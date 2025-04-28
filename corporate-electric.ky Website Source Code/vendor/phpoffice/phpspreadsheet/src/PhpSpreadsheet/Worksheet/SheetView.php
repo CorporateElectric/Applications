@@ -1,193 +1,53 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Worksheet;
-
-use PhpOffice\PhpSpreadsheet\Exception as PhpSpreadsheetException;
-
-class SheetView
-{
-    // Sheet View types
-    const SHEETVIEW_NORMAL = 'normal';
-    const SHEETVIEW_PAGE_LAYOUT = 'pageLayout';
-    const SHEETVIEW_PAGE_BREAK_PREVIEW = 'pageBreakPreview';
-
-    private static $sheetViewTypes = [
-        self::SHEETVIEW_NORMAL,
-        self::SHEETVIEW_PAGE_LAYOUT,
-        self::SHEETVIEW_PAGE_BREAK_PREVIEW,
-    ];
-
-    /**
-     * ZoomScale.
-     *
-     * Valid values range from 10 to 400.
-     *
-     * @var int
-     */
-    private $zoomScale = 100;
-
-    /**
-     * ZoomScaleNormal.
-     *
-     * Valid values range from 10 to 400.
-     *
-     * @var int
-     */
-    private $zoomScaleNormal = 100;
-
-    /**
-     * ShowZeros.
-     *
-     * If true, "null" values from a calculation will be shown as "0". This is the default Excel behaviour and can be changed
-     * with the advanced worksheet option "Show a zero in cells that have zero value"
-     *
-     * @var bool
-     */
-    private $showZeros = true;
-
-    /**
-     * View.
-     *
-     * Valid values range from 10 to 400.
-     *
-     * @var string
-     */
-    private $sheetviewType = self::SHEETVIEW_NORMAL;
-
-    /**
-     * Create a new SheetView.
-     */
-    public function __construct()
-    {
-    }
-
-    /**
-     * Get ZoomScale.
-     *
-     * @return int
-     */
-    public function getZoomScale()
-    {
-        return $this->zoomScale;
-    }
-
-    /**
-     * Set ZoomScale.
-     * Valid values range from 10 to 400.
-     *
-     * @param int $pValue
-     *
-     * @return $this
-     */
-    public function setZoomScale($pValue)
-    {
-        // Microsoft Office Excel 2007 only allows setting a scale between 10 and 400 via the user interface,
-        // but it is apparently still able to handle any scale >= 1
-        if (($pValue >= 1) || $pValue === null) {
-            $this->zoomScale = $pValue;
-        } else {
-            throw new PhpSpreadsheetException('Scale must be greater than or equal to 1.');
-        }
-
-        return $this;
-    }
-
-    /**
-     * Get ZoomScaleNormal.
-     *
-     * @return int
-     */
-    public function getZoomScaleNormal()
-    {
-        return $this->zoomScaleNormal;
-    }
-
-    /**
-     * Set ZoomScale.
-     * Valid values range from 10 to 400.
-     *
-     * @param int $pValue
-     *
-     * @return $this
-     */
-    public function setZoomScaleNormal($pValue)
-    {
-        if (($pValue >= 1) || $pValue === null) {
-            $this->zoomScaleNormal = $pValue;
-        } else {
-            throw new PhpSpreadsheetException('Scale must be greater than or equal to 1.');
-        }
-
-        return $this;
-    }
-
-    /**
-     * Set ShowZeroes setting.
-     *
-     * @param bool $pValue
-     */
-    public function setShowZeros($pValue): void
-    {
-        $this->showZeros = $pValue;
-    }
-
-    /**
-     * @return bool
-     */
-    public function getShowZeros()
-    {
-        return $this->showZeros;
-    }
-
-    /**
-     * Get View.
-     *
-     * @return string
-     */
-    public function getView()
-    {
-        return $this->sheetviewType;
-    }
-
-    /**
-     * Set View.
-     *
-     * Valid values are
-     *        'normal'            self::SHEETVIEW_NORMAL
-     *        'pageLayout'        self::SHEETVIEW_PAGE_LAYOUT
-     *        'pageBreakPreview'  self::SHEETVIEW_PAGE_BREAK_PREVIEW
-     *
-     * @param string $pValue
-     *
-     * @return $this
-     */
-    public function setView($pValue)
-    {
-        // MS Excel 2007 allows setting the view to 'normal', 'pageLayout' or 'pageBreakPreview' via the user interface
-        if ($pValue === null) {
-            $pValue = self::SHEETVIEW_NORMAL;
-        }
-        if (in_array($pValue, self::$sheetViewTypes)) {
-            $this->sheetviewType = $pValue;
-        } else {
-            throw new PhpSpreadsheetException('Invalid sheetview layout type.');
-        }
-
-        return $this;
-    }
-
-    /**
-     * Implement PHP __clone to create a deep clone, not just a shallow copy.
-     */
-    public function __clone()
-    {
-        $vars = get_object_vars($this);
-        foreach ($vars as $key => $value) {
-            if (is_object($value)) {
-                $this->$key = clone $value;
-            } else {
-                $this->$key = $value;
-            }
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

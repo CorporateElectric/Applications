@@ -1,232 +1,98 @@
-<?php
-
-namespace Doctrine\Instantiator;
-
-use ArrayIterator;
-use Doctrine\Instantiator\Exception\InvalidArgumentException;
-use Doctrine\Instantiator\Exception\UnexpectedValueException;
-use Exception;
-use ReflectionClass;
-use ReflectionException;
-use Serializable;
-
-use function class_exists;
-use function is_subclass_of;
-use function restore_error_handler;
-use function set_error_handler;
-use function sprintf;
-use function strlen;
-use function unserialize;
-
-final class Instantiator implements InstantiatorInterface
-{
-    /**
-     * Markers used internally by PHP to define whether {@see \unserialize} should invoke
-     * the method {@see \Serializable::unserialize()} when dealing with classes implementing
-     * the {@see \Serializable} interface.
-     */
-    public const SERIALIZATION_FORMAT_USE_UNSERIALIZER   = 'C';
-    public const SERIALIZATION_FORMAT_AVOID_UNSERIALIZER = 'O';
-
-    /**
-     * Used to instantiate specific classes, indexed by class name.
-     *
-     * @var callable[]
-     */
-    private static $cachedInstantiators = [];
-
-    /**
-     * Array of objects that can directly be cloned, indexed by class name.
-     *
-     * @var object[]
-     */
-    private static $cachedCloneables = [];
-
-    /**
-     * {@inheritDoc}
-     */
-    public function instantiate($className)
-    {
-        if (isset(self::$cachedCloneables[$className])) {
-            return clone self::$cachedCloneables[$className];
-        }
-
-        if (isset(self::$cachedInstantiators[$className])) {
-            $factory = self::$cachedInstantiators[$className];
-
-            return $factory();
-        }
-
-        return $this->buildAndCacheFromFactory($className);
-    }
-
-    /**
-     * Builds the requested object and caches it in static properties for performance
-     *
-     * @return object
-     *
-     * @template T of object
-     * @phpstan-param class-string<T> $className
-     *
-     * @phpstan-return T
-     */
-    private function buildAndCacheFromFactory(string $className)
-    {
-        $factory  = self::$cachedInstantiators[$className] = $this->buildFactory($className);
-        $instance = $factory();
-
-        if ($this->isSafeToClone(new ReflectionClass($instance))) {
-            self::$cachedCloneables[$className] = clone $instance;
-        }
-
-        return $instance;
-    }
-
-    /**
-     * Builds a callable capable of instantiating the given $className without
-     * invoking its constructor.
-     *
-     * @throws InvalidArgumentException
-     * @throws UnexpectedValueException
-     * @throws ReflectionException
-     *
-     * @template T of object
-     * @phpstan-param class-string<T> $className
-     *
-     * @phpstan-return callable(): T
-     */
-    private function buildFactory(string $className): callable
-    {
-        $reflectionClass = $this->getReflectionClass($className);
-
-        if ($this->isInstantiableViaReflection($reflectionClass)) {
-            return [$reflectionClass, 'newInstanceWithoutConstructor'];
-        }
-
-        $serializedString = sprintf(
-            '%s:%d:"%s":0:{}',
-            is_subclass_of($className, Serializable::class) ? self::SERIALIZATION_FORMAT_USE_UNSERIALIZER : self::SERIALIZATION_FORMAT_AVOID_UNSERIALIZER,
-            strlen($className),
-            $className
-        );
-
-        $this->checkIfUnSerializationIsSupported($reflectionClass, $serializedString);
-
-        return static function () use ($serializedString) {
-            return unserialize($serializedString);
-        };
-    }
-
-    /**
-     * @throws InvalidArgumentException
-     * @throws ReflectionException
-     *
-     * @template T of object
-     * @phpstan-param class-string<T> $className
-     *
-     * @phpstan-return ReflectionClass<T>
-     */
-    private function getReflectionClass(string $className): ReflectionClass
-    {
-        if (! class_exists($className)) {
-            throw InvalidArgumentException::fromNonExistingClass($className);
-        }
-
-        $reflection = new ReflectionClass($className);
-
-        if ($reflection->isAbstract()) {
-            throw InvalidArgumentException::fromAbstractClass($reflection);
-        }
-
-        return $reflection;
-    }
-
-    /**
-     * @throws UnexpectedValueException
-     *
-     * @template T of object
-     * @phpstan-param ReflectionClass<T> $reflectionClass
-     */
-    private function checkIfUnSerializationIsSupported(ReflectionClass $reflectionClass, string $serializedString): void
-    {
-        set_error_handler(static function (int $code, string $message, string $file, int $line) use ($reflectionClass, &$error): bool {
-            $error = UnexpectedValueException::fromUncleanUnSerialization(
-                $reflectionClass,
-                $message,
-                $code,
-                $file,
-                $line
-            );
-
-            return true;
-        });
-
-        try {
-            $this->attemptInstantiationViaUnSerialization($reflectionClass, $serializedString);
-        } finally {
-            restore_error_handler();
-        }
-
-        if ($error) {
-            throw $error;
-        }
-    }
-
-    /**
-     * @throws UnexpectedValueException
-     *
-     * @template T of object
-     * @phpstan-param ReflectionClass<T> $reflectionClass
-     */
-    private function attemptInstantiationViaUnSerialization(ReflectionClass $reflectionClass, string $serializedString): void
-    {
-        try {
-            unserialize($serializedString);
-        } catch (Exception $exception) {
-            throw UnexpectedValueException::fromSerializationTriggeredException($reflectionClass, $exception);
-        }
-    }
-
-    /**
-     * @template T of object
-     * @phpstan-param ReflectionClass<T> $reflectionClass
-     */
-    private function isInstantiableViaReflection(ReflectionClass $reflectionClass): bool
-    {
-        return ! ($this->hasInternalAncestors($reflectionClass) && $reflectionClass->isFinal());
-    }
-
-    /**
-     * Verifies whether the given class is to be considered internal
-     *
-     * @template T of object
-     * @phpstan-param ReflectionClass<T> $reflectionClass
-     */
-    private function hasInternalAncestors(ReflectionClass $reflectionClass): bool
-    {
-        do {
-            if ($reflectionClass->isInternal()) {
-                return true;
-            }
-
-            $reflectionClass = $reflectionClass->getParentClass();
-        } while ($reflectionClass);
-
-        return false;
-    }
-
-    /**
-     * Checks if a class is cloneable
-     *
-     * Classes implementing `__clone` cannot be safely cloned, as that may cause side-effects.
-     *
-     * @template T of object
-     * @phpstan-param ReflectionClass<T> $reflectionClass
-     */
-    private function isSafeToClone(ReflectionClass $reflectionClass): bool
-    {
-        return $reflectionClass->isCloneable()
-            && ! $reflectionClass->hasMethod('__clone')
-            && ! $reflectionClass->isSubclassOf(ArrayIterator::class);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

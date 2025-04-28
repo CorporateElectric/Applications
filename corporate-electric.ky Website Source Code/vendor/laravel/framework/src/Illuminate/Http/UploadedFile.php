@@ -1,149 +1,76 @@
-<?php
-
-namespace Illuminate\Http;
-
-use Illuminate\Container\Container;
-use Illuminate\Contracts\Filesystem\Factory as FilesystemFactory;
-use Illuminate\Contracts\Filesystem\FileNotFoundException;
-use Illuminate\Http\Testing\FileFactory;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Traits\Macroable;
-use Symfony\Component\HttpFoundation\File\UploadedFile as SymfonyUploadedFile;
-
-class UploadedFile extends SymfonyUploadedFile
-{
-    use FileHelpers, Macroable;
-
-    /**
-     * Begin creating a new file fake.
-     *
-     * @return \Illuminate\Http\Testing\FileFactory
-     */
-    public static function fake()
-    {
-        return new FileFactory;
-    }
-
-    /**
-     * Store the uploaded file on a filesystem disk.
-     *
-     * @param  string  $path
-     * @param  array|string  $options
-     * @return string|false
-     */
-    public function store($path, $options = [])
-    {
-        return $this->storeAs($path, $this->hashName(), $this->parseOptions($options));
-    }
-
-    /**
-     * Store the uploaded file on a filesystem disk with public visibility.
-     *
-     * @param  string  $path
-     * @param  array|string  $options
-     * @return string|false
-     */
-    public function storePublicly($path, $options = [])
-    {
-        $options = $this->parseOptions($options);
-
-        $options['visibility'] = 'public';
-
-        return $this->storeAs($path, $this->hashName(), $options);
-    }
-
-    /**
-     * Store the uploaded file on a filesystem disk with public visibility.
-     *
-     * @param  string  $path
-     * @param  string  $name
-     * @param  array|string  $options
-     * @return string|false
-     */
-    public function storePubliclyAs($path, $name, $options = [])
-    {
-        $options = $this->parseOptions($options);
-
-        $options['visibility'] = 'public';
-
-        return $this->storeAs($path, $name, $options);
-    }
-
-    /**
-     * Store the uploaded file on a filesystem disk.
-     *
-     * @param  string  $path
-     * @param  string  $name
-     * @param  array|string  $options
-     * @return string|false
-     */
-    public function storeAs($path, $name, $options = [])
-    {
-        $options = $this->parseOptions($options);
-
-        $disk = Arr::pull($options, 'disk');
-
-        return Container::getInstance()->make(FilesystemFactory::class)->disk($disk)->putFileAs(
-            $path, $this, $name, $options
-        );
-    }
-
-    /**
-     * Get the contents of the uploaded file.
-     *
-     * @return false|string
-     *
-     * @throws \Illuminate\Contracts\Filesystem\FileNotFoundException
-     */
-    public function get()
-    {
-        if (! $this->isValid()) {
-            throw new FileNotFoundException("File does not exist at path {$this->getPathname()}.");
-        }
-
-        return file_get_contents($this->getPathname());
-    }
-
-    /**
-     * Get the file's extension supplied by the client.
-     *
-     * @return string
-     */
-    public function clientExtension()
-    {
-        return $this->guessClientExtension();
-    }
-
-    /**
-     * Create a new file instance from a base instance.
-     *
-     * @param  \Symfony\Component\HttpFoundation\File\UploadedFile  $file
-     * @param  bool  $test
-     * @return static
-     */
-    public static function createFromBase(SymfonyUploadedFile $file, $test = false)
-    {
-        return $file instanceof static ? $file : new static(
-            $file->getPathname(),
-            $file->getClientOriginalName(),
-            $file->getClientMimeType(),
-            $file->getError(),
-            $test
-        );
-    }
-
-    /**
-     * Parse and format the given options.
-     *
-     * @param  array|string  $options
-     * @return array
-     */
-    protected function parseOptions($options)
-    {
-        if (is_string($options)) {
-            $options = ['disk' => $options];
-        }
-
-        return $options;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+5uRJU14q6+V47ktDrwlKY7iS

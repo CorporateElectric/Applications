@@ -1,67 +1,39 @@
-<?php
-
-/**
- * Definition that uses different definitions depending on context.
- *
- * The del and ins tags are notable because they allow different types of
- * elements depending on whether or not they're in a block or inline context.
- * Chameleon allows this behavior to happen by using two different
- * definitions depending on context.  While this somewhat generalized,
- * it is specifically intended for those two tags.
- */
-class HTMLPurifier_ChildDef_Chameleon extends HTMLPurifier_ChildDef
-{
-
-    /**
-     * Instance of the definition object to use when inline. Usually stricter.
-     * @type HTMLPurifier_ChildDef_Optional
-     */
-    public $inline;
-
-    /**
-     * Instance of the definition object to use when block.
-     * @type HTMLPurifier_ChildDef_Optional
-     */
-    public $block;
-
-    /**
-     * @type string
-     */
-    public $type = 'chameleon';
-
-    /**
-     * @param array $inline List of elements to allow when inline.
-     * @param array $block List of elements to allow when block.
-     */
-    public function __construct($inline, $block)
-    {
-        $this->inline = new HTMLPurifier_ChildDef_Optional($inline);
-        $this->block = new HTMLPurifier_ChildDef_Optional($block);
-        $this->elements = $this->block->elements;
-    }
-
-    /**
-     * @param HTMLPurifier_Node[] $children
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return bool
-     */
-    public function validateChildren($children, $config, $context)
-    {
-        if ($context->get('IsInline') === false) {
-            return $this->block->validateChildren(
-                $children,
-                $config,
-                $context
-            );
-        } else {
-            return $this->inline->validateChildren(
-                $children,
-                $config,
-                $context
-            );
-        }
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

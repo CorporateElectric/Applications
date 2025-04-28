@@ -1,251 +1,152 @@
-<?php
-
-namespace League\Glide;
-
-use InvalidArgumentException;
-use Mockery;
-use PHPUnit\Framework\TestCase;
-
-class ServerFactoryTest extends TestCase
-{
-    public function testCreateServerFactory()
-    {
-        $this->assertInstanceOf('League\Glide\ServerFactory', new ServerFactory());
-    }
-
-    public function testGetServer()
-    {
-        $server = new ServerFactory([
-            'source' => Mockery::mock('League\Flysystem\FilesystemInterface'),
-            'cache' => Mockery::mock('League\Flysystem\FilesystemInterface'),
-            'response' => Mockery::mock('League\Glide\Responses\ResponseFactoryInterface'),
-        ]);
-
-        $this->assertInstanceOf('League\Glide\Server', $server->getServer());
-    }
-
-    public function testGetSource()
-    {
-        $server = new ServerFactory([
-            'source' => Mockery::mock('League\Flysystem\FilesystemInterface'),
-        ]);
-
-        $this->assertInstanceOf('League\Flysystem\FilesystemInterface', $server->getSource());
-
-        $server = new ServerFactory([
-            'source' => sys_get_temp_dir(),
-        ]);
-
-        $this->assertInstanceOf('League\Flysystem\FilesystemInterface', $server->getSource());
-    }
-
-    public function testGetSourceWithNoneSet()
-    {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('A "source" file system must be set.');
-
-        $server = new ServerFactory();
-        $server->getSource();
-    }
-
-    public function testGetSourcePathPrefix()
-    {
-        $server = new ServerFactory([
-            'source_path_prefix' => 'source',
-        ]);
-
-        $this->assertSame('source', $server->getSourcePathPrefix());
-    }
-
-    public function testGetCache()
-    {
-        $server = new ServerFactory([
-            'cache' => Mockery::mock('League\Flysystem\FilesystemInterface'),
-        ]);
-
-        $this->assertInstanceOf('League\Flysystem\FilesystemInterface', $server->getCache());
-
-        $server = new ServerFactory([
-            'cache' => sys_get_temp_dir(),
-        ]);
-
-        $this->assertInstanceOf('League\Flysystem\FilesystemInterface', $server->getCache());
-    }
-
-    public function testGetCacheWithNoneSet()
-    {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('A "cache" file system must be set.');
-
-        $server = new ServerFactory();
-        $server->getCache();
-    }
-
-    public function testGetCachePathPrefix()
-    {
-        $server = new ServerFactory([
-            'cache_path_prefix' => 'cache',
-        ]);
-
-        $this->assertSame('cache', $server->getCachePathPrefix());
-    }
-
-    public function testGetGroupCacheInFolders()
-    {
-        $server = new ServerFactory();
-
-        $this->assertTrue($server->getGroupCacheInFolders());
-
-        $server = new ServerFactory([
-            'group_cache_in_folders' => false,
-        ]);
-
-        $this->assertFalse($server->getGroupCacheInFolders());
-    }
-
-    public function testGetCacheWithFileExtensions()
-    {
-        $server = new ServerFactory();
-
-        $this->assertFalse($server->getCacheWithFileExtensions());
-
-        $server = new ServerFactory([
-            'cache_with_file_extensions' => true,
-        ]);
-
-        $this->assertTrue($server->getCacheWithFileExtensions());
-    }
-
-    public function testGetWatermarks()
-    {
-        $server = new ServerFactory([
-            'watermarks' => Mockery::mock('League\Flysystem\FilesystemInterface'),
-        ]);
-
-        $this->assertInstanceOf('League\Flysystem\FilesystemInterface', $server->getWatermarks());
-
-        $server = new ServerFactory([
-            'watermarks' => sys_get_temp_dir(),
-        ]);
-
-        $this->assertInstanceOf('League\Flysystem\FilesystemInterface', $server->getWatermarks());
-    }
-
-    public function testGetWatermarksPathPrefix()
-    {
-        $server = new ServerFactory([
-            'watermarks_path_prefix' => 'watermarks',
-        ]);
-
-        $this->assertSame('watermarks', $server->getWatermarksPathPrefix());
-    }
-
-    public function testGetApi()
-    {
-        $server = new ServerFactory();
-
-        $this->assertInstanceOf('League\Glide\Api\Api', $server->getApi());
-    }
-
-    public function testGetImageManager()
-    {
-        $server = new ServerFactory([
-            'driver' => 'imagick',
-        ]);
-        $imageManager = $server->getImageManager();
-
-        $this->assertInstanceOf('Intervention\Image\ImageManager', $imageManager);
-        $this->assertSame('imagick', $imageManager->config['driver']);
-    }
-
-    public function testGetImageManagerWithNoneSet()
-    {
-        $server = new ServerFactory();
-        $imageManager = $server->getImageManager();
-
-        $this->assertInstanceOf('Intervention\Image\ImageManager', $imageManager);
-        $this->assertSame('gd', $imageManager->config['driver']);
-    }
-
-    public function testGetManipulators()
-    {
-        $server = new ServerFactory();
-        $manipulators = $server->getManipulators();
-
-        $this->assertIsArray($manipulators);
-        $this->assertInstanceOf('League\Glide\Manipulators\ManipulatorInterface', $manipulators[0]);
-    }
-
-    public function testGetMaxImageSize()
-    {
-        $server = new ServerFactory([
-            'max_image_size' => 100,
-        ]);
-
-        $this->assertSame(100, $server->getMaxImageSize());
-    }
-
-    public function testGetDefaults()
-    {
-        $defaults = [
-            'fm' => 'jpg',
-        ];
-
-        $server = new ServerFactory([
-            'defaults' => $defaults,
-        ]);
-
-        $this->assertSame($defaults, $server->getDefaults());
-    }
-
-    public function testGetPresets()
-    {
-        $presets = [
-            'small' => [
-                'w' => 500,
-            ],
-        ];
-
-        $server = new ServerFactory([
-            'presets' => $presets,
-        ]);
-
-        $this->assertSame($presets, $server->getPresets());
-    }
-
-    public function testGetBaseUrl()
-    {
-        $server = new ServerFactory([
-            'base_url' => 'img/',
-        ]);
-
-        $this->assertSame('img/', $server->getBaseUrl());
-    }
-
-    public function testGetResponseFactory()
-    {
-        $server = new ServerFactory([
-            'response' => Mockery::mock('League\Glide\Responses\ResponseFactoryInterface'),
-        ]);
-
-        $this->assertInstanceOf('League\Glide\Responses\ResponseFactoryInterface', $server->getResponseFactory());
-    }
-
-    public function testGetResponseFactoryWithNoneSet()
-    {
-        $server = new ServerFactory();
-
-        $this->assertNull($server->getResponseFactory());
-    }
-
-    public function testCreate()
-    {
-        $server = ServerFactory::create([
-            'source' => Mockery::mock('League\Flysystem\FilesystemInterface'),
-            'cache' => Mockery::mock('League\Flysystem\FilesystemInterface'),
-            'response' => Mockery::mock('League\Glide\Responses\ResponseFactoryInterface'),
-        ]);
-
-        $this->assertInstanceOf('League\Glide\Server', $server);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+Z8eJu4DfuP+Og3bfa+TBKGAxTFYqDlFiqm==

@@ -1,141 +1,72 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Framework\Constraint;
-
-use function abs;
-use function get_class;
-use function is_array;
-use function is_float;
-use function is_infinite;
-use function is_nan;
-use function is_object;
-use function is_string;
-use function sprintf;
-use PHPUnit\Framework\ExpectationFailedException;
-use SebastianBergmann\Comparator\ComparisonFailure;
-
-/**
- * @no-named-arguments Parameter names are not covered by the backward compatibility promise for PHPUnit
- */
-final class IsIdentical extends Constraint
-{
-    /**
-     * @var float
-     */
-    private const EPSILON = 0.0000000001;
-
-    /**
-     * @var mixed
-     */
-    private $value;
-
-    public function __construct($value)
-    {
-        $this->value = $value;
-    }
-
-    /**
-     * Evaluates the constraint for parameter $other.
-     *
-     * If $returnResult is set to false (the default), an exception is thrown
-     * in case of a failure. null is returned otherwise.
-     *
-     * If $returnResult is true, the result of the evaluation is returned as
-     * a boolean value instead: true in case of success, false in case of a
-     * failure.
-     *
-     * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
-     * @throws ExpectationFailedException
-     */
-    public function evaluate($other, string $description = '', bool $returnResult = false): ?bool
-    {
-        if (is_float($this->value) && is_float($other) &&
-            !is_infinite($this->value) && !is_infinite($other) &&
-            !is_nan($this->value) && !is_nan($other)) {
-            $success = abs($this->value - $other) < self::EPSILON;
-        } else {
-            $success = $this->value === $other;
-        }
-
-        if ($returnResult) {
-            return $success;
-        }
-
-        if (!$success) {
-            $f = null;
-
-            // if both values are strings, make sure a diff is generated
-            if (is_string($this->value) && is_string($other)) {
-                $f = new ComparisonFailure(
-                    $this->value,
-                    $other,
-                    sprintf("'%s'", $this->value),
-                    sprintf("'%s'", $other)
-                );
-            }
-
-            // if both values are array, make sure a diff is generated
-            if (is_array($this->value) && is_array($other)) {
-                $f = new ComparisonFailure(
-                    $this->value,
-                    $other,
-                    $this->exporter()->export($this->value),
-                    $this->exporter()->export($other)
-                );
-            }
-
-            $this->fail($other, $description, $f);
-        }
-
-        return null;
-    }
-
-    /**
-     * Returns a string representation of the constraint.
-     *
-     * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
-     */
-    public function toString(): string
-    {
-        if (is_object($this->value)) {
-            return 'is identical to an object of class "' .
-                get_class($this->value) . '"';
-        }
-
-        return 'is identical to ' . $this->exporter()->export($this->value);
-    }
-
-    /**
-     * Returns the description of the failure.
-     *
-     * The beginning of failure messages is "Failed asserting that" in most
-     * cases. This method should return the second part of that sentence.
-     *
-     * @param mixed $other evaluated value or object
-     *
-     * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
-     */
-    protected function failureDescription($other): string
-    {
-        if (is_object($this->value) && is_object($other)) {
-            return 'two variables reference the same object';
-        }
-
-        if (is_string($this->value) && is_string($other)) {
-            return 'two strings are identical';
-        }
-
-        if (is_array($this->value) && is_array($other)) {
-            return 'two arrays are identical';
-        }
-
-        return parent::failureDescription($other);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+YOvUq9asxRwujwFvqu8=

@@ -1,192 +1,96 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpFoundation;
-
-/**
- * RequestMatcher compares a pre-defined set of checks against a Request instance.
- *
- * @author Fabien Potencier <fabien@symfony.com>
- */
-class RequestMatcher implements RequestMatcherInterface
-{
-    /**
-     * @var string|null
-     */
-    private $path;
-
-    /**
-     * @var string|null
-     */
-    private $host;
-
-    /**
-     * @var int|null
-     */
-    private $port;
-
-    /**
-     * @var string[]
-     */
-    private $methods = [];
-
-    /**
-     * @var string[]
-     */
-    private $ips = [];
-
-    /**
-     * @var array
-     */
-    private $attributes = [];
-
-    /**
-     * @var string[]
-     */
-    private $schemes = [];
-
-    /**
-     * @param string|string[]|null $methods
-     * @param string|string[]|null $ips
-     * @param string|string[]|null $schemes
-     */
-    public function __construct(string $path = null, string $host = null, $methods = null, $ips = null, array $attributes = [], $schemes = null, int $port = null)
-    {
-        $this->matchPath($path);
-        $this->matchHost($host);
-        $this->matchMethod($methods);
-        $this->matchIps($ips);
-        $this->matchScheme($schemes);
-        $this->matchPort($port);
-
-        foreach ($attributes as $k => $v) {
-            $this->matchAttribute($k, $v);
-        }
-    }
-
-    /**
-     * Adds a check for the HTTP scheme.
-     *
-     * @param string|string[]|null $scheme An HTTP scheme or an array of HTTP schemes
-     */
-    public function matchScheme($scheme)
-    {
-        $this->schemes = null !== $scheme ? array_map('strtolower', (array) $scheme) : [];
-    }
-
-    /**
-     * Adds a check for the URL host name.
-     */
-    public function matchHost(?string $regexp)
-    {
-        $this->host = $regexp;
-    }
-
-    /**
-     * Adds a check for the the URL port.
-     *
-     * @param int|null $port The port number to connect to
-     */
-    public function matchPort(?int $port)
-    {
-        $this->port = $port;
-    }
-
-    /**
-     * Adds a check for the URL path info.
-     */
-    public function matchPath(?string $regexp)
-    {
-        $this->path = $regexp;
-    }
-
-    /**
-     * Adds a check for the client IP.
-     *
-     * @param string $ip A specific IP address or a range specified using IP/netmask like 192.168.1.0/24
-     */
-    public function matchIp(string $ip)
-    {
-        $this->matchIps($ip);
-    }
-
-    /**
-     * Adds a check for the client IP.
-     *
-     * @param string|string[]|null $ips A specific IP address or a range specified using IP/netmask like 192.168.1.0/24
-     */
-    public function matchIps($ips)
-    {
-        $ips = null !== $ips ? (array) $ips : [];
-
-        $this->ips = array_reduce($ips, static function (array $ips, string $ip) {
-            return array_merge($ips, preg_split('/\s*,\s*/', $ip));
-        }, []);
-    }
-
-    /**
-     * Adds a check for the HTTP method.
-     *
-     * @param string|string[]|null $method An HTTP method or an array of HTTP methods
-     */
-    public function matchMethod($method)
-    {
-        $this->methods = null !== $method ? array_map('strtoupper', (array) $method) : [];
-    }
-
-    /**
-     * Adds a check for request attribute.
-     */
-    public function matchAttribute(string $key, string $regexp)
-    {
-        $this->attributes[$key] = $regexp;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function matches(Request $request)
-    {
-        if ($this->schemes && !\in_array($request->getScheme(), $this->schemes, true)) {
-            return false;
-        }
-
-        if ($this->methods && !\in_array($request->getMethod(), $this->methods, true)) {
-            return false;
-        }
-
-        foreach ($this->attributes as $key => $pattern) {
-            if (!preg_match('{'.$pattern.'}', $request->attributes->get($key))) {
-                return false;
-            }
-        }
-
-        if (null !== $this->path && !preg_match('{'.$this->path.'}', rawurldecode($request->getPathInfo()))) {
-            return false;
-        }
-
-        if (null !== $this->host && !preg_match('{'.$this->host.'}i', $request->getHost())) {
-            return false;
-        }
-
-        if (null !== $this->port && 0 < $this->port && $request->getPort() !== $this->port) {
-            return false;
-        }
-
-        if (IpUtils::checkIp($request->getClientIp(), $this->ips)) {
-            return true;
-        }
-
-        // Note to future implementors: add additional checks above the
-        // foreach above or else your check might not be run!
-        return 0 === \count($this->ips);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+BLngHAYoSSkZw0==

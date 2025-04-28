@@ -1,79 +1,84 @@
-<?php
-
-namespace Facade\Ignition\SolutionProviders;
-
-use Facade\Ignition\Support\ComposerClassMap;
-use Facade\Ignition\Support\StringComparator;
-use Facade\IgnitionContracts\BaseSolution;
-use Facade\IgnitionContracts\HasSolutionsForThrowable;
-use Illuminate\Support\Str;
-use Throwable;
-use UnexpectedValueException;
-
-class InvalidRouteActionSolutionProvider implements HasSolutionsForThrowable
-{
-    protected const REGEX = '/\[([a-zA-Z\\\\]+)\]/m';
-
-    public function canSolve(Throwable $throwable): bool
-    {
-        if (! $throwable instanceof UnexpectedValueException) {
-            return false;
-        }
-
-        if (! preg_match(self::REGEX, $throwable->getMessage(), $matches)) {
-            return false;
-        }
-
-        return Str::startsWith($throwable->getMessage(), 'Invalid route action: ');
-    }
-
-    public function getSolutions(Throwable $throwable): array
-    {
-        preg_match(self::REGEX, $throwable->getMessage(), $matches);
-
-        $invalidController = $matches[1] ?? null;
-
-        $suggestedController = $this->findRelatedController($invalidController);
-
-        if ($suggestedController === $invalidController) {
-            return [
-                BaseSolution::create("`{$invalidController}` is not invokable.")
-                    ->setSolutionDescription("The controller class `{$invalidController}` is not invokable. Did you forget to add the `__invoke` method or is the controller's method missing in your routes file?"),
-            ];
-        }
-
-        if ($suggestedController) {
-            return [
-                BaseSolution::create("`{$invalidController}` was not found.")
-                    ->setSolutionDescription("Controller class `{$invalidController}` for one of your routes was not found. Did you mean `{$suggestedController}`?"),
-            ];
-        }
-
-        return [
-            BaseSolution::create("`{$invalidController}` was not found.")
-                ->setSolutionDescription("Controller class `{$invalidController}` for one of your routes was not found. Are you sure this controller exists and is imported correctly?"),
-        ];
-    }
-
-    protected function findRelatedController(string $invalidController): ?string
-    {
-        $composerClassMap = app(ComposerClassMap::class);
-
-        $controllers = collect($composerClassMap->listClasses())
-            ->filter(function (string $file, string $fqcn) {
-                return Str::endsWith($fqcn, 'Controller');
-            })
-            ->mapWithKeys(function (string $file, string $fqcn) {
-                return [$fqcn => class_basename($fqcn)];
-            })
-            ->toArray();
-
-        $basenameMatch = StringComparator::findClosestMatch($controllers, $invalidController, 4);
-
-        $controllers = array_flip($controllers);
-
-        $fqcnMatch = StringComparator::findClosestMatch($controllers, $invalidController, 4);
-
-        return $fqcnMatch ?? $basenameMatch;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+WhvJQkUmOgl04OHYhSvm/7G=

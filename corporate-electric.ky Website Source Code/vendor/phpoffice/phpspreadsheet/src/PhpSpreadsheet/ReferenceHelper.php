@@ -1,1038 +1,610 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet;
-
-use PhpOffice\PhpSpreadsheet\Calculation\Calculation;
-use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
-use PhpOffice\PhpSpreadsheet\Cell\DataType;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-
-class ReferenceHelper
-{
-    /**    Constants                */
-    /**    Regular Expressions      */
-    const REFHELPER_REGEXP_CELLREF = '((\w*|\'[^!]*\')!)?(?<![:a-z\$])(\$?[a-z]{1,3}\$?\d+)(?=[^:!\d\'])';
-    const REFHELPER_REGEXP_CELLRANGE = '((\w*|\'[^!]*\')!)?(\$?[a-z]{1,3}\$?\d+):(\$?[a-z]{1,3}\$?\d+)';
-    const REFHELPER_REGEXP_ROWRANGE = '((\w*|\'[^!]*\')!)?(\$?\d+):(\$?\d+)';
-    const REFHELPER_REGEXP_COLRANGE = '((\w*|\'[^!]*\')!)?(\$?[a-z]{1,3}):(\$?[a-z]{1,3})';
-
-    /**
-     * Instance of this class.
-     *
-     * @var ReferenceHelper
-     */
-    private static $instance;
-
-    /**
-     * Get an instance of this class.
-     *
-     * @return ReferenceHelper
-     */
-    public static function getInstance()
-    {
-        if (!isset(self::$instance) || (self::$instance === null)) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
-    }
-
-    /**
-     * Create a new ReferenceHelper.
-     */
-    protected function __construct()
-    {
-    }
-
-    /**
-     * Compare two column addresses
-     * Intended for use as a Callback function for sorting column addresses by column.
-     *
-     * @param string $a First column to test (e.g. 'AA')
-     * @param string $b Second column to test (e.g. 'Z')
-     *
-     * @return int
-     */
-    public static function columnSort($a, $b)
-    {
-        return strcasecmp(strlen($a) . $a, strlen($b) . $b);
-    }
-
-    /**
-     * Compare two column addresses
-     * Intended for use as a Callback function for reverse sorting column addresses by column.
-     *
-     * @param string $a First column to test (e.g. 'AA')
-     * @param string $b Second column to test (e.g. 'Z')
-     *
-     * @return int
-     */
-    public static function columnReverseSort($a, $b)
-    {
-        return -strcasecmp(strlen($a) . $a, strlen($b) . $b);
-    }
-
-    /**
-     * Compare two cell addresses
-     * Intended for use as a Callback function for sorting cell addresses by column and row.
-     *
-     * @param string $a First cell to test (e.g. 'AA1')
-     * @param string $b Second cell to test (e.g. 'Z1')
-     *
-     * @return int
-     */
-    public static function cellSort($a, $b)
-    {
-        [$ac, $ar] = sscanf($a, '%[A-Z]%d');
-        [$bc, $br] = sscanf($b, '%[A-Z]%d');
-
-        if ($ar === $br) {
-            return strcasecmp(strlen($ac) . $ac, strlen($bc) . $bc);
-        }
-
-        return ($ar < $br) ? -1 : 1;
-    }
-
-    /**
-     * Compare two cell addresses
-     * Intended for use as a Callback function for sorting cell addresses by column and row.
-     *
-     * @param string $a First cell to test (e.g. 'AA1')
-     * @param string $b Second cell to test (e.g. 'Z1')
-     *
-     * @return int
-     */
-    public static function cellReverseSort($a, $b)
-    {
-        [$ac, $ar] = sscanf($a, '%[A-Z]%d');
-        [$bc, $br] = sscanf($b, '%[A-Z]%d');
-
-        if ($ar === $br) {
-            return -strcasecmp(strlen($ac) . $ac, strlen($bc) . $bc);
-        }
-
-        return ($ar < $br) ? 1 : -1;
-    }
-
-    /**
-     * Test whether a cell address falls within a defined range of cells.
-     *
-     * @param string $cellAddress Address of the cell we're testing
-     * @param int $beforeRow Number of the row we're inserting/deleting before
-     * @param int $pNumRows Number of rows to insert/delete (negative values indicate deletion)
-     * @param int $beforeColumnIndex Index number of the column we're inserting/deleting before
-     * @param int $pNumCols Number of columns to insert/delete (negative values indicate deletion)
-     *
-     * @return bool
-     */
-    private static function cellAddressInDeleteRange($cellAddress, $beforeRow, $pNumRows, $beforeColumnIndex, $pNumCols)
-    {
-        [$cellColumn, $cellRow] = Coordinate::coordinateFromString($cellAddress);
-        $cellColumnIndex = Coordinate::columnIndexFromString($cellColumn);
-        //    Is cell within the range of rows/columns if we're deleting
-        if (
-            $pNumRows < 0 &&
-            ($cellRow >= ($beforeRow + $pNumRows)) &&
-            ($cellRow < $beforeRow)
-        ) {
-            return true;
-        } elseif (
-            $pNumCols < 0 &&
-            ($cellColumnIndex >= ($beforeColumnIndex + $pNumCols)) &&
-            ($cellColumnIndex < $beforeColumnIndex)
-        ) {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Update page breaks when inserting/deleting rows/columns.
-     *
-     * @param Worksheet $pSheet The worksheet that we're editing
-     * @param string $pBefore Insert/Delete before this cell address (e.g. 'A1')
-     * @param int $beforeColumnIndex Index number of the column we're inserting/deleting before
-     * @param int $pNumCols Number of columns to insert/delete (negative values indicate deletion)
-     * @param int $beforeRow Number of the row we're inserting/deleting before
-     * @param int $pNumRows Number of rows to insert/delete (negative values indicate deletion)
-     */
-    protected function adjustPageBreaks(Worksheet $pSheet, $pBefore, $beforeColumnIndex, $pNumCols, $beforeRow, $pNumRows): void
-    {
-        $aBreaks = $pSheet->getBreaks();
-        ($pNumCols > 0 || $pNumRows > 0) ?
-            uksort($aBreaks, ['self', 'cellReverseSort']) : uksort($aBreaks, ['self', 'cellSort']);
-
-        foreach ($aBreaks as $key => $value) {
-            if (self::cellAddressInDeleteRange($key, $beforeRow, $pNumRows, $beforeColumnIndex, $pNumCols)) {
-                //    If we're deleting, then clear any defined breaks that are within the range
-                //        of rows/columns that we're deleting
-                $pSheet->setBreak($key, Worksheet::BREAK_NONE);
-            } else {
-                //    Otherwise update any affected breaks by inserting a new break at the appropriate point
-                //        and removing the old affected break
-                $newReference = $this->updateCellReference($key, $pBefore, $pNumCols, $pNumRows);
-                if ($key != $newReference) {
-                    $pSheet->setBreak($newReference, $value)
-                        ->setBreak($key, Worksheet::BREAK_NONE);
-                }
-            }
-        }
-    }
-
-    /**
-     * Update cell comments when inserting/deleting rows/columns.
-     *
-     * @param Worksheet $pSheet The worksheet that we're editing
-     * @param string $pBefore Insert/Delete before this cell address (e.g. 'A1')
-     * @param int $beforeColumnIndex Index number of the column we're inserting/deleting before
-     * @param int $pNumCols Number of columns to insert/delete (negative values indicate deletion)
-     * @param int $beforeRow Number of the row we're inserting/deleting before
-     * @param int $pNumRows Number of rows to insert/delete (negative values indicate deletion)
-     */
-    protected function adjustComments($pSheet, $pBefore, $beforeColumnIndex, $pNumCols, $beforeRow, $pNumRows): void
-    {
-        $aComments = $pSheet->getComments();
-        $aNewComments = []; // the new array of all comments
-
-        foreach ($aComments as $key => &$value) {
-            // Any comments inside a deleted range will be ignored
-            if (!self::cellAddressInDeleteRange($key, $beforeRow, $pNumRows, $beforeColumnIndex, $pNumCols)) {
-                // Otherwise build a new array of comments indexed by the adjusted cell reference
-                $newReference = $this->updateCellReference($key, $pBefore, $pNumCols, $pNumRows);
-                $aNewComments[$newReference] = $value;
-            }
-        }
-        //    Replace the comments array with the new set of comments
-        $pSheet->setComments($aNewComments);
-    }
-
-    /**
-     * Update hyperlinks when inserting/deleting rows/columns.
-     *
-     * @param Worksheet $pSheet The worksheet that we're editing
-     * @param string $pBefore Insert/Delete before this cell address (e.g. 'A1')
-     * @param int $beforeColumnIndex Index number of the column we're inserting/deleting before
-     * @param int $pNumCols Number of columns to insert/delete (negative values indicate deletion)
-     * @param int $beforeRow Number of the row we're inserting/deleting before
-     * @param int $pNumRows Number of rows to insert/delete (negative values indicate deletion)
-     */
-    protected function adjustHyperlinks($pSheet, $pBefore, $beforeColumnIndex, $pNumCols, $beforeRow, $pNumRows): void
-    {
-        $aHyperlinkCollection = $pSheet->getHyperlinkCollection();
-        ($pNumCols > 0 || $pNumRows > 0) ?
-            uksort($aHyperlinkCollection, ['self', 'cellReverseSort']) : uksort($aHyperlinkCollection, ['self', 'cellSort']);
-
-        foreach ($aHyperlinkCollection as $key => $value) {
-            $newReference = $this->updateCellReference($key, $pBefore, $pNumCols, $pNumRows);
-            if ($key != $newReference) {
-                $pSheet->setHyperlink($newReference, $value);
-                $pSheet->setHyperlink($key, null);
-            }
-        }
-    }
-
-    /**
-     * Update data validations when inserting/deleting rows/columns.
-     *
-     * @param Worksheet $pSheet The worksheet that we're editing
-     * @param string $pBefore Insert/Delete before this cell address (e.g. 'A1')
-     * @param int $beforeColumnIndex Index number of the column we're inserting/deleting before
-     * @param int $pNumCols Number of columns to insert/delete (negative values indicate deletion)
-     * @param int $beforeRow Number of the row we're inserting/deleting before
-     * @param int $pNumRows Number of rows to insert/delete (negative values indicate deletion)
-     */
-    protected function adjustDataValidations($pSheet, $pBefore, $beforeColumnIndex, $pNumCols, $beforeRow, $pNumRows): void
-    {
-        $aDataValidationCollection = $pSheet->getDataValidationCollection();
-        ($pNumCols > 0 || $pNumRows > 0) ?
-            uksort($aDataValidationCollection, ['self', 'cellReverseSort']) : uksort($aDataValidationCollection, ['self', 'cellSort']);
-
-        foreach ($aDataValidationCollection as $key => $value) {
-            $newReference = $this->updateCellReference($key, $pBefore, $pNumCols, $pNumRows);
-            if ($key != $newReference) {
-                $pSheet->setDataValidation($newReference, $value);
-                $pSheet->setDataValidation($key, null);
-            }
-        }
-    }
-
-    /**
-     * Update merged cells when inserting/deleting rows/columns.
-     *
-     * @param Worksheet $pSheet The worksheet that we're editing
-     * @param string $pBefore Insert/Delete before this cell address (e.g. 'A1')
-     * @param int $beforeColumnIndex Index number of the column we're inserting/deleting before
-     * @param int $pNumCols Number of columns to insert/delete (negative values indicate deletion)
-     * @param int $beforeRow Number of the row we're inserting/deleting before
-     * @param int $pNumRows Number of rows to insert/delete (negative values indicate deletion)
-     */
-    protected function adjustMergeCells($pSheet, $pBefore, $beforeColumnIndex, $pNumCols, $beforeRow, $pNumRows): void
-    {
-        $aMergeCells = $pSheet->getMergeCells();
-        $aNewMergeCells = []; // the new array of all merge cells
-        foreach ($aMergeCells as $key => &$value) {
-            $newReference = $this->updateCellReference($key, $pBefore, $pNumCols, $pNumRows);
-            $aNewMergeCells[$newReference] = $newReference;
-        }
-        $pSheet->setMergeCells($aNewMergeCells); // replace the merge cells array
-    }
-
-    /**
-     * Update protected cells when inserting/deleting rows/columns.
-     *
-     * @param Worksheet $pSheet The worksheet that we're editing
-     * @param string $pBefore Insert/Delete before this cell address (e.g. 'A1')
-     * @param int $beforeColumnIndex Index number of the column we're inserting/deleting before
-     * @param int $pNumCols Number of columns to insert/delete (negative values indicate deletion)
-     * @param int $beforeRow Number of the row we're inserting/deleting before
-     * @param int $pNumRows Number of rows to insert/delete (negative values indicate deletion)
-     */
-    protected function adjustProtectedCells($pSheet, $pBefore, $beforeColumnIndex, $pNumCols, $beforeRow, $pNumRows): void
-    {
-        $aProtectedCells = $pSheet->getProtectedCells();
-        ($pNumCols > 0 || $pNumRows > 0) ?
-            uksort($aProtectedCells, ['self', 'cellReverseSort']) : uksort($aProtectedCells, ['self', 'cellSort']);
-        foreach ($aProtectedCells as $key => $value) {
-            $newReference = $this->updateCellReference($key, $pBefore, $pNumCols, $pNumRows);
-            if ($key != $newReference) {
-                $pSheet->protectCells($newReference, $value, true);
-                $pSheet->unprotectCells($key);
-            }
-        }
-    }
-
-    /**
-     * Update column dimensions when inserting/deleting rows/columns.
-     *
-     * @param Worksheet $pSheet The worksheet that we're editing
-     * @param string $pBefore Insert/Delete before this cell address (e.g. 'A1')
-     * @param int $beforeColumnIndex Index number of the column we're inserting/deleting before
-     * @param int $pNumCols Number of columns to insert/delete (negative values indicate deletion)
-     * @param int $beforeRow Number of the row we're inserting/deleting before
-     * @param int $pNumRows Number of rows to insert/delete (negative values indicate deletion)
-     */
-    protected function adjustColumnDimensions($pSheet, $pBefore, $beforeColumnIndex, $pNumCols, $beforeRow, $pNumRows): void
-    {
-        $aColumnDimensions = array_reverse($pSheet->getColumnDimensions(), true);
-        if (!empty($aColumnDimensions)) {
-            foreach ($aColumnDimensions as $objColumnDimension) {
-                $newReference = $this->updateCellReference($objColumnDimension->getColumnIndex() . '1', $pBefore, $pNumCols, $pNumRows);
-                [$newReference] = Coordinate::coordinateFromString($newReference);
-                if ($objColumnDimension->getColumnIndex() != $newReference) {
-                    $objColumnDimension->setColumnIndex($newReference);
-                }
-            }
-            $pSheet->refreshColumnDimensions();
-        }
-    }
-
-    /**
-     * Update row dimensions when inserting/deleting rows/columns.
-     *
-     * @param Worksheet $pSheet The worksheet that we're editing
-     * @param string $pBefore Insert/Delete before this cell address (e.g. 'A1')
-     * @param int $beforeColumnIndex Index number of the column we're inserting/deleting before
-     * @param int $pNumCols Number of columns to insert/delete (negative values indicate deletion)
-     * @param int $beforeRow Number of the row we're inserting/deleting before
-     * @param int $pNumRows Number of rows to insert/delete (negative values indicate deletion)
-     */
-    protected function adjustRowDimensions($pSheet, $pBefore, $beforeColumnIndex, $pNumCols, $beforeRow, $pNumRows): void
-    {
-        $aRowDimensions = array_reverse($pSheet->getRowDimensions(), true);
-        if (!empty($aRowDimensions)) {
-            foreach ($aRowDimensions as $objRowDimension) {
-                $newReference = $this->updateCellReference('A' . $objRowDimension->getRowIndex(), $pBefore, $pNumCols, $pNumRows);
-                [, $newReference] = Coordinate::coordinateFromString($newReference);
-                if ($objRowDimension->getRowIndex() != $newReference) {
-                    $objRowDimension->setRowIndex($newReference);
-                }
-            }
-            $pSheet->refreshRowDimensions();
-
-            $copyDimension = $pSheet->getRowDimension($beforeRow - 1);
-            for ($i = $beforeRow; $i <= $beforeRow - 1 + $pNumRows; ++$i) {
-                $newDimension = $pSheet->getRowDimension($i);
-                $newDimension->setRowHeight($copyDimension->getRowHeight());
-                $newDimension->setVisible($copyDimension->getVisible());
-                $newDimension->setOutlineLevel($copyDimension->getOutlineLevel());
-                $newDimension->setCollapsed($copyDimension->getCollapsed());
-            }
-        }
-    }
-
-    /**
-     * Insert a new column or row, updating all possible related data.
-     *
-     * @param string $pBefore Insert before this cell address (e.g. 'A1')
-     * @param int $pNumCols Number of columns to insert/delete (negative values indicate deletion)
-     * @param int $pNumRows Number of rows to insert/delete (negative values indicate deletion)
-     * @param Worksheet $pSheet The worksheet that we're editing
-     */
-    public function insertNewBefore($pBefore, $pNumCols, $pNumRows, Worksheet $pSheet): void
-    {
-        $remove = ($pNumCols < 0 || $pNumRows < 0);
-        $allCoordinates = $pSheet->getCoordinates();
-
-        // Get coordinate of $pBefore
-        [$beforeColumn, $beforeRow] = Coordinate::coordinateFromString($pBefore);
-        $beforeColumnIndex = Coordinate::columnIndexFromString($beforeColumn);
-
-        // Clear cells if we are removing columns or rows
-        $highestColumn = $pSheet->getHighestColumn();
-        $highestRow = $pSheet->getHighestRow();
-
-        // 1. Clear column strips if we are removing columns
-        if ($pNumCols < 0 && $beforeColumnIndex - 2 + $pNumCols > 0) {
-            for ($i = 1; $i <= $highestRow - 1; ++$i) {
-                for ($j = $beforeColumnIndex - 1 + $pNumCols; $j <= $beforeColumnIndex - 2; ++$j) {
-                    $coordinate = Coordinate::stringFromColumnIndex($j + 1) . $i;
-                    $pSheet->removeConditionalStyles($coordinate);
-                    if ($pSheet->cellExists($coordinate)) {
-                        $pSheet->getCell($coordinate)->setValueExplicit('', DataType::TYPE_NULL);
-                        $pSheet->getCell($coordinate)->setXfIndex(0);
-                    }
-                }
-            }
-        }
-
-        // 2. Clear row strips if we are removing rows
-        if ($pNumRows < 0 && $beforeRow - 1 + $pNumRows > 0) {
-            for ($i = $beforeColumnIndex - 1; $i <= Coordinate::columnIndexFromString($highestColumn) - 1; ++$i) {
-                for ($j = $beforeRow + $pNumRows; $j <= $beforeRow - 1; ++$j) {
-                    $coordinate = Coordinate::stringFromColumnIndex($i + 1) . $j;
-                    $pSheet->removeConditionalStyles($coordinate);
-                    if ($pSheet->cellExists($coordinate)) {
-                        $pSheet->getCell($coordinate)->setValueExplicit('', DataType::TYPE_NULL);
-                        $pSheet->getCell($coordinate)->setXfIndex(0);
-                    }
-                }
-            }
-        }
-
-        // Loop through cells, bottom-up, and change cell coordinate
-        if ($remove) {
-            // It's faster to reverse and pop than to use unshift, especially with large cell collections
-            $allCoordinates = array_reverse($allCoordinates);
-        }
-        while ($coordinate = array_pop($allCoordinates)) {
-            $cell = $pSheet->getCell($coordinate);
-            $cellIndex = Coordinate::columnIndexFromString($cell->getColumn());
-
-            if ($cellIndex - 1 + $pNumCols < 0) {
-                continue;
-            }
-
-            // New coordinate
-            $newCoordinate = Coordinate::stringFromColumnIndex($cellIndex + $pNumCols) . ($cell->getRow() + $pNumRows);
-
-            // Should the cell be updated? Move value and cellXf index from one cell to another.
-            if (($cellIndex >= $beforeColumnIndex) && ($cell->getRow() >= $beforeRow)) {
-                // Update cell styles
-                $pSheet->getCell($newCoordinate)->setXfIndex($cell->getXfIndex());
-
-                // Insert this cell at its new location
-                if ($cell->getDataType() == DataType::TYPE_FORMULA) {
-                    // Formula should be adjusted
-                    $pSheet->getCell($newCoordinate)
-                        ->setValue($this->updateFormulaReferences($cell->getValue(), $pBefore, $pNumCols, $pNumRows, $pSheet->getTitle()));
-                } else {
-                    // Formula should not be adjusted
-                    $pSheet->getCell($newCoordinate)->setValue($cell->getValue());
-                }
-
-                // Clear the original cell
-                $pSheet->getCellCollection()->delete($coordinate);
-            } else {
-                /*    We don't need to update styles for rows/columns before our insertion position,
-                        but we do still need to adjust any formulae    in those cells                    */
-                if ($cell->getDataType() == DataType::TYPE_FORMULA) {
-                    // Formula should be adjusted
-                    $cell->setValue($this->updateFormulaReferences($cell->getValue(), $pBefore, $pNumCols, $pNumRows, $pSheet->getTitle()));
-                }
-            }
-        }
-
-        // Duplicate styles for the newly inserted cells
-        $highestColumn = $pSheet->getHighestColumn();
-        $highestRow = $pSheet->getHighestRow();
-
-        if ($pNumCols > 0 && $beforeColumnIndex - 2 > 0) {
-            for ($i = $beforeRow; $i <= $highestRow - 1; ++$i) {
-                // Style
-                $coordinate = Coordinate::stringFromColumnIndex($beforeColumnIndex - 1) . $i;
-                if ($pSheet->cellExists($coordinate)) {
-                    $xfIndex = $pSheet->getCell($coordinate)->getXfIndex();
-                    $conditionalStyles = $pSheet->conditionalStylesExists($coordinate) ?
-                        $pSheet->getConditionalStyles($coordinate) : false;
-                    for ($j = $beforeColumnIndex; $j <= $beforeColumnIndex - 1 + $pNumCols; ++$j) {
-                        $pSheet->getCellByColumnAndRow($j, $i)->setXfIndex($xfIndex);
-                        if ($conditionalStyles) {
-                            $cloned = [];
-                            foreach ($conditionalStyles as $conditionalStyle) {
-                                $cloned[] = clone $conditionalStyle;
-                            }
-                            $pSheet->setConditionalStyles(Coordinate::stringFromColumnIndex($j) . $i, $cloned);
-                        }
-                    }
-                }
-            }
-        }
-
-        if ($pNumRows > 0 && $beforeRow - 1 > 0) {
-            for ($i = $beforeColumnIndex; $i <= Coordinate::columnIndexFromString($highestColumn); ++$i) {
-                // Style
-                $coordinate = Coordinate::stringFromColumnIndex($i) . ($beforeRow - 1);
-                if ($pSheet->cellExists($coordinate)) {
-                    $xfIndex = $pSheet->getCell($coordinate)->getXfIndex();
-                    $conditionalStyles = $pSheet->conditionalStylesExists($coordinate) ?
-                        $pSheet->getConditionalStyles($coordinate) : false;
-                    for ($j = $beforeRow; $j <= $beforeRow - 1 + $pNumRows; ++$j) {
-                        $pSheet->getCell(Coordinate::stringFromColumnIndex($i) . $j)->setXfIndex($xfIndex);
-                        if ($conditionalStyles) {
-                            $cloned = [];
-                            foreach ($conditionalStyles as $conditionalStyle) {
-                                $cloned[] = clone $conditionalStyle;
-                            }
-                            $pSheet->setConditionalStyles(Coordinate::stringFromColumnIndex($i) . $j, $cloned);
-                        }
-                    }
-                }
-            }
-        }
-
-        // Update worksheet: column dimensions
-        $this->adjustColumnDimensions($pSheet, $pBefore, $beforeColumnIndex, $pNumCols, $beforeRow, $pNumRows);
-
-        // Update worksheet: row dimensions
-        $this->adjustRowDimensions($pSheet, $pBefore, $beforeColumnIndex, $pNumCols, $beforeRow, $pNumRows);
-
-        //    Update worksheet: page breaks
-        $this->adjustPageBreaks($pSheet, $pBefore, $beforeColumnIndex, $pNumCols, $beforeRow, $pNumRows);
-
-        //    Update worksheet: comments
-        $this->adjustComments($pSheet, $pBefore, $beforeColumnIndex, $pNumCols, $beforeRow, $pNumRows);
-
-        // Update worksheet: hyperlinks
-        $this->adjustHyperlinks($pSheet, $pBefore, $beforeColumnIndex, $pNumCols, $beforeRow, $pNumRows);
-
-        // Update worksheet: data validations
-        $this->adjustDataValidations($pSheet, $pBefore, $beforeColumnIndex, $pNumCols, $beforeRow, $pNumRows);
-
-        // Update worksheet: merge cells
-        $this->adjustMergeCells($pSheet, $pBefore, $beforeColumnIndex, $pNumCols, $beforeRow, $pNumRows);
-
-        // Update worksheet: protected cells
-        $this->adjustProtectedCells($pSheet, $pBefore, $beforeColumnIndex, $pNumCols, $beforeRow, $pNumRows);
-
-        // Update worksheet: autofilter
-        $autoFilter = $pSheet->getAutoFilter();
-        $autoFilterRange = $autoFilter->getRange();
-        if (!empty($autoFilterRange)) {
-            if ($pNumCols != 0) {
-                $autoFilterColumns = $autoFilter->getColumns();
-                if (count($autoFilterColumns) > 0) {
-                    $column = '';
-                    $row = 0;
-                    sscanf($pBefore, '%[A-Z]%d', $column, $row);
-                    $columnIndex = Coordinate::columnIndexFromString($column);
-                    [$rangeStart, $rangeEnd] = Coordinate::rangeBoundaries($autoFilterRange);
-                    if ($columnIndex <= $rangeEnd[0]) {
-                        if ($pNumCols < 0) {
-                            //    If we're actually deleting any columns that fall within the autofilter range,
-                            //        then we delete any rules for those columns
-                            $deleteColumn = $columnIndex + $pNumCols - 1;
-                            $deleteCount = abs($pNumCols);
-                            for ($i = 1; $i <= $deleteCount; ++$i) {
-                                if (isset($autoFilterColumns[Coordinate::stringFromColumnIndex($deleteColumn + 1)])) {
-                                    $autoFilter->clearColumn(Coordinate::stringFromColumnIndex($deleteColumn + 1));
-                                }
-                                ++$deleteColumn;
-                            }
-                        }
-                        $startCol = ($columnIndex > $rangeStart[0]) ? $columnIndex : $rangeStart[0];
-
-                        //    Shuffle columns in autofilter range
-                        if ($pNumCols > 0) {
-                            $startColRef = $startCol;
-                            $endColRef = $rangeEnd[0];
-                            $toColRef = $rangeEnd[0] + $pNumCols;
-
-                            do {
-                                $autoFilter->shiftColumn(Coordinate::stringFromColumnIndex($endColRef), Coordinate::stringFromColumnIndex($toColRef));
-                                --$endColRef;
-                                --$toColRef;
-                            } while ($startColRef <= $endColRef);
-                        } else {
-                            //    For delete, we shuffle from beginning to end to avoid overwriting
-                            $startColID = Coordinate::stringFromColumnIndex($startCol);
-                            $toColID = Coordinate::stringFromColumnIndex($startCol + $pNumCols);
-                            $endColID = Coordinate::stringFromColumnIndex($rangeEnd[0] + 1);
-                            do {
-                                $autoFilter->shiftColumn($startColID, $toColID);
-                                ++$startColID;
-                                ++$toColID;
-                            } while ($startColID != $endColID);
-                        }
-                    }
-                }
-            }
-            $pSheet->setAutoFilter($this->updateCellReference($autoFilterRange, $pBefore, $pNumCols, $pNumRows));
-        }
-
-        // Update worksheet: freeze pane
-        if ($pSheet->getFreezePane()) {
-            $splitCell = $pSheet->getFreezePane();
-            $topLeftCell = $pSheet->getTopLeftCell();
-
-            $splitCell = $this->updateCellReference($splitCell, $pBefore, $pNumCols, $pNumRows);
-            $topLeftCell = $this->updateCellReference($topLeftCell, $pBefore, $pNumCols, $pNumRows);
-
-            $pSheet->freezePane($splitCell, $topLeftCell);
-        }
-
-        // Page setup
-        if ($pSheet->getPageSetup()->isPrintAreaSet()) {
-            $pSheet->getPageSetup()->setPrintArea($this->updateCellReference($pSheet->getPageSetup()->getPrintArea(), $pBefore, $pNumCols, $pNumRows));
-        }
-
-        // Update worksheet: drawings
-        $aDrawings = $pSheet->getDrawingCollection();
-        foreach ($aDrawings as $objDrawing) {
-            $newReference = $this->updateCellReference($objDrawing->getCoordinates(), $pBefore, $pNumCols, $pNumRows);
-            if ($objDrawing->getCoordinates() != $newReference) {
-                $objDrawing->setCoordinates($newReference);
-            }
-        }
-
-        // Update workbook: define names
-        if (count($pSheet->getParent()->getDefinedNames()) > 0) {
-            foreach ($pSheet->getParent()->getDefinedNames() as $definedName) {
-                if ($definedName->getWorksheet()->getHashCode() === $pSheet->getHashCode()) {
-                    $definedName->setValue($this->updateCellReference($definedName->getValue(), $pBefore, $pNumCols, $pNumRows));
-                }
-            }
-        }
-
-        // Garbage collect
-        $pSheet->garbageCollect();
-    }
-
-    /**
-     * Update references within formulas.
-     *
-     * @param string $pFormula Formula to update
-     * @param string $pBefore Insert before this one
-     * @param int $pNumCols Number of columns to insert
-     * @param int $pNumRows Number of rows to insert
-     * @param string $sheetName Worksheet name/title
-     *
-     * @return string Updated formula
-     */
-    public function updateFormulaReferences($pFormula = '', $pBefore = 'A1', $pNumCols = 0, $pNumRows = 0, $sheetName = '')
-    {
-        //    Update cell references in the formula
-        $formulaBlocks = explode('"', $pFormula);
-        $i = false;
-        foreach ($formulaBlocks as &$formulaBlock) {
-            //    Ignore blocks that were enclosed in quotes (alternating entries in the $formulaBlocks array after the explode)
-            if ($i = !$i) {
-                $adjustCount = 0;
-                $newCellTokens = $cellTokens = [];
-                //    Search for row ranges (e.g. 'Sheet1'!3:5 or 3:5) with or without $ absolutes (e.g. $3:5)
-                $matchCount = preg_match_all('/' . self::REFHELPER_REGEXP_ROWRANGE . '/i', ' ' . $formulaBlock . ' ', $matches, PREG_SET_ORDER);
-                if ($matchCount > 0) {
-                    foreach ($matches as $match) {
-                        $fromString = ($match[2] > '') ? $match[2] . '!' : '';
-                        $fromString .= $match[3] . ':' . $match[4];
-                        $modified3 = substr($this->updateCellReference('$A' . $match[3], $pBefore, $pNumCols, $pNumRows), 2);
-                        $modified4 = substr($this->updateCellReference('$A' . $match[4], $pBefore, $pNumCols, $pNumRows), 2);
-
-                        if ($match[3] . ':' . $match[4] !== $modified3 . ':' . $modified4) {
-                            if (($match[2] == '') || (trim($match[2], "'") == $sheetName)) {
-                                $toString = ($match[2] > '') ? $match[2] . '!' : '';
-                                $toString .= $modified3 . ':' . $modified4;
-                                //    Max worksheet size is 1,048,576 rows by 16,384 columns in Excel 2007, so our adjustments need to be at least one digit more
-                                $column = 100000;
-                                $row = 10000000 + trim($match[3], '$');
-                                $cellIndex = $column . $row;
-
-                                $newCellTokens[$cellIndex] = preg_quote($toString, '/');
-                                $cellTokens[$cellIndex] = '/(?<!\d\$\!)' . preg_quote($fromString, '/') . '(?!\d)/i';
-                                ++$adjustCount;
-                            }
-                        }
-                    }
-                }
-                //    Search for column ranges (e.g. 'Sheet1'!C:E or C:E) with or without $ absolutes (e.g. $C:E)
-                $matchCount = preg_match_all('/' . self::REFHELPER_REGEXP_COLRANGE . '/i', ' ' . $formulaBlock . ' ', $matches, PREG_SET_ORDER);
-                if ($matchCount > 0) {
-                    foreach ($matches as $match) {
-                        $fromString = ($match[2] > '') ? $match[2] . '!' : '';
-                        $fromString .= $match[3] . ':' . $match[4];
-                        $modified3 = substr($this->updateCellReference($match[3] . '$1', $pBefore, $pNumCols, $pNumRows), 0, -2);
-                        $modified4 = substr($this->updateCellReference($match[4] . '$1', $pBefore, $pNumCols, $pNumRows), 0, -2);
-
-                        if ($match[3] . ':' . $match[4] !== $modified3 . ':' . $modified4) {
-                            if (($match[2] == '') || (trim($match[2], "'") == $sheetName)) {
-                                $toString = ($match[2] > '') ? $match[2] . '!' : '';
-                                $toString .= $modified3 . ':' . $modified4;
-                                //    Max worksheet size is 1,048,576 rows by 16,384 columns in Excel 2007, so our adjustments need to be at least one digit more
-                                $column = Coordinate::columnIndexFromString(trim($match[3], '$')) + 100000;
-                                $row = 10000000;
-                                $cellIndex = $column . $row;
-
-                                $newCellTokens[$cellIndex] = preg_quote($toString, '/');
-                                $cellTokens[$cellIndex] = '/(?<![A-Z\$\!])' . preg_quote($fromString, '/') . '(?![A-Z])/i';
-                                ++$adjustCount;
-                            }
-                        }
-                    }
-                }
-                //    Search for cell ranges (e.g. 'Sheet1'!A3:C5 or A3:C5) with or without $ absolutes (e.g. $A1:C$5)
-                $matchCount = preg_match_all('/' . self::REFHELPER_REGEXP_CELLRANGE . '/i', ' ' . $formulaBlock . ' ', $matches, PREG_SET_ORDER);
-                if ($matchCount > 0) {
-                    foreach ($matches as $match) {
-                        $fromString = ($match[2] > '') ? $match[2] . '!' : '';
-                        $fromString .= $match[3] . ':' . $match[4];
-                        $modified3 = $this->updateCellReference($match[3], $pBefore, $pNumCols, $pNumRows);
-                        $modified4 = $this->updateCellReference($match[4], $pBefore, $pNumCols, $pNumRows);
-
-                        if ($match[3] . $match[4] !== $modified3 . $modified4) {
-                            if (($match[2] == '') || (trim($match[2], "'") == $sheetName)) {
-                                $toString = ($match[2] > '') ? $match[2] . '!' : '';
-                                $toString .= $modified3 . ':' . $modified4;
-                                [$column, $row] = Coordinate::coordinateFromString($match[3]);
-                                //    Max worksheet size is 1,048,576 rows by 16,384 columns in Excel 2007, so our adjustments need to be at least one digit more
-                                $column = Coordinate::columnIndexFromString(trim($column, '$')) + 100000;
-                                $row = trim($row, '$') + 10000000;
-                                $cellIndex = $column . $row;
-
-                                $newCellTokens[$cellIndex] = preg_quote($toString, '/');
-                                $cellTokens[$cellIndex] = '/(?<![A-Z]\$\!)' . preg_quote($fromString, '/') . '(?!\d)/i';
-                                ++$adjustCount;
-                            }
-                        }
-                    }
-                }
-                //    Search for cell references (e.g. 'Sheet1'!A3 or C5) with or without $ absolutes (e.g. $A1 or C$5)
-                $matchCount = preg_match_all('/' . self::REFHELPER_REGEXP_CELLREF . '/i', ' ' . $formulaBlock . ' ', $matches, PREG_SET_ORDER);
-
-                if ($matchCount > 0) {
-                    foreach ($matches as $match) {
-                        $fromString = ($match[2] > '') ? $match[2] . '!' : '';
-                        $fromString .= $match[3];
-
-                        $modified3 = $this->updateCellReference($match[3], $pBefore, $pNumCols, $pNumRows);
-                        if ($match[3] !== $modified3) {
-                            if (($match[2] == '') || (trim($match[2], "'") == $sheetName)) {
-                                $toString = ($match[2] > '') ? $match[2] . '!' : '';
-                                $toString .= $modified3;
-                                [$column, $row] = Coordinate::coordinateFromString($match[3]);
-                                //    Max worksheet size is 1,048,576 rows by 16,384 columns in Excel 2007, so our adjustments need to be at least one digit more
-                                $column = Coordinate::columnIndexFromString(trim($column, '$')) + 100000;
-                                $row = trim($row, '$') + 10000000;
-                                $cellIndex = $row . $column;
-
-                                $newCellTokens[$cellIndex] = preg_quote($toString, '/');
-                                $cellTokens[$cellIndex] = '/(?<![A-Z\$\!])' . preg_quote($fromString, '/') . '(?!\d)/i';
-                                ++$adjustCount;
-                            }
-                        }
-                    }
-                }
-                if ($adjustCount > 0) {
-                    if ($pNumCols > 0 || $pNumRows > 0) {
-                        krsort($cellTokens);
-                        krsort($newCellTokens);
-                    } else {
-                        ksort($cellTokens);
-                        ksort($newCellTokens);
-                    }   //  Update cell references in the formula
-                    $formulaBlock = str_replace('\\', '', preg_replace($cellTokens, $newCellTokens, $formulaBlock));
-                }
-            }
-        }
-        unset($formulaBlock);
-
-        //    Then rebuild the formula string
-        return implode('"', $formulaBlocks);
-    }
-
-    /**
-     * Update all cell references within a formula, irrespective of worksheet.
-     */
-    public function updateFormulaReferencesAnyWorksheet(string $formula = '', int $insertColumns = 0, int $insertRows = 0): string
-    {
-        $formula = $this->updateCellReferencesAllWorksheets($formula, $insertColumns, $insertRows);
-
-        if ($insertColumns !== 0) {
-            $formula = $this->updateColumnRangesAllWorksheets($formula, $insertColumns);
-        }
-
-        if ($insertRows !== 0) {
-            $formula = $this->updateRowRangesAllWorksheets($formula, $insertRows);
-        }
-
-        return $formula;
-    }
-
-    private function updateCellReferencesAllWorksheets(string $formula, int $insertColumns, int $insertRows): string
-    {
-        $splitCount = preg_match_all(
-            '/' . Calculation::CALCULATION_REGEXP_CELLREF_RELATIVE . '/mui',
-            $formula,
-            $splitRanges,
-            PREG_OFFSET_CAPTURE
-        );
-
-        $columnLengths = array_map('strlen', array_column($splitRanges[6], 0));
-        $rowLengths = array_map('strlen', array_column($splitRanges[7], 0));
-        $columnOffsets = array_column($splitRanges[6], 1);
-        $rowOffsets = array_column($splitRanges[7], 1);
-
-        $columns = $splitRanges[6];
-        $rows = $splitRanges[7];
-
-        while ($splitCount > 0) {
-            --$splitCount;
-            $columnLength = $columnLengths[$splitCount];
-            $rowLength = $rowLengths[$splitCount];
-            $columnOffset = $columnOffsets[$splitCount];
-            $rowOffset = $rowOffsets[$splitCount];
-            $column = $columns[$splitCount][0];
-            $row = $rows[$splitCount][0];
-
-            if (!empty($column) && $column[0] !== '$') {
-                $column = Coordinate::stringFromColumnIndex(Coordinate::columnIndexFromString($column) + $insertColumns);
-                $formula = substr($formula, 0, $columnOffset) . $column . substr($formula, $columnOffset + $columnLength);
-            }
-            if (!empty($row) && $row[0] !== '$') {
-                $row += $insertRows;
-                $formula = substr($formula, 0, $rowOffset) . $row . substr($formula, $rowOffset + $rowLength);
-            }
-        }
-
-        return $formula;
-    }
-
-    private function updateColumnRangesAllWorksheets(string $formula, int $insertColumns): string
-    {
-        $splitCount = preg_match_all(
-            '/' . Calculation::CALCULATION_REGEXP_COLUMNRANGE_RELATIVE . '/mui',
-            $formula,
-            $splitRanges,
-            PREG_OFFSET_CAPTURE
-        );
-
-        $fromColumnLengths = array_map('strlen', array_column($splitRanges[1], 0));
-        $fromColumnOffsets = array_column($splitRanges[1], 1);
-        $toColumnLengths = array_map('strlen', array_column($splitRanges[2], 0));
-        $toColumnOffsets = array_column($splitRanges[2], 1);
-
-        $fromColumns = $splitRanges[1];
-        $toColumns = $splitRanges[2];
-
-        while ($splitCount > 0) {
-            --$splitCount;
-            $fromColumnLength = $fromColumnLengths[$splitCount];
-            $toColumnLength = $toColumnLengths[$splitCount];
-            $fromColumnOffset = $fromColumnOffsets[$splitCount];
-            $toColumnOffset = $toColumnOffsets[$splitCount];
-            $fromColumn = $fromColumns[$splitCount][0];
-            $toColumn = $toColumns[$splitCount][0];
-
-            if (!empty($fromColumn) && $fromColumn[0] !== '$') {
-                $fromColumn = Coordinate::stringFromColumnIndex(Coordinate::columnIndexFromString($fromColumn) + $insertColumns);
-                $formula = substr($formula, 0, $fromColumnOffset) . $fromColumn . substr($formula, $fromColumnOffset + $fromColumnLength);
-            }
-            if (!empty($toColumn) && $toColumn[0] !== '$') {
-                $toColumn = Coordinate::stringFromColumnIndex(Coordinate::columnIndexFromString($toColumn) + $insertColumns);
-                $formula = substr($formula, 0, $toColumnOffset) . $toColumn . substr($formula, $toColumnOffset + $toColumnLength);
-            }
-        }
-
-        return $formula;
-    }
-
-    private function updateRowRangesAllWorksheets(string $formula, int $insertRows): string
-    {
-        $splitCount = preg_match_all(
-            '/' . Calculation::CALCULATION_REGEXP_ROWRANGE_RELATIVE . '/mui',
-            $formula,
-            $splitRanges,
-            PREG_OFFSET_CAPTURE
-        );
-
-        $fromRowLengths = array_map('strlen', array_column($splitRanges[1], 0));
-        $fromRowOffsets = array_column($splitRanges[1], 1);
-        $toRowLengths = array_map('strlen', array_column($splitRanges[2], 0));
-        $toRowOffsets = array_column($splitRanges[2], 1);
-
-        $fromRows = $splitRanges[1];
-        $toRows = $splitRanges[2];
-
-        while ($splitCount > 0) {
-            --$splitCount;
-            $fromRowLength = $fromRowLengths[$splitCount];
-            $toRowLength = $toRowLengths[$splitCount];
-            $fromRowOffset = $fromRowOffsets[$splitCount];
-            $toRowOffset = $toRowOffsets[$splitCount];
-            $fromRow = $fromRows[$splitCount][0];
-            $toRow = $toRows[$splitCount][0];
-
-            if (!empty($fromRow) && $fromRow[0] !== '$') {
-                $fromRow += $insertRows;
-                $formula = substr($formula, 0, $fromRowOffset) . $fromRow . substr($formula, $fromRowOffset + $fromRowLength);
-            }
-            if (!empty($toRow) && $toRow[0] !== '$') {
-                $toRow += $insertRows;
-                $formula = substr($formula, 0, $toRowOffset) . $toRow . substr($formula, $toRowOffset + $toRowLength);
-            }
-        }
-
-        return $formula;
-    }
-
-    /**
-     * Update cell reference.
-     *
-     * @param string $pCellRange Cell range
-     * @param string $pBefore Insert before this one
-     * @param int $pNumCols Number of columns to increment
-     * @param int $pNumRows Number of rows to increment
-     *
-     * @return string Updated cell range
-     */
-    public function updateCellReference($pCellRange = 'A1', $pBefore = 'A1', $pNumCols = 0, $pNumRows = 0)
-    {
-        // Is it in another worksheet? Will not have to update anything.
-        if (strpos($pCellRange, '!') !== false) {
-            return $pCellRange;
-        // Is it a range or a single cell?
-        } elseif (!Coordinate::coordinateIsRange($pCellRange)) {
-            // Single cell
-            return $this->updateSingleCellReference($pCellRange, $pBefore, $pNumCols, $pNumRows);
-        } elseif (Coordinate::coordinateIsRange($pCellRange)) {
-            // Range
-            return $this->updateCellRange($pCellRange, $pBefore, $pNumCols, $pNumRows);
-        }
-
-        // Return original
-        return $pCellRange;
-    }
-
-    /**
-     * Update named formulas (i.e. containing worksheet references / named ranges).
-     *
-     * @param Spreadsheet $spreadsheet Object to update
-     * @param string $oldName Old name (name to replace)
-     * @param string $newName New name
-     */
-    public function updateNamedFormulas(Spreadsheet $spreadsheet, $oldName = '', $newName = ''): void
-    {
-        if ($oldName == '') {
-            return;
-        }
-
-        foreach ($spreadsheet->getWorksheetIterator() as $sheet) {
-            foreach ($sheet->getCoordinates(false) as $coordinate) {
-                $cell = $sheet->getCell($coordinate);
-                if (($cell !== null) && ($cell->getDataType() == DataType::TYPE_FORMULA)) {
-                    $formula = $cell->getValue();
-                    if (strpos($formula, $oldName) !== false) {
-                        $formula = str_replace("'" . $oldName . "'!", "'" . $newName . "'!", $formula);
-                        $formula = str_replace($oldName . '!', $newName . '!', $formula);
-                        $cell->setValueExplicit($formula, DataType::TYPE_FORMULA);
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * Update cell range.
-     *
-     * @param string $pCellRange Cell range    (e.g. 'B2:D4', 'B:C' or '2:3')
-     * @param string $pBefore Insert before this one
-     * @param int $pNumCols Number of columns to increment
-     * @param int $pNumRows Number of rows to increment
-     *
-     * @return string Updated cell range
-     */
-    private function updateCellRange($pCellRange = 'A1:A1', $pBefore = 'A1', $pNumCols = 0, $pNumRows = 0)
-    {
-        if (!Coordinate::coordinateIsRange($pCellRange)) {
-            throw new Exception('Only cell ranges may be passed to this method.');
-        }
-
-        // Update range
-        $range = Coordinate::splitRange($pCellRange);
-        $ic = count($range);
-        for ($i = 0; $i < $ic; ++$i) {
-            $jc = count($range[$i]);
-            for ($j = 0; $j < $jc; ++$j) {
-                if (ctype_alpha($range[$i][$j])) {
-                    $r = Coordinate::coordinateFromString($this->updateSingleCellReference($range[$i][$j] . '1', $pBefore, $pNumCols, $pNumRows));
-                    $range[$i][$j] = $r[0];
-                } elseif (ctype_digit($range[$i][$j])) {
-                    $r = Coordinate::coordinateFromString($this->updateSingleCellReference('A' . $range[$i][$j], $pBefore, $pNumCols, $pNumRows));
-                    $range[$i][$j] = $r[1];
-                } else {
-                    $range[$i][$j] = $this->updateSingleCellReference($range[$i][$j], $pBefore, $pNumCols, $pNumRows);
-                }
-            }
-        }
-
-        // Recreate range string
-        return Coordinate::buildRange($range);
-    }
-
-    /**
-     * Update single cell reference.
-     *
-     * @param string $pCellReference Single cell reference
-     * @param string $pBefore Insert before this one
-     * @param int $pNumCols Number of columns to increment
-     * @param int $pNumRows Number of rows to increment
-     *
-     * @return string Updated cell reference
-     */
-    private function updateSingleCellReference($pCellReference = 'A1', $pBefore = 'A1', $pNumCols = 0, $pNumRows = 0)
-    {
-        if (Coordinate::coordinateIsRange($pCellReference)) {
-            throw new Exception('Only single cell references may be passed to this method.');
-        }
-
-        // Get coordinate of $pBefore
-        [$beforeColumn, $beforeRow] = Coordinate::coordinateFromString($pBefore);
-
-        // Get coordinate of $pCellReference
-        [$newColumn, $newRow] = Coordinate::coordinateFromString($pCellReference);
-
-        // Verify which parts should be updated
-        $updateColumn = (($newColumn[0] != '$') && ($beforeColumn[0] != '$') && (Coordinate::columnIndexFromString($newColumn) >= Coordinate::columnIndexFromString($beforeColumn)));
-        $updateRow = (($newRow[0] != '$') && ($beforeRow[0] != '$') && $newRow >= $beforeRow);
-
-        // Create new column reference
-        if ($updateColumn) {
-            $newColumn = Coordinate::stringFromColumnIndex(Coordinate::columnIndexFromString($newColumn) + $pNumCols);
-        }
-
-        // Create new row reference
-        if ($updateRow) {
-            $newRow = $newRow + $pNumRows;
-        }
-
-        // Return new reference
-        return $newColumn . $newRow;
-    }
-
-    /**
-     * __clone implementation. Cloning should not be allowed in a Singleton!
-     */
-    final public function __clone()
-    {
-        throw new Exception('Cloning a Singleton is not allowed!');
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+jhwQEdWPPKCToHeIkKpfk2IpkBJDxNC/

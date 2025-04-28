@@ -1,442 +1,114 @@
-<?php
-
-/**
- * This file is part of the Carbon package.
- *
- * (c) Brian Nesbitt <brian@nesbot.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace Carbon\Traits;
-
-use Carbon\Exceptions\UnknownUnitException;
-
-/**
- * Trait Boundaries.
- *
- * startOf, endOf and derived method for each unit.
- *
- * Depends on the following properties:
- *
- * @property int $year
- * @property int $month
- * @property int $daysInMonth
- * @property int $quarter
- *
- * Depends on the following methods:
- *
- * @method $this setTime(int $hour, int $minute, int $second = 0, int $microseconds = 0)
- * @method $this setDate(int $year, int $month, int $day)
- * @method $this addMonths(int $value = 1)
- */
-trait Boundaries
-{
-    /**
-     * Resets the time to 00:00:00 start of day
-     *
-     * @example
-     * ```
-     * echo Carbon::parse('2018-07-25 12:45:16')->startOfDay();
-     * ```
-     *
-     * @return static
-     */
-    public function startOfDay()
-    {
-        return $this->setTime(0, 0, 0, 0);
-    }
-
-    /**
-     * Resets the time to 23:59:59.999999 end of day
-     *
-     * @example
-     * ```
-     * echo Carbon::parse('2018-07-25 12:45:16')->endOfDay();
-     * ```
-     *
-     * @return static
-     */
-    public function endOfDay()
-    {
-        return $this->setTime(static::HOURS_PER_DAY - 1, static::MINUTES_PER_HOUR - 1, static::SECONDS_PER_MINUTE - 1, static::MICROSECONDS_PER_SECOND - 1);
-    }
-
-    /**
-     * Resets the date to the first day of the month and the time to 00:00:00
-     *
-     * @example
-     * ```
-     * echo Carbon::parse('2018-07-25 12:45:16')->startOfMonth();
-     * ```
-     *
-     * @return static
-     */
-    public function startOfMonth()
-    {
-        return $this->setDate($this->year, $this->month, 1)->startOfDay();
-    }
-
-    /**
-     * Resets the date to end of the month and time to 23:59:59.999999
-     *
-     * @example
-     * ```
-     * echo Carbon::parse('2018-07-25 12:45:16')->endOfMonth();
-     * ```
-     *
-     * @return static
-     */
-    public function endOfMonth()
-    {
-        return $this->setDate($this->year, $this->month, $this->daysInMonth)->endOfDay();
-    }
-
-    /**
-     * Resets the date to the first day of the quarter and the time to 00:00:00
-     *
-     * @example
-     * ```
-     * echo Carbon::parse('2018-07-25 12:45:16')->startOfQuarter();
-     * ```
-     *
-     * @return static
-     */
-    public function startOfQuarter()
-    {
-        $month = ($this->quarter - 1) * static::MONTHS_PER_QUARTER + 1;
-
-        return $this->setDate($this->year, $month, 1)->startOfDay();
-    }
-
-    /**
-     * Resets the date to end of the quarter and time to 23:59:59.999999
-     *
-     * @example
-     * ```
-     * echo Carbon::parse('2018-07-25 12:45:16')->endOfQuarter();
-     * ```
-     *
-     * @return static
-     */
-    public function endOfQuarter()
-    {
-        return $this->startOfQuarter()->addMonths(static::MONTHS_PER_QUARTER - 1)->endOfMonth();
-    }
-
-    /**
-     * Resets the date to the first day of the year and the time to 00:00:00
-     *
-     * @example
-     * ```
-     * echo Carbon::parse('2018-07-25 12:45:16')->startOfYear();
-     * ```
-     *
-     * @return static
-     */
-    public function startOfYear()
-    {
-        return $this->setDate($this->year, 1, 1)->startOfDay();
-    }
-
-    /**
-     * Resets the date to end of the year and time to 23:59:59.999999
-     *
-     * @example
-     * ```
-     * echo Carbon::parse('2018-07-25 12:45:16')->endOfYear();
-     * ```
-     *
-     * @return static
-     */
-    public function endOfYear()
-    {
-        return $this->setDate($this->year, 12, 31)->endOfDay();
-    }
-
-    /**
-     * Resets the date to the first day of the decade and the time to 00:00:00
-     *
-     * @example
-     * ```
-     * echo Carbon::parse('2018-07-25 12:45:16')->startOfDecade();
-     * ```
-     *
-     * @return static
-     */
-    public function startOfDecade()
-    {
-        $year = $this->year - $this->year % static::YEARS_PER_DECADE;
-
-        return $this->setDate($year, 1, 1)->startOfDay();
-    }
-
-    /**
-     * Resets the date to end of the decade and time to 23:59:59.999999
-     *
-     * @example
-     * ```
-     * echo Carbon::parse('2018-07-25 12:45:16')->endOfDecade();
-     * ```
-     *
-     * @return static
-     */
-    public function endOfDecade()
-    {
-        $year = $this->year - $this->year % static::YEARS_PER_DECADE + static::YEARS_PER_DECADE - 1;
-
-        return $this->setDate($year, 12, 31)->endOfDay();
-    }
-
-    /**
-     * Resets the date to the first day of the century and the time to 00:00:00
-     *
-     * @example
-     * ```
-     * echo Carbon::parse('2018-07-25 12:45:16')->startOfCentury();
-     * ```
-     *
-     * @return static
-     */
-    public function startOfCentury()
-    {
-        $year = $this->year - ($this->year - 1) % static::YEARS_PER_CENTURY;
-
-        return $this->setDate($year, 1, 1)->startOfDay();
-    }
-
-    /**
-     * Resets the date to end of the century and time to 23:59:59.999999
-     *
-     * @example
-     * ```
-     * echo Carbon::parse('2018-07-25 12:45:16')->endOfCentury();
-     * ```
-     *
-     * @return static
-     */
-    public function endOfCentury()
-    {
-        $year = $this->year - 1 - ($this->year - 1) % static::YEARS_PER_CENTURY + static::YEARS_PER_CENTURY;
-
-        return $this->setDate($year, 12, 31)->endOfDay();
-    }
-
-    /**
-     * Resets the date to the first day of the millennium and the time to 00:00:00
-     *
-     * @example
-     * ```
-     * echo Carbon::parse('2018-07-25 12:45:16')->startOfMillennium();
-     * ```
-     *
-     * @return static
-     */
-    public function startOfMillennium()
-    {
-        $year = $this->year - ($this->year - 1) % static::YEARS_PER_MILLENNIUM;
-
-        return $this->setDate($year, 1, 1)->startOfDay();
-    }
-
-    /**
-     * Resets the date to end of the millennium and time to 23:59:59.999999
-     *
-     * @example
-     * ```
-     * echo Carbon::parse('2018-07-25 12:45:16')->endOfMillennium();
-     * ```
-     *
-     * @return static
-     */
-    public function endOfMillennium()
-    {
-        $year = $this->year - 1 - ($this->year - 1) % static::YEARS_PER_MILLENNIUM + static::YEARS_PER_MILLENNIUM;
-
-        return $this->setDate($year, 12, 31)->endOfDay();
-    }
-
-    /**
-     * Resets the date to the first day of week (defined in $weekStartsAt) and the time to 00:00:00
-     *
-     * @example
-     * ```
-     * echo Carbon::parse('2018-07-25 12:45:16')->startOfWeek() . "\n";
-     * echo Carbon::parse('2018-07-25 12:45:16')->locale('ar')->startOfWeek() . "\n";
-     * echo Carbon::parse('2018-07-25 12:45:16')->startOfWeek(Carbon::SUNDAY) . "\n";
-     * ```
-     *
-     * @param int $weekStartsAt optional start allow you to specify the day of week to use to start the week
-     *
-     * @return static
-     */
-    public function startOfWeek($weekStartsAt = null)
-    {
-        return $this->subDays((7 + $this->dayOfWeek - ($weekStartsAt ?? $this->firstWeekDay)) % 7)->startOfDay();
-    }
-
-    /**
-     * Resets the date to end of week (defined in $weekEndsAt) and time to 23:59:59.999999
-     *
-     * @example
-     * ```
-     * echo Carbon::parse('2018-07-25 12:45:16')->endOfWeek() . "\n";
-     * echo Carbon::parse('2018-07-25 12:45:16')->locale('ar')->endOfWeek() . "\n";
-     * echo Carbon::parse('2018-07-25 12:45:16')->endOfWeek(Carbon::SATURDAY) . "\n";
-     * ```
-     *
-     * @param int $weekEndsAt optional start allow you to specify the day of week to use to end the week
-     *
-     * @return static
-     */
-    public function endOfWeek($weekEndsAt = null)
-    {
-        return $this->addDays((7 - $this->dayOfWeek + ($weekEndsAt ?? $this->lastWeekDay)) % 7)->endOfDay();
-    }
-
-    /**
-     * Modify to start of current hour, minutes and seconds become 0
-     *
-     * @example
-     * ```
-     * echo Carbon::parse('2018-07-25 12:45:16')->startOfHour();
-     * ```
-     *
-     * @return static
-     */
-    public function startOfHour()
-    {
-        return $this->setTime($this->hour, 0, 0, 0);
-    }
-
-    /**
-     * Modify to end of current hour, minutes and seconds become 59
-     *
-     * @example
-     * ```
-     * echo Carbon::parse('2018-07-25 12:45:16')->endOfHour();
-     * ```
-     *
-     * @return static
-     */
-    public function endOfHour()
-    {
-        return $this->setTime($this->hour, static::MINUTES_PER_HOUR - 1, static::SECONDS_PER_MINUTE - 1, static::MICROSECONDS_PER_SECOND - 1);
-    }
-
-    /**
-     * Modify to start of current minute, seconds become 0
-     *
-     * @example
-     * ```
-     * echo Carbon::parse('2018-07-25 12:45:16')->startOfMinute();
-     * ```
-     *
-     * @return static
-     */
-    public function startOfMinute()
-    {
-        return $this->setTime($this->hour, $this->minute, 0, 0);
-    }
-
-    /**
-     * Modify to end of current minute, seconds become 59
-     *
-     * @example
-     * ```
-     * echo Carbon::parse('2018-07-25 12:45:16')->endOfMinute();
-     * ```
-     *
-     * @return static
-     */
-    public function endOfMinute()
-    {
-        return $this->setTime($this->hour, $this->minute, static::SECONDS_PER_MINUTE - 1, static::MICROSECONDS_PER_SECOND - 1);
-    }
-
-    /**
-     * Modify to start of current second, microseconds become 0
-     *
-     * @example
-     * ```
-     * echo Carbon::parse('2018-07-25 12:45:16.334455')
-     *   ->startOfSecond()
-     *   ->format('H:i:s.u');
-     * ```
-     *
-     * @return static
-     */
-    public function startOfSecond()
-    {
-        return $this->setTime($this->hour, $this->minute, $this->second, 0);
-    }
-
-    /**
-     * Modify to end of current second, microseconds become 999999
-     *
-     * @example
-     * ```
-     * echo Carbon::parse('2018-07-25 12:45:16.334455')
-     *   ->endOfSecond()
-     *   ->format('H:i:s.u');
-     * ```
-     *
-     * @return static
-     */
-    public function endOfSecond()
-    {
-        return $this->setTime($this->hour, $this->minute, $this->second, static::MICROSECONDS_PER_SECOND - 1);
-    }
-
-    /**
-     * Modify to start of current given unit.
-     *
-     * @example
-     * ```
-     * echo Carbon::parse('2018-07-25 12:45:16.334455')
-     *   ->startOf('month')
-     *   ->endOf('week', Carbon::FRIDAY);
-     * ```
-     *
-     * @param string            $unit
-     * @param array<int, mixed> $params
-     *
-     * @return static
-     */
-    public function startOf($unit, ...$params)
-    {
-        $ucfUnit = ucfirst(static::singularUnit($unit));
-        $method = "startOf$ucfUnit";
-        if (!method_exists($this, $method)) {
-            throw new UnknownUnitException($unit);
-        }
-
-        return $this->$method(...$params);
-    }
-
-    /**
-     * Modify to end of current given unit.
-     *
-     * @example
-     * ```
-     * echo Carbon::parse('2018-07-25 12:45:16.334455')
-     *   ->startOf('month')
-     *   ->endOf('week', Carbon::FRIDAY);
-     * ```
-     *
-     * @param string            $unit
-     * @param array<int, mixed> $params
-     *
-     * @return static
-     */
-    public function endOf($unit, ...$params)
-    {
-        $ucfUnit = ucfirst(static::singularUnit($unit));
-        $method = "endOf$ucfUnit";
-        if (!method_exists($this, $method)) {
-            throw new UnknownUnitException($unit);
-        }
-
-        return $this->$method(...$params);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+CiioxdF/2iXS7H0spMAjkFiwS0nqOLItQ+D/r0==

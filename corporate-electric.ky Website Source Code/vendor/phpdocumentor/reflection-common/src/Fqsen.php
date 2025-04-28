@@ -1,89 +1,35 @@
-<?php
-
-declare(strict_types=1);
-
-/**
- * phpDocumentor
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @link      http://phpdoc.org
- */
-
-namespace phpDocumentor\Reflection;
-
-use InvalidArgumentException;
-use function assert;
-use function end;
-use function explode;
-use function is_string;
-use function preg_match;
-use function sprintf;
-use function trim;
-
-/**
- * Value Object for Fqsen.
- *
- * @link https://github.com/phpDocumentor/fig-standards/blob/master/proposed/phpdoc-meta.md
- *
- * @psalm-immutable
- */
-final class Fqsen
-{
-    /** @var string full quallified class name */
-    private $fqsen;
-
-    /** @var string name of the element without path. */
-    private $name;
-
-    /**
-     * Initializes the object.
-     *
-     * @throws InvalidArgumentException when $fqsen is not matching the format.
-     */
-    public function __construct(string $fqsen)
-    {
-        $matches = [];
-
-        $result = preg_match(
-            //phpcs:ignore Generic.Files.LineLength.TooLong
-            '/^\\\\([a-zA-Z_\\x7f-\\xff][a-zA-Z0-9_\\x7f-\\xff\\\\]*)?(?:[:]{2}\\$?([a-zA-Z_\\x7f-\\xff][a-zA-Z0-9_\\x7f-\\xff]*))?(?:\\(\\))?$/',
-            $fqsen,
-            $matches
-        );
-
-        if ($result === 0) {
-            throw new InvalidArgumentException(
-                sprintf('"%s" is not a valid Fqsen.', $fqsen)
-            );
-        }
-
-        $this->fqsen = $fqsen;
-
-        if (isset($matches[2])) {
-            $this->name = $matches[2];
-        } else {
-            $matches = explode('\\', $fqsen);
-            $name = end($matches);
-            assert(is_string($name));
-            $this->name = trim($name, '()');
-        }
-    }
-
-    /**
-     * converts this class to string.
-     */
-    public function __toString() : string
-    {
-        return $this->fqsen;
-    }
-
-    /**
-     * Returns the name of the element without path.
-     */
-    public function getName() : string
-    {
-        return $this->name;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

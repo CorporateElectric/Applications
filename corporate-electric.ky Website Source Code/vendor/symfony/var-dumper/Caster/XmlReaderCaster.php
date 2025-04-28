@@ -1,79 +1,67 @@
-<?php
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\VarDumper\Caster;
-
-use Symfony\Component\VarDumper\Cloner\Stub;
-
-/**
- * Casts XmlReader class to array representation.
- *
- * @author Baptiste Clavié <clavie.b@gmail.com>
- *
- * @final
- */
-class XmlReaderCaster
-{
-    private static $nodeTypes = [
-        \XMLReader::NONE => 'NONE',
-        \XMLReader::ELEMENT => 'ELEMENT',
-        \XMLReader::ATTRIBUTE => 'ATTRIBUTE',
-        \XMLReader::TEXT => 'TEXT',
-        \XMLReader::CDATA => 'CDATA',
-        \XMLReader::ENTITY_REF => 'ENTITY_REF',
-        \XMLReader::ENTITY => 'ENTITY',
-        \XMLReader::PI => 'PI (Processing Instruction)',
-        \XMLReader::COMMENT => 'COMMENT',
-        \XMLReader::DOC => 'DOC',
-        \XMLReader::DOC_TYPE => 'DOC_TYPE',
-        \XMLReader::DOC_FRAGMENT => 'DOC_FRAGMENT',
-        \XMLReader::NOTATION => 'NOTATION',
-        \XMLReader::WHITESPACE => 'WHITESPACE',
-        \XMLReader::SIGNIFICANT_WHITESPACE => 'SIGNIFICANT_WHITESPACE',
-        \XMLReader::END_ELEMENT => 'END_ELEMENT',
-        \XMLReader::END_ENTITY => 'END_ENTITY',
-        \XMLReader::XML_DECLARATION => 'XML_DECLARATION',
-    ];
-
-    public static function castXmlReader(\XMLReader $reader, array $a, Stub $stub, bool $isNested)
-    {
-        $props = Caster::PREFIX_VIRTUAL.'parserProperties';
-        $info = [
-            'localName' => $reader->localName,
-            'prefix' => $reader->prefix,
-            'nodeType' => new ConstStub(self::$nodeTypes[$reader->nodeType], $reader->nodeType),
-            'depth' => $reader->depth,
-            'isDefault' => $reader->isDefault,
-            'isEmptyElement' => \XMLReader::NONE === $reader->nodeType ? null : $reader->isEmptyElement,
-            'xmlLang' => $reader->xmlLang,
-            'attributeCount' => $reader->attributeCount,
-            'value' => $reader->value,
-            'namespaceURI' => $reader->namespaceURI,
-            'baseURI' => $reader->baseURI ? new LinkStub($reader->baseURI) : $reader->baseURI,
-            $props => [
-                'LOADDTD' => $reader->getParserProperty(\XMLReader::LOADDTD),
-                'DEFAULTATTRS' => $reader->getParserProperty(\XMLReader::DEFAULTATTRS),
-                'VALIDATE' => $reader->getParserProperty(\XMLReader::VALIDATE),
-                'SUBST_ENTITIES' => $reader->getParserProperty(\XMLReader::SUBST_ENTITIES),
-            ],
-        ];
-
-        if ($info[$props] = Caster::filter($info[$props], Caster::EXCLUDE_EMPTY, [], $count)) {
-            $info[$props] = new EnumStub($info[$props]);
-            $info[$props]->cut = $count;
-        }
-
-        $info = Caster::filter($info, Caster::EXCLUDE_EMPTY, [], $count);
-        // +2 because hasValue and hasAttributes are always filtered
-        $stub->cut += $count + 2;
-
-        return $a + $info;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+hykQ9b8=

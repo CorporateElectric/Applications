@@ -1,66 +1,39 @@
-<?php declare(strict_types=1);
-
-/*
- * This file is part of the Monolog package.
- *
- * (c) Jordi Boggiano <j.boggiano@seld.be>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Monolog\Handler\FingersCrossed;
-
-use Monolog\Logger;
-
-/**
- * Channel and Error level based monolog activation strategy. Allows to trigger activation
- * based on level per channel. e.g. trigger activation on level 'ERROR' by default, except
- * for records of the 'sql' channel; those should trigger activation on level 'WARN'.
- *
- * Example:
- *
- * <code>
- *   $activationStrategy = new ChannelLevelActivationStrategy(
- *       Logger::CRITICAL,
- *       array(
- *           'request' => Logger::ALERT,
- *           'sensitive' => Logger::ERROR,
- *       )
- *   );
- *   $handler = new FingersCrossedHandler(new StreamHandler('php://stderr'), $activationStrategy);
- * </code>
- *
- * @author Mike Meessen <netmikey@gmail.com>
- */
-class ChannelLevelActivationStrategy implements ActivationStrategyInterface
-{
-    /**
-     * @var int
-     */
-    private $defaultActionLevel;
-
-    /**
-     * @var array
-     */
-    private $channelToActionLevel;
-
-    /**
-     * @param int|string $defaultActionLevel   The default action level to be used if the record's category doesn't match any
-     * @param array      $channelToActionLevel An array that maps channel names to action levels.
-     */
-    public function __construct($defaultActionLevel, array $channelToActionLevel = [])
-    {
-        $this->defaultActionLevel = Logger::toMonologLevel($defaultActionLevel);
-        $this->channelToActionLevel = array_map('Monolog\Logger::toMonologLevel', $channelToActionLevel);
-    }
-
-    public function isHandlerActivated(array $record): bool
-    {
-        if (isset($this->channelToActionLevel[$record['channel']])) {
-            return $record['level'] >= $this->channelToActionLevel[$record['channel']];
-        }
-
-        return $record['level'] >= $this->defaultActionLevel;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

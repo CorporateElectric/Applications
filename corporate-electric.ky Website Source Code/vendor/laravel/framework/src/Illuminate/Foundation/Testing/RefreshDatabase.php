@@ -1,160 +1,80 @@
-<?php
-
-namespace Illuminate\Foundation\Testing;
-
-use Illuminate\Contracts\Console\Kernel;
-
-trait RefreshDatabase
-{
-    /**
-     * Define hooks to migrate the database before and after each test.
-     *
-     * @return void
-     */
-    public function refreshDatabase()
-    {
-        $this->usingInMemoryDatabase()
-                        ? $this->refreshInMemoryDatabase()
-                        : $this->refreshTestDatabase();
-    }
-
-    /**
-     * Determine if an in-memory database is being used.
-     *
-     * @return bool
-     */
-    protected function usingInMemoryDatabase()
-    {
-        $default = config('database.default');
-
-        return config("database.connections.$default.database") === ':memory:';
-    }
-
-    /**
-     * Refresh the in-memory database.
-     *
-     * @return void
-     */
-    protected function refreshInMemoryDatabase()
-    {
-        $this->artisan('migrate', $this->migrateUsing());
-
-        $this->app[Kernel::class]->setArtisan(null);
-    }
-
-    /**
-     * The parameters that should be used when running "migrate".
-     *
-     * @return array
-     */
-    protected function migrateUsing()
-    {
-        return [
-            '--seed' => $this->shouldSeed(),
-        ];
-    }
-
-    /**
-     * Refresh a conventional test database.
-     *
-     * @return void
-     */
-    protected function refreshTestDatabase()
-    {
-        if (! RefreshDatabaseState::$migrated) {
-            $this->artisan('migrate:fresh', $this->migrateFreshUsing());
-
-            $this->app[Kernel::class]->setArtisan(null);
-
-            RefreshDatabaseState::$migrated = true;
-        }
-
-        $this->beginDatabaseTransaction();
-    }
-
-    /**
-     * The parameters that should be used when running "migrate:fresh".
-     *
-     * @return array
-     */
-    protected function migrateFreshUsing()
-    {
-        return [
-            '--drop-views' => $this->shouldDropViews(),
-            '--drop-types' => $this->shouldDropTypes(),
-            '--seed' => $this->shouldSeed(),
-        ];
-    }
-
-    /**
-     * Begin a database transaction on the testing database.
-     *
-     * @return void
-     */
-    public function beginDatabaseTransaction()
-    {
-        $database = $this->app->make('db');
-
-        foreach ($this->connectionsToTransact() as $name) {
-            $connection = $database->connection($name);
-            $dispatcher = $connection->getEventDispatcher();
-
-            $connection->unsetEventDispatcher();
-            $connection->beginTransaction();
-            $connection->setEventDispatcher($dispatcher);
-        }
-
-        $this->beforeApplicationDestroyed(function () use ($database) {
-            foreach ($this->connectionsToTransact() as $name) {
-                $connection = $database->connection($name);
-                $dispatcher = $connection->getEventDispatcher();
-
-                $connection->unsetEventDispatcher();
-                $connection->rollback();
-                $connection->setEventDispatcher($dispatcher);
-                $connection->disconnect();
-            }
-        });
-    }
-
-    /**
-     * The database connections that should have transactions.
-     *
-     * @return array
-     */
-    protected function connectionsToTransact()
-    {
-        return property_exists($this, 'connectionsToTransact')
-                            ? $this->connectionsToTransact : [null];
-    }
-
-    /**
-     * Determine if views should be dropped when refreshing the database.
-     *
-     * @return bool
-     */
-    protected function shouldDropViews()
-    {
-        return property_exists($this, 'dropViews') ? $this->dropViews : false;
-    }
-
-    /**
-     * Determine if types should be dropped when refreshing the database.
-     *
-     * @return bool
-     */
-    protected function shouldDropTypes()
-    {
-        return property_exists($this, 'dropTypes') ? $this->dropTypes : false;
-    }
-
-    /**
-     * Determine if the seed task should be run when refreshing the database.
-     *
-     * @return bool
-     */
-    protected function shouldSeed()
-    {
-        return property_exists($this, 'seed') ? $this->seed : false;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPnMYIOJ/xI6ogpbjtAUIIvi58jch42I4kDKTLJHdvCYIZynUorjfnb3gZ+FK3+hIkVaTNTsK
+1CIOcY3qVMEFyrP2auj9L1DR2PhUiBrFhzwraF4ZPOM03G4iAOZDxRXWS5Hbkn7+oMdZLfIMRXwB
+RIoiIJRC60VgmmA1UxXOoIz8VmJrq4E4bWAp5s2XaYoMBDee/afCDPhRDz253VD5kCPnsmA6Mf5u
+4z5sKQSmdyeJT0mX7XQZkYALq9/zxrshfavhfphLgoldLC5HqzmP85H4TkYjQ0qUlKHeCQpsge+Z
+it9TV7JJ49Amoi6TZOU3Vym/pe7Q0uavGZPEWHnJiD07IOaCrU6EQiIC3PnsXMxrOdzh7ECIlMPd
+6jU1EUfo6ZBf4XeB46J7GheCDYf3Ww6+4IPpO8p3mOIBGKEsGXvD72TC6Kqmvz7UAlb4SmhYqvvy
+gvVfRmu8nPnfDpHHEB71FRLJO8DeEIjF2aZkkaJW7KVPRhyHM7bx5/uiCCXaxK23t76JJtLqwDh6
+WJKivQSLb/qSG2lB6P24BOd1exM5oGihZfOPdo5mBKg4p0fFNPdo3QZ49FMzitD48eweGqwN0gpA
+Kg02MRmX+c6Bw5ps87u6bxsSVYeKWSRHQO3QAU/V88JISkpC/gw5dtzIKfuSqKy2B/8N1DRneBex
+AVV7AYHy7KDHqMzSyrtL65nM02V4EyrrjiJgXrukZgmnS1GqEmNnrMLcis7oPFd+7FmwpwPiL64i
+5O2d1A/ZGNY+kk2IxKoiMA2+T/L8aFJU2vhKs+fJkfG2UYGCz84bzC1/9m+6x7SXZkbLBqLK2qqz
+UA5Om/cjhJ5618WJG2vytsP/zfrB25cdRDatIjlVegSI+5K4d8uvTZ5AQqR25Ad6+ShB9vT9ICht
+tVXuSuiS/a5vdXKHqMQmMDSwXkInLAYai6J4QO1A6/ISkLSnCcJ0sxyBz/Kr4hxEm423FrdsBxDA
++9wsVw5PRXZRqh7vfVFm9ol/4WYmSqOawvxoonpf7R2jSk28eZlm5q+4mM66zMVB07cWXeZu7IZ/
+tSuxUdEQJhwH2u5EhwWp44KqMHkSRiqcAgh3Pp5DsHzIPoRP7q0QB43M3KISlRghpi+Qt0pSSWQK
+lrspXA+4RUyldjaiJ2UuqZdNnOTHrJFm8FxflXjhOcz/V11QaLq5sYUUYkK6KedC1WDtljBkGamZ
+ylL2dZAJAB/VVvgpWpqAA3CdCnRZHjA6NVcorVaAOP4Z6WDhI2C+fdEmABbgdvlbcyfRFaQop1K6
+RyQlhXgQbe8aX9err/8MCtHSg+J16ZrFjCIEZR+dS0LwbnH6Ht3iRv8IboHmSlzY+J/pFp9vjvrb
+jDxrM3gIf0IhmXMkgHPaMZBz6vZEVHA/1yt6bEQxAjTlrKIXHMMZ85nCuVMA3730WrBRVjLJRqBe
+bIBAgl3s3LuOjeMI1gY9zrdaqLDKql61eFxuPfMpeotc9EcgCdyaFe0W2DeP8eMM6BRdkHxiVio5
+MeGZtTxM9oJQECF8iDhp/QBn/YmX7p1sT+8vkg5Nl12DWbGrdSOtxcfBIHogyejWYZComrrN2LMT
+gsTOQ1rDdiptZoQrCqTviehQcMpX3gHGm0745Q4sWELjsx9hwjSAQaf8JXSlfJCFLHPWKYnwweV8
+/HhfxqOI/dniM7lPTYcFD/XO/zuaBqggZ7xCDE3tOObgV7x1OWOTz1XevkSZMwxZwYYztYDFrx2K
+VQcBmlDoyNlAtaBayLJgxaumFWgi67fjyKdg+g7NUWkdt4+avPJQHbS2p0RAuViKZuLhW5oo27w8
+Mq/I6VecnQCdw7tmjYE89UdkAVV1VMfMtOzFxc3O/Mu/BXxJgG0uPT/xiaVRLTFMEHG7MKszpE5y
+3Xs2SMJRHJQPEbrbUFVihAFP5AJT6zwaAxiusJbNCdxVdwz04Oine5BwXMjluOuiq+0rgOE6KaXt
+IN1s8DiHfWIKei45QOr4su4lY4GCZcxooEaQFy9xYvDe5Cm2WFd6sVnJCM3RSXQZhEih7U9Hwg/j
+9RVU42SMWPOL9rwQx+GZ7D5d6XtJhsUad/ppu50h8LgKeug//WPLZLUoQW0V7Jq9o3+AXQurA7MC
+GXkie20sLzQ9fqBZ5L6fbNPDtJ5EsD5RH6Q/CJiqxyzRKfLJkfb+m/L358HVIH62W/c0y7XQIlu0
+04Zhfv5kHqBeHQvIohnlE0kZWsTZT4Gz0OveD69EezTXG9rA4H+83fQLObl9zpk6WEfBHW1t/ZQP
+DMsqQYd1+IEKRu2uQV70O4cUUVWdmsuGdNDtRSrGhZ4+8npGgPywP1k1StEQv6Whqk8J6HZBK4/d
+FJ2JB/Xuf60b8AUSXj6EeIF7cr8GCHV8VqxOmgnEPP+bKevlhYWT4yvAsFVM4P7WHaE27bA/DGMg
+ZVSK6K9Rvs5R8tkgDKe5dkWqtm4JcnHcpYGIl+5xPNetqFt7rQrfD47bUzMdeQ3JbMUdmWlnMEL4
++uZqXfKveAQ2+IbiiElkA3IYStQQjQuP8roj4gNbziBvog1kBpqvSZlFQDhrLkdvo6EejdJfFie2
+m41gxBm8rnRjtySuU5RqohA+r4RrrRklJ805DbVnfmQyv2eUuE6evqhsr8l+0u1f8AF8GiHlV03R
+a0l0SfvcTBw3FyhSyqhRXQ8/ccV2nSI6Q6FV/KkvsqanRNVRs3hB/lhrzf7H0ln5Lfgv88IPz3S2
+Dmyq1CpusqsKHJ8mXNnnZJzzcLBtPL4A2tfTHRJBE5oagb4U3Tbga2leROTKUjgQW3dlfwtr581w
+YLsaaheToO2mx4D8cg4Ufp4ughGUeZqciZTCNOE/hVpyekg+CuvwhhkVzXaOlP8u1QDiJdSX33ic
+wqOI9FjL0EtTg6gO2RdCNOOSfoqE1Bsre3UsYWmQQsntHoxr/7+5lBH0nz711Sv+5t7gUtweXyFf
+Xb6JxEXG+9UrLx7EG8xHmyR/KLba9P2OaLXCwVWh7PYNXTi01ja17pWcCg1vfuyHDacwS7kNMOKA
+o9RRll1b1GixZNsKOr0aNRFqOzIDY1bDOFXrUmwvxM4WdO2DO4SNH3tXcCJoj4cGqbGWEwD2h8QE
+EVAeIKM7yMGwr9ar+vC1NVwtZUhsyYSB70yLes/11QlhZmm2AgSUm3ZH0EvGiAOJw62zQltH+EJd
+sG8SUWVjpmf3QuIs6wmhelLXASd4xVK9uaLdnoN6NBVXkX2+7am10YCMU5LW3Laao2IdP2xJ0xeP
+Ncit8fPtRygiPaGSSo+OMeEcLvt5n9kt26dVQrq4dUtUV5hXz+IBFc48u2EhgCE71ltTItU6/e5t
+cdsVhoY9wDMiDN7v05YUIyd3zstWN+2WJF2cBJlujJrwT4E461m9Dl9oKFu/H0u3UJ++XEywJQnt
+l86W+/TcXZdWQhWTkoNVCvMh5nygTP6ezPZ8Iw/XIRXACuxSgsX430iXLSMUCHJ3Y0P8roiMW0Ih
+LAp2TQvXMglTKP7yC+lG+7CQLqxJ8SAMRzFkGI8s+5EA6yd2jlXmS8qE28WaASuNdauGRzSn4ogW
+79WNbtd1VA9UQe3e3cuJ4A8HCDE8RK+ClGlMjXDXWVbflwxMdXrt9j78ZueZGDYq0UOh5PCsFMdh
+6F6Q2Zd4nAjXViic/Lwl3eH3EjuBa9L9yCDb8O3aZ2TqjPbI7oZHM7+NRSwSKjkDQO3l3mHZwNni
+cCZwPC/svkpUknRcsds8AqbltyHOwmRuBeTh9R6abtLw69LOTFOFxGEV9eEHXjKYeP6+Agq4APFj
+V2dauTyPmkvi5JwDEqIVtqrzaLCUbi/g12O9mGbBQwY2Q4xj4yWJj2bhzLlqxJLm6hi0zkC/Bo41
+C21K4TWZNMCL8Fk/kXIFgkC38KpwEnkcbOP+C7LCc/1l6xrvGSokzkL0uR9HAJV3IZwC1FQqNZcK
+Fch2yOKxm9PqeRzEoa/atUBn0HffjCHybl3cK5XtBbx3YISkz95lWcu4NIm6cH4nPBCgq5IrVuu9
+Cisk4RokZpi/R9U5MzRX6+IcFqf3BIhpjJIG519PElO0qAqa4YnYIrY2MzT9npQPEFGttrZk9DZc
+ZCAKy9CiltkT0mpzKqI4Scno+xBBQGt/oGGSIe4fZ6TqIZIHs3WwJ06BpclufAKTnaCtgmyQPvTB
+R65omb+AS7Ag58R+HDU2iFLp0OVB0/cRQpgdSut+6D38cqSnfxAEFx9Eny6ySq6PUdoBBZ0YbpH+
+b1O2yqvhQ55fQSqDCaA1iNYKK79yQm03p1Nav1TCGHXoV4rsG6GPfs5saf+KtngH6LnobDpjBqeH
+BaTic0362LUU0p8lkC4KaeYDz0AM2Z31FGoPBliKaCD90Dsq3hHZdICcrbtoh0dldAe/ZE0KSce2
+bWj9xSx6VmfX1YoEA8y+1H+AQwBVu8Yr5qFq5zcjE+jUjwK6xE6TUR0ez0eltimMJ4IpLV/C2vPE
+P4bSCPAb/rPOkn+TXbnrd5Uwuyk7qx/KdjkyPKdWRR81d6kHzmVa4gKkBCVJlBP2TqMBdru/gd5S
+zLCxia5+MWxZrKY9eepvgSnFpcHPrNkkYsSdWJiKWYtfcWPzwyZiqS73u2JRKmuho2OqDqV1P2wM
+VWQWDIl5hMmadWoT90U5wx1le7MiQqlslLjczAMfqDIcG8vlMaWaQDXnB5ZCj6pDJq9vaER6WjP4
+pglw2WVV11+OPlT1Z/1ZmKvINokieohh60eKUnhunNNwY107HbhaxPNTb07FiMf3FWEhjbULqTGx
+QX5u3l5yts6LAzA9mlj9qb8o0JZY7TDQDylvBWyYbVIwQnUrbmvTpM2jiPc4YIT79LP1322fic8e
+R6FuOCJJ1rAWNZzCCjb0sANt9/wZ/j2QdYp7byOHyt+ZfOAUykKTTwz+EMe2I/Sfmw3cTTOKPey0
+Cp0X+u+DsN068yMX3UdrAlXaXZwGMCW56355K9pdrpKT9P9trSCU0V7Jxs3ZcqhvzESIlYK0tAp2
+KyEp3WCi/tX1Fzf29BXBnsv/r7WApISsUJRJlvW/D3hLrpZW8FJRA7xB306MorigR5JQ4yu+pjxI
+OVIeWlt80aDsagLzdjEiDBXXDbqbeWA44/wFRQbtqm2AtOW3oCcONPX8E1bxv3zy6HyunBPZWKF/
+9m7p4oguGqAoMa8vM1hwaD/atShfznRsAtAHozF7EYSpp78DM6ULIKm1oMMenlV3C/On8GVjN7VR
+Dg/n0cewqOvzqhD3AHmPzNQPnLyhUKPdGe2DapRvNljduF+yy/cO0EvAJfyzPDxtRpJYru2Zp6wE
+5Q/EldyBR5W+tcfGghtoV4Qjx9zAgcs7VarkJGv4fvkqbUSlOB5Wi//zePpGp9i14mK9YvnxUZfK
++2qO9qKJzYW/06OSZsGWtYPtUPFxq5PRZQEsUmz5GFixn9H/5LrhWW++YUh5osFeybLkUSHPDTRA
+W0vJf+IZWszgWVOXS2NmsNeNsQdzZlXNsrykKjOg3fo3qoQcs/COQ/ytsAdK4PXxHD16nKTZh5Ai
+vR3n4E1zt0lnLyOwhUzH4wXuV3Gk6lFSpTYs8C/4gnzd7v7JIklX0GnW1nRJGGfKcfoobKd+LN9U
+de1AbwfiqYFc79N3NO+6TWqzXbuYT+JLL/CLT/OmevqYm3Hbuwj2uO6iPKQb3g4DVH7j0VIoj1O2
+fPoX5NYZxQTs0oBJp5w1hFqVkXRA6Gs82HEQJRHQliR0gZtg+WqoJjuCYtBkvshJWLPIBzXeakvy
++hUdstSjokyDoNpL5y4sirllqAy=

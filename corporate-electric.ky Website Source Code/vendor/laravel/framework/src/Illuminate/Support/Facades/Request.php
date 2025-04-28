@@ -1,103 +1,24 @@
-<?php
-
-namespace Illuminate\Support\Facades;
-
-/**
- * @method static \Closure getRouteResolver()
- * @method static \Closure getUserResolver()
- * @method static \Illuminate\Http\Request capture()
- * @method static \Illuminate\Http\Request createFrom(\Illuminate\Http\Request $from, \Illuminate\Http\Request|null $to = null)
- * @method static \Illuminate\Http\Request createFromBase(\Symfony\Component\HttpFoundation\Request $request)
- * @method static \Illuminate\Http\Request duplicate(array|null $query = null, array|null $request = null, array|null $attributes = null, array|null $cookies = null, array|null $files = null, array|null $server = null)
- * @method static \Illuminate\Http\Request instance()
- * @method static \Illuminate\Http\Request merge(array $input)
- * @method static \Illuminate\Http\Request replace(array $input)
- * @method static \Illuminate\Http\Request setJson(\Symfony\Component\HttpFoundation\ParameterBag $json)
- * @method static \Illuminate\Http\Request setRouteResolver(\Closure $callback)
- * @method static \Illuminate\Http\Request setUserResolver(\Closure $callback)
- * @method static \Illuminate\Http\UploadedFile|\Illuminate\Http\UploadedFile[]|array|null file(string|null $key = null, mixed $default = null)
- * @method static \Illuminate\Routing\Route|object|string route(string|null $param = null, string|null $default = null)
- * @method static \Illuminate\Session\Store session()
- * @method static \Illuminate\Session\Store|null getSession()
- * @method static \Symfony\Component\HttpFoundation\ParameterBag|mixed json(string|null $key = null, mixed $default = null)
- * @method static array all(array|mixed|null $keys = null)
- * @method static array allFiles()
- * @method static array except(array|mixed $keys)
- * @method static array ips()
- * @method static array keys()
- * @method static array only(array|mixed $keys)
- * @method static array segments()
- * @method static array toArray()
- * @method static array validate(array $rules, ...$params)
- * @method static array validateWithBag(string $errorBag, array $rules, ...$params)
- * @method static bool accepts(string|array $contentTypes)
- * @method static bool acceptsAnyContentType()
- * @method static bool acceptsHtml()
- * @method static bool acceptsJson()
- * @method static bool ajax()
- * @method static bool anyFilled(string|array $key)
- * @method static bool exists(string|array $key)
- * @method static bool expectsJson()
- * @method static bool filled(string|array $key)
- * @method static bool fullUrlIs(mixed ...$patterns)
- * @method static bool has(string|array $key)
- * @method static bool hasAny(string|array $key)
- * @method static bool hasCookie(string $key)
- * @method static bool hasFile(string $key)
- * @method static bool hasHeader(string $key)
- * @method static bool hasValidSignature(bool $absolute = true)
- * @method static bool is(mixed ...$patterns)
- * @method static bool isJson()
- * @method static bool matchesType(string $actual, string $type)
- * @method static bool offsetExists(string $offset)
- * @method static bool pjax()
- * @method static bool prefers(string|array $contentTypes)
- * @method static bool prefetch()
- * @method static bool routeIs(mixed ...$patterns)
- * @method static bool secure()
- * @method static bool wantsJson()
- * @method static mixed filterFiles(mixed $files)
- * @method static mixed offsetGet(string $offset)
- * @method static mixed user(string|null $guard = null)
- * @method static string decodedPath()
- * @method static string fingerprint()
- * @method static string format($default = 'html')
- * @method static string fullUrl()
- * @method static string fullUrlWithQuery(array $query)
- * @method static string method()
- * @method static string path()
- * @method static string root()
- * @method static string url()
- * @method static string userAgent()
- * @method static string|array old(string|null $key = null, string|array|null $default = null)
- * @method static string|array|null cookie(string|null $key = null, string|array|null $default = null)
- * @method static string|array|null header(string|null $key = null, string|array|null $default = null)
- * @method static string|array|null input(string|null $key = null, string|array|null $default = null)
- * @method static string|array|null post(string|null $key = null, string|array|null $default = null)
- * @method static string|array|null query(string|null $key = null, string|array|null $default = null)
- * @method static string|array|null server(string|null $key = null, string|array|null $default = null)
- * @method static string|null bearerToken()
- * @method static string|null ip()
- * @method static string|null segment(int $index, string|null $default = null)
- * @method static void flash()
- * @method static void flashExcept(array|mixed $keys)
- * @method static void flashOnly(array|mixed $keys)
- * @method static void flush()
- * @method static void offsetSet(string $offset, mixed $value)
- * @method static void offsetUnset(string $offset)
- * @method static void setLaravelSession(\Illuminate\Contracts\Session\Session $session)
- *
- * @see \Illuminate\Http\Request
- */
-class Request extends Facade
-{
-    /**
-     * Get the registered name of the component.
-     *
-     * @return string
-     */
-    protected static function getFacadeAccessor()
-    {
-        return 'request';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPmCEvmdIwTikgxLoAbhr52V8rH+fXmhL5xsuzLYy/D1ZIXkf1DNfj0I3tTkRr5/CNFyG3dEU
+rxzy9H3qCMvXtYtbWa0lzlTyeluE0OC1DI7OVTuH17uBvqg3lTwjnTiRu+/L1Rx5aUuuy8s+dmnw
+rlUjFQrm+fqbwnO3FtsBMakWR1O2RaBq13s+R6BMEcots0QQrn51344OrH40rXXxrCazdvqEYe8I
+lr2VEZvLX9bxv17ov4txSzkodEaUPEA96geIEjMhA+TKmL7Jt1aWL4Hsw0jfblVAzwpeFl8ChWEk
+wayD/suKx8MT82sVd5+rcSXx9KialdtEmaZizYsALI0jH/qxkdLSrNh/HLL281S2hUuIHY4Oh8II
+2T7Jhoo2yYRjlL2F0T/cNw5lC9dI8aVJa2eGC1I3n5lx0YqPnuO1gyxa8nunYlNUB/W4o/6/7bei
+w3ck2iC15Ng2/wNe44zRzX48uO4H/nIqzEQj+84ZxN+Qq9DoVR10RmHHrICRUl19TMBsNNwepGQK
+Ox7DSkRo3+ibzyqYkSmPg2asYEEvuBARs5NOCGK1LxeLNfnzWM7agsG1igIc/8YBe9a80EjjNYMf
+Qx3oddWZCM9EWOPNX2y096GhdQucC+YmXyyfPgrd57p/fl7irwBLp6a/AXiJ7H7EasBRypgwVVa7
+vwJZs+YCe28MVoe+IXLx13Zrd7uP2Mrd+oZywhbMBYW9R2Lafq8rbvhDicBI2cZalcxl6YXg01BG
+ALpljp8nIsPdsHZiueAewX+Ga7V37mEc9Nb9E3QYgDf05Hf509NNGvQEpQs6rwnpnsciO8TGi3lS
+6VpTdJGexHJJoSQ+nU4rukjAHPm9x+i/C/jYZvEGFUk0LJbhFp+7Za3gzi2pSuzZwFo8S35hWqbS
+mb4NzwHWxB5gY29XGWudLvuDv4G+kgxgugu4VniYHspcOJXQXtGx1XbItBum/qkXIXeTUrapP9mg
+Pt46Gmyc5mNkOXPu1L5c/03EroE36t3lp9oednuQQGCjb0vfY+c89UpGONPhvSXWEVsM1eKVlqYG
+8EVjcPKa4QUKWwvSjKcW6BqUOsupvbwhrDpv1v3LqpJjhNIh7MZsmACEfCsieW2Kkd9Xk9UyiWH7
+LYUBwcxOp5moc2ESGP7IWqJwtiwv6zyirVrrsvp917PkLrK3vxa9eE41LdsTt/J1hNECbJuoVVvk
+T1ufNHd0oPS0Uvhrw7ShBpOx+OsY6fwBED0bKy8BowPqn/6VSxzEl1F60Q7Ouwd91Cd83Wtj3+DJ
+Eb4QfmP62jAte+QuSifDSyV2RyPmdK8h1CDoOkTRgwPIOX5naR6xiakzkRb9OoPbCenfCsg8woSB
+drPyQd4Q3xQ2vKbfE97jWdLCaKsfrY+ffdBO1qJKViBEedyK/eLgRjUZgAALtb2tqdgAs1a8n/5u
+5a8RJ6rXoCUSp+X+xrsQqjAXp8Uv8ZSEsNPx8490Y4SXPhSdKk2mmcdCctC4zZSCf9Xep00qD3L+
+mYm7nv0kC8vH0WElDC6L+W==

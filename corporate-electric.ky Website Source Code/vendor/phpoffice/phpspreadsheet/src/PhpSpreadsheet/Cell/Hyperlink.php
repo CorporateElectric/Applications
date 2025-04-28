@@ -1,113 +1,39 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Cell;
-
-class Hyperlink
-{
-    /**
-     * URL to link the cell to.
-     *
-     * @var string
-     */
-    private $url;
-
-    /**
-     * Tooltip to display on the hyperlink.
-     *
-     * @var string
-     */
-    private $tooltip;
-
-    /**
-     * Create a new Hyperlink.
-     *
-     * @param string $pUrl Url to link the cell to
-     * @param string $pTooltip Tooltip to display on the hyperlink
-     */
-    public function __construct($pUrl = '', $pTooltip = '')
-    {
-        // Initialise member variables
-        $this->url = $pUrl;
-        $this->tooltip = $pTooltip;
-    }
-
-    /**
-     * Get URL.
-     *
-     * @return string
-     */
-    public function getUrl()
-    {
-        return $this->url;
-    }
-
-    /**
-     * Set URL.
-     *
-     * @param string $value
-     *
-     * @return $this
-     */
-    public function setUrl($value)
-    {
-        $this->url = $value;
-
-        return $this;
-    }
-
-    /**
-     * Get tooltip.
-     *
-     * @return string
-     */
-    public function getTooltip()
-    {
-        return $this->tooltip;
-    }
-
-    /**
-     * Set tooltip.
-     *
-     * @param string $value
-     *
-     * @return $this
-     */
-    public function setTooltip($value)
-    {
-        $this->tooltip = $value;
-
-        return $this;
-    }
-
-    /**
-     * Is this hyperlink internal? (to another worksheet).
-     *
-     * @return bool
-     */
-    public function isInternal()
-    {
-        return strpos($this->url, 'sheet://') !== false;
-    }
-
-    /**
-     * @return string
-     */
-    public function getTypeHyperlink()
-    {
-        return $this->isInternal() ? '' : 'External';
-    }
-
-    /**
-     * Get hash code.
-     *
-     * @return string Hash code
-     */
-    public function getHashCode()
-    {
-        return md5(
-            $this->url .
-            $this->tooltip .
-            __CLASS__
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+6QPiMbOv

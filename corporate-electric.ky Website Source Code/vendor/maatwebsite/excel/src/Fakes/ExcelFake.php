@@ -1,356 +1,157 @@
-<?php
-
-namespace Maatwebsite\Excel\Fakes;
-
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Bus\PendingDispatch;
-use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Queue;
-use Maatwebsite\Excel\Exporter;
-use Maatwebsite\Excel\Importer;
-use Maatwebsite\Excel\Reader;
-use PHPUnit\Framework\Assert;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
-use Symfony\Component\HttpFoundation\File\UploadedFile;
-
-class ExcelFake implements Exporter, Importer
-{
-    /**
-     * @var array
-     */
-    protected $downloads = [];
-
-    /**
-     * @var array
-     */
-    protected $stored = [];
-
-    /**
-     * @var array
-     */
-    protected $queued = [];
-
-    /**
-     * @var array
-     */
-    protected $imported = [];
-
-    /**
-     * @var bool
-     */
-    protected $matchByRegex = false;
-
-    /**
-     * @var object|null
-     */
-    protected $job;
-
-    /**
-     * {@inheritdoc}
-     */
-    public function download($export, string $fileName, string $writerType = null, array $headers = [])
-    {
-        $this->downloads[$fileName] = $export;
-
-        return new BinaryFileResponse(__DIR__ . '/fake_file');
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function store($export, string $filePath, string $disk = null, string $writerType = null, $diskOptions = [])
-    {
-        if ($export instanceof ShouldQueue) {
-            return $this->queue($export, $filePath, $disk, $writerType);
-        }
-
-        $this->stored[$disk ?? 'default'][$filePath] = $export;
-
-        return true;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function queue($export, string $filePath, string $disk = null, string $writerType = null, $diskOptions = [])
-    {
-        Queue::fake();
-
-        $this->stored[$disk ?? 'default'][$filePath] = $export;
-        $this->queued[$disk ?? 'default'][$filePath] = $export;
-
-        $this->job = new class {
-            use Queueable;
-
-            public function handle()
-            {
-                //
-            }
-        };
-
-        Queue::push($this->job);
-
-        return new PendingDispatch($this->job);
-    }
-
-    /**
-     * @param object $export
-     * @param string $writerType
-     *
-     * @return string
-     */
-    public function raw($export, string $writerType)
-    {
-        return 'RAW-CONTENTS';
-    }
-
-    /**
-     * @param object              $import
-     * @param string|UploadedFile $file
-     * @param string|null         $disk
-     * @param string|null         $readerType
-     *
-     * @return Reader|PendingDispatch
-     */
-    public function import($import, $file, string $disk = null, string $readerType = null)
-    {
-        if ($import instanceof ShouldQueue) {
-            return $this->queueImport($import, $file, $disk, $readerType);
-        }
-
-        $filePath = ($file instanceof UploadedFile) ? $file->getClientOriginalName() : $file;
-
-        $this->imported[$disk ?? 'default'][$filePath] = $import;
-
-        return $this;
-    }
-
-    /**
-     * @param object              $import
-     * @param string|UploadedFile $file
-     * @param string|null         $disk
-     * @param string|null         $readerType
-     *
-     * @return array
-     */
-    public function toArray($import, $file, string $disk = null, string $readerType = null): array
-    {
-        $filePath = ($file instanceof UploadedFile) ? $file->getFilename() : $file;
-
-        $this->imported[$disk ?? 'default'][$filePath] = $import;
-
-        return [];
-    }
-
-    /**
-     * @param object              $import
-     * @param string|UploadedFile $file
-     * @param string|null         $disk
-     * @param string|null         $readerType
-     *
-     * @return Collection
-     */
-    public function toCollection($import, $file, string $disk = null, string $readerType = null): Collection
-    {
-        $filePath = ($file instanceof UploadedFile) ? $file->getFilename() : $file;
-
-        $this->imported[$disk ?? 'default'][$filePath] = $import;
-
-        return new Collection();
-    }
-
-    /**
-     * @param ShouldQueue         $import
-     * @param string|UploadedFile $file
-     * @param string|null         $disk
-     * @param string              $readerType
-     *
-     * @return PendingDispatch
-     */
-    public function queueImport(ShouldQueue $import, $file, string $disk = null, string $readerType = null)
-    {
-        Queue::fake();
-
-        $filePath = ($file instanceof UploadedFile) ? $file->getFilename() : $file;
-
-        $this->queued[$disk ?? 'default'][$filePath]   = $import;
-        $this->imported[$disk ?? 'default'][$filePath] = $import;
-
-        return new PendingDispatch(new class {
-            use Queueable;
-
-            public function handle()
-            {
-                //
-            }
-        });
-    }
-
-    /**
-     * When asserting downloaded, stored, queued or imported, use regular expression
-     * to look for a matching file path.
-     *
-     * @return void
-     */
-    public function matchByRegex()
-    {
-        $this->matchByRegex = true;
-    }
-
-    /**
-     * When asserting downloaded, stored, queued or imported, use regular string
-     * comparison for matching file path.
-     *
-     * @return void
-     */
-    public function doNotMatchByRegex()
-    {
-        $this->matchByRegex = false;
-    }
-
-    /**
-     * @param string        $fileName
-     * @param callable|null $callback
-     */
-    public function assertDownloaded(string $fileName, $callback = null)
-    {
-        $fileName = $this->assertArrayHasKey($fileName, $this->downloads, sprintf('%s is not downloaded', $fileName));
-
-        $callback = $callback ?: function () {
-            return true;
-        };
-
-        Assert::assertTrue(
-            $callback($this->downloads[$fileName]),
-            "The file [{$fileName}] was not downloaded with the expected data."
-        );
-    }
-
-    /**
-     * @param string               $filePath
-     * @param string|callable|null $disk
-     * @param callable|null        $callback
-     */
-    public function assertStored(string $filePath, $disk = null, $callback = null)
-    {
-        if (is_callable($disk)) {
-            $callback = $disk;
-            $disk     = null;
-        }
-
-        $disk         = $disk ?? 'default';
-        $storedOnDisk = $this->stored[$disk] ?? [];
-
-        $filePath = $this->assertArrayHasKey(
-            $filePath,
-            $storedOnDisk,
-            sprintf('%s is not stored on disk %s', $filePath, $disk)
-        );
-
-        $callback = $callback ?: function () {
-            return true;
-        };
-
-        Assert::assertTrue(
-            $callback($storedOnDisk[$filePath]),
-            "The file [{$filePath}] was not stored with the expected data."
-        );
-    }
-
-    /**
-     * @param string               $filePath
-     * @param string|callable|null $disk
-     * @param callable|null        $callback
-     */
-    public function assertQueued(string $filePath, $disk = null, $callback = null)
-    {
-        if (is_callable($disk)) {
-            $callback = $disk;
-            $disk     = null;
-        }
-
-        $disk          = $disk ?? 'default';
-        $queuedForDisk = $this->queued[$disk] ?? [];
-
-        $filePath = $this->assertArrayHasKey(
-            $filePath,
-            $queuedForDisk,
-            sprintf('%s is not queued for export on disk %s', $filePath, $disk)
-        );
-
-        $callback = $callback ?: function () {
-            return true;
-        };
-
-        Assert::assertTrue(
-            $callback($queuedForDisk[$filePath]),
-            "The file [{$filePath}] was not stored with the expected data."
-        );
-    }
-
-    public function assertQueuedWithChain($chain): void
-    {
-        Queue::assertPushedWithChain(get_class($this->job), $chain);
-    }
-
-    /**
-     * @param string               $filePath
-     * @param string|callable|null $disk
-     * @param callable|null        $callback
-     */
-    public function assertImported(string $filePath, $disk = null, $callback = null)
-    {
-        if (is_callable($disk)) {
-            $callback = $disk;
-            $disk     = null;
-        }
-
-        $disk           = $disk ?? 'default';
-        $importedOnDisk = $this->imported[$disk] ?? [];
-
-        $filePath = $this->assertArrayHasKey(
-            $filePath,
-            $importedOnDisk,
-            sprintf('%s is not stored on disk %s', $filePath, $disk)
-        );
-
-        $callback = $callback ?: function () {
-            return true;
-        };
-
-        Assert::assertTrue(
-            $callback($importedOnDisk[$filePath]),
-            "The file [{$filePath}] was not imported with the expected data."
-        );
-    }
-
-    /**
-     * Asserts that an array has a specified key and returns the key if successful.
-     * @see matchByRegex for more information about file path matching
-     *
-     * @param string    $key
-     * @param array     $array
-     * @param string    $message
-     *
-     * @return string
-     *
-     * @throws ExpectationFailedException
-     * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
-     * @throws Exception
-     */
-    protected function assertArrayHasKey(string $key, array $disk, string $message = ''): string
-    {
-        if ($this->matchByRegex) {
-            $files   = array_keys($disk);
-            $results = preg_grep($key, $files);
-            Assert::assertGreaterThan(0, count($results), $message);
-            Assert::assertEquals(1, count($results), "More than one result matches the file name expression '$key'.");
-
-            return $results[0];
-        }
-        Assert::assertArrayHasKey($key, $disk, $message);
-
-        return $key;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

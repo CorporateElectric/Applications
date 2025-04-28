@@ -1,218 +1,73 @@
-<?php
-
-return [
-
-    /*
-     |--------------------------------------------------------------------------
-     | Debugbar Settings
-     |--------------------------------------------------------------------------
-     |
-     | Debugbar is enabled by default, when debug is set to true in app.php.
-     | You can override the value by setting enable to true or false instead of null.
-     |
-     | You can provide an array of URI's that must be ignored (eg. 'api/*')
-     |
-     */
-
-    'enabled' => env('DEBUGBAR_ENABLED', null),
-    'except' => [
-        'telescope*',
-        'horizon*',
-    ],
-
-    /*
-     |--------------------------------------------------------------------------
-     | Storage settings
-     |--------------------------------------------------------------------------
-     |
-     | DebugBar stores data for session/ajax requests.
-     | You can disable this, so the debugbar stores data in headers/session,
-     | but this can cause problems with large data collectors.
-     | By default, file storage (in the storage folder) is used. Redis and PDO
-     | can also be used. For PDO, run the package migrations first.
-     |
-     */
-    'storage' => [
-        'enabled'    => true,
-        'driver'     => 'file', // redis, file, pdo, socket, custom
-        'path'       => storage_path('debugbar'), // For file driver
-        'connection' => null,   // Leave null for default connection (Redis/PDO)
-        'provider'   => '', // Instance of StorageInterface for custom driver
-        'hostname'   => '127.0.0.1', // Hostname to use with the "socket" driver
-        'port'       => 2304, // Port to use with the "socket" driver
-    ],
-
-    /*
-     |--------------------------------------------------------------------------
-     | Vendors
-     |--------------------------------------------------------------------------
-     |
-     | Vendor files are included by default, but can be set to false.
-     | This can also be set to 'js' or 'css', to only include javascript or css vendor files.
-     | Vendor files are for css: font-awesome (including fonts) and highlight.js (css files)
-     | and for js: jquery and and highlight.js
-     | So if you want syntax highlighting, set it to true.
-     | jQuery is set to not conflict with existing jQuery scripts.
-     |
-     */
-
-    'include_vendors' => true,
-
-    /*
-     |--------------------------------------------------------------------------
-     | Capture Ajax Requests
-     |--------------------------------------------------------------------------
-     |
-     | The Debugbar can capture Ajax requests and display them. If you don't want this (ie. because of errors),
-     | you can use this option to disable sending the data through the headers.
-     |
-     | Optionally, you can also send ServerTiming headers on ajax requests for the Chrome DevTools.
-     */
-
-    'capture_ajax' => true,
-    'add_ajax_timing' => false,
-
-    /*
-     |--------------------------------------------------------------------------
-     | Custom Error Handler for Deprecated warnings
-     |--------------------------------------------------------------------------
-     |
-     | When enabled, the Debugbar shows deprecated warnings for Symfony components
-     | in the Messages tab.
-     |
-     */
-    'error_handler' => false,
-
-    /*
-     |--------------------------------------------------------------------------
-     | Clockwork integration
-     |--------------------------------------------------------------------------
-     |
-     | The Debugbar can emulate the Clockwork headers, so you can use the Chrome
-     | Extension, without the server-side code. It uses Debugbar collectors instead.
-     |
-     */
-    'clockwork' => false,
-
-    /*
-     |--------------------------------------------------------------------------
-     | DataCollectors
-     |--------------------------------------------------------------------------
-     |
-     | Enable/disable DataCollectors
-     |
-     */
-
-    'collectors' => [
-        'phpinfo'         => true,  // Php version
-        'messages'        => true,  // Messages
-        'time'            => true,  // Time Datalogger
-        'memory'          => true,  // Memory usage
-        'exceptions'      => true,  // Exception displayer
-        'log'             => true,  // Logs from Monolog (merged in messages if enabled)
-        'db'              => true,  // Show database (PDO) queries and bindings
-        'views'           => true,  // Views with their data
-        'route'           => true,  // Current route information
-        'auth'            => false, // Display Laravel authentication status
-        'gate'            => true,  // Display Laravel Gate checks
-        'session'         => true,  // Display session data
-        'symfony_request' => true,  // Only one can be enabled..
-        'mail'            => true,  // Catch mail messages
-        'laravel'         => false, // Laravel version and environment
-        'events'          => false, // All events fired
-        'default_request' => false, // Regular or special Symfony request logger
-        'logs'            => false, // Add the latest log messages
-        'files'           => false, // Show the included files
-        'config'          => false, // Display config settings
-        'cache'           => false, // Display cache events
-        'models'          => true,  // Display models
-        'livewire'        => true,  // Display Livewire (when available)
-    ],
-
-    /*
-     |--------------------------------------------------------------------------
-     | Extra options
-     |--------------------------------------------------------------------------
-     |
-     | Configure some DataCollectors
-     |
-     */
-
-    'options' => [
-        'auth' => [
-            'show_name' => true,   // Also show the users name/email in the debugbar
-        ],
-        'db' => [
-            'with_params'       => true,   // Render SQL with the parameters substituted
-            'backtrace'         => true,   // Use a backtrace to find the origin of the query in your files.
-            'backtrace_exclude_paths' => [],   // Paths to exclude from backtrace. (in addition to defaults)
-            'timeline'          => false,  // Add the queries to the timeline
-            'explain' => [                 // Show EXPLAIN output on queries
-                'enabled' => false,
-                'types' => ['SELECT'],     // Deprecated setting, is always only SELECT
-            ],
-            'hints'             => false,    // Show hints for common mistakes
-            'show_copy'         => false,    // Show copy button next to the query
-        ],
-        'mail' => [
-            'full_log' => false,
-        ],
-        'views' => [
-            'data' => false,    //Note: Can slow down the application, because the data can be quite large..
-        ],
-        'route' => [
-            'label' => true,  // show complete route on bar
-        ],
-        'logs' => [
-            'file' => null,
-        ],
-        'cache' => [
-            'values' => true, // collect cache values
-        ],
-    ],
-
-    /*
-     |--------------------------------------------------------------------------
-     | Inject Debugbar in Response
-     |--------------------------------------------------------------------------
-     |
-     | Usually, the debugbar is added just before </body>, by listening to the
-     | Response after the App is done. If you disable this, you have to add them
-     | in your template yourself. See http://phpdebugbar.com/docs/rendering.html
-     |
-     */
-
-    'inject' => true,
-
-    /*
-     |--------------------------------------------------------------------------
-     | DebugBar route prefix
-     |--------------------------------------------------------------------------
-     |
-     | Sometimes you want to set route prefix to be used by DebugBar to load
-     | its resources from. Usually the need comes from misconfigured web server or
-     | from trying to overcome bugs like this: http://trac.nginx.org/nginx/ticket/97
-     |
-     */
-    'route_prefix' => '_debugbar',
-
-    /*
-     |--------------------------------------------------------------------------
-     | DebugBar route domain
-     |--------------------------------------------------------------------------
-     |
-     | By default DebugBar route served from the same domain that request served.
-     | To override default domain, specify it as a non-empty value.
-     */
-    'route_domain' => null,
-
-    /*
-     |--------------------------------------------------------------------------
-     | DebugBar theme
-     |--------------------------------------------------------------------------
-     |
-     | Switches between light and dark theme. If set to auto it will respect system preferences
-     | Possible values: auto, light, dark
-     */
-    'theme' => 'auto',
-];
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

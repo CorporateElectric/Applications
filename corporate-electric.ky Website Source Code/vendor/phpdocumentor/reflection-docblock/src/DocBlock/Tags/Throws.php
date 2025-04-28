@@ -1,64 +1,50 @@
-<?php
-
-declare(strict_types=1);
-
-/**
- * This file is part of phpDocumentor.
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @link      http://phpdoc.org
- */
-
-namespace phpDocumentor\Reflection\DocBlock\Tags;
-
-use phpDocumentor\Reflection\DocBlock\Description;
-use phpDocumentor\Reflection\DocBlock\DescriptionFactory;
-use phpDocumentor\Reflection\Type;
-use phpDocumentor\Reflection\TypeResolver;
-use phpDocumentor\Reflection\Types\Context as TypeContext;
-use Webmozart\Assert\Assert;
-
-/**
- * Reflection class for a {@}throws tag in a Docblock.
- */
-final class Throws extends TagWithType implements Factory\StaticMethod
-{
-    public function __construct(Type $type, ?Description $description = null)
-    {
-        $this->name        = 'throws';
-        $this->type        = $type;
-        $this->description = $description;
-    }
-
-    public static function create(
-        string $body,
-        ?TypeResolver $typeResolver = null,
-        ?DescriptionFactory $descriptionFactory = null,
-        ?TypeContext $context = null
-    ) : self {
-        Assert::notNull($typeResolver);
-        Assert::notNull($descriptionFactory);
-
-        [$type, $description] = self::extractTypeFromBody($body);
-
-        $type        = $typeResolver->resolve($type, $context);
-        $description = $descriptionFactory->create($description, $context);
-
-        return new static($type, $description);
-    }
-
-    public function __toString() : string
-    {
-        if ($this->description) {
-            $description = $this->description->render();
-        } else {
-            $description = '';
-        }
-
-        $type = (string) $this->type;
-
-        return $type . ($description !== '' ? ($type !== '' ? ' ' : '') . $description : '');
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

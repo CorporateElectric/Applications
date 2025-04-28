@@ -1,384 +1,171 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\VarDumper\Cloner;
-
-use Symfony\Component\VarDumper\Caster\Caster;
-use Symfony\Component\VarDumper\Exception\ThrowingCasterException;
-
-/**
- * AbstractCloner implements a generic caster mechanism for objects and resources.
- *
- * @author Nicolas Grekas <p@tchwork.com>
- */
-abstract class AbstractCloner implements ClonerInterface
-{
-    public static $defaultCasters = [
-        '__PHP_Incomplete_Class' => ['Symfony\Component\VarDumper\Caster\Caster', 'castPhpIncompleteClass'],
-
-        'Symfony\Component\VarDumper\Caster\CutStub' => ['Symfony\Component\VarDumper\Caster\StubCaster', 'castStub'],
-        'Symfony\Component\VarDumper\Caster\CutArrayStub' => ['Symfony\Component\VarDumper\Caster\StubCaster', 'castCutArray'],
-        'Symfony\Component\VarDumper\Caster\ConstStub' => ['Symfony\Component\VarDumper\Caster\StubCaster', 'castStub'],
-        'Symfony\Component\VarDumper\Caster\EnumStub' => ['Symfony\Component\VarDumper\Caster\StubCaster', 'castEnum'],
-
-        'Closure' => ['Symfony\Component\VarDumper\Caster\ReflectionCaster', 'castClosure'],
-        'Generator' => ['Symfony\Component\VarDumper\Caster\ReflectionCaster', 'castGenerator'],
-        'ReflectionType' => ['Symfony\Component\VarDumper\Caster\ReflectionCaster', 'castType'],
-        'ReflectionAttribute' => ['Symfony\Component\VarDumper\Caster\ReflectionCaster', 'castAttribute'],
-        'ReflectionGenerator' => ['Symfony\Component\VarDumper\Caster\ReflectionCaster', 'castReflectionGenerator'],
-        'ReflectionClass' => ['Symfony\Component\VarDumper\Caster\ReflectionCaster', 'castClass'],
-        'ReflectionClassConstant' => ['Symfony\Component\VarDumper\Caster\ReflectionCaster', 'castClassConstant'],
-        'ReflectionFunctionAbstract' => ['Symfony\Component\VarDumper\Caster\ReflectionCaster', 'castFunctionAbstract'],
-        'ReflectionMethod' => ['Symfony\Component\VarDumper\Caster\ReflectionCaster', 'castMethod'],
-        'ReflectionParameter' => ['Symfony\Component\VarDumper\Caster\ReflectionCaster', 'castParameter'],
-        'ReflectionProperty' => ['Symfony\Component\VarDumper\Caster\ReflectionCaster', 'castProperty'],
-        'ReflectionReference' => ['Symfony\Component\VarDumper\Caster\ReflectionCaster', 'castReference'],
-        'ReflectionExtension' => ['Symfony\Component\VarDumper\Caster\ReflectionCaster', 'castExtension'],
-        'ReflectionZendExtension' => ['Symfony\Component\VarDumper\Caster\ReflectionCaster', 'castZendExtension'],
-
-        'Doctrine\Common\Persistence\ObjectManager' => ['Symfony\Component\VarDumper\Caster\StubCaster', 'cutInternals'],
-        'Doctrine\Common\Proxy\Proxy' => ['Symfony\Component\VarDumper\Caster\DoctrineCaster', 'castCommonProxy'],
-        'Doctrine\ORM\Proxy\Proxy' => ['Symfony\Component\VarDumper\Caster\DoctrineCaster', 'castOrmProxy'],
-        'Doctrine\ORM\PersistentCollection' => ['Symfony\Component\VarDumper\Caster\DoctrineCaster', 'castPersistentCollection'],
-        'Doctrine\Persistence\ObjectManager' => ['Symfony\Component\VarDumper\Caster\StubCaster', 'cutInternals'],
-
-        'DOMException' => ['Symfony\Component\VarDumper\Caster\DOMCaster', 'castException'],
-        'DOMStringList' => ['Symfony\Component\VarDumper\Caster\DOMCaster', 'castLength'],
-        'DOMNameList' => ['Symfony\Component\VarDumper\Caster\DOMCaster', 'castLength'],
-        'DOMImplementation' => ['Symfony\Component\VarDumper\Caster\DOMCaster', 'castImplementation'],
-        'DOMImplementationList' => ['Symfony\Component\VarDumper\Caster\DOMCaster', 'castLength'],
-        'DOMNode' => ['Symfony\Component\VarDumper\Caster\DOMCaster', 'castNode'],
-        'DOMNameSpaceNode' => ['Symfony\Component\VarDumper\Caster\DOMCaster', 'castNameSpaceNode'],
-        'DOMDocument' => ['Symfony\Component\VarDumper\Caster\DOMCaster', 'castDocument'],
-        'DOMNodeList' => ['Symfony\Component\VarDumper\Caster\DOMCaster', 'castLength'],
-        'DOMNamedNodeMap' => ['Symfony\Component\VarDumper\Caster\DOMCaster', 'castLength'],
-        'DOMCharacterData' => ['Symfony\Component\VarDumper\Caster\DOMCaster', 'castCharacterData'],
-        'DOMAttr' => ['Symfony\Component\VarDumper\Caster\DOMCaster', 'castAttr'],
-        'DOMElement' => ['Symfony\Component\VarDumper\Caster\DOMCaster', 'castElement'],
-        'DOMText' => ['Symfony\Component\VarDumper\Caster\DOMCaster', 'castText'],
-        'DOMTypeinfo' => ['Symfony\Component\VarDumper\Caster\DOMCaster', 'castTypeinfo'],
-        'DOMDomError' => ['Symfony\Component\VarDumper\Caster\DOMCaster', 'castDomError'],
-        'DOMLocator' => ['Symfony\Component\VarDumper\Caster\DOMCaster', 'castLocator'],
-        'DOMDocumentType' => ['Symfony\Component\VarDumper\Caster\DOMCaster', 'castDocumentType'],
-        'DOMNotation' => ['Symfony\Component\VarDumper\Caster\DOMCaster', 'castNotation'],
-        'DOMEntity' => ['Symfony\Component\VarDumper\Caster\DOMCaster', 'castEntity'],
-        'DOMProcessingInstruction' => ['Symfony\Component\VarDumper\Caster\DOMCaster', 'castProcessingInstruction'],
-        'DOMXPath' => ['Symfony\Component\VarDumper\Caster\DOMCaster', 'castXPath'],
-
-        'XMLReader' => ['Symfony\Component\VarDumper\Caster\XmlReaderCaster', 'castXmlReader'],
-
-        'ErrorException' => ['Symfony\Component\VarDumper\Caster\ExceptionCaster', 'castErrorException'],
-        'Exception' => ['Symfony\Component\VarDumper\Caster\ExceptionCaster', 'castException'],
-        'Error' => ['Symfony\Component\VarDumper\Caster\ExceptionCaster', 'castError'],
-        'Symfony\Bridge\Monolog\Logger' => ['Symfony\Component\VarDumper\Caster\StubCaster', 'cutInternals'],
-        'Symfony\Component\DependencyInjection\ContainerInterface' => ['Symfony\Component\VarDumper\Caster\StubCaster', 'cutInternals'],
-        'Symfony\Component\EventDispatcher\EventDispatcherInterface' => ['Symfony\Component\VarDumper\Caster\StubCaster', 'cutInternals'],
-        'Symfony\Component\HttpClient\CurlHttpClient' => ['Symfony\Component\VarDumper\Caster\SymfonyCaster', 'castHttpClient'],
-        'Symfony\Component\HttpClient\NativeHttpClient' => ['Symfony\Component\VarDumper\Caster\SymfonyCaster', 'castHttpClient'],
-        'Symfony\Component\HttpClient\Response\CurlResponse' => ['Symfony\Component\VarDumper\Caster\SymfonyCaster', 'castHttpClientResponse'],
-        'Symfony\Component\HttpClient\Response\NativeResponse' => ['Symfony\Component\VarDumper\Caster\SymfonyCaster', 'castHttpClientResponse'],
-        'Symfony\Component\HttpFoundation\Request' => ['Symfony\Component\VarDumper\Caster\SymfonyCaster', 'castRequest'],
-        'Symfony\Component\VarDumper\Exception\ThrowingCasterException' => ['Symfony\Component\VarDumper\Caster\ExceptionCaster', 'castThrowingCasterException'],
-        'Symfony\Component\VarDumper\Caster\TraceStub' => ['Symfony\Component\VarDumper\Caster\ExceptionCaster', 'castTraceStub'],
-        'Symfony\Component\VarDumper\Caster\FrameStub' => ['Symfony\Component\VarDumper\Caster\ExceptionCaster', 'castFrameStub'],
-        'Symfony\Component\VarDumper\Cloner\AbstractCloner' => ['Symfony\Component\VarDumper\Caster\StubCaster', 'cutInternals'],
-        'Symfony\Component\ErrorHandler\Exception\SilencedErrorContext' => ['Symfony\Component\VarDumper\Caster\ExceptionCaster', 'castSilencedErrorContext'],
-
-        'Imagine\Image\ImageInterface' => ['Symfony\Component\VarDumper\Caster\ImagineCaster', 'castImage'],
-
-        'Ramsey\Uuid\UuidInterface' => ['Symfony\Component\VarDumper\Caster\UuidCaster', 'castRamseyUuid'],
-
-        'ProxyManager\Proxy\ProxyInterface' => ['Symfony\Component\VarDumper\Caster\ProxyManagerCaster', 'castProxy'],
-        'PHPUnit_Framework_MockObject_MockObject' => ['Symfony\Component\VarDumper\Caster\StubCaster', 'cutInternals'],
-        'PHPUnit\Framework\MockObject\MockObject' => ['Symfony\Component\VarDumper\Caster\StubCaster', 'cutInternals'],
-        'PHPUnit\Framework\MockObject\Stub' => ['Symfony\Component\VarDumper\Caster\StubCaster', 'cutInternals'],
-        'Prophecy\Prophecy\ProphecySubjectInterface' => ['Symfony\Component\VarDumper\Caster\StubCaster', 'cutInternals'],
-        'Mockery\MockInterface' => ['Symfony\Component\VarDumper\Caster\StubCaster', 'cutInternals'],
-
-        'PDO' => ['Symfony\Component\VarDumper\Caster\PdoCaster', 'castPdo'],
-        'PDOStatement' => ['Symfony\Component\VarDumper\Caster\PdoCaster', 'castPdoStatement'],
-
-        'AMQPConnection' => ['Symfony\Component\VarDumper\Caster\AmqpCaster', 'castConnection'],
-        'AMQPChannel' => ['Symfony\Component\VarDumper\Caster\AmqpCaster', 'castChannel'],
-        'AMQPQueue' => ['Symfony\Component\VarDumper\Caster\AmqpCaster', 'castQueue'],
-        'AMQPExchange' => ['Symfony\Component\VarDumper\Caster\AmqpCaster', 'castExchange'],
-        'AMQPEnvelope' => ['Symfony\Component\VarDumper\Caster\AmqpCaster', 'castEnvelope'],
-
-        'ArrayObject' => ['Symfony\Component\VarDumper\Caster\SplCaster', 'castArrayObject'],
-        'ArrayIterator' => ['Symfony\Component\VarDumper\Caster\SplCaster', 'castArrayIterator'],
-        'SplDoublyLinkedList' => ['Symfony\Component\VarDumper\Caster\SplCaster', 'castDoublyLinkedList'],
-        'SplFileInfo' => ['Symfony\Component\VarDumper\Caster\SplCaster', 'castFileInfo'],
-        'SplFileObject' => ['Symfony\Component\VarDumper\Caster\SplCaster', 'castFileObject'],
-        'SplHeap' => ['Symfony\Component\VarDumper\Caster\SplCaster', 'castHeap'],
-        'SplObjectStorage' => ['Symfony\Component\VarDumper\Caster\SplCaster', 'castObjectStorage'],
-        'SplPriorityQueue' => ['Symfony\Component\VarDumper\Caster\SplCaster', 'castHeap'],
-        'OuterIterator' => ['Symfony\Component\VarDumper\Caster\SplCaster', 'castOuterIterator'],
-        'WeakReference' => ['Symfony\Component\VarDumper\Caster\SplCaster', 'castWeakReference'],
-
-        'Redis' => ['Symfony\Component\VarDumper\Caster\RedisCaster', 'castRedis'],
-        'RedisArray' => ['Symfony\Component\VarDumper\Caster\RedisCaster', 'castRedisArray'],
-        'RedisCluster' => ['Symfony\Component\VarDumper\Caster\RedisCaster', 'castRedisCluster'],
-
-        'DateTimeInterface' => ['Symfony\Component\VarDumper\Caster\DateCaster', 'castDateTime'],
-        'DateInterval' => ['Symfony\Component\VarDumper\Caster\DateCaster', 'castInterval'],
-        'DateTimeZone' => ['Symfony\Component\VarDumper\Caster\DateCaster', 'castTimeZone'],
-        'DatePeriod' => ['Symfony\Component\VarDumper\Caster\DateCaster', 'castPeriod'],
-
-        'GMP' => ['Symfony\Component\VarDumper\Caster\GmpCaster', 'castGmp'],
-
-        'MessageFormatter' => ['Symfony\Component\VarDumper\Caster\IntlCaster', 'castMessageFormatter'],
-        'NumberFormatter' => ['Symfony\Component\VarDumper\Caster\IntlCaster', 'castNumberFormatter'],
-        'IntlTimeZone' => ['Symfony\Component\VarDumper\Caster\IntlCaster', 'castIntlTimeZone'],
-        'IntlCalendar' => ['Symfony\Component\VarDumper\Caster\IntlCaster', 'castIntlCalendar'],
-        'IntlDateFormatter' => ['Symfony\Component\VarDumper\Caster\IntlCaster', 'castIntlDateFormatter'],
-
-        'Memcached' => ['Symfony\Component\VarDumper\Caster\MemcachedCaster', 'castMemcached'],
-
-        'Ds\Collection' => ['Symfony\Component\VarDumper\Caster\DsCaster', 'castCollection'],
-        'Ds\Map' => ['Symfony\Component\VarDumper\Caster\DsCaster', 'castMap'],
-        'Ds\Pair' => ['Symfony\Component\VarDumper\Caster\DsCaster', 'castPair'],
-        'Symfony\Component\VarDumper\Caster\DsPairStub' => ['Symfony\Component\VarDumper\Caster\DsCaster', 'castPairStub'],
-
-        'CurlHandle' => ['Symfony\Component\VarDumper\Caster\ResourceCaster', 'castCurl'],
-        ':curl' => ['Symfony\Component\VarDumper\Caster\ResourceCaster', 'castCurl'],
-
-        ':dba' => ['Symfony\Component\VarDumper\Caster\ResourceCaster', 'castDba'],
-        ':dba persistent' => ['Symfony\Component\VarDumper\Caster\ResourceCaster', 'castDba'],
-
-        'GdImage' => ['Symfony\Component\VarDumper\Caster\ResourceCaster', 'castGd'],
-        ':gd' => ['Symfony\Component\VarDumper\Caster\ResourceCaster', 'castGd'],
-
-        ':mysql link' => ['Symfony\Component\VarDumper\Caster\ResourceCaster', 'castMysqlLink'],
-        ':pgsql large object' => ['Symfony\Component\VarDumper\Caster\PgSqlCaster', 'castLargeObject'],
-        ':pgsql link' => ['Symfony\Component\VarDumper\Caster\PgSqlCaster', 'castLink'],
-        ':pgsql link persistent' => ['Symfony\Component\VarDumper\Caster\PgSqlCaster', 'castLink'],
-        ':pgsql result' => ['Symfony\Component\VarDumper\Caster\PgSqlCaster', 'castResult'],
-        ':process' => ['Symfony\Component\VarDumper\Caster\ResourceCaster', 'castProcess'],
-        ':stream' => ['Symfony\Component\VarDumper\Caster\ResourceCaster', 'castStream'],
-
-        'OpenSSLCertificate' => ['Symfony\Component\VarDumper\Caster\ResourceCaster', 'castOpensslX509'],
-        ':OpenSSL X.509' => ['Symfony\Component\VarDumper\Caster\ResourceCaster', 'castOpensslX509'],
-
-        ':persistent stream' => ['Symfony\Component\VarDumper\Caster\ResourceCaster', 'castStream'],
-        ':stream-context' => ['Symfony\Component\VarDumper\Caster\ResourceCaster', 'castStreamContext'],
-
-        'XmlParser' => ['Symfony\Component\VarDumper\Caster\XmlResourceCaster', 'castXml'],
-        ':xml' => ['Symfony\Component\VarDumper\Caster\XmlResourceCaster', 'castXml'],
-
-        'RdKafka' => ['Symfony\Component\VarDumper\Caster\RdKafkaCaster', 'castRdKafka'],
-        'RdKafka\Conf' => ['Symfony\Component\VarDumper\Caster\RdKafkaCaster', 'castConf'],
-        'RdKafka\KafkaConsumer' => ['Symfony\Component\VarDumper\Caster\RdKafkaCaster', 'castKafkaConsumer'],
-        'RdKafka\Metadata\Broker' => ['Symfony\Component\VarDumper\Caster\RdKafkaCaster', 'castBrokerMetadata'],
-        'RdKafka\Metadata\Collection' => ['Symfony\Component\VarDumper\Caster\RdKafkaCaster', 'castCollectionMetadata'],
-        'RdKafka\Metadata\Partition' => ['Symfony\Component\VarDumper\Caster\RdKafkaCaster', 'castPartitionMetadata'],
-        'RdKafka\Metadata\Topic' => ['Symfony\Component\VarDumper\Caster\RdKafkaCaster', 'castTopicMetadata'],
-        'RdKafka\Message' => ['Symfony\Component\VarDumper\Caster\RdKafkaCaster', 'castMessage'],
-        'RdKafka\Topic' => ['Symfony\Component\VarDumper\Caster\RdKafkaCaster', 'castTopic'],
-        'RdKafka\TopicPartition' => ['Symfony\Component\VarDumper\Caster\RdKafkaCaster', 'castTopicPartition'],
-        'RdKafka\TopicConf' => ['Symfony\Component\VarDumper\Caster\RdKafkaCaster', 'castTopicConf'],
-    ];
-
-    protected $maxItems = 2500;
-    protected $maxString = -1;
-    protected $minDepth = 1;
-
-    private $casters = [];
-    private $prevErrorHandler;
-    private $classInfo = [];
-    private $filter = 0;
-
-    /**
-     * @param callable[]|null $casters A map of casters
-     *
-     * @see addCasters
-     */
-    public function __construct(array $casters = null)
-    {
-        if (null === $casters) {
-            $casters = static::$defaultCasters;
-        }
-        $this->addCasters($casters);
-    }
-
-    /**
-     * Adds casters for resources and objects.
-     *
-     * Maps resources or objects types to a callback.
-     * Types are in the key, with a callable caster for value.
-     * Resource types are to be prefixed with a `:`,
-     * see e.g. static::$defaultCasters.
-     *
-     * @param callable[] $casters A map of casters
-     */
-    public function addCasters(array $casters)
-    {
-        foreach ($casters as $type => $callback) {
-            $this->casters[$type][] = $callback;
-        }
-    }
-
-    /**
-     * Sets the maximum number of items to clone past the minimum depth in nested structures.
-     */
-    public function setMaxItems(int $maxItems)
-    {
-        $this->maxItems = $maxItems;
-    }
-
-    /**
-     * Sets the maximum cloned length for strings.
-     */
-    public function setMaxString(int $maxString)
-    {
-        $this->maxString = $maxString;
-    }
-
-    /**
-     * Sets the minimum tree depth where we are guaranteed to clone all the items.  After this
-     * depth is reached, only setMaxItems items will be cloned.
-     */
-    public function setMinDepth(int $minDepth)
-    {
-        $this->minDepth = $minDepth;
-    }
-
-    /**
-     * Clones a PHP variable.
-     *
-     * @param mixed $var    Any PHP variable
-     * @param int   $filter A bit field of Caster::EXCLUDE_* constants
-     *
-     * @return Data The cloned variable represented by a Data object
-     */
-    public function cloneVar($var, int $filter = 0)
-    {
-        $this->prevErrorHandler = set_error_handler(function ($type, $msg, $file, $line, $context = []) {
-            if (\E_RECOVERABLE_ERROR === $type || \E_USER_ERROR === $type) {
-                // Cloner never dies
-                throw new \ErrorException($msg, 0, $type, $file, $line);
-            }
-
-            if ($this->prevErrorHandler) {
-                return ($this->prevErrorHandler)($type, $msg, $file, $line, $context);
-            }
-
-            return false;
-        });
-        $this->filter = $filter;
-
-        if ($gc = gc_enabled()) {
-            gc_disable();
-        }
-        try {
-            return new Data($this->doClone($var));
-        } finally {
-            if ($gc) {
-                gc_enable();
-            }
-            restore_error_handler();
-            $this->prevErrorHandler = null;
-        }
-    }
-
-    /**
-     * Effectively clones the PHP variable.
-     *
-     * @param mixed $var Any PHP variable
-     *
-     * @return array The cloned variable represented in an array
-     */
-    abstract protected function doClone($var);
-
-    /**
-     * Casts an object to an array representation.
-     *
-     * @param bool $isNested True if the object is nested in the dumped structure
-     *
-     * @return array The object casted as array
-     */
-    protected function castObject(Stub $stub, bool $isNested)
-    {
-        $obj = $stub->value;
-        $class = $stub->class;
-
-        if (\PHP_VERSION_ID < 80000 ? "\0" === ($class[15] ?? null) : false !== strpos($class, "@anonymous\0")) {
-            $stub->class = get_debug_type($obj);
-        }
-        if (isset($this->classInfo[$class])) {
-            [$i, $parents, $hasDebugInfo, $fileInfo] = $this->classInfo[$class];
-        } else {
-            $i = 2;
-            $parents = [$class];
-            $hasDebugInfo = method_exists($class, '__debugInfo');
-
-            foreach (class_parents($class) as $p) {
-                $parents[] = $p;
-                ++$i;
-            }
-            foreach (class_implements($class) as $p) {
-                $parents[] = $p;
-                ++$i;
-            }
-            $parents[] = '*';
-
-            $r = new \ReflectionClass($class);
-            $fileInfo = $r->isInternal() || $r->isSubclassOf(Stub::class) ? [] : [
-                'file' => $r->getFileName(),
-                'line' => $r->getStartLine(),
-            ];
-
-            $this->classInfo[$class] = [$i, $parents, $hasDebugInfo, $fileInfo];
-        }
-
-        $stub->attr += $fileInfo;
-        $a = Caster::castObject($obj, $class, $hasDebugInfo, $stub->class);
-
-        try {
-            while ($i--) {
-                if (!empty($this->casters[$p = $parents[$i]])) {
-                    foreach ($this->casters[$p] as $callback) {
-                        $a = $callback($obj, $a, $stub, $isNested, $this->filter);
-                    }
-                }
-            }
-        } catch (\Exception $e) {
-            $a = [(Stub::TYPE_OBJECT === $stub->type ? Caster::PREFIX_VIRTUAL : '').'⚠' => new ThrowingCasterException($e)] + $a;
-        }
-
-        return $a;
-    }
-
-    /**
-     * Casts a resource to an array representation.
-     *
-     * @param bool $isNested True if the object is nested in the dumped structure
-     *
-     * @return array The resource casted as array
-     */
-    protected function castResource(Stub $stub, bool $isNested)
-    {
-        $a = [];
-        $res = $stub->value;
-        $type = $stub->class;
-
-        try {
-            if (!empty($this->casters[':'.$type])) {
-                foreach ($this->casters[':'.$type] as $callback) {
-                    $a = $callback($res, $a, $stub, $isNested, $this->filter);
-                }
-            }
-        } catch (\Exception $e) {
-            $a = [(Stub::TYPE_OBJECT === $stub->type ? Caster::PREFIX_VIRTUAL : '').'⚠' => new ThrowingCasterException($e)] + $a;
-        }
-
-        return $a;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPq4FO+6jjrVNgDlsmfKKfNkGJXj1NepJkF8A39LsNMLvZhgHFjW298YIggnWad2i2nW/RYpP
+rdnUMHsWhUlEQjuLlH++ZrphfK0VzDnf2UfiRYJD0f1hjf1/NEr/Y5DcJnJpZNNcB5EyMhJTPa+c
+IUlFzinI80JdQWSJYcXWzb7LvSf0vGgfJUcuPnAROixYS61sRdTD9tLJcnvt2BtNHH4Q9nkUJRIX
+UHwlDu0biVbu3RPHx32XwFDUVFbMCgtx8aNBw0CwrQihvrJ1KTFS6I1KH7Re4cc0yYQb6o9d+2CW
++pXEcqeS47zRgYCopRe8d0oySM27MU64YeQk/f6huA757Of1L8Rh+brtOrmrg9bXSdTxVoUjIwpH
+IgakYA7gFQq/+OoZ9tkYgl8tA3/EpRucaB7tbOreAr3PCYsAPHF4c1WkQ03gk41qaGC8+tRYkdmj
+qyenAhLVmGCf8zFPgbHaSk4BLoBZO3byOdvteoCGzVvG42Hft1nO/pz2T5zX0wZDjMSNQdiQMulV
+E9HP4rPKrI+CM37IFry6EtiutGWIdioY/T3pJIz8MD0fmzurKiVdcWg/YyweuaawVXcP02vIY6ii
+n5Szz5JKdLgRpZu112HDFSN1AeoOmw9uh/c+NL3YVlPguvDVK0IKeLbt3RKIxO21CFgemDjvNQbU
+iqLzT3qoCQYJrlK9Ovs9eHEAytCeC3kn/Y9FdDv0iCqPH6CXPmvOtx1evxUdD/9RzeS7a0Hb/ibN
+EYPiHOqi4wcyJfZLGVwCK0NpARL0Cb7DjMy9q7TYerdYUeo/KdmckdzgelHy5kIIhl6uBraZuDdX
+z8MKupMSUMcOLiomW6X8ew/+15gpYxnhn7Nl8PHsD3FmA/yMx+5W60IQ+/m2v89OHmdWzxBsZPao
+IHsXvuQVqRXQrMO6QVQgpyC0iadGWFah/JlIPFPUkkAYc9W5dQJKZfUUsIZUsmvO1hq+YG/8J0Bc
+MDrqKWZ5966/AT4nwyGjIRr3GviTCKlrAETFxRdi9iFC3G27m9nhLmh7hz2BDsEVjIuvo7L8Hfg6
+MJCjyWfaotwDCkikjttewuO30JOp74Iui3sy+HE3LmnZDTjh7aLM/Rp+j3wbAX2O/Nk1HLgCTnNY
+IrE8ysRoCDj3QybU7Vtj+OEG7qYI+EXUvsjTMQ9131VZZYlVJ17O3zCVyXAepvzaxI8PJbvcUs12
+o8d7+i1zQ3/z3j+1lUvcCT42ZE4E3biASEjEV1lSpwoB1l7xZjOUFzMp79uN0XKMksffGnBMYfCl
+bjlezn3cmjISogIrRfcmQ84KNQFSUvziwIUuSpJZrG/OQ04ZGhK2ivHAb6pOQfxJV0ZKJri46W+7
+4HFMFlyWXefXp5Rih46hTf75nLaTBLUMWyHE/yT0TDWVT2TuDlxQ/XLSxO4VWfLQ++j4H4HT+XLo
+GxaRbyRE1ZOP8KFwfP/O3jKXsbsChHATD1wrhyLTjQoBOjItif8sqvTjEBhRvYBahGHOYG1ay5Vg
+wdbQVWc+imyEs2eSGDyZZtvoyC9VgG6duzxViBtpm2/hSFfKXYDisXv+K2e0sGO0L/wBdxMjMEP7
+60oC35w7EYOdAXqbAPfWtpHV79jNRy+IPKfMKPUn7kIXyh0/vtbZM0c0zS2FvfF6NoWAKXRF5TEt
+GH5GrLQcgnsCOAQWMRncTX2j3OlL8OtDvAA/UDuL/xSz0qgEKjeuYMKGJw0gT9QD19qev3lbmyEF
++ljiHohAw7phg8nFXFREAOWPcvxVifAzFQ5T8XqYJAteQET9/BcdKk8ntjhflwwtxifZ1eDuD298
+r8s+4Av/ZcG6SBGi3JHns4vZQHaf+ciVqgY/YxTaGdavb9ecaRhQXaxNRCsFoPGJOFYiQLhGanJ2
+0Os+DqBEuFLvqyQ7JD2p2PXe4gKpDoKdieanO4Rpr0DqWWKr4Pgnx2rmyEj3YoefPwmu7VbAZtMR
+G0ZrGJ56g/66ZERPEzQaKLUoLOAbLlzn1FEFmSF2do+7Z9keOT42rTuOYvFMJzn/WiyvN2P3U/dQ
+NWiQZ/PoWQMzgZLEmIO7PitiIU0MAFLAoOHs6tcdUe5rfBI07QgQW9pt+bsMyBdx8s1Ol1+YM4At
+8mEuN9xr/pvdh6yVJRYfxoMekKOVMRoUh9J9wNk9lBMTXTRdwOlt+dosKiQQndO/He51LIBdgfHh
+NDkMAAnaqK+vIFiR/Nk9HDPHd6wirJzXONQgZ22XaZCMbnUd1Y2uSvdfrJ/ZeKsSGuCKRs0AJZv/
+XQMS1qps8oo8mHFWf8k8cs8XKaLoN6hgo3ZGCdjfZ4GMphQEntiA/r2EQEVAHxBVv9l48ma0gipM
+HlryIvI3CMu3MGTOZY1Y9BgAvF2Eysohv2h3oYIRmq4EHxNBKrsJ5J1AQxsq1ynM0QwKN17/poj3
+Yy0tFO1ZVN4/3qGG63Me+c+sD57dz1eWLCV5Xhbd3Nup7+jegsRkRDewOVLKjqmOwI17M5WEU7sG
+LtBbI/w6qVAyZC7ZxSFH4OzwKzPbcUjhYZwFJB2/OoGEFI2C8V41KNkqI3IBZGUVZuSWW536DPc7
+tIjlMHF8qEn0D7U3/NXrLNhlArXaG12dlWs/pJAtBDswHO83SJDvQHktkTSEtdxXj4HCKS5cO9Ba
+Pyvuaubzq0nl6gwYR24fvqOsPj80LE/JePx6T4tkpjZl/brXYRuLjBa/0vL6+fkQoB8gv7ICpoTc
+Td0B2uWC2u1vXyxm/U7GQrnUEoMbqdta1FTqSf5tbwrZWZF74mYi6OatAP16dB3snBjIH6oQnAfC
+Nqt6xl2lwzAsw3vL+qxQN8Fq7UQ3HZeu0kugJP/utvyLRPC7EyH5bp35rENnc+5Qzwik+VExYXU5
+cMFY1VCYrWkW1VFSRBYZtpu+RuGrAedsCl2dCWu5Qal8hHHya57VmXzBrQQeV5Hz/U/Hu05hDcDZ
+hR4Za78RN/I4TagHdo+fii4BifANX7fxKdsKR0V73CbPxT6fygpJCaUVxQRahuyXQy6urIhPsI2l
+oxdhlx2lQgDM2Hy+Uuh6qKPTKtgC8dt9Nu1/gN6OW3IliVe+nAo8a//wanuEX8fT1mH92INXIS9g
+/qKfI0MfNry1I/HGdUgXUDCer4DMxSGDBRe17dbzzdK3yJhct9fRjimw0sNxKNDiZNA0n9IoWQ4U
+mVjB6jh6Wpxhi+uAMdIoxpXKjduW44jLbEWWEoaJTQsnQZ0wTIGcR2G0yHsYwOO4AjCJgmE6lyzF
+eKQV4uzOmSxVHWmCPPkpwHHE40aIgxXzcIxLkiVfmcMX08YUoz1a56zG/cp5l/0g9cS57aK88G04
+LjIyjkIM7OprMuEiPi9J+caTrxVgTVqWEnnSAMh+9giYewSr4BZGOlz4RLYHyjcD6YmeJJbFkb3p
+zjVY/SjwTBLk/UGp23RitfcoNks81CreB/Rdo67kPSWP8NjrgpRHVwUhf1KpFckY3LLZkOjp0kxT
+FkUjy4HYW3zIcU7//9cUp4G+Zzsqd5ZW0aelEPlMVBody3Fz3qdA0yVm4X/u31F3YV2DXTyZeU2d
+904V63wb9XAUfkijwrgXf3bCUThX2S3kN+4aN/qsyQh9M32ahLhRIhXERYXLSncsnq0U3IDh3uC/
+4dhe/RrEj/vDNQXdRfyAZRDpS2JFm9LPg+qfZksFmXLC6BAo9f8CE1RfZ6o/H4JI5sb3fcVOB5/i
++2hcaN3Z4AUHp+BclT1CZOxfzqhlcY/u98SMT5/CgNfLOW5PtLNboO6e711PsUGjS5JNCPEypt1l
+MyfTD8CY0u+liduzKqBWayiG4qhMPUr+6FIoXLs+bUlCDOztg82+o+5mY2tt/O/avGlanl3YHfi0
+3bOAzON3ee16vfA/bHRLqxdN2FRFEWtH91pWTVttXFbue6ZwN9DWNXh0broPPj65QqgjPylu8Rhb
+fCIBWr+quu45TgWLyqKXDWUYWSOZ1PH06tlZxSty2XrZoacBP71S5MuqXjkIlHsUQiXGZDenOORX
+jZ5KUzkSL0npk0PdtSInFKJfT0zT6j9LdQdt6OKgFH035X3GHRIGuQWvccAIfRNGrq/rm1kgOycs
+hGPHEuVQGYLRMU0o9g2rHlYPKrRjwuVv5/DySjDZLBPReb8gyct1nUKeQ2v514eJlI2NLgA7sYA9
+PIFMMlS2ZZNqn6/MOYx+XIpUIkU5qJzNh6AWf4F7IFC5ypD7eej77IhMNqeZVknFQ86j8R7CnAan
+a7K3u/twdZxQ80i2QGWObUmLlfnrUG2QgEbQdblffbZP4GXYdmh/khhgU5cTeJ2cZfDkLUCIYctz
+jPccGUQ2suCHEz87enuWbJ2PQke/3Y0Obm95FqpvvTTVRPNYRITPYis9mo3hCWHAdAdh4IjzQKlJ
+1gbee4uromUdiqP6ZaJiAsrsjfrTzf0XhV3zOyIf7BvfkxbbVaNOl0m1tZ2zYeCzX0uOYZLq0iVp
+bDbA2HdHi2flzY7/s6ywQ9aXQ5cS8uIsLV0mO1d85bXlUsdg8uuf5ZCYDz56WbHPAqsSDxoC2kGn
+Y1/18k7RHH5LJ5RjatIgweym8iHi44XyJshoQ7HBQNj4ptO5g2YQK1JrC/Qah3Uu/wUkQHxTnZYX
+5iiwcGNcwk3TneUbPg0WMqocDTgWv8w93YRYU4Gtfjn+e0kndAb3Ec3EI9CKAkoF4WnlNFhY6n5/
+n0WkXnSEtrSeCBFqHQhqLEI6IVucx8gkrOQKS+iKVyFKAII+B1xFeDKk3NMo2jyiVhoM0825RKrY
+anWa/pMk5204BwEPw787pGj6h25SNbkeSyOHbV4xmME15ez9cMs5RKJjvEL/LVy0QkAq0mR7G9b6
+PqmPg05M3dtatNhQHKUL/D7MlaLPSLNP6j8vCKWbezALMNtalhV7wdo38nEnc+qYmrD3po+tmnYg
+YVzrcG7TZ/h6Kq9FE8rhtgWkRwc+u5OnZgBg/AEYZehhM5ajHtRWsg3FfLBxfTTiGz1pmbzc3pvZ
+PxD7GHYiSPe/a1m7wXbT2cCv0T6DbvPrGMmTD9FOVaLqWJTnAjAWtv8vFl7WCbYaLU0zjSdAvyKE
+i/QJ2hROu8tJuuUMEtNWOzK6M1AAypO+zqsJcMI5nNOVq+5stGBiiBcu9IZRU08LQLvCbxuJnv7A
+lluDjrDvdrsN/on4c+qXngSav/kmONz7U1QzsDEQv9X6Rw3bkMVfcqe4ng4m0XSkAHTot4bleCUI
+eJiDgGntLevaroW8MKJy6JtRwAKQFt8Vdc7AXuO1Tqb4vhLIFMRXHPWIGL1vc54VTAl1uEbQ/5LV
+7xnt/EaslGKE9ZS4ftM3Heb5dcR1FUvf0MMdahMU094hoTKuB7lghojOnwVKt86c4W6XBTihu8qv
+SlR2+/DAqFQD3LptrTyQKBnMEOdDgUpmzQNi/mKJq8EOzcCXeT3GziY964yD3bMjBoMrg30g+j0+
+XgwOvyUf4qQM03B2QoTpu7xoaD6i98IlDHSEeObN20Qch4xT8Ft3xEJUhUbf6J2lL73/6wovkjg7
+rHXff4Uiz+BqQtUbn2ZpD90wvhGMPyU1uOBA0eMS1Su38M7CEdz8asTfgEqGomzYKb3TPERQ62ie
+ukBxKHHbTvcY2ZU0VTKPkgghSmOHwMPc8Q9Kbnrm9tDcTQdphQJA4X5UTDiGSeHjgwsLFPK+ggYI
++2rBs/7KvspjkcimYNq4U25e/3gdK3NDdqzOKfgrpFXWapboSHTR+w9TLrj5e09HCJZ0CadNeCHH
+LZz4PrgCl8MdPuxM93z91NOmYNpyTqot5BphjtqrVwHgPv99yHT7FSHN8hYbFMbdjm10S1F0PCY/
+JtMA5/x3JjmPfP+pLdEJZHtXye6+9jLTfJUzhzBLmVHX7fQLUc9B1lOf/lLmCTbbbYGIKOW082LP
++tD4EdUWounWZ/M9TPoOfqeMafznyKkrJgd/jnyKyv7rB48UoCIE/Mz70IIfvzxXrIDABPO/LmPU
+qeVs7eZbOumeRXcjECAr+GQrPpAdumw4PSt2oxkh3aig1Shp+tvZTeJZyBalFo3KAPRea3HT87ve
+Sa2X2JY7hBOFF/rZHQlSneF0Pp0K/CzHq8qhPjKpydQBEdwXoRmYS0t8fuzg+7dmTFQHDmXitDuT
+TnJDycNFWTw6IK4fOMHgXhGMMkhJLlaWkj1+ZEIb2STTc2k4DWCHfszvSGupi4QQ/o/L0Wvx/n99
+EgFLvXTrkcvHs5R5j7yMGPjW2kCLkIQa5hnLIawMW+FVGcUkxSFf3c/g+EpOT4juzBdWeibPBkFR
+h1RpnVABjlhGqpOU/1G3aQGKXhsbCKuNrciTJNsQU25/vtOWg+MpYqyjQ+fJgaWBPlr1wddNNIj0
+zdQoOeeEQ1OFQxzJn/IOehCezfrmc9vuX/8pOUjDuBfA2XHkhjnEJTt3c+2iQyVTqyHpURNyofef
+cnQccYhmzAvUzzIT+bDOE9GQHdk+i0qSZtV+XD9mbcPhf/T9AD4zAC4T3NWMzPVop7QqpOqpFMVJ
+N/cyO9VuMaI8VtvJR0P6SHPCzpvIgJ7g5bGIXllBi8aW3FPoNJ+nSbHSrtMTb4upx7RY4DLIrWuc
+6ojr2hxKDZjts+3Nxp2qZVlQ8kwporcNOjOUKLL764clR0tSUGodSIhT5Q3/Wkh/PHhB1QOTHt7Y
+2wZR1i9UzUQ+0Umr3FBSEajU6sa3I16KFjYHvDmr5JJkoyUZ1tmTJJbnvQ2SB8R5O+caQeV6KeFN
+luU/WSDoAYQr9S1bxgHJ+Y/wsXWhHaI/8Yj2tfvXj9YcMSQJhTKcKfqWfQmv6mADQI4TXI+tkQLF
+gm+NXUhEa+0GQDsCVUpZsopE9dyBneqvu/rTUzSA9FLem6FDpG9kLScy93dJnnTM+exurmzxFajm
+RFykiJ3UPCVSd6y9QOZFV2WNrK0mgqJHgeRAD9J2bsLqkRuIuUooG58N5PVRBUlCodpVjKVPBS2d
+OgrBQkg4hpM/hPVmLVGFCaSVCNYP28Zd3Cx+PdTLZPcD+J2dY2M3fm2JE4lc6BdkCg+u5/DnRBR8
+WxJn1Mcj1PLXPi5wErJdKZbZHjxtIQanWdkq8NlAVRh7LWxTDMiO45m+v+X7vQKfR285YlP7whlw
+PjvYD/TA3w/BI8m/uIitpw2oNThcamkiviQSy5liCdL9Be93b5B8HVY3ZzRHG+Hdz+9QiRnMLqbK
+Br3jG7YqTifHjTEIOmvP3/6eqbjLZBLS5uW/YE1i7pWDo3kMCAuMSudNVLq+/F+RB+8T+kAEaUM3
+WTJRJzwC1oNVGcSGcRi1exFoJt7eqLCsD7Eo8lZFoTETb9ngfg3pKck0X+ZYo76M//gQyJL0ZX6O
+dLr6zbAaXXqKhkiahI/n/S09uZlouQn1zMyPUU1oykfFvjLDLYtas1x77Uz1qiyenloMICd01ZBi
+tHk+66BuFwcY0XGmtDYxiwe0FqVWmn81tSP51Z90cvFk/Fkd+BXJ4mbxCXBQsduHvjTo/5dSz8zj
+t7tHD5LSszO1USWJQyhRdYTZGTE/xK6WUYfP/pdJE3OiGNpqYrw+chkOEfXwkQ6kBO6vYBXDVnE9
+jU/XKsEmnPYALYbmJUi2K6ywUvER/+UhrYO87vsD1mEkIGJ+K4gJmyWQoBr/+3jD7AzkzdOSORfs
+S4RHnPHjTAlR0nELGGXZQKZ1gbw0oKHP54kkChhdbZxFKvtYAsgLYEi6TsaD8f5dGnToEQTaajNJ
+Ygm/N6Ea8AhyO5x1pWpcFYllbDef+Q7im2iBMCaRGoGkd7lpcUdpDyxB9px0RexeKOPW2/WWkOwJ
+CJuwLKjSNycWmxE3I1yDUrvPUc1mlJX5yYJaTPzmHq0kmDYJpVnFWhqllX0rob8ZUigEOspRpoEg
+CQAbYS7V0Cq7zPh3SKH1M0v2hpB3HFyq1iSecHZClpvGVXzS98aPVl/biGWjcXEneMtkEJtosHM9
+oT9/CD378OSTZ5a/X+I5skjg85y20FqgXWiwFhjYEa2dVNGVuKE0LP/xuCgESk3Eo7QW7foum0QK
+AoTDMgfFWk9qfNOFGmEMPQn9qPnfoQ5ST1FUp/XCavZBU4kYVCdGXnw5k4EgXU3g/kDsNgS21r7l
+w5e+TDhRxhoPgNOjuiXXTzXqBMIiTkMmVVLlBzfDMSR2p69Qvt2phLds/Li4un4ALoifvMLiN4nB
+jTThk54mXCsmdMX5LjLkAYAIAtHd4Iqq7xD65z5LYaFHQjtcdXpqNi1kyDln3OgoSavrLKKJPdo9
+7guL55K0J+sY8xnJqntvvHnHuPkCM4/Rk6kATOLvQ+MnWP5uO+dLn2CTHav0C88fQVyKtk9bQTYf
+J4CgISdaxjqPM1+36aY797tESTS31U8a6uqBo39eeKMs+gKsu994jCjrl7lHJVJWsWo5xv9cTUrT
+UFsN+bHKNTS+ZE2JBrGGg3Ad20HH7H9UtpZMPpPsszL4pIbzkCV3Z74ekhgcbvjd88X4QBTt2En5
+P9z8zFDOoNePU/sfqyidDNNn37dnNs5zJSAcvwhkjNHKwgcsex08A8M5IJz6xeTR6g6N342Jt5Wh
+fqQVmZ88TZgYJ5+ls8eAusIgqkRZECj8MB4V+XK9OGuJhzcrDm8hDMvM7WuXGOei3u7qY2b7Toof
+GSMjBOxinmnSdzMKT19Aihuem5a3ZW1SYQiI6uq4dIaZGWGCdfTV2OAZ/uNGNyP8/vEWQddWpzet
+htZ4vPQmHLaaOtgoHl36e/UAWRw24zrY3nhuKwE+/zWP5dj3b6OfM+xDBfXV/4A1KFRWE9TbecrU
+YAcRhavErNL6PExobsePLEpArjyZ6WTa51PMiwY7wC0BBRh9+RInwizVgXZZkhe8d9DGKxGm/NtU
+Bq/5oQnOsamU4SwCLBfdNaHM/+ZKQzTrdTIBT3Kd8F4uD5SZzULewM/6bsK7lWnsC6Uo3JrHTVAT
+yyRwiXjD3kIbzUbeq7hTDUyQtgeHHbhjA5u/tqagTsFqVP5JAC40ctUXl6XhWMiwbkti/jtJICWQ
+w2NpdnYzdJquz4z3xo/qAdMNXg8wTKs1QuLsWndK6YrqkR3H1S6LUMR1wQixS7ZoWXkRVI88M9E6
+eNsaPz/AZGLLVtR0rpKP0rpq4LuG7r2Tf+GAi9/FDBxkg8O2NjBnpobmmTjlW33XdGkEcPOq6Mv6
+iLjHnoPgQi7SZw9eoY85msdCSrypu/KlHaNaFZYyDT+9QqkxQnXSPJPo8OrUG1EfxrrTV8ohTRD8
+3eLCl1rWdOQjgfwN1HQ59q5cfGMYJZx3MCT/E4b4pHfFWOdZJtOKmt+MGomLO/OpjGUGJvuW/zvP
+oYGgTumwAjqVElNunq6ANHEZwpjHU03vf7AGzHLn6CzA07HEaTpSY4DVrXtuAUEPSgyG5S5myjdU
+R+YV425cQbd0AOc2eJUQo06OS1s7TJSAw5acvy2IEabuYPboNShKqcZnGAYYzeKMsh3LmdwjiyZb
+qjfDNJvk4wtiZElo+FrbxylicMrzkaUP5itsKYtJpHTSRDheN16P+pqN3cSVQtuJzNP+/kha1Pqa
+Qp9ezHWZ22FNTumv6q2RP2rbCaS+wbMBHPt8UcMZz6huqUfReTjAV7U4QjG9NCQ06ulNg0kzI6vE
+orIJUGwChtdS9dWuHN6SrAeUpSsjvD3Fz4+CmMzvUUpWmbWvhwEbsbahN76p9dLVPVGcXzYuGDOK
+i+ggTHn8z/jf4Dw1qBa274WjamT7zdPKb8uchkbb+ahuqat2XUeG37+6owkI8A2aV+o81mYDA4dC
+wZc+dKV+793viKEdEL7HLK6j5sPGw9D1BJ1mlERaiKHrXUIxm+m6uz9jsO5exu1tl0gxLSMFc3XX
+YbQwEwnLekC2/JiNMi+LM5qGO220f/p2usHGagUAwGQrHyUgqoCTSX6bHzCZFjjYNdYkeqvWLp+D
+tLiZX+ZckxvBv+MtyXzkdOqLO6hPINTugN38NkUgeEs7BzylkPWoxvXmJH2bXt27VGNARocjTbDe
+sWGL5V/TevBZ8epoUfw4jrvbGZc1OUCoEeBgITrTWBa+Kq91lT7wg63F3tld3m5ankh2Oaev24dt
+DqYswQiHPwjEDl5plaFIGK04PkJUjo/xZjv92mNrRvbdxrYoU4LbrCyCHfDcI37Ewj9uqoVuHRIb
+ZvdgGf7Vz13WA4yNwqIKDdm2VqP81jmvtrjvPCSYWh0sLT1XHi4iqNxq2BrT+HPY7VYF5nqP54Xj
+e56Zmi6P3e72iO35KqlQPbGQkfcGGqJjiv2j8HMCwt2pvySpGY6iUOmn6hrlLvh5Z7WKswcZbpgw
+m1Y7z1GiEE0aIq/8EZzsHW7txjFrYk38v+uD0kwNAi4F3JKlHn98gWVBdEvRCrwFDL3nqOMZgpyf
+srVH41WhduFyO1CdG/YkdO2Rbx+hNR0QiVqbjVtFbhkTX/Nz10qGFS/0vEVeFXIFUyv8v3AHyabu
+q5gpqBOhBTVMbSrEbP/DCeA59G1pajAWtUQkCBXi2dfkVfUrkG28EzTUrIF/AjDAEVtvSJ5qhuHF
+XgCmPMvpLFXTmFQxVeK/XYIVA4LFi1GMqLXjrgyr+6RclYGLlNXVUXFqlHpD/YzaiVoBYKZWKsN+
+dOxPIeMR4Sxm8cA5iF2b89SWQWpZ4psWy2QBHGfqybh16Gm1hC7Dx+jJi/nat8bhpPw6RTpD6q/v
+B5R+gxvrDc1bKcyMiqeQwWZSN/Ql5/mgwHD+nGNtU93ZSCF9Fn5Nvt+8WP+UiD5TaqY0oARdH3sP
+JpP2Cj8TQU3bjwXVWsqwYM7X7kZ5NPbbHmHbjKFXisR9x388Npwm8BjeJNKJsbUsSveiN6Q0H7kP
+xzVXh1tS0fnwerQ0Gewf7dDzushve+EUl5RqTJa0Jzl/D+X3G185K2w2oCLqLaAVfOeIqaFLlw8i
+g/9ThyUioSTTVzVsIGCdqla3M8NFMKFVDOyaFQwK+vTe/iwY6XPZ3B/JEzFOQjVpIkDf5WQwBKF/
+2/A6nxl/woolg5z6Xy6D/61Zsc8txWaQCNzxqotCN3eH6UP4oNk/jsBHEqaSpBvwVQnYcctA8GHc
+GBBypGqOVSxSuCo1LOp6c5nUoGuTgHT6ySDWriH+6OmA6I44M1BcRwdiV1kHXgTRcsr3DffkfCN0
+36gDAu4baocyumuxWUkTV4iCHNEHah0vBquSHr5oiPLextnSz3Ccx1LHLwWE7USnIUvs+Tw8ki3e
+pNKOLGbPf0r32A7Pub43+zCW5YSh52VwV7JOKTv7DSVtnqd1Fk2nP96ZAajqbM69hrP7BMfLkQjA
+B74FVuhTmbYjoQqDoazvIQVbhSsSyPm2Ep8r7yqJTPi0cnb1pfTDmKBeK0cDTSSE9fS/PJDpN2lR
+xiHuPkk3/JhQYgzKYJyF2BbPTaGZxXYV+Vn5r7+9xrAss/nBXzRWjDYxWd/5dn03AZ0guiCPqzM4
+tNPZ5y+x8T6k6RsI4A9b7ncXuws36BHubCcRm7FWQv4ISAOm4G7Q+xfnENijEyAYRV06uLYDiQKp
+yQKJaulzFJAxTT3NqPOT6+/NVP8Cs2RGhffWTsxIkVg25oAqmUtrNaGOjvGibjm9T/eIw6vetBAA
+ZNTQIg+cemhmm6IJR7fpgPCfbhVg65BTeeo4MrHxYaw/NzqqpNP4G/uovReRsiPhpWvK2WSDkn7i
+xjSrqDmCd5i1hqAzWsRp7YvEoe5mYbfl8pKgCKUtZRN0ReRukbhvdodtxaVvS3gzk9OGfvsHNFyh
+6AbOK76Mlx/fhR5sQlD7igB7BDlr9qm0wv2foBokw6aIVPzNdW/dcnzj8J89eha05tKTgG+GGqp6
+Swu3TqV7+B8FKZtarER5ZelvBGo7g2akwTAUPBYcV8aSk1FWmlXHmmZqdYVp5kGk1tJ77oVOK2jy
+XhZSzH49ZSkEi3xUPfAFOOQZKTMIvSd/VEOaBHn2eEnKN8mQit9yprnLRNyaUGiaBdOzZ76jujoL
+yNOUOl3sA7sLSVGRPyo9NnnPJdLB7we0DqmxCmd7nmahe6dSTEANoyusvW6scr1M0au5oYD/BEA+
+3bCv4+lDBtUWTYwu8dCbt5ZyDFmSr4ltwLab5rx5CIx+pMlRj47mhtLu8JMLmBH/41keXPmRvw6Y
+t6qc0XKLMInR/nWJASNKRDFJR1N0paZyV7Zj2nCDKqIZYRn62LnCjo9CmDcF7tHN02XvA1krutwC
+l0nKeIsJ5qIeX6FgfhNOdB7srWq9puhpqSS0Cxo0vnL4ZpYwN+RqVU5f5iv3lstIEe1K0VZZJIng
+oLVuovdz7TjGv2JbnQRjqq9AL5K3FQIxRy/iRSAOv7UGZ16nSO/sR6K+uiiZ8D+IwKh7uHLb6Bm7
+HgWS2cj/1M7HZ7Z1gwYH77V7znf7Q0q5sam0u9idMFqaMrCUqx6AZWCI458YmjGhnT+DexKHeOMH
+UW6vInwjLdAZRnM3qopZ/GHOGmp4jWTX7Np0fYCHhePrmf3dSExf7EvfAdGVU0QbJk9FscxR+V8E
+eCVtkMftohGLO2mlhn5en1dxQw5vQHi35il8KMZJxgeDzHZpE63x/2wOl7gk5AH41zaut9wNZ7Mv
+gDYnupsGNhvaeRQCkTD3KEwoOPOS6Ix98kLT7h+uznKPjc7aa2AuNh0DB2fqf8wAQVNzVl6TbmYq
+sP1FEFlkpxF/N+L6Gze5jfky8J9Klm==

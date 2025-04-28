@@ -1,71 +1,44 @@
-<?php
-
-namespace GuzzleHttp\Psr7;
-
-final class Header
-{
-    /**
-     * Parse an array of header values containing ";" separated data into an
-     * array of associative arrays representing the header key value pair data
-     * of the header. When a parameter does not contain a value, but just
-     * contains a key, this function will inject a key with a '' string value.
-     *
-     * @param string|array $header Header to parse into components.
-     *
-     * @return array Returns the parsed header values.
-     */
-    public static function parse($header)
-    {
-        static $trimmed = "\"'  \n\t\r";
-        $params = $matches = [];
-
-        foreach (self::normalize($header) as $val) {
-            $part = [];
-            foreach (preg_split('/;(?=([^"]*"[^"]*")*[^"]*$)/', $val) as $kvp) {
-                if (preg_match_all('/<[^>]+>|[^=]+/', $kvp, $matches)) {
-                    $m = $matches[0];
-                    if (isset($m[1])) {
-                        $part[trim($m[0], $trimmed)] = trim($m[1], $trimmed);
-                    } else {
-                        $part[] = trim($m[0], $trimmed);
-                    }
-                }
-            }
-            if ($part) {
-                $params[] = $part;
-            }
-        }
-
-        return $params;
-    }
-
-    /**
-     * Converts an array of header values that may contain comma separated
-     * headers into an array of headers with no comma separated values.
-     *
-     * @param string|array $header Header to normalize.
-     *
-     * @return array Returns the normalized header field values.
-     */
-    public static function normalize($header)
-    {
-        if (!is_array($header)) {
-            return array_map('trim', explode(',', $header));
-        }
-
-        $result = [];
-        foreach ($header as $value) {
-            foreach ((array) $value as $v) {
-                if (strpos($v, ',') === false) {
-                    $result[] = $v;
-                    continue;
-                }
-                foreach (preg_split('/,(?=([^"]*"[^"]*")*[^"]*$)/', $v) as $vv) {
-                    $result[] = trim($vv);
-                }
-            }
-        }
-
-        return $result;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

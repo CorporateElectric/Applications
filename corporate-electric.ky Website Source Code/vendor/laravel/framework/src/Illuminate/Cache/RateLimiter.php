@@ -1,166 +1,66 @@
-<?php
-
-namespace Illuminate\Cache;
-
-use Closure;
-use Illuminate\Contracts\Cache\Repository as Cache;
-use Illuminate\Support\InteractsWithTime;
-
-class RateLimiter
-{
-    use InteractsWithTime;
-
-    /**
-     * The cache store implementation.
-     *
-     * @var \Illuminate\Contracts\Cache\Repository
-     */
-    protected $cache;
-
-    /**
-     * The configured limit object resolvers.
-     *
-     * @var array
-     */
-    protected $limiters = [];
-
-    /**
-     * Create a new rate limiter instance.
-     *
-     * @param  \Illuminate\Contracts\Cache\Repository  $cache
-     * @return void
-     */
-    public function __construct(Cache $cache)
-    {
-        $this->cache = $cache;
-    }
-
-    /**
-     * Register a named limiter configuration.
-     *
-     * @param  string  $name
-     * @param  \Closure  $callback
-     * @return $this
-     */
-    public function for(string $name, Closure $callback)
-    {
-        $this->limiters[$name] = $callback;
-
-        return $this;
-    }
-
-    /**
-     * Get the given named rate limiter.
-     *
-     * @param  string  $name
-     * @return \Closure
-     */
-    public function limiter(string $name)
-    {
-        return $this->limiters[$name] ?? null;
-    }
-
-    /**
-     * Determine if the given key has been "accessed" too many times.
-     *
-     * @param  string  $key
-     * @param  int  $maxAttempts
-     * @return bool
-     */
-    public function tooManyAttempts($key, $maxAttempts)
-    {
-        if ($this->attempts($key) >= $maxAttempts) {
-            if ($this->cache->has($key.':timer')) {
-                return true;
-            }
-
-            $this->resetAttempts($key);
-        }
-
-        return false;
-    }
-
-    /**
-     * Increment the counter for a given key for a given decay time.
-     *
-     * @param  string  $key
-     * @param  int  $decaySeconds
-     * @return int
-     */
-    public function hit($key, $decaySeconds = 60)
-    {
-        $this->cache->add(
-            $key.':timer', $this->availableAt($decaySeconds), $decaySeconds
-        );
-
-        $added = $this->cache->add($key, 0, $decaySeconds);
-
-        $hits = (int) $this->cache->increment($key);
-
-        if (! $added && $hits == 1) {
-            $this->cache->put($key, 1, $decaySeconds);
-        }
-
-        return $hits;
-    }
-
-    /**
-     * Get the number of attempts for the given key.
-     *
-     * @param  string  $key
-     * @return mixed
-     */
-    public function attempts($key)
-    {
-        return $this->cache->get($key, 0);
-    }
-
-    /**
-     * Reset the number of attempts for the given key.
-     *
-     * @param  string  $key
-     * @return mixed
-     */
-    public function resetAttempts($key)
-    {
-        return $this->cache->forget($key);
-    }
-
-    /**
-     * Get the number of retries left for the given key.
-     *
-     * @param  string  $key
-     * @param  int  $maxAttempts
-     * @return int
-     */
-    public function retriesLeft($key, $maxAttempts)
-    {
-        $attempts = $this->attempts($key);
-
-        return $maxAttempts - $attempts;
-    }
-
-    /**
-     * Clear the hits and lockout timer for the given key.
-     *
-     * @param  string  $key
-     * @return void
-     */
-    public function clear($key)
-    {
-        $this->resetAttempts($key);
-
-        $this->cache->forget($key.':timer');
-    }
-
-    /**
-     * Get the number of seconds until the "key" is accessible again.
-     *
-     * @param  string  $key
-     * @return int
-     */
-    public function availableIn($key)
-    {
-        return $this->cache->get($key.':timer') - $this->currentTime();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

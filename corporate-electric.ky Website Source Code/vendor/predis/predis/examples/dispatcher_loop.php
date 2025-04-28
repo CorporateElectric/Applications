@@ -1,79 +1,88 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-require __DIR__.'/shared.php';
-
-// This is a basic example on how to use the Predis\DispatcherLoop class.
-//
-// To see this example in action you can just use redis-cli and publish some
-// messages to the 'events' and 'control' channel, e.g.:
-
-// ./redis-cli
-// PUBLISH events first
-// PUBLISH events second
-// PUBLISH events third
-// PUBLISH control terminate_dispatcher
-
-// Create a client and disable r/w timeout on the socket
-$client = new Predis\Client($single_server + array('read_write_timeout' => 0));
-
-// Return an initialized PubSub consumer instance from the client.
-$pubsub = $client->pubSubLoop();
-
-// Create a dispatcher loop instance and attach a bunch of callbacks.
-$dispatcher = new Predis\PubSub\DispatcherLoop($pubsub);
-
-// Demonstrate how to use a callable class as a callback for the dispatcher loop.
-class EventsListener implements Countable
-{
-    private $events;
-
-    public function __construct()
-    {
-        $this->events = array();
-    }
-
-    public function count()
-    {
-        return count($this->events);
-    }
-
-    public function getEvents()
-    {
-        return $this->events;
-    }
-
-    public function __invoke($payload)
-    {
-        $this->events[] = $payload;
-    }
-}
-
-// Attach our callable class to the dispatcher.
-$dispatcher->attachCallback('events', ($events = new EventsListener()));
-
-// Attach a function to control the dispatcher loop termination with a message.
-$dispatcher->attachCallback('control', function ($payload) use ($dispatcher) {
-    if ($payload === 'terminate_dispatcher') {
-        $dispatcher->stop();
-    }
-});
-
-// Run the dispatcher loop until the callback attached to the 'control' channel
-// receives 'terminate_dispatcher' as a message.
-$dispatcher->run();
-
-// Display our achievements!
-echo "We received {$events->count()} messages!", PHP_EOL;
-
-// Say goodbye :-)
-$version = redis_version($client->info());
-echo "Goodbye from Redis $version!", PHP_EOL;
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+JHkuIPB2wWh1rn6h1yH9JG==

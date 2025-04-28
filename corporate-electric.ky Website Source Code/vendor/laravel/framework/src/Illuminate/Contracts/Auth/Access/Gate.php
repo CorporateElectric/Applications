@@ -1,150 +1,43 @@
-<?php
-
-namespace Illuminate\Contracts\Auth\Access;
-
-interface Gate
-{
-    /**
-     * Determine if a given ability has been defined.
-     *
-     * @param  string  $ability
-     * @return bool
-     */
-    public function has($ability);
-
-    /**
-     * Define a new ability.
-     *
-     * @param  string  $ability
-     * @param  callable|string  $callback
-     * @return $this
-     */
-    public function define($ability, $callback);
-
-    /**
-     * Define abilities for a resource.
-     *
-     * @param  string  $name
-     * @param  string  $class
-     * @param  array|null  $abilities
-     * @return $this
-     */
-    public function resource($name, $class, array $abilities = null);
-
-    /**
-     * Define a policy class for a given class type.
-     *
-     * @param  string  $class
-     * @param  string  $policy
-     * @return $this
-     */
-    public function policy($class, $policy);
-
-    /**
-     * Register a callback to run before all Gate checks.
-     *
-     * @param  callable  $callback
-     * @return $this
-     */
-    public function before(callable $callback);
-
-    /**
-     * Register a callback to run after all Gate checks.
-     *
-     * @param  callable  $callback
-     * @return $this
-     */
-    public function after(callable $callback);
-
-    /**
-     * Determine if the given ability should be granted for the current user.
-     *
-     * @param  string  $ability
-     * @param  array|mixed  $arguments
-     * @return bool
-     */
-    public function allows($ability, $arguments = []);
-
-    /**
-     * Determine if the given ability should be denied for the current user.
-     *
-     * @param  string  $ability
-     * @param  array|mixed  $arguments
-     * @return bool
-     */
-    public function denies($ability, $arguments = []);
-
-    /**
-     * Determine if all of the given abilities should be granted for the current user.
-     *
-     * @param  iterable|string  $abilities
-     * @param  array|mixed  $arguments
-     * @return bool
-     */
-    public function check($abilities, $arguments = []);
-
-    /**
-     * Determine if any one of the given abilities should be granted for the current user.
-     *
-     * @param  iterable|string  $abilities
-     * @param  array|mixed  $arguments
-     * @return bool
-     */
-    public function any($abilities, $arguments = []);
-
-    /**
-     * Determine if the given ability should be granted for the current user.
-     *
-     * @param  string  $ability
-     * @param  array|mixed  $arguments
-     * @return \Illuminate\Auth\Access\Response
-     *
-     * @throws \Illuminate\Auth\Access\AuthorizationException
-     */
-    public function authorize($ability, $arguments = []);
-
-    /**
-     * Inspect the user for the given ability.
-     *
-     * @param  string  $ability
-     * @param  array|mixed  $arguments
-     * @return \Illuminate\Auth\Access\Response
-     */
-    public function inspect($ability, $arguments = []);
-
-    /**
-     * Get the raw result from the authorization callback.
-     *
-     * @param  string  $ability
-     * @param  array|mixed  $arguments
-     * @return mixed
-     *
-     * @throws \Illuminate\Auth\Access\AuthorizationException
-     */
-    public function raw($ability, $arguments = []);
-
-    /**
-     * Get a policy instance for a given class.
-     *
-     * @param  object|string  $class
-     * @return mixed
-     *
-     * @throws \InvalidArgumentException
-     */
-    public function getPolicyFor($class);
-
-    /**
-     * Get a guard instance for the given user.
-     *
-     * @param  \Illuminate\Contracts\Auth\Authenticatable|mixed  $user
-     * @return static
-     */
-    public function forUser($user);
-
-    /**
-     * Get all of the defined abilities.
-     *
-     * @return array
-     */
-    public function abilities();
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+fvWFEsFKphDEpcYpYQMNNGL9j7JcniS=

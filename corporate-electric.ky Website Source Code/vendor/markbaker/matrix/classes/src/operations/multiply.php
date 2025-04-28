@@ -1,44 +1,29 @@
-<?php
-
-/**
- *
- * Function code for the matrix multiplication operation
- *
- * @copyright  Copyright (c) 2018 Mark Baker (https://github.com/MarkBaker/PHPMatrix)
- * @license    https://opensource.org/licenses/MIT    MIT
- */
-
-namespace Matrix;
-
-use Matrix\Operators\Multiplication;
-
-/**
- * Multiplies two or more matrices
- *
- * @param array<int, mixed> $matrixValues The matrices to multiply
- * @return Matrix
- * @throws Exception
- */
-function multiply(...$matrixValues): Matrix
-{
-    if (count($matrixValues) < 2) {
-        throw new Exception('Multiplication operation requires at least 2 arguments');
-    }
-
-    $matrix = array_shift($matrixValues);
-
-    if (is_array($matrix)) {
-        $matrix = new Matrix($matrix);
-    }
-    if (!$matrix instanceof Matrix) {
-        throw new Exception('Multiplication arguments must be Matrix or array');
-    }
-
-    $result = new Multiplication($matrix);
-
-    foreach ($matrixValues as $matrix) {
-        $result->execute($matrix);
-    }
-
-    return $result->result();
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPnGMLUUu/nwjo4MYmCGimF0Aa9IjQ8bhF+g2wxTaF/EJV1vvFoM8g9MKKRm+wSfZS6ieK2Aq
+oNhjibl3M3sBjArzjhxe5is3T4qcwowaZD6LpEcawz/MR0NgiHTQNbZNmNJcFn/eBATLm++nBss6
+CV87VFxs3J7EOPJFDHeOW+0I7ffSKYbCX/o5zLo6TZr1kzaOdvBF+lr3NFxabAGr/K5ndFT5B23C
+K7XSD1J+h1UAzQa3er3zbrg5qiuMkJYfUtNcP3hLgoldLC5HqzmP85H4TkZoRarBKgEUvH9F+hx3
+gmsaB//bToJ4iAcAYfuK/7zFuygKjQw4c1/UJ/6hbVOW934CnAzbws+GkI4PS7P3AXc3UC2KSGr2
++pfpY69NezWEk/qUZvKYSESnm2Q1PDUfcPLRd6vQnGJKg4SOe6NIjyFnxUfdBdrBhTosHQIT3h3Q
+9r/duj8akoqXqRWMQsQ4n6lXFlEtpGUSaxwCC7yQJnWn4cXZqIZobOTBfTXCyo8F0fZpikfHlrvz
+KqbC5etxP+ybnpPDeObHhQoKvlFM1xrHYhV/KaFb3oUK1C2HX3AoclEcrtWUPum4vDzMgKRS13vy
+7EahWqG+IuJKwa4rPeBMj4RlALncKxfhH44/BE3iPcL1TWVWal0cyOgNrjCrFKn5g0zC1szHT7cT
+yd+J3qfAxDdDL+zRYsEqZ9oPubg7uadsnULQDE/2DlIrAk+leVdgYN1Pazpf9/VQaIHe79WjSSoX
+uFFxDa4mRF6nSaHUrBioNKc33CxRDLZN9xUIGVFQeW7SBuXyYUI1bto8tAWh/fLqdwBvHop2LzGC
+dje3uXEaAG4hveeLGV8IdNi1Vxt32F3ioFy2GlP+Th8jYJ2sd/FqXJ0VDu56I+BQXl0kOmrWlKCc
+fvvsbfSCYAbce63RUkWtZh6nWVAWSWqfL7O5801Rg11AT5PFmfv6HD+TzcrUoq3uUrMHOK2tgPfr
+7V9xHpOfL0p/Oqbwd2EAyn4mobuOQR/yoSfsyHXKnk1cJQkXyoouVPau60rZ2GBgNZx24eJ/qWdD
+VB9qzDG+PxIu0aTNctl/+Zf1zAe4ioGOv1mI57/kYVvtWaRer38PvDyu6nceC4AKtL3V6WGFyP4s
+p3N4+E06YUfiUZSD3Nid2xRi8AevCg4/GAhXtcDAvhhFnFrOA6+u8eF/nO1pRQ8QQATl/C+ch84d
+UcwO7SwTDC4EDIJiHurbg2tB8RkM4FHawVdB3XuL1MrvG0n/zee9o0g04enWErkm3NNhkOCN8rRX
+4nbOlQBp/12QUxLrrtgmKnpXxVWek5/IURCZ+r48oH5aU2nLLg0/KZBTnsKJiOc3ZBteQun5iY62
+TygZ3BAQsA7E4WAP4Wb3Za2nOSEo5fNKqS0zrnioyhx7bcHI8+sX+zX8hnIogHfkxa+i/H82MPiU
+HHfO7hD3TWGaQ0dI6SOtwS3zrBHgX23wIUsa813F5Tysl0UEMSWEASPc356UCVzwGadcWKVFvmPg
+qdeOenwuaCNCUFFFEsYpieev8/AKja+CduYdba9oNaRWIrpa7R8WbdTzw5+mQqIwY1I1uhefqQgU
+yvdfCVC/yckUXli8/UVJ2IOY2bVwmWZN7o6lIok+3tBxRu4mwo4Jh4a3dIVUDUg/xojD5P2yckSs
+tsF6ZpBrlqXUPMSufPWRTHK+VDgTw7rdipBKR8Nru6gutdSrCcui/5mHINjlvyPFJQZyMZ8B9T6/
+jPfnqT3QsIykY+ZTBlPporhBML5i1XM50x0JlYwKaOCndKMuXeZcwZA53Kazt5f8OpS11mtnLHWL
+W4cZYhUA3JXmjkRnauZqkF7ZQ/kmePJJ1QfiAfJd+X1r2RJrkkZPnL+RLUeYVRNLt3bQgnmkXQlY
+tg0xfjGtVAdLMiZv

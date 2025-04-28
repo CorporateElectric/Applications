@@ -1,44 +1,34 @@
-<?php
-
-/**
- * XHTML 1.1 Bi-directional Text Module, defines elements that
- * declare directionality of content. Text Extension Module.
- */
-class HTMLPurifier_HTMLModule_Bdo extends HTMLPurifier_HTMLModule
-{
-
-    /**
-     * @type string
-     */
-    public $name = 'Bdo';
-
-    /**
-     * @type array
-     */
-    public $attr_collections = array(
-        'I18N' => array('dir' => false)
-    );
-
-    /**
-     * @param HTMLPurifier_Config $config
-     */
-    public function setup($config)
-    {
-        $bdo = $this->addElement(
-            'bdo',
-            'Inline',
-            'Inline',
-            array('Core', 'Lang'),
-            array(
-                'dir' => 'Enum#ltr,rtl', // required
-                // The Abstract Module specification has the attribute
-                // inclusions wrong for bdo: bdo allows Lang
-            )
-        );
-        $bdo->attr_transform_post[] = new HTMLPurifier_AttrTransform_BdoDir();
-
-        $this->attr_collections['I18N']['dir'] = 'Enum#ltr,rtl';
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,78 +1,45 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Framework\Constraint;
-
-use function sprintf;
-use function strpos;
-use Throwable;
-
-/**
- * @no-named-arguments Parameter names are not covered by the backward compatibility promise for PHPUnit
- */
-final class ExceptionMessage extends Constraint
-{
-    /**
-     * @var string
-     */
-    private $expectedMessage;
-
-    public function __construct(string $expected)
-    {
-        $this->expectedMessage = $expected;
-    }
-
-    public function toString(): string
-    {
-        if ($this->expectedMessage === '') {
-            return 'exception message is empty';
-        }
-
-        return 'exception message contains ';
-    }
-
-    /**
-     * Evaluates the constraint for parameter $other. Returns true if the
-     * constraint is met, false otherwise.
-     *
-     * @param Throwable $other
-     */
-    protected function matches($other): bool
-    {
-        if ($this->expectedMessage === '') {
-            return $other->getMessage() === '';
-        }
-
-        return strpos((string) $other->getMessage(), $this->expectedMessage) !== false;
-    }
-
-    /**
-     * Returns the description of the failure.
-     *
-     * The beginning of failure messages is "Failed asserting that" in most
-     * cases. This method should return the second part of that sentence.
-     *
-     * @param mixed $other evaluated value or object
-     */
-    protected function failureDescription($other): string
-    {
-        if ($this->expectedMessage === '') {
-            return sprintf(
-                "exception message is empty but is '%s'",
-                $other->getMessage()
-            );
-        }
-
-        return sprintf(
-            "exception message '%s' contains '%s'",
-            $other->getMessage(),
-            $this->expectedMessage
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+uuxZuav1O/TcylPeUKYe98Wnjhd87NcX

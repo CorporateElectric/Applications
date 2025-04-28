@@ -1,90 +1,43 @@
-<?php
-
-namespace Illuminate\Foundation\Bus;
-
-use Illuminate\Contracts\Bus\Dispatcher;
-use Illuminate\Support\Fluent;
-
-trait Dispatchable
-{
-    /**
-     * Dispatch the job with the given arguments.
-     *
-     * @return \Illuminate\Foundation\Bus\PendingDispatch
-     */
-    public static function dispatch()
-    {
-        return new PendingDispatch(new static(...func_get_args()));
-    }
-
-    /**
-     * Dispatch the job with the given arguments if the given truth test passes.
-     *
-     * @param  bool  $boolean
-     * @param  mixed  ...$arguments
-     * @return \Illuminate\Foundation\Bus\PendingDispatch|\Illuminate\Support\Fluent
-     */
-    public static function dispatchIf($boolean, ...$arguments)
-    {
-        return $boolean
-            ? new PendingDispatch(new static(...$arguments))
-            : new Fluent;
-    }
-
-    /**
-     * Dispatch the job with the given arguments unless the given truth test passes.
-     *
-     * @param  bool  $boolean
-     * @param  mixed  ...$arguments
-     * @return \Illuminate\Foundation\Bus\PendingDispatch|\Illuminate\Support\Fluent
-     */
-    public static function dispatchUnless($boolean, ...$arguments)
-    {
-        return ! $boolean
-            ? new PendingDispatch(new static(...$arguments))
-            : new Fluent;
-    }
-
-    /**
-     * Dispatch a command to its appropriate handler in the current process.
-     *
-     * Queuable jobs will be dispatched to the "sync" queue.
-     *
-     * @return mixed
-     */
-    public static function dispatchSync()
-    {
-        return app(Dispatcher::class)->dispatchSync(new static(...func_get_args()));
-    }
-
-    /**
-     * Dispatch a command to its appropriate handler in the current process.
-     *
-     * @return mixed
-     */
-    public static function dispatchNow()
-    {
-        return app(Dispatcher::class)->dispatchNow(new static(...func_get_args()));
-    }
-
-    /**
-     * Dispatch a command to its appropriate handler after the current process.
-     *
-     * @return mixed
-     */
-    public static function dispatchAfterResponse()
-    {
-        return app(Dispatcher::class)->dispatchAfterResponse(new static(...func_get_args()));
-    }
-
-    /**
-     * Set the jobs that should run if this job is successful.
-     *
-     * @param  array  $chain
-     * @return \Illuminate\Foundation\Bus\PendingChain
-     */
-    public static function withChain($chain)
-    {
-        return new PendingChain(static::class, $chain);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

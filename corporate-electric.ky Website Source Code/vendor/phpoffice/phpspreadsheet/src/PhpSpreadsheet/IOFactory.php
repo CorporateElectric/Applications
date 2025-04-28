@@ -1,217 +1,83 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet;
-
-use PhpOffice\PhpSpreadsheet\Shared\File;
-
-/**
- * Factory to create readers and writers easily.
- *
- * It is not required to use this class, but it should make it easier to read and write files.
- * Especially for reading files with an unknown format.
- */
-abstract class IOFactory
-{
-    private static $readers = [
-        'Xlsx' => Reader\Xlsx::class,
-        'Xls' => Reader\Xls::class,
-        'Xml' => Reader\Xml::class,
-        'Ods' => Reader\Ods::class,
-        'Slk' => Reader\Slk::class,
-        'Gnumeric' => Reader\Gnumeric::class,
-        'Html' => Reader\Html::class,
-        'Csv' => Reader\Csv::class,
-    ];
-
-    private static $writers = [
-        'Xls' => Writer\Xls::class,
-        'Xlsx' => Writer\Xlsx::class,
-        'Ods' => Writer\Ods::class,
-        'Csv' => Writer\Csv::class,
-        'Html' => Writer\Html::class,
-        'Tcpdf' => Writer\Pdf\Tcpdf::class,
-        'Dompdf' => Writer\Pdf\Dompdf::class,
-        'Mpdf' => Writer\Pdf\Mpdf::class,
-    ];
-
-    /**
-     * Create Writer\IWriter.
-     *
-     * @param string $writerType Example: Xlsx
-     *
-     * @return Writer\IWriter
-     */
-    public static function createWriter(Spreadsheet $spreadsheet, $writerType)
-    {
-        if (!isset(self::$writers[$writerType])) {
-            throw new Writer\Exception("No writer found for type $writerType");
-        }
-
-        // Instantiate writer
-        $className = self::$writers[$writerType];
-
-        return new $className($spreadsheet);
-    }
-
-    /**
-     * Create Reader\IReader.
-     *
-     * @param string $readerType Example: Xlsx
-     *
-     * @return Reader\IReader
-     */
-    public static function createReader($readerType)
-    {
-        if (!isset(self::$readers[$readerType])) {
-            throw new Reader\Exception("No reader found for type $readerType");
-        }
-
-        // Instantiate reader
-        $className = self::$readers[$readerType];
-
-        return new $className();
-    }
-
-    /**
-     * Loads Spreadsheet from file using automatic Reader\IReader resolution.
-     *
-     * @param string $pFilename The name of the spreadsheet file
-     *
-     * @return Spreadsheet
-     */
-    public static function load($pFilename)
-    {
-        $reader = self::createReaderForFile($pFilename);
-
-        return $reader->load($pFilename);
-    }
-
-    /**
-     * Identify file type using automatic Reader\IReader resolution.
-     *
-     * @param string $pFilename The name of the spreadsheet file to identify
-     *
-     * @return string
-     */
-    public static function identify($pFilename)
-    {
-        $reader = self::createReaderForFile($pFilename);
-        $className = get_class($reader);
-        $classType = explode('\\', $className);
-        unset($reader);
-
-        return array_pop($classType);
-    }
-
-    /**
-     * Create Reader\IReader for file using automatic Reader\IReader resolution.
-     *
-     * @param string $filename The name of the spreadsheet file
-     *
-     * @return Reader\IReader
-     */
-    public static function createReaderForFile($filename)
-    {
-        File::assertFile($filename);
-
-        // First, lucky guess by inspecting file extension
-        $guessedReader = self::getReaderTypeFromExtension($filename);
-        if ($guessedReader !== null) {
-            $reader = self::createReader($guessedReader);
-
-            // Let's see if we are lucky
-            if (isset($reader) && $reader->canRead($filename)) {
-                return $reader;
-            }
-        }
-
-        // If we reach here then "lucky guess" didn't give any result
-        // Try walking through all the options in self::$autoResolveClasses
-        foreach (self::$readers as $type => $class) {
-            //    Ignore our original guess, we know that won't work
-            if ($type !== $guessedReader) {
-                $reader = self::createReader($type);
-                if ($reader->canRead($filename)) {
-                    return $reader;
-                }
-            }
-        }
-
-        throw new Reader\Exception('Unable to identify a reader for this file');
-    }
-
-    /**
-     * Guess a reader type from the file extension, if any.
-     *
-     * @param string $filename
-     *
-     * @return null|string
-     */
-    private static function getReaderTypeFromExtension($filename)
-    {
-        $pathinfo = pathinfo($filename);
-        if (!isset($pathinfo['extension'])) {
-            return null;
-        }
-
-        switch (strtolower($pathinfo['extension'])) {
-            case 'xlsx': // Excel (OfficeOpenXML) Spreadsheet
-            case 'xlsm': // Excel (OfficeOpenXML) Macro Spreadsheet (macros will be discarded)
-            case 'xltx': // Excel (OfficeOpenXML) Template
-            case 'xltm': // Excel (OfficeOpenXML) Macro Template (macros will be discarded)
-                return 'Xlsx';
-            case 'xls': // Excel (BIFF) Spreadsheet
-            case 'xlt': // Excel (BIFF) Template
-                return 'Xls';
-            case 'ods': // Open/Libre Offic Calc
-            case 'ots': // Open/Libre Offic Calc Template
-                return 'Ods';
-            case 'slk':
-                return 'Slk';
-            case 'xml': // Excel 2003 SpreadSheetML
-                return 'Xml';
-            case 'gnumeric':
-                return 'Gnumeric';
-            case 'htm':
-            case 'html':
-                return 'Html';
-            case 'csv':
-                // Do nothing
-                // We must not try to use CSV reader since it loads
-                // all files including Excel files etc.
-                return null;
-            default:
-                return null;
-        }
-    }
-
-    /**
-     * Register a writer with its type and class name.
-     *
-     * @param string $writerType
-     * @param string $writerClass
-     */
-    public static function registerWriter($writerType, $writerClass): void
-    {
-        if (!is_a($writerClass, Writer\IWriter::class, true)) {
-            throw new Writer\Exception('Registered writers must implement ' . Writer\IWriter::class);
-        }
-
-        self::$writers[$writerType] = $writerClass;
-    }
-
-    /**
-     * Register a reader with its type and class name.
-     *
-     * @param string $readerType
-     * @param string $readerClass
-     */
-    public static function registerReader($readerType, $readerClass): void
-    {
-        if (!is_a($readerClass, Reader\IReader::class, true)) {
-            throw new Reader\Exception('Registered readers must implement ' . Reader\IReader::class);
-        }
-
-        self::$readers[$readerType] = $readerClass;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPpVkwRoVUzApPYPydwwnB6WXfsQDtmwQtOYukTnsPFa9GX+++mcgdRCGad5wrgOZGfyKhymS
+jRK636fcR3RzHtHfJDvhjjwdST3XBFuSq3DbFufTBLqC2oyK2r0BYjRRn3SFZQN9U5kgPID8u90N
+3shbiaAwVCOxwjGT514ZB4wtYc74E2m1V/1YEBLzFN1uE+2B4KX6ZseRmqKDVfDLCZTCx+5sERao
+1WSQKxHK3GS5gNxxUF9/HFwOSFUC7OLRTlw7EjMhA+TKmL7Jt1aWL4HswAjX2rMPAqbDdvYdOfEk
+9H1/doeMUtbEUltaQG1NYbBU7JVRHLiAQQIkVcZ5GY4k8aguOJuexRyseEemh9ieLkil5kF2GmmM
+40jEQ+cGGsw2QCso9cn3CpxMOs0sxRghVm57cto7M9JzUMS317qzW2wK8FTr672GoVRzbWUeyLJE
+EqztJ5KcqVQeZs7LYQhZMnekCkr9+TssLLWaANuRV48GGrlHgcf0HkBL+zWMTtIvrP/iIr/3daSI
+qTy6t7+btLOptArr13faAgzq3BAQdKLKv/56rQHW5cfkVrzrhPKIDhMOuK93eUSiGsISkhGLaloy
+0vsk3M7ArjfNYMbjGvhhHv5m2VHjsjGVxGnCDzGRrmrjEa3ACYej94kYQ9V+M1BskjSsqjwA1phI
+I3CsQ0BzLwZuAH437fvp+wEL08rbtFOXTk1Z/fYwrllWnccqfVOxznteIRGwjaS4cmEbABucg2ae
+UANd9jEchsXRn21bhF/8exiZMnwxfWPX7TOjc7214Inpd0CmwXIuC/D7ynIL7ydlhyJntNgcj6zP
+0VfW275UsEJDmzjcZvXLyAfGewvFq/i7PrlKSdaflZXK9PsZqYX0jhin0Q4gDeXUbWr5akizgsBC
+TTtZ3KtShEv6fu3g6pIBVuWLVDrckj+xSdLAIIRsKxAcAgbdUvdY/QOMkvwsTHO9qlQFDcO3fEQc
+oPy0G0v3qd2k9cLTP+LfRALZAEpi2Mz0Yv6gj7cEASnQxYSdAvSfYpPUpEYDsTtai4FOu1Ej+I7x
+3csuSdqk/bAXknQqWJ1s+1ap4M1iMXURvi+8prCSRIHdkwabcu3peEEVeJCetA5XW/5sD1stt8Ol
+9PdoX7cNsy8WWU+Wpa1aKqsYgaQjZDoVA0QnPUgIvOu6nLnsd4/xA9p8Ht1SRp4VOp0Lntlb7nWO
+xZeeBPR+RUl9nEIyZ++TNEHOHWtAWc9JJwVVawYRnuaum4gYdXgLKdsC2EzIiegaSPnXzVBvgkuf
+rJIj1NkBAcZNaVMEtqLnUwNu+sAfeipDa06PG8qFAtdQ620jlt+VKXvu2fFom6+oQDEmwWQOx1pq
+LayNPt42s4bZ+fJmP56FZCT4WsGpWxgJ/3bsiG1pWcOqGXWe4mm6wfYkAnLDPnqkTTQTjtBNqo13
+vPpzoOsPsk/qTE79UE1Gnv6AphTdUaGJGSY4KXMSzRf2zh+sxXzZLLQhGLDUJDWFEnL2W+C86oOE
+ceG390Qrdmsc0vaezPsSfQjJpTK8TkNA3wucoiJGymFy+VmY5SV0u4qkKIs8GWqHPX4jrDA8sPKQ
+BGtPohVDp/zh6YUnhMENbhYWi1TbzIjj1hOi1B9TcUcPtTaF+rNEIUPe7zqEfsN4UON3/v6o5ZXu
+OLLoGibsTvj0EUgnerPYcrt/1OgUfTVFnR0qtdJ6IhzlrG3BLjnHxH1qK/hn0Y/gfO9g8BXWBhmt
+KkauRZcv/Ww4/9svhqoJ4nQ/k9R5sp8dTd2j5pfRi1DfoNOLVF8Dt9YVs1D/VdjfR8B1pBXbbV/A
+4WWctXeRup/Lz3A9BHcXlHa9A0T9WyYAn4ykL0lCmI3TyGDSihmVzoL3DYj/feMsp5gsI9WX83Iw
+tYHIKXvw0OwZ+GsFfoAtx1RNgv8Kr4WeR+M2AMtkAgmOPCiwjzdiCIw72K+bXIvd1O46oHEzYBrb
+RQqvCGIFH3hqrsW+phedVPNfR9GgLKumyMkyNOOV9R50LIGWsuAqezpE/MqXDU6KOhckYy+Ukc6j
+GtRau7Cgz+rlbNN3XzlmtTb2eyseKIXv4zoG3kzzCi/XT4sWdu4gbLF+VW15/vY77cubE3G4ZlZy
+Y0ppEP7R0tVadIE8rrrdGlgZQIXqD58V2D843Tp4GyrUx6actn8/UBC479c1JkqSesAKDQfSvgL3
+c56npkUCgpJPAC4Nlq0hRM4feJzQwisd1BZjcxglGBDxK5FiUrxop6/PuwFwFt5XD1Wjlv0QgwKK
+jdSSR8oA8uJNbDEnEiBjGxd4ifqUyE5Br5LpWkdAXjCgvEzcICbrrBOG0BELWXuTmipj2c5U7ylt
+ai4KDjJpnWQEWyQbX1/i0VLRyAWQ/+TZEeRTyj96qJDeaz0MRZNpJgIKtEn+zjd5VZbqkMJlYmxC
+U3K3ojVafbc9JUeos71mAd39wdg/leULIBpiyrlFHxcba5Nb/DXZ5LqN9ah9eBbrcvQQpGK9bGZI
+MMaowQl99btTfbhP3fiZxMBy1hdtN3swdfmGRbsvcBh8Fj6f+uhh+5oBgDD3vGcNI0GVW2i9J4Le
+O3Dzl6tCIF6rS9no5tUE3TGeGPNl0nTPL4VVbmM7HLurWRt7mTvYWOePNeLNBhL7LMWFBNyasst+
+sw1CKqqwrFRXJ6POpRUMD+xN3Wm/LtHPuO8QE/+RlUaqTqmME4EqbcB+9x1rMy1wnWx/6OQsAFBV
+7ISpILLEzwKmvg42IIkbEPZoa13qNi1l+lAHi6kfPaJ0dkG/LjvN4GF53xuGjBQ3ywETMAL+B+mG
+4Ej3n9SwCs6dFv5+Y7bBEv0Bqv1qkKYtDQUuyW4bEgqiew7rXWmSgFA0FNpRf11zOiUhJZa+ofLV
+2GzIsQ8Ee1/zMwdk8KNhSOo3iugu53wwmAlaYcBjdWRQISqxaaKXMg5lxLVyORQkgo5KGbNpFPdA
+N9oIKTGVt3gdUXgr3u903Ib2QSKDLpq74PQ2Kite60m2ifBVxqe9Qb8uWTP9LexK730PMzrA+zUi
+yvRWFKsx5c8FkhILLuPdciXj7s4DIIibGGdCNJvTKkukMq96txRc8sTovu2hc3cfdMVcJeBUTZcA
+xhZpfkgvcbpKYQKFq/kKUc7TZvYcbSjA5vYFGxvRhE9vqHIQ5juUZ9e+yyGP8YE7md2ApGXwPlH6
+THYAssCC4bAQpHvwI0LX6sQERRnF2Mb9rWLaA+AlVnCOJ530T3debh4pLmbZlZYvH9eVZSBzvBn2
+cLmNxlgxNvf5soR101GIvpDqA8srHQpxZUUQoncZPRW4pSrfBUqxO3G+DHI74ErY8sPGwQ9TprCT
+I5+0XhX41b8fdRUf78klPlWY/dhThy4msAafzfG2g6Tj2s5oSzyVcl/Th6mJbGXO2HIao/CO/oRb
+3TPDiHBjcYefooZyv/2djXJ4ouRStw54ymuxEywKjROQeNRXPsrUdF7c7Nl0epH8hDbeER5wFxaA
+ul97anjn7DLIs4wL8NBH1NR1vfazmvMBC0/9XVYCQLdhzHzE+riSQeO8Nro5ZikgNYG9uYZwnYqE
+cwxl0ptAjhHhOuGBwZB7h8ZdmWvKe5Lrp7LbOfVf9ooIdgtOEHb2KchVRhht04spNF30j2MmLQWX
+7jRtb9wHcBXw8/xQYvZKxiWiyZfrHLicqnPgO90AAMQ6ilPlUX6/k4zwuitcbfXdXNrwM0MsPZ5S
+bbf9WLqUy4BzFxPkqz8weJw8nDCGqvOqIquB/J04Adp+VcRmOi6Eld/p/DP5VT/SvKNqdAPrmu5U
+AdetDT38azobzGBOnTrciimUx8l5k1IltU+UhbbqniLzb9YoBWEYAipsLzlRsvqjFXa1GaHwIK+f
+c5Gfwpwqh/puAuigjYZj8uwSQuiDcAwFiBgSZYthrcAWzICX7lLp04U/KNAnvenW287WjAlEfobn
+WPpQPlFaXDO3dQkmgzE78TuOAFW/H/HkklLiK4asfUsSfbDGKvuFr5HulqSHKlz3bURAJ5GjZhCZ
+4K9p3v6duDx1I/vREeH8582Hfk8FrHwOJZtAiJyGGZT4XlEtBlnmur/ktL1P+OWjIfxJrxggY46v
+CdCmWR8HamwKf2j51j4l3bV1dFk1ZoS0o0p7PdBtk/M894UljjlnDBpkkPIMNryDazmGa1MmhKQ1
++dae0+fWiBZo2JsFIe2N1E3r6HUEdNPNniuOLG4kFKGlpd3rGESVKfWps/5CuFpMUu/QHLKriOAC
+406+acrR0llWco1/YBTd/yP6aUrwWgVXhFiZZrDf/cwywHljrU9G0oUvV1Z1YapTEgMzq2BlDJXc
+TSkrhTthDbrwWjz8Avr5vzWIOUmDvFUYIyXvLxIVXuHOCD0/XRYyUr7tx1BTltf+roUF56Xx85GH
+GrOuSteh97Byk5oGk98mGIiSOSpuFPAyd2cSC//ischDHmPqaZEvVx23rFByexQ9sc0fEnY/8obK
+NqbHXEx/cQUuMToIoFXc9nKvgb47gOrVHexPGcZ9WlDKdqlG1hHnWhp9y33+G4Y/oCPgh2uuQwnQ
+fWC95HYUFKhDEGlRrhAai4y8igXjPuNfJiACL9efYFMVBy3JMvGomB80tPg6NXxzfML01D+CiXg2
+0XoKTopzRF0OPGKbb985RCtqtlMQhZJxzRZ7SgwnXfxWImKr/HiZY8yS/Ld83SJvL+hiMIRIvbz8
+u4t7Wk9oo8ZIMN2S2+qjTqOY9MM4ILCFqk+2sjxshQtmLmiISSNOphTip4syWYFi+2qlJM0cy/+R
+h+dPYyk9WTw2Rc//5Opu0IREPtpIUlH5jr6CayjEp/XzxY8Mb2mCCloSYJzZ9wekzwRSGRhW/Odu
+dsNJik7QpxPoqRaWYc6Mc+ZlPY0cWf5s/tCa1kBQ+2ogrow/QEF60jODiBrhs8quxxbKAKxJ9KAh
+gtnopQtiU/fB/q9KU/AFMfx3gDAWreNNOe3hy2xAzwC3JbDoUc6YW3wOp98BYjRlLCecWei8ygEO
+a78Cg+OMz6Ilaems+5NUYL885jzB8J9Ji8P+dvuLEiX09Xe3cFSvmSLNrX1QVe5jf9jvEvWCpWwF
+3IuP+B/v+i6kSSf0MAsS9Z1HnFLGw0HWOK0SxzsHKllkCxh2Pfm/FlynmhREy7cHW2oe2zl0gu2M
+pqS0CPmTyfuk547uRFPxXOnX7fBFoGwamun/T/yeTfkXdkdA4rtT2lcLK4AJ6eWepLnk6pBvstFI
+Kh572STZPSlpJc+PzKfAdU8qdaVzzeVkmIg+eKk0HbBA/PUEGZQ8UyvfhhZDW0W5WxUD1G/19LO0
+I99MkF9PecmqUPWLi1QnPcD0i9FBHunOXATNcvAVgY6BIl66T/eHvDiBcSNh2aE7OWwg8A+HNnNg
+Xlg/azLAS3ejD4FUYOf+K+gM6/I+bm0VHC/YvCNN67MXiqAfSfJkKjlpksTrrJQwr3XCH4/u9Nji
+N2N+WoNjk2mLSJLMiO9F1r8vOJqoRUKzo9jcEOhJnefh17HLplQTu8HJgsmxO8z+nOAQU7EL1kWA
+mD/vLZ29a3kc9+RtxGNIIRHeAFuMyEl+jae+VSeF8Bu+4W/qeA5kLfoo3Dy7/jdcm9tpzwmwLU4V
+H/G/UhoRXqvjiixuZPV/8oabuso8mxlZ1UNH4ZNzuvN4cH9YqBDqo7hRgp28WtctIHFxU94InxQc
+t3uzWJ5R9pff3SU3EL5r1jaW9vPq9q8BZZKBKWVix9nNcjpS+gKpsVV3bo2cxw/Mv95fCH9nkQCH
+XaN2RCMsZvh1Y/jgdI1oZi1nwRpvp4AJjj+7vedOf7+7hb8AW8JEl8WL5okVRG4/gS5Qf1IwfuHC
+nivbYEqPZouLxNAsIARup+5luHEr6noJ771i82cgdqj8TVrJizN4jpZCaq7xQekuqgw411SfWRjR
+EJsIK0iLfIbT8I+OCq5pjXd447i+n5R3gEgvst+5wJYfe9likEg1VGa6Qp3p1Per+iFiBziifpac
+Kw7PSKq4

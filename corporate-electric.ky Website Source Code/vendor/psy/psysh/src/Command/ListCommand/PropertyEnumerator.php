@@ -1,178 +1,88 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\Command\ListCommand;
-
-use Symfony\Component\Console\Input\InputInterface;
-
-/**
- * Property Enumerator class.
- */
-class PropertyEnumerator extends Enumerator
-{
-    /**
-     * {@inheritdoc}
-     */
-    protected function listItems(InputInterface $input, \Reflector $reflector = null, $target = null)
-    {
-        // only list properties when a Reflector is present.
-
-        if ($reflector === null) {
-            return [];
-        }
-
-        // We can only list properties on actual class (or object) reflectors.
-        if (!$reflector instanceof \ReflectionClass) {
-            return [];
-        }
-
-        // only list properties if we are specifically asked
-        if (!$input->getOption('properties')) {
-            return [];
-        }
-
-        $showAll = $input->getOption('all');
-        $noInherit = $input->getOption('no-inherit');
-        $properties = $this->prepareProperties($this->getProperties($showAll, $reflector, $noInherit), $target);
-
-        if (empty($properties)) {
-            return [];
-        }
-
-        $ret = [];
-        $ret[$this->getKindLabel($reflector)] = $properties;
-
-        return $ret;
-    }
-
-    /**
-     * Get defined properties for the given class or object Reflector.
-     *
-     * @param bool       $showAll   Include private and protected properties
-     * @param \Reflector $reflector
-     * @param bool       $noInherit Exclude inherited properties
-     *
-     * @return array
-     */
-    protected function getProperties($showAll, \Reflector $reflector, $noInherit = false)
-    {
-        $className = $reflector->getName();
-
-        $properties = [];
-        foreach ($reflector->getProperties() as $property) {
-            if ($noInherit && $property->getDeclaringClass()->getName() !== $className) {
-                continue;
-            }
-
-            if ($showAll || $property->isPublic()) {
-                $properties[$property->getName()] = $property;
-            }
-        }
-
-        \ksort($properties, \SORT_NATURAL | \SORT_FLAG_CASE);
-
-        return $properties;
-    }
-
-    /**
-     * Prepare formatted property array.
-     *
-     * @param array $properties
-     *
-     * @return array
-     */
-    protected function prepareProperties(array $properties, $target = null)
-    {
-        // My kingdom for a generator.
-        $ret = [];
-
-        foreach ($properties as $name => $property) {
-            if ($this->showItem($name)) {
-                $fname = '$'.$name;
-                $ret[$fname] = [
-                    'name'  => $fname,
-                    'style' => $this->getVisibilityStyle($property),
-                    'value' => $this->presentValue($property, $target),
-                ];
-            }
-        }
-
-        return $ret;
-    }
-
-    /**
-     * Get a label for the particular kind of "class" represented.
-     *
-     * @param \ReflectionClass $reflector
-     *
-     * @return string
-     */
-    protected function getKindLabel(\ReflectionClass $reflector)
-    {
-        if (\method_exists($reflector, 'isTrait') && $reflector->isTrait()) {
-            return 'Trait Properties';
-        } else {
-            return 'Class Properties';
-        }
-    }
-
-    /**
-     * Get output style for the given property's visibility.
-     *
-     * @param \ReflectionProperty $property
-     *
-     * @return string
-     */
-    private function getVisibilityStyle(\ReflectionProperty $property)
-    {
-        if ($property->isPublic()) {
-            return self::IS_PUBLIC;
-        } elseif ($property->isProtected()) {
-            return self::IS_PROTECTED;
-        } else {
-            return self::IS_PRIVATE;
-        }
-    }
-
-    /**
-     * Present the $target's current value for a reflection property.
-     *
-     * @param \ReflectionProperty $property
-     * @param mixed               $target
-     *
-     * @return string
-     */
-    protected function presentValue(\ReflectionProperty $property, $target)
-    {
-        // If $target is a class or trait (try to) get the default
-        // value for the property.
-        if (!\is_object($target)) {
-            try {
-                $refl = new \ReflectionClass($target);
-                $props = $refl->getDefaultProperties();
-                if (\array_key_exists($property->name, $props)) {
-                    $suffix = $property->isStatic() ? '' : ' <aside>(default)</aside>';
-
-                    return $this->presentRef($props[$property->name]).$suffix;
-                }
-            } catch (\Exception $e) {
-                // Well, we gave it a shot.
-            }
-
-            return '';
-        }
-
-        $property->setAccessible(true);
-        $value = $property->getValue($target);
-
-        return $this->presentRef($value);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

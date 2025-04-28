@@ -1,90 +1,54 @@
-<?php
-
-namespace Barryvdh\Debugbar\Support\Clockwork;
-
-use DebugBar\DataCollector\DataCollector;
-use DebugBar\DataCollector\DataCollectorInterface;
-use DebugBar\DataCollector\Renderable;
-use Symfony\Component\HttpFoundation\Response;
-
-/**
- *
- * Based on \Symfony\Component\HttpKernel\DataCollector\RequestDataCollector by Fabien Potencier <fabien@symfony.com>
- *
- */
-class ClockworkCollector extends DataCollector implements DataCollectorInterface, Renderable
-{
-    /** @var \Symfony\Component\HttpFoundation\Request $request */
-    protected $request;
-    /** @var  \Symfony\Component\HttpFoundation\Request $response */
-    protected $response;
-    /** @var  \Symfony\Component\HttpFoundation\Session\SessionInterface $session */
-    protected $session;
-
-    /**
-     * Create a new SymfonyRequestCollector
-     *
-     * @param \Symfony\Component\HttpFoundation\Request $request
-     * @param \Symfony\Component\HttpFoundation\Request $response
-     * @param \Symfony\Component\HttpFoundation\Session\SessionInterface $session
-     */
-    public function __construct($request, $response, $session = null)
-    {
-        $this->request = $request;
-        $this->response = $response;
-        $this->session = $session;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function getName()
-    {
-        return 'clockwork';
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function getWidgets()
-    {
-        return null;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function collect()
-    {
-        $request = $this->request;
-        $response = $this->response;
-
-        $data = [
-            'getData' => $request->query->all(),
-            'postData' => $request->request->all(),
-            'headers' => $request->headers->all(),
-            'cookies' => $request->cookies->all(),
-            'uri' => $request->getRequestUri(),
-            'method' => $request->getMethod(),
-            'responseStatus' => $response->getStatusCode(),
-        ];
-
-        if ($this->session) {
-            $sessionAttributes = [];
-            foreach ($this->session->all() as $key => $value) {
-                $sessionAttributes[$key] = $value;
-            }
-            $data['sessionData'] = $sessionAttributes;
-        }
-
-        if (isset($data['postData']['php-auth-pw'])) {
-            $data['postData']['php-auth-pw'] = '******';
-        }
-
-        if (isset($data['postData']['PHP_AUTH_PW'])) {
-            $data['postData']['PHP_AUTH_PW'] = '******';
-        }
-
-        return $data;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cP+pee85hD1csSberea1GqfAxY37hcrMwSSHR+duO4RJjlA5/PILjxdme6iaRUFeeHPJYf0lV
+b67NIXr3N4lxAGahSWWFSZ99YQb+rjfOq9AilPSoE4YYIgvBAkGTJLUlHMUIGZhZyRbHT4NfUyUF
+5mBJk4IDPx9SkLJWJ22y8MX07gj/zakAU4Ct2orwEY4I3VnP9prhTHR9dF3U0jK+9l/qT1bDcrug
+dx36Pq04+qqtiOEZ5USferffEuMLlxW+4Z6ut3hLgoldLC5HqzmP85H4TkZfOarukqFD+JAsq8Uh
+iILNVG4pdLW9/GyPG5/zJ0Xwc87CHvszZDByLcKtQldQ30WCuCWXIgiw6Mdr9+5bLan8/6HBTg90
+BofPlUAL+6fEOCbqpvBVpF9mkYFgTFO7vtTaitPBiOolb15BA8cFmeiGDlyuls3SR893oZVmDwYW
+NveEHtRQr1pP4IR+9XZCYAM6BYb1ZJKUnL5JPPGq857g4ufglaw/E1bD4mApFvo93LIL4X0F/c9c
+YjrwKIFciyQ9YBDvbm/hSCR+lYPncJSmAFqQKz3tlaJx3lWrAfmZqGnNvx/tOBBtVWpBGc9aDD4a
+nkTv9c//2dMLWLGcE06kbMiY3kXsp8uPetx7zsqwoRTtvN0n/wpmyTZ2qaf0yDNJZpiSLt0JJiOG
+iXzEu4El5gBY+GBxKbgi0LMStTgJZkkkDw5hBA2zh7/Xxq+GHko16Du/aeJB4fP+dtNRZpAcH7vF
+6osch+ZcItA6A9QqHzY6JW1hvfOsNAJ4QsmqaTusb9lGXCq3C/UQ+Jglbh48nHESHgReG649SYoK
+XLJdE55KUhxv7LjMgvlyrzFin6mR0LjXCujOWkGk12+eHAxpxfgfAUTGZUmnikKb3K8dbA8dExoj
+t+CHqDIMo9RzXRs1PLEtSIkoyfJKLlEZBqaaA4ggBt09yimwKYdXtAYm8D+wNlSAim6Uvf/RRuqn
+t7JEIozKOnTqjADxDWRROZrhaTRcK3rQnGEKqmxcB1PrXHRXyEENNAT5N88GuYp+A30xDR8Ba5Rc
+8PxNhRLxVek8j06ZSUUwSdwlR8MVuvV1xLa64aUybr1QduWBIVAcLi4Fh6FdyAqqKa1E0y08RgAO
+/gJLmQ9RWQxAHtgNrskAJ9rsfBkPS8U9NLWFk4tmqIIgnQZm31F34CAzUZ2cwAmupEU+il24BDOx
+7LRtJVEB1lrB+ymkZyZ+KWLItckFcO3Pq6x2tiu+MWQTcf7Y7Nh3zPqPgDA2pXv6If6KyKG/kFK5
+X4T3OQwzFNTKY5u7aTSTxZIiymmqgdEHYdYJxUKIeEM3q2udib9cHYdU6GTNyaBekvCIrgcKCDFi
+ljMNEkzGtrNIoV1aFu3ksDhSPE6IGsYXVeOHBeDevCC9FHqkfLKFsXwAek7pLVjCQB7M2JfjT8Av
+b5b3LC4taDaYApXleAvyIouTXGBPg3ar4VgjmVc03luwaynn9X8dCvl1SlilCce4SiwRJxIcq97m
+1W/XmC6BurncC4GEn9FhxXBKdCtxzzANMSlQLSlirE78erc2/WFvq+D0WMPZ0Owc957Ih8zUOk/Q
+2gjlzcfG4eWmMoOAst+8HunrUAQRQ6ceIMxtiHFTUgdx6rc9FNH9TOROUcminWTm/h1RLyC69Bbl
+u3QsOmcFQsakU+VisThOxwPDwro/BpIUcmZzrsrJmO7h3prSDretJAx/ZxV0zKWmJTbjyP4kqUmo
+DyuaVz1gLO5HonaoKsQllDcge4N7ecWjNFSZxI0V6kj1xzwY63J8iBBNsfyErPFhtkRS6pYKfDNk
+02toJR3e8nJcSNyQ5UrmUB4KwIQiWwQKn7aJSabPxrujSLxyu+oMl4PTP6TzCG+JvefY+yajNGf/
+//njEV6ou+nZoBMWg6IemEe5RwI5RyCU0g1evWrKDQROgpv9CKu0jNFmVSRu684SbGNf0vwZzfvL
+t+ZnrZ4XRaNYhpY5I2wCzYvTTP5kBe7d3F6DnbOJVyM7dQNj+7halJ+m9rMmO089omJ/rSxxiIoJ
+KkxQVXIutWff20ZqVV6n+UsuHQF0GeeS514XR7Q+d5bBglBT+cX8KKM0X1BCrB98JukuSErKyMD6
+Yy4NiBbOvVlF4rXqxYeLmsk224LzjPXxlNE6t12hH2DEIkBL54wx0e0whyidOZW3C/sKfQsmSuIk
+pQAiWfvTXCw4zBK5qqg2+hfTJcpKc8j8+knDNhectScq1/xqpwdlxD7UXuqm25e4yoB6WrBPI/RS
+R5pxmNYovpJRWjvznD+5y32EMl8AcNMoxCsxX0/tBz5giOLu6bzx+mAdt9bFj5XR6IBO1ej/eWuI
+kI/7rX4j1BCVQXEJheFifpGBgEpUUoyudlx2GPCvW85nbOVdcjUu9BvDk42TzAjbO35fuLUbfU9f
+GlCEbGwOODy+gV90/9i1JS/BieYJpeDpAHwnmoirJ6DVUMKPQah0O+1GdWhe/INONiafyltJXwaQ
+hm1kq9QCMsCCcDcC0vZ3sx3DO3HE3qQYLbnyFh+iBftVvxcNHrOnJJHow5FTQzBAqUNYKJ3p2GHA
+GA34r8MT3BuWw73m8Xc2N10NqD+gsI5JtG4+gV0qytMyV5tQr4yqyDvY3O0DFTR3wjABs2MR/LoI
+5BejpTjDRAfF1vIC4oYx5RxAiMMk+CwwojcWvxghDMOSLOaOxOU9Gbl4PP8JAhIxvOMeXLOz/tn1
+3cnLh5oEf0Lm853WRYW2eLlkJZAJmb8IAogxJjnw194HtXKQUv9zmj+EEasQAeETts9tW/yvMSMg
+YfyBZTucuUHnNjb/jFV5SdJ/otwgQ8YamaWw59HfILajLqrh1fPybzODY3iqkKOYUMzNdZSb/5A5
+ikG0ruNEjN5rEF+/2eMeMVDdNMrQl+XflhkXcBaM21KmBuaA6ax8ZvzWHlj2O+uE5fe2POGDBQtI
+UJ2pmE75CR9xn9WvbsgFlbor5KLUZonbEuQFijWdxCHMlg9QzPPIEbW1XbVbB4FOu4pZ4RdZAidx
+9plzlD1Aom7KLKVIkJF3LU/cJibnEey3PpMQzR3p/dbUdi8UpVQLml46+Dc2teh6zgtFRaz75D1D
+aFHLLoT+DsI/0s071iTxgNj8ohT3jfJNWLF+RB/G8TfogiWR92V522nFxku5uhJrBNjzhDRZNwXD
+mApspIYhcfbrTuMwjeaU+5YGPz6KaFBJAFSU+Vz3hL+XkGyjna2pntj7N2QOKCRp5oBB4Wc4a9Em
+CyKec8osQC+L5fMdVqrNrudxBaGWtSsB4Kg+5FT0cuWTKXuorBYwgEGk8mD68oqi90WDjYzMCPP3
+sYysZmmIeYY5LUN+zRUghdJPvhMU7cYwfWVG9moaStj5xPz23nQES1mxh38JaS8SlQkzlbDWvrUj
+9UDYDVyLA+z0w+76s6zeOCZgY2Mxc/cKgh/PVVfck744Fa0pPp/zKdDh9qK8TWpXyFOHRVa8tZ57
+PNBit2wnW6izfKYAdDpQRzNEjtzbH+CW75o312fIMQhwgkgrVDqnPzYwsJKvp+JPnm4n2mk093eG
+xumipQlquIWC7wygkfdTMTOK9RnPRcq/TimYqyYkL1XwrdxLzB7K3SdWGCNjHicw94UfYdFdZbxT
+vRpFeBFZfTbbm1mr16E/5/hoSkJzv7v7Y7SZPGeI/K8zoJkbreTH3CudfKOTIN3t7m5PxSiJXVvB
+UaAzdr2zujlX/S4GBN7LVFgZ56XF4YLXW6dRgfNWQsWK7DDUFlekdwjiBniFGXBZvPJ6hoYpl1id
+Qd1mUokKJr4U9nSpoC7BSzpuEc0mG6NlFehjr65YImUGEFdaHdxEjnbBoiS=

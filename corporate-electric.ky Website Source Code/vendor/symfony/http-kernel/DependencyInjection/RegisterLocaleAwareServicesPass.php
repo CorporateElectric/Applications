@@ -1,58 +1,45 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpKernel\DependencyInjection;
-
-use Symfony\Component\DependencyInjection\Argument\IteratorArgument;
-use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
-use Symfony\Component\DependencyInjection\ContainerBuilder;
-use Symfony\Component\DependencyInjection\Reference;
-
-/**
- * Register all services that have the "kernel.locale_aware" tag into the listener.
- *
- * @author Pierre Bobiet <pierrebobiet@gmail.com>
- */
-class RegisterLocaleAwareServicesPass implements CompilerPassInterface
-{
-    private $listenerServiceId;
-    private $localeAwareTag;
-
-    public function __construct(string $listenerServiceId = 'locale_aware_listener', string $localeAwareTag = 'kernel.locale_aware')
-    {
-        $this->listenerServiceId = $listenerServiceId;
-        $this->localeAwareTag = $localeAwareTag;
-    }
-
-    public function process(ContainerBuilder $container)
-    {
-        if (!$container->hasDefinition($this->listenerServiceId)) {
-            return;
-        }
-
-        $services = [];
-
-        foreach ($container->findTaggedServiceIds($this->localeAwareTag) as $id => $tags) {
-            $services[] = new Reference($id);
-        }
-
-        if (!$services) {
-            $container->removeDefinition($this->listenerServiceId);
-
-            return;
-        }
-
-        $container
-            ->getDefinition($this->listenerServiceId)
-            ->setArgument(0, new IteratorArgument($services))
-        ;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,57 +1,29 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Predis\Connection;
-
-use Predis\Command\CommandInterface;
-
-/**
- * Defines a virtual connection composed of multiple connection instances to
- * single Redis nodes.
- *
- * @author Daniele Alessandri <suppakilla@gmail.com>
- */
-interface AggregateConnectionInterface extends ConnectionInterface
-{
-    /**
-     * Adds a connection instance to the aggregate connection.
-     *
-     * @param NodeConnectionInterface $connection Connection instance.
-     */
-    public function add(NodeConnectionInterface $connection);
-
-    /**
-     * Removes the specified connection instance from the aggregate connection.
-     *
-     * @param NodeConnectionInterface $connection Connection instance.
-     *
-     * @return bool Returns true if the connection was in the pool.
-     */
-    public function remove(NodeConnectionInterface $connection);
-
-    /**
-     * Returns the connection instance in charge for the given command.
-     *
-     * @param CommandInterface $command Command instance.
-     *
-     * @return NodeConnectionInterface
-     */
-    public function getConnection(CommandInterface $command);
-
-    /**
-     * Returns a connection instance from the aggregate connection by its alias.
-     *
-     * @param string $connectionID Connection alias.
-     *
-     * @return NodeConnectionInterface|null
-     */
-    public function getConnectionById($connectionID);
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cP/WswpUc7D0ulu9+514qMzZVv7Ir7F2GGDqJDijkYLbt9KpVOWi1SbnkHKY1+/GOIsN4VTLf
+grFYsN8b95JfhgHqGpzmDEn4WuiiAEHGmDUGI603zTgJMHJl936gVZk2+FTSQmKcZ9Br/KTko8yZ
+faZ7ayqxAVAhyDb0nAkjR4BjnbdCUKkWqtsx6wztb7HAJhLQh8OUr7hUsN3Mhjr1FH6gSwhrkurz
+uIhBAQy8s7YS9yc9YzmKGE0ELjacex2bSTWzI1ywrQihvrJ1KTFS6I1KH7RevMl7Dwhv2huYofwd
+Wp87aYLk+BfxccsswkuWUu4oIc199RoK5BLjLOJ67C8cJESzz7zCXhAc8mJ4TRsJ45ZQtfbE/h+X
+uLJtfaBiCpzRgWJS3ZE38+pBpZdigP+vj/5fDK1WYX9AqjPsST/RiDWFJdPurnQMzY9wllAd3hu3
+FmQ5X247St3PAz7l685O8JdRvml1lfVAt64EBwiqWoZPl8Qihk7gsSGuO2D+Pr28QalVeCoNp1zj
+wXNZHt1CIUxMDFOQrRDXY9J1Up8YMJl5nOYkl8zOEQA4U7HXteHyLHtsNucSVab4LN+4gSw50vBF
+C2ki4N0bnybMI8cclgiIolkqwqYPYf/30D4sUL5aZSK8KyM0eOTp1Vb7PsMc9QStcpTGLcWeaE+m
+wyHk9xcK4kU6SsppLWUdch2wE0iPVWxdKEoMKNHUTq1Zf+8LQN+N8TM5cQgic7feM5oaFrwQeHfD
+d8ILljEQ7SmFnpOswZbQiqPHZdQ7bDQwRrSGNeIZdQs1WLCB7LCrJ/UidZijB28Fpc3l/aJKh7nR
+3J4NQ6gz1VsgqJ3gBzZGr0q9yd12R1VCOCj9PTwHn+KF7jEP1LpC+6vLx8LvTLSMgwctHCFxPVuR
+AkwDYXxfxC2ONCIzLjuHrQjRc7IQHO+K6zyE6d2qcmhM+hyDpGZtTNN9wPSkoxNsVkXz2qUkMCY4
+Hllfu4eqXqund1y4exxtUaoO/mb0/sIXRENElHSBv6c8qi+GkI2g8HZ1AYjAu5lnJKv17MV/reTt
+UfG5PYoP6X7FPF5g/E+NGFRiroL3Bcgl/YXd5nIrbUm+Ve64/nfqLFKBIlKe3zG4e090/w3LZ3JI
+4Q0sg6zA9Fje2ZHg/7mNPJFW2t/31Jc5E8NMHQCa0SnqOIcOSpk8LMexFK9mtWVnfzS2jXPdH1qI
+2u5AkE0aAK5QiZCbQLQGkhxn36IIJqCdANU3C5v441Mk1aqGljDvZOiWhuTAwh/uplGg2jDExlG8
+vuF7yMS4EcpNyHaDTHDPo5LJ3bQ6WNdeL52deyWVDRIqHSOlAQaM59db7KMmNpPd/7p/2QDGFa+B
+XbV84vxAKAYe9Zx04PDZhHDAX04ukz79pV92kS2By8C8sFSfvW+uXI3P07tT5tdMLNyLFgth+UU3
+qOKSrZu89907V6hCU8zzB/4avB07QehyqOazoubC5sQKzTdulKVc/p+QqFEd4bFi9hL9nfAH10N4
+qCCVH2BbX3EeKTkpS4i+JUScmURIxesIMcul9Y/WKxQf3jwERWeXfulQq525OXmnFlIqwr9dbXH1
+FZAc2wxK9owwhQbO9dU6eZHrQsQ95BB+E4Qe+gKrsTzkpL9E9eDvDTcZvNrZTFYibHxKvLmriPmt
+r2idnwxbO6XhfPBCQ/1Wgl90SbM01QMHSO4qjTSZ0k5cNPkiVGAa/TwV4AKq5CynPceXoceMtwf8
+f3FyZzueEhF5LHLRWQmphf+1oXEMumioJUbi4mnSiQloDAi24I/YHO1r1Eh+t+nTjTE/B3Gbo2OD
+n4WxJtnfds44QaFyoGysZw9iAp4g+nnQm9KHNiTUt719SfWTjbmPvKAhrBCcJHQ/qn0U6D451uJ2
+EixyVaE/YFR4ob9GLdnm2lsXXb2MjG==

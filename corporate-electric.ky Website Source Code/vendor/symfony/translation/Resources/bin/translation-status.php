@@ -1,207 +1,202 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-$usageInstructions = <<<END
-
-  Usage instructions
-  -------------------------------------------------------------------------------
-
-  $ cd symfony-code-root-directory/
-
-  # show the translation status of all locales
-  $ php translation-status.php
-
-  # show the translation status of all locales and all their missing translations
-  $ php translation-status.php -v
-
-  # show the status of a single locale
-  $ php translation-status.php fr
-
-  # show the status of a single locale and all its missing translations
-  $ php translation-status.php fr -v
-
-END;
-
-$config = [
-    // if TRUE, the full list of missing translations is displayed
-    'verbose_output' => false,
-    // NULL = analyze all locales
-    'locale_to_analyze' => null,
-    // the reference files all the other translations are compared to
-    'original_files' => [
-        'src/Symfony/Component/Form/Resources/translations/validators.en.xlf',
-        'src/Symfony/Component/Security/Core/Resources/translations/security.en.xlf',
-        'src/Symfony/Component/Validator/Resources/translations/validators.en.xlf',
-    ],
-];
-
-$argc = $_SERVER['argc'];
-$argv = $_SERVER['argv'];
-
-if ($argc > 3) {
-    echo str_replace('translation-status.php', $argv[0], $usageInstructions);
-    exit(1);
-}
-
-foreach (array_slice($argv, 1) as $argumentOrOption) {
-    if (0 === strpos($argumentOrOption, '-')) {
-        $config['verbose_output'] = true;
-    } else {
-        $config['locale_to_analyze'] = $argumentOrOption;
-    }
-}
-
-foreach ($config['original_files'] as $originalFilePath) {
-    if (!file_exists($originalFilePath)) {
-        echo sprintf('The following file does not exist. Make sure that you execute this command at the root dir of the Symfony code repository.%s  %s', \PHP_EOL, $originalFilePath);
-        exit(1);
-    }
-}
-
-$totalMissingTranslations = 0;
-
-foreach ($config['original_files'] as $originalFilePath) {
-    $translationFilePaths = findTranslationFiles($originalFilePath, $config['locale_to_analyze']);
-    $translationStatus = calculateTranslationStatus($originalFilePath, $translationFilePaths);
-
-    $totalMissingTranslations += array_sum(array_map(function ($translation) {
-        return count($translation['missingKeys']);
-    }, array_values($translationStatus)));
-
-    printTranslationStatus($originalFilePath, $translationStatus, $config['verbose_output']);
-}
-
-exit($totalMissingTranslations > 0 ? 1 : 0);
-
-function findTranslationFiles($originalFilePath, $localeToAnalyze)
-{
-    $translations = [];
-
-    $translationsDir = dirname($originalFilePath);
-    $originalFileName = basename($originalFilePath);
-    $translationFileNamePattern = str_replace('.en.', '.*.', $originalFileName);
-
-    $translationFiles = glob($translationsDir.'/'.$translationFileNamePattern, \GLOB_NOSORT);
-    sort($translationFiles);
-    foreach ($translationFiles as $filePath) {
-        $locale = extractLocaleFromFilePath($filePath);
-
-        if (null !== $localeToAnalyze && $locale !== $localeToAnalyze) {
-            continue;
-        }
-
-        $translations[$locale] = $filePath;
-    }
-
-    return $translations;
-}
-
-function calculateTranslationStatus($originalFilePath, $translationFilePaths)
-{
-    $translationStatus = [];
-    $allTranslationKeys = extractTranslationKeys($originalFilePath);
-
-    foreach ($translationFilePaths as $locale => $translationPath) {
-        $translatedKeys = extractTranslationKeys($translationPath);
-        $missingKeys = array_diff_key($allTranslationKeys, $translatedKeys);
-
-        $translationStatus[$locale] = [
-            'total' => count($allTranslationKeys),
-            'translated' => count($translatedKeys),
-            'missingKeys' => $missingKeys,
-        ];
-    }
-
-    return $translationStatus;
-}
-
-function printTranslationStatus($originalFilePath, $translationStatus, $verboseOutput)
-{
-    printTitle($originalFilePath);
-    printTable($translationStatus, $verboseOutput);
-    echo \PHP_EOL.\PHP_EOL;
-}
-
-function extractLocaleFromFilePath($filePath)
-{
-    $parts = explode('.', $filePath);
-
-    return $parts[count($parts) - 2];
-}
-
-function extractTranslationKeys($filePath)
-{
-    $translationKeys = [];
-    $contents = new \SimpleXMLElement(file_get_contents($filePath));
-
-    foreach ($contents->file->body->{'trans-unit'} as $translationKey) {
-        $translationId = (string) $translationKey['id'];
-        $translationKey = (string) $translationKey->source;
-
-        $translationKeys[$translationId] = $translationKey;
-    }
-
-    return $translationKeys;
-}
-
-function printTitle($title)
-{
-    echo $title.\PHP_EOL;
-    echo str_repeat('=', strlen($title)).\PHP_EOL.\PHP_EOL;
-}
-
-function printTable($translations, $verboseOutput)
-{
-    if (0 === count($translations)) {
-        echo 'No translations found';
-
-        return;
-    }
-    $longestLocaleNameLength = max(array_map('strlen', array_keys($translations)));
-
-    foreach ($translations as $locale => $translation) {
-        if ($translation['translated'] > $translation['total']) {
-            textColorRed();
-        } elseif ($translation['translated'] === $translation['total']) {
-            textColorGreen();
-        }
-
-        echo sprintf('| Locale: %-'.$longestLocaleNameLength.'s | Translated: %d/%d', $locale, $translation['translated'], $translation['total']).\PHP_EOL;
-
-        textColorNormal();
-
-        if (true === $verboseOutput && count($translation['missingKeys']) > 0) {
-            echo str_repeat('-', 80).\PHP_EOL;
-            echo '| Missing Translations:'.\PHP_EOL;
-
-            foreach ($translation['missingKeys'] as $id => $content) {
-                echo sprintf('|   (id=%s) %s', $id, $content).\PHP_EOL;
-            }
-
-            echo str_repeat('-', 80).\PHP_EOL;
-        }
-    }
-}
-
-function textColorGreen()
-{
-    echo "\033[32m";
-}
-
-function textColorRed()
-{
-    echo "\033[31m";
-}
-
-function textColorNormal()
-{
-    echo "\033[0m";
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

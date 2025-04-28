@@ -1,73 +1,42 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\CssSelector\Node;
-
-/**
- * Represents a node specificity.
- *
- * This component is a port of the Python cssselect library,
- * which is copyright Ian Bicking, @see https://github.com/SimonSapin/cssselect.
- *
- * @see http://www.w3.org/TR/selectors/#specificity
- *
- * @author Jean-François Simon <jeanfrancois.simon@sensiolabs.com>
- *
- * @internal
- */
-class Specificity
-{
-    public const A_FACTOR = 100;
-    public const B_FACTOR = 10;
-    public const C_FACTOR = 1;
-
-    private $a;
-    private $b;
-    private $c;
-
-    public function __construct(int $a, int $b, int $c)
-    {
-        $this->a = $a;
-        $this->b = $b;
-        $this->c = $c;
-    }
-
-    public function plus(self $specificity): self
-    {
-        return new self($this->a + $specificity->a, $this->b + $specificity->b, $this->c + $specificity->c);
-    }
-
-    public function getValue(): int
-    {
-        return $this->a * self::A_FACTOR + $this->b * self::B_FACTOR + $this->c * self::C_FACTOR;
-    }
-
-    /**
-     * Returns -1 if the object specificity is lower than the argument,
-     * 0 if they are equal, and 1 if the argument is lower.
-     */
-    public function compareTo(self $specificity): int
-    {
-        if ($this->a !== $specificity->a) {
-            return $this->a > $specificity->a ? 1 : -1;
-        }
-
-        if ($this->b !== $specificity->b) {
-            return $this->b > $specificity->b ? 1 : -1;
-        }
-
-        if ($this->c !== $specificity->c) {
-            return $this->c > $specificity->c ? 1 : -1;
-        }
-
-        return 0;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+88/M6+GV2C2/aLyhJzDa6YQzaTXBB0==

@@ -1,105 +1,81 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Polyfill\Php80;
-
-/**
- * @author Ion Bazan <ion.bazan@gmail.com>
- * @author Nico Oelgart <nicoswd@gmail.com>
- * @author Nicolas Grekas <p@tchwork.com>
- *
- * @internal
- */
-final class Php80
-{
-    public static function fdiv(float $dividend, float $divisor): float
-    {
-        return @($dividend / $divisor);
-    }
-
-    public static function get_debug_type($value): string
-    {
-        switch (true) {
-            case null === $value: return 'null';
-            case \is_bool($value): return 'bool';
-            case \is_string($value): return 'string';
-            case \is_array($value): return 'array';
-            case \is_int($value): return 'int';
-            case \is_float($value): return 'float';
-            case \is_object($value): break;
-            case $value instanceof \__PHP_Incomplete_Class: return '__PHP_Incomplete_Class';
-            default:
-                if (null === $type = @get_resource_type($value)) {
-                    return 'unknown';
-                }
-
-                if ('Unknown' === $type) {
-                    $type = 'closed';
-                }
-
-                return "resource ($type)";
-        }
-
-        $class = \get_class($value);
-
-        if (false === strpos($class, '@')) {
-            return $class;
-        }
-
-        return (get_parent_class($class) ?: key(class_implements($class)) ?: 'class').'@anonymous';
-    }
-
-    public static function get_resource_id($res): int
-    {
-        if (!\is_resource($res) && null === @get_resource_type($res)) {
-            throw new \TypeError(sprintf('Argument 1 passed to get_resource_id() must be of the type resource, %s given', get_debug_type($res)));
-        }
-
-        return (int) $res;
-    }
-
-    public static function preg_last_error_msg(): string
-    {
-        switch (preg_last_error()) {
-            case \PREG_INTERNAL_ERROR:
-                return 'Internal error';
-            case \PREG_BAD_UTF8_ERROR:
-                return 'Malformed UTF-8 characters, possibly incorrectly encoded';
-            case \PREG_BAD_UTF8_OFFSET_ERROR:
-                return 'The offset did not correspond to the beginning of a valid UTF-8 code point';
-            case \PREG_BACKTRACK_LIMIT_ERROR:
-                return 'Backtrack limit exhausted';
-            case \PREG_RECURSION_LIMIT_ERROR:
-                return 'Recursion limit exhausted';
-            case \PREG_JIT_STACKLIMIT_ERROR:
-                return 'JIT stack limit exhausted';
-            case \PREG_NO_ERROR:
-                return 'No error';
-            default:
-                return 'Unknown error';
-        }
-    }
-
-    public static function str_contains(string $haystack, string $needle): bool
-    {
-        return '' === $needle || false !== strpos($haystack, $needle);
-    }
-
-    public static function str_starts_with(string $haystack, string $needle): bool
-    {
-        return 0 === strncmp($haystack, $needle, \strlen($needle));
-    }
-
-    public static function str_ends_with(string $haystack, string $needle): bool
-    {
-        return '' === $needle || ('' !== $haystack && 0 === substr_compare($haystack, $needle, -\strlen($needle)));
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

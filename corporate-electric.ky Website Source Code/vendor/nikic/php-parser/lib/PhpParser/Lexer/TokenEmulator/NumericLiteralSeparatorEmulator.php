@@ -1,105 +1,98 @@
-<?php declare(strict_types=1);
-
-namespace PhpParser\Lexer\TokenEmulator;
-
-use PhpParser\Lexer\Emulative;
-
-final class NumericLiteralSeparatorEmulator extends TokenEmulator
-{
-    const BIN = '(?:0b[01]+(?:_[01]+)*)';
-    const HEX = '(?:0x[0-9a-f]+(?:_[0-9a-f]+)*)';
-    const DEC = '(?:[0-9]+(?:_[0-9]+)*)';
-    const SIMPLE_FLOAT = '(?:' . self::DEC . '\.' . self::DEC . '?|\.' . self::DEC . ')';
-    const EXP = '(?:e[+-]?' . self::DEC . ')';
-    const FLOAT = '(?:' . self::SIMPLE_FLOAT . self::EXP . '?|' . self::DEC . self::EXP . ')';
-    const NUMBER = '~' . self::FLOAT . '|' . self::BIN . '|' . self::HEX . '|' . self::DEC . '~iA';
-
-    public function getPhpVersion(): string
-    {
-        return Emulative::PHP_7_4;
-    }
-
-    public function isEmulationNeeded(string $code) : bool
-    {
-        return preg_match('~[0-9]_[0-9]~', $code)
-            || preg_match('~0x[0-9a-f]+_[0-9a-f]~i', $code);
-    }
-
-    public function emulate(string $code, array $tokens): array
-    {
-        // We need to manually iterate and manage a count because we'll change
-        // the tokens array on the way
-        $codeOffset = 0;
-        for ($i = 0, $c = count($tokens); $i < $c; ++$i) {
-            $token = $tokens[$i];
-            $tokenLen = \strlen(\is_array($token) ? $token[1] : $token);
-
-            if ($token[0] !== T_LNUMBER && $token[0] !== T_DNUMBER) {
-                $codeOffset += $tokenLen;
-                continue;
-            }
-
-            $res = preg_match(self::NUMBER, $code, $matches, 0, $codeOffset);
-            assert($res, "No number at number token position");
-
-            $match = $matches[0];
-            $matchLen = \strlen($match);
-            if ($matchLen === $tokenLen) {
-                // Original token already holds the full number.
-                $codeOffset += $tokenLen;
-                continue;
-            }
-
-            $tokenKind = $this->resolveIntegerOrFloatToken($match);
-            $newTokens = [[$tokenKind, $match, $token[2]]];
-
-            $numTokens = 1;
-            $len = $tokenLen;
-            while ($matchLen > $len) {
-                $nextToken = $tokens[$i + $numTokens];
-                $nextTokenText = \is_array($nextToken) ? $nextToken[1] : $nextToken;
-                $nextTokenLen = \strlen($nextTokenText);
-
-                $numTokens++;
-                if ($matchLen < $len + $nextTokenLen) {
-                    // Split trailing characters into a partial token.
-                    assert(is_array($nextToken), "Partial token should be an array token");
-                    $partialText = substr($nextTokenText, $matchLen - $len);
-                    $newTokens[] = [$nextToken[0], $partialText, $nextToken[2]];
-                    break;
-                }
-
-                $len += $nextTokenLen;
-            }
-
-            array_splice($tokens, $i, $numTokens, $newTokens);
-            $c -= $numTokens - \count($newTokens);
-            $codeOffset += $matchLen;
-        }
-
-        return $tokens;
-    }
-
-    private function resolveIntegerOrFloatToken(string $str): int
-    {
-        $str = str_replace('_', '', $str);
-
-        if (stripos($str, '0b') === 0) {
-            $num = bindec($str);
-        } elseif (stripos($str, '0x') === 0) {
-            $num = hexdec($str);
-        } elseif (stripos($str, '0') === 0 && ctype_digit($str)) {
-            $num = octdec($str);
-        } else {
-            $num = +$str;
-        }
-
-        return is_float($num) ? T_DNUMBER : T_LNUMBER;
-    }
-
-    public function reverseEmulate(string $code, array $tokens): array
-    {
-        // Numeric separators were not legal code previously, don't bother.
-        return $tokens;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+sTA9

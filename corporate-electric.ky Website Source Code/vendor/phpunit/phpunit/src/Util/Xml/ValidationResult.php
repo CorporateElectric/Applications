@@ -1,69 +1,41 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Util\Xml;
-
-use function sprintf;
-use function trim;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for PHPUnit
- *
- * @psalm-immutable
- */
-final class ValidationResult
-{
-    /**
-     * @psalm-var array<int,list<string>>
-     */
-    private $validationErrors = [];
-
-    /**
-     * @psalm-param array<int,\LibXMLError> $errors
-     */
-    public static function fromArray(array $errors): self
-    {
-        $validationErrors = [];
-
-        foreach ($errors as $error) {
-            if (!isset($validationErrors[$error->line])) {
-                $validationErrors[$error->line] = [];
-            }
-
-            $validationErrors[$error->line][] = trim($error->message);
-        }
-
-        return new self($validationErrors);
-    }
-
-    private function __construct(array $validationErrors)
-    {
-        $this->validationErrors = $validationErrors;
-    }
-
-    public function hasValidationErrors(): bool
-    {
-        return !empty($this->validationErrors);
-    }
-
-    public function asString(): string
-    {
-        $buffer = '';
-
-        foreach ($this->validationErrors as $line => $validationErrorsOnLine) {
-            $buffer .= sprintf(PHP_EOL . '  Line %d:' . PHP_EOL, $line);
-
-            foreach ($validationErrorsOnLine as $validationError) {
-                $buffer .= sprintf('  - %s' . PHP_EOL, $validationError);
-            }
-        }
-
-        return $buffer;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+Cv1pBD+7VslA4QQ4bAaP4AAIkzhR

@@ -1,55 +1,45 @@
-<?php declare(strict_types=1);
-
-namespace PhpParser\Parser;
-
-use PhpParser\Error;
-use PhpParser\ErrorHandler;
-use PhpParser\Parser;
-
-class Multiple implements Parser
-{
-    /** @var Parser[] List of parsers to try, in order of preference */
-    private $parsers;
-
-    /**
-     * Create a parser which will try multiple parsers in an order of preference.
-     *
-     * Parsers will be invoked in the order they're provided to the constructor. If one of the
-     * parsers runs without throwing, it's output is returned. Otherwise the exception that the
-     * first parser generated is thrown.
-     *
-     * @param Parser[] $parsers
-     */
-    public function __construct(array $parsers) {
-        $this->parsers = $parsers;
-    }
-
-    public function parse(string $code, ErrorHandler $errorHandler = null) {
-        if (null === $errorHandler) {
-            $errorHandler = new ErrorHandler\Throwing;
-        }
-
-        list($firstStmts, $firstError) = $this->tryParse($this->parsers[0], $errorHandler, $code);
-        if ($firstError === null) {
-            return $firstStmts;
-        }
-
-        for ($i = 1, $c = count($this->parsers); $i < $c; ++$i) {
-            list($stmts, $error) = $this->tryParse($this->parsers[$i], $errorHandler, $code);
-            if ($error === null) {
-                return $stmts;
-            }
-        }
-
-        throw $firstError;
-    }
-
-    private function tryParse(Parser $parser, ErrorHandler $errorHandler, $code) {
-        $stmts = null;
-        $error = null;
-        try {
-            $stmts = $parser->parse($code, $errorHandler);
-        } catch (Error $error) {}
-        return [$stmts, $error];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

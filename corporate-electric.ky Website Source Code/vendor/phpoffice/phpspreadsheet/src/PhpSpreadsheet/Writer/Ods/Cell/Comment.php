@@ -1,30 +1,36 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Writer\Ods\Cell;
-
-use PhpOffice\PhpSpreadsheet\Cell\Cell;
-use PhpOffice\PhpSpreadsheet\Shared\XMLWriter;
-
-/**
- * @author     Alexander Pervakov <frost-nzcr4@jagmort.com>
- */
-class Comment
-{
-    public static function write(XMLWriter $objWriter, Cell $cell): void
-    {
-        $comments = $cell->getWorksheet()->getComments();
-        if (!isset($comments[$cell->getCoordinate()])) {
-            return;
-        }
-        $comment = $comments[$cell->getCoordinate()];
-
-        $objWriter->startElement('office:annotation');
-        $objWriter->writeAttribute('svg:width', $comment->getWidth());
-        $objWriter->writeAttribute('svg:height', $comment->getHeight());
-        $objWriter->writeAttribute('svg:x', $comment->getMarginLeft());
-        $objWriter->writeAttribute('svg:y', $comment->getMarginTop());
-        $objWriter->writeElement('dc:creator', $comment->getAuthor());
-        $objWriter->writeElement('text:p', $comment->getText()->getPlainText());
-        $objWriter->endElement();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,86 +1,60 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpKernel\Fragment;
-
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpKernel\Controller\ControllerReference;
-use Symfony\Component\HttpKernel\EventListener\FragmentListener;
-
-/**
- * Adds the possibility to generate a fragment URI for a given Controller.
- *
- * @author Fabien Potencier <fabien@symfony.com>
- */
-abstract class RoutableFragmentRenderer implements FragmentRendererInterface
-{
-    private $fragmentPath = '/_fragment';
-
-    /**
-     * Sets the fragment path that triggers the fragment listener.
-     *
-     * @see FragmentListener
-     */
-    public function setFragmentPath(string $path)
-    {
-        $this->fragmentPath = $path;
-    }
-
-    /**
-     * Generates a fragment URI for a given controller.
-     *
-     * @param bool $absolute Whether to generate an absolute URL or not
-     * @param bool $strict   Whether to allow non-scalar attributes or not
-     *
-     * @return string A fragment URI
-     */
-    protected function generateFragmentUri(ControllerReference $reference, Request $request, bool $absolute = false, bool $strict = true)
-    {
-        if ($strict) {
-            $this->checkNonScalar($reference->attributes);
-        }
-
-        // We need to forward the current _format and _locale values as we don't have
-        // a proper routing pattern to do the job for us.
-        // This makes things inconsistent if you switch from rendering a controller
-        // to rendering a route if the route pattern does not contain the special
-        // _format and _locale placeholders.
-        if (!isset($reference->attributes['_format'])) {
-            $reference->attributes['_format'] = $request->getRequestFormat();
-        }
-        if (!isset($reference->attributes['_locale'])) {
-            $reference->attributes['_locale'] = $request->getLocale();
-        }
-
-        $reference->attributes['_controller'] = $reference->controller;
-
-        $reference->query['_path'] = http_build_query($reference->attributes, '', '&');
-
-        $path = $this->fragmentPath.'?'.http_build_query($reference->query, '', '&');
-
-        if ($absolute) {
-            return $request->getUriForPath($path);
-        }
-
-        return $request->getBaseUrl().$path;
-    }
-
-    private function checkNonScalar(array $values)
-    {
-        foreach ($values as $key => $value) {
-            if (\is_array($value)) {
-                $this->checkNonScalar($value);
-            } elseif (!is_scalar($value) && null !== $value) {
-                throw new \LogicException(sprintf('Controller attributes cannot contain non-scalar/non-null values (value for key "%s" is not a scalar or null).', $key));
-            }
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cP/KcKAQF2Ac9LfN5XUTtyxhMrA8rzsn59+8xrfCa609yIAzNrmP7q18ia0VPns/TE5wGCxKr
+LpUEtW1Eh+YlMapZwybBPIEZPl5ejPeilCzQCN0JyzsUVEu70MbyxS3Qtx9pNQ+hgwswrooRQHwR
+5DeA4ImC5xlfpCJbXUcQdsV8KgXnpOZNQDhnrzbACSeaztSturrTRjrmyjD4WEQjtMuIbVXnn5xc
+ZGBR4wUZbPUGrkdpO04aprzMeM3sn7/S5/WKb3hLgoldLC5HqzmP85H4TkYlS5d8/H5E3W4DZf3p
+CGCIEK4FoMdMcYgOJDsd4mpyQhvMDTCYStWuw5Uu4j99zycJflhl8fANRPm8/OfLOZ4qya3PvS3+
+rauInTw8gb9ZBpLj6PaeGRsyucKrNk2j6q0vEskAN4ZzVjh2UDi5MItpgipus3AlU8Oc/8k3KJq8
+ihGDXB9EZtYaS6IuFgyILR0uUngKZMmLVWJMG5L7mZkaCvrjZbpb0LWPLCW9URDTC/tTK3x1b7Ue
+Gv/Zgv19YlKb5z67GNsyH1XFXwnwHElbKi5eUq9C3QjCOr+yLEgvKZkrki+X8LEpHsrbtJt3zJAf
+zoQKu+fElcQhvllaXzXOa9Go6+BNPj3RuBtFBvxiJVBN+Y5Z/qMK9M+MPCXxSv+Xzg3KrgNBL6dd
+X/T0FNofVz7q/qJmRYzVpCD7Jv4ZeTydKtVXyxozBzoEcsTDIvgF+2XoWwqfqBI8Ghpd16hHVrzq
+xBrWngeHNJvLxgMXroqZz/CYeSsa1I90ZTC0q8UOcCak02h6t++wXXjGW17ooCo7y7PZVwTqns9w
+Q7UFn+vPwtKBdjPErmQh9E98/kvN0vArfMy+UHBDMGFLSJ9feKrVw8IgxSv7XcHYh9RKU6+tSGYM
+fryjer0DmQZHsCsP/qARWG9DmxoKCm8fBdrhPYRyG5b9svKoaq2NP1bKuibnN7sHHZ1BHopJjn7m
+Ih/l3mG9d47/r4E2EvZzT8XhJMCo28Lqg+EgOucXj02My1xgNHcXNmVT38TKRLlhJO5y2aKZSQps
+6SKEbkyKb9mZmlxPIpJlzQYncPaTR0xmAnaC4wXvNYZdiNEM0xbOyQoQ6nfIP/WQgMMIjIdcuR3D
+qkxfkmKBLc4or4QBoTzm4tAjNSc5V7SekKnuX4i2PDQyXSgLgKrA7MpmE4uiCN6mvKpsw+Gkz569
+jofc4oPlMArvSpgM+k2HGBjITe6w92jJ5mcDg9W0S7p89w8bdwOuS1E7tYmbdBEXUE0lRbSbPP8w
+2QTM9e5PGf7FkjtH5lN20ThF3vxpIwUZ9SK+jalIpLj7ngT7NQiCjlO4MHk3L0yWExQix7Qx4xGh
+iyRIzKxQYEt4lnFDz58hOVdbCcY4KvOgY6LmAplIGe4EaN1pXhzFuTcWO+KN4+YSUq6M0GU+mADf
+iCRABO2PH8mTBCv14tD2xjyPuAIVnrlKqMNbzwmXznQ0QVn9qfo7kpM4T4O9y56KnYMFh6wFK6Cw
+aUUJhCczjfofgEqKtGWWQ3BoGUQqYzLGKAC/7Vb0ZmnRt+1kzWwTW2DJw2uXebu5U4Hl4SV3vWTO
+IBPtrto8G5ZYka7pqjNSoFjfmSHgIO8rE2lFehsQnqk+1/C3fENMoRePATH6231OL8FKtwOb4pPz
+0GwYiGVszgxpd2bEw/AtMU0CvWgADfJUPs98Zp8IfQA04Dl4HKIHrXGot2i6J0bClUkXngzBcDE0
+sqjLFXJFZvM0Gs7x0Fg0zSNkGN8INsGGpNk4PlcwT02rAkdT/mhVfJzLMeiV8mbkmpZkuLE9x/1F
+s1R/K/eecOo35y3of4KC33iVgUl8aaBO5k8U6SLJMi+4s1P7yViQ7RMA4QbnfNqsYB1jWTcXDiWJ
+jR8pw3rAvkrIPNSavHVqgVqYYmStvQR/ty595M296sjPnm77AQYOj9O0IiFq8kr6OIYF2AcYs/Fw
+3C5x0kdmJPK8if43N8TM1sWRhXgEYbaJ2v+euwpQT+RZm05i3trhSEIeQ0R/cGNSTp+siYYeTxhq
+0Lc7/FMEUTAwT/sx7cbw7ZCH10tF+VitriRub05jKJ4nLt3ifHXM8Xg+4WEKAVBMDDeTNIUnZeZz
+mdzJ1LT6lBG2cuC+Q4t93pahAH2HzbAAT/qcPyPAXcCCGSvhLnXaLLe5vC7Nhh8e/jt6y3uNJhtW
+3jP45znsoCLCw2wm4lb61lY08ple1W63qNn2uyx8hX0wjoIlKzr7dBZoGM2ZP4oxZktNOIseY5Ka
++NrF6215VVInkd0UH/mDLFIYvPNbczXjg8LcwcFPGzal4fubAnQlOsgp+CYkSrJrjtsDRbPFLlqH
+lrHZT6dZU3+v0qtRKt8x1zAAJ6n7GYvc/hSPx2vf8bixG2aJXI0XxjgwLRrLSsZGdjzVD/+Hqi+R
+trzxualbOBNVyPuPdAuE4G5qlkszYItV99E7M80klbTZCBI+MCt08Ae4iQ5o6rWCqxopwvNkxRae
+MfVANl5t9K3MgedVGycPI60WPB0YFNJHD4pTwe6h/O0Yn06f3VMUUC/PlObJW7hJrwtoP97O5NXK
+QLsAqluHn0h8eVKDx6vkMSH0lZDHhZqnJ6q6Yo4tkjS8eEMt7tbwI6ZpDutOSkRQMGXwLWpVssU7
+i7ui4Hmd66txQKVd6zwgKqLDZDeAZJ9oX1Xv5erYWwuSuqF5WJkebugu5Zc44ne4/mhersB7QDF2
+43Xwp13arTEBAKKKTzpKON4MxzC0gaMilNTbfQnnMDyBZM9n0aqk7CgG0Bq5I4i/dS4cO79RSwNA
+xVfRHB/hxu1e0OuuqFtmMi5u2oewmHSJE+p5t90a0dtQQICQBMSC2gVG+RquNyJ7vgnz/NH9aQeP
+V6no3K4Dzs4TL9hiEFkhX/cjOYuX6yKZOscueNefsejF4fiOlOtn1PWWkQbuGqkQcjeMS1+weDGa
+Lft51nGI+m5IH/Th2h81vTsXLTQIeKhddF/CW2QgQ6R07/c7LnjdiTN3w2aXr3MuuIPlzELmpzI9
+vPE4OTWPSQDRpWYOQiim8Gms0Jb67kHAw7MFG2GQrggRR3OPUJqvZjS5pW55S6NlHc8R4v4nBWxi
+Qu4jk6xsVzhwRIU+3LZecNMdUOC/krEO6gF4RHEFPNpCfPd/8Hq7I1Ave/OPdFjyPZLx3tTZKWAN
+ZJfaseCz67vtFe5F4bY2jaU76NzXU+KR0TY2KCQIZMuHrpIqui8MPOzXWukoJ2qwVxA/ijpafKps
+1RdCwMwKHUG8Ii1f/a8UhBVG/b84KLUCfVCqDWYXwt01CYUs8zTK9CFfbgPlaiKcGTOoDbXuog4f
+o6fc+Qia0rFJHyaLOiHGXh95rf3b46OJ/QN/yh1SmKqlEWh1oNYRdj/prB4me0zurU2fvpgVs7ng
+Dl+96UEFkAN9jirnsDwS06Q4sJiOtwto7nfJWo/zCMUqBy3fksDlkcYHv6p26nC/silhG/mtaqbW
+TXWnPwOnTDmIQEtrw1yoLC2nOUS5BjcmTb8hTDX2LH2H4eDKmhW3u8ZrzLyzM3CLCMgM/pGw6rNp
+Jtlu1nwTUrY0S5AlVwle4Ju0upclQc88i/rPTGRn98gZYlZLmiM+6qoQxFo+YwL5JQF/0tqhXnvv
+OUj6yipK/kv7fQ5DFdrjK/DnfCVDK4Xg9mFJC8R9pHiNZ0f//Ny8cHfIzDvjrmHfZEVh/UDEZhjh
+s3qr621QCMxA/Xe+UAazMFPXc5PXuyKBVmLq9rfc/sNpiKlgwARtnzRrphHZ4s3wctd/YAggCCHH
+KDhMQdon1LLKYaPDCEEolZMjbfJL3PwnCJZ5NkCOKpiODbXGorj81zvNNqo//Q6U19D3AkzAM73p
+bMtGcOeglYowgNpfY8vKdU+J+PgH3dZ5CAecJAX0Bmg1Ffg2llvm4obPzdX8odR4NzyzwUqJMqfs
+aDdkuS5UUpb7XdToBXZ0OmEMvGLyA3Vhngc8ns6Tz+31/80CjGLsDxl8o3B3x0YCdyErH1EElG2X
+DHf5AyaAvuh9cCnV02g+814CLueASFGSsAu6nJaANV5WMTeFsB+nH9HQdYUnfeGaOEpym9Ge+C95
+EoOKRwCkHaw1IdKwZtR/KyD1IyHoU0Y6h3bbV0CaGR0jitgTh51jEQje5K7V3gUouXXuDqevB8hc
++usMdRtvnl1l/v8JKdd0hAwEsXu7DmcfDAH23XrothQ/ySLltaWdIJg8rYqZvinKFm3LCNmPiBxW
+/rGuxcBszIC9CVLxlZcttSVFFW==

@@ -1,166 +1,83 @@
-<?php
-
-namespace GuzzleHttp\Exception;
-
-use GuzzleHttp\BodySummarizer;
-use GuzzleHttp\BodySummarizerInterface;
-use Psr\Http\Client\RequestExceptionInterface;
-use Psr\Http\Message\RequestInterface;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\UriInterface;
-
-/**
- * HTTP Request exception
- */
-class RequestException extends TransferException implements RequestExceptionInterface
-{
-    /**
-     * @var RequestInterface
-     */
-    private $request;
-
-    /**
-     * @var ResponseInterface|null
-     */
-    private $response;
-
-    /**
-     * @var array
-     */
-    private $handlerContext;
-
-    public function __construct(
-        string $message,
-        RequestInterface $request,
-        ResponseInterface $response = null,
-        \Throwable $previous = null,
-        array $handlerContext = []
-    ) {
-        // Set the code of the exception if the response is set and not future.
-        $code = $response ? $response->getStatusCode() : 0;
-        parent::__construct($message, $code, $previous);
-        $this->request = $request;
-        $this->response = $response;
-        $this->handlerContext = $handlerContext;
-    }
-
-    /**
-     * Wrap non-RequestExceptions with a RequestException
-     */
-    public static function wrapException(RequestInterface $request, \Throwable $e): RequestException
-    {
-        return $e instanceof RequestException ? $e : new RequestException($e->getMessage(), $request, null, $e);
-    }
-
-    /**
-     * Factory method to create a new exception with a normalized error message
-     *
-     * @param RequestInterface             $request        Request sent
-     * @param ResponseInterface            $response       Response received
-     * @param \Throwable|null              $previous       Previous exception
-     * @param array                        $handlerContext Optional handler context
-     * @param BodySummarizerInterface|null $bodySummarizer Optional body summarizer
-     */
-    public static function create(
-        RequestInterface $request,
-        ResponseInterface $response = null,
-        \Throwable $previous = null,
-        array $handlerContext = [],
-        BodySummarizerInterface $bodySummarizer = null
-    ): self {
-        if (!$response) {
-            return new self(
-                'Error completing request',
-                $request,
-                null,
-                $previous,
-                $handlerContext
-            );
-        }
-
-        $level = (int) \floor($response->getStatusCode() / 100);
-        if ($level === 4) {
-            $label = 'Client error';
-            $className = ClientException::class;
-        } elseif ($level === 5) {
-            $label = 'Server error';
-            $className = ServerException::class;
-        } else {
-            $label = 'Unsuccessful request';
-            $className = __CLASS__;
-        }
-
-        $uri = $request->getUri();
-        $uri = static::obfuscateUri($uri);
-
-        // Client Error: `GET /` resulted in a `404 Not Found` response:
-        // <html> ... (truncated)
-        $message = \sprintf(
-            '%s: `%s %s` resulted in a `%s %s` response',
-            $label,
-            $request->getMethod(),
-            $uri,
-            $response->getStatusCode(),
-            $response->getReasonPhrase()
-        );
-
-        $summary = ($bodySummarizer ?? new BodySummarizer())->summarize($response);
-
-        if ($summary !== null) {
-            $message .= ":\n{$summary}\n";
-        }
-
-        return new $className($message, $request, $response, $previous, $handlerContext);
-    }
-
-    /**
-     * Obfuscates URI if there is a username and a password present
-     */
-    private static function obfuscateUri(UriInterface $uri): UriInterface
-    {
-        $userInfo = $uri->getUserInfo();
-
-        if (false !== ($pos = \strpos($userInfo, ':'))) {
-            return $uri->withUserInfo(\substr($userInfo, 0, $pos), '***');
-        }
-
-        return $uri;
-    }
-
-    /**
-     * Get the request that caused the exception
-     */
-    public function getRequest(): RequestInterface
-    {
-        return $this->request;
-    }
-
-    /**
-     * Get the associated response
-     */
-    public function getResponse(): ?ResponseInterface
-    {
-        return $this->response;
-    }
-
-    /**
-     * Check if a response was received
-     */
-    public function hasResponse(): bool
-    {
-        return $this->response !== null;
-    }
-
-    /**
-     * Get contextual information about the error from the underlying handler.
-     *
-     * The contents of this array will vary depending on which handler you are
-     * using. It may also be just an empty array. Relying on this data will
-     * couple you to a specific handler, but can give more debug information
-     * when needed.
-     */
-    public function getHandlerContext(): array
-    {
-        return $this->handlerContext;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

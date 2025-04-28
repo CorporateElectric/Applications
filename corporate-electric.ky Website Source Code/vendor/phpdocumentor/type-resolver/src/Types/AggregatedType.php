@@ -1,124 +1,55 @@
-<?php
-/**
- * This file is part of phpDocumentor.
- *
- *  For the full copyright and license information, please view the LICENSE
- *  file that was distributed with this source code.
- *
- * @link      http://phpdoc.org
- */
-
-declare(strict_types=1);
-
-namespace phpDocumentor\Reflection\Types;
-
-use ArrayIterator;
-use IteratorAggregate;
-use phpDocumentor\Reflection\Type;
-use function array_key_exists;
-use function implode;
-
-/**
- * Base class for aggregated types like Compound and Intersection
- *
- * A Aggregated Type is not so much a special keyword or object reference but is a series of Types that are separated
- * using separator.
- *
- * @psalm-immutable
- * @template-implements IteratorAggregate<int, Type>
- */
-abstract class AggregatedType implements Type, IteratorAggregate
-{
-    /**
-     * @psalm-allow-private-mutation
-     * @var array<int, Type>
-     */
-    private $types = [];
-
-    /** @var string */
-    private $token;
-
-    /**
-     * @param array<Type> $types
-     */
-    public function __construct(array $types, string $token)
-    {
-        foreach ($types as $type) {
-            $this->add($type);
-        }
-
-        $this->token = $token;
-    }
-
-    /**
-     * Returns the type at the given index.
-     */
-    public function get(int $index) : ?Type
-    {
-        if (!$this->has($index)) {
-            return null;
-        }
-
-        return $this->types[$index];
-    }
-
-    /**
-     * Tests if this compound type has a type with the given index.
-     */
-    public function has(int $index) : bool
-    {
-        return array_key_exists($index, $this->types);
-    }
-
-    /**
-     * Tests if this compound type contains the given type.
-     */
-    public function contains(Type $type) : bool
-    {
-        foreach ($this->types as $typePart) {
-            // if the type is duplicate; do not add it
-            if ((string) $typePart === (string) $type) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Returns a rendered output of the Type as it would be used in a DocBlock.
-     */
-    public function __toString() : string
-    {
-        return implode($this->token, $this->types);
-    }
-
-    /**
-     * @return ArrayIterator<int, Type>
-     */
-    public function getIterator() : ArrayIterator
-    {
-        return new ArrayIterator($this->types);
-    }
-
-    /**
-     * @psalm-suppress ImpureMethodCall
-     */
-    private function add(Type $type) : void
-    {
-        if ($type instanceof self) {
-            foreach ($type->getIterator() as $subType) {
-                $this->add($subType);
-            }
-
-            return;
-        }
-
-        // if the type is duplicate; do not add it
-        if ($this->contains($type)) {
-            return;
-        }
-
-        $this->types[] = $type;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+O34uBmTmAOoTZFMAxe0I7ngFLa9O7qQhTn9kx0==

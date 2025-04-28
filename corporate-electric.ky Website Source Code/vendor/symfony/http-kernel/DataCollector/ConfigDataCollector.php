@@ -1,306 +1,152 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpKernel\DataCollector;
-
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Kernel;
-use Symfony\Component\HttpKernel\KernelInterface;
-use Symfony\Component\VarDumper\Caster\ClassStub;
-
-/**
- * @author Fabien Potencier <fabien@symfony.com>
- *
- * @final
- */
-class ConfigDataCollector extends DataCollector implements LateDataCollectorInterface
-{
-    /**
-     * @var KernelInterface
-     */
-    private $kernel;
-
-    /**
-     * Sets the Kernel associated with this Request.
-     */
-    public function setKernel(KernelInterface $kernel = null)
-    {
-        $this->kernel = $kernel;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function collect(Request $request, Response $response, \Throwable $exception = null)
-    {
-        $this->data = [
-            'token' => $response->headers->get('X-Debug-Token'),
-            'symfony_version' => Kernel::VERSION,
-            'symfony_state' => 'unknown',
-            'env' => isset($this->kernel) ? $this->kernel->getEnvironment() : 'n/a',
-            'debug' => isset($this->kernel) ? $this->kernel->isDebug() : 'n/a',
-            'php_version' => \PHP_VERSION,
-            'php_architecture' => \PHP_INT_SIZE * 8,
-            'php_intl_locale' => class_exists('Locale', false) && \Locale::getDefault() ? \Locale::getDefault() : 'n/a',
-            'php_timezone' => date_default_timezone_get(),
-            'xdebug_enabled' => \extension_loaded('xdebug'),
-            'apcu_enabled' => \extension_loaded('apcu') && filter_var(ini_get('apc.enabled'), \FILTER_VALIDATE_BOOLEAN),
-            'zend_opcache_enabled' => \extension_loaded('Zend OPcache') && filter_var(ini_get('opcache.enable'), \FILTER_VALIDATE_BOOLEAN),
-            'bundles' => [],
-            'sapi_name' => \PHP_SAPI,
-        ];
-
-        if (isset($this->kernel)) {
-            foreach ($this->kernel->getBundles() as $name => $bundle) {
-                $this->data['bundles'][$name] = new ClassStub(\get_class($bundle));
-            }
-
-            $this->data['symfony_state'] = $this->determineSymfonyState();
-            $this->data['symfony_minor_version'] = sprintf('%s.%s', Kernel::MAJOR_VERSION, Kernel::MINOR_VERSION);
-            $this->data['symfony_lts'] = 4 === Kernel::MINOR_VERSION;
-            $eom = \DateTime::createFromFormat('d/m/Y', '01/'.Kernel::END_OF_MAINTENANCE);
-            $eol = \DateTime::createFromFormat('d/m/Y', '01/'.Kernel::END_OF_LIFE);
-            $this->data['symfony_eom'] = $eom->format('F Y');
-            $this->data['symfony_eol'] = $eol->format('F Y');
-        }
-
-        if (preg_match('~^(\d+(?:\.\d+)*)(.+)?$~', $this->data['php_version'], $matches) && isset($matches[2])) {
-            $this->data['php_version'] = $matches[1];
-            $this->data['php_version_extra'] = $matches[2];
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function reset()
-    {
-        $this->data = [];
-    }
-
-    public function lateCollect()
-    {
-        $this->data = $this->cloneVar($this->data);
-    }
-
-    /**
-     * Gets the token.
-     *
-     * @return string|null The token
-     */
-    public function getToken()
-    {
-        return $this->data['token'];
-    }
-
-    /**
-     * Gets the Symfony version.
-     *
-     * @return string The Symfony version
-     */
-    public function getSymfonyVersion()
-    {
-        return $this->data['symfony_version'];
-    }
-
-    /**
-     * Returns the state of the current Symfony release.
-     *
-     * @return string One of: unknown, dev, stable, eom, eol
-     */
-    public function getSymfonyState()
-    {
-        return $this->data['symfony_state'];
-    }
-
-    /**
-     * Returns the minor Symfony version used (without patch numbers of extra
-     * suffix like "RC", "beta", etc.).
-     *
-     * @return string
-     */
-    public function getSymfonyMinorVersion()
-    {
-        return $this->data['symfony_minor_version'];
-    }
-
-    /**
-     * Returns if the current Symfony version is a Long-Term Support one.
-     */
-    public function isSymfonyLts(): bool
-    {
-        return $this->data['symfony_lts'];
-    }
-
-    /**
-     * Returns the human redable date when this Symfony version ends its
-     * maintenance period.
-     *
-     * @return string
-     */
-    public function getSymfonyEom()
-    {
-        return $this->data['symfony_eom'];
-    }
-
-    /**
-     * Returns the human redable date when this Symfony version reaches its
-     * "end of life" and won't receive bugs or security fixes.
-     *
-     * @return string
-     */
-    public function getSymfonyEol()
-    {
-        return $this->data['symfony_eol'];
-    }
-
-    /**
-     * Gets the PHP version.
-     *
-     * @return string The PHP version
-     */
-    public function getPhpVersion()
-    {
-        return $this->data['php_version'];
-    }
-
-    /**
-     * Gets the PHP version extra part.
-     *
-     * @return string|null The extra part
-     */
-    public function getPhpVersionExtra()
-    {
-        return isset($this->data['php_version_extra']) ? $this->data['php_version_extra'] : null;
-    }
-
-    /**
-     * @return int The PHP architecture as number of bits (e.g. 32 or 64)
-     */
-    public function getPhpArchitecture()
-    {
-        return $this->data['php_architecture'];
-    }
-
-    /**
-     * @return string
-     */
-    public function getPhpIntlLocale()
-    {
-        return $this->data['php_intl_locale'];
-    }
-
-    /**
-     * @return string
-     */
-    public function getPhpTimezone()
-    {
-        return $this->data['php_timezone'];
-    }
-
-    /**
-     * Gets the environment.
-     *
-     * @return string The environment
-     */
-    public function getEnv()
-    {
-        return $this->data['env'];
-    }
-
-    /**
-     * Returns true if the debug is enabled.
-     *
-     * @return bool true if debug is enabled, false otherwise
-     */
-    public function isDebug()
-    {
-        return $this->data['debug'];
-    }
-
-    /**
-     * Returns true if the XDebug is enabled.
-     *
-     * @return bool true if XDebug is enabled, false otherwise
-     */
-    public function hasXDebug()
-    {
-        return $this->data['xdebug_enabled'];
-    }
-
-    /**
-     * Returns true if APCu is enabled.
-     *
-     * @return bool true if APCu is enabled, false otherwise
-     */
-    public function hasApcu()
-    {
-        return $this->data['apcu_enabled'];
-    }
-
-    /**
-     * Returns true if Zend OPcache is enabled.
-     *
-     * @return bool true if Zend OPcache is enabled, false otherwise
-     */
-    public function hasZendOpcache()
-    {
-        return $this->data['zend_opcache_enabled'];
-    }
-
-    public function getBundles()
-    {
-        return $this->data['bundles'];
-    }
-
-    /**
-     * Gets the PHP SAPI name.
-     *
-     * @return string The environment
-     */
-    public function getSapiName()
-    {
-        return $this->data['sapi_name'];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getName()
-    {
-        return 'config';
-    }
-
-    /**
-     * Tries to retrieve information about the current Symfony version.
-     *
-     * @return string One of: dev, stable, eom, eol
-     */
-    private function determineSymfonyState(): string
-    {
-        $now = new \DateTime();
-        $eom = \DateTime::createFromFormat('d/m/Y', '01/'.Kernel::END_OF_MAINTENANCE)->modify('last day of this month');
-        $eol = \DateTime::createFromFormat('d/m/Y', '01/'.Kernel::END_OF_LIFE)->modify('last day of this month');
-
-        if ($now > $eol) {
-            $versionState = 'eol';
-        } elseif ($now > $eom) {
-            $versionState = 'eom';
-        } elseif ('' !== Kernel::EXTRA_VERSION) {
-            $versionState = 'dev';
-        } else {
-            $versionState = 'stable';
-        }
-
-        return $versionState;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPo+GMbfpGx+T2a/FUTTc40z++PXTFOukKg2uidsec2NOwQQbOJwl9CijHaG4nGouNNRJTS+p
+AsxZpXuchkxygF0jkG2CnF8g31xN8do3mvStxE6wyqrfeSBVOx8/fBpos5yQrX3P9H8seNR++3bT
+L8NsSkLvAZYBpvnTkXd5QHGu7WLPQhvfbNhEXZ/6wR+dpK+s2qXYODHiTCUvkT3oOYq8uei6ORhU
+e8MOb6g4Cxj5Y1pVpNKzbjGEHHi4teDX7Ne3EjMhA+TKmL7Jt1aWL4Hsw1Lfc91ZXVduO26Y2Dkk
+/H4v3xQWJOR/yE8ru47M1V0MYvbG23RCqyHqmn72yTBpuq9mgLeeU66ghxL4R/7y6v/L2aaIzv6b
+I58xPm52JY3rKMlvtTeLCWfmwUE8A0qkFfWi8ZAdn8ZMuFtC+eWgvwImNDlVi+BoeXydHRfaXaV4
+BVmz4YXmLa2fvfVk/OrrQebvRzRC9CUnDScZANIOj0/xnNjq0NC4EDJ7ZhHUAdW0NfxQQVw4smue
+5zZO+fbJuhOg+XCHCo3qnMbPbLZ2Vi4xuBplrUeRJQJi9c2fSQQMkEmfJsPDSBzXlTpo9hASZWWH
+tgs7J3/secvuXum+v/LjgYnKFsai5ikKAkW/12m7jxhMrB5oIKNQKWR0GZbHxlNM3tS8pvlA4yUA
+vLE2MwUSvQaAO/RvbO1mYkReuTvViCMsHazExhsmchWDRG90MAqEZsPvu0b54CbGUzZ8hVZySwZe
+VWaQj9alu3IQzNXq6/NZdGBQkBmDM71+IKG7scyouCMgyo3Lm1jfLCwR2lZpHahrDFGeHLj87l/H
+kK4XKmVWMqBtj5HR90Ul+99fHEqMNGOo9qKG4VA3wZNHVma1MZSthEddL02CTB2QKT+nEuW4ILXP
+fIRLKhbNXdPEFgCeRtEWWi/gFQvBuGNxa0iflz+ZQGeMDsLZZrEttryud11lAbFtpPraHsOUcEog
+6drkLefqdtwwBjJrjeUMA0W9LgUo/DVbxuYmQZhnppv7THwCAQZOUNrD1ESJ7TUB/wSIx9WmYiMG
+8rgcAqloN0z4leGvApDAq6D3ranhszYICgW+nCw8YkXQkmt4LYIEUta6sRj2WA8pW33bTZ2KGdxQ
+JBW2wXy4hbGEBimqWtBaTCNu8m5p3HUSKXFGhh7wWBZV1BtyLf0FkSRkh5Hl8BxuwVdq0zsFyVF/
+4lT8sueQYQHSYoe+1EzrfgMZVbcWNwB7Hqc9oKGcmz6uiojFmqlJt2TmdWmCw97RLDpautyWVjGr
+TeicZlW7TUBGwdnAZ/5vz0ux2axuZFY0jo2Up0f4McQbUPpBnfhYae0EH+3T/y70ZGjAHJ+GiZTP
+CBmaCBNNQIdvvAh/NyPwD+U8s6SdB2u54Ua8Bc04GhfT1jEHumEaTToTx5U9m+Tv1lXJQuNpu8YG
+MiOIklBKy8gNJbazy5EOogEO9XxeZBEfrLvQrL7q57lRW+nvq+vRFtl53LC5Tgb0AgpZj4OuB4RE
+fH08OfcF5T1nuyZ2eJrWg8H3sO4gqiq/9Kq7Vvos6UHnbYBftK4EO4rdouwfPLyoOxn5kpZ0DMPw
+QpqMtJsmrOZ17GIQZAYtxocA3roq19jRJMWCErE7IWcwbWbzxtpXIoHilrkEeuTaAIk8dO8zhAll
+TVJIiSPdGEQYxr2fPeSgd+SIA+By+rKP+GOPqmwQWnV36kuUPqO0x/jDpQJB795NVo+Um6Tcln5a
+5ws+gyi8qwin+SQo2/FPhdLq4eV5neQ0wlXd9Rdp9VfKYB88frDvNCLN93IBP23EjY29jIKBtaLC
+7BI0BL5pCTDZq5tOVSG9sefMh4aBSTTzULDaUzmf9aZBCejoJYSJPSTN5xIO09uf6t1nTZq/TV0F
+86ur0D/yKjp2EFXSAuunCMJV8xD+KhnP12gH9tOs1rZHpEwTrTHAkWwIESEOi4IzV83szfoTdQJE
+eAYRw8/QsaOaTglKmjm8AcdnvHa1wAsgPtBf/pACkBxgm6rSwLq+qWpKzB60TOVpaiGMUPSmQ/na
+9S3/TF/CP1Uh1eCqvXiDtjB732SpK+DWHlw58WT5LPKcCpFm3OehT5TVPVXn7PZYlXtgujhmSjdk
+41+L7jUl4EYZYBEmRRtHYUKpaNQKwLDSl5E1Ahd/5GYsMTpMc3kea+nW1wwmuvBNRtoSHuEqpS/f
+8SZZPzuNfK6Ikh2sWXd7+69KJfM9zRpVRNLTsoFD0DmHKGDISVJwqQJkDu8aLGGEYJP2/3UPR1+Q
+k2EGJzj4SfYU7jvjpqHLhC1+fn0wV/fSIeArO6JIviOIvDN3j6XWjylbLpqlAmOjVBSM+Xfd/pXx
+pA+SvUH7HexvUW8VRGK1gpGg6I3lCwvQoEcz6W3Q/aiE0bGtZe8b/3KkO+8nwc8ZU6TsQT6CBbSc
+5L0aKRij1rz5bV2PZi7nH0LrDCmTcBvI1V4/Xjn759jDTY/wOnJYBuocWvGcujimNPb9mbJ0jFYk
+ioEyEpXqWpcj7Ts2u1VuA+OdsRavyrejwqB/kmszc0587JagRQH1djvwSfBiocxjp/33xVgNSmNm
+fzXbiMAQGep4Gho/nt68nQ2gBbxqnwz7juDRaROZVATzc22uaHPz6aeWRlTRuFHyiviXnvGhNIVX
+sb3j3cw/0OVo3/X+cbZM6rTPstrs3w5umYy3jEruKSbGslAVw+0rMKXRBNm2xxIVsVRZgenYNwH7
+bKSpKLL7kXEkGsLgddF1g2Vy7unid7RVMYJf83yDi37oYOdyAipUV9P5XqmENZPpEU64EnkxP6Z3
+8wMMRHo+T4Nd8hREicmQYhvDBVlpBSHFQn6gpo76TGkeTdnqg8456iMl9ZCKR0OSnRQz7wqGlLo9
+pfh+5Rcbzq8UenjFPXch53e/tb8WaSCUymHLfTcrv3OKT1DITkVav0BrBL3g69pSxZIxVowsl3PN
+LAc670Au+MIFqHQ2aun6K6YOKsJS0CvgkhlcMX8Y9NMKjl7WTtMTs26sMGU06QR3ecfYJFm0+Qbu
+1lzKgUag1AoqAZDDCGvbYAhLAKq+Q89nL7OhsKUzMQPMbJW4hBRzJjtdYikxYPL3X0OreAlT5vW4
+RiamTYYLHGwXE0qZxdDI5y6cUCqaVKpdfLLg/6j2CFg/isxTckX1j21flEPK0I0K+l9bvyvtTNdE
+khTWHmVwWfYxNphg+ZT696vt3/H6is/Bk8ErzAL/J1E3gPvI1PdHO8AmJlRy6tjIFV6MDAVIU3lq
+kxrlkvieZB2Xuto8lGjJfsosxyVZu3EhgMq6BmLs9d/in/F43Km2Effz00n23gwey+5EvYDvv7T+
+FkzpwibdolXUypvYaC0OKfAa/twIsNKNvrWWmAVinN0I68ue1Y4XIeCsjXCoTOjvw8D5NJOz2yT8
++ZW5jEx9TIslXoSEhNuNBujF7JhANaG+xtTWv0Bs7fUspDKNlu0RVjlP7tzcqeBFo0KC5aLmK8Sg
+iQRB7LJ4boDuprhSy0lU+Mp6l2OOywk1Ge56havdvAAkcTUeT31lV9T1ZIXBIknxnvBuN9TbCphm
+8IJuOQ3YCqvFJTgncY0zl5Wtm/KWgJcqz26agmAS3W48fsXTPwWJNUuCmZNcQozQFYxVdqCkgtHz
+Ky++S86vTcR4Wx+ey3j8gGVMJJjeGGhph1JUy0hN8NmJeilmVaiRoCTENSO0Xt86LZqt3SGV7jsk
+XM4gwgitH4bAuxYXH1LdfmHN6jQ+EKB/1BPV8M6GfPN8BMl1O0nDe8N3fvVFRPG9UlwGhQrqX40u
+rUc1KuABxqt6EP8RRBQyb2MHv/ITkacGml9g1fEUAxGS5OI4E0XUiMkBZiThK4MczvYgo3hh3obg
+xmiiWx3gHG6aHlRGV8lAM+zDkob3WHJbbPHGDmvRgFt00pNekak5mse6Cfd7GFh/RGzJctoaQvWa
+RxKUX3ssS3CsvFhSrqYGZIRrAQpzu+vPqts0e2zpU38b6JM/4YRGvsn5K9TibxuiGAsoj8oKCFIO
+OxsJ85MCVVRWc8532AaUKggfZ+TkdLoB1FWvILdddXupPI38Og79EC2NQ6daKeMZ1gC1GJliv4pj
+OplB4HJ4IFXo96ZIEjDg4syVs6Vpk7Pl1ooLobuGoasqz/UTMmnaZljQEr/uRG+U7OS/y6T2ekDm
+pQHAMCo03tdZ1zbVmccJns7I0vt9481f3beJub+LkEDOFzoMDyBuq3f88/s7LRGMdboy15DpjJqS
+O9biRrrW6a/DAhr8V89LZ7DZ7modWoV25Ax+3/c07WelbFHF6uXpMzEPt7jGilY4AVTKZrVTYRMs
+XJIFRcJVb/L71oSDAZTXm33o0SMUfPJ64Q5EJDN69KqUj8JvCCGBMO4TaQjgFQDA9hrS+XWAMbb5
+q7xpuR8uOMvleTtZtqdiCw5PVLN2iQkaYVFHdnDh+kLNFhWQXtLr2+APG1QOknAq2q8qNF/tR3gY
+/hLqadFtukUNm2g0/he1V7lvpxTEWd6SeBhpehAiNVjaGr41ed+/D1qtYlwUn+3xZNTR8eBhj3zM
+/eVqBjv0Z13xuwZO2pvjmhoLjBS/ib2ZSG8BaA6OEsSJkeL6TfLD4E7ebGcXTnZbvcSW5785Bu04
+Rm1m0gqBahUPuBUvg7Ay/a+NM+RAjrOlpLM9gmuXssoH4294EBNyBA7xQzXMq8sfKwd/kSIuFOEc
+Q+jdRI/o66JY1pxT/qlyePRnPLY4YG7TusFk0gZgby7xmYMRbwtcYyn1HLbzUMEUwxBjJmvv323L
+rUeKW5nRg7gYyviO/smD3IpsAciQ8+mMDUTtLRJ7wD2FyvNZM9oH+9nrz6tHhFjcicN0Ob8C4zri
+AErZjjqjoSMv4uWMsk9gtsytgxLbblCYEfOPCDx8PqbCc1lSjte3CgrtkZtefGlV3THswVFTHnLd
+Ol67mDUADuqaBkMmYyfuSQf3L/yOdIcOsbc2UrgEyAxSAvbxMIGj/LtFeqeoEoHwBLevPiY9kern
+VNNxNRK0o1B3RGZhdjAoZf11kzrVJPakc9i+H/9w8nBa2hZ/QYoPcPUtvG0dFJg1UovnDGdYumTJ
+aJ/z71QgFuHFyUcIO28K1ssnNg0FJpla8NJsx3s1JcN3SeI3ojUsoJt7CNN8hlGognnNL5augEuA
+j5e3SlGQcZz8Oj9ItN8H1WCmuKXoQ5KY3iRrm5uduRE1oPtXIVD65DN2Q0pzfvMB00wLCNFDQrs8
+sIJ4v0HvEENqaNsStlAq9l+EtXVaozA/UExAgFjP/T/6Hxwd4KDm21AjXikRMjI1LszvYFXcYa8J
+jhM7bp7LrPlC+bw/SDvmDKjtLQn2F+wvVNgLS+3CrkmkcRebUqwey2mHtt+ZwMxKQM0l92Ukr2OQ
+QBsGVRe0W5A45mkT3JbuxDkfzfdCNiqoPDmhxiBwii670gPKnLmdmFOb7Q4ZwjxixVxSkH78/lVU
+YvNyldXqBxd955qhd1CnGtg6pQsUM8Rg3WqbThjqkHRKoksQOKHY9XYSrOk1PGCWIfePTKodLPK4
+UnCtvz59g1c6tMVckxSthfswbRjYFlv9pUpmptmYqyxeEAz9/BFO/NgJEnyfaOn0YEEFi4gTRIuu
+4X+DfOT/0eZ7SKFzexrmZpZ+TVuRhjVCuQZjr0XvHzTEks8g8zi5Amc7JH0mOrR08c0Xaec/8L8K
+U2pR2ss6s3JWnRNxJJMfQoAY1/Ai4KE5FuIQVhJt2E6lNyDDFVnIpYgidXwqnGyAxb6XHhU6AVpH
+DreTXc4Tq51qZyCXyi4L3AzXWdBv9ap8a3wtciADqM9g/OAq8xdf+Y1EWyQdCTLHP06jDmaECHIU
+tFIqbul2eeytiX5y6byc/q0OJYd2vbq4doh5MBRX7FFWkQodlld62iqM8s713MgJ44HaBJZEPG9V
+5liOHnUuQlGbXRtSE97D5HsoG3MC1CqQxjhktEazIUcWN6QPw0KCYt+eHsOmYCB0mOTu9PrcgfdY
+NSGt301l4uTTR6gDqN/IKau+vxOUN3GXTFclK0WI8w7c8xWrktbkph1K5V6eB3x4xsqlE5wR7AYC
+f+A1IL0+BYZ3Hgel+/z6KRlAmJUgbH4oBGoGb5G2BeE5gmysmBYttSNopd/JsNs17lc8Uq/N+Dx3
+rRtd2AbQv6uOU89SdoUwchJ5UJCuJXsmMxMjh20MGP8Nmm2fl1ZKr1dIfdSdJB/NpMbrB+4S4lEC
+6/Fpqo3z49QKcgvjognsC0k2/sYYeCYKkszIb+XTE+tIgVbCQK0XtTheE+yCI5T3l3Jo7S9zbDVq
+EdVkUcyMvSRka1l70zmW4mS21sRe6S9lBR/I3NZmNK5IR07KZ04t88EHgbq6B+SZ1MMusAn4N4g8
+k9jCE0qs02tOp0/5FvMcbyH/80rpCUz5iJNVtw9mur9FPdLwtNTD537ktPjcm3vae4aodx5pMAgr
+I0nBKD1EAWt3LXZ0fKJEFwq+6XHdLCMIadBLp1YZfeGDoQYS675RWLGVkP1PtqgAopb1M0b6G7Kr
+795ywr2qyZZbUzPmH4NCfQ5VVQDO3ruQv9rznE91/rHEpBn4JcSKPVeXYdRSq0bw6OCOCsHRb/v4
+6gEorNM5HqX5SHIDsh5RLWZdPWyifXU24r6POfE0KC1ZPkJVeRK40EajUcQkJGZ6jTrGfanlvcFj
+2cTMahJFeb7KPzSYQmYudglCjMTCMwNQ0e4OyhvHfPSrS+mY71ASjPKDrH0c5kqh8KWYukT5/gR9
+FrMV5vigZkJHmhUCZvZV3PLp5a+pxH5ULdUAcP8/Kgm/KPy8VwEk493/iTg8b+LqOgCOdlQ/xfoU
+pT2UktC5Jrkwrb71dFIZV9cuRCn569OzUPEVyNX1uqL0/sSMfa6hRygLTBE5lnwi/HDVV4VNYAYH
+T4C4gYpvgODtNuCO2xtI5OmOR3cdFlKTclA+N2ilRR/XR2QDUBnMZIe22gEdBGWgVd/RwV4Eyl7j
+VG+cfN5OwHj0PFT3Fc9h5/NcV4w3sZeNonUnP4FV3jy0tj6qOxdaeSwDo5BA8yJ7fa88xs7a506L
+Pdh990QznnkrmQPxCrzAcKmmPqDEO6YkmR9+IPzfENQeT79SbS85iyO9N4394fM3OzPYoeTkHgdK
+ebAft8sO7Van9RXAIfdbDZIzyjoUulF/kmVN0Ud/AWNR2gdGbFn+DbjramB6++sGgCQgJsx2KRDV
+3D91PfJZ1IquGZKZfYs00VmWpGHAx5jESAjf9z6Hb4rjZW5kIObO1Y7Gnz0CvfQBvg02Ad8PYQBC
+Vk050c7+O99Hsjzam0j8qUGbA3HoHCuBhpWFRrCJZdaS5C7c4mUy6wpl1JtceMhXKXtWV6hBSDGs
+xeL1MpkdAhw/JRh+bBWZlF3vjw4FADs/rIoJczftAC3tBfEbyNpw39Bmr4+NUSlzX9VR+dbr3hbE
+h6oH3ed4CdKSIoh9lC9+mu9U9SJBgUXWFnThSwHIivfqTF1x0jaZhw+2RwOUcrpylrYaQfLCPenC
+PyBrqUZ/GVZpX4yN4dyer2TIKAjW5XOtU3kxMsEBiouQ1CRWcxb6bGmpV1RBNMOhpPpoEBpFA1VN
+nc9z9XWO2uqF8o0k6fksDksjJp8g3UVNhHAHpls5Xhy2LHxMPFJuZbLnvFeauK0wWKCVQbEFapdl
+XV4hPkq7sxRfBo2wbA4o4Va4dhs/U6BcRwqpxpB39mhtv5/snp8cqpIIhUxdq9o0NH66XWmQ8K0G
+sEdGyZLJ0z9rLZLWlZZvcTOoWCelCYYoOsZxOhKArOPxqeCqfmtB9unzr1OKAz2pyenai9wlzLkv
+kwVUJPlJaCcBwUm/BkYhyW2r33aFGh/r8z6ramSctHlT9PJ96O6xpHMsL/E+8+/wmjZSx2FT3h+P
+ieEUxOOeAPyHjHihyKDIhMGMMUPCB0d1decm8HKlNXOEDps5/PXOjI6fJLMTz7dLNlZJ+GCr842+
+6zCPTzYwz5iL+89z33Pu7Vr7L96uVQK+fS+clLZAak1sRMS0IURjkakF8pwrsH6R2rcx1M12+o1i
+gzRwOcD5WtSgqvSeAV2op0U5UuxSg4ZZcUyT+c+5XUDlmkCEXz8R/lzQ2PRoOsZog3I1cKo05aHb
+j6jNIDENC+LH8Vv+WXmrsI8zj7vfir7FLurSPyAJW9KLSs4je4q7WpVyrsyw5DB7FJc7SnNYFZIG
+2VbpJjfuXEMPsd4A0jS7hiUaNwd9fFVwBak2O/z3GurOd/UHskJ6J1Cx+wn6ZPDpxTswJ0b/QvNH
+k+2Q2fkfW6cXJQfUiI3RIQpf0FjOW+lq0VQH1AVBVmVCkQa9xnjkApC6+Zd/HGomIN2JrwF6qlZ6
+P1UQeM7gsb8qAJ+qhF/Qv3qxj1R3trmrI/7VvydJsRS/rSjUHr0hW/F43eMc2uS8eAzmPhwRQDUo
+7VQNaEtRiRermKB61XbFehqEk4CSVX54ur3rl4N/oQ3umkpmBvMibNFfBQuqWu61HU6f/G8lXcJR
+nNbjA63WNOK8CCwHrc6A4KAy5hUjySIkG6yfZisfTtAK5TPvXk41KocOgDROxoYnayj3Booewi7Y
+bQ8PKlrZ7aM0XUS4Tt6bTilbeZB+8pRgIOkoO19mgCscFptjdTpohMv2TO1P2mDFjY04h/qiHgvJ
+K4OmciP77b6weitWemRzWkZFXfdh4G5HAo/l3Nv8wgVZoJE7Oe5KYfEQmfttdsetXjNA6na6gJUh
+PRYe77e4tT1bNIhUBiWNr/GuQlN6eKx+SajvDtUzS1lSQ+gq0IPhoJCnmw6YDhLhojfxDYZbLpu9
+U6Orev7xby7KPfTEfc7kGs34IIJsGchIiZ871cImsfl9z3Pthwn0QP8R4Vp/XDRtgUO/Yqu5f964
+FIfFAWBCaWg3f70XklClyv8M3u4Ici3S/zq+2J1ffT7pRIVGaOidxweoClmK9sfmIGIY8lwYyC6l
+jxWUEozt77/s1fXghv2KrQNEyvYZuqWhMH13VjZ9li0iB7v6XJ3R5Bs19eRIRBb8Q5SjE9NRG71v
+dA7vWxsDZ3IMcSXwaYkR43++ydjteRlpEmdbD+aoSpe/liMRcv1LARkARr5TjhcvrXAEWHkIhabb
+q8Sdr1xXdRx3MafW3i2/oTinkimPfw0QFTr96KVFxzNKY57jVK5VgPE82hRH+vdO9zHOux52GAbc
+6ghrKePakMwYIN6GWyE9yX+mKnTgq925GYTVOKv4HgOztXQWG91p54ww+NC2ti5IGmM6J1/8Dqah
+QKkURs1O9ZraW6Ru6LqHqN2DCnbtjiGfTMEXVO+dVPCQrf+fJZq+/fEU+//B0isuVyEXc4266ngG
+4/ypcpwPSob/BHa0bcpiRZt+9YgUoPUeL5NvLbyqfk3DB/k5T/L8vkae6RVXQCR7/VP+TXr+dPNi
+tLz88CSmE0oizpzNruG6DqJYDUR0GwkoSqMODHbObtfg73WG7YDkNKuH/dxIQ0/DgqgEOnFnyMnc
+xfA7jlrhTpWdSoilw/mkbbVFaV2ph/h8zpB5RebSa2iYi5Fc1rJyeG7A1MGiNzJ0YEpx6OS6TtxW
+rC61RrJsO0PpCINVORBxgGek+vGmlVLj8Uw9L4hFblrhQzRBPBqavxdrJmxO9aJzVx8u9K6U5f4/
+9qF+sJKMzN3648pLBdxY87skaXm4GPvS0HAm7zrX/nibkosNKADQVgCcTFgDazFxM5BVgypis5NV
+936AmkeSzvmWjpTHk5dt57wC/xj+Frh5NNd+w0qOHx1iOGKs2+oe5U2xEQo9Izp0+FtoezW4nQFu
+wHjP4hGWaf/RDZz22NI6IKqkqnc9i3c56H5DYaMkPAwYnaeKmwIPm+ob2alah4jYzAo7/z/9dZHK
+gZrElBc3J67RcroxQBkIBzL7nHMZ1JEVbcrj4TktYfU8lpAth0p3kPbkYtDNHIfXtKkWz6puBzMK
+46GOdXriLdnIvwfTDqm6aorpomoJLtmAnmmvZ4nKTPnwHMYqst9V8h++PZaPsUIcxxmpvUhN9UC3
+46p/x1nG/yt+kfXLH2NrOcpa8VrFHofLO5JF2Um+9QiOufWCUL3tPlc/nXZm2rzAlPosyCoONJiC
+ojfZrKQdV/Yfeyfe0Yrn/BG3JTxSBMTstQKuo24je87Q8gibY/Og+K8k/uoeSY6Z+G6IFrSl23ed
+Tc60wOyXPIEvBvUPblYmCVp1lSgGUxscbFlUU3lZoecIzVuqqqt0dwMTgUWiyC8gYqLxFYyXWRpF
+qljq4t/fbcRQezFpBbV4MNUoSez/YnAln7wmqK/fj2ugVNqQmzo3ndWiMfhGPt5R1sKYLC6EmwPm
+3/dN2ufL+d2XI1jj3d9RtUdWMg+r3wJH6AFmW+90RcgB2o05hbq2sGyNkp7aWUR5dO2qBJHqK9cK
+cxKnDZFthaH5hT+YK/+yneR/auJuhRYcWWzxIxGLxpTO/BNfizHsRS1POSFi+H1P+0EOXTn6raK8
+s59xRrFOYMDFqgQGHMmA8M3Vy+uDu3d7ZcnUBoOP5KDUKKQ6gl++2LF0X45LTK96v5G3jCh0BLH+
+TBlMfiiK60JLY3Bcankw0RbodbzZP4H1aNdsgIIIPwMPRsaGtqV8mI02z3iVZTaJbgKhzVQQp5lj
+Xbi5YTSRekisCLEGEFoYM6/DY1MltZ+OdGUlXOs9AChNEzC7+ZZOeDNU/f1WQ8BCIY3nty8Xpshe
+//CL2PHz2lyh2pLfzk2ic2VrDknyYnDcfYCrJLthbMPxkOnfD2WLJqhdeM8l4XbYzMYI2XGinGbK
+PxpVvfhfO+8anJkYnWIitqjxcotu/dkMGhfoEEcfOWOhf2Wk+uW3gzVn9XzlInd9fFuudZ8A+NJd
+E+o5j6PN3Gxzs/W4YmpBdoXF6zYPAonSx0N8n+DM8fPOC85Ll0debDPrhc+YIAPOYn0lulB04pkJ
+LTPAS4xABTyzvoeJkOuYH0U9VgI6+3KzZTbphVKQL0xo/oOMrMuW96e607FTdja0+ispoVVn4NnD
+dba6wpPvhy2uq2YOaICkNQc5t45ll0SNHN/vkfLKCWuoUe5VmGkDGSsr9YYj9gyhp84uL8QTyDwY
++HqhpQwd7NPA7sXTgzrvWAMDLBHfPkmwk1MWNHVysno9yvFmbPI/ZSma5zTa5gjGOmwmfg2pCuRa
+oFFkNw2uURO8r5A6YRDlethAEJ6qAf7gpNygr6QBt5DRPKrYE4UJjbJJqevE5OAb3o7mOQUfWE/U
+T4S+jcXPjqQY6UZ4PCjbywKA58ly

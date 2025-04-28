@@ -1,76 +1,47 @@
-<?php
-
-namespace Illuminate\Support\Facades;
-
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Testing\Fakes\EventFake;
-
-/**
- * @method static \Closure createClassListener(string $listener, bool $wildcard = false)
- * @method static \Closure makeListener(\Closure|string $listener, bool $wildcard = false)
- * @method static \Illuminate\Events\Dispatcher setQueueResolver(callable $resolver)
- * @method static array getListeners(string $eventName)
- * @method static array|null dispatch(string|object $event, mixed $payload = [], bool $halt = false)
- * @method static array|null until(string|object $event, mixed $payload = [])
- * @method static bool hasListeners(string $eventName)
- * @method static void assertDispatched(string $event, callable|int $callback = null)
- * @method static void assertDispatchedTimes(string $event, int $times = 1)
- * @method static void assertNotDispatched(string $event, callable|int $callback = null)
- * @method static void flush(string $event)
- * @method static void forget(string $event)
- * @method static void forgetPushed()
- * @method static void listen(string|array $events, \Closure|string $listener = null)
- * @method static void push(string $event, array $payload = [])
- * @method static void subscribe(object|string $subscriber)
- *
- * @see \Illuminate\Events\Dispatcher
- */
-class Event extends Facade
-{
-    /**
-     * Replace the bound instance with a fake.
-     *
-     * @param  array|string  $eventsToFake
-     * @return \Illuminate\Support\Testing\Fakes\EventFake
-     */
-    public static function fake($eventsToFake = [])
-    {
-        static::swap($fake = new EventFake(static::getFacadeRoot(), $eventsToFake));
-
-        Model::setEventDispatcher($fake);
-        Cache::refreshEventDispatcher();
-
-        return $fake;
-    }
-
-    /**
-     * Replace the bound instance with a fake during the given callable's execution.
-     *
-     * @param  callable  $callable
-     * @param  array  $eventsToFake
-     * @return callable
-     */
-    public static function fakeFor(callable $callable, array $eventsToFake = [])
-    {
-        $originalDispatcher = static::getFacadeRoot();
-
-        static::fake($eventsToFake);
-
-        return tap($callable(), function () use ($originalDispatcher) {
-            static::swap($originalDispatcher);
-
-            Model::setEventDispatcher($originalDispatcher);
-            Cache::refreshEventDispatcher();
-        });
-    }
-
-    /**
-     * Get the registered name of the component.
-     *
-     * @return string
-     */
-    protected static function getFacadeAccessor()
-    {
-        return 'events';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPvsv+Ri0XSAytGbic7vTj0tjMdSj6cvyIuAur/2Cj//gT67j4zdlEYHv4PMYgge3JBcmLeVy
+VnByawv/YqXvytWg4LY5YAI8nIbPlEoiBoYV1blYIU+d+9Z1rXje8MuI7L3qp67bLfC4GBNanV3z
+9dQt462IE7ACrUrdmHqDwaFxrDjHGpjjheaBRZ+SElK/42s7LfkPXE8UDxUf9v9XhZiejtAfHzPq
+8av8miwag4e1OekpjsfHgS2iAr0UKpy+MnmoEjMhA+TKmL7Jt1aWL4Hsw2zex9e13OlaugWc2aCm
+xaym/mv8xO61n2Z+aAXcT5BlnKJKkX5L/nKC5M0mi3FqnHKQElTrsWB0sd+7vncknzujMz1ij1eh
+JAqb/sbNV6DIR4oCYiZhmIMkh5oVJJlLtXV3wwIwgkepu0qx3xrYg7NI8HaakVRW8G/oVSMsoVRN
+nR1Sc/LoKrXHhX7dQXdlSf/XYGj3eO17Iimu6Xcs//X6eRkWnv1s3QTtkIIOTz9NgnVRPQSdsHAc
+3foW2lfSv5XK7flzvCVCu5oVlusWM6zvrzmADAUYU2VXf06KruzZnP1XNrn4Iq7fvgzfMlslMJc2
+TJLM2kMu1YUWNXLFWFaWL6fb+hDE1cVfhvZoFqkJ2YN/+reL55UePkT109AQkcpF92mS1dkFBZ6I
+Mn/3jrDhtBUY3tL4FuaW1NheKu/4k/1W5Csf4qC3Zyh+l7XxEexn+/TxRXaFpdyHrzkGVwT+hj5i
+uAi+NqLAXk6Kj912/iDirdbahRiiHbe+UQ1XDTzqqZFsDUX7xUtZxcesqteDDerujy1FU5YH+NSm
+lWYZBpZxx1JXz8fdSE5itzz/VXDPPnC6bESkStAGgEPR6q+MC2W0KhJcQVDnvXN87zEQUARfc5lT
+mPml0Wo0Rvff7nSSTTXVVKFsQiWY/EQrVB15Oh6Yv+d5MwfNYrirK/p1NpC8zZFarw2QFLDc8QIw
+PIq/2viD2wyLVeXS1/iPg8LZAuofJ5DTVS/TvqHrnYbTI2g1yba5nwW44SXFQSlGnfc7pGr7BkCJ
+DS/XesPGfx5peiQdDeaVZIjhS8tO33GCC5n0/thtUnwoRhcK8d3kBrqZyO8wInZJus/hzTaembty
+dKQAlC4E3knMKwDaYjteEXNnuUiqDAyaLL763ThZGwwlzOc+gMU8LHJkxGvwy8j1O6CdCs4wh5jZ
+Hyuf+/YjQq184ZTRqjOPu7FLCKAr4S0PlKbR5I8uRkFYHLKHz7e6anA4WV6sBh8mHApaGE4bwrLF
+w0uj0rYRO1we62N09sq3H+FHqiFxQLnQNekZqghjLFr4fvaIyqj99lpkZmxfbvGoYdOcrDIeJ5wg
+KDJO7/ehLOC/m1ZlYJg6s571euazdp4f/9qU2QwYx1IRpc/k8AxzHfkdBiwncXMNwBpqxUcNr7tN
+NnYnt6YlfU9fqHKk1EWWfrkZN6bOjTk4NeueTByBwDlV2v0ViMWBrbB24KFKmL2ZIbNInHsko3l2
+bRbiFRxE2V/fgzmUYD84dWeBE4TOyb+2JwYKu5yAm+ZD2Bk8CoBAMPfjx5hosIr/qTwSFqX7ntnO
+tZCRXp1RoqCNvKOWl8GRVpvgGd0Si2hOlfyNKH85TUU2XprUyX8e1AIZIzLsxxfai+sabfAZUGk5
+X11tjzK4y1KuBJy7a5vRi6n0h9/e4fSiz38Mb++AM+NvADIqEidCXolgd6iNb+9fEdKZu8KMUHd/
+pwJbhmmfqMy54gYplWsLxfngYqOnCTgSo6EAKUv5Lxw7hMrpIQfttjLcSLAc0B/7qOTmPIitSdQI
+EwXt6jk2svzvjcPmyAXWLccYv3MTEryaQYNOW+ly12k1pk7gCbdYydJ2SKkLdS0Wcht/KVc+eP0k
+GD78afyJN/w69RU55szEdzKz5usTlibRTE9f2zWzCKGaUVUSIL3mAzj36OnTVQRPWDtDf6x31MgJ
+2lX6TibYcfrSf0ptQDcq4ti0l0pRfN2r43Punc6Xd4mi6s+lBmNNo9tNTr2z1F+siszR7KxOH+do
+vfSlCS7Vp24FwN637brtLBu+mWp84REIUYZ11C8s7JHKd6enwG8j97fY7X4U7Qb7aOVZv6PFnmb7
+Yw6EAPwtl8437y8oQfi/BeFldyyOHGfNcJe7p4V3MizK4nDpJMZbFqxl4r11p/pfSTEIQ1bDLa85
+2fKqM9Nb4h1vlls8FzDmFMvEFvqLildrQZlAhn8Fg9wZ4I7wehkkTarRqHplbOPFodC+b/j2qKvd
+IIZut4ZoL2qteOVf22E+SRtYQSaHXzCaL503sTDO0jt7Nab8l8jygLte68Npd3RNngqwKMt7rNTk
+HzJTbDv8YXudFz7FWv6VBBOl/uQ+LDBYpFJgQGH1lBOFnLUJgIpWuKOqX/MaDvVbFaLLJbZZrqli
+wlxh95lm5s97baNJ8aA7IxNpq1TsaqAxi2rBXXWMLPJUlXw1Tz8mys1gos/xhMuddSds+otdktaM
+1AfBdSXO+A+bAU/gR/uamP9DgOhCzvlMBnOUmJUAwWVQeFAZRiuHZlHr2E0hZmKxTofVIiBfEJKP
+BHdc+Qkx/pJmthivys0oPVDJSMSYQz/oz36AwYShNb6TNaebnKfusmrZu6hYr3TlIeRX2G6gve4W
+APg0knakm9h9FH6B4yoIWNWipDk5Pm2fUTLOn58P3RzXOWJdN6ScCGqDZNcsBmd/7uYsJ3IkmI65
+vKAjnxFHBwXoxuSPNXUzc3qf0rU4B48cZEdNPuRrVMtotbQIxhPagzA3epP9htBMss2j+1rHDdd6
+3iNdKzV7liG5HFtY51pP4ayml6pY6ie9h7ubYXek+HNY8LfdGRq1evpd+VqtFjFz9sPj9qOuHasS
+B9qrn31c16CBM2/Lk251aVdiXcjwuS+GyVrrzc/osob5FXfqSBO+qp99UbQEGNbw2ZJoiazZ0I0j
+0vM8SwaJMtTaSNhxAssiqY3LOV1hjtz4Be8XzpS2kho7Wm+mqQ7g8r4suTsLQYhpvAzPCf+c8Pbv
+H5/lYl27HtAWL82VLPXA52cJCdx1BdIv0vpUhcvBsSt+gAVBiwG1p5TRmO5vBJ8W/WHlHqnge2Cc
+J1OmVkQj2agzyuRbAXEP+NaxHrWgDLE95e0YK7+7UjQHn5JvpjazyWVXi+9S29iUqKt1u+d4LhcG
+Jr7ftTg8OQmdZEAxoD6bqWLX60e+gs26+tIU9ArgfvYIOObXS2T/n6CJw/N+alYzUiF5hAM2btXC
+m2XvSiBcOlq345PnSQW16Nv22zYWWroa60==

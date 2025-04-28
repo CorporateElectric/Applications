@@ -1,158 +1,55 @@
-<?php
-
-namespace Illuminate\Support;
-
-use Closure;
-use Illuminate\Contracts\Container\Container;
-use InvalidArgumentException;
-
-abstract class Manager
-{
-    /**
-     * The container instance.
-     *
-     * @var \Illuminate\Contracts\Container\Container
-     */
-    protected $container;
-
-    /**
-     * The configuration repository instance.
-     *
-     * @var \Illuminate\Contracts\Config\Repository
-     */
-    protected $config;
-
-    /**
-     * The registered custom driver creators.
-     *
-     * @var array
-     */
-    protected $customCreators = [];
-
-    /**
-     * The array of created "drivers".
-     *
-     * @var array
-     */
-    protected $drivers = [];
-
-    /**
-     * Create a new manager instance.
-     *
-     * @param  \Illuminate\Contracts\Container\Container  $container
-     * @return void
-     */
-    public function __construct(Container $container)
-    {
-        $this->container = $container;
-        $this->config = $container->make('config');
-    }
-
-    /**
-     * Get the default driver name.
-     *
-     * @return string
-     */
-    abstract public function getDefaultDriver();
-
-    /**
-     * Get a driver instance.
-     *
-     * @param  string|null  $driver
-     * @return mixed
-     *
-     * @throws \InvalidArgumentException
-     */
-    public function driver($driver = null)
-    {
-        $driver = $driver ?: $this->getDefaultDriver();
-
-        if (is_null($driver)) {
-            throw new InvalidArgumentException(sprintf(
-                'Unable to resolve NULL driver for [%s].', static::class
-            ));
-        }
-
-        // If the given driver has not been created before, we will create the instances
-        // here and cache it so we can return it next time very quickly. If there is
-        // already a driver created by this name, we'll just return that instance.
-        if (! isset($this->drivers[$driver])) {
-            $this->drivers[$driver] = $this->createDriver($driver);
-        }
-
-        return $this->drivers[$driver];
-    }
-
-    /**
-     * Create a new driver instance.
-     *
-     * @param  string  $driver
-     * @return mixed
-     *
-     * @throws \InvalidArgumentException
-     */
-    protected function createDriver($driver)
-    {
-        // First, we will determine if a custom driver creator exists for the given driver and
-        // if it does not we will check for a creator method for the driver. Custom creator
-        // callbacks allow developers to build their own "drivers" easily using Closures.
-        if (isset($this->customCreators[$driver])) {
-            return $this->callCustomCreator($driver);
-        } else {
-            $method = 'create'.Str::studly($driver).'Driver';
-
-            if (method_exists($this, $method)) {
-                return $this->$method();
-            }
-        }
-
-        throw new InvalidArgumentException("Driver [$driver] not supported.");
-    }
-
-    /**
-     * Call a custom driver creator.
-     *
-     * @param  string  $driver
-     * @return mixed
-     */
-    protected function callCustomCreator($driver)
-    {
-        return $this->customCreators[$driver]($this->container);
-    }
-
-    /**
-     * Register a custom driver creator Closure.
-     *
-     * @param  string  $driver
-     * @param  \Closure  $callback
-     * @return $this
-     */
-    public function extend($driver, Closure $callback)
-    {
-        $this->customCreators[$driver] = $callback;
-
-        return $this;
-    }
-
-    /**
-     * Get all of the created "drivers".
-     *
-     * @return array
-     */
-    public function getDrivers()
-    {
-        return $this->drivers;
-    }
-
-    /**
-     * Dynamically call the default driver instance.
-     *
-     * @param  string  $method
-     * @param  array  $parameters
-     * @return mixed
-     */
-    public function __call($method, $parameters)
-    {
-        return $this->driver()->$method(...$parameters);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

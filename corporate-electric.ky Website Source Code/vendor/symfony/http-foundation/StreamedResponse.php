@@ -1,139 +1,57 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpFoundation;
-
-/**
- * StreamedResponse represents a streamed HTTP response.
- *
- * A StreamedResponse uses a callback for its content.
- *
- * The callback should use the standard PHP functions like echo
- * to stream the response back to the client. The flush() function
- * can also be used if needed.
- *
- * @see flush()
- *
- * @author Fabien Potencier <fabien@symfony.com>
- */
-class StreamedResponse extends Response
-{
-    protected $callback;
-    protected $streamed;
-    private $headersSent;
-
-    public function __construct(callable $callback = null, int $status = 200, array $headers = [])
-    {
-        parent::__construct(null, $status, $headers);
-
-        if (null !== $callback) {
-            $this->setCallback($callback);
-        }
-        $this->streamed = false;
-        $this->headersSent = false;
-    }
-
-    /**
-     * Factory method for chainability.
-     *
-     * @param callable|null $callback A valid PHP callback or null to set it later
-     *
-     * @return static
-     *
-     * @deprecated since Symfony 5.1, use __construct() instead.
-     */
-    public static function create($callback = null, int $status = 200, array $headers = [])
-    {
-        trigger_deprecation('symfony/http-foundation', '5.1', 'The "%s()" method is deprecated, use "new %s()" instead.', __METHOD__, \get_called_class());
-
-        return new static($callback, $status, $headers);
-    }
-
-    /**
-     * Sets the PHP callback associated with this Response.
-     *
-     * @return $this
-     */
-    public function setCallback(callable $callback)
-    {
-        $this->callback = $callback;
-
-        return $this;
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * This method only sends the headers once.
-     *
-     * @return $this
-     */
-    public function sendHeaders()
-    {
-        if ($this->headersSent) {
-            return $this;
-        }
-
-        $this->headersSent = true;
-
-        return parent::sendHeaders();
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * This method only sends the content once.
-     *
-     * @return $this
-     */
-    public function sendContent()
-    {
-        if ($this->streamed) {
-            return $this;
-        }
-
-        $this->streamed = true;
-
-        if (null === $this->callback) {
-            throw new \LogicException('The Response callback must not be null.');
-        }
-
-        ($this->callback)();
-
-        return $this;
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * @throws \LogicException when the content is not null
-     *
-     * @return $this
-     */
-    public function setContent(?string $content)
-    {
-        if (null !== $content) {
-            throw new \LogicException('The content cannot be set on a StreamedResponse instance.');
-        }
-
-        $this->streamed = true;
-
-        return $this;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getContent()
-    {
-        return false;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,190 +1,76 @@
-<?php
-
-namespace Illuminate\Auth\Passwords;
-
-use Closure;
-use Illuminate\Contracts\Auth\CanResetPassword as CanResetPasswordContract;
-use Illuminate\Contracts\Auth\PasswordBroker as PasswordBrokerContract;
-use Illuminate\Contracts\Auth\UserProvider;
-use Illuminate\Support\Arr;
-use UnexpectedValueException;
-
-class PasswordBroker implements PasswordBrokerContract
-{
-    /**
-     * The password token repository.
-     *
-     * @var \Illuminate\Auth\Passwords\TokenRepositoryInterface
-     */
-    protected $tokens;
-
-    /**
-     * The user provider implementation.
-     *
-     * @var \Illuminate\Contracts\Auth\UserProvider
-     */
-    protected $users;
-
-    /**
-     * Create a new password broker instance.
-     *
-     * @param  \Illuminate\Auth\Passwords\TokenRepositoryInterface  $tokens
-     * @param  \Illuminate\Contracts\Auth\UserProvider  $users
-     * @return void
-     */
-    public function __construct(TokenRepositoryInterface $tokens, UserProvider $users)
-    {
-        $this->users = $users;
-        $this->tokens = $tokens;
-    }
-
-    /**
-     * Send a password reset link to a user.
-     *
-     * @param  array  $credentials
-     * @param  \Closure|null  $callback
-     * @return string
-     */
-    public function sendResetLink(array $credentials, Closure $callback = null)
-    {
-        // First we will check to see if we found a user at the given credentials and
-        // if we did not we will redirect back to this current URI with a piece of
-        // "flash" data in the session to indicate to the developers the errors.
-        $user = $this->getUser($credentials);
-
-        if (is_null($user)) {
-            return static::INVALID_USER;
-        }
-
-        if ($this->tokens->recentlyCreatedToken($user)) {
-            return static::RESET_THROTTLED;
-        }
-
-        $token = $this->tokens->create($user);
-
-        if ($callback) {
-            $callback($user, $token);
-        } else {
-            // Once we have the reset token, we are ready to send the message out to this
-            // user with a link to reset their password. We will then redirect back to
-            // the current URI having nothing set in the session to indicate errors.
-            $user->sendPasswordResetNotification($token);
-        }
-
-        return static::RESET_LINK_SENT;
-    }
-
-    /**
-     * Reset the password for the given token.
-     *
-     * @param  array  $credentials
-     * @param  \Closure  $callback
-     * @return mixed
-     */
-    public function reset(array $credentials, Closure $callback)
-    {
-        $user = $this->validateReset($credentials);
-
-        // If the responses from the validate method is not a user instance, we will
-        // assume that it is a redirect and simply return it from this method and
-        // the user is properly redirected having an error message on the post.
-        if (! $user instanceof CanResetPasswordContract) {
-            return $user;
-        }
-
-        $password = $credentials['password'];
-
-        // Once the reset has been validated, we'll call the given callback with the
-        // new password. This gives the user an opportunity to store the password
-        // in their persistent storage. Then we'll delete the token and return.
-        $callback($user, $password);
-
-        $this->tokens->delete($user);
-
-        return static::PASSWORD_RESET;
-    }
-
-    /**
-     * Validate a password reset for the given credentials.
-     *
-     * @param  array  $credentials
-     * @return \Illuminate\Contracts\Auth\CanResetPassword|string
-     */
-    protected function validateReset(array $credentials)
-    {
-        if (is_null($user = $this->getUser($credentials))) {
-            return static::INVALID_USER;
-        }
-
-        if (! $this->tokens->exists($user, $credentials['token'])) {
-            return static::INVALID_TOKEN;
-        }
-
-        return $user;
-    }
-
-    /**
-     * Get the user for the given credentials.
-     *
-     * @param  array  $credentials
-     * @return \Illuminate\Contracts\Auth\CanResetPassword|null
-     *
-     * @throws \UnexpectedValueException
-     */
-    public function getUser(array $credentials)
-    {
-        $credentials = Arr::except($credentials, ['token']);
-
-        $user = $this->users->retrieveByCredentials($credentials);
-
-        if ($user && ! $user instanceof CanResetPasswordContract) {
-            throw new UnexpectedValueException('User must implement CanResetPassword interface.');
-        }
-
-        return $user;
-    }
-
-    /**
-     * Create a new password reset token for the given user.
-     *
-     * @param  \Illuminate\Contracts\Auth\CanResetPassword  $user
-     * @return string
-     */
-    public function createToken(CanResetPasswordContract $user)
-    {
-        return $this->tokens->create($user);
-    }
-
-    /**
-     * Delete password reset tokens of the given user.
-     *
-     * @param  \Illuminate\Contracts\Auth\CanResetPassword  $user
-     * @return void
-     */
-    public function deleteToken(CanResetPasswordContract $user)
-    {
-        $this->tokens->delete($user);
-    }
-
-    /**
-     * Validate the given password reset token.
-     *
-     * @param  \Illuminate\Contracts\Auth\CanResetPassword  $user
-     * @param  string  $token
-     * @return bool
-     */
-    public function tokenExists(CanResetPasswordContract $user, $token)
-    {
-        return $this->tokens->exists($user, $token);
-    }
-
-    /**
-     * Get the password reset token repository implementation.
-     *
-     * @return \Illuminate\Auth\Passwords\TokenRepositoryInterface
-     */
-    public function getRepository()
-    {
-        return $this->tokens;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cP+foScjMqKPDBxtdI3H4glysgePsAvVhaFjbK9vfS+fBJDIKBwCiwcI2TAukGgUWelx2Kg8S
+5BxsD2xfVP6T5St35ESoeNKSTKENHkMCPjzTQp8Cwnl0QFB6xD0X85OdAawu4vIaJMQWkI668eKg
+GSauezYs1Bf3U75BNRV0TJY7KdttHAfI+9Zx5pag+wrX8VwGoNt235CW4fPtHa1ujUtXB+kmSxv7
+OhcGgToEHJ7E4DtEJROZheFZ2mx7H5XGATQuDZhLgoldLC5HqzmP85H4TkYJQB+MGP1W3j8gLAvZ
+CIpK4NPA851/9dC2+veYJHgeVl/6KIiTBDzUZitetRBDf9422iIrJVcP9HEaPh9hKK5hE7Ck491p
+wOzpGhQH3tZDvs/h3jGEiYB8LwQXclbbZE+OaTProUb1Tx+Nz9V+NhmYL34J72EGsR7McRnSrLFY
+V0IL4uF10iVIaMWR3Rt9SDJ3DFrrhmCCS2cRDM1wyuC1EUREAjY732juldk4djRWBPUK5C/BwWHZ
+tSt83ZXRh8ZpfJceykwPCpShE26+qnALu1ZVWSEN0FCryy0esc9sR7Qz6vxLXZTvkmDBOamTuz/o
+LSA1TDhhWA1lpPe0pWmBISB5PzY9fmwJpTyQyIqPvUKYM8wjG8KR1cHDLSIHxPkcSlXdfbJreLBn
+FfBAe34S5oZQw4FrH3R9IsxEr/1jjKZmwsOdHclR2CFZKUiC+NwW9p5Yi2IR0kw+BfgD59CufF/C
+GS3XCiLIut+hayv2JoOx51Vzt2rQZckUdOdr3eLtfchgbx8aYvGO9GgZQjL5k3U44x0BkyWn5MAh
+CmFQT0aSt+BU9tDbT9sv4CLT9vyE0BVVGyBpWjipGt8wjM3/8Y+5br04gTPEUsK4BvaDSErn5CxV
+KLr00ntCtcUiQnV/BC93lrjIN3Zmlbc8CwF5WOS8Xht2Lkceph8Y1G/Tic6oKgtrJi/RiSR6HBG5
+ek8WbZz9eS58ko1eupt/gXhxff87VTp3r/TBvG78Rrm5B7a3AMaoCIeBnSkE9U1qAu2Di+g84qjY
+FgJ20UI9HEgeHnsJAypPNBDdlMtBb5HD4IFGdRHV1y0fyzwigucwHT4MIL8ZO7+9i9jflwknWE24
+9nIvnCABS07DIpl5JwZYZ2AGjkSHA2nmyzzBeFezuUwA3jlRRk+7J/bbYqwYzheiOmY1UMZMDnY/
+mTut7XIuzs52d7F/rjh4gSTL4SDY7J5ZEVoWV9TWcDwGRU7B22rGh5DwxIXeMLNnsXz6snj4KvgD
+Sgv29vJjgQC65KnFZkwGKXWRxzFTtNB2Sp4O4SL+EK6IdYav5EnsMKT7HVXUM/R33xjEDIFtPR93
+5LWt4SN29yfO0xG0nxzM6xe44I32UtSwvTCWmNMIPVbdCsUsALmZKUQQeeeunOtq6i2VzTgj0qu8
+UJNKA9unKbQCrvntzvNRZ936fywpn5g3q6jz5PQ3fgFYUZ1skJBEXAFl0QTWecFTj6h6mnk0G0/z
+8FWYAvnF8riW0sUGL+DslJjYAAmIe/9CZYrRRoyhw9V8mPKD4atlXs2v4z5kQOBe8u4Kmc2jsyhY
+bAY+tNNcHyXW6/rldHzI0J5JKKnRJGRQB5HJonG0dAb16TonCR4jYFv/0li6lfZ2GQRBoaunPr+X
+J9Hx+kmWl8LlRWR3PU88nNTK//XYe9dCU5qS1av5C9bh15qIFtpMAqj+gZy5OL56NeOntIBWHMrV
+GN2ftUInULuXIlz1oIuYYQXyFuo4rEqexW4fTMGx39cFzz152J2cKRFV9APtoVGS/ID8bmgcsjuQ
+KS5BHopkyFQFlT4+aL6sA9CcqdRqhKkAZjc0p9tK3Qc0sslJpsfwn8CeJECG4PLEJjM2TRQIaI0l
+ILYTwLdyUB9ZELEclhVTDH3pYG+7oLlDjYQNgTH5DuZITydSvKHtRH3KKyzR9OzNAJ+brTf+Z/u9
+67eBW81cdlH2PpNu9BmWl4UgqI8lSpuaeVShPrG+qnC+abinUXyLxYGabkXEbnkgOy/HpW8QGXcS
+wFmiyXyLeSoEj4dFfGc4dPcYPMjwUbQWcUpND2t8SgxEwAHQSZZ+x+wo9E6ys2UZP0JLDSn7is1b
+Os38VfIlFSvFkXqSlGKJB0qDjifA48+UstM/nKqU9qcZVpcFd8hzFXlGdOYfhfAxChWFHCBRJM4n
+JfTVLTleQhDdH6EQnXC/sL1A9z9+4XAS1yKLHENCREYBRsaqcXQ9lIXsAJxIY6URiJvKtJV/YbFr
+VIbaSMUT1GosvEx5Ce8dqKxzOld7mSwGt6gUsuytFQ6my+rCCC9+FoEO07kh0B2Wy/ljTa/vKnaH
+qcG7i4VUadDzICjALZR9OlqLzzjALuOMp3HNH/uhbbPyLUJENTJGbnBoIn6nLM6S6JzJAjFr145/
+WrbjbfnG2/U1vydXXlLKscgM3ryMphcXZZ4jS1I2R+9lydkJglIuiT7JRbqqEu7jNgcUqY8POO+h
+bgm8NDxV0gUzSXIBKvsdARA1kNjFZebKGI3ID16n1tymT3rKfcWS2rTfrfTXMtXwy6sTBR8jKHce
+DStapWlpxNxvBE+klaIiTFen87eWEVHaqsWwaqTj9lJKhBFF+79dcNb9z+bkWVwqkRwjWOGx8Ssn
+Z9Wvq42a8Ob96Jfz0eQmGBTwkRW0K4aThUGlSJWgfWIf8nniJPvcPUS6Q2zzMA8md0Yf8LqTOylq
+orC+740OykXQk/PeZXht5/8a/KxnCC8JQc3bIYmWDHBDLvd7700ahUehzZj97j+MWNJPA9BZp+HS
+l/OpiQ6ccuQ/T+ujFqPtmBRMgRdLFgCEwD18YsEgvA+WDVtK2MKAHPrDDsTvZU+hlZxt6l9eI804
+a5i0zSo+pi9Qh8SunjNQRHpijFxu5K0f6e9o6rFSSjCKVXjt4h0Q9e9DB/GY4XnTbYRLtgKxRO4g
+rFb1FhSFhpvU4grBxB1dHWoam6E2A9FS3RLlOJyrP6jybwLICxbRdW04YMpSVCZAdvDSO3/FTjdu
+qBT1ynUHGS4mGb+ZpCES16Y2j/S7aWYnVb/HuzLliNPIdSfHm9hpnBMkpn0Tm6E0hdi7491nar02
+oYHtN9FcXGWcYzIViu7zdOicIHw5J3enCjuSbpswnEAbEaWVOJuvCJqSfzeVyEJZoKremmjEa6ID
+RvPh1AnoSefP9cY7LauH5WrlJ6xvQTrU5rAVM3r51X2Q9GZ8kFfXBBUoyWVlkC+yeAqvYGcVkr+o
+3bflld4MUb/REoOgiOUXH6S3UtsSExaQ58eloaHjE4IE5/sY4GA+GP3vjk5ZgD2JL3J5fLoD7DYh
+sP3L9j5i42Ojl1RWper7CziEFimQ8Uh4cNMpBp7O5y+k2pv0SxBCHlg7gxeRniw9+Z17AT/SZcxs
+9Tpik7Wr5FyKpLosM6OpN4MiiV+m2z6Sr5xV+Cg0Mv6ceuSp2yEWd/fJjDaV+cLP2H3381f/bqKY
+ta7ujC7SKTgFAJSfw4hjbKNJotGMDhQAC1gJeuGRJwa3hnFSih+XWNS+wmX1lJxTOTAzpjk3xKQ3
+h56HVTlhhjy01vK8yD+FX9FnbGAmi03Blymw4DpEtkNs1fz2nYLOE+5SPAc2Bp/g/PmXEqvyVrCX
+YYpdl/Gusy37nQybnqPAI3YFcY8ckYr5rc/aAHYBO/22E0kZB4/5TDQHNLm604LYDFnIlKVIZ5bp
+ldX3CYv3oAcRq0sdjOuv3EI+9dZ9aEKfUn2Uy9FR7bXHjpfDmJS7967D7Zj+U+rB7wdCT7aOPYdP
+dkVZ1CCXghDA+WsvxjOoriWx3vue+4BEIZLiiZf/L2+bAsee2G1yxv9bNtUrwoRlBld8ReeZ8KSJ
+GtnVZM08ohH3jT1skJhlwMOlrdmZ2YUl0VdPhyPH52pOPM8QgggPW0OAkQPFleQ/izJRYv2b/diq
+5+ZzUB1eBjl+5PJ2QyTtK17LCsjsE4E6HX8ur7CSnchOX8rlk9j3zpwzelUe7CJiPnApdD3PJK3J
+ImkDB6yzUwtQQMfWEPRGFX8TgWB8bWtluOy7YDqzMYvV74mEjbtAJ/mY6g+YHpG4ENa8WhX39Ydp
+6zvYCg1Ej5ZwBtWxzorR5Fg3wqaoNDS4saw9dHUo/6/oRQwbSauH1uNeZx62z9kMSg9bGMgAVzzh
+VfT6YTq/3BoDvghjaccO4HKHJmDxwMlkz23PJIfai1TArewLj3f18KfU4phD+56maWwW4KAT5A9I
+ioWhi62x4NU36coksau8ml5YMaw7uygOuuyRwzIrnKHrp5DdKAtq6EVND5B5iOcQ3Lzl5WQrm2IE
+utpwLQ6dC5+qe5yNsESIaHAM1Bh3u9pRE6q/qmjAuqTmcfzK1eGEVBvPJ9u97+aif0BH8DV1f026
+HrFfw/14yF9oZByPJZ/LRmQm9lS3mJQhoDXKPKKSP0Ye1fFiXHdC1+JJPgjOHNIZIp5JTdwBNS9V
+5jz9Oi/6RtoO0KeQgDDohR5Tfi9tnqaTcOTjD4/8kFxPiM+5kt9Is9h0YoHKDVnc+yH04N1dfuA2
+lrn1dRNB1kkIr4eb4+2iReaJWCpOGdDlBcWjZcLj6WYMxmwGULqQJHiLbBrZbxmjTtUVI+MOYoh3
+vCUUSqQba0B98gBn3olX3yfJ82bLV4C6eH/NBbJCAXRTtiHB2qDY8c5OL/ipi6WS67nNrTHuZjYl
+OJMIYWtX1LYLj45/iq4kYUDv1IgUvcqSpY3aCdz/IsNb1g5a/2RFy4xA3g3ER2kY0olp01sH/Dth
+R/BzLgqHK4QgaqyDSEJWBMXabg3yTiavovnf/pgos5+V3lBohfcBBi7Pav4LTjyYPfJGHXMmIimJ
+zculrvR+2OAp9H/jIgxO5Rox+KUKa2vZ1VduiZDLP9VB50ThycY/JaMviazfqoIwZJWIzXMmBjAy
+rOseJaHgHubU43i6onKd23apo5cue4rD3lklBoCR9NUTt07WK/vb2nK3W2AUifNdHiBoc2y9+aTm
+Qnar3ROajYSO2jFiOWuEuY8/ki3U7b7kSz7JwEiHzv0rjvy9/5Dhl1+6m4VENBHk+eBu3dR/AU9n
+8zt4H63QGGFmYgiuYb+AfIKL26LO+sTN2tCRUBYxDVMGNwrdlopMpvNZ+BkEtHArdlDFgq1mep4J
+8y+lVxqCWPmd+wLNWWkuAvEnvf4RNUd8HpQfCJKBxzhtXm+SOwcwIJ0oLdonK2VgvL44WxDbslDB
+CfUARClcbodNAfl0GMHlV9AOaMt9XNUZWHG9gUnjUiJpiHCDnbiG13xeqky6VEei4pgv+wMTw7hC
+pCvI6ccYK+3oiXeFQh+ZJ5jRaTxRj+A2/aQhuF1HFpGNtjjPFHUbG3WhRS/8cOnBcgyqZ29M/7vm
+uJ7k15vQv9T7opFIs92Pl2VlOEMj61/f0Uktnlkox9AijiqHtEZdwvemaPGm4+nrenx7CJa+ZuFd
+Qw2zay54SW01litn1s1p9JRxkVyGSArqQ6qPQhupVT9D

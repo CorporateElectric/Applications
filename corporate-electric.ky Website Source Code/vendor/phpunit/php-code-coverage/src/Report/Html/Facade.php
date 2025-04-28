@@ -1,140 +1,91 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of phpunit/php-code-coverage.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\CodeCoverage\Report\Html;
-
-use const DIRECTORY_SEPARATOR;
-use function copy;
-use function date;
-use function dirname;
-use function substr;
-use SebastianBergmann\CodeCoverage\CodeCoverage;
-use SebastianBergmann\CodeCoverage\Directory as DirectoryUtil;
-use SebastianBergmann\CodeCoverage\Node\Directory as DirectoryNode;
-
-final class Facade
-{
-    /**
-     * @var string
-     */
-    private $templatePath;
-
-    /**
-     * @var string
-     */
-    private $generator;
-
-    /**
-     * @var int
-     */
-    private $lowUpperBound;
-
-    /**
-     * @var int
-     */
-    private $highLowerBound;
-
-    public function __construct(int $lowUpperBound = 50, int $highLowerBound = 90, string $generator = '')
-    {
-        $this->generator      = $generator;
-        $this->highLowerBound = $highLowerBound;
-        $this->lowUpperBound  = $lowUpperBound;
-        $this->templatePath   = __DIR__ . '/Renderer/Template/';
-    }
-
-    public function process(CodeCoverage $coverage, string $target): void
-    {
-        $target = $this->directory($target);
-        $report = $coverage->getReport();
-        $date   = (string) date('D M j G:i:s T Y');
-
-        $dashboard = new Dashboard(
-            $this->templatePath,
-            $this->generator,
-            $date,
-            $this->lowUpperBound,
-            $this->highLowerBound,
-            $coverage->collectsBranchAndPathCoverage()
-        );
-
-        $directory = new Directory(
-            $this->templatePath,
-            $this->generator,
-            $date,
-            $this->lowUpperBound,
-            $this->highLowerBound,
-            $coverage->collectsBranchAndPathCoverage()
-        );
-
-        $file = new File(
-            $this->templatePath,
-            $this->generator,
-            $date,
-            $this->lowUpperBound,
-            $this->highLowerBound,
-            $coverage->collectsBranchAndPathCoverage()
-        );
-
-        $directory->render($report, $target . 'index.html');
-        $dashboard->render($report, $target . 'dashboard.html');
-
-        foreach ($report as $node) {
-            $id = $node->id();
-
-            if ($node instanceof DirectoryNode) {
-                DirectoryUtil::create($target . $id);
-
-                $directory->render($node, $target . $id . '/index.html');
-                $dashboard->render($node, $target . $id . '/dashboard.html');
-            } else {
-                $dir = dirname($target . $id);
-
-                DirectoryUtil::create($dir);
-
-                $file->render($node, $target . $id);
-            }
-        }
-
-        $this->copyFiles($target);
-    }
-
-    private function copyFiles(string $target): void
-    {
-        $dir = $this->directory($target . '_css');
-
-        copy($this->templatePath . 'css/bootstrap.min.css', $dir . 'bootstrap.min.css');
-        copy($this->templatePath . 'css/nv.d3.min.css', $dir . 'nv.d3.min.css');
-        copy($this->templatePath . 'css/style.css', $dir . 'style.css');
-        copy($this->templatePath . 'css/custom.css', $dir . 'custom.css');
-        copy($this->templatePath . 'css/octicons.css', $dir . 'octicons.css');
-
-        $dir = $this->directory($target . '_icons');
-        copy($this->templatePath . 'icons/file-code.svg', $dir . 'file-code.svg');
-        copy($this->templatePath . 'icons/file-directory.svg', $dir . 'file-directory.svg');
-
-        $dir = $this->directory($target . '_js');
-        copy($this->templatePath . 'js/bootstrap.min.js', $dir . 'bootstrap.min.js');
-        copy($this->templatePath . 'js/popper.min.js', $dir . 'popper.min.js');
-        copy($this->templatePath . 'js/d3.min.js', $dir . 'd3.min.js');
-        copy($this->templatePath . 'js/jquery.min.js', $dir . 'jquery.min.js');
-        copy($this->templatePath . 'js/nv.d3.min.js', $dir . 'nv.d3.min.js');
-        copy($this->templatePath . 'js/file.js', $dir . 'file.js');
-    }
-
-    private function directory(string $directory): string
-    {
-        if (substr($directory, -1, 1) != DIRECTORY_SEPARATOR) {
-            $directory .= DIRECTORY_SEPARATOR;
-        }
-
-        DirectoryUtil::create($directory);
-
-        return $directory;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

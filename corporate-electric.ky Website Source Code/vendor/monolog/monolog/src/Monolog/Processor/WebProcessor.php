@@ -1,100 +1,57 @@
-<?php declare(strict_types=1);
-
-/*
- * This file is part of the Monolog package.
- *
- * (c) Jordi Boggiano <j.boggiano@seld.be>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Monolog\Processor;
-
-/**
- * Injects url/method and remote IP of the current web request in all records
- *
- * @author Jordi Boggiano <j.boggiano@seld.be>
- */
-class WebProcessor implements ProcessorInterface
-{
-    /**
-     * @var array|\ArrayAccess
-     */
-    protected $serverData;
-
-    /**
-     * Default fields
-     *
-     * Array is structured as [key in record.extra => key in $serverData]
-     *
-     * @var array
-     */
-    protected $extraFields = [
-        'url'         => 'REQUEST_URI',
-        'ip'          => 'REMOTE_ADDR',
-        'http_method' => 'REQUEST_METHOD',
-        'server'      => 'SERVER_NAME',
-        'referrer'    => 'HTTP_REFERER',
-    ];
-
-    /**
-     * @param array|\ArrayAccess|null $serverData  Array or object w/ ArrayAccess that provides access to the $_SERVER data
-     * @param array|null              $extraFields Field names and the related key inside $serverData to be added. If not provided it defaults to: url, ip, http_method, server, referrer
-     */
-    public function __construct($serverData = null, array $extraFields = null)
-    {
-        if (null === $serverData) {
-            $this->serverData = &$_SERVER;
-        } elseif (is_array($serverData) || $serverData instanceof \ArrayAccess) {
-            $this->serverData = $serverData;
-        } else {
-            throw new \UnexpectedValueException('$serverData must be an array or object implementing ArrayAccess.');
-        }
-
-        if (isset($this->serverData['UNIQUE_ID'])) {
-            $this->extraFields['unique_id'] = 'UNIQUE_ID';
-        }
-
-        if (null !== $extraFields) {
-            if (isset($extraFields[0])) {
-                foreach (array_keys($this->extraFields) as $fieldName) {
-                    if (!in_array($fieldName, $extraFields)) {
-                        unset($this->extraFields[$fieldName]);
-                    }
-                }
-            } else {
-                $this->extraFields = $extraFields;
-            }
-        }
-    }
-
-    public function __invoke(array $record): array
-    {
-        // skip processing if for some reason request data
-        // is not present (CLI or wonky SAPIs)
-        if (!isset($this->serverData['REQUEST_URI'])) {
-            return $record;
-        }
-
-        $record['extra'] = $this->appendExtraFields($record['extra']);
-
-        return $record;
-    }
-
-    public function addExtraField(string $extraName, string $serverName): self
-    {
-        $this->extraFields[$extraName] = $serverName;
-
-        return $this;
-    }
-
-    private function appendExtraFields(array $extra): array
-    {
-        foreach ($this->extraFields as $extraName => $serverName) {
-            $extra[$extraName] = $this->serverData[$serverName] ?? null;
-        }
-
-        return $extra;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+xgQH4DuDlm374s57UHge6Kj/M0==

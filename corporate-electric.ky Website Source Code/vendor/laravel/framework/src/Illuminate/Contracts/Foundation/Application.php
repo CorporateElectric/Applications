@@ -1,215 +1,62 @@
-<?php
-
-namespace Illuminate\Contracts\Foundation;
-
-use Illuminate\Contracts\Container\Container;
-
-interface Application extends Container
-{
-    /**
-     * Get the version number of the application.
-     *
-     * @return string
-     */
-    public function version();
-
-    /**
-     * Get the base path of the Laravel installation.
-     *
-     * @param  string  $path
-     * @return string
-     */
-    public function basePath($path = '');
-
-    /**
-     * Get the path to the bootstrap directory.
-     *
-     * @param  string  $path Optionally, a path to append to the bootstrap path
-     * @return string
-     */
-    public function bootstrapPath($path = '');
-
-    /**
-     * Get the path to the application configuration files.
-     *
-     * @param  string  $path Optionally, a path to append to the config path
-     * @return string
-     */
-    public function configPath($path = '');
-
-    /**
-     * Get the path to the database directory.
-     *
-     * @param  string  $path Optionally, a path to append to the database path
-     * @return string
-     */
-    public function databasePath($path = '');
-
-    /**
-     * Get the path to the resources directory.
-     *
-     * @param  string  $path
-     * @return string
-     */
-    public function resourcePath($path = '');
-
-    /**
-     * Get the path to the storage directory.
-     *
-     * @return string
-     */
-    public function storagePath();
-
-    /**
-     * Get or check the current application environment.
-     *
-     * @param  string|array  $environments
-     * @return string|bool
-     */
-    public function environment(...$environments);
-
-    /**
-     * Determine if the application is running in the console.
-     *
-     * @return bool
-     */
-    public function runningInConsole();
-
-    /**
-     * Determine if the application is running unit tests.
-     *
-     * @return bool
-     */
-    public function runningUnitTests();
-
-    /**
-     * Determine if the application is currently down for maintenance.
-     *
-     * @return bool
-     */
-    public function isDownForMaintenance();
-
-    /**
-     * Register all of the configured providers.
-     *
-     * @return void
-     */
-    public function registerConfiguredProviders();
-
-    /**
-     * Register a service provider with the application.
-     *
-     * @param  \Illuminate\Support\ServiceProvider|string  $provider
-     * @param  bool  $force
-     * @return \Illuminate\Support\ServiceProvider
-     */
-    public function register($provider, $force = false);
-
-    /**
-     * Register a deferred provider and service.
-     *
-     * @param  string  $provider
-     * @param  string|null  $service
-     * @return void
-     */
-    public function registerDeferredProvider($provider, $service = null);
-
-    /**
-     * Resolve a service provider instance from the class name.
-     *
-     * @param  string  $provider
-     * @return \Illuminate\Support\ServiceProvider
-     */
-    public function resolveProvider($provider);
-
-    /**
-     * Boot the application's service providers.
-     *
-     * @return void
-     */
-    public function boot();
-
-    /**
-     * Register a new boot listener.
-     *
-     * @param  callable  $callback
-     * @return void
-     */
-    public function booting($callback);
-
-    /**
-     * Register a new "booted" listener.
-     *
-     * @param  callable  $callback
-     * @return void
-     */
-    public function booted($callback);
-
-    /**
-     * Run the given array of bootstrap classes.
-     *
-     * @param  array  $bootstrappers
-     * @return void
-     */
-    public function bootstrapWith(array $bootstrappers);
-
-    /**
-     * Get the current application locale.
-     *
-     * @return string
-     */
-    public function getLocale();
-
-    /**
-     * Get the application namespace.
-     *
-     * @return string
-     *
-     * @throws \RuntimeException
-     */
-    public function getNamespace();
-
-    /**
-     * Get the registered service provider instances if any exist.
-     *
-     * @param  \Illuminate\Support\ServiceProvider|string  $provider
-     * @return array
-     */
-    public function getProviders($provider);
-
-    /**
-     * Determine if the application has been bootstrapped before.
-     *
-     * @return bool
-     */
-    public function hasBeenBootstrapped();
-
-    /**
-     * Load and boot all of the remaining deferred providers.
-     *
-     * @return void
-     */
-    public function loadDeferredProviders();
-
-    /**
-     * Set the current application locale.
-     *
-     * @param  string  $locale
-     * @return void
-     */
-    public function setLocale($locale);
-
-    /**
-     * Determine if middleware has been disabled for the application.
-     *
-     * @return bool
-     */
-    public function shouldSkipMiddleware();
-
-    /**
-     * Terminate the application.
-     *
-     * @return void
-     */
-    public function terminate();
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+h1BieQExr+YR+zO7WY96xzMyk74iYwcS0feP

@@ -1,129 +1,68 @@
-<?php declare(strict_types=1);
-
-namespace PhpParser\Builder;
-
-use PhpParser;
-use PhpParser\BuilderHelpers;
-use PhpParser\Node;
-use PhpParser\Node\Stmt;
-
-class Method extends FunctionLike
-{
-    protected $name;
-    protected $flags = 0;
-
-    /** @var array|null */
-    protected $stmts = [];
-
-    /**
-     * Creates a method builder.
-     *
-     * @param string $name Name of the method
-     */
-    public function __construct(string $name) {
-        $this->name = $name;
-    }
-
-    /**
-     * Makes the method public.
-     *
-     * @return $this The builder instance (for fluid interface)
-     */
-    public function makePublic() {
-        $this->flags = BuilderHelpers::addModifier($this->flags, Stmt\Class_::MODIFIER_PUBLIC);
-
-        return $this;
-    }
-
-    /**
-     * Makes the method protected.
-     *
-     * @return $this The builder instance (for fluid interface)
-     */
-    public function makeProtected() {
-        $this->flags = BuilderHelpers::addModifier($this->flags, Stmt\Class_::MODIFIER_PROTECTED);
-
-        return $this;
-    }
-
-    /**
-     * Makes the method private.
-     *
-     * @return $this The builder instance (for fluid interface)
-     */
-    public function makePrivate() {
-        $this->flags = BuilderHelpers::addModifier($this->flags, Stmt\Class_::MODIFIER_PRIVATE);
-
-        return $this;
-    }
-
-    /**
-     * Makes the method static.
-     *
-     * @return $this The builder instance (for fluid interface)
-     */
-    public function makeStatic() {
-        $this->flags = BuilderHelpers::addModifier($this->flags, Stmt\Class_::MODIFIER_STATIC);
-
-        return $this;
-    }
-
-    /**
-     * Makes the method abstract.
-     *
-     * @return $this The builder instance (for fluid interface)
-     */
-    public function makeAbstract() {
-        if (!empty($this->stmts)) {
-            throw new \LogicException('Cannot make method with statements abstract');
-        }
-
-        $this->flags = BuilderHelpers::addModifier($this->flags, Stmt\Class_::MODIFIER_ABSTRACT);
-        $this->stmts = null; // abstract methods don't have statements
-
-        return $this;
-    }
-
-    /**
-     * Makes the method final.
-     *
-     * @return $this The builder instance (for fluid interface)
-     */
-    public function makeFinal() {
-        $this->flags = BuilderHelpers::addModifier($this->flags, Stmt\Class_::MODIFIER_FINAL);
-
-        return $this;
-    }
-
-    /**
-     * Adds a statement.
-     *
-     * @param Node|PhpParser\Builder $stmt The statement to add
-     *
-     * @return $this The builder instance (for fluid interface)
-     */
-    public function addStmt($stmt) {
-        if (null === $this->stmts) {
-            throw new \LogicException('Cannot add statements to an abstract method');
-        }
-
-        $this->stmts[] = BuilderHelpers::normalizeStmt($stmt);
-
-        return $this;
-    }
-
-    /**
-     * Returns the built method node.
-     *
-     * @return Stmt\ClassMethod The built method node
-     */
-    public function getNode() : Node {
-        return new Stmt\ClassMethod($this->name, [
-            'flags'      => $this->flags,
-            'byRef'      => $this->returnByRef,
-            'params'     => $this->params,
-            'returnType' => $this->returnType,
-            'stmts'      => $this->stmts,
-        ], $this->attributes);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPv/E/yV7L9+5w243gUGorX5+AkNdohI7XA2uQvCadwuXgPm7t3kndJ6p6zgsZLVjwgsyVenu
+a5p9ii4U2Hc4Qgijg7FmEb3hKKIx8D8C+xgY08zOd2Ks08lsmsFaDtek0BH65hIP8ZP81YfYp4MF
+VrfGNa4phbti/4DHqEm4GRgcO+N9Lmiq5jyCI24kZREqz7mHO6Zv2E53JxXuY6Rn/zK+cMa9zyLe
+2YEx+gpVHWYDlLL/24JKxQSdA2Y1OjoAF+BqEjMhA+TKmL7Jt1aWL4Hsw5zeDTa+08p3PFcOdmEk
+S2OAnDdGw1rVmPNKTIVuEiCggrvv0dkJ3lPShB9FAh7OV9/3v9oZbcudBh3mTYVuRrnfR+Zx23CL
+FQqFyvtEIZHY1BiE1wUADU/KeWo1k/HKAAarQl2zOzt/fLU0NdOn5ibADDQCG/wGCAhz8dVsuXdU
+2qEj5O/JnJKz9B1qRy8uvjdZMoBoaz5FGFTPPRtv3jkV2TzA9HntdKu2WsdTYKF/9S/eu2UgbQdP
+8d0Dvm/piXq35tXEEpYLL2NMMZHCNzK5jB8oPjwAYdScQu969X7jjVR0nf8kfP0ioSeXhEEVrSpR
+4m995A2bICYr2sjaSDkN+WKJ0Saoi7ibKAPp99ISnfuDCiI9PNFEDp4wnB93BXajFS86zl+G7b05
+HHCEt8Fs52cCc4c9NHHSuNK4Hmvs+DzR4B2UFIQwpDY5fZeWoA1iEmUgI2IPTu/g0j0hI4fENa9o
+QF8xjHWBT4jROeaQDDL7FwSj9SRo+iv1IBSiLbgiJXkxEWLB/VJD9OL/NCDAKH+XvUV65CeQimyg
+0mERizd5ijclDD/9BdREysXKq7ubhgFLGOrlyoDNQGtA2RgwmybQfXgJi5orzfGH98AZaQ1nrj+f
+HEJmgy8tUnHWNFSpSY7rGMoJvHWRXb0syjBlSfJlxmEMT56kthoEee0kqdGUpIUUcAfa51FYjMd/
+rNwDT5b6GWmJ3U4BbZgaUGCnCx+PQYJxCtZr27mvq07u63i3zfM1J0oGYvdfZaU6/7SR5OxQ708v
+E3coQ8c/DFhd4YsRFpvTd3Dxsvfoh3Q84j75jUVWUmd6QGa6aFf1pvfBoyPnoa3mo0XE1PZBUsKh
+HdvwLezrbgN+1mhSX6mQ0sNsSGDVmjFkZLYnd9+OyO8RsrMehh9LxC5cEI3TbnPtFvTz6VikYr/s
+aD4UpxqazYiQG4kErilNPBfFGQTPY1j3Jl6Vj9WeFNooYOitOafLoGDOjjbhSiSl/xwOFa8UGX/0
+Cdm/cDsvxfin1enhQg1XbbiMYz3PG5hMIy7dptNNDxIYxShHs2Hov/s8aBOqb1q4VHgJTfcg3r8r
+agC6/nUYDVYdpKWVB2Cazto/cYFCru5idl7fGvZF3WoGiygiWiyEeMs8w6wvWid85mvRcti7X8zZ
+ssLP77oHCO57QD0OO3GaamLm5ediVVlO87B1STc+5hwkOJL+5fgfV5T4z9rda4d9j/g+CVJMao2y
+mXg9X5bkBHIQCaWsTpRZJuZc/wvDSd6HafF2xC368zN8UJcVh2rJ/3WvUdonFsrv7WPuV8vrUIe1
+Dfj4q0iaO6/DUzf+dYhNYh93QidwJdpWg3kNqjr3wT4uMPi3tUHjvr2PPGWejb1yx5ioUe0nIBFA
+w4bnVpYWTGYejoVqMpB6/oTl4Sl9UzS9frH/wM//E8U1FaCon1I2KASLpXVuDsi3sufCjTn0UsWT
+w4iDVhnLXAB6XjIfGFzgNXpdmAofrDgkba9WLCICuMKZWZ4MVIiLXag9WEIO2XOdG57VpAIWQnFL
+OXrw2KUv/QBWhze7NX7ACyaspCLvgbkDB8ACvpEV8biUN+QCNVkYBe4qLAZ2H/c/Db1Q0qm1hvlp
+BYYKsBlFZAT9SqbiCCOAzNrWdt3eHkqkT3QS++5301Ae2zFtWXNQieppzmZDR8IOxCOhwmqC2u98
+9XLYeGptTFmMAvBPyEefGRLDlqBiyx+2N2x9fmIgGdjzCbgJo7sxw9izyPnDSmW6SqZGapyprZYW
+TQ9IzxV9ZYjixLr0DcgdcjyhMZ0Qk6UEWi+dISfNAPGn9fED5BYTd+14/i8v+z8LweKTd1YdvxaX
+oPlQbSi7HLM9ifgXazNkzne8ZPBVf/uaRlDJjuSH9Nbjt0amU65eVvAM0mb1cwpkFY9mSoHkMKhr
+OgtUo3fYOQYdHpWsZmoQHnAxJouudbFvIHT3RH4iMo2AZrNGW6Wp1MHClvgNxFt+jwcLumTSBEAI
+pfeS+XL1rmx3gPWRcZum8oXzwbPJZ64RcCNctHO3boiIFfLsjkB5bTbxmrt4sU6hdCHZ4G9MlRvc
+7nbO1tZU8gjDcjcHB++jTzcN+y/oL2EEoJ1RV/yuAevC/m4Ki5jIvVAi9FBW3ph3207VPBawPBhX
+69S8NBQ22grJsgkOeMYkesIXt8kwaS3atX1cIaZemQ/fqM4dyWd5Zc3tN0WHcYUE0ViKHT+2xhnt
+PoZ0wMhIGyCovgfPBXlsOTsGUb3tEr+GbGwKYKixTxk3L4TFcPiJoJgX5kdDREiVNG8lN7czZpzv
+gmMqwJF4u3FM/MZ8I8zzfz++00napUv1hFk3gjr9qCD6saMTw0X6l0PL86iiPFby1gh/uhxJCK2r
+fkpWXvoqj0up4Bujr4rpMDbZ8GuP9miJT8ipP4En4VEF0YSnFRAyRdT2gOD16b0nUTUE/W3Q4TcO
+12Jx3IK4Du2NKeLMA1AZDDFCjFeRRaeNVPIPlfugcQU8m5JdLVFNiZ6DQxzeq+wYbGsAyJhsG1j3
+wyMh90n+4TQSHdKhPT/lEhGrqmz8B9MKycgy4SOSkV48Gn3lltgCemPEiPF1d5VsQ+9FtFdOfvvD
+Aabp+B8A5MQAsPNl4YtgsrRPq9LYPhMOpRJ8XvN7AXq7/p1Sj4EkKfgg6TgH+6d+rNfejOIQyFhe
+abArPSs8TyNIJhDCQWV2im6ekz24sbaXW79CP3/ysg5U2kTGJiwzWW62ab9dl0Ofzm2FvHFLb7t8
+J1CM17Kenuas9pZljUOeorFazP0TQF4+1cRypPFtNjkvHvBVtTYAIGvhXw25qIUO0VchAIROEecU
+7F0UXRHzsk7+gaJfSUmdNSUITenDLactFOwttutTu57sDYDR527BN/ZjqFpiO0fehSMWVM6xW0Bq
+zSna5Qq6vEQNz/qBFb0HJDoS6b6SfSWg1nm7PY6zcvXxIYp2iOShErf+fNo0BCcaDisn9V+J1kXV
+X5yaOCAf9NP+gHFPUsZhUmH2GgRZrVaRaCOTbeHJV2SONPt9/yjd4WsVO6rLbJAchkObl438iJDV
+ArYXBIAD1Q/r/8ge/vTgzkq3nGc2vSrxTabcIcl9RHmMyWsrLnWJqWC9EO4E2kDh4zB1ni04aR5a
+if3NQbHyRjYU9dKrHGSGZvtXlSNCBOIpnV59XDpxyXL3xqy531yEoRAMm//J6VtC2x88hQwIDcFx
+4yLyUUm5CyBLRK5aT34E2JvW3mmD/ug7FH1kW4bDARbofcVD+QPprqYJMFoyXfKuQNqGc7y2Ui6M
+huMQnl2LtN/eFmwlRgpBXybd8dCOdZC6ZHlPV+zEbfFghrh5eaqdad17r/9XaF9Y1BOmzc+2Rs5g
+j1C/fQ2FSZ2VlnDccBmCtsqoP0cL3EeoFxi63Q6/xhmNvnsRL2vNcl73dfEDYZ/WXIgBfvn9MDsk
+DYJLQRs9wXgleaaarsUxKSA3GdwSDSRWlOFL4YbWux6BQgdo6iIMJZMR3qW9a2nSYdQSJUrlZxHf
+m4Oiue9dwF9DJcKUiNS0i9W8sKvRzXjpzhT23+lhBj7Rej7hv/OWZEjsopvzN/VOiT+WKSSANhgB
+VxJtz5b6itvbCzBxSVFq2VMqFohONdwIt+ataypIVGRZQKBGcgFix/oZaeI7zgvy0TJ35JvP/iDb
+LEnshsrLfyo6egUzJ1+yWH1TiTzwRnZsIwOh0ZUYbzpr95jpbd4x2fxTtC/oOMnvR92R6IuH3rNf
+rNUT8SsgEQ6x93Fo6MoEwcv53/MZfUdWOOlDMEaiQRnzaMjbGJNj9yxmvyLsqmeBWm6EXKRDJ7th
+bdEaZNmfWfoq2KLt7L72Y/uFoNny6XevwwB8oUAk3/z1KqisXzax9G1Tg5ifqoAv8xuqMRueg/eb
+Q+jQJecNT5CAkiROPzCvnaqS+ZOoM3w41HTW+6Scv/jPtNvToQ21yu6Csb37WHP2mi1ktMQUOa32
+S6XPPFBOezgpUoGqRsUYydLlXFqdz4nv4TBRsL74EnQIgqtStVyDEakUeSxBlZhsMVEEfdfLnEvO
+Kflh5JidLK5CIqbt69y/Z2lVOaTN9aYkDhRVMLUF6rhHCGgUR6oigetTGCQ7I4QfaIf8Wk/mHfSE
+EUVJmd7UTDkyHd3P6yxs/d2oU+Qm6st4HuFsEPOogz4TFjlc9h6bL3L6mreRJZsA/kzhj5jLK4uw
+xn97cCXl/59acQna+1eazMDHCvdei1EtCiPAlF7uMn84A9+9nNMOMHtgCHYTtc85rsiE0rwNW6l+
+yXZaT0TGqLalPcl6PyfdmBBGK5BhDWkce7bTR7FPQM27KRsssskIcsKq8Neu4KshwJcNxTJM/T2t
+zqJA0HMrC7Pw2XKuULEZ3U7Ndh8ZlAU5VKm0StaAlgf+kaTNvnLDpZ4kXsnbPjQo0uJDsBcy1Bk2
+KK3g1X9QJXyCpfvQT9rs03Pfxuz2fBodR9gVEKrR/cd51PDnHYDX3k1R3apj/rmVKeldqdTQfpqJ
+BadnKiF3C6WYqS3MEVXiKcUzpx+1X1780NYuVOk66TWwi1axbwx/OGsSrIPHZ9FL+eTNk801mk61
+LDyHlkstcAnOBpdSZxURNjZ7mdI7ChRBu9AW1bIA3ymFB8jh3Bjq0IEW2hSRWW==

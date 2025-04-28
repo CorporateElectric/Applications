@@ -1,280 +1,133 @@
-<?php
-
-namespace Illuminate\Queue;
-
-use Aws\DynamoDb\DynamoDbClient;
-use Illuminate\Contracts\Debug\ExceptionHandler;
-use Illuminate\Contracts\Support\DeferrableProvider;
-use Illuminate\Queue\Connectors\BeanstalkdConnector;
-use Illuminate\Queue\Connectors\DatabaseConnector;
-use Illuminate\Queue\Connectors\NullConnector;
-use Illuminate\Queue\Connectors\RedisConnector;
-use Illuminate\Queue\Connectors\SqsConnector;
-use Illuminate\Queue\Connectors\SyncConnector;
-use Illuminate\Queue\Failed\DatabaseFailedJobProvider;
-use Illuminate\Queue\Failed\DatabaseUuidFailedJobProvider;
-use Illuminate\Queue\Failed\DynamoDbFailedJobProvider;
-use Illuminate\Queue\Failed\NullFailedJobProvider;
-use Illuminate\Support\Arr;
-use Illuminate\Support\ServiceProvider;
-
-class QueueServiceProvider extends ServiceProvider implements DeferrableProvider
-{
-    /**
-     * Register the service provider.
-     *
-     * @return void
-     */
-    public function register()
-    {
-        $this->registerManager();
-        $this->registerConnection();
-        $this->registerWorker();
-        $this->registerListener();
-        $this->registerFailedJobServices();
-    }
-
-    /**
-     * Register the queue manager.
-     *
-     * @return void
-     */
-    protected function registerManager()
-    {
-        $this->app->singleton('queue', function ($app) {
-            // Once we have an instance of the queue manager, we will register the various
-            // resolvers for the queue connectors. These connectors are responsible for
-            // creating the classes that accept queue configs and instantiate queues.
-            return tap(new QueueManager($app), function ($manager) {
-                $this->registerConnectors($manager);
-            });
-        });
-    }
-
-    /**
-     * Register the default queue connection binding.
-     *
-     * @return void
-     */
-    protected function registerConnection()
-    {
-        $this->app->singleton('queue.connection', function ($app) {
-            return $app['queue']->connection();
-        });
-    }
-
-    /**
-     * Register the connectors on the queue manager.
-     *
-     * @param  \Illuminate\Queue\QueueManager  $manager
-     * @return void
-     */
-    public function registerConnectors($manager)
-    {
-        foreach (['Null', 'Sync', 'Database', 'Redis', 'Beanstalkd', 'Sqs'] as $connector) {
-            $this->{"register{$connector}Connector"}($manager);
-        }
-    }
-
-    /**
-     * Register the Null queue connector.
-     *
-     * @param  \Illuminate\Queue\QueueManager  $manager
-     * @return void
-     */
-    protected function registerNullConnector($manager)
-    {
-        $manager->addConnector('null', function () {
-            return new NullConnector;
-        });
-    }
-
-    /**
-     * Register the Sync queue connector.
-     *
-     * @param  \Illuminate\Queue\QueueManager  $manager
-     * @return void
-     */
-    protected function registerSyncConnector($manager)
-    {
-        $manager->addConnector('sync', function () {
-            return new SyncConnector;
-        });
-    }
-
-    /**
-     * Register the database queue connector.
-     *
-     * @param  \Illuminate\Queue\QueueManager  $manager
-     * @return void
-     */
-    protected function registerDatabaseConnector($manager)
-    {
-        $manager->addConnector('database', function () {
-            return new DatabaseConnector($this->app['db']);
-        });
-    }
-
-    /**
-     * Register the Redis queue connector.
-     *
-     * @param  \Illuminate\Queue\QueueManager  $manager
-     * @return void
-     */
-    protected function registerRedisConnector($manager)
-    {
-        $manager->addConnector('redis', function () {
-            return new RedisConnector($this->app['redis']);
-        });
-    }
-
-    /**
-     * Register the Beanstalkd queue connector.
-     *
-     * @param  \Illuminate\Queue\QueueManager  $manager
-     * @return void
-     */
-    protected function registerBeanstalkdConnector($manager)
-    {
-        $manager->addConnector('beanstalkd', function () {
-            return new BeanstalkdConnector;
-        });
-    }
-
-    /**
-     * Register the Amazon SQS queue connector.
-     *
-     * @param  \Illuminate\Queue\QueueManager  $manager
-     * @return void
-     */
-    protected function registerSqsConnector($manager)
-    {
-        $manager->addConnector('sqs', function () {
-            return new SqsConnector;
-        });
-    }
-
-    /**
-     * Register the queue worker.
-     *
-     * @return void
-     */
-    protected function registerWorker()
-    {
-        $this->app->singleton('queue.worker', function ($app) {
-            $isDownForMaintenance = function () {
-                return $this->app->isDownForMaintenance();
-            };
-
-            return new Worker(
-                $app['queue'],
-                $app['events'],
-                $app[ExceptionHandler::class],
-                $isDownForMaintenance
-            );
-        });
-    }
-
-    /**
-     * Register the queue listener.
-     *
-     * @return void
-     */
-    protected function registerListener()
-    {
-        $this->app->singleton('queue.listener', function ($app) {
-            return new Listener($app->basePath());
-        });
-    }
-
-    /**
-     * Register the failed job services.
-     *
-     * @return void
-     */
-    protected function registerFailedJobServices()
-    {
-        $this->app->singleton('queue.failer', function ($app) {
-            $config = $app['config']['queue.failed'];
-
-            if (isset($config['driver']) && $config['driver'] === 'dynamodb') {
-                return $this->dynamoFailedJobProvider($config);
-            } elseif (isset($config['driver']) && $config['driver'] === 'database-uuids') {
-                return $this->databaseUuidFailedJobProvider($config);
-            } elseif (isset($config['table'])) {
-                return $this->databaseFailedJobProvider($config);
-            } else {
-                return new NullFailedJobProvider;
-            }
-        });
-    }
-
-    /**
-     * Create a new database failed job provider.
-     *
-     * @param  array  $config
-     * @return \Illuminate\Queue\Failed\DatabaseFailedJobProvider
-     */
-    protected function databaseFailedJobProvider($config)
-    {
-        return new DatabaseFailedJobProvider(
-            $this->app['db'], $config['database'], $config['table']
-        );
-    }
-
-    /**
-     * Create a new database failed job provider that uses UUIDs as IDs.
-     *
-     * @param  array  $config
-     * @return \Illuminate\Queue\Failed\DatabaseUuidFailedJobProvider
-     */
-    protected function databaseUuidFailedJobProvider($config)
-    {
-        return new DatabaseUuidFailedJobProvider(
-            $this->app['db'], $config['database'], $config['table']
-        );
-    }
-
-    /**
-     * Create a new DynamoDb failed job provider.
-     *
-     * @param  array  $config
-     * @return \Illuminate\Queue\Failed\DynamoDbFailedJobProvider
-     */
-    protected function dynamoFailedJobProvider($config)
-    {
-        $dynamoConfig = [
-            'region' => $config['region'],
-            'version' => 'latest',
-            'endpoint' => $config['endpoint'] ?? null,
-        ];
-
-        if (! empty($config['key']) && ! empty($config['secret'])) {
-            $dynamoConfig['credentials'] = Arr::only(
-                $config, ['key', 'secret', 'token']
-            );
-        }
-
-        return new DynamoDbFailedJobProvider(
-            new DynamoDbClient($dynamoConfig),
-            $this->app['config']['app.name'],
-            $config['table']
-        );
-    }
-
-    /**
-     * Get the services provided by the provider.
-     *
-     * @return array
-     */
-    public function provides()
-    {
-        return [
-            'queue',
-            'queue.connection',
-            'queue.failer',
-            'queue.listener',
-            'queue.worker',
-        ];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

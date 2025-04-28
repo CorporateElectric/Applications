@@ -1,61 +1,55 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Translation\Loader;
-
-use Symfony\Component\Config\Resource\FileResource;
-use Symfony\Component\Translation\Exception\InvalidResourceException;
-use Symfony\Component\Translation\Exception\NotFoundResourceException;
-use Symfony\Component\Translation\MessageCatalogue;
-
-/**
- * IcuResFileLoader loads translations from a resource bundle.
- *
- * @author stealth35
- */
-class IcuDatFileLoader extends IcuResFileLoader
-{
-    /**
-     * {@inheritdoc}
-     */
-    public function load($resource, string $locale, string $domain = 'messages')
-    {
-        if (!stream_is_local($resource.'.dat')) {
-            throw new InvalidResourceException(sprintf('This is not a local file "%s".', $resource));
-        }
-
-        if (!file_exists($resource.'.dat')) {
-            throw new NotFoundResourceException(sprintf('File "%s" not found.', $resource));
-        }
-
-        try {
-            $rb = new \ResourceBundle($locale, $resource);
-        } catch (\Exception $e) {
-            $rb = null;
-        }
-
-        if (!$rb) {
-            throw new InvalidResourceException(sprintf('Cannot load resource "%s".', $resource));
-        } elseif (intl_is_failure($rb->getErrorCode())) {
-            throw new InvalidResourceException($rb->getErrorMessage(), $rb->getErrorCode());
-        }
-
-        $messages = $this->flatten($rb);
-        $catalogue = new MessageCatalogue($locale);
-        $catalogue->add($messages, $domain);
-
-        if (class_exists('Symfony\Component\Config\Resource\FileResource')) {
-            $catalogue->addResource(new FileResource($resource.'.dat'));
-        }
-
-        return $catalogue;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+ATYojRxtiJGqbdi=

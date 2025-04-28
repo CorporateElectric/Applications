@@ -1,663 +1,137 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Chart;
-
-use PhpOffice\PhpSpreadsheet\Settings;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-
-class Chart
-{
-    /**
-     * Chart Name.
-     *
-     * @var string
-     */
-    private $name = '';
-
-    /**
-     * Worksheet.
-     *
-     * @var Worksheet
-     */
-    private $worksheet;
-
-    /**
-     * Chart Title.
-     *
-     * @var Title
-     */
-    private $title;
-
-    /**
-     * Chart Legend.
-     *
-     * @var Legend
-     */
-    private $legend;
-
-    /**
-     * X-Axis Label.
-     *
-     * @var Title
-     */
-    private $xAxisLabel;
-
-    /**
-     * Y-Axis Label.
-     *
-     * @var Title
-     */
-    private $yAxisLabel;
-
-    /**
-     * Chart Plot Area.
-     *
-     * @var PlotArea
-     */
-    private $plotArea;
-
-    /**
-     * Plot Visible Only.
-     *
-     * @var bool
-     */
-    private $plotVisibleOnly = true;
-
-    /**
-     * Display Blanks as.
-     *
-     * @var string
-     */
-    private $displayBlanksAs = DataSeries::EMPTY_AS_GAP;
-
-    /**
-     * Chart Asix Y as.
-     *
-     * @var Axis
-     */
-    private $yAxis;
-
-    /**
-     * Chart Asix X as.
-     *
-     * @var Axis
-     */
-    private $xAxis;
-
-    /**
-     * Chart Major Gridlines as.
-     *
-     * @var GridLines
-     */
-    private $majorGridlines;
-
-    /**
-     * Chart Minor Gridlines as.
-     *
-     * @var GridLines
-     */
-    private $minorGridlines;
-
-    /**
-     * Top-Left Cell Position.
-     *
-     * @var string
-     */
-    private $topLeftCellRef = 'A1';
-
-    /**
-     * Top-Left X-Offset.
-     *
-     * @var int
-     */
-    private $topLeftXOffset = 0;
-
-    /**
-     * Top-Left Y-Offset.
-     *
-     * @var int
-     */
-    private $topLeftYOffset = 0;
-
-    /**
-     * Bottom-Right Cell Position.
-     *
-     * @var string
-     */
-    private $bottomRightCellRef = 'A1';
-
-    /**
-     * Bottom-Right X-Offset.
-     *
-     * @var int
-     */
-    private $bottomRightXOffset = 10;
-
-    /**
-     * Bottom-Right Y-Offset.
-     *
-     * @var int
-     */
-    private $bottomRightYOffset = 10;
-
-    /**
-     * Create a new Chart.
-     *
-     * @param mixed $name
-     * @param mixed $plotVisibleOnly
-     * @param string $displayBlanksAs
-     */
-    public function __construct($name, ?Title $title = null, ?Legend $legend = null, ?PlotArea $plotArea = null, $plotVisibleOnly = true, $displayBlanksAs = DataSeries::EMPTY_AS_GAP, ?Title $xAxisLabel = null, ?Title $yAxisLabel = null, ?Axis $xAxis = null, ?Axis $yAxis = null, ?GridLines $majorGridlines = null, ?GridLines $minorGridlines = null)
-    {
-        $this->name = $name;
-        $this->title = $title;
-        $this->legend = $legend;
-        $this->xAxisLabel = $xAxisLabel;
-        $this->yAxisLabel = $yAxisLabel;
-        $this->plotArea = $plotArea;
-        $this->plotVisibleOnly = $plotVisibleOnly;
-        $this->displayBlanksAs = $displayBlanksAs;
-        $this->xAxis = $xAxis;
-        $this->yAxis = $yAxis;
-        $this->majorGridlines = $majorGridlines;
-        $this->minorGridlines = $minorGridlines;
-    }
-
-    /**
-     * Get Name.
-     *
-     * @return string
-     */
-    public function getName()
-    {
-        return $this->name;
-    }
-
-    /**
-     * Get Worksheet.
-     *
-     * @return Worksheet
-     */
-    public function getWorksheet()
-    {
-        return $this->worksheet;
-    }
-
-    /**
-     * Set Worksheet.
-     *
-     * @param Worksheet $pValue
-     *
-     * @return $this
-     */
-    public function setWorksheet(?Worksheet $pValue = null)
-    {
-        $this->worksheet = $pValue;
-
-        return $this;
-    }
-
-    /**
-     * Get Title.
-     *
-     * @return Title
-     */
-    public function getTitle()
-    {
-        return $this->title;
-    }
-
-    /**
-     * Set Title.
-     *
-     * @return $this
-     */
-    public function setTitle(Title $title)
-    {
-        $this->title = $title;
-
-        return $this;
-    }
-
-    /**
-     * Get Legend.
-     *
-     * @return Legend
-     */
-    public function getLegend()
-    {
-        return $this->legend;
-    }
-
-    /**
-     * Set Legend.
-     *
-     * @return $this
-     */
-    public function setLegend(Legend $legend)
-    {
-        $this->legend = $legend;
-
-        return $this;
-    }
-
-    /**
-     * Get X-Axis Label.
-     *
-     * @return Title
-     */
-    public function getXAxisLabel()
-    {
-        return $this->xAxisLabel;
-    }
-
-    /**
-     * Set X-Axis Label.
-     *
-     * @return $this
-     */
-    public function setXAxisLabel(Title $label)
-    {
-        $this->xAxisLabel = $label;
-
-        return $this;
-    }
-
-    /**
-     * Get Y-Axis Label.
-     *
-     * @return Title
-     */
-    public function getYAxisLabel()
-    {
-        return $this->yAxisLabel;
-    }
-
-    /**
-     * Set Y-Axis Label.
-     *
-     * @return $this
-     */
-    public function setYAxisLabel(Title $label)
-    {
-        $this->yAxisLabel = $label;
-
-        return $this;
-    }
-
-    /**
-     * Get Plot Area.
-     *
-     * @return PlotArea
-     */
-    public function getPlotArea()
-    {
-        return $this->plotArea;
-    }
-
-    /**
-     * Get Plot Visible Only.
-     *
-     * @return bool
-     */
-    public function getPlotVisibleOnly()
-    {
-        return $this->plotVisibleOnly;
-    }
-
-    /**
-     * Set Plot Visible Only.
-     *
-     * @param bool $plotVisibleOnly
-     *
-     * @return $this
-     */
-    public function setPlotVisibleOnly($plotVisibleOnly)
-    {
-        $this->plotVisibleOnly = $plotVisibleOnly;
-
-        return $this;
-    }
-
-    /**
-     * Get Display Blanks as.
-     *
-     * @return string
-     */
-    public function getDisplayBlanksAs()
-    {
-        return $this->displayBlanksAs;
-    }
-
-    /**
-     * Set Display Blanks as.
-     *
-     * @param string $displayBlanksAs
-     *
-     * @return $this
-     */
-    public function setDisplayBlanksAs($displayBlanksAs)
-    {
-        $this->displayBlanksAs = $displayBlanksAs;
-
-        return $this;
-    }
-
-    /**
-     * Get yAxis.
-     *
-     * @return Axis
-     */
-    public function getChartAxisY()
-    {
-        if ($this->yAxis !== null) {
-            return $this->yAxis;
-        }
-
-        return new Axis();
-    }
-
-    /**
-     * Get xAxis.
-     *
-     * @return Axis
-     */
-    public function getChartAxisX()
-    {
-        if ($this->xAxis !== null) {
-            return $this->xAxis;
-        }
-
-        return new Axis();
-    }
-
-    /**
-     * Get Major Gridlines.
-     *
-     * @return GridLines
-     */
-    public function getMajorGridlines()
-    {
-        if ($this->majorGridlines !== null) {
-            return $this->majorGridlines;
-        }
-
-        return new GridLines();
-    }
-
-    /**
-     * Get Minor Gridlines.
-     *
-     * @return GridLines
-     */
-    public function getMinorGridlines()
-    {
-        if ($this->minorGridlines !== null) {
-            return $this->minorGridlines;
-        }
-
-        return new GridLines();
-    }
-
-    /**
-     * Set the Top Left position for the chart.
-     *
-     * @param string $cell
-     * @param int $xOffset
-     * @param int $yOffset
-     *
-     * @return $this
-     */
-    public function setTopLeftPosition($cell, $xOffset = null, $yOffset = null)
-    {
-        $this->topLeftCellRef = $cell;
-        if ($xOffset !== null) {
-            $this->setTopLeftXOffset($xOffset);
-        }
-        if ($yOffset !== null) {
-            $this->setTopLeftYOffset($yOffset);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Get the top left position of the chart.
-     *
-     * @return array an associative array containing the cell address, X-Offset and Y-Offset from the top left of that cell
-     */
-    public function getTopLeftPosition()
-    {
-        return [
-            'cell' => $this->topLeftCellRef,
-            'xOffset' => $this->topLeftXOffset,
-            'yOffset' => $this->topLeftYOffset,
-        ];
-    }
-
-    /**
-     * Get the cell address where the top left of the chart is fixed.
-     *
-     * @return string
-     */
-    public function getTopLeftCell()
-    {
-        return $this->topLeftCellRef;
-    }
-
-    /**
-     * Set the Top Left cell position for the chart.
-     *
-     * @param string $cell
-     *
-     * @return $this
-     */
-    public function setTopLeftCell($cell)
-    {
-        $this->topLeftCellRef = $cell;
-
-        return $this;
-    }
-
-    /**
-     * Set the offset position within the Top Left cell for the chart.
-     *
-     * @param int $xOffset
-     * @param int $yOffset
-     *
-     * @return $this
-     */
-    public function setTopLeftOffset($xOffset, $yOffset)
-    {
-        if ($xOffset !== null) {
-            $this->setTopLeftXOffset($xOffset);
-        }
-
-        if ($yOffset !== null) {
-            $this->setTopLeftYOffset($yOffset);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Get the offset position within the Top Left cell for the chart.
-     *
-     * @return int[]
-     */
-    public function getTopLeftOffset()
-    {
-        return [
-            'X' => $this->topLeftXOffset,
-            'Y' => $this->topLeftYOffset,
-        ];
-    }
-
-    public function setTopLeftXOffset($xOffset)
-    {
-        $this->topLeftXOffset = $xOffset;
-
-        return $this;
-    }
-
-    public function getTopLeftXOffset()
-    {
-        return $this->topLeftXOffset;
-    }
-
-    public function setTopLeftYOffset($yOffset)
-    {
-        $this->topLeftYOffset = $yOffset;
-
-        return $this;
-    }
-
-    public function getTopLeftYOffset()
-    {
-        return $this->topLeftYOffset;
-    }
-
-    /**
-     * Set the Bottom Right position of the chart.
-     *
-     * @param string $cell
-     * @param int $xOffset
-     * @param int $yOffset
-     *
-     * @return $this
-     */
-    public function setBottomRightPosition($cell, $xOffset = null, $yOffset = null)
-    {
-        $this->bottomRightCellRef = $cell;
-        if ($xOffset !== null) {
-            $this->setBottomRightXOffset($xOffset);
-        }
-        if ($yOffset !== null) {
-            $this->setBottomRightYOffset($yOffset);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Get the bottom right position of the chart.
-     *
-     * @return array an associative array containing the cell address, X-Offset and Y-Offset from the top left of that cell
-     */
-    public function getBottomRightPosition()
-    {
-        return [
-            'cell' => $this->bottomRightCellRef,
-            'xOffset' => $this->bottomRightXOffset,
-            'yOffset' => $this->bottomRightYOffset,
-        ];
-    }
-
-    public function setBottomRightCell($cell)
-    {
-        $this->bottomRightCellRef = $cell;
-
-        return $this;
-    }
-
-    /**
-     * Get the cell address where the bottom right of the chart is fixed.
-     *
-     * @return string
-     */
-    public function getBottomRightCell()
-    {
-        return $this->bottomRightCellRef;
-    }
-
-    /**
-     * Set the offset position within the Bottom Right cell for the chart.
-     *
-     * @param int $xOffset
-     * @param int $yOffset
-     *
-     * @return $this
-     */
-    public function setBottomRightOffset($xOffset, $yOffset)
-    {
-        if ($xOffset !== null) {
-            $this->setBottomRightXOffset($xOffset);
-        }
-
-        if ($yOffset !== null) {
-            $this->setBottomRightYOffset($yOffset);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Get the offset position within the Bottom Right cell for the chart.
-     *
-     * @return int[]
-     */
-    public function getBottomRightOffset()
-    {
-        return [
-            'X' => $this->bottomRightXOffset,
-            'Y' => $this->bottomRightYOffset,
-        ];
-    }
-
-    public function setBottomRightXOffset($xOffset)
-    {
-        $this->bottomRightXOffset = $xOffset;
-
-        return $this;
-    }
-
-    public function getBottomRightXOffset()
-    {
-        return $this->bottomRightXOffset;
-    }
-
-    public function setBottomRightYOffset($yOffset)
-    {
-        $this->bottomRightYOffset = $yOffset;
-
-        return $this;
-    }
-
-    public function getBottomRightYOffset()
-    {
-        return $this->bottomRightYOffset;
-    }
-
-    public function refresh(): void
-    {
-        if ($this->worksheet !== null) {
-            $this->plotArea->refresh($this->worksheet);
-        }
-    }
-
-    /**
-     * Render the chart to given file (or stream).
-     *
-     * @param string $outputDestination Name of the file render to
-     *
-     * @return bool true on success
-     */
-    public function render($outputDestination = null)
-    {
-        if ($outputDestination == 'php://output') {
-            $outputDestination = null;
-        }
-
-        $libraryName = Settings::getChartRenderer();
-        if ($libraryName === null) {
-            return false;
-        }
-
-        // Ensure that data series values are up-to-date before we render
-        $this->refresh();
-
-        $renderer = new $libraryName($this);
-
-        return $renderer->render($outputDestination);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,75 +1,59 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpKernel\DependencyInjection;
-
-use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
-use Symfony\Component\DependencyInjection\ContainerBuilder;
-
-/**
- * Removes empty service-locators registered for ServiceValueResolver.
- *
- * @author Nicolas Grekas <p@tchwork.com>
- */
-class RemoveEmptyControllerArgumentLocatorsPass implements CompilerPassInterface
-{
-    private $controllerLocator;
-
-    public function __construct(string $controllerLocator = 'argument_resolver.controller_locator')
-    {
-        $this->controllerLocator = $controllerLocator;
-    }
-
-    public function process(ContainerBuilder $container)
-    {
-        $controllerLocator = $container->findDefinition($this->controllerLocator);
-        $controllers = $controllerLocator->getArgument(0);
-
-        foreach ($controllers as $controller => $argumentRef) {
-            $argumentLocator = $container->getDefinition((string) $argumentRef->getValues()[0]);
-
-            if (!$argumentLocator->getArgument(0)) {
-                // remove empty argument locators
-                $reason = sprintf('Removing service-argument resolver for controller "%s": no corresponding services exist for the referenced types.', $controller);
-            } else {
-                // any methods listed for call-at-instantiation cannot be actions
-                $reason = false;
-                [$id, $action] = explode('::', $controller);
-
-                if ($container->hasAlias($id)) {
-                    continue;
-                }
-
-                $controllerDef = $container->getDefinition($id);
-                foreach ($controllerDef->getMethodCalls() as [$method]) {
-                    if (0 === strcasecmp($action, $method)) {
-                        $reason = sprintf('Removing method "%s" of service "%s" from controller candidates: the method is called at instantiation, thus cannot be an action.', $action, $id);
-                        break;
-                    }
-                }
-                if (!$reason) {
-                    // see Symfony\Component\HttpKernel\Controller\ContainerControllerResolver
-                    $controllers[$id.':'.$action] = $argumentRef;
-
-                    if ('__invoke' === $action) {
-                        $controllers[$id] = $argumentRef;
-                    }
-                    continue;
-                }
-            }
-
-            unset($controllers[$controller]);
-            $container->log($this, $reason);
-        }
-
-        $controllerLocator->replaceArgument(0, $controllers);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

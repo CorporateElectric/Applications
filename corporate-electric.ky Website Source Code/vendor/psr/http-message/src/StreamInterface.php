@@ -1,158 +1,35 @@
-<?php
-
-namespace Psr\Http\Message;
-
-/**
- * Describes a data stream.
- *
- * Typically, an instance will wrap a PHP stream; this interface provides
- * a wrapper around the most common operations, including serialization of
- * the entire stream to a string.
- */
-interface StreamInterface
-{
-    /**
-     * Reads all data from the stream into a string, from the beginning to end.
-     *
-     * This method MUST attempt to seek to the beginning of the stream before
-     * reading data and read the stream until the end is reached.
-     *
-     * Warning: This could attempt to load a large amount of data into memory.
-     *
-     * This method MUST NOT raise an exception in order to conform with PHP's
-     * string casting operations.
-     *
-     * @see http://php.net/manual/en/language.oop5.magic.php#object.tostring
-     * @return string
-     */
-    public function __toString();
-
-    /**
-     * Closes the stream and any underlying resources.
-     *
-     * @return void
-     */
-    public function close();
-
-    /**
-     * Separates any underlying resources from the stream.
-     *
-     * After the stream has been detached, the stream is in an unusable state.
-     *
-     * @return resource|null Underlying PHP stream, if any
-     */
-    public function detach();
-
-    /**
-     * Get the size of the stream if known.
-     *
-     * @return int|null Returns the size in bytes if known, or null if unknown.
-     */
-    public function getSize();
-
-    /**
-     * Returns the current position of the file read/write pointer
-     *
-     * @return int Position of the file pointer
-     * @throws \RuntimeException on error.
-     */
-    public function tell();
-
-    /**
-     * Returns true if the stream is at the end of the stream.
-     *
-     * @return bool
-     */
-    public function eof();
-
-    /**
-     * Returns whether or not the stream is seekable.
-     *
-     * @return bool
-     */
-    public function isSeekable();
-
-    /**
-     * Seek to a position in the stream.
-     *
-     * @link http://www.php.net/manual/en/function.fseek.php
-     * @param int $offset Stream offset
-     * @param int $whence Specifies how the cursor position will be calculated
-     *     based on the seek offset. Valid values are identical to the built-in
-     *     PHP $whence values for `fseek()`.  SEEK_SET: Set position equal to
-     *     offset bytes SEEK_CUR: Set position to current location plus offset
-     *     SEEK_END: Set position to end-of-stream plus offset.
-     * @throws \RuntimeException on failure.
-     */
-    public function seek($offset, $whence = SEEK_SET);
-
-    /**
-     * Seek to the beginning of the stream.
-     *
-     * If the stream is not seekable, this method will raise an exception;
-     * otherwise, it will perform a seek(0).
-     *
-     * @see seek()
-     * @link http://www.php.net/manual/en/function.fseek.php
-     * @throws \RuntimeException on failure.
-     */
-    public function rewind();
-
-    /**
-     * Returns whether or not the stream is writable.
-     *
-     * @return bool
-     */
-    public function isWritable();
-
-    /**
-     * Write data to the stream.
-     *
-     * @param string $string The string that is to be written.
-     * @return int Returns the number of bytes written to the stream.
-     * @throws \RuntimeException on failure.
-     */
-    public function write($string);
-
-    /**
-     * Returns whether or not the stream is readable.
-     *
-     * @return bool
-     */
-    public function isReadable();
-
-    /**
-     * Read data from the stream.
-     *
-     * @param int $length Read up to $length bytes from the object and return
-     *     them. Fewer than $length bytes may be returned if underlying stream
-     *     call returns fewer bytes.
-     * @return string Returns the data read from the stream, or an empty string
-     *     if no bytes are available.
-     * @throws \RuntimeException if an error occurs.
-     */
-    public function read($length);
-
-    /**
-     * Returns the remaining contents in a string
-     *
-     * @return string
-     * @throws \RuntimeException if unable to read or an error occurs while
-     *     reading.
-     */
-    public function getContents();
-
-    /**
-     * Get stream metadata as an associative array or retrieve a specific key.
-     *
-     * The keys returned are identical to the keys returned from PHP's
-     * stream_get_meta_data() function.
-     *
-     * @link http://php.net/manual/en/function.stream-get-meta-data.php
-     * @param string $key Specific metadata to retrieve.
-     * @return array|mixed|null Returns an associative array if no key is
-     *     provided. Returns a specific key value if a key is provided and the
-     *     value is found, or null if the key is not found.
-     */
-    public function getMetadata($key = null);
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

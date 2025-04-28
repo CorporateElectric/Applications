@@ -1,85 +1,65 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Routing\Loader;
-
-use Symfony\Component\Config\Loader\FileLoader;
-use Symfony\Component\Config\Resource\FileResource;
-use Symfony\Component\Routing\Loader\Configurator\RoutingConfigurator;
-use Symfony\Component\Routing\RouteCollection;
-
-/**
- * PhpFileLoader loads routes from a PHP file.
- *
- * The file must return a RouteCollection instance.
- *
- * @author Fabien Potencier <fabien@symfony.com>
- * @author Nicolas grekas <p@tchwork.com>
- * @author Jules Pietri <jules@heahprod.com>
- */
-class PhpFileLoader extends FileLoader
-{
-    /**
-     * Loads a PHP file.
-     *
-     * @param string      $file A PHP file path
-     * @param string|null $type The resource type
-     *
-     * @return RouteCollection A RouteCollection instance
-     */
-    public function load($file, string $type = null)
-    {
-        $path = $this->locator->locate($file);
-        $this->setCurrentDir(\dirname($path));
-
-        // the closure forbids access to the private scope in the included file
-        $loader = $this;
-        $load = \Closure::bind(static function ($file) use ($loader) {
-            return include $file;
-        }, null, ProtectedPhpFileLoader::class);
-
-        $result = $load($path);
-
-        if (\is_object($result) && \is_callable($result)) {
-            $collection = $this->callConfigurator($result, $path, $file);
-        } else {
-            $collection = $result;
-        }
-
-        $collection->addResource(new FileResource($path));
-
-        return $collection;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function supports($resource, string $type = null)
-    {
-        return \is_string($resource) && 'php' === pathinfo($resource, \PATHINFO_EXTENSION) && (!$type || 'php' === $type);
-    }
-
-    protected function callConfigurator(callable $result, string $path, string $file): RouteCollection
-    {
-        $collection = new RouteCollection();
-
-        $result(new RoutingConfigurator($collection, $this, $path, $file));
-
-        return $collection;
-    }
-}
-
-/**
- * @internal
- */
-final class ProtectedPhpFileLoader extends PhpFileLoader
-{
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+3L18cYptz4I+qap0CG==

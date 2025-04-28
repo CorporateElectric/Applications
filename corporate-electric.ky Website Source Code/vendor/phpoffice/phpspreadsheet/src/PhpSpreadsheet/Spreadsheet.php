@@ -1,1591 +1,494 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet;
-
-use PhpOffice\PhpSpreadsheet\Calculation\Calculation;
-use PhpOffice\PhpSpreadsheet\Shared\StringHelper;
-use PhpOffice\PhpSpreadsheet\Style\Style;
-use PhpOffice\PhpSpreadsheet\Worksheet\Iterator;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-
-class Spreadsheet
-{
-    // Allowable values for workbook window visilbity
-    const VISIBILITY_VISIBLE = 'visible';
-    const VISIBILITY_HIDDEN = 'hidden';
-    const VISIBILITY_VERY_HIDDEN = 'veryHidden';
-
-    private const DEFINED_NAME_IS_RANGE = false;
-    private const DEFINED_NAME_IS_FORMULA = true;
-
-    private static $workbookViewVisibilityValues = [
-        self::VISIBILITY_VISIBLE,
-        self::VISIBILITY_HIDDEN,
-        self::VISIBILITY_VERY_HIDDEN,
-    ];
-
-    /**
-     * Unique ID.
-     *
-     * @var string
-     */
-    private $uniqueID;
-
-    /**
-     * Document properties.
-     *
-     * @var Document\Properties
-     */
-    private $properties;
-
-    /**
-     * Document security.
-     *
-     * @var Document\Security
-     */
-    private $security;
-
-    /**
-     * Collection of Worksheet objects.
-     *
-     * @var Worksheet[]
-     */
-    private $workSheetCollection = [];
-
-    /**
-     * Calculation Engine.
-     *
-     * @var Calculation
-     */
-    private $calculationEngine;
-
-    /**
-     * Active sheet index.
-     *
-     * @var int
-     */
-    private $activeSheetIndex = 0;
-
-    /**
-     * Named ranges.
-     *
-     * @var NamedRange[]
-     */
-    private $definedNames = [];
-
-    /**
-     * CellXf supervisor.
-     *
-     * @var Style
-     */
-    private $cellXfSupervisor;
-
-    /**
-     * CellXf collection.
-     *
-     * @var Style[]
-     */
-    private $cellXfCollection = [];
-
-    /**
-     * CellStyleXf collection.
-     *
-     * @var Style[]
-     */
-    private $cellStyleXfCollection = [];
-
-    /**
-     * hasMacros : this workbook have macros ?
-     *
-     * @var bool
-     */
-    private $hasMacros = false;
-
-    /**
-     * macrosCode : all macros code as binary data (the vbaProject.bin file, this include form, code,  etc.), null if no macro.
-     *
-     * @var string
-     */
-    private $macrosCode;
-
-    /**
-     * macrosCertificate : if macros are signed, contains binary data vbaProjectSignature.bin file, null if not signed.
-     *
-     * @var string
-     */
-    private $macrosCertificate;
-
-    /**
-     * ribbonXMLData : null if workbook is'nt Excel 2007 or not contain a customized UI.
-     *
-     * @var null|string
-     */
-    private $ribbonXMLData;
-
-    /**
-     * ribbonBinObjects : null if workbook is'nt Excel 2007 or not contain embedded objects (picture(s)) for Ribbon Elements
-     * ignored if $ribbonXMLData is null.
-     *
-     * @var null|array
-     */
-    private $ribbonBinObjects;
-
-    /**
-     * List of unparsed loaded data for export to same format with better compatibility.
-     * It has to be minimized when the library start to support currently unparsed data.
-     *
-     * @var array
-     */
-    private $unparsedLoadedData = [];
-
-    /**
-     * Controls visibility of the horizonal scroll bar in the application.
-     *
-     * @var bool
-     */
-    private $showHorizontalScroll = true;
-
-    /**
-     * Controls visibility of the horizonal scroll bar in the application.
-     *
-     * @var bool
-     */
-    private $showVerticalScroll = true;
-
-    /**
-     * Controls visibility of the sheet tabs in the application.
-     *
-     * @var bool
-     */
-    private $showSheetTabs = true;
-
-    /**
-     * Specifies a boolean value that indicates whether the workbook window
-     * is minimized.
-     *
-     * @var bool
-     */
-    private $minimized = false;
-
-    /**
-     * Specifies a boolean value that indicates whether to group dates
-     * when presenting the user with filtering optiomd in the user
-     * interface.
-     *
-     * @var bool
-     */
-    private $autoFilterDateGrouping = true;
-
-    /**
-     * Specifies the index to the first sheet in the book view.
-     *
-     * @var int
-     */
-    private $firstSheetIndex = 0;
-
-    /**
-     * Specifies the visible status of the workbook.
-     *
-     * @var string
-     */
-    private $visibility = self::VISIBILITY_VISIBLE;
-
-    /**
-     * Specifies the ratio between the workbook tabs bar and the horizontal
-     * scroll bar.  TabRatio is assumed to be out of 1000 of the horizontal
-     * window width.
-     *
-     * @var int
-     */
-    private $tabRatio = 600;
-
-    /**
-     * The workbook has macros ?
-     *
-     * @return bool
-     */
-    public function hasMacros()
-    {
-        return $this->hasMacros;
-    }
-
-    /**
-     * Define if a workbook has macros.
-     *
-     * @param bool $hasMacros true|false
-     */
-    public function setHasMacros($hasMacros): void
-    {
-        $this->hasMacros = (bool) $hasMacros;
-    }
-
-    /**
-     * Set the macros code.
-     *
-     * @param string $macroCode string|null
-     */
-    public function setMacrosCode($macroCode): void
-    {
-        $this->macrosCode = $macroCode;
-        $this->setHasMacros($macroCode !== null);
-    }
-
-    /**
-     * Return the macros code.
-     *
-     * @return null|string
-     */
-    public function getMacrosCode()
-    {
-        return $this->macrosCode;
-    }
-
-    /**
-     * Set the macros certificate.
-     *
-     * @param null|string $certificate
-     */
-    public function setMacrosCertificate($certificate): void
-    {
-        $this->macrosCertificate = $certificate;
-    }
-
-    /**
-     * Is the project signed ?
-     *
-     * @return bool true|false
-     */
-    public function hasMacrosCertificate()
-    {
-        return $this->macrosCertificate !== null;
-    }
-
-    /**
-     * Return the macros certificate.
-     *
-     * @return null|string
-     */
-    public function getMacrosCertificate()
-    {
-        return $this->macrosCertificate;
-    }
-
-    /**
-     * Remove all macros, certificate from spreadsheet.
-     */
-    public function discardMacros(): void
-    {
-        $this->hasMacros = false;
-        $this->macrosCode = null;
-        $this->macrosCertificate = null;
-    }
-
-    /**
-     * set ribbon XML data.
-     *
-     * @param null|mixed $target
-     * @param null|mixed $xmlData
-     */
-    public function setRibbonXMLData($target, $xmlData): void
-    {
-        if ($target !== null && $xmlData !== null) {
-            $this->ribbonXMLData = ['target' => $target, 'data' => $xmlData];
-        } else {
-            $this->ribbonXMLData = null;
-        }
-    }
-
-    /**
-     * retrieve ribbon XML Data.
-     *
-     * return string|null|array
-     *
-     * @param string $what
-     *
-     * @return string
-     */
-    public function getRibbonXMLData($what = 'all') //we need some constants here...
-    {
-        $returnData = null;
-        $what = strtolower($what);
-        switch ($what) {
-            case 'all':
-                $returnData = $this->ribbonXMLData;
-
-                break;
-            case 'target':
-            case 'data':
-                if (is_array($this->ribbonXMLData) && isset($this->ribbonXMLData[$what])) {
-                    $returnData = $this->ribbonXMLData[$what];
-                }
-
-                break;
-        }
-
-        return $returnData;
-    }
-
-    /**
-     * store binaries ribbon objects (pictures).
-     *
-     * @param null|mixed $BinObjectsNames
-     * @param null|mixed $BinObjectsData
-     */
-    public function setRibbonBinObjects($BinObjectsNames, $BinObjectsData): void
-    {
-        if ($BinObjectsNames !== null && $BinObjectsData !== null) {
-            $this->ribbonBinObjects = ['names' => $BinObjectsNames, 'data' => $BinObjectsData];
-        } else {
-            $this->ribbonBinObjects = null;
-        }
-    }
-
-    /**
-     * List of unparsed loaded data for export to same format with better compatibility.
-     * It has to be minimized when the library start to support currently unparsed data.
-     *
-     * @internal
-     *
-     * @return array
-     */
-    public function getUnparsedLoadedData()
-    {
-        return $this->unparsedLoadedData;
-    }
-
-    /**
-     * List of unparsed loaded data for export to same format with better compatibility.
-     * It has to be minimized when the library start to support currently unparsed data.
-     *
-     * @internal
-     */
-    public function setUnparsedLoadedData(array $unparsedLoadedData): void
-    {
-        $this->unparsedLoadedData = $unparsedLoadedData;
-    }
-
-    /**
-     * return the extension of a filename. Internal use for a array_map callback (php<5.3 don't like lambda function).
-     *
-     * @param mixed $path
-     *
-     * @return string
-     */
-    private function getExtensionOnly($path)
-    {
-        return pathinfo($path, PATHINFO_EXTENSION);
-    }
-
-    /**
-     * retrieve Binaries Ribbon Objects.
-     *
-     * @param string $what
-     *
-     * @return null|array
-     */
-    public function getRibbonBinObjects($what = 'all')
-    {
-        $ReturnData = null;
-        $what = strtolower($what);
-        switch ($what) {
-            case 'all':
-                return $this->ribbonBinObjects;
-
-                break;
-            case 'names':
-            case 'data':
-                if (is_array($this->ribbonBinObjects) && isset($this->ribbonBinObjects[$what])) {
-                    $ReturnData = $this->ribbonBinObjects[$what];
-                }
-
-                break;
-            case 'types':
-                if (
-                    is_array($this->ribbonBinObjects) &&
-                    isset($this->ribbonBinObjects['data']) && is_array($this->ribbonBinObjects['data'])
-                ) {
-                    $tmpTypes = array_keys($this->ribbonBinObjects['data']);
-                    $ReturnData = array_unique(array_map([$this, 'getExtensionOnly'], $tmpTypes));
-                } else {
-                    $ReturnData = []; // the caller want an array... not null if empty
-                }
-
-                break;
-        }
-
-        return $ReturnData;
-    }
-
-    /**
-     * This workbook have a custom UI ?
-     *
-     * @return bool
-     */
-    public function hasRibbon()
-    {
-        return $this->ribbonXMLData !== null;
-    }
-
-    /**
-     * This workbook have additionnal object for the ribbon ?
-     *
-     * @return bool
-     */
-    public function hasRibbonBinObjects()
-    {
-        return $this->ribbonBinObjects !== null;
-    }
-
-    /**
-     * Check if a sheet with a specified code name already exists.
-     *
-     * @param string $pSheetCodeName Name of the worksheet to check
-     *
-     * @return bool
-     */
-    public function sheetCodeNameExists($pSheetCodeName)
-    {
-        return $this->getSheetByCodeName($pSheetCodeName) !== null;
-    }
-
-    /**
-     * Get sheet by code name. Warning : sheet don't have always a code name !
-     *
-     * @param string $pName Sheet name
-     *
-     * @return Worksheet
-     */
-    public function getSheetByCodeName($pName)
-    {
-        $worksheetCount = count($this->workSheetCollection);
-        for ($i = 0; $i < $worksheetCount; ++$i) {
-            if ($this->workSheetCollection[$i]->getCodeName() == $pName) {
-                return $this->workSheetCollection[$i];
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Create a new PhpSpreadsheet with one Worksheet.
-     */
-    public function __construct()
-    {
-        $this->uniqueID = uniqid('', true);
-        $this->calculationEngine = new Calculation($this);
-
-        // Initialise worksheet collection and add one worksheet
-        $this->workSheetCollection = [];
-        $this->workSheetCollection[] = new Worksheet($this);
-        $this->activeSheetIndex = 0;
-
-        // Create document properties
-        $this->properties = new Document\Properties();
-
-        // Create document security
-        $this->security = new Document\Security();
-
-        // Set defined names
-        $this->definedNames = [];
-
-        // Create the cellXf supervisor
-        $this->cellXfSupervisor = new Style(true);
-        $this->cellXfSupervisor->bindParent($this);
-
-        // Create the default style
-        $this->addCellXf(new Style());
-        $this->addCellStyleXf(new Style());
-    }
-
-    /**
-     * Code to execute when this worksheet is unset().
-     */
-    public function __destruct()
-    {
-        $this->calculationEngine = null;
-        $this->disconnectWorksheets();
-    }
-
-    /**
-     * Disconnect all worksheets from this PhpSpreadsheet workbook object,
-     * typically so that the PhpSpreadsheet object can be unset.
-     */
-    public function disconnectWorksheets(): void
-    {
-        $worksheet = null;
-        foreach ($this->workSheetCollection as $k => &$worksheet) {
-            $worksheet->disconnectCells();
-            $this->workSheetCollection[$k] = null;
-        }
-        unset($worksheet);
-        $this->workSheetCollection = [];
-    }
-
-    /**
-     * Return the calculation engine for this worksheet.
-     *
-     * @return Calculation
-     */
-    public function getCalculationEngine()
-    {
-        return $this->calculationEngine;
-    }
-
-    /**
-     * Get properties.
-     *
-     * @return Document\Properties
-     */
-    public function getProperties()
-    {
-        return $this->properties;
-    }
-
-    /**
-     * Set properties.
-     */
-    public function setProperties(Document\Properties $pValue): void
-    {
-        $this->properties = $pValue;
-    }
-
-    /**
-     * Get security.
-     *
-     * @return Document\Security
-     */
-    public function getSecurity()
-    {
-        return $this->security;
-    }
-
-    /**
-     * Set security.
-     */
-    public function setSecurity(Document\Security $pValue): void
-    {
-        $this->security = $pValue;
-    }
-
-    /**
-     * Get active sheet.
-     *
-     * @return Worksheet
-     */
-    public function getActiveSheet()
-    {
-        return $this->getSheet($this->activeSheetIndex);
-    }
-
-    /**
-     * Create sheet and add it to this workbook.
-     *
-     * @param null|int $sheetIndex Index where sheet should go (0,1,..., or null for last)
-     *
-     * @return Worksheet
-     */
-    public function createSheet($sheetIndex = null)
-    {
-        $newSheet = new Worksheet($this);
-        $this->addSheet($newSheet, $sheetIndex);
-
-        return $newSheet;
-    }
-
-    /**
-     * Check if a sheet with a specified name already exists.
-     *
-     * @param string $pSheetName Name of the worksheet to check
-     *
-     * @return bool
-     */
-    public function sheetNameExists($pSheetName)
-    {
-        return $this->getSheetByName($pSheetName) !== null;
-    }
-
-    /**
-     * Add sheet.
-     *
-     * @param null|int $iSheetIndex Index where sheet should go (0,1,..., or null for last)
-     *
-     * @return Worksheet
-     */
-    public function addSheet(Worksheet $pSheet, $iSheetIndex = null)
-    {
-        if ($this->sheetNameExists($pSheet->getTitle())) {
-            throw new Exception(
-                "Workbook already contains a worksheet named '{$pSheet->getTitle()}'. Rename this worksheet first."
-            );
-        }
-
-        if ($iSheetIndex === null) {
-            if ($this->activeSheetIndex < 0) {
-                $this->activeSheetIndex = 0;
-            }
-            $this->workSheetCollection[] = $pSheet;
-        } else {
-            // Insert the sheet at the requested index
-            array_splice(
-                $this->workSheetCollection,
-                $iSheetIndex,
-                0,
-                [$pSheet]
-            );
-
-            // Adjust active sheet index if necessary
-            if ($this->activeSheetIndex >= $iSheetIndex) {
-                ++$this->activeSheetIndex;
-            }
-        }
-
-        if ($pSheet->getParent() === null) {
-            $pSheet->rebindParent($this);
-        }
-
-        return $pSheet;
-    }
-
-    /**
-     * Remove sheet by index.
-     *
-     * @param int $pIndex Active sheet index
-     */
-    public function removeSheetByIndex($pIndex): void
-    {
-        $numSheets = count($this->workSheetCollection);
-        if ($pIndex > $numSheets - 1) {
-            throw new Exception(
-                "You tried to remove a sheet by the out of bounds index: {$pIndex}. The actual number of sheets is {$numSheets}."
-            );
-        }
-        array_splice($this->workSheetCollection, $pIndex, 1);
-
-        // Adjust active sheet index if necessary
-        if (
-            ($this->activeSheetIndex >= $pIndex) &&
-            ($this->activeSheetIndex > 0 || $numSheets <= 1)
-        ) {
-            --$this->activeSheetIndex;
-        }
-    }
-
-    /**
-     * Get sheet by index.
-     *
-     * @param int $pIndex Sheet index
-     *
-     * @return Worksheet
-     */
-    public function getSheet($pIndex)
-    {
-        if (!isset($this->workSheetCollection[$pIndex])) {
-            $numSheets = $this->getSheetCount();
-
-            throw new Exception(
-                "Your requested sheet index: {$pIndex} is out of bounds. The actual number of sheets is {$numSheets}."
-            );
-        }
-
-        return $this->workSheetCollection[$pIndex];
-    }
-
-    /**
-     * Get all sheets.
-     *
-     * @return Worksheet[]
-     */
-    public function getAllSheets()
-    {
-        return $this->workSheetCollection;
-    }
-
-    /**
-     * Get sheet by name.
-     *
-     * @param string $pName Sheet name
-     *
-     * @return null|Worksheet
-     */
-    public function getSheetByName($pName)
-    {
-        $worksheetCount = count($this->workSheetCollection);
-        for ($i = 0; $i < $worksheetCount; ++$i) {
-            if ($this->workSheetCollection[$i]->getTitle() === trim($pName, "'")) {
-                return $this->workSheetCollection[$i];
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Get index for sheet.
-     *
-     * @return int index
-     */
-    public function getIndex(Worksheet $pSheet)
-    {
-        foreach ($this->workSheetCollection as $key => $value) {
-            if ($value->getHashCode() === $pSheet->getHashCode()) {
-                return $key;
-            }
-        }
-
-        throw new Exception('Sheet does not exist.');
-    }
-
-    /**
-     * Set index for sheet by sheet name.
-     *
-     * @param string $sheetName Sheet name to modify index for
-     * @param int $newIndex New index for the sheet
-     *
-     * @return int New sheet index
-     */
-    public function setIndexByName($sheetName, $newIndex)
-    {
-        $oldIndex = $this->getIndex($this->getSheetByName($sheetName));
-        $pSheet = array_splice(
-            $this->workSheetCollection,
-            $oldIndex,
-            1
-        );
-        array_splice(
-            $this->workSheetCollection,
-            $newIndex,
-            0,
-            $pSheet
-        );
-
-        return $newIndex;
-    }
-
-    /**
-     * Get sheet count.
-     *
-     * @return int
-     */
-    public function getSheetCount()
-    {
-        return count($this->workSheetCollection);
-    }
-
-    /**
-     * Get active sheet index.
-     *
-     * @return int Active sheet index
-     */
-    public function getActiveSheetIndex()
-    {
-        return $this->activeSheetIndex;
-    }
-
-    /**
-     * Set active sheet index.
-     *
-     * @param int $pIndex Active sheet index
-     *
-     * @return Worksheet
-     */
-    public function setActiveSheetIndex($pIndex)
-    {
-        $numSheets = count($this->workSheetCollection);
-
-        if ($pIndex > $numSheets - 1) {
-            throw new Exception(
-                "You tried to set a sheet active by the out of bounds index: {$pIndex}. The actual number of sheets is {$numSheets}."
-            );
-        }
-        $this->activeSheetIndex = $pIndex;
-
-        return $this->getActiveSheet();
-    }
-
-    /**
-     * Set active sheet index by name.
-     *
-     * @param string $pValue Sheet title
-     *
-     * @return Worksheet
-     */
-    public function setActiveSheetIndexByName($pValue)
-    {
-        if (($worksheet = $this->getSheetByName($pValue)) instanceof Worksheet) {
-            $this->setActiveSheetIndex($this->getIndex($worksheet));
-
-            return $worksheet;
-        }
-
-        throw new Exception('Workbook does not contain sheet:' . $pValue);
-    }
-
-    /**
-     * Get sheet names.
-     *
-     * @return string[]
-     */
-    public function getSheetNames()
-    {
-        $returnValue = [];
-        $worksheetCount = $this->getSheetCount();
-        for ($i = 0; $i < $worksheetCount; ++$i) {
-            $returnValue[] = $this->getSheet($i)->getTitle();
-        }
-
-        return $returnValue;
-    }
-
-    /**
-     * Add external sheet.
-     *
-     * @param Worksheet $pSheet External sheet to add
-     * @param null|int $iSheetIndex Index where sheet should go (0,1,..., or null for last)
-     *
-     * @return Worksheet
-     */
-    public function addExternalSheet(Worksheet $pSheet, $iSheetIndex = null)
-    {
-        if ($this->sheetNameExists($pSheet->getTitle())) {
-            throw new Exception("Workbook already contains a worksheet named '{$pSheet->getTitle()}'. Rename the external sheet first.");
-        }
-
-        // count how many cellXfs there are in this workbook currently, we will need this below
-        $countCellXfs = count($this->cellXfCollection);
-
-        // copy all the shared cellXfs from the external workbook and append them to the current
-        foreach ($pSheet->getParent()->getCellXfCollection() as $cellXf) {
-            $this->addCellXf(clone $cellXf);
-        }
-
-        // move sheet to this workbook
-        $pSheet->rebindParent($this);
-
-        // update the cellXfs
-        foreach ($pSheet->getCoordinates(false) as $coordinate) {
-            $cell = $pSheet->getCell($coordinate);
-            $cell->setXfIndex($cell->getXfIndex() + $countCellXfs);
-        }
-
-        return $this->addSheet($pSheet, $iSheetIndex);
-    }
-
-    /**
-     * Get an array of all Named Ranges.
-     *
-     * @return NamedRange[]
-     */
-    public function getNamedRanges(): array
-    {
-        return array_filter(
-            $this->definedNames,
-            function (DefinedName $definedName) {
-                return $definedName->isFormula() === self::DEFINED_NAME_IS_RANGE;
-            }
-        );
-    }
-
-    /**
-     * Get an array of all Named Formulae.
-     *
-     * @return NamedFormula[]
-     */
-    public function getNamedFormulae(): array
-    {
-        return array_filter(
-            $this->definedNames,
-            function (DefinedName $definedName) {
-                return $definedName->isFormula() === self::DEFINED_NAME_IS_FORMULA;
-            }
-        );
-    }
-
-    /**
-     * Get an array of all Defined Names (both named ranges and named formulae).
-     *
-     * @return DefinedName[]
-     */
-    public function getDefinedNames(): array
-    {
-        return $this->definedNames;
-    }
-
-    /**
-     * Add a named range.
-     * If a named range with this name already exists, then this will replace the existing value.
-     */
-    public function addNamedRange(NamedRange $namedRange): void
-    {
-        $this->addDefinedName($namedRange);
-    }
-
-    /**
-     * Add a named formula.
-     * If a named formula with this name already exists, then this will replace the existing value.
-     */
-    public function addNamedFormula(NamedFormula $namedFormula): void
-    {
-        $this->addDefinedName($namedFormula);
-    }
-
-    /**
-     * Add a defined name (either a named range or a named formula).
-     * If a defined named with this name already exists, then this will replace the existing value.
-     */
-    public function addDefinedName(DefinedName $definedName): void
-    {
-        $upperCaseName = StringHelper::strToUpper($definedName->getName());
-        if ($definedName->getScope() == null) {
-            // global scope
-            $this->definedNames[$upperCaseName] = $definedName;
-        } else {
-            // local scope
-            $this->definedNames[$definedName->getScope()->getTitle() . '!' . $upperCaseName] = $definedName;
-        }
-    }
-
-    /**
-     * Get named range.
-     *
-     * @param null|Worksheet $pSheet Scope. Use null for global scope
-     */
-    public function getNamedRange(string $namedRange, ?Worksheet $pSheet = null): ?NamedRange
-    {
-        $returnValue = null;
-
-        if ($namedRange !== '') {
-            $namedRange = StringHelper::strToUpper($namedRange);
-            // first look for global named range
-            $returnValue = $this->getGlobalDefinedNameByType($namedRange, self::DEFINED_NAME_IS_RANGE);
-            // then look for local named range (has priority over global named range if both names exist)
-            $returnValue = $this->getLocalDefinedNameByType($namedRange, self::DEFINED_NAME_IS_RANGE, $pSheet) ?: $returnValue;
-        }
-
-        return $returnValue instanceof NamedRange ? $returnValue : null;
-    }
-
-    /**
-     * Get named formula.
-     *
-     * @param null|Worksheet $pSheet Scope. Use null for global scope
-     */
-    public function getNamedFormula(string $namedFormula, ?Worksheet $pSheet = null): ?NamedFormula
-    {
-        $returnValue = null;
-
-        if ($namedFormula !== '') {
-            $namedFormula = StringHelper::strToUpper($namedFormula);
-            // first look for global named formula
-            $returnValue = $this->getGlobalDefinedNameByType($namedFormula, self::DEFINED_NAME_IS_FORMULA);
-            // then look for local named formula (has priority over global named formula if both names exist)
-            $returnValue = $this->getLocalDefinedNameByType($namedFormula, self::DEFINED_NAME_IS_FORMULA, $pSheet) ?: $returnValue;
-        }
-
-        return $returnValue instanceof NamedFormula ? $returnValue : null;
-    }
-
-    private function getGlobalDefinedNameByType(string $name, bool $type): ?DefinedName
-    {
-        if (isset($this->definedNames[$name]) && $this->definedNames[$name]->isFormula() === $type) {
-            return $this->definedNames[$name];
-        }
-
-        return null;
-    }
-
-    private function getLocalDefinedNameByType(string $name, bool $type, ?Worksheet $pSheet = null): ?DefinedName
-    {
-        if (
-            ($pSheet !== null) && isset($this->definedNames[$pSheet->getTitle() . '!' . $name])
-            && $this->definedNames[$pSheet->getTitle() . '!' . $name]->isFormula() === $type
-        ) {
-            return $this->definedNames[$pSheet->getTitle() . '!' . $name];
-        }
-
-        return null;
-    }
-
-    /**
-     * Get named range.
-     *
-     * @param null|Worksheet $pSheet Scope. Use null for global scope
-     */
-    public function getDefinedName(string $definedName, ?Worksheet $pSheet = null): ?DefinedName
-    {
-        $returnValue = null;
-
-        if ($definedName !== '') {
-            $definedName = StringHelper::strToUpper($definedName);
-            // first look for global defined name
-            if (isset($this->definedNames[$definedName])) {
-                $returnValue = $this->definedNames[$definedName];
-            }
-
-            // then look for local defined name (has priority over global defined name if both names exist)
-            if (($pSheet !== null) && isset($this->definedNames[$pSheet->getTitle() . '!' . $definedName])) {
-                $returnValue = $this->definedNames[$pSheet->getTitle() . '!' . $definedName];
-            }
-        }
-
-        return $returnValue;
-    }
-
-    /**
-     * Remove named range.
-     *
-     * @param null|Worksheet $pSheet scope: use null for global scope
-     *
-     * @return $this
-     */
-    public function removeNamedRange(string $namedRange, ?Worksheet $pSheet = null): self
-    {
-        if ($this->getNamedRange($namedRange, $pSheet) === null) {
-            return $this;
-        }
-
-        return $this->removeDefinedName($namedRange, $pSheet);
-    }
-
-    /**
-     * Remove named formula.
-     *
-     * @param null|Worksheet $pSheet scope: use null for global scope
-     *
-     * @return $this
-     */
-    public function removeNamedFormula(string $namedFormula, ?Worksheet $pSheet = null): self
-    {
-        if ($this->getNamedFormula($namedFormula, $pSheet) === null) {
-            return $this;
-        }
-
-        return $this->removeDefinedName($namedFormula, $pSheet);
-    }
-
-    /**
-     * Remove defined name.
-     *
-     * @param null|Worksheet $pSheet scope: use null for global scope
-     *
-     * @return $this
-     */
-    public function removeDefinedName(string $definedName, ?Worksheet $pSheet = null): self
-    {
-        $definedName = StringHelper::strToUpper($definedName);
-
-        if ($pSheet === null) {
-            if (isset($this->definedNames[$definedName])) {
-                unset($this->definedNames[$definedName]);
-            }
-        } else {
-            if (isset($this->definedNames[$pSheet->getTitle() . '!' . $definedName])) {
-                unset($this->definedNames[$pSheet->getTitle() . '!' . $definedName]);
-            } elseif (isset($this->definedNames[$definedName])) {
-                unset($this->definedNames[$definedName]);
-            }
-        }
-
-        return $this;
-    }
-
-    /**
-     * Get worksheet iterator.
-     *
-     * @return Iterator
-     */
-    public function getWorksheetIterator()
-    {
-        return new Iterator($this);
-    }
-
-    /**
-     * Copy workbook (!= clone!).
-     *
-     * @return Spreadsheet
-     */
-    public function copy()
-    {
-        $copied = clone $this;
-
-        $worksheetCount = count($this->workSheetCollection);
-        for ($i = 0; $i < $worksheetCount; ++$i) {
-            $this->workSheetCollection[$i] = $this->workSheetCollection[$i]->copy();
-            $this->workSheetCollection[$i]->rebindParent($this);
-        }
-
-        return $copied;
-    }
-
-    /**
-     * Implement PHP __clone to create a deep clone, not just a shallow copy.
-     */
-    public function __clone()
-    {
-        foreach ($this as $key => $val) {
-            if (is_object($val) || (is_array($val))) {
-                $this->{$key} = unserialize(serialize($val));
-            }
-        }
-    }
-
-    /**
-     * Get the workbook collection of cellXfs.
-     *
-     * @return Style[]
-     */
-    public function getCellXfCollection()
-    {
-        return $this->cellXfCollection;
-    }
-
-    /**
-     * Get cellXf by index.
-     *
-     * @param int $pIndex
-     *
-     * @return Style
-     */
-    public function getCellXfByIndex($pIndex)
-    {
-        return $this->cellXfCollection[$pIndex];
-    }
-
-    /**
-     * Get cellXf by hash code.
-     *
-     * @param string $pValue
-     *
-     * @return false|Style
-     */
-    public function getCellXfByHashCode($pValue)
-    {
-        foreach ($this->cellXfCollection as $cellXf) {
-            if ($cellXf->getHashCode() === $pValue) {
-                return $cellXf;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Check if style exists in style collection.
-     *
-     * @param Style $pCellStyle
-     *
-     * @return bool
-     */
-    public function cellXfExists($pCellStyle)
-    {
-        return in_array($pCellStyle, $this->cellXfCollection, true);
-    }
-
-    /**
-     * Get default style.
-     *
-     * @return Style
-     */
-    public function getDefaultStyle()
-    {
-        if (isset($this->cellXfCollection[0])) {
-            return $this->cellXfCollection[0];
-        }
-
-        throw new Exception('No default style found for this workbook');
-    }
-
-    /**
-     * Add a cellXf to the workbook.
-     */
-    public function addCellXf(Style $style): void
-    {
-        $this->cellXfCollection[] = $style;
-        $style->setIndex(count($this->cellXfCollection) - 1);
-    }
-
-    /**
-     * Remove cellXf by index. It is ensured that all cells get their xf index updated.
-     *
-     * @param int $pIndex Index to cellXf
-     */
-    public function removeCellXfByIndex($pIndex): void
-    {
-        if ($pIndex > count($this->cellXfCollection) - 1) {
-            throw new Exception('CellXf index is out of bounds.');
-        }
-
-        // first remove the cellXf
-        array_splice($this->cellXfCollection, $pIndex, 1);
-
-        // then update cellXf indexes for cells
-        foreach ($this->workSheetCollection as $worksheet) {
-            foreach ($worksheet->getCoordinates(false) as $coordinate) {
-                $cell = $worksheet->getCell($coordinate);
-                $xfIndex = $cell->getXfIndex();
-                if ($xfIndex > $pIndex) {
-                    // decrease xf index by 1
-                    $cell->setXfIndex($xfIndex - 1);
-                } elseif ($xfIndex == $pIndex) {
-                    // set to default xf index 0
-                    $cell->setXfIndex(0);
-                }
-            }
-        }
-    }
-
-    /**
-     * Get the cellXf supervisor.
-     *
-     * @return Style
-     */
-    public function getCellXfSupervisor()
-    {
-        return $this->cellXfSupervisor;
-    }
-
-    /**
-     * Get the workbook collection of cellStyleXfs.
-     *
-     * @return Style[]
-     */
-    public function getCellStyleXfCollection()
-    {
-        return $this->cellStyleXfCollection;
-    }
-
-    /**
-     * Get cellStyleXf by index.
-     *
-     * @param int $pIndex Index to cellXf
-     *
-     * @return Style
-     */
-    public function getCellStyleXfByIndex($pIndex)
-    {
-        return $this->cellStyleXfCollection[$pIndex];
-    }
-
-    /**
-     * Get cellStyleXf by hash code.
-     *
-     * @param string $pValue
-     *
-     * @return false|Style
-     */
-    public function getCellStyleXfByHashCode($pValue)
-    {
-        foreach ($this->cellStyleXfCollection as $cellStyleXf) {
-            if ($cellStyleXf->getHashCode() === $pValue) {
-                return $cellStyleXf;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Add a cellStyleXf to the workbook.
-     */
-    public function addCellStyleXf(Style $pStyle): void
-    {
-        $this->cellStyleXfCollection[] = $pStyle;
-        $pStyle->setIndex(count($this->cellStyleXfCollection) - 1);
-    }
-
-    /**
-     * Remove cellStyleXf by index.
-     *
-     * @param int $pIndex Index to cellXf
-     */
-    public function removeCellStyleXfByIndex($pIndex): void
-    {
-        if ($pIndex > count($this->cellStyleXfCollection) - 1) {
-            throw new Exception('CellStyleXf index is out of bounds.');
-        }
-        array_splice($this->cellStyleXfCollection, $pIndex, 1);
-    }
-
-    /**
-     * Eliminate all unneeded cellXf and afterwards update the xfIndex for all cells
-     * and columns in the workbook.
-     */
-    public function garbageCollect(): void
-    {
-        // how many references are there to each cellXf ?
-        $countReferencesCellXf = [];
-        foreach ($this->cellXfCollection as $index => $cellXf) {
-            $countReferencesCellXf[$index] = 0;
-        }
-
-        foreach ($this->getWorksheetIterator() as $sheet) {
-            // from cells
-            foreach ($sheet->getCoordinates(false) as $coordinate) {
-                $cell = $sheet->getCell($coordinate);
-                ++$countReferencesCellXf[$cell->getXfIndex()];
-            }
-
-            // from row dimensions
-            foreach ($sheet->getRowDimensions() as $rowDimension) {
-                if ($rowDimension->getXfIndex() !== null) {
-                    ++$countReferencesCellXf[$rowDimension->getXfIndex()];
-                }
-            }
-
-            // from column dimensions
-            foreach ($sheet->getColumnDimensions() as $columnDimension) {
-                ++$countReferencesCellXf[$columnDimension->getXfIndex()];
-            }
-        }
-
-        // remove cellXfs without references and create mapping so we can update xfIndex
-        // for all cells and columns
-        $countNeededCellXfs = 0;
-        foreach ($this->cellXfCollection as $index => $cellXf) {
-            if ($countReferencesCellXf[$index] > 0 || $index == 0) { // we must never remove the first cellXf
-                ++$countNeededCellXfs;
-            } else {
-                unset($this->cellXfCollection[$index]);
-            }
-            $map[$index] = $countNeededCellXfs - 1;
-        }
-        $this->cellXfCollection = array_values($this->cellXfCollection);
-
-        // update the index for all cellXfs
-        foreach ($this->cellXfCollection as $i => $cellXf) {
-            $cellXf->setIndex($i);
-        }
-
-        // make sure there is always at least one cellXf (there should be)
-        if (empty($this->cellXfCollection)) {
-            $this->cellXfCollection[] = new Style();
-        }
-
-        // update the xfIndex for all cells, row dimensions, column dimensions
-        foreach ($this->getWorksheetIterator() as $sheet) {
-            // for all cells
-            foreach ($sheet->getCoordinates(false) as $coordinate) {
-                $cell = $sheet->getCell($coordinate);
-                $cell->setXfIndex($map[$cell->getXfIndex()]);
-            }
-
-            // for all row dimensions
-            foreach ($sheet->getRowDimensions() as $rowDimension) {
-                if ($rowDimension->getXfIndex() !== null) {
-                    $rowDimension->setXfIndex($map[$rowDimension->getXfIndex()]);
-                }
-            }
-
-            // for all column dimensions
-            foreach ($sheet->getColumnDimensions() as $columnDimension) {
-                $columnDimension->setXfIndex($map[$columnDimension->getXfIndex()]);
-            }
-
-            // also do garbage collection for all the sheets
-            $sheet->garbageCollect();
-        }
-    }
-
-    /**
-     * Return the unique ID value assigned to this spreadsheet workbook.
-     *
-     * @return string
-     */
-    public function getID()
-    {
-        return $this->uniqueID;
-    }
-
-    /**
-     * Get the visibility of the horizonal scroll bar in the application.
-     *
-     * @return bool True if horizonal scroll bar is visible
-     */
-    public function getShowHorizontalScroll()
-    {
-        return $this->showHorizontalScroll;
-    }
-
-    /**
-     * Set the visibility of the horizonal scroll bar in the application.
-     *
-     * @param bool $showHorizontalScroll True if horizonal scroll bar is visible
-     */
-    public function setShowHorizontalScroll($showHorizontalScroll): void
-    {
-        $this->showHorizontalScroll = (bool) $showHorizontalScroll;
-    }
-
-    /**
-     * Get the visibility of the vertical scroll bar in the application.
-     *
-     * @return bool True if vertical scroll bar is visible
-     */
-    public function getShowVerticalScroll()
-    {
-        return $this->showVerticalScroll;
-    }
-
-    /**
-     * Set the visibility of the vertical scroll bar in the application.
-     *
-     * @param bool $showVerticalScroll True if vertical scroll bar is visible
-     */
-    public function setShowVerticalScroll($showVerticalScroll): void
-    {
-        $this->showVerticalScroll = (bool) $showVerticalScroll;
-    }
-
-    /**
-     * Get the visibility of the sheet tabs in the application.
-     *
-     * @return bool True if the sheet tabs are visible
-     */
-    public function getShowSheetTabs()
-    {
-        return $this->showSheetTabs;
-    }
-
-    /**
-     * Set the visibility of the sheet tabs  in the application.
-     *
-     * @param bool $showSheetTabs True if sheet tabs are visible
-     */
-    public function setShowSheetTabs($showSheetTabs): void
-    {
-        $this->showSheetTabs = (bool) $showSheetTabs;
-    }
-
-    /**
-     * Return whether the workbook window is minimized.
-     *
-     * @return bool true if workbook window is minimized
-     */
-    public function getMinimized()
-    {
-        return $this->minimized;
-    }
-
-    /**
-     * Set whether the workbook window is minimized.
-     *
-     * @param bool $minimized true if workbook window is minimized
-     */
-    public function setMinimized($minimized): void
-    {
-        $this->minimized = (bool) $minimized;
-    }
-
-    /**
-     * Return whether to group dates when presenting the user with
-     * filtering optiomd in the user interface.
-     *
-     * @return bool true if workbook window is minimized
-     */
-    public function getAutoFilterDateGrouping()
-    {
-        return $this->autoFilterDateGrouping;
-    }
-
-    /**
-     * Set whether to group dates when presenting the user with
-     * filtering optiomd in the user interface.
-     *
-     * @param bool $autoFilterDateGrouping true if workbook window is minimized
-     */
-    public function setAutoFilterDateGrouping($autoFilterDateGrouping): void
-    {
-        $this->autoFilterDateGrouping = (bool) $autoFilterDateGrouping;
-    }
-
-    /**
-     * Return the first sheet in the book view.
-     *
-     * @return int First sheet in book view
-     */
-    public function getFirstSheetIndex()
-    {
-        return $this->firstSheetIndex;
-    }
-
-    /**
-     * Set the first sheet in the book view.
-     *
-     * @param int $firstSheetIndex First sheet in book view
-     */
-    public function setFirstSheetIndex($firstSheetIndex): void
-    {
-        if ($firstSheetIndex >= 0) {
-            $this->firstSheetIndex = (int) $firstSheetIndex;
-        } else {
-            throw new Exception('First sheet index must be a positive integer.');
-        }
-    }
-
-    /**
-     * Return the visibility status of the workbook.
-     *
-     * This may be one of the following three values:
-     * - visibile
-     *
-     * @return string Visible status
-     */
-    public function getVisibility()
-    {
-        return $this->visibility;
-    }
-
-    /**
-     * Set the visibility status of the workbook.
-     *
-     * Valid values are:
-     *  - 'visible' (self::VISIBILITY_VISIBLE):
-     *       Workbook window is visible
-     *  - 'hidden' (self::VISIBILITY_HIDDEN):
-     *       Workbook window is hidden, but can be shown by the user
-     *       via the user interface
-     *  - 'veryHidden' (self::VISIBILITY_VERY_HIDDEN):
-     *       Workbook window is hidden and cannot be shown in the
-     *       user interface.
-     *
-     * @param string $visibility visibility status of the workbook
-     */
-    public function setVisibility($visibility): void
-    {
-        if ($visibility === null) {
-            $visibility = self::VISIBILITY_VISIBLE;
-        }
-
-        if (in_array($visibility, self::$workbookViewVisibilityValues)) {
-            $this->visibility = $visibility;
-        } else {
-            throw new Exception('Invalid visibility value.');
-        }
-    }
-
-    /**
-     * Get the ratio between the workbook tabs bar and the horizontal scroll bar.
-     * TabRatio is assumed to be out of 1000 of the horizontal window width.
-     *
-     * @return int Ratio between the workbook tabs bar and the horizontal scroll bar
-     */
-    public function getTabRatio()
-    {
-        return $this->tabRatio;
-    }
-
-    /**
-     * Set the ratio between the workbook tabs bar and the horizontal scroll bar
-     * TabRatio is assumed to be out of 1000 of the horizontal window width.
-     *
-     * @param int $tabRatio Ratio between the tabs bar and the horizontal scroll bar
-     */
-    public function setTabRatio($tabRatio): void
-    {
-        if ($tabRatio >= 0 || $tabRatio <= 1000) {
-            $this->tabRatio = (int) $tabRatio;
-        } else {
-            throw new Exception('Tab ratio must be between 0 and 1000.');
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+mxHt5dGgazr27S40yngIHiTw0FMt7DPlfm==

@@ -1,327 +1,141 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of sebastian/diff.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\Diff;
-
-use const PHP_INT_SIZE;
-use const PREG_SPLIT_DELIM_CAPTURE;
-use const PREG_SPLIT_NO_EMPTY;
-use function array_shift;
-use function array_unshift;
-use function array_values;
-use function count;
-use function current;
-use function end;
-use function get_class;
-use function gettype;
-use function is_array;
-use function is_object;
-use function is_string;
-use function key;
-use function min;
-use function preg_split;
-use function prev;
-use function reset;
-use function sprintf;
-use function substr;
-use SebastianBergmann\Diff\Output\DiffOutputBuilderInterface;
-use SebastianBergmann\Diff\Output\UnifiedDiffOutputBuilder;
-
-final class Differ
-{
-    public const OLD                     = 0;
-
-    public const ADDED                   = 1;
-
-    public const REMOVED                 = 2;
-
-    public const DIFF_LINE_END_WARNING   = 3;
-
-    public const NO_LINE_END_EOF_WARNING = 4;
-
-    /**
-     * @var DiffOutputBuilderInterface
-     */
-    private $outputBuilder;
-
-    /**
-     * @param DiffOutputBuilderInterface $outputBuilder
-     *
-     * @throws InvalidArgumentException
-     */
-    public function __construct($outputBuilder = null)
-    {
-        if ($outputBuilder instanceof DiffOutputBuilderInterface) {
-            $this->outputBuilder = $outputBuilder;
-        } elseif (null === $outputBuilder) {
-            $this->outputBuilder = new UnifiedDiffOutputBuilder;
-        } elseif (is_string($outputBuilder)) {
-            // PHPUnit 6.1.4, 6.2.0, 6.2.1, 6.2.2, and 6.2.3 support
-            // @see https://github.com/sebastianbergmann/phpunit/issues/2734#issuecomment-314514056
-            // @deprecated
-            $this->outputBuilder = new UnifiedDiffOutputBuilder($outputBuilder);
-        } else {
-            throw new InvalidArgumentException(
-                sprintf(
-                    'Expected builder to be an instance of DiffOutputBuilderInterface, <null> or a string, got %s.',
-                    is_object($outputBuilder) ? 'instance of "' . get_class($outputBuilder) . '"' : gettype($outputBuilder) . ' "' . $outputBuilder . '"'
-                )
-            );
-        }
-    }
-
-    /**
-     * Returns the diff between two arrays or strings as string.
-     *
-     * @param array|string $from
-     * @param array|string $to
-     */
-    public function diff($from, $to, LongestCommonSubsequenceCalculator $lcs = null): string
-    {
-        $diff = $this->diffToArray(
-            $this->normalizeDiffInput($from),
-            $this->normalizeDiffInput($to),
-            $lcs
-        );
-
-        return $this->outputBuilder->getDiff($diff);
-    }
-
-    /**
-     * Returns the diff between two arrays or strings as array.
-     *
-     * Each array element contains two elements:
-     *   - [0] => mixed $token
-     *   - [1] => 2|1|0
-     *
-     * - 2: REMOVED: $token was removed from $from
-     * - 1: ADDED: $token was added to $from
-     * - 0: OLD: $token is not changed in $to
-     *
-     * @param array|string                       $from
-     * @param array|string                       $to
-     * @param LongestCommonSubsequenceCalculator $lcs
-     */
-    public function diffToArray($from, $to, LongestCommonSubsequenceCalculator $lcs = null): array
-    {
-        if (is_string($from)) {
-            $from = $this->splitStringByLines($from);
-        } elseif (!is_array($from)) {
-            throw new InvalidArgumentException('"from" must be an array or string.');
-        }
-
-        if (is_string($to)) {
-            $to = $this->splitStringByLines($to);
-        } elseif (!is_array($to)) {
-            throw new InvalidArgumentException('"to" must be an array or string.');
-        }
-
-        [$from, $to, $start, $end] = self::getArrayDiffParted($from, $to);
-
-        if ($lcs === null) {
-            $lcs = $this->selectLcsImplementation($from, $to);
-        }
-
-        $common = $lcs->calculate(array_values($from), array_values($to));
-        $diff   = [];
-
-        foreach ($start as $token) {
-            $diff[] = [$token, self::OLD];
-        }
-
-        reset($from);
-        reset($to);
-
-        foreach ($common as $token) {
-            while (($fromToken = reset($from)) !== $token) {
-                $diff[] = [array_shift($from), self::REMOVED];
-            }
-
-            while (($toToken = reset($to)) !== $token) {
-                $diff[] = [array_shift($to), self::ADDED];
-            }
-
-            $diff[] = [$token, self::OLD];
-
-            array_shift($from);
-            array_shift($to);
-        }
-
-        while (($token = array_shift($from)) !== null) {
-            $diff[] = [$token, self::REMOVED];
-        }
-
-        while (($token = array_shift($to)) !== null) {
-            $diff[] = [$token, self::ADDED];
-        }
-
-        foreach ($end as $token) {
-            $diff[] = [$token, self::OLD];
-        }
-
-        if ($this->detectUnmatchedLineEndings($diff)) {
-            array_unshift($diff, ["#Warning: Strings contain different line endings!\n", self::DIFF_LINE_END_WARNING]);
-        }
-
-        return $diff;
-    }
-
-    /**
-     * Casts variable to string if it is not a string or array.
-     *
-     * @return array|string
-     */
-    private function normalizeDiffInput($input)
-    {
-        if (!is_array($input) && !is_string($input)) {
-            return (string) $input;
-        }
-
-        return $input;
-    }
-
-    /**
-     * Checks if input is string, if so it will split it line-by-line.
-     */
-    private function splitStringByLines(string $input): array
-    {
-        return preg_split('/(.*\R)/', $input, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
-    }
-
-    private function selectLcsImplementation(array $from, array $to): LongestCommonSubsequenceCalculator
-    {
-        // We do not want to use the time-efficient implementation if its memory
-        // footprint will probably exceed this value. Note that the footprint
-        // calculation is only an estimation for the matrix and the LCS method
-        // will typically allocate a bit more memory than this.
-        $memoryLimit = 100 * 1024 * 1024;
-
-        if ($this->calculateEstimatedFootprint($from, $to) > $memoryLimit) {
-            return new MemoryEfficientLongestCommonSubsequenceCalculator;
-        }
-
-        return new TimeEfficientLongestCommonSubsequenceCalculator;
-    }
-
-    /**
-     * Calculates the estimated memory footprint for the DP-based method.
-     *
-     * @return float|int
-     */
-    private function calculateEstimatedFootprint(array $from, array $to)
-    {
-        $itemSize = PHP_INT_SIZE === 4 ? 76 : 144;
-
-        return $itemSize * min(count($from), count($to)) ** 2;
-    }
-
-    /**
-     * Returns true if line ends don't match in a diff.
-     */
-    private function detectUnmatchedLineEndings(array $diff): bool
-    {
-        $newLineBreaks = ['' => true];
-        $oldLineBreaks = ['' => true];
-
-        foreach ($diff as $entry) {
-            if (self::OLD === $entry[1]) {
-                $ln                 = $this->getLinebreak($entry[0]);
-                $oldLineBreaks[$ln] = true;
-                $newLineBreaks[$ln] = true;
-            } elseif (self::ADDED === $entry[1]) {
-                $newLineBreaks[$this->getLinebreak($entry[0])] = true;
-            } elseif (self::REMOVED === $entry[1]) {
-                $oldLineBreaks[$this->getLinebreak($entry[0])] = true;
-            }
-        }
-
-        // if either input or output is a single line without breaks than no warning should be raised
-        if (['' => true] === $newLineBreaks || ['' => true] === $oldLineBreaks) {
-            return false;
-        }
-
-        // two way compare
-        foreach ($newLineBreaks as $break => $set) {
-            if (!isset($oldLineBreaks[$break])) {
-                return true;
-            }
-        }
-
-        foreach ($oldLineBreaks as $break => $set) {
-            if (!isset($newLineBreaks[$break])) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private function getLinebreak($line): string
-    {
-        if (!is_string($line)) {
-            return '';
-        }
-
-        $lc = substr($line, -1);
-
-        if ("\r" === $lc) {
-            return "\r";
-        }
-
-        if ("\n" !== $lc) {
-            return '';
-        }
-
-        if ("\r\n" === substr($line, -2)) {
-            return "\r\n";
-        }
-
-        return "\n";
-    }
-
-    private static function getArrayDiffParted(array &$from, array &$to): array
-    {
-        $start = [];
-        $end   = [];
-
-        reset($to);
-
-        foreach ($from as $k => $v) {
-            $toK = key($to);
-
-            if ($toK === $k && $v === $to[$k]) {
-                $start[$k] = $v;
-
-                unset($from[$k], $to[$k]);
-            } else {
-                break;
-            }
-        }
-
-        end($from);
-        end($to);
-
-        do {
-            $fromK = key($from);
-            $toK   = key($to);
-
-            if (null === $fromK || null === $toK || current($from) !== current($to)) {
-                break;
-            }
-
-            prev($from);
-            prev($to);
-
-            $end = [$fromK => $from[$fromK]] + $end;
-            unset($from[$fromK], $to[$toK]);
-        } while (true);
-
-        return [$from, $to, $start, $end];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+WhY+m03Z

@@ -1,68 +1,49 @@
-<?php
-
-namespace Matrix\Operators;
-
-use Matrix\Matrix;
-use Matrix\Exception;
-
-class Subtraction extends Operator
-{
-    /**
-     * Execute the subtraction
-     *
-     * @param mixed $value The matrix or numeric value to subtract from the current base value
-     * @throws Exception If the provided argument is not appropriate for the operation
-     * @return $this The operation object, allowing multiple subtractions to be chained
-     **/
-    public function execute($value): Operator
-    {
-        if (is_array($value)) {
-            $value = new Matrix($value);
-        }
-
-        if (is_object($value) && ($value instanceof Matrix)) {
-            return $this->subtractMatrix($value);
-        } elseif (is_numeric($value)) {
-            return $this->subtractScalar($value);
-        }
-
-        throw new Exception('Invalid argument for subtraction');
-    }
-
-    /**
-     * Execute the subtraction for a scalar
-     *
-     * @param mixed $value The numeric value to subtracted from the current base value
-     * @return $this The operation object, allowing multiple additions to be chained
-     **/
-    protected function subtractScalar($value): Operator
-    {
-        for ($row = 0; $row < $this->rows; ++$row) {
-            for ($column = 0; $column < $this->columns; ++$column) {
-                $this->matrix[$row][$column] -= $value;
-            }
-        }
-
-        return $this;
-    }
-
-    /**
-     * Execute the subtraction for a matrix
-     *
-     * @param Matrix $value The numeric value to subtract from the current base value
-     * @return $this The operation object, allowing multiple subtractions to be chained
-     * @throws Exception If the provided argument is not appropriate for the operation
-     **/
-    protected function subtractMatrix(Matrix $value): Operator
-    {
-        $this->validateMatchingDimensions($value);
-
-        for ($row = 0; $row < $this->rows; ++$row) {
-            for ($column = 0; $column < $this->columns; ++$column) {
-                $this->matrix[$row][$column] -= $value->getValue($row + 1, $column + 1);
-            }
-        }
-
-        return $this;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+3/fDrXKFV7PwY7IampG8SVPK37vT/bIlJvhQyG==

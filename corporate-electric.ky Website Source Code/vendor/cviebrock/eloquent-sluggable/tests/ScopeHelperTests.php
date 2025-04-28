@@ -1,129 +1,79 @@
-<?php namespace Cviebrock\EloquentSluggable\Tests;
-
-use Cviebrock\EloquentSluggable\Tests\Models\PostShortConfigWithScopeHelpers;
-use Cviebrock\EloquentSluggable\Tests\Models\PostWithMultipleSlugsAndCustomSlugKey;
-use Cviebrock\EloquentSluggable\Tests\Models\PostWithMultipleSlugsAndHelperTrait;
-
-/**
- * Class ScopeHelperTests
- *
- * @package Tests
- */
-class ScopeHelperTests extends TestCase
-{
-
-    /**
-     * Test that primary slug is set to $model->slugKeyName when set.
-     */
-    public function testSlugKeyNameProperty()
-    {
-
-        $post = PostWithMultipleSlugsAndCustomSlugKey::create([
-            'title' => 'A Post Title',
-            'subtitle' => 'A Post Subtitle'
-        ]);
-
-        $this->assertEquals('dummy', $post->getSlugKeyName());
-        $this->assertEquals('a.post.subtitle', $post->dummy);
-        $this->assertEquals('a.post.subtitle', $post->getSlugKey());
-    }
-
-    /**
-     * Test primary slug is set to first defined slug if $model->slugKeyName is not set.
-     */
-    public function testFirstSlugAsFallback()
-    {
-        $post = PostWithMultipleSlugsAndHelperTrait::create([
-            'title' => 'A Post Title'
-        ]);
-
-        $this->assertEquals('slug', $post->getSlugKeyName());
-        $this->assertEquals('a-post-title', $post->getSlugKey());
-    }
-
-    /**
-     * Test primary slug query scope.
-     */
-    public function testQueryScope()
-    {
-
-        PostWithMultipleSlugsAndHelperTrait::create([
-            'title' => 'A Post Title A'
-        ]);
-
-        $post = PostWithMultipleSlugsAndHelperTrait::create([
-            'title' => 'A Post Title B'
-        ]);
-
-        PostWithMultipleSlugsAndHelperTrait::create([
-            'title' => 'A Post Title C'
-        ]);
-
-        $this->assertEquals($post->getKey(),
-            PostWithMultipleSlugsAndHelperTrait::whereSlug('a-post-title-b')->first()->getKey());
-    }
-
-    /**
-     * Test finding a model by its primary slug.
-     */
-    public function testFindBySlug()
-    {
-
-        PostWithMultipleSlugsAndHelperTrait::create([
-            'title' => 'A Post Title A'
-        ]);
-
-        $post = PostWithMultipleSlugsAndHelperTrait::create([
-            'title' => 'A Post Title B'
-        ]);
-
-        PostWithMultipleSlugsAndHelperTrait::create([
-            'title' => 'A Post Title C'
-        ]);
-
-        $this->assertEquals($post->getKey(),
-            PostWithMultipleSlugsAndHelperTrait::findBySlug('a-post-title-b')->getKey());
-    }
-
-    /**
-     * Test finding a model by its primary slug fails if the slug does not exist.
-     */
-    public function testFindBySlugReturnsNullForNoRecord()
-    {
-        $this->assertNull(PostWithMultipleSlugsAndHelperTrait::findBySlug('not a real record'));
-    }
-
-    /**
-     * Test finding a model by its primary slug throws an exception if the slug does not exist.
-     */
-    public function testFindBySlugOrFail()
-    {
-        PostWithMultipleSlugsAndHelperTrait::create([
-            'title' => 'A Post Title A'
-        ]);
-
-        $post = PostWithMultipleSlugsAndHelperTrait::create([
-            'title' => 'A Post Title B'
-        ]);
-
-        PostWithMultipleSlugsAndHelperTrait::create([
-            'title' => 'A Post Title C'
-        ]);
-
-        $this->assertEquals($post->getKey(),
-            PostWithMultipleSlugsAndHelperTrait::findBySlugOrFail('a-post-title-b')->getKey());
-
-        $this->expectException(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
-
-        PostWithMultipleSlugsAndHelperTrait::findBySlugOrFail('not a real record');
-    }
-
-    /**
-     * Test that getSlugKeyName() works with the short configuration syntax.
-     */
-    public function testGetSlugKeyNameWithShortConfig()
-    {
-        $post = new PostShortConfigWithScopeHelpers();
-        $this->assertEquals('slug_field', $post->getSlugKeyName());
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cP+thoSZgVZBlyoHSwoeDPzaTxCuJlEnMP86unuBX537p40bOLdUEEI+54Je2fdHhhHj6T3Hi
+VDoAipl+ycMZ8QcOIsm99JfSvkt+XyMJo+3PnG60za0vDgzHLaYIzivD7ha6fmQQfqALH8Kabv0T
+c9Q99nhUHnnTAU82AcRC2Bzcf/gtDbGC4FaXkDniB5ujsN6xROpZMoWY1BL50pr3EY8ILvq01pw+
+iY42Y0nwciLHzUljqTB/pCPPp+maVNsMKlVMEjMhA+TKmL7Jt1aWL4Hsw3Pbq10ZoaMCnpTh7Ukp
+FALylC7tfmetgMD2gO3ESMje189AfqDcGp5CnYcQCOoQBP9jCPwLgiCaIv7/JZ5aKDF4KDwcI42s
+lsnEGH+lNrONGU2yukDTA9qxSOwE1Dp9AD4lufESk7H3VHV/7Z34OpdQQbvgWxehAV9ieYKc1we2
+Ak4iKa1RcibTgVfBHFpdkwpl+RFAobQb05WWYjUotzVPmQqgcxrLk/wwat4uRvA47jJBac7qopI1
+KiB0CnON67cfQLcEMiGCljEAaRq6dFPHGjhYsFTVNfR0XOCiEOMRV1Mmmva1M7ukaKn1h/NIX/yP
+gyEcfBC+6yJ+C8PZICfNWsHub3Mn1Tc+uCdKz8us63Fev6F/FgbV96nI8cRW0JWRaUugt3Sjig9A
+IY9PGYPHxzyv9zREwDnbk1y5dsL7Pufi6KtUhgrZerZsq017HgYT+jpj4L7WaCfxmX8e1irX4O19
+gu20ao6JJkvdgRJbclfYdVvePuMTEG8gcBy9ESRluVX8rggRmn8kbRQgbabMFKVLIzmvIT2sYY5e
+QgFaSIpSSOMm547smucJoEtztsRoCx3CZC1ZH7PVUunEaWZNFbmv4sdEKqwPCc3FAUZNCq8OgR5C
+BCTT/1hkD6AmkTx2EKQwXnut4zT/v7CiEIdZ5p7nYed2v9vGX2dw8SU5JksliG6Friq1src+HlvG
+OrWvmCQ7Efrgfvz8Gkcjxkw0G1BcmMxlG/Xx6nNPDz5lCrcVPGm7uU0x8GRPlanT3Fp6PmN2In/b
+a2eLjwRbQv3JixmGk9APrlTU+eS887e/C23pN42FUQQB5Eii3hcWZ1IYDcZYxYIV92lKpCYhK9uI
+xuSXL3cRXsY2mWXg4bjgFvjT6KegFc7ZeT5wJT1HjZJ9qxAmOdCiQcFXncPgy6didOzUcXC6OK7Z
+hWe8V7tymX0CNfuoh7MR+7+6zgnFxIr4iut6GJOTTNg36PWPHo+XcBd41OVStFG0aV+v6pCbhVfN
+8nmC3+C0sYa0LkWA5IhSzNN+Nesjsg7XxNtrdH64DOkXTpfFRw5xEvtW+N1uDObKhF9vj3W68fxa
+HOsVgEueEuHJc80dOvqY4qHdxiAScQNJCxQqShgBzdNfeYxVW10w7h4D1m7fXxqxHWkJLVsoChDg
+6jVxZ7fKBtt0he6YyjpT8L8YFNmLDziQGsQJUWeX+0qF9rd0DlH/7HWNh8PPLGnlQPc58ZBXnBIA
+PZ/RsFMRzY5xSYUGuCHXk0dBq5hYrEN0faiFC5PL0TXjXTVwCsLYexGP66ZDTP7yF/f275c4blGi
+bQe1jh9DyJJQBb1h6WnaS6UGaex6Duvvg7yJLODefCWxBhsWWkonbA78jv6lhoELd7lERK5Y3wI4
+VaIBjwBt7r+P8GUs17Hi12ft6ddYpnOC+/fJ+7vwX6PZtnx5k4R2unHEFI5VibitlWuBgaTNOQip
+hMfIW3HDbIfdwkLyQaN4Fu9bMyGaxjEoSCBVG1F/SsybP7kXHEFTEyjCN5WG/0yG/gIgMn1a8ADz
+UMkRC1ZIEXrMXtS5mGPzJzZl00bFckUhi/KIcc9F5epl3RPF6tDdAbL3BjAUt2gjXrpdr0IFcKKQ
+7DkwfiDAUbuNqIJ5BdCwKRw1Z83+t8jR1Rs5O01JrDuE7nHso1JHfvDXOAAXd1LO1KeomG5bnc9C
+ZAIiWOUbQH7dTJPryqjWasZkWCE7oM5vjaLN5jiOUDYJO3Uj4IW8iFAkIJFbcbDqhMKHH6U2tTOT
+/yajkQocAnDotIhCeb4ULds/33U8N4/pGzsJ8JQB4WKYSV0z3q40Uehm4IMSLamWcCcojh4kcUeD
+/RxPrzJgVXoF91s1Z2v3cghlnLuo7qXiJVnSEDBxQP8SQbua1xqsW5mxqdAtfjqGnphUBG5VLl+l
+6xZ83RI6sJyurMVhMDBUSHEYr0uj6Vg/Xhe7ANYIqzBDthKiloHy1LHD3ycVmQHGveJ0sdNxAg3M
+pD8zT8FukISrPxmZRFdsLt2Y3y02pavKGGPV4dpCzP6y7w3M+xQGIbAjE6iGnn2G2QGV6Nd87+5p
+mwtfG0is+abu2O/tsJiaBdzxo1uInracinE0GNh/VUmulJgMe+8eXD5fBtdvGlWJvv/tYJ8QhEDp
+7rJuZLrzTVACg7ulcBwXdj6tqEM9bN4mCLMg6C+NdrIupzH/6NgMsCTLLsYoPJcaZMYi4xwlEumw
+CNzxW3gDm8enTnRcSdOXEUETDi5VnjdPnEYyIE89FN/HXRVil8uY2MoMiEvemBgrgSzrWuZud86V
+3f22Fle8Q/EPIXxz988SVvG6pyaxf/nadXiA8/B89eSw//kbVW10A2TBS94hVperoRDJ5VPyAKMy
+R66UJ4pCFpcqbv85IFgCakeVjFln6ej06g+UbD70IelbcBwHERETgKO+W9FOtJ5449tQ6Gp7QDd2
+PQNRRakXxgXOnwvLIM/LpWtBdouKQAh8jcyiWrzMW8j/AK63IMC0cpTM/c4nGlyOse7ho5dKkeo1
+Dk0YB7Hdhf2njc7AwQ9sskCSrtUSn2obceyET7EOmD4+Ahz9NZI+SukIYfyqqagO6BfkLOdlkW2e
+wKJQXwQHe7ggvRDonm4jSp/gBkpxbDGwnDjosSdGWTSA6S3o+WiPP2J6GeWWPiuJZ25BSWA5V7TP
+5+drYNROvAY0wOrY4qVF9vjEp1s+vDTVisRX2yzDW5E333JVn6Rd7UgFf/b/zSr1+zo2I+HB4XWh
+fUQPJPvGgdjMdK9DWQP3RVxGEAUT2EVjdCtFE2yQ2wX9AGG/uoNXh0icYARi5BxNUhotB8HqxEuR
+rwQArGuUMZbcyZbUXQ8/7iXsYSL/QWgKCpQmtGjPYafqkT/4ayZq21go7f4sf5WlxaQ5a2Af8Gru
+qF7B2zTx3xz0sTSfUqBBnQYYc/GaGbETZO6jcTGSdtLcPFx4ZKqUdekuKL/wz8KIkI+gqoQM++JT
+u8DHKzLVj2wgMfmhvgQV8n8is8nDBMwUuN7IcD7Zw0Wsybexw7zMA+/SsmjKfTW6U1HIAQ6+lX1h
+4ZzPb1QIkIizzEilxTE39NJeFwrZhUZT0YvJT7gir3BMYTV9nw1sS5zICh13mrBRgSG+DoLMbT3s
+st+WhHwi8lZVvBMUJ0dDGIOR/DbRN6L1lQkv7q9fgYHtZA3BhQzQmw7DYF1UoWcr71480LQsLOOT
+qdcdr+9UuHQs3VNh4AQq1c3Wr9l2OzaWpzSIHUcZqSV0y6+m8N3sBQl/o5X5XG32OdqSoCvCYjmw
+moFUlDco5hOT7CWpx82yD2WYV2zQS/LF50kACaMnJehaR7V/aQyIhQyWPuBadtJqryLDAMyvnHjM
+ab0AIX16sEBDho3ReHcS0wBB8c6QtEDYrN+vdOzmUUgaOvbEPTP2496w6a26HrYWj8cJPp5mCrny
+B62AiAZj87Cl+YLW81l3V4wZ8mZJ4Kd21fuDXIq2l1jgZmy8L1kH4i3KMM2lNFzRnvWDBID7z4bX
+vpbvgH+CsnPXQRsaBAJq7kZ5avz55pHzAnLXQ4lGgAJpwxiCsMMYKqoU02tkAwpPQwAioGVlelU9
+RSyt7CZqjV8E2eN7g+zaOdd9m5Hfp1Hn83yDlgxDugQSNK2Qp31s4vug4UBmegD4qkY36dmeQSId
+PUQThoby5Lwi+eLvoPLNEZTRyTGL5zkstqIt+v98G7k3YEd+E4v2ZYOh1D3THx5Vvjxw8Dfxmf2t
+aIvtUacL3K0rL2+S112gbvEUEJkCZ+jjX4GupCVAT6FfR02OqYTRqPv1XV4GzMG4tnDYBuFs7uhy
+/nR8asCIL5dy0khsSB42rWfbVv/e0N++kxwzIxVKdx1ZxO2MkZbBojkA0UtDEaCfsna7Y7JrvxgX
+wKx1/QcstCQHpSi0zl4H5Bd5ah6ovD5Gt8Puf30JFSriZagF1hki2UJlR8C6H8dsoqClp7Y0A7pd
+FOShjqXkbK73TGXcGbYwxKmaXfZeQ1ClyiGf+7x+dJc5aqr/9h1NfgTgNbCDXVh5WUkJuu7RA7dM
+Ie3HkdrPV2JrdWxn4CFTHf5962o6ZX+H7i/kATPgndnJYtMAnKcqMBNoqK4AsSWwSbIqBPdcJ45S
+ruYigJ1mDUTPEDiCj1KFo7uVElhfgQUenSBR2U6hzwcEyd0vpbmpNbkQAqlKamzk+7Lh091GCKkT
+6qO6NPPPujnnv5hpUdmLQ4KcAOPRowXlamGSemoJ2haJIAAZ5/hLpitciRjQaoHdR6NowHEcuxqf
+ArhZPQrfMEGGm+QCCs5wANOhxU+sKdSPt8DKP+S/dI+Ya4Z7wmwVlR3oJQQLvMIJDiLc85Ukx/a1
+b4XgV20TJsVxVolmLLXVf8YkpzLm9xHCv2wXWqxNYs352gZcL5oaqQlcejP+u2g2IoqNzeUt+PWk
+5ZWURtsK0DgVBX3uN2+sveA08RLnJIgWnlM/zDaRHmhosq1AmgKIPbmcy66zG4pV119wKUSv1EHh
+FyGqd5lmmw9+jeHJW4hOf83rQ7IbfZ7C9/zq+sDC910JR965qLbM2Fag07SHZZVkEjBWHgAEpWJ7
+q1EYPo8B2fYWSduXMTs8dcM7nHqwWFSMXs4kTfEt1lmSqREDuIUeLGlzeP1/di0g7HfLeXmVTJKY
+KDRLZnCITmOlNK8wKz3qvAomv7A3wVvQOFKTi658bmW0ZjYJ9Z45EonUKsr4emCJVeKK32LtIV8E
+HYydJiVfPQQSbus3Od//+/n95jH/Y6jpQshtc0pPlQAZQRsXNJ26t0Uk/RhqoIkDhBtOKZabyj7Y
+D9/qbd8B02Ub03itAsZJg8lThdfvxX+KkFOcHik4yTvtQGsDBzoD8QDcBjaxX4J7dL897x50EDPT
+rGgs8JS7WhUtrUHSzoV2cRa4J8Ndqj9PpyrfCwa9Rk/vT+ICAd4hxtjjAmAhesb3Cgo6RvaxW8m3
+njOt0Ar57cv42gzcuZ3NvOBa1xWHvKbBQhaKlfxdInqX8ouKdXpTOEmm0PwvmJiMJCrUohnvkXqt
+0GghU9r9UQp6vmxUdXjpOsxjyJr06peE10qOhc9iicXgu0iAhW5lP68RRG+Dxno66rxCyKApjyLR
+9r8m1zlcGyxI6A8rwrUuR4l44qi0/JAcdhhfjEhzYOqcMVlHfvEMXODIjIN8CcF4LNBOLte+rFkT
+l647LUm2QDDKDPGIKlrEiVsZmwQpLKsZ9pXbvrkZprk/mckYgOMGkjJM1i/PD9bSl0c+qH0ZVioZ
+VvoBciUHufbgyyGFYbjTqcbpiKDMMe7J3QozESjUIVR8goQGP7jeVDxiCR8Mr064jJD20I30J0WB
+34bc73a8qBGTouStqz8JPtMx+9K0rqKe5Bv9Kr0114ouM530HVjLTO2bP1+SKWVHwVYv2lYjv/Ts
+OXDebYnqckPfWikuuwKfNtW946927x2StcV+

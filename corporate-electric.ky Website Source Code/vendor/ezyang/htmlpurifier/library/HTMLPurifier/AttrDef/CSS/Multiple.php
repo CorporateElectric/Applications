@@ -1,71 +1,44 @@
-<?php
-
-/**
- * Framework class for strings that involve multiple values.
- *
- * Certain CSS properties such as border-width and margin allow multiple
- * lengths to be specified.  This class can take a vanilla border-width
- * definition and multiply it, usually into a max of four.
- *
- * @note Even though the CSS specification isn't clear about it, inherit
- *       can only be used alone: it will never manifest as part of a multi
- *       shorthand declaration.  Thus, this class does not allow inherit.
- */
-class HTMLPurifier_AttrDef_CSS_Multiple extends HTMLPurifier_AttrDef
-{
-    /**
-     * Instance of component definition to defer validation to.
-     * @type HTMLPurifier_AttrDef
-     * @todo Make protected
-     */
-    public $single;
-
-    /**
-     * Max number of values allowed.
-     * @todo Make protected
-     */
-    public $max;
-
-    /**
-     * @param HTMLPurifier_AttrDef $single HTMLPurifier_AttrDef to multiply
-     * @param int $max Max number of values allowed (usually four)
-     */
-    public function __construct($single, $max = 4)
-    {
-        $this->single = $single;
-        $this->max = $max;
-    }
-
-    /**
-     * @param string $string
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return bool|string
-     */
-    public function validate($string, $config, $context)
-    {
-        $string = $this->mungeRgb($this->parseCDATA($string));
-        if ($string === '') {
-            return false;
-        }
-        $parts = explode(' ', $string); // parseCDATA replaced \r, \t and \n
-        $length = count($parts);
-        $final = '';
-        for ($i = 0, $num = 0; $i < $length && $num < $this->max; $i++) {
-            if (ctype_space($parts[$i])) {
-                continue;
-            }
-            $result = $this->single->validate($parts[$i], $config, $context);
-            if ($result !== false) {
-                $final .= $result . ' ';
-                $num++;
-            }
-        }
-        if ($final === '') {
-            return false;
-        }
-        return rtrim($final);
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,288 +1,144 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of phpunit/php-code-coverage.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\CodeCoverage\Report\Html;
-
-use function array_values;
-use function arsort;
-use function asort;
-use function count;
-use function explode;
-use function floor;
-use function json_encode;
-use function sprintf;
-use function str_replace;
-use SebastianBergmann\CodeCoverage\Node\AbstractNode;
-use SebastianBergmann\CodeCoverage\Node\Directory as DirectoryNode;
-use SebastianBergmann\Template\Template;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for phpunit/php-code-coverage
- */
-final class Dashboard extends Renderer
-{
-    public function render(DirectoryNode $node, string $file): void
-    {
-        $classes      = $node->classesAndTraits();
-        $templateName = $this->templatePath . ($this->hasBranchCoverage ? 'dashboard_branch.html' : 'dashboard.html');
-        $template     = new Template(
-            $templateName,
-            '{{',
-            '}}'
-        );
-
-        $this->setCommonTemplateVariables($template, $node);
-
-        $baseLink             = $node->id() . '/';
-        $complexity           = $this->complexity($classes, $baseLink);
-        $coverageDistribution = $this->coverageDistribution($classes);
-        $insufficientCoverage = $this->insufficientCoverage($classes, $baseLink);
-        $projectRisks         = $this->projectRisks($classes, $baseLink);
-
-        $template->setVar(
-            [
-                'insufficient_coverage_classes' => $insufficientCoverage['class'],
-                'insufficient_coverage_methods' => $insufficientCoverage['method'],
-                'project_risks_classes'         => $projectRisks['class'],
-                'project_risks_methods'         => $projectRisks['method'],
-                'complexity_class'              => $complexity['class'],
-                'complexity_method'             => $complexity['method'],
-                'class_coverage_distribution'   => $coverageDistribution['class'],
-                'method_coverage_distribution'  => $coverageDistribution['method'],
-            ]
-        );
-
-        $template->renderTo($file);
-    }
-
-    protected function activeBreadcrumb(AbstractNode $node): string
-    {
-        return sprintf(
-            '         <li class="breadcrumb-item"><a href="index.html">%s</a></li>' . "\n" .
-            '         <li class="breadcrumb-item active">(Dashboard)</li>' . "\n",
-            $node->name()
-        );
-    }
-
-    /**
-     * Returns the data for the Class/Method Complexity charts.
-     */
-    private function complexity(array $classes, string $baseLink): array
-    {
-        $result = ['class' => [], 'method' => []];
-
-        foreach ($classes as $className => $class) {
-            foreach ($class['methods'] as $methodName => $method) {
-                if ($className !== '*') {
-                    $methodName = $className . '::' . $methodName;
-                }
-
-                $result['method'][] = [
-                    $method['coverage'],
-                    $method['ccn'],
-                    sprintf(
-                        '<a href="%s">%s</a>',
-                        str_replace($baseLink, '', $method['link']),
-                        $methodName
-                    ),
-                ];
-            }
-
-            $result['class'][] = [
-                $class['coverage'],
-                $class['ccn'],
-                sprintf(
-                    '<a href="%s">%s</a>',
-                    str_replace($baseLink, '', $class['link']),
-                    $className
-                ),
-            ];
-        }
-
-        return [
-            'class'  => json_encode($result['class']),
-            'method' => json_encode($result['method']),
-        ];
-    }
-
-    /**
-     * Returns the data for the Class / Method Coverage Distribution chart.
-     */
-    private function coverageDistribution(array $classes): array
-    {
-        $result = [
-            'class' => [
-                '0%'      => 0,
-                '0-10%'   => 0,
-                '10-20%'  => 0,
-                '20-30%'  => 0,
-                '30-40%'  => 0,
-                '40-50%'  => 0,
-                '50-60%'  => 0,
-                '60-70%'  => 0,
-                '70-80%'  => 0,
-                '80-90%'  => 0,
-                '90-100%' => 0,
-                '100%'    => 0,
-            ],
-            'method' => [
-                '0%'      => 0,
-                '0-10%'   => 0,
-                '10-20%'  => 0,
-                '20-30%'  => 0,
-                '30-40%'  => 0,
-                '40-50%'  => 0,
-                '50-60%'  => 0,
-                '60-70%'  => 0,
-                '70-80%'  => 0,
-                '80-90%'  => 0,
-                '90-100%' => 0,
-                '100%'    => 0,
-            ],
-        ];
-
-        foreach ($classes as $class) {
-            foreach ($class['methods'] as $methodName => $method) {
-                if ($method['coverage'] === 0) {
-                    $result['method']['0%']++;
-                } elseif ($method['coverage'] === 100) {
-                    $result['method']['100%']++;
-                } else {
-                    $key = floor($method['coverage'] / 10) * 10;
-                    $key = $key . '-' . ($key + 10) . '%';
-                    $result['method'][$key]++;
-                }
-            }
-
-            if ($class['coverage'] === 0) {
-                $result['class']['0%']++;
-            } elseif ($class['coverage'] === 100) {
-                $result['class']['100%']++;
-            } else {
-                $key = floor($class['coverage'] / 10) * 10;
-                $key = $key . '-' . ($key + 10) . '%';
-                $result['class'][$key]++;
-            }
-        }
-
-        return [
-            'class'  => json_encode(array_values($result['class'])),
-            'method' => json_encode(array_values($result['method'])),
-        ];
-    }
-
-    /**
-     * Returns the classes / methods with insufficient coverage.
-     */
-    private function insufficientCoverage(array $classes, string $baseLink): array
-    {
-        $leastTestedClasses = [];
-        $leastTestedMethods = [];
-        $result             = ['class' => '', 'method' => ''];
-
-        foreach ($classes as $className => $class) {
-            foreach ($class['methods'] as $methodName => $method) {
-                if ($method['coverage'] < $this->highLowerBound) {
-                    $key = $methodName;
-
-                    if ($className !== '*') {
-                        $key = $className . '::' . $methodName;
-                    }
-
-                    $leastTestedMethods[$key] = $method['coverage'];
-                }
-            }
-
-            if ($class['coverage'] < $this->highLowerBound) {
-                $leastTestedClasses[$className] = $class['coverage'];
-            }
-        }
-
-        asort($leastTestedClasses);
-        asort($leastTestedMethods);
-
-        foreach ($leastTestedClasses as $className => $coverage) {
-            $result['class'] .= sprintf(
-                '       <tr><td><a href="%s">%s</a></td><td class="text-right">%d%%</td></tr>' . "\n",
-                str_replace($baseLink, '', $classes[$className]['link']),
-                $className,
-                $coverage
-            );
-        }
-
-        foreach ($leastTestedMethods as $methodName => $coverage) {
-            [$class, $method] = explode('::', $methodName);
-
-            $result['method'] .= sprintf(
-                '       <tr><td><a href="%s"><abbr title="%s">%s</abbr></a></td><td class="text-right">%d%%</td></tr>' . "\n",
-                str_replace($baseLink, '', $classes[$class]['methods'][$method]['link']),
-                $methodName,
-                $method,
-                $coverage
-            );
-        }
-
-        return $result;
-    }
-
-    /**
-     * Returns the project risks according to the CRAP index.
-     */
-    private function projectRisks(array $classes, string $baseLink): array
-    {
-        $classRisks  = [];
-        $methodRisks = [];
-        $result      = ['class' => '', 'method' => ''];
-
-        foreach ($classes as $className => $class) {
-            foreach ($class['methods'] as $methodName => $method) {
-                if ($method['coverage'] < $this->highLowerBound && $method['ccn'] > 1) {
-                    $key = $methodName;
-
-                    if ($className !== '*') {
-                        $key = $className . '::' . $methodName;
-                    }
-
-                    $methodRisks[$key] = $method['crap'];
-                }
-            }
-
-            if ($class['coverage'] < $this->highLowerBound &&
-                $class['ccn'] > count($class['methods'])) {
-                $classRisks[$className] = $class['crap'];
-            }
-        }
-
-        arsort($classRisks);
-        arsort($methodRisks);
-
-        foreach ($classRisks as $className => $crap) {
-            $result['class'] .= sprintf(
-                '       <tr><td><a href="%s">%s</a></td><td class="text-right">%d</td></tr>' . "\n",
-                str_replace($baseLink, '', $classes[$className]['link']),
-                $className,
-                $crap
-            );
-        }
-
-        foreach ($methodRisks as $methodName => $crap) {
-            [$class, $method] = explode('::', $methodName);
-
-            $result['method'] .= sprintf(
-                '       <tr><td><a href="%s"><abbr title="%s">%s</abbr></a></td><td class="text-right">%d</td></tr>' . "\n",
-                str_replace($baseLink, '', $classes[$class]['methods'][$method]['link']),
-                $methodName,
-                $method,
-                $crap
-            );
-        }
-
-        return $result;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

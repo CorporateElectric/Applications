@@ -1,79 +1,59 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\Command;
-
-use Psy\Output\ShellOutput;
-use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Output\OutputInterface;
-
-/**
- * Interact with the current code buffer.
- *
- * Shows and clears the buffer for the current multi-line expression.
- */
-class BufferCommand extends Command
-{
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
-    {
-        $this
-            ->setName('buffer')
-            ->setAliases(['buf'])
-            ->setDefinition([
-                new InputOption('clear', '', InputOption::VALUE_NONE, 'Clear the current buffer.'),
-            ])
-            ->setDescription('Show (or clear) the contents of the code input buffer.')
-            ->setHelp(
-                <<<'HELP'
-Show the contents of the code buffer for the current multi-line expression.
-
-Optionally, clear the buffer by passing the <info>--clear</info> option.
-HELP
-            );
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function execute(InputInterface $input, OutputInterface $output)
-    {
-        $buf = $this->getApplication()->getCodeBuffer();
-        if ($input->getOption('clear')) {
-            $this->getApplication()->resetCodeBuffer();
-            $output->writeln($this->formatLines($buf, 'urgent'), ShellOutput::NUMBER_LINES);
-        } else {
-            $output->writeln($this->formatLines($buf), ShellOutput::NUMBER_LINES);
-        }
-
-        return 0;
-    }
-
-    /**
-     * A helper method for wrapping buffer lines in `<urgent>` and `<return>` formatter strings.
-     *
-     * @param array  $lines
-     * @param string $type  (default: 'return')
-     *
-     * @return array Formatted strings
-     */
-    protected function formatLines(array $lines, $type = 'return')
-    {
-        $template = \sprintf('<%s>%%s</%s>', $type, $type);
-
-        return \array_map(function ($line) use ($template) {
-            return \sprintf($template, $line);
-        }, $lines);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

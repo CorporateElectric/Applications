@@ -1,184 +1,105 @@
-<?php
-
-namespace Illuminate\Foundation;
-
-use Exception;
-use Illuminate\Filesystem\Filesystem;
-
-class PackageManifest
-{
-    /**
-     * The filesystem instance.
-     *
-     * @var \Illuminate\Filesystem\Filesystem
-     */
-    public $files;
-
-    /**
-     * The base path.
-     *
-     * @var string
-     */
-    public $basePath;
-
-    /**
-     * The vendor path.
-     *
-     * @var string
-     */
-    public $vendorPath;
-
-    /**
-     * The manifest path.
-     *
-     * @var string|null
-     */
-    public $manifestPath;
-
-    /**
-     * The loaded manifest array.
-     *
-     * @var array
-     */
-    public $manifest;
-
-    /**
-     * Create a new package manifest instance.
-     *
-     * @param  \Illuminate\Filesystem\Filesystem  $files
-     * @param  string  $basePath
-     * @param  string  $manifestPath
-     * @return void
-     */
-    public function __construct(Filesystem $files, $basePath, $manifestPath)
-    {
-        $this->files = $files;
-        $this->basePath = $basePath;
-        $this->manifestPath = $manifestPath;
-        $this->vendorPath = $basePath.'/vendor';
-    }
-
-    /**
-     * Get all of the service provider class names for all packages.
-     *
-     * @return array
-     */
-    public function providers()
-    {
-        return $this->config('providers');
-    }
-
-    /**
-     * Get all of the aliases for all packages.
-     *
-     * @return array
-     */
-    public function aliases()
-    {
-        return $this->config('aliases');
-    }
-
-    /**
-     * Get all of the values for all packages for the given configuration name.
-     *
-     * @param  string  $key
-     * @return array
-     */
-    public function config($key)
-    {
-        return collect($this->getManifest())->flatMap(function ($configuration) use ($key) {
-            return (array) ($configuration[$key] ?? []);
-        })->filter()->all();
-    }
-
-    /**
-     * Get the current package manifest.
-     *
-     * @return array
-     */
-    protected function getManifest()
-    {
-        if (! is_null($this->manifest)) {
-            return $this->manifest;
-        }
-
-        if (! is_file($this->manifestPath)) {
-            $this->build();
-        }
-
-        return $this->manifest = is_file($this->manifestPath) ?
-            $this->files->getRequire($this->manifestPath) : [];
-    }
-
-    /**
-     * Build the manifest and write it to disk.
-     *
-     * @return void
-     */
-    public function build()
-    {
-        $packages = [];
-
-        if ($this->files->exists($path = $this->vendorPath.'/composer/installed.json')) {
-            $installed = json_decode($this->files->get($path), true);
-
-            $packages = $installed['packages'] ?? $installed;
-        }
-
-        $ignoreAll = in_array('*', $ignore = $this->packagesToIgnore());
-
-        $this->write(collect($packages)->mapWithKeys(function ($package) {
-            return [$this->format($package['name']) => $package['extra']['laravel'] ?? []];
-        })->each(function ($configuration) use (&$ignore) {
-            $ignore = array_merge($ignore, $configuration['dont-discover'] ?? []);
-        })->reject(function ($configuration, $package) use ($ignore, $ignoreAll) {
-            return $ignoreAll || in_array($package, $ignore);
-        })->filter()->all());
-    }
-
-    /**
-     * Format the given package name.
-     *
-     * @param  string  $package
-     * @return string
-     */
-    protected function format($package)
-    {
-        return str_replace($this->vendorPath.'/', '', $package);
-    }
-
-    /**
-     * Get all of the package names that should be ignored.
-     *
-     * @return array
-     */
-    protected function packagesToIgnore()
-    {
-        if (! is_file($this->basePath.'/composer.json')) {
-            return [];
-        }
-
-        return json_decode(file_get_contents(
-            $this->basePath.'/composer.json'
-        ), true)['extra']['laravel']['dont-discover'] ?? [];
-    }
-
-    /**
-     * Write the given manifest array to disk.
-     *
-     * @param  array  $manifest
-     * @return void
-     *
-     * @throws \Exception
-     */
-    protected function write(array $manifest)
-    {
-        if (! is_writable($dirname = dirname($this->manifestPath))) {
-            throw new Exception("The {$dirname} directory must be present and writable.");
-        }
-
-        $this->files->replace(
-            $this->manifestPath, '<?php return '.var_export($manifest, true).';'
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPtbiBcSgvP98CwcxH8EofcDtWMgPBFBvuyjpAEib5+GYjJamAzx+DweiydvKnYfEK95Xx9t6
+3IB49YA0ToEhAUNWYPsILQ7hE3CFCoZANop1Eji7eNZyL/LpCJ97VSl6+PMpX7lkWQ4VrMXn9ZXY
+SUP0mZUaAdFfhTw7/ebsYRe/EHF8U7e7mk/pJfTIYFaUG1uMTDOSPvC9jwksN7uuBNjoTdU7cMhX
+wouA/yw7aINCkuPsUruCbIeIjalpZQuSsrcxg1WwrQihvrJ1KTFS6I1KH7ReZ6ZbSUPsGxXOwHud
+2wog7mdASsl2owVBNce+iYTkCGrHTSK5fpVEUoKaFgfP1bCJNW2EC0NuRpD6/unBZ5So2eAsb2m7
+zgWswyMAuEwJbNE98jaO19WJNhg3ma2D2fpPEKNdx8u1YRtKCiP4V2QyipRygkHhImgBMuvtqqmq
+JefKJSsc1vjkiio4ZrBNSLIrnITmV4E9w4lYxY+Db+MXTaHoEPsO99VXMfdCkI5rD/OVClk0wx8A
+IkJsmSZpzc5XDMD3/noYgWVoJMbjP1Cw2oHVy0akgEoYNWQwqObLK0bs0Nmjx/6jc5gGMdigsJO7
+byF72pgsVtzg4ojKfPlXggZ5d+o+soHKEZOtAA7ow5SmcDr0FVFCNFzbMsLD2Do7L70IMYcKTg3R
+COBw50k6mNEtztELfYz6Fe6Y0xOQuug9kaXhkHrLw0Ri5vK37bqN5OH3JtqjO8OKsvKatKMzQq1U
+9LKDxVWAIgL92fS6bFFxUro2WULm+T+d+JI9aHmab5RZnzMocR4IFPfHxLpApRh2sO+hz7Ld1jrG
+LulG0uj6QPoV8XT70jw/A7B0cr3S2oH376ESQNCzjnuJ94P7s3h+MEhZ/W0ID7L7WHL2FWy6Cy02
+QF8/1hdXZaBV0gDAwVcM+SfAe2ZWu4xrPqxtwc5hFP2Fd21JJBXAIC1VUqBsWakYyp/kmLag+Eq7
+XKrMKj/xBNganijs5sEI5WUSg9u3RLvaT2MFm3wEWeOUaQoNbbb9vwlG4Aoyv7zPms0ql+y7yRsQ
+6DUmuxSREeyetwFpWbnwns3qtY6nqvYjjR7qsUk54Qmuj7AObCwbiqUntWsKxHrgiRIcsYpEAdP0
+VPu34MQ4DmeFnupvxN/y5zTALw+mxOv+kbchTf0Mf/T5aqT5jgTZVU0Jfq2RB0wp5xiOUGqPYYla
+k72FTZx/yHzX1KkfkT71JwHdh5RMP/GsbH1y7EtCBa3ZI1hovRijdgJVXvjkG4Jgq49BK8CFM8lc
+6NRL0pSMfZHPZMpZoo9KgTAqZXvFtJSqPwIutLE20GEAgSJrhOXbIhiaNWfu2d/CpQL5C4az52ZQ
+MfKt+F3yaE6sLeXZVieBG0+vWsPkeQEdG6YfhIFBkDE9z1mQ/xjxuiPWo64+eurXEv2mylQB+3Rm
+RJd5O3MnWRa/swurBe1x356xhlYPLssCWmaoEs/6rl8AEFmFH8C7fNEkNEL8b5/LSTTnYd4pPmwj
+vFiJBkuOHDp+Nam6ZZOE34VgeRgNKfrivitENvzAd6vMLde3rb161nVleig4nlm3ZlrLeib2nSiH
+8t9gjcKfVblRDAfuew3pzyZ8YvRwmrs3d6pwcpCq9wDUznmzJ/N/jD9i2/gJbJGUvHBkDAtNhnn6
++dkRjuLY5S5wJNn9R4jOrI39O39AAOZHerz3T7MEBf3vag18E1cGYPobpStQzIA+UKEWvgpnrvIL
+3TFa9EvXNIDT7laMg/RA94kbNTs6YWTi8jkpb+ikhbjN1Njvea+U0gm13irU1oxppBKTVGAVueDN
++egqwkXDTc0Gp++EZZFL94ngy8wMIsDxZF3WQV3lvbfzb/9tb8tppy15QzE2YJCpTdgLCHMYHPoQ
+kLlW6lu6G6Ha1SAHZ2GXWGMCx4KdrX8hOB4u1cOXVg807A38lmhN1GLn6PCmByr3EbP2eDnwjH0p
+jC6JzN4M2n2zOPDkfdUCEty1E0IJZnoJTr5f8mvVlejp6+pQfJdHdGDktea+9mzA39GpQv0Dvl7b
+U8grJjCj4T6Z2pQ3jR7bj2ksoRM9Vn6eS2gbBucIk4ukxPfySXlNvVGOao8lu1MfvkUynB7vEEkL
+kfXqq6W7IT8qegD4qLBrO/2I6ahyWlr4H43jfCJs1LPqe0mNfg4ednX/YIY/eXB6udtYKxTs415v
+9ho7ETuZQTAvv+p+pwhLCA782+qqeya8JjAe9HSqnrXlEV9D4AqU4SnSCpkzjAszVO4GEd+dK4c8
+bKl5satHlnI1yXlYLCzaS8xA9RPveiPqdiAshKEiqA4cqdvcBjQ/QxYyFrilMnY6JYCS1L676bXX
+ZHWv4J77oNCBg9ooGiddDk9d9Sg9cQ0U1WLVGYMV3od/lDsRAoZV+EXV1B7NsVP5iwb1igi79cW7
+N3SemaqzonqwIk+Vg3gsbcAI3GK/28Zr4+8sqDY51vhd2bOSafUpRyApTmmxSTlnJ7ZXaaQ+KvSS
+2mV+RnxXNaB2dNY/VWF6pWUAt+w1GR8LbpgnhTQr8DoCzu6lpgV6RLb/8ndRYiyHywRt5KPPbA0K
+FkEgy+4tlZL3iRp6WoC3v1SsWdqVEICLT+cavPUDtgf48/HG2OHvRs5N91ucLcUcWTPV/aMG5UT3
+27+uV8tnanFhKUScpeT34tNe7kWQQPtQ04UDD4zzbmQFuxuuvpucAU9Bogjc8INpPHoD2TwakApI
+wQr91/+iwSZ4/sGvA38wqB7Bg68proX/tGzPRSrKHxSNs+4LJBTzWtzCoCuTADb1gjYYpIK9c1TS
+NO/mtC5N/XlyNaaBp8YcNVD6NDS9uSsEvoUPBb9U2rBjD5RvgVWcMpLjM38XTcwsjQ7TMoTB+xlf
+rnT+YpwBSl/BmW+1dwxF3pSw3+zl6fLIr4dcz1RTp5eoH743ukWMuF+AaPB/Cx6PCPcAxxzxg+T1
+xBtnj8gxFVaSlfRCWFmWOmkQRiZxLY1slRHd+OjZo3asnBv8/VN4jPtQTxqgfQHq13OZXFVeDa30
+Qyl9O/DegJM6suPzQ9yOtH1t3K9hKPWmOtSeGlKUbpucBhVv6CodYE+GIh+Qj9FHw3GZJgoPgX3y
+XL7UsE+huUrLV2lZM142KNf8IfZVzGw6uo7G9ZQTsAeNqLjy48JAROU3QQlHbLsS8Wvrn3Ah2UUM
+kGMqhHMKXIpRFzGKzae+DS/tkYt0CW2lZMndaUsiyEWkpImrtJQZbsJnv2yubO1OsO4taQwiUMPc
+MkZOn0hALySjnUrjbAi01gJSEL4piuXvcKdT+YobTCdKMtVeApf7eqf9b6GHXrPHehfALY7IqkN0
+a1Ez4BfVPfSWkaTvdfyr6xYmMfUM5AN1ReKKDzJ5hEtLLfKrMnbsxeddh0vIUYbBihTj13xBUQgX
++ET8r137Os0WNmsdSWXckoDwVZlKLlR3u+xPf5gB8dnCa0J5ho3arJA0E33UWxBOmTXK0J50W7tl
+S5WoPQ7qI/qcVIIeFMLM2pcYwuSSMA1o/6tpji7eNW1a0Xzav7z2CU/Pw+vzS5VK4XmZmJ9mi2Tr
+LLqGQ5zm9Gj2W/pEQEaiBzotif/FycF5tncXkP13d5LXcyAEjri/IVH4AoaqfuQSabSipNYbAPDg
++cNJO94p2h18lsZaR+3kO733voejJooWx5iJC9GadA86pxinLPCSjzFGHm+DIvyPMeFVwgJRE6Mm
+3OrOMbGxT3ze8gkStqGNhkuTpwLnHn86Un1inJeuhYgTbeC7PVrnIVzKlJVSmz6mOVZmN1Rc2NlI
+kM+46aeYWXhXEyN1tA87KqLlZDLpvoGqr+IJ9E6/fDGL/u4EaBXsHgdp3xN/pKBFGxJQ7k7q56r/
+Kn1pheADI1Umf5elJtsVdekg171HLhJckTDIjRc82VMPsAhQj9VebDgM0RexAb5ouzrLXO7VPXNr
+JNZmGkw4csTJfI1KfKEXGVpV84VQz5FbXooHKWcZyLXV2z3Vlv9sARzwdqO+vQG62DRP+01ZWttG
+kCMQfD8NLFmHt6e6c0gU+g5yCsweK85r3DV354zQTkCU8r63KoqLuZVe2cYaKaPPMnLQWJ7kUxZ8
+H31FWX5LluiQrFbDebXMmVil5XqsnbyRylm5P8mLZBohFntai7v0LyXbak0UzCRHOXNWOdsUQ1fY
+QsSfFfVcSXbKToJir58N1tR1RHBTvRs2zgSHtnI7yhy1q/XvpCKA7wfrsEm7yfk/6HJo1i2oHWQg
+DjcbWZxhqwwXdFOt3m+g3Ie+ZeTFJ1vdMC7B/gPrt+AKL20IKm1PynWhrRYMFQmvhZqwMMqhnJFw
+Ra+ck8rCNYc5wvjtweLDwUQpauHE9neuJ6lxkR8/pKpnkaBVxJbFvx4T1cER3Ss4Ivw49p9lY7p4
+m5KV17tCuS/iwH51rjahbdrcoYb+5GtoqiPE5cZI21S8mkeb+FpGbX7Ww9ZrxXx/Uk1A9aIdG3QO
+QYAZc1zbdHjhK9QJYNzwP60mdmxFAqKKcuHj89Fxt4kFdZZrWTOl0JsGsEfG66PwD8DdonmOdXNl
+RCNdsQc6PophzYJeDnBHLLetV5QsG3aUWhxD7CTJ4VoeLgoSnPmAWEXPPQde2V7DCu6AyHwOAJU9
+drOJNcsoqIyniiaeQg1Wx3ultiPjR8v/bTtJUhQ3eUXlnYQJyVCiJlvfzPPtzWKQuDPou0xyo8SY
+N/FSNH/yfvDWUlgkARQe3DLDSKD4njHLg0OZsAE9fvVYjDBZ/kzWFpIY30unDJqvP8hp9RnChcvl
+OwgdfYyU8wHSfHKI8jCMKAxN8FSi/ZcTJXq3WeHVYimhCGA4RmWeAtC5T+mgqj3Fdw7FehWxPWR1
+de4TpnMQhj5YpOcnGkdNyxjAuaZrDye+s8WMsROLNsfPW3EkI0BaFL/zn+sVVU8cHdTD8pyEQZCT
+UT/b7W2piMIlBPFT5et1dDwA/a7Yxwv/NHlkDAxDg9rcnMd+Cz58N8HkBTSHa/Yg1C1oaCK+5Z6U
+IcLjQPUPo/JiIHzlafTEVVoQCAIDiJjUVpUB5si020SDiZIJJIfglOevZsUfbDvK/hmm6VUlSguH
+ZL7XLOTK1POFM/D6jmXFnA+jXO3qAv7Sr4SR64CXvAm8B/aIU5x0W8TA1wnHjL/PGZCr9dd5KwZw
+8RCYanCZsqClDi8q5xqwQUWJXQ+M0r7MIZBpPydY95ipbT8tamCSQIJBf0jj8Gy87y7WOh4qADZN
+Ndlk1Fo6FzHqjDppFYzCmoTZLh2eqD/91zvD6bNJazc+d6WT8SAnok0lDRYtPW2PClCSbbYG8gvU
+8IGnaVoLAvwns/QVllCx+KwZhmEg1qScfYvC9UiLXmTGcqWhdqbyzehDIhZ4DYFwjWfL9SU5NL/y
+p3c4Kui5BjAPuNe+oPUZ0KGVWuRsKpGaRpKNFbq7ftTEZmL3tuiAJIHiOuQ9udsXdKot/mcPclG7
+6NwGG86Nt4ZS1VPA8xqLxvXPhGAVZ6GsExhJmrCqYfFMyjqs3L6XZI2Z7fV/zSvuCItFxQYozsMH
+3WG1991RoMglPJY6niI2smKFEVu1iir6QPC+30LdfMAT3uot0CIcNRvtEUYBoa4n1EEjzBFnzEXB
+uV6Hx9ITh82w18oQmfpbO8ArPUvuqfWk07Jgkb4I85n2YUPUQWD1jXC5KjIZOBAfVUBqqIKKSIKf
++AaqSECN/6emTj+oefneelOlRbzRqHtbV8yDVLnMRM8tGikRVHsW4GASHNF45tdnbSG0hJrK/tXE
+gED+sA7I38KSD47DLafiSMSDNety0yva1OiYL9Jj5MsyFzMA88/au96hjT9BnQyDxnEuGFgehNB0
+tUsii4LW5erAY56JNzc3HWr+rKv90mhNMdkukI0IHqGsUzVYCa4FMFIGWK1C5JI5KWVq8kD/Rvdu
+uf1VEhvomhR2Pq117xTLdglB9R+HPHibc8hPqvuVlkD5brpO1SI1koqusUlRx/hxltz5rOHufwnA
+Mhc9ksW0xffAu0s63SMKgQ4xPBYDS8X2Y5rrfqDCV2UXxSMMmG1n5+o8S666PMeSIWlhC/E1fMCD
+SbxN4mCFSyjVWoFK/dThs0htt9NVRYWRGJx0uX+jfO/AsuLZtiNh2hggYVCvIv6ytMl1N6KdWQOe
+6R7S1OGo2Iag3jpQaEB+HCTgCqtdxdW1N6EW7vhzLOxRsqJFCECM0GoM+XCQsTzeEYaRtsjyv5TN
+78UT9QkLTpSqwjaQAvUJY79coHl02Sk1bZDh+dl4DwvsXdx/rNWNdrkjQCKBqUWDPbmi1rK27OBt
+CTxOGGICBEB8slyrtXpIYFAwlb3GBhsztzwr0KXO9r4tZbUt18tGP6SrFU50G4WWdVouwywaSDbZ
+08j2u2eKaXXwUwUAoZhZ4KTgn/fyqCtMuWTppOKbLZXxicZpMnI7Af4uxYfhd0+0y359ppav3VLG
+oP5wwgv+x5T1w1N8aGaLIrN31/6Akd7i7fLifArDJ+pG7VzARyVAqk810C7QRLJBBOMtutW1BrFD
+ygMjun22aHuDZF4mJ+TS77eglXol0HaZTS+Notnvv5eLFj+IkEfQgbboFhnevLvPQuh5P5CQ9mQD
+gebltmN1dkSSqe11AOWe+qN/SSdnW2niLSDNTPrkksMkO5ZPEysXCr14CLoV7isogoK4XRDbr7G2
+TavmCCFET8Pq3vq14ABW75owGYEiDXY0zYMkrElZ7W1b4i4jw2bD1BmdTd5sxpbjmugpzy/tv1zG
+JbZIYjfF8FEfxy+bT/Ya53GdmHU/9/5o/fpn3K+FISgDa57jjmBDwiVGOI0+Jcz6dhw8pmAQH3b2
+cKAjvts3YSbuQ61yG1GSQPbBkUpKY4JcddlFuavpJ8/WA1f/J1DMwfY9WvUhpbeditSz1QMWtCW2
+7WuwFOIro2AXJ8NgKyWuIcLS4DsCqm06ZJwiayYbezN7ze8Gj9okv9c5Kg3z9uuJCJRK4Ms0TvAm
+2xLnL7/LahNwYqfOOwbnBD4JhXr18PhW8v0kOcNYcr/f9nO80FkXKqmQ3kAD/Gfu0erqD9Ofx4N5
+NZQT7QsPa3GUirRxIcVvpcAF6/1kRk8hzQLtGjN6nfuSaRBnvynde6AfsJtWNMY5P6bPjx7QyNhh
+PEySRpWsKlgSu2y5zEtbfRUbIu0OQ+X9r+czHqEZdoK1cn2NV2S9t0lClh1w5r6dfDZKBj+wKdiU
+BywngQCDUb1G7BFNKLMZ0aDH4hCNVQk/HSnS4BVVzL0j2gjNUzFYP70Th5QSSXFkjpRmupDddpsO
+MYH056eQ15CJXVVY+oevZD0WG7WLSIUDli4OWkZXBchsFN77MBdlCiku2/dHr1e2OZzi7XN5YE5D
+6VJw/nyTAzxjqO1qlzBPi0DiVrTpOwNVoXCrTKfW6goQlLF/7P6Ezm911AjNzEaYTabARczlkq05
+w9Z1fHXbBcaqOfc0xaHXUlwAjw610JXi1c4Y+UgSsmsJHXdNK5VHOUku62VxRHpcYYsXAaL/nCPO
+lof1Q55hTFd5kxT0JXVNpLIJLoxy1guN1PAZBysNZzSzRjMmc9Nz09i7a4OuW72GEq2cAbdiModi
+u41M3kemumNkHsgN8jr5kpFTwKOFeGTF4b8iVm7PkLAucuZ++MdneImD+ZfDTYrtO+0GNwlWVOtm
+LIrfICXj2ptyc8fbmzGapHGx7/ZgV6GYZ/SwXZYSwnclEhGPsG==

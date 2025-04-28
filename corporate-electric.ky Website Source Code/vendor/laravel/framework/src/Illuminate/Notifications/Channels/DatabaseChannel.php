@@ -1,63 +1,39 @@
-<?php
-
-namespace Illuminate\Notifications\Channels;
-
-use Illuminate\Notifications\Notification;
-use RuntimeException;
-
-class DatabaseChannel
-{
-    /**
-     * Send the given notification.
-     *
-     * @param  mixed  $notifiable
-     * @param  \Illuminate\Notifications\Notification  $notification
-     * @return \Illuminate\Database\Eloquent\Model
-     */
-    public function send($notifiable, Notification $notification)
-    {
-        return $notifiable->routeNotificationFor('database', $notification)->create(
-            $this->buildPayload($notifiable, $notification)
-        );
-    }
-
-    /**
-     * Get the data for the notification.
-     *
-     * @param  mixed  $notifiable
-     * @param  \Illuminate\Notifications\Notification  $notification
-     * @return array
-     *
-     * @throws \RuntimeException
-     */
-    protected function getData($notifiable, Notification $notification)
-    {
-        if (method_exists($notification, 'toDatabase')) {
-            return is_array($data = $notification->toDatabase($notifiable))
-                                ? $data : $data->data;
-        }
-
-        if (method_exists($notification, 'toArray')) {
-            return $notification->toArray($notifiable);
-        }
-
-        throw new RuntimeException('Notification is missing toDatabase / toArray method.');
-    }
-
-    /**
-     * Build an array payload for the DatabaseNotification Model.
-     *
-     * @param  mixed  $notifiable
-     * @param  \Illuminate\Notifications\Notification  $notification
-     * @return array
-     */
-    protected function buildPayload($notifiable, Notification $notification)
-    {
-        return [
-            'id' => $notification->id,
-            'type' => get_class($notification),
-            'data' => $this->getData($notifiable, $notification),
-            'read_at' => null,
-        ];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+MLmDu+U3z92YPILK4m47iXPfRWu=

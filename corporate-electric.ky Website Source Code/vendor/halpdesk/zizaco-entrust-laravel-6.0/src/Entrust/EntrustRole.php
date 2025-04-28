@@ -1,38 +1,29 @@
-<?php namespace Zizaco\Entrust;
-
-/**
- * This file is part of Entrust,
- * a role & permission management solution for Laravel.
- *
- * @license MIT
- * @package Zizaco\Entrust
- */
-
-use Zizaco\Entrust\Contracts\EntrustRoleInterface;
-use Zizaco\Entrust\Traits\EntrustRoleTrait;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Config;
-
-class EntrustRole extends Model implements EntrustRoleInterface
-{
-    use EntrustRoleTrait;
-
-    /**
-     * The database table used by the model.
-     *
-     * @var string
-     */
-    protected $table;
-
-    /**
-     * Creates a new instance of the model.
-     *
-     * @param array $attributes
-     */
-    public function __construct(array $attributes = [])
-    {
-        parent::__construct($attributes);
-        $this->table = Config::get('entrust.roles_table');
-    }
-
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

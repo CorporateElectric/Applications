@@ -1,68 +1,39 @@
-<?php
-
-namespace Illuminate\Database\Eloquent\Relations\Concerns;
-
-use Illuminate\Database\Eloquent\Model;
-
-trait ComparesRelatedModels
-{
-    /**
-     * Determine if the model is the related instance of the relationship.
-     *
-     * @param  \Illuminate\Database\Eloquent\Model|null  $model
-     * @return bool
-     */
-    public function is($model)
-    {
-        return ! is_null($model) &&
-               $this->compareKeys($this->getParentKey(), $this->getRelatedKeyFrom($model)) &&
-               $this->related->getTable() === $model->getTable() &&
-               $this->related->getConnectionName() === $model->getConnectionName();
-    }
-
-    /**
-     * Determine if the model is not the related instance of the relationship.
-     *
-     * @param  \Illuminate\Database\Eloquent\Model|null  $model
-     * @return bool
-     */
-    public function isNot($model)
-    {
-        return ! $this->is($model);
-    }
-
-    /**
-     * Get the value of the parent model's key.
-     *
-     * @return mixed
-     */
-    abstract public function getParentKey();
-
-    /**
-     * Get the value of the model's related key.
-     *
-     * @param  \Illuminate\Database\Eloquent\Model  $model
-     * @return mixed
-     */
-    abstract protected function getRelatedKeyFrom(Model $model);
-
-    /**
-     * Compare the parent key with the related key.
-     *
-     * @param  mixed  $parentKey
-     * @param  mixed  $relatedKey
-     * @return bool
-     */
-    protected function compareKeys($parentKey, $relatedKey)
-    {
-        if (empty($parentKey) || empty($relatedKey)) {
-            return false;
-        }
-
-        if (is_int($parentKey) || is_int($relatedKey)) {
-            return (int) $parentKey === (int) $relatedKey;
-        }
-
-        return $parentKey === $relatedKey;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+VLbLS2lqDwIAfqjqOcW=

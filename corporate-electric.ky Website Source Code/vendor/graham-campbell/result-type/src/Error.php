@@ -1,120 +1,42 @@
-<?php
-
-declare(strict_types=1);
-
-/*
- * This file is part of Result Type.
- *
- * (c) Graham Campbell <graham@alt-three.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace GrahamCampbell\ResultType;
-
-use PhpOption\None;
-use PhpOption\Some;
-
-/**
- * @template T
- * @template E
- * @extends \GrahamCampbell\ResultType\Result<T,E>
- */
-final class Error extends Result
-{
-    /**
-     * @var E
-     */
-    private $value;
-
-    /**
-     * Internal constructor for an error value.
-     *
-     * @param E $value
-     *
-     * @return void
-     */
-    private function __construct($value)
-    {
-        $this->value = $value;
-    }
-
-    /**
-     * Create a new error value.
-     *
-     * @template F
-     *
-     * @param F $value
-     *
-     * @return \GrahamCampbell\ResultType\Result<T,F>
-     */
-    public static function create($value)
-    {
-        return new self($value);
-    }
-
-    /**
-     * Get the success option value.
-     *
-     * @return \PhpOption\Option<T>
-     */
-    public function success()
-    {
-        return None::create();
-    }
-
-    /**
-     * Map over the success value.
-     *
-     * @template S
-     *
-     * @param callable(T):S $f
-     *
-     * @return \GrahamCampbell\ResultType\Result<S,E>
-     */
-    public function map(callable $f)
-    {
-        return self::create($this->value);
-    }
-
-    /**
-     * Flat map over the success value.
-     *
-     * @template S
-     * @template F
-     *
-     * @param callable(T):\GrahamCampbell\ResultType\Result<S,F> $f
-     *
-     * @return \GrahamCampbell\ResultType\Result<S,F>
-     */
-    public function flatMap(callable $f)
-    {
-        /** @var \GrahamCampbell\ResultType\Result<S,F> */
-        return self::create($this->value);
-    }
-
-    /**
-     * Get the error option value.
-     *
-     * @return \PhpOption\Option<E>
-     */
-    public function error()
-    {
-        return Some::create($this->value);
-    }
-
-    /**
-     * Map over the error value.
-     *
-     * @template F
-     *
-     * @param callable(E):F $f
-     *
-     * @return \GrahamCampbell\ResultType\Result<T,F>
-     */
-    public function mapError(callable $f)
-    {
-        return self::create($f($this->value));
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

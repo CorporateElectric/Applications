@@ -1,47 +1,31 @@
-<?php
-
-/*
- * This file is part of SwiftMailer.
- * (c) 2004-2009 Chris Corbyn
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-/**
- * Writes data to a KeyCache using a stream.
- *
- * @author Chris Corbyn
- */
-interface Swift_KeyCache_KeyCacheInputStream extends Swift_InputByteStream
-{
-    /**
-     * Set the KeyCache to wrap.
-     */
-    public function setKeyCache(Swift_KeyCache $keyCache);
-
-    /**
-     * Set the nsKey which will be written to.
-     *
-     * @param string $nsKey
-     */
-    public function setNsKey($nsKey);
-
-    /**
-     * Set the itemKey which will be written to.
-     *
-     * @param string $itemKey
-     */
-    public function setItemKey($itemKey);
-
-    /**
-     * Specify a stream to write through for each write().
-     */
-    public function setWriteThroughStream(Swift_InputByteStream $is);
-
-    /**
-     * Any implementation should be cloneable, allowing the clone to access a
-     * separate $nsKey and $itemKey.
-     */
-    public function __clone();
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+WkBNGilBx+6xE7IwqerejG==

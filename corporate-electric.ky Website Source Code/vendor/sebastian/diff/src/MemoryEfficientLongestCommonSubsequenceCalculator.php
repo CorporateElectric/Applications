@@ -1,88 +1,58 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of sebastian/diff.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\Diff;
-
-use function array_fill;
-use function array_merge;
-use function array_reverse;
-use function array_slice;
-use function count;
-use function in_array;
-use function max;
-
-final class MemoryEfficientLongestCommonSubsequenceCalculator implements LongestCommonSubsequenceCalculator
-{
-    /**
-     * {@inheritdoc}
-     */
-    public function calculate(array $from, array $to): array
-    {
-        $cFrom = count($from);
-        $cTo   = count($to);
-
-        if ($cFrom === 0) {
-            return [];
-        }
-
-        if ($cFrom === 1) {
-            if (in_array($from[0], $to, true)) {
-                return [$from[0]];
-            }
-
-            return [];
-        }
-
-        $i         = (int) ($cFrom / 2);
-        $fromStart = array_slice($from, 0, $i);
-        $fromEnd   = array_slice($from, $i);
-        $llB       = $this->length($fromStart, $to);
-        $llE       = $this->length(array_reverse($fromEnd), array_reverse($to));
-        $jMax      = 0;
-        $max       = 0;
-
-        for ($j = 0; $j <= $cTo; $j++) {
-            $m = $llB[$j] + $llE[$cTo - $j];
-
-            if ($m >= $max) {
-                $max  = $m;
-                $jMax = $j;
-            }
-        }
-
-        $toStart = array_slice($to, 0, $jMax);
-        $toEnd   = array_slice($to, $jMax);
-
-        return array_merge(
-            $this->calculate($fromStart, $toStart),
-            $this->calculate($fromEnd, $toEnd)
-        );
-    }
-
-    private function length(array $from, array $to): array
-    {
-        $current = array_fill(0, count($to) + 1, 0);
-        $cFrom   = count($from);
-        $cTo     = count($to);
-
-        for ($i = 0; $i < $cFrom; $i++) {
-            $prev = $current;
-
-            for ($j = 0; $j < $cTo; $j++) {
-                if ($from[$i] === $to[$j]) {
-                    $current[$j + 1] = $prev[$j] + 1;
-                } else {
-                    $current[$j + 1] = max($current[$j], $prev[$j + 1]);
-                }
-            }
-        }
-
-        return $current;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

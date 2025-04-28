@@ -1,119 +1,85 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Writer\Ods;
-
-use PhpOffice\PhpSpreadsheet\Calculation\Calculation;
-use PhpOffice\PhpSpreadsheet\DefinedName;
-
-class Formula
-{
-    private $definedNames = [];
-
-    /**
-     * @param DefinedName[] $definedNames
-     */
-    public function __construct(array $definedNames)
-    {
-        foreach ($definedNames as $definedName) {
-            $this->definedNames[] = $definedName->getName();
-        }
-    }
-
-    public function convertFormula(string $formula, string $worksheetName = ''): string
-    {
-        $formula = $this->convertCellReferences($formula, $worksheetName);
-        $formula = $this->convertDefinedNames($formula);
-
-        if (substr($formula, 0, 1) !== '=') {
-            $formula = '=' . $formula;
-        }
-
-        return 'of:' . $formula;
-    }
-
-    private function convertDefinedNames(string $formula): string
-    {
-        $splitCount = preg_match_all(
-            '/' . Calculation::CALCULATION_REGEXP_DEFINEDNAME . '/mui',
-            $formula,
-            $splitRanges,
-            PREG_OFFSET_CAPTURE
-        );
-
-        $lengths = array_map('strlen', array_column($splitRanges[0], 0));
-        $offsets = array_column($splitRanges[0], 1);
-        $values = array_column($splitRanges[0], 0);
-
-        while ($splitCount > 0) {
-            --$splitCount;
-            $length = $lengths[$splitCount];
-            $offset = $offsets[$splitCount];
-            $value = $values[$splitCount];
-
-            if (in_array($value, $this->definedNames, true)) {
-                $formula = substr($formula, 0, $offset) . '$$' . $value . substr($formula, $offset + $length);
-            }
-        }
-
-        return $formula;
-    }
-
-    private function convertCellReferences(string $formula, string $worksheetName): string
-    {
-        $splitCount = preg_match_all(
-            '/' . Calculation::CALCULATION_REGEXP_CELLREF_RELATIVE . '/mui',
-            $formula,
-            $splitRanges,
-            PREG_OFFSET_CAPTURE
-        );
-
-        $lengths = array_map('strlen', array_column($splitRanges[0], 0));
-        $offsets = array_column($splitRanges[0], 1);
-
-        $worksheets = $splitRanges[2];
-        $columns = $splitRanges[6];
-        $rows = $splitRanges[7];
-
-        // Replace any commas in the formula with semi-colons for Ods
-        // If by chance there are commas in worksheet names, then they will be "fixed" again in the loop
-        //    because we've already extracted worksheet names with our preg_match_all()
-        $formula = str_replace(',', ';', $formula);
-        while ($splitCount > 0) {
-            --$splitCount;
-            $length = $lengths[$splitCount];
-            $offset = $offsets[$splitCount];
-            $worksheet = $worksheets[$splitCount][0];
-            $column = $columns[$splitCount][0];
-            $row = $rows[$splitCount][0];
-
-            $newRange = '';
-            if (empty($worksheet)) {
-                if (($offset === 0) || ($formula[$offset - 1] !== ':')) {
-                    // We need a worksheet
-                    $worksheet = $worksheetName;
-                }
-            } else {
-                $worksheet = str_replace("''", "'", trim($worksheet, "'"));
-            }
-            if (!empty($worksheet)) {
-                $newRange = "['" . str_replace("'", "''", $worksheet) . "'";
-            } elseif (substr($formula, $offset - 1, 1) !== ':') {
-                $newRange = '[';
-            }
-            $newRange .= '.';
-
-            if (!empty($column)) {
-                $newRange .= $column;
-            }
-            if (!empty($row)) {
-                $newRange .= $row;
-            }
-            // close the wrapping [] unless this is the first part of a range
-            $newRange .= substr($formula, $offset + $length, 1) !== ':' ? ']' : '';
-
-            $formula = substr($formula, 0, $offset) . $newRange . substr($formula, $offset + $length);
-        }
-
-        return $formula;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,64 +1,34 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Shared\OLE\PPS;
-
-// vim: set expandtab tabstop=4 shiftwidth=4:
-// +----------------------------------------------------------------------+
-// | PHP Version 4                                                        |
-// +----------------------------------------------------------------------+
-// | Copyright (c) 1997-2002 The PHP Group                                |
-// +----------------------------------------------------------------------+
-// | This source file is subject to version 2.02 of the PHP license,      |
-// | that is bundled with this package in the file LICENSE, and is        |
-// | available at through the world-wide-web at                           |
-// | http://www.php.net/license/2_02.txt.                                 |
-// | If you did not receive a copy of the PHP license and are unable to   |
-// | obtain it through the world-wide-web, please send a note to          |
-// | license@php.net so we can mail you a copy immediately.               |
-// +----------------------------------------------------------------------+
-// | Author: Xavier Noguer <xnoguer@php.net>                              |
-// | Based on OLE::Storage_Lite by Kawai, Takanori                        |
-// +----------------------------------------------------------------------+
-//
-use PhpOffice\PhpSpreadsheet\Shared\OLE;
-use PhpOffice\PhpSpreadsheet\Shared\OLE\PPS;
-
-/**
- * Class for creating File PPS's for OLE containers.
- *
- * @author   Xavier Noguer <xnoguer@php.net>
- */
-class File extends PPS
-{
-    /**
-     * The constructor.
-     *
-     * @param string $name The name of the file (in Unicode)
-     *
-     * @see OLE::ascToUcs()
-     */
-    public function __construct($name)
-    {
-        parent::__construct(null, $name, OLE::OLE_PPS_TYPE_FILE, null, null, null, null, null, '', []);
-    }
-
-    /**
-     * Initialization method. Has to be called right after OLE_PPS_File().
-     *
-     * @return mixed true on success
-     */
-    public function init()
-    {
-        return true;
-    }
-
-    /**
-     * Append data to PPS.
-     *
-     * @param string $data The data to append
-     */
-    public function append($data): void
-    {
-        $this->_data .= $data;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+tMpyN79y0Gc8MqYHgKdUbAS=

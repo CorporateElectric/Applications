@@ -1,43 +1,33 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Console\Exception;
-
-/**
- * Represents an incorrect command name typed in the console.
- *
- * @author Jérôme Tamarelle <jerome@tamarelle.net>
- */
-class CommandNotFoundException extends \InvalidArgumentException implements ExceptionInterface
-{
-    private $alternatives;
-
-    /**
-     * @param string     $message      Exception message to throw
-     * @param array      $alternatives List of similar defined names
-     * @param int        $code         Exception code
-     * @param \Throwable $previous     Previous exception used for the exception chaining
-     */
-    public function __construct(string $message, array $alternatives = [], int $code = 0, \Throwable $previous = null)
-    {
-        parent::__construct($message, $code, $previous);
-
-        $this->alternatives = $alternatives;
-    }
-
-    /**
-     * @return array A list of similar defined names
-     */
-    public function getAlternatives()
-    {
-        return $this->alternatives;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

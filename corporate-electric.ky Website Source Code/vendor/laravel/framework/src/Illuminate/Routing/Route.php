@@ -1,1189 +1,388 @@
-<?php
-
-namespace Illuminate\Routing;
-
-use Closure;
-use Illuminate\Container\Container;
-use Illuminate\Http\Exceptions\HttpResponseException;
-use Illuminate\Http\Request;
-use Illuminate\Routing\Contracts\ControllerDispatcher as ControllerDispatcherContract;
-use Illuminate\Routing\Matching\HostValidator;
-use Illuminate\Routing\Matching\MethodValidator;
-use Illuminate\Routing\Matching\SchemeValidator;
-use Illuminate\Routing\Matching\UriValidator;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
-use Illuminate\Support\Traits\Macroable;
-use LogicException;
-use Opis\Closure\SerializableClosure;
-use ReflectionFunction;
-use Symfony\Component\Routing\Route as SymfonyRoute;
-
-class Route
-{
-    use CreatesRegularExpressionRouteConstraints, Macroable, RouteDependencyResolverTrait;
-
-    /**
-     * The URI pattern the route responds to.
-     *
-     * @var string
-     */
-    public $uri;
-
-    /**
-     * The HTTP methods the route responds to.
-     *
-     * @var array
-     */
-    public $methods;
-
-    /**
-     * The route action array.
-     *
-     * @var array
-     */
-    public $action;
-
-    /**
-     * Indicates whether the route is a fallback route.
-     *
-     * @var bool
-     */
-    public $isFallback = false;
-
-    /**
-     * The controller instance.
-     *
-     * @var mixed
-     */
-    public $controller;
-
-    /**
-     * The default values for the route.
-     *
-     * @var array
-     */
-    public $defaults = [];
-
-    /**
-     * The regular expression requirements.
-     *
-     * @var array
-     */
-    public $wheres = [];
-
-    /**
-     * The array of matched parameters.
-     *
-     * @var array|null
-     */
-    public $parameters;
-
-    /**
-     * The parameter names for the route.
-     *
-     * @var array|null
-     */
-    public $parameterNames;
-
-    /**
-     * The array of the matched parameters' original values.
-     *
-     * @var array
-     */
-    protected $originalParameters;
-
-    /**
-     * Indicates the maximum number of seconds the route should acquire a session lock for.
-     *
-     * @var int|null
-     */
-    protected $lockSeconds;
-
-    /**
-     * Indicates the maximum number of seconds the route should wait while attempting to acquire a session lock.
-     *
-     * @var int|null
-     */
-    protected $waitSeconds;
-
-    /**
-     * The computed gathered middleware.
-     *
-     * @var array|null
-     */
-    public $computedMiddleware;
-
-    /**
-     * The compiled version of the route.
-     *
-     * @var \Symfony\Component\Routing\CompiledRoute
-     */
-    public $compiled;
-
-    /**
-     * The router instance used by the route.
-     *
-     * @var \Illuminate\Routing\Router
-     */
-    protected $router;
-
-    /**
-     * The container instance used by the route.
-     *
-     * @var \Illuminate\Container\Container
-     */
-    protected $container;
-
-    /**
-     * The fields that implicit binding should use for a given parameter.
-     *
-     * @var array
-     */
-    protected $bindingFields = [];
-
-    /**
-     * The validators used by the routes.
-     *
-     * @var array
-     */
-    public static $validators;
-
-    /**
-     * Create a new Route instance.
-     *
-     * @param  array|string  $methods
-     * @param  string  $uri
-     * @param  \Closure|array  $action
-     * @return void
-     */
-    public function __construct($methods, $uri, $action)
-    {
-        $this->uri = $uri;
-        $this->methods = (array) $methods;
-        $this->action = Arr::except($this->parseAction($action), ['prefix']);
-
-        if (in_array('GET', $this->methods) && ! in_array('HEAD', $this->methods)) {
-            $this->methods[] = 'HEAD';
-        }
-
-        $this->prefix(is_array($action) ? Arr::get($action, 'prefix') : '');
-    }
-
-    /**
-     * Parse the route action into a standard array.
-     *
-     * @param  callable|array|null  $action
-     * @return array
-     *
-     * @throws \UnexpectedValueException
-     */
-    protected function parseAction($action)
-    {
-        return RouteAction::parse($this->uri, $action);
-    }
-
-    /**
-     * Run the route action and return the response.
-     *
-     * @return mixed
-     */
-    public function run()
-    {
-        $this->container = $this->container ?: new Container;
-
-        try {
-            if ($this->isControllerAction()) {
-                return $this->runController();
-            }
-
-            return $this->runCallable();
-        } catch (HttpResponseException $e) {
-            return $e->getResponse();
-        }
-    }
-
-    /**
-     * Checks whether the route's action is a controller.
-     *
-     * @return bool
-     */
-    protected function isControllerAction()
-    {
-        return is_string($this->action['uses']) && ! $this->isSerializedClosure();
-    }
-
-    /**
-     * Run the route action and return the response.
-     *
-     * @return mixed
-     */
-    protected function runCallable()
-    {
-        $callable = $this->action['uses'];
-
-        if ($this->isSerializedClosure()) {
-            $callable = unserialize($this->action['uses'])->getClosure();
-        }
-
-        return $callable(...array_values($this->resolveMethodDependencies(
-            $this->parametersWithoutNulls(), new ReflectionFunction($callable)
-        )));
-    }
-
-    /**
-     * Determine if the route action is a serialized Closure.
-     *
-     * @return bool
-     */
-    protected function isSerializedClosure()
-    {
-        return RouteAction::containsSerializedClosure($this->action);
-    }
-
-    /**
-     * Run the route action and return the response.
-     *
-     * @return mixed
-     *
-     * @throws \Symfony\Component\HttpKernel\Exception\NotFoundHttpException
-     */
-    protected function runController()
-    {
-        return $this->controllerDispatcher()->dispatch(
-            $this, $this->getController(), $this->getControllerMethod()
-        );
-    }
-
-    /**
-     * Get the controller instance for the route.
-     *
-     * @return mixed
-     */
-    public function getController()
-    {
-        if (! $this->controller) {
-            $class = $this->parseControllerCallback()[0];
-
-            $this->controller = $this->container->make(ltrim($class, '\\'));
-        }
-
-        return $this->controller;
-    }
-
-    /**
-     * Get the controller method used for the route.
-     *
-     * @return string
-     */
-    protected function getControllerMethod()
-    {
-        return $this->parseControllerCallback()[1];
-    }
-
-    /**
-     * Parse the controller.
-     *
-     * @return array
-     */
-    protected function parseControllerCallback()
-    {
-        return Str::parseCallback($this->action['uses']);
-    }
-
-    /**
-     * Determine if the route matches a given request.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  bool  $includingMethod
-     * @return bool
-     */
-    public function matches(Request $request, $includingMethod = true)
-    {
-        $this->compileRoute();
-
-        foreach (self::getValidators() as $validator) {
-            if (! $includingMethod && $validator instanceof MethodValidator) {
-                continue;
-            }
-
-            if (! $validator->matches($this, $request)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Compile the route into a Symfony CompiledRoute instance.
-     *
-     * @return \Symfony\Component\Routing\CompiledRoute
-     */
-    protected function compileRoute()
-    {
-        if (! $this->compiled) {
-            $this->compiled = $this->toSymfonyRoute()->compile();
-        }
-
-        return $this->compiled;
-    }
-
-    /**
-     * Bind the route to a given request for execution.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return $this
-     */
-    public function bind(Request $request)
-    {
-        $this->compileRoute();
-
-        $this->parameters = (new RouteParameterBinder($this))
-                        ->parameters($request);
-
-        $this->originalParameters = $this->parameters;
-
-        return $this;
-    }
-
-    /**
-     * Determine if the route has parameters.
-     *
-     * @return bool
-     */
-    public function hasParameters()
-    {
-        return isset($this->parameters);
-    }
-
-    /**
-     * Determine a given parameter exists from the route.
-     *
-     * @param  string  $name
-     * @return bool
-     */
-    public function hasParameter($name)
-    {
-        if ($this->hasParameters()) {
-            return array_key_exists($name, $this->parameters());
-        }
-
-        return false;
-    }
-
-    /**
-     * Get a given parameter from the route.
-     *
-     * @param  string  $name
-     * @param  string|object|null  $default
-     * @return string|object|null
-     */
-    public function parameter($name, $default = null)
-    {
-        return Arr::get($this->parameters(), $name, $default);
-    }
-
-    /**
-     * Get original value of a given parameter from the route.
-     *
-     * @param  string  $name
-     * @param  string|null  $default
-     * @return string|null
-     */
-    public function originalParameter($name, $default = null)
-    {
-        return Arr::get($this->originalParameters(), $name, $default);
-    }
-
-    /**
-     * Set a parameter to the given value.
-     *
-     * @param  string  $name
-     * @param  string|object|null  $value
-     * @return void
-     */
-    public function setParameter($name, $value)
-    {
-        $this->parameters();
-
-        $this->parameters[$name] = $value;
-    }
-
-    /**
-     * Unset a parameter on the route if it is set.
-     *
-     * @param  string  $name
-     * @return void
-     */
-    public function forgetParameter($name)
-    {
-        $this->parameters();
-
-        unset($this->parameters[$name]);
-    }
-
-    /**
-     * Get the key / value list of parameters for the route.
-     *
-     * @return array
-     *
-     * @throws \LogicException
-     */
-    public function parameters()
-    {
-        if (isset($this->parameters)) {
-            return $this->parameters;
-        }
-
-        throw new LogicException('Route is not bound.');
-    }
-
-    /**
-     * Get the key / value list of original parameters for the route.
-     *
-     * @return array
-     *
-     * @throws \LogicException
-     */
-    public function originalParameters()
-    {
-        if (isset($this->originalParameters)) {
-            return $this->originalParameters;
-        }
-
-        throw new LogicException('Route is not bound.');
-    }
-
-    /**
-     * Get the key / value list of parameters without null values.
-     *
-     * @return array
-     */
-    public function parametersWithoutNulls()
-    {
-        return array_filter($this->parameters(), function ($p) {
-            return ! is_null($p);
-        });
-    }
-
-    /**
-     * Get all of the parameter names for the route.
-     *
-     * @return array
-     */
-    public function parameterNames()
-    {
-        if (isset($this->parameterNames)) {
-            return $this->parameterNames;
-        }
-
-        return $this->parameterNames = $this->compileParameterNames();
-    }
-
-    /**
-     * Get the parameter names for the route.
-     *
-     * @return array
-     */
-    protected function compileParameterNames()
-    {
-        preg_match_all('/\{(.*?)\}/', $this->getDomain().$this->uri, $matches);
-
-        return array_map(function ($m) {
-            return trim($m, '?');
-        }, $matches[1]);
-    }
-
-    /**
-     * Get the parameters that are listed in the route / controller signature.
-     *
-     * @param  string|null  $subClass
-     * @return array
-     */
-    public function signatureParameters($subClass = null)
-    {
-        return RouteSignatureParameters::fromAction($this->action, $subClass);
-    }
-
-    /**
-     * Get the binding field for the given parameter.
-     *
-     * @param  string|int  $parameter
-     * @return string|null
-     */
-    public function bindingFieldFor($parameter)
-    {
-        $fields = is_int($parameter) ? array_values($this->bindingFields) : $this->bindingFields;
-
-        return $fields[$parameter] ?? null;
-    }
-
-    /**
-     * Get the binding fields for the route.
-     *
-     * @return array
-     */
-    public function bindingFields()
-    {
-        return $this->bindingFields ?? [];
-    }
-
-    /**
-     * Set the binding fields for the route.
-     *
-     * @param  array  $bindingFields
-     * @return $this
-     */
-    public function setBindingFields(array $bindingFields)
-    {
-        $this->bindingFields = $bindingFields;
-
-        return $this;
-    }
-
-    /**
-     * Get the parent parameter of the given parameter.
-     *
-     * @param  string  $parameter
-     * @return string
-     */
-    public function parentOfParameter($parameter)
-    {
-        $key = array_search($parameter, array_keys($this->parameters));
-
-        if ($key === 0) {
-            return;
-        }
-
-        return array_values($this->parameters)[$key - 1];
-    }
-
-    /**
-     * Set a default value for the route.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @return $this
-     */
-    public function defaults($key, $value)
-    {
-        $this->defaults[$key] = $value;
-
-        return $this;
-    }
-
-    /**
-     * Set the default values for the route.
-     *
-     * @param  array  $defaults
-     * @return $this
-     */
-    public function setDefaults(array $defaults)
-    {
-        $this->defaults = $defaults;
-
-        return $this;
-    }
-
-    /**
-     * Set a regular expression requirement on the route.
-     *
-     * @param  array|string  $name
-     * @param  string|null  $expression
-     * @return $this
-     */
-    public function where($name, $expression = null)
-    {
-        foreach ($this->parseWhere($name, $expression) as $name => $expression) {
-            $this->wheres[$name] = $expression;
-        }
-
-        return $this;
-    }
-
-    /**
-     * Parse arguments to the where method into an array.
-     *
-     * @param  array|string  $name
-     * @param  string  $expression
-     * @return array
-     */
-    protected function parseWhere($name, $expression)
-    {
-        return is_array($name) ? $name : [$name => $expression];
-    }
-
-    /**
-     * Set a list of regular expression requirements on the route.
-     *
-     * @param  array  $wheres
-     * @return $this
-     */
-    public function setWheres(array $wheres)
-    {
-        foreach ($wheres as $name => $expression) {
-            $this->where($name, $expression);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Mark this route as a fallback route.
-     *
-     * @return $this
-     */
-    public function fallback()
-    {
-        $this->isFallback = true;
-
-        return $this;
-    }
-
-    /**
-     * Set the fallback value.
-     *
-     * @param  bool  $isFallback
-     * @return $this
-     */
-    public function setFallback($isFallback)
-    {
-        $this->isFallback = $isFallback;
-
-        return $this;
-    }
-
-    /**
-     * Get the HTTP verbs the route responds to.
-     *
-     * @return array
-     */
-    public function methods()
-    {
-        return $this->methods;
-    }
-
-    /**
-     * Determine if the route only responds to HTTP requests.
-     *
-     * @return bool
-     */
-    public function httpOnly()
-    {
-        return in_array('http', $this->action, true);
-    }
-
-    /**
-     * Determine if the route only responds to HTTPS requests.
-     *
-     * @return bool
-     */
-    public function httpsOnly()
-    {
-        return $this->secure();
-    }
-
-    /**
-     * Determine if the route only responds to HTTPS requests.
-     *
-     * @return bool
-     */
-    public function secure()
-    {
-        return in_array('https', $this->action, true);
-    }
-
-    /**
-     * Get or set the domain for the route.
-     *
-     * @param  string|null  $domain
-     * @return $this|string|null
-     */
-    public function domain($domain = null)
-    {
-        if (is_null($domain)) {
-            return $this->getDomain();
-        }
-
-        $parsed = RouteUri::parse($domain);
-
-        $this->action['domain'] = $parsed->uri;
-
-        $this->bindingFields = array_merge(
-            $this->bindingFields, $parsed->bindingFields
-        );
-
-        return $this;
-    }
-
-    /**
-     * Get the domain defined for the route.
-     *
-     * @return string|null
-     */
-    public function getDomain()
-    {
-        return isset($this->action['domain'])
-                ? str_replace(['http://', 'https://'], '', $this->action['domain']) : null;
-    }
-
-    /**
-     * Get the prefix of the route instance.
-     *
-     * @return string|null
-     */
-    public function getPrefix()
-    {
-        return $this->action['prefix'] ?? null;
-    }
-
-    /**
-     * Add a prefix to the route URI.
-     *
-     * @param  string  $prefix
-     * @return $this
-     */
-    public function prefix($prefix)
-    {
-        $this->updatePrefixOnAction($prefix);
-
-        $uri = rtrim($prefix, '/').'/'.ltrim($this->uri, '/');
-
-        return $this->setUri($uri !== '/' ? trim($uri, '/') : $uri);
-    }
-
-    /**
-     * Update the "prefix" attribute on the action array.
-     *
-     * @param  string  $prefix
-     * @return void
-     */
-    protected function updatePrefixOnAction($prefix)
-    {
-        if (! empty($newPrefix = trim(rtrim($prefix, '/').'/'.ltrim($this->action['prefix'] ?? '', '/'), '/'))) {
-            $this->action['prefix'] = $newPrefix;
-        }
-    }
-
-    /**
-     * Get the URI associated with the route.
-     *
-     * @return string
-     */
-    public function uri()
-    {
-        return $this->uri;
-    }
-
-    /**
-     * Set the URI that the route responds to.
-     *
-     * @param  string  $uri
-     * @return $this
-     */
-    public function setUri($uri)
-    {
-        $this->uri = $this->parseUri($uri);
-
-        return $this;
-    }
-
-    /**
-     * Parse the route URI and normalize / store any implicit binding fields.
-     *
-     * @param  string  $uri
-     * @return string
-     */
-    protected function parseUri($uri)
-    {
-        $this->bindingFields = [];
-
-        return tap(RouteUri::parse($uri), function ($uri) {
-            $this->bindingFields = $uri->bindingFields;
-        })->uri;
-    }
-
-    /**
-     * Get the name of the route instance.
-     *
-     * @return string|null
-     */
-    public function getName()
-    {
-        return $this->action['as'] ?? null;
-    }
-
-    /**
-     * Add or change the route name.
-     *
-     * @param  string  $name
-     * @return $this
-     */
-    public function name($name)
-    {
-        $this->action['as'] = isset($this->action['as']) ? $this->action['as'].$name : $name;
-
-        return $this;
-    }
-
-    /**
-     * Determine whether the route's name matches the given patterns.
-     *
-     * @param  mixed  ...$patterns
-     * @return bool
-     */
-    public function named(...$patterns)
-    {
-        if (is_null($routeName = $this->getName())) {
-            return false;
-        }
-
-        foreach ($patterns as $pattern) {
-            if (Str::is($pattern, $routeName)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Set the handler for the route.
-     *
-     * @param  \Closure|array|string  $action
-     * @return $this
-     */
-    public function uses($action)
-    {
-        if (is_array($action)) {
-            $action = $action[0].'@'.$action[1];
-        }
-
-        $action = is_string($action) ? $this->addGroupNamespaceToStringUses($action) : $action;
-
-        return $this->setAction(array_merge($this->action, $this->parseAction([
-            'uses' => $action,
-            'controller' => $action,
-        ])));
-    }
-
-    /**
-     * Parse a string based action for the "uses" fluent method.
-     *
-     * @param  string  $action
-     * @return string
-     */
-    protected function addGroupNamespaceToStringUses($action)
-    {
-        $groupStack = last($this->router->getGroupStack());
-
-        if (isset($groupStack['namespace']) && strpos($action, '\\') !== 0) {
-            return $groupStack['namespace'].'\\'.$action;
-        }
-
-        return $action;
-    }
-
-    /**
-     * Get the action name for the route.
-     *
-     * @return string
-     */
-    public function getActionName()
-    {
-        return $this->action['controller'] ?? 'Closure';
-    }
-
-    /**
-     * Get the method name of the route action.
-     *
-     * @return string
-     */
-    public function getActionMethod()
-    {
-        return Arr::last(explode('@', $this->getActionName()));
-    }
-
-    /**
-     * Get the action array or one of its properties for the route.
-     *
-     * @param  string|null  $key
-     * @return mixed
-     */
-    public function getAction($key = null)
-    {
-        return Arr::get($this->action, $key);
-    }
-
-    /**
-     * Set the action array for the route.
-     *
-     * @param  array  $action
-     * @return $this
-     */
-    public function setAction(array $action)
-    {
-        $this->action = $action;
-
-        if (isset($this->action['domain'])) {
-            $this->domain($this->action['domain']);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Get all middleware, including the ones from the controller.
-     *
-     * @return array
-     */
-    public function gatherMiddleware()
-    {
-        if (! is_null($this->computedMiddleware)) {
-            return $this->computedMiddleware;
-        }
-
-        $this->computedMiddleware = [];
-
-        return $this->computedMiddleware = Router::uniqueMiddleware(array_merge(
-            $this->middleware(), $this->controllerMiddleware()
-        ));
-    }
-
-    /**
-     * Get or set the middlewares attached to the route.
-     *
-     * @param  array|string|null  $middleware
-     * @return $this|array
-     */
-    public function middleware($middleware = null)
-    {
-        if (is_null($middleware)) {
-            return (array) ($this->action['middleware'] ?? []);
-        }
-
-        if (is_string($middleware)) {
-            $middleware = func_get_args();
-        }
-
-        $this->action['middleware'] = array_merge(
-            (array) ($this->action['middleware'] ?? []), $middleware
-        );
-
-        return $this;
-    }
-
-    /**
-     * Get the middleware for the route's controller.
-     *
-     * @return array
-     */
-    public function controllerMiddleware()
-    {
-        if (! $this->isControllerAction()) {
-            return [];
-        }
-
-        return $this->controllerDispatcher()->getMiddleware(
-            $this->getController(), $this->getControllerMethod()
-        );
-    }
-
-    /**
-     * Specify middleware that should be removed from the given route.
-     *
-     * @param  array|string  $middleware
-     * @return $this|array
-     */
-    public function withoutMiddleware($middleware)
-    {
-        $this->action['excluded_middleware'] = array_merge(
-            (array) ($this->action['excluded_middleware'] ?? []), Arr::wrap($middleware)
-        );
-
-        return $this;
-    }
-
-    /**
-     * Get the middleware should be removed from the route.
-     *
-     * @return array
-     */
-    public function excludedMiddleware()
-    {
-        return (array) ($this->action['excluded_middleware'] ?? []);
-    }
-
-    /**
-     * Specify that the route should not allow concurrent requests from the same session.
-     *
-     * @param  int|null  $lockSeconds
-     * @param  int|null  $waitSeconds
-     * @return $this
-     */
-    public function block($lockSeconds = 10, $waitSeconds = 10)
-    {
-        $this->lockSeconds = $lockSeconds;
-        $this->waitSeconds = $waitSeconds;
-
-        return $this;
-    }
-
-    /**
-     * Specify that the route should allow concurrent requests from the same session.
-     *
-     * @return $this
-     */
-    public function withoutBlocking()
-    {
-        return $this->block(null, null);
-    }
-
-    /**
-     * Get the maximum number of seconds the route's session lock should be held for.
-     *
-     * @return int|null
-     */
-    public function locksFor()
-    {
-        return $this->lockSeconds;
-    }
-
-    /**
-     * Get the maximum number of seconds to wait while attempting to acquire a session lock.
-     *
-     * @return int|null
-     */
-    public function waitsFor()
-    {
-        return $this->waitSeconds;
-    }
-
-    /**
-     * Get the dispatcher for the route's controller.
-     *
-     * @return \Illuminate\Routing\Contracts\ControllerDispatcher
-     */
-    public function controllerDispatcher()
-    {
-        if ($this->container->bound(ControllerDispatcherContract::class)) {
-            return $this->container->make(ControllerDispatcherContract::class);
-        }
-
-        return new ControllerDispatcher($this->container);
-    }
-
-    /**
-     * Get the route validators for the instance.
-     *
-     * @return array
-     */
-    public static function getValidators()
-    {
-        if (isset(static::$validators)) {
-            return static::$validators;
-        }
-
-        // To match the route, we will use a chain of responsibility pattern with the
-        // validator implementations. We will spin through each one making sure it
-        // passes and then we will know if the route as a whole matches request.
-        return static::$validators = [
-            new UriValidator, new MethodValidator,
-            new SchemeValidator, new HostValidator,
-        ];
-    }
-
-    /**
-     * Convert the route to a Symfony route.
-     *
-     * @return \Symfony\Component\Routing\Route
-     */
-    public function toSymfonyRoute()
-    {
-        return new SymfonyRoute(
-            preg_replace('/\{(\w+?)\?\}/', '{$1}', $this->uri()), $this->getOptionalParameterNames(),
-            $this->wheres, ['utf8' => true, 'action' => $this->action],
-            $this->getDomain() ?: '', [], $this->methods
-        );
-    }
-
-    /**
-     * Get the optional parameter names for the route.
-     *
-     * @return array
-     */
-    protected function getOptionalParameterNames()
-    {
-        preg_match_all('/\{(\w+?)\?\}/', $this->uri(), $matches);
-
-        return isset($matches[1]) ? array_fill_keys($matches[1], null) : [];
-    }
-
-    /**
-     * Get the compiled version of the route.
-     *
-     * @return \Symfony\Component\Routing\CompiledRoute
-     */
-    public function getCompiled()
-    {
-        return $this->compiled;
-    }
-
-    /**
-     * Set the router instance on the route.
-     *
-     * @param  \Illuminate\Routing\Router  $router
-     * @return $this
-     */
-    public function setRouter(Router $router)
-    {
-        $this->router = $router;
-
-        return $this;
-    }
-
-    /**
-     * Set the container instance on the route.
-     *
-     * @param  \Illuminate\Container\Container  $container
-     * @return $this
-     */
-    public function setContainer(Container $container)
-    {
-        $this->container = $container;
-
-        return $this;
-    }
-
-    /**
-     * Prepare the route instance for serialization.
-     *
-     * @return void
-     *
-     * @throws \LogicException
-     */
-    public function prepareForSerialization()
-    {
-        if ($this->action['uses'] instanceof Closure) {
-            $this->action['uses'] = serialize(new SerializableClosure($this->action['uses']));
-
-            // throw new LogicException("Unable to prepare route [{$this->uri}] for serialization. Uses Closure.");
-        }
-
-        $this->compileRoute();
-
-        unset($this->router, $this->container);
-    }
-
-    /**
-     * Dynamically access route parameters.
-     *
-     * @param  string  $key
-     * @return mixed
-     */
-    public function __get($key)
-    {
-        return $this->parameter($key);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

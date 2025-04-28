@@ -1,132 +1,84 @@
-<?php
-
-namespace XdgBaseDir;
-
-/**
- * Simple implementation of the XDG standard http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html
- *
- * Based on the python implementation https://github.com/takluyver/pyxdg/blob/master/xdg/BaseDirectory.py
- */
-class Xdg
-{
-    const S_IFDIR = 040000; // directory
-    const S_IRWXO = 00007;  // rwx other
-    const S_IRWXG = 00056;  // rwx group
-    const RUNTIME_DIR_FALLBACK = 'php-xdg-runtime-dir-fallback-';
-
-    /**
-     * @return string
-     */
-    public function getHomeDir()
-    {
-        return getenv('HOME') ?: (getenv('HOMEDRIVE') . DIRECTORY_SEPARATOR . getenv('HOMEPATH'));
-    }
-
-    /**
-     * @return string
-     */
-    public function getHomeConfigDir()
-    {
-        if ($path = getenv('XDG_CONFIG_HOME')) {
-            return $path;
-        }
-
-        $homeDir = $this->getHomeDir();
-
-        $path = DIRECTORY_SEPARATOR === $homeDir ? $homeDir.'.config' : $homeDir . DIRECTORY_SEPARATOR . '.config';
-
-        return $path;
-    }
-
-    /**
-     * @return string
-     */
-    public function getHomeDataDir()
-    {
-        $path = getenv('XDG_DATA_HOME') ?: $this->getHomeDir() . DIRECTORY_SEPARATOR . '.local' . DIRECTORY_SEPARATOR . 'share';
-
-        return $path;
-    }
-
-    /**
-     * @return array
-     */
-    public function getConfigDirs()
-    {
-        $configDirs = getenv('XDG_CONFIG_DIRS') ? explode(':', getenv('XDG_CONFIG_DIRS')) : array('/etc/xdg');
-
-        $paths = array_merge(array($this->getHomeConfigDir()), $configDirs);
-
-        return $paths;
-    }
-
-    /**
-     * @return array
-     */
-    public function getDataDirs()
-    {
-        $dataDirs = getenv('XDG_DATA_DIRS') ? explode(':', getenv('XDG_DATA_DIRS')) : array('/usr/local/share', '/usr/share');
-
-        $paths = array_merge(array($this->getHomeDataDir()), $dataDirs);
-
-        return $paths;
-    }
-
-    /**
-     * @return string
-     */
-    public function getHomeCacheDir()
-    {
-        $path = getenv('XDG_CACHE_HOME') ?: $this->getHomeDir() . DIRECTORY_SEPARATOR . '.cache';
-
-        return $path;
-
-    }
-
-    public function getRuntimeDir($strict=true)
-    {
-        if ($runtimeDir = getenv('XDG_RUNTIME_DIR')) {
-            return $runtimeDir;
-        }
-
-        if ($strict) {
-            throw new \RuntimeException('XDG_RUNTIME_DIR was not set');
-        }
-
-        $fallback = sys_get_temp_dir() . DIRECTORY_SEPARATOR . self::RUNTIME_DIR_FALLBACK . getenv('USER');
-
-        $create = false;
-
-        if (!is_dir($fallback)) {
-            mkdir($fallback, 0700, true);
-        }
-
-        $st = lstat($fallback);
-
-        # The fallback must be a directory
-        if (!$st['mode'] & self::S_IFDIR) {
-            rmdir($fallback);
-            $create = true;
-        } elseif ($st['uid'] != $this->getUid() ||
-            $st['mode'] & (self::S_IRWXG | self::S_IRWXO)
-        ) {
-            rmdir($fallback);
-            $create = true;
-        }
-
-        if ($create) {
-            mkdir($fallback, 0700, true);
-        }
-
-        return $fallback;
-    }
-
-    private function getUid()
-    {
-        if (function_exists('posix_getuid')) {
-            return posix_getuid();
-        }
-
-        return getmyuid();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

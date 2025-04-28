@@ -1,83 +1,54 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\CodeCleaner;
-
-use PhpParser\Node;
-use PhpParser\Node\Expr\ConstFetch;
-use PhpParser\Node\Expr\FuncCall;
-use PhpParser\Node\Name;
-use PhpParser\Node\Stmt\Class_;
-use PhpParser\Node\Stmt\Trait_;
-use Psy\Exception\ErrorException;
-
-/**
- * The called class pass throws warnings for get_class() and get_called_class()
- * outside a class context.
- */
-class CalledClassPass extends CodeCleanerPass
-{
-    private $inClass;
-
-    /**
-     * @param array $nodes
-     */
-    public function beforeTraverse(array $nodes)
-    {
-        $this->inClass = false;
-    }
-
-    /**
-     * @throws ErrorException if get_class or get_called_class is called without an object from outside a class
-     *
-     * @param Node $node
-     */
-    public function enterNode(Node $node)
-    {
-        if ($node instanceof Class_ || $node instanceof Trait_) {
-            $this->inClass = true;
-        } elseif ($node instanceof FuncCall && !$this->inClass) {
-            // We'll give any args at all (besides null) a pass.
-            // Technically we should be checking whether the args are objects, but this will do for now.
-            //
-            // @todo switch this to actually validate args when we get context-aware code cleaner passes.
-            if (!empty($node->args) && !$this->isNull($node->args[0])) {
-                return;
-            }
-
-            // We'll ignore name expressions as well (things like `$foo()`)
-            if (!($node->name instanceof Name)) {
-                return;
-            }
-
-            $name = \strtolower($node->name);
-            if (\in_array($name, ['get_class', 'get_called_class'])) {
-                $msg = \sprintf('%s() called without object from outside a class', $name);
-                throw new ErrorException($msg, 0, \E_USER_WARNING, null, $node->getLine());
-            }
-        }
-    }
-
-    /**
-     * @param Node $node
-     */
-    public function leaveNode(Node $node)
-    {
-        if ($node instanceof Class_) {
-            $this->inClass = false;
-        }
-    }
-
-    private function isNull(Node $node)
-    {
-        return $node->value instanceof ConstFetch && \strtolower($node->value->name) === 'null';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,240 +1,113 @@
-<?php
-
-namespace TijsVerkoyen\CssToInlineStyles;
-
-use Symfony\Component\CssSelector\CssSelector;
-use Symfony\Component\CssSelector\CssSelectorConverter;
-use Symfony\Component\CssSelector\Exception\ExceptionInterface;
-use TijsVerkoyen\CssToInlineStyles\Css\Processor;
-use TijsVerkoyen\CssToInlineStyles\Css\Property\Processor as PropertyProcessor;
-use TijsVerkoyen\CssToInlineStyles\Css\Rule\Processor as RuleProcessor;
-
-class CssToInlineStyles
-{
-    private $cssConverter;
-
-    public function __construct()
-    {
-        if (class_exists('Symfony\Component\CssSelector\CssSelectorConverter')) {
-            $this->cssConverter = new CssSelectorConverter();
-        }
-    }
-
-    /**
-     * Will inline the $css into the given $html
-     *
-     * Remark: if the html contains <style>-tags those will be used, the rules
-     * in $css will be appended.
-     *
-     * @param string $html
-     * @param string $css
-     *
-     * @return string
-     */
-    public function convert($html, $css = null)
-    {
-        $document = $this->createDomDocumentFromHtml($html);
-        $processor = new Processor();
-
-        // get all styles from the style-tags
-        $rules = $processor->getRules(
-            $processor->getCssFromStyleTags($html)
-        );
-
-        if ($css !== null) {
-            $rules = $processor->getRules($css, $rules);
-        }
-
-        $document = $this->inline($document, $rules);
-
-        return $this->getHtmlFromDocument($document);
-    }
-
-    /**
-     * Inline the given properties on an given DOMElement
-     *
-     * @param \DOMElement             $element
-     * @param Css\Property\Property[] $properties
-     *
-     * @return \DOMElement
-     */
-    public function inlineCssOnElement(\DOMElement $element, array $properties)
-    {
-        if (empty($properties)) {
-            return $element;
-        }
-
-        $cssProperties = array();
-        $inlineProperties = array();
-
-        foreach ($this->getInlineStyles($element) as $property) {
-            $inlineProperties[$property->getName()] = $property;
-        }
-
-        foreach ($properties as $property) {
-            if (!isset($inlineProperties[$property->getName()])) {
-                $cssProperties[$property->getName()] = $property;
-            }
-        }
-
-        $rules = array();
-        foreach (array_merge($cssProperties, $inlineProperties) as $property) {
-            $rules[] = $property->toString();
-        }
-        $element->setAttribute('style', implode(' ', $rules));
-
-        return $element;
-    }
-
-    /**
-     * Get the current inline styles for a given DOMElement
-     *
-     * @param \DOMElement $element
-     *
-     * @return Css\Property\Property[]
-     */
-    public function getInlineStyles(\DOMElement $element)
-    {
-        $processor = new PropertyProcessor();
-
-        return $processor->convertArrayToObjects(
-            $processor->splitIntoSeparateProperties(
-                $element->getAttribute('style')
-            )
-        );
-    }
-
-    /**
-     * @param string $html
-     *
-     * @return \DOMDocument
-     */
-    protected function createDomDocumentFromHtml($html)
-    {
-        $document = new \DOMDocument('1.0', 'UTF-8');
-        $internalErrors = libxml_use_internal_errors(true);
-        $document->loadHTML(mb_convert_encoding($html, 'HTML-ENTITIES', 'UTF-8'));
-        libxml_use_internal_errors($internalErrors);
-        $document->formatOutput = true;
-
-        return $document;
-    }
-
-    /**
-     * @param \DOMDocument $document
-     *
-     * @return string
-     */
-    protected function getHtmlFromDocument(\DOMDocument $document)
-    {
-        // retrieve the document element
-        // we do it this way to preserve the utf-8 encoding
-        $htmlElement = $document->documentElement;
-        $html = $document->saveHTML($htmlElement);
-        $html = trim($html);
-
-        // retrieve the doctype
-        $document->removeChild($htmlElement);
-        $doctype = $document->saveHTML();
-        $doctype = trim($doctype);
-
-        // if it is the html5 doctype convert it to lowercase
-        if ($doctype === '<!DOCTYPE html>') {
-            $doctype = strtolower($doctype);
-        }
-
-        return $doctype."\n".$html;
-    }
-
-    /**
-     * @param \DOMDocument    $document
-     * @param Css\Rule\Rule[] $rules
-     *
-     * @return \DOMDocument
-     */
-    protected function inline(\DOMDocument $document, array $rules)
-    {
-        if (empty($rules)) {
-            return $document;
-        }
-
-        $propertyStorage = new \SplObjectStorage();
-
-        $xPath = new \DOMXPath($document);
-
-        usort($rules, array(RuleProcessor::class, 'sortOnSpecificity'));
-
-        foreach ($rules as $rule) {
-            try {
-                if (null !== $this->cssConverter) {
-                    $expression = $this->cssConverter->toXPath($rule->getSelector());
-                } else {
-                    // Compatibility layer for Symfony 2.7 and older
-                    $expression = CssSelector::toXPath($rule->getSelector());
-                }
-            } catch (ExceptionInterface $e) {
-                continue;
-            }
-
-            $elements = $xPath->query($expression);
-
-            if ($elements === false) {
-                continue;
-            }
-
-            foreach ($elements as $element) {
-                $propertyStorage[$element] = $this->calculatePropertiesToBeApplied(
-                    $rule->getProperties(),
-                    $propertyStorage->contains($element) ? $propertyStorage[$element] : array()
-                );
-            }
-        }
-
-        foreach ($propertyStorage as $element) {
-            $this->inlineCssOnElement($element, $propertyStorage[$element]);
-        }
-
-        return $document;
-    }
-
-    /**
-     * Merge the CSS rules to determine the applied properties.
-     *
-     * @param Css\Property\Property[] $properties
-     * @param Css\Property\Property[] $cssProperties existing applied properties indexed by name
-     *
-     * @return Css\Property\Property[] updated properties, indexed by name
-     */
-    private function calculatePropertiesToBeApplied(array $properties, array $cssProperties)
-    {
-        if (empty($properties)) {
-            return $cssProperties;
-        }
-
-        foreach ($properties as $property) {
-            if (isset($cssProperties[$property->getName()])) {
-                $existingProperty = $cssProperties[$property->getName()];
-
-                //skip check to overrule if existing property is important and current is not
-                if ($existingProperty->isImportant() && !$property->isImportant()) {
-                    continue;
-                }
-
-                //overrule if current property is important and existing is not, else check specificity
-                $overrule = !$existingProperty->isImportant() && $property->isImportant();
-                if (!$overrule) {
-                    $overrule = $existingProperty->getOriginalSpecificity()->compareTo($property->getOriginalSpecificity()) <= 0;
-                }
-
-                if ($overrule) {
-                    unset($cssProperties[$property->getName()]);
-                    $cssProperties[$property->getName()] = $property;
-                }
-            } else {
-                $cssProperties[$property->getName()] = $property;
-            }
-        }
-
-        return $cssProperties;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

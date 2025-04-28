@@ -1,78 +1,35 @@
-<?php
-
-/*
- * This file is part of SwiftMailer.
- * (c) 2004-2009 Chris Corbyn
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-/**
- * General utility class in Swift Mailer, not to be instantiated.
- *
- * @author Chris Corbyn
- */
-abstract class Swift
-{
-    const VERSION = '6.2.5-DEV';
-
-    public static $initialized = false;
-    public static $inits = [];
-
-    /**
-     * Registers an initializer callable that will be called the first time
-     * a SwiftMailer class is autoloaded.
-     *
-     * This enables you to tweak the default configuration in a lazy way.
-     *
-     * @param mixed $callable A valid PHP callable that will be called when autoloading the first Swift class
-     */
-    public static function init($callable)
-    {
-        self::$inits[] = $callable;
-    }
-
-    /**
-     * Internal autoloader for spl_autoload_register().
-     *
-     * @param string $class
-     */
-    public static function autoload($class)
-    {
-        // Don't interfere with other autoloaders
-        if (0 !== strpos($class, 'Swift_')) {
-            return;
-        }
-
-        $path = __DIR__.'/'.str_replace('_', '/', $class).'.php';
-
-        if (!file_exists($path)) {
-            return;
-        }
-
-        require $path;
-
-        if (self::$inits && !self::$initialized) {
-            self::$initialized = true;
-            foreach (self::$inits as $init) {
-                \call_user_func($init);
-            }
-        }
-    }
-
-    /**
-     * Configure autoloading using Swift Mailer.
-     *
-     * This is designed to play nicely with other autoloaders.
-     *
-     * @param mixed $callable A valid PHP callable that will be called when autoloading the first Swift class
-     */
-    public static function registerAutoload($callable = null)
-    {
-        if (null !== $callable) {
-            self::$inits[] = $callable;
-        }
-        spl_autoload_register(['Swift', 'autoload']);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,75 +1,45 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Runner\Extension;
-
-use PharIo\Manifest\ApplicationName;
-use PharIo\Manifest\Exception as ManifestException;
-use PharIo\Manifest\ManifestLoader;
-use PharIo\Version\Version as PharIoVersion;
-use PHPUnit\Runner\Version;
-use SebastianBergmann\FileIterator\Facade as FileIteratorFacade;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for PHPUnit
- */
-final class PharLoader
-{
-    /**
-     * @psalm-return array{loadedExtensions: list<string>, notLoadedExtensions: list<string>}
-     */
-    public function loadPharExtensionsInDirectory(string $directory): array
-    {
-        $loadedExtensions    = [];
-        $notLoadedExtensions = [];
-
-        foreach ((new FileIteratorFacade)->getFilesAsArray($directory, '.phar') as $file) {
-            if (!is_file('phar://' . $file . '/manifest.xml')) {
-                $notLoadedExtensions[] = $file . ' is not an extension for PHPUnit';
-
-                continue;
-            }
-
-            try {
-                $applicationName = new ApplicationName('phpunit/phpunit');
-                $version         = new PharIoVersion(Version::series());
-                $manifest        = ManifestLoader::fromFile('phar://' . $file . '/manifest.xml');
-
-                if (!$manifest->isExtensionFor($applicationName)) {
-                    $notLoadedExtensions[] = $file . ' is not an extension for PHPUnit';
-
-                    continue;
-                }
-
-                if (!$manifest->isExtensionFor($applicationName, $version)) {
-                    $notLoadedExtensions[] = $file . ' is not compatible with this version of PHPUnit';
-
-                    continue;
-                }
-            } catch (ManifestException $e) {
-                $notLoadedExtensions[] = $file . ': ' . $e->getMessage();
-
-                continue;
-            }
-
-            /**
-             * @noinspection PhpIncludeInspection
-             * @psalm-suppress UnresolvableInclude
-             */
-            require $file;
-
-            $loadedExtensions[] = $manifest->getName()->asString() . ' ' . $manifest->getVersion()->getVersionString();
-        }
-
-        return [
-            'loadedExtensions'    => $loadedExtensions,
-            'notLoadedExtensions' => $notLoadedExtensions,
-        ];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

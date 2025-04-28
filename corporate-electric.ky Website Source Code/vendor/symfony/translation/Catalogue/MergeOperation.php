@@ -1,58 +1,52 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Translation\Catalogue;
-
-use Symfony\Component\Translation\MessageCatalogueInterface;
-
-/**
- * Merge operation between two catalogues as follows:
- * all = source ∪ target = {x: x ∈ source ∨ x ∈ target}
- * new = all ∖ source = {x: x ∈ target ∧ x ∉ source}
- * obsolete = source ∖ all = {x: x ∈ source ∧ x ∉ source ∧ x ∉ target} = ∅
- * Basically, the result contains messages from both catalogues.
- *
- * @author Jean-François Simon <contact@jfsimon.fr>
- */
-class MergeOperation extends AbstractOperation
-{
-    /**
-     * {@inheritdoc}
-     */
-    protected function processDomain(string $domain)
-    {
-        $this->messages[$domain] = [
-            'all' => [],
-            'new' => [],
-            'obsolete' => [],
-        ];
-        $intlDomain = $domain.MessageCatalogueInterface::INTL_DOMAIN_SUFFIX;
-
-        foreach ($this->source->all($domain) as $id => $message) {
-            $this->messages[$domain]['all'][$id] = $message;
-            $this->result->add([$id => $message], $this->source->defines($id, $intlDomain) ? $intlDomain : $domain);
-            if (null !== $keyMetadata = $this->source->getMetadata($id, $domain)) {
-                $this->result->setMetadata($id, $keyMetadata, $domain);
-            }
-        }
-
-        foreach ($this->target->all($domain) as $id => $message) {
-            if (!$this->source->has($id, $domain)) {
-                $this->messages[$domain]['all'][$id] = $message;
-                $this->messages[$domain]['new'][$id] = $message;
-                $this->result->add([$id => $message], $this->target->defines($id, $intlDomain) ? $intlDomain : $domain);
-                if (null !== $keyMetadata = $this->target->getMetadata($id, $domain)) {
-                    $this->result->setMetadata($id, $keyMetadata, $domain);
-                }
-            }
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+xOG/KWGGLrLQ1ZedCzIZvG77uG==

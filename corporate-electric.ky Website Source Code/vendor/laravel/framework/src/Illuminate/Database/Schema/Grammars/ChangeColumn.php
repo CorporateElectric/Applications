@@ -1,247 +1,109 @@
-<?php
-
-namespace Illuminate\Database\Schema\Grammars;
-
-use Doctrine\DBAL\Schema\AbstractSchemaManager as SchemaManager;
-use Doctrine\DBAL\Schema\Comparator;
-use Doctrine\DBAL\Schema\Table;
-use Doctrine\DBAL\Types\Type;
-use Illuminate\Database\Connection;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Fluent;
-use RuntimeException;
-
-class ChangeColumn
-{
-    /**
-     * Compile a change column command into a series of SQL statements.
-     *
-     * @param  \Illuminate\Database\Schema\Grammars\Grammar  $grammar
-     * @param  \Illuminate\Database\Schema\Blueprint  $blueprint
-     * @param  \Illuminate\Support\Fluent  $command
-     * @param  \Illuminate\Database\Connection  $connection
-     * @return array
-     *
-     * @throws \RuntimeException
-     */
-    public static function compile($grammar, Blueprint $blueprint, Fluent $command, Connection $connection)
-    {
-        if (! $connection->isDoctrineAvailable()) {
-            throw new RuntimeException(sprintf(
-                'Changing columns for table "%s" requires Doctrine DBAL. Please install the doctrine/dbal package.',
-                $blueprint->getTable()
-            ));
-        }
-
-        $schema = $connection->getDoctrineSchemaManager();
-        $databasePlatform = $schema->getDatabasePlatform();
-        $databasePlatform->registerDoctrineTypeMapping('enum', 'string');
-
-        $tableDiff = static::getChangedDiff(
-            $grammar, $blueprint, $schema
-        );
-
-        if ($tableDiff !== false) {
-            return (array) $databasePlatform->getAlterTableSQL($tableDiff);
-        }
-
-        return [];
-    }
-
-    /**
-     * Get the Doctrine table difference for the given changes.
-     *
-     * @param  \Illuminate\Database\Schema\Grammars\Grammar  $grammar
-     * @param  \Illuminate\Database\Schema\Blueprint  $blueprint
-     * @param  \Doctrine\DBAL\Schema\AbstractSchemaManager  $schema
-     * @return \Doctrine\DBAL\Schema\TableDiff|bool
-     */
-    protected static function getChangedDiff($grammar, Blueprint $blueprint, SchemaManager $schema)
-    {
-        $current = $schema->listTableDetails($grammar->getTablePrefix().$blueprint->getTable());
-
-        return (new Comparator)->diffTable(
-            $current, static::getTableWithColumnChanges($blueprint, $current)
-        );
-    }
-
-    /**
-     * Get a copy of the given Doctrine table after making the column changes.
-     *
-     * @param  \Illuminate\Database\Schema\Blueprint  $blueprint
-     * @param  \Doctrine\DBAL\Schema\Table  $table
-     * @return \Doctrine\DBAL\Schema\Table
-     */
-    protected static function getTableWithColumnChanges(Blueprint $blueprint, Table $table)
-    {
-        $table = clone $table;
-
-        foreach ($blueprint->getChangedColumns() as $fluent) {
-            $column = static::getDoctrineColumn($table, $fluent);
-
-            // Here we will spin through each fluent column definition and map it to the proper
-            // Doctrine column definitions - which is necessary because Laravel and Doctrine
-            // use some different terminology for various column attributes on the tables.
-            foreach ($fluent->getAttributes() as $key => $value) {
-                if (! is_null($option = static::mapFluentOptionToDoctrine($key))) {
-                    if (method_exists($column, $method = 'set'.ucfirst($option))) {
-                        $column->{$method}(static::mapFluentValueToDoctrine($option, $value));
-                        continue;
-                    }
-
-                    $column->setCustomSchemaOption($option, static::mapFluentValueToDoctrine($option, $value));
-                }
-            }
-        }
-
-        return $table;
-    }
-
-    /**
-     * Get the Doctrine column instance for a column change.
-     *
-     * @param  \Doctrine\DBAL\Schema\Table  $table
-     * @param  \Illuminate\Support\Fluent  $fluent
-     * @return \Doctrine\DBAL\Schema\Column
-     */
-    protected static function getDoctrineColumn(Table $table, Fluent $fluent)
-    {
-        return $table->changeColumn(
-            $fluent['name'], static::getDoctrineColumnChangeOptions($fluent)
-        )->getColumn($fluent['name']);
-    }
-
-    /**
-     * Get the Doctrine column change options.
-     *
-     * @param  \Illuminate\Support\Fluent  $fluent
-     * @return array
-     */
-    protected static function getDoctrineColumnChangeOptions(Fluent $fluent)
-    {
-        $options = ['type' => static::getDoctrineColumnType($fluent['type'])];
-
-        if (in_array($fluent['type'], ['text', 'mediumText', 'longText'])) {
-            $options['length'] = static::calculateDoctrineTextLength($fluent['type']);
-        }
-
-        if (static::doesntNeedCharacterOptions($fluent['type'])) {
-            $options['customSchemaOptions'] = [
-                'collation' => '',
-                'charset' => '',
-            ];
-        }
-
-        return $options;
-    }
-
-    /**
-     * Get the doctrine column type.
-     *
-     * @param  string  $type
-     * @return \Doctrine\DBAL\Types\Type
-     */
-    protected static function getDoctrineColumnType($type)
-    {
-        $type = strtolower($type);
-
-        switch ($type) {
-            case 'biginteger':
-                $type = 'bigint';
-                break;
-            case 'smallinteger':
-                $type = 'smallint';
-                break;
-            case 'mediumtext':
-            case 'longtext':
-                $type = 'text';
-                break;
-            case 'binary':
-                $type = 'blob';
-                break;
-            case 'uuid':
-                $type = 'guid';
-                break;
-        }
-
-        return Type::getType($type);
-    }
-
-    /**
-     * Calculate the proper column length to force the Doctrine text type.
-     *
-     * @param  string  $type
-     * @return int
-     */
-    protected static function calculateDoctrineTextLength($type)
-    {
-        switch ($type) {
-            case 'mediumText':
-                return 65535 + 1;
-            case 'longText':
-                return 16777215 + 1;
-            default:
-                return 255 + 1;
-        }
-    }
-
-    /**
-     * Determine if the given type does not need character / collation options.
-     *
-     * @param  string  $type
-     * @return bool
-     */
-    protected static function doesntNeedCharacterOptions($type)
-    {
-        return in_array($type, [
-            'bigInteger',
-            'binary',
-            'boolean',
-            'date',
-            'decimal',
-            'double',
-            'float',
-            'integer',
-            'json',
-            'mediumInteger',
-            'smallInteger',
-            'time',
-            'tinyInteger',
-        ]);
-    }
-
-    /**
-     * Get the matching Doctrine option for a given Fluent attribute name.
-     *
-     * @param  string  $attribute
-     * @return string|null
-     */
-    protected static function mapFluentOptionToDoctrine($attribute)
-    {
-        switch ($attribute) {
-            case 'type':
-            case 'name':
-                return;
-            case 'nullable':
-                return 'notnull';
-            case 'total':
-                return 'precision';
-            case 'places':
-                return 'scale';
-            default:
-                return $attribute;
-        }
-    }
-
-    /**
-     * Get the matching Doctrine value for a given Fluent attribute.
-     *
-     * @param  string  $option
-     * @param  mixed  $value
-     * @return mixed
-     */
-    protected static function mapFluentValueToDoctrine($option, $value)
-    {
-        return $option === 'notnull' ? ! $value : $value;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

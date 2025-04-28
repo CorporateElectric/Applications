@@ -1,89 +1,57 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\CssSelector\Parser\Tokenizer;
-
-/**
- * CSS selector tokenizer patterns builder.
- *
- * This component is a port of the Python cssselect library,
- * which is copyright Ian Bicking, @see https://github.com/SimonSapin/cssselect.
- *
- * @author Jean-François Simon <jeanfrancois.simon@sensiolabs.com>
- *
- * @internal
- */
-class TokenizerPatterns
-{
-    private $unicodeEscapePattern;
-    private $simpleEscapePattern;
-    private $newLineEscapePattern;
-    private $escapePattern;
-    private $stringEscapePattern;
-    private $nonAsciiPattern;
-    private $nmCharPattern;
-    private $nmStartPattern;
-    private $identifierPattern;
-    private $hashPattern;
-    private $numberPattern;
-    private $quotedStringPattern;
-
-    public function __construct()
-    {
-        $this->unicodeEscapePattern = '\\\\([0-9a-f]{1,6})(?:\r\n|[ \n\r\t\f])?';
-        $this->simpleEscapePattern = '\\\\(.)';
-        $this->newLineEscapePattern = '\\\\(?:\n|\r\n|\r|\f)';
-        $this->escapePattern = $this->unicodeEscapePattern.'|\\\\[^\n\r\f0-9a-f]';
-        $this->stringEscapePattern = $this->newLineEscapePattern.'|'.$this->escapePattern;
-        $this->nonAsciiPattern = '[^\x00-\x7F]';
-        $this->nmCharPattern = '[_a-z0-9-]|'.$this->escapePattern.'|'.$this->nonAsciiPattern;
-        $this->nmStartPattern = '[_a-z]|'.$this->escapePattern.'|'.$this->nonAsciiPattern;
-        $this->identifierPattern = '-?(?:'.$this->nmStartPattern.')(?:'.$this->nmCharPattern.')*';
-        $this->hashPattern = '#((?:'.$this->nmCharPattern.')+)';
-        $this->numberPattern = '[+-]?(?:[0-9]*\.[0-9]+|[0-9]+)';
-        $this->quotedStringPattern = '([^\n\r\f%s]|'.$this->stringEscapePattern.')*';
-    }
-
-    public function getNewLineEscapePattern(): string
-    {
-        return '~^'.$this->newLineEscapePattern.'~';
-    }
-
-    public function getSimpleEscapePattern(): string
-    {
-        return '~^'.$this->simpleEscapePattern.'~';
-    }
-
-    public function getUnicodeEscapePattern(): string
-    {
-        return '~^'.$this->unicodeEscapePattern.'~i';
-    }
-
-    public function getIdentifierPattern(): string
-    {
-        return '~^'.$this->identifierPattern.'~i';
-    }
-
-    public function getHashPattern(): string
-    {
-        return '~^'.$this->hashPattern.'~i';
-    }
-
-    public function getNumberPattern(): string
-    {
-        return '~^'.$this->numberPattern.'~';
-    }
-
-    public function getQuotedStringPattern(string $quote): string
-    {
-        return '~^'.sprintf($this->quotedStringPattern, $quote).'~i';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

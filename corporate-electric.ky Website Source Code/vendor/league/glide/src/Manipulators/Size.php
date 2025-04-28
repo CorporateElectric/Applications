@@ -1,408 +1,172 @@
-<?php
-
-namespace League\Glide\Manipulators;
-
-use Intervention\Image\Image;
-
-/**
- * @property string $dpr
- * @property string $fit
- * @property string $h
- * @property string $w
- */
-class Size extends BaseManipulator
-{
-    /**
-     * Maximum image size in pixels.
-     * @var integer|null
-     */
-    protected $maxImageSize;
-
-    /**
-     * Create Size instance.
-     * @param integer|null $maxImageSize Maximum image size in pixels.
-     */
-    public function __construct($maxImageSize = null)
-    {
-        $this->maxImageSize = $maxImageSize;
-    }
-
-    /**
-     * Set the maximum image size.
-     * @param integer|null Maximum image size in pixels.
-     */
-    public function setMaxImageSize($maxImageSize)
-    {
-        $this->maxImageSize = $maxImageSize;
-    }
-
-    /**
-     * Get the maximum image size.
-     * @return integer|null Maximum image size in pixels.
-     */
-    public function getMaxImageSize()
-    {
-        return $this->maxImageSize;
-    }
-
-    /**
-     * Perform size image manipulation.
-     * @param  Image $image The source image.
-     * @return Image The manipulated image.
-     */
-    public function run(Image $image)
-    {
-        $width = $this->getWidth();
-        $height = $this->getHeight();
-        $fit = $this->getFit();
-        $dpr = $this->getDpr();
-
-        list($width, $height) = $this->resolveMissingDimensions($image, $width, $height);
-        list($width, $height) = $this->applyDpr($width, $height, $dpr);
-        list($width, $height) = $this->limitImageSize($width, $height);
-
-        if ((int) $width !== (int) $image->width() or (int) $height !== (int) $image->height()) {
-            $image = $this->runResize($image, $fit, (int) $width, (int) $height);
-        }
-
-        return $image;
-    }
-
-    /**
-     * Resolve width.
-     * @return integer|null The resolved width.
-     */
-    public function getWidth()
-    {
-        if (!is_numeric($this->w)) {
-            return;
-        }
-
-        if ($this->w <= 0) {
-            return;
-        }
-
-        return (int) $this->w;
-    }
-
-    /**
-     * Resolve height.
-     * @return integer|null The resolved height.
-     */
-    public function getHeight()
-    {
-        if (!is_numeric($this->h)) {
-            return;
-        }
-
-        if ($this->h <= 0) {
-            return;
-        }
-
-        return (int) $this->h;
-    }
-
-    /**
-     * Resolve fit.
-     * @return string The resolved fit.
-     */
-    public function getFit()
-    {
-        if (in_array($this->fit, ['contain', 'fill', 'max', 'stretch'], true)) {
-            return $this->fit;
-        }
-
-        if (preg_match('/^(crop)(-top-left|-top|-top-right|-left|-center|-right|-bottom-left|-bottom|-bottom-right|-[\d]{1,3}-[\d]{1,3}(?:-[\d]{1,3}(?:\.\d+)?)?)*$/', $this->fit)) {
-            return 'crop';
-        }
-
-        return 'contain';
-    }
-
-    /**
-     * Resolve the device pixel ratio.
-     * @return double The device pixel ratio.
-     */
-    public function getDpr()
-    {
-        if (!is_numeric($this->dpr)) {
-            return 1.0;
-        }
-
-        if ($this->dpr < 0 or $this->dpr > 8) {
-            return 1.0;
-        }
-
-        return (double) $this->dpr;
-    }
-
-    /**
-     * Resolve missing image dimensions.
-     * @param  Image        $image  The source image.
-     * @param  integer|null $width  The image width.
-     * @param  integer|null $height The image height.
-     * @return integer[]    The resolved width and height.
-     */
-    public function resolveMissingDimensions(Image $image, $width, $height)
-    {
-        if (is_null($width) and is_null($height)) {
-            $width = $image->width();
-            $height = $image->height();
-        }
-
-        if (is_null($width)) {
-            $width = $height * ($image->width() / $image->height());
-        }
-
-        if (is_null($height)) {
-            $height = $width / ($image->width() / $image->height());
-        }
-
-        return [
-            (int) $width,
-            (int) $height,
-        ];
-    }
-
-    /**
-     * Apply the device pixel ratio.
-     * @param  integer   $width  The target image width.
-     * @param  integer   $height The target image height.
-     * @param  integer   $dpr    The device pixel ratio.
-     * @return integer[] The modified width and height.
-     */
-    public function applyDpr($width, $height, $dpr)
-    {
-        $width = $width * $dpr;
-        $height = $height * $dpr;
-
-        return [
-            (int) $width,
-            (int) $height,
-        ];
-    }
-
-    /**
-     * Limit image size to maximum allowed image size.
-     * @param  integer   $width  The image width.
-     * @param  integer   $height The image height.
-     * @return integer[] The limited width and height.
-     */
-    public function limitImageSize($width, $height)
-    {
-        if ($this->maxImageSize !== null) {
-            $imageSize = $width * $height;
-
-            if ($imageSize > $this->maxImageSize) {
-                $width = $width / sqrt($imageSize / $this->maxImageSize);
-                $height = $height / sqrt($imageSize / $this->maxImageSize);
-            }
-        }
-
-        return [
-            (int) $width,
-            (int) $height,
-        ];
-    }
-
-    /**
-     * Perform resize image manipulation.
-     * @param  Image   $image  The source image.
-     * @param  string  $fit    The fit.
-     * @param  integer $width  The width.
-     * @param  integer $height The height.
-     * @return Image   The manipulated image.
-     */
-    public function runResize(Image $image, $fit, $width, $height)
-    {
-        if ($fit === 'contain') {
-            return $this->runContainResize($image, $width, $height);
-        }
-
-        if ($fit === 'fill') {
-            return $this->runFillResize($image, $width, $height);
-        }
-
-        if ($fit === 'max') {
-            return $this->runMaxResize($image, $width, $height);
-        }
-
-        if ($fit === 'stretch') {
-            return $this->runStretchResize($image, $width, $height);
-        }
-
-        if ($fit === 'crop') {
-            return $this->runCropResize($image, $width, $height);
-        }
-
-        return $image;
-    }
-
-    /**
-     * Perform contain resize image manipulation.
-     * @param  Image   $image  The source image.
-     * @param  integer $width  The width.
-     * @param  integer $height The height.
-     * @return Image   The manipulated image.
-     */
-    public function runContainResize(Image $image, $width, $height)
-    {
-        return $image->resize($width, $height, function ($constraint) {
-            $constraint->aspectRatio();
-        });
-    }
-
-    /**
-     * Perform max resize image manipulation.
-     * @param  Image   $image  The source image.
-     * @param  integer $width  The width.
-     * @param  integer $height The height.
-     * @return Image   The manipulated image.
-     */
-    public function runMaxResize(Image $image, $width, $height)
-    {
-        return $image->resize($width, $height, function ($constraint) {
-            $constraint->aspectRatio();
-            $constraint->upsize();
-        });
-    }
-
-    /**
-     * Perform fill resize image manipulation.
-     * @param  Image   $image  The source image.
-     * @param  integer $width  The width.
-     * @param  integer $height The height.
-     * @return Image   The manipulated image.
-     */
-    public function runFillResize($image, $width, $height)
-    {
-        $image = $this->runMaxResize($image, $width, $height);
-
-        return $image->resizeCanvas($width, $height, 'center');
-    }
-
-    /**
-     * Perform stretch resize image manipulation.
-     * @param  Image   $image  The source image.
-     * @param  integer $width  The width.
-     * @param  integer $height The height.
-     * @return Image   The manipulated image.
-     */
-    public function runStretchResize(Image $image, $width, $height)
-    {
-        return $image->resize($width, $height);
-    }
-
-    /**
-     * Perform crop resize image manipulation.
-     * @param  Image   $image  The source image.
-     * @param  integer $width  The width.
-     * @param  integer $height The height.
-     * @return Image   The manipulated image.
-     */
-    public function runCropResize(Image $image, $width, $height)
-    {
-        list($resize_width, $resize_height) = $this->resolveCropResizeDimensions($image, $width, $height);
-
-        $zoom = $this->getCrop()[2];
-
-        $image->resize($resize_width * $zoom, $resize_height * $zoom, function ($constraint) {
-            $constraint->aspectRatio();
-        });
-
-        list($offset_x, $offset_y) = $this->resolveCropOffset($image, $width, $height);
-
-        return $image->crop($width, $height, $offset_x, $offset_y);
-    }
-
-    /**
-     * Resolve the crop resize dimensions.
-     * @param  Image   $image  The source image.
-     * @param  integer $width  The width.
-     * @param  integer $height The height.
-     * @return array   The resize dimensions.
-     */
-    public function resolveCropResizeDimensions(Image $image, $width, $height)
-    {
-        if ($height > $width * ($image->height() / $image->width())) {
-            return [$height * ($image->width() / $image->height()), $height];
-        }
-
-        return [$width, $width * ($image->height() / $image->width())];
-    }
-
-    /**
-     * Resolve the crop offset.
-     * @param  Image   $image  The source image.
-     * @param  integer $width  The width.
-     * @param  integer $height The height.
-     * @return array   The crop offset.
-     */
-    public function resolveCropOffset(Image $image, $width, $height)
-    {
-        list($offset_percentage_x, $offset_percentage_y) = $this->getCrop();
-
-        $offset_x = (int) (($image->width() * $offset_percentage_x / 100) - ($width / 2));
-        $offset_y = (int) (($image->height() * $offset_percentage_y / 100) - ($height / 2));
-
-        $max_offset_x = $image->width() - $width;
-        $max_offset_y = $image->height() - $height;
-
-        if ($offset_x < 0) {
-            $offset_x = 0;
-        }
-
-        if ($offset_y < 0) {
-            $offset_y = 0;
-        }
-
-        if ($offset_x > $max_offset_x) {
-            $offset_x = $max_offset_x;
-        }
-
-        if ($offset_y > $max_offset_y) {
-            $offset_y = $max_offset_y;
-        }
-
-        return [$offset_x, $offset_y];
-    }
-
-    /**
-     * Resolve crop with zoom.
-     * @return integer[] The resolved crop.
-     */
-    public function getCrop()
-    {
-        $cropMethods = [
-            'crop-top-left' => [0, 0, 1.0],
-            'crop-top' => [50, 0, 1.0],
-            'crop-top-right' => [100, 0, 1.0],
-            'crop-left' => [0, 50, 1.0],
-            'crop-center' => [50, 50, 1.0],
-            'crop-right' => [100, 50, 1.0],
-            'crop-bottom-left' => [0, 100, 1.0],
-            'crop-bottom' => [50, 100, 1.0],
-            'crop-bottom-right' => [100, 100, 1.0],
-        ];
-
-        if (array_key_exists($this->fit, $cropMethods)) {
-            return $cropMethods[$this->fit];
-        }
-
-        if (preg_match('/^crop-([\d]{1,3})-([\d]{1,3})(?:-([\d]{1,3}(?:\.\d+)?))*$/', $this->fit, $matches)) {
-            $matches[3] = isset($matches[3]) ? $matches[3] : 1;
-
-            if ($matches[1] > 100 or $matches[2] > 100 or $matches[3] > 100) {
-                return [50, 50, 1.0];
-            }
-
-            return [
-                (int) $matches[1],
-                (int) $matches[2],
-                (float) $matches[3],
-            ];
-        }
-
-        return [50, 50, 1.0];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

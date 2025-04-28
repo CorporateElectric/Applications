@@ -1,109 +1,79 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpKernel\Fragment;
-
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Controller\ControllerReference;
-use Symfony\Component\HttpKernel\UriSigner;
-use Twig\Environment;
-
-/**
- * Implements the Hinclude rendering strategy.
- *
- * @author Fabien Potencier <fabien@symfony.com>
- */
-class HIncludeFragmentRenderer extends RoutableFragmentRenderer
-{
-    private $globalDefaultTemplate;
-    private $signer;
-    private $twig;
-    private $charset;
-
-    /**
-     * @param string $globalDefaultTemplate The global default content (it can be a template name or the content)
-     */
-    public function __construct(Environment $twig = null, UriSigner $signer = null, string $globalDefaultTemplate = null, string $charset = 'utf-8')
-    {
-        $this->twig = $twig;
-        $this->globalDefaultTemplate = $globalDefaultTemplate;
-        $this->signer = $signer;
-        $this->charset = $charset;
-    }
-
-    /**
-     * Checks if a templating engine has been set.
-     *
-     * @return bool true if the templating engine has been set, false otherwise
-     */
-    public function hasTemplating()
-    {
-        return null !== $this->twig;
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * Additional available options:
-     *
-     *  * default:    The default content (it can be a template name or the content)
-     *  * id:         An optional hx:include tag id attribute
-     *  * attributes: An optional array of hx:include tag attributes
-     */
-    public function render($uri, Request $request, array $options = [])
-    {
-        if ($uri instanceof ControllerReference) {
-            if (null === $this->signer) {
-                throw new \LogicException('You must use a proper URI when using the Hinclude rendering strategy or set a URL signer.');
-            }
-
-            // we need to sign the absolute URI, but want to return the path only.
-            $uri = substr($this->signer->sign($this->generateFragmentUri($uri, $request, true)), \strlen($request->getSchemeAndHttpHost()));
-        }
-
-        // We need to replace ampersands in the URI with the encoded form in order to return valid html/xml content.
-        $uri = str_replace('&', '&amp;', $uri);
-
-        $template = isset($options['default']) ? $options['default'] : $this->globalDefaultTemplate;
-        if (null !== $this->twig && $template && $this->twig->getLoader()->exists($template)) {
-            $content = $this->twig->render($template);
-        } else {
-            $content = $template;
-        }
-
-        $attributes = isset($options['attributes']) && \is_array($options['attributes']) ? $options['attributes'] : [];
-        if (isset($options['id']) && $options['id']) {
-            $attributes['id'] = $options['id'];
-        }
-        $renderedAttributes = '';
-        if (\count($attributes) > 0) {
-            $flags = \ENT_QUOTES | \ENT_SUBSTITUTE;
-            foreach ($attributes as $attribute => $value) {
-                $renderedAttributes .= sprintf(
-                    ' %s="%s"',
-                    htmlspecialchars($attribute, $flags, $this->charset, false),
-                    htmlspecialchars($value, $flags, $this->charset, false)
-                );
-            }
-        }
-
-        return new Response(sprintf('<hx:include src="%s"%s>%s</hx:include>', $uri, $renderedAttributes, $content));
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getName()
-    {
-        return 'hinclude';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,135 +1,105 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Reader\Xlsx;
-
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-use SimpleXMLElement;
-
-class SheetViewOptions extends BaseParserClass
-{
-    private $worksheet;
-
-    private $worksheetXml;
-
-    public function __construct(Worksheet $workSheet, ?SimpleXMLElement $worksheetXml = null)
-    {
-        $this->worksheet = $workSheet;
-        $this->worksheetXml = $worksheetXml;
-    }
-
-    /**
-     * @param bool $readDataOnly
-     */
-    public function load($readDataOnly = false): void
-    {
-        if ($this->worksheetXml === null) {
-            return;
-        }
-
-        if (isset($this->worksheetXml->sheetPr)) {
-            $this->tabColor($this->worksheetXml->sheetPr);
-            $this->codeName($this->worksheetXml->sheetPr);
-            $this->outlines($this->worksheetXml->sheetPr);
-            $this->pageSetup($this->worksheetXml->sheetPr);
-        }
-
-        if (isset($this->worksheetXml->sheetFormatPr)) {
-            $this->sheetFormat($this->worksheetXml->sheetFormatPr);
-        }
-
-        if (!$readDataOnly && isset($this->worksheetXml->printOptions)) {
-            $this->printOptions($this->worksheetXml->printOptions);
-        }
-    }
-
-    private function tabColor(SimpleXMLElement $sheetPr): void
-    {
-        if (isset($sheetPr->tabColor, $sheetPr->tabColor['rgb'])) {
-            $this->worksheet->getTabColor()->setARGB((string) $sheetPr->tabColor['rgb']);
-        }
-    }
-
-    private function codeName(SimpleXMLElement $sheetPr): void
-    {
-        if (isset($sheetPr['codeName'])) {
-            $this->worksheet->setCodeName((string) $sheetPr['codeName'], false);
-        }
-    }
-
-    private function outlines(SimpleXMLElement $sheetPr): void
-    {
-        if (isset($sheetPr->outlinePr)) {
-            if (
-                isset($sheetPr->outlinePr['summaryRight']) &&
-                !self::boolean((string) $sheetPr->outlinePr['summaryRight'])
-            ) {
-                $this->worksheet->setShowSummaryRight(false);
-            } else {
-                $this->worksheet->setShowSummaryRight(true);
-            }
-
-            if (
-                isset($sheetPr->outlinePr['summaryBelow']) &&
-                !self::boolean((string) $sheetPr->outlinePr['summaryBelow'])
-            ) {
-                $this->worksheet->setShowSummaryBelow(false);
-            } else {
-                $this->worksheet->setShowSummaryBelow(true);
-            }
-        }
-    }
-
-    private function pageSetup(SimpleXMLElement $sheetPr): void
-    {
-        if (isset($sheetPr->pageSetUpPr)) {
-            if (
-                isset($sheetPr->pageSetUpPr['fitToPage']) &&
-                !self::boolean((string) $sheetPr->pageSetUpPr['fitToPage'])
-            ) {
-                $this->worksheet->getPageSetup()->setFitToPage(false);
-            } else {
-                $this->worksheet->getPageSetup()->setFitToPage(true);
-            }
-        }
-    }
-
-    private function sheetFormat(SimpleXMLElement $sheetFormatPr): void
-    {
-        if (
-            isset($sheetFormatPr['customHeight']) &&
-            self::boolean((string) $sheetFormatPr['customHeight']) &&
-            isset($sheetFormatPr['defaultRowHeight'])
-        ) {
-            $this->worksheet->getDefaultRowDimension()
-                ->setRowHeight((float) $sheetFormatPr['defaultRowHeight']);
-        }
-
-        if (isset($sheetFormatPr['defaultColWidth'])) {
-            $this->worksheet->getDefaultColumnDimension()
-                ->setWidth((float) $sheetFormatPr['defaultColWidth']);
-        }
-
-        if (
-            isset($sheetFormatPr['zeroHeight']) &&
-            ((string) $sheetFormatPr['zeroHeight'] === '1')
-        ) {
-            $this->worksheet->getDefaultRowDimension()->setZeroHeight(true);
-        }
-    }
-
-    private function printOptions(SimpleXMLElement $printOptions): void
-    {
-        if (self::boolean((string) $printOptions['gridLinesSet'])) {
-            $this->worksheet->setShowGridlines(true);
-        }
-        if (self::boolean((string) $printOptions['gridLines'])) {
-            $this->worksheet->setPrintGridlines(true);
-        }
-        if (self::boolean((string) $printOptions['horizontalCentered'])) {
-            $this->worksheet->getPageSetup()->setHorizontalCentered(true);
-        }
-        if (self::boolean((string) $printOptions['verticalCentered'])) {
-            $this->worksheet->getPageSetup()->setVerticalCentered(true);
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

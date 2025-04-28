@@ -1,133 +1,74 @@
-<?php
-
-/**
- * This file is part of the ramsey/uuid library
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @copyright Copyright (c) Ben Ramsey <ben@benramsey.com>
- * @license http://opensource.org/licenses/MIT MIT
- */
-
-declare(strict_types=1);
-
-namespace Ramsey\Uuid\Nonstandard;
-
-use Ramsey\Uuid\Exception\InvalidArgumentException;
-use Ramsey\Uuid\Fields\SerializableFieldsTrait;
-use Ramsey\Uuid\Rfc4122\FieldsInterface;
-use Ramsey\Uuid\Rfc4122\VariantTrait;
-use Ramsey\Uuid\Type\Hexadecimal;
-
-use function bin2hex;
-use function dechex;
-use function hexdec;
-use function sprintf;
-use function str_pad;
-use function strlen;
-use function substr;
-
-use const STR_PAD_LEFT;
-
-/**
- * Nonstandard UUID fields do not conform to the RFC 4122 standard
- *
- * Since some systems may create nonstandard UUIDs, this implements the
- * Rfc4122\FieldsInterface, so that functionality of a nonstandard UUID is not
- * degraded, in the event these UUIDs are expected to contain RFC 4122 fields.
- *
- * Internally, this class represents the fields together as a 16-byte binary
- * string.
- *
- * @psalm-immutable
- */
-final class Fields implements FieldsInterface
-{
-    use SerializableFieldsTrait;
-    use VariantTrait;
-
-    /**
-     * @var string
-     */
-    private $bytes;
-
-    /**
-     * @param string $bytes A 16-byte binary string representation of a UUID
-     *
-     * @throws InvalidArgumentException if the byte string is not exactly 16 bytes
-     */
-    public function __construct(string $bytes)
-    {
-        if (strlen($bytes) !== 16) {
-            throw new InvalidArgumentException(
-                'The byte string must be 16 bytes long; '
-                . 'received ' . strlen($bytes) . ' bytes'
-            );
-        }
-
-        $this->bytes = $bytes;
-    }
-
-    public function getBytes(): string
-    {
-        return $this->bytes;
-    }
-
-    public function getClockSeq(): Hexadecimal
-    {
-        $clockSeq = hexdec(bin2hex(substr($this->bytes, 8, 2))) & 0x3fff;
-
-        return new Hexadecimal(str_pad(dechex($clockSeq), 4, '0', STR_PAD_LEFT));
-    }
-
-    public function getClockSeqHiAndReserved(): Hexadecimal
-    {
-        return new Hexadecimal(bin2hex(substr($this->bytes, 8, 1)));
-    }
-
-    public function getClockSeqLow(): Hexadecimal
-    {
-        return new Hexadecimal(bin2hex(substr($this->bytes, 9, 1)));
-    }
-
-    public function getNode(): Hexadecimal
-    {
-        return new Hexadecimal(bin2hex(substr($this->bytes, 10)));
-    }
-
-    public function getTimeHiAndVersion(): Hexadecimal
-    {
-        return new Hexadecimal(bin2hex(substr($this->bytes, 6, 2)));
-    }
-
-    public function getTimeLow(): Hexadecimal
-    {
-        return new Hexadecimal(bin2hex(substr($this->bytes, 0, 4)));
-    }
-
-    public function getTimeMid(): Hexadecimal
-    {
-        return new Hexadecimal(bin2hex(substr($this->bytes, 4, 2)));
-    }
-
-    public function getTimestamp(): Hexadecimal
-    {
-        return new Hexadecimal(sprintf(
-            '%03x%04s%08s',
-            hexdec($this->getTimeHiAndVersion()->toString()) & 0x0fff,
-            $this->getTimeMid()->toString(),
-            $this->getTimeLow()->toString()
-        ));
-    }
-
-    public function getVersion(): ?int
-    {
-        return null;
-    }
-
-    public function isNil(): bool
-    {
-        return false;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

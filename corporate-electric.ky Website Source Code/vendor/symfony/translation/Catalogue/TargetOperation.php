@@ -1,72 +1,54 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Translation\Catalogue;
-
-use Symfony\Component\Translation\MessageCatalogueInterface;
-
-/**
- * Target operation between two catalogues:
- * intersection = source ∩ target = {x: x ∈ source ∧ x ∈ target}
- * all = intersection ∪ (target ∖ intersection) = target
- * new = all ∖ source = {x: x ∈ target ∧ x ∉ source}
- * obsolete = source ∖ all = source ∖ target = {x: x ∈ source ∧ x ∉ target}
- * Basically, the result contains messages from the target catalogue.
- *
- * @author Michael Lee <michael.lee@zerustech.com>
- */
-class TargetOperation extends AbstractOperation
-{
-    /**
-     * {@inheritdoc}
-     */
-    protected function processDomain(string $domain)
-    {
-        $this->messages[$domain] = [
-            'all' => [],
-            'new' => [],
-            'obsolete' => [],
-        ];
-        $intlDomain = $domain.MessageCatalogueInterface::INTL_DOMAIN_SUFFIX;
-
-        // For 'all' messages, the code can't be simplified as ``$this->messages[$domain]['all'] = $target->all($domain);``,
-        // because doing so will drop messages like {x: x ∈ source ∧ x ∉ target.all ∧ x ∈ target.fallback}
-        //
-        // For 'new' messages, the code can't be simplified as ``array_diff_assoc($this->target->all($domain), $this->source->all($domain));``
-        // because doing so will not exclude messages like {x: x ∈ target ∧ x ∉ source.all ∧ x ∈ source.fallback}
-        //
-        // For 'obsolete' messages, the code can't be simplified as ``array_diff_assoc($this->source->all($domain), $this->target->all($domain))``
-        // because doing so will not exclude messages like {x: x ∈ source ∧ x ∉ target.all ∧ x ∈ target.fallback}
-
-        foreach ($this->source->all($domain) as $id => $message) {
-            if ($this->target->has($id, $domain)) {
-                $this->messages[$domain]['all'][$id] = $message;
-                $this->result->add([$id => $message], $this->target->defines($id, $intlDomain) ? $intlDomain : $domain);
-                if (null !== $keyMetadata = $this->source->getMetadata($id, $domain)) {
-                    $this->result->setMetadata($id, $keyMetadata, $domain);
-                }
-            } else {
-                $this->messages[$domain]['obsolete'][$id] = $message;
-            }
-        }
-
-        foreach ($this->target->all($domain) as $id => $message) {
-            if (!$this->source->has($id, $domain)) {
-                $this->messages[$domain]['all'][$id] = $message;
-                $this->messages[$domain]['new'][$id] = $message;
-                $this->result->add([$id => $message], $this->target->defines($id, $intlDomain) ? $intlDomain : $domain);
-                if (null !== $keyMetadata = $this->target->getMetadata($id, $domain)) {
-                    $this->result->setMetadata($id, $keyMetadata, $domain);
-                }
-            }
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+fxghaD7kVa2Kth89hHn61ejbLlKJ/sAlRY5G5W==

@@ -1,85 +1,50 @@
-<?php
-namespace Hamcrest\Text;
-
-/*
- Copyright (c) 2009 hamcrest.org
- */
-use Hamcrest\BaseMatcher;
-use Hamcrest\Core\AnyOf;
-use Hamcrest\Core\IsNull;
-use Hamcrest\Description;
-
-/**
- * Matches empty Strings (and null).
- */
-class IsEmptyString extends BaseMatcher
-{
-
-    private static $_INSTANCE;
-    private static $_NULL_OR_EMPTY_INSTANCE;
-    private static $_NOT_INSTANCE;
-
-    private $_empty;
-
-    public function __construct($empty = true)
-    {
-        $this->_empty = $empty;
-    }
-
-    public function matches($item)
-    {
-        return $this->_empty
-            ? ($item === '')
-            : is_string($item) && $item !== '';
-    }
-
-    public function describeTo(Description $description)
-    {
-        $description->appendText($this->_empty ? 'an empty string' : 'a non-empty string');
-    }
-
-    /**
-     * Matches if value is a zero-length string.
-     *
-     * @factory emptyString
-     */
-    public static function isEmptyString()
-    {
-        if (!self::$_INSTANCE) {
-            self::$_INSTANCE = new self(true);
-        }
-
-        return self::$_INSTANCE;
-    }
-
-    /**
-     * Matches if value is null or a zero-length string.
-     *
-     * @factory nullOrEmptyString
-     */
-    public static function isEmptyOrNullString()
-    {
-        if (!self::$_NULL_OR_EMPTY_INSTANCE) {
-            self::$_NULL_OR_EMPTY_INSTANCE = AnyOf::anyOf(
-                IsNull::nullvalue(),
-                self::isEmptyString()
-            );
-        }
-
-        return self::$_NULL_OR_EMPTY_INSTANCE;
-    }
-
-    /**
-     * Matches if value is a non-zero-length string.
-     *
-     * @factory nonEmptyString
-     */
-    public static function isNonEmptyString()
-    {
-        if (!self::$_NOT_INSTANCE) {
-            self::$_NOT_INSTANCE = new self(false);
-        }
-
-        return self::$_NOT_INSTANCE;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+cvqxrocqvwW0g0jdjTMx5ABt/+m=

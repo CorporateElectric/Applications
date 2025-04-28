@@ -1,1289 +1,434 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Framework;
-
-use const PHP_EOL;
-use function count;
-use function function_exists;
-use function get_class;
-use function sprintf;
-use AssertionError;
-use Countable;
-use Error;
-use PHPUnit\Util\ErrorHandler;
-use PHPUnit\Util\ExcludeList;
-use PHPUnit\Util\Printer;
-use PHPUnit\Util\Test as TestUtil;
-use ReflectionClass;
-use ReflectionException;
-use SebastianBergmann\CodeCoverage\CodeCoverage;
-use SebastianBergmann\CodeCoverage\Exception as OriginalCodeCoverageException;
-use SebastianBergmann\CodeCoverage\UnintentionallyCoveredCodeException;
-use SebastianBergmann\Invoker\Invoker;
-use SebastianBergmann\Invoker\TimeoutException;
-use SebastianBergmann\ResourceOperations\ResourceOperations;
-use SebastianBergmann\Timer\Timer;
-use Throwable;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for PHPUnit
- */
-final class TestResult implements Countable
-{
-    /**
-     * @var array
-     */
-    private $passed = [];
-
-    /**
-     * @var array<string>
-     */
-    private $passedTestClasses = [];
-
-    /**
-     * @var bool
-     */
-    private $currentTestSuiteFailed = false;
-
-    /**
-     * @var TestFailure[]
-     */
-    private $errors = [];
-
-    /**
-     * @var TestFailure[]
-     */
-    private $failures = [];
-
-    /**
-     * @var TestFailure[]
-     */
-    private $warnings = [];
-
-    /**
-     * @var TestFailure[]
-     */
-    private $notImplemented = [];
-
-    /**
-     * @var TestFailure[]
-     */
-    private $risky = [];
-
-    /**
-     * @var TestFailure[]
-     */
-    private $skipped = [];
-
-    /**
-     * @deprecated Use the `TestHook` interfaces instead
-     *
-     * @var TestListener[]
-     */
-    private $listeners = [];
-
-    /**
-     * @var int
-     */
-    private $runTests = 0;
-
-    /**
-     * @var float
-     */
-    private $time = 0;
-
-    /**
-     * Code Coverage information.
-     *
-     * @var CodeCoverage
-     */
-    private $codeCoverage;
-
-    /**
-     * @var bool
-     */
-    private $convertDeprecationsToExceptions = true;
-
-    /**
-     * @var bool
-     */
-    private $convertErrorsToExceptions = true;
-
-    /**
-     * @var bool
-     */
-    private $convertNoticesToExceptions = true;
-
-    /**
-     * @var bool
-     */
-    private $convertWarningsToExceptions = true;
-
-    /**
-     * @var bool
-     */
-    private $stop = false;
-
-    /**
-     * @var bool
-     */
-    private $stopOnError = false;
-
-    /**
-     * @var bool
-     */
-    private $stopOnFailure = false;
-
-    /**
-     * @var bool
-     */
-    private $stopOnWarning = false;
-
-    /**
-     * @var bool
-     */
-    private $beStrictAboutTestsThatDoNotTestAnything = true;
-
-    /**
-     * @var bool
-     */
-    private $beStrictAboutOutputDuringTests = false;
-
-    /**
-     * @var bool
-     */
-    private $beStrictAboutTodoAnnotatedTests = false;
-
-    /**
-     * @var bool
-     */
-    private $beStrictAboutResourceUsageDuringSmallTests = false;
-
-    /**
-     * @var bool
-     */
-    private $enforceTimeLimit = false;
-
-    /**
-     * @var bool
-     */
-    private $forceCoversAnnotation = false;
-
-    /**
-     * @var int
-     */
-    private $timeoutForSmallTests = 1;
-
-    /**
-     * @var int
-     */
-    private $timeoutForMediumTests = 10;
-
-    /**
-     * @var int
-     */
-    private $timeoutForLargeTests = 60;
-
-    /**
-     * @var bool
-     */
-    private $stopOnRisky = false;
-
-    /**
-     * @var bool
-     */
-    private $stopOnIncomplete = false;
-
-    /**
-     * @var bool
-     */
-    private $stopOnSkipped = false;
-
-    /**
-     * @var bool
-     */
-    private $lastTestFailed = false;
-
-    /**
-     * @var int
-     */
-    private $defaultTimeLimit = 0;
-
-    /**
-     * @var bool
-     */
-    private $stopOnDefect = false;
-
-    /**
-     * @var bool
-     */
-    private $registerMockObjectsFromTestArgumentsRecursively = false;
-
-    /**
-     * @deprecated Use the `TestHook` interfaces instead
-     *
-     * @codeCoverageIgnore
-     *
-     * Registers a TestListener.
-     */
-    public function addListener(TestListener $listener): void
-    {
-        $this->listeners[] = $listener;
-    }
-
-    /**
-     * @deprecated Use the `TestHook` interfaces instead
-     *
-     * @codeCoverageIgnore
-     *
-     * Unregisters a TestListener.
-     */
-    public function removeListener(TestListener $listener): void
-    {
-        foreach ($this->listeners as $key => $_listener) {
-            if ($listener === $_listener) {
-                unset($this->listeners[$key]);
-            }
-        }
-    }
-
-    /**
-     * @deprecated Use the `TestHook` interfaces instead
-     *
-     * @codeCoverageIgnore
-     *
-     * Flushes all flushable TestListeners.
-     */
-    public function flushListeners(): void
-    {
-        foreach ($this->listeners as $listener) {
-            if ($listener instanceof Printer) {
-                $listener->flush();
-            }
-        }
-    }
-
-    /**
-     * Adds an error to the list of errors.
-     */
-    public function addError(Test $test, Throwable $t, float $time): void
-    {
-        if ($t instanceof RiskyTestError) {
-            $this->recordRisky($test, $t);
-
-            $notifyMethod = 'addRiskyTest';
-
-            if ($test instanceof TestCase) {
-                $test->markAsRisky();
-            }
-
-            if ($this->stopOnRisky || $this->stopOnDefect) {
-                $this->stop();
-            }
-        } elseif ($t instanceof IncompleteTest) {
-            $this->recordNotImplemented($test, $t);
-
-            $notifyMethod = 'addIncompleteTest';
-
-            if ($this->stopOnIncomplete) {
-                $this->stop();
-            }
-        } elseif ($t instanceof SkippedTest) {
-            $this->recordSkipped($test, $t);
-
-            $notifyMethod = 'addSkippedTest';
-
-            if ($this->stopOnSkipped) {
-                $this->stop();
-            }
-        } else {
-            $this->recordError($test, $t);
-
-            $notifyMethod = 'addError';
-
-            if ($this->stopOnError || $this->stopOnFailure) {
-                $this->stop();
-            }
-        }
-
-        // @see https://github.com/sebastianbergmann/phpunit/issues/1953
-        if ($t instanceof Error) {
-            $t = new ExceptionWrapper($t);
-        }
-
-        foreach ($this->listeners as $listener) {
-            $listener->{$notifyMethod}($test, $t, $time);
-        }
-
-        $this->lastTestFailed = true;
-        $this->time += $time;
-    }
-
-    /**
-     * Adds a warning to the list of warnings.
-     * The passed in exception caused the warning.
-     */
-    public function addWarning(Test $test, Warning $e, float $time): void
-    {
-        if ($this->stopOnWarning || $this->stopOnDefect) {
-            $this->stop();
-        }
-
-        $this->recordWarning($test, $e);
-
-        foreach ($this->listeners as $listener) {
-            $listener->addWarning($test, $e, $time);
-        }
-
-        $this->time += $time;
-    }
-
-    /**
-     * Adds a failure to the list of failures.
-     * The passed in exception caused the failure.
-     */
-    public function addFailure(Test $test, AssertionFailedError $e, float $time): void
-    {
-        if ($e instanceof RiskyTestError || $e instanceof OutputError) {
-            $this->recordRisky($test, $e);
-
-            $notifyMethod = 'addRiskyTest';
-
-            if ($test instanceof TestCase) {
-                $test->markAsRisky();
-            }
-
-            if ($this->stopOnRisky || $this->stopOnDefect) {
-                $this->stop();
-            }
-        } elseif ($e instanceof IncompleteTest) {
-            $this->recordNotImplemented($test, $e);
-
-            $notifyMethod = 'addIncompleteTest';
-
-            if ($this->stopOnIncomplete) {
-                $this->stop();
-            }
-        } elseif ($e instanceof SkippedTest) {
-            $this->recordSkipped($test, $e);
-
-            $notifyMethod = 'addSkippedTest';
-
-            if ($this->stopOnSkipped) {
-                $this->stop();
-            }
-        } else {
-            $this->failures[] = new TestFailure($test, $e);
-            $notifyMethod     = 'addFailure';
-
-            if ($this->stopOnFailure || $this->stopOnDefect) {
-                $this->stop();
-            }
-        }
-
-        foreach ($this->listeners as $listener) {
-            $listener->{$notifyMethod}($test, $e, $time);
-        }
-
-        $this->lastTestFailed = true;
-        $this->time += $time;
-    }
-
-    /**
-     * Informs the result that a test suite will be started.
-     */
-    public function startTestSuite(TestSuite $suite): void
-    {
-        $this->currentTestSuiteFailed = false;
-
-        foreach ($this->listeners as $listener) {
-            $listener->startTestSuite($suite);
-        }
-    }
-
-    /**
-     * Informs the result that a test suite was completed.
-     */
-    public function endTestSuite(TestSuite $suite): void
-    {
-        if (!$this->currentTestSuiteFailed) {
-            $this->passedTestClasses[] = $suite->getName();
-        }
-
-        foreach ($this->listeners as $listener) {
-            $listener->endTestSuite($suite);
-        }
-    }
-
-    /**
-     * Informs the result that a test will be started.
-     */
-    public function startTest(Test $test): void
-    {
-        $this->lastTestFailed = false;
-        $this->runTests += count($test);
-
-        foreach ($this->listeners as $listener) {
-            $listener->startTest($test);
-        }
-    }
-
-    /**
-     * Informs the result that a test was completed.
-     *
-     * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
-     */
-    public function endTest(Test $test, float $time): void
-    {
-        foreach ($this->listeners as $listener) {
-            $listener->endTest($test, $time);
-        }
-
-        if (!$this->lastTestFailed && $test instanceof TestCase) {
-            $class = get_class($test);
-            $key   = $class . '::' . $test->getName();
-
-            $this->passed[$key] = [
-                'result' => $test->getResult(),
-                'size'   => \PHPUnit\Util\Test::getSize(
-                    $class,
-                    $test->getName(false)
-                ),
-            ];
-
-            $this->time += $time;
-        }
-
-        if ($this->lastTestFailed && $test instanceof TestCase) {
-            $this->currentTestSuiteFailed = true;
-        }
-    }
-
-    /**
-     * Returns true if no risky test occurred.
-     */
-    public function allHarmless(): bool
-    {
-        return $this->riskyCount() === 0;
-    }
-
-    /**
-     * Gets the number of risky tests.
-     */
-    public function riskyCount(): int
-    {
-        return count($this->risky);
-    }
-
-    /**
-     * Returns true if no incomplete test occurred.
-     */
-    public function allCompletelyImplemented(): bool
-    {
-        return $this->notImplementedCount() === 0;
-    }
-
-    /**
-     * Gets the number of incomplete tests.
-     */
-    public function notImplementedCount(): int
-    {
-        return count($this->notImplemented);
-    }
-
-    /**
-     * Returns an array of TestFailure objects for the risky tests.
-     *
-     * @return TestFailure[]
-     */
-    public function risky(): array
-    {
-        return $this->risky;
-    }
-
-    /**
-     * Returns an array of TestFailure objects for the incomplete tests.
-     *
-     * @return TestFailure[]
-     */
-    public function notImplemented(): array
-    {
-        return $this->notImplemented;
-    }
-
-    /**
-     * Returns true if no test has been skipped.
-     */
-    public function noneSkipped(): bool
-    {
-        return $this->skippedCount() === 0;
-    }
-
-    /**
-     * Gets the number of skipped tests.
-     */
-    public function skippedCount(): int
-    {
-        return count($this->skipped);
-    }
-
-    /**
-     * Returns an array of TestFailure objects for the skipped tests.
-     *
-     * @return TestFailure[]
-     */
-    public function skipped(): array
-    {
-        return $this->skipped;
-    }
-
-    /**
-     * Gets the number of detected errors.
-     */
-    public function errorCount(): int
-    {
-        return count($this->errors);
-    }
-
-    /**
-     * Returns an array of TestFailure objects for the errors.
-     *
-     * @return TestFailure[]
-     */
-    public function errors(): array
-    {
-        return $this->errors;
-    }
-
-    /**
-     * Gets the number of detected failures.
-     */
-    public function failureCount(): int
-    {
-        return count($this->failures);
-    }
-
-    /**
-     * Returns an array of TestFailure objects for the failures.
-     *
-     * @return TestFailure[]
-     */
-    public function failures(): array
-    {
-        return $this->failures;
-    }
-
-    /**
-     * Gets the number of detected warnings.
-     */
-    public function warningCount(): int
-    {
-        return count($this->warnings);
-    }
-
-    /**
-     * Returns an array of TestFailure objects for the warnings.
-     *
-     * @return TestFailure[]
-     */
-    public function warnings(): array
-    {
-        return $this->warnings;
-    }
-
-    /**
-     * Returns the names of the tests that have passed.
-     */
-    public function passed(): array
-    {
-        return $this->passed;
-    }
-
-    /**
-     * Returns the names of the TestSuites that have passed.
-     *
-     * This enables @depends-annotations for TestClassName::class
-     */
-    public function passedClasses(): array
-    {
-        return $this->passedTestClasses;
-    }
-
-    /**
-     * Returns whether code coverage information should be collected.
-     */
-    public function getCollectCodeCoverageInformation(): bool
-    {
-        return $this->codeCoverage !== null;
-    }
-
-    /**
-     * Runs a TestCase.
-     *
-     * @throws \SebastianBergmann\CodeCoverage\InvalidArgumentException
-     * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
-     * @throws CodeCoverageException
-     * @throws UnintentionallyCoveredCodeException
-     */
-    public function run(Test $test): void
-    {
-        Assert::resetCount();
-
-        if ($test instanceof TestCase) {
-            $test->setRegisterMockObjectsFromTestArgumentsRecursively(
-                $this->registerMockObjectsFromTestArgumentsRecursively
-            );
-
-            $isAnyCoverageRequired = TestUtil::requiresCodeCoverageDataCollection($test);
-        }
-
-        $error      = false;
-        $failure    = false;
-        $warning    = false;
-        $incomplete = false;
-        $risky      = false;
-        $skipped    = false;
-
-        $this->startTest($test);
-
-        if ($this->convertDeprecationsToExceptions || $this->convertErrorsToExceptions || $this->convertNoticesToExceptions || $this->convertWarningsToExceptions) {
-            $errorHandler = new ErrorHandler(
-                $this->convertDeprecationsToExceptions,
-                $this->convertErrorsToExceptions,
-                $this->convertNoticesToExceptions,
-                $this->convertWarningsToExceptions
-            );
-
-            $errorHandler->register();
-        }
-
-        $collectCodeCoverage = $this->codeCoverage !== null &&
-                               !$test instanceof ErrorTestCase &&
-                               !$test instanceof WarningTestCase &&
-                               $isAnyCoverageRequired;
-
-        if ($collectCodeCoverage) {
-            $this->codeCoverage->start($test);
-        }
-
-        $monitorFunctions = $this->beStrictAboutResourceUsageDuringSmallTests &&
-                            !$test instanceof ErrorTestCase &&
-                            !$test instanceof WarningTestCase &&
-                            $test->getSize() === \PHPUnit\Util\Test::SMALL &&
-                            function_exists('xdebug_start_function_monitor');
-
-        if ($monitorFunctions) {
-            /* @noinspection ForgottenDebugOutputInspection */
-            xdebug_start_function_monitor(ResourceOperations::getFunctions());
-        }
-
-        $timer = new Timer;
-        $timer->start();
-
-        try {
-            $invoker = new Invoker;
-
-            if (!$test instanceof ErrorTestCase &&
-                !$test instanceof WarningTestCase &&
-                $this->enforceTimeLimit &&
-                ($this->defaultTimeLimit || $test->getSize() != \PHPUnit\Util\Test::UNKNOWN) &&
-                $invoker->canInvokeWithTimeout()) {
-                switch ($test->getSize()) {
-                    case \PHPUnit\Util\Test::SMALL:
-                        $_timeout = $this->timeoutForSmallTests;
-
-                        break;
-
-                    case \PHPUnit\Util\Test::MEDIUM:
-                        $_timeout = $this->timeoutForMediumTests;
-
-                        break;
-
-                    case \PHPUnit\Util\Test::LARGE:
-                        $_timeout = $this->timeoutForLargeTests;
-
-                        break;
-
-                    case \PHPUnit\Util\Test::UNKNOWN:
-                        $_timeout = $this->defaultTimeLimit;
-
-                        break;
-                }
-
-                $invoker->invoke([$test, 'runBare'], [], $_timeout);
-            } else {
-                $test->runBare();
-            }
-        } catch (TimeoutException $e) {
-            $this->addFailure(
-                $test,
-                new RiskyTestError(
-                    $e->getMessage()
-                ),
-                $_timeout
-            );
-
-            $risky = true;
-        } catch (AssertionFailedError $e) {
-            $failure = true;
-
-            if ($e instanceof RiskyTestError) {
-                $risky = true;
-            } elseif ($e instanceof IncompleteTestError) {
-                $incomplete = true;
-            } elseif ($e instanceof SkippedTestError) {
-                $skipped = true;
-            }
-        } catch (AssertionError $e) {
-            $test->addToAssertionCount(1);
-
-            $failure = true;
-            $frame   = $e->getTrace()[0];
-
-            $e = new AssertionFailedError(
-                sprintf(
-                    '%s in %s:%s',
-                    $e->getMessage(),
-                    $frame['file'],
-                    $frame['line']
-                )
-            );
-        } catch (Warning $e) {
-            $warning = true;
-        } catch (Exception $e) {
-            $error = true;
-        } catch (Throwable $e) {
-            $e     = new ExceptionWrapper($e);
-            $error = true;
-        }
-
-        $time = $timer->stop()->asSeconds();
-
-        $test->addToAssertionCount(Assert::getCount());
-
-        if ($monitorFunctions) {
-            $excludeList = new ExcludeList;
-
-            /** @noinspection ForgottenDebugOutputInspection */
-            $functions = xdebug_get_monitored_functions();
-
-            /* @noinspection ForgottenDebugOutputInspection */
-            xdebug_stop_function_monitor();
-
-            foreach ($functions as $function) {
-                if (!$excludeList->isExcluded($function['filename'])) {
-                    $this->addFailure(
-                        $test,
-                        new RiskyTestError(
-                            sprintf(
-                                '%s() used in %s:%s',
-                                $function['function'],
-                                $function['filename'],
-                                $function['lineno']
-                            )
-                        ),
-                        $time
-                    );
-                }
-            }
-        }
-
-        if ($this->beStrictAboutTestsThatDoNotTestAnything &&
-            $test->getNumAssertions() === 0) {
-            $risky = true;
-        }
-
-        if ($this->forceCoversAnnotation && !$error && !$failure && !$warning && !$incomplete && !$skipped && !$risky) {
-            $annotations = TestUtil::parseTestMethodAnnotations(
-                get_class($test),
-                $test->getName(false)
-            );
-
-            if (!isset($annotations['class']['covers']) &&
-                !isset($annotations['method']['covers']) &&
-                !isset($annotations['class']['coversNothing']) &&
-                !isset($annotations['method']['coversNothing'])) {
-                $this->addFailure(
-                    $test,
-                    new MissingCoversAnnotationException(
-                        'This test does not have a @covers annotation but is expected to have one'
-                    ),
-                    $time
-                );
-
-                $risky = true;
-            }
-        }
-
-        if ($collectCodeCoverage) {
-            $append           = !$risky && !$incomplete && !$skipped;
-            $linesToBeCovered = [];
-            $linesToBeUsed    = [];
-
-            if ($append && $test instanceof TestCase) {
-                try {
-                    $linesToBeCovered = \PHPUnit\Util\Test::getLinesToBeCovered(
-                        get_class($test),
-                        $test->getName(false)
-                    );
-
-                    $linesToBeUsed = \PHPUnit\Util\Test::getLinesToBeUsed(
-                        get_class($test),
-                        $test->getName(false)
-                    );
-                } catch (InvalidCoversTargetException $cce) {
-                    $this->addWarning(
-                        $test,
-                        new Warning(
-                            $cce->getMessage()
-                        ),
-                        $time
-                    );
-                }
-            }
-
-            try {
-                $this->codeCoverage->stop(
-                    $append,
-                    $linesToBeCovered,
-                    $linesToBeUsed
-                );
-            } catch (UnintentionallyCoveredCodeException $cce) {
-                $unintentionallyCoveredCodeError = new UnintentionallyCoveredCodeError(
-                    'This test executed code that is not listed as code to be covered or used:' .
-                    PHP_EOL . $cce->getMessage()
-                );
-            } catch (OriginalCodeCoverageException $cce) {
-                $error = true;
-
-                $e = $e ?? $cce;
-            }
-        }
-
-        if (isset($errorHandler)) {
-            $errorHandler->unregister();
-
-            unset($errorHandler);
-        }
-
-        if ($error) {
-            $this->addError($test, $e, $time);
-        } elseif ($failure) {
-            $this->addFailure($test, $e, $time);
-        } elseif ($warning) {
-            $this->addWarning($test, $e, $time);
-        } elseif (isset($unintentionallyCoveredCodeError)) {
-            $this->addFailure(
-                $test,
-                $unintentionallyCoveredCodeError,
-                $time
-            );
-        } elseif ($this->beStrictAboutTestsThatDoNotTestAnything &&
-            !$test->doesNotPerformAssertions() &&
-            $test->getNumAssertions() === 0) {
-            try {
-                $reflected = new ReflectionClass($test);
-                // @codeCoverageIgnoreStart
-            } catch (ReflectionException $e) {
-                throw new Exception(
-                    $e->getMessage(),
-                    (int) $e->getCode(),
-                    $e
-                );
-            }
-            // @codeCoverageIgnoreEnd
-
-            $name = $test->getName(false);
-
-            if ($name && $reflected->hasMethod($name)) {
-                try {
-                    $reflected = $reflected->getMethod($name);
-                    // @codeCoverageIgnoreStart
-                } catch (ReflectionException $e) {
-                    throw new Exception(
-                        $e->getMessage(),
-                        (int) $e->getCode(),
-                        $e
-                    );
-                }
-                // @codeCoverageIgnoreEnd
-            }
-
-            $this->addFailure(
-                $test,
-                new RiskyTestError(
-                    sprintf(
-                        "This test did not perform any assertions\n\n%s:%d",
-                        $reflected->getFileName(),
-                        $reflected->getStartLine()
-                    )
-                ),
-                $time
-            );
-        } elseif ($this->beStrictAboutTestsThatDoNotTestAnything &&
-            $test->doesNotPerformAssertions() &&
-            $test->getNumAssertions() > 0) {
-            $this->addFailure(
-                $test,
-                new RiskyTestError(
-                    sprintf(
-                        'This test is annotated with "@doesNotPerformAssertions" but performed %d assertions',
-                        $test->getNumAssertions()
-                    )
-                ),
-                $time
-            );
-        } elseif ($this->beStrictAboutOutputDuringTests && $test->hasOutput()) {
-            $this->addFailure(
-                $test,
-                new OutputError(
-                    sprintf(
-                        'This test printed output: %s',
-                        $test->getActualOutput()
-                    )
-                ),
-                $time
-            );
-        } elseif ($this->beStrictAboutTodoAnnotatedTests && $test instanceof TestCase) {
-            $annotations = TestUtil::parseTestMethodAnnotations(
-                get_class($test),
-                $test->getName(false)
-            );
-
-            if (isset($annotations['method']['todo'])) {
-                $this->addFailure(
-                    $test,
-                    new RiskyTestError(
-                        'Test method is annotated with @todo'
-                    ),
-                    $time
-                );
-            }
-        }
-
-        $this->endTest($test, $time);
-    }
-
-    /**
-     * Gets the number of run tests.
-     */
-    public function count(): int
-    {
-        return $this->runTests;
-    }
-
-    /**
-     * Checks whether the test run should stop.
-     */
-    public function shouldStop(): bool
-    {
-        return $this->stop;
-    }
-
-    /**
-     * Marks that the test run should stop.
-     */
-    public function stop(): void
-    {
-        $this->stop = true;
-    }
-
-    /**
-     * Returns the code coverage object.
-     */
-    public function getCodeCoverage(): ?CodeCoverage
-    {
-        return $this->codeCoverage;
-    }
-
-    /**
-     * Sets the code coverage object.
-     */
-    public function setCodeCoverage(CodeCoverage $codeCoverage): void
-    {
-        $this->codeCoverage = $codeCoverage;
-    }
-
-    /**
-     * Enables or disables the deprecation-to-exception conversion.
-     */
-    public function convertDeprecationsToExceptions(bool $flag): void
-    {
-        $this->convertDeprecationsToExceptions = $flag;
-    }
-
-    /**
-     * Returns the deprecation-to-exception conversion setting.
-     */
-    public function getConvertDeprecationsToExceptions(): bool
-    {
-        return $this->convertDeprecationsToExceptions;
-    }
-
-    /**
-     * Enables or disables the error-to-exception conversion.
-     */
-    public function convertErrorsToExceptions(bool $flag): void
-    {
-        $this->convertErrorsToExceptions = $flag;
-    }
-
-    /**
-     * Returns the error-to-exception conversion setting.
-     */
-    public function getConvertErrorsToExceptions(): bool
-    {
-        return $this->convertErrorsToExceptions;
-    }
-
-    /**
-     * Enables or disables the notice-to-exception conversion.
-     */
-    public function convertNoticesToExceptions(bool $flag): void
-    {
-        $this->convertNoticesToExceptions = $flag;
-    }
-
-    /**
-     * Returns the notice-to-exception conversion setting.
-     */
-    public function getConvertNoticesToExceptions(): bool
-    {
-        return $this->convertNoticesToExceptions;
-    }
-
-    /**
-     * Enables or disables the warning-to-exception conversion.
-     */
-    public function convertWarningsToExceptions(bool $flag): void
-    {
-        $this->convertWarningsToExceptions = $flag;
-    }
-
-    /**
-     * Returns the warning-to-exception conversion setting.
-     */
-    public function getConvertWarningsToExceptions(): bool
-    {
-        return $this->convertWarningsToExceptions;
-    }
-
-    /**
-     * Enables or disables the stopping when an error occurs.
-     */
-    public function stopOnError(bool $flag): void
-    {
-        $this->stopOnError = $flag;
-    }
-
-    /**
-     * Enables or disables the stopping when a failure occurs.
-     */
-    public function stopOnFailure(bool $flag): void
-    {
-        $this->stopOnFailure = $flag;
-    }
-
-    /**
-     * Enables or disables the stopping when a warning occurs.
-     */
-    public function stopOnWarning(bool $flag): void
-    {
-        $this->stopOnWarning = $flag;
-    }
-
-    public function beStrictAboutTestsThatDoNotTestAnything(bool $flag): void
-    {
-        $this->beStrictAboutTestsThatDoNotTestAnything = $flag;
-    }
-
-    public function isStrictAboutTestsThatDoNotTestAnything(): bool
-    {
-        return $this->beStrictAboutTestsThatDoNotTestAnything;
-    }
-
-    public function beStrictAboutOutputDuringTests(bool $flag): void
-    {
-        $this->beStrictAboutOutputDuringTests = $flag;
-    }
-
-    public function isStrictAboutOutputDuringTests(): bool
-    {
-        return $this->beStrictAboutOutputDuringTests;
-    }
-
-    public function beStrictAboutResourceUsageDuringSmallTests(bool $flag): void
-    {
-        $this->beStrictAboutResourceUsageDuringSmallTests = $flag;
-    }
-
-    public function isStrictAboutResourceUsageDuringSmallTests(): bool
-    {
-        return $this->beStrictAboutResourceUsageDuringSmallTests;
-    }
-
-    public function enforceTimeLimit(bool $flag): void
-    {
-        $this->enforceTimeLimit = $flag;
-    }
-
-    public function enforcesTimeLimit(): bool
-    {
-        return $this->enforceTimeLimit;
-    }
-
-    public function beStrictAboutTodoAnnotatedTests(bool $flag): void
-    {
-        $this->beStrictAboutTodoAnnotatedTests = $flag;
-    }
-
-    public function isStrictAboutTodoAnnotatedTests(): bool
-    {
-        return $this->beStrictAboutTodoAnnotatedTests;
-    }
-
-    public function forceCoversAnnotation(): void
-    {
-        $this->forceCoversAnnotation = true;
-    }
-
-    public function forcesCoversAnnotation(): bool
-    {
-        return $this->forceCoversAnnotation;
-    }
-
-    /**
-     * Enables or disables the stopping for risky tests.
-     */
-    public function stopOnRisky(bool $flag): void
-    {
-        $this->stopOnRisky = $flag;
-    }
-
-    /**
-     * Enables or disables the stopping for incomplete tests.
-     */
-    public function stopOnIncomplete(bool $flag): void
-    {
-        $this->stopOnIncomplete = $flag;
-    }
-
-    /**
-     * Enables or disables the stopping for skipped tests.
-     */
-    public function stopOnSkipped(bool $flag): void
-    {
-        $this->stopOnSkipped = $flag;
-    }
-
-    /**
-     * Enables or disables the stopping for defects: error, failure, warning.
-     */
-    public function stopOnDefect(bool $flag): void
-    {
-        $this->stopOnDefect = $flag;
-    }
-
-    /**
-     * Returns the time spent running the tests.
-     */
-    public function time(): float
-    {
-        return $this->time;
-    }
-
-    /**
-     * Returns whether the entire test was successful or not.
-     */
-    public function wasSuccessful(): bool
-    {
-        return $this->wasSuccessfulIgnoringWarnings() && empty($this->warnings);
-    }
-
-    public function wasSuccessfulIgnoringWarnings(): bool
-    {
-        return empty($this->errors) && empty($this->failures);
-    }
-
-    public function wasSuccessfulAndNoTestIsRiskyOrSkippedOrIncomplete(): bool
-    {
-        return $this->wasSuccessful() && $this->allHarmless() && $this->allCompletelyImplemented() && $this->noneSkipped();
-    }
-
-    /**
-     * Sets the default timeout for tests.
-     */
-    public function setDefaultTimeLimit(int $timeout): void
-    {
-        $this->defaultTimeLimit = $timeout;
-    }
-
-    /**
-     * Sets the timeout for small tests.
-     */
-    public function setTimeoutForSmallTests(int $timeout): void
-    {
-        $this->timeoutForSmallTests = $timeout;
-    }
-
-    /**
-     * Sets the timeout for medium tests.
-     */
-    public function setTimeoutForMediumTests(int $timeout): void
-    {
-        $this->timeoutForMediumTests = $timeout;
-    }
-
-    /**
-     * Sets the timeout for large tests.
-     */
-    public function setTimeoutForLargeTests(int $timeout): void
-    {
-        $this->timeoutForLargeTests = $timeout;
-    }
-
-    /**
-     * Returns the set timeout for large tests.
-     */
-    public function getTimeoutForLargeTests(): int
-    {
-        return $this->timeoutForLargeTests;
-    }
-
-    public function setRegisterMockObjectsFromTestArgumentsRecursively(bool $flag): void
-    {
-        $this->registerMockObjectsFromTestArgumentsRecursively = $flag;
-    }
-
-    private function recordError(Test $test, Throwable $t): void
-    {
-        $this->errors[] = new TestFailure($test, $t);
-    }
-
-    private function recordNotImplemented(Test $test, Throwable $t): void
-    {
-        $this->notImplemented[] = new TestFailure($test, $t);
-    }
-
-    private function recordRisky(Test $test, Throwable $t): void
-    {
-        $this->risky[] = new TestFailure($test, $t);
-    }
-
-    private function recordSkipped(Test $test, Throwable $t): void
-    {
-        $this->skipped[] = new TestFailure($test, $t);
-    }
-
-    private function recordWarning(Test $test, Throwable $t): void
-    {
-        $this->warnings[] = new TestFailure($test, $t);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+71ypIWDGpXGNwtp+Rdh1hOhVh8s/+Wa5uW==

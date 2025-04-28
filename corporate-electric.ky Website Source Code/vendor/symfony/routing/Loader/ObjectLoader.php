@@ -1,84 +1,69 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Routing\Loader;
-
-use Symfony\Component\Config\Loader\Loader;
-use Symfony\Component\Config\Resource\FileResource;
-use Symfony\Component\Routing\RouteCollection;
-
-/**
- * A route loader that calls a method on an object to load the routes.
- *
- * @author Ryan Weaver <ryan@knpuniversity.com>
- */
-abstract class ObjectLoader extends Loader
-{
-    /**
-     * Returns the object that the method will be called on to load routes.
-     *
-     * For example, if your application uses a service container,
-     * the $id may be a service id.
-     *
-     * @return object
-     */
-    abstract protected function getObject(string $id);
-
-    /**
-     * Calls the object method that will load the routes.
-     *
-     * @param string      $resource object_id::method
-     * @param string|null $type     The resource type
-     *
-     * @return RouteCollection
-     */
-    public function load($resource, string $type = null)
-    {
-        if (!preg_match('/^[^\:]+(?:::(?:[^\:]+))?$/', $resource)) {
-            throw new \InvalidArgumentException(sprintf('Invalid resource "%s" passed to the %s route loader: use the format "object_id::method" or "object_id" if your object class has an "__invoke" method.', $resource, \is_string($type) ? '"'.$type.'"' : 'object'));
-        }
-
-        $parts = explode('::', $resource);
-        $method = $parts[1] ?? '__invoke';
-
-        $loaderObject = $this->getObject($parts[0]);
-
-        if (!\is_object($loaderObject)) {
-            throw new \TypeError(sprintf('"%s:getObject()" must return an object: "%s" returned.', static::class, get_debug_type($loaderObject)));
-        }
-
-        if (!\is_callable([$loaderObject, $method])) {
-            throw new \BadMethodCallException(sprintf('Method "%s" not found on "%s" when importing routing resource "%s".', $method, get_debug_type($loaderObject), $resource));
-        }
-
-        $routeCollection = $loaderObject->$method($this);
-
-        if (!$routeCollection instanceof RouteCollection) {
-            $type = get_debug_type($routeCollection);
-
-            throw new \LogicException(sprintf('The "%s::%s()" method must return a RouteCollection: "%s" returned.', get_debug_type($loaderObject), $method, $type));
-        }
-
-        // make the object file tracked so that if it changes, the cache rebuilds
-        $this->addClassResource(new \ReflectionClass($loaderObject), $routeCollection);
-
-        return $routeCollection;
-    }
-
-    private function addClassResource(\ReflectionClass $class, RouteCollection $collection)
-    {
-        do {
-            if (is_file($class->getFileName())) {
-                $collection->addResource(new FileResource($class->getFileName()));
-            }
-        } while ($class = $class->getParentClass());
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

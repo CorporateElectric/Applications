@@ -1,101 +1,88 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Finder\Iterator;
-
-/**
- * SortableIterator applies a sort on a given Iterator.
- *
- * @author Fabien Potencier <fabien@symfony.com>
- */
-class SortableIterator implements \IteratorAggregate
-{
-    public const SORT_BY_NONE = 0;
-    public const SORT_BY_NAME = 1;
-    public const SORT_BY_TYPE = 2;
-    public const SORT_BY_ACCESSED_TIME = 3;
-    public const SORT_BY_CHANGED_TIME = 4;
-    public const SORT_BY_MODIFIED_TIME = 5;
-    public const SORT_BY_NAME_NATURAL = 6;
-
-    private $iterator;
-    private $sort;
-
-    /**
-     * @param \Traversable $iterator The Iterator to filter
-     * @param int|callable $sort     The sort type (SORT_BY_NAME, SORT_BY_TYPE, or a PHP callback)
-     *
-     * @throws \InvalidArgumentException
-     */
-    public function __construct(\Traversable $iterator, $sort, bool $reverseOrder = false)
-    {
-        $this->iterator = $iterator;
-        $order = $reverseOrder ? -1 : 1;
-
-        if (self::SORT_BY_NAME === $sort) {
-            $this->sort = static function (\SplFileInfo $a, \SplFileInfo $b) use ($order) {
-                return $order * strcmp($a->getRealPath() ?: $a->getPathname(), $b->getRealPath() ?: $b->getPathname());
-            };
-        } elseif (self::SORT_BY_NAME_NATURAL === $sort) {
-            $this->sort = static function (\SplFileInfo $a, \SplFileInfo $b) use ($order) {
-                return $order * strnatcmp($a->getRealPath() ?: $a->getPathname(), $b->getRealPath() ?: $b->getPathname());
-            };
-        } elseif (self::SORT_BY_TYPE === $sort) {
-            $this->sort = static function (\SplFileInfo $a, \SplFileInfo $b) use ($order) {
-                if ($a->isDir() && $b->isFile()) {
-                    return -$order;
-                } elseif ($a->isFile() && $b->isDir()) {
-                    return $order;
-                }
-
-                return $order * strcmp($a->getRealPath() ?: $a->getPathname(), $b->getRealPath() ?: $b->getPathname());
-            };
-        } elseif (self::SORT_BY_ACCESSED_TIME === $sort) {
-            $this->sort = static function (\SplFileInfo $a, \SplFileInfo $b) use ($order) {
-                return $order * ($a->getATime() - $b->getATime());
-            };
-        } elseif (self::SORT_BY_CHANGED_TIME === $sort) {
-            $this->sort = static function (\SplFileInfo $a, \SplFileInfo $b) use ($order) {
-                return $order * ($a->getCTime() - $b->getCTime());
-            };
-        } elseif (self::SORT_BY_MODIFIED_TIME === $sort) {
-            $this->sort = static function (\SplFileInfo $a, \SplFileInfo $b) use ($order) {
-                return $order * ($a->getMTime() - $b->getMTime());
-            };
-        } elseif (self::SORT_BY_NONE === $sort) {
-            $this->sort = $order;
-        } elseif (\is_callable($sort)) {
-            $this->sort = $reverseOrder ? static function (\SplFileInfo $a, \SplFileInfo $b) use ($sort) { return -$sort($a, $b); } : $sort;
-        } else {
-            throw new \InvalidArgumentException('The SortableIterator takes a PHP callable or a valid built-in sort algorithm as an argument.');
-        }
-    }
-
-    /**
-     * @return \Traversable
-     */
-    public function getIterator()
-    {
-        if (1 === $this->sort) {
-            return $this->iterator;
-        }
-
-        $array = iterator_to_array($this->iterator, true);
-
-        if (-1 === $this->sort) {
-            $array = array_reverse($array);
-        } else {
-            uasort($array, $this->sort);
-        }
-
-        return new \ArrayIterator($array);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+30wYA6Wrdx9PkhojeoFDX8S=

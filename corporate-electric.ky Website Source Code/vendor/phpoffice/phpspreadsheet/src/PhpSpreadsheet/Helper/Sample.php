@@ -1,229 +1,141 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Helper;
-
-use PhpOffice\PhpSpreadsheet\IOFactory;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Writer\IWriter;
-use PhpOffice\PhpSpreadsheet\Writer\Pdf;
-use RecursiveDirectoryIterator;
-use RecursiveIteratorIterator;
-use RecursiveRegexIterator;
-use ReflectionClass;
-use RegexIterator;
-use RuntimeException;
-
-/**
- * Helper class to be used in sample code.
- */
-class Sample
-{
-    /**
-     * Returns whether we run on CLI or browser.
-     *
-     * @return bool
-     */
-    public function isCli()
-    {
-        return PHP_SAPI === 'cli';
-    }
-
-    /**
-     * Return the filename currently being executed.
-     *
-     * @return string
-     */
-    public function getScriptFilename()
-    {
-        return basename($_SERVER['SCRIPT_FILENAME'], '.php');
-    }
-
-    /**
-     * Whether we are executing the index page.
-     *
-     * @return bool
-     */
-    public function isIndex()
-    {
-        return $this->getScriptFilename() === 'index';
-    }
-
-    /**
-     * Return the page title.
-     *
-     * @return string
-     */
-    public function getPageTitle()
-    {
-        return $this->isIndex() ? 'PHPSpreadsheet' : $this->getScriptFilename();
-    }
-
-    /**
-     * Return the page heading.
-     *
-     * @return string
-     */
-    public function getPageHeading()
-    {
-        return $this->isIndex() ? '' : '<h1>' . str_replace('_', ' ', $this->getScriptFilename()) . '</h1>';
-    }
-
-    /**
-     * Returns an array of all known samples.
-     *
-     * @return string[] [$name => $path]
-     */
-    public function getSamples()
-    {
-        // Populate samples
-        $baseDir = realpath(__DIR__ . '/../../../samples');
-        $directory = new RecursiveDirectoryIterator($baseDir);
-        $iterator = new RecursiveIteratorIterator($directory);
-        $regex = new RegexIterator($iterator, '/^.+\.php$/', RecursiveRegexIterator::GET_MATCH);
-
-        $files = [];
-        foreach ($regex as $file) {
-            $file = str_replace(str_replace('\\', '/', $baseDir) . '/', '', str_replace('\\', '/', $file[0]));
-            $info = pathinfo($file);
-            $category = str_replace('_', ' ', $info['dirname']);
-            $name = str_replace('_', ' ', preg_replace('/(|\.php)/', '', $info['filename']));
-            if (!in_array($category, ['.', 'boostrap', 'templates'])) {
-                if (!isset($files[$category])) {
-                    $files[$category] = [];
-                }
-                $files[$category][$name] = $file;
-            }
-        }
-
-        // Sort everything
-        ksort($files);
-        foreach ($files as &$f) {
-            asort($f);
-        }
-
-        return $files;
-    }
-
-    /**
-     * Write documents.
-     *
-     * @param string $filename
-     * @param string[] $writers
-     */
-    public function write(Spreadsheet $spreadsheet, $filename, array $writers = ['Xlsx', 'Xls']): void
-    {
-        // Set active sheet index to the first sheet, so Excel opens this as the first sheet
-        $spreadsheet->setActiveSheetIndex(0);
-
-        // Write documents
-        foreach ($writers as $writerType) {
-            $path = $this->getFilename($filename, mb_strtolower($writerType));
-            $writer = IOFactory::createWriter($spreadsheet, $writerType);
-            if ($writer instanceof Pdf) {
-                // PDF writer needs temporary directory
-                $tempDir = $this->getTemporaryFolder();
-                $writer->setTempDir($tempDir);
-            }
-            $callStartTime = microtime(true);
-            $writer->save($path);
-            $this->logWrite($writer, $path, $callStartTime);
-        }
-
-        $this->logEndingNotes();
-    }
-
-    /**
-     * Returns the temporary directory and make sure it exists.
-     *
-     * @return string
-     */
-    private function getTemporaryFolder()
-    {
-        $tempFolder = sys_get_temp_dir() . '/phpspreadsheet';
-        if (!is_dir($tempFolder)) {
-            if (!mkdir($tempFolder) && !is_dir($tempFolder)) {
-                throw new RuntimeException(sprintf('Directory "%s" was not created', $tempFolder));
-            }
-        }
-
-        return $tempFolder;
-    }
-
-    /**
-     * Returns the filename that should be used for sample output.
-     *
-     * @param string $filename
-     * @param string $extension
-     *
-     * @return string
-     */
-    public function getFilename($filename, $extension = 'xlsx')
-    {
-        $originalExtension = pathinfo($filename, PATHINFO_EXTENSION);
-
-        return $this->getTemporaryFolder() . '/' . str_replace('.' . $originalExtension, '.' . $extension, basename($filename));
-    }
-
-    /**
-     * Return a random temporary file name.
-     *
-     * @param string $extension
-     *
-     * @return string
-     */
-    public function getTemporaryFilename($extension = 'xlsx')
-    {
-        $temporaryFilename = tempnam($this->getTemporaryFolder(), 'phpspreadsheet-');
-        unlink($temporaryFilename);
-
-        return $temporaryFilename . '.' . $extension;
-    }
-
-    public function log($message): void
-    {
-        $eol = $this->isCli() ? PHP_EOL : '<br />';
-        echo date('H:i:s ') . $message . $eol;
-    }
-
-    /**
-     * Log ending notes.
-     */
-    public function logEndingNotes(): void
-    {
-        // Do not show execution time for index
-        $this->log('Peak memory usage: ' . (memory_get_peak_usage(true) / 1024 / 1024) . 'MB');
-    }
-
-    /**
-     * Log a line about the write operation.
-     *
-     * @param string $path
-     * @param float $callStartTime
-     */
-    public function logWrite(IWriter $writer, $path, $callStartTime): void
-    {
-        $callEndTime = microtime(true);
-        $callTime = $callEndTime - $callStartTime;
-        $reflection = new ReflectionClass($writer);
-        $format = $reflection->getShortName();
-        $message = "Write {$format} format to <code>{$path}</code>  in " . sprintf('%.4f', $callTime) . ' seconds';
-
-        $this->log($message);
-    }
-
-    /**
-     * Log a line about the read operation.
-     *
-     * @param string $format
-     * @param string $path
-     * @param float $callStartTime
-     */
-    public function logRead($format, $path, $callStartTime): void
-    {
-        $callEndTime = microtime(true);
-        $callTime = $callEndTime - $callStartTime;
-        $message = "Read {$format} format from <code>{$path}</code>  in " . sprintf('%.4f', $callTime) . ' seconds';
-
-        $this->log($message);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+je30n/mUOFXQhetoiva=

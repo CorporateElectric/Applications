@@ -1,113 +1,41 @@
-<?php
-
-/*
- * This file is part of SwiftMailer.
- * (c) 2004-2009 Chris Corbyn
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-/**
- * A null KeyCache that does not cache at all.
- *
- * @author Chris Corbyn
- */
-class Swift_KeyCache_NullKeyCache implements Swift_KeyCache
-{
-    /**
-     * Set a string into the cache under $itemKey for the namespace $nsKey.
-     *
-     * @see MODE_WRITE, MODE_APPEND
-     *
-     * @param string $nsKey
-     * @param string $itemKey
-     * @param string $string
-     * @param int    $mode
-     */
-    public function setString($nsKey, $itemKey, $string, $mode)
-    {
-    }
-
-    /**
-     * Set a ByteStream into the cache under $itemKey for the namespace $nsKey.
-     *
-     * @see MODE_WRITE, MODE_APPEND
-     *
-     * @param string $nsKey
-     * @param string $itemKey
-     * @param int    $mode
-     */
-    public function importFromByteStream($nsKey, $itemKey, Swift_OutputByteStream $os, $mode)
-    {
-    }
-
-    /**
-     * Provides a ByteStream which when written to, writes data to $itemKey.
-     *
-     * NOTE: The stream will always write in append mode.
-     *
-     * @param string $nsKey
-     * @param string $itemKey
-     *
-     * @return Swift_InputByteStream
-     */
-    public function getInputByteStream($nsKey, $itemKey, Swift_InputByteStream $writeThrough = null)
-    {
-    }
-
-    /**
-     * Get data back out of the cache as a string.
-     *
-     * @param string $nsKey
-     * @param string $itemKey
-     *
-     * @return string
-     */
-    public function getString($nsKey, $itemKey)
-    {
-    }
-
-    /**
-     * Get data back out of the cache as a ByteStream.
-     *
-     * @param string                $nsKey
-     * @param string                $itemKey
-     * @param Swift_InputByteStream $is      to write the data to
-     */
-    public function exportToByteStream($nsKey, $itemKey, Swift_InputByteStream $is)
-    {
-    }
-
-    /**
-     * Check if the given $itemKey exists in the namespace $nsKey.
-     *
-     * @param string $nsKey
-     * @param string $itemKey
-     *
-     * @return bool
-     */
-    public function hasKey($nsKey, $itemKey)
-    {
-        return false;
-    }
-
-    /**
-     * Clear data for $itemKey in the namespace $nsKey if it exists.
-     *
-     * @param string $nsKey
-     * @param string $itemKey
-     */
-    public function clearKey($nsKey, $itemKey)
-    {
-    }
-
-    /**
-     * Clear all data in the namespace $nsKey if it exists.
-     *
-     * @param string $nsKey
-     */
-    public function clearAll($nsKey)
-    {
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+OW0IEUCX32GSTahhikFoo3DvgE2tBzu=

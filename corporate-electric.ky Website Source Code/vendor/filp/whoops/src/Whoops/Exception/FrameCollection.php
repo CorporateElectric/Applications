@@ -1,203 +1,91 @@
-<?php
-/**
- * Whoops - php errors for cool kids
- * @author Filipe Dobreira <http://github.com/filp>
- */
-
-namespace Whoops\Exception;
-
-use ArrayAccess;
-use ArrayIterator;
-use Countable;
-use IteratorAggregate;
-use Serializable;
-use UnexpectedValueException;
-
-/**
- * Exposes a fluent interface for dealing with an ordered list
- * of stack-trace frames.
- */
-class FrameCollection implements ArrayAccess, IteratorAggregate, Serializable, Countable
-{
-    /**
-     * @var array[]
-     */
-    private $frames;
-
-    /**
-     * @param array $frames
-     */
-    public function __construct(array $frames)
-    {
-        $this->frames = array_map(function ($frame) {
-            return new Frame($frame);
-        }, $frames);
-    }
-
-    /**
-     * Filters frames using a callable, returns the same FrameCollection
-     *
-     * @param  callable        $callable
-     * @return FrameCollection
-     */
-    public function filter($callable)
-    {
-        $this->frames = array_values(array_filter($this->frames, $callable));
-        return $this;
-    }
-
-    /**
-     * Map the collection of frames
-     *
-     * @param  callable        $callable
-     * @return FrameCollection
-     */
-    public function map($callable)
-    {
-        // Contain the map within a higher-order callable
-        // that enforces type-correctness for the $callable
-        $this->frames = array_map(function ($frame) use ($callable) {
-            $frame = call_user_func($callable, $frame);
-
-            if (!$frame instanceof Frame) {
-                throw new UnexpectedValueException(
-                    "Callable to " . __CLASS__ . "::map must return a Frame object"
-                );
-            }
-
-            return $frame;
-        }, $this->frames);
-
-        return $this;
-    }
-
-    /**
-     * Returns an array with all frames, does not affect
-     * the internal array.
-     *
-     * @todo   If this gets any more complex than this,
-     *         have getIterator use this method.
-     * @see    FrameCollection::getIterator
-     * @return array
-     */
-    public function getArray()
-    {
-        return $this->frames;
-    }
-
-    /**
-     * @see IteratorAggregate::getIterator
-     * @return ArrayIterator
-     */
-    public function getIterator()
-    {
-        return new ArrayIterator($this->frames);
-    }
-
-    /**
-     * @see ArrayAccess::offsetExists
-     * @param int $offset
-     */
-    public function offsetExists($offset)
-    {
-        return isset($this->frames[$offset]);
-    }
-
-    /**
-     * @see ArrayAccess::offsetGet
-     * @param int $offset
-     */
-    public function offsetGet($offset)
-    {
-        return $this->frames[$offset];
-    }
-
-    /**
-     * @see ArrayAccess::offsetSet
-     * @param int $offset
-     */
-    public function offsetSet($offset, $value)
-    {
-        throw new \Exception(__CLASS__ . ' is read only');
-    }
-
-    /**
-     * @see ArrayAccess::offsetUnset
-     * @param int $offset
-     */
-    public function offsetUnset($offset)
-    {
-        throw new \Exception(__CLASS__ . ' is read only');
-    }
-
-    /**
-     * @see Countable::count
-     * @return int
-     */
-    public function count()
-    {
-        return count($this->frames);
-    }
-
-    /**
-     * Count the frames that belongs to the application.
-     *
-     * @return int
-     */
-    public function countIsApplication()
-    {
-        return count(array_filter($this->frames, function (Frame $f) {
-            return $f->isApplication();
-        }));
-    }
-
-    /**
-     * @see Serializable::serialize
-     * @return string
-     */
-    public function serialize()
-    {
-        return serialize($this->frames);
-    }
-
-    /**
-     * @see Serializable::unserialize
-     * @param string $serializedFrames
-     */
-    public function unserialize($serializedFrames)
-    {
-        $this->frames = unserialize($serializedFrames);
-    }
-
-    /**
-     * @param Frame[] $frames Array of Frame instances, usually from $e->getPrevious()
-     */
-    public function prependFrames(array $frames)
-    {
-        $this->frames = array_merge($frames, $this->frames);
-    }
-
-    /**
-     * Gets the innermost part of stack trace that is not the same as that of outer exception
-     *
-     * @param  FrameCollection $parentFrames Outer exception frames to compare tail against
-     * @return Frame[]
-     */
-    public function topDiff(FrameCollection $parentFrames)
-    {
-        $diff = $this->frames;
-
-        $parentFrames = $parentFrames->getArray();
-        $p = count($parentFrames)-1;
-
-        for ($i = count($diff)-1; $i >= 0 && $p >= 0; $i--) {
-            /** @var Frame $tailFrame */
-            $tailFrame = $diff[$i];
-            if ($tailFrame->equals($parentFrames[$p])) {
-                unset($diff[$i]);
-            }
-            $p--;
-        }
-        return $diff;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+J6tyrQfYQTwt+pqBO0==

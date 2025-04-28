@@ -1,142 +1,55 @@
-<?php
-
-class HTMLPurifier_DoctypeRegistry
-{
-
-    /**
-     * Hash of doctype names to doctype objects.
-     * @type array
-     */
-    protected $doctypes;
-
-    /**
-     * Lookup table of aliases to real doctype names.
-     * @type array
-     */
-    protected $aliases;
-
-    /**
-     * Registers a doctype to the registry
-     * @note Accepts a fully-formed doctype object, or the
-     *       parameters for constructing a doctype object
-     * @param string $doctype Name of doctype or literal doctype object
-     * @param bool $xml
-     * @param array $modules Modules doctype will load
-     * @param array $tidy_modules Modules doctype will load for certain modes
-     * @param array $aliases Alias names for doctype
-     * @param string $dtd_public
-     * @param string $dtd_system
-     * @return HTMLPurifier_Doctype Editable registered doctype
-     */
-    public function register(
-        $doctype,
-        $xml = true,
-        $modules = array(),
-        $tidy_modules = array(),
-        $aliases = array(),
-        $dtd_public = null,
-        $dtd_system = null
-    ) {
-        if (!is_array($modules)) {
-            $modules = array($modules);
-        }
-        if (!is_array($tidy_modules)) {
-            $tidy_modules = array($tidy_modules);
-        }
-        if (!is_array($aliases)) {
-            $aliases = array($aliases);
-        }
-        if (!is_object($doctype)) {
-            $doctype = new HTMLPurifier_Doctype(
-                $doctype,
-                $xml,
-                $modules,
-                $tidy_modules,
-                $aliases,
-                $dtd_public,
-                $dtd_system
-            );
-        }
-        $this->doctypes[$doctype->name] = $doctype;
-        $name = $doctype->name;
-        // hookup aliases
-        foreach ($doctype->aliases as $alias) {
-            if (isset($this->doctypes[$alias])) {
-                continue;
-            }
-            $this->aliases[$alias] = $name;
-        }
-        // remove old aliases
-        if (isset($this->aliases[$name])) {
-            unset($this->aliases[$name]);
-        }
-        return $doctype;
-    }
-
-    /**
-     * Retrieves reference to a doctype of a certain name
-     * @note This function resolves aliases
-     * @note When possible, use the more fully-featured make()
-     * @param string $doctype Name of doctype
-     * @return HTMLPurifier_Doctype Editable doctype object
-     */
-    public function get($doctype)
-    {
-        if (isset($this->aliases[$doctype])) {
-            $doctype = $this->aliases[$doctype];
-        }
-        if (!isset($this->doctypes[$doctype])) {
-            trigger_error('Doctype ' . htmlspecialchars($doctype) . ' does not exist', E_USER_ERROR);
-            $anon = new HTMLPurifier_Doctype($doctype);
-            return $anon;
-        }
-        return $this->doctypes[$doctype];
-    }
-
-    /**
-     * Creates a doctype based on a configuration object,
-     * will perform initialization on the doctype
-     * @note Use this function to get a copy of doctype that config
-     *       can hold on to (this is necessary in order to tell
-     *       Generator whether or not the current document is XML
-     *       based or not).
-     * @param HTMLPurifier_Config $config
-     * @return HTMLPurifier_Doctype
-     */
-    public function make($config)
-    {
-        return clone $this->get($this->getDoctypeFromConfig($config));
-    }
-
-    /**
-     * Retrieves the doctype from the configuration object
-     * @param HTMLPurifier_Config $config
-     * @return string
-     */
-    public function getDoctypeFromConfig($config)
-    {
-        // recommended test
-        $doctype = $config->get('HTML.Doctype');
-        if (!empty($doctype)) {
-            return $doctype;
-        }
-        $doctype = $config->get('HTML.CustomDoctype');
-        if (!empty($doctype)) {
-            return $doctype;
-        }
-        // backwards-compatibility
-        if ($config->get('HTML.XHTML')) {
-            $doctype = 'XHTML 1.0';
-        } else {
-            $doctype = 'HTML 4.01';
-        }
-        if ($config->get('HTML.Strict')) {
-            $doctype .= ' Strict';
-        } else {
-            $doctype .= ' Transitional';
-        }
-        return $doctype;
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

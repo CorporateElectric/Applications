@@ -1,70 +1,39 @@
-<?php
-
-/**
- * Validates contents based on NMTOKENS attribute type.
- */
-class HTMLPurifier_AttrDef_HTML_Nmtokens extends HTMLPurifier_AttrDef
-{
-
-    /**
-     * @param string $string
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return bool|string
-     */
-    public function validate($string, $config, $context)
-    {
-        $string = trim($string);
-
-        // early abort: '' and '0' (strings that convert to false) are invalid
-        if (!$string) {
-            return false;
-        }
-
-        $tokens = $this->split($string, $config, $context);
-        $tokens = $this->filter($tokens, $config, $context);
-        if (empty($tokens)) {
-            return false;
-        }
-        return implode(' ', $tokens);
-    }
-
-    /**
-     * Splits a space separated list of tokens into its constituent parts.
-     * @param string $string
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return array
-     */
-    protected function split($string, $config, $context)
-    {
-        // OPTIMIZABLE!
-        // do the preg_match, capture all subpatterns for reformulation
-
-        // we don't support U+00A1 and up codepoints or
-        // escaping because I don't know how to do that with regexps
-        // and plus it would complicate optimization efforts (you never
-        // see that anyway).
-        $pattern = '/(?:(?<=\s)|\A)' . // look behind for space or string start
-            '((?:--|-?[A-Za-z_])[A-Za-z_\-0-9]*)' .
-            '(?:(?=\s)|\z)/'; // look ahead for space or string end
-        preg_match_all($pattern, $string, $matches);
-        return $matches[1];
-    }
-
-    /**
-     * Template method for removing certain tokens based on arbitrary criteria.
-     * @note If we wanted to be really functional, we'd do an array_filter
-     *       with a callback. But... we're not.
-     * @param array $tokens
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return array
-     */
-    protected function filter($tokens, $config, $context)
-    {
-        return $tokens;
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+hdGQc9yiExhz5/5habM1hmnPs30=

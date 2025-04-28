@@ -1,79 +1,33 @@
-<?php
-
-namespace Illuminate\Contracts\Routing;
-
-interface UrlGenerator
-{
-    /**
-     * Get the current URL for the request.
-     *
-     * @return string
-     */
-    public function current();
-
-    /**
-     * Get the URL for the previous request.
-     *
-     * @param  mixed  $fallback
-     * @return string
-     */
-    public function previous($fallback = false);
-
-    /**
-     * Generate an absolute URL to the given path.
-     *
-     * @param  string  $path
-     * @param  mixed  $extra
-     * @param  bool|null  $secure
-     * @return string
-     */
-    public function to($path, $extra = [], $secure = null);
-
-    /**
-     * Generate a secure, absolute URL to the given path.
-     *
-     * @param  string  $path
-     * @param  array  $parameters
-     * @return string
-     */
-    public function secure($path, $parameters = []);
-
-    /**
-     * Generate the URL to an application asset.
-     *
-     * @param  string  $path
-     * @param  bool|null  $secure
-     * @return string
-     */
-    public function asset($path, $secure = null);
-
-    /**
-     * Get the URL to a named route.
-     *
-     * @param  string  $name
-     * @param  mixed  $parameters
-     * @param  bool  $absolute
-     * @return string
-     *
-     * @throws \InvalidArgumentException
-     */
-    public function route($name, $parameters = [], $absolute = true);
-
-    /**
-     * Get the URL to a controller action.
-     *
-     * @param  string|array  $action
-     * @param  mixed  $parameters
-     * @param  bool  $absolute
-     * @return string
-     */
-    public function action($action, $parameters = [], $absolute = true);
-
-    /**
-     * Set the root controller namespace.
-     *
-     * @param  string  $rootNamespace
-     * @return $this
-     */
-    public function setRootControllerNamespace($rootNamespace);
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+Oi/dR0==

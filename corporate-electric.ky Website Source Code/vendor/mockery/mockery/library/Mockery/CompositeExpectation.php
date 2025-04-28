@@ -1,154 +1,65 @@
-<?php
-/**
- * Mockery
- *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://github.com/padraic/mockery/blob/master/LICENSE
- * If you did not receive a copy of the license and are unable to
- * obtain it through the world-wide-web, please send an email
- * to padraic@php.net so we can send you a copy immediately.
- *
- * @category   Mockery
- * @package    Mockery
- * @copyright  Copyright (c) 2010 Pádraic Brady (http://blog.astrumfutura.com)
- * @license    http://github.com/padraic/mockery/blob/master/LICENSE New BSD License
- */
-
-namespace Mockery;
-
-class CompositeExpectation implements ExpectationInterface
-{
-    /**
-     * Stores an array of all expectations for this composite
-     *
-     * @var array
-     */
-    protected $_expectations = array();
-
-    /**
-     * Add an expectation to the composite
-     *
-     * @param \Mockery\Expectation|\Mockery\CompositeExpectation $expectation
-     * @return void
-     */
-    public function add($expectation)
-    {
-        $this->_expectations[] = $expectation;
-    }
-
-    /**
-     * @param mixed ...$args
-     */
-    public function andReturn(...$args)
-    {
-        return $this->__call(__FUNCTION__, $args);
-    }
-
-    /**
-     * Set a return value, or sequential queue of return values
-     *
-     * @param mixed ...$args
-     * @return self
-     */
-    public function andReturns(...$args)
-    {
-        return call_user_func_array([$this, 'andReturn'], $args);
-    }
-
-    /**
-     * Intercept any expectation calls and direct against all expectations
-     *
-     * @param string $method
-     * @param array $args
-     * @return self
-     */
-    public function __call($method, array $args)
-    {
-        foreach ($this->_expectations as $expectation) {
-            call_user_func_array(array($expectation, $method), $args);
-        }
-        return $this;
-    }
-
-    /**
-     * Return order number of the first expectation
-     *
-     * @return int
-     */
-    public function getOrderNumber()
-    {
-        reset($this->_expectations);
-        $first = current($this->_expectations);
-        return $first->getOrderNumber();
-    }
-
-    /**
-     * Return the parent mock of the first expectation
-     *
-     * @return \Mockery\MockInterface|\Mockery\LegacyMockInterface
-     */
-    public function getMock()
-    {
-        reset($this->_expectations);
-        $first = current($this->_expectations);
-        return $first->getMock();
-    }
-
-    /**
-     * Mockery API alias to getMock
-     *
-     * @return \Mockery\LegacyMockInterface|\Mockery\MockInterface
-     */
-    public function mock()
-    {
-        return $this->getMock();
-    }
-
-    /**
-     * Starts a new expectation addition on the first mock which is the primary
-     * target outside of a demeter chain
-     *
-     * @param mixed ...$args
-     * @return \Mockery\Expectation
-     */
-    public function shouldReceive(...$args)
-    {
-        reset($this->_expectations);
-        $first = current($this->_expectations);
-        return call_user_func_array(array($first->getMock(), 'shouldReceive'), $args);
-    }
-
-    /**
-     * Starts a new expectation addition on the first mock which is the primary
-     * target outside of a demeter chain
-     *
-     * @param mixed ...$args
-     * @return \Mockery\Expectation
-     */
-    public function shouldNotReceive(...$args)
-    {
-        reset($this->_expectations);
-        $first = current($this->_expectations);
-        return call_user_func_array(array($first->getMock(), 'shouldNotReceive'), $args);
-    }
-
-    /**
-     * Return the string summary of this composite expectation
-     *
-     * @return string
-     */
-    public function __toString()
-    {
-        $return = '[';
-        $parts = array();
-        foreach ($this->_expectations as $exp) {
-            $parts[] = (string) $exp;
-        }
-        $return .= implode(', ', $parts) . ']';
-        return $return;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

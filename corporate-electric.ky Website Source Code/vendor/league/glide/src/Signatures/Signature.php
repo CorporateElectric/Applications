@@ -1,63 +1,46 @@
-<?php
-
-namespace League\Glide\Signatures;
-
-class Signature implements SignatureInterface
-{
-    /**
-     * Secret key used to generate signature.
-     * @var string
-     */
-    protected $signKey;
-
-    /**
-     * Create Signature instance.
-     * @param string $signKey Secret key used to generate signature.
-     */
-    public function __construct($signKey)
-    {
-        $this->signKey = $signKey;
-    }
-
-    /**
-     * Add an HTTP signature to manipulation parameters.
-     * @param  string $path   The resource path.
-     * @param  array  $params The manipulation parameters.
-     * @return array  The updated manipulation parameters.
-     */
-    public function addSignature($path, array $params)
-    {
-        return array_merge($params, ['s' => $this->generateSignature($path, $params)]);
-    }
-
-    /**
-     * Validate a request signature.
-     * @param  string             $path   The resource path.
-     * @param  array              $params The manipulation params.
-     * @throws SignatureException
-     */
-    public function validateRequest($path, array $params)
-    {
-        if (!isset($params['s'])) {
-            throw new SignatureException('Signature is missing.');
-        }
-
-        if ($params['s'] !== $this->generateSignature($path, $params)) {
-            throw new SignatureException('Signature is not valid.');
-        }
-    }
-
-    /**
-     * Generate an HTTP signature.
-     * @param  string $path   The resource path.
-     * @param  array  $params The manipulation parameters.
-     * @return string The generated HTTP signature.
-     */
-    public function generateSignature($path, array $params)
-    {
-        unset($params['s']);
-        ksort($params);
-
-        return md5($this->signKey.':'.ltrim($path, '/').'?'.http_build_query($params));
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

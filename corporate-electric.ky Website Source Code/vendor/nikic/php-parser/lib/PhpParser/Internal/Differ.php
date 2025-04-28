@@ -1,164 +1,86 @@
-<?php declare(strict_types=1);
-
-namespace PhpParser\Internal;
-
-/**
- * Implements the Myers diff algorithm.
- *
- * Myers, Eugene W. "An O (ND) difference algorithm and its variations."
- * Algorithmica 1.1 (1986): 251-266.
- *
- * @internal
- */
-class Differ
-{
-    private $isEqual;
-
-    /**
-     * Create differ over the given equality relation.
-     *
-     * @param callable $isEqual Equality relation with signature function($a, $b) : bool
-     */
-    public function __construct(callable $isEqual) {
-        $this->isEqual = $isEqual;
-    }
-
-    /**
-     * Calculate diff (edit script) from $old to $new.
-     *
-     * @param array $old Original array
-     * @param array $new New array
-     *
-     * @return DiffElem[] Diff (edit script)
-     */
-    public function diff(array $old, array $new) {
-        list($trace, $x, $y) = $this->calculateTrace($old, $new);
-        return $this->extractDiff($trace, $x, $y, $old, $new);
-    }
-
-    /**
-     * Calculate diff, including "replace" operations.
-     *
-     * If a sequence of remove operations is followed by the same number of add operations, these
-     * will be coalesced into replace operations.
-     *
-     * @param array $old Original array
-     * @param array $new New array
-     *
-     * @return DiffElem[] Diff (edit script), including replace operations
-     */
-    public function diffWithReplacements(array $old, array $new) {
-        return $this->coalesceReplacements($this->diff($old, $new));
-    }
-
-    private function calculateTrace(array $a, array $b) {
-        $n = \count($a);
-        $m = \count($b);
-        $max = $n + $m;
-        $v = [1 => 0];
-        $trace = [];
-        for ($d = 0; $d <= $max; $d++) {
-            $trace[] = $v;
-            for ($k = -$d; $k <= $d; $k += 2) {
-                if ($k === -$d || ($k !== $d && $v[$k-1] < $v[$k+1])) {
-                    $x = $v[$k+1];
-                } else {
-                    $x = $v[$k-1] + 1;
-                }
-
-                $y = $x - $k;
-                while ($x < $n && $y < $m && ($this->isEqual)($a[$x], $b[$y])) {
-                    $x++;
-                    $y++;
-                }
-
-                $v[$k] = $x;
-                if ($x >= $n && $y >= $m) {
-                    return [$trace, $x, $y];
-                }
-            }
-        }
-        throw new \Exception('Should not happen');
-    }
-
-    private function extractDiff(array $trace, int $x, int $y, array $a, array $b) {
-        $result = [];
-        for ($d = \count($trace) - 1; $d >= 0; $d--) {
-            $v = $trace[$d];
-            $k = $x - $y;
-
-            if ($k === -$d || ($k !== $d && $v[$k-1] < $v[$k+1])) {
-                $prevK = $k + 1;
-            } else {
-                $prevK = $k - 1;
-            }
-
-            $prevX = $v[$prevK];
-            $prevY = $prevX - $prevK;
-
-            while ($x > $prevX && $y > $prevY) {
-                $result[] = new DiffElem(DiffElem::TYPE_KEEP, $a[$x-1], $b[$y-1]);
-                $x--;
-                $y--;
-            }
-
-            if ($d === 0) {
-                break;
-            }
-
-            while ($x > $prevX) {
-                $result[] = new DiffElem(DiffElem::TYPE_REMOVE, $a[$x-1], null);
-                $x--;
-            }
-
-            while ($y > $prevY) {
-                $result[] = new DiffElem(DiffElem::TYPE_ADD, null, $b[$y-1]);
-                $y--;
-            }
-        }
-        return array_reverse($result);
-    }
-
-    /**
-     * Coalesce equal-length sequences of remove+add into a replace operation.
-     *
-     * @param DiffElem[] $diff
-     * @return DiffElem[]
-     */
-    private function coalesceReplacements(array $diff) {
-        $newDiff = [];
-        $c = \count($diff);
-        for ($i = 0; $i < $c; $i++) {
-            $diffType = $diff[$i]->type;
-            if ($diffType !== DiffElem::TYPE_REMOVE) {
-                $newDiff[] = $diff[$i];
-                continue;
-            }
-
-            $j = $i;
-            while ($j < $c && $diff[$j]->type === DiffElem::TYPE_REMOVE) {
-                $j++;
-            }
-
-            $k = $j;
-            while ($k < $c && $diff[$k]->type === DiffElem::TYPE_ADD) {
-                $k++;
-            }
-
-            if ($j - $i === $k - $j) {
-                $len = $j - $i;
-                for ($n = 0; $n < $len; $n++) {
-                    $newDiff[] = new DiffElem(
-                        DiffElem::TYPE_REPLACE, $diff[$i + $n]->old, $diff[$j + $n]->new
-                    );
-                }
-            } else {
-                for (; $i < $k; $i++) {
-                    $newDiff[] = $diff[$i];
-                }
-            }
-            $i = $k - 1;
-        }
-        return $newDiff;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

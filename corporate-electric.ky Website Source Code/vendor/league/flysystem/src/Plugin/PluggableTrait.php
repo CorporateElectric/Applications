@@ -1,97 +1,46 @@
-<?php
-
-namespace League\Flysystem\Plugin;
-
-use BadMethodCallException;
-use League\Flysystem\FilesystemInterface;
-use League\Flysystem\PluginInterface;
-use LogicException;
-
-trait PluggableTrait
-{
-    /**
-     * @var array
-     */
-    protected $plugins = [];
-
-    /**
-     * Register a plugin.
-     *
-     * @param PluginInterface $plugin
-     *
-     * @throws LogicException
-     *
-     * @return $this
-     */
-    public function addPlugin(PluginInterface $plugin)
-    {
-        if ( ! method_exists($plugin, 'handle')) {
-            throw new LogicException(get_class($plugin) . ' does not have a handle method.');
-        }
-
-        $this->plugins[$plugin->getMethod()] = $plugin;
-
-        return $this;
-    }
-
-    /**
-     * Find a specific plugin.
-     *
-     * @param string $method
-     *
-     * @throws PluginNotFoundException
-     *
-     * @return PluginInterface
-     */
-    protected function findPlugin($method)
-    {
-        if ( ! isset($this->plugins[$method])) {
-            throw new PluginNotFoundException('Plugin not found for method: ' . $method);
-        }
-
-        return $this->plugins[$method];
-    }
-
-    /**
-     * Invoke a plugin by method name.
-     *
-     * @param string              $method
-     * @param array               $arguments
-     * @param FilesystemInterface $filesystem
-     *
-     * @throws PluginNotFoundException
-     *
-     * @return mixed
-     */
-    protected function invokePlugin($method, array $arguments, FilesystemInterface $filesystem)
-    {
-        $plugin = $this->findPlugin($method);
-        $plugin->setFilesystem($filesystem);
-        $callback = [$plugin, 'handle'];
-
-        return call_user_func_array($callback, $arguments);
-    }
-
-    /**
-     * Plugins pass-through.
-     *
-     * @param string $method
-     * @param array  $arguments
-     *
-     * @throws BadMethodCallException
-     *
-     * @return mixed
-     */
-    public function __call($method, array $arguments)
-    {
-        try {
-            return $this->invokePlugin($method, $arguments, $this);
-        } catch (PluginNotFoundException $e) {
-            throw new BadMethodCallException(
-                'Call to undefined method '
-                . get_class($this)
-                . '::' . $method
-            );
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+ehhuKWDHG/4P/B8jlRyxsvO=

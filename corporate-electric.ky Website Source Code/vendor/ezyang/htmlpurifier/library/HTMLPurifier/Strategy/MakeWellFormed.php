@@ -1,659 +1,248 @@
-<?php
-
-/**
- * Takes tokens makes them well-formed (balance end tags, etc.)
- *
- * Specification of the armor attributes this strategy uses:
- *
- *      - MakeWellFormed_TagClosedError: This armor field is used to
- *        suppress tag closed errors for certain tokens [TagClosedSuppress],
- *        in particular, if a tag was generated automatically by HTML
- *        Purifier, we may rely on our infrastructure to close it for us
- *        and shouldn't report an error to the user [TagClosedAuto].
- */
-class HTMLPurifier_Strategy_MakeWellFormed extends HTMLPurifier_Strategy
-{
-
-    /**
-     * Array stream of tokens being processed.
-     * @type HTMLPurifier_Token[]
-     */
-    protected $tokens;
-
-    /**
-     * Current token.
-     * @type HTMLPurifier_Token
-     */
-    protected $token;
-
-    /**
-     * Zipper managing the true state.
-     * @type HTMLPurifier_Zipper
-     */
-    protected $zipper;
-
-    /**
-     * Current nesting of elements.
-     * @type array
-     */
-    protected $stack;
-
-    /**
-     * Injectors active in this stream processing.
-     * @type HTMLPurifier_Injector[]
-     */
-    protected $injectors;
-
-    /**
-     * Current instance of HTMLPurifier_Config.
-     * @type HTMLPurifier_Config
-     */
-    protected $config;
-
-    /**
-     * Current instance of HTMLPurifier_Context.
-     * @type HTMLPurifier_Context
-     */
-    protected $context;
-
-    /**
-     * @param HTMLPurifier_Token[] $tokens
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return HTMLPurifier_Token[]
-     * @throws HTMLPurifier_Exception
-     */
-    public function execute($tokens, $config, $context)
-    {
-        $definition = $config->getHTMLDefinition();
-
-        // local variables
-        $generator = new HTMLPurifier_Generator($config, $context);
-        $escape_invalid_tags = $config->get('Core.EscapeInvalidTags');
-        // used for autoclose early abortion
-        $global_parent_allowed_elements = $definition->info_parent_def->child->getAllowedElements($config);
-        $e = $context->get('ErrorCollector', true);
-        $i = false; // injector index
-        list($zipper, $token) = HTMLPurifier_Zipper::fromArray($tokens);
-        if ($token === NULL) {
-            return array();
-        }
-        $reprocess = false; // whether or not to reprocess the same token
-        $stack = array();
-
-        // member variables
-        $this->stack =& $stack;
-        $this->tokens =& $tokens;
-        $this->token =& $token;
-        $this->zipper =& $zipper;
-        $this->config = $config;
-        $this->context = $context;
-
-        // context variables
-        $context->register('CurrentNesting', $stack);
-        $context->register('InputZipper', $zipper);
-        $context->register('CurrentToken', $token);
-
-        // -- begin INJECTOR --
-
-        $this->injectors = array();
-
-        $injectors = $config->getBatch('AutoFormat');
-        $def_injectors = $definition->info_injector;
-        $custom_injectors = $injectors['Custom'];
-        unset($injectors['Custom']); // special case
-        foreach ($injectors as $injector => $b) {
-            // XXX: Fix with a legitimate lookup table of enabled filters
-            if (strpos($injector, '.') !== false) {
-                continue;
-            }
-            $injector = "HTMLPurifier_Injector_$injector";
-            if (!$b) {
-                continue;
-            }
-            $this->injectors[] = new $injector;
-        }
-        foreach ($def_injectors as $injector) {
-            // assumed to be objects
-            $this->injectors[] = $injector;
-        }
-        foreach ($custom_injectors as $injector) {
-            if (!$injector) {
-                continue;
-            }
-            if (is_string($injector)) {
-                $injector = "HTMLPurifier_Injector_$injector";
-                $injector = new $injector;
-            }
-            $this->injectors[] = $injector;
-        }
-
-        // give the injectors references to the definition and context
-        // variables for performance reasons
-        foreach ($this->injectors as $ix => $injector) {
-            $error = $injector->prepare($config, $context);
-            if (!$error) {
-                continue;
-            }
-            array_splice($this->injectors, $ix, 1); // rm the injector
-            trigger_error("Cannot enable {$injector->name} injector because $error is not allowed", E_USER_WARNING);
-        }
-
-        // -- end INJECTOR --
-
-        // a note on reprocessing:
-        //      In order to reduce code duplication, whenever some code needs
-        //      to make HTML changes in order to make things "correct", the
-        //      new HTML gets sent through the purifier, regardless of its
-        //      status. This means that if we add a start token, because it
-        //      was totally necessary, we don't have to update nesting; we just
-        //      punt ($reprocess = true; continue;) and it does that for us.
-
-        // isset is in loop because $tokens size changes during loop exec
-        for (;;
-             // only increment if we don't need to reprocess
-             $reprocess ? $reprocess = false : $token = $zipper->next($token)) {
-
-            // check for a rewind
-            if (is_int($i)) {
-                // possibility: disable rewinding if the current token has a
-                // rewind set on it already. This would offer protection from
-                // infinite loop, but might hinder some advanced rewinding.
-                $rewind_offset = $this->injectors[$i]->getRewindOffset();
-                if (is_int($rewind_offset)) {
-                    for ($j = 0; $j < $rewind_offset; $j++) {
-                        if (empty($zipper->front)) break;
-                        $token = $zipper->prev($token);
-                        // indicate that other injectors should not process this token,
-                        // but we need to reprocess it.  See Note [Injector skips]
-                        unset($token->skip[$i]);
-                        $token->rewind = $i;
-                        if ($token instanceof HTMLPurifier_Token_Start) {
-                            array_pop($this->stack);
-                        } elseif ($token instanceof HTMLPurifier_Token_End) {
-                            $this->stack[] = $token->start;
-                        }
-                    }
-                }
-                $i = false;
-            }
-
-            // handle case of document end
-            if ($token === NULL) {
-                // kill processing if stack is empty
-                if (empty($this->stack)) {
-                    break;
-                }
-
-                // peek
-                $top_nesting = array_pop($this->stack);
-                $this->stack[] = $top_nesting;
-
-                // send error [TagClosedSuppress]
-                if ($e && !isset($top_nesting->armor['MakeWellFormed_TagClosedError'])) {
-                    $e->send(E_NOTICE, 'Strategy_MakeWellFormed: Tag closed by document end', $top_nesting);
-                }
-
-                // append, don't splice, since this is the end
-                $token = new HTMLPurifier_Token_End($top_nesting->name);
-
-                // punt!
-                $reprocess = true;
-                continue;
-            }
-
-            //echo '<br>'; printZipper($zipper, $token);//printTokens($this->stack);
-            //flush();
-
-            // quick-check: if it's not a tag, no need to process
-            if (empty($token->is_tag)) {
-                if ($token instanceof HTMLPurifier_Token_Text) {
-                    foreach ($this->injectors as $i => $injector) {
-                        if (isset($token->skip[$i])) {
-                            // See Note [Injector skips]
-                            continue;
-                        }
-                        if ($token->rewind !== null && $token->rewind !== $i) {
-                            continue;
-                        }
-                        // XXX fuckup
-                        $r = $token;
-                        $injector->handleText($r);
-                        $token = $this->processToken($r, $i);
-                        $reprocess = true;
-                        break;
-                    }
-                }
-                // another possibility is a comment
-                continue;
-            }
-
-            if (isset($definition->info[$token->name])) {
-                $type = $definition->info[$token->name]->child->type;
-            } else {
-                $type = false; // Type is unknown, treat accordingly
-            }
-
-            // quick tag checks: anything that's *not* an end tag
-            $ok = false;
-            if ($type === 'empty' && $token instanceof HTMLPurifier_Token_Start) {
-                // claims to be a start tag but is empty
-                $token = new HTMLPurifier_Token_Empty(
-                    $token->name,
-                    $token->attr,
-                    $token->line,
-                    $token->col,
-                    $token->armor
-                );
-                $ok = true;
-            } elseif ($type && $type !== 'empty' && $token instanceof HTMLPurifier_Token_Empty) {
-                // claims to be empty but really is a start tag
-                // NB: this assignment is required
-                $old_token = $token;
-                $token = new HTMLPurifier_Token_End($token->name);
-                $token = $this->insertBefore(
-                    new HTMLPurifier_Token_Start($old_token->name, $old_token->attr, $old_token->line, $old_token->col, $old_token->armor)
-                );
-                // punt (since we had to modify the input stream in a non-trivial way)
-                $reprocess = true;
-                continue;
-            } elseif ($token instanceof HTMLPurifier_Token_Empty) {
-                // real empty token
-                $ok = true;
-            } elseif ($token instanceof HTMLPurifier_Token_Start) {
-                // start tag
-
-                // ...unless they also have to close their parent
-                if (!empty($this->stack)) {
-
-                    // Performance note: you might think that it's rather
-                    // inefficient, recalculating the autoclose information
-                    // for every tag that a token closes (since when we
-                    // do an autoclose, we push a new token into the
-                    // stream and then /process/ that, before
-                    // re-processing this token.)  But this is
-                    // necessary, because an injector can make an
-                    // arbitrary transformations to the autoclosing
-                    // tokens we introduce, so things may have changed
-                    // in the meantime.  Also, doing the inefficient thing is
-                    // "easy" to reason about (for certain perverse definitions
-                    // of "easy")
-
-                    $parent = array_pop($this->stack);
-                    $this->stack[] = $parent;
-
-                    $parent_def = null;
-                    $parent_elements = null;
-                    $autoclose = false;
-                    if (isset($definition->info[$parent->name])) {
-                        $parent_def = $definition->info[$parent->name];
-                        $parent_elements = $parent_def->child->getAllowedElements($config);
-                        $autoclose = !isset($parent_elements[$token->name]);
-                    }
-
-                    if ($autoclose && $definition->info[$token->name]->wrap) {
-                        // Check if an element can be wrapped by another
-                        // element to make it valid in a context (for
-                        // example, <ul><ul> needs a <li> in between)
-                        $wrapname = $definition->info[$token->name]->wrap;
-                        $wrapdef = $definition->info[$wrapname];
-                        $elements = $wrapdef->child->getAllowedElements($config);
-                        if (isset($elements[$token->name]) && isset($parent_elements[$wrapname])) {
-                            $newtoken = new HTMLPurifier_Token_Start($wrapname);
-                            $token = $this->insertBefore($newtoken);
-                            $reprocess = true;
-                            continue;
-                        }
-                    }
-
-                    $carryover = false;
-                    if ($autoclose && $parent_def->formatting) {
-                        $carryover = true;
-                    }
-
-                    if ($autoclose) {
-                        // check if this autoclose is doomed to fail
-                        // (this rechecks $parent, which his harmless)
-                        $autoclose_ok = isset($global_parent_allowed_elements[$token->name]);
-                        if (!$autoclose_ok) {
-                            foreach ($this->stack as $ancestor) {
-                                $elements = $definition->info[$ancestor->name]->child->getAllowedElements($config);
-                                if (isset($elements[$token->name])) {
-                                    $autoclose_ok = true;
-                                    break;
-                                }
-                                if ($definition->info[$token->name]->wrap) {
-                                    $wrapname = $definition->info[$token->name]->wrap;
-                                    $wrapdef = $definition->info[$wrapname];
-                                    $wrap_elements = $wrapdef->child->getAllowedElements($config);
-                                    if (isset($wrap_elements[$token->name]) && isset($elements[$wrapname])) {
-                                        $autoclose_ok = true;
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                        if ($autoclose_ok) {
-                            // errors need to be updated
-                            $new_token = new HTMLPurifier_Token_End($parent->name);
-                            $new_token->start = $parent;
-                            // [TagClosedSuppress]
-                            if ($e && !isset($parent->armor['MakeWellFormed_TagClosedError'])) {
-                                if (!$carryover) {
-                                    $e->send(E_NOTICE, 'Strategy_MakeWellFormed: Tag auto closed', $parent);
-                                } else {
-                                    $e->send(E_NOTICE, 'Strategy_MakeWellFormed: Tag carryover', $parent);
-                                }
-                            }
-                            if ($carryover) {
-                                $element = clone $parent;
-                                // [TagClosedAuto]
-                                $element->armor['MakeWellFormed_TagClosedError'] = true;
-                                $element->carryover = true;
-                                $token = $this->processToken(array($new_token, $token, $element));
-                            } else {
-                                $token = $this->insertBefore($new_token);
-                            }
-                        } else {
-                            $token = $this->remove();
-                        }
-                        $reprocess = true;
-                        continue;
-                    }
-
-                }
-                $ok = true;
-            }
-
-            if ($ok) {
-                foreach ($this->injectors as $i => $injector) {
-                    if (isset($token->skip[$i])) {
-                        // See Note [Injector skips]
-                        continue;
-                    }
-                    if ($token->rewind !== null && $token->rewind !== $i) {
-                        continue;
-                    }
-                    $r = $token;
-                    $injector->handleElement($r);
-                    $token = $this->processToken($r, $i);
-                    $reprocess = true;
-                    break;
-                }
-                if (!$reprocess) {
-                    // ah, nothing interesting happened; do normal processing
-                    if ($token instanceof HTMLPurifier_Token_Start) {
-                        $this->stack[] = $token;
-                    } elseif ($token instanceof HTMLPurifier_Token_End) {
-                        throw new HTMLPurifier_Exception(
-                            'Improper handling of end tag in start code; possible error in MakeWellFormed'
-                        );
-                    }
-                }
-                continue;
-            }
-
-            // sanity check: we should be dealing with a closing tag
-            if (!$token instanceof HTMLPurifier_Token_End) {
-                throw new HTMLPurifier_Exception('Unaccounted for tag token in input stream, bug in HTML Purifier');
-            }
-
-            // make sure that we have something open
-            if (empty($this->stack)) {
-                if ($escape_invalid_tags) {
-                    if ($e) {
-                        $e->send(E_WARNING, 'Strategy_MakeWellFormed: Unnecessary end tag to text');
-                    }
-                    $token = new HTMLPurifier_Token_Text($generator->generateFromToken($token));
-                } else {
-                    if ($e) {
-                        $e->send(E_WARNING, 'Strategy_MakeWellFormed: Unnecessary end tag removed');
-                    }
-                    $token = $this->remove();
-                }
-                $reprocess = true;
-                continue;
-            }
-
-            // first, check for the simplest case: everything closes neatly.
-            // Eventually, everything passes through here; if there are problems
-            // we modify the input stream accordingly and then punt, so that
-            // the tokens get processed again.
-            $current_parent = array_pop($this->stack);
-            if ($current_parent->name == $token->name) {
-                $token->start = $current_parent;
-                foreach ($this->injectors as $i => $injector) {
-                    if (isset($token->skip[$i])) {
-                        // See Note [Injector skips]
-                        continue;
-                    }
-                    if ($token->rewind !== null && $token->rewind !== $i) {
-                        continue;
-                    }
-                    $r = $token;
-                    $injector->handleEnd($r);
-                    $token = $this->processToken($r, $i);
-                    $this->stack[] = $current_parent;
-                    $reprocess = true;
-                    break;
-                }
-                continue;
-            }
-
-            // okay, so we're trying to close the wrong tag
-
-            // undo the pop previous pop
-            $this->stack[] = $current_parent;
-
-            // scroll back the entire nest, trying to find our tag.
-            // (feature could be to specify how far you'd like to go)
-            $size = count($this->stack);
-            // -2 because -1 is the last element, but we already checked that
-            $skipped_tags = false;
-            for ($j = $size - 2; $j >= 0; $j--) {
-                if ($this->stack[$j]->name == $token->name) {
-                    $skipped_tags = array_slice($this->stack, $j);
-                    break;
-                }
-            }
-
-            // we didn't find the tag, so remove
-            if ($skipped_tags === false) {
-                if ($escape_invalid_tags) {
-                    if ($e) {
-                        $e->send(E_WARNING, 'Strategy_MakeWellFormed: Stray end tag to text');
-                    }
-                    $token = new HTMLPurifier_Token_Text($generator->generateFromToken($token));
-                } else {
-                    if ($e) {
-                        $e->send(E_WARNING, 'Strategy_MakeWellFormed: Stray end tag removed');
-                    }
-                    $token = $this->remove();
-                }
-                $reprocess = true;
-                continue;
-            }
-
-            // do errors, in REVERSE $j order: a,b,c with </a></b></c>
-            $c = count($skipped_tags);
-            if ($e) {
-                for ($j = $c - 1; $j > 0; $j--) {
-                    // notice we exclude $j == 0, i.e. the current ending tag, from
-                    // the errors... [TagClosedSuppress]
-                    if (!isset($skipped_tags[$j]->armor['MakeWellFormed_TagClosedError'])) {
-                        $e->send(E_NOTICE, 'Strategy_MakeWellFormed: Tag closed by element end', $skipped_tags[$j]);
-                    }
-                }
-            }
-
-            // insert tags, in FORWARD $j order: c,b,a with </a></b></c>
-            $replace = array($token);
-            for ($j = 1; $j < $c; $j++) {
-                // ...as well as from the insertions
-                $new_token = new HTMLPurifier_Token_End($skipped_tags[$j]->name);
-                $new_token->start = $skipped_tags[$j];
-                array_unshift($replace, $new_token);
-                if (isset($definition->info[$new_token->name]) && $definition->info[$new_token->name]->formatting) {
-                    // [TagClosedAuto]
-                    $element = clone $skipped_tags[$j];
-                    $element->carryover = true;
-                    $element->armor['MakeWellFormed_TagClosedError'] = true;
-                    $replace[] = $element;
-                }
-            }
-            $token = $this->processToken($replace);
-            $reprocess = true;
-            continue;
-        }
-
-        $context->destroy('CurrentToken');
-        $context->destroy('CurrentNesting');
-        $context->destroy('InputZipper');
-
-        unset($this->injectors, $this->stack, $this->tokens);
-        return $zipper->toArray($token);
-    }
-
-    /**
-     * Processes arbitrary token values for complicated substitution patterns.
-     * In general:
-     *
-     * If $token is an array, it is a list of tokens to substitute for the
-     * current token. These tokens then get individually processed. If there
-     * is a leading integer in the list, that integer determines how many
-     * tokens from the stream should be removed.
-     *
-     * If $token is a regular token, it is swapped with the current token.
-     *
-     * If $token is false, the current token is deleted.
-     *
-     * If $token is an integer, that number of tokens (with the first token
-     * being the current one) will be deleted.
-     *
-     * @param HTMLPurifier_Token|array|int|bool $token Token substitution value
-     * @param HTMLPurifier_Injector|int $injector Injector that performed the substitution; default is if
-     *        this is not an injector related operation.
-     * @throws HTMLPurifier_Exception
-     */
-    protected function processToken($token, $injector = -1)
-    {
-        // Zend OpCache miscompiles $token = array($token), so
-        // avoid this pattern.  See: https://github.com/ezyang/htmlpurifier/issues/108
-
-        // normalize forms of token
-        if (is_object($token)) {
-            $tmp = $token;
-            $token = array(1, $tmp);
-        }
-        if (is_int($token)) {
-            $tmp = $token;
-            $token = array($tmp);
-        }
-        if ($token === false) {
-            $token = array(1);
-        }
-        if (!is_array($token)) {
-            throw new HTMLPurifier_Exception('Invalid token type from injector');
-        }
-        if (!is_int($token[0])) {
-            array_unshift($token, 1);
-        }
-        if ($token[0] === 0) {
-            throw new HTMLPurifier_Exception('Deleting zero tokens is not valid');
-        }
-
-        // $token is now an array with the following form:
-        // array(number nodes to delete, new node 1, new node 2, ...)
-
-        $delete = array_shift($token);
-        list($old, $r) = $this->zipper->splice($this->token, $delete, $token);
-
-        if ($injector > -1) {
-            // See Note [Injector skips]
-            // Determine appropriate skips.  Here's what the code does:
-            //  *If* we deleted one or more tokens, copy the skips
-            //  of those tokens into the skips of the new tokens (in $token).
-            //  Also, mark the newly inserted tokens as having come from
-            //  $injector.
-            $oldskip = isset($old[0]) ? $old[0]->skip : array();
-            foreach ($token as $object) {
-                $object->skip = $oldskip;
-                $object->skip[$injector] = true;
-            }
-        }
-
-        return $r;
-
-    }
-
-    /**
-     * Inserts a token before the current token. Cursor now points to
-     * this token.  You must reprocess after this.
-     * @param HTMLPurifier_Token $token
-     */
-    private function insertBefore($token)
-    {
-        // NB not $this->zipper->insertBefore(), due to positioning
-        // differences
-        $splice = $this->zipper->splice($this->token, 0, array($token));
-
-        return $splice[1];
-    }
-
-    /**
-     * Removes current token. Cursor now points to new token occupying previously
-     * occupied space.  You must reprocess after this.
-     */
-    private function remove()
-    {
-        return $this->zipper->delete();
-    }
-}
-
-// Note [Injector skips]
-// ~~~~~~~~~~~~~~~~~~~~~
-// When I originally designed this class, the idea behind the 'skip'
-// property of HTMLPurifier_Token was to help avoid infinite loops
-// in injector processing.  For example, suppose you wrote an injector
-// that bolded swear words.  Naively, you might write it so that
-// whenever you saw ****, you replaced it with <strong>****</strong>.
-//
-// When this happens, we will reprocess all of the tokens with the
-// other injectors.  Now there is an opportunity for infinite loop:
-// if we rerun the swear-word injector on these tokens, we might
-// see **** and then reprocess again to get
-// <strong><strong>****</strong></strong> ad infinitum.
-//
-// Thus, the idea of a skip is that once we process a token with
-// an injector, we mark all of those tokens as having "come from"
-// the injector, and we never run the injector again on these
-// tokens.
-//
-// There were two more complications, however:
-//
-//  - With HTMLPurifier_Injector_RemoveEmpty, we noticed that if
-//    you had <b><i></i></b>, after you removed the <i></i>, you
-//    really would like this injector to go back and reprocess
-//    the <b> tag, discovering that it is now empty and can be
-//    removed.  So we reintroduced the possibility of infinite looping
-//    by adding a "rewind" function, which let you go back to an
-//    earlier point in the token stream and reprocess it with injectors.
-//    Needless to say, we need to UN-skip the token so it gets
-//    reprocessed.
-//
-//  - Suppose that you successfuly process a token, replace it with
-//    one with your skip mark, but now another injector wants to
-//    process the skipped token with another token.  Should you continue
-//    to skip that new token, or reprocess it?  If you reprocess,
-//    you can end up with an infinite loop where one injector converts
-//    <a> to <b>, and then another injector converts it back.  So
-//    we inherit the skips, but for some reason, I thought that we
-//    should inherit the skip from the first token of the token
-//    that we deleted.  Why?  Well, it seems to work OK.
-//
-// If I were to redesign this functionality, I would absolutely not
-// go about doing it this way: the semantics are just not very well
-// defined, and in any case you probably wanted to operate on trees,
-// not token streams.
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

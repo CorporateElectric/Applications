@@ -1,227 +1,53 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Polyfill\Ctype;
-
-/**
- * Ctype implementation through regex.
- *
- * @internal
- *
- * @author Gert de Pagter <BackEndTea@gmail.com>
- */
-final class Ctype
-{
-    /**
-     * Returns TRUE if every character in text is either a letter or a digit, FALSE otherwise.
-     *
-     * @see https://php.net/ctype-alnum
-     *
-     * @param string|int $text
-     *
-     * @return bool
-     */
-    public static function ctype_alnum($text)
-    {
-        $text = self::convert_int_to_char_for_ctype($text);
-
-        return \is_string($text) && '' !== $text && !preg_match('/[^A-Za-z0-9]/', $text);
-    }
-
-    /**
-     * Returns TRUE if every character in text is a letter, FALSE otherwise.
-     *
-     * @see https://php.net/ctype-alpha
-     *
-     * @param string|int $text
-     *
-     * @return bool
-     */
-    public static function ctype_alpha($text)
-    {
-        $text = self::convert_int_to_char_for_ctype($text);
-
-        return \is_string($text) && '' !== $text && !preg_match('/[^A-Za-z]/', $text);
-    }
-
-    /**
-     * Returns TRUE if every character in text is a control character from the current locale, FALSE otherwise.
-     *
-     * @see https://php.net/ctype-cntrl
-     *
-     * @param string|int $text
-     *
-     * @return bool
-     */
-    public static function ctype_cntrl($text)
-    {
-        $text = self::convert_int_to_char_for_ctype($text);
-
-        return \is_string($text) && '' !== $text && !preg_match('/[^\x00-\x1f\x7f]/', $text);
-    }
-
-    /**
-     * Returns TRUE if every character in the string text is a decimal digit, FALSE otherwise.
-     *
-     * @see https://php.net/ctype-digit
-     *
-     * @param string|int $text
-     *
-     * @return bool
-     */
-    public static function ctype_digit($text)
-    {
-        $text = self::convert_int_to_char_for_ctype($text);
-
-        return \is_string($text) && '' !== $text && !preg_match('/[^0-9]/', $text);
-    }
-
-    /**
-     * Returns TRUE if every character in text is printable and actually creates visible output (no white space), FALSE otherwise.
-     *
-     * @see https://php.net/ctype-graph
-     *
-     * @param string|int $text
-     *
-     * @return bool
-     */
-    public static function ctype_graph($text)
-    {
-        $text = self::convert_int_to_char_for_ctype($text);
-
-        return \is_string($text) && '' !== $text && !preg_match('/[^!-~]/', $text);
-    }
-
-    /**
-     * Returns TRUE if every character in text is a lowercase letter.
-     *
-     * @see https://php.net/ctype-lower
-     *
-     * @param string|int $text
-     *
-     * @return bool
-     */
-    public static function ctype_lower($text)
-    {
-        $text = self::convert_int_to_char_for_ctype($text);
-
-        return \is_string($text) && '' !== $text && !preg_match('/[^a-z]/', $text);
-    }
-
-    /**
-     * Returns TRUE if every character in text will actually create output (including blanks). Returns FALSE if text contains control characters or characters that do not have any output or control function at all.
-     *
-     * @see https://php.net/ctype-print
-     *
-     * @param string|int $text
-     *
-     * @return bool
-     */
-    public static function ctype_print($text)
-    {
-        $text = self::convert_int_to_char_for_ctype($text);
-
-        return \is_string($text) && '' !== $text && !preg_match('/[^ -~]/', $text);
-    }
-
-    /**
-     * Returns TRUE if every character in text is printable, but neither letter, digit or blank, FALSE otherwise.
-     *
-     * @see https://php.net/ctype-punct
-     *
-     * @param string|int $text
-     *
-     * @return bool
-     */
-    public static function ctype_punct($text)
-    {
-        $text = self::convert_int_to_char_for_ctype($text);
-
-        return \is_string($text) && '' !== $text && !preg_match('/[^!-\/\:-@\[-`\{-~]/', $text);
-    }
-
-    /**
-     * Returns TRUE if every character in text creates some sort of white space, FALSE otherwise. Besides the blank character this also includes tab, vertical tab, line feed, carriage return and form feed characters.
-     *
-     * @see https://php.net/ctype-space
-     *
-     * @param string|int $text
-     *
-     * @return bool
-     */
-    public static function ctype_space($text)
-    {
-        $text = self::convert_int_to_char_for_ctype($text);
-
-        return \is_string($text) && '' !== $text && !preg_match('/[^\s]/', $text);
-    }
-
-    /**
-     * Returns TRUE if every character in text is an uppercase letter.
-     *
-     * @see https://php.net/ctype-upper
-     *
-     * @param string|int $text
-     *
-     * @return bool
-     */
-    public static function ctype_upper($text)
-    {
-        $text = self::convert_int_to_char_for_ctype($text);
-
-        return \is_string($text) && '' !== $text && !preg_match('/[^A-Z]/', $text);
-    }
-
-    /**
-     * Returns TRUE if every character in text is a hexadecimal 'digit', that is a decimal digit or a character from [A-Fa-f] , FALSE otherwise.
-     *
-     * @see https://php.net/ctype-xdigit
-     *
-     * @param string|int $text
-     *
-     * @return bool
-     */
-    public static function ctype_xdigit($text)
-    {
-        $text = self::convert_int_to_char_for_ctype($text);
-
-        return \is_string($text) && '' !== $text && !preg_match('/[^A-Fa-f0-9]/', $text);
-    }
-
-    /**
-     * Converts integers to their char versions according to normal ctype behaviour, if needed.
-     *
-     * If an integer between -128 and 255 inclusive is provided,
-     * it is interpreted as the ASCII value of a single character
-     * (negative values have 256 added in order to allow characters in the Extended ASCII range).
-     * Any other integer is interpreted as a string containing the decimal digits of the integer.
-     *
-     * @param string|int $int
-     *
-     * @return mixed
-     */
-    private static function convert_int_to_char_for_ctype($int)
-    {
-        if (!\is_int($int)) {
-            return $int;
-        }
-
-        if ($int < -128 || $int > 255) {
-            return (string) $int;
-        }
-
-        if ($int < 0) {
-            $int += 256;
-        }
-
-        return \chr($int);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+f4RMYd8=

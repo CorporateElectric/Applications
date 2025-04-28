@@ -1,87 +1,47 @@
-<?php
-
-namespace Intervention\Image;
-
-use Illuminate\Support\ServiceProvider;
-use Laravel\Lumen\Application as LumenApplication;
-use Illuminate\Foundation\Application as IlluminateApplication;
-
-class ImageServiceProvider extends ServiceProvider
-{
-    /**
-     * Indicates if loading of the provider is deferred.
-     *
-     * @var bool
-     */
-    protected $defer = false;
-
-    /**
-     * Actual provider
-     *
-     * @var \Illuminate\Support\ServiceProvider
-     */
-    protected $provider;
-
-    /**
-     * Create a new service provider instance.
-     *
-     * @param  \Illuminate\Contracts\Foundation\Application  $app
-     * @return void
-     */
-    public function __construct($app)
-    {
-        parent::__construct($app);
-
-        $this->provider = $this->getProvider();
-    }
-
-    /**
-     * Bootstrap the application events.
-     *
-     * @return void
-     */
-    public function boot()
-    {
-        if (method_exists($this->provider, 'boot')) {
-            return $this->provider->boot();
-        }
-    }
-
-    /**
-     * Register the service provider.
-     *
-     * @return void
-     */
-    public function register()
-    {
-        return $this->provider->register();
-    }
-
-    /**
-     * Return ServiceProvider according to Laravel version
-     *
-     * @return \Intervention\Image\Provider\ProviderInterface
-     */
-    private function getProvider()
-    {
-        if ($this->app instanceof LumenApplication) {
-            $provider = '\Intervention\Image\ImageServiceProviderLumen';
-        } elseif (version_compare(IlluminateApplication::VERSION, '5.0', '<')) {
-            $provider = '\Intervention\Image\ImageServiceProviderLaravel4';
-        } else {
-            $provider = '\Intervention\Image\ImageServiceProviderLaravelRecent';
-        }
-
-        return new $provider($this->app);
-    }
-
-    /**
-     * Get the services provided by the provider.
-     *
-     * @return array
-     */
-    public function provides()
-    {
-        return ['image'];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

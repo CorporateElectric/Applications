@@ -1,46 +1,33 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Predis\Protocol\Text\Handler;
-
-use Predis\CommunicationException;
-use Predis\Connection\CompositeConnectionInterface;
-use Predis\Protocol\ProtocolException;
-
-/**
- * Handler for the integer response type in the standard Redis wire protocol.
- * It translates the payload an integer or NULL.
- *
- * @link http://redis.io/topics/protocol
- *
- * @author Daniele Alessandri <suppakilla@gmail.com>
- */
-class IntegerResponse implements ResponseHandlerInterface
-{
-    /**
-     * {@inheritdoc}
-     */
-    public function handle(CompositeConnectionInterface $connection, $payload)
-    {
-        if (is_numeric($payload)) {
-            $integer = (int) $payload;
-            return $integer == $payload ? $integer : $payload;
-        }
-
-        if ($payload !== 'nil') {
-            CommunicationException::handle(new ProtocolException(
-                $connection, "Cannot parse '$payload' as a valid numeric response."
-            ));
-        }
-
-        return;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+xJYhmxktVm==

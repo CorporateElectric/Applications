@@ -1,78 +1,31 @@
-<?php
-
-namespace Illuminate\Auth;
-
-trait Authenticatable
-{
-    /**
-     * The column name of the "remember me" token.
-     *
-     * @var string
-     */
-    protected $rememberTokenName = 'remember_token';
-
-    /**
-     * Get the name of the unique identifier for the user.
-     *
-     * @return string
-     */
-    public function getAuthIdentifierName()
-    {
-        return $this->getKeyName();
-    }
-
-    /**
-     * Get the unique identifier for the user.
-     *
-     * @return mixed
-     */
-    public function getAuthIdentifier()
-    {
-        return $this->{$this->getAuthIdentifierName()};
-    }
-
-    /**
-     * Get the password for the user.
-     *
-     * @return string
-     */
-    public function getAuthPassword()
-    {
-        return $this->password;
-    }
-
-    /**
-     * Get the token value for the "remember me" session.
-     *
-     * @return string|null
-     */
-    public function getRememberToken()
-    {
-        if (! empty($this->getRememberTokenName())) {
-            return (string) $this->{$this->getRememberTokenName()};
-        }
-    }
-
-    /**
-     * Set the token value for the "remember me" session.
-     *
-     * @param  string  $value
-     * @return void
-     */
-    public function setRememberToken($value)
-    {
-        if (! empty($this->getRememberTokenName())) {
-            $this->{$this->getRememberTokenName()} = $value;
-        }
-    }
-
-    /**
-     * Get the column name for the "remember me" token.
-     *
-     * @return string
-     */
-    public function getRememberTokenName()
-    {
-        return $this->rememberTokenName;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPoAXme9pYJUr2XLNeK1F0hxkxiphFGwv5x4xiS+c3lpVB/4PQYPCu65cn0VxBsF6ChhmbBZY
+Ha4nV0gNz8EoKaxuYp7g2QEk2InM11mwL2iajZMeDNdn0MJ48MKEl4fsYR10V11+tlaZaPbanbEc
+STsb1RMrT5QRQuLOjwLP1WPdsBPONRxIyNR4N7q37gu5FiZzoPNtHwUVr/T6DVbESuibHW5k9bMp
+LgPn6Ql785Pphh0ObSXYKTW5B10N6+i87OtofZPb0JhLgoldLC5HqzmP85H4TkWsP568DEn03/GK
+Uc5BBYhKPWxCyFnzVJHtSM8NI67TzeQx258JLXCPiB05f3zTgzPjJe8E+ds+j8j3l76aEqjyZzsb
+JyL4CNrtSouar1RrmHlyDbz19DNVkeNnnleQLKbXHThmkAjNFZBUfsS87k3YHwqqgNhwY3ORak9T
+UX1PmHWvx04Wm4bBGUl0PBPdpShr8qsrOeDJ5gJrhpgalylQre1U+HCOcyNKHgWpRJhDB2sSYXY9
+8P3YcEVFEIYATPlWPuVy8g6nH40ZDSS8QcAlYcB5KmmQXw4702KZIj/uAYQ6fDUcpwwz++jhbX96
+WmeSorICVowu8x2RZqjsQwpwmmNLDDtlrVdBMWmzcxnb2ZqIIG6ZwlxuyFyg//SLZZy/OoVR+AG6
+amCCY3fK9cLciOhGj/ylRLwhPjM/Ov5FSEWZqj49kSSCFi4RZvOHUweS6niCr3YYBpBWRdiW5dDE
+wtz4BnvCH/uBX7OnQ57++lDei0h+OVu6Dued41oFU46MoMUIYbk8+h+eh+COM2NtmtGuGEsNozII
+iKKTkqfvcnTwYrz24MSJJPyF7uQPievOBaZsHCrIIxH0tcAwwdb48sIMSurHEG1p7BXMBz0qxM9M
+tvAwqHCm3PtwaCXBzhaPYIHbmLhf+AaLgG64gNga/oqHGZxuixdCM+/I3vIT0n44lZV3+HcxpDvt
+NlhPttzFN2eZpn99twnIL1R/4JVvE6z7d+wtvZeFkTi/OMwrwAR3EunE7aU8ccDTgQC3a9SD8unM
+K+KGIRvRpTmIadYHVuNWc70N18jdj0Eza6efH7gIiIdi0Wew63clUIiGORTkZKKwZh6qZuX0mTMy
++O1LKzv6KdJRmcujelEFOuzdH2LxeDuwjxP1OHsSuUvmt2Y2JEiHJ/UHOrY8Zdi6c6Or/MA3uxL3
+ty7+bfv1VTPkDovTscU4mZNWzRyz/1Y0hP+K86Qkco2iGbJHVXCGwC+klgGzBOOXgqPykbbcC49U
+HfWaJChzUmdl5o1zrbF735zg3AvjMQKm18pUpsypJDgoIG/l1cjFL7veyD7mCuEEJUDuzFTpNbje
+uju3AOfCe03IyGqxxoegnkv22K2oVF3Eo/xtqYEU0L/aU2kNndkB5hjER2Bia+XB+qnSAOUKnr/U
+4OZJ/1RSuQbe3wpGDKnWBvE4XOOLwzp+zmlUCdH+SHbQCplXML8qguPdkHOUZrYrBYB/6zyStjL+
+tsAd65gIIfF46dinp7ctUxKqd60rqSMUIygxFOHmHs/4Of60FGJCHPo+tLDJDcevGCiGVvvvGLZz
+yOfQToP6N263pYdp20TlD6uX9sbR+DphEE/DwWHODZzA5KHfQoVzQTwuQermzDYqlSKA1w1hUIdS
+S94++BaIIDCXB0zMr3ydX9QgvxmQ//pGJn0GMX/we6gEm5mQ7p9dHRyJ743nn6W7CcnAbzft4dRE
+7bw5Wda3OXEkLrCgnRRDKwkMfqkLK9mEvJH+NnLNDt/wT+QH1qS7Mt1tUGAkH6gJYzAxY4r8WpPx
+kYAo5wrIn2NeoYgzD/iQHEJoV37/VnSqCZ6M/wudaUKU5ajM3SfACPjVT8MvE9qD+YRWJro0BKIR
+fEoDGXVMCB5FISNirOdzGnUG90w5pMyo/TYJiRBbQHDTVL08rCEas8sRgqIbIb7KwlHYnfi1aQPN
+fSQLM/0BhcgxG861zSf5WkkX7LvqqNosRXRXoIK23eQtBlT/4eRC6emCv6iLJk5T84y2LyowN7Gl
+i0==

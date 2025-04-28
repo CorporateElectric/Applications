@@ -1,70 +1,44 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\VarDumper\Caster;
-
-use Ds\Collection;
-use Ds\Map;
-use Ds\Pair;
-use Symfony\Component\VarDumper\Cloner\Stub;
-
-/**
- * Casts Ds extension classes to array representation.
- *
- * @author Jáchym Toušek <enumag@gmail.com>
- *
- * @final
- */
-class DsCaster
-{
-    public static function castCollection(Collection $c, array $a, Stub $stub, bool $isNested): array
-    {
-        $a[Caster::PREFIX_VIRTUAL.'count'] = $c->count();
-        $a[Caster::PREFIX_VIRTUAL.'capacity'] = $c->capacity();
-
-        if (!$c instanceof Map) {
-            $a += $c->toArray();
-        }
-
-        return $a;
-    }
-
-    public static function castMap(Map $c, array $a, Stub $stub, bool $isNested): array
-    {
-        foreach ($c as $k => $v) {
-            $a[] = new DsPairStub($k, $v);
-        }
-
-        return $a;
-    }
-
-    public static function castPair(Pair $c, array $a, Stub $stub, bool $isNested): array
-    {
-        foreach ($c->toArray() as $k => $v) {
-            $a[Caster::PREFIX_VIRTUAL.$k] = $v;
-        }
-
-        return $a;
-    }
-
-    public static function castPairStub(DsPairStub $c, array $a, Stub $stub, bool $isNested): array
-    {
-        if ($isNested) {
-            $stub->class = Pair::class;
-            $stub->value = null;
-            $stub->handle = 0;
-
-            $a = $c->value;
-        }
-
-        return $a;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+qfu5ZBRKxQWW

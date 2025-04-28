@@ -1,186 +1,77 @@
-<?php
-
-/**
- * This file is part of the Carbon package.
- *
- * (c) Brian Nesbitt <brian@nesbot.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace Carbon\Traits;
-
-use Closure;
-use Generator;
-use ReflectionClass;
-use ReflectionException;
-use ReflectionMethod;
-use Throwable;
-
-/**
- * Trait Mixin.
- *
- * Allows mixing in entire classes with multiple macros.
- */
-trait Mixin
-{
-    /**
-     * Stack of macro instance contexts.
-     *
-     * @var array
-     */
-    protected static $macroContextStack = [];
-
-    /**
-     * Mix another object into the class.
-     *
-     * @example
-     * ```
-     * Carbon::mixin(new class {
-     *   public function addMoon() {
-     *     return function () {
-     *       return $this->addDays(30);
-     *     };
-     *   }
-     *   public function subMoon() {
-     *     return function () {
-     *       return $this->subDays(30);
-     *     };
-     *   }
-     * });
-     * $fullMoon = Carbon::create('2018-12-22');
-     * $nextFullMoon = $fullMoon->addMoon();
-     * $blackMoon = Carbon::create('2019-01-06');
-     * $previousBlackMoon = $blackMoon->subMoon();
-     * echo "$nextFullMoon\n";
-     * echo "$previousBlackMoon\n";
-     * ```
-     *
-     * @param object|string $mixin
-     *
-     * @throws ReflectionException
-     *
-     * @return void
-     */
-    public static function mixin($mixin)
-    {
-        \is_string($mixin) && trait_exists($mixin)
-            ? static::loadMixinTrait($mixin)
-            : static::loadMixinClass($mixin);
-    }
-
-    /**
-     * @param object|string $mixin
-     *
-     * @throws ReflectionException
-     */
-    private static function loadMixinClass($mixin)
-    {
-        $methods = (new ReflectionClass($mixin))->getMethods(
-            ReflectionMethod::IS_PUBLIC | ReflectionMethod::IS_PROTECTED
-        );
-
-        foreach ($methods as $method) {
-            if ($method->isConstructor() || $method->isDestructor()) {
-                continue;
-            }
-
-            $method->setAccessible(true);
-
-            static::macro($method->name, $method->invoke($mixin));
-        }
-    }
-
-    /**
-     * @param string $trait
-     */
-    private static function loadMixinTrait($trait)
-    {
-        $context = eval(self::getAnonymousClassCodeForTrait($trait));
-        $className = \get_class($context);
-
-        foreach (self::getMixableMethods($context) as $name) {
-            $closureBase = Closure::fromCallable([$context, $name]);
-
-            static::macro($name, function () use ($closureBase, $className) {
-                /** @phpstan-ignore-next-line */
-                $context = isset($this) ? $this->cast($className) : new $className();
-
-                try {
-                    $closure = $closureBase->bindTo($context);
-                } catch (Throwable $throwable) {
-                    $closure = $closureBase;
-                }
-
-                return $closure(...\func_get_args());
-            });
-        }
-    }
-
-    private static function getAnonymousClassCodeForTrait(string $trait)
-    {
-        return 'return new class() extends '.static::class.' {use '.$trait.';};';
-    }
-
-    private static function getMixableMethods(self $context): Generator
-    {
-        foreach (get_class_methods($context) as $name) {
-            if (method_exists(static::class, $name)) {
-                continue;
-            }
-
-            yield $name;
-        }
-    }
-
-    /**
-     * Stack a Carbon context from inside calls of self::this() and execute a given action.
-     *
-     * @param static|null $context
-     * @param callable    $callable
-     *
-     * @throws Throwable
-     *
-     * @return mixed
-     */
-    protected static function bindMacroContext($context, callable $callable)
-    {
-        static::$macroContextStack[] = $context;
-        $exception = null;
-        $result = null;
-
-        try {
-            $result = $callable();
-        } catch (Throwable $throwable) {
-            $exception = $throwable;
-        }
-
-        array_pop(static::$macroContextStack);
-
-        if ($exception) {
-            throw $exception;
-        }
-
-        return $result;
-    }
-
-    /**
-     * Return the current context from inside a macro callee or a null if static.
-     *
-     * @return static|null
-     */
-    protected static function context()
-    {
-        return end(static::$macroContextStack) ?: null;
-    }
-
-    /**
-     * Return the current context from inside a macro callee or a new one if static.
-     *
-     * @return static
-     */
-    protected static function this()
-    {
-        return end(static::$macroContextStack) ?: new static();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

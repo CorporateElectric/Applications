@@ -1,121 +1,82 @@
-<?php
-
-namespace Intervention\Image\Imagick;
-
-use Intervention\Image\AbstractFont;
-use Intervention\Image\Exception\RuntimeException;
-use Intervention\Image\Image;
-
-class Font extends AbstractFont
-{
-    /**
-     * Draws font to given image at given position
-     *
-     * @param  Image   $image
-     * @param  int     $posx
-     * @param  int     $posy
-     * @return void
-     */
-    public function applyToImage(Image $image, $posx = 0, $posy = 0)
-    {
-        // build draw object
-        $draw = new \ImagickDraw();
-        $draw->setStrokeAntialias(true);
-        $draw->setTextAntialias(true);
-
-        // set font file
-        if ($this->hasApplicableFontFile()) {
-            $draw->setFont($this->file);
-        } else {
-            throw new RuntimeException(
-                "Font file must be provided to apply text to image."
-            );
-        }
-
-        // parse text color
-        $color = new Color($this->color);
-
-        $draw->setFontSize($this->size);
-        $draw->setFillColor($color->getPixel());
-
-        // align horizontal
-        switch (strtolower($this->align)) {
-            case 'center':
-                $align = \Imagick::ALIGN_CENTER;
-                break;
-
-            case 'right':
-                $align = \Imagick::ALIGN_RIGHT;
-                break;
-
-            default:
-                $align = \Imagick::ALIGN_LEFT;
-                break;
-        }
-
-        $draw->setTextAlignment($align);
-
-        // align vertical
-        if (strtolower($this->valign) != 'bottom') {
-
-            // corrections on y-position
-            switch (strtolower($this->valign)) {
-                case 'center':
-                case 'middle':
-                // calculate box size
-                $dimensions = $image->getCore()->queryFontMetrics($draw, $this->text);
-                $posy = $posy + $dimensions['textHeight'] * 0.65 / 2;
-                break;
-
-                case 'top':
-                // calculate box size
-                $dimensions = $image->getCore()->queryFontMetrics($draw, $this->text, false);
-                $posy = $posy + $dimensions['textHeight'] * 0.65;
-                break;
-            }
-        }
-
-        // apply to image
-        $image->getCore()->annotateImage($draw, $posx, $posy, $this->angle * (-1), $this->text);
-    }
-    
-    /**
-     * Calculates bounding box of current font setting
-     *
-     * @return array
-     */
-    public function getBoxSize()
-    {
-        $box = [];
-
-        // build draw object
-        $draw = new \ImagickDraw();
-        $draw->setStrokeAntialias(true);
-        $draw->setTextAntialias(true);
-
-        // set font file
-        if ($this->hasApplicableFontFile()) {
-            $draw->setFont($this->file);
-        } else {
-            throw new RuntimeException(
-                "Font file must be provided to apply text to image."
-            );
-        }
-
-        $draw->setFontSize($this->size);
-
-        $dimensions = (new \Imagick())->queryFontMetrics($draw, $this->text);
-
-        if (strlen($this->text) == 0) {
-            // no text -> no boxsize
-            $box['width'] = 0;
-            $box['height'] = 0;
-        } else {
-            // get boxsize
-            $box['width'] = intval(abs($dimensions['textWidth']));
-            $box['height'] = intval(abs($dimensions['textHeight']));
-        }
-
-        return $box;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+6kUz5HEu//goPGpVTUJzDDHAc5CQhjwhL3rb8W==

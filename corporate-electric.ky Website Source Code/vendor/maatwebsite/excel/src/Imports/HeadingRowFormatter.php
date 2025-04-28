@@ -1,103 +1,55 @@
-<?php
-
-namespace Maatwebsite\Excel\Imports;
-
-use Illuminate\Support\Collection;
-use Illuminate\Support\Str;
-use InvalidArgumentException;
-
-class HeadingRowFormatter
-{
-    /**
-     * @const string
-     */
-    const FORMATTER_NONE = 'none';
-
-    /**
-     * @const string
-     */
-    const FORMATTER_SLUG = 'slug';
-
-    /**
-     * @var string
-     */
-    protected static $formatter;
-
-    /**
-     * @var callable[]
-     */
-    protected static $customFormatters = [];
-
-    /**
-     * @var array
-     */
-    protected static $defaultFormatters = [
-        self::FORMATTER_NONE,
-        self::FORMATTER_SLUG,
-    ];
-
-    /**
-     * @param array $headings
-     *
-     * @return array
-     */
-    public static function format(array $headings): array
-    {
-        return (new Collection($headings))->map(function ($value) {
-            return static::callFormatter($value);
-        })->toArray();
-    }
-
-    /**
-     * @param string $name
-     */
-    public static function default(string $name = null)
-    {
-        if (null !== $name && !isset(static::$customFormatters[$name]) && !in_array($name, static::$defaultFormatters, true)) {
-            throw new InvalidArgumentException(sprintf('Formatter "%s" does not exist', $name));
-        }
-
-        static::$formatter = $name;
-    }
-
-    /**
-     * @param string   $name
-     * @param callable $formatter
-     */
-    public static function extend(string $name, callable $formatter)
-    {
-        static::$customFormatters[$name] = $formatter;
-    }
-
-    /**
-     * Reset the formatter.
-     */
-    public static function reset()
-    {
-        static::default();
-    }
-
-    /**
-     * @param mixed $value
-     *
-     * @return mixed
-     */
-    protected static function callFormatter($value)
-    {
-        static::$formatter = static::$formatter ?? config('excel.imports.heading_row.formatter', self::FORMATTER_SLUG);
-
-        // Call custom formatter
-        if (isset(static::$customFormatters[static::$formatter])) {
-            $formatter = static::$customFormatters[static::$formatter];
-
-            return $formatter($value);
-        }
-
-        if (static::$formatter === self::FORMATTER_SLUG) {
-            return Str::slug($value, '_');
-        }
-
-        // No formatter (FORMATTER_NONE)
-        return $value;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

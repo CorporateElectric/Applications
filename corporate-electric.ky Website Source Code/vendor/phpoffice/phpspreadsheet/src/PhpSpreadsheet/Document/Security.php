@@ -1,205 +1,52 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Document;
-
-use PhpOffice\PhpSpreadsheet\Shared\PasswordHasher;
-
-class Security
-{
-    /**
-     * LockRevision.
-     *
-     * @var bool
-     */
-    private $lockRevision = false;
-
-    /**
-     * LockStructure.
-     *
-     * @var bool
-     */
-    private $lockStructure = false;
-
-    /**
-     * LockWindows.
-     *
-     * @var bool
-     */
-    private $lockWindows = false;
-
-    /**
-     * RevisionsPassword.
-     *
-     * @var string
-     */
-    private $revisionsPassword = '';
-
-    /**
-     * WorkbookPassword.
-     *
-     * @var string
-     */
-    private $workbookPassword = '';
-
-    /**
-     * Create a new Document Security instance.
-     */
-    public function __construct()
-    {
-    }
-
-    /**
-     * Is some sort of document security enabled?
-     *
-     * @return bool
-     */
-    public function isSecurityEnabled()
-    {
-        return  $this->lockRevision ||
-                $this->lockStructure ||
-                $this->lockWindows;
-    }
-
-    /**
-     * Get LockRevision.
-     *
-     * @return bool
-     */
-    public function getLockRevision()
-    {
-        return $this->lockRevision;
-    }
-
-    /**
-     * Set LockRevision.
-     *
-     * @param bool $pValue
-     *
-     * @return $this
-     */
-    public function setLockRevision($pValue)
-    {
-        $this->lockRevision = $pValue;
-
-        return $this;
-    }
-
-    /**
-     * Get LockStructure.
-     *
-     * @return bool
-     */
-    public function getLockStructure()
-    {
-        return $this->lockStructure;
-    }
-
-    /**
-     * Set LockStructure.
-     *
-     * @param bool $pValue
-     *
-     * @return $this
-     */
-    public function setLockStructure($pValue)
-    {
-        $this->lockStructure = $pValue;
-
-        return $this;
-    }
-
-    /**
-     * Get LockWindows.
-     *
-     * @return bool
-     */
-    public function getLockWindows()
-    {
-        return $this->lockWindows;
-    }
-
-    /**
-     * Set LockWindows.
-     *
-     * @param bool $pValue
-     *
-     * @return $this
-     */
-    public function setLockWindows($pValue)
-    {
-        $this->lockWindows = $pValue;
-
-        return $this;
-    }
-
-    /**
-     * Get RevisionsPassword (hashed).
-     *
-     * @return string
-     */
-    public function getRevisionsPassword()
-    {
-        return $this->revisionsPassword;
-    }
-
-    /**
-     * Set RevisionsPassword.
-     *
-     * @param string $pValue
-     * @param bool $pAlreadyHashed If the password has already been hashed, set this to true
-     *
-     * @return $this
-     */
-    public function setRevisionsPassword($pValue, $pAlreadyHashed = false)
-    {
-        if (!$pAlreadyHashed) {
-            $pValue = PasswordHasher::hashPassword($pValue);
-        }
-        $this->revisionsPassword = $pValue;
-
-        return $this;
-    }
-
-    /**
-     * Get WorkbookPassword (hashed).
-     *
-     * @return string
-     */
-    public function getWorkbookPassword()
-    {
-        return $this->workbookPassword;
-    }
-
-    /**
-     * Set WorkbookPassword.
-     *
-     * @param string $pValue
-     * @param bool $pAlreadyHashed If the password has already been hashed, set this to true
-     *
-     * @return $this
-     */
-    public function setWorkbookPassword($pValue, $pAlreadyHashed = false)
-    {
-        if (!$pAlreadyHashed) {
-            $pValue = PasswordHasher::hashPassword($pValue);
-        }
-        $this->workbookPassword = $pValue;
-
-        return $this;
-    }
-
-    /**
-     * Implement PHP __clone to create a deep clone, not just a shallow copy.
-     */
-    public function __clone()
-    {
-        $vars = get_object_vars($this);
-        foreach ($vars as $key => $value) {
-            if (is_object($value)) {
-                $this->$key = clone $value;
-            } else {
-                $this->$key = $value;
-            }
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+d1w6+fNj+l896xq4vcbJ

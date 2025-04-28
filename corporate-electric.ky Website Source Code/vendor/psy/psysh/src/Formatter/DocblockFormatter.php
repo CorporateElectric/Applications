@@ -1,174 +1,97 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\Formatter;
-
-use Psy\Util\Docblock;
-use Symfony\Component\Console\Formatter\OutputFormatter;
-
-/**
- * A pretty-printer for docblocks.
- */
-class DocblockFormatter implements ReflectorFormatter
-{
-    private static $vectorParamTemplates = [
-        'type' => 'info',
-        'var'  => 'strong',
-    ];
-
-    /**
-     * Format a docblock.
-     *
-     * @param \Reflector $reflector
-     *
-     * @return string Formatted docblock
-     */
-    public static function format(\Reflector $reflector)
-    {
-        $docblock = new Docblock($reflector);
-        $chunks = [];
-
-        if (!empty($docblock->desc)) {
-            $chunks[] = '<comment>Description:</comment>';
-            $chunks[] = self::indent(OutputFormatter::escape($docblock->desc), '  ');
-            $chunks[] = '';
-        }
-
-        if (!empty($docblock->tags)) {
-            foreach ($docblock::$vectors as $name => $vector) {
-                if (isset($docblock->tags[$name])) {
-                    $chunks[] = \sprintf('<comment>%s:</comment>', self::inflect($name));
-                    $chunks[] = self::formatVector($vector, $docblock->tags[$name]);
-                    $chunks[] = '';
-                }
-            }
-
-            $tags = self::formatTags(\array_keys($docblock::$vectors), $docblock->tags);
-            if (!empty($tags)) {
-                $chunks[] = $tags;
-                $chunks[] = '';
-            }
-        }
-
-        return \rtrim(\implode("\n", $chunks));
-    }
-
-    /**
-     * Format a docblock vector, for example, `@throws`, `@param`, or `@return`.
-     *
-     * @see DocBlock::$vectors
-     *
-     * @param array $vector
-     * @param array $lines
-     *
-     * @return string
-     */
-    private static function formatVector(array $vector, array $lines)
-    {
-        $template = [' '];
-        foreach ($vector as $type) {
-            $max = 0;
-            foreach ($lines as $line) {
-                $chunk = $line[$type];
-                $cur = empty($chunk) ? 0 : \strlen($chunk) + 1;
-                if ($cur > $max) {
-                    $max = $cur;
-                }
-            }
-
-            $template[] = self::getVectorParamTemplate($type, $max);
-        }
-        $template = \implode(' ', $template);
-
-        return \implode("\n", \array_map(function ($line) use ($template) {
-            $escaped = \array_map(function ($l) {
-                if ($l === null) {
-                    return '';
-                }
-
-                return OutputFormatter::escape($l);
-            }, $line);
-
-            return \rtrim(\vsprintf($template, $escaped));
-        }, $lines));
-    }
-
-    /**
-     * Format docblock tags.
-     *
-     * @param array $skip Tags to exclude
-     * @param array $tags Tags to format
-     *
-     * @return string formatted tags
-     */
-    private static function formatTags(array $skip, array $tags)
-    {
-        $chunks = [];
-
-        foreach ($tags as $name => $values) {
-            if (\in_array($name, $skip)) {
-                continue;
-            }
-
-            foreach ($values as $value) {
-                $chunks[] = \sprintf('<comment>%s%s</comment> %s', self::inflect($name), empty($value) ? '' : ':', OutputFormatter::escape($value));
-            }
-
-            $chunks[] = '';
-        }
-
-        return \implode("\n", $chunks);
-    }
-
-    /**
-     * Get a docblock vector template.
-     *
-     * @param string $type Vector type
-     * @param int    $max  Pad width
-     *
-     * @return string
-     */
-    private static function getVectorParamTemplate($type, $max)
-    {
-        if (!isset(self::$vectorParamTemplates[$type])) {
-            return \sprintf('%%-%ds', $max);
-        }
-
-        return \sprintf('<%s>%%-%ds</%s>', self::$vectorParamTemplates[$type], $max, self::$vectorParamTemplates[$type]);
-    }
-
-    /**
-     * Indent a string.
-     *
-     * @param string $text   String to indent
-     * @param string $indent (default: '  ')
-     *
-     * @return string
-     */
-    private static function indent($text, $indent = '  ')
-    {
-        return $indent.\str_replace("\n", "\n".$indent, $text);
-    }
-
-    /**
-     * Convert underscored or whitespace separated words into sentence case.
-     *
-     * @param string $text
-     *
-     * @return string
-     */
-    private static function inflect($text)
-    {
-        $words = \trim(\preg_replace('/[\s_-]+/', ' ', \preg_replace('/([a-z])([A-Z])/', '$1 $2', $text)));
-
-        return \implode(' ', \array_map('ucfirst', \explode(' ', $words)));
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+APOgRgV1DDFe2G5gQNfkAAs0yP5Z

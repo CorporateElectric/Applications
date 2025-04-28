@@ -1,566 +1,235 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Shared;
-
-// vim: set expandtab tabstop=4 shiftwidth=4:
-// +----------------------------------------------------------------------+
-// | PHP Version 4                                                        |
-// +----------------------------------------------------------------------+
-// | Copyright (c) 1997-2002 The PHP Group                                |
-// +----------------------------------------------------------------------+
-// | This source file is subject to version 2.02 of the PHP license,      |
-// | that is bundled with this package in the file LICENSE, and is        |
-// | available at through the world-wide-web at                           |
-// | http://www.php.net/license/2_02.txt.                                 |
-// | If you did not receive a copy of the PHP license and are unable to   |
-// | obtain it through the world-wide-web, please send a note to          |
-// | license@php.net so we can mail you a copy immediately.               |
-// +----------------------------------------------------------------------+
-// | Author: Xavier Noguer <xnoguer@php.net>                              |
-// | Based on OLE::Storage_Lite by Kawai, Takanori                        |
-// +----------------------------------------------------------------------+
-//
-
-use PhpOffice\PhpSpreadsheet\Reader\Exception as ReaderException;
-use PhpOffice\PhpSpreadsheet\Shared\OLE\ChainedBlockStream;
-use PhpOffice\PhpSpreadsheet\Shared\OLE\PPS\Root;
-
-/*
- * Array for storing OLE instances that are accessed from
- * OLE_ChainedBlockStream::stream_open().
- *
- * @var array
- */
-$GLOBALS['_OLE_INSTANCES'] = [];
-
-/**
- * OLE package base class.
- *
- * @author   Xavier Noguer <xnoguer@php.net>
- * @author   Christian Schmidt <schmidt@php.net>
- */
-class OLE
-{
-    const OLE_PPS_TYPE_ROOT = 5;
-    const OLE_PPS_TYPE_DIR = 1;
-    const OLE_PPS_TYPE_FILE = 2;
-    const OLE_DATA_SIZE_SMALL = 0x1000;
-    const OLE_LONG_INT_SIZE = 4;
-    const OLE_PPS_SIZE = 0x80;
-
-    /**
-     * The file handle for reading an OLE container.
-     *
-     * @var resource
-     */
-    public $_file_handle;
-
-    /**
-     * Array of PPS's found on the OLE container.
-     *
-     * @var array
-     */
-    public $_list = [];
-
-    /**
-     * Root directory of OLE container.
-     *
-     * @var Root
-     */
-    public $root;
-
-    /**
-     * Big Block Allocation Table.
-     *
-     * @var array (blockId => nextBlockId)
-     */
-    public $bbat;
-
-    /**
-     * Short Block Allocation Table.
-     *
-     * @var array (blockId => nextBlockId)
-     */
-    public $sbat;
-
-    /**
-     * Size of big blocks. This is usually 512.
-     *
-     * @var int number of octets per block
-     */
-    public $bigBlockSize;
-
-    /**
-     * Size of small blocks. This is usually 64.
-     *
-     * @var int number of octets per block
-     */
-    public $smallBlockSize;
-
-    /**
-     * Threshold for big blocks.
-     *
-     * @var int
-     */
-    public $bigBlockThreshold;
-
-    /**
-     * Reads an OLE container from the contents of the file given.
-     *
-     * @acces public
-     *
-     * @param string $file
-     *
-     * @return bool true on success, PEAR_Error on failure
-     */
-    public function read($file)
-    {
-        $fh = fopen($file, 'rb');
-        if (!$fh) {
-            throw new ReaderException("Can't open file $file");
-        }
-        $this->_file_handle = $fh;
-
-        $signature = fread($fh, 8);
-        if ("\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1" != $signature) {
-            throw new ReaderException("File doesn't seem to be an OLE container.");
-        }
-        fseek($fh, 28);
-        if (fread($fh, 2) != "\xFE\xFF") {
-            // This shouldn't be a problem in practice
-            throw new ReaderException('Only Little-Endian encoding is supported.');
-        }
-        // Size of blocks and short blocks in bytes
-        $this->bigBlockSize = 2 ** self::readInt2($fh);
-        $this->smallBlockSize = 2 ** self::readInt2($fh);
-
-        // Skip UID, revision number and version number
-        fseek($fh, 44);
-        // Number of blocks in Big Block Allocation Table
-        $bbatBlockCount = self::readInt4($fh);
-
-        // Root chain 1st block
-        $directoryFirstBlockId = self::readInt4($fh);
-
-        // Skip unused bytes
-        fseek($fh, 56);
-        // Streams shorter than this are stored using small blocks
-        $this->bigBlockThreshold = self::readInt4($fh);
-        // Block id of first sector in Short Block Allocation Table
-        $sbatFirstBlockId = self::readInt4($fh);
-        // Number of blocks in Short Block Allocation Table
-        $sbbatBlockCount = self::readInt4($fh);
-        // Block id of first sector in Master Block Allocation Table
-        $mbatFirstBlockId = self::readInt4($fh);
-        // Number of blocks in Master Block Allocation Table
-        $mbbatBlockCount = self::readInt4($fh);
-        $this->bbat = [];
-
-        // Remaining 4 * 109 bytes of current block is beginning of Master
-        // Block Allocation Table
-        $mbatBlocks = [];
-        for ($i = 0; $i < 109; ++$i) {
-            $mbatBlocks[] = self::readInt4($fh);
-        }
-
-        // Read rest of Master Block Allocation Table (if any is left)
-        $pos = $this->getBlockOffset($mbatFirstBlockId);
-        for ($i = 0; $i < $mbbatBlockCount; ++$i) {
-            fseek($fh, $pos);
-            for ($j = 0; $j < $this->bigBlockSize / 4 - 1; ++$j) {
-                $mbatBlocks[] = self::readInt4($fh);
-            }
-            // Last block id in each block points to next block
-            $pos = $this->getBlockOffset(self::readInt4($fh));
-        }
-
-        // Read Big Block Allocation Table according to chain specified by $mbatBlocks
-        for ($i = 0; $i < $bbatBlockCount; ++$i) {
-            $pos = $this->getBlockOffset($mbatBlocks[$i]);
-            fseek($fh, $pos);
-            for ($j = 0; $j < $this->bigBlockSize / 4; ++$j) {
-                $this->bbat[] = self::readInt4($fh);
-            }
-        }
-
-        // Read short block allocation table (SBAT)
-        $this->sbat = [];
-        $shortBlockCount = $sbbatBlockCount * $this->bigBlockSize / 4;
-        $sbatFh = $this->getStream($sbatFirstBlockId);
-        for ($blockId = 0; $blockId < $shortBlockCount; ++$blockId) {
-            $this->sbat[$blockId] = self::readInt4($sbatFh);
-        }
-        fclose($sbatFh);
-
-        $this->readPpsWks($directoryFirstBlockId);
-
-        return true;
-    }
-
-    /**
-     * @param int $blockId byte offset from beginning of file
-     *
-     * @return int
-     */
-    public function getBlockOffset($blockId)
-    {
-        return 512 + $blockId * $this->bigBlockSize;
-    }
-
-    /**
-     * Returns a stream for use with fread() etc. External callers should
-     * use \PhpOffice\PhpSpreadsheet\Shared\OLE\PPS\File::getStream().
-     *
-     * @param int|OLE\PPS $blockIdOrPps block id or PPS
-     *
-     * @return resource read-only stream
-     */
-    public function getStream($blockIdOrPps)
-    {
-        static $isRegistered = false;
-        if (!$isRegistered) {
-            stream_wrapper_register('ole-chainedblockstream', ChainedBlockStream::class);
-            $isRegistered = true;
-        }
-
-        // Store current instance in global array, so that it can be accessed
-        // in OLE_ChainedBlockStream::stream_open().
-        // Object is removed from self::$instances in OLE_Stream::close().
-        $GLOBALS['_OLE_INSTANCES'][] = $this;
-        $instanceId = end(array_keys($GLOBALS['_OLE_INSTANCES']));
-
-        $path = 'ole-chainedblockstream://oleInstanceId=' . $instanceId;
-        if ($blockIdOrPps instanceof OLE\PPS) {
-            $path .= '&blockId=' . $blockIdOrPps->startBlock;
-            $path .= '&size=' . $blockIdOrPps->Size;
-        } else {
-            $path .= '&blockId=' . $blockIdOrPps;
-        }
-
-        return fopen($path, 'rb');
-    }
-
-    /**
-     * Reads a signed char.
-     *
-     * @param resource $fh file handle
-     *
-     * @return int
-     */
-    private static function readInt1($fh)
-    {
-        [, $tmp] = unpack('c', fread($fh, 1));
-
-        return $tmp;
-    }
-
-    /**
-     * Reads an unsigned short (2 octets).
-     *
-     * @param resource $fh file handle
-     *
-     * @return int
-     */
-    private static function readInt2($fh)
-    {
-        [, $tmp] = unpack('v', fread($fh, 2));
-
-        return $tmp;
-    }
-
-    /**
-     * Reads an unsigned long (4 octets).
-     *
-     * @param resource $fh file handle
-     *
-     * @return int
-     */
-    private static function readInt4($fh)
-    {
-        [, $tmp] = unpack('V', fread($fh, 4));
-
-        return $tmp;
-    }
-
-    /**
-     * Gets information about all PPS's on the OLE container from the PPS WK's
-     * creates an OLE_PPS object for each one.
-     *
-     * @param int $blockId the block id of the first block
-     *
-     * @return bool true on success, PEAR_Error on failure
-     */
-    public function readPpsWks($blockId)
-    {
-        $fh = $this->getStream($blockId);
-        for ($pos = 0; true; $pos += 128) {
-            fseek($fh, $pos, SEEK_SET);
-            $nameUtf16 = fread($fh, 64);
-            $nameLength = self::readInt2($fh);
-            $nameUtf16 = substr($nameUtf16, 0, $nameLength - 2);
-            // Simple conversion from UTF-16LE to ISO-8859-1
-            $name = str_replace("\x00", '', $nameUtf16);
-            $type = self::readInt1($fh);
-            switch ($type) {
-                case self::OLE_PPS_TYPE_ROOT:
-                    $pps = new OLE\PPS\Root(null, null, []);
-                    $this->root = $pps;
-
-                    break;
-                case self::OLE_PPS_TYPE_DIR:
-                    $pps = new OLE\PPS(null, null, null, null, null, null, null, null, null, []);
-
-                    break;
-                case self::OLE_PPS_TYPE_FILE:
-                    $pps = new OLE\PPS\File($name);
-
-                    break;
-                default:
-                    break;
-            }
-            fseek($fh, 1, SEEK_CUR);
-            $pps->Type = $type;
-            $pps->Name = $name;
-            $pps->PrevPps = self::readInt4($fh);
-            $pps->NextPps = self::readInt4($fh);
-            $pps->DirPps = self::readInt4($fh);
-            fseek($fh, 20, SEEK_CUR);
-            $pps->Time1st = self::OLE2LocalDate(fread($fh, 8));
-            $pps->Time2nd = self::OLE2LocalDate(fread($fh, 8));
-            $pps->startBlock = self::readInt4($fh);
-            $pps->Size = self::readInt4($fh);
-            $pps->No = count($this->_list);
-            $this->_list[] = $pps;
-
-            // check if the PPS tree (starting from root) is complete
-            if (isset($this->root) && $this->ppsTreeComplete($this->root->No)) {
-                break;
-            }
-        }
-        fclose($fh);
-
-        // Initialize $pps->children on directories
-        foreach ($this->_list as $pps) {
-            if ($pps->Type == self::OLE_PPS_TYPE_DIR || $pps->Type == self::OLE_PPS_TYPE_ROOT) {
-                $nos = [$pps->DirPps];
-                $pps->children = [];
-                while ($nos) {
-                    $no = array_pop($nos);
-                    if ($no != -1) {
-                        $childPps = $this->_list[$no];
-                        $nos[] = $childPps->PrevPps;
-                        $nos[] = $childPps->NextPps;
-                        $pps->children[] = $childPps;
-                    }
-                }
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * It checks whether the PPS tree is complete (all PPS's read)
-     * starting with the given PPS (not necessarily root).
-     *
-     * @param int $index The index of the PPS from which we are checking
-     *
-     * @return bool Whether the PPS tree for the given PPS is complete
-     */
-    private function ppsTreeComplete($index)
-    {
-        return isset($this->_list[$index]) &&
-            ($pps = $this->_list[$index]) &&
-            ($pps->PrevPps == -1 ||
-                $this->ppsTreeComplete($pps->PrevPps)) &&
-            ($pps->NextPps == -1 ||
-                $this->ppsTreeComplete($pps->NextPps)) &&
-            ($pps->DirPps == -1 ||
-                $this->ppsTreeComplete($pps->DirPps));
-    }
-
-    /**
-     * Checks whether a PPS is a File PPS or not.
-     * If there is no PPS for the index given, it will return false.
-     *
-     * @param int $index The index for the PPS
-     *
-     * @return bool true if it's a File PPS, false otherwise
-     */
-    public function isFile($index)
-    {
-        if (isset($this->_list[$index])) {
-            return $this->_list[$index]->Type == self::OLE_PPS_TYPE_FILE;
-        }
-
-        return false;
-    }
-
-    /**
-     * Checks whether a PPS is a Root PPS or not.
-     * If there is no PPS for the index given, it will return false.
-     *
-     * @param int $index the index for the PPS
-     *
-     * @return bool true if it's a Root PPS, false otherwise
-     */
-    public function isRoot($index)
-    {
-        if (isset($this->_list[$index])) {
-            return $this->_list[$index]->Type == self::OLE_PPS_TYPE_ROOT;
-        }
-
-        return false;
-    }
-
-    /**
-     * Gives the total number of PPS's found in the OLE container.
-     *
-     * @return int The total number of PPS's found in the OLE container
-     */
-    public function ppsTotal()
-    {
-        return count($this->_list);
-    }
-
-    /**
-     * Gets data from a PPS
-     * If there is no PPS for the index given, it will return an empty string.
-     *
-     * @param int $index The index for the PPS
-     * @param int $position The position from which to start reading
-     *                          (relative to the PPS)
-     * @param int $length The amount of bytes to read (at most)
-     *
-     * @return string The binary string containing the data requested
-     *
-     * @see OLE_PPS_File::getStream()
-     */
-    public function getData($index, $position, $length)
-    {
-        // if position is not valid return empty string
-        if (!isset($this->_list[$index]) || ($position >= $this->_list[$index]->Size) || ($position < 0)) {
-            return '';
-        }
-        $fh = $this->getStream($this->_list[$index]);
-        $data = stream_get_contents($fh, $length, $position);
-        fclose($fh);
-
-        return $data;
-    }
-
-    /**
-     * Gets the data length from a PPS
-     * If there is no PPS for the index given, it will return 0.
-     *
-     * @param int $index The index for the PPS
-     *
-     * @return int The amount of bytes in data the PPS has
-     */
-    public function getDataLength($index)
-    {
-        if (isset($this->_list[$index])) {
-            return $this->_list[$index]->Size;
-        }
-
-        return 0;
-    }
-
-    /**
-     * Utility function to transform ASCII text to Unicode.
-     *
-     * @param string $ascii The ASCII string to transform
-     *
-     * @return string The string in Unicode
-     */
-    public static function ascToUcs($ascii)
-    {
-        $rawname = '';
-        $iMax = strlen($ascii);
-        for ($i = 0; $i < $iMax; ++$i) {
-            $rawname .= $ascii[$i]
-                . "\x00";
-        }
-
-        return $rawname;
-    }
-
-    /**
-     * Utility function
-     * Returns a string for the OLE container with the date given.
-     *
-     * @param int $date A timestamp
-     *
-     * @return string The string for the OLE container
-     */
-    public static function localDateToOLE($date)
-    {
-        if (!isset($date)) {
-            return "\x00\x00\x00\x00\x00\x00\x00\x00";
-        }
-
-        // factor used for separating numbers into 4 bytes parts
-        $factor = 2 ** 32;
-
-        // days from 1-1-1601 until the beggining of UNIX era
-        $days = 134774;
-        // calculate seconds
-        $big_date = $days * 24 * 3600 + mktime((int) date('H', $date), (int) date('i', $date), (int) date('s', $date), (int) date('m', $date), (int) date('d', $date), (int) date('Y', $date));
-        // multiply just to make MS happy
-        $big_date *= 10000000;
-
-        $high_part = floor($big_date / $factor);
-        // lower 4 bytes
-        $low_part = floor((($big_date / $factor) - $high_part) * $factor);
-
-        // Make HEX string
-        $res = '';
-
-        for ($i = 0; $i < 4; ++$i) {
-            $hex = $low_part % 0x100;
-            $res .= pack('c', $hex);
-            $low_part /= 0x100;
-        }
-        for ($i = 0; $i < 4; ++$i) {
-            $hex = $high_part % 0x100;
-            $res .= pack('c', $hex);
-            $high_part /= 0x100;
-        }
-
-        return $res;
-    }
-
-    /**
-     * Returns a timestamp from an OLE container's date.
-     *
-     * @param string $oleTimestamp A binary string with the encoded date
-     *
-     * @return int The Unix timestamp corresponding to the string
-     */
-    public static function OLE2LocalDate($oleTimestamp)
-    {
-        if (strlen($oleTimestamp) != 8) {
-            throw new ReaderException('Expecting 8 byte string');
-        }
-
-        // convert to units of 100 ns since 1601:
-        $unpackedTimestamp = unpack('v4', $oleTimestamp);
-        $timestampHigh = (float) $unpackedTimestamp[4] * 65536 + (float) $unpackedTimestamp[3];
-        $timestampLow = (float) $unpackedTimestamp[2] * 65536 + (float) $unpackedTimestamp[1];
-
-        // translate to seconds since 1601:
-        $timestampHigh /= 10000000;
-        $timestampLow /= 10000000;
-
-        // days from 1601 to 1970:
-        $days = 134774;
-
-        // translate to seconds since 1970:
-        $unixTimestamp = floor(65536.0 * 65536.0 * $timestampHigh + $timestampLow - $days * 24 * 3600 + 0.5);
-
-        $iTimestamp = (int) $unixTimestamp;
-
-        // Overflow conditions can't happen on 64-bit system
-        return ($iTimestamp == $unixTimestamp) ? $iTimestamp : ($unixTimestamp >= 0.0 ? PHP_INT_MAX : PHP_INT_MIN);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,67 +1,41 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Framework\Constraint;
-
-use function sprintf;
-use Throwable;
-
-/**
- * @no-named-arguments Parameter names are not covered by the backward compatibility promise for PHPUnit
- */
-final class ExceptionCode extends Constraint
-{
-    /**
-     * @var int|string
-     */
-    private $expectedCode;
-
-    /**
-     * @param int|string $expected
-     */
-    public function __construct($expected)
-    {
-        $this->expectedCode = $expected;
-    }
-
-    public function toString(): string
-    {
-        return 'exception code is ';
-    }
-
-    /**
-     * Evaluates the constraint for parameter $other. Returns true if the
-     * constraint is met, false otherwise.
-     *
-     * @param Throwable $other
-     */
-    protected function matches($other): bool
-    {
-        return (string) $other->getCode() === (string) $this->expectedCode;
-    }
-
-    /**
-     * Returns the description of the failure.
-     *
-     * The beginning of failure messages is "Failed asserting that" in most
-     * cases. This method should return the second part of that sentence.
-     *
-     * @param mixed $other evaluated value or object
-     *
-     * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
-     */
-    protected function failureDescription($other): string
-    {
-        return sprintf(
-            '%s is equal to expected exception code %s',
-            $this->exporter()->export($other->getCode()),
-            $this->exporter()->export($this->expectedCode)
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

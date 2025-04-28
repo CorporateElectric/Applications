@@ -1,157 +1,65 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\String\Inflector;
-
-/**
- * French inflector.
- *
- * This class does only inflect nouns; not adjectives nor composed words like "soixante-dix".
- */
-final class FrenchInflector implements InflectorInterface
-{
-    /**
-     * A list of all rules for pluralise.
-     *
-     * @see https://la-conjugaison.nouvelobs.com/regles/grammaire/le-pluriel-des-noms-121.php
-     */
-    private static $pluralizeRegexp = [
-        // First entry: regexp
-        // Second entry: replacement
-
-        // Words finishing with "s", "x" or "z" are invariables
-        // Les mots finissant par "s", "x" ou "z" sont invariables
-        ['/(s|x|z)$/i', '\1'],
-
-        // Words finishing with "eau" are pluralized with a "x"
-        // Les mots finissant par "eau" prennent tous un "x" au pluriel
-        ['/(eau)$/i', '\1x'],
-
-        // Words finishing with "au" are pluralized with a "x" excepted "landau"
-        // Les mots finissant par "au" prennent un "x" au pluriel sauf "landau"
-        ['/^(landau)$/i', '\1s'],
-        ['/(au)$/i', '\1x'],
-
-        // Words finishing with "eu" are pluralized with a "x" excepted "pneu", "bleu", "émeu"
-        // Les mots finissant en "eu" prennent un "x" au pluriel sauf "pneu", "bleu", "émeu"
-        ['/^(pneu|bleu|émeu)$/i', '\1s'],
-        ['/(eu)$/i', '\1x'],
-
-        // Words finishing with "al" are pluralized with a "aux" excepted
-        // Les mots finissant en "al" se terminent en "aux" sauf
-        ['/^(bal|carnaval|caracal|chacal|choral|corral|étal|festival|récital|val)$/i', '\1s'],
-        ['/al$/i', '\1aux'],
-
-        // Aspirail, bail, corail, émail, fermail, soupirail, travail, vantail et vitrail font leur pluriel en -aux
-        ['/^(aspir|b|cor|ém|ferm|soupir|trav|vant|vitr)ail$/i', '\1aux'],
-
-        // Bijou, caillou, chou, genou, hibou, joujou et pou qui prennent un x au pluriel
-        ['/^(bij|caill|ch|gen|hib|jouj|p)ou$/i', '\1oux'],
-
-        // Invariable words
-        ['/^(cinquante|soixante|mille)$/i', '\1'],
-
-        // French titles
-        ['/^(mon|ma)(sieur|dame|demoiselle|seigneur)$/', 'mes\2s'],
-        ['/^(Mon|Ma)(sieur|dame|demoiselle|seigneur)$/', 'Mes\2s'],
-    ];
-
-    /**
-     * A list of all rules for singularize.
-     */
-    private static $singularizeRegexp = [
-        // First entry: regexp
-        // Second entry: replacement
-
-        // Aspirail, bail, corail, émail, fermail, soupirail, travail, vantail et vitrail font leur pluriel en -aux
-        ['/((aspir|b|cor|ém|ferm|soupir|trav|vant|vitr))aux$/i', '\1ail'],
-
-        // Words finishing with "eau" are pluralized with a "x"
-        // Les mots finissant par "eau" prennent tous un "x" au pluriel
-        ['/(eau)x$/i', '\1'],
-
-        // Words finishing with "al" are pluralized with a "aux" expected
-        // Les mots finissant en "al" se terminent en "aux" sauf
-        ['/(amir|anim|arsen|boc|can|capit|capor|chev|crist|génér|hopit|hôpit|idé|journ|littor|loc|m|mét|minér|princip|radic|termin)aux$/i', '\1al'],
-
-        // Words finishing with "au" are pluralized with a "x" excepted "landau"
-        // Les mots finissant par "au" prennent un "x" au pluriel sauf "landau"
-        ['/(au)x$/i', '\1'],
-
-        // Words finishing with "eu" are pluralized with a "x" excepted "pneu", "bleu", "émeu"
-        // Les mots finissant en "eu" prennent un "x" au pluriel sauf "pneu", "bleu", "émeu"
-        ['/(eu)x$/i', '\1'],
-
-        //  Words finishing with "ou" are pluralized with a "s" excepted bijou, caillou, chou, genou, hibou, joujou, pou
-        // Les mots finissant par "ou" prennent un "s" sauf bijou, caillou, chou, genou, hibou, joujou, pou
-        ['/(bij|caill|ch|gen|hib|jouj|p)oux$/i', '\1ou'],
-
-        // French titles
-        ['/^mes(dame|demoiselle)s$/', 'ma\1'],
-        ['/^Mes(dame|demoiselle)s$/', 'Ma\1'],
-        ['/^mes(sieur|seigneur)s$/', 'mon\1'],
-        ['/^Mes(sieur|seigneur)s$/', 'Mon\1'],
-
-        //Default rule
-        ['/s$/i', ''],
-    ];
-
-    /**
-     * A list of words which should not be inflected.
-     * This list is only used by singularize.
-     */
-    private static $uninflected = '/^(abcès|accès|abus|albatros|anchois|anglais|autobus|bois|brebis|carquois|cas|chas|colis|concours|corps|cours|cyprès|décès|devis|discours|dos|embarras|engrais|entrelacs|excès|fils|fois|gâchis|gars|glas|héros|intrus|jars|jus|kermès|lacis|legs|lilas|marais|mars|matelas|mépris|mets|mois|mors|obus|os|palais|paradis|parcours|pardessus|pays|plusieurs|poids|pois|pouls|printemps|processus|progrès|puits|pus|rabais|radis|recors|recours|refus|relais|remords|remous|rictus|rhinocéros|repas|rubis|sas|secours|sens|souris|succès|talus|tapis|tas|taudis|temps|tiers|univers|velours|verglas|vernis|virus)$/i';
-
-    /**
-     * {@inheritdoc}
-     */
-    public function singularize(string $plural): array
-    {
-        if ($this->isInflectedWord($plural)) {
-            return [$plural];
-        }
-
-        foreach (self::$singularizeRegexp as $rule) {
-            [$regexp, $replace] = $rule;
-
-            if (1 === preg_match($regexp, $plural)) {
-                return [preg_replace($regexp, $replace, $plural)];
-            }
-        }
-
-        return [$plural];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function pluralize(string $singular): array
-    {
-        if ($this->isInflectedWord($singular)) {
-            return [$singular];
-        }
-
-        foreach (self::$pluralizeRegexp as $rule) {
-            [$regexp, $replace] = $rule;
-
-            if (1 === preg_match($regexp, $singular)) {
-                return [preg_replace($regexp, $replace, $singular)];
-            }
-        }
-
-        return [$singular.'s'];
-    }
-
-    private function isInflectedWord(string $word): bool
-    {
-        return 1 === preg_match(self::$uninflected, $word);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+VLLksG9oO+mKkT2eLmMyNKRg8m==

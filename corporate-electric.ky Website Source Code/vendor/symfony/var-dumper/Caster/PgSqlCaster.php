@@ -1,156 +1,121 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\VarDumper\Caster;
-
-use Symfony\Component\VarDumper\Cloner\Stub;
-
-/**
- * Casts pqsql resources to array representation.
- *
- * @author Nicolas Grekas <p@tchwork.com>
- *
- * @final
- */
-class PgSqlCaster
-{
-    private static $paramCodes = [
-        'server_encoding',
-        'client_encoding',
-        'is_superuser',
-        'session_authorization',
-        'DateStyle',
-        'TimeZone',
-        'IntervalStyle',
-        'integer_datetimes',
-        'application_name',
-        'standard_conforming_strings',
-    ];
-
-    private static $transactionStatus = [
-        \PGSQL_TRANSACTION_IDLE => 'PGSQL_TRANSACTION_IDLE',
-        \PGSQL_TRANSACTION_ACTIVE => 'PGSQL_TRANSACTION_ACTIVE',
-        \PGSQL_TRANSACTION_INTRANS => 'PGSQL_TRANSACTION_INTRANS',
-        \PGSQL_TRANSACTION_INERROR => 'PGSQL_TRANSACTION_INERROR',
-        \PGSQL_TRANSACTION_UNKNOWN => 'PGSQL_TRANSACTION_UNKNOWN',
-    ];
-
-    private static $resultStatus = [
-        \PGSQL_EMPTY_QUERY => 'PGSQL_EMPTY_QUERY',
-        \PGSQL_COMMAND_OK => 'PGSQL_COMMAND_OK',
-        \PGSQL_TUPLES_OK => 'PGSQL_TUPLES_OK',
-        \PGSQL_COPY_OUT => 'PGSQL_COPY_OUT',
-        \PGSQL_COPY_IN => 'PGSQL_COPY_IN',
-        \PGSQL_BAD_RESPONSE => 'PGSQL_BAD_RESPONSE',
-        \PGSQL_NONFATAL_ERROR => 'PGSQL_NONFATAL_ERROR',
-        \PGSQL_FATAL_ERROR => 'PGSQL_FATAL_ERROR',
-    ];
-
-    private static $diagCodes = [
-        'severity' => \PGSQL_DIAG_SEVERITY,
-        'sqlstate' => \PGSQL_DIAG_SQLSTATE,
-        'message' => \PGSQL_DIAG_MESSAGE_PRIMARY,
-        'detail' => \PGSQL_DIAG_MESSAGE_DETAIL,
-        'hint' => \PGSQL_DIAG_MESSAGE_HINT,
-        'statement position' => \PGSQL_DIAG_STATEMENT_POSITION,
-        'internal position' => \PGSQL_DIAG_INTERNAL_POSITION,
-        'internal query' => \PGSQL_DIAG_INTERNAL_QUERY,
-        'context' => \PGSQL_DIAG_CONTEXT,
-        'file' => \PGSQL_DIAG_SOURCE_FILE,
-        'line' => \PGSQL_DIAG_SOURCE_LINE,
-        'function' => \PGSQL_DIAG_SOURCE_FUNCTION,
-    ];
-
-    public static function castLargeObject($lo, array $a, Stub $stub, bool $isNested)
-    {
-        $a['seek position'] = pg_lo_tell($lo);
-
-        return $a;
-    }
-
-    public static function castLink($link, array $a, Stub $stub, bool $isNested)
-    {
-        $a['status'] = pg_connection_status($link);
-        $a['status'] = new ConstStub(\PGSQL_CONNECTION_OK === $a['status'] ? 'PGSQL_CONNECTION_OK' : 'PGSQL_CONNECTION_BAD', $a['status']);
-        $a['busy'] = pg_connection_busy($link);
-
-        $a['transaction'] = pg_transaction_status($link);
-        if (isset(self::$transactionStatus[$a['transaction']])) {
-            $a['transaction'] = new ConstStub(self::$transactionStatus[$a['transaction']], $a['transaction']);
-        }
-
-        $a['pid'] = pg_get_pid($link);
-        $a['last error'] = pg_last_error($link);
-        $a['last notice'] = pg_last_notice($link);
-        $a['host'] = pg_host($link);
-        $a['port'] = pg_port($link);
-        $a['dbname'] = pg_dbname($link);
-        $a['options'] = pg_options($link);
-        $a['version'] = pg_version($link);
-
-        foreach (self::$paramCodes as $v) {
-            if (false !== $s = pg_parameter_status($link, $v)) {
-                $a['param'][$v] = $s;
-            }
-        }
-
-        $a['param']['client_encoding'] = pg_client_encoding($link);
-        $a['param'] = new EnumStub($a['param']);
-
-        return $a;
-    }
-
-    public static function castResult($result, array $a, Stub $stub, bool $isNested)
-    {
-        $a['num rows'] = pg_num_rows($result);
-        $a['status'] = pg_result_status($result);
-        if (isset(self::$resultStatus[$a['status']])) {
-            $a['status'] = new ConstStub(self::$resultStatus[$a['status']], $a['status']);
-        }
-        $a['command-completion tag'] = pg_result_status($result, \PGSQL_STATUS_STRING);
-
-        if (-1 === $a['num rows']) {
-            foreach (self::$diagCodes as $k => $v) {
-                $a['error'][$k] = pg_result_error_field($result, $v);
-            }
-        }
-
-        $a['affected rows'] = pg_affected_rows($result);
-        $a['last OID'] = pg_last_oid($result);
-
-        $fields = pg_num_fields($result);
-
-        for ($i = 0; $i < $fields; ++$i) {
-            $field = [
-                'name' => pg_field_name($result, $i),
-                'table' => sprintf('%s (OID: %s)', pg_field_table($result, $i), pg_field_table($result, $i, true)),
-                'type' => sprintf('%s (OID: %s)', pg_field_type($result, $i), pg_field_type_oid($result, $i)),
-                'nullable' => (bool) pg_field_is_null($result, $i),
-                'storage' => pg_field_size($result, $i).' bytes',
-                'display' => pg_field_prtlen($result, $i).' chars',
-            ];
-            if (' (OID: )' === $field['table']) {
-                $field['table'] = null;
-            }
-            if ('-1 bytes' === $field['storage']) {
-                $field['storage'] = 'variable size';
-            } elseif ('1 bytes' === $field['storage']) {
-                $field['storage'] = '1 byte';
-            }
-            if ('1 chars' === $field['display']) {
-                $field['display'] = '1 char';
-            }
-            $a['fields'][] = new EnumStub($field);
-        }
-
-        return $a;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+Zy2WkW==

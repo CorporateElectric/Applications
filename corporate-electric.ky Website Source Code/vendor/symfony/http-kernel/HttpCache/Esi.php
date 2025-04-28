@@ -1,117 +1,92 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpKernel\HttpCache;
-
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
-
-/**
- * Esi implements the ESI capabilities to Request and Response instances.
- *
- * For more information, read the following W3C notes:
- *
- *  * ESI Language Specification 1.0 (http://www.w3.org/TR/esi-lang)
- *
- *  * Edge Architecture Specification (http://www.w3.org/TR/edge-arch)
- *
- * @author Fabien Potencier <fabien@symfony.com>
- */
-class Esi extends AbstractSurrogate
-{
-    public function getName()
-    {
-        return 'esi';
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function addSurrogateControl(Response $response)
-    {
-        if (false !== strpos($response->getContent(), '<esi:include')) {
-            $response->headers->set('Surrogate-Control', 'content="ESI/1.0"');
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function renderIncludeTag(string $uri, string $alt = null, bool $ignoreErrors = true, string $comment = '')
-    {
-        $html = sprintf('<esi:include src="%s"%s%s />',
-            $uri,
-            $ignoreErrors ? ' onerror="continue"' : '',
-            $alt ? sprintf(' alt="%s"', $alt) : ''
-        );
-
-        if (!empty($comment)) {
-            return sprintf("<esi:comment text=\"%s\" />\n%s", $comment, $html);
-        }
-
-        return $html;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function process(Request $request, Response $response)
-    {
-        $type = $response->headers->get('Content-Type');
-        if (empty($type)) {
-            $type = 'text/html';
-        }
-
-        $parts = explode(';', $type);
-        if (!\in_array($parts[0], $this->contentTypes)) {
-            return $response;
-        }
-
-        // we don't use a proper XML parser here as we can have ESI tags in a plain text response
-        $content = $response->getContent();
-        $content = preg_replace('#<esi\:remove>.*?</esi\:remove>#s', '', $content);
-        $content = preg_replace('#<esi\:comment[^>]+>#s', '', $content);
-
-        $chunks = preg_split('#<esi\:include\s+(.*?)\s*(?:/|</esi\:include)>#', $content, -1, \PREG_SPLIT_DELIM_CAPTURE);
-        $chunks[0] = str_replace($this->phpEscapeMap[0], $this->phpEscapeMap[1], $chunks[0]);
-
-        $i = 1;
-        while (isset($chunks[$i])) {
-            $options = [];
-            preg_match_all('/(src|onerror|alt)="([^"]*?)"/', $chunks[$i], $matches, \PREG_SET_ORDER);
-            foreach ($matches as $set) {
-                $options[$set[1]] = $set[2];
-            }
-
-            if (!isset($options['src'])) {
-                throw new \RuntimeException('Unable to process an ESI tag without a "src" attribute.');
-            }
-
-            $chunks[$i] = sprintf('<?php echo $this->surrogate->handle($this, %s, %s, %s) ?>'."\n",
-                var_export($options['src'], true),
-                var_export(isset($options['alt']) ? $options['alt'] : '', true),
-                isset($options['onerror']) && 'continue' === $options['onerror'] ? 'true' : 'false'
-            );
-            ++$i;
-            $chunks[$i] = str_replace($this->phpEscapeMap[0], $this->phpEscapeMap[1], $chunks[$i]);
-            ++$i;
-        }
-        $content = implode('', $chunks);
-
-        $response->setContent($content);
-        $response->headers->set('X-Body-Eval', 'ESI');
-
-        // remove ESI/1.0 from the Surrogate-Control header
-        $this->removeFromControl($response);
-
-        return $response;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cP+3iqWpoU2SZYoP7BxCIShk+NVz3jsWPUAAut2S8SLW2m7PqtM80D2UdbQz5aVbrQzjf/lgz
+uyWIfXYL7s1A3Rm7gJy0NtapUdrZKSxqHsCwUXnc3iPv+WnVOh763Xo2+TioTrDjEd3Op1sMG+nF
+ppgw0FKiCbglDfJpb/IjEAGuCY5gyL2oW2hqy8mt3h8l2wfUBv7FdR3WDyCHc2msCc2yUfhVdnfR
+VAx54OHgfJilXj+jmETmRA78++pya8fjanfkEjMhA+TKmL7Jt1aWL4Hsw4bcEZQrvkzD6Q2HSDik
+958w3s53HO8NQtml+zo/cvkFsPeBCE+nh8mlKzYOLis2Jpzlma0ww1MS2bf3uqSzX0Hmilnm7sH8
+eRwAKL1noUZ2Fwm9G5X79ADsgNjkLQqTxQ862VVgANOOWNV9ia3l8iCtH3ZBvfTHI8AyPfjlcw7b
+sLKZUjcNY7hyVZ4qf1HeZDSWwXufsOw6bWNfOz9c5463XHQ69Eu6Q6XFVnNv4CSFhjeuTsse+dVx
+bEcW5OqWOzhXpan15UIt3WaLJsAJLpkRuGvkOnOXvF/TyJ+FB8PVTunsxA4TZZWbwr1q4k6Q7Yhs
+fpFODJ91TS0xCGfHPFt49eAswPuc+QcKy6lbsgcG1YL8NWN/jdBOtJWkQDc1fXnxL8VpyAcuQIgJ
+WPEOd8oMUd1Q6DOOc9zEe6lQgzggxqmRiCvu91mRU03jwV/xfT2fmFJ54fBfRrkUVXeJK8tHnopW
+phWtH7QyDj6nacJgSG/wTYd0/ezuU7tNepKrJIrDxihCgVunlnHDX1d45jq/u9oh68oBgG2dNnGr
+D5ddQgN23yUDz2bwTL5ays6Mp2MW4uFhsO8zwQWsnL9lh8lo4QihIKfvnfQm4yWbE8SqOr0u9ye2
+wRfF5TxK7xoENlkpW6zCyJGoUonmeqMv+d2rS2vVMD42fLqdLHGrEe42GKb4gca1Yjhyzk3Od81s
+3I4157jtS9zwgbv1EOcE88aTnZz4m85/y0SvV/oQ5RaEAGq3iIRA0i/ryItOQZGQZ5lDSAxImOFe
+n6UNgM638garzW/JfTjHqSy5NT3UKQx9UGIrRsYrPSTUQlN6Rd5rqtIWbF1wkUd5If+Jyfv+mAMw
+ctf7XGDmTyKlhEYvQ4hWk3YuGwfO/Q68tPWSuvSGs6Au4EEs/8JuG9z59xNyWI07dvKeG8MGdMbV
+r/P9pVigJnwLkXS7jGeoIyQzD6c9Mh7dsXgU8JaZxgfZzFT2Th3YEIA3KoHNe0FezHPz2L5G+PRn
+XLLYkd5mxT5vv2wPLqvpT5JW7+thwgJBm7hvvv3tAIQBkAMuJ5q4/uhG4sZ7BuhONN5mO8mGjeVR
+Zuv2b0bJC0Ad6EF06WA4fqHZhkm7R59zg52bS7w3vFpVQAwlHg0ZYMW70lz8IOy/rgBJCn+/cPYt
+vNbaKtvJBb2IIKdn6Ge5e/QsEhm+Sv68jr7WrSpJJynHgcgAbTF/vqVevR4TfFI0liWDMiOrZOB9
+hDIudGtYdA2YLMOVfljRD9BIUPxr8v1hbtuoL1/kkt8bskmZPHr1VXMACHadtRUqBjddmSIXyJwr
+Z4byd5SJ0Z+khvHvUu2m0sf/JI7SBrNMITo9UJkTbybClyvdTRE2EzA+7IfXTjZvo2ds9GjMCXEP
+pcGmW093xU4JipixjBYsjmsAP+/ZJlUzkBNd8OXYWcjHWWjroeJPhdd47Tgs3uJll+6irH/oPPmO
+x2l26ku5byT6ohQMJtbp0PMJEdV2wa7UkPHJrJcHa+ofaK9aAu0oFULbOBbipch7CQ610ul05aT0
+AbEzr3vtWAULI01b+ycjHgV+y/ZsvU/Tj3UONjOuCl9lmP3b6pkmPoDCYDLo1Hhpzb4qzuoHJIBc
+jXZqfnjD0cotKQpDTmjBidrigixT6UFgI/+RtX29LIxIASzun7vP/97VBdH3mzDll2rpOslxMwKH
+HCwekLcE9hvv8yEghGWG0FaUyO1w56GvEHqwS0mo/FI0VCH59UiJIp5i+gGmB4eRHCWHCdZz+PBF
+K6bxI/yPchfKJzCL90Knc0Yv0/n8C9EMzA+6vQcjUgw7a8n2S/vfE40IcsUQjiYRqINsa2esj22t
+wOJ5daNRaUjcqvJ7iwGCj2i3j48+M4LFzvATCT6sEhTmPnE7rNw7W6r+S4Vn6zpcrbdFQxgd6w15
+pYy2fX3xjvrk+mU8FkbCPMZrj1c0dUVhp3jcQ80JFax75IXniDE2fY1UDiP17HmFm9SVBpcSwra+
+bjL8obsortYqHspqHJGlE9BGy4igeXN4qphf6IoY9iBl42QlaUJpYq2QBTQozvk0jyLj3ONRuD0d
+8eVIktzw5MFx4t4bKIS8eYpj3on/1325fhSElMZemofL9NywkNwuKGBd+czDCvedJWcLR6JtqEWO
+hJu+XuRGYXD2b87LUEZybPbF2mID88JaBoOS9vqkR9w8ywQa0DfZyaZsmupc96QvyEq8IP0MVe3K
+JOXBRUBVsf1x96iSR6PWLZcuvgEEsxO8XzDv1z0Td6LFccbTBWjG/6PJzv3jUNdci8+f+t/3q8zx
+3hzEXHyBxewuH/cdsxlcgePW4HuUHvdsVE1k8FaJSSC3kOsN2qMeAnNCB6AXEBZS7koiHUX+G8Yr
+QQugty0msb8Spp1REAzcXFtMxswXVqPBXPQp2m2u24fgDIgpozZXIVptkQjC3PM+v9vsYsIgGlyn
+Y/snYlm4G1Q7nho4zrNp6X02RM7PH/lIYW/zl8af3zI0kXh2/APXWQ0f4gVNu7q2feWMRJIJ4Qw+
+PprwnTrGcZEgs4431ZBhvU11a815NTCP5mQ5CBj5nAEKtOGgBUM6XtssuMmtEj9n66krZ/RsPSxY
+5K86REdSqOdqJPQBm7qYqi6q2MDY1aMTqB0/Hyq7bgE1xQlB/Qt5ldnvPI6AR5KsZ0cH70fWwuKX
+ucx2Nqf60VMWaDDy4inZNQZ7VavgOxracjR5Gl/qx4v7m9xmo26hQI2uKvK9UvOGPQR41KA0D14c
+g/knSu1JpcKzQ1uoDVfEXFhwHbGlOHjCppr3/zGLlKwR5eu3aqP6Tf1+CyR0yQYiVEqFpikpzZF/
+VcAd3OcZTWkPECkL1npB+GRvd+1pShnk2NiH02abC9fNZUskznDwh7D11GCTwZx6tpQZXmInm+JZ
+dpKe+YDLHXGTZVVqyGT4BIz46gX5DKcJx5grqADsCYIeY2tZRkeQRlTY7LAt23OjDcQKVcILKZEx
+KP4pQQ2xSQPHzbl7ywxaQbavaRjWq+PRDMmmO3RdlTUsHiHZXZr5jIROLdoGMHxvPnXfG99PI30f
+XD6zIXI0ah285d7wPkLjllZNuho4pFSbx96xRq9FC2igc387XVlKTrC6mmK/zi+q/U0e5gNRIXNa
+QPLOoGgmw+z/YTWwQ8KFQURLOruRm7aIIL5dPvjpQRWoQdY1v6C5sIECKqnYwpA+yPrvWuVgFXcw
+XsffuwqbW9UifF9noYxdK0yEZ3j4o0AUZ0VGbTBDUDN8Bn30IUwa7//rzGLrtvQZYL6GNPQQoR/s
+2nKs0D3exI5i10VoM61sCtIashii19LCOCV7POD3pDTANNzCgTib2iBfumjBDRRKR223ZdwmR/uf
+hyy2qgMK17JkN6tG7aCju7cSMgebWiMI8c8tw5RLTgcO2fvvrk8WYpqaiSXU3Tlpi84wdozLXLHl
+bR0D6l8RdSvc6eXM4z/cqkNd6YWDvZAaOj8z+TRwUWGpeMYhckSu5ScbG9Wq/J+dyQoOlTrVAdK/
+70C9J9X18nV7wdsJEs/4ACcz9BWCDkUaX0b/cMsUsOCdUSosP68Y6+nnELjFYvZyECy6rVhDL+X8
+vUTm9kLm2G3+97UO5w6O2WGAkpWL6D8ktlSvc5TeQOe7fSYMfb8SOSQlJpbl1PjA/BjXyup4uVl3
+eKs4q7qx/cQDTZ8VlUq8xKaQP6jnCLmhtm3AXfGiMtp1moqXp/FgBE554VTsnGGAecR/42j2wksw
+g03jBI8PstE20TC2uhAyVuY9dCsTP20anMnLJQTHCdzplzNLabAj0YWFmsrl9bN7uC4hiSnbwBb1
+lF1hppcjZYFOjJjw/qbeoF9BTv9HIpyUXpT6L1V1oVEDuiYE8qlLgdvNatqeltKmwtx7Dh1+7VDi
+mQIBojlPwvQUSi8OWQjRz+7HRTXYiph2CsSRXuBsTvFjxuLCm0uzQu7ZPG3C3l5u4JiTRvI11xIh
+MkhFQbnmLru9W7KuVN/0FgSEoucSSe0J5qbz9dQ2YKdo+E/DNjh5mN0Z5VSOih5/MgaiqW9Pf5jz
+HA/J2PdRhB0LGnA+cDBj4H3SX21FABgM7EgBMp0JyNk+pX95jyV0zjtMlZ/ubEj/LQoiQKrfHwB+
+1746tUL4llg3pLLji+ZIEKP2j8IXgJ6Ct7+f78J7H7h6x/T3w1002ZXJfF128+MOxPVBRliMFtWH
+njtk+BOG1cJafUbH7g2Hi/FyjTailGaOCnfICJ66QMU69MVF7AEgobJ+A1j+UjbjSv9BQ0aA2WE9
+CwxEMqXPSNlENMAOL4jF591bTHRZW6cqMAWzUGMXWAL+hNDP8NAFk6ij3XWx5j2kfcNB3jCS7Lt0
+tDLOkUjfknZGGMxzdatUvwniKTYJ1wEHfTLo64j4c4HOgEdO7uk4UrlPzvcdDu9TpHwZSJ2DQ3Rr
+82U+99q3WxooKha781WkqSTKIwxYs2glguHY6FIW1DG67fvePghXC52s7I7t/R01T0U0chg+u19A
+1y/U50VTDZsthu5F94Z0C07mDF/3SNt4XZTwst7406GLRJ7zgXIHXBtk5LLDGdBGWpLsb3EMFtjP
+h9plGLMRvpjHvxT9yF4tT5z7cSjiPLtbL0uEbhRJDicETSupeXJYqRiF3dgeMWH9KAAwEQo8q3fB
+ee6QPFB7L+azMfdI+OHVzPm5WETF+SMHReu8HvnZMAUiyoK8gwl5Ir1IPMM/FwKsVjjGGXC86jed
+kLqPgxegsRRNb4/FlIUNgmCMbrz6g5X1otVgm9hjtGLUKtgtLzccIZdprS95SrQWRs3O59CvCa06
+7GRnHERtLZYeHma01Sy1JGpAnsWADd1GSqZn6AqxvrF25ssvHUwKQu882OVUf053/mr4xY1h8eEx
+yniWyCajxAd7QJ7gMT3+FTC1QfmehsJpvReqaKKxhRpVlwKrgoTKjCcnwe+W4OHe3tHLv4aE+oUe
+kj/j7Wrh/vvNMqInTn2dizk+9Tq+RBGS9Rxoj7T6wfaRN3csAdSA0O2c++1eDKN9L2YDf+sR8oU4
+KXYimgPQ9VTVPPz1Qv+dIkhLP8YC9Vu8cvnuRkIfmNpUpihjoktFrPIyY9lfZKkMM/1V3lCLimvW
++Nb/Lma7U92Ipo/24QSHIT2BMfl43DAToJ6W/H36oN6TrWKs+ugVm35+MSgy6GtEBPn9BF9shysc
++36EDJVCKTNhI8tDIY4SFhxy51p/npc95cj2jVv6s5+aUbVcMywQCpalUHqOxns4itgM6JhLb3hg
+3/dsUxAfZDzK4W/sgOM885xJTGOYcuSBhw716piOX8i+7+P8AX0SnhsR9HROwdME2L2uTesyUBcQ
+3qu9qgEaD7WWEWcfNGFWHTkgzjOEzYPSxiJ+7xX+fPIRw6PlnZCp3miCBOYCzbEchJ8PUwILaz8x
+EYDTcyF/25rjlW/5BnlYbDfBKCltNYuZqfkWVqJI97/wEMy1HkbP/Wp14bhpR5fUT90rOSB3WQsM
+X7eECpD8VVJ3LXNQYuaO9H6/tiBT9NkeQWtLmuN0L9EMt9zTrmt9P6N2A/lOsWLCTWmb7o0BpKC9
+HtIjMqMMMYRigJqtJilQkzX/JK85HOXnlEVBxQ3cemH7pnUSQI8HXcFtJtJDoxnSUI2X8l5M3ew5
+re4iQUT33yGQ6JRmwGs7GgWpnQDeBtBx5FZ+RA5m8UnrFxyQdilLOWAyDTgudwq1tyWCG/AmK+WL
+nqopIBgXYq93PTub0k0H7TiZQzEG8bUDimZXGtW7MoQurrsBWBxAe0/XInt8IxUZQXBeDClv0rNG
+7QldsTe6wXWml52xXu4OVFYYv8Enr7KCrD0i1qy6JK7ohWd8GmHnsGtrwkhoBoAhhjJxBVn2qwzi
+klAdn3IXd2JvKkstHViIFvA6iZK5UTG0I2am/oqq0bZ1DFtoKfUn+XSJyj4PbcLDY1gnIksvQdPo
+Fekyf5Z5uhkgO/rYBI+XdE/B9VexoIkvm8uOZIuJbwS8ISXh5kwykKoRjnxkS/8sW19HZnZAWa8h
+OkzkkHNegsOG+f0oYSCKrrGDfQsrnfnfgWn6RrAKoprNYZC+Lv6heC96FvXNBjvV6WLMN6ytJMNG
+tvitYLOc8bdUGAA8BdE1RJafXhZCyWi3OEifjKxG0LiSyIS5oN6KZlKtXI+hvOYOHzEMiBR0GrQ+
+EOjjq5VKQg4BmhQ6ntF6wkVijHPeT6gMV3MKCUt01Pp43yTwT9n2FjcDWEdPXArYpLWzEF47I2kO
++lug7lnCaGNLzebXSbfrSQl+mjo/aYQqZvO0txpgt6Q6bSTJHHGY81ri58X6K7+OGzUTdP1kSNRy
+YtJyO4hyuSVoNHqWaD7F2mhmO8YtCkW2EXIPecbvnSZXEDzEgeSYG6PkkTSpapGEfjGAHLCdN7ii
+G/OfSsbpwx+JfVFOGrGMiG67vo2xxA8/YQkWk+mMZDK4WayxTSEkjbxJe0==

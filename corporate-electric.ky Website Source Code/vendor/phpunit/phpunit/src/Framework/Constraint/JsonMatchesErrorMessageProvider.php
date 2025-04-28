@@ -1,72 +1,40 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Framework\Constraint;
-
-use const JSON_ERROR_CTRL_CHAR;
-use const JSON_ERROR_DEPTH;
-use const JSON_ERROR_NONE;
-use const JSON_ERROR_STATE_MISMATCH;
-use const JSON_ERROR_SYNTAX;
-use const JSON_ERROR_UTF8;
-use function strtolower;
-
-/**
- * @no-named-arguments Parameter names are not covered by the backward compatibility promise for PHPUnit
- */
-final class JsonMatchesErrorMessageProvider
-{
-    /**
-     * Translates JSON error to a human readable string.
-     */
-    public static function determineJsonError(string $error, string $prefix = ''): ?string
-    {
-        switch ($error) {
-            case JSON_ERROR_NONE:
-                return null;
-            case JSON_ERROR_DEPTH:
-                return $prefix . 'Maximum stack depth exceeded';
-            case JSON_ERROR_STATE_MISMATCH:
-                return $prefix . 'Underflow or the modes mismatch';
-            case JSON_ERROR_CTRL_CHAR:
-                return $prefix . 'Unexpected control character found';
-            case JSON_ERROR_SYNTAX:
-                return $prefix . 'Syntax error, malformed JSON';
-            case JSON_ERROR_UTF8:
-                return $prefix . 'Malformed UTF-8 characters, possibly incorrectly encoded';
-
-            default:
-                return $prefix . 'Unknown error';
-        }
-    }
-
-    /**
-     * Translates a given type to a human readable message prefix.
-     */
-    public static function translateTypeToPrefix(string $type): string
-    {
-        switch (strtolower($type)) {
-            case 'expected':
-                $prefix = 'Expected value JSON decode error - ';
-
-                break;
-            case 'actual':
-                $prefix = 'Actual value JSON decode error - ';
-
-                break;
-
-            default:
-                $prefix = '';
-
-                break;
-        }
-
-        return $prefix;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

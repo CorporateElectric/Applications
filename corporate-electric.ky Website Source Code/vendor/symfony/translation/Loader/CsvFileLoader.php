@@ -1,65 +1,52 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Translation\Loader;
-
-use Symfony\Component\Translation\Exception\NotFoundResourceException;
-
-/**
- * CsvFileLoader loads translations from CSV files.
- *
- * @author Saša Stamenković <umpirsky@gmail.com>
- */
-class CsvFileLoader extends FileLoader
-{
-    private $delimiter = ';';
-    private $enclosure = '"';
-    private $escape = '\\';
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function loadResource($resource)
-    {
-        $messages = [];
-
-        try {
-            $file = new \SplFileObject($resource, 'rb');
-        } catch (\RuntimeException $e) {
-            throw new NotFoundResourceException(sprintf('Error opening file "%s".', $resource), 0, $e);
-        }
-
-        $file->setFlags(\SplFileObject::READ_CSV | \SplFileObject::SKIP_EMPTY);
-        $file->setCsvControl($this->delimiter, $this->enclosure, $this->escape);
-
-        foreach ($file as $data) {
-            if (false === $data) {
-                continue;
-            }
-
-            if ('#' !== substr($data[0], 0, 1) && isset($data[1]) && 2 === \count($data)) {
-                $messages[$data[0]] = $data[1];
-            }
-        }
-
-        return $messages;
-    }
-
-    /**
-     * Sets the delimiter, enclosure, and escape character for CSV.
-     */
-    public function setCsvControl(string $delimiter = ';', string $enclosure = '"', string $escape = '\\')
-    {
-        $this->delimiter = $delimiter;
-        $this->enclosure = $enclosure;
-        $this->escape = $escape;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+hQKcvClv

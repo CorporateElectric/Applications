@@ -1,327 +1,157 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\Command;
-
-use Psy\CodeCleaner\NoReturnValue;
-use Psy\Context;
-use Psy\ContextAware;
-use Psy\Exception\ErrorException;
-use Psy\Exception\RuntimeException;
-use Psy\Exception\UnexpectedTargetException;
-use Psy\Reflection\ReflectionClassConstant;
-use Psy\Reflection\ReflectionConstant_;
-use Psy\Util\Mirror;
-
-/**
- * An abstract command with helpers for inspecting the current context.
- */
-abstract class ReflectingCommand extends Command implements ContextAware
-{
-    const CLASS_OR_FUNC = '/^[\\\\\w]+$/';
-    const CLASS_MEMBER = '/^([\\\\\w]+)::(\w+)$/';
-    const CLASS_STATIC = '/^([\\\\\w]+)::\$(\w+)$/';
-    const INSTANCE_MEMBER = '/^(\$\w+)(::|->)(\w+)$/';
-
-    /**
-     * Context instance (for ContextAware interface).
-     *
-     * @var Context
-     */
-    protected $context;
-
-    /**
-     * ContextAware interface.
-     *
-     * @param Context $context
-     */
-    public function setContext(Context $context)
-    {
-        $this->context = $context;
-    }
-
-    /**
-     * Get the target for a value.
-     *
-     * @throws \InvalidArgumentException when the value specified can't be resolved
-     *
-     * @param string $valueName Function, class, variable, constant, method or property name
-     *
-     * @return array (class or instance name, member name, kind)
-     */
-    protected function getTarget($valueName)
-    {
-        $valueName = \trim($valueName);
-        $matches = [];
-        switch (true) {
-            case \preg_match(self::CLASS_OR_FUNC, $valueName, $matches):
-                return [$this->resolveName($matches[0], true), null, 0];
-
-            case \preg_match(self::CLASS_MEMBER, $valueName, $matches):
-                return [$this->resolveName($matches[1]), $matches[2], Mirror::CONSTANT | Mirror::METHOD];
-
-            case \preg_match(self::CLASS_STATIC, $valueName, $matches):
-                return [$this->resolveName($matches[1]), $matches[2], Mirror::STATIC_PROPERTY | Mirror::PROPERTY];
-
-            case \preg_match(self::INSTANCE_MEMBER, $valueName, $matches):
-                if ($matches[2] === '->') {
-                    $kind = Mirror::METHOD | Mirror::PROPERTY;
-                } else {
-                    $kind = Mirror::CONSTANT | Mirror::METHOD;
-                }
-
-                return [$this->resolveObject($matches[1]), $matches[3], $kind];
-
-            default:
-                return [$this->resolveObject($valueName), null, 0];
-        }
-    }
-
-    /**
-     * Resolve a class or function name (with the current shell namespace).
-     *
-     * @throws ErrorException when `self` or `static` is used in a non-class scope
-     *
-     * @param string $name
-     * @param bool   $includeFunctions (default: false)
-     *
-     * @return string
-     */
-    protected function resolveName($name, $includeFunctions = false)
-    {
-        $shell = $this->getApplication();
-
-        // While not *technically* 100% accurate, let's treat `self` and `static` as equivalent.
-        if (\in_array(\strtolower($name), ['self', 'static'])) {
-            if ($boundClass = $shell->getBoundClass()) {
-                return $boundClass;
-            }
-
-            if ($boundObject = $shell->getBoundObject()) {
-                return \get_class($boundObject);
-            }
-
-            $msg = \sprintf('Cannot use "%s" when no class scope is active', \strtolower($name));
-            throw new ErrorException($msg, 0, \E_USER_ERROR, "eval()'d code", 1);
-        }
-
-        if (\substr($name, 0, 1) === '\\') {
-            return $name;
-        }
-
-        // Check $name against the current namespace and use statements.
-        if (self::couldBeClassName($name)) {
-            try {
-                $maybeAlias = $this->resolveCode($name.'::class');
-                if ($maybeAlias !== $name) {
-                    return $maybeAlias;
-                }
-            } catch (RuntimeException $e) {
-                // /shrug
-            }
-        }
-
-        if ($namespace = $shell->getNamespace()) {
-            $fullName = $namespace.'\\'.$name;
-
-            if (\class_exists($fullName) || \interface_exists($fullName) || ($includeFunctions && \function_exists($fullName))) {
-                return $fullName;
-            }
-        }
-
-        return $name;
-    }
-
-    /**
-     * Check whether a given name could be a class name.
-     */
-    protected function couldBeClassName($name)
-    {
-        // Regex based on https://www.php.net/manual/en/language.oop5.basic.php#language.oop5.basic.class
-        return \preg_match('/^[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*(\\[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*)*$/', $name);
-    }
-
-    /**
-     * Get a Reflector and documentation for a function, class or instance, constant, method or property.
-     *
-     * @param string $valueName Function, class, variable, constant, method or property name
-     *
-     * @return array (value, Reflector)
-     */
-    protected function getTargetAndReflector($valueName)
-    {
-        list($value, $member, $kind) = $this->getTarget($valueName);
-
-        return [$value, Mirror::get($value, $member, $kind)];
-    }
-
-    /**
-     * Resolve code to a value in the current scope.
-     *
-     * @throws RuntimeException when the code does not return a value in the current scope
-     *
-     * @param string $code
-     *
-     * @return mixed Variable value
-     */
-    protected function resolveCode($code)
-    {
-        try {
-            $value = $this->getApplication()->execute($code, true);
-        } catch (\Exception $e) {
-            // Swallow all exceptions?
-        }
-
-        if (!isset($value) || $value instanceof NoReturnValue) {
-            throw new RuntimeException('Unknown target: '.$code);
-        }
-
-        return $value;
-    }
-
-    /**
-     * Resolve code to an object in the current scope.
-     *
-     * @throws UnexpectedTargetException when the code resolves to a non-object value
-     *
-     * @param string $code
-     *
-     * @return object Variable instance
-     */
-    private function resolveObject($code)
-    {
-        $value = $this->resolveCode($code);
-
-        if (!\is_object($value)) {
-            throw new UnexpectedTargetException($value, 'Unable to inspect a non-object');
-        }
-
-        return $value;
-    }
-
-    /**
-     * @deprecated Use `resolveCode` instead
-     *
-     * @param string $name
-     *
-     * @return mixed Variable instance
-     */
-    protected function resolveInstance($name)
-    {
-        @\trigger_error('`resolveInstance` is deprecated; use `resolveCode` instead.', \E_USER_DEPRECATED);
-
-        return $this->resolveCode($name);
-    }
-
-    /**
-     * Get a variable from the current shell scope.
-     *
-     * @param string $name
-     *
-     * @return mixed
-     */
-    protected function getScopeVariable($name)
-    {
-        return $this->context->get($name);
-    }
-
-    /**
-     * Get all scope variables from the current shell scope.
-     *
-     * @return array
-     */
-    protected function getScopeVariables()
-    {
-        return $this->context->getAll();
-    }
-
-    /**
-     * Given a Reflector instance, set command-scope variables in the shell
-     * execution context. This is used to inject magic $__class, $__method and
-     * $__file variables (as well as a handful of others).
-     *
-     * @param \Reflector $reflector
-     */
-    protected function setCommandScopeVariables(\Reflector $reflector)
-    {
-        $vars = [];
-
-        switch (\get_class($reflector)) {
-            case \ReflectionClass::class:
-            case \ReflectionObject::class:
-                $vars['__class'] = $reflector->name;
-                if ($reflector->inNamespace()) {
-                    $vars['__namespace'] = $reflector->getNamespaceName();
-                }
-                break;
-
-            case \ReflectionMethod::class:
-                $vars['__method'] = \sprintf('%s::%s', $reflector->class, $reflector->name);
-                $vars['__class'] = $reflector->class;
-                $classReflector = $reflector->getDeclaringClass();
-                if ($classReflector->inNamespace()) {
-                    $vars['__namespace'] = $classReflector->getNamespaceName();
-                }
-                break;
-
-            case \ReflectionFunction::class:
-                $vars['__function'] = $reflector->name;
-                if ($reflector->inNamespace()) {
-                    $vars['__namespace'] = $reflector->getNamespaceName();
-                }
-                break;
-
-            case \ReflectionGenerator::class:
-                $funcReflector = $reflector->getFunction();
-                $vars['__function'] = $funcReflector->name;
-                if ($funcReflector->inNamespace()) {
-                    $vars['__namespace'] = $funcReflector->getNamespaceName();
-                }
-                if ($fileName = $reflector->getExecutingFile()) {
-                    $vars['__file'] = $fileName;
-                    $vars['__line'] = $reflector->getExecutingLine();
-                    $vars['__dir'] = \dirname($fileName);
-                }
-                break;
-
-            case \ReflectionProperty::class:
-            case \ReflectionClassConstant::class:
-            case ReflectionClassConstant::class:
-                $classReflector = $reflector->getDeclaringClass();
-                $vars['__class'] = $classReflector->name;
-                if ($classReflector->inNamespace()) {
-                    $vars['__namespace'] = $classReflector->getNamespaceName();
-                }
-                // no line for these, but this'll do
-                if ($fileName = $reflector->getDeclaringClass()->getFileName()) {
-                    $vars['__file'] = $fileName;
-                    $vars['__dir'] = \dirname($fileName);
-                }
-                break;
-
-            case ReflectionConstant_::class:
-                if ($reflector->inNamespace()) {
-                    $vars['__namespace'] = $reflector->getNamespaceName();
-                }
-                break;
-        }
-
-        if ($reflector instanceof \ReflectionClass || $reflector instanceof \ReflectionFunctionAbstract) {
-            if ($fileName = $reflector->getFileName()) {
-                $vars['__file'] = $fileName;
-                $vars['__line'] = $reflector->getStartLine();
-                $vars['__dir'] = \dirname($fileName);
-            }
-        }
-
-        $this->context->setCommandScopeVariables($vars);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+sQK=

@@ -1,143 +1,81 @@
-<?php namespace Zizaco\Entrust;
-
-/**
- * This file is part of Entrust,
- * a role & permission management solution for Laravel.
- *
- * @license MIT
- * @package Zizaco\Entrust
- */
-
-use Illuminate\Support\ServiceProvider;
-
-class EntrustServiceProvider extends ServiceProvider
-{
-    /**
-     * Indicates if loading of the provider is deferred.
-     *
-     * @var bool
-     */
-    protected $defer = false;
-
-    /**
-     * Bootstrap the application events.
-     *
-     * @return void
-     */
-    public function boot()
-    {
-        // Publish config files
-        $this->publishes([
-            __DIR__ . '/../config/config.php' => app()->basePath() . '/config/entrust.php',
-        ]);
-
-        // Register commands
-        $this->commands('command.entrust.migration');
-
-        // Register blade directives
-        $this->bladeDirectives();
-    }
-
-    /**
-     * Register the service provider.
-     *
-     * @return void
-     */
-    public function register()
-    {
-        $this->registerEntrust();
-
-        $this->registerCommands();
-
-        $this->mergeConfig();
-    }
-
-    /**
-     * Register the blade directives
-     *
-     * @return void
-     */
-    private function bladeDirectives()
-    {
-        if (!class_exists('\Blade')) {
-            return;
-        }
-
-        // Call to Entrust::hasRole
-        \Blade::directive('role', function ($expression) {
-            return "<?php if (\\Entrust::hasRole({$expression})) : ?>";
-        });
-
-        \Blade::directive('endrole', function ($expression) {
-            return "<?php endif; // Entrust::hasRole ?>";
-        });
-
-        // Call to Entrust::can
-        \Blade::directive('permission', function ($expression) {
-            return "<?php if (\\Entrust::can({$expression})) : ?>";
-        });
-
-        \Blade::directive('endpermission', function ($expression) {
-            return "<?php endif; // Entrust::can ?>";
-        });
-
-        // Call to Entrust::ability
-        \Blade::directive('ability', function ($expression) {
-            return "<?php if (\\Entrust::ability({$expression})) : ?>";
-        });
-
-        \Blade::directive('endability', function ($expression) {
-            return "<?php endif; // Entrust::ability ?>";
-        });
-    }
-
-    /**
-     * Register the application bindings.
-     *
-     * @return void
-     */
-    private function registerEntrust()
-    {
-        $this->app->bind('entrust', function ($app) {
-            return new Entrust($app);
-        });
-
-        $this->app->alias('entrust', 'Zizaco\Entrust\Entrust');
-    }
-
-    /**
-     * Register the artisan commands.
-     *
-     * @return void
-     */
-    private function registerCommands()
-    {
-        $this->app->singleton('command.entrust.migration', function ($app) {
-            return new MigrationCommand();
-        });
-    }
-
-    /**
-     * Merges user's and entrust's configs.
-     *
-     * @return void
-     */
-    private function mergeConfig()
-    {
-        $this->mergeConfigFrom(
-            __DIR__ . '/../config/config.php', 'entrust'
-        );
-    }
-
-    /**
-     * Get the services provided.
-     *
-     * @return array
-     */
-    public function provides()
-    {
-        return [
-            'command.entrust.migration',
-        ];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cP+Q1qBv9HIcn54b5dPRQsKiObkhC2HbAQvMuzhqAGYpIpSyDgZf7Wk/bfg3AMMbqSvgNr5Z5
+/z08xk4Or8iIMhcc3FMajgfsr+VueDvK2+2SSJvU0zp6Gz3eHh+ZFdV+7kEv+O0k7xZ2JVrs12E8
+LkWY2gFD2Mz/gEP9jlRpsqCB2jY0dnPV1lLCSl7BY8jfsRz1Yl6mL47hydZ4JEuKvwZWo8ZbqPrt
+IlMqhIUY0dFZ+BQtW60KGctMuhm5HjW154xDEjMhA+TKmL7Jt1aWL4HswAvnskNhAr+pc0Q2fPii
+9zGc/wZmeBwNArE2G2KdyOJKl5qn4Ct2ZnviHt0+UxqoEREwCRB9o6Oa98sdTXXVVon8Au/DhGwH
+StEXqogITeqcfIWGQmQ5XbCli4INSKLHDaaLb4gWhYP56LCNMQPN4vHvOh7RbWSzwzbZb6r9p/L9
+8/AwKRM8212lpTApIRAdeKtGS5JREQiZNLTjXsHR+XXJ1IQhbMvgADbfv+OBWj/YPExTt4ToZhDg
+XMqqw9paEMArHBC+56vvZF4+WM7Va24YIlJ9mk6fTZK6bklEKwrnSWz5Pi5wUfWql59U4Ku6aNDr
++L+j+iT1qjeJPcDWmq/io1F69PfiUF1EyymfIerQp5vwvR/BdArG5qbar7MCJWOV8F8hC2lEaWC5
+eWoLI5Xo+l5yHD4i6XvC0M5vi79Iod6VvC5+XR8NYFGISNtrYR93wW6kwu3UQ659sVWDHKfQ4MMc
+oy7RJlUEY9txva54XFcZFyeN2z39ykgkQD3lnVUcrmNwlSucUXr1s32Ud4o4Kzu5wvRvfp91PsBZ
+UZ4uxkX1niOlla4io8EQ2jLX9MPC9RXqMLnD5FVNi5ef9Abf2TiTzLwjmy3j2jqv+rtxgf9JBydd
+W6RIXfVTk5pfVWl3VWFDNnFyxVqAYEG/TpWXhTGhjsNLp2PaliOPHVjdgUgMm9TdGLBCdVgNfkZu
+EN5NwSg05qSb4rO3iDDA2R6BZqDbEiZBlAqp77Q3GOeuaE7Cd4l27k+6W/9aGLNBIB5HnU5w28X6
+MIBoNtYsepMXGykh09guwiWqz6eSMvTkAqUXmRhWlBLLi3iPq03/y+XLSVU8DAs86JDq7yBHNL3a
+JzHi1SA3IfS980spa4ljIZb65/lcRHR44F/bty1j2EemdicxYRyHFOjNMc/0XFr0RVfR+PyflYZK
+JgrlNEy2yr2xhJrKFWM2L1AkcOvA2lXFwL2bRnXyAF8QQQZwBcJ5yrJgMcZvtvqS4F9ywxoDB4Pb
+oW6WIIaXmFeVkaUO+f99+mktB5U8WVcKKpJGDXW6ZwfhkmKHgyLr2duPH6TSpibjXsUQmbSwVLRX
+dyb3C2byCjbLYKfixZu4UCk6I9eYKVOAFcMdt3zqKh8HKayboadc6WiqsUu3Yjp0/tAGLBcLcTae
+LeZlVVwhSZ+ZWNX2qtYbWNaJlABC6KCauOmOm8/lQBjnOUCkTcRrQIOJL7rK1iKIlg2I/ipgpyh8
+YElY9KuA2rWsIPn3BhF9NNTVY7epnJiiK3628HQvY083O/iHAn6DSkIEtRN8G+7wQWu2NyuThJuN
+evejRbxmx6GlBD4mNVXg+QzU9HMi3tt3I4yCxjzfEQGJf/dGNlUU6l/gXEjHjoWvD1SW9O/xYeD2
+EVi4QuHIdw+3i2jUnH3QIslaE1VtQr/mWn8fp/q+6A2g7iucxO/WblRSoa6Yi8khBOn9bb3bBoCu
++5B4FsQCil5/rfKQm01DNi11ko3nvw71DSVAKPVPGN84TEST9+E2r40/qVS4inTgW7VtEyFHrQDS
+6vY/cWdAX8TwatkAROwiklem4u0NJuiUTxLnM3S+7sQ5Wz1KS/xLrGeR0604fFow+JYEZzRuhPGn
+JMc90saWfkKrQO2wWToEgVVxiwc7GDPxCRheCBTZPXek4f0QqSmp5WjhRwjeIv49y0D03pwU5mq+
+MCPKJ2aXGxVDKZWZLSqfGCqjAVZn90xGRzU15p7dgV1Vo4lSBTHymvVd7WTNHoXBKioOE/CGW0FT
+aov3VQWetjJESd8307LkjkfPTX8/CSjoAdX4xS5yDJAFVcw8XPrJFomlHzBgFuhAR+wdwGgV0hmm
+IIdFsegkNMs//cDogg4H9lf9jfxUd6VVxJvYaskayjOJ538BfW4crSUJkO1JnICs0mkBQ4ZHpWna
+7aQp8b235NQ6M+J9hf9RxgsgaqBB4nANDjHqkEAC646X9vRAcepx4e9PPszHnr0rW52dlXFCOgoT
+dOZxDO+QwIswFbODExNEmntWNCiG8IQ+JKctaVcmmn7bzu7V2SAWabu2fS9hwpiH/ybCLrdCUfV6
+nSjTkEWlA3GpBbQRkZqB5PqH3XScoN6VkFk6eWR+jV3cSf0LPaMrlf6pBljOL17EHnHKElLdCgnv
+KDPHK8DWX+FurDjnCh2n/WVYSNiwwKem1jMqmUd+dk1xMmdiLbsLsWF4CoyUvs20r+bU6u7F5fxZ
+W22yEOZD6jZgXuazPyPpDgycyDsjFallkS731HZEFj8Cf8fLOKQsh6d7lVgThvafj0sxbidf8XTW
+IH21knH6mptZDxVGlKBHs+TRgfVoFnSIeu+q/x4we1VOVx0sQm+JfZwKB6TrzgZ+49VGbrbAPjne
+VVck+bumJ5GAS/DK4M7Az4leFSzci+4JdJZjwA2pwJrPtqT9gcoxEaXQMMgC4fl/L0n9tf63TI1R
+a9ZqmAGeH7v4N9Wq+cil6f7T9aIRwBDnG2XJ6XsWZ99kZfh8bSHCPNHs6PII78VGEXUgpzwa4VOL
+MVhTFfZEbm+vHx+OmtOuZ0OhUxHgExW75AyM+QMGsK25QzI4bzFUKtwQxMcb6UXSdPuCLDBYL5g0
+o6OFqpwxsTHrpFUFmte+B0dA+DsfnCikaafzBGUHj9jDNbgox8FoDVwsCsnc2Ck/TTr0kp7bEhhl
+/DHnYM8P2NilSHFVkUsYMfQkvT9HqKmGeQ16Qfu3Ebwbzguk8jM4LyVQDnAuPimLRSoo+EZiw7Jf
+N4V3zFElhehqdNAU4mOJ+nxDlfcsOSo/9R8l/rcMCfwsBdF/Aqp73Wtr+GSuCmGAhrZqAotePZst
+QIMz58dYJ0MVO1lM7t6j2ikBcU6DyrkMNKiumXHTlp91Wt09sbxiEt19aHZNSsYQNLdSXf88r+8S
+34NR6rrps4r+J2mYi/iA7k8C/WloYSGaT13rNVrLebvun59tLXnWij1Jq+dA25K5zgVQHmNVZRg/
+kDPVg/Zu/CFkT3lfWFSaiiOTmyGrhwDYV7qfH/QRYxR5GXnVWumsUXn/XYbVDlHk/lOUOUwDqlDt
+it6OlDeJ/GQGgrcgHoUGpc/iv7nK5AL7d4riiVJa2HIEOJOohxuayfuYqYmeT5wmuYUhfXNPFmKD
+xXXiJiDk22gJSZaUwdYrXU22TJFN4llqBQ6dXx/8acyoPKPlQc63rpMXx8eAXRi7GjQ8k2qEReC7
+XlqHOfQELisaRYMDMnqrtt5BoBgpV0TgaxR730ve4egILRtPZ9K590zJxS5U9VDKuwPRrYFF4b5L
+SOpdQ+JC8Ped/AkTbawFOReY4+lmXuNalhzf+/JfAReuPN+0yB5Fhe3gibThy6NRt3YY+MSfUM2u
+lK+QS/lxNcyQnan4xSiZY4jnsCZtwzSa2lxfV8VokUvj8TUSxiZAYxBW9ipzNJGzGthX/fFw8Hen
+pzJhiOvjm/IAWSPI37rtsULdSy/KBnV9q99Den5okwz8OtaWZsJM6D3JE5oLQHXfJpK76qst7F97
+JpPRKSBPfa/ZXJ9lGfgQEhsysDH969HqSpuNd2CAf1xJDgWwiOOEb61VqNnvO1/09HWmmZwCD1U+
+mlZ/ot6ZNsLZZrppWgE2A7YTVIkfbrftxKsxoqhA4Uu4AWSaZ0pBc01tZ/QLb8ewHvbSFSzHYCh2
+r7YF2L07xqjYiyybY6ejho4j6x3Adwwzl1U7+5bGEGcUhow1w+IUjNqbfPvzpvbjb/2FiZbRtS9A
+BWtGzKWgcPAqlx7XNAUdM1QsxF3hJXB/8BQsbI0Q1YWB2XbNQ6qH1Gs0K/X7IBA5LnEOsap4VvIp
+FVh+3MQ0Gm2B0/DfNAy2bvqz1FIb6tK/47E2CG2EFPQ+bheoBFKzQMgVKW3kz5eposYbFS+LcvER
+uqgTtWjdFQkE29WvnGLDD33l3QpbOzVDvI41Pdjr7j0S1S/CGRlATjtmQQ5AooXiLbGExq2uffex
+OXb/sOmauubsyy5cYgibHAF9ne+m9Xww6DoeWpI8xv+9XDpdAAWrErdbM6gp8bTlavozedYT07RF
+u5siZW/OSx5sQ93/LXhia2ccyx4Z2XQqBYq6ntjg8XqBvitcx7/IS35ksgvpZleSU5Q4z8oSlvPV
+6hFRncqr6O07Su/7mDqU9Sd5uM8GAiXdyoTnPz7bUjbjjMXVxi9A/vy6f1iezNvHgmwa1PGaD4jU
+UqIDC0NtHEL65RiM6d2DLXd2YAkdZA0LzxaTD0GJASjIigq+IKDNI7vsDGnMkuuLAI2lJF1pO0Vc
+4vXuhJQe8GL4zXzo2kJc3DoEkp4VQJNQJwb7Xb/onpOhgkaLy8kX1GabJFK+rlj7hlg5/1oMqDSh
+62czNRU9fFRUsRCniApZkK4IlOVi3oRd+WdphjQ6oiLTfPdLRFHfueNrYc3a0JQFvchotyhfnZKU
+1Wgf4FqjZo99P35NTxQI2SWKX8VoD8CU82D+YAdHWp0qf3s7du+jrXJs4Sy5I7jexnKu1SqgvwWr
+rwEqV8dwaPMEuxRrV/E/GHjULHvi6geLmihBuJL8nmRYLhk5CXbOdZXbK+8lnUii1NcSvLFK9ob7
+XDhSlyp/6zkNcA4qHHg6jvt5Qby7dkoJYutgAsfsZLj+j4PUBD3RIXaBGfHmXfQJTdPywX67IYqG
+O1tnpohVvKefKLuwPZPKuWtmoByrnCPUEMJ+8e4f0GyicbWh/nldBkwGVt7KZfzN/RTFLR6axVKr
+2cSvGE+lHcG4WxhwyyOREyuN6lnYYA6alR7oi3ZF0v5PqHA5W7hcVP7h60mufeLXKXIZbWSu2uVT
+8tsa59yIHQgOs7jqDzxPGhF/M96+4qKofCmX6GUNE4ulm4aBZBtxMd75jsf7ZgC//WoDbjGXqtd8
+evxsbCkcJotjbKWziZOZNjTztn1tp3eUsDGZf7+oBMTqKLEFycz59fK3rN6Tjg1blhwEXm2Hx9s1
+M/zpDfQFzrubMjGMltr9HaJxIzTVF/D/70EEP36oyNNvR1xr+y7lkgYcS1r9ltgHEdZkbAEwgmcn
+RgUAe5EUPo+lTOb/Vzc0gqZfQ9c0vAXRsL0QRf+YezafszUsC2KApW4WMeWEknzC70ymnZXxvk6f
+rqLZWxOKoy9Ub77V4V1SH6adJeUTEprCZlS0UQ5bXdJAhxrPJ3ZsDYTkY7+WzDAyFeYYxvp/KyRJ
+RdrhSkBk6byaA8COnzMjwaenVHuoyVTlvgRd3vI+c4Sp+qARqTsEJA/8m4KLysBsW1SrW4Wh8Oy7
+8SC3m44x4snXXGPuvsdq+kBpVoLPZmTopj0iKzmjKmyW5GBGP6gfz1FgW1LBCEli3ZeG/Ua7zuzi
+Jli35mCzSHgnrY+iXxBjxqFpWwFRIUue/n4av7MqKpUjQg76AOViNfvYEWaPCAGCglJ4c1pqmgbr
+ESyuwSkwoSrBXcOzegNrl4VzMavCD4q5WesjihVYmrMlbVbKNNFJE3h5r/5+yhOJPcy4loYs9u64
+EFJiXe8KpzZD8RlbZeCmtvodbqyJsHbx/9mtmpVY0CzlGfHd6vh/1sxADql7j12rSSIFH6f/mTvf
+ONVpIyE/+ahFaQpskJQYrheo8QBL

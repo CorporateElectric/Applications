@@ -1,193 +1,97 @@
-<?php declare(strict_types=1);
-
-/*
- * This file is part of the Monolog package.
- *
- * (c) Jordi Boggiano <j.boggiano@seld.be>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Monolog\Handler;
-
-use Monolog\Logger;
-
-/**
- * Used for testing purposes.
- *
- * It records all records and gives you access to them for verification.
- *
- * @author Jordi Boggiano <j.boggiano@seld.be>
- *
- * @method bool hasEmergency($record)
- * @method bool hasAlert($record)
- * @method bool hasCritical($record)
- * @method bool hasError($record)
- * @method bool hasWarning($record)
- * @method bool hasNotice($record)
- * @method bool hasInfo($record)
- * @method bool hasDebug($record)
- *
- * @method bool hasEmergencyRecords()
- * @method bool hasAlertRecords()
- * @method bool hasCriticalRecords()
- * @method bool hasErrorRecords()
- * @method bool hasWarningRecords()
- * @method bool hasNoticeRecords()
- * @method bool hasInfoRecords()
- * @method bool hasDebugRecords()
- *
- * @method bool hasEmergencyThatContains($message)
- * @method bool hasAlertThatContains($message)
- * @method bool hasCriticalThatContains($message)
- * @method bool hasErrorThatContains($message)
- * @method bool hasWarningThatContains($message)
- * @method bool hasNoticeThatContains($message)
- * @method bool hasInfoThatContains($message)
- * @method bool hasDebugThatContains($message)
- *
- * @method bool hasEmergencyThatMatches($message)
- * @method bool hasAlertThatMatches($message)
- * @method bool hasCriticalThatMatches($message)
- * @method bool hasErrorThatMatches($message)
- * @method bool hasWarningThatMatches($message)
- * @method bool hasNoticeThatMatches($message)
- * @method bool hasInfoThatMatches($message)
- * @method bool hasDebugThatMatches($message)
- *
- * @method bool hasEmergencyThatPasses($message)
- * @method bool hasAlertThatPasses($message)
- * @method bool hasCriticalThatPasses($message)
- * @method bool hasErrorThatPasses($message)
- * @method bool hasWarningThatPasses($message)
- * @method bool hasNoticeThatPasses($message)
- * @method bool hasInfoThatPasses($message)
- * @method bool hasDebugThatPasses($message)
- */
-class TestHandler extends AbstractProcessingHandler
-{
-    protected $records = [];
-    protected $recordsByLevel = [];
-    private $skipReset = false;
-
-    public function getRecords()
-    {
-        return $this->records;
-    }
-
-    public function clear()
-    {
-        $this->records = [];
-        $this->recordsByLevel = [];
-    }
-
-    public function reset()
-    {
-        if (!$this->skipReset) {
-            $this->clear();
-        }
-    }
-
-    public function setSkipReset(bool $skipReset)
-    {
-        $this->skipReset = $skipReset;
-    }
-
-    /**
-     * @param string|int $level Logging level value or name
-     */
-    public function hasRecords($level): bool
-    {
-        return isset($this->recordsByLevel[Logger::toMonologLevel($level)]);
-    }
-
-    /**
-     * @param string|array $record Either a message string or an array containing message and optionally context keys that will be checked against all records
-     * @param string|int   $level  Logging level value or name
-     */
-    public function hasRecord($record, $level): bool
-    {
-        if (is_string($record)) {
-            $record = array('message' => $record);
-        }
-
-        return $this->hasRecordThatPasses(function ($rec) use ($record) {
-            if ($rec['message'] !== $record['message']) {
-                return false;
-            }
-            if (isset($record['context']) && $rec['context'] !== $record['context']) {
-                return false;
-            }
-
-            return true;
-        }, $level);
-    }
-
-    /**
-     * @param string|int $level Logging level value or name
-     */
-    public function hasRecordThatContains(string $message, $level): bool
-    {
-        return $this->hasRecordThatPasses(function ($rec) use ($message) {
-            return strpos($rec['message'], $message) !== false;
-        }, $level);
-    }
-
-    /**
-     * @param string|int $level Logging level value or name
-     */
-    public function hasRecordThatMatches(string $regex, $level): bool
-    {
-        return $this->hasRecordThatPasses(function (array $rec) use ($regex): bool {
-            return preg_match($regex, $rec['message']) > 0;
-        }, $level);
-    }
-
-    /**
-     * @psalm-param callable(array, int): mixed $predicate
-     *
-     * @param string|int $level Logging level value or name
-     * @return bool
-     */
-    public function hasRecordThatPasses(callable $predicate, $level)
-    {
-        $level = Logger::toMonologLevel($level);
-
-        if (!isset($this->recordsByLevel[$level])) {
-            return false;
-        }
-
-        foreach ($this->recordsByLevel[$level] as $i => $rec) {
-            if ($predicate($rec, $i)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function write(array $record): void
-    {
-        $this->recordsByLevel[$record['level']][] = $record;
-        $this->records[] = $record;
-    }
-
-    public function __call($method, $args)
-    {
-        if (preg_match('/(.*)(Debug|Info|Notice|Warning|Error|Critical|Alert|Emergency)(.*)/', $method, $matches) > 0) {
-            $genericMethod = $matches[1] . ('Records' !== $matches[3] ? 'Record' : '') . $matches[3];
-            $level = constant('Monolog\Logger::' . strtoupper($matches[2]));
-            if (method_exists($this, $genericMethod)) {
-                $args[] = $level;
-
-                return call_user_func_array([$this, $genericMethod], $args);
-            }
-        }
-
-        throw new \BadMethodCallException('Call to undefined method ' . get_class($this) . '::' . $method . '()');
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

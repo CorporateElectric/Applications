@@ -1,251 +1,127 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of phpunit/php-code-coverage.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\CodeCoverage\Node;
-
-use const DIRECTORY_SEPARATOR;
-use function array_merge;
-use function str_replace;
-use function substr;
-use Countable;
-use SebastianBergmann\CodeCoverage\Percentage;
-use SebastianBergmann\LinesOfCode\LinesOfCode;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for phpunit/php-code-coverage
- */
-abstract class AbstractNode implements Countable
-{
-    /**
-     * @var string
-     */
-    private $name;
-
-    /**
-     * @var string
-     */
-    private $pathAsString;
-
-    /**
-     * @var array
-     */
-    private $pathAsArray;
-
-    /**
-     * @var AbstractNode
-     */
-    private $parent;
-
-    /**
-     * @var string
-     */
-    private $id;
-
-    public function __construct(string $name, self $parent = null)
-    {
-        if (substr($name, -1) === DIRECTORY_SEPARATOR) {
-            $name = substr($name, 0, -1);
-        }
-
-        $this->name   = $name;
-        $this->parent = $parent;
-    }
-
-    public function name(): string
-    {
-        return $this->name;
-    }
-
-    public function id(): string
-    {
-        if ($this->id === null) {
-            $parent = $this->parent();
-
-            if ($parent === null) {
-                $this->id = 'index';
-            } else {
-                $parentId = $parent->id();
-
-                if ($parentId === 'index') {
-                    $this->id = str_replace(':', '_', $this->name);
-                } else {
-                    $this->id = $parentId . '/' . $this->name;
-                }
-            }
-        }
-
-        return $this->id;
-    }
-
-    public function pathAsString(): string
-    {
-        if ($this->pathAsString === null) {
-            if ($this->parent === null) {
-                $this->pathAsString = $this->name;
-            } else {
-                $this->pathAsString = $this->parent->pathAsString() . DIRECTORY_SEPARATOR . $this->name;
-            }
-        }
-
-        return $this->pathAsString;
-    }
-
-    public function pathAsArray(): array
-    {
-        if ($this->pathAsArray === null) {
-            if ($this->parent === null) {
-                $this->pathAsArray = [];
-            } else {
-                $this->pathAsArray = $this->parent->pathAsArray();
-            }
-
-            $this->pathAsArray[] = $this;
-        }
-
-        return $this->pathAsArray;
-    }
-
-    public function parent(): ?self
-    {
-        return $this->parent;
-    }
-
-    public function percentageOfTestedClasses(): Percentage
-    {
-        return Percentage::fromFractionAndTotal(
-            $this->numberOfTestedClasses(),
-            $this->numberOfClasses(),
-        );
-    }
-
-    public function percentageOfTestedTraits(): Percentage
-    {
-        return Percentage::fromFractionAndTotal(
-            $this->numberOfTestedTraits(),
-            $this->numberOfTraits(),
-        );
-    }
-
-    public function percentageOfTestedClassesAndTraits(): Percentage
-    {
-        return Percentage::fromFractionAndTotal(
-            $this->numberOfTestedClassesAndTraits(),
-            $this->numberOfClassesAndTraits(),
-        );
-    }
-
-    public function percentageOfTestedFunctions(): Percentage
-    {
-        return Percentage::fromFractionAndTotal(
-            $this->numberOfTestedFunctions(),
-            $this->numberOfFunctions(),
-        );
-    }
-
-    public function percentageOfTestedMethods(): Percentage
-    {
-        return Percentage::fromFractionAndTotal(
-            $this->numberOfTestedMethods(),
-            $this->numberOfMethods(),
-        );
-    }
-
-    public function percentageOfTestedFunctionsAndMethods(): Percentage
-    {
-        return Percentage::fromFractionAndTotal(
-            $this->numberOfTestedFunctionsAndMethods(),
-            $this->numberOfFunctionsAndMethods(),
-        );
-    }
-
-    public function percentageOfExecutedLines(): Percentage
-    {
-        return Percentage::fromFractionAndTotal(
-            $this->numberOfExecutedLines(),
-            $this->numberOfExecutableLines(),
-        );
-    }
-
-    public function percentageOfExecutedBranches(): Percentage
-    {
-        return Percentage::fromFractionAndTotal(
-            $this->numberOfExecutedBranches(),
-            $this->numberOfExecutableBranches()
-        );
-    }
-
-    public function percentageOfExecutedPaths(): Percentage
-    {
-        return Percentage::fromFractionAndTotal(
-            $this->numberOfExecutedPaths(),
-            $this->numberOfExecutablePaths()
-        );
-    }
-
-    public function numberOfClassesAndTraits(): int
-    {
-        return $this->numberOfClasses() + $this->numberOfTraits();
-    }
-
-    public function numberOfTestedClassesAndTraits(): int
-    {
-        return $this->numberOfTestedClasses() + $this->numberOfTestedTraits();
-    }
-
-    public function classesAndTraits(): array
-    {
-        return array_merge($this->classes(), $this->traits());
-    }
-
-    public function numberOfFunctionsAndMethods(): int
-    {
-        return $this->numberOfFunctions() + $this->numberOfMethods();
-    }
-
-    public function numberOfTestedFunctionsAndMethods(): int
-    {
-        return $this->numberOfTestedFunctions() + $this->numberOfTestedMethods();
-    }
-
-    abstract public function classes(): array;
-
-    abstract public function traits(): array;
-
-    abstract public function functions(): array;
-
-    abstract public function linesOfCode(): LinesOfCode;
-
-    abstract public function numberOfExecutableLines(): int;
-
-    abstract public function numberOfExecutedLines(): int;
-
-    abstract public function numberOfExecutableBranches(): int;
-
-    abstract public function numberOfExecutedBranches(): int;
-
-    abstract public function numberOfExecutablePaths(): int;
-
-    abstract public function numberOfExecutedPaths(): int;
-
-    abstract public function numberOfClasses(): int;
-
-    abstract public function numberOfTestedClasses(): int;
-
-    abstract public function numberOfTraits(): int;
-
-    abstract public function numberOfTestedTraits(): int;
-
-    abstract public function numberOfMethods(): int;
-
-    abstract public function numberOfTestedMethods(): int;
-
-    abstract public function numberOfFunctions(): int;
-
-    abstract public function numberOfTestedFunctions(): int;
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+5gIdDwkv64jJRG==

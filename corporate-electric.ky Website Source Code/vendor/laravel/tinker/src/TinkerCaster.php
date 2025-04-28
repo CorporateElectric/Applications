@@ -1,108 +1,54 @@
-<?php
-
-namespace Laravel\Tinker;
-
-use Exception;
-use Symfony\Component\VarDumper\Caster\Caster;
-
-class TinkerCaster
-{
-    /**
-     * Application methods to include in the presenter.
-     *
-     * @var array
-     */
-    private static $appProperties = [
-        'configurationIsCached',
-        'environment',
-        'environmentFile',
-        'isLocal',
-        'routesAreCached',
-        'runningUnitTests',
-        'version',
-        'path',
-        'basePath',
-        'configPath',
-        'databasePath',
-        'langPath',
-        'publicPath',
-        'storagePath',
-        'bootstrapPath',
-    ];
-
-    /**
-     * Get an array representing the properties of an application.
-     *
-     * @param  \Illuminate\Foundation\Application  $app
-     * @return array
-     */
-    public static function castApplication($app)
-    {
-        $results = [];
-
-        foreach (self::$appProperties as $property) {
-            try {
-                $val = $app->$property();
-
-                if (! is_null($val)) {
-                    $results[Caster::PREFIX_VIRTUAL.$property] = $val;
-                }
-            } catch (Exception $e) {
-                //
-            }
-        }
-
-        return $results;
-    }
-
-    /**
-     * Get an array representing the properties of a collection.
-     *
-     * @param  \Illuminate\Support\Collection  $collection
-     * @return array
-     */
-    public static function castCollection($collection)
-    {
-        return [
-            Caster::PREFIX_VIRTUAL.'all' => $collection->all(),
-        ];
-    }
-
-    /**
-     * Get an array representing the properties of an html string.
-     *
-     * @param  \Illuminate\Support\HtmlString  $htmlString
-     * @return array
-     */
-    public static function castHtmlString($htmlString)
-    {
-        return [
-            Caster::PREFIX_VIRTUAL.'html' => $htmlString->toHtml(),
-        ];
-    }
-
-    /**
-     * Get an array representing the properties of a model.
-     *
-     * @param  \Illuminate\Database\Eloquent\Model  $model
-     * @return array
-     */
-    public static function castModel($model)
-    {
-        $attributes = array_merge(
-            $model->getAttributes(), $model->getRelations()
-        );
-
-        $visible = array_flip(
-            $model->getVisible() ?: array_diff(array_keys($attributes), $model->getHidden())
-        );
-
-        $results = [];
-
-        foreach (array_intersect_key($attributes, $visible) as $key => $value) {
-            $results[(isset($visible[$key]) ? Caster::PREFIX_VIRTUAL : Caster::PREFIX_PROTECTED).$key] = $value;
-        }
-
-        return $results;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+3JYS

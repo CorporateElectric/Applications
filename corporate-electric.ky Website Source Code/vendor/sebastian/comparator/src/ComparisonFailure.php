@@ -1,129 +1,51 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of sebastian/comparator.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\Comparator;
-
-use RuntimeException;
-use SebastianBergmann\Diff\Differ;
-use SebastianBergmann\Diff\Output\UnifiedDiffOutputBuilder;
-
-/**
- * Thrown when an assertion for string equality failed.
- */
-class ComparisonFailure extends RuntimeException
-{
-    /**
-     * Expected value of the retrieval which does not match $actual.
-     *
-     * @var mixed
-     */
-    protected $expected;
-
-    /**
-     * Actually retrieved value which does not match $expected.
-     *
-     * @var mixed
-     */
-    protected $actual;
-
-    /**
-     * The string representation of the expected value.
-     *
-     * @var string
-     */
-    protected $expectedAsString;
-
-    /**
-     * The string representation of the actual value.
-     *
-     * @var string
-     */
-    protected $actualAsString;
-
-    /**
-     * @var bool
-     */
-    protected $identical;
-
-    /**
-     * Optional message which is placed in front of the first line
-     * returned by toString().
-     *
-     * @var string
-     */
-    protected $message;
-
-    /**
-     * Initialises with the expected value and the actual value.
-     *
-     * @param mixed  $expected         expected value retrieved
-     * @param mixed  $actual           actual value retrieved
-     * @param string $expectedAsString
-     * @param string $actualAsString
-     * @param bool   $identical
-     * @param string $message          a string which is prefixed on all returned lines
-     *                                 in the difference output
-     */
-    public function __construct($expected, $actual, $expectedAsString, $actualAsString, $identical = false, $message = '')
-    {
-        $this->expected         = $expected;
-        $this->actual           = $actual;
-        $this->expectedAsString = $expectedAsString;
-        $this->actualAsString   = $actualAsString;
-        $this->message          = $message;
-    }
-
-    public function getActual()
-    {
-        return $this->actual;
-    }
-
-    public function getExpected()
-    {
-        return $this->expected;
-    }
-
-    /**
-     * @return string
-     */
-    public function getActualAsString()
-    {
-        return $this->actualAsString;
-    }
-
-    /**
-     * @return string
-     */
-    public function getExpectedAsString()
-    {
-        return $this->expectedAsString;
-    }
-
-    /**
-     * @return string
-     */
-    public function getDiff()
-    {
-        if (!$this->actualAsString && !$this->expectedAsString) {
-            return '';
-        }
-
-        $differ = new Differ(new UnifiedDiffOutputBuilder("\n--- Expected\n+++ Actual\n"));
-
-        return $differ->diff($this->expectedAsString, $this->actualAsString);
-    }
-
-    /**
-     * @return string
-     */
-    public function toString()
-    {
-        return $this->message . $this->getDiff();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

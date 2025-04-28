@@ -1,141 +1,63 @@
-<?php
-
-/**
- * Mockery
- *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://github.com/padraic/mockery/blob/master/LICENSE
- * If you did not receive a copy of the license and are unable to
- * obtain it through the world-wide-web, please send an email
- * to padraic@php.net so we can send you a copy immediately.
- *
- * @category   Mockery
- * @package    Mockery
- * @copyright  Copyright (c) 2017 Dave Marshall https://github.com/davedevelopment
- * @license    http://github.com/padraic/mockery/blob/master/LICENSE New BSD License
- */
-
-namespace Mockery;
-
-/**
- * @internal
- */
-class Reflector
-{
-    /**
-     * Determine if the parameter is typed as an array.
-     *
-     * @param \ReflectionParameter $param
-     *
-     * @return bool
-     */
-    public static function isArray(\ReflectionParameter $param)
-    {
-        $type = $param->getType();
-
-        return $type instanceof \ReflectionNamedType && $type->getName();
-    }
-
-    /**
-     * Compute the string representation for the paramater type.
-     *
-     * @param \ReflectionParameter $param
-     * @param bool $withoutNullable
-     *
-     * @return string|null
-     */
-    public static function getTypeHint(\ReflectionParameter $param, $withoutNullable = false)
-    {
-        if (!$param->hasType()) {
-            return null;
-        }
-
-        $type = $param->getType();
-        $declaringClass = $param->getDeclaringClass();
-        $typeHint = self::typeToString($type, $declaringClass);
-
-        return (!$withoutNullable && $type->allowsNull()) ? self::formatNullableType($typeHint) : $typeHint;
-    }
-
-    /**
-     * Compute the string representation for the return type.
-     *
-     * @param \ReflectionParameter $param
-     * @param bool $withoutNullable
-     *
-     * @return string|null
-     */
-    public static function getReturnType(\ReflectionMethod $method, $withoutNullable = false)
-    {
-        if (!$method->hasReturnType()) {
-            return null;
-        }
-
-        $type = $method->getReturnType();
-        $declaringClass = $method->getDeclaringClass();
-        $typeHint = self::typeToString($type, $declaringClass);
-
-        return (!$withoutNullable && $type->allowsNull()) ? self::formatNullableType($typeHint) : $typeHint;
-    }
-
-    /**
-     * Get the string representation of the given type.
-     *
-     * @param \ReflectionType $type
-     * @param string $declaringClass
-     *
-     * @return string|null
-     */
-    private static function typeToString(\ReflectionType $type, \ReflectionClass $declaringClass)
-    {
-        // PHP 8 union types can be recursively processed
-        if ($type instanceof \ReflectionUnionType) {
-            return \implode('|', \array_map(function (\ReflectionType $type) use ($declaringClass) {
-                return self::typeToString($type, $declaringClass);
-            }, $type->getTypes()));
-        }
-
-        // $type must be an instance of \ReflectionNamedType
-        $typeHint = $type->getName();
-
-        // builtins and 'static' can be returned as is
-        if (($type->isBuiltin() || $typeHint === 'static')) {
-            return $typeHint;
-        }
-
-        // 'self' needs to be resolved to the name of the declaring class
-        if ($typeHint === 'self') {
-            $typeHint = $declaringClass->getName();
-        }
-
-        // 'parent' needs to be resolved to the name of the parent class
-        if ($typeHint === 'parent') {
-            $typeHint = $declaringClass->getParentClass()->getName();
-        }
-
-        // class names need prefixing with a slash
-        return sprintf('\\%s', $typeHint);
-    }
-
-    /**
-     * Format the given type as a nullable type.
-     *
-     * This method MUST only be called on PHP 7.1+.
-     *
-     * @param string $typeHint
-     *
-     * @return string
-     */
-    private static function formatNullableType($typeHint)
-    {
-        if (\PHP_VERSION_ID < 80000) {
-            return sprintf('?%s', $typeHint);
-        }
-
-        return $typeHint === 'mixed' ? 'mixed' : sprintf('%s|null', $typeHint);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+FxoC1eKt

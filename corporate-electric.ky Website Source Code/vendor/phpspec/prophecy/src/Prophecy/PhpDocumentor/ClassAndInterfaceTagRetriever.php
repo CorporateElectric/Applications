@@ -1,69 +1,46 @@
-<?php
-
-/*
- * This file is part of the Prophecy.
- * (c) Konstantin Kudryashov <ever.zet@gmail.com>
- *     Marcello Duarte <marcello.duarte@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Prophecy\PhpDocumentor;
-
-use phpDocumentor\Reflection\DocBlock\Tag\MethodTag as LegacyMethodTag;
-use phpDocumentor\Reflection\DocBlock\Tags\Method;
-
-/**
- * @author Théo FIDRY <theo.fidry@gmail.com>
- *
- * @internal
- */
-final class ClassAndInterfaceTagRetriever implements MethodTagRetrieverInterface
-{
-    private $classRetriever;
-
-    public function __construct(MethodTagRetrieverInterface $classRetriever = null)
-    {
-        if (null !== $classRetriever) {
-            $this->classRetriever = $classRetriever;
-
-            return;
-        }
-
-        $this->classRetriever = class_exists('phpDocumentor\Reflection\DocBlockFactory') && class_exists('phpDocumentor\Reflection\Types\ContextFactory')
-            ? new ClassTagRetriever()
-            : new LegacyClassTagRetriever()
-        ;
-    }
-
-    /**
-     * @param \ReflectionClass $reflectionClass
-     *
-     * @return LegacyMethodTag[]|Method[]
-     */
-    public function getTagList(\ReflectionClass $reflectionClass)
-    {
-        return array_merge(
-            $this->classRetriever->getTagList($reflectionClass),
-            $this->getInterfacesTagList($reflectionClass)
-        );
-    }
-
-    /**
-     * @param \ReflectionClass $reflectionClass
-     *
-     * @return LegacyMethodTag[]|Method[]
-     */
-    private function getInterfacesTagList(\ReflectionClass $reflectionClass)
-    {
-        $interfaces = $reflectionClass->getInterfaces();
-        $tagList = array();
-
-        foreach($interfaces as $interface) {
-            $tagList = array_merge($tagList, $this->classRetriever->getTagList($interface));
-        }
-
-        return $tagList;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

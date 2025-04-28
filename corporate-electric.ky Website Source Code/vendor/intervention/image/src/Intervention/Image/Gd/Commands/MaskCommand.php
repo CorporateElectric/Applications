@@ -1,83 +1,61 @@
-<?php
-
-namespace Intervention\Image\Gd\Commands;
-
-use Intervention\Image\Commands\AbstractCommand;
-
-class MaskCommand extends AbstractCommand
-{
-    /**
-     * Applies an alpha mask to an image
-     *
-     * @param  \Intervention\Image\Image $image
-     * @return boolean
-     */
-    public function execute($image)
-    {
-        $mask_source = $this->argument(0)->value();
-        $mask_w_alpha = $this->argument(1)->type('bool')->value(false);
-
-        $image_size = $image->getSize();
-
-        // create empty canvas
-        $canvas = $image->getDriver()->newImage($image_size->width, $image_size->height, [0,0,0,0]);
-
-        // build mask image from source
-        $mask = $image->getDriver()->init($mask_source);
-        $mask_size = $mask->getSize();
-
-        // resize mask to size of current image (if necessary)
-        if ($mask_size != $image_size) {
-            $mask->resize($image_size->width, $image_size->height);
-        }
-
-        imagealphablending($canvas->getCore(), false);
-
-        if ( ! $mask_w_alpha) {
-            // mask from greyscale image
-            imagefilter($mask->getCore(), IMG_FILTER_GRAYSCALE);
-        }
-
-        // redraw old image pixel by pixel considering alpha map
-        for ($x=0; $x < $image_size->width; $x++) {
-            for ($y=0; $y < $image_size->height; $y++) {
-
-                $color = $image->pickColor($x, $y, 'array');
-                $alpha = $mask->pickColor($x, $y, 'array');
-
-                if ($mask_w_alpha) {
-                    $alpha = $alpha[3]; // use alpha channel as mask
-                } else {
-
-                    if ($alpha[3] == 0) { // transparent as black
-                        $alpha = 0;
-                    } else {
-
-                        // $alpha = floatval(round((($alpha[0] + $alpha[1] + $alpha[3]) / 3) / 255, 2));
-
-                        // image is greyscale, so channel doesn't matter (use red channel)
-                        $alpha = floatval(round($alpha[0] / 255, 2));
-                    }
-
-                }
-
-                // preserve alpha of original image...
-                if ($color[3] < $alpha) {
-                    $alpha = $color[3];
-                }
-
-                // replace alpha value
-                $color[3] = $alpha;
-
-                // redraw pixel
-                $canvas->pixel($color, $x, $y);
-            }
-        }
-
-
-        // replace current image with masked instance
-        $image->setCore($canvas->getCore());
-
-        return true;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

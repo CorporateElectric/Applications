@@ -1,137 +1,51 @@
-<?php
-/**
- * Whoops - php errors for cool kids
- * @author Filipe Dobreira <http://github.com/filp>
- */
-
-namespace Whoops\Util;
-
-class SystemFacade
-{
-    /**
-     * Turns on output buffering.
-     *
-     * @return bool
-     */
-    public function startOutputBuffering()
-    {
-        return ob_start();
-    }
-
-    /**
-     * @param callable $handler
-     * @param int      $types
-     *
-     * @return callable|null
-     */
-    public function setErrorHandler(callable $handler, $types = 'use-php-defaults')
-    {
-        // Since PHP 5.4 the constant E_ALL contains all errors (even E_STRICT)
-        if ($types === 'use-php-defaults') {
-            $types = E_ALL;
-        }
-        return set_error_handler($handler, $types);
-    }
-
-    /**
-     * @param callable $handler
-     *
-     * @return callable|null
-     */
-    public function setExceptionHandler(callable $handler)
-    {
-        return set_exception_handler($handler);
-    }
-
-    /**
-     * @return void
-     */
-    public function restoreExceptionHandler()
-    {
-        restore_exception_handler();
-    }
-
-    /**
-     * @return void
-     */
-    public function restoreErrorHandler()
-    {
-        restore_error_handler();
-    }
-
-    /**
-     * @param callable $function
-     *
-     * @return void
-     */
-    public function registerShutdownFunction(callable $function)
-    {
-        register_shutdown_function($function);
-    }
-
-    /**
-     * @return string|false
-     */
-    public function cleanOutputBuffer()
-    {
-        return ob_get_clean();
-    }
-
-    /**
-     * @return int
-     */
-    public function getOutputBufferLevel()
-    {
-        return ob_get_level();
-    }
-
-    /**
-     * @return bool
-     */
-    public function endOutputBuffering()
-    {
-        return ob_end_clean();
-    }
-
-    /**
-     * @return void
-     */
-    public function flushOutputBuffer()
-    {
-        flush();
-    }
-
-    /**
-     * @return int
-     */
-    public function getErrorReportingLevel()
-    {
-        return error_reporting();
-    }
-
-    /**
-     * @return array|null
-     */
-    public function getLastError()
-    {
-        return error_get_last();
-    }
-
-    /**
-     * @param int $httpCode
-     *
-     * @return int
-     */
-    public function setHttpResponseCode($httpCode)
-    {
-        return http_response_code($httpCode);
-    }
-
-    /**
-     * @param int $exitStatus
-     */
-    public function stopExecution($exitStatus)
-    {
-        exit($exitStatus);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

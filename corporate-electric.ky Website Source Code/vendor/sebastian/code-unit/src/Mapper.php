@@ -1,414 +1,172 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of sebastian/code-unit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\CodeUnit;
-
-use function array_keys;
-use function array_merge;
-use function array_unique;
-use function array_values;
-use function class_exists;
-use function explode;
-use function function_exists;
-use function interface_exists;
-use function ksort;
-use function method_exists;
-use function sort;
-use function sprintf;
-use function str_replace;
-use function strpos;
-use function trait_exists;
-use ReflectionClass;
-use ReflectionFunction;
-use ReflectionMethod;
-
-final class Mapper
-{
-    /**
-     * @psalm-return array<string,list<int>>
-     */
-    public function codeUnitsToSourceLines(CodeUnitCollection $codeUnits): array
-    {
-        $result = [];
-
-        foreach ($codeUnits as $codeUnit) {
-            $sourceFileName = $codeUnit->sourceFileName();
-
-            if (!isset($result[$sourceFileName])) {
-                $result[$sourceFileName] = [];
-            }
-
-            $result[$sourceFileName] = array_merge($result[$sourceFileName], $codeUnit->sourceLines());
-        }
-
-        foreach (array_keys($result) as $sourceFileName) {
-            $result[$sourceFileName] = array_values(array_unique($result[$sourceFileName]));
-
-            sort($result[$sourceFileName]);
-        }
-
-        ksort($result);
-
-        return $result;
-    }
-
-    /**
-     * @throws InvalidCodeUnitException
-     * @throws ReflectionException
-     */
-    public function stringToCodeUnits(string $unit): CodeUnitCollection
-    {
-        if (strpos($unit, '::') !== false) {
-            [$firstPart, $secondPart] = explode('::', $unit);
-
-            if (empty($firstPart) && $this->isUserDefinedFunction($secondPart)) {
-                return CodeUnitCollection::fromList(CodeUnit::forFunction($secondPart));
-            }
-
-            if ($this->isUserDefinedClass($firstPart)) {
-                if ($secondPart === '<public>') {
-                    return $this->publicMethodsOfClass($firstPart);
-                }
-
-                if ($secondPart === '<!public>') {
-                    return $this->protectedAndPrivateMethodsOfClass($firstPart);
-                }
-
-                if ($secondPart === '<protected>') {
-                    return $this->protectedMethodsOfClass($firstPart);
-                }
-
-                if ($secondPart === '<!protected>') {
-                    return $this->publicAndPrivateMethodsOfClass($firstPart);
-                }
-
-                if ($secondPart === '<private>') {
-                    return $this->privateMethodsOfClass($firstPart);
-                }
-
-                if ($secondPart === '<!private>') {
-                    return $this->publicAndProtectedMethodsOfClass($firstPart);
-                }
-
-                if ($this->isUserDefinedMethod($firstPart, $secondPart)) {
-                    return CodeUnitCollection::fromList(CodeUnit::forClassMethod($firstPart, $secondPart));
-                }
-            }
-
-            if ($this->isUserDefinedInterface($firstPart)) {
-                return CodeUnitCollection::fromList(CodeUnit::forInterfaceMethod($firstPart, $secondPart));
-            }
-
-            if ($this->isUserDefinedTrait($firstPart)) {
-                return CodeUnitCollection::fromList(CodeUnit::forTraitMethod($firstPart, $secondPart));
-            }
-        } else {
-            if ($this->isUserDefinedClass($unit)) {
-                $units = [CodeUnit::forClass($unit)];
-
-                foreach ($this->reflectorForClass($unit)->getTraits() as $trait) {
-                    if (!$trait->isUserDefined()) {
-                        // @codeCoverageIgnoreStart
-                        continue;
-                        // @codeCoverageIgnoreEnd
-                    }
-
-                    $units[] = CodeUnit::forTrait($trait->getName());
-                }
-
-                return CodeUnitCollection::fromArray($units);
-            }
-
-            if ($this->isUserDefinedInterface($unit)) {
-                return CodeUnitCollection::fromList(CodeUnit::forInterface($unit));
-            }
-
-            if ($this->isUserDefinedTrait($unit)) {
-                return CodeUnitCollection::fromList(CodeUnit::forTrait($unit));
-            }
-
-            if ($this->isUserDefinedFunction($unit)) {
-                return CodeUnitCollection::fromList(CodeUnit::forFunction($unit));
-            }
-
-            $unit = str_replace('<extended>', '', $unit);
-
-            if ($this->isUserDefinedClass($unit)) {
-                return $this->classAndParentClassesAndTraits($unit);
-            }
-        }
-
-        throw new InvalidCodeUnitException(
-            sprintf(
-                '"%s" is not a valid code unit',
-                $unit
-            )
-        );
-    }
-
-    /**
-     * @psalm-param class-string $className
-     *
-     * @throws ReflectionException
-     */
-    private function publicMethodsOfClass(string $className): CodeUnitCollection
-    {
-        return $this->methodsOfClass($className, ReflectionMethod::IS_PUBLIC);
-    }
-
-    /**
-     * @psalm-param class-string $className
-     *
-     * @throws ReflectionException
-     */
-    private function publicAndProtectedMethodsOfClass(string $className): CodeUnitCollection
-    {
-        return $this->methodsOfClass($className, ReflectionMethod::IS_PUBLIC | ReflectionMethod::IS_PROTECTED);
-    }
-
-    /**
-     * @psalm-param class-string $className
-     *
-     * @throws ReflectionException
-     */
-    private function publicAndPrivateMethodsOfClass(string $className): CodeUnitCollection
-    {
-        return $this->methodsOfClass($className, ReflectionMethod::IS_PUBLIC | ReflectionMethod::IS_PRIVATE);
-    }
-
-    /**
-     * @psalm-param class-string $className
-     *
-     * @throws ReflectionException
-     */
-    private function protectedMethodsOfClass(string $className): CodeUnitCollection
-    {
-        return $this->methodsOfClass($className, ReflectionMethod::IS_PROTECTED);
-    }
-
-    /**
-     * @psalm-param class-string $className
-     *
-     * @throws ReflectionException
-     */
-    private function protectedAndPrivateMethodsOfClass(string $className): CodeUnitCollection
-    {
-        return $this->methodsOfClass($className, ReflectionMethod::IS_PROTECTED | ReflectionMethod::IS_PRIVATE);
-    }
-
-    /**
-     * @psalm-param class-string $className
-     *
-     * @throws ReflectionException
-     */
-    private function privateMethodsOfClass(string $className): CodeUnitCollection
-    {
-        return $this->methodsOfClass($className, ReflectionMethod::IS_PRIVATE);
-    }
-
-    /**
-     * @psalm-param class-string $className
-     *
-     * @throws ReflectionException
-     */
-    private function methodsOfClass(string $className, int $filter): CodeUnitCollection
-    {
-        $units = [];
-
-        foreach ($this->reflectorForClass($className)->getMethods($filter) as $method) {
-            if (!$method->isUserDefined()) {
-                continue;
-            }
-
-            $units[] = CodeUnit::forClassMethod($className, $method->getName());
-        }
-
-        return CodeUnitCollection::fromArray($units);
-    }
-
-    /**
-     * @psalm-param class-string $className
-     *
-     * @throws ReflectionException
-     */
-    private function classAndParentClassesAndTraits(string $className): CodeUnitCollection
-    {
-        $units = [CodeUnit::forClass($className)];
-
-        $reflector = $this->reflectorForClass($className);
-
-        foreach ($this->reflectorForClass($className)->getTraits() as $trait) {
-            if (!$trait->isUserDefined()) {
-                // @codeCoverageIgnoreStart
-                continue;
-                // @codeCoverageIgnoreEnd
-            }
-
-            $units[] = CodeUnit::forTrait($trait->getName());
-        }
-
-        while ($reflector = $reflector->getParentClass()) {
-            if (!$reflector->isUserDefined()) {
-                break;
-            }
-
-            $units[] = CodeUnit::forClass($reflector->getName());
-
-            foreach ($reflector->getTraits() as $trait) {
-                if (!$trait->isUserDefined()) {
-                    // @codeCoverageIgnoreStart
-                    continue;
-                    // @codeCoverageIgnoreEnd
-                }
-
-                $units[] = CodeUnit::forTrait($trait->getName());
-            }
-        }
-
-        return CodeUnitCollection::fromArray($units);
-    }
-
-    /**
-     * @psalm-param class-string $className
-     *
-     * @throws ReflectionException
-     */
-    private function reflectorForClass(string $className): ReflectionClass
-    {
-        try {
-            return new ReflectionClass($className);
-            // @codeCoverageIgnoreStart
-        } catch (\ReflectionException $e) {
-            throw new ReflectionException(
-                $e->getMessage(),
-                (int) $e->getCode(),
-                $e
-            );
-        }
-        // @codeCoverageIgnoreEnd
-    }
-
-    /**
-     * @throws ReflectionException
-     */
-    private function isUserDefinedFunction(string $functionName): bool
-    {
-        if (!function_exists($functionName)) {
-            return false;
-        }
-
-        try {
-            return (new ReflectionFunction($functionName))->isUserDefined();
-            // @codeCoverageIgnoreStart
-        } catch (\ReflectionException $e) {
-            throw new ReflectionException(
-                $e->getMessage(),
-                (int) $e->getCode(),
-                $e
-            );
-        }
-        // @codeCoverageIgnoreEnd
-    }
-
-    /**
-     * @throws ReflectionException
-     */
-    private function isUserDefinedClass(string $className): bool
-    {
-        if (!class_exists($className)) {
-            return false;
-        }
-
-        try {
-            return (new ReflectionClass($className))->isUserDefined();
-            // @codeCoverageIgnoreStart
-        } catch (\ReflectionException $e) {
-            throw new ReflectionException(
-                $e->getMessage(),
-                (int) $e->getCode(),
-                $e
-            );
-        }
-        // @codeCoverageIgnoreEnd
-    }
-
-    /**
-     * @throws ReflectionException
-     */
-    private function isUserDefinedInterface(string $interfaceName): bool
-    {
-        if (!interface_exists($interfaceName)) {
-            return false;
-        }
-
-        try {
-            return (new ReflectionClass($interfaceName))->isUserDefined();
-            // @codeCoverageIgnoreStart
-        } catch (\ReflectionException $e) {
-            throw new ReflectionException(
-                $e->getMessage(),
-                (int) $e->getCode(),
-                $e
-            );
-        }
-        // @codeCoverageIgnoreEnd
-    }
-
-    /**
-     * @throws ReflectionException
-     */
-    private function isUserDefinedTrait(string $traitName): bool
-    {
-        if (!trait_exists($traitName)) {
-            return false;
-        }
-
-        try {
-            return (new ReflectionClass($traitName))->isUserDefined();
-            // @codeCoverageIgnoreStart
-        } catch (\ReflectionException $e) {
-            throw new ReflectionException(
-                $e->getMessage(),
-                (int) $e->getCode(),
-                $e
-            );
-        }
-        // @codeCoverageIgnoreEnd
-    }
-
-    /**
-     * @throws ReflectionException
-     */
-    private function isUserDefinedMethod(string $className, string $methodName): bool
-    {
-        if (!class_exists($className)) {
-            // @codeCoverageIgnoreStart
-            return false;
-            // @codeCoverageIgnoreEnd
-        }
-
-        if (!method_exists($className, $methodName)) {
-            // @codeCoverageIgnoreStart
-            return false;
-            // @codeCoverageIgnoreEnd
-        }
-
-        try {
-            return (new ReflectionMethod($className, $methodName))->isUserDefined();
-            // @codeCoverageIgnoreStart
-        } catch (\ReflectionException $e) {
-            throw new ReflectionException(
-                $e->getMessage(),
-                (int) $e->getCode(),
-                $e
-            );
-        }
-        // @codeCoverageIgnoreEnd
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

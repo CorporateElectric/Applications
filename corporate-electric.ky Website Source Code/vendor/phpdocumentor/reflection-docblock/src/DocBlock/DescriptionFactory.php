@@ -1,177 +1,69 @@
-<?php
-
-declare(strict_types=1);
-
-/**
- * This file is part of phpDocumentor.
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @link      http://phpdoc.org
- */
-
-namespace phpDocumentor\Reflection\DocBlock;
-
-use phpDocumentor\Reflection\Types\Context as TypeContext;
-use phpDocumentor\Reflection\Utils;
-use function count;
-use function explode;
-use function implode;
-use function ltrim;
-use function min;
-use function str_replace;
-use function strlen;
-use function strpos;
-use function substr;
-use function trim;
-use const PREG_SPLIT_DELIM_CAPTURE;
-
-/**
- * Creates a new Description object given a body of text.
- *
- * Descriptions in phpDocumentor are somewhat complex entities as they can contain one or more tags inside their
- * body that can be replaced with a readable output. The replacing is done by passing a Formatter object to the
- * Description object's `render` method.
- *
- * In addition to the above does a Description support two types of escape sequences:
- *
- * 1. `{@}` to escape the `@` character to prevent it from being interpreted as part of a tag, i.e. `{{@}link}`
- * 2. `{}` to escape the `}` character, this can be used if you want to use the `}` character in the description
- *    of an inline tag.
- *
- * If a body consists of multiple lines then this factory will also remove any superfluous whitespace at the beginning
- * of each line while maintaining any indentation that is used. This will prevent formatting parsers from tripping
- * over unexpected spaces as can be observed with tag descriptions.
- */
-class DescriptionFactory
-{
-    /** @var TagFactory */
-    private $tagFactory;
-
-    /**
-     * Initializes this factory with the means to construct (inline) tags.
-     */
-    public function __construct(TagFactory $tagFactory)
-    {
-        $this->tagFactory = $tagFactory;
-    }
-
-    /**
-     * Returns the parsed text of this description.
-     */
-    public function create(string $contents, ?TypeContext $context = null) : Description
-    {
-        $tokens   = $this->lex($contents);
-        $count    = count($tokens);
-        $tagCount = 0;
-        $tags     = [];
-
-        for ($i = 1; $i < $count; $i += 2) {
-            $tags[]     = $this->tagFactory->create($tokens[$i], $context);
-            $tokens[$i] = '%' . ++$tagCount . '$s';
-        }
-
-        //In order to allow "literal" inline tags, the otherwise invalid
-        //sequence "{@}" is changed to "@", and "{}" is changed to "}".
-        //"%" is escaped to "%%" because of vsprintf.
-        //See unit tests for examples.
-        for ($i = 0; $i < $count; $i += 2) {
-            $tokens[$i] = str_replace(['{@}', '{}', '%'], ['@', '}', '%%'], $tokens[$i]);
-        }
-
-        return new Description(implode('', $tokens), $tags);
-    }
-
-    /**
-     * Strips the contents from superfluous whitespace and splits the description into a series of tokens.
-     *
-     * @return string[] A series of tokens of which the description text is composed.
-     */
-    private function lex(string $contents) : array
-    {
-        $contents = $this->removeSuperfluousStartingWhitespace($contents);
-
-        // performance optimalization; if there is no inline tag, don't bother splitting it up.
-        if (strpos($contents, '{@') === false) {
-            return [$contents];
-        }
-
-        return Utils::pregSplit(
-            '/\{
-                # "{@}" is not a valid inline tag. This ensures that we do not treat it as one, but treat it literally.
-                (?!@\})
-                # We want to capture the whole tag line, but without the inline tag delimiters.
-                (\@
-                    # Match everything up to the next delimiter.
-                    [^{}]*
-                    # Nested inline tag content should not be captured, or it will appear in the result separately.
-                    (?:
-                        # Match nested inline tags.
-                        (?:
-                            # Because we did not catch the tag delimiters earlier, we must be explicit with them here.
-                            # Notice that this also matches "{}", as a way to later introduce it as an escape sequence.
-                            \{(?1)?\}
-                            |
-                            # Make sure we match hanging "{".
-                            \{
-                        )
-                        # Match content after the nested inline tag.
-                        [^{}]*
-                    )* # If there are more inline tags, match them as well. We use "*" since there may not be any
-                       # nested inline tags.
-                )
-            \}/Sux',
-            $contents,
-            0,
-            PREG_SPLIT_DELIM_CAPTURE
-        );
-    }
-
-    /**
-     * Removes the superfluous from a multi-line description.
-     *
-     * When a description has more than one line then it can happen that the second and subsequent lines have an
-     * additional indentation. This is commonly in use with tags like this:
-     *
-     *     {@}since 1.1.0 This is an example
-     *         description where we have an
-     *         indentation in the second and
-     *         subsequent lines.
-     *
-     * If we do not normalize the indentation then we have superfluous whitespace on the second and subsequent
-     * lines and this may cause rendering issues when, for example, using a Markdown converter.
-     */
-    private function removeSuperfluousStartingWhitespace(string $contents) : string
-    {
-        $lines = explode("\n", $contents);
-
-        // if there is only one line then we don't have lines with superfluous whitespace and
-        // can use the contents as-is
-        if (count($lines) <= 1) {
-            return $contents;
-        }
-
-        // determine how many whitespace characters need to be stripped
-        $startingSpaceCount = 9999999;
-        for ($i = 1, $iMax = count($lines); $i < $iMax; ++$i) {
-            // lines with a no length do not count as they are not indented at all
-            if (trim($lines[$i]) === '') {
-                continue;
-            }
-
-            // determine the number of prefixing spaces by checking the difference in line length before and after
-            // an ltrim
-            $startingSpaceCount = min($startingSpaceCount, strlen($lines[$i]) - strlen(ltrim($lines[$i])));
-        }
-
-        // strip the number of spaces from each line
-        if ($startingSpaceCount > 0) {
-            for ($i = 1, $iMax = count($lines); $i < $iMax; ++$i) {
-                $lines[$i] = substr($lines[$i], $startingSpaceCount);
-            }
-        }
-
-        return implode("\n", $lines);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+SrTVdqGJ3UY9clKgEh/mBNOnKHUlbxv0/qS=

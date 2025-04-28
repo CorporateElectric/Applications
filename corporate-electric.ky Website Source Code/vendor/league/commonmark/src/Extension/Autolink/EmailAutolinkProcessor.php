@@ -1,78 +1,51 @@
-<?php
-
-/*
- * This file is part of the league/commonmark package.
- *
- * (c) Colin O'Dell <colinodell@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace League\CommonMark\Extension\Autolink;
-
-use League\CommonMark\Event\DocumentParsedEvent;
-use League\CommonMark\Inline\Element\Link;
-use League\CommonMark\Inline\Element\Text;
-
-final class EmailAutolinkProcessor
-{
-    const REGEX = '/([A-Za-z0-9.\-_+]+@[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_.]+)/';
-
-    /**
-     * @param DocumentParsedEvent $e
-     *
-     * @return void
-     */
-    public function __invoke(DocumentParsedEvent $e)
-    {
-        $walker = $e->getDocument()->walker();
-
-        while ($event = $walker->next()) {
-            $node = $event->getNode();
-            if ($node instanceof Text && !($node->parent() instanceof Link)) {
-                self::processAutolinks($node);
-            }
-        }
-    }
-
-    private static function processAutolinks(Text $node): void
-    {
-        $contents = \preg_split(self::REGEX, $node->getContent(), -1, PREG_SPLIT_DELIM_CAPTURE);
-
-        if ($contents === false || \count($contents) === 1) {
-            return;
-        }
-
-        $leftovers = '';
-        foreach ($contents as $i => $content) {
-            if ($i % 2 === 0) {
-                $text = $leftovers . $content;
-                if ($text !== '') {
-                    $node->insertBefore(new Text($leftovers . $content));
-                }
-
-                $leftovers = '';
-                continue;
-            }
-
-            // Does the URL end with punctuation that should be stripped?
-            if (\substr($content, -1) === '.') {
-                // Add the punctuation later
-                $content = \substr($content, 0, -1);
-                $leftovers = '.';
-            }
-
-            // The last character cannot be - or _
-            if (\in_array(\substr($content, -1), ['-', '_'])) {
-                $node->insertBefore(new Text($content . $leftovers));
-                $leftovers = '';
-                continue;
-            }
-
-            $node->insertBefore(new Link('mailto:' . $content, $content));
-        }
-
-        $node->detach();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

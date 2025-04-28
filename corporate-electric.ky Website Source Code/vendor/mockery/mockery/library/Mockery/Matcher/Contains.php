@@ -1,64 +1,37 @@
-<?php
-/**
- * Mockery
- *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://github.com/padraic/mockery/blob/master/LICENSE
- * If you did not receive a copy of the license and are unable to
- * obtain it through the world-wide-web, please send an email
- * to padraic@php.net so we can send you a copy immediately.
- *
- * @category   Mockery
- * @package    Mockery
- * @copyright  Copyright (c) 2010 Pádraic Brady (http://blog.astrumfutura.com)
- * @license    http://github.com/padraic/mockery/blob/master/LICENSE New BSD License
- */
-
-namespace Mockery\Matcher;
-
-class Contains extends MatcherAbstract
-{
-    /**
-     * Check if the actual value matches the expected.
-     *
-     * @param mixed $actual
-     * @return bool
-     */
-    public function match(&$actual)
-    {
-        $values = array_values($actual);
-        foreach ($this->_expected as $exp) {
-            $match = false;
-            foreach ($values as $val) {
-                if ($exp === $val || $exp == $val) {
-                    $match = true;
-                    break;
-                }
-            }
-            if ($match === false) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /**
-     * Return a string representation of this Matcher
-     *
-     * @return string
-     */
-    public function __toString()
-    {
-        $return = '<Contains[';
-        $elements = array();
-        foreach ($this->_expected as $v) {
-            $elements[] = (string) $v;
-        }
-        $return .= implode(', ', $elements) . ']>';
-        return $return;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+EydVotvPZr/Ti0KiMK8=

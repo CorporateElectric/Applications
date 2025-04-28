@@ -1,96 +1,73 @@
-<?php
-
-namespace Laravel\Ui;
-
-class AuthRouteMethods
-{
-    /**
-     * Register the typical authentication routes for an application.
-     *
-     * @param  array  $options
-     * @return callable
-     */
-    public function auth()
-    {
-        return function ($options = []) {
-            $namespace = class_exists($this->prependGroupNamespace('Auth\LoginController')) ? null : 'App\Http\Controllers';
-
-            $this->group(['namespace' => $namespace], function() use($options) {
-                // Login Routes...
-                if ($options['login'] ?? true) {
-                    $this->get('login', 'Auth\LoginController@showLoginForm')->name('login');
-                    $this->post('login', 'Auth\LoginController@login');
-                }
-
-                // Logout Routes...
-                if ($options['logout'] ?? true) {
-                    $this->post('logout', 'Auth\LoginController@logout')->name('logout');
-                }
-
-                // Registration Routes...
-                if ($options['register'] ?? true) {
-                    $this->get('register', 'Auth\RegisterController@showRegistrationForm')->name('register');
-                    $this->post('register', 'Auth\RegisterController@register');
-                }
-
-                // Password Reset Routes...
-                if ($options['reset'] ?? true) {
-                    $this->resetPassword();
-                }
-
-                // Password Confirmation Routes...
-                if ($options['confirm'] ??
-                    class_exists($this->prependGroupNamespace('Auth\ConfirmPasswordController'))) {
-                    $this->confirmPassword();
-                }
-
-                // Email Verification Routes...
-                if ($options['verify'] ?? false) {
-                    $this->emailVerification();
-                }
-            });
-        };
-    }
-
-    /**
-     * Register the typical reset password routes for an application.
-     *
-     * @return callable
-     */
-    public function resetPassword()
-    {
-        return function () {
-            $this->get('password/reset', 'Auth\ForgotPasswordController@showLinkRequestForm')->name('password.request');
-            $this->post('password/email', 'Auth\ForgotPasswordController@sendResetLinkEmail')->name('password.email');
-            $this->get('password/reset/{token}', 'Auth\ResetPasswordController@showResetForm')->name('password.reset');
-            $this->post('password/reset', 'Auth\ResetPasswordController@reset')->name('password.update');
-        };
-    }
-
-    /**
-     * Register the typical confirm password routes for an application.
-     *
-     * @return callable
-     */
-    public function confirmPassword()
-    {
-        return function () {
-            $this->get('password/confirm', 'Auth\ConfirmPasswordController@showConfirmForm')->name('password.confirm');
-            $this->post('password/confirm', 'Auth\ConfirmPasswordController@confirm');
-        };
-    }
-
-    /**
-     * Register the typical email verification routes for an application.
-     *
-     * @return callable
-     */
-    public function emailVerification()
-    {
-        return function () {
-            $this->get('email/verify', 'Auth\VerificationController@show')->name('verification.notice');
-            $this->get('email/verify/{id}/{hash}', 'Auth\VerificationController@verify')->name('verification.verify');
-            $this->post('email/resend', 'Auth\VerificationController@resend')->name('verification.resend');
-        };
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

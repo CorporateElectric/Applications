@@ -1,176 +1,75 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Predis\Collection\Iterator;
-
-use Predis\ClientInterface;
-use Predis\NotSupportedException;
-
-/**
- * Abstracts the iteration of items stored in a list by leveraging the LRANGE
- * command wrapped in a fully-rewindable PHP iterator.
- *
- * This iterator tries to emulate the behaviour of cursor-based iterators based
- * on the SCAN-family of commands introduced in Redis <= 2.8, meaning that due
- * to its incremental nature with multiple fetches it can only offer limited
- * guarantees on the returned elements because the collection can change several
- * times (trimmed, deleted, overwritten) during the iteration process.
- *
- * @author Daniele Alessandri <suppakilla@gmail.com>
- *
- * @link http://redis.io/commands/lrange
- */
-class ListKey implements \Iterator
-{
-    protected $client;
-    protected $count;
-    protected $key;
-
-    protected $valid;
-    protected $fetchmore;
-    protected $elements;
-    protected $position;
-    protected $current;
-
-    /**
-     * @param ClientInterface $client Client connected to Redis.
-     * @param string          $key    Redis list key.
-     * @param int             $count  Number of items retrieved on each fetch operation.
-     *
-     * @throws \InvalidArgumentException
-     */
-    public function __construct(ClientInterface $client, $key, $count = 10)
-    {
-        $this->requiredCommand($client, 'LRANGE');
-
-        if ((false === $count = filter_var($count, FILTER_VALIDATE_INT)) || $count < 0) {
-            throw new \InvalidArgumentException('The $count argument must be a positive integer.');
-        }
-
-        $this->client = $client;
-        $this->key = $key;
-        $this->count = $count;
-
-        $this->reset();
-    }
-
-    /**
-     * Ensures that the client instance supports the specified Redis command
-     * required to fetch elements from the server to perform the iteration.
-     *
-     * @param ClientInterface $client    Client connected to Redis.
-     * @param string          $commandID Command ID.
-     *
-     * @throws NotSupportedException
-     */
-    protected function requiredCommand(ClientInterface $client, $commandID)
-    {
-        if (!$client->getProfile()->supportsCommand($commandID)) {
-            throw new NotSupportedException("The current profile does not support '$commandID'.");
-        }
-    }
-
-    /**
-     * Resets the inner state of the iterator.
-     */
-    protected function reset()
-    {
-        $this->valid = true;
-        $this->fetchmore = true;
-        $this->elements = array();
-        $this->position = -1;
-        $this->current = null;
-    }
-
-    /**
-     * Fetches a new set of elements from the remote collection, effectively
-     * advancing the iteration process.
-     *
-     * @return array
-     */
-    protected function executeCommand()
-    {
-        return $this->client->lrange($this->key, $this->position + 1, $this->position + $this->count);
-    }
-
-    /**
-     * Populates the local buffer of elements fetched from the server during the
-     * iteration.
-     */
-    protected function fetch()
-    {
-        $elements = $this->executeCommand();
-
-        if (count($elements) < $this->count) {
-            $this->fetchmore = false;
-        }
-
-        $this->elements = $elements;
-    }
-
-    /**
-     * Extracts next values for key() and current().
-     */
-    protected function extractNext()
-    {
-        ++$this->position;
-        $this->current = array_shift($this->elements);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function rewind()
-    {
-        $this->reset();
-        $this->next();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function current()
-    {
-        return $this->current;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function key()
-    {
-        return $this->position;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function next()
-    {
-        if (!$this->elements && $this->fetchmore) {
-            $this->fetch();
-        }
-
-        if ($this->elements) {
-            $this->extractNext();
-        } else {
-            $this->valid = false;
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function valid()
-    {
-        return $this->valid;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+OaGz

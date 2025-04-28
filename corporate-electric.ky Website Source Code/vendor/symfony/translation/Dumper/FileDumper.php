@@ -1,112 +1,75 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Translation\Dumper;
-
-use Symfony\Component\Translation\Exception\InvalidArgumentException;
-use Symfony\Component\Translation\Exception\RuntimeException;
-use Symfony\Component\Translation\MessageCatalogue;
-
-/**
- * FileDumper is an implementation of DumperInterface that dump a message catalogue to file(s).
- *
- * Options:
- * - path (mandatory): the directory where the files should be saved
- *
- * @author Michel Salib <michelsalib@hotmail.com>
- */
-abstract class FileDumper implements DumperInterface
-{
-    /**
-     * A template for the relative paths to files.
-     *
-     * @var string
-     */
-    protected $relativePathTemplate = '%domain%.%locale%.%extension%';
-
-    /**
-     * Sets the template for the relative paths to files.
-     *
-     * @param string $relativePathTemplate A template for the relative paths to files
-     */
-    public function setRelativePathTemplate(string $relativePathTemplate)
-    {
-        $this->relativePathTemplate = $relativePathTemplate;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function dump(MessageCatalogue $messages, array $options = [])
-    {
-        if (!\array_key_exists('path', $options)) {
-            throw new InvalidArgumentException('The file dumper needs a path option.');
-        }
-
-        // save a file for each domain
-        foreach ($messages->getDomains() as $domain) {
-            $fullpath = $options['path'].'/'.$this->getRelativePath($domain, $messages->getLocale());
-            if (!file_exists($fullpath)) {
-                $directory = \dirname($fullpath);
-                if (!file_exists($directory) && !@mkdir($directory, 0777, true)) {
-                    throw new RuntimeException(sprintf('Unable to create directory "%s".', $directory));
-                }
-            }
-
-            $intlDomain = $domain.MessageCatalogue::INTL_DOMAIN_SUFFIX;
-            $intlMessages = $messages->all($intlDomain);
-
-            if ($intlMessages) {
-                $intlPath = $options['path'].'/'.$this->getRelativePath($intlDomain, $messages->getLocale());
-                file_put_contents($intlPath, $this->formatCatalogue($messages, $intlDomain, $options));
-
-                $messages->replace([], $intlDomain);
-
-                try {
-                    if ($messages->all($domain)) {
-                        file_put_contents($fullpath, $this->formatCatalogue($messages, $domain, $options));
-                    }
-                    continue;
-                } finally {
-                    $messages->replace($intlMessages, $intlDomain);
-                }
-            }
-
-            file_put_contents($fullpath, $this->formatCatalogue($messages, $domain, $options));
-        }
-    }
-
-    /**
-     * Transforms a domain of a message catalogue to its string representation.
-     *
-     * @return string representation
-     */
-    abstract public function formatCatalogue(MessageCatalogue $messages, string $domain, array $options = []);
-
-    /**
-     * Gets the file extension of the dumper.
-     *
-     * @return string file extension
-     */
-    abstract protected function getExtension();
-
-    /**
-     * Gets the relative file path using the template.
-     */
-    private function getRelativePath(string $domain, string $locale): string
-    {
-        return strtr($this->relativePathTemplate, [
-            '%domain%' => $domain,
-            '%locale%' => $locale,
-            '%extension%' => $this->getExtension(),
-        ]);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+7G==

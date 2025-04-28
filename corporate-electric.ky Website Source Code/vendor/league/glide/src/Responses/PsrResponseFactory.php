@@ -1,66 +1,50 @@
-<?php
-
-namespace League\Glide\Responses;
-
-use Closure;
-use League\Flysystem\FilesystemInterface;
-use League\Glide\Filesystem\FilesystemException;
-use Psr\Http\Message\ResponseInterface;
-
-class PsrResponseFactory implements ResponseFactoryInterface
-{
-    /**
-     * Base response object.
-     * @var ResponseInterface
-     */
-    protected $response;
-
-    /**
-     * Callback to create stream.
-     * @var Closure
-     */
-    protected $streamCallback;
-
-    /**
-     * Create PsrResponseFactory instance.
-     * @param ResponseInterface $response       Base response object.
-     * @param Closure           $streamCallback Callback to create stream.
-     */
-    public function __construct(ResponseInterface $response, Closure $streamCallback)
-    {
-        $this->response = $response;
-        $this->streamCallback = $streamCallback;
-    }
-
-    /**
-     * Create response.
-     * @param  FilesystemInterface $cache Cache file system.
-     * @param  string              $path  Cached file path.
-     * @return ResponseInterface   Response object.
-     */
-    public function create(FilesystemInterface $cache, $path)
-    {
-        $stream = $this->streamCallback->__invoke(
-            $cache->readStream($path)
-        );
-
-        $contentType = $cache->getMimetype($path);
-        $contentLength = (string) $cache->getSize($path);
-        $cacheControl = 'max-age=31536000, public';
-        $expires = date_create('+1 years')->format('D, d M Y H:i:s').' GMT';
-
-        if ($contentType === false) {
-            throw new FilesystemException('Unable to determine the image content type.');
-        }
-
-        if ($contentLength === false) {
-            throw new FilesystemException('Unable to determine the image content length.');
-        }
-
-        return $this->response->withBody($stream)
-            ->withHeader('Content-Type', $contentType)
-            ->withHeader('Content-Length', $contentLength)
-            ->withHeader('Cache-Control', $cacheControl)
-            ->withHeader('Expires', $expires);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

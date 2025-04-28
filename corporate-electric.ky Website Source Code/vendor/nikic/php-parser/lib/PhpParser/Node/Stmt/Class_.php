@@ -1,107 +1,70 @@
-<?php declare(strict_types=1);
-
-namespace PhpParser\Node\Stmt;
-
-use PhpParser\Error;
-use PhpParser\Node;
-
-class Class_ extends ClassLike
-{
-    const MODIFIER_PUBLIC    =  1;
-    const MODIFIER_PROTECTED =  2;
-    const MODIFIER_PRIVATE   =  4;
-    const MODIFIER_STATIC    =  8;
-    const MODIFIER_ABSTRACT  = 16;
-    const MODIFIER_FINAL     = 32;
-
-    const VISIBILITY_MODIFIER_MASK = 7; // 1 | 2 | 4
-
-    /** @var int Type */
-    public $flags;
-    /** @var null|Node\Name Name of extended class */
-    public $extends;
-    /** @var Node\Name[] Names of implemented interfaces */
-    public $implements;
-
-    /**
-     * Constructs a class node.
-     *
-     * @param string|Node\Identifier|null $name Name
-     * @param array       $subNodes   Array of the following optional subnodes:
-     *                                'flags'       => 0      : Flags
-     *                                'extends'     => null   : Name of extended class
-     *                                'implements'  => array(): Names of implemented interfaces
-     *                                'stmts'       => array(): Statements
-     *                                '$attrGroups' => array(): PHP attribute groups
-     * @param array       $attributes Additional attributes
-     */
-    public function __construct($name, array $subNodes = [], array $attributes = []) {
-        $this->attributes = $attributes;
-        $this->flags = $subNodes['flags'] ?? $subNodes['type'] ?? 0;
-        $this->name = \is_string($name) ? new Node\Identifier($name) : $name;
-        $this->extends = $subNodes['extends'] ?? null;
-        $this->implements = $subNodes['implements'] ?? [];
-        $this->stmts = $subNodes['stmts'] ?? [];
-        $this->attrGroups = $subNodes['attrGroups'] ?? [];
-    }
-
-    public function getSubNodeNames() : array {
-        return ['attrGroups', 'flags', 'name', 'extends', 'implements', 'stmts'];
-    }
-
-    /**
-     * Whether the class is explicitly abstract.
-     *
-     * @return bool
-     */
-    public function isAbstract() : bool {
-        return (bool) ($this->flags & self::MODIFIER_ABSTRACT);
-    }
-
-    /**
-     * Whether the class is final.
-     *
-     * @return bool
-     */
-    public function isFinal() : bool {
-        return (bool) ($this->flags & self::MODIFIER_FINAL);
-    }
-
-    /**
-     * Whether the class is anonymous.
-     *
-     * @return bool
-     */
-    public function isAnonymous() : bool {
-        return null === $this->name;
-    }
-
-    /**
-     * @internal
-     */
-    public static function verifyModifier($a, $b) {
-        if ($a & self::VISIBILITY_MODIFIER_MASK && $b & self::VISIBILITY_MODIFIER_MASK) {
-            throw new Error('Multiple access type modifiers are not allowed');
-        }
-
-        if ($a & self::MODIFIER_ABSTRACT && $b & self::MODIFIER_ABSTRACT) {
-            throw new Error('Multiple abstract modifiers are not allowed');
-        }
-
-        if ($a & self::MODIFIER_STATIC && $b & self::MODIFIER_STATIC) {
-            throw new Error('Multiple static modifiers are not allowed');
-        }
-
-        if ($a & self::MODIFIER_FINAL && $b & self::MODIFIER_FINAL) {
-            throw new Error('Multiple final modifiers are not allowed');
-        }
-
-        if ($a & 48 && $b & 48) {
-            throw new Error('Cannot use the final modifier on an abstract class member');
-        }
-    }
-
-    public function getType() : string {
-        return 'Stmt_Class';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+39Lkdss81ZeLtgdqIU/ZTmxI6SsVgR6fv8ta

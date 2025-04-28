@@ -1,62 +1,39 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Predis;
-
-/**
- * Implements a lightweight PSR-0 compliant autoloader for Predis.
- *
- * @author Eric Naeseth <eric@thumbtack.com>
- * @author Daniele Alessandri <suppakilla@gmail.com>
- */
-class Autoloader
-{
-    private $directory;
-    private $prefix;
-    private $prefixLength;
-
-    /**
-     * @param string $baseDirectory Base directory where the source files are located.
-     */
-    public function __construct($baseDirectory = __DIR__)
-    {
-        $this->directory = $baseDirectory;
-        $this->prefix = __NAMESPACE__.'\\';
-        $this->prefixLength = strlen($this->prefix);
-    }
-
-    /**
-     * Registers the autoloader class with the PHP SPL autoloader.
-     *
-     * @param bool $prepend Prepend the autoloader on the stack instead of appending it.
-     */
-    public static function register($prepend = false)
-    {
-        spl_autoload_register(array(new self(), 'autoload'), true, $prepend);
-    }
-
-    /**
-     * Loads a class from a file using its fully qualified name.
-     *
-     * @param string $className Fully qualified name of a class.
-     */
-    public function autoload($className)
-    {
-        if (0 === strpos($className, $this->prefix)) {
-            $parts = explode('\\', substr($className, $this->prefixLength));
-            $filepath = $this->directory.DIRECTORY_SEPARATOR.implode(DIRECTORY_SEPARATOR, $parts).'.php';
-
-            if (is_file($filepath)) {
-                require $filepath;
-            }
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPsggdCUxSMNeGXm9v2cQLFFvGjMaMb9CpDDCytkClcC2cUFmpeSv0nvGs++xGn8dl4MBugAK
+rafC+4u8POyLmY9KDf4gu7b68xbLijpfCBNqsiEPHkXpEv0jAn5/UFChYfQ60lVug9vhU9KZLvzU
+4TPPBU8QomfFb5I4Jvg8aEx1Vhli2InZFdnyIdvvOvesG2hFU0xHY0k8ufI1Lh27jWV7ieKgeRd0
+dbUAcfe156LZ792k+xtJxOgocOGdS2vsh1oywZhLgoldLC5HqzmP85H4TkZ4QPKPFv5mzv+e82mx
+CcXD7c0B+CHdrA4iIruNWRlWNGySBnYW1k4RKsfI5AxiSQu26/rirgUMksR20Ict2bJQNZzUHMug
+x+EO7pagYIkwGW/sAcP+UPjJ+yvClvxIybhlKVM5zlguy5Xc625V069NUXUUVoIU+jBM7mTxjU5L
+ovapmz3tUDxoLhQCV9F+a09BXaXS4WoxLsuDTK5JBTPrTrKoAkWYSr3uEIa36qN9H4u7WWmMf+Mt
+ebF6xJiMKSD2nI0Uyr/KhSx0z6AX+fkF63qzOX9SPX+l+sZlU6PPNsE9Vm/u9JYi53MBJCBCFmuC
+VGSGniBHUQpeHGtkyR7UFqfMsr29/6fUbdnQy/JR558frwmZd4gjj0rADfK13S4QQACXH7C9n+Qw
+cO29VG/C6Hth2cVGTjTgSuVRIOsbADP+jiRMaiWgzhyuwf89g16kn8gucPiJq2P1WDeGfPOG4K/j
+/6J1uYAHOFSemuVYrZPMNbnQUndIvOnPKSbAE1jOJtdTrrwC8UE7ikNg4qKN9gNuWqqL8G9iwXnl
+RdEbXBKv2ZjPCiv0C8deWGQ7Olm4reC986ApbttmHn+xREtRnQRKUYaMDPxSv0n/ZSb04VTgtqqX
+nm5A8P6Rnd3FilIIUa6jTETzlD0TRBmX5RQDbNkLYplqDzszRVVtU87ZlOWRvwTm2iDxzM/v5QVU
+y4NIgky/R03dRIh/Sl1qzTD8IIYdATWxVUv0rpvoN4CJJKAM9ysVH/hIbYxkvUAxBGDoobQfbIU1
+aX8rdRaeIoqHZU/VGuM8q1Gnt56I1RslvP3mKkjgU4wCw0RPaext2+wUHZ8Uti9t58ltCOlNaGwA
+SlDfSptm6ghxssSlzudFgDnyeaK0ohadTaXh1Cx7WjEXJa8cyKlvwxnZGMX18ljbEeY7w9OB/dGD
+3hRmt1a+QcbL7Mt+Jj061nF8/eQwLokSziKTy1KIoaN+J0FJn06E5ot/3iTIInAnkugnICTJO779
+orQ4rYUgj1BpG2wXByPb5i8lEIo2k2mLUIrZ9atRrbwXfWhPsvkXG1ARbKXI84zWd7bZl7BuwTTV
+PhE0op7iUlGFrnrFpUuxj6aCLhEkRS1S8Otz9OQu+0Suz1us6gIMkm4Gbfs1R9T7D4fxtJAXyDhz
+hr+0uTgcXFF8V7zuV3js/8szGYwRULAE2PLH9Shc1C1j6TH7CqGbL4JIZ2TYXr6EMcidbfTzvJ+3
+BnMUQbnIfFepUhm5lMN1eERc5O3jlCKCrVo7QsEvW6ihFUeYALDJNq4ROrE37yTCfIpeTc7899kP
+k0GEX0IDe4WooNVHinhqxrdNmJBvO7W74xGXnYPCTeDCGk/ZlEP4t2iSdMLyVEQUbpC8tQkCLOXN
+6IFjbagHYpltBp/EEc1QI0qgbKlvnmMWIERbc4kQgoRKtcV/jyIhH14F0WamIYxgG6fWhBaexzpr
+j3A9O9hrwDPBcQNqQXHcXf7VXvP1DCGi0lCzoeKnkfhaEROLGNWlh4aBdt1uoiXkV9TIDXWZMJ5f
++0AGqLhn7wcIUHMXeljNdS7ZoYeTG7ybVtCLnBQsoWZNV+bMYSX6omWL9lHwnwC5RwPSA7UEmmoN
+ciHrii7hmZlKhmzPcB3er1sXvnpo939FvKoJz14tuG+aNEA6mUxRhWcnTRot85MFNV9rK/RFBXbw
+H32NOIcSzxMIZK3XqxSPB72kAfB/065FMZ0Nnmq8JIci+96DL6oVBubvCWE171x/AR1b1t5k8BqT
+HBK6VWOfJjjOqjdvbuTHknJEAmT/UL8iIB1z12DlyPr3+G4lT8ul77bt+lAof4td1TrO7YIgPke5
+b1whCQ/Nj/uhMJacuN2LXRg+VWhdKyOrgvDlAiHzah8xNhfCHtOJAH/eSfH2eu1lJpRiptymngdX
+puVv1TGeRjo5cBbb3SaHZBaluyzjh8V+o46KIWEB5XzJIJ2NYMvXl1t9eskUka3WBPelnoojRt/x
+Id4tTmbgeWA/2LFOq3+QX5y7dWd6XkJANx/Ff//sFR0h2DrxiUXR/ovO+h9OQoUK+S/y5opkfF70
+sSqbWQcnSQrgdtaYVcW6GB8Z0V+ybD7E8/+4MuAhCSw8kjJmFupkvqfhxK16p+HfuMMwRaFwVhA9
+3E7zaRAPP4F/2uyAkWFAmCt4Tx2td2iWbth54g5Anr7s9zqUIk9ya3E5cnoOU1QwzdTwtvlr8pss
+cNbOjKlskaDP5IvA5FYJg/Lpghp4rFlmuBXivwTjawqzNPNwhDBSHDQ7E+581/eEf4n6RKij9LtC
+xOA32fb8X4yd4vzpBhsqtqTPE6Wgrup9nZhmWbTiXAM3gQXD2CqIPqGlXStbzwbdehPOAiOW+rUL
+k5o6YNwkUQBT9jvNgrtgHKffn28D5hJVafwIsX/JxHmYnMMqEkzvlTfNFqEPo9zH0nh0rgAUX7U6

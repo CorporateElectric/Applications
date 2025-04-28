@@ -1,100 +1,68 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Shared;
-
-use PhpOffice\PhpSpreadsheet\Exception;
-use PhpOffice\PhpSpreadsheet\Worksheet\Protection;
-
-class PasswordHasher
-{
-    /**
-     * Get algorithm name for PHP.
-     */
-    private static function getAlgorithm(string $algorithmName): string
-    {
-        if (!$algorithmName) {
-            return '';
-        }
-
-        // Mapping between algorithm name in Excel and algorithm name in PHP
-        $mapping = [
-            Protection::ALGORITHM_MD2 => 'md2',
-            Protection::ALGORITHM_MD4 => 'md4',
-            Protection::ALGORITHM_MD5 => 'md5',
-            Protection::ALGORITHM_SHA_1 => 'sha1',
-            Protection::ALGORITHM_SHA_256 => 'sha256',
-            Protection::ALGORITHM_SHA_384 => 'sha384',
-            Protection::ALGORITHM_SHA_512 => 'sha512',
-            Protection::ALGORITHM_RIPEMD_128 => 'ripemd128',
-            Protection::ALGORITHM_RIPEMD_160 => 'ripemd160',
-            Protection::ALGORITHM_WHIRLPOOL => 'whirlpool',
-        ];
-
-        if (array_key_exists($algorithmName, $mapping)) {
-            return $mapping[$algorithmName];
-        }
-
-        throw new Exception('Unsupported password algorithm: ' . $algorithmName);
-    }
-
-    /**
-     * Create a password hash from a given string.
-     *
-     * This method is based on the algorithm provided by
-     * Daniel Rentz of OpenOffice and the PEAR package
-     * Spreadsheet_Excel_Writer by Xavier Noguer <xnoguer@rezebra.com>.
-     *
-     * @param string $pPassword Password to hash
-     */
-    private static function defaultHashPassword(string $pPassword): string
-    {
-        $password = 0x0000;
-        $charPos = 1; // char position
-
-        // split the plain text password in its component characters
-        $chars = preg_split('//', $pPassword, -1, PREG_SPLIT_NO_EMPTY);
-        foreach ($chars as $char) {
-            $value = ord($char) << $charPos++; // shifted ASCII value
-            $rotated_bits = $value >> 15; // rotated bits beyond bit 15
-            $value &= 0x7fff; // first 15 bits
-            $password ^= ($value | $rotated_bits);
-        }
-
-        $password ^= strlen($pPassword);
-        $password ^= 0xCE4B;
-
-        return strtoupper(dechex($password));
-    }
-
-    /**
-     * Create a password hash from a given string by a specific algorithm.
-     *
-     * 2.4.2.4 ISO Write Protection Method
-     *
-     * @see https://docs.microsoft.com/en-us/openspecs/office_file_formats/ms-offcrypto/1357ea58-646e-4483-92ef-95d718079d6f
-     *
-     * @param string $password Password to hash
-     * @param string $algorithm Hash algorithm used to compute the password hash value
-     * @param string $salt Pseudorandom string
-     * @param int $spinCount Number of times to iterate on a hash of a password
-     *
-     * @return string Hashed password
-     */
-    public static function hashPassword(string $password, string $algorithm = '', string $salt = '', int $spinCount = 10000): string
-    {
-        $phpAlgorithm = self::getAlgorithm($algorithm);
-        if (!$phpAlgorithm) {
-            return self::defaultHashPassword($password);
-        }
-
-        $saltValue = base64_decode($salt);
-        $encodedPassword = mb_convert_encoding($password, 'UCS-2LE', 'UTF-8');
-
-        $hashValue = hash($phpAlgorithm, $saltValue . $encodedPassword, true);
-        for ($i = 0; $i < $spinCount; ++$i) {
-            $hashValue = hash($phpAlgorithm, $hashValue . pack('L', $i), true);
-        }
-
-        return base64_encode($hashValue);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPxdpNkt/tb2ZmZa+oywFN69xnkjJ30UydlH/M1umUR29VKqP7FqjuzwaTvmI5gHTzTs5tQG8
+WZUIEIpzx5uNbr8iZAet7rGPygTCz8QMME/ap5Mj4H/cr6YTlWNl2Pq9nelQHatSuhYVVzITTt4N
+leJraLK3xDOlJG/9r2GG6e1NMyFQaGvFUroEOzxegOvqViq1ExnR0gaGMh4u4yeieCb5M/O3Ce2E
+QCBAIu3/9QgZoMCL5OwRS7urywkUgzOXCv4h3phLgoldLC5HqzmP85H4TkXdQU7Ig9/zODRe2w1x
+AppZAr+gOzrY99AsesulMNdxdwGW5MrtpqQoiT5Jyffc4GbtVPYcW/3ZYZEpoX63Er4w3OSc005T
+e+2wOXfaRTH0NUBvD8bt4NJKW48SHVP8nNn8BatP3VSjxqXN7o1Gr5mw4OjZC6quBSix14Rk0z+Y
+dw7TXSH4ge1+uUwO3ZS50xp4RwU3GW/O73ikY7neyQsFTEPi/dLvHj2hQ/1M9ksOG8E1I5hu+rS1
+UiJI6kUOrS+lg3CB628JYL5V1Ssmfam50rNInwx8dmaKwAzAJTYWSM9aa9KhCGLsjpcC255qgVyI
+jBb6v0Cb/zOumNYkyv7KlxYftW/RSV4LeT8eYMlDTH4anVIQ1C0Z/qFrIvqfCkDzc93VcQRNH//M
+De7iZ+0NaI4Y4r51VoD8G5sYb/5lhrVx1sPF0sakQpuDr4LtTompsiT6jCT909n1FtNdTqyZaYcv
+Ps4vQmUQ9BbiimNX7Xg4/LvbhcWWXmVYvPEHma30ULXLXfq9SxKFhIgbXj4cQZlEnVlIQjNUkCIP
+rucApcddpDDrMrzeFjA61QyV7zG8rirg7vBhpENofxp2lZe8esmDXQjL+Gqui21ZgZCMYZJVZskf
+znWPNSpFnDaizs40U7K1I8NlU8sXJ/be432dl2zY0jIG1LmodUc7/FlBlMoOyXi5jq+SHdLTJDoB
+AjOUcm8DcM5UZLR/zITKd9oQpfmnZKfxRTr2YZPfJjVHGaSYKuSt1x+qsfO2OqlEmAyopWaN4b3r
++wdLrDTYuqk9SwnRsccOggAdq6qs6A5XfHszFsboffoLhWEFIqdvRBMkrsM1w3WdldFRMKGdjdYM
+nL98R1YE2X9wqdR8krEs/EvklBz6Jrfrx0YNgYb+y12FNvhxWpHCidp0XkvwKI3Org8TnrHMTa2x
+EQ90VjgRrhLRDO9h2zzXeNys4pkCr1hN/DUg8HV8TvCa6mjFwXqlE8xnPEpek2hkZ0YORJP9hprW
+6P8qZO3UgHQ8c3hy91g4Is2ZGAr7/36tQsmdQiYFzPgyYJCMffYhAYmFBb1pPsBZnBHsg4laDq8x
+0nc1n2Q/R5/9fFUUlY90dad3auJFI6Ur6Pt638h8BZWIX3bJLOhekIKgD5anHMNsSaUr6HUp0BPI
+46K78JLTOZPjPKtqbQfgRdDz3sVgRZdx6/bOgY57H8v5J9c/UQCARnORligtGHJGQ1BBEFD4KtJR
+ZDbK/AwenpI9ADHWfYvxBQ5XjbWwDKsj4/cmCq9cBNmSok3e4ghlZd/x/3OpYo0qo7FQklCH2zdC
+dYY6OML6WBFgMqa+/Tl4j8S64NaeB/+cemqCydFR9ZYsbCZAy0daRw5mjIinrotPMON0zAPwYFoo
+DWr+kphdp9VlMtGdyy5MjIHvYPJ3TTANP2FsVeO4EZPZpV9FQkOZ2n0Fi/Dn50aPKSfFTc8vtilT
+oMHcskqzc63t+gFKr6jUQ0CcOunhNQg2dFmELceJ/JigkYKWgD3EsOE+Y8Wk7fN6YBeZWiyhrguv
+xatIRBiBsU9yjBAI/jK3rMHa+UlWkaSMXwVOWWeeKUIDxyNOFiN7jXlmcSTb3MfmMAWlROlIfaa9
+Bzw5NtSjTTTEPt3l5a03iA4/8W/covNRi0QI9XP68q86khchwnX7BVENZzBbODT2FfDZb+TqETim
+LE/W8SbxZdt83d+OCCbT0Aezz59eyD2HOEe1D8HHYhZPNGep9DnQz5IMC1MZ+vPYefqCE3lQg3cV
+7/L7td1knJOO/SjizhJq9GseJPdguh9HXUo/8T4NLnS2oy+3/BIqc3NXngtp/JBzzE+4bcvPntJ2
+k+qewAlqXQyhPUFKSAGJHS+DNz3N/TXKkmZQX35r4uniCCwrKX1ktnCLAsqojjAowoaSKrYby5sD
+64lyu5+DTPNrBGDUUXG/Eh2JtJehaJN7oqSLqIllAL1C43irMMZuUIGJftidcN19NxBi1l3+9PUJ
+H62uNjRv+aHFrwxFEKv0HS83MDL8s4PXMUnM8vUm1k4RMMnXD+KW6Kf/ypD+8kD1UonuMT3cDj6U
+G+IsAAy7Qn5YZlhFgg3TAL2HP5LOja6X732k2yHjS//GotOBOljJH/SV3fVLN22TzTh6UNVHh+/o
+U8tucgP116fDGf/MSQqXrZD+4hMsBh/6TjNrhCqji6GfUD1s+qRqUMz9YjHTMYv1WX2gk3Q5RSyg
+VvGH09NAAB40x8DUg4A4C3dO+8orreWz0zk89Ad4+ya/8EbiBQiEJnjZIebuIwRI1Zg3C9ELZxWl
+29WnQkSMBIHnY12KrySc9Nb8wrzKS006lY5rNGWZ5cZtcDNec5uEHFTIY2/INesUefcbhIROJB1m
+AGHRPP3t0uG1HOQprQxgxd4/2FsGsakjRqLZKrg3o+iPFosL4mrDAFUd8GEVKiLb7ZPp6G7vMMCv
+mAj8Eae3IjfR/mdkuz8+1OtmFpqnX8kjdU+5CyI85EnqlrR65UZtQx3qd4u3vsngQUqsUz0LQirs
+6bKjo9M89Liwc7jfZPnMCntKtEMYah0BVNpFIyKIxVIUlrQhd4QgDvwIfiSGRNu7Eyhy0XDDhwm9
+4wUrwYJ5m9j/fPjEKYS6yhQieknXX11pdm30oaKM3q6aCNs+IQvwJAPh/WImh7+6biIO4uwIj5TX
+lztTMP0NEuYdqiqY0wGknoB+1EnC3/SmsrwBPLHx5gpbVbksGowf0Jed7QLx+TAwr1odvFrgYAFj
+9BRkujZiwjD5NqKYibSz7eBWnFiherLEVWjkoV22wWOpOMVoZLNep7fT+kHnRR8fzWb/CaSgJ1XB
+3qwRu7pZLQ6Ihqtop5VwTPwQ18XKDtSHsQVaGdZICUpg64HTi8ZjN9aQda0xSlxjFh2AmA5Fa/9S
+OhT6yIkziS5Mhf1sMQxtzXn9EG2HchT+eQvXxwGfLzv64ZjDaHPmMUFYgbjDNTOTg0Y3jM+rP5hn
+/vB7cu2sQNWBDFhyBwB+zdFmqPligAZgw9XLZq+BmWOQVJTyz+RtaY3Tu/ifu2nekQrc/Oup5A6h
+/CeogbGqDyf5lctNrkl8lknxWdNtNnGhQexR7OY6ryVz/WvfgZd+cIrvCMu6YOeBYrqKmKSgFutn
+BcOtsBQtVlxVUf2/b1Yd6vzy5uQRbm6tFN3tAleXeMbw7dwPh9I120E7gCbh3proXVrV66zOLTsw
+OUVhS2HjHNQ3iJgzpWyRdzkdpu6n9x1E/uKk+ZWQ0g0SiQWAYagFmsTtZCKb5VmjjuEHtuimkg1H
+zM8Jxg4ne7u2z+JAx+FGLgUKiIWvORcJPPdomcE4aaTIePzlQ6rJNCiPqD25do7WEP5PU4Z43adA
+UA7L5oQRiZSsfW9js1bdoF0Q40LFvyyEXQlpK76zwIwifyUqf/e7HBRHmMaMFjZNCQg0BIF2akQr
+5Vz1fPaibuzTAAC6D/B2+bUNgYofiGUbMcsqzWFJL6AyKJRYviURq1kc/As/LzBQHzyVjkt2qjXE
+ciS3bYUwOr+8+xZBYvRr2qbdzb33GDm+AlbIU0uA3jeRmo9uMDTmum4xqubEbNLWPGykJ0FYOSOD
+zF+N5S48WEKB+jjt8+sOXhVFqUmixCP9pwlz3uezlI/0B5P6BEWWRy+FpkgPhozNj68DkFf2Cwfv
+XXWNVmaCsX1DfcvRi3wrPfljms/PRzqJrXdNOpzjnH3cjBhP2XUG9+AE38Xy8Hgyyels4EG2CxOs
+gM/VC3y1dsyTI4ZDqrmWPIJy+cfK/aT2u54uMeTDqeHfk2i1pG7wY9fVM87jd7TStjdUaMV5VXkp
+NR6kQH3QL9hlzthpZHee+CDc7+c+oGzyYXVj6BxRp0ZIlP04TmdeE6gOvAaIblqZUVq7Eo0Mif0s
+rsCQ66DJnjS08udkEH7oepwZtHjhdkG9ZIoqK+upIoDBdXcZAksINmiHx0cmmAvwWNmEl1vVNgqu
+g3X7sFKkNKl2Cw6cSYzQCIVSOvCPC7g+3b5Mb9QBgCtCRa1JwvWKwzuHtCncb3dpzaj6IFJ4Fmmp
+RkGanxYubNQueo3FNn+kRzk4AgFW78BFUHQAGfgfaND7HrQTi12xWpaW4Bog96JW+t39ZyhbX6jV
+RMoaTcf+fBOg8PwNN/HrUx9JZkHfbjblHsv9cz+FQSg+bTgNbv4U4PtychL0gfyTMpMGKbDw3ddE
+0IESr2JALhW+4LS2Ku249FGPm+Vvb9Lo/Sj3cbSS7kNq0gniR85z7ji2geN7GS5y8gx75L+4JpHQ
+wSpRRsecmzU03lYgOpihVMB6KMlCCaeDEpPt8dlaqKlp34sOhm+npRhzFwNfPJDyc61TM600+6eO
+NUWWb5TSeZUYDQBQl2nfcp+bfDaJc1l/gp2d4/qxiwBchdpiaH7kyhoHyL4wVwCTcfneVedrAM6y
+quqrV4ltO+etYw/ed5amD7nDDDBkIqrXe+0f6XIEwnQyD7RBAbmS9PpwahT02zcv5+nSjrrrw9qg
+8V6hi4Z5UrFh88BHthqX+aJdjavEJqHGIshYax6JsIjPFg6j4RP/KBXKAQOgn8qacbBdDjSF6Dni
+46SZ1GeEOQrtH0bbDy8r0S68WgLMnPbspWTAX4oTD1B99PNKGc1Eh0wl9Wm=

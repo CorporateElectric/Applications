@@ -1,354 +1,129 @@
-<?php
-/**
-* Whoops - php errors for cool kids
-* @author Filipe Dobreira <http://github.com/filp>
-* Plaintext handler for command line and logs.
-* @author Pierre-Yves Landuré <https://howto.biapy.com/>
-*/
-
-namespace Whoops\Handler;
-
-use InvalidArgumentException;
-use Psr\Log\LoggerInterface;
-use Whoops\Exception\Frame;
-
-/**
-* Handler outputing plaintext error messages. Can be used
-* directly, or will be instantiated automagically by Whoops\Run
-* if passed to Run::pushHandler
-*/
-class PlainTextHandler extends Handler
-{
-    const VAR_DUMP_PREFIX = '   | ';
-
-    /**
-     * @var \Psr\Log\LoggerInterface
-     */
-    protected $logger;
-
-    /**
-     * @var callable
-     */
-    protected $dumper;
-
-    /**
-     * @var bool
-     */
-    private $addTraceToOutput = true;
-
-    /**
-     * @var bool|integer
-     */
-    private $addTraceFunctionArgsToOutput = false;
-
-    /**
-     * @var integer
-     */
-    private $traceFunctionArgsOutputLimit = 1024;
-
-    /**
-     * @var bool
-     */
-    private $addPreviousToOutput = true;
-
-    /**
-     * @var bool
-     */
-    private $loggerOnly = false;
-
-    /**
-     * Constructor.
-     * @throws InvalidArgumentException     If argument is not null or a LoggerInterface
-     * @param  \Psr\Log\LoggerInterface|null $logger
-     */
-    public function __construct($logger = null)
-    {
-        $this->setLogger($logger);
-    }
-
-    /**
-     * Set the output logger interface.
-     * @throws InvalidArgumentException     If argument is not null or a LoggerInterface
-     * @param  \Psr\Log\LoggerInterface|null $logger
-     */
-    public function setLogger($logger = null)
-    {
-        if (! (is_null($logger)
-            || $logger instanceof LoggerInterface)) {
-            throw new InvalidArgumentException(
-                'Argument to ' . __METHOD__ .
-                " must be a valid Logger Interface (aka. Monolog), " .
-                get_class($logger) . ' given.'
-            );
-        }
-
-        $this->logger = $logger;
-    }
-
-    /**
-     * @return \Psr\Log\LoggerInterface|null
-     */
-    public function getLogger()
-    {
-        return $this->logger;
-    }
-
-    /**
-     * Set var dumper callback function.
-     *
-     * @param  callable $dumper
-     * @return void
-     */
-    public function setDumper(callable $dumper)
-    {
-        $this->dumper = $dumper;
-    }
-
-    /**
-     * Add error trace to output.
-     * @param  bool|null  $addTraceToOutput
-     * @return bool|$this
-     */
-    public function addTraceToOutput($addTraceToOutput = null)
-    {
-        if (func_num_args() == 0) {
-            return $this->addTraceToOutput;
-        }
-
-        $this->addTraceToOutput = (bool) $addTraceToOutput;
-        return $this;
-    }
-
-    /**
-     * Add previous exceptions to output.
-     * @param  bool|null $addPreviousToOutput
-     * @return bool|$this
-     */
-    public function addPreviousToOutput($addPreviousToOutput = null)
-    {
-        if (func_num_args() == 0) {
-            return $this->addPreviousToOutput;
-        }
-
-        $this->addPreviousToOutput = (bool) $addPreviousToOutput;
-        return $this;
-    }
-
-    /**
-     * Add error trace function arguments to output.
-     * Set to True for all frame args, or integer for the n first frame args.
-     * @param  bool|integer|null $addTraceFunctionArgsToOutput
-     * @return null|bool|integer
-     */
-    public function addTraceFunctionArgsToOutput($addTraceFunctionArgsToOutput = null)
-    {
-        if (func_num_args() == 0) {
-            return $this->addTraceFunctionArgsToOutput;
-        }
-
-        if (! is_integer($addTraceFunctionArgsToOutput)) {
-            $this->addTraceFunctionArgsToOutput = (bool) $addTraceFunctionArgsToOutput;
-        } else {
-            $this->addTraceFunctionArgsToOutput = $addTraceFunctionArgsToOutput;
-        }
-    }
-
-    /**
-     * Set the size limit in bytes of frame arguments var_dump output.
-     * If the limit is reached, the var_dump output is discarded.
-     * Prevent memory limit errors.
-     * @var integer
-     */
-    public function setTraceFunctionArgsOutputLimit($traceFunctionArgsOutputLimit)
-    {
-        $this->traceFunctionArgsOutputLimit = (integer) $traceFunctionArgsOutputLimit;
-    }
-
-    /**
-     * Create plain text response and return it as a string
-     * @return string
-     */
-    public function generateResponse()
-    {
-        $exception = $this->getException();
-        $message = $this->getExceptionOutput($exception);
-
-        if ($this->addPreviousToOutput) {
-            $previous = $exception->getPrevious();
-            while ($previous) {
-                $message .= "\n\nCaused by\n" . $this->getExceptionOutput($previous);
-                $previous = $previous->getPrevious();
-            }
-        }
-
-
-        return $message . $this->getTraceOutput() . "\n";
-    }
-
-    /**
-     * Get the size limit in bytes of frame arguments var_dump output.
-     * If the limit is reached, the var_dump output is discarded.
-     * Prevent memory limit errors.
-     * @return integer
-     */
-    public function getTraceFunctionArgsOutputLimit()
-    {
-        return $this->traceFunctionArgsOutputLimit;
-    }
-
-    /**
-     * Only output to logger.
-     * @param  bool|null $loggerOnly
-     * @return null|bool
-     */
-    public function loggerOnly($loggerOnly = null)
-    {
-        if (func_num_args() == 0) {
-            return $this->loggerOnly;
-        }
-
-        $this->loggerOnly = (bool) $loggerOnly;
-    }
-
-    /**
-     * Test if handler can output to stdout.
-     * @return bool
-     */
-    private function canOutput()
-    {
-        return !$this->loggerOnly();
-    }
-
-    /**
-     * Get the frame args var_dump.
-     * @param  \Whoops\Exception\Frame $frame [description]
-     * @param  integer                 $line  [description]
-     * @return string
-     */
-    private function getFrameArgsOutput(Frame $frame, $line)
-    {
-        if ($this->addTraceFunctionArgsToOutput() === false
-            || $this->addTraceFunctionArgsToOutput() < $line) {
-            return '';
-        }
-
-        // Dump the arguments:
-        ob_start();
-        $this->dump($frame->getArgs());
-        if (ob_get_length() > $this->getTraceFunctionArgsOutputLimit()) {
-            // The argument var_dump is to big.
-            // Discarded to limit memory usage.
-            ob_clean();
-            return sprintf(
-                "\n%sArguments dump length greater than %d Bytes. Discarded.",
-                self::VAR_DUMP_PREFIX,
-                $this->getTraceFunctionArgsOutputLimit()
-            );
-        }
-
-        return sprintf(
-            "\n%s",
-            preg_replace('/^/m', self::VAR_DUMP_PREFIX, ob_get_clean())
-        );
-    }
-
-    /**
-     * Dump variable.
-     *
-     * @param mixed $var
-     * @return void
-     */
-    protected function dump($var)
-    {
-        if ($this->dumper) {
-            call_user_func($this->dumper, $var);
-        } else {
-            var_dump($var);
-        }
-    }
-
-    /**
-     * Get the exception trace as plain text.
-     * @return string
-     */
-    private function getTraceOutput()
-    {
-        if (! $this->addTraceToOutput()) {
-            return '';
-        }
-        $inspector = $this->getInspector();
-        $frames = $inspector->getFrames();
-
-        $response = "\nStack trace:";
-
-        $line = 1;
-        foreach ($frames as $frame) {
-            /** @var Frame $frame */
-            $class = $frame->getClass();
-
-            $template = "\n%3d. %s->%s() %s:%d%s";
-            if (! $class) {
-                // Remove method arrow (->) from output.
-                $template = "\n%3d. %s%s() %s:%d%s";
-            }
-
-            $response .= sprintf(
-                $template,
-                $line,
-                $class,
-                $frame->getFunction(),
-                $frame->getFile(),
-                $frame->getLine(),
-                $this->getFrameArgsOutput($frame, $line)
-            );
-
-            $line++;
-        }
-
-        return $response;
-    }
-
-    /**
-     * Get the exception as plain text.
-     * @param \Throwable $exception
-     * @return string
-     */
-    private function getExceptionOutput($exception)
-    {
-        return sprintf(
-            "%s: %s in file %s on line %d",
-            get_class($exception),
-            $exception->getMessage(),
-            $exception->getFile(),
-            $exception->getLine()
-        );
-    }
-
-    /**
-     * @return int
-     */
-    public function handle()
-    {
-        $response = $this->generateResponse();
-
-        if ($this->getLogger()) {
-            $this->getLogger()->error($response);
-        }
-
-        if (! $this->canOutput()) {
-            return Handler::DONE;
-        }
-
-        echo $response;
-
-        return Handler::QUIT;
-    }
-
-    /**
-     * @return string
-     */
-    public function contentType()
-    {
-        return 'text/plain';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+SDS=

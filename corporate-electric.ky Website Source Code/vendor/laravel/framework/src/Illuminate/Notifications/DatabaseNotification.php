@@ -1,134 +1,54 @@
-<?php
-
-namespace Illuminate\Notifications;
-
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
-
-class DatabaseNotification extends Model
-{
-    /**
-     * The "type" of the primary key ID.
-     *
-     * @var string
-     */
-    protected $keyType = 'string';
-
-    /**
-     * Indicates if the IDs are auto-incrementing.
-     *
-     * @var bool
-     */
-    public $incrementing = false;
-
-    /**
-     * The table associated with the model.
-     *
-     * @var string
-     */
-    protected $table = 'notifications';
-
-    /**
-     * The guarded attributes on the model.
-     *
-     * @var array
-     */
-    protected $guarded = [];
-
-    /**
-     * The attributes that should be cast to native types.
-     *
-     * @var array
-     */
-    protected $casts = [
-        'data' => 'array',
-        'read_at' => 'datetime',
-    ];
-
-    /**
-     * Get the notifiable entity that the notification belongs to.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\MorphTo
-     */
-    public function notifiable()
-    {
-        return $this->morphTo();
-    }
-
-    /**
-     * Mark the notification as read.
-     *
-     * @return void
-     */
-    public function markAsRead()
-    {
-        if (is_null($this->read_at)) {
-            $this->forceFill(['read_at' => $this->freshTimestamp()])->save();
-        }
-    }
-
-    /**
-     * Mark the notification as unread.
-     *
-     * @return void
-     */
-    public function markAsUnread()
-    {
-        if (! is_null($this->read_at)) {
-            $this->forceFill(['read_at' => null])->save();
-        }
-    }
-
-    /**
-     * Determine if a notification has been read.
-     *
-     * @return bool
-     */
-    public function read()
-    {
-        return $this->read_at !== null;
-    }
-
-    /**
-     * Determine if a notification has not been read.
-     *
-     * @return bool
-     */
-    public function unread()
-    {
-        return $this->read_at === null;
-    }
-
-    /**
-     * Scope a query to only include read notifications.
-     *
-     * @param  \Illuminate\Database\Eloquent\Builder  $query
-     * @return \Illuminate\Database\Eloquent\Builder
-     */
-    public function scopeRead(Builder $query)
-    {
-        return $query->whereNotNull('read_at');
-    }
-
-    /**
-     * Scope a query to only include unread notifications.
-     *
-     * @param  \Illuminate\Database\Eloquent\Builder  $query
-     * @return \Illuminate\Database\Eloquent\Builder
-     */
-    public function scopeUnread(Builder $query)
-    {
-        return $query->whereNull('read_at');
-    }
-
-    /**
-     * Create a new database notification collection instance.
-     *
-     * @param  array  $models
-     * @return \Illuminate\Notifications\DatabaseNotificationCollection
-     */
-    public function newCollection(array $models = [])
-    {
-        return new DatabaseNotificationCollection($models);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

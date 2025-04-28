@@ -1,226 +1,126 @@
-<?php
-
-class HTMLPurifier_ConfigSchema_InterchangeBuilder
-{
-
-    /**
-     * Used for processing DEFAULT, nothing else.
-     * @type HTMLPurifier_VarParser
-     */
-    protected $varParser;
-
-    /**
-     * @param HTMLPurifier_VarParser $varParser
-     */
-    public function __construct($varParser = null)
-    {
-        $this->varParser = $varParser ? $varParser : new HTMLPurifier_VarParser_Native();
-    }
-
-    /**
-     * @param string $dir
-     * @return HTMLPurifier_ConfigSchema_Interchange
-     */
-    public static function buildFromDirectory($dir = null)
-    {
-        $builder = new HTMLPurifier_ConfigSchema_InterchangeBuilder();
-        $interchange = new HTMLPurifier_ConfigSchema_Interchange();
-        return $builder->buildDir($interchange, $dir);
-    }
-
-    /**
-     * @param HTMLPurifier_ConfigSchema_Interchange $interchange
-     * @param string $dir
-     * @return HTMLPurifier_ConfigSchema_Interchange
-     */
-    public function buildDir($interchange, $dir = null)
-    {
-        if (!$dir) {
-            $dir = HTMLPURIFIER_PREFIX . '/HTMLPurifier/ConfigSchema/schema';
-        }
-        if (file_exists($dir . '/info.ini')) {
-            $info = parse_ini_file($dir . '/info.ini');
-            $interchange->name = $info['name'];
-        }
-
-        $files = array();
-        $dh = opendir($dir);
-        while (false !== ($file = readdir($dh))) {
-            if (!$file || $file[0] == '.' || strrchr($file, '.') !== '.txt') {
-                continue;
-            }
-            $files[] = $file;
-        }
-        closedir($dh);
-
-        sort($files);
-        foreach ($files as $file) {
-            $this->buildFile($interchange, $dir . '/' . $file);
-        }
-        return $interchange;
-    }
-
-    /**
-     * @param HTMLPurifier_ConfigSchema_Interchange $interchange
-     * @param string $file
-     */
-    public function buildFile($interchange, $file)
-    {
-        $parser = new HTMLPurifier_StringHashParser();
-        $this->build(
-            $interchange,
-            new HTMLPurifier_StringHash($parser->parseFile($file))
-        );
-    }
-
-    /**
-     * Builds an interchange object based on a hash.
-     * @param HTMLPurifier_ConfigSchema_Interchange $interchange HTMLPurifier_ConfigSchema_Interchange object to build
-     * @param HTMLPurifier_StringHash $hash source data
-     * @throws HTMLPurifier_ConfigSchema_Exception
-     */
-    public function build($interchange, $hash)
-    {
-        if (!$hash instanceof HTMLPurifier_StringHash) {
-            $hash = new HTMLPurifier_StringHash($hash);
-        }
-        if (!isset($hash['ID'])) {
-            throw new HTMLPurifier_ConfigSchema_Exception('Hash does not have any ID');
-        }
-        if (strpos($hash['ID'], '.') === false) {
-            if (count($hash) == 2 && isset($hash['DESCRIPTION'])) {
-                $hash->offsetGet('DESCRIPTION'); // prevent complaining
-            } else {
-                throw new HTMLPurifier_ConfigSchema_Exception('All directives must have a namespace');
-            }
-        } else {
-            $this->buildDirective($interchange, $hash);
-        }
-        $this->_findUnused($hash);
-    }
-
-    /**
-     * @param HTMLPurifier_ConfigSchema_Interchange $interchange
-     * @param HTMLPurifier_StringHash $hash
-     * @throws HTMLPurifier_ConfigSchema_Exception
-     */
-    public function buildDirective($interchange, $hash)
-    {
-        $directive = new HTMLPurifier_ConfigSchema_Interchange_Directive();
-
-        // These are required elements:
-        $directive->id = $this->id($hash->offsetGet('ID'));
-        $id = $directive->id->toString(); // convenience
-
-        if (isset($hash['TYPE'])) {
-            $type = explode('/', $hash->offsetGet('TYPE'));
-            if (isset($type[1])) {
-                $directive->typeAllowsNull = true;
-            }
-            $directive->type = $type[0];
-        } else {
-            throw new HTMLPurifier_ConfigSchema_Exception("TYPE in directive hash '$id' not defined");
-        }
-
-        if (isset($hash['DEFAULT'])) {
-            try {
-                $directive->default = $this->varParser->parse(
-                    $hash->offsetGet('DEFAULT'),
-                    $directive->type,
-                    $directive->typeAllowsNull
-                );
-            } catch (HTMLPurifier_VarParserException $e) {
-                throw new HTMLPurifier_ConfigSchema_Exception($e->getMessage() . " in DEFAULT in directive hash '$id'");
-            }
-        }
-
-        if (isset($hash['DESCRIPTION'])) {
-            $directive->description = $hash->offsetGet('DESCRIPTION');
-        }
-
-        if (isset($hash['ALLOWED'])) {
-            $directive->allowed = $this->lookup($this->evalArray($hash->offsetGet('ALLOWED')));
-        }
-
-        if (isset($hash['VALUE-ALIASES'])) {
-            $directive->valueAliases = $this->evalArray($hash->offsetGet('VALUE-ALIASES'));
-        }
-
-        if (isset($hash['ALIASES'])) {
-            $raw_aliases = trim($hash->offsetGet('ALIASES'));
-            $aliases = preg_split('/\s*,\s*/', $raw_aliases);
-            foreach ($aliases as $alias) {
-                $directive->aliases[] = $this->id($alias);
-            }
-        }
-
-        if (isset($hash['VERSION'])) {
-            $directive->version = $hash->offsetGet('VERSION');
-        }
-
-        if (isset($hash['DEPRECATED-USE'])) {
-            $directive->deprecatedUse = $this->id($hash->offsetGet('DEPRECATED-USE'));
-        }
-
-        if (isset($hash['DEPRECATED-VERSION'])) {
-            $directive->deprecatedVersion = $hash->offsetGet('DEPRECATED-VERSION');
-        }
-
-        if (isset($hash['EXTERNAL'])) {
-            $directive->external = preg_split('/\s*,\s*/', trim($hash->offsetGet('EXTERNAL')));
-        }
-
-        $interchange->addDirective($directive);
-    }
-
-    /**
-     * Evaluates an array PHP code string without array() wrapper
-     * @param string $contents
-     */
-    protected function evalArray($contents)
-    {
-        return eval('return array(' . $contents . ');');
-    }
-
-    /**
-     * Converts an array list into a lookup array.
-     * @param array $array
-     * @return array
-     */
-    protected function lookup($array)
-    {
-        $ret = array();
-        foreach ($array as $val) {
-            $ret[$val] = true;
-        }
-        return $ret;
-    }
-
-    /**
-     * Convenience function that creates an HTMLPurifier_ConfigSchema_Interchange_Id
-     * object based on a string Id.
-     * @param string $id
-     * @return HTMLPurifier_ConfigSchema_Interchange_Id
-     */
-    protected function id($id)
-    {
-        return HTMLPurifier_ConfigSchema_Interchange_Id::make($id);
-    }
-
-    /**
-     * Triggers errors for any unused keys passed in the hash; such keys
-     * may indicate typos, missing values, etc.
-     * @param HTMLPurifier_StringHash $hash Hash to check.
-     */
-    protected function _findUnused($hash)
-    {
-        $accessed = $hash->getAccessed();
-        foreach ($hash as $k => $v) {
-            if (!isset($accessed[$k])) {
-                trigger_error("String hash key '$k' not used by builder", E_USER_NOTICE);
-            }
-        }
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

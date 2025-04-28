@@ -1,96 +1,51 @@
-<?php
-
-namespace Illuminate\Database;
-
-class DatabaseTransactionsManager
-{
-    /**
-     * All of the recorded transactions.
-     *
-     * @var \Illuminate\Support\Collection
-     */
-    protected $transactions;
-
-    /**
-     * Create a new database transactions manager instance.
-     *
-     * @return void
-     */
-    public function __construct()
-    {
-        $this->transactions = collect();
-    }
-
-    /**
-     * Start a new database transaction.
-     *
-     * @param  string  $connection
-     * @param  int  $level
-     * @return void
-     */
-    public function begin($connection, $level)
-    {
-        $this->transactions->push(
-            new DatabaseTransactionRecord($connection, $level)
-        );
-    }
-
-    /**
-     * Rollback the active database transaction.
-     *
-     * @param  string  $connection
-     * @param  int  $level
-     * @return void
-     */
-    public function rollback($connection, $level)
-    {
-        $this->transactions = $this->transactions->reject(function ($transaction) use ($connection, $level) {
-            return $transaction->connection == $connection &&
-                   $transaction->level > $level;
-        })->values();
-    }
-
-    /**
-     * Commit the active database transaction.
-     *
-     * @param  string  $connection
-     * @return void
-     */
-    public function commit($connection)
-    {
-        $this->transactions = $this->transactions->reject(function ($transaction) use ($connection) {
-            if ($transaction->connection == $connection) {
-                $transaction->executeCallbacks();
-
-                return true;
-            }
-
-            return false;
-        })->values();
-    }
-
-    /**
-     * Register a transaction callback.
-     *
-     * @param  callable  $callback
-     * @return void
-     */
-    public function addCallback($callback)
-    {
-        if ($current = $this->transactions->last()) {
-            return $current->addCallback($callback);
-        }
-
-        call_user_func($callback);
-    }
-
-    /**
-     * Get all the transactions.
-     *
-     * @return \Illuminate\Support\Collection
-     */
-    public function getTransactions()
-    {
-        return $this->transactions;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

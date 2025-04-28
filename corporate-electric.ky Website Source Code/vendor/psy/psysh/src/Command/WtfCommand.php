@@ -1,134 +1,87 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\Command;
-
-use Psy\Context;
-use Psy\ContextAware;
-use Psy\Input\FilterOptions;
-use Psy\Output\ShellOutput;
-use Symfony\Component\Console\Input\InputArgument;
-use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Output\OutputInterface;
-
-/**
- * Show the last uncaught exception.
- */
-class WtfCommand extends TraceCommand implements ContextAware
-{
-    /**
-     * Context instance (for ContextAware interface).
-     *
-     * @var Context
-     */
-    protected $context;
-
-    /**
-     * ContextAware interface.
-     *
-     * @param Context $context
-     */
-    public function setContext(Context $context)
-    {
-        $this->context = $context;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
-    {
-        list($grep, $insensitive, $invert) = FilterOptions::getOptions();
-
-        $this
-            ->setName('wtf')
-            ->setAliases(['last-exception', 'wtf?'])
-            ->setDefinition([
-                new InputArgument('incredulity', InputArgument::OPTIONAL | InputArgument::IS_ARRAY, 'Number of lines to show.'),
-                new InputOption('all', 'a', InputOption::VALUE_NONE, 'Show entire backtrace.'),
-
-                $grep,
-                $insensitive,
-                $invert,
-            ])
-            ->setDescription('Show the backtrace of the most recent exception.')
-            ->setHelp(
-                <<<'HELP'
-Shows a few lines of the backtrace of the most recent exception.
-
-If you want to see more lines, add more question marks or exclamation marks:
-
-e.g.
-<return>>>> wtf ?</return>
-<return>>>> wtf ?!???!?!?</return>
-
-To see the entire backtrace, pass the -a/--all flag:
-
-e.g.
-<return>>>> wtf -a</return>
-HELP
-            );
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function execute(InputInterface $input, OutputInterface $output)
-    {
-        $this->filter->bind($input);
-
-        $incredulity = \implode('', $input->getArgument('incredulity'));
-        if (\strlen(\preg_replace('/[\\?!]/', '', $incredulity))) {
-            throw new \InvalidArgumentException('Incredulity must include only "?" and "!"');
-        }
-
-        $exception = $this->context->getLastException();
-        $count = $input->getOption('all') ? \PHP_INT_MAX : \max(3, \pow(2, \strlen($incredulity) + 1));
-
-        $shell = $this->getApplication();
-
-        if ($output instanceof ShellOutput) {
-            $output->startPaging();
-        }
-
-        do {
-            $traceCount = \count($exception->getTrace());
-            $showLines = $count;
-            // Show the whole trace if we'd only be hiding a few lines
-            if ($traceCount < \max($count * 1.2, $count + 2)) {
-                $showLines = \PHP_INT_MAX;
-            }
-
-            $trace = $this->getBacktrace($exception, $showLines);
-            $moreLines = $traceCount - \count($trace);
-
-            $output->writeln($shell->formatException($exception));
-            $output->writeln('--');
-            $output->write($trace, true, ShellOutput::NUMBER_LINES);
-            $output->writeln('');
-
-            if ($moreLines > 0) {
-                $output->writeln(\sprintf(
-                    '<aside>Use <return>wtf -a</return> to see %d more lines</aside>',
-                    $moreLines
-                ));
-                $output->writeln('');
-            }
-        } while ($exception = $exception->getPrevious());
-
-        if ($output instanceof ShellOutput) {
-            $output->stopPaging();
-        }
-
-        return 0;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

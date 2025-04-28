@@ -1,143 +1,51 @@
-<?php
-
-declare(strict_types=1);
-
-namespace Dotenv\Store;
-
-use Dotenv\Store\File\Paths;
-
-final class StoreBuilder
-{
-    /**
-     * The of default name.
-     *
-     * @var string[]
-     */
-    private const DEFAULT_NAME = '.env';
-
-    /**
-     * The paths to search within.
-     *
-     * @var string[]
-     */
-    private $paths;
-
-    /**
-     * The file names to search for.
-     *
-     * @var string[]
-     */
-    private $names;
-
-    /**
-     * Should file loading short circuit?
-     *
-     * @var bool
-     */
-    private $shortCircuit;
-
-    /**
-     * The file encoding.
-     *
-     * @var string|null
-     */
-    private $fileEncoding;
-
-    /**
-     * Create a new store builder instance.
-     *
-     * @param string[]    $paths
-     * @param string[]    $names
-     * @param bool        $shortCircuit
-     * @param string|null $fileEncoding
-     *
-     * @return void
-     */
-    private function __construct(array $paths = [], array $names = [], bool $shortCircuit = false, string $fileEncoding = null)
-    {
-        $this->paths = $paths;
-        $this->names = $names;
-        $this->shortCircuit = $shortCircuit;
-        $this->fileEncoding = $fileEncoding;
-    }
-
-    /**
-     * Create a new store builder instance with no names.
-     *
-     * @return \Dotenv\Store\StoreBuilder
-     */
-    public static function createWithNoNames()
-    {
-        return new self();
-    }
-
-    /**
-     * Create a new store builder instance with the default name.
-     *
-     * @return \Dotenv\Store\StoreBuilder
-     */
-    public static function createWithDefaultName()
-    {
-        return new self([], [self::DEFAULT_NAME]);
-    }
-
-    /**
-     * Creates a store builder with the given path added.
-     *
-     * @param string $path
-     *
-     * @return \Dotenv\Store\StoreBuilder
-     */
-    public function addPath(string $path)
-    {
-        return new self(\array_merge($this->paths, [$path]), $this->names, $this->shortCircuit, $this->fileEncoding);
-    }
-
-    /**
-     * Creates a store builder with the given name added.
-     *
-     * @param string $name
-     *
-     * @return \Dotenv\Store\StoreBuilder
-     */
-    public function addName(string $name)
-    {
-        return new self($this->paths, \array_merge($this->names, [$name]), $this->shortCircuit, $this->fileEncoding);
-    }
-
-    /**
-     * Creates a store builder with short circuit mode enabled.
-     *
-     * @return \Dotenv\Store\StoreBuilder
-     */
-    public function shortCircuit()
-    {
-        return new self($this->paths, $this->names, true, $this->fileEncoding);
-    }
-
-    /**
-     * Creates a store builder with the specified file encoding.
-     *
-     * @param string|null $fileEncoding
-     *
-     * @return \Dotenv\Store\StoreBuilder
-     */
-    public function fileEncoding(string $fileEncoding = null)
-    {
-        return new self($this->paths, $this->names, $this->shortCircuit, $fileEncoding);
-    }
-
-    /**
-     * Creates a new store instance.
-     *
-     * @return \Dotenv\Store\StoreInterface
-     */
-    public function make()
-    {
-        return new FileStore(
-            Paths::filePaths($this->paths, $this->names),
-            $this->shortCircuit,
-            $this->fileEncoding
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+2zO9wQIXDFJbXm==

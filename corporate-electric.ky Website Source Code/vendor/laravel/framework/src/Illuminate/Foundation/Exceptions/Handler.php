@@ -1,660 +1,298 @@
-<?php
-
-namespace Illuminate\Foundation\Exceptions;
-
-use Closure;
-use Exception;
-use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Auth\AuthenticationException;
-use Illuminate\Contracts\Container\BindingResolutionException;
-use Illuminate\Contracts\Container\Container;
-use Illuminate\Contracts\Debug\ExceptionHandler as ExceptionHandlerContract;
-use Illuminate\Contracts\Support\Responsable;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Http\Exceptions\HttpResponseException;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Response;
-use Illuminate\Routing\Router;
-use Illuminate\Session\TokenMismatchException;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\View;
-use Illuminate\Support\Reflector;
-use Illuminate\Support\Traits\ReflectsClosures;
-use Illuminate\Support\ViewErrorBag;
-use Illuminate\Validation\ValidationException;
-use InvalidArgumentException;
-use Psr\Log\LoggerInterface;
-use Symfony\Component\Console\Application as ConsoleApplication;
-use Symfony\Component\ErrorHandler\ErrorRenderer\HtmlErrorRenderer;
-use Symfony\Component\HttpFoundation\Exception\SuspiciousOperationException;
-use Symfony\Component\HttpFoundation\RedirectResponse as SymfonyRedirectResponse;
-use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
-use Symfony\Component\HttpKernel\Exception\HttpException;
-use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-use Throwable;
-use Whoops\Handler\HandlerInterface;
-use Whoops\Run as Whoops;
-
-class Handler implements ExceptionHandlerContract
-{
-    use ReflectsClosures;
-
-    /**
-     * The container implementation.
-     *
-     * @var \Illuminate\Contracts\Container\Container
-     */
-    protected $container;
-
-    /**
-     * A list of the exception types that are not reported.
-     *
-     * @var array
-     */
-    protected $dontReport = [];
-
-    /**
-     * The callbacks that should be used during reporting.
-     *
-     * @var array
-     */
-    protected $reportCallbacks = [];
-
-    /**
-     * The callbacks that should be used during rendering.
-     *
-     * @var array
-     */
-    protected $renderCallbacks = [];
-
-    /**
-     * The registered exception mappings.
-     *
-     * @var array
-     */
-    protected $exceptionMap = [];
-
-    /**
-     * A list of the internal exception types that should not be reported.
-     *
-     * @var string[]
-     */
-    protected $internalDontReport = [
-        AuthenticationException::class,
-        AuthorizationException::class,
-        HttpException::class,
-        HttpResponseException::class,
-        ModelNotFoundException::class,
-        SuspiciousOperationException::class,
-        TokenMismatchException::class,
-        ValidationException::class,
-    ];
-
-    /**
-     * A list of the inputs that are never flashed for validation exceptions.
-     *
-     * @var string[]
-     */
-    protected $dontFlash = [
-        'password',
-        'password_confirmation',
-    ];
-
-    /**
-     * Create a new exception handler instance.
-     *
-     * @param  \Illuminate\Contracts\Container\Container  $container
-     * @return void
-     */
-    public function __construct(Container $container)
-    {
-        $this->container = $container;
-
-        $this->register();
-    }
-
-    /**
-     * Register the exception handling callbacks for the application.
-     *
-     * @return void
-     */
-    public function register()
-    {
-        //
-    }
-
-    /**
-     * Register a reportable callback.
-     *
-     * @param  callable  $reportUsing
-     * @return \Illuminate\Foundation\Exceptions\ReportableHandler
-     */
-    public function reportable(callable $reportUsing)
-    {
-        return tap(new ReportableHandler($reportUsing), function ($callback) {
-            $this->reportCallbacks[] = $callback;
-        });
-    }
-
-    /**
-     * Register a renderable callback.
-     *
-     * @param  callable  $renderUsing
-     * @return $this
-     */
-    public function renderable(callable $renderUsing)
-    {
-        $this->renderCallbacks[] = $renderUsing;
-
-        return $this;
-    }
-
-    /**
-     * Register a new exception mapping.
-     *
-     * @param  \Closure|string  $from
-     * @param  \Closure|string|null  $to
-     * @return $this
-     */
-    public function map($from, $to = null)
-    {
-        if (is_string($to)) {
-            $to = function ($exception) use ($to) {
-                return new $to('', 0, $exception);
-            };
-        }
-
-        if (is_callable($from) && is_null($to)) {
-            $from = $this->firstClosureParameterType($to = $from);
-        }
-
-        if (! is_string($from) || ! $to instanceof Closure) {
-            throw new InvalidArgumentException('Invalid exception mapping.');
-        }
-
-        $this->exceptionMap[$from] = $to;
-
-        return $this;
-    }
-
-    /**
-     * Indicate that the given exception type should not be reported.
-     *
-     * @param  string  $class
-     * @return $this
-     */
-    protected function ignore(string $class)
-    {
-        $this->dontReport[] = $class;
-
-        return $this;
-    }
-
-    /**
-     * Report or log an exception.
-     *
-     * @param  \Throwable  $e
-     * @return void
-     *
-     * @throws \Throwable
-     */
-    public function report(Throwable $e)
-    {
-        $e = $this->mapException($e);
-
-        if ($this->shouldntReport($e)) {
-            return;
-        }
-
-        if (Reflector::isCallable($reportCallable = [$e, 'report'])) {
-            if ($this->container->call($reportCallable) !== false) {
-                return;
-            }
-        }
-
-        foreach ($this->reportCallbacks as $reportCallback) {
-            if ($reportCallback->handles($e)) {
-                if ($reportCallback($e) === false) {
-                    return;
-                }
-            }
-        }
-
-        try {
-            $logger = $this->container->make(LoggerInterface::class);
-        } catch (Exception $ex) {
-            throw $e;
-        }
-
-        $logger->error(
-            $e->getMessage(),
-            array_merge(
-                $this->exceptionContext($e),
-                $this->context(),
-                ['exception' => $e]
-            )
-        );
-    }
-
-    /**
-     * Determine if the exception should be reported.
-     *
-     * @param  \Throwable  $e
-     * @return bool
-     */
-    public function shouldReport(Throwable $e)
-    {
-        return ! $this->shouldntReport($e);
-    }
-
-    /**
-     * Determine if the exception is in the "do not report" list.
-     *
-     * @param  \Throwable  $e
-     * @return bool
-     */
-    protected function shouldntReport(Throwable $e)
-    {
-        $dontReport = array_merge($this->dontReport, $this->internalDontReport);
-
-        return ! is_null(Arr::first($dontReport, function ($type) use ($e) {
-            return $e instanceof $type;
-        }));
-    }
-
-    /**
-     * Get the default exception context variables for logging.
-     *
-     * @param  \Throwable  $e
-     * @return array
-     */
-    protected function exceptionContext(Throwable $e)
-    {
-        return [];
-    }
-
-    /**
-     * Get the default context variables for logging.
-     *
-     * @return array
-     */
-    protected function context()
-    {
-        try {
-            return array_filter([
-                'userId' => Auth::id(),
-                // 'email' => optional(Auth::user())->email,
-            ]);
-        } catch (Throwable $e) {
-            return [];
-        }
-    }
-
-    /**
-     * Render an exception into an HTTP response.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Throwable  $e
-     * @return \Symfony\Component\HttpFoundation\Response
-     *
-     * @throws \Throwable
-     */
-    public function render($request, Throwable $e)
-    {
-        if (method_exists($e, 'render') && $response = $e->render($request)) {
-            return Router::toResponse($request, $response);
-        } elseif ($e instanceof Responsable) {
-            return $e->toResponse($request);
-        }
-
-        $e = $this->prepareException($this->mapException($e));
-
-        foreach ($this->renderCallbacks as $renderCallback) {
-            if (is_a($e, $this->firstClosureParameterType($renderCallback))) {
-                $response = $renderCallback($e, $request);
-
-                if (! is_null($response)) {
-                    return $response;
-                }
-            }
-        }
-
-        if ($e instanceof HttpResponseException) {
-            return $e->getResponse();
-        } elseif ($e instanceof AuthenticationException) {
-            return $this->unauthenticated($request, $e);
-        } elseif ($e instanceof ValidationException) {
-            return $this->convertValidationExceptionToResponse($e, $request);
-        }
-
-        return $request->expectsJson()
-                    ? $this->prepareJsonResponse($request, $e)
-                    : $this->prepareResponse($request, $e);
-    }
-
-    /**
-     * Map the exception using a registered mapper if possible.
-     *
-     * @param  \Throwable  $e
-     * @return \Throwable
-     */
-    protected function mapException(Throwable $e)
-    {
-        foreach ($this->exceptionMap as $class => $mapper) {
-            if (is_a($e, $class)) {
-                return $mapper($e);
-            }
-        }
-
-        return $e;
-    }
-
-    /**
-     * Prepare exception for rendering.
-     *
-     * @param  \Throwable  $e
-     * @return \Throwable
-     */
-    protected function prepareException(Throwable $e)
-    {
-        if ($e instanceof ModelNotFoundException) {
-            $e = new NotFoundHttpException($e->getMessage(), $e);
-        } elseif ($e instanceof AuthorizationException) {
-            $e = new AccessDeniedHttpException($e->getMessage(), $e);
-        } elseif ($e instanceof TokenMismatchException) {
-            $e = new HttpException(419, $e->getMessage(), $e);
-        } elseif ($e instanceof SuspiciousOperationException) {
-            $e = new NotFoundHttpException('Bad hostname provided.', $e);
-        }
-
-        return $e;
-    }
-
-    /**
-     * Convert an authentication exception into a response.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Illuminate\Auth\AuthenticationException  $exception
-     * @return \Symfony\Component\HttpFoundation\Response
-     */
-    protected function unauthenticated($request, AuthenticationException $exception)
-    {
-        return $request->expectsJson()
-                    ? response()->json(['message' => $exception->getMessage()], 401)
-                    : redirect()->guest($exception->redirectTo() ?? route('login'));
-    }
-
-    /**
-     * Create a response object from the given validation exception.
-     *
-     * @param  \Illuminate\Validation\ValidationException  $e
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Symfony\Component\HttpFoundation\Response
-     */
-    protected function convertValidationExceptionToResponse(ValidationException $e, $request)
-    {
-        if ($e->response) {
-            return $e->response;
-        }
-
-        return $request->expectsJson()
-                    ? $this->invalidJson($request, $e)
-                    : $this->invalid($request, $e);
-    }
-
-    /**
-     * Convert a validation exception into a response.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Illuminate\Validation\ValidationException  $exception
-     * @return \Illuminate\Http\Response
-     */
-    protected function invalid($request, ValidationException $exception)
-    {
-        return redirect($exception->redirectTo ?? url()->previous())
-                    ->withInput(Arr::except($request->input(), $this->dontFlash))
-                    ->withErrors($exception->errors(), $request->input('_error_bag', $exception->errorBag));
-    }
-
-    /**
-     * Convert a validation exception into a JSON response.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Illuminate\Validation\ValidationException  $exception
-     * @return \Illuminate\Http\JsonResponse
-     */
-    protected function invalidJson($request, ValidationException $exception)
-    {
-        return response()->json([
-            'message' => $exception->getMessage(),
-            'errors' => $exception->errors(),
-        ], $exception->status);
-    }
-
-    /**
-     * Prepare a response for the given exception.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Throwable  $e
-     * @return \Symfony\Component\HttpFoundation\Response
-     */
-    protected function prepareResponse($request, Throwable $e)
-    {
-        if (! $this->isHttpException($e) && config('app.debug')) {
-            return $this->toIlluminateResponse($this->convertExceptionToResponse($e), $e);
-        }
-
-        if (! $this->isHttpException($e)) {
-            $e = new HttpException(500, $e->getMessage());
-        }
-
-        return $this->toIlluminateResponse(
-            $this->renderHttpException($e), $e
-        );
-    }
-
-    /**
-     * Create a Symfony response for the given exception.
-     *
-     * @param  \Throwable  $e
-     * @return \Symfony\Component\HttpFoundation\Response
-     */
-    protected function convertExceptionToResponse(Throwable $e)
-    {
-        return new SymfonyResponse(
-            $this->renderExceptionContent($e),
-            $this->isHttpException($e) ? $e->getStatusCode() : 500,
-            $this->isHttpException($e) ? $e->getHeaders() : []
-        );
-    }
-
-    /**
-     * Get the response content for the given exception.
-     *
-     * @param  \Throwable  $e
-     * @return string
-     */
-    protected function renderExceptionContent(Throwable $e)
-    {
-        try {
-            return config('app.debug') && class_exists(Whoops::class)
-                        ? $this->renderExceptionWithWhoops($e)
-                        : $this->renderExceptionWithSymfony($e, config('app.debug'));
-        } catch (Exception $e) {
-            return $this->renderExceptionWithSymfony($e, config('app.debug'));
-        }
-    }
-
-    /**
-     * Render an exception to a string using "Whoops".
-     *
-     * @param  \Throwable  $e
-     * @return string
-     */
-    protected function renderExceptionWithWhoops(Throwable $e)
-    {
-        return tap(new Whoops, function ($whoops) {
-            $whoops->appendHandler($this->whoopsHandler());
-
-            $whoops->writeToOutput(false);
-
-            $whoops->allowQuit(false);
-        })->handleException($e);
-    }
-
-    /**
-     * Get the Whoops handler for the application.
-     *
-     * @return \Whoops\Handler\Handler
-     */
-    protected function whoopsHandler()
-    {
-        try {
-            return app(HandlerInterface::class);
-        } catch (BindingResolutionException $e) {
-            return (new WhoopsHandler)->forDebug();
-        }
-    }
-
-    /**
-     * Render an exception to a string using Symfony.
-     *
-     * @param  \Throwable  $e
-     * @param  bool  $debug
-     * @return string
-     */
-    protected function renderExceptionWithSymfony(Throwable $e, $debug)
-    {
-        $renderer = new HtmlErrorRenderer($debug);
-
-        return $renderer->render($e)->getAsString();
-    }
-
-    /**
-     * Render the given HttpException.
-     *
-     * @param  \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface  $e
-     * @return \Symfony\Component\HttpFoundation\Response
-     */
-    protected function renderHttpException(HttpExceptionInterface $e)
-    {
-        $this->registerErrorViewPaths();
-
-        if (view()->exists($view = $this->getHttpExceptionView($e))) {
-            return response()->view($view, [
-                'errors' => new ViewErrorBag,
-                'exception' => $e,
-            ], $e->getStatusCode(), $e->getHeaders());
-        }
-
-        return $this->convertExceptionToResponse($e);
-    }
-
-    /**
-     * Register the error template hint paths.
-     *
-     * @return void
-     */
-    protected function registerErrorViewPaths()
-    {
-        (new RegisterErrorViewPaths)();
-    }
-
-    /**
-     * Get the view used to render HTTP exceptions.
-     *
-     * @param  \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface  $e
-     * @return string
-     */
-    protected function getHttpExceptionView(HttpExceptionInterface $e)
-    {
-        return "errors::{$e->getStatusCode()}";
-    }
-
-    /**
-     * Map the given exception into an Illuminate response.
-     *
-     * @param  \Symfony\Component\HttpFoundation\Response  $response
-     * @param  \Throwable  $e
-     * @return \Illuminate\Http\Response
-     */
-    protected function toIlluminateResponse($response, Throwable $e)
-    {
-        if ($response instanceof SymfonyRedirectResponse) {
-            $response = new RedirectResponse(
-                $response->getTargetUrl(), $response->getStatusCode(), $response->headers->all()
-            );
-        } else {
-            $response = new Response(
-                $response->getContent(), $response->getStatusCode(), $response->headers->all()
-            );
-        }
-
-        return $response->withException($e);
-    }
-
-    /**
-     * Prepare a JSON response for the given exception.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Throwable  $e
-     * @return \Illuminate\Http\JsonResponse
-     */
-    protected function prepareJsonResponse($request, Throwable $e)
-    {
-        return new JsonResponse(
-            $this->convertExceptionToArray($e),
-            $this->isHttpException($e) ? $e->getStatusCode() : 500,
-            $this->isHttpException($e) ? $e->getHeaders() : [],
-            JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES
-        );
-    }
-
-    /**
-     * Convert the given exception to an array.
-     *
-     * @param  \Throwable  $e
-     * @return array
-     */
-    protected function convertExceptionToArray(Throwable $e)
-    {
-        return config('app.debug') ? [
-            'message' => $e->getMessage(),
-            'exception' => get_class($e),
-            'file' => $e->getFile(),
-            'line' => $e->getLine(),
-            'trace' => collect($e->getTrace())->map(function ($trace) {
-                return Arr::except($trace, ['args']);
-            })->all(),
-        ] : [
-            'message' => $this->isHttpException($e) ? $e->getMessage() : 'Server Error',
-        ];
-    }
-
-    /**
-     * Render an exception to the console.
-     *
-     * @param  \Symfony\Component\Console\Output\OutputInterface  $output
-     * @param  \Throwable  $e
-     * @return void
-     */
-    public function renderForConsole($output, Throwable $e)
-    {
-        (new ConsoleApplication)->renderThrowable($e, $output);
-    }
-
-    /**
-     * Determine if the given exception is an HTTP exception.
-     *
-     * @param  \Throwable  $e
-     * @return bool
-     */
-    protected function isHttpException(Throwable $e)
-    {
-        return $e instanceof HttpExceptionInterface;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

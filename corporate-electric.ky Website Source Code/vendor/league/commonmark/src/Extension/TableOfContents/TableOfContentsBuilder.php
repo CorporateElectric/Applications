@@ -1,127 +1,83 @@
-<?php
-
-/*
- * This file is part of the league/commonmark package.
- *
- * (c) Colin O'Dell <colinodell@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace League\CommonMark\Extension\TableOfContents;
-
-use League\CommonMark\Block\Element\Document;
-use League\CommonMark\Block\Element\Heading;
-use League\CommonMark\Event\DocumentParsedEvent;
-use League\CommonMark\Exception\InvalidOptionException;
-use League\CommonMark\Extension\HeadingPermalink\HeadingPermalink;
-use League\CommonMark\Extension\TableOfContents\Node\TableOfContents;
-use League\CommonMark\Extension\TableOfContents\Node\TableOfContentsPlaceholder;
-use League\CommonMark\Util\ConfigurationAwareInterface;
-use League\CommonMark\Util\ConfigurationInterface;
-
-final class TableOfContentsBuilder implements ConfigurationAwareInterface
-{
-    /**
-     * @deprecated Use TableOfContentsGenerator::STYLE_BULLET instead
-     */
-    public const STYLE_BULLET = TableOfContentsGenerator::STYLE_BULLET;
-
-    /**
-     * @deprecated Use TableOfContentsGenerator::STYLE_ORDERED instead
-     */
-    public const STYLE_ORDERED = TableOfContentsGenerator::STYLE_ORDERED;
-
-    /**
-     * @deprecated Use TableOfContentsGenerator::NORMALIZE_DISABLED instead
-     */
-    public const NORMALIZE_DISABLED = TableOfContentsGenerator::NORMALIZE_DISABLED;
-
-    /**
-     * @deprecated Use TableOfContentsGenerator::NORMALIZE_RELATIVE instead
-     */
-    public const NORMALIZE_RELATIVE = TableOfContentsGenerator::NORMALIZE_RELATIVE;
-
-    /**
-     * @deprecated Use TableOfContentsGenerator::NORMALIZE_FLAT instead
-     */
-    public const NORMALIZE_FLAT = TableOfContentsGenerator::NORMALIZE_FLAT;
-
-    public const POSITION_TOP = 'top';
-    public const POSITION_BEFORE_HEADINGS = 'before-headings';
-    public const POSITION_PLACEHOLDER = 'placeholder';
-
-    /** @var ConfigurationInterface */
-    private $config;
-
-    public function onDocumentParsed(DocumentParsedEvent $event): void
-    {
-        $document = $event->getDocument();
-
-        $generator = new TableOfContentsGenerator(
-            $this->config->get('table_of_contents/style', TableOfContentsGenerator::STYLE_BULLET),
-            $this->config->get('table_of_contents/normalize', TableOfContentsGenerator::NORMALIZE_RELATIVE),
-            (int) $this->config->get('table_of_contents/min_heading_level', 1),
-            (int) $this->config->get('table_of_contents/max_heading_level', 6)
-        );
-
-        $toc = $generator->generate($document);
-        if ($toc === null) {
-            // No linkable headers exist, so no TOC could be generated
-            return;
-        }
-
-        // Add custom CSS class(es), if defined
-        $class = $this->config->get('table_of_contents/html_class', 'table-of-contents');
-        if (!empty($class)) {
-            $toc->data['attributes']['class'] = $class;
-        }
-
-        // Add the TOC to the Document
-        $position = $this->config->get('table_of_contents/position', self::POSITION_TOP);
-        if ($position === self::POSITION_TOP) {
-            $document->prependChild($toc);
-        } elseif ($position === self::POSITION_BEFORE_HEADINGS) {
-            $this->insertBeforeFirstLinkedHeading($document, $toc);
-        } elseif ($position === self::POSITION_PLACEHOLDER) {
-            $this->replacePlaceholders($document, $toc);
-        } else {
-            throw new InvalidOptionException(\sprintf('Invalid config option "%s" for "table_of_contents/position"', $position));
-        }
-    }
-
-    private function insertBeforeFirstLinkedHeading(Document $document, TableOfContents $toc): void
-    {
-        $walker = $document->walker();
-        while ($event = $walker->next()) {
-            if ($event->isEntering() && ($node = $event->getNode()) instanceof HeadingPermalink && ($parent = $node->parent()) instanceof Heading) {
-                $parent->insertBefore($toc);
-
-                return;
-            }
-        }
-    }
-
-    private function replacePlaceholders(Document $document, TableOfContents $toc): void
-    {
-        $walker = $document->walker();
-        while ($event = $walker->next()) {
-            // Add the block once we find a placeholder (and we're about to leave it)
-            if (!$event->getNode() instanceof TableOfContentsPlaceholder) {
-                continue;
-            }
-
-            if ($event->isEntering()) {
-                continue;
-            }
-
-            $event->getNode()->replaceWith(clone $toc);
-        }
-    }
-
-    public function setConfiguration(ConfigurationInterface $config)
-    {
-        $this->config = $config;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,714 +1,194 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\TextUI\XmlConfiguration;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for PHPUnit
- * @psalm-immutable
- */
-final class PHPUnit
-{
-    /**
-     * @var bool
-     */
-    private $cacheResult;
-
-    /**
-     * @var ?string
-     */
-    private $cacheResultFile;
-
-    /**
-     * @var int|string
-     */
-    private $columns;
-
-    /**
-     * @var string
-     */
-    private $colors;
-
-    /**
-     * @var bool
-     */
-    private $stderr;
-
-    /**
-     * @var bool
-     */
-    private $noInteraction;
-
-    /**
-     * @var bool
-     */
-    private $verbose;
-
-    /**
-     * @var bool
-     */
-    private $reverseDefectList;
-
-    /**
-     * @var bool
-     */
-    private $convertDeprecationsToExceptions;
-
-    /**
-     * @var bool
-     */
-    private $convertErrorsToExceptions;
-
-    /**
-     * @var bool
-     */
-    private $convertNoticesToExceptions;
-
-    /**
-     * @var bool
-     */
-    private $convertWarningsToExceptions;
-
-    /**
-     * @var bool
-     */
-    private $forceCoversAnnotation;
-
-    /**
-     * @var ?string
-     */
-    private $bootstrap;
-
-    /**
-     * @var bool
-     */
-    private $processIsolation;
-
-    /**
-     * @var bool
-     */
-    private $failOnEmptyTestSuite;
-
-    /**
-     * @var bool
-     */
-    private $failOnIncomplete;
-
-    /**
-     * @var bool
-     */
-    private $failOnRisky;
-
-    /**
-     * @var bool
-     */
-    private $failOnSkipped;
-
-    /**
-     * @var bool
-     */
-    private $failOnWarning;
-
-    /**
-     * @var bool
-     */
-    private $stopOnDefect;
-
-    /**
-     * @var bool
-     */
-    private $stopOnError;
-
-    /**
-     * @var bool
-     */
-    private $stopOnFailure;
-
-    /**
-     * @var bool
-     */
-    private $stopOnWarning;
-
-    /**
-     * @var bool
-     */
-    private $stopOnIncomplete;
-
-    /**
-     * @var bool
-     */
-    private $stopOnRisky;
-
-    /**
-     * @var bool
-     */
-    private $stopOnSkipped;
-
-    /**
-     * @var ?string
-     */
-    private $extensionsDirectory;
-
-    /**
-     * @var ?string
-     *
-     * @deprecated see https://github.com/sebastianbergmann/phpunit/issues/4039
-     */
-    private $testSuiteLoaderClass;
-
-    /**
-     * @var ?string
-     *
-     * @deprecated see https://github.com/sebastianbergmann/phpunit/issues/4039
-     */
-    private $testSuiteLoaderFile;
-
-    /**
-     * @var ?string
-     */
-    private $printerClass;
-
-    /**
-     * @var ?string
-     */
-    private $printerFile;
-
-    /**
-     * @var bool
-     */
-    private $beStrictAboutChangesToGlobalState;
-
-    /**
-     * @var bool
-     */
-    private $beStrictAboutOutputDuringTests;
-
-    /**
-     * @var bool
-     */
-    private $beStrictAboutResourceUsageDuringSmallTests;
-
-    /**
-     * @var bool
-     */
-    private $beStrictAboutTestsThatDoNotTestAnything;
-
-    /**
-     * @var bool
-     */
-    private $beStrictAboutTodoAnnotatedTests;
-
-    /**
-     * @var bool
-     */
-    private $beStrictAboutCoversAnnotation;
-
-    /**
-     * @var bool
-     */
-    private $enforceTimeLimit;
-
-    /**
-     * @var int
-     */
-    private $defaultTimeLimit;
-
-    /**
-     * @var int
-     */
-    private $timeoutForSmallTests;
-
-    /**
-     * @var int
-     */
-    private $timeoutForMediumTests;
-
-    /**
-     * @var int
-     */
-    private $timeoutForLargeTests;
-
-    /**
-     * @var ?string
-     */
-    private $defaultTestSuite;
-
-    /**
-     * @var int
-     */
-    private $executionOrder;
-
-    /**
-     * @var bool
-     */
-    private $resolveDependencies;
-
-    /**
-     * @var bool
-     */
-    private $defectsFirst;
-
-    /**
-     * @var bool
-     */
-    private $backupGlobals;
-
-    /**
-     * @var bool
-     */
-    private $backupStaticAttributes;
-
-    /**
-     * @var bool
-     */
-    private $registerMockObjectsFromTestArgumentsRecursively;
-
-    /**
-     * @var bool
-     */
-    private $conflictBetweenPrinterClassAndTestdox;
-
-    public function __construct(bool $cacheResult, ?string $cacheResultFile, $columns, string $colors, bool $stderr, bool $noInteraction, bool $verbose, bool $reverseDefectList, bool $convertDeprecationsToExceptions, bool $convertErrorsToExceptions, bool $convertNoticesToExceptions, bool $convertWarningsToExceptions, bool $forceCoversAnnotation, ?string $bootstrap, bool $processIsolation, bool $failOnEmptyTestSuite, bool $failOnIncomplete, bool $failOnRisky, bool $failOnSkipped, bool $failOnWarning, bool $stopOnDefect, bool $stopOnError, bool $stopOnFailure, bool $stopOnWarning, bool $stopOnIncomplete, bool $stopOnRisky, bool $stopOnSkipped, ?string $extensionsDirectory, ?string $testSuiteLoaderClass, ?string $testSuiteLoaderFile, ?string $printerClass, ?string $printerFile, bool $beStrictAboutChangesToGlobalState, bool $beStrictAboutOutputDuringTests, bool $beStrictAboutResourceUsageDuringSmallTests, bool $beStrictAboutTestsThatDoNotTestAnything, bool $beStrictAboutTodoAnnotatedTests, bool $beStrictAboutCoversAnnotation, bool $enforceTimeLimit, int $defaultTimeLimit, int $timeoutForSmallTests, int $timeoutForMediumTests, int $timeoutForLargeTests, ?string $defaultTestSuite, int $executionOrder, bool $resolveDependencies, bool $defectsFirst, bool $backupGlobals, bool $backupStaticAttributes, bool $registerMockObjectsFromTestArgumentsRecursively, bool $conflictBetweenPrinterClassAndTestdox)
-    {
-        $this->cacheResult                                     = $cacheResult;
-        $this->cacheResultFile                                 = $cacheResultFile;
-        $this->columns                                         = $columns;
-        $this->colors                                          = $colors;
-        $this->stderr                                          = $stderr;
-        $this->noInteraction                                   = $noInteraction;
-        $this->verbose                                         = $verbose;
-        $this->reverseDefectList                               = $reverseDefectList;
-        $this->convertDeprecationsToExceptions                 = $convertDeprecationsToExceptions;
-        $this->convertErrorsToExceptions                       = $convertErrorsToExceptions;
-        $this->convertNoticesToExceptions                      = $convertNoticesToExceptions;
-        $this->convertWarningsToExceptions                     = $convertWarningsToExceptions;
-        $this->forceCoversAnnotation                           = $forceCoversAnnotation;
-        $this->bootstrap                                       = $bootstrap;
-        $this->processIsolation                                = $processIsolation;
-        $this->failOnEmptyTestSuite                            = $failOnEmptyTestSuite;
-        $this->failOnIncomplete                                = $failOnIncomplete;
-        $this->failOnRisky                                     = $failOnRisky;
-        $this->failOnSkipped                                   = $failOnSkipped;
-        $this->failOnWarning                                   = $failOnWarning;
-        $this->stopOnDefect                                    = $stopOnDefect;
-        $this->stopOnError                                     = $stopOnError;
-        $this->stopOnFailure                                   = $stopOnFailure;
-        $this->stopOnWarning                                   = $stopOnWarning;
-        $this->stopOnIncomplete                                = $stopOnIncomplete;
-        $this->stopOnRisky                                     = $stopOnRisky;
-        $this->stopOnSkipped                                   = $stopOnSkipped;
-        $this->extensionsDirectory                             = $extensionsDirectory;
-        $this->testSuiteLoaderClass                            = $testSuiteLoaderClass;
-        $this->testSuiteLoaderFile                             = $testSuiteLoaderFile;
-        $this->printerClass                                    = $printerClass;
-        $this->printerFile                                     = $printerFile;
-        $this->beStrictAboutChangesToGlobalState               = $beStrictAboutChangesToGlobalState;
-        $this->beStrictAboutOutputDuringTests                  = $beStrictAboutOutputDuringTests;
-        $this->beStrictAboutResourceUsageDuringSmallTests      = $beStrictAboutResourceUsageDuringSmallTests;
-        $this->beStrictAboutTestsThatDoNotTestAnything         = $beStrictAboutTestsThatDoNotTestAnything;
-        $this->beStrictAboutTodoAnnotatedTests                 = $beStrictAboutTodoAnnotatedTests;
-        $this->beStrictAboutCoversAnnotation                   = $beStrictAboutCoversAnnotation;
-        $this->enforceTimeLimit                                = $enforceTimeLimit;
-        $this->defaultTimeLimit                                = $defaultTimeLimit;
-        $this->timeoutForSmallTests                            = $timeoutForSmallTests;
-        $this->timeoutForMediumTests                           = $timeoutForMediumTests;
-        $this->timeoutForLargeTests                            = $timeoutForLargeTests;
-        $this->defaultTestSuite                                = $defaultTestSuite;
-        $this->executionOrder                                  = $executionOrder;
-        $this->resolveDependencies                             = $resolveDependencies;
-        $this->defectsFirst                                    = $defectsFirst;
-        $this->backupGlobals                                   = $backupGlobals;
-        $this->backupStaticAttributes                          = $backupStaticAttributes;
-        $this->registerMockObjectsFromTestArgumentsRecursively = $registerMockObjectsFromTestArgumentsRecursively;
-        $this->conflictBetweenPrinterClassAndTestdox           = $conflictBetweenPrinterClassAndTestdox;
-    }
-
-    public function cacheResult(): bool
-    {
-        return $this->cacheResult;
-    }
-
-    /**
-     * @psalm-assert-if-true !null $this->cacheResultFile
-     */
-    public function hasCacheResultFile(): bool
-    {
-        return $this->cacheResultFile !== null;
-    }
-
-    /**
-     * @throws Exception
-     */
-    public function cacheResultFile(): string
-    {
-        if (!$this->hasCacheResultFile()) {
-            throw new Exception('Cache result file is not configured');
-        }
-
-        return (string) $this->cacheResultFile;
-    }
-
-    public function columns()
-    {
-        return $this->columns;
-    }
-
-    public function colors(): string
-    {
-        return $this->colors;
-    }
-
-    public function stderr(): bool
-    {
-        return $this->stderr;
-    }
-
-    public function noInteraction(): bool
-    {
-        return $this->noInteraction;
-    }
-
-    public function verbose(): bool
-    {
-        return $this->verbose;
-    }
-
-    public function reverseDefectList(): bool
-    {
-        return $this->reverseDefectList;
-    }
-
-    public function convertDeprecationsToExceptions(): bool
-    {
-        return $this->convertDeprecationsToExceptions;
-    }
-
-    public function convertErrorsToExceptions(): bool
-    {
-        return $this->convertErrorsToExceptions;
-    }
-
-    public function convertNoticesToExceptions(): bool
-    {
-        return $this->convertNoticesToExceptions;
-    }
-
-    public function convertWarningsToExceptions(): bool
-    {
-        return $this->convertWarningsToExceptions;
-    }
-
-    public function forceCoversAnnotation(): bool
-    {
-        return $this->forceCoversAnnotation;
-    }
-
-    /**
-     * @psalm-assert-if-true !null $this->bootstrap
-     */
-    public function hasBootstrap(): bool
-    {
-        return $this->bootstrap !== null;
-    }
-
-    /**
-     * @throws Exception
-     */
-    public function bootstrap(): string
-    {
-        if (!$this->hasBootstrap()) {
-            throw new Exception('Bootstrap script is not configured');
-        }
-
-        return (string) $this->bootstrap;
-    }
-
-    public function processIsolation(): bool
-    {
-        return $this->processIsolation;
-    }
-
-    public function failOnEmptyTestSuite(): bool
-    {
-        return $this->failOnEmptyTestSuite;
-    }
-
-    public function failOnIncomplete(): bool
-    {
-        return $this->failOnIncomplete;
-    }
-
-    public function failOnRisky(): bool
-    {
-        return $this->failOnRisky;
-    }
-
-    public function failOnSkipped(): bool
-    {
-        return $this->failOnSkipped;
-    }
-
-    public function failOnWarning(): bool
-    {
-        return $this->failOnWarning;
-    }
-
-    public function stopOnDefect(): bool
-    {
-        return $this->stopOnDefect;
-    }
-
-    public function stopOnError(): bool
-    {
-        return $this->stopOnError;
-    }
-
-    public function stopOnFailure(): bool
-    {
-        return $this->stopOnFailure;
-    }
-
-    public function stopOnWarning(): bool
-    {
-        return $this->stopOnWarning;
-    }
-
-    public function stopOnIncomplete(): bool
-    {
-        return $this->stopOnIncomplete;
-    }
-
-    public function stopOnRisky(): bool
-    {
-        return $this->stopOnRisky;
-    }
-
-    public function stopOnSkipped(): bool
-    {
-        return $this->stopOnSkipped;
-    }
-
-    /**
-     * @psalm-assert-if-true !null $this->extensionsDirectory
-     */
-    public function hasExtensionsDirectory(): bool
-    {
-        return $this->extensionsDirectory !== null;
-    }
-
-    /**
-     * @throws Exception
-     */
-    public function extensionsDirectory(): string
-    {
-        if (!$this->hasExtensionsDirectory()) {
-            throw new Exception('Extensions directory is not configured');
-        }
-
-        return (string) $this->extensionsDirectory;
-    }
-
-    /**
-     * @psalm-assert-if-true !null $this->testSuiteLoaderClass
-     *
-     * @deprecated see https://github.com/sebastianbergmann/phpunit/issues/4039
-     */
-    public function hasTestSuiteLoaderClass(): bool
-    {
-        return $this->testSuiteLoaderClass !== null;
-    }
-
-    /**
-     * @throws Exception
-     *
-     * @deprecated see https://github.com/sebastianbergmann/phpunit/issues/4039
-     */
-    public function testSuiteLoaderClass(): string
-    {
-        if (!$this->hasTestSuiteLoaderClass()) {
-            throw new Exception('TestSuiteLoader class is not configured');
-        }
-
-        return (string) $this->testSuiteLoaderClass;
-    }
-
-    /**
-     * @psalm-assert-if-true !null $this->testSuiteLoaderFile
-     *
-     * @deprecated see https://github.com/sebastianbergmann/phpunit/issues/4039
-     */
-    public function hasTestSuiteLoaderFile(): bool
-    {
-        return $this->testSuiteLoaderFile !== null;
-    }
-
-    /**
-     * @throws Exception
-     *
-     * @deprecated see https://github.com/sebastianbergmann/phpunit/issues/4039
-     */
-    public function testSuiteLoaderFile(): string
-    {
-        if (!$this->hasTestSuiteLoaderFile()) {
-            throw new Exception('TestSuiteLoader sourcecode file is not configured');
-        }
-
-        return (string) $this->testSuiteLoaderFile;
-    }
-
-    /**
-     * @psalm-assert-if-true !null $this->printerClass
-     */
-    public function hasPrinterClass(): bool
-    {
-        return $this->printerClass !== null;
-    }
-
-    /**
-     * @throws Exception
-     */
-    public function printerClass(): string
-    {
-        if (!$this->hasPrinterClass()) {
-            throw new Exception('ResultPrinter class is not configured');
-        }
-
-        return (string) $this->printerClass;
-    }
-
-    /**
-     * @psalm-assert-if-true !null $this->printerFile
-     */
-    public function hasPrinterFile(): bool
-    {
-        return $this->printerFile !== null;
-    }
-
-    /**
-     * @throws Exception
-     */
-    public function printerFile(): string
-    {
-        if (!$this->hasPrinterFile()) {
-            throw new Exception('ResultPrinter sourcecode file is not configured');
-        }
-
-        return (string) $this->printerFile;
-    }
-
-    public function beStrictAboutChangesToGlobalState(): bool
-    {
-        return $this->beStrictAboutChangesToGlobalState;
-    }
-
-    public function beStrictAboutOutputDuringTests(): bool
-    {
-        return $this->beStrictAboutOutputDuringTests;
-    }
-
-    public function beStrictAboutResourceUsageDuringSmallTests(): bool
-    {
-        return $this->beStrictAboutResourceUsageDuringSmallTests;
-    }
-
-    public function beStrictAboutTestsThatDoNotTestAnything(): bool
-    {
-        return $this->beStrictAboutTestsThatDoNotTestAnything;
-    }
-
-    public function beStrictAboutTodoAnnotatedTests(): bool
-    {
-        return $this->beStrictAboutTodoAnnotatedTests;
-    }
-
-    public function beStrictAboutCoversAnnotation(): bool
-    {
-        return $this->beStrictAboutCoversAnnotation;
-    }
-
-    public function enforceTimeLimit(): bool
-    {
-        return $this->enforceTimeLimit;
-    }
-
-    public function defaultTimeLimit(): int
-    {
-        return $this->defaultTimeLimit;
-    }
-
-    public function timeoutForSmallTests(): int
-    {
-        return $this->timeoutForSmallTests;
-    }
-
-    public function timeoutForMediumTests(): int
-    {
-        return $this->timeoutForMediumTests;
-    }
-
-    public function timeoutForLargeTests(): int
-    {
-        return $this->timeoutForLargeTests;
-    }
-
-    /**
-     * @psalm-assert-if-true !null $this->defaultTestSuite
-     */
-    public function hasDefaultTestSuite(): bool
-    {
-        return $this->defaultTestSuite !== null;
-    }
-
-    /**
-     * @throws Exception
-     */
-    public function defaultTestSuite(): string
-    {
-        if (!$this->hasDefaultTestSuite()) {
-            throw new Exception('Default test suite is not configured');
-        }
-
-        return (string) $this->defaultTestSuite;
-    }
-
-    public function executionOrder(): int
-    {
-        return $this->executionOrder;
-    }
-
-    public function resolveDependencies(): bool
-    {
-        return $this->resolveDependencies;
-    }
-
-    public function defectsFirst(): bool
-    {
-        return $this->defectsFirst;
-    }
-
-    public function backupGlobals(): bool
-    {
-        return $this->backupGlobals;
-    }
-
-    public function backupStaticAttributes(): bool
-    {
-        return $this->backupStaticAttributes;
-    }
-
-    public function registerMockObjectsFromTestArgumentsRecursively(): bool
-    {
-        return $this->registerMockObjectsFromTestArgumentsRecursively;
-    }
-
-    public function conflictBetweenPrinterClassAndTestdox(): bool
-    {
-        return $this->conflictBetweenPrinterClassAndTestdox;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

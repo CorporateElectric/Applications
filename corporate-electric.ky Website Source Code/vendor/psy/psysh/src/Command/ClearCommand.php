@@ -1,51 +1,35 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\Command;
-
-use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Output\OutputInterface;
-
-/**
- * Clear the Psy Shell.
- *
- * Just what it says on the tin.
- */
-class ClearCommand extends Command
-{
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
-    {
-        $this
-            ->setName('clear')
-            ->setDefinition([])
-            ->setDescription('Clear the Psy Shell screen.')
-            ->setHelp(
-                <<<'HELP'
-Clear the Psy Shell screen.
-
-Pro Tip: If your PHP has readline support, you should be able to use ctrl+l too!
-HELP
-            );
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function execute(InputInterface $input, OutputInterface $output)
-    {
-        $output->write(\sprintf('%c[2J%c[0;0f', 27, 27));
-
-        return 0;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

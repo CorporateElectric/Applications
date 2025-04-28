@@ -1,434 +1,101 @@
-<?php
-
-/*
- * Copyright 2012 Johannes M. Schmitt <schmittjoh@gmail.com>
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-namespace PhpOption;
-
-use ArrayAccess;
-use IteratorAggregate;
-
-/**
- * @template T
- *
- * @implements IteratorAggregate<T>
- */
-abstract class Option implements IteratorAggregate
-{
-    /**
-     * Creates an option given a return value.
-     *
-     * This is intended for consuming existing APIs and allows you to easily
-     * convert them to an option. By default, we treat ``null`` as the None
-     * case, and everything else as Some.
-     *
-     * @template S
-     *
-     * @param S $value     The actual return value.
-     * @param S $noneValue The value which should be considered "None"; null by
-     *                     default.
-     *
-     * @return Option<S>
-     */
-    public static function fromValue($value, $noneValue = null)
-    {
-        if ($value === $noneValue) {
-            return None::create();
-        }
-
-        return new Some($value);
-    }
-
-    /**
-     * Creates an option from an array's value.
-     *
-     * If the key does not exist in the array, the array is not actually an
-     * array, or the array's value at the given key is null, None is returned.
-     * Otherwise, Some is returned wrapping the value at the given key.
-     *
-     * @template S
-     *
-     * @param array<string|int,S>|ArrayAccess<string|int,S>|null $array A potential array or \ArrayAccess value.
-     * @param string                                             $key   The key to check.
-     *
-     * @return Option<S>
-     */
-    public static function fromArraysValue($array, $key)
-    {
-        if (!(is_array($array) || $array instanceof ArrayAccess) || !isset($array[$key])) {
-            return None::create();
-        }
-
-        return new Some($array[$key]);
-    }
-
-    /**
-     * Creates a lazy-option with the given callback.
-     *
-     * This is also a helper constructor for lazy-consuming existing APIs where
-     * the return value is not yet an option. By default, we treat ``null`` as
-     * None case, and everything else as Some.
-     *
-     * @template S
-     *
-     * @param callable $callback  The callback to evaluate.
-     * @param array    $arguments The arguments for the callback.
-     * @param S        $noneValue The value which should be considered "None";
-    *                             null by default.
-     *
-     * @return LazyOption<S>
-     */
-    public static function fromReturn($callback, array $arguments = [], $noneValue = null)
-    {
-        return new LazyOption(static function () use ($callback, $arguments, $noneValue) {
-            /** @var mixed */
-            $return = call_user_func_array($callback, $arguments);
-
-            if ($return === $noneValue) {
-                return None::create();
-            }
-
-            return new Some($return);
-        });
-    }
-
-    /**
-     * Option factory, which creates new option based on passed value.
-     *
-     * If value is already an option, it simply returns. If value is callable,
-     * LazyOption with passed callback created and returned. If Option
-     * returned from callback, it returns directly. On other case value passed
-     * to Option::fromValue() method.
-     *
-     * @template S
-     *
-     * @param Option<S>|callable|S $value
-     * @param S                    $noneValue Used when $value is mixed or
-     *                                        callable, for None-check.
-     *
-     * @return Option<S>|LazyOption<S>
-     */
-    public static function ensure($value, $noneValue = null)
-    {
-        if ($value instanceof self) {
-            return $value;
-        } elseif (is_callable($value)) {
-            return new LazyOption(static function () use ($value, $noneValue) {
-                /** @var mixed */
-                $return = $value();
-
-                if ($return instanceof self) {
-                    return $return;
-                } else {
-                    return self::fromValue($return, $noneValue);
-                }
-            });
-        } else {
-            return self::fromValue($value, $noneValue);
-        }
-    }
-
-    /**
-     * Lift a function so that it accepts Option as parameters.
-     *
-     * We return a new closure that wraps the original callback. If any of the
-     * parameters passed to the lifted function is empty, the function will
-     * return a value of None. Otherwise, we will pass all parameters to the
-     * original callback and return the value inside a new Option, unless an
-     * Option is returned from the function, in which case, we use that.
-     *
-     * @template S
-     *
-     * @param callable $callback
-     * @param mixed    $noneValue
-     *
-     * @return callable
-     */
-    public static function lift($callback, $noneValue = null)
-    {
-        return static function () use ($callback, $noneValue) {
-            /** @var array<int, mixed> */
-            $args = func_get_args();
-
-            $reduced_args = array_reduce(
-                $args,
-                /** @param bool $status */
-                static function ($status, self $o) {
-                    return $o->isEmpty() ? true : $status;
-                },
-                false
-            );
-            // if at least one parameter is empty, return None
-            if ($reduced_args) {
-                return None::create();
-            }
-
-            $args = array_map(
-                /** @return T */
-                static function (self $o) {
-                    // it is safe to do so because the fold above checked
-                    // that all arguments are of type Some
-                    /** @var T */
-                    return $o->get();
-                },
-                $args
-            );
-
-            return self::ensure(call_user_func_array($callback, $args), $noneValue);
-        };
-    }
-
-    /**
-     * Returns the value if available, or throws an exception otherwise.
-     *
-     * @throws \RuntimeException If value is not available.
-     *
-     * @return T
-     */
-    abstract public function get();
-
-    /**
-     * Returns the value if available, or the default value if not.
-     *
-     * @template S
-     *
-     * @param S $default
-     *
-     * @return T|S
-     */
-    abstract public function getOrElse($default);
-
-    /**
-     * Returns the value if available, or the results of the callable.
-     *
-     * This is preferable over ``getOrElse`` if the computation of the default
-     * value is expensive.
-     *
-     * @template S
-     *
-     * @param callable():S $callable
-     *
-     * @return T|S
-     */
-    abstract public function getOrCall($callable);
-
-    /**
-     * Returns the value if available, or throws the passed exception.
-     *
-     * @param \Exception $ex
-     *
-     * @return T
-     */
-    abstract public function getOrThrow(\Exception $ex);
-
-    /**
-     * Returns true if no value is available, false otherwise.
-     *
-     * @return bool
-     */
-    abstract public function isEmpty();
-
-    /**
-     * Returns true if a value is available, false otherwise.
-     *
-     * @return bool
-     */
-    abstract public function isDefined();
-
-    /**
-     * Returns this option if non-empty, or the passed option otherwise.
-     *
-     * This can be used to try multiple alternatives, and is especially useful
-     * with lazy evaluating options:
-     *
-     * ```php
-     *     $repo->findSomething()
-     *         ->orElse(new LazyOption(array($repo, 'findSomethingElse')))
-     *         ->orElse(new LazyOption(array($repo, 'createSomething')));
-     * ```
-     *
-     * @param Option<T> $else
-     *
-     * @return Option<T>
-     */
-    abstract public function orElse(self $else);
-
-    /**
-     * This is similar to map() below except that the return value has no meaning;
-     * the passed callable is simply executed if the option is non-empty, and
-     * ignored if the option is empty.
-     *
-     * In all cases, the return value of the callable is discarded.
-     *
-     * ```php
-     *     $comment->getMaybeFile()->ifDefined(function($file) {
-     *         // Do something with $file here.
-     *     });
-     * ```
-     *
-     * If you're looking for something like ``ifEmpty``, you can use ``getOrCall``
-     * and ``getOrElse`` in these cases.
-     *
-     * @deprecated Use forAll() instead.
-     *
-     * @param callable(T):mixed $callable
-     *
-     * @return void
-     */
-    abstract public function ifDefined($callable);
-
-    /**
-     * This is similar to map() except that the return value of the callable has no meaning.
-     *
-     * The passed callable is simply executed if the option is non-empty, and ignored if the
-     * option is empty. This method is preferred for callables with side-effects, while map()
-     * is intended for callables without side-effects.
-     *
-     * @param callable(T):mixed $callable
-     *
-     * @return Option<T>
-     */
-    abstract public function forAll($callable);
-
-    /**
-     * Applies the callable to the value of the option if it is non-empty,
-     * and returns the return value of the callable wrapped in Some().
-     *
-     * If the option is empty, then the callable is not applied.
-     *
-     * ```php
-     *     (new Some("foo"))->map('strtoupper')->get(); // "FOO"
-     * ```
-     *
-     * @template S
-     *
-     * @param callable(T):S $callable
-     *
-     * @return Option<S>
-     */
-    abstract public function map($callable);
-
-    /**
-     * Applies the callable to the value of the option if it is non-empty, and
-     * returns the return value of the callable directly.
-     *
-     * In contrast to ``map``, the return value of the callable is expected to
-     * be an Option itself; it is not automatically wrapped in Some().
-     *
-     * @template S
-     *
-     * @param callable(T):Option<S> $callable must return an Option
-     *
-     * @return Option<S>
-     */
-    abstract public function flatMap($callable);
-
-    /**
-     * If the option is empty, it is returned immediately without applying the callable.
-     *
-     * If the option is non-empty, the callable is applied, and if it returns true,
-     * the option itself is returned; otherwise, None is returned.
-     *
-     * @param callable(T):bool $callable
-     *
-     * @return Option<T>
-     */
-    abstract public function filter($callable);
-
-    /**
-     * If the option is empty, it is returned immediately without applying the callable.
-     *
-     * If the option is non-empty, the callable is applied, and if it returns false,
-     * the option itself is returned; otherwise, None is returned.
-     *
-     * @param callable(T):bool $callable
-     *
-     * @return Option<T>
-     */
-    abstract public function filterNot($callable);
-
-    /**
-     * If the option is empty, it is returned immediately.
-     *
-     * If the option is non-empty, and its value does not equal the passed value
-     * (via a shallow comparison ===), then None is returned. Otherwise, the
-     * Option is returned.
-     *
-     * In other words, this will filter all but the passed value.
-     *
-     * @param T $value
-     *
-     * @return Option<T>
-     */
-    abstract public function select($value);
-
-    /**
-     * If the option is empty, it is returned immediately.
-     *
-     * If the option is non-empty, and its value does equal the passed value (via
-     * a shallow comparison ===), then None is returned; otherwise, the Option is
-     * returned.
-     *
-     * In other words, this will let all values through except the passed value.
-     *
-     * @param T $value
-     *
-     * @return Option<T>
-     */
-    abstract public function reject($value);
-
-    /**
-     * Binary operator for the initial value and the option's value.
-     *
-     * If empty, the initial value is returned. If non-empty, the callable
-     * receives the initial value and the option's value as arguments.
-     *
-     * ```php
-     *
-     *     $some = new Some(5);
-     *     $none = None::create();
-     *     $result = $some->foldLeft(1, function($a, $b) { return $a + $b; }); // int(6)
-     *     $result = $none->foldLeft(1, function($a, $b) { return $a + $b; }); // int(1)
-     *
-     *     // This can be used instead of something like the following:
-     *     $option = Option::fromValue($integerOrNull);
-     *     $result = 1;
-     *     if ( ! $option->isEmpty()) {
-     *         $result += $option->get();
-     *     }
-     * ```
-     *
-     * @template S
-     *
-     * @param S                $initialValue
-     * @param callable(S, T):S $callable
-     *
-     * @return S
-     */
-    abstract public function foldLeft($initialValue, $callable);
-
-    /**
-     * foldLeft() but with reversed arguments for the callable.
-     *
-     * @template S
-     *
-     * @param S                $initialValue
-     * @param callable(T, S):S $callable
-     *
-     * @return S
-     */
-    abstract public function foldRight($initialValue, $callable);
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

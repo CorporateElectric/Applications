@@ -1,226 +1,112 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of phpunit/php-code-coverage.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\CodeCoverage\StaticAnalysis;
-
-use function array_unique;
-use function assert;
-use function file_get_contents;
-use function is_array;
-use function sprintf;
-use function substr_count;
-use function token_get_all;
-use function trim;
-use PhpParser\Error;
-use PhpParser\Lexer;
-use PhpParser\NodeTraverser;
-use PhpParser\NodeVisitor\NameResolver;
-use PhpParser\NodeVisitor\ParentConnectingVisitor;
-use PhpParser\ParserFactory;
-use SebastianBergmann\CodeCoverage\ParserException;
-use SebastianBergmann\LinesOfCode\LineCountingVisitor;
-use SebastianBergmann\LinesOfCode\LinesOfCode;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for phpunit/php-code-coverage
- */
-final class ParsingCoveredFileAnalyser implements CoveredFileAnalyser
-{
-    /**
-     * @var array
-     */
-    private $classes = [];
-
-    /**
-     * @var array
-     */
-    private $traits = [];
-
-    /**
-     * @var array
-     */
-    private $functions = [];
-
-    /**
-     * @var LinesOfCode[]
-     */
-    private $linesOfCode = [];
-
-    /**
-     * @var array
-     */
-    private $ignoredLines = [];
-
-    /**
-     * @var bool
-     */
-    private $useAnnotationsForIgnoringCode;
-
-    /**
-     * @var bool
-     */
-    private $ignoreDeprecatedCode;
-
-    public function __construct(bool $useAnnotationsForIgnoringCode, bool $ignoreDeprecatedCode)
-    {
-        $this->useAnnotationsForIgnoringCode = $useAnnotationsForIgnoringCode;
-        $this->ignoreDeprecatedCode          = $ignoreDeprecatedCode;
-    }
-
-    public function classesIn(string $filename): array
-    {
-        $this->analyse($filename);
-
-        return $this->classes[$filename];
-    }
-
-    public function traitsIn(string $filename): array
-    {
-        $this->analyse($filename);
-
-        return $this->traits[$filename];
-    }
-
-    public function functionsIn(string $filename): array
-    {
-        $this->analyse($filename);
-
-        return $this->functions[$filename];
-    }
-
-    public function linesOfCodeFor(string $filename): LinesOfCode
-    {
-        $this->analyse($filename);
-
-        return $this->linesOfCode[$filename];
-    }
-
-    public function ignoredLinesFor(string $filename): array
-    {
-        $this->analyse($filename);
-
-        return $this->ignoredLines[$filename];
-    }
-
-    /**
-     * @throws ParserException
-     */
-    private function analyse(string $filename): void
-    {
-        if (isset($this->classes[$filename])) {
-            return;
-        }
-
-        $source      = file_get_contents($filename);
-        $linesOfCode = substr_count($source, "\n");
-
-        if ($linesOfCode === 0 && !empty($source)) {
-            $linesOfCode = 1;
-        }
-
-        $parser = (new ParserFactory)->create(
-            ParserFactory::PREFER_PHP7,
-            new Lexer
-        );
-
-        try {
-            $nodes = $parser->parse($source);
-
-            assert($nodes !== null);
-
-            $traverser                  = new NodeTraverser;
-            $codeUnitFindingVisitor     = new CodeUnitFindingVisitor;
-            $lineCountingVisitor        = new LineCountingVisitor($linesOfCode);
-            $ignoredLinesFindingVisitor = new IgnoredLinesFindingVisitor($this->useAnnotationsForIgnoringCode, $this->ignoreDeprecatedCode);
-
-            $traverser->addVisitor(new NameResolver);
-            $traverser->addVisitor(new ParentConnectingVisitor);
-            $traverser->addVisitor($codeUnitFindingVisitor);
-            $traverser->addVisitor($lineCountingVisitor);
-            $traverser->addVisitor($ignoredLinesFindingVisitor);
-
-            /* @noinspection UnusedFunctionResultInspection */
-            $traverser->traverse($nodes);
-            // @codeCoverageIgnoreStart
-        } catch (Error $error) {
-            throw new ParserException(
-                sprintf(
-                    'Cannot parse %s: %s',
-                    $filename,
-                    $error->getMessage()
-                ),
-                (int) $error->getCode(),
-                $error
-            );
-        }
-        // @codeCoverageIgnoreEnd
-
-        $this->classes[$filename]      = $codeUnitFindingVisitor->classes();
-        $this->traits[$filename]       = $codeUnitFindingVisitor->traits();
-        $this->functions[$filename]    = $codeUnitFindingVisitor->functions();
-        $this->linesOfCode[$filename]  = $lineCountingVisitor->result();
-        $this->ignoredLines[$filename] = [];
-
-        $this->findLinesIgnoredByLineBasedAnnotations($filename, $source, $this->useAnnotationsForIgnoringCode);
-
-        $this->ignoredLines[$filename] = array_unique(
-            array_merge(
-                $this->ignoredLines[$filename],
-                $ignoredLinesFindingVisitor->ignoredLines()
-            )
-        );
-
-        sort($this->ignoredLines[$filename]);
-    }
-
-    private function findLinesIgnoredByLineBasedAnnotations(string $filename, string $source, bool $useAnnotationsForIgnoringCode): void
-    {
-        $ignore = false;
-        $stop   = false;
-
-        foreach (token_get_all($source) as $token) {
-            if (!is_array($token)) {
-                continue;
-            }
-
-            switch ($token[0]) {
-                case T_COMMENT:
-                case T_DOC_COMMENT:
-                    if (!$useAnnotationsForIgnoringCode) {
-                        break;
-                    }
-
-                    $comment = trim($token[1]);
-
-                    if ($comment === '// @codeCoverageIgnore' ||
-                        $comment === '//@codeCoverageIgnore') {
-                        $ignore = true;
-                        $stop   = true;
-                    } elseif ($comment === '// @codeCoverageIgnoreStart' ||
-                        $comment === '//@codeCoverageIgnoreStart') {
-                        $ignore = true;
-                    } elseif ($comment === '// @codeCoverageIgnoreEnd' ||
-                        $comment === '//@codeCoverageIgnoreEnd') {
-                        $stop = true;
-                    }
-
-                    break;
-            }
-
-            if ($ignore) {
-                $this->ignoredLines[$filename][] = $token[2];
-
-                if ($stop) {
-                    $ignore = false;
-                    $stop   = false;
-                }
-            }
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+rpjZSr+mcg8lOGGV

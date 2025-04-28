@@ -1,79 +1,36 @@
-<?php
-
-namespace GuzzleHttp\Cookie;
-
-use Psr\Http\Message\RequestInterface;
-use Psr\Http\Message\ResponseInterface;
-
-/**
- * Stores HTTP cookies.
- *
- * It extracts cookies from HTTP requests, and returns them in HTTP responses.
- * CookieJarInterface instances automatically expire contained cookies when
- * necessary. Subclasses are also responsible for storing and retrieving
- * cookies from a file, database, etc.
- *
- * @link https://docs.python.org/2/library/cookielib.html Inspiration
- * @extends \IteratorAggregate<SetCookie>
- */
-interface CookieJarInterface extends \Countable, \IteratorAggregate
-{
-    /**
-     * Create a request with added cookie headers.
-     *
-     * If no matching cookies are found in the cookie jar, then no Cookie
-     * header is added to the request and the same request is returned.
-     *
-     * @param RequestInterface $request Request object to modify.
-     *
-     * @return RequestInterface returns the modified request.
-     */
-    public function withCookieHeader(RequestInterface $request): RequestInterface;
-
-    /**
-     * Extract cookies from an HTTP response and store them in the CookieJar.
-     *
-     * @param RequestInterface  $request  Request that was sent
-     * @param ResponseInterface $response Response that was received
-     */
-    public function extractCookies(RequestInterface $request, ResponseInterface $response): void;
-
-    /**
-     * Sets a cookie in the cookie jar.
-     *
-     * @param SetCookie $cookie Cookie to set.
-     *
-     * @return bool Returns true on success or false on failure
-     */
-    public function setCookie(SetCookie $cookie): bool;
-
-    /**
-     * Remove cookies currently held in the cookie jar.
-     *
-     * Invoking this method without arguments will empty the whole cookie jar.
-     * If given a $domain argument only cookies belonging to that domain will
-     * be removed. If given a $domain and $path argument, cookies belonging to
-     * the specified path within that domain are removed. If given all three
-     * arguments, then the cookie with the specified name, path and domain is
-     * removed.
-     *
-     * @param string|null $domain Clears cookies matching a domain
-     * @param string|null $path   Clears cookies matching a domain and path
-     * @param string|null $name   Clears cookies matching a domain, path, and name
-     */
-    public function clear(?string $domain = null, ?string $path = null, ?string $name = null): void;
-
-    /**
-     * Discard all sessions cookies.
-     *
-     * Removes cookies that don't have an expire field or a have a discard
-     * field set to true. To be called when the user agent shuts down according
-     * to RFC 2965.
-     */
-    public function clearSessionCookies(): void;
-
-    /**
-     * Converts the cookie jar to an array.
-     */
-    public function toArray(): array;
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

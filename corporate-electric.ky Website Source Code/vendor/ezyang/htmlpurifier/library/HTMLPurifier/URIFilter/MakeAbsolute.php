@@ -1,158 +1,89 @@
-<?php
-
-// does not support network paths
-
-class HTMLPurifier_URIFilter_MakeAbsolute extends HTMLPurifier_URIFilter
-{
-    /**
-     * @type string
-     */
-    public $name = 'MakeAbsolute';
-
-    /**
-     * @type
-     */
-    protected $base;
-
-    /**
-     * @type array
-     */
-    protected $basePathStack = array();
-
-    /**
-     * @param HTMLPurifier_Config $config
-     * @return bool
-     */
-    public function prepare($config)
-    {
-        $def = $config->getDefinition('URI');
-        $this->base = $def->base;
-        if (is_null($this->base)) {
-            trigger_error(
-                'URI.MakeAbsolute is being ignored due to lack of ' .
-                'value for URI.Base configuration',
-                E_USER_WARNING
-            );
-            return false;
-        }
-        $this->base->fragment = null; // fragment is invalid for base URI
-        $stack = explode('/', $this->base->path);
-        array_pop($stack); // discard last segment
-        $stack = $this->_collapseStack($stack); // do pre-parsing
-        $this->basePathStack = $stack;
-        return true;
-    }
-
-    /**
-     * @param HTMLPurifier_URI $uri
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return bool
-     */
-    public function filter(&$uri, $config, $context)
-    {
-        if (is_null($this->base)) {
-            return true;
-        } // abort early
-        if ($uri->path === '' && is_null($uri->scheme) &&
-            is_null($uri->host) && is_null($uri->query) && is_null($uri->fragment)) {
-            // reference to current document
-            $uri = clone $this->base;
-            return true;
-        }
-        if (!is_null($uri->scheme)) {
-            // absolute URI already: don't change
-            if (!is_null($uri->host)) {
-                return true;
-            }
-            $scheme_obj = $uri->getSchemeObj($config, $context);
-            if (!$scheme_obj) {
-                // scheme not recognized
-                return false;
-            }
-            if (!$scheme_obj->hierarchical) {
-                // non-hierarchal URI with explicit scheme, don't change
-                return true;
-            }
-            // special case: had a scheme but always is hierarchical and had no authority
-        }
-        if (!is_null($uri->host)) {
-            // network path, don't bother
-            return true;
-        }
-        if ($uri->path === '') {
-            $uri->path = $this->base->path;
-        } elseif ($uri->path[0] !== '/') {
-            // relative path, needs more complicated processing
-            $stack = explode('/', $uri->path);
-            $new_stack = array_merge($this->basePathStack, $stack);
-            if ($new_stack[0] !== '' && !is_null($this->base->host)) {
-                array_unshift($new_stack, '');
-            }
-            $new_stack = $this->_collapseStack($new_stack);
-            $uri->path = implode('/', $new_stack);
-        } else {
-            // absolute path, but still we should collapse
-            $uri->path = implode('/', $this->_collapseStack(explode('/', $uri->path)));
-        }
-        // re-combine
-        $uri->scheme = $this->base->scheme;
-        if (is_null($uri->userinfo)) {
-            $uri->userinfo = $this->base->userinfo;
-        }
-        if (is_null($uri->host)) {
-            $uri->host = $this->base->host;
-        }
-        if (is_null($uri->port)) {
-            $uri->port = $this->base->port;
-        }
-        return true;
-    }
-
-    /**
-     * Resolve dots and double-dots in a path stack
-     * @param array $stack
-     * @return array
-     */
-    private function _collapseStack($stack)
-    {
-        $result = array();
-        $is_folder = false;
-        for ($i = 0; isset($stack[$i]); $i++) {
-            $is_folder = false;
-            // absorb an internally duplicated slash
-            if ($stack[$i] == '' && $i && isset($stack[$i + 1])) {
-                continue;
-            }
-            if ($stack[$i] == '..') {
-                if (!empty($result)) {
-                    $segment = array_pop($result);
-                    if ($segment === '' && empty($result)) {
-                        // error case: attempted to back out too far:
-                        // restore the leading slash
-                        $result[] = '';
-                    } elseif ($segment === '..') {
-                        $result[] = '..'; // cannot remove .. with ..
-                    }
-                } else {
-                    // relative path, preserve the double-dots
-                    $result[] = '..';
-                }
-                $is_folder = true;
-                continue;
-            }
-            if ($stack[$i] == '.') {
-                // silently absorb
-                $is_folder = true;
-                continue;
-            }
-            $result[] = $stack[$i];
-        }
-        if ($is_folder) {
-            $result[] = '';
-        }
-        return $result;
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

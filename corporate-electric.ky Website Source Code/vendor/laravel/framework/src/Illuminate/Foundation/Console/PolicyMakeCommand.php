@@ -1,187 +1,105 @@
-<?php
-
-namespace Illuminate\Foundation\Console;
-
-use Illuminate\Console\GeneratorCommand;
-use Illuminate\Support\Str;
-use LogicException;
-use Symfony\Component\Console\Input\InputOption;
-
-class PolicyMakeCommand extends GeneratorCommand
-{
-    /**
-     * The console command name.
-     *
-     * @var string
-     */
-    protected $name = 'make:policy';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Create a new policy class';
-
-    /**
-     * The type of class being generated.
-     *
-     * @var string
-     */
-    protected $type = 'Policy';
-
-    /**
-     * Build the class with the given name.
-     *
-     * @param  string  $name
-     * @return string
-     */
-    protected function buildClass($name)
-    {
-        $stub = $this->replaceUserNamespace(
-            parent::buildClass($name)
-        );
-
-        $model = $this->option('model');
-
-        return $model ? $this->replaceModel($stub, $model) : $stub;
-    }
-
-    /**
-     * Replace the User model namespace.
-     *
-     * @param  string  $stub
-     * @return string
-     */
-    protected function replaceUserNamespace($stub)
-    {
-        $model = $this->userProviderModel();
-
-        if (! $model) {
-            return $stub;
-        }
-
-        return str_replace(
-            $this->rootNamespace().'User',
-            $model,
-            $stub
-        );
-    }
-
-    /**
-     * Get the model for the guard's user provider.
-     *
-     * @return string|null
-     */
-    protected function userProviderModel()
-    {
-        $config = $this->laravel['config'];
-
-        $guard = $this->option('guard') ?: $config->get('auth.defaults.guard');
-
-        if (is_null($guardProvider = $config->get('auth.guards.'.$guard.'.provider'))) {
-            throw new LogicException('The ['.$guard.'] guard is not defined in your "auth" configuration file.');
-        }
-
-        return $config->get(
-            'auth.providers.'.$guardProvider.'.model'
-        );
-    }
-
-    /**
-     * Replace the model for the given stub.
-     *
-     * @param  string  $stub
-     * @param  string  $model
-     * @return string
-     */
-    protected function replaceModel($stub, $model)
-    {
-        $model = str_replace('/', '\\', $model);
-
-        if (Str::startsWith($model, '\\')) {
-            $namespacedModel = trim($model, '\\');
-        } else {
-            $namespacedModel = $this->qualifyModel($model);
-        }
-
-        $model = class_basename(trim($model, '\\'));
-
-        $dummyUser = class_basename($this->userProviderModel());
-
-        $dummyModel = Str::camel($model) === 'user' ? 'model' : $model;
-
-        $replace = [
-            'NamespacedDummyModel' => $namespacedModel,
-            '{{ namespacedModel }}' => $namespacedModel,
-            '{{namespacedModel}}' => $namespacedModel,
-            'DummyModel' => $model,
-            '{{ model }}' => $model,
-            '{{model}}' => $model,
-            'dummyModel' => Str::camel($dummyModel),
-            '{{ modelVariable }}' => Str::camel($dummyModel),
-            '{{modelVariable}}' => Str::camel($dummyModel),
-            'DummyUser' => $dummyUser,
-            '{{ user }}' => $dummyUser,
-            '{{user}}' => $dummyUser,
-            '$user' => '$'.Str::camel($dummyUser),
-        ];
-
-        $stub = str_replace(
-            array_keys($replace), array_values($replace), $stub
-        );
-
-        return str_replace(
-            "use {$namespacedModel};\nuse {$namespacedModel};", "use {$namespacedModel};", $stub
-        );
-    }
-
-    /**
-     * Get the stub file for the generator.
-     *
-     * @return string
-     */
-    protected function getStub()
-    {
-        return $this->option('model')
-                    ? $this->resolveStubPath('/stubs/policy.stub')
-                    : $this->resolveStubPath('/stubs/policy.plain.stub');
-    }
-
-    /**
-     * Resolve the fully-qualified path to the stub.
-     *
-     * @param  string  $stub
-     * @return string
-     */
-    protected function resolveStubPath($stub)
-    {
-        return file_exists($customPath = $this->laravel->basePath(trim($stub, '/')))
-                        ? $customPath
-                        : __DIR__.$stub;
-    }
-
-    /**
-     * Get the default namespace for the class.
-     *
-     * @param  string  $rootNamespace
-     * @return string
-     */
-    protected function getDefaultNamespace($rootNamespace)
-    {
-        return $rootNamespace.'\Policies';
-    }
-
-    /**
-     * Get the console command arguments.
-     *
-     * @return array
-     */
-    protected function getOptions()
-    {
-        return [
-            ['model', 'm', InputOption::VALUE_OPTIONAL, 'The model that the policy applies to'],
-            ['guard', 'g', InputOption::VALUE_OPTIONAL, 'The guard that the policy relies on'],
-        ];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPtOodLqFgsMIrlS8VlceFxvl7bK9KUVL8wouQNLCUKj7jzPup2GdON46e1u3iFPqKM1Z/g5Z
+mMUHPnu6OKlGI+N5ud6XsigPivj1zJHCA/URVwEv5YHmuMG87b1icNQJBJ9+14h95UaX0eQcEiBI
+6Eyw8/Je8L9AhQ7EPwyzhYWXLc5oW90bB/3bPM9WZyAEs1VBaLNlJhBuv86GdAf/uu1m/d1BfQYH
+OMdX6NgJOAHIvWBrcKfen41flnlKUeOUXlGiEjMhA+TKmL7Jt1aWL4HswAPdvTxSq5lXDEZXzZEq
+PrqM/toPoKcDZ7kg6+WvbAFZoth6d4zGg3ic28bhSHYFy+Wvu5WQg4mx2DbjfocbtWAvhXhEW/Aq
+goJbC8elbdbETgQaazZiirgfMkvMeWt96KMZiJTNIcgnvnPTt5WbaFmUDoNvXRybZb0j5G/eSJFm
+GpsMEDRtcpsZadLb9oV7jaenKYhon7tFW+RV33MkZuS1sBIwFeuUf216k+k9ZK3hXGuJ4jU6yTVY
+rgE1p+A2lNfF2NGPZxIsg+22nbzUb/UbaLoQEwMmIHYeAnFDoR6f5mdclF5bOTl2QmP4zZkf9eFb
+8yxZWn9CWuVozP43MazOYUJSSAduvdTnPm+QoR1cuLktvPy9B/deDVzLVYJHWHnbP/Meh9KDhFE6
+K3EVn9A/0PGpWIBdqknlhj3rvc7KUAno4Iwagi7mBqJ5NrvmiB+UvxOXv3k53asKPhVwAYTvVvV7
+UIP6nk2MKb4dI8vg33CXHgNo++SN1Jf3fGJ9ek+fBIDebiE3XH7cRPWVfOKlN1svGn43yUuOq9Iy
+JJWviio9X8odlgGIj4YgoIMfD8y2WZGZXom6mLe2atUaZBKUoLh+KQoDwyvwcnrM4TpzGfPJyNNe
+Lxt3Dy9ZbjIbbcafDGowZQEGzl9up7SfoWq0gymDRbLNLgVboGaQWwrbFU1XwVAfS+wddUTTvS7t
+46dVaRapmMZLPlyizCdg4kC1B/VnMeoaCMdHyjJooHMzchZlHcBx5lHvaJ4ilRsKqCO0Oqk73G0+
+isAwLfYbpWkoPYn0XNMoXOpiYWMQsTUkfryx/jlhrnUGjaF+74+PA9I0zKvLFmFeGvKlJzUa8C+M
+/gCdR2XdAzp2pIqcmrn9//sVxb/X4FgTMXRmRAzooZWzkJLupXwRuRZ/LGK3Ye7dW3eUsiATb2VC
+8/7/PeSI1oDAWsHGhCIohBaFzP4O+bBoOwZvQQplcA1OjuE719mR/xPbjryLvcTDUxYPVFQDOWdW
+sPcbticP9OtDsOgF9dDOcLTebwq1vH1pzt42NkMw7nsmFWLYUNmKa37iGkkI8PJjldXkXpKnezgt
+TBmX6IVfILxkqFEVUu5R+tT2G8aec/+qtgVMzq2J6jpbRZy5YuD1G9DfSvVD6Oj66T6EuLqXZRKz
+bLUXnImFg3HhpphYTtaB/KrHFSRtU0BW+Zx1FNiQskrE5VetSVO+SGM0o5JcyJZsCQ/JklAalOjg
+nKSzAyk80KLim0ipEfGzKsvtd8hc30C8czl1zl8AkrEa0PFaFTwZx5Hybk1Uf67KMfN2e3/m9aTr
+EQdtqtt0ybGKk6t3bDE+q0vpVVJchCGjTqr2I4P58QbTl5YHU2J0mN6qqcmA3GslZASA5S2BcS10
+Cen8MTIkhuXbe0nQsIR/tbR0pfg+n4ANGJBnUnLaxvxi2adG+rZfxle2aI3Enz/cnIXTAHKJaC9+
+DyqZ8qNhrZNCej15vvihY+M8TlkYrvCuA2JnLaDhZdEAxH0bpoYk1A8KnxFBRJ7DSEz6ofegFWEM
+inI+Md5Bk6KqfYNJiJhJqRP16wUMXHQmBrqoPvdUBhHhg+DHWH8lsjBUA3/mDDQlGQtAus45HK1A
+IhQ8gR4jVsjpso3MQV69w/xRng43k1tEeMZ8EksKsfHAJwoISUwL442/KYYjodsLfUFby5MLDOdo
+nHz05SBDcO6f11gD1XGoAL9vOVAU/pW80iE88XMb9Qme002/VPrxg/uvLfCeDaAj1eylzsNRKc8Q
+Bk/5igblhFea/WfdgxpxttP4sXzJP982t2BEyNjU07aRxVBo9skMP2FHzIHYB4VFlQFQM2ia3WlS
+DFUM3sg04D0hunK8xGSzacb9Qf/stN2c09IPiwFJD1P/Pz+4QUNWfReThsnE8mBnlymEd70ma9qW
+V5lP4ZvCxw2nelZ1DnDXr5bfNtAMt3Wa995Zu0NRbKRbZ2eKcQd793ccEn4ziPujmr79QC6JkuYZ
+QTWYcC47HglGkrGdKi9CsFzGYtntqMGsjvvoDnYf2FLjcMAWjFCmhmrjRiFqs/6ze4Fnff1XjRJh
+EPjUobZ4qDkPIynOl7GC5BJ9jj9Nj4dgpVjX+F43DqnE5m61D0pRsrAmZdPk6VGiA4ezFNB7t0zS
+ciF0ZoypZZqf4W1i07d9KLkrrcJQPFpQHwYBQaxTJVEeaDL8/7wYqJRK3QSU2S8hHajBFvmdTgkV
+vaeF7j7Q5iGNQuSEBylJ5uiFhkGm6ls2ZnIsdy9Eki6aP4ekuAejwTwrQ4T7s745lWlBrsC141Zx
+EiecVXWdM1I7BFGSHErOwhTV2SZjRAOIgFicnXxzHvVw5KhVap5CPB6g0kLDWhTe7I4H2Zc/0lHc
+yDbyozvQy8uvzT03FUMfFom8mjQQ08O5tpMGrFY5X5oo4r1QUU21LBdtPF7BLkciMWSJkdtvgFvd
+cwWbrwNAM/pKVA6VkYT7B+uMk8Qj6Y4/AsIAtFSloLpmo4dwtPsLbm1oPH+f63zk7ftLGQObrC/W
++kjpczsRPLwL48L8Suo8ZWOQewn3LzIxFXARU2HHsX08uPNvTEwui1o54h9L4i4D9BTb0zHAXU/Y
+Vwx0hrOlncLUoHE3sZ/5j7xFqZrAMkkEZ0D4LELsGCFTfuL9Kxmzf6/biJbv1v0ehdJPuraT3Crh
+NtyrCYmd07Vm+Un4BmCd9w/385Yx8ykJSieAkXjO83UiDTqPAdrRc/O3ZMKAWM7W+cCXd+bp8iOC
+/NIf5vAk7S9aTRpCc9poSODvdU1B1H5opuVU3F+vptRNvjM75CnVvweZL5JJJ8KBoMLX24yaiuYc
+hjhtP6SWzELKZj5XV2trdYzTR/ugtcKxCVyvnPl5LznoK6QUDXLoJAVb++CzmiYJeKw6apKsyfG3
+X19ZoL+OnhTUZYMTOFiomV9eGgodB7Rw30pxNhfuVjz36vAA9yEldBzYX93PUueM98zsitBz1JM1
+rBnjXfpvxqK21sF/lqz0bEfYnfldOSLsVuFLL6NAIVtjJeYMnRuObs0GPO9XE8rmXYIdhKUS9+zM
+BhPxv5GQX//LG/ogiQuTJ+wEZQJUhUzApFqm26Wzl6+2GUciGYdxiLynRqlFR9V4m/b5u106Irrn
+G0DVDqFNbTJjkj/AuiRP5Z6YgkCfyxpOSqz0NJUFombcETPQPWTrRgZLnCbjic4DEnUvMBRekXGm
+gx4M2DHIad2HK141hv5lP6aNlLrSgWxMXDAECQYAHoJwSLso6S/rCmHoOOtLMpPUWSxc00aGNhb2
+/CYVpDT4uV+9EeFbA4JWy+e1AARYRzel3scsGcIDkjkvVfe0De8AfNCFDQbvDYMkyw/z1ko2Ns9E
++g3qChP9Zk64QmrI+zztL31FXucV9RT79CQ6aL5/4JjECZfIUntoWnE9M7c/kIXdKmTrinRH945X
+Tk+w0sFRWjoF5nIYnz5Bvq7760IJozzp/MW7g4yFRoZYzhasAanEluKR+JB3oLlLIg2PQEV9f+bO
+7tqAiCxeQ3ssJlE1IT0rCkgXWgDOoYX2Us1F1IoT5U6DPC3OXDs7QSFpabk+adtUegteXYuCjobd
+13QgZDqwiBdKJwD6z61gS9GdC6AS9P1EJh3jzI+z2qdM6GnQGqOrbEDGIcb6TtSn9oE5pe+O1WG7
+4h+iQoWIs4XX3RyKfYgB468cEx5yltxJY6hIxWknZTmDxnRCm8FLsEyCy40blq5zGu1rvZwur+VS
+URP9j9HFL0YIQLh+vyT8A9G/X14TSrCiDgjAKM9bUxJPGOzv/Uq3JKb1TAoWxQf3iiUs6hU8HxV3
+Ma21HD6gSAB1GF8/117R4Qr/fvnqBiY6/pUHU6JspuGnSUqLrjSIQbV3nvMuc2jzCrnk9XHSXtHe
+Uc8ggsgMo7jsTjClDI0fSdmnQ7em2WQasD6DODpvykkjIA0Dvd2StldBnLkW9bin7LSxPHVBQRTV
+vswvB45JGXY5aa/9pCueKty//m6Spvhj/1G7A/PC4IKv+cKokS3YBiEQnTphGvtFR5KHLvGVZqxL
+CPHtflV6b8YSjil4SDKa6P8JJ8vmxTwNXeq8hK5Pj6dHckna2uuOmv8ir2kYfzeNdHJmdCX6nmwZ
+Zan8izqrQal3ibStOShd02WlaOCVZ/KWrTkTtQb/2fz/FR+6I1vv5tcxk4aCBr4ux0jFii8NnKZ8
+B4mAoCjpD9+7dA1Aa9yRMUz49u2eZ4bhATaAfCc5yx20J0lLZFaCcB7fErDq1zXrgDkjqBmGQRQc
+mzZyt4IHqmKsNXmPPLSuSjWfHXyMooVQjFcRhEMK8P5mjACaqH5PBxyqEFUNln2z3AAQ61zpgr7T
+ddXiv4q9rbir1+7RUdcc1DAXSySH2iS1eze+1FmGNcxurCeZ747iGCH1vxNKiDX2DHUldwfKu+rD
+YZ/OM8Ru6U86fQ/RxFMNr4x+TzX6ZByrDXTsl+au9AaxayeJERZs5G3v+hDegDh8+uRD54KOqVtM
+wXMP35NPSW0cL1eGrwdh/ovNnqCkmq7/88weVZX6RzRPA3VJx2TWoTtiggjB20sLR0Hmn8CwIZt/
+oqpRZU9dI0VHMZkVdI7Mv4noU0bwc8rvsl5GuWw+mnpwt7M+b2vmlD11PYpsjF8QCJdA75AMRU8E
+HK2YQt3zY1yHPumCBykm1J3gi0MXwfX802bdorlboX1xYd/yiPZyofACYma7IkhRKyvfwYOwsGBB
+6A2wGDA3oqfHUE7rvuHrGbB9khHvI7on66IPOAopRPcRqVyMa6WdvQKfFraTjeaMiSqYur5b9ypn
+GcMszJHA+FZmjkhvPqyB1qtmM1et9RKLOEad2uTs5m9HWIXyKgh9gTZImFCJ/R0NSTcF1l/8G82y
+M8dxR7JSGExltzVpC6t0fYfq2bFAYpFk058jOfPqT4IOc/dSq60cdtG9FwNgBP2dgzhtfFYZ3tfQ
+ovK1VmX9gpH/qYnCNKBXLBC6dKvSRmhnKKDS5rcNnSihR++YvtEJf/fhajwJJ7wxBXCaooScTtCp
+SK03epEzKek+yT2b/iiYlxkzbXWmoHIijMy5NMp10GzCfQbQphH8ZBWs1/TseILKd6ZDTv9lqPLF
+xwhjbJU6es04ecUyB9F05s1WxkP8PsFNRYN3dkw5L604iFKD9R29dHrBLofgsF29BDmr7n68uA0+
+6983ByHt6GySvzLYFxOblw4+S+OxguXC//lO9nHq29qlfDJbYqJxwRv411UhePsMBMfaDBOoyGne
+p2d5r939NkFlY9NXMNGBj+OHZK8UAt52DlPKg8mdMjYmAj/5/2rQGsN1U4LBSnADNREoX0YLNeJf
+0FgVN0LS4GbCoPhnlnAR5FWIDRHfY+b+8usuo46c88WovJF9+ZjMN+FMHtRX+0lak4FAzms3FcxZ
+VpazuJWBIt3fq7NcpaStfRd7kgd/V3RP6us3txSioPIJCkG8zwNTctRiT4/VLihCEntcvIDClj3f
+RdzHTVz7yNFpau/VGlQYRVkT6vaF82Zkpr3zO7bC94Jz2ZQfGLxRE9vNZm6wQB9bCCEepqDye7Pq
+3O9n7mJK065XH5dh7OiuLTHqkrMq4tszBaD7pFsxeuyPGL8kBVrawEdV6sLW3JHaysFjKjCgJTxM
+MqQNR2VEdYO+AGzDIImC6T8zejlGER1x2KKG8ssHWjQ4m7CfNess9qvy08UiaFuzNqJ7NrtH4Kzt
+AEwpy9yaX8CD9ocbSJI1h0Qpcr2Ihb++lhSjTjOAZje3K8spFPMYz7nqUM6NTDfJ9K6ZDeUTVLYT
+g8bu4e09R/PYHGzzk2AFwVD4i+mpjBgeL79CiCfKmPaT/JDS3c4FmnklqUmVhTeIteEZ4cEFHvTP
+JASqPtRyGyflXkFOkPygzQ6zv2GXU8jDwhmH3sKK2FzO+1DAL/NusQCuLn9rUKWueAfgoeBhgT7C
+M5kZ7IVVec+7oyFFm8L0i4W0tvA62ioQj2NcpdeQPqIprFpc/S6gp3gKXoLPhvj+h6lg0q4vKzTp
+eIhyz27RcuS6LLvJFGv5LXoaRjNK+Fv2BO2YjIkEkgBYpDxOwVJTVkpjCtWNI6G58eesS2dckkdl
+UNn3UZBl4+O/W8GBTw5akF5Eu8eqUXeEY/i350gT3ZV6puaKEMWs/5H3x/ecx9bNmI4PpOdvhh77
+LFYWWkT8ulJCnIrVAJrtittJztQ63iGqbhXSzxA66cUlM6XGwX19l5BArDTn0jSD4fnRo+llUOfc
+Pca5XkadSsZZBMLDNn7bHBi08ruFLqirPjybIEM8tBpHaHlYJ0YZrQpNdHfFIXj+CuEECl97N9GQ
+agkHfklQ94+Issb6kJqMqT8OVA38c7OcBOob+FbJ1pFdnrweacF+udk//TKWM1o0d50WjYfxxpJn
+zdFldD5A6ld+wrzSZU3dKup/hQslibebXV4qAH7Kix8KRsQgUR3BH/QVnO3XATqSmPuAcdD3xjx4
+eRqVdN/mS3ziOrKRb58+Ja497nzTwO4kBtpIBMNwQ64cYbtwOcqhvvIXtFBvqyMWKsQGZJ0X388r
+C4URVoJAGwzgEyWt/VhK1iwDTjb7Vp8HAMCiBAB/QGXkHywO+ImZX1RXESNWkpPomxV0JNaCsVKa
+mFQAalw/PjmCjG0NNIch3oICOLVExHjfFyoE3Rc7p2fti8XJ5DISiLNbvrW4YPB0RV00fska7RjL
+GZxPEvqfnH0kXckRbpCfOKTurD1iAUssIWOLc/iiAttSZJA70ion5mjYJ2ugY435pbFoE6lXbHg1
+eHMytFxukPo7mZb7E9FmngC9k1ZCVU5dYHHkrcT6E7jCJpU8tgJdoXb5lCJhmLyI2/PyyI80vlKA
+mf/Fj4JckOa5P8Tqd51TEnCTLR7FPbJujOLQ1ja+IrjG4qR9YITJWLJxNPTsVullivMzzswBVJQN
+CdqClfRKJEq4FTgo5sadLl+/ipgoexkHHjNrBSa8ZcQW2cYN6z6UGxnmwYOYLgRaRv080EdFEOdJ
+peQemhxSfg3hGJgayV9pkxAezoaFoZFDMMIrrXoWl9R/HwVDwc48SqT6+9OTVaN9959fkH0aJEnl
+uinTZ4ihmm4nl7tGTdeWM8kXk5nQDyl/PGYxifOhy+4vzchV43wStGdTIHdEkkworw+lvBfcLUbn
+4DLTumtWCU9mzCvY4EU1c/zb+YEMzYIm4JRbwRh0xZVcH7C6nfe0ptw4r01vqyagYJMj9eZVXSo1
+sySXcuKVLMbriy+sg8BgnzP1St+cQa78gujWbwjfpr3vsVc1rYrvwcoSdc4mJepBLqEoEU7AWwNI
+fZh93oFt0lQqzQ2hfS56RCcF3L7yZBxmqwmxg9bA3G7n6V4DCS7Cs8p/ULhDNnYq5dxXN7LexAwX
+rX9O9NKotDwc6wwZvkUw

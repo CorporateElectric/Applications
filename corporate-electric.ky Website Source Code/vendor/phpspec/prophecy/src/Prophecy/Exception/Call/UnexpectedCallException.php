@@ -1,40 +1,34 @@
-<?php
-
-/*
- * This file is part of the Prophecy.
- * (c) Konstantin Kudryashov <ever.zet@gmail.com>
- *     Marcello Duarte <marcello.duarte@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Prophecy\Exception\Call;
-
-use Prophecy\Exception\Prophecy\ObjectProphecyException;
-use Prophecy\Prophecy\ObjectProphecy;
-
-class UnexpectedCallException extends ObjectProphecyException
-{
-    private $methodName;
-    private $arguments;
-
-    public function __construct($message, ObjectProphecy $objectProphecy,
-                                $methodName, array $arguments)
-    {
-        parent::__construct($message, $objectProphecy);
-
-        $this->methodName = $methodName;
-        $this->arguments = $arguments;
-    }
-
-    public function getMethodName()
-    {
-        return $this->methodName;
-    }
-
-    public function getArguments()
-    {
-        return $this->arguments;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

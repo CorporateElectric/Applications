@@ -1,138 +1,76 @@
-<?php
-
-namespace Illuminate\Foundation\Support\Providers;
-
-use Illuminate\Foundation\Events\DiscoverEvents;
-use Illuminate\Support\Facades\Event;
-use Illuminate\Support\ServiceProvider;
-
-class EventServiceProvider extends ServiceProvider
-{
-    /**
-     * The event handler mappings for the application.
-     *
-     * @var array
-     */
-    protected $listen = [];
-
-    /**
-     * The subscriber classes to register.
-     *
-     * @var array
-     */
-    protected $subscribe = [];
-
-    /**
-     * Register the application's event listeners.
-     *
-     * @return void
-     */
-    public function register()
-    {
-        $this->booting(function () {
-            $events = $this->getEvents();
-
-            foreach ($events as $event => $listeners) {
-                foreach (array_unique($listeners) as $listener) {
-                    Event::listen($event, $listener);
-                }
-            }
-
-            foreach ($this->subscribe as $subscriber) {
-                Event::subscribe($subscriber);
-            }
-        });
-    }
-
-    /**
-     * Boot any application services.
-     *
-     * @return void
-     */
-    public function boot()
-    {
-        //
-    }
-
-    /**
-     * Get the events and handlers.
-     *
-     * @return array
-     */
-    public function listens()
-    {
-        return $this->listen;
-    }
-
-    /**
-     * Get the discovered events and listeners for the application.
-     *
-     * @return array
-     */
-    public function getEvents()
-    {
-        if ($this->app->eventsAreCached()) {
-            $cache = require $this->app->getCachedEventsPath();
-
-            return $cache[get_class($this)] ?? [];
-        } else {
-            return array_merge_recursive(
-                $this->discoveredEvents(),
-                $this->listens()
-            );
-        }
-    }
-
-    /**
-     * Get the discovered events for the application.
-     *
-     * @return array
-     */
-    protected function discoveredEvents()
-    {
-        return $this->shouldDiscoverEvents()
-                    ? $this->discoverEvents()
-                    : [];
-    }
-
-    /**
-     * Determine if events and listeners should be automatically discovered.
-     *
-     * @return bool
-     */
-    public function shouldDiscoverEvents()
-    {
-        return false;
-    }
-
-    /**
-     * Discover the events and listeners for the application.
-     *
-     * @return array
-     */
-    public function discoverEvents()
-    {
-        return collect($this->discoverEventsWithin())
-                    ->reject(function ($directory) {
-                        return ! is_dir($directory);
-                    })
-                    ->reduce(function ($discovered, $directory) {
-                        return array_merge_recursive(
-                            $discovered,
-                            DiscoverEvents::within($directory, base_path())
-                        );
-                    }, []);
-    }
-
-    /**
-     * Get the listener directories that should be used to discover events.
-     *
-     * @return array
-     */
-    protected function discoverEventsWithin()
-    {
-        return [
-            $this->app->path('Listeners'),
-        ];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

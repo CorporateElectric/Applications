@@ -1,143 +1,91 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Console\Output;
-
-use Symfony\Component\Console\Formatter\OutputFormatterInterface;
-use Symfony\Component\Console\Helper\Helper;
-use Symfony\Component\Console\Terminal;
-
-/**
- * @author Pierre du Plessis <pdples@gmail.com>
- * @author Gabriel Ostrolucký <gabriel.ostrolucky@gmail.com>
- */
-class ConsoleSectionOutput extends StreamOutput
-{
-    private $content = [];
-    private $lines = 0;
-    private $sections;
-    private $terminal;
-
-    /**
-     * @param resource               $stream
-     * @param ConsoleSectionOutput[] $sections
-     */
-    public function __construct($stream, array &$sections, int $verbosity, bool $decorated, OutputFormatterInterface $formatter)
-    {
-        parent::__construct($stream, $verbosity, $decorated, $formatter);
-        array_unshift($sections, $this);
-        $this->sections = &$sections;
-        $this->terminal = new Terminal();
-    }
-
-    /**
-     * Clears previous output for this section.
-     *
-     * @param int $lines Number of lines to clear. If null, then the entire output of this section is cleared
-     */
-    public function clear(int $lines = null)
-    {
-        if (empty($this->content) || !$this->isDecorated()) {
-            return;
-        }
-
-        if ($lines) {
-            array_splice($this->content, -($lines * 2)); // Multiply lines by 2 to cater for each new line added between content
-        } else {
-            $lines = $this->lines;
-            $this->content = [];
-        }
-
-        $this->lines -= $lines;
-
-        parent::doWrite($this->popStreamContentUntilCurrentSection($lines), false);
-    }
-
-    /**
-     * Overwrites the previous output with a new message.
-     *
-     * @param array|string $message
-     */
-    public function overwrite($message)
-    {
-        $this->clear();
-        $this->writeln($message);
-    }
-
-    public function getContent(): string
-    {
-        return implode('', $this->content);
-    }
-
-    /**
-     * @internal
-     */
-    public function addContent(string $input)
-    {
-        foreach (explode(\PHP_EOL, $input) as $lineContent) {
-            $this->lines += ceil($this->getDisplayLength($lineContent) / $this->terminal->getWidth()) ?: 1;
-            $this->content[] = $lineContent;
-            $this->content[] = \PHP_EOL;
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function doWrite($message, $newline)
-    {
-        if (!$this->isDecorated()) {
-            parent::doWrite($message, $newline);
-
-            return;
-        }
-
-        $erasedContent = $this->popStreamContentUntilCurrentSection();
-
-        $this->addContent($message);
-
-        parent::doWrite($message, true);
-        parent::doWrite($erasedContent, false);
-    }
-
-    /**
-     * At initial stage, cursor is at the end of stream output. This method makes cursor crawl upwards until it hits
-     * current section. Then it erases content it crawled through. Optionally, it erases part of current section too.
-     */
-    private function popStreamContentUntilCurrentSection(int $numberOfLinesToClearFromCurrentSection = 0): string
-    {
-        $numberOfLinesToClear = $numberOfLinesToClearFromCurrentSection;
-        $erasedContent = [];
-
-        foreach ($this->sections as $section) {
-            if ($section === $this) {
-                break;
-            }
-
-            $numberOfLinesToClear += $section->lines;
-            $erasedContent[] = $section->getContent();
-        }
-
-        if ($numberOfLinesToClear > 0) {
-            // move cursor up n lines
-            parent::doWrite(sprintf("\x1b[%dA", $numberOfLinesToClear), false);
-            // erase to end of screen
-            parent::doWrite("\x1b[0J", false);
-        }
-
-        return implode('', array_reverse($erasedContent));
-    }
-
-    private function getDisplayLength(string $text): string
-    {
-        return Helper::strlenWithoutDecoration($this->getFormatter(), str_replace("\t", '        ', $text));
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

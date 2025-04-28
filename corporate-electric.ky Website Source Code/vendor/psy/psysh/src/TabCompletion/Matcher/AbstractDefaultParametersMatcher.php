@@ -1,76 +1,53 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\TabCompletion\Matcher;
-
-abstract class AbstractDefaultParametersMatcher extends AbstractContextAwareMatcher
-{
-    /**
-     * @param \ReflectionParameter[] $reflectionParameters
-     *
-     * @return array
-     */
-    public function getDefaultParameterCompletion(array $reflectionParameters)
-    {
-        $parametersProcessed = [];
-
-        foreach ($reflectionParameters as $parameter) {
-            if (!$parameter->isDefaultValueAvailable()) {
-                return [];
-            }
-
-            $defaultValue = $this->valueToShortString($parameter->getDefaultValue());
-
-            $parametersProcessed[] = "\${$parameter->getName()} = $defaultValue";
-        }
-
-        if (empty($parametersProcessed)) {
-            return [];
-        }
-
-        return [\implode(', ', $parametersProcessed).')'];
-    }
-
-    /**
-     * Takes in the default value of a parameter and turns it into a
-     *  string representation that fits inline.
-     * This is not 100% true to the original (newlines are inlined, for example).
-     *
-     * @param mixed $value
-     *
-     * @return string
-     */
-    private function valueToShortString($value)
-    {
-        if (!\is_array($value)) {
-            return \json_encode($value);
-        }
-
-        $chunks = [];
-        $chunksSequential = [];
-
-        $allSequential = true;
-
-        foreach ($value as $key => $item) {
-            $allSequential = $allSequential && \is_numeric($key) && $key === \count($chunksSequential);
-
-            $keyString = $this->valueToShortString($key);
-            $itemString = $this->valueToShortString($item);
-
-            $chunks[] = "{$keyString} => {$itemString}";
-            $chunksSequential[] = $itemString;
-        }
-
-        $chunksToImplode = $allSequential ? $chunksSequential : $chunks;
-
-        return '['.\implode(', ', $chunksToImplode).']';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+Nq0/OH8HeRVwvOVEJZvXR3atj1W3aF8=

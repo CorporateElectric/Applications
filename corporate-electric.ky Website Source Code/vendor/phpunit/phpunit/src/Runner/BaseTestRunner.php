@@ -1,161 +1,57 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Runner;
-
-use function is_dir;
-use function is_file;
-use function substr;
-use PHPUnit\Framework\Exception;
-use PHPUnit\Framework\TestSuite;
-use ReflectionClass;
-use ReflectionException;
-use SebastianBergmann\FileIterator\Facade as FileIteratorFacade;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for PHPUnit
- */
-abstract class BaseTestRunner
-{
-    /**
-     * @var int
-     */
-    public const STATUS_UNKNOWN = -1;
-
-    /**
-     * @var int
-     */
-    public const STATUS_PASSED = 0;
-
-    /**
-     * @var int
-     */
-    public const STATUS_SKIPPED = 1;
-
-    /**
-     * @var int
-     */
-    public const STATUS_INCOMPLETE = 2;
-
-    /**
-     * @var int
-     */
-    public const STATUS_FAILURE = 3;
-
-    /**
-     * @var int
-     */
-    public const STATUS_ERROR = 4;
-
-    /**
-     * @var int
-     */
-    public const STATUS_RISKY = 5;
-
-    /**
-     * @var int
-     */
-    public const STATUS_WARNING = 6;
-
-    /**
-     * @var string
-     */
-    public const SUITE_METHODNAME = 'suite';
-
-    /**
-     * Returns the loader to be used.
-     */
-    public function getLoader(): TestSuiteLoader
-    {
-        return new StandardTestSuiteLoader;
-    }
-
-    /**
-     * Returns the Test corresponding to the given suite.
-     * This is a template method, subclasses override
-     * the runFailed() and clearStatus() methods.
-     *
-     * @param string|string[] $suffixes
-     *
-     * @throws Exception
-     */
-    public function getTest(string $suiteClassFile, $suffixes = ''): ?TestSuite
-    {
-        if (is_dir($suiteClassFile)) {
-            /** @var string[] $files */
-            $files = (new FileIteratorFacade)->getFilesAsArray(
-                $suiteClassFile,
-                $suffixes
-            );
-
-            $suite = new TestSuite($suiteClassFile);
-            $suite->addTestFiles($files);
-
-            return $suite;
-        }
-
-        if (is_file($suiteClassFile) && substr($suiteClassFile, -5, 5) === '.phpt') {
-            $suite = new TestSuite;
-            $suite->addTestFile($suiteClassFile);
-
-            return $suite;
-        }
-
-        try {
-            $testClass = $this->loadSuiteClass(
-                $suiteClassFile
-            );
-        } catch (\PHPUnit\Exception $e) {
-            $this->runFailed($e->getMessage());
-
-            return null;
-        }
-
-        try {
-            $suiteMethod = $testClass->getMethod(self::SUITE_METHODNAME);
-
-            if (!$suiteMethod->isStatic()) {
-                $this->runFailed(
-                    'suite() method must be static.'
-                );
-
-                return null;
-            }
-
-            $test = $suiteMethod->invoke(null, $testClass->getName());
-        } catch (ReflectionException $e) {
-            $test = new TestSuite($testClass);
-        }
-
-        $this->clearStatus();
-
-        return $test;
-    }
-
-    /**
-     * Returns the loaded ReflectionClass for a suite name.
-     */
-    protected function loadSuiteClass(string $suiteClassFile): ReflectionClass
-    {
-        return $this->getLoader()->load($suiteClassFile);
-    }
-
-    /**
-     * Clears the status message.
-     */
-    protected function clearStatus(): void
-    {
-    }
-
-    /**
-     * Override to define how to handle a failed loading of
-     * a test suite.
-     */
-    abstract protected function runFailed(string $message): void;
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPoU44ErJQEd2AZQ5pkJAlVxnu2EY///3kCWBzYIV/C0PscQG/RB7S2JpuGiZbhhC0gvA2aAG
+FqOqM1PDs2sQiVlG5NKo3lwtzFMKo+ArvzmJhqbfGlzK1lFve67/2HY+zcUw5hFan0Swn+3sFl6x
++7l5ap8LyKc5MCdvk220sPlEdujbOT0l9Y7G7GnM9AIrhGF+abE3E8YJExzKz/c2MyeEFRBMj9ix
+hQzM5STiD1lHkaqmYQpd7Tg+FvuRRT+dpHxNIeawrQihvrJ1KTFS6I1KH7ReDtALuGVHOLiWGNvi
+gp4Iadd/iCDb/rKYUVkkTRhtAbg2D498Fq+UAY8mM5bsVxDmWE48Qi16X2SaH+/Nkyk5nczkVuG3
+O5xylMf60ClUG70FRinFK8PpRfixOXr0N4WD7hT3VIegHwqc60qdgD/0IfLxcaRMMDm2Cj+AOdRI
+bgFu9RUrSheNKn6vazCtG/bxHIVeJk6eWd8uZz7HvjX4RvZHCDyr84YOI/umu7d1PeJS+9PqmAup
+4bcGFLoE3Iuxg4ZU0fEiKbvetSDyIXxjtP9RZVBWvOWiHLKA79oIBdINpMndnB0/YGa+XC+2HLt/
+tuCB+zTySiVtP9zjgoyraJYYogYxf2BBBT+xwaIwqLqLA//LAMSJTVurk+GGu/blBZR7WMrgdWNp
+tmdh0VkiRGZQJLquzNWZLDPcrFnKzpHPEDx2jy7wSiM1CHACxFWI4T+kKiQEELHt/gHEEexwme0X
+EpATVr1Ttqu211YiWhCrg6bQvFuElguD7C2T5aDOWV+rlqX4nknjmTx9kFP68GGfRFBNXJT6m/uU
+nM9TtHBg8n8ESyFsA8m9dt+vB1uvMMNrRa1m1nhEFpOeKKVVRVHvSnw7FTXYkwf7kLQsoGddy8vG
+5JsQXeqD+8h7rU1YKOk1+3kMoC6qbb2w76wyfJT7Is96RH7YNhdrE23xabwBVTAXYfybFLsb0tkB
+DBghhTiKxNzNd5kP7Vy+3D+9Qvgsmj0uY28/axrnGotRVlrrsMiFAFJ+B6G1Pr/0thlXKnwdRgCO
+IVlu1WeWQoTtn47Q66mmVbFfTg+1VAYgYcZxdv/hRfBa75ytS1yJ3clvWMu9M9wn3SagAHbfq62j
+kwog3xPU+60AHhdxy50UqXbiVh1eiqDJBVlvQv82zU+RPILI+o7Z0709zZN5ftGl/pLRCuRI2PKu
+ePc1WlAW1VdkkUwPTh9bDgo/AfmLCKANviAjBQ9COMcW505R0o+VZjWUqMzkIofW/fo3TkML+3UX
+sazoV5Yq0KrpYBAuNihZaPHLR16JUfVVD+F0M537Z+2yNwmgt2+eGeqol4iOU+ao7eG21mtzsNZa
+z13izJX+DxkMQTNysvBUqh0c/UpOnFsRSRxtsKBFudL1AT/601nXurPKNOKZx6oHHZeTWg8OLVDG
+W6rqcZUvhE2pecN9oFCIvhZMmLgWpl4Xf+2/EobefxpFRtSfy0Bhys9lrvLZP7zlvhzRgKEOMxXh
+t7GONjhpxHYpCzKR+2dfO0h8pKkvtGymb2oq+bH+AbE6B4VfZnezKFAy+bPK3XS8TRPsbOWQfq9Q
+2T8ssIbK+MQ1LzpcvHt8Rd53Uhq7yKL6enCZ2UKisyVAVviuwfrb0Te5Z2o1y9WJowptZHX8Jfjx
+eShpFptutNja1UZTjEZjVbYERdfzIgu1Uu7duIB8hqHuOt92HU/saC6Y/JiZ/fUl8kBb0EcpRUzK
+kUtdNgCDBhRxW3S7bdzFC7QNmzf8YvjA1coTVMIzrAHfiPU3TlSZY83/iHkyidLadZb0fbMlHP5a
+vCxOkldpYyIdNulEfuQmKfn8mu37SegcDF4Enx5/OfmZmqNFkFmgjk4OtgKm1hHZuBJgHEdn54Xu
+4ER3mCxgqCV2H/Goe70NSacRoorMY1QZk5maJw2hADLDVGHm+CXrjfxm2yHObH294thZqHuoP/0t
+GBEiIHSZdhOjOqcCQB2tYWa3fTE2cqFAofONSQ9qSikf9mg3tcyDsTpTg/T6sTCJET7K1vl4wu9V
+cF6JogG+zjAoAOmbjXSPmw3jE/osV7bcEOLxjlHLi4mV6HqkDZuAz6XkptTZPKqYdvDhQ5kXMdku
+qIZshvTRRCxGk/HIuLbwSV+bmmOb1wndmD4va31pKcdqusZUQf51sKXiNaJtmHcrvBa+jHQve8nR
+3xyvRl8goTBz2tO+biKzxnNlYea/fH2Ul4Wmzk2rYFixDqSrhgLCzxP3mhE0+VTaSaUJqS8HSHHD
+JKUrVHMNoQZnmfIbgWEEqcPGI+S9xcWUO5vg3atRpjAR7MGna4yJcMibYfBberjHx97rwjLQ9N2z
+jnrftsZYmswtQ0pnY+TYc1Z6bFS+8kbOvecrGcN9QZkxUhHSm6aQIxcBnSqfbD/ysOLBTi3tyj0R
+yITdtDezH+gAHQm7biKo9Cl473b1dcloaaRCzUVG1RwoUNpcpBo/dCl9EFuqaZ4wUz7Tsh81WcSc
+j9/w6UCiRSSwzcRWQUYfL7jH7AKD2FDe/84QhhWof0unIZccvHderIbpeaK+89LhNCAcyZNYAyOi
+8VsDKjdpWIMSJsYxGHy7uXiOvlWaGcTMNRYHhUwhbOBGrp/oOwWeY+jL9bKCCR8039WV9CbvGocK
+iAlQXKyc12eTQco6BIamPg7G9P+KJvr7dUi1LCW8O1XCO7jkkwNRjbDNWNYs7syTEVxYAD9xpVdd
+VC3TTOAE7bnIpmeIGZ0XB9JZPUvt3aJI/TtcIpN/1v5bxSnzjW2dsIKZNTrLuLLukvqIcYJNqkv3
+1dxkj/jtgyGmUUZeniaqzDS6olKBWs3uGNEkTSYbBsgggFiKHsMJbcfKUfxl1A9MhSM7hqfXJWUM
+enQfcv0r19Ua9q2mT0mXj69Y8e0HuuZbM6iD/kHWrYzC/l/ItTj2Jp/t3VYWJCWND1PyspOGLJUx
+mHUYVQwAMsFX51LiNtOH7WDsy6Q1c+JpYoTFLki5Lo20mmFVta9hfftgPFHzn8OwRty/wgKukHHk
+s047JTF79bmIlBeJn3KhSAclW8rPmal2s6ewnHimAJWEmpAoq1DwzsjYpjasfYLNCXa3LxTReCIr
+ncJY/r3dv6QxXdbMQyCE8UU3f/00qUo8KPeo5u6OQtijriSwoYHcou7RC3SqqHUiwF5ZyoUXevVP
+eKtGxYhG9o7oPn2S65wiL3DzX3WiA9Qwcp6YK5tiT6XE2G1liEPj/56r+FxU7QcyrlvLACo48nD6
+6cFwyoy1Cn/cgjkpJmaDOcTb8FUyW1swd7lR+qXBKjCdIHKTXuflIlk3W4taL/Labfm6WytdBqOb
+1HMdWt25xETv0OOz59LjWgzAaZ5aopRlstRuRwT10oTExn3eto4RkTZ+IXd1HCu/M5N6uMYFv1O4
+x/6Q72O7J1PgDcYf2748tTD4OTsTP/MHHcMTwjEEu1t9ol0s3NrQk4/P3FYwYya4eq+qEiZAFNUs
+mpAXqrgp02vhTfNZ+dqLJNpVi6pCpwsiSfN2gdK55cjEEq1WRS/6HBg5+vlEYiOo2nJM2KGSM7vT
+1UKGRkxI3AIXSB3A8GUhSUXPGDFRfL+hTH0Kis0JXdxn1I5IooG6n4sME8bcNWsqUiu5u6Bc1ESI
+U4a4kityxLwygLuPgeNmS18whrnNJktOZ0c67aFZJT7z9a+GdLD5wnqfSniGbQGaPBFS1B+f+l81
+QQvxEUEWeYJ6z9VS8YHbOg3woA/AVTuD5tzKojOhb2Wcvt8rZgDvYTdY3dQ9w7/7zQqQFRuT/nPg
+DXTIJyYwm6gjhxkQR0PNEOOk5wHRiTUfPaVeEB1hvsH6cWOBFnM3tPa10E2EA1fL6ahNMoQ5jCQM
+CkaZQbJGfD0YfIy9zpFdyWLc0vmnfgy2JaopgiNXxoxPji9eqKHmUaddxqftL2b6YhVLv7rwA+TU
+zGG7oKh9ZIvyyukNJNkxrOTCunvkuF/Dh94jJwynWwXMoi1Frj3wTkCNbuW+nZsRm8T0XiMwOCDf
+ijvduAlwinWL7/3tW9mvfAE8Kiq=

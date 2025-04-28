@@ -1,180 +1,86 @@
-<?php declare(strict_types=1);
-
-namespace PhpParser;
-
-class Error extends \RuntimeException
-{
-    protected $rawMessage;
-    protected $attributes;
-
-    /**
-     * Creates an Exception signifying a parse error.
-     *
-     * @param string    $message    Error message
-     * @param array|int $attributes Attributes of node/token where error occurred
-     *                              (or start line of error -- deprecated)
-     */
-    public function __construct(string $message, $attributes = []) {
-        $this->rawMessage = $message;
-        if (is_array($attributes)) {
-            $this->attributes = $attributes;
-        } else {
-            $this->attributes = ['startLine' => $attributes];
-        }
-        $this->updateMessage();
-    }
-
-    /**
-     * Gets the error message
-     *
-     * @return string Error message
-     */
-    public function getRawMessage() : string {
-        return $this->rawMessage;
-    }
-
-    /**
-     * Gets the line the error starts in.
-     *
-     * @return int Error start line
-     */
-    public function getStartLine() : int {
-        return $this->attributes['startLine'] ?? -1;
-    }
-
-    /**
-     * Gets the line the error ends in.
-     *
-     * @return int Error end line
-     */
-    public function getEndLine() : int {
-        return $this->attributes['endLine'] ?? -1;
-    }
-
-    /**
-     * Gets the attributes of the node/token the error occurred at.
-     *
-     * @return array
-     */
-    public function getAttributes() : array {
-        return $this->attributes;
-    }
-
-    /**
-     * Sets the attributes of the node/token the error occurred at.
-     *
-     * @param array $attributes
-     */
-    public function setAttributes(array $attributes) {
-        $this->attributes = $attributes;
-        $this->updateMessage();
-    }
-
-    /**
-     * Sets the line of the PHP file the error occurred in.
-     *
-     * @param string $message Error message
-     */
-    public function setRawMessage(string $message) {
-        $this->rawMessage = $message;
-        $this->updateMessage();
-    }
-
-    /**
-     * Sets the line the error starts in.
-     *
-     * @param int $line Error start line
-     */
-    public function setStartLine(int $line) {
-        $this->attributes['startLine'] = $line;
-        $this->updateMessage();
-    }
-
-    /**
-     * Returns whether the error has start and end column information.
-     *
-     * For column information enable the startFilePos and endFilePos in the lexer options.
-     *
-     * @return bool
-     */
-    public function hasColumnInfo() : bool {
-        return isset($this->attributes['startFilePos'], $this->attributes['endFilePos']);
-    }
-
-    /**
-     * Gets the start column (1-based) into the line where the error started.
-     *
-     * @param string $code Source code of the file
-     * @return int
-     */
-    public function getStartColumn(string $code) : int {
-        if (!$this->hasColumnInfo()) {
-            throw new \RuntimeException('Error does not have column information');
-        }
-
-        return $this->toColumn($code, $this->attributes['startFilePos']);
-    }
-
-    /**
-     * Gets the end column (1-based) into the line where the error ended.
-     *
-     * @param string $code Source code of the file
-     * @return int
-     */
-    public function getEndColumn(string $code) : int {
-        if (!$this->hasColumnInfo()) {
-            throw new \RuntimeException('Error does not have column information');
-        }
-
-        return $this->toColumn($code, $this->attributes['endFilePos']);
-    }
-
-    /**
-     * Formats message including line and column information.
-     *
-     * @param string $code Source code associated with the error, for calculation of the columns
-     *
-     * @return string Formatted message
-     */
-    public function getMessageWithColumnInfo(string $code) : string {
-        return sprintf(
-            '%s from %d:%d to %d:%d', $this->getRawMessage(),
-            $this->getStartLine(), $this->getStartColumn($code),
-            $this->getEndLine(), $this->getEndColumn($code)
-        );
-    }
-
-    /**
-     * Converts a file offset into a column.
-     *
-     * @param string $code Source code that $pos indexes into
-     * @param int    $pos  0-based position in $code
-     *
-     * @return int 1-based column (relative to start of line)
-     */
-    private function toColumn(string $code, int $pos) : int {
-        if ($pos > strlen($code)) {
-            throw new \RuntimeException('Invalid position information');
-        }
-
-        $lineStartPos = strrpos($code, "\n", $pos - strlen($code));
-        if (false === $lineStartPos) {
-            $lineStartPos = -1;
-        }
-
-        return $pos - $lineStartPos;
-    }
-
-    /**
-     * Updates the exception message after a change to rawMessage or rawLine.
-     */
-    protected function updateMessage() {
-        $this->message = $this->rawMessage;
-
-        if (-1 === $this->getStartLine()) {
-            $this->message .= ' on unknown line';
-        } else {
-            $this->message .= ' on line ' . $this->getStartLine();
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+CX+uPjfdptO82MSjRhe2hnEx

@@ -1,32 +1,33 @@
-<?php
-
-/*
- * This file is part of the league/commonmark package.
- *
- * (c) Colin O'Dell <colinodell@gmail.com>
- * (c) 2015 Martin Hasoň <martin.hason@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-declare(strict_types=1);
-
-namespace League\CommonMark\Extension\Attributes;
-
-use League\CommonMark\ConfigurableEnvironmentInterface;
-use League\CommonMark\Event\DocumentParsedEvent;
-use League\CommonMark\Extension\Attributes\Event\AttributesListener;
-use League\CommonMark\Extension\Attributes\Parser\AttributesBlockParser;
-use League\CommonMark\Extension\Attributes\Parser\AttributesInlineParser;
-use League\CommonMark\Extension\ExtensionInterface;
-
-final class AttributesExtension implements ExtensionInterface
-{
-    public function register(ConfigurableEnvironmentInterface $environment)
-    {
-        $environment->addBlockParser(new AttributesBlockParser());
-        $environment->addInlineParser(new AttributesInlineParser());
-        $environment->addEventListener(DocumentParsedEvent::class, [new AttributesListener(), 'processDocument']);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+A0==

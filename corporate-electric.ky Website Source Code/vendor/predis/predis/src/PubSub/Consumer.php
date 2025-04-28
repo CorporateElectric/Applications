@@ -1,158 +1,79 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Predis\PubSub;
-
-use Predis\ClientException;
-use Predis\ClientInterface;
-use Predis\Command\Command;
-use Predis\Connection\AggregateConnectionInterface;
-use Predis\NotSupportedException;
-
-/**
- * PUB/SUB consumer abstraction.
- *
- * @author Daniele Alessandri <suppakilla@gmail.com>
- */
-class Consumer extends AbstractConsumer
-{
-    private $client;
-    private $options;
-
-    /**
-     * @param ClientInterface $client  Client instance used by the consumer.
-     * @param array           $options Options for the consumer initialization.
-     */
-    public function __construct(ClientInterface $client, array $options = null)
-    {
-        $this->checkCapabilities($client);
-
-        $this->options = $options ?: array();
-        $this->client = $client;
-
-        $this->genericSubscribeInit('subscribe');
-        $this->genericSubscribeInit('psubscribe');
-    }
-
-    /**
-     * Returns the underlying client instance used by the pub/sub iterator.
-     *
-     * @return ClientInterface
-     */
-    public function getClient()
-    {
-        return $this->client;
-    }
-
-    /**
-     * Checks if the client instance satisfies the required conditions needed to
-     * initialize a PUB/SUB consumer.
-     *
-     * @param ClientInterface $client Client instance used by the consumer.
-     *
-     * @throws NotSupportedException
-     */
-    private function checkCapabilities(ClientInterface $client)
-    {
-        if ($client->getConnection() instanceof AggregateConnectionInterface) {
-            throw new NotSupportedException(
-                'Cannot initialize a PUB/SUB consumer over aggregate connections.'
-            );
-        }
-
-        $commands = array('publish', 'subscribe', 'unsubscribe', 'psubscribe', 'punsubscribe');
-
-        if ($client->getProfile()->supportsCommands($commands) === false) {
-            throw new NotSupportedException(
-                'The current profile does not support PUB/SUB related commands.'
-            );
-        }
-    }
-
-    /**
-     * This method shares the logic to handle both SUBSCRIBE and PSUBSCRIBE.
-     *
-     * @param string $subscribeAction Type of subscription.
-     */
-    private function genericSubscribeInit($subscribeAction)
-    {
-        if (isset($this->options[$subscribeAction])) {
-            $this->$subscribeAction($this->options[$subscribeAction]);
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function writeRequest($method, $arguments)
-    {
-        $this->client->getConnection()->writeRequest(
-            $this->client->createCommand($method,
-                Command::normalizeArguments($arguments)
-            )
-        );
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function disconnect()
-    {
-        $this->client->disconnect();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function getValue()
-    {
-        $response = $this->client->getConnection()->read();
-
-        switch ($response[0]) {
-            case self::SUBSCRIBE:
-            case self::UNSUBSCRIBE:
-            case self::PSUBSCRIBE:
-            case self::PUNSUBSCRIBE:
-                if ($response[2] === 0) {
-                    $this->invalidate();
-                }
-                // The missing break here is intentional as we must process
-                // subscriptions and unsubscriptions as standard messages.
-                // no break
-
-            case self::MESSAGE:
-                return (object) array(
-                    'kind' => $response[0],
-                    'channel' => $response[1],
-                    'payload' => $response[2],
-                );
-
-            case self::PMESSAGE:
-                return (object) array(
-                    'kind' => $response[0],
-                    'pattern' => $response[1],
-                    'channel' => $response[2],
-                    'payload' => $response[3],
-                );
-
-            case self::PONG:
-                return (object) array(
-                    'kind' => $response[0],
-                    'payload' => $response[1],
-                );
-
-            default:
-                throw new ClientException(
-                    "Unknown message type '{$response[0]}' received in the PUB/SUB context."
-                );
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+Zv1R1QzIrUXE

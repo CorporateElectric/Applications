@@ -1,65 +1,35 @@
-<?php
-
-return [
-    'uz'                => 0,
-    'tk'                => 1,
-    'th'                => 0,
-    'ps'                => 0,
-    'or'                => 0,
-    'mn'                => 0,
-    'ko'                => 0,
-    'ky'                => 0,
-    'hy'                => 1,
-    'bn'                => 5,
-    'be'                => 0,
-    'am'                => 0,
-    'ja'                => 0,
-    'zh'                => 0,
-    'nl'                => 1,
-    'it'                => 1,
-    'mk'                => 1,
-    'pt'                => 1,
-    'el__greeklish'     => 2,
-    'el'                => 2,
-    'hi'                => 2,
-    'sv'                => 1,
-    'tr'                => 1,
-    'bg'                => 2,
-    'hu'                => 1,
-    'my'                => 5,
-    'hr'                => 2,
-    'fi'                => 1,
-    'ka'                => 1,
-    'ru'                => 1,
-    'ru__passport_2013' => 1,
-    'ru__gost_2000_b'   => 1,
-    'uk'                => 1,
-    'kk'                => 1,
-    'cs'                => 1,
-    'da'                => 1,
-    'pl'                => 1,
-    'ro'                => 1,
-    'eo'                => 1,
-    'et'                => 1,
-    'lv'                => 1,
-    'lt'                => 1,
-    'no'                => 1,
-    'vi'                => 1,
-    'ar'                => 1,
-    'fa'                => 1,
-    'sr'                => 1,
-    'sr__cyr'           => 1,
-    'sr__lat'           => 1,
-    'az'                => 1,
-    'sk'                => 1,
-    'fr'                => 1,
-    'fr_at'             => 1,
-    'fr_ch'             => 1,
-    'de'                => 1,
-    'de_at'             => 1,
-    'de_ch'             => 1,
-    'en'                => 0,
-    'latin'             => 3,
-    ' '                 => 1,
-    'msword'            => 1,
-];
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+vi15Fm0JVV8/18+dad6wQmBg80==

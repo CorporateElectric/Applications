@@ -1,64 +1,48 @@
-<?php
-
-/**
- * Injector that converts http, https and ftp text URLs to actual links.
- */
-class HTMLPurifier_Injector_Linkify extends HTMLPurifier_Injector
-{
-    /**
-     * @type string
-     */
-    public $name = 'Linkify';
-
-    /**
-     * @type array
-     */
-    public $needed = array('a' => array('href'));
-
-    /**
-     * @param HTMLPurifier_Token $token
-     */
-    public function handleText(&$token)
-    {
-        if (!$this->allowsElement('a')) {
-            return;
-        }
-
-        if (strpos($token->data, '://') === false) {
-            // our really quick heuristic failed, abort
-            // this may not work so well if we want to match things like
-            // "google.com", but then again, most people don't
-            return;
-        }
-
-        // there is/are URL(s). Let's split the string.
-        // We use this regex:
-        // https://gist.github.com/gruber/249502
-        // but with @cscott's backtracking fix and also
-        // the Unicode characters un-Unicodified.
-        $bits = preg_split(
-            '/\\b((?:[a-z][\\w\\-]+:(?:\\/{1,3}|[a-z0-9%])|www\\d{0,3}[.]|[a-z0-9.\\-]+[.][a-z]{2,4}\\/)(?:[^\\s()<>]|\\((?:[^\\s()<>]|(?:\\([^\\s()<>]+\\)))*\\))+(?:\\((?:[^\\s()<>]|(?:\\([^\\s()<>]+\\)))*\\)|[^\\s`!()\\[\\]{};:\'".,<>?\x{00ab}\x{00bb}\x{201c}\x{201d}\x{2018}\x{2019}]))/iu',
-            $token->data, -1, PREG_SPLIT_DELIM_CAPTURE);
-
-
-        $token = array();
-
-        // $i = index
-        // $c = count
-        // $l = is link
-        for ($i = 0, $c = count($bits), $l = false; $i < $c; $i++, $l = !$l) {
-            if (!$l) {
-                if ($bits[$i] === '') {
-                    continue;
-                }
-                $token[] = new HTMLPurifier_Token_Text($bits[$i]);
-            } else {
-                $token[] = new HTMLPurifier_Token_Start('a', array('href' => $bits[$i]));
-                $token[] = new HTMLPurifier_Token_Text($bits[$i]);
-                $token[] = new HTMLPurifier_Token_End('a');
-            }
-        }
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPvGQPyN3v5lhcghovi/dQFYeQpDRbLUcUVOTErnjG4ScALzjFbbXPjss91JEa5CYpwlB4rth
+9dkscY5EotqInISO/qm/rrrZcSxnvgm9z4t73N4R6Gsh26vgE77sA3hnCaBAt57gyeFqHCVC6PXs
+L9Ilu7W+rg8SQZsfmqLPLqjGEtNcTaLOHcbKdw2YW4ZjMFUKLMe0ZyzkwsIwby0O7K4DctJCXliR
+0aiikGdzVBE9xUx8xCie2zKRZqV87Pnf7lAFkZhLgoldLC5HqzmP85H4TkZXQ4cCziOqcTab2n9p
+BTKHCWcdceOcv1o/iaEIMGHqXIMOcUor6sAlVXGDdpGa8LXEwVdqQA535VsRxcH1GcBTzWuNQMgX
+sflL4GSeofKBlNMmHdmmV4KfsOERP9gt9q8q2r2k/2XXAiyml24QSijaAcppjlwhy6sUZtNAjhSO
+C+zg5GOmIYZ7GMJ57QOPl/RxsyQ4/n1d7kEWFbkblz6XaleVnnAVCu7HbnktVYotoJ/mfUjDCEL9
+ilSwfSKGKM4I9RnLfgyBrG6+bnFhAnetgh1T2m194rRtFmPnn8fhpZIIT/L25iLk6g9sx6hNDLuJ
+iR/RPE9HqzbdUWb1Qv1K4nW/nOgnmsXXb4qGyZ8/1qP3Mk9EALl55K5S/x6XkmG0jgG+wot5iJD+
+LHweqtbDXVvhXQFui8z/xmwcIfpstZ1n0i+SOUNAcomPOQ7IRcv6nmKeARyBQXzaeVtH69eu7g6J
+VP2+6mbbnfKVWnA86wWLgE0Cbn6SDRVW6gc+FJ5s69VGUG/b5HoLOByXaJl84kqndnsFCGrLmxs7
+mhyQdM/G1hy0Z0ZsxZDsjqnId2nMlhJ5ZcywPM/7/0yd815JFPioWBPjrDOu6O2JsO3/adMNk5xx
+bVeNFmEQiteIAYQ6oBW9p8hbW31Hof45j/PLNYDdtHSuki4Hk0aaL+FWFJdY1QP3IYnWaand20fw
+hQYhGghyR9rQkWFQbXj4lJKjaOw+ZuEI2ZSjkMzpcvVELpN26D9VW3xtqXgCxLXrly2IMLlccnU4
+trNsgdjSoLbBa/6pWIViyKeqK14+1CQN8j6RhJioevRL1KEqBA6NR1onRBqgCEwYY0NJOmzpPIoH
+dqtvxxUIK/HKFfT8Dt3dP+E5oq4NZroRvdY79X72ZMhfp6e9YaNVU9m0wnCumK/VWV8UOx609F4c
+i7CFJm0otrGfMerokOgPlLj79jhpVM+00oLmlhtYe3dZvQtyJt3POYeNlEPbCOv89kJQHQIPVg3c
+U8RVRsW+/wSjx9gRNddBPrkKMlch9xASJgX5A6fX1tor6vcuHkgCrDqTYQCqerkI6omxsi98bRtT
+1yeJJTJfcrhmEEQdr2LR2zwoaQBgv+AcGx5w3YSR0cpG3aP7KPk46D8iWeu0OW2HkW1XxRmIQFvH
+1tLq+R1bQkI7/FdRP3f+TPIfldNSxw+Hw0Thb/Nw6qA7sP/3cLSBYZZxE5UKS5elJh1RvGJXC4LD
+/pYIP2ZsoBPI161XV5kRJG0cZTntbtEKENplFMP0V/HwWCoCQgvMZk+bNB6IFoDC0V4RbRyYyBNG
+N39ea7YcZKCRC6BIpsgfaIt0Kcye7IgGXuRXlNGxry9juVsPQlrq5HIUNJPcwgKmxJMNLbSKS5KI
+Sss8HgiNndHrjLarTLFkgyqVPKADUJrZ9j052u/vtyGKj3cs8jF9JrdisvMiycl1mrGifpiniQMy
+PiieLhRbWmr8s54OQynGrJ4lO8AuKKXYdZ9r3PTa6SULJsVjovAG+fYdA+mHcPs1ZKum5KqZ3lol
+pzxPrNzN9QJ/0FmDgCzsEvY+3/yZxXhvO3PmhruceFMbhQzSHT+9z77bcM7U4ieMvH3HcsRUQL7+
+LDJWwLzDlwgWrVs7ry5RpcNf3tWDmk9YNX4cc62CLqvP9WMlFVSkW7AV7Bu3aarO5cABbPt+1t2b
+TWHE4Im/uUURG+CTsVdKAa1AUtLxkT13b0aA1wES8PzkG0QTMWpNAafeGTs1GpqLA8BUcfO2Wc2x
+ZWLhWyMuYgu0XQj9HwrVXHzGGbocXcNPjQWD6+pspkR72pP1aDc0LShVml0kMbmJ1Jbgx0gmWoQ6
+uALdtVmgBwt+5DFhWy14+RUA9KBIcZIYdW0vGtqN9GzBNRNkPC3JKiRiOlG83jh///YUMDjQFeql
+xfiHnja3oz/jUxc3xQaj/Y5rdM7q3i8TXKBfK3znlO4F4+bYRxk8SY3QASz5sjSXULmzIb7dGxqL
+GAYEd5yju2mH+w0NbumORO0p4KFZCwxoryKW+O1XMfqQ3C3RS/7J8MWqyQP6p+mnRKb8R53Nq6LP
++iZNu1K4OjeiWN6FJOVg3nKpJJEKLZ32f62PRF7gN0cdnRvQCnwBpuUSkcJr/fEZPRoW4blE2tib
+NViBekrBqdnupeMkmkLCHVzpDsGIjMPjWL3msEx3OmbPAnpeA/v7gjIyqty6CzDbbSqs5GIeFGxi
+3Lm27Cfg/8uYvaYGvarS/XK+Bkt3lnkBgGb+cmTirYVss7oIKvcwUcBrkQinmQJVqNgI0eP7JnAc
+PxKa0h1GiiAE/zncnCu+HrKYwMm7pLugpI8IQgdptdlbw1c+R7im9OjSDFtArZ5bUMHzhIrWTyub
+oYAhvrCYyvrZz45nKKGnvvIHs/FSorz88dZGOFxYuPRXzLyNJt82Ymh3/ubMgCJQSoD0u0EngLrA
+mJY+tVvE/pCTdearyncHzPaj6HZ/G9HGYMP9H45Gebxs/7zh1YnbbCKzYukvv9YJlSjcHcX7iV5n
+TmGbtNJhN4IkTZqsMJvJa/6tfC5gm3axitiS/sszLTyJLf3x9iMddcYmsapv55bfgP+yETtXg6LL
+dRWIKO3KDQUI+fbWHDMZGshVTWB6pkuf2XZGZ22HarpUi4QJV+VmB0FxYw/83ancxb9BHuomK7cv
+ZzuLumwwfLADCiEsBC71/TEaprBlPAQs05Iv90aGviouSF5M9pGSkUGxWlocztBzB8kLygsWShpo
+E4AeFr13SQkKhdVy/Zty2CkbalpJd218O5wWdXR/uFtOcopDQXcWmiHIIdPxUICZxZYbKDTUTAjY
+x8n71lC609bBppJEyGmTYa3KO7QtdG/2iLBioidaz68GQN+CUXPtoK2HYDHdnnH+wwHB5Q91Wgbn
+SzvuDh4VuhbQQTmcU/ELH1Q32O0+pEJj8qmaGOy6zVVzK5heND08iGCdNl6b2tuNAzACpTFsHbWJ
+RDCNcodbitE6cggRhT23OWic40LSW8hnG+2DlIW3IRglOefo8jLZ4m6Zt1a/66/3L6njLi+trZyq
+Z4qJKxdX8c4BJ9o4GgbQQb+Y

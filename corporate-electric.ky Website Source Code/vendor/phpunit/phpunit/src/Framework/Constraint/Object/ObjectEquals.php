@@ -1,151 +1,79 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Framework\Constraint;
-
-use function get_class;
-use function is_object;
-use PHPUnit\Framework\ActualValueIsNotAnObjectException;
-use PHPUnit\Framework\ComparisonMethodDoesNotAcceptParameterTypeException;
-use PHPUnit\Framework\ComparisonMethodDoesNotDeclareBoolReturnTypeException;
-use PHPUnit\Framework\ComparisonMethodDoesNotDeclareExactlyOneParameterException;
-use PHPUnit\Framework\ComparisonMethodDoesNotDeclareParameterTypeException;
-use PHPUnit\Framework\ComparisonMethodDoesNotExistException;
-use ReflectionNamedType;
-use ReflectionObject;
-
-/**
- * @no-named-arguments Parameter names are not covered by the backward compatibility promise for PHPUnit
- */
-final class ObjectEquals extends Constraint
-{
-    /**
-     * @var object
-     */
-    private $expected;
-
-    /**
-     * @var string
-     */
-    private $method;
-
-    public function __construct(object $object, string $method = 'equals')
-    {
-        $this->expected = $object;
-        $this->method   = $method;
-    }
-
-    public function toString(): string
-    {
-        return 'two objects are equal';
-    }
-
-    /**
-     * @throws ActualValueIsNotAnObjectException
-     * @throws ComparisonMethodDoesNotAcceptParameterTypeException
-     * @throws ComparisonMethodDoesNotDeclareBoolReturnTypeException
-     * @throws ComparisonMethodDoesNotDeclareExactlyOneParameterException
-     * @throws ComparisonMethodDoesNotDeclareParameterTypeException
-     * @throws ComparisonMethodDoesNotExistException
-     */
-    protected function matches($other): bool
-    {
-        if (!is_object($other)) {
-            throw new ActualValueIsNotAnObjectException;
-        }
-
-        $object = new ReflectionObject($other);
-
-        if (!$object->hasMethod($this->method)) {
-            throw new ComparisonMethodDoesNotExistException(
-                get_class($other),
-                $this->method
-            );
-        }
-
-        /** @noinspection PhpUnhandledExceptionInspection */
-        $method = $object->getMethod($this->method);
-
-        if (!$method->hasReturnType()) {
-            throw new ComparisonMethodDoesNotDeclareBoolReturnTypeException(
-                get_class($other),
-                $this->method
-            );
-        }
-
-        $returnType = $method->getReturnType();
-
-        if (!$returnType instanceof ReflectionNamedType) {
-            throw new ComparisonMethodDoesNotDeclareBoolReturnTypeException(
-                get_class($other),
-                $this->method
-            );
-        }
-
-        if ($returnType->allowsNull()) {
-            throw new ComparisonMethodDoesNotDeclareBoolReturnTypeException(
-                get_class($other),
-                $this->method
-            );
-        }
-
-        if ($returnType->getName() !== 'bool') {
-            throw new ComparisonMethodDoesNotDeclareBoolReturnTypeException(
-                get_class($other),
-                $this->method
-            );
-        }
-
-        if ($method->getNumberOfParameters() !== 1 || $method->getNumberOfRequiredParameters() !== 1) {
-            throw new ComparisonMethodDoesNotDeclareExactlyOneParameterException(
-                get_class($other),
-                $this->method
-            );
-        }
-
-        $parameter = $method->getParameters()[0];
-
-        if (!$parameter->hasType()) {
-            throw new ComparisonMethodDoesNotDeclareParameterTypeException(
-                get_class($other),
-                $this->method
-            );
-        }
-
-        $type = $parameter->getType();
-
-        if (!$type instanceof ReflectionNamedType) {
-            throw new ComparisonMethodDoesNotDeclareParameterTypeException(
-                get_class($other),
-                $this->method
-            );
-        }
-
-        $typeName = $type->getName();
-
-        if ($typeName === 'self') {
-            $typeName = get_class($other);
-        }
-
-        if (!$this->expected instanceof $typeName) {
-            throw new ComparisonMethodDoesNotAcceptParameterTypeException(
-                get_class($other),
-                $this->method,
-                get_class($this->expected)
-            );
-        }
-
-        return $other->{$this->method}($this->expected);
-    }
-
-    protected function failureDescription($other): string
-    {
-        return $this->toString();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

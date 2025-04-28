@@ -1,155 +1,55 @@
-<?php
-
-namespace Illuminate\Contracts\Routing;
-
-interface ResponseFactory
-{
-    /**
-     * Create a new response instance.
-     *
-     * @param  string  $content
-     * @param  int  $status
-     * @param  array  $headers
-     * @return \Illuminate\Http\Response
-     */
-    public function make($content = '', $status = 200, array $headers = []);
-
-    /**
-     * Create a new "no content" response.
-     *
-     * @param  int  $status
-     * @param  array  $headers
-     * @return \Illuminate\Http\Response
-     */
-    public function noContent($status = 204, array $headers = []);
-
-    /**
-     * Create a new response for a given view.
-     *
-     * @param  string|array  $view
-     * @param  array  $data
-     * @param  int  $status
-     * @param  array  $headers
-     * @return \Illuminate\Http\Response
-     */
-    public function view($view, $data = [], $status = 200, array $headers = []);
-
-    /**
-     * Create a new JSON response instance.
-     *
-     * @param  mixed  $data
-     * @param  int  $status
-     * @param  array  $headers
-     * @param  int  $options
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function json($data = [], $status = 200, array $headers = [], $options = 0);
-
-    /**
-     * Create a new JSONP response instance.
-     *
-     * @param  string  $callback
-     * @param  mixed  $data
-     * @param  int  $status
-     * @param  array  $headers
-     * @param  int  $options
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function jsonp($callback, $data = [], $status = 200, array $headers = [], $options = 0);
-
-    /**
-     * Create a new streamed response instance.
-     *
-     * @param  \Closure  $callback
-     * @param  int  $status
-     * @param  array  $headers
-     * @return \Symfony\Component\HttpFoundation\StreamedResponse
-     */
-    public function stream($callback, $status = 200, array $headers = []);
-
-    /**
-     * Create a new streamed response instance as a file download.
-     *
-     * @param  \Closure  $callback
-     * @param  string|null  $name
-     * @param  array  $headers
-     * @param  string|null  $disposition
-     * @return \Symfony\Component\HttpFoundation\StreamedResponse
-     */
-    public function streamDownload($callback, $name = null, array $headers = [], $disposition = 'attachment');
-
-    /**
-     * Create a new file download response.
-     *
-     * @param  \SplFileInfo|string  $file
-     * @param  string|null  $name
-     * @param  array  $headers
-     * @param  string|null  $disposition
-     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
-     */
-    public function download($file, $name = null, array $headers = [], $disposition = 'attachment');
-
-    /**
-     * Return the raw contents of a binary file.
-     *
-     * @param  \SplFileInfo|string  $file
-     * @param  array  $headers
-     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
-     */
-    public function file($file, array $headers = []);
-
-    /**
-     * Create a new redirect response to the given path.
-     *
-     * @param  string  $path
-     * @param  int  $status
-     * @param  array  $headers
-     * @param  bool|null  $secure
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function redirectTo($path, $status = 302, $headers = [], $secure = null);
-
-    /**
-     * Create a new redirect response to a named route.
-     *
-     * @param  string  $route
-     * @param  mixed  $parameters
-     * @param  int  $status
-     * @param  array  $headers
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function redirectToRoute($route, $parameters = [], $status = 302, $headers = []);
-
-    /**
-     * Create a new redirect response to a controller action.
-     *
-     * @param  string  $action
-     * @param  mixed  $parameters
-     * @param  int  $status
-     * @param  array  $headers
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function redirectToAction($action, $parameters = [], $status = 302, $headers = []);
-
-    /**
-     * Create a new redirect response, while putting the current URL in the session.
-     *
-     * @param  string  $path
-     * @param  int  $status
-     * @param  array  $headers
-     * @param  bool|null  $secure
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function redirectGuest($path, $status = 302, $headers = [], $secure = null);
-
-    /**
-     * Create a new redirect response to the previously intended location.
-     *
-     * @param  string  $default
-     * @param  int  $status
-     * @param  array  $headers
-     * @param  bool|null  $secure
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function redirectToIntended($default = '/', $status = 302, $headers = [], $secure = null);
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

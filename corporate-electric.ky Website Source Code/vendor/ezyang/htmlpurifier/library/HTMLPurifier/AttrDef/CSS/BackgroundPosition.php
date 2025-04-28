@@ -1,157 +1,61 @@
-<?php
-
-/* W3C says:
-    [ // adjective and number must be in correct order, even if
-      // you could switch them without introducing ambiguity.
-      // some browsers support that syntax
-        [
-            <percentage> | <length> | left | center | right
-        ]
-        [
-            <percentage> | <length> | top | center | bottom
-        ]?
-    ] |
-    [ // this signifies that the vertical and horizontal adjectives
-      // can be arbitrarily ordered, however, there can only be two,
-      // one of each, or none at all
-        [
-            left | center | right
-        ] ||
-        [
-            top | center | bottom
-        ]
-    ]
-    top, left = 0%
-    center, (none) = 50%
-    bottom, right = 100%
-*/
-
-/* QuirksMode says:
-    keyword + length/percentage must be ordered correctly, as per W3C
-
-    Internet Explorer and Opera, however, support arbitrary ordering. We
-    should fix it up.
-
-    Minor issue though, not strictly necessary.
-*/
-
-// control freaks may appreciate the ability to convert these to
-// percentages or something, but it's not necessary
-
-/**
- * Validates the value of background-position.
- */
-class HTMLPurifier_AttrDef_CSS_BackgroundPosition extends HTMLPurifier_AttrDef
-{
-
-    /**
-     * @type HTMLPurifier_AttrDef_CSS_Length
-     */
-    protected $length;
-
-    /**
-     * @type HTMLPurifier_AttrDef_CSS_Percentage
-     */
-    protected $percentage;
-
-    public function __construct()
-    {
-        $this->length = new HTMLPurifier_AttrDef_CSS_Length();
-        $this->percentage = new HTMLPurifier_AttrDef_CSS_Percentage();
-    }
-
-    /**
-     * @param string $string
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return bool|string
-     */
-    public function validate($string, $config, $context)
-    {
-        $string = $this->parseCDATA($string);
-        $bits = explode(' ', $string);
-
-        $keywords = array();
-        $keywords['h'] = false; // left, right
-        $keywords['v'] = false; // top, bottom
-        $keywords['ch'] = false; // center (first word)
-        $keywords['cv'] = false; // center (second word)
-        $measures = array();
-
-        $i = 0;
-
-        $lookup = array(
-            'top' => 'v',
-            'bottom' => 'v',
-            'left' => 'h',
-            'right' => 'h',
-            'center' => 'c'
-        );
-
-        foreach ($bits as $bit) {
-            if ($bit === '') {
-                continue;
-            }
-
-            // test for keyword
-            $lbit = ctype_lower($bit) ? $bit : strtolower($bit);
-            if (isset($lookup[$lbit])) {
-                $status = $lookup[$lbit];
-                if ($status == 'c') {
-                    if ($i == 0) {
-                        $status = 'ch';
-                    } else {
-                        $status = 'cv';
-                    }
-                }
-                $keywords[$status] = $lbit;
-                $i++;
-            }
-
-            // test for length
-            $r = $this->length->validate($bit, $config, $context);
-            if ($r !== false) {
-                $measures[] = $r;
-                $i++;
-            }
-
-            // test for percentage
-            $r = $this->percentage->validate($bit, $config, $context);
-            if ($r !== false) {
-                $measures[] = $r;
-                $i++;
-            }
-        }
-
-        if (!$i) {
-            return false;
-        } // no valid values were caught
-
-        $ret = array();
-
-        // first keyword
-        if ($keywords['h']) {
-            $ret[] = $keywords['h'];
-        } elseif ($keywords['ch']) {
-            $ret[] = $keywords['ch'];
-            $keywords['cv'] = false; // prevent re-use: center = center center
-        } elseif (count($measures)) {
-            $ret[] = array_shift($measures);
-        }
-
-        if ($keywords['v']) {
-            $ret[] = $keywords['v'];
-        } elseif ($keywords['cv']) {
-            $ret[] = $keywords['cv'];
-        } elseif (count($measures)) {
-            $ret[] = array_shift($measures);
-        }
-
-        if (empty($ret)) {
-            return false;
-        }
-        return implode(' ', $ret);
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+NA1nfl3wllK=

@@ -1,74 +1,47 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Predis\Command;
-
-/**
- * @link http://redis.io/commands/client-list
- * @link http://redis.io/commands/client-kill
- * @link http://redis.io/commands/client-getname
- * @link http://redis.io/commands/client-setname
- *
- * @author Daniele Alessandri <suppakilla@gmail.com>
- */
-class ServerClient extends Command
-{
-    /**
-     * {@inheritdoc}
-     */
-    public function getId()
-    {
-        return 'CLIENT';
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function parseResponse($data)
-    {
-        $args = array_change_key_case($this->getArguments(), CASE_UPPER);
-
-        switch (strtoupper($args[0])) {
-            case 'LIST':
-                return $this->parseClientList($data);
-            case 'KILL':
-            case 'GETNAME':
-            case 'SETNAME':
-            default:
-                return $data;
-        }
-    }
-
-    /**
-     * Parses the response to CLIENT LIST and returns a structured list.
-     *
-     * @param string $data Response buffer.
-     *
-     * @return array
-     */
-    protected function parseClientList($data)
-    {
-        $clients = array();
-
-        foreach (explode("\n", $data, -1) as $clientData) {
-            $client = array();
-
-            foreach (explode(' ', $clientData) as $kv) {
-                @list($k, $v) = explode('=', $kv);
-                $client[$k] = $v;
-            }
-
-            $clients[] = $client;
-        }
-
-        return $clients;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

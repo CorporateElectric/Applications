@@ -1,85 +1,86 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-require __DIR__.'/shared.php';
-
-// Predis allows to set Lua scripts as read-only operations for replication.
-// This works for both EVAL and EVALSHA and also for the client-side abstraction
-// built upon them (Predis\Command\ScriptCommand). This example shows a slightly
-// more complex configuration that injects a new script command in the server
-// profile used by the new client instance and marks it marks it as a read-only
-// operation for replication so that it will be executed on slaves.
-
-use Predis\Command\ScriptCommand;
-use Predis\Connection\Aggregate\MasterSlaveReplication;
-use Predis\Replication\ReplicationStrategy;
-
-// ------------------------------------------------------------------------- //
-
-// Define a new script command that returns all the fields of a variable number
-// of hashes with a single roundtrip.
-
-class HashMultipleGetAll extends ScriptCommand
-{
-    const BODY = <<<LUA
-local hashes = {}
-for _, key in pairs(KEYS) do
-    table.insert(hashes, key)
-    table.insert(hashes, redis.call('hgetall', key))
-end
-return hashes
-LUA;
-
-    public function getScript()
-    {
-        return self::BODY;
-    }
-}
-
-// ------------------------------------------------------------------------- //
-
-$parameters = array(
-    'tcp://127.0.0.1:6379/?alias=master',
-    'tcp://127.0.0.1:6380/?alias=slave',
-);
-
-$options = array(
-    'profile' => function ($options, $option) {
-        $profile = $options->getDefault($option);
-        $profile->defineCommand('hmgetall', 'HashMultipleGetAll');
-
-        return $profile;
-    },
-    'replication' => function () {
-        $strategy = new ReplicationStrategy();
-        $strategy->setScriptReadOnly(HashMultipleGetAll::BODY);
-
-        $replication = new MasterSlaveReplication($strategy);
-
-        return $replication;
-    },
-);
-
-// ------------------------------------------------------------------------- //
-
-$client = new Predis\Client($parameters, $options);
-
-// Execute the following commands on the master server using redis-cli:
-// $ ./redis-cli HMSET metavars foo bar hoge piyo
-// $ ./redis-cli HMSET servers master host1 slave host2
-
-$hashes = $client->hmgetall('metavars', 'servers');
-
-$replication = $client->getConnection();
-$stillOnSlave = $replication->getCurrent() === $replication->getConnectionById('slave');
-
-echo 'Is still on slave? ', $stillOnSlave ? 'YES!' : 'NO!', PHP_EOL;
-var_export($hashes);
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+YgGikW==

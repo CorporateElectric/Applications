@@ -1,85 +1,70 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpFoundation\Test\Constraint;
-
-use PHPUnit\Framework\Constraint\Constraint;
-use Symfony\Component\HttpFoundation\Cookie;
-use Symfony\Component\HttpFoundation\Response;
-
-final class ResponseCookieValueSame extends Constraint
-{
-    private $name;
-    private $value;
-    private $path;
-    private $domain;
-
-    public function __construct(string $name, string $value, string $path = '/', string $domain = null)
-    {
-        $this->name = $name;
-        $this->value = $value;
-        $this->path = $path;
-        $this->domain = $domain;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function toString(): string
-    {
-        $str = sprintf('has cookie "%s"', $this->name);
-        if ('/' !== $this->path) {
-            $str .= sprintf(' with path "%s"', $this->path);
-        }
-        if ($this->domain) {
-            $str .= sprintf(' for domain "%s"', $this->domain);
-        }
-        $str .= sprintf(' with value "%s"', $this->value);
-
-        return $str;
-    }
-
-    /**
-     * @param Response $response
-     *
-     * {@inheritdoc}
-     */
-    protected function matches($response): bool
-    {
-        $cookie = $this->getCookie($response);
-        if (!$cookie) {
-            return false;
-        }
-
-        return $this->value === $cookie->getValue();
-    }
-
-    /**
-     * @param Response $response
-     *
-     * {@inheritdoc}
-     */
-    protected function failureDescription($response): string
-    {
-        return 'the Response '.$this->toString();
-    }
-
-    protected function getCookie(Response $response): ?Cookie
-    {
-        $cookies = $response->headers->getCookies();
-
-        $filteredCookies = array_filter($cookies, function (Cookie $cookie) {
-            return $cookie->getName() === $this->name && $cookie->getPath() === $this->path && $cookie->getDomain() === $this->domain;
-        });
-
-        return reset($filteredCookies) ?: null;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+Z/bwmngYx3aepqfflutokpFd9Pi=

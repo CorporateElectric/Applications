@@ -1,70 +1,59 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\CodeCleaner;
-
-use PhpParser\Node;
-use PhpParser\Node\Expr\Array_;
-use PhpParser\Node\Expr\Assign;
-use PhpParser\Node\Expr\FuncCall;
-use PhpParser\Node\Expr\Isset_;
-use PhpParser\Node\Expr\MethodCall;
-use PhpParser\Node\Expr\StaticCall;
-use PhpParser\Node\Stmt\Unset_;
-use Psy\Exception\FatalErrorException;
-
-/**
- * Validate that the functions are used correctly.
- *
- * @author Martin Hasoň <martin.hason@gmail.com>
- */
-class FunctionReturnInWriteContextPass extends CodeCleanerPass
-{
-    const ISSET_MESSAGE = 'Cannot use isset() on the result of an expression (you can use "null !== expression" instead)';
-    const EXCEPTION_MESSAGE = "Can't use function return value in write context";
-
-    /**
-     * Validate that the functions are used correctly.
-     *
-     * @throws FatalErrorException if a function is passed as an argument reference
-     * @throws FatalErrorException if a function is used as an argument in the isset
-     * @throws FatalErrorException if a value is assigned to a function
-     *
-     * @param Node $node
-     */
-    public function enterNode(Node $node)
-    {
-        if ($node instanceof Array_ || $this->isCallNode($node)) {
-            $items = $node instanceof Array_ ? $node->items : $node->args;
-            foreach ($items as $item) {
-                if ($item && $item->byRef && $this->isCallNode($item->value)) {
-                    throw new FatalErrorException(self::EXCEPTION_MESSAGE, 0, \E_ERROR, null, $node->getLine());
-                }
-            }
-        } elseif ($node instanceof Isset_ || $node instanceof Unset_) {
-            foreach ($node->vars as $var) {
-                if (!$this->isCallNode($var)) {
-                    continue;
-                }
-
-                $msg = $node instanceof Isset_ ? self::ISSET_MESSAGE : self::EXCEPTION_MESSAGE;
-                throw new FatalErrorException($msg, 0, \E_ERROR, null, $node->getLine());
-            }
-        } elseif ($node instanceof Assign && $this->isCallNode($node->var)) {
-            throw new FatalErrorException(self::EXCEPTION_MESSAGE, 0, \E_ERROR, null, $node->getLine());
-        }
-    }
-
-    private function isCallNode(Node $node)
-    {
-        return $node instanceof FuncCall || $node instanceof MethodCall || $node instanceof StaticCall;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+wTGNyagb+hHMa0==

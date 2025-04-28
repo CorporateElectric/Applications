@@ -1,108 +1,78 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpKernel\Fragment;
-
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Controller\ControllerReference;
-use Symfony\Component\HttpKernel\HttpCache\SurrogateInterface;
-use Symfony\Component\HttpKernel\UriSigner;
-
-/**
- * Implements Surrogate rendering strategy.
- *
- * @author Fabien Potencier <fabien@symfony.com>
- */
-abstract class AbstractSurrogateFragmentRenderer extends RoutableFragmentRenderer
-{
-    private $surrogate;
-    private $inlineStrategy;
-    private $signer;
-
-    /**
-     * The "fallback" strategy when surrogate is not available should always be an
-     * instance of InlineFragmentRenderer.
-     *
-     * @param FragmentRendererInterface $inlineStrategy The inline strategy to use when the surrogate is not supported
-     */
-    public function __construct(SurrogateInterface $surrogate = null, FragmentRendererInterface $inlineStrategy, UriSigner $signer = null)
-    {
-        $this->surrogate = $surrogate;
-        $this->inlineStrategy = $inlineStrategy;
-        $this->signer = $signer;
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * Note that if the current Request has no surrogate capability, this method
-     * falls back to use the inline rendering strategy.
-     *
-     * Additional available options:
-     *
-     *  * alt: an alternative URI to render in case of an error
-     *  * comment: a comment to add when returning the surrogate tag
-     *
-     * Note, that not all surrogate strategies support all options. For now
-     * 'alt' and 'comment' are only supported by ESI.
-     *
-     * @see Symfony\Component\HttpKernel\HttpCache\SurrogateInterface
-     */
-    public function render($uri, Request $request, array $options = [])
-    {
-        if (!$this->surrogate || !$this->surrogate->hasSurrogateCapability($request)) {
-            if ($uri instanceof ControllerReference && $this->containsNonScalars($uri->attributes)) {
-                throw new \InvalidArgumentException('Passing non-scalar values as part of URI attributes to the ESI and SSI rendering strategies is not supported. Use a different rendering strategy or pass scalar values.');
-            }
-
-            return $this->inlineStrategy->render($uri, $request, $options);
-        }
-
-        if ($uri instanceof ControllerReference) {
-            $uri = $this->generateSignedFragmentUri($uri, $request);
-        }
-
-        $alt = isset($options['alt']) ? $options['alt'] : null;
-        if ($alt instanceof ControllerReference) {
-            $alt = $this->generateSignedFragmentUri($alt, $request);
-        }
-
-        $tag = $this->surrogate->renderIncludeTag($uri, $alt, isset($options['ignore_errors']) ? $options['ignore_errors'] : false, isset($options['comment']) ? $options['comment'] : '');
-
-        return new Response($tag);
-    }
-
-    private function generateSignedFragmentUri(ControllerReference $uri, Request $request): string
-    {
-        if (null === $this->signer) {
-            throw new \LogicException('You must use a URI when using the ESI rendering strategy or set a URL signer.');
-        }
-
-        // we need to sign the absolute URI, but want to return the path only.
-        $fragmentUri = $this->signer->sign($this->generateFragmentUri($uri, $request, true));
-
-        return substr($fragmentUri, \strlen($request->getSchemeAndHttpHost()));
-    }
-
-    private function containsNonScalars(array $values): bool
-    {
-        foreach ($values as $value) {
-            if (\is_array($value)) {
-                return $this->containsNonScalars($value);
-            } elseif (!is_scalar($value) && null !== $value) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cP/oJ6zcECU0ULroE+X7CkAyoHH/H9CkB2lq/BdGx7C/U7VumKqt/BTHkHUoi/JuuJCiuv/le
+E+8V9/RG2sJvZ/B9KdhbQTF/tmewsSPBwI71HX8bJ5XhvtWoidZi7X5dqsjCVzZV0Av9BrWL8J33
+RZiVwLB36nm9rFEjVfQ57jJ7VQzwar55NKhJWePCXQ/Td0qG1hgtWQ65tZ3H0Gf1+xATKCLo/W7Y
+3Qx0qJ0XJa3ulYK52w8oAWGBrCZtxtb2bm5EbphLgoldLC5HqzmP85H4TkX9Py2h2A4/ahZqDygh
+iG0IQV+1I0NTbWFpzdWVnIxA3uSihXbz87ycCEWFzEKLnV11cR7fwWgs/T8CAxImr9Mbg1+xJdq8
+HTZYSxstfqaqBa6oYWX4Rj0l844KcWDqeHV4C03OgQnL8PDduIaqoqo9lYvsVkdF+ETnwZdwBtgI
+hcwb61R6aQfqhnaSui521hjbIElgXNWZhPmhKNS+yZjPWZQJBU0tPFPP+gAHZhanbOGikvy5VZJ+
+USum2GsArhEkfW+Wz2B/QBvwWlJ+bQGRdq2m7n7wJSW3UhncfsSmL7/GnB4IVDbma5+JxQUC6zqk
+8gnkw2aUvvyg9A2hMXth6+EmiUmlDNb4BRTa0L2wKxrA/zGs9knqAuKr9WVGCMkM4l2l7eDPLq1b
+syNVxxk/5a3ZzSbwa6vfq42a494RRYCmbI/fWBtZlLRUOsm55MLaDcPY1kiWNO9iGhn8cRITfK6P
+qjKqc0rzIfzjxoaxYVlrpb5O/Mzswm0Ja5r5iR0i6MPKgtxw6srJBxCFtV8xRTRCbB/DRveFBs6Q
+yZeOXXWXNUFS2X5OEHeMfrDIzRRhsl4iySWg1ogCZSKAgzK9p1qXLu1cnYzxE3+LKHX86+pSwFgT
+LY8BtOgEpsCeHEoAi03jRNFP7eJ0ZQYq56RBerD4cFoWP0blHFtRAVp1nKtOulMdpzGVv6BUpZ+0
+dGE81rsO7loQQXkIoieouZPY35U8OhrJHEjrT3J3buuxxTdLQc89cT1dnC7yFHt/n5ZMeGFO9VN8
+fy/nAaNSBZTqvBmED3JDFtLLcXAel9XsNrhhYCaDH8XBIZzc1Q7RhDcwgpX0OkeXvJYhuHyLeUDl
+6EtZ7F3d7XkzNI+k5zStwiOdi4SwzD/sL0F0DkIyX9WUULOpI7WT4zQn1nUTZZXcIQKqjBbg7Ugx
+1EZ7rvdOBq4oyq9Tg9Pg3Inb5XFiMZhB8h+s1+IQFw22Uc2C3Nj8SefZl4IdLE0kHjeObZzEZTKQ
+4B5iM1xfcyUWbCTNXuf78Q2tcV5g67gLxhjP/UXghi9v57LH0F+6dwRb4H3VJQJ8TAVGJeBCP0OP
+SR5m364264j7XERrmsudR5xCOG1LsffopxkpKksc1udAX/wPUTkB/zSvg6b1ym2xfcx+lYNDV9x5
+ja9VXMWSNPDWMjl2EmQNIsd6b1gbcnsb3KkjsPQOTfoGrNedmlg/hqNBd5aIoKWvEtdL9oaPRj6h
+B6wmoKkfCFRyUQTA63Iq49sKaCjkXsYLBL3p/qmY7TX3N5DQ3PGPr/ejHG8rgoOLe+V//JhgIlvU
+lcsNlOBxLmr+nxat09nnQIACdgDcWt4G7rYb3OaWNS1qjUdbr7I27ZZvrJUVuc4Ct45ixTKwBRIx
+PuLPQj7R3guF/+3jdetRmOKrIlqW3UrUIZ0DDTENEJ4ZPBa0W9oc7ZD23o5fesJC4qxtpAhY7TRo
+NUfoj+/3R0qkInm0hDXRTucqsMWnHVXOeMVg81qBJ0jIlM9T9CtUVb5vKOSAjZ5FinN3XDi2HIVm
+2rc1SDqq2md2O7+BJzoiRhfschZ078+Z4gu0ilI4vveK5XbMSyYFMt6r7P1jJ/WUf9hWg9jZj8Pw
+zE8dWFXY0BMY3HdPUn42E+jt3n2HVtN9/sezLclKdwZDYmjSL3D1bOG2Tkd8DmvQOtljpfM8VXye
+lOUPpGHxeIUbdyqaxQkBWA30UAe3i9aUFnC7iRPZGcpyjvSQkug4BW+IeuoG2aW5wXMD7uBSqGoE
+SXaIxnN4zV6qsPeTSxgQ47BwosYScK437ZjqMR4apOkSa6MiUOhqEA/MT70gU0MTlgOiak+3D8Ex
+TxpwLNXw0TCI3n5JuKJqkPzl17EoSZKJ+qWNealrN2ZJojsrVmeZtT+uDflZdMxuKqDfO8kFYjLO
+T79Qe9yre4B97JOjrP6l0MtL00MnhHM7mvTD993fswUDf/7fnG5Tx/xQcNDX5zVx73c3zpqGFbVs
+v71L9T5x47UYqksv++eQdfbet2ufDiJlcRi9Sqk6qOS595Sd+nAwwa1YI9h1ctyoyPN8AFfSlpgm
+jUKCnZLzD4gXEisPpbP/SH/GCZGiYL2lFnaKQPR42dh0cr7POQMXdMK0z/ma5lpW0fUbKiWuruPM
+MsM/K1oyza6KG6QW7HhhzWPYnIpmyQNQ29ovdTQ7W2HQDEAOesa89SIajM2Uk62t1Up4WiwmYsyp
+Qh2JN/XmUKkLHb5ceClFdr9xmDID/rJAQhyDFxFc8Xn4xOLnsFbX7VsR2fQLlskpYpal8N3DzR4e
+iPiKcfMdiJEjKYUUwYvW6m85Cx/EC8kXzbMxnHb87DGi40ekVqilrLgjxK7RWWK0/D2rI4UP1gMy
+wOQGGp6y7R7rQssPir7doeYDseA6ze3NvutzSO+nxH2rLe2bABc0q5SOZmvabePaXnKpYjOCD//X
+eV/00+yEhI1Sx3tearpYDCZojEteW61PDpvMvHaUQ9/Kg9swhnM4dtbG3fgZyGUIih6d5WkuI2Ul
+8R5m73BFFSUzHSXi/KbTqTVVwC5D98YsnceYhDqJvC4AtEioArcOPbIjSNvQksk61pJkoLs8n3BZ
+ZE+4C++7WmX2D0+Et+Pd95zemDY1uae+BoUfiDLrSl4tINjWDThJzOR2NpTXCNtQVCtqVs9QXoqH
+n8aZZB+YFfVLrllmzO3nSrZ8dMfyAyaCy28Px4Fvi4CKbVHZyanK83uRonfwNdhnXBew6tUtE7kf
+v4oRynyUhvCtOGSJtkNWTR4p0xV10kxrIKD3L6P5mMesVVoqs6cQv+SEKGGmWc458eHI5tak+Cbz
+f8mqijvvf0Yc2YTTwhfKeu57itHSSOn+ydI5RacTMdhk0muUCqjpjKUJza3JSTWgLS2AGIfDL8F0
+BHCcpArv/nKEMmqi4TKh3aGnXc6rZIGubdzCNoiSMBWDbjdZqOpyJBDpUotb2iFCsXCUQ/H4Als9
+KsC8/mNkmWfH0+0t97FJbyP3TaMEyIZtLHnadslZJBGuJirfh+LrQKMDUg97ZmvJZMb29G3pO7Qr
+g/iTzx9SasJzMDqVMzfBiRt29pdQmZvGis+uqh6dTwF0qkSFx8KCX53jkLCMXiXuwMFDK9gqF/he
+TKGDDqR/uF+MaCT/K5ht4DYENujrzeHPjBiwuQUR3oqcS33tqX55VI4U54efNzRt9G3lXgpb6/Op
+B1RMWxyiElgVsI82aDrTd0C8UIAxI0/QFSqrXKj9sHgZd2caPw4DoU0QjYLB5EnouU158btTmfox
+cn8iNGFwZjEos7SeOgHlwKzWuIUdxgeQpLHV44EFSGJSlDenyA0bkfDDek9jtwbn9Rk4AfHl2+8H
+XZPKVKQ63ce1p59E2jpAxGYZxVkNeftxHKqbCX99T4bkm0GddD/m1xDx3APcZdFxS75Ofo3Qoclh
+GijCKoyEe0doM9F0iPCW3Jiv6d7jmbwBAHP3ue6gouNMG/zVSyJqZplBxR0sbYOXbjmpTWphzeFx
+kwC4vWz/MUdVA8VIv1/xQP09923StapRbDVZOforxiD8/1VH2URccxCESq85/1KYO3grrFMPQdgQ
+HL6TYMzTWPhbPc3lGS9wfZ8QYddHGbSAnfyKOkfYzy7JS/z+aX9Mj8Whr7Ds5KpX61czq86VulmH
+xR5Ffk+k1LxM4ddDTXORzFIfy2L4PGUmTfPuhXwev+ChNQTPg0WhKZQb3h0wvKY/lyCeeGVsaddR
+VTwEYu92/sUkW0FzUF30Wc3yqDMQ8jvtIko0QPnnTzVTtz0SQ7n6yTfCs3OLahgWP32UiOQhB0lk
+Zhh1m3Wrgk1eTA6duZjs7UCdhwk7Ctc4ILjP7oL6Ny7eSbvrXtGewazI9GN2ywigs6N/aCgmkExc
+JKsu5GE0aH5z8nYn7DPQSlie8/nkXWF4QBNCoOKkKztAg35YNe6wHjkiSTqB6xnJWqBkCrQiYva7
+VdnAy9AIHCDUJ9n7pqjUNOjbcgm0UFUeZGC7A+DeX59rg2/9GLypGTTWaWp12QcED60EKw0HiWor
+lXUACgMVbUj/L7MCEf7lwpgIJbAnxdkciLFBC7HrJHYAlV+LQn19m5Gg6DHdzSS5Wbg2rsPn0bXM
+oMbdfrXDL3uHj9EhnyAuxOjL/N2ddHwebNSshoEtgltmpMkzE670IJtrGDBRdMVTcIxRLyb2A7Uz
+g1tvQ6inX+wbPeWkALJV4bR/vm/BJsubVvte0bNL5M8mTQAolZcE8FIFL/laG3iRr+Qlk5TH8kcU
+wlZ3megrszw4PqnqSWVfIkBqwQ1ZmWZZjy+eNzjGddxzq/X0Rd4fNdgqkZ6ZmOrpp1gj33Nxe0xs
+V5OK5oLwliPeCBZg1hBFZ+rQbiT6pyc3WeAxulXCY/2IC4Zg9q/hi5UMsurXK8D/yMWAI/upeXiP
++wCNWMKKFdxYd5BJKlzgLQ4M9od9+8TSqMG37zhHr2BYMdQcbBlEWC0Pa5c35GBVahKsayjgVvue
+liWsHQCt7ZQHAv6P5sKDjA9gVCY7iq61L8bTBZ4a4sNLBKTfWfIe1VlA4zOE6WbktfUzHNvRqbeP
+s4vVy6Ye6cKn9785mgb51iKle+MkG6GaDLEnq2O8/+eGSFi2aww6c7UkzZFY458n7yraSPly410p
+y9VESPaKFYCE2pe/BnUTMxOh+VUxJaAPdnS1zrxffcdRMmTWprLXkMbotoaj9+l7+Chy5WP91YWL
+fZSkJeuzcKQUoOBMCmyw+aPc/8m4UcFFfkB3ZdFjtABVbD+ENFdZ1NUmAIamgJMxbhBx48K/IyMV
+xdmfG974AaYz4QkjSX5e/JunFPd7a8Z9PAlpSgN61whJGD7wNUD6gFYeOWS93VdvA9NYkvPfqXvT
+uWR9UonTzxnR6iUdxVwjcFwhDntf3sPDfLmQHi8ubXHJeTvirqR+o4+1wsCColbRASKAAoh8Snca
+9JIaQgyRDUmQ/94uIGWo+3EsklDHPCKxn2LYI9Qws3h8LVSsUmjhiNudZ5yaatkx4J1SN7MuxOtz
+r3KMEUKaqjZxlPHoJDHAMUZIM0UGyLa2wJKnpnUhdmL6kDYRGCd1nG6imLCLl4/Fg2tzo3wj8PzI
+kelVeGnUoo7JSTjzA3CxRyDc0VPcx3smYCOpNRicL9+WEn++pmGOZEEnhnl8Ajye8LBi2KpWxcgx
+RFH5t3gOjDF3nAEvb3CQ7I1CGbZETrDUcC4DPRUACTRO8lhl0Q/aomObXf+AfDCOhZdDVxodJ8o/
+9Afla1PR2oZWm1IJDHiDfzNemWYZtdvXQOVDu0tJw9pClHeC2NIRv6fsCX18vJZ+7h73fgeI6H83
+kDFLaAYqlTBn

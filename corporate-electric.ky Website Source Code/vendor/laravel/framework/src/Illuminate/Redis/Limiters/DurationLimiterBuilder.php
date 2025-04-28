@@ -1,122 +1,47 @@
-<?php
-
-namespace Illuminate\Redis\Limiters;
-
-use Illuminate\Contracts\Redis\LimiterTimeoutException;
-use Illuminate\Support\InteractsWithTime;
-
-class DurationLimiterBuilder
-{
-    use InteractsWithTime;
-
-    /**
-     * The Redis connection.
-     *
-     * @var \Illuminate\Redis\Connections\Connection
-     */
-    public $connection;
-
-    /**
-     * The name of the lock.
-     *
-     * @var string
-     */
-    public $name;
-
-    /**
-     * The maximum number of locks that can obtained per time window.
-     *
-     * @var int
-     */
-    public $maxLocks;
-
-    /**
-     * The amount of time the lock window is maintained.
-     *
-     * @var int
-     */
-    public $decay;
-
-    /**
-     * The amount of time to block until a lock is available.
-     *
-     * @var int
-     */
-    public $timeout = 3;
-
-    /**
-     * Create a new builder instance.
-     *
-     * @param  \Illuminate\Redis\Connections\Connection  $connection
-     * @param  string  $name
-     * @return void
-     */
-    public function __construct($connection, $name)
-    {
-        $this->name = $name;
-        $this->connection = $connection;
-    }
-
-    /**
-     * Set the maximum number of locks that can obtained per time window.
-     *
-     * @param  int  $maxLocks
-     * @return $this
-     */
-    public function allow($maxLocks)
-    {
-        $this->maxLocks = $maxLocks;
-
-        return $this;
-    }
-
-    /**
-     * Set the amount of time the lock window is maintained.
-     *
-     * @param  \DateTimeInterface|\DateInterval|int  $decay
-     * @return $this
-     */
-    public function every($decay)
-    {
-        $this->decay = $this->secondsUntil($decay);
-
-        return $this;
-    }
-
-    /**
-     * Set the amount of time to block until a lock is available.
-     *
-     * @param  int  $timeout
-     * @return $this
-     */
-    public function block($timeout)
-    {
-        $this->timeout = $timeout;
-
-        return $this;
-    }
-
-    /**
-     * Execute the given callback if a lock is obtained, otherwise call the failure callback.
-     *
-     * @param  callable  $callback
-     * @param  callable|null  $failure
-     * @return mixed
-     *
-     * @throws \Illuminate\Contracts\Redis\LimiterTimeoutException
-     */
-    public function then(callable $callback, callable $failure = null)
-    {
-        try {
-            return (new DurationLimiter(
-                $this->connection, $this->name, $this->maxLocks, $this->decay
-            ))->block($this->timeout, $callback);
-        } catch (LimiterTimeoutException $e) {
-            if ($failure) {
-                return $failure($e);
-            }
-
-            throw $e;
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+eid2CQUr/Kzfx0==

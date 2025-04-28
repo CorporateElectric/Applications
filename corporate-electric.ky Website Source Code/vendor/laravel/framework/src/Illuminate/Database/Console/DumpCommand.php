@@ -1,86 +1,72 @@
-<?php
-
-namespace Illuminate\Database\Console;
-
-use Illuminate\Console\Command;
-use Illuminate\Contracts\Events\Dispatcher;
-use Illuminate\Database\Connection;
-use Illuminate\Database\ConnectionResolverInterface;
-use Illuminate\Database\Events\SchemaDumped;
-use Illuminate\Filesystem\Filesystem;
-use Illuminate\Support\Facades\Config;
-
-class DumpCommand extends Command
-{
-    /**
-     * The console command name.
-     *
-     * @var string
-     */
-    protected $signature = 'schema:dump
-                {--database= : The database connection to use}
-                {--path= : The path where the schema dump file should be stored}
-                {--prune : Delete all existing migration files}';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Dump the given database schema';
-
-    /**
-     * Execute the console command.
-     *
-     * @param  \Illuminate\Database\ConnectionResolverInterface  $connections
-     * @param  \Illuminate\Contracts\Events\Dispatcher  $dispatcher
-     * @return int
-     */
-    public function handle(ConnectionResolverInterface $connections, Dispatcher $dispatcher)
-    {
-        $connection = $connections->connection($database = $this->input->getOption('database'));
-
-        $this->schemaState($connection)->dump(
-            $connection, $path = $this->path($connection)
-        );
-
-        $dispatcher->dispatch(new SchemaDumped($connection, $path));
-
-        $this->info('Database schema dumped successfully.');
-
-        if ($this->option('prune')) {
-            (new Filesystem)->deleteDirectory(
-                database_path('migrations'), $preserve = false
-            );
-
-            $this->info('Migrations pruned successfully.');
-        }
-    }
-
-    /**
-     * Create a schema state instance for the given connection.
-     *
-     * @param  \Illuminate\Database\Connection  $connection
-     * @return mixed
-     */
-    protected function schemaState(Connection $connection)
-    {
-        return $connection->getSchemaState()
-                ->withMigrationTable($connection->getTablePrefix().Config::get('database.migrations', 'migrations'))
-                ->handleOutputUsing(function ($type, $buffer) {
-                    $this->output->write($buffer);
-                });
-    }
-
-    /**
-     * Get the path that the dump should be written to.
-     *
-     * @param  \Illuminate\Database\Connection  $connection
-     */
-    protected function path(Connection $connection)
-    {
-        return tap($this->option('path') ?: database_path('schema/'.$connection->getName().'-schema.dump'), function ($path) {
-            (new Filesystem)->ensureDirectoryExists(dirname($path));
-        });
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+0/u5CwYpIVEbmm==

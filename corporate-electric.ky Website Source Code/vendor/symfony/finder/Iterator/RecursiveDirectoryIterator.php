@@ -1,144 +1,76 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Finder\Iterator;
-
-use Symfony\Component\Finder\Exception\AccessDeniedException;
-use Symfony\Component\Finder\SplFileInfo;
-
-/**
- * Extends the \RecursiveDirectoryIterator to support relative paths.
- *
- * @author Victor Berchet <victor@suumit.com>
- */
-class RecursiveDirectoryIterator extends \RecursiveDirectoryIterator
-{
-    /**
-     * @var bool
-     */
-    private $ignoreUnreadableDirs;
-
-    /**
-     * @var bool
-     */
-    private $rewindable;
-
-    // these 3 properties take part of the performance optimization to avoid redoing the same work in all iterations
-    private $rootPath;
-    private $subPath;
-    private $directorySeparator = '/';
-
-    /**
-     * @throws \RuntimeException
-     */
-    public function __construct(string $path, int $flags, bool $ignoreUnreadableDirs = false)
-    {
-        if ($flags & (self::CURRENT_AS_PATHNAME | self::CURRENT_AS_SELF)) {
-            throw new \RuntimeException('This iterator only support returning current as fileinfo.');
-        }
-
-        parent::__construct($path, $flags);
-        $this->ignoreUnreadableDirs = $ignoreUnreadableDirs;
-        $this->rootPath = $path;
-        if ('/' !== \DIRECTORY_SEPARATOR && !($flags & self::UNIX_PATHS)) {
-            $this->directorySeparator = \DIRECTORY_SEPARATOR;
-        }
-    }
-
-    /**
-     * Return an instance of SplFileInfo with support for relative paths.
-     *
-     * @return SplFileInfo File information
-     */
-    public function current()
-    {
-        // the logic here avoids redoing the same work in all iterations
-
-        if (null === $subPathname = $this->subPath) {
-            $subPathname = $this->subPath = (string) $this->getSubPath();
-        }
-        if ('' !== $subPathname) {
-            $subPathname .= $this->directorySeparator;
-        }
-        $subPathname .= $this->getFilename();
-
-        if ('/' !== $basePath = $this->rootPath) {
-            $basePath .= $this->directorySeparator;
-        }
-
-        return new SplFileInfo($basePath.$subPathname, $this->subPath, $subPathname);
-    }
-
-    /**
-     * @return \RecursiveIterator
-     *
-     * @throws AccessDeniedException
-     */
-    public function getChildren()
-    {
-        try {
-            $children = parent::getChildren();
-
-            if ($children instanceof self) {
-                // parent method will call the constructor with default arguments, so unreadable dirs won't be ignored anymore
-                $children->ignoreUnreadableDirs = $this->ignoreUnreadableDirs;
-
-                // performance optimization to avoid redoing the same work in all children
-                $children->rewindable = &$this->rewindable;
-                $children->rootPath = $this->rootPath;
-            }
-
-            return $children;
-        } catch (\UnexpectedValueException $e) {
-            if ($this->ignoreUnreadableDirs) {
-                // If directory is unreadable and finder is set to ignore it, a fake empty content is returned.
-                return new \RecursiveArrayIterator([]);
-            } else {
-                throw new AccessDeniedException($e->getMessage(), $e->getCode(), $e);
-            }
-        }
-    }
-
-    /**
-     * Do nothing for non rewindable stream.
-     */
-    public function rewind()
-    {
-        if (false === $this->isRewindable()) {
-            return;
-        }
-
-        parent::rewind();
-    }
-
-    /**
-     * Checks if the stream is rewindable.
-     *
-     * @return bool true when the stream is rewindable, false otherwise
-     */
-    public function isRewindable()
-    {
-        if (null !== $this->rewindable) {
-            return $this->rewindable;
-        }
-
-        if (false !== $stream = @opendir($this->getPath())) {
-            $infos = stream_get_meta_data($stream);
-            closedir($stream);
-
-            if ($infos['seekable']) {
-                return $this->rewindable = true;
-            }
-        }
-
-        return $this->rewindable = false;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+gOkk+VNmGiJ3DR+k2pKtbheguQ8=

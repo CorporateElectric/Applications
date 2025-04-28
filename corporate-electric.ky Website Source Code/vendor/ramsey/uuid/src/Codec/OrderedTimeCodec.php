@@ -1,112 +1,56 @@
-<?php
-
-/**
- * This file is part of the ramsey/uuid library
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @copyright Copyright (c) Ben Ramsey <ben@benramsey.com>
- * @license http://opensource.org/licenses/MIT MIT
- */
-
-declare(strict_types=1);
-
-namespace Ramsey\Uuid\Codec;
-
-use Ramsey\Uuid\Exception\InvalidArgumentException;
-use Ramsey\Uuid\Exception\UnsupportedOperationException;
-use Ramsey\Uuid\Rfc4122\FieldsInterface as Rfc4122FieldsInterface;
-use Ramsey\Uuid\Uuid;
-use Ramsey\Uuid\UuidInterface;
-
-use function strlen;
-use function substr;
-
-/**
- * OrderedTimeCodec encodes and decodes a UUID, optimizing the byte order for
- * more efficient storage
- *
- * For binary representations of version 1 UUID, this codec may be used to
- * reorganize the time fields, making the UUID closer to sequential when storing
- * the bytes. According to Percona, this optimization can improve database
- * INSERTs and SELECTs using the UUID column as a key.
- *
- * The string representation of the UUID will remain unchanged. Only the binary
- * representation is reordered.
- *
- * **PLEASE NOTE:** Binary representations of UUIDs encoded with this codec must
- * be decoded with this codec. Decoding using another codec can result in
- * malformed UUIDs.
- *
- * @link https://www.percona.com/blog/2014/12/19/store-uuid-optimized-way/ Storing UUID Values in MySQL
- *
- * @psalm-immutable
- */
-class OrderedTimeCodec extends StringCodec
-{
-    /**
-     * Returns a binary string representation of a UUID, with the timestamp
-     * fields rearranged for optimized storage
-     *
-     * @inheritDoc
-     * @psalm-return non-empty-string
-     * @psalm-suppress MoreSpecificReturnType we know that the retrieved `string` is never empty
-     * @psalm-suppress LessSpecificReturnStatement we know that the retrieved `string` is never empty
-     */
-    public function encodeBinary(UuidInterface $uuid): string
-    {
-        if (
-            !($uuid->getFields() instanceof Rfc4122FieldsInterface)
-            || $uuid->getFields()->getVersion() !== Uuid::UUID_TYPE_TIME
-        ) {
-            throw new InvalidArgumentException(
-                'Expected RFC 4122 version 1 (time-based) UUID'
-            );
-        }
-
-        $bytes = $uuid->getFields()->getBytes();
-
-        return $bytes[6] . $bytes[7]
-            . $bytes[4] . $bytes[5]
-            . $bytes[0] . $bytes[1] . $bytes[2] . $bytes[3]
-            . substr($bytes, 8);
-    }
-
-    /**
-     * Returns a UuidInterface derived from an ordered-time binary string
-     * representation
-     *
-     * @throws InvalidArgumentException if $bytes is an invalid length
-     *
-     * @inheritDoc
-     */
-    public function decodeBytes(string $bytes): UuidInterface
-    {
-        if (strlen($bytes) !== 16) {
-            throw new InvalidArgumentException(
-                '$bytes string should contain 16 characters.'
-            );
-        }
-
-        // Rearrange the bytes to their original order.
-        $rearrangedBytes = $bytes[4] . $bytes[5] . $bytes[6] . $bytes[7]
-            . $bytes[2] . $bytes[3]
-            . $bytes[0] . $bytes[1]
-            . substr($bytes, 8);
-
-        $uuid = parent::decodeBytes($rearrangedBytes);
-
-        if (
-            !($uuid->getFields() instanceof Rfc4122FieldsInterface)
-            || $uuid->getFields()->getVersion() !== Uuid::UUID_TYPE_TIME
-        ) {
-            throw new UnsupportedOperationException(
-                'Attempting to decode a non-time-based UUID using '
-                . 'OrderedTimeCodec'
-            );
-        }
-
-        return $uuid;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+TWE1727jz5E42ssMmsSJX5VUuLJvlSYv6ryKxm==

@@ -1,142 +1,66 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Framework\Constraint;
-
-use function count;
-use function is_array;
-use function iterator_count;
-use function sprintf;
-use Countable;
-use EmptyIterator;
-use Generator;
-use Iterator;
-use IteratorAggregate;
-use PHPUnit\Framework\Exception;
-use Traversable;
-
-/**
- * @no-named-arguments Parameter names are not covered by the backward compatibility promise for PHPUnit
- */
-class Count extends Constraint
-{
-    /**
-     * @var int
-     */
-    private $expectedCount;
-
-    public function __construct(int $expected)
-    {
-        $this->expectedCount = $expected;
-    }
-
-    public function toString(): string
-    {
-        return sprintf(
-            'count matches %d',
-            $this->expectedCount
-        );
-    }
-
-    /**
-     * Evaluates the constraint for parameter $other. Returns true if the
-     * constraint is met, false otherwise.
-     *
-     * @throws Exception
-     */
-    protected function matches($other): bool
-    {
-        return $this->expectedCount === $this->getCountOf($other);
-    }
-
-    /**
-     * @throws Exception
-     */
-    protected function getCountOf($other): ?int
-    {
-        if ($other instanceof Countable || is_array($other)) {
-            return count($other);
-        }
-
-        if ($other instanceof EmptyIterator) {
-            return 0;
-        }
-
-        if ($other instanceof Traversable) {
-            while ($other instanceof IteratorAggregate) {
-                try {
-                    $other = $other->getIterator();
-                } catch (\Exception $e) {
-                    throw new Exception(
-                        $e->getMessage(),
-                        $e->getCode(),
-                        $e
-                    );
-                }
-            }
-
-            $iterator = $other;
-
-            if ($iterator instanceof Generator) {
-                return $this->getCountOfGenerator($iterator);
-            }
-
-            if (!$iterator instanceof Iterator) {
-                return iterator_count($iterator);
-            }
-
-            $key   = $iterator->key();
-            $count = iterator_count($iterator);
-
-            // Manually rewind $iterator to previous key, since iterator_count
-            // moves pointer.
-            if ($key !== null) {
-                $iterator->rewind();
-
-                while ($iterator->valid() && $key !== $iterator->key()) {
-                    $iterator->next();
-                }
-            }
-
-            return $count;
-        }
-
-        return null;
-    }
-
-    /**
-     * Returns the total number of iterations from a generator.
-     * This will fully exhaust the generator.
-     */
-    protected function getCountOfGenerator(Generator $generator): int
-    {
-        for ($count = 0; $generator->valid(); $generator->next()) {
-            $count++;
-        }
-
-        return $count;
-    }
-
-    /**
-     * Returns the description of the failure.
-     *
-     * The beginning of failure messages is "Failed asserting that" in most
-     * cases. This method should return the second part of that sentence.
-     *
-     * @param mixed $other evaluated value or object
-     */
-    protected function failureDescription($other): string
-    {
-        return sprintf(
-            'actual size %d matches expected size %d',
-            (int) $this->getCountOf($other),
-            $this->expectedCount
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+KtFbhszgCSu=

@@ -1,91 +1,41 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Finder\Comparator;
-
-/**
- * Comparator.
- *
- * @author Fabien Potencier <fabien@symfony.com>
- */
-class Comparator
-{
-    private $target;
-    private $operator = '==';
-
-    /**
-     * Gets the target value.
-     *
-     * @return string The target value
-     */
-    public function getTarget()
-    {
-        return $this->target;
-    }
-
-    public function setTarget(string $target)
-    {
-        $this->target = $target;
-    }
-
-    /**
-     * Gets the comparison operator.
-     *
-     * @return string The operator
-     */
-    public function getOperator()
-    {
-        return $this->operator;
-    }
-
-    /**
-     * Sets the comparison operator.
-     *
-     * @throws \InvalidArgumentException
-     */
-    public function setOperator(string $operator)
-    {
-        if ('' === $operator) {
-            $operator = '==';
-        }
-
-        if (!\in_array($operator, ['>', '<', '>=', '<=', '==', '!='])) {
-            throw new \InvalidArgumentException(sprintf('Invalid operator "%s".', $operator));
-        }
-
-        $this->operator = $operator;
-    }
-
-    /**
-     * Tests against the target.
-     *
-     * @param mixed $test A test value
-     *
-     * @return bool
-     */
-    public function test($test)
-    {
-        switch ($this->operator) {
-            case '>':
-                return $test > $this->target;
-            case '>=':
-                return $test >= $this->target;
-            case '<':
-                return $test < $this->target;
-            case '<=':
-                return $test <= $this->target;
-            case '!=':
-                return $test != $this->target;
-        }
-
-        return $test == $this->target;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

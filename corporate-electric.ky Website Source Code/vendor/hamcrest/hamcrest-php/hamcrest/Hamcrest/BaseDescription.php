@@ -1,132 +1,83 @@
-<?php
-namespace Hamcrest;
-
-/*
- Copyright (c) 2009 hamcrest.org
- */
-use Hamcrest\Internal\SelfDescribingValue;
-
-/**
- * A {@link Hamcrest\Description} that is stored as a string.
- */
-abstract class BaseDescription implements Description
-{
-
-    public function appendText($text)
-    {
-        $this->append($text);
-
-        return $this;
-    }
-
-    public function appendDescriptionOf(SelfDescribing $value)
-    {
-        $value->describeTo($this);
-
-        return $this;
-    }
-
-    public function appendValue($value)
-    {
-        if (is_null($value)) {
-            $this->append('null');
-        } elseif (is_string($value)) {
-            $this->_toPhpSyntax($value);
-        } elseif (is_float($value)) {
-            $this->append('<');
-            $this->append($value);
-            $this->append('F>');
-        } elseif (is_bool($value)) {
-            $this->append('<');
-            $this->append($value ? 'true' : 'false');
-            $this->append('>');
-        } elseif (is_array($value) || $value instanceof \Iterator || $value instanceof \IteratorAggregate) {
-            $this->appendValueList('[', ', ', ']', $value);
-        } elseif (is_object($value) && !method_exists($value, '__toString')) {
-            $this->append('<');
-            $this->append(get_class($value));
-            $this->append('>');
-        } else {
-            $this->append('<');
-            $this->append($value);
-            $this->append('>');
-        }
-
-        return $this;
-    }
-
-    public function appendValueList($start, $separator, $end, $values)
-    {
-        $list = array();
-        foreach ($values as $v) {
-            $list[] = new SelfDescribingValue($v);
-        }
-
-        $this->appendList($start, $separator, $end, $list);
-
-        return $this;
-    }
-
-    public function appendList($start, $separator, $end, $values)
-    {
-        $this->append($start);
-
-        $separate = false;
-
-        foreach ($values as $value) {
-            /*if (!($value instanceof Hamcrest\SelfDescribing)) {
-                $value = new Hamcrest\Internal\SelfDescribingValue($value);
-            }*/
-
-            if ($separate) {
-                $this->append($separator);
-            }
-
-            $this->appendDescriptionOf($value);
-
-            $separate = true;
-        }
-
-        $this->append($end);
-
-        return $this;
-    }
-
-    // -- Protected Methods
-
-    /**
-     * Append the String <var>$str</var> to the description.
-     */
-    abstract protected function append($str);
-
-    // -- Private Methods
-
-    private function _toPhpSyntax($value)
-    {
-        $str = '"';
-        for ($i = 0, $len = strlen($value); $i < $len; ++$i) {
-            switch ($value[$i]) {
-                case '"':
-                    $str .= '\\"';
-                    break;
-
-                case "\t":
-                    $str .= '\\t';
-                    break;
-
-                case "\r":
-                    $str .= '\\r';
-                    break;
-
-                case "\n":
-                    $str .= '\\n';
-                    break;
-
-                default:
-                    $str .= $value[$i];
-            }
-        }
-        $str .= '"';
-        $this->append($str);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+fq+vOYamkij5W4kRRC9dnaqaypkW9Q42MgOX

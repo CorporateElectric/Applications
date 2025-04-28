@@ -1,97 +1,63 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\CodeCleaner;
-
-use PhpParser\Node;
-use PhpParser\Node\Expr;
-use PhpParser\Node\Expr\FuncCall;
-use PhpParser\Node\Expr\Variable;
-use PhpParser\Node\Stmt\Do_;
-use PhpParser\Node\Stmt\Function_;
-use PhpParser\Node\Stmt\If_;
-use PhpParser\Node\Stmt\Switch_;
-use PhpParser\Node\Stmt\While_;
-use Psy\Exception\FatalErrorException;
-
-/**
- * Validate that function calls will succeed.
- *
- * This pass throws a FatalErrorException rather than letting PHP run
- * headfirst into a real fatal error and die.
- */
-class ValidFunctionNamePass extends NamespaceAwarePass
-{
-    private $conditionalScopes = 0;
-
-    /**
-     * Store newly defined function names on the way in, to allow recursion.
-     *
-     * @param Node $node
-     */
-    public function enterNode(Node $node)
-    {
-        parent::enterNode($node);
-
-        if (self::isConditional($node)) {
-            $this->conditionalScopes++;
-        } elseif ($node instanceof Function_) {
-            $name = $this->getFullyQualifiedName($node->name);
-
-            // @todo add an "else" here which adds a runtime check for instances where we can't tell
-            // whether a function is being redefined by static analysis alone.
-            if ($this->conditionalScopes === 0) {
-                if (\function_exists($name) ||
-                    isset($this->currentScope[\strtolower($name)])) {
-                    $msg = \sprintf('Cannot redeclare %s()', $name);
-                    throw new FatalErrorException($msg, 0, \E_ERROR, null, $node->getLine());
-                }
-            }
-
-            $this->currentScope[\strtolower($name)] = true;
-        }
-    }
-
-    /**
-     * Validate that function calls will succeed.
-     *
-     * @throws FatalErrorException if a function is redefined
-     * @throws FatalErrorException if the function name is a string (not an expression) and is not defined
-     *
-     * @param Node $node
-     */
-    public function leaveNode(Node $node)
-    {
-        if (self::isConditional($node)) {
-            $this->conditionalScopes--;
-        } elseif ($node instanceof FuncCall) {
-            // if function name is an expression or a variable, give it a pass for now.
-            $name = $node->name;
-            if (!$name instanceof Expr && !$name instanceof Variable) {
-                $shortName = \implode('\\', $name->parts);
-                $fullName = $this->getFullyQualifiedName($name);
-                $inScope = isset($this->currentScope[\strtolower($fullName)]);
-                if (!$inScope && !\function_exists($shortName) && !\function_exists($fullName)) {
-                    $message = \sprintf('Call to undefined function %s()', $name);
-                    throw new FatalErrorException($message, 0, \E_ERROR, null, $node->getLine());
-                }
-            }
-        }
-    }
-
-    private static function isConditional(Node $node)
-    {
-        return $node instanceof If_ ||
-            $node instanceof While_ ||
-            $node instanceof Do_ ||
-            $node instanceof Switch_;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

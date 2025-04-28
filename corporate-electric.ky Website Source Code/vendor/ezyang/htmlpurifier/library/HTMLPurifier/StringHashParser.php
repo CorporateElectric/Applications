@@ -1,136 +1,48 @@
-<?php
-
-/**
- * Parses string hash files. File format is as such:
- *
- *      DefaultKeyValue
- *      KEY: Value
- *      KEY2: Value2
- *      --MULTILINE-KEY--
- *      Multiline
- *      value.
- *
- * Which would output something similar to:
- *
- *      array(
- *          'ID' => 'DefaultKeyValue',
- *          'KEY' => 'Value',
- *          'KEY2' => 'Value2',
- *          'MULTILINE-KEY' => "Multiline\nvalue.\n",
- *      )
- *
- * We use this as an easy to use file-format for configuration schema
- * files, but the class itself is usage agnostic.
- *
- * You can use ---- to forcibly terminate parsing of a single string-hash;
- * this marker is used in multi string-hashes to delimit boundaries.
- */
-class HTMLPurifier_StringHashParser
-{
-
-    /**
-     * @type string
-     */
-    public $default = 'ID';
-
-    /**
-     * Parses a file that contains a single string-hash.
-     * @param string $file
-     * @return array
-     */
-    public function parseFile($file)
-    {
-        if (!file_exists($file)) {
-            return false;
-        }
-        $fh = fopen($file, 'r');
-        if (!$fh) {
-            return false;
-        }
-        $ret = $this->parseHandle($fh);
-        fclose($fh);
-        return $ret;
-    }
-
-    /**
-     * Parses a file that contains multiple string-hashes delimited by '----'
-     * @param string $file
-     * @return array
-     */
-    public function parseMultiFile($file)
-    {
-        if (!file_exists($file)) {
-            return false;
-        }
-        $ret = array();
-        $fh = fopen($file, 'r');
-        if (!$fh) {
-            return false;
-        }
-        while (!feof($fh)) {
-            $ret[] = $this->parseHandle($fh);
-        }
-        fclose($fh);
-        return $ret;
-    }
-
-    /**
-     * Internal parser that acepts a file handle.
-     * @note While it's possible to simulate in-memory parsing by using
-     *       custom stream wrappers, if such a use-case arises we should
-     *       factor out the file handle into its own class.
-     * @param resource $fh File handle with pointer at start of valid string-hash
-     *            block.
-     * @return array
-     */
-    protected function parseHandle($fh)
-    {
-        $state   = false;
-        $single  = false;
-        $ret     = array();
-        do {
-            $line = fgets($fh);
-            if ($line === false) {
-                break;
-            }
-            $line = rtrim($line, "\n\r");
-            if (!$state && $line === '') {
-                continue;
-            }
-            if ($line === '----') {
-                break;
-            }
-            if (strncmp('--#', $line, 3) === 0) {
-                // Comment
-                continue;
-            } elseif (strncmp('--', $line, 2) === 0) {
-                // Multiline declaration
-                $state = trim($line, '- ');
-                if (!isset($ret[$state])) {
-                    $ret[$state] = '';
-                }
-                continue;
-            } elseif (!$state) {
-                $single = true;
-                if (strpos($line, ':') !== false) {
-                    // Single-line declaration
-                    list($state, $line) = explode(':', $line, 2);
-                    $line = trim($line);
-                } else {
-                    // Use default declaration
-                    $state  = $this->default;
-                }
-            }
-            if ($single) {
-                $ret[$state] = $line;
-                $single = false;
-                $state  = false;
-            } else {
-                $ret[$state] .= "$line\n";
-            }
-        } while (!feof($fh));
-        return $ret;
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+a1w4QRDoOIRo4Vv41YIZZLbhIG==

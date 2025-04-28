@@ -1,93 +1,58 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of sebastian/comparator.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\Comparator;
-
-use function sprintf;
-use function strtolower;
-use DOMDocument;
-use DOMNode;
-use ValueError;
-
-/**
- * Compares DOMNode instances for equality.
- */
-class DOMNodeComparator extends ObjectComparator
-{
-    /**
-     * Returns whether the comparator can compare two values.
-     *
-     * @param mixed $expected The first value to compare
-     * @param mixed $actual   The second value to compare
-     *
-     * @return bool
-     */
-    public function accepts($expected, $actual)
-    {
-        return $expected instanceof DOMNode && $actual instanceof DOMNode;
-    }
-
-    /**
-     * Asserts that two values are equal.
-     *
-     * @param mixed $expected     First value to compare
-     * @param mixed $actual       Second value to compare
-     * @param float $delta        Allowed numerical distance between two values to consider them equal
-     * @param bool  $canonicalize Arrays are sorted before comparison when set to true
-     * @param bool  $ignoreCase   Case is ignored when set to true
-     * @param array $processed    List of already processed elements (used to prevent infinite recursion)
-     *
-     * @throws ComparisonFailure
-     */
-    public function assertEquals($expected, $actual, $delta = 0.0, $canonicalize = false, $ignoreCase = false, array &$processed = [])/*: void*/
-    {
-        $expectedAsString = $this->nodeToText($expected, true, $ignoreCase);
-        $actualAsString   = $this->nodeToText($actual, true, $ignoreCase);
-
-        if ($expectedAsString !== $actualAsString) {
-            $type = $expected instanceof DOMDocument ? 'documents' : 'nodes';
-
-            throw new ComparisonFailure(
-                $expected,
-                $actual,
-                $expectedAsString,
-                $actualAsString,
-                false,
-                sprintf("Failed asserting that two DOM %s are equal.\n", $type)
-            );
-        }
-    }
-
-    /**
-     * Returns the normalized, whitespace-cleaned, and indented textual
-     * representation of a DOMNode.
-     */
-    private function nodeToText(DOMNode $node, bool $canonicalize, bool $ignoreCase): string
-    {
-        if ($canonicalize) {
-            $document = new DOMDocument;
-
-            try {
-                @$document->loadXML($node->C14N());
-            } catch (ValueError $e) {
-            }
-
-            $node = $document;
-        }
-
-        $document = $node instanceof DOMDocument ? $node : $node->ownerDocument;
-
-        $document->formatOutput = true;
-        $document->normalizeDocument();
-
-        $text = $node instanceof DOMDocument ? $node->saveXML() : $document->saveXML($node);
-
-        return $ignoreCase ? strtolower($text) : $text;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

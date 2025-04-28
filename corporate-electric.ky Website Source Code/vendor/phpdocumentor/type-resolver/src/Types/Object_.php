@@ -1,68 +1,38 @@
-<?php
-
-declare(strict_types=1);
-
-/**
- * This file is part of phpDocumentor.
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @link      http://phpdoc.org
- */
-
-namespace phpDocumentor\Reflection\Types;
-
-use InvalidArgumentException;
-use phpDocumentor\Reflection\Fqsen;
-use phpDocumentor\Reflection\Type;
-use function strpos;
-
-/**
- * Value Object representing an object.
- *
- * An object can be either typed or untyped. When an object is typed it means that it has an identifier, the FQSEN,
- * pointing to an element in PHP. Object types that are untyped do not refer to a specific class but represent objects
- * in general.
- *
- * @psalm-immutable
- */
-final class Object_ implements Type
-{
-    /** @var Fqsen|null */
-    private $fqsen;
-
-    /**
-     * Initializes this object with an optional FQSEN, if not provided this object is considered 'untyped'.
-     *
-     * @throws InvalidArgumentException When provided $fqsen is not a valid type.
-     */
-    public function __construct(?Fqsen $fqsen = null)
-    {
-        if (strpos((string) $fqsen, '::') !== false || strpos((string) $fqsen, '()') !== false) {
-            throw new InvalidArgumentException(
-                'Object types can only refer to a class, interface or trait but a method, function, constant or '
-                . 'property was received: ' . (string) $fqsen
-            );
-        }
-
-        $this->fqsen = $fqsen;
-    }
-
-    /**
-     * Returns the FQSEN associated with this object.
-     */
-    public function getFqsen() : ?Fqsen
-    {
-        return $this->fqsen;
-    }
-
-    public function __toString() : string
-    {
-        if ($this->fqsen) {
-            return (string) $this->fqsen;
-        }
-
-        return 'object';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+ASYB2I0n2xwfP27X

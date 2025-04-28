@@ -1,1490 +1,631 @@
-<?php declare(strict_types=1);
-
-namespace PhpParser;
-
-use PhpParser\Internal\DiffElem;
-use PhpParser\Internal\PrintableNewAnonClassNode;
-use PhpParser\Internal\TokenStream;
-use PhpParser\Node\Expr;
-use PhpParser\Node\Expr\AssignOp;
-use PhpParser\Node\Expr\BinaryOp;
-use PhpParser\Node\Expr\Cast;
-use PhpParser\Node\Scalar;
-use PhpParser\Node\Stmt;
-
-abstract class PrettyPrinterAbstract
-{
-    const FIXUP_PREC_LEFT       = 0; // LHS operand affected by precedence
-    const FIXUP_PREC_RIGHT      = 1; // RHS operand affected by precedence
-    const FIXUP_CALL_LHS        = 2; // LHS of call
-    const FIXUP_DEREF_LHS       = 3; // LHS of dereferencing operation
-    const FIXUP_BRACED_NAME     = 4; // Name operand that may require bracing
-    const FIXUP_VAR_BRACED_NAME = 5; // Name operand that may require ${} bracing
-    const FIXUP_ENCAPSED        = 6; // Encapsed string part
-
-    protected $precedenceMap = [
-        // [precedence, associativity]
-        // where for precedence -1 is %left, 0 is %nonassoc and 1 is %right
-        BinaryOp\Pow::class            => [  0,  1],
-        Expr\BitwiseNot::class         => [ 10,  1],
-        Expr\PreInc::class             => [ 10,  1],
-        Expr\PreDec::class             => [ 10,  1],
-        Expr\PostInc::class            => [ 10, -1],
-        Expr\PostDec::class            => [ 10, -1],
-        Expr\UnaryPlus::class          => [ 10,  1],
-        Expr\UnaryMinus::class         => [ 10,  1],
-        Cast\Int_::class               => [ 10,  1],
-        Cast\Double::class             => [ 10,  1],
-        Cast\String_::class            => [ 10,  1],
-        Cast\Array_::class             => [ 10,  1],
-        Cast\Object_::class            => [ 10,  1],
-        Cast\Bool_::class              => [ 10,  1],
-        Cast\Unset_::class             => [ 10,  1],
-        Expr\ErrorSuppress::class      => [ 10,  1],
-        Expr\Instanceof_::class        => [ 20,  0],
-        Expr\BooleanNot::class         => [ 30,  1],
-        BinaryOp\Mul::class            => [ 40, -1],
-        BinaryOp\Div::class            => [ 40, -1],
-        BinaryOp\Mod::class            => [ 40, -1],
-        BinaryOp\Plus::class           => [ 50, -1],
-        BinaryOp\Minus::class          => [ 50, -1],
-        BinaryOp\Concat::class         => [ 50, -1],
-        BinaryOp\ShiftLeft::class      => [ 60, -1],
-        BinaryOp\ShiftRight::class     => [ 60, -1],
-        BinaryOp\Smaller::class        => [ 70,  0],
-        BinaryOp\SmallerOrEqual::class => [ 70,  0],
-        BinaryOp\Greater::class        => [ 70,  0],
-        BinaryOp\GreaterOrEqual::class => [ 70,  0],
-        BinaryOp\Equal::class          => [ 80,  0],
-        BinaryOp\NotEqual::class       => [ 80,  0],
-        BinaryOp\Identical::class      => [ 80,  0],
-        BinaryOp\NotIdentical::class   => [ 80,  0],
-        BinaryOp\Spaceship::class      => [ 80,  0],
-        BinaryOp\BitwiseAnd::class     => [ 90, -1],
-        BinaryOp\BitwiseXor::class     => [100, -1],
-        BinaryOp\BitwiseOr::class      => [110, -1],
-        BinaryOp\BooleanAnd::class     => [120, -1],
-        BinaryOp\BooleanOr::class      => [130, -1],
-        BinaryOp\Coalesce::class       => [140,  1],
-        Expr\Ternary::class            => [150,  0],
-        // parser uses %left for assignments, but they really behave as %right
-        Expr\Assign::class             => [160,  1],
-        Expr\AssignRef::class          => [160,  1],
-        AssignOp\Plus::class           => [160,  1],
-        AssignOp\Minus::class          => [160,  1],
-        AssignOp\Mul::class            => [160,  1],
-        AssignOp\Div::class            => [160,  1],
-        AssignOp\Concat::class         => [160,  1],
-        AssignOp\Mod::class            => [160,  1],
-        AssignOp\BitwiseAnd::class     => [160,  1],
-        AssignOp\BitwiseOr::class      => [160,  1],
-        AssignOp\BitwiseXor::class     => [160,  1],
-        AssignOp\ShiftLeft::class      => [160,  1],
-        AssignOp\ShiftRight::class     => [160,  1],
-        AssignOp\Pow::class            => [160,  1],
-        AssignOp\Coalesce::class       => [160,  1],
-        Expr\YieldFrom::class          => [165,  1],
-        Expr\Print_::class             => [168,  1],
-        BinaryOp\LogicalAnd::class     => [170, -1],
-        BinaryOp\LogicalXor::class     => [180, -1],
-        BinaryOp\LogicalOr::class      => [190, -1],
-        Expr\Include_::class           => [200, -1],
-    ];
-
-    /** @var int Current indentation level. */
-    protected $indentLevel;
-    /** @var string Newline including current indentation. */
-    protected $nl;
-    /** @var string Token placed at end of doc string to ensure it is followed by a newline. */
-    protected $docStringEndToken;
-    /** @var bool Whether semicolon namespaces can be used (i.e. no global namespace is used) */
-    protected $canUseSemicolonNamespaces;
-    /** @var array Pretty printer options */
-    protected $options;
-
-    /** @var TokenStream Original tokens for use in format-preserving pretty print */
-    protected $origTokens;
-    /** @var Internal\Differ Differ for node lists */
-    protected $nodeListDiffer;
-    /** @var bool[] Map determining whether a certain character is a label character */
-    protected $labelCharMap;
-    /**
-     * @var int[][] Map from token classes and subnode names to FIXUP_* constants. This is used
-     *              during format-preserving prints to place additional parens/braces if necessary.
-     */
-    protected $fixupMap;
-    /**
-     * @var int[][] Map from "{$node->getType()}->{$subNode}" to ['left' => $l, 'right' => $r],
-     *              where $l and $r specify the token type that needs to be stripped when removing
-     *              this node.
-     */
-    protected $removalMap;
-    /**
-     * @var mixed[] Map from "{$node->getType()}->{$subNode}" to [$find, $beforeToken, $extraLeft, $extraRight].
-     *              $find is an optional token after which the insertion occurs. $extraLeft/Right
-     *              are optionally added before/after the main insertions.
-     */
-    protected $insertionMap;
-    /**
-     * @var string[] Map From "{$node->getType()}->{$subNode}" to string that should be inserted
-     *               between elements of this list subnode.
-     */
-    protected $listInsertionMap;
-    protected $emptyListInsertionMap;
-    /** @var int[] Map from "{$node->getType()}->{$subNode}" to token before which the modifiers
-     *             should be reprinted. */
-    protected $modifierChangeMap;
-
-    /**
-     * Creates a pretty printer instance using the given options.
-     *
-     * Supported options:
-     *  * bool $shortArraySyntax = false: Whether to use [] instead of array() as the default array
-     *                                    syntax, if the node does not specify a format.
-     *
-     * @param array $options Dictionary of formatting options
-     */
-    public function __construct(array $options = []) {
-        $this->docStringEndToken = '_DOC_STRING_END_' . mt_rand();
-
-        $defaultOptions = ['shortArraySyntax' => false];
-        $this->options = $options + $defaultOptions;
-    }
-
-    /**
-     * Reset pretty printing state.
-     */
-    protected function resetState() {
-        $this->indentLevel = 0;
-        $this->nl = "\n";
-        $this->origTokens = null;
-    }
-
-    /**
-     * Set indentation level
-     *
-     * @param int $level Level in number of spaces
-     */
-    protected function setIndentLevel(int $level) {
-        $this->indentLevel = $level;
-        $this->nl = "\n" . \str_repeat(' ', $level);
-    }
-
-    /**
-     * Increase indentation level.
-     */
-    protected function indent() {
-        $this->indentLevel += 4;
-        $this->nl .= '    ';
-    }
-
-    /**
-     * Decrease indentation level.
-     */
-    protected function outdent() {
-        assert($this->indentLevel >= 4);
-        $this->indentLevel -= 4;
-        $this->nl = "\n" . str_repeat(' ', $this->indentLevel);
-    }
-
-    /**
-     * Pretty prints an array of statements.
-     *
-     * @param Node[] $stmts Array of statements
-     *
-     * @return string Pretty printed statements
-     */
-    public function prettyPrint(array $stmts) : string {
-        $this->resetState();
-        $this->preprocessNodes($stmts);
-
-        return ltrim($this->handleMagicTokens($this->pStmts($stmts, false)));
-    }
-
-    /**
-     * Pretty prints an expression.
-     *
-     * @param Expr $node Expression node
-     *
-     * @return string Pretty printed node
-     */
-    public function prettyPrintExpr(Expr $node) : string {
-        $this->resetState();
-        return $this->handleMagicTokens($this->p($node));
-    }
-
-    /**
-     * Pretty prints a file of statements (includes the opening <?php tag if it is required).
-     *
-     * @param Node[] $stmts Array of statements
-     *
-     * @return string Pretty printed statements
-     */
-    public function prettyPrintFile(array $stmts) : string {
-        if (!$stmts) {
-            return "<?php\n\n";
-        }
-
-        $p = "<?php\n\n" . $this->prettyPrint($stmts);
-
-        if ($stmts[0] instanceof Stmt\InlineHTML) {
-            $p = preg_replace('/^<\?php\s+\?>\n?/', '', $p);
-        }
-        if ($stmts[count($stmts) - 1] instanceof Stmt\InlineHTML) {
-            $p = preg_replace('/<\?php$/', '', rtrim($p));
-        }
-
-        return $p;
-    }
-
-    /**
-     * Preprocesses the top-level nodes to initialize pretty printer state.
-     *
-     * @param Node[] $nodes Array of nodes
-     */
-    protected function preprocessNodes(array $nodes) {
-        /* We can use semicolon-namespaces unless there is a global namespace declaration */
-        $this->canUseSemicolonNamespaces = true;
-        foreach ($nodes as $node) {
-            if ($node instanceof Stmt\Namespace_ && null === $node->name) {
-                $this->canUseSemicolonNamespaces = false;
-                break;
-            }
-        }
-    }
-
-    /**
-     * Handles (and removes) no-indent and doc-string-end tokens.
-     *
-     * @param string $str
-     * @return string
-     */
-    protected function handleMagicTokens(string $str) : string {
-        // Replace doc-string-end tokens with nothing or a newline
-        $str = str_replace($this->docStringEndToken . ";\n", ";\n", $str);
-        $str = str_replace($this->docStringEndToken, "\n", $str);
-
-        return $str;
-    }
-
-    /**
-     * Pretty prints an array of nodes (statements) and indents them optionally.
-     *
-     * @param Node[] $nodes  Array of nodes
-     * @param bool   $indent Whether to indent the printed nodes
-     *
-     * @return string Pretty printed statements
-     */
-    protected function pStmts(array $nodes, bool $indent = true) : string {
-        if ($indent) {
-            $this->indent();
-        }
-
-        $result = '';
-        foreach ($nodes as $node) {
-            $comments = $node->getComments();
-            if ($comments) {
-                $result .= $this->nl . $this->pComments($comments);
-                if ($node instanceof Stmt\Nop) {
-                    continue;
-                }
-            }
-
-            $result .= $this->nl . $this->p($node);
-        }
-
-        if ($indent) {
-            $this->outdent();
-        }
-
-        return $result;
-    }
-
-    /**
-     * Pretty-print an infix operation while taking precedence into account.
-     *
-     * @param string $class          Node class of operator
-     * @param Node   $leftNode       Left-hand side node
-     * @param string $operatorString String representation of the operator
-     * @param Node   $rightNode      Right-hand side node
-     *
-     * @return string Pretty printed infix operation
-     */
-    protected function pInfixOp(string $class, Node $leftNode, string $operatorString, Node $rightNode) : string {
-        list($precedence, $associativity) = $this->precedenceMap[$class];
-
-        return $this->pPrec($leftNode, $precedence, $associativity, -1)
-             . $operatorString
-             . $this->pPrec($rightNode, $precedence, $associativity, 1);
-    }
-
-    /**
-     * Pretty-print a prefix operation while taking precedence into account.
-     *
-     * @param string $class          Node class of operator
-     * @param string $operatorString String representation of the operator
-     * @param Node   $node           Node
-     *
-     * @return string Pretty printed prefix operation
-     */
-    protected function pPrefixOp(string $class, string $operatorString, Node $node) : string {
-        list($precedence, $associativity) = $this->precedenceMap[$class];
-        return $operatorString . $this->pPrec($node, $precedence, $associativity, 1);
-    }
-
-    /**
-     * Pretty-print a postfix operation while taking precedence into account.
-     *
-     * @param string $class          Node class of operator
-     * @param string $operatorString String representation of the operator
-     * @param Node   $node           Node
-     *
-     * @return string Pretty printed postfix operation
-     */
-    protected function pPostfixOp(string $class, Node $node, string $operatorString) : string {
-        list($precedence, $associativity) = $this->precedenceMap[$class];
-        return $this->pPrec($node, $precedence, $associativity, -1) . $operatorString;
-    }
-
-    /**
-     * Prints an expression node with the least amount of parentheses necessary to preserve the meaning.
-     *
-     * @param Node $node                Node to pretty print
-     * @param int  $parentPrecedence    Precedence of the parent operator
-     * @param int  $parentAssociativity Associativity of parent operator
-     *                                  (-1 is left, 0 is nonassoc, 1 is right)
-     * @param int  $childPosition       Position of the node relative to the operator
-     *                                  (-1 is left, 1 is right)
-     *
-     * @return string The pretty printed node
-     */
-    protected function pPrec(Node $node, int $parentPrecedence, int $parentAssociativity, int $childPosition) : string {
-        $class = \get_class($node);
-        if (isset($this->precedenceMap[$class])) {
-            $childPrecedence = $this->precedenceMap[$class][0];
-            if ($childPrecedence > $parentPrecedence
-                || ($parentPrecedence === $childPrecedence && $parentAssociativity !== $childPosition)
-            ) {
-                return '(' . $this->p($node) . ')';
-            }
-        }
-
-        return $this->p($node);
-    }
-
-    /**
-     * Pretty prints an array of nodes and implodes the printed values.
-     *
-     * @param Node[] $nodes Array of Nodes to be printed
-     * @param string $glue  Character to implode with
-     *
-     * @return string Imploded pretty printed nodes
-     */
-    protected function pImplode(array $nodes, string $glue = '') : string {
-        $pNodes = [];
-        foreach ($nodes as $node) {
-            if (null === $node) {
-                $pNodes[] = '';
-            } else {
-                $pNodes[] = $this->p($node);
-            }
-        }
-
-        return implode($glue, $pNodes);
-    }
-
-    /**
-     * Pretty prints an array of nodes and implodes the printed values with commas.
-     *
-     * @param Node[] $nodes Array of Nodes to be printed
-     *
-     * @return string Comma separated pretty printed nodes
-     */
-    protected function pCommaSeparated(array $nodes) : string {
-        return $this->pImplode($nodes, ', ');
-    }
-
-    /**
-     * Pretty prints a comma-separated list of nodes in multiline style, including comments.
-     *
-     * The result includes a leading newline and one level of indentation (same as pStmts).
-     *
-     * @param Node[] $nodes         Array of Nodes to be printed
-     * @param bool   $trailingComma Whether to use a trailing comma
-     *
-     * @return string Comma separated pretty printed nodes in multiline style
-     */
-    protected function pCommaSeparatedMultiline(array $nodes, bool $trailingComma) : string {
-        $this->indent();
-
-        $result = '';
-        $lastIdx = count($nodes) - 1;
-        foreach ($nodes as $idx => $node) {
-            if ($node !== null) {
-                $comments = $node->getComments();
-                if ($comments) {
-                    $result .= $this->nl . $this->pComments($comments);
-                }
-
-                $result .= $this->nl . $this->p($node);
-            } else {
-                $result .= $this->nl;
-            }
-            if ($trailingComma || $idx !== $lastIdx) {
-                $result .= ',';
-            }
-        }
-
-        $this->outdent();
-        return $result;
-    }
-
-    /**
-     * Prints reformatted text of the passed comments.
-     *
-     * @param Comment[] $comments List of comments
-     *
-     * @return string Reformatted text of comments
-     */
-    protected function pComments(array $comments) : string {
-        $formattedComments = [];
-
-        foreach ($comments as $comment) {
-            $formattedComments[] = str_replace("\n", $this->nl, $comment->getReformattedText());
-        }
-
-        return implode($this->nl, $formattedComments);
-    }
-
-    /**
-     * Perform a format-preserving pretty print of an AST.
-     *
-     * The format preservation is best effort. For some changes to the AST the formatting will not
-     * be preserved (at least not locally).
-     *
-     * In order to use this method a number of prerequisites must be satisfied:
-     *  * The startTokenPos and endTokenPos attributes in the lexer must be enabled.
-     *  * The CloningVisitor must be run on the AST prior to modification.
-     *  * The original tokens must be provided, using the getTokens() method on the lexer.
-     *
-     * @param Node[] $stmts      Modified AST with links to original AST
-     * @param Node[] $origStmts  Original AST with token offset information
-     * @param array  $origTokens Tokens of the original code
-     *
-     * @return string
-     */
-    public function printFormatPreserving(array $stmts, array $origStmts, array $origTokens) : string {
-        $this->initializeNodeListDiffer();
-        $this->initializeLabelCharMap();
-        $this->initializeFixupMap();
-        $this->initializeRemovalMap();
-        $this->initializeInsertionMap();
-        $this->initializeListInsertionMap();
-        $this->initializeEmptyListInsertionMap();
-        $this->initializeModifierChangeMap();
-
-        $this->resetState();
-        $this->origTokens = new TokenStream($origTokens);
-
-        $this->preprocessNodes($stmts);
-
-        $pos = 0;
-        $result = $this->pArray($stmts, $origStmts, $pos, 0, 'File', 'stmts', null);
-        if (null !== $result) {
-            $result .= $this->origTokens->getTokenCode($pos, count($origTokens), 0);
-        } else {
-            // Fallback
-            // TODO Add <?php properly
-            $result = "<?php\n" . $this->pStmts($stmts, false);
-        }
-
-        return ltrim($this->handleMagicTokens($result));
-    }
-
-    protected function pFallback(Node $node) {
-        return $this->{'p' . $node->getType()}($node);
-    }
-
-    /**
-     * Pretty prints a node.
-     *
-     * This method also handles formatting preservation for nodes.
-     *
-     * @param Node $node Node to be pretty printed
-     * @param bool $parentFormatPreserved Whether parent node has preserved formatting
-     *
-     * @return string Pretty printed node
-     */
-    protected function p(Node $node, $parentFormatPreserved = false) : string {
-        // No orig tokens means this is a normal pretty print without preservation of formatting
-        if (!$this->origTokens) {
-            return $this->{'p' . $node->getType()}($node);
-        }
-
-        /** @var Node $origNode */
-        $origNode = $node->getAttribute('origNode');
-        if (null === $origNode) {
-            return $this->pFallback($node);
-        }
-
-        $class = \get_class($node);
-        \assert($class === \get_class($origNode));
-
-        $startPos = $origNode->getStartTokenPos();
-        $endPos = $origNode->getEndTokenPos();
-        \assert($startPos >= 0 && $endPos >= 0);
-
-        $fallbackNode = $node;
-        if ($node instanceof Expr\New_ && $node->class instanceof Stmt\Class_) {
-            // Normalize node structure of anonymous classes
-            $node = PrintableNewAnonClassNode::fromNewNode($node);
-            $origNode = PrintableNewAnonClassNode::fromNewNode($origNode);
-        }
-
-        // InlineHTML node does not contain closing and opening PHP tags. If the parent formatting
-        // is not preserved, then we need to use the fallback code to make sure the tags are
-        // printed.
-        if ($node instanceof Stmt\InlineHTML && !$parentFormatPreserved) {
-            return $this->pFallback($fallbackNode);
-        }
-
-        $indentAdjustment = $this->indentLevel - $this->origTokens->getIndentationBefore($startPos);
-
-        $type = $node->getType();
-        $fixupInfo = $this->fixupMap[$class] ?? null;
-
-        $result = '';
-        $pos = $startPos;
-        foreach ($node->getSubNodeNames() as $subNodeName) {
-            $subNode = $node->$subNodeName;
-            $origSubNode = $origNode->$subNodeName;
-
-            if ((!$subNode instanceof Node && $subNode !== null)
-                || (!$origSubNode instanceof Node && $origSubNode !== null)
-            ) {
-                if ($subNode === $origSubNode) {
-                    // Unchanged, can reuse old code
-                    continue;
-                }
-
-                if (is_array($subNode) && is_array($origSubNode)) {
-                    // Array subnode changed, we might be able to reconstruct it
-                    $listResult = $this->pArray(
-                        $subNode, $origSubNode, $pos, $indentAdjustment, $type, $subNodeName,
-                        $fixupInfo[$subNodeName] ?? null
-                    );
-                    if (null === $listResult) {
-                        return $this->pFallback($fallbackNode);
-                    }
-
-                    $result .= $listResult;
-                    continue;
-                }
-
-                if (is_int($subNode) && is_int($origSubNode)) {
-                    // Check if this is a modifier change
-                    $key = $type . '->' . $subNodeName;
-                    if (!isset($this->modifierChangeMap[$key])) {
-                        return $this->pFallback($fallbackNode);
-                    }
-
-                    $findToken = $this->modifierChangeMap[$key];
-                    $result .= $this->pModifiers($subNode);
-                    $pos = $this->origTokens->findRight($pos, $findToken);
-                    continue;
-                }
-
-                // If a non-node, non-array subnode changed, we don't be able to do a partial
-                // reconstructions, as we don't have enough offset information. Pretty print the
-                // whole node instead.
-                return $this->pFallback($fallbackNode);
-            }
-
-            $extraLeft = '';
-            $extraRight = '';
-            if ($origSubNode !== null) {
-                $subStartPos = $origSubNode->getStartTokenPos();
-                $subEndPos = $origSubNode->getEndTokenPos();
-                \assert($subStartPos >= 0 && $subEndPos >= 0);
-            } else {
-                if ($subNode === null) {
-                    // Both null, nothing to do
-                    continue;
-                }
-
-                // A node has been inserted, check if we have insertion information for it
-                $key = $type . '->' . $subNodeName;
-                if (!isset($this->insertionMap[$key])) {
-                    return $this->pFallback($fallbackNode);
-                }
-
-                list($findToken, $beforeToken, $extraLeft, $extraRight) = $this->insertionMap[$key];
-                if (null !== $findToken) {
-                    $subStartPos = $this->origTokens->findRight($pos, $findToken)
-                        + (int) !$beforeToken;
-                } else {
-                    $subStartPos = $pos;
-                }
-
-                if (null === $extraLeft && null !== $extraRight) {
-                    // If inserting on the right only, skipping whitespace looks better
-                    $subStartPos = $this->origTokens->skipRightWhitespace($subStartPos);
-                }
-                $subEndPos = $subStartPos - 1;
-            }
-
-            if (null === $subNode) {
-                // A node has been removed, check if we have removal information for it
-                $key = $type . '->' . $subNodeName;
-                if (!isset($this->removalMap[$key])) {
-                    return $this->pFallback($fallbackNode);
-                }
-
-                // Adjust positions to account for additional tokens that must be skipped
-                $removalInfo = $this->removalMap[$key];
-                if (isset($removalInfo['left'])) {
-                    $subStartPos = $this->origTokens->skipLeft($subStartPos - 1, $removalInfo['left']) + 1;
-                }
-                if (isset($removalInfo['right'])) {
-                    $subEndPos = $this->origTokens->skipRight($subEndPos + 1, $removalInfo['right']) - 1;
-                }
-            }
-
-            $result .= $this->origTokens->getTokenCode($pos, $subStartPos, $indentAdjustment);
-
-            if (null !== $subNode) {
-                $result .= $extraLeft;
-
-                $origIndentLevel = $this->indentLevel;
-                $this->setIndentLevel($this->origTokens->getIndentationBefore($subStartPos) + $indentAdjustment);
-
-                // If it's the same node that was previously in this position, it certainly doesn't
-                // need fixup. It's important to check this here, because our fixup checks are more
-                // conservative than strictly necessary.
-                if (isset($fixupInfo[$subNodeName])
-                    && $subNode->getAttribute('origNode') !== $origSubNode
-                ) {
-                    $fixup = $fixupInfo[$subNodeName];
-                    $res = $this->pFixup($fixup, $subNode, $class, $subStartPos, $subEndPos);
-                } else {
-                    $res = $this->p($subNode, true);
-                }
-
-                $this->safeAppend($result, $res);
-                $this->setIndentLevel($origIndentLevel);
-
-                $result .= $extraRight;
-            }
-
-            $pos = $subEndPos + 1;
-        }
-
-        $result .= $this->origTokens->getTokenCode($pos, $endPos + 1, $indentAdjustment);
-        return $result;
-    }
-
-    /**
-     * Perform a format-preserving pretty print of an array.
-     *
-     * @param array       $nodes            New nodes
-     * @param array       $origNodes        Original nodes
-     * @param int         $pos              Current token position (updated by reference)
-     * @param int         $indentAdjustment Adjustment for indentation
-     * @param string      $parentNodeType   Type of the containing node.
-     * @param string      $subNodeName      Name of array subnode.
-     * @param null|int    $fixup            Fixup information for array item nodes
-     *
-     * @return null|string Result of pretty print or null if cannot preserve formatting
-     */
-    protected function pArray(
-        array $nodes, array $origNodes, int &$pos, int $indentAdjustment,
-        string $parentNodeType, string $subNodeName, $fixup
-    ) {
-        $diff = $this->nodeListDiffer->diffWithReplacements($origNodes, $nodes);
-
-        $mapKey = $parentNodeType . '->' . $subNodeName;
-        $insertStr = $this->listInsertionMap[$mapKey] ?? null;
-        $isStmtList = $subNodeName === 'stmts';
-
-        $beforeFirstKeepOrReplace = true;
-        $skipRemovedNode = false;
-        $delayedAdd = [];
-        $lastElemIndentLevel = $this->indentLevel;
-
-        $insertNewline = false;
-        if ($insertStr === "\n") {
-            $insertStr = '';
-            $insertNewline = true;
-        }
-
-        if ($isStmtList && \count($origNodes) === 1 && \count($nodes) !== 1) {
-            $startPos = $origNodes[0]->getStartTokenPos();
-            $endPos = $origNodes[0]->getEndTokenPos();
-            \assert($startPos >= 0 && $endPos >= 0);
-            if (!$this->origTokens->haveBraces($startPos, $endPos)) {
-                // This was a single statement without braces, but either additional statements
-                // have been added, or the single statement has been removed. This requires the
-                // addition of braces. For now fall back.
-                // TODO: Try to preserve formatting
-                return null;
-            }
-        }
-
-        $result = '';
-        foreach ($diff as $i => $diffElem) {
-            $diffType = $diffElem->type;
-            /** @var Node|null $arrItem */
-            $arrItem = $diffElem->new;
-            /** @var Node|null $origArrItem */
-            $origArrItem = $diffElem->old;
-
-            if ($diffType === DiffElem::TYPE_KEEP || $diffType === DiffElem::TYPE_REPLACE) {
-                $beforeFirstKeepOrReplace = false;
-
-                if ($origArrItem === null || $arrItem === null) {
-                    // We can only handle the case where both are null
-                    if ($origArrItem === $arrItem) {
-                        continue;
-                    }
-                    return null;
-                }
-
-                if (!$arrItem instanceof Node || !$origArrItem instanceof Node) {
-                    // We can only deal with nodes. This can occur for Names, which use string arrays.
-                    return null;
-                }
-
-                $itemStartPos = $origArrItem->getStartTokenPos();
-                $itemEndPos = $origArrItem->getEndTokenPos();
-                \assert($itemStartPos >= 0 && $itemEndPos >= 0 && $itemStartPos >= $pos);
-
-                $origIndentLevel = $this->indentLevel;
-                $lastElemIndentLevel = $this->origTokens->getIndentationBefore($itemStartPos) + $indentAdjustment;
-                $this->setIndentLevel($lastElemIndentLevel);
-
-                $comments = $arrItem->getComments();
-                $origComments = $origArrItem->getComments();
-                $commentStartPos = $origComments ? $origComments[0]->getStartTokenPos() : $itemStartPos;
-                \assert($commentStartPos >= 0);
-
-                if ($commentStartPos < $pos) {
-                    // Comments may be assigned to multiple nodes if they start at the same position.
-                    // Make sure we don't try to print them multiple times.
-                    $commentStartPos = $itemStartPos;
-                }
-
-                if ($skipRemovedNode) {
-                    if ($isStmtList && $this->origTokens->haveBracesInRange($pos, $itemStartPos)) {
-                        // We'd remove the brace of a code block.
-                        // TODO: Preserve formatting.
-                        $this->setIndentLevel($origIndentLevel);
-                        return null;
-                    }
-                } else {
-                    $result .= $this->origTokens->getTokenCode(
-                        $pos, $commentStartPos, $indentAdjustment);
-                }
-
-                if (!empty($delayedAdd)) {
-                    /** @var Node $delayedAddNode */
-                    foreach ($delayedAdd as $delayedAddNode) {
-                        if ($insertNewline) {
-                            $delayedAddComments = $delayedAddNode->getComments();
-                            if ($delayedAddComments) {
-                                $result .= $this->pComments($delayedAddComments) . $this->nl;
-                            }
-                        }
-
-                        $this->safeAppend($result, $this->p($delayedAddNode, true));
-
-                        if ($insertNewline) {
-                            $result .= $insertStr . $this->nl;
-                        } else {
-                            $result .= $insertStr;
-                        }
-                    }
-
-                    $delayedAdd = [];
-                }
-
-                if ($comments !== $origComments) {
-                    if ($comments) {
-                        $result .= $this->pComments($comments) . $this->nl;
-                    }
-                } else {
-                    $result .= $this->origTokens->getTokenCode(
-                        $commentStartPos, $itemStartPos, $indentAdjustment);
-                }
-
-                // If we had to remove anything, we have done so now.
-                $skipRemovedNode = false;
-            } elseif ($diffType === DiffElem::TYPE_ADD) {
-                if (null === $insertStr) {
-                    // We don't have insertion information for this list type
-                    return null;
-                }
-
-                if ($insertStr === ', ' && $this->isMultiline($origNodes)) {
-                    $insertStr = ',';
-                    $insertNewline = true;
-                }
-
-                if ($beforeFirstKeepOrReplace) {
-                    // Will be inserted at the next "replace" or "keep" element
-                    $delayedAdd[] = $arrItem;
-                    continue;
-                }
-
-                $itemStartPos = $pos;
-                $itemEndPos = $pos - 1;
-
-                $origIndentLevel = $this->indentLevel;
-                $this->setIndentLevel($lastElemIndentLevel);
-
-                if ($insertNewline) {
-                    $comments = $arrItem->getComments();
-                    if ($comments) {
-                        $result .= $this->nl . $this->pComments($comments);
-                    }
-                    $result .= $insertStr . $this->nl;
-                } else {
-                    $result .= $insertStr;
-                }
-            } elseif ($diffType === DiffElem::TYPE_REMOVE) {
-                if (!$origArrItem instanceof Node) {
-                    // We only support removal for nodes
-                    return null;
-                }
-
-                $itemStartPos = $origArrItem->getStartTokenPos();
-                $itemEndPos = $origArrItem->getEndTokenPos();
-                \assert($itemStartPos >= 0 && $itemEndPos >= 0);
-
-                // Consider comments part of the node.
-                $origComments = $origArrItem->getComments();
-                if ($origComments) {
-                    $itemStartPos = $origComments[0]->getStartTokenPos();
-                }
-
-                if ($i === 0) {
-                    // If we're removing from the start, keep the tokens before the node and drop those after it,
-                    // instead of the other way around.
-                    $result .= $this->origTokens->getTokenCode(
-                        $pos, $itemStartPos, $indentAdjustment);
-                    $skipRemovedNode = true;
-                } else {
-                    if ($isStmtList && $this->origTokens->haveBracesInRange($pos, $itemStartPos)) {
-                        // We'd remove the brace of a code block.
-                        // TODO: Preserve formatting.
-                        return null;
-                    }
-                }
-
-                $pos = $itemEndPos + 1;
-                continue;
-            } else {
-                throw new \Exception("Shouldn't happen");
-            }
-
-            if (null !== $fixup && $arrItem->getAttribute('origNode') !== $origArrItem) {
-                $res = $this->pFixup($fixup, $arrItem, null, $itemStartPos, $itemEndPos);
-            } else {
-                $res = $this->p($arrItem, true);
-            }
-            $this->safeAppend($result, $res);
-
-            $this->setIndentLevel($origIndentLevel);
-            $pos = $itemEndPos + 1;
-        }
-
-        if ($skipRemovedNode) {
-            // TODO: Support removing single node.
-            return null;
-        }
-
-        if (!empty($delayedAdd)) {
-            if (!isset($this->emptyListInsertionMap[$mapKey])) {
-                return null;
-            }
-
-            list($findToken, $extraLeft, $extraRight) = $this->emptyListInsertionMap[$mapKey];
-            if (null !== $findToken) {
-                $insertPos = $this->origTokens->findRight($pos, $findToken) + 1;
-                $result .= $this->origTokens->getTokenCode($pos, $insertPos, $indentAdjustment);
-                $pos = $insertPos;
-            }
-
-            $first = true;
-            $result .= $extraLeft;
-            foreach ($delayedAdd as $delayedAddNode) {
-                if (!$first) {
-                    $result .= $insertStr;
-                }
-                $result .= $this->p($delayedAddNode, true);
-                $first = false;
-            }
-            $result .= $extraRight;
-        }
-
-        return $result;
-    }
-
-    /**
-     * Print node with fixups.
-     *
-     * Fixups here refer to the addition of extra parentheses, braces or other characters, that
-     * are required to preserve program semantics in a certain context (e.g. to maintain precedence
-     * or because only certain expressions are allowed in certain places).
-     *
-     * @param int         $fixup       Fixup type
-     * @param Node        $subNode     Subnode to print
-     * @param string|null $parentClass Class of parent node
-     * @param int         $subStartPos Original start pos of subnode
-     * @param int         $subEndPos   Original end pos of subnode
-     *
-     * @return string Result of fixed-up print of subnode
-     */
-    protected function pFixup(int $fixup, Node $subNode, $parentClass, int $subStartPos, int $subEndPos) : string {
-        switch ($fixup) {
-            case self::FIXUP_PREC_LEFT:
-            case self::FIXUP_PREC_RIGHT:
-                if (!$this->origTokens->haveParens($subStartPos, $subEndPos)) {
-                    list($precedence, $associativity) = $this->precedenceMap[$parentClass];
-                    return $this->pPrec($subNode, $precedence, $associativity,
-                        $fixup === self::FIXUP_PREC_LEFT ? -1 : 1);
-                }
-                break;
-            case self::FIXUP_CALL_LHS:
-                if ($this->callLhsRequiresParens($subNode)
-                    && !$this->origTokens->haveParens($subStartPos, $subEndPos)
-                ) {
-                    return '(' . $this->p($subNode) . ')';
-                }
-                break;
-            case self::FIXUP_DEREF_LHS:
-                if ($this->dereferenceLhsRequiresParens($subNode)
-                    && !$this->origTokens->haveParens($subStartPos, $subEndPos)
-                ) {
-                    return '(' . $this->p($subNode) . ')';
-                }
-                break;
-            case self::FIXUP_BRACED_NAME:
-            case self::FIXUP_VAR_BRACED_NAME:
-                if ($subNode instanceof Expr
-                    && !$this->origTokens->haveBraces($subStartPos, $subEndPos)
-                ) {
-                    return ($fixup === self::FIXUP_VAR_BRACED_NAME ? '$' : '')
-                        . '{' . $this->p($subNode) . '}';
-                }
-                break;
-            case self::FIXUP_ENCAPSED:
-                if (!$subNode instanceof Scalar\EncapsedStringPart
-                    && !$this->origTokens->haveBraces($subStartPos, $subEndPos)
-                ) {
-                    return '{' . $this->p($subNode) . '}';
-                }
-                break;
-            default:
-                throw new \Exception('Cannot happen');
-        }
-
-        // Nothing special to do
-        return $this->p($subNode);
-    }
-
-    /**
-     * Appends to a string, ensuring whitespace between label characters.
-     *
-     * Example: "echo" and "$x" result in "echo$x", but "echo" and "x" result in "echo x".
-     * Without safeAppend the result would be "echox", which does not preserve semantics.
-     *
-     * @param string $str
-     * @param string $append
-     */
-    protected function safeAppend(string &$str, string $append) {
-        if ($str === "") {
-            $str = $append;
-            return;
-        }
-
-        if ($append === "") {
-            return;
-        }
-
-        if (!$this->labelCharMap[$append[0]]
-                || !$this->labelCharMap[$str[\strlen($str) - 1]]) {
-            $str .= $append;
-        } else {
-            $str .= " " . $append;
-        }
-    }
-
-    /**
-     * Determines whether the LHS of a call must be wrapped in parenthesis.
-     *
-     * @param Node $node LHS of a call
-     *
-     * @return bool Whether parentheses are required
-     */
-    protected function callLhsRequiresParens(Node $node) : bool {
-        return !($node instanceof Node\Name
-            || $node instanceof Expr\Variable
-            || $node instanceof Expr\ArrayDimFetch
-            || $node instanceof Expr\FuncCall
-            || $node instanceof Expr\MethodCall
-            || $node instanceof Expr\NullsafeMethodCall
-            || $node instanceof Expr\StaticCall
-            || $node instanceof Expr\Array_);
-    }
-
-    /**
-     * Determines whether the LHS of a dereferencing operation must be wrapped in parenthesis.
-     *
-     * @param Node $node LHS of dereferencing operation
-     *
-     * @return bool Whether parentheses are required
-     */
-    protected function dereferenceLhsRequiresParens(Node $node) : bool {
-        return !($node instanceof Expr\Variable
-            || $node instanceof Node\Name
-            || $node instanceof Expr\ArrayDimFetch
-            || $node instanceof Expr\PropertyFetch
-            || $node instanceof Expr\NullsafePropertyFetch
-            || $node instanceof Expr\StaticPropertyFetch
-            || $node instanceof Expr\FuncCall
-            || $node instanceof Expr\MethodCall
-            || $node instanceof Expr\NullsafeMethodCall
-            || $node instanceof Expr\StaticCall
-            || $node instanceof Expr\Array_
-            || $node instanceof Scalar\String_
-            || $node instanceof Expr\ConstFetch
-            || $node instanceof Expr\ClassConstFetch);
-    }
-
-    /**
-     * Print modifiers, including trailing whitespace.
-     *
-     * @param int $modifiers Modifier mask to print
-     *
-     * @return string Printed modifiers
-     */
-    protected function pModifiers(int $modifiers) {
-        return ($modifiers & Stmt\Class_::MODIFIER_PUBLIC    ? 'public '    : '')
-             . ($modifiers & Stmt\Class_::MODIFIER_PROTECTED ? 'protected ' : '')
-             . ($modifiers & Stmt\Class_::MODIFIER_PRIVATE   ? 'private '   : '')
-             . ($modifiers & Stmt\Class_::MODIFIER_STATIC    ? 'static '    : '')
-             . ($modifiers & Stmt\Class_::MODIFIER_ABSTRACT  ? 'abstract '  : '')
-             . ($modifiers & Stmt\Class_::MODIFIER_FINAL     ? 'final '     : '');
-    }
-
-    /**
-     * Determine whether a list of nodes uses multiline formatting.
-     *
-     * @param (Node|null)[] $nodes Node list
-     *
-     * @return bool Whether multiline formatting is used
-     */
-    protected function isMultiline(array $nodes) : bool {
-        if (\count($nodes) < 2) {
-            return false;
-        }
-
-        $pos = -1;
-        foreach ($nodes as $node) {
-            if (null === $node) {
-                continue;
-            }
-
-            $endPos = $node->getEndTokenPos() + 1;
-            if ($pos >= 0) {
-                $text = $this->origTokens->getTokenCode($pos, $endPos, 0);
-                if (false === strpos($text, "\n")) {
-                    // We require that a newline is present between *every* item. If the formatting
-                    // is inconsistent, with only some items having newlines, we don't consider it
-                    // as multiline
-                    return false;
-                }
-            }
-            $pos = $endPos;
-        }
-
-        return true;
-    }
-
-    /**
-     * Lazily initializes label char map.
-     *
-     * The label char map determines whether a certain character may occur in a label.
-     */
-    protected function initializeLabelCharMap() {
-        if ($this->labelCharMap) return;
-
-        $this->labelCharMap = [];
-        for ($i = 0; $i < 256; $i++) {
-            // Since PHP 7.1 The lower range is 0x80. However, we also want to support code for
-            // older versions.
-            $this->labelCharMap[chr($i)] = $i >= 0x7f || ctype_alnum($i);
-        }
-    }
-
-    /**
-     * Lazily initializes node list differ.
-     *
-     * The node list differ is used to determine differences between two array subnodes.
-     */
-    protected function initializeNodeListDiffer() {
-        if ($this->nodeListDiffer) return;
-
-        $this->nodeListDiffer = new Internal\Differ(function ($a, $b) {
-            if ($a instanceof Node && $b instanceof Node) {
-                return $a === $b->getAttribute('origNode');
-            }
-            // Can happen for array destructuring
-            return $a === null && $b === null;
-        });
-    }
-
-    /**
-     * Lazily initializes fixup map.
-     *
-     * The fixup map is used to determine whether a certain subnode of a certain node may require
-     * some kind of "fixup" operation, e.g. the addition of parenthesis or braces.
-     */
-    protected function initializeFixupMap() {
-        if ($this->fixupMap) return;
-
-        $this->fixupMap = [
-            Expr\PreInc::class => ['var' => self::FIXUP_PREC_RIGHT],
-            Expr\PreDec::class => ['var' => self::FIXUP_PREC_RIGHT],
-            Expr\PostInc::class => ['var' => self::FIXUP_PREC_LEFT],
-            Expr\PostDec::class => ['var' => self::FIXUP_PREC_LEFT],
-            Expr\Instanceof_::class => [
-                'expr' => self::FIXUP_PREC_LEFT,
-                'class' => self::FIXUP_PREC_RIGHT, // TODO: FIXUP_NEW_VARIABLE
-            ],
-            Expr\Ternary::class => [
-                'cond' => self::FIXUP_PREC_LEFT,
-                'else' => self::FIXUP_PREC_RIGHT,
-            ],
-
-            Expr\FuncCall::class => ['name' => self::FIXUP_CALL_LHS],
-            Expr\StaticCall::class => ['class' => self::FIXUP_DEREF_LHS],
-            Expr\ArrayDimFetch::class => ['var' => self::FIXUP_DEREF_LHS],
-            Expr\ClassConstFetch::class => ['var' => self::FIXUP_DEREF_LHS],
-            Expr\New_::class => ['class' => self::FIXUP_DEREF_LHS], // TODO: FIXUP_NEW_VARIABLE
-            Expr\MethodCall::class => [
-                'var' => self::FIXUP_DEREF_LHS,
-                'name' => self::FIXUP_BRACED_NAME,
-            ],
-            Expr\NullsafeMethodCall::class => [
-                'var' => self::FIXUP_DEREF_LHS,
-                'name' => self::FIXUP_BRACED_NAME,
-            ],
-            Expr\StaticPropertyFetch::class => [
-                'class' => self::FIXUP_DEREF_LHS,
-                'name' => self::FIXUP_VAR_BRACED_NAME,
-            ],
-            Expr\PropertyFetch::class => [
-                'var' => self::FIXUP_DEREF_LHS,
-                'name' => self::FIXUP_BRACED_NAME,
-            ],
-            Expr\NullsafePropertyFetch::class => [
-                'var' => self::FIXUP_DEREF_LHS,
-                'name' => self::FIXUP_BRACED_NAME,
-            ],
-            Scalar\Encapsed::class => [
-                'parts' => self::FIXUP_ENCAPSED,
-            ],
-        ];
-
-        $binaryOps = [
-            BinaryOp\Pow::class, BinaryOp\Mul::class, BinaryOp\Div::class, BinaryOp\Mod::class,
-            BinaryOp\Plus::class, BinaryOp\Minus::class, BinaryOp\Concat::class,
-            BinaryOp\ShiftLeft::class, BinaryOp\ShiftRight::class, BinaryOp\Smaller::class,
-            BinaryOp\SmallerOrEqual::class, BinaryOp\Greater::class, BinaryOp\GreaterOrEqual::class,
-            BinaryOp\Equal::class, BinaryOp\NotEqual::class, BinaryOp\Identical::class,
-            BinaryOp\NotIdentical::class, BinaryOp\Spaceship::class, BinaryOp\BitwiseAnd::class,
-            BinaryOp\BitwiseXor::class, BinaryOp\BitwiseOr::class, BinaryOp\BooleanAnd::class,
-            BinaryOp\BooleanOr::class, BinaryOp\Coalesce::class, BinaryOp\LogicalAnd::class,
-            BinaryOp\LogicalXor::class, BinaryOp\LogicalOr::class,
-        ];
-        foreach ($binaryOps as $binaryOp) {
-            $this->fixupMap[$binaryOp] = [
-                'left' => self::FIXUP_PREC_LEFT,
-                'right' => self::FIXUP_PREC_RIGHT
-            ];
-        }
-
-        $assignOps = [
-            Expr\Assign::class, Expr\AssignRef::class, AssignOp\Plus::class, AssignOp\Minus::class,
-            AssignOp\Mul::class, AssignOp\Div::class, AssignOp\Concat::class, AssignOp\Mod::class,
-            AssignOp\BitwiseAnd::class, AssignOp\BitwiseOr::class, AssignOp\BitwiseXor::class,
-            AssignOp\ShiftLeft::class, AssignOp\ShiftRight::class, AssignOp\Pow::class, AssignOp\Coalesce::class
-        ];
-        foreach ($assignOps as $assignOp) {
-            $this->fixupMap[$assignOp] = [
-                'var' => self::FIXUP_PREC_LEFT,
-                'expr' => self::FIXUP_PREC_RIGHT,
-            ];
-        }
-
-        $prefixOps = [
-            Expr\BitwiseNot::class, Expr\BooleanNot::class, Expr\UnaryPlus::class, Expr\UnaryMinus::class,
-            Cast\Int_::class, Cast\Double::class, Cast\String_::class, Cast\Array_::class,
-            Cast\Object_::class, Cast\Bool_::class, Cast\Unset_::class, Expr\ErrorSuppress::class,
-            Expr\YieldFrom::class, Expr\Print_::class, Expr\Include_::class,
-        ];
-        foreach ($prefixOps as $prefixOp) {
-            $this->fixupMap[$prefixOp] = ['expr' => self::FIXUP_PREC_RIGHT];
-        }
-    }
-
-    /**
-     * Lazily initializes the removal map.
-     *
-     * The removal map is used to determine which additional tokens should be returned when a
-     * certain node is replaced by null.
-     */
-    protected function initializeRemovalMap() {
-        if ($this->removalMap) return;
-
-        $stripBoth = ['left' => \T_WHITESPACE, 'right' => \T_WHITESPACE];
-        $stripLeft = ['left' => \T_WHITESPACE];
-        $stripRight = ['right' => \T_WHITESPACE];
-        $stripDoubleArrow = ['right' => \T_DOUBLE_ARROW];
-        $stripColon = ['left' => ':'];
-        $stripEquals = ['left' => '='];
-        $this->removalMap = [
-            'Expr_ArrayDimFetch->dim' => $stripBoth,
-            'Expr_ArrayItem->key' => $stripDoubleArrow,
-            'Expr_ArrowFunction->returnType' => $stripColon,
-            'Expr_Closure->returnType' => $stripColon,
-            'Expr_Exit->expr' => $stripBoth,
-            'Expr_Ternary->if' => $stripBoth,
-            'Expr_Yield->key' => $stripDoubleArrow,
-            'Expr_Yield->value' => $stripBoth,
-            'Param->type' => $stripRight,
-            'Param->default' => $stripEquals,
-            'Stmt_Break->num' => $stripBoth,
-            'Stmt_Catch->var' => $stripLeft,
-            'Stmt_ClassMethod->returnType' => $stripColon,
-            'Stmt_Class->extends' => ['left' => \T_EXTENDS],
-            'Expr_PrintableNewAnonClass->extends' => ['left' => \T_EXTENDS],
-            'Stmt_Continue->num' => $stripBoth,
-            'Stmt_Foreach->keyVar' => $stripDoubleArrow,
-            'Stmt_Function->returnType' => $stripColon,
-            'Stmt_If->else' => $stripLeft,
-            'Stmt_Namespace->name' => $stripLeft,
-            'Stmt_Property->type' => $stripRight,
-            'Stmt_PropertyProperty->default' => $stripEquals,
-            'Stmt_Return->expr' => $stripBoth,
-            'Stmt_StaticVar->default' => $stripEquals,
-            'Stmt_TraitUseAdaptation_Alias->newName' => $stripLeft,
-            'Stmt_TryCatch->finally' => $stripLeft,
-            // 'Stmt_Case->cond': Replace with "default"
-            // 'Stmt_Class->name': Unclear what to do
-            // 'Stmt_Declare->stmts': Not a plain node
-            // 'Stmt_TraitUseAdaptation_Alias->newModifier': Not a plain node
-        ];
-    }
-
-    protected function initializeInsertionMap() {
-        if ($this->insertionMap) return;
-
-        // TODO: "yield" where both key and value are inserted doesn't work
-        // [$find, $beforeToken, $extraLeft, $extraRight]
-        $this->insertionMap = [
-            'Expr_ArrayDimFetch->dim' => ['[', false, null, null],
-            'Expr_ArrayItem->key' => [null, false, null, ' => '],
-            'Expr_ArrowFunction->returnType' => [')', false, ' : ', null],
-            'Expr_Closure->returnType' => [')', false, ' : ', null],
-            'Expr_Ternary->if' => ['?', false, ' ', ' '],
-            'Expr_Yield->key' => [\T_YIELD, false, null, ' => '],
-            'Expr_Yield->value' => [\T_YIELD, false, ' ', null],
-            'Param->type' => [null, false, null, ' '],
-            'Param->default' => [null, false, ' = ', null],
-            'Stmt_Break->num' => [\T_BREAK, false, ' ', null],
-            'Stmt_Catch->var' => [null, false, ' ', null],
-            'Stmt_ClassMethod->returnType' => [')', false, ' : ', null],
-            'Stmt_Class->extends' => [null, false, ' extends ', null],
-            'Expr_PrintableNewAnonClass->extends' => [null, ' extends ', null],
-            'Stmt_Continue->num' => [\T_CONTINUE, false, ' ', null],
-            'Stmt_Foreach->keyVar' => [\T_AS, false, null, ' => '],
-            'Stmt_Function->returnType' => [')', false, ' : ', null],
-            'Stmt_If->else' => [null, false, ' ', null],
-            'Stmt_Namespace->name' => [\T_NAMESPACE, false, ' ', null],
-            'Stmt_Property->type' => [\T_VARIABLE, true, null, ' '],
-            'Stmt_PropertyProperty->default' => [null, false, ' = ', null],
-            'Stmt_Return->expr' => [\T_RETURN, false, ' ', null],
-            'Stmt_StaticVar->default' => [null, false, ' = ', null],
-            //'Stmt_TraitUseAdaptation_Alias->newName' => [T_AS, false, ' ', null], // TODO
-            'Stmt_TryCatch->finally' => [null, false, ' ', null],
-
-            // 'Expr_Exit->expr': Complicated due to optional ()
-            // 'Stmt_Case->cond': Conversion from default to case
-            // 'Stmt_Class->name': Unclear
-            // 'Stmt_Declare->stmts': Not a proper node
-            // 'Stmt_TraitUseAdaptation_Alias->newModifier': Not a proper node
-        ];
-    }
-
-    protected function initializeListInsertionMap() {
-        if ($this->listInsertionMap) return;
-
-        $this->listInsertionMap = [
-            // special
-            //'Expr_ShellExec->parts' => '', // TODO These need to be treated more carefully
-            //'Scalar_Encapsed->parts' => '',
-            'Stmt_Catch->types' => '|',
-            'UnionType->types' => '|',
-            'Stmt_If->elseifs' => ' ',
-            'Stmt_TryCatch->catches' => ' ',
-
-            // comma-separated lists
-            'Expr_Array->items' => ', ',
-            'Expr_ArrowFunction->params' => ', ',
-            'Expr_Closure->params' => ', ',
-            'Expr_Closure->uses' => ', ',
-            'Expr_FuncCall->args' => ', ',
-            'Expr_Isset->vars' => ', ',
-            'Expr_List->items' => ', ',
-            'Expr_MethodCall->args' => ', ',
-            'Expr_NullsafeMethodCall->args' => ', ',
-            'Expr_New->args' => ', ',
-            'Expr_PrintableNewAnonClass->args' => ', ',
-            'Expr_StaticCall->args' => ', ',
-            'Stmt_ClassConst->consts' => ', ',
-            'Stmt_ClassMethod->params' => ', ',
-            'Stmt_Class->implements' => ', ',
-            'Expr_PrintableNewAnonClass->implements' => ', ',
-            'Stmt_Const->consts' => ', ',
-            'Stmt_Declare->declares' => ', ',
-            'Stmt_Echo->exprs' => ', ',
-            'Stmt_For->init' => ', ',
-            'Stmt_For->cond' => ', ',
-            'Stmt_For->loop' => ', ',
-            'Stmt_Function->params' => ', ',
-            'Stmt_Global->vars' => ', ',
-            'Stmt_GroupUse->uses' => ', ',
-            'Stmt_Interface->extends' => ', ',
-            'Stmt_Match->arms' => ', ',
-            'Stmt_Property->props' => ', ',
-            'Stmt_StaticVar->vars' => ', ',
-            'Stmt_TraitUse->traits' => ', ',
-            'Stmt_TraitUseAdaptation_Precedence->insteadof' => ', ',
-            'Stmt_Unset->vars' => ', ',
-            'Stmt_Use->uses' => ', ',
-            'MatchArm->conds' => ', ',
-            'AttributeGroup->attrs' => ', ',
-
-            // statement lists
-            'Expr_Closure->stmts' => "\n",
-            'Stmt_Case->stmts' => "\n",
-            'Stmt_Catch->stmts' => "\n",
-            'Stmt_Class->stmts' => "\n",
-            'Expr_PrintableNewAnonClass->stmts' => "\n",
-            'Stmt_Interface->stmts' => "\n",
-            'Stmt_Trait->stmts' => "\n",
-            'Stmt_ClassMethod->stmts' => "\n",
-            'Stmt_Declare->stmts' => "\n",
-            'Stmt_Do->stmts' => "\n",
-            'Stmt_ElseIf->stmts' => "\n",
-            'Stmt_Else->stmts' => "\n",
-            'Stmt_Finally->stmts' => "\n",
-            'Stmt_Foreach->stmts' => "\n",
-            'Stmt_For->stmts' => "\n",
-            'Stmt_Function->stmts' => "\n",
-            'Stmt_If->stmts' => "\n",
-            'Stmt_Namespace->stmts' => "\n",
-            'Stmt_Class->attrGroups' => "\n",
-            'Stmt_Interface->attrGroups' => "\n",
-            'Stmt_Trait->attrGroups' => "\n",
-            'Stmt_Function->attrGroups' => "\n",
-            'Stmt_ClassMethod->attrGroups' => "\n",
-            'Stmt_ClassConst->attrGroups' => "\n",
-            'Stmt_Property->attrGroups' => "\n",
-            'Expr_PrintableNewAnonClass->attrGroups' => ' ',
-            'Expr_Closure->attrGroups' => ' ',
-            'Expr_ArrowFunction->attrGroups' => ' ',
-            'Param->attrGroups' => ' ',
-            'Stmt_Switch->cases' => "\n",
-            'Stmt_TraitUse->adaptations' => "\n",
-            'Stmt_TryCatch->stmts' => "\n",
-            'Stmt_While->stmts' => "\n",
-
-            // dummy for top-level context
-            'File->stmts' => "\n",
-        ];
-    }
-
-    protected function initializeEmptyListInsertionMap() {
-        if ($this->emptyListInsertionMap) return;
-
-        // TODO Insertion into empty statement lists.
-
-        // [$find, $extraLeft, $extraRight]
-        $this->emptyListInsertionMap = [
-            'Expr_ArrowFunction->params' => ['(', '', ''],
-            'Expr_Closure->uses' => [')', ' use(', ')'],
-            'Expr_Closure->params' => ['(', '', ''],
-            'Expr_FuncCall->args' => ['(', '', ''],
-            'Expr_MethodCall->args' => ['(', '', ''],
-            'Expr_NullsafeMethodCall->args' => ['(', '', ''],
-            'Expr_New->args' => ['(', '', ''],
-            'Expr_PrintableNewAnonClass->args' => ['(', '', ''],
-            'Expr_PrintableNewAnonClass->implements' => [null, ' implements ', ''],
-            'Expr_StaticCall->args' => ['(', '', ''],
-            'Stmt_Class->implements' => [null, ' implements ', ''],
-            'Stmt_ClassMethod->params' => ['(', '', ''],
-            'Stmt_Interface->extends' => [null, ' extends ', ''],
-            'Stmt_Function->params' => ['(', '', ''],
-
-            /* These cannot be empty to start with:
-             * Expr_Isset->vars
-             * Stmt_Catch->types
-             * Stmt_Const->consts
-             * Stmt_ClassConst->consts
-             * Stmt_Declare->declares
-             * Stmt_Echo->exprs
-             * Stmt_Global->vars
-             * Stmt_GroupUse->uses
-             * Stmt_Property->props
-             * Stmt_StaticVar->vars
-             * Stmt_TraitUse->traits
-             * Stmt_TraitUseAdaptation_Precedence->insteadof
-             * Stmt_Unset->vars
-             * Stmt_Use->uses
-             * UnionType->types
-             */
-
-            /* TODO
-             * Stmt_If->elseifs
-             * Stmt_TryCatch->catches
-             * Expr_Array->items
-             * Expr_List->items
-             * Stmt_For->init
-             * Stmt_For->cond
-             * Stmt_For->loop
-             */
-        ];
-    }
-
-    protected function initializeModifierChangeMap() {
-        if ($this->modifierChangeMap) return;
-
-        $this->modifierChangeMap = [
-            'Stmt_ClassConst->flags' => \T_CONST,
-            'Stmt_ClassMethod->flags' => \T_FUNCTION,
-            'Stmt_Class->flags' => \T_CLASS,
-            'Stmt_Property->flags' => \T_VARIABLE,
-            'Param->flags' => \T_VARIABLE,
-            //'Stmt_TraitUseAdaptation_Alias->newModifier' => 0, // TODO
-        ];
-
-        // List of integer subnodes that are not modifiers:
-        // Expr_Include->type
-        // Stmt_GroupUse->type
-        // Stmt_Use->type
-        // Stmt_UseUse->type
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+1rHgtXcPVjo+MVTYHckxLMYVjV3ecxG=

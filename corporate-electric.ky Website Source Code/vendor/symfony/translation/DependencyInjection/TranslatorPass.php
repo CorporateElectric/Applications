@@ -1,89 +1,76 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Translation\DependencyInjection;
-
-use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
-use Symfony\Component\DependencyInjection\Compiler\ServiceLocatorTagPass;
-use Symfony\Component\DependencyInjection\ContainerBuilder;
-use Symfony\Component\DependencyInjection\Reference;
-
-class TranslatorPass implements CompilerPassInterface
-{
-    private $translatorServiceId;
-    private $readerServiceId;
-    private $loaderTag;
-    private $debugCommandServiceId;
-    private $updateCommandServiceId;
-
-    public function __construct(string $translatorServiceId = 'translator.default', string $readerServiceId = 'translation.reader', string $loaderTag = 'translation.loader', string $debugCommandServiceId = 'console.command.translation_debug', string $updateCommandServiceId = 'console.command.translation_update')
-    {
-        $this->translatorServiceId = $translatorServiceId;
-        $this->readerServiceId = $readerServiceId;
-        $this->loaderTag = $loaderTag;
-        $this->debugCommandServiceId = $debugCommandServiceId;
-        $this->updateCommandServiceId = $updateCommandServiceId;
-    }
-
-    public function process(ContainerBuilder $container)
-    {
-        if (!$container->hasDefinition($this->translatorServiceId)) {
-            return;
-        }
-
-        $loaders = [];
-        $loaderRefs = [];
-        foreach ($container->findTaggedServiceIds($this->loaderTag, true) as $id => $attributes) {
-            $loaderRefs[$id] = new Reference($id);
-            $loaders[$id][] = $attributes[0]['alias'];
-            if (isset($attributes[0]['legacy-alias'])) {
-                $loaders[$id][] = $attributes[0]['legacy-alias'];
-            }
-        }
-
-        if ($container->hasDefinition($this->readerServiceId)) {
-            $definition = $container->getDefinition($this->readerServiceId);
-            foreach ($loaders as $id => $formats) {
-                foreach ($formats as $format) {
-                    $definition->addMethodCall('addLoader', [$format, $loaderRefs[$id]]);
-                }
-            }
-        }
-
-        $container
-            ->findDefinition($this->translatorServiceId)
-            ->replaceArgument(0, ServiceLocatorTagPass::register($container, $loaderRefs))
-            ->replaceArgument(3, $loaders)
-        ;
-
-        if (!$container->hasParameter('twig.default_path')) {
-            return;
-        }
-
-        $paths = array_keys($container->getDefinition('twig.template_iterator')->getArgument(1));
-        if ($container->hasDefinition($this->debugCommandServiceId)) {
-            $definition = $container->getDefinition($this->debugCommandServiceId);
-            $definition->replaceArgument(4, $container->getParameter('twig.default_path'));
-
-            if (\count($definition->getArguments()) > 6) {
-                $definition->replaceArgument(6, $paths);
-            }
-        }
-        if ($container->hasDefinition($this->updateCommandServiceId)) {
-            $definition = $container->getDefinition($this->updateCommandServiceId);
-            $definition->replaceArgument(5, $container->getParameter('twig.default_path'));
-
-            if (\count($definition->getArguments()) > 7) {
-                $definition->replaceArgument(7, $paths);
-            }
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

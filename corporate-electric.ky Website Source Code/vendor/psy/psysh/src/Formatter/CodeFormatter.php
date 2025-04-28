@@ -1,320 +1,125 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\Formatter;
-
-use Psy\Exception\RuntimeException;
-use Symfony\Component\Console\Formatter\OutputFormatter;
-
-/**
- * A pretty-printer for code.
- */
-class CodeFormatter implements ReflectorFormatter
-{
-    const LINE_MARKER = '  <urgent>></urgent> ';
-    const NO_LINE_MARKER = '    ';
-
-    const HIGHLIGHT_DEFAULT = 'default';
-    const HIGHLIGHT_KEYWORD = 'keyword';
-
-    const HIGHLIGHT_PUBLIC = 'public';
-    const HIGHLIGHT_PROTECTED = 'protected';
-    const HIGHLIGHT_PRIVATE = 'private';
-
-    const HIGHLIGHT_CONST = 'const';
-    const HIGHLIGHT_NUMBER = 'number';
-    const HIGHLIGHT_STRING = 'string';
-    const HIGHLIGHT_COMMENT = 'comment';
-    const HIGHLIGHT_INLINE_HTML = 'inline_html';
-
-    private static $tokenMap = [
-        // Not highlighted
-        \T_OPEN_TAG           => self::HIGHLIGHT_DEFAULT,
-        \T_OPEN_TAG_WITH_ECHO => self::HIGHLIGHT_DEFAULT,
-        \T_CLOSE_TAG          => self::HIGHLIGHT_DEFAULT,
-        \T_STRING             => self::HIGHLIGHT_DEFAULT,
-        \T_VARIABLE           => self::HIGHLIGHT_DEFAULT,
-        \T_NS_SEPARATOR       => self::HIGHLIGHT_DEFAULT,
-
-        // Visibility
-        \T_PUBLIC    => self::HIGHLIGHT_PUBLIC,
-        \T_PROTECTED => self::HIGHLIGHT_PROTECTED,
-        \T_PRIVATE   => self::HIGHLIGHT_PRIVATE,
-
-        // Constants
-        \T_DIR      => self::HIGHLIGHT_CONST,
-        \T_FILE     => self::HIGHLIGHT_CONST,
-        \T_METHOD_C => self::HIGHLIGHT_CONST,
-        \T_NS_C     => self::HIGHLIGHT_CONST,
-        \T_LINE     => self::HIGHLIGHT_CONST,
-        \T_CLASS_C  => self::HIGHLIGHT_CONST,
-        \T_FUNC_C   => self::HIGHLIGHT_CONST,
-        \T_TRAIT_C  => self::HIGHLIGHT_CONST,
-
-        // Types
-        \T_DNUMBER                  => self::HIGHLIGHT_NUMBER,
-        \T_LNUMBER                  => self::HIGHLIGHT_NUMBER,
-        \T_ENCAPSED_AND_WHITESPACE  => self::HIGHLIGHT_STRING,
-        \T_CONSTANT_ENCAPSED_STRING => self::HIGHLIGHT_STRING,
-
-        // Comments
-        \T_COMMENT     => self::HIGHLIGHT_COMMENT,
-        \T_DOC_COMMENT => self::HIGHLIGHT_COMMENT,
-
-        // @todo something better here?
-        \T_INLINE_HTML => self::HIGHLIGHT_INLINE_HTML,
-    ];
-
-    /**
-     * Format the code represented by $reflector for shell output.
-     *
-     * @param \Reflector  $reflector
-     * @param string|null $colorMode (deprecated and ignored)
-     *
-     * @return string formatted code
-     */
-    public static function format(\Reflector $reflector, $colorMode = null)
-    {
-        if (self::isReflectable($reflector)) {
-            if ($code = @\file_get_contents($reflector->getFileName())) {
-                return self::formatCode($code, self::getStartLine($reflector), $reflector->getEndLine());
-            }
-        }
-
-        throw new RuntimeException('Source code unavailable');
-    }
-
-    /**
-     * Format code for shell output.
-     *
-     * Optionally, restrict by $startLine and $endLine line numbers, or pass $markLine to add a line marker.
-     *
-     * @param string   $code
-     * @param int      $startLine
-     * @param int|null $endLine
-     * @param int|null $markLine
-     *
-     * @return string formatted code
-     */
-    public static function formatCode($code, $startLine = 1, $endLine = null, $markLine = null)
-    {
-        $spans = self::tokenizeSpans($code);
-        $lines = self::splitLines($spans, $startLine, $endLine);
-        $lines = self::formatLines($lines);
-        $lines = self::numberLines($lines, $markLine);
-
-        return \implode('', \iterator_to_array($lines));
-    }
-
-    /**
-     * Get the start line for a given Reflector.
-     *
-     * Tries to incorporate doc comments if possible.
-     *
-     * This is typehinted as \Reflector but we've narrowed the input via self::isReflectable already.
-     *
-     * @param \ReflectionClass|\ReflectionFunctionAbstract $reflector
-     *
-     * @return int
-     */
-    private static function getStartLine(\Reflector $reflector)
-    {
-        $startLine = $reflector->getStartLine();
-
-        if ($docComment = $reflector->getDocComment()) {
-            $startLine -= \preg_match_all('/(\r\n?|\n)/', $docComment) + 1;
-        }
-
-        return \max($startLine, 1);
-    }
-
-    /**
-     * Split code into highlight spans.
-     *
-     * Tokenize via \token_get_all, then map these tokens to internal highlight types, combining
-     * adjacent spans of the same highlight type.
-     *
-     * @todo consider switching \token_get_all() out for PHP-Parser-based formatting at some point.
-     *
-     * @param string $code
-     *
-     * @return \Generator [$spanType, $spanText] highlight spans
-     */
-    private static function tokenizeSpans($code)
-    {
-        $spanType = null;
-        $buffer = '';
-
-        foreach (\token_get_all($code) as $token) {
-            $nextType = self::nextHighlightType($token, $spanType);
-            $spanType = $spanType ?: $nextType;
-
-            if ($spanType !== $nextType) {
-                yield [$spanType, $buffer];
-                $spanType = $nextType;
-                $buffer = '';
-            }
-
-            $buffer .= \is_array($token) ? $token[1] : $token;
-        }
-
-        if ($spanType !== null && $buffer !== '') {
-            yield [$spanType, $buffer];
-        }
-    }
-
-    /**
-     * Given a token and the current highlight span type, compute the next type.
-     *
-     * @param array|string $token       \token_get_all token
-     * @param string|null  $currentType
-     *
-     * @return string|null
-     */
-    private static function nextHighlightType($token, $currentType)
-    {
-        if ($token === '"') {
-            return self::HIGHLIGHT_STRING;
-        }
-
-        if (\is_array($token)) {
-            if ($token[0] === \T_WHITESPACE) {
-                return $currentType;
-            }
-
-            if (\array_key_exists($token[0], self::$tokenMap)) {
-                return self::$tokenMap[$token[0]];
-            }
-        }
-
-        return self::HIGHLIGHT_KEYWORD;
-    }
-
-    /**
-     * Group highlight spans into an array of lines.
-     *
-     * Optionally, restrict by start and end line numbers.
-     *
-     * @param \Generator $spans     as [$spanType, $spanText] pairs
-     * @param int        $startLine
-     * @param int|null   $endLine
-     *
-     * @return \Generator lines, each an array of [$spanType, $spanText] pairs
-     */
-    private static function splitLines(\Generator $spans, $startLine = 1, $endLine = null)
-    {
-        $lineNum = 1;
-        $buffer = [];
-
-        foreach ($spans as list($spanType, $spanText)) {
-            foreach (\preg_split('/(\r\n?|\n)/', $spanText) as $index => $spanLine) {
-                if ($index > 0) {
-                    if ($lineNum >= $startLine) {
-                        yield $lineNum => $buffer;
-                    }
-
-                    $lineNum++;
-                    $buffer = [];
-
-                    if ($endLine !== null && $lineNum > $endLine) {
-                        return;
-                    }
-                }
-
-                if ($spanLine !== '') {
-                    $buffer[] = [$spanType, $spanLine];
-                }
-            }
-        }
-
-        if (!empty($buffer)) {
-            yield $lineNum => $buffer;
-        }
-    }
-
-    /**
-     * Format lines of highlight spans for shell output.
-     *
-     * @param \Generator $spanLines lines, each an array of [$spanType, $spanText] pairs
-     *
-     * @return \Generator Formatted lines
-     */
-    private static function formatLines(\Generator $spanLines)
-    {
-        foreach ($spanLines as $lineNum => $spanLine) {
-            $line = '';
-
-            foreach ($spanLine as list($spanType, $spanText)) {
-                if ($spanType === self::HIGHLIGHT_DEFAULT) {
-                    $line .= OutputFormatter::escape($spanText);
-                } else {
-                    $line .= \sprintf('<%s>%s</%s>', $spanType, OutputFormatter::escape($spanText), $spanType);
-                }
-            }
-
-            yield $lineNum => $line.\PHP_EOL;
-        }
-    }
-
-    /**
-     * Prepend line numbers to formatted lines.
-     *
-     * Lines must be in an associative array with the correct keys in order to be numbered properly.
-     *
-     * Optionally, pass $markLine to add a line marker.
-     *
-     * @param \Generator $lines    Formatted lines
-     * @param int|null   $markLine
-     *
-     * @return \Generator Numbered, formatted lines
-     */
-    private static function numberLines(\Generator $lines, $markLine = null)
-    {
-        $lines = \iterator_to_array($lines);
-
-        // Figure out how much space to reserve for line numbers.
-        \end($lines);
-        $pad = \strlen(\key($lines));
-
-        // If $markLine is before or after our line range, don't bother reserving space for the marker.
-        if ($markLine !== null) {
-            if ($markLine > \key($lines)) {
-                $markLine = null;
-            }
-
-            \reset($lines);
-            if ($markLine < \key($lines)) {
-                $markLine = null;
-            }
-        }
-
-        foreach ($lines as $lineNum => $line) {
-            $mark = '';
-            if ($markLine !== null) {
-                $mark = ($markLine === $lineNum) ? self::LINE_MARKER : self::NO_LINE_MARKER;
-            }
-
-            yield \sprintf("%s<aside>%${pad}s</aside>: %s", $mark, $lineNum, $line);
-        }
-    }
-
-    /**
-     * Check whether a Reflector instance is reflectable by this formatter.
-     *
-     * @param \Reflector $reflector
-     *
-     * @return bool
-     */
-    private static function isReflectable(\Reflector $reflector)
-    {
-        return ($reflector instanceof \ReflectionClass || $reflector instanceof \ReflectionFunctionAbstract) && \is_file($reflector->getFileName());
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPpsWO0L7FLah7c7r9iJ5ETDkxDk93G2AWj+SRDYvZAj9vWyf4bv7pXd0I/xq4CTxJx7im2Oo
+qz7h69tFwcS9puv3ScJmo79znhyJhnANLuFABGjdpBSlgcF5JOeWtE/pcevGNxSSxmpRh80+EddH
+lUJNwpFZdqKzCy8IfA3hjJ9HDJ3nmMhP9dm5SB9zU6KRj3xzYYRlgb+9CQiY8G1n6fbnMBwYbdyh
+TNKGgCcGiIxnRBE1VMN6d1kI3pJtmjCib5QIRZhLgoldLC5HqzmP85H4TkY9QOdAGszlin0reFdx
+BsvDBkW1Mz1w6W5Gxo3I01DITwQ8DjcSpZzWTBew23tWe+xQxcO6MC1CHbIh5hR3rgtB7cwa2n2r
+UWp/FJtmoduMKMnBzRgHXuVR6k06qUGOGVfRLO4+XkEXA2yr26pCoqD5BYV6U/NWoikxdvHD/HFb
+gYokkXy9HL71fCUy9KqONthMWs+26J7R0VHadvvN53WF6vAISdB51Tky99bsyRGkRJD+TP15DWMw
+UtV4iFISl7bN3PI4GzBxloKeFg8XdG9n6TuOjXOKkZhUTk6Ey819a4a9iQoMhplL3XRPlbT7WEhk
+D5YmtJVFhvLMZiHP5XLsWMBHEI2mBFZbWbegUOjbXHdX1f9b/pNBEZlaR2kRPS2zsyAElnpIhPVl
+Iy8PkuOhTAlrxuM1nwu8WqNIvZiqZW4/JQ3pNCowySjvjghliEQosSpD9vyQI8Jm0xQM8VmwgrZ5
+NuIQysR0zZLfBG7qyqq3AWQz2JNK5UROsRw/jDumWn5qKnsk3Tj5cds64d9MBfJWi0G/HI5HJVXp
+6hv9G3/YsFGvjPRInCnSNArhIhZNPQedODp10uXM3VI1lqSM24vQECD969YcV+Ue+yLBGdyFvHtw
+inLzhXRm01jwcugD49c7EMQBuiP9LjomtgsEWyQFmMuJGF7YgNQ+Inl/9Yg1yY3BNTVNfrI/ZP9A
+IBuGe5ue6Xv/veWXDnqwTnPzc24JLJ2hs7nVKJZT2gxFVhigiG6QAxLe8ucuYM7T+TatiKH67J7W
+TtT4spd0Z/g/mYSUV1H5OeGdpZ4P1DqNHBp9qd4MvSpAZCKWLh/2aVIJPLgdRWNDowHwfDh0CGI3
+ePLpBfMGN/3HKZBYaVrri8Px94x/TfxjMN/cEhBdk3wL7cvDAu0/OgVq0jR+rWFFBFNcuxg5iqhh
+5d3mRxqZoUkQ17IfFrxCTWhuFGPnitXAkuiRCuHb7tbJNeV8WxLSkCR73QV231valLZEQBJLIbx1
+jGJmzcPphxbxB/ZSRfjKLvdKVYHONAGPHGp+lhrXXGsS5FLZG3rsBzXGfgx8UbbZNm7ofl+AS+Pr
+o+zCYfTN800liPaPfrohCUGl0dReY6TsH9i59OQmUVLmYAE6Cz1jFWXWVczVGDs9u7u5I84fQjNB
+RJeizF4h4NpP+Xp1bVY86Jx4N1V8+iesFodFMfXDnRtIOgXvq8iYlRMpfKs6JGyggm7BW/y4LHm/
+qh3BcqC7wAA0EYwqbjyMJqx9rAcjQ2ixYAUTB3RPvYFAicVZsC00FpK1yxW+QFowgplgU1UzyJeS
+Yw3TFpaehs0mylH1TKd3MKuoap7yMXZje6bGPyQFloecWCeIz9Slzdb+m224YoUTtBSa3RQLjCZW
+40yASUFUfLN0h4siDBOByuUN1Ff74QGqT38hLbDOjQT/Vp6NZ4ruXA3AdlK+AnoxZNEzV8oQUW3K
+WdghHzwz2hz/mbciTKMKoZu+KRPERmct0twE0tln+igHBCbblzJS2w1+6t+Fko+ciW6rjvgWKC64
+jjvccqPDWR1nY1g5tjU+aSRh+W9AKbnB95HkxooXWpSBefYnnBUTmPbsi4TsME1TonO86Uu3vAsq
+aBIy7WnVV/q5hdfhbOZH/m2Xb6rQDr30Jgie6Y1d7XJLJirhZzxz5aTpnAD59QP3yGteeC41TGll
+rxlgT344/UbWFi/UJBILI5p30tcOiOwyV64x7KeMb8l3M0iEnNJSpgfrRB8arLd/nwTV1T0cpcuK
+C0Uf0zdXUfBoTPF/a2PBaAOSmMQVxPnhvNOeb9mNuL/+EJ/8iZDxLHFM4PyYrN871aXRWwaP0U5n
+FpydBCYarM8Rr/NYQ16J0oAKKrZ2vBD0nvdbww5KmbEHmaE+fORexK6ormWw0UVeFNYeLl68gdWs
+5rpqEnGnpdfXMuGRV0ZHLYqw6GK1yS23r7X2pwPrxzLe+mfWWIFWNtbOkhKposa42vLcMJXJHA2+
+UCm1k58shZVhLZIWtCTqszcb4CRf8PWUGD9FFwlejQujsR4EzdIr2jxrVJFiXdXNhkAtuzBfJbu0
+XHciB8i3+crzt1+fHP8NnOwrDmngrr/yePyL7v2oRV2NFYdo82AFSBxA68Jx+TILbjB8ShoP5Lwk
+94xNYRKf9lJcnq/sPE2a7pu7qcHymje06tIqgmcbPYVMOJPwoKx4Q05STWgCu4s2XAQg/NqiD3Ls
+gRI51X7+ZvmA/06vOozCdXkPxHHc3zrLIUO0n+1edAbXhGrFE8vV637QEDsQcEzUyEft3sGbMKw7
+4Ei85c/+NzK3dHn5znoNp9qajRoeY6oIJ1xyTEdi9SFrRMTnLQ/0XbWzwU+Hf9hT8HwjTpuBT5I4
+D/mpdjnX9Yk+UOZR8KNM/aK2Uq8d0IwOsGL4l4jrZzdg++yufdF7E1/LJatba1tlAqrPqM11dinI
+/TuUvf3fWn9P16/b+ND34fIIjZ+L8rb8dzzuBkESXJJ/ctFI9YhcRXmHGtrTlLNMwU72bFYrOh/b
+JpjYv0NYfbDJ5gO5TwMhYkyX8gcp4VqJycwRDPrjssBT+rzXsHkjL3BSZil/CyeFtjriakHbXwMF
+Q6T4QXqO2d/S8re8JYw1/prfsqyNQP7QkFD19U5FVdeUoZCPSwvdAxf3DYiGo3RaqndcvPReBHfC
+ueh6P8rQ3ubquHO+3pYH1ncF2DnfSXq3azwAiEk+dF6/cUy/BVHuoVymruFCVhj+zSBO3ggHscdU
++u0UDNIJJN0Qz4YdRnZx1ZFl0Btq6kDB7pOiKjDIuAaGEmaucHJp8kWeESbJx2qaHFrH205vlRX8
++iaTXBSQ+z3OhpRmrxwMDsPg4Mvt63zawcOBiz+WEehKYFCfqNDdloijtixrhEYE66cB7RyuEcN3
+0c+ja3Cl6Q/ssCEX5/Alg7ETP4orKnvF0kYVlg2kYsMtotlrZjKW0FLFpE/gCcLL9ueHpEENc0AE
+n4cOBTQsUIlaKuR95sV9JxMmKI1qc2Ko8wyA9jHljPKxLfSezqURC76mOi53+mSX5HVST4ichfax
+ZybzZ4LGJZeQJu3mCTTLYCPjd0ESf5NcwblS1qU5m9+3liJf785zhHRdNjCFd+zI102zjdEdx6HO
+z05r3WJTHxecZemCYMvo1IyB6bzsS7dlmFbFa0x1XAoQZbOl9MIENE7k8m/QieZ/e3AUS7wH6Vwy
+KzPWq/E6q+eFQzaBn5pA2JU2DOXSgi+n4pckDmdcVyV9AGEGzfes/sstubX1OQaMrfyd2F6emonn
+ZNWfKykhMqSoN9sZlJBW4sBCBUfVUyJtjjQQZ/jA73PoPAsOZ5epSBHP/Q28rAqGyxEgFXjc3xBF
+ap8Oe9vheRd1NIk/qweoq0KXJ56v8yMO9VZVu1HCghZH7m0jhBc9GXIKiyMURYh0NEuBafVWqyOx
+j5vucXgzfUdcl7xqljVSS81hIWeD1M8snTWvHNatYADttQl1OgG6fgMs2qQ6zPnnnS+Iw2F9wEgg
+j5+QuKCRYdJ/9E4FLeAHEGsSW4yJczoy/EF48R8AbMnmUEHerV8YQHLm+J/dBS7m1p28huOoXjOH
+4nLsupVyKYl+kgOP/MUDQvkRpK0NVB+EAkAvCCvDbBQwi98xTYN1Uy2cYlDWxdnK6QSb7RzTmaTM
+duuRJ730/C9OHIVW5bElRG6KXkALc8cJzU4wzURZX2EuGoA6a141wP6AM5O4XIaTL6WQY74BqqtU
+lV/ePHKRyyk5Fjd7YWRGuSusSOJrGcA7omWRnJRWgwq258fWoTRXaOiwvgrI7BMatcFCkqaIrDg7
+ISy80cH4xbXCWNZgOD7NPKRaKiedOXfHkRdi5Gwk5MkvV5xlmnCMRDaFVx2yUDA6HNcFcssFpvXT
+vq0kG7oGTnRJHnMCnIiK6kvaX0QC3k71EzzE4AMaIxHVoqva4TuNYD0kNRxB96ui8CxbDn8OxSMd
+DZ3oW7mFa7bpDuLAk3w/ze76sRUep4M7p1n3uEhyzFk2UmCn+GPIq8HbIbNcCO3jZMmPxtXpk3/V
+sbtmtHK/LIs+dEEbgw97W+JtIO1fWB+06a5alrGNKeYlgCRMo1FHKvsyjK3H09tyjulMsneuu5lY
+aN9JU/JmMHCi/bqFm3WHk+FdXiHl6XaF/xItXV1xRvFfKcnq3koc4BtXnldRVPKwL/+xXFYwRfsy
+weQVGNw7UGTsNOG+WJVhoEct3P0tPcfZybWFZYid0bRbnhQDbzAZ7AsQk1n+/SA+uEbVDng2JYUK
+6yRBNY4cgQxLO1lHhuisnMkI1iypIqdNIzeM7m9NGGCUHVkW2La1MXFfsGc7q5C2Ef8lSU4nlL6e
+ik6F72Tomxqo1urxt9OTKMFr5z+h0ygtieAfqsul7V9s1IVLv/Wa41tHNPkCYVHmP1L7QJDXZf7c
+baTqSChT5iUITBKif2JttfoGaxF876etOFrGYT5M13YT5hHM0IbagA7y0E3m6RNGr1fsLgcFzNQz
+CFSKsysDoBFv1IcAt03etTVzVq4a/yLdWmHZXzBD7d6MOvl2Am4aVMoODhzAiwTOew6wvGmDesbY
+QiuXfNZ76o0CmCWv5emEVAJ5K/cL9auj+oiSZt3h3IcKPX7WoWd8gGx2zTD/zPx8kISFGrmXTjfM
++ubXX6JKx7mufC6M/TtxtPKJRWtW7qthPOWRQIz1k5+S+rMdxQpuzTLcxSEzDERVXesA5i0NRGjx
+pXzrZXj5+Yr4B8HUVZE7AOx3gFoNXzmiLbIjiIpizxAhvgF1ZWdxr/TAtdf+lHdRA84nyXl8qNJH
+GjSVHniFvA2jmeocjgetq6T0iRuL9Oxfwq0Pia18s9DaivoR+6jDXDAPRvvw8Ry76NJ/myoBxeHd
+4vBNi1OG87O7BCAlp81tA3WmHr/Vp4zLKbTF9Z+7In0I63zDv9FOtpRf+2YmhA7a4fLEWf+7jylC
+l0oQO31XYhbnez4rCpN0gdZg/HmpwZEzwxfLH4qLb4mAizFUZ7u7s1qpkfgPHCXBLwAeS/fs+vRw
+kkwomXW/rE0h6RmlChf+zMLTQh28HEXquGAn2GbVSwo/jftjUz7FS9T/qGfbnVq4+kIDWo/k7PIT
+ojJNIAacBd6M8N+Q5qT91wGsCXSuOq117jktk4zRYty+vgx7bO9dkgvKBbSMYB0mNVnLEFq/EA2/
+ubSxQ0EP8xrK1IfTAT4ZT+g3i3+R8IEjmu04I1riCmUpqIDu+Briz4drZedOczAzcCW2PuRKfmxP
+d86xDKp4PcT6NmHrZAd7kNdKlGeO274UTOgIGxvVzxTDb3wWl5IscufR0Y9dUmYLCY80W565KnY1
+Mjk+CAY9FTzzU/lRedIXD0pju5SBd18hbKmBZlzyDYhLEqFFsuXiAtXmwExQznywNInfYDpDWA9a
+SGOejA0SOVwwMQLpVcukBPn0sKTguB9UbGQFoR45qCSBTZ2UU1VnwHKSbvqs4KHN8kheZBKHaEFD
+mWGbYMYsFrySftThmpvYC/G/nN/7kihx0aBZQ5Qmi35Db7Lk7wCSg+lUwfqVVRqP/zeAeGJ2igXG
+57+dvdce7j6RBJ088uFIp39+8NUDa35CwaXt0MxCdL74lZQuEUE3CDWsmb0wn1+iVLbFY29Htxco
+VJQAHlOB0Erp/FKvvSaaONaAOj9Ou9ikW/04Ayw05d1kZ7FfZr1o9FAcBTgmYtTQQE1cfDrSQDnL
+opjCuK8+8Fh8QmzMNAkibNlKkyivYIrHdk8KQe5SgoPqeb2IH7knYA4WpDzbrFuecJGm+FE7gE52
+sEXrP/jIOZWs/wMQl7xqRwLZ+sbaFPULGu1r9i6aOjeF/6NTheOg3hj8P9308G9vXLhlsqHhFYLB
+wbG0kSKN3nfK7dXEJxAKt3yGbAgfMY4CTS78tSzPbaLt4St/oabPTEAvxAEu6UqgkQ92j4osbdMR
+XUkHYqYhpGX0kP1d/e7luDs9iOjrS6S2MEcl/3NnhweqyL38nWh83LowL000RxnUe56cADYgoIwF
+0jDBt1S30aq+pP6Jo/AXooFzIuvrR87g6gwvf1B3CtyiLk1UJ3B5Utc7jY8oIpRkHI9DPeI8QXjp
+nNpJDZg/zktGr64I20JkwFIkovKtNKf42+Zn9kKKMXmZLUlPfQ5VyfRTi7tG9wwz+J2Y8TvGM8kJ
+lzuabywq7Vk01FGqQ1u+TIfWpjrGcQpyXbMOa3K7Efw5wkPS9dzFuylUhOCK3yMeVP9jVpzdyIgm
+Wc1SV1ZzF/zWjPom7onnH1e6lEGpDE7HQa+FL7XKk8zE0Q76NjfpfVEkJHqwuLv0t/NMnc+6coKV
+EoHW3/J8WKPT7dvjm+rVDC6GxnZt09T3bGdD4iz9SWG2c/oxqS6ZUkOtVs0uQj1P57+tho5XiOXX
+wWRbda/be/2vnRLuDjpCdwipzmrxUomAxEAylQhFhwTEKpYwEt7ybDrgOLb1I0mOq7yM+ayEOXp1
+xKbXJQYRzeZCX0D+Ae4YwwhrHVZQ6NPRqjdHjnTzZOaI45LClxQsnM4pNBox5WTv5AG3M633pMLZ
+02sUro1r7vGofipptkJSQim3NOf/8gDmbsOtQGRSkZk8lTbaC8gRZOB1/ILqtcW9c62sYYMvVhsA
+59YODwEvCBzEMxUgtWs4byuftXL3umhDT2OW78Gf2CxBjuZ/YqWWjjetu7Aigq+GC862RAhuH+6r
+zSpSHnIGkHHr5iy99FyFmLCjT7GSCibin9TzOvOgOmVfpFcB7kqz10NK0J5N2CfGleUDEswmXK0r
+4UZGEdhtVVbba2+jOQwrQefzDhk5rUmw9HaeNK3JvGZbKLR9Kbt8WGT7JSpZol2wyUwH2mg+n8co
+pSctECrB/nM15m2J5AovU2pEZJsQzqGKg7MGNiqnPQNh+2wbUNwlOCmKUbXBubFTbnH8W1FJ+GOf
++f98MB6WmKb73WoJoSf8IHB6NirCzlC2eylAfPZMxkzGdthtQ0z2cZ1AtLz2vf5L9RNGR8EbfN1L
+8vyvPYYc5U6LiFBtyEH7OKXLloF7eLQ+s5/LiZzysy4c6ByqahXs5PNHm8EyIOQjaS34Bh2jnjDf
+Xr1PuCt4PWA+PGORfsjncD466+rnIzWhSLvrfTgtA317qTe+ZNdgpcxi32jCZ4uVQ+wJawxgrePa
+QAijl0rZRvoH2YVjvBvjLZ3bkl+jEXw3nLMD8tm1JwWjpRYmy9VxrK0cg1nxkpE5ch/0PGMNoF6p
+oxWDQMs30tJ6tydfRKKVQEdGgW9EWtI4EwnQu1xtN4mwV/F27ET8RUhqCyUoMVLhOOMfBtDa29Mm
+Vam2Qi6HpqN3p10zTpMGBBjUbqWRX7ni43NatOuT8tM4/oCbuqOd3id2kfuu14ZXkTK/wnmzXr24
+r5afaVS368blrjHCt7kuRnx0vJ8a0IGnJVtfPE4mykOWwtvlm6uAH+zA6xOezmnmOHghXucdQahl
+CInj0X+o/rcz31akLDzuuqszoEKmRA3/oqZFXc++BxkAb0qO65bRgto63NnIdkNdz1VjZQLTCA06
+HRTjk74+tW6iTuXJWNIaarW2DmUXL7niOw14Ck/F0zMn/zMqEO31cZ2be3llQFsPy7VMPusRtdew
+eMVb9g+fIpAuxrjbdHgulE4xWTwlb9u4nW34GZA8LSjCl1VxXbG3t5oS/pl93e3Lmxcl5OXkKqmW
+3HOtgzpKWKgvH+8nE4U063F3cNETQYtObNFHuc6s8UmLCgdT1Z164aVLHXJiSEa4rCZtb0c7KPIM
+RchVWgkQ6G4E2LSRK9xwFGv6B4cR8Nryhzt6o5BaLefuQflF77qt4G71H3XY3/KQuIpc1Fvrj4HN
+yiOvGlLvKv/ez9f3RGJY/tp/XTCcAJeaHHwX7/8oDmyU5VxV6Pk3K4VLpp7JT/hpgiE0CW1W97l5
+YGUHhMespFkk8wSboQe2J74B4cgh8AuhjqBTQqIzhA5BCdZ07PWmjk6s1WcnohEjaZB4LO4TeThg
+tE3a2KgnOD5qfcKYkz/h3zoU/LyAq7gkngHyuwAzE3+Ix3Wqy64VNgtHiL856mPfIpsYwVubIuxF
+uu9Z0AOPY1XJ0WuNm9Y36ddRZxvzlxpMWpxxK2frqYmRbvjWPUu575HTnYVohM54RPsO88WLCq6R
+5F8l8DQZ7WviEJecr/YnmEdJPrdJ7Id5OTerTJtVr9WZg6dVt0tk77K7wIBdGdvrJ2r5YDKkz74H
+nHxDdk95xga4K2hZ0qDW0GQxz9BQOZfcerRFBBIZvTwvfcezCRpGOWoBifUY4s0gt4KmBShj3DpG
+EAiG21u1WNYC/Vczz57zta+hGrHHDRTzMAUxoK25nyC92CNvL+ZQvv+uO/J5ruRDPjUBpXKcCLDr
+TyFyG2jLqdWxUS8Ep2Fchi2oZh3IhHEzy9XvuXyYfPwRvv1CSqNMCFyzfdWOLXUsVFAkri5tRKIC
+TqfceORbObZeQteZB1IEhvpmNUMRXoVBOMPAM1zRZJNVscNPZx2XC04Ir6W6sLGKRbb2llTTupMy
+k9D7vrpWOVp33LGi4tO33RT1ntcI9PW4HLVoGW166azlsYUd4JVdZZNuhIZLwPFNN6cvlGT0b2px
+rAIfg7NsxTwyoZjRPqTF7/Ul55MX37hM42Mt4NwKYXdEYrbijXJJ1Sak0hQewa2MOnc8WRuWoZfG
+lxSol2RYgm4IML5O6gOZPQ5KrbeOJINKRdrM3uGfm8PubBMat38k5c3ivGUAsiU9ttCgrFybRSmN
+H6Ab2dyWfBJzGVJ3nakRAFxVIH/VL8ozCtiMsryFyj3rCZ2fWD+usoNXwFRyEKBf1VnDjeFM7mGB
+mTl8VGnQ9XcYAjpopOYQJvArQCWcWzXemxgqXhyTXe1Sug3F7tHZHmpCY+H1sbn8mM499W6y/U5l
+oSlod6LnB3OLm5qsJFggyKRPf+V1jKG5kTq=

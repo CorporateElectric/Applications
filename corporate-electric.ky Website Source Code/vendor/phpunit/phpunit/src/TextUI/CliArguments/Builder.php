@@ -1,887 +1,237 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\TextUI\CliArguments;
-
-use function array_map;
-use function array_merge;
-use function class_exists;
-use function explode;
-use function is_numeric;
-use function str_replace;
-use PHPUnit\Runner\TestSuiteSorter;
-use PHPUnit\TextUI\DefaultResultPrinter;
-use PHPUnit\TextUI\XmlConfiguration\Extension;
-use PHPUnit\Util\Log\TeamCity;
-use PHPUnit\Util\TestDox\CliTestDoxPrinter;
-use SebastianBergmann\CliParser\Exception as CliParserException;
-use SebastianBergmann\CliParser\Parser as CliParser;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for PHPUnit
- */
-final class Builder
-{
-    private const LONG_OPTIONS = [
-        'atleast-version=',
-        'prepend=',
-        'bootstrap=',
-        'cache-result',
-        'do-not-cache-result',
-        'cache-result-file=',
-        'check-version',
-        'colors==',
-        'columns=',
-        'configuration=',
-        'coverage-cache=',
-        'warm-coverage-cache',
-        'coverage-filter=',
-        'coverage-clover=',
-        'coverage-cobertura=',
-        'coverage-crap4j=',
-        'coverage-html=',
-        'coverage-php=',
-        'coverage-text==',
-        'coverage-xml=',
-        'path-coverage',
-        'debug',
-        'disallow-test-output',
-        'disallow-resource-usage',
-        'disallow-todo-tests',
-        'default-time-limit=',
-        'enforce-time-limit',
-        'exclude-group=',
-        'extensions=',
-        'filter=',
-        'generate-configuration',
-        'globals-backup',
-        'group=',
-        'covers=',
-        'uses=',
-        'help',
-        'resolve-dependencies',
-        'ignore-dependencies',
-        'include-path=',
-        'list-groups',
-        'list-suites',
-        'list-tests',
-        'list-tests-xml=',
-        'loader=',
-        'log-junit=',
-        'log-teamcity=',
-        'migrate-configuration',
-        'no-configuration',
-        'no-coverage',
-        'no-logging',
-        'no-interaction',
-        'no-extensions',
-        'order-by=',
-        'printer=',
-        'process-isolation',
-        'repeat=',
-        'dont-report-useless-tests',
-        'random-order',
-        'random-order-seed=',
-        'reverse-order',
-        'reverse-list',
-        'static-backup',
-        'stderr',
-        'stop-on-defect',
-        'stop-on-error',
-        'stop-on-failure',
-        'stop-on-warning',
-        'stop-on-incomplete',
-        'stop-on-risky',
-        'stop-on-skipped',
-        'fail-on-empty-test-suite',
-        'fail-on-incomplete',
-        'fail-on-risky',
-        'fail-on-skipped',
-        'fail-on-warning',
-        'strict-coverage',
-        'disable-coverage-ignore',
-        'strict-global-state',
-        'teamcity',
-        'testdox',
-        'testdox-group=',
-        'testdox-exclude-group=',
-        'testdox-html=',
-        'testdox-text=',
-        'testdox-xml=',
-        'test-suffix=',
-        'testsuite=',
-        'verbose',
-        'version',
-        'whitelist=',
-        'dump-xdebug-filter=',
-    ];
-
-    private const SHORT_OPTIONS = 'd:c:hv';
-
-    public function fromParameters(array $parameters, array $additionalLongOptions): Configuration
-    {
-        try {
-            $options = (new CliParser)->parse(
-                $parameters,
-                self::SHORT_OPTIONS,
-                array_merge(self::LONG_OPTIONS, $additionalLongOptions)
-            );
-        } catch (CliParserException $e) {
-            throw new Exception(
-                $e->getMessage(),
-                (int) $e->getCode(),
-                $e
-            );
-        }
-
-        $argument                                   = null;
-        $atLeastVersion                             = null;
-        $backupGlobals                              = null;
-        $backupStaticAttributes                     = null;
-        $beStrictAboutChangesToGlobalState          = null;
-        $beStrictAboutResourceUsageDuringSmallTests = null;
-        $bootstrap                                  = null;
-        $cacheResult                                = null;
-        $cacheResultFile                            = null;
-        $checkVersion                               = null;
-        $colors                                     = null;
-        $columns                                    = null;
-        $configuration                              = null;
-        $coverageCacheDirectory                     = null;
-        $warmCoverageCache                          = null;
-        $coverageFilter                             = null;
-        $coverageClover                             = null;
-        $coverageCobertura                          = null;
-        $coverageCrap4J                             = null;
-        $coverageHtml                               = null;
-        $coveragePhp                                = null;
-        $coverageText                               = null;
-        $coverageTextShowUncoveredFiles             = null;
-        $coverageTextShowOnlySummary                = null;
-        $coverageXml                                = null;
-        $pathCoverage                               = null;
-        $debug                                      = null;
-        $defaultTimeLimit                           = null;
-        $disableCodeCoverageIgnore                  = null;
-        $disallowTestOutput                         = null;
-        $disallowTodoAnnotatedTests                 = null;
-        $enforceTimeLimit                           = null;
-        $excludeGroups                              = null;
-        $executionOrder                             = null;
-        $executionOrderDefects                      = null;
-        $extensions                                 = [];
-        $unavailableExtensions                      = [];
-        $failOnEmptyTestSuite                       = null;
-        $failOnIncomplete                           = null;
-        $failOnRisky                                = null;
-        $failOnSkipped                              = null;
-        $failOnWarning                              = null;
-        $filter                                     = null;
-        $generateConfiguration                      = null;
-        $migrateConfiguration                       = null;
-        $groups                                     = null;
-        $testsCovering                              = null;
-        $testsUsing                                 = null;
-        $help                                       = null;
-        $includePath                                = null;
-        $iniSettings                                = [];
-        $junitLogfile                               = null;
-        $listGroups                                 = null;
-        $listSuites                                 = null;
-        $listTests                                  = null;
-        $listTestsXml                               = null;
-        $loader                                     = null;
-        $noCoverage                                 = null;
-        $noExtensions                               = null;
-        $noInteraction                              = null;
-        $noLogging                                  = null;
-        $printer                                    = null;
-        $processIsolation                           = null;
-        $randomOrderSeed                            = null;
-        $repeat                                     = null;
-        $reportUselessTests                         = null;
-        $resolveDependencies                        = null;
-        $reverseList                                = null;
-        $stderr                                     = null;
-        $strictCoverage                             = null;
-        $stopOnDefect                               = null;
-        $stopOnError                                = null;
-        $stopOnFailure                              = null;
-        $stopOnIncomplete                           = null;
-        $stopOnRisky                                = null;
-        $stopOnSkipped                              = null;
-        $stopOnWarning                              = null;
-        $teamcityLogfile                            = null;
-        $testdoxExcludeGroups                       = null;
-        $testdoxGroups                              = null;
-        $testdoxHtmlFile                            = null;
-        $testdoxTextFile                            = null;
-        $testdoxXmlFile                             = null;
-        $testSuffixes                               = null;
-        $testSuite                                  = null;
-        $unrecognizedOptions                        = [];
-        $unrecognizedOrderBy                        = null;
-        $useDefaultConfiguration                    = null;
-        $verbose                                    = null;
-        $version                                    = null;
-        $xdebugFilterFile                           = null;
-
-        if (isset($options[1][0])) {
-            $argument = $options[1][0];
-        }
-
-        foreach ($options[0] as $option) {
-            switch ($option[0]) {
-                case '--colors':
-                    $colors = $option[1] ?: DefaultResultPrinter::COLOR_AUTO;
-
-                    break;
-
-                case '--bootstrap':
-                    $bootstrap = $option[1];
-
-                    break;
-
-                case '--cache-result':
-                    $cacheResult = true;
-
-                    break;
-
-                case '--do-not-cache-result':
-                    $cacheResult = false;
-
-                    break;
-
-                case '--cache-result-file':
-                    $cacheResultFile = $option[1];
-
-                    break;
-
-                case '--columns':
-                    if (is_numeric($option[1])) {
-                        $columns = (int) $option[1];
-                    } elseif ($option[1] === 'max') {
-                        $columns = 'max';
-                    }
-
-                    break;
-
-                case 'c':
-                case '--configuration':
-                    $configuration = $option[1];
-
-                    break;
-
-                case '--coverage-cache':
-                    $coverageCacheDirectory = $option[1];
-
-                    break;
-
-                case '--warm-coverage-cache':
-                    $warmCoverageCache = true;
-
-                    break;
-
-                case '--coverage-clover':
-                    $coverageClover = $option[1];
-
-                    break;
-
-                case '--coverage-cobertura':
-                    $coverageCobertura = $option[1];
-
-                    break;
-
-                case '--coverage-crap4j':
-                    $coverageCrap4J = $option[1];
-
-                    break;
-
-                case '--coverage-html':
-                    $coverageHtml = $option[1];
-
-                    break;
-
-                case '--coverage-php':
-                    $coveragePhp = $option[1];
-
-                    break;
-
-                case '--coverage-text':
-                    if ($option[1] === null) {
-                        $option[1] = 'php://stdout';
-                    }
-
-                    $coverageText                   = $option[1];
-                    $coverageTextShowUncoveredFiles = false;
-                    $coverageTextShowOnlySummary    = false;
-
-                    break;
-
-                case '--coverage-xml':
-                    $coverageXml = $option[1];
-
-                    break;
-
-                case '--path-coverage':
-                    $pathCoverage = true;
-
-                    break;
-
-                case 'd':
-                    $tmp = explode('=', $option[1]);
-
-                    if (isset($tmp[0])) {
-                        if (isset($tmp[1])) {
-                            $iniSettings[$tmp[0]] = $tmp[1];
-                        } else {
-                            $iniSettings[$tmp[0]] = '1';
-                        }
-                    }
-
-                    break;
-
-                case '--debug':
-                    $debug = true;
-
-                    break;
-
-                case 'h':
-                case '--help':
-                    $help = true;
-
-                    break;
-
-                case '--filter':
-                    $filter = $option[1];
-
-                    break;
-
-                case '--testsuite':
-                    $testSuite = $option[1];
-
-                    break;
-
-                case '--generate-configuration':
-                    $generateConfiguration = true;
-
-                    break;
-
-                case '--migrate-configuration':
-                    $migrateConfiguration = true;
-
-                    break;
-
-                case '--group':
-                    $groups = explode(',', $option[1]);
-
-                    break;
-
-                case '--exclude-group':
-                    $excludeGroups = explode(',', $option[1]);
-
-                    break;
-
-                case '--covers':
-                    $testsCovering = array_map('strtolower', explode(',', $option[1]));
-
-                    break;
-
-                case '--uses':
-                    $testsUsing = array_map('strtolower', explode(',', $option[1]));
-
-                    break;
-
-                case '--test-suffix':
-                    $testSuffixes = explode(',', $option[1]);
-
-                    break;
-
-                case '--include-path':
-                    $includePath = $option[1];
-
-                    break;
-
-                case '--list-groups':
-                    $listGroups = true;
-
-                    break;
-
-                case '--list-suites':
-                    $listSuites = true;
-
-                    break;
-
-                case '--list-tests':
-                    $listTests = true;
-
-                    break;
-
-                case '--list-tests-xml':
-                    $listTestsXml = $option[1];
-
-                    break;
-
-                case '--printer':
-                    $printer = $option[1];
-
-                    break;
-
-                case '--loader':
-                    $loader = $option[1];
-
-                    break;
-
-                case '--log-junit':
-                    $junitLogfile = $option[1];
-
-                    break;
-
-                case '--log-teamcity':
-                    $teamcityLogfile = $option[1];
-
-                    break;
-
-                case '--order-by':
-                    foreach (explode(',', $option[1]) as $order) {
-                        switch ($order) {
-                            case 'default':
-                                $executionOrder        = TestSuiteSorter::ORDER_DEFAULT;
-                                $executionOrderDefects = TestSuiteSorter::ORDER_DEFAULT;
-                                $resolveDependencies   = true;
-
-                                break;
-
-                            case 'defects':
-                                $executionOrderDefects = TestSuiteSorter::ORDER_DEFECTS_FIRST;
-
-                                break;
-
-                            case 'depends':
-                                $resolveDependencies = true;
-
-                                break;
-
-                            case 'duration':
-                                $executionOrder = TestSuiteSorter::ORDER_DURATION;
-
-                                break;
-
-                            case 'no-depends':
-                                $resolveDependencies = false;
-
-                                break;
-
-                            case 'random':
-                                $executionOrder = TestSuiteSorter::ORDER_RANDOMIZED;
-
-                                break;
-
-                            case 'reverse':
-                                $executionOrder = TestSuiteSorter::ORDER_REVERSED;
-
-                                break;
-
-                            case 'size':
-                                $executionOrder = TestSuiteSorter::ORDER_SIZE;
-
-                                break;
-
-                            default:
-                                $unrecognizedOrderBy = $order;
-                        }
-                    }
-
-                    break;
-
-                case '--process-isolation':
-                    $processIsolation = true;
-
-                    break;
-
-                case '--repeat':
-                    $repeat = (int) $option[1];
-
-                    break;
-
-                case '--stderr':
-                    $stderr = true;
-
-                    break;
-
-                case '--stop-on-defect':
-                    $stopOnDefect = true;
-
-                    break;
-
-                case '--stop-on-error':
-                    $stopOnError = true;
-
-                    break;
-
-                case '--stop-on-failure':
-                    $stopOnFailure = true;
-
-                    break;
-
-                case '--stop-on-warning':
-                    $stopOnWarning = true;
-
-                    break;
-
-                case '--stop-on-incomplete':
-                    $stopOnIncomplete = true;
-
-                    break;
-
-                case '--stop-on-risky':
-                    $stopOnRisky = true;
-
-                    break;
-
-                case '--stop-on-skipped':
-                    $stopOnSkipped = true;
-
-                    break;
-
-                case '--fail-on-empty-test-suite':
-                    $failOnEmptyTestSuite = true;
-
-                    break;
-
-                case '--fail-on-incomplete':
-                    $failOnIncomplete = true;
-
-                    break;
-
-                case '--fail-on-risky':
-                    $failOnRisky = true;
-
-                    break;
-
-                case '--fail-on-skipped':
-                    $failOnSkipped = true;
-
-                    break;
-
-                case '--fail-on-warning':
-                    $failOnWarning = true;
-
-                    break;
-
-                case '--teamcity':
-                    $printer = TeamCity::class;
-
-                    break;
-
-                case '--testdox':
-                    $printer = CliTestDoxPrinter::class;
-
-                    break;
-
-                case '--testdox-group':
-                    $testdoxGroups = explode(',', $option[1]);
-
-                    break;
-
-                case '--testdox-exclude-group':
-                    $testdoxExcludeGroups = explode(',', $option[1]);
-
-                    break;
-
-                case '--testdox-html':
-                    $testdoxHtmlFile = $option[1];
-
-                    break;
-
-                case '--testdox-text':
-                    $testdoxTextFile = $option[1];
-
-                    break;
-
-                case '--testdox-xml':
-                    $testdoxXmlFile = $option[1];
-
-                    break;
-
-                case '--no-configuration':
-                    $useDefaultConfiguration = false;
-
-                    break;
-
-                case '--extensions':
-                    foreach (explode(',', $option[1]) as $extensionClass) {
-                        if (!class_exists($extensionClass)) {
-                            $unavailableExtensions[] = $extensionClass;
-
-                            continue;
-                        }
-
-                        $extensions[] = new Extension($extensionClass, '', []);
-                    }
-
-                    break;
-
-                case '--no-extensions':
-                    $noExtensions = true;
-
-                    break;
-
-                case '--no-coverage':
-                    $noCoverage = true;
-
-                    break;
-
-                case '--no-logging':
-                    $noLogging = true;
-
-                    break;
-
-                case '--no-interaction':
-                    $noInteraction = true;
-
-                    break;
-
-                case '--globals-backup':
-                    $backupGlobals = true;
-
-                    break;
-
-                case '--static-backup':
-                    $backupStaticAttributes = true;
-
-                    break;
-
-                case 'v':
-                case '--verbose':
-                    $verbose = true;
-
-                    break;
-
-                case '--atleast-version':
-                    $atLeastVersion = $option[1];
-
-                    break;
-
-                case '--version':
-                    $version = true;
-
-                    break;
-
-                case '--dont-report-useless-tests':
-                    $reportUselessTests = false;
-
-                    break;
-
-                case '--strict-coverage':
-                    $strictCoverage = true;
-
-                    break;
-
-                case '--disable-coverage-ignore':
-                    $disableCodeCoverageIgnore = true;
-
-                    break;
-
-                case '--strict-global-state':
-                    $beStrictAboutChangesToGlobalState = true;
-
-                    break;
-
-                case '--disallow-test-output':
-                    $disallowTestOutput = true;
-
-                    break;
-
-                case '--disallow-resource-usage':
-                    $beStrictAboutResourceUsageDuringSmallTests = true;
-
-                    break;
-
-                case '--default-time-limit':
-                    $defaultTimeLimit = (int) $option[1];
-
-                    break;
-
-                case '--enforce-time-limit':
-                    $enforceTimeLimit = true;
-
-                    break;
-
-                case '--disallow-todo-tests':
-                    $disallowTodoAnnotatedTests = true;
-
-                    break;
-
-                case '--reverse-list':
-                    $reverseList = true;
-
-                    break;
-
-                case '--check-version':
-                    $checkVersion = true;
-
-                    break;
-
-                case '--coverage-filter':
-                case '--whitelist':
-                    if ($coverageFilter === null) {
-                        $coverageFilter = [];
-                    }
-
-                    $coverageFilter[] = $option[1];
-
-                    break;
-
-                case '--random-order':
-                    $executionOrder = TestSuiteSorter::ORDER_RANDOMIZED;
-
-                    break;
-
-                case '--random-order-seed':
-                    $randomOrderSeed = (int) $option[1];
-
-                    break;
-
-                case '--resolve-dependencies':
-                    $resolveDependencies = true;
-
-                    break;
-
-                case '--ignore-dependencies':
-                    $resolveDependencies = false;
-
-                    break;
-
-                case '--reverse-order':
-                    $executionOrder = TestSuiteSorter::ORDER_REVERSED;
-
-                    break;
-
-                case '--dump-xdebug-filter':
-                    $xdebugFilterFile = $option[1];
-
-                    break;
-
-                default:
-                    $unrecognizedOptions[str_replace('--', '', $option[0])] = $option[1];
-            }
-        }
-
-        if (empty($extensions)) {
-            $extensions = null;
-        }
-
-        if (empty($unavailableExtensions)) {
-            $unavailableExtensions = null;
-        }
-
-        if (empty($iniSettings)) {
-            $iniSettings = null;
-        }
-
-        if (empty($coverageFilter)) {
-            $coverageFilter = null;
-        }
-
-        return new Configuration(
-            $argument,
-            $atLeastVersion,
-            $backupGlobals,
-            $backupStaticAttributes,
-            $beStrictAboutChangesToGlobalState,
-            $beStrictAboutResourceUsageDuringSmallTests,
-            $bootstrap,
-            $cacheResult,
-            $cacheResultFile,
-            $checkVersion,
-            $colors,
-            $columns,
-            $configuration,
-            $coverageClover,
-            $coverageCobertura,
-            $coverageCrap4J,
-            $coverageHtml,
-            $coveragePhp,
-            $coverageText,
-            $coverageTextShowUncoveredFiles,
-            $coverageTextShowOnlySummary,
-            $coverageXml,
-            $pathCoverage,
-            $coverageCacheDirectory,
-            $warmCoverageCache,
-            $debug,
-            $defaultTimeLimit,
-            $disableCodeCoverageIgnore,
-            $disallowTestOutput,
-            $disallowTodoAnnotatedTests,
-            $enforceTimeLimit,
-            $excludeGroups,
-            $executionOrder,
-            $executionOrderDefects,
-            $extensions,
-            $unavailableExtensions,
-            $failOnEmptyTestSuite,
-            $failOnIncomplete,
-            $failOnRisky,
-            $failOnSkipped,
-            $failOnWarning,
-            $filter,
-            $generateConfiguration,
-            $migrateConfiguration,
-            $groups,
-            $testsCovering,
-            $testsUsing,
-            $help,
-            $includePath,
-            $iniSettings,
-            $junitLogfile,
-            $listGroups,
-            $listSuites,
-            $listTests,
-            $listTestsXml,
-            $loader,
-            $noCoverage,
-            $noExtensions,
-            $noInteraction,
-            $noLogging,
-            $printer,
-            $processIsolation,
-            $randomOrderSeed,
-            $repeat,
-            $reportUselessTests,
-            $resolveDependencies,
-            $reverseList,
-            $stderr,
-            $strictCoverage,
-            $stopOnDefect,
-            $stopOnError,
-            $stopOnFailure,
-            $stopOnIncomplete,
-            $stopOnRisky,
-            $stopOnSkipped,
-            $stopOnWarning,
-            $teamcityLogfile,
-            $testdoxExcludeGroups,
-            $testdoxGroups,
-            $testdoxHtmlFile,
-            $testdoxTextFile,
-            $testdoxXmlFile,
-            $testSuffixes,
-            $testSuite,
-            $unrecognizedOptions,
-            $unrecognizedOrderBy,
-            $useDefaultConfiguration,
-            $verbose,
-            $version,
-            $coverageFilter,
-            $xdebugFilterFile
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

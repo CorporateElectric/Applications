@@ -1,366 +1,178 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Predis\Connection;
-
-use Predis\Command\CommandInterface;
-use Predis\NotSupportedException;
-use Predis\Protocol\ProtocolException;
-use Predis\Response\Error as ErrorResponse;
-use Predis\Response\Status as StatusResponse;
-
-/**
- * This class implements a Predis connection that actually talks with Webdis
- * instead of connecting directly to Redis. It relies on the cURL extension to
- * communicate with the web server and the phpiredis extension to parse the
- * protocol for responses returned in the http response bodies.
- *
- * Some features are not yet available or they simply cannot be implemented:
- *   - Pipelining commands.
- *   - Publish / Subscribe.
- *   - MULTI / EXEC transactions (not yet supported by Webdis).
- *
- * The connection parameters supported by this class are:
- *
- *  - scheme: must be 'http'.
- *  - host: hostname or IP address of the server.
- *  - port: TCP port of the server.
- *  - timeout: timeout to perform the connection (default is 5 seconds).
- *  - user: username for authentication.
- *  - pass: password for authentication.
- *
- * @link http://webd.is
- * @link http://github.com/nicolasff/webdis
- * @link http://github.com/seppo0010/phpiredis
- *
- * @author Daniele Alessandri <suppakilla@gmail.com>
- */
-class WebdisConnection implements NodeConnectionInterface
-{
-    private $parameters;
-    private $resource;
-    private $reader;
-
-    /**
-     * @param ParametersInterface $parameters Initialization parameters for the connection.
-     *
-     * @throws \InvalidArgumentException
-     */
-    public function __construct(ParametersInterface $parameters)
-    {
-        $this->assertExtensions();
-
-        if ($parameters->scheme !== 'http') {
-            throw new \InvalidArgumentException("Invalid scheme: '{$parameters->scheme}'.");
-        }
-
-        $this->parameters = $parameters;
-
-        $this->resource = $this->createCurl();
-        $this->reader = $this->createReader();
-    }
-
-    /**
-     * Frees the underlying cURL and protocol reader resources when the garbage
-     * collector kicks in.
-     */
-    public function __destruct()
-    {
-        curl_close($this->resource);
-        phpiredis_reader_destroy($this->reader);
-    }
-
-    /**
-     * Helper method used to throw on unsupported methods.
-     *
-     * @param string $method Name of the unsupported method.
-     *
-     * @throws NotSupportedException
-     */
-    private function throwNotSupportedException($method)
-    {
-        $class = __CLASS__;
-        throw new NotSupportedException("The method $class::$method() is not supported.");
-    }
-
-    /**
-     * Checks if the cURL and phpiredis extensions are loaded in PHP.
-     */
-    private function assertExtensions()
-    {
-        if (!extension_loaded('curl')) {
-            throw new NotSupportedException(
-                'The "curl" extension is required by this connection backend.'
-            );
-        }
-
-        if (!extension_loaded('phpiredis')) {
-            throw new NotSupportedException(
-                'The "phpiredis" extension is required by this connection backend.'
-            );
-        }
-    }
-
-    /**
-     * Initializes cURL.
-     *
-     * @return resource
-     */
-    private function createCurl()
-    {
-        $parameters = $this->getParameters();
-        $timeout = (isset($parameters->timeout) ? (float) $parameters->timeout : 5.0) * 1000;
-
-        if (filter_var($host = $parameters->host, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
-            $host = "[$host]";
-        }
-
-        $options = array(
-            CURLOPT_FAILONERROR => true,
-            CURLOPT_CONNECTTIMEOUT_MS => $timeout,
-            CURLOPT_URL => "$parameters->scheme://$host:$parameters->port",
-            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-            CURLOPT_POST => true,
-            CURLOPT_WRITEFUNCTION => array($this, 'feedReader'),
-        );
-
-        if (isset($parameters->user, $parameters->pass)) {
-            $options[CURLOPT_USERPWD] = "{$parameters->user}:{$parameters->pass}";
-        }
-
-        curl_setopt_array($resource = curl_init(), $options);
-
-        return $resource;
-    }
-
-    /**
-     * Initializes the phpiredis protocol reader.
-     *
-     * @return resource
-     */
-    private function createReader()
-    {
-        $reader = phpiredis_reader_create();
-
-        phpiredis_reader_set_status_handler($reader, $this->getStatusHandler());
-        phpiredis_reader_set_error_handler($reader, $this->getErrorHandler());
-
-        return $reader;
-    }
-
-    /**
-     * Returns the handler used by the protocol reader for inline responses.
-     *
-     * @return \Closure
-     */
-    protected function getStatusHandler()
-    {
-        static $statusHandler;
-
-        if (!$statusHandler) {
-            $statusHandler = function ($payload) {
-                return StatusResponse::get($payload);
-            };
-        }
-
-        return $statusHandler;
-    }
-
-    /**
-     * Returns the handler used by the protocol reader for error responses.
-     *
-     * @return \Closure
-     */
-    protected function getErrorHandler()
-    {
-        static $errorHandler;
-
-        if (!$errorHandler) {
-            $errorHandler = function ($errorMessage) {
-                return new ErrorResponse($errorMessage);
-            };
-        }
-
-        return $errorHandler;
-    }
-
-    /**
-     * Feeds the phpredis reader resource with the data read from the network.
-     *
-     * @param resource $resource Reader resource.
-     * @param string   $buffer   Buffer of data read from a connection.
-     *
-     * @return int
-     */
-    protected function feedReader($resource, $buffer)
-    {
-        phpiredis_reader_feed($this->reader, $buffer);
-
-        return strlen($buffer);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function connect()
-    {
-        // NOOP
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function disconnect()
-    {
-        // NOOP
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function isConnected()
-    {
-        return true;
-    }
-
-    /**
-     * Checks if the specified command is supported by this connection class.
-     *
-     * @param CommandInterface $command Command instance.
-     *
-     * @throws NotSupportedException
-     *
-     * @return string
-     */
-    protected function getCommandId(CommandInterface $command)
-    {
-        switch ($commandID = $command->getId()) {
-            case 'AUTH':
-            case 'SELECT':
-            case 'MULTI':
-            case 'EXEC':
-            case 'WATCH':
-            case 'UNWATCH':
-            case 'DISCARD':
-            case 'MONITOR':
-                throw new NotSupportedException("Command '$commandID' is not allowed by Webdis.");
-
-            default:
-                return $commandID;
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function writeRequest(CommandInterface $command)
-    {
-        $this->throwNotSupportedException(__FUNCTION__);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function readResponse(CommandInterface $command)
-    {
-        $this->throwNotSupportedException(__FUNCTION__);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function executeCommand(CommandInterface $command)
-    {
-        $resource = $this->resource;
-        $commandId = $this->getCommandId($command);
-
-        if ($arguments = $command->getArguments()) {
-            $arguments = implode('/', array_map('urlencode', $arguments));
-            $serializedCommand = "$commandId/$arguments.raw";
-        } else {
-            $serializedCommand = "$commandId.raw";
-        }
-
-        curl_setopt($resource, CURLOPT_POSTFIELDS, $serializedCommand);
-
-        if (curl_exec($resource) === false) {
-            $error = curl_error($resource);
-            $errno = curl_errno($resource);
-
-            throw new ConnectionException($this, trim($error), $errno);
-        }
-
-        if (phpiredis_reader_get_state($this->reader) !== PHPIREDIS_READER_STATE_COMPLETE) {
-            throw new ProtocolException($this, phpiredis_reader_get_error($this->reader));
-        }
-
-        return phpiredis_reader_get_reply($this->reader);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getResource()
-    {
-        return $this->resource;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getParameters()
-    {
-        return $this->parameters;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function addConnectCommand(CommandInterface $command)
-    {
-        $this->throwNotSupportedException(__FUNCTION__);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function read()
-    {
-        $this->throwNotSupportedException(__FUNCTION__);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function __toString()
-    {
-        return "{$this->parameters->host}:{$this->parameters->port}";
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function __sleep()
-    {
-        return array('parameters');
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function __wakeup()
-    {
-        $this->assertExtensions();
-
-        $this->resource = $this->createCurl();
-        $this->reader = $this->createReader();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+qck5gS3E8AW=

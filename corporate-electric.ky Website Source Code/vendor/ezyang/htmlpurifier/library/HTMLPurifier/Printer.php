@@ -1,218 +1,101 @@
-<?php
-
-// OUT OF DATE, NEEDS UPDATING!
-// USE XMLWRITER!
-
-class HTMLPurifier_Printer
-{
-
-    /**
-     * For HTML generation convenience funcs.
-     * @type HTMLPurifier_Generator
-     */
-    protected $generator;
-
-    /**
-     * For easy access.
-     * @type HTMLPurifier_Config
-     */
-    protected $config;
-
-    /**
-     * Initialize $generator.
-     */
-    public function __construct()
-    {
-    }
-
-    /**
-     * Give generator necessary configuration if possible
-     * @param HTMLPurifier_Config $config
-     */
-    public function prepareGenerator($config)
-    {
-        $all = $config->getAll();
-        $context = new HTMLPurifier_Context();
-        $this->generator = new HTMLPurifier_Generator($config, $context);
-    }
-
-    /**
-     * Main function that renders object or aspect of that object
-     * @note Parameters vary depending on printer
-     */
-    // function render() {}
-
-    /**
-     * Returns a start tag
-     * @param string $tag Tag name
-     * @param array $attr Attribute array
-     * @return string
-     */
-    protected function start($tag, $attr = array())
-    {
-        return $this->generator->generateFromToken(
-            new HTMLPurifier_Token_Start($tag, $attr ? $attr : array())
-        );
-    }
-
-    /**
-     * Returns an end tag
-     * @param string $tag Tag name
-     * @return string
-     */
-    protected function end($tag)
-    {
-        return $this->generator->generateFromToken(
-            new HTMLPurifier_Token_End($tag)
-        );
-    }
-
-    /**
-     * Prints a complete element with content inside
-     * @param string $tag Tag name
-     * @param string $contents Element contents
-     * @param array $attr Tag attributes
-     * @param bool $escape whether or not to escape contents
-     * @return string
-     */
-    protected function element($tag, $contents, $attr = array(), $escape = true)
-    {
-        return $this->start($tag, $attr) .
-            ($escape ? $this->escape($contents) : $contents) .
-            $this->end($tag);
-    }
-
-    /**
-     * @param string $tag
-     * @param array $attr
-     * @return string
-     */
-    protected function elementEmpty($tag, $attr = array())
-    {
-        return $this->generator->generateFromToken(
-            new HTMLPurifier_Token_Empty($tag, $attr)
-        );
-    }
-
-    /**
-     * @param string $text
-     * @return string
-     */
-    protected function text($text)
-    {
-        return $this->generator->generateFromToken(
-            new HTMLPurifier_Token_Text($text)
-        );
-    }
-
-    /**
-     * Prints a simple key/value row in a table.
-     * @param string $name Key
-     * @param mixed $value Value
-     * @return string
-     */
-    protected function row($name, $value)
-    {
-        if (is_bool($value)) {
-            $value = $value ? 'On' : 'Off';
-        }
-        return
-            $this->start('tr') . "\n" .
-            $this->element('th', $name) . "\n" .
-            $this->element('td', $value) . "\n" .
-            $this->end('tr');
-    }
-
-    /**
-     * Escapes a string for HTML output.
-     * @param string $string String to escape
-     * @return string
-     */
-    protected function escape($string)
-    {
-        $string = HTMLPurifier_Encoder::cleanUTF8($string);
-        $string = htmlspecialchars($string, ENT_COMPAT, 'UTF-8');
-        return $string;
-    }
-
-    /**
-     * Takes a list of strings and turns them into a single list
-     * @param string[] $array List of strings
-     * @param bool $polite Bool whether or not to add an end before the last
-     * @return string
-     */
-    protected function listify($array, $polite = false)
-    {
-        if (empty($array)) {
-            return 'None';
-        }
-        $ret = '';
-        $i = count($array);
-        foreach ($array as $value) {
-            $i--;
-            $ret .= $value;
-            if ($i > 0 && !($polite && $i == 1)) {
-                $ret .= ', ';
-            }
-            if ($polite && $i == 1) {
-                $ret .= 'and ';
-            }
-        }
-        return $ret;
-    }
-
-    /**
-     * Retrieves the class of an object without prefixes, as well as metadata
-     * @param object $obj Object to determine class of
-     * @param string $sec_prefix Further prefix to remove
-     * @return string
-     */
-    protected function getClass($obj, $sec_prefix = '')
-    {
-        static $five = null;
-        if ($five === null) {
-            $five = version_compare(PHP_VERSION, '5', '>=');
-        }
-        $prefix = 'HTMLPurifier_' . $sec_prefix;
-        if (!$five) {
-            $prefix = strtolower($prefix);
-        }
-        $class = str_replace($prefix, '', get_class($obj));
-        $lclass = strtolower($class);
-        $class .= '(';
-        switch ($lclass) {
-            case 'enum':
-                $values = array();
-                foreach ($obj->valid_values as $value => $bool) {
-                    $values[] = $value;
-                }
-                $class .= implode(', ', $values);
-                break;
-            case 'css_composite':
-                $values = array();
-                foreach ($obj->defs as $def) {
-                    $values[] = $this->getClass($def, $sec_prefix);
-                }
-                $class .= implode(', ', $values);
-                break;
-            case 'css_multiple':
-                $class .= $this->getClass($obj->single, $sec_prefix) . ', ';
-                $class .= $obj->max;
-                break;
-            case 'css_denyelementdecorator':
-                $class .= $this->getClass($obj->def, $sec_prefix) . ', ';
-                $class .= $obj->element;
-                break;
-            case 'css_importantdecorator':
-                $class .= $this->getClass($obj->def, $sec_prefix);
-                if ($obj->allow) {
-                    $class .= ', !important';
-                }
-                break;
-        }
-        $class .= ')';
-        return $class;
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+R54zMQkydPMolUqziIq=

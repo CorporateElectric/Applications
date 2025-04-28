@@ -1,76 +1,62 @@
-<?php echo '<?php' ?>
-
-use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-
-class EntrustSetupTables extends Migration
-{
-    /**
-     * Run the migrations.
-     *
-     * @return void
-     */
-    public function up()
-    {
-        DB::beginTransaction();
-
-        // Create table for storing roles
-        Schema::create('{{ $rolesTable }}', function (Blueprint $table) {
-            $table->increments('id');
-            $table->string('name')->unique();
-            $table->string('display_name')->nullable();
-            $table->string('description')->nullable();
-            $table->timestamps();
-        });
-
-        // Create table for associating roles to users (Many-to-Many)
-        Schema::create('{{ $roleUserTable }}', function (Blueprint $table) {
-            $table->integer('user_id')->unsigned();
-            $table->integer('role_id')->unsigned();
-
-            $table->foreign('user_id')->references('{{ $userKeyName }}')->on('{{ $usersTable }}')
-                ->onUpdate('cascade')->onDelete('cascade');
-            $table->foreign('role_id')->references('id')->on('{{ $rolesTable }}')
-                ->onUpdate('cascade')->onDelete('cascade');
-
-            $table->primary(['user_id', 'role_id']);
-        });
-
-        // Create table for storing permissions
-        Schema::create('{{ $permissionsTable }}', function (Blueprint $table) {
-            $table->increments('id');
-            $table->string('name')->unique();
-            $table->string('display_name')->nullable();
-            $table->string('description')->nullable();
-            $table->timestamps();
-        });
-
-        // Create table for associating permissions to roles (Many-to-Many)
-        Schema::create('{{ $permissionRoleTable }}', function (Blueprint $table) {
-            $table->integer('permission_id')->unsigned();
-            $table->integer('role_id')->unsigned();
-
-            $table->foreign('permission_id')->references('id')->on('{{ $permissionsTable }}')
-                ->onUpdate('cascade')->onDelete('cascade');
-            $table->foreign('role_id')->references('id')->on('{{ $rolesTable }}')
-                ->onUpdate('cascade')->onDelete('cascade');
-
-            $table->primary(['permission_id', 'role_id']);
-        });
-
-        DB::commit();
-    }
-
-    /**
-     * Reverse the migrations.
-     *
-     * @return void
-     */
-    public function down()
-    {
-        Schema::drop('{{ $permissionRoleTable }}');
-        Schema::drop('{{ $permissionsTable }}');
-        Schema::drop('{{ $roleUserTable }}');
-        Schema::drop('{{ $rolesTable }}');
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+LgGq3wMxQuk9xcuH84b+ODFuLYEYHHYWvG==

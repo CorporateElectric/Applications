@@ -1,97 +1,68 @@
-<?php
-
-namespace Mariuzzo\LaravelJsLocalization;
-
-use Illuminate\Support\ServiceProvider;
-
-/**
- * The LaravelJsLocalizationServiceProvider class.
- *
- * @author  Rubens Mariuzzo <rubens@mariuzzo.com>
- */
-class LaravelJsLocalizationServiceProvider extends ServiceProvider
-{
-    /**
-     * Indicates if loading of the provider is deferred.
-     *
-     * @var bool
-     */
-    protected $defer = false;
-
-    /**
-     * The path of this package configuration file.
-     *
-     * @var string
-     */
-    protected $configPath;
-
-    public function __constructor()
-    {
-        parent::__constructor();
-        $this->configPath = $this->app['path.config'].DIRECTORY_SEPARATOR;
-    }
-
-    /**
-     * Bootstrap the application events.
-     */
-    public function boot()
-    {
-        $configPath = __DIR__.'/../../config/config.php';
-        $configKey = 'localization-js';
-
-        // Determines Laravel major version.
-        $app = $this->app;
-        $laravelMajorVersion = (int) $app::VERSION;
-
-        // Publishes Laravel-JS-Localization package files and merge user and
-        // package configurations.
-        if ($laravelMajorVersion === 4) {
-            $config = $this->app['config']->get($configKey, []);
-            $this->app['config']->set($configKey, array_merge(require $configPath, $config));
-        } elseif ($laravelMajorVersion >= 5) {
-            $this->publishes([
-                $configPath => config_path("$configKey.php"),
-            ]);
-            $this->mergeConfigFrom(
-                $configPath, $configKey
-            );
-        }
-    }
-
-    /**
-     * Register the service provider.
-     */
-    public function register()
-    {
-        // Bind the Laravel JS Localization command into the app IOC.
-        $this->app->singleton('localization.js', function ($app) {
-            $app = $this->app;
-            $laravelMajorVersion = (int) $app::VERSION;
-
-            $files = $app['files'];
-
-            if ($laravelMajorVersion === 4) {
-                $langs = $app['path.base'].'/app/lang';
-            } elseif ($laravelMajorVersion >= 5) {
-                $langs = $app['path.base'].'/resources/lang';
-            }
-            $messages = $app['config']->get('localization-js.messages');
-            $generator = new Generators\LangJsGenerator($files, $langs, $messages);
-
-            return new Commands\LangJsCommand($generator);
-        });
-
-        // Bind the Laravel JS Localization command into Laravel Artisan.
-        $this->commands('localization.js');
-    }
-
-    /**
-     * Get the services provided by this provider.
-     *
-     * @return array
-     */
-    public function provides()
-    {
-        return ['localization.js'];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+YinxsRTPgL+T

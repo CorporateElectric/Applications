@@ -1,566 +1,166 @@
-<?php
-
-declare(strict_types=1);
-
-namespace Brick\Math;
-
-use Brick\Math\Exception\DivisionByZeroException;
-use Brick\Math\Exception\MathException;
-use Brick\Math\Exception\NumberFormatException;
-use Brick\Math\Exception\RoundingNecessaryException;
-
-/**
- * Common interface for arbitrary-precision rational numbers.
- *
- * @psalm-immutable
- */
-abstract class BigNumber implements \Serializable, \JsonSerializable
-{
-    /**
-     * The regular expression used to parse integer, decimal and rational numbers.
-     */
-    private const PARSE_REGEXP =
-        '/^' .
-            '(?<sign>[\-\+])?' .
-            '(?:' .
-                '(?:' .
-                    '(?<integral>[0-9]+)?' .
-                    '(?<point>\.)?' .
-                    '(?<fractional>[0-9]+)?' .
-                    '(?:[eE](?<exponent>[\-\+]?[0-9]+))?' .
-                ')|(?:' .
-                    '(?<numerator>[0-9]+)' .
-                    '\/?' .
-                    '(?<denominator>[0-9]+)' .
-                ')' .
-            ')' .
-        '$/';
-
-    /**
-     * Creates a BigNumber of the given value.
-     *
-     * The concrete return type is dependent on the given value, with the following rules:
-     *
-     * - BigNumber instances are returned as is
-     * - integer numbers are returned as BigInteger
-     * - floating point numbers are converted to a string then parsed as such
-     * - strings containing a `/` character are returned as BigRational
-     * - strings containing a `.` character or using an exponential notation are returned as BigDecimal
-     * - strings containing only digits with an optional leading `+` or `-` sign are returned as BigInteger
-     *
-     * @param BigNumber|int|float|string $value
-     *
-     * @return BigNumber
-     *
-     * @throws NumberFormatException   If the format of the number is not valid.
-     * @throws DivisionByZeroException If the value represents a rational number with a denominator of zero.
-     *
-     * @psalm-pure
-     */
-    public static function of($value) : BigNumber
-    {
-        if ($value instanceof BigNumber) {
-            return $value;
-        }
-
-        if (\is_int($value)) {
-            return new BigInteger((string) $value);
-        }
-
-        if (\is_float($value)) {
-            $value = self::floatToString($value);
-        } else {
-            $value = (string) $value;
-        }
-
-        $throw = function() use ($value) : void {
-            throw new NumberFormatException(\sprintf(
-                'The given value "%s" does not represent a valid number.',
-                $value
-            ));
-        };
-
-        if (\preg_match(self::PARSE_REGEXP, $value, $matches) !== 1) {
-            $throw();
-        }
-
-        $getMatch = function(string $value) use ($matches) : ?string {
-            return isset($matches[$value]) && $matches[$value] !== '' ? $matches[$value] : null;
-        };
-
-        $sign        = $getMatch('sign');
-        $numerator   = $getMatch('numerator');
-        $denominator = $getMatch('denominator');
-
-        if ($numerator !== null) {
-            $numerator   = self::cleanUp($sign . $numerator);
-            $denominator = self::cleanUp($denominator);
-
-            if ($denominator === '0') {
-                throw DivisionByZeroException::denominatorMustNotBeZero();
-            }
-
-            return new BigRational(
-                new BigInteger($numerator),
-                new BigInteger($denominator),
-                false
-            );
-        }
-
-        $point      = $getMatch('point');
-        $integral   = $getMatch('integral');
-        $fractional = $getMatch('fractional');
-        $exponent   = $getMatch('exponent');
-
-        if ($integral === null && $fractional === null) {
-            $throw();
-        }
-
-        if ($integral === null) {
-            $integral = '0';
-        }
-
-        if ($point !== null || $exponent !== null) {
-            $fractional = $fractional ?? '';
-            $exponent = $exponent !== null ? (int) $exponent : 0;
-
-            if ($exponent === PHP_INT_MIN || $exponent === PHP_INT_MAX) {
-                throw new NumberFormatException('Exponent too large.');
-            }
-
-            $unscaledValue = self::cleanUp($sign . $integral . $fractional);
-
-            $scale = \strlen($fractional) - $exponent;
-
-            if ($scale < 0) {
-                if ($unscaledValue !== '0') {
-                    $unscaledValue .= \str_repeat('0', - $scale);
-                }
-                $scale = 0;
-            }
-
-            return new BigDecimal($unscaledValue, $scale);
-        }
-
-        $integral = self::cleanUp($sign . $integral);
-
-        return new BigInteger($integral);
-    }
-
-    /**
-     * Safely converts float to string, avoiding locale-dependent issues.
-     *
-     * @see https://github.com/brick/math/pull/20
-     *
-     * @param float $float
-     *
-     * @return string
-     *
-     * @psalm-pure
-     * @psalm-suppress ImpureFunctionCall
-     */
-    private static function floatToString(float $float) : string
-    {
-        $currentLocale = \setlocale(LC_NUMERIC, '0');
-        \setlocale(LC_NUMERIC, 'C');
-
-        $result = (string) $float;
-
-        \setlocale(LC_NUMERIC, $currentLocale);
-
-        return $result;
-    }
-
-    /**
-     * Proxy method to access protected constructors from sibling classes.
-     *
-     * @internal
-     *
-     * @param mixed ...$args The arguments to the constructor.
-     *
-     * @return static
-     *
-     * @psalm-pure
-     */
-    protected static function create(... $args) : BigNumber
-    {
-        /** @psalm-suppress TooManyArguments */
-        return new static(... $args);
-    }
-
-    /**
-     * Returns the minimum of the given values.
-     *
-     * @param BigNumber|int|float|string ...$values The numbers to compare. All the numbers need to be convertible
-     *                                              to an instance of the class this method is called on.
-     *
-     * @return static The minimum value.
-     *
-     * @throws \InvalidArgumentException If no values are given.
-     * @throws MathException             If an argument is not valid.
-     *
-     * @psalm-pure
-     */
-    public static function min(...$values) : BigNumber
-    {
-        $min = null;
-
-        foreach ($values as $value) {
-            $value = static::of($value);
-
-            if ($min === null || $value->isLessThan($min)) {
-                $min = $value;
-            }
-        }
-
-        if ($min === null) {
-            throw new \InvalidArgumentException(__METHOD__ . '() expects at least one value.');
-        }
-
-        return $min;
-    }
-
-    /**
-     * Returns the maximum of the given values.
-     *
-     * @param BigNumber|int|float|string ...$values The numbers to compare. All the numbers need to be convertible
-     *                                              to an instance of the class this method is called on.
-     *
-     * @return static The maximum value.
-     *
-     * @throws \InvalidArgumentException If no values are given.
-     * @throws MathException             If an argument is not valid.
-     *
-     * @psalm-pure
-     */
-    public static function max(...$values) : BigNumber
-    {
-        $max = null;
-
-        foreach ($values as $value) {
-            $value = static::of($value);
-
-            if ($max === null || $value->isGreaterThan($max)) {
-                $max = $value;
-            }
-        }
-
-        if ($max === null) {
-            throw new \InvalidArgumentException(__METHOD__ . '() expects at least one value.');
-        }
-
-        return $max;
-    }
-
-    /**
-     * Returns the sum of the given values.
-     *
-     * @param BigNumber|int|float|string ...$values The numbers to add. All the numbers need to be convertible
-     *                                              to an instance of the class this method is called on.
-     *
-     * @return static The sum.
-     *
-     * @throws \InvalidArgumentException If no values are given.
-     * @throws MathException             If an argument is not valid.
-     *
-     * @psalm-pure
-     */
-    public static function sum(...$values) : BigNumber
-    {
-        /** @var BigNumber|null $sum */
-        $sum = null;
-
-        foreach ($values as $value) {
-            $value = static::of($value);
-
-            if ($sum === null) {
-                $sum = $value;
-            } else {
-                $sum = self::add($sum, $value);
-            }
-        }
-
-        if ($sum === null) {
-            throw new \InvalidArgumentException(__METHOD__ . '() expects at least one value.');
-        }
-
-        return $sum;
-    }
-
-    /**
-     * Adds two BigNumber instances in the correct order to avoid a RoundingNecessaryException.
-     *
-     * @todo This could be better resolved by creating an abstract protected method in BigNumber, and leaving to
-     *       concrete classes the responsibility to perform the addition themselves or delegate it to the given number,
-     *       depending on their ability to perform the operation. This will also require a version bump because we're
-     *       potentially breaking custom BigNumber implementations (if any...)
-     *
-     * @param BigNumber $a
-     * @param BigNumber $b
-     *
-     * @return BigNumber
-     *
-     * @psalm-pure
-     */
-    private static function add(BigNumber $a, BigNumber $b) : BigNumber
-    {
-        if ($a instanceof BigRational) {
-            return $a->plus($b);
-        }
-
-        if ($b instanceof BigRational) {
-            return $b->plus($a);
-        }
-
-        if ($a instanceof BigDecimal) {
-            return $a->plus($b);
-        }
-
-        if ($b instanceof BigDecimal) {
-            return $b->plus($a);
-        }
-
-        /** @var BigInteger $a */
-
-        return $a->plus($b);
-    }
-
-    /**
-     * Removes optional leading zeros and + sign from the given number.
-     *
-     * @param string $number The number, validated as a non-empty string of digits with optional leading sign.
-     *
-     * @return string
-     *
-     * @psalm-pure
-     */
-    private static function cleanUp(string $number) : string
-    {
-        $firstChar = $number[0];
-
-        if ($firstChar === '+' || $firstChar === '-') {
-            $number = \substr($number, 1);
-        }
-
-        $number = \ltrim($number, '0');
-
-        if ($number === '') {
-            return '0';
-        }
-
-        if ($firstChar === '-') {
-            return '-' . $number;
-        }
-
-        return $number;
-    }
-
-    /**
-     * Checks if this number is equal to the given one.
-     *
-     * @param BigNumber|int|float|string $that
-     *
-     * @return bool
-     */
-    public function isEqualTo($that) : bool
-    {
-        return $this->compareTo($that) === 0;
-    }
-
-    /**
-     * Checks if this number is strictly lower than the given one.
-     *
-     * @param BigNumber|int|float|string $that
-     *
-     * @return bool
-     */
-    public function isLessThan($that) : bool
-    {
-        return $this->compareTo($that) < 0;
-    }
-
-    /**
-     * Checks if this number is lower than or equal to the given one.
-     *
-     * @param BigNumber|int|float|string $that
-     *
-     * @return bool
-     */
-    public function isLessThanOrEqualTo($that) : bool
-    {
-        return $this->compareTo($that) <= 0;
-    }
-
-    /**
-     * Checks if this number is strictly greater than the given one.
-     *
-     * @param BigNumber|int|float|string $that
-     *
-     * @return bool
-     */
-    public function isGreaterThan($that) : bool
-    {
-        return $this->compareTo($that) > 0;
-    }
-
-    /**
-     * Checks if this number is greater than or equal to the given one.
-     *
-     * @param BigNumber|int|float|string $that
-     *
-     * @return bool
-     */
-    public function isGreaterThanOrEqualTo($that) : bool
-    {
-        return $this->compareTo($that) >= 0;
-    }
-
-    /**
-     * Checks if this number equals zero.
-     *
-     * @return bool
-     */
-    public function isZero() : bool
-    {
-        return $this->getSign() === 0;
-    }
-
-    /**
-     * Checks if this number is strictly negative.
-     *
-     * @return bool
-     */
-    public function isNegative() : bool
-    {
-        return $this->getSign() < 0;
-    }
-
-    /**
-     * Checks if this number is negative or zero.
-     *
-     * @return bool
-     */
-    public function isNegativeOrZero() : bool
-    {
-        return $this->getSign() <= 0;
-    }
-
-    /**
-     * Checks if this number is strictly positive.
-     *
-     * @return bool
-     */
-    public function isPositive() : bool
-    {
-        return $this->getSign() > 0;
-    }
-
-    /**
-     * Checks if this number is positive or zero.
-     *
-     * @return bool
-     */
-    public function isPositiveOrZero() : bool
-    {
-        return $this->getSign() >= 0;
-    }
-
-    /**
-     * Returns the sign of this number.
-     *
-     * @return int -1 if the number is negative, 0 if zero, 1 if positive.
-     */
-    abstract public function getSign() : int;
-
-    /**
-     * Compares this number to the given one.
-     *
-     * @param BigNumber|int|float|string $that
-     *
-     * @return int [-1,0,1] If `$this` is lower than, equal to, or greater than `$that`.
-     *
-     * @throws MathException If the number is not valid.
-     */
-    abstract public function compareTo($that) : int;
-
-    /**
-     * Converts this number to a BigInteger.
-     *
-     * @return BigInteger The converted number.
-     *
-     * @throws RoundingNecessaryException If this number cannot be converted to a BigInteger without rounding.
-     */
-    abstract public function toBigInteger() : BigInteger;
-
-    /**
-     * Converts this number to a BigDecimal.
-     *
-     * @return BigDecimal The converted number.
-     *
-     * @throws RoundingNecessaryException If this number cannot be converted to a BigDecimal without rounding.
-     */
-    abstract public function toBigDecimal() : BigDecimal;
-
-    /**
-     * Converts this number to a BigRational.
-     *
-     * @return BigRational The converted number.
-     */
-    abstract public function toBigRational() : BigRational;
-
-    /**
-     * Converts this number to a BigDecimal with the given scale, using rounding if necessary.
-     *
-     * @param int $scale        The scale of the resulting `BigDecimal`.
-     * @param int $roundingMode A `RoundingMode` constant.
-     *
-     * @return BigDecimal
-     *
-     * @throws RoundingNecessaryException If this number cannot be converted to the given scale without rounding.
-     *                                    This only applies when RoundingMode::UNNECESSARY is used.
-     */
-    abstract public function toScale(int $scale, int $roundingMode = RoundingMode::UNNECESSARY) : BigDecimal;
-
-    /**
-     * Returns the exact value of this number as a native integer.
-     *
-     * If this number cannot be converted to a native integer without losing precision, an exception is thrown.
-     * Note that the acceptable range for an integer depends on the platform and differs for 32-bit and 64-bit.
-     *
-     * @return int The converted value.
-     *
-     * @throws MathException If this number cannot be exactly converted to a native integer.
-     */
-    abstract public function toInt() : int;
-
-    /**
-     * Returns an approximation of this number as a floating-point value.
-     *
-     * Note that this method can discard information as the precision of a floating-point value
-     * is inherently limited.
-     *
-     * If the number is greater than the largest representable floating point number, positive infinity is returned.
-     * If the number is less than the smallest representable floating point number, negative infinity is returned.
-     *
-     * @return float The converted value.
-     */
-    abstract public function toFloat() : float;
-
-    /**
-     * Returns a string representation of this number.
-     *
-     * The output of this method can be parsed by the `of()` factory method;
-     * this will yield an object equal to this one, without any information loss.
-     *
-     * @return string
-     */
-    abstract public function __toString() : string;
-
-    /**
-     * {@inheritdoc}
-     */
-    public function jsonSerialize() : string
-    {
-        return $this->__toString();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

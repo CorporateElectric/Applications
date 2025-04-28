@@ -1,246 +1,99 @@
-<?php
-
-namespace Illuminate\Auth\Passwords;
-
-use Illuminate\Contracts\Auth\CanResetPassword as CanResetPasswordContract;
-use Illuminate\Contracts\Hashing\Hasher as HasherContract;
-use Illuminate\Database\ConnectionInterface;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Str;
-
-class DatabaseTokenRepository implements TokenRepositoryInterface
-{
-    /**
-     * The database connection instance.
-     *
-     * @var \Illuminate\Database\ConnectionInterface
-     */
-    protected $connection;
-
-    /**
-     * The Hasher implementation.
-     *
-     * @var \Illuminate\Contracts\Hashing\Hasher
-     */
-    protected $hasher;
-
-    /**
-     * The token database table.
-     *
-     * @var string
-     */
-    protected $table;
-
-    /**
-     * The hashing key.
-     *
-     * @var string
-     */
-    protected $hashKey;
-
-    /**
-     * The number of seconds a token should last.
-     *
-     * @var int
-     */
-    protected $expires;
-
-    /**
-     * Minimum number of seconds before re-redefining the token.
-     *
-     * @var int
-     */
-    protected $throttle;
-
-    /**
-     * Create a new token repository instance.
-     *
-     * @param  \Illuminate\Database\ConnectionInterface  $connection
-     * @param  \Illuminate\Contracts\Hashing\Hasher  $hasher
-     * @param  string  $table
-     * @param  string  $hashKey
-     * @param  int  $expires
-     * @param  int  $throttle
-     * @return void
-     */
-    public function __construct(ConnectionInterface $connection, HasherContract $hasher,
-                                $table, $hashKey, $expires = 60,
-                                $throttle = 60)
-    {
-        $this->table = $table;
-        $this->hasher = $hasher;
-        $this->hashKey = $hashKey;
-        $this->expires = $expires * 60;
-        $this->connection = $connection;
-        $this->throttle = $throttle;
-    }
-
-    /**
-     * Create a new token record.
-     *
-     * @param  \Illuminate\Contracts\Auth\CanResetPassword  $user
-     * @return string
-     */
-    public function create(CanResetPasswordContract $user)
-    {
-        $email = $user->getEmailForPasswordReset();
-
-        $this->deleteExisting($user);
-
-        // We will create a new, random token for the user so that we can e-mail them
-        // a safe link to the password reset form. Then we will insert a record in
-        // the database so that we can verify the token within the actual reset.
-        $token = $this->createNewToken();
-
-        $this->getTable()->insert($this->getPayload($email, $token));
-
-        return $token;
-    }
-
-    /**
-     * Delete all existing reset tokens from the database.
-     *
-     * @param  \Illuminate\Contracts\Auth\CanResetPassword  $user
-     * @return int
-     */
-    protected function deleteExisting(CanResetPasswordContract $user)
-    {
-        return $this->getTable()->where('email', $user->getEmailForPasswordReset())->delete();
-    }
-
-    /**
-     * Build the record payload for the table.
-     *
-     * @param  string  $email
-     * @param  string  $token
-     * @return array
-     */
-    protected function getPayload($email, $token)
-    {
-        return ['email' => $email, 'token' => $this->hasher->make($token), 'created_at' => new Carbon];
-    }
-
-    /**
-     * Determine if a token record exists and is valid.
-     *
-     * @param  \Illuminate\Contracts\Auth\CanResetPassword  $user
-     * @param  string  $token
-     * @return bool
-     */
-    public function exists(CanResetPasswordContract $user, $token)
-    {
-        $record = (array) $this->getTable()->where(
-            'email', $user->getEmailForPasswordReset()
-        )->first();
-
-        return $record &&
-               ! $this->tokenExpired($record['created_at']) &&
-                 $this->hasher->check($token, $record['token']);
-    }
-
-    /**
-     * Determine if the token has expired.
-     *
-     * @param  string  $createdAt
-     * @return bool
-     */
-    protected function tokenExpired($createdAt)
-    {
-        return Carbon::parse($createdAt)->addSeconds($this->expires)->isPast();
-    }
-
-    /**
-     * Determine if the given user recently created a password reset token.
-     *
-     * @param  \Illuminate\Contracts\Auth\CanResetPassword  $user
-     * @return bool
-     */
-    public function recentlyCreatedToken(CanResetPasswordContract $user)
-    {
-        $record = (array) $this->getTable()->where(
-            'email', $user->getEmailForPasswordReset()
-        )->first();
-
-        return $record && $this->tokenRecentlyCreated($record['created_at']);
-    }
-
-    /**
-     * Determine if the token was recently created.
-     *
-     * @param  string  $createdAt
-     * @return bool
-     */
-    protected function tokenRecentlyCreated($createdAt)
-    {
-        if ($this->throttle <= 0) {
-            return false;
-        }
-
-        return Carbon::parse($createdAt)->addSeconds(
-            $this->throttle
-        )->isFuture();
-    }
-
-    /**
-     * Delete a token record by user.
-     *
-     * @param  \Illuminate\Contracts\Auth\CanResetPassword  $user
-     * @return void
-     */
-    public function delete(CanResetPasswordContract $user)
-    {
-        $this->deleteExisting($user);
-    }
-
-    /**
-     * Delete expired tokens.
-     *
-     * @return void
-     */
-    public function deleteExpired()
-    {
-        $expiredAt = Carbon::now()->subSeconds($this->expires);
-
-        $this->getTable()->where('created_at', '<', $expiredAt)->delete();
-    }
-
-    /**
-     * Create a new token for the user.
-     *
-     * @return string
-     */
-    public function createNewToken()
-    {
-        return hash_hmac('sha256', Str::random(40), $this->hashKey);
-    }
-
-    /**
-     * Get the database connection instance.
-     *
-     * @return \Illuminate\Database\ConnectionInterface
-     */
-    public function getConnection()
-    {
-        return $this->connection;
-    }
-
-    /**
-     * Begin a new database query against the table.
-     *
-     * @return \Illuminate\Database\Query\Builder
-     */
-    protected function getTable()
-    {
-        return $this->connection->table($this->table);
-    }
-
-    /**
-     * Get the hasher instance.
-     *
-     * @return \Illuminate\Contracts\Hashing\Hasher
-     */
-    public function getHasher()
-    {
-        return $this->hasher;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

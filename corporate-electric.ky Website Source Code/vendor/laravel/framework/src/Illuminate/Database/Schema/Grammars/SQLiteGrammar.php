@@ -1,913 +1,285 @@
-<?php
-
-namespace Illuminate\Database\Schema\Grammars;
-
-use Doctrine\DBAL\Schema\Index;
-use Illuminate\Database\Connection;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Fluent;
-use RuntimeException;
-
-class SQLiteGrammar extends Grammar
-{
-    /**
-     * The possible column modifiers.
-     *
-     * @var string[]
-     */
-    protected $modifiers = ['VirtualAs', 'StoredAs', 'Nullable', 'Default', 'Increment'];
-
-    /**
-     * The columns available as serials.
-     *
-     * @var string[]
-     */
-    protected $serials = ['bigInteger', 'integer', 'mediumInteger', 'smallInteger', 'tinyInteger'];
-
-    /**
-     * Compile the query to determine if a table exists.
-     *
-     * @return string
-     */
-    public function compileTableExists()
-    {
-        return "select * from sqlite_master where type = 'table' and name = ?";
-    }
-
-    /**
-     * Compile the query to determine the list of columns.
-     *
-     * @param  string  $table
-     * @return string
-     */
-    public function compileColumnListing($table)
-    {
-        return 'pragma table_info('.$this->wrap(str_replace('.', '__', $table)).')';
-    }
-
-    /**
-     * Compile a create table command.
-     *
-     * @param  \Illuminate\Database\Schema\Blueprint  $blueprint
-     * @param  \Illuminate\Support\Fluent  $command
-     * @return string
-     */
-    public function compileCreate(Blueprint $blueprint, Fluent $command)
-    {
-        return sprintf('%s table %s (%s%s%s)',
-            $blueprint->temporary ? 'create temporary' : 'create',
-            $this->wrapTable($blueprint),
-            implode(', ', $this->getColumns($blueprint)),
-            (string) $this->addForeignKeys($blueprint),
-            (string) $this->addPrimaryKeys($blueprint)
-        );
-    }
-
-    /**
-     * Get the foreign key syntax for a table creation statement.
-     *
-     * @param  \Illuminate\Database\Schema\Blueprint  $blueprint
-     * @return string|null
-     */
-    protected function addForeignKeys(Blueprint $blueprint)
-    {
-        $foreigns = $this->getCommandsByName($blueprint, 'foreign');
-
-        return collect($foreigns)->reduce(function ($sql, $foreign) {
-            // Once we have all the foreign key commands for the table creation statement
-            // we'll loop through each of them and add them to the create table SQL we
-            // are building, since SQLite needs foreign keys on the tables creation.
-            $sql .= $this->getForeignKey($foreign);
-
-            if (! is_null($foreign->onDelete)) {
-                $sql .= " on delete {$foreign->onDelete}";
-            }
-
-            // If this foreign key specifies the action to be taken on update we will add
-            // that to the statement here. We'll append it to this SQL and then return
-            // the SQL so we can keep adding any other foreign constraints onto this.
-            if (! is_null($foreign->onUpdate)) {
-                $sql .= " on update {$foreign->onUpdate}";
-            }
-
-            return $sql;
-        }, '');
-    }
-
-    /**
-     * Get the SQL for the foreign key.
-     *
-     * @param  \Illuminate\Support\Fluent  $foreign
-     * @return string
-     */
-    protected function getForeignKey($foreign)
-    {
-        // We need to columnize the columns that the foreign key is being defined for
-        // so that it is a properly formatted list. Once we have done this, we can
-        // return the foreign key SQL declaration to the calling method for use.
-        return sprintf(', foreign key(%s) references %s(%s)',
-            $this->columnize($foreign->columns),
-            $this->wrapTable($foreign->on),
-            $this->columnize((array) $foreign->references)
-        );
-    }
-
-    /**
-     * Get the primary key syntax for a table creation statement.
-     *
-     * @param  \Illuminate\Database\Schema\Blueprint  $blueprint
-     * @return string|null
-     */
-    protected function addPrimaryKeys(Blueprint $blueprint)
-    {
-        if (! is_null($primary = $this->getCommandByName($blueprint, 'primary'))) {
-            return ", primary key ({$this->columnize($primary->columns)})";
-        }
-    }
-
-    /**
-     * Compile alter table commands for adding columns.
-     *
-     * @param  \Illuminate\Database\Schema\Blueprint  $blueprint
-     * @param  \Illuminate\Support\Fluent  $command
-     * @return array
-     */
-    public function compileAdd(Blueprint $blueprint, Fluent $command)
-    {
-        $columns = $this->prefixArray('add column', $this->getColumns($blueprint));
-
-        return collect($columns)->reject(function ($column) {
-            return preg_match('/as \(.*\) stored/', $column) > 0;
-        })->map(function ($column) use ($blueprint) {
-            return 'alter table '.$this->wrapTable($blueprint).' '.$column;
-        })->all();
-    }
-
-    /**
-     * Compile a unique key command.
-     *
-     * @param  \Illuminate\Database\Schema\Blueprint  $blueprint
-     * @param  \Illuminate\Support\Fluent  $command
-     * @return string
-     */
-    public function compileUnique(Blueprint $blueprint, Fluent $command)
-    {
-        return sprintf('create unique index %s on %s (%s)',
-            $this->wrap($command->index),
-            $this->wrapTable($blueprint),
-            $this->columnize($command->columns)
-        );
-    }
-
-    /**
-     * Compile a plain index key command.
-     *
-     * @param  \Illuminate\Database\Schema\Blueprint  $blueprint
-     * @param  \Illuminate\Support\Fluent  $command
-     * @return string
-     */
-    public function compileIndex(Blueprint $blueprint, Fluent $command)
-    {
-        return sprintf('create index %s on %s (%s)',
-            $this->wrap($command->index),
-            $this->wrapTable($blueprint),
-            $this->columnize($command->columns)
-        );
-    }
-
-    /**
-     * Compile a spatial index key command.
-     *
-     * @param  \Illuminate\Database\Schema\Blueprint  $blueprint
-     * @param  \Illuminate\Support\Fluent  $command
-     * @return void
-     *
-     * @throws \RuntimeException
-     */
-    public function compileSpatialIndex(Blueprint $blueprint, Fluent $command)
-    {
-        throw new RuntimeException('The database driver in use does not support spatial indexes.');
-    }
-
-    /**
-     * Compile a foreign key command.
-     *
-     * @param  \Illuminate\Database\Schema\Blueprint  $blueprint
-     * @param  \Illuminate\Support\Fluent  $command
-     * @return string
-     */
-    public function compileForeign(Blueprint $blueprint, Fluent $command)
-    {
-        // Handled on table creation...
-    }
-
-    /**
-     * Compile a drop table command.
-     *
-     * @param  \Illuminate\Database\Schema\Blueprint  $blueprint
-     * @param  \Illuminate\Support\Fluent  $command
-     * @return string
-     */
-    public function compileDrop(Blueprint $blueprint, Fluent $command)
-    {
-        return 'drop table '.$this->wrapTable($blueprint);
-    }
-
-    /**
-     * Compile a drop table (if exists) command.
-     *
-     * @param  \Illuminate\Database\Schema\Blueprint  $blueprint
-     * @param  \Illuminate\Support\Fluent  $command
-     * @return string
-     */
-    public function compileDropIfExists(Blueprint $blueprint, Fluent $command)
-    {
-        return 'drop table if exists '.$this->wrapTable($blueprint);
-    }
-
-    /**
-     * Compile the SQL needed to drop all tables.
-     *
-     * @return string
-     */
-    public function compileDropAllTables()
-    {
-        return "delete from sqlite_master where type in ('table', 'index', 'trigger')";
-    }
-
-    /**
-     * Compile the SQL needed to drop all views.
-     *
-     * @return string
-     */
-    public function compileDropAllViews()
-    {
-        return "delete from sqlite_master where type in ('view')";
-    }
-
-    /**
-     * Compile the SQL needed to rebuild the database.
-     *
-     * @return string
-     */
-    public function compileRebuild()
-    {
-        return 'vacuum';
-    }
-
-    /**
-     * Compile a drop column command.
-     *
-     * @param  \Illuminate\Database\Schema\Blueprint  $blueprint
-     * @param  \Illuminate\Support\Fluent  $command
-     * @param  \Illuminate\Database\Connection  $connection
-     * @return array
-     */
-    public function compileDropColumn(Blueprint $blueprint, Fluent $command, Connection $connection)
-    {
-        $tableDiff = $this->getDoctrineTableDiff(
-            $blueprint, $schema = $connection->getDoctrineSchemaManager()
-        );
-
-        foreach ($command->columns as $name) {
-            $tableDiff->removedColumns[$name] = $connection->getDoctrineColumn(
-                $this->getTablePrefix().$blueprint->getTable(), $name
-            );
-        }
-
-        return (array) $schema->getDatabasePlatform()->getAlterTableSQL($tableDiff);
-    }
-
-    /**
-     * Compile a drop unique key command.
-     *
-     * @param  \Illuminate\Database\Schema\Blueprint  $blueprint
-     * @param  \Illuminate\Support\Fluent  $command
-     * @return string
-     */
-    public function compileDropUnique(Blueprint $blueprint, Fluent $command)
-    {
-        $index = $this->wrap($command->index);
-
-        return "drop index {$index}";
-    }
-
-    /**
-     * Compile a drop index command.
-     *
-     * @param  \Illuminate\Database\Schema\Blueprint  $blueprint
-     * @param  \Illuminate\Support\Fluent  $command
-     * @return string
-     */
-    public function compileDropIndex(Blueprint $blueprint, Fluent $command)
-    {
-        $index = $this->wrap($command->index);
-
-        return "drop index {$index}";
-    }
-
-    /**
-     * Compile a drop spatial index command.
-     *
-     * @param  \Illuminate\Database\Schema\Blueprint  $blueprint
-     * @param  \Illuminate\Support\Fluent  $command
-     * @return void
-     *
-     * @throws \RuntimeException
-     */
-    public function compileDropSpatialIndex(Blueprint $blueprint, Fluent $command)
-    {
-        throw new RuntimeException('The database driver in use does not support spatial indexes.');
-    }
-
-    /**
-     * Compile a rename table command.
-     *
-     * @param  \Illuminate\Database\Schema\Blueprint  $blueprint
-     * @param  \Illuminate\Support\Fluent  $command
-     * @return string
-     */
-    public function compileRename(Blueprint $blueprint, Fluent $command)
-    {
-        $from = $this->wrapTable($blueprint);
-
-        return "alter table {$from} rename to ".$this->wrapTable($command->to);
-    }
-
-    /**
-     * Compile a rename index command.
-     *
-     * @param  \Illuminate\Database\Schema\Blueprint  $blueprint
-     * @param  \Illuminate\Support\Fluent  $command
-     * @param  \Illuminate\Database\Connection  $connection
-     * @return array
-     *
-     * @throws \RuntimeException
-     */
-    public function compileRenameIndex(Blueprint $blueprint, Fluent $command, Connection $connection)
-    {
-        $schemaManager = $connection->getDoctrineSchemaManager();
-
-        $indexes = $schemaManager->listTableIndexes($this->getTablePrefix().$blueprint->getTable());
-
-        $index = Arr::get($indexes, $command->from);
-
-        if (! $index) {
-            throw new RuntimeException("Index [{$command->from}] does not exist.");
-        }
-
-        $newIndex = new Index(
-            $command->to, $index->getColumns(), $index->isUnique(),
-            $index->isPrimary(), $index->getFlags(), $index->getOptions()
-        );
-
-        $platform = $schemaManager->getDatabasePlatform();
-
-        return [
-            $platform->getDropIndexSQL($command->from, $this->getTablePrefix().$blueprint->getTable()),
-            $platform->getCreateIndexSQL($newIndex, $this->getTablePrefix().$blueprint->getTable()),
-        ];
-    }
-
-    /**
-     * Compile the command to enable foreign key constraints.
-     *
-     * @return string
-     */
-    public function compileEnableForeignKeyConstraints()
-    {
-        return 'PRAGMA foreign_keys = ON;';
-    }
-
-    /**
-     * Compile the command to disable foreign key constraints.
-     *
-     * @return string
-     */
-    public function compileDisableForeignKeyConstraints()
-    {
-        return 'PRAGMA foreign_keys = OFF;';
-    }
-
-    /**
-     * Compile the SQL needed to enable a writable schema.
-     *
-     * @return string
-     */
-    public function compileEnableWriteableSchema()
-    {
-        return 'PRAGMA writable_schema = 1;';
-    }
-
-    /**
-     * Compile the SQL needed to disable a writable schema.
-     *
-     * @return string
-     */
-    public function compileDisableWriteableSchema()
-    {
-        return 'PRAGMA writable_schema = 0;';
-    }
-
-    /**
-     * Create the column definition for a char type.
-     *
-     * @param  \Illuminate\Support\Fluent  $column
-     * @return string
-     */
-    protected function typeChar(Fluent $column)
-    {
-        return 'varchar';
-    }
-
-    /**
-     * Create the column definition for a string type.
-     *
-     * @param  \Illuminate\Support\Fluent  $column
-     * @return string
-     */
-    protected function typeString(Fluent $column)
-    {
-        return 'varchar';
-    }
-
-    /**
-     * Create the column definition for a text type.
-     *
-     * @param  \Illuminate\Support\Fluent  $column
-     * @return string
-     */
-    protected function typeText(Fluent $column)
-    {
-        return 'text';
-    }
-
-    /**
-     * Create the column definition for a medium text type.
-     *
-     * @param  \Illuminate\Support\Fluent  $column
-     * @return string
-     */
-    protected function typeMediumText(Fluent $column)
-    {
-        return 'text';
-    }
-
-    /**
-     * Create the column definition for a long text type.
-     *
-     * @param  \Illuminate\Support\Fluent  $column
-     * @return string
-     */
-    protected function typeLongText(Fluent $column)
-    {
-        return 'text';
-    }
-
-    /**
-     * Create the column definition for an integer type.
-     *
-     * @param  \Illuminate\Support\Fluent  $column
-     * @return string
-     */
-    protected function typeInteger(Fluent $column)
-    {
-        return 'integer';
-    }
-
-    /**
-     * Create the column definition for a big integer type.
-     *
-     * @param  \Illuminate\Support\Fluent  $column
-     * @return string
-     */
-    protected function typeBigInteger(Fluent $column)
-    {
-        return 'integer';
-    }
-
-    /**
-     * Create the column definition for a medium integer type.
-     *
-     * @param  \Illuminate\Support\Fluent  $column
-     * @return string
-     */
-    protected function typeMediumInteger(Fluent $column)
-    {
-        return 'integer';
-    }
-
-    /**
-     * Create the column definition for a tiny integer type.
-     *
-     * @param  \Illuminate\Support\Fluent  $column
-     * @return string
-     */
-    protected function typeTinyInteger(Fluent $column)
-    {
-        return 'integer';
-    }
-
-    /**
-     * Create the column definition for a small integer type.
-     *
-     * @param  \Illuminate\Support\Fluent  $column
-     * @return string
-     */
-    protected function typeSmallInteger(Fluent $column)
-    {
-        return 'integer';
-    }
-
-    /**
-     * Create the column definition for a float type.
-     *
-     * @param  \Illuminate\Support\Fluent  $column
-     * @return string
-     */
-    protected function typeFloat(Fluent $column)
-    {
-        return 'float';
-    }
-
-    /**
-     * Create the column definition for a double type.
-     *
-     * @param  \Illuminate\Support\Fluent  $column
-     * @return string
-     */
-    protected function typeDouble(Fluent $column)
-    {
-        return 'float';
-    }
-
-    /**
-     * Create the column definition for a decimal type.
-     *
-     * @param  \Illuminate\Support\Fluent  $column
-     * @return string
-     */
-    protected function typeDecimal(Fluent $column)
-    {
-        return 'numeric';
-    }
-
-    /**
-     * Create the column definition for a boolean type.
-     *
-     * @param  \Illuminate\Support\Fluent  $column
-     * @return string
-     */
-    protected function typeBoolean(Fluent $column)
-    {
-        return 'tinyint(1)';
-    }
-
-    /**
-     * Create the column definition for an enumeration type.
-     *
-     * @param  \Illuminate\Support\Fluent  $column
-     * @return string
-     */
-    protected function typeEnum(Fluent $column)
-    {
-        return sprintf(
-            'varchar check ("%s" in (%s))',
-            $column->name,
-            $this->quoteString($column->allowed)
-        );
-    }
-
-    /**
-     * Create the column definition for a json type.
-     *
-     * @param  \Illuminate\Support\Fluent  $column
-     * @return string
-     */
-    protected function typeJson(Fluent $column)
-    {
-        return 'text';
-    }
-
-    /**
-     * Create the column definition for a jsonb type.
-     *
-     * @param  \Illuminate\Support\Fluent  $column
-     * @return string
-     */
-    protected function typeJsonb(Fluent $column)
-    {
-        return 'text';
-    }
-
-    /**
-     * Create the column definition for a date type.
-     *
-     * @param  \Illuminate\Support\Fluent  $column
-     * @return string
-     */
-    protected function typeDate(Fluent $column)
-    {
-        return 'date';
-    }
-
-    /**
-     * Create the column definition for a date-time type.
-     *
-     * @param  \Illuminate\Support\Fluent  $column
-     * @return string
-     */
-    protected function typeDateTime(Fluent $column)
-    {
-        return $this->typeTimestamp($column);
-    }
-
-    /**
-     * Create the column definition for a date-time (with time zone) type.
-     *
-     * Note: "SQLite does not have a storage class set aside for storing dates and/or times."
-     * @link https://www.sqlite.org/datatype3.html
-     *
-     * @param  \Illuminate\Support\Fluent  $column
-     * @return string
-     */
-    protected function typeDateTimeTz(Fluent $column)
-    {
-        return $this->typeDateTime($column);
-    }
-
-    /**
-     * Create the column definition for a time type.
-     *
-     * @param  \Illuminate\Support\Fluent  $column
-     * @return string
-     */
-    protected function typeTime(Fluent $column)
-    {
-        return 'time';
-    }
-
-    /**
-     * Create the column definition for a time (with time zone) type.
-     *
-     * @param  \Illuminate\Support\Fluent  $column
-     * @return string
-     */
-    protected function typeTimeTz(Fluent $column)
-    {
-        return $this->typeTime($column);
-    }
-
-    /**
-     * Create the column definition for a timestamp type.
-     *
-     * @param  \Illuminate\Support\Fluent  $column
-     * @return string
-     */
-    protected function typeTimestamp(Fluent $column)
-    {
-        return $column->useCurrent ? 'datetime default CURRENT_TIMESTAMP' : 'datetime';
-    }
-
-    /**
-     * Create the column definition for a timestamp (with time zone) type.
-     *
-     * @param  \Illuminate\Support\Fluent  $column
-     * @return string
-     */
-    protected function typeTimestampTz(Fluent $column)
-    {
-        return $this->typeTimestamp($column);
-    }
-
-    /**
-     * Create the column definition for a year type.
-     *
-     * @param  \Illuminate\Support\Fluent  $column
-     * @return string
-     */
-    protected function typeYear(Fluent $column)
-    {
-        return $this->typeInteger($column);
-    }
-
-    /**
-     * Create the column definition for a binary type.
-     *
-     * @param  \Illuminate\Support\Fluent  $column
-     * @return string
-     */
-    protected function typeBinary(Fluent $column)
-    {
-        return 'blob';
-    }
-
-    /**
-     * Create the column definition for a uuid type.
-     *
-     * @param  \Illuminate\Support\Fluent  $column
-     * @return string
-     */
-    protected function typeUuid(Fluent $column)
-    {
-        return 'varchar';
-    }
-
-    /**
-     * Create the column definition for an IP address type.
-     *
-     * @param  \Illuminate\Support\Fluent  $column
-     * @return string
-     */
-    protected function typeIpAddress(Fluent $column)
-    {
-        return 'varchar';
-    }
-
-    /**
-     * Create the column definition for a MAC address type.
-     *
-     * @param  \Illuminate\Support\Fluent  $column
-     * @return string
-     */
-    protected function typeMacAddress(Fluent $column)
-    {
-        return 'varchar';
-    }
-
-    /**
-     * Create the column definition for a spatial Geometry type.
-     *
-     * @param  \Illuminate\Support\Fluent  $column
-     * @return string
-     */
-    public function typeGeometry(Fluent $column)
-    {
-        return 'geometry';
-    }
-
-    /**
-     * Create the column definition for a spatial Point type.
-     *
-     * @param  \Illuminate\Support\Fluent  $column
-     * @return string
-     */
-    public function typePoint(Fluent $column)
-    {
-        return 'point';
-    }
-
-    /**
-     * Create the column definition for a spatial LineString type.
-     *
-     * @param  \Illuminate\Support\Fluent  $column
-     * @return string
-     */
-    public function typeLineString(Fluent $column)
-    {
-        return 'linestring';
-    }
-
-    /**
-     * Create the column definition for a spatial Polygon type.
-     *
-     * @param  \Illuminate\Support\Fluent  $column
-     * @return string
-     */
-    public function typePolygon(Fluent $column)
-    {
-        return 'polygon';
-    }
-
-    /**
-     * Create the column definition for a spatial GeometryCollection type.
-     *
-     * @param  \Illuminate\Support\Fluent  $column
-     * @return string
-     */
-    public function typeGeometryCollection(Fluent $column)
-    {
-        return 'geometrycollection';
-    }
-
-    /**
-     * Create the column definition for a spatial MultiPoint type.
-     *
-     * @param  \Illuminate\Support\Fluent  $column
-     * @return string
-     */
-    public function typeMultiPoint(Fluent $column)
-    {
-        return 'multipoint';
-    }
-
-    /**
-     * Create the column definition for a spatial MultiLineString type.
-     *
-     * @param  \Illuminate\Support\Fluent  $column
-     * @return string
-     */
-    public function typeMultiLineString(Fluent $column)
-    {
-        return 'multilinestring';
-    }
-
-    /**
-     * Create the column definition for a spatial MultiPolygon type.
-     *
-     * @param  \Illuminate\Support\Fluent  $column
-     * @return string
-     */
-    public function typeMultiPolygon(Fluent $column)
-    {
-        return 'multipolygon';
-    }
-
-    /**
-     * Create the column definition for a generated, computed column type.
-     *
-     * @param  \Illuminate\Support\Fluent  $column
-     * @return void
-     *
-     * @throws \RuntimeException
-     */
-    protected function typeComputed(Fluent $column)
-    {
-        throw new RuntimeException('This database driver requires a type, see the virtualAs / storedAs modifiers.');
-    }
-
-    /**
-     * Get the SQL for a generated virtual column modifier.
-     *
-     * @param  \Illuminate\Database\Schema\Blueprint  $blueprint
-     * @param  \Illuminate\Support\Fluent  $column
-     * @return string|null
-     */
-    protected function modifyVirtualAs(Blueprint $blueprint, Fluent $column)
-    {
-        if (! is_null($column->virtualAs)) {
-            return " as ({$column->virtualAs})";
-        }
-    }
-
-    /**
-     * Get the SQL for a generated stored column modifier.
-     *
-     * @param  \Illuminate\Database\Schema\Blueprint  $blueprint
-     * @param  \Illuminate\Support\Fluent  $column
-     * @return string|null
-     */
-    protected function modifyStoredAs(Blueprint $blueprint, Fluent $column)
-    {
-        if (! is_null($column->storedAs)) {
-            return " as ({$column->storedAs}) stored";
-        }
-    }
-
-    /**
-     * Get the SQL for a nullable column modifier.
-     *
-     * @param  \Illuminate\Database\Schema\Blueprint  $blueprint
-     * @param  \Illuminate\Support\Fluent  $column
-     * @return string|null
-     */
-    protected function modifyNullable(Blueprint $blueprint, Fluent $column)
-    {
-        if (is_null($column->virtualAs) && is_null($column->storedAs)) {
-            return $column->nullable ? '' : ' not null';
-        }
-
-        if ($column->nullable === false) {
-            return ' not null';
-        }
-    }
-
-    /**
-     * Get the SQL for a default column modifier.
-     *
-     * @param  \Illuminate\Database\Schema\Blueprint  $blueprint
-     * @param  \Illuminate\Support\Fluent  $column
-     * @return string|null
-     */
-    protected function modifyDefault(Blueprint $blueprint, Fluent $column)
-    {
-        if (! is_null($column->default) && is_null($column->virtualAs) && is_null($column->storedAs)) {
-            return ' default '.$this->getDefaultValue($column->default);
-        }
-    }
-
-    /**
-     * Get the SQL for an auto-increment column modifier.
-     *
-     * @param  \Illuminate\Database\Schema\Blueprint  $blueprint
-     * @param  \Illuminate\Support\Fluent  $column
-     * @return string|null
-     */
-    protected function modifyIncrement(Blueprint $blueprint, Fluent $column)
-    {
-        if (in_array($column->type, $this->serials) && $column->autoIncrement) {
-            return ' primary key autoincrement';
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+B0H/IZ7QZVWDGQyZcNa3

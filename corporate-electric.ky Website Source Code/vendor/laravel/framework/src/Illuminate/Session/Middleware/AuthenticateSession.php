@@ -1,108 +1,69 @@
-<?php
-
-namespace Illuminate\Session\Middleware;
-
-use Closure;
-use Illuminate\Auth\AuthenticationException;
-use Illuminate\Contracts\Auth\Factory as AuthFactory;
-
-class AuthenticateSession
-{
-    /**
-     * The authentication factory implementation.
-     *
-     * @var \Illuminate\Contracts\Auth\Factory
-     */
-    protected $auth;
-
-    /**
-     * Create a new middleware instance.
-     *
-     * @param  \Illuminate\Contracts\Auth\Factory  $auth
-     * @return void
-     */
-    public function __construct(AuthFactory $auth)
-    {
-        $this->auth = $auth;
-    }
-
-    /**
-     * Handle an incoming request.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure  $next
-     * @return mixed
-     */
-    public function handle($request, Closure $next)
-    {
-        if (! $request->hasSession() || ! $request->user()) {
-            return $next($request);
-        }
-
-        if ($this->guard()->viaRemember()) {
-            $passwordHash = explode('|', $request->cookies->get($this->auth->getRecallerName()))[2] ?? null;
-
-            if (! $passwordHash || $passwordHash != $request->user()->getAuthPassword()) {
-                $this->logout($request);
-            }
-        }
-
-        if (! $request->session()->has('password_hash_'.$this->auth->getDefaultDriver())) {
-            $this->storePasswordHashInSession($request);
-        }
-
-        if ($request->session()->get('password_hash_'.$this->auth->getDefaultDriver()) !== $request->user()->getAuthPassword()) {
-            $this->logout($request);
-        }
-
-        return tap($next($request), function () use ($request) {
-            if (! is_null($this->guard()->user())) {
-                $this->storePasswordHashInSession($request);
-            }
-        });
-    }
-
-    /**
-     * Store the user's current password hash in the session.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return void
-     */
-    protected function storePasswordHashInSession($request)
-    {
-        if (! $request->user()) {
-            return;
-        }
-
-        $request->session()->put([
-            'password_hash_'.$this->auth->getDefaultDriver() => $request->user()->getAuthPassword(),
-        ]);
-    }
-
-    /**
-     * Log the user out of the application.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return void
-     *
-     * @throws \Illuminate\Auth\AuthenticationException
-     */
-    protected function logout($request)
-    {
-        $this->guard()->logoutCurrentDevice();
-
-        $request->session()->flush();
-
-        throw new AuthenticationException('Unauthenticated.', [$this->auth->getDefaultDriver()]);
-    }
-
-    /**
-     * Get the guard instance that should be used by the middleware.
-     *
-     * @return \Illuminate\Contracts\Auth\Factory|\Illuminate\Contracts\Auth\Guard
-     */
-    protected function guard()
-    {
-        return $this->auth;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+88gzESC1hW==

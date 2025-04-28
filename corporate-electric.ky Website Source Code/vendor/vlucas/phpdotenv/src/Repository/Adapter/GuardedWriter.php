@@ -1,85 +1,38 @@
-<?php
-
-declare(strict_types=1);
-
-namespace Dotenv\Repository\Adapter;
-
-final class GuardedWriter implements WriterInterface
-{
-    /**
-     * The inner writer to use.
-     *
-     * @var \Dotenv\Repository\Adapter\WriterInterface
-     */
-    private $writer;
-
-    /**
-     * The variable name allow list.
-     *
-     * @var string[]
-     */
-    private $allowList;
-
-    /**
-     * Create a new guarded writer instance.
-     *
-     * @param \Dotenv\Repository\Adapter\WriterInterface $writer
-     * @param string[]                                   $allowList
-     *
-     * @return void
-     */
-    public function __construct(WriterInterface $writer, array $allowList)
-    {
-        $this->writer = $writer;
-        $this->allowList = $allowList;
-    }
-
-    /**
-     * Write to an environment variable, if possible.
-     *
-     * @param string $name
-     * @param string $value
-     *
-     * @return bool
-     */
-    public function write(string $name, string $value)
-    {
-        // Don't set non-allowed variables
-        if (!$this->isAllowed($name)) {
-            return false;
-        }
-
-        // Set the value on the inner writer
-        return $this->writer->write($name, $value);
-    }
-
-    /**
-     * Delete an environment variable, if possible.
-     *
-     * @param string $name
-     *
-     * @return bool
-     */
-    public function delete(string $name)
-    {
-        // Don't clear non-allowed variables
-        if (!$this->isAllowed($name)) {
-            return false;
-        }
-
-        // Set the value on the inner writer
-        return $this->writer->delete($name);
-    }
-
-    /**
-     * Determine if the given variable is allowed.
-     *
-     * @param string $name
-     *
-     * @return bool
-     */
-    private function isAllowed(string $name)
-    {
-        return \in_array($name, $this->allowList, true);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

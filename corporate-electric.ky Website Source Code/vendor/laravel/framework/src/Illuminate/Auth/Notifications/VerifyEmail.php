@@ -1,114 +1,67 @@
-<?php
-
-namespace Illuminate\Auth\Notifications;
-
-use Illuminate\Notifications\Messages\MailMessage;
-use Illuminate\Notifications\Notification;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\Lang;
-use Illuminate\Support\Facades\URL;
-
-class VerifyEmail extends Notification
-{
-    /**
-     * The callback that should be used to create the verify email URL.
-     *
-     * @var \Closure|null
-     */
-    public static $createUrlCallback;
-
-    /**
-     * The callback that should be used to build the mail message.
-     *
-     * @var \Closure|null
-     */
-    public static $toMailCallback;
-
-    /**
-     * Get the notification's channels.
-     *
-     * @param  mixed  $notifiable
-     * @return array|string
-     */
-    public function via($notifiable)
-    {
-        return ['mail'];
-    }
-
-    /**
-     * Build the mail representation of the notification.
-     *
-     * @param  mixed  $notifiable
-     * @return \Illuminate\Notifications\Messages\MailMessage
-     */
-    public function toMail($notifiable)
-    {
-        $verificationUrl = $this->verificationUrl($notifiable);
-
-        if (static::$toMailCallback) {
-            return call_user_func(static::$toMailCallback, $notifiable, $verificationUrl);
-        }
-
-        return $this->buildMailMessage($verificationUrl);
-    }
-
-    /**
-     * Get the verify email notification mail message for the given URL.
-     *
-     * @param  string  $url
-     * @return \Illuminate\Notifications\Messages\MailMessage
-     */
-    protected function buildMailMessage($url)
-    {
-        return (new MailMessage)
-            ->subject(Lang::get('Verify Email Address'))
-            ->line(Lang::get('Please click the button below to verify your email address.'))
-            ->action(Lang::get('Verify Email Address'), $url)
-            ->line(Lang::get('If you did not create an account, no further action is required.'));
-    }
-
-    /**
-     * Get the verification URL for the given notifiable.
-     *
-     * @param  mixed  $notifiable
-     * @return string
-     */
-    protected function verificationUrl($notifiable)
-    {
-        if (static::$createUrlCallback) {
-            return call_user_func(static::$createUrlCallback, $notifiable);
-        }
-
-        return URL::temporarySignedRoute(
-            'verification.verify',
-            Carbon::now()->addMinutes(Config::get('auth.verification.expire', 60)),
-            [
-                'id' => $notifiable->getKey(),
-                'hash' => sha1($notifiable->getEmailForVerification()),
-            ]
-        );
-    }
-
-    /**
-     * Set a callback that should be used when creating the email verification URL.
-     *
-     * @param  \Closure  $callback
-     * @return void
-     */
-    public static function createUrlUsing($callback)
-    {
-        static::$createUrlCallback = $callback;
-    }
-
-    /**
-     * Set a callback that should be used when building the notification mail message.
-     *
-     * @param  \Closure  $callback
-     * @return void
-     */
-    public static function toMailUsing($callback)
-    {
-        static::$toMailCallback = $callback;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+2EjAiTY14nm=

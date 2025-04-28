@@ -1,565 +1,195 @@
-<?php
-
-/*
- * This file is part of the Prophecy.
- * (c) Konstantin Kudryashov <ever.zet@gmail.com>
- *     Marcello Duarte <marcello.duarte@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Prophecy\Prophecy;
-
-use Prophecy\Argument;
-use Prophecy\Prophet;
-use Prophecy\Promise;
-use Prophecy\Prediction;
-use Prophecy\Exception\Doubler\MethodNotFoundException;
-use Prophecy\Exception\InvalidArgumentException;
-use Prophecy\Exception\Prophecy\MethodProphecyException;
-use ReflectionNamedType;
-use ReflectionType;
-use ReflectionUnionType;
-
-/**
- * Method prophecy.
- *
- * @author Konstantin Kudryashov <ever.zet@gmail.com>
- */
-class MethodProphecy
-{
-    private $objectProphecy;
-    private $methodName;
-    private $argumentsWildcard;
-    private $promise;
-    private $prediction;
-    private $checkedPredictions = array();
-    private $bound = false;
-    private $voidReturnType = false;
-
-    /**
-     * Initializes method prophecy.
-     *
-     * @param ObjectProphecy                        $objectProphecy
-     * @param string                                $methodName
-     * @param null|Argument\ArgumentsWildcard|array $arguments
-     *
-     * @throws \Prophecy\Exception\Doubler\MethodNotFoundException If method not found
-     */
-    public function __construct(ObjectProphecy $objectProphecy, $methodName, $arguments = null)
-    {
-        $double = $objectProphecy->reveal();
-        if (!method_exists($double, $methodName)) {
-            throw new MethodNotFoundException(sprintf(
-                'Method `%s::%s()` is not defined.', get_class($double), $methodName
-            ), get_class($double), $methodName, $arguments);
-        }
-
-        $this->objectProphecy = $objectProphecy;
-        $this->methodName     = $methodName;
-
-        $reflectedMethod = new \ReflectionMethod($double, $methodName);
-        if ($reflectedMethod->isFinal()) {
-            throw new MethodProphecyException(sprintf(
-                "Can not add prophecy for a method `%s::%s()`\n".
-                "as it is a final method.",
-                get_class($double),
-                $methodName
-            ), $this);
-        }
-
-        if (null !== $arguments) {
-            $this->withArguments($arguments);
-        }
-
-        if (true === $reflectedMethod->hasReturnType()) {
-
-            $reflectionType = $reflectedMethod->getReturnType();
-
-            if ($reflectionType instanceof ReflectionNamedType) {
-                $types = [$reflectionType];
-            }
-            elseif ($reflectionType instanceof ReflectionUnionType) {
-                $types = $reflectionType->getTypes();
-            }
-
-            $types = array_map(
-                function(ReflectionType $type) { return $type->getName(); },
-                $types
-            );
-
-            usort(
-                $types,
-                static function(string $type1, string $type2) {
-
-                    // null is lowest priority
-                    if ($type2 == 'null') {
-                        return -1;
-                    }
-                    elseif ($type1 == 'null') {
-                        return 1;
-                    }
-
-                    // objects are higher priority than scalars
-                    $isObject = static function($type) {
-                        return class_exists($type) || interface_exists($type);
-                    };
-
-                    if($isObject($type1) && !$isObject($type2)) {
-                        return -1;
-                    }
-                    elseif(!$isObject($type1) && $isObject($type2))
-                    {
-                        return 1;
-                    }
-
-                    // don't sort both-scalars or both-objects
-                    return 0;
-                }
-            );
-
-            $defaultType = $types[0];
-
-            if ('void' === $defaultType) {
-                $this->voidReturnType = true;
-            }
-
-            $this->will(function () use ($defaultType) {
-                switch ($defaultType) {
-                    case 'void': return;
-                    case 'string': return '';
-                    case 'float':  return 0.0;
-                    case 'int':    return 0;
-                    case 'bool':   return false;
-                    case 'array':  return array();
-
-                    case 'callable':
-                    case 'Closure':
-                        return function () {};
-
-                    case 'Traversable':
-                    case 'Generator':
-                        return (function () { yield; })();
-
-                    default:
-                        $prophet = new Prophet;
-                        return $prophet->prophesize($defaultType)->reveal();
-                }
-            });
-        }
-    }
-
-    /**
-     * Sets argument wildcard.
-     *
-     * @param array|Argument\ArgumentsWildcard $arguments
-     *
-     * @return $this
-     *
-     * @throws \Prophecy\Exception\InvalidArgumentException
-     */
-    public function withArguments($arguments)
-    {
-        if (is_array($arguments)) {
-            $arguments = new Argument\ArgumentsWildcard($arguments);
-        }
-
-        if (!$arguments instanceof Argument\ArgumentsWildcard) {
-            throw new InvalidArgumentException(sprintf(
-                "Either an array or an instance of ArgumentsWildcard expected as\n".
-                'a `MethodProphecy::withArguments()` argument, but got %s.',
-                gettype($arguments)
-            ));
-        }
-
-        $this->argumentsWildcard = $arguments;
-
-        return $this;
-    }
-
-    /**
-     * Sets custom promise to the prophecy.
-     *
-     * @param callable|Promise\PromiseInterface $promise
-     *
-     * @return $this
-     *
-     * @throws \Prophecy\Exception\InvalidArgumentException
-     */
-    public function will($promise)
-    {
-        if (is_callable($promise)) {
-            $promise = new Promise\CallbackPromise($promise);
-        }
-
-        if (!$promise instanceof Promise\PromiseInterface) {
-            throw new InvalidArgumentException(sprintf(
-                'Expected callable or instance of PromiseInterface, but got %s.',
-                gettype($promise)
-            ));
-        }
-
-        $this->bindToObjectProphecy();
-        $this->promise = $promise;
-
-        return $this;
-    }
-
-    /**
-     * Sets return promise to the prophecy.
-     *
-     * @see \Prophecy\Promise\ReturnPromise
-     *
-     * @return $this
-     */
-    public function willReturn()
-    {
-        if ($this->voidReturnType) {
-            throw new MethodProphecyException(
-                "The method \"$this->methodName\" has a void return type, and so cannot return anything",
-                $this
-            );
-        }
-
-        return $this->will(new Promise\ReturnPromise(func_get_args()));
-    }
-
-    /**
-     * @param array $items
-     *
-     * @return $this
-     *
-     * @throws \Prophecy\Exception\InvalidArgumentException
-     */
-    public function willYield($items)
-    {
-        if ($this->voidReturnType) {
-            throw new MethodProphecyException(
-                "The method \"$this->methodName\" has a void return type, and so cannot yield anything",
-                $this
-            );
-        }
-
-        if (!is_array($items)) {
-            throw new InvalidArgumentException(sprintf(
-                'Expected array, but got %s.',
-                gettype($items)
-            ));
-        }
-
-        $generator =  function() use ($items) {
-            foreach ($items as $key => $value) {
-                yield $key => $value;
-            }
-        };
-
-        return $this->will($generator);
-    }
-
-    /**
-     * Sets return argument promise to the prophecy.
-     *
-     * @param int $index The zero-indexed number of the argument to return
-     *
-     * @see \Prophecy\Promise\ReturnArgumentPromise
-     *
-     * @return $this
-     */
-    public function willReturnArgument($index = 0)
-    {
-        if ($this->voidReturnType) {
-            throw new MethodProphecyException("The method \"$this->methodName\" has a void return type", $this);
-        }
-
-        return $this->will(new Promise\ReturnArgumentPromise($index));
-    }
-
-    /**
-     * Sets throw promise to the prophecy.
-     *
-     * @see \Prophecy\Promise\ThrowPromise
-     *
-     * @param string|\Exception $exception Exception class or instance
-     *
-     * @return $this
-     */
-    public function willThrow($exception)
-    {
-        return $this->will(new Promise\ThrowPromise($exception));
-    }
-
-    /**
-     * Sets custom prediction to the prophecy.
-     *
-     * @param callable|Prediction\PredictionInterface $prediction
-     *
-     * @return $this
-     *
-     * @throws \Prophecy\Exception\InvalidArgumentException
-     */
-    public function should($prediction)
-    {
-        if (is_callable($prediction)) {
-            $prediction = new Prediction\CallbackPrediction($prediction);
-        }
-
-        if (!$prediction instanceof Prediction\PredictionInterface) {
-            throw new InvalidArgumentException(sprintf(
-                'Expected callable or instance of PredictionInterface, but got %s.',
-                gettype($prediction)
-            ));
-        }
-
-        $this->bindToObjectProphecy();
-        $this->prediction = $prediction;
-
-        return $this;
-    }
-
-    /**
-     * Sets call prediction to the prophecy.
-     *
-     * @see \Prophecy\Prediction\CallPrediction
-     *
-     * @return $this
-     */
-    public function shouldBeCalled()
-    {
-        return $this->should(new Prediction\CallPrediction);
-    }
-
-    /**
-     * Sets no calls prediction to the prophecy.
-     *
-     * @see \Prophecy\Prediction\NoCallsPrediction
-     *
-     * @return $this
-     */
-    public function shouldNotBeCalled()
-    {
-        return $this->should(new Prediction\NoCallsPrediction);
-    }
-
-    /**
-     * Sets call times prediction to the prophecy.
-     *
-     * @see \Prophecy\Prediction\CallTimesPrediction
-     *
-     * @param $count
-     *
-     * @return $this
-     */
-    public function shouldBeCalledTimes($count)
-    {
-        return $this->should(new Prediction\CallTimesPrediction($count));
-    }
-
-    /**
-     * Sets call times prediction to the prophecy.
-     *
-     * @see \Prophecy\Prediction\CallTimesPrediction
-     *
-     * @return $this
-     */
-    public function shouldBeCalledOnce()
-    {
-        return $this->shouldBeCalledTimes(1);
-    }
-
-    /**
-     * Checks provided prediction immediately.
-     *
-     * @param callable|Prediction\PredictionInterface $prediction
-     *
-     * @return $this
-     *
-     * @throws \Prophecy\Exception\InvalidArgumentException
-     */
-    public function shouldHave($prediction)
-    {
-        if (is_callable($prediction)) {
-            $prediction = new Prediction\CallbackPrediction($prediction);
-        }
-
-        if (!$prediction instanceof Prediction\PredictionInterface) {
-            throw new InvalidArgumentException(sprintf(
-                'Expected callable or instance of PredictionInterface, but got %s.',
-                gettype($prediction)
-            ));
-        }
-
-        if (null === $this->promise && !$this->voidReturnType) {
-            $this->willReturn();
-        }
-
-        $calls = $this->getObjectProphecy()->findProphecyMethodCalls(
-            $this->getMethodName(),
-            $this->getArgumentsWildcard()
-        );
-
-        try {
-            $prediction->check($calls, $this->getObjectProphecy(), $this);
-            $this->checkedPredictions[] = $prediction;
-        } catch (\Exception $e) {
-            $this->checkedPredictions[] = $prediction;
-
-            throw $e;
-        }
-
-        return $this;
-    }
-
-    /**
-     * Checks call prediction.
-     *
-     * @see \Prophecy\Prediction\CallPrediction
-     *
-     * @return $this
-     */
-    public function shouldHaveBeenCalled()
-    {
-        return $this->shouldHave(new Prediction\CallPrediction);
-    }
-
-    /**
-     * Checks no calls prediction.
-     *
-     * @see \Prophecy\Prediction\NoCallsPrediction
-     *
-     * @return $this
-     */
-    public function shouldNotHaveBeenCalled()
-    {
-        return $this->shouldHave(new Prediction\NoCallsPrediction);
-    }
-
-    /**
-     * Checks no calls prediction.
-     *
-     * @see \Prophecy\Prediction\NoCallsPrediction
-     * @deprecated
-     *
-     * @return $this
-     */
-    public function shouldNotBeenCalled()
-    {
-        return $this->shouldNotHaveBeenCalled();
-    }
-
-    /**
-     * Checks call times prediction.
-     *
-     * @see \Prophecy\Prediction\CallTimesPrediction
-     *
-     * @param int $count
-     *
-     * @return $this
-     */
-    public function shouldHaveBeenCalledTimes($count)
-    {
-        return $this->shouldHave(new Prediction\CallTimesPrediction($count));
-    }
-
-    /**
-     * Checks call times prediction.
-     *
-     * @see \Prophecy\Prediction\CallTimesPrediction
-     *
-     * @return $this
-     */
-    public function shouldHaveBeenCalledOnce()
-    {
-        return $this->shouldHaveBeenCalledTimes(1);
-    }
-
-    /**
-     * Checks currently registered [with should(...)] prediction.
-     */
-    public function checkPrediction()
-    {
-        if (null === $this->prediction) {
-            return;
-        }
-
-        $this->shouldHave($this->prediction);
-    }
-
-    /**
-     * Returns currently registered promise.
-     *
-     * @return null|Promise\PromiseInterface
-     */
-    public function getPromise()
-    {
-        return $this->promise;
-    }
-
-    /**
-     * Returns currently registered prediction.
-     *
-     * @return null|Prediction\PredictionInterface
-     */
-    public function getPrediction()
-    {
-        return $this->prediction;
-    }
-
-    /**
-     * Returns predictions that were checked on this object.
-     *
-     * @return Prediction\PredictionInterface[]
-     */
-    public function getCheckedPredictions()
-    {
-        return $this->checkedPredictions;
-    }
-
-    /**
-     * Returns object prophecy this method prophecy is tied to.
-     *
-     * @return ObjectProphecy
-     */
-    public function getObjectProphecy()
-    {
-        return $this->objectProphecy;
-    }
-
-    /**
-     * Returns method name.
-     *
-     * @return string
-     */
-    public function getMethodName()
-    {
-        return $this->methodName;
-    }
-
-    /**
-     * Returns arguments wildcard.
-     *
-     * @return Argument\ArgumentsWildcard
-     */
-    public function getArgumentsWildcard()
-    {
-        return $this->argumentsWildcard;
-    }
-
-    /**
-     * @return bool
-     */
-    public function hasReturnVoid()
-    {
-        return $this->voidReturnType;
-    }
-
-    private function bindToObjectProphecy()
-    {
-        if ($this->bound) {
-            return;
-        }
-
-        $this->getObjectProphecy()->addMethodProphecy($this);
-        $this->bound = true;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,108 +1,46 @@
-<?php
-
-/*
- * This file is part of the league/commonmark package.
- *
- * (c) Colin O'Dell <colinodell@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace League\CommonMark;
-
-use League\CommonMark\Block\Parser\BlockParserInterface;
-use League\CommonMark\Block\Renderer\BlockRendererInterface;
-use League\CommonMark\Delimiter\Processor\DelimiterProcessorInterface;
-use League\CommonMark\Extension\ExtensionInterface;
-use League\CommonMark\Inline\Parser\InlineParserInterface;
-use League\CommonMark\Inline\Renderer\InlineRendererInterface;
-
-/**
- * Interface for an Environment which can be configured with config settings, parsers, processors, and renderers
- */
-interface ConfigurableEnvironmentInterface extends EnvironmentInterface
-{
-    /**
-     * @param array<string, mixed> $config
-     *
-     * @return void
-     */
-    public function mergeConfig(array $config = []);
-
-    /**
-     * @param array<string, mixed> $config
-     *
-     * @return void
-     */
-    public function setConfig(array $config = []);
-
-    /**
-     * Registers the given extension with the Environment
-     *
-     * @param ExtensionInterface $extension
-     *
-     * @return ConfigurableEnvironmentInterface
-     */
-    public function addExtension(ExtensionInterface $extension): ConfigurableEnvironmentInterface;
-
-    /**
-     * Registers the given block parser with the Environment
-     *
-     * @param BlockParserInterface $parser   Block parser instance
-     * @param int                  $priority Priority (a higher number will be executed earlier)
-     *
-     * @return self
-     */
-    public function addBlockParser(BlockParserInterface $parser, int $priority = 0): ConfigurableEnvironmentInterface;
-
-    /**
-     * Registers the given inline parser with the Environment
-     *
-     * @param InlineParserInterface $parser   Inline parser instance
-     * @param int                   $priority Priority (a higher number will be executed earlier)
-     *
-     * @return self
-     */
-    public function addInlineParser(InlineParserInterface $parser, int $priority = 0): ConfigurableEnvironmentInterface;
-
-    /**
-     * Registers the given delimiter processor with the Environment
-     *
-     * @param DelimiterProcessorInterface $processor Delimiter processors instance
-     *
-     * @return ConfigurableEnvironmentInterface
-     */
-    public function addDelimiterProcessor(DelimiterProcessorInterface $processor): ConfigurableEnvironmentInterface;
-
-    /**
-     * @param string                 $blockClass    The fully-qualified block element class name the renderer below should handle
-     * @param BlockRendererInterface $blockRenderer The renderer responsible for rendering the type of element given above
-     * @param int                    $priority      Priority (a higher number will be executed earlier)
-     *
-     * @return self
-     */
-    public function addBlockRenderer($blockClass, BlockRendererInterface $blockRenderer, int $priority = 0): ConfigurableEnvironmentInterface;
-
-    /**
-     * Registers the given inline renderer with the Environment
-     *
-     * @param string                  $inlineClass The fully-qualified inline element class name the renderer below should handle
-     * @param InlineRendererInterface $renderer    The renderer responsible for rendering the type of element given above
-     * @param int                     $priority    Priority (a higher number will be executed earlier)
-     *
-     * @return self
-     */
-    public function addInlineRenderer(string $inlineClass, InlineRendererInterface $renderer, int $priority = 0): ConfigurableEnvironmentInterface;
-
-    /**
-     * Registers the given event listener
-     *
-     * @param string   $eventClass Fully-qualified class name of the event this listener should respond to
-     * @param callable $listener   Listener to be executed
-     * @param int      $priority   Priority (a higher number will be executed earlier)
-     *
-     * @return self
-     */
-    public function addEventListener(string $eventClass, callable $listener, int $priority = 0): ConfigurableEnvironmentInterface;
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

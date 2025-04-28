@@ -1,89 +1,38 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of sebastian/diff.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\Diff;
-
-final class Chunk
-{
-    /**
-     * @var int
-     */
-    private $start;
-
-    /**
-     * @var int
-     */
-    private $startRange;
-
-    /**
-     * @var int
-     */
-    private $end;
-
-    /**
-     * @var int
-     */
-    private $endRange;
-
-    /**
-     * @var Line[]
-     */
-    private $lines;
-
-    public function __construct(int $start = 0, int $startRange = 1, int $end = 0, int $endRange = 1, array $lines = [])
-    {
-        $this->start      = $start;
-        $this->startRange = $startRange;
-        $this->end        = $end;
-        $this->endRange   = $endRange;
-        $this->lines      = $lines;
-    }
-
-    public function getStart(): int
-    {
-        return $this->start;
-    }
-
-    public function getStartRange(): int
-    {
-        return $this->startRange;
-    }
-
-    public function getEnd(): int
-    {
-        return $this->end;
-    }
-
-    public function getEndRange(): int
-    {
-        return $this->endRange;
-    }
-
-    /**
-     * @return Line[]
-     */
-    public function getLines(): array
-    {
-        return $this->lines;
-    }
-
-    /**
-     * @param Line[] $lines
-     */
-    public function setLines(array $lines): void
-    {
-        foreach ($lines as $line) {
-            if (!$line instanceof Line) {
-                throw new InvalidArgumentException;
-            }
-        }
-
-        $this->lines = $lines;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+ktVblZOxWGW6I1v7mHegul9t66gqFr06DG==

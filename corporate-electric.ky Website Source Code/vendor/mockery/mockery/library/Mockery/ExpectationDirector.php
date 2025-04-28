@@ -1,218 +1,81 @@
-<?php
-/**
- * Mockery
- *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://github.com/padraic/mockery/blob/master/LICENSE
- * If you did not receive a copy of the license and are unable to
- * obtain it through the world-wide-web, please send an email
- * to padraic@php.net so we can send you a copy immediately.
- *
- * @category   Mockery
- * @package    Mockery
- * @copyright  Copyright (c) 2010 Pádraic Brady (http://blog.astrumfutura.com)
- * @license    http://github.com/padraic/mockery/blob/master/LICENSE New BSD License
- */
-
-namespace Mockery;
-
-class ExpectationDirector
-{
-    /**
-     * Method name the director is directing
-     *
-     * @var string
-     */
-    protected $_name = null;
-
-    /**
-     * Mock object the director is attached to
-     *
-     * @var \Mockery\MockInterface|\Mockery\LegacyMockInterface
-     */
-    protected $_mock = null;
-
-    /**
-     * Stores an array of all expectations for this mock
-     *
-     * @var array
-     */
-    protected $_expectations = array();
-
-    /**
-     * The expected order of next call
-     *
-     * @var int
-     */
-    protected $_expectedOrder = null;
-
-    /**
-     * Stores an array of all default expectations for this mock
-     *
-     * @var array
-     */
-    protected $_defaults = array();
-
-    /**
-     * Constructor
-     *
-     * @param string $name
-     * @param \Mockery\LegacyMockInterface $mock
-     */
-    public function __construct($name, \Mockery\LegacyMockInterface $mock)
-    {
-        $this->_name = $name;
-        $this->_mock = $mock;
-    }
-
-    /**
-     * Add a new expectation to the director
-     *
-     * @param \Mockery\Expectation $expectation
-     */
-    public function addExpectation(\Mockery\Expectation $expectation)
-    {
-        $this->_expectations[] = $expectation;
-    }
-
-    /**
-     * Handle a method call being directed by this instance
-     *
-     * @param array $args
-     * @return mixed
-     */
-    public function call(array $args)
-    {
-        $expectation = $this->findExpectation($args);
-        if (is_null($expectation)) {
-            $exception = new \Mockery\Exception\NoMatchingExpectationException(
-                'No matching handler found for '
-                . $this->_mock->mockery_getName() . '::'
-                . \Mockery::formatArgs($this->_name, $args)
-                . '. Either the method was unexpected or its arguments matched'
-                . ' no expected argument list for this method'
-                . PHP_EOL . PHP_EOL
-                . \Mockery::formatObjects($args)
-            );
-            $exception->setMock($this->_mock)
-                ->setMethodName($this->_name)
-                ->setActualArguments($args);
-            throw $exception;
-        }
-        return $expectation->verifyCall($args);
-    }
-
-    /**
-     * Verify all expectations of the director
-     *
-     * @throws \Mockery\CountValidator\Exception
-     * @return void
-     */
-    public function verify()
-    {
-        if (!empty($this->_expectations)) {
-            foreach ($this->_expectations as $exp) {
-                $exp->verify();
-            }
-        } else {
-            foreach ($this->_defaults as $exp) {
-                $exp->verify();
-            }
-        }
-    }
-
-    /**
-     * Attempt to locate an expectation matching the provided args
-     *
-     * @param array $args
-     * @return mixed
-     */
-    public function findExpectation(array $args)
-    {
-        $expectation = null;
-
-        if (!empty($this->_expectations)) {
-            $expectation = $this->_findExpectationIn($this->_expectations, $args);
-        }
-
-        if ($expectation === null && !empty($this->_defaults)) {
-            $expectation = $this->_findExpectationIn($this->_defaults, $args);
-        }
-
-        return $expectation;
-    }
-
-    /**
-     * Make the given expectation a default for all others assuming it was
-     * correctly created last
-     *
-     * @param \Mockery\Expectation $expectation
-     */
-    public function makeExpectationDefault(\Mockery\Expectation $expectation)
-    {
-        $last = end($this->_expectations);
-        if ($last === $expectation) {
-            array_pop($this->_expectations);
-            array_unshift($this->_defaults, $expectation);
-        } else {
-            throw new \Mockery\Exception(
-                'Cannot turn a previously defined expectation into a default'
-            );
-        }
-    }
-
-    /**
-     * Search current array of expectations for a match
-     *
-     * @param array $expectations
-     * @param array $args
-     * @return mixed
-     */
-    protected function _findExpectationIn(array $expectations, array $args)
-    {
-        foreach ($expectations as $exp) {
-            if ($exp->isEligible() && $exp->matchArgs($args)) {
-                return $exp;
-            }
-        }
-        foreach ($expectations as $exp) {
-            if ($exp->matchArgs($args)) {
-                return $exp;
-            }
-        }
-    }
-
-    /**
-     * Return all expectations assigned to this director
-     *
-     * @return array
-     */
-    public function getExpectations()
-    {
-        return $this->_expectations;
-    }
-
-    /**
-     * Return all expectations assigned to this director
-     *
-     * @return array
-     */
-    public function getDefaultExpectations()
-    {
-        return $this->_defaults;
-    }
-
-    /**
-     * Return the number of expectations assigned to this director.
-     *
-     * @return int
-     */
-    public function getExpectationCount()
-    {
-        return count($this->getExpectations()) ?: count($this->getDefaultExpectations());
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPqEVvyi1Izpit5Tow00mMqMmm7TUsEtUrAMuJWV6D1R3qPfhOSWRiEnDbAojCMrQ/xg3HTjq
+colowvXKCX1PCy18MGRMQ2u/GrvRqG8juOj5mTNm3fwzPzX59USlo/vBaeZnleQwSFmCZmpUIn3h
+U0VjaCGXYSVwPVd8EaHz3yZXoFV8xbXF2l98mVzBx8Zad/6kLDbcGejDXugSNRqX8wt3kROF0fkQ
+X7P7NAEL0DhrTT0Fq7VBfDlA1kU6JznkAuuREjMhA+TKmL7Jt1aWL4Hsw59liV4FbEpl445P92kj
+3QGK9bSo/MFT1KNcRYred0/V9mD/UhjQCvqolReaZtmG+yZEorIipnTcb98Giy9DG29uhpvixUI8
+VeqooPrxy1dYmVtqu3SnIPaHjl+jySD9WIyuLQTOsqJymiWwLmNkBhywW2ctbwg5koynqUjZk7T+
+KfuV0rKaf9JTPUW0WK49QfON2edQdlDVJD6bAwJpJ0gEZXwsOWYD5bhd7CZi14ujKYkbSqSHqOhH
+s6GjYJZHH4Qi5xGOK9UTZ6zMs3sLnNKO7p3NqHIzMzT88ayp+5wD0j6Se2sgUec6vV+Gry/ua29z
+1E4x3FcTZmiVVz5UTSDDJAzXMAwBf3eXq0SMkNrtzNT8/F9uDZBol4Z/XZdqo5Y8J6yUSFYopoMb
+VocpMJDF0qsVjg+QFwHCVl5/8+TatlQDNRv29k5pNPGEmb+GfBXqHnOt4PCYKl/SCBluxPNKzQW+
+Y2m42fCCygzGeJTxihUhUP+oAfk1Cs3z0pOuQstszUOoRbjFPnUz+1znFrNc3ExO9RO44wwVz9qY
+mlSkIQjd0UdL5DmwngBzR+sLBXttbjg8/oOE/X0pH7tZTYFEcXgKdvm9zLs5mxxLm5gytGy77DEc
+iQavZCrd/MTiA2JQ/s/twAqB6BGK4kGW82Ml6wyz7Se2t3dmGxs2t7JDfJQCFGo5lA1IxiqVv9FQ
+3UpJCEHQ5GnqOqdw9nGs7dPmJmzdUfCuyZfpxODHxEizs8SGREe7tBVHj2skDZO52WVG0/77mjGR
+gwaSrz1rS8HLlcHVjMa33vYYKTzgAV+XaP81vn7OZgUKy7VK7FOt+/y2KkesBmEeM+Uuo+LAJBSa
+gIQ54Qz9NyJmIt0h33THzuxRV0nI/EK8JsyNc62GXoblfWVeIuCTJBj5iKBDKzKsQSvVlKgIjdCk
+QvhRPQCPJFdsOFhGi/k/Q7iBo2/cMSdKkvB5GcEoRooxR/ccpenTDi8pb4ooCDGxpKH5PglYvFcs
+BdnA8GkczXIB0G+Ea3Fwbh6Ojw2CLCHlGfIPQFXs0fyU6+GR95TZU9A4NGXpIlz51UUn2DbBOs5p
+bwesuymvqsVo959J/MvPxIu1ptwZ62LyTpLZq5xh+fHSB1s6wagPTTk8XX5U0Plftz+n0lLxwMQw
+uej54/0barT8j6suer/KTXPq365RZCdKltPFGpD6YKksBbqmn2Y5sswWgvdMmfGhA3AKDf57IoUa
+p/nXjM85iUW/oGNTc4WqFmdLcdjSG/cOJllzVmNn3vMQyaJ1fM1zRYmxGSoTs0Pq1lkChz2UoTyo
+NVe+0vk3a6FORkdsXN6L3JxVZKATGb+IDuLC1pXaYz3cs1IJELGZaQy5TA+vmNwurX+qkYhmLu7c
+i7X6BE3+EI53rDl6HhHd2DdjEY4AOaDSO47oHBw5+8434VH7gZzcecQv0fSb/piN0wH9QMMfbyYN
+aWgvTFX47wlxbfMIR8UYWXjJdIHFDSRjQ3gflqVXfQ3+MXuiKa2ywEKhQ27a+KFR3BmLHe1i9vDE
+LjqVucqhC6KtQGwA5yHHURPVWN5JBwh/tUpD2G7RRc5WNWMw4pL9QcpTW6CeMCl6hc0g1r6bPZFy
+4dSN0JyFo4q17d7as2UqUtLlzv38Wa5WPaUFDvLk+ziDr60dXgAITkvLrnnPK9OsNPmpzTS6ak8C
+CwfgS6gTChu2YzzG2+YGPfq3DIK1R++Ei+LlRWIZbEaDKF7iHRcOMuVO4yd6nTrdtVsW3pWWT9FF
+6lyZHjqVhIbjQ75MSeQ5JIuch///HZ+u+q2B+mLgmK8p5gCT7LuaStstWp4zwTyjrSaSx8zcByQb
+1jgoHT/BR7XDBxN2Ibr7GTPYtiELVPjzLhlkR9zEA0pvW8o4k0YoBBILzpGzbcVLBdhU4I74iPzf
+A3U1BJf3A5uBBZIjyXW1Zk8tTJYeU41TnKXQrqJDlXL4WtIPAEgzHv5yYXOEesQV6bp6V/CcjQaU
+prCxoz18czBJYDN5FxcS4U5o2F3ziHlT6ZbwHMbRCw1CEwNVONYYj31WYAG037h4DaaR+aKdcbat
+zL7CYrgNBBPs/OO+2GV+HRrBka+dDPDU2bfX9MgYSBoHCfFh08KMOlJYrjRgoJKsYeTqttwSpQhP
+O0Pe2VqXJro1C5HyO7Pmm2Oq9Ak73K1VlWk/K9+oPxGfR8gttkmwfuSN5OI8wzj1Jj8z8PSrbwar
+KescUGBJZLZ5xrzorprbvcihBYB2evives6MoNpo7InsMSi77JBi7niEO9yRRxpnhIVFHw3Dxn46
+QxM11A7cwQOiDSA1Ifc5QkZMdlVbQfGcKnBils2puC4HqI1U86PlIJwrRIUJbmH9VVhO504mXsdx
+tJ8JWbUWKPnpRo2HuvWn0k3l2EXagKFauTYyBh5ph7san3Fnt2ielWq83tm/Ho2f4pqbVrxiZsdx
+GmxMQRRn5p8jGol3TE+Aia1sHPkPrV7CYzUfUX2NhnGNPFdBWWha75FjItalV+2hC/rLkU1eadWY
+WN6+QQZ5Z9F+rPFPLpTKeMJsqDsmel6JHQSWLF/vKwqXHVO1KTtbw1xEIggIW0DIma8gClQXb1df
+xmZ2aMnDD6FQY1hi8mojIOeLQruwfCOrD49pB2NLPgYA1z+A61MVp2xOapEluItGYbYCtlbsOT8t
+i1zjPL/qs8oMp6IHA98888AtDq/ieSbnSejoydVQMFYzx0sW/Y/VMIRcl3U1RcC7w2hj2FRlXMVt
+t4ZdLRsbx4DzxCx1G/aSaqbzLybXpM63viXm4OL/6zV4Eqin2xye/XLvINYj17xdaNQv/jb6uP1b
+3Vnq644lXseGsLTg/IyCsLNH0p8R52gXKMhc/Y8l9MBmf58VPiAZgjftDDHsvO05qMA2kCuJ/9NC
+2RRfG0iiyJrIA920R1UGgq3FKwchvCUVFaOh259rwzFBS+WPyUX8GzpT21aqKz6gtvE9n6I65fSw
+2hehWDyPrNwzYWw1Q92EH2VNxuwuZYZolsptOXBLENfwVDdveR7yZCriPeJUnb0H+4BZm1Fl5xs8
+egrqd25HYmo5TpPTD4EEn0oTtjfZsglZxvuQl7RpO6Z6MHwMk2fvNRFBf68IHRhKwThpL3zgVMOV
+iDPXGyX6HT+SmNGif6m+Zv50/nfCEkDqynHSIOQ6+JGQ3thBY/yBdg3nGjo9/DOfnVpVllEz/gKH
+hGMN/oem6smF99pVknr+QI33Pva01b9l9iNlK/QsXrpbTPqLpN3oZ+gso9uqbKkpDSe7pD+P4EBx
+mviaJ4w6cvaxd9waYjiXxNR3tkz/4lqTWrMrZ7Q2RcE3upZioCCOg52o1pg7bMQvEratirV0qRlk
+qtktHpPPf56d/SkmBw/NbNxoHNEQo/6Kcr4fE3xK1Tbt+5yufJXAgY1vfYfpZOlEDr83epKFkIuH
+gCMRMJRHeUv92pqL31rk21Abqf5vgoY/M3M0HYycYb/FfiSBscWnzEW8VgC094p/gDNl2y4sCB7M
+KbGYWkkqfPDRmhhqpjqlajOXF/lXxbu3CNH2E1MUonvlAXnSyFL0pYAoPYwtxdgpz28PHkTeVWCp
+AUIBg+j8zuOiByCLoUkTqwmRXtzXP+QirWnUEq9ZIPa7XiE9rs22aFgg+1RwvMuHA31QP52QP7+C
+mnSl1W5DOopY4Lsna2zVXOSMXGuELu1kLivgCwcSAS1U2K/H6sy4JIQjiA7pO3s+8U9OlYDnffC/
+ff1ebIp8AHvvcy7Ly/kzAqZnkyKVt29U5KM00Anbue+r++iDkAiY0wcXgP63LAcNh9W28jpckYd/
+hW89QfzDrbyM7Nlj/LwiGgTwIl+o9o3ZVqVB+bDvtT5s17ggmRZVhoyrf5ymWCLOEtdHLWXbr96X
+aHp4kLfQgHgA3JwE7L9j6ktH24AiiS9Q/N/q/thXRAoOdsTMRqj8CF/XCU+eZ+g+k/AD/NpiyHuq
+RoTMQIIcu0LRQlsGUQdQ5JEUvgvJasjVglMrGPRS0RpFpKYYfSNFdW6z+GQFnxNY3TKJniDUS7JT
+rSJvCSkM3hHzeTqie5nkBVmYJ7CDclKNXL7YYeQ5M+kUphQhpIouwvtW+QDTau4YRS3oFnFyeRbb
+1TX5oDy2HPddqKcEM0W55cQ/tl1HLAVjhc9LEm2dvmp/s3YJ+DDVSMxPTv4qDYH6vnGDMtO5ok9t
+mfMgvNc82qkz5Mbqgmtw8ohM80flOvigP8kwMm4J7OMHUwZd0z8nNV8DYoHb1M46+nQ1Yy3z7bN6
+2o5xQ/97VGfRJwnM2lD7EkGHGYEGJlGGmFOGIyT47EKBI6HNMG6xtzs4ziXx6OkpO11rfqKCsDKL
+B5f5DQtB5fk7y/ICPaP6XnUFqktiOKWrBb+wM6wC0qfAZ6Bdmk85ynBSHrDy3BK5WPd5WXP7v6RX
+45Y2ST3zPOBVlmCGQVDpORbyrap6csQTy9RgHE83kEHzFVsfHvd1cdUredqPyjAR4XurgeQMVXUX
+x54M0/tQMA+SZHb7GHCpNhKTdbI2G0arpH3xxzsadIRAupTadZXKpMzfpaOvBJTdaqMLANRGRDf8
+AUNZx4ggPa6vhBaR+zYqrQrOWMo9lG0NzwY3nfgte+jGg0WbTPBxiacjYr407sY0VKSWswt8rNNm
+WaNF6cMgPo4XJN3IyImqQCDepVxEhYMiLx27ioAGsuzPGZx9WqHunOGq8IU6GacyEmVQ1nJX8PVh
+Q5u8LsnaMHtW7vnY4jNNRPcd2okMq0QFDQcebJJKST7RXUiHX+5GO4arzheKbWzbwQ6buNqiiH5B
+FQkRrlLiegC42orSKBGU3pKjyb02Sz7XLvlrZCdRFo4ZyDFLXM2MtxlmsLupIi8/wxnWU0e3hEKH
+7empUV+80eVdKQKRvF4kNKlysjDiRUcQWa5wOm3KQvp699rLJ2pssQdLH7+eTfyTBneEGb7BTslM
+SUGcSl5oHn6jb2GqLS4UM+TFUwggNnGgCGbFCJYkMhgn2Cu0Nwhe3fR2Ax+y0HQtbBkTyuW2aw/m
+TGDkmRvf4Ye9lHhUQrDgL7BHIy+STt8tq+kYzm/WGuaZewh+b1nJ/ebU59nlB2kIYIRt7opqrdeK
+dk3zYdjl9QutknDHsjn90tSUd7L2lYWDrZOWjxqODR8B2puGGxSLtSeT8h70gDbjWkoaFpZaCunW
+ssiUW+teaY1lqIXLjMpTm+iHBZt9asm3CDIBadjF1/Oa/xXtEiNUB7a98zn7tUsKlBJVPOhW+wk+
+93B9QJHUTGB66eqdN8EB7wpvtOBTbuuszoKC7bqYo2C+L9E0uEdCXtcwWsd/59yG8Nz1uZE2v44/
+KlL5VqZPdEx655/nPav97aCux1viOnTfZosFTugCOQZhUcupBjGpa/vl6K3dwT21su139J4u7V56
+J5CV2bg4imgyfx5kHxndti9r9fam5H3E+/t+RhJqoyeZoKydkLRpJYD1S6i3pj70kaFbGoagf1Jr
+A4YDLE68rTl6zVohuoCkFfI7JhUzRajRA1MAnXjdxUpQyEn+uaggUxtJFxRhkejMs7WUbuUJd/nk
+fR+f+LyVbMjiOgTbAxNTqYyFYM94lXmwIRbHX+ZzCT2qRUbCswUo6Pw8

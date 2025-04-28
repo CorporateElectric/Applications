@@ -1,128 +1,75 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of phpunit/php-code-coverage.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\CodeCoverage\Driver;
-
-use const XDEBUG_CC_BRANCH_CHECK;
-use const XDEBUG_CC_DEAD_CODE;
-use const XDEBUG_CC_UNUSED;
-use const XDEBUG_FILTER_CODE_COVERAGE;
-use const XDEBUG_PATH_INCLUDE;
-use const XDEBUG_PATH_WHITELIST;
-use function defined;
-use function extension_loaded;
-use function ini_get;
-use function phpversion;
-use function sprintf;
-use function version_compare;
-use function xdebug_get_code_coverage;
-use function xdebug_set_filter;
-use function xdebug_start_code_coverage;
-use function xdebug_stop_code_coverage;
-use SebastianBergmann\CodeCoverage\Filter;
-use SebastianBergmann\CodeCoverage\RawCodeCoverageData;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for phpunit/php-code-coverage
- */
-final class Xdebug2Driver extends Driver
-{
-    /**
-     * @var bool
-     */
-    private $pathCoverageIsMixedCoverage;
-
-    /**
-     * @throws XdebugNotAvailableException
-     * @throws WrongXdebugVersionException
-     * @throws Xdebug2NotEnabledException
-     */
-    public function __construct(Filter $filter)
-    {
-        if (!extension_loaded('xdebug')) {
-            throw new XdebugNotAvailableException;
-        }
-
-        if (version_compare(phpversion('xdebug'), '3', '>=')) {
-            throw new WrongXdebugVersionException(
-                sprintf(
-                    'This driver requires Xdebug 2 but version %s is loaded',
-                    phpversion('xdebug')
-                )
-            );
-        }
-
-        if (!ini_get('xdebug.coverage_enable')) {
-            throw new Xdebug2NotEnabledException;
-        }
-
-        if (!$filter->isEmpty()) {
-            if (defined('XDEBUG_PATH_WHITELIST')) {
-                $listType = XDEBUG_PATH_WHITELIST;
-            } else {
-                $listType = XDEBUG_PATH_INCLUDE;
-            }
-
-            xdebug_set_filter(
-                XDEBUG_FILTER_CODE_COVERAGE,
-                $listType,
-                $filter->files()
-            );
-        }
-
-        $this->pathCoverageIsMixedCoverage = version_compare(phpversion('xdebug'), '2.9.6', '<');
-    }
-
-    public function canCollectBranchAndPathCoverage(): bool
-    {
-        return true;
-    }
-
-    public function canDetectDeadCode(): bool
-    {
-        return true;
-    }
-
-    public function start(): void
-    {
-        $flags = XDEBUG_CC_UNUSED;
-
-        if ($this->detectsDeadCode() || $this->collectsBranchAndPathCoverage()) {
-            $flags |= XDEBUG_CC_DEAD_CODE;
-        }
-
-        if ($this->collectsBranchAndPathCoverage()) {
-            $flags |= XDEBUG_CC_BRANCH_CHECK;
-        }
-
-        xdebug_start_code_coverage($flags);
-    }
-
-    public function stop(): RawCodeCoverageData
-    {
-        $data = xdebug_get_code_coverage();
-
-        xdebug_stop_code_coverage();
-
-        if ($this->collectsBranchAndPathCoverage()) {
-            if ($this->pathCoverageIsMixedCoverage) {
-                return RawCodeCoverageData::fromXdebugWithMixedCoverage($data);
-            }
-
-            return RawCodeCoverageData::fromXdebugWithPathCoverage($data);
-        }
-
-        return RawCodeCoverageData::fromXdebugWithoutPathCoverage($data);
-    }
-
-    public function nameAndVersion(): string
-    {
-        return 'Xdebug ' . phpversion('xdebug');
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+ekk6CD4=

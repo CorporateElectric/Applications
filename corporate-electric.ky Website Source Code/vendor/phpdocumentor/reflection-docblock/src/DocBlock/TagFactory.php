@@ -1,84 +1,25 @@
-<?php
-
-declare(strict_types=1);
-
-/**
- * This file is part of phpDocumentor.
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @link http://phpdoc.org
- */
-
-namespace phpDocumentor\Reflection\DocBlock;
-
-use InvalidArgumentException;
-use phpDocumentor\Reflection\Types\Context as TypeContext;
-
-interface TagFactory
-{
-    /**
-     * Adds a parameter to the service locator that can be injected in a tag's factory method.
-     *
-     * When calling a tag's "create" method we always check the signature for dependencies to inject. One way is to
-     * typehint a parameter in the signature so that we can use that interface or class name to inject a dependency
-     * (see {@see addService()} for more information on that).
-     *
-     * Another way is to check the name of the argument against the names in the Service Locator. With this method
-     * you can add a variable that will be inserted when a tag's create method is not typehinted and has a matching
-     * name.
-     *
-     * Be aware that there are two reserved names:
-     *
-     * - name, representing the name of the tag.
-     * - body, representing the complete body of the tag.
-     *
-     * These parameters are injected at the last moment and will override any existing parameter with those names.
-     *
-     * @param mixed $value
-     */
-    public function addParameter(string $name, $value) : void;
-
-    /**
-     * Factory method responsible for instantiating the correct sub type.
-     *
-     * @param string $tagLine The text for this tag, including description.
-     *
-     * @return Tag A new tag object.
-     *
-     * @throws InvalidArgumentException If an invalid tag line was presented.
-     */
-    public function create(string $tagLine, ?TypeContext $context = null) : Tag;
-
-    /**
-     * Registers a service with the Service Locator using the FQCN of the class or the alias, if provided.
-     *
-     * When calling a tag's "create" method we always check the signature for dependencies to inject. If a parameter
-     * has a typehint then the ServiceLocator is queried to see if a Service is registered for that typehint.
-     *
-     * Because interfaces are regularly used as type-hints this method provides an alias parameter; if the FQCN of the
-     * interface is passed as alias then every time that interface is requested the provided service will be returned.
-     */
-    public function addService(object $service) : void;
-
-    /**
-     * Registers a handler for tags.
-     *
-     * If you want to use your own tags then you can use this method to instruct the TagFactory
-     * to register the name of a tag with the FQCN of a 'Tag Handler'. The Tag handler should implement
-     * the {@see Tag} interface (and thus the create method).
-     *
-     * @param string                    $tagName Name of tag to register a handler for. When registering a namespaced
-     *                                   tag, the full name, along with a prefixing slash MUST be provided.
-     * @param class-string<Tag>         $handler FQCN of handler.
-     *
-     * @throws InvalidArgumentException If the tag name is not a string.
-     * @throws InvalidArgumentException If the tag name is namespaced (contains backslashes) but
-     *                                   does not start with a backslash.
-     * @throws InvalidArgumentException If the handler is not a string.
-     * @throws InvalidArgumentException If the handler is not an existing class.
-     * @throws InvalidArgumentException If the handler does not implement the {@see Tag} interface.
-     */
-    public function registerTagHandler(string $tagName, string $handler) : void;
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPst/oRJ5VHiDwdY78UO87dSHtBG1uBmWGziXXwr1e0mXkPT2+0O3BBTmqgcA6wYT0BhGuDye
+g4XF/PzscfOC5CtxREruFTwsMQ7jNh0Z02L41zdnKzCzBmcFSJOEQ3HqsZqcERp+VRwvd2/oxmtU
+qk2XGYw8ddvZFZNQ6IThRvb76z6c11p/2lV7fNc2vLMcW7Dh0wKIXJy5EW4H5oFKxgk7H5WfJK3G
+tYaSWuLqwmTSbRT8CAKP+1LILplhOPcQWZjfhZhLgoldLC5HqzmP85H4TkZTOd2X1zlJfab9NJop
+BsScANiOQA/cjZHYwk1PZvtOzrtAMQUSej3QSwtqgO9n/1HvSiZrPcd6xTeXcsGN3Ln7bZZaLEUW
+OA0qfwoWnKrSpVUhDFAaOb2YlF+wj//xbE4TCjfwmyLesd8sr93JTpApFhqmhQuYMtSwcq126X/D
+fHoT/kKI35fNI8MrGBM9ta632sXsojqikjfilwf+8QrTjX/DcW/ngMNtUvSFqy5ck+5SJYdCNIPE
+xWDqmhdvZNQjBwQlGD0j9qXv0fVD7MXw8er6dWkM85uLk5+RasE6VrIN6vq/REujyJk7/epRv6bT
+xcQJNQkJ6j6+9zF10/93pjjgR2CRHP+WIn9roJwl81fokgq/fVOHRZErhf3nlpYXMtrGcSZewpFs
+EgYd+Hm+RsLGkPuAKtJUWjSaCcNptxBd4X7PDE2ee22mPcHoywIUIFfbXaPe4z7MIfruV+lvERui
+tgH0ZDo236YPPXFt8RwDxixHY4507o5WSR3ZETJ/TORuZm8reHx3Bsewy7zzXpRyZ5AMAaDBlbMH
+yLf6ZHekHeWN3Vjj+FcvkM3BCrzai0u01t5RY3AAHPyR72SL+mKpFlhYscm8vzidSjBymlRygyb4
+4yVfCTrRXDALJozOq2tAQSgSS4qn8FRDEK5akCxjvQZvMBrmFgGRuSdyzGUkIVnhnfuWQd0GbUCb
+jjTcK2X3KhurSrhBnHZPmXwID6hJATJ6nK0lxPqKe0G8ye4n0HkoYEWXKo+s3GJTjoUoJcL1woaf
+Cq1/QYd3YSrHL3GfpQVZSl1QmJWFjeHCajIDJ/HCYI5f1mO+8Uf1UG7rTrVz+tTS1Qdww8PBe5E2
+p4WLoGMWovFODcMzHwOV06SZX53bxwiX8p1Q9FL/ZEynorhB3yoPdfwabedm8D24G+qRrfabHVV6
+KhLQ9TTZISz+08VaXUrsPHyYE5fhIJZjxuZZImPmOlssqsLypetZA/r2txhimrhD0NR3b6S7iA56
+xbwhhfXSUHGUgHF63BUyftaXBFfOSrmSkrQ/2fc2J13b6zo1/siC9r06tq7oO/T+5x5hWod7PxQb
+yybqxi+kk9Ku1mOrzrZCNxuOeWToOCJG/PdHbqUw9a4l0+tv1QzeMwMbNPoD8BJBCPJVTRSQWu4a
+Diq6U2JXm3u9ncecPUmfvjDsVFOAB3zWryvQzowvHxj7XWKUFo3G6aWXjvE6IocJRaEY30YKNZ6b
+66eEWTA5ozuJjCMfS5Dg4cBPLfimsA2g4MN/0KGKbjbVIssdYT0jmzDS/UHKC/NWb9sM8uAD11sN
+NYqaen/iutU4su53/5/aCOyqbLgOt97yf8CoQ6WVJIgRAHX6cZkGigprg9e=

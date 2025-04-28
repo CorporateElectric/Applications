@@ -1,54 +1,33 @@
-<?php
-
-namespace Illuminate\Foundation\Testing;
-
-use Faker\Factory;
-use Faker\Generator;
-
-trait WithFaker
-{
-    /**
-     * The Faker instance.
-     *
-     * @var \Faker\Generator
-     */
-    protected $faker;
-
-    /**
-     * Setup up the Faker instance.
-     *
-     * @return void
-     */
-    protected function setUpFaker()
-    {
-        $this->faker = $this->makeFaker();
-    }
-
-    /**
-     * Get the default Faker instance for a given locale.
-     *
-     * @param  string|null  $locale
-     * @return \Faker\Generator
-     */
-    protected function faker($locale = null)
-    {
-        return is_null($locale) ? $this->faker : $this->makeFaker($locale);
-    }
-
-    /**
-     * Create a Faker instance for the given locale.
-     *
-     * @param  string|null  $locale
-     * @return \Faker\Generator
-     */
-    protected function makeFaker($locale = null)
-    {
-        $locale = $locale ?? config('app.faker_locale', Factory::DEFAULT_LOCALE);
-
-        if (isset($this->app) && $this->app->bound(Generator::class)) {
-            return $this->app->make(Generator::class, ['locale' => $locale]);
-        }
-
-        return Factory::create($locale);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

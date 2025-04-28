@@ -1,260 +1,156 @@
-<?php
-
-namespace GuzzleHttp;
-
-use GuzzleHttp\Cookie\CookieJarInterface;
-use GuzzleHttp\Exception\RequestException;
-use GuzzleHttp\Promise as P;
-use GuzzleHttp\Promise\PromiseInterface;
-use Psr\Http\Message\RequestInterface;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Log\LoggerInterface;
-
-/**
- * Functions used to create and wrap handlers with handler middleware.
- */
-final class Middleware
-{
-    /**
-     * Middleware that adds cookies to requests.
-     *
-     * The options array must be set to a CookieJarInterface in order to use
-     * cookies. This is typically handled for you by a client.
-     *
-     * @return callable Returns a function that accepts the next handler.
-     */
-    public static function cookies(): callable
-    {
-        return static function (callable $handler): callable {
-            return static function ($request, array $options) use ($handler) {
-                if (empty($options['cookies'])) {
-                    return $handler($request, $options);
-                } elseif (!($options['cookies'] instanceof CookieJarInterface)) {
-                    throw new \InvalidArgumentException('cookies must be an instance of GuzzleHttp\Cookie\CookieJarInterface');
-                }
-                $cookieJar = $options['cookies'];
-                $request = $cookieJar->withCookieHeader($request);
-                return $handler($request, $options)
-                    ->then(
-                        static function (ResponseInterface $response) use ($cookieJar, $request): ResponseInterface {
-                            $cookieJar->extractCookies($request, $response);
-                            return $response;
-                        }
-                    );
-            };
-        };
-    }
-
-    /**
-     * Middleware that throws exceptions for 4xx or 5xx responses when the
-     * "http_error" request option is set to true.
-     *
-     * @param BodySummarizerInterface|null $bodySummarizer The body summarizer to use in exception messages.
-     *
-     * @return callable(callable): callable Returns a function that accepts the next handler.
-     */
-    public static function httpErrors(BodySummarizerInterface $bodySummarizer = null): callable
-    {
-        return static function (callable $handler) use ($bodySummarizer): callable {
-            return static function ($request, array $options) use ($handler, $bodySummarizer) {
-                if (empty($options['http_errors'])) {
-                    return $handler($request, $options);
-                }
-                return $handler($request, $options)->then(
-                    static function (ResponseInterface $response) use ($request, $bodySummarizer) {
-                        $code = $response->getStatusCode();
-                        if ($code < 400) {
-                            return $response;
-                        }
-                        throw RequestException::create($request, $response, null, [], $bodySummarizer);
-                    }
-                );
-            };
-        };
-    }
-
-    /**
-     * Middleware that pushes history data to an ArrayAccess container.
-     *
-     * @param array|\ArrayAccess<int, array> $container Container to hold the history (by reference).
-     *
-     * @return callable(callable): callable Returns a function that accepts the next handler.
-     *
-     * @throws \InvalidArgumentException if container is not an array or ArrayAccess.
-     */
-    public static function history(&$container): callable
-    {
-        if (!\is_array($container) && !$container instanceof \ArrayAccess) {
-            throw new \InvalidArgumentException('history container must be an array or object implementing ArrayAccess');
-        }
-
-        return static function (callable $handler) use (&$container): callable {
-            return static function (RequestInterface $request, array $options) use ($handler, &$container) {
-                return $handler($request, $options)->then(
-                    static function ($value) use ($request, &$container, $options) {
-                        $container[] = [
-                            'request'  => $request,
-                            'response' => $value,
-                            'error'    => null,
-                            'options'  => $options
-                        ];
-                        return $value;
-                    },
-                    static function ($reason) use ($request, &$container, $options) {
-                        $container[] = [
-                            'request'  => $request,
-                            'response' => null,
-                            'error'    => $reason,
-                            'options'  => $options
-                        ];
-                        return P\Create::rejectionFor($reason);
-                    }
-                );
-            };
-        };
-    }
-
-    /**
-     * Middleware that invokes a callback before and after sending a request.
-     *
-     * The provided listener cannot modify or alter the response. It simply
-     * "taps" into the chain to be notified before returning the promise. The
-     * before listener accepts a request and options array, and the after
-     * listener accepts a request, options array, and response promise.
-     *
-     * @param callable $before Function to invoke before forwarding the request.
-     * @param callable $after  Function invoked after forwarding.
-     *
-     * @return callable Returns a function that accepts the next handler.
-     */
-    public static function tap(callable $before = null, callable $after = null): callable
-    {
-        return static function (callable $handler) use ($before, $after): callable {
-            return static function (RequestInterface $request, array $options) use ($handler, $before, $after) {
-                if ($before) {
-                    $before($request, $options);
-                }
-                $response = $handler($request, $options);
-                if ($after) {
-                    $after($request, $options, $response);
-                }
-                return $response;
-            };
-        };
-    }
-
-    /**
-     * Middleware that handles request redirects.
-     *
-     * @return callable Returns a function that accepts the next handler.
-     */
-    public static function redirect(): callable
-    {
-        return static function (callable $handler): RedirectMiddleware {
-            return new RedirectMiddleware($handler);
-        };
-    }
-
-    /**
-     * Middleware that retries requests based on the boolean result of
-     * invoking the provided "decider" function.
-     *
-     * If no delay function is provided, a simple implementation of exponential
-     * backoff will be utilized.
-     *
-     * @param callable $decider Function that accepts the number of retries,
-     *                          a request, [response], and [exception] and
-     *                          returns true if the request is to be retried.
-     * @param callable $delay   Function that accepts the number of retries and
-     *                          returns the number of milliseconds to delay.
-     *
-     * @return callable Returns a function that accepts the next handler.
-     */
-    public static function retry(callable $decider, callable $delay = null): callable
-    {
-        return static function (callable $handler) use ($decider, $delay): RetryMiddleware {
-            return new RetryMiddleware($decider, $handler, $delay);
-        };
-    }
-
-    /**
-     * Middleware that logs requests, responses, and errors using a message
-     * formatter.
-     *
-     * @phpstan-param \Psr\Log\LogLevel::* $logLevel  Level at which to log requests.
-     *
-     * @param LoggerInterface                            $logger    Logs messages.
-     * @param MessageFormatterInterface|MessageFormatter $formatter Formatter used to create message strings.
-     * @param string                                     $logLevel  Level at which to log requests.
-     *
-     * @return callable Returns a function that accepts the next handler.
-     */
-    public static function log(LoggerInterface $logger, $formatter, string $logLevel = 'info'): callable
-    {
-        // To be compatible with Guzzle 7.1.x we need to allow users to pass a MessageFormatter
-        if (!$formatter instanceof MessageFormatter && !$formatter instanceof MessageFormatterInterface) {
-            throw new \LogicException(sprintf('Argument 2 to %s::log() must be of type %s', self::class, MessageFormatterInterface::class));
-        }
-
-        return static function (callable $handler) use ($logger, $formatter, $logLevel): callable {
-            return static function (RequestInterface $request, array $options = []) use ($handler, $logger, $formatter, $logLevel) {
-                return $handler($request, $options)->then(
-                    static function ($response) use ($logger, $request, $formatter, $logLevel): ResponseInterface {
-                        $message = $formatter->format($request, $response);
-                        $logger->log($logLevel, $message);
-                        return $response;
-                    },
-                    static function ($reason) use ($logger, $request, $formatter): PromiseInterface {
-                        $response = $reason instanceof RequestException ? $reason->getResponse() : null;
-                        $message = $formatter->format($request, $response, P\Create::exceptionFor($reason));
-                        $logger->error($message);
-                        return P\Create::rejectionFor($reason);
-                    }
-                );
-            };
-        };
-    }
-
-    /**
-     * This middleware adds a default content-type if possible, a default
-     * content-length or transfer-encoding header, and the expect header.
-     */
-    public static function prepareBody(): callable
-    {
-        return static function (callable $handler): PrepareBodyMiddleware {
-            return new PrepareBodyMiddleware($handler);
-        };
-    }
-
-    /**
-     * Middleware that applies a map function to the request before passing to
-     * the next handler.
-     *
-     * @param callable $fn Function that accepts a RequestInterface and returns
-     *                     a RequestInterface.
-     */
-    public static function mapRequest(callable $fn): callable
-    {
-        return static function (callable $handler) use ($fn): callable {
-            return static function (RequestInterface $request, array $options) use ($handler, $fn) {
-                return $handler($fn($request), $options);
-            };
-        };
-    }
-
-    /**
-     * Middleware that applies a map function to the resolved promise's
-     * response.
-     *
-     * @param callable $fn Function that accepts a ResponseInterface and
-     *                     returns a ResponseInterface.
-     */
-    public static function mapResponse(callable $fn): callable
-    {
-        return static function (callable $handler) use ($fn): callable {
-            return static function (RequestInterface $request, array $options) use ($handler, $fn) {
-                return $handler($request, $options)->then($fn);
-            };
-        };
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+352O9G==

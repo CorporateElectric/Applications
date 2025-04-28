@@ -1,114 +1,87 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpKernel\EventListener;
-
-use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-use Symfony\Component\HttpFoundation\Cookie;
-use Symfony\Component\HttpFoundation\Session\Session;
-use Symfony\Component\HttpFoundation\Session\SessionInterface;
-use Symfony\Component\HttpKernel\Event\RequestEvent;
-use Symfony\Component\HttpKernel\Event\ResponseEvent;
-use Symfony\Component\HttpKernel\KernelEvents;
-
-/**
- * TestSessionListener.
- *
- * Saves session in test environment.
- *
- * @author Bulat Shakirzyanov <mallluhuct@gmail.com>
- * @author Fabien Potencier <fabien@symfony.com>
- *
- * @internal
- */
-abstract class AbstractTestSessionListener implements EventSubscriberInterface
-{
-    private $sessionId;
-    private $sessionOptions;
-
-    public function __construct(array $sessionOptions = [])
-    {
-        $this->sessionOptions = $sessionOptions;
-    }
-
-    public function onKernelRequest(RequestEvent $event)
-    {
-        if (!$event->isMasterRequest()) {
-            return;
-        }
-
-        // bootstrap the session
-        if (!$session = $this->getSession()) {
-            return;
-        }
-
-        $cookies = $event->getRequest()->cookies;
-
-        if ($cookies->has($session->getName())) {
-            $this->sessionId = $cookies->get($session->getName());
-            $session->setId($this->sessionId);
-        }
-    }
-
-    /**
-     * Checks if session was initialized and saves if current request is master
-     * Runs on 'kernel.response' in test environment.
-     */
-    public function onKernelResponse(ResponseEvent $event)
-    {
-        if (!$event->isMasterRequest()) {
-            return;
-        }
-
-        $request = $event->getRequest();
-        if (!$request->hasSession()) {
-            return;
-        }
-
-        $session = $request->getSession();
-        if ($wasStarted = $session->isStarted()) {
-            $session->save();
-        }
-
-        if ($session instanceof Session ? !$session->isEmpty() || (null !== $this->sessionId && $session->getId() !== $this->sessionId) : $wasStarted) {
-            $params = session_get_cookie_params() + ['samesite' => null];
-            foreach ($this->sessionOptions as $k => $v) {
-                if (0 === strpos($k, 'cookie_')) {
-                    $params[substr($k, 7)] = $v;
-                }
-            }
-
-            foreach ($event->getResponse()->headers->getCookies() as $cookie) {
-                if ($session->getName() === $cookie->getName() && $params['path'] === $cookie->getPath() && $params['domain'] == $cookie->getDomain()) {
-                    return;
-                }
-            }
-
-            $event->getResponse()->headers->setCookie(new Cookie($session->getName(), $session->getId(), 0 === $params['lifetime'] ? 0 : time() + $params['lifetime'], $params['path'], $params['domain'], $params['secure'], $params['httponly'], false, $params['samesite'] ?: null));
-            $this->sessionId = $session->getId();
-        }
-    }
-
-    public static function getSubscribedEvents(): array
-    {
-        return [
-            KernelEvents::REQUEST => ['onKernelRequest', 192],
-            KernelEvents::RESPONSE => ['onKernelResponse', -128],
-        ];
-    }
-
-    /**
-     * Gets the session object.
-     *
-     * @return SessionInterface|null A SessionInterface instance or null if no session is available
-     */
-    abstract protected function getSession();
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+h3x2bze=

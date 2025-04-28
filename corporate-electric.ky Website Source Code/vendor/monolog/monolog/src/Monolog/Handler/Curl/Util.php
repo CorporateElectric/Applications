@@ -1,70 +1,36 @@
-<?php declare(strict_types=1);
-
-/*
- * This file is part of the Monolog package.
- *
- * (c) Jordi Boggiano <j.boggiano@seld.be>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Monolog\Handler\Curl;
-
-use CurlHandle;
-
-/**
- * This class is marked as internal and it is not under the BC promise of the package.
- *
- * @internal
- */
-final class Util
-{
-    private static $retriableErrorCodes = [
-        CURLE_COULDNT_RESOLVE_HOST,
-        CURLE_COULDNT_CONNECT,
-        CURLE_HTTP_NOT_FOUND,
-        CURLE_READ_ERROR,
-        CURLE_OPERATION_TIMEOUTED,
-        CURLE_HTTP_POST_ERROR,
-        CURLE_SSL_CONNECT_ERROR,
-    ];
-
-    /**
-     * Executes a CURL request with optional retries and exception on failure
-     *
-     * @param  resource|CurlHandle $ch             curl handler
-     * @param  int                 $retries
-     * @param  bool                $closeAfterDone
-     * @return bool|string         @see curl_exec
-     */
-    public static function execute($ch, int $retries = 5, bool $closeAfterDone = true)
-    {
-        while ($retries--) {
-            $curlResponse = curl_exec($ch);
-            if ($curlResponse === false) {
-                $curlErrno = curl_errno($ch);
-
-                if (false === in_array($curlErrno, self::$retriableErrorCodes, true) || !$retries) {
-                    $curlError = curl_error($ch);
-
-                    if ($closeAfterDone) {
-                        curl_close($ch);
-                    }
-
-                    throw new \RuntimeException(sprintf('Curl error (code %d): %s', $curlErrno, $curlError));
-                }
-
-                continue;
-            }
-
-            if ($closeAfterDone) {
-                curl_close($ch);
-            }
-
-            return $curlResponse;
-        }
-
-        return false;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPyuP/aDvuy9q1AzhO36eXe2ORETLv8cBiUefDMHCx+UC7vC3HcDSbjLecSVtFsxyJ174OAI/
+b8Lt9UpyFxq0D9Vc/zx0RDI4Ze9+5QwdlEO/+6PCJLsys/c+ANjObEvL2mK5SZxqqFJwbaKcLUqS
+0wwLIrGfmnQ2442lOlyvEt4fuy+yz5qivVWwWLIh3Jb0gaC55bK+ujxz1vl8L8Uigvrr7v5P1Dpz
+fjPTMP2F3z3DUOSX//BAkagSUditOiBJzT8daOWwrQihvrJ1KTFS6I1KH7ReAMuB10MBSEXANq2W
+gx4Df3y5ul8fckQVHI/vPQfnjzvcEm6Z10k/0RD71ekQxT/EmvHv0zPqC0GJxOYO4pI841fIkdr5
+CZiBs+7YbXwwKhYFHQ6aPbk3HDBVQgcm/G1BXqIjThRlM/X0fhiXZQQrmsXi68YOCy8w89F5gt8Y
+646Gb/d3M2AqForkzw2wpsSX5FyeVumjW7yzqvtOX820qvHnKXdIvQ3v115DhZKhiPYd+Y/Lnh+l
+82LEsf1WV3IhKHkxL3YPg/Jv3A3nWhrW1+dy8mNsLxwE5QNMBV15lO1GDLBj4TV/zFq8Smq7J9qg
+k+I6laNP2dADGz9jesnu/AnZcC7foTuRK/lLYX5KSwTabb9HC+k79I6c6oJ9YlOWNwxkRkoK5JRO
+b8vgeAjDvTZhKeelrMzPrtXqrscLZ1DkwrIy7dm/NegtWsv5HwXLd46F6zzVmsMghtJ0j1r9d3rf
+CclYnFJBiUqzdk7rKdE0v5dpoaiGPBnJlXzJhyMCcUCKMh+gPHQLKGnJ7kg70t19Zg0aDz2iuAlX
+++ouVUnBELeaqAvWBFNkSukl5SRvZIjLtQ+K48pOX3+1UHJ75o/B7Z1Tfy+QSR1uAW3rYmAt0my6
+u7QaGSIw4jFSRZuVpgIw3mfhuVQLuMq1oWc8N8yXju9WaGCdcC8HuJk1vFEbaqHU4oh3AO0EKt5M
+OIpDsBXTPs/UvXOUkuTez70OD2tPsahiJBvW/otXgqP3iQXMv6OvxaSsQhLvirnzUAsZTqn4YL1j
+U7zEkAYS1NbmSj4hBuqc6DyIHXj944BOM2C8iIrAEdI7hoMONSMHeUyc4yxkM5JnBcZG9S7vSwn+
+sIMGXmlfKBAV8HQXMRwT18p0KbTPd8NwCSVkEefOAMbcDd4mkffymMOmMp9XyqqQx5p/WLB2Bkdk
+9Mjv8ULYByfw4OZCO6/lrEUNbry7qmJsTQ6BlPQUh0T38lCzLMMJEbW1NzX0nCDJmhEykVs41pUm
+Aj0E/b343djzQpvqAaAb638M8FJiqp0Cop+/qLtGBrsjgL+hjt8sIcZ81Y3/bNd3/4wW7VARZDyA
+lKXuqA31iq4Z1qZIpgpLnekReKOzf4uJrFBZluJjP/lA/DsS9L7VQVVraNac5IymsKA0AoRGZm8X
+afelYwxLB6fUUMdSFulpR0Bq9GBOoooSFhjh4kglCrsa4A5zD12DxRg1OhokcyazEI1bLYx+oLAs
+46HYNv40k9fUYb3vqZuVfxdRKw+tthk4yjlylOTOwmIK0olQrQuBhJckCBkCrGBMtlJUIDd5aUfY
+1c6CUvLZe/C9NwhwsIE0imAkqyr5RKNN90qkDF525a0wAe5ZpkGWbWWFNB5E1QbrG2BWJD90hoGh
+z4Z7exeQEUFLIbiYsFk+Gs/osbgGH2j2miZakhe+k8Afwzy4WNFxCYQPMKzTd/haXN8DOV84nQD+
+jGcP0rsEyslezPRA+MMLFhEAH/U7gjis418ClGo8ui/zR5rM+XH+4CRIGb1Nk70ft6hIXvL3zgN5
+Xhtm3u6NAN7tuOEYmKc3Qq6FLCS1DQXai0TmcfuE6OMtkNpyuLurUTpt/tVhkiozPdrAYTYMNCek
+0J9MCigWV5XmmJLh9RU7lpSoCTQrFxuARQ/bjoYOob+D04xx0RSTYQaPFOAjpwGi3hwFOjGADT7s
+tcUA2ingsvswoBGRQxErpi7I3jCkSIKHeBrv38/gvf3vN4QExOC+lQnxMS1IaiOT9Fq2YcxZsUhV
+nTf55XfRDvPGt66zUbOx9mlnRMJ+xsdEy5kLS9thFIghvtWnjNLYrV7BZPJbCxZ1WIMWYfMSg/+X
+2SmlpbGLIFkJ2714ZYKNhL6Tdsw9m685SL5GNf4qXY5/Sg+VL35nj7XeEUTU3V6h8S1084LvGDWV
+4CyeMQ66rkv0KpliTHE1dbo3auF6n6TBfg8ulHQXg6eCM0BRvRPIapMNwWhkogzpzmN75tmGdWIS
+jveaDoRjqnSfjEfh1sFDkBKe1RCuur5IPW/U1XB++DKcAwJ1y5NkaEHVopIEmN8b6DTAA/FXgniO
+4u82UR7IvGriPjAOT4C2V0t+vzNRrbmdeRbYvY0ODAHrNyNViiGgQbz+pT50bctDTLyReE4SktCS
+yjS=

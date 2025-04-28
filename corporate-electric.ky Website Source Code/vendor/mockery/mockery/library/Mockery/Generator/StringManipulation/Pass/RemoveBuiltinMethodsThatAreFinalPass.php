@@ -1,53 +1,29 @@
-<?php
-/**
- * Mockery
- *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://github.com/padraic/mockery/blob/master/LICENSE
- * If you did not receive a copy of the license and are unable to
- * obtain it through the world-wide-web, please send an email
- * to padraic@php.net so we can send you a copy immediately.
- *
- * @category   Mockery
- * @package    Mockery
- * @copyright  Copyright (c) 2010 Pádraic Brady (http://blog.astrumfutura.com)
- * @license    http://github.com/padraic/mockery/blob/master/LICENSE New BSD License
- */
-
-namespace Mockery\Generator\StringManipulation\Pass;
-
-use Mockery\Generator\MockConfiguration;
-
-/**
- * The standard Mockery\Mock class includes some methods to ease mocking, such
- * as __wakeup, however if the target has a final __wakeup method, it can't be
- * mocked. This pass removes the builtin methods where they are final on the
- * target
- */
-class RemoveBuiltinMethodsThatAreFinalPass
-{
-    protected $methods = array(
-        '__wakeup' => '/public function __wakeup\(\)\s+\{.*?\}/sm',
-    );
-
-    public function apply($code, MockConfiguration $config)
-    {
-        $target = $config->getTargetClass();
-
-        if (!$target) {
-            return $code;
-        }
-
-        foreach ($target->getMethods() as $method) {
-            if ($method->isFinal() && isset($this->methods[$method->getName()])) {
-                $code = preg_replace($this->methods[$method->getName()], '', $code);
-            }
-        }
-
-        return $code;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPuv4jLpleWsJzl0WVpTiAUf9+h2/Jwu5keoupDObMoc9nTGpgedm7xiIXciCn/2Z0vFY1PnA
+CaCGtv7xHpDEuwWIFeK6etIm2KuZrRJ1z0Vsmo7YQyghvBSSOCCoxZfmiDn4HN0CPDBn+fJYW3fa
+5ovuzJ/X47YBhrBrizioL+YsbJGdxe281GTvnJrQ4mPUxgV9WQ//JhI4QbUSdmxjgssDN+assy8w
+maS4PnzUx5Wt4BmN2gW/kEEPg+0X3HOK2lTIEjMhA+TKmL7Jt1aWL4Hsw35eq+MfuH+ylwvpsPki
+oUPYONmUM0MLYBWoVg3i4CVxXmSbQHgp9v71+aPdHBUVnX2Zz6NVJwyUjq5xEXrKsDHfVYWM8oeP
+hf2KzGsqcubVQumQM9yYhStbbUl/B9IlZgmagaebBY6iB9BxeqDOQXZS6x+2YN6T0YXnmNp4iIZs
+952SWxX0re4Eg3kh6ezICdmPcm78KGM2lOXm+uOzAzrSjiIbcfeAgtJB5W4LiyZRQY09yDpXg7mb
+5mmJ2sWmUiOXetOlmKJ0PJw41TtEkNUV8ZKVZhKuEfF8FJqe5kuJTbH93M4CwVA5Zrwsd0MCKd4C
+Buil4e3/HPRxAaG++0iqoL4ZO7PWDW+/HqkFKQ4M4ZwGWLBG8JJysihnmbFREykKMbRRoB3ihVcS
+dnkhIBun+q/vMWX9XlE56R1xlfPr0Lr60iPsVX1q6qVANJ82zUPHEsF9Aiegv76bShuv5IIqTZvp
+O00bWGVLcwOPzgEROlh5dun1l1MRqhHt/sB9DqKazTzoS1B7v7RyxNDQIvPnmnS6uDPGMxy68NdX
+ssjda2dTOcK/fzQbQ7yKjuhkjEVuCCpgynG3RzuOODoXuMVy2Q8FaxDHOSKVOBInfGZ4p7J+mbqr
+nkfxjl77bDTqHPcX6sVOnPB6VYuBPs0OT/t2tP7D/5zONyHmcJkUpjHpQKYcHomhvQ7jbCKHfBU0
+sOqDonVkzUX5CV+uB4oEB3x68QJlkpZTi8S2S2lLl41T+3C87jBHhOzdKOyfProHJbL/KTHdSdiO
+qmt490pPpJtoaiakT2hxQ4N8dFszaxAd9GuCqa05AVk8tIXVRdE/HgWO187ou0tYQjba/5Gb0ffx
+PZcX+30JdM2MbYmx1c9Cjsb1C2IvlkL+tMzrDrVuqjycjW/UPURsshHYAq0zjQMEaCxuJwA1YiJd
+71+lxgXYYBfntdpkLIjPWp6w44ZDNoH/AGqEeYJF08gAs2/aIoSO1kEZRC9htQyzPbXPjt0kodku
+K45lycoXqTOD+csTUtHmwDHAO5YdQBS/GfglI54t3ozEJza/uTaPdl9PJrUkkPVJEMYfbvKrkDDd
+SOWqAHCRkiMVR2wJTTUzp36OHqhuxeSjmueJjKUjWAep7MC7MQ7Yzk3nur3OsQ4laDgwsW+JwsSG
+ZWD+sG5hKE4KZHLx7aeqW0aLTuDSOLmAfuBPJlVmXO6D2N3XhavEivx3LApSUf9qZhxB4BF0sn/P
+k5zigOi6ylyG+qRgk+wgksppzTnzQJ3JhixxcImq2F0UBmPg1TCpbB86GfxIHqyVCDaYdRRW708k
+4/lYW5rb1tguZrwm76Q1StXNwZAyunzXtXzZC+ijlM9lpcJnAgj+lgdwNhR80WQ59QksZ8QW4HGD
+CS0axHKH6Slxa1bl8sUuAMojKZEq3c4PkcWm6W/djGBMujIYSP+0aLNrmA2bvNosz5Mbb68Fjzy1
+0lzTH5f3++jrDvnB5pwrKjANwhTBJVMxno7OWm65ye+Y1X9ttlkC5W+vaqP+xJPXLMyGoBykbHOo
+LidzXSSKtz75S379M++/gSBXJgSzIkEE+VRPimruHHpZ7QGqhWMOgu2jQ//97SoVg84WVtZFks/R
+y1gAcRyUzXVUMl6VPWNB+/pC97My5oAmzP1molOui0zVtm0=

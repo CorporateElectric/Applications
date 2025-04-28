@@ -1,68 +1,63 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Console\Input;
-
-use Symfony\Component\Console\Exception\InvalidArgumentException;
-
-/**
- * StringInput represents an input provided as a string.
- *
- * Usage:
- *
- *     $input = new StringInput('foo --bar="foobar"');
- *
- * @author Fabien Potencier <fabien@symfony.com>
- */
-class StringInput extends ArgvInput
-{
-    public const REGEX_STRING = '([^\s]+?)(?:\s|(?<!\\\\)"|(?<!\\\\)\'|$)';
-    public const REGEX_QUOTED_STRING = '(?:"([^"\\\\]*(?:\\\\.[^"\\\\]*)*)"|\'([^\'\\\\]*(?:\\\\.[^\'\\\\]*)*)\')';
-
-    /**
-     * @param string $input A string representing the parameters from the CLI
-     */
-    public function __construct(string $input)
-    {
-        parent::__construct([]);
-
-        $this->setTokens($this->tokenize($input));
-    }
-
-    /**
-     * Tokenizes a string.
-     *
-     * @throws InvalidArgumentException When unable to parse input (should never happen)
-     */
-    private function tokenize(string $input): array
-    {
-        $tokens = [];
-        $length = \strlen($input);
-        $cursor = 0;
-        while ($cursor < $length) {
-            if (preg_match('/\s+/A', $input, $match, null, $cursor)) {
-            } elseif (preg_match('/([^="\'\s]+?)(=?)('.self::REGEX_QUOTED_STRING.'+)/A', $input, $match, null, $cursor)) {
-                $tokens[] = $match[1].$match[2].stripcslashes(str_replace(['"\'', '\'"', '\'\'', '""'], '', substr($match[3], 1, \strlen($match[3]) - 2)));
-            } elseif (preg_match('/'.self::REGEX_QUOTED_STRING.'/A', $input, $match, null, $cursor)) {
-                $tokens[] = stripcslashes(substr($match[0], 1, \strlen($match[0]) - 2));
-            } elseif (preg_match('/'.self::REGEX_STRING.'/A', $input, $match, null, $cursor)) {
-                $tokens[] = stripcslashes($match[1]);
-            } else {
-                // should never happen
-                throw new InvalidArgumentException(sprintf('Unable to parse input near "... %s ...".', substr($input, $cursor, 10)));
-            }
-
-            $cursor += \strlen($match[0]);
-        }
-
-        return $tokens;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPp38REe3dbNEsWJvoPWg8ePSSWKwxgldUeouZ1Px/ib/JjX3JB70kWcqlw59LvVStfvN6NTB
+kOAG+f93pZqHKvCuLjxY57SCTsw6B1GrVWQyQfNYs0RXJfTL9Anfmr0Bw0jWi/0YUd7KCL5cZ+/g
+XO8BLIXulyjHb5hZ57wcHguSlzmPApBCwns027+x8kV29n7k/X6LLXaFk6drhDpNDguiDwfQqPby
+HQOvBcg6D9XL1fV+rqVb2ePN+siHZbPhZMZ3EjMhA+TKmL7Jt1aWL4Hsw6DcOQ9fioO4yXikJYCl
+mzCd/wuF1HMRmzc/igg6OSpgP3xhvUyUr2VwrbwpixIgoXvra+tIAWIBwgPQt8RHoL/KkJ4iqu4q
+DbZZHtqI9sNY1+peytzEprSIhcdcJU2Wbq4to25lK4sp1aU73+gv1IwnrVyUVmn4mIKLOd7NLDGY
+WDRp7BrPOoosM062cUegh+7c8SWf/q5QBBhbh05Iu/LJ7TnU02hijWhgUJwo99zm7EtrXv4hUQI6
+IT8o6dDxRDq4rt8lnbhpk0f+sTASJ/VVo+9hfaIHBAkWCEFrSXMd0yfo7wdnT7e0hgzrL/vs1I1C
+bD9TLz8B34ptYxWd441mwkaSxJYN/5/Vpz3IsVVcHMAmYeH7/WLE0ww7j43Jo30bCt27KzmLsKXN
+2NvQqxjtiz2lc+/lkcsnJIhfjpCcurFWhR2FABYorpTlEnknq+WCEgaMiJ2O2NorspRRcE1qAtPv
+aeC6ph0mV5ZabEWNMgppgn4QLLgyZgsLIbvL+9jBUr3b+n8E9JzmZtj0RSojvhSt9XRX2Ed7zBzz
+zJbOYmeYDEZUrrxiaQhCOt9r0t938Bk/Ez5xPWuHiQ3ckShr4vs2xX5ET9raW/j4tiidz2l0hE0v
+V8Cp5dMsXBn1Maa6M3MMdrPMcYk3Uh63sckavWvTQuOXuzjtPijNFP+LosjuUXIcfljTSjj5oS9f
+8CO6WvT2E1kO9kKgSw0QJiyUZxvSCW8AHTKxo+YvHd13DJYOYroc5Scrr6uN9i6bftmFMdFL2aSa
+y6FD1kemAk6bAouPNlKsvisLBN+usKDjq3DSMCXpZGWA+uEAl9+gwDTttP7txcoVGkirUYQIa9I/
+VzanEBv9YuKB7OPquq6za2dHGhXw/plqfuIHfS8KwWNwPVewDD1lkpB24/YZNpTvJrNkB6xntFoF
+gMoy0OmjcnCGWPCQe6r/GLIuB2rEaKMie+6e5AaNkEyWLvpME3lskl1RsXzCL7eJ9v/Z0tGDLGdQ
+f7SvgRLSCfUPOVcuf3HUcr8rTMkxz6iaft2w9BW6Z+2OcM7oktj2isa16rKiG8I3Dz4k0vpdoG5l
+WpAysFbWUwTRGAi3a2pHiO7y2SSZPBf8exzH60oPzxsLjKNIGx3TWyBPgi3pgsqqN0DBVXHSZNU2
+RFwqKfpx20g2rqAf4P8fL67lvAN4IYPOoSf5s36V0V8/RqBRmui3ekG/K/gNDn6BfnB7yNI6qpbk
+uD8kTWkTSSwxRrodj6kDTUthyIudql3wjAKhno22/YK8WpbhJsXvqrCOJTVZw6pF326kKZlMPCvt
+83lRNkKXO7thCF858l/QZvU5aDcjmYpfe/Gizb16tCtgw/iYSHtipKZAbBx6T18asBTjgZwSdCKc
+KUZubceFfALBU2QAV/2FxhiG6cbF50oRKZ3dSOiAvG3552clocyluyX+R+PEzRTe/v6+T7qQoTyg
+6pqPB1ygqSe/hCgg7qnZ25foEGUIZsRgSVQMPi7+cEmKDsI9kbm92hQgIAx/VrGhZ0lYSS1AA2lf
+Dda0GA98tFYI1KoQuIoLviY5SRiMJn2HmUVJOsz8qkYyGV0rlm1Y/1ZXq0os2HA9DEQ78aOF6Dlm
+Mikd/6fUzzxGDLK8tCGGLjzhEwORXhRUEtiP0wD/Fn9UISxUsdL7H2hZ2Uwui7/sndzKU44Qt8ug
+qgbPf16HbLnbGZw++KmKM1UOqGvyitIrz8ZB4L+LHeEAEAyA1CRhuIbBZxOpKSzMmh9D/mH5xiW0
+HNqzk6NlPXxVfPyCD/lLO0GM2UzOK7sysmaDiDSo1jBJTHMLO0xUZVsb3EYx5n0n88FELV16HTW2
+hKm0kiVgCDp/19Zwqe6Xa4wAZThfXv80OrYX6XXXynZZ1QZY3StrA0iALuvIb0QXIGtRBVEKy/VX
+KMmVbZ2XbxCPc76BHXxfMiBLJ8ar/gb2ooPesCRnme0tGYuV7qH2xjm86TgOQe2h/b2rFezo7vXJ
+ZXgXH1c4nspK++XPe1m2CvPEvgOAquq/IF6IrSlNDrRKqnUxeaTSLtA7lb8nPpkwCk/3LwgRqZ9o
+7ihwTMKcp8HepzdGhXkutXvQ+jITb4N/WkeS6zCRYCWnnPqi+6RWbvR0Mm3j34Kwf8dSigeOiU3d
+YlP30QJGY/o87VPIDybZtLXWFu8YobNcLYx8avfZyVbXss4b4Vql1dbkZDg537VRBKP2k3rhPAbw
+JixO5sGoVqBUnalZOdSnV3ungkAYvmfbGLGhEIOAH57gMzOG97XiTHHyaapXqoXypHgbib3noU/u
+iiUzuC6nJbZAHCDEr9r6ApzVZ+CksRzKacggQBXCRnNHUruPBPSMNz20Z1vSzwa8t3UeMIF20lDP
+m+1zamVUGuTptcQSazxwizXmKb9d+gNqVpK6LGuoRuTuYpWbkKhd+HtSdflEbnT1Lgv+Jk7hQyvh
+HjNE2KQ+xM19NQZjbhX4s8kk9EX05sFnnhZuXKHReBWNZ2aQfYI8Gjo0ebEEJwffgufULSDVJlCg
+JIJIUTguFuMzGE5CXSrN4wLFdfMhWqoLHbHMUYh5vqwDgqGxKDZoO8SGUCVkW8/hmI6wDoxmcgHJ
+M8vyYV63MN9UAwjFawBW8Ix9oz3abw4weX55+gfnKetz/SUon2HRN73IEUfniN1n+SqQa+KIy+d+
+763SDmUuOxExOfPjyCL4Zi1pZLH0G94gPNaSX8gaFYavdRvMR3GhMvZKNYRZW1tG1MIEbt8TND0A
+h3ZZoWFPzjX5L19u3Suv1NrhpkLpUpB8Epz1/mXsJg62j1kYysN9l1geNykZ0/dwAAVRgM3f0lSh
+dir0oPJXLCfdHJ2ilNaez80DxoXXGKzcSKQp/EAZJwpoIgjH3+TLFSE9m2sRffzeDieXa2IMVVlY
+IMAPSH3m4j3K5xW+8NID/895DoxHcYh5Pqrs/+5X9vxZwAW5vAz4oecrma4tpSbcwMO6KmEtOcI2
+IzUSv1vPvfLbzpTaZqCYD/mXlcHn/CwLAH4v9rfLiLAHWhSvkw22heEdJm6GIU/pJbREAEd2/FhH
+LtgvNb/qQRg6J5XzRnzpKnERzgEhJGW2xm8+Nxl8d8N9bp2OxSReKOSg905s6CwlWr4QoQH2QXSq
+y4heV/sxxuta5gR757cnz/JRIyLUfLDakRSwWp3rNXlr0Q+UmO2g7yJhKCDnCJPWs2d5bvUcSyhj
+aztFIw4tem1GLwMhNR0vOx1NHQd1xqTqLqZyNGP/u3SlwNsiVDJ2FUmeu3wO+1sP8sZcrtkGUTej
+oHkpyRZnVMUywL9sf1VgAnNlE9Y8gxUzCpi85ZPROuiF04TDTNt51cqDuAkSvrtiXFJerqG+tU9v
+mxAMCWYtAtJiV7YK3tqZ+jBA/bxQA34u1NHgtlQhNkFFdYTmYDy3ovw4if/BwX0fq8z+VkaR4Qc8
+p2rRSQa1QtihaRCNzAOCnyZv5z6y8uZSUYoWWTQHV4oUkKI9c80OSyGT0vYPuPg+MGPMzTpZB2VR
+UgiwwyI6PRuh4t1tEHQrMsYPpT5sX+kjFjkV0ePMCImTDQPh3DvCoyR9j5WsMH0Gr5b/d8COieHd
+7cSIcQ1/sZHP5+ru97SmCURN5GkiqX2wkwG3GGd3XGCW9yILV+2WDCB+omaIU9W6LihUcANSPplN
+hg1cYJ7RCV1Qj406UddptILghONyA9VOmCtcYTvRp1vFYnVCa5a3YMVtMOaq7hfz8YbUVfuN5btV
+eL9Lb97o894zh5CU4u14dV6ACVsL+FBfayy4wF/sAxGWhLVewHxQDYeVs2p78HSorWwA3frlXwHq
+KHZWJpK3E8pwS0jIyKjz0HGtu43lmi6KieknbNtMwLcvSyNI6TrwypZEGhCMFzRYtgibWqeHlMrP
+QPGK6WVqWu9iSW9B2v1AJOz4Aqh3nOWahAu7l0ubq/NcFRbXz9ldp/XSls0gNoTzFYJnpJR3QHF/
+jol/1c2tdPpWWCG28DKgwnnSJc0qAYGv6Ac4sOTPSseCRTBB63hDdFxhZ8kxODwgwf/Jwdx6JL9C
+n9q7iP6F4MSddeoFSLCtLDXOTDpMGWj0hAeE3Cttgxnjcx84xphaOmXLKz1lAulJJ3xKQrdzTZiV
+nOgjGMRBXctlhMps44HXAOCDBmXXs++bFk2NbKoXx4y5ZjfJgYPp/XSfHSm7CCbS8ydhconKR/nb
+7s2LTZCOx4uxbLoxK5tmcznMTvRm71Cf1asvep1qt0==

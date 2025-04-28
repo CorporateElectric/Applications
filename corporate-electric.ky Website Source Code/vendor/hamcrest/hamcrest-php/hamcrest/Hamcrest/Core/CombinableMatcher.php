@@ -1,78 +1,46 @@
-<?php
-namespace Hamcrest\Core;
-
-/*
- Copyright (c) 2009 hamcrest.org
- */
-
-use Hamcrest\BaseMatcher;
-use Hamcrest\Description;
-use Hamcrest\Matcher;
-
-class CombinableMatcher extends BaseMatcher
-{
-
-    private $_matcher;
-
-    public function __construct(Matcher $matcher)
-    {
-        $this->_matcher = $matcher;
-    }
-
-    public function matches($item)
-    {
-        return $this->_matcher->matches($item);
-    }
-
-    public function describeTo(Description $description)
-    {
-        $description->appendDescriptionOf($this->_matcher);
-    }
-
-    /** Diversion from Hamcrest-Java... Logical "and" not permitted */
-    public function andAlso(Matcher $other)
-    {
-        return new self(new AllOf($this->_templatedListWith($other)));
-    }
-
-    /** Diversion from Hamcrest-Java... Logical "or" not permitted */
-    public function orElse(Matcher $other)
-    {
-        return new self(new AnyOf($this->_templatedListWith($other)));
-    }
-
-    /**
-     * This is useful for fluently combining matchers that must both pass.
-     * For example:
-     * <pre>
-     *   assertThat($string, both(containsString("a"))->andAlso(containsString("b")));
-     * </pre>
-     *
-     * @factory
-     */
-    public static function both(Matcher $matcher)
-    {
-        return new self($matcher);
-    }
-
-    /**
-     * This is useful for fluently combining matchers where either may pass,
-     * for example:
-     * <pre>
-     *   assertThat($string, either(containsString("a"))->orElse(containsString("b")));
-     * </pre>
-     *
-     * @factory
-     */
-    public static function either(Matcher $matcher)
-    {
-        return new self($matcher);
-    }
-
-    // -- Private Methods
-
-    private function _templatedListWith(Matcher $other)
-    {
-        return array($this->_matcher, $other);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

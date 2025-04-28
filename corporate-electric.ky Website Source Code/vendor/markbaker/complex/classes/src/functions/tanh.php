@@ -1,35 +1,31 @@
-<?php
-
-/**
- *
- * Function code for the complex tanh() function
- *
- * @copyright  Copyright (c) 2013-2018 Mark Baker (https://github.com/MarkBaker/PHPComplex)
- * @license    https://opensource.org/licenses/MIT    MIT
- */
-namespace Complex;
-
-/**
- * Returns the hyperbolic tangent of a complex number.
- *
- * @param     Complex|mixed    $complex    Complex number or a numeric value.
- * @return    Complex          The hyperbolic tangent of the complex argument.
- * @throws    Exception        If argument isn't a valid real or complex number.
- * @throws    \InvalidArgumentException    If function would result in a division by zero
- */
-function tanh($complex): Complex
-{
-    $complex = Complex::validateComplexArgument($complex);
-    $real = $complex->getReal();
-    $imaginary = $complex->getImaginary();
-    $divisor = \cos($imaginary) * \cos($imaginary) + \sinh($real) * \sinh($real);
-    if ($divisor == 0.0) {
-        throw new \InvalidArgumentException('Division by zero');
-    }
-
-    return new Complex(
-        \sinh($real) * \cosh($real) / $divisor,
-        0.5 * \sin(2 * $imaginary) / $divisor,
-        $complex->getSuffix()
-    );
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+Xou=

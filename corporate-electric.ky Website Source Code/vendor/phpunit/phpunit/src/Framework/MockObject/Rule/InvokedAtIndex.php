@@ -1,75 +1,44 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Framework\MockObject\Rule;
-
-use function sprintf;
-use PHPUnit\Framework\ExpectationFailedException;
-use PHPUnit\Framework\MockObject\Invocation as BaseInvocation;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for PHPUnit
- *
- * @deprecated https://github.com/sebastianbergmann/phpunit/issues/4297
- * @codeCoverageIgnore
- */
-final class InvokedAtIndex extends InvocationOrder
-{
-    /**
-     * @var int
-     */
-    private $sequenceIndex;
-
-    /**
-     * @var int
-     */
-    private $currentIndex = -1;
-
-    /**
-     * @param int $sequenceIndex
-     */
-    public function __construct($sequenceIndex)
-    {
-        $this->sequenceIndex = $sequenceIndex;
-    }
-
-    public function toString(): string
-    {
-        return 'invoked at sequence index ' . $this->sequenceIndex;
-    }
-
-    public function matches(BaseInvocation $invocation): bool
-    {
-        $this->currentIndex++;
-
-        return $this->currentIndex == $this->sequenceIndex;
-    }
-
-    /**
-     * Verifies that the current expectation is valid. If everything is OK the
-     * code should just return, if not it must throw an exception.
-     *
-     * @throws ExpectationFailedException
-     */
-    public function verify(): void
-    {
-        if ($this->currentIndex < $this->sequenceIndex) {
-            throw new ExpectationFailedException(
-                sprintf(
-                    'The expected invocation at index %s was never reached.',
-                    $this->sequenceIndex
-                )
-            );
-        }
-    }
-
-    protected function invokedDo(BaseInvocation $invocation): void
-    {
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

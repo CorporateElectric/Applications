@@ -1,71 +1,45 @@
-<?php
-
-namespace Illuminate\Validation\Concerns;
-
-use Egulias\EmailValidator\EmailLexer;
-use Egulias\EmailValidator\Validation\EmailValidation;
-
-class FilterEmailValidation implements EmailValidation
-{
-    /**
-     * The flags to pass to the filter_var function.
-     *
-     * @var int|null
-     */
-    protected $flags;
-
-    /**
-     * Create a new validation instance.
-     *
-     * @param  int  $flags
-     * @return void
-     */
-    public function __construct($flags = null)
-    {
-        $this->flags = $flags;
-    }
-
-    /**
-     * Create a new instance which allows any unicode characters in local-part.
-     *
-     * @return static
-     */
-    public static function unicode()
-    {
-        return new static(FILTER_FLAG_EMAIL_UNICODE);
-    }
-
-    /**
-     * Returns true if the given email is valid.
-     *
-     * @param  string  $email
-     * @param  \Egulias\EmailValidator\EmailLexer  $emailLexer
-     * @return bool
-     */
-    public function isValid($email, EmailLexer $emailLexer)
-    {
-        return is_null($this->flags)
-                    ? filter_var($email, FILTER_VALIDATE_EMAIL) !== false
-                    : filter_var($email, FILTER_VALIDATE_EMAIL, $this->flags) !== false;
-    }
-
-    /**
-     * Returns the validation error.
-     *
-     * @return \Egulias\EmailValidator\Exception\InvalidEmail|null
-     */
-    public function getError()
-    {
-        //
-    }
-
-    /**
-     * Returns the validation warnings.
-     *
-     * @return \Egulias\EmailValidator\Warning\Warning[]
-     */
-    public function getWarnings()
-    {
-        return [];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

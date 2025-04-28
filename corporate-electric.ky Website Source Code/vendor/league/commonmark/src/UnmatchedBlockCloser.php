@@ -1,90 +1,41 @@
-<?php
-
-/*
- * This file is part of the league/commonmark package.
- *
- * (c) Colin O'Dell <colinodell@gmail.com>
- *
- * Original code based on the CommonMark JS reference parser (https://bitly.com/commonmark-js)
- *  - (c) John MacFarlane
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace League\CommonMark;
-
-use League\CommonMark\Block\Element\AbstractBlock;
-
-/**
- * @internal
- */
-class UnmatchedBlockCloser
-{
-    /**
-     * @var ContextInterface
-     */
-    private $context;
-
-    /**
-     * @var AbstractBlock
-     */
-    private $oldTip;
-
-    /**
-     * @var AbstractBlock
-     */
-    private $lastMatchedContainer;
-
-    /**
-     * @param ContextInterface $context
-     */
-    public function __construct(ContextInterface $context)
-    {
-        $this->context = $context;
-
-        $this->resetTip();
-    }
-
-    /**
-     * @param AbstractBlock $block
-     *
-     * @return void
-     */
-    public function setLastMatchedContainer(AbstractBlock $block)
-    {
-        $this->lastMatchedContainer = $block;
-    }
-
-    /**
-     * @return void
-     */
-    public function closeUnmatchedBlocks()
-    {
-        $endLine = $this->context->getLineNumber() - 1;
-
-        while ($this->oldTip !== $this->lastMatchedContainer) {
-            /** @var AbstractBlock $oldTip */
-            $oldTip = $this->oldTip->parent();
-            $this->oldTip->finalize($this->context, $endLine);
-            $this->oldTip = $oldTip;
-        }
-    }
-
-    /**
-     * @return void
-     */
-    public function resetTip()
-    {
-        if ($this->context->getTip() === null) {
-            throw new \RuntimeException('No tip to reset to');
-        }
-
-        $this->oldTip = $this->context->getTip();
-    }
-
-    public function areAllClosed(): bool
-    {
-        return $this->context->getTip() === $this->lastMatchedContainer;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
++PQ9LSZFw4oMgYAwcu4=

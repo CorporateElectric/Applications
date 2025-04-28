@@ -1,82 +1,37 @@
-<?php
-
-namespace Illuminate\View\Compilers\Concerns;
-
-trait CompilesIncludes
-{
-    /**
-     * Compile the each statements into valid PHP.
-     *
-     * @param  string  $expression
-     * @return string
-     */
-    protected function compileEach($expression)
-    {
-        return "<?php echo \$__env->renderEach{$expression}; ?>";
-    }
-
-    /**
-     * Compile the include statements into valid PHP.
-     *
-     * @param  string  $expression
-     * @return string
-     */
-    protected function compileInclude($expression)
-    {
-        $expression = $this->stripParentheses($expression);
-
-        return "<?php echo \$__env->make({$expression}, \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>";
-    }
-
-    /**
-     * Compile the include-if statements into valid PHP.
-     *
-     * @param  string  $expression
-     * @return string
-     */
-    protected function compileIncludeIf($expression)
-    {
-        $expression = $this->stripParentheses($expression);
-
-        return "<?php if (\$__env->exists({$expression})) echo \$__env->make({$expression}, \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>";
-    }
-
-    /**
-     * Compile the include-when statements into valid PHP.
-     *
-     * @param  string  $expression
-     * @return string
-     */
-    protected function compileIncludeWhen($expression)
-    {
-        $expression = $this->stripParentheses($expression);
-
-        return "<?php echo \$__env->renderWhen($expression, \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path'])); ?>";
-    }
-
-    /**
-     * Compile the include-unless statements into valid PHP.
-     *
-     * @param  string  $expression
-     * @return string
-     */
-    protected function compileIncludeUnless($expression)
-    {
-        $expression = $this->stripParentheses($expression);
-
-        return "<?php echo \$__env->renderWhen(! $expression, \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path'])); ?>";
-    }
-
-    /**
-     * Compile the include-first statements into valid PHP.
-     *
-     * @param  string  $expression
-     * @return string
-     */
-    protected function compileIncludeFirst($expression)
-    {
-        $expression = $this->stripParentheses($expression);
-
-        return "<?php echo \$__env->first({$expression}, \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>";
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+egp4MLZZ1tPJtv9CDw49GD54

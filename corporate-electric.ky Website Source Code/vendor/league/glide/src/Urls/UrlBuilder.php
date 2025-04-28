@@ -1,115 +1,57 @@
-<?php
-
-namespace League\Glide\Urls;
-
-use InvalidArgumentException;
-use League\Glide\Signatures\SignatureInterface;
-
-class UrlBuilder
-{
-    /**
-     * The base URL.
-     * @var string
-     */
-    protected $baseUrl;
-
-    /**
-     * Whether the base URL is a relative domain.
-     * @var bool
-     */
-    protected $isRelativeDomain = false;
-
-    /**
-     * The HTTP signature used to sign URLs.
-     * @var SignatureInterface
-     */
-    protected $signature;
-
-    /**
-     * Create UrlBuilder instance.
-     * @param string                  $baseUrl   The base URL.
-     * @param SignatureInterface|null $signature The HTTP signature used to sign URLs.
-     */
-    public function __construct($baseUrl = '', SignatureInterface $signature = null)
-    {
-        $this->setBaseUrl($baseUrl);
-        $this->setSignature($signature);
-    }
-
-    /**
-     * Set the base URL.
-     * @param string $baseUrl The base URL.
-     */
-    public function setBaseUrl($baseUrl)
-    {
-        if (substr($baseUrl, 0, 2) === '//') {
-            $baseUrl = 'http:'.$baseUrl;
-            $this->isRelativeDomain = true;
-        }
-
-        $this->baseUrl = rtrim($baseUrl, '/');
-    }
-
-    /**
-     * Set the HTTP signature.
-     * @param SignatureInterface|null $signature The HTTP signature used to sign URLs.
-     */
-    public function setSignature(SignatureInterface $signature = null)
-    {
-        $this->signature = $signature;
-    }
-
-    /**
-     * Get the URL.
-     * @param  string $path   The resource path.
-     * @param  array  $params The manipulation parameters.
-     * @return string The URL.
-     */
-    public function getUrl($path, array $params = [])
-    {
-        $parts = parse_url($this->baseUrl.'/'.trim($path, '/'));
-
-        if ($parts === false) {
-            throw new InvalidArgumentException('Not a valid path.');
-        }
-
-        $parts['path'] = '/'.trim($parts['path'], '/');
-
-        if ($this->signature) {
-            $params = $this->signature->addSignature($parts['path'], $params);
-        }
-
-        return $this->buildUrl($parts, $params);
-    }
-
-    /**
-     * Build the URL.
-     * @param  array  $parts  The URL parts.
-     * @param  array  $params The manipulation parameters.
-     * @return string The built URL.
-     */
-    protected function buildUrl($parts, $params)
-    {
-        $url = '';
-
-        if (isset($parts['host'])) {
-            if ($this->isRelativeDomain) {
-                $url .= '//'.$parts['host'];
-            } else {
-                $url .= $parts['scheme'].'://'.$parts['host'];
-            }
-
-            if (isset($parts['port'])) {
-                $url .= ':'.$parts['port'];
-            }
-        }
-
-        $url .= $parts['path'];
-
-        if (count($params)) {
-            $url .= '?'.http_build_query($params);
-        }
-
-        return $url;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,968 +1,479 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Calculation;
-
-use PhpOffice\PhpSpreadsheet\Cell\Cell;
-use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
-use PhpOffice\PhpSpreadsheet\Shared\StringHelper;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-
-class LookupRef
-{
-    /**
-     * CELL_ADDRESS.
-     *
-     * Creates a cell address as text, given specified row and column numbers.
-     *
-     * Excel Function:
-     *        =ADDRESS(row, column, [relativity], [referenceStyle], [sheetText])
-     *
-     * @param mixed $row Row number to use in the cell reference
-     * @param mixed $column Column number to use in the cell reference
-     * @param int $relativity Flag indicating the type of reference to return
-     *                                1 or omitted    Absolute
-     *                                2                Absolute row; relative column
-     *                                3                Relative row; absolute column
-     *                                4                Relative
-     * @param bool $referenceStyle A logical value that specifies the A1 or R1C1 reference style.
-     *                                TRUE or omitted        CELL_ADDRESS returns an A1-style reference
-     *                                FALSE                CELL_ADDRESS returns an R1C1-style reference
-     * @param string $sheetText Optional Name of worksheet to use
-     *
-     * @return string
-     */
-    public static function cellAddress($row, $column, $relativity = 1, $referenceStyle = true, $sheetText = '')
-    {
-        $row = Functions::flattenSingleValue($row);
-        $column = Functions::flattenSingleValue($column);
-        $relativity = Functions::flattenSingleValue($relativity);
-        $sheetText = Functions::flattenSingleValue($sheetText);
-
-        if (($row < 1) || ($column < 1)) {
-            return Functions::VALUE();
-        }
-
-        if ($sheetText > '') {
-            if (strpos($sheetText, ' ') !== false) {
-                $sheetText = "'" . $sheetText . "'";
-            }
-            $sheetText .= '!';
-        }
-        if ((!is_bool($referenceStyle)) || $referenceStyle) {
-            $rowRelative = $columnRelative = '$';
-            $column = Coordinate::stringFromColumnIndex($column);
-            if (($relativity == 2) || ($relativity == 4)) {
-                $columnRelative = '';
-            }
-            if (($relativity == 3) || ($relativity == 4)) {
-                $rowRelative = '';
-            }
-
-            return $sheetText . $columnRelative . $column . $rowRelative . $row;
-        }
-        if (($relativity == 2) || ($relativity == 4)) {
-            $column = '[' . $column . ']';
-        }
-        if (($relativity == 3) || ($relativity == 4)) {
-            $row = '[' . $row . ']';
-        }
-
-        return $sheetText . 'R' . $row . 'C' . $column;
-    }
-
-    /**
-     * COLUMN.
-     *
-     * Returns the column number of the given cell reference
-     * If the cell reference is a range of cells, COLUMN returns the column numbers of each column in the reference as a horizontal array.
-     * If cell reference is omitted, and the function is being called through the calculation engine, then it is assumed to be the
-     *        reference of the cell in which the COLUMN function appears; otherwise this function returns 0.
-     *
-     * Excel Function:
-     *        =COLUMN([cellAddress])
-     *
-     * @param null|array|string $cellAddress A reference to a range of cells for which you want the column numbers
-     *
-     * @return int|int[]
-     */
-    public static function COLUMN($cellAddress = null)
-    {
-        if ($cellAddress === null || trim($cellAddress) === '') {
-            return 0;
-        }
-
-        if (is_array($cellAddress)) {
-            foreach ($cellAddress as $columnKey => $value) {
-                $columnKey = preg_replace('/[^a-z]/i', '', $columnKey);
-
-                return (int) Coordinate::columnIndexFromString($columnKey);
-            }
-        } else {
-            [$sheet, $cellAddress] = Worksheet::extractSheetTitle($cellAddress, true);
-            if (strpos($cellAddress, ':') !== false) {
-                [$startAddress, $endAddress] = explode(':', $cellAddress);
-                $startAddress = preg_replace('/[^a-z]/i', '', $startAddress);
-                $endAddress = preg_replace('/[^a-z]/i', '', $endAddress);
-                $returnValue = [];
-                do {
-                    $returnValue[] = (int) Coordinate::columnIndexFromString($startAddress);
-                } while ($startAddress++ != $endAddress);
-
-                return $returnValue;
-            }
-            $cellAddress = preg_replace('/[^a-z]/i', '', $cellAddress);
-
-            return (int) Coordinate::columnIndexFromString($cellAddress);
-        }
-    }
-
-    /**
-     * COLUMNS.
-     *
-     * Returns the number of columns in an array or reference.
-     *
-     * Excel Function:
-     *        =COLUMNS(cellAddress)
-     *
-     * @param null|array|string $cellAddress An array or array formula, or a reference to a range of cells for which you want the number of columns
-     *
-     * @return int|string The number of columns in cellAddress, or a string if arguments are invalid
-     */
-    public static function COLUMNS($cellAddress = null)
-    {
-        if ($cellAddress === null || $cellAddress === '') {
-            return 1;
-        } elseif (!is_array($cellAddress)) {
-            return Functions::VALUE();
-        }
-
-        reset($cellAddress);
-        $isMatrix = (is_numeric(key($cellAddress)));
-        [$columns, $rows] = Calculation::getMatrixDimensions($cellAddress);
-
-        if ($isMatrix) {
-            return $rows;
-        }
-
-        return $columns;
-    }
-
-    /**
-     * ROW.
-     *
-     * Returns the row number of the given cell reference
-     * If the cell reference is a range of cells, ROW returns the row numbers of each row in the reference as a vertical array.
-     * If cell reference is omitted, and the function is being called through the calculation engine, then it is assumed to be the
-     *        reference of the cell in which the ROW function appears; otherwise this function returns 0.
-     *
-     * Excel Function:
-     *        =ROW([cellAddress])
-     *
-     * @param null|array|string $cellAddress A reference to a range of cells for which you want the row numbers
-     *
-     * @return int|mixed[]|string
-     */
-    public static function ROW($cellAddress = null)
-    {
-        if ($cellAddress === null || trim($cellAddress) === '') {
-            return 0;
-        }
-
-        if (is_array($cellAddress)) {
-            foreach ($cellAddress as $columnKey => $rowValue) {
-                foreach ($rowValue as $rowKey => $cellValue) {
-                    return (int) preg_replace('/\D/', '', $rowKey);
-                }
-            }
-        } else {
-            [$sheet, $cellAddress] = Worksheet::extractSheetTitle($cellAddress, true);
-            if (strpos($cellAddress, ':') !== false) {
-                [$startAddress, $endAddress] = explode(':', $cellAddress);
-                $startAddress = preg_replace('/\D/', '', $startAddress);
-                $endAddress = preg_replace('/\D/', '', $endAddress);
-                $returnValue = [];
-                do {
-                    $returnValue[][] = (int) $startAddress;
-                } while ($startAddress++ != $endAddress);
-
-                return $returnValue;
-            }
-            [$cellAddress] = explode(':', $cellAddress);
-
-            return (int) preg_replace('/\D/', '', $cellAddress);
-        }
-    }
-
-    /**
-     * ROWS.
-     *
-     * Returns the number of rows in an array or reference.
-     *
-     * Excel Function:
-     *        =ROWS(cellAddress)
-     *
-     * @param null|array|string $cellAddress An array or array formula, or a reference to a range of cells for which you want the number of rows
-     *
-     * @return int|string The number of rows in cellAddress, or a string if arguments are invalid
-     */
-    public static function ROWS($cellAddress = null)
-    {
-        if ($cellAddress === null || $cellAddress === '') {
-            return 1;
-        } elseif (!is_array($cellAddress)) {
-            return Functions::VALUE();
-        }
-
-        reset($cellAddress);
-        $isMatrix = (is_numeric(key($cellAddress)));
-        [$columns, $rows] = Calculation::getMatrixDimensions($cellAddress);
-
-        if ($isMatrix) {
-            return $columns;
-        }
-
-        return $rows;
-    }
-
-    /**
-     * HYPERLINK.
-     *
-     * Excel Function:
-     *        =HYPERLINK(linkURL,displayName)
-     *
-     * @param string $linkURL Value to check, is also the value returned when no error
-     * @param string $displayName Value to return when testValue is an error condition
-     * @param Cell $pCell The cell to set the hyperlink in
-     *
-     * @return mixed The value of $displayName (or $linkURL if $displayName was blank)
-     */
-    public static function HYPERLINK($linkURL = '', $displayName = null, ?Cell $pCell = null)
-    {
-        $linkURL = ($linkURL === null) ? '' : Functions::flattenSingleValue($linkURL);
-        $displayName = ($displayName === null) ? '' : Functions::flattenSingleValue($displayName);
-
-        if ((!is_object($pCell)) || (trim($linkURL) == '')) {
-            return Functions::REF();
-        }
-
-        if ((is_object($displayName)) || trim($displayName) == '') {
-            $displayName = $linkURL;
-        }
-
-        $pCell->getHyperlink()->setUrl($linkURL);
-        $pCell->getHyperlink()->setTooltip($displayName);
-
-        return $displayName;
-    }
-
-    /**
-     * INDIRECT.
-     *
-     * Returns the reference specified by a text string.
-     * References are immediately evaluated to display their contents.
-     *
-     * Excel Function:
-     *        =INDIRECT(cellAddress)
-     *
-     * NOTE - INDIRECT() does not yet support the optional a1 parameter introduced in Excel 2010
-     *
-     * @param null|array|string $cellAddress $cellAddress The cell address of the current cell (containing this formula)
-     * @param Cell $pCell The current cell (containing this formula)
-     *
-     * @return mixed The cells referenced by cellAddress
-     *
-     * @TODO    Support for the optional a1 parameter introduced in Excel 2010
-     */
-    public static function INDIRECT($cellAddress = null, ?Cell $pCell = null)
-    {
-        $cellAddress = Functions::flattenSingleValue($cellAddress);
-        if ($cellAddress === null || $cellAddress === '') {
-            return Functions::REF();
-        }
-
-        $cellAddress1 = $cellAddress;
-        $cellAddress2 = null;
-        if (strpos($cellAddress, ':') !== false) {
-            [$cellAddress1, $cellAddress2] = explode(':', $cellAddress);
-        }
-
-        if (
-            (!preg_match('/^' . Calculation::CALCULATION_REGEXP_CELLREF . '$/i', $cellAddress1, $matches)) ||
-            (($cellAddress2 !== null) && (!preg_match('/^' . Calculation::CALCULATION_REGEXP_CELLREF . '$/i', $cellAddress2, $matches)))
-        ) {
-            if (!preg_match('/^' . Calculation::CALCULATION_REGEXP_DEFINEDNAME . '$/i', $cellAddress1, $matches)) {
-                return Functions::REF();
-            }
-
-            if (strpos($cellAddress, '!') !== false) {
-                [$sheetName, $cellAddress] = Worksheet::extractSheetTitle($cellAddress, true);
-                $sheetName = trim($sheetName, "'");
-                $pSheet = $pCell->getWorksheet()->getParent()->getSheetByName($sheetName);
-            } else {
-                $pSheet = $pCell->getWorksheet();
-            }
-
-            return Calculation::getInstance()->extractNamedRange($cellAddress, $pSheet, false);
-        }
-
-        if (strpos($cellAddress, '!') !== false) {
-            [$sheetName, $cellAddress] = Worksheet::extractSheetTitle($cellAddress, true);
-            $sheetName = trim($sheetName, "'");
-            $pSheet = $pCell->getWorksheet()->getParent()->getSheetByName($sheetName);
-        } else {
-            $pSheet = $pCell->getWorksheet();
-        }
-
-        return Calculation::getInstance()->extractCellRange($cellAddress, $pSheet, false);
-    }
-
-    /**
-     * OFFSET.
-     *
-     * Returns a reference to a range that is a specified number of rows and columns from a cell or range of cells.
-     * The reference that is returned can be a single cell or a range of cells. You can specify the number of rows and
-     * the number of columns to be returned.
-     *
-     * Excel Function:
-     *        =OFFSET(cellAddress, rows, cols, [height], [width])
-     *
-     * @param null|string $cellAddress The reference from which you want to base the offset. Reference must refer to a cell or
-     *                                range of adjacent cells; otherwise, OFFSET returns the #VALUE! error value.
-     * @param mixed $rows The number of rows, up or down, that you want the upper-left cell to refer to.
-     *                                Using 5 as the rows argument specifies that the upper-left cell in the reference is
-     *                                five rows below reference. Rows can be positive (which means below the starting reference)
-     *                                or negative (which means above the starting reference).
-     * @param mixed $columns The number of columns, to the left or right, that you want the upper-left cell of the result
-     *                                to refer to. Using 5 as the cols argument specifies that the upper-left cell in the
-     *                                reference is five columns to the right of reference. Cols can be positive (which means
-     *                                to the right of the starting reference) or negative (which means to the left of the
-     *                                starting reference).
-     * @param mixed $height The height, in number of rows, that you want the returned reference to be. Height must be a positive number.
-     * @param mixed $width The width, in number of columns, that you want the returned reference to be. Width must be a positive number.
-     *
-     * @return string A reference to a cell or range of cells
-     */
-    public static function OFFSET($cellAddress = null, $rows = 0, $columns = 0, $height = null, $width = null, ?Cell $pCell = null)
-    {
-        $rows = Functions::flattenSingleValue($rows);
-        $columns = Functions::flattenSingleValue($columns);
-        $height = Functions::flattenSingleValue($height);
-        $width = Functions::flattenSingleValue($width);
-        if ($cellAddress === null) {
-            return 0;
-        }
-
-        if (!is_object($pCell)) {
-            return Functions::REF();
-        }
-
-        $sheetName = null;
-        if (strpos($cellAddress, '!')) {
-            [$sheetName, $cellAddress] = Worksheet::extractSheetTitle($cellAddress, true);
-            $sheetName = trim($sheetName, "'");
-        }
-        if (strpos($cellAddress, ':')) {
-            [$startCell, $endCell] = explode(':', $cellAddress);
-        } else {
-            $startCell = $endCell = $cellAddress;
-        }
-        [$startCellColumn, $startCellRow] = Coordinate::coordinateFromString($startCell);
-        [$endCellColumn, $endCellRow] = Coordinate::coordinateFromString($endCell);
-
-        $startCellRow += $rows;
-        $startCellColumn = Coordinate::columnIndexFromString($startCellColumn) - 1;
-        $startCellColumn += $columns;
-
-        if (($startCellRow <= 0) || ($startCellColumn < 0)) {
-            return Functions::REF();
-        }
-        $endCellColumn = Coordinate::columnIndexFromString($endCellColumn) - 1;
-        if (($width != null) && (!is_object($width))) {
-            $endCellColumn = $startCellColumn + $width - 1;
-        } else {
-            $endCellColumn += $columns;
-        }
-        $startCellColumn = Coordinate::stringFromColumnIndex($startCellColumn + 1);
-
-        if (($height != null) && (!is_object($height))) {
-            $endCellRow = $startCellRow + $height - 1;
-        } else {
-            $endCellRow += $rows;
-        }
-
-        if (($endCellRow <= 0) || ($endCellColumn < 0)) {
-            return Functions::REF();
-        }
-        $endCellColumn = Coordinate::stringFromColumnIndex($endCellColumn + 1);
-
-        $cellAddress = $startCellColumn . $startCellRow;
-        if (($startCellColumn != $endCellColumn) || ($startCellRow != $endCellRow)) {
-            $cellAddress .= ':' . $endCellColumn . $endCellRow;
-        }
-
-        if ($sheetName !== null) {
-            $pSheet = $pCell->getWorksheet()->getParent()->getSheetByName($sheetName);
-        } else {
-            $pSheet = $pCell->getWorksheet();
-        }
-
-        return Calculation::getInstance()->extractCellRange($cellAddress, $pSheet, false);
-    }
-
-    /**
-     * CHOOSE.
-     *
-     * Uses lookup_value to return a value from the list of value arguments.
-     * Use CHOOSE to select one of up to 254 values based on the lookup_value.
-     *
-     * Excel Function:
-     *        =CHOOSE(index_num, value1, [value2], ...)
-     *
-     * @return mixed The selected value
-     */
-    public static function CHOOSE(...$chooseArgs)
-    {
-        $chosenEntry = Functions::flattenArray(array_shift($chooseArgs));
-        $entryCount = count($chooseArgs) - 1;
-
-        if (is_array($chosenEntry)) {
-            $chosenEntry = array_shift($chosenEntry);
-        }
-        if ((is_numeric($chosenEntry)) && (!is_bool($chosenEntry))) {
-            --$chosenEntry;
-        } else {
-            return Functions::VALUE();
-        }
-        $chosenEntry = floor($chosenEntry);
-        if (($chosenEntry < 0) || ($chosenEntry > $entryCount)) {
-            return Functions::VALUE();
-        }
-
-        if (is_array($chooseArgs[$chosenEntry])) {
-            return Functions::flattenArray($chooseArgs[$chosenEntry]);
-        }
-
-        return $chooseArgs[$chosenEntry];
-    }
-
-    /**
-     * MATCH.
-     *
-     * The MATCH function searches for a specified item in a range of cells
-     *
-     * Excel Function:
-     *        =MATCH(lookup_value, lookup_array, [match_type])
-     *
-     * @param mixed $lookupValue The value that you want to match in lookup_array
-     * @param mixed $lookupArray The range of cells being searched
-     * @param mixed $matchType The number -1, 0, or 1. -1 means above, 0 means exact match, 1 means below.
-     *                         If match_type is 1 or -1, the list has to be ordered.
-     *
-     * @return int|string The relative position of the found item
-     */
-    public static function MATCH($lookupValue, $lookupArray, $matchType = 1)
-    {
-        $lookupArray = Functions::flattenArray($lookupArray);
-        $lookupValue = Functions::flattenSingleValue($lookupValue);
-        $matchType = ($matchType === null) ? 1 : (int) Functions::flattenSingleValue($matchType);
-
-        // MATCH is not case sensitive, so we convert lookup value to be lower cased in case it's string type.
-        if (is_string($lookupValue)) {
-            $lookupValue = StringHelper::strToLower($lookupValue);
-        }
-
-        // Lookup_value type has to be number, text, or logical values
-        if ((!is_numeric($lookupValue)) && (!is_string($lookupValue)) && (!is_bool($lookupValue))) {
-            return Functions::NA();
-        }
-
-        // Match_type is 0, 1 or -1
-        if (($matchType !== 0) && ($matchType !== -1) && ($matchType !== 1)) {
-            return Functions::NA();
-        }
-
-        // Lookup_array should not be empty
-        $lookupArraySize = count($lookupArray);
-        if ($lookupArraySize <= 0) {
-            return Functions::NA();
-        }
-
-        if ($matchType == 1) {
-            // If match_type is 1 the list has to be processed from last to first
-
-            $lookupArray = array_reverse($lookupArray);
-            $keySet = array_reverse(array_keys($lookupArray));
-        }
-
-        // Lookup_array should contain only number, text, or logical values, or empty (null) cells
-        foreach ($lookupArray as $i => $lookupArrayValue) {
-            //    check the type of the value
-            if (
-                (!is_numeric($lookupArrayValue)) && (!is_string($lookupArrayValue)) &&
-                (!is_bool($lookupArrayValue)) && ($lookupArrayValue !== null)
-            ) {
-                return Functions::NA();
-            }
-            // Convert strings to lowercase for case-insensitive testing
-            if (is_string($lookupArrayValue)) {
-                $lookupArray[$i] = StringHelper::strToLower($lookupArrayValue);
-            }
-            if (($lookupArrayValue === null) && (($matchType == 1) || ($matchType == -1))) {
-                unset($lookupArray[$i]);
-            }
-        }
-
-        // **
-        // find the match
-        // **
-
-        if ($matchType === 0 || $matchType === 1) {
-            foreach ($lookupArray as $i => $lookupArrayValue) {
-                $typeMatch = ((gettype($lookupValue) === gettype($lookupArrayValue)) || (is_numeric($lookupValue) && is_numeric($lookupArrayValue)));
-                $exactTypeMatch = $typeMatch && $lookupArrayValue === $lookupValue;
-                $nonOnlyNumericExactMatch = !$typeMatch && $lookupArrayValue === $lookupValue;
-                $exactMatch = $exactTypeMatch || $nonOnlyNumericExactMatch;
-
-                if ($matchType === 0) {
-                    if ($typeMatch && is_string($lookupValue) && (bool) preg_match('/([\?\*])/', $lookupValue)) {
-                        $splitString = $lookupValue;
-                        $chars = array_map(function ($i) use ($splitString) {
-                            return mb_substr($splitString, $i, 1);
-                        }, range(0, mb_strlen($splitString) - 1));
-
-                        $length = count($chars);
-                        $pattern = '/^';
-                        for ($j = 0; $j < $length; ++$j) {
-                            if ($chars[$j] === '~') {
-                                if (isset($chars[$j + 1])) {
-                                    if ($chars[$j + 1] === '*') {
-                                        $pattern .= preg_quote($chars[$j + 1], '/');
-                                        ++$j;
-                                    } elseif ($chars[$j + 1] === '?') {
-                                        $pattern .= preg_quote($chars[$j + 1], '/');
-                                        ++$j;
-                                    }
-                                } else {
-                                    $pattern .= preg_quote($chars[$j], '/');
-                                }
-                            } elseif ($chars[$j] === '*') {
-                                $pattern .= '.*';
-                            } elseif ($chars[$j] === '?') {
-                                $pattern .= '.{1}';
-                            } else {
-                                $pattern .= preg_quote($chars[$j], '/');
-                            }
-                        }
-
-                        $pattern .= '$/';
-                        if ((bool) preg_match($pattern, $lookupArrayValue)) {
-                            // exact match
-                            return $i + 1;
-                        }
-                    } elseif ($exactMatch) {
-                        // exact match
-                        return $i + 1;
-                    }
-                } elseif (($matchType === 1) && $typeMatch && ($lookupArrayValue <= $lookupValue)) {
-                    $i = array_search($i, $keySet);
-
-                    // The current value is the (first) match
-                    return $i + 1;
-                }
-            }
-        } else {
-            $maxValueKey = null;
-
-            // The basic algorithm is:
-            // Iterate and keep the highest match until the next element is smaller than the searched value.
-            // Return immediately if perfect match is found
-            foreach ($lookupArray as $i => $lookupArrayValue) {
-                $typeMatch = gettype($lookupValue) === gettype($lookupArrayValue);
-                $exactTypeMatch = $typeMatch && $lookupArrayValue === $lookupValue;
-                $nonOnlyNumericExactMatch = !$typeMatch && $lookupArrayValue === $lookupValue;
-                $exactMatch = $exactTypeMatch || $nonOnlyNumericExactMatch;
-
-                if ($exactMatch) {
-                    // Another "special" case. If a perfect match is found,
-                    // the algorithm gives up immediately
-                    return $i + 1;
-                } elseif ($typeMatch & $lookupArrayValue >= $lookupValue) {
-                    $maxValueKey = $i + 1;
-                } elseif ($typeMatch & $lookupArrayValue < $lookupValue) {
-                    //Excel algorithm gives up immediately if the first element is smaller than the searched value
-                    break;
-                }
-            }
-
-            if ($maxValueKey !== null) {
-                return $maxValueKey;
-            }
-        }
-
-        // Unsuccessful in finding a match, return #N/A error value
-        return Functions::NA();
-    }
-
-    /**
-     * INDEX.
-     *
-     * Uses an index to choose a value from a reference or array
-     *
-     * Excel Function:
-     *        =INDEX(range_array, row_num, [column_num])
-     *
-     * @param mixed $arrayValues A range of cells or an array constant
-     * @param mixed $rowNum The row in array from which to return a value. If row_num is omitted, column_num is required.
-     * @param mixed $columnNum The column in array from which to return a value. If column_num is omitted, row_num is required.
-     *
-     * @return mixed the value of a specified cell or array of cells
-     */
-    public static function INDEX($arrayValues, $rowNum = 0, $columnNum = 0)
-    {
-        $rowNum = Functions::flattenSingleValue($rowNum);
-        $columnNum = Functions::flattenSingleValue($columnNum);
-
-        if (($rowNum < 0) || ($columnNum < 0)) {
-            return Functions::VALUE();
-        }
-
-        if (!is_array($arrayValues) || ($rowNum > count($arrayValues))) {
-            return Functions::REF();
-        }
-
-        $rowKeys = array_keys($arrayValues);
-        $columnKeys = @array_keys($arrayValues[$rowKeys[0]]);
-
-        if ($columnNum > count($columnKeys)) {
-            return Functions::VALUE();
-        } elseif ($columnNum == 0) {
-            if ($rowNum == 0) {
-                return $arrayValues;
-            }
-            $rowNum = $rowKeys[--$rowNum];
-            $returnArray = [];
-            foreach ($arrayValues as $arrayColumn) {
-                if (is_array($arrayColumn)) {
-                    if (isset($arrayColumn[$rowNum])) {
-                        $returnArray[] = $arrayColumn[$rowNum];
-                    } else {
-                        return [$rowNum => $arrayValues[$rowNum]];
-                    }
-                } else {
-                    return $arrayValues[$rowNum];
-                }
-            }
-
-            return $returnArray;
-        }
-        $columnNum = $columnKeys[--$columnNum];
-        if ($rowNum > count($rowKeys)) {
-            return Functions::VALUE();
-        } elseif ($rowNum == 0) {
-            return $arrayValues[$columnNum];
-        }
-        $rowNum = $rowKeys[--$rowNum];
-
-        return $arrayValues[$rowNum][$columnNum];
-    }
-
-    /**
-     * TRANSPOSE.
-     *
-     * @param array $matrixData A matrix of values
-     *
-     * @return array
-     *
-     * Unlike the Excel TRANSPOSE function, which will only work on a single row or column, this function will transpose a full matrix
-     */
-    public static function TRANSPOSE($matrixData)
-    {
-        $returnMatrix = [];
-        if (!is_array($matrixData)) {
-            $matrixData = [[$matrixData]];
-        }
-
-        $column = 0;
-        foreach ($matrixData as $matrixRow) {
-            $row = 0;
-            foreach ($matrixRow as $matrixCell) {
-                $returnMatrix[$row][$column] = $matrixCell;
-                ++$row;
-            }
-            ++$column;
-        }
-
-        return $returnMatrix;
-    }
-
-    private static function vlookupSort($a, $b)
-    {
-        reset($a);
-        $firstColumn = key($a);
-        $aLower = StringHelper::strToLower($a[$firstColumn]);
-        $bLower = StringHelper::strToLower($b[$firstColumn]);
-        if ($aLower == $bLower) {
-            return 0;
-        }
-
-        return ($aLower < $bLower) ? -1 : 1;
-    }
-
-    /**
-     * VLOOKUP
-     * The VLOOKUP function searches for value in the left-most column of lookup_array and returns the value in the same row based on the index_number.
-     *
-     * @param mixed $lookup_value The value that you want to match in lookup_array
-     * @param mixed $lookup_array The range of cells being searched
-     * @param mixed $index_number The column number in table_array from which the matching value must be returned. The first column is 1.
-     * @param mixed $not_exact_match determines if you are looking for an exact match based on lookup_value
-     *
-     * @return mixed The value of the found cell
-     */
-    public static function VLOOKUP($lookup_value, $lookup_array, $index_number, $not_exact_match = true)
-    {
-        $lookup_value = Functions::flattenSingleValue($lookup_value);
-        $index_number = Functions::flattenSingleValue($index_number);
-        $not_exact_match = Functions::flattenSingleValue($not_exact_match);
-
-        // index_number must be greater than or equal to 1
-        if ($index_number < 1) {
-            return Functions::VALUE();
-        }
-
-        // index_number must be less than or equal to the number of columns in lookup_array
-        if ((!is_array($lookup_array)) || (empty($lookup_array))) {
-            return Functions::REF();
-        }
-        $f = array_keys($lookup_array);
-        $firstRow = array_pop($f);
-        if ((!is_array($lookup_array[$firstRow])) || ($index_number > count($lookup_array[$firstRow]))) {
-            return Functions::REF();
-        }
-        $columnKeys = array_keys($lookup_array[$firstRow]);
-        $returnColumn = $columnKeys[--$index_number];
-        $firstColumn = array_shift($columnKeys);
-
-        if (!$not_exact_match) {
-            uasort($lookup_array, ['self', 'vlookupSort']);
-        }
-
-        $lookupLower = StringHelper::strToLower($lookup_value);
-        $rowNumber = $rowValue = false;
-        foreach ($lookup_array as $rowKey => $rowData) {
-            $firstLower = StringHelper::strToLower($rowData[$firstColumn]);
-
-            // break if we have passed possible keys
-            if (
-                (is_numeric($lookup_value) && is_numeric($rowData[$firstColumn]) && ($rowData[$firstColumn] > $lookup_value)) ||
-                (!is_numeric($lookup_value) && !is_numeric($rowData[$firstColumn]) && ($firstLower > $lookupLower))
-            ) {
-                break;
-            }
-            // remember the last key, but only if datatypes match
-            if (
-                (is_numeric($lookup_value) && is_numeric($rowData[$firstColumn])) ||
-                (!is_numeric($lookup_value) && !is_numeric($rowData[$firstColumn]))
-            ) {
-                if ($not_exact_match) {
-                    $rowNumber = $rowKey;
-
-                    continue;
-                } elseif (
-                    ($firstLower == $lookupLower)
-                    // Spreadsheets software returns first exact match,
-                    // we have sorted and we might have broken key orders
-                    // we want the first one (by its initial index)
-                    && (($rowNumber == false) || ($rowKey < $rowNumber))
-                ) {
-                    $rowNumber = $rowKey;
-                }
-            }
-        }
-
-        if ($rowNumber !== false) {
-            // return the appropriate value
-            return $lookup_array[$rowNumber][$returnColumn];
-        }
-
-        return Functions::NA();
-    }
-
-    /**
-     * HLOOKUP
-     * The HLOOKUP function searches for value in the top-most row of lookup_array and returns the value in the same column based on the index_number.
-     *
-     * @param mixed $lookup_value The value that you want to match in lookup_array
-     * @param mixed $lookup_array The range of cells being searched
-     * @param mixed $index_number The row number in table_array from which the matching value must be returned. The first row is 1.
-     * @param mixed $not_exact_match determines if you are looking for an exact match based on lookup_value
-     *
-     * @return mixed The value of the found cell
-     */
-    public static function HLOOKUP($lookup_value, $lookup_array, $index_number, $not_exact_match = true)
-    {
-        $lookup_value = Functions::flattenSingleValue($lookup_value);
-        $index_number = Functions::flattenSingleValue($index_number);
-        $not_exact_match = Functions::flattenSingleValue($not_exact_match);
-
-        // index_number must be greater than or equal to 1
-        if ($index_number < 1) {
-            return Functions::VALUE();
-        }
-
-        // index_number must be less than or equal to the number of columns in lookup_array
-        if ((!is_array($lookup_array)) || (empty($lookup_array))) {
-            return Functions::REF();
-        }
-        $f = array_keys($lookup_array);
-        $firstRow = reset($f);
-        if ((!is_array($lookup_array[$firstRow])) || ($index_number > count($lookup_array))) {
-            return Functions::REF();
-        }
-
-        $firstkey = $f[0] - 1;
-        $returnColumn = $firstkey + $index_number;
-        $firstColumn = array_shift($f);
-        $rowNumber = null;
-        foreach ($lookup_array[$firstColumn] as $rowKey => $rowData) {
-            // break if we have passed possible keys
-            $bothNumeric = is_numeric($lookup_value) && is_numeric($rowData);
-            $bothNotNumeric = !is_numeric($lookup_value) && !is_numeric($rowData);
-            $lookupLower = StringHelper::strToLower($lookup_value);
-            $rowDataLower = StringHelper::strToLower($rowData);
-
-            if (
-                $not_exact_match && (
-                ($bothNumeric && $rowData > $lookup_value) ||
-                ($bothNotNumeric && $rowDataLower > $lookupLower)
-                )
-            ) {
-                break;
-            }
-
-            // Remember the last key, but only if datatypes match (as in VLOOKUP)
-            if ($bothNumeric || $bothNotNumeric) {
-                if ($not_exact_match) {
-                    $rowNumber = $rowKey;
-
-                    continue;
-                } elseif (
-                    $rowDataLower === $lookupLower
-                    && ($rowNumber === null || $rowKey < $rowNumber)
-                ) {
-                    $rowNumber = $rowKey;
-                }
-            }
-        }
-
-        if ($rowNumber !== null) {
-            //  otherwise return the appropriate value
-            return $lookup_array[$returnColumn][$rowNumber];
-        }
-
-        return Functions::NA();
-    }
-
-    /**
-     * LOOKUP
-     * The LOOKUP function searches for value either from a one-row or one-column range or from an array.
-     *
-     * @param mixed $lookup_value The value that you want to match in lookup_array
-     * @param mixed $lookup_vector The range of cells being searched
-     * @param null|mixed $result_vector The column from which the matching value must be returned
-     *
-     * @return mixed The value of the found cell
-     */
-    public static function LOOKUP($lookup_value, $lookup_vector, $result_vector = null)
-    {
-        $lookup_value = Functions::flattenSingleValue($lookup_value);
-
-        if (!is_array($lookup_vector)) {
-            return Functions::NA();
-        }
-        $hasResultVector = isset($result_vector);
-        $lookupRows = count($lookup_vector);
-        $l = array_keys($lookup_vector);
-        $l = array_shift($l);
-        $lookupColumns = count($lookup_vector[$l]);
-        // we correctly orient our results
-        if (($lookupRows === 1 && $lookupColumns > 1) || (!$hasResultVector && $lookupRows === 2 && $lookupColumns !== 2)) {
-            $lookup_vector = self::TRANSPOSE($lookup_vector);
-            $lookupRows = count($lookup_vector);
-            $l = array_keys($lookup_vector);
-            $lookupColumns = count($lookup_vector[array_shift($l)]);
-        }
-
-        if ($result_vector === null) {
-            $result_vector = $lookup_vector;
-        }
-        $resultRows = count($result_vector);
-        $l = array_keys($result_vector);
-        $l = array_shift($l);
-        $resultColumns = count($result_vector[$l]);
-        // we correctly orient our results
-        if ($resultRows === 1 && $resultColumns > 1) {
-            $result_vector = self::TRANSPOSE($result_vector);
-            $resultRows = count($result_vector);
-            $r = array_keys($result_vector);
-            $resultColumns = count($result_vector[array_shift($r)]);
-        }
-
-        if ($lookupRows === 2 && !$hasResultVector) {
-            $result_vector = array_pop($lookup_vector);
-            $lookup_vector = array_shift($lookup_vector);
-        }
-
-        if ($lookupColumns !== 2) {
-            foreach ($lookup_vector as &$value) {
-                if (is_array($value)) {
-                    $k = array_keys($value);
-                    $key1 = $key2 = array_shift($k);
-                    ++$key2;
-                    $dataValue1 = $value[$key1];
-                } else {
-                    $key1 = 0;
-                    $key2 = 1;
-                    $dataValue1 = $value;
-                }
-                $dataValue2 = array_shift($result_vector);
-                if (is_array($dataValue2)) {
-                    $dataValue2 = array_shift($dataValue2);
-                }
-                $value = [$key1 => $dataValue1, $key2 => $dataValue2];
-            }
-            unset($value);
-        }
-
-        return self::VLOOKUP($lookup_value, $lookup_vector, 2);
-    }
-
-    /**
-     * FORMULATEXT.
-     *
-     * @param mixed $cellReference The cell to check
-     * @param Cell $pCell The current cell (containing this formula)
-     *
-     * @return string
-     */
-    public static function FORMULATEXT($cellReference = '', ?Cell $pCell = null)
-    {
-        if ($pCell === null) {
-            return Functions::REF();
-        }
-
-        preg_match('/^' . Calculation::CALCULATION_REGEXP_CELLREF . '$/i', $cellReference, $matches);
-
-        $cellReference = $matches[6] . $matches[7];
-        $worksheetName = trim($matches[3], "'");
-        $worksheet = (!empty($worksheetName))
-            ? $pCell->getWorksheet()->getParent()->getSheetByName($worksheetName)
-            : $pCell->getWorksheet();
-
-        if (!$worksheet->getCell($cellReference)->isFormula()) {
-            return Functions::NA();
-        }
-
-        return $worksheet->getCell($cellReference)->getValue();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+c5+5UG==

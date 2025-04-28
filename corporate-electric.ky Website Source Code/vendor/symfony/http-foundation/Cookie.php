@@ -1,424 +1,177 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpFoundation;
-
-/**
- * Represents a cookie.
- *
- * @author Johannes M. Schmitt <schmittjoh@gmail.com>
- */
-class Cookie
-{
-    public const SAMESITE_NONE = 'none';
-    public const SAMESITE_LAX = 'lax';
-    public const SAMESITE_STRICT = 'strict';
-
-    protected $name;
-    protected $value;
-    protected $domain;
-    protected $expire;
-    protected $path;
-    protected $secure;
-    protected $httpOnly;
-
-    private $raw;
-    private $sameSite;
-    private $secureDefault = false;
-
-    private static $reservedCharsList = "=,; \t\r\n\v\f";
-    private static $reservedCharsFrom = ['=', ',', ';', ' ', "\t", "\r", "\n", "\v", "\f"];
-    private static $reservedCharsTo = ['%3D', '%2C', '%3B', '%20', '%09', '%0D', '%0A', '%0B', '%0C'];
-
-    /**
-     * Creates cookie from raw header string.
-     *
-     * @return static
-     */
-    public static function fromString(string $cookie, bool $decode = false)
-    {
-        $data = [
-            'expires' => 0,
-            'path' => '/',
-            'domain' => null,
-            'secure' => false,
-            'httponly' => false,
-            'raw' => !$decode,
-            'samesite' => null,
-        ];
-
-        $parts = HeaderUtils::split($cookie, ';=');
-        $part = array_shift($parts);
-
-        $name = $decode ? urldecode($part[0]) : $part[0];
-        $value = isset($part[1]) ? ($decode ? urldecode($part[1]) : $part[1]) : null;
-
-        $data = HeaderUtils::combine($parts) + $data;
-        $data['expires'] = self::expiresTimestamp($data['expires']);
-
-        if (isset($data['max-age']) && ($data['max-age'] > 0 || $data['expires'] > time())) {
-            $data['expires'] = time() + (int) $data['max-age'];
-        }
-
-        return new static($name, $value, $data['expires'], $data['path'], $data['domain'], $data['secure'], $data['httponly'], $data['raw'], $data['samesite']);
-    }
-
-    public static function create(string $name, string $value = null, $expire = 0, ?string $path = '/', string $domain = null, bool $secure = null, bool $httpOnly = true, bool $raw = false, ?string $sameSite = self::SAMESITE_LAX): self
-    {
-        return new self($name, $value, $expire, $path, $domain, $secure, $httpOnly, $raw, $sameSite);
-    }
-
-    /**
-     * @param string                        $name     The name of the cookie
-     * @param string|null                   $value    The value of the cookie
-     * @param int|string|\DateTimeInterface $expire   The time the cookie expires
-     * @param string                        $path     The path on the server in which the cookie will be available on
-     * @param string|null                   $domain   The domain that the cookie is available to
-     * @param bool|null                     $secure   Whether the client should send back the cookie only over HTTPS or null to auto-enable this when the request is already using HTTPS
-     * @param bool                          $httpOnly Whether the cookie will be made accessible only through the HTTP protocol
-     * @param bool                          $raw      Whether the cookie value should be sent with no url encoding
-     * @param string|null                   $sameSite Whether the cookie will be available for cross-site requests
-     *
-     * @throws \InvalidArgumentException
-     */
-    public function __construct(string $name, string $value = null, $expire = 0, ?string $path = '/', string $domain = null, bool $secure = null, bool $httpOnly = true, bool $raw = false, ?string $sameSite = 'lax')
-    {
-        // from PHP source code
-        if ($raw && false !== strpbrk($name, self::$reservedCharsList)) {
-            throw new \InvalidArgumentException(sprintf('The cookie name "%s" contains invalid characters.', $name));
-        }
-
-        if (empty($name)) {
-            throw new \InvalidArgumentException('The cookie name cannot be empty.');
-        }
-
-        $this->name = $name;
-        $this->value = $value;
-        $this->domain = $domain;
-        $this->expire = self::expiresTimestamp($expire);
-        $this->path = empty($path) ? '/' : $path;
-        $this->secure = $secure;
-        $this->httpOnly = $httpOnly;
-        $this->raw = $raw;
-        $this->sameSite = $this->withSameSite($sameSite)->sameSite;
-    }
-
-    /**
-     * Creates a cookie copy with a new value.
-     *
-     * @return static
-     */
-    public function withValue(?string $value): self
-    {
-        $cookie = clone $this;
-        $cookie->value = $value;
-
-        return $cookie;
-    }
-
-    /**
-     * Creates a cookie copy with a new domain that the cookie is available to.
-     *
-     * @return static
-     */
-    public function withDomain(?string $domain): self
-    {
-        $cookie = clone $this;
-        $cookie->domain = $domain;
-
-        return $cookie;
-    }
-
-    /**
-     * Creates a cookie copy with a new time the cookie expires.
-     *
-     * @param int|string|\DateTimeInterface $expire
-     *
-     * @return static
-     */
-    public function withExpires($expire = 0): self
-    {
-        $cookie = clone $this;
-        $cookie->expire = self::expiresTimestamp($expire);
-
-        return $cookie;
-    }
-
-    /**
-     * Converts expires formats to a unix timestamp.
-     *
-     * @param int|string|\DateTimeInterface $expire
-     *
-     * @return int
-     */
-    private static function expiresTimestamp($expire = 0)
-    {
-        // convert expiration time to a Unix timestamp
-        if ($expire instanceof \DateTimeInterface) {
-            $expire = $expire->format('U');
-        } elseif (!is_numeric($expire)) {
-            $expire = strtotime($expire);
-
-            if (false === $expire) {
-                throw new \InvalidArgumentException('The cookie expiration time is not valid.');
-            }
-        }
-
-        return 0 < $expire ? (int) $expire : 0;
-    }
-
-    /**
-     * Creates a cookie copy with a new path on the server in which the cookie will be available on.
-     *
-     * @return static
-     */
-    public function withPath(string $path): self
-    {
-        $cookie = clone $this;
-        $cookie->path = '' === $path ? '/' : $path;
-
-        return $cookie;
-    }
-
-    /**
-     * Creates a cookie copy that only be transmitted over a secure HTTPS connection from the client.
-     *
-     * @return static
-     */
-    public function withSecure(bool $secure = true): self
-    {
-        $cookie = clone $this;
-        $cookie->secure = $secure;
-
-        return $cookie;
-    }
-
-    /**
-     * Creates a cookie copy that be accessible only through the HTTP protocol.
-     *
-     * @return static
-     */
-    public function withHttpOnly(bool $httpOnly = true): self
-    {
-        $cookie = clone $this;
-        $cookie->httpOnly = $httpOnly;
-
-        return $cookie;
-    }
-
-    /**
-     * Creates a cookie copy that uses no url encoding.
-     *
-     * @return static
-     */
-    public function withRaw(bool $raw = true): self
-    {
-        if ($raw && false !== strpbrk($this->name, self::$reservedCharsList)) {
-            throw new \InvalidArgumentException(sprintf('The cookie name "%s" contains invalid characters.', $this->name));
-        }
-
-        $cookie = clone $this;
-        $cookie->raw = $raw;
-
-        return $cookie;
-    }
-
-    /**
-     * Creates a cookie copy with SameSite attribute.
-     *
-     * @return static
-     */
-    public function withSameSite(?string $sameSite): self
-    {
-        if ('' === $sameSite) {
-            $sameSite = null;
-        } elseif (null !== $sameSite) {
-            $sameSite = strtolower($sameSite);
-        }
-
-        if (!\in_array($sameSite, [self::SAMESITE_LAX, self::SAMESITE_STRICT, self::SAMESITE_NONE, null], true)) {
-            throw new \InvalidArgumentException('The "sameSite" parameter value is not valid.');
-        }
-
-        $cookie = clone $this;
-        $cookie->sameSite = $sameSite;
-
-        return $cookie;
-    }
-
-    /**
-     * Returns the cookie as a string.
-     *
-     * @return string The cookie
-     */
-    public function __toString()
-    {
-        if ($this->isRaw()) {
-            $str = $this->getName();
-        } else {
-            $str = str_replace(self::$reservedCharsFrom, self::$reservedCharsTo, $this->getName());
-        }
-
-        $str .= '=';
-
-        if ('' === (string) $this->getValue()) {
-            $str .= 'deleted; expires='.gmdate('D, d-M-Y H:i:s T', time() - 31536001).'; Max-Age=0';
-        } else {
-            $str .= $this->isRaw() ? $this->getValue() : rawurlencode($this->getValue());
-
-            if (0 !== $this->getExpiresTime()) {
-                $str .= '; expires='.gmdate('D, d-M-Y H:i:s T', $this->getExpiresTime()).'; Max-Age='.$this->getMaxAge();
-            }
-        }
-
-        if ($this->getPath()) {
-            $str .= '; path='.$this->getPath();
-        }
-
-        if ($this->getDomain()) {
-            $str .= '; domain='.$this->getDomain();
-        }
-
-        if (true === $this->isSecure()) {
-            $str .= '; secure';
-        }
-
-        if (true === $this->isHttpOnly()) {
-            $str .= '; httponly';
-        }
-
-        if (null !== $this->getSameSite()) {
-            $str .= '; samesite='.$this->getSameSite();
-        }
-
-        return $str;
-    }
-
-    /**
-     * Gets the name of the cookie.
-     *
-     * @return string
-     */
-    public function getName()
-    {
-        return $this->name;
-    }
-
-    /**
-     * Gets the value of the cookie.
-     *
-     * @return string|null
-     */
-    public function getValue()
-    {
-        return $this->value;
-    }
-
-    /**
-     * Gets the domain that the cookie is available to.
-     *
-     * @return string|null
-     */
-    public function getDomain()
-    {
-        return $this->domain;
-    }
-
-    /**
-     * Gets the time the cookie expires.
-     *
-     * @return int
-     */
-    public function getExpiresTime()
-    {
-        return $this->expire;
-    }
-
-    /**
-     * Gets the max-age attribute.
-     *
-     * @return int
-     */
-    public function getMaxAge()
-    {
-        $maxAge = $this->expire - time();
-
-        return 0 >= $maxAge ? 0 : $maxAge;
-    }
-
-    /**
-     * Gets the path on the server in which the cookie will be available on.
-     *
-     * @return string
-     */
-    public function getPath()
-    {
-        return $this->path;
-    }
-
-    /**
-     * Checks whether the cookie should only be transmitted over a secure HTTPS connection from the client.
-     *
-     * @return bool
-     */
-    public function isSecure()
-    {
-        return $this->secure ?? $this->secureDefault;
-    }
-
-    /**
-     * Checks whether the cookie will be made accessible only through the HTTP protocol.
-     *
-     * @return bool
-     */
-    public function isHttpOnly()
-    {
-        return $this->httpOnly;
-    }
-
-    /**
-     * Whether this cookie is about to be cleared.
-     *
-     * @return bool
-     */
-    public function isCleared()
-    {
-        return 0 !== $this->expire && $this->expire < time();
-    }
-
-    /**
-     * Checks if the cookie value should be sent with no url encoding.
-     *
-     * @return bool
-     */
-    public function isRaw()
-    {
-        return $this->raw;
-    }
-
-    /**
-     * Gets the SameSite attribute.
-     *
-     * @return string|null
-     */
-    public function getSameSite()
-    {
-        return $this->sameSite;
-    }
-
-    /**
-     * @param bool $default The default value of the "secure" flag when it is set to null
-     */
-    public function setSecureDefault(bool $default): void
-    {
-        $this->secureDefault = $default;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

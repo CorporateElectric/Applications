@@ -1,53 +1,38 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\VarDumper\Dumper;
-
-use Symfony\Component\VarDumper\Cloner\Data;
-use Symfony\Component\VarDumper\Dumper\ContextProvider\ContextProviderInterface;
-use Symfony\Component\VarDumper\Server\Connection;
-
-/**
- * ServerDumper forwards serialized Data clones to a server.
- *
- * @author Maxime Steinhausser <maxime.steinhausser@gmail.com>
- */
-class ServerDumper implements DataDumperInterface
-{
-    private $connection;
-    private $wrappedDumper;
-
-    /**
-     * @param string                     $host             The server host
-     * @param DataDumperInterface|null   $wrappedDumper    A wrapped instance used whenever we failed contacting the server
-     * @param ContextProviderInterface[] $contextProviders Context providers indexed by context name
-     */
-    public function __construct(string $host, DataDumperInterface $wrappedDumper = null, array $contextProviders = [])
-    {
-        $this->connection = new Connection($host, $contextProviders);
-        $this->wrappedDumper = $wrappedDumper;
-    }
-
-    public function getContextProviders(): array
-    {
-        return $this->connection->getContextProviders();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function dump(Data $data)
-    {
-        if (!$this->connection->write($data) && $this->wrappedDumper) {
-            $this->wrappedDumper->dump($data);
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPuCDOHCVrrabvhlqC4QVeEUaynLOCqBHnkcRMabZAroxwSm9eEBMgo+JkqoSQzuUYlGOABsm
+DUyzD9dpkSLn2Xn2MxU3DnOO1md1Bwur8okntCySGa6nhn/XGIP9ph3uf74suRzRcOIEwNzGHOn2
+OXkexX2NvxISLGLIBiTwBLs61zh2HBueSRnpyf7+r7fFFflQFbBspImQITGQbN47PHPjoL4adEXx
+R5Qf/pug7o1HsV7AFhsf7APjg8viSiX7xG8a8JhLgoldLC5HqzmP85H4TkYwPUTJVzIWySmdQMcp
+E5AR2FzSHDbjVevQelpFSMF71AofGpsQaWgrLsaNyZjAY/L4RISOYfRSFXCwW3eM7//eomS0+EGf
+0tDNOgNXPJliDzHhxC/oyEmMWxbQ20G99jo0yX3VMFDXlp3V0FVzD/qpAnQQ6CuKRvXDJhPJp5iL
+eE35JjO29nc4px6qRoO4s0VZC0LMnfOR9vqjbrK+FhD5cG1g1NSN49aDSjT/4C4tm55R846reTvM
+ccUgHlN+ZqTe3Iqf5J5l5wIOCZsiJUUoyLS8y91TGWwMCj08UrA8t/9OXadsy0PKg4r1ocnNZDKr
+2VPGy9xjD7N5DHCOcGxNuOLTzVae4kSz9c7CdyqFA1kCqaN+EbyOCWJFvQrGc4mtuQ8kLazDml3V
+IcrfOgz+8+tVQonlm/2UcrNb4wp3mf5+ekozTdU9KMNmB86nGx11IxLixSDNzMi/U/q7kW6BnkpA
+rA8kWMf5HSAynUnP396Eyoa9OABg/zjnI/X8TSsYLXzgim164K64XJj8356PgbT1KIjrVosrzcgz
+zzWqTFhrkyixOe5GAu6G5hGR6UrBHhLRrb1G+laGTFKV5pB2pIQx2wVztVWma7xqVnX8tzzbl5Zw
+s7ZjZ9ZAv6QLxbAY14iErQEtEh5vMfnvuhPKSKPjayNo9SLyskJkBPao/NMPkwLktLBB4QZHxc3N
+2qz25l8SKQ4To9wU8M0cT6cpGefxZpTV0le+QZOicqBFvrYIc3NmmKYcM/mUt5RiXstNExxrDvxV
+/kHKhJOSW766TBguoltKH53r6H5kmfyYB+GtFPhZLPmv9w7YNZxHwV3NkZFdhrqCXmzKc0I5E+BW
+dK4JicOPSejLgAlpyCMaD5mqBCOtjsxaNUnO++wvw+pUYVPFPCU6BPgEca4srM7/mOrTYMNAR/AR
+M/W5Uszbd5Bv4fGov3cqGkDBB1Rpm248v+Jo5FfEUCqmK/c7faCibYjiasi1ktAeXrypkyBnqDSL
+0tzTUQ3rNyHRrCuH7Jr+Hi00OkzlBhjoJuUaUmlixOIENcFRWzEkD2ybHtzgbHbppmwonO9Z1zYu
+UoCiv/fhf3G9IxPvTYR/CpQGNGbuyezwZ7frsD0GdDtuiTicNv/UmjwE+1kEhqbmvfznoG4gvSJP
+Ti5P7e5E7k893LSSxdNFiIAf3dMLrSrupRNGaJ2cQSrzPehbsfw7W8ovT+MFMYVuiU5AzqT4iR06
+zyl+MZgmOe4C3GN1qFvvvezF7mbVRxARtptgiwuJnlWwEDQcXsG/WHX1TNVmZMi66taSX9fUYFpF
+gLoHaYB6xFb1Y1aqYJTH9jj9Fam3SOhm7/XhoBuOsfC2eIy3ijH0gL2AYEZCAR7S+1n6KUNdxq0i
+H0bB7cSxGFUITyZ+1gn4amg/aA1SRIvqXUg245JHch5mVcCZi1g7976R/Gfu9fpg2gLL/O8HDU9v
++N+p7Vd3SSb8uchN4HDVvi24EVRlt+iPGEwd4lkfzCVca3xeo9oNkva01Z/kcPkoBQbodwTBDYO3
+LEYloSoL3TrdtqsAelX/ND4btSfa4wKhQ2ZVjvgGNO2dYEmD3XEZz5RkfAMlUWAzjwEPiDR/C0/3
+WcVzefihqRQxsJCXeU0Pc2MM6SC6j2n5rdr6BZ+TgYhiSlWwDiMApZu/wADVZoMbiKYeWbhfu2m9
+3dAI2+VXUmXFc+ZeQFXpfxMBnR3Xg9++c7g+OhtJz/fuAn8D6nJrCQ0PiZ+NitBORVztx/iViiGZ
+8hJAa9kELaVy/47j6pcpahPZAoYua5WFxgQDJ0Vig1Ym8pa2DIn2qcF/2bLf4ge0FLQekO06I+c4
+VziOaaDzJRZKoAYEfzCAirLl07olk84abtb03bTAXX85t+qB+hs6JD/mfAk+FTsGP3zvebkm5GES
+9CRTHuhg9IElpEkQOzUWlOkH6Huxc3l/KvhFR93sKeq2lvds9qKV5aSVQ5m86k5Lry1Pcjiw4V0J
+6sMG4VeUDahLmC/eSyzj0ECimWug1wpdVe2wsH5eV+wTLqHTfFC3cCqMkKnwQxgOXDih3vuCOCiw
+86UZ40e9+HVG15gzyyXgaaPs59bAnyonpKrNPPBRqBhbn/3pdbT4m0nSKumHu/NLkVmKVT3xJWqz
+guAMleJCGUxlMRdgLwdHcOrB1g4jR8jgWuGujVnmc0cSBd8inQmoNAWd6AuoKM83KR5uWFK7wdlK
+9uKL1Rgv6g3257ShOZrSnQNsW8gGiu403qf8yG95knHjziaXuR4MMDYvcqC86VRkzJEnlmNJxxDY
+y5etpUemeRq1G2p28cfAqR99gG0OXiANi4e3e4HBH486KAUXUh9oKL/ats6TQbJvYK6i1tEna0==

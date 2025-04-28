@@ -1,86 +1,80 @@
-<?php
-
-namespace Facade\Ignition\Commands;
-
-use Exception;
-use Facade\FlareClient\Flare;
-use Illuminate\Config\Repository;
-use Illuminate\Console\Command;
-use Illuminate\Log\LogManager;
-
-class TestCommand extends Command
-{
-    protected $signature = 'flare:test';
-
-    protected $description = 'Send a test notification to Flare';
-
-    /** @var \Illuminate\Config\Repository */
-    protected $config;
-
-    public function handle(Repository $config)
-    {
-        $this->config = $config;
-
-        $this->checkFlareKey();
-
-        if (app()->make('log') instanceof LogManager) {
-            $this->checkFlareLogger();
-        }
-
-        $this->sendTestException();
-    }
-
-    protected function checkFlareKey()
-    {
-        $message = empty($this->config->get('flare.key'))
-            ? '❌ Flare key not specified. Make sure you specify a value in the `key` key of the `flare` config file.'
-            : '✅ Flare key specified';
-
-        $this->info($message);
-
-        return $this;
-    }
-
-    public function checkFlareLogger()
-    {
-        $defaultLogChannel = $this->config->get('logging.default');
-
-        $activeStack = $this->config->get("logging.channels.{$defaultLogChannel}");
-
-        if (is_null($activeStack)) {
-            $this->info("❌ The default logging channel `{$defaultLogChannel}` is not configured in the `logging` config file");
-        }
-
-        if (! isset($activeStack['channels']) || ! in_array('flare', $activeStack['channels'])) {
-            $this->info("❌ The logging channel `{$defaultLogChannel}` does not contain the 'flare' channel");
-        }
-
-        if (is_null($this->config->get('logging.channels.flare'))) {
-            $this->info('❌ There is no logging channel named `flare` in the `logging` config file');
-        }
-
-        if ($this->config->get('logging.channels.flare.driver') !== 'flare') {
-            $this->info('❌ The `flare` logging channel defined in the `logging` config file is not set to `flare`.');
-        }
-
-        $this->info('✅ The Flare logging driver was configured correctly.');
-
-        return $this;
-    }
-
-    protected function sendTestException()
-    {
-        $testException = new Exception('This is an exception to test if the integration with Flare works.');
-
-        try {
-            app(Flare::class)->sendTestReport($testException);
-            $this->info(PHP_EOL);
-        } catch (Exception $exception) {
-            $this->warn('❌ We were unable to send an exception to Flare. Make sure that your key is correct and that you have a valid subscription. '.PHP_EOL.PHP_EOL.'For more info visit the docs on installing Flare in a Laravel project: https://flareapp.io/docs/ignition-for-laravel/introduction');
-
-            return;
-        }
-
-        $this->info('We tried to send an exception to Flare. Please check if it arrived!');
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPsXNouY4zS+lKPXUgoiZeAPZ6+zbWojFXBguSZW6YF//pesFIRbU2kUN0lHKGb5p0zNUgP7M
+NPJ8tJwsySaAjEP89eu16Ki8YOjiJRLTarvltYAQztSvKCCieLb/xOL2utzOYjCK9VJpLTFalxac
+9+0EaPkDR2180+TKqMCQY5jr1KIdOhBTdEtwB7Ux61IMphRjgHbR77LZW/H7ikNP8ZO1KAzL0y6I
+oFgvP/smWEsgRHI00hanKvZv17EJObg+hLeaEjMhA+TKmL7Jt1aWL4Hsw9HfvDMtoDEil2qsCmEk
+tn57/sMoMq3RnJURxKYZSO+1M0dRqP+VMx2nQFK6QBidistfg1Sk2AImm5Qzb+aK1/40kJHaRyfn
+SwSrLUMnMoYStrK8YaQAsBtl7sUGy5Qcz+uGGq7rLHtK2m0x20TuSRIDznfUnaB+kFsa7B8mdwc2
+5PVN/WMjtykpAkE2BidL+b/Vs8sNVfNRPZ+TK3O0lOezHSNfAAI1XnrM9YdkNyzTUOJ3i7Z9Zi7j
+Gsy5J3yAL5bGhZyqN2DOdn3pvxuzgBXxp4vhnRRCpJxmdBtL7XtRmhir29aNWvPgiOORwWcilhCr
+eTJb3MMtL6hjChLEZ7KNxdLhB8DAHjzZ7Hoimcd4H2FMZFIk3XaCaG/wqJ02iqQg/xk6wm6dhQTW
+x2gkbQyqui4CqUh/ITL2gmK+JzQJ4lB1E4jgBumT+dwgJQrnp8G1RagpVn9IYMaRvB+RVekxfZPE
+0Hbt+oCGhlNjY/viVrfIdZ5gCtzI3+nBO12g446tiMmw5pujvHb0wzLYZJEn5tFOyI2Fd2HppXCO
+dCjC0nYgKrTQEvPLO0IqEEJO37ENh99uk+cMzvBuCDftTJsplmMW5uDqQF75FHpcfnY6W+H5qW00
+9y23kxoVk+aP1hlS4oyLbPY7ieEV7YXVj7OAkv8aSKYXUu4OgC0DQPL1AX6LRTumnvt5p5Z89pbC
+YDvL1j93Eo+2Lsp89a1YNzrcFlCJ7n86i5wgJXGBnrUcFtCCzYN7YZO6ENTsQHsoS/vV5HHfefk/
+J8qqSeF9ojPMwSwY4e4LBPH8FhIEBg53CpD2zqfx6o0rRzDVgf9e4O628C1ejWiqUWX5EDzVEJgU
+XGr2uJsC1weSTsJWbu2bJliXV+Eky3b4phu0igkVeKUxjml/1vN16pKRlkiCpec7jzaqxukAmkW9
+2MfiIUauMyZmhpS6XB32OL2SB2Xggk1XHP7LTnACH0P1Tubg8m+18HARS5l48RUOh6zMOgSF2KmB
+oWKJjuxrzwsNMKBpEOE1+HcGcFQ6vi0B4WUZr+xhFw5x+4f/HPiEDEyoIspviFaX9AVLvUhO+P0h
+C8+4TcwRVDjR+CzdV7jp226RJquCalyMaiq0xfSC/MjniQW4wSEN9asWl9k0MsTN7AAkN0fQcciZ
++6UWVP8U8ZafN7V3cxl8berOXCmgFWAaH4//HOAGadMKAcBk3MHqRPXGmuR4Jvgou6EOsBvIu4JU
+9fTp9k6gaTk2Xdr16dls2kFZlESoTmlh4ayeAUsvOh1Uq1DvaI2TBeH3C9alYeRxvsRkeJVFshvW
+y2TzvChi3jf9Dkbwgre22lCT4dcT0IutjYFFWD5LU1rgFXnvPLj9nk9X+h4R+36uNdHEYZ6Mvvss
+peYcTpxrERyl/4HIqKz9T5gOw1AGPH3hOz9MYd1Aba4mlQxPJLJHlxgYwIWqpX/ZqlpMRaIIa56d
+5YwAu7N91WA3RZlW+uDGTNttYZVXwXe9RDkIuv1SuTRJb1kNull6nXnXqRMKgXj0c5HVojnYmtiP
+PkpGseGWtvOhuExpGngnX3i/Bp9AHkD0U01h6HQP/qcQS4Cf9RBP6UaaBl50nJeDTPTskworTD8Z
+qkxQ9ztun8KFKW0o9qIv30aPk64oHQqKCvnS2fBZ4VsaH3lWZT63TTRSEoaX92DF9YENMoaGxldk
+MMPmoxMR0omxGhxxmJwO8m6OI7h44jCGn17Omk1pSP0XHnFzitMY528zvwgSrJSdz8d/TyyrGeik
+Vbs6v93CeGyRSTNlzncVrEEeBC/Rn5q+EaFYvDQrp4X3yzrAr8yoZZ3l/favcTAm+dqe28fwsHQR
+o/It4bQil3H0rHU8EEKfLTLSDcbeNv/lcCD7CDRXSKfR3ZHZUam6XCJdparPh+4rQu1GfbQEsI/a
+KWOXiaxYeQ1XTGldyDII74otteGOmihxWey811xIWaE8KM1kyERmIQKBToM52gaZM0qEVnX999k2
+uh9Qif7e3HWL4+RZoIMTqlQCeYnRyRPM8xdzakwy218glMfZV0oijmHhXg6yzPRKkhNEhDzgrdll
+EKavXExIxzBt194PyP/wMs3rRmlKjfZ4urIUjwRhRTqp9WQ5ua9ykZ51Ze0gyEJvLPz6P08Ns1r2
+RKdszz9Zr+rMvn7my3xDaxKfRUdkNnHYMqNK1SbcdlklsF1PkTTQxSZJEuEb70IQHAXM4EU6o5xl
+uDibauHNf3g8j+FIIjPETcUnEgcQlnaDV4/qZNPC+rC3xw9fZRMseByZEbNuxS1ix3kC9Z+RQtKN
+TgYubsrA34W3uytm8Vk96qHg9NxEp+awQGuBtUnYprIfR6xmSPhXnE4IZEEbAso1yhZSHqh7rS7m
+789VIUdyUBmfM1JczHUyr0bxwwTUv1IbMPS4XDIsoRYk47aa/ON/k6SzDlLdnTmp7HE4FoMB//Ze
+ag+Fhx6xcVoWeLiulXnhNw+zAofIscciUkOmbKvGn3gN6fv4Fq3e+LWxL27eT8msYIyOf+E8ntsk
+ikYv11n3lL/XzlsRm3gzjrpSKDX0pYQFnIjOJR1Xpohj77lelAOR++NW5bqe8jexTjMQa6l7Rc6J
+b3adaiyabXawKqabnxvHykrHepvUZPoydjwAHRLeDMMH4VvgVOXjdg7sJRUVbdf92svkmf3prV3G
+1zF1bgUydgjewJZGIaEvK5TstadzjE0/gy5gmhX4f5iUDJ8Tjtxg3bhjFdAxgauBO/eV3xXpOSCd
+5gZ/ttpOZmPTvvxz7736BTJzI5Ki/CYC21FZghK6aaWecYrb261ZiMetbWPDA72ofTQ6dMV3Rq8Q
+454sHnOC6zoVeoU9MdRGR+lK+Fqj3IMyjsEN/YGuwJ7aD7F4chduksgulWpF/qxR5XddQoQewT1w
+qmXM52oz3fyqAU89qsi4VA0Atu91+9y08ym88CmgO7a3HUg3zjVTr8I/Kr1sY9eHZa6xlRP6VU+V
+WLIWw6DUwnqurHgHqRmSD7hG2xphJbIPo7QJuveOysqoMYATwXEvs9wuVyATOhNxT1RTmlElc30s
+NXaC3zoUIJYf9rXvgD6R8sHYzl8e652ORUYsIyd4Rlq42dQoEO3m6RIdHvg5i03DgXpaKcH//hRS
+lxiFgjT1QxZxMg+fq8KZ6qSHqVLsdzhSlq6mtVagBBFz9kUssFLe/Dj4jQdxurvxMHXcLpIeK/Tt
+HR2/IVlNbrJPlP6RfTCfUhRxLp7CBh8WhyPfvafocRDJZ76WMWA2XJJdp3LYve8sDY/XJCbvmNmY
+ZXsi5063l5Vxc2MRoGdQFI+VLwTaKMDIC84Fp/sBN9V9WwJrLsN5NtH3xXWdITtAJFYPvZ5UtH0F
+WGG92CK1JtCowPQr2L+RaYzo0tRZ21Fef27spO/CkXF/K8+XDl35RPerjSjUsgdRn3LC7giVPsoP
+OeoRMKx0aZ//Dlx1AFs9m6kKI2/qfGLCToEaG/inx9OfaKDtTTCmakaFtataVIfNGGAu6pJ/AoEq
+2am6lMz3soq20++jPeWor17DBv4riCpUNlDnEBE2d5/pv9JswFAsUjlKrUE5QMC89iAg+V3GRMkq
+N0TbONP2JMrCon29HZbpHGv9PXtakDO46ixkcOklm6C8+i2r17p7uWSMtKKRGQvJNEco2XqmrMpj
+vJad+wrmJ+5XBa4VES/fpma2orZFhV70Xwnei1GORm0lU5hcEsDo5CXoCkVFCvtEMWSNGxBxMLS2
+X4vK5dcQWj8+5ftKeBt05DbkKfptVsMKk05mLGO+9leFTrP2oAVRmkLfIcvThGs9uQn4sAvJvIOs
+k5dluiDcwGYbiIITcAJuXK8hW8ysMaUVNVznb8Bo0/xhdKcT8M94sOaBZm8Eb5VHUfIuJLKvCg/x
+OTMZsNsANGmmvFzbPIIvrm1GcshlCjY+hCoM1HmAbfUqh4d1Lv/WU2BO1s99nUymCZbjVtGIW6QP
+zVkaTOk+Aia0dshooUNIC5bvI/tp3NFlsnOV+mYcww/Jr11Nl9QcVy/ew5llE2YyQnTIbaG79YGP
+2+kCR1cxbQWM/OdCmcOi+M9ibg/jXRjHDYAvCt5MwudSWO2GYmP6nrm6CC7uCiQQK2XG8rhwwRrp
+86isOd5VDJrUh+MVoGA6rATMyt3daEAYInYvQFhbzAZBFTf+pzebg7dZq7TBRWz83tYfC4aO4n1V
+YG6Ar8xM9jHwnv1dpFJUojgOV3+BTURTT+lySbImVwI9pm7YNvA8SwbSDx8IAGJ2T7g1t1vwpJ2e
+oKL7LsoOgyH0RI+rM/MPKxbqzvkr0z9bRBuF8q1MVZ0orX04ZDGG5afMX6mDmougH2UDdXW5Mzkx
+ljVbsDchAL+mbZKUD/3Lj946+lrJpYKWJaF1d6PO17lOo23hMDQ5Uj20dYa5Iv/iMr/0kH3RDHAS
+hUTX5SstHBIvHRyXLBmJTY5s/7PHhdv6cDPdDVeCVO91HlrIQcRl7LmMPtfvgYazCe2QFQWnO2UR
+C/lWrY2Ddk/6uPPABB7rspFNpP6M4CF9Fywn7lZMyrtRakIPPE0ompJkGLIEAv/6tfcEIXiCMOwf
+TLUHUOkrIYcjwpLyM2qItXo9oDLO4c37Kd4WZnyh8wnwuxR5meu5RE/gKiix4UujRCyIqs1vQRJb
+So9pWxjjiTCmR89ZHYncHyrqh5vImnMYO7jPRjv6ZcyodRk712oZsuVqASJwGfDeMykFYgc7dLok
+oNA8nc6Iiq2F0rANh6HJ/qROboCcLsioBBWUQz4P/c5dqvyos7dJXU5uejBwEXxVKbwCsbAMkEYB
+BKxrsmDssizbQSd61Ux5jEp3KV1+aDjvdHeg8nN4DtdvtYe315KejxpuLhlHqG7XZers9Gn/CdxY
+gGU8KuJe5ux06pHu3j1jeeAxihXpsuI6B0Tnz4vgiPF0WRNO5G4IDSe4CRvjmj671EBheEjGODYW
+FMIjmRO18vj/b4XPYg2B9I6g6w8pyJTq8B4Re0fld6iPBJ++aUG35z+nGeBFmw9trjifXlSMqGBX
+zdnZN9Ix3Xtt9YXTa1mqwCcgiLQHod1MdsZBUg+HrNBdv9aYb/jtS4S0V5+YL6V1Nk6XmztRj1Pn
+lLpq98ZDLLJ0DTjp2Iaxfdn+BaAtUw/CaAjKa6/sGi/xbY3JTZCKo35/yVykJS0MtEB7vRYLPWv9
+9ePxOtzLtQyicNEuixYU2fKaR4Fj0HG1TtQAUIeReFC06Wab/e4s242Zgn62BWiqbfrkjDIosAzL
+uEVmy3AJV8vwfmlAa6chxqkHpKJlXeMj2BNylIGUdScN6bH3tzhohmqLQeGNAEl4bQbKXKBL+kK3
+cq8QNlSnbnRsX5urD4RUKpawvA0NMgwzLnDNjQCG8YjPB5PMP4PDnl4FXS5FT6+wT+LHCfnPkbpB
+zlcvsfTM7MoxrpuSTkfLVrk8T4RIujvuyHB9Vn8lR7u95IGw9fEH4CGm88APmr5RW+zaveDWZuBJ
+6+8GfhCO1R40

@@ -1,62 +1,46 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Translation\Reader;
-
-use Symfony\Component\Finder\Finder;
-use Symfony\Component\Translation\Loader\LoaderInterface;
-use Symfony\Component\Translation\MessageCatalogue;
-
-/**
- * TranslationReader reads translation messages from translation files.
- *
- * @author Michel Salib <michelsalib@hotmail.com>
- */
-class TranslationReader implements TranslationReaderInterface
-{
-    /**
-     * Loaders used for import.
-     *
-     * @var array
-     */
-    private $loaders = [];
-
-    /**
-     * Adds a loader to the translation extractor.
-     *
-     * @param string $format The format of the loader
-     */
-    public function addLoader(string $format, LoaderInterface $loader)
-    {
-        $this->loaders[$format] = $loader;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function read(string $directory, MessageCatalogue $catalogue)
-    {
-        if (!is_dir($directory)) {
-            return;
-        }
-
-        foreach ($this->loaders as $format => $loader) {
-            // load any existing translation files
-            $finder = new Finder();
-            $extension = $catalogue->getLocale().'.'.$format;
-            $files = $finder->files()->name('*.'.$extension)->in($directory);
-            foreach ($files as $file) {
-                $domain = substr($file->getFilename(), 0, -1 * \strlen($extension) - 1);
-                $catalogue->addCatalogue($loader->load($file->getPathname(), $catalogue->getLocale(), $domain));
-            }
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

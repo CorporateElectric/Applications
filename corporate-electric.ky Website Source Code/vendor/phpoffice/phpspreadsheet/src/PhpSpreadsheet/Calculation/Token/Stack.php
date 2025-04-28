@@ -1,149 +1,56 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Calculation\Token;
-
-use PhpOffice\PhpSpreadsheet\Calculation\Calculation;
-
-class Stack
-{
-    /**
-     * The parser stack for formulae.
-     *
-     * @var mixed[]
-     */
-    private $stack = [];
-
-    /**
-     * Count of entries in the parser stack.
-     *
-     * @var int
-     */
-    private $count = 0;
-
-    /**
-     * Return the number of entries on the stack.
-     *
-     * @return int
-     */
-    public function count()
-    {
-        return $this->count;
-    }
-
-    /**
-     * Push a new entry onto the stack.
-     *
-     * @param mixed $type
-     * @param mixed $value
-     * @param mixed $reference
-     * @param null|string $storeKey will store the result under this alias
-     * @param null|string $onlyIf will only run computation if the matching
-     *      store key is true
-     * @param null|string $onlyIfNot will only run computation if the matching
-     *      store key is false
-     */
-    public function push(
-        $type,
-        $value,
-        $reference = null,
-        $storeKey = null,
-        $onlyIf = null,
-        $onlyIfNot = null
-    ): void {
-        $stackItem = $this->getStackItem($type, $value, $reference, $storeKey, $onlyIf, $onlyIfNot);
-
-        $this->stack[$this->count++] = $stackItem;
-
-        if ($type == 'Function') {
-            $localeFunction = Calculation::localeFunc($value);
-            if ($localeFunction != $value) {
-                $this->stack[($this->count - 1)]['localeValue'] = $localeFunction;
-            }
-        }
-    }
-
-    public function getStackItem(
-        $type,
-        $value,
-        $reference = null,
-        $storeKey = null,
-        $onlyIf = null,
-        $onlyIfNot = null
-    ) {
-        $stackItem = [
-            'type' => $type,
-            'value' => $value,
-            'reference' => $reference,
-        ];
-
-        if (isset($storeKey)) {
-            $stackItem['storeKey'] = $storeKey;
-        }
-
-        if (isset($onlyIf)) {
-            $stackItem['onlyIf'] = $onlyIf;
-        }
-
-        if (isset($onlyIfNot)) {
-            $stackItem['onlyIfNot'] = $onlyIfNot;
-        }
-
-        return $stackItem;
-    }
-
-    /**
-     * Pop the last entry from the stack.
-     *
-     * @return mixed
-     */
-    public function pop()
-    {
-        if ($this->count > 0) {
-            return $this->stack[--$this->count];
-        }
-
-        return null;
-    }
-
-    /**
-     * Return an entry from the stack without removing it.
-     *
-     * @param int $n number indicating how far back in the stack we want to look
-     *
-     * @return mixed
-     */
-    public function last($n = 1)
-    {
-        if ($this->count - $n < 0) {
-            return null;
-        }
-
-        return $this->stack[$this->count - $n];
-    }
-
-    /**
-     * Clear the stack.
-     */
-    public function clear(): void
-    {
-        $this->stack = [];
-        $this->count = 0;
-    }
-
-    public function __toString()
-    {
-        $str = 'Stack: ';
-        foreach ($this->stack as $index => $item) {
-            if ($index > $this->count - 1) {
-                break;
-            }
-            $value = $item['value'] ?? 'no value';
-            while (is_array($value)) {
-                $value = array_pop($value);
-            }
-            $str .= $value . ' |> ';
-        }
-
-        return $str;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+ZE1H2DyLjR1KhmuglYRSgmRDAhOCJc5M

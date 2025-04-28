@@ -1,178 +1,64 @@
-<?php
-
-/**
- * Validates the attributes of a token. Doesn't manage required attributes
- * very well. The only reason we factored this out was because RemoveForeignElements
- * also needed it besides ValidateAttributes.
- */
-class HTMLPurifier_AttrValidator
-{
-
-    /**
-     * Validates the attributes of a token, mutating it as necessary.
-     * that has valid tokens
-     * @param HTMLPurifier_Token $token Token to validate.
-     * @param HTMLPurifier_Config $config Instance of HTMLPurifier_Config
-     * @param HTMLPurifier_Context $context Instance of HTMLPurifier_Context
-     */
-    public function validateToken($token, $config, $context)
-    {
-        $definition = $config->getHTMLDefinition();
-        $e =& $context->get('ErrorCollector', true);
-
-        // initialize IDAccumulator if necessary
-        $ok =& $context->get('IDAccumulator', true);
-        if (!$ok) {
-            $id_accumulator = HTMLPurifier_IDAccumulator::build($config, $context);
-            $context->register('IDAccumulator', $id_accumulator);
-        }
-
-        // initialize CurrentToken if necessary
-        $current_token =& $context->get('CurrentToken', true);
-        if (!$current_token) {
-            $context->register('CurrentToken', $token);
-        }
-
-        if (!$token instanceof HTMLPurifier_Token_Start &&
-            !$token instanceof HTMLPurifier_Token_Empty
-        ) {
-            return;
-        }
-
-        // create alias to global definition array, see also $defs
-        // DEFINITION CALL
-        $d_defs = $definition->info_global_attr;
-
-        // don't update token until the very end, to ensure an atomic update
-        $attr = $token->attr;
-
-        // do global transformations (pre)
-        // nothing currently utilizes this
-        foreach ($definition->info_attr_transform_pre as $transform) {
-            $attr = $transform->transform($o = $attr, $config, $context);
-            if ($e) {
-                if ($attr != $o) {
-                    $e->send(E_NOTICE, 'AttrValidator: Attributes transformed', $o, $attr);
-                }
-            }
-        }
-
-        // do local transformations only applicable to this element (pre)
-        // ex. <p align="right"> to <p style="text-align:right;">
-        foreach ($definition->info[$token->name]->attr_transform_pre as $transform) {
-            $attr = $transform->transform($o = $attr, $config, $context);
-            if ($e) {
-                if ($attr != $o) {
-                    $e->send(E_NOTICE, 'AttrValidator: Attributes transformed', $o, $attr);
-                }
-            }
-        }
-
-        // create alias to this element's attribute definition array, see
-        // also $d_defs (global attribute definition array)
-        // DEFINITION CALL
-        $defs = $definition->info[$token->name]->attr;
-
-        $attr_key = false;
-        $context->register('CurrentAttr', $attr_key);
-
-        // iterate through all the attribute keypairs
-        // Watch out for name collisions: $key has previously been used
-        foreach ($attr as $attr_key => $value) {
-
-            // call the definition
-            if (isset($defs[$attr_key])) {
-                // there is a local definition defined
-                if ($defs[$attr_key] === false) {
-                    // We've explicitly been told not to allow this element.
-                    // This is usually when there's a global definition
-                    // that must be overridden.
-                    // Theoretically speaking, we could have a
-                    // AttrDef_DenyAll, but this is faster!
-                    $result = false;
-                } else {
-                    // validate according to the element's definition
-                    $result = $defs[$attr_key]->validate(
-                        $value,
-                        $config,
-                        $context
-                    );
-                }
-            } elseif (isset($d_defs[$attr_key])) {
-                // there is a global definition defined, validate according
-                // to the global definition
-                $result = $d_defs[$attr_key]->validate(
-                    $value,
-                    $config,
-                    $context
-                );
-            } else {
-                // system never heard of the attribute? DELETE!
-                $result = false;
-            }
-
-            // put the results into effect
-            if ($result === false || $result === null) {
-                // this is a generic error message that should replaced
-                // with more specific ones when possible
-                if ($e) {
-                    $e->send(E_ERROR, 'AttrValidator: Attribute removed');
-                }
-
-                // remove the attribute
-                unset($attr[$attr_key]);
-            } elseif (is_string($result)) {
-                // generally, if a substitution is happening, there
-                // was some sort of implicit correction going on. We'll
-                // delegate it to the attribute classes to say exactly what.
-
-                // simple substitution
-                $attr[$attr_key] = $result;
-            } else {
-                // nothing happens
-            }
-
-            // we'd also want slightly more complicated substitution
-            // involving an array as the return value,
-            // although we're not sure how colliding attributes would
-            // resolve (certain ones would be completely overriden,
-            // others would prepend themselves).
-        }
-
-        $context->destroy('CurrentAttr');
-
-        // post transforms
-
-        // global (error reporting untested)
-        foreach ($definition->info_attr_transform_post as $transform) {
-            $attr = $transform->transform($o = $attr, $config, $context);
-            if ($e) {
-                if ($attr != $o) {
-                    $e->send(E_NOTICE, 'AttrValidator: Attributes transformed', $o, $attr);
-                }
-            }
-        }
-
-        // local (error reporting untested)
-        foreach ($definition->info[$token->name]->attr_transform_post as $transform) {
-            $attr = $transform->transform($o = $attr, $config, $context);
-            if ($e) {
-                if ($attr != $o) {
-                    $e->send(E_NOTICE, 'AttrValidator: Attributes transformed', $o, $attr);
-                }
-            }
-        }
-
-        $token->attr = $attr;
-
-        // destroy CurrentToken if we made it ourselves
-        if (!$current_token) {
-            $context->destroy('CurrentToken');
-        }
-
-    }
-
-
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+rxNNn1C5VK4R8iPO59WHhlIzpskgT4sRAm==

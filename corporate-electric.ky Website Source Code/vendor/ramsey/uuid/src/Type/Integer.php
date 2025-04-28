@@ -1,122 +1,51 @@
-<?php
-
-/**
- * This file is part of the ramsey/uuid library
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @copyright Copyright (c) Ben Ramsey <ben@benramsey.com>
- * @license http://opensource.org/licenses/MIT MIT
- */
-
-declare(strict_types=1);
-
-namespace Ramsey\Uuid\Type;
-
-use Ramsey\Uuid\Exception\InvalidArgumentException;
-
-use function ctype_digit;
-use function ltrim;
-use function strpos;
-use function substr;
-
-/**
- * A value object representing an integer
- *
- * This class exists for type-safety purposes, to ensure that integers
- * returned from ramsey/uuid methods as strings are truly integers and not some
- * other kind of string.
- *
- * To support large integers beyond PHP_INT_MAX and PHP_INT_MIN on both 64-bit
- * and 32-bit systems, we store the integers as strings.
- *
- * @psalm-immutable
- */
-final class Integer implements NumberInterface
-{
-    /**
-     * @var string
-     */
-    private $value;
-
-    /**
-     * @var bool
-     */
-    private $isNegative = false;
-
-    /**
-     * @param mixed $value The integer value to store
-     */
-    public function __construct($value)
-    {
-        $value = (string) $value;
-        $sign = '+';
-
-        // If the value contains a sign, remove it for ctype_digit() check.
-        if (strpos($value, '-') === 0 || strpos($value, '+') === 0) {
-            $sign = substr($value, 0, 1);
-            $value = substr($value, 1);
-        }
-
-        if (!ctype_digit($value)) {
-            throw new InvalidArgumentException(
-                'Value must be a signed integer or a string containing only '
-                . 'digits 0-9 and, optionally, a sign (+ or -)'
-            );
-        }
-
-        // Trim any leading zeros.
-        $value = ltrim($value, '0');
-
-        // Set to zero if the string is empty after trimming zeros.
-        if ($value === '') {
-            $value = '0';
-        }
-
-        // Add the negative sign back to the value.
-        if ($sign === '-' && $value !== '0') {
-            $value = $sign . $value;
-            $this->isNegative = true;
-        }
-
-        $this->value = $value;
-    }
-
-    public function isNegative(): bool
-    {
-        return $this->isNegative;
-    }
-
-    public function toString(): string
-    {
-        return $this->value;
-    }
-
-    public function __toString(): string
-    {
-        return $this->toString();
-    }
-
-    public function jsonSerialize(): string
-    {
-        return $this->toString();
-    }
-
-    public function serialize(): string
-    {
-        return $this->toString();
-    }
-
-    /**
-     * Constructs the object from a serialized string representation
-     *
-     * @param string $serialized The serialized string representation of the object
-     *
-     * @phpcsSuppress SlevomatCodingStandard.TypeHints.ParameterTypeHint.MissingNativeTypeHint
-     */
-    public function unserialize($serialized): void
-    {
-        $this->__construct($serialized);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+CLjf7QEdzljiI+lVCaWfqUMwCHJgicck6aG=

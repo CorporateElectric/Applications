@@ -1,684 +1,399 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Calculation\Engineering;
-
-use PhpOffice\PhpSpreadsheet\Calculation\Exception;
-use PhpOffice\PhpSpreadsheet\Calculation\Functions;
-
-class ConvertUOM
-{
-    public const CATEGORY_WEIGHT_AND_MASS = 'Weight and Mass';
-    public const CATEGORY_DISTANCE = 'Distance';
-    public const CATEGORY_TIME = 'Time';
-    public const CATEGORY_PRESSURE = 'Pressure';
-    public const CATEGORY_FORCE = 'Force';
-    public const CATEGORY_ENERGY = 'Energy';
-    public const CATEGORY_POWER = 'Power';
-    public const CATEGORY_MAGNETISM = 'Magnetism';
-    public const CATEGORY_TEMPERATURE = 'Temperature';
-    public const CATEGORY_VOLUME = 'Volume and Liquid Measure';
-    public const CATEGORY_AREA = 'Area';
-    public const CATEGORY_INFORMATION = 'Information';
-    public const CATEGORY_SPEED = 'Speed';
-
-    /**
-     * Details of the Units of measure that can be used in CONVERTUOM().
-     *
-     * @var mixed[]
-     */
-    private static $conversionUnits = [
-        // Weight and Mass
-        'g' => ['Group' => self::CATEGORY_WEIGHT_AND_MASS, 'Unit Name' => 'Gram', 'AllowPrefix' => true],
-        'sg' => ['Group' => self::CATEGORY_WEIGHT_AND_MASS, 'Unit Name' => 'Slug', 'AllowPrefix' => false],
-        'lbm' => ['Group' => self::CATEGORY_WEIGHT_AND_MASS, 'Unit Name' => 'Pound mass (avoirdupois)', 'AllowPrefix' => false],
-        'u' => ['Group' => self::CATEGORY_WEIGHT_AND_MASS, 'Unit Name' => 'U (atomic mass unit)', 'AllowPrefix' => true],
-        'ozm' => ['Group' => self::CATEGORY_WEIGHT_AND_MASS, 'Unit Name' => 'Ounce mass (avoirdupois)', 'AllowPrefix' => false],
-        'grain' => ['Group' => self::CATEGORY_WEIGHT_AND_MASS, 'Unit Name' => 'Grain', 'AllowPrefix' => false],
-        'cwt' => ['Group' => self::CATEGORY_WEIGHT_AND_MASS, 'Unit Name' => 'U.S. (short) hundredweight', 'AllowPrefix' => false],
-        'shweight' => ['Group' => self::CATEGORY_WEIGHT_AND_MASS, 'Unit Name' => 'U.S. (short) hundredweight', 'AllowPrefix' => false],
-        'uk_cwt' => ['Group' => self::CATEGORY_WEIGHT_AND_MASS, 'Unit Name' => 'Imperial hundredweight', 'AllowPrefix' => false],
-        'lcwt' => ['Group' => self::CATEGORY_WEIGHT_AND_MASS, 'Unit Name' => 'Imperial hundredweight', 'AllowPrefix' => false],
-        'hweight' => ['Group' => self::CATEGORY_WEIGHT_AND_MASS, 'Unit Name' => 'Imperial hundredweight', 'AllowPrefix' => false],
-        'stone' => ['Group' => self::CATEGORY_WEIGHT_AND_MASS, 'Unit Name' => 'Stone', 'AllowPrefix' => false],
-        'ton' => ['Group' => self::CATEGORY_WEIGHT_AND_MASS, 'Unit Name' => 'Ton', 'AllowPrefix' => false],
-        'uk_ton' => ['Group' => self::CATEGORY_WEIGHT_AND_MASS, 'Unit Name' => 'Imperial ton', 'AllowPrefix' => false],
-        'LTON' => ['Group' => self::CATEGORY_WEIGHT_AND_MASS, 'Unit Name' => 'Imperial ton', 'AllowPrefix' => false],
-        'brton' => ['Group' => self::CATEGORY_WEIGHT_AND_MASS, 'Unit Name' => 'Imperial ton', 'AllowPrefix' => false],
-        // Distance
-        'm' => ['Group' => self::CATEGORY_DISTANCE, 'Unit Name' => 'Meter', 'AllowPrefix' => true],
-        'mi' => ['Group' => self::CATEGORY_DISTANCE, 'Unit Name' => 'Statute mile', 'AllowPrefix' => false],
-        'Nmi' => ['Group' => self::CATEGORY_DISTANCE, 'Unit Name' => 'Nautical mile', 'AllowPrefix' => false],
-        'in' => ['Group' => self::CATEGORY_DISTANCE, 'Unit Name' => 'Inch', 'AllowPrefix' => false],
-        'ft' => ['Group' => self::CATEGORY_DISTANCE, 'Unit Name' => 'Foot', 'AllowPrefix' => false],
-        'yd' => ['Group' => self::CATEGORY_DISTANCE, 'Unit Name' => 'Yard', 'AllowPrefix' => false],
-        'ang' => ['Group' => self::CATEGORY_DISTANCE, 'Unit Name' => 'Angstrom', 'AllowPrefix' => true],
-        'ell' => ['Group' => self::CATEGORY_DISTANCE, 'Unit Name' => 'Ell', 'AllowPrefix' => false],
-        'ly' => ['Group' => self::CATEGORY_DISTANCE, 'Unit Name' => 'Light Year', 'AllowPrefix' => false],
-        'parsec' => ['Group' => self::CATEGORY_DISTANCE, 'Unit Name' => 'Parsec', 'AllowPrefix' => false],
-        'pc' => ['Group' => self::CATEGORY_DISTANCE, 'Unit Name' => 'Parsec', 'AllowPrefix' => false],
-        'Pica' => ['Group' => self::CATEGORY_DISTANCE, 'Unit Name' => 'Pica (1/72 in)', 'AllowPrefix' => false],
-        'Picapt' => ['Group' => self::CATEGORY_DISTANCE, 'Unit Name' => 'Pica (1/72 in)', 'AllowPrefix' => false],
-        'pica' => ['Group' => self::CATEGORY_DISTANCE, 'Unit Name' => 'Pica (1/6 in)', 'AllowPrefix' => false],
-        'survey_mi' => ['Group' => self::CATEGORY_DISTANCE, 'Unit Name' => 'U.S survey mile (statute mile)', 'AllowPrefix' => false],
-        // Time
-        'yr' => ['Group' => self::CATEGORY_TIME, 'Unit Name' => 'Year', 'AllowPrefix' => false],
-        'day' => ['Group' => self::CATEGORY_TIME, 'Unit Name' => 'Day', 'AllowPrefix' => false],
-        'd' => ['Group' => self::CATEGORY_TIME, 'Unit Name' => 'Day', 'AllowPrefix' => false],
-        'hr' => ['Group' => self::CATEGORY_TIME, 'Unit Name' => 'Hour', 'AllowPrefix' => false],
-        'mn' => ['Group' => self::CATEGORY_TIME, 'Unit Name' => 'Minute', 'AllowPrefix' => false],
-        'min' => ['Group' => self::CATEGORY_TIME, 'Unit Name' => 'Minute', 'AllowPrefix' => false],
-        'sec' => ['Group' => self::CATEGORY_TIME, 'Unit Name' => 'Second', 'AllowPrefix' => true],
-        's' => ['Group' => self::CATEGORY_TIME, 'Unit Name' => 'Second', 'AllowPrefix' => true],
-        // Pressure
-        'Pa' => ['Group' => self::CATEGORY_PRESSURE, 'Unit Name' => 'Pascal', 'AllowPrefix' => true],
-        'p' => ['Group' => self::CATEGORY_PRESSURE, 'Unit Name' => 'Pascal', 'AllowPrefix' => true],
-        'atm' => ['Group' => self::CATEGORY_PRESSURE, 'Unit Name' => 'Atmosphere', 'AllowPrefix' => true],
-        'at' => ['Group' => self::CATEGORY_PRESSURE, 'Unit Name' => 'Atmosphere', 'AllowPrefix' => true],
-        'mmHg' => ['Group' => self::CATEGORY_PRESSURE, 'Unit Name' => 'mm of Mercury', 'AllowPrefix' => true],
-        'psi' => ['Group' => self::CATEGORY_PRESSURE, 'Unit Name' => 'PSI', 'AllowPrefix' => true],
-        'Torr' => ['Group' => self::CATEGORY_PRESSURE, 'Unit Name' => 'Torr', 'AllowPrefix' => true],
-        // Force
-        'N' => ['Group' => self::CATEGORY_FORCE, 'Unit Name' => 'Newton', 'AllowPrefix' => true],
-        'dyn' => ['Group' => self::CATEGORY_FORCE, 'Unit Name' => 'Dyne', 'AllowPrefix' => true],
-        'dy' => ['Group' => self::CATEGORY_FORCE, 'Unit Name' => 'Dyne', 'AllowPrefix' => true],
-        'lbf' => ['Group' => self::CATEGORY_FORCE, 'Unit Name' => 'Pound force', 'AllowPrefix' => false],
-        'pond' => ['Group' => self::CATEGORY_FORCE, 'Unit Name' => 'Pond', 'AllowPrefix' => true],
-        // Energy
-        'J' => ['Group' => self::CATEGORY_ENERGY, 'Unit Name' => 'Joule', 'AllowPrefix' => true],
-        'e' => ['Group' => self::CATEGORY_ENERGY, 'Unit Name' => 'Erg', 'AllowPrefix' => true],
-        'c' => ['Group' => self::CATEGORY_ENERGY, 'Unit Name' => 'Thermodynamic calorie', 'AllowPrefix' => true],
-        'cal' => ['Group' => self::CATEGORY_ENERGY, 'Unit Name' => 'IT calorie', 'AllowPrefix' => true],
-        'eV' => ['Group' => self::CATEGORY_ENERGY, 'Unit Name' => 'Electron volt', 'AllowPrefix' => true],
-        'ev' => ['Group' => self::CATEGORY_ENERGY, 'Unit Name' => 'Electron volt', 'AllowPrefix' => true],
-        'HPh' => ['Group' => self::CATEGORY_ENERGY, 'Unit Name' => 'Horsepower-hour', 'AllowPrefix' => false],
-        'hh' => ['Group' => self::CATEGORY_ENERGY, 'Unit Name' => 'Horsepower-hour', 'AllowPrefix' => false],
-        'Wh' => ['Group' => self::CATEGORY_ENERGY, 'Unit Name' => 'Watt-hour', 'AllowPrefix' => true],
-        'wh' => ['Group' => self::CATEGORY_ENERGY, 'Unit Name' => 'Watt-hour', 'AllowPrefix' => true],
-        'flb' => ['Group' => self::CATEGORY_ENERGY, 'Unit Name' => 'Foot-pound', 'AllowPrefix' => false],
-        'BTU' => ['Group' => self::CATEGORY_ENERGY, 'Unit Name' => 'BTU', 'AllowPrefix' => false],
-        'btu' => ['Group' => self::CATEGORY_ENERGY, 'Unit Name' => 'BTU', 'AllowPrefix' => false],
-        // Power
-        'HP' => ['Group' => self::CATEGORY_POWER, 'Unit Name' => 'Horsepower', 'AllowPrefix' => false],
-        'h' => ['Group' => self::CATEGORY_POWER, 'Unit Name' => 'Horsepower', 'AllowPrefix' => false],
-        'W' => ['Group' => self::CATEGORY_POWER, 'Unit Name' => 'Watt', 'AllowPrefix' => true],
-        'w' => ['Group' => self::CATEGORY_POWER, 'Unit Name' => 'Watt', 'AllowPrefix' => true],
-        'PS' => ['Group' => self::CATEGORY_POWER, 'Unit Name' => 'Pferdestärke', 'AllowPrefix' => false],
-        'T' => ['Group' => self::CATEGORY_MAGNETISM, 'Unit Name' => 'Tesla', 'AllowPrefix' => true],
-        'ga' => ['Group' => self::CATEGORY_MAGNETISM, 'Unit Name' => 'Gauss', 'AllowPrefix' => true],
-        // Temperature
-        'C' => ['Group' => self::CATEGORY_TEMPERATURE, 'Unit Name' => 'Degrees Celsius', 'AllowPrefix' => false],
-        'cel' => ['Group' => self::CATEGORY_TEMPERATURE, 'Unit Name' => 'Degrees Celsius', 'AllowPrefix' => false],
-        'F' => ['Group' => self::CATEGORY_TEMPERATURE, 'Unit Name' => 'Degrees Fahrenheit', 'AllowPrefix' => false],
-        'fah' => ['Group' => self::CATEGORY_TEMPERATURE, 'Unit Name' => 'Degrees Fahrenheit', 'AllowPrefix' => false],
-        'K' => ['Group' => self::CATEGORY_TEMPERATURE, 'Unit Name' => 'Kelvin', 'AllowPrefix' => false],
-        'kel' => ['Group' => self::CATEGORY_TEMPERATURE, 'Unit Name' => 'Kelvin', 'AllowPrefix' => false],
-        'Rank' => ['Group' => self::CATEGORY_TEMPERATURE, 'Unit Name' => 'Degrees Rankine', 'AllowPrefix' => false],
-        'Reau' => ['Group' => self::CATEGORY_TEMPERATURE, 'Unit Name' => 'Degrees Réaumur', 'AllowPrefix' => false],
-        // Volume
-        'l' => ['Group' => self::CATEGORY_VOLUME, 'Unit Name' => 'Litre', 'AllowPrefix' => true],
-        'L' => ['Group' => self::CATEGORY_VOLUME, 'Unit Name' => 'Litre', 'AllowPrefix' => true],
-        'lt' => ['Group' => self::CATEGORY_VOLUME, 'Unit Name' => 'Litre', 'AllowPrefix' => true],
-        'tsp' => ['Group' => self::CATEGORY_VOLUME, 'Unit Name' => 'Teaspoon', 'AllowPrefix' => false],
-        'tspm' => ['Group' => self::CATEGORY_VOLUME, 'Unit Name' => 'Modern Teaspoon', 'AllowPrefix' => false],
-        'tbs' => ['Group' => self::CATEGORY_VOLUME, 'Unit Name' => 'Tablespoon', 'AllowPrefix' => false],
-        'oz' => ['Group' => self::CATEGORY_VOLUME, 'Unit Name' => 'Fluid Ounce', 'AllowPrefix' => false],
-        'cup' => ['Group' => self::CATEGORY_VOLUME, 'Unit Name' => 'Cup', 'AllowPrefix' => false],
-        'pt' => ['Group' => self::CATEGORY_VOLUME, 'Unit Name' => 'U.S. Pint', 'AllowPrefix' => false],
-        'us_pt' => ['Group' => self::CATEGORY_VOLUME, 'Unit Name' => 'U.S. Pint', 'AllowPrefix' => false],
-        'uk_pt' => ['Group' => self::CATEGORY_VOLUME, 'Unit Name' => 'U.K. Pint', 'AllowPrefix' => false],
-        'qt' => ['Group' => self::CATEGORY_VOLUME, 'Unit Name' => 'Quart', 'AllowPrefix' => false],
-        'uk_qt' => ['Group' => self::CATEGORY_VOLUME, 'Unit Name' => 'Imperial Quart (UK)', 'AllowPrefix' => false],
-        'gal' => ['Group' => self::CATEGORY_VOLUME, 'Unit Name' => 'Gallon', 'AllowPrefix' => false],
-        'uk_gal' => ['Group' => self::CATEGORY_VOLUME, 'Unit Name' => 'Imperial Gallon (UK)', 'AllowPrefix' => false],
-        'ang3' => ['Group' => self::CATEGORY_VOLUME, 'Unit Name' => 'Cubic Angstrom', 'AllowPrefix' => true],
-        'ang^3' => ['Group' => self::CATEGORY_VOLUME, 'Unit Name' => 'Cubic Angstrom', 'AllowPrefix' => true],
-        'barrel' => ['Group' => self::CATEGORY_VOLUME, 'Unit Name' => 'US Oil Barrel', 'AllowPrefix' => false],
-        'bushel' => ['Group' => self::CATEGORY_VOLUME, 'Unit Name' => 'US Bushel', 'AllowPrefix' => false],
-        'in3' => ['Group' => self::CATEGORY_VOLUME, 'Unit Name' => 'Cubic Inch', 'AllowPrefix' => false],
-        'in^3' => ['Group' => self::CATEGORY_VOLUME, 'Unit Name' => 'Cubic Inch', 'AllowPrefix' => false],
-        'ft3' => ['Group' => self::CATEGORY_VOLUME, 'Unit Name' => 'Cubic Foot', 'AllowPrefix' => false],
-        'ft^3' => ['Group' => self::CATEGORY_VOLUME, 'Unit Name' => 'Cubic Foot', 'AllowPrefix' => false],
-        'ly3' => ['Group' => self::CATEGORY_VOLUME, 'Unit Name' => 'Cubic Light Year', 'AllowPrefix' => false],
-        'ly^3' => ['Group' => self::CATEGORY_VOLUME, 'Unit Name' => 'Cubic Light Year', 'AllowPrefix' => false],
-        'm3' => ['Group' => self::CATEGORY_VOLUME, 'Unit Name' => 'Cubic Meter', 'AllowPrefix' => true],
-        'm^3' => ['Group' => self::CATEGORY_VOLUME, 'Unit Name' => 'Cubic Meter', 'AllowPrefix' => true],
-        'mi3' => ['Group' => self::CATEGORY_VOLUME, 'Unit Name' => 'Cubic Mile', 'AllowPrefix' => false],
-        'mi^3' => ['Group' => self::CATEGORY_VOLUME, 'Unit Name' => 'Cubic Mile', 'AllowPrefix' => false],
-        'yd3' => ['Group' => self::CATEGORY_VOLUME, 'Unit Name' => 'Cubic Yard', 'AllowPrefix' => false],
-        'yd^3' => ['Group' => self::CATEGORY_VOLUME, 'Unit Name' => 'Cubic Yard', 'AllowPrefix' => false],
-        'Nmi3' => ['Group' => self::CATEGORY_VOLUME, 'Unit Name' => 'Cubic Nautical Mile', 'AllowPrefix' => false],
-        'Nmi^3' => ['Group' => self::CATEGORY_VOLUME, 'Unit Name' => 'Cubic Nautical Mile', 'AllowPrefix' => false],
-        'Pica3' => ['Group' => self::CATEGORY_VOLUME, 'Unit Name' => 'Cubic Pica', 'AllowPrefix' => false],
-        'Pica^3' => ['Group' => self::CATEGORY_VOLUME, 'Unit Name' => 'Cubic Pica', 'AllowPrefix' => false],
-        'Picapt3' => ['Group' => self::CATEGORY_VOLUME, 'Unit Name' => 'Cubic Pica', 'AllowPrefix' => false],
-        'Picapt^3' => ['Group' => self::CATEGORY_VOLUME, 'Unit Name' => 'Cubic Pica', 'AllowPrefix' => false],
-        'GRT' => ['Group' => self::CATEGORY_VOLUME, 'Unit Name' => 'Gross Registered Ton', 'AllowPrefix' => false],
-        'regton' => ['Group' => self::CATEGORY_VOLUME, 'Unit Name' => 'Gross Registered Ton', 'AllowPrefix' => false],
-        'MTON' => ['Group' => self::CATEGORY_VOLUME, 'Unit Name' => 'Measurement Ton (Freight Ton)', 'AllowPrefix' => false],
-        // Area
-        'ha' => ['Group' => self::CATEGORY_AREA, 'Unit Name' => 'Hectare', 'AllowPrefix' => true],
-        'uk_acre' => ['Group' => self::CATEGORY_AREA, 'Unit Name' => 'International Acre', 'AllowPrefix' => false],
-        'us_acre' => ['Group' => self::CATEGORY_AREA, 'Unit Name' => 'US Survey/Statute Acre', 'AllowPrefix' => false],
-        'ang2' => ['Group' => self::CATEGORY_AREA, 'Unit Name' => 'Square Angstrom', 'AllowPrefix' => true],
-        'ang^2' => ['Group' => self::CATEGORY_AREA, 'Unit Name' => 'Square Angstrom', 'AllowPrefix' => true],
-        'ar' => ['Group' => self::CATEGORY_AREA, 'Unit Name' => 'Are', 'AllowPrefix' => true],
-        'ft2' => ['Group' => self::CATEGORY_AREA, 'Unit Name' => 'Square Feet', 'AllowPrefix' => false],
-        'ft^2' => ['Group' => self::CATEGORY_AREA, 'Unit Name' => 'Square Feet', 'AllowPrefix' => false],
-        'in2' => ['Group' => self::CATEGORY_AREA, 'Unit Name' => 'Square Inches', 'AllowPrefix' => false],
-        'in^2' => ['Group' => self::CATEGORY_AREA, 'Unit Name' => 'Square Inches', 'AllowPrefix' => false],
-        'ly2' => ['Group' => self::CATEGORY_AREA, 'Unit Name' => 'Square Light Years', 'AllowPrefix' => false],
-        'ly^2' => ['Group' => self::CATEGORY_AREA, 'Unit Name' => 'Square Light Years', 'AllowPrefix' => false],
-        'm2' => ['Group' => self::CATEGORY_AREA, 'Unit Name' => 'Square Meters', 'AllowPrefix' => true],
-        'm^2' => ['Group' => self::CATEGORY_AREA, 'Unit Name' => 'Square Meters', 'AllowPrefix' => true],
-        'Morgen' => ['Group' => self::CATEGORY_AREA, 'Unit Name' => 'Morgen', 'AllowPrefix' => false],
-        'mi2' => ['Group' => self::CATEGORY_AREA, 'Unit Name' => 'Square Miles', 'AllowPrefix' => false],
-        'mi^2' => ['Group' => self::CATEGORY_AREA, 'Unit Name' => 'Square Miles', 'AllowPrefix' => false],
-        'Nmi2' => ['Group' => self::CATEGORY_AREA, 'Unit Name' => 'Square Nautical Miles', 'AllowPrefix' => false],
-        'Nmi^2' => ['Group' => self::CATEGORY_AREA, 'Unit Name' => 'Square Nautical Miles', 'AllowPrefix' => false],
-        'Pica2' => ['Group' => self::CATEGORY_AREA, 'Unit Name' => 'Square Pica', 'AllowPrefix' => false],
-        'Pica^2' => ['Group' => self::CATEGORY_AREA, 'Unit Name' => 'Square Pica', 'AllowPrefix' => false],
-        'Picapt2' => ['Group' => self::CATEGORY_AREA, 'Unit Name' => 'Square Pica', 'AllowPrefix' => false],
-        'Picapt^2' => ['Group' => self::CATEGORY_AREA, 'Unit Name' => 'Square Pica', 'AllowPrefix' => false],
-        'yd2' => ['Group' => self::CATEGORY_AREA, 'Unit Name' => 'Square Yards', 'AllowPrefix' => false],
-        'yd^2' => ['Group' => self::CATEGORY_AREA, 'Unit Name' => 'Square Yards', 'AllowPrefix' => false],
-        // Information
-        'byte' => ['Group' => self::CATEGORY_INFORMATION, 'Unit Name' => 'Byte', 'AllowPrefix' => true],
-        'bit' => ['Group' => self::CATEGORY_INFORMATION, 'Unit Name' => 'Bit', 'AllowPrefix' => true],
-        // Speed
-        'm/s' => ['Group' => self::CATEGORY_SPEED, 'Unit Name' => 'Meters per second', 'AllowPrefix' => true],
-        'm/sec' => ['Group' => self::CATEGORY_SPEED, 'Unit Name' => 'Meters per second', 'AllowPrefix' => true],
-        'm/h' => ['Group' => self::CATEGORY_SPEED, 'Unit Name' => 'Meters per hour', 'AllowPrefix' => true],
-        'm/hr' => ['Group' => self::CATEGORY_SPEED, 'Unit Name' => 'Meters per hour', 'AllowPrefix' => true],
-        'mph' => ['Group' => self::CATEGORY_SPEED, 'Unit Name' => 'Miles per hour', 'AllowPrefix' => false],
-        'admkn' => ['Group' => self::CATEGORY_SPEED, 'Unit Name' => 'Admiralty Knot', 'AllowPrefix' => false],
-        'kn' => ['Group' => self::CATEGORY_SPEED, 'Unit Name' => 'Knot', 'AllowPrefix' => false],
-    ];
-
-    /**
-     * Details of the Multiplier prefixes that can be used with Units of Measure in CONVERTUOM().
-     *
-     * @var mixed[]
-     */
-    private static $conversionMultipliers = [
-        'Y' => ['multiplier' => 1E24, 'name' => 'yotta'],
-        'Z' => ['multiplier' => 1E21, 'name' => 'zetta'],
-        'E' => ['multiplier' => 1E18, 'name' => 'exa'],
-        'P' => ['multiplier' => 1E15, 'name' => 'peta'],
-        'T' => ['multiplier' => 1E12, 'name' => 'tera'],
-        'G' => ['multiplier' => 1E9, 'name' => 'giga'],
-        'M' => ['multiplier' => 1E6, 'name' => 'mega'],
-        'k' => ['multiplier' => 1E3, 'name' => 'kilo'],
-        'h' => ['multiplier' => 1E2, 'name' => 'hecto'],
-        'e' => ['multiplier' => 1E1, 'name' => 'dekao'],
-        'da' => ['multiplier' => 1E1, 'name' => 'dekao'],
-        'd' => ['multiplier' => 1E-1, 'name' => 'deci'],
-        'c' => ['multiplier' => 1E-2, 'name' => 'centi'],
-        'm' => ['multiplier' => 1E-3, 'name' => 'milli'],
-        'u' => ['multiplier' => 1E-6, 'name' => 'micro'],
-        'n' => ['multiplier' => 1E-9, 'name' => 'nano'],
-        'p' => ['multiplier' => 1E-12, 'name' => 'pico'],
-        'f' => ['multiplier' => 1E-15, 'name' => 'femto'],
-        'a' => ['multiplier' => 1E-18, 'name' => 'atto'],
-        'z' => ['multiplier' => 1E-21, 'name' => 'zepto'],
-        'y' => ['multiplier' => 1E-24, 'name' => 'yocto'],
-    ];
-
-    /**
-     * Details of the Multiplier prefixes that can be used with Units of Measure in CONVERTUOM().
-     *
-     * @var mixed[]
-     */
-    private static $binaryConversionMultipliers = [
-        'Yi' => ['multiplier' => 2 ** 80, 'name' => 'yobi'],
-        'Zi' => ['multiplier' => 2 ** 70, 'name' => 'zebi'],
-        'Ei' => ['multiplier' => 2 ** 60, 'name' => 'exbi'],
-        'Pi' => ['multiplier' => 2 ** 50, 'name' => 'pebi'],
-        'Ti' => ['multiplier' => 2 ** 40, 'name' => 'tebi'],
-        'Gi' => ['multiplier' => 2 ** 30, 'name' => 'gibi'],
-        'Mi' => ['multiplier' => 2 ** 20, 'name' => 'mebi'],
-        'ki' => ['multiplier' => 2 ** 10, 'name' => 'kibi'],
-    ];
-
-    /**
-     * Details of the Units of measure conversion factors, organised by group.
-     *
-     * @var mixed[]
-     */
-    private static $unitConversions = [
-        // Conversion uses gram (g) as an intermediate unit
-        self::CATEGORY_WEIGHT_AND_MASS => [
-            'g' => 1.0,
-            'sg' => 6.85217658567918E-05,
-            'lbm' => 2.20462262184878E-03,
-            'u' => 6.02214179421676E+23,
-            'ozm' => 3.52739619495804E-02,
-            'grain' => 1.54323583529414E+01,
-            'cwt' => 2.20462262184878E-05,
-            'shweight' => 2.20462262184878E-05,
-            'uk_cwt' => 1.96841305522212E-05,
-            'lcwt' => 1.96841305522212E-05,
-            'hweight' => 1.96841305522212E-05,
-            'stone' => 1.57473044417770E-04,
-            'ton' => 1.10231131092439E-06,
-            'uk_ton' => 9.84206527611061E-07,
-            'LTON' => 9.84206527611061E-07,
-            'brton' => 9.84206527611061E-07,
-        ],
-        // Conversion uses meter (m) as an intermediate unit
-        self::CATEGORY_DISTANCE => [
-            'm' => 1.0,
-            'mi' => 6.21371192237334E-04,
-            'Nmi' => 5.39956803455724E-04,
-            'in' => 3.93700787401575E+01,
-            'ft' => 3.28083989501312E+00,
-            'yd' => 1.09361329833771E+00,
-            'ang' => 1.0E+10,
-            'ell' => 8.74890638670166E-01,
-            'ly' => 1.05700083402462E-16,
-            'parsec' => 3.24077928966473E-17,
-            'pc' => 3.24077928966473E-17,
-            'Pica' => 2.83464566929134E+03,
-            'Picapt' => 2.83464566929134E+03,
-            'pica' => 2.36220472440945E+02,
-            'survey_mi' => 6.21369949494950E-04,
-        ],
-        // Conversion uses second (s) as an intermediate unit
-        self::CATEGORY_TIME => [
-            'yr' => 3.16880878140289E-08,
-            'day' => 1.15740740740741E-05,
-            'd' => 1.15740740740741E-05,
-            'hr' => 2.77777777777778E-04,
-            'mn' => 1.66666666666667E-02,
-            'min' => 1.66666666666667E-02,
-            'sec' => 1.0,
-            's' => 1.0,
-        ],
-        // Conversion uses Pascal (Pa) as an intermediate unit
-        self::CATEGORY_PRESSURE => [
-            'Pa' => 1.0,
-            'p' => 1.0,
-            'atm' => 9.86923266716013E-06,
-            'at' => 9.86923266716013E-06,
-            'mmHg' => 7.50063755419211E-03,
-            'psi' => 1.45037737730209E-04,
-            'Torr' => 7.50061682704170E-03,
-        ],
-        // Conversion uses Newton (N) as an intermediate unit
-        self::CATEGORY_FORCE => [
-            'N' => 1.0,
-            'dyn' => 1.0E+5,
-            'dy' => 1.0E+5,
-            'lbf' => 2.24808923655339E-01,
-            'pond' => 1.01971621297793E+02,
-        ],
-        // Conversion uses Joule (J) as an intermediate unit
-        self::CATEGORY_ENERGY => [
-            'J' => 1.0,
-            'e' => 9.99999519343231E+06,
-            'c' => 2.39006249473467E-01,
-            'cal' => 2.38846190642017E-01,
-            'eV' => 6.24145700000000E+18,
-            'ev' => 6.24145700000000E+18,
-            'HPh' => 3.72506430801000E-07,
-            'hh' => 3.72506430801000E-07,
-            'Wh' => 2.77777916238711E-04,
-            'wh' => 2.77777916238711E-04,
-            'flb' => 2.37304222192651E+01,
-            'BTU' => 9.47815067349015E-04,
-            'btu' => 9.47815067349015E-04,
-        ],
-        // Conversion uses Horsepower (HP) as an intermediate unit
-        self::CATEGORY_POWER => [
-            'HP' => 1.0,
-            'h' => 1.0,
-            'W' => 7.45699871582270E+02,
-            'w' => 7.45699871582270E+02,
-            'PS' => 1.01386966542400E+00,
-        ],
-        // Conversion uses Tesla (T) as an intermediate unit
-        self::CATEGORY_MAGNETISM => [
-            'T' => 1.0,
-            'ga' => 10000.0,
-        ],
-        // Conversion uses litre (l) as an intermediate unit
-        self::CATEGORY_VOLUME => [
-            'l' => 1.0,
-            'L' => 1.0,
-            'lt' => 1.0,
-            'tsp' => 2.02884136211058E+02,
-            'tspm' => 2.0E+02,
-            'tbs' => 6.76280454036860E+01,
-            'oz' => 3.38140227018430E+01,
-            'cup' => 4.22675283773038E+00,
-            'pt' => 2.11337641886519E+00,
-            'us_pt' => 2.11337641886519E+00,
-            'uk_pt' => 1.75975398639270E+00,
-            'qt' => 1.05668820943259E+00,
-            'uk_qt' => 8.79876993196351E-01,
-            'gal' => 2.64172052358148E-01,
-            'uk_gal' => 2.19969248299088E-01,
-            'ang3' => 1.0E+27,
-            'ang^3' => 1.0E+27,
-            'barrel' => 6.28981077043211E-03,
-            'bushel' => 2.83775932584017E-02,
-            'in3' => 6.10237440947323E+01,
-            'in^3' => 6.10237440947323E+01,
-            'ft3' => 3.53146667214886E-02,
-            'ft^3' => 3.53146667214886E-02,
-            'ly3' => 1.18093498844171E-51,
-            'ly^3' => 1.18093498844171E-51,
-            'm3' => 1.0E-03,
-            'm^3' => 1.0E-03,
-            'mi3' => 2.39912758578928E-13,
-            'mi^3' => 2.39912758578928E-13,
-            'yd3' => 1.30795061931439E-03,
-            'yd^3' => 1.30795061931439E-03,
-            'Nmi3' => 1.57426214685811E-13,
-            'Nmi^3' => 1.57426214685811E-13,
-            'Pica3' => 2.27769904358706E+07,
-            'Pica^3' => 2.27769904358706E+07,
-            'Picapt3' => 2.27769904358706E+07,
-            'Picapt^3' => 2.27769904358706E+07,
-            'GRT' => 3.53146667214886E-04,
-            'regton' => 3.53146667214886E-04,
-            'MTON' => 8.82866668037215E-04,
-        ],
-        // Conversion uses hectare (ha) as an intermediate unit
-        self::CATEGORY_AREA => [
-            'ha' => 1.0,
-            'uk_acre' => 2.47105381467165E+00,
-            'us_acre' => 2.47104393046628E+00,
-            'ang2' => 1.0E+24,
-            'ang^2' => 1.0E+24,
-            'ar' => 1.0E+02,
-            'ft2' => 1.07639104167097E+05,
-            'ft^2' => 1.07639104167097E+05,
-            'in2' => 1.55000310000620E+07,
-            'in^2' => 1.55000310000620E+07,
-            'ly2' => 1.11725076312873E-28,
-            'ly^2' => 1.11725076312873E-28,
-            'm2' => 1.0E+04,
-            'm^2' => 1.0E+04,
-            'Morgen' => 4.0E+00,
-            'mi2' => 3.86102158542446E-03,
-            'mi^2' => 3.86102158542446E-03,
-            'Nmi2' => 2.91553349598123E-03,
-            'Nmi^2' => 2.91553349598123E-03,
-            'Pica2' => 8.03521607043214E+10,
-            'Pica^2' => 8.03521607043214E+10,
-            'Picapt2' => 8.03521607043214E+10,
-            'Picapt^2' => 8.03521607043214E+10,
-            'yd2' => 1.19599004630108E+04,
-            'yd^2' => 1.19599004630108E+04,
-        ],
-        // Conversion uses bit (bit) as an intermediate unit
-        self::CATEGORY_INFORMATION => [
-            'bit' => 1.0,
-            'byte' => 0.125,
-        ],
-        // Conversion uses Meters per Second (m/s) as an intermediate unit
-        self::CATEGORY_SPEED => [
-            'm/s' => 1.0,
-            'm/sec' => 1.0,
-            'm/h' => 3.60E+03,
-            'm/hr' => 3.60E+03,
-            'mph' => 2.23693629205440E+00,
-            'admkn' => 1.94260256941567E+00,
-            'kn' => 1.94384449244060E+00,
-        ],
-    ];
-
-    /**
-     *    getConversionGroups
-     * Returns a list of the different conversion groups for UOM conversions.
-     *
-     * @return array
-     */
-    public static function getConversionCategories()
-    {
-        $conversionGroups = [];
-        foreach (self::$conversionUnits as $conversionUnit) {
-            $conversionGroups[] = $conversionUnit['Group'];
-        }
-
-        return array_merge(array_unique($conversionGroups));
-    }
-
-    /**
-     *    getConversionGroupUnits
-     * Returns an array of units of measure, for a specified conversion group, or for all groups.
-     *
-     * @param string $category The group whose units of measure you want to retrieve
-     *
-     * @return array
-     */
-    public static function getConversionCategoryUnits($category = null)
-    {
-        $conversionGroups = [];
-        foreach (self::$conversionUnits as $conversionUnit => $conversionGroup) {
-            if (($category === null) || ($conversionGroup['Group'] == $category)) {
-                $conversionGroups[$conversionGroup['Group']][] = $conversionUnit;
-            }
-        }
-
-        return $conversionGroups;
-    }
-
-    /**
-     * getConversionGroupUnitDetails.
-     *
-     * @param string $category The group whose units of measure you want to retrieve
-     *
-     * @return array
-     */
-    public static function getConversionCategoryUnitDetails($category = null)
-    {
-        $conversionGroups = [];
-        foreach (self::$conversionUnits as $conversionUnit => $conversionGroup) {
-            if (($category === null) || ($conversionGroup['Group'] == $category)) {
-                $conversionGroups[$conversionGroup['Group']][] = [
-                    'unit' => $conversionUnit,
-                    'description' => $conversionGroup['Unit Name'],
-                ];
-            }
-        }
-
-        return $conversionGroups;
-    }
-
-    /**
-     *    getConversionMultipliers
-     * Returns an array of the Multiplier prefixes that can be used with Units of Measure in CONVERTUOM().
-     *
-     * @return array of mixed
-     */
-    public static function getConversionMultipliers()
-    {
-        return self::$conversionMultipliers;
-    }
-
-    /**
-     *    getBinaryConversionMultipliers
-     * Returns an array of the additional Multiplier prefixes that can be used with Information Units of Measure in CONVERTUOM().
-     *
-     * @return array of mixed
-     */
-    public static function getBinaryConversionMultipliers()
-    {
-        return self::$binaryConversionMultipliers;
-    }
-
-    /**
-     * CONVERT.
-     *
-     * Converts a number from one measurement system to another.
-     *    For example, CONVERT can translate a table of distances in miles to a table of distances
-     * in kilometers.
-     *
-     *    Excel Function:
-     *        CONVERT(value,fromUOM,toUOM)
-     *
-     * @param float|int $value the value in fromUOM to convert
-     * @param string $fromUOM the units for value
-     * @param string $toUOM the units for the result
-     *
-     * @return float|string
-     */
-    public static function CONVERT($value, $fromUOM, $toUOM)
-    {
-        $value = Functions::flattenSingleValue($value);
-        $fromUOM = Functions::flattenSingleValue($fromUOM);
-        $toUOM = Functions::flattenSingleValue($toUOM);
-
-        if (!is_numeric($value)) {
-            return Functions::VALUE();
-        }
-
-        try {
-            [$fromUOM, $fromCategory, $fromMultiplier] = self::getUOMDetails($fromUOM);
-            [$toUOM, $toCategory, $toMultiplier] = self::getUOMDetails($toUOM);
-        } catch (Exception $e) {
-            return Functions::NA();
-        }
-
-        if ($fromCategory !== $toCategory) {
-            return Functions::NA();
-        }
-
-        $value *= $fromMultiplier;
-
-        if (($fromUOM === $toUOM) && ($fromMultiplier === $toMultiplier)) {
-            //    We've already factored $fromMultiplier into the value, so we need
-            //        to reverse it again
-            return $value / $fromMultiplier;
-        } elseif ($fromUOM === $toUOM) {
-            return $value / $toMultiplier;
-        } elseif ($fromCategory === self::CATEGORY_TEMPERATURE) {
-            return self::convertTemperature($fromUOM, $toUOM, $value);
-        }
-
-        $baseValue = $value * (1.0 / self::$unitConversions[$fromCategory][$fromUOM]);
-
-        return ($baseValue * self::$unitConversions[$fromCategory][$toUOM]) / $toMultiplier;
-    }
-
-    private static function getUOMDetails(string $uom)
-    {
-        if (isset(self::$conversionUnits[$uom])) {
-            $unitCategory = self::$conversionUnits[$uom]['Group'];
-
-            return [$uom, $unitCategory, 1.0];
-        }
-
-        // Check 1-character standard metric multiplier prefixes
-        $multiplierType = substr($uom, 0, 1);
-        $uom = substr($uom, 1);
-        if (isset(self::$conversionUnits[$uom], self::$conversionMultipliers[$multiplierType])) {
-            if (self::$conversionUnits[$uom]['AllowPrefix'] === false) {
-                throw new Exception('Prefix not allowed for UoM');
-            }
-            $unitCategory = self::$conversionUnits[$uom]['Group'];
-
-            return [$uom, $unitCategory, self::$conversionMultipliers[$multiplierType]['multiplier']];
-        }
-
-        $multiplierType .= substr($uom, 0, 1);
-        $uom = substr($uom, 1);
-
-        // Check 2-character standard metric multiplier prefixes
-        if (isset(self::$conversionUnits[$uom], self::$conversionMultipliers[$multiplierType])) {
-            if (self::$conversionUnits[$uom]['AllowPrefix'] === false) {
-                throw new Exception('Prefix not allowed for UoM');
-            }
-            $unitCategory = self::$conversionUnits[$uom]['Group'];
-
-            return [$uom, $unitCategory, self::$conversionMultipliers[$multiplierType]['multiplier']];
-        }
-
-        // Check 2-character binary multiplier prefixes
-        if (isset(self::$conversionUnits[$uom], self::$binaryConversionMultipliers[$multiplierType])) {
-            if (self::$conversionUnits[$uom]['AllowPrefix'] === false) {
-                throw new Exception('Prefix not allowed for UoM');
-            }
-            $unitCategory = self::$conversionUnits[$uom]['Group'];
-            if ($unitCategory !== 'Information') {
-                throw new Exception('Binary Prefix is only allowed for Information UoM');
-            }
-
-            return [$uom, $unitCategory, self::$binaryConversionMultipliers[$multiplierType]['multiplier']];
-        }
-
-        throw new Exception('UoM Not Found');
-    }
-
-    /**
-     * @param float|int $value
-     *
-     * @return float|int
-     */
-    protected static function convertTemperature(string $fromUOM, string $toUOM, $value)
-    {
-        $fromUOM = self::resolveTemperatureSynonyms($fromUOM);
-        $toUOM = self::resolveTemperatureSynonyms($toUOM);
-
-        if ($fromUOM === $toUOM) {
-            return $value;
-        }
-
-        // Convert to Kelvin
-        switch ($fromUOM) {
-            case 'F':
-                $value = ($value - 32) / 1.8 + 273.15;
-
-                break;
-            case 'C':
-                $value += 273.15;
-
-                break;
-            case 'Rank':
-                $value /= 1.8;
-
-                break;
-            case 'Reau':
-                $value = $value * 1.25 + 273.15;
-
-                break;
-        }
-
-        // Convert from Kelvin
-        switch ($toUOM) {
-            case 'F':
-                $value = ($value - 273.15) * 1.8 + 32.00;
-
-                break;
-            case 'C':
-                $value -= 273.15;
-
-                break;
-            case 'Rank':
-                $value *= 1.8;
-
-                break;
-            case 'Reau':
-                $value = ($value - 273.15) * 0.80000;
-
-                break;
-        }
-
-        return $value;
-    }
-
-    private static function resolveTemperatureSynonyms(string $uom)
-    {
-        switch ($uom) {
-            case 'fah':
-                return 'F';
-            case 'cel':
-                return 'C';
-            case 'kel':
-                return 'K';
-        }
-
-        return $uom;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+HWCKD0jIpZ212hbOmeYfSbMUGxITVKg4

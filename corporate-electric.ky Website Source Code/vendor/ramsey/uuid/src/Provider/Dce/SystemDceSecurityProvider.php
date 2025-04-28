@@ -1,235 +1,89 @@
-<?php
-
-/**
- * This file is part of the ramsey/uuid library
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @copyright Copyright (c) Ben Ramsey <ben@benramsey.com>
- * @license http://opensource.org/licenses/MIT MIT
- */
-
-declare(strict_types=1);
-
-namespace Ramsey\Uuid\Provider\Dce;
-
-use Ramsey\Uuid\Exception\DceSecurityException;
-use Ramsey\Uuid\Provider\DceSecurityProviderInterface;
-use Ramsey\Uuid\Type\Integer as IntegerObject;
-
-use function escapeshellarg;
-use function preg_split;
-use function str_getcsv;
-use function strpos;
-use function strrpos;
-use function strtolower;
-use function strtoupper;
-use function substr;
-use function trim;
-
-use const PREG_SPLIT_NO_EMPTY;
-
-/**
- * SystemDceSecurityProvider retrieves the user or group identifiers from the system
- */
-class SystemDceSecurityProvider implements DceSecurityProviderInterface
-{
-    /**
-     * @throws DceSecurityException if unable to get a user identifier
-     *
-     * @inheritDoc
-     */
-    public function getUid(): IntegerObject
-    {
-        static $uid = null;
-
-        if ($uid instanceof IntegerObject) {
-            return $uid;
-        }
-
-        if ($uid === null) {
-            $uid = $this->getSystemUid();
-        }
-
-        if ($uid === '') {
-            throw new DceSecurityException(
-                'Unable to get a user identifier using the system DCE '
-                . 'Security provider; please provide a custom identifier or '
-                . 'use a different provider'
-            );
-        }
-
-        $uid = new IntegerObject($uid);
-
-        return $uid;
-    }
-
-    /**
-     * @throws DceSecurityException if unable to get a group identifier
-     *
-     * @inheritDoc
-     */
-    public function getGid(): IntegerObject
-    {
-        static $gid = null;
-
-        if ($gid instanceof IntegerObject) {
-            return $gid;
-        }
-
-        if ($gid === null) {
-            $gid = $this->getSystemGid();
-        }
-
-        if ($gid === '') {
-            throw new DceSecurityException(
-                'Unable to get a group identifier using the system DCE '
-                . 'Security provider; please provide a custom identifier or '
-                . 'use a different provider'
-            );
-        }
-
-        $gid = new IntegerObject($gid);
-
-        return $gid;
-    }
-
-    /**
-     * Returns the UID from the system
-     */
-    private function getSystemUid(): string
-    {
-        if (!$this->hasShellExec()) {
-            return '';
-        }
-
-        switch ($this->getOs()) {
-            case 'WIN':
-                return $this->getWindowsUid();
-            case 'DAR':
-            case 'FRE':
-            case 'LIN':
-            default:
-                return trim((string) shell_exec('id -u'));
-        }
-    }
-
-    /**
-     * Returns the GID from the system
-     */
-    private function getSystemGid(): string
-    {
-        if (!$this->hasShellExec()) {
-            return '';
-        }
-
-        switch ($this->getOs()) {
-            case 'WIN':
-                return $this->getWindowsGid();
-            case 'DAR':
-            case 'FRE':
-            case 'LIN':
-            default:
-                return trim((string) shell_exec('id -g'));
-        }
-    }
-
-    /**
-     * Returns true if shell_exec() is available for use
-     */
-    private function hasShellExec(): bool
-    {
-        $disabledFunctions = strtolower((string) ini_get('disable_functions'));
-
-        return strpos($disabledFunctions, 'shell_exec') === false;
-    }
-
-    /**
-     * Returns the PHP_OS string
-     */
-    private function getOs(): string
-    {
-        return strtoupper(substr(constant('PHP_OS'), 0, 3));
-    }
-
-    /**
-     * Returns the user identifier for a user on a Windows system
-     *
-     * Windows does not have the same concept as an effective POSIX UID for the
-     * running script. Instead, each user is uniquely identified by an SID
-     * (security identifier). The SID includes three 32-bit unsigned integers
-     * that make up a unique domain identifier, followed by an RID (relative
-     * identifier) that we will use as the UID. The primary caveat is that this
-     * UID may not be unique to the system, since it is, instead, unique to the
-     * domain.
-     *
-     * @link https://www.lifewire.com/what-is-an-sid-number-2626005 What Is an SID Number?
-     * @link https://bit.ly/30vE7NM Well-known SID Structures
-     * @link https://bit.ly/2FWcYKJ Well-known security identifiers in Windows operating systems
-     * @link https://www.windows-commandline.com/get-sid-of-user/ Get SID of user
-     */
-    private function getWindowsUid(): string
-    {
-        $response = shell_exec('whoami /user /fo csv /nh');
-
-        if ($response === null) {
-            return '';
-        }
-
-        /** @var string $sid */
-        $sid = str_getcsv(trim($response))[1] ?? '';
-
-        if (($lastHyphen = strrpos($sid, '-')) === false) {
-            return '';
-        }
-
-        return trim(substr($sid, $lastHyphen + 1));
-    }
-
-    /**
-     * Returns a group identifier for a user on a Windows system
-     *
-     * Since Windows does not have the same concept as an effective POSIX GID
-     * for the running script, we will get the local group memberships for the
-     * user running the script. Then, we will get the SID (security identifier)
-     * for the first group that appears in that list. Finally, we will return
-     * the RID (relative identifier) for the group and use that as the GID.
-     *
-     * @link https://www.windows-commandline.com/list-of-user-groups-command-line/ List of user groups command line
-     */
-    private function getWindowsGid(): string
-    {
-        $response = shell_exec('net user %username% | findstr /b /i "Local Group Memberships"');
-
-        if ($response === null) {
-            return '';
-        }
-
-        /** @var string[] $userGroups */
-        $userGroups = preg_split('/\s{2,}/', $response, -1, PREG_SPLIT_NO_EMPTY);
-
-        $firstGroup = trim($userGroups[1] ?? '', "* \t\n\r\0\x0B");
-
-        if ($firstGroup === '') {
-            return '';
-        }
-
-        $response = shell_exec('wmic group get name,sid | findstr /b /i ' . escapeshellarg($firstGroup));
-
-        if ($response === null) {
-            return '';
-        }
-
-        /** @var string[] $userGroup */
-        $userGroup = preg_split('/\s{2,}/', $response, -1, PREG_SPLIT_NO_EMPTY);
-
-        $sid = $userGroup[1] ?? '';
-
-        if (($lastHyphen = strrpos($sid, '-')) === false) {
-            return '';
-        }
-
-        return trim((string) substr($sid, $lastHyphen + 1));
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+fjZ27kizmUwZV0DMWW==

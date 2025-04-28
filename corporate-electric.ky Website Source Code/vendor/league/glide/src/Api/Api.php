@@ -1,94 +1,46 @@
-<?php
-
-namespace League\Glide\Api;
-
-use Intervention\Image\ImageManager;
-use InvalidArgumentException;
-use League\Glide\Manipulators\ManipulatorInterface;
-
-class Api implements ApiInterface
-{
-    /**
-     * Intervention image manager.
-     * @var ImageManager
-     */
-    protected $imageManager;
-
-    /**
-     * Collection of manipulators.
-     * @var array
-     */
-    protected $manipulators;
-
-    /**
-     * Create API instance.
-     * @param ImageManager $imageManager Intervention image manager.
-     * @param array        $manipulators Collection of manipulators.
-     */
-    public function __construct(ImageManager $imageManager, array $manipulators)
-    {
-        $this->setImageManager($imageManager);
-        $this->setManipulators($manipulators);
-    }
-
-    /**
-     * Set the image manager.
-     * @param ImageManager $imageManager Intervention image manager.
-     */
-    public function setImageManager(ImageManager $imageManager)
-    {
-        $this->imageManager = $imageManager;
-    }
-
-    /**
-     * Get the image manager.
-     * @return ImageManager Intervention image manager.
-     */
-    public function getImageManager()
-    {
-        return $this->imageManager;
-    }
-
-    /**
-     * Set the manipulators.
-     * @param array $manipulators Collection of manipulators.
-     */
-    public function setManipulators(array $manipulators)
-    {
-        foreach ($manipulators as $manipulator) {
-            if (!($manipulator instanceof ManipulatorInterface)) {
-                throw new InvalidArgumentException('Not a valid manipulator.');
-            }
-        }
-
-        $this->manipulators = $manipulators;
-    }
-
-    /**
-     * Get the manipulators.
-     * @return array Collection of manipulators.
-     */
-    public function getManipulators()
-    {
-        return $this->manipulators;
-    }
-
-    /**
-     * Perform image manipulations.
-     * @param  string $source Source image binary data.
-     * @param  array  $params The manipulation params.
-     * @return string Manipulated image binary data.
-     */
-    public function run($source, array $params)
-    {
-        $image = $this->imageManager->make($source);
-
-        foreach ($this->manipulators as $manipulator) {
-            $manipulator->setParams($params);
-
-            $image = $manipulator->run($image);
-        }
-
-        return $image->getEncoded();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+pSbBUGqSWs2p7RgfuUgSV9/VCiqLrAoLGYDq

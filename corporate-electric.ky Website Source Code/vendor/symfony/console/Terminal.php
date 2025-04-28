@@ -1,174 +1,92 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Console;
-
-class Terminal
-{
-    private static $width;
-    private static $height;
-    private static $stty;
-
-    /**
-     * Gets the terminal width.
-     *
-     * @return int
-     */
-    public function getWidth()
-    {
-        $width = getenv('COLUMNS');
-        if (false !== $width) {
-            return (int) trim($width);
-        }
-
-        if (null === self::$width) {
-            self::initDimensions();
-        }
-
-        return self::$width ?: 80;
-    }
-
-    /**
-     * Gets the terminal height.
-     *
-     * @return int
-     */
-    public function getHeight()
-    {
-        $height = getenv('LINES');
-        if (false !== $height) {
-            return (int) trim($height);
-        }
-
-        if (null === self::$height) {
-            self::initDimensions();
-        }
-
-        return self::$height ?: 50;
-    }
-
-    /**
-     * @internal
-     *
-     * @return bool
-     */
-    public static function hasSttyAvailable()
-    {
-        if (null !== self::$stty) {
-            return self::$stty;
-        }
-
-        // skip check if exec function is disabled
-        if (!\function_exists('exec')) {
-            return false;
-        }
-
-        exec('stty 2>&1', $output, $exitcode);
-
-        return self::$stty = 0 === $exitcode;
-    }
-
-    private static function initDimensions()
-    {
-        if ('\\' === \DIRECTORY_SEPARATOR) {
-            if (preg_match('/^(\d+)x(\d+)(?: \((\d+)x(\d+)\))?$/', trim(getenv('ANSICON')), $matches)) {
-                // extract [w, H] from "wxh (WxH)"
-                // or [w, h] from "wxh"
-                self::$width = (int) $matches[1];
-                self::$height = isset($matches[4]) ? (int) $matches[4] : (int) $matches[2];
-            } elseif (!self::hasVt100Support() && self::hasSttyAvailable()) {
-                // only use stty on Windows if the terminal does not support vt100 (e.g. Windows 7 + git-bash)
-                // testing for stty in a Windows 10 vt100-enabled console will implicitly disable vt100 support on STDOUT
-                self::initDimensionsUsingStty();
-            } elseif (null !== $dimensions = self::getConsoleMode()) {
-                // extract [w, h] from "wxh"
-                self::$width = (int) $dimensions[0];
-                self::$height = (int) $dimensions[1];
-            }
-        } else {
-            self::initDimensionsUsingStty();
-        }
-    }
-
-    /**
-     * Returns whether STDOUT has vt100 support (some Windows 10+ configurations).
-     */
-    private static function hasVt100Support(): bool
-    {
-        return \function_exists('sapi_windows_vt100_support') && sapi_windows_vt100_support(fopen('php://stdout', 'w'));
-    }
-
-    /**
-     * Initializes dimensions using the output of an stty columns line.
-     */
-    private static function initDimensionsUsingStty()
-    {
-        if ($sttyString = self::getSttyColumns()) {
-            if (preg_match('/rows.(\d+);.columns.(\d+);/i', $sttyString, $matches)) {
-                // extract [w, h] from "rows h; columns w;"
-                self::$width = (int) $matches[2];
-                self::$height = (int) $matches[1];
-            } elseif (preg_match('/;.(\d+).rows;.(\d+).columns/i', $sttyString, $matches)) {
-                // extract [w, h] from "; h rows; w columns"
-                self::$width = (int) $matches[2];
-                self::$height = (int) $matches[1];
-            }
-        }
-    }
-
-    /**
-     * Runs and parses mode CON if it's available, suppressing any error output.
-     *
-     * @return int[]|null An array composed of the width and the height or null if it could not be parsed
-     */
-    private static function getConsoleMode(): ?array
-    {
-        $info = self::readFromProcess('mode CON');
-
-        if (null === $info || !preg_match('/--------+\r?\n.+?(\d+)\r?\n.+?(\d+)\r?\n/', $info, $matches)) {
-            return null;
-        }
-
-        return [(int) $matches[2], (int) $matches[1]];
-    }
-
-    /**
-     * Runs and parses stty -a if it's available, suppressing any error output.
-     */
-    private static function getSttyColumns(): ?string
-    {
-        return self::readFromProcess('stty -a | grep columns');
-    }
-
-    private static function readFromProcess(string $command): ?string
-    {
-        if (!\function_exists('proc_open')) {
-            return null;
-        }
-
-        $descriptorspec = [
-            1 => ['pipe', 'w'],
-            2 => ['pipe', 'w'],
-        ];
-
-        $process = proc_open($command, $descriptorspec, $pipes, null, null, ['suppress_errors' => true]);
-        if (!\is_resource($process)) {
-            return null;
-        }
-
-        $info = stream_get_contents($pipes[1]);
-        fclose($pipes[1]);
-        fclose($pipes[2]);
-        proc_close($process);
-
-        return $info;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+N365MOoAP5PrBvPdrlTt6CqlZlQ3jNUcDsCsM0==

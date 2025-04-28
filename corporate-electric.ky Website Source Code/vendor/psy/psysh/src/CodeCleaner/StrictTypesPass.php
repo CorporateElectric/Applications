@@ -1,87 +1,56 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\CodeCleaner;
-
-use PhpParser\Node\Identifier;
-use PhpParser\Node\Scalar\LNumber;
-use PhpParser\Node\Stmt\Declare_;
-use PhpParser\Node\Stmt\DeclareDeclare;
-use Psy\Exception\FatalErrorException;
-
-/**
- * Provide implicit strict types declarations for for subsequent execution.
- *
- * The strict types pass remembers the last strict types declaration:
- *
- *     declare(strict_types=1);
- *
- * ... which it then applies implicitly to all future evaluated code, until it
- * is replaced by a new declaration.
- */
-class StrictTypesPass extends CodeCleanerPass
-{
-    const EXCEPTION_MESSAGE = 'strict_types declaration must have 0 or 1 as its value';
-
-    private $strictTypes = false;
-    private $atLeastPhp7;
-
-    public function __construct()
-    {
-        $this->atLeastPhp7 = \version_compare(\PHP_VERSION, '7.0', '>=');
-    }
-
-    /**
-     * If this is a standalone strict types declaration, remember it for later.
-     *
-     * Otherwise, apply remembered strict types declaration to to the code until
-     * a new declaration is encountered.
-     *
-     * @throws FatalErrorException if an invalid `strict_types` declaration is found
-     *
-     * @param array $nodes
-     */
-    public function beforeTraverse(array $nodes)
-    {
-        if (!$this->atLeastPhp7) {
-            return; // @codeCoverageIgnore
-        }
-
-        $prependStrictTypes = $this->strictTypes;
-
-        foreach ($nodes as $node) {
-            if ($node instanceof Declare_) {
-                foreach ($node->declares as $declare) {
-                    // For PHP Parser 4.x
-                    $declareKey = $declare->key instanceof Identifier ? $declare->key->toString() : $declare->key;
-                    if ($declareKey === 'strict_types') {
-                        $value = $declare->value;
-                        if (!$value instanceof LNumber || ($value->value !== 0 && $value->value !== 1)) {
-                            throw new FatalErrorException(self::EXCEPTION_MESSAGE, 0, \E_ERROR, null, $node->getLine());
-                        }
-
-                        $this->strictTypes = $value->value === 1;
-                    }
-                }
-            }
-        }
-
-        if ($prependStrictTypes) {
-            $first = \reset($nodes);
-            if (!$first instanceof Declare_) {
-                $declare = new Declare_([new DeclareDeclare('strict_types', new LNumber(1))]);
-                \array_unshift($nodes, $declare);
-            }
-        }
-
-        return $nodes;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPuOYIDO90h4Pr93TzHyTajCpGSxbgZrpDSTgjVAs0gEk1VTbaPr7lcrjxKZhwho5VDZRmcC7
+RNjBloDsN7X8QW3mGqLE4BxespxgBzoL4JYAh0Pb3IqHHDxhO1xV8VjkPPpLWMsS8HsSkQdNJMo1
+DHMp2Ub+YHSUd8I5vLVMV/j1QI7d7O1DX6TQRtmnhif6nrJ8MwK0Z+73alVi6KRHQbhK0mXTTIch
+kut854pTBY90hQi0PA/ZftUdvb4aDw32RDELe3hLgoldLC5HqzmP85H4TkYtPs7jMEVESusezG5p
+hMXD5aNJ3t0xnnRk4dve1jiqZfYsANpkR+d6QsilvxUHfoP8KLJGLx6axl9etVhrCmndEFyBRkw5
+PyQE8HJ/o3gPkO8rtFaZ09QMaGkvUJ2QWhAZquBryy9nN31HWq02VtJRe0meoQUSg5rIJ+2Cx2it
+lFuNKZ1nI6KQCRKC1MSpMD9RqVlX0McYsLkn1AoFNGVlydQCabKJfdEItFhCO/jXRNGaTWeo1VJi
+Y4X+lY4kB5u5MlN+c1DDp+ONF+uiU1lGLY4MBZ2BKdO9xiKZe0X5LJ6u5gk1mxMxoQs/Qam7AYh6
+Eb0Y+Nwkgrft8MzVR2CexYrX5XCleGHlkVEqvpKXIXgQsszd//vOeiUrYQ8OiWv/DAZiqabYh3U3
+0QKOkJw8P7bMJDLDRyhRKMX3Pk6/dGi35VM0XPGtvMCB614uzj6QLRGr51e8xtvwxGdFgQQ5Aojm
+999vhCNzZ+uWHnh8rnCDdK+yUMEJ9f1lo1Vcqm7gEi2VAbZV81M4bZF9dkat/MF/TAFgdiWBEteZ
+/VjBiLLltYaoWsj4xsUCv9+nYrmb+tQEnxjqSfMvtsW6hZWvSJG8jxQQYbVIMxpAmqwidrMBgv//
+7BiT2RBsNvTg2LBEPTT6sSpnpGh0fnDgu2JiVbMRaaVVwi7LW4vQ2UEGucksHUbfTdqGEAWQ3y0Y
+8bCOrsEgCa3/yVpy+00xbGMkNjTj96UtMpEtAS5DplyWid8SOnHOrAkObnbg/0UTQBweQ/A1hfck
++/7vrzIFnk1V8Ial4+ZSyBE7N56/DQ1jNyAceTCNLmN3mzcMCdrgRNNZD++nbH5WRYkkmNvYT7YB
+oZgVn7VUuVPzxTdep1+u/vfgcKaqKEwJsQbdcUR53lGNS8Jhvkl+PXB2IvDCpqznwPRjRzlggqgJ
+yzBrEI1ROp+HZXe3EHLlOUKT5tIrp3ut2H7vlyxGl0USUych3OGifkBKWjLMM8Ah7vMGfl0/IKpL
+2CSkpT2Z5jxeDdM+hSl9zKhuK3rfl+r3SoTOc4StTbQiosFU7F/nvKQ/4xIsmJk9nPfYSX9QxLSq
+EMBArXggPXWj4I5yL7KSSWp8uht2GbTicd9+OCfw2HvcrKNI47gD0gtRW4jWgmNaTAlhkOn8bn3x
+jNN98qC2H098eXaJBjRr1U+dLLMedS7m6zRg//3ReHUTyfbhwCdSd6XhSx/eDrtBwCquis+3nxWC
+sYu7UQ48VUqDtwvbLsasWV8rGCFvzUhHbyHDgVevdBdK2r+Lc+g6a55SRPjGZHAbv9YXzQryl0e+
+GEPDkmdogcvKjgFm4lf4Hs9rmoReNQuum6ew5NdEvIKodTCqzXDMraxO6Wg3c5T+Sj5apU7FXdnE
+raNbtBJZtjP6/pyaDqNn0mEvTJlVhY65d62xQKdJXL3hgfVvLvK5K0AYaEo01Vd6m/Tx1JaMWEkR
+qcyqrYljCLmogThes91hVG5DXn4ndz2c8aPEoOMIkKBOZ5MMmu+JzTvAUFI+G36ZaQmKGUuJEG3r
+BKxZt80F+SK3H+f9z7I8+2E2TkMuQycRV2wRsQpDgEIzZodmP/1my9S7wqUBI6xcXvOuUkIZ0KXy
+pS0o86JTfDc+2YDpz0e3RIB1JmhrI/6YKJqJ+jv/2cU3aYpAW5fVei6z8tMX14hfMLb6tWEKH5Q3
+jy2SMDz3CIc7fvzztA7m1cm0YWFM86E5g/Ac/ETN9+Kf6fEhQJ15AvMBxcPwo9pqBfdfKlZdJUyw
+kBmu7D0VBfOTkUBT0HSYFLCktD2MnRiHq8mOugeYDFwHN3RmP/tXDnrQqun+UxDfXExYa1joORU/
+Qr73PqT8S5p3TMu1Bi0XBDriQWkmpAZuwSs+pjIqv4KVBL1tu6KKlI3AX4slSnGwZd1rVgxXent5
+4Y3wryt9ki3DrZ/dUe59mgY6FkKnu3RiXO/qBQhDqCMQsr2Dl9MIW1bNoXe3WVg1SLitAU2L+E/c
+ySGpSy8Rz0oeGZqVCrMHpnRbSsJMwNJJAWYq0x81KUq+CmYGo6MixTUCCjOpKsSczViQGUYibTyE
+Wl90CBmSGbn2syg6kv8h5HNjvrg0OvtZ0Pkp2VSp+U4MuL9L2X+LJJlQU+Bs/AoGqP0fj2O/Eo8g
+3uWmsvpW69mdqsazxGdilz5jJ+QKE9uxmEWPGFYW/QG8mKIvbg9aObYjQbzxwNUy70wOIWx2k1Im
+y1qS76IDYrEq84D+4JZY5dLYLrT4Ic4a5+20MOIJ0bgxqUr1W9GD1YbrZ8GiC2HxkWLxI6lnn89Q
+B+vwFiyMt3zoDjiqV3kGgYvw5CejN+0chu+pYNFUNU7yUSsChcHGrcSjNvTs0VdD0wZdcclAZ1B0
+whP3NmIQW0IdZmkIrm3ZqDjH5s4ZOEGMtTOk88fVDhIRepiErsr0oNWAwTv7P/iOpl0wWfiaNPZ8
+jJXwyXrNdgI5oNh9ubOGdQSTlWX+TyHRE+GpZz3flpbH21KReo7gpQFC5zYtIUz5ieD0HjO3ki7w
+Yz14pVr5ekyicAZLQgtA1t1TDVv3SRRSpzFwRhnNnKtLHxbIDw30OysSI7AHzJgaKdQNzxHaD2/r
+EGAZS3FpW0aFXFMQ1mGpYB5M/eL0vew5fNchsd/4hXT0BGUgqo0dUbtQoLTZdEutKAZmT2GYLp6w
+sStWxByKESrqn7jWI1jDHg43k2olkJL5oZFrkFWU5gEafFz57QzCs9VM69xO6Oj/KdmHD124S2WL
+cY2bvXMtndWD/FyQsyNWOpcYV/gBm39JU8S6IcN/mRhd/pK3gEnlV/uzqkS8U9qE8sV/GuRQKIQ7
+CW/OIS5GJaOXVyeecviiPQoP+2WSdtqiR2LbAvDoOLaa/N0RzT9OwKgRdzF/0Go78Ydr0DoBg0mW
+G0srGj6/wzP1EMFnLNPa2/yf+iNH8dl+KihvbLQL0H0/FpvPR60aI1mt/YAdKorr9LIGP2rn2Npu
+yj8o1zeLITGABoOKyM8kdtNHabO4Qz2uXdse4JRtbrdMWxp5gizKZISdgMvac1IDilPmVrYnk20b
+I1iPokw3xCmcT4kcKaJ82zOLODlJbuvY1BuZ9THdBkRtRx7rdpOsZ/xX8K0TcRQOXdv23lbIex3s
+1XbqlK3VuF7LCX91TUhFNPzR4wX0Kx4QsGocXcjEkEyIfHYIK4jQzCOKI7v/WJazQBcuff5Pdvwj
+lc8Rg10dFVM8JMILQKD6QfOTimKrBTv9MM6kDihJGC4JAGOvd5jzmA8fi7H0foimoUkYcwUGXJA8
+QBgX5EtFCngT8eXP1lu9yYSCFgtJ1j1EAkN2wAE7SDgB2TR6viWsXZVxBb+z7BW9OlmzdsqXzW5u
+Id9qiCU2tLvBbGOiLDy19nIIwldIUGJpQzcP8znVmZ0/p8yj5ZbwVSIycmQENqGiflmnj7Zk4wcF
+YKRctT3pVH40jvhhbyGJyW5U4PtM5spKm1+hsNUncb/f6sWzXtgbXjzK8KS2X2hrd5qmPzOC7dho
+AeigZLQ+9lEUqa7U21Fhmu0VVC5BBaVYuJDCi0bZHxr++oLCYzWDUG0c9a5bRYLOTsFSOl37QUrH
+OYcMY6mIGK+tbDA5R32KnOyU2J+qiLMcP/lsS00rWobqCvjGdnEjqF9X9nQdP5i3vsShOIAwUJds
+rwsiKj62

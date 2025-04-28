@@ -1,71 +1,45 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of sebastian/comparator.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\Comparator;
-
-use SplObjectStorage;
-
-/**
- * Compares \SplObjectStorage instances for equality.
- */
-class SplObjectStorageComparator extends Comparator
-{
-    /**
-     * Returns whether the comparator can compare two values.
-     *
-     * @param mixed $expected The first value to compare
-     * @param mixed $actual   The second value to compare
-     *
-     * @return bool
-     */
-    public function accepts($expected, $actual)
-    {
-        return $expected instanceof SplObjectStorage && $actual instanceof SplObjectStorage;
-    }
-
-    /**
-     * Asserts that two values are equal.
-     *
-     * @param mixed $expected     First value to compare
-     * @param mixed $actual       Second value to compare
-     * @param float $delta        Allowed numerical distance between two values to consider them equal
-     * @param bool  $canonicalize Arrays are sorted before comparison when set to true
-     * @param bool  $ignoreCase   Case is ignored when set to true
-     *
-     * @throws ComparisonFailure
-     */
-    public function assertEquals($expected, $actual, $delta = 0.0, $canonicalize = false, $ignoreCase = false)/*: void*/
-    {
-        foreach ($actual as $object) {
-            if (!$expected->contains($object)) {
-                throw new ComparisonFailure(
-                    $expected,
-                    $actual,
-                    $this->exporter->export($expected),
-                    $this->exporter->export($actual),
-                    false,
-                    'Failed asserting that two objects are equal.'
-                );
-            }
-        }
-
-        foreach ($expected as $object) {
-            if (!$actual->contains($object)) {
-                throw new ComparisonFailure(
-                    $expected,
-                    $actual,
-                    $this->exporter->export($expected),
-                    $this->exporter->export($actual),
-                    false,
-                    'Failed asserting that two objects are equal.'
-                );
-            }
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,106 +1,35 @@
-<?php
-
-/**
- * This file is part of the ramsey/uuid library
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @copyright Copyright (c) Ben Ramsey <ben@benramsey.com>
- * @license http://opensource.org/licenses/MIT MIT
- */
-
-declare(strict_types=1);
-
-namespace Ramsey\Uuid\Math;
-
-use Ramsey\Uuid\Type\Hexadecimal;
-use Ramsey\Uuid\Type\Integer as IntegerObject;
-use Ramsey\Uuid\Type\NumberInterface;
-
-/**
- * A calculator performs arithmetic operations on numbers
- *
- * @psalm-immutable
- */
-interface CalculatorInterface
-{
-    /**
-     * Returns the sum of all the provided parameters
-     *
-     * @param NumberInterface $augend The first addend (the integer being added to)
-     * @param NumberInterface ...$addends The additional integers to a add to the augend
-     *
-     * @return NumberInterface The sum of all the parameters
-     */
-    public function add(NumberInterface $augend, NumberInterface ...$addends): NumberInterface;
-
-    /**
-     * Returns the difference of all the provided parameters
-     *
-     * @param NumberInterface $minuend The integer being subtracted from
-     * @param NumberInterface ...$subtrahends The integers to subtract from the minuend
-     *
-     * @return NumberInterface The difference after subtracting all parameters
-     */
-    public function subtract(NumberInterface $minuend, NumberInterface ...$subtrahends): NumberInterface;
-
-    /**
-     * Returns the product of all the provided parameters
-     *
-     * @param NumberInterface $multiplicand The integer to be multiplied
-     * @param NumberInterface ...$multipliers The factors by which to multiply the multiplicand
-     *
-     * @return NumberInterface The product of multiplying all the provided parameters
-     */
-    public function multiply(NumberInterface $multiplicand, NumberInterface ...$multipliers): NumberInterface;
-
-    /**
-     * Returns the quotient of the provided parameters divided left-to-right
-     *
-     * @param int $roundingMode The RoundingMode constant to use for this operation
-     * @param int $scale The scale to use for this operation
-     * @param NumberInterface $dividend The integer to be divided
-     * @param NumberInterface ...$divisors The integers to divide $dividend by, in
-     *     the order in which the division operations should take place
-     *     (left-to-right)
-     *
-     * @return NumberInterface The quotient of dividing the provided parameters left-to-right
-     */
-    public function divide(
-        int $roundingMode,
-        int $scale,
-        NumberInterface $dividend,
-        NumberInterface ...$divisors
-    ): NumberInterface;
-
-    /**
-     * Converts a value from an arbitrary base to a base-10 integer value
-     *
-     * @param string $value The value to convert
-     * @param int $base The base to convert from (i.e., 2, 16, 32, etc.)
-     *
-     * @return IntegerObject The base-10 integer value of the converted value
-     */
-    public function fromBase(string $value, int $base): IntegerObject;
-
-    /**
-     * Converts a base-10 integer value to an arbitrary base
-     *
-     * @param IntegerObject $value The integer value to convert
-     * @param int $base The base to convert to (i.e., 2, 16, 32, etc.)
-     *
-     * @return string The value represented in the specified base
-     */
-    public function toBase(IntegerObject $value, int $base): string;
-
-    /**
-     * Converts an Integer instance to a Hexadecimal instance
-     */
-    public function toHexadecimal(IntegerObject $value): Hexadecimal;
-
-    /**
-     * Converts a Hexadecimal instance to an Integer instance
-     */
-    public function toInteger(Hexadecimal $value): IntegerObject;
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cP/JxvtSZGTnuEaroL6aGb91ZbxPm1FiHiw2uMdi4aUdz7xASapMHljR/+TSfZeLdz8CbPgN8
+eNhpEGNtEBlbkFB7E2LUG7ty4kvnfNc/XyGtMo14Og5YGWP/0OGNXJHAoeRqBYGBXelr0P7TyDQZ
+tHykyND2efZiBjYdDR6ZEEldyk2S432LMDOMhOBAfiu3neL5CxUTCX68kqnG1DoFPgQtDG/SzHnV
+SoVkabSY/gjTgA0JwFLWgvD+kw0a15usZsw5EjMhA+TKmL7Jt1aWL4Hsw5rhzk+gcRHK1qOcRtCj
+kv8q/mH/TOwmt3Kg5b12z4hv0osX7rdNer3V0UCGXJ14MNjMvwzVMzVPDGcX/QKIS4X8TE0jU7Wv
+zTYHI/8LOZdMMU0tyucrA90Z8CbE/3wAIZgeoN2IcSaFoMRtnNQ+kvBuxq0AK22h9Yus6Mp91Ipr
+s5Zmgsli9GcW+H4/xTBbUBc6u9eSaN4DGk+Uthjn9uOWSNLwUp0tFSVDsc+E9hxxz4WG3TMiSfXv
+wz2PDRQ/UKBkmNu9idxYB2WLO6tKi0fLNyZccjQhqH3ACwKfrzindSF4rgebnKTEMEJIyuEGkhcc
+uzGuqBQJbbMQkg3yt1buVHgrEYeUNpMCVI4SiSHVM5J/uL2X6n1rQoSvt14ivRBuxkaRUeNHxtWV
+6rP0daqqmnxsXCkBioJeOYj5yy0PGGZfhmuDUbjxtD3fPlyChK9ntqe2mQ8QNDGrs0lE/UhkHWZ6
+opKrNEizuyTKTn5fIID2GETpoe2LV282dbb9BvbKKTr7yMswX8Jlj6w9lM4jsTBVdtVY9xRxL+RJ
+wzV41TLaUlGCp3BJQmdFT8ZeuSgW1aSX2hUEtEaGmRkt1ktwh6wZRq84z9+pI3wa27QuvZrhQV9Z
+AhNMZfNSbRbeV9ruQWN8Hon9xOiJG0F5ZrQvKSh6AcQjD9TmzqlvvXta+cyXeztl8CfKxH3wK6De
+K8Px6cSxZTpsMqBmGQV42h/9fZLSLh47cTJxrA1UETBwQTdTJe4u/rusxcFOU6IiyKRv94koxHan
+66w51Nn+Fy1crjCE9qTgP/JTOf2UuJ+16mOXHB4vqljGOK+PEVLNS+XadNPB1rD046+McgTnbwJg
+yJAwkvrLST9gdMqmh2UjxylKbAqRIrdH6UsyUPu/AjDbSNXsGuX/kp1EGGd8PYf6L59FmiP2QAAF
+37JWlbExYaHKLFLkX95le77e6gDhMyS5RwrpiMJljDJowvCjUMN/0PUmdPOUNWGQGPwBeFL/8Ccx
+rW3SGMA7KoItaNdAGM6rr/mO8vvAb4kj5Eoi2H1dNUmJOQyJ/tnwUmFQzG6MeJ974hLv/+e18IL4
+qwkDqOd7UwPxUvsdo2qGyhNC/VVv/Z6cnAEfunsm9pVZ7isrk7p4yY97TfyfEAVZTttIX5PuQSfm
+HXI6fBPcv9KMpMq3fzAGz73xo0L5oCMrcV1wHJGxsRvPQaMTtV6KHe2IXVr3W1X95XgZG6WaMO1S
+RNT8DSi3kAwVpDi0iWKD+/NVpRIZiBCAvoM5jb1AJSO9rZceyC8BER3p/DjpVa+mqL1xGbDiV0Hd
+Fda0pQV1CnBdlIc26z0Rf2MLVOfiZ/IGiWKMiPDLD98NgUKaQf2jz+AXUW1QDBX3Nqv1tOSd3MUJ
+Jl/pv9JZEoCrKjX6nwuojc0Fs72jPS/4LmdHg6yxgB9cULe61/x/iYIyu6Af2+xXdbI6RXEaOtGw
+TTmn8nI3n48nw9XLC5yzIDpXXJ46Z5EAfEpnIXpPDRbxdFmA0hOqMDkFBP2ciSZZZ0WPO8cvrpq6
+guAj0GCzuy21cqAJKrXHxF7vTgn1M5jz8qrGccmCkrCzSbe0VHRDccdMzGR6RxqHFdTVeyk5fw6k
+cTUSrWA7sDMiNg5ES0NjvEf2SM1hlhCLykmD9HrzsDfYAYgqheGIbveRUfxeqvzYypWglih2yvdq
+FVqOOkWLUH7g2XaYlEeQoldJ1i2L3gs4L+rCol52gqNEwIN0Gl4XKWAkUV5eJGZZJ/XkvP+uROq7
+SlReKRwxAeZGkrnpli2y9UOslP4LAjaJcg2/CdlVPAjmzgf2IyKPBpNPdIhDZe2721ORNv2SzuJd
+2FjoCIk9u8EABGIZ2wY6NinVrrsHRQBLEpUIdoLkUvrLlKFbbqMMTehekkbVEdQYtFyzpRYYPGdx
+FXqfGL3KDomAQtUo5tY35JqLl1kqqgBq6pMUJ+dfhTdZYU5RxSycppsaOGgGtvE4dhNyCzjYE58t
+N8tvQEDBp6mIxmGH5O8NgIkLWQehDnhyxY9Xz5VwEQjLiWx0TC+MTf4fsmBtOg9JY9Zt82jhOAd5
+IFObDMlm5wNpvnuiEYhg6R9bYZyu6vAHoDFO3z44TEVw+84CKWqRc88uFMpuQ0R9pQXH8Xx/1m==

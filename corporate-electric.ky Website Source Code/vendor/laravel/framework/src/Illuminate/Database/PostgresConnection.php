@@ -1,108 +1,63 @@
-<?php
-
-namespace Illuminate\Database;
-
-use Doctrine\DBAL\Driver\PDOPgSql\Driver as DoctrineDriver;
-use Doctrine\DBAL\Version;
-use Illuminate\Database\PDO\PostgresDriver;
-use Illuminate\Database\Query\Grammars\PostgresGrammar as QueryGrammar;
-use Illuminate\Database\Query\Processors\PostgresProcessor;
-use Illuminate\Database\Schema\Grammars\PostgresGrammar as SchemaGrammar;
-use Illuminate\Database\Schema\PostgresBuilder;
-use Illuminate\Database\Schema\PostgresSchemaState;
-use PDO;
-
-class PostgresConnection extends Connection
-{
-    /**
-     * Bind values to their parameters in the given statement.
-     *
-     * @param  \PDOStatement  $statement
-     * @param  array  $bindings
-     * @return void
-     */
-    public function bindValues($statement, $bindings)
-    {
-        foreach ($bindings as $key => $value) {
-            if (is_int($value)) {
-                $pdoParam = PDO::PARAM_INT;
-            } elseif (is_resource($value)) {
-                $pdoParam = PDO::PARAM_LOB;
-            } else {
-                $pdoParam = PDO::PARAM_STR;
-            }
-
-            $statement->bindValue(
-                is_string($key) ? $key : $key + 1,
-                $value,
-                $pdoParam
-            );
-        }
-    }
-
-    /**
-     * Get the default query grammar instance.
-     *
-     * @return \Illuminate\Database\Query\Grammars\PostgresGrammar
-     */
-    protected function getDefaultQueryGrammar()
-    {
-        return $this->withTablePrefix(new QueryGrammar);
-    }
-
-    /**
-     * Get a schema builder instance for the connection.
-     *
-     * @return \Illuminate\Database\Schema\PostgresBuilder
-     */
-    public function getSchemaBuilder()
-    {
-        if (is_null($this->schemaGrammar)) {
-            $this->useDefaultSchemaGrammar();
-        }
-
-        return new PostgresBuilder($this);
-    }
-
-    /**
-     * Get the default schema grammar instance.
-     *
-     * @return \Illuminate\Database\Schema\Grammars\PostgresGrammar
-     */
-    protected function getDefaultSchemaGrammar()
-    {
-        return $this->withTablePrefix(new SchemaGrammar);
-    }
-
-    /**
-     * Get the schema state for the connection.
-     *
-     * @param  \Illuminate\Database\Filesystem|null  $files
-     * @param  callable|null  $processFactory
-     * @return \Illuminate\Database\Schema\PostgresSchemaState
-     */
-    public function getSchemaState(Filesystem $files = null, callable $processFactory = null)
-    {
-        return new PostgresSchemaState($this, $files, $processFactory);
-    }
-
-    /**
-     * Get the default post processor instance.
-     *
-     * @return \Illuminate\Database\Query\Processors\PostgresProcessor
-     */
-    protected function getDefaultPostProcessor()
-    {
-        return new PostgresProcessor;
-    }
-
-    /**
-     * Get the Doctrine DBAL driver.
-     *
-     * @return \Doctrine\DBAL\Driver\PDOPgSql\Driver|\Illuminate\Database\PDO\PostgresDriver
-     */
-    protected function getDoctrineDriver()
-    {
-        return class_exists(Version::class) ? new DoctrineDriver : new PostgresDriver;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

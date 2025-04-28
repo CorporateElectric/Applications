@@ -1,104 +1,82 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Console\DependencyInjection;
-
-use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\CommandLoader\ContainerCommandLoader;
-use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
-use Symfony\Component\DependencyInjection\Compiler\ServiceLocatorTagPass;
-use Symfony\Component\DependencyInjection\ContainerBuilder;
-use Symfony\Component\DependencyInjection\Exception\InvalidArgumentException;
-use Symfony\Component\DependencyInjection\TypedReference;
-
-/**
- * Registers console commands.
- *
- * @author Grégoire Pineau <lyrixx@lyrixx.info>
- */
-class AddConsoleCommandPass implements CompilerPassInterface
-{
-    private $commandLoaderServiceId;
-    private $commandTag;
-    private $noPreloadTag;
-    private $privateTagName;
-
-    public function __construct(string $commandLoaderServiceId = 'console.command_loader', string $commandTag = 'console.command', string $noPreloadTag = 'container.no_preload', string $privateTagName = 'container.private')
-    {
-        $this->commandLoaderServiceId = $commandLoaderServiceId;
-        $this->commandTag = $commandTag;
-        $this->noPreloadTag = $noPreloadTag;
-        $this->privateTagName = $privateTagName;
-    }
-
-    public function process(ContainerBuilder $container)
-    {
-        $commandServices = $container->findTaggedServiceIds($this->commandTag, true);
-        $lazyCommandMap = [];
-        $lazyCommandRefs = [];
-        $serviceIds = [];
-
-        foreach ($commandServices as $id => $tags) {
-            $definition = $container->getDefinition($id);
-            $definition->addTag($this->noPreloadTag);
-            $class = $container->getParameterBag()->resolveValue($definition->getClass());
-
-            if (isset($tags[0]['command'])) {
-                $commandName = $tags[0]['command'];
-            } else {
-                if (!$r = $container->getReflectionClass($class)) {
-                    throw new InvalidArgumentException(sprintf('Class "%s" used for service "%s" cannot be found.', $class, $id));
-                }
-                if (!$r->isSubclassOf(Command::class)) {
-                    throw new InvalidArgumentException(sprintf('The service "%s" tagged "%s" must be a subclass of "%s".', $id, $this->commandTag, Command::class));
-                }
-                $commandName = $class::getDefaultName();
-            }
-
-            if (null === $commandName) {
-                if (!$definition->isPublic() || $definition->isPrivate() || $definition->hasTag($this->privateTagName)) {
-                    $commandId = 'console.command.public_alias.'.$id;
-                    $container->setAlias($commandId, $id)->setPublic(true);
-                    $id = $commandId;
-                }
-                $serviceIds[] = $id;
-
-                continue;
-            }
-
-            unset($tags[0]);
-            $lazyCommandMap[$commandName] = $id;
-            $lazyCommandRefs[$id] = new TypedReference($id, $class);
-            $aliases = [];
-
-            foreach ($tags as $tag) {
-                if (isset($tag['command'])) {
-                    $aliases[] = $tag['command'];
-                    $lazyCommandMap[$tag['command']] = $id;
-                }
-            }
-
-            $definition->addMethodCall('setName', [$commandName]);
-
-            if ($aliases) {
-                $definition->addMethodCall('setAliases', [$aliases]);
-            }
-        }
-
-        $container
-            ->register($this->commandLoaderServiceId, ContainerCommandLoader::class)
-            ->setPublic(true)
-            ->addTag($this->noPreloadTag)
-            ->setArguments([ServiceLocatorTagPass::register($container, $lazyCommandRefs), $lazyCommandMap]);
-
-        $container->setParameter('console.command.ids', $serviceIds);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

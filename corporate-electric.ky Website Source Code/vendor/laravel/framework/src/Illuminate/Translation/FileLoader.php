@@ -1,187 +1,92 @@
-<?php
-
-namespace Illuminate\Translation;
-
-use Illuminate\Contracts\Translation\Loader;
-use Illuminate\Filesystem\Filesystem;
-use RuntimeException;
-
-class FileLoader implements Loader
-{
-    /**
-     * The filesystem instance.
-     *
-     * @var \Illuminate\Filesystem\Filesystem
-     */
-    protected $files;
-
-    /**
-     * The default path for the loader.
-     *
-     * @var string
-     */
-    protected $path;
-
-    /**
-     * All of the registered paths to JSON translation files.
-     *
-     * @var array
-     */
-    protected $jsonPaths = [];
-
-    /**
-     * All of the namespace hints.
-     *
-     * @var array
-     */
-    protected $hints = [];
-
-    /**
-     * Create a new file loader instance.
-     *
-     * @param  \Illuminate\Filesystem\Filesystem  $files
-     * @param  string  $path
-     * @return void
-     */
-    public function __construct(Filesystem $files, $path)
-    {
-        $this->path = $path;
-        $this->files = $files;
-    }
-
-    /**
-     * Load the messages for the given locale.
-     *
-     * @param  string  $locale
-     * @param  string  $group
-     * @param  string|null  $namespace
-     * @return array
-     */
-    public function load($locale, $group, $namespace = null)
-    {
-        if ($group === '*' && $namespace === '*') {
-            return $this->loadJsonPaths($locale);
-        }
-
-        if (is_null($namespace) || $namespace === '*') {
-            return $this->loadPath($this->path, $locale, $group);
-        }
-
-        return $this->loadNamespaced($locale, $group, $namespace);
-    }
-
-    /**
-     * Load a namespaced translation group.
-     *
-     * @param  string  $locale
-     * @param  string  $group
-     * @param  string  $namespace
-     * @return array
-     */
-    protected function loadNamespaced($locale, $group, $namespace)
-    {
-        if (isset($this->hints[$namespace])) {
-            $lines = $this->loadPath($this->hints[$namespace], $locale, $group);
-
-            return $this->loadNamespaceOverrides($lines, $locale, $group, $namespace);
-        }
-
-        return [];
-    }
-
-    /**
-     * Load a local namespaced translation group for overrides.
-     *
-     * @param  array  $lines
-     * @param  string  $locale
-     * @param  string  $group
-     * @param  string  $namespace
-     * @return array
-     */
-    protected function loadNamespaceOverrides(array $lines, $locale, $group, $namespace)
-    {
-        $file = "{$this->path}/vendor/{$namespace}/{$locale}/{$group}.php";
-
-        if ($this->files->exists($file)) {
-            return array_replace_recursive($lines, $this->files->getRequire($file));
-        }
-
-        return $lines;
-    }
-
-    /**
-     * Load a locale from a given path.
-     *
-     * @param  string  $path
-     * @param  string  $locale
-     * @param  string  $group
-     * @return array
-     */
-    protected function loadPath($path, $locale, $group)
-    {
-        if ($this->files->exists($full = "{$path}/{$locale}/{$group}.php")) {
-            return $this->files->getRequire($full);
-        }
-
-        return [];
-    }
-
-    /**
-     * Load a locale from the given JSON file path.
-     *
-     * @param  string  $locale
-     * @return array
-     *
-     * @throws \RuntimeException
-     */
-    protected function loadJsonPaths($locale)
-    {
-        return collect(array_merge($this->jsonPaths, [$this->path]))
-            ->reduce(function ($output, $path) use ($locale) {
-                if ($this->files->exists($full = "{$path}/{$locale}.json")) {
-                    $decoded = json_decode($this->files->get($full), true);
-
-                    if (is_null($decoded) || json_last_error() !== JSON_ERROR_NONE) {
-                        throw new RuntimeException("Translation file [{$full}] contains an invalid JSON structure.");
-                    }
-
-                    $output = array_merge($output, $decoded);
-                }
-
-                return $output;
-            }, []);
-    }
-
-    /**
-     * Add a new namespace to the loader.
-     *
-     * @param  string  $namespace
-     * @param  string  $hint
-     * @return void
-     */
-    public function addNamespace($namespace, $hint)
-    {
-        $this->hints[$namespace] = $hint;
-    }
-
-    /**
-     * Add a new JSON path to the loader.
-     *
-     * @param  string  $path
-     * @return void
-     */
-    public function addJsonPath($path)
-    {
-        $this->jsonPaths[] = $path;
-    }
-
-    /**
-     * Get an array of all the registered namespaces.
-     *
-     * @return array
-     */
-    public function namespaces()
-    {
-        return $this->hints;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

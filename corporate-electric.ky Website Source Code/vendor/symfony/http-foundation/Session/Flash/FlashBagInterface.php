@@ -1,88 +1,38 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpFoundation\Session\Flash;
-
-use Symfony\Component\HttpFoundation\Session\SessionBagInterface;
-
-/**
- * FlashBagInterface.
- *
- * @author Drak <drak@zikula.org>
- */
-interface FlashBagInterface extends SessionBagInterface
-{
-    /**
-     * Adds a flash message for the given type.
-     *
-     * @param mixed $message
-     */
-    public function add(string $type, $message);
-
-    /**
-     * Registers one or more messages for a given type.
-     *
-     * @param string|array $messages
-     */
-    public function set(string $type, $messages);
-
-    /**
-     * Gets flash messages for a given type.
-     *
-     * @param string $type    Message category type
-     * @param array  $default Default value if $type does not exist
-     *
-     * @return array
-     */
-    public function peek(string $type, array $default = []);
-
-    /**
-     * Gets all flash messages.
-     *
-     * @return array
-     */
-    public function peekAll();
-
-    /**
-     * Gets and clears flash from the stack.
-     *
-     * @param array $default Default value if $type does not exist
-     *
-     * @return array
-     */
-    public function get(string $type, array $default = []);
-
-    /**
-     * Gets and clears flashes from the stack.
-     *
-     * @return array
-     */
-    public function all();
-
-    /**
-     * Sets all flash messages.
-     */
-    public function setAll(array $messages);
-
-    /**
-     * Has flash messages for a given type?
-     *
-     * @return bool
-     */
-    public function has(string $type);
-
-    /**
-     * Returns a list of all defined types.
-     *
-     * @return array
-     */
-    public function keys();
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

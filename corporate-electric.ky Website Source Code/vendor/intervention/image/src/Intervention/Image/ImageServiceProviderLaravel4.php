@@ -1,112 +1,97 @@
-<?php
-
-namespace Intervention\Image;
-
-use Illuminate\Support\ServiceProvider;
-use Illuminate\Http\Response as IlluminateResponse;
-
-class ImageServiceProviderLaravel4 extends ServiceProvider
-{
-    /**
-     * Bootstrap the application events.
-     *
-     * @return void
-     */
-    public function boot()
-    {
-        $this->package('intervention/image');
-
-        // try to create imagecache route only if imagecache is present
-        if (class_exists('Intervention\\Image\\ImageCache')) {
-
-            $app = $this->app;
-
-            // load imagecache config
-            $app['config']->package('intervention/imagecache', __DIR__.'/../../../../imagecache/src/config', 'imagecache');
-            $config = $app['config'];
-
-            // create dynamic manipulation route
-            if (is_string($config->get('imagecache::route'))) {
-
-                // add original to route templates
-                $config->set('imagecache::templates.original', null);
-
-                // setup image manipulator route
-                $app['router']->get($config->get('imagecache::route').'/{template}/{filename}', ['as' => 'imagecache', function ($template, $filename) use ($app, $config) {
-
-                    // disable session cookies for image route
-                    $app['config']->set('session.driver', 'array');
-
-                    // find file
-                    foreach ($config->get('imagecache::paths') as $path) {
-                        // don't allow '..' in filenames
-                        $image_path = $path.'/'.str_replace('..', '', $filename);
-                        if (file_exists($image_path) && is_file($image_path)) {
-                            break;
-                        } else {
-                            $image_path = false;
-                        }
-                    }
-
-                    // abort if file not found
-                    if ($image_path === false) {
-                        $app->abort(404);
-                    }
-
-                    // define template callback
-                    $callback = $config->get("imagecache::templates.{$template}");
-
-                    if (is_callable($callback) || class_exists($callback)) {
-
-                        // image manipulation based on callback
-                        $content = $app['image']->cache(function ($image) use ($image_path, $callback) {
-                            
-                            switch (true) {
-                                case is_callable($callback):
-                                    return $callback($image->make($image_path));
-                                    break;
-                                
-                                case class_exists($callback):
-                                    return $image->make($image_path)->filter(new $callback);
-                                    break;
-                            }
-
-                        }, $config->get('imagecache::lifetime'));
-
-                    } else {
-
-                        // get original image file contents
-                        $content = file_get_contents($image_path);
-                    }
-
-                    // define mime type
-                    $mime = finfo_buffer(finfo_open(FILEINFO_MIME_TYPE), $content);
-
-                    // return http response
-                    return new IlluminateResponse($content, 200, [
-                        'Content-Type' => $mime,
-                        'Cache-Control' => 'max-age='.($config->get('imagecache::lifetime')*60).', public',
-                        'Etag' => md5($content)
-                    ]);
-
-                }])->where(['template' => join('|', array_keys($config->get('imagecache::templates'))), 'filename' => '[ \w\\.\\/\\-]+']);
-            }
-        }
-    }
-
-    /**
-     * Register the service provider.
-     *
-     * @return void
-     */
-    public function register()
-    {
-        $app = $this->app;
-
-        $app['image'] = $app->share(function ($app) {
-            return new ImageManager($app['config']->get('image::config'));
-        });
-
-        $app->alias('image', 'Intervention\Image\ImageManager');
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

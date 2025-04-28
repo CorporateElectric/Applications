@@ -1,124 +1,78 @@
-<?php
-
-namespace Intervention\Image\Gd;
-
-use Intervention\Image\Exception\NotSupportedException;
-
-class Encoder extends \Intervention\Image\AbstractEncoder
-{
-    /**
-     * Processes and returns encoded image as JPEG string
-     *
-     * @return string
-     */
-    protected function processJpeg()
-    {
-        ob_start();
-        imagejpeg($this->image->getCore(), null, $this->quality);
-        $this->image->mime = image_type_to_mime_type(IMAGETYPE_JPEG);
-        $buffer = ob_get_contents();
-        ob_end_clean();
-
-        return $buffer;
-    }
-
-    /**
-     * Processes and returns encoded image as PNG string
-     *
-     * @return string
-     */
-    protected function processPng()
-    {
-        ob_start();
-        $resource = $this->image->getCore();
-        imagealphablending($resource, false);
-        imagesavealpha($resource, true);
-        imagepng($resource, null, -1);
-        $this->image->mime = image_type_to_mime_type(IMAGETYPE_PNG);
-        $buffer = ob_get_contents();
-        ob_end_clean();
-
-        return $buffer;
-    }
-
-    /**
-     * Processes and returns encoded image as GIF string
-     *
-     * @return string
-     */
-    protected function processGif()
-    {
-        ob_start();
-        imagegif($this->image->getCore());
-        $this->image->mime = image_type_to_mime_type(IMAGETYPE_GIF);
-        $buffer = ob_get_contents();
-        ob_end_clean();
-
-        return $buffer;
-    }
-
-    protected function processWebp()
-    {
-        if ( ! function_exists('imagewebp')) {
-            throw new NotSupportedException(
-                "Webp format is not supported by PHP installation."
-            );
-        }
-
-        ob_start();
-        imagewebp($this->image->getCore(), null, $this->quality);
-        $this->image->mime = defined('IMAGETYPE_WEBP') ? image_type_to_mime_type(IMAGETYPE_WEBP) : 'image/webp';
-        $buffer = ob_get_contents();
-        ob_end_clean();
-        
-        return $buffer;
-    }
-
-    /**
-     * Processes and returns encoded image as TIFF string
-     *
-     * @return string
-     */
-    protected function processTiff()
-    {
-        throw new NotSupportedException(
-            "TIFF format is not supported by Gd Driver."
-        );
-    }
-
-    /**
-     * Processes and returns encoded image as BMP string
-     *
-     * @return string
-     */
-    protected function processBmp()
-    {
-        throw new NotSupportedException(
-            "BMP format is not supported by Gd Driver."
-        );
-    }
-
-    /**
-     * Processes and returns encoded image as ICO string
-     *
-     * @return string
-     */
-    protected function processIco()
-    {
-        throw new NotSupportedException(
-            "ICO format is not supported by Gd Driver."
-        );
-    }
-
-    /**
-     * Processes and returns encoded image as PSD string
-     *
-     * @return string
-     */
-    protected function processPsd()
-    {
-        throw new NotSupportedException(
-            "PSD format is not supported by Gd Driver."
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,493 +1,194 @@
-<?php
-
-/**
- * Definition of the purified HTML that describes allowed children,
- * attributes, and many other things.
- *
- * Conventions:
- *
- * All member variables that are prefixed with info
- * (including the main $info array) are used by HTML Purifier internals
- * and should not be directly edited when customizing the HTMLDefinition.
- * They can usually be set via configuration directives or custom
- * modules.
- *
- * On the other hand, member variables without the info prefix are used
- * internally by the HTMLDefinition and MUST NOT be used by other HTML
- * Purifier internals. Many of them, however, are public, and may be
- * edited by userspace code to tweak the behavior of HTMLDefinition.
- *
- * @note This class is inspected by Printer_HTMLDefinition; please
- *       update that class if things here change.
- *
- * @warning Directives that change this object's structure must be in
- *          the HTML or Attr namespace!
- */
-class HTMLPurifier_HTMLDefinition extends HTMLPurifier_Definition
-{
-
-    // FULLY-PUBLIC VARIABLES ---------------------------------------------
-
-    /**
-     * Associative array of element names to HTMLPurifier_ElementDef.
-     * @type HTMLPurifier_ElementDef[]
-     */
-    public $info = array();
-
-    /**
-     * Associative array of global attribute name to attribute definition.
-     * @type array
-     */
-    public $info_global_attr = array();
-
-    /**
-     * String name of parent element HTML will be going into.
-     * @type string
-     */
-    public $info_parent = 'div';
-
-    /**
-     * Definition for parent element, allows parent element to be a
-     * tag that's not allowed inside the HTML fragment.
-     * @type HTMLPurifier_ElementDef
-     */
-    public $info_parent_def;
-
-    /**
-     * String name of element used to wrap inline elements in block context.
-     * @type string
-     * @note This is rarely used except for BLOCKQUOTEs in strict mode
-     */
-    public $info_block_wrapper = 'p';
-
-    /**
-     * Associative array of deprecated tag name to HTMLPurifier_TagTransform.
-     * @type array
-     */
-    public $info_tag_transform = array();
-
-    /**
-     * Indexed list of HTMLPurifier_AttrTransform to be performed before validation.
-     * @type HTMLPurifier_AttrTransform[]
-     */
-    public $info_attr_transform_pre = array();
-
-    /**
-     * Indexed list of HTMLPurifier_AttrTransform to be performed after validation.
-     * @type HTMLPurifier_AttrTransform[]
-     */
-    public $info_attr_transform_post = array();
-
-    /**
-     * Nested lookup array of content set name (Block, Inline) to
-     * element name to whether or not it belongs in that content set.
-     * @type array
-     */
-    public $info_content_sets = array();
-
-    /**
-     * Indexed list of HTMLPurifier_Injector to be used.
-     * @type HTMLPurifier_Injector[]
-     */
-    public $info_injector = array();
-
-    /**
-     * Doctype object
-     * @type HTMLPurifier_Doctype
-     */
-    public $doctype;
-
-
-
-    // RAW CUSTOMIZATION STUFF --------------------------------------------
-
-    /**
-     * Adds a custom attribute to a pre-existing element
-     * @note This is strictly convenience, and does not have a corresponding
-     *       method in HTMLPurifier_HTMLModule
-     * @param string $element_name Element name to add attribute to
-     * @param string $attr_name Name of attribute
-     * @param mixed $def Attribute definition, can be string or object, see
-     *             HTMLPurifier_AttrTypes for details
-     */
-    public function addAttribute($element_name, $attr_name, $def)
-    {
-        $module = $this->getAnonymousModule();
-        if (!isset($module->info[$element_name])) {
-            $element = $module->addBlankElement($element_name);
-        } else {
-            $element = $module->info[$element_name];
-        }
-        $element->attr[$attr_name] = $def;
-    }
-
-    /**
-     * Adds a custom element to your HTML definition
-     * @see HTMLPurifier_HTMLModule::addElement() for detailed
-     *       parameter and return value descriptions.
-     */
-    public function addElement($element_name, $type, $contents, $attr_collections, $attributes = array())
-    {
-        $module = $this->getAnonymousModule();
-        // assume that if the user is calling this, the element
-        // is safe. This may not be a good idea
-        $element = $module->addElement($element_name, $type, $contents, $attr_collections, $attributes);
-        return $element;
-    }
-
-    /**
-     * Adds a blank element to your HTML definition, for overriding
-     * existing behavior
-     * @param string $element_name
-     * @return HTMLPurifier_ElementDef
-     * @see HTMLPurifier_HTMLModule::addBlankElement() for detailed
-     *       parameter and return value descriptions.
-     */
-    public function addBlankElement($element_name)
-    {
-        $module  = $this->getAnonymousModule();
-        $element = $module->addBlankElement($element_name);
-        return $element;
-    }
-
-    /**
-     * Retrieves a reference to the anonymous module, so you can
-     * bust out advanced features without having to make your own
-     * module.
-     * @return HTMLPurifier_HTMLModule
-     */
-    public function getAnonymousModule()
-    {
-        if (!$this->_anonModule) {
-            $this->_anonModule = new HTMLPurifier_HTMLModule();
-            $this->_anonModule->name = 'Anonymous';
-        }
-        return $this->_anonModule;
-    }
-
-    private $_anonModule = null;
-
-    // PUBLIC BUT INTERNAL VARIABLES --------------------------------------
-
-    /**
-     * @type string
-     */
-    public $type = 'HTML';
-
-    /**
-     * @type HTMLPurifier_HTMLModuleManager
-     */
-    public $manager;
-
-    /**
-     * Performs low-cost, preliminary initialization.
-     */
-    public function __construct()
-    {
-        $this->manager = new HTMLPurifier_HTMLModuleManager();
-    }
-
-    /**
-     * @param HTMLPurifier_Config $config
-     */
-    protected function doSetup($config)
-    {
-        $this->processModules($config);
-        $this->setupConfigStuff($config);
-        unset($this->manager);
-
-        // cleanup some of the element definitions
-        foreach ($this->info as $k => $v) {
-            unset($this->info[$k]->content_model);
-            unset($this->info[$k]->content_model_type);
-        }
-    }
-
-    /**
-     * Extract out the information from the manager
-     * @param HTMLPurifier_Config $config
-     */
-    protected function processModules($config)
-    {
-        if ($this->_anonModule) {
-            // for user specific changes
-            // this is late-loaded so we don't have to deal with PHP4
-            // reference wonky-ness
-            $this->manager->addModule($this->_anonModule);
-            unset($this->_anonModule);
-        }
-
-        $this->manager->setup($config);
-        $this->doctype = $this->manager->doctype;
-
-        foreach ($this->manager->modules as $module) {
-            foreach ($module->info_tag_transform as $k => $v) {
-                if ($v === false) {
-                    unset($this->info_tag_transform[$k]);
-                } else {
-                    $this->info_tag_transform[$k] = $v;
-                }
-            }
-            foreach ($module->info_attr_transform_pre as $k => $v) {
-                if ($v === false) {
-                    unset($this->info_attr_transform_pre[$k]);
-                } else {
-                    $this->info_attr_transform_pre[$k] = $v;
-                }
-            }
-            foreach ($module->info_attr_transform_post as $k => $v) {
-                if ($v === false) {
-                    unset($this->info_attr_transform_post[$k]);
-                } else {
-                    $this->info_attr_transform_post[$k] = $v;
-                }
-            }
-            foreach ($module->info_injector as $k => $v) {
-                if ($v === false) {
-                    unset($this->info_injector[$k]);
-                } else {
-                    $this->info_injector[$k] = $v;
-                }
-            }
-        }
-        $this->info = $this->manager->getElements();
-        $this->info_content_sets = $this->manager->contentSets->lookup;
-    }
-
-    /**
-     * Sets up stuff based on config. We need a better way of doing this.
-     * @param HTMLPurifier_Config $config
-     */
-    protected function setupConfigStuff($config)
-    {
-        $block_wrapper = $config->get('HTML.BlockWrapper');
-        if (isset($this->info_content_sets['Block'][$block_wrapper])) {
-            $this->info_block_wrapper = $block_wrapper;
-        } else {
-            trigger_error(
-                'Cannot use non-block element as block wrapper',
-                E_USER_ERROR
-            );
-        }
-
-        $parent = $config->get('HTML.Parent');
-        $def = $this->manager->getElement($parent, true);
-        if ($def) {
-            $this->info_parent = $parent;
-            $this->info_parent_def = $def;
-        } else {
-            trigger_error(
-                'Cannot use unrecognized element as parent',
-                E_USER_ERROR
-            );
-            $this->info_parent_def = $this->manager->getElement($this->info_parent, true);
-        }
-
-        // support template text
-        $support = "(for information on implementing this, see the support forums) ";
-
-        // setup allowed elements -----------------------------------------
-
-        $allowed_elements = $config->get('HTML.AllowedElements');
-        $allowed_attributes = $config->get('HTML.AllowedAttributes'); // retrieve early
-
-        if (!is_array($allowed_elements) && !is_array($allowed_attributes)) {
-            $allowed = $config->get('HTML.Allowed');
-            if (is_string($allowed)) {
-                list($allowed_elements, $allowed_attributes) = $this->parseTinyMCEAllowedList($allowed);
-            }
-        }
-
-        if (is_array($allowed_elements)) {
-            foreach ($this->info as $name => $d) {
-                if (!isset($allowed_elements[$name])) {
-                    unset($this->info[$name]);
-                }
-                unset($allowed_elements[$name]);
-            }
-            // emit errors
-            foreach ($allowed_elements as $element => $d) {
-                $element = htmlspecialchars($element); // PHP doesn't escape errors, be careful!
-                trigger_error("Element '$element' is not supported $support", E_USER_WARNING);
-            }
-        }
-
-        // setup allowed attributes ---------------------------------------
-
-        $allowed_attributes_mutable = $allowed_attributes; // by copy!
-        if (is_array($allowed_attributes)) {
-            // This actually doesn't do anything, since we went away from
-            // global attributes. It's possible that userland code uses
-            // it, but HTMLModuleManager doesn't!
-            foreach ($this->info_global_attr as $attr => $x) {
-                $keys = array($attr, "*@$attr", "*.$attr");
-                $delete = true;
-                foreach ($keys as $key) {
-                    if ($delete && isset($allowed_attributes[$key])) {
-                        $delete = false;
-                    }
-                    if (isset($allowed_attributes_mutable[$key])) {
-                        unset($allowed_attributes_mutable[$key]);
-                    }
-                }
-                if ($delete) {
-                    unset($this->info_global_attr[$attr]);
-                }
-            }
-
-            foreach ($this->info as $tag => $info) {
-                foreach ($info->attr as $attr => $x) {
-                    $keys = array("$tag@$attr", $attr, "*@$attr", "$tag.$attr", "*.$attr");
-                    $delete = true;
-                    foreach ($keys as $key) {
-                        if ($delete && isset($allowed_attributes[$key])) {
-                            $delete = false;
-                        }
-                        if (isset($allowed_attributes_mutable[$key])) {
-                            unset($allowed_attributes_mutable[$key]);
-                        }
-                    }
-                    if ($delete) {
-                        if ($this->info[$tag]->attr[$attr]->required) {
-                            trigger_error(
-                                "Required attribute '$attr' in element '$tag' " .
-                                "was not allowed, which means '$tag' will not be allowed either",
-                                E_USER_WARNING
-                            );
-                        }
-                        unset($this->info[$tag]->attr[$attr]);
-                    }
-                }
-            }
-            // emit errors
-            foreach ($allowed_attributes_mutable as $elattr => $d) {
-                $bits = preg_split('/[.@]/', $elattr, 2);
-                $c = count($bits);
-                switch ($c) {
-                    case 2:
-                        if ($bits[0] !== '*') {
-                            $element = htmlspecialchars($bits[0]);
-                            $attribute = htmlspecialchars($bits[1]);
-                            if (!isset($this->info[$element])) {
-                                trigger_error(
-                                    "Cannot allow attribute '$attribute' if element " .
-                                    "'$element' is not allowed/supported $support"
-                                );
-                            } else {
-                                trigger_error(
-                                    "Attribute '$attribute' in element '$element' not supported $support",
-                                    E_USER_WARNING
-                                );
-                            }
-                            break;
-                        }
-                        // otherwise fall through
-                    case 1:
-                        $attribute = htmlspecialchars($bits[0]);
-                        trigger_error(
-                            "Global attribute '$attribute' is not ".
-                            "supported in any elements $support",
-                            E_USER_WARNING
-                        );
-                        break;
-                }
-            }
-        }
-
-        // setup forbidden elements ---------------------------------------
-
-        $forbidden_elements   = $config->get('HTML.ForbiddenElements');
-        $forbidden_attributes = $config->get('HTML.ForbiddenAttributes');
-
-        foreach ($this->info as $tag => $info) {
-            if (isset($forbidden_elements[$tag])) {
-                unset($this->info[$tag]);
-                continue;
-            }
-            foreach ($info->attr as $attr => $x) {
-                if (isset($forbidden_attributes["$tag@$attr"]) ||
-                    isset($forbidden_attributes["*@$attr"]) ||
-                    isset($forbidden_attributes[$attr])
-                ) {
-                    unset($this->info[$tag]->attr[$attr]);
-                    continue;
-                } elseif (isset($forbidden_attributes["$tag.$attr"])) { // this segment might get removed eventually
-                    // $tag.$attr are not user supplied, so no worries!
-                    trigger_error(
-                        "Error with $tag.$attr: tag.attr syntax not supported for " .
-                        "HTML.ForbiddenAttributes; use tag@attr instead",
-                        E_USER_WARNING
-                    );
-                }
-            }
-        }
-        foreach ($forbidden_attributes as $key => $v) {
-            if (strlen($key) < 2) {
-                continue;
-            }
-            if ($key[0] != '*') {
-                continue;
-            }
-            if ($key[1] == '.') {
-                trigger_error(
-                    "Error with $key: *.attr syntax not supported for HTML.ForbiddenAttributes; use attr instead",
-                    E_USER_WARNING
-                );
-            }
-        }
-
-        // setup injectors -----------------------------------------------------
-        foreach ($this->info_injector as $i => $injector) {
-            if ($injector->checkNeeded($config) !== false) {
-                // remove injector that does not have it's required
-                // elements/attributes present, and is thus not needed.
-                unset($this->info_injector[$i]);
-            }
-        }
-    }
-
-    /**
-     * Parses a TinyMCE-flavored Allowed Elements and Attributes list into
-     * separate lists for processing. Format is element[attr1|attr2],element2...
-     * @warning Although it's largely drawn from TinyMCE's implementation,
-     *      it is different, and you'll probably have to modify your lists
-     * @param array $list String list to parse
-     * @return array
-     * @todo Give this its own class, probably static interface
-     */
-    public function parseTinyMCEAllowedList($list)
-    {
-        $list = str_replace(array(' ', "\t"), '', $list);
-
-        $elements = array();
-        $attributes = array();
-
-        $chunks = preg_split('/(,|[\n\r]+)/', $list);
-        foreach ($chunks as $chunk) {
-            if (empty($chunk)) {
-                continue;
-            }
-            // remove TinyMCE element control characters
-            if (!strpos($chunk, '[')) {
-                $element = $chunk;
-                $attr = false;
-            } else {
-                list($element, $attr) = explode('[', $chunk);
-            }
-            if ($element !== '*') {
-                $elements[$element] = true;
-            }
-            if (!$attr) {
-                continue;
-            }
-            $attr = substr($attr, 0, strlen($attr) - 1); // remove trailing ]
-            $attr = explode('|', $attr);
-            foreach ($attr as $key) {
-                $attributes["$element.$key"] = true;
-            }
-        }
-        return array($elements, $attributes);
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+bOaFoWmsOwj/V0UL

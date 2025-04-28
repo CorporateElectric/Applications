@@ -1,142 +1,77 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpFoundation;
-
-use Symfony\Component\HttpFoundation\File\UploadedFile;
-
-/**
- * FileBag is a container for uploaded files.
- *
- * @author Fabien Potencier <fabien@symfony.com>
- * @author Bulat Shakirzyanov <mallluhuct@gmail.com>
- */
-class FileBag extends ParameterBag
-{
-    private static $fileKeys = ['error', 'name', 'size', 'tmp_name', 'type'];
-
-    /**
-     * @param array|UploadedFile[] $parameters An array of HTTP files
-     */
-    public function __construct(array $parameters = [])
-    {
-        $this->replace($parameters);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function replace(array $files = [])
-    {
-        $this->parameters = [];
-        $this->add($files);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function set(string $key, $value)
-    {
-        if (!\is_array($value) && !$value instanceof UploadedFile) {
-            throw new \InvalidArgumentException('An uploaded file must be an array or an instance of UploadedFile.');
-        }
-
-        parent::set($key, $this->convertFileInformation($value));
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function add(array $files = [])
-    {
-        foreach ($files as $key => $file) {
-            $this->set($key, $file);
-        }
-    }
-
-    /**
-     * Converts uploaded files to UploadedFile instances.
-     *
-     * @param array|UploadedFile $file A (multi-dimensional) array of uploaded file information
-     *
-     * @return UploadedFile[]|UploadedFile|null A (multi-dimensional) array of UploadedFile instances
-     */
-    protected function convertFileInformation($file)
-    {
-        if ($file instanceof UploadedFile) {
-            return $file;
-        }
-
-        if (\is_array($file)) {
-            $file = $this->fixPhpFilesArray($file);
-            $keys = array_keys($file);
-            sort($keys);
-
-            if ($keys == self::$fileKeys) {
-                if (\UPLOAD_ERR_NO_FILE == $file['error']) {
-                    $file = null;
-                } else {
-                    $file = new UploadedFile($file['tmp_name'], $file['name'], $file['type'], $file['error'], false);
-                }
-            } else {
-                $file = array_map([$this, 'convertFileInformation'], $file);
-                if (array_keys($keys) === $keys) {
-                    $file = array_filter($file);
-                }
-            }
-        }
-
-        return $file;
-    }
-
-    /**
-     * Fixes a malformed PHP $_FILES array.
-     *
-     * PHP has a bug that the format of the $_FILES array differs, depending on
-     * whether the uploaded file fields had normal field names or array-like
-     * field names ("normal" vs. "parent[child]").
-     *
-     * This method fixes the array to look like the "normal" $_FILES array.
-     *
-     * It's safe to pass an already converted array, in which case this method
-     * just returns the original array unmodified.
-     *
-     * @param array $data
-     *
-     * @return array
-     */
-    protected function fixPhpFilesArray($data)
-    {
-        $keys = array_keys($data);
-        sort($keys);
-
-        if (self::$fileKeys != $keys || !isset($data['name']) || !\is_array($data['name'])) {
-            return $data;
-        }
-
-        $files = $data;
-        foreach (self::$fileKeys as $k) {
-            unset($files[$k]);
-        }
-
-        foreach ($data['name'] as $key => $name) {
-            $files[$key] = $this->fixPhpFilesArray([
-                'error' => $data['error'][$key],
-                'name' => $name,
-                'type' => $data['type'][$key],
-                'tmp_name' => $data['tmp_name'][$key],
-                'size' => $data['size'][$key],
-            ]);
-        }
-
-        return $files;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

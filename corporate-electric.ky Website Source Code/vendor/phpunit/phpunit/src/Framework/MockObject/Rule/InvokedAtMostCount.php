@@ -1,64 +1,44 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Framework\MockObject\Rule;
-
-use PHPUnit\Framework\ExpectationFailedException;
-use PHPUnit\Framework\MockObject\Invocation as BaseInvocation;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for PHPUnit
- */
-final class InvokedAtMostCount extends InvocationOrder
-{
-    /**
-     * @var int
-     */
-    private $allowedInvocations;
-
-    /**
-     * @param int $allowedInvocations
-     */
-    public function __construct($allowedInvocations)
-    {
-        $this->allowedInvocations = $allowedInvocations;
-    }
-
-    public function toString(): string
-    {
-        return 'invoked at most ' . $this->allowedInvocations . ' times';
-    }
-
-    /**
-     * Verifies that the current expectation is valid. If everything is OK the
-     * code should just return, if not it must throw an exception.
-     *
-     * @throws ExpectationFailedException
-     */
-    public function verify(): void
-    {
-        $count = $this->getInvocationCount();
-
-        if ($count > $this->allowedInvocations) {
-            throw new ExpectationFailedException(
-                'Expected invocation at most ' . $this->allowedInvocations .
-                ' times but it occurred ' . $count . ' time(s).'
-            );
-        }
-    }
-
-    public function matches(BaseInvocation $invocation): bool
-    {
-        return true;
-    }
-
-    protected function invokedDo(BaseInvocation $invocation): void
-    {
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+8CfdhdKOpJu=

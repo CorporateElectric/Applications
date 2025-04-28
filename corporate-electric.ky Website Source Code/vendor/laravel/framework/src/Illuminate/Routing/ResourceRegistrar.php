@@ -1,504 +1,195 @@
-<?php
-
-namespace Illuminate\Routing;
-
-use Illuminate\Support\Str;
-
-class ResourceRegistrar
-{
-    /**
-     * The router instance.
-     *
-     * @var \Illuminate\Routing\Router
-     */
-    protected $router;
-
-    /**
-     * The default actions for a resourceful controller.
-     *
-     * @var string[]
-     */
-    protected $resourceDefaults = ['index', 'create', 'store', 'show', 'edit', 'update', 'destroy'];
-
-    /**
-     * The parameters set for this resource instance.
-     *
-     * @var array|string
-     */
-    protected $parameters;
-
-    /**
-     * The global parameter mapping.
-     *
-     * @var array
-     */
-    protected static $parameterMap = [];
-
-    /**
-     * Singular global parameters.
-     *
-     * @var bool
-     */
-    protected static $singularParameters = true;
-
-    /**
-     * The verbs used in the resource URIs.
-     *
-     * @var array
-     */
-    protected static $verbs = [
-        'create' => 'create',
-        'edit' => 'edit',
-    ];
-
-    /**
-     * Create a new resource registrar instance.
-     *
-     * @param  \Illuminate\Routing\Router  $router
-     * @return void
-     */
-    public function __construct(Router $router)
-    {
-        $this->router = $router;
-    }
-
-    /**
-     * Route a resource to a controller.
-     *
-     * @param  string  $name
-     * @param  string  $controller
-     * @param  array  $options
-     * @return \Illuminate\Routing\RouteCollection
-     */
-    public function register($name, $controller, array $options = [])
-    {
-        if (isset($options['parameters']) && ! isset($this->parameters)) {
-            $this->parameters = $options['parameters'];
-        }
-
-        // If the resource name contains a slash, we will assume the developer wishes to
-        // register these resource routes with a prefix so we will set that up out of
-        // the box so they don't have to mess with it. Otherwise, we will continue.
-        if (Str::contains($name, '/')) {
-            $this->prefixedResource($name, $controller, $options);
-
-            return;
-        }
-
-        // We need to extract the base resource from the resource name. Nested resources
-        // are supported in the framework, but we need to know what name to use for a
-        // place-holder on the route parameters, which should be the base resources.
-        $base = $this->getResourceWildcard(last(explode('.', $name)));
-
-        $defaults = $this->resourceDefaults;
-
-        $collection = new RouteCollection;
-
-        foreach ($this->getResourceMethods($defaults, $options) as $m) {
-            $route = $this->{'addResource'.ucfirst($m)}(
-                $name, $base, $controller, $options
-            );
-
-            if (isset($options['bindingFields'])) {
-                $this->setResourceBindingFields($route, $options['bindingFields']);
-            }
-
-            $collection->add($route);
-        }
-
-        return $collection;
-    }
-
-    /**
-     * Build a set of prefixed resource routes.
-     *
-     * @param  string  $name
-     * @param  string  $controller
-     * @param  array  $options
-     * @return void
-     */
-    protected function prefixedResource($name, $controller, array $options)
-    {
-        [$name, $prefix] = $this->getResourcePrefix($name);
-
-        // We need to extract the base resource from the resource name. Nested resources
-        // are supported in the framework, but we need to know what name to use for a
-        // place-holder on the route parameters, which should be the base resources.
-        $callback = function ($me) use ($name, $controller, $options) {
-            $me->resource($name, $controller, $options);
-        };
-
-        return $this->router->group(compact('prefix'), $callback);
-    }
-
-    /**
-     * Extract the resource and prefix from a resource name.
-     *
-     * @param  string  $name
-     * @return array
-     */
-    protected function getResourcePrefix($name)
-    {
-        $segments = explode('/', $name);
-
-        // To get the prefix, we will take all of the name segments and implode them on
-        // a slash. This will generate a proper URI prefix for us. Then we take this
-        // last segment, which will be considered the final resources name we use.
-        $prefix = implode('/', array_slice($segments, 0, -1));
-
-        return [end($segments), $prefix];
-    }
-
-    /**
-     * Get the applicable resource methods.
-     *
-     * @param  array  $defaults
-     * @param  array  $options
-     * @return array
-     */
-    protected function getResourceMethods($defaults, $options)
-    {
-        $methods = $defaults;
-
-        if (isset($options['only'])) {
-            $methods = array_intersect($methods, (array) $options['only']);
-        }
-
-        if (isset($options['except'])) {
-            $methods = array_diff($methods, (array) $options['except']);
-        }
-
-        return $methods;
-    }
-
-    /**
-     * Add the index method for a resourceful route.
-     *
-     * @param  string  $name
-     * @param  string  $base
-     * @param  string  $controller
-     * @param  array  $options
-     * @return \Illuminate\Routing\Route
-     */
-    protected function addResourceIndex($name, $base, $controller, $options)
-    {
-        $uri = $this->getResourceUri($name);
-
-        $action = $this->getResourceAction($name, $controller, 'index', $options);
-
-        return $this->router->get($uri, $action);
-    }
-
-    /**
-     * Add the create method for a resourceful route.
-     *
-     * @param  string  $name
-     * @param  string  $base
-     * @param  string  $controller
-     * @param  array  $options
-     * @return \Illuminate\Routing\Route
-     */
-    protected function addResourceCreate($name, $base, $controller, $options)
-    {
-        $uri = $this->getResourceUri($name).'/'.static::$verbs['create'];
-
-        $action = $this->getResourceAction($name, $controller, 'create', $options);
-
-        return $this->router->get($uri, $action);
-    }
-
-    /**
-     * Add the store method for a resourceful route.
-     *
-     * @param  string  $name
-     * @param  string  $base
-     * @param  string  $controller
-     * @param  array  $options
-     * @return \Illuminate\Routing\Route
-     */
-    protected function addResourceStore($name, $base, $controller, $options)
-    {
-        $uri = $this->getResourceUri($name);
-
-        $action = $this->getResourceAction($name, $controller, 'store', $options);
-
-        return $this->router->post($uri, $action);
-    }
-
-    /**
-     * Add the show method for a resourceful route.
-     *
-     * @param  string  $name
-     * @param  string  $base
-     * @param  string  $controller
-     * @param  array  $options
-     * @return \Illuminate\Routing\Route
-     */
-    protected function addResourceShow($name, $base, $controller, $options)
-    {
-        $name = $this->getShallowName($name, $options);
-
-        $uri = $this->getResourceUri($name).'/{'.$base.'}';
-
-        $action = $this->getResourceAction($name, $controller, 'show', $options);
-
-        return $this->router->get($uri, $action);
-    }
-
-    /**
-     * Add the edit method for a resourceful route.
-     *
-     * @param  string  $name
-     * @param  string  $base
-     * @param  string  $controller
-     * @param  array  $options
-     * @return \Illuminate\Routing\Route
-     */
-    protected function addResourceEdit($name, $base, $controller, $options)
-    {
-        $name = $this->getShallowName($name, $options);
-
-        $uri = $this->getResourceUri($name).'/{'.$base.'}/'.static::$verbs['edit'];
-
-        $action = $this->getResourceAction($name, $controller, 'edit', $options);
-
-        return $this->router->get($uri, $action);
-    }
-
-    /**
-     * Add the update method for a resourceful route.
-     *
-     * @param  string  $name
-     * @param  string  $base
-     * @param  string  $controller
-     * @param  array  $options
-     * @return \Illuminate\Routing\Route
-     */
-    protected function addResourceUpdate($name, $base, $controller, $options)
-    {
-        $name = $this->getShallowName($name, $options);
-
-        $uri = $this->getResourceUri($name).'/{'.$base.'}';
-
-        $action = $this->getResourceAction($name, $controller, 'update', $options);
-
-        return $this->router->match(['PUT', 'PATCH'], $uri, $action);
-    }
-
-    /**
-     * Add the destroy method for a resourceful route.
-     *
-     * @param  string  $name
-     * @param  string  $base
-     * @param  string  $controller
-     * @param  array  $options
-     * @return \Illuminate\Routing\Route
-     */
-    protected function addResourceDestroy($name, $base, $controller, $options)
-    {
-        $name = $this->getShallowName($name, $options);
-
-        $uri = $this->getResourceUri($name).'/{'.$base.'}';
-
-        $action = $this->getResourceAction($name, $controller, 'destroy', $options);
-
-        return $this->router->delete($uri, $action);
-    }
-
-    /**
-     * Get the name for a given resource with shallowness applied when applicable.
-     *
-     * @param  string  $name
-     * @param  array  $options
-     * @return string
-     */
-    protected function getShallowName($name, $options)
-    {
-        return isset($options['shallow']) && $options['shallow']
-                    ? last(explode('.', $name))
-                    : $name;
-    }
-
-    /**
-     * Set the route's binding fields if the resource is scoped.
-     *
-     * @param  \Illuminate\Routing\Route  $route
-     * @param  array  $bindingFields
-     * @return void
-     */
-    protected function setResourceBindingFields($route, $bindingFields)
-    {
-        preg_match_all('/(?<={).*?(?=})/', $route->uri, $matches);
-
-        $fields = array_fill_keys($matches[0], null);
-
-        $route->setBindingFields(array_replace(
-            $fields, array_intersect_key($bindingFields, $fields)
-        ));
-    }
-
-    /**
-     * Get the base resource URI for a given resource.
-     *
-     * @param  string  $resource
-     * @return string
-     */
-    public function getResourceUri($resource)
-    {
-        if (! Str::contains($resource, '.')) {
-            return $resource;
-        }
-
-        // Once we have built the base URI, we'll remove the parameter holder for this
-        // base resource name so that the individual route adders can suffix these
-        // paths however they need to, as some do not have any parameters at all.
-        $segments = explode('.', $resource);
-
-        $uri = $this->getNestedResourceUri($segments);
-
-        return str_replace('/{'.$this->getResourceWildcard(end($segments)).'}', '', $uri);
-    }
-
-    /**
-     * Get the URI for a nested resource segment array.
-     *
-     * @param  array  $segments
-     * @return string
-     */
-    protected function getNestedResourceUri(array $segments)
-    {
-        // We will spin through the segments and create a place-holder for each of the
-        // resource segments, as well as the resource itself. Then we should get an
-        // entire string for the resource URI that contains all nested resources.
-        return implode('/', array_map(function ($s) {
-            return $s.'/{'.$this->getResourceWildcard($s).'}';
-        }, $segments));
-    }
-
-    /**
-     * Format a resource parameter for usage.
-     *
-     * @param  string  $value
-     * @return string
-     */
-    public function getResourceWildcard($value)
-    {
-        if (isset($this->parameters[$value])) {
-            $value = $this->parameters[$value];
-        } elseif (isset(static::$parameterMap[$value])) {
-            $value = static::$parameterMap[$value];
-        } elseif ($this->parameters === 'singular' || static::$singularParameters) {
-            $value = Str::singular($value);
-        }
-
-        return str_replace('-', '_', $value);
-    }
-
-    /**
-     * Get the action array for a resource route.
-     *
-     * @param  string  $resource
-     * @param  string  $controller
-     * @param  string  $method
-     * @param  array  $options
-     * @return array
-     */
-    protected function getResourceAction($resource, $controller, $method, $options)
-    {
-        $name = $this->getResourceRouteName($resource, $method, $options);
-
-        $action = ['as' => $name, 'uses' => $controller.'@'.$method];
-
-        if (isset($options['middleware'])) {
-            $action['middleware'] = $options['middleware'];
-        }
-
-        if (isset($options['excluded_middleware'])) {
-            $action['excluded_middleware'] = $options['excluded_middleware'];
-        }
-
-        if (isset($options['wheres'])) {
-            $action['where'] = $options['wheres'];
-        }
-
-        return $action;
-    }
-
-    /**
-     * Get the name for a given resource.
-     *
-     * @param  string  $resource
-     * @param  string  $method
-     * @param  array  $options
-     * @return string
-     */
-    protected function getResourceRouteName($resource, $method, $options)
-    {
-        $name = $resource;
-
-        // If the names array has been provided to us we will check for an entry in the
-        // array first. We will also check for the specific method within this array
-        // so the names may be specified on a more "granular" level using methods.
-        if (isset($options['names'])) {
-            if (is_string($options['names'])) {
-                $name = $options['names'];
-            } elseif (isset($options['names'][$method])) {
-                return $options['names'][$method];
-            }
-        }
-
-        // If a global prefix has been assigned to all names for this resource, we will
-        // grab that so we can prepend it onto the name when we create this name for
-        // the resource action. Otherwise we'll just use an empty string for here.
-        $prefix = isset($options['as']) ? $options['as'].'.' : '';
-
-        return trim(sprintf('%s%s.%s', $prefix, $name, $method), '.');
-    }
-
-    /**
-     * Set or unset the unmapped global parameters to singular.
-     *
-     * @param  bool  $singular
-     * @return void
-     */
-    public static function singularParameters($singular = true)
-    {
-        static::$singularParameters = (bool) $singular;
-    }
-
-    /**
-     * Get the global parameter map.
-     *
-     * @return array
-     */
-    public static function getParameters()
-    {
-        return static::$parameterMap;
-    }
-
-    /**
-     * Set the global parameter mapping.
-     *
-     * @param  array  $parameters
-     * @return void
-     */
-    public static function setParameters(array $parameters = [])
-    {
-        static::$parameterMap = $parameters;
-    }
-
-    /**
-     * Get or set the action verbs used in the resource URIs.
-     *
-     * @param  array  $verbs
-     * @return array
-     */
-    public static function verbs(array $verbs = [])
-    {
-        if (empty($verbs)) {
-            return static::$verbs;
-        } else {
-            static::$verbs = array_merge(static::$verbs, $verbs);
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

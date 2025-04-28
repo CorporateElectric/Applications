@@ -1,92 +1,60 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Console\Helper;
-
-use Symfony\Component\Console\Formatter\OutputFormatter;
-
-/**
- * The Formatter class provides helpers to format messages.
- *
- * @author Fabien Potencier <fabien@symfony.com>
- */
-class FormatterHelper extends Helper
-{
-    /**
-     * Formats a message within a section.
-     *
-     * @return string The format section
-     */
-    public function formatSection(string $section, string $message, string $style = 'info')
-    {
-        return sprintf('<%s>[%s]</%s> %s', $style, $section, $style, $message);
-    }
-
-    /**
-     * Formats a message as a block of text.
-     *
-     * @param string|array $messages The message to write in the block
-     *
-     * @return string The formatter message
-     */
-    public function formatBlock($messages, string $style, bool $large = false)
-    {
-        if (!\is_array($messages)) {
-            $messages = [$messages];
-        }
-
-        $len = 0;
-        $lines = [];
-        foreach ($messages as $message) {
-            $message = OutputFormatter::escape($message);
-            $lines[] = sprintf($large ? '  %s  ' : ' %s ', $message);
-            $len = max(self::strlen($message) + ($large ? 4 : 2), $len);
-        }
-
-        $messages = $large ? [str_repeat(' ', $len)] : [];
-        for ($i = 0; isset($lines[$i]); ++$i) {
-            $messages[] = $lines[$i].str_repeat(' ', $len - self::strlen($lines[$i]));
-        }
-        if ($large) {
-            $messages[] = str_repeat(' ', $len);
-        }
-
-        for ($i = 0; isset($messages[$i]); ++$i) {
-            $messages[$i] = sprintf('<%s>%s</%s>', $style, $messages[$i], $style);
-        }
-
-        return implode("\n", $messages);
-    }
-
-    /**
-     * Truncates a message to the given length.
-     *
-     * @return string
-     */
-    public function truncate(string $message, int $length, string $suffix = '...')
-    {
-        $computedLength = $length - self::strlen($suffix);
-
-        if ($computedLength > self::strlen($message)) {
-            return $message;
-        }
-
-        return self::substr($message, 0, $length).$suffix;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getName()
-    {
-        return 'formatter';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

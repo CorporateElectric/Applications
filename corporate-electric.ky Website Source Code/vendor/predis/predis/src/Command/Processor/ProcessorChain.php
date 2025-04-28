@@ -1,130 +1,63 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Predis\Command\Processor;
-
-use Predis\Command\CommandInterface;
-
-/**
- * Default implementation of a command processors chain.
- *
- * @author Daniele Alessandri <suppakilla@gmail.com>
- */
-class ProcessorChain implements \ArrayAccess, ProcessorInterface
-{
-    private $processors = array();
-
-    /**
-     * @param array $processors List of instances of ProcessorInterface.
-     */
-    public function __construct($processors = array())
-    {
-        foreach ($processors as $processor) {
-            $this->add($processor);
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function add(ProcessorInterface $processor)
-    {
-        $this->processors[] = $processor;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function remove(ProcessorInterface $processor)
-    {
-        if (false !== $index = array_search($processor, $this->processors, true)) {
-            unset($this[$index]);
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function process(CommandInterface $command)
-    {
-        for ($i = 0; $i < $count = count($this->processors); ++$i) {
-            $this->processors[$i]->process($command);
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getProcessors()
-    {
-        return $this->processors;
-    }
-
-    /**
-     * Returns an iterator over the list of command processor in the chain.
-     *
-     * @return \ArrayIterator
-     */
-    public function getIterator()
-    {
-        return new \ArrayIterator($this->processors);
-    }
-
-    /**
-     * Returns the number of command processors in the chain.
-     *
-     * @return int
-     */
-    public function count()
-    {
-        return count($this->processors);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function offsetExists($index)
-    {
-        return isset($this->processors[$index]);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function offsetGet($index)
-    {
-        return $this->processors[$index];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function offsetSet($index, $processor)
-    {
-        if (!$processor instanceof ProcessorInterface) {
-            throw new \InvalidArgumentException(
-                'A processor chain accepts only instances of '.
-                "'Predis\Command\Processor\ProcessorInterface'."
-            );
-        }
-
-        $this->processors[$index] = $processor;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function offsetUnset($index)
-    {
-        unset($this->processors[$index]);
-        $this->processors = array_values($this->processors);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+xL7dE7p0WuYR11qnilCITZy=

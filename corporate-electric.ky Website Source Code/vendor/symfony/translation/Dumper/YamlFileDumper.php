@@ -1,62 +1,47 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Translation\Dumper;
-
-use Symfony\Component\Translation\Exception\LogicException;
-use Symfony\Component\Translation\MessageCatalogue;
-use Symfony\Component\Translation\Util\ArrayConverter;
-use Symfony\Component\Yaml\Yaml;
-
-/**
- * YamlFileDumper generates yaml files from a message catalogue.
- *
- * @author Michel Salib <michelsalib@hotmail.com>
- */
-class YamlFileDumper extends FileDumper
-{
-    private $extension;
-
-    public function __construct(string $extension = 'yml')
-    {
-        $this->extension = $extension;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function formatCatalogue(MessageCatalogue $messages, string $domain, array $options = [])
-    {
-        if (!class_exists('Symfony\Component\Yaml\Yaml')) {
-            throw new LogicException('Dumping translations in the YAML format requires the Symfony Yaml component.');
-        }
-
-        $data = $messages->all($domain);
-
-        if (isset($options['as_tree']) && $options['as_tree']) {
-            $data = ArrayConverter::expandToTree($data);
-        }
-
-        if (isset($options['inline']) && ($inline = (int) $options['inline']) > 0) {
-            return Yaml::dump($data, $inline);
-        }
-
-        return Yaml::dump($data);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function getExtension()
-    {
-        return $this->extension;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+q5dNEG==

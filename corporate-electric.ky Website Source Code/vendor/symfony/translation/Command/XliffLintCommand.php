@@ -1,266 +1,204 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Translation\Command;
-
-use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Exception\RuntimeException;
-use Symfony\Component\Console\Input\InputArgument;
-use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Style\SymfonyStyle;
-use Symfony\Component\Translation\Exception\InvalidArgumentException;
-use Symfony\Component\Translation\Util\XliffUtils;
-
-/**
- * Validates XLIFF files syntax and outputs encountered errors.
- *
- * @author Grégoire Pineau <lyrixx@lyrixx.info>
- * @author Robin Chalas <robin.chalas@gmail.com>
- * @author Javier Eguiluz <javier.eguiluz@gmail.com>
- */
-class XliffLintCommand extends Command
-{
-    protected static $defaultName = 'lint:xliff';
-
-    private $format;
-    private $displayCorrectFiles;
-    private $directoryIteratorProvider;
-    private $isReadableProvider;
-    private $requireStrictFileNames;
-
-    public function __construct(string $name = null, callable $directoryIteratorProvider = null, callable $isReadableProvider = null, bool $requireStrictFileNames = true)
-    {
-        parent::__construct($name);
-
-        $this->directoryIteratorProvider = $directoryIteratorProvider;
-        $this->isReadableProvider = $isReadableProvider;
-        $this->requireStrictFileNames = $requireStrictFileNames;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
-    {
-        $this
-            ->setDescription('Lints a XLIFF file and outputs encountered errors')
-            ->addArgument('filename', InputArgument::IS_ARRAY, 'A file, a directory or "-" for reading from STDIN')
-            ->addOption('format', null, InputOption::VALUE_REQUIRED, 'The output format', 'txt')
-            ->setHelp(<<<EOF
-The <info>%command.name%</info> command lints a XLIFF file and outputs to STDOUT
-the first encountered syntax error.
-
-You can validates XLIFF contents passed from STDIN:
-
-  <info>cat filename | php %command.full_name% -</info>
-
-You can also validate the syntax of a file:
-
-  <info>php %command.full_name% filename</info>
-
-Or of a whole directory:
-
-  <info>php %command.full_name% dirname</info>
-  <info>php %command.full_name% dirname --format=json</info>
-
-EOF
-            )
-        ;
-    }
-
-    protected function execute(InputInterface $input, OutputInterface $output)
-    {
-        $io = new SymfonyStyle($input, $output);
-        $filenames = (array) $input->getArgument('filename');
-        $this->format = $input->getOption('format');
-        $this->displayCorrectFiles = $output->isVerbose();
-
-        if (['-'] === $filenames) {
-            return $this->display($io, [$this->validate(file_get_contents('php://stdin'))]);
-        }
-
-        if (!$filenames) {
-            throw new RuntimeException('Please provide a filename or pipe file content to STDIN.');
-        }
-
-        $filesInfo = [];
-        foreach ($filenames as $filename) {
-            if (!$this->isReadable($filename)) {
-                throw new RuntimeException(sprintf('File or directory "%s" is not readable.', $filename));
-            }
-
-            foreach ($this->getFiles($filename) as $file) {
-                $filesInfo[] = $this->validate(file_get_contents($file), $file);
-            }
-        }
-
-        return $this->display($io, $filesInfo);
-    }
-
-    private function validate(string $content, string $file = null): array
-    {
-        $errors = [];
-
-        // Avoid: Warning DOMDocument::loadXML(): Empty string supplied as input
-        if ('' === trim($content)) {
-            return ['file' => $file, 'valid' => true];
-        }
-
-        $internal = libxml_use_internal_errors(true);
-
-        $document = new \DOMDocument();
-        $document->loadXML($content);
-
-        if (null !== $targetLanguage = $this->getTargetLanguageFromFile($document)) {
-            $normalizedLocale = preg_quote(str_replace('-', '_', $targetLanguage), '/');
-            // strict file names require translation files to be named '____.locale.xlf'
-            // otherwise, both '____.locale.xlf' and 'locale.____.xlf' are allowed
-            // also, the regexp matching must be case-insensitive, as defined for 'target-language' values
-            // http://docs.oasis-open.org/xliff/v1.2/os/xliff-core.html#target-language
-            $expectedFilenamePattern = $this->requireStrictFileNames ? sprintf('/^.*\.(?i:%s)\.(?:xlf|xliff)/', $normalizedLocale) : sprintf('/^(?:.*\.(?i:%s)|(?i:%s)\..*)\.(?:xlf|xliff)/', $normalizedLocale, $normalizedLocale);
-
-            if (0 === preg_match($expectedFilenamePattern, basename($file))) {
-                $errors[] = [
-                    'line' => -1,
-                    'column' => -1,
-                    'message' => sprintf('There is a mismatch between the language included in the file name ("%s") and the "%s" value used in the "target-language" attribute of the file.', basename($file), $targetLanguage),
-                ];
-            }
-        }
-
-        foreach (XliffUtils::validateSchema($document) as $xmlError) {
-            $errors[] = [
-                'line' => $xmlError['line'],
-                'column' => $xmlError['column'],
-                'message' => $xmlError['message'],
-            ];
-        }
-
-        libxml_clear_errors();
-        libxml_use_internal_errors($internal);
-
-        return ['file' => $file, 'valid' => 0 === \count($errors), 'messages' => $errors];
-    }
-
-    private function display(SymfonyStyle $io, array $files)
-    {
-        switch ($this->format) {
-            case 'txt':
-                return $this->displayTxt($io, $files);
-            case 'json':
-                return $this->displayJson($io, $files);
-            default:
-                throw new InvalidArgumentException(sprintf('The format "%s" is not supported.', $this->format));
-        }
-    }
-
-    private function displayTxt(SymfonyStyle $io, array $filesInfo)
-    {
-        $countFiles = \count($filesInfo);
-        $erroredFiles = 0;
-
-        foreach ($filesInfo as $info) {
-            if ($info['valid'] && $this->displayCorrectFiles) {
-                $io->comment('<info>OK</info>'.($info['file'] ? sprintf(' in %s', $info['file']) : ''));
-            } elseif (!$info['valid']) {
-                ++$erroredFiles;
-                $io->text('<error> ERROR </error>'.($info['file'] ? sprintf(' in %s', $info['file']) : ''));
-                $io->listing(array_map(function ($error) {
-                    // general document errors have a '-1' line number
-                    return -1 === $error['line'] ? $error['message'] : sprintf('Line %d, Column %d: %s', $error['line'], $error['column'], $error['message']);
-                }, $info['messages']));
-            }
-        }
-
-        if (0 === $erroredFiles) {
-            $io->success(sprintf('All %d XLIFF files contain valid syntax.', $countFiles));
-        } else {
-            $io->warning(sprintf('%d XLIFF files have valid syntax and %d contain errors.', $countFiles - $erroredFiles, $erroredFiles));
-        }
-
-        return min($erroredFiles, 1);
-    }
-
-    private function displayJson(SymfonyStyle $io, array $filesInfo)
-    {
-        $errors = 0;
-
-        array_walk($filesInfo, function (&$v) use (&$errors) {
-            $v['file'] = (string) $v['file'];
-            if (!$v['valid']) {
-                ++$errors;
-            }
-        });
-
-        $io->writeln(json_encode($filesInfo, \JSON_PRETTY_PRINT | \JSON_UNESCAPED_SLASHES));
-
-        return min($errors, 1);
-    }
-
-    private function getFiles(string $fileOrDirectory)
-    {
-        if (is_file($fileOrDirectory)) {
-            yield new \SplFileInfo($fileOrDirectory);
-
-            return;
-        }
-
-        foreach ($this->getDirectoryIterator($fileOrDirectory) as $file) {
-            if (!\in_array($file->getExtension(), ['xlf', 'xliff'])) {
-                continue;
-            }
-
-            yield $file;
-        }
-    }
-
-    private function getDirectoryIterator(string $directory)
-    {
-        $default = function ($directory) {
-            return new \RecursiveIteratorIterator(
-                new \RecursiveDirectoryIterator($directory, \FilesystemIterator::SKIP_DOTS | \FilesystemIterator::FOLLOW_SYMLINKS),
-                \RecursiveIteratorIterator::LEAVES_ONLY
-            );
-        };
-
-        if (null !== $this->directoryIteratorProvider) {
-            return ($this->directoryIteratorProvider)($directory, $default);
-        }
-
-        return $default($directory);
-    }
-
-    private function isReadable(string $fileOrDirectory)
-    {
-        $default = function ($fileOrDirectory) {
-            return is_readable($fileOrDirectory);
-        };
-
-        if (null !== $this->isReadableProvider) {
-            return ($this->isReadableProvider)($fileOrDirectory, $default);
-        }
-
-        return $default($fileOrDirectory);
-    }
-
-    private function getTargetLanguageFromFile(\DOMDocument $xliffContents): ?string
-    {
-        foreach ($xliffContents->getElementsByTagName('file')[0]->attributes ?? [] as $attribute) {
-            if ('target-language' === $attribute->nodeName) {
-                return $attribute->nodeValue;
-            }
-        }
-
-        return null;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+7m7bLH04RwYUot5dGY+nNy6b5cy6f0RF9nW=

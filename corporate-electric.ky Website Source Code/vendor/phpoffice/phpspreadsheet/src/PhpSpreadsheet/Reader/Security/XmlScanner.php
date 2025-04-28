@@ -1,150 +1,96 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Reader\Security;
-
-use PhpOffice\PhpSpreadsheet\Reader;
-use PhpOffice\PhpSpreadsheet\Settings;
-
-class XmlScanner
-{
-    /**
-     * String used to identify risky xml elements.
-     *
-     * @var string
-     */
-    private $pattern;
-
-    private $callback;
-
-    private static $libxmlDisableEntityLoaderValue;
-
-    public function __construct($pattern = '<!DOCTYPE')
-    {
-        $this->pattern = $pattern;
-
-        $this->disableEntityLoaderCheck();
-
-        // A fatal error will bypass the destructor, so we register a shutdown here
-        register_shutdown_function([__CLASS__, 'shutdown']);
-    }
-
-    public static function getInstance(Reader\IReader $reader)
-    {
-        switch (true) {
-            case $reader instanceof Reader\Html:
-                return new self('<!ENTITY');
-            case $reader instanceof Reader\Xlsx:
-            case $reader instanceof Reader\Xml:
-            case $reader instanceof Reader\Ods:
-            case $reader instanceof Reader\Gnumeric:
-                return new self('<!DOCTYPE');
-            default:
-                return new self('<!DOCTYPE');
-        }
-    }
-
-    public static function threadSafeLibxmlDisableEntityLoaderAvailability()
-    {
-        if (PHP_MAJOR_VERSION == 7) {
-            switch (PHP_MINOR_VERSION) {
-                case 2:
-                    return PHP_RELEASE_VERSION >= 1;
-                case 1:
-                    return PHP_RELEASE_VERSION >= 13;
-                case 0:
-                    return PHP_RELEASE_VERSION >= 27;
-            }
-
-            return true;
-        }
-
-        return false;
-    }
-
-    private function disableEntityLoaderCheck(): void
-    {
-        if (Settings::getLibXmlDisableEntityLoader() && \PHP_VERSION_ID < 80000) {
-            $libxmlDisableEntityLoaderValue = libxml_disable_entity_loader(true);
-
-            if (self::$libxmlDisableEntityLoaderValue === null) {
-                self::$libxmlDisableEntityLoaderValue = $libxmlDisableEntityLoaderValue;
-            }
-        }
-    }
-
-    public static function shutdown(): void
-    {
-        if (self::$libxmlDisableEntityLoaderValue !== null && \PHP_VERSION_ID < 80000) {
-            libxml_disable_entity_loader(self::$libxmlDisableEntityLoaderValue);
-            self::$libxmlDisableEntityLoaderValue = null;
-        }
-    }
-
-    public function __destruct()
-    {
-        self::shutdown();
-    }
-
-    public function setAdditionalCallback(callable $callback): void
-    {
-        $this->callback = $callback;
-    }
-
-    private function toUtf8($xml)
-    {
-        $pattern = '/encoding="(.*?)"/';
-        $result = preg_match($pattern, $xml, $matches);
-        $charset = strtoupper($result ? $matches[1] : 'UTF-8');
-
-        if ($charset !== 'UTF-8') {
-            $xml = mb_convert_encoding($xml, 'UTF-8', $charset);
-
-            $result = preg_match($pattern, $xml, $matches);
-            $charset = strtoupper($result ? $matches[1] : 'UTF-8');
-            if ($charset !== 'UTF-8') {
-                throw new Reader\Exception('Suspicious Double-encoded XML, spreadsheet file load() aborted to prevent XXE/XEE attacks');
-            }
-        }
-
-        return $xml;
-    }
-
-    /**
-     * Scan the XML for use of <!ENTITY to prevent XXE/XEE attacks.
-     *
-     * @param mixed $xml
-     *
-     * @return string
-     */
-    public function scan($xml)
-    {
-        $this->disableEntityLoaderCheck();
-
-        $xml = $this->toUtf8($xml);
-
-        // Don't rely purely on libxml_disable_entity_loader()
-        $pattern = '/\\0?' . implode('\\0?', str_split($this->pattern)) . '\\0?/';
-
-        if (preg_match($pattern, $xml)) {
-            throw new Reader\Exception('Detected use of ENTITY in XML, spreadsheet file load() aborted to prevent XXE/XEE attacks');
-        }
-
-        if ($this->callback !== null && is_callable($this->callback)) {
-            $xml = call_user_func($this->callback, $xml);
-        }
-
-        return $xml;
-    }
-
-    /**
-     * Scan theXML for use of <!ENTITY to prevent XXE/XEE attacks.
-     *
-     * @param string $filestream
-     *
-     * @return string
-     */
-    public function scanFile($filestream)
-    {
-        return $this->scan(file_get_contents($filestream));
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

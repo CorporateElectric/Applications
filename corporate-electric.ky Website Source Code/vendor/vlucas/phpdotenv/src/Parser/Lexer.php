@@ -1,62 +1,32 @@
-<?php
-
-declare(strict_types=1);
-
-namespace Dotenv\Parser;
-
-final class Lexer
-{
-    /**
-     * The regex for each type of token.
-     *
-     * @var string
-     */
-    private const PATTERNS = [
-        '[\r\n]{1,1000}', '[^\S\r\n]{1,1000}', '\\\\', '\'', '"', '\\#', '\\$', '([^(\s\\\\\'"\\#\\$)]|\\(|\\)){1,1000}',
-    ];
-
-    /**
-     * This class is a singleton.
-     *
-     * @codeCoverageIgnore
-     *
-     * @return void
-     */
-    private function __construct()
-    {
-        //
-    }
-
-    /**
-     * Convert content into a token stream.
-     *
-     * Multibyte string processing is not needed here, and nether is error
-     * handling, for performance reasons.
-     *
-     * @param string $content
-     *
-     * @return \Generator<string>
-     */
-    public static function lex(string $content)
-    {
-        static $regex;
-
-        if ($regex === null) {
-            $regex = '(('.\implode(')|(', self::PATTERNS).'))A';
-        }
-
-        $tokens = [];
-
-        $offset = 0;
-
-        while (isset($content[$offset])) {
-            if (!\preg_match($regex, $content, $matches, 0, $offset)) {
-                throw new \Error(\sprintf('Lexer encountered unexpected character [%s].', $content[$offset]));
-            }
-
-            $offset += \strlen($matches[0]);
-
-            yield $matches[0];
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

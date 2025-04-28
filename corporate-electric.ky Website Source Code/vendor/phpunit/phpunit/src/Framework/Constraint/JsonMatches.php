@@ -1,109 +1,59 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Framework\Constraint;
-
-use function json_decode;
-use function sprintf;
-use PHPUnit\Framework\ExpectationFailedException;
-use PHPUnit\Util\Json;
-use SebastianBergmann\Comparator\ComparisonFailure;
-
-/**
- * @no-named-arguments Parameter names are not covered by the backward compatibility promise for PHPUnit
- */
-final class JsonMatches extends Constraint
-{
-    /**
-     * @var string
-     */
-    private $value;
-
-    public function __construct(string $value)
-    {
-        $this->value = $value;
-    }
-
-    /**
-     * Returns a string representation of the object.
-     */
-    public function toString(): string
-    {
-        return sprintf(
-            'matches JSON string "%s"',
-            $this->value
-        );
-    }
-
-    /**
-     * Evaluates the constraint for parameter $other. Returns true if the
-     * constraint is met, false otherwise.
-     *
-     * This method can be overridden to implement the evaluation algorithm.
-     *
-     * @param mixed $other value or object to evaluate
-     */
-    protected function matches($other): bool
-    {
-        [$error, $recodedOther] = Json::canonicalize($other);
-
-        if ($error) {
-            return false;
-        }
-
-        [$error, $recodedValue] = Json::canonicalize($this->value);
-
-        if ($error) {
-            return false;
-        }
-
-        return $recodedOther == $recodedValue;
-    }
-
-    /**
-     * Throws an exception for the given compared value and test description.
-     *
-     * @param mixed             $other             evaluated value or object
-     * @param string            $description       Additional information about the test
-     * @param ComparisonFailure $comparisonFailure
-     *
-     * @throws \PHPUnit\Framework\Exception
-     * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
-     * @throws ExpectationFailedException
-     *
-     * @psalm-return never-return
-     */
-    protected function fail($other, $description, ComparisonFailure $comparisonFailure = null): void
-    {
-        if ($comparisonFailure === null) {
-            [$error, $recodedOther] = Json::canonicalize($other);
-
-            if ($error) {
-                parent::fail($other, $description);
-            }
-
-            [$error, $recodedValue] = Json::canonicalize($this->value);
-
-            if ($error) {
-                parent::fail($other, $description);
-            }
-
-            $comparisonFailure = new ComparisonFailure(
-                json_decode($this->value),
-                json_decode($other),
-                Json::prettify($recodedValue),
-                Json::prettify($recodedOther),
-                false,
-                'Failed asserting that two json values are equal.'
-            );
-        }
-
-        parent::fail($other, $description, $comparisonFailure);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+4o3LTKmApbUqfvoeMRK=

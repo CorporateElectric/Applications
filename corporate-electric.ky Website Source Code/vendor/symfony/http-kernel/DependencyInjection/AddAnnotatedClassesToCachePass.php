@@ -1,144 +1,93 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpKernel\DependencyInjection;
-
-use Composer\Autoload\ClassLoader;
-use Symfony\Component\Debug\DebugClassLoader as LegacyDebugClassLoader;
-use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
-use Symfony\Component\DependencyInjection\ContainerBuilder;
-use Symfony\Component\ErrorHandler\DebugClassLoader;
-use Symfony\Component\HttpKernel\Kernel;
-
-/**
- * Sets the classes to compile in the cache for the container.
- *
- * @author Fabien Potencier <fabien@symfony.com>
- */
-class AddAnnotatedClassesToCachePass implements CompilerPassInterface
-{
-    private $kernel;
-
-    public function __construct(Kernel $kernel)
-    {
-        $this->kernel = $kernel;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function process(ContainerBuilder $container)
-    {
-        $annotatedClasses = $this->kernel->getAnnotatedClassesToCompile();
-        foreach ($container->getExtensions() as $extension) {
-            if ($extension instanceof Extension) {
-                $annotatedClasses = array_merge($annotatedClasses, $extension->getAnnotatedClassesToCompile());
-            }
-        }
-
-        $existingClasses = $this->getClassesInComposerClassMaps();
-
-        $annotatedClasses = $container->getParameterBag()->resolveValue($annotatedClasses);
-        $this->kernel->setAnnotatedClassCache($this->expandClasses($annotatedClasses, $existingClasses));
-    }
-
-    /**
-     * Expands the given class patterns using a list of existing classes.
-     *
-     * @param array $patterns The class patterns to expand
-     * @param array $classes  The existing classes to match against the patterns
-     */
-    private function expandClasses(array $patterns, array $classes): array
-    {
-        $expanded = [];
-
-        // Explicit classes declared in the patterns are returned directly
-        foreach ($patterns as $key => $pattern) {
-            if ('\\' !== substr($pattern, -1) && false === strpos($pattern, '*')) {
-                unset($patterns[$key]);
-                $expanded[] = ltrim($pattern, '\\');
-            }
-        }
-
-        // Match patterns with the classes list
-        $regexps = $this->patternsToRegexps($patterns);
-
-        foreach ($classes as $class) {
-            $class = ltrim($class, '\\');
-
-            if ($this->matchAnyRegexps($class, $regexps)) {
-                $expanded[] = $class;
-            }
-        }
-
-        return array_unique($expanded);
-    }
-
-    private function getClassesInComposerClassMaps(): array
-    {
-        $classes = [];
-
-        foreach (spl_autoload_functions() as $function) {
-            if (!\is_array($function)) {
-                continue;
-            }
-
-            if ($function[0] instanceof DebugClassLoader || $function[0] instanceof LegacyDebugClassLoader) {
-                $function = $function[0]->getClassLoader();
-            }
-
-            if (\is_array($function) && $function[0] instanceof ClassLoader) {
-                $classes += array_filter($function[0]->getClassMap());
-            }
-        }
-
-        return array_keys($classes);
-    }
-
-    private function patternsToRegexps(array $patterns): array
-    {
-        $regexps = [];
-
-        foreach ($patterns as $pattern) {
-            // Escape user input
-            $regex = preg_quote(ltrim($pattern, '\\'));
-
-            // Wildcards * and **
-            $regex = strtr($regex, ['\\*\\*' => '.*?', '\\*' => '[^\\\\]*?']);
-
-            // If this class does not end by a slash, anchor the end
-            if ('\\' !== substr($regex, -1)) {
-                $regex .= '$';
-            }
-
-            $regexps[] = '{^\\\\'.$regex.'}';
-        }
-
-        return $regexps;
-    }
-
-    private function matchAnyRegexps(string $class, array $regexps): bool
-    {
-        $isTest = false !== strpos($class, 'Test');
-
-        foreach ($regexps as $regex) {
-            if ($isTest && false === strpos($regex, 'Test')) {
-                continue;
-            }
-
-            if (preg_match($regex, '\\'.$class)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

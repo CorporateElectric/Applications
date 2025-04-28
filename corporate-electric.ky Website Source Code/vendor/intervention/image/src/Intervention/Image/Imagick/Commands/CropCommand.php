@@ -1,45 +1,56 @@
-<?php
-
-namespace Intervention\Image\Imagick\Commands;
-
-use Intervention\Image\Commands\AbstractCommand;
-use Intervention\Image\Exception\InvalidArgumentException;
-use Intervention\Image\Point;
-use Intervention\Image\Size;
-
-class CropCommand extends AbstractCommand
-{
-    /**
-     * Crop an image instance
-     *
-     * @param  \Intervention\Image\Image $image
-     * @return boolean
-     */
-    public function execute($image)
-    {
-        $width = $this->argument(0)->type('digit')->required()->value();
-        $height = $this->argument(1)->type('digit')->required()->value();
-        $x = $this->argument(2)->type('digit')->value();
-        $y = $this->argument(3)->type('digit')->value();
-
-        if (is_null($width) || is_null($height)) {
-            throw new InvalidArgumentException(
-                "Width and height of cutout needs to be defined."
-            );
-        }
-
-        $cropped = new Size($width, $height);
-        $position = new Point($x, $y);
-
-        // align boxes
-        if (is_null($x) && is_null($y)) {
-            $position = $image->getSize()->align('center')->relativePosition($cropped->align('center'));
-        }
-
-        // crop image core
-        $image->getCore()->cropImage($cropped->width, $cropped->height, $position->x, $position->y);
-        $image->getCore()->setImagePage(0,0,0,0);
-
-        return true;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

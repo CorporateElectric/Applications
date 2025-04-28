@@ -1,148 +1,96 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Routing\Loader;
-
-use Symfony\Component\Config\FileLocatorInterface;
-use Symfony\Component\Config\Loader\FileLoader;
-use Symfony\Component\Config\Resource\FileResource;
-use Symfony\Component\Routing\RouteCollection;
-
-/**
- * AnnotationFileLoader loads routing information from annotations set
- * on a PHP class and its methods.
- *
- * @author Fabien Potencier <fabien@symfony.com>
- */
-class AnnotationFileLoader extends FileLoader
-{
-    protected $loader;
-
-    /**
-     * @throws \RuntimeException
-     */
-    public function __construct(FileLocatorInterface $locator, AnnotationClassLoader $loader)
-    {
-        if (!\function_exists('token_get_all')) {
-            throw new \LogicException('The Tokenizer extension is required for the routing annotation loaders.');
-        }
-
-        parent::__construct($locator);
-
-        $this->loader = $loader;
-    }
-
-    /**
-     * Loads from annotations from a file.
-     *
-     * @param string      $file A PHP file path
-     * @param string|null $type The resource type
-     *
-     * @return RouteCollection|null A RouteCollection instance
-     *
-     * @throws \InvalidArgumentException When the file does not exist or its routes cannot be parsed
-     */
-    public function load($file, string $type = null)
-    {
-        $path = $this->locator->locate($file);
-
-        $collection = new RouteCollection();
-        if ($class = $this->findClass($path)) {
-            $refl = new \ReflectionClass($class);
-            if ($refl->isAbstract()) {
-                return null;
-            }
-
-            $collection->addResource(new FileResource($path));
-            $collection->addCollection($this->loader->load($class, $type));
-        }
-
-        gc_mem_caches();
-
-        return $collection;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function supports($resource, string $type = null)
-    {
-        return \is_string($resource) && 'php' === pathinfo($resource, \PATHINFO_EXTENSION) && (!$type || 'annotation' === $type);
-    }
-
-    /**
-     * Returns the full class name for the first class in the file.
-     *
-     * @return string|false Full class name if found, false otherwise
-     */
-    protected function findClass(string $file)
-    {
-        $class = false;
-        $namespace = false;
-        $tokens = token_get_all(file_get_contents($file));
-
-        if (1 === \count($tokens) && \T_INLINE_HTML === $tokens[0][0]) {
-            throw new \InvalidArgumentException(sprintf('The file "%s" does not contain PHP code. Did you forgot to add the "<?php" start tag at the beginning of the file?', $file));
-        }
-
-        $nsTokens = [\T_NS_SEPARATOR => true, \T_STRING => true];
-        if (\defined('T_NAME_QUALIFIED')) {
-            $nsTokens[T_NAME_QUALIFIED] = true;
-        }
-
-        for ($i = 0; isset($tokens[$i]); ++$i) {
-            $token = $tokens[$i];
-
-            if (!isset($token[1])) {
-                continue;
-            }
-
-            if (true === $class && \T_STRING === $token[0]) {
-                return $namespace.'\\'.$token[1];
-            }
-
-            if (true === $namespace && isset($nsTokens[$token[0]])) {
-                $namespace = $token[1];
-                while (isset($tokens[++$i][1], $nsTokens[$tokens[$i][0]])) {
-                    $namespace .= $tokens[$i][1];
-                }
-                $token = $tokens[$i];
-            }
-
-            if (\T_CLASS === $token[0]) {
-                // Skip usage of ::class constant and anonymous classes
-                $skipClassToken = false;
-                for ($j = $i - 1; $j > 0; --$j) {
-                    if (!isset($tokens[$j][1])) {
-                        break;
-                    }
-
-                    if (\T_DOUBLE_COLON === $tokens[$j][0] || \T_NEW === $tokens[$j][0]) {
-                        $skipClassToken = true;
-                        break;
-                    } elseif (!\in_array($tokens[$j][0], [\T_WHITESPACE, \T_DOC_COMMENT, \T_COMMENT])) {
-                        break;
-                    }
-                }
-
-                if (!$skipClassToken) {
-                    $class = true;
-                }
-            }
-
-            if (\T_NAMESPACE === $token[0]) {
-                $namespace = true;
-            }
-        }
-
-        return false;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+JI3i9RfrYBpXrjPUZ3YxeJFHID4=

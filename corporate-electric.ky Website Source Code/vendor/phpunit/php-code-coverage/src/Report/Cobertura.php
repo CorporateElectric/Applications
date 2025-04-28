@@ -1,302 +1,184 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of phpunit/php-code-coverage.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\CodeCoverage\Report;
-
-use function count;
-use function dirname;
-use function file_put_contents;
-use function range;
-use function time;
-use DOMImplementation;
-use SebastianBergmann\CodeCoverage\CodeCoverage;
-use SebastianBergmann\CodeCoverage\Directory;
-use SebastianBergmann\CodeCoverage\Driver\WriteOperationFailedException;
-use SebastianBergmann\CodeCoverage\Node\File;
-
-final class Cobertura
-{
-    /**
-     * @throws WriteOperationFailedException
-     */
-    public function process(CodeCoverage $coverage, ?string $target = null, ?string $name = null): string
-    {
-        $time = (string) time();
-
-        $report = $coverage->getReport();
-
-        $implementation = new DOMImplementation;
-
-        $documentType = $implementation->createDocumentType(
-            'coverage',
-            '',
-            'http://cobertura.sourceforge.net/xml/coverage-04.dtd'
-        );
-
-        $document               = $implementation->createDocument('', '', $documentType);
-        $document->xmlVersion   = '1.0';
-        $document->encoding     = 'UTF-8';
-        $document->formatOutput = true;
-
-        $coverageElement = $document->createElement('coverage');
-
-        $linesValid   = $report->numberOfExecutableLines();
-        $linesCovered = $report->numberOfExecutedLines();
-        $lineRate     = $linesValid === 0 ? 0 : ($linesCovered / $linesValid);
-        $coverageElement->setAttribute('line-rate', (string) $lineRate);
-
-        $branchesValid   = $report->numberOfExecutableBranches();
-        $branchesCovered = $report->numberOfExecutedBranches();
-        $branchRate      = $branchesValid === 0 ? 0 : ($branchesCovered / $branchesValid);
-        $coverageElement->setAttribute('branch-rate', (string) $branchRate);
-
-        $coverageElement->setAttribute('lines-covered', (string) $report->numberOfExecutedLines());
-        $coverageElement->setAttribute('lines-valid', (string) $report->numberOfExecutableLines());
-        $coverageElement->setAttribute('branches-covered', (string) $report->numberOfExecutedBranches());
-        $coverageElement->setAttribute('branches-valid', (string) $report->numberOfExecutableBranches());
-        $coverageElement->setAttribute('complexity', '');
-        $coverageElement->setAttribute('version', '0.4');
-        $coverageElement->setAttribute('timestamp', $time);
-
-        $document->appendChild($coverageElement);
-
-        $sourcesElement = $document->createElement('sources');
-        $coverageElement->appendChild($sourcesElement);
-
-        $sourceElement = $document->createElement('source', $report->pathAsString());
-        $sourcesElement->appendChild($sourceElement);
-
-        $packagesElement = $document->createElement('packages');
-        $coverageElement->appendChild($packagesElement);
-
-        $complexity = 0;
-
-        foreach ($report as $item) {
-            if (!$item instanceof File) {
-                continue;
-            }
-
-            $packageElement    = $document->createElement('package');
-            $packageComplexity = 0;
-            $packageName       = $name ?? '';
-
-            $packageElement->setAttribute('name', $packageName);
-
-            $linesValid   = $item->numberOfExecutableLines();
-            $linesCovered = $item->numberOfExecutedLines();
-            $lineRate     = $linesValid === 0 ? 0 : ($linesCovered / $linesValid);
-
-            $packageElement->setAttribute('line-rate', (string) $lineRate);
-
-            $branchesValid   = $item->numberOfExecutableBranches();
-            $branchesCovered = $item->numberOfExecutedBranches();
-            $branchRate      = $branchesValid === 0 ? 0 : ($branchesCovered / $branchesValid);
-
-            $packageElement->setAttribute('branch-rate', (string) $branchRate);
-
-            $packageElement->setAttribute('complexity', '');
-            $packagesElement->appendChild($packageElement);
-
-            $classesElement = $document->createElement('classes');
-
-            $packageElement->appendChild($classesElement);
-
-            $classes      = $item->classesAndTraits();
-            $coverageData = $item->lineCoverageData();
-
-            foreach ($classes as $className => $class) {
-                $complexity += $class['ccn'];
-                $packageComplexity += $class['ccn'];
-
-                if (!empty($class['package']['namespace'])) {
-                    $className = $class['package']['namespace'] . '\\' . $className;
-                }
-
-                $linesValid   = $class['executableLines'];
-                $linesCovered = $class['executedLines'];
-                $lineRate     = $linesValid === 0 ? 0 : ($linesCovered / $linesValid);
-
-                $branchesValid   = $class['executableBranches'];
-                $branchesCovered = $class['executedBranches'];
-                $branchRate      = $branchesValid === 0 ? 0 : ($branchesCovered / $branchesValid);
-
-                $classElement = $document->createElement('class');
-
-                $classElement->setAttribute('name', $className);
-                $classElement->setAttribute('filename', str_replace($report->pathAsString() . DIRECTORY_SEPARATOR, '', $item->pathAsString()));
-                $classElement->setAttribute('line-rate', (string) $lineRate);
-                $classElement->setAttribute('branch-rate', (string) $branchRate);
-                $classElement->setAttribute('complexity', (string) $class['ccn']);
-
-                $classesElement->appendChild($classElement);
-
-                $methodsElement = $document->createElement('methods');
-
-                $classElement->appendChild($methodsElement);
-
-                $classLinesElement = $document->createElement('lines');
-
-                $classElement->appendChild($classLinesElement);
-
-                foreach ($class['methods'] as $methodName => $method) {
-                    if ($method['executableLines'] === 0) {
-                        continue;
-                    }
-
-                    $linesValid   = $method['executableLines'];
-                    $linesCovered = $method['executedLines'];
-                    $lineRate     = $linesValid === 0 ? 0 : ($linesCovered / $linesValid);
-
-                    $branchesValid   = $method['executableBranches'];
-                    $branchesCovered = $method['executedBranches'];
-                    $branchRate      = $branchesValid === 0 ? 0 : ($branchesCovered / $branchesValid);
-
-                    $methodElement = $document->createElement('method');
-
-                    $methodElement->setAttribute('name', $methodName);
-                    $methodElement->setAttribute('signature', $method['signature']);
-                    $methodElement->setAttribute('line-rate', (string) $lineRate);
-                    $methodElement->setAttribute('branch-rate', (string) $branchRate);
-                    $methodElement->setAttribute('complexity', (string) $method['ccn']);
-
-                    $methodLinesElement = $document->createElement('lines');
-
-                    $methodElement->appendChild($methodLinesElement);
-
-                    foreach (range($method['startLine'], $method['endLine']) as $line) {
-                        if (!isset($coverageData[$line]) || $coverageData[$line] === null) {
-                            continue;
-                        }
-                        $methodLineElement = $document->createElement('line');
-
-                        $methodLineElement->setAttribute('number', (string) $line);
-                        $methodLineElement->setAttribute('hits', (string) count($coverageData[$line]));
-
-                        $methodLinesElement->appendChild($methodLineElement);
-
-                        $classLineElement = $methodLineElement->cloneNode();
-
-                        $classLinesElement->appendChild($classLineElement);
-                    }
-
-                    $methodsElement->appendChild($methodElement);
-                }
-            }
-
-            if ($report->numberOfFunctions() === 0) {
-                $packageElement->setAttribute('complexity', (string) $packageComplexity);
-
-                continue;
-            }
-
-            $functionsComplexity      = 0;
-            $functionsLinesValid      = 0;
-            $functionsLinesCovered    = 0;
-            $functionsBranchesValid   = 0;
-            $functionsBranchesCovered = 0;
-
-            $classElement = $document->createElement('class');
-            $classElement->setAttribute('name', basename($item->pathAsString()));
-            $classElement->setAttribute('filename', str_replace($report->pathAsString() . DIRECTORY_SEPARATOR, '', $item->pathAsString()));
-
-            $methodsElement = $document->createElement('methods');
-
-            $classElement->appendChild($methodsElement);
-
-            $classLinesElement = $document->createElement('lines');
-
-            $classElement->appendChild($classLinesElement);
-
-            $functions = $report->functions();
-
-            foreach ($functions as $functionName => $function) {
-                if ($function['executableLines'] === 0) {
-                    continue;
-                }
-
-                $complexity += $function['ccn'];
-                $packageComplexity += $function['ccn'];
-                $functionsComplexity += $function['ccn'];
-
-                $linesValid   = $function['executableLines'];
-                $linesCovered = $function['executedLines'];
-                $lineRate     = $linesValid === 0 ? 0 : ($linesCovered / $linesValid);
-
-                $functionsLinesValid += $linesValid;
-                $functionsLinesCovered += $linesCovered;
-
-                $branchesValid   = $function['executableBranches'];
-                $branchesCovered = $function['executedBranches'];
-                $branchRate      = $branchesValid === 0 ? 0 : ($branchesCovered / $branchesValid);
-
-                $functionsBranchesValid += $branchesValid;
-                $functionsBranchesCovered += $branchesValid;
-
-                $methodElement = $document->createElement('method');
-
-                $methodElement->setAttribute('name', $functionName);
-                $methodElement->setAttribute('signature', $function['signature']);
-                $methodElement->setAttribute('line-rate', (string) $lineRate);
-                $methodElement->setAttribute('branch-rate', (string) $branchRate);
-                $methodElement->setAttribute('complexity', (string) $function['ccn']);
-
-                $methodLinesElement = $document->createElement('lines');
-
-                $methodElement->appendChild($methodLinesElement);
-
-                foreach (range($function['startLine'], $function['endLine']) as $line) {
-                    if (!isset($coverageData[$line]) || $coverageData[$line] === null) {
-                        continue;
-                    }
-                    $methodLineElement = $document->createElement('line');
-
-                    $methodLineElement->setAttribute('number', (string) $line);
-                    $methodLineElement->setAttribute('hits', (string) count($coverageData[$line]));
-
-                    $methodLinesElement->appendChild($methodLineElement);
-
-                    $classLineElement = $methodLineElement->cloneNode();
-
-                    $classLinesElement->appendChild($classLineElement);
-                }
-
-                $methodsElement->appendChild($methodElement);
-            }
-
-            $packageElement->setAttribute('complexity', (string) $packageComplexity);
-
-            if ($functionsLinesValid === 0) {
-                continue;
-            }
-
-            $lineRate   = $functionsLinesCovered / $functionsLinesValid;
-            $branchRate = $functionsBranchesValid === 0 ? 0 : ($functionsBranchesCovered / $functionsBranchesValid);
-
-            $classElement->setAttribute('line-rate', (string) $lineRate);
-            $classElement->setAttribute('branch-rate', (string) $branchRate);
-            $classElement->setAttribute('complexity', (string) $functionsComplexity);
-
-            $classesElement->appendChild($classElement);
-        }
-
-        $coverageElement->setAttribute('complexity', (string) $complexity);
-
-        $buffer = $document->saveXML();
-
-        if ($target !== null) {
-            Directory::create(dirname($target));
-
-            if (@file_put_contents($target, $buffer) === false) {
-                throw new WriteOperationFailedException($target);
-            }
-        }
-
-        return $buffer;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,685 +1,283 @@
-<?php
-
-namespace Illuminate\Database\Eloquent\Relations\Concerns;
-
-use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\Pivot;
-use Illuminate\Support\Collection as BaseCollection;
-
-trait InteractsWithPivotTable
-{
-    /**
-     * Toggles a model (or models) from the parent.
-     *
-     * Each existing model is detached, and non existing ones are attached.
-     *
-     * @param  mixed  $ids
-     * @param  bool  $touch
-     * @return array
-     */
-    public function toggle($ids, $touch = true)
-    {
-        $changes = [
-            'attached' => [], 'detached' => [],
-        ];
-
-        $records = $this->formatRecordsList($this->parseIds($ids));
-
-        // Next, we will determine which IDs should get removed from the join table by
-        // checking which of the given ID/records is in the list of current records
-        // and removing all of those rows from this "intermediate" joining table.
-        $detach = array_values(array_intersect(
-            $this->newPivotQuery()->pluck($this->relatedPivotKey)->all(),
-            array_keys($records)
-        ));
-
-        if (count($detach) > 0) {
-            $this->detach($detach, false);
-
-            $changes['detached'] = $this->castKeys($detach);
-        }
-
-        // Finally, for all of the records which were not "detached", we'll attach the
-        // records into the intermediate table. Then, we will add those attaches to
-        // this change list and get ready to return these results to the callers.
-        $attach = array_diff_key($records, array_flip($detach));
-
-        if (count($attach) > 0) {
-            $this->attach($attach, [], false);
-
-            $changes['attached'] = array_keys($attach);
-        }
-
-        // Once we have finished attaching or detaching the records, we will see if we
-        // have done any attaching or detaching, and if we have we will touch these
-        // relationships if they are configured to touch on any database updates.
-        if ($touch && (count($changes['attached']) ||
-                       count($changes['detached']))) {
-            $this->touchIfTouching();
-        }
-
-        return $changes;
-    }
-
-    /**
-     * Sync the intermediate tables with a list of IDs without detaching.
-     *
-     * @param  \Illuminate\Support\Collection|\Illuminate\Database\Eloquent\Model|array  $ids
-     * @return array
-     */
-    public function syncWithoutDetaching($ids)
-    {
-        return $this->sync($ids, false);
-    }
-
-    /**
-     * Sync the intermediate tables with a list of IDs or collection of models.
-     *
-     * @param  \Illuminate\Support\Collection|\Illuminate\Database\Eloquent\Model|array  $ids
-     * @param  bool  $detaching
-     * @return array
-     */
-    public function sync($ids, $detaching = true)
-    {
-        $changes = [
-            'attached' => [], 'detached' => [], 'updated' => [],
-        ];
-
-        // First we need to attach any of the associated models that are not currently
-        // in this joining table. We'll spin through the given IDs, checking to see
-        // if they exist in the array of current ones, and if not we will insert.
-        $current = $this->getCurrentlyAttachedPivots()
-                        ->pluck($this->relatedPivotKey)->all();
-
-        $detach = array_diff($current, array_keys(
-            $records = $this->formatRecordsList($this->parseIds($ids))
-        ));
-
-        // Next, we will take the differences of the currents and given IDs and detach
-        // all of the entities that exist in the "current" array but are not in the
-        // array of the new IDs given to the method which will complete the sync.
-        if ($detaching && count($detach) > 0) {
-            $this->detach($detach);
-
-            $changes['detached'] = $this->castKeys($detach);
-        }
-
-        // Now we are finally ready to attach the new records. Note that we'll disable
-        // touching until after the entire operation is complete so we don't fire a
-        // ton of touch operations until we are totally done syncing the records.
-        $changes = array_merge(
-            $changes, $this->attachNew($records, $current, false)
-        );
-
-        // Once we have finished attaching or detaching the records, we will see if we
-        // have done any attaching or detaching, and if we have we will touch these
-        // relationships if they are configured to touch on any database updates.
-        if (count($changes['attached']) ||
-            count($changes['updated'])) {
-            $this->touchIfTouching();
-        }
-
-        return $changes;
-    }
-
-    /**
-     * Sync the intermediate tables with a list of IDs or collection of models with the given pivot values.
-     *
-     * @param  \Illuminate\Support\Collection|\Illuminate\Database\Eloquent\Model|array  $ids
-     * @param  array  $values
-     * @param  bool  $detaching
-     * @return array
-     */
-    public function syncWithPivotValues($ids, array $values, bool $detaching = true)
-    {
-        return $this->sync(collect($this->parseIds($ids))->mapWithKeys(function ($id) use ($values) {
-            return [$id => $values];
-        }), $detaching);
-    }
-
-    /**
-     * Format the sync / toggle record list so that it is keyed by ID.
-     *
-     * @param  array  $records
-     * @return array
-     */
-    protected function formatRecordsList(array $records)
-    {
-        return collect($records)->mapWithKeys(function ($attributes, $id) {
-            if (! is_array($attributes)) {
-                [$id, $attributes] = [$attributes, []];
-            }
-
-            return [$id => $attributes];
-        })->all();
-    }
-
-    /**
-     * Attach all of the records that aren't in the given current records.
-     *
-     * @param  array  $records
-     * @param  array  $current
-     * @param  bool  $touch
-     * @return array
-     */
-    protected function attachNew(array $records, array $current, $touch = true)
-    {
-        $changes = ['attached' => [], 'updated' => []];
-
-        foreach ($records as $id => $attributes) {
-            // If the ID is not in the list of existing pivot IDs, we will insert a new pivot
-            // record, otherwise, we will just update this existing record on this joining
-            // table, so that the developers will easily update these records pain free.
-            if (! in_array($id, $current)) {
-                $this->attach($id, $attributes, $touch);
-
-                $changes['attached'][] = $this->castKey($id);
-            }
-
-            // Now we'll try to update an existing pivot record with the attributes that were
-            // given to the method. If the model is actually updated we will add it to the
-            // list of updated pivot records so we return them back out to the consumer.
-            elseif (count($attributes) > 0 &&
-                $this->updateExistingPivot($id, $attributes, $touch)) {
-                $changes['updated'][] = $this->castKey($id);
-            }
-        }
-
-        return $changes;
-    }
-
-    /**
-     * Update an existing pivot record on the table.
-     *
-     * @param  mixed  $id
-     * @param  array  $attributes
-     * @param  bool  $touch
-     * @return int
-     */
-    public function updateExistingPivot($id, array $attributes, $touch = true)
-    {
-        if ($this->using &&
-            empty($this->pivotWheres) &&
-            empty($this->pivotWhereIns) &&
-            empty($this->pivotWhereNulls)) {
-            return $this->updateExistingPivotUsingCustomClass($id, $attributes, $touch);
-        }
-
-        if (in_array($this->updatedAt(), $this->pivotColumns)) {
-            $attributes = $this->addTimestampsToAttachment($attributes, true);
-        }
-
-        $updated = $this->newPivotStatementForId($this->parseId($id))->update(
-            $this->castAttributes($attributes)
-        );
-
-        if ($touch) {
-            $this->touchIfTouching();
-        }
-
-        return $updated;
-    }
-
-    /**
-     * Update an existing pivot record on the table via a custom class.
-     *
-     * @param  mixed  $id
-     * @param  array  $attributes
-     * @param  bool  $touch
-     * @return int
-     */
-    protected function updateExistingPivotUsingCustomClass($id, array $attributes, $touch)
-    {
-        $pivot = $this->getCurrentlyAttachedPivots()
-                    ->where($this->foreignPivotKey, $this->parent->{$this->parentKey})
-                    ->where($this->relatedPivotKey, $this->parseId($id))
-                    ->first();
-
-        $updated = $pivot ? $pivot->fill($attributes)->isDirty() : false;
-
-        if ($updated) {
-            $pivot->save();
-        }
-
-        if ($touch) {
-            $this->touchIfTouching();
-        }
-
-        return (int) $updated;
-    }
-
-    /**
-     * Attach a model to the parent.
-     *
-     * @param  mixed  $id
-     * @param  array  $attributes
-     * @param  bool  $touch
-     * @return void
-     */
-    public function attach($id, array $attributes = [], $touch = true)
-    {
-        if ($this->using) {
-            $this->attachUsingCustomClass($id, $attributes);
-        } else {
-            // Here we will insert the attachment records into the pivot table. Once we have
-            // inserted the records, we will touch the relationships if necessary and the
-            // function will return. We can parse the IDs before inserting the records.
-            $this->newPivotStatement()->insert($this->formatAttachRecords(
-                $this->parseIds($id), $attributes
-            ));
-        }
-
-        if ($touch) {
-            $this->touchIfTouching();
-        }
-    }
-
-    /**
-     * Attach a model to the parent using a custom class.
-     *
-     * @param  mixed  $id
-     * @param  array  $attributes
-     * @return void
-     */
-    protected function attachUsingCustomClass($id, array $attributes)
-    {
-        $records = $this->formatAttachRecords(
-            $this->parseIds($id), $attributes
-        );
-
-        foreach ($records as $record) {
-            $this->newPivot($record, false)->save();
-        }
-    }
-
-    /**
-     * Create an array of records to insert into the pivot table.
-     *
-     * @param  array  $ids
-     * @param  array  $attributes
-     * @return array
-     */
-    protected function formatAttachRecords($ids, array $attributes)
-    {
-        $records = [];
-
-        $hasTimestamps = ($this->hasPivotColumn($this->createdAt()) ||
-                  $this->hasPivotColumn($this->updatedAt()));
-
-        // To create the attachment records, we will simply spin through the IDs given
-        // and create a new record to insert for each ID. Each ID may actually be a
-        // key in the array, with extra attributes to be placed in other columns.
-        foreach ($ids as $key => $value) {
-            $records[] = $this->formatAttachRecord(
-                $key, $value, $attributes, $hasTimestamps
-            );
-        }
-
-        return $records;
-    }
-
-    /**
-     * Create a full attachment record payload.
-     *
-     * @param  int  $key
-     * @param  mixed  $value
-     * @param  array  $attributes
-     * @param  bool  $hasTimestamps
-     * @return array
-     */
-    protected function formatAttachRecord($key, $value, $attributes, $hasTimestamps)
-    {
-        [$id, $attributes] = $this->extractAttachIdAndAttributes($key, $value, $attributes);
-
-        return array_merge(
-            $this->baseAttachRecord($id, $hasTimestamps), $this->castAttributes($attributes)
-        );
-    }
-
-    /**
-     * Get the attach record ID and extra attributes.
-     *
-     * @param  mixed  $key
-     * @param  mixed  $value
-     * @param  array  $attributes
-     * @return array
-     */
-    protected function extractAttachIdAndAttributes($key, $value, array $attributes)
-    {
-        return is_array($value)
-                    ? [$key, array_merge($value, $attributes)]
-                    : [$value, $attributes];
-    }
-
-    /**
-     * Create a new pivot attachment record.
-     *
-     * @param  int  $id
-     * @param  bool  $timed
-     * @return array
-     */
-    protected function baseAttachRecord($id, $timed)
-    {
-        $record[$this->relatedPivotKey] = $id;
-
-        $record[$this->foreignPivotKey] = $this->parent->{$this->parentKey};
-
-        // If the record needs to have creation and update timestamps, we will make
-        // them by calling the parent model's "freshTimestamp" method which will
-        // provide us with a fresh timestamp in this model's preferred format.
-        if ($timed) {
-            $record = $this->addTimestampsToAttachment($record);
-        }
-
-        foreach ($this->pivotValues as $value) {
-            $record[$value['column']] = $value['value'];
-        }
-
-        return $record;
-    }
-
-    /**
-     * Set the creation and update timestamps on an attach record.
-     *
-     * @param  array  $record
-     * @param  bool  $exists
-     * @return array
-     */
-    protected function addTimestampsToAttachment(array $record, $exists = false)
-    {
-        $fresh = $this->parent->freshTimestamp();
-
-        if ($this->using) {
-            $pivotModel = new $this->using;
-
-            $fresh = $fresh->format($pivotModel->getDateFormat());
-        }
-
-        if (! $exists && $this->hasPivotColumn($this->createdAt())) {
-            $record[$this->createdAt()] = $fresh;
-        }
-
-        if ($this->hasPivotColumn($this->updatedAt())) {
-            $record[$this->updatedAt()] = $fresh;
-        }
-
-        return $record;
-    }
-
-    /**
-     * Determine whether the given column is defined as a pivot column.
-     *
-     * @param  string  $column
-     * @return bool
-     */
-    public function hasPivotColumn($column)
-    {
-        return in_array($column, $this->pivotColumns);
-    }
-
-    /**
-     * Detach models from the relationship.
-     *
-     * @param  mixed  $ids
-     * @param  bool  $touch
-     * @return int
-     */
-    public function detach($ids = null, $touch = true)
-    {
-        if ($this->using &&
-            ! empty($ids) &&
-            empty($this->pivotWheres) &&
-            empty($this->pivotWhereIns) &&
-            empty($this->pivotWhereNulls)) {
-            $results = $this->detachUsingCustomClass($ids);
-        } else {
-            $query = $this->newPivotQuery();
-
-            // If associated IDs were passed to the method we will only delete those
-            // associations, otherwise all of the association ties will be broken.
-            // We'll return the numbers of affected rows when we do the deletes.
-            if (! is_null($ids)) {
-                $ids = $this->parseIds($ids);
-
-                if (empty($ids)) {
-                    return 0;
-                }
-
-                $query->whereIn($this->relatedPivotKey, (array) $ids);
-            }
-
-            // Once we have all of the conditions set on the statement, we are ready
-            // to run the delete on the pivot table. Then, if the touch parameter
-            // is true, we will go ahead and touch all related models to sync.
-            $results = $query->delete();
-        }
-
-        if ($touch) {
-            $this->touchIfTouching();
-        }
-
-        return $results;
-    }
-
-    /**
-     * Detach models from the relationship using a custom class.
-     *
-     * @param  mixed  $ids
-     * @return int
-     */
-    protected function detachUsingCustomClass($ids)
-    {
-        $results = 0;
-
-        foreach ($this->parseIds($ids) as $id) {
-            $results += $this->newPivot([
-                $this->foreignPivotKey => $this->parent->{$this->parentKey},
-                $this->relatedPivotKey => $id,
-            ], true)->delete();
-        }
-
-        return $results;
-    }
-
-    /**
-     * Get the pivot models that are currently attached.
-     *
-     * @return \Illuminate\Support\Collection
-     */
-    protected function getCurrentlyAttachedPivots()
-    {
-        return $this->newPivotQuery()->get()->map(function ($record) {
-            $class = $this->using ?: Pivot::class;
-
-            $pivot = $class::fromRawAttributes($this->parent, (array) $record, $this->getTable(), true);
-
-            return $pivot->setPivotKeys($this->foreignPivotKey, $this->relatedPivotKey);
-        });
-    }
-
-    /**
-     * Create a new pivot model instance.
-     *
-     * @param  array  $attributes
-     * @param  bool  $exists
-     * @return \Illuminate\Database\Eloquent\Relations\Pivot
-     */
-    public function newPivot(array $attributes = [], $exists = false)
-    {
-        $pivot = $this->related->newPivot(
-            $this->parent, $attributes, $this->table, $exists, $this->using
-        );
-
-        return $pivot->setPivotKeys($this->foreignPivotKey, $this->relatedPivotKey);
-    }
-
-    /**
-     * Create a new existing pivot model instance.
-     *
-     * @param  array  $attributes
-     * @return \Illuminate\Database\Eloquent\Relations\Pivot
-     */
-    public function newExistingPivot(array $attributes = [])
-    {
-        return $this->newPivot($attributes, true);
-    }
-
-    /**
-     * Get a new plain query builder for the pivot table.
-     *
-     * @return \Illuminate\Database\Query\Builder
-     */
-    public function newPivotStatement()
-    {
-        return $this->query->getQuery()->newQuery()->from($this->table);
-    }
-
-    /**
-     * Get a new pivot statement for a given "other" ID.
-     *
-     * @param  mixed  $id
-     * @return \Illuminate\Database\Query\Builder
-     */
-    public function newPivotStatementForId($id)
-    {
-        return $this->newPivotQuery()->whereIn($this->relatedPivotKey, $this->parseIds($id));
-    }
-
-    /**
-     * Create a new query builder for the pivot table.
-     *
-     * @return \Illuminate\Database\Query\Builder
-     */
-    public function newPivotQuery()
-    {
-        $query = $this->newPivotStatement();
-
-        foreach ($this->pivotWheres as $arguments) {
-            $query->where(...$arguments);
-        }
-
-        foreach ($this->pivotWhereIns as $arguments) {
-            $query->whereIn(...$arguments);
-        }
-
-        foreach ($this->pivotWhereNulls as $arguments) {
-            $query->whereNull(...$arguments);
-        }
-
-        return $query->where($this->foreignPivotKey, $this->parent->{$this->parentKey});
-    }
-
-    /**
-     * Set the columns on the pivot table to retrieve.
-     *
-     * @param  array|mixed  $columns
-     * @return $this
-     */
-    public function withPivot($columns)
-    {
-        $this->pivotColumns = array_merge(
-            $this->pivotColumns, is_array($columns) ? $columns : func_get_args()
-        );
-
-        return $this;
-    }
-
-    /**
-     * Get all of the IDs from the given mixed value.
-     *
-     * @param  mixed  $value
-     * @return array
-     */
-    protected function parseIds($value)
-    {
-        if ($value instanceof Model) {
-            return [$value->{$this->relatedKey}];
-        }
-
-        if ($value instanceof Collection) {
-            return $value->pluck($this->relatedKey)->all();
-        }
-
-        if ($value instanceof BaseCollection) {
-            return $value->toArray();
-        }
-
-        return (array) $value;
-    }
-
-    /**
-     * Get the ID from the given mixed value.
-     *
-     * @param  mixed  $value
-     * @return mixed
-     */
-    protected function parseId($value)
-    {
-        return $value instanceof Model ? $value->{$this->relatedKey} : $value;
-    }
-
-    /**
-     * Cast the given keys to integers if they are numeric and string otherwise.
-     *
-     * @param  array  $keys
-     * @return array
-     */
-    protected function castKeys(array $keys)
-    {
-        return array_map(function ($v) {
-            return $this->castKey($v);
-        }, $keys);
-    }
-
-    /**
-     * Cast the given key to convert to primary key type.
-     *
-     * @param  mixed  $key
-     * @return mixed
-     */
-    protected function castKey($key)
-    {
-        return $this->getTypeSwapValue(
-            $this->related->getKeyType(),
-            $key
-        );
-    }
-
-    /**
-     * Cast the given pivot attributes.
-     *
-     * @param  array  $attributes
-     * @return array
-     */
-    protected function castAttributes($attributes)
-    {
-        return $this->using
-                    ? $this->newPivot()->fill($attributes)->getAttributes()
-                    : $attributes;
-    }
-
-    /**
-     * Converts a given value to a given type value.
-     *
-     * @param  string  $type
-     * @param  mixed  $value
-     * @return mixed
-     */
-    protected function getTypeSwapValue($type, $value)
-    {
-        switch (strtolower($type)) {
-            case 'int':
-            case 'integer':
-                return (int) $value;
-            case 'real':
-            case 'float':
-            case 'double':
-                return (float) $value;
-            case 'string':
-                return (string) $value;
-            default:
-                return $value;
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,163 +1,44 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Worksheet;
-
-use PhpOffice\PhpSpreadsheet\Exception as PhpSpreadsheetException;
-
-abstract class Dimension
-{
-    /**
-     * Visible?
-     *
-     * @var bool
-     */
-    private $visible = true;
-
-    /**
-     * Outline level.
-     *
-     * @var int
-     */
-    private $outlineLevel = 0;
-
-    /**
-     * Collapsed.
-     *
-     * @var bool
-     */
-    private $collapsed = false;
-
-    /**
-     * Index to cellXf. Null value means row has no explicit cellXf format.
-     *
-     * @var null|int
-     */
-    private $xfIndex;
-
-    /**
-     * Create a new Dimension.
-     *
-     * @param int $initialValue Numeric row index
-     */
-    public function __construct($initialValue = null)
-    {
-        // set dimension as unformatted by default
-        $this->xfIndex = $initialValue;
-    }
-
-    /**
-     * Get Visible.
-     *
-     * @return bool
-     */
-    public function getVisible()
-    {
-        return $this->visible;
-    }
-
-    /**
-     * Set Visible.
-     *
-     * @param bool $pValue
-     *
-     * @return $this
-     */
-    public function setVisible($pValue)
-    {
-        $this->visible = (bool) $pValue;
-
-        return $this;
-    }
-
-    /**
-     * Get Outline Level.
-     *
-     * @return int
-     */
-    public function getOutlineLevel()
-    {
-        return $this->outlineLevel;
-    }
-
-    /**
-     * Set Outline Level.
-     * Value must be between 0 and 7.
-     *
-     * @param int $pValue
-     *
-     * @return $this
-     */
-    public function setOutlineLevel($pValue)
-    {
-        if ($pValue < 0 || $pValue > 7) {
-            throw new PhpSpreadsheetException('Outline level must range between 0 and 7.');
-        }
-
-        $this->outlineLevel = $pValue;
-
-        return $this;
-    }
-
-    /**
-     * Get Collapsed.
-     *
-     * @return bool
-     */
-    public function getCollapsed()
-    {
-        return $this->collapsed;
-    }
-
-    /**
-     * Set Collapsed.
-     *
-     * @param bool $pValue
-     *
-     * @return $this
-     */
-    public function setCollapsed($pValue)
-    {
-        $this->collapsed = (bool) $pValue;
-
-        return $this;
-    }
-
-    /**
-     * Get index to cellXf.
-     *
-     * @return int
-     */
-    public function getXfIndex()
-    {
-        return $this->xfIndex;
-    }
-
-    /**
-     * Set index to cellXf.
-     *
-     * @param int $pValue
-     *
-     * @return $this
-     */
-    public function setXfIndex($pValue)
-    {
-        $this->xfIndex = $pValue;
-
-        return $this;
-    }
-
-    /**
-     * Implement PHP __clone to create a deep clone, not just a shallow copy.
-     */
-    public function __clone()
-    {
-        $vars = get_object_vars($this);
-        foreach ($vars as $key => $value) {
-            if (is_object($value)) {
-                $this->$key = clone $value;
-            } else {
-                $this->$key = $value;
-            }
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

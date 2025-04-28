@@ -1,97 +1,53 @@
-<?php
-
-namespace Illuminate\Hashing;
-
-use Illuminate\Contracts\Hashing\Hasher;
-use Illuminate\Support\Manager;
-
-class HashManager extends Manager implements Hasher
-{
-    /**
-     * Create an instance of the Bcrypt hash Driver.
-     *
-     * @return \Illuminate\Hashing\BcryptHasher
-     */
-    public function createBcryptDriver()
-    {
-        return new BcryptHasher($this->config->get('hashing.bcrypt') ?? []);
-    }
-
-    /**
-     * Create an instance of the Argon2i hash Driver.
-     *
-     * @return \Illuminate\Hashing\ArgonHasher
-     */
-    public function createArgonDriver()
-    {
-        return new ArgonHasher($this->config->get('hashing.argon') ?? []);
-    }
-
-    /**
-     * Create an instance of the Argon2id hash Driver.
-     *
-     * @return \Illuminate\Hashing\Argon2IdHasher
-     */
-    public function createArgon2idDriver()
-    {
-        return new Argon2IdHasher($this->config->get('hashing.argon') ?? []);
-    }
-
-    /**
-     * Get information about the given hashed value.
-     *
-     * @param  string  $hashedValue
-     * @return array
-     */
-    public function info($hashedValue)
-    {
-        return $this->driver()->info($hashedValue);
-    }
-
-    /**
-     * Hash the given value.
-     *
-     * @param  string  $value
-     * @param  array  $options
-     * @return string
-     */
-    public function make($value, array $options = [])
-    {
-        return $this->driver()->make($value, $options);
-    }
-
-    /**
-     * Check the given plain value against a hash.
-     *
-     * @param  string  $value
-     * @param  string  $hashedValue
-     * @param  array  $options
-     * @return bool
-     */
-    public function check($value, $hashedValue, array $options = [])
-    {
-        return $this->driver()->check($value, $hashedValue, $options);
-    }
-
-    /**
-     * Check if the given hash has been hashed using the given options.
-     *
-     * @param  string  $hashedValue
-     * @param  array  $options
-     * @return bool
-     */
-    public function needsRehash($hashedValue, array $options = [])
-    {
-        return $this->driver()->needsRehash($hashedValue, $options);
-    }
-
-    /**
-     * Get the default driver name.
-     *
-     * @return string
-     */
-    public function getDefaultDriver()
-    {
-        return $this->config->get('hashing.driver', 'bcrypt');
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

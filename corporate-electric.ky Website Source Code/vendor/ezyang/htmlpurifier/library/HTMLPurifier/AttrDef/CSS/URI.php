@@ -1,77 +1,50 @@
-<?php
-
-/**
- * Validates a URI in CSS syntax, which uses url('http://example.com')
- * @note While theoretically speaking a URI in a CSS document could
- *       be non-embedded, as of CSS2 there is no such usage so we're
- *       generalizing it. This may need to be changed in the future.
- * @warning Since HTMLPurifier_AttrDef_CSS blindly uses semicolons as
- *          the separator, you cannot put a literal semicolon in
- *          in the URI. Try percent encoding it, in that case.
- */
-class HTMLPurifier_AttrDef_CSS_URI extends HTMLPurifier_AttrDef_URI
-{
-
-    public function __construct()
-    {
-        parent::__construct(true); // always embedded
-    }
-
-    /**
-     * @param string $uri_string
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return bool|string
-     */
-    public function validate($uri_string, $config, $context)
-    {
-        // parse the URI out of the string and then pass it onto
-        // the parent object
-
-        $uri_string = $this->parseCDATA($uri_string);
-        if (strpos($uri_string, 'url(') !== 0) {
-            return false;
-        }
-        $uri_string = substr($uri_string, 4);
-        if (strlen($uri_string) == 0) {
-            return false;
-        }
-        $new_length = strlen($uri_string) - 1;
-        if ($uri_string[$new_length] != ')') {
-            return false;
-        }
-        $uri = trim(substr($uri_string, 0, $new_length));
-
-        if (!empty($uri) && ($uri[0] == "'" || $uri[0] == '"')) {
-            $quote = $uri[0];
-            $new_length = strlen($uri) - 1;
-            if ($uri[$new_length] !== $quote) {
-                return false;
-            }
-            $uri = substr($uri, 1, $new_length - 1);
-        }
-
-        $uri = $this->expandCSSEscape($uri);
-
-        $result = parent::validate($uri, $config, $context);
-
-        if ($result === false) {
-            return false;
-        }
-
-        // extra sanity check; should have been done by URI
-        $result = str_replace(array('"', "\\", "\n", "\x0c", "\r"), "", $result);
-
-        // suspicious characters are ()'; we're going to percent encode
-        // them for safety.
-        $result = str_replace(array('(', ')', "'"), array('%28', '%29', '%27'), $result);
-
-        // there's an extra bug where ampersands lose their escaping on
-        // an innerHTML cycle, so a very unlucky query parameter could
-        // then change the meaning of the URL.  Unfortunately, there's
-        // not much we can do about that...
-        return "url(\"$result\")";
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,122 +1,75 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\CssSelector\XPath\Extension;
-
-use Symfony\Component\CssSelector\Exception\ExpressionErrorException;
-use Symfony\Component\CssSelector\XPath\XPathExpr;
-
-/**
- * XPath expression translator pseudo-class extension.
- *
- * This component is a port of the Python cssselect library,
- * which is copyright Ian Bicking, @see https://github.com/SimonSapin/cssselect.
- *
- * @author Jean-François Simon <jeanfrancois.simon@sensiolabs.com>
- *
- * @internal
- */
-class PseudoClassExtension extends AbstractExtension
-{
-    /**
-     * {@inheritdoc}
-     */
-    public function getPseudoClassTranslators(): array
-    {
-        return [
-            'root' => [$this, 'translateRoot'],
-            'first-child' => [$this, 'translateFirstChild'],
-            'last-child' => [$this, 'translateLastChild'],
-            'first-of-type' => [$this, 'translateFirstOfType'],
-            'last-of-type' => [$this, 'translateLastOfType'],
-            'only-child' => [$this, 'translateOnlyChild'],
-            'only-of-type' => [$this, 'translateOnlyOfType'],
-            'empty' => [$this, 'translateEmpty'],
-        ];
-    }
-
-    public function translateRoot(XPathExpr $xpath): XPathExpr
-    {
-        return $xpath->addCondition('not(parent::*)');
-    }
-
-    public function translateFirstChild(XPathExpr $xpath): XPathExpr
-    {
-        return $xpath
-            ->addStarPrefix()
-            ->addNameTest()
-            ->addCondition('position() = 1');
-    }
-
-    public function translateLastChild(XPathExpr $xpath): XPathExpr
-    {
-        return $xpath
-            ->addStarPrefix()
-            ->addNameTest()
-            ->addCondition('position() = last()');
-    }
-
-    /**
-     * @throws ExpressionErrorException
-     */
-    public function translateFirstOfType(XPathExpr $xpath): XPathExpr
-    {
-        if ('*' === $xpath->getElement()) {
-            throw new ExpressionErrorException('"*:first-of-type" is not implemented.');
-        }
-
-        return $xpath
-            ->addStarPrefix()
-            ->addCondition('position() = 1');
-    }
-
-    /**
-     * @throws ExpressionErrorException
-     */
-    public function translateLastOfType(XPathExpr $xpath): XPathExpr
-    {
-        if ('*' === $xpath->getElement()) {
-            throw new ExpressionErrorException('"*:last-of-type" is not implemented.');
-        }
-
-        return $xpath
-            ->addStarPrefix()
-            ->addCondition('position() = last()');
-    }
-
-    public function translateOnlyChild(XPathExpr $xpath): XPathExpr
-    {
-        return $xpath
-            ->addStarPrefix()
-            ->addNameTest()
-            ->addCondition('last() = 1');
-    }
-
-    public function translateOnlyOfType(XPathExpr $xpath): XPathExpr
-    {
-        $element = $xpath->getElement();
-
-        return $xpath->addCondition(sprintf('count(preceding-sibling::%s)=0 and count(following-sibling::%s)=0', $element, $element));
-    }
-
-    public function translateEmpty(XPathExpr $xpath): XPathExpr
-    {
-        return $xpath->addCondition('not(*) and not(string-length())');
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getName(): string
-    {
-        return 'pseudo-class';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+hiXJ9yvC/H9Bi0Dspn4=

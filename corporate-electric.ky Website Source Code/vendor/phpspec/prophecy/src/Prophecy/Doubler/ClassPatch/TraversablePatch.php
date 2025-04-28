@@ -1,83 +1,52 @@
-<?php
-
-/*
- * This file is part of the Prophecy.
- * (c) Konstantin Kudryashov <ever.zet@gmail.com>
- *     Marcello Duarte <marcello.duarte@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Prophecy\Doubler\ClassPatch;
-
-use Prophecy\Doubler\Generator\Node\ClassNode;
-use Prophecy\Doubler\Generator\Node\MethodNode;
-
-/**
- * Traversable interface patch.
- * Forces classes that implement interfaces, that extend Traversable to also implement Iterator.
- *
- * @author Konstantin Kudryashov <ever.zet@gmail.com>
- */
-class TraversablePatch implements ClassPatchInterface
-{
-    /**
-     * Supports nodetree, that implement Traversable, but not Iterator or IteratorAggregate.
-     *
-     * @param ClassNode $node
-     *
-     * @return bool
-     */
-    public function supports(ClassNode $node)
-    {
-        if (in_array('Iterator', $node->getInterfaces())) {
-            return false;
-        }
-        if (in_array('IteratorAggregate', $node->getInterfaces())) {
-            return false;
-        }
-
-        foreach ($node->getInterfaces() as $interface) {
-            if ('Traversable' !== $interface && !is_subclass_of($interface, 'Traversable')) {
-                continue;
-            }
-            if ('Iterator' === $interface || is_subclass_of($interface, 'Iterator')) {
-                continue;
-            }
-            if ('IteratorAggregate' === $interface || is_subclass_of($interface, 'IteratorAggregate')) {
-                continue;
-            }
-
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Forces class to implement Iterator interface.
-     *
-     * @param ClassNode $node
-     */
-    public function apply(ClassNode $node)
-    {
-        $node->addInterface('Iterator');
-
-        $node->addMethod(new MethodNode('current'));
-        $node->addMethod(new MethodNode('key'));
-        $node->addMethod(new MethodNode('next'));
-        $node->addMethod(new MethodNode('rewind'));
-        $node->addMethod(new MethodNode('valid'));
-    }
-
-    /**
-     * Returns patch priority, which determines when patch will be applied.
-     *
-     * @return int Priority number (higher - earlier)
-     */
-    public function getPriority()
-    {
-        return 100;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+UxBIighbZQc1nNb2

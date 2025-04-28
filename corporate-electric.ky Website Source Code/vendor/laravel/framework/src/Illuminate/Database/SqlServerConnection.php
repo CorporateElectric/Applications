@@ -1,125 +1,64 @@
-<?php
-
-namespace Illuminate\Database;
-
-use Closure;
-use Doctrine\DBAL\Driver\PDOSqlsrv\Driver as DoctrineDriver;
-use Doctrine\DBAL\Version;
-use Illuminate\Database\PDO\SqlServerDriver;
-use Illuminate\Database\Query\Grammars\SqlServerGrammar as QueryGrammar;
-use Illuminate\Database\Query\Processors\SqlServerProcessor;
-use Illuminate\Database\Schema\Grammars\SqlServerGrammar as SchemaGrammar;
-use Illuminate\Database\Schema\SqlServerBuilder;
-use Illuminate\Filesystem\Filesystem;
-use RuntimeException;
-use Throwable;
-
-class SqlServerConnection extends Connection
-{
-    /**
-     * Execute a Closure within a transaction.
-     *
-     * @param  \Closure  $callback
-     * @param  int  $attempts
-     * @return mixed
-     *
-     * @throws \Throwable
-     */
-    public function transaction(Closure $callback, $attempts = 1)
-    {
-        for ($a = 1; $a <= $attempts; $a++) {
-            if ($this->getDriverName() === 'sqlsrv') {
-                return parent::transaction($callback);
-            }
-
-            $this->getPdo()->exec('BEGIN TRAN');
-
-            // We'll simply execute the given callback within a try / catch block
-            // and if we catch any exception we can rollback the transaction
-            // so that none of the changes are persisted to the database.
-            try {
-                $result = $callback($this);
-
-                $this->getPdo()->exec('COMMIT TRAN');
-            }
-
-            // If we catch an exception, we will roll back so nothing gets messed
-            // up in the database. Then we'll re-throw the exception so it can
-            // be handled how the developer sees fit for their applications.
-            catch (Throwable $e) {
-                $this->getPdo()->exec('ROLLBACK TRAN');
-
-                throw $e;
-            }
-
-            return $result;
-        }
-    }
-
-    /**
-     * Get the default query grammar instance.
-     *
-     * @return \Illuminate\Database\Query\Grammars\SqlServerGrammar
-     */
-    protected function getDefaultQueryGrammar()
-    {
-        return $this->withTablePrefix(new QueryGrammar);
-    }
-
-    /**
-     * Get a schema builder instance for the connection.
-     *
-     * @return \Illuminate\Database\Schema\SqlServerBuilder
-     */
-    public function getSchemaBuilder()
-    {
-        if (is_null($this->schemaGrammar)) {
-            $this->useDefaultSchemaGrammar();
-        }
-
-        return new SqlServerBuilder($this);
-    }
-
-    /**
-     * Get the default schema grammar instance.
-     *
-     * @return \Illuminate\Database\Schema\Grammars\SqlServerGrammar
-     */
-    protected function getDefaultSchemaGrammar()
-    {
-        return $this->withTablePrefix(new SchemaGrammar);
-    }
-
-    /**
-     * Get the schema state for the connection.
-     *
-     * @param  \Illuminate\Filesystem\Filesystem|null  $files
-     * @param  callable|null  $processFactory
-     *
-     * @throws \RuntimeException
-     */
-    public function getSchemaState(Filesystem $files = null, callable $processFactory = null)
-    {
-        throw new RuntimeException('Schema dumping is not supported when using SQL Server.');
-    }
-
-    /**
-     * Get the default post processor instance.
-     *
-     * @return \Illuminate\Database\Query\Processors\SqlServerProcessor
-     */
-    protected function getDefaultPostProcessor()
-    {
-        return new SqlServerProcessor;
-    }
-
-    /**
-     * Get the Doctrine DBAL driver.
-     *
-     * @return \Doctrine\DBAL\Driver\PDOSqlsrv\Driver|\Illuminate\Database\PDO\SqlServerDriver
-     */
-    protected function getDoctrineDriver()
-    {
-        return class_exists(Version::class) ? new DoctrineDriver : new SqlServerDriver;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

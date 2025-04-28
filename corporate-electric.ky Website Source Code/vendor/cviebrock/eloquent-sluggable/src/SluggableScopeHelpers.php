@@ -1,86 +1,41 @@
-<?php namespace Cviebrock\EloquentSluggable;
-
-use Illuminate\Database\Eloquent\Builder;
-
-/**
- * Class SluggableScopeHelpers
- *
- * Helper trait for defining the primary slug of a model
- * and providing useful scopes and query methods.
- *
- * @package Cviebrock\EloquentSluggable
- */
-trait SluggableScopeHelpers
-{
-
-    /**
-     * Primary slug column of this model.
-     *
-     * @return string
-     */
-    public function getSlugKeyName(): string
-    {
-        if (property_exists($this, 'slugKeyName')) {
-            return $this->slugKeyName;
-        }
-
-        $config = $this->sluggable();
-        $name = reset($config);
-        $key = key($config);
-
-        // check for short configuration
-        if ($key === 0) {
-            return $name;
-        }
-
-        return $key;
-    }
-
-    /**
-     * Primary slug value of this model.
-     *
-     * @return string
-     */
-    public function getSlugKey(): string
-    {
-        return $this->getAttribute($this->getSlugKeyName());
-    }
-
-    /**
-     * Query scope for finding a model by its primary slug.
-     *
-     * @param \Illuminate\Database\Eloquent\Builder $scope
-     * @param string $slug
-     * @return \Illuminate\Database\Eloquent\Builder
-     */
-    public function scopeWhereSlug(Builder $scope, string $slug): Builder
-    {
-        return $scope->where($this->getSlugKeyName(), $slug);
-    }
-
-    /**
-     * Find a model by its primary slug.
-     *
-     * @param string $slug
-     * @param array $columns
-     * @return \Illuminate\Database\Eloquent\Model|\Illuminate\Database\Eloquent\Collection|static[]|static|null
-     */
-    public static function findBySlug(string $slug, array $columns = ['*'])
-    {
-        return static::whereSlug($slug)->first($columns);
-    }
-
-    /**
-     * Find a model by its primary slug or throw an exception.
-     *
-     * @param string $slug
-     * @param array $columns
-     * @return \Illuminate\Database\Eloquent\Model|\Illuminate\Database\Eloquent\Collection
-     *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
-     */
-    public static function findBySlugOrFail(string $slug, array $columns = ['*'])
-    {
-        return static::whereSlug($slug)->firstOrFail($columns);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPmnfCHhsi8bTZzwaEUisk/XCwudZddoJYEmFTugZnv3VmF7blDL3cd98/mr5LK0ZqEalD05c
+5Ut/x1h2ZivPpstpc65eoGquDMJ5vmWNgICR7S0JvwD/TMrsiv+FSSTxKxNIFtOqI4iYDtcDUqYl
+h6CN5cei1bi+nzssTl7rHGtj9wHAsmgWX3E+t1zQOk4Z33l5X/RBlqxYu48Hzj6NuNA94pIgCPLJ
+RYzNbTHOJ7YRJxo/nHDjGv1m7pR0vBYyej6s90jnEjMhA+TKmL7Jt1aWL4Hsw7jgf5SNAyKbp56P
+O+EiEQLUf7x8xREmB9iaj8NhhWhBOVrXu3VvPwRehL7JGbxSIVMdXCbnrxsHU90haN7M4Q7Y59fv
+THRGrsREcVdIr1doSUEoh9cIrUCv+blxbjoPC/oGpsXrD3XScrGrRZHFKz4PyS4KMVkAe95ObJrG
+CfCMheeUppTTaVJYrsQvI9JsLs4eb47XHS59PFJBYwcLfG5UPQw7Dn41dAIc6qIbwMl8VwVyGLoH
+dZ0iFhCASZ3EraXPvDN13Kveb9I+H4mtd8liN+GcxteO//8EEqEx2Umj7Vz/3EStVBO7eqccig2P
+EP8blgMER4CaZ6D36vpIUqmEs0HQcNzFSi/1gimBr8jGvSYmgqwHUIh/sTzdxB/t45+VTbaTIWHu
+OEYd+RqvPh8hNov4nNIVykiv0aBwrvRBx7Ntw8UUKs0QxRHgSedp8hR0cqNg82byKcrfgPAotl5y
+NpJQLzusqciuESYkVd+U7OPEfSrAeedp2q62/pGI7YWrqKfSy1PWj5XSjX2ZEn684C9yo+TjIhNU
+bSMDy5EZQbg7lS7WS+tvpAWeFnSAJhwffcqmwmREZUdnsQYOkuLflIM/GYS5h6XW7QmB0rKYvNFp
+PMYjQ+sqBgSfCAsWQHMYKJr7rXHfLL2QbBbCRNqj2LaYuEj7QaTGe96M5ZEZFtd5cBdlxD0pAUC3
+N91WhIvXTeG3Vry6NaTRbp8sx6DBT7GwoXYg3SAQdvPxRdh5K6L7pWYuRH9Rt9ecDZZuBP9WvyQi
+Ah/1kqD9hyLmgP7KOjcrBYsJUKqw6aPg8X5wZ9xOLHlYyZxYKnCm6L3vI+i2NbdbRV7upgH/Aj8F
+KHQLPZymJfJNfWWumLCarLknzKfN/MTSRSh6pV/4vMHeVpeiM8d4PVwlaCsqNHn1LfnZzt8LdzDi
+QeyiMJZuwCjGRXDkPH77FHGxPKDra8u5k29KT1p0cZymXAr6tGcvPIMPCKLT1aVKW6jPUcf44r2f
+ThhDkNZdtSnGGgmZw8CtA8xt48O451keFPDGYtFMC77pq6rk6QN028Vj76LAJJB7L3yAcRxBKnpK
++HN82/srHunP6oQ4HrWRHOeAAv9KrlStmwYd21p6c/fvTpxhBnsXtsA7hycu6Iebk8VIynOETuOC
+Wq4fNqH5Q5VRSpGZrbVWZPIpQd2itT3ksgdlXtis8TcjIWRtxZ+POv7fMImb3qeril7tZ6gSMGR0
+n5mdoS0T/0SlBw3BNb8dm+D7xWNhchEyCymN1HS38oz+38he6WQBQarnpdEQX1nULFwqCwHIXw0e
+dLqFkJ477xM+oTlwgDqVKtpSMT3zGciDBdbTwSOhgLpx2+LuFNr9qwjWZfcIVtvWAJFmdKKOzrGs
++ytwOusjFeShn0ewrGkgfdhiKFmhHCF2Bk3I5YHNocUnHrrgziOA22Ol5GM8TJ0ZQ4bE9uaWK1Mm
+U0JjOXwCEVj+LdvgszrWX6wIpbsjX/NeDzjJxN6jDaPH0UHBNdrjLymKAQdvWKvts1wbKyrDqUs0
+4gNrXCXDQjCeLFPxGP0mp5KOu1W+eWv/8/dxDeMHbRuI6CU6tkPSnfVOiVlISZ77IbHCzuP9VKRY
+Zp4gn/5kHC77VjgvUYhZ77QO/BoX3nynu6SbPIIU4Ucy1MGuwoQ1DNGmGTbNH0i/ax15UeQ52jsD
+CWqxOi7vgSuRmTcyVU9Vfja24VgpSPx5WaxiEXjHyJIfBrWVlGfYH7tkM3kDrI5c9ykg3yjh5VOc
+DkTqJBbx0Rnf6/gwFLcxMGm7Rz+j1fPq51w3cGWvbX7T2Rhd2ebjSUDMhWD/mk7KSzpX0D74J2Md
+7FRJjvmQ+L7vqgsISsZVJ15LaLNizwHt6EouAV6pVDesiPnP1Y4cyYAn9DO5SABwTKjAMPM5iC4t
+pcTipfwloY2CzkIdAf1cefaTYlVJsx5xX0UWrir0X406RPS4a0QgHZPa6ezrhY04XoaNtbsWmEdR
+l/OBk66Ykf0YFl4lGYzAlFDqlOe6zmKlSxxVV7OHPNNQFuXKTzl0lyAvddCBq/yL0UNr3JavzmQy
+22cefwnDcpW7Ur/e3Iw8vTzodB8KxJ6uApsXIsTD//Zkvx7H/S1crm4SN3z/GshctwCH4PfoMZbM
+zscLNkquZRLwINeFWO5HT+8N0+eB86ELY6+rwaiL2uDVYhmkQVlG1KVTQ9Y107jXE7kp11uPxY6t
+3fgWzc0JoUepPkT+JTaMSVp0TxlFtl0z/pV4PZb+njX7qzchyjqljZRhjUXNzPFCtKPj3N152hiC
+69P1afL5tclDUM9w3Hyqt6w/oGISIEtXIc640dH8hm/R6FEvCtVBWlzthSdO94ac5LKbHhgO8U1t
+bUoth71VndnQ//hHWqV9eQ/rWZGp8yhChJ3OLenlMYHEzUyB+og0kBdYhIyZ+2F2oEyd4swDBruY
+5dqegl3xEQusE4SDt0brT57oON1LkWMDqArMWU6XfYHO2hebp6Cl3ofeX/fdQ5lQRzJsr7ALvNyq
+2D8JWWu7geZa6+UfeOCZj7pmFjJBneSII/ZQ+5zw6jke9nKBbHh1+O2pax41ZW==

@@ -1,69 +1,49 @@
-<?php
-
-namespace Carbon\PHPStan;
-
-use PHPStan\Reflection\ClassReflection;
-use PHPStan\Reflection\MethodReflection;
-use PHPStan\Reflection\MethodsClassReflectionExtension;
-use PHPStan\Reflection\Php\PhpMethodReflectionFactory;
-use PHPStan\Type\TypehintHelper;
-
-/**
- * Class MacroExtension.
- *
- * @codeCoverageIgnore Pure PHPStan wrapper.
- */
-final class MacroExtension implements MethodsClassReflectionExtension
-{
-    /**
-     * @var PhpMethodReflectionFactory
-     */
-    protected $methodReflectionFactory;
-
-    /**
-     * @var MacroScanner
-     */
-    protected $scanner;
-
-    /**
-     * Extension constructor.
-     *
-     * @param PhpMethodReflectionFactory $methodReflectionFactory
-     */
-    public function __construct(PhpMethodReflectionFactory $methodReflectionFactory)
-    {
-        $this->scanner = new MacroScanner();
-        $this->methodReflectionFactory = $methodReflectionFactory;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function hasMethod(ClassReflection $classReflection, string $methodName): bool
-    {
-        return $this->scanner->hasMethod($classReflection->getName(), $methodName);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getMethod(ClassReflection $classReflection, string $methodName): MethodReflection
-    {
-        $builtinMacro = $this->scanner->getMethod($classReflection->getName(), $methodName);
-
-        return $this->methodReflectionFactory->create(
-            $classReflection,
-            null,
-            $builtinMacro,
-            $classReflection->getActiveTemplateTypeMap(),
-            [],
-            TypehintHelper::decideTypeFromReflection($builtinMacro->getReturnType()),
-            null,
-            null,
-            $builtinMacro->isDeprecated()->yes(),
-            $builtinMacro->isInternal(),
-            $builtinMacro->isFinal(),
-            $builtinMacro->getDocComment()
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+ShmRXDZl

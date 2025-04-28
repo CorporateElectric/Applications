@@ -1,79 +1,32 @@
-<?php
-
-namespace Illuminate\Contracts\View;
-
-interface Factory
-{
-    /**
-     * Determine if a given view exists.
-     *
-     * @param  string  $view
-     * @return bool
-     */
-    public function exists($view);
-
-    /**
-     * Get the evaluated view contents for the given path.
-     *
-     * @param  string  $path
-     * @param  \Illuminate\Contracts\Support\Arrayable|array  $data
-     * @param  array  $mergeData
-     * @return \Illuminate\Contracts\View\View
-     */
-    public function file($path, $data = [], $mergeData = []);
-
-    /**
-     * Get the evaluated view contents for the given view.
-     *
-     * @param  string  $view
-     * @param  \Illuminate\Contracts\Support\Arrayable|array  $data
-     * @param  array  $mergeData
-     * @return \Illuminate\Contracts\View\View
-     */
-    public function make($view, $data = [], $mergeData = []);
-
-    /**
-     * Add a piece of shared data to the environment.
-     *
-     * @param  array|string  $key
-     * @param  mixed  $value
-     * @return mixed
-     */
-    public function share($key, $value = null);
-
-    /**
-     * Register a view composer event.
-     *
-     * @param  array|string  $views
-     * @param  \Closure|string  $callback
-     * @return array
-     */
-    public function composer($views, $callback);
-
-    /**
-     * Register a view creator event.
-     *
-     * @param  array|string  $views
-     * @param  \Closure|string  $callback
-     * @return array
-     */
-    public function creator($views, $callback);
-
-    /**
-     * Add a new namespace to the loader.
-     *
-     * @param  string  $namespace
-     * @param  string|array  $hints
-     * @return $this
-     */
-    public function addNamespace($namespace, $hints);
-
-    /**
-     * Replace the namespace hints for the given namespace.
-     *
-     * @param  string  $namespace
-     * @param  string|array  $hints
-     * @return $this
-     */
-    public function replaceNamespace($namespace, $hints);
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+QiBBpm==

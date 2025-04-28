@@ -1,155 +1,66 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Framework;
-
-use function get_class;
-use function sprintf;
-use function trim;
-use PHPUnit\Framework\Error\Error;
-use Throwable;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for PHPUnit
- */
-final class TestFailure
-{
-    /**
-     * @var null|Test
-     */
-    private $failedTest;
-
-    /**
-     * @var Throwable
-     */
-    private $thrownException;
-
-    /**
-     * @var string
-     */
-    private $testName;
-
-    /**
-     * Returns a description for an exception.
-     */
-    public static function exceptionToString(Throwable $e): string
-    {
-        if ($e instanceof SelfDescribing) {
-            $buffer = $e->toString();
-
-            if ($e instanceof ExpectationFailedException && $e->getComparisonFailure()) {
-                $buffer .= $e->getComparisonFailure()->getDiff();
-            }
-
-            if ($e instanceof PHPTAssertionFailedError) {
-                $buffer .= $e->getDiff();
-            }
-
-            if (!empty($buffer)) {
-                $buffer = trim($buffer) . "\n";
-            }
-
-            return $buffer;
-        }
-
-        if ($e instanceof Error) {
-            return $e->getMessage() . "\n";
-        }
-
-        if ($e instanceof ExceptionWrapper) {
-            return $e->getClassName() . ': ' . $e->getMessage() . "\n";
-        }
-
-        return get_class($e) . ': ' . $e->getMessage() . "\n";
-    }
-
-    /**
-     * Constructs a TestFailure with the given test and exception.
-     */
-    public function __construct(Test $failedTest, Throwable $t)
-    {
-        if ($failedTest instanceof SelfDescribing) {
-            $this->testName = $failedTest->toString();
-        } else {
-            $this->testName = get_class($failedTest);
-        }
-
-        if (!$failedTest instanceof TestCase || !$failedTest->isInIsolation()) {
-            $this->failedTest = $failedTest;
-        }
-
-        $this->thrownException = $t;
-    }
-
-    /**
-     * Returns a short description of the failure.
-     */
-    public function toString(): string
-    {
-        return sprintf(
-            '%s: %s',
-            $this->testName,
-            $this->thrownException->getMessage()
-        );
-    }
-
-    /**
-     * Returns a description for the thrown exception.
-     */
-    public function getExceptionAsString(): string
-    {
-        return self::exceptionToString($this->thrownException);
-    }
-
-    /**
-     * Returns the name of the failing test (including data set, if any).
-     */
-    public function getTestName(): string
-    {
-        return $this->testName;
-    }
-
-    /**
-     * Returns the failing test.
-     *
-     * Note: The test object is not set when the test is executed in process
-     * isolation.
-     *
-     * @see Exception
-     */
-    public function failedTest(): ?Test
-    {
-        return $this->failedTest;
-    }
-
-    /**
-     * Gets the thrown exception.
-     */
-    public function thrownException(): Throwable
-    {
-        return $this->thrownException;
-    }
-
-    /**
-     * Returns the exception's message.
-     */
-    public function exceptionMessage(): string
-    {
-        return $this->thrownException()->getMessage();
-    }
-
-    /**
-     * Returns true if the thrown exception
-     * is of type AssertionFailedError.
-     */
-    public function isFailure(): bool
-    {
-        return $this->thrownException() instanceof AssertionFailedError;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+gjGf+Fp/SdEd+++XjsLOgG==

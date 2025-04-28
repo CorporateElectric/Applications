@@ -1,141 +1,79 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of sebastian/comparator.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\Comparator;
-
-use function array_key_exists;
-use function is_array;
-use function sort;
-use function sprintf;
-use function str_replace;
-use function trim;
-
-/**
- * Compares arrays for equality.
- *
- * Arrays are equal if they contain the same key-value pairs.
- * The order of the keys does not matter.
- * The types of key-value pairs do not matter.
- */
-class ArrayComparator extends Comparator
-{
-    /**
-     * Returns whether the comparator can compare two values.
-     *
-     * @param mixed $expected The first value to compare
-     * @param mixed $actual   The second value to compare
-     *
-     * @return bool
-     */
-    public function accepts($expected, $actual)
-    {
-        return is_array($expected) && is_array($actual);
-    }
-
-    /**
-     * Asserts that two arrays are equal.
-     *
-     * @param mixed $expected     First value to compare
-     * @param mixed $actual       Second value to compare
-     * @param float $delta        Allowed numerical distance between two values to consider them equal
-     * @param bool  $canonicalize Arrays are sorted before comparison when set to true
-     * @param bool  $ignoreCase   Case is ignored when set to true
-     * @param array $processed    List of already processed elements (used to prevent infinite recursion)
-     *
-     * @throws ComparisonFailure
-     */
-    public function assertEquals($expected, $actual, $delta = 0.0, $canonicalize = false, $ignoreCase = false, array &$processed = [])/*: void*/
-    {
-        if ($canonicalize) {
-            sort($expected);
-            sort($actual);
-        }
-
-        $remaining        = $actual;
-        $actualAsString   = "Array (\n";
-        $expectedAsString = "Array (\n";
-        $equal            = true;
-
-        foreach ($expected as $key => $value) {
-            unset($remaining[$key]);
-
-            if (!array_key_exists($key, $actual)) {
-                $expectedAsString .= sprintf(
-                    "    %s => %s\n",
-                    $this->exporter->export($key),
-                    $this->exporter->shortenedExport($value)
-                );
-
-                $equal = false;
-
-                continue;
-            }
-
-            try {
-                $comparator = $this->factory->getComparatorFor($value, $actual[$key]);
-                $comparator->assertEquals($value, $actual[$key], $delta, $canonicalize, $ignoreCase, $processed);
-
-                $expectedAsString .= sprintf(
-                    "    %s => %s\n",
-                    $this->exporter->export($key),
-                    $this->exporter->shortenedExport($value)
-                );
-
-                $actualAsString .= sprintf(
-                    "    %s => %s\n",
-                    $this->exporter->export($key),
-                    $this->exporter->shortenedExport($actual[$key])
-                );
-            } catch (ComparisonFailure $e) {
-                $expectedAsString .= sprintf(
-                    "    %s => %s\n",
-                    $this->exporter->export($key),
-                    $e->getExpectedAsString() ? $this->indent($e->getExpectedAsString()) : $this->exporter->shortenedExport($e->getExpected())
-                );
-
-                $actualAsString .= sprintf(
-                    "    %s => %s\n",
-                    $this->exporter->export($key),
-                    $e->getActualAsString() ? $this->indent($e->getActualAsString()) : $this->exporter->shortenedExport($e->getActual())
-                );
-
-                $equal = false;
-            }
-        }
-
-        foreach ($remaining as $key => $value) {
-            $actualAsString .= sprintf(
-                "    %s => %s\n",
-                $this->exporter->export($key),
-                $this->exporter->shortenedExport($value)
-            );
-
-            $equal = false;
-        }
-
-        $expectedAsString .= ')';
-        $actualAsString .= ')';
-
-        if (!$equal) {
-            throw new ComparisonFailure(
-                $expected,
-                $actual,
-                $expectedAsString,
-                $actualAsString,
-                false,
-                'Failed asserting that two arrays are equal.'
-            );
-        }
-    }
-
-    protected function indent($lines)
-    {
-        return trim(str_replace("\n", "\n    ", $lines));
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

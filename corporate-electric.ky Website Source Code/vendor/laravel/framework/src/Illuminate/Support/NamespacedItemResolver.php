@@ -1,102 +1,47 @@
-<?php
-
-namespace Illuminate\Support;
-
-class NamespacedItemResolver
-{
-    /**
-     * A cache of the parsed items.
-     *
-     * @var array
-     */
-    protected $parsed = [];
-
-    /**
-     * Parse a key into namespace, group, and item.
-     *
-     * @param  string  $key
-     * @return array
-     */
-    public function parseKey($key)
-    {
-        // If we've already parsed the given key, we'll return the cached version we
-        // already have, as this will save us some processing. We cache off every
-        // key we parse so we can quickly return it on all subsequent requests.
-        if (isset($this->parsed[$key])) {
-            return $this->parsed[$key];
-        }
-
-        // If the key does not contain a double colon, it means the key is not in a
-        // namespace, and is just a regular configuration item. Namespaces are a
-        // tool for organizing configuration items for things such as modules.
-        if (strpos($key, '::') === false) {
-            $segments = explode('.', $key);
-
-            $parsed = $this->parseBasicSegments($segments);
-        } else {
-            $parsed = $this->parseNamespacedSegments($key);
-        }
-
-        // Once we have the parsed array of this key's elements, such as its groups
-        // and namespace, we will cache each array inside a simple list that has
-        // the key and the parsed array for quick look-ups for later requests.
-        return $this->parsed[$key] = $parsed;
-    }
-
-    /**
-     * Parse an array of basic segments.
-     *
-     * @param  array  $segments
-     * @return array
-     */
-    protected function parseBasicSegments(array $segments)
-    {
-        // The first segment in a basic array will always be the group, so we can go
-        // ahead and grab that segment. If there is only one total segment we are
-        // just pulling an entire group out of the array and not a single item.
-        $group = $segments[0];
-
-        // If there is more than one segment in this group, it means we are pulling
-        // a specific item out of a group and will need to return this item name
-        // as well as the group so we know which item to pull from the arrays.
-        $item = count($segments) === 1
-                    ? null
-                    : implode('.', array_slice($segments, 1));
-
-        return [null, $group, $item];
-    }
-
-    /**
-     * Parse an array of namespaced segments.
-     *
-     * @param  string  $key
-     * @return array
-     */
-    protected function parseNamespacedSegments($key)
-    {
-        [$namespace, $item] = explode('::', $key);
-
-        // First we'll just explode the first segment to get the namespace and group
-        // since the item should be in the remaining segments. Once we have these
-        // two pieces of data we can proceed with parsing out the item's value.
-        $itemSegments = explode('.', $item);
-
-        $groupAndItem = array_slice(
-            $this->parseBasicSegments($itemSegments), 1
-        );
-
-        return array_merge([$namespace], $groupAndItem);
-    }
-
-    /**
-     * Set the parsed value of a key.
-     *
-     * @param  string  $key
-     * @param  array  $parsed
-     * @return void
-     */
-    public function setParsedKey($key, $parsed)
-    {
-        $this->parsed[$key] = $parsed;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+p4PTrG==

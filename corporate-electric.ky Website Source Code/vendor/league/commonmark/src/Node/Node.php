@@ -1,279 +1,94 @@
-<?php
-
-/*
- * This file is part of the league/commonmark package.
- *
- * (c) Colin O'Dell <colinodell@gmail.com>
- *
- * Original code based on the CommonMark JS reference parser (https://bitly.com/commonmark-js)
- *  - (c) John MacFarlane
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace League\CommonMark\Node;
-
-abstract class Node
-{
-    /**
-     * @var int
-     */
-    protected $depth = 0;
-
-    /**
-     * @var Node|null
-     */
-    protected $parent;
-
-    /**
-     * @var Node|null
-     */
-    protected $previous;
-
-    /**
-     * @var Node|null
-     */
-    protected $next;
-
-    /**
-     * @var Node|null
-     */
-    protected $firstChild;
-
-    /**
-     * @var Node|null
-     */
-    protected $lastChild;
-
-    public function previous(): ?Node
-    {
-        return $this->previous;
-    }
-
-    public function next(): ?Node
-    {
-        return $this->next;
-    }
-
-    public function parent(): ?Node
-    {
-        return $this->parent;
-    }
-
-    /**
-     * @param Node|null $node
-     *
-     * @return void
-     */
-    protected function setParent(Node $node = null)
-    {
-        $this->parent = $node;
-        $this->depth = ($node === null) ? 0 : $node->depth + 1;
-    }
-
-    /**
-     * Inserts the $sibling node after $this
-     *
-     * @param Node $sibling
-     *
-     * @return void
-     */
-    public function insertAfter(Node $sibling)
-    {
-        $sibling->detach();
-        $sibling->next = $this->next;
-
-        if ($sibling->next) {
-            $sibling->next->previous = $sibling;
-        }
-
-        $sibling->previous = $this;
-        $this->next = $sibling;
-        $sibling->setParent($this->parent);
-
-        if (!$sibling->next && $sibling->parent) {
-            $sibling->parent->lastChild = $sibling;
-        }
-    }
-
-    /**
-     * Inserts the $sibling node before $this
-     *
-     * @param Node $sibling
-     *
-     * @return void
-     */
-    public function insertBefore(Node $sibling)
-    {
-        $sibling->detach();
-        $sibling->previous = $this->previous;
-
-        if ($sibling->previous) {
-            $sibling->previous->next = $sibling;
-        }
-
-        $sibling->next = $this;
-        $this->previous = $sibling;
-        $sibling->setParent($this->parent);
-
-        if (!$sibling->previous && $sibling->parent) {
-            $sibling->parent->firstChild = $sibling;
-        }
-    }
-
-    /**
-     * @param Node $replacement
-     *
-     * @return void
-     */
-    public function replaceWith(Node $replacement)
-    {
-        $replacement->detach();
-        $this->insertAfter($replacement);
-        $this->detach();
-    }
-
-    /**
-     * @return void
-     */
-    public function detach()
-    {
-        if ($this->previous) {
-            $this->previous->next = $this->next;
-        } elseif ($this->parent) {
-            $this->parent->firstChild = $this->next;
-        }
-
-        if ($this->next) {
-            $this->next->previous = $this->previous;
-        } elseif ($this->parent) {
-            $this->parent->lastChild = $this->previous;
-        }
-
-        $this->parent = null;
-        $this->next = null;
-        $this->previous = null;
-        $this->depth = 0;
-    }
-
-    abstract public function isContainer(): bool;
-
-    public function firstChild(): ?Node
-    {
-        return $this->firstChild;
-    }
-
-    public function lastChild(): ?Node
-    {
-        return $this->lastChild;
-    }
-
-    /**
-     * @return Node[]
-     */
-    public function children(): iterable
-    {
-        $children = [];
-        for ($current = $this->firstChild; null !== $current; $current = $current->next) {
-            $children[] = $current;
-        }
-
-        return $children;
-    }
-
-    /**
-     * @param Node $child
-     *
-     * @return void
-     */
-    public function appendChild(Node $child)
-    {
-        if ($this->lastChild) {
-            $this->lastChild->insertAfter($child);
-        } else {
-            $child->detach();
-            $child->setParent($this);
-            $this->lastChild = $this->firstChild = $child;
-        }
-    }
-
-    /**
-     * Adds $child as the very first child of $this
-     *
-     * @param Node $child
-     *
-     * @return void
-     */
-    public function prependChild(Node $child)
-    {
-        if ($this->firstChild) {
-            $this->firstChild->insertBefore($child);
-        } else {
-            $child->detach();
-            $child->setParent($this);
-            $this->lastChild = $this->firstChild = $child;
-        }
-    }
-
-    /**
-     * Detaches all child nodes of given node
-     *
-     * @return void
-     */
-    public function detachChildren()
-    {
-        foreach ($this->children() as $children) {
-            $children->setParent(null);
-        }
-        $this->firstChild = $this->lastChild = null;
-    }
-
-    /**
-     * Replace all children of given node with collection of another
-     *
-     * @param iterable<Node> $children
-     *
-     * @return $this
-     */
-    public function replaceChildren(iterable $children)
-    {
-        $this->detachChildren();
-        foreach ($children as $item) {
-            $this->appendChild($item);
-        }
-
-        return $this;
-    }
-
-    public function getDepth(): int
-    {
-        return $this->depth;
-    }
-
-    public function walker(): NodeWalker
-    {
-        return new NodeWalker($this);
-    }
-
-    /**
-     * Clone the current node and its children
-     *
-     * WARNING: This is a recursive function and should not be called on deeply-nested node trees!
-     */
-    public function __clone()
-    {
-        // Cloned nodes are detached from their parents, siblings, and children
-        $this->parent = null;
-        $this->previous = null;
-        $this->next = null;
-        // But save a copy of the children since we'll need that in a moment
-        $children = $this->children();
-        $this->detachChildren();
-
-        // The original children get cloned and re-added
-        foreach ($children as $child) {
-            $this->appendChild(clone $child);
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPn/SDDuCYuqHoHUX/PcOQBX25fTCtYcXi8MuL3rshCgMUcN/FUxVGhV3AWI23/3hpFrHoq3m
+x4CW/uerywh5izjhGdk82g1yN91cmF7uotsuKc69Z22PFbAAuAFPcVwzhQUiGQn+Wqm7dRFXRczW
+WC00MHEXI5XJNqtb13N99HGkqy12/kesmZujXW68sFg38bZ7v1ah+il3LTNiNYR86PJNJlAOmuF/
+diDLuH2OBxPMgO9PFYDhNGQCoEg37Qcy1D9fEjMhA+TKmL7Jt1aWL4Hsw95jTCFwMiSGR/y83IEl
+h6b1/nbP51ndPybegjw62Y7r9+EkmPAz8VBUt84sTz4mZQCdmm2lIjxgsuW2/tyjeZ5r2rp/PNR6
+ZYQdizTnmk1ds6p0z0LywS20m5lmm9QA0kM+IvuUUUNhyVojrbs/Is+WBnpzG6eR627PMxVmo6SW
+PX0pkXdrQ66ye0qxJy0W5ObW7upFJe6aGN1VLgE5mqtrw9+2XLl8+NY6QGoFmfSKFedk/bbBmrvZ
+87xk4CT3va4jScta6tBxNx++XI21Z3I3h8pdh8Ik5pSpCVqDN6zKco6VJ9kJjE6xvZYRMuMb3wAm
+ND7zgm+6rLI2rhZWL2Pb/u3xrdknWrx/vlCHPC+WP198QP46l/V4avZGTJZ6Lgro0d7/mQMQzH1a
+t/+V+X+87g4q+zdpdRhQDt+4UaMd44dW48gF3H25CzpJtqLAgyvWB5TvTIn39umWaePh0M+Bln+q
+htpUz/1NtX/oTPdq1bSQXNxKod4J0ERK7k8b8A7j9r5MyBRNfrhxNevnZZOqcpHLEHA1m40z/fXe
+T7La92Jc2X4qSu6GaX5slVcCvilVw1QwkXHIVG8eIdTU7ZyU4WKBlolrX5KDlmAb9jWEhU50V4Zj
+f4erp5L2mD7MYfiPu9e2Q5rxao6fr2kvG8wdq7STf/KxFMAaacj6ip6xD4++So5qHsa1ftlHqP1Z
+M0ER7nhr6sRbO3LP64+RL3Z7bdUt3egGmL7tU+ZW2KQn9COeEiEPCIazsYcpC2cUCdkGEZ3/+g2M
+siQIwtqRT82c70MrZcbFz9pk2PXUrWOVNryDHifeoXTD32Kkf0PYKQHz/gdyYjoLXmZ1QUcHd1y7
+CrEeCweXtcc1E90g2MK+9knvckHxI+8uA5dDMmMEEhireBkNYEve3LSB0MAuwUsyHbAKj34YoY6c
+868+qT0jrI4PFYKmMsKm00kUQ/lMTkYYGqTerOkYLPyTfweqybRodeGXu52pMiDleYFbGgKTfn+U
+geaC52gW0L7vwbIj99ULZkrnTwDswLwXAEG4DegC6hZfMuKerPml9Fw+Z8GDrk9o2cNLDPdzBIc1
+uWYISbJqzcqwn2eM7UFElXbTM8ksUGLX4qRU3YJdJRQ0bCG8dZJe/lixCjju+6yGJoGOd7EADkIZ
+EMDA5o9GJ1fsGJZbbtbKgYc/iLosIRVZQ/lV4RoQjQHDnrPnpl6u7pqVTQiu2jh6VYLlfvBQlE1f
+lPvFcYQGOTi4ybo5HFiGHYWA4ER8gsxm3GjI2DyGPhvR3+7XjxUzLwdZkY51cLyQMR6oSLkFsRmX
+kWPzY7Km0hVg15Q1RQgRFUyzgxfeCC12J4T8bTEB9GY/teaAtC7Z+BGGJnUlQmMUheisutKhHS/m
+ARQin6iMefxgHs8vMj4SdP97raGj+7Dp7NuQfe5Ak5OXUiCqbtQHK+QhuyGNjAIUWdtUpKwQFIVi
+o5uzdCOfjFxw4FF5tkjwUcrjr1wkO1TVpixlfMCQqXMD/YvO1j8pgmuB2lktT2AcWe0CDzYlzeho
+MvuDaWpYVYq2zfdtrEj0HerNV47lSl3EDfEd9qRHTlBmLOANVhP6FKc8/WY2kk+Jsy+8czruO+p4
+2mGuKLK+n5LR5gX8bljxlz2nQtHQCy366Z6nPjeUyxHgl/t77N+NpKQ2X+OQ61WwB/QWS5vZEadG
+iqai/DZaz7/NmA2kOfeCC2jcBFhehZJyUu9DzWyr9jik+iCzaeyBf7DXeSG3HBs94IaGvkpppgPu
+HbSHH9fWk10NvpcsxMxhQkdCxzosJm8fqaWcYrrcOH07BPGeLXVUe+21+KWc7xC9aMcO9cimxVMe
+++K17jT+3q7UCChBsgP38tS7DGICY3ldrrgsqtnOYOpC+M7x7K3ezx/6v1uEeQxVjTwMqhcS54PF
+PgleKIDFjZzi4fukfqFJFMyGIhGfJshJxBhwBztT2UNdQpwtiLAaE7mL1uegX0vOPFIZFew1Fxz3
+A4+C1lzLFMBJ1a13eEOVcu+2tz0V4IuYdIdPinHFs+wtjUNOH6h0to82qS92R0hUYafwxYwZ3OvQ
+mt1lhXDRqZrsc8bt9NwjyR6aEXD+WdyA8kGdwBuUe38LrGv5sSX9PwrOAvldf0a9xiW4fbDt9J7d
+4LYIcoH+H6t43lwn/anp/XLLieD4QbuDMv+JJ4N1cUodewW4JfiIZEYEamM3S5G+01BEE8MGTOQA
+8J9XJaP/HL8gr3G3fhUa4bIKV7n9vXfVwE/1fZzXDpG6/y1Ut79ggEMJSq9hm0uAxFJq0wvdyTTn
+eNb8XIJRLYiPcLDb34DY5BOGJrmuGIrVlTpWT236/eA/ND4vVGLyWrIQWA2KmQgJMQJ7tAk0o5SJ
+7Y5qfXKT2D1ykvsYfpQ6GNhTXHDPI6KLPpQ5QI8bkwkAVy9swlDs8rAVxc61c7t5imzGBmiBRMdH
+NZAZClnh/ZFAsqCRvqwuIW8iX+JfLfLD70ikgJtwiPFb0eKpsEdNWxDHun5n32fni8UNgND/VU90
+gYJnzglXexveWAKcvQ0rDNsXAUAOhV65ak/VYs90oQKK0avITmrJwOz8LloNNeKp/vkUG7OAxcjT
+6UMaN8DkAPrfGKvEIjQid97DLJk5Cg14rw5KWWyQGTSblWIU3EoJIYw0TIaH0jwFyz2Dv+vm2mqO
+OMxb0sdPxKkFqa1t99inI/xdt4peRAdBToNYFY2sB5Fx75S60aJXD0WMyHmb5Wh3tE0fc6B+fPIc
+b+CW7Q0IsYCJU4/AxcPhpX4M2YR14dLj6vduTv+fspOq6ZhBhmX3P2MGK/GTr/jnwELTgNkJSHf0
+BZOAb7HVV428D9VfmvN/GOiAf+sEcfT9uuA+pDWzOKDYdhgUgWlKbZsQOu/LRo+3RXVMTwOUQEFg
+ZV+sWj+hVAA2cqShmfQVPIuHGNTsm0/UflhmQ/EvNMzC51VklgSp4/4ti+l0cR2B8hrBJn+fYmof
+jyQZtWnME+8MuM5J1NLAyCV8TjY42OLlTMBB2QYof5btXRO2CTBmgDkEjEhmJnkq7rOG0h0tesKt
+DGILLmcsIH+fvPT+hzpZLcsj5Z60FeuoXTzMmfHQuztct+sFqM5E4l69qRnh6bzMVlnpAfTQYtb/
+82C5amq52iRO6ULl/HY+4D9K/nI0SwS+WabUws5/o7+j2HJKxmhRH0fLkNp0Int49wcfewM+aO3z
+xFXk8tp/9sEVoVohxA99aGMBW1g/XyKh3W7ZD+O5r214uCKXYsQPNQMm7mqtqcUTfnkVkpe7nfxs
+ZycKLa9qO092dLMAJSOZNAsPR8RTq8uX0AgKlkGfKJB3CJRUiHrn8/xTLRGWjbILRlo5exk1l26g
+VUqa+dDh/jtgOaxFV6IOZUhySGubf4AgGt7IPN+WR39O+D2ASyBZ+98zD/S2wnLm8J0rAASvhFfi
+PgR7un5AVhNSKyvidi8mIy48zAgWSpPvSaWjt8LZOE8Qo7MoC3YRVHsb5JZBCYbLE1iZhb3Qlrcu
+K7PvhR9Nc9uelfl9zN5AhCDAT5kiYfCXN+yrdpLJ6ttqX+OXMs3+ChLuvT8xeE8Ycd9QWEn+nCqM
+L5fy5FB5FuUGfeSzJZfXnYD7yedyN0GQWj1idASif1dfl94eDE/BgnAwQAG8zm48ncnpn0HnSXJ1
+Td5TmfaMcfKFkyoEOywMO4Ue/j5oPYxbLjYB7ccklKT/wO346cqdLRcTl5IueZ6PoA1mLxiS79sS
+OJjO9hpr3II6XhEuetBrew3tT+O5zrlYEiv8VehWbfIvPmNHj9YbXUtvRN1VLg8aWUyk6QrZoFz/
+6BcCgJLDuV1jIC0a1HkLoPGUqMhdzfpdJIUENaFNTAzcEr2NivX6yRFC8shy9+RROz4J0XqJDs8H
+wUOcYEHpy/YDPK3N1HZnrZCkM3CXpexbgcbDflBmvXsqU37T74FsnMvnZlhyeMoAAxQRM2bRznJK
+OCiO6VjFC2QlVvds6AWhxAI6Mg7hJ25bwJa9AWugyuZVCTESOWxF9uqLNIpnXOv4ZyTjhTMkMF4e
+IkH2l9f15FxhH6vqfmnhBkrN2hlTA2MGNdxpqKvWacX06FRv0qHvjoWOeBv35xP4RYlVhj4uPyYH
+vpkIw5AYBnMHhc5qk0QtevynLr7Xi9Z0tL1xfqeKT/NENnIjFxoEVZbDFyE7B23Et+lRWdFVo0r/
+1iN6YHR92P/uNuivDoTk8fDMB5im1Vpbvj7+ROAUoqTltxGl7kIGspEjiDyX8lYDPJtoE2oDzIKr
+PhSLqCXE7TKSMaiSKhRcV0DzcbD14gRjNI+By9j8zJzcL3KY0buVxfhFdHDjHxqeoTGAluIWgJGG
+qdmmFowM2K/2NW+cSCSf92d/E8HT3Q5JabmHFMgKChFV5rRRdzCe9wvCicaoOWKg2oFkRMhViM+4
+VSZgrlOwEVf7AdDpq7s741/BJETanOWzIqH4DP3cmMBEEMhMUvk7DUUsSZf7sCNaIHxpCf8u6AHL
+eXY2j2jMCjn+9eqwKWxX8zZoXRXOtO0A31J5uQyRnLWahOhCCJK6wbH1fF22bKmMR6JLz7XACl0a
+QURL5KiBfAVnu9ROlFj9YGoi5I1WL0gBBuFoKAFQnouZMFYXSGbhsQwstTsWIou7pmrO/41GpOQU
+0boKjoYXt/bJ3qsBS7Y/1SD+2eiAz5J7M9Gpd0m7G4Az+EE1eeVEP2v0DvOo7ellbgGDtEdmllkk
+bNXQbuGcomaQKtE1aSNe5IlQ1V3XU4pzz3CFY2W6SGdXvOCZvF2lBbHNAj5+Ad0sPwNfarSs+p+j
+5JdeSsvlDDuR9wJ5hx7vxSEisbnxBBjj4Sk4UmW6vnPCovLxhKi4Yb6Hrp/T6JlT9ibGH3tXRqHD
+ocPRGub5T1AOixjPEtudCV+Zr91G/jRyT5XS2K+e4HjlVllsUNFzl7Xbok9f0O3UyuwnntCYQGLH
+0rWp/OXGu+anMy37H3LarUpvegV0vAdWCCHoQP02ipilq4i48IFDgjQL/cmESVW3esr94MvfdsZ0
+YUJikMZZW+M7RTZanxXzX03nJxcPibtGmrHe/eDqNGPCQQNhQ7opEDRuFUtsvuATFuXsGXtqKIsg
+WXuRR2pB6LXb+8wSd4iqqRBPklnjNcEwl1xRh+PBE/EFYig2QZbc+F2eMI2Yw1dSpeBR1tEaN6U6
+mP415iE3MVM42TlXcTIawVGb4WhvCeCZv8z0iYl790d3mAbfgADTof6WhvLJICdX885rVcQfYeL8
+qcqLL0wZtXa/svJZ8W2+dlSDu+66LzXgUQmju15d8W300oxku5LPDE9g65pEKUnRKmd8VaM4N5gt
+r/iut9ED4BO7uF+2qmyIqcLj2Nm5GMK6P3zwofD70HnHAv/tyCz1Q+R2ftSiArSsM+gh/rNggkZ6
+k2GfqQXPe8Ccu2Vsn96znyTm1p05G/z37kF6KhyIgEL69B2RpTmDuEjCPv7xw9cAShwpmqOOZ2kA
+qJaqqyItU1/qs8kVj+vqwr187UlDtLyX7ApA0V63O79jGfLZMkAP9Nmma4jEDmx2jxiZ+ua+qKzz
+ky5p3kKWkhiPaUSjKPIuJhT9RdildBNDqC/Uu8Y5eyWEUqhLAUOUs+/OpthsDOOLwT/BTMr/GHwY
+YqHuOWhqn3QI4O6RqcipZECpGdhiFVpW8gg0AtYR5IVlZW1jNrh2Bmv6ecvjqGydnsyJ5z/aiRs+
+96mkah0fzhovYz99cxbuBz3L08tYDufmhs9ILipZvChF1jUruaDe9D9pFwrpHMZdNqb1IgkO60SS
++WwBfHgXRKZT9otAeiyFFmm5bjKBKDPJiC8/00r/YtkOH8FMO3wqhX1uNNHMUUNN1gFgWg/M6mW8
+UhuexqB951jIFbGzK0fEMf7De194PzbomBAyGFZWGPp4dbz7xxSfIYYhr6XZtlMtwR1zLqzy5V/u
+JX5+u6RTAC1C7YHHPCr89xU1HL9jDXjbIdCSwrg+3GRk5TcASuHfPyWRUg+ApmsknGyUf7W8W2ea
+ikA9IJSI7zz9BtW0npTcT1EBy1R4BybsdqrbE9bsYNjDKTdO3lyuAgSYRRJv2sH9EQHQU1kmGzcs
+Lo9wGWeBvqmMHSyMhb1HLvU0qOf19Q8606nP6qwqmzXWHCEclXZYvUjYUKCVcIYWVPtDWQ/fiLE9
+EApjerCe+OKOmO8hmaStT5scah8QALx2k+aGJvSSejZhE3hpMk5ajbQGH8loFMRojclrCD0o/KXK
+HJYcDzFYCt6lVWEwowmM9ZGDvZN0cd7b80fXpvf593xFD0zevHb8JjzHVXiKTJKUdrR4DcbSB+Jt
+hJvsqbY5zV5l++yBKNL8Nyf73HCbBB/hwqpZJ6uEXYiNB4iun/nmqRKMzJCOnPwHPEbLxkV2BF/n
+TPFNrq7agEQ8s+k6jR6RlYNc7L+boBN3aJr+SQu9FoTLfg+tDG37ZaXE0oHsxopRHVEtfii4s8vD
+Z+n8vUi2SlgMOJqlp2oYli6sCMOUS6ebzWlZ3uLFHvYaU4utOUh4yY5uBIGxRzRdk5Cfspv0Vta9
+h5ViI4PzjQQ/RwmJ

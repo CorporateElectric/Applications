@@ -1,145 +1,62 @@
-<?php
-
-namespace Illuminate\Testing;
-
-use Illuminate\Support\Traits\Macroable;
-use Illuminate\Testing\Assert as PHPUnit;
-use Illuminate\Testing\Constraints\SeeInOrder;
-use Illuminate\View\View;
-
-class TestView
-{
-    use Macroable;
-
-    /**
-     * The original view.
-     *
-     * @var \Illuminate\View\View
-     */
-    protected $view;
-
-    /**
-     * The rendered view contents.
-     *
-     * @var string
-     */
-    protected $rendered;
-
-    /**
-     * Create a new test view instance.
-     *
-     * @param  \Illuminate\View\View  $view
-     * @return void
-     */
-    public function __construct(View $view)
-    {
-        $this->view = $view;
-        $this->rendered = $view->render();
-    }
-
-    /**
-     * Assert that the given string is contained within the view.
-     *
-     * @param  string  $value
-     * @param  bool  $escape
-     * @return $this
-     */
-    public function assertSee($value, $escape = true)
-    {
-        $value = $escape ? e($value) : $value;
-
-        PHPUnit::assertStringContainsString((string) $value, $this->rendered);
-
-        return $this;
-    }
-
-    /**
-     * Assert that the given strings are contained in order within the view.
-     *
-     * @param  array  $values
-     * @param  bool  $escape
-     * @return $this
-     */
-    public function assertSeeInOrder(array $values, $escape = true)
-    {
-        $values = $escape ? array_map('e', ($values)) : $values;
-
-        PHPUnit::assertThat($values, new SeeInOrder($this->rendered));
-
-        return $this;
-    }
-
-    /**
-     * Assert that the given string is contained within the view text.
-     *
-     * @param  string  $value
-     * @param  bool  $escape
-     * @return $this
-     */
-    public function assertSeeText($value, $escape = true)
-    {
-        $value = $escape ? e($value) : $value;
-
-        PHPUnit::assertStringContainsString((string) $value, strip_tags($this->rendered));
-
-        return $this;
-    }
-
-    /**
-     * Assert that the given strings are contained in order within the view text.
-     *
-     * @param  array  $values
-     * @param  bool  $escape
-     * @return $this
-     */
-    public function assertSeeTextInOrder(array $values, $escape = true)
-    {
-        $values = $escape ? array_map('e', ($values)) : $values;
-
-        PHPUnit::assertThat($values, new SeeInOrder(strip_tags($this->rendered)));
-
-        return $this;
-    }
-
-    /**
-     * Assert that the given string is not contained within the view.
-     *
-     * @param  string  $value
-     * @param  bool  $escape
-     * @return $this
-     */
-    public function assertDontSee($value, $escape = true)
-    {
-        $value = $escape ? e($value) : $value;
-
-        PHPUnit::assertStringNotContainsString((string) $value, $this->rendered);
-
-        return $this;
-    }
-
-    /**
-     * Assert that the given string is not contained within the view text.
-     *
-     * @param  string  $value
-     * @param  bool  $escape
-     * @return $this
-     */
-    public function assertDontSeeText($value, $escape = true)
-    {
-        $value = $escape ? e($value) : $value;
-
-        PHPUnit::assertStringNotContainsString((string) $value, strip_tags($this->rendered));
-
-        return $this;
-    }
-
-    /**
-     * Get the string contents of the rendered view.
-     *
-     * @return string
-     */
-    public function __toString()
-    {
-        return $this->rendered;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

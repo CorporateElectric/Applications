@@ -1,138 +1,116 @@
-<?php
-
-namespace Psr\Log\Test;
-
-use Psr\Log\LoggerInterface;
-use Psr\Log\LogLevel;
-use PHPUnit\Framework\TestCase;
-
-/**
- * Provides a base test class for ensuring compliance with the LoggerInterface.
- *
- * Implementors can extend the class and implement abstract methods to run this
- * as part of their test suite.
- */
-abstract class LoggerInterfaceTest extends TestCase
-{
-    /**
-     * @return LoggerInterface
-     */
-    abstract public function getLogger();
-
-    /**
-     * This must return the log messages in order.
-     *
-     * The simple formatting of the messages is: "<LOG LEVEL> <MESSAGE>".
-     *
-     * Example ->error('Foo') would yield "error Foo".
-     *
-     * @return string[]
-     */
-    abstract public function getLogs();
-
-    public function testImplements()
-    {
-        $this->assertInstanceOf('Psr\Log\LoggerInterface', $this->getLogger());
-    }
-
-    /**
-     * @dataProvider provideLevelsAndMessages
-     */
-    public function testLogsAtAllLevels($level, $message)
-    {
-        $logger = $this->getLogger();
-        $logger->{$level}($message, array('user' => 'Bob'));
-        $logger->log($level, $message, array('user' => 'Bob'));
-
-        $expected = array(
-            $level.' message of level '.$level.' with context: Bob',
-            $level.' message of level '.$level.' with context: Bob',
-        );
-        $this->assertEquals($expected, $this->getLogs());
-    }
-
-    public function provideLevelsAndMessages()
-    {
-        return array(
-            LogLevel::EMERGENCY => array(LogLevel::EMERGENCY, 'message of level emergency with context: {user}'),
-            LogLevel::ALERT => array(LogLevel::ALERT, 'message of level alert with context: {user}'),
-            LogLevel::CRITICAL => array(LogLevel::CRITICAL, 'message of level critical with context: {user}'),
-            LogLevel::ERROR => array(LogLevel::ERROR, 'message of level error with context: {user}'),
-            LogLevel::WARNING => array(LogLevel::WARNING, 'message of level warning with context: {user}'),
-            LogLevel::NOTICE => array(LogLevel::NOTICE, 'message of level notice with context: {user}'),
-            LogLevel::INFO => array(LogLevel::INFO, 'message of level info with context: {user}'),
-            LogLevel::DEBUG => array(LogLevel::DEBUG, 'message of level debug with context: {user}'),
-        );
-    }
-
-    /**
-     * @expectedException \Psr\Log\InvalidArgumentException
-     */
-    public function testThrowsOnInvalidLevel()
-    {
-        $logger = $this->getLogger();
-        $logger->log('invalid level', 'Foo');
-    }
-
-    public function testContextReplacement()
-    {
-        $logger = $this->getLogger();
-        $logger->info('{Message {nothing} {user} {foo.bar} a}', array('user' => 'Bob', 'foo.bar' => 'Bar'));
-
-        $expected = array('info {Message {nothing} Bob Bar a}');
-        $this->assertEquals($expected, $this->getLogs());
-    }
-
-    public function testObjectCastToString()
-    {
-        if (method_exists($this, 'createPartialMock')) {
-            $dummy = $this->createPartialMock('Psr\Log\Test\DummyTest', array('__toString'));
-        } else {
-            $dummy = $this->getMock('Psr\Log\Test\DummyTest', array('__toString'));
-        }
-        $dummy->expects($this->once())
-            ->method('__toString')
-            ->will($this->returnValue('DUMMY'));
-
-        $this->getLogger()->warning($dummy);
-
-        $expected = array('warning DUMMY');
-        $this->assertEquals($expected, $this->getLogs());
-    }
-
-    public function testContextCanContainAnything()
-    {
-        $closed = fopen('php://memory', 'r');
-        fclose($closed);
-
-        $context = array(
-            'bool' => true,
-            'null' => null,
-            'string' => 'Foo',
-            'int' => 0,
-            'float' => 0.5,
-            'nested' => array('with object' => new DummyTest),
-            'object' => new \DateTime,
-            'resource' => fopen('php://memory', 'r'),
-            'closed' => $closed,
-        );
-
-        $this->getLogger()->warning('Crazy context data', $context);
-
-        $expected = array('warning Crazy context data');
-        $this->assertEquals($expected, $this->getLogs());
-    }
-
-    public function testContextExceptionKeyCanBeExceptionOrOtherValues()
-    {
-        $logger = $this->getLogger();
-        $logger->warning('Random message', array('exception' => 'oops'));
-        $logger->critical('Uncaught Exception!', array('exception' => new \LogicException('Fail')));
-
-        $expected = array(
-            'warning Random message',
-            'critical Uncaught Exception!'
-        );
-        $this->assertEquals($expected, $this->getLogs());
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+i+pVZm==

@@ -1,112 +1,69 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\CodeCleaner;
-
-use PhpParser\Node;
-use PhpParser\Node\Expr;
-use PhpParser\Node\Expr\Array_;
-use PhpParser\Node\Expr\ArrayDimFetch;
-use PhpParser\Node\Expr\ArrayItem;
-use PhpParser\Node\Expr\Assign;
-use PhpParser\Node\Expr\FuncCall;
-use PhpParser\Node\Expr\List_;
-use PhpParser\Node\Expr\MethodCall;
-use PhpParser\Node\Expr\PropertyFetch;
-use PhpParser\Node\Expr\Variable;
-use Psy\Exception\ParseErrorException;
-
-/**
- * Validate that the list assignment.
- */
-class ListPass extends CodeCleanerPass
-{
-    private $atLeastPhp71;
-
-    public function __construct()
-    {
-        $this->atLeastPhp71 = \version_compare(\PHP_VERSION, '7.1', '>=');
-    }
-
-    /**
-     * Validate use of list assignment.
-     *
-     * @throws ParseErrorException if the user used empty with anything but a variable
-     *
-     * @param Node $node
-     */
-    public function enterNode(Node $node)
-    {
-        if (!$node instanceof Assign) {
-            return;
-        }
-
-        if (!$node->var instanceof Array_ && !$node->var instanceof List_) {
-            return;
-        }
-
-        if (!$this->atLeastPhp71 && $node->var instanceof Array_) {
-            $msg = "syntax error, unexpected '='";
-            throw new ParseErrorException($msg, $node->expr->getLine());
-        }
-
-        // Polyfill for PHP-Parser 2.x
-        $items = isset($node->var->items) ? $node->var->items : $node->var->vars;
-
-        if ($items === [] || $items === [null]) {
-            throw new ParseErrorException('Cannot use empty list', $node->var->getLine());
-        }
-
-        $itemFound = false;
-        foreach ($items as $item) {
-            if ($item === null) {
-                continue;
-            }
-
-            $itemFound = true;
-
-            // List_->$vars in PHP-Parser 2.x is Variable instead of ArrayItem.
-            if (!$this->atLeastPhp71 && $item instanceof ArrayItem && $item->key !== null) {
-                $msg = 'Syntax error, unexpected T_CONSTANT_ENCAPSED_STRING, expecting \',\' or \')\'';
-                throw new ParseErrorException($msg, $item->key->getLine());
-            }
-
-            if (!self::isValidArrayItem($item)) {
-                $msg = 'Assignments can only happen to writable values';
-                throw new ParseErrorException($msg, $item->getLine());
-            }
-        }
-
-        if (!$itemFound) {
-            throw new ParseErrorException('Cannot use empty list');
-        }
-    }
-
-    /**
-     * Validate whether a given item in an array is valid for short assignment.
-     *
-     * @param Expr $item
-     *
-     * @return bool
-     */
-    private static function isValidArrayItem(Expr $item)
-    {
-        $value = ($item instanceof ArrayItem) ? $item->value : $item;
-
-        while ($value instanceof ArrayDimFetch || $value instanceof PropertyFetch) {
-            $value = $value->var;
-        }
-
-        // We just kind of give up if it's a method call. We can't tell if it's
-        // valid via static analysis.
-        return $value instanceof Variable || $value instanceof MethodCall || $value instanceof FuncCall;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+sMTAwu9uggJIyIu=

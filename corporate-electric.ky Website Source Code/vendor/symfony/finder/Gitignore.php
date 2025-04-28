@@ -1,133 +1,73 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Finder;
-
-/**
- * Gitignore matches against text.
- *
- * @author Ahmed Abdou <mail@ahmd.io>
- */
-class Gitignore
-{
-    /**
-     * Returns a regexp which is the equivalent of the gitignore pattern.
-     *
-     * @return string The regexp
-     */
-    public static function toRegex(string $gitignoreFileContent): string
-    {
-        $gitignoreFileContent = preg_replace('/^[^\\\r\n]*#.*/m', '', $gitignoreFileContent);
-        $gitignoreLines = preg_split('/\r\n|\r|\n/', $gitignoreFileContent);
-
-        $positives = [];
-        $negatives = [];
-        foreach ($gitignoreLines as $i => $line) {
-            $line = trim($line);
-            if ('' === $line) {
-                continue;
-            }
-
-            if (1 === preg_match('/^!/', $line)) {
-                $positives[$i] = null;
-                $negatives[$i] = self::getRegexFromGitignore(preg_replace('/^!(.*)/', '${1}', $line), true);
-
-                continue;
-            }
-            $negatives[$i] = null;
-            $positives[$i] = self::getRegexFromGitignore($line);
-        }
-
-        $index = 0;
-        $patterns = [];
-        foreach ($positives as $pattern) {
-            if (null === $pattern) {
-                continue;
-            }
-
-            $negativesAfter = array_filter(\array_slice($negatives, ++$index));
-            if ([] !== $negativesAfter) {
-                $pattern .= sprintf('(?<!%s)', implode('|', $negativesAfter));
-            }
-
-            $patterns[] = $pattern;
-        }
-
-        return sprintf('/^((%s))$/', implode(')|(', $patterns));
-    }
-
-    private static function getRegexFromGitignore(string $gitignorePattern, bool $negative = false): string
-    {
-        $regex = '';
-        $isRelativePath = false;
-        // If there is a separator at the beginning or middle (or both) of the pattern, then the pattern is relative to the directory level of the particular .gitignore file itself
-        $slashPosition = strpos($gitignorePattern, '/');
-        if (false !== $slashPosition && \strlen($gitignorePattern) - 1 !== $slashPosition) {
-            if (0 === $slashPosition) {
-                $gitignorePattern = substr($gitignorePattern, 1);
-            }
-
-            $isRelativePath = true;
-            $regex .= '^';
-        }
-
-        if ('/' === $gitignorePattern[\strlen($gitignorePattern) - 1]) {
-            $gitignorePattern = substr($gitignorePattern, 0, -1);
-        }
-
-        $iMax = \strlen($gitignorePattern);
-        for ($i = 0; $i < $iMax; ++$i) {
-            $tripleChars = substr($gitignorePattern, $i, 3);
-            if ('**/' === $tripleChars || '/**' === $tripleChars) {
-                $regex .= '.*';
-                $i += 2;
-                continue;
-            }
-
-            $doubleChars = substr($gitignorePattern, $i, 2);
-            if ('**' === $doubleChars) {
-                $regex .= '.*';
-                ++$i;
-                continue;
-            }
-            if ('*/' === $doubleChars) {
-                $regex .= '[^\/]*\/?[^\/]*';
-                ++$i;
-                continue;
-            }
-
-            $c = $gitignorePattern[$i];
-            switch ($c) {
-                case '*':
-                    $regex .= $isRelativePath ? '[^\/]*' : '[^\/]*\/?[^\/]*';
-                    break;
-                case '/':
-                case '.':
-                case ':':
-                case '(':
-                case ')':
-                case '{':
-                case '}':
-                    $regex .= '\\'.$c;
-                    break;
-                default:
-                    $regex .= $c;
-            }
-        }
-
-        if ($negative) {
-            // a lookbehind assertion has to be a fixed width (it can not have nested '|' statements)
-            return sprintf('%s$|%s\/$', $regex, $regex);
-        }
-
-        return '(?>'.$regex.'($|\/.*))';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+w3x3hn6conSb8m==

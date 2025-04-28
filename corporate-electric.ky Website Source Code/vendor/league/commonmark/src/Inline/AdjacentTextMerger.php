@@ -1,91 +1,50 @@
-<?php
-
-/*
- * This file is part of the league/commonmark package.
- *
- * (c) Colin O'Dell <colinodell@gmail.com>
- *
- * Additional emphasis processing code based on commonmark-java (https://github.com/atlassian/commonmark-java)
- *  - (c) Atlassian Pty Ltd
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace League\CommonMark\Inline;
-
-use League\CommonMark\Inline\Element\Text;
-use League\CommonMark\Node\Node;
-
-/**
- * @internal
- */
-final class AdjacentTextMerger
-{
-    public static function mergeChildNodes(Node $node): void
-    {
-        // No children or just one child node, no need for merging
-        if ($node->firstChild() === $node->lastChild() || $node->firstChild() === null || $node->lastChild() === null) {
-            return;
-        }
-
-        self::mergeTextNodesInclusive($node->firstChild(), $node->lastChild());
-    }
-
-    public static function mergeTextNodesBetweenExclusive(Node $fromNode, Node $toNode): void
-    {
-        // No nodes between them
-        if ($fromNode === $toNode || $fromNode->next() === $toNode || $fromNode->next() === null || $toNode->previous() === null) {
-            return;
-        }
-
-        self::mergeTextNodesInclusive($fromNode->next(), $toNode->previous());
-    }
-
-    private static function mergeTextNodesInclusive(Node $fromNode, Node $toNode): void
-    {
-        $first = null;
-        $last = null;
-
-        $node = $fromNode;
-        while ($node !== null) {
-            if ($node instanceof Text) {
-                if ($first === null) {
-                    $first = $node;
-                }
-                $last = $node;
-            } else {
-                self::mergeIfNeeded($first, $last);
-                $first = null;
-                $last = null;
-            }
-            if ($node === $toNode) {
-                break;
-            }
-            $node = $node->next();
-        }
-
-        self::mergeIfNeeded($first, $last);
-    }
-
-    private static function mergeIfNeeded(?Text $first, ?Text $last): void
-    {
-        if ($first === null || $last === null || $first === $last) {
-            // No merging needed
-            return;
-        }
-
-        $s = $first->getContent();
-
-        $node = $first->next();
-        $stop = $last->next();
-        while ($node !== $stop && $node instanceof Text) {
-            $s .= $node->getContent();
-            $unlink = $node;
-            $node = $node->next();
-            $unlink->detach();
-        }
-
-        $first->setContent($s);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

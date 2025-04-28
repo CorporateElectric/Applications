@@ -1,89 +1,61 @@
-<?php
-
-/**
- * Validates an IPv6 address.
- * @author Feyd @ forums.devnetwork.net (public domain)
- * @note This function requires brackets to have been removed from address
- *       in URI.
- */
-class HTMLPurifier_AttrDef_URI_IPv6 extends HTMLPurifier_AttrDef_URI_IPv4
-{
-
-    /**
-     * @param string $aIP
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return bool|string
-     */
-    public function validate($aIP, $config, $context)
-    {
-        if (!$this->ip4) {
-            $this->_loadRegex();
-        }
-
-        $original = $aIP;
-
-        $hex = '[0-9a-fA-F]';
-        $blk = '(?:' . $hex . '{1,4})';
-        $pre = '(?:/(?:12[0-8]|1[0-1][0-9]|[1-9][0-9]|[0-9]))'; // /0 - /128
-
-        //      prefix check
-        if (strpos($aIP, '/') !== false) {
-            if (preg_match('#' . $pre . '$#s', $aIP, $find)) {
-                $aIP = substr($aIP, 0, 0 - strlen($find[0]));
-                unset($find);
-            } else {
-                return false;
-            }
-        }
-
-        //      IPv4-compatiblity check
-        if (preg_match('#(?<=:' . ')' . $this->ip4 . '$#s', $aIP, $find)) {
-            $aIP = substr($aIP, 0, 0 - strlen($find[0]));
-            $ip = explode('.', $find[0]);
-            $ip = array_map('dechex', $ip);
-            $aIP .= $ip[0] . $ip[1] . ':' . $ip[2] . $ip[3];
-            unset($find, $ip);
-        }
-
-        //      compression check
-        $aIP = explode('::', $aIP);
-        $c = count($aIP);
-        if ($c > 2) {
-            return false;
-        } elseif ($c == 2) {
-            list($first, $second) = $aIP;
-            $first = explode(':', $first);
-            $second = explode(':', $second);
-
-            if (count($first) + count($second) > 8) {
-                return false;
-            }
-
-            while (count($first) < 8) {
-                array_push($first, '0');
-            }
-
-            array_splice($first, 8 - count($second), 8, $second);
-            $aIP = $first;
-            unset($first, $second);
-        } else {
-            $aIP = explode(':', $aIP[0]);
-        }
-        $c = count($aIP);
-
-        if ($c != 8) {
-            return false;
-        }
-
-        //      All the pieces should be 16-bit hex strings. Are they?
-        foreach ($aIP as $piece) {
-            if (!preg_match('#^[0-9a-fA-F]{4}$#s', sprintf('%04s', $piece))) {
-                return false;
-            }
-        }
-        return $original;
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+tBrCkds8ZTUTuSrGRSdT9oXAawBavOA+

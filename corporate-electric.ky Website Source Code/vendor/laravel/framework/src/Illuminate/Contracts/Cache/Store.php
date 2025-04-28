@@ -1,92 +1,32 @@
-<?php
-
-namespace Illuminate\Contracts\Cache;
-
-interface Store
-{
-    /**
-     * Retrieve an item from the cache by key.
-     *
-     * @param  string|array  $key
-     * @return mixed
-     */
-    public function get($key);
-
-    /**
-     * Retrieve multiple items from the cache by key.
-     *
-     * Items not found in the cache will have a null value.
-     *
-     * @param  array  $keys
-     * @return array
-     */
-    public function many(array $keys);
-
-    /**
-     * Store an item in the cache for a given number of seconds.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @param  int  $seconds
-     * @return bool
-     */
-    public function put($key, $value, $seconds);
-
-    /**
-     * Store multiple items in the cache for a given number of seconds.
-     *
-     * @param  array  $values
-     * @param  int  $seconds
-     * @return bool
-     */
-    public function putMany(array $values, $seconds);
-
-    /**
-     * Increment the value of an item in the cache.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @return int|bool
-     */
-    public function increment($key, $value = 1);
-
-    /**
-     * Decrement the value of an item in the cache.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @return int|bool
-     */
-    public function decrement($key, $value = 1);
-
-    /**
-     * Store an item in the cache indefinitely.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @return bool
-     */
-    public function forever($key, $value);
-
-    /**
-     * Remove an item from the cache.
-     *
-     * @param  string  $key
-     * @return bool
-     */
-    public function forget($key);
-
-    /**
-     * Remove all items from the cache.
-     *
-     * @return bool
-     */
-    public function flush();
-
-    /**
-     * Get the cache key prefix.
-     *
-     * @return string
-     */
-    public function getPrefix();
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+zyLNy4yg/hWPjHqn

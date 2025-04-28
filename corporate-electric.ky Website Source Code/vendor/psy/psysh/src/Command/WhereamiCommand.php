@@ -1,159 +1,96 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\Command;
-
-use Psy\Formatter\CodeFormatter;
-use Psy\Output\ShellOutput;
-use Psy\Shell;
-use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Output\OutputInterface;
-
-/**
- * Show the context of where you opened the debugger.
- */
-class WhereamiCommand extends Command
-{
-    private $backtrace;
-
-    /**
-     * @param string|null $colorMode (deprecated and ignored)
-     */
-    public function __construct($colorMode = null)
-    {
-        $this->backtrace = \debug_backtrace(\DEBUG_BACKTRACE_IGNORE_ARGS);
-
-        parent::__construct();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
-    {
-        $this
-            ->setName('whereami')
-            ->setDefinition([
-                new InputOption('num', 'n', InputOption::VALUE_OPTIONAL, 'Number of lines before and after.', '5'),
-                new InputOption('file', 'f|a', InputOption::VALUE_NONE, 'Show the full source for the current file.'),
-            ])
-            ->setDescription('Show where you are in the code.')
-            ->setHelp(
-                <<<'HELP'
-Show where you are in the code.
-
-Optionally, include the number of lines before and after you want to display,
-or --file for the whole file.
-
-e.g.
-<return>> whereami </return>
-<return>> whereami -n10</return>
-<return>> whereami --file</return>
-HELP
-            );
-    }
-
-    /**
-     * Obtains the correct stack frame in the full backtrace.
-     *
-     * @return array
-     */
-    protected function trace()
-    {
-        foreach (\array_reverse($this->backtrace) as $stackFrame) {
-            if ($this->isDebugCall($stackFrame)) {
-                return $stackFrame;
-            }
-        }
-
-        return \end($this->backtrace);
-    }
-
-    private static function isDebugCall(array $stackFrame)
-    {
-        $class = isset($stackFrame['class']) ? $stackFrame['class'] : null;
-        $function = isset($stackFrame['function']) ? $stackFrame['function'] : null;
-
-        return ($class === null && $function === 'Psy\\debug') ||
-            ($class === Shell::class && \in_array($function, ['__construct', 'debug']));
-    }
-
-    /**
-     * Determine the file and line based on the specific backtrace.
-     *
-     * @return array
-     */
-    protected function fileInfo()
-    {
-        $stackFrame = $this->trace();
-        if (\preg_match('/eval\(/', $stackFrame['file'])) {
-            \preg_match_all('/([^\(]+)\((\d+)/', $stackFrame['file'], $matches);
-            $file = $matches[1][0];
-            $line = (int) $matches[2][0];
-        } else {
-            $file = $stackFrame['file'];
-            $line = $stackFrame['line'];
-        }
-
-        return \compact('file', 'line');
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function execute(InputInterface $input, OutputInterface $output)
-    {
-        $info = $this->fileInfo();
-        $num = $input->getOption('num');
-        $lineNum = $info['line'];
-        $startLine = \max($lineNum - $num, 1);
-        $endLine = $lineNum + $num;
-        $code = \file_get_contents($info['file']);
-
-        if ($input->getOption('file')) {
-            $startLine = 1;
-            $endLine = null;
-        }
-
-        if ($output instanceof ShellOutput) {
-            $output->startPaging();
-        }
-
-        $output->writeln(\sprintf('From <info>%s:%s</info>:', $this->replaceCwd($info['file']), $lineNum));
-        $output->write(CodeFormatter::formatCode($code, $startLine, $endLine, $lineNum), false);
-
-        if ($output instanceof ShellOutput) {
-            $output->stopPaging();
-        }
-
-        return 0;
-    }
-
-    /**
-     * Replace the given directory from the start of a filepath.
-     *
-     * @param string $file
-     *
-     * @return string
-     */
-    private function replaceCwd($file)
-    {
-        $cwd = \getcwd();
-        if ($cwd === false) {
-            return $file;
-        }
-
-        $cwd = \rtrim($cwd, \DIRECTORY_SEPARATOR).\DIRECTORY_SEPARATOR;
-
-        return \preg_replace('/^'.\preg_quote($cwd, '/').'/', '', $file);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

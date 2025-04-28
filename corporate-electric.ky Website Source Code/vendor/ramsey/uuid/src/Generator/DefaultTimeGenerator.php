@@ -1,147 +1,73 @@
-<?php
-
-/**
- * This file is part of the ramsey/uuid library
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @copyright Copyright (c) Ben Ramsey <ben@benramsey.com>
- * @license http://opensource.org/licenses/MIT MIT
- */
-
-declare(strict_types=1);
-
-namespace Ramsey\Uuid\Generator;
-
-use Ramsey\Uuid\Converter\TimeConverterInterface;
-use Ramsey\Uuid\Exception\InvalidArgumentException;
-use Ramsey\Uuid\Exception\RandomSourceException;
-use Ramsey\Uuid\Exception\TimeSourceException;
-use Ramsey\Uuid\Provider\NodeProviderInterface;
-use Ramsey\Uuid\Provider\TimeProviderInterface;
-use Ramsey\Uuid\Type\Hexadecimal;
-use Throwable;
-
-use function ctype_xdigit;
-use function dechex;
-use function hex2bin;
-use function is_int;
-use function pack;
-use function sprintf;
-use function str_pad;
-use function strlen;
-
-use const STR_PAD_LEFT;
-
-/**
- * DefaultTimeGenerator generates strings of binary data based on a node ID,
- * clock sequence, and the current time
- */
-class DefaultTimeGenerator implements TimeGeneratorInterface
-{
-    /**
-     * @var NodeProviderInterface
-     */
-    private $nodeProvider;
-
-    /**
-     * @var TimeConverterInterface
-     */
-    private $timeConverter;
-
-    /**
-     * @var TimeProviderInterface
-     */
-    private $timeProvider;
-
-    public function __construct(
-        NodeProviderInterface $nodeProvider,
-        TimeConverterInterface $timeConverter,
-        TimeProviderInterface $timeProvider
-    ) {
-        $this->nodeProvider = $nodeProvider;
-        $this->timeConverter = $timeConverter;
-        $this->timeProvider = $timeProvider;
-    }
-
-    /**
-     * @throws InvalidArgumentException if the parameters contain invalid values
-     * @throws RandomSourceException if random_int() throws an exception/error
-     *
-     * @inheritDoc
-     */
-    public function generate($node = null, ?int $clockSeq = null): string
-    {
-        if ($node instanceof Hexadecimal) {
-            $node = $node->toString();
-        }
-
-        $node = $this->getValidNode($node);
-
-        if ($clockSeq === null) {
-            try {
-                // This does not use "stable storage"; see RFC 4122, Section 4.2.1.1.
-                $clockSeq = random_int(0, 0x3fff);
-            } catch (Throwable $exception) {
-                throw new RandomSourceException(
-                    $exception->getMessage(),
-                    (int) $exception->getCode(),
-                    $exception
-                );
-            }
-        }
-
-        $time = $this->timeProvider->getTime();
-
-        $uuidTime = $this->timeConverter->calculateTime(
-            $time->getSeconds()->toString(),
-            $time->getMicroseconds()->toString()
-        );
-
-        $timeHex = str_pad($uuidTime->toString(), 16, '0', STR_PAD_LEFT);
-
-        if (strlen($timeHex) !== 16) {
-            throw new TimeSourceException(sprintf(
-                'The generated time of \'%s\' is larger than expected',
-                $timeHex
-            ));
-        }
-
-        $timeBytes = (string) hex2bin($timeHex);
-
-        return $timeBytes[4] . $timeBytes[5] . $timeBytes[6] . $timeBytes[7]
-            . $timeBytes[2] . $timeBytes[3]
-            . $timeBytes[0] . $timeBytes[1]
-            . pack('n*', $clockSeq)
-            . $node;
-    }
-
-    /**
-     * Uses the node provider given when constructing this instance to get
-     * the node ID (usually a MAC address)
-     *
-     * @param string|int|null $node A node value that may be used to override the node provider
-     *
-     * @return string 6-byte binary string representation of the node
-     *
-     * @throws InvalidArgumentException
-     */
-    private function getValidNode($node): string
-    {
-        if ($node === null) {
-            $node = $this->nodeProvider->getNode();
-        }
-
-        // Convert the node to hex, if it is still an integer.
-        if (is_int($node)) {
-            $node = dechex($node);
-        }
-
-        if (!ctype_xdigit((string) $node) || strlen((string) $node) > 12) {
-            throw new InvalidArgumentException('Invalid node value');
-        }
-
-        return (string) hex2bin(str_pad((string) $node, 12, '0', STR_PAD_LEFT));
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,66 +1,45 @@
-<?php
-
-declare(strict_types=1);
-
-/*
- * This is part of the league/commonmark package.
- *
- * (c) Martin Hasoň <martin.hason@gmail.com>
- * (c) Webuni s.r.o. <info@webuni.cz>
- * (c) Colin O'Dell <colinodell@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace League\CommonMark\Extension\Table;
-
-use League\CommonMark\Block\Element\AbstractBlock;
-use League\CommonMark\Block\Element\AbstractStringContainerBlock;
-use League\CommonMark\Block\Element\InlineContainerInterface;
-use League\CommonMark\ContextInterface;
-use League\CommonMark\Cursor;
-
-final class TableCell extends AbstractStringContainerBlock implements InlineContainerInterface
-{
-    const TYPE_HEAD = 'th';
-    const TYPE_BODY = 'td';
-
-    const ALIGN_LEFT = 'left';
-    const ALIGN_RIGHT = 'right';
-    const ALIGN_CENTER = 'center';
-
-    /** @var string */
-    public $type = self::TYPE_BODY;
-
-    /** @var string|null */
-    public $align;
-
-    public function __construct(string $string = '', string $type = self::TYPE_BODY, string $align = null)
-    {
-        parent::__construct();
-        $this->finalStringContents = $string;
-        $this->addLine($string);
-        $this->type = $type;
-        $this->align = $align;
-    }
-
-    public function canContain(AbstractBlock $block): bool
-    {
-        return false;
-    }
-
-    public function isCode(): bool
-    {
-        return false;
-    }
-
-    public function matchesNextLine(Cursor $cursor): bool
-    {
-        return false;
-    }
-
-    public function handleRemainingContents(ContextInterface $context, Cursor $cursor): void
-    {
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+oqAd3RHU9KCZ

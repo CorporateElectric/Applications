@@ -1,25 +1,44 @@
-@if ($paginator->hasPages())
-    <nav role="navigation" aria-label="Pagination Navigation" class="flex justify-between">
-        {{-- Previous Page Link --}}
-        @if ($paginator->onFirstPage())
-            <span class="relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 cursor-default leading-5 rounded-md">
-                {!! __('pagination.previous') !!}
-            </span>
-        @else
-            <a href="{{ $paginator->previousPageUrl() }}" rel="prev" class="relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 leading-5 rounded-md hover:text-gray-500 focus:outline-none focus:ring ring-gray-300 focus:border-blue-300 active:bg-gray-100 active:text-gray-700 transition ease-in-out duration-150">
-                {!! __('pagination.previous') !!}
-            </a>
-        @endif
-
-        {{-- Next Page Link --}}
-        @if ($paginator->hasMorePages())
-            <a href="{{ $paginator->nextPageUrl() }}" rel="next" class="relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 leading-5 rounded-md hover:text-gray-500 focus:outline-none focus:ring ring-gray-300 focus:border-blue-300 active:bg-gray-100 active:text-gray-700 transition ease-in-out duration-150">
-                {!! __('pagination.next') !!}
-            </a>
-        @else
-            <span class="relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 cursor-default leading-5 rounded-md">
-                {!! __('pagination.next') !!}
-            </span>
-        @endif
-    </nav>
-@endif
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

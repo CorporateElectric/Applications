@@ -1,166 +1,89 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Console\Output;
-
-use Symfony\Component\Console\Formatter\OutputFormatterInterface;
-
-/**
- * ConsoleOutput is the default class for all CLI output. It uses STDOUT and STDERR.
- *
- * This class is a convenient wrapper around `StreamOutput` for both STDOUT and STDERR.
- *
- *     $output = new ConsoleOutput();
- *
- * This is equivalent to:
- *
- *     $output = new StreamOutput(fopen('php://stdout', 'w'));
- *     $stdErr = new StreamOutput(fopen('php://stderr', 'w'));
- *
- * @author Fabien Potencier <fabien@symfony.com>
- */
-class ConsoleOutput extends StreamOutput implements ConsoleOutputInterface
-{
-    private $stderr;
-    private $consoleSectionOutputs = [];
-
-    /**
-     * @param int                           $verbosity The verbosity level (one of the VERBOSITY constants in OutputInterface)
-     * @param bool|null                     $decorated Whether to decorate messages (null for auto-guessing)
-     * @param OutputFormatterInterface|null $formatter Output formatter instance (null to use default OutputFormatter)
-     */
-    public function __construct(int $verbosity = self::VERBOSITY_NORMAL, bool $decorated = null, OutputFormatterInterface $formatter = null)
-    {
-        parent::__construct($this->openOutputStream(), $verbosity, $decorated, $formatter);
-
-        if (null === $formatter) {
-            // for BC reasons, stdErr has it own Formatter only when user don't inject a specific formatter.
-            $this->stderr = new StreamOutput($this->openErrorStream(), $verbosity, $decorated);
-
-            return;
-        }
-
-        $actualDecorated = $this->isDecorated();
-        $this->stderr = new StreamOutput($this->openErrorStream(), $verbosity, $decorated, $this->getFormatter());
-
-        if (null === $decorated) {
-            $this->setDecorated($actualDecorated && $this->stderr->isDecorated());
-        }
-    }
-
-    /**
-     * Creates a new output section.
-     */
-    public function section(): ConsoleSectionOutput
-    {
-        return new ConsoleSectionOutput($this->getStream(), $this->consoleSectionOutputs, $this->getVerbosity(), $this->isDecorated(), $this->getFormatter());
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function setDecorated(bool $decorated)
-    {
-        parent::setDecorated($decorated);
-        $this->stderr->setDecorated($decorated);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function setFormatter(OutputFormatterInterface $formatter)
-    {
-        parent::setFormatter($formatter);
-        $this->stderr->setFormatter($formatter);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function setVerbosity(int $level)
-    {
-        parent::setVerbosity($level);
-        $this->stderr->setVerbosity($level);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getErrorOutput()
-    {
-        return $this->stderr;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function setErrorOutput(OutputInterface $error)
-    {
-        $this->stderr = $error;
-    }
-
-    /**
-     * Returns true if current environment supports writing console output to
-     * STDOUT.
-     *
-     * @return bool
-     */
-    protected function hasStdoutSupport()
-    {
-        return false === $this->isRunningOS400();
-    }
-
-    /**
-     * Returns true if current environment supports writing console output to
-     * STDERR.
-     *
-     * @return bool
-     */
-    protected function hasStderrSupport()
-    {
-        return false === $this->isRunningOS400();
-    }
-
-    /**
-     * Checks if current executing environment is IBM iSeries (OS400), which
-     * doesn't properly convert character-encodings between ASCII to EBCDIC.
-     */
-    private function isRunningOS400(): bool
-    {
-        $checks = [
-            \function_exists('php_uname') ? php_uname('s') : '',
-            getenv('OSTYPE'),
-            \PHP_OS,
-        ];
-
-        return false !== stripos(implode(';', $checks), 'OS400');
-    }
-
-    /**
-     * @return resource
-     */
-    private function openOutputStream()
-    {
-        if (!$this->hasStdoutSupport()) {
-            return fopen('php://output', 'w');
-        }
-
-        return @fopen('php://stdout', 'w') ?: fopen('php://output', 'w');
-    }
-
-    /**
-     * @return resource
-     */
-    private function openErrorStream()
-    {
-        return fopen($this->hasStderrSupport() ? 'php://stderr' : 'php://output', 'w');
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

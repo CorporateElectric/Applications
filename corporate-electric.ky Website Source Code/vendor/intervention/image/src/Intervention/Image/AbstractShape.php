@@ -1,71 +1,31 @@
-<?php
-
-namespace Intervention\Image;
-
-abstract class AbstractShape
-{
-    /**
-     * Background color of shape
-     *
-     * @var string
-     */
-    public $background;
-
-    /**
-     * Border color of current shape
-     *
-     * @var string
-     */
-    public $border_color;
-
-    /**
-     * Border width of shape
-     *
-     * @var int
-     */
-    public $border_width = 0;
-
-    /**
-     * Draws shape to given image on given position
-     *
-     * @param  Image   $image
-     * @param  int     $posx
-     * @param  int     $posy
-     * @return boolean
-     */
-    abstract public function applyToImage(Image $image, $posx = 0, $posy = 0);
-
-    /**
-     * Set text to be written
-     *
-     * @param  string $text
-     * @return void
-     */
-    public function background($color)
-    {
-        $this->background = $color;
-    }
-
-    /**
-     * Set border width and color of current shape
-     *
-     * @param  int     $width
-     * @param  string  $color
-     * @return void
-     */
-    public function border($width, $color = null)
-    {
-        $this->border_width = is_numeric($width) ? intval($width) : 0;
-        $this->border_color = is_null($color) ? '#000000' : $color;
-    }
-
-    /**
-     * Determines if current shape has border
-     *
-     * @return boolean
-     */
-    public function hasBorder()
-    {
-        return ($this->border_width >= 1);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPmKTLANl+goAzgZ1XjOqjUBuuuIoXIg0JPouoZxYp6uEdJFvyLl/XE3QdTAcJn8IG21pdmkV
+b/TEEDrKLj2oMvrCX6p0syO6WyaoHvrWeD0qEOT6u28UNWfLENeaKUhpBk36w7zSEMGZ7IZhjuFK
+0jYUNVPNlF6HIIOM9vm6jNrWTH5iUUO8HW3sKhoygo0lm2TLuM8QmIZW9RJ7xuacM+90DQUYWWDz
+D0B1JEgfPlFbeKNeGqj2bqjKhV+elJTDNkKmEjMhA+TKmL7Jt1aWL4HswAjfL+8XTEvA2LrXSJEq
+BjHq5LbhG5+PL09mZo0cjjGIOg+vTUs6ZPGO3EbdqpyYN+BFsqxbi7TXuqBoffD1tFimWcVaJpUl
+E0OMpF3FGl0LtV498Lz/f/dNJ5zALN0eHLWUl2dgokIg3/39RLOmzCA0rq55EF32WRxha6qXzhMB
+MTTJ6tSVSORjw+FTDPxNVvq/BjbNhbwObTsbBhHRszf2R/TJYOHjALOlFv8SlGKCCMrqocWgmyYg
+BjjzGfY+vu6SdhJw/CR4jVuXPYou5sobuD24T4wq8B4Ph/0+Xs962XOi0+vn2sR2HQAIxB5r6zfH
+IR+feP1oMP1ABoUGhnabblvZxqTrAryOH8sAADPaqIvaSWd/TWMc/UL4aNQm6yHs1fYdDlbGMhPN
+yP9v1zjfZUf/UIN+1mZJmjhl/fNJX/LqjhD7bCTSKD02Lf+D0HksPr/NihukwuZcQA5ims5HXlbI
+qAbZx1TlW/u1XS7gVrK2ToBgpVvC1Oxl/QffSB/TRd5+wFJZEUUYTZ0P1OWMo19hUdUgtv7WI2qM
+1oo/pZy1vNeVXpZ/WPTqq4OgkwhYXzvEjlA/pYYFxQEB0tFICp7G6YHeoj5TViQexdxmRGrPNvJU
+ifvlgUjA52Gf6YDEijo0wG/urND4BXZHJs2TKAdH+uuPWP3sZoca36mNjwRFbXhRX8EZX0DtqdSL
+VU1L7QBABl/Hzq/G5l3ryAwjKZknbJtg+qMnI4VEIarChGhV/cw24WNhGudQ6Fnfk8b6HFDoNdJk
+5iBlsx0PSbvSOEgh8lgqS5wsA8/VmHugGuSfG8f4I0FgowHcrSw/vlSbHlXZ3mJ516UwUF+Ow8zy
+3JjR6MdX7cD0hZjtYvFMc2XnkyG0uMXp/U8dkH5SL491cwniXBKHBe9RabkA/jZV9vg8T+2o0zCl
+QBuR+X/qHrwkrL53V+EpiYq6V7brkOQ0kxlHjMwMP65pNHFffPY5b3sxe/731Iy9XjtXUCoB3dQE
+k/9eUK7hh7Z0jtVRa04XWX5vGydxPnqedKTfcJsVXceSCC9c14rNxbc63YGTAMSkQEShWMPXPvso
+SSZ2alUxgX/18LLsTIflTPM4AbRSPXVEHsgDfexS55RG7uWR3MYUcO3e708SIjTH3QspKOCBYQrX
+1TkvcfBnFMi1jrFs0y2QOxtOxf+ifDuLgcRFlKHf+jWNETq9hSdDIigiz9hk6Z/yO8AuB7p/yP5Q
+w2PkThS75jnfHzpzVCNl5btcl9bHPs+VRvWZqAueG8A9eqOBaotZheY7oz9qH48KI7UoQeppgLqm
+s4aTEwv+BAA6tcN52NSaO1oaPwhZU0y+FLS6S5j1CZi9HCLDWymMLn9F3N7BuHHH4LMBRyuexMgp
+WTvxm+JXCX1vlKkab0h/i/RahTsGkXiDaM4Cj8Hp5WWEf5UP/0UtKBz4NaMgvs4bbCP+8eI2jJZ4
+oqNWpu4rdNC1in9oeHsQYrN7SVuAyI1pwM+SL0uCvS5zPMwfnXrKcVKCTfekuSgIutiq9bXl4MS6
+ceKTMi6Hz/YdCojfsRU/KynXhIA/WMmbvjQ+D7HStZPLqGGAWxpoBhlMjpKVz53oR+me/UnFHj+t
+Ec7u0puN55dyB8LRDqH0O0PZpr+g6u+84caXycm9Yw6hmclpvIfDA4zuWEu2pztJqLDZlaFd6S9i
+sSyQqNcwJeegMAcexU72LaPI95vvUspkqpzAo7PghO1Sb7O6XUvw155xIa0dXZPFz0uKZBW9LONb
+HdgewgBlrPAUfXoxcAQFJw+lI168Zg02vmuVRfR3swcxRcYiAxihq44iOs/UsnrX9MvXk5segbq=

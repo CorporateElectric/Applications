@@ -1,130 +1,72 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Predis\Pipeline;
-
-use Predis\CommunicationException;
-use Predis\Connection\Aggregate\ClusterInterface;
-use Predis\Connection\ConnectionInterface;
-use Predis\Connection\NodeConnectionInterface;
-use Predis\NotSupportedException;
-
-/**
- * Command pipeline that does not throw exceptions on connection errors, but
- * returns the exception instances as the rest of the response elements.
- *
- * @todo Awful naming!
- *
- * @author Daniele Alessandri <suppakilla@gmail.com>
- */
-class ConnectionErrorProof extends Pipeline
-{
-    /**
-     * {@inheritdoc}
-     */
-    protected function getConnection()
-    {
-        return $this->getClient()->getConnection();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function executePipeline(ConnectionInterface $connection, \SplQueue $commands)
-    {
-        if ($connection instanceof NodeConnectionInterface) {
-            return $this->executeSingleNode($connection, $commands);
-        } elseif ($connection instanceof ClusterInterface) {
-            return $this->executeCluster($connection, $commands);
-        } else {
-            $class = get_class($connection);
-
-            throw new NotSupportedException("The connection class '$class' is not supported.");
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function executeSingleNode(NodeConnectionInterface $connection, \SplQueue $commands)
-    {
-        $responses = array();
-        $sizeOfPipe = count($commands);
-
-        foreach ($commands as $command) {
-            try {
-                $connection->writeRequest($command);
-            } catch (CommunicationException $exception) {
-                return array_fill(0, $sizeOfPipe, $exception);
-            }
-        }
-
-        for ($i = 0; $i < $sizeOfPipe; ++$i) {
-            $command = $commands->dequeue();
-
-            try {
-                $responses[$i] = $connection->readResponse($command);
-            } catch (CommunicationException $exception) {
-                $add = count($commands) - count($responses);
-                $responses = array_merge($responses, array_fill(0, $add, $exception));
-
-                break;
-            }
-        }
-
-        return $responses;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function executeCluster(ClusterInterface $connection, \SplQueue $commands)
-    {
-        $responses = array();
-        $sizeOfPipe = count($commands);
-        $exceptions = array();
-
-        foreach ($commands as $command) {
-            $cmdConnection = $connection->getConnection($command);
-
-            if (isset($exceptions[spl_object_hash($cmdConnection)])) {
-                continue;
-            }
-
-            try {
-                $cmdConnection->writeRequest($command);
-            } catch (CommunicationException $exception) {
-                $exceptions[spl_object_hash($cmdConnection)] = $exception;
-            }
-        }
-
-        for ($i = 0; $i < $sizeOfPipe; ++$i) {
-            $command = $commands->dequeue();
-
-            $cmdConnection = $connection->getConnection($command);
-            $connectionHash = spl_object_hash($cmdConnection);
-
-            if (isset($exceptions[$connectionHash])) {
-                $responses[$i] = $exceptions[$connectionHash];
-                continue;
-            }
-
-            try {
-                $responses[$i] = $cmdConnection->readResponse($command);
-            } catch (CommunicationException $exception) {
-                $responses[$i] = $exception;
-                $exceptions[$connectionHash] = $exception;
-            }
-        }
-
-        return $responses;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+UoWURZxQjG+gLC3UJASL93cM

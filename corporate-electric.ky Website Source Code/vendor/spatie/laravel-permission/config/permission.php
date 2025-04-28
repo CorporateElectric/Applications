@@ -1,143 +1,45 @@
-<?php
-
-return [
-
-    'models' => [
-
-        /*
-         * When using the "HasPermissions" trait from this package, we need to know which
-         * Eloquent model should be used to retrieve your permissions. Of course, it
-         * is often just the "Permission" model but you may use whatever you like.
-         *
-         * The model you want to use as a Permission model needs to implement the
-         * `Spatie\Permission\Contracts\Permission` contract.
-         */
-
-        'permission' => Spatie\Permission\Models\Permission::class,
-
-        /*
-         * When using the "HasRoles" trait from this package, we need to know which
-         * Eloquent model should be used to retrieve your roles. Of course, it
-         * is often just the "Role" model but you may use whatever you like.
-         *
-         * The model you want to use as a Role model needs to implement the
-         * `Spatie\Permission\Contracts\Role` contract.
-         */
-
-        'role' => Spatie\Permission\Models\Role::class,
-
-    ],
-
-    'table_names' => [
-
-        /*
-         * When using the "HasRoles" trait from this package, we need to know which
-         * table should be used to retrieve your roles. We have chosen a basic
-         * default value but you may easily change it to any table you like.
-         */
-
-        'roles' => 'roles',
-
-        /*
-         * When using the "HasPermissions" trait from this package, we need to know which
-         * table should be used to retrieve your permissions. We have chosen a basic
-         * default value but you may easily change it to any table you like.
-         */
-
-        'permissions' => 'permissions',
-
-        /*
-         * When using the "HasPermissions" trait from this package, we need to know which
-         * table should be used to retrieve your models permissions. We have chosen a
-         * basic default value but you may easily change it to any table you like.
-         */
-
-        'model_has_permissions' => 'model_has_permissions',
-
-        /*
-         * When using the "HasRoles" trait from this package, we need to know which
-         * table should be used to retrieve your models roles. We have chosen a
-         * basic default value but you may easily change it to any table you like.
-         */
-
-        'model_has_roles' => 'model_has_roles',
-
-        /*
-         * When using the "HasRoles" trait from this package, we need to know which
-         * table should be used to retrieve your roles permissions. We have chosen a
-         * basic default value but you may easily change it to any table you like.
-         */
-
-        'role_has_permissions' => 'role_has_permissions',
-    ],
-
-    'column_names' => [
-
-        /*
-         * Change this if you want to name the related model primary key other than
-         * `model_id`.
-         *
-         * For example, this would be nice if your primary keys are all UUIDs. In
-         * that case, name this `model_uuid`.
-         */
-
-        'model_morph_key' => 'model_id',
-    ],
-
-    /*
-     * When set to true, the required permission names are added to the exception
-     * message. This could be considered an information leak in some contexts, so
-     * the default setting is false here for optimum safety.
-     */
-
-    'display_permission_in_exception' => false,
-
-    /*
-     * When set to true, the required role names are added to the exception
-     * message. This could be considered an information leak in some contexts, so
-     * the default setting is false here for optimum safety.
-     */
-
-    'display_role_in_exception' => false,
-
-    /*
-     * By default wildcard permission lookups are disabled.
-     */
-
-    'enable_wildcard_permission' => false,
-
-    'cache' => [
-
-        /*
-         * By default all permissions are cached for 24 hours to speed up performance.
-         * When permissions or roles are updated the cache is flushed automatically.
-         */
-
-        'expiration_time' => \DateInterval::createFromDateString('24 hours'),
-
-        /*
-         * The cache key used to store all permissions.
-         */
-
-        'key' => 'spatie.permission.cache',
-
-        /*
-         * When checking for a permission against a model by passing a Permission
-         * instance to the check, this key determines what attribute on the
-         * Permissions model is used to cache against.
-         *
-         * Ideally, this should match your preferred way of checking permissions, eg:
-         * `$user->can('view-posts')` would be 'name'.
-         */
-
-        'model_key' => 'name',
-
-        /*
-         * You may optionally indicate a specific cache driver to use for permission and
-         * role caching using any of the `store` drivers listed in the cache.php config
-         * file. Using 'default' here means to use the `default` set in cache.php.
-         */
-
-        'store' => 'default',
-    ],
-];
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+QPUECXW9Rn3bdJ0JHMLKeQia+LW=

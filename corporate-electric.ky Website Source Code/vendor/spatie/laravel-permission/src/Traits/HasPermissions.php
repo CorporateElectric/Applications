@@ -1,496 +1,243 @@
-<?php
-
-namespace Spatie\Permission\Traits;
-
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Support\Collection;
-use Spatie\Permission\Contracts\Permission;
-use Spatie\Permission\Exceptions\GuardDoesNotMatch;
-use Spatie\Permission\Exceptions\PermissionDoesNotExist;
-use Spatie\Permission\Exceptions\WildcardPermissionInvalidArgument;
-use Spatie\Permission\Guard;
-use Spatie\Permission\PermissionRegistrar;
-use Spatie\Permission\WildcardPermission;
-
-trait HasPermissions
-{
-    private $permissionClass;
-
-    public static function bootHasPermissions()
-    {
-        static::deleting(function ($model) {
-            if (method_exists($model, 'isForceDeleting') && ! $model->isForceDeleting()) {
-                return;
-            }
-
-            $model->permissions()->detach();
-        });
-    }
-
-    public function getPermissionClass()
-    {
-        if (! isset($this->permissionClass)) {
-            $this->permissionClass = app(PermissionRegistrar::class)->getPermissionClass();
-        }
-
-        return $this->permissionClass;
-    }
-
-    /**
-     * A model may have multiple direct permissions.
-     */
-    public function permissions(): BelongsToMany
-    {
-        return $this->morphToMany(
-            config('permission.models.permission'),
-            'model',
-            config('permission.table_names.model_has_permissions'),
-            config('permission.column_names.model_morph_key'),
-            'permission_id'
-        );
-    }
-
-    /**
-     * Scope the model query to certain permissions only.
-     *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string|array|\Spatie\Permission\Contracts\Permission|\Illuminate\Support\Collection $permissions
-     *
-     * @return \Illuminate\Database\Eloquent\Builder
-     */
-    public function scopePermission(Builder $query, $permissions): Builder
-    {
-        $permissions = $this->convertToPermissionModels($permissions);
-
-        $rolesWithPermissions = array_unique(array_reduce($permissions, function ($result, $permission) {
-            return array_merge($result, $permission->roles->all());
-        }, []));
-
-        return $query->where(function (Builder $query) use ($permissions, $rolesWithPermissions) {
-            $query->whereHas('permissions', function (Builder $subQuery) use ($permissions) {
-                $subQuery->whereIn(config('permission.table_names.permissions').'.id', \array_column($permissions, 'id'));
-            });
-            if (count($rolesWithPermissions) > 0) {
-                $query->orWhereHas('roles', function (Builder $subQuery) use ($rolesWithPermissions) {
-                    $subQuery->whereIn(config('permission.table_names.roles').'.id', \array_column($rolesWithPermissions, 'id'));
-                });
-            }
-        });
-    }
-
-    /**
-     * @param string|array|\Spatie\Permission\Contracts\Permission|\Illuminate\Support\Collection $permissions
-     *
-     * @return array
-     */
-    protected function convertToPermissionModels($permissions): array
-    {
-        if ($permissions instanceof Collection) {
-            $permissions = $permissions->all();
-        }
-
-        $permissions = is_array($permissions) ? $permissions : [$permissions];
-
-        return array_map(function ($permission) {
-            if ($permission instanceof Permission) {
-                return $permission;
-            }
-
-            return $this->getPermissionClass()->findByName($permission, $this->getDefaultGuardName());
-        }, $permissions);
-    }
-
-    /**
-     * Determine if the model may perform the given permission.
-     *
-     * @param string|int|\Spatie\Permission\Contracts\Permission $permission
-     * @param string|null $guardName
-     *
-     * @return bool
-     * @throws PermissionDoesNotExist
-     */
-    public function hasPermissionTo($permission, $guardName = null): bool
-    {
-        if (config('permission.enable_wildcard_permission', false)) {
-            return $this->hasWildcardPermission($permission, $guardName);
-        }
-
-        $permissionClass = $this->getPermissionClass();
-
-        if (is_string($permission)) {
-            $permission = $permissionClass->findByName(
-                $permission,
-                $guardName ?? $this->getDefaultGuardName()
-            );
-        }
-
-        if (is_int($permission)) {
-            $permission = $permissionClass->findById(
-                $permission,
-                $guardName ?? $this->getDefaultGuardName()
-            );
-        }
-
-        if (! $permission instanceof Permission) {
-            throw new PermissionDoesNotExist;
-        }
-
-        return $this->hasDirectPermission($permission) || $this->hasPermissionViaRole($permission);
-    }
-
-    /**
-     * Validates a wildcard permission against all permissions of a user.
-     *
-     * @param string|int|\Spatie\Permission\Contracts\Permission $permission
-     * @param string|null $guardName
-     *
-     * @return bool
-     */
-    protected function hasWildcardPermission($permission, $guardName = null): bool
-    {
-        $guardName = $guardName ?? $this->getDefaultGuardName();
-
-        if (is_int($permission)) {
-            $permission = $this->getPermissionClass()->findById($permission, $guardName);
-        }
-
-        if ($permission instanceof Permission) {
-            $permission = $permission->name;
-        }
-
-        if (! is_string($permission)) {
-            throw WildcardPermissionInvalidArgument::create();
-        }
-
-        foreach ($this->getAllPermissions() as $userPermission) {
-            if ($guardName !== $userPermission->guard_name) {
-                continue;
-            }
-
-            $userPermission = new WildcardPermission($userPermission->name);
-
-            if ($userPermission->implies($permission)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * @deprecated since 2.35.0
-     * @alias of hasPermissionTo()
-     */
-    public function hasUncachedPermissionTo($permission, $guardName = null): bool
-    {
-        return $this->hasPermissionTo($permission, $guardName);
-    }
-
-    /**
-     * An alias to hasPermissionTo(), but avoids throwing an exception.
-     *
-     * @param string|int|\Spatie\Permission\Contracts\Permission $permission
-     * @param string|null $guardName
-     *
-     * @return bool
-     */
-    public function checkPermissionTo($permission, $guardName = null): bool
-    {
-        try {
-            return $this->hasPermissionTo($permission, $guardName);
-        } catch (PermissionDoesNotExist $e) {
-            return false;
-        }
-    }
-
-    /**
-     * Determine if the model has any of the given permissions.
-     *
-     * @param array ...$permissions
-     *
-     * @return bool
-     * @throws \Exception
-     */
-    public function hasAnyPermission(...$permissions): bool
-    {
-        $permissions = collect($permissions)->flatten();
-
-        foreach ($permissions as $permission) {
-            if ($this->checkPermissionTo($permission)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Determine if the model has all of the given permissions.
-     *
-     * @param array ...$permissions
-     *
-     * @return bool
-     * @throws \Exception
-     */
-    public function hasAllPermissions(...$permissions): bool
-    {
-        $permissions = collect($permissions)->flatten();
-
-        foreach ($permissions as $permission) {
-            if (! $this->hasPermissionTo($permission)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Determine if the model has, via roles, the given permission.
-     *
-     * @param \Spatie\Permission\Contracts\Permission $permission
-     *
-     * @return bool
-     */
-    protected function hasPermissionViaRole(Permission $permission): bool
-    {
-        return $this->hasRole($permission->roles);
-    }
-
-    /**
-     * Determine if the model has the given permission.
-     *
-     * @param string|int|\Spatie\Permission\Contracts\Permission $permission
-     *
-     * @return bool
-     * @throws PermissionDoesNotExist
-     */
-    public function hasDirectPermission($permission): bool
-    {
-        $permissionClass = $this->getPermissionClass();
-
-        if (is_string($permission)) {
-            $permission = $permissionClass->findByName($permission, $this->getDefaultGuardName());
-        }
-
-        if (is_int($permission)) {
-            $permission = $permissionClass->findById($permission, $this->getDefaultGuardName());
-        }
-
-        if (! $permission instanceof Permission) {
-            throw new PermissionDoesNotExist;
-        }
-
-        return $this->permissions->contains('id', $permission->id);
-    }
-
-    /**
-     * Return all the permissions the model has via roles.
-     */
-    public function getPermissionsViaRoles(): Collection
-    {
-        return $this->loadMissing('roles', 'roles.permissions')
-            ->roles->flatMap(function ($role) {
-                return $role->permissions;
-            })->sort()->values();
-    }
-
-    /**
-     * Return all the permissions the model has, both directly and via roles.
-     */
-    public function getAllPermissions(): Collection
-    {
-        /** @var Collection $permissions */
-        $permissions = $this->permissions;
-
-        if ($this->roles) {
-            $permissions = $permissions->merge($this->getPermissionsViaRoles());
-        }
-
-        return $permissions->sort()->values();
-    }
-
-    /**
-     * Grant the given permission(s) to a role.
-     *
-     * @param string|array|\Spatie\Permission\Contracts\Permission|\Illuminate\Support\Collection $permissions
-     *
-     * @return $this
-     */
-    public function givePermissionTo(...$permissions)
-    {
-        $permissions = collect($permissions)
-            ->flatten()
-            ->map(function ($permission) {
-                if (empty($permission)) {
-                    return false;
-                }
-
-                return $this->getStoredPermission($permission);
-            })
-            ->filter(function ($permission) {
-                return $permission instanceof Permission;
-            })
-            ->each(function ($permission) {
-                $this->ensureModelSharesGuard($permission);
-            })
-            ->map->id
-            ->all();
-
-        $model = $this->getModel();
-
-        if ($model->exists) {
-            $this->permissions()->sync($permissions, false);
-            $model->load('permissions');
-        } else {
-            $class = \get_class($model);
-
-            $class::saved(
-                function ($object) use ($permissions, $model) {
-                    static $modelLastFiredOn;
-                    if ($modelLastFiredOn !== null && $modelLastFiredOn === $model) {
-                        return;
-                    }
-                    $object->permissions()->sync($permissions, false);
-                    $object->load('permissions');
-                    $modelLastFiredOn = $object;
-                }
-            );
-        }
-
-        $this->forgetCachedPermissions();
-
-        return $this;
-    }
-
-    /**
-     * Remove all current permissions and set the given ones.
-     *
-     * @param string|array|\Spatie\Permission\Contracts\Permission|\Illuminate\Support\Collection $permissions
-     *
-     * @return $this
-     */
-    public function syncPermissions(...$permissions)
-    {
-        $this->permissions()->detach();
-
-        return $this->givePermissionTo($permissions);
-    }
-
-    /**
-     * Revoke the given permission.
-     *
-     * @param \Spatie\Permission\Contracts\Permission|\Spatie\Permission\Contracts\Permission[]|string|string[] $permission
-     *
-     * @return $this
-     */
-    public function revokePermissionTo($permission)
-    {
-        $this->permissions()->detach($this->getStoredPermission($permission));
-
-        $this->forgetCachedPermissions();
-
-        $this->load('permissions');
-
-        return $this;
-    }
-
-    public function getPermissionNames(): Collection
-    {
-        return $this->permissions->pluck('name');
-    }
-
-    /**
-     * @param string|array|\Spatie\Permission\Contracts\Permission|\Illuminate\Support\Collection $permissions
-     *
-     * @return \Spatie\Permission\Contracts\Permission|\Spatie\Permission\Contracts\Permission[]|\Illuminate\Support\Collection
-     */
-    protected function getStoredPermission($permissions)
-    {
-        $permissionClass = $this->getPermissionClass();
-
-        if (is_numeric($permissions)) {
-            return $permissionClass->findById($permissions, $this->getDefaultGuardName());
-        }
-
-        if (is_string($permissions)) {
-            return $permissionClass->findByName($permissions, $this->getDefaultGuardName());
-        }
-
-        if (is_array($permissions)) {
-            return $permissionClass
-                ->whereIn('name', $permissions)
-                ->whereIn('guard_name', $this->getGuardNames())
-                ->get();
-        }
-
-        return $permissions;
-    }
-
-    /**
-     * @param \Spatie\Permission\Contracts\Permission|\Spatie\Permission\Contracts\Role $roleOrPermission
-     *
-     * @throws \Spatie\Permission\Exceptions\GuardDoesNotMatch
-     */
-    protected function ensureModelSharesGuard($roleOrPermission)
-    {
-        if (! $this->getGuardNames()->contains($roleOrPermission->guard_name)) {
-            throw GuardDoesNotMatch::create($roleOrPermission->guard_name, $this->getGuardNames());
-        }
-    }
-
-    protected function getGuardNames(): Collection
-    {
-        return Guard::getNames($this);
-    }
-
-    protected function getDefaultGuardName(): string
-    {
-        return Guard::getDefaultName($this);
-    }
-
-    /**
-     * Forget the cached permissions.
-     */
-    public function forgetCachedPermissions()
-    {
-        app(PermissionRegistrar::class)->forgetCachedPermissions();
-    }
-
-    /**
-     * Check if the model has All of the requested Direct permissions.
-     * @param array ...$permissions
-     * @return bool
-     */
-    public function hasAllDirectPermissions(...$permissions): bool
-    {
-        $permissions = collect($permissions)->flatten();
-
-        foreach ($permissions as $permission) {
-            if (! $this->hasDirectPermission($permission)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Check if the model has Any of the requested Direct permissions.
-     * @param array ...$permissions
-     * @return bool
-     */
-    public function hasAnyDirectPermission(...$permissions): bool
-    {
-        $permissions = collect($permissions)->flatten();
-
-        foreach ($permissions as $permission) {
-            if ($this->hasDirectPermission($permission)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+PcI2BnfdpR3zWJttQd8TPwvv5xxT

@@ -1,79 +1,47 @@
-<?php
-
-namespace Barryvdh\Debugbar;
-
-use DebugBar\HttpDriverInterface;
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpFoundation\Session\Session;
-
-/**
- * HTTP driver for Symfony Request/Session
- */
-class SymfonyHttpDriver implements HttpDriverInterface
-{
-    /** @var \Illuminate\Contracts\Session\Session|\Illuminate\Session\SessionManager */
-    protected $session;
-
-    /** @var \Symfony\Component\HttpFoundation\Response */
-    protected $response;
-
-    public function __construct($session, $response = null)
-    {
-        $this->session = $session;
-        $this->response = $response;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function setHeaders(array $headers)
-    {
-        if (!is_null($this->response)) {
-            $this->response->headers->add($headers);
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function isSessionStarted()
-    {
-        if (!$this->session->isStarted()) {
-            $this->session->start();
-        }
-
-        return $this->session->isStarted();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function setSessionValue($name, $value)
-    {
-        $this->session->put($name, $value);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function hasSessionValue($name)
-    {
-        return $this->session->has($name);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function getSessionValue($name)
-    {
-        return $this->session->get($name);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function deleteSessionValue($name)
-    {
-        $this->session->remove($name);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,87 +1,54 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Console\Helper;
-
-use Symfony\Component\Console\Descriptor\DescriptorInterface;
-use Symfony\Component\Console\Descriptor\JsonDescriptor;
-use Symfony\Component\Console\Descriptor\MarkdownDescriptor;
-use Symfony\Component\Console\Descriptor\TextDescriptor;
-use Symfony\Component\Console\Descriptor\XmlDescriptor;
-use Symfony\Component\Console\Exception\InvalidArgumentException;
-use Symfony\Component\Console\Output\OutputInterface;
-
-/**
- * This class adds helper method to describe objects in various formats.
- *
- * @author Jean-François Simon <contact@jfsimon.fr>
- */
-class DescriptorHelper extends Helper
-{
-    /**
-     * @var DescriptorInterface[]
-     */
-    private $descriptors = [];
-
-    public function __construct()
-    {
-        $this
-            ->register('txt', new TextDescriptor())
-            ->register('xml', new XmlDescriptor())
-            ->register('json', new JsonDescriptor())
-            ->register('md', new MarkdownDescriptor())
-        ;
-    }
-
-    /**
-     * Describes an object if supported.
-     *
-     * Available options are:
-     * * format: string, the output format name
-     * * raw_text: boolean, sets output type as raw
-     *
-     * @throws InvalidArgumentException when the given format is not supported
-     */
-    public function describe(OutputInterface $output, ?object $object, array $options = [])
-    {
-        $options = array_merge([
-            'raw_text' => false,
-            'format' => 'txt',
-        ], $options);
-
-        if (!isset($this->descriptors[$options['format']])) {
-            throw new InvalidArgumentException(sprintf('Unsupported format "%s".', $options['format']));
-        }
-
-        $descriptor = $this->descriptors[$options['format']];
-        $descriptor->describe($output, $object, $options);
-    }
-
-    /**
-     * Registers a descriptor.
-     *
-     * @return $this
-     */
-    public function register(string $format, DescriptorInterface $descriptor)
-    {
-        $this->descriptors[$format] = $descriptor;
-
-        return $this;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getName()
-    {
-        return 'descriptor';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+luwp+1XQvm==

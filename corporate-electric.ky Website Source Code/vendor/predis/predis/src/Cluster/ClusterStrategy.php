@@ -1,469 +1,171 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Predis\Cluster;
-
-use Predis\Command\CommandInterface;
-use Predis\Command\ScriptCommand;
-
-/**
- * Common class implementing the logic needed to support clustering strategies.
- *
- * @author Daniele Alessandri <suppakilla@gmail.com>
- */
-abstract class ClusterStrategy implements StrategyInterface
-{
-    protected $commands;
-
-    /**
-     *
-     */
-    public function __construct()
-    {
-        $this->commands = $this->getDefaultCommands();
-    }
-
-    /**
-     * Returns the default map of supported commands with their handlers.
-     *
-     * @return array
-     */
-    protected function getDefaultCommands()
-    {
-        $getKeyFromFirstArgument = array($this, 'getKeyFromFirstArgument');
-        $getKeyFromAllArguments = array($this, 'getKeyFromAllArguments');
-
-        return array(
-            /* commands operating on the key space */
-            'EXISTS' => $getKeyFromAllArguments,
-            'DEL' => $getKeyFromAllArguments,
-            'TYPE' => $getKeyFromFirstArgument,
-            'EXPIRE' => $getKeyFromFirstArgument,
-            'EXPIREAT' => $getKeyFromFirstArgument,
-            'PERSIST' => $getKeyFromFirstArgument,
-            'PEXPIRE' => $getKeyFromFirstArgument,
-            'PEXPIREAT' => $getKeyFromFirstArgument,
-            'TTL' => $getKeyFromFirstArgument,
-            'PTTL' => $getKeyFromFirstArgument,
-            'SORT' => array($this, 'getKeyFromSortCommand'),
-            'DUMP' => $getKeyFromFirstArgument,
-            'RESTORE' => $getKeyFromFirstArgument,
-
-            /* commands operating on string values */
-            'APPEND' => $getKeyFromFirstArgument,
-            'DECR' => $getKeyFromFirstArgument,
-            'DECRBY' => $getKeyFromFirstArgument,
-            'GET' => $getKeyFromFirstArgument,
-            'GETBIT' => $getKeyFromFirstArgument,
-            'MGET' => $getKeyFromAllArguments,
-            'SET' => $getKeyFromFirstArgument,
-            'GETRANGE' => $getKeyFromFirstArgument,
-            'GETSET' => $getKeyFromFirstArgument,
-            'INCR' => $getKeyFromFirstArgument,
-            'INCRBY' => $getKeyFromFirstArgument,
-            'INCRBYFLOAT' => $getKeyFromFirstArgument,
-            'SETBIT' => $getKeyFromFirstArgument,
-            'SETEX' => $getKeyFromFirstArgument,
-            'MSET' => array($this, 'getKeyFromInterleavedArguments'),
-            'MSETNX' => array($this, 'getKeyFromInterleavedArguments'),
-            'SETNX' => $getKeyFromFirstArgument,
-            'SETRANGE' => $getKeyFromFirstArgument,
-            'STRLEN' => $getKeyFromFirstArgument,
-            'SUBSTR' => $getKeyFromFirstArgument,
-            'BITOP' => array($this, 'getKeyFromBitOp'),
-            'BITCOUNT' => $getKeyFromFirstArgument,
-            'BITFIELD' => $getKeyFromFirstArgument,
-
-            /* commands operating on lists */
-            'LINSERT' => $getKeyFromFirstArgument,
-            'LINDEX' => $getKeyFromFirstArgument,
-            'LLEN' => $getKeyFromFirstArgument,
-            'LPOP' => $getKeyFromFirstArgument,
-            'RPOP' => $getKeyFromFirstArgument,
-            'RPOPLPUSH' => $getKeyFromAllArguments,
-            'BLPOP' => array($this, 'getKeyFromBlockingListCommands'),
-            'BRPOP' => array($this, 'getKeyFromBlockingListCommands'),
-            'BRPOPLPUSH' => array($this, 'getKeyFromBlockingListCommands'),
-            'LPUSH' => $getKeyFromFirstArgument,
-            'LPUSHX' => $getKeyFromFirstArgument,
-            'RPUSH' => $getKeyFromFirstArgument,
-            'RPUSHX' => $getKeyFromFirstArgument,
-            'LRANGE' => $getKeyFromFirstArgument,
-            'LREM' => $getKeyFromFirstArgument,
-            'LSET' => $getKeyFromFirstArgument,
-            'LTRIM' => $getKeyFromFirstArgument,
-
-            /* commands operating on sets */
-            'SADD' => $getKeyFromFirstArgument,
-            'SCARD' => $getKeyFromFirstArgument,
-            'SDIFF' => $getKeyFromAllArguments,
-            'SDIFFSTORE' => $getKeyFromAllArguments,
-            'SINTER' => $getKeyFromAllArguments,
-            'SINTERSTORE' => $getKeyFromAllArguments,
-            'SUNION' => $getKeyFromAllArguments,
-            'SUNIONSTORE' => $getKeyFromAllArguments,
-            'SISMEMBER' => $getKeyFromFirstArgument,
-            'SMEMBERS' => $getKeyFromFirstArgument,
-            'SSCAN' => $getKeyFromFirstArgument,
-            'SPOP' => $getKeyFromFirstArgument,
-            'SRANDMEMBER' => $getKeyFromFirstArgument,
-            'SREM' => $getKeyFromFirstArgument,
-
-            /* commands operating on sorted sets */
-            'ZADD' => $getKeyFromFirstArgument,
-            'ZCARD' => $getKeyFromFirstArgument,
-            'ZCOUNT' => $getKeyFromFirstArgument,
-            'ZINCRBY' => $getKeyFromFirstArgument,
-            'ZINTERSTORE' => array($this, 'getKeyFromZsetAggregationCommands'),
-            'ZRANGE' => $getKeyFromFirstArgument,
-            'ZRANGEBYSCORE' => $getKeyFromFirstArgument,
-            'ZRANK' => $getKeyFromFirstArgument,
-            'ZREM' => $getKeyFromFirstArgument,
-            'ZREMRANGEBYRANK' => $getKeyFromFirstArgument,
-            'ZREMRANGEBYSCORE' => $getKeyFromFirstArgument,
-            'ZREVRANGE' => $getKeyFromFirstArgument,
-            'ZREVRANGEBYSCORE' => $getKeyFromFirstArgument,
-            'ZREVRANK' => $getKeyFromFirstArgument,
-            'ZSCORE' => $getKeyFromFirstArgument,
-            'ZUNIONSTORE' => array($this, 'getKeyFromZsetAggregationCommands'),
-            'ZSCAN' => $getKeyFromFirstArgument,
-            'ZLEXCOUNT' => $getKeyFromFirstArgument,
-            'ZRANGEBYLEX' => $getKeyFromFirstArgument,
-            'ZREMRANGEBYLEX' => $getKeyFromFirstArgument,
-            'ZREVRANGEBYLEX' => $getKeyFromFirstArgument,
-
-            /* commands operating on hashes */
-            'HDEL' => $getKeyFromFirstArgument,
-            'HEXISTS' => $getKeyFromFirstArgument,
-            'HGET' => $getKeyFromFirstArgument,
-            'HGETALL' => $getKeyFromFirstArgument,
-            'HMGET' => $getKeyFromFirstArgument,
-            'HMSET' => $getKeyFromFirstArgument,
-            'HINCRBY' => $getKeyFromFirstArgument,
-            'HINCRBYFLOAT' => $getKeyFromFirstArgument,
-            'HKEYS' => $getKeyFromFirstArgument,
-            'HLEN' => $getKeyFromFirstArgument,
-            'HSET' => $getKeyFromFirstArgument,
-            'HSETNX' => $getKeyFromFirstArgument,
-            'HVALS' => $getKeyFromFirstArgument,
-            'HSCAN' => $getKeyFromFirstArgument,
-            'HSTRLEN' => $getKeyFromFirstArgument,
-
-            /* commands operating on HyperLogLog */
-            'PFADD' => $getKeyFromFirstArgument,
-            'PFCOUNT' => $getKeyFromAllArguments,
-            'PFMERGE' => $getKeyFromAllArguments,
-
-            /* scripting */
-            'EVAL' => array($this, 'getKeyFromScriptingCommands'),
-            'EVALSHA' => array($this, 'getKeyFromScriptingCommands'),
-
-            /* commands performing geospatial operations */
-            'GEOADD' => $getKeyFromFirstArgument,
-            'GEOHASH' => $getKeyFromFirstArgument,
-            'GEOPOS' => $getKeyFromFirstArgument,
-            'GEODIST' => $getKeyFromFirstArgument,
-            'GEORADIUS' => array($this, 'getKeyFromGeoradiusCommands'),
-            'GEORADIUSBYMEMBER' => array($this, 'getKeyFromGeoradiusCommands'),
-        );
-    }
-
-    /**
-     * Returns the list of IDs for the supported commands.
-     *
-     * @return array
-     */
-    public function getSupportedCommands()
-    {
-        return array_keys($this->commands);
-    }
-
-    /**
-     * Sets an handler for the specified command ID.
-     *
-     * The signature of the callback must have a single parameter of type
-     * Predis\Command\CommandInterface.
-     *
-     * When the callback argument is omitted or NULL, the previously associated
-     * handler for the specified command ID is removed.
-     *
-     * @param string $commandID Command ID.
-     * @param mixed  $callback  A valid callable object, or NULL to unset the handler.
-     *
-     * @throws \InvalidArgumentException
-     */
-    public function setCommandHandler($commandID, $callback = null)
-    {
-        $commandID = strtoupper($commandID);
-
-        if (!isset($callback)) {
-            unset($this->commands[$commandID]);
-
-            return;
-        }
-
-        if (!is_callable($callback)) {
-            throw new \InvalidArgumentException(
-                'The argument must be a callable object or NULL.'
-            );
-        }
-
-        $this->commands[$commandID] = $callback;
-    }
-
-    /**
-     * Extracts the key from the first argument of a command instance.
-     *
-     * @param CommandInterface $command Command instance.
-     *
-     * @return string
-     */
-    protected function getKeyFromFirstArgument(CommandInterface $command)
-    {
-        return $command->getArgument(0);
-    }
-
-    /**
-     * Extracts the key from a command with multiple keys only when all keys in
-     * the arguments array produce the same hash.
-     *
-     * @param CommandInterface $command Command instance.
-     *
-     * @return string|null
-     */
-    protected function getKeyFromAllArguments(CommandInterface $command)
-    {
-        $arguments = $command->getArguments();
-
-        if ($this->checkSameSlotForKeys($arguments)) {
-            return $arguments[0];
-        }
-    }
-
-    /**
-     * Extracts the key from a command with multiple keys only when all keys in
-     * the arguments array produce the same hash.
-     *
-     * @param CommandInterface $command Command instance.
-     *
-     * @return string|null
-     */
-    protected function getKeyFromInterleavedArguments(CommandInterface $command)
-    {
-        $arguments = $command->getArguments();
-        $keys = array();
-
-        for ($i = 0; $i < count($arguments); $i += 2) {
-            $keys[] = $arguments[$i];
-        }
-
-        if ($this->checkSameSlotForKeys($keys)) {
-            return $arguments[0];
-        }
-    }
-
-    /**
-     * Extracts the key from SORT command.
-     *
-     * @param CommandInterface $command Command instance.
-     *
-     * @return string|null
-     */
-    protected function getKeyFromSortCommand(CommandInterface $command)
-    {
-        $arguments = $command->getArguments();
-        $firstKey = $arguments[0];
-
-        if (1 === $argc = count($arguments)) {
-            return $firstKey;
-        }
-
-        $keys = array($firstKey);
-
-        for ($i = 1; $i < $argc; ++$i) {
-            if (strtoupper($arguments[$i]) === 'STORE') {
-                $keys[] = $arguments[++$i];
-            }
-        }
-
-        if ($this->checkSameSlotForKeys($keys)) {
-            return $firstKey;
-        }
-    }
-
-    /**
-     * Extracts the key from BLPOP and BRPOP commands.
-     *
-     * @param CommandInterface $command Command instance.
-     *
-     * @return string|null
-     */
-    protected function getKeyFromBlockingListCommands(CommandInterface $command)
-    {
-        $arguments = $command->getArguments();
-
-        if ($this->checkSameSlotForKeys(array_slice($arguments, 0, count($arguments) - 1))) {
-            return $arguments[0];
-        }
-    }
-
-    /**
-     * Extracts the key from BITOP command.
-     *
-     * @param CommandInterface $command Command instance.
-     *
-     * @return string|null
-     */
-    protected function getKeyFromBitOp(CommandInterface $command)
-    {
-        $arguments = $command->getArguments();
-
-        if ($this->checkSameSlotForKeys(array_slice($arguments, 1, count($arguments)))) {
-            return $arguments[1];
-        }
-    }
-
-    /**
-     * Extracts the key from GEORADIUS and GEORADIUSBYMEMBER commands.
-     *
-     * @param CommandInterface $command Command instance.
-     *
-     * @return string|null
-     */
-    protected function getKeyFromGeoradiusCommands(CommandInterface $command)
-    {
-        $arguments = $command->getArguments();
-        $argc = count($arguments);
-        $startIndex = $command->getId() === 'GEORADIUS' ? 5 : 4;
-
-        if ($argc > $startIndex) {
-            $keys = array($arguments[0]);
-
-            for ($i = $startIndex; $i < $argc; ++$i) {
-                $argument = strtoupper($arguments[$i]);
-                if ($argument === 'STORE' || $argument === 'STOREDIST') {
-                    $keys[] = $arguments[++$i];
-                }
-            }
-
-            if ($this->checkSameSlotForKeys($keys)) {
-                return $arguments[0];
-            } else {
-                return;
-            }
-        }
-
-        return $arguments[0];
-    }
-
-    /**
-     * Extracts the key from ZINTERSTORE and ZUNIONSTORE commands.
-     *
-     * @param CommandInterface $command Command instance.
-     *
-     * @return string|null
-     */
-    protected function getKeyFromZsetAggregationCommands(CommandInterface $command)
-    {
-        $arguments = $command->getArguments();
-        $keys = array_merge(array($arguments[0]), array_slice($arguments, 2, $arguments[1]));
-
-        if ($this->checkSameSlotForKeys($keys)) {
-            return $arguments[0];
-        }
-    }
-
-    /**
-     * Extracts the key from EVAL and EVALSHA commands.
-     *
-     * @param CommandInterface $command Command instance.
-     *
-     * @return string|null
-     */
-    protected function getKeyFromScriptingCommands(CommandInterface $command)
-    {
-        if ($command instanceof ScriptCommand) {
-            $keys = $command->getKeys();
-        } else {
-            $keys = array_slice($args = $command->getArguments(), 2, $args[1]);
-        }
-
-        if ($keys && $this->checkSameSlotForKeys($keys)) {
-            return $keys[0];
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getSlot(CommandInterface $command)
-    {
-        $slot = $command->getSlot();
-
-        if (!isset($slot) && isset($this->commands[$cmdID = $command->getId()])) {
-            $key = call_user_func($this->commands[$cmdID], $command);
-
-            if (isset($key)) {
-                $slot = $this->getSlotByKey($key);
-                $command->setSlot($slot);
-            }
-        }
-
-        return $slot;
-    }
-
-    /**
-     * Checks if the specified array of keys will generate the same hash.
-     *
-     * @param array $keys Array of keys.
-     *
-     * @return bool
-     */
-    protected function checkSameSlotForKeys(array $keys)
-    {
-        if (!$count = count($keys)) {
-            return false;
-        }
-
-        $currentSlot = $this->getSlotByKey($keys[0]);
-
-        for ($i = 1; $i < $count; ++$i) {
-            $nextSlot = $this->getSlotByKey($keys[$i]);
-
-            if ($currentSlot !== $nextSlot) {
-                return false;
-            }
-
-            $currentSlot = $nextSlot;
-        }
-
-        return true;
-    }
-
-    /**
-     * Returns only the hashable part of a key (delimited by "{...}"), or the
-     * whole key if a key tag is not found in the string.
-     *
-     * @param string $key A key.
-     *
-     * @return string
-     */
-    protected function extractKeyTag($key)
-    {
-        if (false !== $start = strpos($key, '{')) {
-            if (false !== ($end = strpos($key, '}', $start)) && $end !== ++$start) {
-                $key = substr($key, $start, $end - $start);
-            }
-        }
-
-        return $key;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPupz7+f5PUJD42cAoVLz793v0xDV4tZ5qPAu8ZeY893FM8I6zddGGSwj1yVp8WnrU14ghd5N
+ZgTQQgl0fjfl0CoUSut5EYmvL9dHVA/gw97e+aT9fCTGJV5YYztBwhTNvvMWqbmFgDN1KBH01xqi
+M98Q6xf11keUcjdHuVXGx/XIqj7P3jj/59rbQIe1Zs7hufZLiaJ0krJOwaR5uPrcOUCBgN8eyqDC
+/WUVIcUUxAVJUyRZh5N3kNdRz08bsNzHzpeaEjMhA+TKmL7Jt1aWL4HswBzm8UyCl1+eQrapZACp
+2v8d/r0mvJEkt8ep40EsvUBptqiMR4YE6KeOIr5reuPTxPu9Pk5quRMpl3Fy3BcVGh79VPk1/u4E
+HD86CSzLxElYCodtif/VbaJZpbZyN0FDTR2OON+GDNw4Gl0Zd96oQtzJtpFIjZ1vr8OpUxu9tnxS
+8E+D4shCzhzvHKMkJ8aWJ4svnd7QexCYXmQftZDzmcM1R5Le1b948uZaIdP9hRwqSqW5FrKrBEBT
+ZEkEEt4Y6af0vifXu43aE8lNHVxb8rpTH/jGzlj9v5GmCwM/zbQ6IszeaiyViRxUXVOhixBDxhk9
+k2ibBEHig8q7d62iQyQYpCVMT/NJZA8hRF1oCWhnN6qYohg/mY1KQPrVqXWiPiiIYdLXhVoZRvok
+JMvCBiJL3onjSes6IYYqV3r80YfgCAPjtpZltggg5/qczTzrcKEroIrVvt0iiYGaD5tKnjv3YgiL
+4taf86dOgPCdlT9pdwHcRe91bugLWagVTRS+pqwPEiYPCRI/Ahk7z/dmpG8NmsSwSDR+ScUiKaOK
+ed+w6J48baGGCGh44NOIBXZNM4wmja6axFWnV2vnYTVWqyQD4zV2LFNmCmd3WNDv+zzM/QCk+HXx
+IAnBb7HUBeU+TMBk2tjCCqcKLJ+Sb/H7n1u+YB2qG7g9UY3OknbbvIl3RAy4ntF+GDTCsJ5y6lip
+5nM1/XdVbwDNma/JRnt7aUHdW+6R3ZjygcicRxx5P26tzX4s4KVQif2Geu/+0KO6rPk2KaEttPYG
+DerPBBK4el7zbTSfe94wb7u+31WpR2BgCGfpEChXMO38GLGvOGlvphF8H/tAA+XE2EbZxlY+bqb5
+OLJ7WUu7ck41McoadfMfX0OvGk2FalhkiOXPvDFVHYzG0J8AjmXPyw6nE2y+euH1ZZFHpub7njYC
+96mYo7OVh7TafAlEcubFe8W5wrdqZNtulrmRGayASeaVesrvzPCSyyE1D/7zTi3gHr/fxuR5Unkn
+MXu4jCDVaQp7oGhjtxyALra6APQ7dQ+hQKDuWdRr+b7pOiurhecSAfRZz7YG5T4b5IA7mGPVETeY
+f0C9zjhNnrMSczAg58LEAkaP5Eb3wW8Pvk1nS+JUHMjU8JE9VfKe47YQuVYxvhw3lNpNsEGaCNGX
+YR4T/xvaXTMduTHhXd/t9c4pMLtXw7b5Y3qljbpSNXieS+2IBkvFqsvGstK0tU+7JRYHOqcf15xP
+t8apIsjgNd0VyYmU/C2d27CfqEZzOrK7t7/wtr1yVMWHRtd6tsh0SgAkKVtlPMWHhZ+/NutQIqdu
+44DkgK35XIhxqKpXSStJ3+sI5OQe+BEkqjX10xoo4ygsKLa+He8eTwmIDEv20nlbOjU9LbLDpzqI
+uJI8jQMh3CcAm3A9hGqIlTbcVlXeN18R1SyaLORla9zlu4ggsiSqZnCx8413O0ht4KjUacfTCTYq
+rhHqdqdNoW25eVy+T1YmLPGGduBW+jh2glD3+TYh1c+4HwTbMtdQbGQ51HjnE+6Tqm+njx95TYDz
+pdPFzA1gz9JNJ538nifVYhj3xnSveZEdJTI4Q2vAyK3M8GvhvKMHlFNyIV/LX8MycZ3jdAmYu9Zv
+KXeATgltw9h+FPvDLztOCPyzlwsaGOSi2Z56sPUHTuIUbe9hXh0l4WJiJx+6DRl/n57g3md9l1CY
+dpPZkYbOJJFDn8+u3R7n6OLODxIzf0S7bkHMXWCtAbsvnsrwoYx9TYWovf/ejgrgZ1tDoi2gm23x
+31mMy4O8hruECrlWN56RECfxvVXhBRenpU/EjATiZ7Wccq1jms7P0cEkZw8Znt0TCAJGx8TrgWdH
+2lG4S+3Qaz86Ugf0OiN3IMyBcUq6Ic6kYPC8ujb5asE54oaTy3DgE1W9gCqxcPCVG0Ty8QEeJymI
+8bkw2kJ4irtIb87q9++C7jYCwmz0tWNJJfAKViS94QxYZKHO87AiQYpB3EiOnLmWwogRWO6HBYyA
+Mi6KNFos65TS0yIvyuUvBj7rXf9EGPgcEDDoY/dF1Jy3aK37wP2Yfb/3MK4CEs32d+P/Wu/VxmYu
+EK0suZHBC6l5akRu2G4tIgJEBaKIHu0nMT6LBG1hZWrc1D6x5nShb+OSGtaObUv6TCrBK7ijBXoK
+cslPUfaFjoG5hKqkVxmE2cPGxRna3wwxLWKYjND+wO2l0g3QJibGA+bypoOkyl00JGzh4rr9A1g5
+gOQUE+1jSg41XgoJ3cTpoyIUZxI3La1DTCfHKjY+nyYL8+ucsFW2knwbjwP/4QSZKOvi7o3QmoMK
+YBUG2jbQ1TLtVa1Zaa+XcjG7ROwB9YTdKtdjpLICKGUT57ij67I6SuXrks7uKyRT6MLq5kUxBjJ6
+77kItZdeY69zEwFhQPQtOwpaHxZWwU7Z22vkkO2Cg+jfrnD/swKHEhrzbgvvfakO6nxnPicHAdBR
+eLHItVL8NUVQGHDC10l/pqDxg9CcwRY2tFMA8ixB5W1deXQt63Mi3ads1A/CAt8EPK0QqUc8ILio
+0zKWaUM0vKPRExzBOfIqiKJ05+IWlIYUt9UQIdswyb1dRsy17uXsADpunBWituHoJSVkXX2zjR7h
+v+U21OviCIB1iIyb4+Ho/IMNiP/kQsHT8PxVibd/E2VHaF9odcg0FnP3N7VyWiUhUuK38V+lATer
+LXyiPtoS+Pnls9OvAKJdeoZ0tG/HOya+FsZtp20eOl2T4a2psfympjvg/EGv5+NBngkfpKXCo9gI
+CeVCRChbmXbb+51ubHKNKVGWjkOzgT+zSmW+BUH2m56KVuK7n5ejDb2i6VzUYqJnFPPbSirjgwHp
+qk1HjCalD3txU3faUEl8H8OYiN7C0owphpzl15SCHI605ZgCx8Rj8L3g3s5iytZuQdMk5OOQO+4J
+BavvCMPgTBF8QTRq9RdO9uAFtG0F2Tz90xQJYqLCT8y4MVdp1S3amp/FdHqmeTpys8LRhQTW/Nx2
+HcstzfhQ/7a3Jtyewl9+8GdpVhGhrD/HB8omEXZR28AR9AWjijh0IhaTGVzhfwWO6S6Z3td1yJj3
+G12nUMtlju6a6qE4tmlIdAyOcr10QKDtvl8pg4c1NlyrOdFBvz0YeBa5VMDC07PVS4WS7oGOnI4I
+8z1ySR0x0FNaTjWluEez//bj+E8gmrpzpyHoFzO4N3L6dq27etU/NSEtG+DcHhW7yCPhgm2gcptH
+85mrJdNvAcMHundD8TS8SIiTRQtkgBWw18b2wGQtr15LzBrO2Bm0tbSGFGCSRPJDl2mHJ4lrkJ2X
+0gIcvGGzenQtmVJNJduLb3wfPXe1Bfo/B6TS05le2Y9HT23nkNeOvH88mniJAKFWYVldRmm1DqNg
+Glcm1lE4FZO+Dr1DBRN9HxBfItxpdffmgW7HyGpu2YVhNZcvYGERS9cNMP9l/Y4velNCLSfiJxSh
+3/UnOKxMhZ6F8G+tImhX+lUVqi3rKB3v6fAh6kj8wdawc+rA79gpFqrXUKjByQQqRwVaTJ1BByGg
+K5/HlNZRN/FeSpkyibxBP+/2QL9OzDdqMmPUevKA0MwHch9JmIM6lvoUIlBZkd6DvCoG9ta0rSvJ
+bjO62nC7Yxn6iz9sfBrPdxLuh39ANNjDLodjgRJRZ9gp8u6Acd7q612pJYUei8bxrfLpNGrj5S29
+pyHUbGjeyGkShAgjNINq2iCTBdvSAKFyJYI6xT9CgAXx7t6zbp1CLgntUaKAanEkgIxRk2EWLcyC
+WsxyFSr02ho7E8xktxkoZ1fz7RzKyHNGWv7at5H7SNq40UpZaw9mCa6/p4vbY++yS7n7MzVE/YIz
+nSNEv4i7cph6vlRz+2uK3vIrEol9qUd3yj9dQ3wg5x7ClCbE3TtVQoxZDLGroMb7aGL31dS1t+Cn
+Cs5+VQ0Wc+e7QFTwLYn+X5uCOWDKxJEwP50L4KnFNSFtbiAVyFYBDUkdudsDwb/Nfk/KATjJb7sw
+e/+R1qTLkhuYyQiwKH/I5tcKMzBXukccA15aRBefz0nFgZhYCWQJnFAuPLf3Hjbkt+a8E8j9LTMf
+Xqyj6yVJE107cvQKT3KR3MM0WpguvXJOG3yP3trUk8suRaviH8ozNUXkEONb+l1BSK6MuV5AKnbz
+nST/5yNSbDTdfopVFgcglhow6/mBhNTgbVqhpqNNKAPEZo95usDp1gGWsIpa+Cad59uOLQML0UCJ
+/vLSCYR5O+NMWOQhPohpEjSEon6U47hv0WjJnbdKitQ14UvtG43Xc2q7CmFEv4nM7aFlw2T/Oxku
+LB/igun5f08JU8s2JIKo3zHJ5cogj8wM84ttX+28ZvVlL9GOfjb/gE28+5eGuZV52+T+ggpeLeZc
+9fk3b8+uhbZqsVyUVE9iL7rUXlru6tvfazuNLglBMDjadKiUbczoEEqmT4qaf2N5uO1oESp38/Oi
+4pkhkmFa7z33SMeN1+aNXRbC47ipK0hajvos072SeqnwK5rvlSlTNTYtwlSeBLMJm/odPr4qaUQG
+i08G6bPfhmCM4fIGTFxjU/UFELX5zt0GeJAQ/3+KqYfCd1OKYTrLmkE4OT5wgNzuPIFMrhQDv1Pd
+pkcaVwVmDw67mNWFYg38IFn5Ajd2YtrAgU+CabuVWDW5K6bkuMcjtNgoKrnmEkVI8x1gp0Rqy4ax
+3/bkZEXAhd7rLj49VD99xZb6rqAsKCz6nBmUMKrHvBb9OgOjsKD1VBR1C9CzW3sGRuEO1aaEDQ/8
+lkj2Qaxr6P+57cf1eWt7w6U9WExe86nqMXVkIiKIHjVVo0xG0TvQVh2WGjZdoGLsxCdN8Ar9/IqD
+dAQ3snmFFs69zhJissVbaECM4CsPItpOZCSkGCII5ckBuuLj6QBlaSGUvXX+GSrdX4fOln1x/e1D
+9TOQGYv3RgmsCagaMKWn7tlALfzFyYNusPsyCQ2IY5D2z2Y70ik7amD0W7Z8Ugw4uXMFWiLHbi6m
+m3sI+0u+ZvmMCx5FQuvvUgiOTlW9sCRfa7aoBy4MpFyreQu6LRiwKns44A/7nlqvzcSGptQ/dq+O
+X3A/TrqGADSnL4xX2VZkoU3+Jp95wgfOP0LnsdEJ69gu/Dv9EmOmBlCgE/aiBCUzO7oXGMNAlD0n
++jagqaYN0NAxMQ6Ku6JKQa5y5YvY9XCqUN09WhfibQm6Vv7sBGRi3bdo67kDELGoDL+PMg0v99Ut
+Z5yXBMMvXWXYGE84yYB7cPJ5hFQmZiWGovqHQTTTV7aKUawOzlohuNrCGNj6eQt84FR8+Y6XM83H
+uC1FKeti7WC5P3Gx0q0JOTAOW+co9uKT+RZXCPFUk7eBNAnGtcfEPz7PfmNUDhrO27uQZASeTAdw
+I/ptF+lUJwGmBbu37Lf999VM6yhoGu2ToReRbrOGlY1gu8svM32FOe+yDPd9mdAYxW9oDaJHadBr
+XUno3ag8PYIdWdH7wNTtH2PdNRzulglHdYTsY3hgQfYvU1PKmjKLW+Z2lTxWrIVctsZjhvtoofoT
+YBag1/3lNBHEPTcAB1X0sMi7DDNOvkDYGRJpihuCjCMorcfldRnXCEak8WDuW5PGpaCaMMigxIAE
+EJz3skvueU2ihoZHIysrXk/LEA9mt1V/Zom0z0cm+e+7DelhUE7nL5WvlBFxj5rHv0Dni5APAoqJ
+4rprI19KFwRCerFhl13MqsiVL39XtWJTfIUA9UGafUKF5b3WyzoAOVykczsa90mOEM0w57nz25Kn
+CbA4f/ji2MdtKG5BA7qAqszOsTldzCreD1Cvpax+NTEhi/nkDjG/DtC9ABXLrRNQzDGIdEbnMXDn
+Sm52LwDEoUkE+B2zWprJMcSqYFmar8fL8tDeFIot2RmH8YZPJil1GG9rWwp5xgucC6oiMu2FJHat
+uMHqh7ecjZFFuvrhUPLQqiUMtUzGWZQEj2w8uWBDE8kysWl4rWR2iu3TSjZc4EOtsgoHBzJchLwz
+I/3gY9eUM4d/OKKxWFHuwY2/nzpsuLgrnv9ywL9dffyb3+4PO6txiJxagXghM239S96PaVrPNWxB
+Em/pREHz7eykhp2iBxC2YXYA4zPhLYfICKmNsTlhmYoKUzmswWzPmLdKdt/zkP8klMcdETx1XkKM
+jjmFb734nCgeSuafJUym1HOAsBt4UDO6Pl0wOuoI2FDZM/45tEtDeMa7PQm67HnHzXxdnu5slEbd
+esTQWRR4b5StKEoFyJ4tBXJL3wGNQmzNzquwMjaGNevDy6XM18+dDYhcwm//G7SjO572dOKNSCv/
+ZisZ6MFAYDe2u4qbW9QgeQ+O7d5qdeIMCLS6NyQq4TYLOm71HpzOAdML7LHM55149ooCGpICFwoX
+m3zTKnskb8/FJLqmyHch8wjsTKSjOKDzv5/u94nDjNLBYKSbSKlSwhnxomO0SFqt4j/mBSFApyrH
+SsF+nFTNrUH9XaXDdwdf9NZoAQwTX/TXo0Bxg1XuCqvHHCkzqn8mqSxmjAekUMycjngQuJrhu3Lm
+B1T0MYM+rjhtKbZUxAuqRgx9sDZd2VfBilFFdc+LbLmrvY1AZEMJJDrPdripPqrUiiqASVppFUHX
++PfFIKQqWxZVPua9VuJs0i5ixyLSPw9rjtdDRKI2u4Lohb/krNFIOBVljyYrDBp5LQIJXzWNsLxc
+ZKDfvAd5KYGpa4sgAIAjixEsL+tz2MA2sA6a6Sw2fD3AqtJMVBxgvsO1cI92odNiyyR0ZVcdt8MT
+uY19+jNCq4SzKoAIYxlYc0P0ktGZn7ZLj8db9Db/SsxRvjZBhQy87zwa8lqerHrps4VeWpOMbMyG
+/Oicl0f+drEKVXcNftCjEKISBFwEdcfxVgzFdzngMLTfK8BYj8OnjRgf6veHTb3oi5r1dVNatxWw
+nVBo2KNPG8otey9/EHjJn9F+mQ/HvjigGyAFgl6+37+mg8q59wVjNbHZaoKB9XHUqXVLQJaeLueu
+u9l+3fA9Feu8OKvA3z1rHq9CApB01n/UN5qKFZSK2506NNcFW0vGGQ8VRQ1Y6FGY9oglkh5U7viM
+HZHgWbPIOKHfZntQp8Ct2VVQdQDdpn6zmZwmXcL7Zz4B/aHmwjv76MwV7NvlF+j95mzQNQFY5+fA
+nodMXQpdJc9RjT/4OyDyc54QHg5j4OKuwsidDNMmxgCv5rNs1a7kWnsTdHvTXOEvTgu7ovxbWd53
+MCRZ94rS9Mxv2HkqJuAwb17J5XW9TpLSHTIPXdTMG93yV76/5li2uvv6OHOXhs694DjXKRdHehbb
+eXyI4HYaDc/+bQJ0b3hpGKfbmAjbG7+LFbZYNSi26ISZ8jCN5gGdqctQQvJULI8tWi0rpMMw+HBF
+2N/a2CoWyP0oRCNYhYWikxGnqTZ1QFEF6GZn98rJvomVPniw0bwXBj5666jvr2m9r1RGwWRguBuF
+TOEqmXc1/CyvzDDNjxL1UMv926DpNzPH/4fDIyJ8Dkbm9GiJjXvtXOIX92uqP/mcur6NV4jkW+vB
+Rd2vav9aJGRhyih4a+YDCYj9InI8rzx74lhc3+kcgCi54RZKGjKSwgx9czSTY+ccOtZBZoDa/0nG
+Z9ajGMNqgdqswfdVg+w9zE0/SYgJ6YOQki9IrZbUwDD3LSjxEK7LXdcofLpy/pQQCIEm8QIUW52J
+mQatLwvVrnth6yqWIDwH5Hm4JnsyHYMLT/ykeTUS1FHRlKcQdQeHDFWgnnMZJ3TaV5BAwjmplxDW
+cNfl3wP1lQ+QU1T8nhlFl0NHb8GKb1t0ghwBXKs0qftNqeVd1Or+paMyxE+epDieKyzj+xJBSxnF
+6xEHNyMFbkzJ/dh7Xgh9pJj59aBQlfKuKVrRhChNloPph9VdNuMBLXx1ZWdwhhRwTrLQwB4reDJI
+rznr274/kLE1VzIQgrM7TsvyLpAFwmEZkbzrktLOFm+Yt8LgMMjN8ijCj2Tynz/EP1A9PUN/dc86
+xxFC8srl6IORr7opc+iETIYgc0zhBiAhzePGChkgrRQm8AAPcmQLa8UvTMSL6omcqmZ0Jr9j2Oiu
+dxeq57YBUSwYN+r5tzQevjdjdtr5Tpb9QF+8TIS72bZH6fXVJRNaSIm/efKGuO0s00StXjx6wTbP
+0HmNoeWmFcQEWxIOs2xnz7ULfXnVunI7TmLxxNQzjJ7ztxI6u5cXp8fFw/aoFHvXZassxXA6VjiY
+FtlPDVuih4Xif6gazZANQaFt206oN6nQ8jQWCXJPX3xpUvH6CvMxV42jopR4da2/QH0gI19qphVY
+fx1hBnIr5H7IBUM1jJ1gFS/+3K1A1pBosBLmSiTUsBV+zyusZvGhY3kNA3jaFLu+W0kzVw1EIiE2
+hUw/JSiZSZD8qRONJzQeUayobI80UIL+vxzqFzOBcMUI+Ac2lI2d9L1/GPGHb5fUne/8fyDDwGHz
+uZLB8IXFi/o1R+RFgs1kFPvvW0dPx6G/mkAhR5Usff31L15m/vFAPdnhErfLn+xY6+bAP30WnGKa
+olXmX9RONqMLZMnGUiUogsTlQXKN15eka9zmzlTHSEolbX0M3hFfHWlbGkPJj4zZHdiDcjRWuM75
+OE4l/+znate4DgHjCmAAJAHzDOeRzgICB+FcN/sMR0QASkWnUhaJKp3SyhKho7LaXgpEoYiTWD3O
+7NHgKmFhJQ80yk6LJW7cdC3avvCgHHX8w2JvB37Zc/9jEQvUFZWDZWr3rIITsXIjtBouW13TvMx1
+B/IDZN985Ryiu1OgXaTPHHbAp9mB5kiQfLEurm9WKBrU5kDR1efZHwcZpIOtJHFb6IzYucD6UKBt
+a4GI4YeFrKUMMifed+A233LakDf2b8GgK8cwUdPZOSU6vVL1dfnr8SLAdM16MjYjVtldsMMnBXFh
+xBL/ZqzhFImKkGr2WefaHaLDZeBWaOvNme9vYSlIdRJndVcdX8PbhKwW4h6WbpvfVDjvLxGk760e
+23+wmlAwHKkST8RQAJMrDAXgter3+b/YHtbFcko4xX1NsC9UFvi/zy+Zx38adlK3HRSYd8lL3q3W
+G5HHdesf/6fXorKZW1+7+LCLIhIjul21QZ2k9VJAQIo4ng81mqT9IKOJZhQldVSifZJlbbnTLv0s
+4xeVjj2zMZuRzrDC2YJE8Y3LoZG6mwDAijxJNjO0gDpnHpARbT52tgyegflWdWinU4oH7Lm9R7mH
+FqMq/+KVkjVZ2wDZ/vgO0C0vWXxM9+wltJA9xgjs+yFFwiLpCgwzMX/RXRYNEXjvZo18GVJh/Ed3
+eknIvzJiV7ZEngYuel+t9VpjoJEl5nAwJ3eZ/QYkzSTCYoHMCUzuTmUY7LIGRMOFzFcYWCevEifU
+Vt3wGHAZsI2dp1gncJxZAa9bluspHjW8hDDfnP+zfp/NQ6aYC8uXaNTzCz1hYD8J6lzZHcc9U9Ua
+Nw7zzGIbfg6FgA709k9PjJfEf4wpXyU6WwzYL64ChS58W8fQPpDA4DjLBv4Svc7b84GujV+XN9gA
+qtFkoTMhvm89HWdyZ7TMvdj06HCEkdGkkdvLk/Dityq31AZW+6D8/QrZFRGbOTvrd5bdliqOUri1
+fWXiPrMREpa4qBb9yOawBpvjjWA9+U25mozP92Rkt5r5aWzsyVr+h3SP1ZdV+MRAIGHfMi7UOCJs
+D8ujfztXDQVL7vLGK7FgmFjESeKbFejs4pelyL9AwEhAa2HHILCsMBzsdUuUvTt8NBIA2a9aeang
+rkiK/VVsgNOU926JFwwpTeNRab1VLdRFw2l0Dir9/x1crfq1zG0nR3RI9cbKifqELBZffIBQXkr3
+bU1T4DDwpHaxQoKJOYi8QEBF83iK5KoBVYZHQSIS5W5NOByZ8YcT6S+n9CcDFIXL74WWxo4Vq8s2
+5ercHHHvCXcsuHH6vKDYpHUeunaKMwarBjmHIks3BZ5o72u6N/KhcgNYGHYx5HcUkFHgsCsvMzpr
+LcBvA80PPC3fL2wvbONULpLHUmX9L8ULOkkchBzA+XRV1Bt5sgg3KEGPRo1qfXB9ndFdWkO0HKaZ
+vWI7bkMYxOf7XBk2TOd8/WhJuTL8fmYjS94d50k9dYHotxgMDM7y51U3s3D1LAXn17Fs5gl+QOEX
+7NYtArSc+T68DI0arsTvjf2uPqyit/2dplyshZwruf5ml48X3oBQh+fgkeEJzW6dK6PUklUB75+e
+At8gAwPcrP9PT97ZxepGqletGDVCuDUbOZ/YcIMFtdOJYdP/JI+EpiKb2u7Cnniwi498RiFSL9ht
+SwS7TJ3xZ5YsAowDnOCItKI9jgxmINz6fhdoAo6tULIMByRWEgoGsqHW8RHWhiAVpA3fSAb0niri
+xEN8x2Fd7Yj8D/GU++v+oqoegrjQwQIoEJjsktQFE/6kZ/lgbwsS41ZY1djrT4ETvxwkPLNBV2lF
+lTPPFtFDGgZwgWgNSeMK5pgOpF2hjwgOXFGGDxy1w8ks1ieC6aJHjApGp9THQ4GpcFAUBtsNABiL
+gjVxYCosKGZdFbvhn5Kfnq8MGOboBTrMhMrk/zmT95iqVEaZp6hX2Nsg3vWbRi4aaYlz16LLRI2v
+3XOHUCrcg9oBIhmVK3Bl5zQ8dj+q+asqrgfa+Ha4VAqUZ8q6GQXbFOBpvDp9xwiqMdeDq7446T2G
+a8jrT2oLugU0RQtYJdZGLO1cO2UwNTwXNrqXaH1SHtEF3HcRw9EyFWXGwRixTKp4/kpxA3Sviklb
+3GtIg3b5fY5xTc/01XmnIAoO167kr2G4Vu9q/OqXLkYvXmkv3TgNKdsra1U7GwfTH6hfMcVmZcRJ
+WzMV8BrxO4R0f3ilIvRG7Eb+j7PxJT1+A9cUlffBmZFpPkFruFBWYsc2Bo7p0IWmkUTkQk+bMRkb
+luy2DDWFtGp2gCKvvSlpcVJqaFCdDXl5VM3oDYi70iCqgdUPU24ZSmWQThFPtbp5llC9ukv0Kt3v
+nPPPwOaOhJ8qzVygeWUtzQASPooiwMoTFym5rnlTeTUPsAY9+7QKHfs5epGpFltlAkmSZ+0S+Qoa
+R0b3IR7CfNExJ6ZqKopkZXTrWuBtvkitU+1Mbzc0vsEpmUOpSDictClhTtBwuHd1VpRZjqHtNrOA
+VnGu/W1n8WLOaB2wvFcb7gKQ2pAwqehYKPZ1/bO5K5WUy0bCBS1uKylJGQ76IdQWtxAKl54c0bYF
+CR+N9WnAGYsGy3W/Zu+hCCsiiEI9AQFL8n5jJEnnheOAW/mt/zb5evKm9RgRJvAeeF/+Ig2uEgMV
+dy/z9SO50muJzeVn7sA/ZS6yHXaYZEnt6sJXBDzMg4ML6jpDeQTdo5uArWDWELB+rZS6/zbbxNOQ
+llcO+kJCXQiEux5jt+Hfb7V29kJFC5AGgtft1qc/3KHiMCc5LNmYa/OwAng6jiqZcK2bXQvpuVT1
+Isout68SPWiia1hhdVjBuo82auEGSRyKkMA+ItNN8fmqOtm2/mq5n6QrFSqJrTkNPH6fpzJjoM+5
+SeB5u18bXY2gkPYWEdgL+ffeu1Yj1Fj95iJ13nWrL1LMasa6LuspcfXBjMbasYUvN0ADg1JTGrwo
+Nxa8X8GJHJSG+u0EV5pcJhNL7A+gSrT9w9U6KY4XMQKOf0+ZRN601s9wr+/S+OoQwginnnXZ5Udv
+JbYZCnIIDM9N/TSm6bALRiE1iQWE5oBNUM/EK3JbIdy0gCDuhL6s2SO0SGUC23xFvtoiSBmjLJr9
+Sgwvyt5hDx4B1Iik+/PDFGyKvlc0XUImRFdBWz7ry3bM2K9J7htCWeCzT6GVAxyBsdwmaDabVKsv
+SjqmQtVMxUsdigZ+CYX/loFQJLtiyzYVvW2FdYwjeAjDdI8YZCV5AwLwinPVEfwonONRz1R79ydV
+8RPT269/VoYDdrGxLSNf+E+Gjii/LjzKKwCYgtdumdNBDoimMwpltnXJ1Qk14FyaNK8VVgGwyM5v
+B0pXWncpAwE+Zyk1h5Rm1aNtZ4cSlC0YrwPZmADB6IS6YWF3OTg3apPa8i4+f9vf82B2/tAZs8ip
+NKU1GkTlmdvXz2fT5xFYNTb7W77hGg+h/2hBsrDgq1n5xbI5B4cLJDjoFvcBqrCORMb6V0s6OWj/
+eExE4RDX1kQ9CDcC8tJoOt8Ruo/xf5JNEAsp6Hnwr+bwuhmIvW2CKrQgQmxVvPoAIhyUrxcWLUdG
+yWyfELDgVd6zTQdLxZaAZZBpFXIe2/RHIwGbz8xlZuGYI7FXX7qi1LyBjfdvPfm2bhGoazlncE0k
+anJshcHnmI8qmr+NsW2yyGjCZlYKSoDvMrQQuT9yPfMudq9dCKfG7KCBrIb8XuUWYC2FDXXI7E8d
+A5HPN4eRfVEBFeOHvRIZD5HiOqKG1ibcN0dsgjFmausw7pAGTJXrP222FS5IAVdtVBjuJ1OR2lmQ
+VOoRchEIuSqELwiEB+asme56D2w3touBKweonMGwTSyDXoFmTRwgW5JBSzxOVywCsH4YnpglWanc
+BBZFr1OtKfx3eLjVyNA/O20jEfKehgW6A2Ax0xX27TJE

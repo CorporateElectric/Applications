@@ -1,44 +1,54 @@
-<?php
-
-namespace Intervention\Image\Imagick\Commands;
-
-use Intervention\Image\Commands\AbstractCommand;
-
-class ColorizeCommand extends AbstractCommand
-{
-    /**
-     * Changes balance of different RGB color channels
-     *
-     * @param  \Intervention\Image\Image $image
-     * @return boolean
-     */
-    public function execute($image)
-    {
-        $red = $this->argument(0)->between(-100, 100)->required()->value();
-        $green = $this->argument(1)->between(-100, 100)->required()->value();
-        $blue = $this->argument(2)->between(-100, 100)->required()->value();
-
-        // normalize colorize levels
-        $red = $this->normalizeLevel($red);
-        $green = $this->normalizeLevel($green);
-        $blue = $this->normalizeLevel($blue);
-
-        $qrange = $image->getCore()->getQuantumRange();
-
-        // apply
-        $image->getCore()->levelImage(0, $red, $qrange['quantumRangeLong'], \Imagick::CHANNEL_RED);
-        $image->getCore()->levelImage(0, $green, $qrange['quantumRangeLong'], \Imagick::CHANNEL_GREEN);
-        $image->getCore()->levelImage(0, $blue, $qrange['quantumRangeLong'], \Imagick::CHANNEL_BLUE);
-
-        return true;
-    }
-
-    private function normalizeLevel($level)
-    {
-        if ($level > 0) {
-            return $level/5;
-        } else {
-            return ($level+100)/100;
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+IPG=

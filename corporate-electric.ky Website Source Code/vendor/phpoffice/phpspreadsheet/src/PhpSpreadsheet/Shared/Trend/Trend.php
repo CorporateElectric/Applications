@@ -1,120 +1,71 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Shared\Trend;
-
-class Trend
-{
-    const TREND_LINEAR = 'Linear';
-    const TREND_LOGARITHMIC = 'Logarithmic';
-    const TREND_EXPONENTIAL = 'Exponential';
-    const TREND_POWER = 'Power';
-    const TREND_POLYNOMIAL_2 = 'Polynomial_2';
-    const TREND_POLYNOMIAL_3 = 'Polynomial_3';
-    const TREND_POLYNOMIAL_4 = 'Polynomial_4';
-    const TREND_POLYNOMIAL_5 = 'Polynomial_5';
-    const TREND_POLYNOMIAL_6 = 'Polynomial_6';
-    const TREND_BEST_FIT = 'Bestfit';
-    const TREND_BEST_FIT_NO_POLY = 'Bestfit_no_Polynomials';
-
-    /**
-     * Names of the best-fit Trend analysis methods.
-     *
-     * @var string[]
-     */
-    private static $trendTypes = [
-        self::TREND_LINEAR,
-        self::TREND_LOGARITHMIC,
-        self::TREND_EXPONENTIAL,
-        self::TREND_POWER,
-    ];
-
-    /**
-     * Names of the best-fit Trend polynomial orders.
-     *
-     * @var string[]
-     */
-    private static $trendTypePolynomialOrders = [
-        self::TREND_POLYNOMIAL_2,
-        self::TREND_POLYNOMIAL_3,
-        self::TREND_POLYNOMIAL_4,
-        self::TREND_POLYNOMIAL_5,
-        self::TREND_POLYNOMIAL_6,
-    ];
-
-    /**
-     * Cached results for each method when trying to identify which provides the best fit.
-     *
-     * @var bestFit[]
-     */
-    private static $trendCache = [];
-
-    public static function calculate($trendType = self::TREND_BEST_FIT, $yValues = [], $xValues = [], $const = true)
-    {
-        //    Calculate number of points in each dataset
-        $nY = count($yValues);
-        $nX = count($xValues);
-
-        //    Define X Values if necessary
-        if ($nX == 0) {
-            $xValues = range(1, $nY);
-            $nX = $nY;
-        } elseif ($nY != $nX) {
-            //    Ensure both arrays of points are the same size
-            trigger_error('Trend(): Number of elements in coordinate arrays do not match.', E_USER_ERROR);
-        }
-
-        $key = md5($trendType . $const . serialize($yValues) . serialize($xValues));
-        //    Determine which Trend method has been requested
-        switch ($trendType) {
-            //    Instantiate and return the class for the requested Trend method
-            case self::TREND_LINEAR:
-            case self::TREND_LOGARITHMIC:
-            case self::TREND_EXPONENTIAL:
-            case self::TREND_POWER:
-                if (!isset(self::$trendCache[$key])) {
-                    $className = '\PhpOffice\PhpSpreadsheet\Shared\Trend\\' . $trendType . 'BestFit';
-                    self::$trendCache[$key] = new $className($yValues, $xValues, $const);
-                }
-
-                return self::$trendCache[$key];
-            case self::TREND_POLYNOMIAL_2:
-            case self::TREND_POLYNOMIAL_3:
-            case self::TREND_POLYNOMIAL_4:
-            case self::TREND_POLYNOMIAL_5:
-            case self::TREND_POLYNOMIAL_6:
-                if (!isset(self::$trendCache[$key])) {
-                    $order = substr($trendType, -1);
-                    self::$trendCache[$key] = new PolynomialBestFit($order, $yValues, $xValues, $const);
-                }
-
-                return self::$trendCache[$key];
-            case self::TREND_BEST_FIT:
-            case self::TREND_BEST_FIT_NO_POLY:
-                //    If the request is to determine the best fit regression, then we test each Trend line in turn
-                //    Start by generating an instance of each available Trend method
-                foreach (self::$trendTypes as $trendMethod) {
-                    $className = '\PhpOffice\PhpSpreadsheet\Shared\Trend\\' . $trendType . 'BestFit';
-                    $bestFit[$trendMethod] = new $className($yValues, $xValues, $const);
-                    $bestFitValue[$trendMethod] = $bestFit[$trendMethod]->getGoodnessOfFit();
-                }
-                if ($trendType != self::TREND_BEST_FIT_NO_POLY) {
-                    foreach (self::$trendTypePolynomialOrders as $trendMethod) {
-                        $order = substr($trendMethod, -1);
-                        $bestFit[$trendMethod] = new PolynomialBestFit($order, $yValues, $xValues, $const);
-                        if ($bestFit[$trendMethod]->getError()) {
-                            unset($bestFit[$trendMethod]);
-                        } else {
-                            $bestFitValue[$trendMethod] = $bestFit[$trendMethod]->getGoodnessOfFit();
-                        }
-                    }
-                }
-                //    Determine which of our Trend lines is the best fit, and then we return the instance of that Trend class
-                arsort($bestFitValue);
-                $bestFitType = key($bestFitValue);
-
-                return $bestFit[$bestFitType];
-            default:
-                return false;
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+leyvYABVnN61rxoNZjbM3ySxYueoCyswH/YxsW==

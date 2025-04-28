@@ -1,205 +1,65 @@
-<?php
-
-namespace League\Flysystem;
-
-/**
- * @deprecated
- */
-class File extends Handler
-{
-    /**
-     * Check whether the file exists.
-     *
-     * @return bool
-     */
-    public function exists()
-    {
-        return $this->filesystem->has($this->path);
-    }
-
-    /**
-     * Read the file.
-     *
-     * @return string|false file contents
-     */
-    public function read()
-    {
-        return $this->filesystem->read($this->path);
-    }
-
-    /**
-     * Read the file as a stream.
-     *
-     * @return resource|false file stream
-     */
-    public function readStream()
-    {
-        return $this->filesystem->readStream($this->path);
-    }
-
-    /**
-     * Write the new file.
-     *
-     * @param string $content
-     *
-     * @return bool success boolean
-     */
-    public function write($content)
-    {
-        return $this->filesystem->write($this->path, $content);
-    }
-
-    /**
-     * Write the new file using a stream.
-     *
-     * @param resource $resource
-     *
-     * @return bool success boolean
-     */
-    public function writeStream($resource)
-    {
-        return $this->filesystem->writeStream($this->path, $resource);
-    }
-
-    /**
-     * Update the file contents.
-     *
-     * @param string $content
-     *
-     * @return bool success boolean
-     */
-    public function update($content)
-    {
-        return $this->filesystem->update($this->path, $content);
-    }
-
-    /**
-     * Update the file contents with a stream.
-     *
-     * @param resource $resource
-     *
-     * @return bool success boolean
-     */
-    public function updateStream($resource)
-    {
-        return $this->filesystem->updateStream($this->path, $resource);
-    }
-
-    /**
-     * Create the file or update if exists.
-     *
-     * @param string $content
-     *
-     * @return bool success boolean
-     */
-    public function put($content)
-    {
-        return $this->filesystem->put($this->path, $content);
-    }
-
-    /**
-     * Create the file or update if exists using a stream.
-     *
-     * @param resource $resource
-     *
-     * @return bool success boolean
-     */
-    public function putStream($resource)
-    {
-        return $this->filesystem->putStream($this->path, $resource);
-    }
-
-    /**
-     * Rename the file.
-     *
-     * @param string $newpath
-     *
-     * @return bool success boolean
-     */
-    public function rename($newpath)
-    {
-        if ($this->filesystem->rename($this->path, $newpath)) {
-            $this->path = $newpath;
-
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Copy the file.
-     *
-     * @param string $newpath
-     *
-     * @return File|false new file or false
-     */
-    public function copy($newpath)
-    {
-        if ($this->filesystem->copy($this->path, $newpath)) {
-            return new File($this->filesystem, $newpath);
-        }
-
-        return false;
-    }
-
-    /**
-     * Get the file's timestamp.
-     *
-     * @return string|false The timestamp or false on failure.
-     */
-    public function getTimestamp()
-    {
-        return $this->filesystem->getTimestamp($this->path);
-    }
-
-    /**
-     * Get the file's mimetype.
-     *
-     * @return string|false The file mime-type or false on failure.
-     */
-    public function getMimetype()
-    {
-        return $this->filesystem->getMimetype($this->path);
-    }
-
-    /**
-     * Get the file's visibility.
-     *
-     * @return string|false The visibility (public|private) or false on failure.
-     */
-    public function getVisibility()
-    {
-        return $this->filesystem->getVisibility($this->path);
-    }
-
-    /**
-     * Get the file's metadata.
-     *
-     * @return array|false The file metadata or false on failure.
-     */
-    public function getMetadata()
-    {
-        return $this->filesystem->getMetadata($this->path);
-    }
-
-    /**
-     * Get the file size.
-     *
-     * @return int|false The file size or false on failure.
-     */
-    public function getSize()
-    {
-        return $this->filesystem->getSize($this->path);
-    }
-
-    /**
-     * Delete the file.
-     *
-     * @return bool success boolean
-     */
-    public function delete()
-    {
-        return $this->filesystem->delete($this->path);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+Y6dj4QptoeDRB1Nm4mqkHkfheVbAJrC=

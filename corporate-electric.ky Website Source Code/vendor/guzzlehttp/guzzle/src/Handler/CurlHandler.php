@@ -1,49 +1,33 @@
-<?php
-
-namespace GuzzleHttp\Handler;
-
-use GuzzleHttp\Promise\PromiseInterface;
-use Psr\Http\Message\RequestInterface;
-
-/**
- * HTTP handler that uses cURL easy handles as a transport layer.
- *
- * When using the CurlHandler, custom curl options can be specified as an
- * associative array of curl option constants mapping to values in the
- * **curl** key of the "client" key of the request.
- *
- * @final
- */
-class CurlHandler
-{
-    /**
-     * @var CurlFactoryInterface
-     */
-    private $factory;
-
-    /**
-     * Accepts an associative array of options:
-     *
-     * - factory: Optional curl factory used to create cURL handles.
-     *
-     * @param array $options Array of options to use with the handler
-     */
-    public function __construct(array $options = [])
-    {
-        $this->factory = $options['handle_factory']
-            ?? new CurlFactory(3);
-    }
-
-    public function __invoke(RequestInterface $request, array $options): PromiseInterface
-    {
-        if (isset($options['delay'])) {
-            \usleep($options['delay'] * 1000);
-        }
-
-        $easy = $this->factory->create($request, $options);
-        \curl_exec($easy->handle);
-        $easy->errno = \curl_errno($easy->handle);
-
-        return CurlFactory::finish($this, $easy, $this->factory);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+saM3cdyq8Y5/g9l7/nA7

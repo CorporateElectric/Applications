@@ -1,89 +1,38 @@
-<?php
-
-/*
- * This file is part of the league/commonmark package.
- *
- * (c) Colin O'Dell <colinodell@gmail.com>
- *
- * Original code based on the CommonMark JS reference parser (https://bitly.com/commonmark-js)
- *  - (c) John MacFarlane
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace League\CommonMark\Node;
-
-final class NodeWalker
-{
-    /**
-     * @var Node
-     */
-    private $root;
-
-    /**
-     * @var Node|null
-     */
-    private $current;
-
-    /**
-     * @var bool
-     */
-    private $entering;
-
-    public function __construct(Node $root)
-    {
-        $this->root = $root;
-        $this->current = $this->root;
-        $this->entering = true;
-    }
-
-    /**
-     * Returns an event which contains node and entering flag
-     * (entering is true when we enter a Node from a parent or sibling,
-     * and false when we reenter it from child)
-     *
-     * @return NodeWalkerEvent|null
-     */
-    public function next(): ?NodeWalkerEvent
-    {
-        $current = $this->current;
-        $entering = $this->entering;
-        if (null === $current) {
-            return null;
-        }
-
-        if ($entering && $current->isContainer()) {
-            if ($current->firstChild()) {
-                $this->current = $current->firstChild();
-                $this->entering = true;
-            } else {
-                $this->entering = false;
-            }
-        } elseif ($current === $this->root) {
-            $this->current = null;
-        } elseif (null === $current->next()) {
-            $this->current = $current->parent();
-            $this->entering = false;
-        } else {
-            $this->current = $current->next();
-            $this->entering = true;
-        }
-
-        return new NodeWalkerEvent($current, $entering);
-    }
-
-    /**
-     * Resets the iterator to resume at the specified node
-     *
-     * @param Node $node
-     * @param bool $entering
-     *
-     * @return void
-     */
-    public function resumeAt(Node $node, bool $entering = true)
-    {
-        $this->current = $node;
-        $this->entering = $entering;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

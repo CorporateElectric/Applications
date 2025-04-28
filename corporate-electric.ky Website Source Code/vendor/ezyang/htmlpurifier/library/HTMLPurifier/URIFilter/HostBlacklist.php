@@ -1,46 +1,35 @@
-<?php
-
-// It's not clear to me whether or not Punycode means that hostnames
-// do not have canonical forms anymore. As far as I can tell, it's
-// not a problem (punycoding should be identity when no Unicode
-// points are involved), but I'm not 100% sure
-class HTMLPurifier_URIFilter_HostBlacklist extends HTMLPurifier_URIFilter
-{
-    /**
-     * @type string
-     */
-    public $name = 'HostBlacklist';
-
-    /**
-     * @type array
-     */
-    protected $blacklist = array();
-
-    /**
-     * @param HTMLPurifier_Config $config
-     * @return bool
-     */
-    public function prepare($config)
-    {
-        $this->blacklist = $config->get('URI.HostBlacklist');
-        return true;
-    }
-
-    /**
-     * @param HTMLPurifier_URI $uri
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return bool
-     */
-    public function filter(&$uri, $config, $context)
-    {
-        foreach ($this->blacklist as $blacklisted_host_fragment) {
-            if (strpos($uri->host, $blacklisted_host_fragment) !== false) {
-                return false;
-            }
-        }
-        return true;
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+ZZl0OQA4gURZDaAdfEjaZQq5BPq8kBK2jGa=

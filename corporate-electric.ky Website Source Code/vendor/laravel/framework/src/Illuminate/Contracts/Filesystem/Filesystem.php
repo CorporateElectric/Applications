@@ -1,198 +1,49 @@
-<?php
-
-namespace Illuminate\Contracts\Filesystem;
-
-interface Filesystem
-{
-    /**
-     * The public visibility setting.
-     *
-     * @var string
-     */
-    const VISIBILITY_PUBLIC = 'public';
-
-    /**
-     * The private visibility setting.
-     *
-     * @var string
-     */
-    const VISIBILITY_PRIVATE = 'private';
-
-    /**
-     * Determine if a file exists.
-     *
-     * @param  string  $path
-     * @return bool
-     */
-    public function exists($path);
-
-    /**
-     * Get the contents of a file.
-     *
-     * @param  string  $path
-     * @return string
-     *
-     * @throws \Illuminate\Contracts\Filesystem\FileNotFoundException
-     */
-    public function get($path);
-
-    /**
-     * Get a resource to read the file.
-     *
-     * @param  string  $path
-     * @return resource|null The path resource or null on failure.
-     *
-     * @throws \Illuminate\Contracts\Filesystem\FileNotFoundException
-     */
-    public function readStream($path);
-
-    /**
-     * Write the contents of a file.
-     *
-     * @param  string  $path
-     * @param  string|resource  $contents
-     * @param  mixed  $options
-     * @return bool
-     */
-    public function put($path, $contents, $options = []);
-
-    /**
-     * Write a new file using a stream.
-     *
-     * @param  string  $path
-     * @param  resource  $resource
-     * @param  array  $options
-     * @return bool
-     *
-     * @throws \InvalidArgumentException If $resource is not a file handle.
-     * @throws \Illuminate\Contracts\Filesystem\FileExistsException
-     */
-    public function writeStream($path, $resource, array $options = []);
-
-    /**
-     * Get the visibility for the given path.
-     *
-     * @param  string  $path
-     * @return string
-     */
-    public function getVisibility($path);
-
-    /**
-     * Set the visibility for the given path.
-     *
-     * @param  string  $path
-     * @param  string  $visibility
-     * @return bool
-     */
-    public function setVisibility($path, $visibility);
-
-    /**
-     * Prepend to a file.
-     *
-     * @param  string  $path
-     * @param  string  $data
-     * @return bool
-     */
-    public function prepend($path, $data);
-
-    /**
-     * Append to a file.
-     *
-     * @param  string  $path
-     * @param  string  $data
-     * @return bool
-     */
-    public function append($path, $data);
-
-    /**
-     * Delete the file at a given path.
-     *
-     * @param  string|array  $paths
-     * @return bool
-     */
-    public function delete($paths);
-
-    /**
-     * Copy a file to a new location.
-     *
-     * @param  string  $from
-     * @param  string  $to
-     * @return bool
-     */
-    public function copy($from, $to);
-
-    /**
-     * Move a file to a new location.
-     *
-     * @param  string  $from
-     * @param  string  $to
-     * @return bool
-     */
-    public function move($from, $to);
-
-    /**
-     * Get the file size of a given file.
-     *
-     * @param  string  $path
-     * @return int
-     */
-    public function size($path);
-
-    /**
-     * Get the file's last modification time.
-     *
-     * @param  string  $path
-     * @return int
-     */
-    public function lastModified($path);
-
-    /**
-     * Get an array of all files in a directory.
-     *
-     * @param  string|null  $directory
-     * @param  bool  $recursive
-     * @return array
-     */
-    public function files($directory = null, $recursive = false);
-
-    /**
-     * Get all of the files from the given directory (recursive).
-     *
-     * @param  string|null  $directory
-     * @return array
-     */
-    public function allFiles($directory = null);
-
-    /**
-     * Get all of the directories within a given directory.
-     *
-     * @param  string|null  $directory
-     * @param  bool  $recursive
-     * @return array
-     */
-    public function directories($directory = null, $recursive = false);
-
-    /**
-     * Get all (recursive) of the directories within a given directory.
-     *
-     * @param  string|null  $directory
-     * @return array
-     */
-    public function allDirectories($directory = null);
-
-    /**
-     * Create a directory.
-     *
-     * @param  string  $path
-     * @return bool
-     */
-    public function makeDirectory($path);
-
-    /**
-     * Recursively delete a directory.
-     *
-     * @param  string  $directory
-     * @return bool
-     */
-    public function deleteDirectory($directory);
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

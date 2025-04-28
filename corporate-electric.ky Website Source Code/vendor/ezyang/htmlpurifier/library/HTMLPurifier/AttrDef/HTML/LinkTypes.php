@@ -1,72 +1,45 @@
-<?php
-
-/**
- * Validates a rel/rev link attribute against a directive of allowed values
- * @note We cannot use Enum because link types allow multiple
- *       values.
- * @note Assumes link types are ASCII text
- */
-class HTMLPurifier_AttrDef_HTML_LinkTypes extends HTMLPurifier_AttrDef
-{
-
-    /**
-     * Name config attribute to pull.
-     * @type string
-     */
-    protected $name;
-
-    /**
-     * @param string $name
-     */
-    public function __construct($name)
-    {
-        $configLookup = array(
-            'rel' => 'AllowedRel',
-            'rev' => 'AllowedRev'
-        );
-        if (!isset($configLookup[$name])) {
-            trigger_error(
-                'Unrecognized attribute name for link ' .
-                'relationship.',
-                E_USER_ERROR
-            );
-            return;
-        }
-        $this->name = $configLookup[$name];
-    }
-
-    /**
-     * @param string $string
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return bool|string
-     */
-    public function validate($string, $config, $context)
-    {
-        $allowed = $config->get('Attr.' . $this->name);
-        if (empty($allowed)) {
-            return false;
-        }
-
-        $string = $this->parseCDATA($string);
-        $parts = explode(' ', $string);
-
-        // lookup to prevent duplicates
-        $ret_lookup = array();
-        foreach ($parts as $part) {
-            $part = strtolower(trim($part));
-            if (!isset($allowed[$part])) {
-                continue;
-            }
-            $ret_lookup[$part] = true;
-        }
-
-        if (empty($ret_lookup)) {
-            return false;
-        }
-        $string = implode(' ', array_keys($ret_lookup));
-        return $string;
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

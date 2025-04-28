@@ -1,130 +1,51 @@
-<?php
-
-namespace Lavary\Menu;
-
-class Link
-{
-    /**
-     * Reference to the menu builder.
-     *
-     * @var Builder | null
-     */
-    protected $builder;
-
-    /**
-     * Path Information.
-     *
-     * @var array
-     */
-    protected $path = array();
-
-    /**
-     * Explicit href for the link.
-     *
-     * @var string
-     */
-    protected $href;
-
-    /**
-     * Link attributes.
-     *
-     * @var array
-     */
-    public $attributes = array();
-
-    /**
-     * Flag for active state.
-     *
-     * @var bool
-     */
-    public $isActive = false;
-
-    /**
-     * Creates a hyper link instance.
-     *
-     * @param array   $path
-     * @param Builder $builder
-     */
-    public function __construct($path = array(), $builder = null)
-    {
-        $this->path = $path;
-        $this->builder = $builder;
-    }
-
-    /**
-     * Make the anchor active.
-     *
-     * @return Link
-     */
-    public function active()
-    {
-        $this->attributes['class'] = Builder::formatGroupClass(array('class' => $this->builder ? $this->builder->conf('active_class') : null), $this->attributes);
-        $this->isActive = true;
-
-        return $this;
-    }
-
-    /**
-     * Set Anchor's href property.
-     *
-     * @return Link
-     */
-    public function href($href)
-    {
-        $this->href = $href;
-
-        return $this;
-    }
-
-    /**
-     * Make the url secure.
-     *
-     * @return Link
-     */
-    public function secure()
-    {
-        $this->path['secure'] = true;
-
-        return $this;
-    }
-
-    /***
-     * Add attributes to the link.
-     *
-     * @param mixed
-     * @return $this|array|mixed|null
-     */
-    public function attr()
-    {
-        $args = func_get_args();
-
-        if (isset($args[0]) && is_array($args[0])) {
-            $this->attributes = array_merge($this->attributes, $args[0]);
-
-            return $this;
-        } elseif (isset($args[0]) && isset($args[1])) {
-            $this->attributes[$args[0]] = $args[1];
-
-            return $this;
-        } elseif (isset($args[0])) {
-            return isset($this->attributes[$args[0]]) ? $this->attributes[$args[0]] : null;
-        }
-
-        return $this->attributes;
-    }
-
-    /***
-     * Check for a method of the same name if the attribute doesn't exist.
-     *
-     * @param $prop
-     * @return Link|string
-     */
-    public function __get($prop)
-    {
-        if (property_exists($this, $prop)) {
-            return $this->$prop;
-        }
-
-        return $this->attr($prop);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+qfWM

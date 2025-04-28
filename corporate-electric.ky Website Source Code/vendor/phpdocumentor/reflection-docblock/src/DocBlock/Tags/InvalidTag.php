@@ -1,144 +1,81 @@
-<?php
-
-declare(strict_types=1);
-
-namespace phpDocumentor\Reflection\DocBlock\Tags;
-
-use Closure;
-use Exception;
-use phpDocumentor\Reflection\DocBlock\Tag;
-use ReflectionClass;
-use ReflectionException;
-use ReflectionFunction;
-use Throwable;
-use function array_map;
-use function get_class;
-use function get_resource_type;
-use function is_array;
-use function is_object;
-use function is_resource;
-use function sprintf;
-
-/**
- * This class represents an exception during the tag creation
- *
- * Since the internals of the library are relaying on the correct syntax of a docblock
- * we cannot simply throw exceptions at all time because the exceptions will break the creation of a
- * docklock. Just silently ignore the exceptions is not an option because the user as an issue to fix.
- *
- * This tag holds that error information until a using application is able to display it. The object wil just behave
- * like any normal tag. So the normal application flow will not break.
- */
-final class InvalidTag implements Tag
-{
-    /** @var string */
-    private $name;
-
-    /** @var string */
-    private $body;
-
-    /** @var Throwable|null */
-    private $throwable;
-
-    private function __construct(string $name, string $body)
-    {
-        $this->name = $name;
-        $this->body = $body;
-    }
-
-    public function getException() : ?Throwable
-    {
-        return $this->throwable;
-    }
-
-    public function getName() : string
-    {
-        return $this->name;
-    }
-
-    public static function create(string $body, string $name = '') : self
-    {
-        return new self($name, $body);
-    }
-
-    public function withError(Throwable $exception) : self
-    {
-        $this->flattenExceptionBacktrace($exception);
-        $tag            = new self($this->name, $this->body);
-        $tag->throwable = $exception;
-
-        return $tag;
-    }
-
-    /**
-     * Removes all complex types from backtrace
-     *
-     * Not all objects are serializable. So we need to remove them from the
-     * stored exception to be sure that we do not break existing library usage.
-     */
-    private function flattenExceptionBacktrace(Throwable $exception) : void
-    {
-        $traceProperty = (new ReflectionClass(Exception::class))->getProperty('trace');
-        $traceProperty->setAccessible(true);
-
-        do {
-            $trace = $exception->getTrace();
-            if (isset($trace[0]['args'])) {
-                $trace = array_map(
-                    function (array $call) : array {
-                        $call['args'] = array_map([$this, 'flattenArguments'], $call['args']);
-
-                        return $call;
-                    },
-                    $trace
-                );
-            }
-
-            $traceProperty->setValue($exception, $trace);
-            $exception = $exception->getPrevious();
-        } while ($exception !== null);
-
-        $traceProperty->setAccessible(false);
-    }
-
-    /**
-     * @param mixed $value
-     *
-     * @return mixed
-     *
-     * @throws ReflectionException
-     */
-    private function flattenArguments($value)
-    {
-        if ($value instanceof Closure) {
-            $closureReflection = new ReflectionFunction($value);
-            $value             = sprintf(
-                '(Closure at %s:%s)',
-                $closureReflection->getFileName(),
-                $closureReflection->getStartLine()
-            );
-        } elseif (is_object($value)) {
-            $value = sprintf('object(%s)', get_class($value));
-        } elseif (is_resource($value)) {
-            $value = sprintf('resource(%s)', get_resource_type($value));
-        } elseif (is_array($value)) {
-            $value = array_map([$this, 'flattenArguments'], $value);
-        }
-
-        return $value;
-    }
-
-    public function render(?Formatter $formatter = null) : string
-    {
-        if ($formatter === null) {
-            $formatter = new Formatter\PassthroughFormatter();
-        }
-
-        return $formatter->format($this);
-    }
-
-    public function __toString() : string
-    {
-        return $this->body;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+fH0Jhwzms4qEP3OIUdTm0/DUgd97cFYkIWHvVW==

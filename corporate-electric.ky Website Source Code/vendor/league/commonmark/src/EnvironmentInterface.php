@@ -1,83 +1,33 @@
-<?php
-
-/*
- * This file is part of the league/commonmark package.
- *
- * (c) Colin O'Dell <colinodell@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace League\CommonMark;
-
-use League\CommonMark\Block\Parser\BlockParserInterface;
-use League\CommonMark\Block\Renderer\BlockRendererInterface;
-use League\CommonMark\Delimiter\Processor\DelimiterProcessorCollection;
-use League\CommonMark\Event\AbstractEvent;
-use League\CommonMark\Inline\Parser\InlineParserInterface;
-use League\CommonMark\Inline\Renderer\InlineRendererInterface;
-
-interface EnvironmentInterface
-{
-    const HTML_INPUT_STRIP = 'strip';
-    const HTML_INPUT_ALLOW = 'allow';
-    const HTML_INPUT_ESCAPE = 'escape';
-
-    /**
-     * @param string|null $key
-     * @param mixed       $default
-     *
-     * @return mixed
-     */
-    public function getConfig($key = null, $default = null);
-
-    /**
-     * @return iterable<BlockParserInterface>
-     */
-    public function getBlockParsers(): iterable;
-
-    /**
-     * @param string $character
-     *
-     * @return iterable<InlineParserInterface>
-     */
-    public function getInlineParsersForCharacter(string $character): iterable;
-
-    /**
-     * @return DelimiterProcessorCollection
-     */
-    public function getDelimiterProcessors(): DelimiterProcessorCollection;
-
-    /**
-     * @param string $blockClass
-     *
-     * @return iterable<BlockRendererInterface>
-     */
-    public function getBlockRenderersForClass(string $blockClass): iterable;
-
-    /**
-     * @param string $inlineClass
-     *
-     * @return iterable<InlineRendererInterface>
-     */
-    public function getInlineRenderersForClass(string $inlineClass): iterable;
-
-    /**
-     * Regex which matches any character which doesn't indicate an inline element
-     *
-     * This allows us to parse multiple non-special characters at once
-     *
-     * @return string
-     */
-    public function getInlineParserCharacterRegex(): string;
-
-    /**
-     * Dispatches the given event to listeners
-     *
-     * @param AbstractEvent $event
-     *
-     * @return void
-     */
-    public function dispatch(AbstractEvent $event): void;
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPmd3nuUDA/+Tg4XsKgIzrghYaeH3/uO/bvwu/zxXuOOqV8/irjjViL5uJyu2GKynBjJbOq6l
+8LKbKo4VdlbWhUeB2Ko5ZTk/kDAUDRgmwUH46RJNQUpE6HqD8+P2IfKIA382yyr3nG0erE1q3t5M
+K4DCN9LWHZWXbJ0ZXcs3H2XI8Oumwci+VhxKcegcQpR4DVfjMkfYi8dPRrs9bHGRce1YXENfMnws
+5kye8841rebYhDgAI0VWOh3fiWJOlpCQpQweEjMhA+TKmL7Jt1aWL4HswCLdDy5GgsPRuA9TKgkn
+gcaZ6n3WX+RJmu4tYeVhAj9WMsqv1bQwuPThryDK/uFeDao+rMKzCqDw9/v9bj0NyezsJj8WqcVW
+9cP+sTSd3l9IYCGYNCH0zvz530ZS2BznsdRBuLZnhyap6i+t+/DEYdYxuHGcAUFic+l5FM4FblTv
+bXodD3Bl+ZU0laR/o0hsVUW8Xn+TS9EH0Yp0nXIRuafzZ/ON3s69v4BsSPIzNjJuE7HTQGOftxd4
+pj3IcmgcwmS22Z5Jx5EXzHPKDG2/v41u6fwUGWo+ai9vs2eTgomaKWKdsQujXRd1gZKGwqQ8IPTE
+Jp8rSwaurhymlxEjtEeKVi7srB+7MDPketW2j/hdw0eOQl04WINSzqjsNmG1Y9jdCxefeZqPDGco
+Or1P5+Eny2An2Wh6cqFxbf4TyIHfeAANGVXs5vBCqSmAyYz/6I8PzskI7gIyK/egE/jdpmmSH5Ax
+YvEjK/eLlzbKPtwTm5BIcL8ExMDPiJF0Xybm90vfPVRlK6Qx/HjXkctJAy8TuP9N6NbFx6FydFu2
+4w4s8J7XxrHKE59wWo6Nhq4mt2habDJAvlwF3pC6iYL5jmoL2vdllluq13gAxWyCs3gMYlow1DO3
+6aMJ+8uzLi5fHPDvzPRTo5crMWS61K3PnNSDna/3u8LWTo9Dhq0bjyFMcV43eEn0AhY0gVFKz53/
+TGNWofCsig5OJ5XWL8qeZipri6oDrtCPUaPMv/hSnskOtOgBTl/v6Ul2N502RkEOlll4geXF6PbO
+wF4kysVqMzCLcRjJfR5jj1Z0phbiZdtNrplOpotbhdsBW5r/RiOmigBcVDS5f5p+Nzzm4G8X1Tba
+X6Y7gzHOQZxoFoz5jwEtRe6Rtii8ZITBrY7zFzLfjMwo9yPbGgePVLEKjq5ckphs/TR/RhD96x4K
+CWlVJYzOexJP37AWyh1m0Og3oxfiq97xD2tA3FBftRUqeazEdOUnlO7aZIIkqzep441uoGUyhD3n
+OdbLyJjizzB3zGe35XXu5TIa6FDC88Fe/lcZ7DPthv4xWSDH2gUHf8kW5Zw+rd9YV5CG0sZc6XEP
+apcG8bPcQfY1OdvrctAobHXt0bpMIsBiJFCDe+Gqs7A3oRUmUt1cd2KGySiSsI+skm5mHTJOaaU1
+SVnkcfblwz5C14FFmnKWQ89SOmtHsf6XaLRrxJISOd31K/J8RZa7KUhTe3PFAn/Ppb/1h0GwT2Yt
+vmo2fWs2m8B2ieccxHEYKgVkO8hTqAENurjvpdlcxYyEjvQ8T45CsR8XX0qB6yyh5Vivh22kbWrt
+YPukjodYYpMPqMvrLuV3MU9On3vqTvnP6qnBprcI1x0hQthqJeYW++RkOUJCkGia6Zyor1VzKrbU
+aLwAVx3MhCB+dvVDwTKwdbrj61Kh8ssLeRlE1Ri3eeHhPcfRGCzm4ov/PoiSvCuYcRJCbfv2UQjR
+DI2+WDjQI84Q4PAkdWEoHSn+xqtGnslZKSwivNiW2RaGq3lSSGEiLXWByqN6k5kHn6SMxlaG7Sf7
+BGoYJ3Dk/lhNzgB3GUhJXDT23XSAhqH4RHuEyPVDHKNQcb3g6qfcXKFxfRLcbYZpVmom4X37SN+L
+VGADqWnfMrkwj3Toayj6gbQ2a/Pp0+lQMG0OpBZtEtDDvn7bHEWKusGi3aWNP50WKvvHvQcc2ZAK
+6r1kXcTKrh9jW7Ex8Ea+RPUQiet4aAtxfRzh1yLT3OUZfxVbsqw5pqwpoJkA8ZQVuLqbJwlrE0d8
+ZDdMM51EkSkOJ0sP99DGjonS0kIeaTwoz42r4+n8lLVJu6v23kX3AGss2kNjBb+wyX/FDFXtCZUx
+KvX7DElO9VUFQHa/oGJ3Ns7gc5yjGYZrs3ysx21VDz3fjF1p031UgynbNZ+6KYyRci98qqXtc/L5
+ypXe2N13+bPof+0EWWL+t3JwHISx1MmlsfRVpg6lXgHUbBlbX1C35EZBkp/2MXQKx4qqfORZ83K=

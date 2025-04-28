@@ -1,91 +1,47 @@
-<?php
-
-declare(strict_types=1);
-
-namespace Dotenv\Repository\Adapter;
-
-use PhpOption\None;
-use PhpOption\Option;
-use PhpOption\Some;
-
-final class PutenvAdapter implements AdapterInterface
-{
-    /**
-     * Create a new putenv adapter instance.
-     *
-     * @return void
-     */
-    private function __construct()
-    {
-        //
-    }
-
-    /**
-     * Create a new instance of the adapter, if it is available.
-     *
-     * @return \PhpOption\Option<\Dotenv\Repository\Adapter\AdapterInterface>
-     */
-    public static function create()
-    {
-        if (self::isSupported()) {
-            /** @var \PhpOption\Option<AdapterInterface> */
-            return Some::create(new self());
-        }
-
-        return None::create();
-    }
-
-    /**
-     * Determines if the adapter is supported.
-     *
-     * @return bool
-     */
-    private static function isSupported()
-    {
-        return \function_exists('getenv') && \function_exists('putenv');
-    }
-
-    /**
-     * Read an environment variable, if it exists.
-     *
-     * @param string $name
-     *
-     * @return \PhpOption\Option<string>
-     */
-    public function read(string $name)
-    {
-        /** @var \PhpOption\Option<string> */
-        return Option::fromValue(\getenv($name), false)->filter(static function ($value) {
-            return \is_string($value);
-        });
-    }
-
-    /**
-     * Write to an environment variable, if possible.
-     *
-     * @param string $name
-     * @param string $value
-     *
-     * @return bool
-     */
-    public function write(string $name, string $value)
-    {
-        \putenv("$name=$value");
-
-        return true;
-    }
-
-    /**
-     * Delete an environment variable, if possible.
-     *
-     * @param string $name
-     *
-     * @return bool
-     */
-    public function delete(string $name)
-    {
-        \putenv($name);
-
-        return true;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

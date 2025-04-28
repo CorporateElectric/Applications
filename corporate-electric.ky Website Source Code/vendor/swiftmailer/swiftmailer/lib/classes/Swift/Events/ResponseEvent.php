@@ -1,64 +1,31 @@
-<?php
-
-/*
- * This file is part of SwiftMailer.
- * (c) 2004-2009 Chris Corbyn
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-/**
- * Generated when a response is received on a SMTP connection.
- *
- * @author Chris Corbyn
- */
-class Swift_Events_ResponseEvent extends Swift_Events_EventObject
-{
-    /**
-     * The overall result.
-     *
-     * @var bool
-     */
-    private $valid;
-
-    /**
-     * The response received from the server.
-     *
-     * @var string
-     */
-    private $response;
-
-    /**
-     * Create a new ResponseEvent for $source and $response.
-     *
-     * @param string $response
-     * @param bool   $valid
-     */
-    public function __construct(Swift_Transport $source, $response, $valid = false)
-    {
-        parent::__construct($source);
-        $this->response = $response;
-        $this->valid = $valid;
-    }
-
-    /**
-     * Get the response which was received from the server.
-     *
-     * @return string
-     */
-    public function getResponse()
-    {
-        return $this->response;
-    }
-
-    /**
-     * Get the success status of this Event.
-     *
-     * @return bool
-     */
-    public function isValid()
-    {
-        return $this->valid;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

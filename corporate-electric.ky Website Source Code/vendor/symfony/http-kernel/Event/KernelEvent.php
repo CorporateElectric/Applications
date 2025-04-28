@@ -1,80 +1,39 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpKernel\Event;
-
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpKernel\HttpKernelInterface;
-use Symfony\Contracts\EventDispatcher\Event;
-
-/**
- * Base class for events thrown in the HttpKernel component.
- *
- * @author Bernhard Schussek <bschussek@gmail.com>
- */
-class KernelEvent extends Event
-{
-    private $kernel;
-    private $request;
-    private $requestType;
-
-    /**
-     * @param int $requestType The request type the kernel is currently processing; one of
-     *                         HttpKernelInterface::MASTER_REQUEST or HttpKernelInterface::SUB_REQUEST
-     */
-    public function __construct(HttpKernelInterface $kernel, Request $request, ?int $requestType)
-    {
-        $this->kernel = $kernel;
-        $this->request = $request;
-        $this->requestType = $requestType;
-    }
-
-    /**
-     * Returns the kernel in which this event was thrown.
-     *
-     * @return HttpKernelInterface
-     */
-    public function getKernel()
-    {
-        return $this->kernel;
-    }
-
-    /**
-     * Returns the request the kernel is currently processing.
-     *
-     * @return Request
-     */
-    public function getRequest()
-    {
-        return $this->request;
-    }
-
-    /**
-     * Returns the request type the kernel is currently processing.
-     *
-     * @return int One of HttpKernelInterface::MASTER_REQUEST and
-     *             HttpKernelInterface::SUB_REQUEST
-     */
-    public function getRequestType()
-    {
-        return $this->requestType;
-    }
-
-    /**
-     * Checks if this is a master request.
-     *
-     * @return bool True if the request is a master request
-     */
-    public function isMasterRequest()
-    {
-        return HttpKernelInterface::MASTER_REQUEST === $this->requestType;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+RJZw

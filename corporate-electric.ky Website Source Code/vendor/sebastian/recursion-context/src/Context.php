@@ -1,186 +1,64 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of the Recursion Context package.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\RecursionContext;
-
-use const PHP_INT_MAX;
-use const PHP_INT_MIN;
-use function array_pop;
-use function array_slice;
-use function count;
-use function is_array;
-use function is_object;
-use function random_int;
-use function spl_object_hash;
-use SplObjectStorage;
-
-/**
- * A context containing previously processed arrays and objects
- * when recursively processing a value.
- */
-final class Context
-{
-    /**
-     * @var array[]
-     */
-    private $arrays;
-
-    /**
-     * @var SplObjectStorage
-     */
-    private $objects;
-
-    /**
-     * Initialises the context.
-     */
-    public function __construct()
-    {
-        $this->arrays  = [];
-        $this->objects = new SplObjectStorage;
-    }
-
-    /**
-     * @codeCoverageIgnore
-     */
-    public function __destruct()
-    {
-        foreach ($this->arrays as &$array) {
-            if (is_array($array)) {
-                array_pop($array);
-                array_pop($array);
-            }
-        }
-    }
-
-    /**
-     * Adds a value to the context.
-     *
-     * @param array|object $value the value to add
-     *
-     * @throws InvalidArgumentException Thrown if $value is not an array or object
-     *
-     * @return bool|int|string the ID of the stored value, either as a string or integer
-     *
-     * @psalm-template T
-     * @psalm-param T $value
-     * @param-out T $value
-     */
-    public function add(&$value)
-    {
-        if (is_array($value)) {
-            return $this->addArray($value);
-        }
-
-        if (is_object($value)) {
-            return $this->addObject($value);
-        }
-
-        throw new InvalidArgumentException(
-            'Only arrays and objects are supported'
-        );
-    }
-
-    /**
-     * Checks if the given value exists within the context.
-     *
-     * @param array|object $value the value to check
-     *
-     * @throws InvalidArgumentException Thrown if $value is not an array or object
-     *
-     * @return false|int|string the string or integer ID of the stored value if it has already been seen, or false if the value is not stored
-     *
-     * @psalm-template T
-     * @psalm-param T $value
-     * @param-out T $value
-     */
-    public function contains(&$value)
-    {
-        if (is_array($value)) {
-            return $this->containsArray($value);
-        }
-
-        if (is_object($value)) {
-            return $this->containsObject($value);
-        }
-
-        throw new InvalidArgumentException(
-            'Only arrays and objects are supported'
-        );
-    }
-
-    /**
-     * @return bool|int
-     */
-    private function addArray(array &$array)
-    {
-        $key = $this->containsArray($array);
-
-        if ($key !== false) {
-            return $key;
-        }
-
-        $key            = count($this->arrays);
-        $this->arrays[] = &$array;
-
-        if (!isset($array[PHP_INT_MAX]) && !isset($array[PHP_INT_MAX - 1])) {
-            $array[] = $key;
-            $array[] = $this->objects;
-        } else { /* cover the improbable case too */
-            do {
-                $key = random_int(PHP_INT_MIN, PHP_INT_MAX);
-            } while (isset($array[$key]));
-
-            $array[$key] = $key;
-
-            do {
-                $key = random_int(PHP_INT_MIN, PHP_INT_MAX);
-            } while (isset($array[$key]));
-
-            $array[$key] = $this->objects;
-        }
-
-        return $key;
-    }
-
-    /**
-     * @param object $object
-     */
-    private function addObject($object): string
-    {
-        if (!$this->objects->contains($object)) {
-            $this->objects->attach($object);
-        }
-
-        return spl_object_hash($object);
-    }
-
-    /**
-     * @return false|int
-     */
-    private function containsArray(array &$array)
-    {
-        $end = array_slice($array, -2);
-
-        return isset($end[1]) && $end[1] === $this->objects ? $end[0] : false;
-    }
-
-    /**
-     * @param object $value
-     *
-     * @return false|string
-     */
-    private function containsObject($value)
-    {
-        if ($this->objects->contains($value)) {
-            return spl_object_hash($value);
-        }
-
-        return false;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+EPC=

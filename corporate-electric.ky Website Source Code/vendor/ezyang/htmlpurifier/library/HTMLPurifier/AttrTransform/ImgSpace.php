@@ -1,61 +1,45 @@
-<?php
-
-/**
- * Pre-transform that changes deprecated hspace and vspace attributes to CSS
- */
-class HTMLPurifier_AttrTransform_ImgSpace extends HTMLPurifier_AttrTransform
-{
-    /**
-     * @type string
-     */
-    protected $attr;
-
-    /**
-     * @type array
-     */
-    protected $css = array(
-        'hspace' => array('left', 'right'),
-        'vspace' => array('top', 'bottom')
-    );
-
-    /**
-     * @param string $attr
-     */
-    public function __construct($attr)
-    {
-        $this->attr = $attr;
-        if (!isset($this->css[$attr])) {
-            trigger_error(htmlspecialchars($attr) . ' is not valid space attribute');
-        }
-    }
-
-    /**
-     * @param array $attr
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return array
-     */
-    public function transform($attr, $config, $context)
-    {
-        if (!isset($attr[$this->attr])) {
-            return $attr;
-        }
-
-        $width = $this->confiscateAttr($attr, $this->attr);
-        // some validation could happen here
-
-        if (!isset($this->css[$this->attr])) {
-            return $attr;
-        }
-
-        $style = '';
-        foreach ($this->css[$this->attr] as $suffix) {
-            $property = "margin-$suffix";
-            $style .= "$property:{$width}px;";
-        }
-        $this->prependCSS($attr, $style);
-        return $attr;
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+R+43NgKl8ok3

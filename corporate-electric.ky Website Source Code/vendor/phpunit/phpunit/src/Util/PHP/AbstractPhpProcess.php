@@ -1,415 +1,162 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Util\PHP;
-
-use const DIRECTORY_SEPARATOR;
-use const PHP_SAPI;
-use function array_keys;
-use function array_merge;
-use function assert;
-use function escapeshellarg;
-use function ini_get_all;
-use function restore_error_handler;
-use function set_error_handler;
-use function sprintf;
-use function str_replace;
-use function strpos;
-use function strrpos;
-use function substr;
-use function trim;
-use function unserialize;
-use __PHP_Incomplete_Class;
-use ErrorException;
-use PHPUnit\Framework\AssertionFailedError;
-use PHPUnit\Framework\Exception;
-use PHPUnit\Framework\SyntheticError;
-use PHPUnit\Framework\Test;
-use PHPUnit\Framework\TestCase;
-use PHPUnit\Framework\TestFailure;
-use PHPUnit\Framework\TestResult;
-use SebastianBergmann\Environment\Runtime;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for PHPUnit
- */
-abstract class AbstractPhpProcess
-{
-    /**
-     * @var Runtime
-     */
-    protected $runtime;
-
-    /**
-     * @var bool
-     */
-    protected $stderrRedirection = false;
-
-    /**
-     * @var string
-     */
-    protected $stdin = '';
-
-    /**
-     * @var string
-     */
-    protected $args = '';
-
-    /**
-     * @var array<string, string>
-     */
-    protected $env = [];
-
-    /**
-     * @var int
-     */
-    protected $timeout = 0;
-
-    public static function factory(): self
-    {
-        if (DIRECTORY_SEPARATOR === '\\') {
-            return new WindowsPhpProcess;
-        }
-
-        return new DefaultPhpProcess;
-    }
-
-    public function __construct()
-    {
-        $this->runtime = new Runtime;
-    }
-
-    /**
-     * Defines if should use STDERR redirection or not.
-     *
-     * Then $stderrRedirection is TRUE, STDERR is redirected to STDOUT.
-     */
-    public function setUseStderrRedirection(bool $stderrRedirection): void
-    {
-        $this->stderrRedirection = $stderrRedirection;
-    }
-
-    /**
-     * Returns TRUE if uses STDERR redirection or FALSE if not.
-     */
-    public function useStderrRedirection(): bool
-    {
-        return $this->stderrRedirection;
-    }
-
-    /**
-     * Sets the input string to be sent via STDIN.
-     */
-    public function setStdin(string $stdin): void
-    {
-        $this->stdin = $stdin;
-    }
-
-    /**
-     * Returns the input string to be sent via STDIN.
-     */
-    public function getStdin(): string
-    {
-        return $this->stdin;
-    }
-
-    /**
-     * Sets the string of arguments to pass to the php job.
-     */
-    public function setArgs(string $args): void
-    {
-        $this->args = $args;
-    }
-
-    /**
-     * Returns the string of arguments to pass to the php job.
-     */
-    public function getArgs(): string
-    {
-        return $this->args;
-    }
-
-    /**
-     * Sets the array of environment variables to start the child process with.
-     *
-     * @param array<string, string> $env
-     */
-    public function setEnv(array $env): void
-    {
-        $this->env = $env;
-    }
-
-    /**
-     * Returns the array of environment variables to start the child process with.
-     */
-    public function getEnv(): array
-    {
-        return $this->env;
-    }
-
-    /**
-     * Sets the amount of seconds to wait before timing out.
-     */
-    public function setTimeout(int $timeout): void
-    {
-        $this->timeout = $timeout;
-    }
-
-    /**
-     * Returns the amount of seconds to wait before timing out.
-     */
-    public function getTimeout(): int
-    {
-        return $this->timeout;
-    }
-
-    /**
-     * Runs a single test in a separate PHP process.
-     *
-     * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
-     */
-    public function runTestJob(string $job, Test $test, TestResult $result): void
-    {
-        $result->startTest($test);
-
-        $_result = $this->runJob($job);
-
-        $this->processChildResult(
-            $test,
-            $result,
-            $_result['stdout'],
-            $_result['stderr']
-        );
-    }
-
-    /**
-     * Returns the command based into the configurations.
-     */
-    public function getCommand(array $settings, string $file = null): string
-    {
-        $command = $this->runtime->getBinary();
-
-        if ($this->runtime->hasPCOV()) {
-            $settings = array_merge(
-                $settings,
-                $this->runtime->getCurrentSettings(
-                    array_keys(ini_get_all('pcov'))
-                )
-            );
-        } elseif ($this->runtime->hasXdebug()) {
-            $settings = array_merge(
-                $settings,
-                $this->runtime->getCurrentSettings(
-                    array_keys(ini_get_all('xdebug'))
-                )
-            );
-        }
-
-        $command .= $this->settingsToParameters($settings);
-
-        if (PHP_SAPI === 'phpdbg') {
-            $command .= ' -qrr';
-
-            if (!$file) {
-                $command .= 's=';
-            }
-        }
-
-        if ($file) {
-            $command .= ' ' . escapeshellarg($file);
-        }
-
-        if ($this->args) {
-            if (!$file) {
-                $command .= ' --';
-            }
-            $command .= ' ' . $this->args;
-        }
-
-        if ($this->stderrRedirection) {
-            $command .= ' 2>&1';
-        }
-
-        return $command;
-    }
-
-    /**
-     * Runs a single job (PHP code) using a separate PHP process.
-     */
-    abstract public function runJob(string $job, array $settings = []): array;
-
-    protected function settingsToParameters(array $settings): string
-    {
-        $buffer = '';
-
-        foreach ($settings as $setting) {
-            $buffer .= ' -d ' . escapeshellarg($setting);
-        }
-
-        return $buffer;
-    }
-
-    /**
-     * Processes the TestResult object from an isolated process.
-     *
-     * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
-     */
-    private function processChildResult(Test $test, TestResult $result, string $stdout, string $stderr): void
-    {
-        $time = 0;
-
-        if (!empty($stderr)) {
-            $result->addError(
-                $test,
-                new Exception(trim($stderr)),
-                $time
-            );
-        } else {
-            set_error_handler(
-                /**
-                 * @throws ErrorException
-                 */
-                static function ($errno, $errstr, $errfile, $errline): void {
-                    throw new ErrorException($errstr, $errno, $errno, $errfile, $errline);
-                }
-            );
-
-            try {
-                if (strpos($stdout, "#!/usr/bin/env php\n") === 0) {
-                    $stdout = substr($stdout, 19);
-                }
-
-                $childResult = unserialize(str_replace("#!/usr/bin/env php\n", '', $stdout));
-                restore_error_handler();
-
-                if ($childResult === false) {
-                    $result->addFailure(
-                        $test,
-                        new AssertionFailedError('Test was run in child process and ended unexpectedly'),
-                        $time
-                    );
-                }
-            } catch (ErrorException $e) {
-                restore_error_handler();
-                $childResult = false;
-
-                $result->addError(
-                    $test,
-                    new Exception(trim($stdout), 0, $e),
-                    $time
-                );
-            }
-
-            if ($childResult !== false) {
-                if (!empty($childResult['output'])) {
-                    $output = $childResult['output'];
-                }
-
-                /* @var TestCase $test */
-
-                $test->setResult($childResult['testResult']);
-                $test->addToAssertionCount($childResult['numAssertions']);
-
-                $childResult = $childResult['result'];
-                assert($childResult instanceof TestResult);
-
-                if ($result->getCollectCodeCoverageInformation()) {
-                    $result->getCodeCoverage()->merge(
-                        $childResult->getCodeCoverage()
-                    );
-                }
-
-                $time           = $childResult->time();
-                $notImplemented = $childResult->notImplemented();
-                $risky          = $childResult->risky();
-                $skipped        = $childResult->skipped();
-                $errors         = $childResult->errors();
-                $warnings       = $childResult->warnings();
-                $failures       = $childResult->failures();
-
-                if (!empty($notImplemented)) {
-                    $result->addError(
-                        $test,
-                        $this->getException($notImplemented[0]),
-                        $time
-                    );
-                } elseif (!empty($risky)) {
-                    $result->addError(
-                        $test,
-                        $this->getException($risky[0]),
-                        $time
-                    );
-                } elseif (!empty($skipped)) {
-                    $result->addError(
-                        $test,
-                        $this->getException($skipped[0]),
-                        $time
-                    );
-                } elseif (!empty($errors)) {
-                    $result->addError(
-                        $test,
-                        $this->getException($errors[0]),
-                        $time
-                    );
-                } elseif (!empty($warnings)) {
-                    $result->addWarning(
-                        $test,
-                        $this->getException($warnings[0]),
-                        $time
-                    );
-                } elseif (!empty($failures)) {
-                    $result->addFailure(
-                        $test,
-                        $this->getException($failures[0]),
-                        $time
-                    );
-                }
-            }
-        }
-
-        $result->endTest($test, $time);
-
-        if (!empty($output)) {
-            print $output;
-        }
-    }
-
-    /**
-     * Gets the thrown exception from a PHPUnit\Framework\TestFailure.
-     *
-     * @see https://github.com/sebastianbergmann/phpunit/issues/74
-     */
-    private function getException(TestFailure $error): Exception
-    {
-        $exception = $error->thrownException();
-
-        if ($exception instanceof __PHP_Incomplete_Class) {
-            $exceptionArray = [];
-
-            foreach ((array) $exception as $key => $value) {
-                $key                  = substr($key, strrpos($key, "\0") + 1);
-                $exceptionArray[$key] = $value;
-            }
-
-            $exception = new SyntheticError(
-                sprintf(
-                    '%s: %s',
-                    $exceptionArray['_PHP_Incomplete_Class_Name'],
-                    $exceptionArray['message']
-                ),
-                $exceptionArray['code'],
-                $exceptionArray['file'],
-                $exceptionArray['line'],
-                $exceptionArray['trace']
-            );
-        }
-
-        return $exception;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+rxZ/dNU8w8v5nvSRyjqbiOhmhEi=

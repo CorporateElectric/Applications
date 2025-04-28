@@ -1,77 +1,49 @@
-<?php
-/**
- * Whoops - php errors for cool kids
- * @author Filipe Dobreira <http://github.com/filp>
- */
-
-namespace Whoops\Util;
-
-class Misc
-{
-    /**
-     * Can we at this point in time send HTTP headers?
-     *
-     * Currently this checks if we are even serving an HTTP request,
-     * as opposed to running from a command line.
-     *
-     * If we are serving an HTTP request, we check if it's not too late.
-     *
-     * @return bool
-     */
-    public static function canSendHeaders()
-    {
-        return isset($_SERVER["REQUEST_URI"]) && !headers_sent();
-    }
-
-    public static function isAjaxRequest()
-    {
-        return (
-            !empty($_SERVER['HTTP_X_REQUESTED_WITH'])
-            && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest');
-    }
-
-    /**
-     * Check, if possible, that this execution was triggered by a command line.
-     * @return bool
-     */
-    public static function isCommandLine()
-    {
-        return PHP_SAPI == 'cli';
-    }
-
-    /**
-     * Translate ErrorException code into the represented constant.
-     *
-     * @param int $error_code
-     * @return string
-     */
-    public static function translateErrorCode($error_code)
-    {
-        $constants = get_defined_constants(true);
-        if (array_key_exists('Core', $constants)) {
-            foreach ($constants['Core'] as $constant => $value) {
-                if (substr($constant, 0, 2) == 'E_' && $value == $error_code) {
-                    return $constant;
-                }
-            }
-        }
-        return "E_UNKNOWN";
-    }
-    
-    /**
-     * Determine if an error level is fatal (halts execution)
-     *
-     * @param int $level
-     * @return bool
-     */
-    public static function isLevelFatal($level)
-    {
-        $errors = E_ERROR;
-        $errors |= E_PARSE;
-        $errors |= E_CORE_ERROR;
-        $errors |= E_CORE_WARNING;
-        $errors |= E_COMPILE_ERROR;
-        $errors |= E_COMPILE_WARNING;
-        return ($level & $errors) > 0;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

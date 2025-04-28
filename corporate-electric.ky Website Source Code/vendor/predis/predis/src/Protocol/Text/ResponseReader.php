@@ -1,116 +1,58 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Predis\Protocol\Text;
-
-use Predis\CommunicationException;
-use Predis\Connection\CompositeConnectionInterface;
-use Predis\Protocol\ProtocolException;
-use Predis\Protocol\ResponseReaderInterface;
-
-/**
- * Response reader for the standard Redis wire protocol.
- *
- * @link http://redis.io/topics/protocol
- *
- * @author Daniele Alessandri <suppakilla@gmail.com>
- */
-class ResponseReader implements ResponseReaderInterface
-{
-    protected $handlers;
-
-    /**
-     *
-     */
-    public function __construct()
-    {
-        $this->handlers = $this->getDefaultHandlers();
-    }
-
-    /**
-     * Returns the default handlers for the supported type of responses.
-     *
-     * @return array
-     */
-    protected function getDefaultHandlers()
-    {
-        return array(
-            '+' => new Handler\StatusResponse(),
-            '-' => new Handler\ErrorResponse(),
-            ':' => new Handler\IntegerResponse(),
-            '$' => new Handler\BulkResponse(),
-            '*' => new Handler\MultiBulkResponse(),
-        );
-    }
-
-    /**
-     * Sets the handler for the specified prefix identifying the response type.
-     *
-     * @param string                           $prefix  Identifier of the type of response.
-     * @param Handler\ResponseHandlerInterface $handler Response handler.
-     */
-    public function setHandler($prefix, Handler\ResponseHandlerInterface $handler)
-    {
-        $this->handlers[$prefix] = $handler;
-    }
-
-    /**
-     * Returns the response handler associated to a certain type of response.
-     *
-     * @param string $prefix Identifier of the type of response.
-     *
-     * @return Handler\ResponseHandlerInterface
-     */
-    public function getHandler($prefix)
-    {
-        if (isset($this->handlers[$prefix])) {
-            return $this->handlers[$prefix];
-        }
-
-        return;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function read(CompositeConnectionInterface $connection)
-    {
-        $header = $connection->readLine();
-
-        if ($header === '') {
-            $this->onProtocolError($connection, 'Unexpected empty reponse header.');
-        }
-
-        $prefix = $header[0];
-
-        if (!isset($this->handlers[$prefix])) {
-            $this->onProtocolError($connection, "Unknown response prefix: '$prefix'.");
-        }
-
-        $payload = $this->handlers[$prefix]->handle($connection, substr($header, 1));
-
-        return $payload;
-    }
-
-    /**
-     * Handles protocol errors generated while reading responses from a
-     * connection.
-     *
-     * @param CompositeConnectionInterface $connection Redis connection that generated the error.
-     * @param string                       $message    Error message.
-     */
-    protected function onProtocolError(CompositeConnectionInterface $connection, $message)
-    {
-        CommunicationException::handle(
-            new ProtocolException($connection, $message)
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

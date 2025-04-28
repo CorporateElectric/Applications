@@ -1,463 +1,106 @@
-<?php
-
-/**
- * This file is part of the Carbon package.
- *
- * (c) Brian Nesbitt <brian@nesbot.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace Carbon\Traits;
-
-use Carbon\CarbonInterface;
-use DateTimeInterface;
-use Throwable;
-
-/**
- * Trait Options.
- *
- * Embed base methods to change settings of Carbon classes.
- *
- * Depends on the following methods:
- *
- * @method \Carbon\Carbon|\Carbon\CarbonImmutable shiftTimezone($timezone) Set the timezone
- */
-trait Options
-{
-    use Localization;
-
-    /**
-     * Customizable PHP_INT_SIZE override.
-     *
-     * @var int
-     */
-    public static $PHPIntSize = PHP_INT_SIZE;
-
-    /**
-     * First day of week.
-     *
-     * @var int|string
-     */
-    protected static $weekStartsAt = CarbonInterface::MONDAY;
-
-    /**
-     * Last day of week.
-     *
-     * @var int|string
-     */
-    protected static $weekEndsAt = CarbonInterface::SUNDAY;
-
-    /**
-     * Days of weekend.
-     *
-     * @var array
-     */
-    protected static $weekendDays = [
-        CarbonInterface::SATURDAY,
-        CarbonInterface::SUNDAY,
-    ];
-
-    /**
-     * Format regex patterns.
-     *
-     * @var array
-     */
-    protected static $regexFormats = [
-        'd' => '(3[01]|[12][0-9]|0[1-9])',
-        'D' => '(Sun|Mon|Tue|Wed|Thu|Fri|Sat)',
-        'j' => '([123][0-9]|[1-9])',
-        'l' => '([a-zA-Z]{2,})',
-        'N' => '([1-7])',
-        'S' => '(st|nd|rd|th)',
-        'w' => '([0-6])',
-        'z' => '(36[0-5]|3[0-5][0-9]|[12][0-9]{2}|[1-9]?[0-9])',
-        'W' => '(5[012]|[1-4][0-9]|[1-9])',
-        'F' => '([a-zA-Z]{2,})',
-        'm' => '(1[012]|0[1-9])',
-        'M' => '([a-zA-Z]{3})',
-        'n' => '(1[012]|[1-9])',
-        't' => '(2[89]|3[01])',
-        'L' => '(0|1)',
-        'o' => '([1-9][0-9]{0,4})',
-        'Y' => '([1-9]?[0-9]{4})',
-        'y' => '([0-9]{2})',
-        'a' => '(am|pm)',
-        'A' => '(AM|PM)',
-        'B' => '([0-9]{3})',
-        'g' => '(1[012]|[1-9])',
-        'G' => '(2[0-3]|1?[0-9])',
-        'h' => '(1[012]|0[1-9])',
-        'H' => '(2[0-3]|[01][0-9])',
-        'i' => '([0-5][0-9])',
-        's' => '([0-5][0-9])',
-        'u' => '([0-9]{1,6})',
-        'v' => '([0-9]{1,3})',
-        'e' => '([a-zA-Z]{1,5})|([a-zA-Z]*\\/[a-zA-Z]*)',
-        'I' => '(0|1)',
-        'O' => '([+-](1[012]|0[0-9])[0134][05])',
-        'P' => '([+-](1[012]|0[0-9]):[0134][05])',
-        'T' => '([a-zA-Z]{1,5})',
-        'Z' => '(-?[1-5]?[0-9]{1,4})',
-        'U' => '([0-9]*)',
-
-        // The formats below are combinations of the above formats.
-        'c' => '(([1-9]?[0-9]{4})-(1[012]|0[1-9])-(3[01]|[12][0-9]|0[1-9])T(2[0-3]|[01][0-9]):([0-5][0-9]):([0-5][0-9])[+-](1[012]|0[0-9]):([0134][05]))', // Y-m-dTH:i:sP
-        'r' => '(([a-zA-Z]{3}), ([123][0-9]|0[1-9]) ([a-zA-Z]{3}) ([1-9]?[0-9]{4}) (2[0-3]|[01][0-9]):([0-5][0-9]):([0-5][0-9]) [+-](1[012]|0[0-9])([0134][05]))', // D, d M Y H:i:s O
-    ];
-
-    /**
-     * Format modifiers (such as available in createFromFormat) regex patterns.
-     *
-     * @var array
-     */
-    protected static $regexFormatModifiers = [
-        '*' => '.+',
-        ' ' => '[   ]',
-        '#' => '[;:\\/.,()-]',
-        '?' => '([^a]|[a])',
-        '!' => '',
-        '|' => '',
-        '+' => '',
-    ];
-
-    /**
-     * Indicates if months should be calculated with overflow.
-     * Global setting.
-     *
-     * @var bool
-     */
-    protected static $monthsOverflow = true;
-
-    /**
-     * Indicates if years should be calculated with overflow.
-     * Global setting.
-     *
-     * @var bool
-     */
-    protected static $yearsOverflow = true;
-
-    /**
-     * Indicates if the strict mode is in use.
-     * Global setting.
-     *
-     * @var bool
-     */
-    protected static $strictModeEnabled = true;
-
-    /**
-     * Function to call instead of format.
-     *
-     * @var string|callable|null
-     */
-    protected static $formatFunction = null;
-
-    /**
-     * Function to call instead of createFromFormat.
-     *
-     * @var string|callable|null
-     */
-    protected static $createFromFormatFunction = null;
-
-    /**
-     * Function to call instead of parse.
-     *
-     * @var string|callable|null
-     */
-    protected static $parseFunction = null;
-
-    /**
-     * Indicates if months should be calculated with overflow.
-     * Specific setting.
-     *
-     * @var bool|null
-     */
-    protected $localMonthsOverflow = null;
-
-    /**
-     * Indicates if years should be calculated with overflow.
-     * Specific setting.
-     *
-     * @var bool|null
-     */
-    protected $localYearsOverflow = null;
-
-    /**
-     * Indicates if the strict mode is in use.
-     * Specific setting.
-     *
-     * @var bool|null
-     */
-    protected $localStrictModeEnabled = null;
-
-    /**
-     * Options for diffForHumans and forHumans methods.
-     *
-     * @var bool|null
-     */
-    protected $localHumanDiffOptions = null;
-
-    /**
-     * Format to use on string cast.
-     *
-     * @var string|null
-     */
-    protected $localToStringFormat = null;
-
-    /**
-     * Format to use on JSON serialization.
-     *
-     * @var string|null
-     */
-    protected $localSerializer = null;
-
-    /**
-     * Instance-specific macros.
-     *
-     * @var array|null
-     */
-    protected $localMacros = null;
-
-    /**
-     * Instance-specific generic macros.
-     *
-     * @var array|null
-     */
-    protected $localGenericMacros = null;
-
-    /**
-     * Function to call instead of format.
-     *
-     * @var string|callable|null
-     */
-    protected $localFormatFunction = null;
-
-    /**
-     * @deprecated To avoid conflict between different third-party libraries, static setters should not be used.
-     *             You should rather use the ->settings() method.
-     * @see settings
-     *
-     * Enable the strict mode (or disable with passing false).
-     *
-     * @param bool $strictModeEnabled
-     */
-    public static function useStrictMode($strictModeEnabled = true)
-    {
-        static::$strictModeEnabled = $strictModeEnabled;
-    }
-
-    /**
-     * Returns true if the strict mode is globally in use, false else.
-     * (It can be overridden in specific instances.)
-     *
-     * @return bool
-     */
-    public static function isStrictModeEnabled()
-    {
-        return static::$strictModeEnabled;
-    }
-
-    /**
-     * @deprecated To avoid conflict between different third-party libraries, static setters should not be used.
-     *             You should rather use the ->settings() method.
-     *             Or you can use method variants: addMonthsWithOverflow/addMonthsNoOverflow, same variants
-     *             are available for quarters, years, decade, centuries, millennia (singular and plural forms).
-     * @see settings
-     *
-     * Indicates if months should be calculated with overflow.
-     *
-     * @param bool $monthsOverflow
-     *
-     * @return void
-     */
-    public static function useMonthsOverflow($monthsOverflow = true)
-    {
-        static::$monthsOverflow = $monthsOverflow;
-    }
-
-    /**
-     * @deprecated To avoid conflict between different third-party libraries, static setters should not be used.
-     *             You should rather use the ->settings() method.
-     *             Or you can use method variants: addMonthsWithOverflow/addMonthsNoOverflow, same variants
-     *             are available for quarters, years, decade, centuries, millennia (singular and plural forms).
-     * @see settings
-     *
-     * Reset the month overflow behavior.
-     *
-     * @return void
-     */
-    public static function resetMonthsOverflow()
-    {
-        static::$monthsOverflow = true;
-    }
-
-    /**
-     * Get the month overflow global behavior (can be overridden in specific instances).
-     *
-     * @return bool
-     */
-    public static function shouldOverflowMonths()
-    {
-        return static::$monthsOverflow;
-    }
-
-    /**
-     * @deprecated To avoid conflict between different third-party libraries, static setters should not be used.
-     *             You should rather use the ->settings() method.
-     *             Or you can use method variants: addYearsWithOverflow/addYearsNoOverflow, same variants
-     *             are available for quarters, years, decade, centuries, millennia (singular and plural forms).
-     * @see settings
-     *
-     * Indicates if years should be calculated with overflow.
-     *
-     * @param bool $yearsOverflow
-     *
-     * @return void
-     */
-    public static function useYearsOverflow($yearsOverflow = true)
-    {
-        static::$yearsOverflow = $yearsOverflow;
-    }
-
-    /**
-     * @deprecated To avoid conflict between different third-party libraries, static setters should not be used.
-     *             You should rather use the ->settings() method.
-     *             Or you can use method variants: addYearsWithOverflow/addYearsNoOverflow, same variants
-     *             are available for quarters, years, decade, centuries, millennia (singular and plural forms).
-     * @see settings
-     *
-     * Reset the month overflow behavior.
-     *
-     * @return void
-     */
-    public static function resetYearsOverflow()
-    {
-        static::$yearsOverflow = true;
-    }
-
-    /**
-     * Get the month overflow global behavior (can be overridden in specific instances).
-     *
-     * @return bool
-     */
-    public static function shouldOverflowYears()
-    {
-        return static::$yearsOverflow;
-    }
-
-    /**
-     * Set specific options.
-     *  - strictMode: true|false|null
-     *  - monthOverflow: true|false|null
-     *  - yearOverflow: true|false|null
-     *  - humanDiffOptions: int|null
-     *  - toStringFormat: string|Closure|null
-     *  - toJsonFormat: string|Closure|null
-     *  - locale: string|null
-     *  - timezone: \DateTimeZone|string|int|null
-     *  - macros: array|null
-     *  - genericMacros: array|null
-     *
-     * @param array $settings
-     *
-     * @return $this|static
-     */
-    public function settings(array $settings)
-    {
-        $this->localStrictModeEnabled = $settings['strictMode'] ?? null;
-        $this->localMonthsOverflow = $settings['monthOverflow'] ?? null;
-        $this->localYearsOverflow = $settings['yearOverflow'] ?? null;
-        $this->localHumanDiffOptions = $settings['humanDiffOptions'] ?? null;
-        $this->localToStringFormat = $settings['toStringFormat'] ?? null;
-        $this->localSerializer = $settings['toJsonFormat'] ?? null;
-        $this->localMacros = $settings['macros'] ?? null;
-        $this->localGenericMacros = $settings['genericMacros'] ?? null;
-        $this->localFormatFunction = $settings['formatFunction'] ?? null;
-
-        if (isset($settings['locale'])) {
-            $locales = $settings['locale'];
-
-            if (!\is_array($locales)) {
-                $locales = [$locales];
-            }
-
-            $this->locale(...$locales);
-        }
-
-        if (isset($settings['timezone'])) {
-            return $this->shiftTimezone($settings['timezone']);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Returns current local settings.
-     *
-     * @return array
-     */
-    public function getSettings()
-    {
-        $settings = [];
-        $map = [
-            'localStrictModeEnabled' => 'strictMode',
-            'localMonthsOverflow' => 'monthOverflow',
-            'localYearsOverflow' => 'yearOverflow',
-            'localHumanDiffOptions' => 'humanDiffOptions',
-            'localToStringFormat' => 'toStringFormat',
-            'localSerializer' => 'toJsonFormat',
-            'localMacros' => 'macros',
-            'localGenericMacros' => 'genericMacros',
-            'locale' => 'locale',
-            'tzName' => 'timezone',
-            'localFormatFunction' => 'formatFunction',
-        ];
-        foreach ($map as $property => $key) {
-            $value = $this->$property ?? null;
-            if ($value !== null) {
-                $settings[$key] = $value;
-            }
-        }
-
-        return $settings;
-    }
-
-    /**
-     * Show truthy properties on var_dump().
-     *
-     * @return array
-     */
-    public function __debugInfo()
-    {
-        $infos = array_filter(get_object_vars($this), function ($var) {
-            return $var;
-        });
-
-        foreach (['dumpProperties', 'constructedObjectId'] as $property) {
-            if (isset($infos[$property])) {
-                unset($infos[$property]);
-            }
-        }
-
-        $this->addExtraDebugInfos($infos);
-
-        return $infos;
-    }
-
-    protected function addExtraDebugInfos(&$infos): void
-    {
-        if ($this instanceof CarbonInterface || $this instanceof DateTimeInterface) {
-            try {
-                if (!isset($infos['date'])) {
-                    $infos['date'] = $this->format(CarbonInterface::MOCK_DATETIME_FORMAT);
-                }
-
-                if (!isset($infos['timezone'])) {
-                    $infos['timezone'] = $this->tzName;
-                }
-            } catch (Throwable $exception) {
-                // noop
-            }
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+MR63mGec/n8nMeTEAKi8GrLVhBNgnu0=

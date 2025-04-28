@@ -1,613 +1,183 @@
-<?php
-/*
- * This file is part of the JShrink package.
- *
- * (c) Robert Hafner <tedivm@tedivm.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-/**
- * JShrink
- *
- *
- * @package    JShrink
- * @author     Robert Hafner <tedivm@tedivm.com>
- */
-
-namespace JShrink;
-
-/**
- * Minifier
- *
- * Usage - Minifier::minify($js);
- * Usage - Minifier::minify($js, $options);
- * Usage - Minifier::minify($js, array('flaggedComments' => false));
- *
- * @package JShrink
- * @author Robert Hafner <tedivm@tedivm.com>
- * @license http://www.opensource.org/licenses/bsd-license.php  BSD License
- */
-class Minifier
-{
-    /**
-     * The input javascript to be minified.
-     *
-     * @var string
-     */
-    protected $input;
-
-    /**
-     * Length of input javascript.
-     *
-     * @var int
-     */
-    protected $len = 0;
-
-    /**
-     * The location of the character (in the input string) that is next to be
-     * processed.
-     *
-     * @var int
-     */
-    protected $index = 0;
-
-    /**
-     * The first of the characters currently being looked at.
-     *
-     * @var string
-     */
-    protected $a = '';
-
-    /**
-     * The next character being looked at (after a);
-     *
-     * @var string
-     */
-    protected $b = '';
-
-    /**
-     * This character is only active when certain look ahead actions take place.
-     *
-     *  @var string
-     */
-    protected $c;
-
-    /**
-     * Contains the options for the current minification process.
-     *
-     * @var array
-     */
-    protected $options;
-
-    /**
-     * These characters are used to define strings.
-     */
-    protected $stringDelimiters = ['\'' => true, '"' => true, '`' => true];
-
-    /**
-     * Contains the default options for minification. This array is merged with
-     * the one passed in by the user to create the request specific set of
-     * options (stored in the $options attribute).
-     *
-     * @var array
-     */
-    protected static $defaultOptions = ['flaggedComments' => true];
-
-    /**
-     * Contains lock ids which are used to replace certain code patterns and
-     * prevent them from being minified
-     *
-     * @var array
-     */
-    protected $locks = [];
-
-    /**
-     * Takes a string containing javascript and removes unneeded characters in
-     * order to shrink the code without altering it's functionality.
-     *
-     * @param  string      $js      The raw javascript to be minified
-     * @param  array       $options Various runtime options in an associative array
-     * @throws \Exception
-     * @return bool|string
-     */
-    public static function minify($js, $options = [])
-    {
-        try {
-            ob_start();
-
-            $jshrink = new Minifier();
-            $js = $jshrink->lock($js);
-            $jshrink->minifyDirectToOutput($js, $options);
-
-            // Sometimes there's a leading new line, so we trim that out here.
-            $js = ltrim(ob_get_clean());
-            $js = $jshrink->unlock($js);
-            unset($jshrink);
-
-            return $js;
-        } catch (\Exception $e) {
-            if (isset($jshrink)) {
-                // Since the breakdownScript function probably wasn't finished
-                // we clean it out before discarding it.
-                $jshrink->clean();
-                unset($jshrink);
-            }
-
-            // without this call things get weird, with partially outputted js.
-            ob_end_clean();
-            throw $e;
-        }
-    }
-
-    /**
-     * Processes a javascript string and outputs only the required characters,
-     * stripping out all unneeded characters.
-     *
-     * @param string $js      The raw javascript to be minified
-     * @param array  $options Various runtime options in an associative array
-     */
-    protected function minifyDirectToOutput($js, $options)
-    {
-        $this->initialize($js, $options);
-        $this->loop();
-        $this->clean();
-    }
-
-    /**
-     *  Initializes internal variables, normalizes new lines,
-     *
-     * @param string $js      The raw javascript to be minified
-     * @param array  $options Various runtime options in an associative array
-     */
-    protected function initialize($js, $options)
-    {
-        $this->options = array_merge(static::$defaultOptions, $options);
-        $this->input = str_replace(["\r\n", '/**/', "\r"], ["\n", "", "\n"], $js);
-
-        // We add a newline to the end of the script to make it easier to deal
-        // with comments at the bottom of the script- this prevents the unclosed
-        // comment error that can otherwise occur.
-        $this->input .= PHP_EOL;
-
-        // save input length to skip calculation every time
-        $this->len = strlen($this->input);
-
-        // Populate "a" with a new line, "b" with the first character, before
-        // entering the loop
-        $this->a = "\n";
-        $this->b = $this->getReal();
-    }
-
-    /**
-     * Characters that can't stand alone preserve the newline.
-     *
-     * @var array
-     */
-    protected $noNewLineCharacters = [
-        '(' => true,
-        '-' => true,
-        '+' => true,
-        '[' => true,
-        '@' => true];
-
-    /**
-     * The primary action occurs here. This function loops through the input string,
-     * outputting anything that's relevant and discarding anything that is not.
-     */
-    protected function loop()
-    {
-        while ($this->a !== false && !is_null($this->a) && $this->a !== '') {
-            switch ($this->a) {
-                // new lines
-                case "\n":
-                    // if the next line is something that can't stand alone preserve the newline
-                    if ($this->b !== false && isset($this->noNewLineCharacters[$this->b])) {
-                        echo $this->a;
-                        $this->saveString();
-                        break;
-                    }
-
-                    // if B is a space we skip the rest of the switch block and go down to the
-                    // string/regex check below, resetting $this->b with getReal
-                    if ($this->b === ' ') {
-                        break;
-                    }
-
-                // otherwise we treat the newline like a space
-
-                // no break
-                case ' ':
-                    if (static::isAlphaNumeric($this->b)) {
-                        echo $this->a;
-                    }
-
-                    $this->saveString();
-                    break;
-
-                default:
-                    switch ($this->b) {
-                        case "\n":
-                            if (strpos('}])+-"\'', $this->a) !== false) {
-                                echo $this->a;
-                                $this->saveString();
-                                break;
-                            } else {
-                                if (static::isAlphaNumeric($this->a)) {
-                                    echo $this->a;
-                                    $this->saveString();
-                                }
-                            }
-                            break;
-
-                        case ' ':
-                            if (!static::isAlphaNumeric($this->a)) {
-                                break;
-                            }
-
-                        // no break
-                        default:
-                            // check for some regex that breaks stuff
-                            if ($this->a === '/' && ($this->b === '\'' || $this->b === '"')) {
-                                $this->saveRegex();
-                                continue 3;
-                            }
-
-                            echo $this->a;
-                            $this->saveString();
-                            break;
-                    }
-            }
-
-            // do reg check of doom
-            $this->b = $this->getReal();
-
-            if (($this->b == '/' && strpos('(,=:[!&|?', $this->a) !== false)) {
-                $this->saveRegex();
-            }
-        }
-    }
-
-    /**
-     * Resets attributes that do not need to be stored between requests so that
-     * the next request is ready to go. Another reason for this is to make sure
-     * the variables are cleared and are not taking up memory.
-     */
-    protected function clean()
-    {
-        unset($this->input);
-        $this->len = 0;
-        $this->index = 0;
-        $this->a = $this->b = '';
-        unset($this->c);
-        unset($this->options);
-    }
-
-    /**
-     * Returns the next string for processing based off of the current index.
-     *
-     * @return string
-     */
-    protected function getChar()
-    {
-        // Check to see if we had anything in the look ahead buffer and use that.
-        if (isset($this->c)) {
-            $char = $this->c;
-            unset($this->c);
-        } else {
-            // Otherwise we start pulling from the input.
-            $char = $this->index < $this->len ? $this->input[$this->index] : false;
-
-            // If the next character doesn't exist return false.
-            if (isset($char) && $char === false) {
-                return false;
-            }
-
-            // Otherwise increment the pointer and use this char.
-            $this->index++;
-        }
-
-        // Normalize all whitespace except for the newline character into a
-        // standard space.
-        if ($char !== "\n" && $char < "\x20") {
-            return ' ';
-        }
-
-        return $char;
-    }
-
-    /**
-     * This function gets the next "real" character. It is essentially a wrapper
-     * around the getChar function that skips comments. This has significant
-     * performance benefits as the skipping is done using native functions (ie,
-     * c code) rather than in script php.
-     *
-     *
-     * @return string            Next 'real' character to be processed.
-     * @throws \RuntimeException
-     */
-    protected function getReal()
-    {
-        $startIndex = $this->index;
-        $char = $this->getChar();
-
-        // Check to see if we're potentially in a comment
-        if ($char !== '/') {
-            return $char;
-        }
-
-        $this->c = $this->getChar();
-
-        if ($this->c === '/') {
-            $this->processOneLineComments($startIndex);
-
-            return $this->getReal();
-        } elseif ($this->c === '*') {
-            $this->processMultiLineComments($startIndex);
-
-            return $this->getReal();
-        }
-
-        return $char;
-    }
-
-    /**
-     * Removed one line comments, with the exception of some very specific types of
-     * conditional comments.
-     *
-     * @param  int  $startIndex The index point where "getReal" function started
-     * @return void
-     */
-    protected function processOneLineComments($startIndex)
-    {
-        $thirdCommentString = $this->index < $this->len ? $this->input[$this->index] : false;
-
-        // kill rest of line
-        $this->getNext("\n");
-
-        unset($this->c);
-
-        if ($thirdCommentString == '@') {
-            $endPoint = $this->index - $startIndex;
-            $this->c = "\n" . substr($this->input, $startIndex, $endPoint);
-        }
-    }
-
-    /**
-     * Skips multiline comments where appropriate, and includes them where needed.
-     * Conditional comments and "license" style blocks are preserved.
-     *
-     * @param  int               $startIndex The index point where "getReal" function started
-     * @return void
-     * @throws \RuntimeException Unclosed comments will throw an error
-     */
-    protected function processMultiLineComments($startIndex)
-    {
-        $this->getChar(); // current C
-        $thirdCommentString = $this->getChar();
-
-        // kill everything up to the next */ if it's there
-        if ($this->getNext('*/')) {
-            $this->getChar(); // get *
-            $this->getChar(); // get /
-            $char = $this->getChar(); // get next real character
-
-            // Now we reinsert conditional comments and YUI-style licensing comments
-            if (($this->options['flaggedComments'] && $thirdCommentString === '!')
-                || ($thirdCommentString === '@')) {
-
-                // If conditional comments or flagged comments are not the first thing in the script
-                // we need to echo a and fill it with a space before moving on.
-                if ($startIndex > 0) {
-                    echo $this->a;
-                    $this->a = " ";
-
-                    // If the comment started on a new line we let it stay on the new line
-                    if ($this->input[($startIndex - 1)] === "\n") {
-                        echo "\n";
-                    }
-                }
-
-                $endPoint = ($this->index - 1) - $startIndex;
-                echo substr($this->input, $startIndex, $endPoint);
-
-                $this->c = $char;
-
-                return;
-            }
-        } else {
-            $char = false;
-        }
-
-        if ($char === false) {
-            throw new \RuntimeException('Unclosed multiline comment at position: ' . ($this->index - 2));
-        }
-
-        // if we're here c is part of the comment and therefore tossed
-        $this->c = $char;
-    }
-
-    /**
-     * Pushes the index ahead to the next instance of the supplied string. If it
-     * is found the first character of the string is returned and the index is set
-     * to it's position.
-     *
-     * @param  string       $string
-     * @return string|false Returns the first character of the string or false.
-     */
-    protected function getNext($string)
-    {
-        // Find the next occurrence of "string" after the current position.
-        $pos = strpos($this->input, $string, $this->index);
-
-        // If it's not there return false.
-        if ($pos === false) {
-            return false;
-        }
-
-        // Adjust position of index to jump ahead to the asked for string
-        $this->index = $pos;
-
-        // Return the first character of that string.
-        return $this->index < $this->len ? $this->input[$this->index] : false;
-    }
-
-    /**
-     * When a javascript string is detected this function crawls for the end of
-     * it and saves the whole string.
-     *
-     * @throws \RuntimeException Unclosed strings will throw an error
-     */
-    protected function saveString()
-    {
-        $startpos = $this->index;
-
-        // saveString is always called after a gets cleared, so we push b into
-        // that spot.
-        $this->a = $this->b;
-
-        // If this isn't a string we don't need to do anything.
-        if (!isset($this->stringDelimiters[$this->a])) {
-            return;
-        }
-
-        // String type is the quote used, " or '
-        $stringType = $this->a;
-
-        // Echo out that starting quote
-        echo $this->a;
-
-        // Loop until the string is done
-        // Grab the very next character and load it into a
-        while (($this->a = $this->getChar()) !== false) {
-            switch ($this->a) {
-
-                // If the string opener (single or double quote) is used
-                // output it and break out of the while loop-
-                // The string is finished!
-                case $stringType:
-                    break 2;
-
-                // New lines in strings without line delimiters are bad- actual
-                // new lines will be represented by the string \n and not the actual
-                // character, so those will be treated just fine using the switch
-                // block below.
-                case "\n":
-                    if ($stringType === '`') {
-                        echo $this->a;
-                    } else {
-                        throw new \RuntimeException('Unclosed string at position: ' . $startpos);
-                    }
-                    break;
-
-                // Escaped characters get picked up here. If it's an escaped new line it's not really needed
-                case '\\':
-
-                    // a is a slash. We want to keep it, and the next character,
-                    // unless it's a new line. New lines as actual strings will be
-                    // preserved, but escaped new lines should be reduced.
-                    $this->b = $this->getChar();
-
-                    // If b is a new line we discard a and b and restart the loop.
-                    if ($this->b === "\n") {
-                        break;
-                    }
-
-                    // echo out the escaped character and restart the loop.
-                    echo $this->a . $this->b;
-                    break;
-
-
-                // Since we're not dealing with any special cases we simply
-                // output the character and continue our loop.
-                default:
-                    echo $this->a;
-            }
-        }
-    }
-
-    /**
-     * When a regular expression is detected this function crawls for the end of
-     * it and saves the whole regex.
-     *
-     * @throws \RuntimeException Unclosed regex will throw an error
-     */
-    protected function saveRegex()
-    {
-        echo $this->a . $this->b;
-
-        while (($this->a = $this->getChar()) !== false) {
-            if ($this->a === '/') {
-                break;
-            }
-
-            if ($this->a === '\\') {
-                echo $this->a;
-                $this->a = $this->getChar();
-            }
-
-            if ($this->a === "\n") {
-                throw new \RuntimeException('Unclosed regex pattern at position: ' . $this->index);
-            }
-
-            echo $this->a;
-        }
-        $this->b = $this->getReal();
-    }
-
-    /**
-     * Checks to see if a character is alphanumeric.
-     *
-     * @param  string $char Just one character
-     * @return bool
-     */
-    protected static function isAlphaNumeric($char)
-    {
-        return preg_match('/^[\w\$\pL]$/', $char) === 1 || $char == '/';
-    }
-
-    /**
-     * Replace patterns in the given string and store the replacement
-     *
-     * @param  string $js The string to lock
-     * @return bool
-     */
-    protected function lock($js)
-    {
-        /* lock things like <code>"asd" + ++x;</code> */
-        $lock = '"LOCK---' . crc32(time()) . '"';
-
-        $matches = [];
-        preg_match('/([+-])(\s+)([+-])/S', $js, $matches);
-        if (empty($matches)) {
-            return $js;
-        }
-
-        $this->locks[$lock] = $matches[2];
-
-        $js = preg_replace('/([+-])\s+([+-])/S', "$1{$lock}$2", $js);
-        /* -- */
-
-        return $js;
-    }
-
-    /**
-     * Replace "locks" with the original characters
-     *
-     * @param  string $js The string to unlock
-     * @return bool
-     */
-    protected function unlock($js)
-    {
-        if (empty($this->locks)) {
-            return $js;
-        }
-
-        foreach ($this->locks as $lock => $replacement) {
-            $js = str_replace($lock, $replacement, $js);
-        }
-
-        return $js;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,161 +1,72 @@
-<?php
-
-/**
- * This file is part of the ramsey/uuid library
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @copyright Copyright (c) Ben Ramsey <ben@benramsey.com>
- * @license http://opensource.org/licenses/MIT MIT
- */
-
-declare(strict_types=1);
-
-namespace Ramsey\Uuid\Generator;
-
-use Ramsey\Uuid\Converter\NumberConverterInterface;
-use Ramsey\Uuid\Exception\DceSecurityException;
-use Ramsey\Uuid\Provider\DceSecurityProviderInterface;
-use Ramsey\Uuid\Type\Hexadecimal;
-use Ramsey\Uuid\Type\Integer as IntegerObject;
-use Ramsey\Uuid\Uuid;
-
-use function hex2bin;
-use function in_array;
-use function pack;
-use function str_pad;
-use function strlen;
-use function substr_replace;
-
-use const STR_PAD_LEFT;
-
-/**
- * DceSecurityGenerator generates strings of binary data based on a local
- * domain, local identifier, node ID, clock sequence, and the current time
- */
-class DceSecurityGenerator implements DceSecurityGeneratorInterface
-{
-    private const DOMAINS = [
-        Uuid::DCE_DOMAIN_PERSON,
-        Uuid::DCE_DOMAIN_GROUP,
-        Uuid::DCE_DOMAIN_ORG,
-    ];
-
-    /**
-     * Upper bounds for the clock sequence in DCE Security UUIDs.
-     */
-    private const CLOCK_SEQ_HIGH = 63;
-
-    /**
-     * Lower bounds for the clock sequence in DCE Security UUIDs.
-     */
-    private const CLOCK_SEQ_LOW = 0;
-
-    /**
-     * @var NumberConverterInterface
-     */
-    private $numberConverter;
-
-    /**
-     * @var TimeGeneratorInterface
-     */
-    private $timeGenerator;
-
-    /**
-     * @var DceSecurityProviderInterface
-     */
-    private $dceSecurityProvider;
-
-    public function __construct(
-        NumberConverterInterface $numberConverter,
-        TimeGeneratorInterface $timeGenerator,
-        DceSecurityProviderInterface $dceSecurityProvider
-    ) {
-        $this->numberConverter = $numberConverter;
-        $this->timeGenerator = $timeGenerator;
-        $this->dceSecurityProvider = $dceSecurityProvider;
-    }
-
-    public function generate(
-        int $localDomain,
-        ?IntegerObject $localIdentifier = null,
-        ?Hexadecimal $node = null,
-        ?int $clockSeq = null
-    ): string {
-        if (!in_array($localDomain, self::DOMAINS)) {
-            throw new DceSecurityException(
-                'Local domain must be a valid DCE Security domain'
-            );
-        }
-
-        if ($localIdentifier && $localIdentifier->isNegative()) {
-            throw new DceSecurityException(
-                'Local identifier out of bounds; it must be a value between 0 and 4294967295'
-            );
-        }
-
-        if ($clockSeq > self::CLOCK_SEQ_HIGH || $clockSeq < self::CLOCK_SEQ_LOW) {
-            throw new DceSecurityException(
-                'Clock sequence out of bounds; it must be a value between 0 and 63'
-            );
-        }
-
-        switch ($localDomain) {
-            case Uuid::DCE_DOMAIN_ORG:
-                if ($localIdentifier === null) {
-                    throw new DceSecurityException(
-                        'A local identifier must be provided for the org domain'
-                    );
-                }
-
-                break;
-            case Uuid::DCE_DOMAIN_PERSON:
-                if ($localIdentifier === null) {
-                    $localIdentifier = $this->dceSecurityProvider->getUid();
-                }
-
-                break;
-            case Uuid::DCE_DOMAIN_GROUP:
-            default:
-                if ($localIdentifier === null) {
-                    $localIdentifier = $this->dceSecurityProvider->getGid();
-                }
-
-                break;
-        }
-
-        $identifierHex = $this->numberConverter->toHex($localIdentifier->toString());
-
-        // The maximum value for the local identifier is 0xffffffff, or
-        // 4294967295. This is 8 hexadecimal digits, so if the length of
-        // hexadecimal digits is greater than 8, we know the value is greater
-        // than 0xffffffff.
-        if (strlen($identifierHex) > 8) {
-            throw new DceSecurityException(
-                'Local identifier out of bounds; it must be a value between 0 and 4294967295'
-            );
-        }
-
-        $domainByte = pack('n', $localDomain)[1];
-        $identifierBytes = hex2bin(str_pad($identifierHex, 8, '0', STR_PAD_LEFT));
-
-        if ($node instanceof Hexadecimal) {
-            $node = $node->toString();
-        }
-
-        // Shift the clock sequence 8 bits to the left, so it matches 0x3f00.
-        if ($clockSeq !== null) {
-            $clockSeq = $clockSeq << 8;
-        }
-
-        /** @var string $bytes */
-        $bytes = $this->timeGenerator->generate($node, $clockSeq);
-
-        // Replace bytes in the time-based UUID with DCE Security values.
-        $bytes = substr_replace($bytes, $identifierBytes, 0, 4);
-        $bytes = substr_replace($bytes, $domainByte, 9, 1);
-
-        return $bytes;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

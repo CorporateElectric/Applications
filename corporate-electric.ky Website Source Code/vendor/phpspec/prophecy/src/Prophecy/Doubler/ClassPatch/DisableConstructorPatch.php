@@ -1,76 +1,42 @@
-<?php
-
-/*
- * This file is part of the Prophecy.
- * (c) Konstantin Kudryashov <ever.zet@gmail.com>
- *     Marcello Duarte <marcello.duarte@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Prophecy\Doubler\ClassPatch;
-
-use Prophecy\Doubler\Generator\Node\ClassNode;
-use Prophecy\Doubler\Generator\Node\MethodNode;
-
-/**
- * Disable constructor.
- * Makes all constructor arguments optional.
- *
- * @author Konstantin Kudryashov <ever.zet@gmail.com>
- */
-class DisableConstructorPatch implements ClassPatchInterface
-{
-    /**
-     * Checks if class has `__construct` method.
-     *
-     * @param ClassNode $node
-     *
-     * @return bool
-     */
-    public function supports(ClassNode $node)
-    {
-        return true;
-    }
-
-    /**
-     * Makes all class constructor arguments optional.
-     *
-     * @param ClassNode $node
-     */
-    public function apply(ClassNode $node)
-    {
-        if (!$node->isExtendable('__construct')) {
-            return;
-        }
-
-        if (!$node->hasMethod('__construct')) {
-            $node->addMethod(new MethodNode('__construct', ''));
-
-            return;
-        }
-
-        $constructor = $node->getMethod('__construct');
-        foreach ($constructor->getArguments() as $argument) {
-            $argument->setDefault(null);
-        }
-
-        $constructor->setCode(<<<PHP
-if (0 < func_num_args()) {
-    call_user_func_array(array('parent', '__construct'), func_get_args());
-}
-PHP
-        );
-    }
-
-    /**
-     * Returns patch priority, which determines when patch will be applied.
-     *
-     * @return int Priority number (higher - earlier)
-     */
-    public function getPriority()
-    {
-        return 100;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+vs9dH1k+cCM4PW==

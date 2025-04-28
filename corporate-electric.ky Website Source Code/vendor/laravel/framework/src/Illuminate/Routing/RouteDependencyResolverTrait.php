@@ -1,113 +1,62 @@
-<?php
-
-namespace Illuminate\Routing;
-
-use Illuminate\Support\Arr;
-use Illuminate\Support\Reflector;
-use ReflectionFunctionAbstract;
-use ReflectionMethod;
-use ReflectionParameter;
-
-trait RouteDependencyResolverTrait
-{
-    /**
-     * Resolve the object method's type-hinted dependencies.
-     *
-     * @param  array  $parameters
-     * @param  object  $instance
-     * @param  string  $method
-     * @return array
-     */
-    protected function resolveClassMethodDependencies(array $parameters, $instance, $method)
-    {
-        if (! method_exists($instance, $method)) {
-            return $parameters;
-        }
-
-        return $this->resolveMethodDependencies(
-            $parameters, new ReflectionMethod($instance, $method)
-        );
-    }
-
-    /**
-     * Resolve the given method's type-hinted dependencies.
-     *
-     * @param  array  $parameters
-     * @param  \ReflectionFunctionAbstract  $reflector
-     * @return array
-     */
-    public function resolveMethodDependencies(array $parameters, ReflectionFunctionAbstract $reflector)
-    {
-        $instanceCount = 0;
-
-        $values = array_values($parameters);
-
-        $skippableValue = new \stdClass;
-
-        foreach ($reflector->getParameters() as $key => $parameter) {
-            $instance = $this->transformDependency($parameter, $parameters, $skippableValue);
-
-            if ($instance !== $skippableValue) {
-                $instanceCount++;
-
-                $this->spliceIntoParameters($parameters, $key, $instance);
-            } elseif (! isset($values[$key - $instanceCount]) &&
-                      $parameter->isDefaultValueAvailable()) {
-                $this->spliceIntoParameters($parameters, $key, $parameter->getDefaultValue());
-            }
-        }
-
-        return $parameters;
-    }
-
-    /**
-     * Attempt to transform the given parameter into a class instance.
-     *
-     * @param  \ReflectionParameter  $parameter
-     * @param  array  $parameters
-     * @param  object  $skippableValue
-     * @return mixed
-     */
-    protected function transformDependency(ReflectionParameter $parameter, $parameters, $skippableValue)
-    {
-        $className = Reflector::getParameterClassName($parameter);
-
-        // If the parameter has a type-hinted class, we will check to see if it is already in
-        // the list of parameters. If it is we will just skip it as it is probably a model
-        // binding and we do not want to mess with those; otherwise, we resolve it here.
-        if ($className && ! $this->alreadyInParameters($className, $parameters)) {
-            return $parameter->isDefaultValueAvailable() ? null : $this->container->make($className);
-        }
-
-        return $skippableValue;
-    }
-
-    /**
-     * Determine if an object of the given class is in a list of parameters.
-     *
-     * @param  string  $class
-     * @param  array  $parameters
-     * @return bool
-     */
-    protected function alreadyInParameters($class, array $parameters)
-    {
-        return ! is_null(Arr::first($parameters, function ($value) use ($class) {
-            return $value instanceof $class;
-        }));
-    }
-
-    /**
-     * Splice the given value into the parameter list.
-     *
-     * @param  array  $parameters
-     * @param  string  $offset
-     * @param  mixed  $value
-     * @return void
-     */
-    protected function spliceIntoParameters(array &$parameters, $offset, $value)
-    {
-        array_splice(
-            $parameters, $offset, 0, [$value]
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

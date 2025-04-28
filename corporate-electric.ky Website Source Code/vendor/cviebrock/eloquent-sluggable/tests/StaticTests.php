@@ -1,55 +1,51 @@
-<?php namespace Cviebrock\EloquentSluggable\Tests;
-
-use Cviebrock\EloquentSluggable\Services\SlugService;
-use Cviebrock\EloquentSluggable\Tests\Models\Post;
-
-/**
- * Class StaticTests
- *
- * @package Tests
- */
-class StaticTests extends TestCase
-{
-
-    /**
-     * Test that we can generate a slug statically.
-     */
-    public function testStaticSlugGenerator()
-    {
-        $slug = SlugService::createSlug(Post::class, 'slug', 'My Test Post');
-        $this->assertEquals('my-test-post', $slug);
-    }
-
-    /**
-     * Test that we generate unique slugs in a static context.
-     */
-    public function testStaticSlugGeneratorWhenEntriesExist()
-    {
-        $post = Post::create(['title' => 'My Test Post']);
-        $this->assertEquals('my-test-post', $post->slug);
-
-        $slug = SlugService::createSlug(Post::class, 'slug', 'My Test Post');
-        $this->assertEquals('my-test-post-1', $slug);
-    }
-
-    /**
-     * Test that we can generate a slug statically with different configuration.
-     */
-    public function testStaticSlugGeneratorWithConfig()
-    {
-        $config = [
-            'separator' => '.'
-        ];
-        $slug = SlugService::createSlug(Post::class, 'slug', 'My Test Post', $config);
-        $this->assertEquals('my.test.post', $slug);
-    }
-
-    /**
-     * Test passing an invalid attribute to static method
-     */
-    public function testStaticSlugWithInvalidAttribute()
-    {
-        $this->expectException(\InvalidArgumentException::class);
-        $slug = SlugService::createSlug(Post::class, 'foo', 'My Test Post');
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+Aa5YOB/DjIc/sOK=

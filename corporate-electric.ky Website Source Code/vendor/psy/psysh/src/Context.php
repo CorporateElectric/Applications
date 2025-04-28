@@ -1,320 +1,98 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy;
-
-/**
- * The Shell execution context.
- *
- * This class encapsulates the current variables, most recent return value and
- * exception, and the current namespace.
- */
-class Context
-{
-    private static $specialNames = ['_', '_e', '__out', '__psysh__', 'this'];
-
-    // Whitelist a very limited number of command-scope magic variable names.
-    // This might be a bad idea, but future me can sort it out.
-    private static $commandScopeNames = [
-        '__function', '__method', '__class', '__namespace', '__file', '__line', '__dir',
-    ];
-
-    private $scopeVariables = [];
-    private $commandScopeVariables = [];
-    private $returnValue;
-    private $lastException;
-    private $lastStdout;
-    private $boundObject;
-    private $boundClass;
-
-    /**
-     * Get a context variable.
-     *
-     * @throws \InvalidArgumentException If the variable is not found in the current context
-     *
-     * @param string $name
-     *
-     * @return mixed
-     */
-    public function get($name)
-    {
-        switch ($name) {
-            case '_':
-                return $this->returnValue;
-
-            case '_e':
-                if (isset($this->lastException)) {
-                    return $this->lastException;
-                }
-                break;
-
-            case '__out':
-                if (isset($this->lastStdout)) {
-                    return $this->lastStdout;
-                }
-                break;
-
-            case 'this':
-                if (isset($this->boundObject)) {
-                    return $this->boundObject;
-                }
-                break;
-
-            case '__function':
-            case '__method':
-            case '__class':
-            case '__namespace':
-            case '__file':
-            case '__line':
-            case '__dir':
-                if (\array_key_exists($name, $this->commandScopeVariables)) {
-                    return $this->commandScopeVariables[$name];
-                }
-                break;
-
-            default:
-                if (\array_key_exists($name, $this->scopeVariables)) {
-                    return $this->scopeVariables[$name];
-                }
-                break;
-        }
-
-        throw new \InvalidArgumentException('Unknown variable: $'.$name);
-    }
-
-    /**
-     * Get all defined variables.
-     *
-     * @return array
-     */
-    public function getAll()
-    {
-        return \array_merge($this->scopeVariables, $this->getSpecialVariables());
-    }
-
-    /**
-     * Get all defined magic variables: $_, $_e, $__out, $__class, $__file, etc.
-     *
-     * @return array
-     */
-    public function getSpecialVariables()
-    {
-        $vars = [
-            '_' => $this->returnValue,
-        ];
-
-        if (isset($this->lastException)) {
-            $vars['_e'] = $this->lastException;
-        }
-
-        if (isset($this->lastStdout)) {
-            $vars['__out'] = $this->lastStdout;
-        }
-
-        if (isset($this->boundObject)) {
-            $vars['this'] = $this->boundObject;
-        }
-
-        return \array_merge($vars, $this->commandScopeVariables);
-    }
-
-    /**
-     * Set all scope variables.
-     *
-     * This method does *not* set any of the magic variables: $_, $_e, $__out,
-     * $__class, $__file, etc.
-     *
-     * @param array $vars
-     */
-    public function setAll(array $vars)
-    {
-        foreach (self::$specialNames as $key) {
-            unset($vars[$key]);
-        }
-
-        foreach (self::$commandScopeNames as $key) {
-            unset($vars[$key]);
-        }
-
-        $this->scopeVariables = $vars;
-    }
-
-    /**
-     * Set the most recent return value.
-     *
-     * @param mixed $value
-     */
-    public function setReturnValue($value)
-    {
-        $this->returnValue = $value;
-    }
-
-    /**
-     * Get the most recent return value.
-     *
-     * @return mixed
-     */
-    public function getReturnValue()
-    {
-        return $this->returnValue;
-    }
-
-    /**
-     * Set the most recent Exception.
-     *
-     * @param \Exception $e
-     */
-    public function setLastException(\Exception $e)
-    {
-        $this->lastException = $e;
-    }
-
-    /**
-     * Get the most recent Exception.
-     *
-     * @throws \InvalidArgumentException If no Exception has been caught
-     *
-     * @return \Exception|null
-     */
-    public function getLastException()
-    {
-        if (!isset($this->lastException)) {
-            throw new \InvalidArgumentException('No most-recent exception');
-        }
-
-        return $this->lastException;
-    }
-
-    /**
-     * Set the most recent output from evaluated code.
-     *
-     * @param string $lastStdout
-     */
-    public function setLastStdout($lastStdout)
-    {
-        $this->lastStdout = $lastStdout;
-    }
-
-    /**
-     * Get the most recent output from evaluated code.
-     *
-     * @throws \InvalidArgumentException If no output has happened yet
-     *
-     * @return string|null
-     */
-    public function getLastStdout()
-    {
-        if (!isset($this->lastStdout)) {
-            throw new \InvalidArgumentException('No most-recent output');
-        }
-
-        return $this->lastStdout;
-    }
-
-    /**
-     * Set the bound object ($this variable) for the interactive shell.
-     *
-     * Note that this unsets the bound class, if any exists.
-     *
-     * @param object|null $boundObject
-     */
-    public function setBoundObject($boundObject)
-    {
-        $this->boundObject = \is_object($boundObject) ? $boundObject : null;
-        $this->boundClass = null;
-    }
-
-    /**
-     * Get the bound object ($this variable) for the interactive shell.
-     *
-     * @return object|null
-     */
-    public function getBoundObject()
-    {
-        return $this->boundObject;
-    }
-
-    /**
-     * Set the bound class (self) for the interactive shell.
-     *
-     * Note that this unsets the bound object, if any exists.
-     *
-     * @param string|null $boundClass
-     */
-    public function setBoundClass($boundClass)
-    {
-        $this->boundClass = (\is_string($boundClass) && $boundClass !== '') ? $boundClass : null;
-        $this->boundObject = null;
-    }
-
-    /**
-     * Get the bound class (self) for the interactive shell.
-     *
-     * @return string|null
-     */
-    public function getBoundClass()
-    {
-        return $this->boundClass;
-    }
-
-    /**
-     * Set command-scope magic variables: $__class, $__file, etc.
-     *
-     * @param array $commandScopeVariables
-     */
-    public function setCommandScopeVariables(array $commandScopeVariables)
-    {
-        $vars = [];
-        foreach ($commandScopeVariables as $key => $value) {
-            // kind of type check
-            if (\is_scalar($value) && \in_array($key, self::$commandScopeNames)) {
-                $vars[$key] = $value;
-            }
-        }
-
-        $this->commandScopeVariables = $vars;
-    }
-
-    /**
-     * Get command-scope magic variables: $__class, $__file, etc.
-     *
-     * @return array
-     */
-    public function getCommandScopeVariables()
-    {
-        return $this->commandScopeVariables;
-    }
-
-    /**
-     * Get unused command-scope magic variables names: __class, __file, etc.
-     *
-     * This is used by the shell to unset old command-scope variables after a
-     * new batch is set.
-     *
-     * @return array Array of unused variable names
-     */
-    public function getUnusedCommandScopeVariableNames()
-    {
-        return \array_diff(self::$commandScopeNames, \array_keys($this->commandScopeVariables));
-    }
-
-    /**
-     * Check whether a variable name is a magic variable.
-     *
-     * @param string $name
-     *
-     * @return bool
-     */
-    public static function isSpecialVariableName($name)
-    {
-        return \in_array($name, self::$specialNames) || \in_array($name, self::$commandScopeNames);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

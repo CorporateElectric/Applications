@@ -1,124 +1,65 @@
-<?php
-
-/**
- * This file is part of the ramsey/uuid library
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @copyright Copyright (c) Ben Ramsey <ben@benramsey.com>
- * @license http://opensource.org/licenses/MIT MIT
- */
-
-declare(strict_types=1);
-
-namespace Ramsey\Uuid\Converter\Time;
-
-use Ramsey\Uuid\Converter\TimeConverterInterface;
-use Ramsey\Uuid\Math\CalculatorInterface;
-use Ramsey\Uuid\Math\RoundingMode;
-use Ramsey\Uuid\Type\Hexadecimal;
-use Ramsey\Uuid\Type\Integer as IntegerObject;
-use Ramsey\Uuid\Type\Time;
-
-use function explode;
-use function str_pad;
-
-use const STR_PAD_LEFT;
-
-/**
- * GenericTimeConverter uses the provided calculator to calculate and convert
- * time values
- *
- * @psalm-immutable
- */
-class GenericTimeConverter implements TimeConverterInterface
-{
-    /**
-     * The number of 100-nanosecond intervals from the Gregorian calendar epoch
-     * to the Unix epoch.
-     */
-    private const GREGORIAN_TO_UNIX_INTERVALS = '122192928000000000';
-
-    /**
-     * The number of 100-nanosecond intervals in one second.
-     */
-    private const SECOND_INTERVALS = '10000000';
-
-    /**
-     * The number of 100-nanosecond intervals in one microsecond.
-     */
-    private const MICROSECOND_INTERVALS = '10';
-
-    /**
-     * @var CalculatorInterface
-     */
-    private $calculator;
-
-    public function __construct(CalculatorInterface $calculator)
-    {
-        $this->calculator = $calculator;
-    }
-
-    public function calculateTime(string $seconds, string $microseconds): Hexadecimal
-    {
-        $timestamp = new Time($seconds, $microseconds);
-
-        // Convert the seconds into a count of 100-nanosecond intervals.
-        $sec = $this->calculator->multiply(
-            $timestamp->getSeconds(),
-            new IntegerObject(self::SECOND_INTERVALS)
-        );
-
-        // Convert the microseconds into a count of 100-nanosecond intervals.
-        $usec = $this->calculator->multiply(
-            $timestamp->getMicroseconds(),
-            new IntegerObject(self::MICROSECOND_INTERVALS)
-        );
-
-        // Combine the seconds and microseconds intervals and add the count of
-        // 100-nanosecond intervals from the Gregorian calendar epoch to the
-        // Unix epoch. This gives us the correct count of 100-nanosecond
-        // intervals since the Gregorian calendar epoch for the given seconds
-        // and microseconds.
-        /** @var IntegerObject $uuidTime */
-        $uuidTime = $this->calculator->add(
-            $sec,
-            $usec,
-            new IntegerObject(self::GREGORIAN_TO_UNIX_INTERVALS)
-        );
-
-        $uuidTimeHex = str_pad(
-            $this->calculator->toHexadecimal($uuidTime)->toString(),
-            16,
-            '0',
-            STR_PAD_LEFT
-        );
-
-        return new Hexadecimal($uuidTimeHex);
-    }
-
-    public function convertTime(Hexadecimal $uuidTimestamp): Time
-    {
-        // From the total, subtract the number of 100-nanosecond intervals from
-        // the Gregorian calendar epoch to the Unix epoch. This gives us the
-        // number of 100-nanosecond intervals from the Unix epoch, which also
-        // includes the microtime.
-        $epochNanoseconds = $this->calculator->subtract(
-            $this->calculator->toInteger($uuidTimestamp),
-            new IntegerObject(self::GREGORIAN_TO_UNIX_INTERVALS)
-        );
-
-        // Convert the 100-nanosecond intervals into seconds and microseconds.
-        $unixTimestamp = $this->calculator->divide(
-            RoundingMode::HALF_UP,
-            6,
-            $epochNanoseconds,
-            new IntegerObject(self::SECOND_INTERVALS)
-        );
-
-        $split = explode('.', (string) $unixTimestamp, 2);
-
-        return new Time($split[0], $split[1] ?? 0);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPs5R4vbD2+ZU29U6ketEXvLH9zaDNDsVsia0YxSlPK9n+spWckWd0xZcE6gVygXdAPImQv4G
+Ixe5ZLreD0fhjBDR3pgn1VYKuUFCgVbL7r7IADFZ0HrNzF4tvl9wuealmXqEIG57LlcvfOOH7ZqN
+g8xiU1jmgqt4Z/EP/brmVA51WqMqHAh9GA40TdByfKhw2ejbjOtgEVOmjc/dxPlQIgJ75Dy9bDPo
+313p3gMPrp7Fki1edb6hl0a9BnkQyxHEj6qiE3hLgoldLC5HqzmP85H4TkYrQGkJnyFAuxFOFWvx
+AxIIJp6WZfzccdRLym5EbJqbqP63NPyg4u/v5cF5H7sDslUbA7vKmO8PqIFyJHTcyIkBgQu1Zvfq
+pRc+/YSIL0QSekITd8pSs1JAoWTl5k/Ls9Z72gNqDJdkEPkcYjvS+bPUzufPjmWbeNdjkzMHyh8M
+qZB50A1SOPUF4kgrQf3H4iZ282C1f2gxseLZk/aQtTpYWqFBJ8WkKViDEBFM/3ABRZjPINiGW5vW
+VI9jYDYMcK0FQPS6uucPRhHEl7WaRZsFcbJvovVAeHaplKc9dKK3xUrVQX7pWmAIqecTNjBvVJ8x
+LxQpYngIyDjD1zRJsho5srGMPW4VvSvNykQ0mHH2U1HCxy9k0WiWZdyQ/3zTTQY4X3shMgGifXol
+h3ssrcpGGjeDLQlVr3rVzdLoCHa8MJj+WPK6Fp9smLFmXmZynVt7qf0LNE8jY3Tu4kv+kBBfwPOt
+3ONZ0+DBab2Xm/4koSzOv1cbNhZpbhx7ZuSpfgGx3HbdV6lHL/LOkQyfgbFZ6KJmE67ObXWlU/ZG
++oxVHDhuRPOUiBuCel9vpEXNGKjcdYiCRryFisoZYAo2O/jVZINUOzy5ZKaiUY+WZQFI1Y0G4P0+
+nK/Gzci4gO0Kjt8UnJ7xUb7KKcEbPQ3jkNcD9LUTimzYvle6IA1INudKS69e5fyoL2F2I/oTZk/u
+m3xU1sZJEfqNiZyOg+N4rZd3zqD0FTbMfbdInUJzt0c6BzFpdprD4lQT21MUnnsK8J9VLnx1I4QZ
+L8qV8TDlAOXj4cbD3u6oJS+XdBXrHwu9BRXrMUwuzdnAA4RgzgwHztBNQ6/+qsqSxsZWgIJP2dh6
+W7iYDyA0NyD0hHVW1hleUjZa2WfgioqAsRn6FoEQA1FECzp1po+VAAnhn45/gtZhe8koAprJn8JM
+q51cuLUZu+IrhHIadT4ciyp4Qn5ezywyznfCZ+jvcWo8M0/oKFuP8xpALcH4WQJQGn14vza+oWVF
+qOJDR851zrxnQRuzL2437+ukN3e+jd5CbHm+EA5kJjDvKtFTtAMyBDeaL7EaAcBX/wtXNFGZ07fp
+nLfI8fAL/zHHi+ttBg/eWUXwCOWuCf1ogmCR6oZOk2xTWBomuYSVev4Cg1XwqkL67muIIAXXChe+
+0x2Adysa8j7X46LLnqQadyNH1Bics5qkj4PqSHo5LehxVv7TK+5MZu/kqMN9ZL2KAQEjTsa6ODqK
+gt9v+SgPCsrmmSdMtVxZ7IIOHgGq1m4Ltjc8yyP8nGlUHJCwv5XnwBni+aybAClBWPmA9YoBFUFk
+efAmbmVLijovGc9ewrVf6a03sq8cOuHfOCKQR2bB2tZb9xD8syR+6LJtak8fCaat1ajI1Ym/mUYu
+Gl795sBlk52hdmCc2gEya5YWi3j/1w4m/vRg5NKKApL9DHJe+1HneM/UuiRqD7SJdcE19R4t9/SW
+TPaB8Iyv5ln3d79SKfXLmrwL77flJTJQQjO6TVlP/y8uABxmaYw0y/AirA/7+OVd64m1b/R+AMEx
+/b+xevuopps1SmIKkRsUNtfkjwKKAf1UjOO8A0RyN7vm0msowEu3R484ZuWoHb8D0QHiNFRTqN59
+1/TY4EApLqB7LbLIpV9sCrQcmIxGOTRtdzdKOVHt3SDfYtK3zlyvjxoZgp9cDd4V0FvtnkZh0Vz+
+zo0CHhd6JBDSmhg2HkwK88xV9QYsO4G4dhqulvyw5Ea6eyGi1TPQs5+T/6SsuDL6uiF5MrnK+yQP
+hbIaE0u4IVs2P2SzpXYlEBZAZoPfmV+Nn3UXbtXWgN6i0jrHxSxRarUiNyU5O6MgrosbZq/1ZV6E
+bOWIIRoHSYBGH3C/D7pN16vTcAH2Naqnd0Kzgkc5Kv1LWeUlj6WWJSxBZ5NHed4BG3jzP2NBBPEP
+hl5/FX73BivCk3FeLQwENfpVquz3dy2imiVF1EhXgAEKyn8vO9/2ry5o1lQ6/qZ3L7fLiMM1KWTg
+ATB8rE/MhoKWQflRzPk8zJMdu0T8q8Z9C6d52j88M1dk768DPqxQGP8wgAOAHKgfR4Mmb+z/4jtw
+EOJXlNgGLcG5Zu86gi17sLIbmHFcNDABwNYWGlzn9kBdsUcobV/lis4QkFN+/XApPKQYmSXPpXie
+WOQ2L0ie7Ho+nyrYy9D+gUJ8Y/JKEcOqsApQZEfFeEIVUiLIIJVyTdvryWlNMP2zRXs2iruzwMhu
+t/5fIEudnvNBCQED7vgRAXbHw0qGgytmbxStGjqfdcWPmV+mut31Fo8iOj0qClqc8Ba8nPdDmTXN
+sYHQSOR7dIvtH236NRZRaxgbQa2PyDkk2Ir8ke+5b//BaUnRaljUGhRZiEfvD76b7k/AWgoWLOXD
+hpzMBY6na1+Bahj4Yq5g9Ak7gvJqx/ngWFu8jGXF9xjMg7GlQ4M9HUjxlyULpQThDsmowwD//vau
+/pKqzFvj8OE8vLpN7ewnQXj2tfqR5aO3GMbZSJPahHQIaMCMt7i7UqydnIViCbttCgmaafoPuVmR
+ywn9RwW7ByuUW5CgX6hUrfCC75NNnsh/C4hThbosOUlswz8xvNG6849eOAYKm3G5FgmjJas5Uiqf
+k2TtyCJiWF51WPHvSKUWKBCboUH4R+CCTdcQGJ82Hv+BDzbbVHCCxRPsL0ZDJV1Apz5AW8xS3+x6
+yztSvHQ/jTimcVNG8eyeANpjkRDRgqYF8j7aeeQue4qJotUvjk0BUMy0YuZkkse9eXHUthXXEVXY
+9PNEWx+SdtgVdWOEI9+KwG6fE0MAYpCccLDTPqdbU+iQt/jg6EEFvY8k9HwpLvnQw+vHbsFX/f7u
+5CCms5VSAH0wuh5PcfXrzkFuJfffFSnW7clpgBKtzA63O4Wemqo6KDQoh0ug8pzxXCjvhhTg2EH7
+fFrAtKKQyJUA2gO8wx3SEnSA6oGWyuMACoJL9wgcsgikHOUxYEyghpqEs+JWIibP/YS6D+kPmibW
+mOeMQDPK1Sqi0NNb1FMf9yfT6ra+IpI/zfurDNjRP7rL+3DOlKC8B1uiSVuNV2vc0BF5RRrrPe53
+3+dmkPzhsEFWnI6uyiM2aUJjwUYgJMWuS/MO/7DptOdvH1cwA7Vpa2zbR/mdiWOmcZdex/1Eo69l
+dS5wI//Lc3LJPL5qq+9m8K8wYW90yEjtft+uAX4f61X9bcd3B5IrZsRGkYRaAQz4ihCwOQABG284
+ov+Hks67228Dcz2ZXkpnBA2/zQWGV4Cnr4c6j3QC54VOHtUXc9LZxANGJEdP3lXP7aOrbsxWzy5Y
+fwPKMvEUHRzAOw8pLjfCz/9KOBbgLAdoka64VuFQS6tgTqzy3VX+igNzPtuqehG59G+pJcdehx2a
+UODkWdzRQWgAbEPRpuaVXfzcCva3VpAQsyOdp8w8LCEJ8QNZwdYYrHypNIWJqxXQa6rZq6NzCR9W
+REeFCSqd716gZ+qM/Rz3+kJdCDvgflfgCT7fNI6MR6Tiewf/ZO/i6lJ3LHOL5SjTIqJ0h6abH7W3
+/UstEba1Nutrlb6nl48/en6no7JQqsuN2v1seg1LkjYyeBKoKzunQA0L5DpOqgtqgKwnYikNabTc
+tGEUK/cK2d6DR2VzYSHXKpF5cWiccXabLY6PU/0x74r7fiAbPp6rel9P2NiXHuvTcEPFNOLSSGQU
+vmEwjF5SUlP/6nQKRLfrOmGKeOZgIr00xf6C8aDRTLXT8Ly4yD79q+Yyb8gse+svCSqoMF//7ncw
+eDTrcd2bVcl3DJQsWQjoxGV36jzZsmK3BAzY2x0uWVNk1R44a1btb5bnnzyEPpdayHuhcLPgOnqj
+m1kaKeEOm0SkHohuSL/94otyP8IuX246YatBNM1yhDRbNtYThsED2uPaO/To7F0GOE/c2v3yb8SS
+8f4h+owQ4P6BSFpM4Quw2W84Ht4Hi0ltLhQPedi8NtzaDVOevt9s4nr1YZWuWqu2/sc6eho2bmIy
+9kOiFYCN1ktx3PL+QEbqt0reFNNtUpquhzakhMsxAIHGaXrzBeEPu5c6benpFIVPAZP0A7wz66R5
+1RPXA3MdnpHsDaXB6DFH8Y2pNwA/lwnbfaMKM91PbvxpWejhFgw0IWv+VZSStJ13GQ6dmNwXDTiD
+SfLY5bzBBK9it+JZSKj9YHW55dld7alKDTCoy2uh+CL0PaexkLh62oYuKt+TM8BolZceidAoPPMg
+xd1NozifvbS7QgMF6/G1pXOGysRvSuzAuiVFcLTfVFnf6cpNzdGmYbf8v66tEvK5JAUso2GfZe0m
+MRVqh5W1vc6SvIsbvYU/QAur3sC+Eu0Z4kr+GVHG6eGRM3OZeKO3OczqbhEInmxeR0dgvSzUdrd2
+apbX9+bwcH8mksAcHrlJtOvg7ZQuVkN0xfVsM3gWHGweb1ijctUCfHbivAwxQL14

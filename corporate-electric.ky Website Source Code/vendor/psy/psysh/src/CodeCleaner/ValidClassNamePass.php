@@ -1,419 +1,163 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\CodeCleaner;
-
-use PhpParser\Node;
-use PhpParser\Node\Expr;
-use PhpParser\Node\Expr\ClassConstFetch;
-use PhpParser\Node\Expr\New_;
-use PhpParser\Node\Expr\StaticCall;
-use PhpParser\Node\Expr\Ternary;
-use PhpParser\Node\Stmt;
-use PhpParser\Node\Stmt\Class_;
-use PhpParser\Node\Stmt\Do_;
-use PhpParser\Node\Stmt\If_;
-use PhpParser\Node\Stmt\Interface_;
-use PhpParser\Node\Stmt\Switch_;
-use PhpParser\Node\Stmt\Trait_;
-use PhpParser\Node\Stmt\While_;
-use Psy\Exception\FatalErrorException;
-
-/**
- * Validate that classes exist.
- *
- * This pass throws a FatalErrorException rather than letting PHP run
- * headfirst into a real fatal error and die.
- */
-class ValidClassNamePass extends NamespaceAwarePass
-{
-    const CLASS_TYPE = 'class';
-    const INTERFACE_TYPE = 'interface';
-    const TRAIT_TYPE = 'trait';
-
-    private $conditionalScopes = 0;
-    private $atLeastPhp7;
-
-    public function __construct()
-    {
-        $this->atLeastPhp7 = \version_compare(\PHP_VERSION, '7.0', '>=');
-    }
-
-    /**
-     * Validate class, interface and trait definitions.
-     *
-     * Validate them upon entering the node, so that we know about their
-     * presence and can validate constant fetches and static calls in class or
-     * trait methods.
-     *
-     * @param Node $node
-     */
-    public function enterNode(Node $node)
-    {
-        parent::enterNode($node);
-
-        if (self::isConditional($node)) {
-            $this->conditionalScopes++;
-
-            return;
-        }
-
-        if ($this->conditionalScopes === 0) {
-            if ($node instanceof Class_) {
-                $this->validateClassStatement($node);
-            } elseif ($node instanceof Interface_) {
-                $this->validateInterfaceStatement($node);
-            } elseif ($node instanceof Trait_) {
-                $this->validateTraitStatement($node);
-            }
-        }
-    }
-
-    /**
-     * Validate `new` expressions, class constant fetches, and static calls.
-     *
-     * @throws FatalErrorException if a class, interface or trait is referenced which does not exist
-     * @throws FatalErrorException if a class extends something that is not a class
-     * @throws FatalErrorException if a class implements something that is not an interface
-     * @throws FatalErrorException if an interface extends something that is not an interface
-     * @throws FatalErrorException if a class, interface or trait redefines an existing class, interface or trait name
-     *
-     * @param Node $node
-     */
-    public function leaveNode(Node $node)
-    {
-        if (self::isConditional($node)) {
-            $this->conditionalScopes--;
-
-            return;
-        }
-
-        if (!$this->atLeastPhp7) {
-            if ($node instanceof New_) {
-                $this->validateNewExpression($node);
-            } elseif ($node instanceof ClassConstFetch) {
-                $this->validateClassConstFetchExpression($node);
-            } elseif ($node instanceof StaticCall) {
-                $this->validateStaticCallExpression($node);
-            }
-        }
-    }
-
-    private static function isConditional(Node $node)
-    {
-        return $node instanceof If_ ||
-            $node instanceof While_ ||
-            $node instanceof Do_ ||
-            $node instanceof Switch_ ||
-            $node instanceof Ternary;
-    }
-
-    /**
-     * Validate a class definition statement.
-     *
-     * @param Class_ $stmt
-     */
-    protected function validateClassStatement(Class_ $stmt)
-    {
-        $this->ensureCanDefine($stmt, self::CLASS_TYPE);
-        if (isset($stmt->extends)) {
-            $this->ensureClassExists($this->getFullyQualifiedName($stmt->extends), $stmt);
-        }
-        $this->ensureInterfacesExist($stmt->implements, $stmt);
-    }
-
-    /**
-     * Validate an interface definition statement.
-     *
-     * @param Interface_ $stmt
-     */
-    protected function validateInterfaceStatement(Interface_ $stmt)
-    {
-        $this->ensureCanDefine($stmt, self::INTERFACE_TYPE);
-        $this->ensureInterfacesExist($stmt->extends, $stmt);
-    }
-
-    /**
-     * Validate a trait definition statement.
-     *
-     * @param Trait_ $stmt
-     */
-    protected function validateTraitStatement(Trait_ $stmt)
-    {
-        $this->ensureCanDefine($stmt, self::TRAIT_TYPE);
-    }
-
-    /**
-     * Validate a `new` expression.
-     *
-     * @param New_ $stmt
-     */
-    protected function validateNewExpression(New_ $stmt)
-    {
-        // if class name is an expression or an anonymous class, give it a pass for now
-        if (!$stmt->class instanceof Expr && !$stmt->class instanceof Class_) {
-            $this->ensureClassExists($this->getFullyQualifiedName($stmt->class), $stmt);
-        }
-    }
-
-    /**
-     * Validate a class constant fetch expression's class.
-     *
-     * @param ClassConstFetch $stmt
-     */
-    protected function validateClassConstFetchExpression(ClassConstFetch $stmt)
-    {
-        // there is no need to check exists for ::class const
-        if (\strtolower($stmt->name) === 'class') {
-            return;
-        }
-
-        // if class name is an expression, give it a pass for now
-        if (!$stmt->class instanceof Expr) {
-            $this->ensureClassOrInterfaceExists($this->getFullyQualifiedName($stmt->class), $stmt);
-        }
-    }
-
-    /**
-     * Validate a class constant fetch expression's class.
-     *
-     * @param StaticCall $stmt
-     */
-    protected function validateStaticCallExpression(StaticCall $stmt)
-    {
-        // if class name is an expression, give it a pass for now
-        if (!$stmt->class instanceof Expr) {
-            $this->ensureMethodExists($this->getFullyQualifiedName($stmt->class), $stmt->name, $stmt);
-        }
-    }
-
-    /**
-     * Ensure that no class, interface or trait name collides with a new definition.
-     *
-     * @throws FatalErrorException
-     *
-     * @param Stmt   $stmt
-     * @param string $scopeType
-     */
-    protected function ensureCanDefine(Stmt $stmt, $scopeType = self::CLASS_TYPE)
-    {
-        $name = $this->getFullyQualifiedName($stmt->name);
-
-        // check for name collisions
-        $errorType = null;
-        if ($this->classExists($name)) {
-            $errorType = self::CLASS_TYPE;
-        } elseif ($this->interfaceExists($name)) {
-            $errorType = self::INTERFACE_TYPE;
-        } elseif ($this->traitExists($name)) {
-            $errorType = self::TRAIT_TYPE;
-        }
-
-        if ($errorType !== null) {
-            throw $this->createError(\sprintf('%s named %s already exists', \ucfirst($errorType), $name), $stmt);
-        }
-
-        // Store creation for the rest of this code snippet so we can find local
-        // issue too
-        $this->currentScope[\strtolower($name)] = $scopeType;
-    }
-
-    /**
-     * Ensure that a referenced class exists.
-     *
-     * @throws FatalErrorException
-     *
-     * @param string $name
-     * @param Stmt   $stmt
-     */
-    protected function ensureClassExists($name, $stmt)
-    {
-        if (!$this->classExists($name)) {
-            throw $this->createError(\sprintf('Class \'%s\' not found', $name), $stmt);
-        }
-    }
-
-    /**
-     * Ensure that a referenced class _or interface_ exists.
-     *
-     * @throws FatalErrorException
-     *
-     * @param string $name
-     * @param Stmt   $stmt
-     */
-    protected function ensureClassOrInterfaceExists($name, $stmt)
-    {
-        if (!$this->classExists($name) && !$this->interfaceExists($name)) {
-            throw $this->createError(\sprintf('Class \'%s\' not found', $name), $stmt);
-        }
-    }
-
-    /**
-     * Ensure that a referenced class _or trait_ exists.
-     *
-     * @throws FatalErrorException
-     *
-     * @param string $name
-     * @param Stmt   $stmt
-     */
-    protected function ensureClassOrTraitExists($name, $stmt)
-    {
-        if (!$this->classExists($name) && !$this->traitExists($name)) {
-            throw $this->createError(\sprintf('Class \'%s\' not found', $name), $stmt);
-        }
-    }
-
-    /**
-     * Ensure that a statically called method exists.
-     *
-     * @throws FatalErrorException
-     *
-     * @param string $class
-     * @param string $name
-     * @param Stmt   $stmt
-     */
-    protected function ensureMethodExists($class, $name, $stmt)
-    {
-        $this->ensureClassOrTraitExists($class, $stmt);
-
-        // let's pretend all calls to self, parent and static are valid
-        if (\in_array(\strtolower($class), ['self', 'parent', 'static'])) {
-            return;
-        }
-
-        // ... and all calls to classes defined right now
-        if ($this->findInScope($class) === self::CLASS_TYPE) {
-            return;
-        }
-
-        // if method name is an expression, give it a pass for now
-        if ($name instanceof Expr) {
-            return;
-        }
-
-        if (!\method_exists($class, $name) && !\method_exists($class, '__callStatic')) {
-            throw $this->createError(\sprintf('Call to undefined method %s::%s()', $class, $name), $stmt);
-        }
-    }
-
-    /**
-     * Ensure that a referenced interface exists.
-     *
-     * @throws FatalErrorException
-     *
-     * @param Interface_[] $interfaces
-     * @param Stmt         $stmt
-     */
-    protected function ensureInterfacesExist($interfaces, $stmt)
-    {
-        foreach ($interfaces as $interface) {
-            /** @var string $name */
-            $name = $this->getFullyQualifiedName($interface);
-            if (!$this->interfaceExists($name)) {
-                throw $this->createError(\sprintf('Interface \'%s\' not found', $name), $stmt);
-            }
-        }
-    }
-
-    /**
-     * Get a symbol type key for storing in the scope name cache.
-     *
-     * @deprecated No longer used. Scope type should be passed into ensureCanDefine directly.
-     * @codeCoverageIgnore
-     *
-     * @param Stmt $stmt
-     *
-     * @return string
-     */
-    protected function getScopeType(Stmt $stmt)
-    {
-        if ($stmt instanceof Class_) {
-            return self::CLASS_TYPE;
-        } elseif ($stmt instanceof Interface_) {
-            return self::INTERFACE_TYPE;
-        } elseif ($stmt instanceof Trait_) {
-            return self::TRAIT_TYPE;
-        }
-    }
-
-    /**
-     * Check whether a class exists, or has been defined in the current code snippet.
-     *
-     * Gives `self`, `static` and `parent` a free pass.
-     *
-     * @param string $name
-     *
-     * @return bool
-     */
-    protected function classExists($name)
-    {
-        // Give `self`, `static` and `parent` a pass. This will actually let
-        // some errors through, since we're not checking whether the keyword is
-        // being used in a class scope.
-        if (\in_array(\strtolower($name), ['self', 'static', 'parent'])) {
-            return true;
-        }
-
-        return \class_exists($name) || $this->findInScope($name) === self::CLASS_TYPE;
-    }
-
-    /**
-     * Check whether an interface exists, or has been defined in the current code snippet.
-     *
-     * @param string $name
-     *
-     * @return bool
-     */
-    protected function interfaceExists($name)
-    {
-        return \interface_exists($name) || $this->findInScope($name) === self::INTERFACE_TYPE;
-    }
-
-    /**
-     * Check whether a trait exists, or has been defined in the current code snippet.
-     *
-     * @param string $name
-     *
-     * @return bool
-     */
-    protected function traitExists($name)
-    {
-        return \trait_exists($name) || $this->findInScope($name) === self::TRAIT_TYPE;
-    }
-
-    /**
-     * Find a symbol in the current code snippet scope.
-     *
-     * @param string $name
-     *
-     * @return string|null
-     */
-    protected function findInScope($name)
-    {
-        $name = \strtolower($name);
-        if (isset($this->currentScope[$name])) {
-            return $this->currentScope[$name];
-        }
-    }
-
-    /**
-     * Error creation factory.
-     *
-     * @param string $msg
-     * @param Stmt   $stmt
-     *
-     * @return FatalErrorException
-     */
-    protected function createError($msg, $stmt)
-    {
-        return new FatalErrorException($msg, 0, \E_ERROR, null, $stmt->getLine());
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

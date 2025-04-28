@@ -1,75 +1,45 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Framework;
-
-use function explode;
-use PHPUnit\Util\Test as TestUtil;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for PHPUnit
- */
-final class DataProviderTestSuite extends TestSuite
-{
-    /**
-     * @var list<ExecutionOrderDependency>
-     */
-    private $dependencies = [];
-
-    /**
-     * @param list<ExecutionOrderDependency> $dependencies
-     */
-    public function setDependencies(array $dependencies): void
-    {
-        $this->dependencies = $dependencies;
-
-        foreach ($this->tests as $test) {
-            if (!$test instanceof TestCase) {
-                // @codeCoverageIgnoreStart
-                continue;
-                // @codeCoverageIgnoreStart
-            }
-            $test->setDependencies($dependencies);
-        }
-    }
-
-    /**
-     * @return list<ExecutionOrderDependency>
-     */
-    public function provides(): array
-    {
-        if ($this->providedTests === null) {
-            $this->providedTests = [new ExecutionOrderDependency($this->getName())];
-        }
-
-        return $this->providedTests;
-    }
-
-    /**
-     * @return list<ExecutionOrderDependency>
-     */
-    public function requires(): array
-    {
-        // A DataProviderTestSuite does not have to traverse its child tests
-        // as these are inherited and cannot reference dataProvider rows directly
-        return $this->dependencies;
-    }
-
-    /**
-     * Returns the size of the each test created using the data provider(s).
-     *
-     * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
-     */
-    public function getSize(): int
-    {
-        [$className, $methodName] = explode('::', $this->getName());
-
-        return TestUtil::getSize($className, $methodName);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+WOJL1kGmf+uIDqm=

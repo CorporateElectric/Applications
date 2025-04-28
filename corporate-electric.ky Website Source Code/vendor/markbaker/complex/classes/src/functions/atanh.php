@@ -1,38 +1,32 @@
-<?php
-
-/**
- *
- * Function code for the complex atanh() function
- *
- * @copyright  Copyright (c) 2013-2018 Mark Baker (https://github.com/MarkBaker/PHPComplex)
- * @license    https://opensource.org/licenses/MIT    MIT
- */
-namespace Complex;
-
-/**
- * Returns the inverse hyperbolic tangent of a complex number.
- *
- * @param     Complex|mixed    $complex    Complex number or a numeric value.
- * @return    Complex          The inverse hyperbolic tangent of the complex argument.
- * @throws    Exception        If argument isn't a valid real or complex number.
- */
-function atanh($complex): Complex
-{
-    $complex = Complex::validateComplexArgument($complex);
-
-    if ($complex->isReal()) {
-        $real = $complex->getReal();
-        if ($real >= -1.0 && $real <= 1.0) {
-            return new Complex(\atanh($real));
-        } else {
-            return new Complex(\atanh(1 / $real), (($real < 0.0) ? M_PI_2 : -1 * M_PI_2));
-        }
-    }
-
-    $iComplex = clone $complex;
-    $iComplex = $iComplex->invertImaginary()
-        ->reverse();
-    return atan($iComplex)
-        ->invertReal()
-        ->reverse();
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

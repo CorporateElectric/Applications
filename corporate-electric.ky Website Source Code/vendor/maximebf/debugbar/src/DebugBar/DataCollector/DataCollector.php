@@ -1,234 +1,90 @@
-<?php
-/*
- * This file is part of the DebugBar package.
- *
- * (c) 2013 Maxime Bouroumeau-Fuseau
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace DebugBar\DataCollector;
-
-use DebugBar\DataFormatter\DataFormatter;
-use DebugBar\DataFormatter\DataFormatterInterface;
-use DebugBar\DataFormatter\DebugBarVarDumper;
-
-/**
- * Abstract class for data collectors
- */
-abstract class DataCollector implements DataCollectorInterface
-{
-    private static $defaultDataFormatter;
-    private static $defaultVarDumper;
-
-    protected $dataFormater;
-    protected $varDumper;
-    protected $xdebugLinkTemplate = '';
-    protected $xdebugShouldUseAjax = false;
-    protected $xdebugReplacements = array();
-
-    /**
-     * Sets the default data formater instance used by all collectors subclassing this class
-     *
-     * @param DataFormatterInterface $formater
-     */
-    public static function setDefaultDataFormatter(DataFormatterInterface $formater)
-    {
-        self::$defaultDataFormatter = $formater;
-    }
-
-    /**
-     * Returns the default data formater
-     *
-     * @return DataFormatterInterface
-     */
-    public static function getDefaultDataFormatter()
-    {
-        if (self::$defaultDataFormatter === null) {
-            self::$defaultDataFormatter = new DataFormatter();
-        }
-        return self::$defaultDataFormatter;
-    }
-
-    /**
-     * Sets the data formater instance used by this collector
-     *
-     * @param DataFormatterInterface $formater
-     * @return $this
-     */
-    public function setDataFormatter(DataFormatterInterface $formater)
-    {
-        $this->dataFormater = $formater;
-        return $this;
-    }
-
-    /**
-     * @return DataFormatterInterface
-     */
-    public function getDataFormatter()
-    {
-        if ($this->dataFormater === null) {
-            $this->dataFormater = self::getDefaultDataFormatter();
-        }
-        return $this->dataFormater;
-    }
-
-    /**
-     * Get an Xdebug Link to a file
-     *
-     * @param string $file
-     * @param int    $line
-     *
-     * @return array {
-     * @var string   $url
-     * @var bool     $ajax should be used to open the url instead of a normal links
-     * }
-     */
-    public function getXdebugLink($file, $line = 1)
-    {
-        if (count($this->xdebugReplacements)) {
-            $file = strtr($file, $this->xdebugReplacements);
-        }
-
-        $url = strtr($this->getXdebugLinkTemplate(), ['%f' => $file, '%l' => $line]);
-        if ($url) {
-            return ['url' => $url, 'ajax' => $this->getXdebugShouldUseAjax()];
-        }
-    }
-  
-    /**  
-     * Sets the default variable dumper used by all collectors subclassing this class
-     *
-     * @param DebugBarVarDumper $varDumper
-     */
-    public static function setDefaultVarDumper(DebugBarVarDumper $varDumper)
-    {
-        self::$defaultVarDumper = $varDumper;
-    }
-
-    /**
-     * Returns the default variable dumper
-     *
-     * @return DebugBarVarDumper
-     */
-    public static function getDefaultVarDumper()
-    {
-        if (self::$defaultVarDumper === null) {
-            self::$defaultVarDumper = new DebugBarVarDumper();
-        }
-        return self::$defaultVarDumper;
-    }
-
-    /**
-     * Sets the variable dumper instance used by this collector
-     *
-     * @param DebugBarVarDumper $varDumper
-     * @return $this
-     */
-    public function setVarDumper(DebugBarVarDumper $varDumper)
-    {
-        $this->varDumper = $varDumper;
-        return $this;
-    }
-
-    /**
-     * Gets the variable dumper instance used by this collector; note that collectors using this
-     * instance need to be sure to return the static assets provided by the variable dumper.
-     *
-     * @return DebugBarVarDumper
-     */
-    public function getVarDumper()
-    {
-        if ($this->varDumper === null) {
-            $this->varDumper = self::getDefaultVarDumper();
-        }
-        return $this->varDumper;
-    }
-
-    /**
-     * @deprecated
-     */
-    public function formatVar($var)
-    {
-        return $this->getDataFormatter()->formatVar($var);
-    }
-
-    /**
-     * @deprecated
-     */
-    public function formatDuration($seconds)
-    {
-        return $this->getDataFormatter()->formatDuration($seconds);
-    }
-
-    /**
-     * @deprecated
-     */
-    public function formatBytes($size, $precision = 2)
-    {
-        return $this->getDataFormatter()->formatBytes($size, $precision);
-    }
-
-    /**
-     * @return string
-     */
-    public function getXdebugLinkTemplate()
-    {
-        if (empty($this->xdebugLinkTemplate) && !empty(ini_get('xdebug.file_link_format'))) {
-            $this->xdebugLinkTemplate = ini_get('xdebug.file_link_format');
-        }
-
-        return $this->xdebugLinkTemplate;
-    }
-
-    /**
-     * @param string $xdebugLinkTemplate
-     * @param bool $shouldUseAjax
-     */
-    public function setXdebugLinkTemplate($xdebugLinkTemplate, $shouldUseAjax = false)
-    {
-        if ($xdebugLinkTemplate === 'idea') {
-            $this->xdebugLinkTemplate  = 'http://localhost:63342/api/file/?file=%f&line=%l';
-            $this->xdebugShouldUseAjax = true;
-        } else {
-            $this->xdebugLinkTemplate  = $xdebugLinkTemplate;
-            $this->xdebugShouldUseAjax = $shouldUseAjax;
-        }
-    }
-
-    /**
-     * @return bool
-     */
-    public function getXdebugShouldUseAjax()
-    {
-        return $this->xdebugShouldUseAjax;
-    }
-
-    /**
-     * returns an array of filename-replacements
-     *
-     * this is useful f.e. when using vagrant or remote servers,
-     * where the path of the file is different between server and
-     * development environment
-     *
-     * @return array key-value-pairs of replacements, key = path on server, value = replacement
-     */
-    public function getXdebugReplacements()
-    {
-        return $this->xdebugReplacements;
-    }
-
-    /**
-     * @param array $xdebugReplacements
-     */
-    public function setXdebugReplacements($xdebugReplacements)
-    {
-        $this->xdebugReplacements = $xdebugReplacements;
-    }
-
-    public function setXdebugReplacement($serverPath, $replacement)
-    {
-        $this->xdebugReplacements[$serverPath] = $replacement;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

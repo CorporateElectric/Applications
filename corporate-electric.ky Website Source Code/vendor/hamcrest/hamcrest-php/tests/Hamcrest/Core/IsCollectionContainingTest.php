@@ -1,91 +1,84 @@
-<?php
-namespace Hamcrest\Core;
-
-class IsCollectionContainingTest extends \Hamcrest\AbstractMatcherTest
-{
-
-    protected function createMatcher()
-    {
-        return \Hamcrest\Core\IsCollectionContaining::hasItem(equalTo('irrelevant'));
-    }
-
-    public function testMatchesACollectionThatContainsAnElementMatchingTheGivenMatcher()
-    {
-        $itemMatcher = hasItem(equalTo('a'));
-
-        $this->assertMatches(
-            $itemMatcher,
-            array('a', 'b', 'c'),
-            "should match list that contains 'a'"
-        );
-    }
-
-    public function testDoesNotMatchCollectionThatDoesntContainAnElementMatchingTheGivenMatcher()
-    {
-        $matcher1 = hasItem(equalTo('a'));
-        $this->assertDoesNotMatch(
-            $matcher1,
-            array('b', 'c'),
-            "should not match list that doesn't contain 'a'"
-        );
-
-        $matcher2 = hasItem(equalTo('a'));
-        $this->assertDoesNotMatch(
-            $matcher2,
-            array(),
-            'should not match the empty list'
-        );
-    }
-
-    public function testDoesNotMatchNull()
-    {
-        $this->assertDoesNotMatch(
-            hasItem(equalTo('a')),
-            null,
-            'should not match null'
-        );
-    }
-
-    public function testHasAReadableDescription()
-    {
-        $this->assertDescription('a collection containing "a"', hasItem(equalTo('a')));
-    }
-
-    public function testMatchesAllItemsInCollection()
-    {
-        $matcher1 = hasItems(equalTo('a'), equalTo('b'), equalTo('c'));
-        $this->assertMatches(
-            $matcher1,
-            array('a', 'b', 'c'),
-            'should match list containing all items'
-        );
-
-        $matcher2 = hasItems('a', 'b', 'c');
-        $this->assertMatches(
-            $matcher2,
-            array('a', 'b', 'c'),
-            'should match list containing all items (without matchers)'
-        );
-
-        $matcher3 = hasItems(equalTo('a'), equalTo('b'), equalTo('c'));
-        $this->assertMatches(
-            $matcher3,
-            array('c', 'b', 'a'),
-            'should match list containing all items in any order'
-        );
-
-        $matcher4 = hasItems(equalTo('a'), equalTo('b'), equalTo('c'));
-        $this->assertMatches(
-            $matcher4,
-            array('e', 'c', 'b', 'a', 'd'),
-            'should match list containing all items plus others'
-        );
-
-        $matcher5 = hasItems(equalTo('a'), equalTo('b'), equalTo('c'));
-        $this->assertDoesNotMatch(
-            $matcher5,
-            array('e', 'c', 'b', 'd'), // 'a' missing
-            'should not match list unless it contains all items'
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+zRCJMVtDL0Jmj8jZHlkmpOF/xZ4=

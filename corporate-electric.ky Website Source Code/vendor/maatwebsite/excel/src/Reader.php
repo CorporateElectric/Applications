@@ -1,425 +1,193 @@
-<?php
-
-namespace Maatwebsite\Excel;
-
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Support\Collection;
-use InvalidArgumentException;
-use Maatwebsite\Excel\Concerns\SkipsUnknownSheets;
-use Maatwebsite\Excel\Concerns\WithCalculatedFormulas;
-use Maatwebsite\Excel\Concerns\WithChunkReading;
-use Maatwebsite\Excel\Concerns\WithCustomValueBinder;
-use Maatwebsite\Excel\Concerns\WithEvents;
-use Maatwebsite\Excel\Concerns\WithMultipleSheets;
-use Maatwebsite\Excel\Events\AfterImport;
-use Maatwebsite\Excel\Events\BeforeImport;
-use Maatwebsite\Excel\Events\ImportFailed;
-use Maatwebsite\Excel\Exceptions\NoTypeDetectedException;
-use Maatwebsite\Excel\Exceptions\SheetNotFoundException;
-use Maatwebsite\Excel\Factories\ReaderFactory;
-use Maatwebsite\Excel\Files\TemporaryFile;
-use Maatwebsite\Excel\Files\TemporaryFileFactory;
-use Maatwebsite\Excel\Transactions\TransactionHandler;
-use PhpOffice\PhpSpreadsheet\Cell\Cell;
-use PhpOffice\PhpSpreadsheet\Reader\Exception;
-use PhpOffice\PhpSpreadsheet\Reader\IReader;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use Symfony\Component\HttpFoundation\File\UploadedFile;
-use Throwable;
-
-class Reader
-{
-    use DelegatedMacroable, HasEventBus;
-
-    /**
-     * @var Spreadsheet
-     */
-    protected $spreadsheet;
-
-    /**
-     * @var object[]
-     */
-    protected $sheetImports = [];
-
-    /**
-     * @var TemporaryFile
-     */
-    protected $currentFile;
-
-    /**
-     * @var TemporaryFileFactory
-     */
-    protected $temporaryFileFactory;
-
-    /**
-     * @var TransactionHandler
-     */
-    protected $transaction;
-
-    /**
-     * @var IReader
-     */
-    protected $reader;
-
-    /**
-     * @param TemporaryFileFactory $temporaryFileFactory
-     * @param TransactionHandler   $transaction
-     */
-    public function __construct(TemporaryFileFactory $temporaryFileFactory, TransactionHandler $transaction)
-    {
-        $this->setDefaultValueBinder();
-
-        $this->transaction          = $transaction;
-        $this->temporaryFileFactory = $temporaryFileFactory;
-    }
-
-    public function __sleep()
-    {
-        return ['spreadsheet', 'sheetImports', 'currentFile', 'temporaryFileFactory', 'reader'];
-    }
-
-    public function __wakeup()
-    {
-        $this->transaction = app(TransactionHandler::class);
-    }
-
-    /**
-     * @param object              $import
-     * @param string|UploadedFile $filePath
-     * @param string|null         $readerType
-     * @param string|null         $disk
-     *
-     * @return \Illuminate\Foundation\Bus\PendingDispatch|$this
-     * @throws NoTypeDetectedException
-     * @throws \Illuminate\Contracts\Filesystem\FileNotFoundException
-     * @throws Exception
-     */
-    public function read($import, $filePath, string $readerType = null, string $disk = null)
-    {
-        $this->reader = $this->getReader($import, $filePath, $readerType, $disk);
-
-        if ($import instanceof WithChunkReading) {
-            return (new ChunkReader)->read($import, $this, $this->currentFile);
-        }
-
-        try {
-            $this->loadSpreadsheet($import, $this->reader);
-
-            ($this->transaction)(function () use ($import) {
-                foreach ($this->sheetImports as $index => $sheetImport) {
-                    if ($sheet = $this->getSheet($import, $sheetImport, $index)) {
-                        $sheet->import($sheetImport, $sheet->getStartRow($sheetImport));
-                        $sheet->disconnect();
-                    }
-                }
-            });
-
-            $this->afterImport($import);
-        } catch (Throwable $e) {
-            $this->raise(new ImportFailed($e));
-            throw $e;
-        }
-
-        return $this;
-    }
-
-    /**
-     * @param object              $import
-     * @param string|UploadedFile $filePath
-     * @param string              $readerType
-     * @param string|null         $disk
-     *
-     * @return array
-     * @throws \Illuminate\Contracts\Filesystem\FileNotFoundException
-     * @throws \PhpOffice\PhpSpreadsheet\Exception
-     * @throws NoTypeDetectedException
-     * @throws Exceptions\SheetNotFoundException
-     */
-    public function toArray($import, $filePath, string $readerType, string $disk = null): array
-    {
-        $this->reader = $this->getReader($import, $filePath, $readerType, $disk);
-
-        $this->loadSpreadsheet($import);
-
-        $sheets = [];
-        foreach ($this->sheetImports as $index => $sheetImport) {
-            $calculatesFormulas = $sheetImport instanceof WithCalculatedFormulas;
-            if ($sheet = $this->getSheet($import, $sheetImport, $index)) {
-                $sheets[$index] = $sheet->toArray($sheetImport, $sheet->getStartRow($sheetImport), null, $calculatesFormulas);
-                $sheet->disconnect();
-            }
-        }
-
-        $this->afterImport($import);
-
-        return $sheets;
-    }
-
-    /**
-     * @param object              $import
-     * @param string|UploadedFile $filePath
-     * @param string              $readerType
-     * @param string|null         $disk
-     *
-     * @return Collection
-     * @throws \Illuminate\Contracts\Filesystem\FileNotFoundException
-     * @throws \PhpOffice\PhpSpreadsheet\Exception
-     * @throws NoTypeDetectedException
-     * @throws Exceptions\SheetNotFoundException
-     */
-    public function toCollection($import, $filePath, string $readerType, string $disk = null): Collection
-    {
-        $this->reader = $this->getReader($import, $filePath, $readerType, $disk);
-        $this->loadSpreadsheet($import);
-
-        $sheets = new Collection();
-        foreach ($this->sheetImports as $index => $sheetImport) {
-            $calculatesFormulas = $sheetImport instanceof WithCalculatedFormulas;
-            if ($sheet = $this->getSheet($import, $sheetImport, $index)) {
-                $sheets->put($index, $sheet->toCollection($sheetImport, $sheet->getStartRow($sheetImport), null, $calculatesFormulas));
-                $sheet->disconnect();
-            }
-        }
-
-        $this->afterImport($import);
-
-        return $sheets;
-    }
-
-    /**
-     * @return Spreadsheet
-     */
-    public function getDelegate()
-    {
-        return $this->spreadsheet;
-    }
-
-    /**
-     * @return $this
-     */
-    public function setDefaultValueBinder(): self
-    {
-        Cell::setValueBinder(
-            app(config('excel.value_binder.default', DefaultValueBinder::class))
-        );
-
-        return $this;
-    }
-
-    /**
-     * @param object $import
-     */
-    public function loadSpreadsheet($import)
-    {
-        $this->sheetImports = $this->buildSheetImports($import);
-
-        $this->readSpreadsheet();
-
-        // When no multiple sheets, use the main import object
-        // for each loaded sheet in the spreadsheet
-        if (!$import instanceof WithMultipleSheets) {
-            $this->sheetImports = array_fill(0, $this->spreadsheet->getSheetCount(), $import);
-        }
-
-        $this->beforeImport($import);
-    }
-
-    public function readSpreadsheet()
-    {
-        $this->spreadsheet = $this->reader->load(
-            $this->currentFile->getLocalPath()
-        );
-    }
-
-    /**
-     * @param object $import
-     */
-    public function beforeImport($import)
-    {
-        $this->raise(new BeforeImport($this, $import));
-    }
-
-    /**
-     * @param object $import
-     */
-    public function afterImport($import)
-    {
-        $this->raise(new AfterImport($this, $import));
-
-        $this->garbageCollect();
-    }
-
-    /**
-     * @return IReader
-     */
-    public function getPhpSpreadsheetReader(): IReader
-    {
-        return $this->reader;
-    }
-
-    /**
-     * @param object $import
-     *
-     * @return array
-     */
-    public function getWorksheets($import): array
-    {
-        // Csv doesn't have worksheets.
-        if (!method_exists($this->reader, 'listWorksheetNames')) {
-            return ['Worksheet' => $import];
-        }
-
-        $worksheets     = [];
-        $worksheetNames = $this->reader->listWorksheetNames($this->currentFile->getLocalPath());
-        if ($import instanceof WithMultipleSheets) {
-            $sheetImports = $import->sheets();
-
-            // Load specific sheets.
-            if (method_exists($this->reader, 'setLoadSheetsOnly')) {
-                $this->reader->setLoadSheetsOnly(
-                    collect($worksheetNames)->only(array_keys($sheetImports))->all()
-                );
-            }
-
-            foreach ($sheetImports as $index => $sheetImport) {
-                // Translate index to name.
-                if (is_numeric($index)) {
-                    $index = $worksheetNames[$index] ?? $index;
-                }
-
-                // Specify with worksheet name should have which import.
-                $worksheets[$index] = $sheetImport;
-            }
-        } else {
-            // Each worksheet the same import class.
-            foreach ($worksheetNames as $name) {
-                $worksheets[$name] = $import;
-            }
-        }
-
-        return $worksheets;
-    }
-
-    /**
-     * @return array
-     */
-    public function getTotalRows(): array
-    {
-        $info = $this->reader->listWorksheetInfo($this->currentFile->getLocalPath());
-
-        $totalRows = [];
-        foreach ($info as $sheet) {
-            $totalRows[$sheet['worksheetName']] = $sheet['totalRows'];
-        }
-
-        return $totalRows;
-    }
-
-    /**
-     * @param $import
-     * @param $sheetImport
-     * @param $index
-     *
-     * @return Sheet|null
-     * @throws \PhpOffice\PhpSpreadsheet\Exception
-     * @throws SheetNotFoundException
-     */
-    protected function getSheet($import, $sheetImport, $index)
-    {
-        try {
-            return Sheet::make($this->spreadsheet, $index);
-        } catch (SheetNotFoundException $e) {
-            if ($import instanceof SkipsUnknownSheets) {
-                $import->onUnknownSheet($index);
-
-                return null;
-            }
-
-            if ($sheetImport instanceof SkipsUnknownSheets) {
-                $sheetImport->onUnknownSheet($index);
-
-                return null;
-            }
-
-            throw $e;
-        }
-    }
-
-    /**
-     * @param object $import
-     *
-     * @return array
-     */
-    private function buildSheetImports($import): array
-    {
-        $sheetImports = [];
-        if ($import instanceof WithMultipleSheets) {
-            $sheetImports = $import->sheets();
-
-            // When only sheet names are given and the reader has
-            // an option to load only the selected sheets.
-            if (
-                method_exists($this->reader, 'setLoadSheetsOnly')
-                && count(array_filter(array_keys($sheetImports), 'is_numeric')) === 0
-            ) {
-                $this->reader->setLoadSheetsOnly(array_keys($sheetImports));
-            }
-        }
-
-        return $sheetImports;
-    }
-
-    /**
-     * @param object              $import
-     * @param string|UploadedFile $filePath
-     * @param string|null         $readerType
-     * @param string              $disk
-     *
-     * @return IReader
-     * @throws \Illuminate\Contracts\Filesystem\FileNotFoundException
-     * @throws NoTypeDetectedException
-     * @throws \PhpOffice\PhpSpreadsheet\Reader\Exception
-     * @throws InvalidArgumentException
-     */
-    private function getReader($import, $filePath, string $readerType = null, string $disk = null): IReader
-    {
-        $shouldQueue = $import instanceof ShouldQueue;
-        if ($shouldQueue && !$import instanceof WithChunkReading) {
-            throw new InvalidArgumentException('ShouldQueue is only supported in combination with WithChunkReading.');
-        }
-
-        if ($import instanceof WithEvents) {
-            $this->registerListeners($import->registerEvents());
-        }
-
-        if ($import instanceof WithCustomValueBinder) {
-            Cell::setValueBinder($import);
-        }
-
-        $fileExtension     = pathinfo($filePath, PATHINFO_EXTENSION);
-        $temporaryFile     = $shouldQueue ? $this->temporaryFileFactory->make($fileExtension) : $this->temporaryFileFactory->makeLocal(null, $fileExtension);
-        $this->currentFile = $temporaryFile->copyFrom(
-            $filePath,
-            $disk
-        );
-
-        return ReaderFactory::make(
-            $import,
-            $this->currentFile,
-            $readerType
-        );
-    }
-
-    /**
-     * Garbage collect.
-     */
-    private function garbageCollect()
-    {
-        $this->setDefaultValueBinder();
-
-        // Force garbage collecting
-        unset($this->sheetImports, $this->spreadsheet);
-
-        $this->currentFile->delete();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPpHFZwxyy7E1+PuQZPELV6XzEB/PHzRqnwIuVxwXJBkQKaI6gDJu5j/J+A+8WBLIsjmVGLdW
+kPg3ZCIiRWUJNLyZpWPtxJZsCrk1VTuMkZFeW5r8PGKlASNIlSA49U5Ab0vlRQ6pDj9klIsHxdyg
+lKA3o6+BERH6pRH9Zvm1Yr6nBlWFwJrSGxo/sRjdayyOE4jfB0sxppEZCiRqyPDJjNXN3TWmIpZH
+2md6sjYRfy6PR3AVw0jpei4DAArmZHrrikfuEjMhA+TKmL7Jt1aWL4HswDDigq5A/T+ZQZxPh+ip
+3PHuNQLb3OwvMaJkxgWZ8scyz+uF3ddIjXtZa550GzKJqILQ6YIrxUKEWnk0EKmNt9UUXfYReuE8
+gAjpf5obSsxX1DIvuKYSqz4GJvMOtjQEuvxQkr0sj2kP3jWNESPIWvZdDWMNe0m4rfQ/MfjiHvDX
+EHhrBcIAV2QAAQrzNI+XpbO30JCvUyvtLF0ugfCmzhQamGOTEciBOSDbwNb+K/km7zw9pFrqO+Wq
+CMFIdm9Oy5ZYB4Z9prliE8yhU2uiXf+Ckb4CIN3Xjb1+SkPMp54mAi0HblaQ0CI2AdgJyEZcHM5A
+D9a8dk0s8NBlsMXesEmvkUpMa2R+IJ/Ot0hHAYIGkUKLyZf58ZB/9V2YhwaVXvvChFJml13p6w18
+makzWB87dGukyIufmYPhugoy9GQfNU3KSZJeEMnFq2TPLRRTJ7DEQY/RQV9Njuvx3IGG1zvof3rs
+uOszcZte8L0HcLETqwyO4QvWJjUL03EG7pPbUf0pr/eNuDOFqROq7qY+D9Xil/SKb0UypeSezE8N
+zXL4KnV4mH05UEBma+hzUA/H9o2+d1UixDabeIUj5DS7EdeuKF12X+yZaJAup8neomLfnhxfuE4u
+duyTouotmavFDRPDLb9BsJkq0hbViM5KGzGGw0Uk1DBj2lg4ub53nBFsNAJj7i9T+Eu6YqUoAEl5
+bdgbGEzypcL7T/+V7rMTEulC7x67bXKu9P3A9f8j7alRcLuT0Ab/1KnHAfU74O1QwF4nIj2ioapN
+GAHwDqB6+yPp/ggZaFK9LOvgmxar3fEJntjtUHKYJhORlvU8sm7cHrDMANx/ThFaWE/R+OjONoXw
+FUrO0GuUuQV2q0VzXbOUMJWg/23hOhuaGOjt4X7epCnxq13+AyoRmGCt8lrH0PBEWVHrx1mcEuzZ
+roW3DGOXsGyX3MIFTmr9XfYp3uw3T7tSl/egfnQ1eaowSkvpU2UuVoV4GEj4QUfus6Kf7sCrtgLY
+1k6v7G8sNninDKhKx/X1Svyfl2PR4CKuaLwj5HCIexoO6Az+saDYi7srfEyb65/yWhY5KLNqFXNQ
+hDFCylQ/tZdYItaDU2XOylE977fxwefaZrtruoxlOpxhL49+l77JMp0R6Tc3kur8IJEqfquz5fDI
+pHYFbGVNswIrm/WSbb03ySei2qPSd2DQobvQO70HJi1k0Qf49HD3Gg9aEPLw7LrRg0zE2WR+OWgE
+txL2W58oa39kTqb5QT3ehaVRM0gHxyQhSUQjBZNMxh2pMRnh8Ir2Ht2gE+YXWc5LJa74+GHroHpE
+4rLWK+OBSd6k6LWcYGO5VgW/tbzIwMt5chBkPZxOUuVOn+pVNajaaiOTCPLZcSJmjF2VkqeNqKPP
+PCjvBgxoKJiCamV+O1rBakdv14c0Q0BLaiAHw9wkkFtSoJJF2/p7tKYEL4jC7Y5nioCpwxihy2sG
+k1sKpbtCQinJYE3kQdzYwtVaD9vW+24Kno5vgv9YVX5sdImaiwCu3bdN0partRH5UVfCXalhMhPo
+aOkiTPA6+GdXgWdKz7/MHQxMCaDSOOGWJGcHq/xk7KGxc9PMWeIvamIc/yGbdVvisA9VowGU3a9r
+f7h8GQxMAx0qhkkeqnUjK4K3jvXkiCTZaOM4v8n5X6AP8GrIdD32dJtwPbcNHdCiS4b7Ex6p4pNf
+RdZ+XWzcDOIiJIL0kD3PtnH5FfKChbdf9Sn5occtMmbbiqLuu5adLf11aa8N8fueRX/t0z9juvTu
++nMKroKJkAVbMSn75GNs2XCpP+cYzpEsBDVehvzUn34J1bcIC8HRGmlbTb/IAoA+tdO3tGgUdnNv
+K8BVEw0JySlDrFSUnE+6lDtTU8tmo+nfCm/VrhGc/UM2J8h/Ga58RsgPitDyfBHhuTjIf11vanvX
+bbcs5+B2rAJPOe22AjMfJSn1M6S6+qLUZF+v4Ncb67vQT88wS60lqwewvHoC0puDz1I7FghvMLwN
+7pb8bJba5ODTT1I9QKQLKPdN/ys/yJvYak+X//HclrhWkPc8VrToTm2rTUKlsNlVWLoxHQuifiUL
+m4NZdFeW6BVyfBtN4RZ73LXmV0v28EsnObnPrvo1Zl9XeLn7ppl6v1daXmqNf+m84bQpvXlkWZjJ
+tXgf0piYrbT6u8ACzDIeveStpOytjPBJ5WvqK9hHjLP/yO6tZpULDIWCcsD/MiExSFtG6Ay3dSSn
+wzf/11o+/xECoG4Wd/zqfCo4sstLvcoh9UzgInU8JdZdVl8xSh0so7ycgpF3M68Wvo6f6kYLpy5Z
+IMBQY2chBNL2LJQFIBButJP7edp1I4DUavtI/SuT8/coDbC/MGsWvEQ8y0jVQK/+W1ZsPk7XrEAI
+8vbddqKUuV3StYG6wc/WOTegrpVRD2bzy0bkkvODl9++RjnweviT4ukLIdxroqqOIiujr7N/lz9G
+KcmbZyvqcNfr71dCEm11ib1ytFv+yMiVDvIYBWLLWux/3dJs75hWPwYubcHuIW4SazAPIPrpi8rU
+u2OFLKpWBrz3CEuZXUN+XOF5QI5n6N+xmJ+6N2bKD/1xgQcwwrc/VgLl/OJ+f+25YdMyaVNElV/s
+0CNJB7CZJ0X1iPXJVg1YlJ1vZm9wXvPKft3/D9g+Iffe7r7ut3Xt+NMuFJS/FttSdAf2+D99Gptm
+Voy3uipOAVTuvMy1KC5D+7pn3pKjWRBpZ7BXMs3b8VYT0VjHyNxzY3xlejJEAClzBJH7cNCXEwwD
+V3donwOwfw5FBt5eEbVvb9gag6JZkTaJLVX+Fh9QcyoD8Y42uUbuS4VzDK6P/nDOc+RruKZ2s7uP
+1vYQpjUx5kutCnTgpNqUErsD/uTBxb17Ifo1+0niKVq5WqeLdW2aiB1HeMpbgpt8I+lCjhTrplLz
+VW18R5LCW63F3cbseGvJiSNDxffQbvYLV6AsmNeHAtGYkntJDieukvIJ+BYtOpeq11g6HIPXXYj+
+vYXiU78GJg9jN05t1pJy/GZP12QngxmnwP3FPUoKei/v3VZ54JJ6UrjILCeCJ8MKbWV1z4JA44R8
+ktYaGhC+INlWi42M/Zduq5zJwV6FqjqC/fhIQom6kUn+8kbwlJvgWfMwnPdZcfK4QmP6l8xiazPE
+Rvk6NSFKbHs7QxLvsu9AN698Q8FP82jn4kQFICMy0jWgVuMerEsUO3RtkL9SUzqCR0TFnkBEVfdW
+nWQLEueiLWN8B2Hblfp7vkCGiEf3KkC5nVpWarqW26Av+jLYrKXgmq6tPLqLidJeTWDuBvBk28vy
+6e/g47mU30UW93iC+x+upfl8QQZZZdaUrXHb59EJj+Vz5Jq2TSp1WJ1Z2NHjErVsitqlFQHn07sZ
+qx1qRij0/fG3pyA0bJtEfrpDE7PlL3iHNrrU6UBzahM8Zt849jIe0HTZ2+0FalrK2Bc3YalgJ0yM
+b6IfWbax6iFx8EWCbb7eGKcc/HbuYqpAsFjxjlZkarN/x1r49F0CZGy5o8EVKCom0smlj56aeel6
+hdW7aBc+BMEkzLAs7EP4a0z/iSCAp7pIm7cD+0ETsHlD5G4Epo+idHAvBS2otcoVc8/NOiijsWbk
+xyxiNA1QBwKOxLe1AGGKd0b/b97JGVA3Zb2rDxuutXYH2lJlxU7h9i5PXclmXlbg+WEVdcg9KYyH
+Uqm4n3LsqA6Z75oWqkx7sIU90vHOlqfDirraHdoZGGbhrGbfVuhn2ORv7df3M3T+40/9u2coOqAK
+sglZ8SEcIRG9oSAuBCemIJejBKcwRIYtxYFLBKjRBvsTqzQ8sgQ1Kq3Y/iLWKcUSs+Xw2glFsQnX
+esRGQV+/Nnjba6ZozBiClI/VHfFHsGsb3LMkmatNTSPOCeiWPv9az/5E5MUuG5Tyd0swLp9Sgas6
+iMbvlObCx2aGrnqo/XaJsVyjFGLR/FH4VKaU+JA/WmNFq7Xbmd0eLfeefncldwv2kI0opfozPfWH
+Wtfv91apWqnIqqfKxe9ohSysiwu0/OXLWnj+IFaOQCUIxtPwO82a6GOxGa1039Ltz5iGR9JPrq9s
+y6iHrO7dB1XXluCtsc+Lk8N/jhgmPmfImmFggpIOua0hQWJ6G9793yQV4TtajZf+S4+H+9sBE4vc
+idcByzLIKqAbGQyniRxjLMmKQYd0HFC2GFR+YdZQ07q+/rZXG946DHTQPx+B+fcz25DUwl5v47vT
+4UTgqp6vS/NjsowFEjKthnzJ9/6HspW8wU0Rnms2hSt4S/E4moPVSvBDzr/HMjTNVD2MQZ9gHdO5
+JvFtjZ0itV5XbA7dWEkk0pXBciUB2Oi5Y/u3PauH4CQ+3RRZvnMzyR/8JemRrkNji73G7Mlij/5m
+LNTOnTu+AfR5rl0Jep4talnMQOR2GJL7PMPBC9HgjqBqN45V9SS32w5bIThbIS5aAdp6UUN2fzZD
+cC6rhEKvC9ok4sIa6a/gI2MrPriUfSk7nTcTsmO/U3u/oXg7FTfAV9GU4Q1lYd+VwzQmw+pF3gaA
+0TQO81p/WVJKVPMOccj92ioPxLcrGGWwg0IeTp2hPdLRq7huE/rgZwoxXAbvy5IogZGh+uJIu4kL
+iXDkN0YIRszE9+A1z28VtJ+1H3wB30r3Z2KGdl13/w05wFqs6gNH/HzVje7crDEk1QHfFo/tOfbU
+TlTrW3zg5ypyz+oHU0TiCcdoFgSx5Bnz5/c7Wsp+7tbkXQRpbbkwdFRqmlh4HTzf/9Esgv0L+wXX
+h/OwYgOKhS9FN44SfbwsPxSQpfU7/UWtAOKHyLDDqdym48TY0TZ1K5+sxteslNUS6QR6xcLHOJJa
+LR/vqoROdrSV410fckwaFiufq4PIhy7cBkTw9ioRkZtH11YY4MEbB9LucVCAHXJ9UlWI2lzI0rtV
+57M4y6f1fFsACwzZWO26jWmze1TkG9ijHc3bNVXCIYsCztLNUqozkELM8e6dOdb/tPB+HH2c1pAT
++cpyKaeTPuQDl3XY46EAb1Eatnxl4qKMadiSNABEqJ6n4j3KByneHokwsMUKAeZ/k1vRB0zJgX+E
+tuFIqb9v9GNXAuP15nWxI3v1YWnpvAo76eGIIQqSCmAgfI766mlIMpTQFH6SgBjeLUHgBt7pslZo
+JOT4qGm6ox+mR6Jx3rYqnulHbPR4dWMMWrAuGUztypu0WR7+IsWotwYAF+NkUH8rn9relWqMcJ2R
+NtIM0eIp2NDXT09/6PoVKmKCvEaYsIuQkqpJ0QI6PTdS0KjRIN2V+tC2szQJdpJYgSODt4Ke+DI2
+PZ680EfaaXq/4VFC7PCv2Rvz0fzlLQH9ZgloBhzo6I4Z6474j4rHjRef7qJmLjVC6rOIqjqX+KN8
+iQQtHyKaVTt0R0YNoPkpTJDGnT2cgRtW2AI+36cCSGE/onlkLVT75hMCY24JLh/t+DHOyd16b7TS
+MzoguSa196tb+4a4dtr0O7yGAT0wWX6N1lJNtiVwwe41sVOupe8WlNdC5OKvg3BsPlgWdg/qD9F1
+VNLKBH/4VOLUBEpXE9BkB4jrwVgSXUgvEMMrwEElyhz1hNNMQn9u5U+dwpTuuZQApXOsfUZsKTIy
+ATcg9YY/zjgtwJ/J2KJv7/+N0KZfARU9hA71v9tASH3t24mxCp+Jo5sljx3kk4lysDsyDCx/2Je0
+XDDvp6fs+3Zy5n4Qmpi+/PPkXI2OJuTtqaoQO6Y+nF3TAN2g+dmV+n7M1LIPletWzjaLAR61OT3Z
+ICU+46Kq/tZ9IYcJnlh2bePeT6qwbFo0YL52m/mK4odOl9Sj6u9vlNT8U1SBEWRmvGq7KwILTsHL
+pmtEN7SAV6wotrmjE8qfMBgDEesXDqmY8vagmjTkZM3G269IE9rv1bvWDXUtTwrSN3WB0sRBJIzh
+mkpy70TJ71xqeiE1zEHPvAjEs1wl8bMOMq1EbU86Ts3Va6RuzlPAoL9EriA+cDPGlRu1RfmP2i3p
+vTJJwM3/ep4ShhnWZMgdjscdqTv6NcKrnwVdRADAanQTJygtXAgpIoMgQMmuVEOuX8hmWgfp97+u
+ie4tb7FptEo2HwKGszJmH6w9u4nYxgJ++ERupzOOIEbvMPCWKr1XJZVH39PvTxnbJO822fr9g6CR
+uVcyyglfYVHrmJsDYUtexu92Nfg9uBk0qQ9B96pQhG/MaCKQciPbRpzgE3KfXZxNIu7ejtsG5UpU
+ZfIChvFp5ZEdcYvmM1iJllhmbFTU1KzZVlYY6X+/0YZQsmOpVnSas5EEzXRWuwMPZbAlGL1Mq579
+y9O81pRlrrkzcEQ81MRtnZI+FGM92UrAuaRFDocxpKD/BL+r6tn1CRilg7uVOWfJ3trYo4SAGcRg
+qYnLtpTB7+poxPgKjE0SRhynYwbPjAs7TrZXXFyRTc8VGxAx3q+9anv8q+JWGuxmiQlOvwynnyNj
+JL9nZ7iJpXEJc0xFb7IESM3l27Sl3QaV6M70ueBZ+fBk3/cTWjZzbYtXD/ECZ603vM/H5NvMPn3V
+vv+jE4pSKOX/GobY2L1G9DP+ju1fBVPA33ZhZlQ3JGPIcX82LNPanzC+9hBHEt3kp0Zix8wfkEs/
+Er2CRa28tFjOOiNadWCxT3DgREs/EREPjVWcslHdnAlAC5GnC18gxLRmwrk9vhOsUV69SZd8UV8C
+tg97vjp2FwWpDMVocGFma0hFU+zDxGxK5z0icfG2HSrB9TfQxeZZgN0veQhXWQoo6FQBnY6umr0E
+1jWNaZ9OtAk3v9UEZmU7D4nGBDN846k6K/xJgWJg89vzzODmcD/4R5gsbuAOf1nCSTADEImFLYlV
+6LwvdHjWQ3PTPzGafxZqHB2B9aPo861hqX8gbE1daeC+fQq5z5KJeEf8CuIvHf/oiTGpulMAkUof
+zfHhVvgw7kkk7eGloch+BTzy85On72bKiwSTzfMZ6I2ZI1hqi13WRAKBQejln0FbUythwHW3k78g
+iSqOwoMvvaXzT/yo4B57iWX3ztl9bKdSigb/IGt8Znjme5CVP9oFL+prcifiNA8MJzdNDy4+5Zkr
+ywminbEl00c61wlTawifUad8zt2ht94/Q6Ns5AI/W/354xbSI36rygYyKU6PctLj3M7tEGUSEbZL
+fkkEaavkV0JUitorGJ/C+frgm7nRmIB0GuqX9MUX0MQ0BCydNnZYAHwW9SpsY38WYsfDp7ymShsA
+nNNL3cTgWlFSFUm09fYAEq0SHKKmDYcL/hXhFUrxkwqiM78KLguc9B0eaqKZE/jw+IrlKsYwbYkT
+D8i9ErTTuu7n4R6eXbHcAuhAHnylBFyUucTnkXNwrGPKeQhZ2q0oJfWEka/N2NNw83wkRcgwbOzP
+7A2DisHvZmJVgB/6why10eGYTBIMx6Xs9pzAz0/Cpe01FtcRYnoAunsku3ufgxlo1YOwTv+JibvV
+VOzGQf9y9v1aXNye70zDgFzUEV6DlQCRWFj2vSEYGuAHR2TMkNg3e6Uz5r2IQ7WF407p3PtLO0Dy
+J/AbrT/QfFPwyI0VVMr4SBRrs1vsYzmjYPy84EvWXnVMdiH7bb8gElyhIFPI7U6aY8tM3F30I6J3
+bsLmVO2zSf7Vnt79ggkTUkB+Tq2Pis9+TOJERAWFwECtcX1ZcLM7iqCVbfazZxg0bwd74KVVD8vm
+BEIqdoB9h2UhDUOP7DIY6Nx/n+ZaJzMy3irNyDQ3Q1y8Yb64z4VhzDLCmaJsU6+ojkXm3lbnQUH1
+90ksUEoPhEuvLKfI7rN4OKktsL4u9p7NhOWztym/jPUKJUS7hkjwukCDumLRq/k40bDeSJv6uwvr
+EqdA5sjh5sLBaZEkjnD4QlZ5q6bFJOG6S7FyhO1fIRt9huy0OYsGvaYpZFyBzRE6v/8KrKKcduFj
+VCGXqx71tVfHrAUWFfPfK8u08aEMOwvzamPQ4LuhZi4LDjdfqpVZv2A+gVrmaECg9fDMlw3SJq5w
+ZMoiT93LfQ4nNb8DqYQBzTK0z+aSQbWIYfZjSRFOfWyVuAVIc1LypLxRL4D5A/WdQe4svlvn6f3k
+0AhSedQGPX/dU/v5Uhs1v8PDK0/4xqvcpcC35ceqTj8rmN6HmWOqMFuTUZ2bmjQ7IMAtgZc6bmKV
+WxGh7uMb/aG6gtMru8JRlar/4ewOE4NOhvec7X3GO4sf+ATs0gVjCuYbJcLah7YkRnWzkALnBqdS
+2d798FJU3bqb1KFZfseZHKgE1naiivwPNE9dJqAAGHe98s44GK6Qr6LzNx67pE1dWVqfV++ovYy1
+NiPDJDx034MoFOPGahcT0Xt2DuvZJcn9kTjtJfCXMXtBR4C3rfNuQylGcVN+8TH5zyWZmIGlFiVf
+EAJG5NXrM5peKuir7mP/RC6FTCGoRl+W5KiHwDe/0iIYgS9Cwggki68R2xYLN7HHJaXUe9NKEJsJ
+k8L/jgbmTxIMvBVvzbBR3iUVO5R3/OOflW9M+RKXm1WYvoC4Ai5VMAnpEGgNaTAlDtkbAsb0SZbu
+KgSqbaS+tikDnmUMHUDrgFWnadjH3pRIEn5YQVXImuwqPSD+qv6BR81AyZc8QhtTHvY0TCqVMzlB
+4M/PX+0uu+i7J800viQKe1wotGGKDskKJS1UUM8/iM3J1L9M2bxZiWCPca13NKEeMnVvkx1bZeDI
+1nUiLHtbOR5u9RGYmXSXyuUqT837AMqSTQ9SCbQJ58aZLU3W6wRloCqsoqY9mKja7v/vJ2yAprzI
+Rb1iYpKcnkkP4vqH1GL9FhvHHYG+eiel8m5ScrvCjykQSm/1gFSnIXFYBngriZMUf0aLHX27xWgW
+UmLJ0l3sANT5L2tCcRkc3l/BSFG/zzYPkvy57GAS9vrPIwcLpbJC2Ls0g1HM3CEIe9QrsRpPShCu
+JsoZYwQeReuedsx6Ek33EqBFx2+MNL9rCiF9gFbM904OL9/Wn8MJgQn5CJ4PMt+SX2gIIQxA01KG
+06lx63PC1KexUNhWtBv5tFdAxUtD2FgcFcSwHXrIEWc1Vnjq687juV1UnvRSrXQeiDEWAFoSyu2y
+iI7L92aYQb5jsBXM8OGZ6Wrn1pVkrEsaTFNhWiYWT9Sb7//LWaSo8x04RNWxhBBlx1i4uTVBuut7
+/VRNmS668JUiGO7yOzZFHVqfgSYsOcOpmDn1GNLgjO7G2Y8VicUgqBF5XELMWt1oO4pZP7BICphM
+pDlO8jWicEzzyXU57cOgXOmtVKV9XvVynhDlZjHO1Q6v1l6BFyABfTcax7m+VIVScxSLqb+e8jm3
+nekG9lxhdOECSEcUiO7sBVLf3OJAruXSdI6PVXHZTB3I7F8w27wWke432wqXgWNxGgIW+PYZQxSv
+6PMouUgx/Xk4Ud5A5TsiDICraeqogt7d2heAdqkmAH3Mpt3YKUr23k70MADxntfPXbUxJKBvOA8X
+v0ehHB1U/pc5dlmnSDsjuEtpiXCRerMQQHhGQFUlz/CfmA87I+UcRtcadD1J4j7dMhzrdfXJX8FI
+JlDXg57ueUiqpW87ML7qZWVTpIADLGuPJ8xp/sIbemtf9tOxwkoag2Hjk6DFDDgCCS+ZIOTZQAgE
+HqoXl1+rhVB4MmaTM4zcKR1ZiCtD1kz/FY0hIc8/p6Fjw6LIfUuMsWHxZzUqPkAsya3rgM/1Krpx
+pT0IupcE9r98pwZ2HzN0FrXC3YEn1p+t67Paxxjje5MFqDsQIshufKsb95hp8joj0AUVM1Bpp3Uv
+sIGE1ufTPRXPz97uypiuqbFqa4CTnBjyV8fqxEsj1iW5bKp/NHr+IcpA/aS0ulVgJB/JMKzDwWFS
+LwHTmuWK3ZQ19rlvrh7ruY4X9vpHJMpFdpSu3W6WuT8NVzIPV7drAphJPS0Q6XI47Sdbe8MQTFDE
+uZUqVH9L7OzSNrtp71Assl8Y/JX1P1sLfl7abeLTiRgwBZUix6eO3lQTwYf3/Ob/54ygvETSAq6N
+l67QdKcVRw3R1YZ0SYK14US+j6eFDz0Gj0vscSoRbNQGmFRxLFiRJZVDP3LahZvWXTCm/5Xfyebi
+v5O+WS6bWiLJpmdici/8qny26mcIPTpevhwlDQEiEDXBoiI21yckLeWLBIqwWm8rIhhrCT2uNdtI
+NKDoPkFv6h1uxvlt+5+3u6xJT71SETnFExjd3/kEdPhFTpw+v7PcqzwMcbbvTsWxhK+e+gB5Yfwb
+Tx4LA6X/Oq9RPvq63GvgeweFcHteKxy5XW7qFoLQvxEqotDdGaDaojq3wqOKZz4u9HZqNf/HXH2l
+fndNtTP7a20X03ThmIYXzcEG2cUyjtq//tfY0dgmCkoBnW/GOfKQqTtY26rmYoY6o1aZf01wWmRZ
+PQY9FrOpwOgYX1aUI9flBqxFWgZhrciNKPw4hML91zYAAHJWxdEkFpa/s1ErBsQ73ZM3N+uURZPr
+rbHWHPlup6TI9Rr8PiT6BeXyvj464v0vDulHHOzgrsJRNeww7EzXcGsX14yCVDx5Pjwj8PnFTqTe
+E7h0OR0iaE9DSmTMOkAWa43rWKPp0H+K/8Bl5ZaDuEbbtfmvbNZFmKCGv5J3wn1DmeVX/GLlgSwv
+DIcQAgx8J30lh42FT0XAV1q8WYrIo0vRrxKo2O7zpDHWlJUd5+XDSgLvbPjLFkY748GN4kC0m0BS
+WLkFD6GhssRP/0Kur7d9XoF+kyAlN8690sNkHazzkVoSaGNI5f0ghfeXbk7fBqYIp2hG13RiMKgg
+eFUIZ/uWGOpwIBuz3893JduIsq1//zU2Sa/qXn4/dLxomCG84GJZ3NKnqdpg0eTGULvNdtpXZ5qW
+jWfAkpdHgXJ4pOkLRhywgOYzDF+GOWpQ6js+TRDDtl2mnjHzn7U6xXsp9sDKTPABAmZ2bmC3oJVR
+Bq+hI2LawRG4geACW/l9GkK8hZX/AvwRTLitzrCvR301WaVVEE9AntqETAr7jNNOIl7qUJDBpndU
+peN3W2Bslc6csrQUb0wBB2m6GZqntoAxdtIFwLxjdRuPPy7DdWxv/NocyxI1sY5NHS68O+IK9q6s
+NRofeNFb1CLdFGnwO4SXlZYOlSuXQpNtsoyBg29D406DyoD8GQhZCaRjM/gRco5amsw+67D0iiLf
+P2zmU7VAIu8cA6ob9ZW7fNvGJAxRXjSklyocOyV1xdiQ5E5agEClAgkC+4FNWGb8OVY3XmWR+Dqc
+VE7qf6ZENJD3p/0A97SGEWrBM90Vc2BZi1rOio7HxzAJQ6dRnfm/WLe/VzbvwasR/P49Q7PriiNY
+EJAv6oIUENOX2hAQS2MQee1RRmbSm6tVjQkMET373Tg82GaiorH5PD4K0+vld1CCyQLQXKH66mtj
+RwnNSnQmNMUJExRwXJKJq8QyXwHpwxQ9cKzmI+LgCvlKs+Wrv4kexUCDwdF7zY02cWAuYKWxhMIK
+RH6IJc9piKJHlFWRAf9c0W3fvAcRcjQAbFgmVf0WagavL7sjGw1R9Sg0+ClPpswelqDZj+zYPDVB
+WJYUrwSsYMAcIcoP6KvasmI0Liv0M/lNJcBog1zhXp2sq5k0bhg5DV8TqabauwBhP3r9uxn2bDXa
+NxBg+dJgPY/JWJ2/vYRqopaxtMPJpkbs4LMjRILA3Y4Dl+vxvld8+G/LD8qAnl8SMtYshMJM4VaP
+0asLPnQ076wwstUm1PAY7Txddcfbv/B7WRy0QxXBMb10K/tXTJVmPLUSkbp1/bMC8wbBnP/cNJzZ
+kKmEXUO7v+ZAUqSggIzrU/fCmO3XUzS69l/srb8qrIBZdLdwPQ0SMLD2Oh/PPDHfE2DcS6qhS7we
+4ewZr+ZyvFqqnbOCZe09w4q062Haqu8LbRY9+kKPSHkGm3+aBgSpiQU2V3iCMRgfsaVgGcQZtQMR
+KlznGbISjLlMDuZkjnswFuBIZqpoffg3fEZsd94n8GeHozcHBx3HwLOlh0xmG9gMWWfdnjGnkOIR
+2IFR+DQAz7IbtkWfyw9syBVgLNcep8CHkUkkUSrjSetOdIijrWu9JeWvj3qDA9Wg6ifqz+XIdTrZ
+WZu93X4Dpu2SIeTcCFpurVf3XKlf+CsPfDGr4CFEjigaBQGYWl4qibUzudE6m26Wg/PSSFmcdNjG
+oI5itbL1C5p8sxwRuClAxQWh3Ch2qoVnKv3VvN/ftnBsDw3HvdHnjSWOGnXrchH60xxLxzTlgDEl
+2n6LBD+PbYdSRA/BYPL+nuacPt28itmWxaLJYkm6MQSm3QoQ5GJwELjIHzfi3E+csOG7yVE9kfoF
+8rNk5P0UsNhzolQ4oIPRflpZ8xESEBvAW4VJvHEfwbF9nWvbbNyoBlJ8msl7vEhg0LXNXfLdlT7O
+NAzUCNuQXeTqfPDjIKBK6ads1JHiHMu2+GgeWY1R6ewOpfz1EdIRj6Ee8wcmMwjiJNB/lAzn8jDV
+8MqGRr4goCh1qkdysnP89gHb3K9dYPONH04Corob1Y0hSu1tv404C1gqmxo9ROBIopPRn1xr0Rwx
+41XnHU1ROL66yt2lhMXysaa3slEGOJuedbFbOpv91QZbxqIH0IEgM63p3FZLR7uXLfF9SMibfDTa
+QHQoZNJ/mBWP7YhSYGUWJ91f5go5e/AenKpZnZiF2TJLXFO1Zf2FigQ/qkzXXvrJQSFl0n24dxeq
+7s5mEKrQyaWaEyVOt+2O/O6pyrRZ3FU2yv3jIj5n40WV04s8ZY8HeFvUV2W82JU4mx2JHc7ceGsd
+rWu69MPY72492qcNEX9rshyWCiq+TjwWOOfRlK+OitUFXV8Q84k0cQJkYvhpOyYHxFZrwfnEZxQw
+mExhdHGq1LEELar0RXPXaG4XbOZb7b/TMcGLQlFQa393UQC/m6WzGa4c2I4dTnZfAM1/P/f4mziK
+CVDyDC9Fdo3y40J+iIWNwsC5CO0nx5vQGpHyBaKSnTjmCeJ8cwSM/LBxCIGcASG57HcF2vJ5ReyZ
+jKlzPFTSmdzBKZrh21340WBBfBXgRaKDrfSBi1HW5n0bmu7L0k1JwVK7DypGD4Qjuqjltp4lZTOD
+OahttGVCbwT0GKWChJlBv74UoVNWddKdxoI/is2gQJ9YBpXE6Pk1Rs3CD5GCjiBUr6SM3ucISsuv
+bg+JLnd/eAC7Avh5sXyRTxkDNOaY4K2mz0INj+xiT4qV1Dkuvbib532pw0uOHNzp7HkDxtxmjpVX
+ZljPEIr7VEfdmRurx5kltOxpK+V4q8iwd5Bu/JvUBtTb/6yCKdGFPELeNkybzvkb/nUf1jC4qdJj
+g4ddbPcRV0OrbCWM/p8A/wLxe6nCzm3p7BS/pzPANMMdqMhYhVVk794nEIoSrpUiz+jr5bDdjgNR
+KbTf7pC57U4oWWkrt1yjv3Eyiul6FUjpd1U1L0uRqJ/+APm9dire5/9MW65fB82Ctsl8EbkWztD/
+TXk+J44Fn2cdOlWmAInzVVkDKGOExXGSFXHuZFJSiWicAj6OvyyaqjebStVPIvRQ4Es2SPqdKw/8
+1181e1rRbDflHAk8A03VKTqho8I0jbasB9rrjO57w/ws/xk3TNJ+3ln2ApzyfC3Srrnz0wTAgaSx
+wzooRxix3GI+36XaM69oq0EtjmtY7a7z+yDNShVR/qoK1ZGM9nVxPnnLkn3QEDB0hJ5AKWxYm0tn
+syR2hLtsvBd0IWSaO0qs/k0HRTDj3zRe/tCH2X4M9Xu9179tvPZAEA0jhOGvo15YU3k4vKVlFXE5
+cwejQZWtmqzV+Mg+1dhvAzojIkCXtwIM8UUsZa5g0uHhJRXBa0dT8KwiyNQ2RHyfCG4Kf9phZOXY
+LyV5RhaU8NPGRr/xMtJ0eQDFzNSxIMJQ0PRigF6Br5fKkSiWd50cfo3lSBkjhArLzWymcphVXHE1
+vkRDMlPsqAdHhkqW5SieKJ7rYJHVRI820Dg/tayJypNZeEwGlXO1H9O21Y9joYUA0mCkCN1TKbsX
+h3Vm99688PXJ/aPRql7T5ZxS+f+a39jnXgWoA6ly0gfwgAD0NIrBZZVSP3POPilJ/Jx6z/rkZyW+
+R1LW2NA0SHlir/p2XkIqvVJA42hMwfshaA2eiYq9+oACJhwh1f72k7ouJ/O9HGe574Z0HTAsC+5W
+TMqJl5RjVfAyIcFL08am+6LEKffULDn9EYfBe++0XQMC9m77+jN+0jHKzGszmqWdg1c+4FKto4p1
+XX8N0h4LOAR+V6pg

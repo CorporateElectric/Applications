@@ -1,1093 +1,608 @@
-<?php
-/* ===========================================================================
- * Copyright (c) 2018-2019 Zindex Software
- *
- * Licensed under the MIT License
- * =========================================================================== */
-
-namespace Opis\Closure;
-
-defined('T_NAME_QUALIFIED') || define('T_NAME_QUALIFIED', -4);
-defined('T_NAME_FULLY_QUALIFIED') || define('T_NAME_FULLY_QUALIFIED', -5);
-defined('T_FN') || define('T_FN', -6);
-
-use Closure;
-use ReflectionFunction;
-
-class ReflectionClosure extends ReflectionFunction
-{
-    protected $code;
-    protected $tokens;
-    protected $hashedName;
-    protected $useVariables;
-    protected $isStaticClosure;
-    protected $isScopeRequired;
-    protected $isBindingRequired;
-    protected $isShortClosure;
-
-    protected static $files = array();
-    protected static $classes = array();
-    protected static $functions = array();
-    protected static $constants = array();
-    protected static $structures = array();
-
-
-    /**
-     * ReflectionClosure constructor.
-     * @param Closure $closure
-     * @param string|null $code This is ignored. Do not use it
-     * @throws \ReflectionException
-     */
-    public function __construct(Closure $closure, $code = null)
-    {
-        parent::__construct($closure);
-    }
-
-    /**
-     * @return bool
-     */
-    public function isStatic()
-    {
-        if ($this->isStaticClosure === null) {
-            $this->isStaticClosure = strtolower(substr($this->getCode(), 0, 6)) === 'static';
-        }
-
-        return $this->isStaticClosure;
-    }
-
-    public function isShortClosure()
-    {
-        if ($this->isShortClosure === null) {
-            $code = $this->getCode();
-            if ($this->isStatic()) {
-                $code = substr($code, 6);
-            }
-            $this->isShortClosure = strtolower(substr(trim($code), 0, 2)) === 'fn';
-        }
-
-        return $this->isShortClosure;
-    }
-
-    /**
-     * @return string
-     */
-    public function getCode()
-    {
-        if($this->code !== null){
-            return $this->code;
-        }
-
-        $fileName = $this->getFileName();
-        $line = $this->getStartLine() - 1;
-
-        $className = null;
-
-        if (null !== $className = $this->getClosureScopeClass()) {
-            $className = '\\' . trim($className->getName(), '\\');
-        }
-
-        $builtin_types = self::getBuiltinTypes();
-        $class_keywords = ['self', 'static', 'parent'];
-
-        $ns = $this->getNamespaceName();
-        $nsf = $ns == '' ? '' : ($ns[0] == '\\' ? $ns : '\\' . $ns);
-
-        $_file = var_export($fileName, true);
-        $_dir = var_export(dirname($fileName), true);
-        $_namespace = var_export($ns, true);
-        $_class = var_export(trim($className, '\\'), true);
-        $_function = $ns . ($ns == '' ? '' : '\\') . '{closure}';
-        $_method = ($className == '' ? '' : trim($className, '\\') . '::') . $_function;
-        $_function = var_export($_function, true);
-        $_method = var_export($_method, true);
-        $_trait = null;
-
-        $tokens = $this->getTokens();
-        $state = $lastState = 'start';
-        $inside_structure = false;
-        $isShortClosure = false;
-        $inside_structure_mark = 0;
-        $open = 0;
-        $code = '';
-        $id_start = $id_start_ci = $id_name = $context = '';
-        $classes = $functions = $constants = null;
-        $use = array();
-        $lineAdd = 0;
-        $isUsingScope = false;
-        $isUsingThisObject = false;
-
-        for($i = 0, $l = count($tokens); $i < $l; $i++) {
-            $token = $tokens[$i];
-            switch ($state) {
-                case 'start':
-                    if ($token[0] === T_FUNCTION || $token[0] === T_STATIC) {
-                        $code .= $token[1];
-                        $state = $token[0] === T_FUNCTION ? 'function' : 'static';
-                    } elseif ($token[0] === T_FN) {
-                        $isShortClosure = true;
-                        $code .= $token[1];
-                        $state = 'closure_args';
-                    }
-                    break;
-                case 'static':
-                    if ($token[0] === T_WHITESPACE || $token[0] === T_COMMENT || $token[0] === T_FUNCTION) {
-                        $code .= $token[1];
-                        if ($token[0] === T_FUNCTION) {
-                            $state = 'function';
-                        }
-                    } elseif ($token[0] === T_FN) {
-                        $isShortClosure = true;
-                        $code .= $token[1];
-                        $state = 'closure_args';
-                    } else {
-                        $code = '';
-                        $state = 'start';
-                    }
-                    break;
-                case 'function':
-                    switch ($token[0]){
-                        case T_STRING:
-                            $code = '';
-                            $state = 'named_function';
-                            break;
-                        case '(':
-                            $code .= '(';
-                            $state = 'closure_args';
-                            break;
-                        default:
-                            $code .= is_array($token) ? $token[1] : $token;
-                    }
-                    break;
-                case 'named_function':
-                    if($token[0] === T_FUNCTION || $token[0] === T_STATIC){
-                        $code = $token[1];
-                        $state = $token[0] === T_FUNCTION ? 'function' : 'static';
-                    } elseif ($token[0] === T_FN) {
-                        $isShortClosure = true;
-                        $code .= $token[1];
-                        $state = 'closure_args';
-                    }
-                    break;
-                case 'closure_args':
-                    switch ($token[0]){
-                        case T_NAME_QUALIFIED:
-                            list($id_start, $id_start_ci, $id_name) = $this->parseNameQualified($token[1]);
-                            $context = 'args';
-                            $state = 'id_name';
-                            $lastState = 'closure_args';
-                            break;
-                        case T_NS_SEPARATOR:
-                        case T_STRING:
-                            $id_start = $token[1];
-                            $id_start_ci = strtolower($id_start);
-                            $id_name = '';
-                            $context = 'args';
-                            $state = 'id_name';
-                            $lastState = 'closure_args';
-                            break;
-                        case T_USE:
-                            $code .= $token[1];
-                            $state = 'use';
-                            break;
-                        case T_DOUBLE_ARROW:
-                            $code .= $token[1];
-                            if ($isShortClosure) {
-                                $state = 'closure';
-                            }
-                            break;
-                        case ':':
-                            $code .= ':';
-                            $state = 'return';
-                            break;
-                        case '{':
-                            $code .= '{';
-                            $state = 'closure';
-                            $open++;
-                            break;
-                        default:
-                            $code .= is_array($token) ? $token[1] : $token;
-                    }
-                    break;
-                case 'use':
-                    switch ($token[0]){
-                        case T_VARIABLE:
-                            $use[] = substr($token[1], 1);
-                            $code .= $token[1];
-                            break;
-                        case '{':
-                            $code .= '{';
-                            $state = 'closure';
-                            $open++;
-                            break;
-                        case ':':
-                            $code .= ':';
-                            $state = 'return';
-                            break;
-                        default:
-                            $code .= is_array($token) ? $token[1] : $token;
-                            break;
-                    }
-                    break;
-                case 'return':
-                    switch ($token[0]){
-                        case T_WHITESPACE:
-                        case T_COMMENT:
-                        case T_DOC_COMMENT:
-                            $code .= $token[1];
-                            break;
-                        case T_NS_SEPARATOR:
-                        case T_STRING:
-                            $id_start = $token[1];
-                            $id_start_ci = strtolower($id_start);
-                            $id_name = '';
-                            $context = 'return_type';
-                            $state = 'id_name';
-                            $lastState = 'return';
-                            break 2;
-                        case T_NAME_QUALIFIED:
-                            list($id_start, $id_start_ci, $id_name) = $this->parseNameQualified($token[1]);
-                            $context = 'return_type';
-                            $state = 'id_name';
-                            $lastState = 'return';
-                            break 2;
-                        case T_DOUBLE_ARROW:
-                            $code .= $token[1];
-                            if ($isShortClosure) {
-                                $state = 'closure';
-                            }
-                            break;
-                        case '{':
-                            $code .= '{';
-                            $state = 'closure';
-                            $open++;
-                            break;
-                        default:
-                            $code .= is_array($token) ? $token[1] : $token;
-                            break;
-                    }
-                    break;
-                case 'closure':
-                    switch ($token[0]){
-                        case T_CURLY_OPEN:
-                        case T_DOLLAR_OPEN_CURLY_BRACES:
-                        case '{':
-                            $code .= '{';
-                            $open++;
-                            break;
-                        case '}':
-                            $code .= '}';
-                            if(--$open === 0 && !$isShortClosure){
-                                break 3;
-                            } elseif ($inside_structure) {
-                                $inside_structure = !($open === $inside_structure_mark);
-                            }
-                            break;
-                        case '(':
-                        case '[':
-                            $code .= $token[0];
-                            if ($isShortClosure) {
-                                $open++;
-                            }
-                            break;
-                        case ')':
-                        case ']':
-                            if ($isShortClosure) {
-                                if ($open === 0) {
-                                    break 3;
-                                }
-                                --$open;
-                            }
-                            $code .= $token[0];
-                            break;
-                        case ',':
-                        case ';':
-                            if ($isShortClosure && $open === 0) {
-                                break 3;
-                            }
-                            $code .= $token[0];
-                            break;
-                        case T_LINE:
-                            $code .= $token[2] - $line + $lineAdd;
-                            break;
-                        case T_FILE:
-                            $code .= $_file;
-                            break;
-                        case T_DIR:
-                            $code .= $_dir;
-                            break;
-                        case T_NS_C:
-                            $code .= $_namespace;
-                            break;
-                        case T_CLASS_C:
-                            $code .= $inside_structure ? $token[1] : $_class;
-                            break;
-                        case T_FUNC_C:
-                            $code .= $inside_structure ? $token[1] : $_function;
-                            break;
-                        case T_METHOD_C:
-                            $code .= $inside_structure ? $token[1] : $_method;
-                            break;
-                        case T_COMMENT:
-                            if (substr($token[1], 0, 8) === '#trackme') {
-                                $timestamp = time();
-                                $code .= '/**' . PHP_EOL;
-                                $code .= '* Date      : ' . date(DATE_W3C, $timestamp) . PHP_EOL;
-                                $code .= '* Timestamp : ' . $timestamp . PHP_EOL;
-                                $code .= '* Line      : ' . ($line + 1) . PHP_EOL;
-                                $code .= '* File      : ' . $_file . PHP_EOL . '*/' . PHP_EOL;
-                                $lineAdd += 5;
-                            } else {
-                                $code .= $token[1];
-                            }
-                            break;
-                        case T_VARIABLE:
-                            if($token[1] == '$this' && !$inside_structure){
-                                $isUsingThisObject = true;
-                            }
-                            $code .= $token[1];
-                            break;
-                        case T_STATIC:
-                        case T_NS_SEPARATOR:
-                        case T_STRING:
-                            $id_start = $token[1];
-                            $id_start_ci = strtolower($id_start);
-                            $id_name = '';
-                            $context = 'root';
-                            $state = 'id_name';
-                            $lastState = 'closure';
-                            break 2;
-                        case T_NAME_QUALIFIED:
-                            list($id_start, $id_start_ci, $id_name) = $this->parseNameQualified($token[1]);
-                            $context = 'root';
-                            $state = 'id_name';
-                            $lastState = 'closure';
-                            break 2;
-                        case T_NEW:
-                            $code .= $token[1];
-                            $context = 'new';
-                            $state = 'id_start';
-                            $lastState = 'closure';
-                            break 2;
-                        case T_USE:
-                            $code .= $token[1];
-                            $context = 'use';
-                            $state = 'id_start';
-                            $lastState = 'closure';
-                            break;
-                        case T_INSTANCEOF:
-                        case T_INSTEADOF:
-                            $code .= $token[1];
-                            $context = 'instanceof';
-                            $state = 'id_start';
-                            $lastState = 'closure';
-                            break;
-                        case T_OBJECT_OPERATOR:
-                        case T_DOUBLE_COLON:
-                            $code .= $token[1];
-                            $lastState = 'closure';
-                            $state = 'ignore_next';
-                            break;
-                        case T_FUNCTION:
-                            $code .= $token[1];
-                            $state = 'closure_args';
-                            if (!$inside_structure) {
-                                $inside_structure = true;
-                                $inside_structure_mark = $open;
-                            }
-                            break;
-                        case T_TRAIT_C:
-                            if ($_trait === null) {
-                                $startLine = $this->getStartLine();
-                                $endLine = $this->getEndLine();
-                                $structures = $this->getStructures();
-
-                                $_trait = '';
-
-                                foreach ($structures as &$struct) {
-                                    if ($struct['type'] === 'trait' &&
-                                        $struct['start'] <= $startLine &&
-                                        $struct['end'] >= $endLine
-                                    ) {
-                                        $_trait = ($ns == '' ? '' : $ns . '\\') . $struct['name'];
-                                        break;
-                                    }
-                                }
-
-                                $_trait = var_export($_trait, true);
-                            }
-
-                            $code .= $_trait;
-                            break;
-                        default:
-                            $code .= is_array($token) ? $token[1] : $token;
-                    }
-                    break;
-                case 'ignore_next':
-                    switch ($token[0]){
-                        case T_WHITESPACE:
-                        case T_COMMENT:
-                        case T_DOC_COMMENT:
-                            $code .= $token[1];
-                            break;
-                        case T_CLASS:
-                        case T_NEW:
-                        case T_STATIC:
-                        case T_VARIABLE:
-                        case T_STRING:
-                        case T_CLASS_C:
-                        case T_FILE:
-                        case T_DIR:
-                        case T_METHOD_C:
-                        case T_FUNC_C:
-                        case T_FUNCTION:
-                        case T_INSTANCEOF:
-                        case T_LINE:
-                        case T_NS_C:
-                        case T_TRAIT_C:
-                        case T_USE:
-                            $code .= $token[1];
-                            $state = $lastState;
-                            break;
-                        default:
-                            $state = $lastState;
-                            $i--;
-                    }
-                    break;
-                case 'id_start':
-                    switch ($token[0]){
-                        case T_WHITESPACE:
-                        case T_COMMENT:
-                        case T_DOC_COMMENT:
-                            $code .= $token[1];
-                            break;
-                        case T_NS_SEPARATOR:
-                        case T_NAME_FULLY_QUALIFIED:
-                        case T_STRING:
-                        case T_STATIC:
-                            $id_start = $token[1];
-                            $id_start_ci = strtolower($id_start);
-                            $id_name = '';
-                            $state = 'id_name';
-                            break 2;
-                        case T_NAME_QUALIFIED:
-                            list($id_start, $id_start_ci, $id_name) = $this->parseNameQualified($token[1]);
-                            $state = 'id_name';
-                            break 2;
-                        case T_VARIABLE:
-                            $code .= $token[1];
-                            $state = $lastState;
-                            break;
-                        case T_CLASS:
-                            $code .= $token[1];
-                            $state = 'anonymous';
-                            break;
-                        default:
-                            $i--;//reprocess last
-                            $state = 'id_name';
-                    }
-                    break;
-                case 'id_name':
-                    switch ($token[0]){
-                        case T_NAME_QUALIFIED:
-                        case T_NS_SEPARATOR:
-                        case T_STRING:
-                        case T_WHITESPACE:
-                        case T_COMMENT:
-                        case T_DOC_COMMENT:
-                            $id_name .= $token[1];
-                            break;
-                        case '(':
-                            if ($isShortClosure) {
-                                $open++;
-                            }
-                            if($context === 'new' || false !== strpos($id_name, '\\')){
-                                if($id_start_ci === 'self' || $id_start_ci === 'static') {
-                                    if (!$inside_structure) {
-                                        $isUsingScope = true;
-                                    }
-                                } elseif ($id_start !== '\\' && !in_array($id_start_ci, $class_keywords)) {
-                                    if ($classes === null) {
-                                        $classes = $this->getClasses();
-                                    }
-                                    if (isset($classes[$id_start_ci])) {
-                                        $id_start = $classes[$id_start_ci];
-                                    }
-                                    if($id_start[0] !== '\\'){
-                                        $id_start = $nsf . '\\' . $id_start;
-                                    }
-                                }
-                            } else {
-                                if($id_start !== '\\'){
-                                    if($functions === null){
-                                        $functions = $this->getFunctions();
-                                    }
-                                    if(isset($functions[$id_start_ci])){
-                                        $id_start = $functions[$id_start_ci];
-                                    } elseif ($nsf !== '\\' && function_exists($nsf . '\\' . $id_start)) {
-                                        $id_start = $nsf . '\\' . $id_start;
-                                        // Cache it to functions array
-                                        $functions[$id_start_ci] = $id_start;
-                                    }
-                                }
-                            }
-                            $code .= $id_start . $id_name . '(';
-                            $state = $lastState;
-                            break;
-                        case T_VARIABLE:
-                        case T_DOUBLE_COLON:
-                            if($id_start !== '\\') {
-                                if($id_start_ci === 'self' || $id_start_ci === 'parent'){
-                                    if (!$inside_structure) {
-                                        $isUsingScope = true;
-                                    }
-                                } elseif ($id_start_ci === 'static') {
-                                    if (!$inside_structure) {
-                                        $isUsingScope = $token[0] === T_DOUBLE_COLON;
-                                    }
-                                } elseif (!(\PHP_MAJOR_VERSION >= 7 && in_array($id_start_ci, $builtin_types))){
-                                    if ($classes === null) {
-                                        $classes = $this->getClasses();
-                                    }
-                                    if (isset($classes[$id_start_ci])) {
-                                        $id_start = $classes[$id_start_ci];
-                                    }
-                                    if($id_start[0] !== '\\'){
-                                        $id_start = $nsf . '\\' . $id_start;
-                                    }
-                                }
-                            }
-
-                            $code .= $id_start . $id_name . $token[1];
-                            $state = $token[0] === T_DOUBLE_COLON ? 'ignore_next' : $lastState;
-                            break;
-                        default:
-                            if($id_start !== '\\' && !defined($id_start)){
-                                if($constants === null){
-                                    $constants = $this->getConstants();
-                                }
-                                if(isset($constants[$id_start])){
-                                    $id_start = $constants[$id_start];
-                                } elseif($context === 'new'){
-                                    if(in_array($id_start_ci, $class_keywords)) {
-                                        if (!$inside_structure) {
-                                            $isUsingScope = true;
-                                        }
-                                    } else {
-                                        if ($classes === null) {
-                                            $classes = $this->getClasses();
-                                        }
-                                        if (isset($classes[$id_start_ci])) {
-                                            $id_start = $classes[$id_start_ci];
-                                        }
-                                        if ($id_start[0] !== '\\') {
-                                            $id_start = $nsf . '\\' . $id_start;
-                                        }
-                                    }
-                                } elseif($context === 'use' ||
-                                    $context === 'instanceof' ||
-                                    $context === 'args' ||
-                                    $context === 'return_type' ||
-                                    $context === 'extends' ||
-                                    $context === 'root'
-                                ){
-                                    if(in_array($id_start_ci, $class_keywords)){
-                                        if (!$inside_structure && !$id_start_ci === 'static') {
-                                            $isUsingScope = true;
-                                        }
-                                    } elseif (!(\PHP_MAJOR_VERSION >= 7 && in_array($id_start_ci, $builtin_types))){
-                                        if($classes === null){
-                                            $classes = $this->getClasses();
-                                        }
-                                        if(isset($classes[$id_start_ci])){
-                                            $id_start = $classes[$id_start_ci];
-                                        }
-                                        if($id_start[0] !== '\\'){
-                                            $id_start = $nsf . '\\' . $id_start;
-                                        }
-                                    }
-                                }
-                            }
-                            $code .= $id_start . $id_name;
-                            $state = $lastState;
-                            $i--;//reprocess last token
-                    }
-                    break;
-                case 'anonymous':
-                    switch ($token[0]) {
-                        case T_NS_SEPARATOR:
-                        case T_STRING:
-                            $id_start = $token[1];
-                            $id_start_ci = strtolower($id_start);
-                            $id_name = '';
-                            $state = 'id_name';
-                            $context = 'extends';
-                            $lastState = 'anonymous';
-                        break;
-                        case '{':
-                            $state = 'closure';
-                            if (!$inside_structure) {
-                                $inside_structure = true;
-                                $inside_structure_mark = $open;
-                            }
-                            $i--;
-                            break;
-                        default:
-                            $code .= is_array($token) ? $token[1] : $token;
-                    }
-                    break;
-            }
-        }
-
-        if ($isShortClosure) {
-            $this->useVariables = $this->getStaticVariables();
-        } else {
-            $this->useVariables = empty($use) ? $use : array_intersect_key($this->getStaticVariables(), array_flip($use));
-        }
-
-        $this->isShortClosure = $isShortClosure;
-        $this->isBindingRequired = $isUsingThisObject;
-        $this->isScopeRequired = $isUsingScope;
-        $this->code = $code;
-
-        return $this->code;
-    }
-
-    /**
-     * @return array
-     */
-    private static function getBuiltinTypes()
-    {
-        // PHP 5
-        if (\PHP_MAJOR_VERSION === 5) {
-            return ['array', 'callable'];
-        }
-
-        // PHP 8
-        if (\PHP_MAJOR_VERSION === 8) {
-            return ['array', 'callable', 'string', 'int', 'bool', 'float', 'iterable', 'void', 'object', 'mixed', 'false', 'null'];
-        }
-
-        // PHP 7
-        switch (\PHP_MINOR_VERSION) {
-            case 0:
-                return ['array', 'callable', 'string', 'int', 'bool', 'float'];
-            case 1:
-                return ['array', 'callable', 'string', 'int', 'bool', 'float', 'iterable', 'void'];
-            default:
-                return ['array', 'callable', 'string', 'int', 'bool', 'float', 'iterable', 'void', 'object'];
-        }
-    }
-
-    /**
-     * @return array
-     */
-    public function getUseVariables()
-    {
-        if($this->useVariables !== null){
-            return $this->useVariables;
-        }
-
-        $tokens = $this->getTokens();
-        $use = array();
-        $state = 'start';
-
-        foreach ($tokens as &$token) {
-            $is_array = is_array($token);
-
-            switch ($state) {
-                case 'start':
-                    if ($is_array && $token[0] === T_USE) {
-                        $state = 'use';
-                    }
-                    break;
-                case 'use':
-                    if ($is_array) {
-                        if ($token[0] === T_VARIABLE) {
-                            $use[] = substr($token[1], 1);
-                        }
-                    } elseif ($token == ')') {
-                        break 2;
-                    }
-                    break;
-            }
-        }
-
-        $this->useVariables = empty($use) ? $use : array_intersect_key($this->getStaticVariables(), array_flip($use));
-
-        return $this->useVariables;
-    }
-
-    /**
-     * return bool
-     */
-    public function isBindingRequired()
-    {
-        if($this->isBindingRequired === null){
-            $this->getCode();
-        }
-
-        return $this->isBindingRequired;
-    }
-
-    /**
-     * return bool
-     */
-    public function isScopeRequired()
-    {
-        if($this->isScopeRequired === null){
-            $this->getCode();
-        }
-
-        return $this->isScopeRequired;
-    }
-
-    /**
-     * @return string
-     */
-    protected function getHashedFileName()
-    {
-        if ($this->hashedName === null) {
-            $this->hashedName = sha1($this->getFileName());
-        }
-
-        return $this->hashedName;
-    }
-
-    /**
-     * @return array
-     */
-    protected function getFileTokens()
-    {
-        $key = $this->getHashedFileName();
-
-        if (!isset(static::$files[$key])) {
-            static::$files[$key] = token_get_all(file_get_contents($this->getFileName()));
-        }
-
-        return static::$files[$key];
-    }
-
-    /**
-     * @return array
-     */
-    protected function getTokens()
-    {
-        if ($this->tokens === null) {
-            $tokens = $this->getFileTokens();
-            $startLine = $this->getStartLine();
-            $endLine = $this->getEndLine();
-            $results = array();
-            $start = false;
-
-            foreach ($tokens as &$token) {
-                if (!is_array($token)) {
-                    if ($start) {
-                        $results[] = $token;
-                    }
-
-                    continue;
-                }
-
-                $line = $token[2];
-
-                if ($line <= $endLine) {
-                    if ($line >= $startLine) {
-                        $start = true;
-                        $results[] = $token;
-                    }
-
-                    continue;
-                }
-
-                break;
-            }
-
-            $this->tokens = $results;
-        }
-
-        return $this->tokens;
-    }
-
-    /**
-     * @return array
-     */
-    protected function getClasses()
-    {
-        $key = $this->getHashedFileName();
-
-        if (!isset(static::$classes[$key])) {
-            $this->fetchItems();
-        }
-
-        return static::$classes[$key];
-    }
-
-    /**
-     * @return array
-     */
-    protected function getFunctions()
-    {
-        $key = $this->getHashedFileName();
-
-        if (!isset(static::$functions[$key])) {
-            $this->fetchItems();
-        }
-
-        return static::$functions[$key];
-    }
-
-    /**
-     * @return array
-     */
-    protected function getConstants()
-    {
-        $key = $this->getHashedFileName();
-
-        if (!isset(static::$constants[$key])) {
-            $this->fetchItems();
-        }
-
-        return static::$constants[$key];
-    }
-
-    /**
-     * @return array
-     */
-    protected function getStructures()
-    {
-        $key = $this->getHashedFileName();
-
-        if (!isset(static::$structures[$key])) {
-            $this->fetchItems();
-        }
-
-        return static::$structures[$key];
-    }
-
-    protected function fetchItems()
-    {
-        $key = $this->getHashedFileName();
-
-        $classes = array();
-        $functions = array();
-        $constants = array();
-        $structures = array();
-        $tokens = $this->getFileTokens();
-
-        $open = 0;
-        $state = 'start';
-        $lastState = '';
-        $prefix = '';
-        $name = '';
-        $alias = '';
-        $isFunc = $isConst = false;
-
-        $startLine = $endLine = 0;
-        $structType = $structName = '';
-        $structIgnore = false;
-
-        foreach ($tokens as $token) {
-
-            switch ($state) {
-                case 'start':
-                    switch ($token[0]) {
-                        case T_CLASS:
-                        case T_INTERFACE:
-                        case T_TRAIT:
-                            $state = 'before_structure';
-                            $startLine = $token[2];
-                            $structType = $token[0] == T_CLASS
-                                                    ? 'class'
-                                                    : ($token[0] == T_INTERFACE ? 'interface' : 'trait');
-                            break;
-                        case T_USE:
-                            $state = 'use';
-                            $prefix = $name = $alias = '';
-                            $isFunc = $isConst = false;
-                            break;
-                        case T_FUNCTION:
-                            $state = 'structure';
-                            $structIgnore = true;
-                            break;
-                        case T_NEW:
-                            $state = 'new';
-                            break;
-                        case T_OBJECT_OPERATOR:
-                        case T_DOUBLE_COLON:
-                            $state = 'invoke';
-                            break;
-                    }
-                    break;
-                case 'use':
-                    switch ($token[0]) {
-                        case T_FUNCTION:
-                            $isFunc = true;
-                            break;
-                        case T_CONST:
-                            $isConst = true;
-                            break;
-                        case T_NS_SEPARATOR:
-                            $name .= $token[1];
-                            break;
-                        case T_STRING:
-                            $name .= $token[1];
-                            $alias = $token[1];
-                            break;
-                        case T_NAME_QUALIFIED:
-                            $name .= $token[1];
-                            $pieces = explode('\\', $token[1]);
-                            $alias = end($pieces);
-                            break;
-                        case T_AS:
-                            $lastState = 'use';
-                            $state = 'alias';
-                            break;
-                        case '{':
-                            $prefix = $name;
-                            $name = $alias = '';
-                            $state = 'use-group';
-                            break;
-                        case ',':
-                        case ';':
-                            if ($name === '' || $name[0] !== '\\') {
-                                $name = '\\' . $name;
-                            }
-
-                            if ($alias !== '') {
-                                if ($isFunc) {
-                                    $functions[strtolower($alias)] = $name;
-                                } elseif ($isConst) {
-                                    $constants[$alias] = $name;
-                                } else {
-                                    $classes[strtolower($alias)] = $name;
-                                }
-                            }
-                            $name = $alias = '';
-                            $state = $token === ';' ? 'start' : 'use';
-                            break;
-                    }
-                    break;
-                case 'use-group':
-                    switch ($token[0]) {
-                        case T_NS_SEPARATOR:
-                            $name .= $token[1];
-                            break;
-                        case T_NAME_QUALIFIED:
-                            $name .= $token[1];
-                            $pieces = explode('\\', $token[1]);
-                            $alias = end($pieces);
-                            break;
-                        case T_STRING:
-                            $name .= $token[1];
-                            $alias = $token[1];
-                            break;
-                        case T_AS:
-                            $lastState = 'use-group';
-                            $state = 'alias';
-                            break;
-                        case ',':
-                        case '}':
-
-                            if ($prefix === '' || $prefix[0] !== '\\') {
-                                $prefix = '\\' . $prefix;
-                            }
-
-                            if ($alias !== '') {
-                                if ($isFunc) {
-                                    $functions[strtolower($alias)] = $prefix . $name;
-                                } elseif ($isConst) {
-                                    $constants[$alias] = $prefix . $name;
-                                } else {
-                                    $classes[strtolower($alias)] = $prefix . $name;
-                                }
-                            }
-                            $name = $alias = '';
-                            $state = $token === '}' ? 'use' : 'use-group';
-                            break;
-                    }
-                    break;
-                case 'alias':
-                    if ($token[0] === T_STRING) {
-                        $alias = $token[1];
-                        $state = $lastState;
-                    }
-                    break;
-                case 'new':
-                    switch ($token[0]) {
-                        case T_WHITESPACE:
-                        case T_COMMENT:
-                        case T_DOC_COMMENT:
-                            break 2;
-                        case T_CLASS:
-                            $state = 'structure';
-                            $structIgnore = true;
-                            break;
-                        default:
-                            $state = 'start';
-                    }
-                    break;
-                case 'invoke':
-                    switch ($token[0]) {
-                        case T_WHITESPACE:
-                        case T_COMMENT:
-                        case T_DOC_COMMENT:
-                            break 2;
-                        default:
-                            $state = 'start';
-                    }
-                    break;
-                case 'before_structure':
-                    if ($token[0] == T_STRING) {
-                        $structName = $token[1];
-                        $state = 'structure';
-                    }
-                    break;
-                case 'structure':
-                    switch ($token[0]) {
-                        case '{':
-                        case T_CURLY_OPEN:
-                        case T_DOLLAR_OPEN_CURLY_BRACES:
-                            $open++;
-                            break;
-                        case '}':
-                            if (--$open == 0) {
-                                if(!$structIgnore){
-                                    $structures[] = array(
-                                        'type' => $structType,
-                                        'name' => $structName,
-                                        'start' => $startLine,
-                                        'end' => $endLine,
-                                    );
-                                }
-                                $structIgnore = false;
-                                $state = 'start';
-                            }
-                            break;
-                        default:
-                            if (is_array($token)) {
-                                $endLine = $token[2];
-                            }
-                    }
-                    break;
-            }
-        }
-
-        static::$classes[$key] = $classes;
-        static::$functions[$key] = $functions;
-        static::$constants[$key] = $constants;
-        static::$structures[$key] = $structures;
-    }
-
-    private function parseNameQualified($token)
-    {
-        $pieces = explode('\\', $token);
-
-        $id_start = array_shift($pieces);
-
-        $id_start_ci = strtolower($id_start);
-
-        $id_name = '\\' . implode('\\', $pieces);
-
-        return [$id_start, $id_start_ci, $id_name];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPwMbCduO0eTnvP2dNQcDphYT2kO0I8JrM/I34sXE5HbntdkhhD7iq+/7osbNSGDIc/ws81Sz
+nlehRJaaIkZWaF+Qq3+jK3NQ7QE59tMMKVUwIVA90ghaXQxBqFkmcq3s1llpZWvaYGS8vwY/Az2s
+ZitMNRuz2M4nNfXaCYBvV1WA6Qb53VvtJA7UdkFVwaJEkoLnRipJracmFUIXNbcWD7U+bkYRcYRU
+iz38xk1kGby2PKds/kIR3zhAqQ4sSa2pbcuvJJhLgoldLC5HqzmP85H4TkYrRyxccOWxxN5zmhlB
+iZ/IPV+7YmKw6zrSuH1tJzEqdo86S64A4QusMZxnXrDqMbs2i/mMOuG8mE6UpUumUba0iqBlNpEO
+ysvxx1Xqmyz6xP3FtAVD1JbMRc3mCqDzYkM2FR/7sqYIhmqHgaQajzXazFvCUvhrWvyclsRGfKqE
+hJ2d8MSIUJLwu/x3JIzU7CJcJ3H2M9HeuZ23Vpl2WF2cLhl+w55bLtP4fbv7owZV53yMQtRwE1ty
+1xCfhZGtgHVI1Xw+l+tLvY3CwNexQEs/Ffefr78v/cE5PBaMgnfmC7jrqyosBjTOkND7uoaWAW+c
+h0gzgym4aaghEJw34pN0tm75IPAIv7sSZsNiUOZDwNe3UM5Jt7KNBp1awpKaWnxbVgxfPmRhquI5
+zjHBrzWHvy70Q9m8l5oxP/EOS+s2B7sniEijGXymCBhR87L8bz3YzlbIAm2qIu7d+TvzIXVuevXt
+08RyYsG72y+gTOi3yzFG15KfHpAEioLrP7O9n1NqsSUQ/JfE6c2iHUs3zqPWKg4uKfZL0gWYpyes
+/XOhXM0O5zYQnxzHpFR/j3RoWqu5vUo+W1JwM22Qtre1WhsJA96zgB5/NmA4twRUe4d7rpHG30o3
+L0a7uRAiah6V0C+OiYT71Jr7UFBE685DaiUfXljk1czqfd4iuOwXOmOG9AhZO8A3Yd8MXtuhQvXA
+qE9YvxZP3cMprG9Unf6oAMzJoKiZdXwqkup4ccuETPjnOucq71lqKAtIy7VjvCs+Zbk0Rxa2Nm9Q
+9JlF8VpSBstWkX1QLEWnl/ecneU052pbHgOeIT8gZvga2ei8wp5hJX491gwFrckhZINv3uv/uoTm
+s/2ngpH+Z+5fafhunZlkgjrMMGaJFca9NgDmkBCqf6+7Gz0jTs3oE0Af7nCC75v0IfAg616YvrGo
+9nR7R+15GfpI26dr7NdxFsJw2/thCM0BzMDWybMFrVsiE69xWNnv5aa26F22bhaRSisKZ+tcLtg0
+/olR9B0BgNVYnTDCQaEoRt4ZRAP1PIR5zs4PoWUrc+7HykRKl8yI9jwq2kTpL82QRV+2+ZBtUYSp
+SbygUojwJNwH1doc1TbqnJgB/xlXUhdtkBGY1FfusluT0AFeyglHvo5kZllHfwffa4mQ1QSKtVjo
+bbPqHIohI3g6mMoSlZUU8egqVPMrlo3DsNZaEskl61H+yFukLLwvzz3N6iFOXE5anuUnBpjVXiAE
+D1nrPAfK5PvC3BLrqm60Z/LcRX5HFzTWcUqMZdQZgWqmpr9SAbbKku1YtCV8slOAANvC+1tzvhTV
+AAtjkq92LFSSEVw/fkJSFT16sR4fl3LHDWUEVh549kZ8iPu+35Er8EOv137GtuDY7nXxY37bvHmx
+dtt3rERb9SJHcQBraW+9miGwuaKcIikI4OvM871vkVJPSjl53GD6GLfq8T67D59BmwVdr08/3xRt
+Di8DV8zF5qWDtz69pO2zUH4UcHchugnFVJ6Lq/Izb0McPPc/jS7fXfvy3CnE//ZZRP3skd7AOvnM
+5575GEBW9FxV99OszPB6gGW4rL0958cVI02P0+lZzmlj0lmFIX3cgqLsfZed8NKftgweu9me72bs
+5dxWhNXxc25qeTTfMKmWAcXkvCFDyOrP0RIKctzL/0w4z3Ck+6O+Bh7ajsTcgCYCmkqjECLwHlZM
+AT1AGP6sLTg6ZnpYEQgvyiKMlYbhVzBDofEV2ebQeYSb14uRdAMtm0YfklagLjqkZOxaCsD8slNT
+BXuJndrkuGbhdMMwC2qtfgMqCuYQSfwB3vQAxHDVSDe631KFWUxE0zk0bTHrawgCEbsNpevYOYE7
+Sbjdo3sMFLjCxpgHhQ1uv5uvrWEtSUS9Wr6c1LaJv9X8qkS2vvjb4SoySfP+Xyv4fkarCCqMQyZ6
+HNQcsayt2YvEp2IqkdZkUxbhfeGCeUlRYUQtfLCufHvGTtpQQEEkn1VvOZ8F36ir78zNXDQwZolA
+iu/RUoIFTXjK5Lor0gks343tCaAdLbgIxFRK8V1D1SfCoqw2hn1PdlJrwBzHv0G3VC/URdAqjlbL
+Rt1NDBL6a8HFbA/rQM3cervSQr2n5zHVYlMg4flbwBGvuw+i6F+AhISrp9UKMdnJHbF2evshkOVM
+nDm7KS2VM4EVCVgZvUX7Y7/kbMKl/oJJKtY/EyA6nBpX0XKCqTTRkH0KKJK35zeV/OejfvzpWOgp
+SjlnHujujjKDn27s6ZVTjTcWXce0bU8Uk0v/xyLsAtOMNkHhYNJJjgUCVSYIx8kAYjF1q9ILHC0Y
+rw903fo/mJrwcTnybs/9Rqn0Ff7+pH4Suxhpol4srZjyvwFBKkMpt1xEQxcghjAndnFXYFjUG/F8
+pCncuRL6g0VluCt2jxTDkmnTbIhsnertQoAMWZxWRsVB5OwFCY9x4B9u3M0Bc4kfpP3JamLDlADw
+Xs7Gx01lyI9UGT9UC6HzQFb4w3krhnYFZ1uhXyg45LWQVeXpEaD9c/wXcF/+Eso2mFOVS5OgXqu3
+r3IrDwsoMo/7vqphwTJMWt7FdbrxEf6bGHR6k9JMfNA7VAQ7Z0q62m2MU1HMcEgw31WoEneFKw0D
+amr0p76fwIZhzFKNLybTRAh80T4k0K2R5KiW7NhqN2FCC2UOWWrRBKCYaujyqASYPfZc1AyH3Iyk
+6RwBxIXXE+YL0Q76nXyWUqAsYC0XWoIy9xsbC2hjQbnCqEc7TAbiOj7BGtrCIXFUmjMYNT0LFcHi
+qb1uHeqMWjelxGYpvTTkDmls4xAyesbmSMF+D5Aun9N5qLN6q3gKlEn/B9Z+j7R/0aztTKOo+/Az
+DXPHbApY4EWTTq6zzWnB52nvqaKi+W4nVUqFqy9VinYkAHvZ7j3W10Ih9fBEDmUg4l2LwaKTtL3G
+Qlx6bDST95QKbpw7KkBf6jKVSEUghLiRAM04TiER6yfqxdg4VjfdnX+pCkUf6r+vezD+pCSLiktd
+NXvT1bHU8qAhn5DwP+7fKtNj+Qq+DOy9oqBd+LvNzvIud3yO08vdx1hrQ45OGtw+3fxmPOnSutLL
+dhgN8dgLjGbPq+MvSDU/wgCmGOzoKa2Fh4yQGYnIWrKZnwPahXQNkNpy+4N4/VGmZSrFyeisjKQc
+OJ/K9SsCp5YEuxn60ts8KR4L7JgRZZ0Sx5d2xr0PL2J1YrCuL1bz7aNbFeZx5u7nGNsBlTwJkPlB
+z8L4tjE23YuNNnHPAbm2kryvEmBYdUCInBtuLlh9frb/HADtT877TvpqCHzTqi/yh6Blb8ViGQlv
+4eM39hAooYeiBGPgxBfHQmBUMLjvIEymLmJy+GSD4nd60D40o6VqHIjDLJ9TT+MPZ9rEKTGMqzsf
+n9I8iXxmm14U5Ri1MaowxU/X8RSGpjtMVjf5oRpj+qvemEdkwjlUyJtkZX0hvBWECWLvS1h6VI1x
+GOs3c7Q4X3XGRysGCIs4k+l496L9RoWBhrXq/EjTMmWCkt7rzEdg+qSf0Fp/UU2NB5qV99+hWAjg
+QDv+lBRhevqfzzQqdiWfwzRjcHtQ5Gy9FTQIjpCc7f/AH0GwJfqBX4aOrHosSMulVurBUUVN5sUU
+UImScap4r7TVghJVUE3Rzf6NZstoCCkRsts31qqelhzSqXcludC/f82/jszFk/LEBljZFI24XWHp
+fa/O77sAuEgDSIUUiVyhbwahnOVJxeQltGfyqSYAFds6r9QbB+oSMJX0pWDtRVDEdtApB3bssOxr
+0rP7E5/mQMm1AIM1Usxx/v7G6+mB/X2Nd13ct/jOitzvG5BePFme93EO3EYTg7wiTZ0+4h+2P0rs
+se5Rg1U5xaGzJb3euHFEQqIHprGhd06lp7q81HB/66v5g/eiyDlWxif0sMzvym7BcOZZcdynxQde
+NXJQGexZacSBzdrV9fRQj1vOiuD2t9YNNZ1IUm4VDyEjTZtvjlcL4A2kwObrVAf/hZH8mHowCfSr
+I6RcBaDC4k7sCBqN6jA8cZ3JwZdO7s90ukvUqHCfD5LOmhwDrvQXEu7quoRwicRmPZCdlF9wiyEG
+xfgdQwUaHF1zjyt85Buv2d5/uU+AqH+CNSisbiZtpJKEC7b1XFl6uyRIp71Tlc1iRjDj6PkgkVXn
+eLRJXQRy9YJM2Uzb2PfXcXKbGyRVX+l+Zh7+psGJKemi13RD9d+djC8gCbVSpFqqHr6Uj3Ur39Fg
+UV+CtGQSWt/lFKmOKu9Mf8kP8CkKuEVlcqqtnQUWboq/rJT+veL4/tRqOcyHzJdGPcRpAKufnq45
+6ot9sD0LenRjZLZytfWHnRN29DSR27m5iXvrsB5QegKnUqVXgI2utMMAAnqFArJac4EwHEhrAWNo
+Q7niNOuH0SPVb/7unLkeDOwht5BDuZPNqBmvlx10Hk+evD89PTcikd4Zd6VApqwEH60Pl0GjiNsW
+zfQf9Bj9CFs6ZgUTv6s7dTBadYul1kcZjkDoHSCnQJDNFQvplSCSIjZuBll3vnDQIv4Vgnw4DDTa
+TgAyuI8maiEknwWMJdXICCFGsYpdwepBi6ZUmlWS/uAHfLknHCrYTgTcOiS40LMAWMy2LcMNCOXh
+SjwFs4ShHwTbijJG0iecTLbdFhpR0VXfBAws847WD+HekwI/CHnw5k/0cekwPGmQ2b4Q7mgZXCz2
+7ZrgV8WqiabIeLVGuUObyTUf9MCaPevvbvcAHrIKafD1La/MkHPBIHB4Lr1LEAIJXpWIOtLe0nJB
+SD9aj8ENtxzg+9QHcYHlCIpCCAdZHpSdGkSVxqCDoUaGVOsAdg7Z6F/eUcdvXBKY+/uNRXYiNlu8
+S/WF2qCYUTsofKFJEUnnXFPUuUd/LQuIpFi4GlncPc/8c8vI1lOpeR25yT6yMnsA1pcyNQDL2uua
+6mju+fkDfrLL64n+/HqcxPPi18iJZs9LgFo88PVotmyToJlOBGMrj7EXfmRXVR5lhEmGv6RumYJy
+RAvSN0/KCIfM1WRQMWiGS6isl793x00nZwrTXzaKWcR51jDOiE1z0J4th6l5wRRPOYmDkB8XKtRF
+EaoCQFxUTa42YxKu0OUOb61XLoLGB4B/vpWIDL4Xy79U4+badn7WjzxoxYpY3N5rybu4npCK6QJ7
+ncBBJAdpv7fkJWZyDs9BNqbb3TDAGwYlR4N6MO+7Za0Z8fZHt8csE1actvdjYyoKTRezPwHs2DM4
+H80bKY1/whTKp8SZ7K9HsPPYg7z6376SiOinhxPE2JdWO0sIbPAS607j2lzTofwmOtJp78dBd8D3
+xMjF6qWQsjK3dxoFnShRCcIViW+gjU9LeSzkhedZYj6RqK1hhvkclVMAr6Ge18R4wT7baZj0j7Tv
+2i/OPL9MPmTQKWMfcRuQ2LWiu1P9jdsmd5dnvVkhaRE9gftvA2jy5aBoYyiNEyzCfsp4Om1ry5me
+XG4AOT7+Inkh1OpMdsfi1fTypGK9dttEqfVQ4sZyZyYBYNbxq1MNWVgqVu0rfVnhKXfFEtVaUuVw
+bJ2UEWPYWi3fAFCz8ZD+6nxwxVUBazLCals1CZjT0PjufRR+Jaah3h9zGXvcOmKkW90LHXgJQS+N
+xucoIn2K55DbGKmGsLnPl9cIIwpNbLicT0LKCpD8CtH0S/9cVhbSRGnKwwPepHo/g2nTb4l5rQM2
+oM6VsFzGd5AJUQ4CTK1wozlM9sRGvKYp0xO8IwBGCawsVAO1aBL4mB8uL1djBLnsjrDqtPulyZ46
+Rdy7YC3Dw2OF60YCLc/Jx9N6at8O7CEX9tAmhRI8gnp7OFgF83R82h8zfeTwom8mduyi+6nh534I
+/gLR8qs07k/AVA/9QdItsWvnrlf4WP484zRW6diSD/M6cVvkGi+wP0hXajfBWTkEbq706TJCnDR5
+AsJmEQoN0fAXboFcpOsw+oR4iMZqO1rVIeO4RF+lFw/Bn05peZWWWy0EUwmazdJ/tRAJL0hangx7
+0zcKN1rgNWYvMtAVfGw4dKJC8IliauCtui1oge/bgjwcrLJUpyhrx8wYvFL6ARsKijI5C69mbqkG
+EO4H6M9FB2hUp6D3pEwgxgltduz9y1MiBsPDD3a0XZ+5VujADt7EzmJTGhajnLk6PCIspRJLkspa
+eYncYaYGJveocLG2kck0qnoNS+/LAshXFelIA+O5yIsA+LZTRFkApEvUvtwSA3e/W8vg6kNauLy8
+/fhsRKN/Rs2i+K4nCmdMx5B0OEumSKLx2N/2C+4W/CZB6nJzgzyY4pj0s3xIovQTySTqcUs8B6gK
+335kZrwlLz4jjb2z++Yk4WoxGl/+aKokNir7JdWFBNB1k6QIvYUy1Jg7lJ4lJE4/+ZepapQ+uQ4q
+Bz5R4lnMpy8d70MeeYGWDiadlNDEh9meS9xtCOBUr1ueecBuCqX30gmPNXl0Mde3tljCr0+MDU+o
++zsI1E8FICZqSd/jkKvAmwJ18Pa1IXtu64cpDWnLqQ6ncoyEmspsBxhLAswkCuxUnMicXp90P1BE
+z8tkXa9XCm3M7rd2gTtJj7AS/icxc4Pt6sZHRFENLfFHjCpn3NYyA1iObqDP17br4rMozMiOQ6D1
+r+uNTXeLfDcWBD4LQMV98x1hbEmCu+MEEchRiGs+mkzTwX8zIh6s7ZAkmb6vIk5JBsnPySNTd1Ck
+jBp+XsTwTtDlUjgdsfRxcPobZdi/EiwIm/FZ+imJdPA4kPkbkGXEaxHpFVbgdk/dEkCOK20rCgfa
+9JighYnadRi92NsiyICrktFN0V2Qmb0ACu4+yyND2x5zURwXgVjQqbB+jq4IQ6cJFIgHlmc0yblx
+CycYdHrqnZSIrBfxBfivkng0hHFsdxx5gEhCoBenGOd65d3FvYKWD2hCQ8Qs1TJSUgse04gN27xN
+yN6TCpSp6uJGBebGZkSZ033yG3OxzB6t8b6CyfUgngLaxx3gQWfU8m1bUH5C/z9VpzxwH9oyJwA6
+9bS0q3bkI0GYoWRC+5lSruzXa5EiokTqS4RoiSVL3X6LyzZ8Q/caMCcjcSZfun6MddjC46r3l3kE
+zbyNEzsm6mBB1T6PoEXoetnfXslHi+HVaMjlKHmtzqAkYpenQzfKBw5OJE6SYGoV4qBenrS4FVRa
+2J0L+LI+wXBQKC/h9hheL4qTyT6j6eh704igK4AGqDxUteiJO5gUvWRcwfz6LaVpnLTaVkzr2LDM
+MQLItZe+Vjb5n6Sqo2np36NIHrH6+A5djM0LzHjHG49+6DHX1+maVd6bLJZ523hqCwVNZC5d5WmS
+QNEE82bm4jgegDfa+/ZYNqIJ+Pb9hG6s0hU9UUT1lHgf1irHWUh3hQ66V64C/5YZWv7Z/0Lvaifg
+CVyZ2lVIcbAM6X3z5VRdGN1U4hkMdJYzABuutXdfoDBdY9YAcQD2Bnrp8dP5flBQzWP4Gtt+1BWI
+gO8iDtJmfBjSe1+ssJsItYHkhWYCDXWwnINJWYCBLrmkwPIgAf3tPYKf+JCMvTmLUfkyqsPgtIaf
+5iuRgvBjXqCYp5G5rw7lr/5CgqerfqASqmJpsoZYs44gWDRPwfUitj2AsgUHmWqsKc9da94GxCoG
+QaHdR/XOvafkDdma6mcAP++rykD5G5EPcBHrL+mr9j0po8a9AdR2upeJzYLn4K1bznyjZnFqUsU9
+WlTabEpBNNSCB2xL/10gZ5Tf9lcWLi54k2Ga8fGhFoo0PbgKMXf3ZbeS78My/aPzPosKCBHn/Je0
+4JvIGkcFZ9EOuo21o+iYz5KSJVCYpXJ6m10YjMs/QzZtXzxUculeVP2h7Ar58if9iKpecDoeIX+P
+vwbBQ+KBJ4mljRtevNGIu3cO57vklMntAYpF+Ku84FCp4TWWfnkEQJg93P6PXxhVesPaZ4pcdx5p
+1Td63M42U8pPRV1lmCTxJguMtlx6MFzQ8J+vq26M83tVEkn9soxZu+3GDFyhiKWcg2T6X2u6i9p6
+EhGVUeHh/bLQYcrwNZYTEKeLRTs9s+nw9DSpvlnLlRPSOxc3ZY4LYdLR6B1tnkblVDSp1HnDrLbJ
+WeWUnO6WQ5N1a2EF++v3RbXJpynDvfurwAX5/PwKy+GmmQhTMbi36rAwPq16g3cmbChgUw9CiT1P
+zVd0qJIovQebKHcYG4yqBwQX8xgJ0xkCEi2undy221kpUdahCoJkdNPW3pYL7pWWhTxWdP1SKX+Z
+ByWjIZ/uKVscfon8l7Y06PTHKc6UZ0or+TuvgKMglUVVExxzqem/uPU3vsflyOKC3KKsi36GYaNS
+9eVvhMYpBeJhYrJuQl8uV226uJ8BJew95r4hyjrSdtAlAiWrBcdzrONOZD4ls0E3LgNYQE4P9cHh
+h3QhfFP4BjhYX0nTpEjK9u3RlcE/VtECze4MGL5juCcdrHP1JHQlLuQ+7VyRojKUrzqkmhjIKxho
+cuwX2hbFKF7ozzEavl0avMRmcXESORxFacWrLUBZaA2uQR3qFTcpoyO0aGovbaRaOaJkvdNE5EeM
+JdkxE5h8uFql/VMTOgoXGK/FHrzHX7R3gB1oxGJ4ym0rT2o+gmHzI51uadd5vYsCak8ctpBfvoC8
+xfUXYGMnmJ58nSNW0JC5136my873znIB3GsqLITqrBvsD3OuOCGDXKlZ5M3d4bLscjJOI0u7el84
+Z+tfMUcItyXz+1SJDNQ3cdK/3iOtSTNokVgh39U2PKvm+Y7wy23y3c3QIzZyGAJe8FovAXXFwCx1
+I38iKTiaoTKsQsqxd1eg/tKkXVqSIj3GUxqTfkP/FMwQxP9wuGrXjv1vyYlKh3Y62CyoyQIHz71w
+BmFfi47rb1o1pI34ckZzhAUWg0cTJMPN5k+5vQImJEU4CW35XDqW8gHBhKf5wyzh0Pm3/oqKOVh9
+KjZdv0srYgRPwufiCR27TelvKSb4WkKDRjum392Ft8sN6Ua2f4x7plqwL+1wIxzSJt8AigWrZqRV
+4GityPUZu+QUwz7sjolIzdvNoGZxcLGUR1Sc6XZ8FqBJVKaPasRg5Kh4OpGkfCcxjLRccVuTsY47
+WYofjupYDPWtpqhxeGu1kqZcb+qujL5gQO0CthPfTUkzsp6FLoQGUo0kn3t/Kn4WoI4heuRpTIN4
+cw5fij/ihNvDvYe6/S6r0mSJMWd/1tqdb8WtgkQ1jzVlossVLkRiqEEdqUrXvOrvx4Let1ELsn5I
+xcZZDRT+qt/g5vION6Tfs/3oYV3b9iRjN4KxUqPkk678ZM9CueUDe86PMAQh6yI1q1FY7RSQgF8q
+GYKhN6jpWGSS4j3uEIoyyJBvnVL2OoSkTNGwyGMpxOH0xc7KpyjCFaYWvkHp4+Gpw7DX7Ewh2C6x
+H4G5gIxUrmIcGqkWeakTR7/vBFBWMXZSIgtLT1Hy8yxStOFiQEEjNApO/FU5DRFhKG0c3FwKQtOn
+dg8nD/IiiTO+8oJGeo5JRKH3fo62TPLZHNQ6yWitm+7vIcyrN13KVj5jK5bCO8vMAPOUWTJSZuR+
+xFh65jTDgT4uz18UOspavv9fYgor2ai89yxYq8roDxgyp9Hxy+qSOv6Bc65E+bVArLQew5gu1F8u
+Zod+/PxT9kNwIa4+RrP6kvxx9Xovysh/FHyCgQHIEGlVHF+xthVvb02tt3GFVS7/c2FZx+113Evv
+rG1EJZRETa5zsGR6QU6FOCFtCeh6WzjSRsLDutLfs8/U3Ck14DM9Qc6Qsy7oiwqZCHuLp6/2wkmq
+2ud+EtyxbM6S9LWU+qJZHrajKY3nmz8Go1i/iFYXbE5o3Nz6r1KjhqLy45BG6zD1/qiW7uSRZSbP
+cTwEocwPSY7DbYzZynidfF/mebF54DzL6DyPCx6nL0Zgj75a8LUt84gOHfCbZ0sUIdbGHN46aEyq
+sYaRUiPe/j+PJO/78JqpBzrTvVe3Lkcof0skwQQCmO52aw3TeR7d7HhLX0lKQcu3U+KzzspdLRv9
++kb9z6BDrAXoi7n7qT56NIlXHD2qmPQz4U4mO/R872OU4SLAUsm1fl4E+QPxvBAwJaIeOI4fCSPc
+lmS9ldb0NiJwrIY2Pj3yCHStXLZJ3CLTU/FTdrvMlFvJo41USek0NbEc1Nka2t7PY2M/n9udU/ut
+SaJUrV+WclJLwL79lRPQx5pmsGUQ/9jHjmowFlpcFgUxuTErdPBBWdeDfL5IgIR7IgicejFiKTDL
+Rb5uSN2P0iIFFn41fhlzheMs9lZoQ/U7Db70pDTwBxcQ9PF2pWCdjNJBYSYY+XaKDSV6WChre1k0
+Ym2EexjTueGGzRfAcOZrKWaj9StZMLERljK7Iey1V8K+7h/c/NQHVY7HqJrclOlwOWp40+HTsjOb
+YrNS+OUuDMHr8Iz7q1C2xvmB64BHFfFoXiqlU0Nrjf8JrcyHS0YmMpRPLXWePGRQ9hkOCvm54jqK
+uMd9J7FeJC6wqYxROPqLKoudehN7IAH/EVNke1EyhP8cnZ+s7uZYC8nas5RGWcjojdkVRRHuQqnc
+fA/gjdGm2PR9MHeP3xiwlJYqvENr3CA/dQvX4sBoBvWopv30og/y6PaCsb0U9x88hmqlLj+e4jBu
+qB7OdZVeYQmkQpOlyRXeqxxpMlAgJCZxnhQyUgLvG4oABTidRq9uKlIiCzbQswhv4nYCH3x5Eqhl
+hPL7ZM8Ka1diwVpJRlZAxt8a1WOzaO2PeWIksBjvTFmza/5oWgM5luZ9UXQ5pt70aturxk3VWZc7
+CujxH7oD945AKhEHah+CxRFn1ReqQq7YGRIJYYqdXO4wGRQNe2v0wo/sUFWAJsakBtE12WJ7BqmY
+oFQnGBn3Au0ZPNzgs50geTHpL+a+NH6QBuMjZEI02pZ/j6PUdP/ce3sEBNVFach59vttr03f9ieo
+iIiB/IOZ3y2H/EF+ubf3hWvtl5zo+pAt6UKZbCY55R5WwrIpeL26P+Qsz5+sa/n0JPBlBibTKH9d
+YErMYjbufY5+oXZAMv+1kpWYo0Hyl22cgrx5M+BtNZjbZydWEUZnZeYYyoFcsLEi2o7gdZRsAZ04
+yvFL/ORSCRxZHK3jXJdIpdL3g2B6WpGxTY8o9xs1HT7DEmIVhl5ppCcg2I5qT7VL0JJj9jYWLiUp
+NIltWIVK2BrxjMnRUMET5aHpOwk31Ps1Cr3HSmVTjA/NqmY8J8DmAFa9/F5Z8diCJ8oOrCE/Xuc+
+aJ0i120cdnBxK9Y7Fr3P9kb3kgENfdDID67WkZ3xQ7S7RoK5feJ76yDxtY15ZMoDxtnokQe1s7f9
+eukXSPFOAruawINCC/R1mYBX28s8JHyexjF4Rx1XElaD95UHUWI75I7IfHmjKjSHvUp0C/ItiBPS
+4eTHnoyTHSLNB5cbSCCSsKMmJhg6RL/Hjt0ZtymEhgLmMVkvz3a2yqEhSX7uCIlaLoic5vq0uJPA
+gfBhTObt82BGC22oS8Xu1eNx3Tt2DnZlKuJBxRKMdcODpISdYcd+OHGHyAak4AQ69Xtg4N27vyY8
+cUKPj5LUX12RYcmQIuDUcz1fHgopsNpiu515LDluNM9hEDAh8hyd/L30q1/Wz5SvPYqDJxLZlgHc
+JwzqdTvn01AhFLTLUinJKOm4RdBmDh3BxHKAXukbVBawbkebd6zY5pDJ0LPhi7k3Eq0a58rHLD25
+XKqqfIRQB/mLnxGmZZdLr1SfGfzcaF//vlFjm1Udu0uSu5aJmrglbMZasg0E4WYLIYFLeJEgMtMe
+u96mrwF0g2Rx2m8ugSyh4svPJnZv9tqVbm8hnnTp7Hr4JThGzfbzPB4I+xc690MoUXyT0S8S1dLB
+j8oON93qFYCls6ssu4UasW01UHZOi2vSrZ8L6pYNmmUw72Yd0Dw2nRVGVLfYLAaR8JhvKn+VZsVr
+/8pkjO9DYJE7urW1l4bANapnp5+6gSYG1mu2D1mPGkg9LTWWVVGhDaB87Gd28Bs57UhINeME62Hf
+CL5QYzpqceflYUTt/h3NTsvIR+g1NfLdRpXSOKsGA6M9lYoqtJ2YWYDCUSXTswMEXBEq/0vWknTK
+rc3IpDIsbdTFIXGacEEQdb5IjssYbpZ+0aFMvReH0K3atE+h7eq8366PZqXat6ls0/Gn1sLtZ2Mm
+4otRPJZWYxbAu3bvKfSb0p3MdzoJJd9yD8zpDkkY1L0hsUViHh4hPwobiwmKjM15+SAO+KsAg0hq
+Q3D/HSZ+hqsLVZUHnTTvfk60rDzrv56Wr0iBriYspLWeoHq6QqcDvhd3+HVeLWp4fYWCExQtdIqG
+1CEMjHMWN404V0FHWWj71Hq/i5Q5cxIklx3dV6o11sSQ5FolYeBh/eyYqBeqgD5YUL6BoD8vwCqb
+rlL7bZ8iHL7Qs8sxjwmADtv8wT5hUEO+xdRXh26a8JVXg54f71B5BGRuLa0zamSAMutqYOtbnlpt
+aFuNMmh6rDQ/lZ2VyJrWx+ieyI/UBs/EhyYO8lVov1v/MnY4jtvoROERqgFImv7vhZyohPLa0r7d
+gXMyPGEsvN+Tq9sJIIifIo10jeiOP/diYLcZsm9dFxzkQ8Y3SozA0uRXFlTSlnEDrOc9fDXA5m9B
+Pc8DX/TFYCa2H//DhTHnogNtYScTiuGMgCqNrnmqDhf5goQGa1TLsm22ZxpuHuEX0thGqswxSrkg
+XwMiJ0p7nMQvBeCPnauYKAS7AHszisaVcyFKuC2CPZr44l+HcYIFKlgcvy74RNSCEDO3MPCcYN3y
+vovg4DuGH1QnRj9wNoJ13jbMIPyT/5wud5EMG+95TQKlJ3cLxiJ0cQwk/aFeaL3ao9v5Zr4aNkRR
+xF+7XO1ToNxTre1OEQBZIxGqa0x6/PPcBbODBfabluTUeSsKHg/qMJP3uVeiWaPZtBFnVUJVN1RQ
+WSkEY8m2UKaRb5iOkH7QhfhsLd5s+JAX9nX8NvpBbDg2JtvJ4sz+LP1oneCFnx6wl1Ox5LUI2KBs
+h7RCXa3rhrcH+ngNaQjTATj1PxdOBDeHOlCQqVE1hI3ZMhU5xipMseCVgkIF1FVmtn0MedIclHRH
+d4Hs9J0Q/gjgw+/YhgIVvzm+FbSf3D0pFlCco5xL77oMcLLStdu0mzvYmwfLfnAD/VYR3r7Doanw
+hr19sRBiXrST9cEn0LuvAzq29pVV/noduTE7jcc/QrZxuHw0fPXPqP7jV0FufkPOxTPOycNui+uZ
+hM1v5NNAfEF85DeK2WSLnYD5JgEWACgaaiaOqRZiqH9QX0WpjPaTd6WO1h6/jM87Z8NmBLYeCswg
+YKTnfQTLzERIod03SwuhPcNVWaDG21MZBLdJwpiIMlzv+drF0S2EQ6WxGb8sd0hOAAB7XcIuSvQB
+qfdMOLRKfCbhyCb84+QQVjOVeeHFQENRRK4ISkkzTm9rzbmG0kIDGPrEMM227KqZ0US+v7J7g+kf
+K47psgPtoeD6qC5SVqJRsYkcHcEhOixoYZ5E4EG+80dVm+qAUPUMrR8SA3dscZWwTnpK2BfHI8L0
+1IyBAlTUzYhQ55MQCwlKNv9uq3Hq3BdOieUgP4rJxzIBvtQ32nBXBTV5sSMzSH1jqyWGJaxifEJ7
+M7ByWqMY7Rbff1rA64mJU0eOZ5h8X5u/aLP42PC68d3RxCdfDF7YYGfPD718Y5jMORxPDogthlVe
+gbTnBv5swQOIG8X0DIqHlpzhlLlB9+yDXWim7njJGKpOK2qBVpT9dlk78cSYziKsanZkaS0SUZyj
+KwYpaG39uqMAuTJh8iqjXQZRatylCuGL3t7KSS+hiH/3S4fwStE1jYOtTNXxk7oDys9opilv1oEs
+zL2rxtvpU1ZGqCnCUJ8XdgY1HHkYaIygJHRbOwYaWBbEdcVHu3WQKJ31i0eYSesX2EiD7rT8l0+F
+gBkoA2NNd25OL4B9iZH4LL8GJMGBUrBXBzcLO4Q5+4IYcEkKc9ecMLccCB/gHrpSOEnSdWhvr1gj
+fXFRzNUWVRD15GVptyRwz6q5C3lcXgtacQNE+MRerNVZS/Zom0cXstLLu7tTD02T2cKqHDj2L81Z
+wsiJY4VjaZ5XxHyM2JZt3EhGdBw9Yw5I1JtPYOx6JRDeQJWo6c0T8wy1pYewsWAnzahvIraf+9A6
+GZCR+aj6AJT3VgWkANWP/3WaLqgibYvzCe2X0YJhi7YNRN5HtBApb+bxKXzxRTJgEEhVMGBhVLkz
+V4SGlYdZ0jToQwOf1aaF10sk3DDqltC8/f0IwwI9aZXGjx1OKrTww9ZD2IDLl5eTuhueeV+AKi2L
+gfOk/TJ1cHoaC90EISrZ/Twpv8EJAoZCr4H3bRO+xMBxRvYu+qluH8yCwJfwot8RTtqOuT9/h9AO
+wciCtV6fsB049OWhFvAlFl/i8945NFB8fbc+aiNzCAQTKhQFkoRUIIEN3OO+giYoN+nB/KFkyAY/
+bmCrDts00wntNX7XivcfvWxqRdg5nerdrjivG2XhQib4zzMbP6plTtCPReqYoRLSlH1x0+HF1MlM
+T7RJ4jOmQ0CqJrDmxIK5ey5U6iedC4/sjIA3iQjVuONzljNwGD7PR8SjdpuCz27bQ0DoevDshoUt
+OEGu9s7smbb/wz04Ak/nbAzNOm2cUzH2OKMtd8BdGSeSPEBgEhkOz8O4wqgHK75yo870cPwf9SkA
+IlZUi50PeOKE5S2Yn7PmfMwhISSMeZF7H1N8tuUVOzIQ/6MBXWVwD3CS0SfL16A30B2LwMTNlOnJ
+32lsDkkoYWoI71nOoSijeCkJbYjntmLceRYlk8UakQvkM2VNHA80y6fDaMcqw6OAz2JiZRrgpy2z
+PEKY/1bDUPRfqlmXBjeiQCXWfZbVTYMkcn9+XszOa/EoUCuDE1g8NOVk+kFESYV0jqdyElPrr4bN
+xhj/mWnNY2Q0th/F7j35P+9X4F2kHJ2dV7ePspANnuv1FgkgTEiFG4u3jWP77YGbP65mfXmluoMs
+MK5n2svlM/qQBBEHQkxTPzFg9nZALA9VlCuFDdAkg55N8jhfXFXruABQLeIY4Ko7jjdkkfd91wdh
+VR4LFSA0E9Xv5mr8UZLzSdMsFfpAvtWXb/bQEVWGVSrTWZDg4OEsdzRmc+rn/gzWzDtyxXav+S2J
+XncLoZL9p25JFizI/HlhyyknRDJDbHBGuf1MIPhcHua7WmjMRXjHhxyaBuv44OYalpkxGdQX1BSP
+qqBvQ/m7PUGJUZ8EtY7+n8seHOL7e1Q+84pILtzO9IaL9dxP+ketkJaJi4hkIFtLwRmchnJUXVJw
+6UurUciMo+/oqsfJfq35mA0XbX+Q5Z1jDtXIs5QE0bSK0B57ljN/2+GURtKhgybWI96oxVuJguUS
+4JlXAwbBjzSho2thEQ7InUrpq8g3469PVxZaMzz4uA1FdwMqqokrxwNnr4anJK41X36S1AcCPjb4
+vb99Aph/214PfIkUEiCwETB4kOn4qPf7MH4YpqaDBA3zz7vh/7aBxaewTkdqeQn/VyH7quIng4vO
+Xozo8gq9mLnrc00/Zs+fcxqxmVVXD9njkG9NFrW0WbD3arZEtD62WUsbIb9Q0QKQn7hmKj1uxV4h
+tdc5/rj3U4j5NuVsADTr01cGfyTbybrQLypcQZb0JxtLScsJJ9ndTqX4lM6ezb5iqtQliOFsONw3
++/AwkbpacnHyN8rpTnm2yd69gICNQPiJUxRxjFn/erS7QFgpmEuK3fLOBimY6nlCDTJxwUKeA2Cv
+NWI2e9JcpHqjPf+vty9Acch6hJcJV5N9/CRz0X50w9Y+HVyav7Mxj2GEZG9ftZNkgFK06SDcXp2a
+n+LQINf7loCQS9MO64O/GXNoZmO6QwVaYbPMa+XTLT9YAU5ZncZebtxPFgSEDOX61Ttz7Udriqwj
+b5Ch1OZuUg/Xd6Nkr3Gxx9RqqLxdYqBAqEGhvAQ1ZKjEjpYUN2SJDMQYir93OCDzAUw9RFtCzlJq
+3aMcdCM91+hSv9lngdt4j87zxKMEeuxys0/7z+zwfkDuvLop2VOpqm31rK63AQw3J1CzExQ7cwle
+T6gTL1ASygDBr0q3whXjhbCA5G11VMVdgxmcbdNtmbYSedGrkJ6XIV6LJCREb389dJ1hpLgMltXe
+er9dO7f52I45tOh1XUmkU8MgJVMKd52zTto5DFG4528lUw7DWrpTp7HjiQdsWwTfNEPsFjLfTajz
+BHzDVMIsy3DBEGMs76bXEntydm5uKs6QicOzCGDktA6t+mCoTI0DwNpHWk8xPHu8UScrUf4YeLdO
+7d594FGS9QsoKZNzKfUTOQjEByqhs8RldhWuVmHwqlBzaKOnKJQSgsMMK2QTK4k2VCFLDse3XRsr
+UN7fZZN6ga2AxennXn7s6wZNQABuCWH2zjIsoStrCRH1hG/ZiD8ckVC0fFKZAAfj68YTZJ2MkFFK
+3+fV/1Fk6WG7H2ho00g61DaB/a/iNbWcqKvEe7OMOmrL0CSSVKvGaDrkZpL/9Cr5LldeJtuTV1eX
+6ay1knPaUoGWfIanaBQACsxJx8Zs/M7J1Ik0pX58vW1vYFQK1AsXXhTL1h6V2HKx1Y+5E/aCDtGN
+T6fyOBYETXoF+FbA/mCuW63V5pHR6vVMvNpNJdijpQPsJs8dklje5xyncyuA5FOVwmLn34fAfbk3
+4qbnnI6Fb7qWJS2WRh6tJE5Ylh5BGLRBbFYxIyqMZoi3HBsq5dZeWpV7dkbsxohjeweKQlGLil2X
+nD7G6Dz6DJ1APtfh/FqUysPwQxUIZjA4n9azsDolaYHhbktTN7MSPXiUOf5I+5KJ/5FL++lTszMQ
+HMLAYqVH8+23IAhMo3khDRdFl1T5+YGX3s6687EkJfAkLzaq52QFaU6IrdQUFzH8JToE2tEb8Z/3
+k8NXQC0e6YKASzT4UQ954Pij8DtxMeiAJUpzFg4S5szVfqPi022EvumwQZLhhw+BCs/qUISGOqKK
+ENVnWxnpKFky0zTrjoDhxTINfMBzRdIIwtJum19d9VzfhKPINjaT50dT8Da0zTajdT1WSYuTNnAN
+AL5PDH1SlPzAiinaydJpXUvv6+uhQ6pwk+OM5ZAIz9LR1qLg5f3vd5EdKB3J34VqRInNDhL1bcpI
+C67Vfa+nkRmVlD/axcGO+CCs4rI/lXiLrVIDcaKfsd1wFJWF/cDKpcgLc6w06tzQ6LmEbox8Rnil
+z7zHI6uShQYUhWaRLdyci3+Q70dbcsZdMFiwGNTX0XQK8FTcomnDC9jngstWQrYjzwmRj7+a1S3J
+E+s9vW1z3KTKvKp65jnSRvCsbTZWDowKDS1+NQjbTNMowC81DclJFjPY9QCR8olniyCn4w+LuIg1
+mERo+ypY5MeZ3VWzpk9JlArRDvzKTdeqCKRtfCGFrovZBXJIJJU813lLWtuGH8SqyZY6K3X1V5S/
+N7s/oz9BBf0paFBcm6L3RoU/gtlOWwVkBXMvgXmCo6e40vvP1Ya6mM9uc8SKbadVa4njslDrkztG
+iUsvaOu6qfwlFKW9FfQRG+Fr8dgiH1V/SEklFkrl49ynb8wkC5ymccnCBbtYbsH5deIA+/MiTX8A
+Jq6ZeGNgMi+GgroqrIrAfFlPJUFfqRo5BRvlBA1TXU3xcrQJq7tyuM1afIqV38mZtK/0DCXTptQB
+GIY1MaqFK8xoQtSnLDacwCGnDgLhu57sz6lFhHGxwlnBf4j7JLUFCQk3is06mmyMZ5Pandw97Ybk
+xjv9qbX50lz3sYo+ueVQwLYUJj9ouW7RCJuQ8tnt23HWcR3OBA9uepQ5XKPKoYtkIurXpEnNC4id
+eWNQQ2WhKXT99xZJMPuSeyQ1bSFR+Yd+QHHhZRFXPFpwjsWl7Y5BdYNF+3QBz4jv38clKHui64fo
++8/N4Ejtz6ggTmg5ngPGnwl+B0XOxqe4UYQHW52P8y19wjUwZ5FKcJ/OenW4RTBinF2VOSx8ICdO
+kZYD6Rdku+Q9u3wjKYFx0VOmDsRU0aOT6EkbXJenCqfuR7e0q5vrBKIbAGYdizUDvrIRu6Y7BaKO
+Y75I+rfwPn2xQyyvIqEEjypolc2wRDgnfUU0ZsyJ41b0igBCpjLyHj96+nUeBmfnJ7qL8CBflLSB
+Hf/j/vtuXOzDPvvfaCDFHkv73pBad9zrrvpqVuE3mhzEebGBJURnpUmIYOv6MT1r7qdyMYJbkoEt
+TZfhC8O6pSv5o6a1WKqj/7tvtPPm9lNK7rtTPHOk/rsxgobCmfSY0CWiojHImjRDQ54bw7VotetT
+BVndEpZSWivIf5nnvua7hdbxamMRpv8qSnFSFhv0bMOtf6jzsvV5IRSSCs6VXLa9qLqkfkWBNSyM
+ekBWYYGGGj8DGJGTN1OkdiNdjXicRpBQ0ZcVaTjQD36dflj3uchU1hYMbqhmpJvxAGvdVBe0fFmj
++sfAj6FP/csJvYX4mhdAI5GHR9cJJCV1vQ2xiIpjFVtic+HEWwToVDuKP4Br9O11czWfJExTT2+h
++e2Z959MmEoI4299ZmxGJbFF1VoLqFSN/+OJoWOjzN4g9Vp9eeD+emW4yi2LzoRQpt30BPnHah1F
+n2TVJ1n2/iG6jQmgc3gIukGWZEttJSpMnO6h8NGIGZS3Y+VMg7G0YshXJchyc3CQ64ik9GFGePDm
+RFVLZKCK0fI8iliuWZ7CmjiDi4GRdf05XxztfHMMTjY4M+0oPI5VxGE7xY6V60J5AvN2mid800kd
+FelAJLPhTu6TbyFWEbWuM2x6/VcE7GgMKb/GoVmMbE5Q+zePX4yegi8Eot4R8bwjDLCjreuYdzl8
+68dVDTOtg4F+cNUQKG0XiFV2X11byXYY0PGTXX+xtY2RVyM/ow3eNbFS5m1OVVtYO0+IrLffLlVl
+ghZxDLX6ELZpzzyADha7npyWGyQbB7aahhOBQLeLDkxSIlDjiehOyPbcVFG0JlHTvXMvfQJIYvT7
+kfUo+vu2t/EJQmSQY5dnByyfi5Tyr1t3ZoRosImqsFaU+euHCRvkkvIvmyC2E/QimHKQ3OnjOXmR
+uER+k7JR5X/V2+Q6nGVVqpWFXNSZpW7fERp9yCwJIanaQhGcAolbqjAPlwea+GIbwZgTm+32qd73
+lliEwbFNfnniFzzDDqCzZzPY+MVf3vgLcpqMrcpBBPPntwJ+oInqbAIBU7D+DFH1Zxcwouu2qU3N
+yCU9tU5rtlNXJYYkQPDO3Gw6oYPloKEvGgc+RS8n9PHVUFjiQb6Fi3ilYlfC0F09MWMAXbGBlHCL
+iEOv4z3owN0j/q8zrpIXPVxKUEt6Ny0tWit3buxBv0t9SwJfGOvzBfDMvqHpjzqi/g4RyUDSK63D
+bpWBOljGW6Ok9B/dljBUQJ0t3zW6EEp7h6xPDpa3U3Sv1v64SvQKFsW1Hj9WhZ0zaA15b6qUwhpC
+0+qMGbv2nEW+vBPgN21kImZGugsogB70/QmIPtYX/TLwLZ+87guzKLDTlPVkg5LNgiZsVzq00/KY
+VRJ8ECmULiyRWLAMLWg/OwkfVxbwo9JS4LMIsfrItKk1VjAO+J7TWR+VIT6vSt89MXSKCfYUvOI+
+onDEVl2WGc2TSVOANPYlfCYpXcHYAWX7hhkqPqP7djAwA8Xx1rIbchV4j8xhJ+U0B92J9orCVX1t
+Z34Jjoe9CKrc7xkFyjq+pqCDcLEa08C5gJglzF7kbuGOhsx2kUwwR5ZIqX9ysR2IBIj767WdgxEN
+UuYciPxbvQ1uloPiXX4upndETr9mJSSDMRaE9Rsx5NMULVzlKPYLe4pZCGVB8f52cLjH9HRzLo+w
+PoVCZPrjm4TNXz/e+Bts31Ad0LFUQkjUWdLIzWlW6H6Qb4WCMV1hLM2eii5tU6NlYOo5+5Mcav3d
+MDdD04oGci3RGFK0u6zJVscGex1W7KpuYGYRr0fYaQ6aEI9Kmyjmn4fogPjVBjfj5xZOkHeo/iLS
+4VgEXuzTCeixD4b9Tly9YXEALmdJHYp3zWVilM9AcqWEmvsSi4nLMqz+ZukJOs/K7cwzQspc8z1s
+Jyb5S+O/jLKK7JwvXp+kQu0atSYx28B5Ujc2HZsas143cI3sK9vipfR1MpvFL/PcDI2Hu9w9eZwO
+yZFtXNhIKfYaiq7Edul+6rjr4nNB26NO/RcRCgWC0Fj50GK4WlsEgo4hmTci6X1kJxdudFBf4RWK
+KbaLTOTEGGhJ+xKc19jrPKH5qsgAwO7pxlVuBgFQryYrlg+JCaHBdegxcLEcgqbxWRAOeTo5/rxt
+Yaz5dUbsqUYt+bPd8mUjNrm0am3ZokW5Qe2qwz4Poo5xMcKNmKKUEEaZMmOs6oK6uKFafjiUpfck
+pOwynxtAoL77+mBkI6MsCEd0WaA5UWguCLz6dFdCElqA731HUDCRftiFHReft4YSs81IWu1/Jj1G
+EXIfmWZrPrF0a7hV5ZzlifreCAg3lMypdDEaUZsv2PM5Z2QDMA39wZCa1r43THjKFeWL+GiV2XoQ
+Za9HdrN3WFuF8fWMGBcCCymMZwv5KuT3m8OIILgJsjbXia3DIy3CUgo4c6nk+KJz5dRihVNzW9+k
+5GbMTXnGqptAug0HJgWa/x0u4U/ByskE/QkqvJfFZf+xDrwvvNVtLncLHFigd4ppXQPT6uLtIhgg
+Rxvl4pw6a6O8511DXdiS+FomoumzdX0MvRUuPQf/CTeUpfluicejxO/rLo4LBP1iRUW69ZDdCbzq
+ZpqgoWnvcs38YXfWFnIYIR3E5EgcVvgtcpFsTjDALgSbR9gdzXS+GUeejqllTRgIINoWH0Hm6TZJ
+lyMEyMVaKqjlyXp4g+iOzwgi5qKLgl9XXqczzLD9VBUyu4fFkXmnTa7UHMUVyZWlMI3Jonx49DxB
+DqVIoB890W9swhF93WMU6g+EBcYO0PsS5TPQpkC0whmJc/MtVBiRph8SLuIp3DjM1JdtfD2RQ0K/
+bQTl81tpzDghBuK4icSjfp+rUIL2qlJc+6g8u9A1t8uA26TZ57DKNvU18nUp4BbvzAGLCpWb8/z8
+vmjk1lBJtR24UAOOvHTJdyrFnE38YqxDKzrm0RMfm2SKg7HxtM0PWUMsL7QXH9IocOD5xhtHL1D2
+3ST3WLBmkNjayYT8RLf4tSLUOUF0RuUCOvbDYVhz004w/MGJjBREwK4xRPRPlPlHBaFBHnUw4QDH
+ASg2xVh0ViMf3S+LgTMYKIcSR4q/BqHFg2cF6EebEKYtFWLvtTDcdMijo7jSnbm8lMcN9RIMoYyF
+r9TehSy3I0hXZZEP7H85+CTssj6t6T7eldyhobKG9XrPYJEjM0zj8R594Jul41A8JdmXjknryZYc
+9X1jYiTsYvFGv1v12mVPZ5BDLY1aAPIaG2jJ/pagKaCO7eRZOyBLJlWM5g3jm/gG0OCnN2vD0iGe
+K+gKL1gXUKBEgXmj4dd8SLaNc2rdG8/AJA0ZdeRm2ZX1mccZlDD9Gx8gzrCUqAfbh44vIRvg6HIL
+c2rGyclBQTVQxy3BuIreZ+z/3dZaLjdymvacHeI6gYWtD4K/5H/VsoEAEeEDXwIUhmTvk4sbWSLY
+P0l30jbX9Nld6V8OUUiKHnbtMimV7otrj//cPOpZJ9Q9q42e5BR3kkVBj5T9N+SW+DNpjie2KG49
+zxV8gbF0P/UnHh4MfYKa4vPemUIk3gHrP0RKQzTuUT8TNu2hbJF9DXPGtRYMLjZ5xiD1pXU2Q1q8
+uLm65fkijGwTZxAhYAp65TAy+A6AEKfxS9+E5NNV8TcOBjPbbhQDAryKYrtK1oU/RYFI+DCDAt/7
+iUXtiOkHziNETzDLpY7rmllpUmH6Rp3JNJOKMbFN/S8P0SNv+/3RlSoXVvfDbFllEVnoigwv8jNe
+Q+B2Wwg/19YglcP1jQL8vdZwmCC4CMQAlHvPzWuMzSVXXPZ5RoKRTokREyq58vUNUyikYaloK0Hh
+t4qnR0e5fXO7IXHnoT2aM1byqfpGNsffL8Qa80o7v8Yqaqd+58pQtEznaEbzBqBYVWQdZSOtamgL
+PI8ZTVLQkkeEeueJ0BnrxiWSEnsMc3Nu13EfPIjgCBynPmy7MzGI/qdrXJ8Y17pUGLF/DVohG8Qt
+yJFuruXkQuKK3GmaOn8/XCLPfkn192oECl/G2K+atLpOy4CpoX9G3ThzUvspxIpXdCPzXz8e/N7j
+dJJMjCPb9iy98ZxxoCMZq2KwWQ911Nt6ZMHMPYaeQwI88x7B+yIopgjWD1DTEWjLB8Mzmmf7F+jA
+eH8rjqczYEMA7iZVuCL9nNqMUZ68d13JWl8Y6IjsaHWx0dHgWu4lajvnrNV1X9tWOrdM0y/TUBxR
+SRxmRFPvPf6lULiwBeDqeCCu6g1d2RiRM7w6iMk0VVMUzxGlPtJLQoSSGv14W7ZH8D93ySE7r3q/
+xq7RGAKjqjA19MHODJeZQNgNe1NX+6bxI1WD5jVbdmZ4jsb51F4iuIl9yL+gsINjA0bw6XCKIGcW
+ee4ZEkCzSyv7Q1WNu6kHR+9kX3IwMkxcu6qipG6MPx0DGI8VTKRRGCf4neI8LtRpee90/YCaE2JO
+H0rST1Sn8h29wck7sQo1zLjxkAnV1qSvfOdIGVKiXYfuOdcfgly4NQdlsxs58ViBvBPxc1meBCqP
+Ig9aRL2mI8LhC2sCfrJA96x8gnW70za4z10jew53HIk/EnLEsdQpmes7D/1N6VaUZo8cbnKaAv39
+B5KJDymioWnHuCiIqYIOWeLeNNtH/0Py9myWaQJYt9NEeYuHJkwwCaE4L5u3rxsjVHYhSjHMP3aJ
+658++q0SCfn0AbTMHNZ4r+QTBW3ci4f7L1oeNYOaCFkD2MPEg8/TIqoPrp1s4FBjAIXhKWsEjjj+
+ctxmA0TVnP3enhVw0WyDf78iodJv7DS4mN+lL6RTHlixEqvWXsv/Y3TosrqXJOXABxcfKWDfoKUq
+FaV0odXg6yXwaGFP9EN7H27CeakGeRfpeTz9EO0FagsVauG+o9EhiMSJnn69LBTigBcbQkouT/F5
+L2DQIoyKI14BQnhK9hv8FRJeMLk2/WZH7qL+m0WVQrmBPVf2fai4EQepBXNI4LGJZMvNWJbGAw8C
+pwyRi5W6Ho204KWOIBW+4rZBwZlfNQGV6nulsYbFh6D8Sah5QGLUA4GRYwJ063uONmfbHvyV6Qy8
+9H5PrXRIvUa+IHx+/YHJogf5dFA2rVKj0astukuUNcqzHKZ8zlgLU9/qYWFjrEMkqDWaVsA0rd0U
+N0MIIK4mfi5hIAAauGLzotT0QBF4QbGtuO8ziQdBXzvVddzOtsj1gp1PsfkOQ6x3UieWa0Mm2luH
+QqfffMj2PjrcTfAfudiglPnrj9n42MHPpf8NWnx6TfEdpcXsaY8JuC06IPr0vgVyOyNvzPdx5m1n
+KjrMcKLjCzRI7lWhHOQ1lYGT0jvXTlW9kyyr2zgmL8fZYh1uBFSJnlYmbFcCq3JpoWK5LdxTHEzB
+6Xj8UgEiMgwzYqPku7tBTeeCHgX3oP5PDRrdecrad0Yhrs1AvKEKYkVGevYoIPqEujXka7YzvhFj
+1UnRiUkwvB/UdeVfFZ/zE/IRcxnYWQUr6vWSOUVZ9P+qmDpS4KiPZSApdaPHMOEGmcgu99x7oD86
+UcJ+VL9sDUNz/EyuYvlUwox59JJvoqB1H+sXBmK8MQ+9H2m8KoANL+xePZzoBFCnpNXN8VmIT+Dv
+V4mGLL9H/iWCDAIAKYBv4wAOr3scskd/AGRaA+c44vWr1btauuAe53Js95is7fsZka+EsQd4FSlr
+PYLEryJQYjPtvSbO5zrVSC6ZAJG+mJfhQ7QpkyUvR/OHdZYUBvEiwy11NdT0gGdH0zYE63b9AEPo
+OoM0gt9fOIwl4bBDSt312eYAn+HwQctdkHfLYms8XNYGsjmnASlinBdB0XRs7dstNg7lZvht/j0x
+wOeQEHJKqlAuNo9JrFZPRHnk+RFVub7h2UC7sk4oyGpu8zE8VWwSz29+d9+CZtZgqXXUMraAUXS4
+S1XtGEJv+TECFk7aXIkFPYrhLEdWFtVzDsTy54NU5MSrk02P9QVD0cpgiimsDDbl7cWN7dPXjJud
+PG2ZGqWHHBeGYIUtukVKtrlbMby4A/rOZ+XI2Lz74Wi9UDApAx+4H085x4hDmu4YU5Ee0XI3dLSX
++HghE72nuZ2rSYqo/vQEaQNGRMPGqx02AHW3o5qxL4Ff6hbcIQCeYFjUjTvFU2BiUZBapypbSCVC
+wY/VKxEfXLWFCmWfkYRgSWZ/xVswfnadM4XyEBi1apgX8ur9Ug1dSerooM0L3w+hvw0HwvCVA387
+THL/LQMg+1+1e0GfHw3t5H35YqMsj2au9UI0ekuZzkSe/ywYMd3L4JqWYX/65IRZE+jjcMjxuzXo
+7aB+BPkHZ5hvbTnR7pIyRkrh5goHznuW4k5aLSCpa9OZHNorzaPnYZX++qwbcu5Msu2jdULw6lUh
+E1v2e4poc42iu1oGpTK/+aw5NuRoNXo2W/L4Lw+nRR1EJtCZOOQfeNZ/bZR9orKX8HaW9cGKSlBS
+D60/ohukorW/Dr+O+c9CNxtNsG4LpwNUYMVCvTocbPLD7M8C8POv9RZvNeK5cSpp3boQb/WCFaza
+qZNvoctZ7wJTEIrRcYGMaal26AdKPIG/5uoZa2f2/UhJjAYRzsLVuryYfo8mBbHUO8u692csPUcX
+5nNesYXvFSrExXG+2G7i12gnhf67p3TK/8YnvX8qksjHR64cUbDOMBrKGrgWSONdgV5HO7yVWGYi
+llSgNHWB+Er60P2Kv2Xujsojb+vvmaR/D3f2Z/PGHO7YEprxKyLeUuk4lw6z0S1/CbdVRJ7X5gLM
+dJUN9IcLfrjFS9+yEF+oSOkxMY3wIZKatwBmRLhwElHirL/9PrBSpfras+boa9xT1taFZwrtr4mb
+G7Rk4ftKGJ9Tio/dOyZUa5HZ6RgdG59E1nHX6ZKDg877F/Moc16OVKpa/VXQLrnyPYiSHmfQmUD/
+BJHJYPVSfxNHcYCh7pbgg7kBTr5OrdBiO8cMrniNxY23frA+uVFBDIPoBZPljloKP6QXVRm/Mdif
+9Ginv2BEfGbaPOcA2lNAsNMnW3xN7oIv54O+a8uutH++ufOiUKat268NuDu6LzQ2ZNHWVQ62fc5D
+6HQsFj+mJK3TmhmYHQJCUY3ZAjAOd04dA8IUGgjcJhr5Rc191FzBxyTl/tXvkDfvR/v7sPtDKKhu
+P0plVNkVSOeggpHqiFIuVyJNSa/re1NCn1N3w28xoffWkCC7Ls2r0RftWDNqu4PSO/eToISNp5BA
+uRMlJpTilr6ofxgeQ+uYK8f/w4Qst+7kWmmik1cWM7IfeG5AQfmfE9esLC1yf7EQTT9/8Isbl+zd
+Ye2/FXQY7/mVKJNj1Hrdz2UhWlKbjjkODHruW2PkjumL9jpBNghgb/96pbfuGU3PYeGr3JqeLB9k
+Pa0zY5XJHq6Ga047iwCGCTKMXW8St76Btc+6jq/4NffvHLhWoekdQ8y75mcArL6/WFqsh/OkELth
+eEgRCEG364dKAF4XVpd/B4JHIZt1g6JQGANXBCoVOEB1WkhyjTfbv6m203h8ZfBXVRPewwBeAwaF
+00Fn2gCNzRHYn3IZC54sHU3Abiyww9l6FtMDa9F432fDurigv+ZkiH8K0fKKKooBoyvC3blsQLii
+iC2G7mNHsVrUJxdqWQKR+lw7b3S/5Ai96Fy4/p+kfGUFbgtiPhUmPOEx8GGRCaCNd73+7DGHf0hI
+Ix5keRFnYpimw0Z+u1iYNjCSIJa2yforQKplSR+xhNrjST5+MGBBJ/0oc1knWiMVVsW5RUfVwet6
+ZS3aZ6vsYGdhSkXiPcfsl0x4X4MQha2knRtL098G8/msxIOSNYiPVzW905FkYnxY5yqvK7TryEru
+vHqr+CkcQD+VyipBT/bkmLufrWHBcm+2Kr3ry5Dlo4JQq3RyfPgfUUQj8bqGkx5Fp/f5Ow5GqqLG
+Cl69zvziB4PkYI1iw8138PaM3stbmfHUMy9ZaDRBTEJSYW2iuGebb1SdDq8jwt/xRte3UX1xJCQX
+0Ya+gFTPmFJT4qBc76B/y9/3IEtKu5tPmVXsr2uRKeIv8oRPgjZf9gfVDXL/8g3mPsy+d3bNARQT
+PEgrXNk4G0jPQ4Q8aDB0pZlutq8a/JfPndwoBWVJLx1I8cAnQNFTnBNlMp5ojoAHsDu1jWmRbq21
+jrWHwfnogBSE1ekGCzw7jWIxVJixs5JufnKBllozbsq6wzPTtIQDze0idCdYFPNLPnFZE4BI/Q6d
+8e3HUlxTF+YkZKUHLP9K+C8dski5NkUfXl7USdAqG+8KNfb3Bgsqgk0ZjDxFCZs3WYQ2WLFPWcVt
+C/1LEubrtIWWlIEr46adzEzAu5y7qMvmo9+nAJCroAJJKytGNs9r0Ap2whcsfTJ+rLQAZUjbqMzW
+wD8SZGOZk+/Is/2zRueTbZJrwd3xDr50KlIgdhBPo8dWmUh5BaeBMUCYHrc+eRtSSODiad28fJ1E
+2KYlCMvX7ySD6fkXDYQCX/GvUGP9HPyuDkHLI/1rtoVhb5AsD6Df6/oE+29uYLQ8ZlDY3WI6cGU4
+m2T2NRc84EnwVR9dtVVCwpBkCpZ5JgE0jfYByjKPqaAOKcdu+gAFsqNhYV826Z4SMS0XGE9HdVvC
+H3johRSpoxb0AaLGJbSDhRqoKU7BFUf0dYZ+LeRNJhYk8QtNn8+BvuaFV8bZgAtqkyvJeei3MrMy
++KEDqCw8Syhp2giMH0rNkeM4pqzGuyVcu1m1ELz1g1GP3EH5yKRBfCucuDYxRZ0chZVLXeX/669G
+YVD47ZWzBW3F8f3F/bQo0/PH26nBEgphmX6VpjM0x8c6vrwvbWKUUW7pCLsFLHmdvJONijD4I83C
+bUisqLsNr76rot6MfkM07hj16a04dksOCjZW4QLI4UJ3gCZjJfmKiyV/k+6TDJ2qrsYzDDYwlh9N
+psSOJ+qeADwvG1qc+Wfb6zzod+QwkT7B38hq/GbPGsTDR1smbIO1iaqzGBdqhOlg1p1f/2/TQCTi
+TLvzj3Ajyj9ddx2SR54GFxnHgk6h32p4BJavaG9QMIGaAs1G98UkMNB9uNqUuKUFXH9CrylGSzfg
+QMJ46Ji324SzEkhXO4KIhutuT94tILs/mLAWipvQNX0RxP/c8ynJa/4j5WQ/uRsPlH82wSI5U09R
+LozAxHLcwjP9++2YG75/zCxpR3uO+0xFAOAauUVPtn2Hf1GQv5ANX//gUMsmL3VDtQF6oYNsk8hi
+232FGovS/rIkt73sXLk3Xwbm/yTvv/3CXxBBmxZpzikfNjvHBXa6Y/meyNuu6BlmczoHD9yJ4SAg
+nvFT5hHtjAU3ckbG0jvI5vnwHipGSmoTxcN17KFnjqsyAyHl2pR8rt9Z0l4byXb7uBJCNJXmw1IA
+Wgvx8lqj1MaRQg0iuj4JzQJR8byoDPywwBNI7OpxNaLfPdN7tl4rGrlflkjqUN63ncRFKkSf8uHb
+OH3ZzP3dnMtpjcTpIe/Rz8jucXtkmk5cOg7savfyHpQTPCXn7ZrfFvulbKIxhPiOw/O7waeaBL0g
+5y5+dGeNwspWHVnPiHVEJBhu2RDLNsCrHNeMIshAe7BMC79RCBrsMr92y0aucj5+rgVPlKSqCXO2
+dboNyCo3neNduj6nlfDDaysrQmE3FwXiiIH8PRMvEI8bpbKgcVTzWX+8UUv4fyT2MJ9l+5v8fzSA
+hfg2ZLhY+nOuydzhY9Ae1wDevwN67M9bRY/BK3Y9xDOpFzyz0HofTtd2M8eZEOgbupNydp5gJtbi
+dU8WDGlcZVQ+sXuHjOl2dCrXH9YTsVbygcxUhlWM0GGbVqjHDT0mJ6tBsWxxC2x2BRw/fCaplREk
+U406M5KtGEBrD3RSVWKKiAcyuUwzuXZsqVeKY9RYZ9adD3xjIv6sXsqrkEXxt78HOH3jOwkQ9QHT
+H8/oAelhKSs9Ql/PnCJNswpi1mteyPBhkrEwO+MOuRoZGTzoE4hAM4MlDL5oRlvozC/rnF1TB/cA
+PO0epvA5OaE7BpjfuLKMpyW/6fL2fdRbD3jfAXkMXmsBYVAzFtOAa6oSL39A7Be4O1MPM0fDGNuw
+7M4J4dhhRAIMjEM/w5tk53jqTUAhuNbANgfsk4Lob6ZBCQYSlmiN9491J5dMcxYGNK5fBCDwxtaE
+3H1gyXodkKyK1cojeaRlvX2Pz6iJFo3U1JsFUKo47C56qwBTla4t1O+2PBEdQIHc73M7NjDdq5gE
+j20YKM3QQKCE3iT7eOgJOn3i0i4cTy5RY1pyEMIfY/skyw2AowiC/rx7hUO0hJDHMEzoZBdtVZPi
+d3OS9rl+OOoh7b9rZ3qt6a0IKoY7Nd7AMijxiC8XI29Sj/oMqrSaSSWbDtPFnQSK8mUe3l1zeBYZ
+so9VZxjqwzrVZbuNuSJYlCy2Isg29BXFkleMGB69q2UOX6ZjC7WOfd/ZZIVYvuZzl1Dd8wQcDVUv
+gnhIt/kt/Q8flUC9o+/pnUMAxno4OEyfCye4dTBobyh+VyNwsCCD5Y08Krra8czQ0qwtkO3vri9C
+4XQp9zkDP68s2vzzigrh+qheOwa8K7+L+4Yhxq5+AAHcnhGY+4+D3BKvaCEe5hUxeNVN7ruaZ27J
+yj/Sq+Bd32YI4ZN/nSv+biq8/esQYXZdsfh2aGWAD+VCSkZsJpdfhsgL7cQCuXn/zR00cqJoRfMY
+hnQg5b3QkuKXDzTqzemTyV/alPKM1KYnM4s3Uv1tLcLipW3GjM2p7nnKoBV0n1jpyFUcZOO2tvK4
+wYrlfP3LfjkKM14aOw1cJBqPj5Eo2v83UlHRz4Hanf6W2z218xRDOir5658w3duE1yWcKGmSVSal
+zgHPEYAD/ce5+AtTcy5g5ItbVDmWIGVhScCuz/V0VfeOyITdjedJZEkcmIJEID3LvIssnT0GwuO5
+i6Q6k+oxi8LhHzIbLAhCyO83FV64+jAMZdCmx6wCIgLQXQ5HEZbD7OkCeJxJ7YLb/081Cb905pN3
+x5ckrILEy2jF/IgenjY7Q9ghqgATh9ClRDF0JYa1zPyaV7G9klimUNrbTyJtU0ORXTqbqdPsBdph
+3pDLx7OY8ITKiby0m0Sa8fTGzMlWFUklMrLE1roFaY+hdvnINw+CHaYw+Vou+0djEOP5shPR1mVY
+OCV0OAAZrc1rdTeJSz6Hgd1hpllRrEOZPf+FbZITmb4FP2R8bKiuPlFpFq9hiF/26BYvICidqAL8
+VNMFLAPnAHHFaaJWVujhecCxrsn86MGXmwLCmyajtwNmDjBhVNZaC0wqoicDZ+mgzu8odjj30hW1
+HekeCvZj94FCMLSqH0j6IMBlNOwslus0Ny2aTODN5v3TaGCK0hs+S2xStsjahMd5FyNZKlbKbEhx
+575mxIJUQhMvFkvgy4O6wNYYzkcqK79AN8DOYBFaXlU6b3vC4yAl9JxUur3EcgzlEaV9hm3Q8GeT
+ISZaNdsLruRPRcjjUt6RMiTyl/0pTPLeXBej+lIPM7d3dkGeXacg0onWMvNk+56xiu/J/7Hs59xT
+PMWj4kjfE4ldIR9020l9cIcq5s0YawDMcigIToZevzquVbMU69FTNBVmw7I80BRgTUcZdS1pw2Nu
+aH9HVU2fxqilJr3+FZB22Qi2sr1q8U/g6ISFMSjpVvdnq/VMvVgnc7F64UPaPldS/4P8E0ezpqDf
+oASYCjhIvdiY/BXgVFgEd6hQ0L8roYwTK2RfyQWK7E107NqcG1cW34n1griPs3xFrzoNmkoHQltD
+zDym9x7gTJcaXkSajarv7DGbJhKqnTo16KnSjI4NqzjfsVbr7kR6GN83qOVA/UrPT+/ktZX5k3yJ
+tybrlYymOXQsFJZj3eiVE5GmACgciatsQ4gXB7og49gC2k2dz48oklKYe1rYVl6OZOtK9OCl6Y8f
+EncX9V9X2GznwYz7FiFaYnlTRg52SPpQxu9SqnUP3NoN3nT1OFvH+Sx+NwE7tEhm+Z+pUVBo4mM+
+ARyqDKc6QED4PJijDgRESh1k4uYDNM3BJV/r7+dHbBcueKVp2+0KKfhd3fEQ3Y5zuugwOtMqMRgH
+t9bNbj+HD7xP5ffnltbYwHrAiLr8iajKen2xSDY3yihrRXhrjJhmj1BF1BD3IdlHMkk6bALlDIpG
+LVHyyq84m95be4YDmxXkKiDXCmepXUo3IMPB6K37mxXUL2coxLT+H98l3LN4AoFVcBihLgCmmSkR
+9FGQ/h2qaY7eY6ynJHpNYhiQidZQE1FI6gs3L2NJ+m664oEX7LRDkXvqcPqsX8ENlXFjmO2RjbYg
+8ggkFkuWtrK4I+M+wmbDlpiK4ZuUL775FcgwXlBpq/T1ZiDLiJDTAnA/drwn1k/Gp5i1xqee/+VK
+EOSwzW9Hc1NEdMGYrmfoGYwK/u1Yc1cEAUbE/kXYJ7P3j3Tc3L75iI+my9JZwFepjcJqKmcBPszp
+8/FoluHu17kMKRslM+TJDjaqGKAL/6/4RE3TbBG5ZWKCgKvwGYJsG5+x8BLc5SRRkv6Vl8WAEOLi
+qb4BPXQM1Et+DZloEfBzVpQdDVE3JkwEKwIiz6n/KQscH6QapS6RCfETLyfzkcBBpc/OBQ2aJRdo
+IU89+lj+RKhTJg8DO4AOm7x+4WJvD1Y6KEFtCDztVzU4OpwfqpKAwna7ooQHeKVgeYDXg0d4+53S
+EY82bqZHAdLoNDFO9oEAUU+hR5dhYmRQc5WZp39XHnr2iXTdtV53iuT29D4G5cztkCHfqUQwO5lM
+lSjPxeAOYdSm4Cx7/j21JdGv5h+V1gpzf/l0KwOTB1KUU5GBZAaE8HvEWUBltv9QiMv8P6ekoE7p
+bp8G2+a/ewOE1v1W2zNBaEmc94TZPOvw4jijioNXGn9U2datS9Y6TxE7Qm9BsLizwNrXhgdBtOOL
+VtdBurYMqTMYbgTjNDcp1ODAXnLI49+UhJ3Iu4L/Fw4xZwl/ArMZBru1nOH1JgQgVRoRgv7XgvbC
+hFY8rzC88EllakYB4x9JeKGmTgdIsvNdNFjDfuQlSeNsC7eLv8LmaxG5vKPwxyrlrUANrFO11ZYG
+a755OXs4IOyDBjc4MuIQudbvZYzBnUU1RT9TkWDaPEcBdlhMn7O2J07ce6ts5uIl+j6UifQM6+cy
+hb8zmC8Nx126M4fBRTWOmshG2EkRkmZTKD3+8iCRz6hdnHs5RzhPbM+5XuDye9CaC4Pc5EJXdb1F
+KUd+wUoxVm5zcttQ1TErz7iinzafyKzuSnwH0m11m80J/wzRsW5hX82qLuqcpHyuATHFsO4f04Gu
+A54SPMKx7iv/lH5Q1M/2GI8ve0/J+7fQ/9KspT0hTuzmlZQUI+Av1G2Q2NiJ9p3X5uw8In1vMt+6
+ZY0m9I5n/5vOpl/IyAWjlwlc11lKkxxOlElMNYJJkUBLvAoidPY7ZnOj/rCZGp+CciWBuwS84MBF
+3sdIUrxpaiDyRWep0knvs/ah9F2TbFvwLgHwBr9SVt6cvBEzdMF/EjrFbXh/8mUZrrhgZSND+39f
+UIGNAmvSXa0VI1OfrqKvujHJ+1DFb/ntfBSia9DSLcWCK3XiI8BRDX/fsOmpayLhMufSBt9+Z2vw
+ogL85ecqSPjqpW6Ezfu2npEzlKQ6/FCOeiFYqSfDGWQM2DkEvozYgryeDpf2KX/cq5xx0Z0EoYc3
+Um+gulCD/rAX8OkQQ53FHTGY1TMiJX/+RkIc00qfdeiQuZFeLgvACza4zXFZy+g7miCtm5QzVV0L
+AsEqiPonMvrSPJebQHqNsiMo843EZHobHzfqb15O3hWmONQ5oJIT70G2fZA4wmBae0hUa5K2gXo5
+jDc2ZgsnawotTdKe5MFfiQgMbEUbu9fpA0wRl+bGCUwi2r2Hj1wT1+wLjnOE4Z3V3//ebZZIzCFS
+v8GQ2Ufj9DUBO5jMhj4GBc0Ev/Gkx31Dx3qAqN5VckrY+wOrAZsI3BXC0Io60MBhbS52JFegkBEW
+q4Zyx3rx3hQ9JsS9Dvchj+uWIt3RrjULEYt0q+tXAijW/3MQrlS56cMFhqHhyL9Vf9F7kAP1x/NR
+GkOLLhaVgaunqVzGbJFTO4mLeQn19gsP2NAuS9SoEhbX/e0vYNZRqpaEAp5N1V85MUcEYjh1Wsjs
+521jdIH1lWAkha3oXlpAne5OOy0WPP4pO/5We3HGjWuhmkQiEL0hYGxwe3cv4+YOkjcXw0DxMW7J
+bno5xU1mRHXLiI/eWb/s9mZifldeEO++SzX581jWopAqAzFJYMFFfKrMqcAvzSH1I0Ams/RUX69d
+M/l6khtt90uM1GacRc1+I0Nrr4/VfbX10euHGowIXvPwunY4PeOlPt4opdGRT49n602KoAtMJJEx
+XAZFXTpHsz/vpm8mOTHa5o6wjDQKyx6idqH26zSDkMeKl4cq79xKy6VIuTG/j2Eh4Nu/L5rfjPak
+3HMbDXNkzQV5XlsD2Qg2I7Fz3aEOXqvJ7LMLZ+SBMBkcCAZhWZT+9mPILU6W6J6vXenuIi8NaxMk
+dF+5S9SBhPCIAutL6ApcMJvLePkucnYdh3Oh3OUK6SEQnFl38J+UrA51ethG+lqmZsy2rmlliHHO
+RqXnwMEhlRTr/KGXJ0O//3ZC+V5BMSXhEfKNnGhlcob/SyGFk4/jnZzUHkXz1VFzf1gQJKXxUehK
+aseCi203M6UE7wjW0xzSIA5UP2S3ib3Kw5LmLCgiRpYuKGTNLRa89xZegRC+vGZwssDPAVqouL17
+GPZTquiJujHnYz5FCradueasf0EJ7r5T6yZQQuWDPPZ4nZbCjXVMrNq+b0fSnPOQZyOwl3fhYLYW
+RVCYBXTE21dsqjg8Lp7ZpzJPZhowdY5ZM4YgrSQRtlcexSTKuU8ZwxEKA1Nc0vFI/jCNb5dTu6gl
+77AXnqIFdcMVFxscn6TNb/Uc3wbFNg06U5NH2BZqDj4V9QfQGOzDKIwljYkrHCpXdhYUs5CYC4hh
+l321X14K1E6scwf2J1m16qMP+tnmgs6nl8C/rMLMACNj3S7RiM2qU4m/ecv7sf67rbMWyYs0P5Ul
+uqZFJrO2hEAYHME8wP1vm6a5dPOSGQ7lwPWC/HpOGVFMEoNjbouZEk46I/5u1DnqzCn6iSXxxQCB
+3S4e17dUa5dUHoWB9acSb9JyMbo7283+226McJvh235S2+zzb4g29HxsVc4WzrQo9JFzK/yU9CSr
+oD00onrbhNmElPF9c1+5rWZWDTd+Sl+n/LHKFziHWT3lN5aujgCgQIMVKL4ViCiSWiUrCjr3DspF
+jxopH9Z+1mwC5qgxUixm46a4UBX0URZcSNqeCtnZgjE43IgMNO7Zo1TJB8cN7b6NZhVXyRpKANb5
+JH4TmTcTdEkuhX9h87iz5he7T+HhO8u5DK2HPmrq1Gx+haevLMHMgZ9Hk3igmTl6TVoBH++6G4AD
+k6aFZ6AmI/CpCbpZddwCH5/gv59cyjdoeAZFty9BTHsSmd2rDll8wJhiEpZUr8WxtdMc1FyhQ7ir
+QmgR5LaIQQy8rg//DfHW/q6YJoa0W0zNutYs+cJr/N90//wm1FRXffKKXDQdSJJj764vbQGBg1pr
+xP+8BeyEU0TtXd4vpz+WBjENqVPoQJ4t/AvblLsi1zoeuuS67CKQmb7tiBdc6/owfF6e0Snx/B2N
+XFWByQdL5tSOZ5L8xedcCGpESHZCG3qJlHpJlV8J1dpbC/Izbebok9aO9zelMJli4IUCpOs8JGZI
+tYJuKp8eqVbIPzV2kGHGw7EgXWe211LoDfpdmkP0KW2CCXQ9l2cewDmXc3AS2yfhJK5yrfob4UyH
+QE9uxlytzgYpNx/IvoKzgvrZYb0ckAR+YD2Q3Gv2sgmw37m3RIc7NnUekGnX/aNUBwCx4m26UTF1
+ZDYoj7u3qksX4Edyp/vq/TKEjhuLxVS3cXBj2mXPQIBJ0we7zqOYXfCAnGNsNeZucY/cunH7MXs9
++QbuX/TvPq1+gdBJsS5+MKmcjuopfK2td3Dizeoo6vqbM7AyJS6ywjhkfv+bvKNUXx3xWtG7xE86
+YeDG2o24rX7ltsD6QDovp/onpaTI4Ws9ZNE1ZvOtzEgn5DLSUJX9ptIHSGdD/lZzBcFh5r8JqhsE
+cnRrtYSsR2lol4nnMuOqkSsvn3w48Hn/L3B6ZVc68LEKKnFZeBlCCCM3yft1l/Dgova/IA72NJvR
+ZY7gqhZ6K4KIglJb1/7TFs+ARF/nfNhMDtGLQbgOBT8FZBxddi44lM5dt5xasDa21AZeWYIxNmhP
+lnT/YuLxkSTGiOU7I4rXhITOj5BUfiZEhEqB59EYOV36m5kNpzIxsmPuOL6WPQ+xuyvY76UIYHcC
+KZ5cFl+u7BQbRqg057wz9aci5tPcBmnwKMPHmxONuYuQfRwH6E6S+kBusC9JYQhIXJLiyJN3wbaz
+uHjUHPtc4rGtZwLu/+ZHwRdixnP62RAz91e1rLrkwHBE5Izez/UQBx7/8Eu7HRgDESdKdFOJQhFN
+lqNyjE+o66cZy1RyYV1tEs54l54fqP0oFYgNqJ/pWr9SvYeX/TMqsNuPrYKcxonY/+r/t2pGz6pF
+JMZ4opNDy8p6xvhcMWgP/MJvyt6azPI95/Um7tNZFxLs72sppp2PLiR1BY5N74wDak7W2mTSZGgN
+VuXaLBhrKljQpaxnjLC1Zkh+3VTvAJqat3vaQfj8cLFJiWIohAY/c1bT67mi/n9NEk5D1z6Q8t9z
+vkic/4O6YSte+fUFy5oDFaofMF5VU2J+eKIgc1Vlgm8PDlKk/Z0t4Xy64U0a+T7gSeoNQ/wrzkug
+aY0KSDIHjv03zRLI7y0JdJcPABO8LelNh2n3bi/MKcww3Nzw9IkLmdafPCvukczXepibTLsQpLVB
+eW5GZevP/v9FekCO2IaI8VMiCqV/inI6CVJpACzMv+Tj4fwG75WU0gYqBBpK1fsQfbckX94EzBRf
+Iz6OgVoffHASYmrxOujDZBhbpFNdcgo/akY8ewh0vlIdP9UtLYkVkBBkgY/CyOzpvQtN87ozIaC2
+6kY9fVL8cSbhB9L5xOBO66o2ExybtztQTeDWgwDKtMLNSUPV9y0YfB6FXbf9M9YtrN4AzDabEr1v
+6Wk5LktNOPYT/iXlYAW54wu1uMWVQGffIZeR4iJYLa7PFKGYyVaYwrEfjXH9Su6zWKxhQ8WZdtUX
+Ym3cuJE8HvWrhhAykhN2fagmsaRPQrd3Ro4s1oHWrA03FXUkDqEJd3RkWXZrap8XPF9JdT5qk6sC
+pGWStLZVYPsv+dh95EbAcfnN4rld3ImEZGJvrkZz3lf7Cuk+4+i7Px9W+TiIb2t7ubSIRD9wo1+W
+kek2lNVs+7FkKvYPs+SELSQqCEL1so0Gqa7JfF9imFwj2C7FHEFTHMtpJqmgUA9xX0QAw8gHv6kO
+UBU56d6VvGuCv1vOS5b9X4IG6ZdFLqWvwZ9BiqQ8r8F1aPNhd2ntNFExTAnk56vwX3Oz6qUlUhYd
+T31MJ2YaowV/QI022tK9vIRr640zekr+b9MIfGhysgdC98Xy6D1+P9FW+ZTFk14gf+RUz5N4KnNA
+Moj13P9iHuI6RmmuPrW07CxdSl793XTVD3LOY8GUSQY2S/kSWs9OlpSDb/uoC5bqmxmHMlsIsXJj
+IfvMcmxCCfGv8ysHuyaibd7FPa+VDq6Sfc2xS/kSQTr7XUH2zfSWXdFUwigJDEFIGIWo8xsCSt72
+Lr+BklYp5WfA37IbRbkJMXc4aDcZFMJjdYZev6G2zvcCi4wD0SJfxjSBvO7S6QiFnylEKMoYvqwP
+Uv36s2DfzxKsqtlcaSxt9/9kxPs/segekqMU61pmXi/jQWBGnWC03CXkTdm9IBCTjCsn3q1V8Qw7
+i1LHmaTHoH25WPOeBScPVy6VesmHi8yhqrAgfRms53KAA0SeMNEgkj0VybaXFSGtONQ2KTqodSHR
+AYiom6wXRUqOGgRSRZWDyIDWHPdthe3pQfSQFoDSQHM59O3q1CA9fqnHK8hst2BNoy+q0LMBB1tC
+v65APWhC1jnWTe+8BGKhDmKTJp1nx1aUPWIgSz0CbSz/1eS0Gwf1gzZW0zX2MHOOea6L/ubHkiAc
+veSCqy37t1WB57GbYu4TrT8QkWOvYwzDqn+LXaPsXZFMS4rkVhjuVSmbZI518yf8mxVW06ZnXUHp
+LIbonqprwujtLJ9ku3gNDwqExlxmbiJbgoxQ1W784B1vm0IxB8yRpktB+LhSz8bu3j8IUukeW050
+MY4kqAsCALN5AQjtCRBP1QFjY2A1gzk9BKncUBvzAprm4Z/kPVtugRUWnHxNCw8ml5e81AUoe9Yp
+RofGEk9HrkS9WoXRJZOGEbSrSDtBcX9li8pURp7mvdPN1Y7IHLirIysI7YOMzdxFPdyQkIC1sf+Q
+0vDUrzenHLyareQJ0MsexK9yzuh+JpRKToCnAfYO9yCktuNbnqEF5EZy2hb5yQmOelbncKcSX1e9
+Ty8+8v2KUvHcttAQvVGDNxZNsGn/qIrLq/AidhbZYugOxeV8BEm+2S8WGml2qnHIAx9gGgMOYD9z
+0PU/SikhIwEsWIixEhHLK+Yd9Re82VCWPg4+ZdHyOyMi7Qh2ny2jo5e3vOXFm7W25wI4ABovj77B
+hRDhRHm12P/NBTZkYXLK/y/AqzVe/Jd9WgnhudS0hx3HPQEGT+ihamuobWXdDP+qfPTiBpIreCso
+L44Xfxj1ltYGLuyzFI2Wo1PyPQJizDPBuPejc44Vl3AI6vIX8tpOPR4SXmAfaSnICV4ZX4H44GYG
+tVeezXRl+8k1yTyn10domWfUrndmTi12yJ4rx081iIFO0UTP+LC35nPdP1i8NNwjlEGc4Vn8bXy5
+YpcA27Ah28Z8eB2HxuFTEQw1uPiLRDRtSuTBdEC+KrIQ7nRN81NT9qL/bYdA6EaVQHb2WsHcgDCK
+Z7VaX8mNmZLWZu/PIIFbYBCtDDqEgWsJ2LdcKx9UBhjPLT8MqQ6dYjjqTdV/5PbFqk+TwdIPwxc4
+tf61MzGP+sMvOXCS3yTVWLcufALaTBTQ1aKN08TJEgQ8GJ9pXJ+lRbyhri8bP9fHe8bCDvlUgvtE
+ZHwc8i/PT71HkTo7xlTIodBrwyrF5fvdAUgXnx41QKRhg9zgw4HGcKqpXD2YuDXVtVen4aOjEG9U
+kJHeKhyVS/0m5POEJg2VvujNAJRWyqcen2SDkCnCWymZhF244oE3/RtlzlUeo/4rL09tu+uLSJIx
+QRpem0Ve/yi4HFEXA497SBic/R9M9KbLsClpIVzHgTvARDZQQ4l6fzA2bTMP4K7gIPecOYz0tLGd
+n/cnSqvA9jY3PYv454KMDrfSG81HFsEyNYdQDmt1XsumFICYI3Skfsxm34kR0EJ3SaQUn4H6HKAn
+fgvZtF2usV2empPdLLSCxix/ovk8QIvqRBPLjK7o4pxJerphm2FmLiz8cxGx2YHrfAENcdAaFPYV
+ZHZmP44SdLEmXimoymeOKJNqMJQqRy1Es9OVXfROAAxaS2A6XjWueBncrCbyYs7bj/TzoRPWLQAJ
+SWcaoghIE25cc8jNVPdO+Eh3gHiaL9tGOb6A6BJ/MVpn8UTjKHcYUB5c/nj5tqzNqAgcBbHKGPW0
+KHutOHt37iA+wLMP2+pp0YgL8GkjIRuoUYc4mbMzQIQeNJ7cBgX0oUvB1XwO9KHW0UI06rhz9BIJ
+Hjiv2X0t8jWbM8ZLovd0gWVKcn19/PueBh8/Ss5uYdSTmvNxZ9MFw/UFWO+iJsKvJqP/Y0a5uN1G
+DoTeq0Pe7mQF9wlLiqFKb1fSpEQ0bV7FIRLGwsHMK3gxS2X3+VWH6BQebPfLVxg/hOIgn2sUacWN
+sAbKw6ZFfQleTF67GIXaMn2zOXpYTs+/ZWvsCr3bKG5d/mxjaeR7SE5uCSfY6Y5EiFQwtok86b/I
+McHqXmYkM/BPTfkAMwzLLT058Qb9H/HTaCC3R0Rjze190UqQBuAds17u34Zu+7egiMlhXu8DEcWZ
+1J3DgyYomHfaMJ5G9M4OAkXgVI2CxdOY+DG2pb8LjpQhVc5r+UH5RWJROU5Mah5K0UCV+eoVCcwB
+ZPOP4gr/vgf3FUHbIuhyjYVVuVcTh82L0D4KrUfLb+NfWTlB8vvAFRfWechHcGdqCtpd+virjKs9
+3EjAIeiPBNk1vGrTT3vy2SDf9JUAJlyzxeBErHlOlwyjo9nJhZb1MHjBj4yg36+Kc6PfR9NaDTz0
+/pUEfrIpWDWnclv+dxBdIJBTCTKpGnZQ/SMbU+N+Wk0zHz5Bnwf/Qf0qHqj1xRejaze4Wz3DuFJc
+72HWBFqUoP853IwOZjP07dYQdZ8Ey9J+YOQVQMigdEylGrg7601Jo+N1Vodyc0Iw2VeuMJYpSHyP
+8GgL0YmkrwtOMfZwWUfbz7RTxKrLV+bgEXIo9TIycVUWgDV5mU27a6uStmNvkZJNLdaXamH4+YY3
+L4X5pzBZh+wn2RYGoiJSpG2Z9r23Y7JhLlEkAmpoo3PAfTVlSgnguenkWMn4WRQmiGgvjC1cqWoF
+9chDt7bOh6/GBUgDKVr6aJs8HiwBQkVlRJbM6lZjzKRj0mjbRTZ5WIez4Yn/HsfrCz/x/Et2qjnQ
+z1EY6HJPyUsN4tQbiWHqy0lhaidorQnMwj++oC5rYC2JVXVlersP7kWOml3jG1Nz9lpGdhGzMdoS
+Qu1FkSx89hloiSSeGAQhQWmhiHRtAcG/Oho+NGKdHRmSCAzYqpSw9F6X073pNo9wFRT17ECVUI8l
+JY5Kl9iZAdIKSR10qRXI8KE7a3cKHB+ip9moMaUq9hkLX+5s9+wSCGidqYY7x+73w5ilukmAQQQ4
+ZG3uENlY5Fn0KepfQcVdr/IM3UHDFeH0vOCYKqi3WvSiJxP/BOAgSnWzBvfd3OQ+JQe6gU9Va1Up
+T2T0DPtKlBzDRgoxlVJCS1RxQ4cbK7+436xtZj2AvkXn1ZHGLzl3rVKM8zvyC87mL8t1ZBvD0BG3
+u1YumOqJbk1u0yqvwqqiG1RJQilRSFFVsYYZ1+J5G6PQkwqvKdWry70QYeQakXpmoWo9FiXDhL8E
+dnRsjM2ipyWiHJRG1b2JdHVaVp3zwFNm7AEHJUijVudrxD3Usn/tqCR3ZOfsqIynLLnT18sn//Ni
+Pot60hTS7OLGOcSRNVddqjK2D0SC0kNscOARQMlDrlU9lHecLynbHUJowDpiYfUoIkVNktFDUjGP
+GzM01Ky9PkuYTml/QSS9h/lnsHP/NACqZo7qLgTLwpGXCziQp5gS4yVEB7D1TSm63o8mtFLnbGzs
++3cc3VNQskUf3hfIjCTE2u2FZIWI+4p8AKoEauY0ln/rAsHVU7i3th4GCBP8H3NXpPObToxYtQ0d
+sB4owpGrdQXs9AqxP3XZt2O3e8ifWoaMjiTabTH0jbuFSQdOQhaGEIAq1sUoxO0KnnggPfNrNYkZ
+Ziq/tU/NO1T1A1svM9PVtJbVPfsYl2G8Ifr2IqflfFLwSxxx42Y5XDQe77+g7V9br5XTaxdbFIMU
+vxpUmUTKHyKBMsws2i0uQ+E5kcqSTKUbqm2Cb7CmMx/NXz9gbrR6itS4jRL7FqmuLYKxbWgX45fy
+fEj+0FGbBHtJt8EpS2N3LjDcyCLAHZx0w73gMkwDKtO+zhkPvX4WYdu9EN+Y3/oB+AOhuljse13n
+8ivyG2xVY0AHsWFWURSiJWdyiWiuYWQGZh1/Rptw8/uirDXV76lVtWgS85TJmO+7w5hlqlF4MvE/
+9ia7XHJx+bVqxIepze73BtLpiW0KH1OhA8PT0UAMNRtffGjWfKk7rD+ioJzGGtXTRQ9ny6DQg3lk
+nMEgmbxyy2T8Ug2GI68q1QaKN3B3c+zwgshh5lLLRn/uR+1BLpPuGcA12XWhGQFWyRxwyQ8A9p0H
+HBZFYrU3CTYUhTxvEOiVL/L/4DDvQJTBftsdfrb/7VGfor6wyrlNH/GCCfeOKF87AVQaJRRfxMir
+GmAU1veH25Uw/wl36uFRpk7E/Aaee3d0+8gJlbrCnD7jPsM94Iqq8DVwLBYOkuvGdTb8t7KmBWz/
+Bb3U75nytdSxtIEgfICpreIRjHWIoVYP1YhtznERM6E/ZEJGR2MlPOXmqQyWbTUoUWqxl4YwJgOG
+8rNQ3/vL/o0ui0ArgTYEmQkpKL9+eMdzvbyYYtJ3e5Fi9CYxqj/XyjS45rwMHADZFUC/+8ADlNl3
+uCpOXyFdO5nJg2vcR+I3IcNz9gudXN+9DyQWz+ymzWUluPiDxFbvFultq/QVAEqZJx3IaWdFOyhe
+X2GrmXEMi/6g3cbXbKrTKuWLxafVL+CwlCZUC+5/imrNO9TcUCrIw1ImIh58OuIJOOfdRataQvEw
+I6InVc6Ky6bNGkT2fdxeSAoE7rtPP1z+SWfhpS8HGne3cxwr2B3G2kue4C9KusqqpD/sx7MgA79W
+L1nkHQ6hsK1cp3DELqgQxgEqJhpEGajkEUsARAowO9m+hA33xECmyeG4qJCOnJZ9UMiL1Y3BssPX
+hKPpVieTGtxt5FpR4WneIesyp2dyBwF7XXkHsfVeeB1y2bedmgBF1r3YAutTWAwveIKpfs9ZJguK
+yzCiL6NzkbmIDDUgAoQT9I8Ejiik/u4bxlDg0zyc/SI5+DVWyxO9Sc92wJOq07M6/G4DiNl1Kyp/
+IxphIv7G0225BxtZ05RsxkFmQWvfvm1iIMmNq/KE42PWHrdnGzEvYOytS24J7UXm2VviFwIkgI9f
++ObbU0/HU1mLH+FNdpKPs+P1A260WVunulVcYUDSqAALnMYPq70HONfMNTRGK4J8XFpzgX+KTXbM
+Z3/HfTlOg3sLAoQeYOchwue3p4bhlqiFsHnYilMuGYd9cTCP98iWPL4IgRHmFzD4s8ZwybMjZH1e
+cbOB9vte+JRiWIe9U+seBM5XMabC0ihRjPonO6PDVZhfcU+pyxzRWvg7H9zFk1K0oaSmEKQ6aMMT
+mkhry3/U7uhR9LeM2uS3d2V9Hj0mnM4LCCqnbc0oSdbT9RVkgwjHe1lcKoDhoc49OmpcVdVTlBke
+6kHjvto+ghYN6AZpFNsheDnbNKp+vXkXVOxFVbdAyxTPrbH2uyBectaXUy0L0NFsBPpGGjjYUcRR
+TjJlwn+NbVrB/HkhDBox2Peg1CZk0NcuYGfbSPwMAZCjy509OQ5/wMErtkI9RPuet1ztmG3g6BXs
+hMNM/fswtVmdHYaY+q8KIuDaWbA9aobiqRQ+aFzUfOBPbBgS7CLIYNLKCvlaTp5pchpo76DirSOL
+wnMr6QjizM+zySmCoHOHDYjRyxqD1FJfXx5DuJ3ecCQHd666Rg4OrvoeKAtOcSHyBBH3TPBBOTqA
+w/hK8n5MgnvWEY4rM3lzCQvHXus0RqETckkUujMFUUNbrBdL6kZ/M1tIISxsm6uCgHNqvRWKsExI
+zDeVeZ/ky9N0ZepcavrAV2VihByC3zixU3HCL3BpDQBUQNMU8mgsKJeTbbp//LJeUZyKU8ltbwQB
+ezAZPeyX5VzF1mxnXxqq8u5dLHEv/bMJ69JLPgFAI8mIfbHv6R6E4yxf132un2B/mXaLjgvxZBhU
+xGNuIiGR7RzAzVmn2W4Xyiis4LIvSgGZquBY6AGMUzN7bu6jTQG+QZYiS8u10Z+TUVIhI0d+JiMa
+FUWotGag62W6Xo1CdMwvcGzWL2LcD6YsAViflOHRVIAkE4GuwxLzWQqeoFww4cQra3ypGYfIoQQS
+/YBE4DZBqxLI0Dm6C/gPu5ilrd1Z2O9nm4srlHM5IT6bNMrkdqYU+wa6UFF0Bc2jmqgHbp06iIT1
+xXHTeK9fJM/GKK10GnZH0T1984AzGzjuB8lLeiqc06GOszqd4VuU0e8tMrUWRHwoGr+ii0xmXpvH
+xJANV18HNuCeyz3jt7COlC/LasCBZvjUxyaq29GY2pLU7ns6QH6lWopXNY7CtoTFgcf9ouP81X04
+NlhtRWzB23FJ92bvh533iEwqOPHlJR4Rm+5xZHTnWx8XZimzVsgiWFpEYi+hnUIuiWuYiECdvMty
+CY8v1qwcYzYgDp8XiPPaFpQut2kGQ8iNgOO2Rg5lObft97Cc6D3c6NuxPAZQIVE+6s+CcDoeAmnO
+JOFjvUthp0gnv8oC+rNVox9ACuF5J7yMdY1wRVQaw6mca6lg8lcfUfkKvPTWnjxQR43bnBpYrgxl
+tseNdrqpMiHKgN0jR9LGaHv2NS6P3pL8XV2OsaKQwOiYfvGFvCEtXo2gOOnEH4HtcfkoEigdSwf+
+a9DFBkMtSFBTWyxaAF2aTTCPYuyHTAMTijCkp90MaUUv4z6MPfaclIQopYolih05iPwF9tQY3S3J
+4D+Ln25922vTVIxQlpqmvkMpUN5sCPCPjgs933VBJtTjKFfqNQDZicjioICpagy2pmlVHuQXX7Uu
+5N4meIGHMkTtjdCQDvND95oQkfoFaLx6jL6tryxKpKSOIYbj9vAfyJBrN4/OfKbqz4gymxhayv4Q
+MgSCXI6jX72/vQzh1xD1JE9i6+9YxLSJGWe2Gelpc0DaLIXyUNbl0cIjlk0ZEl+zeZcxis5fCZN0
+HBN8reKp20MVDLXcAXGnasx6OXCWNYdu0ums7D+HM5o8SPo7mGZa9Kc3dKS1MzoHxUlsSSI8eCTZ
+oUpOFeacP99kIGM9laxbpuRVIcAL8JVnEko4pIP6ktvCH8FNGVGAHTpGP1lXwpdbgkK4kwWY1dQr
+otHa8L9EV3V5K7uLoPHUxinyU+GfTYwY8N/soSXXMxBTcoEeuO+ZldJfelzEpFWwUWdyWOPtni2h
+tO2SeiLUi/eK3UYlGh4djLbF+HZliSsI2pj8OHB9vqPoRX6Zemkrj/Qcn6yImlfD5aulzh1skGUs
+vK+mO3Clxan/zAIjt72Ov65zGoIX20GuLIoTywJMwmrIkUFC790hr4nXP7bswawU1m5uSoiGWdu2
+MO3NvYncwipXLtgGLmluX4w8mdg2d+1bjmLDIC2TFrnXS1xl8oCo4lrz+raif4aaXQGfJQzZvmAx
+ISSidwwOMy3lxesKeSg7CU3MlofoASrD5JMYvL47ncZ8Y0DnJFa0GVmmfg94X4tXsO4oAGsXvSaQ
+t/7YgvkSBYHRLEVV8/1xoPmnQ5bmmGsxGC6IoDHvKNagQjplfU47+CcesOgapI2Xa4HXriKnNlsT
+I5fPqKYo/cYjzDmgeUkDLw2agULvCWPirPhsFO0uimf9DJU1NV6KR/Q17sE6jIwBlzajExEA+Ego
+1V+5vzKUfEeR1uu3e9OzOIi2FQo8hmVt7dtFW6BqFGB6SGu6MCdshYgVClWnbvVhrSJ8UA50q23c
+cNmWNYnGHqVbI7ll9U6uO1LcwQaDXoMwpEjj+0mj7qmED7zkZYh6TRUFwvoBWdQGcbkj9pMQIXPi
+GMxeMxNZVcD+xLOlDRx6qLlbGNjq4Am6mGBdtbdqKIi7pM5Cjpt0ZTXX7DOoW8jkllcKcchq3QM4
+p1eCgYFvpChQFTQNZc8ep+cD5IIB2DRztrKsmFcIa9Y4wbCtaZZJsJ5QeBQTyfv5cSibQuMelHS/
+BBnZoD7CCWlvraXAw5VNVSo0g6WDAts9lM4cUWnLBVsW4K86YbaPxkvoO/QDiEvdT4Xu97zLdxGQ
+cSUd+Pgv/1Qo5hpzpkExVNJz2PK+N1V6wVnQP8xjyWE/5wTKu3Qbc3wP9V94GvoVA39l+DnsOswP
+xrV3eX/q/k5sG9UCPSfbSGhbR4/iR6ALMatEXmZwHxrHOuCj3QhAWqkX58WU1IfAOcXJTiE9hwjL
+53RzbAUvE4DgaZjd/tFCwVHowyxDmuq3sZlM+MlbJns5tcDRG128yfXXLTQe+bTMukDolVd8BMYc
+RTWgsJZqBdIbXIwpRh6pq+KGkiT0joaDWb8ju1cq7hCMFz+tAOEo1zBvS72dAp4pkqbm9e+XqpS3
+QNcbB0BchRXzX6mjgHN/r2J+69YAG0hly8aDI5Y5fRcvg6jlPwqPpYaBWdPOcCUggd9WyhB0rfp4
+97Gr+jBfSsqwUDCS+2MCNjmCEZeguj/NE/ocJnrOcPgs68XyHu3AGA0l4pjpFkhhPsv4jCgXCQZl
+gVhSPm/bWBYmFJ2S8omXhDU1r+NcgHxq+Vx2ALUhplWmj7te2Vk9kRJsmijHC+tVmiU9Z44Zg9+k
+wEZO0ieoWjjD4fLlfgckEiN1+iFAIV7ZnepRT+/bxsipD4wmB/ggGoPawKmhYFwI1ITE7fB+1wE2
+ny+7R2wivyzpTXq7E7EYbC+Qrn/Q5iZrxD1E48IX2553bTXnjG93yg5r5WXpg5XqP90cFPRo0lQh
+jjP+iQB0HXhOVKihzicKrbY7iBMXbhgkq5lvhb4VEHBFvHS/u3dqKGjSNE7i5z3HQiEqlnazPhJb
+H1sSIqw3bdWwrIJwYbszGdKg4xb28wBtXW/5bFRXsN9qxzxi3y3i2Mei2+B4k1KG0PyrHPhfV97Z
+ipUyfMjPDG9ScnDBJIJnexrgv2/2M5VdyeAJ+FlbM+sM5D9fauoeSzdnWceSnN2B28LqrrgcT4uZ
+KV9szhpflv1N5Va6dGVMmYqZxLmkRIHc+8baEdbbYgqfpKPV7rFFg0iEFT4dWr+x922tb2UDcZWP
+gGykyP7Qj/KdDP4BWa1V6p85/nHL/J1dLcI68N7eJO7wVGsBnHDeS/+ioPkEKreaX1dodcAClYBd
+0t3IjamSo59BHbiT72wmK8dMzgBYGVK8Oq/e7l2LM6hYdWIhjElodXZrqVcdM+sZMzxaXC5FJ8YI
+lF7qMuOM1NxMKigCnBHgMYd9CU7uagaP3qDmZuvKr4ROZHWuYhmEzUoxcpEF4KsRMf4Tr0bTA/HH
+uC/VzoWZPw4L/IGRYBdCbPr40Ds+xIgTZaCjzxi+VSZq9PFExjIE4cK7XN/eb0E0yEpS0YYC7VyP
+WlpgL9n8NoiqeZCpBr1EDqoF/6PRD+v64evF4hAvqYSVn14GrcHCPeinPgzYPY0SDt4ApZSNe8oh
+Ii3cL4wjgq4oyj8FlCLlpv1sHO2b8YXjWZAXYEbKzR8WJri1s6ru5JKf78cavrNqKNqXeS4bI441
+18KccUqVWbqW53XJGSjkUuSDxTWomoSCQGWwGsvoW9K+f2mKTn01HjhB5QM4zzHETqLPHrllw021
+jttIqvyuCzy7oLe+Cci7nG1rkvnlQUvkFP7C4RXd4jw0GIz98H/P+yKhpM4HXZlAP+l9Qyo25s+C
+ECO/5QeWbWkQ777HXOV2KdEizcivx/m6wc/VBMmObts/LKox92kP9EDM43kx0zKYPnjBXXdKmwig
+uIoUG3SLOXQ9eV3+7CBwTVnb4Pltyi6ywgUY2LmefgbBWh+TbGH9qmKYouwXvcZC6M9K1Qs3+w4m
+p5rKMS6CStW5CDJ2Uhb5z7IAjamRun5HdBzUhVUJaG5t7R1DFYC9D7kRD34P6o2li7lmJRTbmBiO
+Hnq7sZv2Necd3Q99njcLUI1PTN/GvtmYzO6napxN0YbMBI40HdZhK8uOZO4ZgTq5y8x3khIelJFv
+4ygp2p19J51JRDF0qazYEL5nLZwhS7yMchKokin/RtK6n0FMOpRq6MmIL5ZrcxNlzFFYU4R3/f/T
+9n66xofIea+C86zeiQ2in+VFzZvvqVjA2GaFJYQIZISh7jrlnXG0LuM/Jm36NxItFqOkSSxlmbCD
+sKmecGj3pGyHerBWRWrKGzhh1vXnbkUakmiWeGMu1ZXZBOwxenP2jodPWnIBxcYhQAFxMygd6SZT
+rYU9FmKqX+cjz1sNDAHlAeJ3GfM4yS6Xa6+xpR8CclwTD2kU37chXA96GJWEdhfjXuHtabcA9R9D
+9u9OwkO3Yd2nYyI9VnyOktWHIa+W/CNnuWbsvCWFyil/tNEnc9/y40kUehyKqMAD

@@ -1,88 +1,52 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Mime;
-
-use Symfony\Component\Mime\Exception\LogicException;
-
-/**
- * @author Fabien Potencier <fabien@symfony.com>
- */
-class RawMessage implements \Serializable
-{
-    private $message;
-
-    /**
-     * @param iterable|string $message
-     */
-    public function __construct($message)
-    {
-        $this->message = $message;
-    }
-
-    public function toString(): string
-    {
-        if (\is_string($this->message)) {
-            return $this->message;
-        }
-
-        return $this->message = implode('', iterator_to_array($this->message, false));
-    }
-
-    public function toIterable(): iterable
-    {
-        if (\is_string($this->message)) {
-            yield $this->message;
-
-            return;
-        }
-
-        $message = '';
-        foreach ($this->message as $chunk) {
-            $message .= $chunk;
-            yield $chunk;
-        }
-        $this->message = $message;
-    }
-
-    /**
-     * @throws LogicException if the message is not valid
-     */
-    public function ensureValidity()
-    {
-    }
-
-    /**
-     * @internal
-     */
-    final public function serialize(): string
-    {
-        return serialize($this->__serialize());
-    }
-
-    /**
-     * @internal
-     */
-    final public function unserialize($serialized)
-    {
-        $this->__unserialize(unserialize($serialized));
-    }
-
-    public function __serialize(): array
-    {
-        return [$this->toString()];
-    }
-
-    public function __unserialize(array $data): void
-    {
-        [$this->message] = $data;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

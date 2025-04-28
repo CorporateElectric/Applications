@@ -1,100 +1,68 @@
-<?php
-
-/*
- * This file is part of the league/commonmark package.
- *
- * (c) Colin O'Dell <colinodell@gmail.com>
- * (c) Rezo Zero / Ambroise Maupate
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-declare(strict_types=1);
-
-namespace League\CommonMark\Extension\Footnote\Event;
-
-use League\CommonMark\Block\Element\Document;
-use League\CommonMark\Event\DocumentParsedEvent;
-use League\CommonMark\Extension\Footnote\Node\Footnote;
-use League\CommonMark\Extension\Footnote\Node\FootnoteBackref;
-use League\CommonMark\Extension\Footnote\Node\FootnoteContainer;
-use League\CommonMark\Reference\Reference;
-use League\CommonMark\Util\ConfigurationAwareInterface;
-use League\CommonMark\Util\ConfigurationInterface;
-
-final class GatherFootnotesListener implements ConfigurationAwareInterface
-{
-    /** @var ConfigurationInterface */
-    private $config;
-
-    public function onDocumentParsed(DocumentParsedEvent $event): void
-    {
-        $document = $event->getDocument();
-        $walker = $document->walker();
-
-        $footnotes = [];
-        while ($event = $walker->next()) {
-            if (!$event->isEntering()) {
-                continue;
-            }
-
-            $node = $event->getNode();
-            if (!$node instanceof Footnote) {
-                continue;
-            }
-
-            // Look for existing reference with footnote label
-            $ref = $document->getReferenceMap()->getReference($node->getReference()->getLabel());
-            if ($ref !== null) {
-                // Use numeric title to get footnotes order
-                $footnotes[\intval($ref->getTitle())] = $node;
-            } else {
-                // Footnote call is missing, append footnote at the end
-                $footnotes[INF] = $node;
-            }
-
-            /*
-             * Look for all footnote refs pointing to this footnote
-             * and create each footnote backrefs.
-             */
-            $backrefs = $document->getData(
-                '#' . $this->config->get('footnote/footnote_id_prefix', 'fn:') . $node->getReference()->getDestination(),
-                []
-            );
-            /** @var Reference $backref */
-            foreach ($backrefs as $backref) {
-                $node->addBackref(new FootnoteBackref(new Reference(
-                    $backref->getLabel(),
-                    '#' . $this->config->get('footnote/ref_id_prefix', 'fnref:') . $backref->getLabel(),
-                    $backref->getTitle()
-                )));
-            }
-        }
-
-        // Only add a footnote container if there are any
-        if (\count($footnotes) === 0) {
-            return;
-        }
-
-        $container = $this->getFootnotesContainer($document);
-
-        \ksort($footnotes);
-        foreach ($footnotes as $footnote) {
-            $container->appendChild($footnote);
-        }
-    }
-
-    private function getFootnotesContainer(Document $document): FootnoteContainer
-    {
-        $footnoteContainer = new FootnoteContainer();
-        $document->appendChild($footnoteContainer);
-
-        return $footnoteContainer;
-    }
-
-    public function setConfiguration(ConfigurationInterface $config): void
-    {
-        $this->config = $config;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

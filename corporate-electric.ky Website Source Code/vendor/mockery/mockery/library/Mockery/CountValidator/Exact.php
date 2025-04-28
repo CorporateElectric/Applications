@@ -1,54 +1,46 @@
-<?php
-/**
- * Mockery
- *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://github.com/padraic/mockery/blob/master/LICENSE
- * If you did not receive a copy of the license and are unable to
- * obtain it through the world-wide-web, please send an email
- * to padraic@php.net so we can send you a copy immediately.
- *
- * @category   Mockery
- * @package    Mockery
- * @copyright  Copyright (c) 2010 Pádraic Brady (http://blog.astrumfutura.com)
- * @license    http://github.com/padraic/mockery/blob/master/LICENSE New BSD License
- */
-
-namespace Mockery\CountValidator;
-
-use Mockery;
-
-class Exact extends CountValidatorAbstract
-{
-    /**
-     * Validate the call count against this validator
-     *
-     * @param int $n
-     * @return bool
-     */
-    public function validate($n)
-    {
-        if ($this->_limit !== $n) {
-            $because = $this->_expectation->getExceptionMessage();
-
-            $exception = new Mockery\Exception\InvalidCountException(
-                'Method ' . (string) $this->_expectation
-                . ' from ' . $this->_expectation->getMock()->mockery_getName()
-                . ' should be called' . PHP_EOL
-                . ' exactly ' . $this->_limit . ' times but called ' . $n
-                . ' times.'
-                . ($because ? ' Because ' . $this->_expectation->getExceptionMessage() : '')
-            );
-            $exception->setMock($this->_expectation->getMock())
-                ->setMethodName((string) $this->_expectation)
-                ->setExpectedCountComparative('=')
-                ->setExpectedCount($this->_limit)
-                ->setActualCount($n);
-            throw $exception;
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

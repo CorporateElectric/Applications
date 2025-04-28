@@ -1,147 +1,59 @@
-<?php
-
-namespace Illuminate\Http\Testing;
-
-use Illuminate\Http\UploadedFile;
-
-class File extends UploadedFile
-{
-    /**
-     * The name of the file.
-     *
-     * @var string
-     */
-    public $name;
-
-    /**
-     * The temporary file resource.
-     *
-     * @var resource
-     */
-    public $tempFile;
-
-    /**
-     * The "size" to report.
-     *
-     * @var int
-     */
-    public $sizeToReport;
-
-    /**
-     * The MIME type to report.
-     *
-     * @var string|null
-     */
-    public $mimeTypeToReport;
-
-    /**
-     * Create a new file instance.
-     *
-     * @param  string  $name
-     * @param  resource  $tempFile
-     * @return void
-     */
-    public function __construct($name, $tempFile)
-    {
-        $this->name = $name;
-        $this->tempFile = $tempFile;
-
-        parent::__construct(
-            $this->tempFilePath(), $name, $this->getMimeType(),
-            null, true
-        );
-    }
-
-    /**
-     * Create a new fake file.
-     *
-     * @param  string  $name
-     * @param  string|int  $kilobytes
-     * @return \Illuminate\Http\Testing\File
-     */
-    public static function create($name, $kilobytes = 0)
-    {
-        return (new FileFactory)->create($name, $kilobytes);
-    }
-
-    /**
-     * Create a new fake file with content.
-     *
-     * @param  string  $name
-     * @param  string  $content
-     * @return \Illuminate\Http\Testing\File
-     */
-    public static function createWithContent($name, $content)
-    {
-        return (new FileFactory)->createWithContent($name, $content);
-    }
-
-    /**
-     * Create a new fake image.
-     *
-     * @param  string  $name
-     * @param  int  $width
-     * @param  int  $height
-     * @return \Illuminate\Http\Testing\File
-     */
-    public static function image($name, $width = 10, $height = 10)
-    {
-        return (new FileFactory)->image($name, $width, $height);
-    }
-
-    /**
-     * Set the "size" of the file in kilobytes.
-     *
-     * @param  int  $kilobytes
-     * @return $this
-     */
-    public function size($kilobytes)
-    {
-        $this->sizeToReport = $kilobytes * 1024;
-
-        return $this;
-    }
-
-    /**
-     * Get the size of the file.
-     *
-     * @return int
-     */
-    public function getSize()
-    {
-        return $this->sizeToReport ?: parent::getSize();
-    }
-
-    /**
-     * Set the "MIME type" for the file.
-     *
-     * @param  string  $mimeType
-     * @return $this
-     */
-    public function mimeType($mimeType)
-    {
-        $this->mimeTypeToReport = $mimeType;
-
-        return $this;
-    }
-
-    /**
-     * Get the MIME type of the file.
-     *
-     * @return string
-     */
-    public function getMimeType()
-    {
-        return $this->mimeTypeToReport ?: MimeType::from($this->name);
-    }
-
-    /**
-     * Get the path to the temporary file.
-     *
-     * @return string
-     */
-    protected function tempFilePath()
-    {
-        return stream_get_meta_data($this->tempFile)['uri'];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,64 +1,37 @@
-<?php
-
-namespace Illuminate\Support;
-
-use DateInterval;
-use DateTimeInterface;
-
-trait InteractsWithTime
-{
-    /**
-     * Get the number of seconds until the given DateTime.
-     *
-     * @param  \DateTimeInterface|\DateInterval|int  $delay
-     * @return int
-     */
-    protected function secondsUntil($delay)
-    {
-        $delay = $this->parseDateInterval($delay);
-
-        return $delay instanceof DateTimeInterface
-                            ? max(0, $delay->getTimestamp() - $this->currentTime())
-                            : (int) $delay;
-    }
-
-    /**
-     * Get the "available at" UNIX timestamp.
-     *
-     * @param  \DateTimeInterface|\DateInterval|int  $delay
-     * @return int
-     */
-    protected function availableAt($delay = 0)
-    {
-        $delay = $this->parseDateInterval($delay);
-
-        return $delay instanceof DateTimeInterface
-                            ? $delay->getTimestamp()
-                            : Carbon::now()->addRealSeconds($delay)->getTimestamp();
-    }
-
-    /**
-     * If the given value is an interval, convert it to a DateTime instance.
-     *
-     * @param  \DateTimeInterface|\DateInterval|int  $delay
-     * @return \DateTimeInterface|int
-     */
-    protected function parseDateInterval($delay)
-    {
-        if ($delay instanceof DateInterval) {
-            $delay = Carbon::now()->add($delay);
-        }
-
-        return $delay;
-    }
-
-    /**
-     * Get the current system time as a UNIX timestamp.
-     *
-     * @return int
-     */
-    protected function currentTime()
-    {
-        return Carbon::now()->getTimestamp();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPvkMGmbRShWk8Y3MAgMNXFATTKbaO4GHNhIuAGNJxEWv5U7CwxBCMnCW+9ET/iUe7AyJ0LmE
+lNNGpuHHAl/cfOpzMu8F380AKTQ+B/QBpZzGkWsoTJYA9iUoLp1Qd5UPC+ilHwPJUIRYwn+YUm9v
+ooBo6mYZK9zN2cl7pwuDUg9K48XmUcQFp0ycDo2Y6muJBHWh/n5h01hSWlebwsPtos4OPXrY+W7m
+z2DvJjUjScsTRcR3yDFUypwsTAVcSyGOX4/cEjMhA+TKmL7Jt1aWL4Hsw1raND2oOxhjY4rW47Cj
+y4yW0rGX781i9Wv4lnsjhrooDE47Wg2p0ePAUSLTONfRL7zJMmFcFIECiVH7+iwtyh22IyXdegB5
+Q3NJ/jAikwfA8m4c9YQYRSwRwhdkt87XZXesozZ0VjS2w/7lI+52HGRZzD+Nl5xQBvhieJGsI7J4
+b7sIgFOBcTt4wjGgbnKfHhU9vF5Do2B0TxJ3oSlyKkUwtdDTjKjGMY/X32OdFKF0GrsLbqlRYROC
+X5AnlSZMcn8qjupdyC+xUtGavzBAhGoEh0nQn9JRN5CORVFDwaul7ndTbD/Xtdy0E5phP1EqFPbF
+6Gc4+Q3Ula8WgMoPSoO7T5qn/hB0FOPz0nGSubcnBxARcPzCi2Yycf2EZRVnjHCzexgxaREtz/YS
+QnfjzCfQROM+jabw6ookXWRMMZ/BFUtgHkNtErL3jLZY2PVY+k3iJFWzN8fO1lBjlBbp/9DhGS4C
+0UspJwkqQIxTvqPzGGRpj0GcMAudI5IMh0Y77sD9NMbtFXltiDD6bRnnhuGtEAL+dlRV93z9ncw7
+5syTHEIrMZVSXEFH3guCwEbQdv+FBvJ7rUyxi9BuULQayYMDWqyvddgT1KnH3fDkvzC1TWQ1vLzb
+uTnZNBzEKI6ySL+ycLbpuv+Z13dN8PNOlN5Wdq65AdVPsdEDmHB4vlQtyYDPlTNKmsmPcJ3qc0Nj
+JrKrMdDX+n7MqamEibUiAM24Hl2oCV//cmDU3lxmvDxJrYGWddQfHIWhnm/5+Dk4rkA3h9lm2Xn2
+NW/E69iMBwBSKcDoHHvAKSrpkbJXoBUrJlZQgpUS6Cz86048uCEdwWyNwLrZDDSPZFvCto4NiAVt
+CPtUuEP/7wACpFuubrrZEeJF9R8jP8OVS6Avl7COE6m20tVF+T5aMyA/jenB7OeMju7QvlUFCAMl
+LIugYZhUaMoe9T/1j6Lmwt11mt+knZCuO5QlrD318ehTfY5OqskNC3M3rWIMYV2tWMcJa+RHc7c6
+XLAghRX2o5PNc2MoNn32KsUCPB7dchddjKSuccM2CwHt8SO3IyegGeDh3UaQdW9aNKrhsw8HpA84
+xjYVQKbJjp9i6psuugwsTRIxOJb6NP9Gxh2oUILYhxZZLyYhj3MGrru6oz/xDFJpgyxzgw2dq9pd
+ojqGgYVONWRuZwVpp3k9Pw02FPrup+egXjp8X8WCDFWF29jeUazm3aCsEEbdFpI4l2I2OJ1b1Ex8
+52m6lFHUyakxBdhm1mvBhaUMu8HE86nJaDMkuBHt1X1JdksflWsa9YxHlGxh7z2884jaEvv32v83
+FycguH7mVygTuBHSrJlclszru395wuwl7EngP6sMeUJVm9SXBIDQiL5d0ejPDYDswP8g3DXlDy/A
+Tjhe5t1w9WiEqcElEJxno3DrDEUrWFlUUr91YqeS2xnI4rqXBJbaubut4dhr7ns8ClpFHpEkTzPt
+CZ5pXZEFJSGl87XbKcEgLgBELYynLE4shdYLucMKaDrRIlIIQXczT41RJ2rpybiRcPjQ9GLoqt9j
+HyAEBfpv6uk7GlvrCuQZFTqszb6zW6GYBsBBcxqph1r450hZI6K5jdVGgc5dNpO0V36IkXztExzC
+mcUf0DmYukGbOgrM2E7WKorwbfO+8qXidXxDd0jQ5cGaCU+MtOeOJzpXra93amIwuK8ff4SpFqJe
+y6ezv17Yk1A3dqkL6n8pyw6bHnkXglkzdWO4uy6NlIXL703zIEVRNOROWduY+83m/uvBx+pwY85J
+RjIubBwKtnZ1c2hHmGHwibKYX5APH0yg0DaOoZK9LkXqVkeuv+FWG9O42ZJtl8HxEvJFoGaF2PKT
+8r12e3eQ/xaSb/+ycPmc9Jen0rRbsTmFamku7jrOuzzFFurGEiLgKqFvl5vNlsNFspRKSlNZJR7a
+c9HvJ16eovBYQGEWGWZsy4MwiwpbTX0wHI9hTi6A6+J1Pn9rd/MzDGjh3iD/pq0nQpUyuh3xkG08
+K++QAqBbG+FkCd8ECW5OM5f0aYB0GNVnxNI/V3MkFdyAVLtbXlK375Lqhexi0IeuWR94HuA8RDbR
+z0Qh50TusJZWdYOmvjsU2qpf9RD0mHfVnyvOYASNqbW7Pz90kG6o1m8HKDSnHfmknPdszZTD1ctK
+cKjnQCun+ZItyUAHv+RzcGJ9xL0XDpMprHAwf1XaDHkQ49YVrcOBGXP+NRaTf/8NBlK11qpriwvT
+Npxl9FzFjr0c8Hym+j7yLrfRr96WPs6pQJxmHG==

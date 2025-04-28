@@ -1,86 +1,43 @@
-<?php
-
-/*
- * This file is part of the league/commonmark package.
- *
- * (c) Colin O'Dell <colinodell@gmail.com>
- * (c) Rezo Zero / Ambroise Maupate
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-declare(strict_types=1);
-
-namespace League\CommonMark\Extension\Footnote\Event;
-
-use League\CommonMark\Event\DocumentParsedEvent;
-use League\CommonMark\Extension\Footnote\Node\FootnoteRef;
-use League\CommonMark\Reference\Reference;
-
-final class NumberFootnotesListener
-{
-    public function onDocumentParsed(DocumentParsedEvent $event): void
-    {
-        $document = $event->getDocument();
-        $walker = $document->walker();
-        $nextCounter = 1;
-        $usedLabels = [];
-        $usedCounters = [];
-
-        while ($event = $walker->next()) {
-            if (!$event->isEntering()) {
-                continue;
-            }
-
-            $node = $event->getNode();
-
-            if (!$node instanceof FootnoteRef) {
-                continue;
-            }
-
-            $existingReference = $node->getReference();
-            $label = $existingReference->getLabel();
-            $counter = $nextCounter;
-            $canIncrementCounter = true;
-
-            if (\array_key_exists($label, $usedLabels)) {
-                /*
-                 * Reference is used again, we need to point
-                 * to the same footnote. But with a different ID
-                 */
-                $counter = $usedCounters[$label];
-                $label = $label . '__' . ++$usedLabels[$label];
-                $canIncrementCounter = false;
-            }
-
-            // rewrite reference title to use a numeric link
-            $newReference = new Reference(
-                $label,
-                $existingReference->getDestination(),
-                (string) $counter
-            );
-
-            // Override reference with numeric link
-            $node->setReference($newReference);
-            $document->getReferenceMap()->addReference($newReference);
-
-            /*
-             * Store created references in document for
-             * creating FootnoteBackrefs
-             */
-            if (false === $document->getData($existingReference->getDestination(), false)) {
-                $document->data[$existingReference->getDestination()] = [];
-            }
-
-            $document->data[$existingReference->getDestination()][] = $newReference;
-
-            $usedLabels[$label] = 1;
-            $usedCounters[$label] = $nextCounter;
-
-            if ($canIncrementCounter) {
-                $nextCounter++;
-            }
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

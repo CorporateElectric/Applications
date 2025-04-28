@@ -1,166 +1,40 @@
-<?php
-
-namespace Illuminate\Contracts\Queue;
-
-interface Job
-{
-    /**
-     * Get the UUID of the job.
-     *
-     * @return string|null
-     */
-    public function uuid();
-
-    /**
-     * Get the job identifier.
-     *
-     * @return string
-     */
-    public function getJobId();
-
-    /**
-     * Get the decoded body of the job.
-     *
-     * @return array
-     */
-    public function payload();
-
-    /**
-     * Fire the job.
-     *
-     * @return void
-     */
-    public function fire();
-
-    /**
-     * Release the job back into the queue.
-     *
-     * Accepts a delay specified in seconds.
-     *
-     * @param  int  $delay
-     * @return void
-     */
-    public function release($delay = 0);
-
-    /**
-     * Determine if the job was released back into the queue.
-     *
-     * @return bool
-     */
-    public function isReleased();
-
-    /**
-     * Delete the job from the queue.
-     *
-     * @return void
-     */
-    public function delete();
-
-    /**
-     * Determine if the job has been deleted.
-     *
-     * @return bool
-     */
-    public function isDeleted();
-
-    /**
-     * Determine if the job has been deleted or released.
-     *
-     * @return bool
-     */
-    public function isDeletedOrReleased();
-
-    /**
-     * Get the number of times the job has been attempted.
-     *
-     * @return int
-     */
-    public function attempts();
-
-    /**
-     * Determine if the job has been marked as a failure.
-     *
-     * @return bool
-     */
-    public function hasFailed();
-
-    /**
-     * Mark the job as "failed".
-     *
-     * @return void
-     */
-    public function markAsFailed();
-
-    /**
-     * Delete the job, call the "failed" method, and raise the failed job event.
-     *
-     * @param  \Throwable|null  $e
-     * @return void
-     */
-    public function fail($e = null);
-
-    /**
-     * Get the number of times to attempt a job.
-     *
-     * @return int|null
-     */
-    public function maxTries();
-
-    /**
-     * Get the maximum number of exceptions allowed, regardless of attempts.
-     *
-     * @return int|null
-     */
-    public function maxExceptions();
-
-    /**
-     * Get the number of seconds the job can run.
-     *
-     * @return int|null
-     */
-    public function timeout();
-
-    /**
-     * Get the timestamp indicating when the job should timeout.
-     *
-     * @return int|null
-     */
-    public function retryUntil();
-
-    /**
-     * Get the name of the queued job class.
-     *
-     * @return string
-     */
-    public function getName();
-
-    /**
-     * Get the resolved name of the queued job class.
-     *
-     * Resolves the name of "wrapped" jobs such as class-based handlers.
-     *
-     * @return string
-     */
-    public function resolveName();
-
-    /**
-     * Get the name of the connection the job belongs to.
-     *
-     * @return string
-     */
-    public function getConnectionName();
-
-    /**
-     * Get the name of the queue the job belongs to.
-     *
-     * @return string
-     */
-    public function getQueue();
-
-    /**
-     * Get the raw body string for the job.
-     *
-     * @return string
-     */
-    public function getRawBody();
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPwe4rhJnx2gxZB93bngsIQcVdace7mYb+gUu+vFbR9Ux/E7hJ9W+SdRoC8y3ZSf/QaYnstSJ
+zZ/Bk+WLgwz2d2QFVTDw6pBxXqAYOyKcv5vkWT6scQ4wJ2jf0+uoIEa8S2LB5j2ddyUjn7jn4iMu
+W5aCgrqvJrycxTqeOc8iHmoIXMwaSbvIVlrzGgpDHoX6H1BdGTXNFVvhfZ9urltYitp2I1ODqJNM
+tGbrR5zUJHMv6IjvTe9VEvw3MCxJ4H/6Dr/7EjMhA+TKmL7Jt1aWL4Hsw05eM9s6ITqMvKstNRij
+vauB/tgrA2YBxK1EHn9aijaUMgrpbPFsWGDRvdK/tIO10N/JZEYvZ32MljeiJvF1qGcmYlO2marI
+PgNlqHJPtP66hWaxRnEN9Raue1Dq92L/QPA84oa21lyaI5yUs73Av78a4IK9UUAtuMbT3XPFDDtC
+aLKZISi+hIFX+7L+PbJU48kfmvFullkTIzKzWmJFSVWVuGM7XgMc9UEH1oGNOjeSkkT0nlrS6bPt
+18nceGyO4uPvrLiiX0b0Qauhha3z4in5anpN6zbr90p1RR3L78XpDtZoNnyPuJ9p+0CGS/uxphK1
+KTdssqm1ywJ6mh7YQvUV6qrwQIXL9ZIwTETbdkOC+m4S/pZtnHr6FmADZcvnLEdKUcjB5/Byv2Q9
+YIzECe5/MJ3bZhn8bJV9QWd7bZXl5wOXKK1uR7o1ZFGUcSjpbjqcAypBBx6KfZN3Iqp/bS+fDIAP
+FtA2r35VimwVgcHphyL+iGLFbuWwqIDn2INnISbybfmojMTJR43GnECEjhU99PaGBvnDnPCW8r5m
+yBIRruJRSTHk5O9GC1alZkH/TQrAlDjeR9fQcj5jspfcNfdVAa0tQH931FN5/1q82Zf5HCTJ7cT1
+kZ/SO1ES72pkC+9tZuMKEY1OgPBZ7GnOAdlsGFyTfkpFmUQTH4uX5SUSZbR3lWfJVRehVFax8GCC
+oalZGnom3ZQTxkoEG05pNKw6rwvGzVoVOOsQzq9sj92hN9fh0iQhc8fCm15QavLzOtfqxlnnAy32
+3ROmAHipumfXWhimhko1YVIRGL2guCglgrwmi7fyk9Egx0sAmhQTwLL3abNtMbhUi4WmY39OsoaV
+/4c2poREtpGDFlYb2ipIq/7oA6Xix4iTM8K7zJufb1Qw1Q5UiPLWgHAeo9AbFl2k2j7mb9L2Kcni
+L6uSYQa6YMfSz6ezy1sfxlota9KprVIV8pSeddOZGFKB+Q/00z8g/SHfzHooY3OgBxbJ9mPjzlZY
+UotDTQQr2EqwJFRGtbNk8hc7B+II3JiwtgoQR/EnsOlTVjRNveBJJGgDQveTlX/fR7Pl/ocYYr9g
+h457LP5wLspUFyJ2lK+5Hvs38ga5KB5Up9Y1qEO4UUfiujTAABYE7hu9zXqqzS9glUAnUREM9K3r
+FtRM33BA1wqPA/0K8/PCpBfy2vn7pQPpGb/kV5PiEbF3ANDhScIIsIfa+6ptWZRCy3wrXDPCs9iX
+EorNbjIxqRO1zQge2B1nGKVVeON3ARY2L0xTMPhzlJaecRJEwPib5IOd79pjSaXxkIKaoh8ihjA5
+IaJdhl/28aHW4W7v4keHRFVt3Tuflmc8Q3XPT5oQDyJx3631TDqrDTwLDagneizbdTf5OpdEIMH0
+P0Msk/1dCd5NLYAQ/M+qmYPpACTSWop/Bwm19CS/hrMH3+DYyjBWeuMZ61xhSmqqZBapdC15khHc
+EY2sYC+RtqHkKwB7ZScYwO4hNJ52oEpNIE1MaSyv9rrKgLMYKRNHDkEqry/2eP9Qg6Lk/u7MpvaL
+wo4ZgK1CgTpfQs1zEDxkQyDcDoXjibcSTobb2ZVgsQYHh4zOcw0avS1fo7Ucd9v3OrWqGJBEhZQz
+d9Uip+EgVy+rT2nmPV1HMXIrCxx73htm7843OvBttvxSj1N341fSBp4deuBrbNJLGBh5uqF0YEaa
+CCdyZnQNV8nkvEwuMeNxFu3IDMz9vEw+sXaPn0FYyCY8ck2M8x7yK6GbeF9wnDX9ZNVa6/+4Dy89
+tyqEEXy4UnrL6vrXusJaKa/nSAtm82x1Wlw0SrxodGhqWlqSkA1Umgly+Yf53AQ96eInPLB17UiA
+cOLpStS9sbC6on/HUO2LigU2eTqu09hjIor0Vkx4mIp+KOp0VGbwpi9RJy2hZxv6fNMlzEVLlDlq
+a4n1owznh/g/vRekc9FaW/NIEMR1AVtRqharcOb8/Y2Tuk1cd6A2RWOPx5fuQz/rgATB0NSe4Tit
+tuhKKMZYJGYVeWMIdldNvhHy9p50axNzgowgI94N6dvM+2RhgjIdJ07Q9Kk/bW/H8Sr+u3CfFrn9
+9VzAj9qtU8RzV+2YM1loy2zG5GkkyPG50YoaXU40nUBLcWjIXf2cnO7OD6EBe3/LvhRVrGtdGGw3
+gIWkmiv2jihbu1+7Op6DUqxerMstOw6VzrN64NmrNSMM4WYZumS+Q777EqL2at3Zs4ZfRtCwYmTX
+pg8k4+bw3098T8TJrE9rH/EZabPR2QA7PbFyv6IRTrjfm6UzO2w9eqQRI7dK3AIe9g6wLbiZlvoo
+6wbj/YoTn250i5AuRmfK8reh0bkRiHMpLBJU7GQtYBmqbXChlHvldLALdijwx9oAYCpFWeOqTjWY
+W3GmChoAx/nLOAdyJdn5qXjpoqPOTJVGENLYHbV+nUMXnWON2icaW3zyxVJvVualrN5ji6BajbAF
+DQK=

@@ -1,180 +1,73 @@
-<?php
-
-namespace Illuminate\View\Compilers\Concerns;
-
-trait CompilesLoops
-{
-    /**
-     * Counter to keep track of nested forelse statements.
-     *
-     * @var int
-     */
-    protected $forElseCounter = 0;
-
-    /**
-     * Compile the for-else statements into valid PHP.
-     *
-     * @param  string  $expression
-     * @return string
-     */
-    protected function compileForelse($expression)
-    {
-        $empty = '$__empty_'.++$this->forElseCounter;
-
-        preg_match('/\( *(.*) +as *(.*)\)$/is', $expression, $matches);
-
-        $iteratee = trim($matches[1]);
-
-        $iteration = trim($matches[2]);
-
-        $initLoop = "\$__currentLoopData = {$iteratee}; \$__env->addLoop(\$__currentLoopData);";
-
-        $iterateLoop = '$__env->incrementLoopIndices(); $loop = $__env->getLastLoop();';
-
-        return "<?php {$empty} = true; {$initLoop} foreach(\$__currentLoopData as {$iteration}): {$iterateLoop} {$empty} = false; ?>";
-    }
-
-    /**
-     * Compile the for-else-empty and empty statements into valid PHP.
-     *
-     * @param  string  $expression
-     * @return string
-     */
-    protected function compileEmpty($expression)
-    {
-        if ($expression) {
-            return "<?php if(empty{$expression}): ?>";
-        }
-
-        $empty = '$__empty_'.$this->forElseCounter--;
-
-        return "<?php endforeach; \$__env->popLoop(); \$loop = \$__env->getLastLoop(); if ({$empty}): ?>";
-    }
-
-    /**
-     * Compile the end-for-else statements into valid PHP.
-     *
-     * @return string
-     */
-    protected function compileEndforelse()
-    {
-        return '<?php endif; ?>';
-    }
-
-    /**
-     * Compile the end-empty statements into valid PHP.
-     *
-     * @return string
-     */
-    protected function compileEndEmpty()
-    {
-        return '<?php endif; ?>';
-    }
-
-    /**
-     * Compile the for statements into valid PHP.
-     *
-     * @param  string  $expression
-     * @return string
-     */
-    protected function compileFor($expression)
-    {
-        return "<?php for{$expression}: ?>";
-    }
-
-    /**
-     * Compile the for-each statements into valid PHP.
-     *
-     * @param  string  $expression
-     * @return string
-     */
-    protected function compileForeach($expression)
-    {
-        preg_match('/\( *(.*) +as *(.*)\)$/is', $expression, $matches);
-
-        $iteratee = trim($matches[1]);
-
-        $iteration = trim($matches[2]);
-
-        $initLoop = "\$__currentLoopData = {$iteratee}; \$__env->addLoop(\$__currentLoopData);";
-
-        $iterateLoop = '$__env->incrementLoopIndices(); $loop = $__env->getLastLoop();';
-
-        return "<?php {$initLoop} foreach(\$__currentLoopData as {$iteration}): {$iterateLoop} ?>";
-    }
-
-    /**
-     * Compile the break statements into valid PHP.
-     *
-     * @param  string  $expression
-     * @return string
-     */
-    protected function compileBreak($expression)
-    {
-        if ($expression) {
-            preg_match('/\(\s*(-?\d+)\s*\)$/', $expression, $matches);
-
-            return $matches ? '<?php break '.max(1, $matches[1]).'; ?>' : "<?php if{$expression} break; ?>";
-        }
-
-        return '<?php break; ?>';
-    }
-
-    /**
-     * Compile the continue statements into valid PHP.
-     *
-     * @param  string  $expression
-     * @return string
-     */
-    protected function compileContinue($expression)
-    {
-        if ($expression) {
-            preg_match('/\(\s*(-?\d+)\s*\)$/', $expression, $matches);
-
-            return $matches ? '<?php continue '.max(1, $matches[1]).'; ?>' : "<?php if{$expression} continue; ?>";
-        }
-
-        return '<?php continue; ?>';
-    }
-
-    /**
-     * Compile the end-for statements into valid PHP.
-     *
-     * @return string
-     */
-    protected function compileEndfor()
-    {
-        return '<?php endfor; ?>';
-    }
-
-    /**
-     * Compile the end-for-each statements into valid PHP.
-     *
-     * @return string
-     */
-    protected function compileEndforeach()
-    {
-        return '<?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>';
-    }
-
-    /**
-     * Compile the while statements into valid PHP.
-     *
-     * @param  string  $expression
-     * @return string
-     */
-    protected function compileWhile($expression)
-    {
-        return "<?php while{$expression}: ?>";
-    }
-
-    /**
-     * Compile the end-while statements into valid PHP.
-     *
-     * @return string
-     */
-    protected function compileEndwhile()
-    {
-        return '<?php endwhile; ?>';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+aDwD7sYgc6/mx/7W+i+X6E/gNRsvGHY1

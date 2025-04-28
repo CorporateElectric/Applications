@@ -1,195 +1,98 @@
-<?php
-namespace Hamcrest\Xml;
-
-/*
- Copyright (c) 2009 hamcrest.org
- */
-use Hamcrest\Core\IsEqual;
-use Hamcrest\Description;
-use Hamcrest\DiagnosingMatcher;
-use Hamcrest\Matcher;
-
-/**
- * Matches if XPath applied to XML/HTML/XHTML document either
- * evaluates to result matching the matcher or returns at least
- * one node, matching the matcher if present.
- */
-class HasXPath extends DiagnosingMatcher
-{
-
-    /**
-     * XPath to apply to the DOM.
-     *
-     * @var string
-     */
-    private $_xpath;
-
-    /**
-     * Optional matcher to apply to the XPath expression result
-     * or the content of the returned nodes.
-     *
-     * @var Matcher
-     */
-    private $_matcher;
-
-    public function __construct($xpath, Matcher $matcher = null)
-    {
-        $this->_xpath = $xpath;
-        $this->_matcher = $matcher;
-    }
-
-    /**
-     * Matches if the XPath matches against the DOM node and the matcher.
-     *
-     * @param string|\DOMNode $actual
-     * @param Description $mismatchDescription
-     * @return bool
-     */
-    protected function matchesWithDiagnosticDescription($actual, Description $mismatchDescription)
-    {
-        if (is_string($actual)) {
-            $actual = $this->createDocument($actual);
-        } elseif (!$actual instanceof \DOMNode) {
-            $mismatchDescription->appendText('was ')->appendValue($actual);
-
-            return false;
-        }
-        $result = $this->evaluate($actual);
-        if ($result instanceof \DOMNodeList) {
-            return $this->matchesContent($result, $mismatchDescription);
-        } else {
-            return $this->matchesExpression($result, $mismatchDescription);
-        }
-    }
-
-    /**
-     * Creates and returns a <code>DOMDocument</code> from the given
-     * XML or HTML string.
-     *
-     * @param string $text
-     * @return \DOMDocument built from <code>$text</code>
-     * @throws \InvalidArgumentException if the document is not valid
-     */
-    protected function createDocument($text)
-    {
-        $document = new \DOMDocument();
-        if (preg_match('/^\s*<\?xml/', $text)) {
-            if (!@$document->loadXML($text)) {
-                throw new \InvalidArgumentException('Must pass a valid XML document');
-            }
-        } else {
-            if (!@$document->loadHTML($text)) {
-                throw new \InvalidArgumentException('Must pass a valid HTML or XHTML document');
-            }
-        }
-
-        return $document;
-    }
-
-    /**
-     * Applies the configured XPath to the DOM node and returns either
-     * the result if it's an expression or the node list if it's a query.
-     *
-     * @param \DOMNode $node context from which to issue query
-     * @return mixed result of expression or DOMNodeList from query
-     */
-    protected function evaluate(\DOMNode $node)
-    {
-        if ($node instanceof \DOMDocument) {
-            $xpathDocument = new \DOMXPath($node);
-
-            return $xpathDocument->evaluate($this->_xpath);
-        } else {
-            $xpathDocument = new \DOMXPath($node->ownerDocument);
-
-            return $xpathDocument->evaluate($this->_xpath, $node);
-        }
-    }
-
-    /**
-     * Matches if the list of nodes is not empty and the content of at least
-     * one node matches the configured matcher, if supplied.
-     *
-     * @param \DOMNodeList $nodes selected by the XPath query
-     * @param Description $mismatchDescription
-     * @return bool
-     */
-    protected function matchesContent(\DOMNodeList $nodes, Description $mismatchDescription)
-    {
-        if ($nodes->length == 0) {
-            $mismatchDescription->appendText('XPath returned no results');
-        } elseif ($this->_matcher === null) {
-            return true;
-        } else {
-            foreach ($nodes as $node) {
-                if ($this->_matcher->matches($node->textContent)) {
-                    return true;
-                }
-            }
-            $content = array();
-            foreach ($nodes as $node) {
-                $content[] = $node->textContent;
-            }
-            $mismatchDescription->appendText('XPath returned ')
-                                                    ->appendValue($content);
-        }
-
-        return false;
-    }
-
-    /**
-     * Matches if the result of the XPath expression matches the configured
-     * matcher or evaluates to <code>true</code> if there is none.
-     *
-     * @param mixed $result result of the XPath expression
-     * @param Description $mismatchDescription
-     * @return bool
-     */
-    protected function matchesExpression($result, Description $mismatchDescription)
-    {
-        if ($this->_matcher === null) {
-            if ($result) {
-                return true;
-            }
-            $mismatchDescription->appendText('XPath expression result was ')
-                                                    ->appendValue($result);
-        } else {
-            if ($this->_matcher->matches($result)) {
-                return true;
-            }
-            $mismatchDescription->appendText('XPath expression result ');
-            $this->_matcher->describeMismatch($result, $mismatchDescription);
-        }
-
-        return false;
-    }
-
-    public function describeTo(Description $description)
-    {
-        $description->appendText('XML or HTML document with XPath "')
-                                ->appendText($this->_xpath)
-                                ->appendText('"');
-        if ($this->_matcher !== null) {
-            $description->appendText(' ');
-            $this->_matcher->describeTo($description);
-        }
-    }
-
-    /**
-     * Wraps <code>$matcher</code> with {@link Hamcrest\Core\IsEqual)
-     * if it's not a matcher and the XPath in <code>count()</code>
-     * if it's an integer.
-     *
-     * @factory
-     */
-    public static function hasXPath($xpath, $matcher = null)
-    {
-        if ($matcher === null || $matcher instanceof Matcher) {
-            return new self($xpath, $matcher);
-        } elseif (is_int($matcher) && strpos($xpath, 'count(') !== 0) {
-            $xpath = 'count(' . $xpath . ')';
-        }
-
-        return new self($xpath, IsEqual::equalTo($matcher));
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

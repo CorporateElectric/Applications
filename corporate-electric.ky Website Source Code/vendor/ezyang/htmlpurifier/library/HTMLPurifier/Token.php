@@ -1,100 +1,37 @@
-<?php
-
-/**
- * Abstract base token class that all others inherit from.
- */
-abstract class HTMLPurifier_Token
-{
-    /**
-     * Line number node was on in source document. Null if unknown.
-     * @type int
-     */
-    public $line;
-
-    /**
-     * Column of line node was on in source document. Null if unknown.
-     * @type int
-     */
-    public $col;
-
-    /**
-     * Lookup array of processing that this token is exempt from.
-     * Currently, valid values are "ValidateAttributes" and
-     * "MakeWellFormed_TagClosedError"
-     * @type array
-     */
-    public $armor = array();
-
-    /**
-     * Used during MakeWellFormed.  See Note [Injector skips]
-     * @type
-     */
-    public $skip;
-
-    /**
-     * @type
-     */
-    public $rewind;
-
-    /**
-     * @type
-     */
-    public $carryover;
-
-    /**
-     * @param string $n
-     * @return null|string
-     */
-    public function __get($n)
-    {
-        if ($n === 'type') {
-            trigger_error('Deprecated type property called; use instanceof', E_USER_NOTICE);
-            switch (get_class($this)) {
-                case 'HTMLPurifier_Token_Start':
-                    return 'start';
-                case 'HTMLPurifier_Token_Empty':
-                    return 'empty';
-                case 'HTMLPurifier_Token_End':
-                    return 'end';
-                case 'HTMLPurifier_Token_Text':
-                    return 'text';
-                case 'HTMLPurifier_Token_Comment':
-                    return 'comment';
-                default:
-                    return null;
-            }
-        }
-    }
-
-    /**
-     * Sets the position of the token in the source document.
-     * @param int $l
-     * @param int $c
-     */
-    public function position($l = null, $c = null)
-    {
-        $this->line = $l;
-        $this->col = $c;
-    }
-
-    /**
-     * Convenience function for DirectLex settings line/col position.
-     * @param int $l
-     * @param int $c
-     */
-    public function rawPosition($l, $c)
-    {
-        if ($c === -1) {
-            $l++;
-        }
-        $this->line = $l;
-        $this->col = $c;
-    }
-
-    /**
-     * Converts a token into its corresponding node.
-     */
-    abstract public function toNode();
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
++zMr7LxDn+LgPbQ43ok2jbksYZMkzW==

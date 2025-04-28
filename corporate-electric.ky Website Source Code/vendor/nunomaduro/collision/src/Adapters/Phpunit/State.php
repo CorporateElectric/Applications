@@ -1,202 +1,85 @@
-<?php
-
-declare(strict_types=1);
-
-namespace NunoMaduro\Collision\Adapters\Phpunit;
-
-use NunoMaduro\Collision\Contracts\Adapters\Phpunit\HasPrintableTestCaseName;
-use PHPUnit\Framework\TestCase;
-
-/**
- * @internal
- */
-final class State
-{
-    /**
-     * The complete test suite number of tests.
-     *
-     * @var int|null
-     */
-    public $suiteTotalTests;
-
-    /**
-     * The complete test suite tests.
-     *
-     * @var array<int, TestResult>
-     */
-    public $suiteTests = [];
-
-    /**
-     * The current test case class.
-     *
-     * @var string
-     */
-    public $testCaseName;
-
-    /**
-     * The current test case tests.
-     *
-     * @var array<int, TestResult>
-     */
-    public $testCaseTests = [];
-
-    /**
-     * The current test case tests.
-     *
-     * @var array<int, TestResult>
-     */
-    public $toBePrintedCaseTests = [];
-
-    /**
-     * Header printed.
-     *
-     * @var bool
-     */
-    public $headerPrinted = false;
-
-    /**
-     * The state constructor.
-     */
-    private function __construct(string $testCaseName)
-    {
-        $this->testCaseName = $testCaseName;
-    }
-
-    /**
-     * Creates a new State starting from the given test case.
-     */
-    public static function from(TestCase $test): self
-    {
-        return new self(self::getPrintableTestCaseName($test));
-    }
-
-    /**
-     * Adds the given test to the State.
-     */
-    public function add(TestResult $test): void
-    {
-        $this->testCaseTests[]        = $test;
-        $this->toBePrintedCaseTests[] = $test;
-
-        $this->suiteTests[] = $test;
-    }
-
-    /**
-     * Gets the test case title.
-     */
-    public function getTestCaseTitle(): string
-    {
-        foreach ($this->testCaseTests as $test) {
-            if ($test->type === TestResult::FAIL) {
-                return 'FAIL';
-            }
-        }
-
-        foreach ($this->testCaseTests as $test) {
-            if ($test->type !== TestResult::PASS) {
-                return 'WARN';
-            }
-        }
-
-        return 'PASS';
-    }
-
-    /**
-     * Gets the test case title color.
-     */
-    public function getTestCaseTitleColor(): string
-    {
-        foreach ($this->testCaseTests as $test) {
-            if ($test->type === TestResult::FAIL) {
-                return 'red';
-            }
-        }
-
-        foreach ($this->testCaseTests as $test) {
-            if ($test->type !== TestResult::PASS) {
-                return 'yellow';
-            }
-        }
-
-        return 'green';
-    }
-
-    /**
-     * Returns the number of tests on the current test case.
-     */
-    public function testCaseTestsCount(): int
-    {
-        return count($this->testCaseTests);
-    }
-
-    /**
-     * Returns the number of tests on the complete test suite.
-     */
-    public function testSuiteTestsCount(): int
-    {
-        return count($this->suiteTests);
-    }
-
-    /**
-     * Checks if the given test case is different from the current one.
-     */
-    public function testCaseHasChanged(TestCase $testCase): bool
-    {
-        return self::getPrintableTestCaseName($testCase) !== $this->testCaseName;
-    }
-
-    /**
-     * Moves the a new test case.
-     */
-    public function moveTo(TestCase $testCase): void
-    {
-        $this->testCaseName = self::getPrintableTestCaseName($testCase);
-
-        $this->testCaseTests = [];
-
-        $this->headerPrinted = false;
-    }
-
-    /**
-     * Foreach test in the test case.
-     */
-    public function eachTestCaseTests(callable $callback): void
-    {
-        foreach ($this->toBePrintedCaseTests as $test) {
-            $callback($test);
-        }
-
-        $this->toBePrintedCaseTests = [];
-    }
-
-    public function countTestsInTestSuiteBy(string $type): int
-    {
-        return count(array_filter($this->suiteTests, function (TestResult $testResult) use ($type) {
-            return $testResult->type === $type;
-        }));
-    }
-
-    /**
-     * Checks if the given test already contains a result.
-     */
-    public function existsInTestCase(TestCase $test): bool
-    {
-        foreach ($this->testCaseTests as $testResult) {
-            if (TestResult::makeDescription($test) === $testResult->description) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Returns the printable test case name from the given `TestCase`.
-     */
-    public static function getPrintableTestCaseName(TestCase $test): string
-    {
-        return $test instanceof HasPrintableTestCaseName
-            ? $test->getPrintableTestCaseName()
-            : get_class($test);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

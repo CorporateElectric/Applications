@@ -1,87 +1,48 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Framework\Constraint;
-
-use function sprintf;
-use ReflectionClass;
-use ReflectionException;
-
-/**
- * @no-named-arguments Parameter names are not covered by the backward compatibility promise for PHPUnit
- */
-final class IsInstanceOf extends Constraint
-{
-    /**
-     * @var string
-     */
-    private $className;
-
-    public function __construct(string $className)
-    {
-        $this->className = $className;
-    }
-
-    /**
-     * Returns a string representation of the constraint.
-     */
-    public function toString(): string
-    {
-        return sprintf(
-            'is instance of %s "%s"',
-            $this->getType(),
-            $this->className
-        );
-    }
-
-    /**
-     * Evaluates the constraint for parameter $other. Returns true if the
-     * constraint is met, false otherwise.
-     *
-     * @param mixed $other value or object to evaluate
-     */
-    protected function matches($other): bool
-    {
-        return $other instanceof $this->className;
-    }
-
-    /**
-     * Returns the description of the failure.
-     *
-     * The beginning of failure messages is "Failed asserting that" in most
-     * cases. This method should return the second part of that sentence.
-     *
-     * @param mixed $other evaluated value or object
-     *
-     * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
-     */
-    protected function failureDescription($other): string
-    {
-        return sprintf(
-            '%s is an instance of %s "%s"',
-            $this->exporter()->shortenedExport($other),
-            $this->getType(),
-            $this->className
-        );
-    }
-
-    private function getType(): string
-    {
-        try {
-            $reflection = new ReflectionClass($this->className);
-
-            if ($reflection->isInterface()) {
-                return 'interface';
-            }
-        } catch (ReflectionException $e) {
-        }
-
-        return 'class';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+fOjfYqq=

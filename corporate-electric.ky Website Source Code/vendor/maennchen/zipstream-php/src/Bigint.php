@@ -1,172 +1,76 @@
-<?php
-declare(strict_types=1);
-
-namespace ZipStream;
-
-use OverflowException;
-
-class Bigint
-{
-    /**
-     * @var int[]
-     */
-    private $bytes = [0, 0, 0, 0, 0, 0, 0, 0];
-
-    /**
-     * Initialize the bytes array
-     *
-     * @param int $value
-     */
-    public function __construct(int $value = 0)
-    {
-        $this->fillBytes($value, 0, 8);
-    }
-
-    /**
-     * Fill the bytes field with int
-     *
-     * @param int $value
-     * @param int $start
-     * @param int $count
-     * @return void
-     */
-    protected function fillBytes(int $value, int $start, int $count): void
-    {
-        for ($i = 0; $i < $count; $i++) {
-            $this->bytes[$start + $i] = $i >= PHP_INT_SIZE ? 0 : $value & 0xFF;
-            $value >>= 8;
-        }
-    }
-
-    /**
-     * Get an instance
-     *
-     * @param int $value
-     * @return Bigint
-     */
-    public static function init(int $value = 0): self
-    {
-        return new self($value);
-    }
-
-    /**
-     * Fill bytes from low to high
-     *
-     * @param int $low
-     * @param int $high
-     * @return Bigint
-     */
-    public static function fromLowHigh(int $low, int $high): self
-    {
-        $bigint = new Bigint();
-        $bigint->fillBytes($low, 0, 4);
-        $bigint->fillBytes($high, 4, 4);
-        return $bigint;
-    }
-
-    /**
-     * Get high 32
-     *
-     * @return int
-     */
-    public function getHigh32(): int
-    {
-        return $this->getValue(4, 4);
-    }
-
-    /**
-     * Get value from bytes array
-     *
-     * @param int $end
-     * @param int $length
-     * @return int
-     */
-    public function getValue(int $end = 0, int $length = 8): int
-    {
-        $result = 0;
-        for ($i = $end + $length - 1; $i >= $end; $i--) {
-            $result <<= 8;
-            $result |= $this->bytes[$i];
-        }
-        return $result;
-    }
-
-    /**
-     * Get low FF
-     *
-     * @param bool $force
-     * @return float
-     */
-    public function getLowFF(bool $force = false): float
-    {
-        if ($force || $this->isOver32()) {
-            return (float)0xFFFFFFFF;
-        }
-        return (float)$this->getLow32();
-    }
-
-    /**
-     * Check if is over 32
-     *
-     * @param bool $force
-     * @return bool
-     */
-    public function isOver32(bool $force = false): bool
-    {
-        // value 0xFFFFFFFF already needs a Zip64 header
-        return $force ||
-            max(array_slice($this->bytes, 4, 4)) > 0 ||
-            min(array_slice($this->bytes, 0, 4)) === 0xFF;
-    }
-
-    /**
-     * Get low 32
-     *
-     * @return int
-     */
-    public function getLow32(): int
-    {
-        return $this->getValue(0, 4);
-    }
-
-    /**
-     * Get hexadecimal
-     *
-     * @return string
-     */
-    public function getHex64(): string
-    {
-        $result = '0x';
-        for ($i = 7; $i >= 0; $i--) {
-            $result .= sprintf('%02X', $this->bytes[$i]);
-        }
-        return $result;
-    }
-
-    /**
-     * Add
-     *
-     * @param Bigint $other
-     * @return Bigint
-     */
-    public function add(Bigint $other): Bigint
-    {
-        $result = clone $this;
-        $overflow = false;
-        for ($i = 0; $i < 8; $i++) {
-            $result->bytes[$i] += $other->bytes[$i];
-            if ($overflow) {
-                $result->bytes[$i]++;
-                $overflow = false;
-            }
-            if ($result->bytes[$i] & 0x100) {
-                $overflow = true;
-                $result->bytes[$i] &= 0xFF;
-            }
-        }
-        if ($overflow) {
-            throw new OverflowException;
-        }
-        return $result;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+NzVkBBvXObkh

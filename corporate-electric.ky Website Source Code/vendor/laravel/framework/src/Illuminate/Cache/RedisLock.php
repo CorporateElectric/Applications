@@ -1,83 +1,50 @@
-<?php
-
-namespace Illuminate\Cache;
-
-class RedisLock extends Lock
-{
-    /**
-     * The Redis factory implementation.
-     *
-     * @var \Illuminate\Redis\Connections\Connection
-     */
-    protected $redis;
-
-    /**
-     * Create a new lock instance.
-     *
-     * @param  \Illuminate\Redis\Connections\Connection  $redis
-     * @param  string  $name
-     * @param  int  $seconds
-     * @param  string|null  $owner
-     * @return void
-     */
-    public function __construct($redis, $name, $seconds, $owner = null)
-    {
-        parent::__construct($name, $seconds, $owner);
-
-        $this->redis = $redis;
-    }
-
-    /**
-     * Attempt to acquire the lock.
-     *
-     * @return bool
-     */
-    public function acquire()
-    {
-        if ($this->seconds > 0) {
-            return $this->redis->set($this->name, $this->owner, 'EX', $this->seconds, 'NX') == true;
-        } else {
-            return $this->redis->setnx($this->name, $this->owner) === 1;
-        }
-    }
-
-    /**
-     * Release the lock.
-     *
-     * @return bool
-     */
-    public function release()
-    {
-        return (bool) $this->redis->eval(LuaScripts::releaseLock(), 1, $this->name, $this->owner);
-    }
-
-    /**
-     * Releases this lock in disregard of ownership.
-     *
-     * @return void
-     */
-    public function forceRelease()
-    {
-        $this->redis->del($this->name);
-    }
-
-    /**
-     * Returns the owner value written into the driver for this lock.
-     *
-     * @return string
-     */
-    protected function getCurrentOwner()
-    {
-        return $this->redis->get($this->name);
-    }
-
-    /**
-     * Get the name of the Redis connection being used to manage the lock.
-     *
-     * @return string
-     */
-    public function getConnectionName()
-    {
-        return $this->redis->getName();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,118 +1,49 @@
-<?php
-
-namespace GuzzleHttp\Handler;
-
-use GuzzleHttp\Psr7\Response;
-use GuzzleHttp\Utils;
-use Psr\Http\Message\RequestInterface;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\StreamInterface;
-
-/**
- * Represents a cURL easy handle and the data it populates.
- *
- * @internal
- */
-final class EasyHandle
-{
-    /**
-     * @var resource|\CurlHandle cURL resource
-     */
-    public $handle;
-
-    /**
-     * @var StreamInterface Where data is being written
-     */
-    public $sink;
-
-    /**
-     * @var array Received HTTP headers so far
-     */
-    public $headers = [];
-
-    /**
-     * @var ResponseInterface|null Received response (if any)
-     */
-    public $response;
-
-    /**
-     * @var RequestInterface Request being sent
-     */
-    public $request;
-
-    /**
-     * @var array Request options
-     */
-    public $options = [];
-
-    /**
-     * @var int cURL error number (if any)
-     */
-    public $errno = 0;
-
-    /**
-     * @var \Throwable|null Exception during on_headers (if any)
-     */
-    public $onHeadersException;
-
-    /**
-     * @var \Exception|null Exception during createResponse (if any)
-     */
-    public $createResponseException;
-
-    /**
-     * Attach a response to the easy handle based on the received headers.
-     *
-     * @throws \RuntimeException if no headers have been received.
-     */
-    public function createResponse(): void
-    {
-        if (empty($this->headers)) {
-            throw new \RuntimeException('No headers have been received');
-        }
-
-        // HTTP-version SP status-code SP reason-phrase
-        $startLine = \explode(' ', \array_shift($this->headers), 3);
-        $headers = Utils::headersFromLines($this->headers);
-        $normalizedKeys = Utils::normalizeHeaderKeys($headers);
-
-        if (!empty($this->options['decode_content']) && isset($normalizedKeys['content-encoding'])) {
-            $headers['x-encoded-content-encoding'] = $headers[$normalizedKeys['content-encoding']];
-            unset($headers[$normalizedKeys['content-encoding']]);
-            if (isset($normalizedKeys['content-length'])) {
-                $headers['x-encoded-content-length'] = $headers[$normalizedKeys['content-length']];
-
-                $bodyLength = (int) $this->sink->getSize();
-                if ($bodyLength) {
-                    $headers[$normalizedKeys['content-length']] = $bodyLength;
-                } else {
-                    unset($headers[$normalizedKeys['content-length']]);
-                }
-            }
-        }
-
-        $statusCode = (int) $startLine[1];
-
-        // Attach a response to the easy handle with the parsed headers.
-        $this->response = new Response(
-            $statusCode,
-            $headers,
-            $this->sink,
-            \substr($startLine[0], 5),
-            isset($startLine[2]) ? (string) $startLine[2] : null
-        );
-    }
-
-    /**
-     * @param string $name
-     *
-     * @return void
-     *
-     * @throws \BadMethodCallException
-     */
-    public function __get($name)
-    {
-        $msg = $name === 'handle' ? 'The EasyHandle has been released' : 'Invalid property: ' . $name;
-        throw new \BadMethodCallException($msg);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+0OM+s7PRzW==

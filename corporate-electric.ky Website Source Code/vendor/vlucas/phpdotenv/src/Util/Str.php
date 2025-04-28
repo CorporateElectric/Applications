@@ -1,110 +1,50 @@
-<?php
-
-declare(strict_types=1);
-
-namespace Dotenv\Util;
-
-use GrahamCampbell\ResultType\Error;
-use GrahamCampbell\ResultType\Success;
-use PhpOption\Option;
-
-/**
- * @internal
- */
-final class Str
-{
-    /**
-     * This class is a singleton.
-     *
-     * @codeCoverageIgnore
-     *
-     * @return void
-     */
-    private function __construct()
-    {
-        //
-    }
-
-    /**
-     * Convert a string to UTF-8 from the given encoding.
-     *
-     * @param string      $input
-     * @param string|null $encoding
-     *
-     * @return \GrahamCampbell\ResultType\Result<string,string>
-     */
-    public static function utf8(string $input, string $encoding = null)
-    {
-        if ($encoding !== null && !\in_array($encoding, \mb_list_encodings(), true)) {
-            /** @var \GrahamCampbell\ResultType\Result<string,string> */
-            return Error::create(
-                \sprintf('Illegal character encoding [%s] specified.', $encoding)
-            );
-        }
-
-        /** @var \GrahamCampbell\ResultType\Result<string,string> */
-        return Success::create(
-            $encoding === null ? @\mb_convert_encoding($input, 'UTF-8') : @\mb_convert_encoding($input, 'UTF-8', $encoding)
-        );
-    }
-
-    /**
-     * Split the given string into an array of characters.
-     *
-     * @param string $input
-     *
-     * @return \GrahamCampbell\ResultType\Result<string[],string>
-     */
-    public static function split(string $input)
-    {
-        $result = \mb_str_split($input, 1, 'UTF-8');
-
-        if ($result === false) {
-            /** @var \GrahamCampbell\ResultType\Result<string[],string> */
-            return Error::create('Multibyte split failed.');
-        }
-
-        /** @var \GrahamCampbell\ResultType\Result<string[],string> */
-        return Success::create($result);
-    }
-
-    /**
-     * Search for a given substring of the input.
-     *
-     * @param string $haystack
-     * @param string $needle
-     *
-     * @return \PhpOption\Option<int>
-     */
-    public static function pos(string $haystack, string $needle)
-    {
-        /** @var \PhpOption\Option<int> */
-        return Option::fromValue(\mb_strpos($haystack, $needle, 0, 'UTF-8'), false);
-    }
-
-    /**
-     * Grab the specified substring of the input.
-     *
-     * @param string   $input
-     * @param int      $start
-     * @param int|null $length
-     *
-     * @return string
-     */
-    public static function substr(string $input, int $start, int $length = null)
-    {
-        return \mb_substr($input, $start, $length, 'UTF-8');
-    }
-
-    /**
-     * Compute the length of the given string.
-     *
-     * @param string $input
-     *
-     * @return int
-     */
-    public static function len(string $input)
-    {
-        return \mb_strlen($input, 'UTF-8');
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+AXa=

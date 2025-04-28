@@ -1,333 +1,157 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of phpunit/php-code-coverage.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\CodeCoverage\Report\Html;
-
-use function array_pop;
-use function count;
-use function phpversion;
-use function sprintf;
-use function str_repeat;
-use function substr_count;
-use SebastianBergmann\CodeCoverage\Node\AbstractNode;
-use SebastianBergmann\CodeCoverage\Node\Directory as DirectoryNode;
-use SebastianBergmann\CodeCoverage\Node\File as FileNode;
-use SebastianBergmann\CodeCoverage\Version;
-use SebastianBergmann\Environment\Runtime;
-use SebastianBergmann\Template\Template;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for phpunit/php-code-coverage
- */
-abstract class Renderer
-{
-    /**
-     * @var string
-     */
-    protected $templatePath;
-
-    /**
-     * @var string
-     */
-    protected $generator;
-
-    /**
-     * @var string
-     */
-    protected $date;
-
-    /**
-     * @var int
-     */
-    protected $lowUpperBound;
-
-    /**
-     * @var int
-     */
-    protected $highLowerBound;
-
-    /**
-     * @var bool
-     */
-    protected $hasBranchCoverage;
-
-    /**
-     * @var string
-     */
-    protected $version;
-
-    public function __construct(string $templatePath, string $generator, string $date, int $lowUpperBound, int $highLowerBound, bool $hasBranchCoverage)
-    {
-        $this->templatePath      = $templatePath;
-        $this->generator         = $generator;
-        $this->date              = $date;
-        $this->lowUpperBound     = $lowUpperBound;
-        $this->highLowerBound    = $highLowerBound;
-        $this->version           = Version::id();
-        $this->hasBranchCoverage = $hasBranchCoverage;
-    }
-
-    protected function renderItemTemplate(Template $template, array $data): string
-    {
-        $numSeparator = '&nbsp;/&nbsp;';
-
-        if (isset($data['numClasses']) && $data['numClasses'] > 0) {
-            $classesLevel = $this->colorLevel($data['testedClassesPercent']);
-
-            $classesNumber = $data['numTestedClasses'] . $numSeparator .
-                $data['numClasses'];
-
-            $classesBar = $this->coverageBar(
-                $data['testedClassesPercent']
-            );
-        } else {
-            $classesLevel                         = '';
-            $classesNumber                        = '0' . $numSeparator . '0';
-            $classesBar                           = '';
-            $data['testedClassesPercentAsString'] = 'n/a';
-        }
-
-        if ($data['numMethods'] > 0) {
-            $methodsLevel = $this->colorLevel($data['testedMethodsPercent']);
-
-            $methodsNumber = $data['numTestedMethods'] . $numSeparator .
-                $data['numMethods'];
-
-            $methodsBar = $this->coverageBar(
-                $data['testedMethodsPercent']
-            );
-        } else {
-            $methodsLevel                         = '';
-            $methodsNumber                        = '0' . $numSeparator . '0';
-            $methodsBar                           = '';
-            $data['testedMethodsPercentAsString'] = 'n/a';
-        }
-
-        if ($data['numExecutableLines'] > 0) {
-            $linesLevel = $this->colorLevel($data['linesExecutedPercent']);
-
-            $linesNumber = $data['numExecutedLines'] . $numSeparator .
-                $data['numExecutableLines'];
-
-            $linesBar = $this->coverageBar(
-                $data['linesExecutedPercent']
-            );
-        } else {
-            $linesLevel                           = '';
-            $linesNumber                          = '0' . $numSeparator . '0';
-            $linesBar                             = '';
-            $data['linesExecutedPercentAsString'] = 'n/a';
-        }
-
-        if ($data['numExecutablePaths'] > 0) {
-            $pathsLevel = $this->colorLevel($data['pathsExecutedPercent']);
-
-            $pathsNumber = $data['numExecutedPaths'] . $numSeparator .
-                $data['numExecutablePaths'];
-
-            $pathsBar = $this->coverageBar(
-                $data['pathsExecutedPercent']
-            );
-        } else {
-            $pathsLevel                           = '';
-            $pathsNumber                          = '0' . $numSeparator . '0';
-            $pathsBar                             = '';
-            $data['pathsExecutedPercentAsString'] = 'n/a';
-        }
-
-        if ($data['numExecutableBranches'] > 0) {
-            $branchesLevel = $this->colorLevel($data['branchesExecutedPercent']);
-
-            $branchesNumber = $data['numExecutedBranches'] . $numSeparator .
-                $data['numExecutableBranches'];
-
-            $branchesBar = $this->coverageBar(
-                $data['branchesExecutedPercent']
-            );
-        } else {
-            $branchesLevel                           = '';
-            $branchesNumber                          = '0' . $numSeparator . '0';
-            $branchesBar                             = '';
-            $data['branchesExecutedPercentAsString'] = 'n/a';
-        }
-
-        $template->setVar(
-            [
-                'icon'                      => $data['icon'] ?? '',
-                'crap'                      => $data['crap'] ?? '',
-                'name'                      => $data['name'],
-                'lines_bar'                 => $linesBar,
-                'lines_executed_percent'    => $data['linesExecutedPercentAsString'],
-                'lines_level'               => $linesLevel,
-                'lines_number'              => $linesNumber,
-                'paths_bar'                 => $pathsBar,
-                'paths_executed_percent'    => $data['pathsExecutedPercentAsString'],
-                'paths_level'               => $pathsLevel,
-                'paths_number'              => $pathsNumber,
-                'branches_bar'              => $branchesBar,
-                'branches_executed_percent' => $data['branchesExecutedPercentAsString'],
-                'branches_level'            => $branchesLevel,
-                'branches_number'           => $branchesNumber,
-                'methods_bar'               => $methodsBar,
-                'methods_tested_percent'    => $data['testedMethodsPercentAsString'],
-                'methods_level'             => $methodsLevel,
-                'methods_number'            => $methodsNumber,
-                'classes_bar'               => $classesBar,
-                'classes_tested_percent'    => $data['testedClassesPercentAsString'] ?? '',
-                'classes_level'             => $classesLevel,
-                'classes_number'            => $classesNumber,
-            ]
-        );
-
-        return $template->render();
-    }
-
-    protected function setCommonTemplateVariables(Template $template, AbstractNode $node): void
-    {
-        $template->setVar(
-            [
-                'id'               => $node->id(),
-                'full_path'        => $node->pathAsString(),
-                'path_to_root'     => $this->pathToRoot($node),
-                'breadcrumbs'      => $this->breadcrumbs($node),
-                'date'             => $this->date,
-                'version'          => $this->version,
-                'runtime'          => $this->runtimeString(),
-                'generator'        => $this->generator,
-                'low_upper_bound'  => $this->lowUpperBound,
-                'high_lower_bound' => $this->highLowerBound,
-            ]
-        );
-    }
-
-    protected function breadcrumbs(AbstractNode $node): string
-    {
-        $breadcrumbs = '';
-        $path        = $node->pathAsArray();
-        $pathToRoot  = [];
-        $max         = count($path);
-
-        if ($node instanceof FileNode) {
-            $max--;
-        }
-
-        for ($i = 0; $i < $max; $i++) {
-            $pathToRoot[] = str_repeat('../', $i);
-        }
-
-        foreach ($path as $step) {
-            if ($step !== $node) {
-                $breadcrumbs .= $this->inactiveBreadcrumb(
-                    $step,
-                    array_pop($pathToRoot)
-                );
-            } else {
-                $breadcrumbs .= $this->activeBreadcrumb($step);
-            }
-        }
-
-        return $breadcrumbs;
-    }
-
-    protected function activeBreadcrumb(AbstractNode $node): string
-    {
-        $buffer = sprintf(
-            '         <li class="breadcrumb-item active">%s</li>' . "\n",
-            $node->name()
-        );
-
-        if ($node instanceof DirectoryNode) {
-            $buffer .= '         <li class="breadcrumb-item">(<a href="dashboard.html">Dashboard</a>)</li>' . "\n";
-        }
-
-        return $buffer;
-    }
-
-    protected function inactiveBreadcrumb(AbstractNode $node, string $pathToRoot): string
-    {
-        return sprintf(
-            '         <li class="breadcrumb-item"><a href="%sindex.html">%s</a></li>' . "\n",
-            $pathToRoot,
-            $node->name()
-        );
-    }
-
-    protected function pathToRoot(AbstractNode $node): string
-    {
-        $id    = $node->id();
-        $depth = substr_count($id, '/');
-
-        if ($id !== 'index' &&
-            $node instanceof DirectoryNode) {
-            $depth++;
-        }
-
-        return str_repeat('../', $depth);
-    }
-
-    protected function coverageBar(float $percent): string
-    {
-        $level = $this->colorLevel($percent);
-
-        $templateName = $this->templatePath . ($this->hasBranchCoverage ? 'coverage_bar_branch.html' : 'coverage_bar.html');
-        $template     = new Template(
-            $templateName,
-            '{{',
-            '}}'
-        );
-
-        $template->setVar(['level' => $level, 'percent' => sprintf('%.2F', $percent)]);
-
-        return $template->render();
-    }
-
-    protected function colorLevel(float $percent): string
-    {
-        if ($percent <= $this->lowUpperBound) {
-            return 'danger';
-        }
-
-        if ($percent > $this->lowUpperBound &&
-            $percent < $this->highLowerBound) {
-            return 'warning';
-        }
-
-        return 'success';
-    }
-
-    private function runtimeString(): string
-    {
-        $runtime = new Runtime;
-
-        $buffer = sprintf(
-            '<a href="%s" target="_top">%s %s</a>',
-            $runtime->getVendorUrl(),
-            $runtime->getName(),
-            $runtime->getVersion()
-        );
-
-        if ($runtime->hasPHPDBGCodeCoverage()) {
-            return $buffer;
-        }
-
-        if ($runtime->hasPCOV()) {
-            $buffer .= sprintf(
-                ' with <a href="https://github.com/krakjoe/pcov">PCOV %s</a>',
-                phpversion('pcov')
-            );
-        } elseif ($runtime->hasXdebug()) {
-            $buffer .= sprintf(
-                ' with <a href="https://xdebug.org/">Xdebug %s</a>',
-                phpversion('xdebug')
-            );
-        }
-
-        return $buffer;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

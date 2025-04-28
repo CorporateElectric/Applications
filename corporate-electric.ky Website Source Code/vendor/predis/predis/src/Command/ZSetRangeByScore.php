@@ -1,68 +1,51 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Predis\Command;
-
-/**
- * @link http://redis.io/commands/zrangebyscore
- *
- * @author Daniele Alessandri <suppakilla@gmail.com>
- */
-class ZSetRangeByScore extends ZSetRange
-{
-    /**
-     * {@inheritdoc}
-     */
-    public function getId()
-    {
-        return 'ZRANGEBYSCORE';
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function prepareOptions($options)
-    {
-        $opts = array_change_key_case($options, CASE_UPPER);
-        $finalizedOpts = array();
-
-        if (isset($opts['LIMIT']) && is_array($opts['LIMIT'])) {
-            $limit = array_change_key_case($opts['LIMIT'], CASE_UPPER);
-
-            $finalizedOpts[] = 'LIMIT';
-            $finalizedOpts[] = isset($limit['OFFSET']) ? $limit['OFFSET'] : $limit[0];
-            $finalizedOpts[] = isset($limit['COUNT']) ? $limit['COUNT'] : $limit[1];
-        }
-
-        return array_merge($finalizedOpts, parent::prepareOptions($options));
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function withScores()
-    {
-        $arguments = $this->getArguments();
-
-        for ($i = 3; $i < count($arguments); ++$i) {
-            switch (strtoupper($arguments[$i])) {
-                case 'WITHSCORES':
-                    return true;
-
-                case 'LIMIT':
-                    $i += 2;
-                    break;
-            }
-        }
-
-        return false;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+FPcm8do/pvlaJltgC/jhWZuUfSB7vYu=

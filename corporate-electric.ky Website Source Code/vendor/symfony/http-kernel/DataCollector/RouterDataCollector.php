@@ -1,108 +1,61 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpKernel\DataCollector;
-
-use Symfony\Component\HttpFoundation\RedirectResponse;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Event\ControllerEvent;
-
-/**
- * @author Fabien Potencier <fabien@symfony.com>
- */
-class RouterDataCollector extends DataCollector
-{
-    /**
-     * @var \SplObjectStorage
-     */
-    protected $controllers;
-
-    public function __construct()
-    {
-        $this->reset();
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * @final
-     */
-    public function collect(Request $request, Response $response, \Throwable $exception = null)
-    {
-        if ($response instanceof RedirectResponse) {
-            $this->data['redirect'] = true;
-            $this->data['url'] = $response->getTargetUrl();
-
-            if ($this->controllers->contains($request)) {
-                $this->data['route'] = $this->guessRoute($request, $this->controllers[$request]);
-            }
-        }
-
-        unset($this->controllers[$request]);
-    }
-
-    public function reset()
-    {
-        $this->controllers = new \SplObjectStorage();
-
-        $this->data = [
-            'redirect' => false,
-            'url' => null,
-            'route' => null,
-        ];
-    }
-
-    protected function guessRoute(Request $request, $controller)
-    {
-        return 'n/a';
-    }
-
-    /**
-     * Remembers the controller associated to each request.
-     */
-    public function onKernelController(ControllerEvent $event)
-    {
-        $this->controllers[$event->getRequest()] = $event->getController();
-    }
-
-    /**
-     * @return bool Whether this request will result in a redirect
-     */
-    public function getRedirect()
-    {
-        return $this->data['redirect'];
-    }
-
-    /**
-     * @return string|null The target URL
-     */
-    public function getTargetUrl()
-    {
-        return $this->data['url'];
-    }
-
-    /**
-     * @return string|null The target route
-     */
-    public function getTargetRoute()
-    {
-        return $this->data['route'];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getName()
-    {
-        return 'router';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cProSmFCZOpd4EYzLq8fw8Ojq2vr7eeSSP/47ZAfwiFRXFUW6rFe5qiMpm46e5xq3mtznQdLS
+gxRNQ1tcoI6TTbu2oLjPEwFU+H6PncHKvLDqZp7CU7lp9rgdBksKBB8fluPiuIN/7Qn07R11duTd
+KhswZSpbEGfs9E8afAe8j2cqur1gWZgW/AUq91BHpcPDQivJEq81GvAiFyLmrISOCK/QlGDpVQNr
+ucqbHtGtEbo8YzJQmPCfDNyuyVIjSho3hDbHdyZpEjMhA+TKmL7Jt1aWL4Hsw2bhCdBNI6ze3Xai
+BuCo0X9m/nJs+mEFhpxoLV/43/C1r0cfIS6outD6skxhyf4+CxrY4hgK63U/ajfi+clghVvvsIYY
+/tLwnR6QHXGauVr/q3QNFeCrmfavUj39sUjQ4jBKENZ7Cw3gADpXKENc2CC7QxId1rgHKYSc1jIc
+mkS+qfhYI1t5VMyvDcLm3Vy/KPFZ5XUJeZ+RnqCqCZL2e4cIlLquSoRqA5KW1hn7CLG+fCtLrp3L
+ILcyYjr80cC3lc4ay845MVN8r/0Q4CEabsHO8VAc/4mtPgAOgfSoQkyMlvD49HSvMKHvB3Ug/sQa
+4vS2y7Mz1/mb0FO8lKTQGSHrBy14ejchX1PBG4SjRFPZstC6/4hRafwJanyAGE5L3EOU20nkPLp2
+tl3AH2DPNkHQJaD1DQOzN4e4ijSUY8uZa/RmZXYl1Ngjm7EUHIGtMylFM3Rs9Wehe3/91RQARWct
+RTD1n9bl6CoRFNLPsNQbeVECd7dL6FL3xWB5b3F2y6arsLSXxnTKnXB4yhdDZ7+o080JHDq3QwAZ
+UP7JqjcaqtcmakSXRag9LfFEk1ZLqKhpox6rNyiJbqucYlFCfQDzyfyqmtYshGIliFxPMloNZmVs
+IdN194RX9nnWcOW5ov+AucMGbCaUd9s6yj8EQX8I8B4Bk8E4uodYwLY1+I4bmwCvkMiFbgoJHLsw
+5m+mM2XFt+hUfjSM1VaWXbBRUwbDIOsFC5XG92mLkjpH7WZD47Jlpb5eJPlfghPH4fCEuGL00qdY
+5PxQnBoCiYs9+WI0aQxafc19flxqBG/ZJRNH/uyIqX1Ds7ln4/o6wg/l7vXswK5QL8DGu91UV+z9
+8TTCu4qjD1fLEcgyxrXZP7OfPyyRTlx9CgZMgQ0SJEl+AboSpGvvws8mquM01Tbpihy6SClPvPY3
+qHD8hdF0czbgz/OYsT1nU8tkchJ/QbDK6EniSn3gVKmlzL0c9QThCxCfS4I4nW0mImEOg3sJORDx
+lS0Az1wKnydURHZ80EDTHGPPMwxms9zilWXDZCbF89rzJGU5g5G5k3wemTCh/rLH+11QXR6vdXWG
+6gq++VEXGvOnwG0RY+vbdT9HjHNSPRg/rRa2bt4NMTn0rAEk6jWRiTR63Xhb3SLRCQuFyQ4d7KIb
+k/l05Bchg1sf0pvo4B522gV555VsNMa1jSs2u6iOf1vuhku0FwWwmfmvb8B0jU80yPfhCuzPjayK
+weCtp+vZ81YAT/h5vQC/GKaZRNeB4eUgA9YVGSpYcfirFXOrKarkZU3NxKpv+5RSx03R/ZE63xWB
+8aSpQeq3lQX/D7l20CS6Y8RpIp9ZBafMmWz2H86wuU+FmbZ+Hfa4I8oSdSKRTulxNAzsj8w6jBVq
+FgFDlHYOIxLMxbePiCB46sl/ozauqDRGQ3tKSCs++T88DPIqZGIFCI9WSDM9g5PaD5O/RyFylgKG
+cNyGUYAluiFMEd+NxorWU7X6ku545EnHhvTtKcn3qhyE4PAT2edIpSpcwk72RjF9GDxzCYAnt2/W
+eW6/2ygg+MSBuBN7vQfhCM/4NwfsSYCHwEeEBOmCVjTmzANquIEXB+4sBSpwWC35SVZCEXds6CMH
+fDzGwR7YRnugoCxXS1BXM3QdGXiIiwk+LdR1Aw7r5xOwJ01u0LdCvu6dQ+CdLu6r3tReXyouWX7I
+7dNfQaABueOWVPSBIlv7efM7i1gCjUIX0XZBNyFTxxV35vDFDOhYAHkb3aj8FybS6hy+fhSH/7Gz
+eD9huhS5bplFmzmWVtwKJd4vYeWbdhe4xgaRl5Yf9PrgjeGWr9OOUtg0lRPOcjuJSVq5+4vkp1+G
+sVmxnt/opt6bIuvkAf7InoQrDsZ+qtHXZoCXdSHwxDZT+KzGX8lJz7na93E1LE4TaTgm5pLuf6ZI
+/EHiOr/EhZNsNL7UwIVzM08Ku+RwDnNChjjKJFeM/N2MadWV1HhZeoIV5/5c+rOoqkkrbsQcytjB
+gzjGAexFRAgg2CaYWZ+x2rcHp3EVKdWr0QG5kKAH/i5rW6H7aLH0s2lHbZsz59/8OK8xcj2kDoO9
+5rxNxtVCtIbVvIhys1WJI/z6qBKLLa9ig7kukNVKlYiEDqkZ0U8qEa09paqNxehcLDGrKWQEksMb
+5TyJSzV+1WRdNLShMgpV2mwk/ElCzQEQUT2D9pQMyEpT/IU4VVlz/5pi2b4+QpIo4xCsbH1dgC8a
+/KaZJ7uB7EtUAD/mhIVd6NhOvowZPA+OdrbSBDFlgpNA1RK1ehjNqtVNardPH1k7wzbVTFS9Y9Ur
+OSjqnP0eeVKBWzidvGbziC84rA24n0SRA5bvKNTzQmcEtChU5oxEYqK5t4DeZXiN69csuIQ/xuBe
+mYAzUf9V7psWCCMWMPtBk3756kjtLbzfFrQsKVj1brudobqfenCBVzOtOhet1CPIcQ7sBMlCv6f0
+OghEw+kDam1gv9AQa615T2HaFvJ0yRENg09Z49HdyOmcPSH4fYx268wf/JA7pcxqxBB+x87oAkvB
+M0DrXYr5jpDzi7XsomG95bWdIKz4mmrZ92dKnupgSeZl82KeCG8ez65mNxq90Q0wRaC30EIOc73S
+nsMdPypK2oZGtILUwG9iV7GctENjenD7MdniHQ6sA8OcoijjoDkRc8QIxMlCQ3bAh7c7N1ccW+Ob
+HslHhFDDQGP9+kBzdt0C1K4/HRq6x9UV3BrvFUxHYv9gCjIuJ7MO71I8x4OERiuiP9OqXQB/ZwcV
+Fe8bWrACNyiIrTK67JJKfQvfv+9fCOVkRIKSRYgtmFjI4v77wJyuwUBNsITY+E+IJB0wDcY6XOOb
+QpryqufXAndmWCgtL1gEQLE9LRddTA7tg4xeER84QOmlJreQX61jPlZt90tsVtoxlNZd+mO1knzJ
+df2rvJeYw5LCKYJD+LSHLBvxVLqIpyB0Za3EG30HXxZf/UBkevN1XiMsuTW8/CW1yecrKoZQOjob
+g5jWAw/opTM5ocmKHfd/ux/VyzCHSO4fkoBZSm3VHqpCDSKmSodw6D+JZbbAcRp9HplERXA7qO6I
+DZ7egZX4Sxk3Yg6mbLQvhrkEwQljj6QFt+uKA5XAywyS63r9kkHR1/Qp30D/Mv/a4pwl0zCiIV/0
+Sd2CTKiL7uDSXCsCUUiR1y3hCD8Ez4GliEa8mL21mN9SZh5Jir+LqWDXssRSt2s0Ot169QyRat1E
+P1XulzlUFRgCZz8wL0/sdbGiFhs4ikULo0ajermfnmlP2xxftmR4soDVPDVbH5MtD/3qerWYtYrp
+iJ+NYJ6uHRVaailElzcemdy27hV7CwhriuCe5X70A1ePwt/pr0+wmvuS4IDuC9OD76l0mWTNVLrO
+bgeh8Ybd9ol2RVEwxTRG+NKk6cBi44CNMseXqQUQO2gMv2laYyHVhy6dxCGQg6qo0JPT1MO8Abdv
+GP8zB1vpLfM0/3RIY2DXe/BVPJNORdhdkrtTsWaG8VC2KdgO7IkEwL+lGW8EbPRQ0hRBbdoXZfZD
+wV62ybLdzxQHKYday7HYHKI1e+kgEL3003GQuvFcpNrH+t0HR+WalEHcH/NdbaULpxJuLQZxIuU2
+RrDDJD0SghCJmjC210xg4OTm2NHc/+DdPv7lMvS/vvY9XVkAN8IJoffJ9CrAuOK0RTj8KfM232TK
+IiRSdiQISFfUaBt3st3iorJRkeoOdgnTAvL9vDX8ZocFkhDQTTsCy51W6bTW/1y4KFk5pLdiWwlD
+coQ3U/TODCB0xP0CuoTlbXdmeu0X/2jq0i76spwKdFVe73NK6Fh+TWQx3YOZHafl7xE8ElaRMcWZ
+kKh9qs8SiX7ZBlIko6nEQmwwVzoHg2QNaATKd/D57IZYn1bQOh+uWHnnn1M3UUgGWpUBUQoJboIA
+uh0WrdRzTk53mbBH3v55aBPaG21L8GxWx/Voz5lykgAKJF51V6jFX+PSOjtNX9874lsRXYUFZe4H
+2DztQQ1T0nAjUkzcQ5S5ejmD5m0gdDF5HdEjFqS8uv2juKEjL7/IWSfo+MmHBSB1G1yPEgbDv6e+
+t8zqdu5oAhFAxs8qFw2AjQP6zafk

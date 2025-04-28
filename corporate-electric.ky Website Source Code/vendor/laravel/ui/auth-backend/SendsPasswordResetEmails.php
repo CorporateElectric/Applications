@@ -1,111 +1,57 @@
-<?php
-
-namespace Illuminate\Foundation\Auth;
-
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Password;
-use Illuminate\Validation\ValidationException;
-
-trait SendsPasswordResetEmails
-{
-    /**
-     * Display the form to request a password reset link.
-     *
-     * @return \Illuminate\View\View
-     */
-    public function showLinkRequestForm()
-    {
-        return view('auth.passwords.email');
-    }
-
-    /**
-     * Send a reset link to the given user.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
-     */
-    public function sendResetLinkEmail(Request $request)
-    {
-        $this->validateEmail($request);
-
-        // We will send the password reset link to this user. Once we have attempted
-        // to send the link, we will examine the response then see the message we
-        // need to show to the user. Finally, we'll send out a proper response.
-        $response = $this->broker()->sendResetLink(
-            $this->credentials($request)
-        );
-
-        return $response == Password::RESET_LINK_SENT
-                    ? $this->sendResetLinkResponse($request, $response)
-                    : $this->sendResetLinkFailedResponse($request, $response);
-    }
-
-    /**
-     * Validate the email for the given request.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return void
-     */
-    protected function validateEmail(Request $request)
-    {
-        $request->validate(['email' => 'required|email']);
-    }
-
-    /**
-     * Get the needed authentication credentials from the request.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return array
-     */
-    protected function credentials(Request $request)
-    {
-        return $request->only('email');
-    }
-
-    /**
-     * Get the response for a successful password reset link.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  string  $response
-     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
-     */
-    protected function sendResetLinkResponse(Request $request, $response)
-    {
-        return $request->wantsJson()
-                    ? new JsonResponse(['message' => trans($response)], 200)
-                    : back()->with('status', trans($response));
-    }
-
-    /**
-     * Get the response for a failed password reset link.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  string  $response
-     * @return \Illuminate\Http\RedirectResponse
-     *
-     * @throws \Illuminate\Validation\ValidationException
-     */
-    protected function sendResetLinkFailedResponse(Request $request, $response)
-    {
-        if ($request->wantsJson()) {
-            throw ValidationException::withMessages([
-                'email' => [trans($response)],
-            ]);
-        }
-
-        return back()
-                ->withInput($request->only('email'))
-                ->withErrors(['email' => trans($response)]);
-    }
-
-    /**
-     * Get the broker to be used during password reset.
-     *
-     * @return \Illuminate\Contracts\Auth\PasswordBroker
-     */
-    public function broker()
-    {
-        return Password::broker();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

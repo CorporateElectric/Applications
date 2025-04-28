@@ -1,171 +1,69 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Worksheet;
-
-use GdImage;
-
-class MemoryDrawing extends BaseDrawing
-{
-    // Rendering functions
-    const RENDERING_DEFAULT = 'imagepng';
-    const RENDERING_PNG = 'imagepng';
-    const RENDERING_GIF = 'imagegif';
-    const RENDERING_JPEG = 'imagejpeg';
-
-    // MIME types
-    const MIMETYPE_DEFAULT = 'image/png';
-    const MIMETYPE_PNG = 'image/png';
-    const MIMETYPE_GIF = 'image/gif';
-    const MIMETYPE_JPEG = 'image/jpeg';
-
-    /**
-     * Image resource.
-     *
-     * @var GdImage|resource
-     */
-    private $imageResource;
-
-    /**
-     * Rendering function.
-     *
-     * @var string
-     */
-    private $renderingFunction;
-
-    /**
-     * Mime type.
-     *
-     * @var string
-     */
-    private $mimeType;
-
-    /**
-     * Unique name.
-     *
-     * @var string
-     */
-    private $uniqueName;
-
-    /**
-     * Create a new MemoryDrawing.
-     */
-    public function __construct()
-    {
-        // Initialise values
-        $this->imageResource = null;
-        $this->renderingFunction = self::RENDERING_DEFAULT;
-        $this->mimeType = self::MIMETYPE_DEFAULT;
-        $this->uniqueName = md5(mt_rand(0, 9999) . time() . mt_rand(0, 9999));
-
-        // Initialize parent
-        parent::__construct();
-    }
-
-    /**
-     * Get image resource.
-     *
-     * @return GdImage|resource
-     */
-    public function getImageResource()
-    {
-        return $this->imageResource;
-    }
-
-    /**
-     * Set image resource.
-     *
-     * @param GdImage|resource $value
-     *
-     * @return $this
-     */
-    public function setImageResource($value)
-    {
-        $this->imageResource = $value;
-
-        if ($this->imageResource !== null) {
-            // Get width/height
-            $this->width = imagesx($this->imageResource);
-            $this->height = imagesy($this->imageResource);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Get rendering function.
-     *
-     * @return string
-     */
-    public function getRenderingFunction()
-    {
-        return $this->renderingFunction;
-    }
-
-    /**
-     * Set rendering function.
-     *
-     * @param string $value see self::RENDERING_*
-     *
-     * @return $this
-     */
-    public function setRenderingFunction($value)
-    {
-        $this->renderingFunction = $value;
-
-        return $this;
-    }
-
-    /**
-     * Get mime type.
-     *
-     * @return string
-     */
-    public function getMimeType()
-    {
-        return $this->mimeType;
-    }
-
-    /**
-     * Set mime type.
-     *
-     * @param string $value see self::MIMETYPE_*
-     *
-     * @return $this
-     */
-    public function setMimeType($value)
-    {
-        $this->mimeType = $value;
-
-        return $this;
-    }
-
-    /**
-     * Get indexed filename (using image index).
-     *
-     * @return string
-     */
-    public function getIndexedFilename()
-    {
-        $extension = strtolower($this->getMimeType());
-        $extension = explode('/', $extension);
-        $extension = $extension[1];
-
-        return $this->uniqueName . $this->getImageIndex() . '.' . $extension;
-    }
-
-    /**
-     * Get hash code.
-     *
-     * @return string Hash code
-     */
-    public function getHashCode()
-    {
-        return md5(
-            $this->renderingFunction .
-            $this->mimeType .
-            $this->uniqueName .
-            parent::getHashCode() .
-            __CLASS__
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+r0==

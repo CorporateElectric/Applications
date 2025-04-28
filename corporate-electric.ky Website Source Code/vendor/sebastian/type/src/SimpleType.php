@@ -1,88 +1,49 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of sebastian/type.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\Type;
-
-use function strtolower;
-
-final class SimpleType extends Type
-{
-    /**
-     * @var string
-     */
-    private $name;
-
-    /**
-     * @var bool
-     */
-    private $allowsNull;
-
-    /**
-     * @var mixed
-     */
-    private $value;
-
-    public function __construct(string $name, bool $nullable, $value = null)
-    {
-        $this->name       = $this->normalize($name);
-        $this->allowsNull = $nullable;
-        $this->value      = $value;
-    }
-
-    public function isAssignable(Type $other): bool
-    {
-        if ($this->allowsNull && $other instanceof NullType) {
-            return true;
-        }
-
-        if ($other instanceof self) {
-            return $this->name === $other->name;
-        }
-
-        return false;
-    }
-
-    public function name(): string
-    {
-        return $this->name;
-    }
-
-    public function allowsNull(): bool
-    {
-        return $this->allowsNull;
-    }
-
-    public function value()
-    {
-        return $this->value;
-    }
-
-    private function normalize(string $name): string
-    {
-        $name = strtolower($name);
-
-        switch ($name) {
-            case 'boolean':
-                return 'bool';
-
-            case 'real':
-            case 'double':
-                return 'float';
-
-            case 'integer':
-                return 'int';
-
-            case '[]':
-                return 'array';
-
-            default:
-                return $name;
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

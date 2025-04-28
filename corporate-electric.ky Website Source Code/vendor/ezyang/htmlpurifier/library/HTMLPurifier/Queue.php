@@ -1,56 +1,30 @@
-<?php
-
-/**
- * A simple array-backed queue, based off of the classic Okasaki
- * persistent amortized queue.  The basic idea is to maintain two
- * stacks: an input stack and an output stack.  When the output
- * stack runs out, reverse the input stack and use it as the output
- * stack.
- *
- * We don't use the SPL implementation because it's only supported
- * on PHP 5.3 and later.
- *
- * Exercise: Prove that push/pop on this queue take amortized O(1) time.
- *
- * Exercise: Extend this queue to be a deque, while preserving amortized
- * O(1) time.  Some care must be taken on rebalancing to avoid quadratic
- * behaviour caused by repeatedly shuffling data from the input stack
- * to the output stack and back.
- */
-class HTMLPurifier_Queue {
-    private $input;
-    private $output;
-
-    public function __construct($input = array()) {
-        $this->input = $input;
-        $this->output = array();
-    }
-
-    /**
-     * Shifts an element off the front of the queue.
-     */
-    public function shift() {
-        if (empty($this->output)) {
-            $this->output = array_reverse($this->input);
-            $this->input = array();
-        }
-        if (empty($this->output)) {
-            return NULL;
-        }
-        return array_pop($this->output);
-    }
-
-    /**
-     * Pushes an element onto the front of the queue.
-     */
-    public function push($x) {
-        array_push($this->input, $x);
-    }
-
-    /**
-     * Checks if it's empty.
-     */
-    public function isEmpty() {
-        return empty($this->input) && empty($this->output);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

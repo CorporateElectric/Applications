@@ -1,204 +1,65 @@
-<?php
-
-declare(strict_types=1);
-
-/**
- * This file is part of phpDocumentor.
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @link      http://phpdoc.org
- */
-
-namespace phpDocumentor\Reflection;
-
-use phpDocumentor\Reflection\DocBlock\Tag;
-use Webmozart\Assert\Assert;
-
-final class DocBlock
-{
-    /** @var string The opening line for this docblock. */
-    private $summary;
-
-    /** @var DocBlock\Description The actual description for this docblock. */
-    private $description;
-
-    /** @var Tag[] An array containing all the tags in this docblock; except inline. */
-    private $tags = [];
-
-    /** @var Types\Context|null Information about the context of this DocBlock. */
-    private $context;
-
-    /** @var Location|null Information about the location of this DocBlock. */
-    private $location;
-
-    /** @var bool Is this DocBlock (the start of) a template? */
-    private $isTemplateStart;
-
-    /** @var bool Does this DocBlock signify the end of a DocBlock template? */
-    private $isTemplateEnd;
-
-    /**
-     * @param DocBlock\Tag[] $tags
-     * @param Types\Context  $context  The context in which the DocBlock occurs.
-     * @param Location       $location The location within the file that this DocBlock occurs in.
-     */
-    public function __construct(
-        string $summary = '',
-        ?DocBlock\Description $description = null,
-        array $tags = [],
-        ?Types\Context $context = null,
-        ?Location $location = null,
-        bool $isTemplateStart = false,
-        bool $isTemplateEnd = false
-    ) {
-        Assert::allIsInstanceOf($tags, Tag::class);
-
-        $this->summary     = $summary;
-        $this->description = $description ?: new DocBlock\Description('');
-        foreach ($tags as $tag) {
-            $this->addTag($tag);
-        }
-
-        $this->context  = $context;
-        $this->location = $location;
-
-        $this->isTemplateEnd   = $isTemplateEnd;
-        $this->isTemplateStart = $isTemplateStart;
-    }
-
-    public function getSummary() : string
-    {
-        return $this->summary;
-    }
-
-    public function getDescription() : DocBlock\Description
-    {
-        return $this->description;
-    }
-
-    /**
-     * Returns the current context.
-     */
-    public function getContext() : ?Types\Context
-    {
-        return $this->context;
-    }
-
-    /**
-     * Returns the current location.
-     */
-    public function getLocation() : ?Location
-    {
-        return $this->location;
-    }
-
-    /**
-     * Returns whether this DocBlock is the start of a Template section.
-     *
-     * A Docblock may serve as template for a series of subsequent DocBlocks. This is indicated by a special marker
-     * (`#@+`) that is appended directly after the opening `/**` of a DocBlock.
-     *
-     * An example of such an opening is:
-     *
-     * ```
-     * /**#@+
-     *  * My DocBlock
-     *  * /
-     * ```
-     *
-     * The description and tags (not the summary!) are copied onto all subsequent DocBlocks and also applied to all
-     * elements that follow until another DocBlock is found that contains the closing marker (`#@-`).
-     *
-     * @see self::isTemplateEnd() for the check whether a closing marker was provided.
-     */
-    public function isTemplateStart() : bool
-    {
-        return $this->isTemplateStart;
-    }
-
-    /**
-     * Returns whether this DocBlock is the end of a Template section.
-     *
-     * @see self::isTemplateStart() for a more complete description of the Docblock Template functionality.
-     */
-    public function isTemplateEnd() : bool
-    {
-        return $this->isTemplateEnd;
-    }
-
-    /**
-     * Returns the tags for this DocBlock.
-     *
-     * @return Tag[]
-     */
-    public function getTags() : array
-    {
-        return $this->tags;
-    }
-
-    /**
-     * Returns an array of tags matching the given name. If no tags are found
-     * an empty array is returned.
-     *
-     * @param string $name String to search by.
-     *
-     * @return Tag[]
-     */
-    public function getTagsByName(string $name) : array
-    {
-        $result = [];
-
-        foreach ($this->getTags() as $tag) {
-            if ($tag->getName() !== $name) {
-                continue;
-            }
-
-            $result[] = $tag;
-        }
-
-        return $result;
-    }
-
-    /**
-     * Checks if a tag of a certain type is present in this DocBlock.
-     *
-     * @param string $name Tag name to check for.
-     */
-    public function hasTag(string $name) : bool
-    {
-        foreach ($this->getTags() as $tag) {
-            if ($tag->getName() === $name) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Remove a tag from this DocBlock.
-     *
-     * @param Tag $tagToRemove The tag to remove.
-     */
-    public function removeTag(Tag $tagToRemove) : void
-    {
-        foreach ($this->tags as $key => $tag) {
-            if ($tag === $tagToRemove) {
-                unset($this->tags[$key]);
-                break;
-            }
-        }
-    }
-
-    /**
-     * Adds a tag to this DocBlock.
-     *
-     * @param Tag $tag The tag to add.
-     */
-    private function addTag(Tag $tag) : void
-    {
-        $this->tags[] = $tag;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+5V6cx8//3G71lQXC3wu=

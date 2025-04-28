@@ -1,101 +1,61 @@
-<?php
-
-namespace Illuminate\Routing;
-
-use Illuminate\Support\Arr;
-
-class RouteGroup
-{
-    /**
-     * Merge route groups into a new array.
-     *
-     * @param  array  $new
-     * @param  array  $old
-     * @param  bool  $prependExistingPrefix
-     * @return array
-     */
-    public static function merge($new, $old, $prependExistingPrefix = true)
-    {
-        if (isset($new['domain'])) {
-            unset($old['domain']);
-        }
-
-        $new = array_merge(static::formatAs($new, $old), [
-            'namespace' => static::formatNamespace($new, $old),
-            'prefix' => static::formatPrefix($new, $old, $prependExistingPrefix),
-            'where' => static::formatWhere($new, $old),
-        ]);
-
-        return array_merge_recursive(Arr::except(
-            $old, ['namespace', 'prefix', 'where', 'as']
-        ), $new);
-    }
-
-    /**
-     * Format the namespace for the new group attributes.
-     *
-     * @param  array  $new
-     * @param  array  $old
-     * @return string|null
-     */
-    protected static function formatNamespace($new, $old)
-    {
-        if (isset($new['namespace'])) {
-            return isset($old['namespace']) && strpos($new['namespace'], '\\') !== 0
-                    ? trim($old['namespace'], '\\').'\\'.trim($new['namespace'], '\\')
-                    : trim($new['namespace'], '\\');
-        }
-
-        return $old['namespace'] ?? null;
-    }
-
-    /**
-     * Format the prefix for the new group attributes.
-     *
-     * @param  array  $new
-     * @param  array  $old
-     * @param  bool  $prependExistingPrefix
-     * @return string|null
-     */
-    protected static function formatPrefix($new, $old, $prependExistingPrefix = true)
-    {
-        $old = $old['prefix'] ?? null;
-
-        if ($prependExistingPrefix) {
-            return isset($new['prefix']) ? trim($old, '/').'/'.trim($new['prefix'], '/') : $old;
-        } else {
-            return isset($new['prefix']) ? trim($new['prefix'], '/').'/'.trim($old, '/') : $old;
-        }
-    }
-
-    /**
-     * Format the "wheres" for the new group attributes.
-     *
-     * @param  array  $new
-     * @param  array  $old
-     * @return array
-     */
-    protected static function formatWhere($new, $old)
-    {
-        return array_merge(
-            $old['where'] ?? [],
-            $new['where'] ?? []
-        );
-    }
-
-    /**
-     * Format the "as" clause of the new group attributes.
-     *
-     * @param  array  $new
-     * @param  array  $old
-     * @return array
-     */
-    protected static function formatAs($new, $old)
-    {
-        if (isset($old['as'])) {
-            $new['as'] = $old['as'].($new['as'] ?? '');
-        }
-
-        return $new;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPsU7irn0RWYJ7JGcVxIS7KOp5AigDSZ3gSi0ZhTVlmLXgWTD59bdEgOrCKuQJv5RTiHbCWwy
+ysUuRQVrytRp0vIFaUM6JvSM2I9WQdcW9ZQYYGD191zbzbZv+ngTGUHvteiNsQ+nYsai4oIOHlZ/
+wmRdW4Q9hsjA90nlJPs7qd+UhbKL6IeKmr4upK8vs+qrPEtssdNiq7c/oHM920Fe6EHjIu5UGzpH
+aqPY1IqkqOkz2zZEtDeZarcA5Nqx35oNtXHMXZhLgoldLC5HqzmP85H4TkYGOJ8ZYrKQdUeJh8vB
+BkvFS/+pu5rNKl+Dv31QpAd1l5hfO12u0P5RzUmEeOeXUjswX/XpA6ndbdsATo6OSulkEx8C1jZj
+tw5eAANmFY9iywlAyvrk6d6fgs54a7V9u3C0GFihSQ6KNV3qkHvlIyFH+cXPLYuIuYbcPgvLeUkG
+bOEDnSJnLITTSPetcyHn+yVK/dvMum0iYQBG4FQj95ODHXFmXAoAMGTGp8ycM5gNrrlulL5ofkuY
+niFWZ32qG34Z9nCzJmgzaB+TWn6z2l3wS9914GynetkYlj/22ljRf5x5HtpPVXryv4mbgnjjIsh3
+MvCBkXhyfMNqWnVeO/8oy4ag+LGMvYH34g+Jx86X5k5u/yRTX6Gga6DE7qccv/u1YF6QTiFbwbWE
+oXaHrGpd0Jv8usFbqioVwTJFAf3Y7X/2L12e/os4CkrrEQbXRrLmlJKlsXdOuG5N7SfEXF/kN6de
+iFdqEIqIKFZ09pbl92cQxe4/u6hE47kMecXNpghqtJOFwVrtWZjeDTQ8UbisjWhMnbx14kOYvP8g
+MEaT/p2lf7JQIXXE7R1Cgm4vOmpRkoGlK+lzq4J5tA6uIpWplmc4HMtCYzOIGspap9/NxAYPTuYN
+gAz+R0XXABqSyInJppt2DBi/eDwRHeFbNAFsGmmtqY3OYuyTDYR/lddape+/iU94ajX4inXSAWs+
+w0tnfoZ/o3yIDZjb8IHTaD99MeWbV45Ev9+5leWTRy6yNnRLx4wV9JHvvUln25bcJ421Onml7JA9
+PRt7Fc0X4S6js8LC06PdwvgjLIcAQLWzKtL15z0/1ozYZ6nRyLyFHHC9SFuolTiqj+wyMoBotUQN
+sE7Gj/eW+Q+HHdampdgTlBs5rhQPjHEUfgaSj9f/M+YZ/cp5mmHAuaBGrDPLSyd88n2JMVPb9f3N
+hAMkw/viWYpLCSoeblKi7MBeFQ8Q1RRS1TrjImP1AeGzofQ9WOboesvS7+g0HpRO7rBT88bAsKCl
+l3EoI27lcFiJY3/UtuWJA9rhTzgm+2h/UiygHcWxpWZdJ/+m1x0UGNRjV5XbSwPdeYXLpHXWK16o
+ygUbYxZS1gMZMeMiZESuhNR5rKR0zrmIDeTgYCMnzo+61uVJbo9v4RKKI/emijX37jrI+w9fw47C
+gN0u2GaVPcgcCriXd7e8vyL31uYXqkb0jy9kMO00rVmmoTCvSu0cqjxbH7n8VlxvaPpx2jExFbpr
++ncErMYNQJGExDnoht9Tadwckbnh7XbM9xc35T6i0csU7CB8T0g0mP86yLun+/JrvB0MK+0Efhnp
+f1w358X/qc2pQwT/BbsoB/0jI3ahwBlGQp90EZsktKrDjLiF0+vdg0fWuRHudNd6zX9yUmxNfTPN
+bMQJYsih9ol0yluDpy94eJJPT4ahZ4AYAO7fZcmkCZ9/s91sjBjBhrzdx643uOixG1JId44OmFfP
+FcjgXTVtRLIlmCrBme1vSS9cY79LBW3n1bvpXf5F+m/vr28i/Tn4ogMZlQnrof0TVVXQMUzoUHN8
+A2Gco40BRYTnkV8EFlCljWdbXuQPK4Sdruy+RH0wuFfUyIh7jbZ9O+qhJACHtuqhJTcHb8NuwCcC
+Z9UWKngx2ozxmjF1BWtHjg6dzG3ALjaiVtwmWVwRbL4r5TbELcjW5iPbuwWCxzwYBl9ugtcz1Uee
+bVryp344E/CumGKJEqLDReU3hZuSn5wDsyDsiosBs3SVFn0vxUH062N/iBlvEXD5pWPQchZQsv5Z
+hmiNMaUhCpZmN5PCtyVhmoJYE3/egHqhqHoM0sNlh0uHp2vCUWeoPTbPnwpYvAbDl8FFdgxwYQMy
+u8Sa9aOrHiKmwW6fLbWKa4sS5Bx79Oml230Rg4QXMOqKT3YjZKqAr2V8ipYygdBdGW/TfR0p4wwq
+N2g6LXdMBlkD/yiU6Xv+L0IEVzi6pNcTtGYbmSKSvvsbrEUmt3wB01VxyiBNVGLxtDSkXsjuhGTc
+PWL4y56aww2Y2jx5CfmhZk0FBidHNhBxijVvMOmpx6qkOI7Q68HMcc8xybWzOXHdQB8pXABV+QCb
+uNtgM4wIZv9cyaSRSV/1yVGn6FiSxMFWhqLev3EowoVILCYF2lBTkv5wn1EV0Jhzmzb1xjrMnSET
+61eq/SmNwcnTDbnUdWpIl96G72YadriYg1y0IKuhgLW8G8r24d+absnoKaWbwOaie35hcRtkSLN6
+xvHp29W0fIURn4FMoZheilOLHrUUV+UQxEL1rdw4l7nKXZ3JheWAik1HifBNXMiSa4KSBIvpvX6b
+YgSg4gZlfJW5E4h8keF7sLgvWJt7OV+5Icb0uqxOntjtpukOKEL+zkulvM/itETnix9wpbcwBrF/
+pwAP0xJbv1H0Du8aJWtON5njRg4oOEvkMTmiajJ3tpipcFT868ZVs/8Z/sfzBM9VCSUjuvvHyqxM
+V+3UfaGczTL2rgJ877zaHt564A0e673BhVVbweoEkfMyOQ7gV/Aflx1XCH0nYCYd7mDmVMCf2pCl
+cfn+IpvJmqymDn04kg+4qTKqdhgPBfHs/Vs5assoDjS8FqZ7BxV3TZ7QbzEGKYqMmBXhD17Pscnb
+LluAfuxU5D8v/QgiyPF1JrUXnELfwOJhaz1TAblrUqz4jD+dHyXoEaoDa33/ieqbcgR94iRFDb1+
+PT/CMHwA96Dl2ejloJBprXasWKSOoJL1PHIM0JjnJQ7S93qseVUyn3L4eap9iW/mHwyJo5VcR3Fr
+55074hFgno2r+0q3r9pI6FuMQNDwsfdOAysAFqWkMesfdoBq4IFtAUXAFStLocAdc3jAx4n9Ujn2
+RYJ4zHlc9MxwkSTUd/BUfisbrgBphLrtEiaTdwqIi9EnwrgFryUE+uz7GBUdUM7DX8j+N6gwyt2a
+xZScetXxBdQfbNAif61IPX1oNuNtTAukKg2RYSMron2hi8ghL1rGzxvoXfpmXuqmnTlcCb4iKdY6
+kvPtZXBl+202jBzTigcoIbqqSzuaXvV7SxexN/2adicM9cu8MjEmY9E/K0J4RbcCwexXpIk7X6CL
+c3Dzsu47+KgHRV95h+R1TtlDRMy1zgx3WexQInlLBDG5JDhuwRZD/9nhRoJ/sbYUpKPhVvgI2RSz
+wYHkErZdf3E4nAXaaAkx1oHZDv4G4GhJ4M0d3N/peLWZJq+3kfY3UHGoUahqE/TecRDJNugB5Etl
+rbXHjtDuoxzgt0M7d40uhmg5Ms69wNAppF1BdMpT12ptXy3j9F5pmK97yOPMcoYs1VH+VwB1cxi+
+OxnXRD6RB8xJgDIV1xXBEBKQEQ1nWLMTqb+TTaTxHWpF/BmJJbeVv/FtYG93mnUg63rHradc9yWd
+DHBj8UI25+6ZqRHJaNGko+qFs/UDmHKf3R1qIvinofgl7TZ939pamL1j805Rq7KRXZ5LkTinF/X+
+qy50EKwqr0mH5T9SxNzY5goeYSKP7JJ1nLe86QPCI/6PGfXfic0tUwFg9B5L7EZlpYpOLGeBa/bR
+zgVaYkHuDo8cWcATSYyqznoMscMT8PvKdqQjAvh79b3k+N10X7+utFlvHh/S+9ZeMF3gXl8DewCK
+tfBYTK5jVyvn2bZuFXTnBiG0f1PQRG+JwY7zhBDn3UgyGwMozeHs/4XGacOkNNUOO7oV7ydKT14J
+NPIS9axZhneC0zFWeEn9yjDzbgWNKfIUItNdT7ZdVykUKlhUupMBTt5r5GQOf8dOZyEDebGNyfsc
+2icvHO913XWaaErerzE7peLO40tu/fkff19hvOJDkBQKQ2mIjNSLnylrT+DpOSqihyiOyhLVMeNn
+oRU9vWktffeHHm1NstUaRFYJzhN/4YaEGXWHebRpOTvu7J7FU6pNVGTB/OqFYX+N53xI72uac3cc
+8YPWXqltrW4WnWyItcwxXTvrzhPSAJELQPjN2ntsTxxYlLzIshQbqYv1qVa+wz08VMcCggQPWuKe
+khDc80gt2Kxqyp9O2nlwSMC+/AVIuSYiXLwWJsMVKYUKML+NH3qflZSu4Oom1EhE4gdkypUgwFEd
+Om==

@@ -1,146 +1,91 @@
-<?php
-
-namespace Illuminate\Queue\Console;
-
-use DateTimeInterface;
-use Illuminate\Console\Command;
-use Illuminate\Support\Arr;
-
-class RetryCommand extends Command
-{
-    /**
-     * The console command signature.
-     *
-     * @var string
-     */
-    protected $signature = 'queue:retry
-                            {id?* : The ID of the failed job or "all" to retry all jobs}
-                            {--range=* : Range of job IDs (numeric) to be retried}';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Retry a failed queue job';
-
-    /**
-     * Execute the console command.
-     *
-     * @return void
-     */
-    public function handle()
-    {
-        foreach ($this->getJobIds() as $id) {
-            $job = $this->laravel['queue.failer']->find($id);
-
-            if (is_null($job)) {
-                $this->error("Unable to find failed job with ID [{$id}].");
-            } else {
-                $this->retryJob($job);
-
-                $this->info("The failed job [{$id}] has been pushed back onto the queue!");
-
-                $this->laravel['queue.failer']->forget($id);
-            }
-        }
-    }
-
-    /**
-     * Get the job IDs to be retried.
-     *
-     * @return array
-     */
-    protected function getJobIds()
-    {
-        $ids = (array) $this->argument('id');
-
-        if (count($ids) === 1 && $ids[0] === 'all') {
-            return Arr::pluck($this->laravel['queue.failer']->all(), 'id');
-        }
-
-        if ($ranges = (array) $this->option('range')) {
-            $ids = array_merge($ids, $this->getJobIdsByRanges($ranges));
-        }
-
-        return array_values(array_filter(array_unique($ids)));
-    }
-
-    /**
-     * Get the job IDs ranges, if applicable.
-     *
-     * @param  array  $ranges
-     * @return array
-     */
-    protected function getJobIdsByRanges(array $ranges)
-    {
-        $ids = [];
-
-        foreach ($ranges as $range) {
-            if (preg_match('/^[0-9]+\-[0-9]+$/', $range)) {
-                $ids = array_merge($ids, range(...explode('-', $range)));
-            }
-        }
-
-        return $ids;
-    }
-
-    /**
-     * Retry the queue job.
-     *
-     * @param  \stdClass  $job
-     * @return void
-     */
-    protected function retryJob($job)
-    {
-        $this->laravel['queue']->connection($job->connection)->pushRaw(
-            $this->refreshRetryUntil($this->resetAttempts($job->payload)), $job->queue
-        );
-    }
-
-    /**
-     * Reset the payload attempts.
-     *
-     * Applicable to Redis and other jobs which store attempts in their payload.
-     *
-     * @param  string  $payload
-     * @return string
-     */
-    protected function resetAttempts($payload)
-    {
-        $payload = json_decode($payload, true);
-
-        if (isset($payload['attempts'])) {
-            $payload['attempts'] = 0;
-        }
-
-        return json_encode($payload);
-    }
-
-    /**
-     * Refresh the "retry until" timestamp for the job.
-     *
-     * @param  string  $payload
-     * @return string
-     */
-    protected function refreshRetryUntil($payload)
-    {
-        $payload = json_decode($payload, true);
-
-        if (! isset($payload['data']['command'])) {
-            return json_encode($payload);
-        }
-
-        $instance = unserialize($payload['data']['command']);
-
-        if (is_object($instance) && method_exists($instance, 'retryUntil')) {
-            $retryUntil = $instance->retryUntil();
-
-            $payload['retryUntil'] = $retryUntil instanceof DateTimeInterface
-                                        ? $retryUntil->getTimestamp()
-                                        : $retryUntil;
-        }
-
-        return json_encode($payload);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

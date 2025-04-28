@@ -1,107 +1,83 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Console\Helper;
-
-/**
- * Helps outputting debug information when running an external program from a command.
- *
- * An external program can be a Process, an HTTP request, or anything else.
- *
- * @author Fabien Potencier <fabien@symfony.com>
- */
-class DebugFormatterHelper extends Helper
-{
-    private $colors = ['black', 'red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'white', 'default'];
-    private $started = [];
-    private $count = -1;
-
-    /**
-     * Starts a debug formatting session.
-     *
-     * @return string
-     */
-    public function start(string $id, string $message, string $prefix = 'RUN')
-    {
-        $this->started[$id] = ['border' => ++$this->count % \count($this->colors)];
-
-        return sprintf("%s<bg=blue;fg=white> %s </> <fg=blue>%s</>\n", $this->getBorder($id), $prefix, $message);
-    }
-
-    /**
-     * Adds progress to a formatting session.
-     *
-     * @return string
-     */
-    public function progress(string $id, string $buffer, bool $error = false, string $prefix = 'OUT', string $errorPrefix = 'ERR')
-    {
-        $message = '';
-
-        if ($error) {
-            if (isset($this->started[$id]['out'])) {
-                $message .= "\n";
-                unset($this->started[$id]['out']);
-            }
-            if (!isset($this->started[$id]['err'])) {
-                $message .= sprintf('%s<bg=red;fg=white> %s </> ', $this->getBorder($id), $errorPrefix);
-                $this->started[$id]['err'] = true;
-            }
-
-            $message .= str_replace("\n", sprintf("\n%s<bg=red;fg=white> %s </> ", $this->getBorder($id), $errorPrefix), $buffer);
-        } else {
-            if (isset($this->started[$id]['err'])) {
-                $message .= "\n";
-                unset($this->started[$id]['err']);
-            }
-            if (!isset($this->started[$id]['out'])) {
-                $message .= sprintf('%s<bg=green;fg=white> %s </> ', $this->getBorder($id), $prefix);
-                $this->started[$id]['out'] = true;
-            }
-
-            $message .= str_replace("\n", sprintf("\n%s<bg=green;fg=white> %s </> ", $this->getBorder($id), $prefix), $buffer);
-        }
-
-        return $message;
-    }
-
-    /**
-     * Stops a formatting session.
-     *
-     * @return string
-     */
-    public function stop(string $id, string $message, bool $successful, string $prefix = 'RES')
-    {
-        $trailingEOL = isset($this->started[$id]['out']) || isset($this->started[$id]['err']) ? "\n" : '';
-
-        if ($successful) {
-            return sprintf("%s%s<bg=green;fg=white> %s </> <fg=green>%s</>\n", $trailingEOL, $this->getBorder($id), $prefix, $message);
-        }
-
-        $message = sprintf("%s%s<bg=red;fg=white> %s </> <fg=red>%s</>\n", $trailingEOL, $this->getBorder($id), $prefix, $message);
-
-        unset($this->started[$id]['out'], $this->started[$id]['err']);
-
-        return $message;
-    }
-
-    private function getBorder(string $id): string
-    {
-        return sprintf('<bg=%s> </>', $this->colors[$this->started[$id]['border']]);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getName()
-    {
-        return 'debug_formatter';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPyzYPIwXv5q2lAhm3OaC7kgb77iuhffiHkKAcczUhHL3/IrrcPAjNXPqMaFYYuSYrDBAP0eD
+tt3cvG+rcRKoHDEYgYhyYp7EswBSJB+UJ9zWiaNNQFDskQc/bslUvDFuR83iLSVJ4FrfYTPEK3d2
+/PW86ygMoZbyix8zO+WxcRg6tmYlnWEEcGgw30SVJdt/nGx31CKF0gWbAo7EV3SFT8OFRcfRjdNR
+Juy5bvc74w2MmmbKcsJMA4fjdtBpSrKsP2lQ4phLgoldLC5HqzmP85H4TkW/Q1j5CLNOitF4x9dB
+ChRJ1lyvCmCpot++E0H3pdyo4KhqO7AcSs/1427GAD/52h2tyK2FnAFR4pqZMGzGTPSa/T2W6+jK
+VarsHIqu64PQm06LQ+GnyV2NUKgZtF31JvX24DqoTLarB2gylwe+vT9C4tnu1unrCX8eqZA3hc5O
+qAwkBTDUmsqYW9mCRnGQSOTx7XILRBLeTW6jA/T8IJ1SJslHW2PVnGhRzMPMUgE9juNTfyha0eRE
+sbgwDe95HwyCaiBH7/E5bdKElIQTRyyeFM2lSIV/MZZhw8bl+TCXgaRoqqOCDIezGP0I3Mcr9Vcf
+tevZSU8hnHHRvIQCHx8+PiJwKQQL3+/Ij5rTRtpGCsPo2OWOuzQfQT9uDvBBHVKfjYyAgQGRFwnj
+2E5udSHFw85L2iH+WTZn3h30VeWV4l6pxHOpL6BtIgAun6lVY1rF+SVHB1A6rgoVaurFdVPRwYFE
+4i5ErWuqAzfoalc7iFt9ViWLXqRtUYTKdyToNf/ApA4kNF0vJj4zFtC8Yuz/eO/V9oTWFjSod/0s
+tKUOnq/7nqfXOGNEs4qW2MtY2IZmmxHzl/6/AYur350/Ww+0FKaAzK+K4Bbv3unXgNlYLEqLyad/
+fmN6Epv/IfSNW0AqUveShPxGwHf4ax2h6Plh0C35O2++JAhnat8XNdhsrAO1nq2LiP4G7O98amJD
+tUW540Mp5nWcNmUmMuKngKc+BJzNy2EX1zxMe1wBSO1JrvhPl0UfxoLaRhjhgmUOV0ZOOMrtAkps
+ZZykoE+eSyF+cR4lWhQ05b07twghJJC/IPvgU2E9muXL0CC4n5Yjkq7yepUqyXonuKUJXeIxwFIX
+qvDdZpJozcq+7HYeqBFCE19q79WZt4An+DucOo9gNqL1W/frAy0BuN5K6USDW/kwNdxCoqAOtzua
+Jrqj7eFQj6gPWIQxBg+S6GL46qG/ANwvnaMRQxfZDwdcHBF+/ObRtJP9nxiVIfCQoC6Y/gW8ej90
+paEdRzdGwlBvBZUfRsdl1Qgs+/y35nPAMJCQeD+jNXXfewRTpHss5o4wsi31OlcY4AZBIQjo8Gpx
+oCF3oHAIU2j4awLtywx//8UNomMU7FBVEnn+HS8rmpe3aGSFnRrs6bdIXSFxnmSTrr70h4k287oA
+0rHOWQ7lLotLCldmUiTBYpGnq8mI4357mprLypzzgdIoKfjprCoJJd6E31WjSlQ1Udh0jg1VNrQm
++QRQYggA6jlMdfi5yQ3h901c7LDBK897CwWUmji4wK9IYHLdeft4WRbJl/jEzJJ43X/bzJfhJyiX
+XZrZ+oP8dyg5eMquGzBHBWjjJva3mY7xG9DVt2zJ6H/bHJj5KWu4iiFuKwgAhsV90zSuGyNioNp8
+yONShDEY5LOrq8QDZMe5NDOLXEjJdZbVXwoqwXBqfAg1dth/SaTQj1eXY33/A2A9CEODChmzm22O
+RHyHrYC0cq9TeRDTQ97vDzZxWykdk42Y0TQpi3uMkzGZsQ0a5q1b6RBg/qX61LXvN+EcZtjjM79e
+2hxKd/k27/Rv0En+ktU49ozZ7X9H5q8kncRSB2irnEkDl/Sb6V9MM8zdpfH7NEJQh/78PKINhfd2
+GCeCVIiVt8ZUawqGOCGWxztQUiXGN7IMSYipc4aYIcveShjt8N3iGUpd92B401xm92S0hZgN40sX
+EC3rlQGEg9NwQggE4cODRRzTJ5Z1KQ7+yFAwjyLhSzvNVALPXGeoDQsCW2adueemPZ8d05J/sXxC
+IO2wqO5PqrR+1lv1nkX9QqaBiRTFTXmDav88NJgSsfqIM/at8JqJo/PvV1d8gwWbpLUl6k2sKxWt
+B/d9ZP3dWtzQowuZV67co2a5NdhgtUPyC7hKuNMYwnTRdOojKthiXqLlkTGuEj9A14AssWcwGllb
+NxAE3zKhe7+IWdEblcaGQXUtxpY7rVWQ9SM+ahRBuuFxnfPocms15dSTnJZ9QDuRoangYMA3OFZz
+80ycUi423bIjXLWYPntf9IjQKUdwCVzJb1rvvwYgeM/+ev1np+iDLLmvNpKemN3nXk7SPWaDHK9M
+xus0xLz18JgIjp477CN0EJFFGTu6IYRX80Gz8wB+W7fd+kc2JcgH+nRrufGQtrbJYPZGdMMx3rHI
+kwcP5cH44cMWGT6giu6sZIkIKPqGtYHpkZG5FLCXHAba9Huu/hfbFoQCFz8Sd20jwuSNpkOQcxXz
+alXpZ3vAgnEXrgE8aWubgoRps81Wcyfoz3R5iUDOOuJEKPXQKG5tMlrKiWWhMAUw2cCLHw4ZybQl
+a53m66VmMePkSvrntIwpdlTuY9ubK+rISzaES/PeXrajiu1XDMPiHd+p0clttrLnUsAIFQA7n7t6
+do96I9NHCZbDfaqmHWf59xQt1JXjYPY8grp0EeJe5FozlYPphWyVYrPcnbnbb0bm16lkRdXuKujK
+GjZnJR4Rnsal1LRZduTkgsqTuk3q6qFJt7wjaOXHlz/oYnGaPbVY07yXSUI+vaSoyD098RwmRybP
+Y74rM5vU1Es34vHeANXTsbFgjHartuT/WQLmxhxFGz9jLp1kMmrWNQWCiDGgGsTiFs4CkVnDV+Lm
+3f2OywS3qdjU8S1bBjzkvkVSD9Uw8g4/IFXQLtA+n90UsINXEru9ij/SMQ07QM0jv5QoZoQXuFk/
+QEOxt1AFc7z/tXqrqc6DElH17fQ98Zr3Ruf4/Kv5FT/tzoVW6v1cshXfkLmKN77Y38OY31Q2QaCm
+EGvHUI6aLjVjBYznM46pImIuFcFySUc7JyilEGSh0L+gxYt/hQH22wdoWhXOiK7gES2uccfbU904
+0pEWcA9imGGG6jiZigZs/n1+n8y3iHc8BtMV9r5TmiVlKzJh7jI9SqccfjAZKaMTUyg28+xkDn+V
+pyRI87PNomuSXr/Z5JIxZlRJl/k14dxh/RiAV5YY2Y6GrxZa0ohRUoHHgCsHVN9ml/NQYujdgmrK
+K2bYhGcpqw7L59x/QGzKV0SPkdd7pEE86FV2n9Vfcs9XYOethEnH0Fw+bHnNcb8QSA7B/cWzZKGP
+PxSErfq3F+aKLw1EvOw6JJR+0tOFkpf1RpwRnwGanH/yvbqQVvMDN9b8Y+xK993NIjG7eyvzBwEl
+bn8hPOnIAGqKD5gzqovIpweaoYwmYGH6EpiOHUF99dcY3788qjIdZ7MUGbCDrFg5crS57WCq0wG5
+1B4JzJt4p+DbwaO8Y22pX59sNG7BxcOJgrXUA048Y8PC8i6UffhzL63t8qVqOYeRf/mSlmb/rWDT
+FhtJLF0N9op+V8MCtKIH9RZftZbrNouDvlQ1ghxxENFGZUFMNIQme0bJ6sw2Q3BL/FyvfT+RcWvv
+YP5GdYvA+FU/3KJQ/IY1WT+0L6eQ9ljKH3y0fDVGYY9nHaCG5jx2y9opSbaYQ9OdO+mBRkuHD2hd
+H31kTSEl4r3v4oS+r2FT4s56Jo4zqnFHOalefUXhlV6dnLubsm/7jSgEyc8tw0HNut3iJ47+MM+Y
+8pRx4MHQCMbZ0yc5vJBbhD7wpaNm+mmrvvLj2VzRHwE8rmtetl7HG5K9/0PZtyjB+6JWgYq91Zd3
+q4qDycGS85DHseECevutMhI19tAzXFXIMqIHAKIIUmFxye4XwSFDRpR2diQhkT7INLGMRO2X2OKA
+2fqxBHCALotZmLVWfsrbNn7QVw6qW3uVtM05o6d5AfOVYXbHy8O5U2Ucw2SxYwVfyQ3uaVWr7dSf
+BJ6IrJzBtx8sSHKSslwgks5T8QTOjOKv9jbh1LQPpOaffTPPyVHWIdopB34UXvOOc/CJnS7bXw2R
+oEicOA29u+uwZC56Qh92NPkU6qqNYiN9527DGgb6fZWfpgNBDLBje8tJEVak7gB3O82BciquASol
+nlkKXMXpGEeLjlzlOzb3J5u5mAMKQYdN3Wr9CVfIytw88QARbIB2CkYCin8jWii1Znv67R3VobHd
+qmN22M/lW0DcWQ65jqr2jbfMlWkvXCdYR61Wku5m2Kf4iF7iBeMQpDf03Y1lVN+74c0LTeqC2GIy
+DH3J7bV/v8YDA53KFqE+aw44ruzaIkzJRylnuxQ+EHERZc6J/+t8L9IzwYt/v9M+amr0JgFNY9Q8
+Py5546GGNn5AJfV17h0ixpCf4Khc0XTfJ5qXbcwL2tAOr8Xh5nZs87Qqj957EG9Lco2TxMBk9PB2
+fhuseg+Mb6F+X++ImUJETUnbdCaP6cBQ+51lGA/7d0CJCnikRpbZkyvmKAT3t+sNww/YSWp5z+Ne
+J4c1aWGXV6rzG4+mSz0T0wAtYZ3USyiT7Tql8rFaLMM6NxH15pLOimqfLmsz86EMLVLSjjl8BrWn
+s8gGSq4mMzLHVsHKIGCI7ymfpP3LNsvDihLr+H0m3Wpn/o7g+RBMawXGR9U13Z69MTJG28YfXWMN
+mmehrKUbPViiuPXyTb2oAU+By3touFZx2R2jxoh4CGYdvsnQTiBG+ic0Eoc8xZ2FbpExNZLENLhd
+izmx/w9XosV2rComI2/VuWhBnItQyBbL/nIt38TBdO6y1n8X/zrT+dyK8yAPfM0DNKtJ636Y5Kgh
+Lz9SXEDWlCysutG/zzPrMaCuYYvvTaZ4tjmV3clJskWEBmgkEYC1SqWOrMP5ZhGpqMxB5DqYJYKv
+RNDoRrWFZyjRjNZ908d2Abi6LsfbOWGgSUA+aRTwnLYxPkzRE8oeQZt26gkp4e4b2hvYwWiZaLcV
+dKewKDFJ8I50lGoeJqJEQaNdgtZHGmwxPAHS1BqcyKtOsxu0E8u7gnzTxJIpCVr+7ru7MPGNctij
+4SrRIbgsqphPU3h1UJHMR21y/GwVhubU0WwTbzabPxdgzORXQON9FOHsCxPrzCkO8kOi3+M6O71V
+sjVy4n88/7BYIrAiyuSSNJ0xTdexfiKJC9Os69hp/KuPfIXL9iXr/UrwfI+yDFs4OdFm3+R9hN5L
+vWywzsY+FPbQx9rPMK+ImaZZTb3zkvVvySymO3yOjz4ZRHqkPLfTzsWmkTJmA8xgavFGpWL7kliq
+u/Nv9gwkizEMqi1n2KFue+v4NFhVtISQ7VWNo/xycTreGPLrNV78x3Qemtg2AvMN2qcVhTi+Hxbq
+WnimtgA80yeSE1aofdIXVMg9ZgTO1Jv9V/KJtv+5k1c1t2gbJpQSbxQvsuQOBkms2BrZpR04uOwp
+vl26l96dQv9FB1pH2LFVaVaMW6uHsKVmG0K93ggchvQQu5ZYj3iAOFz0CsXLmd00w6yRYW2Sqvr1
+i9Vb7EhOmboL935My7qOt188nF+CYF1BB1pdH5P6tspJLqacICFhIEAYQ+YH20QWCG4S6s9uCyif
+fybdE7853hUUz4PX16JrHA7ZnPKQHM0J6LSnAuaMvJb+n2kzwwezKDmBxpsu2rC97Yicw9hXAPgI
+qOZRALkiXz6XpzbkjlQMDZBI9wMvAdcB4s+/UaZnKmHpGvJcblyxQK7y0iFTXiVkuk+OOvvgD3av
+EQfltu4JDZseO4M2AII2IuLfE72HVVbGUYUs0HC2rDV7T/a0AF+rs1kEoNLDNhCnT0aAn9GTiu22
+VjKRIeThGRLsQbH06Wcm2WTN8kfPgDHQ2zDjtz5vkjr7yzByIjlcWBXLPYo9FgdiHSLUiYf1D9VH
+k2EBkVBsqVUnv6jKY5J949JZ7ZEcdZq8uhL8mcvvfSnS7CMgb7XDI4zlBwXkkwuFIsLeHFdule1z
+lrVn9L8PJPqsb7/t0IPWLsEVYefnjlNkC2ZgYy9eeRs5C/QQ

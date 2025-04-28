@@ -1,120 +1,76 @@
-<?php
-
-namespace Illuminate\Http\Resources\Json;
-
-use Illuminate\Contracts\Support\Responsable;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Collection;
-
-class ResourceResponse implements Responsable
-{
-    /**
-     * The underlying resource.
-     *
-     * @var mixed
-     */
-    public $resource;
-
-    /**
-     * Create a new resource response.
-     *
-     * @param  mixed  $resource
-     * @return void
-     */
-    public function __construct($resource)
-    {
-        $this->resource = $resource;
-    }
-
-    /**
-     * Create an HTTP response that represents the object.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function toResponse($request)
-    {
-        return tap(response()->json(
-            $this->wrap(
-                $this->resource->resolve($request),
-                $this->resource->with($request),
-                $this->resource->additional
-            ),
-            $this->calculateStatus()
-        ), function ($response) use ($request) {
-            $response->original = $this->resource->resource;
-
-            $this->resource->withResponse($request, $response);
-        });
-    }
-
-    /**
-     * Wrap the given data if necessary.
-     *
-     * @param  array  $data
-     * @param  array  $with
-     * @param  array  $additional
-     * @return array
-     */
-    protected function wrap($data, $with = [], $additional = [])
-    {
-        if ($data instanceof Collection) {
-            $data = $data->all();
-        }
-
-        if ($this->haveDefaultWrapperAndDataIsUnwrapped($data)) {
-            $data = [$this->wrapper() => $data];
-        } elseif ($this->haveAdditionalInformationAndDataIsUnwrapped($data, $with, $additional)) {
-            $data = [($this->wrapper() ?? 'data') => $data];
-        }
-
-        return array_merge_recursive($data, $with, $additional);
-    }
-
-    /**
-     * Determine if we have a default wrapper and the given data is unwrapped.
-     *
-     * @param  array  $data
-     * @return bool
-     */
-    protected function haveDefaultWrapperAndDataIsUnwrapped($data)
-    {
-        return $this->wrapper() && ! array_key_exists($this->wrapper(), $data);
-    }
-
-    /**
-     * Determine if "with" data has been added and our data is unwrapped.
-     *
-     * @param  array  $data
-     * @param  array  $with
-     * @param  array  $additional
-     * @return bool
-     */
-    protected function haveAdditionalInformationAndDataIsUnwrapped($data, $with, $additional)
-    {
-        return (! empty($with) || ! empty($additional)) &&
-               (! $this->wrapper() ||
-                ! array_key_exists($this->wrapper(), $data));
-    }
-
-    /**
-     * Get the default data wrapper for the resource.
-     *
-     * @return string
-     */
-    protected function wrapper()
-    {
-        return get_class($this->resource)::$wrap;
-    }
-
-    /**
-     * Calculate the appropriate status code for the response.
-     *
-     * @return int
-     */
-    protected function calculateStatus()
-    {
-        return $this->resource->resource instanceof Model &&
-               $this->resource->resource->wasRecentlyCreated ? 201 : 200;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+/qOmldkDrzodOr5cvomO1qmJfKfufq4=

@@ -1,106 +1,53 @@
-<?php
-
-/**
- * Responsible for creating definition caches.
- */
-class HTMLPurifier_DefinitionCacheFactory
-{
-    /**
-     * @type array
-     */
-    protected $caches = array('Serializer' => array());
-
-    /**
-     * @type array
-     */
-    protected $implementations = array();
-
-    /**
-     * @type HTMLPurifier_DefinitionCache_Decorator[]
-     */
-    protected $decorators = array();
-
-    /**
-     * Initialize default decorators
-     */
-    public function setup()
-    {
-        $this->addDecorator('Cleanup');
-    }
-
-    /**
-     * Retrieves an instance of global definition cache factory.
-     * @param HTMLPurifier_DefinitionCacheFactory $prototype
-     * @return HTMLPurifier_DefinitionCacheFactory
-     */
-    public static function instance($prototype = null)
-    {
-        static $instance;
-        if ($prototype !== null) {
-            $instance = $prototype;
-        } elseif ($instance === null || $prototype === true) {
-            $instance = new HTMLPurifier_DefinitionCacheFactory();
-            $instance->setup();
-        }
-        return $instance;
-    }
-
-    /**
-     * Registers a new definition cache object
-     * @param string $short Short name of cache object, for reference
-     * @param string $long Full class name of cache object, for construction
-     */
-    public function register($short, $long)
-    {
-        $this->implementations[$short] = $long;
-    }
-
-    /**
-     * Factory method that creates a cache object based on configuration
-     * @param string $type Name of definitions handled by cache
-     * @param HTMLPurifier_Config $config Config instance
-     * @return mixed
-     */
-    public function create($type, $config)
-    {
-        $method = $config->get('Cache.DefinitionImpl');
-        if ($method === null) {
-            return new HTMLPurifier_DefinitionCache_Null($type);
-        }
-        if (!empty($this->caches[$method][$type])) {
-            return $this->caches[$method][$type];
-        }
-        if (isset($this->implementations[$method]) &&
-            class_exists($class = $this->implementations[$method], false)) {
-            $cache = new $class($type);
-        } else {
-            if ($method != 'Serializer') {
-                trigger_error("Unrecognized DefinitionCache $method, using Serializer instead", E_USER_WARNING);
-            }
-            $cache = new HTMLPurifier_DefinitionCache_Serializer($type);
-        }
-        foreach ($this->decorators as $decorator) {
-            $new_cache = $decorator->decorate($cache);
-            // prevent infinite recursion in PHP 4
-            unset($cache);
-            $cache = $new_cache;
-        }
-        $this->caches[$method][$type] = $cache;
-        return $this->caches[$method][$type];
-    }
-
-    /**
-     * Registers a decorator to add to all new cache objects
-     * @param HTMLPurifier_DefinitionCache_Decorator|string $decorator An instance or the name of a decorator
-     */
-    public function addDecorator($decorator)
-    {
-        if (is_string($decorator)) {
-            $class = "HTMLPurifier_DefinitionCache_Decorator_$decorator";
-            $decorator = new $class;
-        }
-        $this->decorators[$decorator->name] = $decorator;
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

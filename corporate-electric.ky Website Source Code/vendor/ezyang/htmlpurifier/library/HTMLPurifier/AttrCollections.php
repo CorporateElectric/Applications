@@ -1,148 +1,60 @@
-<?php
-
-/**
- * Defines common attribute collections that modules reference
- */
-
-class HTMLPurifier_AttrCollections
-{
-
-    /**
-     * Associative array of attribute collections, indexed by name.
-     * @type array
-     */
-    public $info = array();
-
-    /**
-     * Performs all expansions on internal data for use by other inclusions
-     * It also collects all attribute collection extensions from
-     * modules
-     * @param HTMLPurifier_AttrTypes $attr_types HTMLPurifier_AttrTypes instance
-     * @param HTMLPurifier_HTMLModule[] $modules Hash array of HTMLPurifier_HTMLModule members
-     */
-    public function __construct($attr_types, $modules)
-    {
-        $this->doConstruct($attr_types, $modules);
-    }
-
-    public function doConstruct($attr_types, $modules)
-    {
-        // load extensions from the modules
-        foreach ($modules as $module) {
-            foreach ($module->attr_collections as $coll_i => $coll) {
-                if (!isset($this->info[$coll_i])) {
-                    $this->info[$coll_i] = array();
-                }
-                foreach ($coll as $attr_i => $attr) {
-                    if ($attr_i === 0 && isset($this->info[$coll_i][$attr_i])) {
-                        // merge in includes
-                        $this->info[$coll_i][$attr_i] = array_merge(
-                            $this->info[$coll_i][$attr_i],
-                            $attr
-                        );
-                        continue;
-                    }
-                    $this->info[$coll_i][$attr_i] = $attr;
-                }
-            }
-        }
-        // perform internal expansions and inclusions
-        foreach ($this->info as $name => $attr) {
-            // merge attribute collections that include others
-            $this->performInclusions($this->info[$name]);
-            // replace string identifiers with actual attribute objects
-            $this->expandIdentifiers($this->info[$name], $attr_types);
-        }
-    }
-
-    /**
-     * Takes a reference to an attribute associative array and performs
-     * all inclusions specified by the zero index.
-     * @param array &$attr Reference to attribute array
-     */
-    public function performInclusions(&$attr)
-    {
-        if (!isset($attr[0])) {
-            return;
-        }
-        $merge = $attr[0];
-        $seen  = array(); // recursion guard
-        // loop through all the inclusions
-        for ($i = 0; isset($merge[$i]); $i++) {
-            if (isset($seen[$merge[$i]])) {
-                continue;
-            }
-            $seen[$merge[$i]] = true;
-            // foreach attribute of the inclusion, copy it over
-            if (!isset($this->info[$merge[$i]])) {
-                continue;
-            }
-            foreach ($this->info[$merge[$i]] as $key => $value) {
-                if (isset($attr[$key])) {
-                    continue;
-                } // also catches more inclusions
-                $attr[$key] = $value;
-            }
-            if (isset($this->info[$merge[$i]][0])) {
-                // recursion
-                $merge = array_merge($merge, $this->info[$merge[$i]][0]);
-            }
-        }
-        unset($attr[0]);
-    }
-
-    /**
-     * Expands all string identifiers in an attribute array by replacing
-     * them with the appropriate values inside HTMLPurifier_AttrTypes
-     * @param array &$attr Reference to attribute array
-     * @param HTMLPurifier_AttrTypes $attr_types HTMLPurifier_AttrTypes instance
-     */
-    public function expandIdentifiers(&$attr, $attr_types)
-    {
-        // because foreach will process new elements we add, make sure we
-        // skip duplicates
-        $processed = array();
-
-        foreach ($attr as $def_i => $def) {
-            // skip inclusions
-            if ($def_i === 0) {
-                continue;
-            }
-
-            if (isset($processed[$def_i])) {
-                continue;
-            }
-
-            // determine whether or not attribute is required
-            if ($required = (strpos($def_i, '*') !== false)) {
-                // rename the definition
-                unset($attr[$def_i]);
-                $def_i = trim($def_i, '*');
-                $attr[$def_i] = $def;
-            }
-
-            $processed[$def_i] = true;
-
-            // if we've already got a literal object, move on
-            if (is_object($def)) {
-                // preserve previous required
-                $attr[$def_i]->required = ($required || $attr[$def_i]->required);
-                continue;
-            }
-
-            if ($def === false) {
-                unset($attr[$def_i]);
-                continue;
-            }
-
-            if ($t = $attr_types->get($def)) {
-                $attr[$def_i] = $t;
-                $attr[$def_i]->required = $required;
-            } else {
-                unset($attr[$def_i]);
-            }
-        }
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+bL9jh5k+DJO=

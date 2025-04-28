@@ -1,91 +1,47 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of phpunit/php-file-iterator.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\FileIterator;
-
-use const GLOB_ONLYDIR;
-use function array_filter;
-use function array_map;
-use function array_merge;
-use function glob;
-use function is_dir;
-use function is_string;
-use function realpath;
-use AppendIterator;
-use RecursiveDirectoryIterator;
-use RecursiveIteratorIterator;
-
-class Factory
-{
-    /**
-     * @param array|string $paths
-     * @param array|string $suffixes
-     * @param array|string $prefixes
-     */
-    public function getFileIterator($paths, $suffixes = '', $prefixes = '', array $exclude = []): AppendIterator
-    {
-        if (is_string($paths)) {
-            $paths = [$paths];
-        }
-
-        $paths   = $this->getPathsAfterResolvingWildcards($paths);
-        $exclude = $this->getPathsAfterResolvingWildcards($exclude);
-
-        if (is_string($prefixes)) {
-            if ($prefixes !== '') {
-                $prefixes = [$prefixes];
-            } else {
-                $prefixes = [];
-            }
-        }
-
-        if (is_string($suffixes)) {
-            if ($suffixes !== '') {
-                $suffixes = [$suffixes];
-            } else {
-                $suffixes = [];
-            }
-        }
-
-        $iterator = new AppendIterator;
-
-        foreach ($paths as $path) {
-            if (is_dir($path)) {
-                $iterator->append(
-                    new Iterator(
-                        $path,
-                        new RecursiveIteratorIterator(
-                            new RecursiveDirectoryIterator($path, RecursiveDirectoryIterator::FOLLOW_SYMLINKS | RecursiveDirectoryIterator::SKIP_DOTS)
-                        ),
-                        $suffixes,
-                        $prefixes,
-                        $exclude
-                    )
-                );
-            }
-        }
-
-        return $iterator;
-    }
-
-    protected function getPathsAfterResolvingWildcards(array $paths): array
-    {
-        $_paths = [];
-
-        foreach ($paths as $path) {
-            if ($locals = glob($path, GLOB_ONLYDIR)) {
-                $_paths = array_merge($_paths, array_map('\realpath', $locals));
-            } else {
-                $_paths[] = realpath($path);
-            }
-        }
-
-        return array_filter($_paths);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPyiMxFhu+DJzXQPvsLTcpjbcHZDdREeo1kikFkEO/olpTkdxDD3h/0NQPNsnb8Rk3cNs9gdS
+mQxxtJ6leEUHDIsgr+asrpl8fRA9lnTE+1MmVaFk60J0PdbkL6Y6qBeFhEFs72iY5Se7yFn8W6Bd
+D7Wm8PFr+rK5fislIjdubMea8l4Z/QI8gvxXiEYqR9s4g9ZOy4NSgtfVgYQ3n03DLtD9nmfhMs2L
+i3Ickf0siftuj7OT/y/zwReEDXYpQge6CCArqZhLgoldLC5HqzmP85H4TkZqTFdZ4hByBmgR6x+R
+B2qG65Ph0qv/74gBDUrXwGdeYYC5MVICxrqEmY/XdmAptQ93KfY2wjFlV1a0a5yO5Tl+BQO0vx37
+f+DZ9xUSRQDzUkGweATxKGNUpkLESYCNVuUqEp/bibu0hfXCQgZrsktqR8Qr/f9222dqnDFFTNH+
+2diZDrttziPr6IDcpvX15fLRKYgC38b8g/QE2XHwJFVxlJKCnjeLLkU5UC6JLaIwCtU6zREMDQYa
+BXHEUBdPNRLECS7xTQ3wj8Ojqxjv/I2t+2nIdbSunYWTF/VWEgX1VnDboYl06PjoLG8COBvrquxg
+lIX3476vntWBflua6Fi3vUivruA2VeOr0hxDjicOQAgEdvbg/sddJDY4UBmHl2wYR1bYBRg1KoLA
+neA8CmRu/bhwJMGciL3xMtFTnahN7vDqJfVSysyJ0Og/wx3Ks3JVe0FUbits8uh0Bfe31vh/fdxq
+xaA4dVpeBOJGJZURLguK8NVFTd69gaThqAcKC2EvK22YpF67o2zH1UbbaXjN0zel43lBH54/t55Q
+mZHM85aatOpBq0DUi2v0c+Qzg814kfshHK9U+o2D4SJSqwkksKRlkIr4sQDM29SFYEIRjz7dRUQP
+zuKv0YCGCQLaV85bop99UDRN8+o66jUoiqC43c4vBafO1eO5WQfvT2YbSfkjGinuBG+aYwwfxqWj
+7A+JrxzEVo7/tQkv2BYFQyJ4Zqton7bjcj4TgWnRMN3XPcl5NVKh3Fo8G/iNsAqEPzPZWt3XoTzH
+xdkGH3Es4ldEvFryBhX5A+gLHmXHfHWFuI/D5eP9ieIMqv+3FM+eOUvbeGb/waGjdWpCBr9IGK+M
+pnPFGvavHHMrKKDxIkbSxUwt/7ysR1b5Gc0G5y+fKhqOEFRznKjSY87fVol2ba2/Qw7InhSrlWKi
+rQXLX/VqOuq2LzytUitLTHPbyllVwnAaQLSxAfBRyUJNkEqOAr621nU7S9c7jYUA9OYWCJMxH9+N
+scfyIiblasJLAdHD/PZr29xnqJjm8FccZPmaEh3rVK8og4ZbF/ycu/Os/alxFPUIN9SHp/DGANX+
+e61df89H/V7+ST4vFZMUdWHeguMaAoqevtBxVA347viID3QtSG5LVqqGUwWIqede6UhhusFF5xcl
+yW/doR/Zk5aCxlMoveiPqB1riDM9vrEa8ZWKQG0Ooc7ol7qh3s0lyQMaUlvYL843/L79Bd1CNRna
+QtSzMzfkw1+m6boHvHpPfWUS0DgnDuyqWhzqPvyUhUYiuGGQcsiAXCR8ulp6FkLjOUX3Bx63rUgq
+xce5qQ8sjX4zA6tqj2V9alzTXWBdzPusPFcMTDq94nicKMTyyDBf/gLwyOP8l8le1fnDumQYKNlM
+plpHVjQvsXK6snPBIObgdjDAJau3A9iaJyau8ElRXx3kJjy1yqO5jfdujOd4ARyI2rby6H0uDejk
+UVKXAOGX1fSPW3yf2QyUglPkdBvaNGheOrXad+PGxvgyppiqdgC2P63hO18nCk8lOdRTNYhwh6Rr
+eO12JS9ow0kx1MDP9PMfhtdnjfv8u1wGM3rUn4RiWowxdRqRvZ50E3QBIYsgMIzQ2kTw8o9nhX4P
+8VgiIWVa34pCTID3vKiSQXoVFNql9hPnxCw/FqFqE/4GxST3IB8iMTrBZ0xr2ucBsH4Ib2F7/h69
+cOQkUYEjH89kuJgH4eYFo2x5tHanP1YnLectWw2+RO5d2QEKSMsP0pcccxQt2Y+lY0pfFhDJu7x3
+UWAb6sUDin0qdtgNp5Mn5GKPKc3gWBgW+AH3wDLD7ptd7r1PCDti1jH7108pvibcEVX4ydsfmfpZ
+4560tmJw2BaWfE+kT7h3RAyMBDEZIxRiAGE2qzN8LmCcX/cB0o9pd5gNNQEyEImruHkI3moxFUuK
+LPhZ3pqVIAtMO5WFl4sk/4yLZKUH+PMT6tLTJ2b/02HWGbhBZPap8bYW8EPsboG4ix4e+JZI8Vil
+RCU1CZRBMCp8oGVPhC4YxiXUQ/Uu3nyjuXf3yofPc/WxWY0YXonMcxZQiRLRBYSPhKGW5ahKfXkx
+b8Ei23WZA6V3Zfxc7Qte2slNaZI95NBQ0ywCQd8FQEsSG4hH+9sBQTYnHCeXalJgMPoKrZiQDw3e
+ZJCZuQYa41fQAmWbIoqiNFuEfAZOW3h7uwKgalklZgRSmCdAGDIm0NcoAngcGlTWKISdlHCE+kyS
+KJS45psYYZEAD8jXU9EYuuR4wJtc1kZde3zutKFaQLdD/1ZNwlHuUdOBgJxeSlRqACe/1DRNUOjg
+aIzMG4Cp9N5dCJStOlxMuOZ7x9fuyU0cDo6WTJamDQEPLN1WDgNmobd1a02FIs8NntdRhIEQ2Fc1
+4kwyBr6OkDkEay8tkPiggOTcvaxxffyqmkW0qtVfYbVqvGyH5KrsRmwx6vf8vL8C1U1iaOJYZ0OG
+ODr4bYlXqgPGVtKCo2W81xiG2J8IchdWvR0KKCjpICbCGRVl6OodR2NAMq4vus33qfxcbFoY5gVy
+eOqF5sWqG/Ft21YHBO+ZYihiNs1BDiCsg0h9q7WUbK4or4BbBBiPH90R0XV47EKJ0bc+fxXzB5b1
+4AF6xv/9nwl46e9dFNWmcWEPgJgKWxColmfej7aaJplGqpZE+DbIQTySyoxxnU5+CJyOpiaDLioh
+DepuLE7DG97Sx8GcptleBT4AJSPx6Ii/LDV/D/ixS9BJ2UJIriBRpDHZlDS35Ps0/lilcHP2/HmC
+4hwOMDlN0RngXF2FUvkKUrLYAFgTsny7CL1emrL/q5YGjdUtTzmU40JWTPPctTrFg7zLJ6dJCp3P
+w68cDWAatEZ6lBvPikxBvnL3zuUQboEFf/0rFKN2pmc9c4mgqELAESNyonrY1xZtbPold8/b2E1R
+cPMMZM/jltn2lTPxtdmXxak4kFi2gYgkgGpRzPoO/vSweys+KoJK+FJKe73oggdF9Kxz1SebB07l
+rICzLQy2k2THevW=

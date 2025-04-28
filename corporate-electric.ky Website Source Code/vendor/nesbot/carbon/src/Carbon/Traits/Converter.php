@@ -1,648 +1,164 @@
-<?php
-
-/**
- * This file is part of the Carbon package.
- *
- * (c) Brian Nesbitt <brian@nesbot.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace Carbon\Traits;
-
-use Carbon\Carbon;
-use Carbon\CarbonImmutable;
-use Carbon\CarbonInterface;
-use Carbon\CarbonInterval;
-use Carbon\CarbonPeriod;
-use Carbon\Exceptions\UnitException;
-use Closure;
-use DateTime;
-use DateTimeImmutable;
-
-/**
- * Trait Converter.
- *
- * Change date into different string formats and types and
- * handle the string cast.
- *
- * Depends on the following methods:
- *
- * @method static copy()
- */
-trait Converter
-{
-    /**
-     * Format to use for __toString method when type juggling occurs.
-     *
-     * @var string|Closure|null
-     */
-    protected static $toStringFormat = null;
-
-    /**
-     * Reset the format used to the default when type juggling a Carbon instance to a string
-     *
-     * @return void
-     */
-    public static function resetToStringFormat()
-    {
-        static::setToStringFormat(null);
-    }
-
-    /**
-     * @deprecated To avoid conflict between different third-party libraries, static setters should not be used.
-     *             You should rather let Carbon object being casted to string with DEFAULT_TO_STRING_FORMAT, and
-     *             use other method or custom format passed to format() method if you need to dump an other string
-     *             format.
-     *
-     * Set the default format used when type juggling a Carbon instance to a string
-     *
-     * @param string|Closure|null $format
-     *
-     * @return void
-     */
-    public static function setToStringFormat($format)
-    {
-        static::$toStringFormat = $format;
-    }
-
-    /**
-     * Returns the formatted date string on success or FALSE on failure.
-     *
-     * @see https://php.net/manual/en/datetime.format.php
-     *
-     * @param string $format
-     *
-     * @return string
-     */
-    public function format($format)
-    {
-        $function = $this->localFormatFunction ?: static::$formatFunction;
-
-        if (!$function) {
-            return $this->rawFormat($format);
-        }
-
-        if (\is_string($function) && method_exists($this, $function)) {
-            $function = [$this, $function];
-        }
-
-        return $function(...\func_get_args());
-    }
-
-    /**
-     * @see https://php.net/manual/en/datetime.format.php
-     *
-     * @param string $format
-     *
-     * @return string
-     */
-    public function rawFormat($format)
-    {
-        return parent::format($format);
-    }
-
-    /**
-     * Format the instance as a string using the set format
-     *
-     * @example
-     * ```
-     * echo Carbon::now(); // Carbon instances can be casted to string
-     * ```
-     *
-     * @return string
-     */
-    public function __toString()
-    {
-        $format = $this->localToStringFormat ?? static::$toStringFormat;
-
-        return $format instanceof Closure
-            ? $format($this)
-            : $this->rawFormat($format ?: (
-                \defined('static::DEFAULT_TO_STRING_FORMAT')
-                    ? static::DEFAULT_TO_STRING_FORMAT
-                    : CarbonInterface::DEFAULT_TO_STRING_FORMAT
-            ));
-    }
-
-    /**
-     * Format the instance as date
-     *
-     * @example
-     * ```
-     * echo Carbon::now()->toDateString();
-     * ```
-     *
-     * @return string
-     */
-    public function toDateString()
-    {
-        return $this->rawFormat('Y-m-d');
-    }
-
-    /**
-     * Format the instance as a readable date
-     *
-     * @example
-     * ```
-     * echo Carbon::now()->toFormattedDateString();
-     * ```
-     *
-     * @return string
-     */
-    public function toFormattedDateString()
-    {
-        return $this->rawFormat('M j, Y');
-    }
-
-    /**
-     * Format the instance as time
-     *
-     * @example
-     * ```
-     * echo Carbon::now()->toTimeString();
-     * ```
-     *
-     * @param string $unitPrecision
-     *
-     * @return string
-     */
-    public function toTimeString($unitPrecision = 'second')
-    {
-        return $this->rawFormat(static::getTimeFormatByPrecision($unitPrecision));
-    }
-
-    /**
-     * Format the instance as date and time
-     *
-     * @example
-     * ```
-     * echo Carbon::now()->toDateTimeString();
-     * ```
-     *
-     * @param string $unitPrecision
-     *
-     * @return string
-     */
-    public function toDateTimeString($unitPrecision = 'second')
-    {
-        return $this->rawFormat('Y-m-d '.static::getTimeFormatByPrecision($unitPrecision));
-    }
-
-    /**
-     * Return a format from H:i to H:i:s.u according to given unit precision.
-     *
-     * @param string $unitPrecision "minute", "second", "millisecond" or "microsecond"
-     *
-     * @return string
-     */
-    public static function getTimeFormatByPrecision($unitPrecision)
-    {
-        switch (static::singularUnit($unitPrecision)) {
-            case 'minute':
-                return 'H:i';
-            case 'second':
-                return 'H:i:s';
-            case 'm':
-            case 'millisecond':
-                return 'H:i:s.v';
-            case 'µ':
-            case 'microsecond':
-                return 'H:i:s.u';
-        }
-
-        throw new UnitException('Precision unit expected among: minute, second, millisecond and microsecond.');
-    }
-
-    /**
-     * Format the instance as date and time T-separated with no timezone
-     *
-     * @example
-     * ```
-     * echo Carbon::now()->toDateTimeLocalString();
-     * echo "\n";
-     * echo Carbon::now()->toDateTimeLocalString('minute'); // You can specify precision among: minute, second, millisecond and microsecond
-     * ```
-     *
-     * @param string $unitPrecision
-     *
-     * @return string
-     */
-    public function toDateTimeLocalString($unitPrecision = 'second')
-    {
-        return $this->rawFormat('Y-m-d\T'.static::getTimeFormatByPrecision($unitPrecision));
-    }
-
-    /**
-     * Format the instance with day, date and time
-     *
-     * @example
-     * ```
-     * echo Carbon::now()->toDayDateTimeString();
-     * ```
-     *
-     * @return string
-     */
-    public function toDayDateTimeString()
-    {
-        return $this->rawFormat('D, M j, Y g:i A');
-    }
-
-    /**
-     * Format the instance as ATOM
-     *
-     * @example
-     * ```
-     * echo Carbon::now()->toAtomString();
-     * ```
-     *
-     * @return string
-     */
-    public function toAtomString()
-    {
-        return $this->rawFormat(DateTime::ATOM);
-    }
-
-    /**
-     * Format the instance as COOKIE
-     *
-     * @example
-     * ```
-     * echo Carbon::now()->toCookieString();
-     * ```
-     *
-     * @return string
-     */
-    public function toCookieString()
-    {
-        return $this->rawFormat(DateTime::COOKIE);
-    }
-
-    /**
-     * Format the instance as ISO8601
-     *
-     * @example
-     * ```
-     * echo Carbon::now()->toIso8601String();
-     * ```
-     *
-     * @return string
-     */
-    public function toIso8601String()
-    {
-        return $this->toAtomString();
-    }
-
-    /**
-     * Format the instance as RFC822
-     *
-     * @example
-     * ```
-     * echo Carbon::now()->toRfc822String();
-     * ```
-     *
-     * @return string
-     */
-    public function toRfc822String()
-    {
-        return $this->rawFormat(DateTime::RFC822);
-    }
-
-    /**
-     * Convert the instance to UTC and return as Zulu ISO8601
-     *
-     * @example
-     * ```
-     * echo Carbon::now()->toIso8601ZuluString();
-     * ```
-     *
-     * @param string $unitPrecision
-     *
-     * @return string
-     */
-    public function toIso8601ZuluString($unitPrecision = 'second')
-    {
-        return $this->copy()->utc()->rawFormat('Y-m-d\T'.static::getTimeFormatByPrecision($unitPrecision).'\Z');
-    }
-
-    /**
-     * Format the instance as RFC850
-     *
-     * @example
-     * ```
-     * echo Carbon::now()->toRfc850String();
-     * ```
-     *
-     * @return string
-     */
-    public function toRfc850String()
-    {
-        return $this->rawFormat(DateTime::RFC850);
-    }
-
-    /**
-     * Format the instance as RFC1036
-     *
-     * @example
-     * ```
-     * echo Carbon::now()->toRfc1036String();
-     * ```
-     *
-     * @return string
-     */
-    public function toRfc1036String()
-    {
-        return $this->rawFormat(DateTime::RFC1036);
-    }
-
-    /**
-     * Format the instance as RFC1123
-     *
-     * @example
-     * ```
-     * echo Carbon::now()->toRfc1123String();
-     * ```
-     *
-     * @return string
-     */
-    public function toRfc1123String()
-    {
-        return $this->rawFormat(DateTime::RFC1123);
-    }
-
-    /**
-     * Format the instance as RFC2822
-     *
-     * @example
-     * ```
-     * echo Carbon::now()->toRfc2822String();
-     * ```
-     *
-     * @return string
-     */
-    public function toRfc2822String()
-    {
-        return $this->rawFormat(DateTime::RFC2822);
-    }
-
-    /**
-     * Format the instance as RFC3339
-     *
-     * @param bool $extended
-     *
-     * @example
-     * ```
-     * echo Carbon::now()->toRfc3339String() . "\n";
-     * echo Carbon::now()->toRfc3339String(true) . "\n";
-     * ```
-     *
-     * @return string
-     */
-    public function toRfc3339String($extended = false)
-    {
-        $format = DateTime::RFC3339;
-        if ($extended) {
-            $format = DateTime::RFC3339_EXTENDED;
-        }
-
-        return $this->rawFormat($format);
-    }
-
-    /**
-     * Format the instance as RSS
-     *
-     * @example
-     * ```
-     * echo Carbon::now()->toRssString();
-     * ```
-     *
-     * @return string
-     */
-    public function toRssString()
-    {
-        return $this->rawFormat(DateTime::RSS);
-    }
-
-    /**
-     * Format the instance as W3C
-     *
-     * @example
-     * ```
-     * echo Carbon::now()->toW3cString();
-     * ```
-     *
-     * @return string
-     */
-    public function toW3cString()
-    {
-        return $this->rawFormat(DateTime::W3C);
-    }
-
-    /**
-     * Format the instance as RFC7231
-     *
-     * @example
-     * ```
-     * echo Carbon::now()->toRfc7231String();
-     * ```
-     *
-     * @return string
-     */
-    public function toRfc7231String()
-    {
-        return $this->copy()
-            ->setTimezone('GMT')
-            ->rawFormat(\defined('static::RFC7231_FORMAT') ? static::RFC7231_FORMAT : CarbonInterface::RFC7231_FORMAT);
-    }
-
-    /**
-     * Get default array representation.
-     *
-     * @example
-     * ```
-     * var_dump(Carbon::now()->toArray());
-     * ```
-     *
-     * @return array
-     */
-    public function toArray()
-    {
-        return [
-            'year' => $this->year,
-            'month' => $this->month,
-            'day' => $this->day,
-            'dayOfWeek' => $this->dayOfWeek,
-            'dayOfYear' => $this->dayOfYear,
-            'hour' => $this->hour,
-            'minute' => $this->minute,
-            'second' => $this->second,
-            'micro' => $this->micro,
-            'timestamp' => $this->timestamp,
-            'formatted' => $this->rawFormat(\defined('static::DEFAULT_TO_STRING_FORMAT') ? static::DEFAULT_TO_STRING_FORMAT : CarbonInterface::DEFAULT_TO_STRING_FORMAT),
-            'timezone' => $this->timezone,
-        ];
-    }
-
-    /**
-     * Get default object representation.
-     *
-     * @example
-     * ```
-     * var_dump(Carbon::now()->toObject());
-     * ```
-     *
-     * @return object
-     */
-    public function toObject()
-    {
-        return (object) $this->toArray();
-    }
-
-    /**
-     * Returns english human readable complete date string.
-     *
-     * @example
-     * ```
-     * echo Carbon::now()->toString();
-     * ```
-     *
-     * @return string
-     */
-    public function toString()
-    {
-        return $this->copy()->locale('en')->isoFormat('ddd MMM DD YYYY HH:mm:ss [GMT]ZZ');
-    }
-
-    /**
-     * Return the ISO-8601 string (ex: 1977-04-22T06:00:00Z, if $keepOffset truthy, offset will be kept:
-     * 1977-04-22T01:00:00-05:00).
-     *
-     * @example
-     * ```
-     * echo Carbon::now('America/Toronto')->toISOString() . "\n";
-     * echo Carbon::now('America/Toronto')->toISOString(true) . "\n";
-     * ```
-     *
-     * @param bool $keepOffset Pass true to keep the date offset. Else forced to UTC.
-     *
-     * @return null|string
-     */
-    public function toISOString($keepOffset = false)
-    {
-        if (!$this->isValid()) {
-            return null;
-        }
-
-        $yearFormat = $this->year < 0 || $this->year > 9999 ? 'YYYYYY' : 'YYYY';
-        $tzFormat = $keepOffset ? 'Z' : '[Z]';
-        $date = $keepOffset ? $this : $this->copy()->utc();
-
-        return $date->isoFormat("$yearFormat-MM-DD[T]HH:mm:ss.SSSSSS$tzFormat");
-    }
-
-    /**
-     * Return the ISO-8601 string (ex: 1977-04-22T06:00:00Z) with UTC timezone.
-     *
-     * @example
-     * ```
-     * echo Carbon::now('America/Toronto')->toJSON();
-     * ```
-     *
-     * @return null|string
-     */
-    public function toJSON()
-    {
-        return $this->toISOString();
-    }
-
-    /**
-     * Return native DateTime PHP object matching the current instance.
-     *
-     * @example
-     * ```
-     * var_dump(Carbon::now()->toDateTime());
-     * ```
-     *
-     * @return DateTime
-     */
-    public function toDateTime()
-    {
-        return new DateTime($this->rawFormat('Y-m-d H:i:s.u'), $this->getTimezone());
-    }
-
-    /**
-     * Return native toDateTimeImmutable PHP object matching the current instance.
-     *
-     * @example
-     * ```
-     * var_dump(Carbon::now()->toDateTimeImmutable());
-     * ```
-     *
-     * @return DateTimeImmutable
-     */
-    public function toDateTimeImmutable()
-    {
-        return new DateTimeImmutable($this->rawFormat('Y-m-d H:i:s.u'), $this->getTimezone());
-    }
-
-    /**
-     * @alias toDateTime
-     *
-     * Return native DateTime PHP object matching the current instance.
-     *
-     * @example
-     * ```
-     * var_dump(Carbon::now()->toDate());
-     * ```
-     *
-     * @return DateTime
-     */
-    public function toDate()
-    {
-        return $this->toDateTime();
-    }
-
-    /**
-     * Create a iterable CarbonPeriod object from current date to a given end date (and optional interval).
-     *
-     * @param \DateTimeInterface|Carbon|CarbonImmutable|int|null $end      period end date or recurrences count if int
-     * @param int|\DateInterval|string|null                      $interval period default interval or number of the given $unit
-     * @param string|null                                        $unit     if specified, $interval must be an integer
-     *
-     * @return CarbonPeriod
-     */
-    public function toPeriod($end = null, $interval = null, $unit = null)
-    {
-        if ($unit) {
-            $interval = CarbonInterval::make("$interval ".static::pluralUnit($unit));
-        }
-
-        $period = (new CarbonPeriod())->setDateClass(static::class)->setStartDate($this);
-
-        if ($interval) {
-            $period->setDateInterval($interval);
-        }
-
-        if (\is_int($end) || \is_string($end) && ctype_digit($end)) {
-            $period->setRecurrences($end);
-        } elseif ($end) {
-            $period->setEndDate($end);
-        }
-
-        return $period;
-    }
-
-    /**
-     * Create a iterable CarbonPeriod object from current date to a given end date (and optional interval).
-     *
-     * @param \DateTimeInterface|Carbon|CarbonImmutable|null $end      period end date
-     * @param int|\DateInterval|string|null                  $interval period default interval or number of the given $unit
-     * @param string|null                                    $unit     if specified, $interval must be an integer
-     *
-     * @return CarbonPeriod
-     */
-    public function range($end = null, $interval = null, $unit = null)
-    {
-        return $this->toPeriod($end, $interval, $unit);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+XTm8YRHIhzHFu8qCQjVfpo3/chH7UWyR

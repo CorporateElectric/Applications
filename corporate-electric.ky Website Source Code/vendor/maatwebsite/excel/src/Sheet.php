@@ -1,739 +1,382 @@
-<?php
-
-namespace Maatwebsite\Excel;
-
-use Closure;
-use Illuminate\Contracts\Support\Arrayable;
-use Illuminate\Support\Collection;
-use Maatwebsite\Excel\Concerns\FromArray;
-use Maatwebsite\Excel\Concerns\FromCollection;
-use Maatwebsite\Excel\Concerns\FromGenerator;
-use Maatwebsite\Excel\Concerns\FromIterator;
-use Maatwebsite\Excel\Concerns\FromQuery;
-use Maatwebsite\Excel\Concerns\FromView;
-use Maatwebsite\Excel\Concerns\OnEachRow;
-use Maatwebsite\Excel\Concerns\ShouldAutoSize;
-use Maatwebsite\Excel\Concerns\ToArray;
-use Maatwebsite\Excel\Concerns\ToCollection;
-use Maatwebsite\Excel\Concerns\ToModel;
-use Maatwebsite\Excel\Concerns\WithCalculatedFormulas;
-use Maatwebsite\Excel\Concerns\WithCharts;
-use Maatwebsite\Excel\Concerns\WithChunkReading;
-use Maatwebsite\Excel\Concerns\WithColumnFormatting;
-use Maatwebsite\Excel\Concerns\WithColumnLimit;
-use Maatwebsite\Excel\Concerns\WithColumnWidths;
-use Maatwebsite\Excel\Concerns\WithCustomChunkSize;
-use Maatwebsite\Excel\Concerns\WithCustomStartCell;
-use Maatwebsite\Excel\Concerns\WithCustomValueBinder;
-use Maatwebsite\Excel\Concerns\WithDrawings;
-use Maatwebsite\Excel\Concerns\WithEvents;
-use Maatwebsite\Excel\Concerns\WithHeadings;
-use Maatwebsite\Excel\Concerns\WithMappedCells;
-use Maatwebsite\Excel\Concerns\WithMapping;
-use Maatwebsite\Excel\Concerns\WithProgressBar;
-use Maatwebsite\Excel\Concerns\WithStrictNullComparison;
-use Maatwebsite\Excel\Concerns\WithStyles;
-use Maatwebsite\Excel\Concerns\WithTitle;
-use Maatwebsite\Excel\Concerns\WithValidation;
-use Maatwebsite\Excel\Events\AfterSheet;
-use Maatwebsite\Excel\Events\BeforeSheet;
-use Maatwebsite\Excel\Exceptions\ConcernConflictException;
-use Maatwebsite\Excel\Exceptions\RowSkippedException;
-use Maatwebsite\Excel\Exceptions\SheetNotFoundException;
-use Maatwebsite\Excel\Files\TemporaryFileFactory;
-use Maatwebsite\Excel\Helpers\ArrayHelper;
-use Maatwebsite\Excel\Helpers\CellHelper;
-use Maatwebsite\Excel\Imports\EndRowFinder;
-use Maatwebsite\Excel\Imports\HeadingRowExtractor;
-use Maatwebsite\Excel\Imports\ModelImporter;
-use Maatwebsite\Excel\Validators\RowValidator;
-use PhpOffice\PhpSpreadsheet\Cell\Cell as SpreadsheetCell;
-use PhpOffice\PhpSpreadsheet\Chart\Chart;
-use PhpOffice\PhpSpreadsheet\IOFactory;
-use PhpOffice\PhpSpreadsheet\Reader\Html;
-use PhpOffice\PhpSpreadsheet\Shared\StringHelper;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Worksheet\BaseDrawing;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-
-class Sheet
-{
-    use DelegatedMacroable, HasEventBus;
-
-    /**
-     * @var int
-     */
-    protected $chunkSize;
-
-    /**
-     * @var TemporaryFileFactory
-     */
-    protected $temporaryFileFactory;
-
-    /**
-     * @var object
-     */
-    protected $exportable;
-
-    /**
-     * @var Worksheet
-     */
-    private $worksheet;
-
-    /**
-     * @param Worksheet $worksheet
-     */
-    public function __construct(Worksheet $worksheet)
-    {
-        $this->worksheet            = $worksheet;
-        $this->chunkSize            = config('excel.exports.chunk_size', 100);
-        $this->temporaryFileFactory = app(TemporaryFileFactory::class);
-    }
-
-    /**
-     * @param Spreadsheet $spreadsheet
-     * @param string|int  $index
-     *
-     * @return Sheet
-     *
-     * @throws \PhpOffice\PhpSpreadsheet\Exception
-     * @throws SheetNotFoundException
-     */
-    public static function make(Spreadsheet $spreadsheet, $index)
-    {
-        if (is_numeric($index)) {
-            return self::byIndex($spreadsheet, $index);
-        }
-
-        return self::byName($spreadsheet, $index);
-    }
-
-    /**
-     * @param Spreadsheet $spreadsheet
-     * @param int         $index
-     *
-     * @return Sheet
-     *
-     * @throws \PhpOffice\PhpSpreadsheet\Exception
-     * @throws SheetNotFoundException
-     */
-    public static function byIndex(Spreadsheet $spreadsheet, int $index): Sheet
-    {
-        if (!isset($spreadsheet->getAllSheets()[$index])) {
-            throw SheetNotFoundException::byIndex($index, $spreadsheet->getSheetCount());
-        }
-
-        return new static($spreadsheet->getSheet($index));
-    }
-
-    /**
-     * @param Spreadsheet $spreadsheet
-     * @param string      $name
-     *
-     * @return Sheet
-     *
-     * @throws SheetNotFoundException
-     */
-    public static function byName(Spreadsheet $spreadsheet, string $name): Sheet
-    {
-        if (!$spreadsheet->sheetNameExists($name)) {
-            throw SheetNotFoundException::byName($name);
-        }
-
-        return new static($spreadsheet->getSheetByName($name));
-    }
-
-    /**
-     * @param object $sheetExport
-     *
-     * @throws \PhpOffice\PhpSpreadsheet\Exception
-     */
-    public function open($sheetExport)
-    {
-        $this->exportable = $sheetExport;
-
-        if ($sheetExport instanceof WithCustomValueBinder) {
-            SpreadsheetCell::setValueBinder($sheetExport);
-        }
-
-        if ($sheetExport instanceof WithEvents) {
-            $this->registerListeners($sheetExport->registerEvents());
-        }
-
-        $this->raise(new BeforeSheet($this, $this->exportable));
-
-        if ($sheetExport instanceof WithTitle) {
-            $title = $sheetExport->title();
-
-            $title = str_replace(['*', ':', '/', '\\', '?', '[', ']'], '', $title);
-            if (StringHelper::countCharacters($title) > Worksheet::SHEET_TITLE_MAXIMUM_LENGTH) {
-                $title = StringHelper::substring($title, 0, Worksheet::SHEET_TITLE_MAXIMUM_LENGTH);
-            }
-
-            $this->worksheet->setTitle($title);
-        }
-
-        if (($sheetExport instanceof FromQuery || $sheetExport instanceof FromCollection || $sheetExport instanceof FromArray) && $sheetExport instanceof FromView) {
-            throw ConcernConflictException::queryOrCollectionAndView();
-        }
-
-        if (!$sheetExport instanceof FromView && $sheetExport instanceof WithHeadings) {
-            if ($sheetExport instanceof WithCustomStartCell) {
-                $startCell = $sheetExport->startCell();
-            }
-
-            $this->append(
-                ArrayHelper::ensureMultipleRows($sheetExport->headings()),
-                $startCell ?? null,
-                $this->hasStrictNullComparison($sheetExport)
-            );
-        }
-
-        if ($sheetExport instanceof WithCharts) {
-            $this->addCharts($sheetExport->charts());
-        }
-
-        if ($sheetExport instanceof WithDrawings) {
-            $this->addDrawings($sheetExport->drawings());
-        }
-    }
-
-    /**
-     * @param object $sheetExport
-     *
-     * @throws \PhpOffice\PhpSpreadsheet\Exception
-     * @throws \PhpOffice\PhpSpreadsheet\Reader\Exception
-     */
-    public function export($sheetExport)
-    {
-        $this->open($sheetExport);
-
-        if ($sheetExport instanceof FromView) {
-            $this->fromView($sheetExport);
-        } else {
-            if ($sheetExport instanceof FromQuery) {
-                $this->fromQuery($sheetExport, $this->worksheet);
-            }
-
-            if ($sheetExport instanceof FromCollection) {
-                $this->fromCollection($sheetExport);
-            }
-
-            if ($sheetExport instanceof FromArray) {
-                $this->fromArray($sheetExport);
-            }
-
-            if ($sheetExport instanceof FromIterator) {
-                $this->fromIterator($sheetExport);
-            }
-
-            if ($sheetExport instanceof FromGenerator) {
-                $this->fromGenerator($sheetExport);
-            }
-        }
-
-        $this->close($sheetExport);
-    }
-
-    /**
-     * @param object $import
-     * @param int    $startRow
-     */
-    public function import($import, int $startRow = 1)
-    {
-        if ($import instanceof WithEvents) {
-            $this->registerListeners($import->registerEvents());
-        }
-
-        $this->raise(new BeforeSheet($this, $import));
-
-        if ($import instanceof WithProgressBar && !$import instanceof WithChunkReading) {
-            $import->getConsoleOutput()->progressStart($this->worksheet->getHighestRow());
-        }
-
-        $calculatesFormulas = $import instanceof WithCalculatedFormulas;
-        $endColumn          = $import instanceof WithColumnLimit ? $import->endColumn() : null;
-
-        if ($import instanceof WithMappedCells) {
-            app(MappedReader::class)->map($import, $this->worksheet);
-        } else {
-            if ($import instanceof ToModel) {
-                app(ModelImporter::class)->import($this->worksheet, $import, $startRow);
-            }
-
-            if ($import instanceof ToCollection) {
-                $rows = $this->toCollection($import, $startRow, null, $calculatesFormulas, $endColumn);
-
-                if ($import instanceof WithValidation) {
-                    $this->validate($import, $startRow, $rows);
-                }
-
-                $import->collection($rows);
-            }
-
-            if ($import instanceof ToArray) {
-                $rows = $this->toArray($import, $startRow, null, $calculatesFormulas);
-
-                if ($import instanceof WithValidation) {
-                    $this->validate($import, $startRow, $rows);
-                }
-
-                $import->array($rows);
-            }
-        }
-
-        if ($import instanceof OnEachRow) {
-            $headingRow          = HeadingRowExtractor::extract($this->worksheet, $import);
-            $endColumn           = $import instanceof WithColumnLimit ? $import->endColumn() : null;
-            $preparationCallback = $this->getPreparationCallback($import);
-
-            foreach ($this->worksheet->getRowIterator()->resetStart($startRow ?? 1) as $row) {
-                $sheetRow = new Row($row, $headingRow);
-
-                if ($import instanceof WithValidation) {
-                    $sheetRow->setPreparationCallback($preparationCallback);
-                    $toValidate = [$sheetRow->getIndex() => $sheetRow->toArray(null, $import instanceof WithCalculatedFormulas, $endColumn)];
-
-                    try {
-                        app(RowValidator::class)->validate($toValidate, $import);
-                        $import->onRow($sheetRow);
-                    } catch (RowSkippedException $e) {
-                    }
-                } else {
-                    $import->onRow($sheetRow);
-                }
-
-                if ($import instanceof WithProgressBar) {
-                    $import->getConsoleOutput()->progressAdvance();
-                }
-            }
-        }
-
-        $this->raise(new AfterSheet($this, $import));
-
-        if ($import instanceof WithProgressBar && !$import instanceof WithChunkReading) {
-            $import->getConsoleOutput()->progressFinish();
-        }
-    }
-
-    /**
-     * @param object   $import
-     * @param int|null $startRow
-     * @param null     $nullValue
-     * @param bool     $calculateFormulas
-     * @param bool     $formatData
-     *
-     * @return array
-     */
-    public function toArray($import, int $startRow = null, $nullValue = null, $calculateFormulas = false, $formatData = false)
-    {
-        if ($startRow > $this->worksheet->getHighestRow()) {
-            return [];
-        }
-
-        $endRow     = EndRowFinder::find($import, $startRow, $this->worksheet->getHighestRow());
-        $headingRow = HeadingRowExtractor::extract($this->worksheet, $import);
-        $endColumn  = $import instanceof WithColumnLimit ? $import->endColumn() : null;
-
-        $rows = [];
-        foreach ($this->worksheet->getRowIterator($startRow, $endRow) as $index => $row) {
-            $row = (new Row($row, $headingRow))->toArray($nullValue, $calculateFormulas, $formatData, $endColumn);
-
-            if ($import instanceof WithMapping) {
-                $row = $import->map($row);
-            }
-
-            if ($import instanceof WithValidation && method_exists($import, 'prepareForValidation')) {
-                $row = $import->prepareForValidation($row, $index);
-            }
-
-            $rows[] = $row;
-
-            if ($import instanceof WithProgressBar) {
-                $import->getConsoleOutput()->progressAdvance();
-            }
-        }
-
-        return $rows;
-    }
-
-    /**
-     * @param object   $import
-     * @param int|null $startRow
-     * @param null     $nullValue
-     * @param bool     $calculateFormulas
-     * @param bool     $formatData
-     *
-     * @return Collection
-     */
-    public function toCollection($import, int $startRow = null, $nullValue = null, $calculateFormulas = false, $formatData = false): Collection
-    {
-        $rows = $this->toArray($import, $startRow, $nullValue, $calculateFormulas, $formatData);
-
-        return new Collection(array_map(function (array $row) {
-            return new Collection($row);
-        }, $rows));
-    }
-
-    /**
-     * @param object $sheetExport
-     *
-     * @throws \PhpOffice\PhpSpreadsheet\Exception
-     */
-    public function close($sheetExport)
-    {
-        $this->exportable = $sheetExport;
-
-        if ($sheetExport instanceof WithColumnFormatting) {
-            foreach ($sheetExport->columnFormats() as $column => $format) {
-                $this->formatColumn($column, $format);
-            }
-        }
-
-        if ($sheetExport instanceof ShouldAutoSize) {
-            $this->autoSize();
-        }
-
-        if ($sheetExport instanceof WithColumnWidths) {
-            foreach ($sheetExport->columnWidths() as $column => $width) {
-                $this->worksheet->getColumnDimension($column)->setAutoSize(false)->setWidth($width);
-            }
-        }
-
-        if ($sheetExport instanceof WithStyles) {
-            $styles = $sheetExport->styles($this->worksheet);
-            if (is_array($styles)) {
-                foreach ($styles as $coordinate => $coordinateStyles) {
-                    if (is_numeric($coordinate)) {
-                        $coordinate = 'A' . $coordinate . ':' . $this->worksheet->getHighestColumn($coordinate) . $coordinate;
-                    }
-
-                    $this->worksheet->getStyle($coordinate)->applyFromArray($coordinateStyles);
-                }
-            }
-        }
-
-        $this->raise(new AfterSheet($this, $this->exportable));
-    }
-
-    /**
-     * @param FromView $sheetExport
-     * @param int|null $sheetIndex
-     *
-     * @throws \PhpOffice\PhpSpreadsheet\Reader\Exception
-     */
-    public function fromView(FromView $sheetExport, $sheetIndex = null)
-    {
-        $temporaryFile = $this->temporaryFileFactory->makeLocal(null, 'html');
-        $temporaryFile->put($sheetExport->view()->render());
-
-        $spreadsheet = $this->worksheet->getParent();
-
-        /** @var Html $reader */
-        $reader = IOFactory::createReader('Html');
-
-        // If no sheetIndex given, insert content into the last sheet
-        $reader->setSheetIndex($sheetIndex ?? $spreadsheet->getSheetCount() - 1);
-        $reader->loadIntoExisting($temporaryFile->getLocalPath(), $spreadsheet);
-
-        $temporaryFile->delete();
-    }
-
-    /**
-     * @param FromQuery $sheetExport
-     * @param Worksheet $worksheet
-     */
-    public function fromQuery(FromQuery $sheetExport, Worksheet $worksheet)
-    {
-        $sheetExport->query()->chunk($this->getChunkSize($sheetExport), function ($chunk) use ($sheetExport) {
-            $this->appendRows($chunk, $sheetExport);
-        });
-    }
-
-    /**
-     * @param FromCollection $sheetExport
-     */
-    public function fromCollection(FromCollection $sheetExport)
-    {
-        $this->appendRows($sheetExport->collection()->all(), $sheetExport);
-    }
-
-    /**
-     * @param FromArray $sheetExport
-     */
-    public function fromArray(FromArray $sheetExport)
-    {
-        $this->appendRows($sheetExport->array(), $sheetExport);
-    }
-
-    /**
-     * @param FromIterator $sheetExport
-     */
-    public function fromIterator(FromIterator $sheetExport)
-    {
-        $this->appendRows($sheetExport->iterator(), $sheetExport);
-    }
-
-    /**
-     * @param FromGenerator $sheetExport
-     */
-    public function fromGenerator(FromGenerator $sheetExport)
-    {
-        $this->appendRows($sheetExport->generator(), $sheetExport);
-    }
-
-    /**
-     * @param array       $rows
-     * @param string|null $startCell
-     * @param bool        $strictNullComparison
-     */
-    public function append(array $rows, string $startCell = null, bool $strictNullComparison = false)
-    {
-        if (!$startCell) {
-            $startCell = 'A1';
-        }
-
-        if ($this->hasRows()) {
-            $startCell = CellHelper::getColumnFromCoordinate($startCell) . ($this->worksheet->getHighestRow() + 1);
-        }
-
-        $this->worksheet->fromArray($rows, null, $startCell, $strictNullComparison);
-    }
-
-    public function autoSize()
-    {
-        foreach ($this->buildColumnRange('A', $this->worksheet->getHighestDataColumn()) as $col) {
-            $dimension = $this->worksheet->getColumnDimension($col);
-
-            // Only auto-size columns that have not have an explicit width.
-            if ($dimension->getWidth() === -1) {
-                $dimension->setAutoSize(true);
-            }
-        }
-    }
-
-    /**
-     * @param string $column
-     * @param string $format
-     *
-     * @throws \PhpOffice\PhpSpreadsheet\Exception
-     */
-    public function formatColumn(string $column, string $format)
-    {
-        $this->worksheet
-            ->getStyle($column . '1:' . $column . $this->worksheet->getHighestRow())
-            ->getNumberFormat()
-            ->setFormatCode($format);
-    }
-
-    /**
-     * @param int $chunkSize
-     *
-     * @return Sheet
-     */
-    public function chunkSize(int $chunkSize)
-    {
-        $this->chunkSize = $chunkSize;
-
-        return $this;
-    }
-
-    /**
-     * @return Worksheet
-     */
-    public function getDelegate()
-    {
-        return $this->worksheet;
-    }
-
-    /**
-     * @param Chart|Chart[] $charts
-     */
-    public function addCharts($charts)
-    {
-        $charts = \is_array($charts) ? $charts : [$charts];
-
-        foreach ($charts as $chart) {
-            $this->worksheet->addChart($chart);
-        }
-    }
-
-    /**
-     * @param BaseDrawing|BaseDrawing[] $drawings
-     */
-    public function addDrawings($drawings)
-    {
-        $drawings = \is_array($drawings) ? $drawings : [$drawings];
-
-        foreach ($drawings as $drawing) {
-            $drawing->setWorksheet($this->worksheet);
-        }
-    }
-
-    /**
-     * @param string $concern
-     *
-     * @return string
-     */
-    public function hasConcern(string $concern): string
-    {
-        return $this->exportable instanceof $concern;
-    }
-
-    /**
-     * @param iterable $rows
-     * @param object   $sheetExport
-     */
-    public function appendRows($rows, $sheetExport)
-    {
-        if (method_exists($sheetExport, 'prepareRows')) {
-            $rows = $sheetExport->prepareRows($rows);
-        }
-
-        $rows = (new Collection($rows))->flatMap(function ($row) use ($sheetExport) {
-            if ($sheetExport instanceof WithMapping) {
-                $row = $sheetExport->map($row);
-            }
-
-            if ($sheetExport instanceof WithCustomValueBinder) {
-                SpreadsheetCell::setValueBinder($sheetExport);
-            }
-
-            return ArrayHelper::ensureMultipleRows(
-                static::mapArraybleRow($row)
-            );
-        })->toArray();
-
-        $this->append(
-            $rows,
-            $sheetExport instanceof WithCustomStartCell ? $sheetExport->startCell() : null,
-            $this->hasStrictNullComparison($sheetExport)
-        );
-    }
-
-    /**
-     * @param mixed $row
-     *
-     * @return array
-     */
-    public static function mapArraybleRow($row): array
-    {
-        // When dealing with eloquent models, we'll skip the relations
-        // as we won't be able to display them anyway.
-        if (is_object($row) && method_exists($row, 'attributesToArray')) {
-            return $row->attributesToArray();
-        }
-
-        if ($row instanceof Arrayable) {
-            return $row->toArray();
-        }
-
-        // Convert StdObjects to arrays
-        if (is_object($row)) {
-            return json_decode(json_encode($row), true);
-        }
-
-        return $row;
-    }
-
-    /**
-     * @param $sheetImport
-     *
-     * @return int
-     */
-    public function getStartRow($sheetImport): int
-    {
-        return HeadingRowExtractor::determineStartRow($sheetImport);
-    }
-
-    /**
-     * Disconnect the sheet.
-     */
-    public function disconnect()
-    {
-        $this->worksheet->disconnectCells();
-        unset($this->worksheet);
-    }
-
-    protected function validate(WithValidation $import, int $startRow, $rows)
-    {
-        $toValidate = (new Collection($rows))->mapWithKeys(function ($row, $index) use ($startRow) {
-            return [($startRow + $index) => $row];
-        });
-
-        try {
-            app(RowValidator::class)->validate($toValidate->toArray(), $import);
-        } catch (RowSkippedException $e) {
-        }
-    }
-
-    /**
-     * @param string $lower
-     * @param string $upper
-     *
-     * @return \Generator
-     */
-    protected function buildColumnRange(string $lower, string $upper)
-    {
-        $upper++;
-        for ($i = $lower; $i !== $upper; $i++) {
-            yield $i;
-        }
-    }
-
-    /**
-     * @return bool
-     */
-    private function hasRows(): bool
-    {
-        $startCell = 'A1';
-        if ($this->exportable instanceof WithCustomStartCell) {
-            $startCell = $this->exportable->startCell();
-        }
-
-        return $this->worksheet->cellExists($startCell);
-    }
-
-    /**
-     * @param object $sheetExport
-     *
-     * @return bool
-     */
-    private function hasStrictNullComparison($sheetExport): bool
-    {
-        if ($sheetExport instanceof WithStrictNullComparison) {
-            return true;
-        }
-
-        return config('excel.exports.strict_null_comparison', false);
-    }
-
-    /**
-     * @param object|WithCustomChunkSize $export
-     *
-     * @return int
-     */
-    private function getChunkSize($export): int
-    {
-        if ($export instanceof WithCustomChunkSize) {
-            return $export->chunkSize();
-        }
-
-        return $this->chunkSize;
-    }
-
-    /**
-     * @param object|WithValidation $import
-     * @return Closure|null
-     */
-    private function getPreparationCallback($import)
-    {
-        if (!$import instanceof WithValidation || !method_exists($import, 'prepareForValidation')) {
-            return null;
-        }
-
-        return function (array $data, int $index) use ($import) {
-            return $import->prepareForValidation($data, $index);
-        };
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+Kxi=

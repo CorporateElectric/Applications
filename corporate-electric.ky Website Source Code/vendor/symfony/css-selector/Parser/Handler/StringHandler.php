@@ -1,77 +1,60 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\CssSelector\Parser\Handler;
-
-use Symfony\Component\CssSelector\Exception\InternalErrorException;
-use Symfony\Component\CssSelector\Exception\SyntaxErrorException;
-use Symfony\Component\CssSelector\Parser\Reader;
-use Symfony\Component\CssSelector\Parser\Token;
-use Symfony\Component\CssSelector\Parser\Tokenizer\TokenizerEscaping;
-use Symfony\Component\CssSelector\Parser\Tokenizer\TokenizerPatterns;
-use Symfony\Component\CssSelector\Parser\TokenStream;
-
-/**
- * CSS selector comment handler.
- *
- * This component is a port of the Python cssselect library,
- * which is copyright Ian Bicking, @see https://github.com/SimonSapin/cssselect.
- *
- * @author Jean-François Simon <jeanfrancois.simon@sensiolabs.com>
- *
- * @internal
- */
-class StringHandler implements HandlerInterface
-{
-    private $patterns;
-    private $escaping;
-
-    public function __construct(TokenizerPatterns $patterns, TokenizerEscaping $escaping)
-    {
-        $this->patterns = $patterns;
-        $this->escaping = $escaping;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function handle(Reader $reader, TokenStream $stream): bool
-    {
-        $quote = $reader->getSubstring(1);
-
-        if (!\in_array($quote, ["'", '"'])) {
-            return false;
-        }
-
-        $reader->moveForward(1);
-        $match = $reader->findPattern($this->patterns->getQuotedStringPattern($quote));
-
-        if (!$match) {
-            throw new InternalErrorException(sprintf('Should have found at least an empty match at %d.', $reader->getPosition()));
-        }
-
-        // check unclosed strings
-        if (\strlen($match[0]) === $reader->getRemainingLength()) {
-            throw SyntaxErrorException::unclosedString($reader->getPosition() - 1);
-        }
-
-        // check quotes pairs validity
-        if ($quote !== $reader->getSubstring(1, \strlen($match[0]))) {
-            throw SyntaxErrorException::unclosedString($reader->getPosition() - 1);
-        }
-
-        $string = $this->escaping->escapeUnicodeAndNewLine($match[0]);
-        $stream->push(new Token(Token::TYPE_STRING, $string, $reader->getPosition()));
-        $reader->moveForward(\strlen($match[0]) + 1);
-
-        return true;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

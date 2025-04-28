@@ -1,333 +1,163 @@
-<?php
-
-namespace Illuminate\Routing;
-
-use Illuminate\Container\Container;
-use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
-use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-use Symfony\Component\Routing\Exception\MethodNotAllowedException;
-use Symfony\Component\Routing\Exception\ResourceNotFoundException;
-use Symfony\Component\Routing\Matcher\CompiledUrlMatcher;
-use Symfony\Component\Routing\RequestContext;
-
-class CompiledRouteCollection extends AbstractRouteCollection
-{
-    /**
-     * The compiled routes collection.
-     *
-     * @var array
-     */
-    protected $compiled = [];
-
-    /**
-     * An array of the route attributes keyed by name.
-     *
-     * @var array
-     */
-    protected $attributes = [];
-
-    /**
-     * The dynamically added routes that were added after loading the cached, compiled routes.
-     *
-     * @var \Illuminate\Routing\RouteCollection|null
-     */
-    protected $routes;
-
-    /**
-     * The router instance used by the route.
-     *
-     * @var \Illuminate\Routing\Router
-     */
-    protected $router;
-
-    /**
-     * The container instance used by the route.
-     *
-     * @var \Illuminate\Container\Container
-     */
-    protected $container;
-
-    /**
-     * Create a new CompiledRouteCollection instance.
-     *
-     * @param  array  $compiled
-     * @param  array  $attributes
-     * @return void
-     */
-    public function __construct(array $compiled, array $attributes)
-    {
-        $this->compiled = $compiled;
-        $this->attributes = $attributes;
-        $this->routes = new RouteCollection;
-    }
-
-    /**
-     * Add a Route instance to the collection.
-     *
-     * @param  \Illuminate\Routing\Route  $route
-     * @return \Illuminate\Routing\Route
-     */
-    public function add(Route $route)
-    {
-        return $this->routes->add($route);
-    }
-
-    /**
-     * Refresh the name look-up table.
-     *
-     * This is done in case any names are fluently defined or if routes are overwritten.
-     *
-     * @return void
-     */
-    public function refreshNameLookups()
-    {
-        //
-    }
-
-    /**
-     * Refresh the action look-up table.
-     *
-     * This is done in case any actions are overwritten with new controllers.
-     *
-     * @return void
-     */
-    public function refreshActionLookups()
-    {
-        //
-    }
-
-    /**
-     * Find the first route matching a given request.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Routing\Route
-     *
-     * @throws \Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException
-     * @throws \Symfony\Component\HttpKernel\Exception\NotFoundHttpException
-     */
-    public function match(Request $request)
-    {
-        $matcher = new CompiledUrlMatcher(
-            $this->compiled, (new RequestContext)->fromRequest(
-                $trimmedRequest = $this->requestWithoutTrailingSlash($request)
-            )
-        );
-
-        $route = null;
-
-        try {
-            if ($result = $matcher->matchRequest($trimmedRequest)) {
-                $route = $this->getByName($result['_route']);
-            }
-        } catch (ResourceNotFoundException | MethodNotAllowedException $e) {
-            try {
-                return $this->routes->match($request);
-            } catch (NotFoundHttpException $e) {
-                //
-            }
-        }
-
-        if ($route && $route->isFallback) {
-            try {
-                $dynamicRoute = $this->routes->match($request);
-
-                if (! $dynamicRoute->isFallback) {
-                    $route = $dynamicRoute;
-                }
-            } catch (NotFoundHttpException | MethodNotAllowedHttpException $e) {
-                //
-            }
-        }
-
-        return $this->handleMatchedRoute($request, $route);
-    }
-
-    /**
-     * Get a cloned instance of the given request without any trailing slash on the URI.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Request
-     */
-    protected function requestWithoutTrailingSlash(Request $request)
-    {
-        $trimmedRequest = Request::createFromBase($request);
-
-        $parts = explode('?', $request->server->get('REQUEST_URI'), 2);
-
-        $trimmedRequest->server->set(
-            'REQUEST_URI', rtrim($parts[0], '/').(isset($parts[1]) ? '?'.$parts[1] : '')
-        );
-
-        return $trimmedRequest;
-    }
-
-    /**
-     * Get routes from the collection by method.
-     *
-     * @param  string|null  $method
-     * @return \Illuminate\Routing\Route[]
-     */
-    public function get($method = null)
-    {
-        return $this->getRoutesByMethod()[$method] ?? [];
-    }
-
-    /**
-     * Determine if the route collection contains a given named route.
-     *
-     * @param  string  $name
-     * @return bool
-     */
-    public function hasNamedRoute($name)
-    {
-        return isset($this->attributes[$name]) || $this->routes->hasNamedRoute($name);
-    }
-
-    /**
-     * Get a route instance by its name.
-     *
-     * @param  string  $name
-     * @return \Illuminate\Routing\Route|null
-     */
-    public function getByName($name)
-    {
-        if (isset($this->attributes[$name])) {
-            return $this->newRoute($this->attributes[$name]);
-        }
-
-        return $this->routes->getByName($name);
-    }
-
-    /**
-     * Get a route instance by its controller action.
-     *
-     * @param  string  $action
-     * @return \Illuminate\Routing\Route|null
-     */
-    public function getByAction($action)
-    {
-        $attributes = collect($this->attributes)->first(function (array $attributes) use ($action) {
-            if (isset($attributes['action']['controller'])) {
-                return trim($attributes['action']['controller'], '\\') === $action;
-            }
-
-            return $attributes['action']['uses'] === $action;
-        });
-
-        if ($attributes) {
-            return $this->newRoute($attributes);
-        }
-
-        return $this->routes->getByAction($action);
-    }
-
-    /**
-     * Get all of the routes in the collection.
-     *
-     * @return \Illuminate\Routing\Route[]
-     */
-    public function getRoutes()
-    {
-        return collect($this->attributes)
-            ->map(function (array $attributes) {
-                return $this->newRoute($attributes);
-            })
-            ->merge($this->routes->getRoutes())
-            ->values()
-            ->all();
-    }
-
-    /**
-     * Get all of the routes keyed by their HTTP verb / method.
-     *
-     * @return array
-     */
-    public function getRoutesByMethod()
-    {
-        return collect($this->getRoutes())
-            ->groupBy(function (Route $route) {
-                return $route->methods();
-            })
-            ->map(function (Collection $routes) {
-                return $routes->mapWithKeys(function (Route $route) {
-                    if ($domain = $route->getDomain()) {
-                        return [$domain.'/'.$route->uri => $route];
-                    }
-
-                    return [$route->uri => $route];
-                })->all();
-            })
-            ->all();
-    }
-
-    /**
-     * Get all of the routes keyed by their name.
-     *
-     * @return \Illuminate\Routing\Route[]
-     */
-    public function getRoutesByName()
-    {
-        return collect($this->getRoutes())
-            ->keyBy(function (Route $route) {
-                return $route->getName();
-            })
-            ->all();
-    }
-
-    /**
-     * Resolve an array of attributes to a Route instance.
-     *
-     * @param  array  $attributes
-     * @return \Illuminate\Routing\Route
-     */
-    protected function newRoute(array $attributes)
-    {
-        if (empty($attributes['action']['prefix'] ?? '')) {
-            $baseUri = $attributes['uri'];
-        } else {
-            $prefix = trim($attributes['action']['prefix'], '/');
-
-            $baseUri = trim(implode(
-                '/', array_slice(
-                    explode('/', trim($attributes['uri'], '/')),
-                    count($prefix !== '' ? explode('/', $prefix) : [])
-                )
-            ), '/');
-        }
-
-        return $this->router->newRoute($attributes['methods'], $baseUri == '' ? '/' : $baseUri, $attributes['action'])
-            ->setFallback($attributes['fallback'])
-            ->setDefaults($attributes['defaults'])
-            ->setWheres($attributes['wheres'])
-            ->setBindingFields($attributes['bindingFields'])
-            ->block($attributes['lockSeconds'] ?? null, $attributes['waitSeconds'] ?? null);
-    }
-
-    /**
-     * Set the router instance on the route.
-     *
-     * @param  \Illuminate\Routing\Router  $router
-     * @return $this
-     */
-    public function setRouter(Router $router)
-    {
-        $this->router = $router;
-
-        return $this;
-    }
-
-    /**
-     * Set the container instance on the route.
-     *
-     * @param  \Illuminate\Container\Container  $container
-     * @return $this
-     */
-    public function setContainer(Container $container)
-    {
-        $this->container = $container;
-
-        return $this;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

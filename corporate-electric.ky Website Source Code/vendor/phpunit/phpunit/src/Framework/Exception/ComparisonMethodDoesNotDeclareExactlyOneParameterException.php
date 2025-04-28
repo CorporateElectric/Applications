@@ -1,37 +1,36 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Framework;
-
-use const PHP_EOL;
-use function sprintf;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for PHPUnit
- */
-final class ComparisonMethodDoesNotDeclareExactlyOneParameterException extends Exception
-{
-    public function __construct(string $className, string $methodName)
-    {
-        parent::__construct(
-            sprintf(
-                'Comparison method %s::%s() does not declare exactly one parameter.',
-                $className,
-                $methodName
-            ),
-            0,
-            null
-        );
-    }
-
-    public function __toString(): string
-    {
-        return $this->getMessage() . PHP_EOL;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+iOKJJ0yjajOvW+0BchzsEQf7Dc41jUqP0fO=

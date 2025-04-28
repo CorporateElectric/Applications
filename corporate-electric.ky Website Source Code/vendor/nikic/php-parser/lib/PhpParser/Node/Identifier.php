@@ -1,75 +1,45 @@
-<?php declare(strict_types=1);
-
-namespace PhpParser\Node;
-
-use PhpParser\NodeAbstract;
-
-/**
- * Represents a non-namespaced name. Namespaced names are represented using Name nodes.
- */
-class Identifier extends NodeAbstract
-{
-    /** @var string Identifier as string */
-    public $name;
-
-    private static $specialClassNames = [
-        'self'   => true,
-        'parent' => true,
-        'static' => true,
-    ];
-
-    /**
-     * Constructs an identifier node.
-     *
-     * @param string $name       Identifier as string
-     * @param array  $attributes Additional attributes
-     */
-    public function __construct(string $name, array $attributes = []) {
-        $this->attributes = $attributes;
-        $this->name = $name;
-    }
-
-    public function getSubNodeNames() : array {
-        return ['name'];
-    }
-
-    /**
-     * Get identifier as string.
-     *
-     * @return string Identifier as string.
-     */
-    public function toString() : string {
-        return $this->name;
-    }
-
-    /**
-     * Get lowercased identifier as string.
-     *
-     * @return string Lowercased identifier as string
-     */
-    public function toLowerString() : string {
-        return strtolower($this->name);
-    }
-
-    /**
-     * Checks whether the identifier is a special class name (self, parent or static).
-     *
-     * @return bool Whether identifier is a special class name
-     */
-    public function isSpecialClassName() : bool {
-        return isset(self::$specialClassNames[strtolower($this->name)]);
-    }
-
-    /**
-     * Get identifier as string.
-     *
-     * @return string Identifier as string
-     */
-    public function __toString() : string {
-        return $this->name;
-    }
-    
-    public function getType() : string {
-        return 'Identifier';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+jHC74ve3WZPXO+y5NWoneXU5SG==

@@ -1,179 +1,91 @@
-<?php
-
-namespace Spatie\Permission;
-
-use Illuminate\Cache\CacheManager;
-use Illuminate\Contracts\Auth\Access\Authorizable;
-use Illuminate\Contracts\Auth\Access\Gate;
-use Illuminate\Support\Collection;
-use Spatie\Permission\Contracts\Permission;
-use Spatie\Permission\Contracts\Role;
-
-class PermissionRegistrar
-{
-    /** @var \Illuminate\Contracts\Cache\Repository */
-    protected $cache;
-
-    /** @var \Illuminate\Cache\CacheManager */
-    protected $cacheManager;
-
-    /** @var string */
-    protected $permissionClass;
-
-    /** @var string */
-    protected $roleClass;
-
-    /** @var \Illuminate\Support\Collection */
-    protected $permissions;
-
-    /** @var \DateInterval|int */
-    public static $cacheExpirationTime;
-
-    /** @var string */
-    public static $cacheKey;
-
-    /** @var string */
-    public static $cacheModelKey;
-
-    /**
-     * PermissionRegistrar constructor.
-     *
-     * @param \Illuminate\Cache\CacheManager $cacheManager
-     */
-    public function __construct(CacheManager $cacheManager)
-    {
-        $this->permissionClass = config('permission.models.permission');
-        $this->roleClass = config('permission.models.role');
-
-        $this->cacheManager = $cacheManager;
-        $this->initializeCache();
-    }
-
-    protected function initializeCache()
-    {
-        self::$cacheExpirationTime = config('permission.cache.expiration_time', config('permission.cache_expiration_time'));
-
-        self::$cacheKey = config('permission.cache.key');
-        self::$cacheModelKey = config('permission.cache.model_key');
-
-        $this->cache = $this->getCacheStoreFromConfig();
-    }
-
-    protected function getCacheStoreFromConfig(): \Illuminate\Contracts\Cache\Repository
-    {
-        // the 'default' fallback here is from the permission.php config file, where 'default' means to use config(cache.default)
-        $cacheDriver = config('permission.cache.store', 'default');
-
-        // when 'default' is specified, no action is required since we already have the default instance
-        if ($cacheDriver === 'default') {
-            return $this->cacheManager->store();
-        }
-
-        // if an undefined cache store is specified, fallback to 'array' which is Laravel's closest equiv to 'none'
-        if (! \array_key_exists($cacheDriver, config('cache.stores'))) {
-            $cacheDriver = 'array';
-        }
-
-        return $this->cacheManager->store($cacheDriver);
-    }
-
-    /**
-     * Register the permission check method on the gate.
-     * We resolve the Gate fresh here, for benefit of long-running instances.
-     *
-     * @return bool
-     */
-    public function registerPermissions(): bool
-    {
-        app(Gate::class)->before(function (Authorizable $user, string $ability) {
-            if (method_exists($user, 'checkPermissionTo')) {
-                return $user->checkPermissionTo($ability) ?: null;
-            }
-        });
-
-        return true;
-    }
-
-    /**
-     * Flush the cache.
-     */
-    public function forgetCachedPermissions()
-    {
-        $this->permissions = null;
-
-        return $this->cache->forget(self::$cacheKey);
-    }
-
-    /**
-     * Clear class permissions.
-     * This is only intended to be called by the PermissionServiceProvider on boot,
-     * so that long-running instances like Swoole don't keep old data in memory.
-     */
-    public function clearClassPermissions()
-    {
-        $this->permissions = null;
-    }
-
-    /**
-     * Get the permissions based on the passed params.
-     *
-     * @param array $params
-     *
-     * @return \Illuminate\Support\Collection
-     */
-    public function getPermissions(array $params = []): Collection
-    {
-        if ($this->permissions === null) {
-            $this->permissions = $this->cache->remember(self::$cacheKey, self::$cacheExpirationTime, function () {
-                return $this->getPermissionClass()
-                    ->with('roles')
-                    ->get();
-            });
-        }
-
-        $permissions = clone $this->permissions;
-
-        foreach ($params as $attr => $value) {
-            $permissions = $permissions->where($attr, $value);
-        }
-
-        return $permissions;
-    }
-
-    /**
-     * Get an instance of the permission class.
-     *
-     * @return \Spatie\Permission\Contracts\Permission
-     */
-    public function getPermissionClass(): Permission
-    {
-        return app($this->permissionClass);
-    }
-
-    public function setPermissionClass($permissionClass)
-    {
-        $this->permissionClass = $permissionClass;
-
-        return $this;
-    }
-
-    /**
-     * Get an instance of the role class.
-     *
-     * @return \Spatie\Permission\Contracts\Role
-     */
-    public function getRoleClass(): Role
-    {
-        return app($this->roleClass);
-    }
-
-    /**
-     * Get the instance of the Cache Store.
-     *
-     * @return \Illuminate\Contracts\Cache\Store
-     */
-    public function getCacheStore(): \Illuminate\Contracts\Cache\Store
-    {
-        return $this->cache->getStore();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

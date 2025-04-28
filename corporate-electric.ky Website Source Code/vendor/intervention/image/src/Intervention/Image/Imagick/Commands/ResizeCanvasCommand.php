@@ -1,91 +1,83 @@
-<?php
-
-namespace Intervention\Image\Imagick\Commands;
-
-use Intervention\Image\Commands\AbstractCommand;
-
-class ResizeCanvasCommand extends AbstractCommand
-{
-    /**
-     * Resizes image boundaries
-     *
-     * @param  \Intervention\Image\Image $image
-     * @return boolean
-     */
-    public function execute($image)
-    {
-        $width = $this->argument(0)->type('digit')->required()->value();
-        $height = $this->argument(1)->type('digit')->required()->value();
-        $anchor = $this->argument(2)->value('center');
-        $relative = $this->argument(3)->type('boolean')->value(false);
-        $bgcolor = $this->argument(4)->value();
-
-        $original_width = $image->getWidth();
-        $original_height = $image->getHeight();
-
-        // check of only width or height is set
-        $width = is_null($width) ? $original_width : intval($width);
-        $height = is_null($height) ? $original_height : intval($height);
-
-        // check on relative width/height
-        if ($relative) {
-            $width = $original_width + $width;
-            $height = $original_height + $height;
-        }
-
-        // check for negative width/height
-        $width = ($width <= 0) ? $width + $original_width : $width;
-        $height = ($height <= 0) ? $height + $original_height : $height;
-
-        // create new canvas
-        $canvas = $image->getDriver()->newImage($width, $height, $bgcolor);
-
-        // set copy position
-        $canvas_size = $canvas->getSize()->align($anchor);
-        $image_size = $image->getSize()->align($anchor);
-        $canvas_pos = $image_size->relativePosition($canvas_size);
-        $image_pos = $canvas_size->relativePosition($image_size);
-
-        if ($width <= $original_width) {
-            $dst_x = 0;
-            $src_x = $canvas_pos->x;
-            $src_w = $canvas_size->width;
-        } else {
-            $dst_x = $image_pos->x;
-            $src_x = 0;
-            $src_w = $original_width;
-        }
-
-        if ($height <= $original_height) {
-            $dst_y = 0;
-            $src_y = $canvas_pos->y;
-            $src_h = $canvas_size->height;
-        } else {
-            $dst_y = $image_pos->y;
-            $src_y = 0;
-            $src_h = $original_height;
-        }
-
-        // make image area transparent to keep transparency
-        // even if background-color is set
-        $rect = new \ImagickDraw;
-        $fill = $canvas->pickColor(0, 0, 'hex');
-        $fill = $fill == '#ff0000' ? '#00ff00' : '#ff0000';
-        $rect->setFillColor($fill);
-        $rect->rectangle($dst_x, $dst_y, $dst_x + $src_w - 1, $dst_y + $src_h - 1);
-        $canvas->getCore()->drawImage($rect);
-        $canvas->getCore()->transparentPaintImage($fill, 0, 0, false);
-
-        $canvas->getCore()->setImageColorspace($image->getCore()->getImageColorspace());
-
-        // copy image into new canvas
-        $image->getCore()->cropImage($src_w, $src_h, $src_x, $src_y);
-        $canvas->getCore()->compositeImage($image->getCore(), \Imagick::COMPOSITE_DEFAULT, $dst_x, $dst_y);
-        $canvas->getCore()->setImagePage(0,0,0,0);
-
-        // set new core to canvas
-        $image->setCore($canvas->getCore());
-
-        return true;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

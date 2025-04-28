@@ -1,74 +1,46 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Framework\Constraint;
-
-use function sprintf;
-use Exception;
-use PHPUnit\Util\RegularExpression as RegularExpressionUtil;
-
-/**
- * @no-named-arguments Parameter names are not covered by the backward compatibility promise for PHPUnit
- */
-final class ExceptionMessageRegularExpression extends Constraint
-{
-    /**
-     * @var string
-     */
-    private $expectedMessageRegExp;
-
-    public function __construct(string $expected)
-    {
-        $this->expectedMessageRegExp = $expected;
-    }
-
-    public function toString(): string
-    {
-        return 'exception message matches ';
-    }
-
-    /**
-     * Evaluates the constraint for parameter $other. Returns true if the
-     * constraint is met, false otherwise.
-     *
-     * @param \PHPUnit\Framework\Exception $other
-     *
-     * @throws \PHPUnit\Framework\Exception
-     * @throws Exception
-     */
-    protected function matches($other): bool
-    {
-        $match = RegularExpressionUtil::safeMatch($this->expectedMessageRegExp, $other->getMessage());
-
-        if ($match === false) {
-            throw new \PHPUnit\Framework\Exception(
-                "Invalid expected exception message regex given: '{$this->expectedMessageRegExp}'"
-            );
-        }
-
-        return $match === 1;
-    }
-
-    /**
-     * Returns the description of the failure.
-     *
-     * The beginning of failure messages is "Failed asserting that" in most
-     * cases. This method should return the second part of that sentence.
-     *
-     * @param mixed $other evaluated value or object
-     */
-    protected function failureDescription($other): string
-    {
-        return sprintf(
-            "exception message '%s' matches '%s'",
-            $other->getMessage(),
-            $this->expectedMessageRegExp
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

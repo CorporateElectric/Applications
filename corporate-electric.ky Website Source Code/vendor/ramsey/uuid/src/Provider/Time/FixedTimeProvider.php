@@ -1,63 +1,36 @@
-<?php
-
-/**
- * This file is part of the ramsey/uuid library
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @copyright Copyright (c) Ben Ramsey <ben@benramsey.com>
- * @license http://opensource.org/licenses/MIT MIT
- */
-
-declare(strict_types=1);
-
-namespace Ramsey\Uuid\Provider\Time;
-
-use Ramsey\Uuid\Provider\TimeProviderInterface;
-use Ramsey\Uuid\Type\Integer as IntegerObject;
-use Ramsey\Uuid\Type\Time;
-
-/**
- * FixedTimeProvider uses an known time to provide the time
- *
- * This provider allows the use of a previously-generated, or known, time
- * when generating time-based UUIDs.
- */
-class FixedTimeProvider implements TimeProviderInterface
-{
-    /**
-     * @var Time
-     */
-    private $fixedTime;
-
-    public function __construct(Time $time)
-    {
-        $this->fixedTime = $time;
-    }
-
-    /**
-     * Sets the `usec` component of the time
-     *
-     * @param int|string|IntegerObject $value The `usec` value to set
-     */
-    public function setUsec($value): void
-    {
-        $this->fixedTime = new Time($this->fixedTime->getSeconds(), $value);
-    }
-
-    /**
-     * Sets the `sec` component of the time
-     *
-     * @param int|string|IntegerObject $value The `sec` value to set
-     */
-    public function setSec($value): void
-    {
-        $this->fixedTime = new Time($value, $this->fixedTime->getMicroseconds());
-    }
-
-    public function getTime(): Time
-    {
-        return $this->fixedTime;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,65 +1,38 @@
-<?php
-
-/*
- * This file is part of SwiftMailer.
- * (c) 2004-2009 Chris Corbyn
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-/**
- * Handles raw Transfer Encoding in Swift Mailer.
- *
- * When sending 8-bit content over SMTP, you should use
- * Swift_Transport_Esmtp_EightBitMimeHandler to enable the 8BITMIME SMTP
- * extension.
- *
- * @author Sebastiaan Stok <s.stok@rollerscapes.net>
- */
-class Swift_Mime_ContentEncoder_RawContentEncoder implements Swift_Mime_ContentEncoder
-{
-    /**
-     * Encode a given string to produce an encoded string.
-     *
-     * @param string $string
-     * @param int    $firstLineOffset ignored
-     * @param int    $maxLineLength   ignored
-     *
-     * @return string
-     */
-    public function encodeString($string, $firstLineOffset = 0, $maxLineLength = 0)
-    {
-        return $string;
-    }
-
-    /**
-     * Encode stream $in to stream $out.
-     *
-     * @param int $firstLineOffset ignored
-     * @param int $maxLineLength   ignored
-     */
-    public function encodeByteStream(Swift_OutputByteStream $os, Swift_InputByteStream $is, $firstLineOffset = 0, $maxLineLength = 0)
-    {
-        while (false !== ($bytes = $os->read(8192))) {
-            $is->write($bytes);
-        }
-    }
-
-    /**
-     * Get the name of this encoding scheme.
-     *
-     * @return string
-     */
-    public function getName()
-    {
-        return 'raw';
-    }
-
-    /**
-     * Not used.
-     */
-    public function charsetChanged($charset)
-    {
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+kTbEn6S=

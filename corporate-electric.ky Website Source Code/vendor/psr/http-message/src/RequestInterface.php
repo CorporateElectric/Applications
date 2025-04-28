@@ -1,129 +1,32 @@
-<?php
-
-namespace Psr\Http\Message;
-
-/**
- * Representation of an outgoing, client-side request.
- *
- * Per the HTTP specification, this interface includes properties for
- * each of the following:
- *
- * - Protocol version
- * - HTTP method
- * - URI
- * - Headers
- * - Message body
- *
- * During construction, implementations MUST attempt to set the Host header from
- * a provided URI if no Host header is provided.
- *
- * Requests are considered immutable; all methods that might change state MUST
- * be implemented such that they retain the internal state of the current
- * message and return an instance that contains the changed state.
- */
-interface RequestInterface extends MessageInterface
-{
-    /**
-     * Retrieves the message's request target.
-     *
-     * Retrieves the message's request-target either as it will appear (for
-     * clients), as it appeared at request (for servers), or as it was
-     * specified for the instance (see withRequestTarget()).
-     *
-     * In most cases, this will be the origin-form of the composed URI,
-     * unless a value was provided to the concrete implementation (see
-     * withRequestTarget() below).
-     *
-     * If no URI is available, and no request-target has been specifically
-     * provided, this method MUST return the string "/".
-     *
-     * @return string
-     */
-    public function getRequestTarget();
-
-    /**
-     * Return an instance with the specific request-target.
-     *
-     * If the request needs a non-origin-form request-target — e.g., for
-     * specifying an absolute-form, authority-form, or asterisk-form —
-     * this method may be used to create an instance with the specified
-     * request-target, verbatim.
-     *
-     * This method MUST be implemented in such a way as to retain the
-     * immutability of the message, and MUST return an instance that has the
-     * changed request target.
-     *
-     * @link http://tools.ietf.org/html/rfc7230#section-5.3 (for the various
-     *     request-target forms allowed in request messages)
-     * @param mixed $requestTarget
-     * @return static
-     */
-    public function withRequestTarget($requestTarget);
-
-    /**
-     * Retrieves the HTTP method of the request.
-     *
-     * @return string Returns the request method.
-     */
-    public function getMethod();
-
-    /**
-     * Return an instance with the provided HTTP method.
-     *
-     * While HTTP method names are typically all uppercase characters, HTTP
-     * method names are case-sensitive and thus implementations SHOULD NOT
-     * modify the given string.
-     *
-     * This method MUST be implemented in such a way as to retain the
-     * immutability of the message, and MUST return an instance that has the
-     * changed request method.
-     *
-     * @param string $method Case-sensitive method.
-     * @return static
-     * @throws \InvalidArgumentException for invalid HTTP methods.
-     */
-    public function withMethod($method);
-
-    /**
-     * Retrieves the URI instance.
-     *
-     * This method MUST return a UriInterface instance.
-     *
-     * @link http://tools.ietf.org/html/rfc3986#section-4.3
-     * @return UriInterface Returns a UriInterface instance
-     *     representing the URI of the request.
-     */
-    public function getUri();
-
-    /**
-     * Returns an instance with the provided URI.
-     *
-     * This method MUST update the Host header of the returned request by
-     * default if the URI contains a host component. If the URI does not
-     * contain a host component, any pre-existing Host header MUST be carried
-     * over to the returned request.
-     *
-     * You can opt-in to preserving the original state of the Host header by
-     * setting `$preserveHost` to `true`. When `$preserveHost` is set to
-     * `true`, this method interacts with the Host header in the following ways:
-     *
-     * - If the Host header is missing or empty, and the new URI contains
-     *   a host component, this method MUST update the Host header in the returned
-     *   request.
-     * - If the Host header is missing or empty, and the new URI does not contain a
-     *   host component, this method MUST NOT update the Host header in the returned
-     *   request.
-     * - If a Host header is present and non-empty, this method MUST NOT update
-     *   the Host header in the returned request.
-     *
-     * This method MUST be implemented in such a way as to retain the
-     * immutability of the message, and MUST return an instance that has the
-     * new UriInterface instance.
-     *
-     * @link http://tools.ietf.org/html/rfc3986#section-4.3
-     * @param UriInterface $uri New request URI to use.
-     * @param bool $preserveHost Preserve the original state of the Host header.
-     * @return static
-     */
-    public function withUri(UriInterface $uri, $preserveHost = false);
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+dJ70QMg2qMvWxrfUT0yP05kvfSUnaSi=

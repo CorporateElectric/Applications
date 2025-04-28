@@ -1,243 +1,144 @@
-<?php
-
-/*
- * This file is part of the Prophecy.
- * (c) Konstantin Kudryashov <ever.zet@gmail.com>
- *     Marcello Duarte <marcello.duarte@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Prophecy\Doubler\Generator;
-
-use Prophecy\Doubler\Generator\Node\ArgumentTypeNode;
-use Prophecy\Doubler\Generator\Node\ReturnTypeNode;
-use Prophecy\Exception\InvalidArgumentException;
-use Prophecy\Exception\Doubler\ClassMirrorException;
-use ReflectionClass;
-use ReflectionMethod;
-use ReflectionNamedType;
-use ReflectionParameter;
-use ReflectionType;
-use ReflectionUnionType;
-
-/**
- * Class mirror.
- * Core doubler class. Mirrors specific class and/or interfaces into class node tree.
- *
- * @author Konstantin Kudryashov <ever.zet@gmail.com>
- */
-class ClassMirror
-{
-    private static $reflectableMethods = array(
-        '__construct',
-        '__destruct',
-        '__sleep',
-        '__wakeup',
-        '__toString',
-        '__call',
-        '__invoke'
-    );
-
-    /**
-     * Reflects provided arguments into class node.
-     *
-     * @param ReflectionClass|null $class
-     * @param ReflectionClass[] $interfaces
-     *
-     * @return Node\ClassNode
-     *
-     */
-    public function reflect(?ReflectionClass $class, array $interfaces)
-    {
-        $node = new Node\ClassNode;
-
-        if (null !== $class) {
-            if (true === $class->isInterface()) {
-                throw new InvalidArgumentException(sprintf(
-                    "Could not reflect %s as a class, because it\n".
-                    "is interface - use the second argument instead.",
-                    $class->getName()
-                ));
-            }
-
-            $this->reflectClassToNode($class, $node);
-        }
-
-        foreach ($interfaces as $interface) {
-            if (!$interface instanceof ReflectionClass) {
-                throw new InvalidArgumentException(sprintf(
-                    "[ReflectionClass \$interface1 [, ReflectionClass \$interface2]] array expected as\n".
-                    "a second argument to `ClassMirror::reflect(...)`, but got %s.",
-                    is_object($interface) ? get_class($interface).' class' : gettype($interface)
-                ));
-            }
-            if (false === $interface->isInterface()) {
-                throw new InvalidArgumentException(sprintf(
-                    "Could not reflect %s as an interface, because it\n".
-                    "is class - use the first argument instead.",
-                    $interface->getName()
-                ));
-            }
-
-            $this->reflectInterfaceToNode($interface, $node);
-        }
-
-        $node->addInterface('Prophecy\Doubler\Generator\ReflectionInterface');
-
-        return $node;
-    }
-
-    private function reflectClassToNode(ReflectionClass $class, Node\ClassNode $node)
-    {
-        if (true === $class->isFinal()) {
-            throw new ClassMirrorException(sprintf(
-                'Could not reflect class %s as it is marked final.', $class->getName()
-            ), $class);
-        }
-
-        $node->setParentClass($class->getName());
-
-        foreach ($class->getMethods(ReflectionMethod::IS_ABSTRACT) as $method) {
-            if (false === $method->isProtected()) {
-                continue;
-            }
-
-            $this->reflectMethodToNode($method, $node);
-        }
-
-        foreach ($class->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
-            if (0 === strpos($method->getName(), '_')
-                && !in_array($method->getName(), self::$reflectableMethods)) {
-                continue;
-            }
-
-            if (true === $method->isFinal()) {
-                $node->addUnextendableMethod($method->getName());
-                continue;
-            }
-
-            $this->reflectMethodToNode($method, $node);
-        }
-    }
-
-    private function reflectInterfaceToNode(ReflectionClass $interface, Node\ClassNode $node)
-    {
-        $node->addInterface($interface->getName());
-
-        foreach ($interface->getMethods() as $method) {
-            $this->reflectMethodToNode($method, $node);
-        }
-    }
-
-    private function reflectMethodToNode(ReflectionMethod $method, Node\ClassNode $classNode)
-    {
-        $node = new Node\MethodNode($method->getName());
-
-        if (true === $method->isProtected()) {
-            $node->setVisibility('protected');
-        }
-
-        if (true === $method->isStatic()) {
-            $node->setStatic();
-        }
-
-        if (true === $method->returnsReference()) {
-            $node->setReturnsReference();
-        }
-
-        if ($method->hasReturnType()) {
-            $returnTypes = $this->getTypeHints($method->getReturnType(), $method->getDeclaringClass(), $method->getReturnType()->allowsNull());
-            $node->setReturnTypeNode(new ReturnTypeNode(...$returnTypes));
-        }
-
-        if (is_array($params = $method->getParameters()) && count($params)) {
-            foreach ($params as $param) {
-                $this->reflectArgumentToNode($param, $node);
-            }
-        }
-
-        $classNode->addMethod($node);
-    }
-
-    private function reflectArgumentToNode(ReflectionParameter $parameter, Node\MethodNode $methodNode)
-    {
-        $name = $parameter->getName() == '...' ? '__dot_dot_dot__' : $parameter->getName();
-        $node = new Node\ArgumentNode($name);
-
-        $typeHints = $this->getTypeHints($parameter->getType(), $parameter->getDeclaringClass(), $parameter->allowsNull());
-
-        $node->setTypeNode(new ArgumentTypeNode(...$typeHints));
-
-        if ($parameter->isVariadic()) {
-            $node->setAsVariadic();
-        }
-
-        if ($this->hasDefaultValue($parameter)) {
-            $node->setDefault($this->getDefaultValue($parameter));
-        }
-
-        if ($parameter->isPassedByReference()) {
-            $node->setAsPassedByReference();
-        }
-
-
-        $methodNode->addArgument($node);
-    }
-
-    private function hasDefaultValue(ReflectionParameter $parameter)
-    {
-        if ($parameter->isVariadic()) {
-            return false;
-        }
-
-        if ($parameter->isDefaultValueAvailable()) {
-            return true;
-        }
-
-        return $parameter->isOptional() || ($parameter->allowsNull() && $parameter->getType());
-    }
-
-    private function getDefaultValue(ReflectionParameter $parameter)
-    {
-        if (!$parameter->isDefaultValueAvailable()) {
-            return null;
-        }
-
-        return $parameter->getDefaultValue();
-    }
-
-    private function getTypeHints(?ReflectionType $type, ?ReflectionClass $class, bool $allowsNull) : array
-    {
-        $types = [];
-
-        if ($type instanceof ReflectionNamedType) {
-            $types = [$type->getName()];
-
-        }
-        elseif ($type instanceof ReflectionUnionType) {
-            $types = $type->getTypes();
-        }
-
-        $types = array_map(
-            function(string $type) use ($class) {
-                if ($type === 'self') {
-                    return $class->getName();
-                }
-                if ($type === 'parent') {
-                    return $class->getParentClass()->getName();
-                }
-
-                return $type;
-            },
-            $types
-        );
-
-        if ($types && $types != ['mixed'] && $allowsNull) {
-            $types[] = 'null';
-        }
-
-        return $types;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+rxGJUwjYk84L1A0=

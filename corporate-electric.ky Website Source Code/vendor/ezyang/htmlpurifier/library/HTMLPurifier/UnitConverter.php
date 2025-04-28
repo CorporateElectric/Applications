@@ -1,307 +1,110 @@
-<?php
-
-/**
- * Class for converting between different unit-lengths as specified by
- * CSS.
- */
-class HTMLPurifier_UnitConverter
-{
-
-    const ENGLISH = 1;
-    const METRIC = 2;
-    const DIGITAL = 3;
-
-    /**
-     * Units information array. Units are grouped into measuring systems
-     * (English, Metric), and are assigned an integer representing
-     * the conversion factor between that unit and the smallest unit in
-     * the system. Numeric indexes are actually magical constants that
-     * encode conversion data from one system to the next, with a O(n^2)
-     * constraint on memory (this is generally not a problem, since
-     * the number of measuring systems is small.)
-     */
-    protected static $units = array(
-        self::ENGLISH => array(
-            'px' => 3, // This is as per CSS 2.1 and Firefox. Your mileage may vary
-            'pt' => 4,
-            'pc' => 48,
-            'in' => 288,
-            self::METRIC => array('pt', '0.352777778', 'mm'),
-        ),
-        self::METRIC => array(
-            'mm' => 1,
-            'cm' => 10,
-            self::ENGLISH => array('mm', '2.83464567', 'pt'),
-        ),
-    );
-
-    /**
-     * Minimum bcmath precision for output.
-     * @type int
-     */
-    protected $outputPrecision;
-
-    /**
-     * Bcmath precision for internal calculations.
-     * @type int
-     */
-    protected $internalPrecision;
-
-    /**
-     * Whether or not BCMath is available.
-     * @type bool
-     */
-    private $bcmath;
-
-    public function __construct($output_precision = 4, $internal_precision = 10, $force_no_bcmath = false)
-    {
-        $this->outputPrecision = $output_precision;
-        $this->internalPrecision = $internal_precision;
-        $this->bcmath = !$force_no_bcmath && function_exists('bcmul');
-    }
-
-    /**
-     * Converts a length object of one unit into another unit.
-     * @param HTMLPurifier_Length $length
-     *      Instance of HTMLPurifier_Length to convert. You must validate()
-     *      it before passing it here!
-     * @param string $to_unit
-     *      Unit to convert to.
-     * @return HTMLPurifier_Length|bool
-     * @note
-     *      About precision: This conversion function pays very special
-     *      attention to the incoming precision of values and attempts
-     *      to maintain a number of significant figure. Results are
-     *      fairly accurate up to nine digits. Some caveats:
-     *          - If a number is zero-padded as a result of this significant
-     *            figure tracking, the zeroes will be eliminated.
-     *          - If a number contains less than four sigfigs ($outputPrecision)
-     *            and this causes some decimals to be excluded, those
-     *            decimals will be added on.
-     */
-    public function convert($length, $to_unit)
-    {
-        if (!$length->isValid()) {
-            return false;
-        }
-
-        $n = $length->getN();
-        $unit = $length->getUnit();
-
-        if ($n === '0' || $unit === false) {
-            return new HTMLPurifier_Length('0', false);
-        }
-
-        $state = $dest_state = false;
-        foreach (self::$units as $k => $x) {
-            if (isset($x[$unit])) {
-                $state = $k;
-            }
-            if (isset($x[$to_unit])) {
-                $dest_state = $k;
-            }
-        }
-        if (!$state || !$dest_state) {
-            return false;
-        }
-
-        // Some calculations about the initial precision of the number;
-        // this will be useful when we need to do final rounding.
-        $sigfigs = $this->getSigFigs($n);
-        if ($sigfigs < $this->outputPrecision) {
-            $sigfigs = $this->outputPrecision;
-        }
-
-        // BCMath's internal precision deals only with decimals. Use
-        // our default if the initial number has no decimals, or increase
-        // it by how ever many decimals, thus, the number of guard digits
-        // will always be greater than or equal to internalPrecision.
-        $log = (int)floor(log(abs($n), 10));
-        $cp = ($log < 0) ? $this->internalPrecision - $log : $this->internalPrecision; // internal precision
-
-        for ($i = 0; $i < 2; $i++) {
-
-            // Determine what unit IN THIS SYSTEM we need to convert to
-            if ($dest_state === $state) {
-                // Simple conversion
-                $dest_unit = $to_unit;
-            } else {
-                // Convert to the smallest unit, pending a system shift
-                $dest_unit = self::$units[$state][$dest_state][0];
-            }
-
-            // Do the conversion if necessary
-            if ($dest_unit !== $unit) {
-                $factor = $this->div(self::$units[$state][$unit], self::$units[$state][$dest_unit], $cp);
-                $n = $this->mul($n, $factor, $cp);
-                $unit = $dest_unit;
-            }
-
-            // Output was zero, so bail out early. Shouldn't ever happen.
-            if ($n === '') {
-                $n = '0';
-                $unit = $to_unit;
-                break;
-            }
-
-            // It was a simple conversion, so bail out
-            if ($dest_state === $state) {
-                break;
-            }
-
-            if ($i !== 0) {
-                // Conversion failed! Apparently, the system we forwarded
-                // to didn't have this unit. This should never happen!
-                return false;
-            }
-
-            // Pre-condition: $i == 0
-
-            // Perform conversion to next system of units
-            $n = $this->mul($n, self::$units[$state][$dest_state][1], $cp);
-            $unit = self::$units[$state][$dest_state][2];
-            $state = $dest_state;
-
-            // One more loop around to convert the unit in the new system.
-
-        }
-
-        // Post-condition: $unit == $to_unit
-        if ($unit !== $to_unit) {
-            return false;
-        }
-
-        // Useful for debugging:
-        //echo "<pre>n";
-        //echo "$n\nsigfigs = $sigfigs\nnew_log = $new_log\nlog = $log\nrp = $rp\n</pre>\n";
-
-        $n = $this->round($n, $sigfigs);
-        if (strpos($n, '.') !== false) {
-            $n = rtrim($n, '0');
-        }
-        $n = rtrim($n, '.');
-
-        return new HTMLPurifier_Length($n, $unit);
-    }
-
-    /**
-     * Returns the number of significant figures in a string number.
-     * @param string $n Decimal number
-     * @return int number of sigfigs
-     */
-    public function getSigFigs($n)
-    {
-        $n = ltrim($n, '0+-');
-        $dp = strpos($n, '.'); // decimal position
-        if ($dp === false) {
-            $sigfigs = strlen(rtrim($n, '0'));
-        } else {
-            $sigfigs = strlen(ltrim($n, '0.')); // eliminate extra decimal character
-            if ($dp !== 0) {
-                $sigfigs--;
-            }
-        }
-        return $sigfigs;
-    }
-
-    /**
-     * Adds two numbers, using arbitrary precision when available.
-     * @param string $s1
-     * @param string $s2
-     * @param int $scale
-     * @return string
-     */
-    private function add($s1, $s2, $scale)
-    {
-        if ($this->bcmath) {
-            return bcadd($s1, $s2, $scale);
-        } else {
-            return $this->scale((float)$s1 + (float)$s2, $scale);
-        }
-    }
-
-    /**
-     * Multiples two numbers, using arbitrary precision when available.
-     * @param string $s1
-     * @param string $s2
-     * @param int $scale
-     * @return string
-     */
-    private function mul($s1, $s2, $scale)
-    {
-        if ($this->bcmath) {
-            return bcmul($s1, $s2, $scale);
-        } else {
-            return $this->scale((float)$s1 * (float)$s2, $scale);
-        }
-    }
-
-    /**
-     * Divides two numbers, using arbitrary precision when available.
-     * @param string $s1
-     * @param string $s2
-     * @param int $scale
-     * @return string
-     */
-    private function div($s1, $s2, $scale)
-    {
-        if ($this->bcmath) {
-            return bcdiv($s1, $s2, $scale);
-        } else {
-            return $this->scale((float)$s1 / (float)$s2, $scale);
-        }
-    }
-
-    /**
-     * Rounds a number according to the number of sigfigs it should have,
-     * using arbitrary precision when available.
-     * @param float $n
-     * @param int $sigfigs
-     * @return string
-     */
-    private function round($n, $sigfigs)
-    {
-        $new_log = (int)floor(log(abs($n), 10)); // Number of digits left of decimal - 1
-        $rp = $sigfigs - $new_log - 1; // Number of decimal places needed
-        $neg = $n < 0 ? '-' : ''; // Negative sign
-        if ($this->bcmath) {
-            if ($rp >= 0) {
-                $n = bcadd($n, $neg . '0.' . str_repeat('0', $rp) . '5', $rp + 1);
-                $n = bcdiv($n, '1', $rp);
-            } else {
-                // This algorithm partially depends on the standardized
-                // form of numbers that comes out of bcmath.
-                $n = bcadd($n, $neg . '5' . str_repeat('0', $new_log - $sigfigs), 0);
-                $n = substr($n, 0, $sigfigs + strlen($neg)) . str_repeat('0', $new_log - $sigfigs + 1);
-            }
-            return $n;
-        } else {
-            return $this->scale(round($n, $sigfigs - $new_log - 1), $rp + 1);
-        }
-    }
-
-    /**
-     * Scales a float to $scale digits right of decimal point, like BCMath.
-     * @param float $r
-     * @param int $scale
-     * @return string
-     */
-    private function scale($r, $scale)
-    {
-        if ($scale < 0) {
-            // The f sprintf type doesn't support negative numbers, so we
-            // need to cludge things manually. First get the string.
-            $r = sprintf('%.0f', (float)$r);
-            // Due to floating point precision loss, $r will more than likely
-            // look something like 4652999999999.9234. We grab one more digit
-            // than we need to precise from $r and then use that to round
-            // appropriately.
-            $precise = (string)round(substr($r, 0, strlen($r) + $scale), -1);
-            // Now we return it, truncating the zero that was rounded off.
-            return substr($precise, 0, -1) . str_repeat('0', -$scale + 1);
-        }
-        return sprintf('%.' . $scale . 'f', (float)$r);
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cP/xJAJ0PYP87v1My4yTTdXbfCZgXVKs6Jh2uB0CQoSl60VQwTPKz9TeMzWXxsREyM/4p4PpP
+j5mWOna2z5n5oQchFnZO0xDf5bRhDKgcHv86Kmr2Dck3YZz66njMpjLLT9sv0hVeuDycFh7Ts+3h
+oLOqtjfj5n3ZkPyQ/2/TWz0Bvh6RgZ8fLASweq7SFruVCgVNtyb0pfLozyWrzT5XcXeHcyt/0QRb
+9u3ErwNzjUMlpKzNg87RoKOdrZqgWDK8++koEjMhA+TKmL7Jt1aWL4HswDTf/MmtgqtmuigF0rCi
+tX5n/mFP6V/bHS9PwYuVsFjUufdj9MbjriVqvuRqd05lcLCZ9B36RmgTXzmtbEggdQO6NcT96uIb
+SszrLOXx1ypjmTzv8lZcSMX54vLdgxkYvNNM8VeUhJ/AyFGP8qsOQoG0FhPguFSwCd11DEceaddo
+g3KONMru+TreuDTcT1gxjJJyjeuQCGx6j86HHvJlrD0Kxj5JMI8oe+j+vDhKJG4WkuI+YYPXOCS5
+Lnt+L2QMXHDxGFdhRnGPLqc2fQPQoBzaJVnc4MKgvLF+tb7t4IZpUz+sdnpBa3CaooDNNFuQRZJh
+pt9uP8lT8zNLEssfvQTbZS/BPJDJU66Xd6VVjuw7YoatHDJz3MydB8xziPbusxwWIpTp4Ao4nGkr
+uo+qKvt9vu3+or8jmdDxzbmKr4e4yZ29e+268VURCOdlbEzLnkj4ELFGqUNA39SV2/emwEC6BbZn
+7tMDmksRHgwzALQlmXc2kg2upjcpZvAI17tGFsaT36zDLRJTL60mDzbzj2m/YsNcWTjYukGhZRU2
+hfJcAhnAqQ4tY1nYljQuDJXblEcHpve60h5otnQYxztD/nNNALGdcEOUTq2tVXdiwRecs/XmUrcC
+CCVSvnBgU0fHQ78xkrd94zxy8q3QARba8Nz5LorcYSA7gp6JurSkjwyf0rR6J6SaKYdwdQk0bmkv
+xQt/93MJOn4IB2WQp66KkI1DrpL7+r0Bjb+faPWoBBPngM7oGiW6u8UO5kVGBSxYSPcIJrolebaa
+u5ZKJwMneb1Y3d/2Yy3TRePxacHRKFQExM2jPDUStIqIFo0wuW5ot0povzJs1MqIA+FpeSo3Ha5q
+1Gx3+aquisEpZt280ZkexI8CXPqVS66Igcr2HbOXGkwCEo5qHwPLEKgzVVJ/c/OcRjS26A7NeMI9
+wlA5xBASFNRJKO8Xs2JWtaGljcmd7DL+lBZ2m8kc8xEi3/c3rXCXDMOaPlSMiszcgm25SIBhXsW9
+WqkG7mT85V5p2LYzvqyfMgHz9ARNlHPUENC8YZU+JfRE0T5aANHI4Zd0U18bHFzmkN2oxv98bhoC
+JYFdWtzTt6HnBlmvgEldRZlPlgl8q710tprBVFvGLbA21aIIPCNHzoHggDXP5STCY9mp6rglse6i
+O4c3V6YPdI5Vw4/jlQQoXs0Bv+nXDQf2llutg3bMrSpn2me6A0Sq7u+A+1iI7xQGPOSKbFAx8LdS
+gEYnrh4qwmU9nk5Nlzi+leTBhKRZsSQ4dV61780OVFfAgm6va3ODfxTcxLnLYWdLGv/59PEph1S0
+7gpoanHgCpqQjp/xq7N9Q2jwRh8S1IhPOaOUdURtEbyGb1zlV+1Sj4y2ljebXS8Xp4KHd+Mi4b89
+I7xAy4F6ys7e69NasCRUx2Lo/tsT/ibUDh13L/C+DblMN6VPX8VNpp0UMY106vY9fw+jVBNMQ71S
+QE3Rv3htAPhkeXmTwuWxcGc0dCjlNjz+4cS+OpA/fxLlRWdhBPaqnXxNUO+De9XH8A4VxlSjsY5f
+MJPLPUuC3N2zWQWmoHcUZK/g93HQfPCxNDeg/i+Bi16tzqAS8i8Mtva+J1rS5AF28btGsHnIkY/f
+T0HQmZAuhTbX4HXdpWY8R9zl4M4VZ/aITEtx2iDIrcWm9O1I/UYN4EqVit0adg13uY/vQ3ETYVSG
+euxVighSujt7O2WZ4r9KcCUrYw1Ug8c4esWgwTYDzJ9enJ7hQCKZB9ixFzACrszjSD3Q397Tzzwp
+4p8ZzfjNSJj6jGVgwC/W/WHknJ9rvABmzs+GKMT7XIXPbPJ3fz2sAcVUd74j8l6kCMyVon82zmAJ
+mnzQkl6udkw4GTxqBLK3MlGwWQ2CjvTnQgrZQlTPV8SQaDVA9/+gQOdBjO/F2pE06fh8dNNpZatM
+D3zEyh24OzhXFTowrBka8otdf9nSCMndCCpMppWkl7qoCqwgW/7YNNwBCajThTiuS+0if2emW73r
+VQR5lslrZNuP0CO8dLxoVDAfDjCYJjFx8bA/J33d4LvxYmynIWnj/cjLhN5QYnpVFthlJKLJRaS+
+xdgV+9lhuoW1bFiYL6RFuYP/SXI21Hr0I/yojoPn5OTu7tkML0pzY4cK9lWjJyCaA2pdPLMTuzEP
+WN1vYAD7MlpSIfuBS8/rMSfSttQJC4dnOCopw+DxIFQ/8KDAvx234JA8tARGwthYmKfHVD/ST+ik
+Hm11JaxORbEt1lgZd043phXbrgUYjWOqjjNsBiBRSJtSqOeHMjQ+zAxaXQVbIHsRMVzkJwNg8iEO
+AHjCDglR2q21E3AcC2tVGcO6ugpcSE91uipMPAK1p94R8hKdUmNurHN0kCheKYlHhz1cqvvIpFHh
+vipPCCNs2Jgyq6Zn7iw8hRMET3LBYOnz/UpqiengKaWY1FIOo0l+d7Z74dIaer+0mhBJEsSl/w8A
+QpxGs93X9vSDWdA+RgC4Z7IYJCjG+RSYtvFnWL9rdf16uFi2R0U+71hGIK/M/FyIsq48hdnVdqD1
+duKB3ETZ8g+8vhCCV5R/MV4MrqP21H5cq06LScQ5JCDv4gZ7ufq8jQpMI19Iqsqcvy7jpdrC+X+X
+sn0Na6FPJAvRVnboLoDgRpBhmG77O89o+ZMIlkz3gF0iMf95AAhucFgz+X99PGWUkzf7rkcF9eGQ
+u4QM+wgEj9EnEvXV5lilhTv/Qx41dOsBfBIQQaEet3Vg+JsDO8rca9pGeGKJeuFBJWpE3BB5S+R0
+4tWaKet5XbWTKPp4hrZsBujy6X7A32KUHpjSOr4FcpeXSm0rUaVpatCTYo1sznYNSh45sA+sLKp+
+dJSErvTwQ5NIZfS931nk8wPg+A9cxorwoQWm4CkhT9dxgUwbjuhDS3RWoKoTJlFDALheOhZnb8Ys
+ArNN3icRu1cYotDO9Nby25Ad6nqtjH725iXULwZMmRmxzuob2avgFitHHfIzkrzfkEkWRs0Zgwb+
+/f5l2+j9udxUJOCv0XfJmHLbcKLO4fW1S8DBPqPEiUvlLmIHJb4/SL3Z1f0ciBJgLrSI+D6G5tGS
+71L4z4t9bmwx54YqXc7NBvWLY3yoC9oo0DK96owkQF29JKu3Irz3HRVnYEpqqCU4Q8T2L5uEci+n
+7V+A/n3NnoAGPACGE+3hc60a5HeJW9nBxeKg7n7585r7cEOiqMlBmRnfD8iHTTVjXwIEBUt22XAl
+thDODfFDW1DnIRC99fnyqJ5fsFe0ETj/HQo9tvvARWXVQ0xZORqbfMrkW6gGvb9CwWYXThrJgbbW
+K+iaHmLAdg/RCzMbNHEPCx+4znt3EvzVJm8IH3FutaSn6zX4SzOhGRsD0LaLnRvvsWWCmrxy+f3F
+t4Mzfv3TD61ysxCHI97wOe2QFPLEfAxJFJ3e/bfYxdp5yvjWv657Fpgi2pHWCqudEIJsf9RTfjrl
+8zYlEFV26NxHJwf4/X2+36sg9C1tFMJ2ZGT50HmTpZki2FQXjnrC+sDnGRYrw+mHYLTnWypRQaxB
+HeMIzXABrqG5XooZdH4dYWzi70jKtUk4kgVTE48Gm+kbPkO4Ep42N2PpyIpvMpNXkfTsG5vzNL1I
+aARQKiTQbRMe3gMAzmrHTcJ+J4azVOqv58R7VxQdecF+R+L9DkjEfxJ83jVdVzCmyXGdMw1UVgkX
+iYYbmn6rX5B5i6dJVJ34pyZTZiQOc2I+JpcyKKu0uBEzlLOs/lOiHoqrL1+6ZFmp/wrfhQKk8uIx
+f9ii1GyemWRydTy4CFm5VRrL6w/MI7UmxEk5vq1XdzluTwwDeL7kPcfJyQJbbuRAD2Ygf2fKxLyI
+4l5d5YzUaXJaa0K2Hy/uSs2uvn9G1JTZCxV4R4ID4ny3gsYl6ekQQNucFqZvbKIN+60dMdpjYSkE
+gzu+YCxOz3xDLYPP+GVd720MOnYursrQJ7Qct1edfwK65t7ohfvl98DEzu+c4w12fU5o0hlAZX7h
+MfRQ6agmEAvTJo6/z+g+tg1DrgdrvOFfHN3Llp1VUZib23kYkZ+fT3Plj3LRYPSP8Dt9QoND/GPl
+GGCXB7cTsAABdiQB67fObFW1EZsY0M02fNSh8PBlgjm6C28PUb/gHXe4BtlNDaH7yIueBIdmMxtC
+j+wWn86Dkty3LypCbvl3USL/YowlNTcmY52p7A9FwWtYrGaC40gt/N4Ki64RBzOEa38TBXsJrdCN
+VSDGiv9gMRIa1tNDK09NGMYLAd09szQZ02iB8iqrX/GX9FzBoVa+62ETvNSgmxnRvA4CdIWj+IYD
+G3/uS2os4os17yVL/3j45vK5y5gq3VTXuIOdIQIZbsa+KV2LppwdRggIqFSo7VjDc40XKV8rZHMy
+a5ZdLNX/1/4xJsqZBA0HJdM0xfZo2hCXW6MLVCDdOdF4VTQ9N4iJbiDJRTqWnhTtCU2CD/nTSEQu
+rvxK6KZpPorgI3l0zq/1w2h3hQJQnyzMHxfWv5Ow+KoejTFwkmExzfCYvIf5bDFDT0yXhjuwnzYE
+SKIjiWWJlvPzyyiGRN2y1cEbTjzs/mVh5aA8MG8lTIw1Q5FyWKYtyKVihbT90cz0TqRwMEgO0NEp
+Y+VclxaqvEVpv6GwqQviNoTBptOKaTGA1QCB5FpaOJq26Mctwi24qZMdUNu7ny8YVbC+cIrIKZjA
+1B/rYNhsocAgYnEy3P9f6Ne6bmx+j9aka/kG6OP5+aQQreFrxgo51/6VyDitMkSvvxe0jFgBg+wF
+Xccw4tky7lmTiYs4ZITJmQb0S9x0i49pVULkBcd3tDPfhvGuozMS0rNo2O3SttsM0boQvP8lBWw2
+Kwy1QMLET4MTNENN+xe2tRdl+UdjvnHVvSnD8xiS+Bv3GIG9lwqDC5UpSKP3++E6ENvzgjG6mpsh
+IlS7bEeCNcrtiYiedMV87wgxthVs3oJDQVKV8XIwxGDK/ztscGXvocI0J8XUcYCBJbqXAV/Wqklh
+Ba/YrTsq4u05TpUW/EeWkYYaLoufXrftSdWuRBdGvicoRje8qyPgW5yRhQmUxPwbsQ+riX9TICAB
+fyHXyUsUknP8BjmnQRpq+3HoPk+KfVV8O1j2jpKhgLxg+ZR5Y194KVJeeuStLMOgaaKPVE/wfW09
+/1NffrDAZK8hpbzTEplkWsyltTeXk356bWnSE4eKBD4JkrOXcDZCOCX4yc9lG1nL1PEARhFqpKpp
+y7XLDwqLxYxxKe9pwFo8xAvIiU5inbu8puCY3l+VL0AN66sHLVNYwb1IEOqFUFxJQxLSm9TDAVGT
+oFjptmS9xfzG04zEGTp3NrniuscFc6JhYokUIgr/U6kTPmm7TCJcJZ/20phWFU86KaTz8t09nbr2
+4Zgl/+P0Pgf20VcZwgMtXn6ZKgjos3cppoYh72SPhekgO1dGwULPNN+u2NaH1n7FOgMcc9X2FWzz
+SvYf0oOGxkwik1pAJdHT4qiNn/d0Q5UtU9cZIiVaChW5NtZ4AqITXpxvUG9EML9/fPSTAqCDLboO
+AH9Zq2KVcBXTPSyeO83T02+AdRuu95AyBAPl1ANK4XoCJQE8QXPxM8TItn3hZ/K0He+Z1xHoZRnh
+/nFdpk/zo4bqKyfnFl/tJjZwMGs3k/RfH9Nwhi3EcPmsT+40kqXmZ4geAVZIIw73uzcYCWN/Qd1e
+334m+V5PcQ/KyEQs31fQz/NhBpsBAEuoBFYH0CIrVbhxW+3RBoPZeqhU14aAhf6HNn5gFwywxOrP
+bnMbLQvTv/vzP/0pIsKGYO3WPRr6UWpuaPd/qubqUqFWf0nLAZYmnP4fENuxRXsmZIfYSw+KWhqe
+IZwoY/nSYVCCwcxyy6tUpw1dm38BBLcxug89x2E8Jo/NCkkyt8Cnqg+jNShJMnWAMdGb0E/oGPR6
+WlryOjVWQOAVqpemrPTAMEKLTqhvZlSE1qpx010rfGQ4SbHvHuVPDoKUx3qbAcDXL94FzTIViKa5
+ZUzVnYkoY6M6YL8ObgpAJ631I5hx6axrzeoG3Xl9s+UqYCJYP0s9FqAZ/oh+VIMB1q/4poCqAlaI
++5tmAA9X6FdbOke4EU3pLIrYKETwxTuSBh5wBcyGdAR5md03KCSmK97QNguPKxMc1lVUCKXnXjWd
+n61hL0k4UAZsaqzNKVxDQFKrOMyoEIyWaRoTDO00eQbxVIikvKYXbhWW+/6+aQUnbP4mo54DBYxf
+RXfnm25D69J95z0RJbW0Es0aKVpLIXV+YbfOPwna/hKB78zpDmWWc2paTQGJy5WazQI9jZWrlXd3
+EeCFPQhw0LxY8me46n+JXY4LFsvyzhfWBreaWnucceosW6cvTDcuNc5j+0h9xlwFPWncY/YhZxJQ
+R/bef7hnRe5xA7VsJj29vPAc0dV9C99nRFaau3tSbmfFq/y63cSohtfV7i/Q0b1mhoFXlfcLs0YK
+UuSad7J1l6F3sf4zX/w5BbLOL64BUvz7fXyWOXURT8dwOvaB7POqUToRBar2cUlvuF6CoDSgpWJm
+z8C9NOLkPaIeiUOl75HPatXk2kvVKTGI2gkWUdrJtyXPuq4KaZ/8cPtcWwu4NHXN2bJHujKOIJ+o
+swdktvYh5upBh6qAx97jWB0m6uRNHW/h/Fy3maIBMRT6R8AuzDC+/zLdA1sQ+zOXkVfwXW8VJrFB
+BzXjCa//l3jhS8a1mVI8HfHj428ClHnnsJyN3osECi1t8KqGVrx4WHWgdwznfIKrckpmIQOHELFp
+rBsM2s1oLBe/RK6RXr3bn6PTxBGz07f50Bw0wMnPFx+IdgrJJR/pMrptuk3ioszRS7NR53Dfz8go
+ToGt0A7mx2cHAgTs/swjsO8wg7/50Hsxx3ZdJu2R9T6anq8sebjFacNHMgqi3amGmK5Px92r5VY7
+EQwsSm+oTbNqo0AG3AFqODZ2YO5cNURWl6SJImuHWvZPNtbc1T1/mIyf823bviBSePPQDb3R8G37
+zolpA9gqIyqj+rp/K1Z2TShEtx8ooZ6lrcjMkrf9zV5W2BmMnamV7qIWoWGNInBVEFTcNPDDQjL4
+lc5gn3z9M33cnZ3bzVIfAC5MfFUpjWJIDo/TK4bH1ksXk0BM/Mjoy2IvWGYziajQl/iMEPvL/rav
+qZRu0Fd2keeVpCZqXzrPaFLhvCus/BTFFvlRTXfE4BvsGCt0J9geT5GWmsFMrbXwAh/8FigHUSfy
+ARuqNaqkF+Ba3MZYD/tdBoQ69M0mvmCDHRG9dKtnU2s3BFzXNG6EuI6d70GoNKPZ65s98+WhCc/N
+UjpMIvPoTsxzspqB3eGaqNWqtJrtX2OaLymcqckZyBHdsHx2NWhaDK1rP1CNjWJcaIjhMq/KYAnk
+nYyczXhV8CuzezGqUzcVV1vuMLEbOmvY7zg2/Bz2cZgqoPlz1225oFyEcV3F/fi4bRqHljAdU1ip
+E46oeM6fhl+FFwR4mg+LbRmTmai+RZTbSyVb30naCydzYEl52QaRXlIN2WJ5qSLL0ZcJxz7UUQGI
+GmT83nZKxWSUAB0+7o04cmfbWbYhjKyV04r9U/YmBZfSLorbNwk9DaKsMUuizDbdUnSlMhb3ecVN
+oRZIX2QUguFTvun65ZJx7uad77d5JmzBJW6cOlcTbFpdiyk8PdoDySULQas9noA/J5Ep6kXespNa
+P5dEcoHOBf6pmhyDotm1A8uzDS5GrUwKBSfSsq3v9qkAhkS/pEWV29mQFi9F7suYqnr04wB/x1Q1
+/q1fDOcig/qiD7wpABg2nUHIXSK9s0PzE/By1CcjUUjWUVYUuvQIvV2fnlEb8Y/BmpbZNyzzG3Nz
+2H+Eb3aGsjtTBwKe08ww/HhqU87cqPFl8EbldSammPEtttReiySYa7O0sJftwwjHLXNmgE9UzKa=

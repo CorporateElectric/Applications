@@ -1,543 +1,218 @@
-<?php
-
-declare(strict_types=1);
-
-/**
- * This file is part of phpDocumentor.
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @link      http://phpdoc.org
- */
-
-namespace phpDocumentor\Reflection;
-
-use ArrayIterator;
-use InvalidArgumentException;
-use phpDocumentor\Reflection\Types\Array_;
-use phpDocumentor\Reflection\Types\ClassString;
-use phpDocumentor\Reflection\Types\Collection;
-use phpDocumentor\Reflection\Types\Compound;
-use phpDocumentor\Reflection\Types\Context;
-use phpDocumentor\Reflection\Types\Expression;
-use phpDocumentor\Reflection\Types\Integer;
-use phpDocumentor\Reflection\Types\Intersection;
-use phpDocumentor\Reflection\Types\Iterable_;
-use phpDocumentor\Reflection\Types\Nullable;
-use phpDocumentor\Reflection\Types\Object_;
-use phpDocumentor\Reflection\Types\String_;
-use RuntimeException;
-use function array_key_exists;
-use function array_pop;
-use function array_values;
-use function class_exists;
-use function class_implements;
-use function count;
-use function end;
-use function in_array;
-use function key;
-use function preg_split;
-use function strpos;
-use function strtolower;
-use function trim;
-use const PREG_SPLIT_DELIM_CAPTURE;
-use const PREG_SPLIT_NO_EMPTY;
-
-final class TypeResolver
-{
-    /** @var string Definition of the ARRAY operator for types */
-    private const OPERATOR_ARRAY = '[]';
-
-    /** @var string Definition of the NAMESPACE operator in PHP */
-    private const OPERATOR_NAMESPACE = '\\';
-
-    /** @var int the iterator parser is inside a compound context */
-    private const PARSER_IN_COMPOUND = 0;
-
-    /** @var int the iterator parser is inside a nullable expression context */
-    private const PARSER_IN_NULLABLE = 1;
-
-    /** @var int the iterator parser is inside an array expression context */
-    private const PARSER_IN_ARRAY_EXPRESSION = 2;
-
-    /** @var int the iterator parser is inside a collection expression context */
-    private const PARSER_IN_COLLECTION_EXPRESSION = 3;
-
-    /**
-     * @var array<string, string> List of recognized keywords and unto which Value Object they map
-     * @psalm-var array<string, class-string<Type>>
-     */
-    private $keywords = [
-        'string' => Types\String_::class,
-        'class-string' => Types\ClassString::class,
-        'int' => Types\Integer::class,
-        'integer' => Types\Integer::class,
-        'bool' => Types\Boolean::class,
-        'boolean' => Types\Boolean::class,
-        'real' => Types\Float_::class,
-        'float' => Types\Float_::class,
-        'double' => Types\Float_::class,
-        'object' => Object_::class,
-        'mixed' => Types\Mixed_::class,
-        'array' => Array_::class,
-        'resource' => Types\Resource_::class,
-        'void' => Types\Void_::class,
-        'null' => Types\Null_::class,
-        'scalar' => Types\Scalar::class,
-        'callback' => Types\Callable_::class,
-        'callable' => Types\Callable_::class,
-        'false' => PseudoTypes\False_::class,
-        'true' => PseudoTypes\True_::class,
-        'self' => Types\Self_::class,
-        '$this' => Types\This::class,
-        'static' => Types\Static_::class,
-        'parent' => Types\Parent_::class,
-        'iterable' => Iterable_::class,
-    ];
-
-    /**
-     * @var FqsenResolver
-     * @psalm-readonly
-     */
-    private $fqsenResolver;
-
-    /**
-     * Initializes this TypeResolver with the means to create and resolve Fqsen objects.
-     */
-    public function __construct(?FqsenResolver $fqsenResolver = null)
-    {
-        $this->fqsenResolver = $fqsenResolver ?: new FqsenResolver();
-    }
-
-    /**
-     * Analyzes the given type and returns the FQCN variant.
-     *
-     * When a type is provided this method checks whether it is not a keyword or
-     * Fully Qualified Class Name. If so it will use the given namespace and
-     * aliases to expand the type to a FQCN representation.
-     *
-     * This method only works as expected if the namespace and aliases are set;
-     * no dynamic reflection is being performed here.
-     *
-     * @uses Context::getNamespaceAliases() to check whether the first part of the relative type name should not be
-     * replaced with another namespace.
-     * @uses Context::getNamespace()        to determine with what to prefix the type name.
-     *
-     * @param string $type The relative or absolute type.
-     */
-    public function resolve(string $type, ?Context $context = null) : Type
-    {
-        $type = trim($type);
-        if (!$type) {
-            throw new InvalidArgumentException('Attempted to resolve "' . $type . '" but it appears to be empty');
-        }
-
-        if ($context === null) {
-            $context = new Context('');
-        }
-
-        // split the type string into tokens `|`, `?`, `<`, `>`, `,`, `(`, `)`, `[]`, '<', '>' and type names
-        $tokens = preg_split(
-            '/(\\||\\?|<|>|&|, ?|\\(|\\)|\\[\\]+)/',
-            $type,
-            -1,
-            PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE
-        );
-
-        if ($tokens === false) {
-            throw new InvalidArgumentException('Unable to split the type string "' . $type . '" into tokens');
-        }
-
-        /** @var ArrayIterator<int, string|null> $tokenIterator */
-        $tokenIterator = new ArrayIterator($tokens);
-
-        return $this->parseTypes($tokenIterator, $context, self::PARSER_IN_COMPOUND);
-    }
-
-    /**
-     * Analyse each tokens and creates types
-     *
-     * @param ArrayIterator<int, string|null> $tokens        the iterator on tokens
-     * @param int                        $parserContext on of self::PARSER_* constants, indicating
-     * the context where we are in the parsing
-     */
-    private function parseTypes(ArrayIterator $tokens, Context $context, int $parserContext) : Type
-    {
-        $types = [];
-        $token = '';
-        $compoundToken = '|';
-        while ($tokens->valid()) {
-            $token = $tokens->current();
-            if ($token === null) {
-                throw new RuntimeException(
-                    'Unexpected nullable character'
-                );
-            }
-
-            if ($token === '|' || $token === '&') {
-                if (count($types) === 0) {
-                    throw new RuntimeException(
-                        'A type is missing before a type separator'
-                    );
-                }
-
-                if (!in_array($parserContext, [
-                    self::PARSER_IN_COMPOUND,
-                    self::PARSER_IN_ARRAY_EXPRESSION,
-                    self::PARSER_IN_COLLECTION_EXPRESSION,
-                ], true)
-                ) {
-                    throw new RuntimeException(
-                        'Unexpected type separator'
-                    );
-                }
-
-                $compoundToken = $token;
-                $tokens->next();
-            } elseif ($token === '?') {
-                if (!in_array($parserContext, [
-                    self::PARSER_IN_COMPOUND,
-                    self::PARSER_IN_ARRAY_EXPRESSION,
-                    self::PARSER_IN_COLLECTION_EXPRESSION,
-                ], true)
-                ) {
-                    throw new RuntimeException(
-                        'Unexpected nullable character'
-                    );
-                }
-
-                $tokens->next();
-                $type    = $this->parseTypes($tokens, $context, self::PARSER_IN_NULLABLE);
-                $types[] = new Nullable($type);
-            } elseif ($token === '(') {
-                $tokens->next();
-                $type = $this->parseTypes($tokens, $context, self::PARSER_IN_ARRAY_EXPRESSION);
-
-                $token = $tokens->current();
-                if ($token === null) { // Someone did not properly close their array expression ..
-                    break;
-                }
-
-                $tokens->next();
-
-                $resolvedType = new Expression($type);
-
-                $types[] = $resolvedType;
-            } elseif ($parserContext === self::PARSER_IN_ARRAY_EXPRESSION && $token[0] === ')') {
-                break;
-            } elseif ($token === '<') {
-                if (count($types) === 0) {
-                    throw new RuntimeException(
-                        'Unexpected collection operator "<", class name is missing'
-                    );
-                }
-
-                $classType = array_pop($types);
-                if ($classType !== null) {
-                    if ((string) $classType === 'class-string') {
-                        $types[] = $this->resolveClassString($tokens, $context);
-                    } else {
-                        $types[] = $this->resolveCollection($tokens, $classType, $context);
-                    }
-                }
-
-                $tokens->next();
-            } elseif ($parserContext === self::PARSER_IN_COLLECTION_EXPRESSION
-                && ($token === '>' || trim($token) === ',')
-            ) {
-                break;
-            } elseif ($token === self::OPERATOR_ARRAY) {
-                end($types);
-                $last = key($types);
-                $lastItem = $types[$last];
-                if ($lastItem instanceof Expression) {
-                    $lastItem = $lastItem->getValueType();
-                }
-
-                $types[$last] = new Array_($lastItem);
-
-                $tokens->next();
-            } else {
-                $type = $this->resolveSingleType($token, $context);
-                $tokens->next();
-                if ($parserContext === self::PARSER_IN_NULLABLE) {
-                    return $type;
-                }
-
-                $types[] = $type;
-            }
-        }
-
-        if ($token === '|' || $token === '&') {
-            throw new RuntimeException(
-                'A type is missing after a type separator'
-            );
-        }
-
-        if (count($types) === 0) {
-            if ($parserContext === self::PARSER_IN_NULLABLE) {
-                throw new RuntimeException(
-                    'A type is missing after a nullable character'
-                );
-            }
-
-            if ($parserContext === self::PARSER_IN_ARRAY_EXPRESSION) {
-                throw new RuntimeException(
-                    'A type is missing in an array expression'
-                );
-            }
-
-            if ($parserContext === self::PARSER_IN_COLLECTION_EXPRESSION) {
-                throw new RuntimeException(
-                    'A type is missing in a collection expression'
-                );
-            }
-        } elseif (count($types) === 1) {
-            return $types[0];
-        }
-
-        if ($compoundToken === '|') {
-            return new Compound(array_values($types));
-        }
-
-        return new Intersection(array_values($types));
-    }
-
-    /**
-     * resolve the given type into a type object
-     *
-     * @param string $type the type string, representing a single type
-     *
-     * @return Type|Array_|Object_
-     *
-     * @psalm-mutation-free
-     */
-    private function resolveSingleType(string $type, Context $context) : object
-    {
-        switch (true) {
-            case $this->isKeyword($type):
-                return $this->resolveKeyword($type);
-            case $this->isFqsen($type):
-                return $this->resolveTypedObject($type);
-            case $this->isPartialStructuralElementName($type):
-                return $this->resolveTypedObject($type, $context);
-
-            // @codeCoverageIgnoreStart
-            default:
-                // I haven't got the foggiest how the logic would come here but added this as a defense.
-                throw new RuntimeException(
-                    'Unable to resolve type "' . $type . '", there is no known method to resolve it'
-                );
-        }
-
-        // @codeCoverageIgnoreEnd
-    }
-
-    /**
-     * Adds a keyword to the list of Keywords and associates it with a specific Value Object.
-     *
-     * @psalm-param class-string<Type> $typeClassName
-     */
-    public function addKeyword(string $keyword, string $typeClassName) : void
-    {
-        if (!class_exists($typeClassName)) {
-            throw new InvalidArgumentException(
-                'The Value Object that needs to be created with a keyword "' . $keyword . '" must be an existing class'
-                . ' but we could not find the class ' . $typeClassName
-            );
-        }
-
-        if (!in_array(Type::class, class_implements($typeClassName), true)) {
-            throw new InvalidArgumentException(
-                'The class "' . $typeClassName . '" must implement the interface "phpDocumentor\Reflection\Type"'
-            );
-        }
-
-        $this->keywords[$keyword] = $typeClassName;
-    }
-
-    /**
-     * Detects whether the given type represents a PHPDoc keyword.
-     *
-     * @param string $type A relative or absolute type as defined in the phpDocumentor documentation.
-     *
-     * @psalm-mutation-free
-     */
-    private function isKeyword(string $type) : bool
-    {
-        return array_key_exists(strtolower($type), $this->keywords);
-    }
-
-    /**
-     * Detects whether the given type represents a relative structural element name.
-     *
-     * @param string $type A relative or absolute type as defined in the phpDocumentor documentation.
-     *
-     * @psalm-mutation-free
-     */
-    private function isPartialStructuralElementName(string $type) : bool
-    {
-        return ($type[0] !== self::OPERATOR_NAMESPACE) && !$this->isKeyword($type);
-    }
-
-    /**
-     * Tests whether the given type is a Fully Qualified Structural Element Name.
-     *
-     * @psalm-mutation-free
-     */
-    private function isFqsen(string $type) : bool
-    {
-        return strpos($type, self::OPERATOR_NAMESPACE) === 0;
-    }
-
-    /**
-     * Resolves the given keyword (such as `string`) into a Type object representing that keyword.
-     *
-     * @psalm-mutation-free
-     */
-    private function resolveKeyword(string $type) : Type
-    {
-        $className = $this->keywords[strtolower($type)];
-
-        return new $className();
-    }
-
-    /**
-     * Resolves the given FQSEN string into an FQSEN object.
-     *
-     * @psalm-mutation-free
-     */
-    private function resolveTypedObject(string $type, ?Context $context = null) : Object_
-    {
-        return new Object_($this->fqsenResolver->resolve($type, $context));
-    }
-
-    /**
-     * Resolves class string
-     *
-     * @param ArrayIterator<int, (string|null)> $tokens
-     */
-    private function resolveClassString(ArrayIterator $tokens, Context $context) : Type
-    {
-        $tokens->next();
-
-        $classType = $this->parseTypes($tokens, $context, self::PARSER_IN_COLLECTION_EXPRESSION);
-
-        if (!$classType instanceof Object_ || $classType->getFqsen() === null) {
-            throw new RuntimeException(
-                $classType . ' is not a class string'
-            );
-        }
-
-        $token = $tokens->current();
-        if ($token !== '>') {
-            if (empty($token)) {
-                throw new RuntimeException(
-                    'class-string: ">" is missing'
-                );
-            }
-
-            throw new RuntimeException(
-                'Unexpected character "' . $token . '", ">" is missing'
-            );
-        }
-
-        return new ClassString($classType->getFqsen());
-    }
-
-    /**
-     * Resolves the collection values and keys
-     *
-     * @param ArrayIterator<int, (string|null)> $tokens
-     *
-     * @return Array_|Iterable_|Collection
-     */
-    private function resolveCollection(ArrayIterator $tokens, Type $classType, Context $context) : Type
-    {
-        $isArray    = ((string) $classType === 'array');
-        $isIterable = ((string) $classType === 'iterable');
-
-        // allow only "array", "iterable" or class name before "<"
-        if (!$isArray && !$isIterable
-            && (!$classType instanceof Object_ || $classType->getFqsen() === null)) {
-            throw new RuntimeException(
-                $classType . ' is not a collection'
-            );
-        }
-
-        $tokens->next();
-
-        $valueType = $this->parseTypes($tokens, $context, self::PARSER_IN_COLLECTION_EXPRESSION);
-        $keyType   = null;
-
-        $token = $tokens->current();
-        if ($token !== null && trim($token) === ',') {
-            // if we have a comma, then we just parsed the key type, not the value type
-            $keyType = $valueType;
-            if ($isArray) {
-                // check the key type for an "array" collection. We allow only
-                // strings or integers.
-                if (!$keyType instanceof String_ &&
-                    !$keyType instanceof Integer &&
-                    !$keyType instanceof Compound
-                ) {
-                    throw new RuntimeException(
-                        'An array can have only integers or strings as keys'
-                    );
-                }
-
-                if ($keyType instanceof Compound) {
-                    foreach ($keyType->getIterator() as $item) {
-                        if (!$item instanceof String_ &&
-                            !$item instanceof Integer
-                        ) {
-                            throw new RuntimeException(
-                                'An array can have only integers or strings as keys'
-                            );
-                        }
-                    }
-                }
-            }
-
-            $tokens->next();
-            // now let's parse the value type
-            $valueType = $this->parseTypes($tokens, $context, self::PARSER_IN_COLLECTION_EXPRESSION);
-        }
-
-        $token = $tokens->current();
-        if ($token !== '>') {
-            if (empty($token)) {
-                throw new RuntimeException(
-                    'Collection: ">" is missing'
-                );
-            }
-
-            throw new RuntimeException(
-                'Unexpected character "' . $token . '", ">" is missing'
-            );
-        }
-
-        if ($isArray) {
-            return new Array_($valueType, $keyType);
-        }
-
-        if ($isIterable) {
-            return new Iterable_($valueType, $keyType);
-        }
-
-        if ($classType instanceof Object_) {
-            return $this->makeCollectionFromObject($classType, $valueType, $keyType);
-        }
-
-        throw new RuntimeException('Invalid $classType provided');
-    }
-
-    /**
-     * @psalm-pure
-     */
-    private function makeCollectionFromObject(Object_ $object, Type $valueType, ?Type $keyType = null) : Collection
-    {
-        return new Collection($object->getFqsen(), $valueType, $keyType);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

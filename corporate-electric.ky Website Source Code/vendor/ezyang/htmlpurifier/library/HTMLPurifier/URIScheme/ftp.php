@@ -1,58 +1,46 @@
-<?php
-
-/**
- * Validates ftp (File Transfer Protocol) URIs as defined by generic RFC 1738.
- */
-class HTMLPurifier_URIScheme_ftp extends HTMLPurifier_URIScheme
-{
-    /**
-     * @type int
-     */
-    public $default_port = 21;
-
-    /**
-     * @type bool
-     */
-    public $browsable = true; // usually
-
-    /**
-     * @type bool
-     */
-    public $hierarchical = true;
-
-    /**
-     * @param HTMLPurifier_URI $uri
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return bool
-     */
-    public function doValidate(&$uri, $config, $context)
-    {
-        $uri->query = null;
-
-        // typecode check
-        $semicolon_pos = strrpos($uri->path, ';'); // reverse
-        if ($semicolon_pos !== false) {
-            $type = substr($uri->path, $semicolon_pos + 1); // no semicolon
-            $uri->path = substr($uri->path, 0, $semicolon_pos);
-            $type_ret = '';
-            if (strpos($type, '=') !== false) {
-                // figure out whether or not the declaration is correct
-                list($key, $typecode) = explode('=', $type, 2);
-                if ($key !== 'type') {
-                    // invalid key, tack it back on encoded
-                    $uri->path .= '%3B' . $type;
-                } elseif ($typecode === 'a' || $typecode === 'i' || $typecode === 'd') {
-                    $type_ret = ";type=$typecode";
-                }
-            } else {
-                $uri->path .= '%3B' . $type;
-            }
-            $uri->path = str_replace(';', '%3B', $uri->path);
-            $uri->path .= $type_ret;
-        }
-        return true;
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+WE2KOZElTUzZxe31zZVJqlUWfVuxAIK=

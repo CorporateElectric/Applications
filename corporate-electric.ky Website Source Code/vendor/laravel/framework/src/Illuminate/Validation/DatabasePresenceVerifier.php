@@ -1,138 +1,77 @@
-<?php
-
-namespace Illuminate\Validation;
-
-use Closure;
-use Illuminate\Database\ConnectionResolverInterface;
-use Illuminate\Support\Str;
-
-class DatabasePresenceVerifier implements DatabasePresenceVerifierInterface
-{
-    /**
-     * The database connection instance.
-     *
-     * @var \Illuminate\Database\ConnectionResolverInterface
-     */
-    protected $db;
-
-    /**
-     * The database connection to use.
-     *
-     * @var string
-     */
-    protected $connection;
-
-    /**
-     * Create a new database presence verifier.
-     *
-     * @param  \Illuminate\Database\ConnectionResolverInterface  $db
-     * @return void
-     */
-    public function __construct(ConnectionResolverInterface $db)
-    {
-        $this->db = $db;
-    }
-
-    /**
-     * Count the number of objects in a collection having the given value.
-     *
-     * @param  string  $collection
-     * @param  string  $column
-     * @param  string  $value
-     * @param  int|null  $excludeId
-     * @param  string|null  $idColumn
-     * @param  array  $extra
-     * @return int
-     */
-    public function getCount($collection, $column, $value, $excludeId = null, $idColumn = null, array $extra = [])
-    {
-        $query = $this->table($collection)->where($column, '=', $value);
-
-        if (! is_null($excludeId) && $excludeId !== 'NULL') {
-            $query->where($idColumn ?: 'id', '<>', $excludeId);
-        }
-
-        return $this->addConditions($query, $extra)->count();
-    }
-
-    /**
-     * Count the number of objects in a collection with the given values.
-     *
-     * @param  string  $collection
-     * @param  string  $column
-     * @param  array  $values
-     * @param  array  $extra
-     * @return int
-     */
-    public function getMultiCount($collection, $column, array $values, array $extra = [])
-    {
-        $query = $this->table($collection)->whereIn($column, $values);
-
-        return $this->addConditions($query, $extra)->distinct()->count($column);
-    }
-
-    /**
-     * Add the given conditions to the query.
-     *
-     * @param  \Illuminate\Database\Query\Builder  $query
-     * @param  array  $conditions
-     * @return \Illuminate\Database\Query\Builder
-     */
-    protected function addConditions($query, $conditions)
-    {
-        foreach ($conditions as $key => $value) {
-            if ($value instanceof Closure) {
-                $query->where(function ($query) use ($value) {
-                    $value($query);
-                });
-            } else {
-                $this->addWhere($query, $key, $value);
-            }
-        }
-
-        return $query;
-    }
-
-    /**
-     * Add a "where" clause to the given query.
-     *
-     * @param  \Illuminate\Database\Query\Builder  $query
-     * @param  string  $key
-     * @param  string  $extraValue
-     * @return void
-     */
-    protected function addWhere($query, $key, $extraValue)
-    {
-        if ($extraValue === 'NULL') {
-            $query->whereNull($key);
-        } elseif ($extraValue === 'NOT_NULL') {
-            $query->whereNotNull($key);
-        } elseif (Str::startsWith($extraValue, '!')) {
-            $query->where($key, '!=', mb_substr($extraValue, 1));
-        } else {
-            $query->where($key, $extraValue);
-        }
-    }
-
-    /**
-     * Get a query builder for the given table.
-     *
-     * @param  string  $table
-     * @return \Illuminate\Database\Query\Builder
-     */
-    protected function table($table)
-    {
-        return $this->db->connection($this->connection)->table($table)->useWritePdo();
-    }
-
-    /**
-     * Set the connection to be used.
-     *
-     * @param  string  $connection
-     * @return void
-     */
-    public function setConnection($connection)
-    {
-        $this->connection = $connection;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+iwoi47m=

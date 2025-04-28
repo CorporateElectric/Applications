@@ -1,68 +1,43 @@
-<?php
-
-/**
- * Abstract class of a tag token (start, end or empty), and its behavior.
- */
-abstract class HTMLPurifier_Token_Tag extends HTMLPurifier_Token
-{
-    /**
-     * Static bool marker that indicates the class is a tag.
-     *
-     * This allows us to check objects with <tt>!empty($obj->is_tag)</tt>
-     * without having to use a function call <tt>is_a()</tt>.
-     * @type bool
-     */
-    public $is_tag = true;
-
-    /**
-     * The lower-case name of the tag, like 'a', 'b' or 'blockquote'.
-     *
-     * @note Strictly speaking, XML tags are case sensitive, so we shouldn't
-     * be lower-casing them, but these tokens cater to HTML tags, which are
-     * insensitive.
-     * @type string
-     */
-    public $name;
-
-    /**
-     * Associative array of the tag's attributes.
-     * @type array
-     */
-    public $attr = array();
-
-    /**
-     * Non-overloaded constructor, which lower-cases passed tag name.
-     *
-     * @param string $name String name.
-     * @param array $attr Associative array of attributes.
-     * @param int $line
-     * @param int $col
-     * @param array $armor
-     */
-    public function __construct($name, $attr = array(), $line = null, $col = null, $armor = array())
-    {
-        $this->name = ctype_lower($name) ? $name : strtolower($name);
-        foreach ($attr as $key => $value) {
-            // normalization only necessary when key is not lowercase
-            if (!ctype_lower($key)) {
-                $new_key = strtolower($key);
-                if (!isset($attr[$new_key])) {
-                    $attr[$new_key] = $attr[$key];
-                }
-                if ($new_key !== $key) {
-                    unset($attr[$key]);
-                }
-            }
-        }
-        $this->attr = $attr;
-        $this->line = $line;
-        $this->col = $col;
-        $this->armor = $armor;
-    }
-
-    public function toNode() {
-        return new HTMLPurifier_Node_Element($this->name, $this->attr, $this->line, $this->col, $this->armor);
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+wZ6l4yWrH0==

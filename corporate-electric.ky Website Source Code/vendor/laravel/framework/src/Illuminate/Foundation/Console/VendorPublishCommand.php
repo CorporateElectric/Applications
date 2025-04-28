@@ -1,283 +1,139 @@
-<?php
-
-namespace Illuminate\Foundation\Console;
-
-use Illuminate\Console\Command;
-use Illuminate\Filesystem\Filesystem;
-use Illuminate\Support\Arr;
-use Illuminate\Support\ServiceProvider;
-use League\Flysystem\Adapter\Local as LocalAdapter;
-use League\Flysystem\Filesystem as Flysystem;
-use League\Flysystem\MountManager;
-
-class VendorPublishCommand extends Command
-{
-    /**
-     * The filesystem instance.
-     *
-     * @var \Illuminate\Filesystem\Filesystem
-     */
-    protected $files;
-
-    /**
-     * The provider to publish.
-     *
-     * @var string
-     */
-    protected $provider = null;
-
-    /**
-     * The tags to publish.
-     *
-     * @var array
-     */
-    protected $tags = [];
-
-    /**
-     * The console command signature.
-     *
-     * @var string
-     */
-    protected $signature = 'vendor:publish {--force : Overwrite any existing files}
-                    {--all : Publish assets for all service providers without prompt}
-                    {--provider= : The service provider that has assets you want to publish}
-                    {--tag=* : One or many tags that have assets you want to publish}';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Publish any publishable assets from vendor packages';
-
-    /**
-     * Create a new command instance.
-     *
-     * @param  \Illuminate\Filesystem\Filesystem  $files
-     * @return void
-     */
-    public function __construct(Filesystem $files)
-    {
-        parent::__construct();
-
-        $this->files = $files;
-    }
-
-    /**
-     * Execute the console command.
-     *
-     * @return void
-     */
-    public function handle()
-    {
-        $this->determineWhatShouldBePublished();
-
-        foreach ($this->tags ?: [null] as $tag) {
-            $this->publishTag($tag);
-        }
-
-        $this->info('Publishing complete.');
-    }
-
-    /**
-     * Determine the provider or tag(s) to publish.
-     *
-     * @return void
-     */
-    protected function determineWhatShouldBePublished()
-    {
-        if ($this->option('all')) {
-            return;
-        }
-
-        [$this->provider, $this->tags] = [
-            $this->option('provider'), (array) $this->option('tag'),
-        ];
-
-        if (! $this->provider && ! $this->tags) {
-            $this->promptForProviderOrTag();
-        }
-    }
-
-    /**
-     * Prompt for which provider or tag to publish.
-     *
-     * @return void
-     */
-    protected function promptForProviderOrTag()
-    {
-        $choice = $this->choice(
-            "Which provider or tag's files would you like to publish?",
-            $choices = $this->publishableChoices()
-        );
-
-        if ($choice == $choices[0] || is_null($choice)) {
-            return;
-        }
-
-        $this->parseChoice($choice);
-    }
-
-    /**
-     * The choices available via the prompt.
-     *
-     * @return array
-     */
-    protected function publishableChoices()
-    {
-        return array_merge(
-            ['<comment>Publish files from all providers and tags listed below</comment>'],
-            preg_filter('/^/', '<comment>Provider: </comment>', Arr::sort(ServiceProvider::publishableProviders())),
-            preg_filter('/^/', '<comment>Tag: </comment>', Arr::sort(ServiceProvider::publishableGroups()))
-        );
-    }
-
-    /**
-     * Parse the answer that was given via the prompt.
-     *
-     * @param  string  $choice
-     * @return void
-     */
-    protected function parseChoice($choice)
-    {
-        [$type, $value] = explode(': ', strip_tags($choice));
-
-        if ($type === 'Provider') {
-            $this->provider = $value;
-        } elseif ($type === 'Tag') {
-            $this->tags = [$value];
-        }
-    }
-
-    /**
-     * Publishes the assets for a tag.
-     *
-     * @param  string  $tag
-     * @return mixed
-     */
-    protected function publishTag($tag)
-    {
-        $published = false;
-
-        foreach ($this->pathsToPublish($tag) as $from => $to) {
-            $this->publishItem($from, $to);
-
-            $published = true;
-        }
-
-        if ($published === false) {
-            $this->error('Unable to locate publishable resources.');
-        }
-    }
-
-    /**
-     * Get all of the paths to publish.
-     *
-     * @param  string  $tag
-     * @return array
-     */
-    protected function pathsToPublish($tag)
-    {
-        return ServiceProvider::pathsToPublish(
-            $this->provider, $tag
-        );
-    }
-
-    /**
-     * Publish the given item from and to the given location.
-     *
-     * @param  string  $from
-     * @param  string  $to
-     * @return void
-     */
-    protected function publishItem($from, $to)
-    {
-        if ($this->files->isFile($from)) {
-            return $this->publishFile($from, $to);
-        } elseif ($this->files->isDirectory($from)) {
-            return $this->publishDirectory($from, $to);
-        }
-
-        $this->error("Can't locate path: <{$from}>");
-    }
-
-    /**
-     * Publish the file to the given path.
-     *
-     * @param  string  $from
-     * @param  string  $to
-     * @return void
-     */
-    protected function publishFile($from, $to)
-    {
-        if (! $this->files->exists($to) || $this->option('force')) {
-            $this->createParentDirectory(dirname($to));
-
-            $this->files->copy($from, $to);
-
-            $this->status($from, $to, 'File');
-        }
-    }
-
-    /**
-     * Publish the directory to the given directory.
-     *
-     * @param  string  $from
-     * @param  string  $to
-     * @return void
-     */
-    protected function publishDirectory($from, $to)
-    {
-        $this->moveManagedFiles(new MountManager([
-            'from' => new Flysystem(new LocalAdapter($from)),
-            'to' => new Flysystem(new LocalAdapter($to)),
-        ]));
-
-        $this->status($from, $to, 'Directory');
-    }
-
-    /**
-     * Move all the files in the given MountManager.
-     *
-     * @param  \League\Flysystem\MountManager  $manager
-     * @return void
-     */
-    protected function moveManagedFiles($manager)
-    {
-        foreach ($manager->listContents('from://', true) as $file) {
-            if ($file['type'] === 'file' && (! $manager->has('to://'.$file['path']) || $this->option('force'))) {
-                $manager->put('to://'.$file['path'], $manager->read('from://'.$file['path']));
-            }
-        }
-    }
-
-    /**
-     * Create the directory to house the published files if needed.
-     *
-     * @param  string  $directory
-     * @return void
-     */
-    protected function createParentDirectory($directory)
-    {
-        if (! $this->files->isDirectory($directory)) {
-            $this->files->makeDirectory($directory, 0755, true);
-        }
-    }
-
-    /**
-     * Write a status message to the console.
-     *
-     * @param  string  $from
-     * @param  string  $to
-     * @param  string  $type
-     * @return void
-     */
-    protected function status($from, $to, $type)
-    {
-        $from = str_replace(base_path(), '', realpath($from));
-
-        $to = str_replace(base_path(), '', realpath($to));
-
-        $this->line('<info>Copied '.$type.'</info> <comment>['.$from.']</comment> <info>To</info> <comment>['.$to.']</comment>');
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,67 +1,45 @@
-<?php
-
-namespace Maatwebsite\Excel\Mixins;
-
-use Illuminate\Support\Collection;
-use Maatwebsite\Excel\Concerns\Exportable;
-use Maatwebsite\Excel\Concerns\FromCollection;
-use Maatwebsite\Excel\Concerns\WithHeadings;
-
-class StoreCollection
-{
-    /**
-     * @return callable
-     */
-    public function storeExcel()
-    {
-        return function (string $filePath, string $disk = null, string $writerType = null, $withHeadings = false) {
-            $export = new class($this, $withHeadings) implements FromCollection, WithHeadings {
-                use Exportable;
-
-                /**
-                 * @var bool
-                 */
-                private $withHeadings;
-
-                /**
-                 * @var Collection
-                 */
-                private $collection;
-
-                /**
-                 * @param Collection $collection
-                 * @param bool       $withHeadings
-                 */
-                public function __construct(Collection $collection, bool $withHeadings = false)
-                {
-                    $this->collection   = $collection->toBase();
-                    $this->withHeadings = $withHeadings;
-                }
-
-                /**
-                 * @return Collection
-                 */
-                public function collection()
-                {
-                    return $this->collection;
-                }
-
-                /**
-                 * @return array
-                 */
-                public function headings(): array
-                {
-                    if (!$this->withHeadings) {
-                        return [];
-                    }
-
-                    return is_array($first = $this->collection->first())
-                        ? $this->collection->collapse()->keys()->all()
-                        : array_keys($first->toArray());
-                }
-            };
-
-            return $export->store($filePath, $disk, $writerType);
-        };
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

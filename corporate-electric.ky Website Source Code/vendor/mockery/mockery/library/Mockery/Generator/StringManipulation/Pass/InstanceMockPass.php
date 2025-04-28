@@ -1,83 +1,37 @@
-<?php
-/**
- * Mockery
- *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://github.com/padraic/mockery/blob/master/LICENSE
- * If you did not receive a copy of the license and are unable to
- * obtain it through the world-wide-web, please send an email
- * to padraic@php.net so we can send you a copy immediately.
- *
- * @category   Mockery
- * @package    Mockery
- * @copyright  Copyright (c) 2010 Pádraic Brady (http://blog.astrumfutura.com)
- * @license    http://github.com/padraic/mockery/blob/master/LICENSE New BSD License
- */
-
-namespace Mockery\Generator\StringManipulation\Pass;
-
-use Mockery\Generator\MockConfiguration;
-
-class InstanceMockPass
-{
-    const INSTANCE_MOCK_CODE = <<<MOCK
-
-    protected \$_mockery_ignoreVerification = true;
-
-    public function __construct()
-    {
-        \$this->_mockery_ignoreVerification = false;
-        \$associatedRealObject = \Mockery::fetchMock(__CLASS__);
-
-        foreach (get_object_vars(\$this) as \$attr => \$val) {
-            if (\$attr !== "_mockery_ignoreVerification" && \$attr !== "_mockery_expectations") {
-                \$this->\$attr = \$associatedRealObject->\$attr;
-            }
-        }
-
-        \$directors = \$associatedRealObject->mockery_getExpectations();
-        foreach (\$directors as \$method=>\$director) {
-            // get the director method needed
-            \$existingDirector = \$this->mockery_getExpectationsFor(\$method);
-            if (!\$existingDirector) {
-                \$existingDirector = new \Mockery\ExpectationDirector(\$method, \$this);
-                \$this->mockery_setExpectationsFor(\$method, \$existingDirector);
-            }
-            \$expectations = \$director->getExpectations();
-            foreach (\$expectations as \$expectation) {
-                \$clonedExpectation = clone \$expectation;
-                \$existingDirector->addExpectation(\$clonedExpectation);
-            }
-            \$defaultExpectations = \$director->getDefaultExpectations();
-            foreach (array_reverse(\$defaultExpectations) as \$expectation) {
-                \$clonedExpectation = clone \$expectation;
-                \$existingDirector->addExpectation(\$clonedExpectation);
-                \$existingDirector->makeExpectationDefault(\$clonedExpectation);
-            }
-        }
-        \Mockery::getContainer()->rememberMock(\$this);
-        
-        \$this->_mockery_constructorCalled(func_get_args());
-    }
-MOCK;
-
-    public function apply($code, MockConfiguration $config)
-    {
-        if ($config->isInstanceMock()) {
-            $code = $this->appendToClass($code, static::INSTANCE_MOCK_CODE);
-        }
-
-        return $code;
-    }
-
-    protected function appendToClass($class, $code)
-    {
-        $lastBrace = strrpos($class, "}");
-        $class = substr($class, 0, $lastBrace) . $code . "\n    }\n";
-        return $class;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+wQz/dkXQj/r4jPy=

@@ -1,101 +1,58 @@
-<?php
-
-namespace GuzzleHttp\Cookie;
-
-use GuzzleHttp\Utils;
-
-/**
- * Persists non-session cookies using a JSON formatted file
- */
-class FileCookieJar extends CookieJar
-{
-    /**
-     * @var string filename
-     */
-    private $filename;
-
-    /**
-     * @var bool Control whether to persist session cookies or not.
-     */
-    private $storeSessionCookies;
-
-    /**
-     * Create a new FileCookieJar object
-     *
-     * @param string $cookieFile          File to store the cookie data
-     * @param bool   $storeSessionCookies Set to true to store session cookies
-     *                                    in the cookie jar.
-     *
-     * @throws \RuntimeException if the file cannot be found or created
-     */
-    public function __construct(string $cookieFile, bool $storeSessionCookies = false)
-    {
-        parent::__construct();
-        $this->filename = $cookieFile;
-        $this->storeSessionCookies = $storeSessionCookies;
-
-        if (\file_exists($cookieFile)) {
-            $this->load($cookieFile);
-        }
-    }
-
-    /**
-     * Saves the file when shutting down
-     */
-    public function __destruct()
-    {
-        $this->save($this->filename);
-    }
-
-    /**
-     * Saves the cookies to a file.
-     *
-     * @param string $filename File to save
-     *
-     * @throws \RuntimeException if the file cannot be found or created
-     */
-    public function save(string $filename): void
-    {
-        $json = [];
-        /** @var SetCookie $cookie */
-        foreach ($this as $cookie) {
-            if (CookieJar::shouldPersist($cookie, $this->storeSessionCookies)) {
-                $json[] = $cookie->toArray();
-            }
-        }
-
-        $jsonStr = Utils::jsonEncode($json);
-        if (false === \file_put_contents($filename, $jsonStr, \LOCK_EX)) {
-            throw new \RuntimeException("Unable to save file {$filename}");
-        }
-    }
-
-    /**
-     * Load cookies from a JSON formatted file.
-     *
-     * Old cookies are kept unless overwritten by newly loaded ones.
-     *
-     * @param string $filename Cookie file to load.
-     *
-     * @throws \RuntimeException if the file cannot be loaded.
-     */
-    public function load(string $filename): void
-    {
-        $json = \file_get_contents($filename);
-        if (false === $json) {
-            throw new \RuntimeException("Unable to load file {$filename}");
-        }
-        if ($json === '') {
-            return;
-        }
-
-        $data = Utils::jsonDecode($json, true);
-        if (\is_array($data)) {
-            foreach ($data as $cookie) {
-                $this->setCookie(new SetCookie($cookie));
-            }
-        } elseif (\is_scalar($data) && !empty($data)) {
-            throw new \RuntimeException("Invalid cookie file: {$filename}");
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

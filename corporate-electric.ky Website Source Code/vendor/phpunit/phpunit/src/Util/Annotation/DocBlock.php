@@ -1,550 +1,242 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Util\Annotation;
-
-use const JSON_ERROR_NONE;
-use const PREG_OFFSET_CAPTURE;
-use function array_filter;
-use function array_key_exists;
-use function array_map;
-use function array_merge;
-use function array_pop;
-use function array_slice;
-use function array_values;
-use function count;
-use function explode;
-use function file;
-use function implode;
-use function is_array;
-use function is_int;
-use function json_decode;
-use function json_last_error;
-use function json_last_error_msg;
-use function preg_match;
-use function preg_match_all;
-use function preg_replace;
-use function preg_split;
-use function realpath;
-use function rtrim;
-use function sprintf;
-use function str_replace;
-use function strlen;
-use function strpos;
-use function strtolower;
-use function substr;
-use function trim;
-use PharIo\Version\VersionConstraintParser;
-use PHPUnit\Framework\InvalidDataProviderException;
-use PHPUnit\Framework\SkippedTestError;
-use PHPUnit\Framework\Warning;
-use PHPUnit\Util\Exception;
-use PHPUnit\Util\InvalidDataSetException;
-use ReflectionClass;
-use ReflectionException;
-use ReflectionFunctionAbstract;
-use ReflectionMethod;
-use Reflector;
-use Traversable;
-
-/**
- * This is an abstraction around a PHPUnit-specific docBlock,
- * allowing us to ask meaningful questions about a specific
- * reflection symbol.
- *
- * @internal This class is not covered by the backward compatibility promise for PHPUnit
- */
-final class DocBlock
-{
-    /**
-     * @todo This constant should be private (it's public because of TestTest::testGetProvidedDataRegEx)
-     */
-    public const REGEX_DATA_PROVIDER = '/@dataProvider\s+([a-zA-Z0-9._:-\\\\x7f-\xff]+)/';
-
-    private const REGEX_REQUIRES_VERSION = '/@requires\s+(?P<name>PHP(?:Unit)?)\s+(?P<operator>[<>=!]{0,2})\s*(?P<version>[\d\.-]+(dev|(RC|alpha|beta)[\d\.])?)[ \t]*\r?$/m';
-
-    private const REGEX_REQUIRES_VERSION_CONSTRAINT = '/@requires\s+(?P<name>PHP(?:Unit)?)\s+(?P<constraint>[\d\t \-.|~^]+)[ \t]*\r?$/m';
-
-    private const REGEX_REQUIRES_OS = '/@requires\s+(?P<name>OS(?:FAMILY)?)\s+(?P<value>.+?)[ \t]*\r?$/m';
-
-    private const REGEX_REQUIRES_SETTING = '/@requires\s+(?P<name>setting)\s+(?P<setting>([^ ]+?))\s*(?P<value>[\w\.-]+[\w\.]?)?[ \t]*\r?$/m';
-
-    private const REGEX_REQUIRES = '/@requires\s+(?P<name>function|extension)\s+(?P<value>([^\s<>=!]+))\s*(?P<operator>[<>=!]{0,2})\s*(?P<version>[\d\.-]+[\d\.]?)?[ \t]*\r?$/m';
-
-    private const REGEX_TEST_WITH = '/@testWith\s+/';
-
-    /** @var string */
-    private $docComment;
-
-    /** @var bool */
-    private $isMethod;
-
-    /** @var array<string, array<int, string>> pre-parsed annotations indexed by name and occurrence index */
-    private $symbolAnnotations;
-
-    /**
-     * @var null|array<string, mixed>
-     *
-     * @psalm-var null|(array{
-     *   __OFFSET: array<string, int>&array{__FILE: string},
-     *   setting?: array<string, string>,
-     *   extension_versions?: array<string, array{version: string, operator: string}>
-     * }&array<
-     *   string,
-     *   string|array{version: string, operator: string}|array{constraint: string}|array<int|string, string>
-     * >)
-     */
-    private $parsedRequirements;
-
-    /** @var int */
-    private $startLine;
-
-    /** @var int */
-    private $endLine;
-
-    /** @var string */
-    private $fileName;
-
-    /** @var string */
-    private $name;
-
-    /**
-     * @var string
-     *
-     * @psalm-var class-string
-     */
-    private $className;
-
-    public static function ofClass(ReflectionClass $class): self
-    {
-        $className = $class->getName();
-
-        return new self(
-            (string) $class->getDocComment(),
-            false,
-            self::extractAnnotationsFromReflector($class),
-            $class->getStartLine(),
-            $class->getEndLine(),
-            $class->getFileName(),
-            $className,
-            $className
-        );
-    }
-
-    /**
-     * @psalm-param class-string $classNameInHierarchy
-     */
-    public static function ofMethod(ReflectionMethod $method, string $classNameInHierarchy): self
-    {
-        return new self(
-            (string) $method->getDocComment(),
-            true,
-            self::extractAnnotationsFromReflector($method),
-            $method->getStartLine(),
-            $method->getEndLine(),
-            $method->getFileName(),
-            $method->getName(),
-            $classNameInHierarchy
-        );
-    }
-
-    /**
-     * Note: we do not preserve an instance of the reflection object, since it cannot be safely (de-)serialized.
-     *
-     * @param array<string, array<int, string>> $symbolAnnotations
-     *
-     * @psalm-param class-string $className
-     */
-    private function __construct(string $docComment, bool $isMethod, array $symbolAnnotations, int $startLine, int $endLine, string $fileName, string $name, string $className)
-    {
-        $this->docComment        = $docComment;
-        $this->isMethod          = $isMethod;
-        $this->symbolAnnotations = $symbolAnnotations;
-        $this->startLine         = $startLine;
-        $this->endLine           = $endLine;
-        $this->fileName          = $fileName;
-        $this->name              = $name;
-        $this->className         = $className;
-    }
-
-    /**
-     * @psalm-return array{
-     *   __OFFSET: array<string, int>&array{__FILE: string},
-     *   setting?: array<string, string>,
-     *   extension_versions?: array<string, array{version: string, operator: string}>
-     * }&array<
-     *   string,
-     *   string|array{version: string, operator: string}|array{constraint: string}|array<int|string, string>
-     * >
-     *
-     * @throws Warning if the requirements version constraint is not well-formed
-     */
-    public function requirements(): array
-    {
-        if ($this->parsedRequirements !== null) {
-            return $this->parsedRequirements;
-        }
-
-        $offset            = $this->startLine;
-        $requires          = [];
-        $recordedSettings  = [];
-        $extensionVersions = [];
-        $recordedOffsets   = [
-            '__FILE' => realpath($this->fileName),
-        ];
-
-        // Split docblock into lines and rewind offset to start of docblock
-        $lines = preg_split('/\r\n|\r|\n/', $this->docComment);
-        $offset -= count($lines);
-
-        foreach ($lines as $line) {
-            if (preg_match(self::REGEX_REQUIRES_OS, $line, $matches)) {
-                $requires[$matches['name']]        = $matches['value'];
-                $recordedOffsets[$matches['name']] = $offset;
-            }
-
-            if (preg_match(self::REGEX_REQUIRES_VERSION, $line, $matches)) {
-                $requires[$matches['name']] = [
-                    'version'  => $matches['version'],
-                    'operator' => $matches['operator'],
-                ];
-                $recordedOffsets[$matches['name']] = $offset;
-            }
-
-            if (preg_match(self::REGEX_REQUIRES_VERSION_CONSTRAINT, $line, $matches)) {
-                if (!empty($requires[$matches['name']])) {
-                    $offset++;
-
-                    continue;
-                }
-
-                try {
-                    $versionConstraintParser = new VersionConstraintParser;
-
-                    $requires[$matches['name'] . '_constraint'] = [
-                        'constraint' => $versionConstraintParser->parse(trim($matches['constraint'])),
-                    ];
-                    $recordedOffsets[$matches['name'] . '_constraint'] = $offset;
-                } catch (\PharIo\Version\Exception $e) {
-                    throw new Warning($e->getMessage(), $e->getCode(), $e);
-                }
-            }
-
-            if (preg_match(self::REGEX_REQUIRES_SETTING, $line, $matches)) {
-                $recordedSettings[$matches['setting']]               = $matches['value'];
-                $recordedOffsets['__SETTING_' . $matches['setting']] = $offset;
-            }
-
-            if (preg_match(self::REGEX_REQUIRES, $line, $matches)) {
-                $name = $matches['name'] . 's';
-
-                if (!isset($requires[$name])) {
-                    $requires[$name] = [];
-                }
-
-                $requires[$name][]                                           = $matches['value'];
-                $recordedOffsets[$matches['name'] . '_' . $matches['value']] = $offset;
-
-                if ($name === 'extensions' && !empty($matches['version'])) {
-                    $extensionVersions[$matches['value']] = [
-                        'version'  => $matches['version'],
-                        'operator' => $matches['operator'],
-                    ];
-                }
-            }
-
-            $offset++;
-        }
-
-        return $this->parsedRequirements = array_merge(
-            $requires,
-            ['__OFFSET' => $recordedOffsets],
-            array_filter([
-                'setting'            => $recordedSettings,
-                'extension_versions' => $extensionVersions,
-            ])
-        );
-    }
-
-    /**
-     * Returns the provided data for a method.
-     *
-     * @throws Exception
-     */
-    public function getProvidedData(): ?array
-    {
-        /** @noinspection SuspiciousBinaryOperationInspection */
-        $data = $this->getDataFromDataProviderAnnotation($this->docComment) ?? $this->getDataFromTestWithAnnotation($this->docComment);
-
-        if ($data === null) {
-            return null;
-        }
-
-        if ($data === []) {
-            throw new SkippedTestError;
-        }
-
-        foreach ($data as $key => $value) {
-            if (!is_array($value)) {
-                throw new InvalidDataSetException(
-                    sprintf(
-                        'Data set %s is invalid.',
-                        is_int($key) ? '#' . $key : '"' . $key . '"'
-                    )
-                );
-            }
-        }
-
-        return $data;
-    }
-
-    /**
-     * @psalm-return array<string, array{line: int, value: string}>
-     */
-    public function getInlineAnnotations(): array
-    {
-        $code        = file($this->fileName);
-        $lineNumber  = $this->startLine;
-        $startLine   = $this->startLine - 1;
-        $endLine     = $this->endLine - 1;
-        $codeLines   = array_slice($code, $startLine, $endLine - $startLine + 1);
-        $annotations = [];
-
-        foreach ($codeLines as $line) {
-            if (preg_match('#/\*\*?\s*@(?P<name>[A-Za-z_-]+)(?:[ \t]+(?P<value>.*?))?[ \t]*\r?\*/$#m', $line, $matches)) {
-                $annotations[strtolower($matches['name'])] = [
-                    'line'  => $lineNumber,
-                    'value' => $matches['value'],
-                ];
-            }
-
-            $lineNumber++;
-        }
-
-        return $annotations;
-    }
-
-    public function symbolAnnotations(): array
-    {
-        return $this->symbolAnnotations;
-    }
-
-    public function isHookToBeExecutedBeforeClass(): bool
-    {
-        return $this->isMethod &&
-            false !== strpos($this->docComment, '@beforeClass');
-    }
-
-    public function isHookToBeExecutedAfterClass(): bool
-    {
-        return $this->isMethod &&
-            false !== strpos($this->docComment, '@afterClass');
-    }
-
-    public function isToBeExecutedBeforeTest(): bool
-    {
-        return 1 === preg_match('/@before\b/', $this->docComment);
-    }
-
-    public function isToBeExecutedAfterTest(): bool
-    {
-        return 1 === preg_match('/@after\b/', $this->docComment);
-    }
-
-    public function isToBeExecutedAsPreCondition(): bool
-    {
-        return 1 === preg_match('/@preCondition\b/', $this->docComment);
-    }
-
-    public function isToBeExecutedAsPostCondition(): bool
-    {
-        return 1 === preg_match('/@postCondition\b/', $this->docComment);
-    }
-
-    private function getDataFromDataProviderAnnotation(string $docComment): ?array
-    {
-        $methodName = null;
-        $className  = $this->className;
-
-        if ($this->isMethod) {
-            $methodName = $this->name;
-        }
-
-        if (!preg_match_all(self::REGEX_DATA_PROVIDER, $docComment, $matches)) {
-            return null;
-        }
-
-        $result = [];
-
-        foreach ($matches[1] as $match) {
-            $dataProviderMethodNameNamespace = explode('\\', $match);
-            $leaf                            = explode('::', array_pop($dataProviderMethodNameNamespace));
-            $dataProviderMethodName          = array_pop($leaf);
-
-            if (empty($dataProviderMethodNameNamespace)) {
-                $dataProviderMethodNameNamespace = '';
-            } else {
-                $dataProviderMethodNameNamespace = implode('\\', $dataProviderMethodNameNamespace) . '\\';
-            }
-
-            if (empty($leaf)) {
-                $dataProviderClassName = $className;
-            } else {
-                /** @psalm-var class-string $dataProviderClassName */
-                $dataProviderClassName = $dataProviderMethodNameNamespace . array_pop($leaf);
-            }
-
-            try {
-                $dataProviderClass = new ReflectionClass($dataProviderClassName);
-
-                $dataProviderMethod = $dataProviderClass->getMethod(
-                    $dataProviderMethodName
-                );
-                // @codeCoverageIgnoreStart
-            } catch (ReflectionException $e) {
-                throw new Exception(
-                    $e->getMessage(),
-                    (int) $e->getCode(),
-                    $e
-                );
-                // @codeCoverageIgnoreEnd
-            }
-
-            if ($dataProviderMethod->isStatic()) {
-                $object = null;
-            } else {
-                $object = $dataProviderClass->newInstance();
-            }
-
-            if ($dataProviderMethod->getNumberOfParameters() === 0) {
-                $data = $dataProviderMethod->invoke($object);
-            } else {
-                $data = $dataProviderMethod->invoke($object, $methodName);
-            }
-
-            if ($data instanceof Traversable) {
-                $origData = $data;
-                $data     = [];
-
-                foreach ($origData as $key => $value) {
-                    if (is_int($key)) {
-                        $data[] = $value;
-                    } elseif (array_key_exists($key, $data)) {
-                        throw new InvalidDataProviderException(
-                            sprintf(
-                                'The key "%s" has already been defined in the data provider "%s".',
-                                $key,
-                                $match
-                            )
-                        );
-                    } else {
-                        $data[$key] = $value;
-                    }
-                }
-            }
-
-            if (is_array($data)) {
-                $result = array_merge($result, $data);
-            }
-        }
-
-        return $result;
-    }
-
-    /**
-     * @throws Exception
-     */
-    private function getDataFromTestWithAnnotation(string $docComment): ?array
-    {
-        $docComment = $this->cleanUpMultiLineAnnotation($docComment);
-
-        if (!preg_match(self::REGEX_TEST_WITH, $docComment, $matches, PREG_OFFSET_CAPTURE)) {
-            return null;
-        }
-
-        $offset            = strlen($matches[0][0]) + $matches[0][1];
-        $annotationContent = substr($docComment, $offset);
-        $data              = [];
-
-        foreach (explode("\n", $annotationContent) as $candidateRow) {
-            $candidateRow = trim($candidateRow);
-
-            if ($candidateRow[0] !== '[') {
-                break;
-            }
-
-            $dataSet = json_decode($candidateRow, true);
-
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                throw new Exception(
-                    'The data set for the @testWith annotation cannot be parsed: ' . json_last_error_msg()
-                );
-            }
-
-            $data[] = $dataSet;
-        }
-
-        if (!$data) {
-            throw new Exception('The data set for the @testWith annotation cannot be parsed.');
-        }
-
-        return $data;
-    }
-
-    private function cleanUpMultiLineAnnotation(string $docComment): string
-    {
-        //removing initial '   * ' for docComment
-        $docComment = str_replace("\r\n", "\n", $docComment);
-        $docComment = preg_replace('/' . '\n' . '\s*' . '\*' . '\s?' . '/', "\n", $docComment);
-        $docComment = (string) substr($docComment, 0, -1);
-
-        return rtrim($docComment, "\n");
-    }
-
-    /** @return array<string, array<int, string>> */
-    private static function parseDocBlock(string $docBlock): array
-    {
-        // Strip away the docblock header and footer to ease parsing of one line annotations
-        $docBlock    = (string) substr($docBlock, 3, -2);
-        $annotations = [];
-
-        if (preg_match_all('/@(?P<name>[A-Za-z_-]+)(?:[ \t]+(?P<value>.*?))?[ \t]*\r?$/m', $docBlock, $matches)) {
-            $numMatches = count($matches[0]);
-
-            for ($i = 0; $i < $numMatches; $i++) {
-                $annotations[$matches['name'][$i]][] = (string) $matches['value'][$i];
-            }
-        }
-
-        return $annotations;
-    }
-
-    /** @param ReflectionClass|ReflectionFunctionAbstract $reflector */
-    private static function extractAnnotationsFromReflector(Reflector $reflector): array
-    {
-        $annotations = [];
-
-        if ($reflector instanceof ReflectionClass) {
-            $annotations = array_merge(
-                $annotations,
-                ...array_map(
-                    static function (ReflectionClass $trait): array {
-                        return self::parseDocBlock((string) $trait->getDocComment());
-                    },
-                    array_values($reflector->getTraits())
-                )
-            );
-        }
-
-        return array_merge(
-            $annotations,
-            self::parseDocBlock((string) $reflector->getDocComment())
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+TAMPUvCqG+X3m9w4gz88auy4ejVHYA8=

@@ -1,181 +1,78 @@
-<?php
-
-/**
- * Takes a well formed list of tokens and fixes their nesting.
- *
- * HTML elements dictate which elements are allowed to be their children,
- * for example, you can't have a p tag in a span tag.  Other elements have
- * much more rigorous definitions: tables, for instance, require a specific
- * order for their elements.  There are also constraints not expressible by
- * document type definitions, such as the chameleon nature of ins/del
- * tags and global child exclusions.
- *
- * The first major objective of this strategy is to iterate through all
- * the nodes and determine whether or not their children conform to the
- * element's definition.  If they do not, the child definition may
- * optionally supply an amended list of elements that is valid or
- * require that the entire node be deleted (and the previous node
- * rescanned).
- *
- * The second objective is to ensure that explicitly excluded elements of
- * an element do not appear in its children.  Code that accomplishes this
- * task is pervasive through the strategy, though the two are distinct tasks
- * and could, theoretically, be seperated (although it's not recommended).
- *
- * @note Whether or not unrecognized children are silently dropped or
- *       translated into text depends on the child definitions.
- *
- * @todo Enable nodes to be bubbled out of the structure.  This is
- *       easier with our new algorithm.
- */
-
-class HTMLPurifier_Strategy_FixNesting extends HTMLPurifier_Strategy
-{
-
-    /**
-     * @param HTMLPurifier_Token[] $tokens
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return array|HTMLPurifier_Token[]
-     */
-    public function execute($tokens, $config, $context)
-    {
-
-        //####################################################################//
-        // Pre-processing
-
-        // O(n) pass to convert to a tree, so that we can efficiently
-        // refer to substrings
-        $top_node = HTMLPurifier_Arborize::arborize($tokens, $config, $context);
-
-        // get a copy of the HTML definition
-        $definition = $config->getHTMLDefinition();
-
-        $excludes_enabled = !$config->get('Core.DisableExcludes');
-
-        // setup the context variable 'IsInline', for chameleon processing
-        // is 'false' when we are not inline, 'true' when it must always
-        // be inline, and an integer when it is inline for a certain
-        // branch of the document tree
-        $is_inline = $definition->info_parent_def->descendants_are_inline;
-        $context->register('IsInline', $is_inline);
-
-        // setup error collector
-        $e =& $context->get('ErrorCollector', true);
-
-        //####################################################################//
-        // Loop initialization
-
-        // stack that contains all elements that are excluded
-        // it is organized by parent elements, similar to $stack,
-        // but it is only populated when an element with exclusions is
-        // processed, i.e. there won't be empty exclusions.
-        $exclude_stack = array($definition->info_parent_def->excludes);
-
-        // variable that contains the start token while we are processing
-        // nodes. This enables error reporting to do its job
-        $node = $top_node;
-        // dummy token
-        list($token, $d) = $node->toTokenPair();
-        $context->register('CurrentNode', $node);
-        $context->register('CurrentToken', $token);
-
-        //####################################################################//
-        // Loop
-
-        // We need to implement a post-order traversal iteratively, to
-        // avoid running into stack space limits.  This is pretty tricky
-        // to reason about, so we just manually stack-ify the recursive
-        // variant:
-        //
-        //  function f($node) {
-        //      foreach ($node->children as $child) {
-        //          f($child);
-        //      }
-        //      validate($node);
-        //  }
-        //
-        // Thus, we will represent a stack frame as array($node,
-        // $is_inline, stack of children)
-        // e.g. array_reverse($node->children) - already processed
-        // children.
-
-        $parent_def = $definition->info_parent_def;
-        $stack = array(
-            array($top_node,
-                  $parent_def->descendants_are_inline,
-                  $parent_def->excludes, // exclusions
-                  0)
-            );
-
-        while (!empty($stack)) {
-            list($node, $is_inline, $excludes, $ix) = array_pop($stack);
-            // recursive call
-            $go = false;
-            $def = empty($stack) ? $definition->info_parent_def : $definition->info[$node->name];
-            while (isset($node->children[$ix])) {
-                $child = $node->children[$ix++];
-                if ($child instanceof HTMLPurifier_Node_Element) {
-                    $go = true;
-                    $stack[] = array($node, $is_inline, $excludes, $ix);
-                    $stack[] = array($child,
-                        // ToDo: I don't think it matters if it's def or
-                        // child_def, but double check this...
-                        $is_inline || $def->descendants_are_inline,
-                        empty($def->excludes) ? $excludes
-                                              : array_merge($excludes, $def->excludes),
-                        0);
-                    break;
-                }
-            };
-            if ($go) continue;
-            list($token, $d) = $node->toTokenPair();
-            // base case
-            if ($excludes_enabled && isset($excludes[$node->name])) {
-                $node->dead = true;
-                if ($e) $e->send(E_ERROR, 'Strategy_FixNesting: Node excluded');
-            } else {
-                // XXX I suppose it would be slightly more efficient to
-                // avoid the allocation here and have children
-                // strategies handle it
-                $children = array();
-                foreach ($node->children as $child) {
-                    if (!$child->dead) $children[] = $child;
-                }
-                $result = $def->child->validateChildren($children, $config, $context);
-                if ($result === true) {
-                    // nop
-                    $node->children = $children;
-                } elseif ($result === false) {
-                    $node->dead = true;
-                    if ($e) $e->send(E_ERROR, 'Strategy_FixNesting: Node removed');
-                } else {
-                    $node->children = $result;
-                    if ($e) {
-                        // XXX This will miss mutations of internal nodes. Perhaps defer to the child validators
-                        if (empty($result) && !empty($children)) {
-                            $e->send(E_ERROR, 'Strategy_FixNesting: Node contents removed');
-                        } else if ($result != $children) {
-                            $e->send(E_WARNING, 'Strategy_FixNesting: Node reorganized');
-                        }
-                    }
-                }
-            }
-        }
-
-        //####################################################################//
-        // Post-processing
-
-        // remove context variables
-        $context->destroy('IsInline');
-        $context->destroy('CurrentNode');
-        $context->destroy('CurrentToken');
-
-        //####################################################################//
-        // Return
-
-        return HTMLPurifier_Arborize::flatten($node, $config, $context);
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

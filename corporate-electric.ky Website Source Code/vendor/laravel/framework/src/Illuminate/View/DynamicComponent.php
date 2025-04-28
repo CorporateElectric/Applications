@@ -1,172 +1,111 @@
-<?php
-
-namespace Illuminate\View;
-
-use Illuminate\Container\Container;
-use Illuminate\Support\Str;
-use Illuminate\View\Compilers\ComponentTagCompiler;
-
-class DynamicComponent extends Component
-{
-    /**
-     * The name of the component.
-     *
-     * @var string
-     */
-    public $component;
-
-    /**
-     * The component tag compiler instance.
-     *
-     * @var \Illuminate\View\Compilers\BladeTagCompiler
-     */
-    protected static $compiler;
-
-    /**
-     * The cached component classes.
-     *
-     * @var array
-     */
-    protected static $componentClasses = [];
-
-    /**
-     * Create a new component instance.
-     *
-     * @param  string  $component
-     * @return void
-     */
-    public function __construct(string $component)
-    {
-        $this->component = $component;
-    }
-
-    /**
-     * Get the view / contents that represent the component.
-     *
-     * @return \Illuminate\Contracts\View\View|string
-     */
-    public function render()
-    {
-        $template = <<<'EOF'
-<?php extract(collect($attributes->getAttributes())->mapWithKeys(function ($value, $key) { return [Illuminate\Support\Str::camel(str_replace([':', '.'], ' ', $key)) => $value]; })->all(), EXTR_SKIP); ?>
-{{ props }}
-<x-{{ component }} {{ bindings }} {{ attributes }}>
-{{ slots }}
-{{ defaultSlot }}
-</x-{{ component }}>
-EOF;
-
-        return function ($data) use ($template) {
-            $bindings = $this->bindings($class = $this->classForComponent());
-
-            return str_replace(
-                [
-                    '{{ component }}',
-                    '{{ props }}',
-                    '{{ bindings }}',
-                    '{{ attributes }}',
-                    '{{ slots }}',
-                    '{{ defaultSlot }}',
-                ],
-                [
-                    $this->component,
-                    $this->compileProps($bindings),
-                    $this->compileBindings($bindings),
-                    class_exists($class) ? '{{ $attributes }}' : '',
-                    $this->compileSlots($data['__laravel_slots']),
-                    '{{ $slot ?? "" }}',
-                ],
-                $template
-            );
-        };
-    }
-
-    /**
-     * Compile the @props directive for the component.
-     *
-     * @param  array  $bindings
-     * @return string
-     */
-    protected function compileProps(array $bindings)
-    {
-        if (empty($bindings)) {
-            return '';
-        }
-
-        return '@props('.'[\''.implode('\',\'', collect($bindings)->map(function ($dataKey) {
-            return Str::camel($dataKey);
-        })->all()).'\']'.')';
-    }
-
-    /**
-     * Compile the bindings for the component.
-     *
-     * @param  array  $bindings
-     * @return string
-     */
-    protected function compileBindings(array $bindings)
-    {
-        return collect($bindings)->map(function ($key) {
-            return ':'.$key.'="$'.Str::camel(str_replace([':', '.'], ' ', $key)).'"';
-        })->implode(' ');
-    }
-
-    /**
-     * Compile the slots for the component.
-     *
-     * @param  array  $slots
-     * @return string
-     */
-    protected function compileSlots(array $slots)
-    {
-        return collect($slots)->map(function ($slot, $name) {
-            return $name === '__default' ? null : '<x-slot name="'.$name.'">{{ $'.$name.' }}</x-slot>';
-        })->filter()->implode(PHP_EOL);
-    }
-
-    /**
-     * Get the class for the current component.
-     *
-     * @return string
-     */
-    protected function classForComponent()
-    {
-        if (isset(static::$componentClasses[$this->component])) {
-            return static::$componentClasses[$this->component];
-        }
-
-        return static::$componentClasses[$this->component] =
-                    $this->compiler()->componentClass($this->component);
-    }
-
-    /**
-     * Get the names of the variables that should be bound to the component.
-     *
-     * @param  string  $class
-     * @return array
-     */
-    protected function bindings(string $class)
-    {
-        [$data, $attributes] = $this->compiler()->partitionDataAndAttributes($class, $this->attributes->getAttributes());
-
-        return array_keys($data->all());
-    }
-
-    /**
-     * Get an instance of the Blade tag compiler.
-     *
-     * @return \Illuminate\View\Compilers\ComponentTagCompiler
-     */
-    protected function compiler()
-    {
-        if (! static::$compiler) {
-            static::$compiler = new ComponentTagCompiler(
-                Container::getInstance()->make('blade.compiler')->getClassComponentAliases(),
-                Container::getInstance()->make('blade.compiler')->getClassComponentNamespaces(),
-                Container::getInstance()->make('blade.compiler')
-            );
-        }
-
-        return static::$compiler;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

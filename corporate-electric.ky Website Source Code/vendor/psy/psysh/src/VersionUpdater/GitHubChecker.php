@@ -1,93 +1,56 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\VersionUpdater;
-
-use Psy\Shell;
-
-class GitHubChecker implements Checker
-{
-    const URL = 'https://api.github.com/repos/bobthecow/psysh/releases/latest';
-
-    private $latest;
-
-    /**
-     * @return bool
-     */
-    public function isLatest()
-    {
-        // version_compare doesn't handle semver completely;
-        // strip pre-release and build metadata before comparing
-        $version = \preg_replace('/[+-]\w+/', '', Shell::VERSION);
-
-        return \version_compare($version, $this->getLatest(), '>=');
-    }
-
-    /**
-     * @return string
-     */
-    public function getLatest()
-    {
-        if (!isset($this->latest)) {
-            $this->setLatest($this->getVersionFromTag());
-        }
-
-        return $this->latest;
-    }
-
-    /**
-     * @param string $version
-     */
-    public function setLatest($version)
-    {
-        $this->latest = $version;
-    }
-
-    /**
-     * @return string|null
-     */
-    private function getVersionFromTag()
-    {
-        $contents = $this->fetchLatestRelease();
-        if (!$contents || !isset($contents->tag_name)) {
-            throw new \InvalidArgumentException('Unable to check for updates');
-        }
-        $this->setLatest($contents->tag_name);
-
-        return $this->getLatest();
-    }
-
-    /**
-     * Set to public to make testing easier.
-     *
-     * @return mixed
-     */
-    public function fetchLatestRelease()
-    {
-        $context = \stream_context_create([
-            'http' => [
-                'user_agent' => 'PsySH/'.Shell::VERSION,
-                'timeout'    => 3,
-            ],
-        ]);
-
-        \set_error_handler(function () {
-            // Just ignore all errors with this. The checker will throw an exception
-            // if it doesn't work :)
-        });
-
-        $result = @\file_get_contents(self::URL, false, $context);
-
-        \restore_error_handler();
-
-        return \json_decode($result);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

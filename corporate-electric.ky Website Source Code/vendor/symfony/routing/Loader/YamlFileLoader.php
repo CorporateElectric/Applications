@@ -1,262 +1,182 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Routing\Loader;
-
-use Symfony\Component\Config\Loader\FileLoader;
-use Symfony\Component\Config\Resource\FileResource;
-use Symfony\Component\Routing\Loader\Configurator\Traits\HostTrait;
-use Symfony\Component\Routing\Loader\Configurator\Traits\LocalizedRouteTrait;
-use Symfony\Component\Routing\Loader\Configurator\Traits\PrefixTrait;
-use Symfony\Component\Routing\RouteCollection;
-use Symfony\Component\Yaml\Exception\ParseException;
-use Symfony\Component\Yaml\Parser as YamlParser;
-use Symfony\Component\Yaml\Yaml;
-
-/**
- * YamlFileLoader loads Yaml routing files.
- *
- * @author Fabien Potencier <fabien@symfony.com>
- * @author Tobias Schultze <http://tobion.de>
- */
-class YamlFileLoader extends FileLoader
-{
-    use HostTrait;
-    use LocalizedRouteTrait;
-    use PrefixTrait;
-
-    private static $availableKeys = [
-        'resource', 'type', 'prefix', 'path', 'host', 'schemes', 'methods', 'defaults', 'requirements', 'options', 'condition', 'controller', 'name_prefix', 'trailing_slash_on_root', 'locale', 'format', 'utf8', 'exclude', 'stateless',
-    ];
-    private $yamlParser;
-
-    /**
-     * Loads a Yaml file.
-     *
-     * @param string      $file A Yaml file path
-     * @param string|null $type The resource type
-     *
-     * @return RouteCollection A RouteCollection instance
-     *
-     * @throws \InvalidArgumentException When a route can't be parsed because YAML is invalid
-     */
-    public function load($file, string $type = null)
-    {
-        $path = $this->locator->locate($file);
-
-        if (!stream_is_local($path)) {
-            throw new \InvalidArgumentException(sprintf('This is not a local file "%s".', $path));
-        }
-
-        if (!file_exists($path)) {
-            throw new \InvalidArgumentException(sprintf('File "%s" not found.', $path));
-        }
-
-        if (null === $this->yamlParser) {
-            $this->yamlParser = new YamlParser();
-        }
-
-        try {
-            $parsedConfig = $this->yamlParser->parseFile($path, Yaml::PARSE_CONSTANT);
-        } catch (ParseException $e) {
-            throw new \InvalidArgumentException(sprintf('The file "%s" does not contain valid YAML: ', $path).$e->getMessage(), 0, $e);
-        }
-
-        $collection = new RouteCollection();
-        $collection->addResource(new FileResource($path));
-
-        // empty file
-        if (null === $parsedConfig) {
-            return $collection;
-        }
-
-        // not an array
-        if (!\is_array($parsedConfig)) {
-            throw new \InvalidArgumentException(sprintf('The file "%s" must contain a YAML array.', $path));
-        }
-
-        foreach ($parsedConfig as $name => $config) {
-            $this->validate($config, $name, $path);
-
-            if (isset($config['resource'])) {
-                $this->parseImport($collection, $config, $path, $file);
-            } else {
-                $this->parseRoute($collection, $name, $config, $path);
-            }
-        }
-
-        return $collection;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function supports($resource, string $type = null)
-    {
-        return \is_string($resource) && \in_array(pathinfo($resource, \PATHINFO_EXTENSION), ['yml', 'yaml'], true) && (!$type || 'yaml' === $type);
-    }
-
-    /**
-     * Parses a route and adds it to the RouteCollection.
-     *
-     * @param string $name   Route name
-     * @param array  $config Route definition
-     * @param string $path   Full path of the YAML file being processed
-     */
-    protected function parseRoute(RouteCollection $collection, string $name, array $config, string $path)
-    {
-        $defaults = isset($config['defaults']) ? $config['defaults'] : [];
-        $requirements = isset($config['requirements']) ? $config['requirements'] : [];
-        $options = isset($config['options']) ? $config['options'] : [];
-
-        foreach ($requirements as $placeholder => $requirement) {
-            if (\is_int($placeholder)) {
-                throw new \InvalidArgumentException(sprintf('A placeholder name must be a string (%d given). Did you forget to specify the placeholder key for the requirement "%s" of route "%s" in "%s"?', $placeholder, $requirement, $name, $path));
-            }
-        }
-
-        if (isset($config['controller'])) {
-            $defaults['_controller'] = $config['controller'];
-        }
-        if (isset($config['locale'])) {
-            $defaults['_locale'] = $config['locale'];
-        }
-        if (isset($config['format'])) {
-            $defaults['_format'] = $config['format'];
-        }
-        if (isset($config['utf8'])) {
-            $options['utf8'] = $config['utf8'];
-        }
-        if (isset($config['stateless'])) {
-            $defaults['_stateless'] = $config['stateless'];
-        }
-
-        $routes = $this->createLocalizedRoute($collection, $name, $config['path']);
-        $routes->addDefaults($defaults);
-        $routes->addRequirements($requirements);
-        $routes->addOptions($options);
-        $routes->setSchemes($config['schemes'] ?? []);
-        $routes->setMethods($config['methods'] ?? []);
-        $routes->setCondition($config['condition'] ?? null);
-
-        if (isset($config['host'])) {
-            $this->addHost($routes, $config['host']);
-        }
-    }
-
-    /**
-     * Parses an import and adds the routes in the resource to the RouteCollection.
-     *
-     * @param array  $config Route definition
-     * @param string $path   Full path of the YAML file being processed
-     * @param string $file   Loaded file name
-     */
-    protected function parseImport(RouteCollection $collection, array $config, string $path, string $file)
-    {
-        $type = isset($config['type']) ? $config['type'] : null;
-        $prefix = isset($config['prefix']) ? $config['prefix'] : '';
-        $defaults = isset($config['defaults']) ? $config['defaults'] : [];
-        $requirements = isset($config['requirements']) ? $config['requirements'] : [];
-        $options = isset($config['options']) ? $config['options'] : [];
-        $host = isset($config['host']) ? $config['host'] : null;
-        $condition = isset($config['condition']) ? $config['condition'] : null;
-        $schemes = isset($config['schemes']) ? $config['schemes'] : null;
-        $methods = isset($config['methods']) ? $config['methods'] : null;
-        $trailingSlashOnRoot = $config['trailing_slash_on_root'] ?? true;
-        $namePrefix = $config['name_prefix'] ?? null;
-        $exclude = $config['exclude'] ?? null;
-
-        if (isset($config['controller'])) {
-            $defaults['_controller'] = $config['controller'];
-        }
-        if (isset($config['locale'])) {
-            $defaults['_locale'] = $config['locale'];
-        }
-        if (isset($config['format'])) {
-            $defaults['_format'] = $config['format'];
-        }
-        if (isset($config['utf8'])) {
-            $options['utf8'] = $config['utf8'];
-        }
-        if (isset($config['stateless'])) {
-            $defaults['_stateless'] = $config['stateless'];
-        }
-
-        $this->setCurrentDir(\dirname($path));
-
-        /** @var RouteCollection[] $imported */
-        $imported = $this->import($config['resource'], $type, false, $file, $exclude) ?: [];
-
-        if (!\is_array($imported)) {
-            $imported = [$imported];
-        }
-
-        foreach ($imported as $subCollection) {
-            $this->addPrefix($subCollection, $prefix, $trailingSlashOnRoot);
-
-            if (null !== $host) {
-                $this->addHost($subCollection, $host);
-            }
-            if (null !== $condition) {
-                $subCollection->setCondition($condition);
-            }
-            if (null !== $schemes) {
-                $subCollection->setSchemes($schemes);
-            }
-            if (null !== $methods) {
-                $subCollection->setMethods($methods);
-            }
-            if (null !== $namePrefix) {
-                $subCollection->addNamePrefix($namePrefix);
-            }
-            $subCollection->addDefaults($defaults);
-            $subCollection->addRequirements($requirements);
-            $subCollection->addOptions($options);
-
-            $collection->addCollection($subCollection);
-        }
-    }
-
-    /**
-     * Validates the route configuration.
-     *
-     * @param array  $config A resource config
-     * @param string $name   The config key
-     * @param string $path   The loaded file path
-     *
-     * @throws \InvalidArgumentException If one of the provided config keys is not supported,
-     *                                   something is missing or the combination is nonsense
-     */
-    protected function validate($config, string $name, string $path)
-    {
-        if (!\is_array($config)) {
-            throw new \InvalidArgumentException(sprintf('The definition of "%s" in "%s" must be a YAML array.', $name, $path));
-        }
-        if ($extraKeys = array_diff(array_keys($config), self::$availableKeys)) {
-            throw new \InvalidArgumentException(sprintf('The routing file "%s" contains unsupported keys for "%s": "%s". Expected one of: "%s".', $path, $name, implode('", "', $extraKeys), implode('", "', self::$availableKeys)));
-        }
-        if (isset($config['resource']) && isset($config['path'])) {
-            throw new \InvalidArgumentException(sprintf('The routing file "%s" must not specify both the "resource" key and the "path" key for "%s". Choose between an import and a route definition.', $path, $name));
-        }
-        if (!isset($config['resource']) && isset($config['type'])) {
-            throw new \InvalidArgumentException(sprintf('The "type" key for the route definition "%s" in "%s" is unsupported. It is only available for imports in combination with the "resource" key.', $name, $path));
-        }
-        if (!isset($config['resource']) && !isset($config['path'])) {
-            throw new \InvalidArgumentException(sprintf('You must define a "path" for the route "%s" in file "%s".', $name, $path));
-        }
-        if (isset($config['controller']) && isset($config['defaults']['_controller'])) {
-            throw new \InvalidArgumentException(sprintf('The routing file "%s" must not specify both the "controller" key and the defaults key "_controller" for "%s".', $path, $name));
-        }
-        if (isset($config['stateless']) && isset($config['defaults']['_stateless'])) {
-            throw new \InvalidArgumentException(sprintf('The routing file "%s" must not specify both the "stateless" key and the defaults key "_stateless" for "%s".', $path, $name));
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+TnBVkLW2HwKtee/FuRpWjQDIkaYwjXQO3G==

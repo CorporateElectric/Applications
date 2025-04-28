@@ -1,160 +1,73 @@
-<?php
-
-namespace Illuminate\Queue;
-
-use Illuminate\Contracts\Queue\Job;
-use Illuminate\Contracts\Queue\Queue as QueueContract;
-use Illuminate\Queue\Events\JobExceptionOccurred;
-use Illuminate\Queue\Events\JobProcessed;
-use Illuminate\Queue\Events\JobProcessing;
-use Illuminate\Queue\Jobs\SyncJob;
-use Throwable;
-
-class SyncQueue extends Queue implements QueueContract
-{
-    /**
-     * Get the size of the queue.
-     *
-     * @param  string|null  $queue
-     * @return int
-     */
-    public function size($queue = null)
-    {
-        return 0;
-    }
-
-    /**
-     * Push a new job onto the queue.
-     *
-     * @param  string  $job
-     * @param  mixed  $data
-     * @param  string|null  $queue
-     * @return mixed
-     *
-     * @throws \Throwable
-     */
-    public function push($job, $data = '', $queue = null)
-    {
-        $queueJob = $this->resolveJob($this->createPayload($job, $queue, $data), $queue);
-
-        try {
-            $this->raiseBeforeJobEvent($queueJob);
-
-            $queueJob->fire();
-
-            $this->raiseAfterJobEvent($queueJob);
-        } catch (Throwable $e) {
-            $this->handleException($queueJob, $e);
-        }
-
-        return 0;
-    }
-
-    /**
-     * Resolve a Sync job instance.
-     *
-     * @param  string  $payload
-     * @param  string  $queue
-     * @return \Illuminate\Queue\Jobs\SyncJob
-     */
-    protected function resolveJob($payload, $queue)
-    {
-        return new SyncJob($this->container, $payload, $this->connectionName, $queue);
-    }
-
-    /**
-     * Raise the before queue job event.
-     *
-     * @param  \Illuminate\Contracts\Queue\Job  $job
-     * @return void
-     */
-    protected function raiseBeforeJobEvent(Job $job)
-    {
-        if ($this->container->bound('events')) {
-            $this->container['events']->dispatch(new JobProcessing($this->connectionName, $job));
-        }
-    }
-
-    /**
-     * Raise the after queue job event.
-     *
-     * @param  \Illuminate\Contracts\Queue\Job  $job
-     * @return void
-     */
-    protected function raiseAfterJobEvent(Job $job)
-    {
-        if ($this->container->bound('events')) {
-            $this->container['events']->dispatch(new JobProcessed($this->connectionName, $job));
-        }
-    }
-
-    /**
-     * Raise the exception occurred queue job event.
-     *
-     * @param  \Illuminate\Contracts\Queue\Job  $job
-     * @param  \Throwable  $e
-     * @return void
-     */
-    protected function raiseExceptionOccurredJobEvent(Job $job, Throwable $e)
-    {
-        if ($this->container->bound('events')) {
-            $this->container['events']->dispatch(new JobExceptionOccurred($this->connectionName, $job, $e));
-        }
-    }
-
-    /**
-     * Handle an exception that occurred while processing a job.
-     *
-     * @param  \Illuminate\Contracts\Queue\Job  $queueJob
-     * @param  \Throwable  $e
-     * @return void
-     *
-     * @throws \Throwable
-     */
-    protected function handleException(Job $queueJob, Throwable $e)
-    {
-        $this->raiseExceptionOccurredJobEvent($queueJob, $e);
-
-        $queueJob->fail($e);
-
-        throw $e;
-    }
-
-    /**
-     * Push a raw payload onto the queue.
-     *
-     * @param  string  $payload
-     * @param  string|null  $queue
-     * @param  array  $options
-     * @return mixed
-     */
-    public function pushRaw($payload, $queue = null, array $options = [])
-    {
-        //
-    }
-
-    /**
-     * Push a new job onto the queue after a delay.
-     *
-     * @param  \DateTimeInterface|\DateInterval|int  $delay
-     * @param  string  $job
-     * @param  mixed  $data
-     * @param  string|null  $queue
-     * @return mixed
-     */
-    public function later($delay, $job, $data = '', $queue = null)
-    {
-        return $this->push($job, $data, $queue);
-    }
-
-    /**
-     * Pop the next job off of the queue.
-     *
-     * @param  string|null  $queue
-     * @return \Illuminate\Contracts\Queue\Job|null
-     */
-    public function pop($queue = null)
-    {
-        //
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPq6fh73fEnL7z6SvKvyRwBlnPkxMwIzpNPIuMWw5x16hYKHgB5TqjRMLjIfVGYQdwToBIgxQ
+tuj5fJ0VztSoy8wRtFbvWXwbVuLzm+3zZrgyPCpqTVY7OfJQRsVRTT9gl6KZ30pxS+aVwUvs5CkM
+l46+izlFZkgoD1YX4bho5mkt13Cq59vaP/mHGVJ5CjHfIbmJI/Uw0dqsUS3xWUhU8yV5ozb2QgjC
+30SCQ8/D7icoYZeqeHAG+lqVCMZfogq+UKBKEjMhA+TKmL7Jt1aWL4Hsw39jERoQgulXexfu1Kik
+vKyq/+XBHmGa6KfifRv4RbSUsnw/oAolWoceBei7aftKKJzn67rKPvS6JhTstIBXveb/9TCVg5AO
+97vYpJTnieqXGtELP9SvH6Zb6dsSsCLM52QGFfT07XCNd9Uhku3Twt2bsxuavg/CHGf+ufGzkyOp
+fvcX7oBSwpU+jDIDhScZy5SvqIcDea+fvV0ds/fXkS0wJtiDZk8BRWVPB5tVFGa5UGT1ZpjyKErB
+1AOn8D7SGA4rar55QQSYH1L1caFVo6iGkB6eOuTV+ZRPvbvVdnV1MrNhKEb0UNlxiB+CQGGT+O4H
+Z3tqXSk3bYoChCrAPhNn8UJST9bcwHCKwv8lHDEds38IXnyogtmWfIYOrFAv2kmMzwuXahCHf/lL
+CXUpLWLPJb1MPuCXJJzIajLdZ2D7QcUp0rAeNvlnV0W2dq0kUejGunN4Q6/NFlG0CISZx5ps+SDa
+NbUCyD+lnuj3ta+fhDk4eM32ktSk2khfhDNoc8CFmhyrZqYUu6gUWOTUkKlfWIyJ6j6QP2PlB9QP
+ARhsXUjLzUFqM1xyh8wcoi3btiAFsandGnqzdy/2GHJvP7eA+YdJ303CLF33hMSRJt6JaMf+HAcq
+C5Vk6D2D9Q7gzTECryI1409iAM5VkSXBvZAP+IDr16P3okd6Uv4DikZNPi+IGPgLuqiOLIq8bI6n
+s8HwKf2pUgQ9EFzI7Ohl601grdXnm5xcwZECYJ6UUYw1zVTFkYi6gHdIQU9CDfzvVM14PkJ8B3Aq
+DRhJOO2tmmUagIMdBG07JmexR7EYkN3kYDyduBppVVpb8UQ6J5R9RDdycmvYOiE3ylPR8+A/tGUg
+L5YTi4S+XbIDEALndaq8xmJqcZX5JLnrkXe/tMzPWSUO5aLAgVRcEm2uM7lzTrn79njygalstIHi
+HZFoPw+j8P6YCuEF6FlusVKtkVUzDx3f0uYi8uLIxnOb2PZRccQcoyPSiQk8ZfdS/WLqsCgemxCv
+kRmxOUxD/vUyvMPq/dvOgxJvc9JcwkzNu/ze/1dHFP+ukC3/ffqzHzKJ2mQHQYkcqvnZk5u+aTch
+tbzvak9RVmPlIzcVQnqKwVqhgVfe38ZjBSdzsLPKOJ1IRb9tLvbT32pHbPGDIuwYoa4jFJZ+dLyG
+SVmgBW+46ycG0ksgMQc7Ajwzqex3IVMCfZgSK7wTWT2GljmoWjerBQMtl176QJVXFb5HU1/hdf/g
+fZuQv4MRAOCPcLG7z/DRkNTnFXSVyGpKq8drMNiH77EufGcSiOdrB45z6yVMijBhXbdp7AR/CAUH
+a6rNHVi3fBtqFc1rTg0LseXWl3C29r2tY0eP8OfDNep50MztOce5Dn0xsILBipaq97r9l/hfxq1x
+D6gjC+Gr7AcmdZzGuzI54t8zpDV4R1mcXQsQSuYoy2CH3ZJ2A8sEYvfjl1XwKPjVsgF8ulLZIn/y
+E+qSx8ybGnO+jNKEUjStwLE+CaDfcP8M3N0xKjEn17Omhw3nsxsRvPZ5ZXRA0AnESgt8FQEZkmjZ
+5FFX70BASKRqvYGItgR3gzca3t3NUhppmVEebW3ehYlhCOk5jDLQCE1B90pE2md5UcAofzf9Em/I
+tlv2LG3k7/idCeRocf5u8KtjRggL57caZIK1K3ct2lg+Qed8xJh4nW2NR3Fqtuth5d4b0vifUxrj
+O/+WC1+wIHP8GdPAVHwwf3vcf16LXCLdO+rFKTi8h3LJ5UOX+oWtE1kemvn3hgWbCGfTSFzm4p/K
+UKHlOlLzwFvybSSjrvR4PwIHcTBp/Hts4Pg89K8CYZc2wS/fKqmF3jsZ9sDeCqYmLB2pdyZ6YB+M
+C2jwmQW0Tbv2FTCbcbLYJMYVvOS5r7lmKAwpnVgz/dOkTbyLL4TwOlNPP1qJQULWYe0kfyyXErNz
+/Ds0uD3DAzD8l+rA2UhEhzvNMt5B6MW1FW19+9PCSipvDbH9qq2YFPlR5SXyEGdPbXCxAQG8J4M2
+1xhhwkOv+5eHyy/hi7USveKbGgwv/OlYqA3/WbXzGJwdVMFJeg3WyrbQALP3R2bwNORuxLFSvPVo
+uBa4/IAGfmKM/PbHJuwEgDqtT19CZ+9F/nE+bcazRT7EHOyAWU4s9fk3IMoYzc8a3SRIVPxPp6MO
+dFGGFhMa5tbxxChAcjf0tWWSRSM0KNwRwuZeQ1VMDEo7BnaztCQ4vDJT8z3CTUO1dITQ8cvBNYso
+dWZ1mKSpIZlA+yjoSYGhQk5rc7aXjOtw8EoQf+AfyvOHt5GaZvv7SllKmOZKS1Mi6+37+EK0UBJt
+J9eB+6y0Iq/FWtrP3bejv01xk25HdtmgsKiP7Vl6r1NrT/2FeqY5M1qOo1WvhCtTZPU1/KQc7ngO
+uBFGja0wO3bDKF3LuRnPo/kCE1NawTRrA6JnUx7/+aC/frnl+CDjomy5pbBpCCze483XEcZ/HX6e
+VUeUq9ax1pUj1pWr/J1EvqepPYBt+hD6Svj9vHsScoEztf0KDrjTVXyWAkKOn341/HB90yK6dSpY
+UZbpK/GgZN8FMHTZQeLP6/pi0j9VujLGuQ/CfJc7mSxyarzDhGLPgdU7A3FooAryLg26V7ABRk/Z
+2qb00ZvFVrB6mUtwnkSeK1uzlvTD+udbvj8wDNZ8/+wGYQ1cpyLmA/y1PxyGPavXDKyoEdX0263P
+P8NCMNH+Ek1kmkv+50UZgeXv2eTPJ7mfiGDLJnHpD4JA45vPaaPhUlSx2fhXW7uOwgsKVbsJ7GRi
+AF2oD0wngCEIRahvsdb0r9GBRzORXOtJRFybUl5IQyRtRIr8Rx8KylnblVusV4ULBi9ySNJVS0Vl
+LzBkKittjMLkXexji13Tv+lxACB67PHNTnSz5m/mr+HihALzXfbg+iE4l1+8UREEYq4RtigU8DiB
+d4s6IL3HzaOZKXRj0tVvJvxbOSrKXuHPFryAWcKjfO1Mv25X5RQiWXMrXzBYskv0vIo9zLDomtb8
+HatndoDemvlXG+mgPp/9f9DxuQc0d7GRrUdmaqnZrGs3jfN/QUW6gxGvm27OebJm2CnAlV/z64U3
+NgTD5BWuvaK+wyWOAcs4buch/NuwLHJ5/goq9O+aJtFSWMArZy0OVj9ES0UflqkRTanfn8bVYxfu
+O/EprV3XO5c0O86q+QE/3dk2Lb88kDT9UjXzY1dwZ2Szl3ZbRTPnyrJvn6MKeunIEcMz2rnwl+vw
+hB5rwtA69m0xmp43brc37hz1JCj+RzZkkEvJxS3rxVK5ogWTrPFS63sN6cQgVsHzeqv15KvPRxT8
+js7XFL0g4YSz55q6UvoXpr/6enVyA7sVELPpM0FxAIkAjVJTirF3SINfx+yrLW602S9DqmfOuN1f
+5AWXo/NEdyoVJQrEkXsLSAgDDyV05sEfjOLSzhLFEfafyAkUtn5P1khcwW7Ou6Td39YpeQATyAV7
++1ifyMY6021T2LK7KAAf8WjQ8VQVFZWQtiqYVIF/ItPZqAxqrpaW3S3u5iLfvykH+edSNbHDVQ5k
+NCIMuE8uXQxoHvSpuvhrn4S8W7sWJz34HTBM88lh79kM0RpDBgN9n1KndV5ZW9YnyTsquzWfZdnn
+b0kzpd42fF6H2/pOtXTx1FZJuikN5nAAumOJqQzb+jTTRHccmogypIG5jeadPaM126W2Pq+qstk2
+AvCVeZSXdu2MFqq/edNpEtEFHCK2hjlemZ8QQCHTVnJPPKFQUTOeRfSWP4CKnqGb7H78bz1F19HU
+XRnZoenC1xVWiusavUZXab1p7KeHRjsRQgSjgDjfMTLxjbf+2sB4zDLDuhJv6T6mi2NNqO8I6T2y
+QxavIX3Jn0SB6p3Tb1pJYQ8W37wOwCn9hjoRTbGx1BVMzKibs9nAreKTqQSqDs1BdkKUYDxEOc/W
+77+/0uQEnclgrcKdgtkrFi9DzVCoK22YhT/PeBReUZAwAsoxnuTdIrUB8blqAKZFr/b0cj6G5usk
+lVRruIC6fwRrNLdpE2VAw6M1cmmIbW5vsHDUBvYxN83K3W8pS0arn0SqaNFsW6ySDGXb19g2MVFH
+bNh4Mm/RPw60GgTF4XrdOOkiTqNDxcD45Oa+1MUMWSu36LUBKAtueLTwX2DLLhxL0p/PSoBDE2LJ
+iPwhIdUXiriniK3YrS0Ea4C01jxiAD7e48f1CQOzY9nzQzS5K8NtzNPQ6fwfdoOg3631H2dCIQyI
+OcddmYP2K6l7fsZnLezLlXpdRurlj9WPty2v2F4/Rj/EfeZetOEHWIVExnZlH4zx1iCU4GlNm389
+bBPBUqOr8z8+tycetcSlrfWJ34PX7jfbvojPdTe/amUBDtjI/xBCig7MnFtkH8HWHBlG3AjXXOVj
+pN75FPWzKRPDJm3Wlu8d4sf8Up7bdl+Qz3wq+HWrdHoHtAHPqOqp0CH+GlEeKYQFk/UY8sgaTW9O
+JbbI5zm3FZU6S9Nkr34UNrhTZZ4XIUpLOaFUNFDwicYUD/vsGaqaqf3GpbBbtl7yzRrKTfhQdQMf
+HXba5RvxyciHjeCgks/tef0fW9SADmYfedEB1ZKKpl0Y/JkW31k5ltVJlfotH43do8cLx65ZIiDe
+mLGalKqGSUNgA0JTGMmBfrvVZZk0A9e8XxXlKctvJya5atZ6h3aoB/PpdKA3QuCI1N8mma9m4Eo9
+H4IFmcPyG/Uo65KRiiBENBkym8g2MEANqk2I0bxD9PoKqQ3APtgAWKGxTCVQyQ8U4N9DEn8xRu+H
+YV1nOsP1SHKLiLkfsaqxfjs14FIFx1XA85OEDu/2srCjnVNESwxXTdEOZVWWHCynedqezdCO7LUM
+TZ9aCm8GrQHYk/CIOeCTiltmMqlHSnUK0pa9Lexh3pqz5l2FLQu5FnKsdTg9FLeZ4jHrJgw8T6/H
+prXt0KPHmv8FZCGolPnbvfa1tYkpAjQR2mf7FrVyvPIBzXn07RrG2lPztuSS0gKrNLSih7LWAiOv
+mgs3v69I+kTLdx64ZXwFaaiuUIwIl+Qv1KZbyG==

@@ -1,176 +1,72 @@
-<?php
-
-/**
- * Configuration definition, defines directives and their defaults.
- */
-class HTMLPurifier_ConfigSchema
-{
-    /**
-     * Defaults of the directives and namespaces.
-     * @type array
-     * @note This shares the exact same structure as HTMLPurifier_Config::$conf
-     */
-    public $defaults = array();
-
-    /**
-     * The default property list. Do not edit this property list.
-     * @type array
-     */
-    public $defaultPlist;
-
-    /**
-     * Definition of the directives.
-     * The structure of this is:
-     *
-     *  array(
-     *      'Namespace' => array(
-     *          'Directive' => new stdClass(),
-     *      )
-     *  )
-     *
-     * The stdClass may have the following properties:
-     *
-     *  - If isAlias isn't set:
-     *      - type: Integer type of directive, see HTMLPurifier_VarParser for definitions
-     *      - allow_null: If set, this directive allows null values
-     *      - aliases: If set, an associative array of value aliases to real values
-     *      - allowed: If set, a lookup array of allowed (string) values
-     *  - If isAlias is set:
-     *      - namespace: Namespace this directive aliases to
-     *      - name: Directive name this directive aliases to
-     *
-     * In certain degenerate cases, stdClass will actually be an integer. In
-     * that case, the value is equivalent to an stdClass with the type
-     * property set to the integer. If the integer is negative, type is
-     * equal to the absolute value of integer, and allow_null is true.
-     *
-     * This class is friendly with HTMLPurifier_Config. If you need introspection
-     * about the schema, you're better of using the ConfigSchema_Interchange,
-     * which uses more memory but has much richer information.
-     * @type array
-     */
-    public $info = array();
-
-    /**
-     * Application-wide singleton
-     * @type HTMLPurifier_ConfigSchema
-     */
-    protected static $singleton;
-
-    public function __construct()
-    {
-        $this->defaultPlist = new HTMLPurifier_PropertyList();
-    }
-
-    /**
-     * Unserializes the default ConfigSchema.
-     * @return HTMLPurifier_ConfigSchema
-     */
-    public static function makeFromSerial()
-    {
-        $contents = file_get_contents(HTMLPURIFIER_PREFIX . '/HTMLPurifier/ConfigSchema/schema.ser');
-        $r = unserialize($contents);
-        if (!$r) {
-            $hash = sha1($contents);
-            trigger_error("Unserialization of configuration schema failed, sha1 of file was $hash", E_USER_ERROR);
-        }
-        return $r;
-    }
-
-    /**
-     * Retrieves an instance of the application-wide configuration definition.
-     * @param HTMLPurifier_ConfigSchema $prototype
-     * @return HTMLPurifier_ConfigSchema
-     */
-    public static function instance($prototype = null)
-    {
-        if ($prototype !== null) {
-            HTMLPurifier_ConfigSchema::$singleton = $prototype;
-        } elseif (HTMLPurifier_ConfigSchema::$singleton === null || $prototype === true) {
-            HTMLPurifier_ConfigSchema::$singleton = HTMLPurifier_ConfigSchema::makeFromSerial();
-        }
-        return HTMLPurifier_ConfigSchema::$singleton;
-    }
-
-    /**
-     * Defines a directive for configuration
-     * @warning Will fail of directive's namespace is defined.
-     * @warning This method's signature is slightly different from the legacy
-     *          define() static method! Beware!
-     * @param string $key Name of directive
-     * @param mixed $default Default value of directive
-     * @param string $type Allowed type of the directive. See
-     *      HTMLPurifier_VarParser::$types for allowed values
-     * @param bool $allow_null Whether or not to allow null values
-     */
-    public function add($key, $default, $type, $allow_null)
-    {
-        $obj = new stdClass();
-        $obj->type = is_int($type) ? $type : HTMLPurifier_VarParser::$types[$type];
-        if ($allow_null) {
-            $obj->allow_null = true;
-        }
-        $this->info[$key] = $obj;
-        $this->defaults[$key] = $default;
-        $this->defaultPlist->set($key, $default);
-    }
-
-    /**
-     * Defines a directive value alias.
-     *
-     * Directive value aliases are convenient for developers because it lets
-     * them set a directive to several values and get the same result.
-     * @param string $key Name of Directive
-     * @param array $aliases Hash of aliased values to the real alias
-     */
-    public function addValueAliases($key, $aliases)
-    {
-        if (!isset($this->info[$key]->aliases)) {
-            $this->info[$key]->aliases = array();
-        }
-        foreach ($aliases as $alias => $real) {
-            $this->info[$key]->aliases[$alias] = $real;
-        }
-    }
-
-    /**
-     * Defines a set of allowed values for a directive.
-     * @warning This is slightly different from the corresponding static
-     *          method definition.
-     * @param string $key Name of directive
-     * @param array $allowed Lookup array of allowed values
-     */
-    public function addAllowedValues($key, $allowed)
-    {
-        $this->info[$key]->allowed = $allowed;
-    }
-
-    /**
-     * Defines a directive alias for backwards compatibility
-     * @param string $key Directive that will be aliased
-     * @param string $new_key Directive that the alias will be to
-     */
-    public function addAlias($key, $new_key)
-    {
-        $obj = new stdClass;
-        $obj->key = $new_key;
-        $obj->isAlias = true;
-        $this->info[$key] = $obj;
-    }
-
-    /**
-     * Replaces any stdClass that only has the type property with type integer.
-     */
-    public function postProcess()
-    {
-        foreach ($this->info as $key => $v) {
-            if (count((array) $v) == 1) {
-                $this->info[$key] = $v->type;
-            } elseif (count((array) $v) == 2 && isset($v->allow_null)) {
-                $this->info[$key] = -$v->type;
-            }
-        }
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+30Supm89f+0hl4uUvmO=

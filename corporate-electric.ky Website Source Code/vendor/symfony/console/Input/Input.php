@@ -1,201 +1,108 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Console\Input;
-
-use Symfony\Component\Console\Exception\InvalidArgumentException;
-use Symfony\Component\Console\Exception\RuntimeException;
-
-/**
- * Input is the base class for all concrete Input classes.
- *
- * Three concrete classes are provided by default:
- *
- *  * `ArgvInput`: The input comes from the CLI arguments (argv)
- *  * `StringInput`: The input is provided as a string
- *  * `ArrayInput`: The input is provided as an array
- *
- * @author Fabien Potencier <fabien@symfony.com>
- */
-abstract class Input implements InputInterface, StreamableInputInterface
-{
-    protected $definition;
-    protected $stream;
-    protected $options = [];
-    protected $arguments = [];
-    protected $interactive = true;
-
-    public function __construct(InputDefinition $definition = null)
-    {
-        if (null === $definition) {
-            $this->definition = new InputDefinition();
-        } else {
-            $this->bind($definition);
-            $this->validate();
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function bind(InputDefinition $definition)
-    {
-        $this->arguments = [];
-        $this->options = [];
-        $this->definition = $definition;
-
-        $this->parse();
-    }
-
-    /**
-     * Processes command line arguments.
-     */
-    abstract protected function parse();
-
-    /**
-     * {@inheritdoc}
-     */
-    public function validate()
-    {
-        $definition = $this->definition;
-        $givenArguments = $this->arguments;
-
-        $missingArguments = array_filter(array_keys($definition->getArguments()), function ($argument) use ($definition, $givenArguments) {
-            return !\array_key_exists($argument, $givenArguments) && $definition->getArgument($argument)->isRequired();
-        });
-
-        if (\count($missingArguments) > 0) {
-            throw new RuntimeException(sprintf('Not enough arguments (missing: "%s").', implode(', ', $missingArguments)));
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function isInteractive()
-    {
-        return $this->interactive;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function setInteractive(bool $interactive)
-    {
-        $this->interactive = $interactive;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getArguments()
-    {
-        return array_merge($this->definition->getArgumentDefaults(), $this->arguments);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getArgument(string $name)
-    {
-        if (!$this->definition->hasArgument($name)) {
-            throw new InvalidArgumentException(sprintf('The "%s" argument does not exist.', $name));
-        }
-
-        return isset($this->arguments[$name]) ? $this->arguments[$name] : $this->definition->getArgument($name)->getDefault();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function setArgument(string $name, $value)
-    {
-        if (!$this->definition->hasArgument($name)) {
-            throw new InvalidArgumentException(sprintf('The "%s" argument does not exist.', $name));
-        }
-
-        $this->arguments[$name] = $value;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function hasArgument($name)
-    {
-        return $this->definition->hasArgument($name);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getOptions()
-    {
-        return array_merge($this->definition->getOptionDefaults(), $this->options);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getOption(string $name)
-    {
-        if (!$this->definition->hasOption($name)) {
-            throw new InvalidArgumentException(sprintf('The "%s" option does not exist.', $name));
-        }
-
-        return \array_key_exists($name, $this->options) ? $this->options[$name] : $this->definition->getOption($name)->getDefault();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function setOption(string $name, $value)
-    {
-        if (!$this->definition->hasOption($name)) {
-            throw new InvalidArgumentException(sprintf('The "%s" option does not exist.', $name));
-        }
-
-        $this->options[$name] = $value;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function hasOption(string $name)
-    {
-        return $this->definition->hasOption($name);
-    }
-
-    /**
-     * Escapes a token through escapeshellarg if it contains unsafe chars.
-     *
-     * @return string
-     */
-    public function escapeToken(string $token)
-    {
-        return preg_match('{^[\w-]+$}', $token) ? $token : escapeshellarg($token);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function setStream($stream)
-    {
-        $this->stream = $stream;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getStream()
-    {
-        return $this->stream;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+Be+5Syous18po0==

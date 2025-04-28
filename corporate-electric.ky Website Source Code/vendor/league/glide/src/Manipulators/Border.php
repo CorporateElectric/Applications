@@ -1,176 +1,87 @@
-<?php
-
-namespace League\Glide\Manipulators;
-
-use Intervention\Image\Image;
-use League\Glide\Manipulators\Helpers\Color;
-use League\Glide\Manipulators\Helpers\Dimension;
-
-/**
- * @property string $border
- * @property string $dpr
- */
-class Border extends BaseManipulator
-{
-    /**
-     * Perform border image manipulation.
-     * @param  Image $image The source image.
-     * @return Image The manipulated image.
-     */
-    public function run(Image $image)
-    {
-        if ($border = $this->getBorder($image)) {
-            list($width, $color, $method) = $border;
-
-            if ($method === 'overlay') {
-                return $this->runOverlay($image, $width, $color);
-            }
-
-            if ($method === 'shrink') {
-                return $this->runShrink($image, $width, $color);
-            }
-
-            if ($method === 'expand') {
-                return $this->runExpand($image, $width, $color);
-            }
-        }
-
-        return $image;
-    }
-
-    /**
-     * Resolve border amount.
-     * @param  Image  $image The source image.
-     * @return string The resolved border amount.
-     */
-    public function getBorder(Image $image)
-    {
-        if (!$this->border) {
-            return;
-        }
-
-        $values = explode(',', $this->border);
-
-        $width = $this->getWidth($image, $this->getDpr(), isset($values[0]) ? $values[0] : null);
-        $color = $this->getColor(isset($values[1]) ? $values[1] : null);
-        $method = $this->getMethod(isset($values[2]) ? $values[2] : null);
-
-        if ($width) {
-            return [$width, $color, $method];
-        }
-    }
-
-    /**
-     * Get border width.
-     * @param  Image  $image The source image.
-     * @param  double $dpr   The device pixel ratio.
-     * @param  string $width The border width.
-     * @return double The resolved border width.
-     */
-    public function getWidth(Image $image, $dpr, $width)
-    {
-        return (new Dimension($image, $dpr))->get($width);
-    }
-
-    /**
-     * Get formatted color.
-     * @param  string $color The color.
-     * @return string The formatted color.
-     */
-    public function getColor($color)
-    {
-        return (new Color($color))->formatted();
-    }
-
-    /**
-     * Resolve the border method.
-     * @param  string $method The raw border method.
-     * @return string The resolved border method.
-     */
-    public function getMethod($method)
-    {
-        if (!in_array($method, ['expand', 'shrink', 'overlay'], true)) {
-            return 'overlay';
-        }
-
-        return $method;
-    }
-
-    /**
-     * Resolve the device pixel ratio.
-     * @return double The device pixel ratio.
-     */
-    public function getDpr()
-    {
-        if (!is_numeric($this->dpr)) {
-            return 1.0;
-        }
-
-        if ($this->dpr < 0 or $this->dpr > 8) {
-            return 1.0;
-        }
-
-        return (double) $this->dpr;
-    }
-
-    /**
-     * Run the overlay border method.
-     * @param  Image  $image The source image.
-     * @param  double $width The border width.
-     * @param  string $color The border color.
-     * @return Image  The manipulated image.
-     */
-    public function runOverlay(Image $image, $width, $color)
-    {
-        return $image->rectangle(
-            $width / 2,
-            $width / 2,
-            $image->width() - ($width / 2),
-            $image->height() - ($width / 2),
-            function ($draw) use ($width, $color) {
-                $draw->border($width, $color);
-            }
-        );
-    }
-
-    /**
-     * Run the shrink border method.
-     * @param  Image  $image The source image.
-     * @param  double $width The border width.
-     * @param  string $color The border color.
-     * @return Image  The manipulated image.
-     */
-    public function runShrink(Image $image, $width, $color)
-    {
-        return $image
-            ->resize(
-                $image->width() - ($width * 2),
-                $image->height() - ($width * 2)
-            )
-            ->resizeCanvas(
-                $width * 2,
-                $width * 2,
-                'center',
-                true,
-                $color
-            );
-    }
-
-    /**
-     * Run the expand border method.
-     * @param  Image  $image The source image.
-     * @param  double $width The border width.
-     * @param  string $color The border color.
-     * @return Image  The manipulated image.
-     */
-    public function runExpand(Image $image, $width, $color)
-    {
-        return $image->resizeCanvas(
-            $width * 2,
-            $width * 2,
-            'center',
-            true,
-            $color
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+RG/BBOAwgxMiocwfGqCDTbbJtQJrksw5

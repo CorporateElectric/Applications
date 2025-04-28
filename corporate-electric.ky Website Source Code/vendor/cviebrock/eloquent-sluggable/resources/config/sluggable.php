@@ -1,141 +1,18 @@
-<?php
-
-return [
-
-    /**
-     * What attributes do we use to build the slug?
-     * This can be a single field, like "name" which will build a slug from:
-     *
-     *     $model->name;
-     *
-     * Or it can be an array of fields, like ["name", "company"], which builds a slug from:
-     *
-     *     $model->name . ' ' . $model->company;
-     *
-     * If you've defined custom getters in your model, you can use those too,
-     * since Eloquent will call them when you request a custom attribute.
-     *
-     * Defaults to null, which uses the toString() method on your model.
-     */
-
-    'source' => null,
-
-    /**
-     * The maximum length of a generated slug.  Defaults to "null", which means
-     * no length restrictions are enforced.  Set it to a positive integer if you
-     * want to make sure your slugs aren't too long.
-     */
-
-    'maxLength' => null,
-
-    /**
-     * If you are setting a maximum length on your slugs, you may not want the
-     * truncated string to split a word in half.  The default setting of "true"
-     * will ensure this, e.g. with a maxLength of 12:
-     *
-     *   "my source string" -> "my-source"
-     *
-     * Setting it to "false" will simply truncate the generated slug at the
-     * desired length, e.g.:
-     *
-     *   "my source string" -> "my-source-st"
-     */
-
-    'maxLengthKeepWords' => true,
-
-    /**
-     * If left to "null", then use the cocur/slugify package to generate the slug
-     * (with the separator defined below).
-     *
-     * Set this to a closure that accepts two parameters (string and separator)
-     * to define a custom slugger.  e.g.:
-     *
-     *    'method' => function( $string, $sep ) {
-     *       return preg_replace('/[^a-z]+/i', $sep, $string);
-     *    },
-     *
-     * Otherwise, this will be treated as a callable to be used.  e.g.:
-     *
-     *    'method' => array('Str','slug'),
-     */
-
-    'method' => null,
-
-    /**
-     * Separator to use when generating slugs.  Defaults to a hyphen.
-     */
-
-    'separator' => '-',
-
-    /**
-     * Enforce uniqueness of slugs?  Defaults to true.
-     * If a generated slug already exists, an incremental numeric
-     * value will be appended to the end until a unique slug is found.  e.g.:
-     *
-     *     my-slug
-     *     my-slug-1
-     *     my-slug-2
-     */
-
-    'unique' => true,
-
-    /**
-     * If you are enforcing unique slugs, the default is to add an
-     * incremental value to the end of the base slug.  Alternatively, you
-     * can change this value to a closure that accepts three parameters:
-     * the base slug, the separator, and a Collection of the other
-     * "similar" slugs.  The closure should return the new unique
-     * suffix to append to the slug.
-     */
-    
-    'uniqueSuffix' => null,
-
-    /**
-     * Should we include the trashed items when generating a unique slug?
-     * This only applies if the softDelete property is set for the Eloquent model.
-     * If set to "false", then a new slug could duplicate one that exists on a trashed model.
-     * If set to "true", then uniqueness is enforced across trashed and existing models.
-     */
-
-    'includeTrashed' => false,
-
-    /**
-     * An array of slug names that can never be used for this model,
-     * e.g. to prevent collisions with existing routes or controller methods, etc..
-     * Defaults to null (i.e. no reserved names).
-     * Can be a static array, e.g.:
-     *
-     *    'reserved' => array('add', 'delete'),
-     *
-     * or a closure that returns an array of reserved names.
-     * If using a closure, it will accept one parameter: the model itself, and should
-     * return an array of reserved names, or null. e.g.
-     *
-     *    'reserved' => function( Model $model) {
-     *      return $model->some_method_that_returns_an_array();
-     *    }
-     *
-     * In the case of a slug that gets generated with one of these reserved names,
-     * we will do:
-     *
-     *    $slug .= $separator + "1"
-     *
-     * and continue from there.
-     */
-
-    'reserved' => null,
-
-    /**
-     * Whether to update the slug value when a model is being
-     * re-saved (i.e. already exists).  Defaults to false, which
-     * means slugs are not updated.
-     *
-     * Be careful! If you are using slugs to generate URLs, then
-     * updating your slug automatically might change your URLs which
-     * is probably not a good idea from an SEO point of view.
-     * Only set this to true if you understand the possible consequences.
-     */
-    
-    'onUpdate' => false,
-
-];
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPnQ7n6CBKJrKqZrHG9gcaXbLAnzGTqnwhPAuYhpG4083SEAybcIo2cqm8B9qJ/1Z1n/STyTt
+c0n9QkVNOtPGXwFVgwKIVHmh/143MIemADDuY9e7+W1OOx92prv6HsweaiaF1OmFgYwS3EhtrT/Y
+bLUM1JRKKtDSlPgkEzIWG+UtXj2DSim/LIEMYvAzseT0Xirrb8A9i2puIY5OXguYA7U6hulTqSWs
+WM8nC2TLiJbYwg5vAUAwI5BZAXqo4emIFxnHEjMhA+TKmL7Jt1aWL4Hsw4XXm1ZPmbZLzWk72+kp
+DwLsEPUev1rYd14nB9vhrZ3usJqP6ht2cWAKnB0poV5o+VHl2kejIyIdWoKqAkNOf2Vhb+QlvxCQ
+qQbVtfRZTsbdA8PRgizY4EBefGk9k1hH5JD0c7uU12Llr8hPs37mdxHkQm30Vixb/JjMp8Sjs+Au
+GINAMFMrNgHJX49uKcAl4TDbcXusXt8ScDgGV9zB/6T8l6u9xMG2/vcehxn9A6e5BCT7k4MaIAoN
+moPRBKDNbojJkIftmzphUeZGehTvKu7/nS3UUqkeU/JckWACCb76m6MNOtXCGPGPA+a9S6bLugGf
+XXYUsUyLXUrQMjXny3cp2nB57jB3I5+WQ1bboY7wqWUImNIyisunaEpbxp/jmQIBzFbBdLmSg6yf
++t74PsB2zDIEs5HKYyFRKWN2pHcSUnlHer7yDv7tPuwpQys2LEzQQIHhHfXkb4LOwzZVdKJHglhx
+UXPKpv6mXKr1QlOeL+dQ0AlvUJ6vyCsVeTthtEL2N2YBVWkhN4u4u16IKA1A7sQUTgtOCMvQOLN/
+jI1TK6E4NlCh4sXIr53aG/q2UyhGovl1i2E/nssr/jsfJVHitEqgccjGlHqZfgyvBQhIazFfHeYs
+20UcY2pkoEBpPmtSzmleecibZn07gpBOFyo4psZb1++bB7i5GRqzNCNDQRptknb+I3Zwcq34P89r
+aocbUHEdoTMohiytJJ2Z0IBvt9MFJJXOMNYHFSEyz2JzWROFQqbCROFC3I4s+AB09ccuVF0rhS4w
+NXrdcusXboa/1m==

@@ -1,90 +1,37 @@
-<?php
-
-namespace GuzzleHttp\Promise;
-
-final class Each
-{
-    /**
-     * Given an iterator that yields promises or values, returns a promise that
-     * is fulfilled with a null value when the iterator has been consumed or
-     * the aggregate promise has been fulfilled or rejected.
-     *
-     * $onFulfilled is a function that accepts the fulfilled value, iterator
-     * index, and the aggregate promise. The callback can invoke any necessary
-     * side effects and choose to resolve or reject the aggregate if needed.
-     *
-     * $onRejected is a function that accepts the rejection reason, iterator
-     * index, and the aggregate promise. The callback can invoke any necessary
-     * side effects and choose to resolve or reject the aggregate if needed.
-     *
-     * @param mixed    $iterable    Iterator or array to iterate over.
-     * @param callable $onFulfilled
-     * @param callable $onRejected
-     *
-     * @return PromiseInterface
-     */
-    public static function of(
-        $iterable,
-        callable $onFulfilled = null,
-        callable $onRejected = null
-    ) {
-        return (new EachPromise($iterable, [
-            'fulfilled' => $onFulfilled,
-            'rejected'  => $onRejected
-        ]))->promise();
-    }
-
-    /**
-     * Like of, but only allows a certain number of outstanding promises at any
-     * given time.
-     *
-     * $concurrency may be an integer or a function that accepts the number of
-     * pending promises and returns a numeric concurrency limit value to allow
-     * for dynamic a concurrency size.
-     *
-     * @param mixed        $iterable
-     * @param int|callable $concurrency
-     * @param callable     $onFulfilled
-     * @param callable     $onRejected
-     *
-     * @return PromiseInterface
-     */
-    public static function ofLimit(
-        $iterable,
-        $concurrency,
-        callable $onFulfilled = null,
-        callable $onRejected = null
-    ) {
-        return (new EachPromise($iterable, [
-            'fulfilled'   => $onFulfilled,
-            'rejected'    => $onRejected,
-            'concurrency' => $concurrency
-        ]))->promise();
-    }
-
-    /**
-     * Like limit, but ensures that no promise in the given $iterable argument
-     * is rejected. If any promise is rejected, then the aggregate promise is
-     * rejected with the encountered rejection.
-     *
-     * @param mixed        $iterable
-     * @param int|callable $concurrency
-     * @param callable     $onFulfilled
-     *
-     * @return PromiseInterface
-     */
-    public static function ofLimitAll(
-        $iterable,
-        $concurrency,
-        callable $onFulfilled = null
-    ) {
-        return each_limit(
-            $iterable,
-            $concurrency,
-            $onFulfilled,
-            function ($reason, $idx, PromiseInterface $aggregate) {
-                $aggregate->reject($reason);
-            }
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

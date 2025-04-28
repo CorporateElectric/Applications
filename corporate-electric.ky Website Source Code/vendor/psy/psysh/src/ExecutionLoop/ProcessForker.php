@@ -1,284 +1,124 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\ExecutionLoop;
-
-use Psy\Context;
-use Psy\Exception\BreakException;
-use Psy\Shell;
-
-/**
- * An execution loop listener that forks the process before executing code.
- *
- * This is awesome, as the session won't die prematurely if user input includes
- * a fatal error, such as redeclaring a class or function.
- */
-class ProcessForker extends AbstractListener
-{
-    private $savegame;
-    private $up;
-
-    private static $pcntlFunctions = [
-        'pcntl_fork',
-        'pcntl_signal_dispatch',
-        'pcntl_signal',
-        'pcntl_waitpid',
-        'pcntl_wexitstatus',
-    ];
-
-    private static $posixFunctions = [
-        'posix_getpid',
-        'posix_kill',
-    ];
-
-    /**
-     * Process forker is supported if pcntl and posix extensions are available.
-     *
-     * @return bool
-     */
-    public static function isSupported()
-    {
-        return self::isPcntlSupported() && !self::disabledPcntlFunctions() && self::isPosixSupported() && !self::disabledPosixFunctions();
-    }
-
-    /**
-     * Verify that all required pcntl functions are, in fact, available.
-     */
-    public static function isPcntlSupported()
-    {
-        foreach (self::$pcntlFunctions as $func) {
-            if (!\function_exists($func)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Check whether required pcntl functions are disabled.
-     */
-    public static function disabledPcntlFunctions()
-    {
-        return self::checkDisabledFunctions(self::$pcntlFunctions);
-    }
-
-    /**
-     * Verify that all required posix functions are, in fact, available.
-     */
-    public static function isPosixSupported()
-    {
-        foreach (self::$posixFunctions as $func) {
-            if (!\function_exists($func)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Check whether required posix functions are disabled.
-     */
-    public static function disabledPosixFunctions()
-    {
-        return self::checkDisabledFunctions(self::$posixFunctions);
-    }
-
-    private static function checkDisabledFunctions(array $functions)
-    {
-        return \array_values(\array_intersect($functions, \array_map('strtolower', \array_map('trim', \explode(',', \ini_get('disable_functions'))))));
-    }
-
-    /**
-     * Forks into a master and a loop process.
-     *
-     * The loop process will handle the evaluation of all instructions, then
-     * return its state via a socket upon completion.
-     *
-     * @param Shell $shell
-     */
-    public function beforeRun(Shell $shell)
-    {
-        list($up, $down) = \stream_socket_pair(\STREAM_PF_UNIX, \STREAM_SOCK_STREAM, \STREAM_IPPROTO_IP);
-
-        if (!$up) {
-            throw new \RuntimeException('Unable to create socket pair');
-        }
-
-        $pid = \pcntl_fork();
-        if ($pid < 0) {
-            throw new \RuntimeException('Unable to start execution loop');
-        } elseif ($pid > 0) {
-            // This is the main thread. We'll just wait for a while.
-
-            // We won't be needing this one.
-            \fclose($up);
-
-            // Wait for a return value from the loop process.
-            $read = [$down];
-            $write = null;
-            $except = null;
-
-            do {
-                $n = @\stream_select($read, $write, $except, null);
-
-                if ($n === 0) {
-                    throw new \RuntimeException('Process timed out waiting for execution loop');
-                }
-
-                if ($n === false) {
-                    $err = \error_get_last();
-                    if (!isset($err['message']) || \stripos($err['message'], 'interrupted system call') === false) {
-                        $msg = $err['message'] ?
-                            \sprintf('Error waiting for execution loop: %s', $err['message']) :
-                            'Error waiting for execution loop';
-                        throw new \RuntimeException($msg);
-                    }
-                }
-            } while ($n < 1);
-
-            $content = \stream_get_contents($down);
-            \fclose($down);
-
-            if ($content) {
-                $shell->setScopeVariables(@\unserialize($content));
-            }
-
-            throw new BreakException('Exiting main thread');
-        }
-
-        // This is the child process. It's going to do all the work.
-        if (!@\cli_set_process_title('psysh (loop)')) {
-            // Fall back to `setproctitle` if that wasn't succesful.
-            if (\function_exists('setproctitle')) {
-                @\setproctitle('psysh (loop)');
-            }
-        }
-
-        // We won't be needing this one.
-        \fclose($down);
-
-        // Save this; we'll need to close it in `afterRun`
-        $this->up = $up;
-    }
-
-    /**
-     * Create a savegame at the start of each loop iteration.
-     *
-     * @param Shell $shell
-     */
-    public function beforeLoop(Shell $shell)
-    {
-        $this->createSavegame();
-    }
-
-    /**
-     * Clean up old savegames at the end of each loop iteration.
-     *
-     * @param Shell $shell
-     */
-    public function afterLoop(Shell $shell)
-    {
-        // if there's an old savegame hanging around, let's kill it.
-        if (isset($this->savegame)) {
-            \posix_kill($this->savegame, \SIGKILL);
-            \pcntl_signal_dispatch();
-        }
-    }
-
-    /**
-     * After the REPL session ends, send the scope variables back up to the main
-     * thread (if this is a child thread).
-     *
-     * @param Shell $shell
-     */
-    public function afterRun(Shell $shell)
-    {
-        // We're a child thread. Send the scope variables back up to the main thread.
-        if (isset($this->up)) {
-            \fwrite($this->up, $this->serializeReturn($shell->getScopeVariables(false)));
-            \fclose($this->up);
-
-            \posix_kill(\posix_getpid(), \SIGKILL);
-        }
-    }
-
-    /**
-     * Create a savegame fork.
-     *
-     * The savegame contains the current execution state, and can be resumed in
-     * the event that the worker dies unexpectedly (for example, by encountering
-     * a PHP fatal error).
-     */
-    private function createSavegame()
-    {
-        // the current process will become the savegame
-        $this->savegame = \posix_getpid();
-
-        $pid = \pcntl_fork();
-        if ($pid < 0) {
-            throw new \RuntimeException('Unable to create savegame fork');
-        } elseif ($pid > 0) {
-            // we're the savegame now... let's wait and see what happens
-            \pcntl_waitpid($pid, $status);
-
-            // worker exited cleanly, let's bail
-            if (!\pcntl_wexitstatus($status)) {
-                \posix_kill(\posix_getpid(), \SIGKILL);
-            }
-
-            // worker didn't exit cleanly, we'll need to have another go
-            $this->createSavegame();
-        }
-    }
-
-    /**
-     * Serialize all serializable return values.
-     *
-     * A naïve serialization will run into issues if there is a Closure or
-     * SimpleXMLElement (among other things) in scope when exiting the execution
-     * loop. We'll just ignore these unserializable classes, and serialize what
-     * we can.
-     *
-     * @param array $return
-     *
-     * @return string
-     */
-    private function serializeReturn(array $return)
-    {
-        $serializable = [];
-
-        foreach ($return as $key => $value) {
-            // No need to return magic variables
-            if (Context::isSpecialVariableName($key)) {
-                continue;
-            }
-
-            // Resources and Closures don't error, but they don't serialize well either.
-            if (\is_resource($value) || $value instanceof \Closure) {
-                continue;
-            }
-
-            try {
-                @\serialize($value);
-                $serializable[$key] = $value;
-            } catch (\Throwable $e) {
-                // we'll just ignore this one...
-            } catch (\Exception $e) {
-                // and this one too...
-                // @todo remove this once we don't support PHP 5.x anymore :)
-            }
-        }
-
-        return @\serialize($serializable);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+rG==

@@ -1,91 +1,47 @@
-<?php
-
-namespace Illuminate\Support\Facades;
-
-use Illuminate\Filesystem\Filesystem;
-
-/**
- * @method static \Illuminate\Contracts\Filesystem\Filesystem assertExists(string|array $path)
- * @method static \Illuminate\Contracts\Filesystem\Filesystem assertMissing(string|array $path)
- * @method static \Illuminate\Contracts\Filesystem\Filesystem cloud()
- * @method static \Illuminate\Contracts\Filesystem\Filesystem disk(string $name = null)
- * @method static array allDirectories(string|null $directory = null)
- * @method static array allFiles(string|null $directory = null)
- * @method static array directories(string|null $directory = null, bool $recursive = false)
- * @method static array files(string|null $directory = null, bool $recursive = false)
- * @method static bool append(string $path, string $data)
- * @method static bool copy(string $from, string $to)
- * @method static bool delete(string|array $paths)
- * @method static bool deleteDirectory(string $directory)
- * @method static bool exists(string $path)
- * @method static \Illuminate\Filesystem\FilesystemManager extend(string $driver, \Closure $callback)
- * @method static bool makeDirectory(string $path)
- * @method static bool move(string $from, string $to)
- * @method static bool prepend(string $path, string $data)
- * @method static bool put(string $path, string|resource $contents, mixed $options = [])
- * @method static string|false putFile(string $path, \Illuminate\Http\File|\Illuminate\Http\UploadedFile|string $file, mixed $options = [])
- * @method static string|false putFileAs(string $path, \Illuminate\Http\File|\Illuminate\Http\UploadedFile|string $file, string $name, mixed $options = [])
- * @method static bool setVisibility(string $path, string $visibility)
- * @method static bool writeStream(string $path, resource $resource, array $options = [])
- * @method static int lastModified(string $path)
- * @method static int size(string $path)
- * @method static resource|null readStream(string $path)
- * @method static string get(string $path)
- * @method static string getVisibility(string $path)
- * @method static string temporaryUrl(string $path, \DateTimeInterface $expiration, array $options = [])
- * @method static string url(string $path)
- *
- * @see \Illuminate\Filesystem\FilesystemManager
- */
-class Storage extends Facade
-{
-    /**
-     * Replace the given disk with a local testing disk.
-     *
-     * @param  string|null  $disk
-     * @param  array  $config
-     * @return \Illuminate\Contracts\Filesystem\Filesystem
-     */
-    public static function fake($disk = null, array $config = [])
-    {
-        $disk = $disk ?: static::$app['config']->get('filesystems.default');
-
-        (new Filesystem)->cleanDirectory(
-            $root = storage_path('framework/testing/disks/'.$disk)
-        );
-
-        static::set($disk, $fake = static::createLocalDriver(array_merge($config, [
-            'root' => $root,
-        ])));
-
-        return $fake;
-    }
-
-    /**
-     * Replace the given disk with a persistent local testing disk.
-     *
-     * @param  string|null  $disk
-     * @param  array  $config
-     * @return \Illuminate\Contracts\Filesystem\Filesystem
-     */
-    public static function persistentFake($disk = null, array $config = [])
-    {
-        $disk = $disk ?: static::$app['config']->get('filesystems.default');
-
-        static::set($disk, $fake = static::createLocalDriver(array_merge($config, [
-            'root' => storage_path('framework/testing/disks/'.$disk),
-        ])));
-
-        return $fake;
-    }
-
-    /**
-     * Get the registered name of the component.
-     *
-     * @return string
-     */
-    protected static function getFacadeAccessor()
-    {
-        return 'filesystem';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

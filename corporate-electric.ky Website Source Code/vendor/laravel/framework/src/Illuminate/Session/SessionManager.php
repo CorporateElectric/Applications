@@ -1,255 +1,110 @@
-<?php
-
-namespace Illuminate\Session;
-
-use Illuminate\Support\Manager;
-
-class SessionManager extends Manager
-{
-    /**
-     * Call a custom driver creator.
-     *
-     * @param  string  $driver
-     * @return mixed
-     */
-    protected function callCustomCreator($driver)
-    {
-        return $this->buildSession(parent::callCustomCreator($driver));
-    }
-
-    /**
-     * Create an instance of the "null" session driver.
-     *
-     * @return \Illuminate\Session\Store
-     */
-    protected function createNullDriver()
-    {
-        return $this->buildSession(new NullSessionHandler);
-    }
-
-    /**
-     * Create an instance of the "array" session driver.
-     *
-     * @return \Illuminate\Session\Store
-     */
-    protected function createArrayDriver()
-    {
-        return $this->buildSession(new ArraySessionHandler(
-            $this->config->get('session.lifetime')
-        ));
-    }
-
-    /**
-     * Create an instance of the "cookie" session driver.
-     *
-     * @return \Illuminate\Session\Store
-     */
-    protected function createCookieDriver()
-    {
-        return $this->buildSession(new CookieSessionHandler(
-            $this->container->make('cookie'), $this->config->get('session.lifetime')
-        ));
-    }
-
-    /**
-     * Create an instance of the file session driver.
-     *
-     * @return \Illuminate\Session\Store
-     */
-    protected function createFileDriver()
-    {
-        return $this->createNativeDriver();
-    }
-
-    /**
-     * Create an instance of the file session driver.
-     *
-     * @return \Illuminate\Session\Store
-     */
-    protected function createNativeDriver()
-    {
-        $lifetime = $this->config->get('session.lifetime');
-
-        return $this->buildSession(new FileSessionHandler(
-            $this->container->make('files'), $this->config->get('session.files'), $lifetime
-        ));
-    }
-
-    /**
-     * Create an instance of the database session driver.
-     *
-     * @return \Illuminate\Session\Store
-     */
-    protected function createDatabaseDriver()
-    {
-        $table = $this->config->get('session.table');
-
-        $lifetime = $this->config->get('session.lifetime');
-
-        return $this->buildSession(new DatabaseSessionHandler(
-            $this->getDatabaseConnection(), $table, $lifetime, $this->container
-        ));
-    }
-
-    /**
-     * Get the database connection for the database driver.
-     *
-     * @return \Illuminate\Database\Connection
-     */
-    protected function getDatabaseConnection()
-    {
-        $connection = $this->config->get('session.connection');
-
-        return $this->container->make('db')->connection($connection);
-    }
-
-    /**
-     * Create an instance of the APC session driver.
-     *
-     * @return \Illuminate\Session\Store
-     */
-    protected function createApcDriver()
-    {
-        return $this->createCacheBased('apc');
-    }
-
-    /**
-     * Create an instance of the Memcached session driver.
-     *
-     * @return \Illuminate\Session\Store
-     */
-    protected function createMemcachedDriver()
-    {
-        return $this->createCacheBased('memcached');
-    }
-
-    /**
-     * Create an instance of the Redis session driver.
-     *
-     * @return \Illuminate\Session\Store
-     */
-    protected function createRedisDriver()
-    {
-        $handler = $this->createCacheHandler('redis');
-
-        $handler->getCache()->getStore()->setConnection(
-            $this->config->get('session.connection')
-        );
-
-        return $this->buildSession($handler);
-    }
-
-    /**
-     * Create an instance of the DynamoDB session driver.
-     *
-     * @return \Illuminate\Session\Store
-     */
-    protected function createDynamodbDriver()
-    {
-        return $this->createCacheBased('dynamodb');
-    }
-
-    /**
-     * Create an instance of a cache driven driver.
-     *
-     * @param  string  $driver
-     * @return \Illuminate\Session\Store
-     */
-    protected function createCacheBased($driver)
-    {
-        return $this->buildSession($this->createCacheHandler($driver));
-    }
-
-    /**
-     * Create the cache based session handler instance.
-     *
-     * @param  string  $driver
-     * @return \Illuminate\Session\CacheBasedSessionHandler
-     */
-    protected function createCacheHandler($driver)
-    {
-        $store = $this->config->get('session.store') ?: $driver;
-
-        return new CacheBasedSessionHandler(
-            clone $this->container->make('cache')->store($store),
-            $this->config->get('session.lifetime')
-        );
-    }
-
-    /**
-     * Build the session instance.
-     *
-     * @param  \SessionHandlerInterface  $handler
-     * @return \Illuminate\Session\Store
-     */
-    protected function buildSession($handler)
-    {
-        return $this->config->get('session.encrypt')
-                ? $this->buildEncryptedSession($handler)
-                : new Store($this->config->get('session.cookie'), $handler);
-    }
-
-    /**
-     * Build the encrypted session instance.
-     *
-     * @param  \SessionHandlerInterface  $handler
-     * @return \Illuminate\Session\EncryptedStore
-     */
-    protected function buildEncryptedSession($handler)
-    {
-        return new EncryptedStore(
-            $this->config->get('session.cookie'), $handler, $this->container['encrypter']
-        );
-    }
-
-    /**
-     * Determine if requests for the same session should wait for each to finish before executing.
-     *
-     * @return bool
-     */
-    public function shouldBlock()
-    {
-        return $this->config->get('session.block', false);
-    }
-
-    /**
-     * Get the name of the cache store / driver that should be used to acquire session locks.
-     *
-     * @return string|null
-     */
-    public function blockDriver()
-    {
-        return $this->config->get('session.block_store');
-    }
-
-    /**
-     * Get the session configuration.
-     *
-     * @return array
-     */
-    public function getSessionConfig()
-    {
-        return $this->config->get('session');
-    }
-
-    /**
-     * Get the default session driver name.
-     *
-     * @return string
-     */
-    public function getDefaultDriver()
-    {
-        return $this->config->get('session.driver');
-    }
-
-    /**
-     * Set the default session driver name.
-     *
-     * @param  string  $name
-     * @return void
-     */
-    public function setDefaultDriver($name)
-    {
-        $this->config->set('session.driver', $name);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

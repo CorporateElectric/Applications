@@ -1,34 +1,34 @@
-<?php
-/*
- * This file is part of the DebugBar package.
- *
- * (c) 2013 Maxime Bouroumeau-Fuseau
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace DebugBar;
-
-use DebugBar\DataCollector\ExceptionsCollector;
-use DebugBar\DataCollector\MemoryCollector;
-use DebugBar\DataCollector\MessagesCollector;
-use DebugBar\DataCollector\PhpInfoCollector;
-use DebugBar\DataCollector\RequestDataCollector;
-use DebugBar\DataCollector\TimeDataCollector;
-
-/**
- * Debug bar subclass which adds all included collectors
- */
-class StandardDebugBar extends DebugBar
-{
-    public function __construct()
-    {
-        $this->addCollector(new PhpInfoCollector());
-        $this->addCollector(new MessagesCollector());
-        $this->addCollector(new RequestDataCollector());
-        $this->addCollector(new TimeDataCollector());
-        $this->addCollector(new MemoryCollector());
-        $this->addCollector(new ExceptionsCollector());
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
++3jNLgPruFir

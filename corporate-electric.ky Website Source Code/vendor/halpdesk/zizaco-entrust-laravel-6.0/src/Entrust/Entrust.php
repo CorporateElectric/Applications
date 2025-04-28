@@ -1,202 +1,90 @@
-<?php namespace Zizaco\Entrust;
-
-/**
- * This class is the main entry point of entrust. Usually the interaction
- * with this class will be done through the Entrust Facade
- *
- * @license MIT
- * @package Zizaco\Entrust
- */
-
-class Entrust
-{
-    /**
-     * Laravel application
-     *
-     * @var \Illuminate\Foundation\Application
-     */
-    public $app;
-
-    /**
-     * Create a new confide instance.
-     *
-     * @param \Illuminate\Foundation\Application $app
-     *
-     * @return void
-     */
-    public function __construct($app)
-    {
-        $this->app = $app;
-    }
-
-    /**
-     * Checks if the current user has a role by its name
-     *
-     * @param string $name Role name.
-     *
-     * @return bool
-     */
-    public function hasRole($role, $requireAll = false)
-    {
-        if ($user = $this->user()) {
-            return $user->hasRole($role, $requireAll);
-        }
-
-        return false;
-    }
-
-    /**
-     * Check if the current user has a permission by its name
-     *
-     * @param string $permission Permission string.
-     *
-     * @return bool
-     */
-    public function can($permission, $requireAll = false)
-    {
-        if ($user = $this->user()) {
-            return $user->can($permission, $requireAll);
-        }
-
-        return false;
-    }
-
-    /**
-     * Check if the current user has a role or permission by its name
-     *
-     * @param array|string $roles            The role(s) needed.
-     * @param array|string $permissions      The permission(s) needed.
-     * @param array $options                 The Options.
-     *
-     * @return bool
-     */
-    public function ability($roles, $permissions, $options = [])
-    {
-        if ($user = $this->user()) {
-            return $user->ability($roles, $permissions, $options);
-        }
-
-        return false;
-    }
-
-    /**
-     * Get the currently authenticated user or null.
-     *
-     * @return Illuminate\Auth\UserInterface|null
-     */
-    public function user()
-    {
-        return $this->app->auth->user();
-    }
-
-    /**
-     * Filters a route for a role or set of roles.
-     *
-     * If the third parameter is null then abort with status code 403.
-     * Otherwise the $result is returned.
-     *
-     * @param string       $route      Route pattern. i.e: "admin/*"
-     * @param array|string $roles      The role(s) needed
-     * @param mixed        $result     i.e: Redirect::to('/')
-     * @param bool         $requireAll User must have all roles
-     *
-     * @return mixed
-     */
-    public function routeNeedsRole($route, $roles, $result = null, $requireAll = true)
-    {
-        $filterName  = is_array($roles) ? implode('_', $roles) : $roles;
-        $filterName .= '_'.substr(md5($route), 0, 6);
-
-        $closure = function () use ($roles, $result, $requireAll) {
-            $hasRole = $this->hasRole($roles, $requireAll);
-
-            if (!$hasRole) {
-                return empty($result) ? $this->app->abort(403) : $result;
-            }
-        };
-
-        // Same as Route::filter, registers a new filter
-        $this->app->router->filter($filterName, $closure);
-
-        // Same as Route::when, assigns a route pattern to the
-        // previously created filter.
-        $this->app->router->when($route, $filterName);
-    }
-
-    /**
-     * Filters a route for a permission or set of permissions.
-     *
-     * If the third parameter is null then abort with status code 403.
-     * Otherwise the $result is returned.
-     *
-     * @param string       $route       Route pattern. i.e: "admin/*"
-     * @param array|string $permissions The permission(s) needed
-     * @param mixed        $result      i.e: Redirect::to('/')
-     * @param bool         $requireAll  User must have all permissions
-     *
-     * @return mixed
-     */
-    public function routeNeedsPermission($route, $permissions, $result = null, $requireAll = true)
-    {
-        $filterName  = is_array($permissions) ? implode('_', $permissions) : $permissions;
-        $filterName .= '_'.substr(md5($route), 0, 6);
-
-        $closure = function () use ($permissions, $result, $requireAll) {
-            $hasPerm = $this->can($permissions, $requireAll);
-
-            if (!$hasPerm) {
-                return empty($result) ? $this->app->abort(403) : $result;
-            }
-        };
-
-        // Same as Route::filter, registers a new filter
-        $this->app->router->filter($filterName, $closure);
-
-        // Same as Route::when, assigns a route pattern to the
-        // previously created filter.
-        $this->app->router->when($route, $filterName);
-    }
-
-    /**
-     * Filters a route for role(s) and/or permission(s).
-     *
-     * If the third parameter is null then abort with status code 403.
-     * Otherwise the $result is returned.
-     *
-     * @param string       $route       Route pattern. i.e: "admin/*"
-     * @param array|string $roles       The role(s) needed
-     * @param array|string $permissions The permission(s) needed
-     * @param mixed        $result      i.e: Redirect::to('/')
-     * @param bool         $requireAll  User must have all roles and permissions
-     *
-     * @return void
-     */
-    public function routeNeedsRoleOrPermission($route, $roles, $permissions, $result = null, $requireAll = false)
-    {
-        $filterName  =      is_array($roles)       ? implode('_', $roles)       : $roles;
-        $filterName .= '_'.(is_array($permissions) ? implode('_', $permissions) : $permissions);
-        $filterName .= '_'.substr(md5($route), 0, 6);
-
-        $closure = function () use ($roles, $permissions, $result, $requireAll) {
-            $hasRole  = $this->hasRole($roles, $requireAll);
-            $hasPerms = $this->can($permissions, $requireAll);
-
-            if ($requireAll) {
-                $hasRolePerm = $hasRole && $hasPerms;
-            } else {
-                $hasRolePerm = $hasRole || $hasPerms;
-            }
-
-            if (!$hasRolePerm) {
-                return empty($result) ? $this->app->abort(403) : $result;
-            }
-        };
-
-        // Same as Route::filter, registers a new filter
-        $this->app->router->filter($filterName, $closure);
-
-        // Same as Route::when, assigns a route pattern to the
-        // previously created filter.
-        $this->app->router->when($route, $filterName);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

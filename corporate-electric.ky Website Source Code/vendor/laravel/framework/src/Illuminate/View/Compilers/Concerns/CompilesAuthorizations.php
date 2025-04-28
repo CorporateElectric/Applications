@@ -1,102 +1,33 @@
-<?php
-
-namespace Illuminate\View\Compilers\Concerns;
-
-trait CompilesAuthorizations
-{
-    /**
-     * Compile the can statements into valid PHP.
-     *
-     * @param  string  $expression
-     * @return string
-     */
-    protected function compileCan($expression)
-    {
-        return "<?php if (app(\Illuminate\\Contracts\\Auth\\Access\\Gate::class)->check{$expression}): ?>";
-    }
-
-    /**
-     * Compile the cannot statements into valid PHP.
-     *
-     * @param  string  $expression
-     * @return string
-     */
-    protected function compileCannot($expression)
-    {
-        return "<?php if (app(\Illuminate\\Contracts\\Auth\\Access\\Gate::class)->denies{$expression}): ?>";
-    }
-
-    /**
-     * Compile the canany statements into valid PHP.
-     *
-     * @param  string  $expression
-     * @return string
-     */
-    protected function compileCanany($expression)
-    {
-        return "<?php if (app(\Illuminate\\Contracts\\Auth\\Access\\Gate::class)->any{$expression}): ?>";
-    }
-
-    /**
-     * Compile the else-can statements into valid PHP.
-     *
-     * @param  string  $expression
-     * @return string
-     */
-    protected function compileElsecan($expression)
-    {
-        return "<?php elseif (app(\Illuminate\\Contracts\\Auth\\Access\\Gate::class)->check{$expression}): ?>";
-    }
-
-    /**
-     * Compile the else-cannot statements into valid PHP.
-     *
-     * @param  string  $expression
-     * @return string
-     */
-    protected function compileElsecannot($expression)
-    {
-        return "<?php elseif (app(\Illuminate\\Contracts\\Auth\\Access\\Gate::class)->denies{$expression}): ?>";
-    }
-
-    /**
-     * Compile the else-canany statements into valid PHP.
-     *
-     * @param  string  $expression
-     * @return string
-     */
-    protected function compileElsecanany($expression)
-    {
-        return "<?php elseif (app(\Illuminate\\Contracts\\Auth\\Access\\Gate::class)->any{$expression}): ?>";
-    }
-
-    /**
-     * Compile the end-can statements into valid PHP.
-     *
-     * @return string
-     */
-    protected function compileEndcan()
-    {
-        return '<?php endif; ?>';
-    }
-
-    /**
-     * Compile the end-cannot statements into valid PHP.
-     *
-     * @return string
-     */
-    protected function compileEndcannot()
-    {
-        return '<?php endif; ?>';
-    }
-
-    /**
-     * Compile the end-canany statements into valid PHP.
-     *
-     * @return string
-     */
-    protected function compileEndcanany()
-    {
-        return '<?php endif; ?>';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

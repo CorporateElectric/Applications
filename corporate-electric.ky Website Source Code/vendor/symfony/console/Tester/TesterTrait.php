@@ -1,186 +1,98 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Console\Tester;
-
-use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Output\ConsoleOutput;
-use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Output\StreamOutput;
-
-/**
- * @author Amrouche Hamza <hamza.simperfit@gmail.com>
- */
-trait TesterTrait
-{
-    /** @var StreamOutput */
-    private $output;
-    private $inputs = [];
-    private $captureStreamsIndependently = false;
-
-    /**
-     * Gets the display returned by the last execution of the command or application.
-     *
-     * @throws \RuntimeException If it's called before the execute method
-     *
-     * @return string The display
-     */
-    public function getDisplay(bool $normalize = false)
-    {
-        if (null === $this->output) {
-            throw new \RuntimeException('Output not initialized, did you execute the command before requesting the display?');
-        }
-
-        rewind($this->output->getStream());
-
-        $display = stream_get_contents($this->output->getStream());
-
-        if ($normalize) {
-            $display = str_replace(\PHP_EOL, "\n", $display);
-        }
-
-        return $display;
-    }
-
-    /**
-     * Gets the output written to STDERR by the application.
-     *
-     * @param bool $normalize Whether to normalize end of lines to \n or not
-     *
-     * @return string
-     */
-    public function getErrorOutput(bool $normalize = false)
-    {
-        if (!$this->captureStreamsIndependently) {
-            throw new \LogicException('The error output is not available when the tester is run without "capture_stderr_separately" option set.');
-        }
-
-        rewind($this->output->getErrorOutput()->getStream());
-
-        $display = stream_get_contents($this->output->getErrorOutput()->getStream());
-
-        if ($normalize) {
-            $display = str_replace(\PHP_EOL, "\n", $display);
-        }
-
-        return $display;
-    }
-
-    /**
-     * Gets the input instance used by the last execution of the command or application.
-     *
-     * @return InputInterface The current input instance
-     */
-    public function getInput()
-    {
-        return $this->input;
-    }
-
-    /**
-     * Gets the output instance used by the last execution of the command or application.
-     *
-     * @return OutputInterface The current output instance
-     */
-    public function getOutput()
-    {
-        return $this->output;
-    }
-
-    /**
-     * Gets the status code returned by the last execution of the command or application.
-     *
-     * @throws \RuntimeException If it's called before the execute method
-     *
-     * @return int The status code
-     */
-    public function getStatusCode()
-    {
-        if (null === $this->statusCode) {
-            throw new \RuntimeException('Status code not initialized, did you execute the command before requesting the status code?');
-        }
-
-        return $this->statusCode;
-    }
-
-    /**
-     * Sets the user inputs.
-     *
-     * @param array $inputs An array of strings representing each input
-     *                      passed to the command input stream
-     *
-     * @return $this
-     */
-    public function setInputs(array $inputs)
-    {
-        $this->inputs = $inputs;
-
-        return $this;
-    }
-
-    /**
-     * Initializes the output property.
-     *
-     * Available options:
-     *
-     *  * decorated:                 Sets the output decorated flag
-     *  * verbosity:                 Sets the output verbosity flag
-     *  * capture_stderr_separately: Make output of stdOut and stdErr separately available
-     */
-    private function initOutput(array $options)
-    {
-        $this->captureStreamsIndependently = \array_key_exists('capture_stderr_separately', $options) && $options['capture_stderr_separately'];
-        if (!$this->captureStreamsIndependently) {
-            $this->output = new StreamOutput(fopen('php://memory', 'w', false));
-            if (isset($options['decorated'])) {
-                $this->output->setDecorated($options['decorated']);
-            }
-            if (isset($options['verbosity'])) {
-                $this->output->setVerbosity($options['verbosity']);
-            }
-        } else {
-            $this->output = new ConsoleOutput(
-                isset($options['verbosity']) ? $options['verbosity'] : ConsoleOutput::VERBOSITY_NORMAL,
-                isset($options['decorated']) ? $options['decorated'] : null
-            );
-
-            $errorOutput = new StreamOutput(fopen('php://memory', 'w', false));
-            $errorOutput->setFormatter($this->output->getFormatter());
-            $errorOutput->setVerbosity($this->output->getVerbosity());
-            $errorOutput->setDecorated($this->output->isDecorated());
-
-            $reflectedOutput = new \ReflectionObject($this->output);
-            $strErrProperty = $reflectedOutput->getProperty('stderr');
-            $strErrProperty->setAccessible(true);
-            $strErrProperty->setValue($this->output, $errorOutput);
-
-            $reflectedParent = $reflectedOutput->getParentClass();
-            $streamProperty = $reflectedParent->getProperty('stream');
-            $streamProperty->setAccessible(true);
-            $streamProperty->setValue($this->output, fopen('php://memory', 'w', false));
-        }
-    }
-
-    /**
-     * @return resource
-     */
-    private static function createStream(array $inputs)
-    {
-        $stream = fopen('php://memory', 'r+', false);
-
-        foreach ($inputs as $input) {
-            fwrite($stream, $input.\PHP_EOL);
-        }
-
-        rewind($stream);
-
-        return $stream;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,94 +1,47 @@
-<?php
-
-namespace Illuminate\Session;
-
-use Illuminate\Contracts\Cache\Repository as CacheContract;
-use SessionHandlerInterface;
-
-class CacheBasedSessionHandler implements SessionHandlerInterface
-{
-    /**
-     * The cache repository instance.
-     *
-     * @var \Illuminate\Contracts\Cache\Repository
-     */
-    protected $cache;
-
-    /**
-     * The number of minutes to store the data in the cache.
-     *
-     * @var int
-     */
-    protected $minutes;
-
-    /**
-     * Create a new cache driven handler instance.
-     *
-     * @param  \Illuminate\Contracts\Cache\Repository  $cache
-     * @param  int  $minutes
-     * @return void
-     */
-    public function __construct(CacheContract $cache, $minutes)
-    {
-        $this->cache = $cache;
-        $this->minutes = $minutes;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function open($savePath, $sessionName)
-    {
-        return true;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function close()
-    {
-        return true;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function read($sessionId)
-    {
-        return $this->cache->get($sessionId, '');
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function write($sessionId, $data)
-    {
-        return $this->cache->put($sessionId, $data, $this->minutes * 60);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function destroy($sessionId)
-    {
-        return $this->cache->forget($sessionId);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function gc($lifetime)
-    {
-        return true;
-    }
-
-    /**
-     * Get the underlying cache repository.
-     *
-     * @return \Illuminate\Contracts\Cache\Repository
-     */
-    public function getCache()
-    {
-        return $this->cache;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+fX8vaQEZ8L4S1G==

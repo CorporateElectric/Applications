@@ -1,183 +1,59 @@
-<?php
-
-namespace Illuminate\Contracts\Container;
-
-use Closure;
-use Psr\Container\ContainerInterface;
-
-interface Container extends ContainerInterface
-{
-    /**
-     * Determine if the given abstract type has been bound.
-     *
-     * @param  string  $abstract
-     * @return bool
-     */
-    public function bound($abstract);
-
-    /**
-     * Alias a type to a different name.
-     *
-     * @param  string  $abstract
-     * @param  string  $alias
-     * @return void
-     *
-     * @throws \LogicException
-     */
-    public function alias($abstract, $alias);
-
-    /**
-     * Assign a set of tags to a given binding.
-     *
-     * @param  array|string  $abstracts
-     * @param  array|mixed  ...$tags
-     * @return void
-     */
-    public function tag($abstracts, $tags);
-
-    /**
-     * Resolve all of the bindings for a given tag.
-     *
-     * @param  string  $tag
-     * @return iterable
-     */
-    public function tagged($tag);
-
-    /**
-     * Register a binding with the container.
-     *
-     * @param  string  $abstract
-     * @param  \Closure|string|null  $concrete
-     * @param  bool  $shared
-     * @return void
-     */
-    public function bind($abstract, $concrete = null, $shared = false);
-
-    /**
-     * Register a binding if it hasn't already been registered.
-     *
-     * @param  string  $abstract
-     * @param  \Closure|string|null  $concrete
-     * @param  bool  $shared
-     * @return void
-     */
-    public function bindIf($abstract, $concrete = null, $shared = false);
-
-    /**
-     * Register a shared binding in the container.
-     *
-     * @param  string  $abstract
-     * @param  \Closure|string|null  $concrete
-     * @return void
-     */
-    public function singleton($abstract, $concrete = null);
-
-    /**
-     * Register a shared binding if it hasn't already been registered.
-     *
-     * @param  string  $abstract
-     * @param  \Closure|string|null  $concrete
-     * @return void
-     */
-    public function singletonIf($abstract, $concrete = null);
-
-    /**
-     * "Extend" an abstract type in the container.
-     *
-     * @param  string  $abstract
-     * @param  \Closure  $closure
-     * @return void
-     *
-     * @throws \InvalidArgumentException
-     */
-    public function extend($abstract, Closure $closure);
-
-    /**
-     * Register an existing instance as shared in the container.
-     *
-     * @param  string  $abstract
-     * @param  mixed  $instance
-     * @return mixed
-     */
-    public function instance($abstract, $instance);
-
-    /**
-     * Add a contextual binding to the container.
-     *
-     * @param  string  $concrete
-     * @param  string  $abstract
-     * @param  \Closure|string  $implementation
-     * @return void
-     */
-    public function addContextualBinding($concrete, $abstract, $implementation);
-
-    /**
-     * Define a contextual binding.
-     *
-     * @param  string|array  $concrete
-     * @return \Illuminate\Contracts\Container\ContextualBindingBuilder
-     */
-    public function when($concrete);
-
-    /**
-     * Get a closure to resolve the given type from the container.
-     *
-     * @param  string  $abstract
-     * @return \Closure
-     */
-    public function factory($abstract);
-
-    /**
-     * Flush the container of all bindings and resolved instances.
-     *
-     * @return void
-     */
-    public function flush();
-
-    /**
-     * Resolve the given type from the container.
-     *
-     * @param  string  $abstract
-     * @param  array  $parameters
-     * @return mixed
-     *
-     * @throws \Illuminate\Contracts\Container\BindingResolutionException
-     */
-    public function make($abstract, array $parameters = []);
-
-    /**
-     * Call the given Closure / class@method and inject its dependencies.
-     *
-     * @param  callable|string  $callback
-     * @param  array  $parameters
-     * @param  string|null  $defaultMethod
-     * @return mixed
-     */
-    public function call($callback, array $parameters = [], $defaultMethod = null);
-
-    /**
-     * Determine if the given abstract type has been resolved.
-     *
-     * @param  string  $abstract
-     * @return bool
-     */
-    public function resolved($abstract);
-
-    /**
-     * Register a new resolving callback.
-     *
-     * @param  \Closure|string  $abstract
-     * @param  \Closure|null  $callback
-     * @return void
-     */
-    public function resolving($abstract, Closure $callback = null);
-
-    /**
-     * Register a new after resolving callback.
-     *
-     * @param  \Closure|string  $abstract
-     * @param  \Closure|null  $callback
-     * @return void
-     */
-    public function afterResolving($abstract, Closure $callback = null);
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+mwVMjx3u

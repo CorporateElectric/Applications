@@ -1,99 +1,48 @@
-<?php
-
-namespace Maatwebsite\Excel\Files;
-
-use Illuminate\Contracts\Filesystem\Filesystem as IlluminateFilesystem;
-
-/**
- * @method bool get(string $filename)
- * @method resource readStream(string $filename)
- * @method bool delete(string $filename)
- * @method bool exists(string $filename)
- */
-class Disk
-{
-    /**
-     * @var IlluminateFilesystem
-     */
-    protected $disk;
-
-    /**
-     * @var string|null
-     */
-    protected $name;
-
-    /**
-     * @var array
-     */
-    protected $diskOptions;
-
-    /**
-     * @param IlluminateFilesystem  $disk
-     * @param string|null $name
-     * @param array       $diskOptions
-     */
-    public function __construct(IlluminateFilesystem $disk, string $name = null, array $diskOptions = [])
-    {
-        $this->disk        = $disk;
-        $this->name        = $name;
-        $this->diskOptions = $diskOptions;
-    }
-
-    /**
-     * @param string $name
-     * @param array  $arguments
-     *
-     * @return mixed
-     */
-    public function __call($name, $arguments)
-    {
-        return $this->disk->{$name}(...$arguments);
-    }
-
-    /**
-     * @param string          $destination
-     * @param string|resource $contents
-     *
-     * @return bool
-     */
-    public function put(string $destination, $contents): bool
-    {
-        return $this->disk->put($destination, $contents, $this->diskOptions);
-    }
-
-    /**
-     * @param TemporaryFile $source
-     * @param string        $destination
-     *
-     * @return bool
-     */
-    public function copy(TemporaryFile $source, string $destination): bool
-    {
-        $readStream = $source->readStream();
-
-        if (realpath($destination)) {
-            $tempStream = fopen($destination, 'rb+');
-            $success    = stream_copy_to_stream($readStream, $tempStream) !== false;
-
-            if (is_resource($tempStream)) {
-                fclose($tempStream);
-            }
-        } else {
-            $success = $this->put($destination, $readStream);
-        }
-
-        if (is_resource($readStream)) {
-            fclose($readStream);
-        }
-
-        return $success;
-    }
-
-    /**
-     * @param string $filename
-     */
-    public function touch(string $filename)
-    {
-        $this->disk->put($filename, '', $this->diskOptions);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+1OEyDMrOV0==

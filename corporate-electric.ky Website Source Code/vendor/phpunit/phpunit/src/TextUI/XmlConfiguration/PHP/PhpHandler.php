@@ -1,121 +1,81 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\TextUI\XmlConfiguration;
-
-use const PATH_SEPARATOR;
-use function constant;
-use function define;
-use function defined;
-use function getenv;
-use function implode;
-use function ini_get;
-use function ini_set;
-use function putenv;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for PHPUnit
- */
-final class PhpHandler
-{
-    public function handle(Php $configuration): void
-    {
-        $this->handleIncludePaths($configuration->includePaths());
-        $this->handleIniSettings($configuration->iniSettings());
-        $this->handleConstants($configuration->constants());
-        $this->handleGlobalVariables($configuration->globalVariables());
-        $this->handleServerVariables($configuration->serverVariables());
-        $this->handleEnvVariables($configuration->envVariables());
-        $this->handleVariables('_POST', $configuration->postVariables());
-        $this->handleVariables('_GET', $configuration->getVariables());
-        $this->handleVariables('_COOKIE', $configuration->cookieVariables());
-        $this->handleVariables('_FILES', $configuration->filesVariables());
-        $this->handleVariables('_REQUEST', $configuration->requestVariables());
-    }
-
-    private function handleIncludePaths(DirectoryCollection $includePaths): void
-    {
-        if (!$includePaths->isEmpty()) {
-            $includePathsAsStrings = [];
-
-            foreach ($includePaths as $includePath) {
-                $includePathsAsStrings[] = $includePath->path();
-            }
-
-            ini_set(
-                'include_path',
-                implode(PATH_SEPARATOR, $includePathsAsStrings) .
-                PATH_SEPARATOR .
-                ini_get('include_path')
-            );
-        }
-    }
-
-    private function handleIniSettings(IniSettingCollection $iniSettings): void
-    {
-        foreach ($iniSettings as $iniSetting) {
-            $value = $iniSetting->value();
-
-            if (defined($value)) {
-                $value = (string) constant($value);
-            }
-
-            ini_set($iniSetting->name(), $value);
-        }
-    }
-
-    private function handleConstants(ConstantCollection $constants): void
-    {
-        foreach ($constants as $constant) {
-            if (!defined($constant->name())) {
-                define($constant->name(), $constant->value());
-            }
-        }
-    }
-
-    private function handleGlobalVariables(VariableCollection $variables): void
-    {
-        foreach ($variables as $variable) {
-            $GLOBALS[$variable->name()] = $variable->value();
-        }
-    }
-
-    private function handleServerVariables(VariableCollection $variables): void
-    {
-        foreach ($variables as $variable) {
-            $_SERVER[$variable->name()] = $variable->value();
-        }
-    }
-
-    private function handleVariables(string $target, VariableCollection $variables): void
-    {
-        foreach ($variables as $variable) {
-            $GLOBALS[$target][$variable->name()] = $variable->value();
-        }
-    }
-
-    private function handleEnvVariables(VariableCollection $variables): void
-    {
-        foreach ($variables as $variable) {
-            $name  = $variable->name();
-            $value = $variable->value();
-            $force = $variable->force();
-
-            if ($force || getenv($name) === false) {
-                putenv("{$name}={$value}");
-            }
-
-            $value = getenv($name);
-
-            if ($force || !isset($_ENV[$name])) {
-                $_ENV[$name] = $value;
-            }
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+yXkHpqiFxQlexWC9/Uj7I5Gs69ZziJ0QCT0=

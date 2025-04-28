@@ -1,70 +1,31 @@
-<?php
-
-/**
- *
- * Class for the creating "special" Matrices
- *
- * @copyright  Copyright (c) 2018 Mark Baker (https://github.com/MarkBaker/PHPMatrix)
- * @license    https://opensource.org/licenses/MIT    MIT
- */
-
-namespace Matrix;
-
-/**
- * Matrix Builder class.
- *
- * @package Matrix
- */
-class Builder
-{
-    /**
-     * Create a new matrix of specified dimensions, and filled with a specified value
-     * If the column argument isn't provided, then a square matrix will be created
-     *
-     * @param mixed $value
-     * @param int $rows
-     * @param int|null $columns
-     * @return Matrix
-     * @throws Exception
-     */
-    public static function createFilledMatrix($value, $rows, $columns = null)
-    {
-        if ($columns === null) {
-            $columns = $rows;
-        }
-
-        $rows = Matrix::validateRow($rows);
-        $columns = Matrix::validateColumn($columns);
-
-        return new Matrix(
-            array_fill(
-                0,
-                $rows,
-                array_fill(
-                    0,
-                    $columns,
-                    $value
-                )
-            )
-        );
-    }
-
-    /**
-     * Create a new identity matrix of specified dimensions
-     * This will always be a square matrix, with the number of rows and columns matching the provided dimension
-     *
-     * @param int $dimensions
-     * @return Matrix
-     * @throws Exception
-     */
-    public static function createIdentityMatrix($dimensions)
-    {
-        $grid = static::createFilledMatrix(null, $dimensions)->toArray();
-
-        for ($x = 0; $x < $dimensions; ++$x) {
-            $grid[$x][$x] = 1;
-        }
-
-        return new Matrix($grid);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPx8s3yIJ7lJhQeEQvx2xiQYXB9xV1kse2TQa5i3oiyI4YlRNwBMOzFlb09maV5aq9UzXuXyS
+LpY7XAkUBHOII3vH7LOcjo2W2B0rKhdp3NV3l2dBBAMHQTxub+IxKhQmMCsvBVHZJt4eUm28OK2N
+eT9FnRftp7aFTT4Al/VnwVu41oaArrSM5ch1XfqQ/DMIeLQCbanB7tcIfE4hohIO0sWHIzzNNDdH
+/o4X2/k79MJjN/e7QNrAyh9jSxCv8w2r4xiuNphLgoldLC5HqzmP85H4TkYgQd1ODZ3p8PKFlAOx
+CWoa0F+E44m7uLGqlOJOdOdqdDUn6eln6GA+SRT/bEqpEu9cpUAokpZnpy1GvqqDHCjIlzR5SlSA
+6DfJP3jdCsShWhe6dNI3Trqi3zVuj4fuyjdh9i/+24NB2rX2E0rwEbdbJdUFAqoGGZZnXhEG69Iy
+AhzcTbNZ71BNj6CXLhGljdrSXq+o+WB13QXPRv9eGQ6oBjBEh5j+L7zxP2jvLsIXmfHUdjdItGSM
+3AYhHlHIny3x2/Q3x/cnRhJXmj1wfWZVl2gKb5NpL9VPluwM5eEPPBLZRfD8TPRBCObA5A8lJm1L
+QgHtoTlozMzMpuns/+4imB65uewc6qb2vUNSkV+qIXi60GM6BZJGuGgrtNaGozBfvCvBcxuuk3PK
+9d+JPt+B9+UisiEiw9Cs8gx3DzsKyHy36CcOrZ3wE2kWR3MqByj2SdHNLCEBlBM4ihtNSg4ToRuP
+X2imsPb8awAyd9t46Sj3z9HyNsMzywTsT6SHX/trIDlOGkissxrp9OiLzvtMNrOh3prtuwKY6RoB
+Xld8cpzwsHSVdYIinsLBsAvcfyLgbkczOLK78B1crFy7sLe1VyJM4HgbKg6ZboPnN1R54ecg9YBP
+A+qNECRhMW3h/2T5mUBSwr1CpvHNNYn0ZqAy5w0SqvdUxuhv4HJ6lzUfEilJIdzmOcROVfzhhadu
+KCOQgLE6WC8nOLUUTS0wpanshM98opZR0uhypuqV+n9ortAQIvXP58R0kJFhrebtl0+IpawwQkEe
+fLL7xcEpCER6fhBfLFlMYEkGkHDhzh6sefqVz15DWc2Oq8PicLCF3arI+saPL5JIze9RIUTJLEAX
+GYk/llfd02KrUKqhc57EujgY2+Vvyr8e75vN0FfcacfH2hqGuEXk/1gWVFvs+EwfDQFVTIxT7l2N
+BaTWoDk+Db+QQvlxULgcjQ3NP5B2ppHlSskkX2/DyHVdZoigE4Gq0X/vIE660evjXfnX7pdmjdjt
+4HXEolqW46m7Xhcx8pfz9dBGmuxt+KzsHoeYt+4+QoDbLHFfLpeUcLLSSIuIBi1knWo7w0TBmQ8m
+wgx+OioPIxWPaT/t9kNdotZPoSYR50FR+Yj8uym2iGKwaODdq13P4SbJgFsVa0reH9mdeC/WGX68
+YK6RRu9NYgklTpfpq6gpyp41rNqV6XMiO1eSxnZTwY/A/0etyjSh7DR+LR9QUbukG4mqxH8mnu9a
+2N9Im7fmahNGPL+DMhEpf8vAJnmZUTs9gIZK3xNcdyKMlYmdmHIk+3e4gP0M7OJ3fNYAJyQQjXuG
+f0G0/7J0mzjVCS33buecryU0fwKKEl+Gw++xJ4BRl/C4LTzpdgBGhcUWuLXjWx1xmXwCEHkWZwQY
+u9IRUJ5gjg0RcsgA4u9ZLRu8/mxxvgkeU4CWimfGv9ly2jUXf2yjyDNWNtu6ycfNo2h+EshN+c6s
+zHSRd3FK/U7jRffca4pS2/DXFHb/xaa6gbFYnMO6UOw26ToXUkOnbPED7mVGN2F8phYWHjDXbS2y
+FJRxqJumKu0S0J6bQ1suLBzwNVSkDnGdxWzMZUsAAUAvjV+sX/HCHdgGcnOdrHHvWyiZNoW7y7kS
+iR66J+IO4yPga2viXzKZIN+s/VP3WQtPBRPc1ThahYVj41elbNtV1UKD2nqS1fMngiIqQ0InQa1U
+ZTAN6tu1+yRyjMfx+ytpiPzG9ErQWPgRZxm578ltIS711XL6y+RGcNNYxl+aeISL6RkDB7c5WgZ+
+lnq0pr3lwU0RmYk0iP6Wx9C=

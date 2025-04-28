@@ -1,50 +1,37 @@
-<?php
-
-/*
- * This file is part of SwiftMailer.
- * (c) 2018 Christian Schmidt
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-/**
- * An IDN email address encoder.
- *
- * Encodes the domain part of an address using IDN. This is compatible will all
- * SMTP servers.
- *
- * This encoder does not support email addresses with non-ASCII characters in
- * local-part (the substring before @). To send to such addresses, use
- * Swift_AddressEncoder_Utf8AddressEncoder together with
- * Swift_Transport_Esmtp_SmtpUtf8Handler. Your outbound SMTP server must support
- * the SMTPUTF8 extension.
- *
- * @author Christian Schmidt
- */
-class Swift_AddressEncoder_IdnAddressEncoder implements Swift_AddressEncoder
-{
-    /**
-     * Encodes the domain part of an address using IDN.
-     *
-     * @throws Swift_AddressEncoderException If local-part contains non-ASCII characters
-     */
-    public function encodeString(string $address): string
-    {
-        $i = strrpos($address, '@');
-        if (false !== $i) {
-            $local = substr($address, 0, $i);
-            $domain = substr($address, $i + 1);
-
-            if (preg_match('/[^\x00-\x7F]/', $local)) {
-                throw new Swift_AddressEncoderException('Non-ASCII characters not supported in local-part', $address);
-            }
-
-            if (preg_match('/[^\x00-\x7F]/', $domain)) {
-                $address = sprintf('%s@%s', $local, idn_to_ascii($domain, 0, INTL_IDNA_VARIANT_UTS46));
-            }
-        }
-
-        return $address;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

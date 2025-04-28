@@ -1,70 +1,48 @@
-<?php declare(strict_types=1);
-
-namespace PhpParser\Node\Scalar;
-
-use PhpParser\Node\Scalar;
-
-class DNumber extends Scalar
-{
-    /** @var float Number value */
-    public $value;
-
-    /**
-     * Constructs a float number scalar node.
-     *
-     * @param float $value      Value of the number
-     * @param array $attributes Additional attributes
-     */
-    public function __construct(float $value, array $attributes = []) {
-        $this->attributes = $attributes;
-        $this->value = $value;
-    }
-
-    public function getSubNodeNames() : array {
-        return ['value'];
-    }
-
-    /**
-     * @internal
-     *
-     * Parses a DNUMBER token like PHP would.
-     *
-     * @param string $str A string number
-     *
-     * @return float The parsed number
-     */
-    public static function parse(string $str) : float {
-        $str = str_replace('_', '', $str);
-
-        // if string contains any of .eE just cast it to float
-        if (false !== strpbrk($str, '.eE')) {
-            return (float) $str;
-        }
-
-        // otherwise it's an integer notation that overflowed into a float
-        // if it starts with 0 it's one of the special integer notations
-        if ('0' === $str[0]) {
-            // hex
-            if ('x' === $str[1] || 'X' === $str[1]) {
-                return hexdec($str);
-            }
-
-            // bin
-            if ('b' === $str[1] || 'B' === $str[1]) {
-                return bindec($str);
-            }
-
-            // oct
-            // substr($str, 0, strcspn($str, '89')) cuts the string at the first invalid digit (8 or 9)
-            // so that only the digits before that are used
-            return octdec(substr($str, 0, strcspn($str, '89')));
-        }
-
-        // dec
-        return (float) $str;
-    }
-    
-    public function getType() : string {
-        return 'Scalar_DNumber';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

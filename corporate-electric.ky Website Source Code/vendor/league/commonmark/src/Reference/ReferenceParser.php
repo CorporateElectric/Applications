@@ -1,123 +1,53 @@
-<?php
-
-/*
- * This file is part of the league/commonmark package.
- *
- * (c) Colin O'Dell <colinodell@gmail.com>
- *
- * Original code based on the CommonMark JS reference parser (https://bitly.com/commonmark-js)
- *  - (c) John MacFarlane
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace League\CommonMark\Reference;
-
-use League\CommonMark\Cursor;
-use League\CommonMark\Util\LinkParserHelper;
-
-final class ReferenceParser
-{
-    /**
-     * @var ReferenceMapInterface
-     */
-    private $referenceMap;
-
-    public function __construct(ReferenceMapInterface $referenceMap)
-    {
-        $this->referenceMap = $referenceMap;
-    }
-
-    /**
-     * Attempt to parse a link reference, modifying the refmap.
-     *
-     * @param Cursor $cursor
-     *
-     * @return bool
-     */
-    public function parse(Cursor $cursor)
-    {
-        if ($cursor->isAtEnd()) {
-            return false;
-        }
-
-        $initialState = $cursor->saveState();
-
-        $matchChars = LinkParserHelper::parseLinkLabel($cursor);
-        if ($matchChars === 0) {
-            $cursor->restoreState($initialState);
-
-            return false;
-        }
-
-        // We need to trim the opening and closing brackets from the previously-matched text
-        $label = \substr($cursor->getPreviousText(), 1, -1);
-
-        if (\preg_match('/[^\s]/', $label) === 0) {
-            $cursor->restoreState($initialState);
-
-            return false;
-        }
-
-        if ($cursor->getCharacter() !== ':') {
-            $cursor->restoreState($initialState);
-
-            return false;
-        }
-
-        // Advance past the colon
-        $cursor->advanceBy(1);
-
-        // Link URL
-        $cursor->advanceToNextNonSpaceOrNewline();
-
-        $destination = LinkParserHelper::parseLinkDestination($cursor);
-        if ($destination === null) {
-            $cursor->restoreState($initialState);
-
-            return false;
-        }
-
-        $previousState = $cursor->saveState();
-
-        if ($cursor->advanceToNextNonSpaceOrNewline() > 0) {
-            $title = LinkParserHelper::parseLinkTitle($cursor);
-        }
-
-        if (!isset($title)) {
-            $title = '';
-            $cursor->restoreState($previousState);
-        }
-
-        // Make sure we're at line end:
-        $atLineEnd = true;
-        if ($cursor->match('/^ *(?:\n|$)/') === null) {
-            if ($title === '') {
-                $atLineEnd = false;
-            } else {
-                // The potential title we found is not at the line end,
-                // but it could still be a legal link reference if we
-                // discard the title
-                $title = '';
-                // rewind before spaces
-                $cursor->restoreState($previousState);
-                // and instead check if the link URL is at the line end
-                $atLineEnd = $cursor->match('/^ *(?:\n|$)/') !== null;
-            }
-        }
-
-        if (!$atLineEnd) {
-            $cursor->restoreState($initialState);
-
-            return false;
-        }
-
-        if (!$this->referenceMap->contains($label)) {
-            $reference = new Reference($label, $destination, $title);
-            $this->referenceMap->addReference($reference);
-        }
-
-        return true;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

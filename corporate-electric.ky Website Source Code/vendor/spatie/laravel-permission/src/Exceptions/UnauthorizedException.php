@@ -1,72 +1,60 @@
-<?php
-
-namespace Spatie\Permission\Exceptions;
-
-use Symfony\Component\HttpKernel\Exception\HttpException;
-
-class UnauthorizedException extends HttpException
-{
-    private $requiredRoles = [];
-
-    private $requiredPermissions = [];
-
-    public static function forRoles(array $roles): self
-    {
-        $message = 'User does not have the right roles.';
-
-        if (config('permission.display_permission_in_exception')) {
-            $permStr = implode(', ', $roles);
-            $message = 'User does not have the right roles. Necessary roles are '.$permStr;
-        }
-
-        $exception = new static(403, $message, null, []);
-        $exception->requiredRoles = $roles;
-
-        return $exception;
-    }
-
-    public static function forPermissions(array $permissions): self
-    {
-        $message = 'User does not have the right permissions.';
-
-        if (config('permission.display_permission_in_exception')) {
-            $permStr = implode(', ', $permissions);
-            $message = 'User does not have the right permissions. Necessary permissions are '.$permStr;
-        }
-
-        $exception = new static(403, $message, null, []);
-        $exception->requiredPermissions = $permissions;
-
-        return $exception;
-    }
-
-    public static function forRolesOrPermissions(array $rolesOrPermissions): self
-    {
-        $message = 'User does not have any of the necessary access rights.';
-
-        if (config('permission.display_permission_in_exception') && config('permission.display_role_in_exception')) {
-            $permStr = implode(', ', $rolesOrPermissions);
-            $message = 'User does not have the right permissions. Necessary permissions are '.$permStr;
-        }
-
-        $exception = new static(403, $message, null, []);
-        $exception->requiredPermissions = $rolesOrPermissions;
-
-        return $exception;
-    }
-
-    public static function notLoggedIn(): self
-    {
-        return new static(403, 'User is not logged in.', null, []);
-    }
-
-    public function getRequiredRoles(): array
-    {
-        return $this->requiredRoles;
-    }
-
-    public function getRequiredPermissions(): array
-    {
-        return $this->requiredPermissions;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+jbsrHFa=

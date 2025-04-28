@@ -1,81 +1,57 @@
-<?php
-
-/*
- * This file is part of the league/commonmark package.
- *
- * (c) Colin O'Dell <colinodell@gmail.com>
- *
- * Original code based on the CommonMark JS reference parser (https://bitly.com/commonmark-js)
- *  - (c) John MacFarlane
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace League\CommonMark\Block\Parser;
-
-use League\CommonMark\Block\Element\Heading;
-use League\CommonMark\Block\Element\Paragraph;
-use League\CommonMark\ContextInterface;
-use League\CommonMark\Cursor;
-use League\CommonMark\Reference\ReferenceParser;
-use League\CommonMark\Util\RegexHelper;
-
-final class SetExtHeadingParser implements BlockParserInterface
-{
-    public function parse(ContextInterface $context, Cursor $cursor): bool
-    {
-        if ($cursor->isIndented()) {
-            return false;
-        }
-
-        if (!($context->getContainer() instanceof Paragraph)) {
-            return false;
-        }
-
-        $match = RegexHelper::matchAll('/^(?:=+|-+)[ \t]*$/', $cursor->getLine(), $cursor->getNextNonSpacePosition());
-        if ($match === null) {
-            return false;
-        }
-
-        $level = $match[0][0] === '=' ? 1 : 2;
-        $strings = $context->getContainer()->getStrings();
-
-        $strings = $this->resolveReferenceLinkDefinitions($strings, $context->getReferenceParser());
-        if (empty($strings)) {
-            return false;
-        }
-
-        $context->replaceContainerBlock(new Heading($level, $strings));
-
-        return true;
-    }
-
-    /**
-     * Resolve reference link definition
-     *
-     * @see https://github.com/commonmark/commonmark.js/commit/993bbe335931af847460effa99b2411eb643577d
-     *
-     * @param string[]        $strings
-     * @param ReferenceParser $referenceParser
-     *
-     * @return string[]
-     */
-    private function resolveReferenceLinkDefinitions(array $strings, ReferenceParser $referenceParser): array
-    {
-        foreach ($strings as &$string) {
-            $cursor = new Cursor($string);
-            while ($cursor->getCharacter() === '[' && $referenceParser->parse($cursor)) {
-                $string = $cursor->getRemainder();
-            }
-
-            if ($string !== '') {
-                break;
-            }
-        }
-
-        return \array_filter($strings, function ($s) {
-            return $s !== '';
-        });
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

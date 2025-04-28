@@ -1,51 +1,32 @@
-<?php
-
-namespace League\Glide\Manipulators\Helpers;
-
-use Intervention\Image\Image;
-
-class Dimension
-{
-    /**
-     * The source image.
-     * @var Image
-     */
-    protected $image;
-
-    /**
-     * The device pixel ratio.
-     * @var integer
-     */
-    protected $dpr;
-
-    /**
-     * Create dimension helper instance.
-     * @param Image   $image The source image.
-     * @param integer $dpr   The device pixel ratio.
-     */
-    public function __construct(Image $image, $dpr = 1)
-    {
-        $this->image = $image;
-        $this->dpr = $dpr;
-    }
-
-    /**
-     * Resolve the dimension.
-     * @param  string $value The dimension value.
-     * @return double The resolved dimension.
-     */
-    public function get($value)
-    {
-        if (is_numeric($value) and $value > 0) {
-            return (double) $value * $this->dpr;
-        }
-
-        if (preg_match('/^(\d{1,2}(?!\d)|100)(w|h)$/', $value, $matches)) {
-            if ($matches[2] === 'h') {
-                return (double) $this->image->height() * ($matches[1] / 100);
-            }
-
-            return (double) $this->image->width() * ($matches[1] / 100);
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
++prAfKEEX8dGoDU1ZOHnh6mB5kWXf+M/mAG=

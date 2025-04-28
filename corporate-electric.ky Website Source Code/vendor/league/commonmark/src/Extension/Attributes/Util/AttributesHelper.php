@@ -1,130 +1,72 @@
-<?php
-
-/*
- * This file is part of the league/commonmark package.
- *
- * (c) Colin O'Dell <colinodell@gmail.com>
- * (c) 2015 Martin Hasoň <martin.hason@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-declare(strict_types=1);
-
-namespace League\CommonMark\Extension\Attributes\Util;
-
-use League\CommonMark\Block\Element\AbstractBlock;
-use League\CommonMark\Cursor;
-use League\CommonMark\Inline\Element\AbstractInline;
-use League\CommonMark\Util\RegexHelper;
-
-/**
- * @internal
- */
-final class AttributesHelper
-{
-    /**
-     * @param Cursor $cursor
-     *
-     * @return array<string, mixed>
-     */
-    public static function parseAttributes(Cursor $cursor): array
-    {
-        $state = $cursor->saveState();
-        $cursor->advanceToNextNonSpaceOrNewline();
-        if ($cursor->getCharacter() !== '{') {
-            $cursor->restoreState($state);
-
-            return [];
-        }
-
-        $cursor->advanceBy(1);
-        if ($cursor->getCharacter() === ':') {
-            $cursor->advanceBy(1);
-        }
-
-        $attributes = [];
-        $regex = '/^\s*([.#][_a-z0-9-]+|' . RegexHelper::PARTIAL_ATTRIBUTENAME . RegexHelper::PARTIAL_ATTRIBUTEVALUESPEC . ')(?<!})\s*/i';
-        while ($attribute = \trim((string) $cursor->match($regex))) {
-            if ($attribute[0] === '#') {
-                $attributes['id'] = \substr($attribute, 1);
-
-                continue;
-            }
-
-            if ($attribute[0] === '.') {
-                $attributes['class'][] = \substr($attribute, 1);
-
-                continue;
-            }
-
-            [$name, $value] = \explode('=', $attribute, 2);
-            $first = $value[0];
-            $last = \substr($value, -1);
-            if ((($first === '"' && $last === '"') || ($first === "'" && $last === "'")) && \strlen($value) > 1) {
-                $value = \substr($value, 1, -1);
-            }
-
-            if (\strtolower(\trim($name)) === 'class') {
-                foreach (\array_filter(\explode(' ', \trim($value))) as $class) {
-                    $attributes['class'][] = $class;
-                }
-            } else {
-                $attributes[trim($name)] = trim($value);
-            }
-        }
-
-        if ($cursor->match('/}/') === null) {
-            $cursor->restoreState($state);
-
-            return [];
-        }
-
-        if ($attributes === []) {
-            $cursor->restoreState($state);
-
-            return [];
-        }
-
-        if (isset($attributes['class'])) {
-            $attributes['class'] = \implode(' ', (array) $attributes['class']);
-        }
-
-        return $attributes;
-    }
-
-    /**
-     * @param AbstractBlock|AbstractInline|array<string, mixed> $attributes1
-     * @param AbstractBlock|AbstractInline|array<string, mixed> $attributes2
-     *
-     * @return array<string, mixed>
-     */
-    public static function mergeAttributes($attributes1, $attributes2): array
-    {
-        $attributes = [];
-        foreach ([$attributes1, $attributes2] as $arg) {
-            if ($arg instanceof AbstractBlock || $arg instanceof AbstractInline) {
-                $arg = $arg->data['attributes'] ?? [];
-            }
-
-            /** @var array<string, mixed> $arg */
-            $arg = (array) $arg;
-            if (isset($arg['class'])) {
-                foreach (\array_filter(\explode(' ', \trim($arg['class']))) as $class) {
-                    $attributes['class'][] = $class;
-                }
-
-                unset($arg['class']);
-            }
-
-            $attributes = \array_merge($attributes, $arg);
-        }
-
-        if (isset($attributes['class'])) {
-            $attributes['class'] = \implode(' ', $attributes['class']);
-        }
-
-        return $attributes;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

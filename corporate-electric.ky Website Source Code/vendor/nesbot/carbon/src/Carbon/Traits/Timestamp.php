@@ -1,186 +1,85 @@
-<?php
-
-/**
- * This file is part of the Carbon package.
- *
- * (c) Brian Nesbitt <brian@nesbot.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace Carbon\Traits;
-
-/**
- * Trait Timestamp.
- */
-trait Timestamp
-{
-    /**
-     * Create a Carbon instance from a timestamp and set the timezone (use default one if not specified).
-     *
-     * Timestamp input can be given as int, float or a string containing one or more numbers.
-     *
-     * @param float|int|string          $timestamp
-     * @param \DateTimeZone|string|null $tz
-     *
-     * @return static
-     */
-    public static function createFromTimestamp($timestamp, $tz = null)
-    {
-        return static::createFromTimestampUTC($timestamp)->setTimezone($tz);
-    }
-
-    /**
-     * Create a Carbon instance from an timestamp keeping the timezone to UTC.
-     *
-     * Timestamp input can be given as int, float or a string containing one or more numbers.
-     *
-     * @param float|int|string $timestamp
-     *
-     * @return static
-     */
-    public static function createFromTimestampUTC($timestamp)
-    {
-        [$integer, $decimal] = self::getIntegerAndDecimalParts($timestamp);
-        $delta = floor($decimal / static::MICROSECONDS_PER_SECOND);
-        $integer += $delta;
-        $decimal -= $delta * static::MICROSECONDS_PER_SECOND;
-
-        return static::rawCreateFromFormat('U u', "$integer $decimal");
-    }
-
-    /**
-     * Create a Carbon instance from a timestamp in milliseconds.
-     *
-     * Timestamp input can be given as int, float or a string containing one or more numbers.
-     *
-     * @param float|int|string $timestamp
-     *
-     * @return static
-     */
-    public static function createFromTimestampMsUTC($timestamp)
-    {
-        [$milliseconds, $microseconds] = self::getIntegerAndDecimalParts($timestamp, 3);
-        $sign = $milliseconds < 0 || $milliseconds === 0.0 && $microseconds < 0 ? -1 : 1;
-        $milliseconds = abs($milliseconds);
-        $microseconds = $sign * abs($microseconds) + static::MICROSECONDS_PER_MILLISECOND * ($milliseconds % static::MILLISECONDS_PER_SECOND);
-        $seconds = $sign * floor($milliseconds / static::MILLISECONDS_PER_SECOND);
-        $delta = floor($microseconds / static::MICROSECONDS_PER_SECOND);
-        $seconds += $delta;
-        $microseconds -= $delta * static::MICROSECONDS_PER_SECOND;
-        $microseconds = str_pad($microseconds, 6, '0', STR_PAD_LEFT);
-
-        return static::rawCreateFromFormat('U u', "$seconds $microseconds");
-    }
-
-    /**
-     * Create a Carbon instance from a timestamp in milliseconds.
-     *
-     * Timestamp input can be given as int, float or a string containing one or more numbers.
-     *
-     * @param float|int|string          $timestamp
-     * @param \DateTimeZone|string|null $tz
-     *
-     * @return static
-     */
-    public static function createFromTimestampMs($timestamp, $tz = null)
-    {
-        return static::createFromTimestampMsUTC($timestamp)
-            ->setTimezone($tz);
-    }
-
-    /**
-     * Set the instance's timestamp.
-     *
-     * Timestamp input can be given as int, float or a string containing one or more numbers.
-     *
-     * @param float|int|string $unixTimestamp
-     *
-     * @return static
-     */
-    public function timestamp($unixTimestamp)
-    {
-        return $this->setTimestamp($unixTimestamp);
-    }
-
-    /**
-     * Returns a timestamp rounded with the given precision (6 by default).
-     *
-     * @example getPreciseTimestamp()   1532087464437474 (microsecond maximum precision)
-     * @example getPreciseTimestamp(6)  1532087464437474
-     * @example getPreciseTimestamp(5)  153208746443747  (1/100000 second precision)
-     * @example getPreciseTimestamp(4)  15320874644375   (1/10000 second precision)
-     * @example getPreciseTimestamp(3)  1532087464437    (millisecond precision)
-     * @example getPreciseTimestamp(2)  153208746444     (1/100 second precision)
-     * @example getPreciseTimestamp(1)  15320874644      (1/10 second precision)
-     * @example getPreciseTimestamp(0)  1532087464       (second precision)
-     * @example getPreciseTimestamp(-1) 153208746        (10 second precision)
-     * @example getPreciseTimestamp(-2) 15320875         (100 second precision)
-     *
-     * @param int $precision
-     *
-     * @return float
-     */
-    public function getPreciseTimestamp($precision = 6)
-    {
-        return round($this->rawFormat('Uu') / pow(10, 6 - $precision));
-    }
-
-    /**
-     * Returns the milliseconds timestamps used amongst other by Date javascript objects.
-     *
-     * @return float
-     */
-    public function valueOf()
-    {
-        return $this->getPreciseTimestamp(3);
-    }
-
-    /**
-     * @alias getTimestamp
-     *
-     * Returns the UNIX timestamp for the current date.
-     *
-     * @return int
-     */
-    public function unix()
-    {
-        return $this->getTimestamp();
-    }
-
-    /**
-     * Return an array with integer part digits and decimals digits split from one or more positive numbers
-     * (such as timestamps) as string with the given number of decimals (6 by default).
-     *
-     * By splitting integer and decimal, this method obtain a better precision than
-     * number_format when the input is a string.
-     *
-     * @param float|int|string $numbers  one or more numbers
-     * @param int              $decimals number of decimals precision (6 by default)
-     *
-     * @return array 0-index is integer part, 1-index is decimal part digits
-     */
-    private static function getIntegerAndDecimalParts($numbers, $decimals = 6)
-    {
-        if (\is_int($numbers) || \is_float($numbers)) {
-            $numbers = number_format($numbers, $decimals, '.', '');
-        }
-
-        $sign = substr($numbers, 0, 1) === '-' ? -1 : 1;
-        $integer = 0;
-        $decimal = 0;
-
-        foreach (preg_split('`[^0-9.]+`', $numbers) as $chunk) {
-            [$integerPart, $decimalPart] = explode('.', "$chunk.");
-
-            $integer += \intval($integerPart);
-            $decimal += \floatval("0.$decimalPart");
-        }
-
-        $overflow = floor($decimal);
-        $integer += $overflow;
-        $decimal -= $overflow;
-
-        return [$sign * $integer, $decimal === 0.0 ? 0.0 : $sign * round($decimal * pow(10, $decimals))];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,395 +1,202 @@
-<?php
-
-namespace Illuminate\Queue;
-
-use Illuminate\Contracts\Queue\ClearableQueue;
-use Illuminate\Contracts\Queue\Queue as QueueContract;
-use Illuminate\Database\Connection;
-use Illuminate\Queue\Jobs\DatabaseJob;
-use Illuminate\Queue\Jobs\DatabaseJobRecord;
-use Illuminate\Support\Carbon;
-use PDO;
-
-class DatabaseQueue extends Queue implements QueueContract, ClearableQueue
-{
-    /**
-     * The database connection instance.
-     *
-     * @var \Illuminate\Database\Connection
-     */
-    protected $database;
-
-    /**
-     * The database table that holds the jobs.
-     *
-     * @var string
-     */
-    protected $table;
-
-    /**
-     * The name of the default queue.
-     *
-     * @var string
-     */
-    protected $default;
-
-    /**
-     * The expiration time of a job.
-     *
-     * @var int|null
-     */
-    protected $retryAfter = 60;
-
-    /**
-     * Create a new database queue instance.
-     *
-     * @param  \Illuminate\Database\Connection  $database
-     * @param  string  $table
-     * @param  string  $default
-     * @param  int  $retryAfter
-     * @param  bool  $dispatchAfterCommit
-     * @return void
-     */
-    public function __construct(Connection $database,
-                                $table,
-                                $default = 'default',
-                                $retryAfter = 60,
-                                $dispatchAfterCommit = false)
-    {
-        $this->table = $table;
-        $this->default = $default;
-        $this->database = $database;
-        $this->retryAfter = $retryAfter;
-        $this->dispatchAfterCommit = $dispatchAfterCommit;
-    }
-
-    /**
-     * Get the size of the queue.
-     *
-     * @param  string|null  $queue
-     * @return int
-     */
-    public function size($queue = null)
-    {
-        return $this->database->table($this->table)
-                    ->where('queue', $this->getQueue($queue))
-                    ->count();
-    }
-
-    /**
-     * Push a new job onto the queue.
-     *
-     * @param  string  $job
-     * @param  mixed  $data
-     * @param  string|null  $queue
-     * @return mixed
-     */
-    public function push($job, $data = '', $queue = null)
-    {
-        return $this->enqueueUsing(
-            $job,
-            $this->createPayload($job, $this->getQueue($queue), $data),
-            $queue,
-            null,
-            function ($payload, $queue) {
-                return $this->pushToDatabase($queue, $payload);
-            }
-        );
-    }
-
-    /**
-     * Push a raw payload onto the queue.
-     *
-     * @param  string  $payload
-     * @param  string|null  $queue
-     * @param  array  $options
-     * @return mixed
-     */
-    public function pushRaw($payload, $queue = null, array $options = [])
-    {
-        return $this->pushToDatabase($queue, $payload);
-    }
-
-    /**
-     * Push a new job onto the queue after a delay.
-     *
-     * @param  \DateTimeInterface|\DateInterval|int  $delay
-     * @param  string  $job
-     * @param  mixed  $data
-     * @param  string|null  $queue
-     * @return void
-     */
-    public function later($delay, $job, $data = '', $queue = null)
-    {
-        return $this->enqueueUsing(
-            $job,
-            $this->createPayload($job, $this->getQueue($queue), $data),
-            $queue,
-            $delay,
-            function ($payload, $queue, $delay) {
-                return $this->pushToDatabase($queue, $payload, $delay);
-            }
-        );
-    }
-
-    /**
-     * Push an array of jobs onto the queue.
-     *
-     * @param  array  $jobs
-     * @param  mixed  $data
-     * @param  string|null  $queue
-     * @return mixed
-     */
-    public function bulk($jobs, $data = '', $queue = null)
-    {
-        $queue = $this->getQueue($queue);
-
-        $availableAt = $this->availableAt();
-
-        return $this->database->table($this->table)->insert(collect((array) $jobs)->map(
-            function ($job) use ($queue, $data, $availableAt) {
-                return $this->buildDatabaseRecord($queue, $this->createPayload($job, $this->getQueue($queue), $data), $availableAt);
-            }
-        )->all());
-    }
-
-    /**
-     * Release a reserved job back onto the queue.
-     *
-     * @param  string  $queue
-     * @param  \Illuminate\Queue\Jobs\DatabaseJobRecord  $job
-     * @param  int  $delay
-     * @return mixed
-     */
-    public function release($queue, $job, $delay)
-    {
-        return $this->pushToDatabase($queue, $job->payload, $delay, $job->attempts);
-    }
-
-    /**
-     * Push a raw payload to the database with a given delay.
-     *
-     * @param  string|null  $queue
-     * @param  string  $payload
-     * @param  \DateTimeInterface|\DateInterval|int  $delay
-     * @param  int  $attempts
-     * @return mixed
-     */
-    protected function pushToDatabase($queue, $payload, $delay = 0, $attempts = 0)
-    {
-        return $this->database->table($this->table)->insertGetId($this->buildDatabaseRecord(
-            $this->getQueue($queue), $payload, $this->availableAt($delay), $attempts
-        ));
-    }
-
-    /**
-     * Create an array to insert for the given job.
-     *
-     * @param  string|null  $queue
-     * @param  string  $payload
-     * @param  int  $availableAt
-     * @param  int  $attempts
-     * @return array
-     */
-    protected function buildDatabaseRecord($queue, $payload, $availableAt, $attempts = 0)
-    {
-        return [
-            'queue' => $queue,
-            'attempts' => $attempts,
-            'reserved_at' => null,
-            'available_at' => $availableAt,
-            'created_at' => $this->currentTime(),
-            'payload' => $payload,
-        ];
-    }
-
-    /**
-     * Pop the next job off of the queue.
-     *
-     * @param  string|null  $queue
-     * @return \Illuminate\Contracts\Queue\Job|null
-     *
-     * @throws \Throwable
-     */
-    public function pop($queue = null)
-    {
-        $queue = $this->getQueue($queue);
-
-        return $this->database->transaction(function () use ($queue) {
-            if ($job = $this->getNextAvailableJob($queue)) {
-                return $this->marshalJob($queue, $job);
-            }
-        });
-    }
-
-    /**
-     * Get the next available job for the queue.
-     *
-     * @param  string|null  $queue
-     * @return \Illuminate\Queue\Jobs\DatabaseJobRecord|null
-     */
-    protected function getNextAvailableJob($queue)
-    {
-        $job = $this->database->table($this->table)
-                    ->lock($this->getLockForPopping())
-                    ->where('queue', $this->getQueue($queue))
-                    ->where(function ($query) {
-                        $this->isAvailable($query);
-                        $this->isReservedButExpired($query);
-                    })
-                    ->orderBy('id', 'asc')
-                    ->first();
-
-        return $job ? new DatabaseJobRecord((object) $job) : null;
-    }
-
-    /**
-     * Get the lock required for popping the next job.
-     *
-     * @return string|bool
-     */
-    protected function getLockForPopping()
-    {
-        $databaseEngine = $this->database->getPdo()->getAttribute(PDO::ATTR_DRIVER_NAME);
-        $databaseVersion = $this->database->getConfig('version') ?? $this->database->getPdo()->getAttribute(PDO::ATTR_SERVER_VERSION);
-
-        if ($databaseEngine == 'mysql' && ! strpos($databaseVersion, 'MariaDB') && version_compare($databaseVersion, '8.0.1', '>=') ||
-            $databaseEngine == 'pgsql' && version_compare($databaseVersion, '9.5', '>=')) {
-            return 'FOR UPDATE SKIP LOCKED';
-        }
-
-        return true;
-    }
-
-    /**
-     * Modify the query to check for available jobs.
-     *
-     * @param  \Illuminate\Database\Query\Builder  $query
-     * @return void
-     */
-    protected function isAvailable($query)
-    {
-        $query->where(function ($query) {
-            $query->whereNull('reserved_at')
-                  ->where('available_at', '<=', $this->currentTime());
-        });
-    }
-
-    /**
-     * Modify the query to check for jobs that are reserved but have expired.
-     *
-     * @param  \Illuminate\Database\Query\Builder  $query
-     * @return void
-     */
-    protected function isReservedButExpired($query)
-    {
-        $expiration = Carbon::now()->subSeconds($this->retryAfter)->getTimestamp();
-
-        $query->orWhere(function ($query) use ($expiration) {
-            $query->where('reserved_at', '<=', $expiration);
-        });
-    }
-
-    /**
-     * Marshal the reserved job into a DatabaseJob instance.
-     *
-     * @param  string  $queue
-     * @param  \Illuminate\Queue\Jobs\DatabaseJobRecord  $job
-     * @return \Illuminate\Queue\Jobs\DatabaseJob
-     */
-    protected function marshalJob($queue, $job)
-    {
-        $job = $this->markJobAsReserved($job);
-
-        return new DatabaseJob(
-            $this->container, $this, $job, $this->connectionName, $queue
-        );
-    }
-
-    /**
-     * Mark the given job ID as reserved.
-     *
-     * @param  \Illuminate\Queue\Jobs\DatabaseJobRecord  $job
-     * @return \Illuminate\Queue\Jobs\DatabaseJobRecord
-     */
-    protected function markJobAsReserved($job)
-    {
-        $this->database->table($this->table)->where('id', $job->id)->update([
-            'reserved_at' => $job->touch(),
-            'attempts' => $job->increment(),
-        ]);
-
-        return $job;
-    }
-
-    /**
-     * Delete a reserved job from the queue.
-     *
-     * @param  string  $queue
-     * @param  string  $id
-     * @return void
-     *
-     * @throws \Throwable
-     */
-    public function deleteReserved($queue, $id)
-    {
-        $this->database->transaction(function () use ($id) {
-            if ($this->database->table($this->table)->lockForUpdate()->find($id)) {
-                $this->database->table($this->table)->where('id', $id)->delete();
-            }
-        });
-    }
-
-    /**
-     * Delete a reserved job from the reserved queue and release it.
-     *
-     * @param  string  $queue
-     * @param  \Illuminate\Queue\Jobs\DatabaseJob  $job
-     * @param  int  $delay
-     * @return void
-     */
-    public function deleteAndRelease($queue, $job, $delay)
-    {
-        $this->database->transaction(function () use ($queue, $job, $delay) {
-            if ($this->database->table($this->table)->lockForUpdate()->find($job->getJobId())) {
-                $this->database->table($this->table)->where('id', $job->getJobId())->delete();
-            }
-
-            $this->release($queue, $job->getJobRecord(), $delay);
-        });
-    }
-
-    /**
-     * Delete all of the jobs from the queue.
-     *
-     * @param  string  $queue
-     * @return int
-     */
-    public function clear($queue)
-    {
-        return $this->database->table($this->table)
-                    ->where('queue', $this->getQueue($queue))
-                    ->delete();
-    }
-
-    /**
-     * Get the queue or return the default.
-     *
-     * @param  string|null  $queue
-     * @return string
-     */
-    public function getQueue($queue)
-    {
-        return $queue ?: $this->default;
-    }
-
-    /**
-     * Get the underlying database instance.
-     *
-     * @return \Illuminate\Database\Connection
-     */
-    public function getDatabase()
-    {
-        return $this->database;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPy4I7XKWtU9QFS6BDgZV4ZQ7IY8QpCSlCTLLpHh3Qat0XpSV77sbULIlkijb5UUEXs0E2+Tb
+MyNynVss0U3aOTKeWvxyzod6Gb8Va1o1g/jpppuPwQ6N3VIOT+lxX8JpcCaLmRaigYcNP+M/hXKe
+TRrYlJ20u4NxDxPw6TtT7yV4vQM1GiaW/VyivuL6x9kTRs2aPQnpZhIKvAQnX7kOO/I83bjSQJ0h
+RIGhTqGWljuOaaj21ZTBZ+oi0Rco3K4u/4CtcJhLgoldLC5HqzmP85H4TkXHQaeb0gA6UeAgmShJ
+iAWV3BMtfUwoRCoIC59yQ09iArZZb+VFvjOP6iB1M4MCZ4VRPGqVMJfHVQ8bD/WcINn36BBSYD4+
+JpXUP7wOs/AyBzGChGefe8Lc49bWcyBQsgWXogZSwQS0c/HLpC+kCKdLWQ984ye5XfqIx3V3qaBR
+tAWxEdoEFmE/wJ5R3C5beKmjtvZqrpWVUwZYcSlF8HJkqsiZZM8NL1qzGmoqO6SWmhJohdyv0jLG
+gdf0lkUYx6aQkAVnGgeWZ9ysILnHw8lwH+6dfXxUMio6boXG/v0ELaTpvzUNFcBVUchTJ6DgtyxH
+5LQfYm1+XzKhGc4RGtAEtGIVMoHXfkY4nUxQgTLgoFvbyRG4/wZ0926Re5jfsz+AAFhSYF8Azo8Z
+jjxWlk2hXjTrzVVjyUsnlld7TZykKdhrogMr69vFli/6g+APXvaJPshr9FnVXv3jhxgU0GbP3aG3
+rTPwUuYhfbAMExc7j8v7dC/Qpd/P67fxK/W6TuUQiVzcUmVTYDGLyYNES3dPcpOPTlnCoQl4RI3x
+5veK4szUAmkSM1lNiuPYslKx7grZSHbcrfkao/mqt92pPKrvpjG6MoFOISgRVi7U4NC41OKpvbrX
+GabisVgtE6s73EyhgwidsjFJxf48OoiQrQri5zbvic3kS/lIczdjL3RFkA4d/6I/kp8l64ZZzq9b
+qaSZ69UQS7x/ibe0Og1m9L6PB4twYorrWd7pfyQ1vMmRetvdfgV2pJ2L1KujnL5DQqzrUCdokJbq
+cqeWKuor8ZP6GOhnQmP+uSCM1gbV9NrlhAm4gM5VfaymKuDz6S3IrNczWAH7SIaTG1JPaagSxwh1
+eCXfP3tZG4wctn3cXVIRHN81FrpcebwWpkHLumk46rcyPPShCzpEqhlSByd2yB8PjJ8obzwfPWi+
+KUuGNoxLgG2MsgUJrEM3vSUWCJzRN3DB4yUKBIvHQXnxw081T597Q5mVmzft+htKXsSxDZWWuUy8
+R84JwPYeB0TOKdZExZPtWXqKgI1XNbhayNuNFcHseU1oK28oKr8i+2gRJXokS+IR8PSNNOp2M5f3
+drTFqBsFsbNl3lliU3jsMZsQPs69HF9Gl1aHiEvUk32gS7lwMwzCUbOff4Y0QfyWdRQ1EWZp3NV9
+g/Y6MLE8atLRbpLpc4MO68M6qMGDqN5i6sxLp07qQ16tAoGYpH+POPae6BF6BsRlhoA4EdP6ABlA
+R+wvxlowmXIOT7Q5vz9lfiwSQnnKtt8hh3GgAH+/fmyWgF/qYqvT5E80UyN5JbyGzpNfrnRzHkzA
+IHvqxv99zOA2PMMZ81EM8FPU2geTGCzZbaonywd/qbd3v88K7rVo2r7o2+JOdj2R12GK3mU8xkKu
+pHmNAtPk2iYpqT6fWgewZiHR4bw+FiRIY2dBGydP/DKvtv9EubGY5ezTPeU+aG8lGrDq5NtlIl9M
+AI2nlqLWcPnUxRZYypgRNOW8sFwzqp6o/OQ5jvHuQbZnPpVzeqWIZMif30NQTSw6W6pw+G+0ZOS9
+euIG352c+/+OA6pN6IHEhdO7OyaXTUJXxylBrod3CG3Ao5WECrFuMAhXxmoQet9mVmCDkGGkv+7f
+Mn+o6Cn0NqWrj2zviye6T/ZZa7tjacmUP1UF11ALzoah413Cjs1oe1NKxpuViPrbY9igtzXizB7h
+i0UAHp1Rsvn2awP8Iw6wNA8RbwaS9ij3gI9XcxPapUPQeSVqM3X2lMD/U+fsh2lBk1GXuncjxLRc
+dcN4BbgMHz8mkhJN4j0OhItQ5XoPh+GopvK/WGaF72bmcRKm9gMBZpH/dK8PFSbDgsfr3U1cy4iu
+uOd9PZa4IRdHZo1t/oX+iEItqMqJk0iK33fZbHvUK+MhDjeYfaN+ES1RT4vLU+dlgP25gzd4psCg
+470/Run6zFA5zGkambJIq6I2pblwYPXfCCVmKOsM721ZWYkoyLZzK0hCKgDp4aVvK0KAjbhbGuGx
+VcAOSlu6jRAHaSvqtEoNPSWCDg814OEBkmGpg/4Bpy1E5k2E6GuBTj8tPUSBc8oDEhpg0rbSiX5P
+Uj7nhZOrDJaDTlVjLlCYJ1HJoEYK2Fy1EcE60i1NTwMAvYPubGwKQsn1RZLo2fAP/V5Pd39sPw61
+xTsMN8ZyjWttzuiJ5KCraS3SHjK3fljwHI6SqLxBSkQGLFhiIEIUlcKWdj9zVg6wrUIZdoNHoJG5
+vxGd4uB1+MC4Y9CBvxtvIAI5lg5UKJVGpqqcUwCd/mMH6dIpfiVxpw2B7FKbjhiFovKXvRZCnL2k
+1EGbaqGJFLbG9xlkeNQi93JGyDRDlexrsN9DbnuPro0a8nphEiv0f0wjUT3T1UAaWlefE0Ic0q7v
+ge7Fxuv11RfuX4ITWdCSUFJhstpMYrz/mDfZe8FDmtMV0vCGrbVkK7+9c3U83f0PVEzbs6JWf7w4
+Eqq/XVYDHB8famkAkc7ha44zSCdvBDRnqQe6byRj/Y8kG0dIMGBGZjbIWt+QEiFmfW2Jt9Z+V8uj
+T8mPZ1W2JH45VLizZkJjdawRoBER4DcvwJ2XPhtdvzwdEemP63jNhjKvNgYt2S9SI5VKqNpHxC47
+TVJ2ZQJxhY2vxgnzFoI200y7SuoaeuzZ6wW3/PPcojK2Jq86dgNVcYKbpSFL6G1LeMwlSGIVyQEn
+3EHXoRqrKZZyKCyHb0Q1gNRwIfzYk6JJkqA2rnZ+6QgzHyWctFLk/8Kh6oOgDeT6Y8gTbpkmplKW
+3lQSC/6CZ82yGMa7MICl1M20FiHctGl/IYNmVwuQDGM/2wzEln0zdCABwFp2WN1aDvlFMS/lA71P
+sO9Gqfb2jL455Pxdy0ATkl9DchbaFWAHLYE7ApN6E7dA/e4KLSpwB7o8fhlxRnFRizEkEixoOfF6
+7ZRpC5zvJJYIsJcTWrE9DClDLfZvZUXuwydVwVvCLceId07NmvhAl620fo6oVeP41gAKVYWXnqN3
+uhEYMbZ9U6N4nGPCcXJ4dDx0hbHwEALjBs222wI0DN5XC4onYt/x9Okrn6CWbsrQ47dMeOPAkONT
+kmY2jgnsxRcOEVp+fK+gMm0EETm7IYNX9ULyHjdMPp2APVS1vLilXIGi3dvMN8GNMTPqqVTE4sON
+OFyVps7UfA/K4m6XmM4dtckY4tdOkbZJfTD1g3zbOYme07u+5OVJ+mR91r519lE3XGrrGfuF5DIF
+vj512YJyHN1d558TLMJQYfMwsMGalrexllXrMjbwlUE++K1OmGfmnf048U5TakzrqjRgiTwPjFcm
+9kxV8iVIjTMD8TEo73eQOlzD64twN02KahnfdKQbpuQuVS3c+kSNn23guSGY2IexQndSCgWsJKNr
+4ht6VgY6cq4p/Q3ZgwFluPHZMmNWCRANtD8bLXatnlxFK8aR1fYYVDn3HXjWiC+kDU0GhciJvMcs
+btK8QnVBx0/cp5Yzla/PpC6/pzQvqwdEYGafiNe0/olVUA2T0gfNaTq2KwhTYGasvctAq8ALNbmV
+P+963m/Pp0Q2LZ9/AIZhZSXGR15aqnkk81jUxQY2cokp3pRUozzE+1BAJUIbmkILoHWlUhhrFSxg
+I6boxL4VlAehm1xQDncLlrGw6eqQ3C5hdlyscdKr6OXKFpZkLG3vabr3lXJmgohux+xftoDF4Nzz
+25TvPdjK/QwTVafgDD7w83XghWC1NaK6n5xRZVA9noC424ZCFe417JWDa1AevJuP/h0eRACQY3b2
+IPiGlhCgBzMEh6t3kekVgAeMB/iNysEbjyKq/pObZ8zVjx2VgUPBuHaRZQoTtkzf8M1EhKx5ETiw
+wmR/c9LOHdvgKcq7yzU5v8TbgpQuZ1NWp9aGvv34ULY4IntgomUntzz9d6IXV0SXHs9xALaulXRW
+B2/CNbjkYBpvQJHEhBdyHBdUXajqlOEI8K4KfdfHUSNxGj/wznDhVqunAxt1HGvkhqD1/5XdxZ83
+/pd2Xs3KWd6XEjLNINlRRB7g3OE74l0qJwhYAW4iDpjYvjFuWhYjD21OoyqWkk+A2ImFtkr9JoZ7
+py6vtPRmeUnBFdS8aU2I9rddS+ZsSwpjkr7YIE8iTooMoC0Dal4ejk+sTlTglTAdi8xwURTFZHYU
+1vVGR+OI9hBFT1PUZuvohw80XTae1B2KqGYZYH1/O3S9OFjaaoRehNOMqvuUeAEQdNBtqZldqlFO
+Wt7qTE+QkX8vbjnU3GQ5plGcD/I8NhvG5yJ5vgDgW0aHfvZN9QyOxCdVHVpFdF6CTV2/PF8obdHI
+SR4LSBtqXu7rwwNmH29Bdd3bfcuP0B2IZR9jJBvymfg5HEHz6wF+sAexSFJdH8Jyz8sHECJLcFKj
+BbYYuaZ5wTsYqO/HhEVkFVlhdSxNdQXVnfDFaqZX2B4q8qTMdJu/iazCwkZL15YvgVtWpQMFsfkV
+eV+yVld4+iOFEt2rufBgtB7Hw809BYsYWdRN+moYaPH76wVia8lOs2ARCAA7WxfyBY8fObrk5pSl
+aGTteOVC2WE/EITyFOat7DpHb7xhkm64FGbOOXq9hILmZ6cOTiCKf41ZE1mAeIZlSe8GX5u4jnVe
+/ENYLVrXHjniJ9xwYYawAz6SZ5uRuoSpwzcM0Jy/GMwqB5xr/vWrZsZZSVQNUi+NdeqpJoGl5A3Y
+sobKiWM2N0A/yfJokTJ2PFIIobMpB2q6GRzPzpwWlgDUrdINwsoQmGGcV/nEPF5oTvqam0/T/wt2
+sid6IglrnCGjc+UOlE5rG5oJR49LyLojaH5OOVsUus9RKf9iKXSAQ1FQLM42rGpEbJaBJ5c1oeUB
+l8mOAq7yMsOuYSCONjTndhtVyZIU8yqRiz9eqoMrHy6XmLlsug1dNB/opqIDvsziyqOg1x4uC2gW
+PSwa73bgu/rnAKUD5r+JTwh0TQ20cvVmX8PkvexJTw080C22XaTGrBCbOz+mpNMXan9lEi6AqWPO
+qCyPtg6uPqa5lFz5jpaMd3CYGqEvfuGBjwf5u0SS+aul9WbHwvubNpwTd4m9rimju5PG1dQqkx9Y
+XScCwYL5OdFSkW+V5oDBJFkZigGwtKkKFWms5CORBwaauZF9P/C2YpY5qBNd8zSuHPI/1Y/I70Du
+ITPIUjikOdxkbMVZG6cDi9IOEcGPQjgC93gjJo93PfWbk9wnCf+Brq3W3kz7KvoVTWkbSe4HfY08
+V0LT6N2u4CBAozADnJrLUfIjntJ/Datb5FzmHyT9xdus8hgiWB8V9hB19Iecz4SPqPaOvHcujUiH
+Y2oxSaV7jBDJ86qIf+djshY7B9g+qmqt06KTzb/0QWwdVfMDfrLnr7991PsUc9MLa4RxQtSV8urN
+uXnkHbTsOw97YBQuvS+n4+Gk8QlS8R7WfaCWMTfMXzjCDyJslhbrTUlZ4ZCWoeaxYbBQxQ1h3UoC
+ChcBgaKXzNLi335EGjiUiNPNuNRhHuWCesZGrYH+umBxJ6F99BQ0HJU+deEzU8bR1Nn2s2vBSOeN
+hZjwqGjMZxRAO9MdtJMF0mLEOKlmtXfgogRtq+Wd9P2L6te6tPXedEaoNSpbihtUrAfnUCTTSGX6
++mRACyziO+eAjF9hRheBL3iT9FjLryxgnk8o0eghpvkoMQ+0VpstMMuUHKDOcQAt4bLbqykRl8oS
+gFI0CZZ1NbaVLWrTSO0cuMS+p5y9efgDpjyhkpODPugFAye5y9XxjgOhLfqV6mkkOEzMXdcFdIz9
+ZJTAlPivoyPqEGTb1IvHKq4toVYR9e3Z8DidqjpKMY+L0dusqicm73jBHv0dVLhdRiez5jL5rkm4
+a8gXF+ArV5eKY8KEQEAVnawu8bsZqtlgvGf1gXFkugZibNV0yDP3H00TMWblFSWk6j//a/OYabT+
+IxV0RGA30BAjqBehX7Glbrn0v+FOQvIe5nceH5/X6OC71umxwNpmhpy7fZE4TEInUZ3EzHkHoIRZ
+v57u/qWZJMcegcmqM5t6AZMT/BwgOkg8jG1QFuwTSbn3YupABZcgyk0Nc3HxArPyE6Tgb8yMB7nt
+tjvH0De4bMWtTBmcd9fs1NfXX+v8q8zi9Io+XpgX4uF7zub2x9rWBcJCHDhg2MZRVahoh+MbbQkg
+PGlvO8qnNeFGMUC9muENHA6H0E3wMg0kNUanj0nkDrAuWiHi3ElmOzEW5EtddEHy+S1O/kuMZRgc
++I6HE+pbqeDEEcm/JjtbartrLqIiRLHlIKCldsHl7QBiH3snoxcbHrClqSpgKflC+fLtw/8zZJjZ
+PgHjSH7lL8Et5Nc4YYT1jig0hELXsf7V7+rmW+AA2bIJijN/d5A5zCwnbVpIozwy2e61nq+vJzv9
+KPM2wwFh3GgJgShE51FNq33rLF2aWuy5m/toZQcYcE1b+IYedsK2BVmpmRLf+xf91sSh0vd6o2Xp
++CsvFr0CdRY5I9xTYlbn0stvmu7te6r1QFA5pj9WWeE236sUk0VJN/PBdvhSm7TvMOjSlOzihhab
+xoZziSeUAi9792/fmo4u/VhqrPWDK2RlClJG6xXA09ZXlKll3i1v/u+Hh1YQuF+fWJI1NV77pXq3
+vJKiROlwt3FgNWfmfVXWp7cv68Ftk+3SAbA5T28sQJ556qffjZqEInpoN4ueY8aCja5r5oRUakO5
+qw22i88PrvYmDRkVc23GY+gGUPC9mt0jL2Oa/LvGzRGS9y36tNTpep9eIiMb8RhDArI5bU+hcWcg
+tSrs9BfpZN4bu4Tfir6XtOQzOBG5zg9ARQI1DBAg6fI0+tUBGgoRBVxwrt26/CaDMExQXVAwuXZu
+FXPFLKlEWB2hVnXdqSZUG+hvUXdUacSI5aL/Aq4byu08j8AfgcQMIFXuNqEtPr5TYISSI96lDYLD
+MKkgT+q3QP6CLkafoj6OmtmY0m82bD+EZqXK7esCp4mWcmZYtlTPIN3TWnVWYBbziYEYTGlWOweh
+dQjVC/dTdoEHg7UzmqHYknTNhzv7WSMiUV2oeUvoK7taPF3O9g8Gr7QrdYXG0zUvm3WoOdxLyUzv
+YzPWtxlgFlvOgjooqaIW0NTJvMgZfkw6DVB2wBl1JLbvi7ngRto9I7OQGQiazAIc506dMi8MUsUB
++XiEDEgjonK26jVDhcgNmZKYzVSzOXIWXhM+GoOvxEW1Zgdnd64NvtpZE/8iZEcy/lfEMhoaIy+0
+A3yftXWC4pi5Fp8eNjTfEIkttD1qU6F7s2/grk7Nbt+RVmb0wY/RlmQGyFO2cvFBBAovRTVlEg15
+OwBlX1ytkJcSc9YphPkv9tkMpDs9K6CxALV5/rILCE2uTlJA50Pnj+4Hmnp/TTk3mmVl5kwRUBmq
+RqKWO7p6SE+H6K011wCAh/F26FfsdVtsYqUOQmf2Xw7cvqxkENt82iZ5S4YhhF4CuNFBcPvdT7cU
+/9GidR8ct2botBnYnTbeXTcmsNwvIhAMXUqjUWwz1kwyT/I5pLaNauQTRvxMJPTPZqQ49UYirK7+
+j4IZfC1cpxekQ+j/yEfOykdg74mXhm0MGw/w8lc/bwsNqM62qe1LGubX0zh5NTsEOdHw2Q3qeaj2
+AW98S/wrXRUqIsFVsqUNQw3qkhToAdrmvaJPcIvELCy/tef70sHxDe2+KD7upV+dG/6+L4nYdPX9
+kS78Ka42VgrwGEuCMLFLB2QAL51E7HcCqEbj26n5misHWbeIjbroR+3RN5CgGBi4/RcQHXwo98o3
+OgZeroeAs8UltSeWibfXjixirIbaBLnZnOIux7hWroiGsgrkudWMGD2O0hYHWjkdoKGJpp3woVrS
+MglKvqVBk0TxgwHm9ewSbZhRwu9YzfIYZTps2oGnMA2RJCYY+QMecH0p8kGPORXXxbRW1MNqvaiK
+BiwkeCvRtB36r3adwh1gEgLTiifUNSrZLqIN0+i4eXcPUz7iZ/AOS1gVQOegyiyH/2bFwMASgNM2
+LNylQDXBQzUUOFCxVkih3Of+KdP3OYSXVjyathSJQca84sHI96Y7eButNcHGjNdUUxe67x87vIJ1
+BznXkuH4gb+Wiw6uHcJbIb6m4lLTJuuIk5M63MPPtngsV+AA6WuuSwdkLbRVUB6QGctptKKWAGEq
+eR+8js14TZugLTIBP/u3ShPLq81y6scS14u4RV4/L0H1Of6duOhMJzKInuBAEbvIRf1vhKw4FbR1
+wqOV73g6GNafi2LX4gc6Nv5frp3qswE84ZDAeWQ32Crbv0PCCgwExSWTcLb0n0rk5UEPqLXRoUig
+YUVpeiwjhOy/B2PkQ7NSnDgpR0R8vfBwyc66UF2m9sgJqn5nQaFv1H4sECM0KR9bb9Arps2rrYuZ
+9a+o8s4fxvXEYb5drJNfE+ETAjBkljmQrUiZbjtuebcuYvAE65YXgccBwHINdZZx4CMIshUsorCl
+fUhJK+q0qeY4hISiFI8dQNyXnGIe4tp7OTjuh5ga8SnE7U54IIi4Qzqd92toNNa+0UCZuXmzpLIL
+nxhgVdfMWX/hAT1ujpidOOel0l3EUub8mtPqaGJhg2ymdgjQBtWbAJqqarAlX8qJXL3Y+Qpf+LWR
+AbDdrGcwz8bBIXWzisIaf3gdfIVJBRbjTFbd20ekeDwNubg0Y1QaC/r8kGSBXfby0KEA+yc+EdRn
+tFpYHsRqqMWMrnkp/FbDlJj2lr5UEQn3wfOq1BRSLgGk1rizmZZ/0gdLvRhz1PHxxkmSlV/dlLhs
+xL32WOnp0anL6z9MK5FZj2N3eOriNUfUL6VYAaGAojh4uCetQ1iPSbG/lCVn05mXB+hR64ca4Hl5
+eh+b2mcntATTE2NpuIkeqNj9NtESWHngwd/w+6GJFWQ4QqhlOnqILmHNvk1HT227KRwSDRD5nl8N
+zi4zv1r0XIyVoLIusXHPElLXUn93txT1Ljdw5YOJ8JtBkgUqEQCY80FY5EH34osCgAOD3qf078Ll
+bcgfkRWPQLx1e2UMMxOokKl9l4ut6taMoiDiFwOueP9Kq1AVb5kGNg+qNq++m6bFGmMRrLaikC12
+Yh0PtAYOyEgzNXWfo8f7RRFWHdvS9dVdc0blxXVI3SVD8udDQhkpgF4OVV1pZXRuhZiWFGeNX7Br
+fjwOktOdzUJWfWIXtdc+nsf7iHAw6Y7kM7y1ndgcdpvdL2B6cOCr0iOXlmyEcoU/tWMcPOk+Fz7M
+Fv82ITDHvFb9clMLx72qL4dI1Eg+4B1kVhLZ+4AQUa4mX8SO5HizoOeskKjoW9kjjjfwe6gDc38w
+OEow8HNjUH6H5LUp2eBTTvviWC2vRqwB4f73gUcEyizIg8QK3vlJCYzyhrXdp22k1ayllKBnWDdW
+Gp6vmuKSu5YW9Igo4e7uN8JbxTJYq2hF8VODtiFIGejuPGlk1l9jkPfNII1mvOe+a/Gw0Lpz4OY5
+fFYrwLUP+D3oqWBgGfcTUV6zWI+NMbVkd0HnNNchg+PLiDTtLJYAm6GKCIKI3P5aFwaGhFPUrUwZ
+g3aCm0fs/PpkxCJxn0M45nQU6NySK2ods/i9AGLaJcCJw/SVY+psV2SOck2LFNWmbEzvlgkxxo9K
+9M8MQkG4XRhV3mQcF/QQOm0oZgvAH4hBpezpdFbg2ONKy9O3e5QspAQEro2n2Yk+R142vIUi82NT
+B8/LULUzl1oAeac5TLVr5hv1dg27zEcTrbU38P1H9Fk/mZ9Sby+0CW8ac2tlPmtpKeXyGwyDHAjE
+ifRubSTmnpV6Tpttn396CpIClaTxc+G7sgXu6bxx/B0I8jIPOM0Fp6XV5AFsaG501am4vBapGV/D
+FhF7RCZB+b5YFRa9auUdTxQAv1LQ5Dsm/UR1k7KMJvCSn+I0ym7KzT2bpNrzqI1umTCD2E3M1Rlf
+vka1Ia8oSbeV5Z5jyPjw8Bb3cjiBtQGwWUy51T7ERx/EHpk5cNQkxvDpSpjq65uhloBqQYYqNmaz
+4Flgq/9ViZ8cp644cxtS8VcsshsObzwi8SdVnXjLCWgYJmIa9PqQp1sEmzc3xWYQY6NufLeFOFyA
+vzF/LNDOWkW+YPl/LYp/BWDZI/tV19U3D6DbhVeKVDS933BUmQpteuId4l9A8bblLs4b+tP630nL
+B4JHBMCwjOwtMQ88nByH1/LFnOU9CwWFe5rI/n1Yxsr8zz0CyH70uNPXqbbVqPF2s1BrPJHb0G1S
+INe0Zeo5EK8wSVFTpJJXQfLrxRFLUSWViASn6fMCuj8KyHYi8Iud7d20a8Uzw5Ts8Xv/6bVB4tVu
+55e5ZQklWC6FvGjBLGp/UNydsC/HRLHeeHz1ChRyrLYMZHO66Er69oiQGPknhh4bfZGg/1JrnYL2
+5hdccQ0I5Ava6DZklFe7Aoi+6eA48895DYacCPm2E5Eoe6sRjKctATWZGAmDZ+6IBmm+EZeBW+/7
+2KzoV4IrJOt5z3Jx4bxeR88O9kgV9nkkdtIl752U9abqBu7OZGgLFq76kWSpiOYiAQ7Evd9vu6Sn
+dg738bXYMXhIGWpypSXAYdmw4x2hhY1YS8zrCZ7ekePOuaAsgW/iiWQO+Gd18U17QOTO5Sri7yPz
+7tZ6Od9Bfdm//8aRxoy1kyidfkFpac8sj9wLXhpV2yljiFVY2GSzNfr3q15YaNq3d4hCmaJsyetF
+Lhj/RSTZk6Mo92cfLV7P1Aq2rrZ2kLH5ZSzAGuS4bc5C4SHPNiawngvPZZ9az2qne354AhJFihpV
+tCdl55TymaMURgVr/XR0NXr961Fr/8dzOOcDYvUNco9a5JHLeks0jBk6plSAsqJ+A0TwUjwMWxKP
+8OJHJfBcxR8IlhpbRpb5T1R7ajUfWFddAYSVZ6IoeLtLkQ0Sws9HVFcBQpGTgaQj0I0077xbbQ2X
+XWRcDW3Vy67oFl4cxWTZ/eKhuIWabKLn+AUAU9VStEJAStxPbNLmIhWJuYXJonR1uBoE+Q1fJohX
+mvLBaTGYfT9VnrJHUHdQ7uuik7t6ysbEnKKVcPSG+wfd0R43FJAYoYn55MEYoMvG9LJsMZ1f22HN
+w3lgESEHHxHQW1RGxC92yQWKCNj/0Yfu5Vj8I3650P3alVhB39Mi0OjQe0XJjZw2+1Tb6uy8iuxq
+HL/Fy7Y22P3mtPDgl6O3ABiL0GfZFNOSStxQGOHRQFe3YOZsXwP0akKQsG6SipyJFh7KLni0o+GT
+tVq6NceEljiCi2B/eJfNjeJKfpVbOlqS5Vhy9w485Rq2Z89sB+NJl4MdqonsJut2mStU7Ue7D+BM
+Tu3rP9NzSKu9/kkljw/vw0V17GPVLnyO+GNpsx2EoFbeRQVmzoMyj5MLR4VEiw85WHgs9SnnQZ2h
+ID9JH6FNE5fWgBkhV6wJmYBG7wLnYFqwKVaZzWWFc8DxIzWDyccumRkXYBLgbNDTz9JkbSWZEFzG
+/ARdsL3OcQANaPBP/Nv3D4YV2MG7nH0+n/549K968tmT/jaoyITaFVYF+UqrL9ibtJ+w52enGlw+
+BxVXsiW9INbw73WKGpsC7PNgwcftPVl4fRES9fIzmDBha2pAXKnLM/+ORpOU/qxHsRpjHoQOZomg
+MLMU34SAPTUJ07a0Kk+mAkxTg6wd7hEUgMXDNVLbZcGTXxmcjWmW/CzVdhAoUGJpX/SdJC/s1YWv
+GoYcWtB50CtdgY+R3MjaJbZlybs9NGfyPkDZba60rPgll3JJI0r1KWY4V6WHdiIgLRKha+w1QgWN
+Zo/hPKm5MMYHRh16LZ1J6swaU7/oS10c2JHk4Wz6uko0+YIgrmJwn1of1BA7mvSSmoJxbksXtlgc
+B97gB//7OkLHqUKI9g6/QyI8plmQQDZhmlQa2yD0b5HKMIKP2pv4zKcbDaoblMr32D+3J8M0Ds/S
+ki44FyaFdwHa7x1Rf6614GNY8d00zMrslNycmbftbCMLHOnRp2zp4mnR1jN3fYHWIIvFbIJIjERb
+vc8c8NEoFG2hyyXZ2QTUh2UJXqdDR/an4KoqK4EfHZRZ+NIqMECXORgMiz1EmLCTRY8NdjmaIQgl
+/0HB0CmhQeNXUmTAOjjYe6/Lczcw+hWAHXPsM5kwj+F2Z7qMqeIS/ydKsjD7Qn1v2LEInI6gA257
+qoVNXGEKctyHMgiqNf9lApdlc0krQ/3xIVXdjiYpmXYFPJ489yvT8I9RnTZBrWX3vGgBERjG8XMY
+Hkt/sq9Mh75Stfmk9wlJAOHumFtC5lj8Ns8SjDAYQUdAtn5V0OeYJUhOJWr/OyWpJ+09vZq9/Rzz
+NP/C3T1mwyEYd1JuaEW0Z5wgWb1rb7TYAROkCRvFdsIh6BXuc+1i35qHjePxkHdRVNdTuxyaabyd
+y2FT0ozJ4yeGuCmHlntMGBL7mARHHfnFziyHgnniNkxvl2OaCcZe+wXFGTcBjN/5rjlH1WQ9+kgK
+NOrkLNzUdQKfZcHK02vC0kJDuKs9C+XhgQs02eELJOjrtUbBMNUOpBZ1dSHGZ28Pa42rZJMALqjw
+Boh85vza5Dw0FOkMo6sBYmI7Uo02o4mn+yLgO/WAsBrfWeGzuPE51jB1q895YKS66Eq2QTw51v3J
+JZ63JhqAqw65agrm+PRvwuD87n+WtIc7Rz2zv344s5rINgG0lW8LfoQOZKSarlMK17uFdmCw40RV
++o5YtfF1DMTmmqlGeBsQKMC6GSs0TTZGWzqbnoun+wSr4kggINXqqgvW4PuvA2FYutohCLJCJA+y
+TrqficztBsbIQu+U1bmrSSCoGdf6ECVpd++hzlRX9UaEXCTZj43DDvMtwisdPi4X8UiRSqhskY1w
+/vje8jf+i5rWw63rMQbSvG+K8TFrXHPAo8IDv6HZpCiPwmhKFjZRHeiaveCppl9m0FhvpysOCFTh
+ka4gc/5/7Q6FV2dW20xdxnpAsfQUnBJSZSRRXfBu6+dba/SUaZXKDdSbk0tSm4/3HeRu4KxnhMDS
+NKPc94vfpuSPYcQEEnobMzhxxJH6+01yVJxq7inwnurlTQMmTZinK5WxQdclDEp+axQpydk6q7RU
+pfZyVNoC8EnActiqgvkVkSJk5ZgI8/k3iEnZwj3JIWVPDORJkPmz2Q5Yu2KBjYabm/8nDPOYX6yZ
+d6LkizOJuPr1jfA7uidE+XCQS2UaU4XlUP/+6PSlWcGBtiX+RNNfkD5ccUY47scSWY8EhDWPiIID
+w6j7XvbMmzUwoxpOUAi6iTQo13arZK6wE3hnue5kW8Unz6S/pTpThLxcWkpqQ+4DSGbnMQbT7U8U
+iZHPiP3v5+voaX9CAnY1pnmjUXCOzvTzH+N5jRiZsLR/DN0RDY7lM1JC+CVV6L3/K/Af5gsMqR1a
+NPrk4L5FYUQj0WaZNfxgfsXoPtvzHrbnfPSGDdE/Pgcelbk7U44AhAggcMG5a7m9fr3rQravQmy6
+zsecl/s5OZSbmIjvgZgeNCh8BLue1Pa8ibe+cIGpvrXOs4l1dHG1Qf+yq3dO/GsjqnYGoTowRSyc
+THuC0Tc2OG7KXeHwtu9oLIhQ07skodTVXlmX/FZIY7MOOP+q1qngDzgNU5rwSJUFnPqKAvuxvk/d
+cu8Tu8HvW+2vq15DZXJ+Rr1LxklKelTrFLiq1a9Z6zpnbE087LBg4AdXF+vvPHqFWHWKkRsWzLng
+Wr9aP3+wleN80tJrfyG+lNyHef2f1JuAwJdqkNJ1wGlrXzLer29TpH0ZZgy3FjXTYBHMGRwyEHph
+fQlDqmg9ckeW1oA4wW43TcCjWTOZkxq+sTsj2q2GTb/MK0a3hQ+WW6O+uCkHhAtiG87729rWYdpD
+VJFSfCFXy5k9q1t5Luv3rN3jv660RgqeVnjE+nB/JkDDtx9D5/+hLQG5TokLLX/wmKui9DZnULif
+MS5Ct0vRl+3FzesPRlfiO/ti0wlpdow4wh47JRinnOK0UZflUuzGcItKPVa2+jSZ6nAY55B1kZb7
+oaJWYSe4WQXaWCA6j1Rhw5wI2QhR1M+gvKrBEQemHCQK7oorrirgSEtsl/ZzpIosBz+YfANZl/k1
+Tt4C1s7vq2WBxoSuPmlqAXIpc3s7KV6RA/kb3WZeyrIN9KsgU79iIsP0YVa1uMz7zWmCh1dx49/I
+JOEAQY5YGcPjpYaP/7T3FTiMV+lEV6TjTQjZGwnfFyYW2C8PD5cAnpUEiJDGJyXw/1bTgmqu2STx
+hPpZV9LVycqhYkxHIrh1mnFNBstH5V/vJq7bCFokLBNkODzrti5s3w1/VFSCkzNlr0RmYYWfWFKr
+OJQ9S6BoH1xIKrS4YgESFO9CEuR/0xPyTmhdmqG0x4egCHfTynvHTLnmMHyZ2eGdyVEpZNKTNwHo
+zSq4qpAeCw1zr/glpsK8BvUKbkhiQ5+5Lo2cabaipuFHjE6J+uER8eVLmscgw5sbVyjh+N11rGQ3
+/1LyiILyoLfAnuCqXkwOWNzb3krCvknxqZjwFMq95GH1KkE7DBkokuav2Wpn7URrBiYysI6MiD34
+UgDBwbjLSnHhv+6AKy/MNFjKsn9gMVqptKcsz0O/Xh6jrWl7CM2BbQyjdLDGsWWpP8oXGD+OBejT
+7N5PMROTf771rAVSYdIgKedj8lnQwe1k6ZbWiHcQom/cmFOhDDSlxfOt8X9WqWs04mQlX2txTn54
+fkUN7bcAmBAWhbo8Pyrazuemsa+WEmvJ8XcQb3yL4iEbplkWxpOOmJr8vOVnswJwnzVyHOgiBqAU
+XHP1XqrG6Aj2Fmafqzo2avLTFwYS3Yea++As0+ixmzaDa415OH/2R9RhcFIyf0TwSG6ZtHhIPgjg
+pe3ADjsYytBNnrmnxUtsJ2fzstFPlLTSscjLaqcqjjwDBo+VhzTisDaP4rVMrreC8z4s02tR9Rt3
+0RlvIFhnBdgk8cd3k6YYyyaMvUob/rws4XG=

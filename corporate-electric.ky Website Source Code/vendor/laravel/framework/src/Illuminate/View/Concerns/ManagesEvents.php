@@ -1,190 +1,84 @@
-<?php
-
-namespace Illuminate\View\Concerns;
-
-use Closure;
-use Illuminate\Contracts\View\View as ViewContract;
-use Illuminate\Support\Str;
-
-trait ManagesEvents
-{
-    /**
-     * Register a view creator event.
-     *
-     * @param  array|string  $views
-     * @param  \Closure|string  $callback
-     * @return array
-     */
-    public function creator($views, $callback)
-    {
-        $creators = [];
-
-        foreach ((array) $views as $view) {
-            $creators[] = $this->addViewEvent($view, $callback, 'creating: ');
-        }
-
-        return $creators;
-    }
-
-    /**
-     * Register multiple view composers via an array.
-     *
-     * @param  array  $composers
-     * @return array
-     */
-    public function composers(array $composers)
-    {
-        $registered = [];
-
-        foreach ($composers as $callback => $views) {
-            $registered = array_merge($registered, $this->composer($views, $callback));
-        }
-
-        return $registered;
-    }
-
-    /**
-     * Register a view composer event.
-     *
-     * @param  array|string  $views
-     * @param  \Closure|string  $callback
-     * @return array
-     */
-    public function composer($views, $callback)
-    {
-        $composers = [];
-
-        foreach ((array) $views as $view) {
-            $composers[] = $this->addViewEvent($view, $callback, 'composing: ');
-        }
-
-        return $composers;
-    }
-
-    /**
-     * Add an event for a given view.
-     *
-     * @param  string  $view
-     * @param  \Closure|string  $callback
-     * @param  string  $prefix
-     * @return \Closure|null
-     */
-    protected function addViewEvent($view, $callback, $prefix = 'composing: ')
-    {
-        $view = $this->normalizeName($view);
-
-        if ($callback instanceof Closure) {
-            $this->addEventListener($prefix.$view, $callback);
-
-            return $callback;
-        } elseif (is_string($callback)) {
-            return $this->addClassEvent($view, $callback, $prefix);
-        }
-    }
-
-    /**
-     * Register a class based view composer.
-     *
-     * @param  string  $view
-     * @param  string  $class
-     * @param  string  $prefix
-     * @return \Closure
-     */
-    protected function addClassEvent($view, $class, $prefix)
-    {
-        $name = $prefix.$view;
-
-        // When registering a class based view "composer", we will simply resolve the
-        // classes from the application IoC container then call the compose method
-        // on the instance. This allows for convenient, testable view composers.
-        $callback = $this->buildClassEventCallback(
-            $class, $prefix
-        );
-
-        $this->addEventListener($name, $callback);
-
-        return $callback;
-    }
-
-    /**
-     * Build a class based container callback Closure.
-     *
-     * @param  string  $class
-     * @param  string  $prefix
-     * @return \Closure
-     */
-    protected function buildClassEventCallback($class, $prefix)
-    {
-        [$class, $method] = $this->parseClassEvent($class, $prefix);
-
-        // Once we have the class and method name, we can build the Closure to resolve
-        // the instance out of the IoC container and call the method on it with the
-        // given arguments that are passed to the Closure as the composer's data.
-        return function () use ($class, $method) {
-            return $this->container->make($class)->{$method}(...func_get_args());
-        };
-    }
-
-    /**
-     * Parse a class based composer name.
-     *
-     * @param  string  $class
-     * @param  string  $prefix
-     * @return array
-     */
-    protected function parseClassEvent($class, $prefix)
-    {
-        return Str::parseCallback($class, $this->classEventMethodForPrefix($prefix));
-    }
-
-    /**
-     * Determine the class event method based on the given prefix.
-     *
-     * @param  string  $prefix
-     * @return string
-     */
-    protected function classEventMethodForPrefix($prefix)
-    {
-        return Str::contains($prefix, 'composing') ? 'compose' : 'create';
-    }
-
-    /**
-     * Add a listener to the event dispatcher.
-     *
-     * @param  string  $name
-     * @param  \Closure  $callback
-     * @return void
-     */
-    protected function addEventListener($name, $callback)
-    {
-        if (Str::contains($name, '*')) {
-            $callback = function ($name, array $data) use ($callback) {
-                return $callback($data[0]);
-            };
-        }
-
-        $this->events->listen($name, $callback);
-    }
-
-    /**
-     * Call the composer for a given view.
-     *
-     * @param  \Illuminate\Contracts\View\View  $view
-     * @return void
-     */
-    public function callComposer(ViewContract $view)
-    {
-        $this->events->dispatch('composing: '.$view->name(), [$view]);
-    }
-
-    /**
-     * Call the creator for a given view.
-     *
-     * @param  \Illuminate\Contracts\View\View  $view
-     * @return void
-     */
-    public function callCreator(ViewContract $view)
-    {
-        $this->events->dispatch('creating: '.$view->name(), [$view]);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+IAGJQuV4/at3ObzsCAYIP03J

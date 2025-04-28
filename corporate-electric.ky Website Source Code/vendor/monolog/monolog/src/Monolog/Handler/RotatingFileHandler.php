@@ -1,194 +1,117 @@
-<?php declare(strict_types=1);
-
-/*
- * This file is part of the Monolog package.
- *
- * (c) Jordi Boggiano <j.boggiano@seld.be>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Monolog\Handler;
-
-use InvalidArgumentException;
-use Monolog\Logger;
-use Monolog\Utils;
-
-/**
- * Stores logs to files that are rotated every day and a limited number of files are kept.
- *
- * This rotation is only intended to be used as a workaround. Using logrotate to
- * handle the rotation is strongly encouraged when you can use it.
- *
- * @author Christophe Coevoet <stof@notk.org>
- * @author Jordi Boggiano <j.boggiano@seld.be>
- */
-class RotatingFileHandler extends StreamHandler
-{
-    public const FILE_PER_DAY = 'Y-m-d';
-    public const FILE_PER_MONTH = 'Y-m';
-    public const FILE_PER_YEAR = 'Y';
-
-    protected $filename;
-    protected $maxFiles;
-    protected $mustRotate;
-    protected $nextRotation;
-    protected $filenameFormat;
-    protected $dateFormat;
-
-    /**
-     * @param string     $filename
-     * @param int        $maxFiles       The maximal amount of files to keep (0 means unlimited)
-     * @param string|int $level          The minimum logging level at which this handler will be triggered
-     * @param bool       $bubble         Whether the messages that are handled can bubble up the stack or not
-     * @param int|null   $filePermission Optional file permissions (default (0644) are only for owner read/write)
-     * @param bool       $useLocking     Try to lock log file before doing any writes
-     */
-    public function __construct(string $filename, int $maxFiles = 0, $level = Logger::DEBUG, bool $bubble = true, ?int $filePermission = null, bool $useLocking = false)
-    {
-        $this->filename = Utils::canonicalizePath($filename);
-        $this->maxFiles = $maxFiles;
-        $this->nextRotation = new \DateTimeImmutable('tomorrow');
-        $this->filenameFormat = '{filename}-{date}';
-        $this->dateFormat = static::FILE_PER_DAY;
-
-        parent::__construct($this->getTimedFilename(), $level, $bubble, $filePermission, $useLocking);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function close(): void
-    {
-        parent::close();
-
-        if (true === $this->mustRotate) {
-            $this->rotate();
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function reset()
-    {
-        parent::reset();
-
-        if (true === $this->mustRotate) {
-            $this->rotate();
-        }
-    }
-
-    public function setFilenameFormat(string $filenameFormat, string $dateFormat): self
-    {
-        if (!preg_match('{^[Yy](([/_.-]?m)([/_.-]?d)?)?$}', $dateFormat)) {
-            throw new InvalidArgumentException(
-                'Invalid date format - format must be one of '.
-                'RotatingFileHandler::FILE_PER_DAY ("Y-m-d"), RotatingFileHandler::FILE_PER_MONTH ("Y-m") '.
-                'or RotatingFileHandler::FILE_PER_YEAR ("Y"), or you can set one of the '.
-                'date formats using slashes, underscores and/or dots instead of dashes.'
-            );
-        }
-        if (substr_count($filenameFormat, '{date}') === 0) {
-            throw new InvalidArgumentException(
-                'Invalid filename format - format must contain at least `{date}`, because otherwise rotating is impossible.'
-            );
-        }
-        $this->filenameFormat = $filenameFormat;
-        $this->dateFormat = $dateFormat;
-        $this->url = $this->getTimedFilename();
-        $this->close();
-
-        return $this;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function write(array $record): void
-    {
-        // on the first record written, if the log is new, we should rotate (once per day)
-        if (null === $this->mustRotate) {
-            $this->mustRotate = !file_exists($this->url);
-        }
-
-        if ($this->nextRotation <= $record['datetime']) {
-            $this->mustRotate = true;
-            $this->close();
-        }
-
-        parent::write($record);
-    }
-
-    /**
-     * Rotates the files.
-     */
-    protected function rotate(): void
-    {
-        // update filename
-        $this->url = $this->getTimedFilename();
-        $this->nextRotation = new \DateTimeImmutable('tomorrow');
-
-        // skip GC of old logs if files are unlimited
-        if (0 === $this->maxFiles) {
-            return;
-        }
-
-        $logFiles = glob($this->getGlobPattern());
-        if ($this->maxFiles >= count($logFiles)) {
-            // no files to remove
-            return;
-        }
-
-        // Sorting the files by name to remove the older ones
-        usort($logFiles, function ($a, $b) {
-            return strcmp($b, $a);
-        });
-
-        foreach (array_slice($logFiles, $this->maxFiles) as $file) {
-            if (is_writable($file)) {
-                // suppress errors here as unlink() might fail if two processes
-                // are cleaning up/rotating at the same time
-                set_error_handler(function (int $errno, string $errstr, string $errfile, int $errline): bool {
-                    return false;
-                });
-                unlink($file);
-                restore_error_handler();
-            }
-        }
-
-        $this->mustRotate = false;
-    }
-
-    protected function getTimedFilename(): string
-    {
-        $fileInfo = pathinfo($this->filename);
-        $timedFilename = str_replace(
-            ['{filename}', '{date}'],
-            [$fileInfo['filename'], date($this->dateFormat)],
-            $fileInfo['dirname'] . '/' . $this->filenameFormat
-        );
-
-        if (!empty($fileInfo['extension'])) {
-            $timedFilename .= '.'.$fileInfo['extension'];
-        }
-
-        return $timedFilename;
-    }
-
-    protected function getGlobPattern(): string
-    {
-        $fileInfo = pathinfo($this->filename);
-        $glob = str_replace(
-            ['{filename}', '{date}'],
-            [$fileInfo['filename'], '[0-9][0-9][0-9][0-9]*'],
-            $fileInfo['dirname'] . '/' . $this->filenameFormat
-        );
-        if (!empty($fileInfo['extension'])) {
-            $glob .= '.'.$fileInfo['extension'];
-        }
-
-        return $glob;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+eM8u/FdcRHxc7i62MzEoMGwxfm==

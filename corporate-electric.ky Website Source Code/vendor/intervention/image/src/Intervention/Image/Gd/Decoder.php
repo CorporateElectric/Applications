@@ -1,155 +1,97 @@
-<?php
-
-namespace Intervention\Image\Gd;
-
-use Intervention\Image\Exception\NotReadableException;
-use Intervention\Image\Exception\NotSupportedException;
-use Intervention\Image\Image;
-
-class Decoder extends \Intervention\Image\AbstractDecoder
-{
-    /**
-     * Initiates new image from path in filesystem
-     *
-     * @param  string $path
-     * @return \Intervention\Image\Image
-     */
-    public function initFromPath($path)
-    {
-        if ( ! file_exists($path)) {
-            throw new NotReadableException(
-                "Unable to find file ({$path})."
-            );
-        }
-
-        // get mime type of file
-        $mime = finfo_file(finfo_open(FILEINFO_MIME_TYPE), $path);
-
-        // define core
-        switch (strtolower($mime)) {
-            case 'image/png':
-            case 'image/x-png':
-                $core = @imagecreatefrompng($path);
-                break;
-
-            case 'image/jpg':
-            case 'image/jpeg':
-            case 'image/pjpeg':
-                $core = @imagecreatefromjpeg($path);
-                if (!$core) {
-                    $core= @imagecreatefromstring(file_get_contents($path));
-                }
-                break;
-
-            case 'image/gif':
-                $core = @imagecreatefromgif($path);
-                break;
-
-            case 'image/webp':
-            case 'image/x-webp':
-                if ( ! function_exists('imagecreatefromwebp')) {
-                    throw new NotReadableException(
-                        "Unsupported image type. GD/PHP installation does not support WebP format."
-                    );
-                }
-                $core = @imagecreatefromwebp($path);
-                break;
-
-            default:
-                throw new NotReadableException(
-                    "Unsupported image type. GD driver is only able to decode JPG, PNG, GIF or WebP files."
-                );
-        }
-
-        if (empty($core)) {
-            throw new NotReadableException(
-                "Unable to decode image from file ({$path})."
-            );
-        }
-
-        $this->gdResourceToTruecolor($core);
-
-        // build image
-        $image = $this->initFromGdResource($core);
-        $image->mime = $mime;
-        $image->setFileInfoFromPath($path);
-
-        return $image;
-    }
-
-    /**
-     * Initiates new image from GD resource
-     *
-     * @param  Resource $resource
-     * @return \Intervention\Image\Image
-     */
-    public function initFromGdResource($resource)
-    {
-        return new Image(new Driver, $resource);
-    }
-
-    /**
-     * Initiates new image from Imagick object
-     *
-     * @param  Imagick $object
-     * @return \Intervention\Image\Image
-     */
-    public function initFromImagick(\Imagick $object)
-    {
-        throw new NotSupportedException(
-            "Gd driver is unable to init from Imagick object."
-        );
-    }
-
-    /**
-     * Initiates new image from binary data
-     *
-     * @param  string $data
-     * @return \Intervention\Image\Image
-     */
-    public function initFromBinary($binary)
-    {
-        $resource = @imagecreatefromstring($binary);
-
-        if ($resource === false) {
-             throw new NotReadableException(
-                "Unable to init from given binary data."
-            );
-        }
-
-        $image = $this->initFromGdResource($resource);
-        $image->mime = finfo_buffer(finfo_open(FILEINFO_MIME_TYPE), $binary);
-
-        return $image;
-    }
-
-    /**
-     * Transform GD resource into Truecolor version
-     *
-     * @param  resource $resource
-     * @return bool
-     */
-    public function gdResourceToTruecolor(&$resource)
-    {
-        $width = imagesx($resource);
-        $height = imagesy($resource);
-
-        // new canvas
-        $canvas = imagecreatetruecolor($width, $height);
-
-        // fill with transparent color
-        imagealphablending($canvas, false);
-        $transparent = imagecolorallocatealpha($canvas, 255, 255, 255, 127);
-        imagefilledrectangle($canvas, 0, 0, $width, $height, $transparent);
-        imagecolortransparent($canvas, $transparent);
-        imagealphablending($canvas, true);
-
-        // copy original
-        imagecopy($canvas, $resource, 0, 0, 0, 0, $width, $height);
-        imagedestroy($resource);
-
-        $resource = $canvas;
-
-        return true;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

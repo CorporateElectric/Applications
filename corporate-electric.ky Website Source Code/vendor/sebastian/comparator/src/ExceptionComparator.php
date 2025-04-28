@@ -1,54 +1,32 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of sebastian/comparator.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\Comparator;
-
-use Exception;
-
-/**
- * Compares Exception instances for equality.
- */
-class ExceptionComparator extends ObjectComparator
-{
-    /**
-     * Returns whether the comparator can compare two values.
-     *
-     * @param mixed $expected The first value to compare
-     * @param mixed $actual   The second value to compare
-     *
-     * @return bool
-     */
-    public function accepts($expected, $actual)
-    {
-        return $expected instanceof Exception && $actual instanceof Exception;
-    }
-
-    /**
-     * Converts an object to an array containing all of its private, protected
-     * and public properties.
-     *
-     * @param object $object
-     *
-     * @return array
-     */
-    protected function toArray($object)
-    {
-        $array = parent::toArray($object);
-
-        unset(
-            $array['file'],
-            $array['line'],
-            $array['trace'],
-            $array['string'],
-            $array['xdebug_message']
-        );
-
-        return $array;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

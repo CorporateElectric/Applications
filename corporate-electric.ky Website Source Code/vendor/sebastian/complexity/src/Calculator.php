@@ -1,88 +1,53 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of sebastian/complexity.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\Complexity;
-
-use PhpParser\Error;
-use PhpParser\Lexer;
-use PhpParser\Node;
-use PhpParser\NodeTraverser;
-use PhpParser\NodeVisitor\NameResolver;
-use PhpParser\NodeVisitor\ParentConnectingVisitor;
-use PhpParser\Parser;
-use PhpParser\ParserFactory;
-
-final class Calculator
-{
-    /**
-     * @throws RuntimeException
-     */
-    public function calculateForSourceFile(string $sourceFile): ComplexityCollection
-    {
-        return $this->calculateForSourceString(file_get_contents($sourceFile));
-    }
-
-    /**
-     * @throws RuntimeException
-     */
-    public function calculateForSourceString(string $source): ComplexityCollection
-    {
-        try {
-            $nodes = $this->parser()->parse($source);
-
-            assert($nodes !== null);
-
-            return $this->calculateForAbstractSyntaxTree($nodes);
-
-            // @codeCoverageIgnoreStart
-        } catch (Error $error) {
-            throw new RuntimeException(
-                $error->getMessage(),
-                (int) $error->getCode(),
-                $error
-            );
-        }
-        // @codeCoverageIgnoreEnd
-    }
-
-    /**
-     * @param Node[] $nodes
-     *
-     * @throws RuntimeException
-     */
-    public function calculateForAbstractSyntaxTree(array $nodes): ComplexityCollection
-    {
-        $traverser                    = new NodeTraverser;
-        $complexityCalculatingVisitor = new ComplexityCalculatingVisitor(true);
-
-        $traverser->addVisitor(new NameResolver);
-        $traverser->addVisitor(new ParentConnectingVisitor);
-        $traverser->addVisitor($complexityCalculatingVisitor);
-
-        try {
-            /* @noinspection UnusedFunctionResultInspection */
-            $traverser->traverse($nodes);
-            // @codeCoverageIgnoreStart
-        } catch (Error $error) {
-            throw new RuntimeException(
-                $error->getMessage(),
-                (int) $error->getCode(),
-                $error
-            );
-        }
-        // @codeCoverageIgnoreEnd
-
-        return $complexityCalculatingVisitor->result();
-    }
-
-    private function parser(): Parser
-    {
-        return (new ParserFactory)->create(ParserFactory::PREFER_PHP7, new Lexer);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

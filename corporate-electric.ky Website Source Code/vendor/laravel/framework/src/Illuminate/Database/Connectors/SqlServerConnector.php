@@ -1,205 +1,106 @@
-<?php
-
-namespace Illuminate\Database\Connectors;
-
-use Illuminate\Support\Arr;
-use PDO;
-
-class SqlServerConnector extends Connector implements ConnectorInterface
-{
-    /**
-     * The PDO connection options.
-     *
-     * @var array
-     */
-    protected $options = [
-        PDO::ATTR_CASE => PDO::CASE_NATURAL,
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_ORACLE_NULLS => PDO::NULL_NATURAL,
-        PDO::ATTR_STRINGIFY_FETCHES => false,
-    ];
-
-    /**
-     * Establish a database connection.
-     *
-     * @param  array  $config
-     * @return \PDO
-     */
-    public function connect(array $config)
-    {
-        $options = $this->getOptions($config);
-
-        return $this->createConnection($this->getDsn($config), $config, $options);
-    }
-
-    /**
-     * Create a DSN string from a configuration.
-     *
-     * @param  array  $config
-     * @return string
-     */
-    protected function getDsn(array $config)
-    {
-        // First we will create the basic DSN setup as well as the port if it is in
-        // in the configuration options. This will give us the basic DSN we will
-        // need to establish the PDO connections and return them back for use.
-        if ($this->prefersOdbc($config)) {
-            return $this->getOdbcDsn($config);
-        }
-
-        if (in_array('sqlsrv', $this->getAvailableDrivers())) {
-            return $this->getSqlSrvDsn($config);
-        } else {
-            return $this->getDblibDsn($config);
-        }
-    }
-
-    /**
-     * Determine if the database configuration prefers ODBC.
-     *
-     * @param  array  $config
-     * @return bool
-     */
-    protected function prefersOdbc(array $config)
-    {
-        return in_array('odbc', $this->getAvailableDrivers()) &&
-               ($config['odbc'] ?? null) === true;
-    }
-
-    /**
-     * Get the DSN string for a DbLib connection.
-     *
-     * @param  array  $config
-     * @return string
-     */
-    protected function getDblibDsn(array $config)
-    {
-        return $this->buildConnectString('dblib', array_merge([
-            'host' => $this->buildHostString($config, ':'),
-            'dbname' => $config['database'],
-        ], Arr::only($config, ['appname', 'charset', 'version'])));
-    }
-
-    /**
-     * Get the DSN string for an ODBC connection.
-     *
-     * @param  array  $config
-     * @return string
-     */
-    protected function getOdbcDsn(array $config)
-    {
-        return isset($config['odbc_datasource_name'])
-                    ? 'odbc:'.$config['odbc_datasource_name'] : '';
-    }
-
-    /**
-     * Get the DSN string for a SqlSrv connection.
-     *
-     * @param  array  $config
-     * @return string
-     */
-    protected function getSqlSrvDsn(array $config)
-    {
-        $arguments = [
-            'Server' => $this->buildHostString($config, ','),
-        ];
-
-        if (isset($config['database'])) {
-            $arguments['Database'] = $config['database'];
-        }
-
-        if (isset($config['readonly'])) {
-            $arguments['ApplicationIntent'] = 'ReadOnly';
-        }
-
-        if (isset($config['pooling']) && $config['pooling'] === false) {
-            $arguments['ConnectionPooling'] = '0';
-        }
-
-        if (isset($config['appname'])) {
-            $arguments['APP'] = $config['appname'];
-        }
-
-        if (isset($config['encrypt'])) {
-            $arguments['Encrypt'] = $config['encrypt'];
-        }
-
-        if (isset($config['trust_server_certificate'])) {
-            $arguments['TrustServerCertificate'] = $config['trust_server_certificate'];
-        }
-
-        if (isset($config['multiple_active_result_sets']) && $config['multiple_active_result_sets'] === false) {
-            $arguments['MultipleActiveResultSets'] = 'false';
-        }
-
-        if (isset($config['transaction_isolation'])) {
-            $arguments['TransactionIsolation'] = $config['transaction_isolation'];
-        }
-
-        if (isset($config['multi_subnet_failover'])) {
-            $arguments['MultiSubnetFailover'] = $config['multi_subnet_failover'];
-        }
-
-        if (isset($config['column_encryption'])) {
-            $arguments['ColumnEncryption'] = $config['column_encryption'];
-        }
-
-        if (isset($config['key_store_authentication'])) {
-            $arguments['KeyStoreAuthentication'] = $config['key_store_authentication'];
-        }
-
-        if (isset($config['key_store_principal_id'])) {
-            $arguments['KeyStorePrincipalId'] = $config['key_store_principal_id'];
-        }
-
-        if (isset($config['key_store_secret'])) {
-            $arguments['KeyStoreSecret'] = $config['key_store_secret'];
-        }
-
-        if (isset($config['login_timeout'])) {
-            $arguments['LoginTimeout'] = $config['login_timeout'];
-        }
-
-        return $this->buildConnectString('sqlsrv', $arguments);
-    }
-
-    /**
-     * Build a connection string from the given arguments.
-     *
-     * @param  string  $driver
-     * @param  array  $arguments
-     * @return string
-     */
-    protected function buildConnectString($driver, array $arguments)
-    {
-        return $driver.':'.implode(';', array_map(function ($key) use ($arguments) {
-            return sprintf('%s=%s', $key, $arguments[$key]);
-        }, array_keys($arguments)));
-    }
-
-    /**
-     * Build a host string from the given configuration.
-     *
-     * @param  array  $config
-     * @param  string  $separator
-     * @return string
-     */
-    protected function buildHostString(array $config, $separator)
-    {
-        if (empty($config['port'])) {
-            return $config['host'];
-        }
-
-        return $config['host'].$separator.$config['port'];
-    }
-
-    /**
-     * Get the available PDO drivers.
-     *
-     * @return array
-     */
-    protected function getAvailableDrivers()
-    {
-        return PDO::getAvailableDrivers();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+/FBh06G6zOy0OAHV0B6q

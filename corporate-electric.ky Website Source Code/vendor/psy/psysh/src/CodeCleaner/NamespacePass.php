@@ -1,88 +1,44 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\CodeCleaner;
-
-use PhpParser\Node\Name;
-use PhpParser\Node\Stmt\Namespace_;
-use Psy\CodeCleaner;
-
-/**
- * Provide implicit namespaces for subsequent execution.
- *
- * The namespace pass remembers the last standalone namespace line encountered:
- *
- *     namespace Foo\Bar;
- *
- * ... which it then applies implicitly to all future evaluated code, until the
- * namespace is replaced by another namespace. To reset to the top level
- * namespace, enter `namespace {}`. This is a bit ugly, but it does the trick :)
- */
-class NamespacePass extends CodeCleanerPass
-{
-    private $namespace = null;
-    private $cleaner;
-
-    /**
-     * @param CodeCleaner $cleaner
-     */
-    public function __construct(CodeCleaner $cleaner)
-    {
-        $this->cleaner = $cleaner;
-    }
-
-    /**
-     * If this is a standalone namespace line, remember it for later.
-     *
-     * Otherwise, apply remembered namespaces to the code until a new namespace
-     * is encountered.
-     *
-     * @param array $nodes
-     */
-    public function beforeTraverse(array $nodes)
-    {
-        if (empty($nodes)) {
-            return $nodes;
-        }
-
-        $last = \end($nodes);
-
-        if ($last instanceof Namespace_) {
-            $kind = $last->getAttribute('kind');
-
-            // Treat all namespace statements pre-PHP-Parser v3.1.2 as "open",
-            // even though we really have no way of knowing.
-            if ($kind === null || $kind === Namespace_::KIND_SEMICOLON) {
-                // Save the current namespace for open namespaces
-                $this->setNamespace($last->name);
-            } else {
-                // Clear the current namespace after a braced namespace
-                $this->setNamespace(null);
-            }
-
-            return $nodes;
-        }
-
-        return $this->namespace ? [new Namespace_($this->namespace, $nodes)] : $nodes;
-    }
-
-    /**
-     * Remember the namespace and (re)set the namespace on the CodeCleaner as
-     * well.
-     *
-     * @param Name|null $namespace
-     */
-    private function setNamespace($namespace)
-    {
-        $this->namespace = $namespace;
-        $this->cleaner->setNamespace($namespace === null ? null : $namespace->parts);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

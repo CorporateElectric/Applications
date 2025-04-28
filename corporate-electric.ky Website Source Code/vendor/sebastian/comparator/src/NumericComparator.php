@@ -1,86 +1,54 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of sebastian/comparator.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\Comparator;
-
-use function abs;
-use function is_float;
-use function is_infinite;
-use function is_nan;
-use function is_numeric;
-use function is_string;
-use function sprintf;
-
-/**
- * Compares numerical values for equality.
- */
-class NumericComparator extends ScalarComparator
-{
-    /**
-     * Returns whether the comparator can compare two values.
-     *
-     * @param mixed $expected The first value to compare
-     * @param mixed $actual   The second value to compare
-     *
-     * @return bool
-     */
-    public function accepts($expected, $actual)
-    {
-        // all numerical values, but not if one of them is a double
-        // or both of them are strings
-        return is_numeric($expected) && is_numeric($actual) &&
-               !(is_float($expected) || is_float($actual)) &&
-               !(is_string($expected) && is_string($actual));
-    }
-
-    /**
-     * Asserts that two values are equal.
-     *
-     * @param mixed $expected     First value to compare
-     * @param mixed $actual       Second value to compare
-     * @param float $delta        Allowed numerical distance between two values to consider them equal
-     * @param bool  $canonicalize Arrays are sorted before comparison when set to true
-     * @param bool  $ignoreCase   Case is ignored when set to true
-     *
-     * @throws ComparisonFailure
-     */
-    public function assertEquals($expected, $actual, $delta = 0.0, $canonicalize = false, $ignoreCase = false)/*: void*/
-    {
-        if ($this->isInfinite($actual) && $this->isInfinite($expected)) {
-            return;
-        }
-
-        if (($this->isInfinite($actual) xor $this->isInfinite($expected)) ||
-            ($this->isNan($actual) || $this->isNan($expected)) ||
-            abs($actual - $expected) > $delta) {
-            throw new ComparisonFailure(
-                $expected,
-                $actual,
-                '',
-                '',
-                false,
-                sprintf(
-                    'Failed asserting that %s matches expected %s.',
-                    $this->exporter->export($actual),
-                    $this->exporter->export($expected)
-                )
-            );
-        }
-    }
-
-    private function isInfinite($value): bool
-    {
-        return is_float($value) && is_infinite($value);
-    }
-
-    private function isNan($value): bool
-    {
-        return is_float($value) && is_nan($value);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

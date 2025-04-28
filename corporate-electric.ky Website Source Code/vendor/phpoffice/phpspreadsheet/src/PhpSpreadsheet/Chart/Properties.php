@@ -1,369 +1,77 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Chart;
-
-/**
- * Created by PhpStorm.
- * User: nhw2h8s
- * Date: 7/2/14
- * Time: 5:45 PM.
- */
-abstract class Properties
-{
-    const
-        EXCEL_COLOR_TYPE_STANDARD = 'prstClr';
-    const EXCEL_COLOR_TYPE_SCHEME = 'schemeClr';
-    const EXCEL_COLOR_TYPE_ARGB = 'srgbClr';
-
-    const
-        AXIS_LABELS_LOW = 'low';
-    const AXIS_LABELS_HIGH = 'high';
-    const AXIS_LABELS_NEXT_TO = 'nextTo';
-    const AXIS_LABELS_NONE = 'none';
-
-    const
-        TICK_MARK_NONE = 'none';
-    const TICK_MARK_INSIDE = 'in';
-    const TICK_MARK_OUTSIDE = 'out';
-    const TICK_MARK_CROSS = 'cross';
-
-    const
-        HORIZONTAL_CROSSES_AUTOZERO = 'autoZero';
-    const HORIZONTAL_CROSSES_MAXIMUM = 'max';
-
-    const
-        FORMAT_CODE_GENERAL = 'General';
-    const FORMAT_CODE_NUMBER = '#,##0.00';
-    const FORMAT_CODE_CURRENCY = '$#,##0.00';
-    const FORMAT_CODE_ACCOUNTING = '_($* #,##0.00_);_($* (#,##0.00);_($* "-"??_);_(@_)';
-    const FORMAT_CODE_DATE = 'm/d/yyyy';
-    const FORMAT_CODE_TIME = '[$-F400]h:mm:ss AM/PM';
-    const FORMAT_CODE_PERCENTAGE = '0.00%';
-    const FORMAT_CODE_FRACTION = '# ?/?';
-    const FORMAT_CODE_SCIENTIFIC = '0.00E+00';
-    const FORMAT_CODE_TEXT = '@';
-    const FORMAT_CODE_SPECIAL = '00000';
-
-    const
-        ORIENTATION_NORMAL = 'minMax';
-    const ORIENTATION_REVERSED = 'maxMin';
-
-    const
-        LINE_STYLE_COMPOUND_SIMPLE = 'sng';
-    const LINE_STYLE_COMPOUND_DOUBLE = 'dbl';
-    const LINE_STYLE_COMPOUND_THICKTHIN = 'thickThin';
-    const LINE_STYLE_COMPOUND_THINTHICK = 'thinThick';
-    const LINE_STYLE_COMPOUND_TRIPLE = 'tri';
-    const LINE_STYLE_DASH_SOLID = 'solid';
-    const LINE_STYLE_DASH_ROUND_DOT = 'sysDot';
-    const LINE_STYLE_DASH_SQUERE_DOT = 'sysDash';
-    const LINE_STYPE_DASH_DASH = 'dash';
-    const LINE_STYLE_DASH_DASH_DOT = 'dashDot';
-    const LINE_STYLE_DASH_LONG_DASH = 'lgDash';
-    const LINE_STYLE_DASH_LONG_DASH_DOT = 'lgDashDot';
-    const LINE_STYLE_DASH_LONG_DASH_DOT_DOT = 'lgDashDotDot';
-    const LINE_STYLE_CAP_SQUARE = 'sq';
-    const LINE_STYLE_CAP_ROUND = 'rnd';
-    const LINE_STYLE_CAP_FLAT = 'flat';
-    const LINE_STYLE_JOIN_ROUND = 'bevel';
-    const LINE_STYLE_JOIN_MITER = 'miter';
-    const LINE_STYLE_JOIN_BEVEL = 'bevel';
-    const LINE_STYLE_ARROW_TYPE_NOARROW = null;
-    const LINE_STYLE_ARROW_TYPE_ARROW = 'triangle';
-    const LINE_STYLE_ARROW_TYPE_OPEN = 'arrow';
-    const LINE_STYLE_ARROW_TYPE_STEALTH = 'stealth';
-    const LINE_STYLE_ARROW_TYPE_DIAMOND = 'diamond';
-    const LINE_STYLE_ARROW_TYPE_OVAL = 'oval';
-    const LINE_STYLE_ARROW_SIZE_1 = 1;
-    const LINE_STYLE_ARROW_SIZE_2 = 2;
-    const LINE_STYLE_ARROW_SIZE_3 = 3;
-    const LINE_STYLE_ARROW_SIZE_4 = 4;
-    const LINE_STYLE_ARROW_SIZE_5 = 5;
-    const LINE_STYLE_ARROW_SIZE_6 = 6;
-    const LINE_STYLE_ARROW_SIZE_7 = 7;
-    const LINE_STYLE_ARROW_SIZE_8 = 8;
-    const LINE_STYLE_ARROW_SIZE_9 = 9;
-
-    const
-        SHADOW_PRESETS_NOSHADOW = null;
-    const SHADOW_PRESETS_OUTER_BOTTTOM_RIGHT = 1;
-    const SHADOW_PRESETS_OUTER_BOTTOM = 2;
-    const SHADOW_PRESETS_OUTER_BOTTOM_LEFT = 3;
-    const SHADOW_PRESETS_OUTER_RIGHT = 4;
-    const SHADOW_PRESETS_OUTER_CENTER = 5;
-    const SHADOW_PRESETS_OUTER_LEFT = 6;
-    const SHADOW_PRESETS_OUTER_TOP_RIGHT = 7;
-    const SHADOW_PRESETS_OUTER_TOP = 8;
-    const SHADOW_PRESETS_OUTER_TOP_LEFT = 9;
-    const SHADOW_PRESETS_INNER_BOTTTOM_RIGHT = 10;
-    const SHADOW_PRESETS_INNER_BOTTOM = 11;
-    const SHADOW_PRESETS_INNER_BOTTOM_LEFT = 12;
-    const SHADOW_PRESETS_INNER_RIGHT = 13;
-    const SHADOW_PRESETS_INNER_CENTER = 14;
-    const SHADOW_PRESETS_INNER_LEFT = 15;
-    const SHADOW_PRESETS_INNER_TOP_RIGHT = 16;
-    const SHADOW_PRESETS_INNER_TOP = 17;
-    const SHADOW_PRESETS_INNER_TOP_LEFT = 18;
-    const SHADOW_PRESETS_PERSPECTIVE_BELOW = 19;
-    const SHADOW_PRESETS_PERSPECTIVE_UPPER_RIGHT = 20;
-    const SHADOW_PRESETS_PERSPECTIVE_UPPER_LEFT = 21;
-    const SHADOW_PRESETS_PERSPECTIVE_LOWER_RIGHT = 22;
-    const SHADOW_PRESETS_PERSPECTIVE_LOWER_LEFT = 23;
-
-    /**
-     * @param float $width
-     *
-     * @return float
-     */
-    protected function getExcelPointsWidth($width)
-    {
-        return $width * 12700;
-    }
-
-    /**
-     * @param float $angle
-     *
-     * @return float
-     */
-    protected function getExcelPointsAngle($angle)
-    {
-        return $angle * 60000;
-    }
-
-    protected function getTrueAlpha($alpha)
-    {
-        return (string) 100 - $alpha . '000';
-    }
-
-    protected function setColorProperties($color, $alpha, $type)
-    {
-        return [
-            'type' => (string) $type,
-            'value' => (string) $color,
-            'alpha' => (string) $this->getTrueAlpha($alpha),
-        ];
-    }
-
-    protected function getLineStyleArrowSize($array_selector, $array_kay_selector)
-    {
-        $sizes = [
-            1 => ['w' => 'sm', 'len' => 'sm'],
-            2 => ['w' => 'sm', 'len' => 'med'],
-            3 => ['w' => 'sm', 'len' => 'lg'],
-            4 => ['w' => 'med', 'len' => 'sm'],
-            5 => ['w' => 'med', 'len' => 'med'],
-            6 => ['w' => 'med', 'len' => 'lg'],
-            7 => ['w' => 'lg', 'len' => 'sm'],
-            8 => ['w' => 'lg', 'len' => 'med'],
-            9 => ['w' => 'lg', 'len' => 'lg'],
-        ];
-
-        return $sizes[$array_selector][$array_kay_selector];
-    }
-
-    protected function getShadowPresetsMap($shadow_presets_option)
-    {
-        $presets_options = [
-            //OUTER
-            1 => [
-                'effect' => 'outerShdw',
-                'blur' => '50800',
-                'distance' => '38100',
-                'direction' => '2700000',
-                'algn' => 'tl',
-                'rotWithShape' => '0',
-            ],
-            2 => [
-                'effect' => 'outerShdw',
-                'blur' => '50800',
-                'distance' => '38100',
-                'direction' => '5400000',
-                'algn' => 't',
-                'rotWithShape' => '0',
-            ],
-            3 => [
-                'effect' => 'outerShdw',
-                'blur' => '50800',
-                'distance' => '38100',
-                'direction' => '8100000',
-                'algn' => 'tr',
-                'rotWithShape' => '0',
-            ],
-            4 => [
-                'effect' => 'outerShdw',
-                'blur' => '50800',
-                'distance' => '38100',
-                'algn' => 'l',
-                'rotWithShape' => '0',
-            ],
-            5 => [
-                'effect' => 'outerShdw',
-                'size' => [
-                    'sx' => '102000',
-                    'sy' => '102000',
-                ],
-                'blur' => '63500',
-                'distance' => '38100',
-                'algn' => 'ctr',
-                'rotWithShape' => '0',
-            ],
-            6 => [
-                'effect' => 'outerShdw',
-                'blur' => '50800',
-                'distance' => '38100',
-                'direction' => '10800000',
-                'algn' => 'r',
-                'rotWithShape' => '0',
-            ],
-            7 => [
-                'effect' => 'outerShdw',
-                'blur' => '50800',
-                'distance' => '38100',
-                'direction' => '18900000',
-                'algn' => 'bl',
-                'rotWithShape' => '0',
-            ],
-            8 => [
-                'effect' => 'outerShdw',
-                'blur' => '50800',
-                'distance' => '38100',
-                'direction' => '16200000',
-                'rotWithShape' => '0',
-            ],
-            9 => [
-                'effect' => 'outerShdw',
-                'blur' => '50800',
-                'distance' => '38100',
-                'direction' => '13500000',
-                'algn' => 'br',
-                'rotWithShape' => '0',
-            ],
-            //INNER
-            10 => [
-                'effect' => 'innerShdw',
-                'blur' => '63500',
-                'distance' => '50800',
-                'direction' => '2700000',
-            ],
-            11 => [
-                'effect' => 'innerShdw',
-                'blur' => '63500',
-                'distance' => '50800',
-                'direction' => '5400000',
-            ],
-            12 => [
-                'effect' => 'innerShdw',
-                'blur' => '63500',
-                'distance' => '50800',
-                'direction' => '8100000',
-            ],
-            13 => [
-                'effect' => 'innerShdw',
-                'blur' => '63500',
-                'distance' => '50800',
-            ],
-            14 => [
-                'effect' => 'innerShdw',
-                'blur' => '114300',
-            ],
-            15 => [
-                'effect' => 'innerShdw',
-                'blur' => '63500',
-                'distance' => '50800',
-                'direction' => '10800000',
-            ],
-            16 => [
-                'effect' => 'innerShdw',
-                'blur' => '63500',
-                'distance' => '50800',
-                'direction' => '18900000',
-            ],
-            17 => [
-                'effect' => 'innerShdw',
-                'blur' => '63500',
-                'distance' => '50800',
-                'direction' => '16200000',
-            ],
-            18 => [
-                'effect' => 'innerShdw',
-                'blur' => '63500',
-                'distance' => '50800',
-                'direction' => '13500000',
-            ],
-            //perspective
-            19 => [
-                'effect' => 'outerShdw',
-                'blur' => '152400',
-                'distance' => '317500',
-                'size' => [
-                    'sx' => '90000',
-                    'sy' => '-19000',
-                ],
-                'direction' => '5400000',
-                'rotWithShape' => '0',
-            ],
-            20 => [
-                'effect' => 'outerShdw',
-                'blur' => '76200',
-                'direction' => '18900000',
-                'size' => [
-                    'sy' => '23000',
-                    'kx' => '-1200000',
-                ],
-                'algn' => 'bl',
-                'rotWithShape' => '0',
-            ],
-            21 => [
-                'effect' => 'outerShdw',
-                'blur' => '76200',
-                'direction' => '13500000',
-                'size' => [
-                    'sy' => '23000',
-                    'kx' => '1200000',
-                ],
-                'algn' => 'br',
-                'rotWithShape' => '0',
-            ],
-            22 => [
-                'effect' => 'outerShdw',
-                'blur' => '76200',
-                'distance' => '12700',
-                'direction' => '2700000',
-                'size' => [
-                    'sy' => '-23000',
-                    'kx' => '-800400',
-                ],
-                'algn' => 'bl',
-                'rotWithShape' => '0',
-            ],
-            23 => [
-                'effect' => 'outerShdw',
-                'blur' => '76200',
-                'distance' => '12700',
-                'direction' => '8100000',
-                'size' => [
-                    'sy' => '-23000',
-                    'kx' => '800400',
-                ],
-                'algn' => 'br',
-                'rotWithShape' => '0',
-            ],
-        ];
-
-        return $presets_options[$shadow_presets_option];
-    }
-
-    protected function getArrayElementsValue($properties, $elements)
-    {
-        $reference = &$properties;
-        if (!is_array($elements)) {
-            return $reference[$elements];
-        }
-
-        foreach ($elements as $keys) {
-            $reference = &$reference[$keys];
-        }
-
-        return $reference;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+TpHvFWK5lzxIDroY3hkvXE8n

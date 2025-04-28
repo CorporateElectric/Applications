@@ -1,194 +1,88 @@
-<?php
-
-namespace Illuminate\Database\Connectors;
-
-use PDO;
-
-class PostgresConnector extends Connector implements ConnectorInterface
-{
-    /**
-     * The default PDO connection options.
-     *
-     * @var array
-     */
-    protected $options = [
-        PDO::ATTR_CASE => PDO::CASE_NATURAL,
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_ORACLE_NULLS => PDO::NULL_NATURAL,
-        PDO::ATTR_STRINGIFY_FETCHES => false,
-    ];
-
-    /**
-     * Establish a database connection.
-     *
-     * @param  array  $config
-     * @return \PDO
-     */
-    public function connect(array $config)
-    {
-        // First we'll create the basic DSN and connection instance connecting to the
-        // using the configuration option specified by the developer. We will also
-        // set the default character set on the connections to UTF-8 by default.
-        $connection = $this->createConnection(
-            $this->getDsn($config), $config, $this->getOptions($config)
-        );
-
-        $this->configureEncoding($connection, $config);
-
-        // Next, we will check to see if a timezone has been specified in this config
-        // and if it has we will issue a statement to modify the timezone with the
-        // database. Setting this DB timezone is an optional configuration item.
-        $this->configureTimezone($connection, $config);
-
-        $this->configureSchema($connection, $config);
-
-        // Postgres allows an application_name to be set by the user and this name is
-        // used to when monitoring the application with pg_stat_activity. So we'll
-        // determine if the option has been specified and run a statement if so.
-        $this->configureApplicationName($connection, $config);
-
-        $this->configureSynchronousCommit($connection, $config);
-
-        return $connection;
-    }
-
-    /**
-     * Set the connection character set and collation.
-     *
-     * @param  \PDO  $connection
-     * @param  array  $config
-     * @return void
-     */
-    protected function configureEncoding($connection, $config)
-    {
-        if (! isset($config['charset'])) {
-            return;
-        }
-
-        $connection->prepare("set names '{$config['charset']}'")->execute();
-    }
-
-    /**
-     * Set the timezone on the connection.
-     *
-     * @param  \PDO  $connection
-     * @param  array  $config
-     * @return void
-     */
-    protected function configureTimezone($connection, array $config)
-    {
-        if (isset($config['timezone'])) {
-            $timezone = $config['timezone'];
-
-            $connection->prepare("set time zone '{$timezone}'")->execute();
-        }
-    }
-
-    /**
-     * Set the schema on the connection.
-     *
-     * @param  \PDO  $connection
-     * @param  array  $config
-     * @return void
-     */
-    protected function configureSchema($connection, $config)
-    {
-        if (isset($config['schema'])) {
-            $schema = $this->formatSchema($config['schema']);
-
-            $connection->prepare("set search_path to {$schema}")->execute();
-        }
-    }
-
-    /**
-     * Format the schema for the DSN.
-     *
-     * @param  array|string  $schema
-     * @return string
-     */
-    protected function formatSchema($schema)
-    {
-        if (is_array($schema)) {
-            return '"'.implode('", "', $schema).'"';
-        }
-
-        return '"'.$schema.'"';
-    }
-
-    /**
-     * Set the schema on the connection.
-     *
-     * @param  \PDO  $connection
-     * @param  array  $config
-     * @return void
-     */
-    protected function configureApplicationName($connection, $config)
-    {
-        if (isset($config['application_name'])) {
-            $applicationName = $config['application_name'];
-
-            $connection->prepare("set application_name to '$applicationName'")->execute();
-        }
-    }
-
-    /**
-     * Create a DSN string from a configuration.
-     *
-     * @param  array  $config
-     * @return string
-     */
-    protected function getDsn(array $config)
-    {
-        // First we will create the basic DSN setup as well as the port if it is in
-        // in the configuration options. This will give us the basic DSN we will
-        // need to establish the PDO connections and return them back for use.
-        extract($config, EXTR_SKIP);
-
-        $host = isset($host) ? "host={$host};" : '';
-
-        $dsn = "pgsql:{$host}dbname={$database}";
-
-        // If a port was specified, we will add it to this Postgres DSN connections
-        // format. Once we have done that we are ready to return this connection
-        // string back out for usage, as this has been fully constructed here.
-        if (isset($config['port'])) {
-            $dsn .= ";port={$port}";
-        }
-
-        return $this->addSslOptions($dsn, $config);
-    }
-
-    /**
-     * Add the SSL options to the DSN.
-     *
-     * @param  string  $dsn
-     * @param  array  $config
-     * @return string
-     */
-    protected function addSslOptions($dsn, array $config)
-    {
-        foreach (['sslmode', 'sslcert', 'sslkey', 'sslrootcert'] as $option) {
-            if (isset($config[$option])) {
-                $dsn .= ";{$option}={$config[$option]}";
-            }
-        }
-
-        return $dsn;
-    }
-
-    /**
-     * Configure the synchronous_commit setting.
-     *
-     * @param  \PDO  $connection
-     * @param  array  $config
-     * @return void
-     */
-    protected function configureSynchronousCommit($connection, array $config)
-    {
-        if (! isset($config['synchronous_commit'])) {
-            return;
-        }
-
-        $connection->prepare("set synchronous_commit to '{$config['synchronous_commit']}'")->execute();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+hXzT2evoCxcMQTEsKGFzMrchiUnE3m==

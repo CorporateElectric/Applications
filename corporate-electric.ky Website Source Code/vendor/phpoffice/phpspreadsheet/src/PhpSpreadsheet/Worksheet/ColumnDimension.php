@@ -1,115 +1,39 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Worksheet;
-
-class ColumnDimension extends Dimension
-{
-    /**
-     * Column index.
-     *
-     * @var string
-     */
-    private $columnIndex;
-
-    /**
-     * Column width.
-     *
-     * When this is set to a negative value, the column width should be ignored by IWriter
-     *
-     * @var float
-     */
-    private $width = -1;
-
-    /**
-     * Auto size?
-     *
-     * @var bool
-     */
-    private $autoSize = false;
-
-    /**
-     * Create a new ColumnDimension.
-     *
-     * @param string $pIndex Character column index
-     */
-    public function __construct($pIndex = 'A')
-    {
-        // Initialise values
-        $this->columnIndex = $pIndex;
-
-        // set dimension as unformatted by default
-        parent::__construct(0);
-    }
-
-    /**
-     * Get column index as string eg: 'A'.
-     *
-     * @return string
-     */
-    public function getColumnIndex()
-    {
-        return $this->columnIndex;
-    }
-
-    /**
-     * Set column index as string eg: 'A'.
-     *
-     * @param string $pValue
-     *
-     * @return $this
-     */
-    public function setColumnIndex($pValue)
-    {
-        $this->columnIndex = $pValue;
-
-        return $this;
-    }
-
-    /**
-     * Get Width.
-     *
-     * @return float
-     */
-    public function getWidth()
-    {
-        return $this->width;
-    }
-
-    /**
-     * Set Width.
-     *
-     * @param float $pValue
-     *
-     * @return $this
-     */
-    public function setWidth($pValue)
-    {
-        $this->width = $pValue;
-
-        return $this;
-    }
-
-    /**
-     * Get Auto Size.
-     *
-     * @return bool
-     */
-    public function getAutoSize()
-    {
-        return $this->autoSize;
-    }
-
-    /**
-     * Set Auto Size.
-     *
-     * @param bool $pValue
-     *
-     * @return $this
-     */
-    public function setAutoSize($pValue)
-    {
-        $this->autoSize = $pValue;
-
-        return $this;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

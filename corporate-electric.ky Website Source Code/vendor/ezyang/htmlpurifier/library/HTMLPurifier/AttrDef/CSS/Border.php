@@ -1,56 +1,47 @@
-<?php
-
-/**
- * Validates the border property as defined by CSS.
- */
-class HTMLPurifier_AttrDef_CSS_Border extends HTMLPurifier_AttrDef
-{
-
-    /**
-     * Local copy of properties this property is shorthand for.
-     * @type HTMLPurifier_AttrDef[]
-     */
-    protected $info = array();
-
-    /**
-     * @param HTMLPurifier_Config $config
-     */
-    public function __construct($config)
-    {
-        $def = $config->getCSSDefinition();
-        $this->info['border-width'] = $def->info['border-width'];
-        $this->info['border-style'] = $def->info['border-style'];
-        $this->info['border-top-color'] = $def->info['border-top-color'];
-    }
-
-    /**
-     * @param string $string
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return bool|string
-     */
-    public function validate($string, $config, $context)
-    {
-        $string = $this->parseCDATA($string);
-        $string = $this->mungeRgb($string);
-        $bits = explode(' ', $string);
-        $done = array(); // segments we've finished
-        $ret = ''; // return value
-        foreach ($bits as $bit) {
-            foreach ($this->info as $propname => $validator) {
-                if (isset($done[$propname])) {
-                    continue;
-                }
-                $r = $validator->validate($bit, $config, $context);
-                if ($r !== false) {
-                    $ret .= $r . ' ';
-                    $done[$propname] = true;
-                    break;
-                }
-            }
-        }
-        return rtrim($ret);
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

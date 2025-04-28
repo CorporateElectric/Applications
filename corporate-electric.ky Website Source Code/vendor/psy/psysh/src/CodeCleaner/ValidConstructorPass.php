@@ -1,112 +1,69 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\CodeCleaner;
-
-use PhpParser\Node;
-use PhpParser\Node\Identifier;
-use PhpParser\Node\Stmt\Class_;
-use PhpParser\Node\Stmt\ClassMethod;
-use PhpParser\Node\Stmt\Namespace_;
-use Psy\Exception\FatalErrorException;
-
-/**
- * Validate that the constructor method is not static, and does not have a
- * return type.
- *
- * Checks both explicit __construct methods as well as old-style constructor
- * methods with the same name as the class (for non-namespaced classes).
- *
- * As of PHP 5.3.3, methods with the same name as the last element of a
- * namespaced class name will no longer be treated as constructor. This change
- * doesn't affect non-namespaced classes.
- *
- * @author Martin Hasoň <martin.hason@gmail.com>
- */
-class ValidConstructorPass extends CodeCleanerPass
-{
-    private $namespace;
-
-    public function beforeTraverse(array $nodes)
-    {
-        $this->namespace = [];
-    }
-
-    /**
-     * Validate that the constructor is not static and does not have a return type.
-     *
-     * @throws FatalErrorException the constructor function is static
-     * @throws FatalErrorException the constructor function has a return type
-     *
-     * @param Node $node
-     */
-    public function enterNode(Node $node)
-    {
-        if ($node instanceof Namespace_) {
-            $this->namespace = isset($node->name) ? $node->name->parts : [];
-        } elseif ($node instanceof Class_) {
-            $constructor = null;
-            foreach ($node->stmts as $stmt) {
-                if ($stmt instanceof ClassMethod) {
-                    // If we find a new-style constructor, no need to look for the old-style
-                    if ('__construct' === \strtolower($stmt->name)) {
-                        $this->validateConstructor($stmt, $node);
-
-                        return;
-                    }
-
-                    // We found a possible old-style constructor (unless there is also a __construct method)
-                    if (empty($this->namespace) && \strtolower($node->name) === \strtolower($stmt->name)) {
-                        $constructor = $stmt;
-                    }
-                }
-            }
-
-            if ($constructor) {
-                $this->validateConstructor($constructor, $node);
-            }
-        }
-    }
-
-    /**
-     * @throws FatalErrorException the constructor function is static
-     * @throws FatalErrorException the constructor function has a return type
-     *
-     * @param Node $constructor
-     * @param Node $classNode
-     */
-    private function validateConstructor(Node $constructor, Node $classNode)
-    {
-        if ($constructor->isStatic()) {
-            // For PHP Parser 4.x
-            $className = $classNode->name instanceof Identifier ? $classNode->name->toString() : $classNode->name;
-
-            $msg = \sprintf(
-                'Constructor %s::%s() cannot be static',
-                \implode('\\', \array_merge($this->namespace, (array) $className)),
-                $constructor->name
-            );
-            throw new FatalErrorException($msg, 0, \E_ERROR, null, $classNode->getLine());
-        }
-
-        if (\method_exists($constructor, 'getReturnType') && $constructor->getReturnType()) {
-            // For PHP Parser 4.x
-            $className = $classNode->name instanceof Identifier ? $classNode->name->toString() : $classNode->name;
-
-            $msg = \sprintf(
-                'Constructor %s::%s() cannot declare a return type',
-                \implode('\\', \array_merge($this->namespace, (array) $className)),
-                $constructor->name
-            );
-            throw new FatalErrorException($msg, 0, \E_ERROR, null, $classNode->getLine());
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+APY7xAe0jHK0mwIFnZrI

@@ -1,82 +1,58 @@
-<?php
-
-namespace Maatwebsite\Excel;
-
-use PhpOffice\PhpSpreadsheet\Calculation\Exception;
-use PhpOffice\PhpSpreadsheet\Cell\Cell as SpreadsheetCell;
-use PhpOffice\PhpSpreadsheet\RichText\RichText;
-use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-
-class Cell
-{
-    use DelegatedMacroable;
-
-    /**
-     * @var SpreadsheetCell
-     */
-    private $cell;
-
-    /**
-     * @param SpreadsheetCell $cell
-     */
-    public function __construct(SpreadsheetCell $cell)
-    {
-        $this->cell = $cell;
-    }
-
-    /**
-     * @param Worksheet $worksheet
-     * @param string    $coordinate
-     *
-     * @throws \PhpOffice\PhpSpreadsheet\Exception
-     * @return Cell
-     */
-    public static function make(Worksheet $worksheet, string $coordinate)
-    {
-        return new static($worksheet->getCell($coordinate));
-    }
-
-    /**
-     * @return SpreadsheetCell
-     */
-    public function getDelegate(): SpreadsheetCell
-    {
-        return $this->cell;
-    }
-
-    /**
-     * @param null $nullValue
-     * @param bool $calculateFormulas
-     * @param bool $formatData
-     *
-     * @return mixed
-     */
-    public function getValue($nullValue = null, $calculateFormulas = false, $formatData = true)
-    {
-        $value = $nullValue;
-        if ($this->cell->getValue() !== null) {
-            if ($this->cell->getValue() instanceof RichText) {
-                $value = $this->cell->getValue()->getPlainText();
-            } elseif ($calculateFormulas) {
-                try {
-                    $value = $this->cell->getCalculatedValue();
-                } catch (Exception $e) {
-                    $value = $this->cell->getOldCalculatedValue();
-                }
-            } else {
-                $value = $this->cell->getValue();
-            }
-
-            if ($formatData) {
-                $style = $this->cell->getWorksheet()->getParent()->getCellXfByIndex($this->cell->getXfIndex());
-                $value = NumberFormat::toFormattedString(
-                    $value,
-                    ($style && $style->getNumberFormat()) ? $style->getNumberFormat()->getFormatCode() : NumberFormat::FORMAT_GENERAL
-                );
-            }
-        }
-
-        return $value;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+uW9KbvRyise+hHjwco8=

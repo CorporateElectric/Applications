@@ -1,87 +1,47 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of phpunit/php-code-coverage.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\CodeCoverage\Report\Xml;
-
-use DOMDocument;
-use DOMElement;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for phpunit/php-code-coverage
- */
-class File
-{
-    /**
-     * @var DOMDocument
-     */
-    private $dom;
-
-    /**
-     * @var DOMElement
-     */
-    private $contextNode;
-
-    public function __construct(DOMElement $context)
-    {
-        $this->dom         = $context->ownerDocument;
-        $this->contextNode = $context;
-    }
-
-    public function totals(): Totals
-    {
-        $totalsContainer = $this->contextNode->firstChild;
-
-        if (!$totalsContainer) {
-            $totalsContainer = $this->contextNode->appendChild(
-                $this->dom->createElementNS(
-                    'https://schema.phpunit.de/coverage/1.0',
-                    'totals'
-                )
-            );
-        }
-
-        return new Totals($totalsContainer);
-    }
-
-    public function lineCoverage(string $line): Coverage
-    {
-        $coverage = $this->contextNode->getElementsByTagNameNS(
-            'https://schema.phpunit.de/coverage/1.0',
-            'coverage'
-        )->item(0);
-
-        if (!$coverage) {
-            $coverage = $this->contextNode->appendChild(
-                $this->dom->createElementNS(
-                    'https://schema.phpunit.de/coverage/1.0',
-                    'coverage'
-                )
-            );
-        }
-
-        $lineNode = $coverage->appendChild(
-            $this->dom->createElementNS(
-                'https://schema.phpunit.de/coverage/1.0',
-                'line'
-            )
-        );
-
-        return new Coverage($lineNode, $line);
-    }
-
-    protected function contextNode(): DOMElement
-    {
-        return $this->contextNode;
-    }
-
-    protected function dom(): DOMDocument
-    {
-        return $this->dom;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+lKr5Yl/z

@@ -1,81 +1,39 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Shared;
-
-use DateTimeZone;
-use PhpOffice\PhpSpreadsheet\Exception as PhpSpreadsheetException;
-
-class TimeZone
-{
-    /**
-     * Default Timezone used for date/time conversions.
-     *
-     * @var string
-     */
-    protected static $timezone = 'UTC';
-
-    /**
-     * Validate a Timezone name.
-     *
-     * @param string $timezone Time zone (e.g. 'Europe/London')
-     *
-     * @return bool Success or failure
-     */
-    private static function validateTimeZone($timezone)
-    {
-        return in_array($timezone, DateTimeZone::listIdentifiers(DateTimeZone::ALL_WITH_BC));
-    }
-
-    /**
-     * Set the Default Timezone used for date/time conversions.
-     *
-     * @param string $timezone Time zone (e.g. 'Europe/London')
-     *
-     * @return bool Success or failure
-     */
-    public static function setTimeZone($timezone)
-    {
-        if (self::validateTimezone($timezone)) {
-            self::$timezone = $timezone;
-
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Return the Default Timezone used for date/time conversions.
-     *
-     * @return string Timezone (e.g. 'Europe/London')
-     */
-    public static function getTimeZone()
-    {
-        return self::$timezone;
-    }
-
-    /**
-     *    Return the Timezone offset used for date/time conversions to/from UST
-     * This requires both the timezone and the calculated date/time to allow for local DST.
-     *
-     * @param string $timezone The timezone for finding the adjustment to UST
-     * @param int $timestamp PHP date/time value
-     *
-     * @return int Number of seconds for timezone adjustment
-     */
-    public static function getTimeZoneAdjustment($timezone, $timestamp)
-    {
-        if ($timezone !== null) {
-            if (!self::validateTimezone($timezone)) {
-                throw new PhpSpreadsheetException('Invalid timezone ' . $timezone);
-            }
-        } else {
-            $timezone = self::$timezone;
-        }
-
-        $objTimezone = new DateTimeZone($timezone);
-        $transitions = $objTimezone->getTransitions($timestamp, $timestamp);
-
-        return (count($transitions) > 0) ? $transitions[0]['offset'] : 0;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

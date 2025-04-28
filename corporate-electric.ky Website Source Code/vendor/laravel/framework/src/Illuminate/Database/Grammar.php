@@ -1,221 +1,98 @@
-<?php
-
-namespace Illuminate\Database;
-
-use Illuminate\Database\Query\Expression;
-use Illuminate\Support\Traits\Macroable;
-
-abstract class Grammar
-{
-    use Macroable;
-
-    /**
-     * The grammar table prefix.
-     *
-     * @var string
-     */
-    protected $tablePrefix = '';
-
-    /**
-     * Wrap an array of values.
-     *
-     * @param  array  $values
-     * @return array
-     */
-    public function wrapArray(array $values)
-    {
-        return array_map([$this, 'wrap'], $values);
-    }
-
-    /**
-     * Wrap a table in keyword identifiers.
-     *
-     * @param  \Illuminate\Database\Query\Expression|string  $table
-     * @return string
-     */
-    public function wrapTable($table)
-    {
-        if (! $this->isExpression($table)) {
-            return $this->wrap($this->tablePrefix.$table, true);
-        }
-
-        return $this->getValue($table);
-    }
-
-    /**
-     * Wrap a value in keyword identifiers.
-     *
-     * @param  \Illuminate\Database\Query\Expression|string  $value
-     * @param  bool  $prefixAlias
-     * @return string
-     */
-    public function wrap($value, $prefixAlias = false)
-    {
-        if ($this->isExpression($value)) {
-            return $this->getValue($value);
-        }
-
-        // If the value being wrapped has a column alias we will need to separate out
-        // the pieces so we can wrap each of the segments of the expression on its
-        // own, and then join these both back together using the "as" connector.
-        if (stripos($value, ' as ') !== false) {
-            return $this->wrapAliasedValue($value, $prefixAlias);
-        }
-
-        return $this->wrapSegments(explode('.', $value));
-    }
-
-    /**
-     * Wrap a value that has an alias.
-     *
-     * @param  string  $value
-     * @param  bool  $prefixAlias
-     * @return string
-     */
-    protected function wrapAliasedValue($value, $prefixAlias = false)
-    {
-        $segments = preg_split('/\s+as\s+/i', $value);
-
-        // If we are wrapping a table we need to prefix the alias with the table prefix
-        // as well in order to generate proper syntax. If this is a column of course
-        // no prefix is necessary. The condition will be true when from wrapTable.
-        if ($prefixAlias) {
-            $segments[1] = $this->tablePrefix.$segments[1];
-        }
-
-        return $this->wrap($segments[0]).' as '.$this->wrapValue($segments[1]);
-    }
-
-    /**
-     * Wrap the given value segments.
-     *
-     * @param  array  $segments
-     * @return string
-     */
-    protected function wrapSegments($segments)
-    {
-        return collect($segments)->map(function ($segment, $key) use ($segments) {
-            return $key == 0 && count($segments) > 1
-                            ? $this->wrapTable($segment)
-                            : $this->wrapValue($segment);
-        })->implode('.');
-    }
-
-    /**
-     * Wrap a single string in keyword identifiers.
-     *
-     * @param  string  $value
-     * @return string
-     */
-    protected function wrapValue($value)
-    {
-        if ($value !== '*') {
-            return '"'.str_replace('"', '""', $value).'"';
-        }
-
-        return $value;
-    }
-
-    /**
-     * Convert an array of column names into a delimited string.
-     *
-     * @param  array  $columns
-     * @return string
-     */
-    public function columnize(array $columns)
-    {
-        return implode(', ', array_map([$this, 'wrap'], $columns));
-    }
-
-    /**
-     * Create query parameter place-holders for an array.
-     *
-     * @param  array  $values
-     * @return string
-     */
-    public function parameterize(array $values)
-    {
-        return implode(', ', array_map([$this, 'parameter'], $values));
-    }
-
-    /**
-     * Get the appropriate query parameter place-holder for a value.
-     *
-     * @param  mixed  $value
-     * @return string
-     */
-    public function parameter($value)
-    {
-        return $this->isExpression($value) ? $this->getValue($value) : '?';
-    }
-
-    /**
-     * Quote the given string literal.
-     *
-     * @param  string|array  $value
-     * @return string
-     */
-    public function quoteString($value)
-    {
-        if (is_array($value)) {
-            return implode(', ', array_map([$this, __FUNCTION__], $value));
-        }
-
-        return "'$value'";
-    }
-
-    /**
-     * Determine if the given value is a raw expression.
-     *
-     * @param  mixed  $value
-     * @return bool
-     */
-    public function isExpression($value)
-    {
-        return $value instanceof Expression;
-    }
-
-    /**
-     * Get the value of a raw expression.
-     *
-     * @param  \Illuminate\Database\Query\Expression  $expression
-     * @return string
-     */
-    public function getValue($expression)
-    {
-        return $expression->getValue();
-    }
-
-    /**
-     * Get the format for database stored dates.
-     *
-     * @return string
-     */
-    public function getDateFormat()
-    {
-        return 'Y-m-d H:i:s';
-    }
-
-    /**
-     * Get the grammar's table prefix.
-     *
-     * @return string
-     */
-    public function getTablePrefix()
-    {
-        return $this->tablePrefix;
-    }
-
-    /**
-     * Set the grammar's table prefix.
-     *
-     * @param  string  $prefix
-     * @return $this
-     */
-    public function setTablePrefix($prefix)
-    {
-        $this->tablePrefix = $prefix;
-
-        return $this;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+Z+i1C526H6rMjEJgPpW=

@@ -1,233 +1,108 @@
-<?php declare(strict_types=1);
-
-/*
- * This file is part of the Monolog package.
- *
- * (c) Jordi Boggiano <j.boggiano@seld.be>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Monolog\Handler;
-
-use Monolog\Formatter\FormatterInterface;
-use Monolog\Logger;
-use Monolog\Utils;
-use Monolog\Handler\Slack\SlackRecord;
-
-/**
- * Sends notifications through Slack API
- *
- * @author Greg Kedzierski <greg@gregkedzierski.com>
- * @see    https://api.slack.com/
- */
-class SlackHandler extends SocketHandler
-{
-    /**
-     * Slack API token
-     * @var string
-     */
-    private $token;
-
-    /**
-     * Instance of the SlackRecord util class preparing data for Slack API.
-     * @var SlackRecord
-     */
-    private $slackRecord;
-
-    /**
-     * @param  string                    $token                  Slack API token
-     * @param  string                    $channel                Slack channel (encoded ID or name)
-     * @param  string|null               $username               Name of a bot
-     * @param  bool                      $useAttachment          Whether the message should be added to Slack as attachment (plain text otherwise)
-     * @param  string|null               $iconEmoji              The emoji name to use (or null)
-     * @param  int                       $level                  The minimum logging level at which this handler will be triggered
-     * @param  bool                      $bubble                 Whether the messages that are handled can bubble up the stack or not
-     * @param  bool                      $useShortAttachment     Whether the context/extra messages added to Slack as attachments are in a short style
-     * @param  bool                      $includeContextAndExtra Whether the attachment should include context and extra data
-     * @param  array                     $excludeFields          Dot separated list of fields to exclude from slack message. E.g. ['context.field1', 'extra.field2']
-     * @throws MissingExtensionException If no OpenSSL PHP extension configured
-     */
-    public function __construct(
-        string $token,
-        string $channel,
-        ?string $username = null,
-        bool $useAttachment = true,
-        ?string $iconEmoji = null,
-        $level = Logger::CRITICAL,
-        bool $bubble = true,
-        bool $useShortAttachment = false,
-        bool $includeContextAndExtra = false,
-        array $excludeFields = array()
-    ) {
-        if (!extension_loaded('openssl')) {
-            throw new MissingExtensionException('The OpenSSL PHP extension is required to use the SlackHandler');
-        }
-
-        parent::__construct('ssl://slack.com:443', $level, $bubble);
-
-        $this->slackRecord = new SlackRecord(
-            $channel,
-            $username,
-            $useAttachment,
-            $iconEmoji,
-            $useShortAttachment,
-            $includeContextAndExtra,
-            $excludeFields
-        );
-
-        $this->token = $token;
-    }
-
-    public function getSlackRecord(): SlackRecord
-    {
-        return $this->slackRecord;
-    }
-
-    public function getToken(): string
-    {
-        return $this->token;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function generateDataStream(array $record): string
-    {
-        $content = $this->buildContent($record);
-
-        return $this->buildHeader($content) . $content;
-    }
-
-    /**
-     * Builds the body of API call
-     */
-    private function buildContent(array $record): string
-    {
-        $dataArray = $this->prepareContentData($record);
-
-        return http_build_query($dataArray);
-    }
-
-    protected function prepareContentData(array $record): array
-    {
-        $dataArray = $this->slackRecord->getSlackData($record);
-        $dataArray['token'] = $this->token;
-
-        if (!empty($dataArray['attachments'])) {
-            $dataArray['attachments'] = Utils::jsonEncode($dataArray['attachments']);
-        }
-
-        return $dataArray;
-    }
-
-    /**
-     * Builds the header of the API Call
-     */
-    private function buildHeader(string $content): string
-    {
-        $header = "POST /api/chat.postMessage HTTP/1.1\r\n";
-        $header .= "Host: slack.com\r\n";
-        $header .= "Content-Type: application/x-www-form-urlencoded\r\n";
-        $header .= "Content-Length: " . strlen($content) . "\r\n";
-        $header .= "\r\n";
-
-        return $header;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function write(array $record): void
-    {
-        parent::write($record);
-        $this->finalizeWrite();
-    }
-
-    /**
-     * Finalizes the request by reading some bytes and then closing the socket
-     *
-     * If we do not read some but close the socket too early, slack sometimes
-     * drops the request entirely.
-     */
-    protected function finalizeWrite(): void
-    {
-        $res = $this->getResource();
-        if (is_resource($res)) {
-            @fread($res, 2048);
-        }
-        $this->closeSocket();
-    }
-
-    public function setFormatter(FormatterInterface $formatter): HandlerInterface
-    {
-        parent::setFormatter($formatter);
-        $this->slackRecord->setFormatter($formatter);
-
-        return $this;
-    }
-
-    public function getFormatter(): FormatterInterface
-    {
-        $formatter = parent::getFormatter();
-        $this->slackRecord->setFormatter($formatter);
-
-        return $formatter;
-    }
-
-    /**
-     * Channel used by the bot when posting
-     */
-    public function setChannel(string $channel): self
-    {
-        $this->slackRecord->setChannel($channel);
-
-        return $this;
-    }
-
-    /**
-     * Username used by the bot when posting
-     */
-    public function setUsername(string $username): self
-    {
-        $this->slackRecord->setUsername($username);
-
-        return $this;
-    }
-
-    public function useAttachment(bool $useAttachment): self
-    {
-        $this->slackRecord->useAttachment($useAttachment);
-
-        return $this;
-    }
-
-    public function setIconEmoji(string $iconEmoji): self
-    {
-        $this->slackRecord->setUserIcon($iconEmoji);
-
-        return $this;
-    }
-
-    public function useShortAttachment(bool $useShortAttachment): self
-    {
-        $this->slackRecord->useShortAttachment($useShortAttachment);
-
-        return $this;
-    }
-
-    public function includeContextAndExtra(bool $includeContextAndExtra): self
-    {
-        $this->slackRecord->includeContextAndExtra($includeContextAndExtra);
-
-        return $this;
-    }
-
-    public function excludeFields(array $excludeFields): self
-    {
-        $this->slackRecord->excludeFields($excludeFields);
-
-        return $this;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

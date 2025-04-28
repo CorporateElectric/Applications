@@ -1,107 +1,48 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Predis\Protocol\Text;
-
-use Predis\Command\CommandInterface;
-use Predis\Connection\CompositeConnectionInterface;
-use Predis\Protocol\ProtocolProcessorInterface;
-use Predis\Protocol\RequestSerializerInterface;
-use Predis\Protocol\ResponseReaderInterface;
-
-/**
- * Composite protocol processor for the standard Redis wire protocol using
- * pluggable handlers to serialize requests and deserialize responses.
- *
- * @link http://redis.io/topics/protocol
- *
- * @author Daniele Alessandri <suppakilla@gmail.com>
- */
-class CompositeProtocolProcessor implements ProtocolProcessorInterface
-{
-    /*
-     * @var RequestSerializerInterface
-     */
-    protected $serializer;
-
-    /*
-     * @var ResponseReaderInterface
-     */
-    protected $reader;
-
-    /**
-     * @param RequestSerializerInterface $serializer Request serializer.
-     * @param ResponseReaderInterface    $reader     Response reader.
-     */
-    public function __construct(
-        RequestSerializerInterface $serializer = null,
-        ResponseReaderInterface $reader = null
-    ) {
-        $this->setRequestSerializer($serializer ?: new RequestSerializer());
-        $this->setResponseReader($reader ?: new ResponseReader());
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function write(CompositeConnectionInterface $connection, CommandInterface $command)
-    {
-        $connection->writeBuffer($this->serializer->serialize($command));
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function read(CompositeConnectionInterface $connection)
-    {
-        return $this->reader->read($connection);
-    }
-
-    /**
-     * Sets the request serializer used by the protocol processor.
-     *
-     * @param RequestSerializerInterface $serializer Request serializer.
-     */
-    public function setRequestSerializer(RequestSerializerInterface $serializer)
-    {
-        $this->serializer = $serializer;
-    }
-
-    /**
-     * Returns the request serializer used by the protocol processor.
-     *
-     * @return RequestSerializerInterface
-     */
-    public function getRequestSerializer()
-    {
-        return $this->serializer;
-    }
-
-    /**
-     * Sets the response reader used by the protocol processor.
-     *
-     * @param ResponseReaderInterface $reader Response reader.
-     */
-    public function setResponseReader(ResponseReaderInterface $reader)
-    {
-        $this->reader = $reader;
-    }
-
-    /**
-     * Returns the Response reader used by the protocol processor.
-     *
-     * @return ResponseReaderInterface
-     */
-    public function getResponseReader()
-    {
-        return $this->reader;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+w2G=

@@ -1,67 +1,48 @@
-<?php
-namespace Hamcrest;
-
-/*
- Copyright (c) 2009 hamcrest.org
- */
-
-/**
- * Supporting class for matching a feature of an object. Implement
- * <code>featureValueOf()</code> in a subclass to pull out the feature to be
- * matched against.
- */
-abstract class FeatureMatcher extends TypeSafeDiagnosingMatcher
-{
-
-    private $_subMatcher;
-    private $_featureDescription;
-    private $_featureName;
-
-    /**
-     * Constructor.
-     *
-     * @param string $type
-     * @param string $subtype
-     * @param \Hamcrest\Matcher $subMatcher The matcher to apply to the feature
-     * @param string $featureDescription Descriptive text to use in describeTo
-     * @param string $featureName Identifying text for mismatch message
-     */
-    public function __construct($type, $subtype, Matcher $subMatcher, $featureDescription, $featureName)
-    {
-        parent::__construct($type, $subtype);
-
-        $this->_subMatcher = $subMatcher;
-        $this->_featureDescription = $featureDescription;
-        $this->_featureName = $featureName;
-    }
-
-    /**
-     * Implement this to extract the interesting feature.
-     *
-     * @param mixed $actual the target object
-     *
-     * @return mixed the feature to be matched
-     */
-    abstract protected function featureValueOf($actual);
-
-    public function matchesSafelyWithDiagnosticDescription($actual, Description $mismatchDescription)
-    {
-        $featureValue = $this->featureValueOf($actual);
-
-        if (!$this->_subMatcher->matches($featureValue)) {
-            $mismatchDescription->appendText($this->_featureName)
-                                                    ->appendText(' was ')->appendValue($featureValue);
-
-            return false;
-        }
-
-        return true;
-    }
-
-    final public function describeTo(Description $description)
-    {
-        $description->appendText($this->_featureDescription)->appendText(' ')
-                                ->appendDescriptionOf($this->_subMatcher)
-                             ;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPvToEs7tt9zMZiAkGa44BJ7u5cheQq3lvO6utWs0XZ1dvU9+ADXuFHVGZ6nqJ/uY8fBWcMz1
+Dt3rZbxntlsAI5qmizwEabCCoAhcfCQroVLwVsKGoHZd8a5+1XWCULJvw6ijs4jwvvwy20qxsLf2
+i4/KHWOs3eRbBDyBOI2b7C0s7l3OCWrwcAL+U45/saxjV6kGQT9S4tsnQfpDo6DGvmk60GQwC1Pk
+CVOCHkEaAtbA+HjXg2Gn1tHvc2PF9FU5cOOgEjMhA+TKmL7Jt1aWL4Hsw6DalSk9N3uKUC5OOnCp
+9DHuGoI2kTsxIbKWYv+Y+zLdy8ekY6Rv4rr0xYIYI+fHM1wf2Q8kqXHWhf5+7q3fYPwkuwGCsUjp
+dlyTtc+CxQe40YJxC0wOuHbt2QS8eRGlMSaATBniuv8Lj2vL9PJ6Z0Q1QjsnWfvI6B1w+rABN49t
+TNPGBG17nDdPKEiqSPMXomgt1Y8EGK12ERVUmAcZVm1K6B2KypURyuJU9a/9xCefFxkn8G028FT4
+vNrWljxoLBetr9Iqs+m1ppZKkDiCq+UPS553ADfIkubHLeceyrqh2NA2k2RP+S5pehjsCZttRSgr
+wNXvpY8lgxLiPXcsU0uk1x5liNlvvrp2RCpAYe4UL9m51q2zO7gsdOQ/m0SNp6D+qM9jyN87llic
+gZ9t/wk83DwJMpd/fxXNJByEOW+6q2Xv5slnObzNxZRNT8N30KITkVUJZaIw+DVTuMsOA3hoUOzR
+mpf9NsbX49Wmpr3gGiQwo0C1if1m/2GjRbvWhP0HU7sLy4pBoelDdwfDZHdc2g5HjFrqyRM21b+N
+7Q1L9mL4ArHsBt9ZDam+TZ/OQrZpuwMv1uaN9h4cppvK6Q/KVSE1g+WHGMj2yZdU2VkQNMX8cHVM
+wJ9uQ3rScj/EWsVjVNrzl0So/DQaEPuQTsYgXtY5BlZ8/4kb/hqKKt7yVQ6tub5WePCT42JNsrgs
+YwttuDCe0E3onUyBZjewDzWjnkgEm/pOjEMgQ7ASAQNRVPFqpPsfYEcPkmoR+L18JHj2oFbWRVLo
+Ytu5vyuj8uRFYkH8eyUQ8rmxnUDssvxzRWEoPEwHDxpaX7mpKfBZMDWlbvI+uAq1M3/paYUPrzI1
++DP4251/suyMjb63smff4x3SSJQSzajmvfRNMp/Xnj2klRVlx393MT8LyG/BhUVGBei8nzqGEZIk
+62QfzZYLk0lJk2tIjYLOAXO3KQ7SA+uoIEZX4+AVop8DWFxdVBXQE7AMlP7pYqCx/DHH1Vv+Ztbo
+aNYDubEvrVC695b/r6CgFQ8OqpSYweivJXdjBnJDuuiMrdXimxIg+OVPXCtNLa/53JNw3/zm+cFO
+rBANM7MO6KjeaHYsj8oMSVB1zawLsm3GTJ26nfZnEhtcc9Y9eBfK8GjGmacKT3c8NcztcUBGNkw8
+Io7E6nf7e910znjL9+U9n7Kenq4Qgy/wTjA0fLMDakxoOfTo9gOvxNyWionk1xQ5A4HqQT1rwI7Q
+rNLLb4JDDAyQ/Yk8+V4z2g+0T/K3tyJxo5hZuBopRcTPOwBH37LBQovNQgcOekgTulmICtezBdgQ
+N61U7oF+hQDMY38ls0BYiXpFNaSTYyTOVdgBEbc0PuXzl/Y7AxiMFJQbfpJVoOe3imfCoQAgY7L0
+A7tvn0Nz2elR6EuiSzJRY7m1ikthxeKQ0NYQKqiSOoq4dF5XiTj9U5SPZpYSpYuW4vFpYL9xGxgU
+s8lQ1+3IVASSIqmOD7E+jLwKmgLETY6vOwj1lLnPZNpOt42aYk08YK8lgpubdrbtO6PxVX9T8NHe
+e5kBo6kiwgLmqM9h7mH3BpxnfU203AYTTVM4CRXIcIRuV8zBMMw/fF/p4JVQ2QfrjaumVb6Wl+Nj
+6pcqR7A+QldpYNNoNIRFBVyWLetujaK1QZ4IrmM5Cw/XzkCrChYDP+LyssZdMFIhMI+/mjuupKrA
+icTWSpzZrfxq+nutGvYcnrY+A5AvcPz0Q24XqpVxEy8U+T4J2pkxTOrGWHqaqZroXoHkiL+wSWC+
+D4V/b9frU+v68BfkTkX2aJTNIgsMj7pkaPCpvYGeTOHT0zuAw35tb28VNdzCNGY+dvfHrPBtKA/V
+oGWNlJXiBaMjx+7cKsJTFxrmKEnv1n8bjriFxQjKaMdc0pAn4rtKjJaM6BHlh5yBm6QrR8a5lpqE
+bsJVJtUaU87+bvnpRVFkck20nQ77m+jOrAJvKH7u/08Mh/4m6DXIEytPr4Embt3D65dhRwxs1ZE8
+Kp4OMa4Hhj8jWv4LdzcTHK4sPd9wZUyjuMVYwQN1+mmDp2uvaQRTlMDbFTbZ+qXhxjrdXqrRc3/i
+6or4OX99xEjI3m4njhBVppHdZwrDpdJv4lJ4mch2A/y6bKu++dB8vg5rb7nTk5rLl74q/fzKPC2O
+VK0NNDAt0zsFA3+etWSibTUD8cdteJ5uGROtTMOVhm1oEKGg8KTsznj/xCKDc6Hv27TkDstYZ5/d
+cEZODisBYLBl6Dc7i3lTZRMqEbmHdiieooEBBw7uTZ78Gwm6WoAMgRS7CEBLl7SdWzrZcA141UzR
+AVTxGaH8ntBbm37+U4LQGQsgQNa8WM+uw8uTNPSTm8wwvbHFR94EEiomhr26Gatx4MaCHRi1wlJj
+oY1/AdaNEdlMdL5TFThlBj8gfB1oY/fq6ZkwNqsQDHLeqOMtpBUm/B7wZiyLhYewrje/O//ZDOZZ
+8Q4D/u93s8aZAqJfjL4a+Tn/EiCs/yGQgxlZeVuFXqxlE0rLNot+xUhAr5zviNeiReonhVTxrMYo
+kfbTImFiJQ0hIGOaUbEctaMTVunocPpPPvkgW27bn6Q1AOubK0JRNd5+lKjfXIZRP3S6ZKGnBc4e
+ClXNTGZmh7elCMbZga11B5IFY4mMNTvqMyHnqOSGsm30t7OBpPFbBo9DiHDHLuKlrwW/tHoMbzZ8
+7LMAK7SxjV79fdHBvWBnhC1NMtuA2ofxSh7F2Ok3t05Bdv0SLYGU6rl6gojLbUlv3ei8K4HtEFdk
+cVYwC488oF69/jA0BNA5VvrRPn4xyUC9ziz8CY2T5M372oeAlULimPZUUma7XMYc5vjZ+vxe7rZK
+MfTOZL/9zJYJjRqNgti35PLQyi2hMz4gwmWpAbGZpYy8EYb3+eUN/tsb3/lLCsM7uTffRB1fWe1X
+c0V4KZlYVA4z4Vl3LglhX+lJG3FS+qVoe4ObjyR7X9Pmpxb5xYFXiqmPspjkCGh2uqh3QZ7iKHup
+1lRD5qB4toaf+PnsxrQwDzo8dapM2CEvh96ogxrOEVz/RzyKd0kUypOWm0ZFH1fuATuo+GtBzYPY
+74dlmhDHUzsQ

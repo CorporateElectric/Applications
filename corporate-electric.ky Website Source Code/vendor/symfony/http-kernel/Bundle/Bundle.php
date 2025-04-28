@@ -1,163 +1,87 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpKernel\Bundle;
-
-use Symfony\Component\Console\Application;
-use Symfony\Component\DependencyInjection\Container;
-use Symfony\Component\DependencyInjection\ContainerAwareTrait;
-use Symfony\Component\DependencyInjection\ContainerBuilder;
-use Symfony\Component\DependencyInjection\Extension\ExtensionInterface;
-
-/**
- * An implementation of BundleInterface that adds a few conventions for DependencyInjection extensions.
- *
- * @author Fabien Potencier <fabien@symfony.com>
- */
-abstract class Bundle implements BundleInterface
-{
-    use ContainerAwareTrait;
-
-    protected $name;
-    protected $extension;
-    protected $path;
-    private $namespace;
-
-    /**
-     * {@inheritdoc}
-     */
-    public function boot()
-    {
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function shutdown()
-    {
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * This method can be overridden to register compilation passes,
-     * other extensions, ...
-     */
-    public function build(ContainerBuilder $container)
-    {
-    }
-
-    /**
-     * Returns the bundle's container extension.
-     *
-     * @return ExtensionInterface|null The container extension
-     *
-     * @throws \LogicException
-     */
-    public function getContainerExtension()
-    {
-        if (null === $this->extension) {
-            $extension = $this->createContainerExtension();
-
-            if (null !== $extension) {
-                if (!$extension instanceof ExtensionInterface) {
-                    throw new \LogicException(sprintf('Extension "%s" must implement Symfony\Component\DependencyInjection\Extension\ExtensionInterface.', get_debug_type($extension)));
-                }
-
-                // check naming convention
-                $basename = preg_replace('/Bundle$/', '', $this->getName());
-                $expectedAlias = Container::underscore($basename);
-
-                if ($expectedAlias != $extension->getAlias()) {
-                    throw new \LogicException(sprintf('Users will expect the alias of the default extension of a bundle to be the underscored version of the bundle name ("%s"). You can override "Bundle::getContainerExtension()" if you want to use "%s" or another alias.', $expectedAlias, $extension->getAlias()));
-                }
-
-                $this->extension = $extension;
-            } else {
-                $this->extension = false;
-            }
-        }
-
-        return $this->extension ?: null;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getNamespace()
-    {
-        if (null === $this->namespace) {
-            $this->parseClassName();
-        }
-
-        return $this->namespace;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getPath()
-    {
-        if (null === $this->path) {
-            $reflected = new \ReflectionObject($this);
-            $this->path = \dirname($reflected->getFileName());
-        }
-
-        return $this->path;
-    }
-
-    /**
-     * Returns the bundle name (the class short name).
-     */
-    final public function getName(): string
-    {
-        if (null === $this->name) {
-            $this->parseClassName();
-        }
-
-        return $this->name;
-    }
-
-    public function registerCommands(Application $application)
-    {
-    }
-
-    /**
-     * Returns the bundle's container extension class.
-     *
-     * @return string
-     */
-    protected function getContainerExtensionClass()
-    {
-        $basename = preg_replace('/Bundle$/', '', $this->getName());
-
-        return $this->getNamespace().'\\DependencyInjection\\'.$basename.'Extension';
-    }
-
-    /**
-     * Creates the bundle's container extension.
-     *
-     * @return ExtensionInterface|null
-     */
-    protected function createContainerExtension()
-    {
-        return class_exists($class = $this->getContainerExtensionClass()) ? new $class() : null;
-    }
-
-    private function parseClassName()
-    {
-        $pos = strrpos(static::class, '\\');
-        $this->namespace = false === $pos ? '' : substr(static::class, 0, $pos);
-        if (null === $this->name) {
-            $this->name = false === $pos ? static::class : substr(static::class, $pos + 1);
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

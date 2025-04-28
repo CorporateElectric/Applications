@@ -1,678 +1,324 @@
-<?php
-/* ===========================================================================
- * Copyright (c) 2018-2019 Zindex Software
- *
- * Licensed under the MIT License
- * =========================================================================== */
-
-namespace Opis\Closure;
-
-use Closure;
-use Serializable;
-use SplObjectStorage;
-use ReflectionObject;
-
-/**
- * Provides a wrapper for serialization of closures
- */
-class SerializableClosure implements Serializable
-{
-    /**
-     * @var Closure Wrapped closure
-     *
-     * @see \Opis\Closure\SerializableClosure::getClosure()
-     */
-    protected $closure;
-
-    /**
-     * @var ReflectionClosure A reflection instance for closure
-     *
-     * @see \Opis\Closure\SerializableClosure::getReflector()
-     */
-    protected $reflector;
-
-    /**
-     * @var mixed Used at deserialization to hold variables
-     *
-     * @see \Opis\Closure\SerializableClosure::unserialize()
-     * @see \Opis\Closure\SerializableClosure::getReflector()
-     */
-    protected $code;
-
-    /**
-     * @var string Closure's ID
-     */
-    protected $reference;
-
-    /**
-     * @var string Closure scope
-     */
-    protected $scope;
-
-    /**
-     * @var ClosureContext Context of closure, used in serialization
-     */
-    protected static $context;
-
-    /**
-     * @var ISecurityProvider|null
-     */
-    protected static $securityProvider;
-
-    /** Array recursive constant*/
-    const ARRAY_RECURSIVE_KEY = '¯\_(ツ)_/¯';
-
-    /**
-     * Constructor
-     *
-     * @param   Closure $closure Closure you want to serialize
-     */
-    public function __construct(Closure $closure)
-    {
-        $this->closure = $closure;
-        if (static::$context !== null) {
-            $this->scope = static::$context->scope;
-            $this->scope->toserialize++;
-        }
-    }
-
-    /**
-     * Get the Closure object
-     *
-     * @return  Closure The wrapped closure
-     */
-    public function getClosure()
-    {
-        return $this->closure;
-    }
-
-    /**
-     * Get the reflector for closure
-     *
-     * @return  ReflectionClosure
-     */
-    public function getReflector()
-    {
-        if ($this->reflector === null) {
-            $this->reflector = new ReflectionClosure($this->closure);
-            $this->code = null;
-        }
-
-        return $this->reflector;
-    }
-
-    /**
-     * Implementation of magic method __invoke()
-     */
-    public function __invoke()
-    {
-        return call_user_func_array($this->closure, func_get_args());
-    }
-
-    /**
-     * Implementation of Serializable::serialize()
-     *
-     * @return  string  The serialized closure
-     */
-    public function serialize()
-    {
-        if ($this->scope === null) {
-            $this->scope = new ClosureScope();
-            $this->scope->toserialize++;
-        }
-
-        $this->scope->serializations++;
-
-        $scope = $object = null;
-        $reflector = $this->getReflector();
-
-        if($reflector->isBindingRequired()){
-            $object = $reflector->getClosureThis();
-            static::wrapClosures($object, $this->scope);
-            if($scope = $reflector->getClosureScopeClass()){
-                $scope = $scope->name;
-            }
-        } else {
-            if($scope = $reflector->getClosureScopeClass()){
-                $scope = $scope->name;
-            }
-        }
-
-        $this->reference = spl_object_hash($this->closure);
-
-        $this->scope[$this->closure] = $this;
-
-        $use = $this->transformUseVariables($reflector->getUseVariables());
-        $code = $reflector->getCode();
-
-        $this->mapByReference($use);
-
-        $ret = \serialize(array(
-            'use' => $use,
-            'function' => $code,
-            'scope' => $scope,
-            'this' => $object,
-            'self' => $this->reference,
-        ));
-
-        if (static::$securityProvider !== null) {
-            $data = static::$securityProvider->sign($ret);
-            $ret =  '@' . $data['hash'] . '.' . $data['closure'];
-        }
-
-        if (!--$this->scope->serializations && !--$this->scope->toserialize) {
-            $this->scope = null;
-        }
-
-        return $ret;
-    }
-
-    /**
-     * Transform the use variables before serialization.
-     *
-     * @param  array  $data The Closure's use variables
-     * @return array
-     */
-    protected function transformUseVariables($data)
-    {
-        return $data;
-    }
-
-    /**
-     * Implementation of Serializable::unserialize()
-     *
-     * @param   string $data Serialized data
-     * @throws SecurityException
-     */
-    public function unserialize($data)
-    {
-        ClosureStream::register();
-
-        if (static::$securityProvider !== null) {
-            if ($data[0] !== '@') {
-                throw new SecurityException("The serialized closure is not signed. ".
-                    "Make sure you use a security provider for both serialization and unserialization.");
-            }
-
-            if ($data[1] !== '{') {
-                $separator = strpos($data, '.');
-                if ($separator === false) {
-                    throw new SecurityException('Invalid signed closure');
-                }
-                $hash = substr($data, 1, $separator - 1);
-                $closure = substr($data, $separator + 1);
-
-                $data = ['hash' => $hash, 'closure' => $closure];
-
-                unset($hash, $closure);
-            } else {
-                $data = json_decode(substr($data, 1), true);
-            }
-
-            if (!is_array($data) || !static::$securityProvider->verify($data)) {
-                throw new SecurityException("Your serialized closure might have been modified and it's unsafe to be unserialized. " .
-                    "Make sure you use the same security provider, with the same settings, " .
-                    "both for serialization and unserialization.");
-            }
-
-            $data = $data['closure'];
-        } elseif ($data[0] === '@') {
-            if ($data[1] !== '{') {
-                $separator = strpos($data, '.');
-                if ($separator === false) {
-                    throw new SecurityException('Invalid signed closure');
-                }
-                $hash = substr($data, 1, $separator - 1);
-                $closure = substr($data, $separator + 1);
-
-                $data = ['hash' => $hash, 'closure' => $closure];
-
-                unset($hash, $closure);
-            } else {
-                $data = json_decode(substr($data, 1), true);
-            }
-
-            if (!is_array($data) || !isset($data['closure']) || !isset($data['hash'])) {
-                throw new SecurityException('Invalid signed closure');
-            }
-
-            $data = $data['closure'];
-        }
-
-        $this->code = \unserialize($data);
-
-        // unset data
-        unset($data);
-
-        $this->code['objects'] = array();
-
-        if ($this->code['use']) {
-            $this->scope = new ClosureScope();
-            $this->code['use'] = $this->resolveUseVariables($this->code['use']);
-            $this->mapPointers($this->code['use']);
-            extract($this->code['use'], EXTR_OVERWRITE | EXTR_REFS);
-            $this->scope = null;
-        }
-
-        $this->closure = include(ClosureStream::STREAM_PROTO . '://' . $this->code['function']);
-
-        if($this->code['this'] === $this){
-            $this->code['this'] = null;
-        }
-
-        $this->closure = $this->closure->bindTo($this->code['this'], $this->code['scope']);
-
-        if(!empty($this->code['objects'])){
-            foreach ($this->code['objects'] as $item){
-                $item['property']->setValue($item['instance'], $item['object']->getClosure());
-            }
-        }
-
-        $this->code = $this->code['function'];
-    }
-
-    /**
-     * Resolve the use variables after unserialization.
-     *
-     * @param  array  $data The Closure's transformed use variables
-     * @return array
-     */
-    protected function resolveUseVariables($data)
-    {
-        return $data;
-    }
-
-    /**
-     * Wraps a closure and sets the serialization context (if any)
-     *
-     * @param   Closure $closure Closure to be wrapped
-     *
-     * @return  self    The wrapped closure
-     */
-    public static function from(Closure $closure)
-    {
-        if (static::$context === null) {
-            $instance = new static($closure);
-        } elseif (isset(static::$context->scope[$closure])) {
-            $instance = static::$context->scope[$closure];
-        } else {
-            $instance = new static($closure);
-            static::$context->scope[$closure] = $instance;
-        }
-
-        return $instance;
-    }
-
-    /**
-     * Increments the context lock counter or creates a new context if none exist
-     */
-    public static function enterContext()
-    {
-        if (static::$context === null) {
-            static::$context = new ClosureContext();
-        }
-
-        static::$context->locks++;
-    }
-
-    /**
-     * Decrements the context lock counter and destroy the context when it reaches to 0
-     */
-    public static function exitContext()
-    {
-        if (static::$context !== null && !--static::$context->locks) {
-            static::$context = null;
-        }
-    }
-
-    /**
-     * @param string $secret
-     */
-    public static function setSecretKey($secret)
-    {
-        if(static::$securityProvider === null){
-            static::$securityProvider = new SecurityProvider($secret);
-        }
-    }
-
-    /**
-     * @param ISecurityProvider $securityProvider
-     */
-    public static function addSecurityProvider(ISecurityProvider $securityProvider)
-    {
-        static::$securityProvider = $securityProvider;
-    }
-
-    /**
-     * Remove security provider
-     */
-    public static function removeSecurityProvider()
-    {
-        static::$securityProvider = null;
-    }
-
-    /**
-     * @return null|ISecurityProvider
-     */
-    public static function getSecurityProvider()
-    {
-        return static::$securityProvider;
-    }
-
-    /**
-     * Wrap closures
-     *
-     * @internal
-     * @param $data
-     * @param ClosureScope|SplObjectStorage|null $storage
-     */
-    public static function wrapClosures(&$data, SplObjectStorage $storage = null)
-    {
-        if($storage === null){
-            $storage = static::$context->scope;
-        }
-
-        if($data instanceof Closure){
-            $data = static::from($data);
-        } elseif (is_array($data)){
-            if(isset($data[self::ARRAY_RECURSIVE_KEY])){
-                return;
-            }
-            $data[self::ARRAY_RECURSIVE_KEY] = true;
-            foreach ($data as $key => &$value){
-                if($key === self::ARRAY_RECURSIVE_KEY){
-                    continue;
-                }
-                static::wrapClosures($value, $storage);
-            }
-            unset($value);
-            unset($data[self::ARRAY_RECURSIVE_KEY]);
-        } elseif($data instanceof \stdClass){
-            if(isset($storage[$data])){
-                $data = $storage[$data];
-                return;
-            }
-            $data = $storage[$data] = clone($data);
-            foreach ($data as &$value){
-                static::wrapClosures($value, $storage);
-            }
-            unset($value);
-        } elseif (is_object($data) && ! $data instanceof static){
-            if(isset($storage[$data])){
-                $data = $storage[$data];
-                return;
-            }
-            $instance = $data;
-            $reflection = new ReflectionObject($instance);
-            if(!$reflection->isUserDefined()){
-                $storage[$instance] = $data;
-                return;
-            }
-            $storage[$instance] = $data = $reflection->newInstanceWithoutConstructor();
-
-            do{
-                if(!$reflection->isUserDefined()){
-                    break;
-                }
-                foreach ($reflection->getProperties() as $property){
-                    if($property->isStatic() || !$property->getDeclaringClass()->isUserDefined()){
-                        continue;
-                    }
-                    $property->setAccessible(true);
-                    if (PHP_VERSION >= 7.4 && !$property->isInitialized($instance)) {
-                        continue;
-                    }
-                    $value = $property->getValue($instance);
-                    if(is_array($value) || is_object($value)){
-                        static::wrapClosures($value, $storage);
-                    }
-                    $property->setValue($data, $value);
-                };
-            } while($reflection = $reflection->getParentClass());
-        }
-    }
-
-    /**
-     * Unwrap closures
-     *
-     * @internal
-     * @param $data
-     * @param SplObjectStorage|null $storage
-     */
-    public static function unwrapClosures(&$data, SplObjectStorage $storage = null)
-    {
-        if($storage === null){
-            $storage = static::$context->scope;
-        }
-
-        if($data instanceof static){
-            $data = $data->getClosure();
-        } elseif (is_array($data)){
-            if(isset($data[self::ARRAY_RECURSIVE_KEY])){
-                return;
-            }
-            $data[self::ARRAY_RECURSIVE_KEY] = true;
-            foreach ($data as $key => &$value){
-                if($key === self::ARRAY_RECURSIVE_KEY){
-                    continue;
-                }
-                static::unwrapClosures($value, $storage);
-            }
-            unset($data[self::ARRAY_RECURSIVE_KEY]);
-        }elseif ($data instanceof \stdClass){
-            if(isset($storage[$data])){
-                return;
-            }
-            $storage[$data] = true;
-            foreach ($data as &$property){
-                static::unwrapClosures($property, $storage);
-            }
-        } elseif (is_object($data) && !($data instanceof Closure)){
-            if(isset($storage[$data])){
-                return;
-            }
-            $storage[$data] = true;
-            $reflection = new ReflectionObject($data);
-
-            do{
-                if(!$reflection->isUserDefined()){
-                    break;
-                }
-                foreach ($reflection->getProperties() as $property){
-                    if($property->isStatic() || !$property->getDeclaringClass()->isUserDefined()){
-                        continue;
-                    }
-                    $property->setAccessible(true);
-                    if (PHP_VERSION >= 7.4 && !$property->isInitialized($data)) {
-                        continue;
-                    }
-                    $value = $property->getValue($data);
-                    if(is_array($value) || is_object($value)){
-                        static::unwrapClosures($value, $storage);
-                        $property->setValue($data, $value);
-                    }
-                };
-            } while($reflection = $reflection->getParentClass());
-        }
-    }
-
-    /**
-     * Creates a new closure from arbitrary code,
-     * emulating create_function, but without using eval
-     *
-     * @param string$args
-     * @param string $code
-     * @return Closure
-     */
-    public static function createClosure($args, $code)
-    {
-        ClosureStream::register();
-        return include(ClosureStream::STREAM_PROTO . '://function(' . $args. '){' . $code . '};');
-    }
-
-    /**
-     * Internal method used to map closure pointers
-     * @internal
-     * @param $data
-     */
-    protected function mapPointers(&$data)
-    {
-        $scope = $this->scope;
-
-        if ($data instanceof static) {
-            $data = &$data->closure;
-        } elseif (is_array($data)) {
-            if(isset($data[self::ARRAY_RECURSIVE_KEY])){
-                return;
-            }
-            $data[self::ARRAY_RECURSIVE_KEY] = true;
-            foreach ($data as $key => &$value){
-                if($key === self::ARRAY_RECURSIVE_KEY){
-                    continue;
-                } elseif ($value instanceof static) {
-                    $data[$key] = &$value->closure;
-                } elseif ($value instanceof SelfReference && $value->hash === $this->code['self']){
-                    $data[$key] = &$this->closure;
-                } else {
-                    $this->mapPointers($value);
-                }
-            }
-            unset($value);
-            unset($data[self::ARRAY_RECURSIVE_KEY]);
-        } elseif ($data instanceof \stdClass) {
-            if(isset($scope[$data])){
-                return;
-            }
-            $scope[$data] = true;
-            foreach ($data as $key => &$value){
-                if ($value instanceof SelfReference && $value->hash === $this->code['self']){
-                    $data->{$key} = &$this->closure;
-                } elseif(is_array($value) || is_object($value)) {
-                    $this->mapPointers($value);
-                }
-            }
-            unset($value);
-        } elseif (is_object($data) && !($data instanceof Closure)){
-            if(isset($scope[$data])){
-                return;
-            }
-            $scope[$data] = true;
-            $reflection = new ReflectionObject($data);
-            do{
-                if(!$reflection->isUserDefined()){
-                    break;
-                }
-                foreach ($reflection->getProperties() as $property){
-                    if($property->isStatic() || !$property->getDeclaringClass()->isUserDefined()){
-                        continue;
-                    }
-                    $property->setAccessible(true);
-                    if (PHP_VERSION >= 7.4 && !$property->isInitialized($data)) {
-                        continue;
-                    }
-                    $item = $property->getValue($data);
-                    if ($item instanceof SerializableClosure || ($item instanceof SelfReference && $item->hash === $this->code['self'])) {
-                        $this->code['objects'][] = array(
-                            'instance' => $data,
-                            'property' => $property,
-                            'object' => $item instanceof SelfReference ? $this : $item,
-                        );
-                    } elseif (is_array($item) || is_object($item)) {
-                        $this->mapPointers($item);
-                        $property->setValue($data, $item);
-                    }
-                }
-            } while($reflection = $reflection->getParentClass());
-        }
-    }
-
-    /**
-     * Internal method used to map closures by reference
-     *
-     * @internal
-     * @param   mixed &$data
-     */
-    protected function mapByReference(&$data)
-    {
-        if ($data instanceof Closure) {
-            if($data === $this->closure){
-                $data = new SelfReference($this->reference);
-                return;
-            }
-
-            if (isset($this->scope[$data])) {
-                $data = $this->scope[$data];
-                return;
-            }
-
-            $instance = new static($data);
-
-            if (static::$context !== null) {
-                static::$context->scope->toserialize--;
-            } else {
-                $instance->scope = $this->scope;
-            }
-
-            $data = $this->scope[$data] = $instance;
-        } elseif (is_array($data)) {
-            if(isset($data[self::ARRAY_RECURSIVE_KEY])){
-                return;
-            }
-            $data[self::ARRAY_RECURSIVE_KEY] = true;
-            foreach ($data as $key => &$value){
-                if($key === self::ARRAY_RECURSIVE_KEY){
-                    continue;
-                }
-                $this->mapByReference($value);
-            }
-            unset($value);
-            unset($data[self::ARRAY_RECURSIVE_KEY]);
-        } elseif ($data instanceof \stdClass) {
-            if(isset($this->scope[$data])){
-                $data = $this->scope[$data];
-                return;
-            }
-            $instance = $data;
-            $this->scope[$instance] = $data = clone($data);
-
-            foreach ($data as &$value){
-                $this->mapByReference($value);
-            }
-            unset($value);
-        } elseif (is_object($data) && !$data instanceof SerializableClosure){
-            if(isset($this->scope[$data])){
-                $data = $this->scope[$data];
-                return;
-            }
-
-            $instance = $data;
-            $reflection = new ReflectionObject($data);
-            if(!$reflection->isUserDefined()){
-                $this->scope[$instance] = $data;
-                return;
-            }
-            $this->scope[$instance] = $data = $reflection->newInstanceWithoutConstructor();
-
-            do{
-                if(!$reflection->isUserDefined()){
-                    break;
-                }
-                foreach ($reflection->getProperties() as $property){
-                    if($property->isStatic() || !$property->getDeclaringClass()->isUserDefined()){
-                        continue;
-                    }
-                    $property->setAccessible(true);
-                    if (PHP_VERSION >= 7.4 && !$property->isInitialized($instance)) {
-                        continue;
-                    }
-                    $value = $property->getValue($instance);
-                    if(is_array($value) || is_object($value)){
-                        $this->mapByReference($value);
-                    }
-                    $property->setValue($data, $value);
-                }
-            } while($reflection = $reflection->getParentClass());
-        }
-    }
-
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

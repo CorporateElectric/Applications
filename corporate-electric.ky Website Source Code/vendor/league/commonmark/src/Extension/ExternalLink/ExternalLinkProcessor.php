@@ -1,131 +1,84 @@
-<?php
-
-/*
- * This file is part of the league/commonmark package.
- *
- * (c) Colin O'Dell <colinodell@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace League\CommonMark\Extension\ExternalLink;
-
-use League\CommonMark\EnvironmentInterface;
-use League\CommonMark\Event\DocumentParsedEvent;
-use League\CommonMark\Inline\Element\Link;
-
-final class ExternalLinkProcessor
-{
-    public const APPLY_NONE = '';
-    public const APPLY_ALL = 'all';
-    public const APPLY_EXTERNAL = 'external';
-    public const APPLY_INTERNAL = 'internal';
-
-    /** @var EnvironmentInterface */
-    private $environment;
-
-    public function __construct(EnvironmentInterface $environment)
-    {
-        $this->environment = $environment;
-    }
-
-    /**
-     * @param DocumentParsedEvent $e
-     *
-     * @return void
-     */
-    public function __invoke(DocumentParsedEvent $e)
-    {
-        $internalHosts = $this->environment->getConfig('external_link/internal_hosts', []);
-        $openInNewWindow = $this->environment->getConfig('external_link/open_in_new_window', false);
-        $classes = $this->environment->getConfig('external_link/html_class', '');
-
-        $walker = $e->getDocument()->walker();
-        while ($event = $walker->next()) {
-            if ($event->isEntering() && $event->getNode() instanceof Link) {
-                /** @var Link $link */
-                $link = $event->getNode();
-
-                $host = parse_url($link->getUrl(), PHP_URL_HOST);
-                if (empty($host)) {
-                    // Something is terribly wrong with this URL
-                    continue;
-                }
-
-                if (self::hostMatches($host, $internalHosts)) {
-                    $link->data['external'] = false;
-                    $this->applyRelAttribute($link, false);
-                    continue;
-                }
-
-                // Host does not match our list
-                $this->markLinkAsExternal($link, $openInNewWindow, $classes);
-            }
-        }
-    }
-
-    private function markLinkAsExternal(Link $link, bool $openInNewWindow, string $classes): void
-    {
-        $link->data['external'] = true;
-        $link->data['attributes'] = $link->getData('attributes', []);
-        $this->applyRelAttribute($link, true);
-
-        if ($openInNewWindow) {
-            $link->data['attributes']['target'] = '_blank';
-        }
-
-        if (!empty($classes)) {
-            $link->data['attributes']['class'] = trim(($link->data['attributes']['class'] ?? '') . ' ' . $classes);
-        }
-    }
-
-    private function applyRelAttribute(Link $link, bool $isExternal): void
-    {
-        $rel = [];
-
-        $options = [
-            'nofollow'   => $this->environment->getConfig('external_link/nofollow', self::APPLY_NONE),
-            'noopener'   => $this->environment->getConfig('external_link/noopener', self::APPLY_EXTERNAL),
-            'noreferrer' => $this->environment->getConfig('external_link/noreferrer', self::APPLY_EXTERNAL),
-        ];
-
-        foreach ($options as $type => $option) {
-            switch (true) {
-                case $option === self::APPLY_ALL:
-                case $isExternal && $option === self::APPLY_EXTERNAL:
-                case !$isExternal && $option === self::APPLY_INTERNAL:
-                    $rel[] = $type;
-            }
-        }
-
-        if ($rel === []) {
-            return;
-        }
-
-        $link->data['attributes']['rel'] = \implode(' ', $rel);
-    }
-
-    /**
-     * @param string $host
-     * @param mixed  $compareTo
-     *
-     * @return bool
-     *
-     * @internal This method is only public so we can easily test it. DO NOT USE THIS OUTSIDE OF THIS EXTENSION!
-     */
-    public static function hostMatches(string $host, $compareTo)
-    {
-        foreach ((array) $compareTo as $c) {
-            if (strpos($c, '/') === 0) {
-                if (preg_match($c, $host)) {
-                    return true;
-                }
-            } elseif ($c === $host) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+gY+LOnRqEE4/SAw+bdPgd7o1OgeSfWgr

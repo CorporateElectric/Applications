@@ -1,94 +1,56 @@
-<?php
-
-/*
- * This file is part of the Prophecy.
- * (c) Konstantin Kudryashov <ever.zet@gmail.com>
- *     Marcello Duarte <marcello.duarte@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Prophecy\Doubler\ClassPatch;
-
-use Prophecy\Doubler\Generator\Node\ClassNode;
-use Prophecy\Doubler\Generator\Node\MethodNode;
-use Prophecy\PhpDocumentor\ClassAndInterfaceTagRetriever;
-use Prophecy\PhpDocumentor\MethodTagRetrieverInterface;
-
-/**
- * Discover Magical API using "@method" PHPDoc format.
- *
- * @author Thomas Tourlourat <thomas@tourlourat.com>
- * @author Kévin Dunglas <dunglas@gmail.com>
- * @author Théo FIDRY <theo.fidry@gmail.com>
- */
-class MagicCallPatch implements ClassPatchInterface
-{
-    private $tagRetriever;
-
-    public function __construct(MethodTagRetrieverInterface $tagRetriever = null)
-    {
-        $this->tagRetriever = null === $tagRetriever ? new ClassAndInterfaceTagRetriever() : $tagRetriever;
-    }
-
-    /**
-     * Support any class
-     *
-     * @param ClassNode $node
-     *
-     * @return boolean
-     */
-    public function supports(ClassNode $node)
-    {
-        return true;
-    }
-
-    /**
-     * Discover Magical API
-     *
-     * @param ClassNode $node
-     */
-    public function apply(ClassNode $node)
-    {
-        $types = array_filter($node->getInterfaces(), function ($interface) {
-            return 0 !== strpos($interface, 'Prophecy\\');
-        });
-        $types[] = $node->getParentClass();
-
-        foreach ($types as $type) {
-            $reflectionClass = new \ReflectionClass($type);
-
-            while ($reflectionClass) {
-                $tagList = $this->tagRetriever->getTagList($reflectionClass);
-
-                foreach ($tagList as $tag) {
-                    $methodName = $tag->getMethodName();
-
-                    if (empty($methodName)) {
-                        continue;
-                    }
-
-                    if (!$reflectionClass->hasMethod($methodName)) {
-                        $methodNode = new MethodNode($methodName);
-                        $methodNode->setStatic($tag->isStatic());
-                        $node->addMethod($methodNode);
-                    }
-                }
-
-                $reflectionClass = $reflectionClass->getParentClass();
-            }
-        }
-    }
-
-    /**
-     * Returns patch priority, which determines when patch will be applied.
-     *
-     * @return integer Priority number (higher - earlier)
-     */
-    public function getPriority()
-    {
-        return 50;
-    }
-}
-
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+jaZQ5ZzdXjbr1Waz0D4jkxhwJdwI

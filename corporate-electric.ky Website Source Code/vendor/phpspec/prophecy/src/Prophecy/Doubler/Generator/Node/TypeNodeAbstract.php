@@ -1,87 +1,64 @@
-<?php
-
-namespace Prophecy\Doubler\Generator\Node;
-
-use Prophecy\Exception\Doubler\DoubleException;
-
-abstract class TypeNodeAbstract
-{
-    /** @var string[] */
-    protected $types = [];
-
-    public function __construct(string ...$types)
-    {
-        foreach ($types as $type) {
-            $type = $this->getRealType($type);
-            $this->types[$type] = $type;
-        }
-
-        $this->guardIsValidType();
-    }
-
-    public function canUseNullShorthand(): bool
-    {
-        return isset($this->types['null']) && count($this->types) <= 2;
-    }
-
-    public function getTypes(): array
-    {
-        return array_values($this->types);
-    }
-
-    public function getNonNullTypes(): array
-    {
-        $nonNullTypes = $this->types;
-        unset($nonNullTypes['null']);
-
-        return array_values($nonNullTypes);
-    }
-
-    protected function prefixWithNsSeparator(string $type): string
-    {
-        return '\\' . ltrim($type, '\\');
-    }
-
-    protected function getRealType(string $type): string
-    {
-        switch ($type) {
-            // type aliases
-            case 'double':
-            case 'real':
-                return 'float';
-            case 'boolean':
-                return 'bool';
-            case 'integer':
-                return 'int';
-
-            //  built in types
-            case 'self':
-            case 'array':
-            case 'callable':
-            case 'bool':
-            case 'float':
-            case 'int':
-            case 'string':
-            case 'iterable':
-            case 'object':
-            case 'null':
-                return $type;
-            case 'mixed':
-                return \PHP_VERSION_ID < 80000 ? $this->prefixWithNsSeparator($type) : $type;
-
-            default:
-                return $this->prefixWithNsSeparator($type);
-        }
-    }
-
-    protected function guardIsValidType()
-    {
-        if ($this->types == ['null' => 'null']) {
-            throw new DoubleException('Argument type cannot be standalone null');
-        }
-
-        if (\PHP_VERSION_ID >= 80000 && isset($this->types['mixed']) && count($this->types) !== 1) {
-            throw new DoubleException('mixed cannot be part of a union');
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

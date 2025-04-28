@@ -1,330 +1,155 @@
-<?php
-
-namespace Illuminate\Broadcasting\Broadcasters;
-
-use Exception;
-use Illuminate\Container\Container;
-use Illuminate\Contracts\Broadcasting\Broadcaster as BroadcasterContract;
-use Illuminate\Contracts\Routing\BindingRegistrar;
-use Illuminate\Contracts\Routing\UrlRoutable;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Reflector;
-use Illuminate\Support\Str;
-use ReflectionClass;
-use ReflectionFunction;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
-
-abstract class Broadcaster implements BroadcasterContract
-{
-    /**
-     * The registered channel authenticators.
-     *
-     * @var array
-     */
-    protected $channels = [];
-
-    /**
-     * The registered channel options.
-     *
-     * @var array
-     */
-    protected $channelOptions = [];
-
-    /**
-     * The binding registrar instance.
-     *
-     * @var \Illuminate\Contracts\Routing\BindingRegistrar
-     */
-    protected $bindingRegistrar;
-
-    /**
-     * Register a channel authenticator.
-     *
-     * @param  string  $channel
-     * @param  callable|string  $callback
-     * @param  array  $options
-     * @return $this
-     */
-    public function channel($channel, $callback, $options = [])
-    {
-        $this->channels[$channel] = $callback;
-
-        $this->channelOptions[$channel] = $options;
-
-        return $this;
-    }
-
-    /**
-     * Authenticate the incoming request for a given channel.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  string  $channel
-     * @return mixed
-     *
-     * @throws \Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException
-     */
-    protected function verifyUserCanAccessChannel($request, $channel)
-    {
-        foreach ($this->channels as $pattern => $callback) {
-            if (! $this->channelNameMatchesPattern($channel, $pattern)) {
-                continue;
-            }
-
-            $parameters = $this->extractAuthParameters($pattern, $channel, $callback);
-
-            $handler = $this->normalizeChannelHandlerToCallable($callback);
-
-            if ($result = $handler($this->retrieveUser($request, $channel), ...$parameters)) {
-                return $this->validAuthenticationResponse($request, $result);
-            }
-        }
-
-        throw new AccessDeniedHttpException;
-    }
-
-    /**
-     * Extract the parameters from the given pattern and channel.
-     *
-     * @param  string  $pattern
-     * @param  string  $channel
-     * @param  callable|string  $callback
-     * @return array
-     */
-    protected function extractAuthParameters($pattern, $channel, $callback)
-    {
-        $callbackParameters = $this->extractParameters($callback);
-
-        return collect($this->extractChannelKeys($pattern, $channel))->reject(function ($value, $key) {
-            return is_numeric($key);
-        })->map(function ($value, $key) use ($callbackParameters) {
-            return $this->resolveBinding($key, $value, $callbackParameters);
-        })->values()->all();
-    }
-
-    /**
-     * Extracts the parameters out of what the user passed to handle the channel authentication.
-     *
-     * @param  callable|string  $callback
-     * @return \ReflectionParameter[]
-     *
-     * @throws \Exception
-     */
-    protected function extractParameters($callback)
-    {
-        if (is_callable($callback)) {
-            return (new ReflectionFunction($callback))->getParameters();
-        } elseif (is_string($callback)) {
-            return $this->extractParametersFromClass($callback);
-        }
-
-        throw new Exception('Given channel handler is an unknown type.');
-    }
-
-    /**
-     * Extracts the parameters out of a class channel's "join" method.
-     *
-     * @param  string  $callback
-     * @return \ReflectionParameter[]
-     *
-     * @throws \Exception
-     */
-    protected function extractParametersFromClass($callback)
-    {
-        $reflection = new ReflectionClass($callback);
-
-        if (! $reflection->hasMethod('join')) {
-            throw new Exception('Class based channel must define a "join" method.');
-        }
-
-        return $reflection->getMethod('join')->getParameters();
-    }
-
-    /**
-     * Extract the channel keys from the incoming channel name.
-     *
-     * @param  string  $pattern
-     * @param  string  $channel
-     * @return array
-     */
-    protected function extractChannelKeys($pattern, $channel)
-    {
-        preg_match('/^'.preg_replace('/\{(.*?)\}/', '(?<$1>[^\.]+)', $pattern).'/', $channel, $keys);
-
-        return $keys;
-    }
-
-    /**
-     * Resolve the given parameter binding.
-     *
-     * @param  string  $key
-     * @param  string  $value
-     * @param  array  $callbackParameters
-     * @return mixed
-     */
-    protected function resolveBinding($key, $value, $callbackParameters)
-    {
-        $newValue = $this->resolveExplicitBindingIfPossible($key, $value);
-
-        return $newValue === $value ? $this->resolveImplicitBindingIfPossible(
-            $key, $value, $callbackParameters
-        ) : $newValue;
-    }
-
-    /**
-     * Resolve an explicit parameter binding if applicable.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @return mixed
-     */
-    protected function resolveExplicitBindingIfPossible($key, $value)
-    {
-        $binder = $this->binder();
-
-        if ($binder && $binder->getBindingCallback($key)) {
-            return call_user_func($binder->getBindingCallback($key), $value);
-        }
-
-        return $value;
-    }
-
-    /**
-     * Resolve an implicit parameter binding if applicable.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @param  array  $callbackParameters
-     * @return mixed
-     *
-     * @throws \Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException
-     */
-    protected function resolveImplicitBindingIfPossible($key, $value, $callbackParameters)
-    {
-        foreach ($callbackParameters as $parameter) {
-            if (! $this->isImplicitlyBindable($key, $parameter)) {
-                continue;
-            }
-
-            $className = Reflector::getParameterClassName($parameter);
-
-            if (is_null($model = (new $className)->resolveRouteBinding($value))) {
-                throw new AccessDeniedHttpException;
-            }
-
-            return $model;
-        }
-
-        return $value;
-    }
-
-    /**
-     * Determine if a given key and parameter is implicitly bindable.
-     *
-     * @param  string  $key
-     * @param  \ReflectionParameter  $parameter
-     * @return bool
-     */
-    protected function isImplicitlyBindable($key, $parameter)
-    {
-        return $parameter->getName() === $key &&
-                        Reflector::isParameterSubclassOf($parameter, UrlRoutable::class);
-    }
-
-    /**
-     * Format the channel array into an array of strings.
-     *
-     * @param  array  $channels
-     * @return array
-     */
-    protected function formatChannels(array $channels)
-    {
-        return array_map(function ($channel) {
-            return (string) $channel;
-        }, $channels);
-    }
-
-    /**
-     * Get the model binding registrar instance.
-     *
-     * @return \Illuminate\Contracts\Routing\BindingRegistrar
-     */
-    protected function binder()
-    {
-        if (! $this->bindingRegistrar) {
-            $this->bindingRegistrar = Container::getInstance()->bound(BindingRegistrar::class)
-                        ? Container::getInstance()->make(BindingRegistrar::class) : null;
-        }
-
-        return $this->bindingRegistrar;
-    }
-
-    /**
-     * Normalize the given callback into a callable.
-     *
-     * @param  mixed  $callback
-     * @return callable
-     */
-    protected function normalizeChannelHandlerToCallable($callback)
-    {
-        return is_callable($callback) ? $callback : function (...$args) use ($callback) {
-            return Container::getInstance()
-                ->make($callback)
-                ->join(...$args);
-        };
-    }
-
-    /**
-     * Retrieve the authenticated user using the configured guard (if any).
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  string  $channel
-     * @return mixed
-     */
-    protected function retrieveUser($request, $channel)
-    {
-        $options = $this->retrieveChannelOptions($channel);
-
-        $guards = $options['guards'] ?? null;
-
-        if (is_null($guards)) {
-            return $request->user();
-        }
-
-        foreach (Arr::wrap($guards) as $guard) {
-            if ($user = $request->user($guard)) {
-                return $user;
-            }
-        }
-    }
-
-    /**
-     * Retrieve options for a certain channel.
-     *
-     * @param  string  $channel
-     * @return array
-     */
-    protected function retrieveChannelOptions($channel)
-    {
-        foreach ($this->channelOptions as $pattern => $options) {
-            if (! $this->channelNameMatchesPattern($channel, $pattern)) {
-                continue;
-            }
-
-            return $options;
-        }
-
-        return [];
-    }
-
-    /**
-     * Check if the channel name from the request matches a pattern from registered channels.
-     *
-     * @param  string  $channel
-     * @param  string  $pattern
-     * @return bool
-     */
-    protected function channelNameMatchesPattern($channel, $pattern)
-    {
-        return Str::is(preg_replace('/\{(.*?)\}/', '*', $pattern), $channel);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+uU4gR2MnTBgm083itOI999LrpgIY/eMTvG==

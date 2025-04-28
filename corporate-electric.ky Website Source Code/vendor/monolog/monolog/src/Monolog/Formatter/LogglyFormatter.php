@@ -1,45 +1,35 @@
-<?php declare(strict_types=1);
-
-/*
- * This file is part of the Monolog package.
- *
- * (c) Jordi Boggiano <j.boggiano@seld.be>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Monolog\Formatter;
-
-/**
- * Encodes message information into JSON in a format compatible with Loggly.
- *
- * @author Adam Pancutt <adam@pancutt.com>
- */
-class LogglyFormatter extends JsonFormatter
-{
-    /**
-     * Overrides the default batch mode to new lines for compatibility with the
-     * Loggly bulk API.
-     */
-    public function __construct(int $batchMode = self::BATCH_MODE_NEWLINES, bool $appendNewline = false)
-    {
-        parent::__construct($batchMode, $appendNewline);
-    }
-
-    /**
-     * Appends the 'timestamp' parameter for indexing by Loggly.
-     *
-     * @see https://www.loggly.com/docs/automated-parsing/#json
-     * @see \Monolog\Formatter\JsonFormatter::format()
-     */
-    public function format(array $record): string
-    {
-        if (isset($record["datetime"]) && ($record["datetime"] instanceof \DateTimeInterface)) {
-            $record["timestamp"] = $record["datetime"]->format("Y-m-d\TH:i:s.uO");
-            unset($record["datetime"]);
-        }
-
-        return parent::format($record);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

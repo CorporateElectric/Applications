@@ -1,117 +1,56 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Util\Xml;
-
-use function chdir;
-use function dirname;
-use function error_reporting;
-use function file_get_contents;
-use function getcwd;
-use function libxml_get_errors;
-use function libxml_use_internal_errors;
-use function sprintf;
-use DOMDocument;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for PHPUnit
- */
-final class Loader
-{
-    /**
-     * @throws Exception
-     */
-    public function loadFile(string $filename, bool $isHtml = false, bool $xinclude = false, bool $strict = false): DOMDocument
-    {
-        $reporting = error_reporting(0);
-        $contents  = file_get_contents($filename);
-
-        error_reporting($reporting);
-
-        if ($contents === false) {
-            throw new Exception(
-                sprintf(
-                    'Could not read "%s".',
-                    $filename
-                )
-            );
-        }
-
-        return $this->load($contents, $isHtml, $filename, $xinclude, $strict);
-    }
-
-    /**
-     * @throws Exception
-     */
-    public function load(string $actual, bool $isHtml = false, string $filename = '', bool $xinclude = false, bool $strict = false): DOMDocument
-    {
-        if ($actual === '') {
-            throw new Exception('Could not load XML from empty string');
-        }
-
-        // Required for XInclude on Windows.
-        if ($xinclude) {
-            $cwd = getcwd();
-            @chdir(dirname($filename));
-        }
-
-        $document                     = new DOMDocument;
-        $document->preserveWhiteSpace = false;
-
-        $internal  = libxml_use_internal_errors(true);
-        $message   = '';
-        $reporting = error_reporting(0);
-
-        if ($filename !== '') {
-            // Required for XInclude
-            $document->documentURI = $filename;
-        }
-
-        if ($isHtml) {
-            $loaded = $document->loadHTML($actual);
-        } else {
-            $loaded = $document->loadXML($actual);
-        }
-
-        if (!$isHtml && $xinclude) {
-            $document->xinclude();
-        }
-
-        foreach (libxml_get_errors() as $error) {
-            $message .= "\n" . $error->message;
-        }
-
-        libxml_use_internal_errors($internal);
-        error_reporting($reporting);
-
-        if (isset($cwd)) {
-            @chdir($cwd);
-        }
-
-        if ($loaded === false || ($strict && $message !== '')) {
-            if ($filename !== '') {
-                throw new Exception(
-                    sprintf(
-                        'Could not load "%s".%s',
-                        $filename,
-                        $message !== '' ? "\n" . $message : ''
-                    )
-                );
-            }
-
-            if ($message === '') {
-                $message = 'Could not load XML for unknown reason';
-            }
-
-            throw new Exception($message);
-        }
-
-        return $document;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cP+lKzElCECtCYMPXo17iQ4SM0mfuzOHSeCqKE0HOXNj2AITq0cp1sKX32tw72EJSTtpQqgeG
+QkJe4WuEih6q1JiEFZQ7UysJyyIrXtVxrzz0j+wauwKiATsMrx9tIYXskO4c8I6oxQWUnkJOQn7R
+goudr2QAGHTcnGVWAzvSAKOoazWJ4lmrYW4QPS6jIxTj5y1liD5MRrHCTDP8WQg1xIAP5k7aflo2
+eYlSoT+9h+HzJT2YHadBNOij3FXgY0PCswGixHGwrQihvrJ1KTFS6I1KH7ReWscpgejJ3V0bVVRd
+mwiGadN/vpCWOloPcb0Ttuk+S/1Iw7mP7lVeOOF4cpRpz6deHKJdSf5Bbc5GtOHaHZTm0tKRDO65
+NktvJKYT+YhjYcJSWeYG0BK+eqSS9glJzSeZppeSWVAO//8fJ51l2YB68Xps8Qu5joECcoDYJtiF
+twts4JcgShs1BeSTDwJt9W6hV9RXaXOe3BFWRtnuxFHlD/cwk10DIdiBQNilgXQ7BPISazLzQfUy
+9XQKIJ2kOGSvqIS1xRXrCIGtRoNcCaktMaOVdhIKp5Qov7ItdGNMXkEOKqDvv5L7RQGdUsaHVLq7
+xBDvE7w/M8d9iaKUhiTBqsejKWAhrkCcpXfMv6SZ0dnB4uF/FWYlijiAfe8xWyRuN9KXwXrJ63Zr
+AQTAPUHFQmkzVH9nH2eBjOYUMi3cJ5FZme39NkCCZNT03jzk0TUJJvWTLSN4xHUBaUx0r9cKXysT
+HymtaRNIEqYUWilecQsxIXNWud7RLMSZ36v4hDckQWWwpGkeo+A4MvCfdUMmkPmQXLDdKvFNLHAA
+lUEQXUFJeXUpBkYEkozgLbYLhMyQ4D8WwTr//QtGVC4FbU9/l9a/bj/+DJ6yHBAF1mvDMwRW2Nu7
+6e7wadOVHLbqDrQOan8vCZ/R6om50+gIsazFQncHRlqF3WPx/ecn2N3aDiaAB4oluqKqzyodmLgh
+YGRjGo84TWuu2b8apAPm/+d7ZeYjOvjq1A8ziKMpa08WGkEF+uO+rb7t8E1mJleCHbGZmT0t/zLE
+ic1MItJXEqKsBfFOz4Ud/8PXcTdFU7wymb88MnvcD0840xbHoRI0eBBj4Ut18wcBwmkmtgwCpqTo
+iDbcOaKnFKgZ/qewtkVVPKHl03ezaMdUP5xILmjBA3vDMPqCu8RoWmZaw2PCgEcWXw1m3MaOf6ui
+Xvpi1EzgiFAUOJVJ+MDfmjp4g2p+JtAmd6JaM5Xxdr4KaOt+kF/VE9ub18fejcpN1OQ44kgOcvId
+7TcqBB+vueXKeDQIQgdyEfgFFnDj+n2BW4aBPJdp8lM5nf0WLTRLTMi8mY//RnWdnnYkMmTk9uMK
+tS0UN0D35jZ7MoYAVX9ovLylKFhsVdCUKB6W4MSX2NwJUJbqTDDP7EzUm1arvYVyiX5YTrnbDcRj
+Dz6kegVUn1XB3oq7+RmH5XesB1S0hdI/S3izCq5IuyWjlGux/mnDdeD/5BjIPJtpugPlRe1MCkTb
+2DNVyNbfGaIm2iwThzgxAzwfvWpfEhWAUFjdzQYRPFX0h9On1Qrd2IEzmKWvxHiGGE7XNUllh2Ie
+ahG0spOUmH65k1Z+gIqluLpti/YQULkguMCuQZU/r2iK2dAMnKi22actKiXiMh2ZCRHbEvD1yv7+
+N/bChoIOe+5IEuJioK5BFXnokz2/iOlwVtvrbU0qT24dD9zUqnfbD2W77ANOdXrfAxPVu5KcyTPo
+GuFOrDpMg19vwjmG2zOt9GbAipXGZg7tsGaSFUHO7TmBl4+9z3ssNXleBwHB95VdYjJMj+6O/Gry
+V7b1TNa6li6Vvl6RHXeOOPmBTlstOUJE+AuI17/W+S24c269GAvSFOXTqDjyo9t/z1RK9ywGaQcq
+KUOzLNDW1HkRKJJsNvh+wwpJsmnLyvKvqmExw8upvlwvZ0EVQFWvGJruUdekMzbDwzJW9DrXJ9IU
+2vFnFUgfi94YBqQKYjOzHi+gPAbJSt9vJi/oW8jdFzLEKzPf6RaqJCgAKSlpQSyOpP0QPNcvg0Oj
+nihFv8WN5PGvoflj30m+Ri8ltN9RArQ6KX19MwspXvGxtpvgZBHI4TtaSP9OSVx5X3/SpTEPuZ+W
+2gByUezPn8P5Cc7TW01IaKfJsVhQYC0h0S1E7UVOI/4cvZ/hguCvcXmTcK203raMOhnII41eVSL0
+z5Qlfs0iJ9jDILF3Nz4Oy0gFkkZmCkc+FfOpykx9crm2ADlDNOzhlIIL6v+m5VX9qhNihDuPPfal
+vxG1v70bzv5HI9SOS7f1cUW+3gr2YnNqWy4IpsoBhE55qLCYOISEFkGlLmUkFlIous5Z5A7ANmzq
+ErFb173f9Re3dwMcSrISlkrLWCj/IMDFMaV/Ezr7U5cZANjmZQ30TuYb2OjeXy83zGAGmNm+63YE
+eHvQ/nphLzw2YFDijYY7AHBDCtJfHuPbmHZRkniPOWcG/a6gKXtpklAPN/F6/s0MSROrCmVAuJSA
+EeBvlGy9AP5WSlZRUOvPCSBpj9Ocs+MamhJhTCmUbFwqAxM88VM/HGWn5mVszDuQzf4/sKHhxImb
+2rovmcR1qBnwwy84Kvy02EhZP4Zxbo5r+lfcQa83SNNwCLb5XiN/zenKEvaWybQZUkXzwPV8Ghvy
+yfSMDBjv6wYqPmQmX1ks9ArRGWV1HowxhyAuiuq5rQH+G73Gz667gP6QMt/ismA41sc4U8nYCXNv
+CVqA+ejhcikLO0LayETrQFAyK1YI875JnHYLczWrAzVb868KqDWtQDZxBzA0ZatgOdj1d5VibrYv
+0XjHE6svyKCe4/o8xVi6WgAIGLhJ2eaR78EoGNiMRWsyL2aFDD6ikMHrz4uNx5y/5JAHw3ULl5dr
+4XOTyZ2wkoBQdlZHmz5HhspHwmhvJOlRnkuRUal7/ptVXtwS/XaGJ+fBt4RUd82xl8qOMdyRCqDu
+WlSf9OEZ63aPplV80NxI6dljgpcrjYybOHsrB/HCedV/9Pl+55zQp9lsxTFfBessL0A+/v3x+uA8
+fVkvdwezxdi3G9xir8wERmiFkzqpVp6XhY3xaGzWqJyJ/mJwHuQYW9SScH5XeZQfmv+fMoiYVm5x
+UgtshV0jGbEFU+NQrUnnpaq41CCuyqyfypwgLy0YVakpnMP9ng4xGRAR9euFwCfmudlSGUHadSTI
+1vJ88A1OldnoVM9UIKUBAD0cqDHr1mRXyCOzMeIDkRfIcvF/I3V/NzBjcCO9ZQK8YPFU1VvMTMQp
+ZfwvIwrGpk3i7fmK5ltYQvhi8srv4cqoIhL4X50H3BxKzcgb5jG+vAsaNkKFrGvlUbHg9oI8E4lN
+ghIUkZN3Tbv6K2N0BeX9pWaetoZkoSmxf5wA4nQRbSQPC5WBN7F54GJP/1MslrEQAEq0ahN9PMK1
+q2VDy05dNdqzz5OwunCUXFx3x/fc7MHAgwmUyd0GoGrCE4S/uhfv2LOlNGd3yNxVJlVOpqEtNU/N
+Y0cdD5zWOEV4WT/SRh8wS7sArcDxZY/hJDqMHTrVldIl2bXfD8zwTxvWcEwSWw+6E4U33e6WG9V5
+3XEUs7mFLw0cUGwgmVZb03e7Hex/jIfG8AlMWPnm9BGssUVuHdr8aXupRRGBGi4TFbKf9VOTW0Z2
+TCnraINslIT7Z0epp0wE1cbbusPDgnPEqV9cdDj2OptgZTkAkovrFS9dS1Sz3OtxOZsfCOxg7DLx
+64q0MiQK9cDGGVAxI1Enu08+eA6cn3TvhG5HL533reVyc5b93a6wH3juJk2+uqi1X+V25PVvCgkq
+R7djYDIclUFoxhldmNN4lDKh64ZjdRIFvDzSkPz/e12sI16/wtspXG71HMqzbOxdRt5jRJvj3S/s
+Jhx67F3aWuvri/DYll+fc6THBt+UPXdM8Ll4Xn0uQdPgGytyMdjxtPbguh8qIwjpoDK9VRYjVLFl
+sHTYOX2bmUsLathqA1A7GAFkXK6fZZBTZXoon8Io6RS/m3PJjup87ykusRbM2HsPOhXiOxYf

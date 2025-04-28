@@ -1,75 +1,37 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\EventDispatcher;
-
-use Symfony\Contracts\EventDispatcher\EventDispatcherInterface as ContractsEventDispatcherInterface;
-
-/**
- * The EventDispatcherInterface is the central point of Symfony's event listener system.
- * Listeners are registered on the manager and events are dispatched through the
- * manager.
- *
- * @author Bernhard Schussek <bschussek@gmail.com>
- */
-interface EventDispatcherInterface extends ContractsEventDispatcherInterface
-{
-    /**
-     * Adds an event listener that listens on the specified events.
-     *
-     * @param callable $listener The listener
-     * @param int      $priority The higher this value, the earlier an event
-     *                           listener will be triggered in the chain (defaults to 0)
-     */
-    public function addListener(string $eventName, $listener, int $priority = 0);
-
-    /**
-     * Adds an event subscriber.
-     *
-     * The subscriber is asked for all the events it is
-     * interested in and added as a listener for these events.
-     */
-    public function addSubscriber(EventSubscriberInterface $subscriber);
-
-    /**
-     * Removes an event listener from the specified events.
-     *
-     * @param callable $listener The listener to remove
-     */
-    public function removeListener(string $eventName, $listener);
-
-    public function removeSubscriber(EventSubscriberInterface $subscriber);
-
-    /**
-     * Gets the listeners of a specific event or all listeners sorted by descending priority.
-     *
-     * @return array The event listeners for the specified event, or all event listeners by event name
-     */
-    public function getListeners(string $eventName = null);
-
-    /**
-     * Gets the listener priority for a specific event.
-     *
-     * Returns null if the event or the listener does not exist.
-     *
-     * @param callable $listener The listener
-     *
-     * @return int|null The event listener priority
-     */
-    public function getListenerPriority(string $eventName, $listener);
-
-    /**
-     * Checks whether an event has any registered listeners.
-     *
-     * @return bool true if the specified event has any listeners, false otherwise
-     */
-    public function hasListeners(string $eventName = null);
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+rpRRg6AFfYUdjoM61m==

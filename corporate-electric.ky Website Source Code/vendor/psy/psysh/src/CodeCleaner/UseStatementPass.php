@@ -1,136 +1,73 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\CodeCleaner;
-
-use PhpParser\Node;
-use PhpParser\Node\Name;
-use PhpParser\Node\Name\FullyQualified as FullyQualifiedName;
-use PhpParser\Node\Stmt\GroupUse;
-use PhpParser\Node\Stmt\Namespace_;
-use PhpParser\Node\Stmt\Use_;
-use PhpParser\Node\Stmt\UseUse;
-use PhpParser\NodeTraverser;
-
-/**
- * Provide implicit use statements for subsequent execution.
- *
- * The use statement pass remembers the last use statement line encountered:
- *
- *     use Foo\Bar as Baz;
- *
- * ... which it then applies implicitly to all future evaluated code, until the
- * current namespace is replaced by another namespace.
- */
-class UseStatementPass extends CodeCleanerPass
-{
-    private $aliases = [];
-    private $lastAliases = [];
-    private $lastNamespace = null;
-
-    /**
-     * Re-load the last set of use statements on re-entering a namespace.
-     *
-     * This isn't how namespaces normally work, but because PsySH has to spin
-     * up a new namespace for every line of code, we do this to make things
-     * work like you'd expect.
-     *
-     * @param Node $node
-     */
-    public function enterNode(Node $node)
-    {
-        if ($node instanceof Namespace_) {
-            // If this is the same namespace as last namespace, let's do ourselves
-            // a favor and reload all the aliases...
-            if (\strtolower($node->name) === \strtolower($this->lastNamespace)) {
-                $this->aliases = $this->lastAliases;
-            }
-        }
-    }
-
-    /**
-     * If this statement is a namespace, forget all the aliases we had.
-     *
-     * If it's a use statement, remember the alias for later. Otherwise, apply
-     * remembered aliases to the code.
-     *
-     * @param Node $node
-     */
-    public function leaveNode(Node $node)
-    {
-        // Store a reference to every "use" statement, because we'll need them in a bit.
-        if ($node instanceof Use_) {
-            foreach ($node->uses as $use) {
-                $alias = $use->alias ?: \end($use->name->parts);
-                $this->aliases[\strtolower($alias)] = $use->name;
-            }
-
-            return NodeTraverser::REMOVE_NODE;
-        }
-
-        // Expand every "use" statement in the group into a full, standalone "use" and store 'em with the others.
-        if ($node instanceof GroupUse) {
-            foreach ($node->uses as $use) {
-                $alias = $use->alias ?: \end($use->name->parts);
-                $this->aliases[\strtolower($alias)] = Name::concat($node->prefix, $use->name, [
-                    'startLine' => $node->prefix->getAttribute('startLine'),
-                    'endLine'   => $use->name->getAttribute('endLine'),
-                ]);
-            }
-
-            return NodeTraverser::REMOVE_NODE;
-        }
-
-        // Start fresh, since we're done with this namespace.
-        if ($node instanceof Namespace_) {
-            $this->lastNamespace = $node->name;
-            $this->lastAliases = $this->aliases;
-            $this->aliases = [];
-
-            return;
-        }
-
-        // Do nothing with UseUse; this an entry in the list of uses in the use statement.
-        if ($node instanceof UseUse) {
-            return;
-        }
-
-        // For everything else, we'll implicitly thunk all aliases into fully-qualified names.
-        foreach ($node as $name => $subNode) {
-            if ($subNode instanceof Name) {
-                if ($replacement = $this->findAlias($subNode)) {
-                    $node->$name = $replacement;
-                }
-            }
-        }
-
-        return $node;
-    }
-
-    /**
-     * Find class/namespace aliases.
-     *
-     * @param Name $name
-     *
-     * @return FullyQualifiedName|null
-     */
-    private function findAlias(Name $name)
-    {
-        $that = \strtolower($name);
-        foreach ($this->aliases as $alias => $prefix) {
-            if ($that === $alias) {
-                return new FullyQualifiedName($prefix->toString());
-            } elseif (\substr($that, 0, \strlen($alias) + 1) === $alias.'\\') {
-                return new FullyQualifiedName($prefix->toString().\substr($name, \strlen($alias)));
-            }
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+LeGtHnTt6rewgNqlA+i=

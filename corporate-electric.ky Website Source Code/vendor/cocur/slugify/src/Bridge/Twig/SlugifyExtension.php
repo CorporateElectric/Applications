@@ -1,80 +1,37 @@
-<?php
-
-/**
- * This file is part of cocur/slugify.
- *
- * (c) Florian Eckerstorfer <florian@eckerstorfer.co>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Cocur\Slugify\Bridge\Twig;
-
-use Cocur\Slugify\SlugifyInterface;
-use Twig\Extension\AbstractExtension;
-use Twig\TwigFilter;
-
-/**
- * SlugifyExtension
- *
- * @package    cocur/slugify
- * @subpackage bridge
- * @author     Florian Eckerstorfer <florian@eckerstorfer.co>
- * @copyright  2012-2015 Florian Eckerstorfer
- * @license    http://www.opensource.org/licenses/MIT The MIT License
- */
-class SlugifyExtension extends AbstractExtension
-{
-    /**
-     * @var SlugifyInterface
-     */
-    private $slugify;
-
-    /**
-     * Constructor.
-     *
-     * @param SlugifyInterface $slugify
-     *
-     * @codeCoverageIgnore
-     */
-    public function __construct(SlugifyInterface $slugify)
-    {
-        $this->slugify = $slugify;
-    }
-
-    /**
-     * Returns the Twig functions of this extension.
-     *
-     * @return TwigFilter[]
-     */
-    public function getFilters()
-    {
-        return [
-            new TwigFilter('slugify', [$this, 'slugifyFilter']),
-        ];
-    }
-
-    /**
-     * Slugify filter.
-     *
-     * @param string      $string
-     * @param string|null $separator
-     *
-     * @return string
-     */
-    public function slugifyFilter($string, $separator = null)
-    {
-        return $this->slugify->slugify($string, $separator);
-    }
-
-    /**
-     * get Name
-     *
-     * @return string
-     */
-    public function getName()
-    {
-        return "SlugifyExtension";
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+hBsOLZN+gGdCOAOQA8sf

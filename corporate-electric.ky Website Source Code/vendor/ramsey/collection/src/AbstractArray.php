@@ -1,180 +1,59 @@
-<?php
-
-/**
- * This file is part of the ramsey/collection library
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @copyright Copyright (c) Ben Ramsey <ben@benramsey.com>
- * @license http://opensource.org/licenses/MIT MIT
- */
-
-declare(strict_types=1);
-
-namespace Ramsey\Collection;
-
-use ArrayIterator;
-use Traversable;
-
-use function serialize;
-use function unserialize;
-
-/**
- * This class provides a basic implementation of `ArrayInterface`, to minimize
- * the effort required to implement this interface.
- */
-abstract class AbstractArray implements ArrayInterface
-{
-    /**
-     * The items of this array.
-     *
-     * @var mixed[]
-     */
-    protected $data = [];
-
-    /**
-     * Constructs a new array object.
-     *
-     * @param mixed[] $data The initial items to add to this array.
-     */
-    public function __construct(array $data = [])
-    {
-        // Invoke offsetSet() for each value added; in this way, sub-classes
-        // may provide additional logic about values added to the array object.
-        foreach ($data as $key => $value) {
-            $this[$key] = $value;
-        }
-    }
-
-    /**
-     * Returns an iterator for this array.
-     *
-     * @link http://php.net/manual/en/iteratoraggregate.getiterator.php IteratorAggregate::getIterator()
-     *
-     * @return ArrayIterator<mixed, mixed>
-     */
-    public function getIterator(): Traversable
-    {
-        return new ArrayIterator($this->data);
-    }
-
-    /**
-     * Returns `true` if the given offset exists in this array.
-     *
-     * @link http://php.net/manual/en/arrayaccess.offsetexists.php ArrayAccess::offsetExists()
-     *
-     * @param mixed $offset The offset to check.
-     */
-    public function offsetExists($offset): bool
-    {
-        return isset($this->data[$offset]);
-    }
-
-    /**
-     * Returns the value at the specified offset.
-     *
-     * @link http://php.net/manual/en/arrayaccess.offsetget.php ArrayAccess::offsetGet()
-     *
-     * @param mixed $offset The offset for which a value should be returned.
-     *
-     * @return mixed|null the value stored at the offset, or null if the offset
-     *     does not exist.
-     */
-    public function offsetGet($offset)
-    {
-        return $this->data[$offset] ?? null;
-    }
-
-    /**
-     * Sets the given value to the given offset in the array.
-     *
-     * @link http://php.net/manual/en/arrayaccess.offsetset.php ArrayAccess::offsetSet()
-     *
-     * @param mixed|null $offset The offset to set. If `null`, the value may be
-     *     set at a numerically-indexed offset.
-     * @param mixed $value The value to set at the given offset.
-     */
-    public function offsetSet($offset, $value): void
-    {
-        if ($offset === null) {
-            $this->data[] = $value;
-        } else {
-            $this->data[$offset] = $value;
-        }
-    }
-
-    /**
-     * Removes the given offset and its value from the array.
-     *
-     * @link http://php.net/manual/en/arrayaccess.offsetunset.php ArrayAccess::offsetUnset()
-     *
-     * @param mixed $offset The offset to remove from the array.
-     */
-    public function offsetUnset($offset): void
-    {
-        unset($this->data[$offset]);
-    }
-
-    /**
-     * Returns a serialized string representation of this array object.
-     *
-     * @link http://php.net/manual/en/serializable.serialize.php Serializable::serialize()
-     *
-     * @return string a PHP serialized string.
-     */
-    public function serialize(): string
-    {
-        return serialize($this->data);
-    }
-
-    /**
-     * Converts a serialized string representation into an instance object.
-     *
-     * @link http://php.net/manual/en/serializable.unserialize.php Serializable::unserialize()
-     *
-     * @param string $serialized A PHP serialized string to unserialize.
-     *
-     * @phpcsSuppress SlevomatCodingStandard.TypeHints.ParameterTypeHint.MissingNativeTypeHint
-     */
-    public function unserialize($serialized): void
-    {
-        $this->data = unserialize($serialized, ['allowed_classes' => false]);
-    }
-
-    /**
-     * Returns the number of items in this array.
-     *
-     * @link http://php.net/manual/en/countable.count.php Countable::count()
-     */
-    public function count(): int
-    {
-        return count($this->data);
-    }
-
-    /**
-     * Removes all items from this array.
-     */
-    public function clear(): void
-    {
-        $this->data = [];
-    }
-
-    /**
-     * Returns a native PHP array representation of this array object.
-     *
-     * @return mixed[]
-     */
-    public function toArray(): array
-    {
-        return $this->data;
-    }
-
-    /**
-     * Returns `true` if this array is empty.
-     */
-    public function isEmpty(): bool
-    {
-        return count($this->data) === 0;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

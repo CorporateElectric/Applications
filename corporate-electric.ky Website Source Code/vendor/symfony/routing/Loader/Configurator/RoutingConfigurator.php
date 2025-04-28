@@ -1,71 +1,58 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Routing\Loader\Configurator;
-
-use Symfony\Component\Routing\Loader\PhpFileLoader;
-use Symfony\Component\Routing\RouteCollection;
-
-/**
- * @author Nicolas Grekas <p@tchwork.com>
- */
-class RoutingConfigurator
-{
-    use Traits\AddTrait;
-
-    private $loader;
-    private $path;
-    private $file;
-
-    public function __construct(RouteCollection $collection, PhpFileLoader $loader, string $path, string $file)
-    {
-        $this->collection = $collection;
-        $this->loader = $loader;
-        $this->path = $path;
-        $this->file = $file;
-    }
-
-    /**
-     * @param string|string[]|null $exclude Glob patterns to exclude from the import
-     */
-    final public function import($resource, string $type = null, bool $ignoreErrors = false, $exclude = null): ImportConfigurator
-    {
-        $this->loader->setCurrentDir(\dirname($this->path));
-
-        $imported = $this->loader->import($resource, $type, $ignoreErrors, $this->file, $exclude) ?: [];
-        if (!\is_array($imported)) {
-            return new ImportConfigurator($this->collection, $imported);
-        }
-
-        $mergedCollection = new RouteCollection();
-        foreach ($imported as $subCollection) {
-            $mergedCollection->addCollection($subCollection);
-        }
-
-        return new ImportConfigurator($this->collection, $mergedCollection);
-    }
-
-    final public function collection(string $name = ''): CollectionConfigurator
-    {
-        return new CollectionConfigurator($this->collection, $name);
-    }
-
-    /**
-     * @return static
-     */
-    final public function withPath(string $path): self
-    {
-        $clone = clone $this;
-        $clone->path = $clone->file = $path;
-
-        return $clone;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+uoYCKy8LUung3/+y5v1G3W==

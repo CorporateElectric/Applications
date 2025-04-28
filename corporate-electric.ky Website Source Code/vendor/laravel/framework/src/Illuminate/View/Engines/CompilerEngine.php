@@ -1,104 +1,58 @@
-<?php
-
-namespace Illuminate\View\Engines;
-
-use ErrorException;
-use Illuminate\Filesystem\Filesystem;
-use Illuminate\View\Compilers\CompilerInterface;
-use Throwable;
-
-class CompilerEngine extends PhpEngine
-{
-    /**
-     * The Blade compiler instance.
-     *
-     * @var \Illuminate\View\Compilers\CompilerInterface
-     */
-    protected $compiler;
-
-    /**
-     * A stack of the last compiled templates.
-     *
-     * @var array
-     */
-    protected $lastCompiled = [];
-
-    /**
-     * Create a new compiler engine instance.
-     *
-     * @param  \Illuminate\View\Compilers\CompilerInterface  $compiler
-     * @param  \Illuminate\Filesystem\Filesystem|null  $files
-     * @return void
-     */
-    public function __construct(CompilerInterface $compiler, Filesystem $files = null)
-    {
-        parent::__construct($files ?: new Filesystem);
-
-        $this->compiler = $compiler;
-    }
-
-    /**
-     * Get the evaluated contents of the view.
-     *
-     * @param  string  $path
-     * @param  array  $data
-     * @return string
-     */
-    public function get($path, array $data = [])
-    {
-        $this->lastCompiled[] = $path;
-
-        // If this given view has expired, which means it has simply been edited since
-        // it was last compiled, we will re-compile the views so we can evaluate a
-        // fresh copy of the view. We'll pass the compiler the path of the view.
-        if ($this->compiler->isExpired($path)) {
-            $this->compiler->compile($path);
-        }
-
-        // Once we have the path to the compiled file, we will evaluate the paths with
-        // typical PHP just like any other templates. We also keep a stack of views
-        // which have been rendered for right exception messages to be generated.
-        $results = $this->evaluatePath($this->compiler->getCompiledPath($path), $data);
-
-        array_pop($this->lastCompiled);
-
-        return $results;
-    }
-
-    /**
-     * Handle a view exception.
-     *
-     * @param  \Throwable  $e
-     * @param  int  $obLevel
-     * @return void
-     *
-     * @throws \Throwable
-     */
-    protected function handleViewException(Throwable $e, $obLevel)
-    {
-        $e = new ErrorException($this->getMessage($e), 0, 1, $e->getFile(), $e->getLine(), $e);
-
-        parent::handleViewException($e, $obLevel);
-    }
-
-    /**
-     * Get the exception message for an exception.
-     *
-     * @param  \Throwable  $e
-     * @return string
-     */
-    protected function getMessage(Throwable $e)
-    {
-        return $e->getMessage().' (View: '.realpath(last($this->lastCompiled)).')';
-    }
-
-    /**
-     * Get the compiler implementation.
-     *
-     * @return \Illuminate\View\Compilers\CompilerInterface
-     */
-    public function getCompiler()
-    {
-        return $this->compiler;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

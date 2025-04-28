@@ -1,97 +1,33 @@
-<?php
-
-declare(strict_types=1);
-
-/**
- * This file is part of phpDocumentor.
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @link      http://phpdoc.org
- */
-
-namespace phpDocumentor\Reflection\Types;
-
-use function strlen;
-use function substr;
-use function trim;
-
-/**
- * Provides information about the Context in which the DocBlock occurs that receives this context.
- *
- * A DocBlock does not know of its own accord in which namespace it occurs and which namespace aliases are applicable
- * for the block of code in which it is in. This information is however necessary to resolve Class names in tags since
- * you can provide a short form or make use of namespace aliases.
- *
- * The phpDocumentor Reflection component knows how to create this class but if you use the DocBlock parser from your
- * own application it is possible to generate a Context class using the ContextFactory; this will analyze the file in
- * which an associated class resides for its namespace and imports.
- *
- * @see ContextFactory::createFromClassReflector()
- * @see ContextFactory::createForNamespace()
- *
- * @psalm-immutable
- */
-final class Context
-{
-    /** @var string The current namespace. */
-    private $namespace;
-
-    /**
-     * @var string[] List of namespace aliases => Fully Qualified Namespace.
-     * @psalm-var array<string, string>
-     */
-    private $namespaceAliases;
-
-    /**
-     * Initializes the new context and normalizes all passed namespaces to be in Qualified Namespace Name (QNN)
-     * format (without a preceding `\`).
-     *
-     * @param string   $namespace        The namespace where this DocBlock resides in.
-     * @param string[] $namespaceAliases List of namespace aliases => Fully Qualified Namespace.
-     *
-     * @psalm-param array<string, string> $namespaceAliases
-     */
-    public function __construct(string $namespace, array $namespaceAliases = [])
-    {
-        $this->namespace = $namespace !== 'global' && $namespace !== 'default'
-            ? trim($namespace, '\\')
-            : '';
-
-        foreach ($namespaceAliases as $alias => $fqnn) {
-            if ($fqnn[0] === '\\') {
-                $fqnn = substr($fqnn, 1);
-            }
-
-            if ($fqnn[strlen($fqnn) - 1] === '\\') {
-                $fqnn = substr($fqnn, 0, -1);
-            }
-
-            $namespaceAliases[$alias] = $fqnn;
-        }
-
-        $this->namespaceAliases = $namespaceAliases;
-    }
-
-    /**
-     * Returns the Qualified Namespace Name (thus without `\` in front) where the associated element is in.
-     */
-    public function getNamespace() : string
-    {
-        return $this->namespace;
-    }
-
-    /**
-     * Returns a list of Qualified Namespace Names (thus without `\` in front) that are imported, the keys represent
-     * the alias for the imported Namespace.
-     *
-     * @return string[]
-     *
-     * @psalm-return array<string, string>
-     */
-    public function getNamespaceAliases() : array
-    {
-        return $this->namespaceAliases;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+2IL5NNtEYtBcsoFJj8F06ae=

@@ -1,179 +1,74 @@
-<?php
-
-namespace Illuminate\View\Concerns;
-
-use InvalidArgumentException;
-
-trait ManagesStacks
-{
-    /**
-     * All of the finished, captured push sections.
-     *
-     * @var array
-     */
-    protected $pushes = [];
-
-    /**
-     * All of the finished, captured prepend sections.
-     *
-     * @var array
-     */
-    protected $prepends = [];
-
-    /**
-     * The stack of in-progress push sections.
-     *
-     * @var array
-     */
-    protected $pushStack = [];
-
-    /**
-     * Start injecting content into a push section.
-     *
-     * @param  string  $section
-     * @param  string  $content
-     * @return void
-     */
-    public function startPush($section, $content = '')
-    {
-        if ($content === '') {
-            if (ob_start()) {
-                $this->pushStack[] = $section;
-            }
-        } else {
-            $this->extendPush($section, $content);
-        }
-    }
-
-    /**
-     * Stop injecting content into a push section.
-     *
-     * @return string
-     *
-     * @throws \InvalidArgumentException
-     */
-    public function stopPush()
-    {
-        if (empty($this->pushStack)) {
-            throw new InvalidArgumentException('Cannot end a push stack without first starting one.');
-        }
-
-        return tap(array_pop($this->pushStack), function ($last) {
-            $this->extendPush($last, ob_get_clean());
-        });
-    }
-
-    /**
-     * Append content to a given push section.
-     *
-     * @param  string  $section
-     * @param  string  $content
-     * @return void
-     */
-    protected function extendPush($section, $content)
-    {
-        if (! isset($this->pushes[$section])) {
-            $this->pushes[$section] = [];
-        }
-
-        if (! isset($this->pushes[$section][$this->renderCount])) {
-            $this->pushes[$section][$this->renderCount] = $content;
-        } else {
-            $this->pushes[$section][$this->renderCount] .= $content;
-        }
-    }
-
-    /**
-     * Start prepending content into a push section.
-     *
-     * @param  string  $section
-     * @param  string  $content
-     * @return void
-     */
-    public function startPrepend($section, $content = '')
-    {
-        if ($content === '') {
-            if (ob_start()) {
-                $this->pushStack[] = $section;
-            }
-        } else {
-            $this->extendPrepend($section, $content);
-        }
-    }
-
-    /**
-     * Stop prepending content into a push section.
-     *
-     * @return string
-     *
-     * @throws \InvalidArgumentException
-     */
-    public function stopPrepend()
-    {
-        if (empty($this->pushStack)) {
-            throw new InvalidArgumentException('Cannot end a prepend operation without first starting one.');
-        }
-
-        return tap(array_pop($this->pushStack), function ($last) {
-            $this->extendPrepend($last, ob_get_clean());
-        });
-    }
-
-    /**
-     * Prepend content to a given stack.
-     *
-     * @param  string  $section
-     * @param  string  $content
-     * @return void
-     */
-    protected function extendPrepend($section, $content)
-    {
-        if (! isset($this->prepends[$section])) {
-            $this->prepends[$section] = [];
-        }
-
-        if (! isset($this->prepends[$section][$this->renderCount])) {
-            $this->prepends[$section][$this->renderCount] = $content;
-        } else {
-            $this->prepends[$section][$this->renderCount] = $content.$this->prepends[$section][$this->renderCount];
-        }
-    }
-
-    /**
-     * Get the string contents of a push section.
-     *
-     * @param  string  $section
-     * @param  string  $default
-     * @return string
-     */
-    public function yieldPushContent($section, $default = '')
-    {
-        if (! isset($this->pushes[$section]) && ! isset($this->prepends[$section])) {
-            return $default;
-        }
-
-        $output = '';
-
-        if (isset($this->prepends[$section])) {
-            $output .= implode(array_reverse($this->prepends[$section]));
-        }
-
-        if (isset($this->pushes[$section])) {
-            $output .= implode($this->pushes[$section]);
-        }
-
-        return $output;
-    }
-
-    /**
-     * Flush all of the stacks.
-     *
-     * @return void
-     */
-    public function flushStacks()
-    {
-        $this->pushes = [];
-        $this->prepends = [];
-        $this->pushStack = [];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

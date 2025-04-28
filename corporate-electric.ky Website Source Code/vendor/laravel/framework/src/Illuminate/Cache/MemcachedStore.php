@@ -1,279 +1,105 @@
-<?php
-
-namespace Illuminate\Cache;
-
-use Illuminate\Contracts\Cache\LockProvider;
-use Illuminate\Support\InteractsWithTime;
-use Memcached;
-use ReflectionMethod;
-
-class MemcachedStore extends TaggableStore implements LockProvider
-{
-    use InteractsWithTime;
-
-    /**
-     * The Memcached instance.
-     *
-     * @var \Memcached
-     */
-    protected $memcached;
-
-    /**
-     * A string that should be prepended to keys.
-     *
-     * @var string
-     */
-    protected $prefix;
-
-    /**
-     * Indicates whether we are using Memcached version >= 3.0.0.
-     *
-     * @var bool
-     */
-    protected $onVersionThree;
-
-    /**
-     * Create a new Memcached store.
-     *
-     * @param  \Memcached  $memcached
-     * @param  string  $prefix
-     * @return void
-     */
-    public function __construct($memcached, $prefix = '')
-    {
-        $this->setPrefix($prefix);
-        $this->memcached = $memcached;
-
-        $this->onVersionThree = (new ReflectionMethod('Memcached', 'getMulti'))
-                            ->getNumberOfParameters() == 2;
-    }
-
-    /**
-     * Retrieve an item from the cache by key.
-     *
-     * @param  string  $key
-     * @return mixed
-     */
-    public function get($key)
-    {
-        $value = $this->memcached->get($this->prefix.$key);
-
-        if ($this->memcached->getResultCode() == 0) {
-            return $value;
-        }
-    }
-
-    /**
-     * Retrieve multiple items from the cache by key.
-     *
-     * Items not found in the cache will have a null value.
-     *
-     * @param  array  $keys
-     * @return array
-     */
-    public function many(array $keys)
-    {
-        $prefixedKeys = array_map(function ($key) {
-            return $this->prefix.$key;
-        }, $keys);
-
-        if ($this->onVersionThree) {
-            $values = $this->memcached->getMulti($prefixedKeys, Memcached::GET_PRESERVE_ORDER);
-        } else {
-            $null = null;
-
-            $values = $this->memcached->getMulti($prefixedKeys, $null, Memcached::GET_PRESERVE_ORDER);
-        }
-
-        if ($this->memcached->getResultCode() != 0) {
-            return array_fill_keys($keys, null);
-        }
-
-        return array_combine($keys, $values);
-    }
-
-    /**
-     * Store an item in the cache for a given number of seconds.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @param  int  $seconds
-     * @return bool
-     */
-    public function put($key, $value, $seconds)
-    {
-        return $this->memcached->set(
-            $this->prefix.$key, $value, $this->calculateExpiration($seconds)
-        );
-    }
-
-    /**
-     * Store multiple items in the cache for a given number of seconds.
-     *
-     * @param  array  $values
-     * @param  int  $seconds
-     * @return bool
-     */
-    public function putMany(array $values, $seconds)
-    {
-        $prefixedValues = [];
-
-        foreach ($values as $key => $value) {
-            $prefixedValues[$this->prefix.$key] = $value;
-        }
-
-        return $this->memcached->setMulti(
-            $prefixedValues, $this->calculateExpiration($seconds)
-        );
-    }
-
-    /**
-     * Store an item in the cache if the key doesn't exist.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @param  int  $seconds
-     * @return bool
-     */
-    public function add($key, $value, $seconds)
-    {
-        return $this->memcached->add(
-            $this->prefix.$key, $value, $this->calculateExpiration($seconds)
-        );
-    }
-
-    /**
-     * Increment the value of an item in the cache.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @return int|bool
-     */
-    public function increment($key, $value = 1)
-    {
-        return $this->memcached->increment($this->prefix.$key, $value);
-    }
-
-    /**
-     * Decrement the value of an item in the cache.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @return int|bool
-     */
-    public function decrement($key, $value = 1)
-    {
-        return $this->memcached->decrement($this->prefix.$key, $value);
-    }
-
-    /**
-     * Store an item in the cache indefinitely.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @return bool
-     */
-    public function forever($key, $value)
-    {
-        return $this->put($key, $value, 0);
-    }
-
-    /**
-     * Get a lock instance.
-     *
-     * @param  string  $name
-     * @param  int  $seconds
-     * @param  string|null  $owner
-     * @return \Illuminate\Contracts\Cache\Lock
-     */
-    public function lock($name, $seconds = 0, $owner = null)
-    {
-        return new MemcachedLock($this->memcached, $this->prefix.$name, $seconds, $owner);
-    }
-
-    /**
-     * Restore a lock instance using the owner identifier.
-     *
-     * @param  string  $name
-     * @param  string  $owner
-     * @return \Illuminate\Contracts\Cache\Lock
-     */
-    public function restoreLock($name, $owner)
-    {
-        return $this->lock($name, 0, $owner);
-    }
-
-    /**
-     * Remove an item from the cache.
-     *
-     * @param  string  $key
-     * @return bool
-     */
-    public function forget($key)
-    {
-        return $this->memcached->delete($this->prefix.$key);
-    }
-
-    /**
-     * Remove all items from the cache.
-     *
-     * @return bool
-     */
-    public function flush()
-    {
-        return $this->memcached->flush();
-    }
-
-    /**
-     * Get the expiration time of the key.
-     *
-     * @param  int  $seconds
-     * @return int
-     */
-    protected function calculateExpiration($seconds)
-    {
-        return $this->toTimestamp($seconds);
-    }
-
-    /**
-     * Get the UNIX timestamp for the given number of seconds.
-     *
-     * @param  int  $seconds
-     * @return int
-     */
-    protected function toTimestamp($seconds)
-    {
-        return $seconds > 0 ? $this->availableAt($seconds) : 0;
-    }
-
-    /**
-     * Get the underlying Memcached connection.
-     *
-     * @return \Memcached
-     */
-    public function getMemcached()
-    {
-        return $this->memcached;
-    }
-
-    /**
-     * Get the cache key prefix.
-     *
-     * @return string
-     */
-    public function getPrefix()
-    {
-        return $this->prefix;
-    }
-
-    /**
-     * Set the cache key prefix.
-     *
-     * @param  string  $prefix
-     * @return void
-     */
-    public function setPrefix($prefix)
-    {
-        $this->prefix = ! empty($prefix) ? $prefix.':' : '';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+Cn4DMmY0CEPKr1vM/o6uLqduTicpuoYkYCvxmW==

@@ -1,78 +1,32 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\TextUI\XmlConfiguration;
-
-use PHPUnit\Util\VersionComparisonOperator;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for PHPUnit
- * @psalm-immutable
- */
-final class TestDirectory
-{
-    /**
-     * @var string
-     */
-    private $path;
-
-    /**
-     * @var string
-     */
-    private $prefix;
-
-    /**
-     * @var string
-     */
-    private $suffix;
-
-    /**
-     * @var string
-     */
-    private $phpVersion;
-
-    /**
-     * @var VersionComparisonOperator
-     */
-    private $phpVersionOperator;
-
-    public function __construct(string $path, string $prefix, string $suffix, string $phpVersion, VersionComparisonOperator $phpVersionOperator)
-    {
-        $this->path               = $path;
-        $this->prefix             = $prefix;
-        $this->suffix             = $suffix;
-        $this->phpVersion         = $phpVersion;
-        $this->phpVersionOperator = $phpVersionOperator;
-    }
-
-    public function path(): string
-    {
-        return $this->path;
-    }
-
-    public function prefix(): string
-    {
-        return $this->prefix;
-    }
-
-    public function suffix(): string
-    {
-        return $this->suffix;
-    }
-
-    public function phpVersion(): string
-    {
-        return $this->phpVersion;
-    }
-
-    public function phpVersionOperator(): VersionComparisonOperator
-    {
-        return $this->phpVersionOperator;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

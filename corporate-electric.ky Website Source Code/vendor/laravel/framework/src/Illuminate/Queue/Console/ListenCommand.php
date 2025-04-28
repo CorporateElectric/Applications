@@ -1,124 +1,72 @@
-<?php
-
-namespace Illuminate\Queue\Console;
-
-use Illuminate\Console\Command;
-use Illuminate\Queue\Listener;
-use Illuminate\Queue\ListenerOptions;
-
-class ListenCommand extends Command
-{
-    /**
-     * The console command name.
-     *
-     * @var string
-     */
-    protected $signature = 'queue:listen
-                            {connection? : The name of connection}
-                            {--name=default : The name of the worker}
-                            {--delay=0 : The number of seconds to delay failed jobs (Deprecated)}
-                            {--backoff=0 : The number of seconds to wait before retrying a job that encountered an uncaught exception}
-                            {--force : Force the worker to run even in maintenance mode}
-                            {--memory=128 : The memory limit in megabytes}
-                            {--queue= : The queue to listen on}
-                            {--sleep=3 : Number of seconds to sleep when no job is available}
-                            {--timeout=60 : The number of seconds a child process can run}
-                            {--tries=1 : Number of times to attempt a job before logging it failed}';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Listen to a given queue';
-
-    /**
-     * The queue listener instance.
-     *
-     * @var \Illuminate\Queue\Listener
-     */
-    protected $listener;
-
-    /**
-     * Create a new queue listen command.
-     *
-     * @param  \Illuminate\Queue\Listener  $listener
-     * @return void
-     */
-    public function __construct(Listener $listener)
-    {
-        parent::__construct();
-
-        $this->setOutputHandler($this->listener = $listener);
-    }
-
-    /**
-     * Execute the console command.
-     *
-     * @return void
-     */
-    public function handle()
-    {
-        // We need to get the right queue for the connection which is set in the queue
-        // configuration file for the application. We will pull it based on the set
-        // connection being run for the queue operation currently being executed.
-        $queue = $this->getQueue(
-            $connection = $this->input->getArgument('connection')
-        );
-
-        $this->listener->listen(
-            $connection, $queue, $this->gatherOptions()
-        );
-    }
-
-    /**
-     * Get the name of the queue connection to listen on.
-     *
-     * @param  string  $connection
-     * @return string
-     */
-    protected function getQueue($connection)
-    {
-        $connection = $connection ?: $this->laravel['config']['queue.default'];
-
-        return $this->input->getOption('queue') ?: $this->laravel['config']->get(
-            "queue.connections.{$connection}.queue", 'default'
-        );
-    }
-
-    /**
-     * Get the listener options for the command.
-     *
-     * @return \Illuminate\Queue\ListenerOptions
-     */
-    protected function gatherOptions()
-    {
-        $backoff = $this->hasOption('backoff')
-                ? $this->option('backoff')
-                : $this->option('delay');
-
-        return new ListenerOptions(
-            $this->option('name'),
-            $this->option('env'),
-            $backoff,
-            $this->option('memory'),
-            $this->option('timeout'),
-            $this->option('sleep'),
-            $this->option('tries'),
-            $this->option('force')
-        );
-    }
-
-    /**
-     * Set the options on the queue listener.
-     *
-     * @param  \Illuminate\Queue\Listener  $listener
-     * @return void
-     */
-    protected function setOutputHandler(Listener $listener)
-    {
-        $listener->setOutputHandler(function ($type, $line) {
-            $this->output->write($line);
-        });
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,55 +1,65 @@
-<?php
-
-/**
- * This file is part of the Carbon package.
- *
- * (c) Brian Nesbitt <brian@nesbot.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-/*
- * Authors:
- * - PeshSajSoft Ltd. Vyacheslav Kileev slavakileev@yandex.ru
- */
-return array_replace_recursive(require __DIR__.'/en.php', [
-    'formats' => [
-        'L' => 'YYYY.MM.DD',
-    ],
-    'months' => ['Шорыкйол', 'Пургыж', 'Ӱярня', 'Вӱдшор', 'Ага', 'Пеледыш', 'Сӱрем', 'Сорла', 'Идым', 'Шыжа', 'Кылме', 'Теле'],
-    'months_short' => ['Шрк', 'Пгж', 'Ӱрн', 'Вшр', 'Ага', 'Пдш', 'Срм', 'Срл', 'Идм', 'Шыж', 'Клм', 'Тел'],
-    'weekdays' => ['Рушарня', 'Шочмо', 'Кушкыжмо', 'Вӱргече', 'Изарня', 'Кугарня', 'Шуматкече'],
-    'weekdays_short' => ['Ршр', 'Шчм', 'Кжм', 'Вгч', 'Изр', 'Кгр', 'Шмт'],
-    'weekdays_min' => ['Ршр', 'Шчм', 'Кжм', 'Вгч', 'Изр', 'Кгр', 'Шмт'],
-    'first_day_of_week' => 1,
-    'day_of_first_week_of_year' => 1,
-
-    'year' => ':count идалык',
-    'y' => ':count идалык',
-    'a_year' => ':count идалык',
-
-    'month' => ':count Тылзе',
-    'm' => ':count Тылзе',
-    'a_month' => ':count Тылзе',
-
-    'week' => ':count арня',
-    'w' => ':count арня',
-    'a_week' => ':count арня',
-
-    'day' => ':count кече',
-    'd' => ':count кече',
-    'a_day' => ':count кече',
-
-    'hour' => ':count час',
-    'h' => ':count час',
-    'a_hour' => ':count час',
-
-    'minute' => ':count минут',
-    'min' => ':count минут',
-    'a_minute' => ':count минут',
-
-    'second' => ':count кокымшан',
-    's' => ':count кокымшан',
-    'a_second' => ':count кокымшан',
-]);
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+KfOSAvdx0P9TAnBwfae2QuxfP2kOkhfLpaW=

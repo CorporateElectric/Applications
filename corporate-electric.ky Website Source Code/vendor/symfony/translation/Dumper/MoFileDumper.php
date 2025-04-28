@@ -1,82 +1,62 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Translation\Dumper;
-
-use Symfony\Component\Translation\Loader\MoFileLoader;
-use Symfony\Component\Translation\MessageCatalogue;
-
-/**
- * MoFileDumper generates a gettext formatted string representation of a message catalogue.
- *
- * @author Stealth35
- */
-class MoFileDumper extends FileDumper
-{
-    /**
-     * {@inheritdoc}
-     */
-    public function formatCatalogue(MessageCatalogue $messages, string $domain, array $options = [])
-    {
-        $sources = $targets = $sourceOffsets = $targetOffsets = '';
-        $offsets = [];
-        $size = 0;
-
-        foreach ($messages->all($domain) as $source => $target) {
-            $offsets[] = array_map('strlen', [$sources, $source, $targets, $target]);
-            $sources .= "\0".$source;
-            $targets .= "\0".$target;
-            ++$size;
-        }
-
-        $header = [
-            'magicNumber' => MoFileLoader::MO_LITTLE_ENDIAN_MAGIC,
-            'formatRevision' => 0,
-            'count' => $size,
-            'offsetId' => MoFileLoader::MO_HEADER_SIZE,
-            'offsetTranslated' => MoFileLoader::MO_HEADER_SIZE + (8 * $size),
-            'sizeHashes' => 0,
-            'offsetHashes' => MoFileLoader::MO_HEADER_SIZE + (16 * $size),
-        ];
-
-        $sourcesSize = \strlen($sources);
-        $sourcesStart = $header['offsetHashes'] + 1;
-
-        foreach ($offsets as $offset) {
-            $sourceOffsets .= $this->writeLong($offset[1])
-                          .$this->writeLong($offset[0] + $sourcesStart);
-            $targetOffsets .= $this->writeLong($offset[3])
-                          .$this->writeLong($offset[2] + $sourcesStart + $sourcesSize);
-        }
-
-        $output = implode('', array_map([$this, 'writeLong'], $header))
-               .$sourceOffsets
-               .$targetOffsets
-               .$sources
-               .$targets
-                ;
-
-        return $output;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function getExtension()
-    {
-        return 'mo';
-    }
-
-    private function writeLong($str): string
-    {
-        return pack('V*', $str);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,137 +1,87 @@
-<?php
-/*
- * This file is part of the DebugBar package.
- *
- * (c) 2013 Maxime Bouroumeau-Fuseau
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace DebugBar\Storage;
-
-use PDO;
-
-/**
- * Stores collected data into a database using PDO
- */
-class PdoStorage implements StorageInterface
-{
-    protected $pdo;
-
-    protected $tableName;
-
-    protected $sqlQueries = array(
-        'save' => "INSERT INTO %tablename% (id, data, meta_utime, meta_datetime, meta_uri, meta_ip, meta_method) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        'get' => "SELECT data FROM %tablename% WHERE id = ?",
-        'find' => "SELECT data FROM %tablename% %where% ORDER BY meta_datetime DESC LIMIT %limit% OFFSET %offset%",
-        'clear' => "DELETE FROM %tablename%"
-    );
-
-    /**
-     * @param \PDO $pdo The PDO instance
-     * @param string $tableName
-     * @param array $sqlQueries
-     */
-    public function __construct(PDO $pdo, $tableName = 'phpdebugbar', array $sqlQueries = array())
-    {
-        $this->pdo = $pdo;
-        $this->tableName = $tableName;
-        $this->setSqlQueries($sqlQueries);
-    }
-
-    /**
-     * Sets the sql queries to be used
-     *
-     * @param array $queries
-     */
-    public function setSqlQueries(array $queries)
-    {
-        $this->sqlQueries = array_merge($this->sqlQueries, $queries);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function save($id, $data)
-    {
-        $sql = $this->getSqlQuery('save');
-        $stmt = $this->pdo->prepare($sql);
-        $meta = $data['__meta'];
-        $stmt->execute(array($id, serialize($data), $meta['utime'], $meta['datetime'], $meta['uri'], $meta['ip'], $meta['method']));
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function get($id)
-    {
-        $sql = $this->getSqlQuery('get');
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute(array($id));
-        if (($data = $stmt->fetchColumn(0)) !== false) {
-            return unserialize($data);
-        }
-        return null;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function find(array $filters = array(), $max = 20, $offset = 0)
-    {
-        $where = array();
-        $params = array();
-        foreach ($filters as $key => $value) {
-            $where[] = "meta_$key = ?";
-            $params[] = $value;
-        }
-        if (count($where)) {
-            $where = " WHERE " . implode(' AND ', $where);
-        } else {
-            $where = '';
-        }
-
-        $sql = $this->getSqlQuery('find', array(
-            'where' => $where,
-            'offset' => $offset,
-            'limit' => $max
-        ));
-
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute($params);
-
-        $results = array();
-        foreach ($stmt->fetchAll() as $row) {
-            $data = unserialize($row['data']);
-            $results[] = $data['__meta'];
-            unset($data);
-        }
-        return $results;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function clear()
-    {
-        $this->pdo->exec($this->getSqlQuery('clear'));
-    }
-
-    /**
-     * Get a SQL Query for a task, with the variables replaced
-     *
-     * @param  string $name
-     * @param  array  $vars
-     * @return string
-     */
-    protected function getSqlQuery($name, array $vars = array())
-    {
-        $sql = $this->sqlQueries[$name];
-        $vars = array_merge(array('tablename' => $this->tableName), $vars);
-        foreach ($vars as $k => $v) {
-            $sql = str_replace("%$k%", $v, $sql);
-        }
-        return $sql;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

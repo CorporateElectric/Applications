@@ -1,101 +1,59 @@
-<?php
-
-namespace Maatwebsite\Excel\Jobs;
-
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Bus\Dispatchable;
-use Maatwebsite\Excel\Concerns\FromQuery;
-use Maatwebsite\Excel\Files\TemporaryFile;
-use Maatwebsite\Excel\Jobs\Middleware\LocalizeJob;
-use Maatwebsite\Excel\Writer;
-
-class AppendQueryToSheet implements ShouldQueue
-{
-    use Queueable, Dispatchable, ProxyFailures;
-
-    /**
-     * @var TemporaryFile
-     */
-    public $temporaryFile;
-
-    /**
-     * @var string
-     */
-    public $writerType;
-
-    /**
-     * @var int
-     */
-    public $sheetIndex;
-
-    /**
-     * @var FromQuery
-     */
-    public $sheetExport;
-
-    /**
-     * @var int
-     */
-    public $page;
-
-    /**
-     * @var int
-     */
-    public $chunkSize;
-
-    /**
-     * @param FromQuery       $sheetExport
-     * @param TemporaryFile   $temporaryFile
-     * @param string          $writerType
-     * @param int             $sheetIndex
-     * @param int             $page
-     * @param int             $chunkSize
-     */
-    public function __construct(
-        FromQuery $sheetExport,
-        TemporaryFile $temporaryFile,
-        string $writerType,
-        int $sheetIndex,
-        int $page,
-        int $chunkSize
-    ) {
-        $this->sheetExport   = $sheetExport;
-        $this->temporaryFile = $temporaryFile;
-        $this->writerType    = $writerType;
-        $this->sheetIndex    = $sheetIndex;
-        $this->page          = $page;
-        $this->chunkSize     = $chunkSize;
-    }
-
-    /**
-     * Get the middleware the job should be dispatched through.
-     *
-     * @return array
-     */
-    public function middleware()
-    {
-        return (method_exists($this->sheetExport, 'middleware')) ? $this->sheetExport->middleware() : [];
-    }
-
-    /**
-     * @param Writer $writer
-     *
-     * @throws \PhpOffice\PhpSpreadsheet\Exception
-     * @throws \PhpOffice\PhpSpreadsheet\Reader\Exception
-     */
-    public function handle(Writer $writer)
-    {
-        (new LocalizeJob($this->sheetExport))->handle($this, function () use ($writer) {
-            $writer = $writer->reopen($this->temporaryFile, $this->writerType);
-
-            $sheet = $writer->getSheetByIndex($this->sheetIndex);
-
-            $query = $this->sheetExport->query()->forPage($this->page, $this->chunkSize);
-
-            $sheet->appendRows($query->get(), $this->sheetExport);
-
-            $writer->write($this->sheetExport, $this->temporaryFile, $this->writerType);
-        });
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+homJjYXJdvl34dLV7B/j+kIW6wZoI0==

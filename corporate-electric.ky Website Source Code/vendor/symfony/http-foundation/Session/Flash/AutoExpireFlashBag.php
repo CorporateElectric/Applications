@@ -1,161 +1,79 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpFoundation\Session\Flash;
-
-/**
- * AutoExpireFlashBag flash message container.
- *
- * @author Drak <drak@zikula.org>
- */
-class AutoExpireFlashBag implements FlashBagInterface
-{
-    private $name = 'flashes';
-    private $flashes = ['display' => [], 'new' => []];
-    private $storageKey;
-
-    /**
-     * @param string $storageKey The key used to store flashes in the session
-     */
-    public function __construct(string $storageKey = '_symfony_flashes')
-    {
-        $this->storageKey = $storageKey;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getName()
-    {
-        return $this->name;
-    }
-
-    public function setName(string $name)
-    {
-        $this->name = $name;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function initialize(array &$flashes)
-    {
-        $this->flashes = &$flashes;
-
-        // The logic: messages from the last request will be stored in new, so we move them to previous
-        // This request we will show what is in 'display'.  What is placed into 'new' this time round will
-        // be moved to display next time round.
-        $this->flashes['display'] = \array_key_exists('new', $this->flashes) ? $this->flashes['new'] : [];
-        $this->flashes['new'] = [];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function add(string $type, $message)
-    {
-        $this->flashes['new'][$type][] = $message;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function peek(string $type, array $default = [])
-    {
-        return $this->has($type) ? $this->flashes['display'][$type] : $default;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function peekAll()
-    {
-        return \array_key_exists('display', $this->flashes) ? (array) $this->flashes['display'] : [];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function get(string $type, array $default = [])
-    {
-        $return = $default;
-
-        if (!$this->has($type)) {
-            return $return;
-        }
-
-        if (isset($this->flashes['display'][$type])) {
-            $return = $this->flashes['display'][$type];
-            unset($this->flashes['display'][$type]);
-        }
-
-        return $return;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function all()
-    {
-        $return = $this->flashes['display'];
-        $this->flashes['display'] = [];
-
-        return $return;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function setAll(array $messages)
-    {
-        $this->flashes['new'] = $messages;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function set(string $type, $messages)
-    {
-        $this->flashes['new'][$type] = (array) $messages;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function has(string $type)
-    {
-        return \array_key_exists($type, $this->flashes['display']) && $this->flashes['display'][$type];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function keys()
-    {
-        return array_keys($this->flashes['display']);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getStorageKey()
-    {
-        return $this->storageKey;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function clear()
-    {
-        return $this->all();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+ejuxFW==

@@ -1,339 +1,111 @@
-<?php
-
-/**
- * This file is part of the Carbon package.
- *
- * (c) Brian Nesbitt <brian@nesbot.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace Carbon;
-
-use JsonSerializable;
-
-class Language implements JsonSerializable
-{
-    /**
-     * @var array
-     */
-    protected static $languagesNames;
-
-    /**
-     * @var array
-     */
-    protected static $regionsNames;
-
-    /**
-     * @var string
-     */
-    protected $id;
-
-    /**
-     * @var string
-     */
-    protected $code;
-
-    /**
-     * @var string|null
-     */
-    protected $variant;
-
-    /**
-     * @var string|null
-     */
-    protected $region;
-
-    /**
-     * @var array
-     */
-    protected $names;
-
-    /**
-     * @var string
-     */
-    protected $isoName;
-
-    /**
-     * @var string
-     */
-    protected $nativeName;
-
-    public function __construct(string $id)
-    {
-        $this->id = str_replace('-', '_', $id);
-        $parts = explode('_', $this->id);
-        $this->code = $parts[0];
-
-        if (isset($parts[1])) {
-            if (!preg_match('/^[A-Z]+$/', $parts[1])) {
-                $this->variant = $parts[1];
-                $parts[1] = $parts[2] ?? null;
-            }
-            if ($parts[1]) {
-                $this->region = $parts[1];
-            }
-        }
-    }
-
-    /**
-     * Get the list of the known languages.
-     *
-     * @return array
-     */
-    public static function all()
-    {
-        if (!static::$languagesNames) {
-            static::$languagesNames = require __DIR__.'/List/languages.php';
-        }
-
-        return static::$languagesNames;
-    }
-
-    /**
-     * Get the list of the known regions.
-     *
-     * @return array
-     */
-    public static function regions()
-    {
-        if (!static::$regionsNames) {
-            static::$regionsNames = require __DIR__.'/List/regions.php';
-        }
-
-        return static::$regionsNames;
-    }
-
-    /**
-     * Get both isoName and nativeName as an array.
-     *
-     * @return array
-     */
-    public function getNames(): array
-    {
-        if (!$this->names) {
-            $this->names = static::all()[$this->code] ?? [
-                'isoName' => $this->code,
-                'nativeName' => $this->code,
-            ];
-        }
-
-        return $this->names;
-    }
-
-    /**
-     * Returns the original locale ID.
-     *
-     * @return string
-     */
-    public function getId(): string
-    {
-        return $this->id;
-    }
-
-    /**
-     * Returns the code of the locale "en"/"fr".
-     *
-     * @return string
-     */
-    public function getCode(): string
-    {
-        return $this->code;
-    }
-
-    /**
-     * Returns the variant code such as cyrl/latn.
-     *
-     * @return string|null
-     */
-    public function getVariant(): ?string
-    {
-        return $this->variant;
-    }
-
-    /**
-     * Returns the variant such as Cyrillic/Latin.
-     *
-     * @return string|null
-     */
-    public function getVariantName(): ?string
-    {
-        if ($this->variant === 'Latn') {
-            return 'Latin';
-        }
-
-        if ($this->variant === 'Cyrl') {
-            return 'Cyrillic';
-        }
-
-        return $this->variant;
-    }
-
-    /**
-     * Returns the region part of the locale.
-     *
-     * @return string|null
-     */
-    public function getRegion(): ?string
-    {
-        return $this->region;
-    }
-
-    /**
-     * Returns the region name for the current language.
-     *
-     * @return string|null
-     */
-    public function getRegionName(): ?string
-    {
-        return $this->region ? (static::regions()[$this->region] ?? $this->region) : null;
-    }
-
-    /**
-     * Returns the long ISO language name.
-     *
-     * @return string
-     */
-    public function getFullIsoName(): string
-    {
-        if (!$this->isoName) {
-            $this->isoName = $this->getNames()['isoName'];
-        }
-
-        return $this->isoName;
-    }
-
-    /**
-     * Set the ISO language name.
-     *
-     * @param string $isoName
-     */
-    public function setIsoName(string $isoName): self
-    {
-        $this->isoName = $isoName;
-
-        return $this;
-    }
-
-    /**
-     * Return the full name of the language in this language.
-     *
-     * @return string
-     */
-    public function getFullNativeName(): string
-    {
-        if (!$this->nativeName) {
-            $this->nativeName = $this->getNames()['nativeName'];
-        }
-
-        return $this->nativeName;
-    }
-
-    /**
-     * Set the name of the language in this language.
-     *
-     * @param string $nativeName
-     */
-    public function setNativeName(string $nativeName): self
-    {
-        $this->nativeName = $nativeName;
-
-        return $this;
-    }
-
-    /**
-     * Returns the short ISO language name.
-     *
-     * @return string
-     */
-    public function getIsoName(): string
-    {
-        $name = $this->getFullIsoName();
-
-        return trim(strstr($name, ',', true) ?: $name);
-    }
-
-    /**
-     * Get the short name of the language in this language.
-     *
-     * @return string
-     */
-    public function getNativeName(): string
-    {
-        $name = $this->getFullNativeName();
-
-        return trim(strstr($name, ',', true) ?: $name);
-    }
-
-    /**
-     * Get a string with short ISO name, region in parentheses if applicable, variant in parentheses if applicable.
-     *
-     * @return string
-     */
-    public function getIsoDescription()
-    {
-        $region = $this->getRegionName();
-        $variant = $this->getVariantName();
-
-        return $this->getIsoName().($region ? ' ('.$region.')' : '').($variant ? ' ('.$variant.')' : '');
-    }
-
-    /**
-     * Get a string with short native name, region in parentheses if applicable, variant in parentheses if applicable.
-     *
-     * @return string
-     */
-    public function getNativeDescription()
-    {
-        $region = $this->getRegionName();
-        $variant = $this->getVariantName();
-
-        return $this->getNativeName().($region ? ' ('.$region.')' : '').($variant ? ' ('.$variant.')' : '');
-    }
-
-    /**
-     * Get a string with long ISO name, region in parentheses if applicable, variant in parentheses if applicable.
-     *
-     * @return string
-     */
-    public function getFullIsoDescription()
-    {
-        $region = $this->getRegionName();
-        $variant = $this->getVariantName();
-
-        return $this->getFullIsoName().($region ? ' ('.$region.')' : '').($variant ? ' ('.$variant.')' : '');
-    }
-
-    /**
-     * Get a string with long native name, region in parentheses if applicable, variant in parentheses if applicable.
-     *
-     * @return string
-     */
-    public function getFullNativeDescription()
-    {
-        $region = $this->getRegionName();
-        $variant = $this->getVariantName();
-
-        return $this->getFullNativeName().($region ? ' ('.$region.')' : '').($variant ? ' ('.$variant.')' : '');
-    }
-
-    /**
-     * Returns the original locale ID.
-     *
-     * @return string
-     */
-    public function __toString()
-    {
-        return $this->getId();
-    }
-
-    /**
-     * Get a string with short ISO name, region in parentheses if applicable, variant in parentheses if applicable.
-     *
-     * @return string
-     */
-    public function jsonSerialize()
-    {
-        return $this->getIsoDescription();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+dlS9kVAu5/cqalaBK/ons9e/r0==

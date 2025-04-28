@@ -1,111 +1,79 @@
-<?php
-
-namespace Lavary\Menu;
-
-use Illuminate\Support\ServiceProvider as BaseServiceProvider;
-use Illuminate\Support\Facades\Blade;
-
-class ServiceProvider extends BaseServiceProvider
-{
-    /**
-     * Indicates if loading of the provider is deferred.
-     *
-     * @var bool
-     */
-    protected $defer = true;
-
-    /**
-     * Register the service provider.
-     */
-    public function register()
-    {
-        $this->mergeConfigFrom(__DIR__.'/../../config/settings.php', 'laravel-menu.settings');
-        $this->mergeConfigFrom(__DIR__.'/../../config/views.php', 'laravel-menu.views');
-
-        $this->app->singleton(Menu::class, function ($app) {
-            return new Menu();
-        });
-    }
-
-    // Patterns and Replace string for lm-attr
-    // Remove with next major version
-    const LM_ATTRS_PATTERN = '/(\s*)@lm-attrs\s*\((\$[^)]+)\)/';
-    const LM_ATTRS_REPLACE = '$1<?php $lm_attrs = $2->attr(); ob_start(); ?>';
-
-    // Patterns and Replace string for lm-endattr
-    // Remove with next major version
-    const LM_ENDATTRS_PATTERN = '/(?<!\w)(\s*)@lm-endattrs(\s*)/';
-    const LM_ENDATTRS_REPLACE = '$1<?php echo \Lavary\Menu\Builder::mergeStatic(ob_get_clean(), $lm_attrs); ?>$2';
-
-    /*
-     * Extending Blade engine. Remove with next major version
-     *
-     * @deprecated
-     * @return void
-     */
-    protected function bladeExtensions()
-    {
-        Blade::extend(function ($view, $compiler) {
-            if (preg_match(self::LM_ATTRS_PATTERN, $view)) {
-              \Log::debug("laravel-menu: @lm-attrs/@lm-endattrs is deprecated. Please switch to @lm_attrs and @lm_endattrs");
-            }
-            return preg_replace(self::LM_ATTRS_PATTERN, self::LM_ATTRS_REPLACE, $view);
-        });
-
-        Blade::extend(function ($view, $compiler) {
-            return preg_replace(self::LM_ENDATTRS_PATTERN, self::LM_ENDATTRS_REPLACE, $view);
-        });
-    }
-
-    /*
-     * Adding custom Blade directives.
-     */
-    protected function bladeDirectives()
-    {
-        /*
-         * Buffers the output if there's any.
-         * The output will be passed to mergeStatic()
-         * where it is merged with item's attributes
-         */
-        Blade::directive('lm_attrs', function ($expression) {
-            return '<?php $lm_attrs = ' . $expression . '->attr(); ob_start(); ?>';
-        });
-
-        /*
-         * Reads the buffer data using ob_get_clean()
-         * and passes it to MergeStatic().
-         * mergeStatic() takes the static string,
-         * converts it into a normal array and merges it with others.
-         */
-        Blade::directive('lm_endattrs', function ($expression) {
-            return '<?php echo \Lavary\Menu\Builder::mergeStatic(ob_get_clean(), $lm_attrs); ?>';
-        });
-    }
-
-    /**
-     * Bootstrap the application events.
-     */
-    public function boot()
-    {
-        $this->bladeDirectives();
-        $this->bladeExtensions();
-
-        $this->loadViewsFrom(__DIR__.'/resources/views', 'laravel-menu');
-
-        $this->publishes([
-            __DIR__.'/resources/views' => base_path('resources/views/vendor/laravel-menu'),
-            __DIR__.'/../../config/settings.php' => config_path('laravel-menu/settings.php'),
-            __DIR__.'/../../config/views.php' => config_path('laravel-menu/views.php'),
-        ]);
-    }
-
-    /**
-     * Get the services provided by the provider.
-     *
-     * @return array
-     */
-    public function provides()
-    {
-        return [Menu::class];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

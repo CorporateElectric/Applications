@@ -1,311 +1,123 @@
-<?php
-
-namespace DebugBar\DataCollector\PDO;
-
-use PDO;
-use PDOException;
-use DebugBar\DataCollector\PDO\TraceablePDOStatement;
-
-/**
- * A PDO proxy which traces statements
- */
-class TraceablePDO extends PDO
-{
-    /** @var PDO */
-    protected $pdo;
-
-    /** @var TracedStatement[] */
-    protected $executedStatements = [];
-
-    public function __construct(PDO $pdo)
-    {
-        $this->pdo = $pdo;
-        $this->pdo->setAttribute(PDO::ATTR_STATEMENT_CLASS, [TraceablePDOStatement::class, [$this]]);
-    }
-
-	/**
-	 * Initiates a transaction
-         *
-	 * @link   http://php.net/manual/en/pdo.begintransaction.php
-	 * @return bool TRUE on success or FALSE on failure.
-	 */
-    public function beginTransaction()
-    {
-        return $this->pdo->beginTransaction();
-    }
-
-    /**
-     * Commits a transaction
-     *
-     * @link   http://php.net/manual/en/pdo.commit.php
-     * @return bool TRUE on success or FALSE on failure.
-     */
-    public function commit()
-    {
-        return $this->pdo->commit();
-    }
-
-    /**
-     * Fetch extended error information associated with the last operation on the database handle
-     *
-     * @link   http://php.net/manual/en/pdo.errorinfo.php
-     * @return array PDO::errorInfo returns an array of error information
-     */
-    public function errorCode()
-    {
-        return $this->pdo->errorCode();
-    }
-
-    /**
-     * Fetch extended error information associated with the last operation on the database handle
-     *
-     * @link   http://php.net/manual/en/pdo.errorinfo.php
-     * @return array PDO::errorInfo returns an array of error information
-     */
-    public function errorInfo()
-    {
-        return $this->pdo->errorInfo();
-    }
-
-    /**
-     * Execute an SQL statement and return the number of affected rows
-     *
-     * @link   http://php.net/manual/en/pdo.exec.php
-     * @param  string   $statement
-     * @return int|bool PDO::exec returns the number of rows that were modified or deleted by the
-     * SQL statement you issued. If no rows were affected, PDO::exec returns 0. This function may
-     * return Boolean FALSE, but may also return a non-Boolean value which evaluates to FALSE.
-     * Please read the section on Booleans for more information
-     */
-    public function exec($statement)
-    {
-        return $this->profileCall('exec', $statement, func_get_args());
-    }
-
-    /**
-     * Retrieve a database connection attribute
-     *
-     * @link   http://php.net/manual/en/pdo.getattribute.php
-     * @param  int   $attribute One of the PDO::ATTR_* constants
-     * @return mixed A successful call returns the value of the requested PDO attribute.
-     * An unsuccessful call returns null.
-     */
-    public function getAttribute($attribute)
-    {
-        return $this->pdo->getAttribute($attribute);
-    }
-
-    /**
-     * Checks if inside a transaction
-     *
-     * @link   http://php.net/manual/en/pdo.intransaction.php
-     * @return bool TRUE if a transaction is currently active, and FALSE if not.
-     */
-    public function inTransaction()
-    {
-        return $this->pdo->inTransaction();
-    }
-
-    /**
-     * Returns the ID of the last inserted row or sequence value
-     *
-     * @link   http://php.net/manual/en/pdo.lastinsertid.php
-     * @param  string $name [optional]
-     * @return string If a sequence name was not specified for the name parameter, PDO::lastInsertId
-     * returns a string representing the row ID of the last row that was inserted into the database.
-     */
-    public function lastInsertId($name = null)
-    {
-        return $this->pdo->lastInsertId($name);
-    }
-
-	/**
-	 * Prepares a statement for execution and returns a statement object
-   *
-	 * @link   http://php.net/manual/en/pdo.prepare.php
-	 * @param  string $statement This must be a valid SQL statement template for the target DB server.
-	 * @param  array  $driver_options [optional] This array holds one or more key=&gt;value pairs to
-	 * set attribute values for the PDOStatement object that this method returns.
-	 * @return TraceablePDOStatement|bool If the database server successfully prepares the statement,
-   * PDO::prepare returns a PDOStatement object. If the database server cannot successfully prepare
-   * the statement, PDO::prepare returns FALSE or emits PDOException (depending on error handling).
-	 */
-    public function prepare($statement, $driver_options = [])
-    {
-        return $this->pdo->prepare($statement, $driver_options);
-    }
-
-	/**
-	 * Executes an SQL statement, returning a result set as a PDOStatement object
-   *
-	 * @link   http://php.net/manual/en/pdo.query.php
-	 * @param  string $statement
-	 * @return TraceablePDOStatement|bool PDO::query returns a PDOStatement object, or FALSE on
-   * failure.
-   */
-    public function query($statement)
-    {
-        return $this->profileCall('query', $statement, func_get_args());
-    }
-
-    /**
-     * Quotes a string for use in a query.
-     *
-     * @link   http://php.net/manual/en/pdo.quote.php
-     * @param  string $string The string to be quoted.
-     * @param  int    $parameter_type [optional] Provides a data type hint for drivers that have
-     * alternate quoting styles.
-     * @return string|bool A quoted string that is theoretically safe to pass into an SQL statement.
-     * Returns FALSE if the driver does not support quoting in this way.
-     */
-    public function quote($string, $parameter_type = PDO::PARAM_STR)
-    {
-        return $this->pdo->quote($string, $parameter_type);
-    }
-
-    /**
-     * Rolls back a transaction
-     *
-     * @link   http://php.net/manual/en/pdo.rollback.php
-     * @return bool TRUE on success or FALSE on failure.
-     */
-    public function rollBack()
-    {
-        return $this->pdo->rollBack();
-    }
-
-    /**
-     * Set an attribute
-     *
-     * @link   http://php.net/manual/en/pdo.setattribute.php
-     * @param  int $attribute
-     * @param  mixed $value
-     * @return bool TRUE on success or FALSE on failure.
-     */
-    public function setAttribute($attribute, $value)
-    {
-        return $this->pdo->setAttribute($attribute, $value);
-    }
-
-    /**
-     * Profiles a call to a PDO method
-     *
-     * @param  string $method
-     * @param  string $sql
-     * @param  array  $args
-     * @return mixed  The result of the call
-     */
-    protected function profileCall($method, $sql, array $args)
-    {
-        $trace = new TracedStatement($sql);
-        $trace->start();
-
-        $ex = null;
-        try {
-            $result = $this->__call($method, $args);
-        } catch (PDOException $e) {
-            $ex = $e;
-        }
-
-        if ($this->pdo->getAttribute(PDO::ATTR_ERRMODE) !== PDO::ERRMODE_EXCEPTION && $result === false) {
-            $error = $this->pdo->errorInfo();
-            $ex = new PDOException($error[2], $error[0]);
-        }
-
-        $trace->end($ex);
-        $this->addExecutedStatement($trace);
-
-        if ($this->pdo->getAttribute(PDO::ATTR_ERRMODE) === PDO::ERRMODE_EXCEPTION && $ex !== null) {
-            throw $ex;
-        }
-        return $result;
-    }
-
-    /**
-     * Adds an executed TracedStatement
-     *
-     * @param TracedStatement $stmt
-     */
-    public function addExecutedStatement(TracedStatement $stmt)
-    {
-        $this->executedStatements[] = $stmt;
-    }
-
-    /**
-     * Returns the accumulated execution time of statements
-     *
-     * @return int
-     */
-    public function getAccumulatedStatementsDuration()
-    {
-        return array_reduce($this->executedStatements, function ($v, $s) { return $v + $s->getDuration(); });
-    }
-
-    /**
-     * Returns the peak memory usage while performing statements
-     *
-     * @return int
-     */
-    public function getMemoryUsage()
-    {
-        return array_reduce($this->executedStatements, function ($v, $s) { return $v + $s->getMemoryUsage(); });
-    }
-
-    /**
-     * Returns the peak memory usage while performing statements
-     *
-     * @return int
-     */
-    public function getPeakMemoryUsage()
-    {
-        return array_reduce($this->executedStatements, function ($v, $s) { $m = $s->getEndMemory(); return $m > $v ? $m : $v; });
-    }
-
-    /**
-     * Returns the list of executed statements as TracedStatement objects
-     *
-     * @return TracedStatement[]
-     */
-    public function getExecutedStatements()
-    {
-        return $this->executedStatements;
-    }
-
-    /**
-     * Returns the list of failed statements
-     *
-     * @return TracedStatement[]
-     */
-    public function getFailedExecutedStatements()
-    {
-        return array_filter($this->executedStatements, function ($s) { return !$s->isSuccess(); });
-    }
-
-    /**
-     * @param $name
-     * @return mixed
-     */
-    public function __get($name)
-    {
-        return $this->pdo->$name;
-    }
-
-    /**
-     * @param $name
-     * @param $value
-     */
-    public function __set($name, $value)
-    {
-        $this->pdo->$name = $value;
-    }
-
-    /**
-     * @param $name
-     * @param $args
-     * @return mixed
-     */
-    public function __call($name, $args)
-    {
-        return call_user_func_array([$this->pdo, $name], $args);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

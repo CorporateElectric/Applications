@@ -1,528 +1,212 @@
-<?php
-
-namespace Illuminate\Cache;
-
-use Aws\DynamoDb\DynamoDbClient;
-use Aws\DynamoDb\Exception\DynamoDbException;
-use Illuminate\Contracts\Cache\LockProvider;
-use Illuminate\Contracts\Cache\Store;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\InteractsWithTime;
-use Illuminate\Support\Str;
-use RuntimeException;
-
-class DynamoDbStore implements LockProvider, Store
-{
-    use InteractsWithTime;
-
-    /**
-     * The DynamoDB client instance.
-     *
-     * @var \Aws\DynamoDb\DynamoDbClient
-     */
-    protected $dynamo;
-
-    /**
-     * The table name.
-     *
-     * @var string
-     */
-    protected $table;
-
-    /**
-     * The name of the attribute that should hold the key.
-     *
-     * @var string
-     */
-    protected $keyAttribute;
-
-    /**
-     * The name of the attribute that should hold the value.
-     *
-     * @var string
-     */
-    protected $valueAttribute;
-
-    /**
-     * The name of the attribute that should hold the expiration timestamp.
-     *
-     * @var string
-     */
-    protected $expirationAttribute;
-
-    /**
-     * A string that should be prepended to keys.
-     *
-     * @var string
-     */
-    protected $prefix;
-
-    /**
-     * Create a new store instance.
-     *
-     * @param  \Aws\DynamoDb\DynamoDbClient  $dynamo
-     * @param  string  $table
-     * @param  string  $keyAttribute
-     * @param  string  $valueAttribute
-     * @param  string  $expirationAttribute
-     * @param  string  $prefix
-     * @return void
-     */
-    public function __construct(DynamoDbClient $dynamo,
-                                $table,
-                                $keyAttribute = 'key',
-                                $valueAttribute = 'value',
-                                $expirationAttribute = 'expires_at',
-                                $prefix = '')
-    {
-        $this->table = $table;
-        $this->dynamo = $dynamo;
-        $this->keyAttribute = $keyAttribute;
-        $this->valueAttribute = $valueAttribute;
-        $this->expirationAttribute = $expirationAttribute;
-
-        $this->setPrefix($prefix);
-    }
-
-    /**
-     * Retrieve an item from the cache by key.
-     *
-     * @param  string  $key
-     * @return mixed
-     */
-    public function get($key)
-    {
-        $response = $this->dynamo->getItem([
-            'TableName' => $this->table,
-            'ConsistentRead' => false,
-            'Key' => [
-                $this->keyAttribute => [
-                    'S' => $this->prefix.$key,
-                ],
-            ],
-        ]);
-
-        if (! isset($response['Item'])) {
-            return;
-        }
-
-        if ($this->isExpired($response['Item'])) {
-            return;
-        }
-
-        if (isset($response['Item'][$this->valueAttribute])) {
-            return $this->unserialize(
-                $response['Item'][$this->valueAttribute]['S'] ??
-                $response['Item'][$this->valueAttribute]['N'] ??
-                null
-            );
-        }
-    }
-
-    /**
-     * Retrieve multiple items from the cache by key.
-     *
-     * Items not found in the cache will have a null value.
-     *
-     * @param  array  $keys
-     * @return array
-     */
-    public function many(array $keys)
-    {
-        $prefixedKeys = array_map(function ($key) {
-            return $this->prefix.$key;
-        }, $keys);
-
-        $response = $this->dynamo->batchGetItem([
-            'RequestItems' => [
-                $this->table => [
-                    'ConsistentRead' => false,
-                    'Keys' => collect($prefixedKeys)->map(function ($key) {
-                        return [
-                            $this->keyAttribute => [
-                                'S' => $key,
-                            ],
-                        ];
-                    })->all(),
-                ],
-            ],
-        ]);
-
-        $now = Carbon::now();
-
-        return array_merge(collect(array_flip($keys))->map(function () {
-            //
-        })->all(), collect($response['Responses'][$this->table])->mapWithKeys(function ($response) use ($now) {
-            if ($this->isExpired($response, $now)) {
-                $value = null;
-            } else {
-                $value = $this->unserialize(
-                    $response[$this->valueAttribute]['S'] ??
-                    $response[$this->valueAttribute]['N'] ??
-                    null
-                );
-            }
-
-            return [Str::replaceFirst($this->prefix, '', $response[$this->keyAttribute]['S']) => $value];
-        })->all());
-    }
-
-    /**
-     * Determine if the given item is expired.
-     *
-     * @param  array  $item
-     * @param  \DateTimeInterface|null  $expiration
-     * @return bool
-     */
-    protected function isExpired(array $item, $expiration = null)
-    {
-        $expiration = $expiration ?: Carbon::now();
-
-        return isset($item[$this->expirationAttribute]) &&
-               $expiration->getTimestamp() >= $item[$this->expirationAttribute]['N'];
-    }
-
-    /**
-     * Store an item in the cache for a given number of seconds.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @param  int  $seconds
-     * @return bool
-     */
-    public function put($key, $value, $seconds)
-    {
-        $this->dynamo->putItem([
-            'TableName' => $this->table,
-            'Item' => [
-                $this->keyAttribute => [
-                    'S' => $this->prefix.$key,
-                ],
-                $this->valueAttribute => [
-                    $this->type($value) => $this->serialize($value),
-                ],
-                $this->expirationAttribute => [
-                    'N' => (string) $this->toTimestamp($seconds),
-                ],
-            ],
-        ]);
-
-        return true;
-    }
-
-    /**
-     * Store multiple items in the cache for a given number of $seconds.
-     *
-     * @param  array  $values
-     * @param  int  $seconds
-     * @return bool
-     */
-    public function putMany(array $values, $seconds)
-    {
-        $expiration = $this->toTimestamp($seconds);
-
-        $this->dynamo->batchWriteItem([
-            'RequestItems' => [
-                $this->table => collect($values)->map(function ($value, $key) use ($expiration) {
-                    return [
-                        'PutRequest' => [
-                            'Item' => [
-                                $this->keyAttribute => [
-                                    'S' => $this->prefix.$key,
-                                ],
-                                $this->valueAttribute => [
-                                    $this->type($value) => $this->serialize($value),
-                                ],
-                                $this->expirationAttribute => [
-                                    'N' => (string) $expiration,
-                                ],
-                            ],
-                        ],
-                    ];
-                })->values()->all(),
-            ],
-        ]);
-
-        return true;
-    }
-
-    /**
-     * Store an item in the cache if the key doesn't exist.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @param  int  $seconds
-     * @return bool
-     */
-    public function add($key, $value, $seconds)
-    {
-        try {
-            $this->dynamo->putItem([
-                'TableName' => $this->table,
-                'Item' => [
-                    $this->keyAttribute => [
-                        'S' => $this->prefix.$key,
-                    ],
-                    $this->valueAttribute => [
-                        $this->type($value) => $this->serialize($value),
-                    ],
-                    $this->expirationAttribute => [
-                        'N' => (string) $this->toTimestamp($seconds),
-                    ],
-                ],
-                'ConditionExpression' => 'attribute_not_exists(#key) OR #expires_at < :now',
-                'ExpressionAttributeNames' => [
-                    '#key' => $this->keyAttribute,
-                    '#expires_at' => $this->expirationAttribute,
-                ],
-                'ExpressionAttributeValues' => [
-                    ':now' => [
-                        'N' => (string) Carbon::now()->getTimestamp(),
-                    ],
-                ],
-            ]);
-
-            return true;
-        } catch (DynamoDbException $e) {
-            if (Str::contains($e->getMessage(), 'ConditionalCheckFailed')) {
-                return false;
-            }
-
-            throw $e;
-        }
-    }
-
-    /**
-     * Increment the value of an item in the cache.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @return int|bool
-     */
-    public function increment($key, $value = 1)
-    {
-        try {
-            $response = $this->dynamo->updateItem([
-                'TableName' => $this->table,
-                'Key' => [
-                    $this->keyAttribute => [
-                        'S' => $this->prefix.$key,
-                    ],
-                ],
-                'ConditionExpression' => 'attribute_exists(#key) AND #expires_at > :now',
-                'UpdateExpression' => 'SET #value = #value + :amount',
-                'ExpressionAttributeNames' => [
-                    '#key' => $this->keyAttribute,
-                    '#value' => $this->valueAttribute,
-                    '#expires_at' => $this->expirationAttribute,
-                ],
-                'ExpressionAttributeValues' => [
-                    ':now' => [
-                        'N' => (string) Carbon::now()->getTimestamp(),
-                    ],
-                    ':amount' => [
-                        'N' => (string) $value,
-                    ],
-                ],
-                'ReturnValues' => 'UPDATED_NEW',
-            ]);
-
-            return (int) $response['Attributes'][$this->valueAttribute]['N'];
-        } catch (DynamoDbException $e) {
-            if (Str::contains($e->getMessage(), 'ConditionalCheckFailed')) {
-                return false;
-            }
-
-            throw $e;
-        }
-    }
-
-    /**
-     * Decrement the value of an item in the cache.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @return int|bool
-     */
-    public function decrement($key, $value = 1)
-    {
-        try {
-            $response = $this->dynamo->updateItem([
-                'TableName' => $this->table,
-                'Key' => [
-                    $this->keyAttribute => [
-                        'S' => $this->prefix.$key,
-                    ],
-                ],
-                'ConditionExpression' => 'attribute_exists(#key) AND #expires_at > :now',
-                'UpdateExpression' => 'SET #value = #value - :amount',
-                'ExpressionAttributeNames' => [
-                    '#key' => $this->keyAttribute,
-                    '#value' => $this->valueAttribute,
-                    '#expires_at' => $this->expirationAttribute,
-                ],
-                'ExpressionAttributeValues' => [
-                    ':now' => [
-                        'N' => (string) Carbon::now()->getTimestamp(),
-                    ],
-                    ':amount' => [
-                        'N' => (string) $value,
-                    ],
-                ],
-                'ReturnValues' => 'UPDATED_NEW',
-            ]);
-
-            return (int) $response['Attributes'][$this->valueAttribute]['N'];
-        } catch (DynamoDbException $e) {
-            if (Str::contains($e->getMessage(), 'ConditionalCheckFailed')) {
-                return false;
-            }
-
-            throw $e;
-        }
-    }
-
-    /**
-     * Store an item in the cache indefinitely.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @return bool
-     */
-    public function forever($key, $value)
-    {
-        return $this->put($key, $value, Carbon::now()->addYears(5)->getTimestamp());
-    }
-
-    /**
-     * Get a lock instance.
-     *
-     * @param  string  $name
-     * @param  int  $seconds
-     * @param  string|null  $owner
-     * @return \Illuminate\Contracts\Cache\Lock
-     */
-    public function lock($name, $seconds = 0, $owner = null)
-    {
-        return new DynamoDbLock($this, $this->prefix.$name, $seconds, $owner);
-    }
-
-    /**
-     * Restore a lock instance using the owner identifier.
-     *
-     * @param  string  $name
-     * @param  string  $owner
-     * @return \Illuminate\Contracts\Cache\Lock
-     */
-    public function restoreLock($name, $owner)
-    {
-        return $this->lock($name, 0, $owner);
-    }
-
-    /**
-     * Remove an item from the cache.
-     *
-     * @param  string  $key
-     * @return bool
-     */
-    public function forget($key)
-    {
-        $this->dynamo->deleteItem([
-            'TableName' => $this->table,
-            'Key' => [
-                $this->keyAttribute => [
-                    'S' => $this->prefix.$key,
-                ],
-            ],
-        ]);
-
-        return true;
-    }
-
-    /**
-     * Remove all items from the cache.
-     *
-     * @return bool
-     *
-     * @throws \RuntimeException
-     */
-    public function flush()
-    {
-        throw new RuntimeException('DynamoDb does not support flushing an entire table. Please create a new table.');
-    }
-
-    /**
-     * Get the UNIX timestamp for the given number of seconds.
-     *
-     * @param  int  $seconds
-     * @return int
-     */
-    protected function toTimestamp($seconds)
-    {
-        return $seconds > 0
-                    ? $this->availableAt($seconds)
-                    : Carbon::now()->getTimestamp();
-    }
-
-    /**
-     * Serialize the value.
-     *
-     * @param  mixed  $value
-     * @return mixed
-     */
-    protected function serialize($value)
-    {
-        return is_numeric($value) ? (string) $value : serialize($value);
-    }
-
-    /**
-     * Unserialize the value.
-     *
-     * @param  mixed  $value
-     * @return mixed
-     */
-    protected function unserialize($value)
-    {
-        if (filter_var($value, FILTER_VALIDATE_INT) !== false) {
-            return (int) $value;
-        }
-
-        if (is_numeric($value)) {
-            return (float) $value;
-        }
-
-        return unserialize($value);
-    }
-
-    /**
-     * Get the DynamoDB type for the given value.
-     *
-     * @param  mixed  $value
-     * @return string
-     */
-    protected function type($value)
-    {
-        return is_numeric($value) ? 'N' : 'S';
-    }
-
-    /**
-     * Get the cache key prefix.
-     *
-     * @return string
-     */
-    public function getPrefix()
-    {
-        return $this->prefix;
-    }
-
-    /**
-     * Set the cache key prefix.
-     *
-     * @param  string  $prefix
-     * @return void
-     */
-    public function setPrefix($prefix)
-    {
-        $this->prefix = ! empty($prefix) ? $prefix.':' : '';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

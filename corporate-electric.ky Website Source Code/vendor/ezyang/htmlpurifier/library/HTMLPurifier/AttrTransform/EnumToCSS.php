@@ -1,68 +1,40 @@
-<?php
-
-/**
- * Generic pre-transform that converts an attribute with a fixed number of
- * values (enumerated) to CSS.
- */
-class HTMLPurifier_AttrTransform_EnumToCSS extends HTMLPurifier_AttrTransform
-{
-    /**
-     * Name of attribute to transform from.
-     * @type string
-     */
-    protected $attr;
-
-    /**
-     * Lookup array of attribute values to CSS.
-     * @type array
-     */
-    protected $enumToCSS = array();
-
-    /**
-     * Case sensitivity of the matching.
-     * @type bool
-     * @warning Currently can only be guaranteed to work with ASCII
-     *          values.
-     */
-    protected $caseSensitive = false;
-
-    /**
-     * @param string $attr Attribute name to transform from
-     * @param array $enum_to_css Lookup array of attribute values to CSS
-     * @param bool $case_sensitive Case sensitivity indicator, default false
-     */
-    public function __construct($attr, $enum_to_css, $case_sensitive = false)
-    {
-        $this->attr = $attr;
-        $this->enumToCSS = $enum_to_css;
-        $this->caseSensitive = (bool)$case_sensitive;
-    }
-
-    /**
-     * @param array $attr
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return array
-     */
-    public function transform($attr, $config, $context)
-    {
-        if (!isset($attr[$this->attr])) {
-            return $attr;
-        }
-
-        $value = trim($attr[$this->attr]);
-        unset($attr[$this->attr]);
-
-        if (!$this->caseSensitive) {
-            $value = strtolower($value);
-        }
-
-        if (!isset($this->enumToCSS[$value])) {
-            return $attr;
-        }
-        $this->prependCSS($attr, $this->enumToCSS[$value]);
-        return $attr;
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

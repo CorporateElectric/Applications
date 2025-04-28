@@ -1,175 +1,65 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet;
-
-class HashTable
-{
-    /**
-     * HashTable elements.
-     *
-     * @var IComparable[]
-     */
-    protected $items = [];
-
-    /**
-     * HashTable key map.
-     *
-     * @var string[]
-     */
-    protected $keyMap = [];
-
-    /**
-     * Create a new \PhpOffice\PhpSpreadsheet\HashTable.
-     *
-     * @param IComparable[] $pSource Optional source array to create HashTable from
-     */
-    public function __construct($pSource = null)
-    {
-        if ($pSource !== null) {
-            // Create HashTable
-            $this->addFromSource($pSource);
-        }
-    }
-
-    /**
-     * Add HashTable items from source.
-     *
-     * @param IComparable[] $pSource Source array to create HashTable from
-     */
-    public function addFromSource(?array $pSource = null): void
-    {
-        // Check if an array was passed
-        if ($pSource == null) {
-            return;
-        }
-
-        foreach ($pSource as $item) {
-            $this->add($item);
-        }
-    }
-
-    /**
-     * Add HashTable item.
-     *
-     * @param IComparable $pSource Item to add
-     */
-    public function add(IComparable $pSource): void
-    {
-        $hash = $pSource->getHashCode();
-        if (!isset($this->items[$hash])) {
-            $this->items[$hash] = $pSource;
-            $this->keyMap[count($this->items) - 1] = $hash;
-        }
-    }
-
-    /**
-     * Remove HashTable item.
-     *
-     * @param IComparable $pSource Item to remove
-     */
-    public function remove(IComparable $pSource): void
-    {
-        $hash = $pSource->getHashCode();
-        if (isset($this->items[$hash])) {
-            unset($this->items[$hash]);
-
-            $deleteKey = -1;
-            foreach ($this->keyMap as $key => $value) {
-                if ($deleteKey >= 0) {
-                    $this->keyMap[$key - 1] = $value;
-                }
-
-                if ($value == $hash) {
-                    $deleteKey = $key;
-                }
-            }
-            unset($this->keyMap[count($this->keyMap) - 1]);
-        }
-    }
-
-    /**
-     * Clear HashTable.
-     */
-    public function clear(): void
-    {
-        $this->items = [];
-        $this->keyMap = [];
-    }
-
-    /**
-     * Count.
-     *
-     * @return int
-     */
-    public function count()
-    {
-        return count($this->items);
-    }
-
-    /**
-     * Get index for hash code.
-     *
-     * @param string $pHashCode
-     *
-     * @return int Index
-     */
-    public function getIndexForHashCode($pHashCode)
-    {
-        return array_search($pHashCode, $this->keyMap);
-    }
-
-    /**
-     * Get by index.
-     *
-     * @param int $pIndex
-     *
-     * @return IComparable
-     */
-    public function getByIndex($pIndex)
-    {
-        if (isset($this->keyMap[$pIndex])) {
-            return $this->getByHashCode($this->keyMap[$pIndex]);
-        }
-
-        return null;
-    }
-
-    /**
-     * Get by hashcode.
-     *
-     * @param string $pHashCode
-     *
-     * @return IComparable
-     */
-    public function getByHashCode($pHashCode)
-    {
-        if (isset($this->items[$pHashCode])) {
-            return $this->items[$pHashCode];
-        }
-
-        return null;
-    }
-
-    /**
-     * HashTable to array.
-     *
-     * @return IComparable[]
-     */
-    public function toArray()
-    {
-        return $this->items;
-    }
-
-    /**
-     * Implement PHP __clone to create a deep clone, not just a shallow copy.
-     */
-    public function __clone()
-    {
-        $vars = get_object_vars($this);
-        foreach ($vars as $key => $value) {
-            if (is_object($value)) {
-                $this->$key = clone $value;
-            }
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+YqQ/RgCi0g+L9QlzBeaW

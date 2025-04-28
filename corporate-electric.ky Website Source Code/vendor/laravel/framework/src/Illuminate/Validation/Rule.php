@@ -1,93 +1,47 @@
-<?php
-
-namespace Illuminate\Validation;
-
-use Illuminate\Contracts\Support\Arrayable;
-use Illuminate\Support\Traits\Macroable;
-use Illuminate\Validation\Rules\Dimensions;
-use Illuminate\Validation\Rules\Exists;
-use Illuminate\Validation\Rules\In;
-use Illuminate\Validation\Rules\NotIn;
-use Illuminate\Validation\Rules\RequiredIf;
-use Illuminate\Validation\Rules\Unique;
-
-class Rule
-{
-    use Macroable;
-
-    /**
-     * Get a dimensions constraint builder instance.
-     *
-     * @param  array  $constraints
-     * @return \Illuminate\Validation\Rules\Dimensions
-     */
-    public static function dimensions(array $constraints = [])
-    {
-        return new Dimensions($constraints);
-    }
-
-    /**
-     * Get an exists constraint builder instance.
-     *
-     * @param  string  $table
-     * @param  string  $column
-     * @return \Illuminate\Validation\Rules\Exists
-     */
-    public static function exists($table, $column = 'NULL')
-    {
-        return new Exists($table, $column);
-    }
-
-    /**
-     * Get an in constraint builder instance.
-     *
-     * @param  \Illuminate\Contracts\Support\Arrayable|array|string  $values
-     * @return \Illuminate\Validation\Rules\In
-     */
-    public static function in($values)
-    {
-        if ($values instanceof Arrayable) {
-            $values = $values->toArray();
-        }
-
-        return new In(is_array($values) ? $values : func_get_args());
-    }
-
-    /**
-     * Get a not_in constraint builder instance.
-     *
-     * @param  \Illuminate\Contracts\Support\Arrayable|array|string  $values
-     * @return \Illuminate\Validation\Rules\NotIn
-     */
-    public static function notIn($values)
-    {
-        if ($values instanceof Arrayable) {
-            $values = $values->toArray();
-        }
-
-        return new NotIn(is_array($values) ? $values : func_get_args());
-    }
-
-    /**
-     * Get a required_if constraint builder instance.
-     *
-     * @param  callable|bool  $callback
-     * @return \Illuminate\Validation\Rules\RequiredIf
-     */
-    public static function requiredIf($callback)
-    {
-        return new RequiredIf($callback);
-    }
-
-    /**
-     * Get a unique constraint builder instance.
-     *
-     * @param  string  $table
-     * @param  string  $column
-     * @return \Illuminate\Validation\Rules\Unique
-     */
-    public static function unique($table, $column = 'NULL')
-    {
-        return new Unique($table, $column);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

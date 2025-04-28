@@ -1,98 +1,55 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of sebastian/global-state.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\GlobalState;
-
-use const PHP_EOL;
-use function is_array;
-use function is_scalar;
-use function serialize;
-use function sprintf;
-use function var_export;
-
-/**
- * Exports parts of a Snapshot as PHP code.
- */
-final class CodeExporter
-{
-    public function constants(Snapshot $snapshot): string
-    {
-        $result = '';
-
-        foreach ($snapshot->constants() as $name => $value) {
-            $result .= sprintf(
-                'if (!defined(\'%s\')) define(\'%s\', %s);' . "\n",
-                $name,
-                $name,
-                $this->exportVariable($value)
-            );
-        }
-
-        return $result;
-    }
-
-    public function globalVariables(Snapshot $snapshot): string
-    {
-        $result = '$GLOBALS = [];' . PHP_EOL;
-
-        foreach ($snapshot->globalVariables() as $name => $value) {
-            $result .= sprintf(
-                '$GLOBALS[%s] = %s;' . PHP_EOL,
-                $this->exportVariable($name),
-                $this->exportVariable($value)
-            );
-        }
-
-        return $result;
-    }
-
-    public function iniSettings(Snapshot $snapshot): string
-    {
-        $result = '';
-
-        foreach ($snapshot->iniSettings() as $key => $value) {
-            $result .= sprintf(
-                '@ini_set(%s, %s);' . "\n",
-                $this->exportVariable($key),
-                $this->exportVariable($value)
-            );
-        }
-
-        return $result;
-    }
-
-    private function exportVariable($variable): string
-    {
-        if (is_scalar($variable) || null === $variable ||
-            (is_array($variable) && $this->arrayOnlyContainsScalars($variable))) {
-            return var_export($variable, true);
-        }
-
-        return 'unserialize(' . var_export(serialize($variable), true) . ')';
-    }
-
-    private function arrayOnlyContainsScalars(array $array): bool
-    {
-        $result = true;
-
-        foreach ($array as $element) {
-            if (is_array($element)) {
-                $result = $this->arrayOnlyContainsScalars($element);
-            } elseif (!is_scalar($element) && null !== $element) {
-                $result = false;
-            }
-
-            if ($result === false) {
-                break;
-            }
-        }
-
-        return $result;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

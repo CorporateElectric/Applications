@@ -1,136 +1,65 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Runner\Filter;
-
-use function end;
-use function implode;
-use function preg_match;
-use function sprintf;
-use function str_replace;
-use Exception;
-use PHPUnit\Framework\ErrorTestCase;
-use PHPUnit\Framework\TestSuite;
-use PHPUnit\Framework\WarningTestCase;
-use PHPUnit\Util\RegularExpression;
-use RecursiveFilterIterator;
-use RecursiveIterator;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for PHPUnit
- */
-final class NameFilterIterator extends RecursiveFilterIterator
-{
-    /**
-     * @var string
-     */
-    private $filter;
-
-    /**
-     * @var int
-     */
-    private $filterMin;
-
-    /**
-     * @var int
-     */
-    private $filterMax;
-
-    /**
-     * @throws Exception
-     */
-    public function __construct(RecursiveIterator $iterator, string $filter)
-    {
-        parent::__construct($iterator);
-
-        $this->setFilter($filter);
-    }
-
-    /**
-     * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
-     */
-    public function accept(): bool
-    {
-        $test = $this->getInnerIterator()->current();
-
-        if ($test instanceof TestSuite) {
-            return true;
-        }
-
-        $tmp = \PHPUnit\Util\Test::describe($test);
-
-        if ($test instanceof ErrorTestCase || $test instanceof WarningTestCase) {
-            $name = $test->getMessage();
-        } elseif ($tmp[0] !== '') {
-            $name = implode('::', $tmp);
-        } else {
-            $name = $tmp[1];
-        }
-
-        $accepted = @preg_match($this->filter, $name, $matches);
-
-        if ($accepted && isset($this->filterMax)) {
-            $set      = end($matches);
-            $accepted = $set >= $this->filterMin && $set <= $this->filterMax;
-        }
-
-        return (bool) $accepted;
-    }
-
-    /**
-     * @throws Exception
-     */
-    private function setFilter(string $filter): void
-    {
-        if (RegularExpression::safeMatch($filter, '') === false) {
-            // Handles:
-            //  * testAssertEqualsSucceeds#4
-            //  * testAssertEqualsSucceeds#4-8
-            if (preg_match('/^(.*?)#(\d+)(?:-(\d+))?$/', $filter, $matches)) {
-                if (isset($matches[3]) && $matches[2] < $matches[3]) {
-                    $filter = sprintf(
-                        '%s.*with data set #(\d+)$',
-                        $matches[1]
-                    );
-
-                    $this->filterMin = (int) $matches[2];
-                    $this->filterMax = (int) $matches[3];
-                } else {
-                    $filter = sprintf(
-                        '%s.*with data set #%s$',
-                        $matches[1],
-                        $matches[2]
-                    );
-                }
-            } // Handles:
-            //  * testDetermineJsonError@JSON_ERROR_NONE
-            //  * testDetermineJsonError@JSON.*
-            elseif (preg_match('/^(.*?)@(.+)$/', $filter, $matches)) {
-                $filter = sprintf(
-                    '%s.*with data set "%s"$',
-                    $matches[1],
-                    $matches[2]
-                );
-            }
-
-            // Escape delimiters in regular expression. Do NOT use preg_quote,
-            // to keep magic characters.
-            $filter = sprintf(
-                '/%s/i',
-                str_replace(
-                    '/',
-                    '\\/',
-                    $filter
-                )
-            );
-        }
-
-        $this->filter = $filter;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+9vPBVhySTgSeKr7okwMv5fBaXXt92hrHMzJ1

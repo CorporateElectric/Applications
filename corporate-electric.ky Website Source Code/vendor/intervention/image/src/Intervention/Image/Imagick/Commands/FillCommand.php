@@ -1,105 +1,78 @@
-<?php
-
-namespace Intervention\Image\Imagick\Commands;
-
-use Intervention\Image\Commands\AbstractCommand;
-use Intervention\Image\Exception\NotReadableException;
-use Intervention\Image\Image;
-use Intervention\Image\Imagick\Color;
-use Intervention\Image\Imagick\Decoder;
-
-class FillCommand extends AbstractCommand
-{
-    /**
-     * Fills image with color or pattern
-     *
-     * @param  \Intervention\Image\Image $image
-     * @return boolean
-     */
-    public function execute($image)
-    {
-        $filling = $this->argument(0)->value();
-        $x = $this->argument(1)->type('digit')->value();
-        $y = $this->argument(2)->type('digit')->value();
-
-        $imagick = $image->getCore();
-
-        try {
-            // set image filling
-            $source = new Decoder;
-            $filling = $source->init($filling);
-
-        } catch (NotReadableException $e) {
-
-            // set solid color filling
-            $filling = new Color($filling);
-        }
-
-        // flood fill if coordinates are set
-        if (is_int($x) && is_int($y)) {
-
-            // flood fill with texture
-            if ($filling instanceof Image) {
-
-                // create tile
-                $tile = clone $image->getCore();
-
-                // mask away color at position
-                $tile->transparentPaintImage($tile->getImagePixelColor($x, $y), 0, 0, false);
-
-                // create canvas
-                $canvas = clone $image->getCore();
-
-                // fill canvas with texture
-                $canvas = $canvas->textureImage($filling->getCore());
-
-                // merge canvas and tile
-                $canvas->compositeImage($tile, \Imagick::COMPOSITE_DEFAULT, 0, 0);
-
-                // replace image core
-                $image->setCore($canvas);
-
-            // flood fill with color
-            } elseif ($filling instanceof Color) {
-
-                // create canvas with filling
-                $canvas = new \Imagick;
-                $canvas->newImage($image->getWidth(), $image->getHeight(), $filling->getPixel(), 'png');
-
-                // create tile to put on top
-                $tile = clone $image->getCore();
-
-                // mask away color at pos.
-                $tile->transparentPaintImage($tile->getImagePixelColor($x, $y), 0, 0, false);
-
-                // save alpha channel of original image
-                $alpha = clone $image->getCore();
-
-                // merge original with canvas and tile
-                $image->getCore()->compositeImage($canvas, \Imagick::COMPOSITE_DEFAULT, 0, 0);
-                $image->getCore()->compositeImage($tile, \Imagick::COMPOSITE_DEFAULT, 0, 0);
-
-                // restore alpha channel of original image
-                $image->getCore()->compositeImage($alpha, \Imagick::COMPOSITE_COPYOPACITY, 0, 0);
-            }
-
-        } else {
-
-            if ($filling instanceof Image) {
-
-                // fill whole image with texture
-                $image->setCore($image->getCore()->textureImage($filling->getCore()));
-
-            } elseif ($filling instanceof Color) {
-
-                // fill whole image with color
-                $draw = new \ImagickDraw();
-                $draw->setFillColor($filling->getPixel());
-                $draw->rectangle(0, 0, $image->getWidth(), $image->getHeight());
-                $image->getCore()->drawImage($draw);
-            }
-        }
-
-        return true;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,353 +1,156 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Contracts\Translation\Test;
-
-use PHPUnit\Framework\TestCase;
-use Symfony\Contracts\Translation\TranslatorInterface;
-use Symfony\Contracts\Translation\TranslatorTrait;
-
-/**
- * Test should cover all languages mentioned on http://translate.sourceforge.net/wiki/l10n/pluralforms
- * and Plural forms mentioned on http://www.gnu.org/software/gettext/manual/gettext.html#Plural-forms.
- *
- * See also https://developer.mozilla.org/en/Localization_and_Plurals which mentions 15 rules having a maximum of 6 forms.
- * The mozilla code is also interesting to check for.
- *
- * As mentioned by chx http://drupal.org/node/1273968 we can cover all by testing number from 0 to 199
- *
- * The goal to cover all languages is to far fetched so this test case is smaller.
- *
- * @author Clemens Tolboom clemens@build2be.nl
- */
-class TranslatorTest extends TestCase
-{
-    public function getTranslator()
-    {
-        return new class() implements TranslatorInterface {
-            use TranslatorTrait;
-        };
-    }
-
-    /**
-     * @dataProvider getTransTests
-     */
-    public function testTrans($expected, $id, $parameters)
-    {
-        $translator = $this->getTranslator();
-
-        $this->assertEquals($expected, $translator->trans($id, $parameters));
-    }
-
-    /**
-     * @dataProvider getTransChoiceTests
-     */
-    public function testTransChoiceWithExplicitLocale($expected, $id, $number)
-    {
-        $translator = $this->getTranslator();
-        $translator->setLocale('en');
-
-        $this->assertEquals($expected, $translator->trans($id, ['%count%' => $number]));
-    }
-
-    /**
-     * @dataProvider getTransChoiceTests
-     */
-    public function testTransChoiceWithDefaultLocale($expected, $id, $number)
-    {
-        \Locale::setDefault('en');
-
-        $translator = $this->getTranslator();
-
-        $this->assertEquals($expected, $translator->trans($id, ['%count%' => $number]));
-    }
-
-    public function testGetSetLocale()
-    {
-        $translator = $this->getTranslator();
-        $translator->setLocale('en');
-
-        $this->assertEquals('en', $translator->getLocale());
-    }
-
-    /**
-     * @requires extension intl
-     */
-    public function testGetLocaleReturnsDefaultLocaleIfNotSet()
-    {
-        $translator = $this->getTranslator();
-
-        \Locale::setDefault('pt_BR');
-        $this->assertEquals('pt_BR', $translator->getLocale());
-
-        \Locale::setDefault('en');
-        $this->assertEquals('en', $translator->getLocale());
-    }
-
-    public function getTransTests()
-    {
-        return [
-            ['Symfony is great!', 'Symfony is great!', []],
-            ['Symfony is awesome!', 'Symfony is %what%!', ['%what%' => 'awesome']],
-        ];
-    }
-
-    public function getTransChoiceTests()
-    {
-        return [
-            ['There are no apples', '{0} There are no apples|{1} There is one apple|]1,Inf] There are %count% apples', 0],
-            ['There is one apple', '{0} There are no apples|{1} There is one apple|]1,Inf] There are %count% apples', 1],
-            ['There are 10 apples', '{0} There are no apples|{1} There is one apple|]1,Inf] There are %count% apples', 10],
-            ['There are 0 apples', 'There is 1 apple|There are %count% apples', 0],
-            ['There is 1 apple', 'There is 1 apple|There are %count% apples', 1],
-            ['There are 10 apples', 'There is 1 apple|There are %count% apples', 10],
-            // custom validation messages may be coded with a fixed value
-            ['There are 2 apples', 'There are 2 apples', 2],
-        ];
-    }
-
-    /**
-     * @dataProvider getInternal
-     */
-    public function testInterval($expected, $number, $interval)
-    {
-        $translator = $this->getTranslator();
-
-        $this->assertEquals($expected, $translator->trans($interval.' foo|[1,Inf[ bar', ['%count%' => $number]));
-    }
-
-    public function getInternal()
-    {
-        return [
-            ['foo', 3, '{1,2, 3 ,4}'],
-            ['bar', 10, '{1,2, 3 ,4}'],
-            ['bar', 3, '[1,2]'],
-            ['foo', 1, '[1,2]'],
-            ['foo', 2, '[1,2]'],
-            ['bar', 1, ']1,2['],
-            ['bar', 2, ']1,2['],
-            ['foo', log(0), '[-Inf,2['],
-            ['foo', -log(0), '[-2,+Inf]'],
-        ];
-    }
-
-    /**
-     * @dataProvider getChooseTests
-     */
-    public function testChoose($expected, $id, $number)
-    {
-        $translator = $this->getTranslator();
-
-        $this->assertEquals($expected, $translator->trans($id, ['%count%' => $number]));
-    }
-
-    public function testReturnMessageIfExactlyOneStandardRuleIsGiven()
-    {
-        $translator = $this->getTranslator();
-
-        $this->assertEquals('There are two apples', $translator->trans('There are two apples', ['%count%' => 2]));
-    }
-
-    /**
-     * @dataProvider getNonMatchingMessages
-     */
-    public function testThrowExceptionIfMatchingMessageCannotBeFound($id, $number)
-    {
-        $this->expectException('InvalidArgumentException');
-        $translator = $this->getTranslator();
-
-        $translator->trans($id, ['%count%' => $number]);
-    }
-
-    public function getNonMatchingMessages()
-    {
-        return [
-            ['{0} There are no apples|{1} There is one apple', 2],
-            ['{1} There is one apple|]1,Inf] There are %count% apples', 0],
-            ['{1} There is one apple|]2,Inf] There are %count% apples', 2],
-            ['{0} There are no apples|There is one apple', 2],
-        ];
-    }
-
-    public function getChooseTests()
-    {
-        return [
-            ['There are no apples', '{0} There are no apples|{1} There is one apple|]1,Inf] There are %count% apples', 0],
-            ['There are no apples', '{0}     There are no apples|{1} There is one apple|]1,Inf] There are %count% apples', 0],
-            ['There are no apples', '{0}There are no apples|{1} There is one apple|]1,Inf] There are %count% apples', 0],
-
-            ['There is one apple', '{0} There are no apples|{1} There is one apple|]1,Inf] There are %count% apples', 1],
-
-            ['There are 10 apples', '{0} There are no apples|{1} There is one apple|]1,Inf] There are %count% apples', 10],
-            ['There are 10 apples', '{0} There are no apples|{1} There is one apple|]1,Inf]There are %count% apples', 10],
-            ['There are 10 apples', '{0} There are no apples|{1} There is one apple|]1,Inf]     There are %count% apples', 10],
-
-            ['There are 0 apples', 'There is one apple|There are %count% apples', 0],
-            ['There is one apple', 'There is one apple|There are %count% apples', 1],
-            ['There are 10 apples', 'There is one apple|There are %count% apples', 10],
-
-            ['There are 0 apples', 'one: There is one apple|more: There are %count% apples', 0],
-            ['There is one apple', 'one: There is one apple|more: There are %count% apples', 1],
-            ['There are 10 apples', 'one: There is one apple|more: There are %count% apples', 10],
-
-            ['There are no apples', '{0} There are no apples|one: There is one apple|more: There are %count% apples', 0],
-            ['There is one apple', '{0} There are no apples|one: There is one apple|more: There are %count% apples', 1],
-            ['There are 10 apples', '{0} There are no apples|one: There is one apple|more: There are %count% apples', 10],
-
-            ['', '{0}|{1} There is one apple|]1,Inf] There are %count% apples', 0],
-            ['', '{0} There are no apples|{1}|]1,Inf] There are %count% apples', 1],
-
-            // Indexed only tests which are Gettext PoFile* compatible strings.
-            ['There are 0 apples', 'There is one apple|There are %count% apples', 0],
-            ['There is one apple', 'There is one apple|There are %count% apples', 1],
-            ['There are 2 apples', 'There is one apple|There are %count% apples', 2],
-
-            // Tests for float numbers
-            ['There is almost one apple', '{0} There are no apples|]0,1[ There is almost one apple|{1} There is one apple|[1,Inf] There is more than one apple', 0.7],
-            ['There is one apple', '{0} There are no apples|]0,1[There are %count% apples|{1} There is one apple|[1,Inf] There is more than one apple', 1],
-            ['There is more than one apple', '{0} There are no apples|]0,1[There are %count% apples|{1} There is one apple|[1,Inf] There is more than one apple', 1.7],
-            ['There are no apples', '{0} There are no apples|]0,1[There are %count% apples|{1} There is one apple|[1,Inf] There is more than one apple', 0],
-            ['There are no apples', '{0} There are no apples|]0,1[There are %count% apples|{1} There is one apple|[1,Inf] There is more than one apple', 0.0],
-            ['There are no apples', '{0.0} There are no apples|]0,1[There are %count% apples|{1} There is one apple|[1,Inf] There is more than one apple', 0],
-
-            // Test texts with new-lines
-            // with double-quotes and \n in id & double-quotes and actual newlines in text
-            ["This is a text with a\n            new-line in it. Selector = 0.", '{0}This is a text with a
-            new-line in it. Selector = 0.|{1}This is a text with a
-            new-line in it. Selector = 1.|[1,Inf]This is a text with a
-            new-line in it. Selector > 1.', 0],
-            // with double-quotes and \n in id and single-quotes and actual newlines in text
-            ["This is a text with a\n            new-line in it. Selector = 1.", '{0}This is a text with a
-            new-line in it. Selector = 0.|{1}This is a text with a
-            new-line in it. Selector = 1.|[1,Inf]This is a text with a
-            new-line in it. Selector > 1.', 1],
-            ["This is a text with a\n            new-line in it. Selector > 1.", '{0}This is a text with a
-            new-line in it. Selector = 0.|{1}This is a text with a
-            new-line in it. Selector = 1.|[1,Inf]This is a text with a
-            new-line in it. Selector > 1.', 5],
-            // with double-quotes and id split accros lines
-            ['This is a text with a
-            new-line in it. Selector = 1.', '{0}This is a text with a
-            new-line in it. Selector = 0.|{1}This is a text with a
-            new-line in it. Selector = 1.|[1,Inf]This is a text with a
-            new-line in it. Selector > 1.', 1],
-            // with single-quotes and id split accros lines
-            ['This is a text with a
-            new-line in it. Selector > 1.', '{0}This is a text with a
-            new-line in it. Selector = 0.|{1}This is a text with a
-            new-line in it. Selector = 1.|[1,Inf]This is a text with a
-            new-line in it. Selector > 1.', 5],
-            // with single-quotes and \n in text
-            ['This is a text with a\nnew-line in it. Selector = 0.', '{0}This is a text with a\nnew-line in it. Selector = 0.|{1}This is a text with a\nnew-line in it. Selector = 1.|[1,Inf]This is a text with a\nnew-line in it. Selector > 1.', 0],
-            // with double-quotes and id split accros lines
-            ["This is a text with a\nnew-line in it. Selector = 1.", "{0}This is a text with a\nnew-line in it. Selector = 0.|{1}This is a text with a\nnew-line in it. Selector = 1.|[1,Inf]This is a text with a\nnew-line in it. Selector > 1.", 1],
-            // esacape pipe
-            ['This is a text with | in it. Selector = 0.', '{0}This is a text with || in it. Selector = 0.|{1}This is a text with || in it. Selector = 1.', 0],
-            // Empty plural set (2 plural forms) from a .PO file
-            ['', '|', 1],
-            // Empty plural set (3 plural forms) from a .PO file
-            ['', '||', 1],
-        ];
-    }
-
-    /**
-     * @dataProvider failingLangcodes
-     */
-    public function testFailedLangcodes($nplural, $langCodes)
-    {
-        $matrix = $this->generateTestData($langCodes);
-        $this->validateMatrix($nplural, $matrix, false);
-    }
-
-    /**
-     * @dataProvider successLangcodes
-     */
-    public function testLangcodes($nplural, $langCodes)
-    {
-        $matrix = $this->generateTestData($langCodes);
-        $this->validateMatrix($nplural, $matrix);
-    }
-
-    /**
-     * This array should contain all currently known langcodes.
-     *
-     * As it is impossible to have this ever complete we should try as hard as possible to have it almost complete.
-     *
-     * @return array
-     */
-    public function successLangcodes()
-    {
-        return [
-            ['1', ['ay', 'bo', 'cgg', 'dz', 'id', 'ja', 'jbo', 'ka', 'kk', 'km', 'ko', 'ky']],
-            ['2', ['nl', 'fr', 'en', 'de', 'de_GE', 'hy', 'hy_AM']],
-            ['3', ['be', 'bs', 'cs', 'hr']],
-            ['4', ['cy', 'mt', 'sl']],
-            ['6', ['ar']],
-        ];
-    }
-
-    /**
-     * This array should be at least empty within the near future.
-     *
-     * This both depends on a complete list trying to add above as understanding
-     * the plural rules of the current failing languages.
-     *
-     * @return array with nplural together with langcodes
-     */
-    public function failingLangcodes()
-    {
-        return [
-            ['1', ['fa']],
-            ['2', ['jbo']],
-            ['3', ['cbs']],
-            ['4', ['gd', 'kw']],
-            ['5', ['ga']],
-        ];
-    }
-
-    /**
-     * We validate only on the plural coverage. Thus the real rules is not tested.
-     *
-     * @param string $nplural       Plural expected
-     * @param array  $matrix        Containing langcodes and their plural index values
-     * @param bool   $expectSuccess
-     */
-    protected function validateMatrix($nplural, $matrix, $expectSuccess = true)
-    {
-        foreach ($matrix as $langCode => $data) {
-            $indexes = array_flip($data);
-            if ($expectSuccess) {
-                $this->assertEquals($nplural, \count($indexes), "Langcode '$langCode' has '$nplural' plural forms.");
-            } else {
-                $this->assertNotEquals((int) $nplural, \count($indexes), "Langcode '$langCode' has '$nplural' plural forms.");
-            }
-        }
-    }
-
-    protected function generateTestData($langCodes)
-    {
-        $translator = new class() {
-            use TranslatorTrait {
-                getPluralizationRule as public;
-            }
-        };
-
-        $matrix = [];
-        foreach ($langCodes as $langCode) {
-            for ($count = 0; $count < 200; ++$count) {
-                $plural = $translator->getPluralizationRule($count, $langCode);
-                $matrix[$langCode][$count] = $plural;
-            }
-        }
-
-        return $matrix;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

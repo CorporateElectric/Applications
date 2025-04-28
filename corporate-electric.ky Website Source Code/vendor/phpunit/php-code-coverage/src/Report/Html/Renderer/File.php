@@ -1,1141 +1,573 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of phpunit/php-code-coverage.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\CodeCoverage\Report\Html;
-
-use const ENT_COMPAT;
-use const ENT_HTML401;
-use const ENT_SUBSTITUTE;
-use const T_ABSTRACT;
-use const T_ARRAY;
-use const T_AS;
-use const T_BREAK;
-use const T_CALLABLE;
-use const T_CASE;
-use const T_CATCH;
-use const T_CLASS;
-use const T_CLONE;
-use const T_COMMENT;
-use const T_CONST;
-use const T_CONTINUE;
-use const T_DECLARE;
-use const T_DEFAULT;
-use const T_DO;
-use const T_DOC_COMMENT;
-use const T_ECHO;
-use const T_ELSE;
-use const T_ELSEIF;
-use const T_EMPTY;
-use const T_ENDDECLARE;
-use const T_ENDFOR;
-use const T_ENDFOREACH;
-use const T_ENDIF;
-use const T_ENDSWITCH;
-use const T_ENDWHILE;
-use const T_EVAL;
-use const T_EXIT;
-use const T_EXTENDS;
-use const T_FINAL;
-use const T_FINALLY;
-use const T_FOR;
-use const T_FOREACH;
-use const T_FUNCTION;
-use const T_GLOBAL;
-use const T_GOTO;
-use const T_HALT_COMPILER;
-use const T_IF;
-use const T_IMPLEMENTS;
-use const T_INCLUDE;
-use const T_INCLUDE_ONCE;
-use const T_INLINE_HTML;
-use const T_INSTANCEOF;
-use const T_INSTEADOF;
-use const T_INTERFACE;
-use const T_ISSET;
-use const T_LIST;
-use const T_NAMESPACE;
-use const T_NEW;
-use const T_PRINT;
-use const T_PRIVATE;
-use const T_PROTECTED;
-use const T_PUBLIC;
-use const T_REQUIRE;
-use const T_REQUIRE_ONCE;
-use const T_RETURN;
-use const T_STATIC;
-use const T_SWITCH;
-use const T_THROW;
-use const T_TRAIT;
-use const T_TRY;
-use const T_UNSET;
-use const T_USE;
-use const T_VAR;
-use const T_WHILE;
-use const T_YIELD;
-use const T_YIELD_FROM;
-use function array_key_exists;
-use function array_pop;
-use function array_unique;
-use function constant;
-use function count;
-use function defined;
-use function explode;
-use function file_get_contents;
-use function htmlspecialchars;
-use function is_string;
-use function sprintf;
-use function str_replace;
-use function substr;
-use function token_get_all;
-use function trim;
-use PHPUnit\Runner\BaseTestRunner;
-use SebastianBergmann\CodeCoverage\Node\File as FileNode;
-use SebastianBergmann\CodeCoverage\Percentage;
-use SebastianBergmann\Template\Template;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for phpunit/php-code-coverage
- */
-final class File extends Renderer
-{
-    /**
-     * @psalm-var array<int,true>
-     */
-    private static $keywordTokens = [];
-
-    /**
-     * @var array
-     */
-    private static $formattedSourceCache = [];
-
-    /**
-     * @var int
-     */
-    private $htmlSpecialCharsFlags = ENT_COMPAT | ENT_HTML401 | ENT_SUBSTITUTE;
-
-    public function render(FileNode $node, string $file): void
-    {
-        $templateName = $this->templatePath . ($this->hasBranchCoverage ? 'file_branch.html' : 'file.html');
-        $template     = new Template($templateName, '{{', '}}');
-        $this->setCommonTemplateVariables($template, $node);
-
-        $template->setVar(
-            [
-                'items'     => $this->renderItems($node),
-                'lines'     => $this->renderSourceWithLineCoverage($node),
-                'legend'    => '<p><span class="success"><strong>Executed</strong></span><span class="danger"><strong>Not Executed</strong></span><span class="warning"><strong>Dead Code</strong></span></p>',
-                'structure' => '',
-            ]
-        );
-
-        $template->renderTo($file . '.html');
-
-        if ($this->hasBranchCoverage) {
-            $template->setVar(
-                [
-                    'items'     => $this->renderItems($node),
-                    'lines'     => $this->renderSourceWithBranchCoverage($node),
-                    'legend'    => '<p><span class="success"><strong>Fully covered</strong></span><span class="warning"><strong>Partially covered</strong></span><span class="danger"><strong>Not covered</strong></span></p>',
-                    'structure' => $this->renderBranchStructure($node),
-                ]
-            );
-
-            $template->renderTo($file . '_branch.html');
-
-            $template->setVar(
-                [
-                    'items'     => $this->renderItems($node),
-                    'lines'     => $this->renderSourceWithPathCoverage($node),
-                    'legend'    => '<p><span class="success"><strong>Fully covered</strong></span><span class="warning"><strong>Partially covered</strong></span><span class="danger"><strong>Not covered</strong></span></p>',
-                    'structure' => $this->renderPathStructure($node),
-                ]
-            );
-
-            $template->renderTo($file . '_path.html');
-        }
-    }
-
-    private function renderItems(FileNode $node): string
-    {
-        $templateName = $this->templatePath . ($this->hasBranchCoverage ? 'file_item_branch.html' : 'file_item.html');
-        $template     = new Template($templateName, '{{', '}}');
-
-        $methodTemplateName = $this->templatePath . ($this->hasBranchCoverage ? 'method_item_branch.html' : 'method_item.html');
-        $methodItemTemplate = new Template(
-            $methodTemplateName,
-            '{{',
-            '}}'
-        );
-
-        $items = $this->renderItemTemplate(
-            $template,
-            [
-                'name'                            => 'Total',
-                'numClasses'                      => $node->numberOfClassesAndTraits(),
-                'numTestedClasses'                => $node->numberOfTestedClassesAndTraits(),
-                'numMethods'                      => $node->numberOfFunctionsAndMethods(),
-                'numTestedMethods'                => $node->numberOfTestedFunctionsAndMethods(),
-                'linesExecutedPercent'            => $node->percentageOfExecutedLines()->asFloat(),
-                'linesExecutedPercentAsString'    => $node->percentageOfExecutedLines()->asString(),
-                'numExecutedLines'                => $node->numberOfExecutedLines(),
-                'numExecutableLines'              => $node->numberOfExecutableLines(),
-                'branchesExecutedPercent'         => $node->percentageOfExecutedBranches()->asFloat(),
-                'branchesExecutedPercentAsString' => $node->percentageOfExecutedBranches()->asString(),
-                'numExecutedBranches'             => $node->numberOfExecutedBranches(),
-                'numExecutableBranches'           => $node->numberOfExecutableBranches(),
-                'pathsExecutedPercent'            => $node->percentageOfExecutedPaths()->asFloat(),
-                'pathsExecutedPercentAsString'    => $node->percentageOfExecutedPaths()->asString(),
-                'numExecutedPaths'                => $node->numberOfExecutedPaths(),
-                'numExecutablePaths'              => $node->numberOfExecutablePaths(),
-                'testedMethodsPercent'            => $node->percentageOfTestedFunctionsAndMethods()->asFloat(),
-                'testedMethodsPercentAsString'    => $node->percentageOfTestedFunctionsAndMethods()->asString(),
-                'testedClassesPercent'            => $node->percentageOfTestedClassesAndTraits()->asFloat(),
-                'testedClassesPercentAsString'    => $node->percentageOfTestedClassesAndTraits()->asString(),
-                'crap'                            => '<abbr title="Change Risk Anti-Patterns (CRAP) Index">CRAP</abbr>',
-            ]
-        );
-
-        $items .= $this->renderFunctionItems(
-            $node->functions(),
-            $methodItemTemplate
-        );
-
-        $items .= $this->renderTraitOrClassItems(
-            $node->traits(),
-            $template,
-            $methodItemTemplate
-        );
-
-        $items .= $this->renderTraitOrClassItems(
-            $node->classes(),
-            $template,
-            $methodItemTemplate
-        );
-
-        return $items;
-    }
-
-    private function renderTraitOrClassItems(array $items, Template $template, Template $methodItemTemplate): string
-    {
-        $buffer = '';
-
-        if (empty($items)) {
-            return $buffer;
-        }
-
-        foreach ($items as $name => $item) {
-            $numMethods       = 0;
-            $numTestedMethods = 0;
-
-            foreach ($item['methods'] as $method) {
-                if ($method['executableLines'] > 0) {
-                    $numMethods++;
-
-                    if ($method['executedLines'] === $method['executableLines']) {
-                        $numTestedMethods++;
-                    }
-                }
-            }
-
-            if ($item['executableLines'] > 0) {
-                $numClasses                   = 1;
-                $numTestedClasses             = $numTestedMethods === $numMethods ? 1 : 0;
-                $linesExecutedPercentAsString = Percentage::fromFractionAndTotal(
-                    $item['executedLines'],
-                    $item['executableLines']
-                )->asString();
-                $branchesExecutedPercentAsString = Percentage::fromFractionAndTotal(
-                    $item['executedBranches'],
-                    $item['executableBranches']
-                )->asString();
-                $pathsExecutedPercentAsString = Percentage::fromFractionAndTotal(
-                    $item['executedPaths'],
-                    $item['executablePaths']
-                )->asString();
-            } else {
-                $numClasses                      = 0;
-                $numTestedClasses                = 0;
-                $linesExecutedPercentAsString    = 'n/a';
-                $branchesExecutedPercentAsString = 'n/a';
-                $pathsExecutedPercentAsString    = 'n/a';
-            }
-
-            $testedMethodsPercentage = Percentage::fromFractionAndTotal(
-                $numTestedMethods,
-                $numMethods
-            );
-
-            $testedClassesPercentage = Percentage::fromFractionAndTotal(
-                $numTestedMethods === $numMethods ? 1 : 0,
-                1
-            );
-
-            $buffer .= $this->renderItemTemplate(
-                $template,
-                [
-                    'name'                 => $this->abbreviateClassName($name),
-                    'numClasses'           => $numClasses,
-                    'numTestedClasses'     => $numTestedClasses,
-                    'numMethods'           => $numMethods,
-                    'numTestedMethods'     => $numTestedMethods,
-                    'linesExecutedPercent' => Percentage::fromFractionAndTotal(
-                        $item['executedLines'],
-                        $item['executableLines'],
-                    )->asFloat(),
-                    'linesExecutedPercentAsString' => $linesExecutedPercentAsString,
-                    'numExecutedLines'             => $item['executedLines'],
-                    'numExecutableLines'           => $item['executableLines'],
-                    'branchesExecutedPercent'      => Percentage::fromFractionAndTotal(
-                        $item['executedBranches'],
-                        $item['executableBranches'],
-                    )->asFloat(),
-                    'branchesExecutedPercentAsString' => $branchesExecutedPercentAsString,
-                    'numExecutedBranches'             => $item['executedBranches'],
-                    'numExecutableBranches'           => $item['executableBranches'],
-                    'pathsExecutedPercent'            => Percentage::fromFractionAndTotal(
-                        $item['executedPaths'],
-                        $item['executablePaths']
-                    )->asFloat(),
-                    'pathsExecutedPercentAsString' => $pathsExecutedPercentAsString,
-                    'numExecutedPaths'             => $item['executedPaths'],
-                    'numExecutablePaths'           => $item['executablePaths'],
-                    'testedMethodsPercent'         => $testedMethodsPercentage->asFloat(),
-                    'testedMethodsPercentAsString' => $testedMethodsPercentage->asString(),
-                    'testedClassesPercent'         => $testedClassesPercentage->asFloat(),
-                    'testedClassesPercentAsString' => $testedClassesPercentage->asString(),
-                    'crap'                         => $item['crap'],
-                ]
-            );
-
-            foreach ($item['methods'] as $method) {
-                $buffer .= $this->renderFunctionOrMethodItem(
-                    $methodItemTemplate,
-                    $method,
-                    '&nbsp;'
-                );
-            }
-        }
-
-        return $buffer;
-    }
-
-    private function renderFunctionItems(array $functions, Template $template): string
-    {
-        if (empty($functions)) {
-            return '';
-        }
-
-        $buffer = '';
-
-        foreach ($functions as $function) {
-            $buffer .= $this->renderFunctionOrMethodItem(
-                $template,
-                $function
-            );
-        }
-
-        return $buffer;
-    }
-
-    private function renderFunctionOrMethodItem(Template $template, array $item, string $indent = ''): string
-    {
-        $numMethods       = 0;
-        $numTestedMethods = 0;
-
-        if ($item['executableLines'] > 0) {
-            $numMethods = 1;
-
-            if ($item['executedLines'] === $item['executableLines']) {
-                $numTestedMethods = 1;
-            }
-        }
-
-        $executedLinesPercentage = Percentage::fromFractionAndTotal(
-            $item['executedLines'],
-            $item['executableLines']
-        );
-
-        $executedBranchesPercentage = Percentage::fromFractionAndTotal(
-            $item['executedBranches'],
-            $item['executableBranches']
-        );
-
-        $executedPathsPercentage = Percentage::fromFractionAndTotal(
-            $item['executedPaths'],
-            $item['executablePaths']
-        );
-
-        $testedMethodsPercentage = Percentage::fromFractionAndTotal(
-            $numTestedMethods,
-            1
-        );
-
-        return $this->renderItemTemplate(
-            $template,
-            [
-                'name' => sprintf(
-                    '%s<a href="#%d"><abbr title="%s">%s</abbr></a>',
-                    $indent,
-                    $item['startLine'],
-                    htmlspecialchars($item['signature'], $this->htmlSpecialCharsFlags),
-                    $item['functionName'] ?? $item['methodName']
-                ),
-                'numMethods'                      => $numMethods,
-                'numTestedMethods'                => $numTestedMethods,
-                'linesExecutedPercent'            => $executedLinesPercentage->asFloat(),
-                'linesExecutedPercentAsString'    => $executedLinesPercentage->asString(),
-                'numExecutedLines'                => $item['executedLines'],
-                'numExecutableLines'              => $item['executableLines'],
-                'branchesExecutedPercent'         => $executedBranchesPercentage->asFloat(),
-                'branchesExecutedPercentAsString' => $executedBranchesPercentage->asString(),
-                'numExecutedBranches'             => $item['executedBranches'],
-                'numExecutableBranches'           => $item['executableBranches'],
-                'pathsExecutedPercent'            => $executedPathsPercentage->asFloat(),
-                'pathsExecutedPercentAsString'    => $executedPathsPercentage->asString(),
-                'numExecutedPaths'                => $item['executedPaths'],
-                'numExecutablePaths'              => $item['executablePaths'],
-                'testedMethodsPercent'            => $testedMethodsPercentage->asFloat(),
-                'testedMethodsPercentAsString'    => $testedMethodsPercentage->asString(),
-                'crap'                            => $item['crap'],
-            ]
-        );
-    }
-
-    private function renderSourceWithLineCoverage(FileNode $node): string
-    {
-        $linesTemplate      = new Template($this->templatePath . 'lines.html.dist', '{{', '}}');
-        $singleLineTemplate = new Template($this->templatePath . 'line.html.dist', '{{', '}}');
-
-        $coverageData = $node->lineCoverageData();
-        $testData     = $node->testData();
-        $codeLines    = $this->loadFile($node->pathAsString());
-        $lines        = '';
-        $i            = 1;
-
-        foreach ($codeLines as $line) {
-            $trClass        = '';
-            $popoverContent = '';
-            $popoverTitle   = '';
-
-            if (array_key_exists($i, $coverageData)) {
-                $numTests = ($coverageData[$i] ? count($coverageData[$i]) : 0);
-
-                if ($coverageData[$i] === null) {
-                    $trClass = 'warning';
-                } elseif ($numTests === 0) {
-                    $trClass = 'danger';
-                } else {
-                    if ($numTests > 1) {
-                        $popoverTitle = $numTests . ' tests cover line ' . $i;
-                    } else {
-                        $popoverTitle = '1 test covers line ' . $i;
-                    }
-
-                    $lineCss        = 'covered-by-large-tests';
-                    $popoverContent = '<ul>';
-
-                    foreach ($coverageData[$i] as $test) {
-                        if ($lineCss === 'covered-by-large-tests' && $testData[$test]['size'] === 'medium') {
-                            $lineCss = 'covered-by-medium-tests';
-                        } elseif ($testData[$test]['size'] === 'small') {
-                            $lineCss = 'covered-by-small-tests';
-                        }
-
-                        $popoverContent .= $this->createPopoverContentForTest($test, $testData[$test]);
-                    }
-
-                    $popoverContent .= '</ul>';
-                    $trClass = $lineCss . ' popin';
-                }
-            }
-
-            $popover = '';
-
-            if (!empty($popoverTitle)) {
-                $popover = sprintf(
-                    ' data-title="%s" data-content="%s" data-placement="top" data-html="true"',
-                    $popoverTitle,
-                    htmlspecialchars($popoverContent, $this->htmlSpecialCharsFlags)
-                );
-            }
-
-            $lines .= $this->renderLine($singleLineTemplate, $i, $line, $trClass, $popover);
-
-            $i++;
-        }
-
-        $linesTemplate->setVar(['lines' => $lines]);
-
-        return $linesTemplate->render();
-    }
-
-    private function renderSourceWithBranchCoverage(FileNode $node): string
-    {
-        $linesTemplate      = new Template($this->templatePath . 'lines.html.dist', '{{', '}}');
-        $singleLineTemplate = new Template($this->templatePath . 'line.html.dist', '{{', '}}');
-
-        $functionCoverageData = $node->functionCoverageData();
-        $testData             = $node->testData();
-        $codeLines            = $this->loadFile($node->pathAsString());
-
-        $lineData = [];
-
-        /** @var int $line */
-        foreach (array_keys($codeLines) as $line) {
-            $lineData[$line + 1] = [
-                'includedInBranches'    => 0,
-                'includedInHitBranches' => 0,
-                'tests'                 => [],
-            ];
-        }
-
-        foreach ($functionCoverageData as $method) {
-            foreach ($method['branches'] as $branch) {
-                foreach (range($branch['line_start'], $branch['line_end']) as $line) {
-                    if (!isset($lineData[$line])) { // blank line at end of file is sometimes included here
-                        continue;
-                    }
-
-                    $lineData[$line]['includedInBranches']++;
-
-                    if ($branch['hit']) {
-                        $lineData[$line]['includedInHitBranches']++;
-                        $lineData[$line]['tests'] = array_unique(array_merge($lineData[$line]['tests'], $branch['hit']));
-                    }
-                }
-            }
-        }
-
-        $lines = '';
-        $i     = 1;
-
-        /** @var string $line */
-        foreach ($codeLines as $line) {
-            $trClass = '';
-            $popover = '';
-
-            if ($lineData[$i]['includedInBranches'] > 0) {
-                $lineCss = 'success';
-
-                if ($lineData[$i]['includedInHitBranches'] === 0) {
-                    $lineCss = 'danger';
-                } elseif ($lineData[$i]['includedInHitBranches'] !== $lineData[$i]['includedInBranches']) {
-                    $lineCss = 'warning';
-                }
-
-                $popoverContent = '<ul>';
-
-                if (count($lineData[$i]['tests']) === 1) {
-                    $popoverTitle = '1 test covers line ' . $i;
-                } else {
-                    $popoverTitle = count($lineData[$i]['tests']) . ' tests cover line ' . $i;
-                }
-                $popoverTitle .= '. These are covering ' . $lineData[$i]['includedInHitBranches'] . ' out of the ' . $lineData[$i]['includedInBranches'] . ' code branches.';
-
-                foreach ($lineData[$i]['tests'] as $test) {
-                    $popoverContent .= $this->createPopoverContentForTest($test, $testData[$test]);
-                }
-
-                $popoverContent .= '</ul>';
-                $trClass = $lineCss . ' popin';
-
-                $popover = sprintf(
-                    ' data-title="%s" data-content="%s" data-placement="top" data-html="true"',
-                    $popoverTitle,
-                    htmlspecialchars($popoverContent, $this->htmlSpecialCharsFlags)
-                );
-            }
-
-            $lines .= $this->renderLine($singleLineTemplate, $i, $line, $trClass, $popover);
-
-            $i++;
-        }
-
-        $linesTemplate->setVar(['lines' => $lines]);
-
-        return $linesTemplate->render();
-    }
-
-    private function renderSourceWithPathCoverage(FileNode $node): string
-    {
-        $linesTemplate      = new Template($this->templatePath . 'lines.html.dist', '{{', '}}');
-        $singleLineTemplate = new Template($this->templatePath . 'line.html.dist', '{{', '}}');
-
-        $functionCoverageData = $node->functionCoverageData();
-        $testData             = $node->testData();
-        $codeLines            = $this->loadFile($node->pathAsString());
-
-        $lineData = [];
-
-        /** @var int $line */
-        foreach (array_keys($codeLines) as $line) {
-            $lineData[$line + 1] = [
-                'includedInPaths'    => [],
-                'includedInHitPaths' => [],
-                'tests'              => [],
-            ];
-        }
-
-        foreach ($functionCoverageData as $method) {
-            foreach ($method['paths'] as $pathId => $path) {
-                foreach ($path['path'] as $branchTaken) {
-                    foreach (range($method['branches'][$branchTaken]['line_start'], $method['branches'][$branchTaken]['line_end']) as $line) {
-                        if (!isset($lineData[$line])) {
-                            continue;
-                        }
-                        $lineData[$line]['includedInPaths'][] = $pathId;
-
-                        if ($path['hit']) {
-                            $lineData[$line]['includedInHitPaths'][] = $pathId;
-                            $lineData[$line]['tests']                = array_unique(array_merge($lineData[$line]['tests'], $path['hit']));
-                        }
-                    }
-                }
-            }
-        }
-
-        $lines = '';
-        $i     = 1;
-
-        /** @var string $line */
-        foreach ($codeLines as $line) {
-            $trClass                 = '';
-            $popover                 = '';
-            $includedInPathsCount    = count(array_unique($lineData[$i]['includedInPaths']));
-            $includedInHitPathsCount = count(array_unique($lineData[$i]['includedInHitPaths']));
-
-            if ($includedInPathsCount > 0) {
-                $lineCss = 'success';
-
-                if ($includedInHitPathsCount === 0) {
-                    $lineCss = 'danger';
-                } elseif ($includedInHitPathsCount !== $includedInPathsCount) {
-                    $lineCss = 'warning';
-                }
-
-                $popoverContent = '<ul>';
-
-                if (count($lineData[$i]['tests']) === 1) {
-                    $popoverTitle = '1 test covers line ' . $i;
-                } else {
-                    $popoverTitle = count($lineData[$i]['tests']) . ' tests cover line ' . $i;
-                }
-                $popoverTitle .= '. These are covering ' . $includedInHitPathsCount . ' out of the ' . $includedInPathsCount . ' code paths.';
-
-                foreach ($lineData[$i]['tests'] as $test) {
-                    $popoverContent .= $this->createPopoverContentForTest($test, $testData[$test]);
-                }
-
-                $popoverContent .= '</ul>';
-                $trClass = $lineCss . ' popin';
-
-                $popover = sprintf(
-                    ' data-title="%s" data-content="%s" data-placement="top" data-html="true"',
-                    $popoverTitle,
-                    htmlspecialchars($popoverContent, $this->htmlSpecialCharsFlags)
-                );
-            }
-
-            $lines .= $this->renderLine($singleLineTemplate, $i, $line, $trClass, $popover);
-
-            $i++;
-        }
-
-        $linesTemplate->setVar(['lines' => $lines]);
-
-        return $linesTemplate->render();
-    }
-
-    private function renderBranchStructure(FileNode $node): string
-    {
-        $branchesTemplate = new Template($this->templatePath . 'branches.html.dist', '{{', '}}');
-
-        $coverageData = $node->functionCoverageData();
-        $testData     = $node->testData();
-        $codeLines    = $this->loadFile($node->pathAsString());
-        $branches     = '';
-
-        ksort($coverageData);
-
-        foreach ($coverageData as $methodName => $methodData) {
-            if (!$methodData['branches']) {
-                continue;
-            }
-
-            $branchStructure = '';
-
-            foreach ($methodData['branches'] as $branch) {
-                $branchStructure .= $this->renderBranchLines($branch, $codeLines, $testData);
-            }
-
-            if ($branchStructure !== '') { // don't show empty branches
-                $branches .= '<h5 class="structure-heading"><a name="' . htmlspecialchars($methodName, $this->htmlSpecialCharsFlags) . '">' . $this->abbreviateMethodName($methodName) . '</a></h5>' . "\n";
-                $branches .= $branchStructure;
-            }
-        }
-
-        $branchesTemplate->setVar(['branches' => $branches]);
-
-        return $branchesTemplate->render();
-    }
-
-    private function renderBranchLines(array $branch, array $codeLines, array $testData): string
-    {
-        $linesTemplate      = new Template($this->templatePath . 'lines.html.dist', '{{', '}}');
-        $singleLineTemplate = new Template($this->templatePath . 'line.html.dist', '{{', '}}');
-
-        $lines = '';
-
-        $branchLines = range($branch['line_start'], $branch['line_end']);
-        sort($branchLines); // sometimes end_line < start_line
-
-        /** @var int $line */
-        foreach ($branchLines as $line) {
-            if (!isset($codeLines[$line])) { // blank line at end of file is sometimes included here
-                continue;
-            }
-
-            $popoverContent = '';
-            $popoverTitle   = '';
-
-            $numTests = count($branch['hit']);
-
-            if ($numTests === 0) {
-                $trClass = 'danger';
-            } else {
-                $lineCss        = 'covered-by-large-tests';
-                $popoverContent = '<ul>';
-
-                if ($numTests > 1) {
-                    $popoverTitle = $numTests . ' tests cover this branch';
-                } else {
-                    $popoverTitle = '1 test covers this branch';
-                }
-
-                foreach ($branch['hit'] as $test) {
-                    if ($lineCss === 'covered-by-large-tests' && $testData[$test]['size'] === 'medium') {
-                        $lineCss = 'covered-by-medium-tests';
-                    } elseif ($testData[$test]['size'] === 'small') {
-                        $lineCss = 'covered-by-small-tests';
-                    }
-
-                    $popoverContent .= $this->createPopoverContentForTest($test, $testData[$test]);
-                }
-                $trClass = $lineCss . ' popin';
-            }
-
-            $popover = '';
-
-            if (!empty($popoverTitle)) {
-                $popover = sprintf(
-                    ' data-title="%s" data-content="%s" data-placement="top" data-html="true"',
-                    $popoverTitle,
-                    htmlspecialchars($popoverContent, $this->htmlSpecialCharsFlags)
-                );
-            }
-
-            $lines .= $this->renderLine($singleLineTemplate, $line, $codeLines[$line - 1], $trClass, $popover);
-        }
-
-        if ($lines === '') {
-            return '';
-        }
-
-        $linesTemplate->setVar(['lines' => $lines]);
-
-        return $linesTemplate->render();
-    }
-
-    private function renderPathStructure(FileNode $node): string
-    {
-        $pathsTemplate = new Template($this->templatePath . 'paths.html.dist', '{{', '}}');
-
-        $coverageData = $node->functionCoverageData();
-        $testData     = $node->testData();
-        $codeLines    = $this->loadFile($node->pathAsString());
-        $paths        = '';
-
-        ksort($coverageData);
-
-        foreach ($coverageData as $methodName => $methodData) {
-            if (!$methodData['paths']) {
-                continue;
-            }
-
-            $pathStructure = '';
-
-            if (count($methodData['paths']) > 100) {
-                $pathStructure .= '<p>' . count($methodData['paths']) . ' is too many paths to sensibly render, consider refactoring your code to bring this number down.</p>';
-
-                continue;
-            }
-
-            foreach ($methodData['paths'] as $path) {
-                $pathStructure .= $this->renderPathLines($path, $methodData['branches'], $codeLines, $testData);
-            }
-
-            if ($pathStructure !== '') {
-                $paths .= '<h5 class="structure-heading"><a name="' . htmlspecialchars($methodName, $this->htmlSpecialCharsFlags) . '">' . $this->abbreviateMethodName($methodName) . '</a></h5>' . "\n";
-                $paths .= $pathStructure;
-            }
-        }
-
-        $pathsTemplate->setVar(['paths' => $paths]);
-
-        return $pathsTemplate->render();
-    }
-
-    private function renderPathLines(array $path, array $branches, array $codeLines, array $testData): string
-    {
-        $linesTemplate      = new Template($this->templatePath . 'lines.html.dist', '{{', '}}');
-        $singleLineTemplate = new Template($this->templatePath . 'line.html.dist', '{{', '}}');
-
-        $lines = '';
-
-        foreach ($path['path'] as $branchId) {
-            $branchLines = range($branches[$branchId]['line_start'], $branches[$branchId]['line_end']);
-            sort($branchLines); // sometimes end_line < start_line
-
-            /** @var int $line */
-            foreach ($branchLines as $line) {
-                if (!isset($codeLines[$line])) { // blank line at end of file is sometimes included here
-                    continue;
-                }
-
-                $popoverContent = '';
-                $popoverTitle   = '';
-
-                $numTests = count($path['hit']);
-
-                if ($numTests === 0) {
-                    $trClass = 'danger';
-                } else {
-                    $lineCss        = 'covered-by-large-tests';
-                    $popoverContent = '<ul>';
-
-                    if ($numTests > 1) {
-                        $popoverTitle = $numTests . ' tests cover this path';
-                    } else {
-                        $popoverTitle = '1 test covers this path';
-                    }
-
-                    foreach ($path['hit'] as $test) {
-                        if ($lineCss === 'covered-by-large-tests' && $testData[$test]['size'] === 'medium') {
-                            $lineCss = 'covered-by-medium-tests';
-                        } elseif ($testData[$test]['size'] === 'small') {
-                            $lineCss = 'covered-by-small-tests';
-                        }
-
-                        $popoverContent .= $this->createPopoverContentForTest($test, $testData[$test]);
-                    }
-                    $trClass = $lineCss . ' popin';
-                }
-
-                $popover = '';
-
-                if (!empty($popoverTitle)) {
-                    $popover = sprintf(
-                        ' data-title="%s" data-content="%s" data-placement="top" data-html="true"',
-                        $popoverTitle,
-                        htmlspecialchars($popoverContent, $this->htmlSpecialCharsFlags)
-                    );
-                }
-
-                $lines .= $this->renderLine($singleLineTemplate, $line, $codeLines[$line - 1], $trClass, $popover);
-            }
-        }
-
-        if ($lines === '') {
-            return '';
-        }
-
-        $linesTemplate->setVar(['lines' => $lines]);
-
-        return $linesTemplate->render();
-    }
-
-    private function renderLine(Template $template, int $lineNumber, string $lineContent, string $class, string $popover): string
-    {
-        $template->setVar(
-            [
-                'lineNumber'  => $lineNumber,
-                'lineContent' => $lineContent,
-                'class'       => $class,
-                'popover'     => $popover,
-            ]
-        );
-
-        return $template->render();
-    }
-
-    private function loadFile(string $file): array
-    {
-        if (isset(self::$formattedSourceCache[$file])) {
-            return self::$formattedSourceCache[$file];
-        }
-
-        $buffer              = file_get_contents($file);
-        $tokens              = token_get_all($buffer);
-        $result              = [''];
-        $i                   = 0;
-        $stringFlag          = false;
-        $fileEndsWithNewLine = substr($buffer, -1) === "\n";
-
-        unset($buffer);
-
-        foreach ($tokens as $j => $token) {
-            if (is_string($token)) {
-                if ($token === '"' && $tokens[$j - 1] !== '\\') {
-                    $result[$i] .= sprintf(
-                        '<span class="string">%s</span>',
-                        htmlspecialchars($token, $this->htmlSpecialCharsFlags)
-                    );
-
-                    $stringFlag = !$stringFlag;
-                } else {
-                    $result[$i] .= sprintf(
-                        '<span class="keyword">%s</span>',
-                        htmlspecialchars($token, $this->htmlSpecialCharsFlags)
-                    );
-                }
-
-                continue;
-            }
-
-            [$token, $value] = $token;
-
-            $value = str_replace(
-                ["\t", ' '],
-                ['&nbsp;&nbsp;&nbsp;&nbsp;', '&nbsp;'],
-                htmlspecialchars($value, $this->htmlSpecialCharsFlags)
-            );
-
-            if ($value === "\n") {
-                $result[++$i] = '';
-            } else {
-                $lines = explode("\n", $value);
-
-                foreach ($lines as $jj => $line) {
-                    $line = trim($line);
-
-                    if ($line !== '') {
-                        if ($stringFlag) {
-                            $colour = 'string';
-                        } else {
-                            $colour = 'default';
-
-                            if ($this->isInlineHtml($token)) {
-                                $colour = 'html';
-                            } elseif ($this->isComment($token)) {
-                                $colour = 'comment';
-                            } elseif ($this->isKeyword($token)) {
-                                $colour = 'keyword';
-                            }
-                        }
-
-                        $result[$i] .= sprintf(
-                            '<span class="%s">%s</span>',
-                            $colour,
-                            $line
-                        );
-                    }
-
-                    if (isset($lines[$jj + 1])) {
-                        $result[++$i] = '';
-                    }
-                }
-            }
-        }
-
-        if ($fileEndsWithNewLine) {
-            unset($result[count($result) - 1]);
-        }
-
-        self::$formattedSourceCache[$file] = $result;
-
-        return $result;
-    }
-
-    private function abbreviateClassName(string $className): string
-    {
-        $tmp = explode('\\', $className);
-
-        if (count($tmp) > 1) {
-            $className = sprintf(
-                '<abbr title="%s">%s</abbr>',
-                $className,
-                array_pop($tmp)
-            );
-        }
-
-        return $className;
-    }
-
-    private function abbreviateMethodName(string $methodName): string
-    {
-        $parts = explode('->', $methodName);
-
-        if (count($parts) === 2) {
-            return $this->abbreviateClassName($parts[0]) . '->' . $parts[1];
-        }
-
-        return $methodName;
-    }
-
-    private function createPopoverContentForTest(string $test, array $testData): string
-    {
-        $testCSS = '';
-
-        if ($testData['fromTestcase']) {
-            switch ($testData['status']) {
-                case BaseTestRunner::STATUS_PASSED:
-                    switch ($testData['size']) {
-                        case 'small':
-                            $testCSS = ' class="covered-by-small-tests"';
-
-                            break;
-
-                        case 'medium':
-                            $testCSS = ' class="covered-by-medium-tests"';
-
-                            break;
-
-                        default:
-                            $testCSS = ' class="covered-by-large-tests"';
-
-                            break;
-                    }
-
-                    break;
-
-                case BaseTestRunner::STATUS_SKIPPED:
-                case BaseTestRunner::STATUS_INCOMPLETE:
-                case BaseTestRunner::STATUS_RISKY:
-                case BaseTestRunner::STATUS_WARNING:
-                    $testCSS = ' class="warning"';
-
-                    break;
-
-                case BaseTestRunner::STATUS_FAILURE:
-                case BaseTestRunner::STATUS_ERROR:
-                    $testCSS = ' class="danger"';
-
-                    break;
-            }
-        }
-
-        return sprintf(
-            '<li%s>%s</li>',
-            $testCSS,
-            htmlspecialchars($test, $this->htmlSpecialCharsFlags)
-        );
-    }
-
-    private function isComment(int $token): bool
-    {
-        return $token === T_COMMENT || $token === T_DOC_COMMENT;
-    }
-
-    private function isInlineHtml(int $token): bool
-    {
-        return $token === T_INLINE_HTML;
-    }
-
-    private function isKeyword(int $token): bool
-    {
-        return isset(self::keywordTokens()[$token]);
-    }
-
-    /**
-     * @psalm-return array<int,true>
-     */
-    private static function keywordTokens(): array
-    {
-        if (self::$keywordTokens !== []) {
-            return self::$keywordTokens;
-        }
-
-        self::$keywordTokens = [
-            T_ABSTRACT      => true,
-            T_ARRAY         => true,
-            T_AS            => true,
-            T_BREAK         => true,
-            T_CALLABLE      => true,
-            T_CASE          => true,
-            T_CATCH         => true,
-            T_CLASS         => true,
-            T_CLONE         => true,
-            T_CONST         => true,
-            T_CONTINUE      => true,
-            T_DECLARE       => true,
-            T_DEFAULT       => true,
-            T_DO            => true,
-            T_ECHO          => true,
-            T_ELSE          => true,
-            T_ELSEIF        => true,
-            T_EMPTY         => true,
-            T_ENDDECLARE    => true,
-            T_ENDFOR        => true,
-            T_ENDFOREACH    => true,
-            T_ENDIF         => true,
-            T_ENDSWITCH     => true,
-            T_ENDWHILE      => true,
-            T_EVAL          => true,
-            T_EXIT          => true,
-            T_EXTENDS       => true,
-            T_FINAL         => true,
-            T_FINALLY       => true,
-            T_FOR           => true,
-            T_FOREACH       => true,
-            T_FUNCTION      => true,
-            T_GLOBAL        => true,
-            T_GOTO          => true,
-            T_HALT_COMPILER => true,
-            T_IF            => true,
-            T_IMPLEMENTS    => true,
-            T_INCLUDE       => true,
-            T_INCLUDE_ONCE  => true,
-            T_INSTANCEOF    => true,
-            T_INSTEADOF     => true,
-            T_INTERFACE     => true,
-            T_ISSET         => true,
-            T_LIST          => true,
-            T_NAMESPACE     => true,
-            T_NEW           => true,
-            T_PRINT         => true,
-            T_PRIVATE       => true,
-            T_PROTECTED     => true,
-            T_PUBLIC        => true,
-            T_REQUIRE       => true,
-            T_REQUIRE_ONCE  => true,
-            T_RETURN        => true,
-            T_STATIC        => true,
-            T_SWITCH        => true,
-            T_THROW         => true,
-            T_TRAIT         => true,
-            T_TRY           => true,
-            T_UNSET         => true,
-            T_USE           => true,
-            T_VAR           => true,
-            T_WHILE         => true,
-            T_YIELD         => true,
-            T_YIELD_FROM    => true,
-        ];
-
-        if (defined('T_FN')) {
-            self::$keywordTokens[constant('T_FN')] = true;
-        }
-
-        if (defined('T_MATCH')) {
-            self::$keywordTokens[constant('T_MATCH')] = true;
-        }
-
-        return self::$keywordTokens;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+tMu=

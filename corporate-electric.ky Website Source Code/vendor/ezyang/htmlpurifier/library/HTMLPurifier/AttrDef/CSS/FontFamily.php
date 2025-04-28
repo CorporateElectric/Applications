@@ -1,219 +1,61 @@
-<?php
-
-/**
- * Validates a font family list according to CSS spec
- */
-class HTMLPurifier_AttrDef_CSS_FontFamily extends HTMLPurifier_AttrDef
-{
-
-    protected $mask = null;
-
-    public function __construct()
-    {
-        $this->mask = '_- ';
-        for ($c = 'a'; $c <= 'z'; $c++) {
-            $this->mask .= $c;
-        }
-        for ($c = 'A'; $c <= 'Z'; $c++) {
-            $this->mask .= $c;
-        }
-        for ($c = '0'; $c <= '9'; $c++) {
-            $this->mask .= $c;
-        } // cast-y, but should be fine
-        // special bytes used by UTF-8
-        for ($i = 0x80; $i <= 0xFF; $i++) {
-            // We don't bother excluding invalid bytes in this range,
-            // because the our restriction of well-formed UTF-8 will
-            // prevent these from ever occurring.
-            $this->mask .= chr($i);
-        }
-
-        /*
-            PHP's internal strcspn implementation is
-            O(length of string * length of mask), making it inefficient
-            for large masks.  However, it's still faster than
-            preg_match 8)
-          for (p = s1;;) {
-            spanp = s2;
-            do {
-              if (*spanp == c || p == s1_end) {
-                return p - s1;
-              }
-            } while (spanp++ < (s2_end - 1));
-            c = *++p;
-          }
-         */
-        // possible optimization: invert the mask.
-    }
-
-    /**
-     * @param string $string
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return bool|string
-     */
-    public function validate($string, $config, $context)
-    {
-        static $generic_names = array(
-            'serif' => true,
-            'sans-serif' => true,
-            'monospace' => true,
-            'fantasy' => true,
-            'cursive' => true
-        );
-        $allowed_fonts = $config->get('CSS.AllowedFonts');
-
-        // assume that no font names contain commas in them
-        $fonts = explode(',', $string);
-        $final = '';
-        foreach ($fonts as $font) {
-            $font = trim($font);
-            if ($font === '') {
-                continue;
-            }
-            // match a generic name
-            if (isset($generic_names[$font])) {
-                if ($allowed_fonts === null || isset($allowed_fonts[$font])) {
-                    $final .= $font . ', ';
-                }
-                continue;
-            }
-            // match a quoted name
-            if ($font[0] === '"' || $font[0] === "'") {
-                $length = strlen($font);
-                if ($length <= 2) {
-                    continue;
-                }
-                $quote = $font[0];
-                if ($font[$length - 1] !== $quote) {
-                    continue;
-                }
-                $font = substr($font, 1, $length - 2);
-            }
-
-            $font = $this->expandCSSEscape($font);
-
-            // $font is a pure representation of the font name
-
-            if ($allowed_fonts !== null && !isset($allowed_fonts[$font])) {
-                continue;
-            }
-
-            if (ctype_alnum($font) && $font !== '') {
-                // very simple font, allow it in unharmed
-                $final .= $font . ', ';
-                continue;
-            }
-
-            // bugger out on whitespace.  form feed (0C) really
-            // shouldn't show up regardless
-            $font = str_replace(array("\n", "\t", "\r", "\x0C"), ' ', $font);
-
-            // Here, there are various classes of characters which need
-            // to be treated differently:
-            //  - Alphanumeric characters are essentially safe.  We
-            //    handled these above.
-            //  - Spaces require quoting, though most parsers will do
-            //    the right thing if there aren't any characters that
-            //    can be misinterpreted
-            //  - Dashes rarely occur, but they fairly unproblematic
-            //    for parsing/rendering purposes.
-            //  The above characters cover the majority of Western font
-            //  names.
-            //  - Arbitrary Unicode characters not in ASCII.  Because
-            //    most parsers give little thought to Unicode, treatment
-            //    of these codepoints is basically uniform, even for
-            //    punctuation-like codepoints.  These characters can
-            //    show up in non-Western pages and are supported by most
-            //    major browsers, for example: "ＭＳ 明朝" is a
-            //    legitimate font-name
-            //    <http://ja.wikipedia.org/wiki/MS_明朝>.  See
-            //    the CSS3 spec for more examples:
-            //    <http://www.w3.org/TR/2011/WD-css3-fonts-20110324/localizedfamilynames.png>
-            //    You can see live samples of these on the Internet:
-            //    <http://www.google.co.jp/search?q=font-family+ＭＳ+明朝|ゴシック>
-            //    However, most of these fonts have ASCII equivalents:
-            //    for example, 'MS Mincho', and it's considered
-            //    professional to use ASCII font names instead of
-            //    Unicode font names.  Thanks Takeshi Terada for
-            //    providing this information.
-            //  The following characters, to my knowledge, have not been
-            //  used to name font names.
-            //  - Single quote.  While theoretically you might find a
-            //    font name that has a single quote in its name (serving
-            //    as an apostrophe, e.g. Dave's Scribble), I haven't
-            //    been able to find any actual examples of this.
-            //    Internet Explorer's cssText translation (which I
-            //    believe is invoked by innerHTML) normalizes any
-            //    quoting to single quotes, and fails to escape single
-            //    quotes.  (Note that this is not IE's behavior for all
-            //    CSS properties, just some sort of special casing for
-            //    font-family).  So a single quote *cannot* be used
-            //    safely in the font-family context if there will be an
-            //    innerHTML/cssText translation.  Note that Firefox 3.x
-            //    does this too.
-            //  - Double quote.  In IE, these get normalized to
-            //    single-quotes, no matter what the encoding.  (Fun
-            //    fact, in IE8, the 'content' CSS property gained
-            //    support, where they special cased to preserve encoded
-            //    double quotes, but still translate unadorned double
-            //    quotes into single quotes.)  So, because their
-            //    fixpoint behavior is identical to single quotes, they
-            //    cannot be allowed either.  Firefox 3.x displays
-            //    single-quote style behavior.
-            //  - Backslashes are reduced by one (so \\ -> \) every
-            //    iteration, so they cannot be used safely.  This shows
-            //    up in IE7, IE8 and FF3
-            //  - Semicolons, commas and backticks are handled properly.
-            //  - The rest of the ASCII punctuation is handled properly.
-            // We haven't checked what browsers do to unadorned
-            // versions, but this is not important as long as the
-            // browser doesn't /remove/ surrounding quotes (as IE does
-            // for HTML).
-            //
-            // With these results in hand, we conclude that there are
-            // various levels of safety:
-            //  - Paranoid: alphanumeric, spaces and dashes(?)
-            //  - International: Paranoid + non-ASCII Unicode
-            //  - Edgy: Everything except quotes, backslashes
-            //  - NoJS: Standards compliance, e.g. sod IE. Note that
-            //    with some judicious character escaping (since certain
-            //    types of escaping doesn't work) this is theoretically
-            //    OK as long as innerHTML/cssText is not called.
-            // We believe that international is a reasonable default
-            // (that we will implement now), and once we do more
-            // extensive research, we may feel comfortable with dropping
-            // it down to edgy.
-
-            // Edgy: alphanumeric, spaces, dashes, underscores and Unicode.  Use of
-            // str(c)spn assumes that the string was already well formed
-            // Unicode (which of course it is).
-            if (strspn($font, $this->mask) !== strlen($font)) {
-                continue;
-            }
-
-            // Historical:
-            // In the absence of innerHTML/cssText, these ugly
-            // transforms don't pose a security risk (as \\ and \"
-            // might--these escapes are not supported by most browsers).
-            // We could try to be clever and use single-quote wrapping
-            // when there is a double quote present, but I have choosen
-            // not to implement that.  (NOTE: you can reduce the amount
-            // of escapes by one depending on what quoting style you use)
-            // $font = str_replace('\\', '\\5C ', $font);
-            // $font = str_replace('"',  '\\22 ', $font);
-            // $font = str_replace("'",  '\\27 ', $font);
-
-            // font possibly with spaces, requires quoting
-            $final .= "'$font', ";
-        }
-        $final = rtrim($final, ', ');
-        if ($final === '') {
-            return false;
-        }
-        return $final;
-    }
-
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

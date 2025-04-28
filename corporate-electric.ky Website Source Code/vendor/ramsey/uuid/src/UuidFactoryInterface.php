@@ -1,182 +1,40 @@
-<?php
-
-/**
- * This file is part of the ramsey/uuid library
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @copyright Copyright (c) Ben Ramsey <ben@benramsey.com>
- * @license http://opensource.org/licenses/MIT MIT
- */
-
-declare(strict_types=1);
-
-namespace Ramsey\Uuid;
-
-use DateTimeInterface;
-use Ramsey\Uuid\Type\Hexadecimal;
-use Ramsey\Uuid\Type\Integer as IntegerObject;
-use Ramsey\Uuid\Validator\ValidatorInterface;
-
-/**
- * UuidFactoryInterface defines common functionality all `UuidFactory` instances
- * must implement
- */
-interface UuidFactoryInterface
-{
-    /**
-     * Returns the validator to use for the factory
-     *
-     * @psalm-mutation-free
-     */
-    public function getValidator(): ValidatorInterface;
-
-    /**
-     * Returns a version 1 (time-based) UUID from a host ID, sequence number,
-     * and the current time
-     *
-     * @param Hexadecimal|int|string|null $node A 48-bit number representing the
-     *     hardware address; this number may be represented as an integer or a
-     *     hexadecimal string
-     * @param int|null $clockSeq A 14-bit number used to help avoid duplicates
-     *     that could arise when the clock is set backwards in time or if the
-     *     node ID changes
-     *
-     * @return UuidInterface A UuidInterface instance that represents a
-     *     version 1 UUID
-     */
-    public function uuid1($node = null, ?int $clockSeq = null): UuidInterface;
-
-    /**
-     * Returns a version 2 (DCE Security) UUID from a local domain, local
-     * identifier, host ID, clock sequence, and the current time
-     *
-     * @param int $localDomain The local domain to use when generating bytes,
-     *     according to DCE Security
-     * @param IntegerObject|null $localIdentifier The local identifier for the
-     *     given domain; this may be a UID or GID on POSIX systems, if the local
-     *     domain is person or group, or it may be a site-defined identifier
-     *     if the local domain is org
-     * @param Hexadecimal|null $node A 48-bit number representing the hardware
-     *     address
-     * @param int|null $clockSeq A 14-bit number used to help avoid duplicates
-     *     that could arise when the clock is set backwards in time or if the
-     *     node ID changes
-     *
-     * @return UuidInterface A UuidInterface instance that represents a
-     *     version 2 UUID
-     */
-    public function uuid2(
-        int $localDomain,
-        ?IntegerObject $localIdentifier = null,
-        ?Hexadecimal $node = null,
-        ?int $clockSeq = null
-    ): UuidInterface;
-
-    /**
-     * Returns a version 3 (name-based) UUID based on the MD5 hash of a
-     * namespace ID and a name
-     *
-     * @param string|UuidInterface $ns The namespace (must be a valid UUID)
-     * @param string $name The name to use for creating a UUID
-     *
-     * @return UuidInterface A UuidInterface instance that represents a
-     *     version 3 UUID
-     *
-     * @psalm-pure
-     */
-    public function uuid3($ns, string $name): UuidInterface;
-
-    /**
-     * Returns a version 4 (random) UUID
-     *
-     * @return UuidInterface A UuidInterface instance that represents a
-     *     version 4 UUID
-     */
-    public function uuid4(): UuidInterface;
-
-    /**
-     * Returns a version 5 (name-based) UUID based on the SHA-1 hash of a
-     * namespace ID and a name
-     *
-     * @param string|UuidInterface $ns The namespace (must be a valid UUID)
-     * @param string $name The name to use for creating a UUID
-     *
-     * @return UuidInterface A UuidInterface instance that represents a
-     *     version 5 UUID
-     *
-     * @psalm-pure
-     */
-    public function uuid5($ns, string $name): UuidInterface;
-
-    /**
-     * Returns a version 6 (ordered-time) UUID from a host ID, sequence number,
-     * and the current time
-     *
-     * @param Hexadecimal|null $node A 48-bit number representing the hardware
-     *     address
-     * @param int|null $clockSeq A 14-bit number used to help avoid duplicates
-     *     that could arise when the clock is set backwards in time or if the
-     *     node ID changes
-     *
-     * @return UuidInterface A UuidInterface instance that represents a
-     *     version 6 UUID
-     */
-    public function uuid6(?Hexadecimal $node = null, ?int $clockSeq = null): UuidInterface;
-
-    /**
-     * Creates a UUID from a byte string
-     *
-     * @param string $bytes A binary string
-     *
-     * @return UuidInterface A UuidInterface instance created from a binary
-     *     string representation
-     *
-     * @psalm-pure
-     */
-    public function fromBytes(string $bytes): UuidInterface;
-
-    /**
-     * Creates a UUID from the string standard representation
-     *
-     * @param string $uuid A hexadecimal string
-     *
-     * @return UuidInterface A UuidInterface instance created from a hexadecimal
-     *     string representation
-     *
-     * @psalm-pure
-     */
-    public function fromString(string $uuid): UuidInterface;
-
-    /**
-     * Creates a UUID from a 128-bit integer string
-     *
-     * @param string $integer String representation of 128-bit integer
-     *
-     * @return UuidInterface A UuidInterface instance created from the string
-     *     representation of a 128-bit integer
-     *
-     * @psalm-pure
-     */
-    public function fromInteger(string $integer): UuidInterface;
-
-    /**
-     * Creates a UUID from a DateTimeInterface instance
-     *
-     * @param DateTimeInterface $dateTime The date and time
-     * @param Hexadecimal|null $node A 48-bit number representing the hardware
-     *     address
-     * @param int|null $clockSeq A 14-bit number used to help avoid duplicates
-     *     that could arise when the clock is set backwards in time or if the
-     *     node ID changes
-     *
-     * @return UuidInterface A UuidInterface instance that represents a
-     *     version 1 UUID created from a DateTimeInterface instance
-     */
-    public function fromDateTime(
-        DateTimeInterface $dateTime,
-        ?Hexadecimal $node = null,
-        ?int $clockSeq = null
-    ): UuidInterface;
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+f90rINvBARwBZ9ca

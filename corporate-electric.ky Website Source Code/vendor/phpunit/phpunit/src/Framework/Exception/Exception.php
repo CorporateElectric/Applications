@@ -1,81 +1,44 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Framework;
-
-use function array_keys;
-use function get_object_vars;
-use PHPUnit\Util\Filter;
-use RuntimeException;
-use Throwable;
-
-/**
- * Base class for all PHPUnit Framework exceptions.
- *
- * Ensures that exceptions thrown during a test run do not leave stray
- * references behind.
- *
- * Every Exception contains a stack trace. Each stack frame contains the 'args'
- * of the called function. The function arguments can contain references to
- * instantiated objects. The references prevent the objects from being
- * destructed (until test results are eventually printed), so memory cannot be
- * freed up.
- *
- * With enabled process isolation, test results are serialized in the child
- * process and unserialized in the parent process. The stack trace of Exceptions
- * may contain objects that cannot be serialized or unserialized (e.g., PDO
- * connections). Unserializing user-space objects from the child process into
- * the parent would break the intended encapsulation of process isolation.
- *
- * @see http://fabien.potencier.org/article/9/php-serialization-stack-traces-and-exceptions
- *
- * @internal This class is not covered by the backward compatibility promise for PHPUnit
- */
-class Exception extends RuntimeException implements \PHPUnit\Exception
-{
-    /**
-     * @var array
-     */
-    protected $serializableTrace;
-
-    public function __construct($message = '', $code = 0, Throwable $previous = null)
-    {
-        parent::__construct($message, $code, $previous);
-
-        $this->serializableTrace = $this->getTrace();
-
-        foreach (array_keys($this->serializableTrace) as $key) {
-            unset($this->serializableTrace[$key]['args']);
-        }
-    }
-
-    public function __toString(): string
-    {
-        $string = TestFailure::exceptionToString($this);
-
-        if ($trace = Filter::getFilteredStacktrace($this)) {
-            $string .= "\n" . $trace;
-        }
-
-        return $string;
-    }
-
-    public function __sleep(): array
-    {
-        return array_keys(get_object_vars($this));
-    }
-
-    /**
-     * Returns the serializable trace (without 'args').
-     */
-    public function getSerializableTrace(): array
-    {
-        return $this->serializableTrace;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

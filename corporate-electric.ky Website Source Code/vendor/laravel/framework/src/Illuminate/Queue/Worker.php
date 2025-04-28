@@ -1,795 +1,305 @@
-<?php
-
-namespace Illuminate\Queue;
-
-use Illuminate\Contracts\Cache\Repository as CacheContract;
-use Illuminate\Contracts\Debug\ExceptionHandler;
-use Illuminate\Contracts\Events\Dispatcher;
-use Illuminate\Contracts\Queue\Factory as QueueManager;
-use Illuminate\Database\DetectsLostConnections;
-use Illuminate\Queue\Events\JobExceptionOccurred;
-use Illuminate\Queue\Events\JobProcessed;
-use Illuminate\Queue\Events\JobProcessing;
-use Illuminate\Queue\Events\Looping;
-use Illuminate\Queue\Events\WorkerStopping;
-use Illuminate\Support\Carbon;
-use Throwable;
-
-class Worker
-{
-    use DetectsLostConnections;
-
-    const EXIT_SUCCESS = 0;
-    const EXIT_ERROR = 1;
-    const EXIT_MEMORY_LIMIT = 12;
-
-    /**
-     * The name of the worker.
-     *
-     * @var string
-     */
-    protected $name;
-
-    /**
-     * The queue manager instance.
-     *
-     * @var \Illuminate\Contracts\Queue\Factory
-     */
-    protected $manager;
-
-    /**
-     * The event dispatcher instance.
-     *
-     * @var \Illuminate\Contracts\Events\Dispatcher
-     */
-    protected $events;
-
-    /**
-     * The cache repository implementation.
-     *
-     * @var \Illuminate\Contracts\Cache\Repository
-     */
-    protected $cache;
-
-    /**
-     * The exception handler instance.
-     *
-     * @var \Illuminate\Contracts\Debug\ExceptionHandler
-     */
-    protected $exceptions;
-
-    /**
-     * The callback used to determine if the application is in maintenance mode.
-     *
-     * @var callable
-     */
-    protected $isDownForMaintenance;
-
-    /**
-     * Indicates if the worker should exit.
-     *
-     * @var bool
-     */
-    public $shouldQuit = false;
-
-    /**
-     * Indicates if the worker is paused.
-     *
-     * @var bool
-     */
-    public $paused = false;
-
-    /**
-     * The callbacks used to pop jobs from queues.
-     *
-     * @var callable[]
-     */
-    protected static $popCallbacks = [];
-
-    /**
-     * Create a new queue worker.
-     *
-     * @param  \Illuminate\Contracts\Queue\Factory  $manager
-     * @param  \Illuminate\Contracts\Events\Dispatcher  $events
-     * @param  \Illuminate\Contracts\Debug\ExceptionHandler  $exceptions
-     * @param  callable  $isDownForMaintenance
-     * @return void
-     */
-    public function __construct(QueueManager $manager,
-                                Dispatcher $events,
-                                ExceptionHandler $exceptions,
-                                callable $isDownForMaintenance)
-    {
-        $this->events = $events;
-        $this->manager = $manager;
-        $this->exceptions = $exceptions;
-        $this->isDownForMaintenance = $isDownForMaintenance;
-    }
-
-    /**
-     * Listen to the given queue in a loop.
-     *
-     * @param  string  $connectionName
-     * @param  string  $queue
-     * @param  \Illuminate\Queue\WorkerOptions  $options
-     * @return int
-     */
-    public function daemon($connectionName, $queue, WorkerOptions $options)
-    {
-        if ($this->supportsAsyncSignals()) {
-            $this->listenForSignals();
-        }
-
-        $lastRestart = $this->getTimestampOfLastQueueRestart();
-
-        [$startTime, $jobsProcessed] = [hrtime(true) / 1e9, 0];
-
-        while (true) {
-            // Before reserving any jobs, we will make sure this queue is not paused and
-            // if it is we will just pause this worker for a given amount of time and
-            // make sure we do not need to kill this worker process off completely.
-            if (! $this->daemonShouldRun($options, $connectionName, $queue)) {
-                $status = $this->pauseWorker($options, $lastRestart);
-
-                if (! is_null($status)) {
-                    return $this->stop($status);
-                }
-
-                continue;
-            }
-
-            // First, we will attempt to get the next job off of the queue. We will also
-            // register the timeout handler and reset the alarm for this job so it is
-            // not stuck in a frozen state forever. Then, we can fire off this job.
-            $job = $this->getNextJob(
-                $this->manager->connection($connectionName), $queue
-            );
-
-            if ($this->supportsAsyncSignals()) {
-                $this->registerTimeoutHandler($job, $options);
-            }
-
-            // If the daemon should run (not in maintenance mode, etc.), then we can run
-            // fire off this job for processing. Otherwise, we will need to sleep the
-            // worker so no more jobs are processed until they should be processed.
-            if ($job) {
-                $jobsProcessed++;
-
-                $this->runJob($job, $connectionName, $options);
-            } else {
-                $this->sleep($options->sleep);
-            }
-
-            if ($this->supportsAsyncSignals()) {
-                $this->resetTimeoutHandler();
-            }
-
-            // Finally, we will check to see if we have exceeded our memory limits or if
-            // the queue should restart based on other indications. If so, we'll stop
-            // this worker and let whatever is "monitoring" it restart the process.
-            $status = $this->stopIfNecessary(
-                $options, $lastRestart, $startTime, $jobsProcessed, $job
-            );
-
-            if (! is_null($status)) {
-                return $this->stop($status);
-            }
-        }
-    }
-
-    /**
-     * Register the worker timeout handler.
-     *
-     * @param  \Illuminate\Contracts\Queue\Job|null  $job
-     * @param  \Illuminate\Queue\WorkerOptions  $options
-     * @return void
-     */
-    protected function registerTimeoutHandler($job, WorkerOptions $options)
-    {
-        // We will register a signal handler for the alarm signal so that we can kill this
-        // process if it is running too long because it has frozen. This uses the async
-        // signals supported in recent versions of PHP to accomplish it conveniently.
-        pcntl_signal(SIGALRM, function () use ($job, $options) {
-            if ($job) {
-                $this->markJobAsFailedIfWillExceedMaxAttempts(
-                    $job->getConnectionName(), $job, (int) $options->maxTries, $e = $this->maxAttemptsExceededException($job)
-                );
-
-                $this->markJobAsFailedIfWillExceedMaxExceptions(
-                    $job->getConnectionName(), $job, $e
-                );
-            }
-
-            $this->kill(static::EXIT_ERROR);
-        });
-
-        pcntl_alarm(
-            max($this->timeoutForJob($job, $options), 0)
-        );
-    }
-
-    /**
-     * Reset the worker timeout handler.
-     *
-     * @return void
-     */
-    protected function resetTimeoutHandler()
-    {
-        pcntl_alarm(0);
-    }
-
-    /**
-     * Get the appropriate timeout for the given job.
-     *
-     * @param  \Illuminate\Contracts\Queue\Job|null  $job
-     * @param  \Illuminate\Queue\WorkerOptions  $options
-     * @return int
-     */
-    protected function timeoutForJob($job, WorkerOptions $options)
-    {
-        return $job && ! is_null($job->timeout()) ? $job->timeout() : $options->timeout;
-    }
-
-    /**
-     * Determine if the daemon should process on this iteration.
-     *
-     * @param  \Illuminate\Queue\WorkerOptions  $options
-     * @param  string  $connectionName
-     * @param  string  $queue
-     * @return bool
-     */
-    protected function daemonShouldRun(WorkerOptions $options, $connectionName, $queue)
-    {
-        return ! ((($this->isDownForMaintenance)() && ! $options->force) ||
-            $this->paused ||
-            $this->events->until(new Looping($connectionName, $queue)) === false);
-    }
-
-    /**
-     * Pause the worker for the current loop.
-     *
-     * @param  \Illuminate\Queue\WorkerOptions  $options
-     * @param  int  $lastRestart
-     * @return int|null
-     */
-    protected function pauseWorker(WorkerOptions $options, $lastRestart)
-    {
-        $this->sleep($options->sleep > 0 ? $options->sleep : 1);
-
-        return $this->stopIfNecessary($options, $lastRestart);
-    }
-
-    /**
-     * Determine the exit code to stop the process if necessary.
-     *
-     * @param  \Illuminate\Queue\WorkerOptions  $options
-     * @param  int  $lastRestart
-     * @param  int  $startTime
-     * @param  int  $jobsProcessed
-     * @param  mixed  $job
-     * @return int|null
-     */
-    protected function stopIfNecessary(WorkerOptions $options, $lastRestart, $startTime = 0, $jobsProcessed = 0, $job = null)
-    {
-        if ($this->shouldQuit) {
-            return static::EXIT_SUCCESS;
-        } elseif ($this->memoryExceeded($options->memory)) {
-            return static::EXIT_MEMORY_LIMIT;
-        } elseif ($this->queueShouldRestart($lastRestart)) {
-            return static::EXIT_SUCCESS;
-        } elseif ($options->stopWhenEmpty && is_null($job)) {
-            return static::EXIT_SUCCESS;
-        } elseif ($options->maxTime && hrtime(true) / 1e9 - $startTime >= $options->maxTime) {
-            return static::EXIT_SUCCESS;
-        } elseif ($options->maxJobs && $jobsProcessed >= $options->maxJobs) {
-            return static::EXIT_SUCCESS;
-        }
-    }
-
-    /**
-     * Process the next job on the queue.
-     *
-     * @param  string  $connectionName
-     * @param  string  $queue
-     * @param  \Illuminate\Queue\WorkerOptions  $options
-     * @return void
-     */
-    public function runNextJob($connectionName, $queue, WorkerOptions $options)
-    {
-        $job = $this->getNextJob(
-            $this->manager->connection($connectionName), $queue
-        );
-
-        // If we're able to pull a job off of the stack, we will process it and then return
-        // from this method. If there is no job on the queue, we will "sleep" the worker
-        // for the specified number of seconds, then keep processing jobs after sleep.
-        if ($job) {
-            return $this->runJob($job, $connectionName, $options);
-        }
-
-        $this->sleep($options->sleep);
-    }
-
-    /**
-     * Get the next job from the queue connection.
-     *
-     * @param  \Illuminate\Contracts\Queue\Queue  $connection
-     * @param  string  $queue
-     * @return \Illuminate\Contracts\Queue\Job|null
-     */
-    protected function getNextJob($connection, $queue)
-    {
-        $popJobCallback = function ($queue) use ($connection) {
-            return $connection->pop($queue);
-        };
-
-        try {
-            if (isset(static::$popCallbacks[$this->name])) {
-                return (static::$popCallbacks[$this->name])($popJobCallback, $queue);
-            }
-
-            foreach (explode(',', $queue) as $queue) {
-                if (! is_null($job = $popJobCallback($queue))) {
-                    return $job;
-                }
-            }
-        } catch (Throwable $e) {
-            $this->exceptions->report($e);
-
-            $this->stopWorkerIfLostConnection($e);
-
-            $this->sleep(1);
-        }
-    }
-
-    /**
-     * Process the given job.
-     *
-     * @param  \Illuminate\Contracts\Queue\Job  $job
-     * @param  string  $connectionName
-     * @param  \Illuminate\Queue\WorkerOptions  $options
-     * @return void
-     */
-    protected function runJob($job, $connectionName, WorkerOptions $options)
-    {
-        try {
-            return $this->process($connectionName, $job, $options);
-        } catch (Throwable $e) {
-            $this->exceptions->report($e);
-
-            $this->stopWorkerIfLostConnection($e);
-        }
-    }
-
-    /**
-     * Stop the worker if we have lost connection to a database.
-     *
-     * @param  \Throwable  $e
-     * @return void
-     */
-    protected function stopWorkerIfLostConnection($e)
-    {
-        if ($this->causedByLostConnection($e)) {
-            $this->shouldQuit = true;
-        }
-    }
-
-    /**
-     * Process the given job from the queue.
-     *
-     * @param  string  $connectionName
-     * @param  \Illuminate\Contracts\Queue\Job  $job
-     * @param  \Illuminate\Queue\WorkerOptions  $options
-     * @return void
-     *
-     * @throws \Throwable
-     */
-    public function process($connectionName, $job, WorkerOptions $options)
-    {
-        try {
-            // First we will raise the before job event and determine if the job has already ran
-            // over its maximum attempt limits, which could primarily happen when this job is
-            // continually timing out and not actually throwing any exceptions from itself.
-            $this->raiseBeforeJobEvent($connectionName, $job);
-
-            $this->markJobAsFailedIfAlreadyExceedsMaxAttempts(
-                $connectionName, $job, (int) $options->maxTries
-            );
-
-            if ($job->isDeleted()) {
-                return $this->raiseAfterJobEvent($connectionName, $job);
-            }
-
-            // Here we will fire off the job and let it process. We will catch any exceptions so
-            // they can be reported to the developers logs, etc. Once the job is finished the
-            // proper events will be fired to let any listeners know this job has finished.
-            $job->fire();
-
-            $this->raiseAfterJobEvent($connectionName, $job);
-        } catch (Throwable $e) {
-            $this->handleJobException($connectionName, $job, $options, $e);
-        }
-    }
-
-    /**
-     * Handle an exception that occurred while the job was running.
-     *
-     * @param  string  $connectionName
-     * @param  \Illuminate\Contracts\Queue\Job  $job
-     * @param  \Illuminate\Queue\WorkerOptions  $options
-     * @param  \Throwable  $e
-     * @return void
-     *
-     * @throws \Throwable
-     */
-    protected function handleJobException($connectionName, $job, WorkerOptions $options, Throwable $e)
-    {
-        try {
-            // First, we will go ahead and mark the job as failed if it will exceed the maximum
-            // attempts it is allowed to run the next time we process it. If so we will just
-            // go ahead and mark it as failed now so we do not have to release this again.
-            if (! $job->hasFailed()) {
-                $this->markJobAsFailedIfWillExceedMaxAttempts(
-                    $connectionName, $job, (int) $options->maxTries, $e
-                );
-
-                $this->markJobAsFailedIfWillExceedMaxExceptions(
-                    $connectionName, $job, $e
-                );
-            }
-
-            $this->raiseExceptionOccurredJobEvent(
-                $connectionName, $job, $e
-            );
-        } finally {
-            // If we catch an exception, we will attempt to release the job back onto the queue
-            // so it is not lost entirely. This'll let the job be retried at a later time by
-            // another listener (or this same one). We will re-throw this exception after.
-            if (! $job->isDeleted() && ! $job->isReleased() && ! $job->hasFailed()) {
-                $job->release($this->calculateBackoff($job, $options));
-            }
-        }
-
-        throw $e;
-    }
-
-    /**
-     * Mark the given job as failed if it has exceeded the maximum allowed attempts.
-     *
-     * This will likely be because the job previously exceeded a timeout.
-     *
-     * @param  string  $connectionName
-     * @param  \Illuminate\Contracts\Queue\Job  $job
-     * @param  int  $maxTries
-     * @return void
-     *
-     * @throws \Throwable
-     */
-    protected function markJobAsFailedIfAlreadyExceedsMaxAttempts($connectionName, $job, $maxTries)
-    {
-        $maxTries = ! is_null($job->maxTries()) ? $job->maxTries() : $maxTries;
-
-        $retryUntil = $job->retryUntil();
-
-        if ($retryUntil && Carbon::now()->getTimestamp() <= $retryUntil) {
-            return;
-        }
-
-        if (! $retryUntil && ($maxTries === 0 || $job->attempts() <= $maxTries)) {
-            return;
-        }
-
-        $this->failJob($job, $e = $this->maxAttemptsExceededException($job));
-
-        throw $e;
-    }
-
-    /**
-     * Mark the given job as failed if it has exceeded the maximum allowed attempts.
-     *
-     * @param  string  $connectionName
-     * @param  \Illuminate\Contracts\Queue\Job  $job
-     * @param  int  $maxTries
-     * @param  \Throwable  $e
-     * @return void
-     */
-    protected function markJobAsFailedIfWillExceedMaxAttempts($connectionName, $job, $maxTries, Throwable $e)
-    {
-        $maxTries = ! is_null($job->maxTries()) ? $job->maxTries() : $maxTries;
-
-        if ($job->retryUntil() && $job->retryUntil() <= Carbon::now()->getTimestamp()) {
-            $this->failJob($job, $e);
-        }
-
-        if (! $job->retryUntil() && $maxTries > 0 && $job->attempts() >= $maxTries) {
-            $this->failJob($job, $e);
-        }
-    }
-
-    /**
-     * Mark the given job as failed if it has exceeded the maximum allowed attempts.
-     *
-     * @param  string  $connectionName
-     * @param  \Illuminate\Contracts\Queue\Job  $job
-     * @param  \Throwable  $e
-     * @return void
-     */
-    protected function markJobAsFailedIfWillExceedMaxExceptions($connectionName, $job, Throwable $e)
-    {
-        if (! $this->cache || is_null($uuid = $job->uuid()) ||
-            is_null($maxExceptions = $job->maxExceptions())) {
-            return;
-        }
-
-        if (! $this->cache->get('job-exceptions:'.$uuid)) {
-            $this->cache->put('job-exceptions:'.$uuid, 0, Carbon::now()->addDay());
-        }
-
-        if ($maxExceptions <= $this->cache->increment('job-exceptions:'.$uuid)) {
-            $this->cache->forget('job-exceptions:'.$uuid);
-
-            $this->failJob($job, $e);
-        }
-    }
-
-    /**
-     * Mark the given job as failed and raise the relevant event.
-     *
-     * @param  \Illuminate\Contracts\Queue\Job  $job
-     * @param  \Throwable  $e
-     * @return void
-     */
-    protected function failJob($job, Throwable $e)
-    {
-        return $job->fail($e);
-    }
-
-    /**
-     * Calculate the backoff for the given job.
-     *
-     * @param  \Illuminate\Contracts\Queue\Job  $job
-     * @param  \Illuminate\Queue\WorkerOptions  $options
-     * @return int
-     */
-    protected function calculateBackoff($job, WorkerOptions $options)
-    {
-        $backoff = explode(
-            ',',
-            method_exists($job, 'backoff') && ! is_null($job->backoff())
-                        ? $job->backoff()
-                        : $options->backoff
-        );
-
-        return (int) ($backoff[$job->attempts() - 1] ?? last($backoff));
-    }
-
-    /**
-     * Raise the before queue job event.
-     *
-     * @param  string  $connectionName
-     * @param  \Illuminate\Contracts\Queue\Job  $job
-     * @return void
-     */
-    protected function raiseBeforeJobEvent($connectionName, $job)
-    {
-        $this->events->dispatch(new JobProcessing(
-            $connectionName, $job
-        ));
-    }
-
-    /**
-     * Raise the after queue job event.
-     *
-     * @param  string  $connectionName
-     * @param  \Illuminate\Contracts\Queue\Job  $job
-     * @return void
-     */
-    protected function raiseAfterJobEvent($connectionName, $job)
-    {
-        $this->events->dispatch(new JobProcessed(
-            $connectionName, $job
-        ));
-    }
-
-    /**
-     * Raise the exception occurred queue job event.
-     *
-     * @param  string  $connectionName
-     * @param  \Illuminate\Contracts\Queue\Job  $job
-     * @param  \Throwable  $e
-     * @return void
-     */
-    protected function raiseExceptionOccurredJobEvent($connectionName, $job, Throwable $e)
-    {
-        $this->events->dispatch(new JobExceptionOccurred(
-            $connectionName, $job, $e
-        ));
-    }
-
-    /**
-     * Determine if the queue worker should restart.
-     *
-     * @param  int|null  $lastRestart
-     * @return bool
-     */
-    protected function queueShouldRestart($lastRestart)
-    {
-        return $this->getTimestampOfLastQueueRestart() != $lastRestart;
-    }
-
-    /**
-     * Get the last queue restart timestamp, or null.
-     *
-     * @return int|null
-     */
-    protected function getTimestampOfLastQueueRestart()
-    {
-        if ($this->cache) {
-            return $this->cache->get('illuminate:queue:restart');
-        }
-    }
-
-    /**
-     * Enable async signals for the process.
-     *
-     * @return void
-     */
-    protected function listenForSignals()
-    {
-        pcntl_async_signals(true);
-
-        pcntl_signal(SIGTERM, function () {
-            $this->shouldQuit = true;
-        });
-
-        pcntl_signal(SIGUSR2, function () {
-            $this->paused = true;
-        });
-
-        pcntl_signal(SIGCONT, function () {
-            $this->paused = false;
-        });
-    }
-
-    /**
-     * Determine if "async" signals are supported.
-     *
-     * @return bool
-     */
-    protected function supportsAsyncSignals()
-    {
-        return extension_loaded('pcntl');
-    }
-
-    /**
-     * Determine if the memory limit has been exceeded.
-     *
-     * @param  int  $memoryLimit
-     * @return bool
-     */
-    public function memoryExceeded($memoryLimit)
-    {
-        return (memory_get_usage(true) / 1024 / 1024) >= $memoryLimit;
-    }
-
-    /**
-     * Stop listening and bail out of the script.
-     *
-     * @param  int  $status
-     * @return int
-     */
-    public function stop($status = 0)
-    {
-        $this->events->dispatch(new WorkerStopping($status));
-
-        return $status;
-    }
-
-    /**
-     * Kill the process.
-     *
-     * @param  int  $status
-     * @return void
-     */
-    public function kill($status = 0)
-    {
-        $this->events->dispatch(new WorkerStopping($status));
-
-        if (extension_loaded('posix')) {
-            posix_kill(getmypid(), SIGKILL);
-        }
-
-        exit($status);
-    }
-
-    /**
-     * Create an instance of MaxAttemptsExceededException.
-     *
-     * @param  \Illuminate\Contracts\Queue\Job  $job
-     * @return \Illuminate\Queue\MaxAttemptsExceededException
-     */
-    protected function maxAttemptsExceededException($job)
-    {
-        return new MaxAttemptsExceededException(
-            $job->resolveName().' has been attempted too many times or run too long. The job may have previously timed out.'
-        );
-    }
-
-    /**
-     * Sleep the script for a given number of seconds.
-     *
-     * @param  int|float  $seconds
-     * @return void
-     */
-    public function sleep($seconds)
-    {
-        if ($seconds < 1) {
-            usleep($seconds * 1000000);
-        } else {
-            sleep($seconds);
-        }
-    }
-
-    /**
-     * Set the cache repository implementation.
-     *
-     * @param  \Illuminate\Contracts\Cache\Repository  $cache
-     * @return $this
-     */
-    public function setCache(CacheContract $cache)
-    {
-        $this->cache = $cache;
-
-        return $this;
-    }
-
-    /**
-     * Set the name of the worker.
-     *
-     * @param  string  $name
-     * @return $this
-     */
-    public function setName($name)
-    {
-        $this->name = $name;
-
-        return $this;
-    }
-
-    /**
-     * Register a callback to be executed to pick jobs.
-     *
-     * @param  string  $workerName
-     * @param  callable  $callback
-     * @return void
-     */
-    public static function popUsing($workerName, $callback)
-    {
-        if (is_null($callback)) {
-            unset(static::$popCallbacks[$workerName]);
-        } else {
-            static::$popCallbacks[$workerName] = $callback;
-        }
-    }
-
-    /**
-     * Get the queue manager instance.
-     *
-     * @return \Illuminate\Queue\QueueManager
-     */
-    public function getManager()
-    {
-        return $this->manager;
-    }
-
-    /**
-     * Set the queue manager instance.
-     *
-     * @param  \Illuminate\Contracts\Queue\Factory  $manager
-     * @return void
-     */
-    public function setManager(QueueManager $manager)
-    {
-        $this->manager = $manager;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

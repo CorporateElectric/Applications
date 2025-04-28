@@ -1,77 +1,41 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Framework\Constraint;
-
-use function json_decode;
-use function json_last_error;
-use function sprintf;
-
-/**
- * @no-named-arguments Parameter names are not covered by the backward compatibility promise for PHPUnit
- */
-final class IsJson extends Constraint
-{
-    /**
-     * Returns a string representation of the constraint.
-     */
-    public function toString(): string
-    {
-        return 'is valid JSON';
-    }
-
-    /**
-     * Evaluates the constraint for parameter $other. Returns true if the
-     * constraint is met, false otherwise.
-     *
-     * @param mixed $other value or object to evaluate
-     */
-    protected function matches($other): bool
-    {
-        if ($other === '') {
-            return false;
-        }
-
-        json_decode($other);
-
-        if (json_last_error()) {
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * Returns the description of the failure.
-     *
-     * The beginning of failure messages is "Failed asserting that" in most
-     * cases. This method should return the second part of that sentence.
-     *
-     * @param mixed $other evaluated value or object
-     *
-     * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
-     */
-    protected function failureDescription($other): string
-    {
-        if ($other === '') {
-            return 'an empty string is valid JSON';
-        }
-
-        json_decode($other);
-        $error = (string) JsonMatchesErrorMessageProvider::determineJsonError(
-            (string) json_last_error()
-        );
-
-        return sprintf(
-            '%s is valid JSON (%s)',
-            $this->exporter()->shortenedExport($other),
-            $error
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+GYWweh+YKOlI9W==

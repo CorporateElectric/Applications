@@ -1,193 +1,89 @@
-<?php declare(strict_types=1);
-
-/*
- * This file is part of the Monolog package.
- *
- * (c) Jordi Boggiano <j.boggiano@seld.be>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Monolog\Handler;
-
-use Monolog\Logger;
-
-/**
- * Stores to STDIN of any process, specified by a command.
- *
- * Usage example:
- * <pre>
- * $log = new Logger('myLogger');
- * $log->pushHandler(new ProcessHandler('/usr/bin/php /var/www/monolog/someScript.php'));
- * </pre>
- *
- * @author Kolja Zuelsdorf <koljaz@web.de>
- */
-class ProcessHandler extends AbstractProcessingHandler
-{
-    /**
-     * Holds the process to receive data on its STDIN.
-     *
-     * @var resource|bool|null
-     */
-    private $process;
-
-    /**
-     * @var string
-     */
-    private $command;
-
-    /**
-     * @var string|null
-     */
-    private $cwd;
-
-    /**
-     * @var array
-     */
-    private $pipes = [];
-
-    /**
-     * @var array
-     */
-    protected const DESCRIPTOR_SPEC = [
-        0 => ['pipe', 'r'],  // STDIN is a pipe that the child will read from
-        1 => ['pipe', 'w'],  // STDOUT is a pipe that the child will write to
-        2 => ['pipe', 'w'],  // STDERR is a pipe to catch the any errors
-    ];
-
-    /**
-     * @param  string                    $command Command for the process to start. Absolute paths are recommended,
-     *                                            especially if you do not use the $cwd parameter.
-     * @param  string|int                $level   The minimum logging level at which this handler will be triggered.
-     * @param  bool                      $bubble  Whether the messages that are handled can bubble up the stack or not.
-     * @param  string|null               $cwd     "Current working directory" (CWD) for the process to be executed in.
-     * @throws \InvalidArgumentException
-     */
-    public function __construct(string $command, $level = Logger::DEBUG, bool $bubble = true, ?string $cwd = null)
-    {
-        if ($command === '') {
-            throw new \InvalidArgumentException('The command argument must be a non-empty string.');
-        }
-        if ($cwd === '') {
-            throw new \InvalidArgumentException('The optional CWD argument must be a non-empty string or null.');
-        }
-
-        parent::__construct($level, $bubble);
-
-        $this->command = $command;
-        $this->cwd = $cwd;
-    }
-
-    /**
-     * Writes the record down to the log of the implementing handler
-     *
-     * @throws \UnexpectedValueException
-     */
-    protected function write(array $record): void
-    {
-        $this->ensureProcessIsStarted();
-
-        $this->writeProcessInput($record['formatted']);
-
-        $errors = $this->readProcessErrors();
-        if (empty($errors) === false) {
-            throw new \UnexpectedValueException(sprintf('Errors while writing to process: %s', $errors));
-        }
-    }
-
-    /**
-     * Makes sure that the process is actually started, and if not, starts it,
-     * assigns the stream pipes, and handles startup errors, if any.
-     */
-    private function ensureProcessIsStarted(): void
-    {
-        if (is_resource($this->process) === false) {
-            $this->startProcess();
-
-            $this->handleStartupErrors();
-        }
-    }
-
-    /**
-     * Starts the actual process and sets all streams to non-blocking.
-     */
-    private function startProcess(): void
-    {
-        $this->process = proc_open($this->command, static::DESCRIPTOR_SPEC, $this->pipes, $this->cwd);
-
-        foreach ($this->pipes as $pipe) {
-            stream_set_blocking($pipe, false);
-        }
-    }
-
-    /**
-     * Selects the STDERR stream, handles upcoming startup errors, and throws an exception, if any.
-     *
-     * @throws \UnexpectedValueException
-     */
-    private function handleStartupErrors(): void
-    {
-        $selected = $this->selectErrorStream();
-        if (false === $selected) {
-            throw new \UnexpectedValueException('Something went wrong while selecting a stream.');
-        }
-
-        $errors = $this->readProcessErrors();
-
-        if (is_resource($this->process) === false || empty($errors) === false) {
-            throw new \UnexpectedValueException(
-                sprintf('The process "%s" could not be opened: ' . $errors, $this->command)
-            );
-        }
-    }
-
-    /**
-     * Selects the STDERR stream.
-     *
-     * @return int|bool
-     */
-    protected function selectErrorStream()
-    {
-        $empty = [];
-        $errorPipes = [$this->pipes[2]];
-
-        return stream_select($errorPipes, $empty, $empty, 1);
-    }
-
-    /**
-     * Reads the errors of the process, if there are any.
-     *
-     * @codeCoverageIgnore
-     * @return string Empty string if there are no errors.
-     */
-    protected function readProcessErrors(): string
-    {
-        return stream_get_contents($this->pipes[2]);
-    }
-
-    /**
-     * Writes to the input stream of the opened process.
-     *
-     * @codeCoverageIgnore
-     */
-    protected function writeProcessInput(string $string): void
-    {
-        fwrite($this->pipes[0], $string);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function close(): void
-    {
-        if (is_resource($this->process)) {
-            foreach ($this->pipes as $pipe) {
-                fclose($pipe);
-            }
-            proc_close($this->process);
-            $this->process = null;
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

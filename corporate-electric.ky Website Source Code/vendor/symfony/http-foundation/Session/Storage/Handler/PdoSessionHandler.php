@@ -1,899 +1,528 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpFoundation\Session\Storage\Handler;
-
-/**
- * Session handler using a PDO connection to read and write data.
- *
- * It works with MySQL, PostgreSQL, Oracle, SQL Server and SQLite and implements
- * different locking strategies to handle concurrent access to the same session.
- * Locking is necessary to prevent loss of data due to race conditions and to keep
- * the session data consistent between read() and write(). With locking, requests
- * for the same session will wait until the other one finished writing. For this
- * reason it's best practice to close a session as early as possible to improve
- * concurrency. PHPs internal files session handler also implements locking.
- *
- * Attention: Since SQLite does not support row level locks but locks the whole database,
- * it means only one session can be accessed at a time. Even different sessions would wait
- * for another to finish. So saving session in SQLite should only be considered for
- * development or prototypes.
- *
- * Session data is a binary string that can contain non-printable characters like the null byte.
- * For this reason it must be saved in a binary column in the database like BLOB in MySQL.
- * Saving it in a character column could corrupt the data. You can use createTable()
- * to initialize a correctly defined table.
- *
- * @see https://php.net/sessionhandlerinterface
- *
- * @author Fabien Potencier <fabien@symfony.com>
- * @author Michael Williams <michael.williams@funsational.com>
- * @author Tobias Schultze <http://tobion.de>
- */
-class PdoSessionHandler extends AbstractSessionHandler
-{
-    /**
-     * No locking is done. This means sessions are prone to loss of data due to
-     * race conditions of concurrent requests to the same session. The last session
-     * write will win in this case. It might be useful when you implement your own
-     * logic to deal with this like an optimistic approach.
-     */
-    public const LOCK_NONE = 0;
-
-    /**
-     * Creates an application-level lock on a session. The disadvantage is that the
-     * lock is not enforced by the database and thus other, unaware parts of the
-     * application could still concurrently modify the session. The advantage is it
-     * does not require a transaction.
-     * This mode is not available for SQLite and not yet implemented for oci and sqlsrv.
-     */
-    public const LOCK_ADVISORY = 1;
-
-    /**
-     * Issues a real row lock. Since it uses a transaction between opening and
-     * closing a session, you have to be careful when you use same database connection
-     * that you also use for your application logic. This mode is the default because
-     * it's the only reliable solution across DBMSs.
-     */
-    public const LOCK_TRANSACTIONAL = 2;
-
-    private const MAX_LIFETIME = 315576000;
-
-    /**
-     * @var \PDO|null PDO instance or null when not connected yet
-     */
-    private $pdo;
-
-    /**
-     * @var string|false|null DSN string or null for session.save_path or false when lazy connection disabled
-     */
-    private $dsn = false;
-
-    /**
-     * @var string Database driver
-     */
-    private $driver;
-
-    /**
-     * @var string Table name
-     */
-    private $table = 'sessions';
-
-    /**
-     * @var string Column for session id
-     */
-    private $idCol = 'sess_id';
-
-    /**
-     * @var string Column for session data
-     */
-    private $dataCol = 'sess_data';
-
-    /**
-     * @var string Column for lifetime
-     */
-    private $lifetimeCol = 'sess_lifetime';
-
-    /**
-     * @var string Column for timestamp
-     */
-    private $timeCol = 'sess_time';
-
-    /**
-     * @var string Username when lazy-connect
-     */
-    private $username = '';
-
-    /**
-     * @var string Password when lazy-connect
-     */
-    private $password = '';
-
-    /**
-     * @var array Connection options when lazy-connect
-     */
-    private $connectionOptions = [];
-
-    /**
-     * @var int The strategy for locking, see constants
-     */
-    private $lockMode = self::LOCK_TRANSACTIONAL;
-
-    /**
-     * It's an array to support multiple reads before closing which is manual, non-standard usage.
-     *
-     * @var \PDOStatement[] An array of statements to release advisory locks
-     */
-    private $unlockStatements = [];
-
-    /**
-     * @var bool True when the current session exists but expired according to session.gc_maxlifetime
-     */
-    private $sessionExpired = false;
-
-    /**
-     * @var bool Whether a transaction is active
-     */
-    private $inTransaction = false;
-
-    /**
-     * @var bool Whether gc() has been called
-     */
-    private $gcCalled = false;
-
-    /**
-     * You can either pass an existing database connection as PDO instance or
-     * pass a DSN string that will be used to lazy-connect to the database
-     * when the session is actually used. Furthermore it's possible to pass null
-     * which will then use the session.save_path ini setting as PDO DSN parameter.
-     *
-     * List of available options:
-     *  * db_table: The name of the table [default: sessions]
-     *  * db_id_col: The column where to store the session id [default: sess_id]
-     *  * db_data_col: The column where to store the session data [default: sess_data]
-     *  * db_lifetime_col: The column where to store the lifetime [default: sess_lifetime]
-     *  * db_time_col: The column where to store the timestamp [default: sess_time]
-     *  * db_username: The username when lazy-connect [default: '']
-     *  * db_password: The password when lazy-connect [default: '']
-     *  * db_connection_options: An array of driver-specific connection options [default: []]
-     *  * lock_mode: The strategy for locking, see constants [default: LOCK_TRANSACTIONAL]
-     *
-     * @param \PDO|string|null $pdoOrDsn A \PDO instance or DSN string or URL string or null
-     *
-     * @throws \InvalidArgumentException When PDO error mode is not PDO::ERRMODE_EXCEPTION
-     */
-    public function __construct($pdoOrDsn = null, array $options = [])
-    {
-        if ($pdoOrDsn instanceof \PDO) {
-            if (\PDO::ERRMODE_EXCEPTION !== $pdoOrDsn->getAttribute(\PDO::ATTR_ERRMODE)) {
-                throw new \InvalidArgumentException(sprintf('"%s" requires PDO error mode attribute be set to throw Exceptions (i.e. $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION)).', __CLASS__));
-            }
-
-            $this->pdo = $pdoOrDsn;
-            $this->driver = $this->pdo->getAttribute(\PDO::ATTR_DRIVER_NAME);
-        } elseif (\is_string($pdoOrDsn) && false !== strpos($pdoOrDsn, '://')) {
-            $this->dsn = $this->buildDsnFromUrl($pdoOrDsn);
-        } else {
-            $this->dsn = $pdoOrDsn;
-        }
-
-        $this->table = isset($options['db_table']) ? $options['db_table'] : $this->table;
-        $this->idCol = isset($options['db_id_col']) ? $options['db_id_col'] : $this->idCol;
-        $this->dataCol = isset($options['db_data_col']) ? $options['db_data_col'] : $this->dataCol;
-        $this->lifetimeCol = isset($options['db_lifetime_col']) ? $options['db_lifetime_col'] : $this->lifetimeCol;
-        $this->timeCol = isset($options['db_time_col']) ? $options['db_time_col'] : $this->timeCol;
-        $this->username = isset($options['db_username']) ? $options['db_username'] : $this->username;
-        $this->password = isset($options['db_password']) ? $options['db_password'] : $this->password;
-        $this->connectionOptions = isset($options['db_connection_options']) ? $options['db_connection_options'] : $this->connectionOptions;
-        $this->lockMode = isset($options['lock_mode']) ? $options['lock_mode'] : $this->lockMode;
-    }
-
-    /**
-     * Creates the table to store sessions which can be called once for setup.
-     *
-     * Session ID is saved in a column of maximum length 128 because that is enough even
-     * for a 512 bit configured session.hash_function like Whirlpool. Session data is
-     * saved in a BLOB. One could also use a shorter inlined varbinary column
-     * if one was sure the data fits into it.
-     *
-     * @throws \PDOException    When the table already exists
-     * @throws \DomainException When an unsupported PDO driver is used
-     */
-    public function createTable()
-    {
-        // connect if we are not yet
-        $this->getConnection();
-
-        switch ($this->driver) {
-            case 'mysql':
-                // We use varbinary for the ID column because it prevents unwanted conversions:
-                // - character set conversions between server and client
-                // - trailing space removal
-                // - case-insensitivity
-                // - language processing like é == e
-                $sql = "CREATE TABLE $this->table ($this->idCol VARBINARY(128) NOT NULL PRIMARY KEY, $this->dataCol BLOB NOT NULL, $this->lifetimeCol INTEGER UNSIGNED NOT NULL, $this->timeCol INTEGER UNSIGNED NOT NULL) COLLATE utf8mb4_bin, ENGINE = InnoDB";
-                break;
-            case 'sqlite':
-                $sql = "CREATE TABLE $this->table ($this->idCol TEXT NOT NULL PRIMARY KEY, $this->dataCol BLOB NOT NULL, $this->lifetimeCol INTEGER NOT NULL, $this->timeCol INTEGER NOT NULL)";
-                break;
-            case 'pgsql':
-                $sql = "CREATE TABLE $this->table ($this->idCol VARCHAR(128) NOT NULL PRIMARY KEY, $this->dataCol BYTEA NOT NULL, $this->lifetimeCol INTEGER NOT NULL, $this->timeCol INTEGER NOT NULL)";
-                break;
-            case 'oci':
-                $sql = "CREATE TABLE $this->table ($this->idCol VARCHAR2(128) NOT NULL PRIMARY KEY, $this->dataCol BLOB NOT NULL, $this->lifetimeCol INTEGER NOT NULL, $this->timeCol INTEGER NOT NULL)";
-                break;
-            case 'sqlsrv':
-                $sql = "CREATE TABLE $this->table ($this->idCol VARCHAR(128) NOT NULL PRIMARY KEY, $this->dataCol VARBINARY(MAX) NOT NULL, $this->lifetimeCol INTEGER NOT NULL, $this->timeCol INTEGER NOT NULL)";
-                break;
-            default:
-                throw new \DomainException(sprintf('Creating the session table is currently not implemented for PDO driver "%s".', $this->driver));
-        }
-
-        try {
-            $this->pdo->exec($sql);
-            $this->pdo->exec("CREATE INDEX EXPIRY ON $this->table ($this->lifetimeCol)");
-        } catch (\PDOException $e) {
-            $this->rollback();
-
-            throw $e;
-        }
-    }
-
-    /**
-     * Returns true when the current session exists but expired according to session.gc_maxlifetime.
-     *
-     * Can be used to distinguish between a new session and one that expired due to inactivity.
-     *
-     * @return bool Whether current session expired
-     */
-    public function isSessionExpired()
-    {
-        return $this->sessionExpired;
-    }
-
-    /**
-     * @return bool
-     */
-    public function open($savePath, $sessionName)
-    {
-        $this->sessionExpired = false;
-
-        if (null === $this->pdo) {
-            $this->connect($this->dsn ?: $savePath);
-        }
-
-        return parent::open($savePath, $sessionName);
-    }
-
-    /**
-     * @return string
-     */
-    public function read($sessionId)
-    {
-        try {
-            return parent::read($sessionId);
-        } catch (\PDOException $e) {
-            $this->rollback();
-
-            throw $e;
-        }
-    }
-
-    /**
-     * @return bool
-     */
-    public function gc($maxlifetime)
-    {
-        // We delay gc() to close() so that it is executed outside the transactional and blocking read-write process.
-        // This way, pruning expired sessions does not block them from being started while the current session is used.
-        $this->gcCalled = true;
-
-        return true;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function doDestroy(string $sessionId)
-    {
-        // delete the record associated with this id
-        $sql = "DELETE FROM $this->table WHERE $this->idCol = :id";
-
-        try {
-            $stmt = $this->pdo->prepare($sql);
-            $stmt->bindParam(':id', $sessionId, \PDO::PARAM_STR);
-            $stmt->execute();
-        } catch (\PDOException $e) {
-            $this->rollback();
-
-            throw $e;
-        }
-
-        return true;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function doWrite(string $sessionId, string $data)
-    {
-        $maxlifetime = (int) ini_get('session.gc_maxlifetime');
-
-        try {
-            // We use a single MERGE SQL query when supported by the database.
-            $mergeStmt = $this->getMergeStatement($sessionId, $data, $maxlifetime);
-            if (null !== $mergeStmt) {
-                $mergeStmt->execute();
-
-                return true;
-            }
-
-            $updateStmt = $this->getUpdateStatement($sessionId, $data, $maxlifetime);
-            $updateStmt->execute();
-
-            // When MERGE is not supported, like in Postgres < 9.5, we have to use this approach that can result in
-            // duplicate key errors when the same session is written simultaneously (given the LOCK_NONE behavior).
-            // We can just catch such an error and re-execute the update. This is similar to a serializable
-            // transaction with retry logic on serialization failures but without the overhead and without possible
-            // false positives due to longer gap locking.
-            if (!$updateStmt->rowCount()) {
-                try {
-                    $insertStmt = $this->getInsertStatement($sessionId, $data, $maxlifetime);
-                    $insertStmt->execute();
-                } catch (\PDOException $e) {
-                    // Handle integrity violation SQLSTATE 23000 (or a subclass like 23505 in Postgres) for duplicate keys
-                    if (0 === strpos($e->getCode(), '23')) {
-                        $updateStmt->execute();
-                    } else {
-                        throw $e;
-                    }
-                }
-            }
-        } catch (\PDOException $e) {
-            $this->rollback();
-
-            throw $e;
-        }
-
-        return true;
-    }
-
-    /**
-     * @return bool
-     */
-    public function updateTimestamp($sessionId, $data)
-    {
-        $expiry = time() + (int) ini_get('session.gc_maxlifetime');
-
-        try {
-            $updateStmt = $this->pdo->prepare(
-                "UPDATE $this->table SET $this->lifetimeCol = :expiry, $this->timeCol = :time WHERE $this->idCol = :id"
-            );
-            $updateStmt->bindParam(':id', $sessionId, \PDO::PARAM_STR);
-            $updateStmt->bindParam(':expiry', $expiry, \PDO::PARAM_INT);
-            $updateStmt->bindValue(':time', time(), \PDO::PARAM_INT);
-            $updateStmt->execute();
-        } catch (\PDOException $e) {
-            $this->rollback();
-
-            throw $e;
-        }
-
-        return true;
-    }
-
-    /**
-     * @return bool
-     */
-    public function close()
-    {
-        $this->commit();
-
-        while ($unlockStmt = array_shift($this->unlockStatements)) {
-            $unlockStmt->execute();
-        }
-
-        if ($this->gcCalled) {
-            $this->gcCalled = false;
-
-            // delete the session records that have expired
-            $sql = "DELETE FROM $this->table WHERE $this->lifetimeCol < :time AND $this->lifetimeCol > :min";
-            $stmt = $this->pdo->prepare($sql);
-            $stmt->bindValue(':time', time(), \PDO::PARAM_INT);
-            $stmt->bindValue(':min', self::MAX_LIFETIME, \PDO::PARAM_INT);
-            $stmt->execute();
-            // to be removed in 6.0
-            if ('mysql' === $this->driver) {
-                $legacySql = "DELETE FROM $this->table WHERE $this->lifetimeCol <= :min AND $this->lifetimeCol + $this->timeCol < :time";
-            } else {
-                $legacySql = "DELETE FROM $this->table WHERE $this->lifetimeCol <= :min AND $this->lifetimeCol < :time - $this->timeCol";
-            }
-
-            $stmt = $this->pdo->prepare($legacySql);
-            $stmt->bindValue(':time', time(), \PDO::PARAM_INT);
-            $stmt->bindValue(':min', self::MAX_LIFETIME, \PDO::PARAM_INT);
-            $stmt->execute();
-        }
-
-        if (false !== $this->dsn) {
-            $this->pdo = null; // only close lazy-connection
-        }
-
-        return true;
-    }
-
-    /**
-     * Lazy-connects to the database.
-     */
-    private function connect(string $dsn): void
-    {
-        $this->pdo = new \PDO($dsn, $this->username, $this->password, $this->connectionOptions);
-        $this->pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
-        $this->driver = $this->pdo->getAttribute(\PDO::ATTR_DRIVER_NAME);
-    }
-
-    /**
-     * Builds a PDO DSN from a URL-like connection string.
-     *
-     * @todo implement missing support for oci DSN (which look totally different from other PDO ones)
-     */
-    private function buildDsnFromUrl(string $dsnOrUrl): string
-    {
-        // (pdo_)?sqlite3?:///... => (pdo_)?sqlite3?://localhost/... or else the URL will be invalid
-        $url = preg_replace('#^((?:pdo_)?sqlite3?):///#', '$1://localhost/', $dsnOrUrl);
-
-        $params = parse_url($url);
-
-        if (false === $params) {
-            return $dsnOrUrl; // If the URL is not valid, let's assume it might be a DSN already.
-        }
-
-        $params = array_map('rawurldecode', $params);
-
-        // Override the default username and password. Values passed through options will still win over these in the constructor.
-        if (isset($params['user'])) {
-            $this->username = $params['user'];
-        }
-
-        if (isset($params['pass'])) {
-            $this->password = $params['pass'];
-        }
-
-        if (!isset($params['scheme'])) {
-            throw new \InvalidArgumentException('URLs without scheme are not supported to configure the PdoSessionHandler.');
-        }
-
-        $driverAliasMap = [
-            'mssql' => 'sqlsrv',
-            'mysql2' => 'mysql', // Amazon RDS, for some weird reason
-            'postgres' => 'pgsql',
-            'postgresql' => 'pgsql',
-            'sqlite3' => 'sqlite',
-        ];
-
-        $driver = isset($driverAliasMap[$params['scheme']]) ? $driverAliasMap[$params['scheme']] : $params['scheme'];
-
-        // Doctrine DBAL supports passing its internal pdo_* driver names directly too (allowing both dashes and underscores). This allows supporting the same here.
-        if (0 === strpos($driver, 'pdo_') || 0 === strpos($driver, 'pdo-')) {
-            $driver = substr($driver, 4);
-        }
-
-        switch ($driver) {
-            case 'mysql':
-            case 'pgsql':
-                $dsn = $driver.':';
-
-                if (isset($params['host']) && '' !== $params['host']) {
-                    $dsn .= 'host='.$params['host'].';';
-                }
-
-                if (isset($params['port']) && '' !== $params['port']) {
-                    $dsn .= 'port='.$params['port'].';';
-                }
-
-                if (isset($params['path'])) {
-                    $dbName = substr($params['path'], 1); // Remove the leading slash
-                    $dsn .= 'dbname='.$dbName.';';
-                }
-
-                return $dsn;
-
-            case 'sqlite':
-                return 'sqlite:'.substr($params['path'], 1);
-
-            case 'sqlsrv':
-                $dsn = 'sqlsrv:server=';
-
-                if (isset($params['host'])) {
-                    $dsn .= $params['host'];
-                }
-
-                if (isset($params['port']) && '' !== $params['port']) {
-                    $dsn .= ','.$params['port'];
-                }
-
-                if (isset($params['path'])) {
-                    $dbName = substr($params['path'], 1); // Remove the leading slash
-                    $dsn .= ';Database='.$dbName;
-                }
-
-                return $dsn;
-
-            default:
-                throw new \InvalidArgumentException(sprintf('The scheme "%s" is not supported by the PdoSessionHandler URL configuration. Pass a PDO DSN directly.', $params['scheme']));
-        }
-    }
-
-    /**
-     * Helper method to begin a transaction.
-     *
-     * Since SQLite does not support row level locks, we have to acquire a reserved lock
-     * on the database immediately. Because of https://bugs.php.net/42766 we have to create
-     * such a transaction manually which also means we cannot use PDO::commit or
-     * PDO::rollback or PDO::inTransaction for SQLite.
-     *
-     * Also MySQLs default isolation, REPEATABLE READ, causes deadlock for different sessions
-     * due to https://percona.com/blog/2013/12/12/one-more-innodb-gap-lock-to-avoid/ .
-     * So we change it to READ COMMITTED.
-     */
-    private function beginTransaction(): void
-    {
-        if (!$this->inTransaction) {
-            if ('sqlite' === $this->driver) {
-                $this->pdo->exec('BEGIN IMMEDIATE TRANSACTION');
-            } else {
-                if ('mysql' === $this->driver) {
-                    $this->pdo->exec('SET TRANSACTION ISOLATION LEVEL READ COMMITTED');
-                }
-                $this->pdo->beginTransaction();
-            }
-            $this->inTransaction = true;
-        }
-    }
-
-    /**
-     * Helper method to commit a transaction.
-     */
-    private function commit(): void
-    {
-        if ($this->inTransaction) {
-            try {
-                // commit read-write transaction which also releases the lock
-                if ('sqlite' === $this->driver) {
-                    $this->pdo->exec('COMMIT');
-                } else {
-                    $this->pdo->commit();
-                }
-                $this->inTransaction = false;
-            } catch (\PDOException $e) {
-                $this->rollback();
-
-                throw $e;
-            }
-        }
-    }
-
-    /**
-     * Helper method to rollback a transaction.
-     */
-    private function rollback(): void
-    {
-        // We only need to rollback if we are in a transaction. Otherwise the resulting
-        // error would hide the real problem why rollback was called. We might not be
-        // in a transaction when not using the transactional locking behavior or when
-        // two callbacks (e.g. destroy and write) are invoked that both fail.
-        if ($this->inTransaction) {
-            if ('sqlite' === $this->driver) {
-                $this->pdo->exec('ROLLBACK');
-            } else {
-                $this->pdo->rollBack();
-            }
-            $this->inTransaction = false;
-        }
-    }
-
-    /**
-     * Reads the session data in respect to the different locking strategies.
-     *
-     * We need to make sure we do not return session data that is already considered garbage according
-     * to the session.gc_maxlifetime setting because gc() is called after read() and only sometimes.
-     *
-     * @return string
-     */
-    protected function doRead(string $sessionId)
-    {
-        if (self::LOCK_ADVISORY === $this->lockMode) {
-            $this->unlockStatements[] = $this->doAdvisoryLock($sessionId);
-        }
-
-        $selectSql = $this->getSelectSql();
-        $selectStmt = $this->pdo->prepare($selectSql);
-        $selectStmt->bindParam(':id', $sessionId, \PDO::PARAM_STR);
-        $insertStmt = null;
-
-        do {
-            $selectStmt->execute();
-            $sessionRows = $selectStmt->fetchAll(\PDO::FETCH_NUM);
-
-            if ($sessionRows) {
-                $expiry = (int) $sessionRows[0][1];
-                if ($expiry <= self::MAX_LIFETIME) {
-                    $expiry += $sessionRows[0][2];
-                }
-
-                if ($expiry < time()) {
-                    $this->sessionExpired = true;
-
-                    return '';
-                }
-
-                return \is_resource($sessionRows[0][0]) ? stream_get_contents($sessionRows[0][0]) : $sessionRows[0][0];
-            }
-
-            if (null !== $insertStmt) {
-                $this->rollback();
-                throw new \RuntimeException('Failed to read session: INSERT reported a duplicate id but next SELECT did not return any data.');
-            }
-
-            if (!filter_var(ini_get('session.use_strict_mode'), \FILTER_VALIDATE_BOOLEAN) && self::LOCK_TRANSACTIONAL === $this->lockMode && 'sqlite' !== $this->driver) {
-                // In strict mode, session fixation is not possible: new sessions always start with a unique
-                // random id, so that concurrency is not possible and this code path can be skipped.
-                // Exclusive-reading of non-existent rows does not block, so we need to do an insert to block
-                // until other connections to the session are committed.
-                try {
-                    $insertStmt = $this->getInsertStatement($sessionId, '', 0);
-                    $insertStmt->execute();
-                } catch (\PDOException $e) {
-                    // Catch duplicate key error because other connection created the session already.
-                    // It would only not be the case when the other connection destroyed the session.
-                    if (0 === strpos($e->getCode(), '23')) {
-                        // Retrieve finished session data written by concurrent connection by restarting the loop.
-                        // We have to start a new transaction as a failed query will mark the current transaction as
-                        // aborted in PostgreSQL and disallow further queries within it.
-                        $this->rollback();
-                        $this->beginTransaction();
-                        continue;
-                    }
-
-                    throw $e;
-                }
-            }
-
-            return '';
-        } while (true);
-    }
-
-    /**
-     * Executes an application-level lock on the database.
-     *
-     * @return \PDOStatement The statement that needs to be executed later to release the lock
-     *
-     * @throws \DomainException When an unsupported PDO driver is used
-     *
-     * @todo implement missing advisory locks
-     *       - for oci using DBMS_LOCK.REQUEST
-     *       - for sqlsrv using sp_getapplock with LockOwner = Session
-     */
-    private function doAdvisoryLock(string $sessionId): \PDOStatement
-    {
-        switch ($this->driver) {
-            case 'mysql':
-                // MySQL 5.7.5 and later enforces a maximum length on lock names of 64 characters. Previously, no limit was enforced.
-                $lockId = substr($sessionId, 0, 64);
-                // should we handle the return value? 0 on timeout, null on error
-                // we use a timeout of 50 seconds which is also the default for innodb_lock_wait_timeout
-                $stmt = $this->pdo->prepare('SELECT GET_LOCK(:key, 50)');
-                $stmt->bindValue(':key', $lockId, \PDO::PARAM_STR);
-                $stmt->execute();
-
-                $releaseStmt = $this->pdo->prepare('DO RELEASE_LOCK(:key)');
-                $releaseStmt->bindValue(':key', $lockId, \PDO::PARAM_STR);
-
-                return $releaseStmt;
-            case 'pgsql':
-                // Obtaining an exclusive session level advisory lock requires an integer key.
-                // When session.sid_bits_per_character > 4, the session id can contain non-hex-characters.
-                // So we cannot just use hexdec().
-                if (4 === \PHP_INT_SIZE) {
-                    $sessionInt1 = $this->convertStringToInt($sessionId);
-                    $sessionInt2 = $this->convertStringToInt(substr($sessionId, 4, 4));
-
-                    $stmt = $this->pdo->prepare('SELECT pg_advisory_lock(:key1, :key2)');
-                    $stmt->bindValue(':key1', $sessionInt1, \PDO::PARAM_INT);
-                    $stmt->bindValue(':key2', $sessionInt2, \PDO::PARAM_INT);
-                    $stmt->execute();
-
-                    $releaseStmt = $this->pdo->prepare('SELECT pg_advisory_unlock(:key1, :key2)');
-                    $releaseStmt->bindValue(':key1', $sessionInt1, \PDO::PARAM_INT);
-                    $releaseStmt->bindValue(':key2', $sessionInt2, \PDO::PARAM_INT);
-                } else {
-                    $sessionBigInt = $this->convertStringToInt($sessionId);
-
-                    $stmt = $this->pdo->prepare('SELECT pg_advisory_lock(:key)');
-                    $stmt->bindValue(':key', $sessionBigInt, \PDO::PARAM_INT);
-                    $stmt->execute();
-
-                    $releaseStmt = $this->pdo->prepare('SELECT pg_advisory_unlock(:key)');
-                    $releaseStmt->bindValue(':key', $sessionBigInt, \PDO::PARAM_INT);
-                }
-
-                return $releaseStmt;
-            case 'sqlite':
-                throw new \DomainException('SQLite does not support advisory locks.');
-            default:
-                throw new \DomainException(sprintf('Advisory locks are currently not implemented for PDO driver "%s".', $this->driver));
-        }
-    }
-
-    /**
-     * Encodes the first 4 (when PHP_INT_SIZE == 4) or 8 characters of the string as an integer.
-     *
-     * Keep in mind, PHP integers are signed.
-     */
-    private function convertStringToInt(string $string): int
-    {
-        if (4 === \PHP_INT_SIZE) {
-            return (\ord($string[3]) << 24) + (\ord($string[2]) << 16) + (\ord($string[1]) << 8) + \ord($string[0]);
-        }
-
-        $int1 = (\ord($string[7]) << 24) + (\ord($string[6]) << 16) + (\ord($string[5]) << 8) + \ord($string[4]);
-        $int2 = (\ord($string[3]) << 24) + (\ord($string[2]) << 16) + (\ord($string[1]) << 8) + \ord($string[0]);
-
-        return $int2 + ($int1 << 32);
-    }
-
-    /**
-     * Return a locking or nonlocking SQL query to read session information.
-     *
-     * @throws \DomainException When an unsupported PDO driver is used
-     */
-    private function getSelectSql(): string
-    {
-        if (self::LOCK_TRANSACTIONAL === $this->lockMode) {
-            $this->beginTransaction();
-
-            // selecting the time column should be removed in 6.0
-            switch ($this->driver) {
-                case 'mysql':
-                case 'oci':
-                case 'pgsql':
-                    return "SELECT $this->dataCol, $this->lifetimeCol, $this->timeCol FROM $this->table WHERE $this->idCol = :id FOR UPDATE";
-                case 'sqlsrv':
-                    return "SELECT $this->dataCol, $this->lifetimeCol, $this->timeCol FROM $this->table WITH (UPDLOCK, ROWLOCK) WHERE $this->idCol = :id";
-                case 'sqlite':
-                    // we already locked when starting transaction
-                    break;
-                default:
-                    throw new \DomainException(sprintf('Transactional locks are currently not implemented for PDO driver "%s".', $this->driver));
-            }
-        }
-
-        return "SELECT $this->dataCol, $this->lifetimeCol, $this->timeCol FROM $this->table WHERE $this->idCol = :id";
-    }
-
-    /**
-     * Returns an insert statement supported by the database for writing session data.
-     */
-    private function getInsertStatement(string $sessionId, string $sessionData, int $maxlifetime): \PDOStatement
-    {
-        switch ($this->driver) {
-            case 'oci':
-                $data = fopen('php://memory', 'r+');
-                fwrite($data, $sessionData);
-                rewind($data);
-                $sql = "INSERT INTO $this->table ($this->idCol, $this->dataCol, $this->lifetimeCol, $this->timeCol) VALUES (:id, EMPTY_BLOB(), :expiry, :time) RETURNING $this->dataCol into :data";
-                break;
-            default:
-                $data = $sessionData;
-                $sql = "INSERT INTO $this->table ($this->idCol, $this->dataCol, $this->lifetimeCol, $this->timeCol) VALUES (:id, :data, :expiry, :time)";
-                break;
-        }
-
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->bindParam(':id', $sessionId, \PDO::PARAM_STR);
-        $stmt->bindParam(':data', $data, \PDO::PARAM_LOB);
-        $stmt->bindValue(':expiry', time() + $maxlifetime, \PDO::PARAM_INT);
-        $stmt->bindValue(':time', time(), \PDO::PARAM_INT);
-
-        return $stmt;
-    }
-
-    /**
-     * Returns an update statement supported by the database for writing session data.
-     */
-    private function getUpdateStatement(string $sessionId, string $sessionData, int $maxlifetime): \PDOStatement
-    {
-        switch ($this->driver) {
-            case 'oci':
-                $data = fopen('php://memory', 'r+');
-                fwrite($data, $sessionData);
-                rewind($data);
-                $sql = "UPDATE $this->table SET $this->dataCol = EMPTY_BLOB(), $this->lifetimeCol = :expiry, $this->timeCol = :time WHERE $this->idCol = :id RETURNING $this->dataCol into :data";
-                break;
-            default:
-                $data = $sessionData;
-                $sql = "UPDATE $this->table SET $this->dataCol = :data, $this->lifetimeCol = :expiry, $this->timeCol = :time WHERE $this->idCol = :id";
-                break;
-        }
-
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->bindParam(':id', $sessionId, \PDO::PARAM_STR);
-        $stmt->bindParam(':data', $data, \PDO::PARAM_LOB);
-        $stmt->bindValue(':expiry', time() + $maxlifetime, \PDO::PARAM_INT);
-        $stmt->bindValue(':time', time(), \PDO::PARAM_INT);
-
-        return $stmt;
-    }
-
-    /**
-     * Returns a merge/upsert (i.e. insert or update) statement when supported by the database for writing session data.
-     */
-    private function getMergeStatement(string $sessionId, string $data, int $maxlifetime): ?\PDOStatement
-    {
-        switch (true) {
-            case 'mysql' === $this->driver:
-                $mergeSql = "INSERT INTO $this->table ($this->idCol, $this->dataCol, $this->lifetimeCol, $this->timeCol) VALUES (:id, :data, :expiry, :time) ".
-                    "ON DUPLICATE KEY UPDATE $this->dataCol = VALUES($this->dataCol), $this->lifetimeCol = VALUES($this->lifetimeCol), $this->timeCol = VALUES($this->timeCol)";
-                break;
-            case 'sqlsrv' === $this->driver && version_compare($this->pdo->getAttribute(\PDO::ATTR_SERVER_VERSION), '10', '>='):
-                // MERGE is only available since SQL Server 2008 and must be terminated by semicolon
-                // It also requires HOLDLOCK according to https://weblogs.sqlteam.com/dang/2009/01/31/upsert-race-condition-with-merge/
-                $mergeSql = "MERGE INTO $this->table WITH (HOLDLOCK) USING (SELECT 1 AS dummy) AS src ON ($this->idCol = ?) ".
-                    "WHEN NOT MATCHED THEN INSERT ($this->idCol, $this->dataCol, $this->lifetimeCol, $this->timeCol) VALUES (?, ?, ?, ?) ".
-                    "WHEN MATCHED THEN UPDATE SET $this->dataCol = ?, $this->lifetimeCol = ?, $this->timeCol = ?;";
-                break;
-            case 'sqlite' === $this->driver:
-                $mergeSql = "INSERT OR REPLACE INTO $this->table ($this->idCol, $this->dataCol, $this->lifetimeCol, $this->timeCol) VALUES (:id, :data, :expiry, :time)";
-                break;
-            case 'pgsql' === $this->driver && version_compare($this->pdo->getAttribute(\PDO::ATTR_SERVER_VERSION), '9.5', '>='):
-                $mergeSql = "INSERT INTO $this->table ($this->idCol, $this->dataCol, $this->lifetimeCol, $this->timeCol) VALUES (:id, :data, :expiry, :time) ".
-                    "ON CONFLICT ($this->idCol) DO UPDATE SET ($this->dataCol, $this->lifetimeCol, $this->timeCol) = (EXCLUDED.$this->dataCol, EXCLUDED.$this->lifetimeCol, EXCLUDED.$this->timeCol)";
-                break;
-            default:
-                // MERGE is not supported with LOBs: https://oracle.com/technetwork/articles/fuecks-lobs-095315.html
-                return null;
-        }
-
-        $mergeStmt = $this->pdo->prepare($mergeSql);
-
-        if ('sqlsrv' === $this->driver) {
-            $mergeStmt->bindParam(1, $sessionId, \PDO::PARAM_STR);
-            $mergeStmt->bindParam(2, $sessionId, \PDO::PARAM_STR);
-            $mergeStmt->bindParam(3, $data, \PDO::PARAM_LOB);
-            $mergeStmt->bindValue(4, time() + $maxlifetime, \PDO::PARAM_INT);
-            $mergeStmt->bindValue(5, time(), \PDO::PARAM_INT);
-            $mergeStmt->bindParam(6, $data, \PDO::PARAM_LOB);
-            $mergeStmt->bindValue(7, time() + $maxlifetime, \PDO::PARAM_INT);
-            $mergeStmt->bindValue(8, time(), \PDO::PARAM_INT);
-        } else {
-            $mergeStmt->bindParam(':id', $sessionId, \PDO::PARAM_STR);
-            $mergeStmt->bindParam(':data', $data, \PDO::PARAM_LOB);
-            $mergeStmt->bindValue(':expiry', time() + $maxlifetime, \PDO::PARAM_INT);
-            $mergeStmt->bindValue(':time', time(), \PDO::PARAM_INT);
-        }
-
-        return $mergeStmt;
-    }
-
-    /**
-     * Return a PDO instance.
-     *
-     * @return \PDO
-     */
-    protected function getConnection()
-    {
-        if (null === $this->pdo) {
-            $this->connect($this->dsn ?: ini_get('session.save_path'));
-        }
-
-        return $this->pdo;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

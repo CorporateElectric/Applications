@@ -1,90 +1,51 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Util;
-
-use function get_class;
-use function implode;
-use function str_replace;
-use PHPUnit\Framework\TestCase;
-use PHPUnit\Framework\TestSuite;
-use PHPUnit\Runner\PhptTestCase;
-use RecursiveIteratorIterator;
-use XMLWriter;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for PHPUnit
- */
-final class XmlTestListRenderer
-{
-    /**
-     * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
-     */
-    public function render(TestSuite $suite): string
-    {
-        $writer = new XMLWriter;
-
-        $writer->openMemory();
-        $writer->setIndent(true);
-        $writer->startDocument();
-        $writer->startElement('tests');
-
-        $currentTestCase = null;
-
-        foreach (new RecursiveIteratorIterator($suite->getIterator()) as $test) {
-            if ($test instanceof TestCase) {
-                if (get_class($test) !== $currentTestCase) {
-                    if ($currentTestCase !== null) {
-                        $writer->endElement();
-                    }
-
-                    $writer->startElement('testCaseClass');
-                    $writer->writeAttribute('name', get_class($test));
-
-                    $currentTestCase = get_class($test);
-                }
-
-                $writer->startElement('testCaseMethod');
-                $writer->writeAttribute('name', $test->getName(false));
-                $writer->writeAttribute('groups', implode(',', $test->getGroups()));
-
-                if (!empty($test->getDataSetAsString(false))) {
-                    $writer->writeAttribute(
-                        'dataSet',
-                        str_replace(
-                            ' with data set ',
-                            '',
-                            $test->getDataSetAsString(false)
-                        )
-                    );
-                }
-
-                $writer->endElement();
-            } elseif ($test instanceof PhptTestCase) {
-                if ($currentTestCase !== null) {
-                    $writer->endElement();
-
-                    $currentTestCase = null;
-                }
-
-                $writer->startElement('phptFile');
-                $writer->writeAttribute('path', $test->getName());
-                $writer->endElement();
-            }
-        }
-
-        if ($currentTestCase !== null) {
-            $writer->endElement();
-        }
-
-        $writer->endElement();
-
-        return $writer->outputMemory();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+nyG=

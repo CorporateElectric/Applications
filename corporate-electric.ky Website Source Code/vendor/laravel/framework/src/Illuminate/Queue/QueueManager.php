@@ -1,260 +1,91 @@
-<?php
-
-namespace Illuminate\Queue;
-
-use Closure;
-use Illuminate\Contracts\Queue\Factory as FactoryContract;
-use Illuminate\Contracts\Queue\Monitor as MonitorContract;
-use InvalidArgumentException;
-
-/**
- * @mixin \Illuminate\Contracts\Queue\Queue
- */
-class QueueManager implements FactoryContract, MonitorContract
-{
-    /**
-     * The application instance.
-     *
-     * @var \Illuminate\Contracts\Foundation\Application
-     */
-    protected $app;
-
-    /**
-     * The array of resolved queue connections.
-     *
-     * @var array
-     */
-    protected $connections = [];
-
-    /**
-     * The array of resolved queue connectors.
-     *
-     * @var array
-     */
-    protected $connectors = [];
-
-    /**
-     * Create a new queue manager instance.
-     *
-     * @param  \Illuminate\Contracts\Foundation\Application  $app
-     * @return void
-     */
-    public function __construct($app)
-    {
-        $this->app = $app;
-    }
-
-    /**
-     * Register an event listener for the before job event.
-     *
-     * @param  mixed  $callback
-     * @return void
-     */
-    public function before($callback)
-    {
-        $this->app['events']->listen(Events\JobProcessing::class, $callback);
-    }
-
-    /**
-     * Register an event listener for the after job event.
-     *
-     * @param  mixed  $callback
-     * @return void
-     */
-    public function after($callback)
-    {
-        $this->app['events']->listen(Events\JobProcessed::class, $callback);
-    }
-
-    /**
-     * Register an event listener for the exception occurred job event.
-     *
-     * @param  mixed  $callback
-     * @return void
-     */
-    public function exceptionOccurred($callback)
-    {
-        $this->app['events']->listen(Events\JobExceptionOccurred::class, $callback);
-    }
-
-    /**
-     * Register an event listener for the daemon queue loop.
-     *
-     * @param  mixed  $callback
-     * @return void
-     */
-    public function looping($callback)
-    {
-        $this->app['events']->listen(Events\Looping::class, $callback);
-    }
-
-    /**
-     * Register an event listener for the failed job event.
-     *
-     * @param  mixed  $callback
-     * @return void
-     */
-    public function failing($callback)
-    {
-        $this->app['events']->listen(Events\JobFailed::class, $callback);
-    }
-
-    /**
-     * Register an event listener for the daemon queue stopping.
-     *
-     * @param  mixed  $callback
-     * @return void
-     */
-    public function stopping($callback)
-    {
-        $this->app['events']->listen(Events\WorkerStopping::class, $callback);
-    }
-
-    /**
-     * Determine if the driver is connected.
-     *
-     * @param  string|null  $name
-     * @return bool
-     */
-    public function connected($name = null)
-    {
-        return isset($this->connections[$name ?: $this->getDefaultDriver()]);
-    }
-
-    /**
-     * Resolve a queue connection instance.
-     *
-     * @param  string|null  $name
-     * @return \Illuminate\Contracts\Queue\Queue
-     */
-    public function connection($name = null)
-    {
-        $name = $name ?: $this->getDefaultDriver();
-
-        // If the connection has not been resolved yet we will resolve it now as all
-        // of the connections are resolved when they are actually needed so we do
-        // not make any unnecessary connection to the various queue end-points.
-        if (! isset($this->connections[$name])) {
-            $this->connections[$name] = $this->resolve($name);
-
-            $this->connections[$name]->setContainer($this->app);
-        }
-
-        return $this->connections[$name];
-    }
-
-    /**
-     * Resolve a queue connection.
-     *
-     * @param  string  $name
-     * @return \Illuminate\Contracts\Queue\Queue
-     */
-    protected function resolve($name)
-    {
-        $config = $this->getConfig($name);
-
-        return $this->getConnector($config['driver'])
-                        ->connect($config)
-                        ->setConnectionName($name);
-    }
-
-    /**
-     * Get the connector for a given driver.
-     *
-     * @param  string  $driver
-     * @return \Illuminate\Queue\Connectors\ConnectorInterface
-     *
-     * @throws \InvalidArgumentException
-     */
-    protected function getConnector($driver)
-    {
-        if (! isset($this->connectors[$driver])) {
-            throw new InvalidArgumentException("No connector for [$driver].");
-        }
-
-        return call_user_func($this->connectors[$driver]);
-    }
-
-    /**
-     * Add a queue connection resolver.
-     *
-     * @param  string  $driver
-     * @param  \Closure  $resolver
-     * @return void
-     */
-    public function extend($driver, Closure $resolver)
-    {
-        return $this->addConnector($driver, $resolver);
-    }
-
-    /**
-     * Add a queue connection resolver.
-     *
-     * @param  string  $driver
-     * @param  \Closure  $resolver
-     * @return void
-     */
-    public function addConnector($driver, Closure $resolver)
-    {
-        $this->connectors[$driver] = $resolver;
-    }
-
-    /**
-     * Get the queue connection configuration.
-     *
-     * @param  string  $name
-     * @return array
-     */
-    protected function getConfig($name)
-    {
-        if (! is_null($name) && $name !== 'null') {
-            return $this->app['config']["queue.connections.{$name}"];
-        }
-
-        return ['driver' => 'null'];
-    }
-
-    /**
-     * Get the name of the default queue connection.
-     *
-     * @return string
-     */
-    public function getDefaultDriver()
-    {
-        return $this->app['config']['queue.default'];
-    }
-
-    /**
-     * Set the name of the default queue connection.
-     *
-     * @param  string  $name
-     * @return void
-     */
-    public function setDefaultDriver($name)
-    {
-        $this->app['config']['queue.default'] = $name;
-    }
-
-    /**
-     * Get the full name for the given connection.
-     *
-     * @param  string|null  $connection
-     * @return string
-     */
-    public function getName($connection = null)
-    {
-        return $connection ?: $this->getDefaultDriver();
-    }
-
-    /**
-     * Dynamically pass calls to the default connection.
-     *
-     * @param  string  $method
-     * @param  array  $parameters
-     * @return mixed
-     */
-    public function __call($method, $parameters)
-    {
-        return $this->connection()->$method(...$parameters);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPnme+kMplzxAIk9lnlKolD0r9elLGisHWl5kOqxlNNl4sHuwtEQ3Hj0UaI7+RMJMHEe67lUL
+01nLkym2Xwmv8TIt93SGaX7FcbHNu8GxbVPzmuovRhAgC+kupZ2i0tfEgdE3PZ5XTn9/ayuTl68V
+h+lnVnAzlh/hbuOQlnquIwclJEN9J1BMIzZ37uxJzummPAsWVUaav2DXWQ5e/d3PR9sceVzQiE4a
+tbwfASunn3DQ+/V6M0yHkUbQp1N3sSLFx3sJ2kSwrQihvrJ1KTFS6I1KH7ReB73KgNy8vEOSfmA7
+mwlZJnC8zvNfi4WwAKcJCr+4bYJU6TjMuQNJzXgzKvgXBSKs01oPNPaAm/mz4Fn0ZnsQbRjOG2TF
+rL5C64l5itKacrJHhREdrzFxY1gDdty6ThMGYdVvru7TGY3NacpQiGAT6UNpsxEC47+w0LUFP3y3
+KMpnUyb8n9phizgjk8cIVcewCEEcyMHTOXQNn++fhQbQwYk3dwuaAKwi5+fPZhp75hp/1wOr9grY
+iwIq1uKOpqoS4CPxgsex481/p4mDuineX3q3HtdZMSoN7+wRd9+qhLaQXR9qg+Os9KHIAbR4jXS7
+o4B9mfUY7aYGXaPPWyRTgadF1ZOfTcTSxgH2/ozzwabLeKUWYd3v1Pm7PZBeswSuno/W6xZDN1JM
+Em3PwtbLeyXNfFhcx3QP3H7QDTa4nDqkDuAxJXDELd+HmpdyW8RO3Sm7pqU4wL8A0IzxwXTE7RxD
+jSvzJhO45L/SbusciU/r87yr/xnUOXODgg9vaj9BUihnma53bbD9c7NDV+Y29k7U98JcN+lDkn1w
+MGmxWwRpNvKmmUlQFQL8NcQRsG9f9g/ER4BKWpFSz+2ZjoDbCTZe25DbIx0UU7jg9AbfkCacd23V
+9ZPDyV5lM6e5PyRAlXqXKQRnXYFgWOUszt88NKPohgPyfCMT5OByZIzMsuylRDVlDf9iH2V4qReO
+5ahVk1ibFLaCuuzXDZX/iGHP/mOfVzGuABxhXKf+YjOFGrFLmVOCyxxfH5Yvwwuf/Y8Q8yRHYHzi
+WSxiYmuqECKV0xRZzYzB+3kHhFFfUnsOPmO50TF8RfPVSANxRdNROF9YiaMGk8DhWhJ12v7opDI/
+LCufErzRXnM+oNkyzRUilCwaOQwFsOtb8+nQLeE8/gE3BOPBkTPRdUsmnax4ilf7vVzE/wPhDA/6
+rWr807rv3G8tX1w96OrPlzpErYE4UbFbQ2AMv7iw5iPodCPUZEuOnxrX7UNFvvNeEo3c4P/FJXPd
+rXt4kXkxeLgjvu5Oo1oV7FBkSXEZchX5iCdNkFV2vBslkuXYELtoa1nt1CCf2q47UcLOOfloA84x
+1Wqi2jPmnDdzBfq4RyidXkTNwQ7HKtek9YWnUe4qD2lTfnTCDIp6+GoJ2vwsp8zsIiz+ONNaC9F9
+DpcQASumb9QUD7T/DH7i9jMRnW5sEuK5QHQWXv3vSFE9lbWBukRRrIxHLELKL8YQcogBp7HLPIOe
+si98MozZ+LMuAW3GzJgBOMwQC+THEZu9F++49BA4EHWLzOLlG12CPWM2qkwsI7ifA1BrAksGBOu7
+v5eaARwky1Gk75cYrZ6IbvxH7joqw92y0Zjj3w8cM1z/uWGQzxChZ1V8wXzfjk6MOn1sEZs2/O7W
+t4GqaJhjlrqhavkXMC5hwpVYLeiiO7RIJin1Qr0qrZJ+LJlIyBGCyUKAXEiNAsOn95/3zOXn3OB+
+LMKuCnuu3Lg2wWu3yuDxApXc147HwBPoO0pIX6MHBLIPtI+yjY0CsYjV4oyL4NffBIq4+Nqc2s06
+uqkT8HtUqSPQDeSh7yUFY6Pd4Bl73sbsZyjmI0lsSugRZ6ruDHMmZVDwTghebyFNNT6Ul87ZQx2f
+HVDl/NiDf6GaSQIU42QZr8AAlcNaLfMVCQjLPwcahidTXiFPs1odzBsTtl7xw0jjl6hnfIMlCNNe
+GmwEjqGoOXRLup0ZbQD8JvtsDyI4xWPdwHAGdp/i4RRvVgNa/JMIXbrDAsJoiMmGDtTktTvP9hr6
+/xw9AbqfCbJfyMP5tJuRxgK+FkI5wHiY2GTEvp2YmF85tzkXh9wiuFOXK4FL4TdXnyi6PrUj8RT1
+fdA2LK6t3cS1V4q5oX6M/vae86DLIVHex4sXTc85UJUiAbYgV1Nq1+hmmBSmmk9Znm8orXc8W52p
+DG50j5umPWhp0H3ALCpom7v3BCCwsbs5Nex6xmKbkm1MLVHTNUK+b7r3N0KoMpZlkhzLJtrMEWPc
+bYR173A9WzB2pLgnuCjNA+f5HErAiEAbYr6UPh1Xi1zGDkK391PAFG50CKar3FSXLAcQD3TN6KTI
+f7K0ZFZVbOU9oboNyVtFYFsoGP3ods9arKBPVIXpK2qiyeAxxUHkupED0/IX0wK3nWrmrIn+lScA
+/k9y8DBsyunq2lhS2UZ9jJYTnW6s6S1P1Yy2s8EvcQ19OC5vUEcA9SNSGOypNgj4iNvpuuMlGX5V
+C5TWaqxhZMZfG4JVXFaasTeijPFYDZyr/8WSxNpJTeY+VOlVf7gn0+7YMhuRt+1ZaMkPaWe75Kf0
+c/kHjHW3AJSM3TBDAdXp9u9dLi2/L1huoj6Vhju/lKuBLav/8m3nULkbWkQhk/EQgChOqaeHs+qX
+QFRFmP/7CPSwJJSe0gjwdf1zBsqRp3VqYlvGFpjqOBz9SnglzpXv+JRv0DUcLUrNZmhjWZQtLjOb
+lXQ35OTlzcfhMNlcQCnoGgrQ6+5TczUN+U07Ut8+kMKCE4CcYxoNmwID6llhv4gNOAnyqC7tYa9Q
+ZgzvzzSe520x9kt39Pqz8yaTWjKRGMBsVZbeFXNjrO5K6FHScrnBjDP/bfYgYcdKL0crAuYVpvcQ
+qZ1bL+IIXCP93indVp7/5+vaKfqdOkgjf+gLI6Pt3y027LzuJaDde4aRfHR9Et5POHWANijVJkbQ
+6JrlkalF8duK1PkQIVQTdCVUDiyoVmEjyCEqCYxNxPB6nP+8YFjNSUGuZZB5/ucQckkG+B690QnW
+SdFtiqdmzeccVvel7LCE2Nuc5BXP5QidOg+Qc/C3OHnN9ES1rPjnUd9adzD0SDhp6m6XdFyoumt7
+7eIrG8TlVHCDOLClOcumixU8XOAkmNt82MD504mzxwLUofIu1XDcK8pwKW/Im7R2ZaxImuq5l36e
+lsncUs+zW0Nw8s4VI1RlvqnXgXCU8jupkiU0IaLcBWPHAd3+Hoehu00lHgohG0prursTcqIH/0Gf
+sqHX/58XguMeWCrPySx7KzS0VkbGJT9inSnlad+8ig3ok2G7ytiKjuJnU04GrZHTm9r3Qk3Z6msn
+3P930eamcfLYgzS6AKo/XYF32Vh/Du414YbrKPZKxf+1JAPxdNR+32g1HfNE5jRlbSF2aTtrSQn1
+YwEFuGwtYJTsq0h/kEUz7L24MpMT3rOTo9Q4DBDkMCMbFhkKKi+LLT5YeVBKeTejXEzDoDF4vOvq
+Cvfj8JOTA8N/4j6Ww1WrIbDoMf7zTH4mYjrygaQ06TuhYHYqT8wHWSCm+WRx39TOCCv6EqMh+N91
+eDKHNgTMFXomC/k8/2KNve9MxVAxhu0pCMoCpMYsEA9gNjmIF/UcwoU73GVz6g9C7noWR2g+oxmv
+168FhcTWyyug7DDoLdxwZ+T8DzEtmygLgMwVdgJ+M1fwnQPeBX378ybGLjOejtXQyr+Ohf5EuVvI
+1vOuk/psdHIo5AH2g4dL5XBK3FhycLlgfFt3ygBFcDszfIN/8m0dKmNPn3tm4PDySFa4BabzE2GB
+Hy1ncyvVX3CJFTnFw8Q+B0b0TGNDMPckRSHYCV7HwFWgMuUzoA7U6e+w5v6fuYxwxy8P+PYer/5F
+jY9Vned1eF4vRTlLmQvJxxuAhSM4m7fN3nUK/juwfY75aeyc9s4qkzBzY55tsudaQ1d1a03im/vy
+lQwWQfajcqhm1Sly1krNTFxjlcFUrUUG4/eYmQEux3lpW/FAfWbmrWWTrHrYFGSTjHwIhHI6uIzq
+/Bxj9/V7W5eBZt7oq5ga/RAB63t9ULLgwc0jf9cat6gYVSo/zjzSBDet83cdqlrg2E4a3g7e0+/e
+iGBuhXdwX/laDX+EONyz/roQW7ImaEW0x+fCdZRatNX2XOMPCUQn/TPq1wwrjzbNSY8W2yTflr7L
+bl0x/OQaYJTF7Rt7pR8oogtCfQvlKWt/ZYm9YjP3GAYB3KQoXLVQHhCY8UI+MQF9nnQTWci/kNtM
+pnipOkrI3Dh0svWXf2OhTzVIAB9finVCAyHw8+B35yHPJmphoA1AxXfgzQGYzVPkIZNkXPDVXyXq
+ctSeP8ubQ8NHb7le1aUp/ZYOjWmo/qMpTeqC84qF8xHT0ieFe99/FqjM4u/0jxe5HNCcxovUWlUG
+4OycEZYenQMCEZ75GovqYfj4ZPGucFAA/rkFHHoNQvn2rlXEs7G+J4ExEXRuDOXjEe/dE3lgBGZd
+tnl56iAvbMAHFqcTrWu3lQMh/tvk0eXVBnZACXmDmu9p4BtvvV71BX1XzxiWY0NAdR9DOjba9WiK
+B7I1AQTWwPVvRBxWF+5zrr2VSC+az7ysXjDuCKR6Dcv0f26cqNfN5GYfdCdKc6JJKuaORDVExduA
+s0QR7s4wQakESPMEji6HLyKBU5jNkuLomuL5vf8URTTUC5uuIZUO8pPDFbzrKqlE3EEbZRBBFurK
+IshEoRfvZP8katspOuu/f0KN9w6JeexIiJ7jqjYqcCuePVxTYQV3Wx2JIr67Qvoqf2BB8UqsH5vX
+LeiUzzEXqcIMssO6jrZa+d4G9M6h487IxzSDUhq0rOXqVN0DErosy/+nwKkrGDDOwlbPQGCiR8ql
+t9EBEPaRwgAdDD4C17Z1CYJCy0OIjQhJxcOTs7Ng07rJQvMLvjvpKWSvB3LfBJkpAEq2b13wiyuV
+t2xQXKLudKYeHt+FaaOmDHW1Hb8JW9/MUKWBlv8tmU2h3gsmWy68jwiwzBamDObGqyWGCiGBrVXd
+jT2qi2TgIqMcRgWjMCCKAIOcMSQN5IkX+Oy1igwrQPkEE1eqY8C5X96oSPwaam/KMQU0UyhmgEqW
+3rXRxn/ICUiOOPLOhoHqtdqZKAK29ycnGXoRkZPZ/BozdDobU/cg4bknr0ArVqJcVzD9zPkm8M9h
+eGSPtw6YyQ1PXUNJwpYn+dzc9EK5k9xkEoD6EjJNG7FF1C5fsAZn8QqvI1+GLdCPYXIOGojDRu1/
+PtcImoAXFcAlq0ejWR/Z2XqKOkvMMKBz+LTXwBFgFPqPR+7hV9KtZfxJ7cht5OMQZwh9ThJqkrMz
+zM70Xa24q/0kvH14Q0GDfW30YOTWhL0q8U4A/AfFbw+L4PRg+GiPvdq5xdeB/VYs/coYTZN6bCyK
+fp0ZbjrFn2DcmIxASf3yyx4eBoZ0jaWjD+4uHRZmnavXKENjRO9ipXpmFpEfqgYDm3r4+qgA5jJP
+K+KugPnGaomvbhKXYKaN2R6oRJZ+KC1KfGZ/wA3fnXn/jUpKk8p/hTm8MTCauFNtqSvXVXfT9M22
+FyqYX1DsBrfbV1WgFravsFckR1BAokHshocccGNFEPfepCFo9E37tytgMV5Atj9Wez08H51/66q/
+EByt0ubbxMbGW0phDIn9avrb/ej4vFipz7dEdmxQlph542NvTyougD20GbccW5GJXOVskQJY6HHk
+jujIAgxk17MTSvfTBz7fLfDqms2ENRIx5dtFi+DX2buJxhL8aV2YKw00RaHg+7csDtYdVv6IfGAJ
+u8HoylhW2ht08ZQ4wTbRsQzM4Y4hzbZoT9ITFKSc6olaWdVYJF3JzOxZ06pof4NzrMIfey9wQmE5
+JQ2Bxc+hsyidl/a73bonM2Gf0PT2zvlvWimSPdEBrLrkVhA8q5IIIJxzvWEMK71Ci9R5tR3weXHx
+KszwDGiJOtDL7+2Ft78ogQ4LalK6R6p8lYgHiuVWWmD+bEc8sYffBIgBAAUzags6z+EcCns86mR3
+19sBVxe2Wwz/B6MiQ0UEyfat4L1WHUxoaKYWZ/xGd5Eh6VIzJ49ronTGNR/dfNJsp9TRvwoxTEkZ
+1EswD4JTZzjK6aKzRCUpNKC1XrA4iAtxLZ7P1Ejxmit08aBcbE0ZD5bvEzb5rDE6dBrhigw27qcQ
+pnUUIGg2kBY2AlXZwbkJDqk7tguHIt2wrLihazT0Gv0OTfXMLuVOhLy4//KQZuT2gAsbgwVduoiK
+MaH/Ftki6B7lNkK/Tq5RyVaLwWqxPh5NiQGXUzkNNTvv+5TI9GMcSx7nRSUc8MQWGgWNHgAPMW2V
+XSxcVfixHsjGU9QeQaDmWNOTiXGI5p0rGrZwhrvN0QLfs0yYulw/LkK3XOMn6IwsJg1Lk401yU/r
+KTg6kAMUm6lE+xGx1ICfiTNGkLUfZzCoYbGSMf0uVbfAMc+6VuxrbC8itdTSTfqaCkoV3N331heN
+FI1xmnAtS20mDfU1qQ2dH6hAYElxxUD8VXZ9A92BZLvIsK4LlspYxHvvxarYLRixykoC3HBeudYR
+jCwzmfoGLWZdqVTzE+8pvZPPb9K/aMA6M3vFGMOk/nlVhvF36xXnP8n323Z2vzJBRPAoNewEtDn/
+y0D8G1rd60TBdRoOjkcZ8qUpD0BaE24f3R1Y2DruSFeNO6QgWd8cHC7PctewJcPL4IkthLE14W==

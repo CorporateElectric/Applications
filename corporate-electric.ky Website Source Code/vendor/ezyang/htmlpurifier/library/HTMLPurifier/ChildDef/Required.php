@@ -1,118 +1,54 @@
-<?php
-
-/**
- * Definition that allows a set of elements, but disallows empty children.
- */
-class HTMLPurifier_ChildDef_Required extends HTMLPurifier_ChildDef
-{
-    /**
-     * Lookup table of allowed elements.
-     * @type array
-     */
-    public $elements = array();
-
-    /**
-     * Whether or not the last passed node was all whitespace.
-     * @type bool
-     */
-    protected $whitespace = false;
-
-    /**
-     * @param array|string $elements List of allowed element names (lowercase).
-     */
-    public function __construct($elements)
-    {
-        if (is_string($elements)) {
-            $elements = str_replace(' ', '', $elements);
-            $elements = explode('|', $elements);
-        }
-        $keys = array_keys($elements);
-        if ($keys == array_keys($keys)) {
-            $elements = array_flip($elements);
-            foreach ($elements as $i => $x) {
-                $elements[$i] = true;
-                if (empty($i)) {
-                    unset($elements[$i]);
-                } // remove blank
-            }
-        }
-        $this->elements = $elements;
-    }
-
-    /**
-     * @type bool
-     */
-    public $allow_empty = false;
-
-    /**
-     * @type string
-     */
-    public $type = 'required';
-
-    /**
-     * @param array $children
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return array
-     */
-    public function validateChildren($children, $config, $context)
-    {
-        // Flag for subclasses
-        $this->whitespace = false;
-
-        // if there are no tokens, delete parent node
-        if (empty($children)) {
-            return false;
-        }
-
-        // the new set of children
-        $result = array();
-
-        // whether or not parsed character data is allowed
-        // this controls whether or not we silently drop a tag
-        // or generate escaped HTML from it
-        $pcdata_allowed = isset($this->elements['#PCDATA']);
-
-        // a little sanity check to make sure it's not ALL whitespace
-        $all_whitespace = true;
-
-        $stack = array_reverse($children);
-        while (!empty($stack)) {
-            $node = array_pop($stack);
-            if (!empty($node->is_whitespace)) {
-                $result[] = $node;
-                continue;
-            }
-            $all_whitespace = false; // phew, we're not talking about whitespace
-
-            if (!isset($this->elements[$node->name])) {
-                // special case text
-                // XXX One of these ought to be redundant or something
-                if ($pcdata_allowed && $node instanceof HTMLPurifier_Node_Text) {
-                    $result[] = $node;
-                    continue;
-                }
-                // spill the child contents in
-                // ToDo: Make configurable
-                if ($node instanceof HTMLPurifier_Node_Element) {
-                    for ($i = count($node->children) - 1; $i >= 0; $i--) {
-                        $stack[] = $node->children[$i];
-                    }
-                    continue;
-                }
-                continue;
-            }
-            $result[] = $node;
-        }
-        if (empty($result)) {
-            return false;
-        }
-        if ($all_whitespace) {
-            $this->whitespace = true;
-            return false;
-        }
-        return $result;
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+HkDnvS7eVhKSBp0lUFYZQIldHm==

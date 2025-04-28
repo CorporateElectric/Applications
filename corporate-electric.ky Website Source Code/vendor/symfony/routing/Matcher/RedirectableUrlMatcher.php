@@ -1,64 +1,53 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Routing\Matcher;
-
-use Symfony\Component\Routing\Exception\ExceptionInterface;
-use Symfony\Component\Routing\Exception\ResourceNotFoundException;
-
-/**
- * @author Fabien Potencier <fabien@symfony.com>
- */
-abstract class RedirectableUrlMatcher extends UrlMatcher implements RedirectableUrlMatcherInterface
-{
-    /**
-     * {@inheritdoc}
-     */
-    public function match(string $pathinfo)
-    {
-        try {
-            return parent::match($pathinfo);
-        } catch (ResourceNotFoundException $e) {
-            if (!\in_array($this->context->getMethod(), ['HEAD', 'GET'], true)) {
-                throw $e;
-            }
-
-            if ($this->allowSchemes) {
-                redirect_scheme:
-                $scheme = $this->context->getScheme();
-                $this->context->setScheme(current($this->allowSchemes));
-                try {
-                    $ret = parent::match($pathinfo);
-
-                    return $this->redirect($pathinfo, $ret['_route'] ?? null, $this->context->getScheme()) + $ret;
-                } catch (ExceptionInterface $e2) {
-                    throw $e;
-                } finally {
-                    $this->context->setScheme($scheme);
-                }
-            } elseif ('/' === $trimmedPathinfo = rtrim($pathinfo, '/') ?: '/') {
-                throw $e;
-            } else {
-                try {
-                    $pathinfo = $trimmedPathinfo === $pathinfo ? $pathinfo.'/' : $trimmedPathinfo;
-                    $ret = parent::match($pathinfo);
-
-                    return $this->redirect($pathinfo, $ret['_route'] ?? null) + $ret;
-                } catch (ExceptionInterface $e2) {
-                    if ($this->allowSchemes) {
-                        goto redirect_scheme;
-                    }
-                    throw $e;
-                }
-            }
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+0/LRhqXbpmkaW06n6EmdKm==

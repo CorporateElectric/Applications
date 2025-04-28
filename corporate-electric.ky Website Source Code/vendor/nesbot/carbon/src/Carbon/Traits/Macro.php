@@ -1,135 +1,48 @@
-<?php
-
-/**
- * This file is part of the Carbon package.
- *
- * (c) Brian Nesbitt <brian@nesbot.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace Carbon\Traits;
-
-/**
- * Trait Macros.
- *
- * Allows users to register macros within the Carbon class.
- */
-trait Macro
-{
-    use Mixin;
-
-    /**
-     * The registered macros.
-     *
-     * @var array
-     */
-    protected static $globalMacros = [];
-
-    /**
-     * The registered generic macros.
-     *
-     * @var array
-     */
-    protected static $globalGenericMacros = [];
-
-    /**
-     * Register a custom macro.
-     *
-     * @example
-     * ```
-     * $userSettings = [
-     *   'locale' => 'pt',
-     *   'timezone' => 'America/Sao_Paulo',
-     * ];
-     * Carbon::macro('userFormat', function () use ($userSettings) {
-     *   return $this->copy()->locale($userSettings['locale'])->tz($userSettings['timezone'])->calendar();
-     * });
-     * echo Carbon::yesterday()->hours(11)->userFormat();
-     * ```
-     *
-     * @param string          $name
-     * @param object|callable $macro
-     *
-     * @return void
-     */
-    public static function macro($name, $macro)
-    {
-        static::$globalMacros[$name] = $macro;
-    }
-
-    /**
-     * Remove all macros and generic macros.
-     */
-    public static function resetMacros()
-    {
-        static::$globalMacros = [];
-        static::$globalGenericMacros = [];
-    }
-
-    /**
-     * Register a custom macro.
-     *
-     * @param object|callable $macro
-     * @param int             $priority marco with higher priority is tried first
-     *
-     * @return void
-     */
-    public static function genericMacro($macro, $priority = 0)
-    {
-        if (!isset(static::$globalGenericMacros[$priority])) {
-            static::$globalGenericMacros[$priority] = [];
-            krsort(static::$globalGenericMacros, SORT_NUMERIC);
-        }
-
-        static::$globalGenericMacros[$priority][] = $macro;
-    }
-
-    /**
-     * Checks if macro is registered globally.
-     *
-     * @param string $name
-     *
-     * @return bool
-     */
-    public static function hasMacro($name)
-    {
-        return isset(static::$globalMacros[$name]);
-    }
-
-    /**
-     * Get the raw callable macro registered globally for a given name.
-     *
-     * @param string $name
-     *
-     * @return callable|null
-     */
-    public static function getMacro($name)
-    {
-        return static::$globalMacros[$name] ?? null;
-    }
-
-    /**
-     * Checks if macro is registered globally or locally.
-     *
-     * @param string $name
-     *
-     * @return bool
-     */
-    public function hasLocalMacro($name)
-    {
-        return ($this->localMacros && isset($this->localMacros[$name])) || static::hasMacro($name);
-    }
-
-    /**
-     * Get the raw callable macro registered globally or locally for a given name.
-     *
-     * @param string $name
-     *
-     * @return callable|null
-     */
-    public function getLocalMacro($name)
-    {
-        return ($this->localMacros ?? [])[$name] ?? static::getMacro($name);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

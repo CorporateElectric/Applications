@@ -1,122 +1,66 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Framework;
-
-use function array_keys;
-use function get_class;
-use function spl_object_hash;
-use PHPUnit\Util\Filter;
-use Throwable;
-
-/**
- * Wraps Exceptions thrown by code under test.
- *
- * Re-instantiates Exceptions thrown by user-space code to retain their original
- * class names, properties, and stack traces (but without arguments).
- *
- * Unlike PHPUnit\Framework\Exception, the complete stack of previous Exceptions
- * is processed.
- *
- * @internal This class is not covered by the backward compatibility promise for PHPUnit
- */
-final class ExceptionWrapper extends Exception
-{
-    /**
-     * @var string
-     */
-    protected $className;
-
-    /**
-     * @var null|ExceptionWrapper
-     */
-    protected $previous;
-
-    public function __construct(Throwable $t)
-    {
-        // PDOException::getCode() is a string.
-        // @see https://php.net/manual/en/class.pdoexception.php#95812
-        parent::__construct($t->getMessage(), (int) $t->getCode());
-
-        $this->setOriginalException($t);
-    }
-
-    public function __toString(): string
-    {
-        $string = TestFailure::exceptionToString($this);
-
-        if ($trace = Filter::getFilteredStacktrace($this)) {
-            $string .= "\n" . $trace;
-        }
-
-        if ($this->previous) {
-            $string .= "\nCaused by\n" . $this->previous;
-        }
-
-        return $string;
-    }
-
-    public function getClassName(): string
-    {
-        return $this->className;
-    }
-
-    public function getPreviousWrapped(): ?self
-    {
-        return $this->previous;
-    }
-
-    public function setClassName(string $className): void
-    {
-        $this->className = $className;
-    }
-
-    public function setOriginalException(Throwable $t): void
-    {
-        $this->originalException($t);
-
-        $this->className = get_class($t);
-        $this->file      = $t->getFile();
-        $this->line      = $t->getLine();
-
-        $this->serializableTrace = $t->getTrace();
-
-        foreach (array_keys($this->serializableTrace) as $key) {
-            unset($this->serializableTrace[$key]['args']);
-        }
-
-        if ($t->getPrevious()) {
-            $this->previous = new self($t->getPrevious());
-        }
-    }
-
-    public function getOriginalException(): ?Throwable
-    {
-        return $this->originalException();
-    }
-
-    /**
-     * Method to contain static originalException to exclude it from stacktrace to prevent the stacktrace contents,
-     * which can be quite big, from being garbage-collected, thus blocking memory until shutdown.
-     *
-     * Approach works both for var_dump() and var_export() and print_r().
-     */
-    private function originalException(Throwable $exceptionToStore = null): ?Throwable
-    {
-        static $originalExceptions;
-
-        $instanceId = spl_object_hash($this);
-
-        if ($exceptionToStore) {
-            $originalExceptions[$instanceId] = $exceptionToStore;
-        }
-
-        return $originalExceptions[$instanceId] ?? null;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+jum/zmeYA89ozmqumHWRcSocU6L5Vm==

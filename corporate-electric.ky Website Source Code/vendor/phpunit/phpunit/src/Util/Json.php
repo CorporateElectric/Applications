@@ -1,98 +1,41 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Util;
-
-use const JSON_PRETTY_PRINT;
-use const JSON_UNESCAPED_SLASHES;
-use const JSON_UNESCAPED_UNICODE;
-use function count;
-use function is_array;
-use function is_object;
-use function json_decode;
-use function json_encode;
-use function json_last_error;
-use function ksort;
-use PHPUnit\Framework\Exception;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for PHPUnit
- */
-final class Json
-{
-    /**
-     * Prettify json string.
-     *
-     * @throws \PHPUnit\Framework\Exception
-     */
-    public static function prettify(string $json): string
-    {
-        $decodedJson = json_decode($json, false);
-
-        if (json_last_error()) {
-            throw new Exception(
-                'Cannot prettify invalid json'
-            );
-        }
-
-        return json_encode($decodedJson, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-    }
-
-    /**
-     * To allow comparison of JSON strings, first process them into a consistent
-     * format so that they can be compared as strings.
-     *
-     * @return array ($error, $canonicalized_json)  The $error parameter is used
-     *               to indicate an error decoding the json. This is used to avoid ambiguity
-     *               with JSON strings consisting entirely of 'null' or 'false'.
-     */
-    public static function canonicalize(string $json): array
-    {
-        $decodedJson = json_decode($json);
-
-        if (json_last_error()) {
-            return [true, null];
-        }
-
-        self::recursiveSort($decodedJson);
-
-        $reencodedJson = json_encode($decodedJson);
-
-        return [false, $reencodedJson];
-    }
-
-    /**
-     * JSON object keys are unordered while PHP array keys are ordered.
-     *
-     * Sort all array keys to ensure both the expected and actual values have
-     * their keys in the same order.
-     */
-    private static function recursiveSort(&$json): void
-    {
-        if (!is_array($json)) {
-            // If the object is not empty, change it to an associative array
-            // so we can sort the keys (and we will still re-encode it
-            // correctly, since PHP encodes associative arrays as JSON objects.)
-            // But EMPTY objects MUST remain empty objects. (Otherwise we will
-            // re-encode it as a JSON array rather than a JSON object.)
-            // See #2919.
-            if (is_object($json) && count((array) $json) > 0) {
-                $json = (array) $json;
-            } else {
-                return;
-            }
-        }
-
-        ksort($json);
-
-        foreach ($json as $key => &$value) {
-            self::recursiveSort($value);
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+rW==

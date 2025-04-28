@@ -1,113 +1,64 @@
-<?php
-
-namespace Illuminate\Session;
-
-use Illuminate\Filesystem\Filesystem;
-use Illuminate\Support\Carbon;
-use SessionHandlerInterface;
-use Symfony\Component\Finder\Finder;
-
-class FileSessionHandler implements SessionHandlerInterface
-{
-    /**
-     * The filesystem instance.
-     *
-     * @var \Illuminate\Filesystem\Filesystem
-     */
-    protected $files;
-
-    /**
-     * The path where sessions should be stored.
-     *
-     * @var string
-     */
-    protected $path;
-
-    /**
-     * The number of minutes the session should be valid.
-     *
-     * @var int
-     */
-    protected $minutes;
-
-    /**
-     * Create a new file driven handler instance.
-     *
-     * @param  \Illuminate\Filesystem\Filesystem  $files
-     * @param  string  $path
-     * @param  int  $minutes
-     * @return void
-     */
-    public function __construct(Filesystem $files, $path, $minutes)
-    {
-        $this->path = $path;
-        $this->files = $files;
-        $this->minutes = $minutes;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function open($savePath, $sessionName)
-    {
-        return true;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function close()
-    {
-        return true;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function read($sessionId)
-    {
-        if ($this->files->isFile($path = $this->path.'/'.$sessionId)) {
-            if ($this->files->lastModified($path) >= Carbon::now()->subMinutes($this->minutes)->getTimestamp()) {
-                return $this->files->sharedGet($path);
-            }
-        }
-
-        return '';
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function write($sessionId, $data)
-    {
-        $this->files->put($this->path.'/'.$sessionId, $data, true);
-
-        return true;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function destroy($sessionId)
-    {
-        $this->files->delete($this->path.'/'.$sessionId);
-
-        return true;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function gc($lifetime)
-    {
-        $files = Finder::create()
-                    ->in($this->path)
-                    ->files()
-                    ->ignoreDotFiles(true)
-                    ->date('<= now - '.$lifetime.' seconds');
-
-        foreach ($files as $file) {
-            $this->files->delete($file->getRealPath());
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

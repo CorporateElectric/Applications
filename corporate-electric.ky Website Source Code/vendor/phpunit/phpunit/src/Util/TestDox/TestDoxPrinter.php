@@ -1,386 +1,197 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Util\TestDox;
-
-use const PHP_EOL;
-use function array_map;
-use function get_class;
-use function implode;
-use function method_exists;
-use function preg_split;
-use function trim;
-use PHPUnit\Framework\AssertionFailedError;
-use PHPUnit\Framework\Reorderable;
-use PHPUnit\Framework\Test;
-use PHPUnit\Framework\TestCase;
-use PHPUnit\Framework\TestResult;
-use PHPUnit\Framework\TestSuite;
-use PHPUnit\Framework\Warning;
-use PHPUnit\Runner\BaseTestRunner;
-use PHPUnit\Runner\PhptTestCase;
-use PHPUnit\TextUI\DefaultResultPrinter;
-use Throwable;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for PHPUnit
- */
-class TestDoxPrinter extends DefaultResultPrinter
-{
-    /**
-     * @var NamePrettifier
-     */
-    protected $prettifier;
-
-    /**
-     * @var int The number of test results received from the TestRunner
-     */
-    protected $testIndex = 0;
-
-    /**
-     * @var int The number of test results already sent to the output
-     */
-    protected $testFlushIndex = 0;
-
-    /**
-     * @var array<int, array> Buffer for test results
-     */
-    protected $testResults = [];
-
-    /**
-     * @var array<string, int> Lookup table for testname to testResults[index]
-     */
-    protected $testNameResultIndex = [];
-
-    /**
-     * @var bool
-     */
-    protected $enableOutputBuffer = false;
-
-    /**
-     * @var array array<string>
-     */
-    protected $originalExecutionOrder = [];
-
-    /**
-     * @var int
-     */
-    protected $spinState = 0;
-
-    /**
-     * @var bool
-     */
-    protected $showProgress = true;
-
-    /**
-     * @param null|resource|string $out
-     * @param int|string           $numberOfColumns
-     *
-     * @throws \PHPUnit\Framework\Exception
-     */
-    public function __construct($out = null, bool $verbose = false, string $colors = self::COLOR_DEFAULT, bool $debug = false, $numberOfColumns = 80, bool $reverse = false)
-    {
-        parent::__construct($out, $verbose, $colors, $debug, $numberOfColumns, $reverse);
-
-        $this->prettifier = new NamePrettifier($this->colors);
-    }
-
-    public function setOriginalExecutionOrder(array $order): void
-    {
-        $this->originalExecutionOrder = $order;
-        $this->enableOutputBuffer     = !empty($order);
-    }
-
-    public function setShowProgressAnimation(bool $showProgress): void
-    {
-        $this->showProgress = $showProgress;
-    }
-
-    public function printResult(TestResult $result): void
-    {
-    }
-
-    /**
-     * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
-     */
-    public function endTest(Test $test, float $time): void
-    {
-        if (!$test instanceof TestCase && !$test instanceof PhptTestCase && !$test instanceof TestSuite) {
-            return;
-        }
-
-        if ($this->testHasPassed()) {
-            $this->registerTestResult($test, null, BaseTestRunner::STATUS_PASSED, $time, false);
-        }
-
-        if ($test instanceof TestCase || $test instanceof PhptTestCase) {
-            $this->testIndex++;
-        }
-
-        parent::endTest($test, $time);
-    }
-
-    /**
-     * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
-     */
-    public function addError(Test $test, Throwable $t, float $time): void
-    {
-        $this->registerTestResult($test, $t, BaseTestRunner::STATUS_ERROR, $time, true);
-    }
-
-    /**
-     * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
-     */
-    public function addWarning(Test $test, Warning $e, float $time): void
-    {
-        $this->registerTestResult($test, $e, BaseTestRunner::STATUS_WARNING, $time, true);
-    }
-
-    /**
-     * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
-     */
-    public function addFailure(Test $test, AssertionFailedError $e, float $time): void
-    {
-        $this->registerTestResult($test, $e, BaseTestRunner::STATUS_FAILURE, $time, true);
-    }
-
-    /**
-     * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
-     */
-    public function addIncompleteTest(Test $test, Throwable $t, float $time): void
-    {
-        $this->registerTestResult($test, $t, BaseTestRunner::STATUS_INCOMPLETE, $time, false);
-    }
-
-    /**
-     * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
-     */
-    public function addRiskyTest(Test $test, Throwable $t, float $time): void
-    {
-        $this->registerTestResult($test, $t, BaseTestRunner::STATUS_RISKY, $time, false);
-    }
-
-    /**
-     * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
-     */
-    public function addSkippedTest(Test $test, Throwable $t, float $time): void
-    {
-        $this->registerTestResult($test, $t, BaseTestRunner::STATUS_SKIPPED, $time, false);
-    }
-
-    public function writeProgress(string $progress): void
-    {
-        $this->flushOutputBuffer();
-    }
-
-    public function flush(): void
-    {
-        $this->flushOutputBuffer(true);
-    }
-
-    /**
-     * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
-     */
-    protected function registerTestResult(Test $test, ?Throwable $t, int $status, float $time, bool $verbose): void
-    {
-        $testName = $test instanceof Reorderable ? $test->sortId() : $test->getName();
-
-        $result = [
-            'className'  => $this->formatClassName($test),
-            'testName'   => $testName,
-            'testMethod' => $this->formatTestName($test),
-            'message'    => '',
-            'status'     => $status,
-            'time'       => $time,
-            'verbose'    => $verbose,
-        ];
-
-        if ($t !== null) {
-            $result['message'] = $this->formatTestResultMessage($t, $result);
-        }
-
-        $this->testResults[$this->testIndex]  = $result;
-        $this->testNameResultIndex[$testName] = $this->testIndex;
-    }
-
-    protected function formatTestName(Test $test): string
-    {
-        return method_exists($test, 'getName') ? $test->getName() : '';
-    }
-
-    protected function formatClassName(Test $test): string
-    {
-        return get_class($test);
-    }
-
-    protected function testHasPassed(): bool
-    {
-        if (!isset($this->testResults[$this->testIndex]['status'])) {
-            return true;
-        }
-
-        if ($this->testResults[$this->testIndex]['status'] === BaseTestRunner::STATUS_PASSED) {
-            return true;
-        }
-
-        return false;
-    }
-
-    protected function flushOutputBuffer(bool $forceFlush = false): void
-    {
-        if ($this->testFlushIndex === $this->testIndex) {
-            return;
-        }
-
-        if ($this->testFlushIndex > 0) {
-            if ($this->enableOutputBuffer) {
-                $prevResult = $this->getTestResultByName($this->originalExecutionOrder[$this->testFlushIndex - 1]);
-            } else {
-                $prevResult = $this->testResults[$this->testFlushIndex - 1];
-            }
-        } else {
-            $prevResult = $this->getEmptyTestResult();
-        }
-
-        if (!$this->enableOutputBuffer) {
-            $this->writeTestResult($prevResult, $this->testResults[$this->testFlushIndex++]);
-        } else {
-            do {
-                $flushed = false;
-
-                if (!$forceFlush && isset($this->originalExecutionOrder[$this->testFlushIndex])) {
-                    $result = $this->getTestResultByName($this->originalExecutionOrder[$this->testFlushIndex]);
-                } else {
-                    // This test(name) cannot found in original execution order,
-                    // flush result to output stream right away
-                    $result = $this->testResults[$this->testFlushIndex];
-                }
-
-                if (!empty($result)) {
-                    $this->hideSpinner();
-                    $this->writeTestResult($prevResult, $result);
-                    $this->testFlushIndex++;
-                    $prevResult = $result;
-                    $flushed    = true;
-                } else {
-                    $this->showSpinner();
-                }
-            } while ($flushed && $this->testFlushIndex < $this->testIndex);
-        }
-    }
-
-    protected function showSpinner(): void
-    {
-        if (!$this->showProgress) {
-            return;
-        }
-
-        if ($this->spinState) {
-            $this->undrawSpinner();
-        }
-
-        $this->spinState++;
-        $this->drawSpinner();
-    }
-
-    protected function hideSpinner(): void
-    {
-        if (!$this->showProgress) {
-            return;
-        }
-
-        if ($this->spinState) {
-            $this->undrawSpinner();
-        }
-
-        $this->spinState = 0;
-    }
-
-    protected function drawSpinner(): void
-    {
-        // optional for CLI printers: show the user a 'buffering output' spinner
-    }
-
-    protected function undrawSpinner(): void
-    {
-        // remove the spinner from the current line
-    }
-
-    protected function writeTestResult(array $prevResult, array $result): void
-    {
-    }
-
-    protected function getEmptyTestResult(): array
-    {
-        return [
-            'className' => '',
-            'testName'  => '',
-            'message'   => '',
-            'failed'    => '',
-            'verbose'   => '',
-        ];
-    }
-
-    protected function getTestResultByName(?string $testName): array
-    {
-        if (isset($this->testNameResultIndex[$testName])) {
-            return $this->testResults[$this->testNameResultIndex[$testName]];
-        }
-
-        return [];
-    }
-
-    protected function formatThrowable(Throwable $t, ?int $status = null): string
-    {
-        $message = trim(\PHPUnit\Framework\TestFailure::exceptionToString($t));
-
-        if ($message) {
-            $message .= PHP_EOL . PHP_EOL . $this->formatStacktrace($t);
-        } else {
-            $message = $this->formatStacktrace($t);
-        }
-
-        return $message;
-    }
-
-    protected function formatStacktrace(Throwable $t): string
-    {
-        return \PHPUnit\Util\Filter::getFilteredStacktrace($t);
-    }
-
-    protected function formatTestResultMessage(Throwable $t, array $result, string $prefix = '│'): string
-    {
-        $message = $this->formatThrowable($t, $result['status']);
-
-        if ($message === '') {
-            return '';
-        }
-
-        if (!($this->verbose || $result['verbose'])) {
-            return '';
-        }
-
-        return $this->prefixLines($prefix, $message);
-    }
-
-    protected function prefixLines(string $prefix, string $message): string
-    {
-        $message = trim($message);
-
-        return implode(
-            PHP_EOL,
-            array_map(
-                static function (string $text) use ($prefix) {
-                    return '   ' . $prefix . ($text ? ' ' . $text : '');
-                },
-                preg_split('/\r\n|\r|\n/', $message)
-            )
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+2Opl

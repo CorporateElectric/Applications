@@ -1,95 +1,73 @@
-<?php
-
-namespace Illuminate\Foundation\Auth;
-
-use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Auth\Events\Verified;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-
-trait VerifiesEmails
-{
-    use RedirectsUsers;
-
-    /**
-     * Show the email verification notice.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\RedirectResponse|\Illuminate\View\View
-     */
-    public function show(Request $request)
-    {
-        return $request->user()->hasVerifiedEmail()
-                        ? redirect($this->redirectPath())
-                        : view('auth.verify');
-    }
-
-    /**
-     * Mark the authenticated user's email address as verified.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
-     *
-     * @throws \Illuminate\Auth\Access\AuthorizationException
-     */
-    public function verify(Request $request)
-    {
-        if (! hash_equals((string) $request->route('id'), (string) $request->user()->getKey())) {
-            throw new AuthorizationException;
-        }
-
-        if (! hash_equals((string) $request->route('hash'), sha1($request->user()->getEmailForVerification()))) {
-            throw new AuthorizationException;
-        }
-
-        if ($request->user()->hasVerifiedEmail()) {
-            return $request->wantsJson()
-                        ? new JsonResponse([], 204)
-                        : redirect($this->redirectPath());
-        }
-
-        if ($request->user()->markEmailAsVerified()) {
-            event(new Verified($request->user()));
-        }
-
-        if ($response = $this->verified($request)) {
-            return $response;
-        }
-
-        return $request->wantsJson()
-                    ? new JsonResponse([], 204)
-                    : redirect($this->redirectPath())->with('verified', true);
-    }
-
-    /**
-     * The user has been verified.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return mixed
-     */
-    protected function verified(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Resend the email verification notification.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
-     */
-    public function resend(Request $request)
-    {
-        if ($request->user()->hasVerifiedEmail()) {
-            return $request->wantsJson()
-                        ? new JsonResponse([], 204)
-                        : redirect($this->redirectPath());
-        }
-
-        $request->user()->sendEmailVerificationNotification();
-
-        return $request->wantsJson()
-                    ? new JsonResponse([], 202)
-                    : back()->with('resent', true);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

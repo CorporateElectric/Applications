@@ -1,104 +1,53 @@
-<?php
-
-/*
- * This file is part of the league/commonmark package.
- *
- * (c) Colin O'Dell <colinodell@gmail.com>
- *
- * Original code based on the CommonMark JS reference parser (https://bitly.com/commonmark-js)
- *  - (c) John MacFarlane
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace League\CommonMark\Extension\Mention;
-
-use League\CommonMark\Inline\Element\Link;
-use League\CommonMark\Inline\Element\Text;
-
-class Mention extends Link
-{
-    /** @var string */
-    private $symbol;
-
-    /** @var string */
-    private $identifier;
-
-    /**
-     * @param string $symbol
-     * @param string $identifier
-     * @param string $label
-     */
-    public function __construct(string $symbol, string $identifier, string $label = null)
-    {
-        $this->symbol = $symbol;
-        $this->identifier = $identifier;
-
-        parent::__construct('', $label ?? \sprintf('%s%s', $symbol, $identifier));
-    }
-
-    /**
-     * @return string|null
-     */
-    public function getLabel(): ?string
-    {
-        if (($labelNode = $this->findLabelNode()) === null) {
-            return null;
-        }
-
-        return $labelNode->getContent();
-    }
-
-    /**
-     * @return string
-     */
-    public function getIdentifier(): string
-    {
-        return $this->identifier;
-    }
-
-    /**
-     * @return string
-     */
-    public function getSymbol(): string
-    {
-        return $this->symbol;
-    }
-
-    /**
-     * @return bool
-     */
-    public function hasUrl(): bool
-    {
-        return !empty($this->url);
-    }
-
-    /**
-     * @param string $label
-     *
-     * @return $this
-     */
-    public function setLabel(string $label): self
-    {
-        if (($labelNode = $this->findLabelNode()) === null) {
-            $labelNode = new Text();
-            $this->prependChild($labelNode);
-        }
-
-        $labelNode->setContent($label);
-
-        return $this;
-    }
-
-    private function findLabelNode(): ?Text
-    {
-        foreach ($this->children() as $child) {
-            if ($child instanceof Text) {
-                return $child;
-            }
-        }
-
-        return null;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

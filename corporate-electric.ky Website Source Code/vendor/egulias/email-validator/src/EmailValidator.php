@@ -1,67 +1,31 @@
-<?php
-
-namespace Egulias\EmailValidator;
-
-use Egulias\EmailValidator\Exception\InvalidEmail;
-use Egulias\EmailValidator\Validation\EmailValidation;
-
-class EmailValidator
-{
-    /**
-     * @var EmailLexer
-     */
-    private $lexer;
-
-    /**
-     * @var Warning\Warning[]
-     */
-    protected $warnings = [];
-
-    /**
-     * @var InvalidEmail|null
-     */
-    protected $error;
-
-    public function __construct()
-    {
-        $this->lexer = new EmailLexer();
-    }
-
-    /**
-     * @param string          $email
-     * @param EmailValidation $emailValidation
-     * @return bool
-     */
-    public function isValid($email, EmailValidation $emailValidation)
-    {
-        $isValid = $emailValidation->isValid($email, $this->lexer);
-        $this->warnings = $emailValidation->getWarnings();
-        $this->error = $emailValidation->getError();
-
-        return $isValid;
-    }
-
-    /**
-     * @return boolean
-     */
-    public function hasWarnings()
-    {
-        return !empty($this->warnings);
-    }
-
-    /**
-     * @return array
-     */
-    public function getWarnings()
-    {
-        return $this->warnings;
-    }
-
-    /**
-     * @return InvalidEmail|null
-     */
-    public function getError()
-    {
-        return $this->error;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

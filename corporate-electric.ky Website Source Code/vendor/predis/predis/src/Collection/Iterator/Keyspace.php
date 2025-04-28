@@ -1,43 +1,33 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Predis\Collection\Iterator;
-
-use Predis\ClientInterface;
-
-/**
- * Abstracts the iteration of the keyspace on a Redis instance by leveraging the
- * SCAN command (Redis >= 2.8) wrapped in a fully-rewindable PHP iterator.
- *
- * @author Daniele Alessandri <suppakilla@gmail.com>
- *
- * @link http://redis.io/commands/scan
- */
-class Keyspace extends CursorBasedIterator
-{
-    /**
-     * {@inheritdoc}
-     */
-    public function __construct(ClientInterface $client, $match = null, $count = null)
-    {
-        $this->requiredCommand($client, 'SCAN');
-
-        parent::__construct($client, $match, $count);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function executeCommand()
-    {
-        return $this->client->scan($this->cursor, $this->getScanOptions());
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

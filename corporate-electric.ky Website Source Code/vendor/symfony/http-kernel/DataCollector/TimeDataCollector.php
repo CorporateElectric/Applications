@@ -1,159 +1,80 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpKernel\DataCollector;
-
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\KernelInterface;
-use Symfony\Component\Stopwatch\Stopwatch;
-use Symfony\Component\Stopwatch\StopwatchEvent;
-
-/**
- * @author Fabien Potencier <fabien@symfony.com>
- *
- * @final
- */
-class TimeDataCollector extends DataCollector implements LateDataCollectorInterface
-{
-    protected $kernel;
-    protected $stopwatch;
-
-    public function __construct(KernelInterface $kernel = null, Stopwatch $stopwatch = null)
-    {
-        $this->kernel = $kernel;
-        $this->stopwatch = $stopwatch;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function collect(Request $request, Response $response, \Throwable $exception = null)
-    {
-        if (null !== $this->kernel) {
-            $startTime = $this->kernel->getStartTime();
-        } else {
-            $startTime = $request->server->get('REQUEST_TIME_FLOAT');
-        }
-
-        $this->data = [
-            'token' => $response->headers->get('X-Debug-Token'),
-            'start_time' => $startTime * 1000,
-            'events' => [],
-            'stopwatch_installed' => class_exists(Stopwatch::class, false),
-        ];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function reset()
-    {
-        $this->data = [];
-
-        if (null !== $this->stopwatch) {
-            $this->stopwatch->reset();
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function lateCollect()
-    {
-        if (null !== $this->stopwatch && isset($this->data['token'])) {
-            $this->setEvents($this->stopwatch->getSectionEvents($this->data['token']));
-        }
-        unset($this->data['token']);
-    }
-
-    /**
-     * Sets the request events.
-     *
-     * @param StopwatchEvent[] $events The request events
-     */
-    public function setEvents(array $events)
-    {
-        foreach ($events as $event) {
-            $event->ensureStopped();
-        }
-
-        $this->data['events'] = $events;
-    }
-
-    /**
-     * Gets the request events.
-     *
-     * @return StopwatchEvent[] The request events
-     */
-    public function getEvents()
-    {
-        return $this->data['events'];
-    }
-
-    /**
-     * Gets the request elapsed time.
-     *
-     * @return float The elapsed time
-     */
-    public function getDuration()
-    {
-        if (!isset($this->data['events']['__section__'])) {
-            return 0;
-        }
-
-        $lastEvent = $this->data['events']['__section__'];
-
-        return $lastEvent->getOrigin() + $lastEvent->getDuration() - $this->getStartTime();
-    }
-
-    /**
-     * Gets the initialization time.
-     *
-     * This is the time spent until the beginning of the request handling.
-     *
-     * @return float The elapsed time
-     */
-    public function getInitTime()
-    {
-        if (!isset($this->data['events']['__section__'])) {
-            return 0;
-        }
-
-        return $this->data['events']['__section__']->getOrigin() - $this->getStartTime();
-    }
-
-    /**
-     * Gets the request time.
-     *
-     * @return float
-     */
-    public function getStartTime()
-    {
-        return $this->data['start_time'];
-    }
-
-    /**
-     * @return bool whether or not the stopwatch component is installed
-     */
-    public function isStopwatchInstalled()
-    {
-        return $this->data['stopwatch_installed'];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getName()
-    {
-        return 'time';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+4UcZ/i6yQGAEpG==

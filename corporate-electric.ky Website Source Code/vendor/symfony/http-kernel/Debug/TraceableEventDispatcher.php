@@ -1,90 +1,56 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpKernel\Debug;
-
-use Symfony\Component\EventDispatcher\Debug\TraceableEventDispatcher as BaseTraceableEventDispatcher;
-use Symfony\Component\HttpKernel\KernelEvents;
-
-/**
- * Collects some data about event listeners.
- *
- * This event dispatcher delegates the dispatching to another one.
- *
- * @author Fabien Potencier <fabien@symfony.com>
- */
-class TraceableEventDispatcher extends BaseTraceableEventDispatcher
-{
-    /**
-     * {@inheritdoc}
-     */
-    protected function beforeDispatch(string $eventName, object $event)
-    {
-        switch ($eventName) {
-            case KernelEvents::REQUEST:
-                $this->stopwatch->openSection();
-                break;
-            case KernelEvents::VIEW:
-            case KernelEvents::RESPONSE:
-                // stop only if a controller has been executed
-                if ($this->stopwatch->isStarted('controller')) {
-                    $this->stopwatch->stop('controller');
-                }
-                break;
-            case KernelEvents::TERMINATE:
-                $token = $event->getResponse()->headers->get('X-Debug-Token');
-                if (null === $token) {
-                    break;
-                }
-                // There is a very special case when using built-in AppCache class as kernel wrapper, in the case
-                // of an ESI request leading to a `stale` response [B]  inside a `fresh` cached response [A].
-                // In this case, `$token` contains the [B] debug token, but the  open `stopwatch` section ID
-                // is equal to the [A] debug token. Trying to reopen section with the [B] token throws an exception
-                // which must be caught.
-                try {
-                    $this->stopwatch->openSection($token);
-                } catch (\LogicException $e) {
-                }
-                break;
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function afterDispatch(string $eventName, object $event)
-    {
-        switch ($eventName) {
-            case KernelEvents::CONTROLLER_ARGUMENTS:
-                $this->stopwatch->start('controller', 'section');
-                break;
-            case KernelEvents::RESPONSE:
-                $token = $event->getResponse()->headers->get('X-Debug-Token');
-                if (null === $token) {
-                    break;
-                }
-                $this->stopwatch->stopSection($token);
-                break;
-            case KernelEvents::TERMINATE:
-                // In the special case described in the `preDispatch` method above, the `$token` section
-                // does not exist, then closing it throws an exception which must be caught.
-                $token = $event->getResponse()->headers->get('X-Debug-Token');
-                if (null === $token) {
-                    break;
-                }
-                try {
-                    $this->stopwatch->stopSection($token);
-                } catch (\LogicException $e) {
-                }
-                break;
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

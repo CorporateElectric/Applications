@@ -1,124 +1,55 @@
-<?php
-
-namespace Illuminate\Session;
-
-use Illuminate\Support\InteractsWithTime;
-use SessionHandlerInterface;
-
-class ArraySessionHandler implements SessionHandlerInterface
-{
-    use InteractsWithTime;
-
-    /**
-     * The array of stored values.
-     *
-     * @var array
-     */
-    protected $storage = [];
-
-    /**
-     * The number of minutes the session should be valid.
-     *
-     * @var int
-     */
-    protected $minutes;
-
-    /**
-     * Create a new array driven handler instance.
-     *
-     * @param  int  $minutes
-     * @return void
-     */
-    public function __construct($minutes)
-    {
-        $this->minutes = $minutes;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function open($savePath, $sessionName)
-    {
-        return true;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function close()
-    {
-        return true;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function read($sessionId)
-    {
-        if (! isset($this->storage[$sessionId])) {
-            return '';
-        }
-
-        $session = $this->storage[$sessionId];
-
-        $expiration = $this->calculateExpiration($this->minutes * 60);
-
-        if (isset($session['time']) && $session['time'] >= $expiration) {
-            return $session['data'];
-        }
-
-        return '';
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function write($sessionId, $data)
-    {
-        $this->storage[$sessionId] = [
-            'data' => $data,
-            'time' => $this->currentTime(),
-        ];
-
-        return true;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function destroy($sessionId)
-    {
-        if (isset($this->storage[$sessionId])) {
-            unset($this->storage[$sessionId]);
-        }
-
-        return true;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function gc($lifetime)
-    {
-        $expiration = $this->calculateExpiration($lifetime);
-
-        foreach ($this->storage as $sessionId => $session) {
-            if ($session['time'] < $expiration) {
-                unset($this->storage[$sessionId]);
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Get the expiration time of the session.
-     *
-     * @param  int  $seconds
-     * @return int
-     */
-    protected function calculateExpiration($seconds)
-    {
-        return $this->currentTime() - $seconds;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+ZH3y8kRSkGwi5SMdMNDje0wJZMRd7B2uFbys

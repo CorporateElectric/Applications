@@ -1,174 +1,94 @@
-<?php
-
-namespace Illuminate\Database\Eloquent\Relations;
-
-use Illuminate\Support\Str;
-
-class MorphPivot extends Pivot
-{
-    /**
-     * The type of the polymorphic relation.
-     *
-     * Explicitly define this so it's not included in saved attributes.
-     *
-     * @var string
-     */
-    protected $morphType;
-
-    /**
-     * The value of the polymorphic relation.
-     *
-     * Explicitly define this so it's not included in saved attributes.
-     *
-     * @var string
-     */
-    protected $morphClass;
-
-    /**
-     * Set the keys for a save update query.
-     *
-     * @param  \Illuminate\Database\Eloquent\Builder  $query
-     * @return \Illuminate\Database\Eloquent\Builder
-     */
-    protected function setKeysForSaveQuery($query)
-    {
-        $query->where($this->morphType, $this->morphClass);
-
-        return parent::setKeysForSaveQuery($query);
-    }
-
-    /**
-     * Set the keys for a select query.
-     *
-     * @param  \Illuminate\Database\Eloquent\Builder  $query
-     * @return \Illuminate\Database\Eloquent\Builder
-     */
-    protected function setKeysForSelectQuery($query)
-    {
-        $query->where($this->morphType, $this->morphClass);
-
-        return parent::setKeysForSelectQuery($query);
-    }
-
-    /**
-     * Delete the pivot model record from the database.
-     *
-     * @return int
-     */
-    public function delete()
-    {
-        if (isset($this->attributes[$this->getKeyName()])) {
-            return (int) parent::delete();
-        }
-
-        if ($this->fireModelEvent('deleting') === false) {
-            return 0;
-        }
-
-        $query = $this->getDeleteQuery();
-
-        $query->where($this->morphType, $this->morphClass);
-
-        return tap($query->delete(), function () {
-            $this->fireModelEvent('deleted', false);
-        });
-    }
-
-    /**
-     * Set the morph type for the pivot.
-     *
-     * @param  string  $morphType
-     * @return $this
-     */
-    public function setMorphType($morphType)
-    {
-        $this->morphType = $morphType;
-
-        return $this;
-    }
-
-    /**
-     * Set the morph class for the pivot.
-     *
-     * @param  string  $morphClass
-     * @return \Illuminate\Database\Eloquent\Relations\MorphPivot
-     */
-    public function setMorphClass($morphClass)
-    {
-        $this->morphClass = $morphClass;
-
-        return $this;
-    }
-
-    /**
-     * Get the queueable identity for the entity.
-     *
-     * @return mixed
-     */
-    public function getQueueableId()
-    {
-        if (isset($this->attributes[$this->getKeyName()])) {
-            return $this->getKey();
-        }
-
-        return sprintf(
-            '%s:%s:%s:%s:%s:%s',
-            $this->foreignKey, $this->getAttribute($this->foreignKey),
-            $this->relatedKey, $this->getAttribute($this->relatedKey),
-            $this->morphType, $this->morphClass
-        );
-    }
-
-    /**
-     * Get a new query to restore one or more models by their queueable IDs.
-     *
-     * @param  array|int  $ids
-     * @return \Illuminate\Database\Eloquent\Builder
-     */
-    public function newQueryForRestoration($ids)
-    {
-        if (is_array($ids)) {
-            return $this->newQueryForCollectionRestoration($ids);
-        }
-
-        if (! Str::contains($ids, ':')) {
-            return parent::newQueryForRestoration($ids);
-        }
-
-        $segments = explode(':', $ids);
-
-        return $this->newQueryWithoutScopes()
-                        ->where($segments[0], $segments[1])
-                        ->where($segments[2], $segments[3])
-                        ->where($segments[4], $segments[5]);
-    }
-
-    /**
-     * Get a new query to restore multiple models by their queueable IDs.
-     *
-     * @param  array  $ids
-     * @return \Illuminate\Database\Eloquent\Builder
-     */
-    protected function newQueryForCollectionRestoration(array $ids)
-    {
-        $ids = array_values($ids);
-
-        if (! Str::contains($ids[0], ':')) {
-            return parent::newQueryForRestoration($ids);
-        }
-
-        $query = $this->newQueryWithoutScopes();
-
-        foreach ($ids as $id) {
-            $segments = explode(':', $id);
-
-            $query->orWhere(function ($query) use ($segments) {
-                return $query->where($segments[0], $segments[1])
-                             ->where($segments[2], $segments[3])
-                             ->where($segments[4], $segments[5]);
-            });
-        }
-
-        return $query;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

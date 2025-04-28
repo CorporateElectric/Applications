@@ -1,127 +1,78 @@
-<?php namespace Cviebrock\EloquentSluggable\Tests;
-
-use Cviebrock\EloquentSluggable\Tests\Models\Post;
-use Cviebrock\EloquentSluggable\Tests\Models\PostWithOnUpdate;
-
-/**
- * Class OnUpdateTests
- *
- * @package Tests
- */
-class OnUpdateTests extends TestCase
-{
-
-    /**
-     * Test that the slug isn't regenerated if onUpdate is false.
-     */
-    public function testSlugDoesntChangeWithoutOnUpdate()
-    {
-        $post = Post::create([
-            'title' => 'My First Post'
-        ]);
-        $post->save();
-        $this->assertEquals('my-first-post', $post->slug);
-
-        $post->update([
-            'title' => 'A New Title'
-        ]);
-        $this->assertEquals('my-first-post', $post->slug);
-    }
-
-    /**
-     * Test that the slug is regenerated if the field is emptied manually.
-     */
-    public function testSlugDoesChangeWhenEmptiedManually()
-    {
-        $post = Post::create([
-            'title' => 'My First Post'
-        ]);
-        $post->save();
-        $this->assertEquals('my-first-post', $post->slug);
-
-        $post->slug = null;
-        $post->update([
-            'title' => 'A New Title'
-        ]);
-        $this->assertEquals('a-new-title', $post->slug);
-    }
-
-    /**
-     * Test that the slug is regenerated if onUpdate is true.
-     */
-    public function testSlugDoesChangeWithOnUpdate()
-    {
-        $post = PostWithOnUpdate::create([
-            'title' => 'My First Post'
-        ]);
-        $post->save();
-        $this->assertEquals('my-first-post', $post->slug);
-
-        $post->update([
-            'title' => 'A New Title'
-        ]);
-        $this->assertEquals('a-new-title', $post->slug);
-    }
-
-    /**
-     * Test that the slug is not regenerated if onUpdate is true
-     * but the source fields didn't change.
-     */
-    public function testSlugDoesNotChangeIfSourceDoesNotChange()
-    {
-        $post = PostWithOnUpdate::create([
-            'title' => 'My First Post'
-        ]);
-        $post->save();
-        $this->assertEquals('my-first-post', $post->slug);
-
-        $post->update([
-            'subtitle' => 'A Subtitle'
-        ]);
-        $this->assertEquals('my-first-post', $post->slug);
-    }
-
-    /**
-     * Test that the slug is not regenerated if onUpdate is true
-     * but the source fields didn't change, even with multiple
-     * increments of the same slug.
-     *
-     * @see https://github.com/cviebrock/eloquent-sluggable/issues/317
-     */
-    public function testSlugDoesNotChangeIfSourceDoesNotChangeMultiple()
-    {
-        $data = [
-            'title' => 'My First Post'
-        ];
-        $post0 = PostWithOnUpdate::create($data);
-        $post1 = PostWithOnUpdate::create($data);
-        $post2 = PostWithOnUpdate::create($data);
-        $post3 = PostWithOnUpdate::create($data);
-        $this->assertEquals('my-first-post-3', $post3->slug);
-
-        $post3->update([
-            'subtitle' => 'A Subtitle'
-        ]);
-        $this->assertEquals('my-first-post-3', $post3->slug);
-    }
-
-    /**
-     * Test that the slug isn't set to null if the source fields
-     * not loaded in model.
-     */
-    public function testSlugDoesNotChangeIfSourceNotProvidedInModel()
-    {
-        $post = Post::create([
-            'title' => 'My First Post'
-        ]);
-        $this->assertEquals('my-first-post', $post->slug);
-
-        $post = Post::whereKey($post->id)->get(['id','subtitle'])->first();
-        $post->update([
-            'subtitle' => 'A Subtitle'
-        ]);
-
-        $post = Post::findOrFail($post->id);
-        $this->assertEquals('my-first-post', $post->slug);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

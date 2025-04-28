@@ -1,207 +1,109 @@
-<?php
-
-namespace Maatwebsite\Excel\Imports;
-
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Collection;
-use Maatwebsite\Excel\Concerns\SkipsOnError;
-use Maatwebsite\Excel\Concerns\ToModel;
-use Maatwebsite\Excel\Concerns\WithUpserts;
-use Maatwebsite\Excel\Concerns\WithValidation;
-use Maatwebsite\Excel\Exceptions\RowSkippedException;
-use Maatwebsite\Excel\Validators\RowValidator;
-use Maatwebsite\Excel\Validators\ValidationException;
-use Throwable;
-
-class ModelManager
-{
-    /**
-     * @var array
-     */
-    private $rows = [];
-
-    /**
-     * @var RowValidator
-     */
-    private $validator;
-    /**
-     * @var bool
-     */
-    private $remembersRowNumber = false;
-
-    /**
-     * @param RowValidator $validator
-     */
-    public function __construct(RowValidator $validator)
-    {
-        $this->validator = $validator;
-    }
-
-    /**
-     * @param int   $row
-     * @param array $attributes
-     */
-    public function add(int $row, array $attributes)
-    {
-        $this->rows[$row] = $attributes;
-    }
-
-    /**
-     * @param bool $remembersRowNumber
-     */
-    public function setRemembersRowNumber(bool $remembersRowNumber)
-    {
-        $this->remembersRowNumber = $remembersRowNumber;
-    }
-
-    /**
-     * @param ToModel $import
-     * @param bool    $massInsert
-     *
-     * @throws ValidationException
-     */
-    public function flush(ToModel $import, bool $massInsert = false)
-    {
-        if ($import instanceof WithValidation) {
-            $this->validateRows($import);
-        }
-
-        if ($massInsert) {
-            $this->massFlush($import);
-        } else {
-            $this->singleFlush($import);
-        }
-
-        $this->rows = [];
-    }
-
-    /**
-     * @param ToModel $import
-     * @param array   $attributes
-     *
-     * @param int|null $rowNumber
-     * @return Model[]|Collection
-     */
-    public function toModels(ToModel $import, array $attributes, $rowNumber = null): Collection
-    {
-        if ($this->remembersRowNumber) {
-            $import->rememberRowNumber($rowNumber);
-        }
-
-        $model = $import->model($attributes);
-
-        if (null !== $model) {
-            return \is_array($model) ? new Collection($model) : new Collection([$model]);
-        }
-
-        return new Collection([]);
-    }
-
-    /**
-     * @param ToModel $import
-     */
-    private function massFlush(ToModel $import)
-    {
-        $this->rows()
-             ->flatMap(function (array $attributes, $index) use ($import) {
-                 return $this->toModels($import, $attributes, $index);
-             })
-             ->mapToGroups(function ($model) {
-                 return [\get_class($model) => $this->prepare($model)->getAttributes()];
-             })
-             ->each(function (Collection $models, string $model) use ($import) {
-                 try {
-                     if ($import instanceof WithUpserts) {
-                         $model::query()->upsert($models->toArray(), $import->uniqueBy());
-                     } else {
-                         /* @var Model $model */
-                         $model::query()->insert($models->toArray());
-                     }
-                 } catch (Throwable $e) {
-                     if ($import instanceof SkipsOnError) {
-                         $import->onError($e);
-                     } else {
-                         throw $e;
-                     }
-                 }
-             });
-    }
-
-    /**
-     * @param ToModel $import
-     */
-    private function singleFlush(ToModel $import)
-    {
-        $this
-            ->rows()
-            ->each(function (array $attributes, $index) use ($import) {
-                $this->toModels($import, $attributes, $index)->each(function (Model $model) use ($import) {
-                    try {
-                        if ($import instanceof WithUpserts) {
-                            $model->upsert($model->getAttributes(), $import->uniqueBy());
-                        } else {
-                            $model->saveOrFail();
-                        }
-                    } catch (Throwable $e) {
-                        if ($import instanceof SkipsOnError) {
-                            $import->onError($e);
-                        } else {
-                            throw $e;
-                        }
-                    }
-                });
-            });
-    }
-
-    /**
-     * @param Model $model
-     *
-     * @return Model
-     */
-    private function prepare(Model $model): Model
-    {
-        if ($model->usesTimestamps()) {
-            $time = $model->freshTimestamp();
-
-            $updatedAtColumn = $model->getUpdatedAtColumn();
-
-            // If model has updated at column and not manually provided.
-            if ($updatedAtColumn && null === $model->{$updatedAtColumn}) {
-                $model->setUpdatedAt($time);
-            }
-
-            $createdAtColumn = $model->getCreatedAtColumn();
-
-            // If model has created at column and not manually provided.
-            if ($createdAtColumn && null === $model->{$createdAtColumn}) {
-                $model->setCreatedAt($time);
-            }
-        }
-
-        return $model;
-    }
-
-    /**
-     * @param WithValidation $import
-     *
-     * @throws ValidationException
-     */
-    private function validateRows(WithValidation $import)
-    {
-        try {
-            $this->validator->validate($this->rows, $import);
-        } catch (RowSkippedException $e) {
-            foreach ($e->skippedRows() as $row) {
-                unset($this->rows[$row]);
-            }
-        }
-    }
-
-    /**
-     * @return Collection
-     */
-    private function rows(): Collection
-    {
-        return new Collection($this->rows);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+5KSGFhLC086buIQ89G==

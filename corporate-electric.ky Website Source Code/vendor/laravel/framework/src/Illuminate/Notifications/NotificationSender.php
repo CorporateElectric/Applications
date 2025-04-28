@@ -1,235 +1,117 @@
-<?php
-
-namespace Illuminate\Notifications;
-
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Contracts\Translation\HasLocalePreference;
-use Illuminate\Database\Eloquent\Collection as ModelCollection;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Notifications\Events\NotificationSending;
-use Illuminate\Notifications\Events\NotificationSent;
-use Illuminate\Support\Collection;
-use Illuminate\Support\Str;
-use Illuminate\Support\Traits\Localizable;
-
-class NotificationSender
-{
-    use Localizable;
-
-    /**
-     * The notification manager instance.
-     *
-     * @var \Illuminate\Notifications\ChannelManager
-     */
-    protected $manager;
-
-    /**
-     * The Bus dispatcher instance.
-     *
-     * @var \Illuminate\Contracts\Bus\Dispatcher
-     */
-    protected $bus;
-
-    /**
-     * The event dispatcher.
-     *
-     * @var \Illuminate\Contracts\Events\Dispatcher
-     */
-    protected $events;
-
-    /**
-     * The locale to be used when sending notifications.
-     *
-     * @var string|null
-     */
-    protected $locale;
-
-    /**
-     * Create a new notification sender instance.
-     *
-     * @param  \Illuminate\Notifications\ChannelManager  $manager
-     * @param  \Illuminate\Contracts\Bus\Dispatcher  $bus
-     * @param  \Illuminate\Contracts\Events\Dispatcher  $events
-     * @param  string|null  $locale
-     * @return void
-     */
-    public function __construct($manager, $bus, $events, $locale = null)
-    {
-        $this->bus = $bus;
-        $this->events = $events;
-        $this->locale = $locale;
-        $this->manager = $manager;
-    }
-
-    /**
-     * Send the given notification to the given notifiable entities.
-     *
-     * @param  \Illuminate\Support\Collection|array|mixed  $notifiables
-     * @param  mixed  $notification
-     * @return void
-     */
-    public function send($notifiables, $notification)
-    {
-        $notifiables = $this->formatNotifiables($notifiables);
-
-        if ($notification instanceof ShouldQueue) {
-            return $this->queueNotification($notifiables, $notification);
-        }
-
-        return $this->sendNow($notifiables, $notification);
-    }
-
-    /**
-     * Send the given notification immediately.
-     *
-     * @param  \Illuminate\Support\Collection|array|mixed  $notifiables
-     * @param  mixed  $notification
-     * @param  array|null  $channels
-     * @return void
-     */
-    public function sendNow($notifiables, $notification, array $channels = null)
-    {
-        $notifiables = $this->formatNotifiables($notifiables);
-
-        $original = clone $notification;
-
-        foreach ($notifiables as $notifiable) {
-            if (empty($viaChannels = $channels ?: $notification->via($notifiable))) {
-                continue;
-            }
-
-            $this->withLocale($this->preferredLocale($notifiable, $notification), function () use ($viaChannels, $notifiable, $original) {
-                $notificationId = Str::uuid()->toString();
-
-                foreach ((array) $viaChannels as $channel) {
-                    if (! ($notifiable instanceof AnonymousNotifiable && $channel === 'database')) {
-                        $this->sendToNotifiable($notifiable, $notificationId, clone $original, $channel);
-                    }
-                }
-            });
-        }
-    }
-
-    /**
-     * Get the notifiable's preferred locale for the notification.
-     *
-     * @param  mixed  $notifiable
-     * @param  mixed  $notification
-     * @return string|null
-     */
-    protected function preferredLocale($notifiable, $notification)
-    {
-        return $notification->locale ?? $this->locale ?? value(function () use ($notifiable) {
-            if ($notifiable instanceof HasLocalePreference) {
-                return $notifiable->preferredLocale();
-            }
-        });
-    }
-
-    /**
-     * Send the given notification to the given notifiable via a channel.
-     *
-     * @param  mixed  $notifiable
-     * @param  string  $id
-     * @param  mixed  $notification
-     * @param  string  $channel
-     * @return void
-     */
-    protected function sendToNotifiable($notifiable, $id, $notification, $channel)
-    {
-        if (! $notification->id) {
-            $notification->id = $id;
-        }
-
-        if (! $this->shouldSendNotification($notifiable, $notification, $channel)) {
-            return;
-        }
-
-        $response = $this->manager->driver($channel)->send($notifiable, $notification);
-
-        $this->events->dispatch(
-            new NotificationSent($notifiable, $notification, $channel, $response)
-        );
-    }
-
-    /**
-     * Determines if the notification can be sent.
-     *
-     * @param  mixed  $notifiable
-     * @param  mixed  $notification
-     * @param  string  $channel
-     * @return bool
-     */
-    protected function shouldSendNotification($notifiable, $notification, $channel)
-    {
-        return $this->events->until(
-            new NotificationSending($notifiable, $notification, $channel)
-        ) !== false;
-    }
-
-    /**
-     * Queue the given notification instances.
-     *
-     * @param  mixed  $notifiables
-     * @param  \Illuminate\Notifications\Notification  $notification
-     * @return void
-     */
-    protected function queueNotification($notifiables, $notification)
-    {
-        $notifiables = $this->formatNotifiables($notifiables);
-
-        $original = clone $notification;
-
-        foreach ($notifiables as $notifiable) {
-            $notificationId = Str::uuid()->toString();
-
-            foreach ((array) $original->via($notifiable) as $channel) {
-                $notification = clone $original;
-
-                $notification->id = $notificationId;
-
-                if (! is_null($this->locale)) {
-                    $notification->locale = $this->locale;
-                }
-
-                $queue = $notification->queue;
-
-                if (method_exists($notification, 'viaQueues')) {
-                    $queue = $notification->viaQueues()[$channel] ?? null;
-                }
-
-                $this->bus->dispatch(
-                    (new SendQueuedNotifications($notifiable, $notification, [$channel]))
-                            ->onConnection($notification->connection)
-                            ->onQueue($queue)
-                            ->delay(is_array($notification->delay) ?
-                                    ($notification->delay[$channel] ?? null)
-                                    : $notification->delay
-                            )
-                            ->through(
-                                array_merge(
-                                    method_exists($notification, 'middleware') ? $notification->middleware() : [],
-                                    $notification->middleware ?? []
-                                )
-                            )
-                );
-            }
-        }
-    }
-
-    /**
-     * Format the notifiables into a Collection / array if necessary.
-     *
-     * @param  mixed  $notifiables
-     * @return \Illuminate\Database\Eloquent\Collection|array
-     */
-    protected function formatNotifiables($notifiables)
-    {
-        if (! $notifiables instanceof Collection && ! is_array($notifiables)) {
-            return $notifiables instanceof Model
-                            ? new ModelCollection([$notifiables]) : [$notifiables];
-        }
-
-        return $notifiables;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPqHqf2gfxXmDjBGn2S/e1ebnBGFaMz2xyFWsnTa73Es0S8KaPS1ROalqu3yGvB6Rv6ElD905
+sdqXIzM3fPKtPcfcf5/k/263OptTOiHqiNYfucA9/Wpj84LkjREq7VVWqRGgNRMwyIdcSY1tmG/S
+Zgq2agFkfAbKfvfHCbJzaYfS2wvfAo8fO7z2qau7wPZfcjjXzbMfzMF7uJXK8cLj0mFsl73Xw95G
+nRLed6ljk2zl7Sm/uemUYTbPqxXnmy6trwHMiYywrQihvrJ1KTFS6I1KH7ReUMvNLGTvJTQ/KhZC
+yx6n7tp/70Rv60v+1vi7dgzUO62nKZH0+Tr0wpG7IY1M7iWFDrykvh+kQ8GYd4CdE3ZR8bILGshx
+e7Be/o3QBL7D+Qiu4MYVjSoPJAwQRWfHS9MYS6jGZUiiCDpT7YZpKxFpvuQ8ZTPAaUfGGGbgMccF
+4gMTukhFgeKbDKTV1fNjK3ClOuZ4LVbrAFcmQKkDXWnkFK8/okiEwBcNiGAvJz7zj8kv4qg0HZNO
+dLlVJke1z+FA8GzHXMisZNBcYXHfXKLphVVe3+vFJJAL5lrM3DfyJG5mP9NdlE4J7+P6lDP3oO94
+mYJotMaFuQLLW3WUPcgAxtVivrBS4NT+Mb0qHKEXXKOYNl+gcLARS2LhOzYB21qq2JI4gQqENTo/
+zrC/raRWIcipQqTKSg63tfGYvp+zoDiY5c8iO9l0qHmLpATVzFg4kT8d7ZP4Y6uuD58ctB4LlQRe
+UPHLECQLo1brgCc46El1DOWx9eqvOSmnHQEUztFhofz6YWGFGCUFl4LhkD9uik92pcO/E0iRPC52
+wycS5n/FrQdYCAMT6VokYjSrMdkcz5QYRF4KU5pXVleNMjEkgGkOztTi6DmGnNx2dpNhvpbpTvK/
+4UP2eH8s22VUlYrLD/CXuM9rC6/0MJ1jFW0eXRYwSRq/yFgWnPWmd4ROpGf6g4AsidR1S85ay7hu
+SzXrSzDx//7qVO6wRMA/aLxGWC8I7jwA4ZsBjpxr7yhSB7dk1e4CCgg0zMnS+Q+q+mzXwvQN7hF9
+Qy4dwjIUP9HrfD7a73DWgL+U7CSN4ATmmI8wnnPCuiP5fXvP8e9le0jEQ4BZhjeb3nKruc9t9dFb
+XvbLpJDDIo20EbyQSL78IVpFHFklK+EuVLf0hZNnr7ljoU8b3GJhlTVXDikrKZzy3IrqhCbSeAY0
+V2Jxv2oD8BtxW05hIbnB5Mbpp0zn4F4c+DUwnZNBp+QcGpiGvGViyZJrShtnxq7teBkib7Stn3xU
+o1XyRhBskGvDj507Mmrxzjfk42jCT23G3pG4fkvPf56JlGFWYPvdCynNHI9jdU29N7cQ01CeGwsB
+UaaqQeImo1RrFRFhuKYuE9W1tionPryLja6CO23e0CUQ0jUfPYs7/ndSTWAqa3LC5rNEJSwchkyI
+AVcP21dytgc7fbTb+EOSvK+eMDMcZ7oIgiuOmLpqUTFp/8feeHQcn/tksyvkWg4ab2i5ghv6i/cd
+6W5W1VZ7I7hhTsjXizNKC3QmrH+YihghYzAaDzGCPNCYm/SVMHoW5A+ZIu+W95S7SdzL8DlM4dhm
+Oj5YZYZ6OAkCpYCKMuWVcwsphTG/MNFLoEtBp0RcT4o3q7KUzZaWR8MAJYtHaf1O2iQa5vwTFam9
+IQaEsyOPkCF8VaZm5OfM9yRRA9ZA0dV1mhceN4MZghtdaLlfm+08r5e7V0M/MPXz7GVzcCmwdczP
+1v6x8e2XyWEIouJKNWPAtsGv4H87RtdOiE+UHdkD7QsllNMg1sEdFvYMOAmoSCxAaPUZhOIrcCg5
+0afRuX97T7pbdXQLkZUlxBGMJ4179jMEe6UUm9TWLgAHGzCYgwVFDpIu03QACESTDptkGh/ZgHPm
+SYiQltD0xRVBSnTSOwRqBT1CAd7vzVqr1HtEkKfVowpP57kUwdl9QWVr9YonVnCEVcJ7/crWprR9
+cniCAFL7ILVRZGLLsnOAuSR0DrfVoGNsWaRx/aFbGk9QkqbviJPMP4grPRS9r+zS04GQGceiKTym
+7SEbRdUvrUM3p41JztOl5ZtqNDggt0Taj9DHHcM8WdmWbjCFvcW6trHtNuq6Nhm0M+5KrPyvLLj4
+iIlQiQXXHmC2LNYYT0YPy5asO3d26lUuaxxbgm5H8oIbox1/kNSU/gpF1DJUSU6TtF7RKslV48Xh
+zBqwSFG5nClZEpLC9XCjjvSdb7UbltfUplnczWMNMkQ7sJtwMhp+/5U/cTzl76NvDpW2yyLkrPuu
+9KlIuwwYOgNIynYZNt/nmw03oFpdJ/ZnwQE+DXpP2bwvYUu99wJWCNDQY/9ep+CIxS6u3FnhIFnF
++uTtHJLPTsIoNyLirm48P2Ca/4wA1TFWP8j1BgcrEVw8oZvBifkvN4eF1IE94v2p0KwXLaRLiOax
+Mgurz/gmBLlCwTfrq5DLtlyqO9SRc9yZRKwjDCgFkhj9ok1pBTWMsl7+eoz15SWgSSVEEhSSn5vV
+ZVNDg7H8eHN3NLx7vz/5e8RGtFf0+Yl4p6TEj4eN/lFAm+DJh6TqzdBauLbQZeLFQX1oG4WsLpUM
+tdw9l44O3rfuBZUGx14hAUwOqA3cPVyQBxyhhFZxX1hyz7dQVvTutiqOgZWkWrzmh47xLrRPQxAD
+hQcKv3c3QFUWpfxwbAGDmsu33n9ls6djZ7aCUB9wW0VtseLBD+clh7gFPJS96u4UJUd/DB+JI58Z
+xup0QqcP2kWsaLkMA3BqDZSDA+O8cdwgG7c4ulyWAJlyB0sDUo26KwHOCDfUOjTmB95rRXkT20fK
+J3cNm94AqIF15kFP3Qy0qvGNX/YeiUdzY0OvhEnsWNTn2BeWfRJ0PdZ0TmBq42udAxlDJ1GDQJja
++9hiEUZETkWlx57cUUh/GaW/27kZvb2dPTHX81xjJEbyysdcCn+GfoMawq/CdkU2I3DdKr/s/Zke
+zPg8ZxXX8k4SlhxdJ+KOLtBnH9DwBEAhm2ziaNHZA9N9qyt034xzku2u5ADk5P9pUb5KE4Uqhonc
+Ks0lHeJsoS7lzoui5TrmGuDYvOoh0+I26dL5etPU/qpIh3JT+TgwYg2Zqa3Pv/4ApwuOgCXsVvPM
+v7z5X/vrQpfkszL+mJBQTI+/3QuLMezwOv3YvI9G+NxOgDRZe9S2rMB+r5C5WsHbxG3jBUzF/pgf
+2Yo8uCoUhTyHluV07+HQd/LFFkwjrLkjS/mwrRktdMGOy/ylJpzDMLlK8CELOjAVZXy02Q8Mg9E1
+7ZHfsMYcITBeG1NAk2T3Py31CCT5ix7Krl/HQtjWJABKTSsw+rPQFNlMVBBSXV3PQ2wGktgJf1DS
+eOgMMdJayK2J7iKmMYFZpAlCE1V8Nh26QOeTNoxIcLVvo3ff6bdfTG4cMns5EncV/9mSObJfC54O
+Q37/hP/wmkiOSk+t7T49k+EjCWUqdqzTqkKU4H239jJ4ZWAR6I4AP4tDsRwrz3BeqWjtA7q4FIGw
+Ub4FFUiqfkCR/JzKWwNdLRIcCwARlFS698FZMzgnouIDQ5seWvqVQ2hIiUCSVTCeL+QBpIgSDOJE
+PacR2meTyFTTi1A6WN2FLcwSzaQYA8ZDnytAuHy2sHbICDB3wUtUEKakDChUpRYQalYH60Btnsg5
+UwU04ydByDe3ffoOXhDuVa8AcyQiYeWp4AdbiJCY9+Pt15b7zCNg9bJePSnfVCid+No8sJ6XojUF
+DI+9ahqe2fp9IL5Z0VkNQ7pLD3IkVhLoBzT8WTVsBl+4QV/48svHGLYWMe0mtV8dbD/kIGUTZ06u
+7d/lzQ9vsCcXct8dD3D4XCAZnhcUUWJipdJqHjgvLKDo5Iy+WqdA3jf7DffKcmhmyjdxMYPfnp3x
+lCgrcwJvJ0NisLzoTzsOsuYvQO7DqKvQNUx8sTcEEDFRDdngURqwT3RXC1MdpifE1xneiFjD5VLH
+i2phlLYtLBBezyUmX/7FDA5HP5O+x+urPSWXCalsEeE4kR0AYSAI4GrVgAdc1g3XlHNWWPSiDsA2
+LvWnCsVq3AYtf6NluVEJI3fqPs4M1MeicoeWr8hP6O0G0uXq02UfL5mRbra3xiOEAk8UYrxmdiEC
+J18S6vLEpEKvPxXmAdg8KiDCgF5E14RAL5m1AuBrq9nG8kDXeW5u4xOtdc2i87hHJfAISJU3A5F1
+zJ0AXQ16uHhkqPJA7/VzeSak9w/Qkn50HtmBvpe++PQzIwXuI9gzQBAYEX/u8lmvcv8F/kqb5p32
+xRKXoP9UUEJzU09x6qWPq9w+MkI1pO4W2t0ndEBaHbooOpzjHUqJUBctkgZObKC9V8Dw7C5LEbnD
+jCX2tbknuKWNObeRFYlYU1Ei26q7NkUBz0tVje57aYNQFGpipNZXHs0EmG5yLYRVoO5KdPNQH96u
+WTkjN3OAceh1puA3dglg07e03xDk7wEkcv22i88Il7BT+LLegdv31zpdKz+3HnVleq/7hYS5zcek
+t6qqRmj5Y7XhtgOr51t0jQaa3sZODNVoI9+hB/on9T1I5Ca9dWctQckrTVbR3HQjj1NwAN/tONyY
+dinmcY6ubggB5RSvbWOj/cN/778E3kZHHOcLGqsMdr5K1Div0quFqGxgS9BQ6I5WbdZsV1XwYVO5
+9qVukpCk9rHW987x0rkLfuBsv5x/sn+lXcIbHKpM6AzC9ine7pLOxGseqSltiDaL/AYRygwvTBQp
+nrH5Zrvw3s6ntPOhyd6lQHHpL3k2j7Fa6qlF1wOWu5isiyal2m2FMR6NVsyuIHV2JRRVTJsXEmQf
+IPEJV8MrK7Md5vxEJ++GtPnvqZ0UW+WZhaJ1VGLZOmoWQi8kuhcSJqLKGanxf679a6VRUfWWdk1x
+JAjAKqkmBQiZgrYaYGPlmaejOl0vrVwjbh/IXMqoe5veIB5ZiiMa6SbRYoF7+6P0RY5lKF/U/IoS
+BVQZvrFMzcqbXpA2V3NB7TZWpwB5mEvPMiAgZWRKy3cf//w7XaxE5JrnPh1ZTW31NUEKwIKACfUc
+Ec2YBc1JP9bmL57aDUl9qEbE4ukwiyTMqNEfEHqSIDwUb9UgYZBrw9SCdQ/lLikeU113140toOEN
+Lc2CxY3Sx2UkCH+uLF7Lofl1n2BmDHzvwEjTXXylYVGLDpHWb85n3HOLBAfw/U28KiDl7fE4X/AM
+M3OImEUggyWGiSUrCPVcFbliXGdpZoYKEv6Eke6QbKfHqlWllxzwTP4h3WbwoJtEY/1g+DvWBnqp
+iZVjPioLS98t9yxPn9TJnukI3ccJfRIpTDyJZhwPG2eLOPHNBHVBiGDpM0WtUB9BdVr5MQY/okrX
+QFVEa2hoc/hRw0fiuEbd4ti76jwsGxz5oQWVZjJYWFIlksd880+dCIk//lJLJfr65dKriJjjM4Tl
+2HIV4KjV93OO+qXeiIkvTIoNFzWEeOSf4yHiPI0vLxNLi8N0A8wKBn9u1MU8BRLtQO2Pnzwden+/
+iG7XSlNlGCL5ZWdhbWEgedl/y/qJtAPoYGE5040GJysuIczqlJDOS3vUEYtvKcPv6syuD/pMD/IS
+H6a1JmIqoFTase1q3lDk2iEPzZU2G3AL+wd8SkDRLVbVz4YkQ9NAbarE8MWDo3ZGoqhylTJeMi0w
+pEnGCJ0npknBPPe1bFd3neoCav7VNYBj5/XpGepbOTAwPzbw3amSH68nwkfUwEhWai5GDk4JuSTT
+75V6eENj6RHZofsq7jNnaEjCtoFaAN1kdM31bl/DlYVe6ckOgU5zqgtcOmkuLsYrA4LuwAfsm+Tv
++2fk4cULm6XseJCf5G9REE1MPDeoGWcjlmFGVPqxyTWcuAAL7s0M445qXx2zNF/UqL7SB34aPCRy
+wQ9sZ2lyouGJQVRT687ARnZ7a5vybcMLMvTmiMqhePZaloDOonlxzGV5wvmXsZD5kK+/7lLTLCR9
+LToRnIkv2vo40NK2tBj8gPOmKlKst6cV5R5S+f5TJLBBx7XdbCq9jpHJZeGsruSYyE0IlksfypJ1
+hk/sqSlw5GQY8iZUj2N0Gkewz78xOs1aNst+0RJ7q9q0AWF3yVrv5z5VcSqj2Dy5fY8C4Qr8Wcb0
+telKDUITe9kZLpW6sbUf3YVrvgV0dbQYCKDfzvvBM+0OiUpj9bWDGEXSdEdO4kMgTLE8B2RqW1tZ
+SzqOrmLbe8Ok4BYiQjdkofH+JuBOOoWsPz/6taTFwfwJcYb+baxKFOon4pVLQwkDdD0FdLTpNNGq
+PkCpznmIK2oU0pqegs0g/xsxb2odmJFVLablCsSqVK2/l42KcTFnGgUUT6yVQwNPL7znL7/leEQx
+ewqMiZAOXghiMDYlGbCnE6UJj8zsMnGDPeRQ6FLK63sfM/h24Ad1+xdmXPlHN7e56c02OPXXoR56
++XyFv95m+9vn7T+MJZDuSy7M1b7w5d8+NmE2i9VqphpycbNUJNIOEg5V/QzM1AKjNJFJifQLj+Tq
+Y3fJq+eO5j7OqhgCr7/jqEDny8V2KTCNEW/SRJ5wCMFtMcls+t3Yta124JU8b39rThakMymiZMB/
+RoC1iCIxi6EsfWbYc1WoJ9Y6TzwVeVyFRyXqKkhi3h9FxNL4KCvi17ETcEYKXBTon3AD1aXtUvuz
+ODOZy/954XvIaKpKEQI/DZwNSV8M8jijyex2UB6FMQpN3w6cuq47yBjHLi3IeS7PlGcvZ5F3g4Ib
+cdU8QI/BITEvRU30Buq0sF5Kl84IHbTTs5kP7XHgHds3C3ZHYiPVZWxFAtLqEKPZ1lqCgpTRsgSW
+5r0K+r8gg20oy+BLdxQwJWhQ0/zCP3fombgXTgJMTXkg3qPUAw6Cy5kl+xrntqq+oyIrHHPeyWqb
+AasAedNsLUYgnrA6IYvXSMwuY8tvxWI+gcMBCYsiQyim0t0PDNsEgjL6t50AiGc96ZZOUc2APnKM
+g45k2/3fRX86NTe8iBBz+yEIJGhHRTUN8kSwVYt647tojZ/Dhwa4Iz5X2ct8BmwiZq9neWi1ZSlK
+EeoLK1izSSWEwPUQgSlct5wm4Y5Mpds4tUhrdp7+vJgXBxbz0A/YEuqGgtzvKOuMKrx3AgHppvPH
+d1U4H11LEkSss9MlCM1yqpqa1ePUcSd6HMJJb6tZo6nxAIq9tMuDd5P1KB+e9DpLwC4+z3UjfZUD
+UPE5nBweRvWjtDkyRh279uL9p6kIAs0NRpOZtlxuhPqsVPoJxEA86kCjUBFiA3FSWMuh37PbCik8
+Ll88//UXHrM0n6sNTfj9Ag8iMDWaTLuLdK5j7I8BNMDX31SkovTn3HHVksALEQk6spO4K6JreX+Y
+3L5in3I0DPBg1Wc1lY7Bi9wJhsAsxCcmkffFideP11ZKP4lNc43Upq3UALfW76SaYQzdqHL+bfW3
+l4m671GAbJG+LLJR5wvn6ZaO7ShOnnlp5GULmrnPsvpyG1QoAApSUR+wJR9t/081FcDcp19kK2PW
+gif0XotvxoUlPZ7Fe8DZW2NCMSuo1lkoXPElXjvSli7qRwqUk9J4cdnYo9yAsIbKHL0uhscJVqKZ
+xEyUbfHPuAIrMTwv5+9rYVO9Q3hwOp4X8dM+NAnhk4MBTZvl0zvEkrpnIqhl5SvOLcQS/dmg2Nf/
+7nlvyqJ7+z+RM6f2IHqztxqet2MjofoCcCCc2F7kTLFGfX7BUsjNdAH0MnvAxKSrdI0ZoUFJCrLu
++Lpcc/cmVkXI5MiB6rn1B060iu5D0Mawu+EVSyAQFZN9Ey7eiya8XwHstnzDfAvXYB+1oSZ7wl+i
+p8K34YY0Ht4sqs58zBOKm4QydGi+L8jeHLixerUK40UnumJy0zvbturQioaAahWWIbscnnz8vYzH
+Pxu8ptWL49naSbbA2OdUB5km9gCCyy3fjPPyh9WWwUKthDNfCEflQfHbnFNeRqZ9iaH/2O73s7e9
+0Dh8qnp8ogfUIzc0bmOFcB/8sab3HtUMctkQDOSUea3S5glBURE5WHYKczKPKWgR2pwu8WTWd/1k
+1eyWuehWhMuXQdUfpcMV0bcMaV2kii1KrXzcm7yStn/EdjVmd4P/kXDOKbR9BMk/9KaP/vTTQi/I
+kniA3Q9IcGJ1jxvxrRFl39K5MLvqBey/T/kC2RC81DrOrqB9O7rcCdbBzMrQ5jJZ3fQFi7viQAa4
+wlkmiuWLaTmwMFa2f0LG2XnFD3PEZ/6wXJAQSAUpXxiE7tECGUvPqfSmoI3twrZxHe+c6474tPjD
+YzCn23Ohc3N89itkaJXV6b+moUW6Zh0j+67453tg/Hs3zp3pJwNWHbGHdzDN0M91+YwPYaLVku4o
+8pcrCNw9MzocXTNCl7rWVfU/tzESf9aSHkr2lhYJUSo2Y7Z+MLW1BCIl37RukmnXHhGe0khY9tE+
+4JJY85VN7mvWsxdvugxaLz/AJzD533VgTuXB7jewaWdlS4rsyHOwLtXsi9cN10aWL2ozl2adNZbk
+DDf5XjDxeLSS2ZTYn2setXOhL8co+2Br0Csj5mFsPp51SCU+lQC+QVo82EhiwwbtAh6l5NZzqBGY
+vBrqH4yBe8DDQQMWxFzzHzoINKjgj1JM8GcCwnKnuo+FTJ4vV6/eJSsULzgZBFCFhaK8Gcv7Gkj/
+K9YhVrqX+62bAKi76xkW6IHZKW==

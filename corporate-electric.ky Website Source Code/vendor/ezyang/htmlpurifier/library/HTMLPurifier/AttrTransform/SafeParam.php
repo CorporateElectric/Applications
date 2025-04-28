@@ -1,79 +1,52 @@
-<?php
-
-/**
- * Validates name/value pairs in param tags to be used in safe objects. This
- * will only allow name values it recognizes, and pre-fill certain attributes
- * with required values.
- *
- * @note
- *      This class only supports Flash. In the future, Quicktime support
- *      may be added.
- *
- * @warning
- *      This class expects an injector to add the necessary parameters tags.
- */
-class HTMLPurifier_AttrTransform_SafeParam extends HTMLPurifier_AttrTransform
-{
-    /**
-     * @type string
-     */
-    public $name = "SafeParam";
-
-    /**
-     * @type HTMLPurifier_AttrDef_URI
-     */
-    private $uri;
-
-    public function __construct()
-    {
-        $this->uri = new HTMLPurifier_AttrDef_URI(true); // embedded
-        $this->wmode = new HTMLPurifier_AttrDef_Enum(array('window', 'opaque', 'transparent'));
-    }
-
-    /**
-     * @param array $attr
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return array
-     */
-    public function transform($attr, $config, $context)
-    {
-        // If we add support for other objects, we'll need to alter the
-        // transforms.
-        switch ($attr['name']) {
-            // application/x-shockwave-flash
-            // Keep this synchronized with Injector/SafeObject.php
-            case 'allowScriptAccess':
-                $attr['value'] = 'never';
-                break;
-            case 'allowNetworking':
-                $attr['value'] = 'internal';
-                break;
-            case 'allowFullScreen':
-                if ($config->get('HTML.FlashAllowFullScreen')) {
-                    $attr['value'] = ($attr['value'] == 'true') ? 'true' : 'false';
-                } else {
-                    $attr['value'] = 'false';
-                }
-                break;
-            case 'wmode':
-                $attr['value'] = $this->wmode->validate($attr['value'], $config, $context);
-                break;
-            case 'movie':
-            case 'src':
-                $attr['name'] = "movie";
-                $attr['value'] = $this->uri->validate($attr['value'], $config, $context);
-                break;
-            case 'flashvars':
-                // we're going to allow arbitrary inputs to the SWF, on
-                // the reasoning that it could only hack the SWF, not us.
-                break;
-            // add other cases to support other param name/value pairs
-            default:
-                $attr['name'] = $attr['value'] = null;
-        }
-        return $attr;
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+yKKQ5whiUYVdKaprX3juluv9ey3h+84=

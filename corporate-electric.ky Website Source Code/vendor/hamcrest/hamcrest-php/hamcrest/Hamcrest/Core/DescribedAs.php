@@ -1,68 +1,58 @@
-<?php
-namespace Hamcrest\Core;
-
-/*
- Copyright (c) 2009 hamcrest.org
- */
-use Hamcrest\BaseMatcher;
-use Hamcrest\Description;
-use Hamcrest\Matcher;
-
-/**
- * Provides a custom description to another matcher.
- */
-class DescribedAs extends BaseMatcher
-{
-
-    private $_descriptionTemplate;
-    private $_matcher;
-    private $_values;
-
-    const ARG_PATTERN = '/%([0-9]+)/';
-
-    public function __construct($descriptionTemplate, Matcher $matcher, array $values)
-    {
-        $this->_descriptionTemplate = $descriptionTemplate;
-        $this->_matcher = $matcher;
-        $this->_values = $values;
-    }
-
-    public function matches($item)
-    {
-        return $this->_matcher->matches($item);
-    }
-
-    public function describeTo(Description $description)
-    {
-        $textStart = 0;
-        while (preg_match(self::ARG_PATTERN, $this->_descriptionTemplate, $matches, PREG_OFFSET_CAPTURE, $textStart)) {
-            $text = $matches[0][0];
-            $index = $matches[1][0];
-            $offset = $matches[0][1];
-
-            $description->appendText(substr($this->_descriptionTemplate, $textStart, $offset - $textStart));
-            $description->appendValue($this->_values[$index]);
-
-            $textStart = $offset + strlen($text);
-        }
-
-        if ($textStart < strlen($this->_descriptionTemplate)) {
-            $description->appendText(substr($this->_descriptionTemplate, $textStart));
-        }
-    }
-
-    /**
-     * Wraps an existing matcher and overrides the description when it fails.
-     *
-     * @factory ...
-     */
-    public static function describedAs(/* $description, Hamcrest\Matcher $matcher, $values... */)
-    {
-        $args = func_get_args();
-        $description = array_shift($args);
-        $matcher = array_shift($args);
-        $values = $args;
-
-        return new self($description, $matcher, $values);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+ZCpLulelTFNtqRaadHjM

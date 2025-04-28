@@ -1,245 +1,105 @@
-<?php
-/*
- * This file is part of the DebugBar package.
- *
- * (c) 2013 Maxime Bouroumeau-Fuseau
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace DebugBar\DataCollector;
-
-use Psr\Log\AbstractLogger;
-use DebugBar\DataFormatter\DataFormatterInterface;
-use DebugBar\DataFormatter\DebugBarVarDumper;
-
-/**
- * Provides a way to log messages
- */
-class MessagesCollector extends AbstractLogger implements DataCollectorInterface, MessagesAggregateInterface, Renderable, AssetProvider
-{
-    protected $name;
-
-    protected $messages = array();
-
-    protected $aggregates = array();
-
-    protected $dataFormater;
-
-    protected $varDumper;
-
-    // The HTML var dumper requires debug bar users to support the new inline assets, which not all
-    // may support yet - so return false by default for now.
-    protected $useHtmlVarDumper = false;
-
-    /**
-     * @param string $name
-     */
-    public function __construct($name = 'messages')
-    {
-        $this->name = $name;
-    }
-
-    /**
-     * Sets the data formater instance used by this collector
-     *
-     * @param DataFormatterInterface $formater
-     * @return $this
-     */
-    public function setDataFormatter(DataFormatterInterface $formater)
-    {
-        $this->dataFormater = $formater;
-        return $this;
-    }
-
-    /**
-     * @return DataFormatterInterface
-     */
-    public function getDataFormatter()
-    {
-        if ($this->dataFormater === null) {
-            $this->dataFormater = DataCollector::getDefaultDataFormatter();
-        }
-        return $this->dataFormater;
-    }
-
-    /**
-     * Sets the variable dumper instance used by this collector
-     *
-     * @param DebugBarVarDumper $varDumper
-     * @return $this
-     */
-    public function setVarDumper(DebugBarVarDumper $varDumper)
-    {
-        $this->varDumper = $varDumper;
-        return $this;
-    }
-
-    /**
-     * Gets the variable dumper instance used by this collector
-     *
-     * @return DebugBarVarDumper
-     */
-    public function getVarDumper()
-    {
-        if ($this->varDumper === null) {
-            $this->varDumper = DataCollector::getDefaultVarDumper();
-        }
-        return $this->varDumper;
-    }
-
-    /**
-     * Sets a flag indicating whether the Symfony HtmlDumper will be used to dump variables for
-     * rich variable rendering.  Be sure to set this flag before logging any messages for the
-     * first time.
-     *
-     * @param bool $value
-     * @return $this
-     */
-    public function useHtmlVarDumper($value = true)
-    {
-        $this->useHtmlVarDumper = $value;
-        return $this;
-    }
-
-    /**
-     * Indicates whether the Symfony HtmlDumper will be used to dump variables for rich variable
-     * rendering.
-     *
-     * @return mixed
-     */
-    public function isHtmlVarDumperUsed()
-    {
-        return $this->useHtmlVarDumper;
-    }
-
-    /**
-     * Adds a message
-     *
-     * A message can be anything from an object to a string
-     *
-     * @param mixed $message
-     * @param string $label
-     */
-    public function addMessage($message, $label = 'info', $isString = true)
-    {
-        $messageText = $message;
-        $messageHtml = null;
-        if (!is_string($message)) {
-            // Send both text and HTML representations; the text version is used for searches
-            $messageText = $this->getDataFormatter()->formatVar($message);
-            if ($this->isHtmlVarDumperUsed()) {
-                $messageHtml = $this->getVarDumper()->renderVar($message);
-            }
-            $isString = false;
-        }
-        $this->messages[] = array(
-            'message' => $messageText,
-            'message_html' => $messageHtml,
-            'is_string' => $isString,
-            'label' => $label,
-            'time' => microtime(true)
-        );
-    }
-
-    /**
-     * Aggregates messages from other collectors
-     *
-     * @param MessagesAggregateInterface $messages
-     */
-    public function aggregate(MessagesAggregateInterface $messages)
-    {
-        $this->aggregates[] = $messages;
-    }
-
-    /**
-     * @return array
-     */
-    public function getMessages()
-    {
-        $messages = $this->messages;
-        foreach ($this->aggregates as $collector) {
-            $msgs = array_map(function ($m) use ($collector) {
-                $m['collector'] = $collector->getName();
-                return $m;
-            }, $collector->getMessages());
-            $messages = array_merge($messages, $msgs);
-        }
-
-        // sort messages by their timestamp
-        usort($messages, function ($a, $b) {
-            if ($a['time'] === $b['time']) {
-                return 0;
-            }
-            return $a['time'] < $b['time'] ? -1 : 1;
-        });
-
-        return $messages;
-    }
-
-    /**
-     * @param $level
-     * @param $message
-     * @param array $context
-     */
-    public function log($level, $message, array $context = array())
-    {
-        $this->addMessage($message, $level);
-    }
-
-    /**
-     * Deletes all messages
-     */
-    public function clear()
-    {
-        $this->messages = array();
-    }
-
-    /**
-     * @return array
-     */
-    public function collect()
-    {
-        $messages = $this->getMessages();
-        return array(
-            'count' => count($messages),
-            'messages' => $messages
-        );
-    }
-
-    /**
-     * @return string
-     */
-    public function getName()
-    {
-        return $this->name;
-    }
-
-    /**
-     * @return array
-     */
-    public function getAssets() {
-        return $this->isHtmlVarDumperUsed() ? $this->getVarDumper()->getAssets() : array();
-    }
-
-    /**
-     * @return array
-     */
-    public function getWidgets()
-    {
-        $name = $this->getName();
-        return array(
-            "$name" => array(
-                'icon' => 'list-alt',
-                "widget" => "PhpDebugBar.Widgets.MessagesWidget",
-                "map" => "$name.messages",
-                "default" => "[]"
-            ),
-            "$name:badge" => array(
-                "map" => "$name.count",
-                "default" => "null"
-            )
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

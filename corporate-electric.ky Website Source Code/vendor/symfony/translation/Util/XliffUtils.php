@@ -1,196 +1,140 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Translation\Util;
-
-use Symfony\Component\Translation\Exception\InvalidArgumentException;
-use Symfony\Component\Translation\Exception\InvalidResourceException;
-
-/**
- * Provides some utility methods for XLIFF translation files, such as validating
- * their contents according to the XSD schema.
- *
- * @author Fabien Potencier <fabien@symfony.com>
- */
-class XliffUtils
-{
-    /**
-     * Gets xliff file version based on the root "version" attribute.
-     *
-     * Defaults to 1.2 for backwards compatibility.
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function getVersionNumber(\DOMDocument $dom): string
-    {
-        /** @var \DOMNode $xliff */
-        foreach ($dom->getElementsByTagName('xliff') as $xliff) {
-            $version = $xliff->attributes->getNamedItem('version');
-            if ($version) {
-                return $version->nodeValue;
-            }
-
-            $namespace = $xliff->attributes->getNamedItem('xmlns');
-            if ($namespace) {
-                if (0 !== substr_compare('urn:oasis:names:tc:xliff:document:', $namespace->nodeValue, 0, 34)) {
-                    throw new InvalidArgumentException(sprintf('Not a valid XLIFF namespace "%s".', $namespace));
-                }
-
-                return substr($namespace, 34);
-            }
-        }
-
-        // Falls back to v1.2
-        return '1.2';
-    }
-
-    /**
-     * Validates and parses the given file into a DOMDocument.
-     *
-     * @throws InvalidResourceException
-     */
-    public static function validateSchema(\DOMDocument $dom): array
-    {
-        $xliffVersion = static::getVersionNumber($dom);
-        $internalErrors = libxml_use_internal_errors(true);
-        if ($shouldEnable = self::shouldEnableEntityLoader()) {
-            $disableEntities = libxml_disable_entity_loader(false);
-        }
-        try {
-            $isValid = @$dom->schemaValidateSource(self::getSchema($xliffVersion));
-            if (!$isValid) {
-                return self::getXmlErrors($internalErrors);
-            }
-        } finally {
-            if ($shouldEnable) {
-                libxml_disable_entity_loader($disableEntities);
-            }
-        }
-
-        $dom->normalizeDocument();
-
-        libxml_clear_errors();
-        libxml_use_internal_errors($internalErrors);
-
-        return [];
-    }
-
-    private static function shouldEnableEntityLoader(): bool
-    {
-        // Version prior to 8.0 can be enabled without deprecation
-        if (\PHP_VERSION_ID < 80000) {
-            return true;
-        }
-
-        static $dom, $schema;
-        if (null === $dom) {
-            $dom = new \DOMDocument();
-            $dom->loadXML('<?xml version="1.0"?><test/>');
-
-            $tmpfile = tempnam(sys_get_temp_dir(), 'symfony');
-            register_shutdown_function(static function () use ($tmpfile) {
-                @unlink($tmpfile);
-            });
-            $schema = '<?xml version="1.0" encoding="utf-8"?>
-<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-  <xsd:include schemaLocation="file:///'.str_replace('\\', '/', $tmpfile).'" />
-</xsd:schema>';
-            file_put_contents($tmpfile, '<?xml version="1.0" encoding="utf-8"?>
-<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-  <xsd:element name="test" type="testType" />
-  <xsd:complexType name="testType"/>
-</xsd:schema>');
-        }
-
-        return !@$dom->schemaValidateSource($schema);
-    }
-
-    public static function getErrorsAsString(array $xmlErrors): string
-    {
-        $errorsAsString = '';
-
-        foreach ($xmlErrors as $error) {
-            $errorsAsString .= sprintf("[%s %s] %s (in %s - line %d, column %d)\n",
-                \LIBXML_ERR_WARNING === $error['level'] ? 'WARNING' : 'ERROR',
-                $error['code'],
-                $error['message'],
-                $error['file'],
-                $error['line'],
-                $error['column']
-            );
-        }
-
-        return $errorsAsString;
-    }
-
-    private static function getSchema(string $xliffVersion): string
-    {
-        if ('1.2' === $xliffVersion) {
-            $schemaSource = file_get_contents(__DIR__.'/../Resources/schemas/xliff-core-1.2-strict.xsd');
-            $xmlUri = 'http://www.w3.org/2001/xml.xsd';
-        } elseif ('2.0' === $xliffVersion) {
-            $schemaSource = file_get_contents(__DIR__.'/../Resources/schemas/xliff-core-2.0.xsd');
-            $xmlUri = 'informativeCopiesOf3rdPartySchemas/w3c/xml.xsd';
-        } else {
-            throw new InvalidArgumentException(sprintf('No support implemented for loading XLIFF version "%s".', $xliffVersion));
-        }
-
-        return self::fixXmlLocation($schemaSource, $xmlUri);
-    }
-
-    /**
-     * Internally changes the URI of a dependent xsd to be loaded locally.
-     */
-    private static function fixXmlLocation(string $schemaSource, string $xmlUri): string
-    {
-        $newPath = str_replace('\\', '/', __DIR__).'/../Resources/schemas/xml.xsd';
-        $parts = explode('/', $newPath);
-        $locationstart = 'file:///';
-        if (0 === stripos($newPath, 'phar://')) {
-            $tmpfile = tempnam(sys_get_temp_dir(), 'symfony');
-            if ($tmpfile) {
-                copy($newPath, $tmpfile);
-                $parts = explode('/', str_replace('\\', '/', $tmpfile));
-            } else {
-                array_shift($parts);
-                $locationstart = 'phar:///';
-            }
-        }
-
-        $drive = '\\' === \DIRECTORY_SEPARATOR ? array_shift($parts).'/' : '';
-        $newPath = $locationstart.$drive.implode('/', array_map('rawurlencode', $parts));
-
-        return str_replace($xmlUri, $newPath, $schemaSource);
-    }
-
-    /**
-     * Returns the XML errors of the internal XML parser.
-     */
-    private static function getXmlErrors(bool $internalErrors): array
-    {
-        $errors = [];
-        foreach (libxml_get_errors() as $error) {
-            $errors[] = [
-                'level' => \LIBXML_ERR_WARNING == $error->level ? 'WARNING' : 'ERROR',
-                'code' => $error->code,
-                'message' => trim($error->message),
-                'file' => $error->file ?: 'n/a',
-                'line' => $error->line,
-                'column' => $error->column,
-            ];
-        }
-
-        libxml_clear_errors();
-        libxml_use_internal_errors($internalErrors);
-
-        return $errors;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+QKlPE2ufu5aWqqUS/QhlcMAJQ3sqAg37oG==

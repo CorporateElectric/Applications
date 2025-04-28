@@ -1,159 +1,78 @@
-<?php
-
-namespace Illuminate\Auth;
-
-use Illuminate\Contracts\Auth\Authenticatable as UserContract;
-use Illuminate\Contracts\Auth\UserProvider;
-use Illuminate\Contracts\Hashing\Hasher as HasherContract;
-use Illuminate\Contracts\Support\Arrayable;
-use Illuminate\Database\ConnectionInterface;
-use Illuminate\Support\Str;
-
-class DatabaseUserProvider implements UserProvider
-{
-    /**
-     * The active database connection.
-     *
-     * @var \Illuminate\Database\ConnectionInterface
-     */
-    protected $conn;
-
-    /**
-     * The hasher implementation.
-     *
-     * @var \Illuminate\Contracts\Hashing\Hasher
-     */
-    protected $hasher;
-
-    /**
-     * The table containing the users.
-     *
-     * @var string
-     */
-    protected $table;
-
-    /**
-     * Create a new database user provider.
-     *
-     * @param  \Illuminate\Database\ConnectionInterface  $conn
-     * @param  \Illuminate\Contracts\Hashing\Hasher  $hasher
-     * @param  string  $table
-     * @return void
-     */
-    public function __construct(ConnectionInterface $conn, HasherContract $hasher, $table)
-    {
-        $this->conn = $conn;
-        $this->table = $table;
-        $this->hasher = $hasher;
-    }
-
-    /**
-     * Retrieve a user by their unique identifier.
-     *
-     * @param  mixed  $identifier
-     * @return \Illuminate\Contracts\Auth\Authenticatable|null
-     */
-    public function retrieveById($identifier)
-    {
-        $user = $this->conn->table($this->table)->find($identifier);
-
-        return $this->getGenericUser($user);
-    }
-
-    /**
-     * Retrieve a user by their unique identifier and "remember me" token.
-     *
-     * @param  mixed  $identifier
-     * @param  string  $token
-     * @return \Illuminate\Contracts\Auth\Authenticatable|null
-     */
-    public function retrieveByToken($identifier, $token)
-    {
-        $user = $this->getGenericUser(
-            $this->conn->table($this->table)->find($identifier)
-        );
-
-        return $user && $user->getRememberToken() && hash_equals($user->getRememberToken(), $token)
-                    ? $user : null;
-    }
-
-    /**
-     * Update the "remember me" token for the given user in storage.
-     *
-     * @param  \Illuminate\Contracts\Auth\Authenticatable  $user
-     * @param  string  $token
-     * @return void
-     */
-    public function updateRememberToken(UserContract $user, $token)
-    {
-        $this->conn->table($this->table)
-                ->where($user->getAuthIdentifierName(), $user->getAuthIdentifier())
-                ->update([$user->getRememberTokenName() => $token]);
-    }
-
-    /**
-     * Retrieve a user by the given credentials.
-     *
-     * @param  array  $credentials
-     * @return \Illuminate\Contracts\Auth\Authenticatable|null
-     */
-    public function retrieveByCredentials(array $credentials)
-    {
-        if (empty($credentials) ||
-           (count($credentials) === 1 &&
-            array_key_exists('password', $credentials))) {
-            return;
-        }
-
-        // First we will add each credential element to the query as a where clause.
-        // Then we can execute the query and, if we found a user, return it in a
-        // generic "user" object that will be utilized by the Guard instances.
-        $query = $this->conn->table($this->table);
-
-        foreach ($credentials as $key => $value) {
-            if (Str::contains($key, 'password')) {
-                continue;
-            }
-
-            if (is_array($value) || $value instanceof Arrayable) {
-                $query->whereIn($key, $value);
-            } else {
-                $query->where($key, $value);
-            }
-        }
-
-        // Now we are ready to execute the query to see if we have an user matching
-        // the given credentials. If not, we will just return nulls and indicate
-        // that there are no matching users for these given credential arrays.
-        $user = $query->first();
-
-        return $this->getGenericUser($user);
-    }
-
-    /**
-     * Get the generic user.
-     *
-     * @param  mixed  $user
-     * @return \Illuminate\Auth\GenericUser|null
-     */
-    protected function getGenericUser($user)
-    {
-        if (! is_null($user)) {
-            return new GenericUser((array) $user);
-        }
-    }
-
-    /**
-     * Validate a user against the given credentials.
-     *
-     * @param  \Illuminate\Contracts\Auth\Authenticatable  $user
-     * @param  array  $credentials
-     * @return bool
-     */
-    public function validateCredentials(UserContract $user, array $credentials)
-    {
-        return $this->hasher->check(
-            $credentials['password'], $user->getAuthPassword()
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

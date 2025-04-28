@@ -1,104 +1,75 @@
-<?php
-
-/*
- * This file is part of the league/commonmark package.
- *
- * (c) Colin O'Dell <colinodell@gmail.com>
- *
- * Original code based on the CommonMark JS reference parser (http://bitly.com/commonmark-js)
- *  - (c) John MacFarlane
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace League\CommonMark\Extension\SmartPunct;
-
-use League\CommonMark\Delimiter\Delimiter;
-use League\CommonMark\Inline\Parser\InlineParserInterface;
-use League\CommonMark\InlineParserContext;
-use League\CommonMark\Util\RegexHelper;
-
-final class QuoteParser implements InlineParserInterface
-{
-    public const DOUBLE_QUOTES = [Quote::DOUBLE_QUOTE, Quote::DOUBLE_QUOTE_OPENER, Quote::DOUBLE_QUOTE_CLOSER];
-    public const SINGLE_QUOTES = [Quote::SINGLE_QUOTE, Quote::SINGLE_QUOTE_OPENER, Quote::SINGLE_QUOTE_CLOSER];
-
-    /**
-     * @return string[]
-     */
-    public function getCharacters(): array
-    {
-        return array_merge(self::DOUBLE_QUOTES, self::SINGLE_QUOTES);
-    }
-
-    /**
-     * Normalizes any quote characters found and manually adds them to the delimiter stack
-     */
-    public function parse(InlineParserContext $inlineContext): bool
-    {
-        $cursor = $inlineContext->getCursor();
-        $normalizedCharacter = $this->getNormalizedQuoteCharacter($cursor->getCharacter());
-
-        $charBefore = $cursor->peek(-1);
-        if ($charBefore === null) {
-            $charBefore = "\n";
-        }
-
-        $cursor->advance();
-
-        $charAfter = $cursor->getCharacter();
-        if ($charAfter === null) {
-            $charAfter = "\n";
-        }
-
-        [$leftFlanking, $rightFlanking] = $this->determineFlanking($charBefore, $charAfter);
-        $canOpen = $leftFlanking && !$rightFlanking;
-        $canClose = $rightFlanking;
-
-        $node = new Quote($normalizedCharacter, ['delim' => true]);
-        $inlineContext->getContainer()->appendChild($node);
-
-        // Add entry to stack to this opener
-        $inlineContext->getDelimiterStack()->push(new Delimiter($normalizedCharacter, 1, $node, $canOpen, $canClose));
-
-        return true;
-    }
-
-    private function getNormalizedQuoteCharacter(string $character): string
-    {
-        if (in_array($character, self::DOUBLE_QUOTES)) {
-            return Quote::DOUBLE_QUOTE;
-        } elseif (in_array($character, self::SINGLE_QUOTES)) {
-            return Quote::SINGLE_QUOTE;
-        }
-
-        return $character;
-    }
-
-    /**
-     * @param string $charBefore
-     * @param string $charAfter
-     *
-     * @return bool[]
-     */
-    private function determineFlanking(string $charBefore, string $charAfter)
-    {
-        $afterIsWhitespace = preg_match('/\pZ|\s/u', $charAfter);
-        $afterIsPunctuation = preg_match(RegexHelper::REGEX_PUNCTUATION, $charAfter);
-        $beforeIsWhitespace = preg_match('/\pZ|\s/u', $charBefore);
-        $beforeIsPunctuation = preg_match(RegexHelper::REGEX_PUNCTUATION, $charBefore);
-
-        $leftFlanking = !$afterIsWhitespace &&
-            !($afterIsPunctuation &&
-                !$beforeIsWhitespace &&
-                !$beforeIsPunctuation);
-
-        $rightFlanking = !$beforeIsWhitespace &&
-            !($beforeIsPunctuation &&
-                !$afterIsWhitespace &&
-                !$afterIsPunctuation);
-
-        return [$leftFlanking, $rightFlanking];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+ovIJBuQNRDHPMwj+RytuEpPfk0TEU2e=

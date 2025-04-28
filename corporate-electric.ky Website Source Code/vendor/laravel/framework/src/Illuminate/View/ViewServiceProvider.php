@@ -1,153 +1,90 @@
-<?php
-
-namespace Illuminate\View;
-
-use Illuminate\Support\ServiceProvider;
-use Illuminate\View\Compilers\BladeCompiler;
-use Illuminate\View\Engines\CompilerEngine;
-use Illuminate\View\Engines\EngineResolver;
-use Illuminate\View\Engines\FileEngine;
-use Illuminate\View\Engines\PhpEngine;
-
-class ViewServiceProvider extends ServiceProvider
-{
-    /**
-     * Register the service provider.
-     *
-     * @return void
-     */
-    public function register()
-    {
-        $this->registerFactory();
-        $this->registerViewFinder();
-        $this->registerBladeCompiler();
-        $this->registerEngineResolver();
-    }
-
-    /**
-     * Register the view environment.
-     *
-     * @return void
-     */
-    public function registerFactory()
-    {
-        $this->app->singleton('view', function ($app) {
-            // Next we need to grab the engine resolver instance that will be used by the
-            // environment. The resolver will be used by an environment to get each of
-            // the various engine implementations such as plain PHP or Blade engine.
-            $resolver = $app['view.engine.resolver'];
-
-            $finder = $app['view.finder'];
-
-            $factory = $this->createFactory($resolver, $finder, $app['events']);
-
-            // We will also set the container instance on this view environment since the
-            // view composers may be classes registered in the container, which allows
-            // for great testable, flexible composers for the application developer.
-            $factory->setContainer($app);
-
-            $factory->share('app', $app);
-
-            return $factory;
-        });
-    }
-
-    /**
-     * Create a new Factory Instance.
-     *
-     * @param  \Illuminate\View\Engines\EngineResolver  $resolver
-     * @param  \Illuminate\View\ViewFinderInterface  $finder
-     * @param  \Illuminate\Contracts\Events\Dispatcher  $events
-     * @return \Illuminate\View\Factory
-     */
-    protected function createFactory($resolver, $finder, $events)
-    {
-        return new Factory($resolver, $finder, $events);
-    }
-
-    /**
-     * Register the view finder implementation.
-     *
-     * @return void
-     */
-    public function registerViewFinder()
-    {
-        $this->app->bind('view.finder', function ($app) {
-            return new FileViewFinder($app['files'], $app['config']['view.paths']);
-        });
-    }
-
-    /**
-     * Register the Blade compiler implementation.
-     *
-     * @return void
-     */
-    public function registerBladeCompiler()
-    {
-        $this->app->singleton('blade.compiler', function ($app) {
-            return tap(new BladeCompiler($app['files'], $app['config']['view.compiled']), function ($blade) {
-                $blade->component('dynamic-component', DynamicComponent::class);
-            });
-        });
-    }
-
-    /**
-     * Register the engine resolver instance.
-     *
-     * @return void
-     */
-    public function registerEngineResolver()
-    {
-        $this->app->singleton('view.engine.resolver', function () {
-            $resolver = new EngineResolver;
-
-            // Next, we will register the various view engines with the resolver so that the
-            // environment will resolve the engines needed for various views based on the
-            // extension of view file. We call a method for each of the view's engines.
-            foreach (['file', 'php', 'blade'] as $engine) {
-                $this->{'register'.ucfirst($engine).'Engine'}($resolver);
-            }
-
-            return $resolver;
-        });
-    }
-
-    /**
-     * Register the file engine implementation.
-     *
-     * @param  \Illuminate\View\Engines\EngineResolver  $resolver
-     * @return void
-     */
-    public function registerFileEngine($resolver)
-    {
-        $resolver->register('file', function () {
-            return new FileEngine($this->app['files']);
-        });
-    }
-
-    /**
-     * Register the PHP engine implementation.
-     *
-     * @param  \Illuminate\View\Engines\EngineResolver  $resolver
-     * @return void
-     */
-    public function registerPhpEngine($resolver)
-    {
-        $resolver->register('php', function () {
-            return new PhpEngine($this->app['files']);
-        });
-    }
-
-    /**
-     * Register the Blade engine implementation.
-     *
-     * @param  \Illuminate\View\Engines\EngineResolver  $resolver
-     * @return void
-     */
-    public function registerBladeEngine($resolver)
-    {
-        $resolver->register('blade', function () {
-            return new CompilerEngine($this->app['blade.compiler'], $this->app['files']);
-        });
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,45 +1,33 @@
-<?php
-
-/*
- * This file is part of SwiftMailer.
- * (c) 2004-2009 Chris Corbyn
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-/**
- * Creates filters for replacing needles in a string buffer.
- *
- * @author Chris Corbyn
- */
-class Swift_StreamFilters_StringReplacementFilterFactory implements Swift_ReplacementFilterFactory
-{
-    /** Lazy-loaded filters */
-    private $filters = [];
-
-    /**
-     * Create a new StreamFilter to replace $search with $replace in a string.
-     *
-     * @param string $search
-     * @param string $replace
-     *
-     * @return Swift_StreamFilter
-     */
-    public function createFilter($search, $replace)
-    {
-        if (!isset($this->filters[$search][$replace])) {
-            if (!isset($this->filters[$search])) {
-                $this->filters[$search] = [];
-            }
-
-            if (!isset($this->filters[$search][$replace])) {
-                $this->filters[$search][$replace] = [];
-            }
-
-            $this->filters[$search][$replace] = new Swift_StreamFilters_StringReplacementFilter($search, $replace);
-        }
-
-        return $this->filters[$search][$replace];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,58 +1,39 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Finder\Iterator;
-
-/**
- * FilecontentFilterIterator filters files by their contents using patterns (regexps or strings).
- *
- * @author Fabien Potencier  <fabien@symfony.com>
- * @author Włodzimierz Gajda <gajdaw@gajdaw.pl>
- */
-class FilecontentFilterIterator extends MultiplePcreFilterIterator
-{
-    /**
-     * Filters the iterator values.
-     *
-     * @return bool true if the value should be kept, false otherwise
-     */
-    public function accept()
-    {
-        if (!$this->matchRegexps && !$this->noMatchRegexps) {
-            return true;
-        }
-
-        $fileinfo = $this->current();
-
-        if ($fileinfo->isDir() || !$fileinfo->isReadable()) {
-            return false;
-        }
-
-        $content = $fileinfo->getContents();
-        if (!$content) {
-            return false;
-        }
-
-        return $this->isAccepted($content);
-    }
-
-    /**
-     * Converts string to regexp if necessary.
-     *
-     * @param string $str Pattern: string or regexp
-     *
-     * @return string regexp corresponding to a given string or regexp
-     */
-    protected function toRegex(string $str)
-    {
-        return $this->isRegex($str) ? $str : '/'.preg_quote($str, '/').'/';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

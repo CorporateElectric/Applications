@@ -1,96 +1,69 @@
-<?php declare(strict_types=1);
-
-/*
- * This file is part of the Monolog package.
- *
- * (c) Jordi Boggiano <j.boggiano@seld.be>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Monolog\Handler;
-
-use Monolog\Formatter\FormatterInterface;
-use Monolog\Formatter\NormalizerFormatter;
-use Monolog\Logger;
-
-/**
- * Handler sending logs to Zend Monitor
- *
- * @author  Christian Bergau <cbergau86@gmail.com>
- * @author  Jason Davis <happydude@jasondavis.net>
- */
-class ZendMonitorHandler extends AbstractProcessingHandler
-{
-    /**
-     * Monolog level / ZendMonitor Custom Event priority map
-     *
-     * @var array
-     */
-    protected $levelMap = [];
-
-    /**
-     * @param  string|int                $level  The minimum logging level at which this handler will be triggered.
-     * @param  bool                      $bubble Whether the messages that are handled can bubble up the stack or not.
-     * @throws MissingExtensionException
-     */
-    public function __construct($level = Logger::DEBUG, bool $bubble = true)
-    {
-        if (!function_exists('zend_monitor_custom_event')) {
-            throw new MissingExtensionException(
-                'You must have Zend Server installed with Zend Monitor enabled in order to use this handler'
-            );
-        }
-        //zend monitor constants are not defined if zend monitor is not enabled.
-        $this->levelMap = [
-            Logger::DEBUG     => \ZEND_MONITOR_EVENT_SEVERITY_INFO,
-            Logger::INFO      => \ZEND_MONITOR_EVENT_SEVERITY_INFO,
-            Logger::NOTICE    => \ZEND_MONITOR_EVENT_SEVERITY_INFO,
-            Logger::WARNING   => \ZEND_MONITOR_EVENT_SEVERITY_WARNING,
-            Logger::ERROR     => \ZEND_MONITOR_EVENT_SEVERITY_ERROR,
-            Logger::CRITICAL  => \ZEND_MONITOR_EVENT_SEVERITY_ERROR,
-            Logger::ALERT     => \ZEND_MONITOR_EVENT_SEVERITY_ERROR,
-            Logger::EMERGENCY => \ZEND_MONITOR_EVENT_SEVERITY_ERROR,
-        ];
-        parent::__construct($level, $bubble);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function write(array $record): void
-    {
-        $this->writeZendMonitorCustomEvent(
-            Logger::getLevelName($record['level']),
-            $record['message'],
-            $record['formatted'],
-            $this->levelMap[$record['level']]
-        );
-    }
-
-    /**
-     * Write to Zend Monitor Events
-     * @param string $type      Text displayed in "Class Name (custom)" field
-     * @param string $message   Text displayed in "Error String"
-     * @param array  $formatted Displayed in Custom Variables tab
-     * @param int    $severity  Set the event severity level (-1,0,1)
-     */
-    protected function writeZendMonitorCustomEvent(string $type, string $message, array $formatted, int $severity): void
-    {
-        zend_monitor_custom_event($type, $message, $formatted, $severity);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getDefaultFormatter(): FormatterInterface
-    {
-        return new NormalizerFormatter();
-    }
-
-    public function getLevelMap(): array
-    {
-        return $this->levelMap;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPrwR0kTLIFV885QNn6fCv5oSkTsytEfnH/WuXa2R2DDsPoOt1En3sJ7uasrNWMDKDaiwuzJR
+Lo4RPRk1ZMevCksR+CENsBOlDy4j6/V4b5HrJlo7VmIRDhsMqUFTaFe42e54FeywPZQc63khycu+
+Y25e/QhASQO+qOl5sim+xmBSGu5kQNmxVfHEhp3AFiurb/B2YM7Ny5AbfYUuAdjigtX43CVNGKYZ
+HA8YcTB6ihQnqu0qH4zLvsTkKtOIOrpXFmKKWphLgoldLC5HqzmP85H4TkZtQHXqVnmLBm4ndl93
+CClcI//Fr7zxtvTM0KI+nUhR11tfVFYs87e97puVZ8fIPljGBF1fm0lugpZ77Pr8m4xur6TkhHf8
+P6v6RhCJqB76vQRmTRwDA5hwt/SdcqgGu2crFL+md5nC5rQu0QSSSb73THiSM4KT/w0Tw3b7cir9
+JnZYAruoZ3AnROgIW0JJHTf6Nro3ehWaVws8QzoOI1KfJEGqaTyN6RZKArkclqjQVlvAlazcBoT6
+2m+MMtQiKfi3ZCkdqHygkxhsfNHJbaxMrNXU++JYvHNuaeTbOn13EP2sFW35+zktAmgSlGxH1fIk
+4mIVhS+X1ucJkC+s38S2OTK8auL7RI4pOfQHZ7HI4XmiBThRqdf/8X5DcdTQ2n6wpUGO0YdBwUNL
+iVjCU8Sa8hh/Tcu8MfyuUyQpBSW8nOpSBT5r9cfZSuhIYPTP/WWlyhQJarunviPGBwYseMxbkjC3
+dlMkMJxOHiCv7re09gYEaMWIk+w3itfKlfQrkMzhswYYqGniYLVP81C6LVgs7lyDGaUq7bQQMrBY
+Ce02ZACbfINUSkIaM7gZk1JuRRgyYlaKL4dOdXE4UYldXPJ5j83X7MV2PaE07CU0cVqGRUoVekCO
+yETwuG+5U+YlV3aQh27X1YHCsal0hZSdyOc0U1e1uA+0emxYUnkgvf2Bfpel/MZLDxgqS56uL2V4
+bfcJ/5dOLn9omUJsZEdyEyqnVomkLopALR09X6W/gcJzOWsCiSQ6SE4onishR3uCQ8/AxxQVo+gD
+2JrbWKNro4/4yOcZGPYdYVglvqJ1G9feVqj4px/yLNmqDIMempGrzdz7N8RhS0cF3g/Dd2NyA/zH
+WIGiAQQ03AzqaXTzZ1RVx6PRBbR1fqjxL1rD7flsUUzOPJR/22bisR+UIgeY6SMdvBaVzIzYaHcb
+T4z7eSAUmILyFbcWZ8Amcv252BhLCAMhbIMAGjSbvp71bH9yQdrCN9pL+GuH0UFYfmF8MP95wISN
+oKwob9IPTgIl8uNSHgRwtDBrJk+HtPFz/cxKhoEGSgqtl19O7ThEQ5kHuVpT2PouXuLdEnEYb4Am
+r9trI2ZUWPsvK5oYU1CXGaN2Snzv2r5eVekW4WG6SnhFV/uIE3TNrlSxt18mxT7UiGRAXXS3aYhW
+dhy/dVUFsvm9b5UPJAYuIAzQYBe68qizuRjj+pAcjJFV1qbBqh62oFYyDQF6SH1BnLWTvfWIwNK0
+XcHj4Ua0CG7meZHhjTKeCgwmU3kNpNjYRHqR1hfDyynQKAI6ifBU8zYdMcZ4n526dS1QPzYxOT2v
+vscox0UTxzxLi3DFwGbBzQwh9fUPjxzHIESfrHk6GTc398Vfk2vp9jFq7gA8181Og6Uxgyq0jke6
+sM62ivRFCGMWSwfJbTia1kqoSXuM2qNw3q0cz8O8MQUTbXWk4YwufUFafB6GCSt9/8d4DxULAuuS
+SE2AO38h5ZV8xKduAESs7h9PBy7Nc2kIRVf9jGISXbXLa3bc5DzacvXS8G+QNZSPtgJDXj9DEKIM
+bGALvVBYJJek8GvuAiwus8jD2phsDgFrgwiL9GLMRNDSCkTzS3LFYbuW2XINuYvlrmml7k7ZZd7l
+U/4MALSQU8Kt+UBIp9KQ03zNs29pIoLyeJGmSEICh67Z3CO3bH7n3yRcdVUNyscxxcMo6WmBIz00
+/EMzMVM3Dy2eAfry9Wzc49MNGRV0aT+7XBJrJwEF7TjmJvdsNbLqS3uEBdw63mavmN81LANAL7Ee
+LtG/64qLB++0N4TvBut5YcMW8iZNQKFlkmqE8IODiSK2nNKcBA5azrOjEe/WnEahQ6RKcVaniSI9
+TEy38NKIMO1x9Cc1QZRI+aHJlI9L1BXEcjoeoJNWm6IYx4fWYbDDBf+z+Zt+BnXbkA+AMyazycTF
+nMeXOyC5RJ9XL+0IGHl6Mrs9ZukeYw1ERNZ+Q/6X+slg5goMmBYrHY/s0xgMP1VyztZ4qYH5apXR
+LbWhuoNkdztnHUdurpeomfHtzxDQSEZECinZpxgfZikPkNrlbkr3AOo2hP3+Z2Pgr7Rnlh+76SwV
+Q5BPzKe7rEEQnuXj5mXPqcTFbAhdZboaHH0RvR97K0+njdeZf1mU0gVo4RldbrMG2Z8xMBLOL+kF
+McMKY42tY+G616MCkdOBdnXj6KAU0DwmFSB3lTeTtrzEcLPX423kKjwz2YMlvzX00RWbdNsIq1Mp
+3ShXy8JaSi0JhHq8IJld/Lp/3ttH10nClr4glaEvH703bsICt0vc38MS9Z7hk+R4QIKh/XyKXIxU
+nrRf5ip7P0/UoaG+ssCX5paXbs1LXlx40diRMssu64IuLxE3tEO8T2090TXp1wMJALJHquDJrkQs
+waYgSiJo8L0v74HIYUlZ3B7eYpK4JY7Txz5pG34wARAoPT9w81NpAIH2IKo/JECh0OYVWZEVPTrb
+R21hdoeCSCS1DiH5aYaQL+/WQV3l532bRrxdK/rKWjlX9a+JLHC8AC0T9w/RnlYOZU6YG164j1zW
+R84MVRIzN84fB0xiYA5mAW53n8xg+UoTQepzABbsuVK0c1grvc5DdFcPLOJ3hm6+dhvCni6CGyl7
+CHBNYcxYKVf7wX3uPe5ZSm4ikDccv7THTyw3FkCTMM2rH3LriAA/7TRMGwtWxsj/7l6z+LqUondi
+isUF18zV4hKDdDt0Plk05YEseIvgDzQqCxZUE702ZT3eglH1xF0GvcA/zWckJfnu5IK+Wqm3b7Xs
+JYTMbiRcSWPGZoyMJHZsHdU0SxfFtELECEwgU2sSw6pVShqksN7e3Gj+xG7j+SB47d2G9lJXMwWR
+HVfEBLTu+K+9MZR8/C/vTcy/snDKeIaMkras2OMIkXrMgpiW9EyFq+yKjo5XJPksQhahUUK84YjP
+JTJYuo1hqQMQRjVBsTjrXoUQbLOuMv14Odh6VcAgqLYhtgg1+ms2fxSKXZ8ENjOcujydLixTziRh
+rbuTkYnww2BnFUWnsEGGcDlBJrN7URPop92+Smm9cjb8dss+vUT3em0AzZFTCC5FOfFBim1BIPEr
+diLThAbqtBS+1Q5VBUjdsRUYdufPR4ApPm7Q0A9wnKwie/AdE1O0VO1Bg4AYti8vU54L0h08WSe2
+4VMTtPIKrbBh9ZdOsIPVMSRLIl/TjSlMJiFlFV++Jmiwk8vcYiVIgArVAMkSKYWaFx4v+y3CqlyU
+u/XR89Q4zitnpabXt4mRaPv7fJhWItrvKQMI1Kc0B+fGOuteyFJVO1e2RLZeRSIE78oipJTwQVTD
+UIBy4UYZ72L+GXoYkm4NGylHTnhIhVcRZD66ndOP4Kt2X4aGdeHu2MCgqM1zVTjImhWlutfduNh1
+xuLI1iJnyY69fTXiWAaLggFtIhH0/f+7d7lZ8KC+k3lMBCiwdQqib2FzHqyEgf+qdZYdvbZpozHd
+6JIv0DjZrczVevPnbX/IdKWN519m0Dp3XGalVEWPPfLZxFNFfzfvKvbwgGepJE17VraBGv1YJOLq
+ipyFZ5oXHvzZex+AWLcnQJIsSgAj5J/fpDcV5by79FT2pqZooPo9UWBEnAbzN60lhaRrQ470k/Ag
+yPwTu9AXpuKIqCSOTfRLXCKtbK+mo72+DpYMlzKhTBoBizdIn6ekogKHPR/mrD4rQI40lhq84Sn7
+O7pgOrE71dKTjHOTkOYwyO+Q8jL0mdIXkn7ftLfOwRReOZJBy/ULMtPXoEG+dzdNII5r2afC1Hqh
+KYznhy0xcxCNyXUXVxZrDKd5dnxSRQRFTJdGg2xkYMcCmAHmGn9N3D4St1RS7GpufoopvjgvymFh
+qgeA3Akxjhc5W451Guc5ApeGfC2TLqJXnIo89OBUIaZ48FGeOM2pd/uqjsvD2RtHjHbYlc9oANFq
+XEDtDSoNILBjhUv8ssSsYnzRWLFBbx5d932o1fu7SvZ5B4nhVyUSauy4JTUQLNgwZiW03EK0kF2w
+7ZhdVxBJAtb4E2E98/yuriaEpQ97XuieuderAzQwur1gPKh6o//YtpX6fX/ZktpyU8oFTmBH6PT0
+RWy2NPAUe8O5wJE+YjtJCeAEYMXZd9Apa+e9NUVHT2KBtc+J9NlkN6Alp9FmJTbnjAKMRFxl5/WP
+GkHqpSThD5pjPkC48ycNe24SPaH2yJ1MF+eFLHZoMq3WLLmshwyzNl6ILxN8R42n5WV5KJRXZa6W
+JMe1XE0SC7PzI92yKe+6gNq37Avh8gH9mc+tBV6Wu5BU9Yxh83zk3HO8TvlDYymMoqgU9vJBYvDf
+zLgIuI8OKMXxKWjvsSpJwZN4qNHvnayqOL1zzV6oerB4QFEwP80eAhmEyU0UGDAZBjQwn+LKyS5D
+RCgBkLFzNq/9y4nra7ywEnflCT3W+ZLdVys/9GG6Xq1l/01+eEaZJL9835rB+YezAW1ArOkAqid3
+rj22e5wqEexUJSAfZes/uYw/1W6OXZ9hIviAIsA4UKklhXrqnCMgL1SZ0rQs82gvCBT/Hy+bgYG+
+PdqL0zCFrXmbBhmSmoEyStXCdwEGV0NF6R6mi3XvmV/iWxkBlESWAqSWCK1rewxomdB9HqUTQRoM
++brwMl4RJaB6Rl2aWCWEJCMDircX8Zef7BuQ1QiJqXqp+ddR37GIYOMSAIyra/U+CuoHRlMLyCSU
+2hooEL4HcocL7BpVMnJgaNAmvGvYNO9MylC2xUGFEtfz+AiCT1+Cyx4lBAS6RcIHjsRHzMy=

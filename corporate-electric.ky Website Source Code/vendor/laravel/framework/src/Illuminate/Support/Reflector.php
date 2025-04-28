@@ -1,102 +1,63 @@
-<?php
-
-namespace Illuminate\Support;
-
-use ReflectionClass;
-use ReflectionMethod;
-use ReflectionNamedType;
-
-class Reflector
-{
-    /**
-     * This is a PHP 7.4 compatible implementation of is_callable.
-     *
-     * @param  mixed  $var
-     * @param  bool  $syntaxOnly
-     * @return bool
-     */
-    public static function isCallable($var, $syntaxOnly = false)
-    {
-        if (! is_array($var)) {
-            return is_callable($var, $syntaxOnly);
-        }
-
-        if ((! isset($var[0]) || ! isset($var[1])) ||
-            ! is_string($var[1] ?? null)) {
-            return false;
-        }
-
-        if ($syntaxOnly &&
-            (is_string($var[0]) || is_object($var[0])) &&
-            is_string($var[1])) {
-            return true;
-        }
-
-        $class = is_object($var[0]) ? get_class($var[0]) : $var[0];
-
-        $method = $var[1];
-
-        if (! class_exists($class)) {
-            return false;
-        }
-
-        if (method_exists($class, $method)) {
-            return (new ReflectionMethod($class, $method))->isPublic();
-        }
-
-        if (is_object($var[0]) && method_exists($class, '__call')) {
-            return (new ReflectionMethod($class, '__call'))->isPublic();
-        }
-
-        if (! is_object($var[0]) && method_exists($class, '__callStatic')) {
-            return (new ReflectionMethod($class, '__callStatic'))->isPublic();
-        }
-
-        return false;
-    }
-
-    /**
-     * Get the class name of the given parameter's type, if possible.
-     *
-     * @param  \ReflectionParameter  $parameter
-     * @return string|null
-     */
-    public static function getParameterClassName($parameter)
-    {
-        $type = $parameter->getType();
-
-        if (! $type instanceof ReflectionNamedType || $type->isBuiltin()) {
-            return;
-        }
-
-        $name = $type->getName();
-
-        if (! is_null($class = $parameter->getDeclaringClass())) {
-            if ($name === 'self') {
-                return $class->getName();
-            }
-
-            if ($name === 'parent' && $parent = $class->getParentClass()) {
-                return $parent->getName();
-            }
-        }
-
-        return $name;
-    }
-
-    /**
-     * Determine if the parameter's type is a subclass of the given type.
-     *
-     * @param  \ReflectionParameter  $parameter
-     * @param  string  $className
-     * @return bool
-     */
-    public static function isParameterSubclassOf($parameter, $className)
-    {
-        $paramClassName = static::getParameterClassName($parameter);
-
-        return ($paramClassName && class_exists($paramClassName))
-            ? (new ReflectionClass($paramClassName))->isSubclassOf($className)
-            : false;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

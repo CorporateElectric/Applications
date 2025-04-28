@@ -1,124 +1,66 @@
-<?php
-
-/**
- * Adds important param elements to inside of object in order to make
- * things safe.
- */
-class HTMLPurifier_Injector_SafeObject extends HTMLPurifier_Injector
-{
-    /**
-     * @type string
-     */
-    public $name = 'SafeObject';
-
-    /**
-     * @type array
-     */
-    public $needed = array('object', 'param');
-
-    /**
-     * @type array
-     */
-    protected $objectStack = array();
-
-    /**
-     * @type array
-     */
-    protected $paramStack = array();
-
-    /**
-     * Keep this synchronized with AttrTransform/SafeParam.php.
-     * @type array
-     */
-    protected $addParam = array(
-        'allowScriptAccess' => 'never',
-        'allowNetworking' => 'internal',
-    );
-
-    /**
-     * These are all lower-case keys.
-     * @type array
-     */
-    protected $allowedParam = array(
-        'wmode' => true,
-        'movie' => true,
-        'flashvars' => true,
-        'src' => true,
-        'allowfullscreen' => true, // if omitted, assume to be 'false'
-    );
-
-    /**
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return void
-     */
-    public function prepare($config, $context)
-    {
-        parent::prepare($config, $context);
-    }
-
-    /**
-     * @param HTMLPurifier_Token $token
-     */
-    public function handleElement(&$token)
-    {
-        if ($token->name == 'object') {
-            $this->objectStack[] = $token;
-            $this->paramStack[] = array();
-            $new = array($token);
-            foreach ($this->addParam as $name => $value) {
-                $new[] = new HTMLPurifier_Token_Empty('param', array('name' => $name, 'value' => $value));
-            }
-            $token = $new;
-        } elseif ($token->name == 'param') {
-            $nest = count($this->currentNesting) - 1;
-            if ($nest >= 0 && $this->currentNesting[$nest]->name === 'object') {
-                $i = count($this->objectStack) - 1;
-                if (!isset($token->attr['name'])) {
-                    $token = false;
-                    return;
-                }
-                $n = $token->attr['name'];
-                // We need this fix because YouTube doesn't supply a data
-                // attribute, which we need if a type is specified. This is
-                // *very* Flash specific.
-                if (!isset($this->objectStack[$i]->attr['data']) &&
-                    ($token->attr['name'] == 'movie' || $token->attr['name'] == 'src')
-                ) {
-                    $this->objectStack[$i]->attr['data'] = $token->attr['value'];
-                }
-                // Check if the parameter is the correct value but has not
-                // already been added
-                if (!isset($this->paramStack[$i][$n]) &&
-                    isset($this->addParam[$n]) &&
-                    $token->attr['name'] === $this->addParam[$n]) {
-                    // keep token, and add to param stack
-                    $this->paramStack[$i][$n] = true;
-                } elseif (isset($this->allowedParam[strtolower($n)])) {
-                    // keep token, don't do anything to it
-                    // (could possibly check for duplicates here)
-                    // Note: In principle, parameters should be case sensitive.
-                    // But it seems they are not really; so accept any case.
-                } else {
-                    $token = false;
-                }
-            } else {
-                // not directly inside an object, DENY!
-                $token = false;
-            }
-        }
-    }
-
-    public function handleEnd(&$token)
-    {
-        // This is the WRONG way of handling the object and param stacks;
-        // we should be inserting them directly on the relevant object tokens
-        // so that the global stack handling handles it.
-        if ($token->name == 'object') {
-            array_pop($this->objectStack);
-            array_pop($this->paramStack);
-        }
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

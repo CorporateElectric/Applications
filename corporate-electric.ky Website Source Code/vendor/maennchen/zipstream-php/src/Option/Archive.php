@@ -1,261 +1,74 @@
-<?php
-declare(strict_types=1);
-
-namespace ZipStream\Option;
-
-final class Archive
-{
-    const DEFAULT_DEFLATE_LEVEL = 6;
-    /**
-     * @var string
-     */
-    private $comment = '';
-    /**
-     * Size, in bytes, of the largest file to try
-     * and load into memory (used by
-     * addFileFromPath()).  Large files may also
-     * be compressed differently; see the
-     * 'largeFileMethod' option. Default is ~20 Mb.
-     *
-     * @var int
-     */
-    private $largeFileSize = 20 * 1024 * 1024;
-    /**
-     * How to handle large files.  Legal values are
-     * Method::STORE() (the default), or
-     * Method::DEFLATE(). STORE sends the file
-     * raw and is significantly
-     * faster, while DEFLATE compresses the file
-     * and is much, much slower. Note that DEFLATE
-     * must compress the file twice and is extremely slow.
-     *
-     * @var Method
-     */
-    private $largeFileMethod;
-    /**
-     * Boolean indicating whether or not to send
-     * the HTTP headers for this file.
-     *
-     * @var bool
-     */
-    private $sendHttpHeaders = false;
-    /**
-     * The method called to send headers
-     *
-     * @var Callable
-     */
-    private $httpHeaderCallback = 'header';
-    /**
-     * Enable Zip64 extension, supporting very large
-     * archives (any size > 4 GB or file count > 64k)
-     *
-     * @var bool
-     */
-    private $enableZip64 = true;
-    /**
-     * Enable streaming files with single read where
-     * general purpose bit 3 indicates local file header
-     * contain zero values in crc and size fields,
-     * these appear only after file contents
-     * in data descriptor block.
-     *
-     * @var bool
-     */
-    private $zeroHeader = false;
-    /**
-     * Enable reading file stat for determining file size.
-     * When a 32-bit system reads file size that is
-     * over 2 GB, invalid value appears in file size
-     * due to integer overflow. Should be disabled on
-     * 32-bit systems with method addFileFromPath
-     * if any file may exceed 2 GB. In this case file
-     * will be read in blocks and correct size will be
-     * determined from content.
-     *
-     * @var bool
-     */
-    private $statFiles = true;
-    /**
-     * Enable flush after every write to output stream.
-     * @var bool
-     */
-    private $flushOutput = false;
-    /**
-     * HTTP Content-Disposition.  Defaults to
-     * 'attachment', where
-     * FILENAME is the specified filename.
-     *
-     * Note that this does nothing if you are
-     * not sending HTTP headers.
-     *
-     * @var string
-     */
-    private $contentDisposition = 'attachment';
-    /**
-     * Note that this does nothing if you are
-     * not sending HTTP headers.
-     *
-     * @var string
-     */
-    private $contentType = 'application/x-zip';
-    /**
-     * @var int
-     */
-    private $deflateLevel = 6;
-
-    /**
-     * @var resource
-     */
-    private $outputStream;
-
-    /**
-     * Options constructor.
-     */
-    public function __construct()
-    {
-        $this->largeFileMethod = Method::STORE();
-        $this->outputStream = fopen('php://output', 'wb');
-    }
-
-    public function getComment(): string
-    {
-        return $this->comment;
-    }
-
-    public function setComment(string $comment): void
-    {
-        $this->comment = $comment;
-    }
-
-    public function getLargeFileSize(): int
-    {
-        return $this->largeFileSize;
-    }
-
-    public function setLargeFileSize(int $largeFileSize): void
-    {
-        $this->largeFileSize = $largeFileSize;
-    }
-
-    public function getLargeFileMethod(): Method
-    {
-        return $this->largeFileMethod;
-    }
-
-    public function setLargeFileMethod(Method $largeFileMethod): void
-    {
-        $this->largeFileMethod = $largeFileMethod;
-    }
-
-    public function isSendHttpHeaders(): bool
-    {
-        return $this->sendHttpHeaders;
-    }
-
-    public function setSendHttpHeaders(bool $sendHttpHeaders): void
-    {
-        $this->sendHttpHeaders = $sendHttpHeaders;
-    }
-
-    public function getHttpHeaderCallback(): Callable
-    {
-        return $this->httpHeaderCallback;
-    }
-
-    public function setHttpHeaderCallback(Callable $httpHeaderCallback): void
-    {
-        $this->httpHeaderCallback = $httpHeaderCallback;
-    }
-
-    public function isEnableZip64(): bool
-    {
-        return $this->enableZip64;
-    }
-
-    public function setEnableZip64(bool $enableZip64): void
-    {
-        $this->enableZip64 = $enableZip64;
-    }
-
-    public function isZeroHeader(): bool
-    {
-        return $this->zeroHeader;
-    }
-
-    public function setZeroHeader(bool $zeroHeader): void
-    {
-        $this->zeroHeader = $zeroHeader;
-    }
-
-    public function isFlushOutput(): bool
-    {
-        return $this->flushOutput;
-    }
-
-    public function setFlushOutput(bool $flushOutput): void
-    {
-        $this->flushOutput = $flushOutput;
-    }
-
-    public function isStatFiles(): bool
-    {
-        return $this->statFiles;
-    }
-
-    public function setStatFiles(bool $statFiles): void
-    {
-        $this->statFiles = $statFiles;
-    }
-
-    public function getContentDisposition(): string
-    {
-        return $this->contentDisposition;
-    }
-
-    public function setContentDisposition(string $contentDisposition): void
-    {
-        $this->contentDisposition = $contentDisposition;
-    }
-
-    public function getContentType(): string
-    {
-        return $this->contentType;
-    }
-
-    public function setContentType(string $contentType): void
-    {
-        $this->contentType = $contentType;
-    }
-
-    /**
-     * @return resource
-     */
-    public function getOutputStream()
-    {
-        return $this->outputStream;
-    }
-
-    /**
-     * @param resource $outputStream
-     */
-    public function setOutputStream($outputStream): void
-    {
-        $this->outputStream = $outputStream;
-    }
-
-    /**
-     * @return int
-     */
-    public function getDeflateLevel(): int
-    {
-        return $this->deflateLevel;
-    }
-
-    /**
-     * @param int $deflateLevel
-     */
-    public function setDeflateLevel(int $deflateLevel): void
-    {
-        $this->deflateLevel = $deflateLevel;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

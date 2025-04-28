@@ -1,89 +1,31 @@
-<?php
-
-/**
- * This file is part of the ramsey/collection library
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @copyright Copyright (c) Ben Ramsey <ben@benramsey.com>
- * @license http://opensource.org/licenses/MIT MIT
- */
-
-declare(strict_types=1);
-
-namespace Ramsey\Collection\Tool;
-
-use DateTimeInterface;
-
-use function get_class;
-use function get_resource_type;
-use function is_array;
-use function is_bool;
-use function is_callable;
-use function is_resource;
-use function is_scalar;
-
-/**
- * Provides functionality to express a value as string
- */
-trait ValueToStringTrait
-{
-    /**
-     * Returns a string representation of the value.
-     *
-     * - null value: `'NULL'`
-     * - boolean: `'TRUE'`, `'FALSE'`
-     * - array: `'Array'`
-     * - scalar: converted-value
-     * - resource: `'(type resource #number)'`
-     * - object with `__toString()`: result of `__toString()`
-     * - object DateTime: ISO 8601 date
-     * - object: `'(className Object)'`
-     * - anonymous function: same as object
-     *
-     * @param mixed $value the value to return as a string.
-     */
-    protected function toolValueToString($value): string
-    {
-        // null
-        if ($value === null) {
-            return 'NULL';
-        }
-
-        // boolean constants
-        if (is_bool($value)) {
-            return $value ? 'TRUE' : 'FALSE';
-        }
-
-        // array
-        if (is_array($value)) {
-            return 'Array';
-        }
-
-        // scalar types (integer, float, string)
-        if (is_scalar($value)) {
-            return (string) $value;
-        }
-
-        // resource
-        if (is_resource($value)) {
-            return '(' . get_resource_type($value) . ' resource #' . (int) $value . ')';
-        }
-
-        // after this line $value is an object since is not null, scalar, array or resource
-
-        // __toString() is implemented
-        if (is_callable([$value, '__toString'])) {
-            return (string) $value->__toString();
-        }
-
-        // object of type \DateTime
-        if ($value instanceof DateTimeInterface) {
-            return $value->format('c');
-        }
-
-        // unknown type
-        return '(' . get_class($value) . ' Object)';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

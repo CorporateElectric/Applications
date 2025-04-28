@@ -1,50 +1,36 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\CodeCleaner;
-
-use PhpParser\Node;
-use PhpParser\Node\Expr\FuncCall;
-use PhpParser\Node\Expr\MethodCall;
-use PhpParser\Node\Expr\StaticCall;
-use Psy\Exception\FatalErrorException;
-
-/**
- * Validate that the user did not use the call-time pass-by-reference that causes a fatal error.
- *
- * As of PHP 5.4.0, call-time pass-by-reference was removed, so using it will raise a fatal error.
- *
- * @author Martin Hasoň <martin.hason@gmail.com>
- */
-class CallTimePassByReferencePass extends CodeCleanerPass
-{
-    const EXCEPTION_MESSAGE = 'Call-time pass-by-reference has been removed';
-
-    /**
-     * Validate of use call-time pass-by-reference.
-     *
-     * @throws FatalErrorException if the user used call-time pass-by-reference
-     *
-     * @param Node $node
-     */
-    public function enterNode(Node $node)
-    {
-        if (!$node instanceof FuncCall && !$node instanceof MethodCall && !$node instanceof StaticCall) {
-            return;
-        }
-
-        foreach ($node->args as $arg) {
-            if ($arg->byRef) {
-                throw new FatalErrorException(self::EXCEPTION_MESSAGE, 0, \E_ERROR, null, $node->getLine());
-            }
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,71 +1,51 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\CssSelector\XPath\Extension;
-
-use Symfony\Component\CssSelector\XPath\XPathExpr;
-
-/**
- * XPath expression translator combination extension.
- *
- * This component is a port of the Python cssselect library,
- * which is copyright Ian Bicking, @see https://github.com/SimonSapin/cssselect.
- *
- * @author Jean-François Simon <jeanfrancois.simon@sensiolabs.com>
- *
- * @internal
- */
-class CombinationExtension extends AbstractExtension
-{
-    /**
-     * {@inheritdoc}
-     */
-    public function getCombinationTranslators(): array
-    {
-        return [
-            ' ' => [$this, 'translateDescendant'],
-            '>' => [$this, 'translateChild'],
-            '+' => [$this, 'translateDirectAdjacent'],
-            '~' => [$this, 'translateIndirectAdjacent'],
-        ];
-    }
-
-    public function translateDescendant(XPathExpr $xpath, XPathExpr $combinedXpath): XPathExpr
-    {
-        return $xpath->join('/descendant-or-self::*/', $combinedXpath);
-    }
-
-    public function translateChild(XPathExpr $xpath, XPathExpr $combinedXpath): XPathExpr
-    {
-        return $xpath->join('/', $combinedXpath);
-    }
-
-    public function translateDirectAdjacent(XPathExpr $xpath, XPathExpr $combinedXpath): XPathExpr
-    {
-        return $xpath
-            ->join('/following-sibling::', $combinedXpath)
-            ->addNameTest()
-            ->addCondition('position() = 1');
-    }
-
-    public function translateIndirectAdjacent(XPathExpr $xpath, XPathExpr $combinedXpath): XPathExpr
-    {
-        return $xpath->join('/following-sibling::', $combinedXpath);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getName(): string
-    {
-        return 'combination';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

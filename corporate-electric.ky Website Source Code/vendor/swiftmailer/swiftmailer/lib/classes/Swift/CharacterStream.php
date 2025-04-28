@@ -1,87 +1,30 @@
-<?php
-
-/*
- * This file is part of SwiftMailer.
- * (c) 2004-2009 Chris Corbyn
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-/**
- * An abstract means of reading and writing data in terms of characters as opposed
- * to bytes.
- *
- * Classes implementing this interface may use a subsystem which requires less
- * memory than working with large strings of data.
- *
- * @author Chris Corbyn
- */
-interface Swift_CharacterStream
-{
-    /**
-     * Set the character set used in this CharacterStream.
-     *
-     * @param string $charset
-     */
-    public function setCharacterSet($charset);
-
-    /**
-     * Set the CharacterReaderFactory for multi charset support.
-     */
-    public function setCharacterReaderFactory(Swift_CharacterReaderFactory $factory);
-
-    /**
-     * Overwrite this character stream using the byte sequence in the byte stream.
-     *
-     * @param Swift_OutputByteStream $os output stream to read from
-     */
-    public function importByteStream(Swift_OutputByteStream $os);
-
-    /**
-     * Import a string a bytes into this CharacterStream, overwriting any existing
-     * data in the stream.
-     *
-     * @param string $string
-     */
-    public function importString($string);
-
-    /**
-     * Read $length characters from the stream and move the internal pointer
-     * $length further into the stream.
-     *
-     * @param int $length
-     *
-     * @return string
-     */
-    public function read($length);
-
-    /**
-     * Read $length characters from the stream and return a 1-dimensional array
-     * containing there octet values.
-     *
-     * @param int $length
-     *
-     * @return int[]
-     */
-    public function readBytes($length);
-
-    /**
-     * Write $chars to the end of the stream.
-     *
-     * @param string $chars
-     */
-    public function write($chars);
-
-    /**
-     * Move the internal pointer to $charOffset in the stream.
-     *
-     * @param int $charOffset
-     */
-    public function setPointer($charOffset);
-
-    /**
-     * Empty the stream and reset the internal pointer.
-     */
-    public function flushContents();
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+PnLd

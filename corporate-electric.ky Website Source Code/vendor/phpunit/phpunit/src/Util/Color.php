@@ -1,157 +1,80 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Util;
-
-use const DIRECTORY_SEPARATOR;
-use function array_keys;
-use function array_map;
-use function array_values;
-use function count;
-use function explode;
-use function implode;
-use function min;
-use function preg_replace;
-use function preg_replace_callback;
-use function sprintf;
-use function strtr;
-use function trim;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for PHPUnit
- */
-final class Color
-{
-    /**
-     * @var array<string,string>
-     */
-    private const WHITESPACE_MAP = [
-        ' '  => '·',
-        "\t" => '⇥',
-    ];
-
-    /**
-     * @var array<string,string>
-     */
-    private const WHITESPACE_EOL_MAP = [
-        ' '  => '·',
-        "\t" => '⇥',
-        "\n" => '↵',
-        "\r" => '⟵',
-    ];
-
-    /**
-     * @var array<string,string>
-     */
-    private static $ansiCodes = [
-        'reset'      => '0',
-        'bold'       => '1',
-        'dim'        => '2',
-        'dim-reset'  => '22',
-        'underlined' => '4',
-        'fg-default' => '39',
-        'fg-black'   => '30',
-        'fg-red'     => '31',
-        'fg-green'   => '32',
-        'fg-yellow'  => '33',
-        'fg-blue'    => '34',
-        'fg-magenta' => '35',
-        'fg-cyan'    => '36',
-        'fg-white'   => '37',
-        'bg-default' => '49',
-        'bg-black'   => '40',
-        'bg-red'     => '41',
-        'bg-green'   => '42',
-        'bg-yellow'  => '43',
-        'bg-blue'    => '44',
-        'bg-magenta' => '45',
-        'bg-cyan'    => '46',
-        'bg-white'   => '47',
-    ];
-
-    public static function colorize(string $color, string $buffer): string
-    {
-        if (trim($buffer) === '') {
-            return $buffer;
-        }
-
-        $codes  = array_map('\trim', explode(',', $color));
-        $styles = [];
-
-        foreach ($codes as $code) {
-            if (isset(self::$ansiCodes[$code])) {
-                $styles[] = self::$ansiCodes[$code] ?? '';
-            }
-        }
-
-        if (empty($styles)) {
-            return $buffer;
-        }
-
-        return self::optimizeColor(sprintf("\x1b[%sm", implode(';', $styles)) . $buffer . "\x1b[0m");
-    }
-
-    public static function colorizePath(string $path, ?string $prevPath = null, bool $colorizeFilename = false): string
-    {
-        if ($prevPath === null) {
-            $prevPath = '';
-        }
-
-        $path     = explode(DIRECTORY_SEPARATOR, $path);
-        $prevPath = explode(DIRECTORY_SEPARATOR, $prevPath);
-
-        for ($i = 0; $i < min(count($path), count($prevPath)); $i++) {
-            if ($path[$i] == $prevPath[$i]) {
-                $path[$i] = self::dim($path[$i]);
-            }
-        }
-
-        if ($colorizeFilename) {
-            $last        = count($path) - 1;
-            $path[$last] = preg_replace_callback(
-                '/([\-_\.]+|phpt$)/',
-                static function ($matches) {
-                    return self::dim($matches[0]);
-                },
-                $path[$last]
-            );
-        }
-
-        return self::optimizeColor(implode(self::dim(DIRECTORY_SEPARATOR), $path));
-    }
-
-    public static function dim(string $buffer): string
-    {
-        if (trim($buffer) === '') {
-            return $buffer;
-        }
-
-        return "\e[2m{$buffer}\e[22m";
-    }
-
-    public static function visualizeWhitespace(string $buffer, bool $visualizeEOL = false): string
-    {
-        $replaceMap = $visualizeEOL ? self::WHITESPACE_EOL_MAP : self::WHITESPACE_MAP;
-
-        return preg_replace_callback('/\s+/', static function ($matches) use ($replaceMap) {
-            return self::dim(strtr($matches[0], $replaceMap));
-        }, $buffer);
-    }
-
-    private static function optimizeColor(string $buffer): string
-    {
-        $patterns = [
-            "/\e\\[22m\e\\[2m/"                   => '',
-            "/\e\\[([^m]*)m\e\\[([1-9][0-9;]*)m/" => "\e[$1;$2m",
-            "/(\e\\[[^m]*m)+(\e\\[0m)/"           => '$2',
-        ];
-
-        return preg_replace(array_keys($patterns), array_values($patterns), $buffer);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,88 +1,45 @@
-<?php
-
-namespace Illuminate\Auth;
-
-use Illuminate\Support\Str;
-
-class Recaller
-{
-    /**
-     * The "recaller" / "remember me" cookie string.
-     *
-     * @var string
-     */
-    protected $recaller;
-
-    /**
-     * Create a new recaller instance.
-     *
-     * @param  string  $recaller
-     * @return void
-     */
-    public function __construct($recaller)
-    {
-        $this->recaller = @unserialize($recaller, ['allowed_classes' => false]) ?: $recaller;
-    }
-
-    /**
-     * Get the user ID from the recaller.
-     *
-     * @return string
-     */
-    public function id()
-    {
-        return explode('|', $this->recaller, 3)[0];
-    }
-
-    /**
-     * Get the "remember token" token from the recaller.
-     *
-     * @return string
-     */
-    public function token()
-    {
-        return explode('|', $this->recaller, 3)[1];
-    }
-
-    /**
-     * Get the password from the recaller.
-     *
-     * @return string
-     */
-    public function hash()
-    {
-        return explode('|', $this->recaller, 3)[2];
-    }
-
-    /**
-     * Determine if the recaller is valid.
-     *
-     * @return bool
-     */
-    public function valid()
-    {
-        return $this->properString() && $this->hasAllSegments();
-    }
-
-    /**
-     * Determine if the recaller is an invalid string.
-     *
-     * @return bool
-     */
-    protected function properString()
-    {
-        return is_string($this->recaller) && Str::contains($this->recaller, '|');
-    }
-
-    /**
-     * Determine if the recaller has all segments.
-     *
-     * @return bool
-     */
-    protected function hasAllSegments()
-    {
-        $segments = explode('|', $this->recaller);
-
-        return count($segments) === 3 && trim($segments[0]) !== '' && trim($segments[1]) !== '';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,203 +1,111 @@
-<?php declare(strict_types=1);
-
-/*
- * This file is part of the Monolog package.
- *
- * (c) Jordi Boggiano <j.boggiano@seld.be>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Monolog\Handler;
-
-use Monolog\Logger;
-use Monolog\Utils;
-
-/**
- * Sends notifications through the pushover api to mobile phones
- *
- * @author Sebastian Göttschkes <sebastian.goettschkes@googlemail.com>
- * @see    https://www.pushover.net/api
- */
-class PushoverHandler extends SocketHandler
-{
-    private $token;
-    private $users;
-    private $title;
-    private $user;
-    private $retry;
-    private $expire;
-
-    private $highPriorityLevel;
-    private $emergencyLevel;
-    private $useFormattedMessage = false;
-
-    /**
-     * All parameters that can be sent to Pushover
-     * @see https://pushover.net/api
-     * @var array
-     */
-    private $parameterNames = [
-        'token' => true,
-        'user' => true,
-        'message' => true,
-        'device' => true,
-        'title' => true,
-        'url' => true,
-        'url_title' => true,
-        'priority' => true,
-        'timestamp' => true,
-        'sound' => true,
-        'retry' => true,
-        'expire' => true,
-        'callback' => true,
-    ];
-
-    /**
-     * Sounds the api supports by default
-     * @see https://pushover.net/api#sounds
-     * @var array
-     */
-    private $sounds = [
-        'pushover', 'bike', 'bugle', 'cashregister', 'classical', 'cosmic', 'falling', 'gamelan', 'incoming',
-        'intermission', 'magic', 'mechanical', 'pianobar', 'siren', 'spacealarm', 'tugboat', 'alien', 'climb',
-        'persistent', 'echo', 'updown', 'none',
-    ];
-
-    /**
-     * @param string       $token             Pushover api token
-     * @param string|array $users             Pushover user id or array of ids the message will be sent to
-     * @param string|null  $title             Title sent to the Pushover API
-     * @param string|int   $level             The minimum logging level at which this handler will be triggered
-     * @param bool         $bubble            Whether the messages that are handled can bubble up the stack or not
-     * @param bool         $useSSL            Whether to connect via SSL. Required when pushing messages to users that are not
-     *                                        the pushover.net app owner. OpenSSL is required for this option.
-     * @param string|int   $highPriorityLevel The minimum logging level at which this handler will start
-     *                                        sending "high priority" requests to the Pushover API
-     * @param string|int   $emergencyLevel    The minimum logging level at which this handler will start
-     *                                        sending "emergency" requests to the Pushover API
-     * @param int          $retry             The retry parameter specifies how often (in seconds) the Pushover servers will
-     *                                        send the same notification to the user.
-     * @param int          $expire            The expire parameter specifies how many seconds your notification will continue
-     *                                        to be retried for (every retry seconds).
-     */
-    public function __construct(
-        string $token,
-        $users,
-        ?string $title = null,
-        $level = Logger::CRITICAL,
-        bool $bubble = true,
-        bool $useSSL = true,
-        $highPriorityLevel = Logger::CRITICAL,
-        $emergencyLevel = Logger::EMERGENCY,
-        int $retry = 30,
-        int $expire = 25200
-    ) {
-        $connectionString = $useSSL ? 'ssl://api.pushover.net:443' : 'api.pushover.net:80';
-        parent::__construct($connectionString, $level, $bubble);
-
-        $this->token = $token;
-        $this->users = (array) $users;
-        $this->title = $title ?: gethostname();
-        $this->highPriorityLevel = Logger::toMonologLevel($highPriorityLevel);
-        $this->emergencyLevel = Logger::toMonologLevel($emergencyLevel);
-        $this->retry = $retry;
-        $this->expire = $expire;
-    }
-
-    protected function generateDataStream(array $record): string
-    {
-        $content = $this->buildContent($record);
-
-        return $this->buildHeader($content) . $content;
-    }
-
-    private function buildContent(array $record): string
-    {
-        // Pushover has a limit of 512 characters on title and message combined.
-        $maxMessageLength = 512 - strlen($this->title);
-
-        $message = ($this->useFormattedMessage) ? $record['formatted'] : $record['message'];
-        $message = Utils::substr($message, 0, $maxMessageLength);
-
-        $timestamp = $record['datetime']->getTimestamp();
-
-        $dataArray = [
-            'token' => $this->token,
-            'user' => $this->user,
-            'message' => $message,
-            'title' => $this->title,
-            'timestamp' => $timestamp,
-        ];
-
-        if (isset($record['level']) && $record['level'] >= $this->emergencyLevel) {
-            $dataArray['priority'] = 2;
-            $dataArray['retry'] = $this->retry;
-            $dataArray['expire'] = $this->expire;
-        } elseif (isset($record['level']) && $record['level'] >= $this->highPriorityLevel) {
-            $dataArray['priority'] = 1;
-        }
-
-        // First determine the available parameters
-        $context = array_intersect_key($record['context'], $this->parameterNames);
-        $extra = array_intersect_key($record['extra'], $this->parameterNames);
-
-        // Least important info should be merged with subsequent info
-        $dataArray = array_merge($extra, $context, $dataArray);
-
-        // Only pass sounds that are supported by the API
-        if (isset($dataArray['sound']) && !in_array($dataArray['sound'], $this->sounds)) {
-            unset($dataArray['sound']);
-        }
-
-        return http_build_query($dataArray);
-    }
-
-    private function buildHeader(string $content): string
-    {
-        $header = "POST /1/messages.json HTTP/1.1\r\n";
-        $header .= "Host: api.pushover.net\r\n";
-        $header .= "Content-Type: application/x-www-form-urlencoded\r\n";
-        $header .= "Content-Length: " . strlen($content) . "\r\n";
-        $header .= "\r\n";
-
-        return $header;
-    }
-
-    protected function write(array $record): void
-    {
-        foreach ($this->users as $user) {
-            $this->user = $user;
-
-            parent::write($record);
-            $this->closeSocket();
-        }
-
-        $this->user = null;
-    }
-
-    public function setHighPriorityLevel($value): self
-    {
-        $this->highPriorityLevel = Logger::toMonologLevel($value);
-
-        return $this;
-    }
-
-    public function setEmergencyLevel($value): self
-    {
-        $this->emergencyLevel = Logger::toMonologLevel($value);
-
-        return $this;
-    }
-
-    /**
-     * Use the formatted message?
-     */
-    public function useFormattedMessage(bool $value): self
-    {
-        $this->useFormattedMessage = $value;
-
-        return $this;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+RWCaZ0wlwdujDW==

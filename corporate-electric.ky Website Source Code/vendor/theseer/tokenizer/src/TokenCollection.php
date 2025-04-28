@@ -1,93 +1,67 @@
-<?php declare(strict_types = 1);
-namespace TheSeer\Tokenizer;
-
-class TokenCollection implements \ArrayAccess, \Iterator, \Countable {
-
-    /** @var Token[] */
-    private $tokens = [];
-
-    /** @var int */
-    private $pos;
-
-    public function addToken(Token $token): void {
-        $this->tokens[] = $token;
-    }
-
-    public function current(): Token {
-        return \current($this->tokens);
-    }
-
-    public function key(): int {
-        return \key($this->tokens);
-    }
-
-    public function next(): void {
-        \next($this->tokens);
-        $this->pos++;
-    }
-
-    public function valid(): bool {
-        return $this->count() > $this->pos;
-    }
-
-    public function rewind(): void {
-        \reset($this->tokens);
-        $this->pos = 0;
-    }
-
-    public function count(): int {
-        return \count($this->tokens);
-    }
-
-    public function offsetExists($offset): bool {
-        return isset($this->tokens[$offset]);
-    }
-
-    /**
-     * @throws TokenCollectionException
-     */
-    public function offsetGet($offset): Token {
-        if (!$this->offsetExists($offset)) {
-            throw new TokenCollectionException(
-                \sprintf('No Token at offest %s', $offset)
-            );
-        }
-
-        return $this->tokens[$offset];
-    }
-
-    /**
-     * @param Token $value
-     *
-     * @throws TokenCollectionException
-     */
-    public function offsetSet($offset, $value): void {
-        if (!\is_int($offset)) {
-            $type = \gettype($offset);
-
-            throw new TokenCollectionException(
-                \sprintf(
-                    'Offset must be of type integer, %s given',
-                    $type === 'object' ? \get_class($value) : $type
-                )
-            );
-        }
-
-        if (!$value instanceof Token) {
-            $type = \gettype($value);
-
-            throw new TokenCollectionException(
-                \sprintf(
-                    'Value must be of type %s, %s given',
-                    Token::class,
-                    $type === 'object' ? \get_class($value) : $type
-                )
-            );
-        }
-        $this->tokens[$offset] = $value;
-    }
-
-    public function offsetUnset($offset): void {
-        unset($this->tokens[$offset]);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

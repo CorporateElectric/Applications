@@ -1,118 +1,73 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\CodeCleaner;
-
-use PhpParser\Node;
-use PhpParser\Node\Expr\Closure;
-use PhpParser\Node\Expr\ConstFetch;
-use PhpParser\Node\Identifier;
-use PhpParser\Node\NullableType;
-use PhpParser\Node\Stmt\Function_;
-use PhpParser\Node\Stmt\Return_;
-use Psy\Exception\FatalErrorException;
-
-/**
- * Add runtime validation for return types.
- */
-class ReturnTypePass extends CodeCleanerPass
-{
-    const MESSAGE = 'A function with return type must return a value';
-    const NULLABLE_MESSAGE = 'A function with return type must return a value (did you mean "return null;" instead of "return;"?)';
-    const VOID_MESSAGE = 'A void function must not return a value';
-    const VOID_NULL_MESSAGE = 'A void function must not return a value (did you mean "return;" instead of "return null;"?)';
-    const NULLABLE_VOID_MESSAGE = 'Void type cannot be nullable';
-
-    private $atLeastPhp71;
-    private $returnTypeStack = [];
-
-    public function __construct()
-    {
-        $this->atLeastPhp71 = \version_compare(\PHP_VERSION, '7.1', '>=');
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function enterNode(Node $node)
-    {
-        if (!$this->atLeastPhp71) {
-            return; // @codeCoverageIgnore
-        }
-
-        if ($this->isFunctionNode($node)) {
-            $this->returnTypeStack[] = $node->returnType;
-
-            return;
-        }
-
-        if (!empty($this->returnTypeStack) && $node instanceof Return_) {
-            $expectedType = \end($this->returnTypeStack);
-            if ($expectedType === null) {
-                return;
-            }
-
-            $msg = null;
-
-            if ($this->typeName($expectedType) === 'void') {
-                // Void functions
-                if ($expectedType instanceof NullableType) {
-                    $msg = self::NULLABLE_VOID_MESSAGE;
-                } elseif ($node->expr instanceof ConstFetch && \strtolower($node->expr->name) === 'null') {
-                    $msg = self::VOID_NULL_MESSAGE;
-                } elseif ($node->expr !== null) {
-                    $msg = self::VOID_MESSAGE;
-                }
-            } else {
-                // Everything else
-                if ($node->expr === null) {
-                    $msg = $expectedType instanceof NullableType ? self::NULLABLE_MESSAGE : self::MESSAGE;
-                }
-            }
-
-            if ($msg !== null) {
-                throw new FatalErrorException($msg, 0, \E_ERROR, null, $node->getLine());
-            }
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function leaveNode(Node $node)
-    {
-        if (!$this->atLeastPhp71) {
-            return; // @codeCoverageIgnore
-        }
-
-        if (!empty($this->returnTypeStack) && $this->isFunctionNode($node)) {
-            \array_pop($this->returnTypeStack);
-        }
-    }
-
-    private function isFunctionNode(Node $node)
-    {
-        return $node instanceof Function_ || $node instanceof Closure;
-    }
-
-    private function typeName(Node $node)
-    {
-        if ($node instanceof NullableType) {
-            return \strtolower($node->type->name);
-        }
-
-        if ($node instanceof Identifier) {
-            return \strtolower($node->name);
-        }
-
-        throw new \InvalidArgumentException('Unable to find type name');
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+YTWHDoTva6O2ae6LfXVMI2QibfR8xw0s8ja3

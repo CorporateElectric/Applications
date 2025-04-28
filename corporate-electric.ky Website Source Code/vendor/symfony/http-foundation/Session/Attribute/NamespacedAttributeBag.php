@@ -1,157 +1,74 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpFoundation\Session\Attribute;
-
-/**
- * This class provides structured storage of session attributes using
- * a name spacing character in the key.
- *
- * @author Drak <drak@zikula.org>
- */
-class NamespacedAttributeBag extends AttributeBag
-{
-    private $namespaceCharacter;
-
-    /**
-     * @param string $storageKey         Session storage key
-     * @param string $namespaceCharacter Namespace character to use in keys
-     */
-    public function __construct(string $storageKey = '_sf2_attributes', string $namespaceCharacter = '/')
-    {
-        $this->namespaceCharacter = $namespaceCharacter;
-        parent::__construct($storageKey);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function has(string $name)
-    {
-        // reference mismatch: if fixed, re-introduced in array_key_exists; keep as it is
-        $attributes = $this->resolveAttributePath($name);
-        $name = $this->resolveKey($name);
-
-        if (null === $attributes) {
-            return false;
-        }
-
-        return \array_key_exists($name, $attributes);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function get(string $name, $default = null)
-    {
-        // reference mismatch: if fixed, re-introduced in array_key_exists; keep as it is
-        $attributes = $this->resolveAttributePath($name);
-        $name = $this->resolveKey($name);
-
-        if (null === $attributes) {
-            return $default;
-        }
-
-        return \array_key_exists($name, $attributes) ? $attributes[$name] : $default;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function set(string $name, $value)
-    {
-        $attributes = &$this->resolveAttributePath($name, true);
-        $name = $this->resolveKey($name);
-        $attributes[$name] = $value;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function remove(string $name)
-    {
-        $retval = null;
-        $attributes = &$this->resolveAttributePath($name);
-        $name = $this->resolveKey($name);
-        if (null !== $attributes && \array_key_exists($name, $attributes)) {
-            $retval = $attributes[$name];
-            unset($attributes[$name]);
-        }
-
-        return $retval;
-    }
-
-    /**
-     * Resolves a path in attributes property and returns it as a reference.
-     *
-     * This method allows structured namespacing of session attributes.
-     *
-     * @param string $name         Key name
-     * @param bool   $writeContext Write context, default false
-     *
-     * @return array|null
-     */
-    protected function &resolveAttributePath(string $name, bool $writeContext = false)
-    {
-        $array = &$this->attributes;
-        $name = (0 === strpos($name, $this->namespaceCharacter)) ? substr($name, 1) : $name;
-
-        // Check if there is anything to do, else return
-        if (!$name) {
-            return $array;
-        }
-
-        $parts = explode($this->namespaceCharacter, $name);
-        if (\count($parts) < 2) {
-            if (!$writeContext) {
-                return $array;
-            }
-
-            $array[$parts[0]] = [];
-
-            return $array;
-        }
-
-        unset($parts[\count($parts) - 1]);
-
-        foreach ($parts as $part) {
-            if (null !== $array && !\array_key_exists($part, $array)) {
-                if (!$writeContext) {
-                    $null = null;
-
-                    return $null;
-                }
-
-                $array[$part] = [];
-            }
-
-            $array = &$array[$part];
-        }
-
-        return $array;
-    }
-
-    /**
-     * Resolves the key from the name.
-     *
-     * This is the last part in a dot separated string.
-     *
-     * @return string
-     */
-    protected function resolveKey(string $name)
-    {
-        if (false !== $pos = strrpos($name, $this->namespaceCharacter)) {
-            $name = substr($name, $pos + 1);
-        }
-
-        return $name;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

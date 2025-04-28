@@ -1,52 +1,35 @@
-<?php
-
-namespace Maatwebsite\Excel\Concerns;
-
-use Maatwebsite\Excel\Events\AfterImport;
-use Maatwebsite\Excel\Events\AfterSheet;
-use Maatwebsite\Excel\Events\BeforeExport;
-use Maatwebsite\Excel\Events\BeforeImport;
-use Maatwebsite\Excel\Events\BeforeSheet;
-use Maatwebsite\Excel\Events\BeforeWriting;
-use Maatwebsite\Excel\Events\ImportFailed;
-
-trait RegistersEventListeners
-{
-    /**
-     * @return array
-     */
-    public function registerEvents(): array
-    {
-        $listeners = [];
-
-        if (method_exists($this, 'beforeExport')) {
-            $listeners[BeforeExport::class] = [static::class, 'beforeExport'];
-        }
-
-        if (method_exists($this, 'beforeWriting')) {
-            $listeners[BeforeWriting::class] = [static::class, 'beforeWriting'];
-        }
-
-        if (method_exists($this, 'beforeImport')) {
-            $listeners[BeforeImport::class] = [static::class, 'beforeImport'];
-        }
-
-        if (method_exists($this, 'afterImport')) {
-            $listeners[AfterImport::class] = [static::class, 'afterImport'];
-        }
-
-        if (method_exists($this, 'importFailed')) {
-            $listeners[ImportFailed::class] = [static::class, 'importFailed'];
-        }
-
-        if (method_exists($this, 'beforeSheet')) {
-            $listeners[BeforeSheet::class] = [static::class, 'beforeSheet'];
-        }
-
-        if (method_exists($this, 'afterSheet')) {
-            $listeners[AfterSheet::class] = [static::class, 'afterSheet'];
-        }
-
-        return $listeners;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

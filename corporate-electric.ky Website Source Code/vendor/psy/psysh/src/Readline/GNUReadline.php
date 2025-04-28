@@ -1,188 +1,78 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\Readline;
-
-/**
- * A Readline interface implementation for GNU Readline.
- *
- * This is by far the coolest way to do it, if you can.
- *
- * Oh well.
- */
-class GNUReadline implements Readline
-{
-    /** @var string|false */
-    protected $historyFile;
-    /** @var int */
-    protected $historySize;
-    /** @var bool */
-    protected $eraseDups;
-
-    /**
-     * GNU Readline is supported iff `readline_list_history` is defined. PHP
-     * decided it would be awesome to swap out GNU Readline for Libedit, but
-     * they ended up shipping an incomplete implementation. So we've got this.
-     *
-     * NOTE: As of PHP 7.4, PHP sometimes has history support in the Libedit
-     * wrapper, so that will use the GNUReadline implementation as well!
-     *
-     * @return bool
-     */
-    public static function isSupported()
-    {
-        return \function_exists('readline') && \function_exists('readline_list_history');
-    }
-
-    /**
-     * Check whether this readline implementation supports bracketed paste.
-     *
-     * Currently, the GNU readline implementation does, but the libedit wrapper does not.
-     */
-    public static function supportsBracketedPaste()
-    {
-        return self::isSupported() && \stripos(\readline_info('library_version'), 'editline') === false;
-    }
-
-    /**
-     * GNU Readline constructor.
-     *
-     * @param string|false $historyFile
-     * @param int          $historySize
-     * @param bool         $eraseDups
-     */
-    public function __construct($historyFile = null, $historySize = 0, $eraseDups = false)
-    {
-        $this->historyFile = ($historyFile !== null) ? $historyFile : false;
-        $this->historySize = $historySize;
-        $this->eraseDups = $eraseDups;
-
-        // HHVM errors on this, so HHVM doesn't get a readline_name.
-        if (!\defined('HHVM_VERSION')) {
-            \readline_info('readline_name', 'psysh');
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function addHistory($line)
-    {
-        if ($res = \readline_add_history($line)) {
-            $this->writeHistory();
-        }
-
-        return $res;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function clearHistory()
-    {
-        if ($res = \readline_clear_history()) {
-            $this->writeHistory();
-        }
-
-        return $res;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function listHistory()
-    {
-        return \readline_list_history();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function readHistory()
-    {
-        // Workaround PHP bug #69054
-        //
-        // If open_basedir is set, readline_read_history() segfaults. This was fixed in 5.6.7:
-        //
-        //     https://github.com/php/php-src/blob/423a057023ef3c00d2ffc16a6b43ba01d0f71796/NEWS#L19-L21
-        //
-        if (\version_compare(\PHP_VERSION, '5.6.7', '>=') || !\ini_get('open_basedir')) {
-            \readline_read_history();
-        }
-        \readline_clear_history();
-
-        return \readline_read_history($this->historyFile);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function readline($prompt = null)
-    {
-        return \readline($prompt);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function redisplay()
-    {
-        \readline_redisplay();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function writeHistory()
-    {
-        // We have to write history first, since it is used
-        // by Libedit to list history
-        if ($this->historyFile !== false) {
-            $res = \readline_write_history($this->historyFile);
-        } else {
-            $res = true;
-        }
-
-        if (!$res || !$this->eraseDups && !$this->historySize > 0) {
-            return $res;
-        }
-
-        $hist = $this->listHistory();
-        if (!$hist) {
-            return true;
-        }
-
-        if ($this->eraseDups) {
-            // flip-flip technique: removes duplicates, latest entries win.
-            $hist = \array_flip(\array_flip($hist));
-            // sort on keys to get the order back
-            \ksort($hist);
-        }
-
-        if ($this->historySize > 0) {
-            $histsize = \count($hist);
-            if ($histsize > $this->historySize) {
-                $hist = \array_slice($hist, $histsize - $this->historySize);
-            }
-        }
-
-        \readline_clear_history();
-        foreach ($hist as $line) {
-            \readline_add_history($line);
-        }
-
-        if ($this->historyFile !== false) {
-            return \readline_write_history($this->historyFile);
-        }
-
-        return true;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

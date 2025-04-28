@@ -1,123 +1,63 @@
-<?php
-
-/*
- * This file is part of the Prophecy.
- * (c) Konstantin Kudryashov <ever.zet@gmail.com>
- *     Marcello Duarte <marcello.duarte@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Prophecy\Doubler\ClassPatch;
-
-use Prophecy\Doubler\Generator\Node\ClassNode;
-use Prophecy\Doubler\Generator\Node\MethodNode;
-
-/**
- * SplFileInfo patch.
- * Makes SplFileInfo and derivative classes usable with Prophecy.
- *
- * @author Konstantin Kudryashov <ever.zet@gmail.com>
- */
-class SplFileInfoPatch implements ClassPatchInterface
-{
-    /**
-     * Supports everything that extends SplFileInfo.
-     *
-     * @param ClassNode $node
-     *
-     * @return bool
-     */
-    public function supports(ClassNode $node)
-    {
-        if (null === $node->getParentClass()) {
-            return false;
-        }
-        return 'SplFileInfo' === $node->getParentClass()
-            || is_subclass_of($node->getParentClass(), 'SplFileInfo')
-        ;
-    }
-
-    /**
-     * Updated constructor code to call parent one with dummy file argument.
-     *
-     * @param ClassNode $node
-     */
-    public function apply(ClassNode $node)
-    {
-        if ($node->hasMethod('__construct')) {
-            $constructor = $node->getMethod('__construct');
-        } else {
-            $constructor = new MethodNode('__construct');
-            $node->addMethod($constructor);
-        }
-
-        if ($this->nodeIsDirectoryIterator($node)) {
-            $constructor->setCode('return parent::__construct("' . __DIR__ . '");');
-
-            return;
-        }
-
-        if ($this->nodeIsSplFileObject($node)) {
-            $filePath = str_replace('\\','\\\\',__FILE__);
-            $constructor->setCode('return parent::__construct("' . $filePath .'");');
-
-            return;
-        }
-
-        if ($this->nodeIsSymfonySplFileInfo($node)) {
-            $filePath = str_replace('\\','\\\\',__FILE__);
-            $constructor->setCode('return parent::__construct("' . $filePath .'", "", "");');
-
-            return;
-        }
-
-        $constructor->useParentCode();
-    }
-
-    /**
-     * Returns patch priority, which determines when patch will be applied.
-     *
-     * @return int Priority number (higher - earlier)
-     */
-    public function getPriority()
-    {
-        return 50;
-    }
-
-    /**
-     * @param ClassNode $node
-     * @return boolean
-     */
-    private function nodeIsDirectoryIterator(ClassNode $node)
-    {
-        $parent = $node->getParentClass();
-
-        return 'DirectoryIterator' === $parent
-            || is_subclass_of($parent, 'DirectoryIterator');
-    }
-
-    /**
-     * @param ClassNode $node
-     * @return boolean
-     */
-    private function nodeIsSplFileObject(ClassNode $node)
-    {
-        $parent = $node->getParentClass();
-
-        return 'SplFileObject' === $parent
-            || is_subclass_of($parent, 'SplFileObject');
-    }
-
-    /**
-     * @param ClassNode $node
-     * @return boolean
-     */
-    private function nodeIsSymfonySplFileInfo(ClassNode $node)
-    {
-        $parent = $node->getParentClass();
-
-        return 'Symfony\\Component\\Finder\\SplFileInfo' === $parent;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

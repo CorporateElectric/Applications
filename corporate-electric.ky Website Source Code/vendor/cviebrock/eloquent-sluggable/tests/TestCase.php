@@ -1,77 +1,50 @@
-<?php namespace Cviebrock\EloquentSluggable\Tests;
-
-use Cviebrock\EloquentSluggable\ServiceProvider;
-use Illuminate\Contracts\Events\Dispatcher;
-use Mockery;
-use Orchestra\Testbench\TestCase as Orchestra;
-
-/**
- * Class TestCase
- *
- * @package Tests
- */
-abstract class TestCase extends Orchestra
-{
-
-    /**
-     * Setup the test environment.
-     *
-     * @return void
-     */
-    public function setUp() : void
-    {
-        parent::setUp();
-
-        $this->artisan('migrate', ['--database' => 'testbench']);
-
-        $this->beforeApplicationDestroyed(function () {
-            $this->artisan('migrate:rollback');
-        });
-    }
-
-    /**
-     * Define environment setup.
-     *
-     * @param  \Illuminate\Foundation\Application $app
-     * @return void
-     */
-    protected function getEnvironmentSetUp($app)
-    {
-        // set up database configuration
-        $app['config']->set('database.default', 'testbench');
-        $app['config']->set('database.connections.testbench', [
-            'driver' => 'sqlite',
-            'database' => ':memory:',
-            'prefix' => '',
-        ]);
-    }
-
-    /**
-     * Get Sluggable package providers.
-     *
-     * @return array
-     */
-    protected function getPackageProviders($app)
-    {
-        return [
-            ServiceProvider::class,
-            TestServiceProvider::class
-        ];
-    }
-
-    /**
-     * Mock the event dispatcher so all events are silenced and collected.
-     *
-     * @return $this
-     */
-    protected function withoutEvents()
-    {
-        $mock = Mockery::mock(Dispatcher::class);
-
-        $mock->shouldReceive('fire', 'until');
-
-        $this->app->instance('events', $mock);
-
-        return $this;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

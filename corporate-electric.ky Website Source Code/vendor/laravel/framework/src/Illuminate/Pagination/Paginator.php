@@ -1,176 +1,89 @@
-<?php
-
-namespace Illuminate\Pagination;
-
-use ArrayAccess;
-use Countable;
-use Illuminate\Contracts\Pagination\Paginator as PaginatorContract;
-use Illuminate\Contracts\Support\Arrayable;
-use Illuminate\Contracts\Support\Jsonable;
-use Illuminate\Support\Collection;
-use IteratorAggregate;
-use JsonSerializable;
-
-class Paginator extends AbstractPaginator implements Arrayable, ArrayAccess, Countable, IteratorAggregate, Jsonable, JsonSerializable, PaginatorContract
-{
-    /**
-     * Determine if there are more items in the data source.
-     *
-     * @return bool
-     */
-    protected $hasMore;
-
-    /**
-     * Create a new paginator instance.
-     *
-     * @param  mixed  $items
-     * @param  int  $perPage
-     * @param  int|null  $currentPage
-     * @param  array  $options (path, query, fragment, pageName)
-     * @return void
-     */
-    public function __construct($items, $perPage, $currentPage = null, array $options = [])
-    {
-        $this->options = $options;
-
-        foreach ($options as $key => $value) {
-            $this->{$key} = $value;
-        }
-
-        $this->perPage = $perPage;
-        $this->currentPage = $this->setCurrentPage($currentPage);
-        $this->path = $this->path !== '/' ? rtrim($this->path, '/') : $this->path;
-
-        $this->setItems($items);
-    }
-
-    /**
-     * Get the current page for the request.
-     *
-     * @param  int  $currentPage
-     * @return int
-     */
-    protected function setCurrentPage($currentPage)
-    {
-        $currentPage = $currentPage ?: static::resolveCurrentPage();
-
-        return $this->isValidPageNumber($currentPage) ? (int) $currentPage : 1;
-    }
-
-    /**
-     * Set the items for the paginator.
-     *
-     * @param  mixed  $items
-     * @return void
-     */
-    protected function setItems($items)
-    {
-        $this->items = $items instanceof Collection ? $items : Collection::make($items);
-
-        $this->hasMore = $this->items->count() > $this->perPage;
-
-        $this->items = $this->items->slice(0, $this->perPage);
-    }
-
-    /**
-     * Get the URL for the next page.
-     *
-     * @return string|null
-     */
-    public function nextPageUrl()
-    {
-        if ($this->hasMorePages()) {
-            return $this->url($this->currentPage() + 1);
-        }
-    }
-
-    /**
-     * Render the paginator using the given view.
-     *
-     * @param  string|null  $view
-     * @param  array  $data
-     * @return string
-     */
-    public function links($view = null, $data = [])
-    {
-        return $this->render($view, $data);
-    }
-
-    /**
-     * Render the paginator using the given view.
-     *
-     * @param  string|null  $view
-     * @param  array  $data
-     * @return \Illuminate\Contracts\Support\Htmlable
-     */
-    public function render($view = null, $data = [])
-    {
-        return static::viewFactory()->make($view ?: static::$defaultSimpleView, array_merge($data, [
-            'paginator' => $this,
-        ]));
-    }
-
-    /**
-     * Manually indicate that the paginator does have more pages.
-     *
-     * @param  bool  $hasMore
-     * @return $this
-     */
-    public function hasMorePagesWhen($hasMore = true)
-    {
-        $this->hasMore = $hasMore;
-
-        return $this;
-    }
-
-    /**
-     * Determine if there are more items in the data source.
-     *
-     * @return bool
-     */
-    public function hasMorePages()
-    {
-        return $this->hasMore;
-    }
-
-    /**
-     * Get the instance as an array.
-     *
-     * @return array
-     */
-    public function toArray()
-    {
-        return [
-            'current_page' => $this->currentPage(),
-            'data' => $this->items->toArray(),
-            'first_page_url' => $this->url(1),
-            'from' => $this->firstItem(),
-            'next_page_url' => $this->nextPageUrl(),
-            'path' => $this->path(),
-            'per_page' => $this->perPage(),
-            'prev_page_url' => $this->previousPageUrl(),
-            'to' => $this->lastItem(),
-        ];
-    }
-
-    /**
-     * Convert the object into something JSON serializable.
-     *
-     * @return array
-     */
-    public function jsonSerialize()
-    {
-        return $this->toArray();
-    }
-
-    /**
-     * Convert the object to its JSON representation.
-     *
-     * @param  int  $options
-     * @return string
-     */
-    public function toJson($options = 0)
-    {
-        return json_encode($this->jsonSerialize(), $options);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

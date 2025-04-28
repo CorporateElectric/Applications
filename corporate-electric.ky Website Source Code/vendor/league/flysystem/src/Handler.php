@@ -1,137 +1,49 @@
-<?php
-
-namespace League\Flysystem;
-
-use BadMethodCallException;
-
-/**
- * @deprecated
- */
-abstract class Handler
-{
-    /**
-     * @var string
-     */
-    protected $path;
-
-    /**
-     * @var FilesystemInterface
-     */
-    protected $filesystem;
-
-    /**
-     * Constructor.
-     *
-     * @param FilesystemInterface $filesystem
-     * @param string              $path
-     */
-    public function __construct(FilesystemInterface $filesystem = null, $path = null)
-    {
-        $this->path = $path;
-        $this->filesystem = $filesystem;
-    }
-
-    /**
-     * Check whether the entree is a directory.
-     *
-     * @return bool
-     */
-    public function isDir()
-    {
-        return $this->getType() === 'dir';
-    }
-
-    /**
-     * Check whether the entree is a file.
-     *
-     * @return bool
-     */
-    public function isFile()
-    {
-        return $this->getType() === 'file';
-    }
-
-    /**
-     * Retrieve the entree type (file|dir).
-     *
-     * @return string file or dir
-     */
-    public function getType()
-    {
-        $metadata = $this->filesystem->getMetadata($this->path);
-
-        return $metadata ? $metadata['type'] : 'dir';
-    }
-
-    /**
-     * Set the Filesystem object.
-     *
-     * @param FilesystemInterface $filesystem
-     *
-     * @return $this
-     */
-    public function setFilesystem(FilesystemInterface $filesystem)
-    {
-        $this->filesystem = $filesystem;
-
-        return $this;
-    }
-    
-    /**
-     * Retrieve the Filesystem object.
-     *
-     * @return FilesystemInterface
-     */
-    public function getFilesystem()
-    {
-        return $this->filesystem;
-    }
-
-    /**
-     * Set the entree path.
-     *
-     * @param string $path
-     *
-     * @return $this
-     */
-    public function setPath($path)
-    {
-        $this->path = $path;
-
-        return $this;
-    }
-
-    /**
-     * Retrieve the entree path.
-     *
-     * @return string path
-     */
-    public function getPath()
-    {
-        return $this->path;
-    }
-
-    /**
-     * Plugins pass-through.
-     *
-     * @param string $method
-     * @param array  $arguments
-     *
-     * @return mixed
-     */
-    public function __call($method, array $arguments)
-    {
-        array_unshift($arguments, $this->path);
-        $callback = [$this->filesystem, $method];
-
-        try {
-            return call_user_func_array($callback, $arguments);
-        } catch (BadMethodCallException $e) {
-            throw new BadMethodCallException(
-                'Call to undefined method '
-                . get_called_class()
-                . '::' . $method
-            );
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+r0IQEvMax/wWQGZOz3fNfxB4ggGDelW2

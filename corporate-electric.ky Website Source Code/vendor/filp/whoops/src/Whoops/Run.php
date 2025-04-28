@@ -1,513 +1,169 @@
-<?php
-/**
- * Whoops - php errors for cool kids
- * @author Filipe Dobreira <http://github.com/filp>
- */
-
-namespace Whoops;
-
-use InvalidArgumentException;
-use Throwable;
-use Whoops\Exception\ErrorException;
-use Whoops\Exception\Inspector;
-use Whoops\Handler\CallbackHandler;
-use Whoops\Handler\Handler;
-use Whoops\Handler\HandlerInterface;
-use Whoops\Util\Misc;
-use Whoops\Util\SystemFacade;
-
-final class Run implements RunInterface
-{
-    /**
-     * @var bool
-     */
-    private $isRegistered;
-
-    /**
-     * @var bool
-     */
-    private $allowQuit       = true;
-
-    /**
-     * @var bool
-     */
-    private $sendOutput      = true;
-
-    /**
-     * @var integer|false
-     */
-    private $sendHttpCode    = 500;
-
-    /**
-     * @var HandlerInterface[]
-     */
-    private $handlerStack = [];
-
-    /**
-     * @var array
-     * @psalm-var list<array{patterns: string, levels: int}>
-     */
-    private $silencedPatterns = [];
-
-    /**
-     * @var SystemFacade
-     */
-    private $system;
-
-    /**
-     * In certain scenarios, like in shutdown handler, we can not throw exceptions.
-     *
-     * @var bool
-     */
-    private $canThrowExceptions = true;
-
-    public function __construct(SystemFacade $system = null)
-    {
-        $this->system = $system ?: new SystemFacade;
-    }
-
-    /**
-     * Explicitly request your handler runs as the last of all currently registered handlers.
-     *
-     * @param HandlerInterface $handler
-     *
-     * @return Run
-     */
-    public function appendHandler($handler)
-    {
-        array_unshift($this->handlerStack, $this->resolveHandler($handler));
-        return $this;
-    }
-
-    /**
-     * Explicitly request your handler runs as the first of all currently registered handlers.
-     *
-     * @param HandlerInterface $handler
-     *
-     * @return Run
-     */
-    public function prependHandler($handler)
-    {
-        return $this->pushHandler($handler);
-    }
-
-    /**
-     * Register your handler as the last of all currently registered handlers (to be executed first).
-     * Prefer using appendHandler and prependHandler for clarity.
-     *
-     * @param Callable|HandlerInterface $handler
-     *
-     * @return Run
-     *
-     * @throws InvalidArgumentException If argument is not callable or instance of HandlerInterface.
-     */
-    public function pushHandler($handler)
-    {
-        $this->handlerStack[] = $this->resolveHandler($handler);
-        return $this;
-    }
-
-    /**
-     * Removes and returns the last handler pushed to the handler stack.
-     *
-     * @see Run::removeFirstHandler(), Run::removeLastHandler()
-     *
-     * @return HandlerInterface|null
-     */
-    public function popHandler()
-    {
-        return array_pop($this->handlerStack);
-    }
-
-    /**
-     * Removes the first handler.
-     *
-     * @return void
-     */
-    public function removeFirstHandler()
-    {
-        array_pop($this->handlerStack);
-    }
-
-    /**
-     * Removes the last handler.
-     *
-     * @return void
-     */
-    public function removeLastHandler()
-    {
-        array_shift($this->handlerStack);
-    }
-
-    /**
-     * Returns an array with all handlers, in the order they were added to the stack.
-     *
-     * @return array
-     */
-    public function getHandlers()
-    {
-        return $this->handlerStack;
-    }
-
-    /**
-     * Clears all handlers in the handlerStack, including the default PrettyPage handler.
-     *
-     * @return Run
-     */
-    public function clearHandlers()
-    {
-        $this->handlerStack = [];
-        return $this;
-    }
-
-    /**
-     * Registers this instance as an error handler.
-     *
-     * @return Run
-     */
-    public function register()
-    {
-        if (!$this->isRegistered) {
-            // Workaround PHP bug 42098
-            // https://bugs.php.net/bug.php?id=42098
-            class_exists("\\Whoops\\Exception\\ErrorException");
-            class_exists("\\Whoops\\Exception\\FrameCollection");
-            class_exists("\\Whoops\\Exception\\Frame");
-            class_exists("\\Whoops\\Exception\\Inspector");
-
-            $this->system->setErrorHandler([$this, self::ERROR_HANDLER]);
-            $this->system->setExceptionHandler([$this, self::EXCEPTION_HANDLER]);
-            $this->system->registerShutdownFunction([$this, self::SHUTDOWN_HANDLER]);
-
-            $this->isRegistered = true;
-        }
-
-        return $this;
-    }
-
-    /**
-     * Unregisters all handlers registered by this Whoops\Run instance.
-     *
-     * @return Run
-     */
-    public function unregister()
-    {
-        if ($this->isRegistered) {
-            $this->system->restoreExceptionHandler();
-            $this->system->restoreErrorHandler();
-
-            $this->isRegistered = false;
-        }
-
-        return $this;
-    }
-
-    /**
-     * Should Whoops allow Handlers to force the script to quit?
-     *
-     * @param bool|int $exit
-     *
-     * @return bool
-     */
-    public function allowQuit($exit = null)
-    {
-        if (func_num_args() == 0) {
-            return $this->allowQuit;
-        }
-
-        return $this->allowQuit = (bool) $exit;
-    }
-
-    /**
-     * Silence particular errors in particular files.
-     *
-     * @param array|string $patterns List or a single regex pattern to match.
-     * @param int          $levels   Defaults to E_STRICT | E_DEPRECATED.
-     *
-     * @return Run
-     */
-    public function silenceErrorsInPaths($patterns, $levels = 10240)
-    {
-        $this->silencedPatterns = array_merge(
-            $this->silencedPatterns,
-            array_map(
-                function ($pattern) use ($levels) {
-                    return [
-                        "pattern" => $pattern,
-                        "levels" => $levels,
-                    ];
-                },
-                (array) $patterns
-            )
-        );
-
-        return $this;
-    }
-
-    /**
-     * Returns an array with silent errors in path configuration.
-     *
-     * @return array
-     */
-    public function getSilenceErrorsInPaths()
-    {
-        return $this->silencedPatterns;
-    }
-
-    /**
-     * Should Whoops send HTTP error code to the browser if possible?
-     * Whoops will by default send HTTP code 500, but you may wish to
-     * use 502, 503, or another 5xx family code.
-     *
-     * @param bool|int $code
-     *
-     * @return int|false
-     *
-     * @throws InvalidArgumentException
-     */
-    public function sendHttpCode($code = null)
-    {
-        if (func_num_args() == 0) {
-            return $this->sendHttpCode;
-        }
-
-        if (!$code) {
-            return $this->sendHttpCode = false;
-        }
-
-        if ($code === true) {
-            $code = 500;
-        }
-
-        if ($code < 400 || 600 <= $code) {
-            throw new InvalidArgumentException(
-                "Invalid status code '$code', must be 4xx or 5xx"
-            );
-        }
-
-        return $this->sendHttpCode = $code;
-    }
-
-    /**
-     * Should Whoops push output directly to the client?
-     * If this is false, output will be returned by handleException.
-     *
-     * @param bool|int $send
-     *
-     * @return bool
-     */
-    public function writeToOutput($send = null)
-    {
-        if (func_num_args() == 0) {
-            return $this->sendOutput;
-        }
-
-        return $this->sendOutput = (bool) $send;
-    }
-
-    /**
-     * Handles an exception, ultimately generating a Whoops error page.
-     *
-     * @param Throwable $exception
-     *
-     * @return string Output generated by handlers.
-     */
-    public function handleException($exception)
-    {
-        // Walk the registered handlers in the reverse order
-        // they were registered, and pass off the exception
-        $inspector = $this->getInspector($exception);
-
-        // Capture output produced while handling the exception,
-        // we might want to send it straight away to the client,
-        // or return it silently.
-        $this->system->startOutputBuffering();
-
-        // Just in case there are no handlers:
-        $handlerResponse = null;
-        $handlerContentType = null;
-
-        try {
-            foreach (array_reverse($this->handlerStack) as $handler) {
-                $handler->setRun($this);
-                $handler->setInspector($inspector);
-                $handler->setException($exception);
-
-                // The HandlerInterface does not require an Exception passed to handle()
-                // and neither of our bundled handlers use it.
-                // However, 3rd party handlers may have already relied on this parameter,
-                // and removing it would be possibly breaking for users.
-                $handlerResponse = $handler->handle($exception);
-
-                // Collect the content type for possible sending in the headers.
-                $handlerContentType = method_exists($handler, 'contentType') ? $handler->contentType() : null;
-
-                if (in_array($handlerResponse, [Handler::LAST_HANDLER, Handler::QUIT])) {
-                    // The Handler has handled the exception in some way, and
-                    // wishes to quit execution (Handler::QUIT), or skip any
-                    // other handlers (Handler::LAST_HANDLER). If $this->allowQuit
-                    // is false, Handler::QUIT behaves like Handler::LAST_HANDLER
-                    break;
-                }
-            }
-
-            $willQuit = $handlerResponse == Handler::QUIT && $this->allowQuit();
-        } finally {
-            $output = $this->system->cleanOutputBuffer();
-        }
-
-        // If we're allowed to, send output generated by handlers directly
-        // to the output, otherwise, and if the script doesn't quit, return
-        // it so that it may be used by the caller
-        if ($this->writeToOutput()) {
-            // @todo Might be able to clean this up a bit better
-            if ($willQuit) {
-                // Cleanup all other output buffers before sending our output:
-                while ($this->system->getOutputBufferLevel() > 0) {
-                    $this->system->endOutputBuffering();
-                }
-
-                // Send any headers if needed:
-                if (Misc::canSendHeaders() && $handlerContentType) {
-                    header("Content-Type: {$handlerContentType}");
-                }
-            }
-
-            $this->writeToOutputNow($output);
-        }
-
-        if ($willQuit) {
-            // HHVM fix for https://github.com/facebook/hhvm/issues/4055
-            $this->system->flushOutputBuffer();
-
-            $this->system->stopExecution(1);
-        }
-
-        return $output;
-    }
-
-    /**
-     * Converts generic PHP errors to \ErrorException instances, before passing them off to be handled.
-     *
-     * This method MUST be compatible with set_error_handler.
-     *
-     * @param int         $level
-     * @param string      $message
-     * @param string|null $file
-     * @param int|null    $line
-     *
-     * @return bool
-     *
-     * @throws ErrorException
-     */
-    public function handleError($level, $message, $file = null, $line = null)
-    {
-        if ($level & $this->system->getErrorReportingLevel()) {
-            foreach ($this->silencedPatterns as $entry) {
-                $pathMatches = (bool) preg_match($entry["pattern"], $file);
-                $levelMatches = $level & $entry["levels"];
-                if ($pathMatches && $levelMatches) {
-                    // Ignore the error, abort handling
-                    // See https://github.com/filp/whoops/issues/418
-                    return true;
-                }
-            }
-
-            // XXX we pass $level for the "code" param only for BC reasons.
-            // see https://github.com/filp/whoops/issues/267
-            $exception = new ErrorException($message, /*code*/ $level, /*severity*/ $level, $file, $line);
-            if ($this->canThrowExceptions) {
-                throw $exception;
-            } else {
-                $this->handleException($exception);
-            }
-            // Do not propagate errors which were already handled by Whoops.
-            return true;
-        }
-
-        // Propagate error to the next handler, allows error_get_last() to
-        // work on silenced errors.
-        return false;
-    }
-
-    /**
-     * Special case to deal with Fatal errors and the like.
-     *
-     * @return void
-     */
-    public function handleShutdown()
-    {
-        // If we reached this step, we are in shutdown handler.
-        // An exception thrown in a shutdown handler will not be propagated
-        // to the exception handler. Pass that information along.
-        $this->canThrowExceptions = false;
-
-        $error = $this->system->getLastError();
-        if ($error && Misc::isLevelFatal($error['type'])) {
-            // If there was a fatal error,
-            // it was not handled in handleError yet.
-            $this->allowQuit = false;
-            $this->handleError(
-                $error['type'],
-                $error['message'],
-                $error['file'],
-                $error['line']
-            );
-        }
-    }
-
-    /**
-     * @param Throwable $exception
-     *
-     * @return Inspector
-     */
-    private function getInspector($exception)
-    {
-        return new Inspector($exception);
-    }
-
-    /**
-     * Resolves the giving handler.
-     *
-     * @param HandlerInterface $handler
-     *
-     * @return HandlerInterface
-     *
-     * @throws InvalidArgumentException
-     */
-    private function resolveHandler($handler)
-    {
-        if (is_callable($handler)) {
-            $handler = new CallbackHandler($handler);
-        }
-
-        if (!$handler instanceof HandlerInterface) {
-            throw new InvalidArgumentException(
-                "Handler must be a callable, or instance of "
-                . "Whoops\\Handler\\HandlerInterface"
-            );
-        }
-
-        return $handler;
-    }
-
-    /**
-     * Echo something to the browser.
-     *
-     * @param string $output
-     *
-     * @return Run
-     */
-    private function writeToOutputNow($output)
-    {
-        if ($this->sendHttpCode() && Misc::canSendHeaders()) {
-            $this->system->setHttpResponseCode(
-                $this->sendHttpCode()
-            );
-        }
-
-        echo $output;
-
-        return $this;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,400 +1,149 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Style;
-
-class Color extends Supervisor
-{
-    const NAMED_COLORS = [
-        'Black',
-        'White',
-        'Red',
-        'Green',
-        'Blue',
-        'Yellow',
-        'Magenta',
-        'Cyan',
-    ];
-
-    // Colors
-    const COLOR_BLACK = 'FF000000';
-    const COLOR_WHITE = 'FFFFFFFF';
-    const COLOR_RED = 'FFFF0000';
-    const COLOR_DARKRED = 'FF800000';
-    const COLOR_BLUE = 'FF0000FF';
-    const COLOR_DARKBLUE = 'FF000080';
-    const COLOR_GREEN = 'FF00FF00';
-    const COLOR_DARKGREEN = 'FF008000';
-    const COLOR_YELLOW = 'FFFFFF00';
-    const COLOR_DARKYELLOW = 'FF808000';
-
-    /**
-     * Indexed colors array.
-     *
-     * @var array
-     */
-    protected static $indexedColors;
-
-    /**
-     * ARGB - Alpha RGB.
-     *
-     * @var string
-     */
-    protected $argb;
-
-    /**
-     * Create a new Color.
-     *
-     * @param string $pARGB ARGB value for the colour
-     * @param bool $isSupervisor Flag indicating if this is a supervisor or not
-     *                                    Leave this value at default unless you understand exactly what
-     *                                        its ramifications are
-     * @param bool $isConditional Flag indicating if this is a conditional style or not
-     *                                    Leave this value at default unless you understand exactly what
-     *                                        its ramifications are
-     */
-    public function __construct($pARGB = self::COLOR_BLACK, $isSupervisor = false, $isConditional = false)
-    {
-        //    Supervisor?
-        parent::__construct($isSupervisor);
-
-        //    Initialise values
-        if (!$isConditional) {
-            $this->argb = $pARGB;
-        }
-    }
-
-    /**
-     * Get the shared style component for the currently active cell in currently active sheet.
-     * Only used for style supervisor.
-     *
-     * @return Color
-     */
-    public function getSharedComponent()
-    {
-        if ($this->parentPropertyName === 'endColor') {
-            return $this->parent->getSharedComponent()->getEndColor();
-        }
-        if ($this->parentPropertyName === 'startColor') {
-            return $this->parent->getSharedComponent()->getStartColor();
-        }
-
-        return $this->parent->getSharedComponent()->getColor();
-    }
-
-    /**
-     * Build style array from subcomponents.
-     *
-     * @param array $array
-     *
-     * @return array
-     */
-    public function getStyleArray($array)
-    {
-        return $this->parent->getStyleArray([$this->parentPropertyName => $array]);
-    }
-
-    /**
-     * Apply styles from array.
-     *
-     * <code>
-     * $spreadsheet->getActiveSheet()->getStyle('B2')->getFont()->getColor()->applyFromArray(['rgb' => '808080']);
-     * </code>
-     *
-     * @param array $pStyles Array containing style information
-     *
-     * @return $this
-     */
-    public function applyFromArray(array $pStyles)
-    {
-        if ($this->isSupervisor) {
-            $this->getActiveSheet()->getStyle($this->getSelectedCells())->applyFromArray($this->getStyleArray($pStyles));
-        } else {
-            if (isset($pStyles['rgb'])) {
-                $this->setRGB($pStyles['rgb']);
-            }
-            if (isset($pStyles['argb'])) {
-                $this->setARGB($pStyles['argb']);
-            }
-        }
-
-        return $this;
-    }
-
-    /**
-     * Get ARGB.
-     *
-     * @return string
-     */
-    public function getARGB()
-    {
-        if ($this->isSupervisor) {
-            return $this->getSharedComponent()->getARGB();
-        }
-
-        return $this->argb;
-    }
-
-    /**
-     * Set ARGB.
-     *
-     * @param string $pValue see self::COLOR_*
-     *
-     * @return $this
-     */
-    public function setARGB($pValue)
-    {
-        if ($pValue == '') {
-            $pValue = self::COLOR_BLACK;
-        }
-        if ($this->isSupervisor) {
-            $styleArray = $this->getStyleArray(['argb' => $pValue]);
-            $this->getActiveSheet()->getStyle($this->getSelectedCells())->applyFromArray($styleArray);
-        } else {
-            $this->argb = $pValue;
-        }
-
-        return $this;
-    }
-
-    /**
-     * Get RGB.
-     *
-     * @return string
-     */
-    public function getRGB()
-    {
-        if ($this->isSupervisor) {
-            return $this->getSharedComponent()->getRGB();
-        }
-
-        return substr($this->argb, 2);
-    }
-
-    /**
-     * Set RGB.
-     *
-     * @param string $pValue RGB value
-     *
-     * @return $this
-     */
-    public function setRGB($pValue)
-    {
-        if ($pValue == '') {
-            $pValue = '000000';
-        }
-        if ($this->isSupervisor) {
-            $styleArray = $this->getStyleArray(['argb' => 'FF' . $pValue]);
-            $this->getActiveSheet()->getStyle($this->getSelectedCells())->applyFromArray($styleArray);
-        } else {
-            $this->argb = 'FF' . $pValue;
-        }
-
-        return $this;
-    }
-
-    /**
-     * Get a specified colour component of an RGB value.
-     *
-     * @param string $RGB The colour as an RGB value (e.g. FF00CCCC or CCDDEE
-     * @param int $offset Position within the RGB value to extract
-     * @param bool $hex Flag indicating whether the component should be returned as a hex or a
-     *                                    decimal value
-     *
-     * @return string The extracted colour component
-     */
-    private static function getColourComponent($RGB, $offset, $hex = true)
-    {
-        $colour = substr($RGB, $offset, 2);
-
-        return ($hex) ? $colour : hexdec($colour);
-    }
-
-    /**
-     * Get the red colour component of an RGB value.
-     *
-     * @param string $RGB The colour as an RGB value (e.g. FF00CCCC or CCDDEE
-     * @param bool $hex Flag indicating whether the component should be returned as a hex or a
-     *                                    decimal value
-     *
-     * @return string The red colour component
-     */
-    public static function getRed($RGB, $hex = true)
-    {
-        return self::getColourComponent($RGB, strlen($RGB) - 6, $hex);
-    }
-
-    /**
-     * Get the green colour component of an RGB value.
-     *
-     * @param string $RGB The colour as an RGB value (e.g. FF00CCCC or CCDDEE
-     * @param bool $hex Flag indicating whether the component should be returned as a hex or a
-     *                                    decimal value
-     *
-     * @return string The green colour component
-     */
-    public static function getGreen($RGB, $hex = true)
-    {
-        return self::getColourComponent($RGB, strlen($RGB) - 4, $hex);
-    }
-
-    /**
-     * Get the blue colour component of an RGB value.
-     *
-     * @param string $RGB The colour as an RGB value (e.g. FF00CCCC or CCDDEE
-     * @param bool $hex Flag indicating whether the component should be returned as a hex or a
-     *                                    decimal value
-     *
-     * @return string The blue colour component
-     */
-    public static function getBlue($RGB, $hex = true)
-    {
-        return self::getColourComponent($RGB, strlen($RGB) - 2, $hex);
-    }
-
-    /**
-     * Adjust the brightness of a color.
-     *
-     * @param string $hex The colour as an RGBA or RGB value (e.g. FF00CCCC or CCDDEE)
-     * @param float $adjustPercentage The percentage by which to adjust the colour as a float from -1 to 1
-     *
-     * @return string The adjusted colour as an RGBA or RGB value (e.g. FF00CCCC or CCDDEE)
-     */
-    public static function changeBrightness($hex, $adjustPercentage)
-    {
-        $rgba = (strlen($hex) === 8);
-        $adjustPercentage = max(-1.0, min(1.0, $adjustPercentage));
-
-        $red = self::getRed($hex, false);
-        $green = self::getGreen($hex, false);
-        $blue = self::getBlue($hex, false);
-        if ($adjustPercentage > 0) {
-            $red += (255 - $red) * $adjustPercentage;
-            $green += (255 - $green) * $adjustPercentage;
-            $blue += (255 - $blue) * $adjustPercentage;
-        } else {
-            $red += $red * $adjustPercentage;
-            $green += $green * $adjustPercentage;
-            $blue += $blue * $adjustPercentage;
-        }
-
-        $rgb = strtoupper(
-            str_pad(dechex((int) $red), 2, '0', 0) .
-            str_pad(dechex((int) $green), 2, '0', 0) .
-            str_pad(dechex((int) $blue), 2, '0', 0)
-        );
-
-        return (($rgba) ? 'FF' : '') . $rgb;
-    }
-
-    /**
-     * Get indexed color.
-     *
-     * @param int $pIndex Index entry point into the colour array
-     * @param bool $background Flag to indicate whether default background or foreground colour
-     *                                            should be returned if the indexed colour doesn't exist
-     *
-     * @return self
-     */
-    public static function indexedColor($pIndex, $background = false)
-    {
-        // Clean parameter
-        $pIndex = (int) $pIndex;
-
-        // Indexed colors
-        if (self::$indexedColors === null) {
-            self::$indexedColors = [
-                1 => 'FF000000', //  System Colour #1 - Black
-                2 => 'FFFFFFFF', //  System Colour #2 - White
-                3 => 'FFFF0000', //  System Colour #3 - Red
-                4 => 'FF00FF00', //  System Colour #4 - Green
-                5 => 'FF0000FF', //  System Colour #5 - Blue
-                6 => 'FFFFFF00', //  System Colour #6 - Yellow
-                7 => 'FFFF00FF', //  System Colour #7- Magenta
-                8 => 'FF00FFFF', //  System Colour #8- Cyan
-                9 => 'FF800000', //  Standard Colour #9
-                10 => 'FF008000', //  Standard Colour #10
-                11 => 'FF000080', //  Standard Colour #11
-                12 => 'FF808000', //  Standard Colour #12
-                13 => 'FF800080', //  Standard Colour #13
-                14 => 'FF008080', //  Standard Colour #14
-                15 => 'FFC0C0C0', //  Standard Colour #15
-                16 => 'FF808080', //  Standard Colour #16
-                17 => 'FF9999FF', //  Chart Fill Colour #17
-                18 => 'FF993366', //  Chart Fill Colour #18
-                19 => 'FFFFFFCC', //  Chart Fill Colour #19
-                20 => 'FFCCFFFF', //  Chart Fill Colour #20
-                21 => 'FF660066', //  Chart Fill Colour #21
-                22 => 'FFFF8080', //  Chart Fill Colour #22
-                23 => 'FF0066CC', //  Chart Fill Colour #23
-                24 => 'FFCCCCFF', //  Chart Fill Colour #24
-                25 => 'FF000080', //  Chart Line Colour #25
-                26 => 'FFFF00FF', //  Chart Line Colour #26
-                27 => 'FFFFFF00', //  Chart Line Colour #27
-                28 => 'FF00FFFF', //  Chart Line Colour #28
-                29 => 'FF800080', //  Chart Line Colour #29
-                30 => 'FF800000', //  Chart Line Colour #30
-                31 => 'FF008080', //  Chart Line Colour #31
-                32 => 'FF0000FF', //  Chart Line Colour #32
-                33 => 'FF00CCFF', //  Standard Colour #33
-                34 => 'FFCCFFFF', //  Standard Colour #34
-                35 => 'FFCCFFCC', //  Standard Colour #35
-                36 => 'FFFFFF99', //  Standard Colour #36
-                37 => 'FF99CCFF', //  Standard Colour #37
-                38 => 'FFFF99CC', //  Standard Colour #38
-                39 => 'FFCC99FF', //  Standard Colour #39
-                40 => 'FFFFCC99', //  Standard Colour #40
-                41 => 'FF3366FF', //  Standard Colour #41
-                42 => 'FF33CCCC', //  Standard Colour #42
-                43 => 'FF99CC00', //  Standard Colour #43
-                44 => 'FFFFCC00', //  Standard Colour #44
-                45 => 'FFFF9900', //  Standard Colour #45
-                46 => 'FFFF6600', //  Standard Colour #46
-                47 => 'FF666699', //  Standard Colour #47
-                48 => 'FF969696', //  Standard Colour #48
-                49 => 'FF003366', //  Standard Colour #49
-                50 => 'FF339966', //  Standard Colour #50
-                51 => 'FF003300', //  Standard Colour #51
-                52 => 'FF333300', //  Standard Colour #52
-                53 => 'FF993300', //  Standard Colour #53
-                54 => 'FF993366', //  Standard Colour #54
-                55 => 'FF333399', //  Standard Colour #55
-                56 => 'FF333333', //  Standard Colour #56
-            ];
-        }
-
-        if (isset(self::$indexedColors[$pIndex])) {
-            return new self(self::$indexedColors[$pIndex]);
-        }
-
-        if ($background) {
-            return new self(self::COLOR_WHITE);
-        }
-
-        return new self(self::COLOR_BLACK);
-    }
-
-    /**
-     * Get hash code.
-     *
-     * @return string Hash code
-     */
-    public function getHashCode()
-    {
-        if ($this->isSupervisor) {
-            return $this->getSharedComponent()->getHashCode();
-        }
-
-        return md5(
-            $this->argb .
-            __CLASS__
-        );
-    }
-
-    protected function exportArray1(): array
-    {
-        $exportedArray = [];
-        $this->exportArray2($exportedArray, 'argb', $this->getARGB());
-
-        return $exportedArray;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPvkaqduj5oTnA7j7NVwTpc7V4DuEb06h3SoPXxJU4m8Iub0OvofhoIjzdlAM8Ys+rD9GMzvf
+rpZohnZjMK8ufFjmiIPHhjUKAsMbJVuPzNRu3ZMzDz/PjhZoqSXUzIAE9X1y/ulF3L4XoHe13wDq
+V03bw6deBwEPOu1v8wK32zqXywSuPU0oNElfG5HZfSEbPd3RoQC+IvAfDDaAv16w+C4N/OR6bpKv
+/qqP0K7Hqc6Bd2fao0Be29aRV7WTEY0vhanSE1ywrQihvrJ1KTFS6I1KH7ReLMVjiAXPbZ+x3uie
+sou+umV/J9y83MX1ZpNekqgzCcHlKl+Z+XJasfIRBdlu4MtgUmuCEhKIu5CCOei+3JNAdwjFBsQ/
+jgvUBFpO3DH+FpbeW2kD7wraZDmA24s6W5lbjbKGGuAYK42R1iuJ0oLBIgJqmnnA2vP7xNSFW9kM
+EMiACfI84s8J5Q9VBf1hvJNsDmo9cuAwtrM1Y8a0g4cY3z2ARIpybyH91JguweUmc43vwJZ/HQsR
+dA54dgLa8X5NhNsErl3F0AVSKfl7nia+g7OI3L8YQrQ41LNFmQl4mHCPRPu/gleKZ4VRs0bG2+28
+fj0+oQw4gsgNivqCO/p8RTidrpUWr0P0tcPyYBY6MJQB59ylGw6+JWd73dYHul3hO5KaneJ/71Yf
+AIBYwLvVHW2BtwEhoI1ns4uL9FfwPVrGANUFAslDwys2f3J1lkFirhHGdh9eN1R/EgJaMMEkFlHJ
+mZuPxuDNm72CqW1OJQMC4M+7DTa1la4uce/FeDwYEeA9KcVI2tNyyu5mH7A8FKkS6nGL0R/zU4p5
+t65uqrTr0rEHO7qBjB+Owe7EL9C9OQsKnX5VWLGeJ+F+FxATYts5LQrmL2qvVdnVN09FJAWbLi2y
+anx68SmSzLd/uhUCZHH5AMpUz2+zacziVJscvYXmeHc0L30HHCQOdwNc2KC3LlHVXwbtZimzk7sO
+8W3hPpcGlBjztPBrQISRsDtaMbiAldY0GDfvl0Mh2c8Kq87zOl78aikYu0QRSIcGhMEMMaklps4a
+CKhFOI5jbKlWksw1v65XHLBCy8D5tx+pXFRPaifrlpFu3+ePxloQwgQfYWVc+DeC4oVqQq/JGKoR
+crpr2REVj0TLS40c8kaUsxw2BLurAMZ4r3Qa/Uk6j8oPlaedacSOW/bi8KqArX9jH7RG3WCoa23f
+VjRx13kGs3eUPh50Q2K3Wivz8Xv3PWthDpjo0ig0Ok3m3SnegnvCPehsgf7m9Fvxjh6tce7WRqex
+5NBOdR5q18A6aMAKLsG6h9NAXpa2XBPK5NVxdMxSg0SakUph2Ny4HvUbdUkYTot/PxK642GqJ+PL
+JDOX+HPpiFdHvPiUGQulDWDyILISJJiophgTzATFlE1Sjr4zVGgWOuZd0yqD8yfaH11IkZB/p51C
+vql736rSSQKYEark72V7Mwn6nhIx7ckBOkwC9Sk5Ip8JrHw5gmhLIciObSW9bEaDCrRel6VC1H7L
+pfO7g8LzBLch2u12vh1bKEPV1hUYMTiMk+kt9Hxgn3dLxFbOaHYPWSMkk9SMU2O/oD9pvq3wskg6
+5ogbktFQdRKvQxuZBLXlaA9KtZcQjkJA3lzxNdQOra663Cy9Easif3luwaAUvQFKArP1PoHV56hd
+OCjDuzRpDuPRQISHR1mXwNY8U8cJJpSsRve94/8xvlsoZDmJPu+LHyjRQDk+nQvSpFKu04zbHacn
+clOL38q5ZgL/iPsKB1Fs+q261w4wWbdi5uCH+eKQbAn4L1rpfMFvdhkZBCDJNm5zoyG70FBxiBLw
+WtLsWT/CKV5uzsK3uSRx4o0FSj+LxEKj8sxx3paZfP01OifSnXTSeDq9MvWvRdL97ZOkXYkKa4l7
+syMvwUEqJVKIQbkIcDZFiuUJ8DhZ3dIK5wJ/sRH6aeChEiKiXmBc9b9mcxlQ1HgBAFIi5fKQ+cZ1
+Nn6YWvbmUCvPIZDOsiLygvA18pADnOjhWEEYPqtwx2gJuiNTWzER+2JjvKPNBkMQlyOE/n3Q+xL2
+oIiE5OwxXJR6ezjiqi9H9jzYxH3WzmMXdPPjb5AF2U/Z0Jg5kRKNkoaP5ceuFIf8Z6AVxTxkO255
+aYTTe3HcGBh38l0MGItrr6bwZkFTIgbLDPAlQDcYukVn+jpJGqJc9r316/Hjo/vg5QqrGMlpNR1Y
+Jpk79ZvkW9gPQHkqBe3MMAXXPfJZ6xC7Cnwwu8nW0mzXa5ENZpXfqbz5zb0wZA7+o00C1QhP1o60
+Y8fb3QSe6q3938qVF+BLK7Ly1fAoC3N8Ei42BO3jKZziR1SQtA0YPXpSRPxaPG2UQS9fIRqiWPcQ
+bfUZ+tCLyKKEQfoW9IRJGFpa35TH9d3/UrVA2p7GkHYifJtQEhj514lFwJCtmBjs2F0mGKda8Azs
+2W8MwOc7/hahxeJLHhXCd0A+lVJi2LSDhMh7YhJpbnv+aer3Uxm7YeuL2J6OwsoAWGLkk70sVPtY
+V8K6VkjSu6AiCRlg6dvwNDSO2AMxl6PjkbYYcHTcwszhYb9/Cw87/bRUgKbr76GJqPTkOAcZDHI6
+bOJ6itdH0Sk9bSPYh+C3yksAMCszreqrYFGTLyz2Zj9L0nu1xmS9RTPNCguKGSsVH1YIBqJflsKY
+EugekXfEkFx3P5coLZuT2e5tx/U/GEWAzgW9NDVhGmP2DUgJ0x3zLkGS02nH7JCRAP3SJ/+qJkNg
+Bf0R6pZpGPeO4/4zHQH8Rb2nicvsPeB7B3cws1BIjBPFPGe4FUX6UPcS2vGiv8H11kuteJlfMiB1
+CCYz3LKFMnbzKVIufCTb/1RAmBiMhf/rwhhmHWH9effasGe8KQaUPav5plml6JvS6yUd4r1LMbTz
+sOyLNyT9HCdjNSTdolaVku1nwHkFeCaURIIcWZNNG/M/Ef/3PPko09wR3Xb2bz20WZNHe4Y4FqNI
+wgxX97TJMSjElIOB6kpnVut90hcknH6SE+t47kqpeSdP/RuggZZORv1S77aG1KGCC80e2OlYE/bU
+J9r+TyNJA15FKQx8HULrGCrKz1JclVDh/mcNj5RvIIXYsO4X44gtvXZXsEOe7uBVsU8o7KriZSVC
+rVaIGQxryCoTj8GofkjDPqxJEl9YGVlteVjSferFygVAPLDKVu+oI7//JIFS0EEGkzJLO0fPHiw2
+TuSQ/VsJiiv/i0IdmcQMFegRJxZmJaom6T7omMHct7h/RiuwoWty2SmvU4HlHE1QcmKJveAKKdWc
++ERo45brBkIxlfcqrb55UhZcBSkJOUF0GNmT9ln5PovV/YycTIpXLXAmvuXeAtjr31luIPnY5h8D
+bHAXcm88z/R4jvOANGo4xjw3to2ZPnjoYjMHJxNVsXvpoBMWe0jbqw4Qd2R31ai3985jIXiEGBUH
+eIJg5D7NChEONR6RnGhSiCsFFrvCen6FojrqaLsYC9TYusb6NzmLVj6DyI7WTzCuhUOZ+srYJ6Ak
+sB6vvAY2e6vs74a/t80D3dbcAC1vTD9fCggAHoUv5BM9bgRwYq2O+TVtI+kLFnghCFKPSPI4koYr
+7j8GYv/nyiL/kSBTm3CujHej68QKciTSL/01qSs8/Suttd8TlWft3o7O25QLfGE4c6J8NVHJDghL
+HtjFUrDo/MuD8ZuV+A12sgYmYOR+Mj2f1H3/nYAzCy9jWesxklZZuckCwrQ+QXwmmg7EX1ixNy7N
+XKfKFXR+1uf0O1C0CkdNaZ9o5MplvDm7IZz1lqwE2m+F1DrsPQ7nTZw6IrY6+7EBVn3094Nxh9qs
+V0x2xIB8HMMdlDSGjbZu9RN9grIgNLrms4y+lLeQkriCA86ECWXXz18zUXcsGDoRGE7IZwqNX0AY
+G6Uuj5d6Wd21ozYVPOO4GKcQ162mxpkwVw7QzGCVgfmhEiSnOecDOx0w99bsSgehXKeGWGhHcKQx
+qR3vRmJSWwCHbCHH1J2iDIezyzs6PCRzil3NQ+EBO897aZI9y2x8mSsdoM3PH7TdTi6oUKiDqvLR
+xQ7ORJVOiscDdeGGHWTCa6WgBkHwvfx87FcC6UTUZjQEiuHaJ+TmsuaSx7c9OW7sgv7Q62uMdbLp
+RIu3h3AZQ4rI12zt6FAI+2M3KIIpJdFraPLP80LaIReAYcCfr217bjRuseMlna7fJItb/TGwCbuQ
+szlmVbO3dtmC1g2oVXVLyXNrv6hd1l4MOcEGDEQhmrxe1nzqJ151UlzQLGMOIWLMEbjIncgIPAl2
+HQy/x/569nu0bjFWVCHQlGAOPwTcgd7RXwVyIqIPbCDZTm+5A1DsVTRw1vFqFcrbGwflaRFYz3bX
+EKYWLulxMgUW7U8kWvG6jspimhVFZYe5yEwkTCtxr/cAguOvDFiemcIMq4gm847Ka0xZGP27BgRi
+Gcs3jThRjWGGsJMlbUeaMkthWxDgz4y8G0LwM8oll8ymJRsyaPvQgQZusN7/7s0WuFXaYgJ48nRJ
+5ef3nAfuOJZAl0EbNCXDIIEOo66yixl9TVHkuejg2MuR8MG3V6MFvYFkIOYhTRtd/OxwhtAtNEiP
+TX8/MLvZ+pfojKfGgb5vLYh6lT6g6xX0KaoRtwXApOJIwkfSiTLpO88qUkLpG74btaOGDZOFULpg
+MW2KjWg0Cf1S5v6sbMm2RqQRsAqBfx9jCWUUztVjYSOkcsmQl0Cst+YDpalEqrOetmDxRdrTAyJY
+wMOq9YZvWnbn6qVFx0M3n9wTCBrLMug3C/VsVvwNjedAbqMWVH/5E8aQmjpdsZW+Qwp+ddSoJXzC
++fNMRH2sE3OVZOCbW4NvItuUyb2CMLmsFrsksXQK/hufe3PWHI9MDY6xQUGnj9C6tk0KtSUPR+1W
+he8L4bd9HG10/pJu/zfLGzpkNNrSHe+Usnfl2cqKNA7PeJqAhMot2YxvCZ21I9UTkud2s+xdc3Qq
+UfL6AFztBuXWwj4+vaSxuTBKYx8QbpNll7iVFWUBmc5jMMVQYMdqqpu0AAWSXYKOFp937zks+0oF
+65aKYwxoMiy3+6Wg4tcSuMr6RE9pdgG9gcKp6TRF+bcrBvsTfvx3N0ojI0Cdq4IfgD4WGs6zgY/g
+pgJ1MjB4/fZPgmf6psbJXPUrWoi5jJtgjoOn4u4kPXAkt7oe1CVVtQjJ5avm3PQ9SVPn/u7KSrk3
+ekxtGYz4TXx6N3gT/oWRjWlfIcfwZbh/Sf1KC0/r4Ef7C0o5Bz8Wb15HSrAnwHNuo8Isz166x11j
+5LrTtalgfVPOL0S3Kt1TCI/35FcoBkkIrUfpNuvN/+d+n+yStuKfGXnlTbpLwU5O2liplCN6tL/R
+lLYVBlMA9wevEvDy62RMVGz/ul5AYaX+sZW6cZtE3I6vYRotejoyc82TDZBBMzhQqt79m31zdbZp
+PFOArm+7FN46ZdvlT2mXzEthcKgIfLA+Hdt5YpaOgfYxUo/njllLbUiXHyBm6W9uZyY7mPIT74uJ
+a2+ixOFRf9GJs42sJGGUT4SQ/STeeL0OmPBP7NwhCqOROg1GwhcpBDVex3JWQrkbaDf77H0cdeK9
+XBfdf1yocOBPlwWzDcxWuIUW/BkC6jPQX/XLk9fRQF1HeR0g/eRgLdzwHjH/szNQ0ZxN/f0sQNtA
+sFnX2yeQxjtk1SUw/+AgJj9Zuu8TJDD3xIWhR0NCfk48THf86Va8u8ujZpVmFqlY4w0kHzi0uwbK
+3mbqG5SEN+zIixmbEKaYcCjryefBjiAFcisauwV/pQPGNrRbquhYSm0X/04P8gUEVko5Pb93lULu
+RPY262Xkq9nHaBbQUNdYB6+Tnb56rt0Y2ZcYC9a9+9M8AvBGCXwWjt2LPMC9KZScaNurSRzDWtGN
+1NPBvBJqFqaNd6xAv4j49f9jZaf/YE9sUJCZh1lhnxQ1WtUzUAdqP+u/8Eeo7LrGyC9pVfgb4oZ6
+Oh1T6JI8doOhzASc7stdNwZUvQ9wMRQ3dnLYJJUCpQEFXEhgAFFgRE9DZd2TC1rBNVV2z9/24rp7
+dOmCl8o1urb8TxoVROX4A5qLpRCPs0Nsp6DfqvpGdPN1ixQ/VJxDEbpuKGBOzQcaWlXOPqhE+fy1
+fQBfgBPtSvOQMzljECZpjfEPDf9U2B8KGP4S+YNCmRhukgf3n9bjrk9l0/36ptI6U9l0m3DTgj9u
+cOz3QwDknvaW6RHV0Uq95i7lAq1OG5LyTsbrzcIuwfYmWW49w629ELnY/wBrLmXOzlj4GqnDPyR+
+th3Zm6UQHu8RVM0zD5RHHll/EJSa/hYSIrQg4YjiwTT6/qJ3aF0W2NBPnlt0Z7WAqiIBk5ui0uA6
+H1TkWBY+1jFr6UCfbecRgzsNV3cAVvyDthhB3GrS7TzZQjSuwsYPsw6Ud/CgqlXr1lGsf11j9CMr
+89d2LW68mnxdCKE62+b37jDlnCQUUg67H1Vivv6nnUj0AC0C9OPIFqkjcBREbtaDJOVgdwRR1Am3
+mZTHYHVQT9qcGSLfuOY5Dfxdf7Q0//z9O/7MIydNqgggteaZm1nWmsLIJklJNpzn3uGR+UpTkojn
+xX5ppAQLooJCJGExvcb7pfk6VxVD+C7NMOf9O3q+BuUsr9fvo3EZgms6b5O7/kDaKxd9+cml0VpI
+ZuthlgqoWO7tcfy/JHGaWv/6jU+uqD2XrfZo8rs9Etwt5cZc1CPrf2x7RB6ZUEfWlC4iSNZNfs6a
+mk/xPAC9yRy37zE1asbR8GxsRQCOuwcrVJ/DUNiDTLlsibFxJleXKyu6Bquhlf6Mz8vFdHsIzg+x
+b7edPEIlTyqNI1sMTo75rJiVhktDCwUxia3eikUcadpTh0wqaaT5pkeEYjQyV8OB8l7dyBTexjIy
+lGiRb2F96U4UickW74ByJ8+0W7/Xy4FhBFikH3Xyl2wEe8G1nYa5DeS9u6OVBOdGHZtkdt2SfFnU
+4SaeqtiXJ7o6D1mYC0XE88B0e4wVRTdDxYVTe8zamrxoUig5k/EoSPcnff4qdmdJv7xmg7jmAL0W
+FUflOQz8Qe6PdGfrpT0xCj+3VTXZu1tUgoIBdGUfSGT1zmwllsgUTBb+8FJBTTjhmtsGafh9D20P
+I4NywiKE4kJI48tpO8tSKKsFDUN7+8E4dW5l5wVKEqPxNq40iHsTANSp+R5LrGg9Sr60RKWGtEVc
+8DwW7Qq3g4AUkZf1lrHVwCx0M2Hc2cJbm9eKrtfo+wyeMJrrGv7VNIUbrfuCzePR91JhU0qks2jQ
+y+jMf32Aqn+pdlGVbKgGyA2ai6yvjbC1//WLX4sgBktilU5CnaBDzr9jCqULBH3+KI+4z09G2RFs
+4teuFJTt8vGG8paJ+laxQ0OQDkjlpsb2RZlSbLVKOAWmORk9zbZVilSllRdGMfMfa3SZNsir4H7j
+WVAjqUiB2hy0KfqgPaly7yFHfC4DE2P2b/16sxMKkD0qqmzShIOWblsy2guz/p0NZPWO91kXBkr9
+iy++sOFb1kyUyD2wqFJYNnvnHoomIkSJKeQD3o7PNvacwEYD9uoYnWmQVHHikvG9oidWDexTFf59
+8Pl48u3r0aPczp6eZr7Ln6F9mc2x+Nnev0hFWtm8CF4eNlClcWEPYO2dyvu/CpJ4JfaEnIx/u6t4
+aqw3lQXohxA4ICbkY8kxNzMw3vJpJg9SOqAJ/cKuYKB5eo7xG+BUssxa5ynFhcwxffr1S84lUoZO
+IFf8ZOZO/wuu7z50Pdo8jHMrYiaC0tsYFRaCk0+/8EvNyx2Lki0kqx4tBA4En+Qjq4Os2YyVdivz
+Vkjwl4YNPEC0MTMzh3LlciEuCkolJb6pFHB0biua+K/fcZrcVRlMFSUPmG+DENc87k6k3mHd0hCE
+wFUJILQAoPTq6gnQnsouPasb1jYR9MOsPiEGfQ+J/VcFVvIF2vFbtv9A+nqhFujMLPKw2Wd4k+e6
+tEkTrY9tejkAr/ZdkUZzkyBy/zHLyiwBUl+0KGaifKsw9Jd9uG242noa5Sf7Cw4L3MyKk1LEklXu
+rL6r4bgX6i3ImPvH6fZyJtftoK7zBfNWQFD+GoW6tkYVd+PT/s3lERMopZN4CYsIpmLoVmJVNReu
+23UjCsIsdZIwDSCJThqKaojJmNNTR+joQ/8TGLClsSbZ/Ojvh6Vjm3ffe6UEFyzD6rIZ+5sWH/Rr
+1GV3Qkkt89AuPKLs6AeFQUFXb117JN867qM9wN2RTekn7lwWf2hkGk2AWUAqpfgDUp76gqWz1P+Y
+6LP0g4fFQ7A+EzYkrMtKLKHk8ZO6eZvoT2wb6aV7lJGdSre3jRm3HZAQK81Du4W3HR03PcyKeXjV
+DyCuPbaBuMaDevyDTKygEOPu3JFmOvqDkDRVxTIS/6AnoBaqIAwq8SVg8wNvENp+Qx4o4+P3UKuD
+tsfvHHhh9gp+mPKsm8Qtv/L58j/7CSRr2VaF3ZrLxOHeY5CCmvinUt2iPN4Ou+arZPeS6eAI+e2x
+CeFOyiO/3jbY2zAFmym13pLBt6m8nB6M6lreO6X1OPVA120PiCIOtipRL9RzU9J915o+OcqHODro
+YsuqxrKiFKfFMrt9DdpQ0kUXotMzGIWLjYj2MsXJkX8MYrkam5MMDwXH74EIHqHuWp7uFZJf/U7S
+9GKtuY+anWsCC0LVQND/MAEffkJh8OGzbigBj34DaJugZ0AHJe7ajn9Ycv5DMIttOt8aSm8RPFVx
+GA266HNBiUAb6bzMU0J3TNA69eaMyu9j/QSeUuJB/pK6g8APjr/3GmPICfF/GabEnKhj5RgEavLH
+1dQ5JCv+zGf+qX5hFd1YUiWdoY/HvXsou5IDSKMTbmVcCyMg+3R8VeMoTCXHGttVC9nrgTogxXfd
+/nvKYGeOEyNEjCSm/DTIiuRYfq+UU4AnxmQ/0gxZB2Be6JFakqPm/DSs+5TGxz38IRlA+dlomVot
+LOassQgBJSURQ3Re6W8q2xbnqc+0uHRFWuQrM8eRVGPj9k0HEQNqSiweyHL5qfis0PJZ5GD8W8EZ
+jga0YzZNSl+iCs79oaIvjMucB1lGKZU0olNZNJHhc3gcDNzB8795G6W7Y67GWmBKgQqhaDdBXRc8
+IrZWozYEfRYChJN72t/xe4iC9DfjT1khXmxsB8RLbcDGOLwAzZfDqKg2Z6MPp/U0IUfqjrGd7s+Q
+L6KScUaNx9Bg+kdUQUkg1afoHuSL5elj6OjIIosWRb1H5qozpzIH+NZQ6p8UdEGUfkw12rkjHiKJ
+m+ufKBHdtIErJIm3RujpA/Yoc6KY2n0UfqZd9daKkVL4B4yWw1Zm7ghmRNR2V3tQt4JPJvBmqA32
+XZfHo5YvDNxzjnev7tfW3bvdj/l+Mwt9d2BOP73JcxXqaIj51WztgTZms8LgJ/X6gPIXoygiZWR0
+Ij1ASzr1ARlm0ncgC72gYVtghx0tzQ1QEDCupPi9oi9HZxZ5CrM1fCwk7czTRAWPSQ4E5dxVnucr
+JNu379thU1F7KgHLgzXWbZQtOoTfvLf5osWc4+wfGhVFMrOD3gilPGwXQK+rPbviKNgiA8wolxqv
+jZvfSWO4AiX4/SDcjhf5qck4yNfbcWuuyHEVCJ91pB7LeG3WMmpsJVcb5hIFwqzOG1+HUtvgt/26
+RXZQZGIOZbIL3fuFdSkiMH1zf10f32DrA/qjqzxiPP5uaEzSP4aT5J7rCJZ78piSaKbI9MubSATB
+ezOWUOa8C9kJzKZ/vRYupWM5vyQg3s++lkTPzkYIpm+tTsNUa3/+pfqg5jye7qoL1K41DrvM9bk5
+3b6u8cPkHbM44YdmYI/ETFyoHFGWunuLcvGL64phaA6n8pHm4Ebfsn3hJVifYCu8H9FCP4oguUBs
+PISV9SdIJGtWY//t5pwANiYWNPo7+lcfy61dq0IJi4DsEjryR9VZu3fKaP71BLybXwEDG5kWFqVD
+LzfUi5Ttowwob7oc2jlCXZBSA4z2NDJyvyBEzMzmA4nirgHtwupnNKaw2MXtQFR4pxUiAu7TsFfM
+a88EoBP5jvbHVR4+CRIl/chAjjqNVYg9rI6KNlPdhQLIBziQ1zFF2Vkx9EECjZydN/fXjJEdrQ/L
+VcngOn3H1TjVDCgR/Vj3Qn36gz3t0szHzr7bIgxFwMdTBnMgyTENlHs1pV6MRTSgqyg0o95Pw/I6
+wABKeSg/xSds0+g9T1blqxbVE66Lxy3zyGeLMTIhppjm0EXNNJ7OqIcTEfHnUlmhyrBwru0AdARf
+nUF+ckPAygW7SkbuAf76grkmoo31faJ9dCP9E1oGWvB0Ea3F5Q+kzoPq2//D1iXFPkX/g9ta1QUu
+/y9HtL5hmBHoXOiKgE5Cf3FN1Jq4b1y2xVOkCG469EsykqeR+qAf6R5UwlXqOqty8fLQpK24yHLS
+czlSXgk+ouaEC0FRXw0qbvU7vLdh2SVN5eyVhf0h7dEO0iPVTqQr4s2uzsXaOb7A++9F3pbJDe2Z
+I6h2vOa1kfxyWsut7yTePnfASnWMxbIaUUeYT1TpOgA0xVhQPhXvZYSzzAAR9xvTFIVZ/+whoz+1
+cfiDxI9lIhJzBA34DkxyaXqoddTRgvxSrlJqUiPtZ48/PwTxxfd/CBWlRBcVBAfIGw0VgbIKBnmX
++MYZFtJePDRhxp6SXQq7Be/h2wMGE9KYTlnk9GqAvLTTd5ORHJiOMekhdxX+El6CDV5I5mSVsMZS
+dbbKw5PE+dePfBjjAhYlW3809O3keUR3yK5/5OYeoWL1U5QkL9MB3wc3rgugZ8ougZubhZOtCGVY
+/U4iDd6JKQYGjPY1LWR2Pw/gKehc3aS6/KuzGZDIQfxXHDbHGevuOudOvaNHx/bEWnWspe1LEFXo
+glvWpOQ1EwvkpwwgVmpOyylZspkRHKjaqflnEu3QGprbp6BApS5TUZzmreBzqMsCgBduGlQfL2rP
+nADomcldvhaptB54cW1QwUJ1cHnmjpXcpu7ZcZk0g2oh3w+dtCdJpnkiN5/cGsr7CXQ7QNmFvfdo
+919LDpQzOkZvaV5h2/RfvnrjivBq0Dtq2lXNzE+KON8aeBKo0qtdO5kMa/ngLHhAkk81FvUvxHYd
+ezOmrDUidSvo1mYN9fk+ouIpjL1v/NZJVnCkOOtUrP+n/IRHB0dYnHm5B52wfJRDiHu=

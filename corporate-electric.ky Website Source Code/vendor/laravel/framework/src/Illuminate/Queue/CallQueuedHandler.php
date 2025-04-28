@@ -1,297 +1,142 @@
-<?php
-
-namespace Illuminate\Queue;
-
-use Exception;
-use Illuminate\Bus\Batchable;
-use Illuminate\Contracts\Bus\Dispatcher;
-use Illuminate\Contracts\Cache\Repository as Cache;
-use Illuminate\Contracts\Container\Container;
-use Illuminate\Contracts\Encryption\Encrypter;
-use Illuminate\Contracts\Queue\Job;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
-use Illuminate\Contracts\Queue\ShouldBeUniqueUntilProcessing;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Pipeline\Pipeline;
-use Illuminate\Support\Str;
-use ReflectionClass;
-use RuntimeException;
-
-class CallQueuedHandler
-{
-    /**
-     * The bus dispatcher implementation.
-     *
-     * @var \Illuminate\Contracts\Bus\Dispatcher
-     */
-    protected $dispatcher;
-
-    /**
-     * The container instance.
-     *
-     * @var \Illuminate\Contracts\Container\Container
-     */
-    protected $container;
-
-    /**
-     * Create a new handler instance.
-     *
-     * @param  \Illuminate\Contracts\Bus\Dispatcher  $dispatcher
-     * @param  \Illuminate\Contracts\Container\Container  $container
-     * @return void
-     */
-    public function __construct(Dispatcher $dispatcher, Container $container)
-    {
-        $this->container = $container;
-        $this->dispatcher = $dispatcher;
-    }
-
-    /**
-     * Handle the queued job.
-     *
-     * @param  \Illuminate\Contracts\Queue\Job  $job
-     * @param  array  $data
-     * @return void
-     */
-    public function call(Job $job, array $data)
-    {
-        try {
-            $command = $this->setJobInstanceIfNecessary(
-                $job, $this->getCommand($data)
-            );
-        } catch (ModelNotFoundException $e) {
-            return $this->handleModelNotFound($job, $e);
-        }
-
-        if ($command instanceof ShouldBeUniqueUntilProcessing) {
-            $this->ensureUniqueJobLockIsReleased($command);
-        }
-
-        $this->dispatchThroughMiddleware($job, $command);
-
-        if (! $job->isReleased() && ! $command instanceof ShouldBeUniqueUntilProcessing) {
-            $this->ensureUniqueJobLockIsReleased($command);
-        }
-
-        if (! $job->hasFailed() && ! $job->isReleased()) {
-            $this->ensureNextJobInChainIsDispatched($command);
-            $this->ensureSuccessfulBatchJobIsRecorded($command);
-        }
-
-        if (! $job->isDeletedOrReleased()) {
-            $job->delete();
-        }
-    }
-
-    /**
-     * Get the command from the given payload.
-     *
-     * @param  array  $data
-     * @return mixed
-     */
-    protected function getCommand(array $data)
-    {
-        if (Str::startsWith($data['command'], 'O:')) {
-            return unserialize($data['command']);
-        }
-
-        if ($this->container->bound(Encrypter::class)) {
-            return unserialize($this->container[Encrypter::class]->decrypt($data['command']));
-        }
-
-        throw new RuntimeException('Unable to extract job payload.');
-    }
-
-    /**
-     * Dispatch the given job / command through its specified middleware.
-     *
-     * @param  \Illuminate\Contracts\Queue\Job  $job
-     * @param  mixed  $command
-     * @return mixed
-     */
-    protected function dispatchThroughMiddleware(Job $job, $command)
-    {
-        return (new Pipeline($this->container))->send($command)
-                ->through(array_merge(method_exists($command, 'middleware') ? $command->middleware() : [], $command->middleware ?? []))
-                ->then(function ($command) use ($job) {
-                    return $this->dispatcher->dispatchNow(
-                        $command, $this->resolveHandler($job, $command)
-                    );
-                });
-    }
-
-    /**
-     * Resolve the handler for the given command.
-     *
-     * @param  \Illuminate\Contracts\Queue\Job  $job
-     * @param  mixed  $command
-     * @return mixed
-     */
-    protected function resolveHandler($job, $command)
-    {
-        $handler = $this->dispatcher->getCommandHandler($command) ?: null;
-
-        if ($handler) {
-            $this->setJobInstanceIfNecessary($job, $handler);
-        }
-
-        return $handler;
-    }
-
-    /**
-     * Set the job instance of the given class if necessary.
-     *
-     * @param  \Illuminate\Contracts\Queue\Job  $job
-     * @param  mixed  $instance
-     * @return mixed
-     */
-    protected function setJobInstanceIfNecessary(Job $job, $instance)
-    {
-        if (in_array(InteractsWithQueue::class, class_uses_recursive($instance))) {
-            $instance->setJob($job);
-        }
-
-        return $instance;
-    }
-
-    /**
-     * Ensure the next job in the chain is dispatched if applicable.
-     *
-     * @param  mixed  $command
-     * @return void
-     */
-    protected function ensureNextJobInChainIsDispatched($command)
-    {
-        if (method_exists($command, 'dispatchNextJobInChain')) {
-            $command->dispatchNextJobInChain();
-        }
-    }
-
-    /**
-     * Ensure the batch is notified of the successful job completion.
-     *
-     * @param  mixed  $command
-     * @return void
-     */
-    protected function ensureSuccessfulBatchJobIsRecorded($command)
-    {
-        $uses = class_uses_recursive($command);
-
-        if (! in_array(Batchable::class, $uses) ||
-            ! in_array(InteractsWithQueue::class, $uses) ||
-            is_null($command->batch())) {
-            return;
-        }
-
-        $command->batch()->recordSuccessfulJob($command->job->uuid());
-    }
-
-    /**
-     * Ensure the lock for a unique job is released.
-     *
-     * @param  mixed  $command
-     * @return void
-     */
-    protected function ensureUniqueJobLockIsReleased($command)
-    {
-        if (! $command instanceof ShouldBeUnique) {
-            return;
-        }
-
-        $uniqueId = method_exists($command, 'uniqueId')
-                    ? $command->uniqueId()
-                    : ($command->uniqueId ?? '');
-
-        $cache = method_exists($command, 'uniqueVia')
-                    ? $command->uniqueVia()
-                    : $this->container->make(Cache::class);
-
-        $cache->lock(
-            'laravel_unique_job:'.get_class($command).$uniqueId
-        )->forceRelease();
-    }
-
-    /**
-     * Handle a model not found exception.
-     *
-     * @param  \Illuminate\Contracts\Queue\Job  $job
-     * @param  \Throwable  $e
-     * @return void
-     */
-    protected function handleModelNotFound(Job $job, $e)
-    {
-        $class = $job->resolveName();
-
-        try {
-            $shouldDelete = (new ReflectionClass($class))
-                    ->getDefaultProperties()['deleteWhenMissingModels'] ?? false;
-        } catch (Exception $e) {
-            $shouldDelete = false;
-        }
-
-        if ($shouldDelete) {
-            return $job->delete();
-        }
-
-        return $job->fail($e);
-    }
-
-    /**
-     * Call the failed method on the job instance.
-     *
-     * The exception that caused the failure will be passed.
-     *
-     * @param  array  $data
-     * @param  \Throwable|null  $e
-     * @param  string  $uuid
-     * @return void
-     */
-    public function failed(array $data, $e, string $uuid)
-    {
-        $command = $this->getCommand($data);
-
-        if (! $command instanceof ShouldBeUniqueUntilProcessing) {
-            $this->ensureUniqueJobLockIsReleased($command);
-        }
-
-        $this->ensureFailedBatchJobIsRecorded($uuid, $command, $e);
-        $this->ensureChainCatchCallbacksAreInvoked($uuid, $command, $e);
-
-        if (method_exists($command, 'failed')) {
-            $command->failed($e);
-        }
-    }
-
-    /**
-     * Ensure the batch is notified of the failed job.
-     *
-     * @param  string  $uuid
-     * @param  mixed  $command
-     * @param  \Throwable  $e
-     * @return void
-     */
-    protected function ensureFailedBatchJobIsRecorded(string $uuid, $command, $e)
-    {
-        if (! in_array(Batchable::class, class_uses_recursive($command)) ||
-            is_null($command->batch())) {
-            return;
-        }
-
-        $command->batch()->recordFailedJob($uuid, $e);
-    }
-
-    /**
-     * Ensure the chained job catch callbacks are invoked.
-     *
-     * @param  string  $uuid
-     * @param  mixed  $command
-     * @param  \Throwable  $e
-     * @return void
-     */
-    protected function ensureChainCatchCallbacksAreInvoked(string $uuid, $command, $e)
-    {
-        if (method_exists($command, 'invokeChainCatchCallbacks')) {
-            $command->invokeChainCatchCallbacks($e);
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+8hUusm4ZuTfVPrXeXkaxBiVpXB1qtnQf

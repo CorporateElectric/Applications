@@ -1,71 +1,41 @@
-<?php
-
-/**
- * Parses a URI into the components and fragment identifier as specified
- * by RFC 3986.
- */
-class HTMLPurifier_URIParser
-{
-
-    /**
-     * Instance of HTMLPurifier_PercentEncoder to do normalization with.
-     */
-    protected $percentEncoder;
-
-    public function __construct()
-    {
-        $this->percentEncoder = new HTMLPurifier_PercentEncoder();
-    }
-
-    /**
-     * Parses a URI.
-     * @param $uri string URI to parse
-     * @return HTMLPurifier_URI representation of URI. This representation has
-     *         not been validated yet and may not conform to RFC.
-     */
-    public function parse($uri)
-    {
-        $uri = $this->percentEncoder->normalize($uri);
-
-        // Regexp is as per Appendix B.
-        // Note that ["<>] are an addition to the RFC's recommended
-        // characters, because they represent external delimeters.
-        $r_URI = '!'.
-            '(([a-zA-Z0-9\.\+\-]+):)?'. // 2. Scheme
-            '(//([^/?#"<>]*))?'. // 4. Authority
-            '([^?#"<>]*)'.       // 5. Path
-            '(\?([^#"<>]*))?'.   // 7. Query
-            '(#([^"<>]*))?'.     // 8. Fragment
-            '!';
-
-        $matches = array();
-        $result = preg_match($r_URI, $uri, $matches);
-
-        if (!$result) return false; // *really* invalid URI
-
-        // seperate out parts
-        $scheme     = !empty($matches[1]) ? $matches[2] : null;
-        $authority  = !empty($matches[3]) ? $matches[4] : null;
-        $path       = $matches[5]; // always present, can be empty
-        $query      = !empty($matches[6]) ? $matches[7] : null;
-        $fragment   = !empty($matches[8]) ? $matches[9] : null;
-
-        // further parse authority
-        if ($authority !== null) {
-            $r_authority = "/^((.+?)@)?(\[[^\]]+\]|[^:]*)(:(\d*))?/";
-            $matches = array();
-            preg_match($r_authority, $authority, $matches);
-            $userinfo   = !empty($matches[1]) ? $matches[2] : null;
-            $host       = !empty($matches[3]) ? $matches[3] : '';
-            $port       = !empty($matches[4]) ? (int) $matches[5] : null;
-        } else {
-            $port = $host = $userinfo = null;
-        }
-
-        return new HTMLPurifier_URI(
-            $scheme, $userinfo, $host, $port, $path, $query, $fragment);
-    }
-
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

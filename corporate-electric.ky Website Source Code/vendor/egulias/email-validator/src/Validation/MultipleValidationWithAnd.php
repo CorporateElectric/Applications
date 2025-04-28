@@ -1,124 +1,59 @@
-<?php
-
-namespace Egulias\EmailValidator\Validation;
-
-use Egulias\EmailValidator\EmailLexer;
-use Egulias\EmailValidator\Validation\Exception\EmptyValidationList;
-
-class MultipleValidationWithAnd implements EmailValidation
-{
-    /**
-     * If one of validations gets failure skips all succeeding validation.
-     * This means MultipleErrors will only contain a single error which first found.
-     */
-    const STOP_ON_ERROR = 0;
-
-    /**
-     * All of validations will be invoked even if one of them got failure.
-     * So MultipleErrors will contain all causes.
-     */
-    const ALLOW_ALL_ERRORS = 1;
-
-    /**
-     * @var EmailValidation[]
-     */
-    private $validations = [];
-
-    /**
-     * @var array
-     */
-    private $warnings = [];
-
-    /**
-     * @var MultipleErrors|null
-     */
-    private $error;
-
-    /**
-     * @var int
-     */
-    private $mode;
-
-    /**
-     * @param EmailValidation[] $validations The validations.
-     * @param int               $mode        The validation mode (one of the constants).
-     */
-    public function __construct(array $validations, $mode = self::ALLOW_ALL_ERRORS)
-    {
-        if (count($validations) == 0) {
-            throw new EmptyValidationList();
-        }
-
-        $this->validations = $validations;
-        $this->mode = $mode;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function isValid($email, EmailLexer $emailLexer)
-    {
-        $result = true;
-        $errors = [];
-        foreach ($this->validations as $validation) {
-            $emailLexer->reset();
-            $validationResult = $validation->isValid($email, $emailLexer);
-            $result = $result && $validationResult;
-            $this->warnings = array_merge($this->warnings, $validation->getWarnings());
-            $errors = $this->addNewError($validation->getError(), $errors);
-
-            if ($this->shouldStop($result)) {
-                break;
-            }
-        }
-
-        if (!empty($errors)) {
-            $this->error = new MultipleErrors($errors);
-        }
-
-        return $result;
-    }
-
-    /**
-     * @param \Egulias\EmailValidator\Exception\InvalidEmail|null $possibleError
-     * @param \Egulias\EmailValidator\Exception\InvalidEmail[] $errors
-     *
-     * @return \Egulias\EmailValidator\Exception\InvalidEmail[]
-     */
-    private function addNewError($possibleError, array $errors)
-    {
-        if (null !== $possibleError) {
-            $errors[] = $possibleError;
-        }
-
-        return $errors;
-    }
-
-    /**
-     * @param bool $result
-     *
-     * @return bool
-     */
-    private function shouldStop($result)
-    {
-        return !$result && $this->mode === self::STOP_ON_ERROR;
-    }
-
-    /**
-     * Returns the validation errors.
-     *
-     * @return MultipleErrors|null
-     */
-    public function getError()
-    {
-        return $this->error;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getWarnings()
-    {
-        return $this->warnings;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

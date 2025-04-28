@@ -1,246 +1,91 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\Util;
-
-/**
- * A docblock representation.
- *
- * Based on PHP-DocBlock-Parser by Paul Scott:
- *
- * {@link http://www.github.com/icio/PHP-DocBlock-Parser}
- *
- * @author Paul Scott <paul@duedil.com>
- * @author Justin Hileman <justin@justinhileman.info>
- */
-class Docblock
-{
-    /**
-     * Tags in the docblock that have a whitespace-delimited number of parameters
-     * (such as `@param type var desc` and `@return type desc`) and the names of
-     * those parameters.
-     *
-     * @var array
-     */
-    public static $vectors = [
-        'throws' => ['type', 'desc'],
-        'param'  => ['type', 'var', 'desc'],
-        'return' => ['type', 'desc'],
-    ];
-
-    protected $reflector;
-
-    /**
-     * The description of the symbol.
-     *
-     * @var string
-     */
-    public $desc;
-
-    /**
-     * The tags defined in the docblock.
-     *
-     * The array has keys which are the tag names (excluding the @) and values
-     * that are arrays, each of which is an entry for the tag.
-     *
-     * In the case where the tag name is defined in {@see DocBlock::$vectors} the
-     * value within the tag-value array is an array in itself with keys as
-     * described by {@see DocBlock::$vectors}.
-     *
-     * @var array
-     */
-    public $tags;
-
-    /**
-     * The entire DocBlock comment that was parsed.
-     *
-     * @var string
-     */
-    public $comment;
-
-    /**
-     * Docblock constructor.
-     *
-     * @param \Reflector $reflector
-     */
-    public function __construct(\Reflector $reflector)
-    {
-        $this->reflector = $reflector;
-        $this->setComment($reflector->getDocComment());
-    }
-
-    /**
-     * Set and parse the docblock comment.
-     *
-     * @param string $comment The docblock
-     */
-    protected function setComment($comment)
-    {
-        $this->desc = '';
-        $this->tags = [];
-        $this->comment = $comment;
-
-        $this->parseComment($comment);
-    }
-
-    /**
-     * Find the length of the docblock prefix.
-     *
-     * @param array $lines
-     *
-     * @return int Prefix length
-     */
-    protected static function prefixLength(array $lines)
-    {
-        // find only lines with interesting things
-        $lines = \array_filter($lines, function ($line) {
-            return \substr($line, \strspn($line, "* \t\n\r\0\x0B"));
-        });
-
-        // if we sort the lines, we only have to compare two items
-        \sort($lines);
-
-        $first = \reset($lines);
-        $last = \end($lines);
-
-        // Special case for single-line comments
-        if (\count($lines) === 1) {
-            return \strspn($first, "* \t\n\r\0\x0B");
-        }
-
-        // find the longest common substring
-        $count = \min(\strlen($first), \strlen($last));
-        for ($i = 0; $i < $count; $i++) {
-            if ($first[$i] !== $last[$i]) {
-                return $i;
-            }
-        }
-
-        return $count;
-    }
-
-    /**
-     * Parse the comment into the component parts and set the state of the object.
-     *
-     * @param string $comment The docblock
-     */
-    protected function parseComment($comment)
-    {
-        // Strip the opening and closing tags of the docblock
-        $comment = \substr($comment, 3, -2);
-
-        // Split into arrays of lines
-        $comment = \array_filter(\preg_split('/\r?\n\r?/', $comment));
-
-        // Trim asterisks and whitespace from the beginning and whitespace from the end of lines
-        $prefixLength = self::prefixLength($comment);
-        $comment = \array_map(function ($line) use ($prefixLength) {
-            return \rtrim(\substr($line, $prefixLength));
-        }, $comment);
-
-        // Group the lines together by @tags
-        $blocks = [];
-        $b = -1;
-        foreach ($comment as $line) {
-            if (self::isTagged($line)) {
-                $b++;
-                $blocks[] = [];
-            } elseif ($b === -1) {
-                $b = 0;
-                $blocks[] = [];
-            }
-            $blocks[$b][] = $line;
-        }
-
-        // Parse the blocks
-        foreach ($blocks as $block => $body) {
-            $body = \trim(\implode("\n", $body));
-
-            if ($block === 0 && !self::isTagged($body)) {
-                // This is the description block
-                $this->desc = $body;
-            } else {
-                // This block is tagged
-                $tag = \substr(self::strTag($body), 1);
-                $body = \ltrim(\substr($body, \strlen($tag) + 2));
-
-                if (isset(self::$vectors[$tag])) {
-                    // The tagged block is a vector
-                    $count = \count(self::$vectors[$tag]);
-                    if ($body) {
-                        $parts = \preg_split('/\s+/', $body, $count);
-                    } else {
-                        $parts = [];
-                    }
-
-                    // Default the trailing values
-                    $parts = \array_pad($parts, $count, null);
-
-                    // Store as a mapped array
-                    $this->tags[$tag][] = \array_combine(self::$vectors[$tag], $parts);
-                } else {
-                    // The tagged block is only text
-                    $this->tags[$tag][] = $body;
-                }
-            }
-        }
-    }
-
-    /**
-     * Whether or not a docblock contains a given @tag.
-     *
-     * @param string $tag The name of the @tag to check for
-     *
-     * @return bool
-     */
-    public function hasTag($tag)
-    {
-        return \is_array($this->tags) && \array_key_exists($tag, $this->tags);
-    }
-
-    /**
-     * The value of a tag.
-     *
-     * @param string $tag
-     *
-     * @return array
-     */
-    public function tag($tag)
-    {
-        return $this->hasTag($tag) ? $this->tags[$tag] : null;
-    }
-
-    /**
-     * Whether or not a string begins with a @tag.
-     *
-     * @param string $str
-     *
-     * @return bool
-     */
-    public static function isTagged($str)
-    {
-        return isset($str[1]) && $str[0] === '@' && !\preg_match('/[^A-Za-z]/', $str[1]);
-    }
-
-    /**
-     * The tag at the beginning of a string.
-     *
-     * @param string $str
-     *
-     * @return string|null
-     */
-    public static function strTag($str)
-    {
-        if (\preg_match('/^@[a-z0-9_]+/', $str, $matches)) {
-            return $matches[0];
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

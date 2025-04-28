@@ -1,68 +1,42 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Predis\Protocol\Text\Handler;
-
-use Predis\CommunicationException;
-use Predis\Connection\CompositeConnectionInterface;
-use Predis\Protocol\ProtocolException;
-
-/**
- * Handler for the multibulk response type in the standard Redis wire protocol.
- * It returns multibulk responses as PHP arrays.
- *
- * @link http://redis.io/topics/protocol
- *
- * @author Daniele Alessandri <suppakilla@gmail.com>
- */
-class MultiBulkResponse implements ResponseHandlerInterface
-{
-    /**
-     * {@inheritdoc}
-     */
-    public function handle(CompositeConnectionInterface $connection, $payload)
-    {
-        $length = (int) $payload;
-
-        if ("$length" !== $payload) {
-            CommunicationException::handle(new ProtocolException(
-                $connection, "Cannot parse '$payload' as a valid length of a multi-bulk response."
-            ));
-        }
-
-        if ($length === -1) {
-            return;
-        }
-
-        $list = array();
-
-        if ($length > 0) {
-            $handlersCache = array();
-            $reader = $connection->getProtocol()->getResponseReader();
-
-            for ($i = 0; $i < $length; ++$i) {
-                $header = $connection->readLine();
-                $prefix = $header[0];
-
-                if (isset($handlersCache[$prefix])) {
-                    $handler = $handlersCache[$prefix];
-                } else {
-                    $handler = $reader->getHandler($prefix);
-                    $handlersCache[$prefix] = $handler;
-                }
-
-                $list[$i] = $handler->handle($connection, substr($header, 1));
-            }
-        }
-
-        return $list;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

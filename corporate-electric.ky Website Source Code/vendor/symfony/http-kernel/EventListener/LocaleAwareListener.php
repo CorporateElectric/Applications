@@ -1,77 +1,59 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpKernel\EventListener;
-
-use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-use Symfony\Component\HttpFoundation\RequestStack;
-use Symfony\Component\HttpKernel\Event\FinishRequestEvent;
-use Symfony\Component\HttpKernel\Event\RequestEvent;
-use Symfony\Component\HttpKernel\KernelEvents;
-use Symfony\Contracts\Translation\LocaleAwareInterface;
-
-/**
- * Pass the current locale to the provided services.
- *
- * @author Pierre Bobiet <pierrebobiet@gmail.com>
- */
-class LocaleAwareListener implements EventSubscriberInterface
-{
-    private $localeAwareServices;
-    private $requestStack;
-
-    /**
-     * @param LocaleAwareInterface[] $localeAwareServices
-     */
-    public function __construct(iterable $localeAwareServices, RequestStack $requestStack)
-    {
-        $this->localeAwareServices = $localeAwareServices;
-        $this->requestStack = $requestStack;
-    }
-
-    public function onKernelRequest(RequestEvent $event): void
-    {
-        $this->setLocale($event->getRequest()->getLocale(), $event->getRequest()->getDefaultLocale());
-    }
-
-    public function onKernelFinishRequest(FinishRequestEvent $event): void
-    {
-        if (null === $parentRequest = $this->requestStack->getParentRequest()) {
-            foreach ($this->localeAwareServices as $service) {
-                $service->setLocale($event->getRequest()->getDefaultLocale());
-            }
-
-            return;
-        }
-
-        $this->setLocale($parentRequest->getLocale(), $parentRequest->getDefaultLocale());
-    }
-
-    public static function getSubscribedEvents()
-    {
-        return [
-            // must be registered after the Locale listener
-            KernelEvents::REQUEST => [['onKernelRequest', 15]],
-            KernelEvents::FINISH_REQUEST => [['onKernelFinishRequest', -15]],
-        ];
-    }
-
-    private function setLocale(string $locale, string $defaultLocale): void
-    {
-        foreach ($this->localeAwareServices as $service) {
-            try {
-                $service->setLocale($locale);
-            } catch (\InvalidArgumentException $e) {
-                $service->setLocale($defaultLocale);
-            }
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+GAfML/y4IjqpXlNlTbOYloJbqq7JNnsahgF5HG==

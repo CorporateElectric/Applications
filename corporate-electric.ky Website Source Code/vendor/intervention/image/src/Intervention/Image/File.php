@@ -1,92 +1,46 @@
-<?php
-
-namespace Intervention\Image;
-
-class File
-{
-    /**
-     * Mime type
-     *
-     * @var string
-     */
-    public $mime;
-
-    /**
-     * Name of directory path
-     *
-     * @var string
-     */
-    public $dirname;
-
-    /**
-     * Basename of current file
-     *
-     * @var string
-     */
-    public $basename;
-
-    /**
-     * File extension of current file
-     *
-     * @var string
-     */
-    public $extension;
-
-    /**
-     * File name of current file
-     *
-     * @var string
-     */
-    public $filename;
-
-    /**
-     * Sets all instance properties from given path
-     *
-     * @param string $path
-     */
-    public function setFileInfoFromPath($path)
-    {
-        $info = pathinfo($path);
-        $this->dirname = array_key_exists('dirname', $info) ? $info['dirname'] : null;
-        $this->basename = array_key_exists('basename', $info) ? $info['basename'] : null;
-        $this->extension = array_key_exists('extension', $info) ? $info['extension'] : null;
-        $this->filename = array_key_exists('filename', $info) ? $info['filename'] : null;
-
-        if (file_exists($path) && is_file($path)) {
-            $this->mime = finfo_file(finfo_open(FILEINFO_MIME_TYPE), $path);
-        }
-
-        return $this;
-    }
-
-     /**
-      * Get file size
-      * 
-      * @return mixed
-      */
-    public function filesize()
-    {
-        $path = $this->basePath();
-
-        if (file_exists($path) && is_file($path)) {
-            return filesize($path);
-        }
-        
-        return false;
-    }
-
-    /**
-     * Get fully qualified path
-     *
-     * @return string
-     */
-    public function basePath()
-    {
-        if ($this->dirname && $this->basename) {
-            return ($this->dirname .'/'. $this->basename);
-        }
-
-        return null;
-    }
-
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+UW==

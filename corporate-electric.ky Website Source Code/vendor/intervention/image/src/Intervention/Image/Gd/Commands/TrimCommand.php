@@ -1,176 +1,100 @@
-<?php
-
-namespace Intervention\Image\Gd\Commands;
-
-use Intervention\Image\Gd\Color;
-
-class TrimCommand extends ResizeCommand
-{
-    /**
-     * Trims away parts of an image
-     *
-     * @param  \Intervention\Image\Image $image
-     * @return boolean
-     */
-    public function execute($image)
-    {
-        $base = $this->argument(0)->type('string')->value();
-        $away = $this->argument(1)->value();
-        $tolerance = $this->argument(2)->type('numeric')->value(0);
-        $feather = $this->argument(3)->type('numeric')->value(0);
-
-        $width = $image->getWidth();
-        $height = $image->getHeight();
-
-        // default values
-        $checkTransparency = false;
-
-        // define borders to trim away
-        if (is_null($away)) {
-            $away = ['top', 'right', 'bottom', 'left'];
-        } elseif (is_string($away)) {
-            $away = [$away];
-        }
-
-        // lower border names
-        foreach ($away as $key => $value) {
-            $away[$key] = strtolower($value);
-        }
-
-        // define base color position
-        switch (strtolower($base)) {
-            case 'transparent':
-            case 'trans':
-                $checkTransparency = true;
-                $base_x = 0;
-                $base_y = 0;
-                break;
-
-            case 'bottom-right':
-            case 'right-bottom':
-                $base_x = $width - 1;
-                $base_y = $height - 1;
-                break;
-
-            default:
-            case 'top-left':
-            case 'left-top':
-                $base_x = 0;
-                $base_y = 0;
-                break;
-        }
-
-        // pick base color
-        if ($checkTransparency) {
-            $color = new Color; // color will only be used to compare alpha channel
-        } else {
-            $color = $image->pickColor($base_x, $base_y, 'object');
-        }
-
-        $top_x = 0;
-        $top_y = 0;
-        $bottom_x = $width;
-        $bottom_y = $height;
-
-        // search upper part of image for colors to trim away
-        if (in_array('top', $away)) {
-
-            for ($y=0; $y < ceil($height/2); $y++) {
-                for ($x=0; $x < $width; $x++) {
-
-                    $checkColor = $image->pickColor($x, $y, 'object');
-
-                    if ($checkTransparency) {
-                        $checkColor->r = $color->r;
-                        $checkColor->g = $color->g;
-                        $checkColor->b = $color->b;
-                    }
-
-                    if ($color->differs($checkColor, $tolerance)) {
-                        $top_y = max(0, $y - $feather);
-                        break 2;
-                    }
-
-                }
-            }
-
-        }
-
-        // search left part of image for colors to trim away
-        if (in_array('left', $away)) {
-
-            for ($x=0; $x < ceil($width/2); $x++) {
-                for ($y=$top_y; $y < $height; $y++) {
-
-                    $checkColor = $image->pickColor($x, $y, 'object');
-
-                    if ($checkTransparency) {
-                        $checkColor->r = $color->r;
-                        $checkColor->g = $color->g;
-                        $checkColor->b = $color->b;
-                    }
-
-                    if ($color->differs($checkColor, $tolerance)) {
-                        $top_x = max(0, $x - $feather);
-                        break 2;
-                    }
-
-                }
-            }
-
-        }
-
-        // search lower part of image for colors to trim away
-        if (in_array('bottom', $away)) {
-
-            for ($y=($height-1); $y >= floor($height/2)-1; $y--) {
-                for ($x=$top_x; $x < $width; $x++) {
-
-                    $checkColor = $image->pickColor($x, $y, 'object');
-
-                    if ($checkTransparency) {
-                        $checkColor->r = $color->r;
-                        $checkColor->g = $color->g;
-                        $checkColor->b = $color->b;
-                    }
-
-                    if ($color->differs($checkColor, $tolerance)) {
-                        $bottom_y = min($height, $y+1 + $feather);
-                        break 2;
-                    }
-
-                }
-            }
-
-        }
-
-        // search right part of image for colors to trim away
-        if (in_array('right', $away)) {
-
-            for ($x=($width-1); $x >= floor($width/2)-1; $x--) {
-                for ($y=$top_y; $y < $bottom_y; $y++) {
-
-                    $checkColor = $image->pickColor($x, $y, 'object');
-
-                    if ($checkTransparency) {
-                        $checkColor->r = $color->r;
-                        $checkColor->g = $color->g;
-                        $checkColor->b = $color->b;
-                    }
-
-                    if ($color->differs($checkColor, $tolerance)) {
-                        $bottom_x = min($width, $x+1 + $feather);
-                        break 2;
-                    }
-
-                }
-            }
-
-        }
-
-
-        // trim parts of image
-        return $this->modify($image, 0, 0, $top_x, $top_y, ($bottom_x-$top_x), ($bottom_y-$top_y), ($bottom_x-$top_x), ($bottom_y-$top_y));
-
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

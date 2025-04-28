@@ -1,102 +1,59 @@
-<?php
-
-declare(strict_types=1);
-
-/**
- * This file is part of phpDocumentor.
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @link      http://phpdoc.org
- */
-
-namespace phpDocumentor\Reflection\DocBlock\Tags;
-
-use phpDocumentor\Reflection\DocBlock\Description;
-use phpDocumentor\Reflection\DocBlock\DescriptionFactory;
-use phpDocumentor\Reflection\Types\Context as TypeContext;
-use Webmozart\Assert\Assert;
-use function preg_match;
-
-/**
- * Reflection class for a {@}since tag in a Docblock.
- */
-final class Since extends BaseTag implements Factory\StaticMethod
-{
-    /** @var string */
-    protected $name = 'since';
-
-    /**
-     * PCRE regular expression matching a version vector.
-     * Assumes the "x" modifier.
-     */
-    public const REGEX_VECTOR = '(?:
-        # Normal release vectors.
-        \d\S*
-        |
-        # VCS version vectors. Per PHPCS, they are expected to
-        # follow the form of the VCS name, followed by ":", followed
-        # by the version vector itself.
-        # By convention, popular VCSes like CVS, SVN and GIT use "$"
-        # around the actual version vector.
-        [^\s\:]+\:\s*\$[^\$]+\$
-    )';
-
-    /** @var string|null The version vector. */
-    private $version;
-
-    public function __construct(?string $version = null, ?Description $description = null)
-    {
-        Assert::nullOrNotEmpty($version);
-
-        $this->version     = $version;
-        $this->description = $description;
-    }
-
-    public static function create(
-        ?string $body,
-        ?DescriptionFactory $descriptionFactory = null,
-        ?TypeContext $context = null
-    ) : ?self {
-        if (empty($body)) {
-            return new static();
-        }
-
-        $matches = [];
-        if (!preg_match('/^(' . self::REGEX_VECTOR . ')\s*(.+)?$/sux', $body, $matches)) {
-            return null;
-        }
-
-        Assert::notNull($descriptionFactory);
-
-        return new static(
-            $matches[1],
-            $descriptionFactory->create($matches[2] ?? '', $context)
-        );
-    }
-
-    /**
-     * Gets the version section of the tag.
-     */
-    public function getVersion() : ?string
-    {
-        return $this->version;
-    }
-
-    /**
-     * Returns a string representation for this tag.
-     */
-    public function __toString() : string
-    {
-        if ($this->description) {
-            $description = $this->description->render();
-        } else {
-            $description = '';
-        }
-
-        $version = (string) $this->version;
-
-        return $version . ($description !== '' ? ($version !== '' ? ' ' : '') . $description : '');
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

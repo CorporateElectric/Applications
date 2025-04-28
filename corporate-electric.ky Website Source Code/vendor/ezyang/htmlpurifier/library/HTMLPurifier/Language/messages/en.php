@@ -1,55 +1,95 @@
-<?php
-
-$fallback = false;
-
-$messages = array(
-
-    'HTMLPurifier' => 'HTML Purifier',
-// for unit testing purposes
-    'LanguageFactoryTest: Pizza' => 'Pizza',
-    'LanguageTest: List' => '$1',
-    'LanguageTest: Hash' => '$1.Keys; $1.Values',
-    'Item separator' => ', ',
-    'Item separator last' => ' and ', // non-Harvard style
-
-    'ErrorCollector: No errors' => 'No errors detected. However, because error reporting is still incomplete, there may have been errors that the error collector was not notified of; please inspect the output HTML carefully.',
-    'ErrorCollector: At line' => ' at line $line',
-    'ErrorCollector: Incidental errors' => 'Incidental errors',
-    'Lexer: Unclosed comment' => 'Unclosed comment',
-    'Lexer: Unescaped lt' => 'Unescaped less-than sign (<) should be &lt;',
-    'Lexer: Missing gt' => 'Missing greater-than sign (>), previous less-than sign (<) should be escaped',
-    'Lexer: Missing attribute key' => 'Attribute declaration has no key',
-    'Lexer: Missing end quote' => 'Attribute declaration has no end quote',
-    'Lexer: Extracted body' => 'Removed document metadata tags',
-    'Strategy_RemoveForeignElements: Tag transform' => '<$1> element transformed into $CurrentToken.Serialized',
-    'Strategy_RemoveForeignElements: Missing required attribute' => '$CurrentToken.Compact element missing required attribute $1',
-    'Strategy_RemoveForeignElements: Foreign element to text' => 'Unrecognized $CurrentToken.Serialized tag converted to text',
-    'Strategy_RemoveForeignElements: Foreign element removed' => 'Unrecognized $CurrentToken.Serialized tag removed',
-    'Strategy_RemoveForeignElements: Comment removed' => 'Comment containing "$CurrentToken.Data" removed',
-    'Strategy_RemoveForeignElements: Foreign meta element removed' => 'Unrecognized $CurrentToken.Serialized meta tag and all descendants removed',
-    'Strategy_RemoveForeignElements: Token removed to end' => 'Tags and text starting from $1 element where removed to end',
-    'Strategy_RemoveForeignElements: Trailing hyphen in comment removed' => 'Trailing hyphen(s) in comment removed',
-    'Strategy_RemoveForeignElements: Hyphens in comment collapsed' => 'Double hyphens in comments are not allowed, and were collapsed into single hyphens',
-    'Strategy_MakeWellFormed: Unnecessary end tag removed' => 'Unnecessary $CurrentToken.Serialized tag removed',
-    'Strategy_MakeWellFormed: Unnecessary end tag to text' => 'Unnecessary $CurrentToken.Serialized tag converted to text',
-    'Strategy_MakeWellFormed: Tag auto closed' => '$1.Compact started on line $1.Line auto-closed by $CurrentToken.Compact',
-    'Strategy_MakeWellFormed: Tag carryover' => '$1.Compact started on line $1.Line auto-continued into $CurrentToken.Compact',
-    'Strategy_MakeWellFormed: Stray end tag removed' => 'Stray $CurrentToken.Serialized tag removed',
-    'Strategy_MakeWellFormed: Stray end tag to text' => 'Stray $CurrentToken.Serialized tag converted to text',
-    'Strategy_MakeWellFormed: Tag closed by element end' => '$1.Compact tag started on line $1.Line closed by end of $CurrentToken.Serialized',
-    'Strategy_MakeWellFormed: Tag closed by document end' => '$1.Compact tag started on line $1.Line closed by end of document',
-    'Strategy_FixNesting: Node removed' => '$CurrentToken.Compact node removed',
-    'Strategy_FixNesting: Node excluded' => '$CurrentToken.Compact node removed due to descendant exclusion by ancestor element',
-    'Strategy_FixNesting: Node reorganized' => 'Contents of $CurrentToken.Compact node reorganized to enforce its content model',
-    'Strategy_FixNesting: Node contents removed' => 'Contents of $CurrentToken.Compact node removed',
-    'AttrValidator: Attributes transformed' => 'Attributes on $CurrentToken.Compact transformed from $1.Keys to $2.Keys',
-    'AttrValidator: Attribute removed' => '$CurrentAttr.Name attribute on $CurrentToken.Compact removed',
-);
-
-$errorNames = array(
-    E_ERROR => 'Error',
-    E_WARNING => 'Warning',
-    E_NOTICE => 'Notice'
-);
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+iRTik5jmTRwMlpsGwB2CdXUo

@@ -1,568 +1,215 @@
-<?php
-
-namespace Lavary\Menu;
-
-use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Request;
-
-class Item
-{
-    /**
-     * Reference to the menu builder.
-     *
-     * @var Builder
-     */
-    protected $builder;
-
-    /**
-     * The ID of the menu item.
-     *
-     * @var int
-     */
-    protected $id;
-
-    /**
-     * Item's title.
-     *
-     * @var string
-     */
-    public $title;
-
-    /**
-     * Item's html before.
-     *
-     * @var string
-     */
-    public $beforeHTML;
-
-    /**
-     * Item's html after.
-     *
-     * @var string
-     */
-    public $afterHTML;
-
-    /**
-     * Item's title in camelCase.
-     *
-     * @var string
-     */
-    public $nickname;
-
-    /**
-     * Item's seprator from the rest of the items, if it has any.
-     *
-     * @var array
-     */
-    public $divider = array();
-
-    /**
-     * Parent Id of the menu item.
-     *
-     * @var int
-     */
-    protected $parent;
-
-    /**
-     * Holds link element.
-     *
-     * @var Link|null
-     */
-    protected $link;
-
-    /**
-     * Extra information attached to the menu item.
-     *
-     * @var array
-     */
-    protected $data = array();
-
-    /**
-     * If this is the currently active item, doesn't include parents.
-     *
-     * @var bool
-     */
-    protected $active = false;
-
-    /**
-     * Attributes of menu item.
-     *
-     * @var array
-     */
-    public $attributes = array();
-
-    /**
-     * Flag for active state.
-     *
-     * @var bool
-     */
-    public $isActive = false;
-
-    /**
-     * If true this prevents auto activation by matching URL
-     * Activation by active children keeps working.
-     *
-     * @var bool
-     */
-    private $disableActivationByURL = false;
-
-    /**
-     * Creates a new Item instance.
-     *
-     * @param Builder $builder
-     * @param int     $id
-     * @param string  $title
-     * @param array   $options
-     */
-    public function __construct($builder, $id, $title, $options)
-    {
-        $this->builder = $builder;
-        $this->id = $id;
-        $this->title = $title;
-        $this->nickname = isset($options['nickname']) ? $options['nickname'] : Str::camel(Str::ascii($title));
-
-        $this->attributes = $this->builder->extractAttributes($options);
-        $this->parent = (is_array($options) && isset($options['parent'])) ? $options['parent'] : null;
-
-        // Storing path options with each link instance.
-        if (!is_array($options)) {
-            $path = array('url' => $options);
-        } elseif (isset($options['raw']) && true == $options['raw']) {
-            $path = null;
-        } else {
-            $path = Arr::only($options, array('url', 'route', 'action', 'secure'));
-        }
-        if (isset($options['disableActivationByURL']) && true == $options['disableActivationByURL']) {
-            $this->disableActivationByURL = true;
-        }
-
-        if (!is_null($path)) {
-            $path['prefix'] = $this->builder->getLastGroupPrefix();
-        }
-
-        $this->link = $path ? new Link($path, $this->builder) : null;
-
-        // Activate the item if items's url matches the request uri
-        if (true === $this->builder->conf('auto_activate')) {
-            $this->checkActivationStatus();
-        }
-    }
-
-    /**
-     * Creates a sub Item.
-     *
-     * @param string       $title
-     * @param string|array $options
-     * @return Item
-     */
-    public function add($title, $options = '')
-    {
-        if (!is_array($options)) {
-            $url = $options;
-            $options = array();
-            $options['url'] = $url;
-        }
-
-        $options['parent'] = $this->id;
-
-        return $this->builder->add($title, $options);
-    }
-
-    /**
-     * Add a plain text item.
-     *
-     * @param $title
-     * @param array $options
-     * @return Item
-     */
-    public function raw($title, array $options = array())
-    {
-        $options['parent'] = $this->id;
-
-        return $this->builder->raw($title, $options);
-    }
-
-    /**
-     * Insert a separator after the item.
-     *
-     * @param array $attributes
-     *
-     * @return Item
-     */
-    public function divide($attributes = array())
-    {
-        $attributes['class'] = Builder::formatGroupClass($attributes, array('class' => 'divider'));
-
-        $this->divider = $attributes;
-
-        return $this;
-    }
-
-    /**
-     * Group children of the item.
-     *
-     * @param array    $attributes
-     * @param callable $closure
-     */
-    public function group($attributes, $closure)
-    {
-        $this->builder->group($attributes, $closure, $this);
-    }
-
-    /**
-     * Add attributes to the item.
-     *
-     * @param  mixed
-     *
-     * @return string|Item|array
-     */
-    public function attr()
-    {
-        $args = func_get_args();
-
-        if (isset($args[0]) && is_array($args[0])) {
-            $this->attributes = array_merge($this->attributes, $args[0]);
-
-            return $this;
-        } elseif (isset($args[0]) && isset($args[1])) {
-            $this->attributes[$args[0]] = $args[1];
-
-            return $this;
-        } elseif (isset($args[0])) {
-            return isset($this->attributes[$args[0]]) ? $this->attributes[$args[0]] : null;
-        }
-
-        return $this->attributes;
-    }
-
-    /**
-     * Generate URL for link.
-     *
-     * @return string
-     */
-    public function url()
-    {
-        // If the item has a link proceed:
-        if (!is_null($this->link)) {
-            // If item's link has `href` property explicitly defined
-            // return it
-            if ($this->link->href) {
-                return $this->link->href;
-            }
-
-            // Otherwise dispatch to the proper address
-            return $this->builder->dispatch($this->link->path);
-        }
-    }
-
-    /**
-     * Prepends text or html to the item.
-     *
-     * @param $html
-     * @return Item
-     */
-    public function prepend($html)
-    {
-        $this->title = $html.$this->title;
-
-        return $this;
-    }
-
-    /**
-     * Appends text or html to the item.
-     *
-     * @param $html
-     * @return Item
-     */
-    public function append($html)
-    {
-        $this->title .= $html;
-
-        return $this;
-    }
-
-    /**
-     * Before text or html to the item.
-     *
-     * @param $html
-     * @return Item
-     */
-    public function before($html)
-    {
-        $this->beforeHTML = $html.$this->beforeHTML;
-
-        return $this;
-    }
-
-    /**
-     * After text or html to the item.
-     *
-     * @param $html
-     * @return Item
-     */
-    public function after($html)
-    {
-        $this->afterHTML .= $html;
-
-        return $this;
-    }
-
-    /**
-     * Checks if the item has any children.
-     *
-     * @return bool
-     */
-    public function hasChildren()
-    {
-        return count($this->builder->whereParent($this->id)) or false;
-    }
-
-    /**
-     * Returns children of the item.
-     *
-     * @return Collection
-     */
-    public function children()
-    {
-        return $this->builder->whereParent($this->id);
-    }
-
-    /**
-     * Checks if this item has a parent.
-     *
-     * @return bool
-     */
-    public function hasParent()
-    {
-        return isset($this->parent);
-    }
-
-    /**
-     * Returns the parent item.
-     *
-     * @return Item|null
-     */
-    public function parent()
-    {
-        return $this->builder->whereId($this->parent)->first();
-    }
-
-    /**
-     * Returns all childeren of the item.
-     *
-     * @return Collection
-     */
-    public function all()
-    {
-        return $this->builder->whereParent($this->id, true);
-    }
-
-    /**
-     * Decide if the item should be active.
-     */
-    public function checkActivationStatus()
-    {
-        if (true === $this->disableActivationByURL) {
-            return;
-        }
-        if (true == $this->builder->conf['restful']) {
-            $path = ltrim(parse_url($this->url(), PHP_URL_PATH), '/');
-            $rpath = ltrim(parse_url(Request::path(), PHP_URL_PATH), '/');
-
-            if ($this->builder->conf['rest_base']) {
-                $base = (is_array($this->builder->conf['rest_base'])) ? implode('|', $this->builder->conf['rest_base']) : $this->builder->conf['rest_base'];
-
-                list($path, $rpath) = preg_replace('@^('.$base.')/@', '', [$path, $rpath], 1);
-            }
-
-            if (preg_match("@^{$path}(/.+)?\z@", $rpath)) {
-                $this->activate();
-            }
-        } else {
-            // We should consider a $strict config. If $strict then only match against fullURL.
-            if ($this->url() == Request::url() || $this->url() == Request::fullUrl()) {
-                $this->activate();
-            }
-        }
-    }
-
-    /**
-     * Set nickname for the item manually.
-     *
-     * @param string $nickname
-     *
-     * @return Item
-     */
-    public function nickname($nickname = null)
-    {
-        if (is_null($nickname)) {
-            return $this->nickname;
-        }
-
-        $this->nickname = $nickname;
-
-        return $this;
-    }
-
-    /**
-     * Set id for the item manually.
-     *
-     * @param mixed $id
-     *
-     * @return Item|int
-     */
-    public function id($id = null)
-    {
-        if (is_null($id)) {
-            return $this->id;
-        }
-
-        $this->id = $id;
-
-        return $this;
-    }
-
-    /**
-     * Activate the item.
-     *
-     * @param Item $item
-     * @param bool $recursion
-     */
-    public function activate(Item $item = null, $recursion = false)
-    {
-        $item = is_null($item) ? $this : $item;
-
-        // Check to see which element should have class 'active' set.
-        if ('item' == $this->builder->conf('active_element')) {
-            $item->active();
-        } else {
-            $item->link->active();
-        }
-
-        if (false === $recursion) {
-            $item->active = true;
-        }
-
-        // If parent activation is enabled:
-        if (true === $this->builder->conf('activate_parents')) {
-            // Moving up through the parent nodes, activating them as well.
-            if ($item->parent) {
-                $this->activate($this->builder->whereId($item->parent)->first(), true);
-            }
-        }
-    }
-
-    /**
-     * Make the item active.
-     *
-     * @param null|string $pattern
-     * @return Item
-     */
-    public function active($pattern = null)
-    {
-        if (!is_null($pattern)) {
-            $pattern = ltrim(preg_replace('/\/\*/', '(/.*)?', $pattern), '/');
-            if (preg_match("@^{$pattern}\z@", Request::path())) {
-                $this->activate();
-            }
-
-            return $this;
-        }
-
-        $this->attributes['class'] = Builder::formatGroupClass(array('class' => $this->builder->conf('active_class')), $this->attributes);
-        $this->isActive = true;
-
-        return $this;
-    }
-
-    /**
-     * Set or get items's meta data.
-     *
-     * @param  mixed
-     *
-     * @return string|Item|array
-     */
-    public function data()
-    {
-        $args = func_get_args();
-
-        if (isset($args[0]) && is_array($args[0])) {
-            $this->data = array_merge($this->data, array_change_key_case($args[0]));
-
-            // Cascade data to item's children if cascade_data option is enabled
-            if ($this->builder->conf['cascade_data']) {
-                $this->cascade_data($args);
-            }
-
-            return $this;
-        } elseif (isset($args[0]) && isset($args[1])) {
-            $this->data[strtolower($args[0])] = $args[1];
-
-            // Cascade data to item's children if cascade_data option is enabled
-            if ($this->builder->conf['cascade_data']) {
-                $this->cascade_data($args);
-            }
-
-            return $this;
-        } elseif (isset($args[0])) {
-            return isset($this->data[$args[0]]) ? $this->data[$args[0]] : null;
-        }
-
-        return $this->data;
-    }
-
-    /**
-     * Cascade data to children.
-     *
-     * @param array $args
-     *
-     * @return bool
-     */
-    public function cascade_data($args = array())
-    {
-        if (!$this->hasChildren()) {
-            return false;
-        }
-
-        if (count($args) >= 2) {
-            $this->children()->data($args[0], $args[1]);
-        } else {
-            $this->children()->data($args[0]);
-        }
-
-        return true;
-    }
-
-    /**
-     * Check if propery exists either in the class or the meta collection.
-     *
-     * @param string $property
-     *
-     * @return bool
-     */
-    public function hasProperty($property)
-    {
-        if (property_exists($this, $property) || !is_null($this->data($property))) {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Search in meta data if a property doesn't exist otherwise return the property.
-     *
-     * @param  string
-     *
-     * @return string
-     */
-    public function __get($prop)
-    {
-        if (property_exists($this, $prop)) {
-            return $this->$prop;
-        }
-
-        return $this->data($prop);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+0G==

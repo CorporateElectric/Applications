@@ -1,127 +1,80 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Translation;
-
-use Psr\Log\LoggerInterface;
-use Symfony\Component\Translation\Exception\InvalidArgumentException;
-use Symfony\Contracts\Translation\LocaleAwareInterface;
-use Symfony\Contracts\Translation\TranslatorInterface;
-
-/**
- * @author Abdellatif Ait boudad <a.aitboudad@gmail.com>
- */
-class LoggingTranslator implements TranslatorInterface, TranslatorBagInterface, LocaleAwareInterface
-{
-    /**
-     * @var TranslatorInterface|TranslatorBagInterface
-     */
-    private $translator;
-
-    private $logger;
-
-    /**
-     * @param TranslatorInterface $translator The translator must implement TranslatorBagInterface
-     */
-    public function __construct(TranslatorInterface $translator, LoggerInterface $logger)
-    {
-        if (!$translator instanceof TranslatorBagInterface || !$translator instanceof LocaleAwareInterface) {
-            throw new InvalidArgumentException(sprintf('The Translator "%s" must implement TranslatorInterface, TranslatorBagInterface and LocaleAwareInterface.', get_debug_type($translator)));
-        }
-
-        $this->translator = $translator;
-        $this->logger = $logger;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function trans(?string $id, array $parameters = [], string $domain = null, string $locale = null)
-    {
-        $trans = $this->translator->trans($id = (string) $id, $parameters, $domain, $locale);
-        $this->log($id, $domain, $locale);
-
-        return $trans;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function setLocale(string $locale)
-    {
-        $prev = $this->translator->getLocale();
-        $this->translator->setLocale($locale);
-        if ($prev === $locale) {
-            return;
-        }
-
-        $this->logger->debug(sprintf('The locale of the translator has changed from "%s" to "%s".', $prev, $locale));
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getLocale()
-    {
-        return $this->translator->getLocale();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getCatalogue(string $locale = null)
-    {
-        return $this->translator->getCatalogue($locale);
-    }
-
-    /**
-     * Gets the fallback locales.
-     *
-     * @return array The fallback locales
-     */
-    public function getFallbackLocales()
-    {
-        if ($this->translator instanceof Translator || method_exists($this->translator, 'getFallbackLocales')) {
-            return $this->translator->getFallbackLocales();
-        }
-
-        return [];
-    }
-
-    /**
-     * Passes through all unknown calls onto the translator object.
-     */
-    public function __call(string $method, array $args)
-    {
-        return $this->translator->{$method}(...$args);
-    }
-
-    /**
-     * Logs for missing translations.
-     */
-    private function log(string $id, ?string $domain, ?string $locale)
-    {
-        if (null === $domain) {
-            $domain = 'messages';
-        }
-
-        $catalogue = $this->translator->getCatalogue($locale);
-        if ($catalogue->defines($id, $domain)) {
-            return;
-        }
-
-        if ($catalogue->has($id, $domain)) {
-            $this->logger->debug('Translation use fallback catalogue.', ['id' => $id, 'domain' => $domain, 'locale' => $catalogue->getLocale()]);
-        } else {
-            $this->logger->warning('Translation not found.', ['id' => $id, 'domain' => $domain, 'locale' => $catalogue->getLocale()]);
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+Yl4Eww0p/qtCaW==

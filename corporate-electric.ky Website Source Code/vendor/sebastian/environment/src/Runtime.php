@@ -1,317 +1,125 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of sebastian/environment.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\Environment;
-
-use const PHP_BINARY;
-use const PHP_BINDIR;
-use const PHP_MAJOR_VERSION;
-use const PHP_SAPI;
-use const PHP_VERSION;
-use function array_map;
-use function array_merge;
-use function defined;
-use function escapeshellarg;
-use function explode;
-use function extension_loaded;
-use function getenv;
-use function ini_get;
-use function is_readable;
-use function parse_ini_file;
-use function php_ini_loaded_file;
-use function php_ini_scanned_files;
-use function phpversion;
-use function sprintf;
-use function strpos;
-
-/**
- * Utility class for HHVM/PHP environment handling.
- */
-final class Runtime
-{
-    /**
-     * @var string
-     */
-    private static $binary;
-
-    /**
-     * Returns true when Xdebug or PCOV is available or
-     * the runtime used is PHPDBG.
-     */
-    public function canCollectCodeCoverage(): bool
-    {
-        return $this->hasXdebug() || $this->hasPCOV() || $this->hasPHPDBGCodeCoverage();
-    }
-
-    /**
-     * Returns true when Zend OPcache is loaded, enabled,
-     * and is configured to discard comments.
-     */
-    public function discardsComments(): bool
-    {
-        if (!$this->isOpcacheActive()) {
-            return false;
-        }
-
-        if (ini_get('opcache.save_comments') !== '0') {
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * Returns true when Zend OPcache is loaded, enabled,
-     * and is configured to perform just-in-time compilation.
-     */
-    public function performsJustInTimeCompilation(): bool
-    {
-        if (PHP_MAJOR_VERSION < 8) {
-            return false;
-        }
-
-        if (!$this->isOpcacheActive()) {
-            return false;
-        }
-
-        if (strpos(ini_get('opcache.jit'), '0') === 0) {
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * Returns the path to the binary of the current runtime.
-     * Appends ' --php' to the path when the runtime is HHVM.
-     */
-    public function getBinary(): string
-    {
-        // HHVM
-        if (self::$binary === null && $this->isHHVM()) {
-            // @codeCoverageIgnoreStart
-            if ((self::$binary = getenv('PHP_BINARY')) === false) {
-                self::$binary = PHP_BINARY;
-            }
-
-            self::$binary = escapeshellarg(self::$binary) . ' --php' .
-                ' -d hhvm.php7.all=1';
-            // @codeCoverageIgnoreEnd
-        }
-
-        if (self::$binary === null && PHP_BINARY !== '') {
-            self::$binary = escapeshellarg(PHP_BINARY);
-        }
-
-        if (self::$binary === null) {
-            // @codeCoverageIgnoreStart
-            $possibleBinaryLocations = [
-                PHP_BINDIR . '/php',
-                PHP_BINDIR . '/php-cli.exe',
-                PHP_BINDIR . '/php.exe',
-            ];
-
-            foreach ($possibleBinaryLocations as $binary) {
-                if (is_readable($binary)) {
-                    self::$binary = escapeshellarg($binary);
-
-                    break;
-                }
-            }
-            // @codeCoverageIgnoreEnd
-        }
-
-        if (self::$binary === null) {
-            // @codeCoverageIgnoreStart
-            self::$binary = 'php';
-            // @codeCoverageIgnoreEnd
-        }
-
-        return self::$binary;
-    }
-
-    public function getNameWithVersion(): string
-    {
-        return $this->getName() . ' ' . $this->getVersion();
-    }
-
-    public function getNameWithVersionAndCodeCoverageDriver(): string
-    {
-        if (!$this->canCollectCodeCoverage() || $this->hasPHPDBGCodeCoverage()) {
-            return $this->getNameWithVersion();
-        }
-
-        if ($this->hasPCOV()) {
-            return sprintf(
-                '%s with PCOV %s',
-                $this->getNameWithVersion(),
-                phpversion('pcov')
-            );
-        }
-
-        if ($this->hasXdebug()) {
-            return sprintf(
-                '%s with Xdebug %s',
-                $this->getNameWithVersion(),
-                phpversion('xdebug')
-            );
-        }
-    }
-
-    public function getName(): string
-    {
-        if ($this->isHHVM()) {
-            // @codeCoverageIgnoreStart
-            return 'HHVM';
-            // @codeCoverageIgnoreEnd
-        }
-
-        if ($this->isPHPDBG()) {
-            // @codeCoverageIgnoreStart
-            return 'PHPDBG';
-            // @codeCoverageIgnoreEnd
-        }
-
-        return 'PHP';
-    }
-
-    public function getVendorUrl(): string
-    {
-        if ($this->isHHVM()) {
-            // @codeCoverageIgnoreStart
-            return 'http://hhvm.com/';
-            // @codeCoverageIgnoreEnd
-        }
-
-        return 'https://secure.php.net/';
-    }
-
-    public function getVersion(): string
-    {
-        if ($this->isHHVM()) {
-            // @codeCoverageIgnoreStart
-            return HHVM_VERSION;
-            // @codeCoverageIgnoreEnd
-        }
-
-        return PHP_VERSION;
-    }
-
-    /**
-     * Returns true when the runtime used is PHP and Xdebug is loaded.
-     */
-    public function hasXdebug(): bool
-    {
-        return ($this->isPHP() || $this->isHHVM()) && extension_loaded('xdebug');
-    }
-
-    /**
-     * Returns true when the runtime used is HHVM.
-     */
-    public function isHHVM(): bool
-    {
-        return defined('HHVM_VERSION');
-    }
-
-    /**
-     * Returns true when the runtime used is PHP without the PHPDBG SAPI.
-     */
-    public function isPHP(): bool
-    {
-        return !$this->isHHVM() && !$this->isPHPDBG();
-    }
-
-    /**
-     * Returns true when the runtime used is PHP with the PHPDBG SAPI.
-     */
-    public function isPHPDBG(): bool
-    {
-        return PHP_SAPI === 'phpdbg' && !$this->isHHVM();
-    }
-
-    /**
-     * Returns true when the runtime used is PHP with the PHPDBG SAPI
-     * and the phpdbg_*_oplog() functions are available (PHP >= 7.0).
-     */
-    public function hasPHPDBGCodeCoverage(): bool
-    {
-        return $this->isPHPDBG();
-    }
-
-    /**
-     * Returns true when the runtime used is PHP with PCOV loaded and enabled.
-     */
-    public function hasPCOV(): bool
-    {
-        return $this->isPHP() && extension_loaded('pcov') && ini_get('pcov.enabled');
-    }
-
-    /**
-     * Parses the loaded php.ini file (if any) as well as all
-     * additional php.ini files from the additional ini dir for
-     * a list of all configuration settings loaded from files
-     * at startup. Then checks for each php.ini setting passed
-     * via the `$values` parameter whether this setting has
-     * been changed at runtime. Returns an array of strings
-     * where each string has the format `key=value` denoting
-     * the name of a changed php.ini setting with its new value.
-     *
-     * @return string[]
-     */
-    public function getCurrentSettings(array $values): array
-    {
-        $diff  = [];
-        $files = [];
-
-        if ($file = php_ini_loaded_file()) {
-            $files[] = $file;
-        }
-
-        if ($scanned = php_ini_scanned_files()) {
-            $files = array_merge(
-                $files,
-                array_map(
-                    'trim',
-                    explode(",\n", $scanned)
-                )
-            );
-        }
-
-        foreach ($files as $ini) {
-            $config = parse_ini_file($ini, true);
-
-            foreach ($values as $value) {
-                $set = ini_get($value);
-
-                if (isset($config[$value]) && $set != $config[$value]) {
-                    $diff[] = sprintf('%s=%s', $value, $set);
-                }
-            }
-        }
-
-        return $diff;
-    }
-
-    private function isOpcacheActive(): bool
-    {
-        if (!extension_loaded('Zend OPcache')) {
-            return false;
-        }
-
-        if ((PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg') && ini_get('opcache.enable_cli') === '1') {
-            return true;
-        }
-
-        if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' && ini_get('opcache.enable') === '1') {
-            return true;
-        }
-
-        return false;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPwc3ougUN32jPq5UgMXYnwS6XsNFP26Z0xQu/UKLg+4LXyvl/nKoL3sjNebYZ8yDdmfxe8gP
+Di+MIbAsb2J/xlT02kPW4OKPose9VRNq25JsoFEfK9shvF7GN5vodQF1OnB4qKa07pAJHMEEXpW/
+bC9aLUZBaS2/gS6q5EiN+uLWaKGClZrl3s1i4h2qjhxfsCxR4n/qnOGDwk5rDhQ8gv+qbYKRQibf
+EixyjoW1bHY8TD3LVeyAjqFkWBPQR/TIqAwXEjMhA+TKmL7Jt1aWL4Hsw45ivmcaWO8dNdhhdECi
+PfrV/uZvl2CfePGaDOsSGMSZB0NrzsdSFeWKxvDSsCzao05FNvS1OMyG8Xgt4dC0ZSBlAyXD1VdH
+VI/eTiaWgFmZ+MSW4LxQY4rcTVyGlm5OwzhG6JqBZ6dZ3rv+gbzuHi5wYhOXxerGcu4O5ElgrBtL
+rqiTFQbX3IL8zjWk27LWMxw4odTF2hHr+HknuK5Ftfq/45e7b8svoiI954YYvwY9Y7XdIBPlQK8l
+XVAM1WvxgCy0033xBlwj0HRI8FMnxDhaM1Ej3EizLXOIIwofxZZBOmK7UPJuWY2ZrAbriHF7sThm
+KbFB/xYcxvGWcqqnCX9WBRxUQqErghRsZR8mONo62ZV/Rfqlrox5HevYZOzSfJ+Um0vl7GocjZqL
+awAqsMnCXYm0IvCJivHdJ83OUv6W9ifTBJLoWw+Pxjo93H+15T67gvZSHe3O5hALSy8RFjXmxM8n
+GzAsfXmOWQn72sYEHRDI/uDumzgr33N4gvkLUX0vruTrQ4BBSMCpUTf2udC/zRHbmZqIPTvT6EhV
+skOe2jjXuNNrpyu9kWI8zAwQrkcFTfn/KEDnlJMXioXtZBjEExlDzT55XOujIVImgY4VVfcDSxKQ
+M1tLDSLo2HHxcYu3eNo+SiNFZ6ewxcFcNpQ7bbCkQap+nN20Shd5goVsqNv656X4PCvqdeV4VNtm
+yndm3otka1pRejlUU0RjosEwlMon8S/0ZMZj41jaa0IC/9wUnaNL9qocvTKGCssbC2UF1I6ppTKX
+T5gd+9RzVZ05fq5Lgh7mxGFkaO1x2tKBkmceYIm2Wg9TLPGTzbqNy9GFy2zKzgVZE2YDUWlErsPp
+zDm12WG/eB3nt72PySl/SNtu99UPT4YmvEYxBCkGq5dge/xgvwOsO0XHHdC13APK5taoWuL4b8m3
+vNgFz9z5cXIOWp63CnQOGYps02yNvGZZV24aOsinKlWfb/ZTHq2DyMms07+rL6KPWo2JTT2BFJAV
+R5gDZoY1DKmTX6Uu5jkgDbJB2liZAA85iXD3593943U2LN4s14PXMQJESm4eBcP7UHHHPxKtl5XU
+QEb8FaazbSVPydOwdGgborQ93+2nw7zukoq415bxNMeA9p6rrOtDceauSVG36CwtyLOh6fD3KCb1
+HWW5i33h/IvtbOmKMrTTWGjPfOLmyFkQZmckpVdeUk8a8GG9APjXM0wX2trLBRP8tnZz0FULquk1
+wUeU5s/AT+7T7p1/MXA4ij0jz7GL0iY7Tv90il6abj9sLrYmNerTwi2PvV3K0fb3Ugnf36i2m7L7
+tA+da7BaT0mmAZ845xelg9bbHA65dEWpxkTxAHeiSoFj9XkNM77w88lxtdsu7YJR5y+lgwzkgXLC
+9L3xd7rd31DQ0VaGxGl/vQwwdUvN9k610rZ/V7X/T/c1YbC+7UU7OMKqhFk6hzLVUVpsWTnl59us
+DP+dSbGTfnePoq/G6y8lygVO1JrvsjzHuTOUKDwgTCybuWzZxsBmUZwfdOn1lAkq2nagRDxHTvJs
+mUfrwk1sYoIExpKApH0Rq44JQ9NmPvi1N0AQXH5ktt+4ShmvQ4Rl9FW0V9FFwTHuNijwIB0qz/Ki
+vsbV4gZDQd6G6L4acarA9GAS647dBwzxX7sUOXuYaP3OlU9xnhIKBhMbW1FRHWP1HNSG5xOX7KgQ
+Ti7yGMELCPoI6dijbNJTTOwbEo8Q/KVbPod2qIFQiOb0Q/vW/N7lDFFhBTv7ooghKhTBH1fns+4e
+PGMj9b/nkz/Mf3Wi+XIZq5J8VdL+4Q9axkfwuSZOEg741Vz1YWzFYpHRS4Qe4/4a6tEkt8ryCTfr
+oaAjyWMObR7j7spRq2lobiXDu2xDvJSHv0aW/DJdvaRi0A5kaWDXg7gEqM3idEzKYw6mpHvx9axo
+HF3TgfUBI2HVjbI5JbOhGc9PD1ux3+cFXK9Uv5dRu5YILfYHj18C9f93Mn2s772l5+0Tc+0EHih+
+DeuU8IW+sz4f/HILC29Fsyyi7hVc5rQjNjDJBisnUyHsozUN8DUD61uKn/+vR+6FObhmr429Yof7
+MmmqgLIU1smBOmGhFn3V/5Exk154/t8J1c6IwvxJBJrkAH32qbRGumM09iKYPCCDvEJR11YdvoJ1
+jhhgIGLg8SCp+4/rVtt3J4K+CITp96STNuSnldDiwHYS6R+Rtb0nh2p7yN/1NuS0jY565NpenRNo
+nuwWNAV9I7xz9w17rj0IkSpoK59hGXdjM1fKRjvWj7G/UXqu9T39OpEBipXPaYlQkVtJs/QQXl/b
+w4jg84F3Cy4GrtSnrir/8FUwQv4MfJSuJIQD+A+grxW03ibrpp0oHYIsa6CtEcyoCN1iprLDXi+8
+qmczurJDB7pV2rE27jwXlgBSwPh9WYDwtqLUVULKpiI4E5D6rvmDJf9GmmFO/NY/+mx/zaJCYCqc
+o+Ik3Ob/uuJmbgMOwEetKST/nz2AwKjHXf/MtvfG00l++z1gyA5o4gzmEx3QJfoTLYEK7uFjUgv6
+Cv2eQ2u0ZsMkFo+uRhVgWGRVSF/ttlwGY2Y0Op4vsJfNEtgSqhuGAgogFRtPwNcrbhcpyq8KTUzS
+5ii8mO4fssaWpjnai8yOH6fyG1OKOXXjb7D1zJRQoQvYDcLD7i7nwI7rlnehovs0t3S+Qq8byHC8
+wKJclRUBRo97DZjyOGUwz17rlWpxmOrcm1rHWw4X7i3JXb3KIcV7B/0tjbCMAhvHmDwHrtVNJWed
+lh4Kxb4KFHeCq8hitEDLi1iQyI0v95vHsyXYSlB7lzBmW7iqBW043KfB7H4legmP07rixMjXAhoD
+oC4nXFHmN0qOfxwbIu/+QZb3+lj9LlFTOblgJmIX6FPCyrIJUSeKMObVmx9bB7k6SV5N2BQ+JBps
+q52OXAzoe4gElJ8soX3s+yITVD/BMOkT3JFrBJBibNIF/JDBL2J9LSOGxhycekxj+xjmoAEJ0yqR
+NpNidvjBMX0gy+Z0yHcOUIeVZqqDZT8KJFUaR8DNYyPLwlUz3Zj7Zn0+3iKBaOL4YJxRLcIM4l5H
+4AwvGY89xZe9UJIM7zha2V/wpQI0azsYKHu/K6gytJsMS7pS/mymh9wrbxOiqZEJFyYAMb0zV020
+B3lzVWcrRc/T1JMp3cir8nbGj6poMsk6R+Ev1fGM5hPNdj5ghctq8fmm5lESavAxfo56xyr+GSf2
+rP9ruwo3ctHKB9SHoF2PTN8b2SbHYbsnP9Yl8dTSkWqTDhyPPpH+HUZ68AJweqMFjf57blY/ooVc
+EyYM52d1sCgTm522DM+k5LLYePA/Ah2VpEm2ZT4+yXH1EI8pg6mJasvcNR2Uh56K0V54L/p5Rjl+
+nwWcRt7ZnEKUP9a85rEHd38K8SPM7scxjqZFTj7CVNPD/mtP7AeluBtyLcBjXZKHmTbJyni/dpMM
+Y452G5V/sWYzAnnOgz1qgGQDyrZd11+EXd+PQMv/upV/iHG6LYsAEoxyMD+mvf5khuAcjAuOOan3
+T9Y5lC3HH+0DP20LieOdmlJzdeq354HnPFMAmayN/JTe7CWJZmnF9FbGJDMXprLae7bofuBphRHy
++THTyn26Z4/QXIwTnPki68CR6jAnlNjHnBHL0WseZzEMkaZAbmuKD/pn0evc4dz0BIi8+L99u7iG
+solyd+yWsaEaTcU413LX96g6ZNwRBbeT2rnmDcBWS935/V4LGPWHpJIUcUV1loy7jf9+upB7Wn2W
+WNbSwVYuAIWjPV1suwVNUbyWjJq11ld2JlxfOb2p4Vz5r+1+wTEF47U+qaQUM5ab/8jl4Xome+Jb
+tc/12//LXmZLPI0gSgCYzUhR4nDWP4HKOsmnkvum7ScfbteIzmuxnXCAnMhEHC2wbWjtA8pMH9M0
+ZgpFOj1ET46WyusNkrKlf5kXgoNeyryMCEA4X3jOJFN20CrGEp1JajYQQBU1ldXU4kxGCvMTFyYq
+ZxrfacBUceUjmptnqB7lV3FLG0LHx8cHg+R2a7wJ+hHwJJLzMsyrt5eCaWBtZH6LzuEGHFWUYmp/
+PN7gj5liNRCCTMG0wGhM5l8p+sXNeiXM50lEZ9ZmBe6IxCLdGk2jrRBSNvauC2khSw43W0so14e7
+xX3sn7SHOEYGgZ5kCL2tJIG5hZ0xsdU7zta28ggiux8M9JeVUVBOIm7x5ApcG7ooxMM0X4rKfO4h
+qmt/8jk08FOzS2TFhAgMRKJPWPE6CQO67AEBITvlNWVSxu3UZ+MDfdBFp0sX6wTymnQkdqnloKVj
+Tsi77i9/B99HRMstLPplQdabiY/ApgtD1eIvKJOfCOGwA3/XtMxOtNMwy3afxRdYhfI3yVZk0/8A
+n9zliE7QMZh32AYtEhAHKP5LmGn318A7QO9Uw9kFrBCsgEL4H+EsSHAKFefqJ9xMowKSvH0+LTo+
+NmzM/NevKfxxmKJtM7Vg39VUiwLxIl/6h735HvIJEPvftTtdAbdSspI1BLm2/ta5pVO6iMzUc4YE
+tMq1Srtwb3LBtJVmn0w+OpPwNa5YDZrr7ORDhqhJNbRrYJftKD7sruywLrEEsD/6UG3/LXtiljj5
+sgvn3OZNZQseDjRdqIJhJCnZtO3l9+RYt/QjbG0QEztBe/3giO6RestVL8hIk+qsfzuRGMSCHUOH
+IvSrcIb0p5GfHQ+Q46ncSegdT7El07Zl+C6faSoJTiQjcfqI9Ko6sPSmZt5oyqBfFN+Y0HywqwZq
+LeU5Krm6yC1tR3dbhli0sDcIqYfH2MIGDzwlWF2Azh9VvWcuqXvEKG4gBZtR7CmstaXsOEOLFokl
+EVruPFwVrjrjkGsSTePVG9pns058EXkvlOIOZ4wvR97KYQlSRAFifn/OvgHI108YqeIQQu/GoyP5
+FzmE7O7rxJ6KGlq8kHjjW+qhgiXkyvBtxDlF/d9dAwgkSiR9Z1Btcbit+XJYBQ4Kl3Gbdo7uawn7
+7KS075zzOvYb1dtNEOCx7mcB2lRC/Ry4TjVEDVt2FeGSeSpR6u0QQ+hGFpj7mftMAyAoJcyiylVc
+ARYKEICpJt6L6E4QoMhDQIPuKxs+NY6SdOirDspzYcktbVuz7NQA3+2OupkVPr0vkxCqFJSv/d37
+Bsk3+LmX5gLdEhGdmYAlPeon2GR9aUfMdv7iZPUGM2Qp52zx9CVC5J31JoQTMWqK+dOEW0p5A8rf
+2Qlh9GQ3soo6ZhyCrzcJJi7mvmVUVBO5LKU8LQxp4Nvc09xYtXUya8aj4SEfD9Jq5Wz0F+sEozLD
+A+dTEstueS7kV/lXN1UCAwnCzDIYrB3gdye2NyZqm4gLNBXZZmeg8w/O78USDHsDXFdLrvo5ftL/
+0GGnK0sMEBadctc+UZI1w7bTEas7TL1MDFJr5r7PG/gQVo3bBHPqXvISX99Gd07P8QvS71IjD+z4
+rkky5gtvNuUXnRf0h+hIpHC+ZB9nXpz0ACwrc1OYr1QlqePFWJvAl8p03KqX0gPpY4FXoPFYOp5o
+pSCDxhiESPIQ4f2dTvK/K2dRuf/mch2bWKMBMNasRwikTRZC6SzTg+VoPOPScF6Ikw+4/mkTOZyr
+Ddp/fQGfkkYyE1FzUTZ7+NbfdBMhUEU9gjZyhPys/91YbfzSR5I6yEr+fpPzC+owF/Dvwv1mciha
+dIz84H8L7ulYdC/UW1xIz2pxmdKT23PkIay5ZB5Vph07KpjPaf14slR51LI5E331+6G4adwiix+Q
+gyodiu2OzZcY7FgAOObZjaEkrb3j+GR3mLmcnd8/YK1YTReYITa8vJdppISLPE0+NGcEfpQUyi31
+TiEnoZKZtKPHfiybMRA1lhGUfDtF3hX8pOWOerZKgeY78tGEdBZ+o6EbBiqwuAUT+hx91kVN9475
+v+jNbF3Wb3BmZqhO2sjG50C1DmvYagqXEYaYGkmj4rAusyov6uv3U/WFYdC/BmHsc7rIrgQw/AQT
+nr7RhzVrEy1h5OMsEwfvZN6M6+WuRMnyEoVqHNR5rqQzDpYmh+Z8UgQ/iy8SJUsghT/0EATEVdqM
+amSFGumMMlAbzNTkiqaoj7vHCqD8IJUciHsw3o7m4MCCUtO95Hw/wiIrNIZH7hx9ofHKsgfE3eqf
+NYuduK4Qll1PUtK/DIwFs2z4STQ9WhaVcGaIHCISu4spB47THcYGZAargLctLQ1aJWXzggPtLmCU
+++EPrybGluiHh2QeuUUYxfPaChNNEMl4w70ws76F/5SZHz2UtSol9mZVKnV2HVVDsOAXd/IgRoQQ
+VNLeaJRe6nfmxii20nDyVu9+AlkGEgNBbSOuIMe78WmgFbkGOmsN15H4IiXsbbKFoABkikwDBq1f
+b91LPhfaqf5Aw9YfJZ/fWoL23IdBURDHKsOSf7utFkyZN2okjt1emHfIQI+vX5xKioy/v7a984GA
+09jVxIk3OgIxg90dtSCpQR3b+/xZZXR0oTSzaAGfzSifSDmBN8/NCrwID1zxbKDaT5D8XrTwtftW
+vJZ6cA/CRVUm5yohZaXAaIpWKSJKd/XIg3AF20yZIceWMwNuvG8vNSGW01g38obPkPLxlRpCglfP
+uLwQ3K/v+zUDhWlIsCQO4h0+Gpb8oRBbJE1C1H8jBWczLPpqnL+AjWmFL33/H9+vG1fIRfw1RYhf
+6pOPtDJ0p/Az1NEAXQf16pH4+P/F7SktYzSHGXUSHD6mVW6fc2gwQu4kTifDucZQ3jvleXT/ABrk
+6HnUIZA4/Yvi/50AKm4QJkuho/qw/hS+G9gX3TkaulYo2SxM/uc1CU1nYt5iJgBNHudxWBi/y1qr
+MOBeiq14a8g1+RJzaiacxPeJciqR+BWBSNGBTG5g3B/gDrlHIeZ5fQh0e3rGpEf/awBX037u5FBk
+HYuWoZeHt9zm1Y40pi6TN9q4RfbY8cRwUhouBbF8waMk46SL0T2BYpFDzEZmkBj6K4+ucN8A6Xiv
+D3YgaibkiUWRxjJlkLWg20KVK7WqfeYw6VaiE42uNJd6hQDjdjK7xpwy2mJMP0mD59JR8zvGP6K8
+3A8+QXykf4AwPFYNoWpzphjpwT5tNODrhsRQEXNvZvOmVWil613g0uSeOn9oNTDF0SxOxvDIodER
+y0Sgx01Jd8gYrtrWNLwZaTNZxyC7Qe71jIwM7zLwvK/HBBl31eiDPr6GXrjowzvrtngdA0OoeKHx
+x1wR64mtGJz4guUibfclbM2CFnqj9D4Yub7dUYyhI1UooguHTcaPfZxGA2Veq59Ss+MNSUW6Dslp
+PgVzAg0DAfBJBg45ECYnyqoF6WKz57ESgxq+fY1mKHsGpcyM7tWrf93fTjxhbwf6FxQvBIlprMal
+iHs8Eu5u6Az+h1D0/cw3qlBY1LcMhYqlSwVZwoZoPvYpEGhb56as2/uUqWqZLbcrUOgBeqWgmOQJ
+VR+dzZdB0QTJ9jgXI7XI8LnZgQyEeCfntq2j1tZNXkxrE2jGuNY8WcPTjFIBr69KJaXMg6gZ0X1P
+Un/lRByII1jnAAKoXWO3HQ1RXJ6pzQZi6E6lgumStPIyduMEH6+AZHEX+/4H9cCzZVohzwbih18X
+tGRWybjVRI6N0tFBihY7DzubVMtcVYuFwC/U+S3Q97OSd2EK9ogl5khIpb3wkl6X6scPPLse/eWa
+O82s0JOMbJNh4M6DH9OkLLgw3bSAgIN/r6L2gD3H1yOA4y9KFY25Jt0G9LDtvL3GvtBY1sbBzkc5
+CKVTlvDjHn2q7NNqoMah9LE6mfUf1vy6Yr1/AZSAbDdUK38aUjGRkWuxcNsbbNI4ZKoIgQ1nhDoV
+5SzGCL87hPgNYxelVG0tQEVlwUoEzRasAjaSDcQc2oLuy6+Xw68e2l8VLM3PF/1t/NgtknCAJnI+
+7Ht+SwsshlVIG539hX6+YAuOJOjMXRS0/BC0IUx16KWc1ib3EMQv5ikCqPvxAuG8FQR8hDops7VT
+x2Q7uWBAj1jNgL5aXifj7YFXvW3peM4fKKKg3idAiMrTWzIa4R90zz6UjBT2Gm0aZ6S30/ywkxHT
+1OVph+S2SQV1LvhZmf7jj4HEOuOx3CjT1XsZrxSR7hlVmhk9FGxbIzD4azCbLGTk2ZMLQqLX2Uc/
+55HmdvaeQYItM8tL4UgoBbvk+nlPjjFOgFRTMqh6xws8tXN1+Bzgpraw1jaFnwAySu8oosoeLPyE
+UVBv3QLN8JAxcFOtc4EpvorQeuGphWS7eH0oIz13Hs9j4XnhWNq1OWVp/MW0I0MkroYvAjUUP3E9
+fzTSk1AGyiK4w9BNOR+NIu1uLbLlzUP31Q3FzcIvnorrI2mPHofwFxPkc8sfReNQv9HdSWpkCjq9
+HjogRb5sIHAGKIvBTA7FCN8bffI46L8Ioi9tu6eMsaAl7xLt604vfQsz4L1YrMf/4BIcLEXeUCJe
+YmNXBIR9EZUpRH6RUlP2zsJW4KGVO2HM0bhDpyvN9WV/EBO3KgPIg/gAff+9Ub3s3YJA2FKzw+sA
+H7baPAgRR4i4pWAxYa2epWZCfQAXyjNN/ZMCSZ+ukItwZGxh3xoFGaEAuToHUu2IgBl832Xs1zv7
+OE+2ELJ/raIFM8lxzFNm6PoLIrQLccVG4rLCJzutV9v0XzJQfa3J1U3JDDwNXkj+fv9pfTFUQzkI
+oJ8qQkkBDcErR3+706+tatlIdTsWG7iDfZ2PvFZ9pdnAhF16S0+WurZ9XLtlk40Lz9O6u0CG0ZZJ
+VvW13EkfDhPb4XYRroOhT+/alKDxylDQ9SexQZ82kLmVyWepp973+jbeXel2jDHdNKqAglpqbgxI
+JIZ6/abbjOWYLB41bcYfxkfOIzsnDzenzXHiZirb1ABWEIkSrh8Rsp5m0XieGPGCdSAiZeYRRQnh
+MjNjlR+cEZSlktX6K5miVnB06/fR3JLc76BL0JSkfXv5cadkZFsSOM/PUFw2rIkkOODNsvN1+dra
+s2hmKHkUm7/+ykKbfVMzyh9TRMDZRJs0v7UY/UyznVqeMk6SnOhZ0QlgzwSn

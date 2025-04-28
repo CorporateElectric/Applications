@@ -1,90 +1,57 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\CodeCleaner;
-
-use PhpParser\Node;
-use PhpParser\Node\Expr;
-use PhpParser\Node\Expr\ClassConstFetch;
-use PhpParser\Node\Expr\ConstFetch;
-use PhpParser\Node\Identifier;
-use Psy\Exception\FatalErrorException;
-
-/**
- * Validate that namespaced constant references will succeed.
- *
- * This pass throws a FatalErrorException rather than letting PHP run
- * headfirst into a real fatal error and die.
- *
- * @todo Detect constants defined in the current code snippet?
- *       ... Might not be worth it, since it would need to both be defining and
- *       referencing a namespaced constant, which doesn't seem like that big of
- *       a target for failure
- */
-class ValidConstantPass extends NamespaceAwarePass
-{
-    /**
-     * Validate that namespaced constant references will succeed.
-     *
-     * Note that this does not (yet) detect constants defined in the current code
-     * snippet. It won't happen very often, so we'll punt for now.
-     *
-     * @throws FatalErrorException if a constant reference is not defined
-     *
-     * @param Node $node
-     */
-    public function leaveNode(Node $node)
-    {
-        if ($node instanceof ConstFetch && \count($node->name->parts) > 1) {
-            $name = $this->getFullyQualifiedName($node->name);
-            if (!\defined($name)) {
-                $msg = \sprintf('Undefined constant %s', $name);
-                throw new FatalErrorException($msg, 0, \E_ERROR, null, $node->getLine());
-            }
-        } elseif ($node instanceof ClassConstFetch) {
-            $this->validateClassConstFetchExpression($node);
-        }
-    }
-
-    /**
-     * Validate a class constant fetch expression.
-     *
-     * @throws FatalErrorException if a class constant is not defined
-     *
-     * @param ClassConstFetch $stmt
-     */
-    protected function validateClassConstFetchExpression(ClassConstFetch $stmt)
-    {
-        // For PHP Parser 4.x
-        $constName = $stmt->name instanceof Identifier ? $stmt->name->toString() : $stmt->name;
-
-        // give the `class` pseudo-constant a pass
-        if ($constName === 'class') {
-            return;
-        }
-
-        // if class name is an expression, give it a pass for now
-        if (!$stmt->class instanceof Expr) {
-            $className = $this->getFullyQualifiedName($stmt->class);
-
-            // if the class doesn't exist, don't throw an exception… it might be
-            // defined in the same line it's used or something stupid like that.
-            if (\class_exists($className) || \interface_exists($className)) {
-                $refl = new \ReflectionClass($className);
-                if (!$refl->hasConstant($constName)) {
-                    $constType = \class_exists($className) ? 'Class' : 'Interface';
-                    $msg = \sprintf('%s constant \'%s::%s\' not found', $constType, $className, $constName);
-                    throw new FatalErrorException($msg, 0, \E_ERROR, null, $stmt->getLine());
-                }
-            }
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

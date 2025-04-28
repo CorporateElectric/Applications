@@ -1,209 +1,109 @@
-<?php
-
-namespace Illuminate\Database\Eloquent\Relations;
-
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Arr;
-
-class MorphToMany extends BelongsToMany
-{
-    /**
-     * The type of the polymorphic relation.
-     *
-     * @var string
-     */
-    protected $morphType;
-
-    /**
-     * The class name of the morph type constraint.
-     *
-     * @var string
-     */
-    protected $morphClass;
-
-    /**
-     * Indicates if we are connecting the inverse of the relation.
-     *
-     * This primarily affects the morphClass constraint.
-     *
-     * @var bool
-     */
-    protected $inverse;
-
-    /**
-     * Create a new morph to many relationship instance.
-     *
-     * @param  \Illuminate\Database\Eloquent\Builder  $query
-     * @param  \Illuminate\Database\Eloquent\Model  $parent
-     * @param  string  $name
-     * @param  string  $table
-     * @param  string  $foreignPivotKey
-     * @param  string  $relatedPivotKey
-     * @param  string  $parentKey
-     * @param  string  $relatedKey
-     * @param  string|null  $relationName
-     * @param  bool  $inverse
-     * @return void
-     */
-    public function __construct(Builder $query, Model $parent, $name, $table, $foreignPivotKey,
-                                $relatedPivotKey, $parentKey, $relatedKey, $relationName = null, $inverse = false)
-    {
-        $this->inverse = $inverse;
-        $this->morphType = $name.'_type';
-        $this->morphClass = $inverse ? $query->getModel()->getMorphClass() : $parent->getMorphClass();
-
-        parent::__construct(
-            $query, $parent, $table, $foreignPivotKey,
-            $relatedPivotKey, $parentKey, $relatedKey, $relationName
-        );
-    }
-
-    /**
-     * Set the where clause for the relation query.
-     *
-     * @return $this
-     */
-    protected function addWhereConstraints()
-    {
-        parent::addWhereConstraints();
-
-        $this->query->where($this->qualifyPivotColumn($this->morphType), $this->morphClass);
-
-        return $this;
-    }
-
-    /**
-     * Set the constraints for an eager load of the relation.
-     *
-     * @param  array  $models
-     * @return void
-     */
-    public function addEagerConstraints(array $models)
-    {
-        parent::addEagerConstraints($models);
-
-        $this->query->where($this->qualifyPivotColumn($this->morphType), $this->morphClass);
-    }
-
-    /**
-     * Create a new pivot attachment record.
-     *
-     * @param  int  $id
-     * @param  bool  $timed
-     * @return array
-     */
-    protected function baseAttachRecord($id, $timed)
-    {
-        return Arr::add(
-            parent::baseAttachRecord($id, $timed), $this->morphType, $this->morphClass
-        );
-    }
-
-    /**
-     * Add the constraints for a relationship count query.
-     *
-     * @param  \Illuminate\Database\Eloquent\Builder  $query
-     * @param  \Illuminate\Database\Eloquent\Builder  $parentQuery
-     * @param  array|mixed  $columns
-     * @return \Illuminate\Database\Eloquent\Builder
-     */
-    public function getRelationExistenceQuery(Builder $query, Builder $parentQuery, $columns = ['*'])
-    {
-        return parent::getRelationExistenceQuery($query, $parentQuery, $columns)->where(
-            $this->qualifyPivotColumn($this->morphType), $this->morphClass
-        );
-    }
-
-    /**
-     * Get the pivot models that are currently attached.
-     *
-     * @return \Illuminate\Support\Collection
-     */
-    protected function getCurrentlyAttachedPivots()
-    {
-        return parent::getCurrentlyAttachedPivots()->map(function ($record) {
-            return $record instanceof MorphPivot
-                            ? $record->setMorphType($this->morphType)
-                                     ->setMorphClass($this->morphClass)
-                            : $record;
-        });
-    }
-
-    /**
-     * Create a new query builder for the pivot table.
-     *
-     * @return \Illuminate\Database\Query\Builder
-     */
-    public function newPivotQuery()
-    {
-        return parent::newPivotQuery()->where($this->morphType, $this->morphClass);
-    }
-
-    /**
-     * Create a new pivot model instance.
-     *
-     * @param  array  $attributes
-     * @param  bool  $exists
-     * @return \Illuminate\Database\Eloquent\Relations\Pivot
-     */
-    public function newPivot(array $attributes = [], $exists = false)
-    {
-        $using = $this->using;
-
-        $pivot = $using ? $using::fromRawAttributes($this->parent, $attributes, $this->table, $exists)
-                        : MorphPivot::fromAttributes($this->parent, $attributes, $this->table, $exists);
-
-        $pivot->setPivotKeys($this->foreignPivotKey, $this->relatedPivotKey)
-              ->setMorphType($this->morphType)
-              ->setMorphClass($this->morphClass);
-
-        return $pivot;
-    }
-
-    /**
-     * Get the pivot columns for the relation.
-     *
-     * "pivot_" is prefixed at each column for easy removal later.
-     *
-     * @return array
-     */
-    protected function aliasedPivotColumns()
-    {
-        $defaults = [$this->foreignPivotKey, $this->relatedPivotKey, $this->morphType];
-
-        return collect(array_merge($defaults, $this->pivotColumns))->map(function ($column) {
-            return $this->qualifyPivotColumn($column).' as pivot_'.$column;
-        })->unique()->all();
-    }
-
-    /**
-     * Get the foreign key "type" name.
-     *
-     * @return string
-     */
-    public function getMorphType()
-    {
-        return $this->morphType;
-    }
-
-    /**
-     * Get the class name of the parent model.
-     *
-     * @return string
-     */
-    public function getMorphClass()
-    {
-        return $this->morphClass;
-    }
-
-    /**
-     * Get the indicator for a reverse relationship.
-     *
-     * @return bool
-     */
-    public function getInverse()
-    {
-        return $this->inverse;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

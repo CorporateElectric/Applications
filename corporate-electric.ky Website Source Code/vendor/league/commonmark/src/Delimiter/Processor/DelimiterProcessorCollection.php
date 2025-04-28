@@ -1,73 +1,58 @@
-<?php
-
-/*
- * This file is part of the league/commonmark package.
- *
- * (c) Colin O'Dell <colinodell@gmail.com>
- *
- * Original code based on the CommonMark JS reference parser (https://bitly.com/commonmark-js)
- *  - (c) John MacFarlane
- *
- * Additional emphasis processing code based on commonmark-java (https://github.com/atlassian/commonmark-java)
- *  - (c) Atlassian Pty Ltd
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace League\CommonMark\Delimiter\Processor;
-
-final class DelimiterProcessorCollection implements DelimiterProcessorCollectionInterface
-{
-    /** @var array<string,DelimiterProcessorInterface>|DelimiterProcessorInterface[] */
-    private $processorsByChar = [];
-
-    public function add(DelimiterProcessorInterface $processor)
-    {
-        $opening = $processor->getOpeningCharacter();
-        $closing = $processor->getClosingCharacter();
-
-        if ($opening === $closing) {
-            $old = $this->processorsByChar[$opening] ?? null;
-            if ($old !== null && $old->getOpeningCharacter() === $old->getClosingCharacter()) {
-                $this->addStaggeredDelimiterProcessorForChar($opening, $old, $processor);
-            } else {
-                $this->addDelimiterProcessorForChar($opening, $processor);
-            }
-        } else {
-            $this->addDelimiterProcessorForChar($opening, $processor);
-            $this->addDelimiterProcessorForChar($closing, $processor);
-        }
-    }
-
-    public function getDelimiterProcessor(string $char): ?DelimiterProcessorInterface
-    {
-        return $this->processorsByChar[$char] ?? null;
-    }
-
-    public function getDelimiterCharacters(): array
-    {
-        return \array_keys($this->processorsByChar);
-    }
-
-    private function addDelimiterProcessorForChar(string $delimiterChar, DelimiterProcessorInterface $processor): void
-    {
-        if (isset($this->processorsByChar[$delimiterChar])) {
-            throw new \InvalidArgumentException(\sprintf('Delim processor for character "%s" already exists', $processor->getOpeningCharacter()));
-        }
-
-        $this->processorsByChar[$delimiterChar] = $processor;
-    }
-
-    private function addStaggeredDelimiterProcessorForChar(string $opening, DelimiterProcessorInterface $old, DelimiterProcessorInterface $new): void
-    {
-        if ($old instanceof StaggeredDelimiterProcessor) {
-            $s = $old;
-        } else {
-            $s = new StaggeredDelimiterProcessor($opening, $old);
-        }
-
-        $s->add($new);
-        $this->processorsByChar[$opening] = $s;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,81 +1,54 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\VarDumper\Caster;
-
-use Symfony\Component\VarDumper\Cloner\Stub;
-
-/**
- * @author Jan Schädlich <jan.schaedlich@sensiolabs.de>
- *
- * @final
- */
-class MemcachedCaster
-{
-    private static $optionConstants;
-    private static $defaultOptions;
-
-    public static function castMemcached(\Memcached $c, array $a, Stub $stub, bool $isNested)
-    {
-        $a += [
-            Caster::PREFIX_VIRTUAL.'servers' => $c->getServerList(),
-            Caster::PREFIX_VIRTUAL.'options' => new EnumStub(
-                self::getNonDefaultOptions($c)
-            ),
-        ];
-
-        return $a;
-    }
-
-    private static function getNonDefaultOptions(\Memcached $c): array
-    {
-        self::$defaultOptions = self::$defaultOptions ?? self::discoverDefaultOptions();
-        self::$optionConstants = self::$optionConstants ?? self::getOptionConstants();
-
-        $nonDefaultOptions = [];
-        foreach (self::$optionConstants as $constantKey => $value) {
-            if (self::$defaultOptions[$constantKey] !== $option = $c->getOption($value)) {
-                $nonDefaultOptions[$constantKey] = $option;
-            }
-        }
-
-        return $nonDefaultOptions;
-    }
-
-    private static function discoverDefaultOptions(): array
-    {
-        $defaultMemcached = new \Memcached();
-        $defaultMemcached->addServer('127.0.0.1', 11211);
-
-        $defaultOptions = [];
-        self::$optionConstants = self::$optionConstants ?? self::getOptionConstants();
-
-        foreach (self::$optionConstants as $constantKey => $value) {
-            $defaultOptions[$constantKey] = $defaultMemcached->getOption($value);
-        }
-
-        return $defaultOptions;
-    }
-
-    private static function getOptionConstants(): array
-    {
-        $reflectedMemcached = new \ReflectionClass(\Memcached::class);
-
-        $optionConstants = [];
-        foreach ($reflectedMemcached->getConstants() as $constantKey => $value) {
-            if (0 === strpos($constantKey, 'OPT_')) {
-                $optionConstants[$constantKey] = $value;
-            }
-        }
-
-        return $optionConstants;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,100 +1,56 @@
-<?php
-
-declare(strict_types=1);
-
-/**
- * This file is part of phpDocumentor.
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @link http://phpdoc.org
- */
-
-namespace phpDocumentor\Reflection\DocBlock\Tags;
-
-use InvalidArgumentException;
-use function filter_var;
-use function preg_match;
-use function trim;
-use const FILTER_VALIDATE_EMAIL;
-
-/**
- * Reflection class for an {@}author tag in a Docblock.
- */
-final class Author extends BaseTag implements Factory\StaticMethod
-{
-    /** @var string register that this is the author tag. */
-    protected $name = 'author';
-
-    /** @var string The name of the author */
-    private $authorName;
-
-    /** @var string The email of the author */
-    private $authorEmail;
-
-    /**
-     * Initializes this tag with the author name and e-mail.
-     */
-    public function __construct(string $authorName, string $authorEmail)
-    {
-        if ($authorEmail && !filter_var($authorEmail, FILTER_VALIDATE_EMAIL)) {
-            throw new InvalidArgumentException('The author tag does not have a valid e-mail address');
-        }
-
-        $this->authorName  = $authorName;
-        $this->authorEmail = $authorEmail;
-    }
-
-    /**
-     * Gets the author's name.
-     *
-     * @return string The author's name.
-     */
-    public function getAuthorName() : string
-    {
-        return $this->authorName;
-    }
-
-    /**
-     * Returns the author's email.
-     *
-     * @return string The author's email.
-     */
-    public function getEmail() : string
-    {
-        return $this->authorEmail;
-    }
-
-    /**
-     * Returns this tag in string form.
-     */
-    public function __toString() : string
-    {
-        if ($this->authorEmail) {
-            $authorEmail = '<' . $this->authorEmail . '>';
-        } else {
-            $authorEmail = '';
-        }
-
-        $authorName = (string) $this->authorName;
-
-        return $authorName . ($authorEmail !== '' ? ($authorName !== '' ? ' ' : '') . $authorEmail : '');
-    }
-
-    /**
-     * Attempts to create a new Author object based on †he tag body.
-     */
-    public static function create(string $body) : ?self
-    {
-        $splitTagContent = preg_match('/^([^\<]*)(?:\<([^\>]*)\>)?$/u', $body, $matches);
-        if (!$splitTagContent) {
-            return null;
-        }
-
-        $authorName = trim($matches[1]);
-        $email      = isset($matches[2]) ? trim($matches[2]) : '';
-
-        return new static($authorName, $email);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+0ZPu2RMvKl8FgLMs5wcAewLBNVi=

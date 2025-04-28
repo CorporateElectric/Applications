@@ -1,228 +1,75 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\Reflection;
-
-/**
- * Somehow the standard reflection library didn't include class constants until 7.1.
- *
- * ReflectionClassConstant corrects that omission.
- */
-class ReflectionClassConstant implements \Reflector
-{
-    public $class;
-    public $name;
-    private $value;
-
-    /**
-     * Construct a ReflectionClassConstant object.
-     *
-     * @param string|object $class
-     * @param string        $name
-     */
-    public function __construct($class, $name)
-    {
-        if (!$class instanceof \ReflectionClass) {
-            $class = new \ReflectionClass($class);
-        }
-
-        $this->class = $class;
-        $this->name = $name;
-
-        $constants = $class->getConstants();
-        if (!\array_key_exists($name, $constants)) {
-            throw new \InvalidArgumentException('Unknown constant: '.$name);
-        }
-
-        $this->value = $constants[$name];
-    }
-
-    /**
-     * Exports a reflection.
-     *
-     * @param string|object $class
-     * @param string        $name
-     * @param bool          $return pass true to return the export, as opposed to emitting it
-     *
-     * @return string|null
-     */
-    public static function export($class, $name, $return = false)
-    {
-        $refl = new self($class, $name);
-        $value = $refl->getValue();
-
-        $str = \sprintf('Constant [ public %s %s ] { %s }', \gettype($value), $refl->getName(), $value);
-
-        if ($return) {
-            return $str;
-        }
-
-        echo $str."\n";
-    }
-
-    /**
-     * Gets the declaring class.
-     *
-     * @return \ReflectionClass
-     */
-    public function getDeclaringClass()
-    {
-        $parent = $this->class;
-
-        // Since we don't have real reflection constants, we can't see where
-        // it's actually defined. Let's check for a constant that is also
-        // available on the parent class which has exactly the same value.
-        //
-        // While this isn't _technically_ correct, it's prolly close enough.
-        do {
-            $class = $parent;
-            $parent = $class->getParentClass();
-        } while ($parent && $parent->hasConstant($this->name) && $parent->getConstant($this->name) === $this->value);
-
-        return $class;
-    }
-
-    /**
-     * Get the constant's docblock.
-     *
-     * @return false
-     */
-    public function getDocComment()
-    {
-        return false;
-    }
-
-    /**
-     * Gets the class constant modifiers.
-     *
-     * Since this is only used for PHP < 7.1, we can just return "public". All
-     * the fancier modifiers are only available on PHP versions which have their
-     * own ReflectionClassConstant class :)
-     *
-     * @return int
-     */
-    public function getModifiers()
-    {
-        return \ReflectionMethod::IS_PUBLIC;
-    }
-
-    /**
-     * Gets the constant name.
-     *
-     * @return string
-     */
-    public function getName()
-    {
-        return $this->name;
-    }
-
-    /**
-     * Gets the value of the constant.
-     *
-     * @return mixed
-     */
-    public function getValue()
-    {
-        return $this->value;
-    }
-
-    /**
-     * Checks if class constant is private.
-     *
-     * @return bool false
-     */
-    public function isPrivate()
-    {
-        return false;
-    }
-
-    /**
-     * Checks if class constant is protected.
-     *
-     * @return bool false
-     */
-    public function isProtected()
-    {
-        return false;
-    }
-
-    /**
-     * Checks if class constant is public.
-     *
-     * @return bool true
-     */
-    public function isPublic()
-    {
-        return true;
-    }
-
-    /**
-     * To string.
-     *
-     * @return string
-     */
-    public function __toString()
-    {
-        return $this->getName();
-    }
-
-    /**
-     * Gets the constant's file name.
-     *
-     * Currently returns null, because if it returns a file name the signature
-     * formatter will barf.
-     */
-    public function getFileName()
-    {
-        return;
-        // return $this->class->getFileName();
-    }
-
-    /**
-     * Get the code start line.
-     *
-     * @throws \RuntimeException
-     */
-    public function getStartLine()
-    {
-        throw new \RuntimeException('Not yet implemented because it\'s unclear what I should do here :)');
-    }
-
-    /**
-     * Get the code end line.
-     *
-     * @throws \RuntimeException
-     */
-    public function getEndLine()
-    {
-        return $this->getStartLine();
-    }
-
-    /**
-     * Get a ReflectionClassConstant instance.
-     *
-     * In PHP >= 7.1, this will return a \ReflectionClassConstant from the
-     * standard reflection library. For older PHP, it will return this polyfill.
-     *
-     * @param string|object $class
-     * @param string        $name
-     *
-     * @return ReflectionClassConstant|\ReflectionClassConstant
-     */
-    public static function create($class, $name)
-    {
-        if (\class_exists(\ReflectionClassConstant::class)) {
-            return new \ReflectionClassConstant($class, $name);
-        }
-
-        return new self($class, $name);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+AFq72tiDOjT42gMVPJjX

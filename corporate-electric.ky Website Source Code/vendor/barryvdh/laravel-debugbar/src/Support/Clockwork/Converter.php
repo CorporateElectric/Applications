@@ -1,140 +1,78 @@
-<?php
-
-namespace Barryvdh\Debugbar\Support\Clockwork;
-
-class Converter
-{
-
-    /**
-     * Convert the phpdebugbar data to Clockwork format.
-     *
-     * @param  array $data
-     * @return array
-     */
-    public function convert($data)
-    {
-        $meta = $data['__meta'];
-
-        // Default output
-        $output = [
-            'id' => $meta['id'],
-            'method' => $meta['method'],
-            'uri' => $meta['uri'],
-            'time' => $meta['utime'],
-            'headers' => [],
-            'cookies' => [],
-            'emailsData' => [],
-            'getData' => [],
-            'log' => [],
-            'postData' => [],
-            'sessionData' => [],
-            'timelineData' => [],
-            'viewsData' => [],
-            'controller' => null,
-            'responseTime' => null,
-            'responseStatus' => null,
-            'responseDuration' => 0,
-        ];
-
-        if (isset($data['clockwork'])) {
-            $output = array_merge($output, $data['clockwork']);
-        }
-
-        if (isset($data['time'])) {
-            $time = $data['time'];
-            $output['time'] = $time['start'];
-            $output['responseTime'] = $time['end'];
-            $output['responseDuration'] = $time['duration'] * 1000;
-            foreach ($time['measures'] as $measure) {
-                $output['timelineData'][] = [
-                    'data' => [],
-                    'description' => $measure['label'],
-                    'duration' => $measure['duration'] * 1000,
-                    'end' => $measure['end'],
-                    'start' => $measure['start'],
-                    'relative_start' => $measure['start'] - $time['start'],
-                ];
-            }
-        }
-
-        if (isset($data['route'])) {
-            $route = $data['route'];
-
-            $controller = null;
-            if (isset($route['controller'])) {
-                $controller = $route['controller'];
-            } elseif (isset($route['uses'])) {
-                $controller = $route['uses'];
-            }
-
-            $output['controller'] = $controller;
-
-            list($method, $uri) = explode(' ', $route['uri'], 2);
-
-            $output['routes'][] = [
-                'action' => $controller,
-                'after' => isset($route['after']) ? $route['after'] : null,
-                'before' => isset($route['before']) ? $route['before'] : null,
-                'method' => $method,
-                'name' => isset($route['as']) ? $route['as'] : null,
-                'uri' => $uri,
-            ];
-        }
-
-        if (isset($data['messages'])) {
-            foreach ($data['messages']['messages'] as $message) {
-                $output['log'][] = [
-                    'message' => $message['message'],
-                    'time' => $message['time'],
-                    'level' => $message['label'],
-                ];
-            }
-        }
-
-        if (isset($data['queries'])) {
-            $queries = $data['queries'];
-            foreach ($queries['statements'] as $statement) {
-                if ($statement['type'] === 'explain') {
-                    continue;
-                }
-                $output['databaseQueries'][] = [
-                    'query' => $statement['sql'],
-                    'bindings' => $statement['params'],
-                    'duration' => $statement['duration'] * 1000,
-                    'connection' => $statement['connection']
-                ];
-            }
-
-            $output['databaseDuration'] = $queries['accumulated_duration'] * 1000;
-        }
-
-        if (isset($data['views'])) {
-            foreach ($data['views']['templates'] as $view) {
-                $output['viewsData'][] = [
-                    'description' => 'Rendering a view',
-                    'duration' => 0,
-                    'end' => 0,
-                    'start' => 0,
-                    'data' => [
-                        'name' => $view['name'],
-                        'data' => $view['params'],
-                    ],
-                ];
-            }
-        }
-
-        if (isset($data['swiftmailer_mails'])) {
-            foreach ($data['swiftmailer_mails']['mails'] as $mail) {
-                $output['emailsData'][] = [
-                    'data' => [
-                        'to' => $mail['to'],
-                        'subject' => $mail['subject'],
-                        'headers' => isset($mail['headers']) ? explode("\n", $mail['headers']) : null,
-                    ],
-                ];
-            }
-        }
-
-        return $output;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

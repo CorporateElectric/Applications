@@ -1,220 +1,149 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpKernel\Controller;
-
-use Psr\Log\LoggerInterface;
-use Symfony\Component\HttpFoundation\Request;
-
-/**
- * This implementation uses the '_controller' request attribute to determine
- * the controller to execute.
- *
- * @author Fabien Potencier <fabien@symfony.com>
- * @author Tobias Schultze <http://tobion.de>
- */
-class ControllerResolver implements ControllerResolverInterface
-{
-    private $logger;
-
-    public function __construct(LoggerInterface $logger = null)
-    {
-        $this->logger = $logger;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getController(Request $request)
-    {
-        if (!$controller = $request->attributes->get('_controller')) {
-            if (null !== $this->logger) {
-                $this->logger->warning('Unable to look for the controller as the "_controller" parameter is missing.');
-            }
-
-            return false;
-        }
-
-        if (\is_array($controller)) {
-            if (isset($controller[0]) && \is_string($controller[0]) && isset($controller[1])) {
-                try {
-                    $controller[0] = $this->instantiateController($controller[0]);
-                } catch (\Error | \LogicException $e) {
-                    try {
-                        // We cannot just check is_callable but have to use reflection because a non-static method
-                        // can still be called statically in PHP but we don't want that. This is deprecated in PHP 7, so we
-                        // could simplify this with PHP 8.
-                        if ((new \ReflectionMethod($controller[0], $controller[1]))->isStatic()) {
-                            return $controller;
-                        }
-                    } catch (\ReflectionException $reflectionException) {
-                        throw $e;
-                    }
-
-                    throw $e;
-                }
-            }
-
-            if (!\is_callable($controller)) {
-                throw new \InvalidArgumentException(sprintf('The controller for URI "%s" is not callable: ', $request->getPathInfo()).$this->getControllerError($controller));
-            }
-
-            return $controller;
-        }
-
-        if (\is_object($controller)) {
-            if (!\is_callable($controller)) {
-                throw new \InvalidArgumentException(sprintf('The controller for URI "%s" is not callable: ', $request->getPathInfo()).$this->getControllerError($controller));
-            }
-
-            return $controller;
-        }
-
-        if (\function_exists($controller)) {
-            return $controller;
-        }
-
-        try {
-            $callable = $this->createController($controller);
-        } catch (\InvalidArgumentException $e) {
-            throw new \InvalidArgumentException(sprintf('The controller for URI "%s" is not callable: ', $request->getPathInfo()).$e->getMessage(), 0, $e);
-        }
-
-        if (!\is_callable($callable)) {
-            throw new \InvalidArgumentException(sprintf('The controller for URI "%s" is not callable: ', $request->getPathInfo()).$this->getControllerError($callable));
-        }
-
-        return $callable;
-    }
-
-    /**
-     * Returns a callable for the given controller.
-     *
-     * @return callable A PHP callable
-     *
-     * @throws \InvalidArgumentException When the controller cannot be created
-     */
-    protected function createController(string $controller)
-    {
-        if (false === strpos($controller, '::')) {
-            $controller = $this->instantiateController($controller);
-
-            if (!\is_callable($controller)) {
-                throw new \InvalidArgumentException($this->getControllerError($controller));
-            }
-
-            return $controller;
-        }
-
-        [$class, $method] = explode('::', $controller, 2);
-
-        try {
-            $controller = [$this->instantiateController($class), $method];
-        } catch (\Error | \LogicException $e) {
-            try {
-                if ((new \ReflectionMethod($class, $method))->isStatic()) {
-                    return $class.'::'.$method;
-                }
-            } catch (\ReflectionException $reflectionException) {
-                throw $e;
-            }
-
-            throw $e;
-        }
-
-        if (!\is_callable($controller)) {
-            throw new \InvalidArgumentException($this->getControllerError($controller));
-        }
-
-        return $controller;
-    }
-
-    /**
-     * Returns an instantiated controller.
-     *
-     * @return object
-     */
-    protected function instantiateController(string $class)
-    {
-        return new $class();
-    }
-
-    private function getControllerError($callable): string
-    {
-        if (\is_string($callable)) {
-            if (false !== strpos($callable, '::')) {
-                $callable = explode('::', $callable, 2);
-            } else {
-                return sprintf('Function "%s" does not exist.', $callable);
-            }
-        }
-
-        if (\is_object($callable)) {
-            $availableMethods = $this->getClassMethodsWithoutMagicMethods($callable);
-            $alternativeMsg = $availableMethods ? sprintf(' or use one of the available methods: "%s"', implode('", "', $availableMethods)) : '';
-
-            return sprintf('Controller class "%s" cannot be called without a method name. You need to implement "__invoke"%s.', get_debug_type($callable), $alternativeMsg);
-        }
-
-        if (!\is_array($callable)) {
-            return sprintf('Invalid type for controller given, expected string, array or object, got "%s".', get_debug_type($callable));
-        }
-
-        if (!isset($callable[0]) || !isset($callable[1]) || 2 !== \count($callable)) {
-            return 'Invalid array callable, expected [controller, method].';
-        }
-
-        [$controller, $method] = $callable;
-
-        if (\is_string($controller) && !class_exists($controller)) {
-            return sprintf('Class "%s" does not exist.', $controller);
-        }
-
-        $className = \is_object($controller) ? get_debug_type($controller) : $controller;
-
-        if (method_exists($controller, $method)) {
-            return sprintf('Method "%s" on class "%s" should be public and non-abstract.', $method, $className);
-        }
-
-        $collection = $this->getClassMethodsWithoutMagicMethods($controller);
-
-        $alternatives = [];
-
-        foreach ($collection as $item) {
-            $lev = levenshtein($method, $item);
-
-            if ($lev <= \strlen($method) / 3 || false !== strpos($item, $method)) {
-                $alternatives[] = $item;
-            }
-        }
-
-        asort($alternatives);
-
-        $message = sprintf('Expected method "%s" on class "%s"', $method, $className);
-
-        if (\count($alternatives) > 0) {
-            $message .= sprintf(', did you mean "%s"?', implode('", "', $alternatives));
-        } else {
-            $message .= sprintf('. Available methods: "%s".', implode('", "', $collection));
-        }
-
-        return $message;
-    }
-
-    private function getClassMethodsWithoutMagicMethods($classOrObject): array
-    {
-        $methods = get_class_methods($classOrObject);
-
-        return array_filter($methods, function (string $method) {
-            return 0 !== strncmp($method, '__', 2);
-        });
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+qm==

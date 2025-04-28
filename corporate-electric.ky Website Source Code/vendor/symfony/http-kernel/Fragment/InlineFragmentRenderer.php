@@ -1,145 +1,98 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpKernel\Fragment;
-
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Controller\ControllerReference;
-use Symfony\Component\HttpKernel\Event\ExceptionEvent;
-use Symfony\Component\HttpKernel\HttpCache\SubRequestHandler;
-use Symfony\Component\HttpKernel\HttpKernelInterface;
-use Symfony\Component\HttpKernel\KernelEvents;
-use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
-
-/**
- * Implements the inline rendering strategy where the Request is rendered by the current HTTP kernel.
- *
- * @author Fabien Potencier <fabien@symfony.com>
- */
-class InlineFragmentRenderer extends RoutableFragmentRenderer
-{
-    private $kernel;
-    private $dispatcher;
-
-    public function __construct(HttpKernelInterface $kernel, EventDispatcherInterface $dispatcher = null)
-    {
-        $this->kernel = $kernel;
-        $this->dispatcher = $dispatcher;
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * Additional available options:
-     *
-     *  * alt: an alternative URI to render in case of an error
-     */
-    public function render($uri, Request $request, array $options = [])
-    {
-        $reference = null;
-        if ($uri instanceof ControllerReference) {
-            $reference = $uri;
-
-            // Remove attributes from the generated URI because if not, the Symfony
-            // routing system will use them to populate the Request attributes. We don't
-            // want that as we want to preserve objects (so we manually set Request attributes
-            // below instead)
-            $attributes = $reference->attributes;
-            $reference->attributes = [];
-
-            // The request format and locale might have been overridden by the user
-            foreach (['_format', '_locale'] as $key) {
-                if (isset($attributes[$key])) {
-                    $reference->attributes[$key] = $attributes[$key];
-                }
-            }
-
-            $uri = $this->generateFragmentUri($uri, $request, false, false);
-
-            $reference->attributes = array_merge($attributes, $reference->attributes);
-        }
-
-        $subRequest = $this->createSubRequest($uri, $request);
-
-        // override Request attributes as they can be objects (which are not supported by the generated URI)
-        if (null !== $reference) {
-            $subRequest->attributes->add($reference->attributes);
-        }
-
-        $level = ob_get_level();
-        try {
-            return SubRequestHandler::handle($this->kernel, $subRequest, HttpKernelInterface::SUB_REQUEST, false);
-        } catch (\Exception $e) {
-            // we dispatch the exception event to trigger the logging
-            // the response that comes back is ignored
-            if (isset($options['ignore_errors']) && $options['ignore_errors'] && $this->dispatcher) {
-                $event = new ExceptionEvent($this->kernel, $request, HttpKernelInterface::SUB_REQUEST, $e);
-
-                $this->dispatcher->dispatch($event, KernelEvents::EXCEPTION);
-            }
-
-            // let's clean up the output buffers that were created by the sub-request
-            Response::closeOutputBuffers($level, false);
-
-            if (isset($options['alt'])) {
-                $alt = $options['alt'];
-                unset($options['alt']);
-
-                return $this->render($alt, $request, $options);
-            }
-
-            if (!isset($options['ignore_errors']) || !$options['ignore_errors']) {
-                throw $e;
-            }
-
-            return new Response();
-        }
-    }
-
-    protected function createSubRequest($uri, Request $request)
-    {
-        $cookies = $request->cookies->all();
-        $server = $request->server->all();
-
-        unset($server['HTTP_IF_MODIFIED_SINCE']);
-        unset($server['HTTP_IF_NONE_MATCH']);
-
-        $subRequest = Request::create($uri, 'get', [], $cookies, [], $server);
-        if ($request->headers->has('Surrogate-Capability')) {
-            $subRequest->headers->set('Surrogate-Capability', $request->headers->get('Surrogate-Capability'));
-        }
-
-        static $setSession;
-
-        if (null === $setSession) {
-            $setSession = \Closure::bind(static function ($subRequest, $request) { $subRequest->session = $request->session; }, null, Request::class);
-        }
-        $setSession($subRequest, $request);
-
-        if ($request->get('_format')) {
-            $subRequest->attributes->set('_format', $request->get('_format'));
-        }
-        if ($request->getDefaultLocale() !== $request->getLocale()) {
-            $subRequest->setLocale($request->getLocale());
-        }
-
-        return $subRequest;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getName()
-    {
-        return 'inline';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

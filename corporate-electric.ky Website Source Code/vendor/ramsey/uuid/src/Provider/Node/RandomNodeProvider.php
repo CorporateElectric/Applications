@@ -1,68 +1,42 @@
-<?php
-
-/**
- * This file is part of the ramsey/uuid library
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @copyright Copyright (c) Ben Ramsey <ben@benramsey.com>
- * @license http://opensource.org/licenses/MIT MIT
- */
-
-declare(strict_types=1);
-
-namespace Ramsey\Uuid\Provider\Node;
-
-use Ramsey\Uuid\Exception\RandomSourceException;
-use Ramsey\Uuid\Provider\NodeProviderInterface;
-use Ramsey\Uuid\Type\Hexadecimal;
-
-use function bin2hex;
-use function dechex;
-use function hex2bin;
-use function hexdec;
-use function str_pad;
-use function substr;
-
-use const STR_PAD_LEFT;
-
-/**
- * RandomNodeProvider generates a random node ID
- *
- * @link http://tools.ietf.org/html/rfc4122#section-4.5 RFC 4122, § 4.5: Node IDs that Do Not Identify the Host
- */
-class RandomNodeProvider implements NodeProviderInterface
-{
-    public function getNode(): Hexadecimal
-    {
-        try {
-            $nodeBytes = random_bytes(6);
-        } catch (\Throwable $exception) {
-            throw new RandomSourceException(
-                $exception->getMessage(),
-                (int) $exception->getCode(),
-                $exception
-            );
-        }
-
-        // Split the node bytes for math on 32-bit systems.
-        $nodeMsb = substr($nodeBytes, 0, 3);
-        $nodeLsb = substr($nodeBytes, 3);
-
-        // Set the multicast bit; see RFC 4122, section 4.5.
-        $nodeMsb = hex2bin(
-            str_pad(
-                dechex(hexdec(bin2hex($nodeMsb)) | 0x010000),
-                6,
-                '0',
-                STR_PAD_LEFT
-            )
-        );
-
-        // Recombine the node bytes.
-        $node = $nodeMsb . $nodeLsb;
-
-        return new Hexadecimal(str_pad(bin2hex($node), 12, '0', STR_PAD_LEFT));
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

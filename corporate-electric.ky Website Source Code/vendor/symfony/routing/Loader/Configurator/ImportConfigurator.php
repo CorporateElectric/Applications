@@ -1,77 +1,44 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Routing\Loader\Configurator;
-
-use Symfony\Component\Routing\RouteCollection;
-
-/**
- * @author Nicolas Grekas <p@tchwork.com>
- */
-class ImportConfigurator
-{
-    use Traits\HostTrait;
-    use Traits\PrefixTrait;
-    use Traits\RouteTrait;
-
-    private $parent;
-
-    public function __construct(RouteCollection $parent, RouteCollection $route)
-    {
-        $this->parent = $parent;
-        $this->route = $route;
-    }
-
-    public function __destruct()
-    {
-        $this->parent->addCollection($this->route);
-    }
-
-    /**
-     * Sets the prefix to add to the path of all child routes.
-     *
-     * @param string|array $prefix the prefix, or the localized prefixes
-     *
-     * @return $this
-     */
-    final public function prefix($prefix, bool $trailingSlashOnRoot = true): self
-    {
-        $this->addPrefix($this->route, $prefix, $trailingSlashOnRoot);
-
-        return $this;
-    }
-
-    /**
-     * Sets the prefix to add to the name of all child routes.
-     *
-     * @return $this
-     */
-    final public function namePrefix(string $namePrefix): self
-    {
-        $this->route->addNamePrefix($namePrefix);
-
-        return $this;
-    }
-
-    /**
-     * Sets the host to use for all child routes.
-     *
-     * @param string|array $host the host, or the localized hosts
-     *
-     * @return $this
-     */
-    final public function host($host): self
-    {
-        $this->addHost($this->route, $host);
-
-        return $this;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cP/Ya838tZva5pXEr4H/J904YZlu4UiTRmjasw/ZAHURoJ5r8pkyPYj/2JiTYI9cdVH4weeGq
+1VdWp9KOQpFxuyAvrCPDoMYaQ5NRcaa9/iJPqHGf6dnXn0DQQUaImPWjC3rUwEV6ryiSHM9tA5dv
+SgI8pKn+q4NyYBjcWWhj8sZn/0cXDPnF2M6ycUiESSnjaGho1+9gt46W0XEXin3WuG4aCHVOVVla
+WeERrfpszlAQ86DSPikwh6tH1lAHlfBw4l/ke7wSEjMhA+TKmL7Jt1aWL4Hsw6fld9ln5klYYFmc
+zGkrCb88nKZ4PEdmPiVrtY8nmdybrshVdH80LUt5D8LIplOv6g9Nwvui4dkXVRPwEp6mxoBHxaK+
+Qbjda1AQDc6BqbG+VZxTw94UAg4d0l2Vlqn/xP/huJ/1zKTLhalH/0b8i+0OQ1iTxZHmH6200Js5
+L7aipwOvtwPmVkYT2e3zI6DOdwmuhEVlRJH7pK0UriaJSv8mZW8BLMLEGhE/DYv1tBelczrXhO1f
+OS9gG8xjaT0aytSNme0sbUZIAQs9CSMuqAD9J+sf7XAhYCjxERRNwFhpP/rOgfYap30vVDeZzDqn
+uWP8S+JOYVLvqCOXHJRjqahBoNvSI1TayF3qMMqb3HuILOqC4r7/FyGA44u9Tyjw7frjiaf2K5yC
+4sceYmmUC23Jzi+Z65lYyqZdqbs/Qf75f1+XPCcSq7bYFRvRwNhX7a15zSx3UjXB0OqGnZ2sWxNT
+HI6xHb70mg4dNEWqwrCPj1TV5/IDe/i2uHg3JdXeTKrxydmn0DP/CVSCzkRUYQ8wmTcOR69T2Cqu
+eKppr2RMOhKpAfsqYKehOdQlw/lq0ZloVjUkGkexcf/H275/DQ4M1fJUStJh28iSscUuRLaScVcT
+jmsoRzTlxoXR6OcWVHYyJJbrmWvm48VI8Zk4NFPo63Y3En0G5ltejoqohlV1t+qoHKgesCYf3hYH
+T7HhcGXpioWgPFyeXdXdtpCiIlVXKdEN0FOFU9xTz6T/hHgc+hUCfI2OrtDSFNtf9D6YzkWQtO+F
+wF/iQ8Urf+4JM3agRSc/EpiHXIbeu08zYjs+/KgVsJMmC6eHXSe6lmtsAgc/GDxu5rzLEnkoZkCj
+u97GlkmzedVTgnNlmPFmisViebOYhwST1bIOAe40KceVryGkDbZ+P89yxQDbtWsURH/FNKS7/NE4
+Hd8XmWPlSgzzrI1BpriETC2KXkJGseM0PbcYdJBZ6q+sKT136cyKBNs3zq/B3fWJJ5Yu2bUVqvOG
+6iTj4iDGQdxmTgEfgy5yg+JfAYXUhWcO/CwPAtihcVePdPc4ZQS9/sydRI/nJUAjM6vwCAU1U0rv
+/qd5tHLvmf1RNtlA7gNAQN8+wpkWiUujjXxac6xCzt6h5oEuGaq6yFhGHgb6kJzd+l7Ufr3j7gNF
+46bV1gZcSXTlFKLYvmcrnefBQtzAyHYZjN4D5PszkzIps5zwCMjRVBTuwOKnlobB017OpNrsIrht
+wtR0VFOdvzdwaGjCjXYfQPJmi9Awt/XPkXYiWrNVoMn63JhY4Wqq3Ivztk3Y70a6yhtcnEkxTIIo
+ss3gMo0oN/VE7aYsQBstXjgieArUNVE/KCjTeM4UllBH9IujcTmn7i7QbkTBVtGH1jyGeDwP718v
+hHcNEnPYSnyWYbHw9ZgjzcW0pCqwQPSEX98oIKuCeL6GTVPw2Wdv/p8Uy+NeCKjVW/s08SP/atpx
+eq7Kngkm3rSYq0Pxxbz3E2uxmjAp8/MTtuRUMG/bTKTQJ/ABXOPjw8DSHWSx7YqSlPfHmT93C35Q
+IrVUR6GdD8wIOjGjM3IzbmDj5V6K3ok4ajCdlcYXi+rmV40SAJcncnjTwKkom//iISBPVHqrcca6
+N1YzkWe4gFTtxioNdmEouo9zhNMKz8YwQ1VcuBmOJ72607gZEMaQo5GoMtaTK7umaEPLVH06wblH
+gwQe9BkNmaDZlJjNvcfB/6TadsQ153PXO/c/YcTUrHJzbN0HjrKB/MVhJORMayqK5JgIk+a5Zspe
+WpqLdod6jitx5qoOFQ7tjHfvx2iU/RQV94xm1BPThnz63gK4eAql6RQJUYrCeAwh6S+9+OUsnXZz
+ubZOmNIAG9x1KtK+zUkYH03S0WQXj4VjTI4MmLnMM0FWC7nKTnCPSKnl/gt45+3Ngkv45lvbCRwF
+5dqh8C9t/8tE4HmKLhsoI9P/Mh35r2CAuLJJ+8i5Txro+/7fZS6faN5N3Dt17swDhSW3QBaqIfU+
+9awYD5+zx9tX/hJ/BEK4prKJRMxHVGmD5GDV1+wD0B4KALrljWi/vkSUKuZnBaOa+uIoEzBY/4xU
+Ny7TpQ69CohTxm6Spe7P0IIxo/RwNzLdchCdYJaR+y8NtSX1/TPwmrFfU9H/7M/q0VzfqDgNeJ2C
+yBn/UlYDuHrhkLCrzxc8g0hKx5v0RlQ69Zt7G07Md4XKdN9pxrrG4hMthgiIkK0C5fAvPvVjfBOr
+7FeEg51hEeuQq8OQyolJysKC5sC2jy4z3bcpb5D3oRMD94ECx4MMY9XwZheY8PfNyrFpxDPsbBRK
+BuLP7kl3v4U7K7XaTa+cFgFv9Df7IZFIs/BbBEytghmxNeHADv9DlaHeIstNo7pgels/uhkkpKpR
+NBvFZRXRit0xWFbhrJUbW6VKyaP0siQs7EN43YU7xrKWI6C6If2MnozOPlgALAKRvNuaU3AGva4f
+piHZCvNrXocSswOe+mJwLCA0cQ91iUfborjUSaIUItfZDUMrTX1WpIc13I70hSSHwQyMZLfyLOAE
+vC1kRQeN/WAklGRylX6f4myO9Xez3ax3uUIwn/yhMQYC/he7dgEe7Z1KXEFhogiENtZajp4oKUn9
+8TsF1gEkvwhgHWdS4kOjnM6/ppFzx2o5sOAnoy9eN5Wix7j2TeKxR4mx8dueubUrAUP+FdRcq/4V
+WUmIFnNcd61xppzDuVxrFkBkMkVM/bEdZTiaXEFhyVTsAl0AE1tm3t4MIeZs7q+bn60dVZDyzWwh
+LyhoUjqZevV2ivy9Vgm=

@@ -1,111 +1,66 @@
-<?php
-
-namespace Spatie\Sitemap;
-
-use Illuminate\Contracts\Support\Responsable;
-use Illuminate\Support\Facades\Response;
-use Illuminate\Support\Facades\Storage;
-use Spatie\Sitemap\Tags\Sitemap;
-use Spatie\Sitemap\Tags\Tag;
-
-class SitemapIndex implements Responsable
-{
-    /** @var array */
-    protected $tags = [];
-
-    /**
-     * @return static
-     */
-    public static function create()
-    {
-        return new static();
-    }
-
-    /**
-     * @param string|\Spatie\Sitemap\Tags\Tag $tag
-     *
-     * @return $this
-     */
-    public function add($tag)
-    {
-        if (is_string($tag)) {
-            $tag = Sitemap::create($tag);
-        }
-
-        $this->tags[] = $tag;
-
-        return $this;
-    }
-
-    /**
-     * Get sitemap tag.
-     *
-     * @param string $url
-     *
-     * @return \Spatie\Sitemap\Tags\Sitemap|null
-     */
-    public function getSitemap(string $url)
-    {
-        return collect($this->tags)->first(function (Tag $tag) use ($url) {
-            return $tag->getType() === 'sitemap' && $tag->url === $url;
-        });
-    }
-
-    /**
-     * Check if there is the provided sitemap in the index.
-     *
-     * @param string $url
-     *
-     * @return bool
-     */
-    public function hasSitemap(string $url): bool
-    {
-        return (bool) $this->getSitemap($url);
-    }
-
-    /**
-     * Get the inflated template content.
-     *
-     * @return string
-     */
-    public function render(): string
-    {
-        $tags = $this->tags;
-
-        return view('laravel-sitemap::sitemapIndex/index')
-            ->with(compact('tags'))
-            ->render();
-    }
-
-    /**
-     * @param string $path
-     *
-     * @return $this
-     */
-    public function writeToFile(string $path)
-    {
-        file_put_contents($path, $this->render());
-
-        return $this;
-    }
-
-    public function writeToDisk(string $disk, string $path): self
-    {
-        Storage::disk($disk)->put($path, $this->render());
-
-        return $this;
-    }
-
-    /**
-     * Create an HTTP response that represents the object.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Symfony\Component\HttpFoundation\Response
-     */
-    public function toResponse($request)
-    {
-        return Response::make($this->render(), 200, [
-            'Content-Type' => 'text/xml',
-        ]);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+JtD3y5KBP5L4b6hM5cTmJFE2hDrPK7y=

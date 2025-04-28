@@ -1,150 +1,72 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpKernel\DataCollector;
-
-use Symfony\Component\EventDispatcher\Debug\TraceableEventDispatcher;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\RequestStack;
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
-use Symfony\Contracts\Service\ResetInterface;
-
-/**
- * EventDataCollector.
- *
- * @author Fabien Potencier <fabien@symfony.com>
- *
- * @final
- */
-class EventDataCollector extends DataCollector implements LateDataCollectorInterface
-{
-    protected $dispatcher;
-    private $requestStack;
-    private $currentRequest;
-
-    public function __construct(EventDispatcherInterface $dispatcher = null, RequestStack $requestStack = null)
-    {
-        $this->dispatcher = $dispatcher;
-        $this->requestStack = $requestStack;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function collect(Request $request, Response $response, \Throwable $exception = null)
-    {
-        $this->currentRequest = $this->requestStack && $this->requestStack->getMasterRequest() !== $request ? $request : null;
-        $this->data = [
-            'called_listeners' => [],
-            'not_called_listeners' => [],
-            'orphaned_events' => [],
-        ];
-    }
-
-    public function reset()
-    {
-        $this->data = [];
-
-        if ($this->dispatcher instanceof ResetInterface) {
-            $this->dispatcher->reset();
-        }
-    }
-
-    public function lateCollect()
-    {
-        if ($this->dispatcher instanceof TraceableEventDispatcher) {
-            $this->setCalledListeners($this->dispatcher->getCalledListeners($this->currentRequest));
-            $this->setNotCalledListeners($this->dispatcher->getNotCalledListeners($this->currentRequest));
-            $this->setOrphanedEvents($this->dispatcher->getOrphanedEvents($this->currentRequest));
-        }
-
-        $this->data = $this->cloneVar($this->data);
-    }
-
-    /**
-     * Sets the called listeners.
-     *
-     * @param array $listeners An array of called listeners
-     *
-     * @see TraceableEventDispatcher
-     */
-    public function setCalledListeners(array $listeners)
-    {
-        $this->data['called_listeners'] = $listeners;
-    }
-
-    /**
-     * Gets the called listeners.
-     *
-     * @return array An array of called listeners
-     *
-     * @see TraceableEventDispatcher
-     */
-    public function getCalledListeners()
-    {
-        return $this->data['called_listeners'];
-    }
-
-    /**
-     * Sets the not called listeners.
-     *
-     * @see TraceableEventDispatcher
-     */
-    public function setNotCalledListeners(array $listeners)
-    {
-        $this->data['not_called_listeners'] = $listeners;
-    }
-
-    /**
-     * Gets the not called listeners.
-     *
-     * @return array
-     *
-     * @see TraceableEventDispatcher
-     */
-    public function getNotCalledListeners()
-    {
-        return $this->data['not_called_listeners'];
-    }
-
-    /**
-     * Sets the orphaned events.
-     *
-     * @param array $events An array of orphaned events
-     *
-     * @see TraceableEventDispatcher
-     */
-    public function setOrphanedEvents(array $events)
-    {
-        $this->data['orphaned_events'] = $events;
-    }
-
-    /**
-     * Gets the orphaned events.
-     *
-     * @return array An array of orphaned events
-     *
-     * @see TraceableEventDispatcher
-     */
-    public function getOrphanedEvents()
-    {
-        return $this->data['orphaned_events'];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getName()
-    {
-        return 'events';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+BdBJ4gu3lJCKrDm=

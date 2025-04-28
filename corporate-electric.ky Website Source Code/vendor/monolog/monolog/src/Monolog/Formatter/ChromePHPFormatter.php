@@ -1,81 +1,47 @@
-<?php declare(strict_types=1);
-
-/*
- * This file is part of the Monolog package.
- *
- * (c) Jordi Boggiano <j.boggiano@seld.be>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Monolog\Formatter;
-
-use Monolog\Logger;
-
-/**
- * Formats a log message according to the ChromePHP array format
- *
- * @author Christophe Coevoet <stof@notk.org>
- */
-class ChromePHPFormatter implements FormatterInterface
-{
-    /**
-     * Translates Monolog log levels to Wildfire levels.
-     */
-    private $logLevels = [
-        Logger::DEBUG     => 'log',
-        Logger::INFO      => 'info',
-        Logger::NOTICE    => 'info',
-        Logger::WARNING   => 'warn',
-        Logger::ERROR     => 'error',
-        Logger::CRITICAL  => 'error',
-        Logger::ALERT     => 'error',
-        Logger::EMERGENCY => 'error',
-    ];
-
-    /**
-     * {@inheritdoc}
-     */
-    public function format(array $record)
-    {
-        // Retrieve the line and file if set and remove them from the formatted extra
-        $backtrace = 'unknown';
-        if (isset($record['extra']['file'], $record['extra']['line'])) {
-            $backtrace = $record['extra']['file'].' : '.$record['extra']['line'];
-            unset($record['extra']['file'], $record['extra']['line']);
-        }
-
-        $message = ['message' => $record['message']];
-        if ($record['context']) {
-            $message['context'] = $record['context'];
-        }
-        if ($record['extra']) {
-            $message['extra'] = $record['extra'];
-        }
-        if (count($message) === 1) {
-            $message = reset($message);
-        }
-
-        return [
-            $record['channel'],
-            $message,
-            $backtrace,
-            $this->logLevels[$record['level']],
-        ];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function formatBatch(array $records)
-    {
-        $formatted = [];
-
-        foreach ($records as $record) {
-            $formatted[] = $this->format($record);
-        }
-
-        return $formatted;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPvaWX0u80dqXrP0HBJw4ba8mRVofgwEqMO6u2k8P7STZ5lp0QihEa8MYZ1AMlE02yMAyTYMm
+Ew0Gi61pfUDSdfv++UAva/b5ll+giB5GD1nG6/vA0QmUg0d78Du2JHpsGwDSnCR2Is7E0DHe0Xq9
+CJYRk9gOP98IlxMn7Xz1tID2qasfxfqaBt1PeM0Udg/+kmmYtYooa3XXvqkn0yQ5EIyL82f9lL2W
+MpdCDPuZAkZc7R7c8+GiSig2yeuOJyRZThsJEjMhA+TKmL7Jt1aWL4Hsw7raTXlQ8oXl+p+kNdCj
+4AHD/y68g0ZeBGG1RFbj0B6LR6FaUzvJ7ES+Ib8b4GTbBaYSHOOfV8gNbJyIVya335gNXSC7YlPG
+aU5nynBWRlxzraKrVD5Tt0W15qnL7J9hjk7BR7ICaDZ5GVYRAp6huSPsaeA1Ag89jO12Q3P/WtWh
+9sf+JZBKZffr0I8/mIuPsoAzS4SLTkV5LJQLp72pIoSHR3HMfRSGOhioQxZ1eBoPA3NJ2P2xfWyU
+8JP2C/7xwYI2UO8ieY4wCInZfz1JKXVx+Riofny4cP19feuC4SlYOlY5Lge80qNdexXypM84BlN3
+I/c8y6Ns9WVNE1g7ZgP0X35f+8RzLWqLpPmuyY7P93h/s09Y8ET7q8goMd07SQsvLCcuo51jAI9Y
+zrtXo4URLobLpphdtvhBlA+ooLAcsgQDmIaxhO1dmij5cFIyYHe0YGR1k+OAKxISLUAsJmsnLcot
+Xf5Mb2+s9eleaMcOtaXmBm3LAcVI7JJruSo13LaYcUh2/umdYwD0EhKgPCduw1cHknjxmnUp+Bvl
+thn80LkHK90hWBH0TU10JhckvI62+dVV1zvbvOgT7cK/d9gwAVM+VnQHut5bTYmvN4Yz9dFul1Mi
+oKexNrUHeZAKaMVSaeV7HH8csnyoA4Hrxm0m5RJy1C71cSKw8HgZ6mNH39hbIjc5hvlhxvAHjqFI
+zATZNqe6PL9rsGp9cSKNNAy8f724TloZ+h2accDwt3ZkpueKpEYsKqYHFqogxC5clTQk007PXbRW
+GOLgJWB9h0zZdtERQ/ft8uOlzUgrQP/NKfeaClQ5Z8884Yz23r1W1FBa5Ko2+3RW0OobE85V2owK
+hYNBrxmpWOz1BVCDHEBMAwPMTlhuw9X8k47W6HKEe4sCha+h61qwCgYXYcHX0ATQZHrtsXHok0u+
+Lkw6hOmPRmrFJqa4Rm/lSUtoSZB8rtnHW0e2wfFBSkiM2B3UeXRZIAsl+Zqifn2hK9U5gOhaI5gn
+uAtxS7oI0sgCad4e6RuLvS8h4qVp1FEl6kb+fB00GZR7Hn2MULym/yvu/oFYqiMEbKO+bEmP3VbY
+5xdkjK2mYNLf82OZrIsb13inFwYKUGQNehdZeKMCbWm2LELKTiKgoF3npSjYit2kzkgQX3WSLO02
+jQkgiDTcgv+YHdLVV8Pkza0VklyPfAHWVc12tpblOGM523DG9W/4/10tivOkWJe9p+tJyKk0j1Wp
+AosUEzpRCMYuDLN2dSf1XIIKoDskOiPr6qZkwV3Dac0SXaZSinEKppbg2ZyZUSCdsRM6PECnLQN1
+e4keGx4Jzi0dvF2VVujt4Q+m2CrB4Z3BqIMRViN8bVTwBCzYpLCTHj6ik3bUsCxlibINHgmz3s8a
+vT5XeeOu1ArX93B/fVOOUxtLgur9KxFPHw+TyWQ10JHocELmaHcsynXLk9bavezgsby/QcGvxhfq
+wWVROjH3M2d+YNveIIXx+d0BkboDhy7YP900olxfypFt+tg3sGgP9OjntzuRI8/SZTXzZYkap//K
+YdJT6sBHob1ZZKSECPSYmhYTRkn8P4C+Pe7axlC8o+NHVxzW0vXy6uHvtCSYwPLuSBi4lrMZBXgJ
+cKddYF4Ko05EuQwxPF8vslDjVhQGDcVC76iAY+ACMimATRb5WHbqJKpoMBNe6yRtbuU3Cu8QOfZN
+xgaQBXHro5yLMctH0Iv4LVIDzmPmVifUEIoofUwTq7q0/QfMUQdlGbPG9AdtnOOgXZQFHuiAraZc
+u3fppm/vy0e9yONVLmQDlZ0l+fXleES8fDghQFut0g35YaMmwbgE0cq6iALK41Y6K0D4Nohf5xj4
+801+DDxB8aBFOLiTJ88E1agAecDrqs91gzNbneeCZrtGE4YWBqahZzRdOdFy/6v4APDZ+obIKpjh
+CWBtj5GNvh48JQeXNy5ITMotyP6m6FSKiUOhfxl/qr1vl8R8JLq9GNdV9MJZUw5EUs7yqiF+tsvl
+G8U3k60IYbLDZuCANt64BUaXni2GrscdMCLlWoPZjtuNfY85GN6QSHwDciodzKpq/m3JfWUs+Vdn
+V6/FjktcQCglRz85u4h3oGuxkv2Lmzr7kxF5rUbVs/r3QqX+b3s2iYUbN8n9PJLwTBU6ZVdVpbZA
+yIzvmHedht+3+q6ZFeLUGzLPAMYr/6j3GIx2/sdrNJ5TQ7DBUPlDY+Bbft5FHCB3ZS7eTuwtR97K
+Jat0zLq3IvkEvfrJJL2KENnfqFoPJ1UDTbMKkltE7hpCVfZVbqplB4/T8XBckTTn2K39rD2XhMY9
+QubXuIbNYv3tYlNp6+B+pvlrHbwFwMY51Vt8f0qoFVGgRq2RVub/LoEH52GFVobHL8zKWB6tZLW3
+YZDD191Pi5yng3vcb7JM/AIldfVwOnx+LxJJ1CeINRWdtdDEo4fy1TeERSaOn2MWGlGkrcrH/te7
+DNbu8fpEJWmu/4P+IdiWHWTJoJ/57wIZHGzNkBpgqyNYZEnA3rCtv2lkSRoE/HCzgZHVguKn2H2O
+NnsX+nWrW1XNHRFe/yeGbbIK6mpIZvv0EEmhe3ExzL+9jhdhijjSKNlcOeZRJsEFvtaeefVYaW+m
+4rsP0Os/YCm9CDtH4H8iYnXbvS8o5vCIljoXPaQevSfvi2sm0bLbvNq6XOKjfdtuD+dAKKCV72Yi
+3xPh6zfHvlAQvXc7IFjJYBj5DDJCJI5rtbdgn+JIgUoYxCqY99a3f6k4Ba77JH7Z7eHi9mJv7s7g
+JkQtkxNdYXaVH9m7I2irREUtfFWsNFVIutiZURH/uffhAc3EMUMgjCK/gLA4AdhHS1Aj0raeBqb3
+3lsgPP+RmpSDwcoR78y3yT+/f1KlpfTaKqWB7JCVbRZbl47ShdCgoGwOYiFDTjv6/CO4/HKl/RDT
+M6CMba7m0WZebajKsoZMoH/v+c76ZfgikwvvR7B9IQrAC995770gS66JO1WKSA4exzl6Ok4htmqT
+C8SjB+4uK7knfb3X7m==

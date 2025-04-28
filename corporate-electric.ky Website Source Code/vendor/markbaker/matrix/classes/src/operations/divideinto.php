@@ -1,44 +1,29 @@
-<?php
-
-/**
- *
- * Function code for the matrix division operation
- *
- * @copyright  Copyright (c) 2013-2018 Mark Baker (https://github.com/MarkBaker/PHPMatrix)
- * @license    https://opensource.org/licenses/MIT    MIT
- */
-
-namespace Matrix;
-
-use Matrix\Operators\Division;
-
-/**
- * Divides two or more matrix numbers
- *
- * @param array<int, mixed> $matrixValues The numbers to divide
- * @return Matrix
- * @throws Exception
- */
-function divideinto(...$matrixValues): Matrix
-{
-    if (count($matrixValues) < 2) {
-        throw new Exception('Division operation requires at least 2 arguments');
-    }
-
-    $matrix = array_shift($matrixValues);
-
-    if (is_array($matrix)) {
-        $matrix = new Matrix($matrix);
-    }
-    if (!$matrix instanceof Matrix) {
-        throw new Exception('Division arguments must be Matrix or array');
-    }
-
-    $result = new Division($matrix);
-
-    foreach ($matrixValues as $matrix) {
-        $result->execute($matrix);
-    }
-
-    return $result->result();
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cP/+cbtXlPdz1GNyZxKp9BFZg1dRXztWuq96uq/EXzbpV3Jl8i+WRqQy18h/SgPrG/z6RVxM0
+i2vdPb1V7e9fak9EeWzkxnE8BtiKdw0NTD5Oi0tc/VLWFKZFnSf4eAG9q5zj3GSplS+uDjgCMBLD
+hYGtvZljgeEMGjxzFxsG4/yQUKIgZExqEHGuB1AlLaQ+DlhOX7p4GDWzI0r532qUh/GMFVwPh1gN
+9bb8e0oQfGGDEFCPVxzNSd2f4ISqKs8U+qPREjMhA+TKmL7Jt1aWL4Hsw1vdJyZQNH+q+ow8jTCm
+3gHs/nWu6fCM8btlcYoeBU0+ZzVkbYmVCZTVpotwtx0k51eXfuGmxhtiKLpRVPBJ6FV4kh2AtLEI
+IeKlFtj3T9KbrsRomes5vgqntBuIZpYg9RWo4JIJaNnF+aM5uT0tx0wPNyR1VsfzD9XmU5knJ+ts
+FiK475DZ922Tv4VPaS+EE4KFQzUjpQdrdKHHG3g0uPnpmghX+2mhVaktPrX9Jpik2jeAKZYM5WoE
+kAunHreGhzE5kV/KztHcc+0E9DDcxp/H5JdzJ3rfbgrK8VNXlud1Czl9ApIxCGYWJ6pxDJ/6XQvM
+Hf3a5LK1Exae5YZmbCfIP15VMF8dsUnOPtdEE8xrnpQEgudGil53n2XSeTvA+V7d2x0fXAje4qxA
+hw5wRGdLbC83nC8MlO46sMHivYXTKwHnk2a9YiKZD7NKi9qbnuBhjE40HWTQN4Ld4ylIJ8GGC/gw
+BhuGLcnvCvF8bmd+byo49YIf+E2BA9NGxkdkfdAHEnNwO/WDtEVhNJ5jhaUJ204Ir/lymNnFlP2t
+7Y0Bq9RfU71JTTn411bOcQDz0cfwSrXD2bpn1UAjGNVDO10gk1a8L5qV+YbSBTTuq7ac4jq8YxUL
+2R2wwGUB2ZvHtN/U+kJQPWOrVACh5FBfZ+RLsvjZbQ3IS4plyqxloSGf8YdLyImOstODdeh1ki8G
+ooRUrMODLLjh6qriHXeRa+/36/01CYyvqM+2T7iWDbC/1onO46+ydRO1IUYOuUpyeVM+EUGQQRzN
+sMiIJ78/EdeV1A4f231ZNvBKC4no7Ut6jPKKTzRKRst2ybPAzuL9CsLIbQjeFeA7JS4NLjpfsQ/E
+uvrraSFOokFh1SHAeUQeV2bPheEUzU4iLrSDUdfKDhpSK4noQvJhixc9VxLLUCSfsdc2Y6SnP5Dg
+5WnDXkoXOE7NoUo1qUG59XKt8aqVjDejXC0BEsrUw6ryKeQHJeK3uhl2w8mejZe6HKJRMgxxwQUl
+CqiDzmWCEvvzZh0KIXnxKqXE3GunDLSbeLkw4Y/8sCIoefKLqei+OA55HKUUZVzt10Lf30pnc+Bb
+D15QisD9E0oVuKqSCyZKTXWPdBxKDe53zjKh8lCFUXt9QpMeVDjfTGRXqh5ErBODek1FAnUqBuN6
+3q3eAHxmxBThmHSMYs31JjMq727vxl+oLMNd9oAvZMldfoQ4FeFm9wwkYSOlw2GExF10KK2/IAKH
+MWZqZZ9AfuYEZuioUAvYVEbvbRCk4av3Den2O7J98xtVTV5ATx/NJ8s5N0z9+sCL1SBks35LRUo4
+9lW8MIAM2btJweyxcALcm7bWKhVGFpjoiBsW2Pctdw6B0BvN9hG1DZhurnxxQoSZZPv9M0s670KI
+BJsiUZtdeKj6DhrVrfkN+7tOUsmsqrlLmk8X85+/xTndafwwZ4Can4QhGmyEK1zL2MykTukkQAso
+IMEzgwNNvmZ3goG1ENiGbB9sZ8rmSUxYOGUIg+CVuC/xP5RzrGkrONlH2WFicU47uht/5rociey5
+5B+363MSfwx8TVzM+ap5goYxWKUriVLMuGbNcvXv48M8YQ50Wo9WrHYlsPaoOFESmGoS+8LnvFWe
+CoJa4wgYREzFujvdUO88WXDamok1gYTH4EK=

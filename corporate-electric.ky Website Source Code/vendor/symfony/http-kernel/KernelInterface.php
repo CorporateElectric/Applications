@@ -1,149 +1,42 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpKernel;
-
-use Symfony\Component\Config\Loader\LoaderInterface;
-use Symfony\Component\DependencyInjection\ContainerInterface;
-use Symfony\Component\HttpKernel\Bundle\BundleInterface;
-
-/**
- * The Kernel is the heart of the Symfony system.
- *
- * It manages an environment made of application kernel and bundles.
- *
- * @method string getBuildDir() Returns the build directory - not implementing it is deprecated since Symfony 5.2.
- *                              This directory should be used to store build artifacts, and can be read-only at runtime.
- *                              Caches written at runtime should be stored in the "cache directory" ({@see KernelInterface::getCacheDir()}).
- *
- * @author Fabien Potencier <fabien@symfony.com>
- */
-interface KernelInterface extends HttpKernelInterface
-{
-    /**
-     * Returns an array of bundles to register.
-     *
-     * @return iterable|BundleInterface[] An iterable of bundle instances
-     */
-    public function registerBundles();
-
-    /**
-     * Loads the container configuration.
-     */
-    public function registerContainerConfiguration(LoaderInterface $loader);
-
-    /**
-     * Boots the current kernel.
-     */
-    public function boot();
-
-    /**
-     * Shutdowns the kernel.
-     *
-     * This method is mainly useful when doing functional testing.
-     */
-    public function shutdown();
-
-    /**
-     * Gets the registered bundle instances.
-     *
-     * @return BundleInterface[] An array of registered bundle instances
-     */
-    public function getBundles();
-
-    /**
-     * Returns a bundle.
-     *
-     * @return BundleInterface A BundleInterface instance
-     *
-     * @throws \InvalidArgumentException when the bundle is not enabled
-     */
-    public function getBundle(string $name);
-
-    /**
-     * Returns the file path for a given bundle resource.
-     *
-     * A Resource can be a file or a directory.
-     *
-     * The resource name must follow the following pattern:
-     *
-     *     "@BundleName/path/to/a/file.something"
-     *
-     * where BundleName is the name of the bundle
-     * and the remaining part is the relative path in the bundle.
-     *
-     * @return string The absolute path of the resource
-     *
-     * @throws \InvalidArgumentException if the file cannot be found or the name is not valid
-     * @throws \RuntimeException         if the name contains invalid/unsafe characters
-     */
-    public function locateResource(string $name);
-
-    /**
-     * Gets the environment.
-     *
-     * @return string The current environment
-     */
-    public function getEnvironment();
-
-    /**
-     * Checks if debug mode is enabled.
-     *
-     * @return bool true if debug mode is enabled, false otherwise
-     */
-    public function isDebug();
-
-    /**
-     * Gets the project dir (path of the project's composer file).
-     *
-     * @return string
-     */
-    public function getProjectDir();
-
-    /**
-     * Gets the current container.
-     *
-     * @return ContainerInterface
-     */
-    public function getContainer();
-
-    /**
-     * Gets the request start time (not available if debug is disabled).
-     *
-     * @return float The request start timestamp
-     */
-    public function getStartTime();
-
-    /**
-     * Gets the cache directory.
-     *
-     * Since Symfony 5.2, the cache directory should be used for caches that are written at runtime.
-     * For caches and artifacts that can be warmed at compile-time and deployed as read-only,
-     * use the new "build directory" returned by the {@see getBuildDir()} method.
-     *
-     * @return string The cache directory
-     */
-    public function getCacheDir();
-
-    /**
-     * Gets the log directory.
-     *
-     * @return string The log directory
-     */
-    public function getLogDir();
-
-    /**
-     * Gets the charset of the application.
-     *
-     * @return string The charset
-     */
-    public function getCharset();
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+Hyj4we6gmDwJvKZkRruwiUjS76Yj/St84G==

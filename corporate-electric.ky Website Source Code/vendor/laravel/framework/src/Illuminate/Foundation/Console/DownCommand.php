@@ -1,119 +1,79 @@
-<?php
-
-namespace Illuminate\Foundation\Console;
-
-use Exception;
-use Illuminate\Console\Command;
-use Illuminate\Foundation\Exceptions\RegisterErrorViewPaths;
-use Illuminate\Support\Facades\View;
-
-class DownCommand extends Command
-{
-    /**
-     * The console command signature.
-     *
-     * @var string
-     */
-    protected $signature = 'down {--redirect= : The path that users should be redirected to}
-                                 {--render= : The view that should be prerendered for display during maintenance mode}
-                                 {--retry= : The number of seconds after which the request may be retried}
-                                 {--secret= : The secret phrase that may be used to bypass maintenance mode}
-                                 {--status=503 : The status code that should be used when returning the maintenance mode response}';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Put the application into maintenance / demo mode';
-
-    /**
-     * Execute the console command.
-     *
-     * @return int
-     */
-    public function handle()
-    {
-        try {
-            if (is_file(storage_path('framework/down'))) {
-                $this->comment('Application is already down.');
-
-                return 0;
-            }
-
-            file_put_contents(
-                storage_path('framework/down'),
-                json_encode($this->getDownFilePayload(), JSON_PRETTY_PRINT)
-            );
-
-            file_put_contents(
-                storage_path('framework/maintenance.php'),
-                file_get_contents(__DIR__.'/stubs/maintenance-mode.stub')
-            );
-
-            $this->comment('Application is now in maintenance mode.');
-        } catch (Exception $e) {
-            $this->error('Failed to enter maintenance mode.');
-
-            $this->error($e->getMessage());
-
-            return 1;
-        }
-    }
-
-    /**
-     * Get the payload to be placed in the "down" file.
-     *
-     * @return array
-     */
-    protected function getDownFilePayload()
-    {
-        return [
-            'redirect' => $this->redirectPath(),
-            'retry' => $this->getRetryTime(),
-            'secret' => $this->option('secret'),
-            'status' => (int) $this->option('status', 503),
-            'template' => $this->option('render') ? $this->prerenderView() : null,
-        ];
-    }
-
-    /**
-     * Get the path that users should be redirected to.
-     *
-     * @return string
-     */
-    protected function redirectPath()
-    {
-        if ($this->option('redirect') && $this->option('redirect') !== '/') {
-            return '/'.trim($this->option('redirect'), '/');
-        }
-
-        return $this->option('redirect');
-    }
-
-    /**
-     * Prerender the specified view so that it can be rendered even before loading Composer.
-     *
-     * @return string
-     */
-    protected function prerenderView()
-    {
-        (new RegisterErrorViewPaths)();
-
-        return view($this->option('render'), [
-            'retryAfter' => $this->option('retry'),
-        ])->render();
-    }
-
-    /**
-     * Get the number of seconds the client should wait before retrying their request.
-     *
-     * @return int|null
-     */
-    protected function getRetryTime()
-    {
-        $retry = $this->option('retry');
-
-        return is_numeric($retry) && $retry > 0 ? (int) $retry : null;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

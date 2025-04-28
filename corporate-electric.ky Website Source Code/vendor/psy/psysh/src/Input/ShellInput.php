@@ -1,336 +1,187 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\Input;
-
-use Symfony\Component\Console\Input\InputDefinition;
-use Symfony\Component\Console\Input\StringInput;
-
-/**
- * A StringInput subclass specialized for code arguments.
- */
-class ShellInput extends StringInput
-{
-    private $hasCodeArgument = false;
-
-    /**
-     * Unlike the parent implementation's tokens, this contains an array of
-     * token/rest pairs, so that code arguments can be handled while parsing.
-     */
-    private $tokenPairs;
-    private $parsed;
-
-    /**
-     * Constructor.
-     *
-     * @param string $input An array of parameters from the CLI (in the argv format)
-     */
-    public function __construct($input)
-    {
-        parent::__construct($input);
-
-        $this->tokenPairs = $this->tokenize($input);
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * @throws \InvalidArgumentException if $definition has CodeArgument before the final argument position
-     */
-    public function bind(InputDefinition $definition)
-    {
-        $hasCodeArgument = false;
-
-        if ($definition->getArgumentCount() > 0) {
-            $args = $definition->getArguments();
-            $lastArg = \array_pop($args);
-            foreach ($args as $arg) {
-                if ($arg instanceof CodeArgument) {
-                    $msg = \sprintf('Unexpected CodeArgument before the final position: %s', $arg->getName());
-                    throw new \InvalidArgumentException($msg);
-                }
-            }
-
-            if ($lastArg instanceof CodeArgument) {
-                $hasCodeArgument = true;
-            }
-        }
-
-        $this->hasCodeArgument = $hasCodeArgument;
-
-        return parent::bind($definition);
-    }
-
-    /**
-     * Tokenizes a string.
-     *
-     * The version of this on StringInput is good, but doesn't handle code
-     * arguments if they're at all complicated. This does :)
-     *
-     * @param string $input The input to tokenize
-     *
-     * @return array An array of token/rest pairs
-     *
-     * @throws \InvalidArgumentException When unable to parse input (should never happen)
-     */
-    private function tokenize($input)
-    {
-        $tokens = [];
-        $length = \strlen($input);
-        $cursor = 0;
-        while ($cursor < $length) {
-            if (\preg_match('/\s+/A', $input, $match, 0, $cursor)) {
-            } elseif (\preg_match('/([^="\'\s]+?)(=?)('.StringInput::REGEX_QUOTED_STRING.'+)/A', $input, $match, 0, $cursor)) {
-                $tokens[] = [
-                    $match[1].$match[2].\stripcslashes(\str_replace(['"\'', '\'"', '\'\'', '""'], '', \substr($match[3], 1, \strlen($match[3]) - 2))),
-                    \stripcslashes(\substr($input, $cursor)),
-                ];
-            } elseif (\preg_match('/'.StringInput::REGEX_QUOTED_STRING.'/A', $input, $match, 0, $cursor)) {
-                $tokens[] = [
-                    \stripcslashes(\substr($match[0], 1, \strlen($match[0]) - 2)),
-                    \stripcslashes(\substr($input, $cursor)),
-                ];
-            } elseif (\preg_match('/'.StringInput::REGEX_STRING.'/A', $input, $match, 0, $cursor)) {
-                $tokens[] = [
-                    \stripcslashes($match[1]),
-                    \stripcslashes(\substr($input, $cursor)),
-                ];
-            } else {
-                // should never happen
-                // @codeCoverageIgnoreStart
-                throw new \InvalidArgumentException(\sprintf('Unable to parse input near "... %s ..."', \substr($input, $cursor, 10)));
-                // @codeCoverageIgnoreEnd
-            }
-
-            $cursor += \strlen($match[0]);
-        }
-
-        return $tokens;
-    }
-
-    /**
-     * Same as parent, but with some bonus handling for code arguments.
-     */
-    protected function parse()
-    {
-        $parseOptions = true;
-        $this->parsed = $this->tokenPairs;
-        while (null !== $tokenPair = \array_shift($this->parsed)) {
-            // token is what you'd expect. rest is the remainder of the input
-            // string, including token, and will be used if this is a code arg.
-            list($token, $rest) = $tokenPair;
-
-            if ($parseOptions && '' === $token) {
-                $this->parseShellArgument($token, $rest);
-            } elseif ($parseOptions && '--' === $token) {
-                $parseOptions = false;
-            } elseif ($parseOptions && 0 === \strpos($token, '--')) {
-                $this->parseLongOption($token);
-            } elseif ($parseOptions && '-' === $token[0] && '-' !== $token) {
-                $this->parseShortOption($token);
-            } else {
-                $this->parseShellArgument($token, $rest);
-            }
-        }
-    }
-
-    /**
-     * Parses an argument, with bonus handling for code arguments.
-     *
-     * @param string $token The current token
-     * @param string $rest  The remaining unparsed input, including the current token
-     *
-     * @throws \RuntimeException When too many arguments are given
-     */
-    private function parseShellArgument($token, $rest)
-    {
-        $c = \count($this->arguments);
-
-        // if input is expecting another argument, add it
-        if ($this->definition->hasArgument($c)) {
-            $arg = $this->definition->getArgument($c);
-
-            if ($arg instanceof CodeArgument) {
-                // When we find a code argument, we're done parsing. Add the
-                // remaining input to the current argument and call it a day.
-                $this->parsed = [];
-                $this->arguments[$arg->getName()] = $rest;
-            } else {
-                $this->arguments[$arg->getName()] = $arg->isArray() ? [$token] : $token;
-            }
-
-            return;
-        }
-
-        // (copypasta)
-        //
-        // @codeCoverageIgnoreStart
-
-        // if last argument isArray(), append token to last argument
-        if ($this->definition->hasArgument($c - 1) && $this->definition->getArgument($c - 1)->isArray()) {
-            $arg = $this->definition->getArgument($c - 1);
-            $this->arguments[$arg->getName()][] = $token;
-
-            return;
-        }
-
-        // unexpected argument
-        $all = $this->definition->getArguments();
-        if (\count($all)) {
-            throw new \RuntimeException(\sprintf('Too many arguments, expected arguments "%s".', \implode('" "', \array_keys($all))));
-        }
-
-        throw new \RuntimeException(\sprintf('No arguments expected, got "%s".', $token));
-        // @codeCoverageIgnoreEnd
-    }
-
-    // Everything below this is copypasta from ArgvInput private methods
-    // @codeCoverageIgnoreStart
-
-    /**
-     * Parses a short option.
-     *
-     * @param string $token The current token
-     */
-    private function parseShortOption($token)
-    {
-        $name = \substr($token, 1);
-
-        if (\strlen($name) > 1) {
-            if ($this->definition->hasShortcut($name[0]) && $this->definition->getOptionForShortcut($name[0])->acceptValue()) {
-                // an option with a value (with no space)
-                $this->addShortOption($name[0], \substr($name, 1));
-            } else {
-                $this->parseShortOptionSet($name);
-            }
-        } else {
-            $this->addShortOption($name, null);
-        }
-    }
-
-    /**
-     * Parses a short option set.
-     *
-     * @param string $name The current token
-     *
-     * @throws \RuntimeException When option given doesn't exist
-     */
-    private function parseShortOptionSet($name)
-    {
-        $len = \strlen($name);
-        for ($i = 0; $i < $len; $i++) {
-            if (!$this->definition->hasShortcut($name[$i])) {
-                throw new \RuntimeException(\sprintf('The "-%s" option does not exist.', $name[$i]));
-            }
-
-            $option = $this->definition->getOptionForShortcut($name[$i]);
-            if ($option->acceptValue()) {
-                $this->addLongOption($option->getName(), $i === $len - 1 ? null : \substr($name, $i + 1));
-
-                break;
-            } else {
-                $this->addLongOption($option->getName(), null);
-            }
-        }
-    }
-
-    /**
-     * Parses a long option.
-     *
-     * @param string $token The current token
-     */
-    private function parseLongOption($token)
-    {
-        $name = \substr($token, 2);
-
-        if (false !== $pos = \strpos($name, '=')) {
-            if (0 === \strlen($value = \substr($name, $pos + 1))) {
-                // if no value after "=" then substr() returns "" since php7 only, false before
-                // see http://php.net/manual/fr/migration70.incompatible.php#119151
-                if (\PHP_VERSION_ID < 70000 && false === $value) {
-                    $value = '';
-                }
-                \array_unshift($this->parsed, [$value, null]);
-            }
-            $this->addLongOption(\substr($name, 0, $pos), $value);
-        } else {
-            $this->addLongOption($name, null);
-        }
-    }
-
-    /**
-     * Adds a short option value.
-     *
-     * @param string $shortcut The short option key
-     * @param mixed  $value    The value for the option
-     *
-     * @throws \RuntimeException When option given doesn't exist
-     */
-    private function addShortOption($shortcut, $value)
-    {
-        if (!$this->definition->hasShortcut($shortcut)) {
-            throw new \RuntimeException(\sprintf('The "-%s" option does not exist.', $shortcut));
-        }
-
-        $this->addLongOption($this->definition->getOptionForShortcut($shortcut)->getName(), $value);
-    }
-
-    /**
-     * Adds a long option value.
-     *
-     * @param string $name  The long option key
-     * @param mixed  $value The value for the option
-     *
-     * @throws \RuntimeException When option given doesn't exist
-     */
-    private function addLongOption($name, $value)
-    {
-        if (!$this->definition->hasOption($name)) {
-            throw new \RuntimeException(\sprintf('The "--%s" option does not exist.', $name));
-        }
-
-        $option = $this->definition->getOption($name);
-
-        if (null !== $value && !$option->acceptValue()) {
-            throw new \RuntimeException(\sprintf('The "--%s" option does not accept a value.', $name));
-        }
-
-        if (\in_array($value, ['', null], true) && $option->acceptValue() && \count($this->parsed)) {
-            // if option accepts an optional or mandatory argument
-            // let's see if there is one provided
-            $next = \array_shift($this->parsed);
-            $nextToken = $next[0];
-            if ((isset($nextToken[0]) && '-' !== $nextToken[0]) || \in_array($nextToken, ['', null], true)) {
-                $value = $nextToken;
-            } else {
-                \array_unshift($this->parsed, $next);
-            }
-        }
-
-        if ($value === null) {
-            if ($option->isValueRequired()) {
-                throw new \RuntimeException(\sprintf('The "--%s" option requires a value.', $name));
-            }
-
-            if (!$option->isArray() && !$option->isValueOptional()) {
-                $value = true;
-            }
-        }
-
-        if ($option->isArray()) {
-            $this->options[$name][] = $value;
-        } else {
-            $this->options[$name] = $value;
-        }
-    }
-
-    // @codeCoverageIgnoreEnd
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

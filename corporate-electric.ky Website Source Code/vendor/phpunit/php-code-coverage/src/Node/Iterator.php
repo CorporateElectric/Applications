@@ -1,92 +1,48 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of phpunit/php-code-coverage.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\CodeCoverage\Node;
-
-use function count;
-use RecursiveIterator;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for phpunit/php-code-coverage
- */
-final class Iterator implements RecursiveIterator
-{
-    /**
-     * @var int
-     */
-    private $position;
-
-    /**
-     * @var AbstractNode[]
-     */
-    private $nodes;
-
-    public function __construct(Directory $node)
-    {
-        $this->nodes = $node->children();
-    }
-
-    /**
-     * Rewinds the Iterator to the first element.
-     */
-    public function rewind(): void
-    {
-        $this->position = 0;
-    }
-
-    /**
-     * Checks if there is a current element after calls to rewind() or next().
-     */
-    public function valid(): bool
-    {
-        return $this->position < count($this->nodes);
-    }
-
-    /**
-     * Returns the key of the current element.
-     */
-    public function key(): int
-    {
-        return $this->position;
-    }
-
-    /**
-     * Returns the current element.
-     */
-    public function current(): ?AbstractNode
-    {
-        return $this->valid() ? $this->nodes[$this->position] : null;
-    }
-
-    /**
-     * Moves forward to next element.
-     */
-    public function next(): void
-    {
-        $this->position++;
-    }
-
-    /**
-     * Returns the sub iterator for the current element.
-     *
-     * @return Iterator
-     */
-    public function getChildren(): self
-    {
-        return new self($this->nodes[$this->position]);
-    }
-
-    /**
-     * Checks whether the current element has children.
-     */
-    public function hasChildren(): bool
-    {
-        return $this->nodes[$this->position] instanceof Directory;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+J70pzgIAQX9W

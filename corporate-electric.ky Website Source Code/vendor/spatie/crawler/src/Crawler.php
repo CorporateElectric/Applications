@@ -1,551 +1,245 @@
-<?php
-
-namespace Spatie\Crawler;
-
-use Generator;
-use GuzzleHttp\Client;
-use GuzzleHttp\Pool;
-use GuzzleHttp\Psr7\Request;
-use GuzzleHttp\Psr7\Uri;
-use GuzzleHttp\RequestOptions;
-use Psr\Http\Message\UriInterface;
-use Spatie\Browsershot\Browsershot;
-use Spatie\Crawler\CrawlQueue\ArrayCrawlQueue;
-use Spatie\Crawler\CrawlQueue\CrawlQueue;
-use Spatie\Crawler\Exception\InvalidCrawlRequestHandler;
-use Spatie\Crawler\Handlers\CrawlRequestFailed;
-use Spatie\Crawler\Handlers\CrawlRequestFulfilled;
-use Spatie\Robots\RobotsTxt;
-use Tree\Node\Node;
-
-class Crawler
-{
-    public const DEFAULT_USER_AGENT = '*';
-
-    /** @var \GuzzleHttp\Client */
-    protected $client;
-
-    /** @var \Psr\Http\Message\UriInterface */
-    protected $baseUrl;
-
-    /** @var \Spatie\Crawler\CrawlObserverCollection */
-    protected $crawlObservers;
-
-    /** @var \Spatie\Crawler\CrawlProfile */
-    protected $crawlProfile;
-
-    /** @var int */
-    protected $concurrency;
-
-    /** @var \Spatie\Crawler\CrawlQueue\CrawlQueue */
-    protected $crawlQueue;
-
-    /** @var int */
-    protected $crawledUrlCount = 0;
-
-    /** @var int|null */
-    protected $maximumCrawlCount = null;
-
-    /** @var int */
-    protected $maximumResponseSize = 1024 * 1024 * 2;
-
-    /** @var int|null */
-    protected $maximumDepth = null;
-
-    /** @var bool */
-    protected $respectRobots = true;
-
-    /** @var bool */
-    protected $rejectNofollowLinks = true;
-
-    /** @var \Tree\Node\Node */
-    protected $depthTree;
-
-    /** @var bool */
-    protected $executeJavaScript = false;
-
-    /** @var Browsershot */
-    protected $browsershot = null;
-
-    /** @var \Spatie\Robots\RobotsTxt */
-    protected $robotsTxt = null;
-
-    /** @var string */
-    protected $crawlRequestFulfilledClass;
-
-    /** @var string */
-    protected $crawlRequestFailedClass;
-
-    /** @var int */
-    protected $delayBetweenRequests = 0;
-
-    /** @var array */
-    protected $allowedMimeTypes = [];
-
-    /** @var   */
-    protected static $defaultClientOptions = [
-        RequestOptions::COOKIES => true,
-        RequestOptions::CONNECT_TIMEOUT => 10,
-        RequestOptions::TIMEOUT => 10,
-        RequestOptions::ALLOW_REDIRECTS => false,
-        RequestOptions::HEADERS => [
-            'User-Agent' => self::DEFAULT_USER_AGENT,
-        ],
-    ];
-
-    public static function create(array $clientOptions = []): Crawler
-    {
-        $clientOptions = (count($clientOptions))
-            ? $clientOptions
-            : static::$defaultClientOptions;
-
-        $client = new Client($clientOptions);
-
-        return new static($client);
-    }
-
-    public function __construct(Client $client, int $concurrency = 10)
-    {
-        $this->client = $client;
-
-        $this->concurrency = $concurrency;
-
-        $this->crawlProfile = new CrawlAllUrls();
-
-        $this->crawlQueue = new ArrayCrawlQueue();
-
-        $this->crawlObservers = new CrawlObserverCollection();
-
-        $this->crawlRequestFulfilledClass = CrawlRequestFulfilled::class;
-
-        $this->crawlRequestFailedClass = CrawlRequestFailed::class;
-    }
-
-    public function setConcurrency(int $concurrency): Crawler
-    {
-        $this->concurrency = $concurrency;
-
-        return $this;
-    }
-
-    public function setMaximumResponseSize(int $maximumResponseSizeInBytes): Crawler
-    {
-        $this->maximumResponseSize = $maximumResponseSizeInBytes;
-
-        return $this;
-    }
-
-    public function getMaximumResponseSize(): ?int
-    {
-        return $this->maximumResponseSize;
-    }
-
-    public function setMaximumCrawlCount(int $maximumCrawlCount): Crawler
-    {
-        $this->maximumCrawlCount = $maximumCrawlCount;
-
-        return $this;
-    }
-
-    public function getMaximumCrawlCount(): ?int
-    {
-        return $this->maximumCrawlCount;
-    }
-
-    public function getCrawlerUrlCount(): int
-    {
-        return $this->crawledUrlCount;
-    }
-
-    public function setMaximumDepth(int $maximumDepth): Crawler
-    {
-        $this->maximumDepth = $maximumDepth;
-
-        return $this;
-    }
-
-    public function getMaximumDepth(): ?int
-    {
-        return $this->maximumDepth;
-    }
-
-    /**
-     * @param int $delay The delay in milliseconds.
-     *
-     * @return Crawler
-     */
-    public function setDelayBetweenRequests(int $delay): Crawler
-    {
-        $this->delayBetweenRequests = ($delay * 1000);
-
-        return $this;
-    }
-
-    /**
-     * @return int The delay in milliseconds.
-     */
-    public function getDelayBetweenRequests(): int
-    {
-        return $this->delayBetweenRequests;
-    }
-
-    /**
-     * @param array $types The allowed mimetypes to parse
-     *
-     * @return Crawler
-     */
-    public function setParseableMimeTypes(array $types): Crawler
-    {
-        $this->allowedMimeTypes = $types;
-
-        return $this;
-    }
-
-    /**
-     * @return int The allowed mimetypes to prase
-     */
-    public function getParseableMimeTypes(): array
-    {
-        return $this->allowedMimeTypes;
-    }
-
-    public function ignoreRobots(): Crawler
-    {
-        $this->respectRobots = false;
-
-        return $this;
-    }
-
-    public function respectRobots(): Crawler
-    {
-        $this->respectRobots = true;
-
-        return $this;
-    }
-
-    public function mustRespectRobots(): bool
-    {
-        return $this->respectRobots;
-    }
-
-    public function acceptNofollowLinks(): Crawler
-    {
-        $this->rejectNofollowLinks = false;
-
-        return $this;
-    }
-
-    public function rejectNofollowLinks(): Crawler
-    {
-        $this->rejectNofollowLinks = true;
-
-        return $this;
-    }
-
-    public function mustRejectNofollowLinks(): bool
-    {
-        return $this->rejectNofollowLinks;
-    }
-
-    public function getRobotsTxt(): RobotsTxt
-    {
-        return $this->robotsTxt;
-    }
-
-    public function setCrawlQueue(CrawlQueue $crawlQueue): Crawler
-    {
-        $this->crawlQueue = $crawlQueue;
-
-        return $this;
-    }
-
-    public function getCrawlQueue(): CrawlQueue
-    {
-        return $this->crawlQueue;
-    }
-
-    public function executeJavaScript(): Crawler
-    {
-        $this->executeJavaScript = true;
-
-        return $this;
-    }
-
-    public function doNotExecuteJavaScript(): Crawler
-    {
-        $this->executeJavaScript = false;
-
-        return $this;
-    }
-
-    public function mayExecuteJavascript(): bool
-    {
-        return $this->executeJavaScript;
-    }
-
-    /**
-     * @param \Spatie\Crawler\CrawlObserver|array[\Spatie\Crawler\CrawlObserver] $crawlObservers
-     *
-     * @return $this
-     */
-    public function setCrawlObserver($crawlObservers): Crawler
-    {
-        if (! is_array($crawlObservers)) {
-            $crawlObservers = [$crawlObservers];
-        }
-
-        return $this->setCrawlObservers($crawlObservers);
-    }
-
-    public function setCrawlObservers(array $crawlObservers): Crawler
-    {
-        $this->crawlObservers = new CrawlObserverCollection($crawlObservers);
-
-        return $this;
-    }
-
-    public function addCrawlObserver(CrawlObserver $crawlObserver): Crawler
-    {
-        $this->crawlObservers->addObserver($crawlObserver);
-
-        return $this;
-    }
-
-    public function getCrawlObservers(): CrawlObserverCollection
-    {
-        return $this->crawlObservers;
-    }
-
-    public function setCrawlProfile(CrawlProfile $crawlProfile): Crawler
-    {
-        $this->crawlProfile = $crawlProfile;
-
-        return $this;
-    }
-
-    public function getCrawlProfile(): CrawlProfile
-    {
-        return $this->crawlProfile;
-    }
-
-    public function setCrawlFulfilledHandlerClass(string $crawlRequestFulfilledClass): Crawler
-    {
-        $baseClass = CrawlRequestFulfilled::class;
-
-        if (! is_subclass_of($crawlRequestFulfilledClass, $baseClass)) {
-            throw InvalidCrawlRequestHandler::doesNotExtendBaseClass($crawlRequestFulfilledClass, $baseClass);
-        }
-
-        $this->crawlRequestFulfilledClass = $crawlRequestFulfilledClass;
-
-        return $this;
-    }
-
-    public function setCrawlFailedHandlerClass(string $crawlRequestFailedClass): Crawler
-    {
-        $baseClass = CrawlRequestFailed::class;
-
-        if (! is_subclass_of($crawlRequestFailedClass, $baseClass)) {
-            throw InvalidCrawlRequestHandler::doesNotExtendBaseClass($crawlRequestFailedClass, $baseClass);
-        }
-
-        $this->crawlRequestFailedClass = $crawlRequestFailedClass;
-
-        return $this;
-    }
-
-    public function setBrowsershot(Browsershot $browsershot)
-    {
-        $this->browsershot = $browsershot;
-
-        return $this;
-    }
-
-    public function setUserAgent(string $userAgent): Crawler
-    {
-        $clientOptions = $this->client->getConfig();
-
-        $headers = array_change_key_case($clientOptions['headers']);
-        $headers['user-agent'] = $userAgent;
-
-        $clientOptions['headers'] = $headers;
-
-        $this->client = new Client($clientOptions);
-
-        return $this;
-    }
-
-    public function getUserAgent(): string
-    {
-        $headers = $this->client->getConfig('headers');
-
-        foreach (array_keys($headers) as $name) {
-            if (strtolower($name) === 'user-agent') {
-                return (string) $headers[$name];
-            }
-        }
-
-        return static::DEFAULT_USER_AGENT;
-    }
-
-    public function getBrowsershot(): Browsershot
-    {
-        if (! $this->browsershot) {
-            $this->browsershot = new Browsershot();
-        }
-
-        return $this->browsershot;
-    }
-
-    public function getBaseUrl(): UriInterface
-    {
-        return $this->baseUrl;
-    }
-
-    /**
-     * @param \Psr\Http\Message\UriInterface|string $baseUrl
-     */
-    public function startCrawling($baseUrl)
-    {
-        if (! $baseUrl instanceof UriInterface) {
-            $baseUrl = new Uri($baseUrl);
-        }
-
-        if ($baseUrl->getScheme() === '') {
-            $baseUrl = $baseUrl->withScheme('http');
-        }
-
-        if ($baseUrl->getPath() === '') {
-            $baseUrl = $baseUrl->withPath('/');
-        }
-
-        $this->baseUrl = $baseUrl;
-
-        $crawlUrl = CrawlUrl::create($this->baseUrl);
-
-        $this->robotsTxt = $this->createRobotsTxt($crawlUrl->url);
-
-        if ($this->robotsTxt->allows((string) $crawlUrl->url, $this->getUserAgent()) ||
-            ! $this->respectRobots
-        ) {
-            $this->addToCrawlQueue($crawlUrl);
-        }
-
-        $this->depthTree = new Node((string) $this->baseUrl);
-
-        $this->startCrawlingQueue();
-
-        foreach ($this->crawlObservers as $crawlObserver) {
-            $crawlObserver->finishedCrawling();
-        }
-    }
-
-    public function addToDepthTree(UriInterface $url, UriInterface $parentUrl, Node $node = null): ?Node
-    {
-        if (is_null($this->maximumDepth)) {
-            return new Node((string) $url);
-        }
-
-        $node = $node ?? $this->depthTree;
-
-        $returnNode = null;
-
-        if ($node->getValue() === (string) $parentUrl) {
-            $newNode = new Node((string) $url);
-
-            $node->addChild($newNode);
-
-            return $newNode;
-        }
-
-        foreach ($node->getChildren() as $currentNode) {
-            $returnNode = $this->addToDepthTree($url, $parentUrl, $currentNode);
-
-            if (! is_null($returnNode)) {
-                break;
-            }
-        }
-
-        return $returnNode;
-    }
-
-    protected function startCrawlingQueue()
-    {
-        while ($this->crawlQueue->hasPendingUrls()) {
-            $pool = new Pool($this->client, $this->getCrawlRequests(), [
-                'concurrency' => $this->concurrency,
-                'options' => $this->client->getConfig(),
-                'fulfilled' => new $this->crawlRequestFulfilledClass($this),
-                'rejected' => new $this->crawlRequestFailedClass($this),
-            ]);
-
-            $promise = $pool->promise();
-
-            $promise->wait();
-        }
-    }
-
-    /**
-     * @deprecated This function will be removed in the next major version
-     */
-    public function endsWith($haystack, $needle)
-    {
-        return strrpos($haystack, $needle) + strlen($needle) ===
-            strlen($haystack);
-    }
-
-    protected function createRobotsTxt(UriInterface $uri): RobotsTxt
-    {
-        return RobotsTxt::create($uri->withPath('/robots.txt'));
-    }
-
-    protected function getCrawlRequests(): Generator
-    {
-        while ($crawlUrl = $this->crawlQueue->getFirstPendingUrl()) {
-            if (! $this->crawlProfile->shouldCrawl($crawlUrl->url)) {
-                $this->crawlQueue->markAsProcessed($crawlUrl);
-                continue;
-            }
-
-            if ($this->crawlQueue->hasAlreadyBeenProcessed($crawlUrl)) {
-                continue;
-            }
-
-            foreach ($this->crawlObservers as $crawlObserver) {
-                $crawlObserver->willCrawl($crawlUrl->url);
-            }
-
-            $this->crawlQueue->markAsProcessed($crawlUrl);
-
-            yield $crawlUrl->getId() => new Request('GET', $crawlUrl->url);
-        }
-    }
-
-    public function addToCrawlQueue(CrawlUrl $crawlUrl): Crawler
-    {
-        if (! $this->getCrawlProfile()->shouldCrawl($crawlUrl->url)) {
-            return $this;
-        }
-
-        if ($this->getCrawlQueue()->has($crawlUrl->url)) {
-            return $this;
-        }
-
-        $this->crawledUrlCount++;
-
-        $this->crawlQueue->add($crawlUrl);
-
-        return $this;
-    }
-
-    public function maximumCrawlCountReached(): bool
-    {
-        $maximumCrawlCount = $this->getMaximumCrawlCount();
-
-        if (is_null($maximumCrawlCount)) {
-            return false;
-        }
-
-        return $this->getCrawlerUrlCount() >= $maximumCrawlCount;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,90 +1,49 @@
-<?php
-
-namespace Intervention\Image\Gd\Shapes;
-
-use Intervention\Image\AbstractShape;
-use Intervention\Image\Gd\Color;
-use Intervention\Image\Image;
-
-class LineShape extends AbstractShape
-{
-    /**
-     * Starting point x-coordinate of line
-     *
-     * @var int
-     */
-    public $x = 0;
-
-    /**
-     * Starting point y-coordinate of line
-     *
-     * @var int
-     */
-    public $y = 0;
-
-    /**
-     * Color of line
-     *
-     * @var string
-     */
-    public $color = '#000000';
-
-    /**
-     * Width of line in pixels
-     *
-     * @var int
-     */
-    public $width = 1;
-
-    /**
-     * Create new line shape instance
-     *
-     * @param int $x
-     * @param int $y
-     */
-    public function __construct($x = null, $y = null)
-    {
-        $this->x = is_numeric($x) ? intval($x) : $this->x;
-        $this->y = is_numeric($y) ? intval($y) : $this->y;
-    }
-
-    /**
-     * Set current line color
-     *
-     * @param  string $color
-     * @return void
-     */
-    public function color($color)
-    {
-        $this->color = $color;
-    }
-
-    /**
-     * Set current line width in pixels
-     *
-     * @param  int $width
-     * @return void
-     */
-    public function width($width)
-    {
-        throw new \Intervention\Image\Exception\NotSupportedException(
-            "Line width is not supported by GD driver."
-        );
-    }
-
-    /**
-     * Draw current instance of line to given endpoint on given image
-     *
-     * @param  Image   $image
-     * @param  int     $x
-     * @param  int     $y
-     * @return boolean
-     */
-    public function applyToImage(Image $image, $x = 0, $y = 0)
-    {
-        $color = new Color($this->color);
-        imageline($image->getCore(), $x, $y, $this->x, $this->y, $color->getInt());
-
-        return true;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

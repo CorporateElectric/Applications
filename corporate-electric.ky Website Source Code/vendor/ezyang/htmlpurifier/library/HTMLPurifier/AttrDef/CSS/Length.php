@@ -1,77 +1,46 @@
-<?php
-
-/**
- * Represents a Length as defined by CSS.
- */
-class HTMLPurifier_AttrDef_CSS_Length extends HTMLPurifier_AttrDef
-{
-
-    /**
-     * @type HTMLPurifier_Length|string
-     */
-    protected $min;
-
-    /**
-     * @type HTMLPurifier_Length|string
-     */
-    protected $max;
-
-    /**
-     * @param HTMLPurifier_Length|string $min Minimum length, or null for no bound. String is also acceptable.
-     * @param HTMLPurifier_Length|string $max Maximum length, or null for no bound. String is also acceptable.
-     */
-    public function __construct($min = null, $max = null)
-    {
-        $this->min = $min !== null ? HTMLPurifier_Length::make($min) : null;
-        $this->max = $max !== null ? HTMLPurifier_Length::make($max) : null;
-    }
-
-    /**
-     * @param string $string
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return bool|string
-     */
-    public function validate($string, $config, $context)
-    {
-        $string = $this->parseCDATA($string);
-
-        // Optimizations
-        if ($string === '') {
-            return false;
-        }
-        if ($string === '0') {
-            return '0';
-        }
-        if (strlen($string) === 1) {
-            return false;
-        }
-
-        $length = HTMLPurifier_Length::make($string);
-        if (!$length->isValid()) {
-            return false;
-        }
-
-        if ($this->min) {
-            $c = $length->compareTo($this->min);
-            if ($c === false) {
-                return false;
-            }
-            if ($c < 0) {
-                return false;
-            }
-        }
-        if ($this->max) {
-            $c = $length->compareTo($this->max);
-            if ($c === false) {
-                return false;
-            }
-            if ($c > 0) {
-                return false;
-            }
-        }
-        return $length->toString();
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+QWhUvnFOLO90s0Hbefn7Bo/GMxTNFRy8

@@ -1,110 +1,58 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Console\Formatter;
-
-use Symfony\Component\Console\Exception\InvalidArgumentException;
-use Symfony\Contracts\Service\ResetInterface;
-
-/**
- * @author Jean-François Simon <contact@jfsimon.fr>
- */
-class OutputFormatterStyleStack implements ResetInterface
-{
-    /**
-     * @var OutputFormatterStyleInterface[]
-     */
-    private $styles;
-
-    private $emptyStyle;
-
-    public function __construct(OutputFormatterStyleInterface $emptyStyle = null)
-    {
-        $this->emptyStyle = $emptyStyle ?: new OutputFormatterStyle();
-        $this->reset();
-    }
-
-    /**
-     * Resets stack (ie. empty internal arrays).
-     */
-    public function reset()
-    {
-        $this->styles = [];
-    }
-
-    /**
-     * Pushes a style in the stack.
-     */
-    public function push(OutputFormatterStyleInterface $style)
-    {
-        $this->styles[] = $style;
-    }
-
-    /**
-     * Pops a style from the stack.
-     *
-     * @return OutputFormatterStyleInterface
-     *
-     * @throws InvalidArgumentException When style tags incorrectly nested
-     */
-    public function pop(OutputFormatterStyleInterface $style = null)
-    {
-        if (empty($this->styles)) {
-            return $this->emptyStyle;
-        }
-
-        if (null === $style) {
-            return array_pop($this->styles);
-        }
-
-        foreach (array_reverse($this->styles, true) as $index => $stackedStyle) {
-            if ($style->apply('') === $stackedStyle->apply('')) {
-                $this->styles = \array_slice($this->styles, 0, $index);
-
-                return $stackedStyle;
-            }
-        }
-
-        throw new InvalidArgumentException('Incorrectly nested style tag found.');
-    }
-
-    /**
-     * Computes current style with stacks top codes.
-     *
-     * @return OutputFormatterStyle
-     */
-    public function getCurrent()
-    {
-        if (empty($this->styles)) {
-            return $this->emptyStyle;
-        }
-
-        return $this->styles[\count($this->styles) - 1];
-    }
-
-    /**
-     * @return $this
-     */
-    public function setEmptyStyle(OutputFormatterStyleInterface $emptyStyle)
-    {
-        $this->emptyStyle = $emptyStyle;
-
-        return $this;
-    }
-
-    /**
-     * @return OutputFormatterStyleInterface
-     */
-    public function getEmptyStyle()
-    {
-        return $this->emptyStyle;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

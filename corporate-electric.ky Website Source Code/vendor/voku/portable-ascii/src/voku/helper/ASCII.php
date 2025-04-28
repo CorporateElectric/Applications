@@ -1,1440 +1,337 @@
-<?php
-
-declare(strict_types=1);
-
-namespace voku\helper;
-
-/**
- * @psalm-immutable
- */
-final class ASCII
-{
-    //
-    // INFO: https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes
-    //
-
-    const UZBEK_LANGUAGE_CODE = 'uz';
-
-    const TURKMEN_LANGUAGE_CODE = 'tk';
-
-    const THAI_LANGUAGE_CODE = 'th';
-
-    const PASHTO_LANGUAGE_CODE = 'ps';
-
-    const ORIYA_LANGUAGE_CODE = 'or';
-
-    const MONGOLIAN_LANGUAGE_CODE = 'mn';
-
-    const KOREAN_LANGUAGE_CODE = 'ko';
-
-    const KIRGHIZ_LANGUAGE_CODE = 'ky';
-
-    const ARMENIAN_LANGUAGE_CODE = 'hy';
-
-    const BENGALI_LANGUAGE_CODE = 'bn';
-
-    const BELARUSIAN_LANGUAGE_CODE = 'be';
-
-    const AMHARIC_LANGUAGE_CODE = 'am';
-
-    const JAPANESE_LANGUAGE_CODE = 'ja';
-
-    const CHINESE_LANGUAGE_CODE = 'zh';
-
-    const DUTCH_LANGUAGE_CODE = 'nl';
-
-    const ITALIAN_LANGUAGE_CODE = 'it';
-
-    const MACEDONIAN_LANGUAGE_CODE = 'mk';
-
-    const PORTUGUESE_LANGUAGE_CODE = 'pt';
-
-    const GREEKLISH_LANGUAGE_CODE = 'el__greeklish';
-
-    const GREEK_LANGUAGE_CODE = 'el';
-
-    const HINDI_LANGUAGE_CODE = 'hi';
-
-    const SWEDISH_LANGUAGE_CODE = 'sv';
-
-    const TURKISH_LANGUAGE_CODE = 'tr';
-
-    const BULGARIAN_LANGUAGE_CODE = 'bg';
-
-    const HUNGARIAN_LANGUAGE_CODE = 'hu';
-
-    const MYANMAR_LANGUAGE_CODE = 'my';
-
-    const CROATIAN_LANGUAGE_CODE = 'hr';
-
-    const FINNISH_LANGUAGE_CODE = 'fi';
-
-    const GEORGIAN_LANGUAGE_CODE = 'ka';
-
-    const RUSSIAN_LANGUAGE_CODE = 'ru';
-
-    const RUSSIAN_PASSPORT_2013_LANGUAGE_CODE = 'ru__passport_2013';
-
-    const RUSSIAN_GOST_2000_B_LANGUAGE_CODE = 'ru__gost_2000_b';
-
-    const UKRAINIAN_LANGUAGE_CODE = 'uk';
-
-    const KAZAKH_LANGUAGE_CODE = 'kk';
-
-    const CZECH_LANGUAGE_CODE = 'cs';
-
-    const DANISH_LANGUAGE_CODE = 'da';
-
-    const POLISH_LANGUAGE_CODE = 'pl';
-
-    const ROMANIAN_LANGUAGE_CODE = 'ro';
-
-    const ESPERANTO_LANGUAGE_CODE = 'eo';
-
-    const ESTONIAN_LANGUAGE_CODE = 'et';
-
-    const LATVIAN_LANGUAGE_CODE = 'lv';
-
-    const LITHUANIAN_LANGUAGE_CODE = 'lt';
-
-    const NORWEGIAN_LANGUAGE_CODE = 'no';
-
-    const VIETNAMESE_LANGUAGE_CODE = 'vi';
-
-    const ARABIC_LANGUAGE_CODE = 'ar';
-
-    const PERSIAN_LANGUAGE_CODE = 'fa';
-
-    const SERBIAN_LANGUAGE_CODE = 'sr';
-
-    const SERBIAN_CYRILLIC_LANGUAGE_CODE = 'sr__cyr';
-
-    const SERBIAN_LATIN_LANGUAGE_CODE = 'sr__lat';
-
-    const AZERBAIJANI_LANGUAGE_CODE = 'az';
-
-    const SLOVAK_LANGUAGE_CODE = 'sk';
-
-    const FRENCH_LANGUAGE_CODE = 'fr';
-
-    const FRENCH_AUSTRIAN_LANGUAGE_CODE = 'fr_at';
-
-    const FRENCH_SWITZERLAND_LANGUAGE_CODE = 'fr_ch';
-
-    const GERMAN_LANGUAGE_CODE = 'de';
-
-    const GERMAN_AUSTRIAN_LANGUAGE_CODE = 'de_at';
-
-    const GERMAN_SWITZERLAND_LANGUAGE_CODE = 'de_ch';
-
-    const ENGLISH_LANGUAGE_CODE = 'en';
-
-    const EXTRA_LATIN_CHARS_LANGUAGE_CODE = 'latin';
-
-    const EXTRA_WHITESPACE_CHARS_LANGUAGE_CODE = ' ';
-
-    const EXTRA_MSWORD_CHARS_LANGUAGE_CODE = 'msword';
-
-    /**
-     * @var array<string, array<string, string>>|null
-     */
-    private static $ASCII_MAPS;
-
-    /**
-     * @var array<string, array<string, string>>|null
-     */
-    private static $ASCII_MAPS_AND_EXTRAS;
-
-    /**
-     * @var array<string, array<string, string>>|null
-     */
-    private static $ASCII_EXTRAS;
-
-    /**
-     * @var array<string, int>|null
-     */
-    private static $ORD;
-
-    /**
-     * @var array<string, int>|null
-     */
-    private static $LANGUAGE_MAX_KEY;
-
-    /**
-     * url: https://en.wikipedia.org/wiki/Wikipedia:ASCII#ASCII_printable_characters
-     *
-     * @var string
-     */
-    private static $REGEX_ASCII = "[^\x09\x10\x13\x0A\x0D\x20-\x7E]";
-
-    /**
-     * bidirectional text chars
-     *
-     * url: https://www.w3.org/International/questions/qa-bidi-unicode-controls
-     *
-     * @var array<int, string>
-     */
-    private static $BIDI_UNI_CODE_CONTROLS_TABLE = [
-        // LEFT-TO-RIGHT EMBEDDING (use -> dir = "ltr")
-        8234 => "\xE2\x80\xAA",
-        // RIGHT-TO-LEFT EMBEDDING (use -> dir = "rtl")
-        8235 => "\xE2\x80\xAB",
-        // POP DIRECTIONAL FORMATTING // (use -> </bdo>)
-        8236 => "\xE2\x80\xAC",
-        // LEFT-TO-RIGHT OVERRIDE // (use -> <bdo dir = "ltr">)
-        8237 => "\xE2\x80\xAD",
-        // RIGHT-TO-LEFT OVERRIDE // (use -> <bdo dir = "rtl">)
-        8238 => "\xE2\x80\xAE",
-        // LEFT-TO-RIGHT ISOLATE // (use -> dir = "ltr")
-        8294 => "\xE2\x81\xA6",
-        // RIGHT-TO-LEFT ISOLATE // (use -> dir = "rtl")
-        8295 => "\xE2\x81\xA7",
-        // FIRST STRONG ISOLATE // (use -> dir = "auto")
-        8296 => "\xE2\x81\xA8",
-        // POP DIRECTIONAL ISOLATE
-        8297 => "\xE2\x81\xA9",
-    ];
-
-    /**
-     * Get all languages from the constants "ASCII::.*LANGUAGE_CODE".
-     *
-     * @return string[]
-     *
-     * @psalm-return array<string, string>
-     */
-    public static function getAllLanguages(): array
-    {
-        // init
-        static $LANGUAGES = [];
-
-        if ($LANGUAGES !== []) {
-            return $LANGUAGES;
-        }
-
-        foreach ((new \ReflectionClass(__CLASS__))->getConstants() as $constant => $lang) {
-            if (\strpos($constant, 'EXTRA') !== false) {
-                $LANGUAGES[\strtolower($constant)] = $lang;
-            } else {
-                $LANGUAGES[\strtolower(\str_replace('_LANGUAGE_CODE', '', $constant))] = $lang;
-            }
-        }
-
-        return $LANGUAGES;
-    }
-
-    /**
-     * Returns an replacement array for ASCII methods.
-     *
-     * EXAMPLE: <code>
-     * $array = ASCII::charsArray();
-     * var_dump($array['ru']['б']); // 'b'
-     * </code>
-     *
-     * @psalm-suppress InvalidNullableReturnType - we use the prepare* methods here, so we don't get NULL here
-     *
-     * @param bool $replace_extra_symbols [optional] <p>Add some more replacements e.g. "£" with " pound ".</p>
-     *
-     * @psalm-pure
-     *
-     * @return array
-     *
-     * @psalm-return array<string, array<string , string>>
-     */
-    public static function charsArray(bool $replace_extra_symbols = false): array
-    {
-        if ($replace_extra_symbols) {
-            self::prepareAsciiAndExtrasMaps();
-
-            return self::$ASCII_MAPS_AND_EXTRAS ?? [];
-        }
-
-        self::prepareAsciiMaps();
-
-        return self::$ASCII_MAPS ?? [];
-    }
-
-    /**
-     * Returns an replacement array for ASCII methods with a mix of multiple languages.
-     *
-     * EXAMPLE: <code>
-     * $array = ASCII::charsArrayWithMultiLanguageValues();
-     * var_dump($array['b']); // ['β', 'б', 'ဗ', 'ბ', 'ب']
-     * </code>
-     *
-     * @param bool $replace_extra_symbols [optional] <p>Add some more replacements e.g. "£" with " pound ".</p>
-     *
-     * @psalm-pure
-     *
-     * @return array
-     *               <p>An array of replacements.</p>
-     *
-     * @psalm-return array<string, array<int, string>>
-     */
-    public static function charsArrayWithMultiLanguageValues(bool $replace_extra_symbols = false): array
-    {
-        /**
-         * @var array<string, array>
-         */
-        static $CHARS_ARRAY = [];
-        $cacheKey = '' . $replace_extra_symbols;
-
-        if (isset($CHARS_ARRAY[$cacheKey])) {
-            return $CHARS_ARRAY[$cacheKey];
-        }
-
-        // init
-        $return = [];
-        $language_all_chars = self::charsArrayWithSingleLanguageValues(
-            $replace_extra_symbols,
-            false
-        );
-
-        /** @noinspection PhpSillyAssignmentInspection - hack for phpstan */
-        /** @var array<string, string> $language_all_chars */
-        $language_all_chars = $language_all_chars;
-
-        /** @noinspection AlterInForeachInspection */
-        foreach ($language_all_chars as $key => &$value) {
-            $return[$value][] = $key;
-        }
-
-        $CHARS_ARRAY[$cacheKey] = $return;
-
-        /** @noinspection PhpSillyAssignmentInspection - hack for phpstan */
-        /** @var array<string, array<int, string>> $return */
-        $return = $return;
-
-        return $return;
-    }
-
-    /**
-     * Returns an replacement array for ASCII methods with one language.
-     *
-     * For example, German will map 'ä' to 'ae', while other languages
-     * will simply return e.g. 'a'.
-     *
-     * EXAMPLE: <code>
-     * $array = ASCII::charsArrayWithOneLanguage('ru');
-     * $tmpKey = \array_search('yo', $array['replace']);
-     * echo $array['orig'][$tmpKey]; // 'ё'
-     * </code>
-     *
-     * @psalm-suppress InvalidNullableReturnType - we use the prepare* methods here, so we don't get NULL here
-     *
-     * @param string $language              [optional] <p>Language of the source string e.g.: en, de_at, or de-ch.
-     *                                      (default is 'en') | ASCII::*_LANGUAGE_CODE</p>
-     * @param bool   $replace_extra_symbols [optional] <p>Add some more replacements e.g. "£" with " pound ".</p>
-     * @param bool   $asOrigReplaceArray    [optional] <p>TRUE === return {orig: string[], replace: string[]}
-     *                                      array</p>
-     *
-     * @psalm-pure
-     *
-     * @return array
-     *               <p>An array of replacements.</p>
-     *
-     * @psalm-return array{orig: string[], replace: string[]}|array<string, string>
-     */
-    public static function charsArrayWithOneLanguage(
-        string $language = self::ENGLISH_LANGUAGE_CODE,
-        bool $replace_extra_symbols = false,
-        bool $asOrigReplaceArray = true
-    ): array {
-        $language = self::get_language($language);
-
-        // init
-        /**
-         * @var array<string, array>
-         */
-        static $CHARS_ARRAY = [];
-        $cacheKey = '' . $replace_extra_symbols . '-' . $asOrigReplaceArray;
-
-        // check static cache
-        if (isset($CHARS_ARRAY[$cacheKey][$language])) {
-            return $CHARS_ARRAY[$cacheKey][$language];
-        }
-
-        if ($replace_extra_symbols) {
-            self::prepareAsciiAndExtrasMaps();
-
-            /** @noinspection DuplicatedCode */
-            if (isset(self::$ASCII_MAPS_AND_EXTRAS[$language])) {
-                $tmpArray = self::$ASCII_MAPS_AND_EXTRAS[$language];
-
-                if ($asOrigReplaceArray) {
-                    $CHARS_ARRAY[$cacheKey][$language] = [
-                        'orig'    => \array_keys($tmpArray),
-                        'replace' => \array_values($tmpArray),
-                    ];
-                } else {
-                    $CHARS_ARRAY[$cacheKey][$language] = $tmpArray;
-                }
-            } else {
-                /** @noinspection NestedPositiveIfStatementsInspection */
-                if ($asOrigReplaceArray) {
-                    $CHARS_ARRAY[$cacheKey][$language] = [
-                        'orig'    => [],
-                        'replace' => [],
-                    ];
-                } else {
-                    $CHARS_ARRAY[$cacheKey][$language] = [];
-                }
-            }
-        } else {
-            self::prepareAsciiMaps();
-
-            /** @noinspection DuplicatedCode */
-            if (isset(self::$ASCII_MAPS[$language])) {
-                $tmpArray = self::$ASCII_MAPS[$language];
-
-                if ($asOrigReplaceArray) {
-                    $CHARS_ARRAY[$cacheKey][$language] = [
-                        'orig'    => \array_keys($tmpArray),
-                        'replace' => \array_values($tmpArray),
-                    ];
-                } else {
-                    $CHARS_ARRAY[$cacheKey][$language] = $tmpArray;
-                }
-            } else {
-                /** @noinspection NestedPositiveIfStatementsInspection */
-                if ($asOrigReplaceArray) {
-                    $CHARS_ARRAY[$cacheKey][$language] = [
-                        'orig'    => [],
-                        'replace' => [],
-                    ];
-                } else {
-                    $CHARS_ARRAY[$cacheKey][$language] = [];
-                }
-            }
-        }
-
-        return $CHARS_ARRAY[$cacheKey][$language] ?? ['orig' => [], 'replace' => []];
-    }
-
-    /**
-     * Returns an replacement array for ASCII methods with multiple languages.
-     *
-     * EXAMPLE: <code>
-     * $array = ASCII::charsArrayWithSingleLanguageValues();
-     * $tmpKey = \array_search('hnaik', $array['replace']);
-     * echo $array['orig'][$tmpKey]; // '၌'
-     * </code>
-     *
-     * @param bool $replace_extra_symbols [optional] <p>Add some more replacements e.g. "£" with " pound ".</p>
-     * @param bool $asOrigReplaceArray    [optional] <p>TRUE === return {orig: string[], replace: string[]}
-     *                                    array</p>
-     *
-     * @psalm-pure
-     *
-     * @return array
-     *               <p>An array of replacements.</p>
-     *
-     * @psalm-return array{orig: string[], replace: string[]}|array<string, string>
-     */
-    public static function charsArrayWithSingleLanguageValues(
-        bool $replace_extra_symbols = false,
-        bool $asOrigReplaceArray = true
-    ): array {
-        // init
-        /**
-         * @var array<string,array>
-         */
-        static $CHARS_ARRAY = [];
-        $cacheKey = '' . $replace_extra_symbols . '-' . $asOrigReplaceArray;
-
-        if (isset($CHARS_ARRAY[$cacheKey])) {
-            return $CHARS_ARRAY[$cacheKey];
-        }
-
-        if ($replace_extra_symbols) {
-            self::prepareAsciiAndExtrasMaps();
-
-            /** @noinspection AlterInForeachInspection */
-            /** @psalm-suppress PossiblyNullIterator - we use the prepare* methods here, so we don't get NULL here */
-            foreach (self::$ASCII_MAPS_AND_EXTRAS ?? [] as &$map) {
-                $CHARS_ARRAY[$cacheKey][] = $map;
-            }
-        } else {
-            self::prepareAsciiMaps();
-
-            /** @noinspection AlterInForeachInspection */
-            /** @psalm-suppress PossiblyNullIterator - we use the prepare* methods here, so we don't get NULL here */
-            foreach (self::$ASCII_MAPS ?? [] as &$map) {
-                $CHARS_ARRAY[$cacheKey][] = $map;
-            }
-        }
-
-        $CHARS_ARRAY[$cacheKey] = \array_merge([], ...$CHARS_ARRAY[$cacheKey]);
-
-        if ($asOrigReplaceArray) {
-            $CHARS_ARRAY[$cacheKey] = [
-                'orig'    => \array_keys($CHARS_ARRAY[$cacheKey]),
-                'replace' => \array_values($CHARS_ARRAY[$cacheKey]),
-            ];
-        }
-
-        return $CHARS_ARRAY[$cacheKey];
-    }
-
-    /**
-     * Accepts a string and removes all non-UTF-8 characters from it + extras if needed.
-     *
-     * @param string $str                         <p>The string to be sanitized.</p>
-     * @param bool   $normalize_whitespace        [optional] <p>Set to true, if you need to normalize the
-     *                                            whitespace.</p>
-     * @param bool   $normalize_msword            [optional] <p>Set to true, if you need to normalize MS Word chars
-     *                                            e.g.: "…"
-     *                                            => "..."</p>
-     * @param bool   $keep_non_breaking_space     [optional] <p>Set to true, to keep non-breaking-spaces, in
-     *                                            combination with
-     *                                            $normalize_whitespace</p>
-     * @param bool   $remove_invisible_characters [optional] <p>Set to false, if you not want to remove invisible
-     *                                            characters e.g.: "\0"</p>
-     *
-     * @psalm-pure
-     *
-     * @return string
-     *                <p>A clean UTF-8 string.</p>
-     */
-    public static function clean(
-        string $str,
-        bool $normalize_whitespace = true,
-        bool $keep_non_breaking_space = false,
-        bool $normalize_msword = true,
-        bool $remove_invisible_characters = true
-    ): string {
-        // http://stackoverflow.com/questions/1401317/remove-non-utf8-characters-from-string
-        // caused connection reset problem on larger strings
-
-        $regex = '/
-          (
-            (?: [\x00-\x7F]               # single-byte sequences   0xxxxxxx
-            |   [\xC0-\xDF][\x80-\xBF]    # double-byte sequences   110xxxxx 10xxxxxx
-            |   [\xE0-\xEF][\x80-\xBF]{2} # triple-byte sequences   1110xxxx 10xxxxxx * 2
-            |   [\xF0-\xF7][\x80-\xBF]{3} # quadruple-byte sequence 11110xxx 10xxxxxx * 3
-            ){1,100}                      # ...one or more times
-          )
-        | ( [\x80-\xBF] )                 # invalid byte in range 10000000 - 10111111
-        | ( [\xC0-\xFF] )                 # invalid byte in range 11000000 - 11111111
-        /x';
-        $str = (string) \preg_replace($regex, '$1', $str);
-
-        if ($normalize_whitespace) {
-            $str = self::normalize_whitespace($str, $keep_non_breaking_space);
-        }
-
-        if ($normalize_msword) {
-            $str = self::normalize_msword($str);
-        }
-
-        if ($remove_invisible_characters) {
-            $str = self::remove_invisible_characters($str);
-        }
-
-        return $str;
-    }
-
-    /**
-     * Checks if a string is 7 bit ASCII.
-     *
-     * EXAMPLE: <code>
-     * ASCII::is_ascii('白'); // false
-     * </code>
-     *
-     * @param string $str <p>The string to check.</p>
-     *
-     * @psalm-pure
-     *
-     * @return bool
-     *              <p>
-     *              <strong>true</strong> if it is ASCII<br>
-     *              <strong>false</strong> otherwise
-     *              </p>
-     */
-    public static function is_ascii(string $str): bool
-    {
-        if ($str === '') {
-            return true;
-        }
-
-        return !\preg_match('/' . self::$REGEX_ASCII . '/', $str);
-    }
-
-    /**
-     * Returns a string with smart quotes, ellipsis characters, and dashes from
-     * Windows-1252 (commonly used in Word documents) replaced by their ASCII
-     * equivalents.
-     *
-     * EXAMPLE: <code>
-     * ASCII::normalize_msword('„Abcdef…”'); // '"Abcdef..."'
-     * </code>
-     *
-     * @param string $str <p>The string to be normalized.</p>
-     *
-     * @psalm-pure
-     *
-     * @return string
-     *                <p>A string with normalized characters for commonly used chars in Word documents.</p>
-     */
-    public static function normalize_msword(string $str): string
-    {
-        if ($str === '') {
-            return '';
-        }
-
-        /**
-         * @var array{orig: string[], replace: string[]}
-         */
-        static $MSWORD_CACHE = ['orig' => [], 'replace' => []];
-
-        if (empty($MSWORD_CACHE['orig'])) {
-            self::prepareAsciiMaps();
-
-            /**
-             * @psalm-suppress PossiblyNullArrayAccess - we use the prepare* methods here, so we don't get NULL here
-             *
-             * @var array<string, string>
-             */
-            $map = self::$ASCII_MAPS[self::EXTRA_MSWORD_CHARS_LANGUAGE_CODE] ?? [];
-
-            $MSWORD_CACHE = [
-                'orig'    => \array_keys($map),
-                'replace' => \array_values($map),
-            ];
-        }
-
-        return \str_replace($MSWORD_CACHE['orig'], $MSWORD_CACHE['replace'], $str);
-    }
-
-    /**
-     * Normalize the whitespace.
-     *
-     * EXAMPLE: <code>
-     * ASCII::normalize_whitespace("abc-\xc2\xa0-öäü-\xe2\x80\xaf-\xE2\x80\xAC", true); // "abc-\xc2\xa0-öäü- -"
-     * </code>
-     *
-     * @param string $str                          <p>The string to be normalized.</p>
-     * @param bool   $keepNonBreakingSpace         [optional] <p>Set to true, to keep non-breaking-spaces.</p>
-     * @param bool   $keepBidiUnicodeControls      [optional] <p>Set to true, to keep non-printable (for the web)
-     *                                             bidirectional text chars.</p>
-     * @param bool   $normalize_control_characters [optional] <p>Set to true, to convert LINE-, PARAGRAPH-SEPARATOR with "\n" and LINE TABULATION with "\t".</p>
-     *
-     * @psalm-pure
-     *
-     * @return string
-     *                <p>A string with normalized whitespace.</p>
-     */
-    public static function normalize_whitespace(
-        string $str,
-        bool $keepNonBreakingSpace = false,
-        bool $keepBidiUnicodeControls = false,
-        bool $normalize_control_characters = false
-    ): string {
-        if ($str === '') {
-            return '';
-        }
-
-        /**
-         * @var array<int,array<string,string>>
-         */
-        static $WHITESPACE_CACHE = [];
-        $cacheKey = (int) $keepNonBreakingSpace;
-
-        if ($normalize_control_characters) {
-            $str = \str_replace(
-                [
-                    "\x0d\x0c",     // 'END OF LINE'
-                    "\xe2\x80\xa8", // 'LINE SEPARATOR'
-                    "\xe2\x80\xa9", // 'PARAGRAPH SEPARATOR'
-                    "\x0c",         // 'FORM FEED'
-                    "\x0d",         // 'CARRIAGE RETURN'
-                    "\x0b",         // 'VERTICAL TAB'
-                ],
-                [
-                    "\n",
-                    "\n",
-                    "\n",
-                    "\n",
-                    "\n",
-                    "\t",
-                ],
-                $str
-            );
-        }
-
-        if (!isset($WHITESPACE_CACHE[$cacheKey])) {
-            self::prepareAsciiMaps();
-
-            $WHITESPACE_CACHE[$cacheKey] = self::$ASCII_MAPS[self::EXTRA_WHITESPACE_CHARS_LANGUAGE_CODE] ?? [];
-
-            if ($keepNonBreakingSpace) {
-                unset($WHITESPACE_CACHE[$cacheKey]["\xc2\xa0"]);
-            }
-
-            $WHITESPACE_CACHE[$cacheKey] = \array_keys($WHITESPACE_CACHE[$cacheKey]);
-        }
-
-        if (!$keepBidiUnicodeControls) {
-            /**
-             * @var array<int,string>|null
-             */
-            static $BIDI_UNICODE_CONTROLS_CACHE = null;
-
-            if ($BIDI_UNICODE_CONTROLS_CACHE === null) {
-                $BIDI_UNICODE_CONTROLS_CACHE = self::$BIDI_UNI_CODE_CONTROLS_TABLE;
-            }
-
-            $str = \str_replace($BIDI_UNICODE_CONTROLS_CACHE, '', $str);
-        }
-
-        return \str_replace($WHITESPACE_CACHE[$cacheKey], ' ', $str);
-    }
-
-    /**
-     * Remove invisible characters from a string.
-     *
-     * e.g.: This prevents sandwiching null characters between ascii characters, like Java\0script.
-     *
-     * copy&past from https://github.com/bcit-ci/CodeIgniter/blob/develop/system/core/Common.php
-     *
-     * @param string $str
-     * @param bool   $url_encoded
-     * @param string $replacement
-     * @param bool   $keep_basic_control_characters
-     *
-     * @psalm-pure
-     *
-     * @return string
-     */
-    public static function remove_invisible_characters(
-        string $str,
-        bool $url_encoded = false,
-        string $replacement = '',
-        bool $keep_basic_control_characters = true
-    ): string {
-        // init
-        $non_displayables = [];
-
-        // every control character except:
-        // - newline (dec 10),
-        // - carriage return (dec 13),
-        // - horizontal tab (dec 09)
-        if ($url_encoded) {
-            $non_displayables[] = '/%0[0-8bcefBCEF]/'; // url encoded 00-08, 11, 12, 14, 15
-            $non_displayables[] = '/%1[0-9a-fA-F]/'; // url encoded 16-31
-        }
-
-        if ($keep_basic_control_characters) {
-            $non_displayables[] = '/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]+/S'; // 00-08, 11, 12, 14-31, 127
-        } else {
-            $str = self::normalize_whitespace($str, false, false, true);
-            $non_displayables[] = '/[^\P{C}\s]/u';
-        }
-
-        do {
-            $str = (string) \preg_replace($non_displayables, $replacement, $str, -1, $count);
-        } while ($count !== 0);
-
-        return $str;
-    }
-
-    /**
-     * Returns an ASCII version of the string. A set of non-ASCII characters are
-     * replaced with their closest ASCII counterparts, and the rest are removed
-     * by default. The language or locale of the source string can be supplied
-     * for language-specific transliteration in any of the following formats:
-     * en, en_GB, or en-GB. For example, passing "de" results in "äöü" mapping
-     * to "aeoeue" rather than "aou" as in other languages.
-     *
-     * EXAMPLE: <code>
-     * ASCII::to_ascii('�Düsseldorf�', 'en'); // Dusseldorf
-     * </code>
-     *
-     * @param string    $str                       <p>The input string.</p>
-     * @param string    $language                  [optional] <p>Language of the source string.
-     *                                             (default is 'en') | ASCII::*_LANGUAGE_CODE</p>
-     * @param bool      $remove_unsupported_chars  [optional] <p>Whether or not to remove the
-     *                                             unsupported characters.</p>
-     * @param bool      $replace_extra_symbols     [optional]  <p>Add some more replacements e.g. "£" with " pound
-     *                                             ".</p>
-     * @param bool      $use_transliterate         [optional]  <p>Use ASCII::to_transliterate() for unknown chars.</p>
-     * @param bool|null $replace_single_chars_only [optional]  <p>Single char replacement is better for the
-     *                                             performance, but some languages need to replace more then one char
-     *                                             at the same time. | NULL === auto-setting, depended on the
-     *                                             language</p>
-     *
-     * @psalm-pure
-     *
-     * @return string
-     *                <p>A string that contains only ASCII characters.</p>
-     */
-    public static function to_ascii(
-        string $str,
-        string $language = self::ENGLISH_LANGUAGE_CODE,
-        bool $remove_unsupported_chars = true,
-        bool $replace_extra_symbols = false,
-        bool $use_transliterate = false,
-        bool $replace_single_chars_only = null
-    ): string {
-        if ($str === '') {
-            return '';
-        }
-
-        $language = self::get_language($language);
-
-        static $EXTRA_SYMBOLS_CACHE = null;
-
-        /**
-         * @var array<string,array<string,string>>
-         */
-        static $REPLACE_HELPER_CACHE = [];
-        $cacheKey = $language . '-' . $replace_extra_symbols;
-
-        if (!isset($REPLACE_HELPER_CACHE[$cacheKey])) {
-            $langAll = self::charsArrayWithSingleLanguageValues($replace_extra_symbols, false);
-
-            $langSpecific = self::charsArrayWithOneLanguage($language, $replace_extra_symbols, false);
-
-            if ($langSpecific === []) {
-                $REPLACE_HELPER_CACHE[$cacheKey] = $langAll;
-            } else {
-                $REPLACE_HELPER_CACHE[$cacheKey] = \array_merge([], $langAll, $langSpecific);
-            }
-        }
-
-        if (
-            $replace_extra_symbols
-            &&
-            $EXTRA_SYMBOLS_CACHE === null
-        ) {
-            $EXTRA_SYMBOLS_CACHE = [];
-            foreach (self::$ASCII_EXTRAS ?? [] as $extrasLanguageTmp => $extrasDataTmp) {
-                foreach ($extrasDataTmp as $extrasDataKeyTmp => $extrasDataValueTmp) {
-                    $EXTRA_SYMBOLS_CACHE[$extrasDataKeyTmp] = $extrasDataKeyTmp;
-                }
-            }
-            $EXTRA_SYMBOLS_CACHE = \implode('', $EXTRA_SYMBOLS_CACHE);
-        }
-
-        $charDone = [];
-        if (\preg_match_all('/' . self::$REGEX_ASCII . ($replace_extra_symbols ? '|[' . $EXTRA_SYMBOLS_CACHE . ']' : '') . '/u', $str, $matches)) {
-            if (!$replace_single_chars_only) {
-                if (self::$LANGUAGE_MAX_KEY === null) {
-                    self::$LANGUAGE_MAX_KEY = self::getData('ascii_language_max_key');
-                }
-
-                $maxKeyLength = self::$LANGUAGE_MAX_KEY[$language] ?? 0;
-
-                if ($maxKeyLength >= 5) {
-                    foreach ($matches[0] as $keyTmp => $char) {
-                        if (isset($matches[0][$keyTmp + 4])) {
-                            $fiveChars = $matches[0][$keyTmp + 0] . $matches[0][$keyTmp + 1] . $matches[0][$keyTmp + 2] . $matches[0][$keyTmp + 3] . $matches[0][$keyTmp + 4];
-                        } else {
-                            $fiveChars = null;
-                        }
-                        if (
-                            $fiveChars
-                            &&
-                            !isset($charDone[$fiveChars])
-                            &&
-                            isset($REPLACE_HELPER_CACHE[$cacheKey][$fiveChars])
-                            &&
-                            \strpos($str, $fiveChars) !== false
-                        ) {
-                            // DEBUG
-                            //\var_dump($str, $fiveChars, $REPLACE_HELPER_CACHE[$cacheKey][$fiveChars]);
-
-                            $charDone[$fiveChars] = true;
-                            $str = \str_replace($fiveChars, $REPLACE_HELPER_CACHE[$cacheKey][$fiveChars], $str);
-
-                            // DEBUG
-                            //\var_dump($str, "\n");
-                        }
-                    }
-                }
-
-                if ($maxKeyLength >= 4) {
-                    foreach ($matches[0] as $keyTmp => $char) {
-                        if (isset($matches[0][$keyTmp + 3])) {
-                            $fourChars = $matches[0][$keyTmp + 0] . $matches[0][$keyTmp + 1] . $matches[0][$keyTmp + 2] . $matches[0][$keyTmp + 3];
-                        } else {
-                            $fourChars = null;
-                        }
-                        if (
-                            $fourChars
-                            &&
-                            !isset($charDone[$fourChars])
-                            &&
-                            isset($REPLACE_HELPER_CACHE[$cacheKey][$fourChars])
-                            &&
-                            \strpos($str, $fourChars) !== false
-                        ) {
-                            // DEBUG
-                            //\var_dump($str, $fourChars, $REPLACE_HELPER_CACHE[$cacheKey][$fourChars]);
-
-                            $charDone[$fourChars] = true;
-                            $str = \str_replace($fourChars, $REPLACE_HELPER_CACHE[$cacheKey][$fourChars], $str);
-
-                            // DEBUG
-                            //\var_dump($str, "\n");
-                        }
-                    }
-                }
-
-                foreach ($matches[0] as $keyTmp => $char) {
-                    if (isset($matches[0][$keyTmp + 2])) {
-                        $threeChars = $matches[0][$keyTmp + 0] . $matches[0][$keyTmp + 1] . $matches[0][$keyTmp + 2];
-                    } else {
-                        $threeChars = null;
-                    }
-                    if (
-                        $threeChars
-                        &&
-                        !isset($charDone[$threeChars])
-                        &&
-                        isset($REPLACE_HELPER_CACHE[$cacheKey][$threeChars])
-                        &&
-                        \strpos($str, $threeChars) !== false
-                    ) {
-                        // DEBUG
-                        //\var_dump($str, $threeChars, $REPLACE_HELPER_CACHE[$cacheKey][$threeChars]);
-
-                        $charDone[$threeChars] = true;
-                        $str = \str_replace($threeChars, $REPLACE_HELPER_CACHE[$cacheKey][$threeChars], $str);
-
-                        // DEBUG
-                        //\var_dump($str, "\n");
-                    }
-                }
-
-                foreach ($matches[0] as $keyTmp => $char) {
-                    if (isset($matches[0][$keyTmp + 1])) {
-                        $twoChars = $matches[0][$keyTmp + 0] . $matches[0][$keyTmp + 1];
-                    } else {
-                        $twoChars = null;
-                    }
-                    if (
-                        $twoChars
-                        &&
-                        !isset($charDone[$twoChars])
-                        &&
-                        isset($REPLACE_HELPER_CACHE[$cacheKey][$twoChars])
-                        &&
-                        \strpos($str, $twoChars) !== false
-                    ) {
-                        // DEBUG
-                        //\var_dump($str, $twoChars, $REPLACE_HELPER_CACHE[$cacheKey][$twoChars]);
-
-                        $charDone[$twoChars] = true;
-                        $str = \str_replace($twoChars, $REPLACE_HELPER_CACHE[$cacheKey][$twoChars], $str);
-
-                        // DEBUG
-                        //\var_dump($str, "\n");
-                    }
-                }
-            }
-
-            foreach ($matches[0] as $keyTmp => $char) {
-                if (
-                    !isset($charDone[$char])
-                    &&
-                    isset($REPLACE_HELPER_CACHE[$cacheKey][$char])
-                    &&
-                    \strpos($str, $char) !== false
-                ) {
-                    // DEBUG
-                    //\var_dump($str, $char, $REPLACE_HELPER_CACHE[$cacheKey][$char]);
-
-                    $charDone[$char] = true;
-                    $str = \str_replace($char, $REPLACE_HELPER_CACHE[$cacheKey][$char], $str);
-
-                    // DEBUG
-                    //\var_dump($str, "\n");
-                }
-            }
-        }
-
-        /** @psalm-suppress PossiblyNullOperand - we use the prepare* methods here, so we don't get NULL here */
-        if (!isset(self::$ASCII_MAPS[$language])) {
-            $use_transliterate = true;
-        }
-
-        if ($use_transliterate) {
-            /** @noinspection ArgumentEqualsDefaultValueInspection */
-            $str = self::to_transliterate($str, null, false);
-        }
-
-        if ($remove_unsupported_chars) {
-            $str = (string) \str_replace(["\n\r", "\n", "\r", "\t"], ' ', $str);
-            $str = (string) \preg_replace('/' . self::$REGEX_ASCII . '/', '', $str);
-        }
-
-        return $str;
-    }
-
-    /**
-     * Convert given string to safe filename (and keep string case).
-     *
-     * EXAMPLE: <code>
-     * ASCII::to_filename('שדגשדג.png', true)); // 'shdgshdg.png'
-     * </code>
-     *
-     * @param string $str
-     * @param bool   $use_transliterate <p>ASCII::to_transliterate() is used by default - unsafe characters are
-     *                                  simply replaced with hyphen otherwise.</p>
-     * @param string $fallback_char
-     *
-     * @psalm-pure
-     *
-     * @return string
-     *                <p>A string that contains only safe characters for a filename.</p>
-     */
-    public static function to_filename(
-        string $str,
-        bool $use_transliterate = true,
-        string $fallback_char = '-'
-    ): string {
-        if ($use_transliterate) {
-            $str = self::to_transliterate($str, $fallback_char);
-        }
-
-        $fallback_char_escaped = \preg_quote($fallback_char, '/');
-
-        $str = (string) \preg_replace(
-            [
-                '/[^' . $fallback_char_escaped . '.\\-a-zA-Z0-9\\s]/', // 1) remove un-needed chars
-                '/[\\s]+/u',                                           // 2) convert spaces to $fallback_char
-                '/[' . $fallback_char_escaped . ']+/u',                // 3) remove double $fallback_char's
-            ],
-            [
-                '',
-                $fallback_char,
-                $fallback_char,
-            ],
-            $str
-        );
-
-        return \trim($str, $fallback_char);
-    }
-
-    /**
-     * Converts the string into an URL slug. This includes replacing non-ASCII
-     * characters with their closest ASCII equivalents, removing remaining
-     * non-ASCII and non-alphanumeric characters, and replacing whitespace with
-     * $separator. The separator defaults to a single dash, and the string
-     * is also converted to lowercase. The language of the source string can
-     * also be supplied for language-specific transliteration.
-     *
-     * @param string                $str
-     * @param string                $separator             [optional] <p>The string used to replace whitespace.</p>
-     * @param string                $language              [optional] <p>Language of the source string.
-     *                                                     (default is 'en') | ASCII::*_LANGUAGE_CODE</p>
-     * @param array<string, string> $replacements          [optional] <p>A map of replaceable strings.</p>
-     * @param bool                  $replace_extra_symbols [optional]  <p>Add some more replacements e.g. "£" with "
-     *                                                     pound ".</p>
-     * @param bool                  $use_str_to_lower      [optional] <p>Use "string to lower" for the input.</p>
-     * @param bool                  $use_transliterate     [optional]  <p>Use ASCII::to_transliterate() for unknown
-     *                                                     chars.</p>
-     * @psalm-pure
-     *
-     * @return string
-     *                <p>A string that has been converted to an URL slug.</p>
-     */
-    public static function to_slugify(
-        string $str,
-        string $separator = '-',
-        string $language = self::ENGLISH_LANGUAGE_CODE,
-        array $replacements = [],
-        bool $replace_extra_symbols = false,
-        bool $use_str_to_lower = true,
-        bool $use_transliterate = false
-    ): string {
-        if ($str === '') {
-            return '';
-        }
-
-        foreach ($replacements as $from => $to) {
-            $str = \str_replace($from, $to, $str);
-        }
-
-        $str = self::to_ascii(
-            $str,
-            $language,
-            false,
-            $replace_extra_symbols,
-            $use_transliterate
-        );
-
-        $str = \str_replace('@', $separator, $str);
-
-        $str = (string) \preg_replace(
-            '/[^a-zA-Z\\d\\s\\-_' . \preg_quote($separator, '/') . ']/',
-            '',
-            $str
-        );
-
-        if ($use_str_to_lower) {
-            $str = \strtolower($str);
-        }
-
-        $str = (string) \preg_replace('/^[\'\\s]+|[\'\\s]+$/', '', $str);
-        $str = (string) \preg_replace('/\\B([A-Z])/', '-\1', $str);
-        $str = (string) \preg_replace('/[\\-_\\s]+/', $separator, $str);
-
-        $l = \strlen($separator);
-        if ($l && \strpos($str, $separator) === 0) {
-            $str = (string) \substr($str, $l);
-        }
-
-        if (\substr($str, -$l) === $separator) {
-            $str = (string) \substr($str, 0, \strlen($str) - $l);
-        }
-
-        return $str;
-    }
-
-    /**
-     * Returns an ASCII version of the string. A set of non-ASCII characters are
-     * replaced with their closest ASCII counterparts, and the rest are removed
-     * unless instructed otherwise.
-     *
-     * EXAMPLE: <code>
-     * ASCII::to_transliterate('déjà σσς iıii'); // 'deja sss iiii'
-     * </code>
-     *
-     * @param string      $str     <p>The input string.</p>
-     * @param string|null $unknown [optional] <p>Character use if character unknown. (default is '?')
-     *                             But you can also use NULL to keep the unknown chars.</p>
-     * @param bool        $strict  [optional] <p>Use "transliterator_transliterate()" from PHP-Intl
-     *
-     * @psalm-pure
-     *
-     * @return string
-     *                <p>A String that contains only ASCII characters.</p>
-     *
-     * @noinspection ParameterDefaultValueIsNotNullInspection
-     */
-    public static function to_transliterate(
-        string $str,
-        $unknown = '?',
-        bool $strict = false
-    ): string {
-        /**
-         * @var array<int,string>|null
-         */
-        static $UTF8_TO_TRANSLIT = null;
-
-        /**
-         * null|\Transliterator
-         */
-        static $TRANSLITERATOR = null;
-
-        /**
-         * @var bool|null
-         */
-        static $SUPPORT_INTL = null;
-
-        if ($str === '') {
-            return '';
-        }
-
-        if ($SUPPORT_INTL === null) {
-            $SUPPORT_INTL = \extension_loaded('intl');
-        }
-
-        // check if we only have ASCII, first (better performance)
-        $str_tmp = $str;
-        if (self::is_ascii($str)) {
-            return $str;
-        }
-
-        $str = self::clean($str);
-
-        // check again, if we only have ASCII, now ...
-        if (
-            $str_tmp !== $str
-            &&
-            self::is_ascii($str)
-        ) {
-            return $str;
-        }
-
-        if (
-            $strict
-            &&
-            $SUPPORT_INTL === true
-        ) {
-            if (!isset($TRANSLITERATOR)) {
-                // INFO: see "*-Latin" rules via "transliterator_list_ids()"
-                /**
-                 * @var \Transliterator
-                 */
-                $TRANSLITERATOR = \transliterator_create('NFKC; [:Nonspacing Mark:] Remove; NFKC; Any-Latin; Latin-ASCII;');
-            }
-
-            // INFO: https://unicode.org/cldr/utility/character.jsp
-            $str_tmp = \transliterator_transliterate($TRANSLITERATOR, $str);
-
-            if ($str_tmp !== false) {
-
-                // check again, if we only have ASCII, now ...
-                if (
-                    $str_tmp !== $str
-                    &&
-                    self::is_ascii($str_tmp)
-                ) {
-                    return $str_tmp;
-                }
-
-                $str = $str_tmp;
-            }
-        }
-
-        if (self::$ORD === null) {
-            self::$ORD = self::getData('ascii_ord');
-        }
-
-        \preg_match_all('/.|[^\x00]$/us', $str, $array_tmp);
-        $chars = $array_tmp[0];
-        $ord = null;
-        $str_tmp = '';
-        foreach ($chars as &$c) {
-            $ordC0 = self::$ORD[$c[0]];
-
-            if ($ordC0 >= 0 && $ordC0 <= 127) {
-                $str_tmp .= $c;
-
-                continue;
-            }
-
-            $ordC1 = self::$ORD[$c[1]];
-
-            // ASCII - next please
-            if ($ordC0 >= 192 && $ordC0 <= 223) {
-                $ord = ($ordC0 - 192) * 64 + ($ordC1 - 128);
-            }
-
-            if ($ordC0 >= 224) {
-                $ordC2 = self::$ORD[$c[2]];
-
-                if ($ordC0 <= 239) {
-                    $ord = ($ordC0 - 224) * 4096 + ($ordC1 - 128) * 64 + ($ordC2 - 128);
-                }
-
-                if ($ordC0 >= 240) {
-                    $ordC3 = self::$ORD[$c[3]];
-
-                    if ($ordC0 <= 247) {
-                        $ord = ($ordC0 - 240) * 262144 + ($ordC1 - 128) * 4096 + ($ordC2 - 128) * 64 + ($ordC3 - 128);
-                    }
-
-                    // We only process valid UTF-8 chars (<= 4 byte), so we don't need this code here ...
-                    /*
-                    if ($ordC0 >= 248) {
-                        $ordC4 = self::$ORD[$c[4]];
-
-                        if ($ordC0 <= 251) {
-                            $ord = ($ordC0 - 248) * 16777216 + ($ordC1 - 128) * 262144 + ($ordC2 - 128) * 4096 + ($ordC3 - 128) * 64 + ($ordC4 - 128);
-                        }
-
-                        if ($ordC0 >= 252) {
-                            $ordC5 = self::$ORD[$c[5]];
-
-                            if ($ordC0 <= 253) {
-                                $ord = ($ordC0 - 252) * 1073741824 + ($ordC1 - 128) * 16777216 + ($ordC2 - 128) * 262144 + ($ordC3 - 128) * 4096 + ($ordC4 - 128) * 64 + ($ordC5 - 128);
-                            }
-                        }
-                    }
-                     */
-                }
-            }
-
-            if (
-                $ordC0 === 254
-                ||
-                $ordC0 === 255
-                ||
-                $ord === null
-            ) {
-                $str_tmp .= $unknown ?? $c;
-
-                continue;
-            }
-
-            $bank = $ord >> 8;
-            if (!isset($UTF8_TO_TRANSLIT[$bank])) {
-                $UTF8_TO_TRANSLIT[$bank] = self::getDataIfExists(\sprintf('x%03x', $bank));
-            }
-
-            $new_char = $ord & 255;
-
-            if (isset($UTF8_TO_TRANSLIT[$bank][$new_char])) {
-
-                // keep for debugging
-                /*
-                echo "file: " . sprintf('x%02x', $bank) . "\n";
-                echo "char: " . $c . "\n";
-                echo "ord: " . $ord . "\n";
-                echo "new_char: " . $new_char . "\n";
-                echo "new_char: " . mb_chr($new_char) . "\n";
-                echo "ascii: " . $UTF8_TO_TRANSLIT[$bank][$new_char] . "\n";
-                echo "bank:" . $bank . "\n\n";
-                 */
-
-                $new_char = $UTF8_TO_TRANSLIT[$bank][$new_char];
-
-                /** @noinspection MissingOrEmptyGroupStatementInspection */
-                /** @noinspection PhpStatementHasEmptyBodyInspection */
-                if ($unknown === null && $new_char === '') {
-                    // nothing
-                } elseif (
-                    $new_char === '[?]'
-                    ||
-                    $new_char === '[?] '
-                ) {
-                    $c = $unknown ?? $c;
-                } else {
-                    $c = $new_char;
-                }
-            } else {
-
-                // keep for debugging missing chars
-                /*
-                echo "file: " . sprintf('x%02x', $bank) . "\n";
-                echo "char: " . $c . "\n";
-                echo "ord: " . $ord . "\n";
-                echo "new_char: " . $new_char . "\n";
-                echo "new_char: " . mb_chr($new_char) . "\n";
-                echo "bank:" . $bank . "\n\n";
-                 */
-
-                $c = $unknown ?? $c;
-            }
-
-            $str_tmp .= $c;
-        }
-
-        return $str_tmp;
-    }
-
-    /**
-     * Get the language from a string.
-     *
-     * e.g.: de_at -> de_at
-     *       de_DE -> de
-     *       DE_DE -> de
-     *       de-de -> de
-     *
-     * @noinspection ReturnTypeCanBeDeclaredInspection
-     *
-     * @param string $language
-     *
-     * @psalm-pure
-     *
-     * @return string
-     */
-    private static function get_language(string $language)
-    {
-        if ($language === '') {
-            return '';
-        }
-
-        if (
-            \strpos($language, '_') === false
-            &&
-            \strpos($language, '-') === false
-        ) {
-            return \strtolower($language);
-        }
-
-        $language = \str_replace('-', '_', \strtolower($language));
-
-        $regex = '/(?<first>[a-z]+)_\g{first}/';
-
-        return (string) \preg_replace($regex, '$1', $language);
-    }
-
-    /**
-     * Get data from "/data/*.php".
-     *
-     * @noinspection ReturnTypeCanBeDeclaredInspection
-     *
-     * @param string $file
-     *
-     * @psalm-pure
-     *
-     * @return array<mixed>
-     */
-    private static function getData(string $file)
-    {
-        /** @noinspection PhpIncludeInspection */
-        /** @noinspection UsingInclusionReturnValueInspection */
-        /** @psalm-suppress UnresolvableInclude */
-        return include __DIR__ . '/data/' . $file . '.php';
-    }
-
-    /**
-     * Get data from "/data/*.php".
-     *
-     * @param string $file
-     *
-     * @psalm-pure
-     *
-     * @return array<mixed>
-     */
-    private static function getDataIfExists(string $file): array
-    {
-        $file = __DIR__ . '/data/' . $file . '.php';
-        /** @psalm-suppress ImpureFunctionCall */
-        if (\is_file($file)) {
-            /** @noinspection PhpIncludeInspection */
-            /** @noinspection UsingInclusionReturnValueInspection */
-            /** @psalm-suppress UnresolvableInclude */
-            return include $file;
-        }
-
-        return [];
-    }
-
-    /**
-     * @psalm-pure
-     *
-     * @return void
-     */
-    private static function prepareAsciiAndExtrasMaps()
-    {
-        if (self::$ASCII_MAPS_AND_EXTRAS === null) {
-            self::prepareAsciiMaps();
-            self::prepareAsciiExtras();
-
-            /** @psalm-suppress PossiblyNullArgument - we use the prepare* methods here, so we don't get NULL here */
-            self::$ASCII_MAPS_AND_EXTRAS = \array_merge_recursive(
-                self::$ASCII_MAPS ?? [],
-                self::$ASCII_EXTRAS ?? []
-            );
-        }
-    }
-
-    /**
-     * @psalm-pure
-     *
-     * @return void
-     */
-    private static function prepareAsciiMaps()
-    {
-        if (self::$ASCII_MAPS === null) {
-            self::$ASCII_MAPS = self::getData('ascii_by_languages');
-        }
-    }
-
-    /**
-     * @psalm-pure
-     *
-     * @return void
-     */
-    private static function prepareAsciiExtras()
-    {
-        if (self::$ASCII_EXTRAS === null) {
-            self::$ASCII_EXTRAS = self::getData('ascii_extras_by_languages');
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

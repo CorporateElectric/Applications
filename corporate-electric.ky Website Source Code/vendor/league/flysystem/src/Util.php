@@ -1,353 +1,143 @@
-<?php
-
-namespace League\Flysystem;
-
-use League\Flysystem\Util\MimeType;
-use LogicException;
-
-class Util
-{
-    /**
-     * Get normalized pathinfo.
-     *
-     * @param string $path
-     *
-     * @return array pathinfo
-     */
-    public static function pathinfo($path)
-    {
-        $pathinfo = compact('path');
-
-        if ('' !== $dirname = dirname($path)) {
-            $pathinfo['dirname'] = static::normalizeDirname($dirname);
-        }
-
-        $pathinfo['basename'] = static::basename($path);
-
-        $pathinfo += pathinfo($pathinfo['basename']);
-
-        return $pathinfo + ['dirname' => ''];
-    }
-
-    /**
-     * Normalize a dirname return value.
-     *
-     * @param string $dirname
-     *
-     * @return string normalized dirname
-     */
-    public static function normalizeDirname($dirname)
-    {
-        return $dirname === '.' ? '' : $dirname;
-    }
-
-    /**
-     * Get a normalized dirname from a path.
-     *
-     * @param string $path
-     *
-     * @return string dirname
-     */
-    public static function dirname($path)
-    {
-        return static::normalizeDirname(dirname($path));
-    }
-
-    /**
-     * Map result arrays.
-     *
-     * @param array $object
-     * @param array $map
-     *
-     * @return array mapped result
-     */
-    public static function map(array $object, array $map)
-    {
-        $result = [];
-
-        foreach ($map as $from => $to) {
-            if ( ! isset($object[$from])) {
-                continue;
-            }
-
-            $result[$to] = $object[$from];
-        }
-
-        return $result;
-    }
-
-    /**
-     * Normalize path.
-     *
-     * @param string $path
-     *
-     * @throws LogicException
-     *
-     * @return string
-     */
-    public static function normalizePath($path)
-    {
-        return static::normalizeRelativePath($path);
-    }
-
-    /**
-     * Normalize relative directories in a path.
-     *
-     * @param string $path
-     *
-     * @throws LogicException
-     *
-     * @return string
-     */
-    public static function normalizeRelativePath($path)
-    {
-        $path = str_replace('\\', '/', $path);
-        $path = static::removeFunkyWhiteSpace($path);
-
-        $parts = [];
-
-        foreach (explode('/', $path) as $part) {
-            switch ($part) {
-                case '':
-                case '.':
-                break;
-
-            case '..':
-                if (empty($parts)) {
-                    throw new LogicException(
-                        'Path is outside of the defined root, path: [' . $path . ']'
-                    );
-                }
-                array_pop($parts);
-                break;
-
-            default:
-                $parts[] = $part;
-                break;
-            }
-        }
-
-        return implode('/', $parts);
-    }
-
-    /**
-     * Removes unprintable characters and invalid unicode characters.
-     *
-     * @param string $path
-     *
-     * @return string $path
-     */
-    protected static function removeFunkyWhiteSpace($path)
-    {
-        // We do this check in a loop, since removing invalid unicode characters
-        // can lead to new characters being created.
-        while (preg_match('#\p{C}+|^\./#u', $path)) {
-            $path = preg_replace('#\p{C}+|^\./#u', '', $path);
-        }
-
-        return $path;
-    }
-
-    /**
-     * Normalize prefix.
-     *
-     * @param string $prefix
-     * @param string $separator
-     *
-     * @return string normalized path
-     */
-    public static function normalizePrefix($prefix, $separator)
-    {
-        return rtrim($prefix, $separator) . $separator;
-    }
-
-    /**
-     * Get content size.
-     *
-     * @param string $contents
-     *
-     * @return int content size
-     */
-    public static function contentSize($contents)
-    {
-        return defined('MB_OVERLOAD_STRING') ? mb_strlen($contents, '8bit') : strlen($contents);
-    }
-
-    /**
-     * Guess MIME Type based on the path of the file and it's content.
-     *
-     * @param string          $path
-     * @param string|resource $content
-     *
-     * @return string|null MIME Type or NULL if no extension detected
-     */
-    public static function guessMimeType($path, $content)
-    {
-        $mimeType = MimeType::detectByContent($content);
-
-        if ( ! (empty($mimeType) || in_array($mimeType, ['application/x-empty', 'text/plain', 'text/x-asm']))) {
-            return $mimeType;
-        }
-
-        return MimeType::detectByFilename($path);
-    }
-
-    /**
-     * Emulate directories.
-     *
-     * @param array $listing
-     *
-     * @return array listing with emulated directories
-     */
-    public static function emulateDirectories(array $listing)
-    {
-        $directories = [];
-        $listedDirectories = [];
-
-        foreach ($listing as $object) {
-            list($directories, $listedDirectories) = static::emulateObjectDirectories($object, $directories, $listedDirectories);
-        }
-
-        $directories = array_diff(array_unique($directories), array_unique($listedDirectories));
-
-        foreach ($directories as $directory) {
-            $listing[] = static::pathinfo($directory) + ['type' => 'dir'];
-        }
-
-        return $listing;
-    }
-
-    /**
-     * Ensure a Config instance.
-     *
-     * @param null|array|Config $config
-     *
-     * @return Config config instance
-     *
-     * @throw  LogicException
-     */
-    public static function ensureConfig($config)
-    {
-        if ($config === null) {
-            return new Config();
-        }
-
-        if ($config instanceof Config) {
-            return $config;
-        }
-
-        if (is_array($config)) {
-            return new Config($config);
-        }
-
-        throw new LogicException('A config should either be an array or a Flysystem\Config object.');
-    }
-
-    /**
-     * Rewind a stream.
-     *
-     * @param resource $resource
-     */
-    public static function rewindStream($resource)
-    {
-        if (ftell($resource) !== 0 && static::isSeekableStream($resource)) {
-            rewind($resource);
-        }
-    }
-
-    public static function isSeekableStream($resource)
-    {
-        $metadata = stream_get_meta_data($resource);
-
-        return $metadata['seekable'];
-    }
-
-    /**
-     * Get the size of a stream.
-     *
-     * @param resource $resource
-     *
-     * @return int|null stream size
-     */
-    public static function getStreamSize($resource)
-    {
-        $stat = fstat($resource);
-
-        if ( ! is_array($stat) || ! isset($stat['size'])) {
-            return null;
-        }
-
-        return $stat['size'];
-    }
-
-    /**
-     * Emulate the directories of a single object.
-     *
-     * @param array $object
-     * @param array $directories
-     * @param array $listedDirectories
-     *
-     * @return array
-     */
-    protected static function emulateObjectDirectories(array $object, array $directories, array $listedDirectories)
-    {
-        if ($object['type'] === 'dir') {
-            $listedDirectories[] = $object['path'];
-        }
-
-        if ( ! isset($object['dirname']) || trim($object['dirname']) === '') {
-            return [$directories, $listedDirectories];
-        }
-
-        $parent = $object['dirname'];
-
-        while (isset($parent) && trim($parent) !== '' && ! in_array($parent, $directories)) {
-            $directories[] = $parent;
-            $parent = static::dirname($parent);
-        }
-
-        if (isset($object['type']) && $object['type'] === 'dir') {
-            $listedDirectories[] = $object['path'];
-
-            return [$directories, $listedDirectories];
-        }
-
-        return [$directories, $listedDirectories];
-    }
-
-    /**
-     * Returns the trailing name component of the path.
-     *
-     * @param string $path
-     *
-     * @return string
-     */
-    private static function basename($path)
-    {
-        $separators = DIRECTORY_SEPARATOR === '/' ? '/' : '\/';
-
-        $path = rtrim($path, $separators);
-
-        $basename = preg_replace('#.*?([^' . preg_quote($separators, '#') . ']+$)#', '$1', $path);
-
-        if (DIRECTORY_SEPARATOR === '/') {
-            return $basename;
-        }
-        // @codeCoverageIgnoreStart
-        // Extra Windows path munging. This is tested via AppVeyor, but code
-        // coverage is not reported.
-
-        // Handle relative paths with drive letters. c:file.txt.
-        while (preg_match('#^[a-zA-Z]{1}:[^\\\/]#', $basename)) {
-            $basename = substr($basename, 2);
-        }
-
-        // Remove colon for standalone drive letter names.
-        if (preg_match('#^[a-zA-Z]{1}:$#', $basename)) {
-            $basename = rtrim($basename, ':');
-        }
-
-        return $basename;
-        // @codeCoverageIgnoreEnd
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

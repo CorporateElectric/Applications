@@ -1,285 +1,150 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpFoundation\File;
-
-use Symfony\Component\HttpFoundation\File\Exception\CannotWriteFileException;
-use Symfony\Component\HttpFoundation\File\Exception\ExtensionFileException;
-use Symfony\Component\HttpFoundation\File\Exception\FileException;
-use Symfony\Component\HttpFoundation\File\Exception\FileNotFoundException;
-use Symfony\Component\HttpFoundation\File\Exception\FormSizeFileException;
-use Symfony\Component\HttpFoundation\File\Exception\IniSizeFileException;
-use Symfony\Component\HttpFoundation\File\Exception\NoFileException;
-use Symfony\Component\HttpFoundation\File\Exception\NoTmpDirFileException;
-use Symfony\Component\HttpFoundation\File\Exception\PartialFileException;
-use Symfony\Component\Mime\MimeTypes;
-
-/**
- * A file uploaded through a form.
- *
- * @author Bernhard Schussek <bschussek@gmail.com>
- * @author Florian Eckerstorfer <florian@eckerstorfer.org>
- * @author Fabien Potencier <fabien@symfony.com>
- */
-class UploadedFile extends File
-{
-    private $test;
-    private $originalName;
-    private $mimeType;
-    private $error;
-
-    /**
-     * Accepts the information of the uploaded file as provided by the PHP global $_FILES.
-     *
-     * The file object is only created when the uploaded file is valid (i.e. when the
-     * isValid() method returns true). Otherwise the only methods that could be called
-     * on an UploadedFile instance are:
-     *
-     *   * getClientOriginalName,
-     *   * getClientMimeType,
-     *   * isValid,
-     *   * getError.
-     *
-     * Calling any other method on an non-valid instance will cause an unpredictable result.
-     *
-     * @param string      $path         The full temporary path to the file
-     * @param string      $originalName The original file name of the uploaded file
-     * @param string|null $mimeType     The type of the file as provided by PHP; null defaults to application/octet-stream
-     * @param int|null    $error        The error constant of the upload (one of PHP's UPLOAD_ERR_XXX constants); null defaults to UPLOAD_ERR_OK
-     * @param bool        $test         Whether the test mode is active
-     *                                  Local files are used in test mode hence the code should not enforce HTTP uploads
-     *
-     * @throws FileException         If file_uploads is disabled
-     * @throws FileNotFoundException If the file does not exist
-     */
-    public function __construct(string $path, string $originalName, string $mimeType = null, int $error = null, bool $test = false)
-    {
-        $this->originalName = $this->getName($originalName);
-        $this->mimeType = $mimeType ?: 'application/octet-stream';
-        $this->error = $error ?: \UPLOAD_ERR_OK;
-        $this->test = $test;
-
-        parent::__construct($path, \UPLOAD_ERR_OK === $this->error);
-    }
-
-    /**
-     * Returns the original file name.
-     *
-     * It is extracted from the request from which the file has been uploaded.
-     * Then it should not be considered as a safe value.
-     *
-     * @return string The original name
-     */
-    public function getClientOriginalName()
-    {
-        return $this->originalName;
-    }
-
-    /**
-     * Returns the original file extension.
-     *
-     * It is extracted from the original file name that was uploaded.
-     * Then it should not be considered as a safe value.
-     *
-     * @return string The extension
-     */
-    public function getClientOriginalExtension()
-    {
-        return pathinfo($this->originalName, \PATHINFO_EXTENSION);
-    }
-
-    /**
-     * Returns the file mime type.
-     *
-     * The client mime type is extracted from the request from which the file
-     * was uploaded, so it should not be considered as a safe value.
-     *
-     * For a trusted mime type, use getMimeType() instead (which guesses the mime
-     * type based on the file content).
-     *
-     * @return string The mime type
-     *
-     * @see getMimeType()
-     */
-    public function getClientMimeType()
-    {
-        return $this->mimeType;
-    }
-
-    /**
-     * Returns the extension based on the client mime type.
-     *
-     * If the mime type is unknown, returns null.
-     *
-     * This method uses the mime type as guessed by getClientMimeType()
-     * to guess the file extension. As such, the extension returned
-     * by this method cannot be trusted.
-     *
-     * For a trusted extension, use guessExtension() instead (which guesses
-     * the extension based on the guessed mime type for the file).
-     *
-     * @return string|null The guessed extension or null if it cannot be guessed
-     *
-     * @see guessExtension()
-     * @see getClientMimeType()
-     */
-    public function guessClientExtension()
-    {
-        if (!class_exists(MimeTypes::class)) {
-            throw new \LogicException('You cannot guess the extension as the Mime component is not installed. Try running "composer require symfony/mime".');
-        }
-
-        return MimeTypes::getDefault()->getExtensions($this->getClientMimeType())[0] ?? null;
-    }
-
-    /**
-     * Returns the upload error.
-     *
-     * If the upload was successful, the constant UPLOAD_ERR_OK is returned.
-     * Otherwise one of the other UPLOAD_ERR_XXX constants is returned.
-     *
-     * @return int The upload error
-     */
-    public function getError()
-    {
-        return $this->error;
-    }
-
-    /**
-     * Returns whether the file was uploaded successfully.
-     *
-     * @return bool True if the file has been uploaded with HTTP and no error occurred
-     */
-    public function isValid()
-    {
-        $isOk = \UPLOAD_ERR_OK === $this->error;
-
-        return $this->test ? $isOk : $isOk && is_uploaded_file($this->getPathname());
-    }
-
-    /**
-     * Moves the file to a new location.
-     *
-     * @return File A File object representing the new file
-     *
-     * @throws FileException if, for any reason, the file could not have been moved
-     */
-    public function move(string $directory, string $name = null)
-    {
-        if ($this->isValid()) {
-            if ($this->test) {
-                return parent::move($directory, $name);
-            }
-
-            $target = $this->getTargetFile($directory, $name);
-
-            set_error_handler(function ($type, $msg) use (&$error) { $error = $msg; });
-            $moved = move_uploaded_file($this->getPathname(), $target);
-            restore_error_handler();
-            if (!$moved) {
-                throw new FileException(sprintf('Could not move the file "%s" to "%s" (%s).', $this->getPathname(), $target, strip_tags($error)));
-            }
-
-            @chmod($target, 0666 & ~umask());
-
-            return $target;
-        }
-
-        switch ($this->error) {
-            case \UPLOAD_ERR_INI_SIZE:
-                throw new IniSizeFileException($this->getErrorMessage());
-            case \UPLOAD_ERR_FORM_SIZE:
-                throw new FormSizeFileException($this->getErrorMessage());
-            case \UPLOAD_ERR_PARTIAL:
-                throw new PartialFileException($this->getErrorMessage());
-            case \UPLOAD_ERR_NO_FILE:
-                throw new NoFileException($this->getErrorMessage());
-            case \UPLOAD_ERR_CANT_WRITE:
-                throw new CannotWriteFileException($this->getErrorMessage());
-            case \UPLOAD_ERR_NO_TMP_DIR:
-                throw new NoTmpDirFileException($this->getErrorMessage());
-            case \UPLOAD_ERR_EXTENSION:
-                throw new ExtensionFileException($this->getErrorMessage());
-        }
-
-        throw new FileException($this->getErrorMessage());
-    }
-
-    /**
-     * Returns the maximum size of an uploaded file as configured in php.ini.
-     *
-     * @return int The maximum size of an uploaded file in bytes
-     */
-    public static function getMaxFilesize()
-    {
-        $sizePostMax = self::parseFilesize(ini_get('post_max_size'));
-        $sizeUploadMax = self::parseFilesize(ini_get('upload_max_filesize'));
-
-        return min($sizePostMax ?: \PHP_INT_MAX, $sizeUploadMax ?: \PHP_INT_MAX);
-    }
-
-    /**
-     * Returns the given size from an ini value in bytes.
-     */
-    private static function parseFilesize($size): int
-    {
-        if ('' === $size) {
-            return 0;
-        }
-
-        $size = strtolower($size);
-
-        $max = ltrim($size, '+');
-        if (0 === strpos($max, '0x')) {
-            $max = \intval($max, 16);
-        } elseif (0 === strpos($max, '0')) {
-            $max = \intval($max, 8);
-        } else {
-            $max = (int) $max;
-        }
-
-        switch (substr($size, -1)) {
-            case 't': $max *= 1024;
-            // no break
-            case 'g': $max *= 1024;
-            // no break
-            case 'm': $max *= 1024;
-            // no break
-            case 'k': $max *= 1024;
-        }
-
-        return $max;
-    }
-
-    /**
-     * Returns an informative upload error message.
-     *
-     * @return string The error message regarding the specified error code
-     */
-    public function getErrorMessage()
-    {
-        static $errors = [
-            \UPLOAD_ERR_INI_SIZE => 'The file "%s" exceeds your upload_max_filesize ini directive (limit is %d KiB).',
-            \UPLOAD_ERR_FORM_SIZE => 'The file "%s" exceeds the upload limit defined in your form.',
-            \UPLOAD_ERR_PARTIAL => 'The file "%s" was only partially uploaded.',
-            \UPLOAD_ERR_NO_FILE => 'No file was uploaded.',
-            \UPLOAD_ERR_CANT_WRITE => 'The file "%s" could not be written on disk.',
-            \UPLOAD_ERR_NO_TMP_DIR => 'File could not be uploaded: missing temporary directory.',
-            \UPLOAD_ERR_EXTENSION => 'File upload was stopped by a PHP extension.',
-        ];
-
-        $errorCode = $this->error;
-        $maxFilesize = \UPLOAD_ERR_INI_SIZE === $errorCode ? self::getMaxFilesize() / 1024 : 0;
-        $message = isset($errors[$errorCode]) ? $errors[$errorCode] : 'The file "%s" was not uploaded due to an unknown error.';
-
-        return sprintf($message, $this->getClientOriginalName(), $maxFilesize);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

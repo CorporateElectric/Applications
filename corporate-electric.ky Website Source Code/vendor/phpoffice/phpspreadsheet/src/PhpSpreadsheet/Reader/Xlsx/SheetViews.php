@@ -1,138 +1,92 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Reader\Xlsx;
-
-use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-use SimpleXMLElement;
-
-class SheetViews extends BaseParserClass
-{
-    private $sheetViewXml;
-
-    private $worksheet;
-
-    public function __construct(SimpleXMLElement $sheetViewXml, Worksheet $workSheet)
-    {
-        $this->sheetViewXml = $sheetViewXml;
-        $this->worksheet = $workSheet;
-    }
-
-    public function load(): void
-    {
-        $this->zoomScale();
-        $this->view();
-        $this->gridLines();
-        $this->headers();
-        $this->direction();
-        $this->showZeros();
-
-        if (isset($this->sheetViewXml->pane)) {
-            $this->pane();
-        }
-        if (isset($this->sheetViewXml->selection, $this->sheetViewXml->selection['sqref'])) {
-            $this->selection();
-        }
-    }
-
-    private function zoomScale(): void
-    {
-        if (isset($this->sheetViewXml['zoomScale'])) {
-            $zoomScale = (int) ($this->sheetViewXml['zoomScale']);
-            if ($zoomScale <= 0) {
-                // setZoomScale will throw an Exception if the scale is less than or equals 0
-                // that is OK when manually creating documents, but we should be able to read all documents
-                $zoomScale = 100;
-            }
-
-            $this->worksheet->getSheetView()->setZoomScale($zoomScale);
-        }
-
-        if (isset($this->sheetViewXml['zoomScaleNormal'])) {
-            $zoomScaleNormal = (int) ($this->sheetViewXml['zoomScaleNormal']);
-            if ($zoomScaleNormal <= 0) {
-                // setZoomScaleNormal will throw an Exception if the scale is less than or equals 0
-                // that is OK when manually creating documents, but we should be able to read all documents
-                $zoomScaleNormal = 100;
-            }
-
-            $this->worksheet->getSheetView()->setZoomScaleNormal($zoomScaleNormal);
-        }
-    }
-
-    private function view(): void
-    {
-        if (isset($this->sheetViewXml['view'])) {
-            $this->worksheet->getSheetView()->setView((string) $this->sheetViewXml['view']);
-        }
-    }
-
-    private function gridLines(): void
-    {
-        if (isset($this->sheetViewXml['showGridLines'])) {
-            $this->worksheet->setShowGridLines(
-                self::boolean((string) $this->sheetViewXml['showGridLines'])
-            );
-        }
-    }
-
-    private function headers(): void
-    {
-        if (isset($this->sheetViewXml['showRowColHeaders'])) {
-            $this->worksheet->setShowRowColHeaders(
-                self::boolean((string) $this->sheetViewXml['showRowColHeaders'])
-            );
-        }
-    }
-
-    private function direction(): void
-    {
-        if (isset($this->sheetViewXml['rightToLeft'])) {
-            $this->worksheet->setRightToLeft(
-                self::boolean((string) $this->sheetViewXml['rightToLeft'])
-            );
-        }
-    }
-
-    private function showZeros(): void
-    {
-        if (isset($this->sheetViewXml['showZeros'])) {
-            $this->worksheet->getSheetView()->setShowZeros(
-                self::boolean((string) $this->sheetViewXml['showZeros'])
-            );
-        }
-    }
-
-    private function pane(): void
-    {
-        $xSplit = 0;
-        $ySplit = 0;
-        $topLeftCell = null;
-
-        if (isset($this->sheetViewXml->pane['xSplit'])) {
-            $xSplit = (int) ($this->sheetViewXml->pane['xSplit']);
-        }
-
-        if (isset($this->sheetViewXml->pane['ySplit'])) {
-            $ySplit = (int) ($this->sheetViewXml->pane['ySplit']);
-        }
-
-        if (isset($this->sheetViewXml->pane['topLeftCell'])) {
-            $topLeftCell = (string) $this->sheetViewXml->pane['topLeftCell'];
-        }
-
-        $this->worksheet->freezePane(
-            Coordinate::stringFromColumnIndex($xSplit + 1) . ($ySplit + 1),
-            $topLeftCell
-        );
-    }
-
-    private function selection(): void
-    {
-        $sqref = (string) $this->sheetViewXml->selection['sqref'];
-        $sqref = explode(' ', $sqref);
-        $sqref = $sqref[0];
-
-        $this->worksheet->setSelectedCells($sqref);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,210 +1,65 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Framework\Constraint;
-
-use function gettype;
-use function is_array;
-use function is_bool;
-use function is_callable;
-use function is_float;
-use function is_int;
-use function is_iterable;
-use function is_numeric;
-use function is_object;
-use function is_scalar;
-use function is_string;
-use function sprintf;
-
-/**
- * @no-named-arguments Parameter names are not covered by the backward compatibility promise for PHPUnit
- */
-final class IsType extends Constraint
-{
-    /**
-     * @var string
-     */
-    public const TYPE_ARRAY = 'array';
-
-    /**
-     * @var string
-     */
-    public const TYPE_BOOL = 'bool';
-
-    /**
-     * @var string
-     */
-    public const TYPE_FLOAT = 'float';
-
-    /**
-     * @var string
-     */
-    public const TYPE_INT = 'int';
-
-    /**
-     * @var string
-     */
-    public const TYPE_NULL = 'null';
-
-    /**
-     * @var string
-     */
-    public const TYPE_NUMERIC = 'numeric';
-
-    /**
-     * @var string
-     */
-    public const TYPE_OBJECT = 'object';
-
-    /**
-     * @var string
-     */
-    public const TYPE_RESOURCE = 'resource';
-
-    /**
-     * @var string
-     */
-    public const TYPE_CLOSED_RESOURCE = 'resource (closed)';
-
-    /**
-     * @var string
-     */
-    public const TYPE_STRING = 'string';
-
-    /**
-     * @var string
-     */
-    public const TYPE_SCALAR = 'scalar';
-
-    /**
-     * @var string
-     */
-    public const TYPE_CALLABLE = 'callable';
-
-    /**
-     * @var string
-     */
-    public const TYPE_ITERABLE = 'iterable';
-
-    /**
-     * @var array<string,bool>
-     */
-    private const KNOWN_TYPES = [
-        'array'             => true,
-        'boolean'           => true,
-        'bool'              => true,
-        'double'            => true,
-        'float'             => true,
-        'integer'           => true,
-        'int'               => true,
-        'null'              => true,
-        'numeric'           => true,
-        'object'            => true,
-        'real'              => true,
-        'resource'          => true,
-        'resource (closed)' => true,
-        'string'            => true,
-        'scalar'            => true,
-        'callable'          => true,
-        'iterable'          => true,
-    ];
-
-    /**
-     * @var string
-     */
-    private $type;
-
-    /**
-     * @throws \PHPUnit\Framework\Exception
-     */
-    public function __construct(string $type)
-    {
-        if (!isset(self::KNOWN_TYPES[$type])) {
-            throw new \PHPUnit\Framework\Exception(
-                sprintf(
-                    'Type specified for PHPUnit\Framework\Constraint\IsType <%s> ' .
-                    'is not a valid type.',
-                    $type
-                )
-            );
-        }
-
-        $this->type = $type;
-    }
-
-    /**
-     * Returns a string representation of the constraint.
-     */
-    public function toString(): string
-    {
-        return sprintf(
-            'is of type "%s"',
-            $this->type
-        );
-    }
-
-    /**
-     * Evaluates the constraint for parameter $other. Returns true if the
-     * constraint is met, false otherwise.
-     *
-     * @param mixed $other value or object to evaluate
-     */
-    protected function matches($other): bool
-    {
-        switch ($this->type) {
-            case 'numeric':
-                return is_numeric($other);
-
-            case 'integer':
-            case 'int':
-                return is_int($other);
-
-            case 'double':
-            case 'float':
-            case 'real':
-                return is_float($other);
-
-            case 'string':
-                return is_string($other);
-
-            case 'boolean':
-            case 'bool':
-                return is_bool($other);
-
-            case 'null':
-                return null === $other;
-
-            case 'array':
-                return is_array($other);
-
-            case 'object':
-                return is_object($other);
-
-            case 'resource':
-                $type = gettype($other);
-
-                return $type === 'resource' || $type === 'resource (closed)';
-
-            case 'resource (closed)':
-                return gettype($other) === 'resource (closed)';
-
-            case 'scalar':
-                return is_scalar($other);
-
-            case 'callable':
-                return is_callable($other);
-
-            case 'iterable':
-                return is_iterable($other);
-
-            default:
-                return false;
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,67 +1,51 @@
-<?php
-namespace Hamcrest\Number;
-
-/*
- Copyright (c) 2009 hamcrest.org
- */
-use Hamcrest\Description;
-use Hamcrest\TypeSafeMatcher;
-
-/**
- * Is the value a number equal to a value within some range of
- * acceptable error?
- */
-class IsCloseTo extends TypeSafeMatcher
-{
-
-    private $_value;
-    private $_delta;
-
-    public function __construct($value, $delta)
-    {
-        parent::__construct(self::TYPE_NUMERIC);
-
-        $this->_value = $value;
-        $this->_delta = $delta;
-    }
-
-    protected function matchesSafely($item)
-    {
-        return $this->_actualDelta($item) <= 0.0;
-    }
-
-    protected function describeMismatchSafely($item, Description $mismatchDescription)
-    {
-        $mismatchDescription->appendValue($item)
-                                                ->appendText(' differed by ')
-                                                ->appendValue($this->_actualDelta($item))
-                                                ;
-    }
-
-    public function describeTo(Description $description)
-    {
-        $description->appendText('a numeric value within ')
-                                ->appendValue($this->_delta)
-                                ->appendText(' of ')
-                                ->appendValue($this->_value)
-                                ;
-    }
-
-    /**
-     * Matches if value is a number equal to $value within some range of
-     * acceptable error $delta.
-     *
-     * @factory
-     */
-    public static function closeTo($value, $delta)
-    {
-        return new self($value, $delta);
-    }
-
-    // -- Private Methods
-
-    private function _actualDelta($item)
-    {
-        return (abs(($item - $this->_value)) - $this->_delta);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

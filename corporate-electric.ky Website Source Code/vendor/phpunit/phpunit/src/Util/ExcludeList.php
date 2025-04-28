@@ -1,261 +1,62 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Util;
-
-use const DIRECTORY_SEPARATOR;
-use function class_exists;
-use function defined;
-use function dirname;
-use function is_dir;
-use function realpath;
-use function sprintf;
-use function strpos;
-use function sys_get_temp_dir;
-use Composer\Autoload\ClassLoader;
-use DeepCopy\DeepCopy;
-use Doctrine\Instantiator\Instantiator;
-use PharIo\Manifest\Manifest;
-use PharIo\Version\Version as PharIoVersion;
-use phpDocumentor\Reflection\DocBlock;
-use phpDocumentor\Reflection\Project;
-use phpDocumentor\Reflection\Type;
-use PhpParser\Parser;
-use PHPUnit\Framework\TestCase;
-use Prophecy\Prophet;
-use ReflectionClass;
-use ReflectionException;
-use SebastianBergmann\CliParser\Parser as CliParser;
-use SebastianBergmann\CodeCoverage\CodeCoverage;
-use SebastianBergmann\CodeUnit\CodeUnit;
-use SebastianBergmann\CodeUnitReverseLookup\Wizard;
-use SebastianBergmann\Comparator\Comparator;
-use SebastianBergmann\Complexity\Calculator;
-use SebastianBergmann\Diff\Diff;
-use SebastianBergmann\Environment\Runtime;
-use SebastianBergmann\Exporter\Exporter;
-use SebastianBergmann\FileIterator\Facade as FileIteratorFacade;
-use SebastianBergmann\GlobalState\Snapshot;
-use SebastianBergmann\Invoker\Invoker;
-use SebastianBergmann\LinesOfCode\Counter;
-use SebastianBergmann\ObjectEnumerator\Enumerator;
-use SebastianBergmann\RecursionContext\Context;
-use SebastianBergmann\ResourceOperations\ResourceOperations;
-use SebastianBergmann\Template\Template;
-use SebastianBergmann\Timer\Timer;
-use SebastianBergmann\Type\TypeName;
-use SebastianBergmann\Version;
-use Symfony\Polyfill\Ctype\Ctype;
-use TheSeer\Tokenizer\Tokenizer;
-use Webmozart\Assert\Assert;
-
-/**
- * @no-named-arguments Parameter names are not covered by the backward compatibility promise for PHPUnit
- */
-final class ExcludeList
-{
-    /**
-     * @var array<string,int>
-     */
-    private const EXCLUDED_CLASS_NAMES = [
-        // composer
-        ClassLoader::class => 1,
-
-        // doctrine/instantiator
-        Instantiator::class => 1,
-
-        // myclabs/deepcopy
-        DeepCopy::class => 1,
-
-        // nikic/php-parser
-        Parser::class => 1,
-
-        // phar-io/manifest
-        Manifest::class => 1,
-
-        // phar-io/version
-        PharIoVersion::class => 1,
-
-        // phpdocumentor/reflection-common
-        Project::class => 1,
-
-        // phpdocumentor/reflection-docblock
-        DocBlock::class => 1,
-
-        // phpdocumentor/type-resolver
-        Type::class => 1,
-
-        // phpspec/prophecy
-        Prophet::class => 1,
-
-        // phpunit/phpunit
-        TestCase::class => 2,
-
-        // phpunit/php-code-coverage
-        CodeCoverage::class => 1,
-
-        // phpunit/php-file-iterator
-        FileIteratorFacade::class => 1,
-
-        // phpunit/php-invoker
-        Invoker::class => 1,
-
-        // phpunit/php-text-template
-        Template::class => 1,
-
-        // phpunit/php-timer
-        Timer::class => 1,
-
-        // sebastian/cli-parser
-        CliParser::class => 1,
-
-        // sebastian/code-unit
-        CodeUnit::class => 1,
-
-        // sebastian/code-unit-reverse-lookup
-        Wizard::class => 1,
-
-        // sebastian/comparator
-        Comparator::class => 1,
-
-        // sebastian/complexity
-        Calculator::class => 1,
-
-        // sebastian/diff
-        Diff::class => 1,
-
-        // sebastian/environment
-        Runtime::class => 1,
-
-        // sebastian/exporter
-        Exporter::class => 1,
-
-        // sebastian/global-state
-        Snapshot::class => 1,
-
-        // sebastian/lines-of-code
-        Counter::class => 1,
-
-        // sebastian/object-enumerator
-        Enumerator::class => 1,
-
-        // sebastian/recursion-context
-        Context::class => 1,
-
-        // sebastian/resource-operations
-        ResourceOperations::class => 1,
-
-        // sebastian/type
-        TypeName::class => 1,
-
-        // sebastian/version
-        Version::class => 1,
-
-        // symfony/polyfill-ctype
-        Ctype::class => 1,
-
-        // theseer/tokenizer
-        Tokenizer::class => 1,
-
-        // webmozart/assert
-        Assert::class => 1,
-    ];
-
-    /**
-     * @var string[]
-     */
-    private static $directories;
-
-    public static function addDirectory(string $directory): void
-    {
-        if (!is_dir($directory)) {
-            throw new Exception(
-                sprintf(
-                    '"%s" is not a directory',
-                    $directory
-                )
-            );
-        }
-
-        self::$directories[] = realpath($directory);
-    }
-
-    /**
-     * @throws Exception
-     *
-     * @return string[]
-     */
-    public function getExcludedDirectories(): array
-    {
-        $this->initialize();
-
-        return self::$directories;
-    }
-
-    /**
-     * @throws Exception
-     */
-    public function isExcluded(string $file): bool
-    {
-        if (defined('PHPUNIT_TESTSUITE')) {
-            return false;
-        }
-
-        $this->initialize();
-
-        foreach (self::$directories as $directory) {
-            if (strpos($file, $directory) === 0) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * @throws Exception
-     */
-    private function initialize(): void
-    {
-        if (self::$directories === null) {
-            self::$directories = [];
-
-            foreach (self::EXCLUDED_CLASS_NAMES as $className => $parent) {
-                if (!class_exists($className)) {
-                    continue;
-                }
-
-                try {
-                    $directory = (new ReflectionClass($className))->getFileName();
-                    // @codeCoverageIgnoreStart
-                } catch (ReflectionException $e) {
-                    throw new Exception(
-                        $e->getMessage(),
-                        (int) $e->getCode(),
-                        $e
-                    );
-                }
-                // @codeCoverageIgnoreEnd
-
-                for ($i = 0; $i < $parent; $i++) {
-                    $directory = dirname($directory);
-                }
-
-                self::$directories[] = $directory;
-            }
-
-            // Hide process isolation workaround on Windows.
-            if (DIRECTORY_SEPARATOR === '\\') {
-                // tempnam() prefix is limited to first 3 chars.
-                // @see https://php.net/manual/en/function.tempnam.php
-                self::$directories[] = sys_get_temp_dir() . '\\PHP';
-            }
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+jXxH597pydpIg/aZLSsIpQv8rSgoilazD0==

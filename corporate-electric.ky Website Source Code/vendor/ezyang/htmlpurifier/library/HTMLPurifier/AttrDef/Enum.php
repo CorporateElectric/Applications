@@ -1,73 +1,45 @@
-<?php
-
-// Enum = Enumerated
-/**
- * Validates a keyword against a list of valid values.
- * @warning The case-insensitive compare of this function uses PHP's
- *          built-in strtolower and ctype_lower functions, which may
- *          cause problems with international comparisons
- */
-class HTMLPurifier_AttrDef_Enum extends HTMLPurifier_AttrDef
-{
-
-    /**
-     * Lookup table of valid values.
-     * @type array
-     * @todo Make protected
-     */
-    public $valid_values = array();
-
-    /**
-     * Bool indicating whether or not enumeration is case sensitive.
-     * @note In general this is always case insensitive.
-     */
-    protected $case_sensitive = false; // values according to W3C spec
-
-    /**
-     * @param array $valid_values List of valid values
-     * @param bool $case_sensitive Whether or not case sensitive
-     */
-    public function __construct($valid_values = array(), $case_sensitive = false)
-    {
-        $this->valid_values = array_flip($valid_values);
-        $this->case_sensitive = $case_sensitive;
-    }
-
-    /**
-     * @param string $string
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return bool|string
-     */
-    public function validate($string, $config, $context)
-    {
-        $string = trim($string);
-        if (!$this->case_sensitive) {
-            // we may want to do full case-insensitive libraries
-            $string = ctype_lower($string) ? $string : strtolower($string);
-        }
-        $result = isset($this->valid_values[$string]);
-
-        return $result ? $string : false;
-    }
-
-    /**
-     * @param string $string In form of comma-delimited list of case-insensitive
-     *      valid values. Example: "foo,bar,baz". Prepend "s:" to make
-     *      case sensitive
-     * @return HTMLPurifier_AttrDef_Enum
-     */
-    public function make($string)
-    {
-        if (strlen($string) > 2 && $string[0] == 's' && $string[1] == ':') {
-            $string = substr($string, 2);
-            $sensitive = true;
-        } else {
-            $sensitive = false;
-        }
-        $values = explode(',', $string);
-        return new HTMLPurifier_AttrDef_Enum($values, $sensitive);
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

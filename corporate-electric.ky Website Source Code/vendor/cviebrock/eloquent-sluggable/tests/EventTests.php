@@ -1,97 +1,58 @@
-<?php namespace Cviebrock\EloquentSluggable\Tests;
-
-use Cviebrock\EloquentSluggable\Tests\Listeners\AbortSlugging;
-use Cviebrock\EloquentSluggable\Tests\Listeners\DoNotAbortSlugging;
-use Cviebrock\EloquentSluggable\Tests\Models\Post;
-
-/**
- * Class EventTests
- *
- * @package Tests
- */
-class EventTests extends TestCase
-{
-
-    /**
-     * Test that the "slugging" event is fired.
-     *
-     * @todo Figure out how to accurately test Eloquent model events
-     */
-    public function testEventsAreFired()
-    {
-        $this->markTestIncomplete('Event tests are not yet reliable.');
-
-        Post::create([
-            'title' => 'My Test Post'
-        ]);
-
-        $this->expectsEvents([
-            'eloquent.slugging: ' . Post::class,
-            'eloquent.slugged: ' . Post::class,
-        ]);
-    }
-
-    /**
-     * Test that the "slugging" event can be cancelled.
-     *
-     * @todo Figure out how to accurately test Eloquent model events
-     */
-    public function testDoNotCancelSluggingEventWhenItReturnsAnythingOtherThanFalse()
-    {
-        $this->markTestIncomplete('Event tests are not yet reliable.');
-
-        $this->app['events']->listen('eloquent.slugging: ' . Post::class, DoNotAbortSlugging::class);
-
-        $post = Post::create([
-            'title' => 'My Test Post'
-        ]);
-
-        $this->expectsEvents([
-            'eloquent.slugging: ' . Post::class,
-        ]);
-
-        $this->doesntExpectEvents([
-            'eloquent.slugged: ' . Post::class,
-        ]);
-
-        $this->assertEquals('my-test-post', $post->slug);
-    }
-
-    public function testCancelSluggingEvent()
-    {
-        $this->markTestIncomplete('Event tests are not yet reliable.');
-
-        $this->app['events']->listen('eloquent.slugging: ' . Post::class, AbortSlugging::class);
-
-        $post = Post::create([
-            'title' => 'My Test Post'
-        ]);
-
-        $this->expectsEvents([
-            'eloquent.slugging: ' . Post::class,
-        ]);
-
-        $this->doesntExpectEvents([
-            'eloquent.slugged: ' . Post::class,
-        ]);
-
-        $this->assertEquals(null, $post->slug);
-    }
-
-    /**
-     * Test that the "slugged" event is fired.
-     *
-     * @todo Figure out how to accurately test Eloquent model events
-     */
-    public function testSluggedEvent()
-    {
-        $this->markTestIncomplete('Event tests are not yet reliable.');
-
-        $post = Post::create([
-            'title' => 'My Test Post'
-        ]);
-
-        $this->assertEquals('my-test-post', $post->slug);
-        $this->assertEquals('I have been slugged!', $post->subtitle);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

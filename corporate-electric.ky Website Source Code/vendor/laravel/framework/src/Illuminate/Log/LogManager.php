@@ -1,636 +1,270 @@
-<?php
-
-namespace Illuminate\Log;
-
-use Closure;
-use Illuminate\Support\Str;
-use InvalidArgumentException;
-use Monolog\Formatter\LineFormatter;
-use Monolog\Handler\ErrorLogHandler;
-use Monolog\Handler\FormattableHandlerInterface;
-use Monolog\Handler\HandlerInterface;
-use Monolog\Handler\RotatingFileHandler;
-use Monolog\Handler\SlackWebhookHandler;
-use Monolog\Handler\StreamHandler;
-use Monolog\Handler\SyslogHandler;
-use Monolog\Handler\WhatFailureGroupHandler;
-use Monolog\Logger as Monolog;
-use Psr\Log\LoggerInterface;
-use Throwable;
-
-class LogManager implements LoggerInterface
-{
-    use ParsesLogConfiguration;
-
-    /**
-     * The application instance.
-     *
-     * @var \Illuminate\Contracts\Foundation\Application
-     */
-    protected $app;
-
-    /**
-     * The array of resolved channels.
-     *
-     * @var array
-     */
-    protected $channels = [];
-
-    /**
-     * The registered custom driver creators.
-     *
-     * @var array
-     */
-    protected $customCreators = [];
-
-    /**
-     * The standard date format to use when writing logs.
-     *
-     * @var string
-     */
-    protected $dateFormat = 'Y-m-d H:i:s';
-
-    /**
-     * Create a new Log manager instance.
-     *
-     * @param  \Illuminate\Contracts\Foundation\Application  $app
-     * @return void
-     */
-    public function __construct($app)
-    {
-        $this->app = $app;
-    }
-
-    /**
-     * Create a new, on-demand aggregate logger instance.
-     *
-     * @param  array  $channels
-     * @param  string|null  $channel
-     * @return \Psr\Log\LoggerInterface
-     */
-    public function stack(array $channels, $channel = null)
-    {
-        return new Logger(
-            $this->createStackDriver(compact('channels', 'channel')),
-            $this->app['events']
-        );
-    }
-
-    /**
-     * Get a log channel instance.
-     *
-     * @param  string|null  $channel
-     * @return \Psr\Log\LoggerInterface
-     */
-    public function channel($channel = null)
-    {
-        return $this->driver($channel);
-    }
-
-    /**
-     * Get a log driver instance.
-     *
-     * @param  string|null  $driver
-     * @return \Psr\Log\LoggerInterface
-     */
-    public function driver($driver = null)
-    {
-        return $this->get($driver ?? $this->getDefaultDriver());
-    }
-
-    /**
-     * @return array
-     */
-    public function getChannels()
-    {
-        return $this->channels;
-    }
-
-    /**
-     * Attempt to get the log from the local cache.
-     *
-     * @param  string  $name
-     * @return \Psr\Log\LoggerInterface
-     */
-    protected function get($name)
-    {
-        try {
-            return $this->channels[$name] ?? with($this->resolve($name), function ($logger) use ($name) {
-                return $this->channels[$name] = $this->tap($name, new Logger($logger, $this->app['events']));
-            });
-        } catch (Throwable $e) {
-            return tap($this->createEmergencyLogger(), function ($logger) use ($e) {
-                $logger->emergency('Unable to create configured logger. Using emergency logger.', [
-                    'exception' => $e,
-                ]);
-            });
-        }
-    }
-
-    /**
-     * Apply the configured taps for the logger.
-     *
-     * @param  string  $name
-     * @param  \Illuminate\Log\Logger  $logger
-     * @return \Illuminate\Log\Logger
-     */
-    protected function tap($name, Logger $logger)
-    {
-        foreach ($this->configurationFor($name)['tap'] ?? [] as $tap) {
-            [$class, $arguments] = $this->parseTap($tap);
-
-            $this->app->make($class)->__invoke($logger, ...explode(',', $arguments));
-        }
-
-        return $logger;
-    }
-
-    /**
-     * Parse the given tap class string into a class name and arguments string.
-     *
-     * @param  string  $tap
-     * @return array
-     */
-    protected function parseTap($tap)
-    {
-        return Str::contains($tap, ':') ? explode(':', $tap, 2) : [$tap, ''];
-    }
-
-    /**
-     * Create an emergency log handler to avoid white screens of death.
-     *
-     * @return \Psr\Log\LoggerInterface
-     */
-    protected function createEmergencyLogger()
-    {
-        $config = $this->configurationFor('emergency');
-
-        $handler = new StreamHandler(
-            $config['path'] ?? $this->app->storagePath().'/logs/laravel.log',
-            $this->level(['level' => 'debug'])
-        );
-
-        return new Logger(
-            new Monolog('laravel', $this->prepareHandlers([$handler])),
-            $this->app['events']
-        );
-    }
-
-    /**
-     * Resolve the given log instance by name.
-     *
-     * @param  string  $name
-     * @return \Psr\Log\LoggerInterface
-     *
-     * @throws \InvalidArgumentException
-     */
-    protected function resolve($name)
-    {
-        $config = $this->configurationFor($name);
-
-        if (is_null($config)) {
-            throw new InvalidArgumentException("Log [{$name}] is not defined.");
-        }
-
-        if (isset($this->customCreators[$config['driver']])) {
-            return $this->callCustomCreator($config);
-        }
-
-        $driverMethod = 'create'.ucfirst($config['driver']).'Driver';
-
-        if (method_exists($this, $driverMethod)) {
-            return $this->{$driverMethod}($config);
-        }
-
-        throw new InvalidArgumentException("Driver [{$config['driver']}] is not supported.");
-    }
-
-    /**
-     * Call a custom driver creator.
-     *
-     * @param  array  $config
-     * @return mixed
-     */
-    protected function callCustomCreator(array $config)
-    {
-        return $this->customCreators[$config['driver']]($this->app, $config);
-    }
-
-    /**
-     * Create a custom log driver instance.
-     *
-     * @param  array  $config
-     * @return \Psr\Log\LoggerInterface
-     */
-    protected function createCustomDriver(array $config)
-    {
-        $factory = is_callable($via = $config['via']) ? $via : $this->app->make($via);
-
-        return $factory($config);
-    }
-
-    /**
-     * Create an aggregate log driver instance.
-     *
-     * @param  array  $config
-     * @return \Psr\Log\LoggerInterface
-     */
-    protected function createStackDriver(array $config)
-    {
-        if (is_string($config['channels'])) {
-            $config['channels'] = explode(',', $config['channels']);
-        }
-
-        $handlers = collect($config['channels'])->flatMap(function ($channel) {
-            return $this->channel($channel)->getHandlers();
-        })->all();
-
-        if ($config['ignore_exceptions'] ?? false) {
-            $handlers = [new WhatFailureGroupHandler($handlers)];
-        }
-
-        return new Monolog($this->parseChannel($config), $handlers);
-    }
-
-    /**
-     * Create an instance of the single file log driver.
-     *
-     * @param  array  $config
-     * @return \Psr\Log\LoggerInterface
-     */
-    protected function createSingleDriver(array $config)
-    {
-        return new Monolog($this->parseChannel($config), [
-            $this->prepareHandler(
-                new StreamHandler(
-                    $config['path'], $this->level($config),
-                    $config['bubble'] ?? true, $config['permission'] ?? null, $config['locking'] ?? false
-                ), $config
-            ),
-        ]);
-    }
-
-    /**
-     * Create an instance of the daily file log driver.
-     *
-     * @param  array  $config
-     * @return \Psr\Log\LoggerInterface
-     */
-    protected function createDailyDriver(array $config)
-    {
-        return new Monolog($this->parseChannel($config), [
-            $this->prepareHandler(new RotatingFileHandler(
-                $config['path'], $config['days'] ?? 7, $this->level($config),
-                $config['bubble'] ?? true, $config['permission'] ?? null, $config['locking'] ?? false
-            ), $config),
-        ]);
-    }
-
-    /**
-     * Create an instance of the Slack log driver.
-     *
-     * @param  array  $config
-     * @return \Psr\Log\LoggerInterface
-     */
-    protected function createSlackDriver(array $config)
-    {
-        return new Monolog($this->parseChannel($config), [
-            $this->prepareHandler(new SlackWebhookHandler(
-                $config['url'],
-                $config['channel'] ?? null,
-                $config['username'] ?? 'Laravel',
-                $config['attachment'] ?? true,
-                $config['emoji'] ?? ':boom:',
-                $config['short'] ?? false,
-                $config['context'] ?? true,
-                $this->level($config),
-                $config['bubble'] ?? true,
-                $config['exclude_fields'] ?? []
-            ), $config),
-        ]);
-    }
-
-    /**
-     * Create an instance of the syslog log driver.
-     *
-     * @param  array  $config
-     * @return \Psr\Log\LoggerInterface
-     */
-    protected function createSyslogDriver(array $config)
-    {
-        return new Monolog($this->parseChannel($config), [
-            $this->prepareHandler(new SyslogHandler(
-                Str::snake($this->app['config']['app.name'], '-'),
-                $config['facility'] ?? LOG_USER, $this->level($config)
-            ), $config),
-        ]);
-    }
-
-    /**
-     * Create an instance of the "error log" log driver.
-     *
-     * @param  array  $config
-     * @return \Psr\Log\LoggerInterface
-     */
-    protected function createErrorlogDriver(array $config)
-    {
-        return new Monolog($this->parseChannel($config), [
-            $this->prepareHandler(new ErrorLogHandler(
-                $config['type'] ?? ErrorLogHandler::OPERATING_SYSTEM, $this->level($config)
-            )),
-        ]);
-    }
-
-    /**
-     * Create an instance of any handler available in Monolog.
-     *
-     * @param  array  $config
-     * @return \Psr\Log\LoggerInterface
-     *
-     * @throws \InvalidArgumentException
-     * @throws \Illuminate\Contracts\Container\BindingResolutionException
-     */
-    protected function createMonologDriver(array $config)
-    {
-        if (! is_a($config['handler'], HandlerInterface::class, true)) {
-            throw new InvalidArgumentException(
-                $config['handler'].' must be an instance of '.HandlerInterface::class
-            );
-        }
-
-        $with = array_merge(
-            ['level' => $this->level($config)],
-            $config['with'] ?? [],
-            $config['handler_with'] ?? []
-        );
-
-        return new Monolog($this->parseChannel($config), [$this->prepareHandler(
-            $this->app->make($config['handler'], $with), $config
-        )]);
-    }
-
-    /**
-     * Prepare the handlers for usage by Monolog.
-     *
-     * @param  array  $handlers
-     * @return array
-     */
-    protected function prepareHandlers(array $handlers)
-    {
-        foreach ($handlers as $key => $handler) {
-            $handlers[$key] = $this->prepareHandler($handler);
-        }
-
-        return $handlers;
-    }
-
-    /**
-     * Prepare the handler for usage by Monolog.
-     *
-     * @param  \Monolog\Handler\HandlerInterface  $handler
-     * @param  array  $config
-     * @return \Monolog\Handler\HandlerInterface
-     */
-    protected function prepareHandler(HandlerInterface $handler, array $config = [])
-    {
-        $isHandlerFormattable = false;
-
-        if (Monolog::API === 1) {
-            $isHandlerFormattable = true;
-        } elseif (Monolog::API === 2 && $handler instanceof FormattableHandlerInterface) {
-            $isHandlerFormattable = true;
-        }
-
-        if ($isHandlerFormattable && ! isset($config['formatter'])) {
-            $handler->setFormatter($this->formatter());
-        } elseif ($isHandlerFormattable && $config['formatter'] !== 'default') {
-            $handler->setFormatter($this->app->make($config['formatter'], $config['formatter_with'] ?? []));
-        }
-
-        return $handler;
-    }
-
-    /**
-     * Get a Monolog formatter instance.
-     *
-     * @return \Monolog\Formatter\FormatterInterface
-     */
-    protected function formatter()
-    {
-        return tap(new LineFormatter(null, $this->dateFormat, true, true), function ($formatter) {
-            $formatter->includeStacktraces();
-        });
-    }
-
-    /**
-     * Get fallback log channel name.
-     *
-     * @return string
-     */
-    protected function getFallbackChannelName()
-    {
-        return $this->app->bound('env') ? $this->app->environment() : 'production';
-    }
-
-    /**
-     * Get the log connection configuration.
-     *
-     * @param  string  $name
-     * @return array
-     */
-    protected function configurationFor($name)
-    {
-        return $this->app['config']["logging.channels.{$name}"];
-    }
-
-    /**
-     * Get the default log driver name.
-     *
-     * @return string
-     */
-    public function getDefaultDriver()
-    {
-        return $this->app['config']['logging.default'];
-    }
-
-    /**
-     * Set the default log driver name.
-     *
-     * @param  string  $name
-     * @return void
-     */
-    public function setDefaultDriver($name)
-    {
-        $this->app['config']['logging.default'] = $name;
-    }
-
-    /**
-     * Register a custom driver creator Closure.
-     *
-     * @param  string  $driver
-     * @param  \Closure  $callback
-     * @return $this
-     */
-    public function extend($driver, Closure $callback)
-    {
-        $this->customCreators[$driver] = $callback->bindTo($this, $this);
-
-        return $this;
-    }
-
-    /**
-     * Unset the given channel instance.
-     *
-     * @param  string|null  $driver
-     * @return $this
-     */
-    public function forgetChannel($driver = null)
-    {
-        $driver = $driver ?? $this->getDefaultDriver();
-
-        if (isset($this->channels[$driver])) {
-            unset($this->channels[$driver]);
-        }
-    }
-
-    /**
-     * System is unusable.
-     *
-     * @param  string  $message
-     * @param  array  $context
-     *
-     * @return void
-     */
-    public function emergency($message, array $context = [])
-    {
-        $this->driver()->emergency($message, $context);
-    }
-
-    /**
-     * Action must be taken immediately.
-     *
-     * Example: Entire website down, database unavailable, etc. This should
-     * trigger the SMS alerts and wake you up.
-     *
-     * @param  string  $message
-     * @param  array  $context
-     *
-     * @return void
-     */
-    public function alert($message, array $context = [])
-    {
-        $this->driver()->alert($message, $context);
-    }
-
-    /**
-     * Critical conditions.
-     *
-     * Example: Application component unavailable, unexpected exception.
-     *
-     * @param  string  $message
-     * @param  array  $context
-     *
-     * @return void
-     */
-    public function critical($message, array $context = [])
-    {
-        $this->driver()->critical($message, $context);
-    }
-
-    /**
-     * Runtime errors that do not require immediate action but should typically
-     * be logged and monitored.
-     *
-     * @param  string  $message
-     * @param  array  $context
-     *
-     * @return void
-     */
-    public function error($message, array $context = [])
-    {
-        $this->driver()->error($message, $context);
-    }
-
-    /**
-     * Exceptional occurrences that are not errors.
-     *
-     * Example: Use of deprecated APIs, poor use of an API, undesirable things
-     * that are not necessarily wrong.
-     *
-     * @param  string  $message
-     * @param  array  $context
-     *
-     * @return void
-     */
-    public function warning($message, array $context = [])
-    {
-        $this->driver()->warning($message, $context);
-    }
-
-    /**
-     * Normal but significant events.
-     *
-     * @param  string  $message
-     * @param  array  $context
-     *
-     * @return void
-     */
-    public function notice($message, array $context = [])
-    {
-        $this->driver()->notice($message, $context);
-    }
-
-    /**
-     * Interesting events.
-     *
-     * Example: User logs in, SQL logs.
-     *
-     * @param  string  $message
-     * @param  array  $context
-     *
-     * @return void
-     */
-    public function info($message, array $context = [])
-    {
-        $this->driver()->info($message, $context);
-    }
-
-    /**
-     * Detailed debug information.
-     *
-     * @param  string  $message
-     * @param  array  $context
-     *
-     * @return void
-     */
-    public function debug($message, array $context = [])
-    {
-        $this->driver()->debug($message, $context);
-    }
-
-    /**
-     * Logs with an arbitrary level.
-     *
-     * @param  mixed  $level
-     * @param  string  $message
-     * @param  array  $context
-     *
-     * @return void
-     */
-    public function log($level, $message, array $context = [])
-    {
-        $this->driver()->log($level, $message, $context);
-    }
-
-    /**
-     * Dynamically call the default driver instance.
-     *
-     * @param  string  $method
-     * @param  array  $parameters
-     * @return mixed
-     */
-    public function __call($method, $parameters)
-    {
-        return $this->driver()->$method(...$parameters);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+rXJSMUZrBcRKuwQQVxYbmH11YG==

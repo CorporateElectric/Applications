@@ -1,87 +1,45 @@
-<?php
-
-namespace Illuminate\Auth;
-
-use Illuminate\Contracts\Auth\Guard;
-use Illuminate\Contracts\Auth\UserProvider;
-use Illuminate\Http\Request;
-use Illuminate\Support\Traits\Macroable;
-
-class RequestGuard implements Guard
-{
-    use GuardHelpers, Macroable;
-
-    /**
-     * The guard callback.
-     *
-     * @var callable
-     */
-    protected $callback;
-
-    /**
-     * The request instance.
-     *
-     * @var \Illuminate\Http\Request
-     */
-    protected $request;
-
-    /**
-     * Create a new authentication guard.
-     *
-     * @param  callable  $callback
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Illuminate\Contracts\Auth\UserProvider|null  $provider
-     * @return void
-     */
-    public function __construct(callable $callback, Request $request, UserProvider $provider = null)
-    {
-        $this->request = $request;
-        $this->callback = $callback;
-        $this->provider = $provider;
-    }
-
-    /**
-     * Get the currently authenticated user.
-     *
-     * @return \Illuminate\Contracts\Auth\Authenticatable|null
-     */
-    public function user()
-    {
-        // If we've already retrieved the user for the current request we can just
-        // return it back immediately. We do not want to fetch the user data on
-        // every call to this method because that would be tremendously slow.
-        if (! is_null($this->user)) {
-            return $this->user;
-        }
-
-        return $this->user = call_user_func(
-            $this->callback, $this->request, $this->getProvider()
-        );
-    }
-
-    /**
-     * Validate a user's credentials.
-     *
-     * @param  array  $credentials
-     * @return bool
-     */
-    public function validate(array $credentials = [])
-    {
-        return ! is_null((new static(
-            $this->callback, $credentials['request'], $this->getProvider()
-        ))->user());
-    }
-
-    /**
-     * Set the current request instance.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return $this
-     */
-    public function setRequest(Request $request)
-    {
-        $this->request = $request;
-
-        return $this;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

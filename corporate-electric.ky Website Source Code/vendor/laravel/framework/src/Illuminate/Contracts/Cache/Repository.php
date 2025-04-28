@@ -1,108 +1,43 @@
-<?php
-
-namespace Illuminate\Contracts\Cache;
-
-use Closure;
-use Psr\SimpleCache\CacheInterface;
-
-interface Repository extends CacheInterface
-{
-    /**
-     * Retrieve an item from the cache and delete it.
-     *
-     * @param  string  $key
-     * @param  mixed  $default
-     * @return mixed
-     */
-    public function pull($key, $default = null);
-
-    /**
-     * Store an item in the cache.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @param  \DateTimeInterface|\DateInterval|int|null  $ttl
-     * @return bool
-     */
-    public function put($key, $value, $ttl = null);
-
-    /**
-     * Store an item in the cache if the key does not exist.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @param  \DateTimeInterface|\DateInterval|int|null  $ttl
-     * @return bool
-     */
-    public function add($key, $value, $ttl = null);
-
-    /**
-     * Increment the value of an item in the cache.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @return int|bool
-     */
-    public function increment($key, $value = 1);
-
-    /**
-     * Decrement the value of an item in the cache.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @return int|bool
-     */
-    public function decrement($key, $value = 1);
-
-    /**
-     * Store an item in the cache indefinitely.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @return bool
-     */
-    public function forever($key, $value);
-
-    /**
-     * Get an item from the cache, or execute the given Closure and store the result.
-     *
-     * @param  string  $key
-     * @param  \DateTimeInterface|\DateInterval|int|null  $ttl
-     * @param  \Closure  $callback
-     * @return mixed
-     */
-    public function remember($key, $ttl, Closure $callback);
-
-    /**
-     * Get an item from the cache, or execute the given Closure and store the result forever.
-     *
-     * @param  string  $key
-     * @param  \Closure  $callback
-     * @return mixed
-     */
-    public function sear($key, Closure $callback);
-
-    /**
-     * Get an item from the cache, or execute the given Closure and store the result forever.
-     *
-     * @param  string  $key
-     * @param  \Closure  $callback
-     * @return mixed
-     */
-    public function rememberForever($key, Closure $callback);
-
-    /**
-     * Remove an item from the cache.
-     *
-     * @param  string  $key
-     * @return bool
-     */
-    public function forget($key);
-
-    /**
-     * Get the cache store implementation.
-     *
-     * @return \Illuminate\Contracts\Cache\Store
-     */
-    public function getStore();
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+gtLM8e+lAVUxhG==

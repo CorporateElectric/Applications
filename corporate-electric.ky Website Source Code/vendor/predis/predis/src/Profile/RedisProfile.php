@@ -1,146 +1,66 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Predis\Profile;
-
-use Predis\ClientException;
-use Predis\Command\Processor\ProcessorInterface;
-
-/**
- * Base class implementing common functionalities for Redis server profiles.
- *
- * @author Daniele Alessandri <suppakilla@gmail.com>
- */
-abstract class RedisProfile implements ProfileInterface
-{
-    private $commands;
-    private $processor;
-
-    /**
-     *
-     */
-    public function __construct()
-    {
-        $this->commands = $this->getSupportedCommands();
-    }
-
-    /**
-     * Returns a map of all the commands supported by the profile and their
-     * actual PHP classes.
-     *
-     * @return array
-     */
-    abstract protected function getSupportedCommands();
-
-    /**
-     * {@inheritdoc}
-     */
-    public function supportsCommand($commandID)
-    {
-        return isset($this->commands[strtoupper($commandID)]);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function supportsCommands(array $commandIDs)
-    {
-        foreach ($commandIDs as $commandID) {
-            if (!$this->supportsCommand($commandID)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Returns the fully-qualified name of a class representing the specified
-     * command ID registered in the current server profile.
-     *
-     * @param string $commandID Command ID.
-     *
-     * @return string|null
-     */
-    public function getCommandClass($commandID)
-    {
-        if (isset($this->commands[$commandID = strtoupper($commandID)])) {
-            return $this->commands[$commandID];
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function createCommand($commandID, array $arguments = array())
-    {
-        $commandID = strtoupper($commandID);
-
-        if (!isset($this->commands[$commandID])) {
-            throw new ClientException("Command '$commandID' is not a registered Redis command.");
-        }
-
-        $commandClass = $this->commands[$commandID];
-        $command = new $commandClass();
-        $command->setArguments($arguments);
-
-        if (isset($this->processor)) {
-            $this->processor->process($command);
-        }
-
-        return $command;
-    }
-
-    /**
-     * Defines a new command in the server profile.
-     *
-     * @param string $commandID Command ID.
-     * @param string $class     Fully-qualified name of a Predis\Command\CommandInterface.
-     *
-     * @throws \InvalidArgumentException
-     */
-    public function defineCommand($commandID, $class)
-    {
-        $reflection = new \ReflectionClass($class);
-
-        if (!$reflection->isSubclassOf('Predis\Command\CommandInterface')) {
-            throw new \InvalidArgumentException("The class '$class' is not a valid command class.");
-        }
-
-        $this->commands[strtoupper($commandID)] = $class;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function setProcessor(ProcessorInterface $processor = null)
-    {
-        $this->processor = $processor;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getProcessor()
-    {
-        return $this->processor;
-    }
-
-    /**
-     * Returns the version of server profile as its string representation.
-     *
-     * @return string
-     */
-    public function __toString()
-    {
-        return $this->getVersion();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

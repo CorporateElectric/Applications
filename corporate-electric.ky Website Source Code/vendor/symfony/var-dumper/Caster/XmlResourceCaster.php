@@ -1,63 +1,41 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\VarDumper\Caster;
-
-use Symfony\Component\VarDumper\Cloner\Stub;
-
-/**
- * Casts XML resources to array representation.
- *
- * @author Nicolas Grekas <p@tchwork.com>
- *
- * @final
- */
-class XmlResourceCaster
-{
-    private static $xmlErrors = [
-        \XML_ERROR_NONE => 'XML_ERROR_NONE',
-        \XML_ERROR_NO_MEMORY => 'XML_ERROR_NO_MEMORY',
-        \XML_ERROR_SYNTAX => 'XML_ERROR_SYNTAX',
-        \XML_ERROR_NO_ELEMENTS => 'XML_ERROR_NO_ELEMENTS',
-        \XML_ERROR_INVALID_TOKEN => 'XML_ERROR_INVALID_TOKEN',
-        \XML_ERROR_UNCLOSED_TOKEN => 'XML_ERROR_UNCLOSED_TOKEN',
-        \XML_ERROR_PARTIAL_CHAR => 'XML_ERROR_PARTIAL_CHAR',
-        \XML_ERROR_TAG_MISMATCH => 'XML_ERROR_TAG_MISMATCH',
-        \XML_ERROR_DUPLICATE_ATTRIBUTE => 'XML_ERROR_DUPLICATE_ATTRIBUTE',
-        \XML_ERROR_JUNK_AFTER_DOC_ELEMENT => 'XML_ERROR_JUNK_AFTER_DOC_ELEMENT',
-        \XML_ERROR_PARAM_ENTITY_REF => 'XML_ERROR_PARAM_ENTITY_REF',
-        \XML_ERROR_UNDEFINED_ENTITY => 'XML_ERROR_UNDEFINED_ENTITY',
-        \XML_ERROR_RECURSIVE_ENTITY_REF => 'XML_ERROR_RECURSIVE_ENTITY_REF',
-        \XML_ERROR_ASYNC_ENTITY => 'XML_ERROR_ASYNC_ENTITY',
-        \XML_ERROR_BAD_CHAR_REF => 'XML_ERROR_BAD_CHAR_REF',
-        \XML_ERROR_BINARY_ENTITY_REF => 'XML_ERROR_BINARY_ENTITY_REF',
-        \XML_ERROR_ATTRIBUTE_EXTERNAL_ENTITY_REF => 'XML_ERROR_ATTRIBUTE_EXTERNAL_ENTITY_REF',
-        \XML_ERROR_MISPLACED_XML_PI => 'XML_ERROR_MISPLACED_XML_PI',
-        \XML_ERROR_UNKNOWN_ENCODING => 'XML_ERROR_UNKNOWN_ENCODING',
-        \XML_ERROR_INCORRECT_ENCODING => 'XML_ERROR_INCORRECT_ENCODING',
-        \XML_ERROR_UNCLOSED_CDATA_SECTION => 'XML_ERROR_UNCLOSED_CDATA_SECTION',
-        \XML_ERROR_EXTERNAL_ENTITY_HANDLING => 'XML_ERROR_EXTERNAL_ENTITY_HANDLING',
-    ];
-
-    public static function castXml($h, array $a, Stub $stub, bool $isNested)
-    {
-        $a['current_byte_index'] = xml_get_current_byte_index($h);
-        $a['current_column_number'] = xml_get_current_column_number($h);
-        $a['current_line_number'] = xml_get_current_line_number($h);
-        $a['error_code'] = xml_get_error_code($h);
-
-        if (isset(self::$xmlErrors[$a['error_code']])) {
-            $a['error_code'] = new ConstStub(self::$xmlErrors[$a['error_code']], $a['error_code']);
-        }
-
-        return $a;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

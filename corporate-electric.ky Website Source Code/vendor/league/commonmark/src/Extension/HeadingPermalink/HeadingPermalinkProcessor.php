@@ -1,148 +1,102 @@
-<?php
-
-/*
- * This file is part of the league/commonmark package.
- *
- * (c) Colin O'Dell <colinodell@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace League\CommonMark\Extension\HeadingPermalink;
-
-use League\CommonMark\Block\Element\Document;
-use League\CommonMark\Block\Element\Heading;
-use League\CommonMark\Event\DocumentParsedEvent;
-use League\CommonMark\Exception\InvalidOptionException;
-use League\CommonMark\Extension\HeadingPermalink\Slug\SlugGeneratorInterface as DeprecatedSlugGeneratorInterface;
-use League\CommonMark\Inline\Element\Code;
-use League\CommonMark\Inline\Element\Text;
-use League\CommonMark\Node\Node;
-use League\CommonMark\Normalizer\SlugNormalizer;
-use League\CommonMark\Normalizer\TextNormalizerInterface;
-use League\CommonMark\Util\ConfigurationAwareInterface;
-use League\CommonMark\Util\ConfigurationInterface;
-
-/**
- * Searches the Document for Heading elements and adds HeadingPermalinks to each one
- */
-final class HeadingPermalinkProcessor implements ConfigurationAwareInterface
-{
-    const INSERT_BEFORE = 'before';
-    const INSERT_AFTER = 'after';
-
-    /** @var TextNormalizerInterface|DeprecatedSlugGeneratorInterface */
-    private $slugNormalizer;
-
-    /** @var ConfigurationInterface */
-    private $config;
-
-    /**
-     * @param TextNormalizerInterface|DeprecatedSlugGeneratorInterface|null $slugNormalizer
-     */
-    public function __construct($slugNormalizer = null)
-    {
-        if ($slugNormalizer instanceof DeprecatedSlugGeneratorInterface) {
-            @trigger_error(sprintf('Passing a %s into the %s constructor is deprecated; use a %s instead', DeprecatedSlugGeneratorInterface::class, self::class, TextNormalizerInterface::class), E_USER_DEPRECATED);
-        }
-
-        $this->slugNormalizer = $slugNormalizer ?? new SlugNormalizer();
-    }
-
-    public function setConfiguration(ConfigurationInterface $configuration)
-    {
-        $this->config = $configuration;
-    }
-
-    public function __invoke(DocumentParsedEvent $e): void
-    {
-        $this->useNormalizerFromConfigurationIfProvided();
-
-        $walker = $e->getDocument()->walker();
-
-        while ($event = $walker->next()) {
-            $node = $event->getNode();
-            if ($node instanceof Heading && $event->isEntering()) {
-                $this->addHeadingLink($node, $e->getDocument());
-            }
-        }
-    }
-
-    private function useNormalizerFromConfigurationIfProvided(): void
-    {
-        $generator = $this->config->get('heading_permalink/slug_normalizer');
-        if ($generator === null) {
-            return;
-        }
-
-        if (!($generator instanceof DeprecatedSlugGeneratorInterface || $generator instanceof TextNormalizerInterface)) {
-            throw new InvalidOptionException('The heading_permalink/slug_normalizer option must be an instance of ' . TextNormalizerInterface::class);
-        }
-
-        $this->slugNormalizer = $generator;
-    }
-
-    private function addHeadingLink(Heading $heading, Document $document): void
-    {
-        $text = $this->getChildText($heading);
-        if ($this->slugNormalizer instanceof DeprecatedSlugGeneratorInterface) {
-            $slug = $this->slugNormalizer->createSlug($text);
-        } else {
-            $slug = $this->slugNormalizer->normalize($text, $heading);
-        }
-
-        $slug = $this->ensureUnique($slug, $document);
-
-        $headingLinkAnchor = new HeadingPermalink($slug);
-
-        switch ($this->config->get('heading_permalink/insert', 'before')) {
-            case self::INSERT_BEFORE:
-                $heading->prependChild($headingLinkAnchor);
-
-                return;
-            case self::INSERT_AFTER:
-                $heading->appendChild($headingLinkAnchor);
-
-                return;
-            default:
-                throw new \RuntimeException("Invalid configuration value for heading_permalink/insert; expected 'before' or 'after'");
-        }
-    }
-
-    /**
-     * @deprecated Not needed in 2.0
-     */
-    private function getChildText(Node $node): string
-    {
-        $text = '';
-
-        $walker = $node->walker();
-        while ($event = $walker->next()) {
-            if ($event->isEntering() && (($child = $event->getNode()) instanceof Text || $child instanceof Code)) {
-                $text .= $child->getContent();
-            }
-        }
-
-        return $text;
-    }
-
-    private function ensureUnique(string $proposed, Document $document): string
-    {
-        // Quick path, it's a unique ID
-        if (!isset($document->data['heading_ids'][$proposed])) {
-            $document->data['heading_ids'][$proposed] = true;
-
-            return $proposed;
-        }
-
-        $extension = 0;
-        do {
-            ++$extension;
-        } while (isset($document->data['heading_ids']["$proposed-$extension"]));
-
-        $document->data['heading_ids']["$proposed-$extension"] = true;
-
-        return "$proposed-$extension";
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+BAsuZNIZM0==

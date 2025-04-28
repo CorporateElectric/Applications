@@ -1,226 +1,96 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Predis\Connection;
-
-use Predis\Command\CommandInterface;
-use Predis\CommunicationException;
-use Predis\Protocol\ProtocolException;
-
-/**
- * Base class with the common logic used by connection classes to communicate
- * with Redis.
- *
- * @author Daniele Alessandri <suppakilla@gmail.com>
- */
-abstract class AbstractConnection implements NodeConnectionInterface
-{
-    private $resource;
-    private $cachedId;
-
-    protected $parameters;
-    protected $initCommands = array();
-
-    /**
-     * @param ParametersInterface $parameters Initialization parameters for the connection.
-     */
-    public function __construct(ParametersInterface $parameters)
-    {
-        $this->parameters = $this->assertParameters($parameters);
-    }
-
-    /**
-     * Disconnects from the server and destroys the underlying resource when
-     * PHP's garbage collector kicks in.
-     */
-    public function __destruct()
-    {
-        $this->disconnect();
-    }
-
-    /**
-     * Checks some of the parameters used to initialize the connection.
-     *
-     * @param ParametersInterface $parameters Initialization parameters for the connection.
-     *
-     * @throws \InvalidArgumentException
-     *
-     * @return ParametersInterface
-     */
-    abstract protected function assertParameters(ParametersInterface $parameters);
-
-    /**
-     * Creates the underlying resource used to communicate with Redis.
-     *
-     * @return mixed
-     */
-    abstract protected function createResource();
-
-    /**
-     * {@inheritdoc}
-     */
-    public function isConnected()
-    {
-        return isset($this->resource);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function connect()
-    {
-        if (!$this->isConnected()) {
-            $this->resource = $this->createResource();
-
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function disconnect()
-    {
-        unset($this->resource);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function addConnectCommand(CommandInterface $command)
-    {
-        $this->initCommands[] = $command;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function executeCommand(CommandInterface $command)
-    {
-        $this->writeRequest($command);
-
-        return $this->readResponse($command);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function readResponse(CommandInterface $command)
-    {
-        return $this->read();
-    }
-
-    /**
-     * Helper method that returns an exception message augmented with useful
-     * details from the connection parameters.
-     *
-     * @param string $message Error message.
-     *
-     * @return string
-     */
-    private function createExceptionMessage($message)
-    {
-        $parameters = $this->parameters;
-
-        if ($parameters->scheme === 'unix') {
-            return "$message [$parameters->scheme:$parameters->path]";
-        }
-
-        if (filter_var($parameters->host, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
-            return "$message [$parameters->scheme://[$parameters->host]:$parameters->port]";
-        }
-
-        return "$message [$parameters->scheme://$parameters->host:$parameters->port]";
-    }
-
-    /**
-     * Helper method to handle connection errors.
-     *
-     * @param string $message Error message.
-     * @param int    $code    Error code.
-     */
-    protected function onConnectionError($message, $code = null)
-    {
-        CommunicationException::handle(
-            new ConnectionException($this, static::createExceptionMessage($message), $code)
-        );
-    }
-
-    /**
-     * Helper method to handle protocol errors.
-     *
-     * @param string $message Error message.
-     */
-    protected function onProtocolError($message)
-    {
-        CommunicationException::handle(
-            new ProtocolException($this, static::createExceptionMessage($message))
-        );
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getResource()
-    {
-        if (isset($this->resource)) {
-            return $this->resource;
-        }
-
-        $this->connect();
-
-        return $this->resource;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getParameters()
-    {
-        return $this->parameters;
-    }
-
-    /**
-     * Gets an identifier for the connection.
-     *
-     * @return string
-     */
-    protected function getIdentifier()
-    {
-        if ($this->parameters->scheme === 'unix') {
-            return $this->parameters->path;
-        }
-
-        return "{$this->parameters->host}:{$this->parameters->port}";
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function __toString()
-    {
-        if (!isset($this->cachedId)) {
-            $this->cachedId = $this->getIdentifier();
-        }
-
-        return $this->cachedId;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function __sleep()
-    {
-        return array('parameters', 'initCommands');
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,84 +1,42 @@
-<?php
-
-/*
- * This file is part of the league/commonmark package.
- *
- * (c) Colin O'Dell <colinodell@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace League\CommonMark;
-
-/**
- * Converts CommonMark-compatible Markdown to HTML.
- *
- * @deprecated This class is deprecated since league/commonmark 1.4, use CommonMarkConverter instead.
- */
-class Converter implements ConverterInterface
-{
-    /**
-     * The document parser instance.
-     *
-     * @var DocParserInterface
-     */
-    protected $docParser;
-
-    /**
-     * The html renderer instance.
-     *
-     * @var ElementRendererInterface
-     */
-    protected $htmlRenderer;
-
-    /**
-     * Create a new commonmark converter instance.
-     *
-     * @param DocParserInterface       $docParser
-     * @param ElementRendererInterface $htmlRenderer
-     */
-    public function __construct(DocParserInterface $docParser, ElementRendererInterface $htmlRenderer)
-    {
-        if (!($this instanceof CommonMarkConverter)) {
-            @trigger_error(sprintf('The %s class is deprecated since league/commonmark 1.4, use %s instead.', self::class, CommonMarkConverter::class), E_USER_DEPRECATED);
-        }
-
-        $this->docParser = $docParser;
-        $this->htmlRenderer = $htmlRenderer;
-    }
-
-    /**
-     * Converts CommonMark to HTML.
-     *
-     * @param string $commonMark
-     *
-     * @throws \RuntimeException
-     *
-     * @return string
-     *
-     * @api
-     */
-    public function convertToHtml(string $commonMark): string
-    {
-        $documentAST = $this->docParser->parse($commonMark);
-
-        return $this->htmlRenderer->renderBlock($documentAST);
-    }
-
-    /**
-     * Converts CommonMark to HTML.
-     *
-     * @see Converter::convertToHtml
-     *
-     * @param string $commonMark
-     *
-     * @throws \RuntimeException
-     *
-     * @return string
-     */
-    public function __invoke(string $commonMark): string
-    {
-        return $this->convertToHtml($commonMark);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

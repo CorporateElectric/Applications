@@ -1,21 +1,30 @@
-<?php
-
-/**
- * Module adds the target-based noopener attribute transformation to a tags.  It
- * is enabled by HTML.TargetNoopener
- */
-class HTMLPurifier_HTMLModule_TargetNoopener extends HTMLPurifier_HTMLModule
-{
-    /**
-     * @type string
-     */
-    public $name = 'TargetNoopener';
-
-    /**
-     * @param HTMLPurifier_Config $config
-     */
-    public function setup($config) {
-        $a = $this->addBlankElement('a');
-        $a->attr_transform_post[] = new HTMLPurifier_AttrTransform_TargetNoopener();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+jiO=

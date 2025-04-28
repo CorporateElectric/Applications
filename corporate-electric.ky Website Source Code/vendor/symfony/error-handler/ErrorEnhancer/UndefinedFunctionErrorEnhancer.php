@@ -1,87 +1,66 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\ErrorHandler\ErrorEnhancer;
-
-use Symfony\Component\ErrorHandler\Error\FatalError;
-use Symfony\Component\ErrorHandler\Error\UndefinedFunctionError;
-
-/**
- * @author Fabien Potencier <fabien@symfony.com>
- */
-class UndefinedFunctionErrorEnhancer implements ErrorEnhancerInterface
-{
-    /**
-     * {@inheritdoc}
-     */
-    public function enhance(\Throwable $error): ?\Throwable
-    {
-        if ($error instanceof FatalError) {
-            return null;
-        }
-
-        $message = $error->getMessage();
-        $messageLen = \strlen($message);
-        $notFoundSuffix = '()';
-        $notFoundSuffixLen = \strlen($notFoundSuffix);
-        if ($notFoundSuffixLen > $messageLen) {
-            return null;
-        }
-
-        if (0 !== substr_compare($message, $notFoundSuffix, -$notFoundSuffixLen)) {
-            return null;
-        }
-
-        $prefix = 'Call to undefined function ';
-        $prefixLen = \strlen($prefix);
-        if (0 !== strpos($message, $prefix)) {
-            return null;
-        }
-
-        $fullyQualifiedFunctionName = substr($message, $prefixLen, -$notFoundSuffixLen);
-        if (false !== $namespaceSeparatorIndex = strrpos($fullyQualifiedFunctionName, '\\')) {
-            $functionName = substr($fullyQualifiedFunctionName, $namespaceSeparatorIndex + 1);
-            $namespacePrefix = substr($fullyQualifiedFunctionName, 0, $namespaceSeparatorIndex);
-            $message = sprintf('Attempted to call function "%s" from namespace "%s".', $functionName, $namespacePrefix);
-        } else {
-            $functionName = $fullyQualifiedFunctionName;
-            $message = sprintf('Attempted to call function "%s" from the global namespace.', $functionName);
-        }
-
-        $candidates = [];
-        foreach (get_defined_functions() as $type => $definedFunctionNames) {
-            foreach ($definedFunctionNames as $definedFunctionName) {
-                if (false !== $namespaceSeparatorIndex = strrpos($definedFunctionName, '\\')) {
-                    $definedFunctionNameBasename = substr($definedFunctionName, $namespaceSeparatorIndex + 1);
-                } else {
-                    $definedFunctionNameBasename = $definedFunctionName;
-                }
-
-                if ($definedFunctionNameBasename === $functionName) {
-                    $candidates[] = '\\'.$definedFunctionName;
-                }
-            }
-        }
-
-        if ($candidates) {
-            sort($candidates);
-            $last = array_pop($candidates).'"?';
-            if ($candidates) {
-                $candidates = 'e.g. "'.implode('", "', $candidates).'" or "'.$last;
-            } else {
-                $candidates = '"'.$last;
-            }
-            $message .= "\nDid you mean to call ".$candidates;
-        }
-
-        return new UndefinedFunctionError($message, $error);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+iC+7wvkr8DJwDK55oC+vL2huBgUHXGMd

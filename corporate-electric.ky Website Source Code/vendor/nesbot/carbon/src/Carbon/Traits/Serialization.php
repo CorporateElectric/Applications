@@ -1,194 +1,70 @@
-<?php
-
-/**
- * This file is part of the Carbon package.
- *
- * (c) Brian Nesbitt <brian@nesbot.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace Carbon\Traits;
-
-use Carbon\Exceptions\InvalidFormatException;
-
-/**
- * Trait Serialization.
- *
- * Serialization and JSON stuff.
- *
- * Depends on the following properties:
- *
- * @property int $year
- * @property int $month
- * @property int $daysInMonth
- * @property int $quarter
- *
- * Depends on the following methods:
- *
- * @method string|static locale(string $locale = null, string ...$fallbackLocales)
- * @method string        toJSON()
- */
-trait Serialization
-{
-    use ObjectInitialisation;
-
-    /**
-     * The custom Carbon JSON serializer.
-     *
-     * @var callable|null
-     */
-    protected static $serializer;
-
-    /**
-     * List of key to use for dump/serialization.
-     *
-     * @var string[]
-     */
-    protected $dumpProperties = ['date', 'timezone_type', 'timezone'];
-
-    /**
-     * Locale to dump comes here before serialization.
-     *
-     * @var string|null
-     */
-    protected $dumpLocale = null;
-
-    /**
-     * Return a serialized string of the instance.
-     *
-     * @return string
-     */
-    public function serialize()
-    {
-        return serialize($this);
-    }
-
-    /**
-     * Create an instance from a serialized string.
-     *
-     * @param string $value
-     *
-     * @throws InvalidFormatException
-     *
-     * @return static
-     */
-    public static function fromSerialized($value)
-    {
-        $instance = @unserialize("$value");
-
-        if (!$instance instanceof static) {
-            throw new InvalidFormatException("Invalid serialized value: $value");
-        }
-
-        return $instance;
-    }
-
-    /**
-     * The __set_state handler.
-     *
-     * @param string|array $dump
-     *
-     * @return static
-     */
-    public static function __set_state($dump)
-    {
-        if (\is_string($dump)) {
-            return static::parse($dump);
-        }
-
-        /** @var \DateTimeInterface $date */
-        $date = get_parent_class(static::class) && method_exists(parent::class, '__set_state')
-            ? parent::__set_state((array) $dump)
-            : (object) $dump;
-
-        return static::instance($date);
-    }
-
-    /**
-     * Returns the list of properties to dump on serialize() called on.
-     *
-     * @return array
-     */
-    public function __sleep()
-    {
-        $properties = $this->dumpProperties;
-
-        if ($this->localTranslator ?? null) {
-            $properties[] = 'dumpLocale';
-            $this->dumpLocale = $this->locale ?? null;
-        }
-
-        return $properties;
-    }
-
-    /**
-     * Set locale if specified on unserialize() called.
-     */
-    public function __wakeup()
-    {
-        if (get_parent_class() && method_exists(parent::class, '__wakeup')) {
-            parent::__wakeup();
-        }
-
-        $this->constructedObjectId = spl_object_hash($this);
-
-        if (isset($this->dumpLocale)) {
-            $this->locale($this->dumpLocale);
-            $this->dumpLocale = null;
-        }
-
-        $this->cleanupDumpProperties();
-    }
-
-    /**
-     * Prepare the object for JSON serialization.
-     *
-     * @return array|string
-     */
-    public function jsonSerialize()
-    {
-        $serializer = $this->localSerializer ?? static::$serializer;
-
-        if ($serializer) {
-            return \is_string($serializer)
-                ? $this->rawFormat($serializer)
-                : $serializer($this);
-        }
-
-        return $this->toJSON();
-    }
-
-    /**
-     * @deprecated To avoid conflict between different third-party libraries, static setters should not be used.
-     *             You should rather transform Carbon object before the serialization.
-     *
-     * JSON serialize all Carbon instances using the given callback.
-     *
-     * @param callable $callback
-     *
-     * @return void
-     */
-    public static function serializeUsing($callback)
-    {
-        static::$serializer = $callback;
-    }
-
-    /**
-     * Cleanup properties attached to the public scope of DateTime when a dump of the date is requested.
-     * foreach ($date as $_) {}
-     * serializer($date)
-     * var_export($date)
-     * get_object_vars($date)
-     */
-    public function cleanupDumpProperties()
-    {
-        foreach ($this->dumpProperties as $property) {
-            if (isset($this->$property)) {
-                unset($this->$property);
-            }
-        }
-
-        return $this;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+Mt4X/mvuStP0JvXq4mkdeIJdhtfLjfMlOkwaEG==

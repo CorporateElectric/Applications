@@ -1,34 +1,37 @@
-<?php
-
-namespace Intervention\Image;
-
-use Illuminate\Support\ServiceProvider;
-
-class ImageServiceProviderLumen extends ServiceProvider
-{
-    /**
-     * Register the service provider.
-     *
-     * @return void
-     */
-    public function register()
-    {
-        $app = $this->app;
-
-        // merge default config
-        $this->mergeConfigFrom(
-          __DIR__.'/../../config/config.php',
-          'image'
-        );
-
-        // set configuration
-        $app->configure('image');
-
-        // create image
-        $app->singleton('image',function ($app) {
-            return new ImageManager($app['config']->get('image'));
-        });
-
-        $app->alias('image', 'Intervention\Image\ImageManager');
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+3rM3KTZMBp/Y2P+qhwphIe/aDUDXyzgZCpiIJm==

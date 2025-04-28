@@ -1,2405 +1,755 @@
-<?php
-
-/**
- * This file is part of the Carbon package.
- *
- * (c) Brian Nesbitt <brian@nesbot.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace Carbon;
-
-use Carbon\Exceptions\InvalidCastException;
-use Carbon\Exceptions\InvalidIntervalException;
-use Carbon\Exceptions\InvalidPeriodDateException;
-use Carbon\Exceptions\InvalidPeriodParameterException;
-use Carbon\Exceptions\NotACarbonClassException;
-use Carbon\Exceptions\NotAPeriodException;
-use Carbon\Exceptions\UnknownGetterException;
-use Carbon\Exceptions\UnknownMethodException;
-use Carbon\Exceptions\UnreachableException;
-use Carbon\Traits\IntervalRounding;
-use Carbon\Traits\Mixin;
-use Carbon\Traits\Options;
-use Closure;
-use Countable;
-use DateInterval;
-use DatePeriod;
-use DateTime;
-use DateTimeInterface;
-use InvalidArgumentException;
-use Iterator;
-use JsonSerializable;
-use ReflectionException;
-use RuntimeException;
-
-/**
- * Substitution of DatePeriod with some modifications and many more features.
- *
- * @property-read int $recurrences number of recurrences (if end not set).
- * @property-read bool $include_start_date rather the start date is included in the iteration.
- * @property-read bool $include_end_date rather the end date is included in the iteration (if recurrences not set).
- * @property-read CarbonInterface $start Period start date.
- * @property-read CarbonInterface $current Current date from the iteration.
- * @property-read CarbonInterface $end Period end date.
- * @property-read CarbonInterval $interval Underlying date interval instance. Always present, one day by default.
- *
- * @method static CarbonPeriod start($date, $inclusive = null) Create instance specifying start date or modify the start date if called on an instance.
- * @method static CarbonPeriod since($date, $inclusive = null) Alias for start().
- * @method static CarbonPeriod sinceNow($inclusive = null) Create instance with start date set to now or set the start date to now if called on an instance.
- * @method static CarbonPeriod end($date = null, $inclusive = null) Create instance specifying end date or modify the end date if called on an instance.
- * @method static CarbonPeriod until($date = null, $inclusive = null) Alias for end().
- * @method static CarbonPeriod untilNow($inclusive = null) Create instance with end date set to now or set the end date to now if called on an instance.
- * @method static CarbonPeriod dates($start, $end = null) Create instance with start and end dates or modify the start and end dates if called on an instance.
- * @method static CarbonPeriod between($start, $end = null) Create instance with start and end dates or modify the start and end dates if called on an instance.
- * @method static CarbonPeriod recurrences($recurrences = null) Create instance with maximum number of recurrences or modify the number of recurrences if called on an instance.
- * @method static CarbonPeriod times($recurrences = null) Alias for recurrences().
- * @method static CarbonPeriod options($options = null) Create instance with options or modify the options if called on an instance.
- * @method static CarbonPeriod toggle($options, $state = null) Create instance with options toggled on or off, or toggle options if called on an instance.
- * @method static CarbonPeriod filter($callback, $name = null) Create instance with filter added to the stack or append a filter if called on an instance.
- * @method static CarbonPeriod push($callback, $name = null) Alias for filter().
- * @method static CarbonPeriod prepend($callback, $name = null) Create instance with filter prepended to the stack or prepend a filter if called on an instance.
- * @method static CarbonPeriod filters(array $filters = []) Create instance with filters stack or replace the whole filters stack if called on an instance.
- * @method static CarbonPeriod interval($interval) Create instance with given date interval or modify the interval if called on an instance.
- * @method static CarbonPeriod each($interval) Create instance with given date interval or modify the interval if called on an instance.
- * @method static CarbonPeriod every($interval) Create instance with given date interval or modify the interval if called on an instance.
- * @method static CarbonPeriod step($interval) Create instance with given date interval or modify the interval if called on an instance.
- * @method static CarbonPeriod stepBy($interval) Create instance with given date interval or modify the interval if called on an instance.
- * @method static CarbonPeriod invert() Create instance with inverted date interval or invert the interval if called on an instance.
- * @method static CarbonPeriod years($years = 1) Create instance specifying a number of years for date interval or replace the interval by the given a number of years if called on an instance.
- * @method static CarbonPeriod year($years = 1) Alias for years().
- * @method static CarbonPeriod months($months = 1) Create instance specifying a number of months for date interval or replace the interval by the given a number of months if called on an instance.
- * @method static CarbonPeriod month($months = 1) Alias for months().
- * @method static CarbonPeriod weeks($weeks = 1) Create instance specifying a number of weeks for date interval or replace the interval by the given a number of weeks if called on an instance.
- * @method static CarbonPeriod week($weeks = 1) Alias for weeks().
- * @method static CarbonPeriod days($days = 1) Create instance specifying a number of days for date interval or replace the interval by the given a number of days if called on an instance.
- * @method static CarbonPeriod dayz($days = 1) Alias for days().
- * @method static CarbonPeriod day($days = 1) Alias for days().
- * @method static CarbonPeriod hours($hours = 1) Create instance specifying a number of hours for date interval or replace the interval by the given a number of hours if called on an instance.
- * @method static CarbonPeriod hour($hours = 1) Alias for hours().
- * @method static CarbonPeriod minutes($minutes = 1) Create instance specifying a number of minutes for date interval or replace the interval by the given a number of minutes if called on an instance.
- * @method static CarbonPeriod minute($minutes = 1) Alias for minutes().
- * @method static CarbonPeriod seconds($seconds = 1) Create instance specifying a number of seconds for date interval or replace the interval by the given a number of seconds if called on an instance.
- * @method static CarbonPeriod second($seconds = 1) Alias for seconds().
- * @method $this roundYear(float $precision = 1, string $function = "round") Round the current instance year with given precision using the given function.
- * @method $this roundYears(float $precision = 1, string $function = "round") Round the current instance year with given precision using the given function.
- * @method $this floorYear(float $precision = 1) Truncate the current instance year with given precision.
- * @method $this floorYears(float $precision = 1) Truncate the current instance year with given precision.
- * @method $this ceilYear(float $precision = 1) Ceil the current instance year with given precision.
- * @method $this ceilYears(float $precision = 1) Ceil the current instance year with given precision.
- * @method $this roundMonth(float $precision = 1, string $function = "round") Round the current instance month with given precision using the given function.
- * @method $this roundMonths(float $precision = 1, string $function = "round") Round the current instance month with given precision using the given function.
- * @method $this floorMonth(float $precision = 1) Truncate the current instance month with given precision.
- * @method $this floorMonths(float $precision = 1) Truncate the current instance month with given precision.
- * @method $this ceilMonth(float $precision = 1) Ceil the current instance month with given precision.
- * @method $this ceilMonths(float $precision = 1) Ceil the current instance month with given precision.
- * @method $this roundWeek(float $precision = 1, string $function = "round") Round the current instance day with given precision using the given function.
- * @method $this roundWeeks(float $precision = 1, string $function = "round") Round the current instance day with given precision using the given function.
- * @method $this floorWeek(float $precision = 1) Truncate the current instance day with given precision.
- * @method $this floorWeeks(float $precision = 1) Truncate the current instance day with given precision.
- * @method $this ceilWeek(float $precision = 1) Ceil the current instance day with given precision.
- * @method $this ceilWeeks(float $precision = 1) Ceil the current instance day with given precision.
- * @method $this roundDay(float $precision = 1, string $function = "round") Round the current instance day with given precision using the given function.
- * @method $this roundDays(float $precision = 1, string $function = "round") Round the current instance day with given precision using the given function.
- * @method $this floorDay(float $precision = 1) Truncate the current instance day with given precision.
- * @method $this floorDays(float $precision = 1) Truncate the current instance day with given precision.
- * @method $this ceilDay(float $precision = 1) Ceil the current instance day with given precision.
- * @method $this ceilDays(float $precision = 1) Ceil the current instance day with given precision.
- * @method $this roundHour(float $precision = 1, string $function = "round") Round the current instance hour with given precision using the given function.
- * @method $this roundHours(float $precision = 1, string $function = "round") Round the current instance hour with given precision using the given function.
- * @method $this floorHour(float $precision = 1) Truncate the current instance hour with given precision.
- * @method $this floorHours(float $precision = 1) Truncate the current instance hour with given precision.
- * @method $this ceilHour(float $precision = 1) Ceil the current instance hour with given precision.
- * @method $this ceilHours(float $precision = 1) Ceil the current instance hour with given precision.
- * @method $this roundMinute(float $precision = 1, string $function = "round") Round the current instance minute with given precision using the given function.
- * @method $this roundMinutes(float $precision = 1, string $function = "round") Round the current instance minute with given precision using the given function.
- * @method $this floorMinute(float $precision = 1) Truncate the current instance minute with given precision.
- * @method $this floorMinutes(float $precision = 1) Truncate the current instance minute with given precision.
- * @method $this ceilMinute(float $precision = 1) Ceil the current instance minute with given precision.
- * @method $this ceilMinutes(float $precision = 1) Ceil the current instance minute with given precision.
- * @method $this roundSecond(float $precision = 1, string $function = "round") Round the current instance second with given precision using the given function.
- * @method $this roundSeconds(float $precision = 1, string $function = "round") Round the current instance second with given precision using the given function.
- * @method $this floorSecond(float $precision = 1) Truncate the current instance second with given precision.
- * @method $this floorSeconds(float $precision = 1) Truncate the current instance second with given precision.
- * @method $this ceilSecond(float $precision = 1) Ceil the current instance second with given precision.
- * @method $this ceilSeconds(float $precision = 1) Ceil the current instance second with given precision.
- * @method $this roundMillennium(float $precision = 1, string $function = "round") Round the current instance millennium with given precision using the given function.
- * @method $this roundMillennia(float $precision = 1, string $function = "round") Round the current instance millennium with given precision using the given function.
- * @method $this floorMillennium(float $precision = 1) Truncate the current instance millennium with given precision.
- * @method $this floorMillennia(float $precision = 1) Truncate the current instance millennium with given precision.
- * @method $this ceilMillennium(float $precision = 1) Ceil the current instance millennium with given precision.
- * @method $this ceilMillennia(float $precision = 1) Ceil the current instance millennium with given precision.
- * @method $this roundCentury(float $precision = 1, string $function = "round") Round the current instance century with given precision using the given function.
- * @method $this roundCenturies(float $precision = 1, string $function = "round") Round the current instance century with given precision using the given function.
- * @method $this floorCentury(float $precision = 1) Truncate the current instance century with given precision.
- * @method $this floorCenturies(float $precision = 1) Truncate the current instance century with given precision.
- * @method $this ceilCentury(float $precision = 1) Ceil the current instance century with given precision.
- * @method $this ceilCenturies(float $precision = 1) Ceil the current instance century with given precision.
- * @method $this roundDecade(float $precision = 1, string $function = "round") Round the current instance decade with given precision using the given function.
- * @method $this roundDecades(float $precision = 1, string $function = "round") Round the current instance decade with given precision using the given function.
- * @method $this floorDecade(float $precision = 1) Truncate the current instance decade with given precision.
- * @method $this floorDecades(float $precision = 1) Truncate the current instance decade with given precision.
- * @method $this ceilDecade(float $precision = 1) Ceil the current instance decade with given precision.
- * @method $this ceilDecades(float $precision = 1) Ceil the current instance decade with given precision.
- * @method $this roundQuarter(float $precision = 1, string $function = "round") Round the current instance quarter with given precision using the given function.
- * @method $this roundQuarters(float $precision = 1, string $function = "round") Round the current instance quarter with given precision using the given function.
- * @method $this floorQuarter(float $precision = 1) Truncate the current instance quarter with given precision.
- * @method $this floorQuarters(float $precision = 1) Truncate the current instance quarter with given precision.
- * @method $this ceilQuarter(float $precision = 1) Ceil the current instance quarter with given precision.
- * @method $this ceilQuarters(float $precision = 1) Ceil the current instance quarter with given precision.
- * @method $this roundMillisecond(float $precision = 1, string $function = "round") Round the current instance millisecond with given precision using the given function.
- * @method $this roundMilliseconds(float $precision = 1, string $function = "round") Round the current instance millisecond with given precision using the given function.
- * @method $this floorMillisecond(float $precision = 1) Truncate the current instance millisecond with given precision.
- * @method $this floorMilliseconds(float $precision = 1) Truncate the current instance millisecond with given precision.
- * @method $this ceilMillisecond(float $precision = 1) Ceil the current instance millisecond with given precision.
- * @method $this ceilMilliseconds(float $precision = 1) Ceil the current instance millisecond with given precision.
- * @method $this roundMicrosecond(float $precision = 1, string $function = "round") Round the current instance microsecond with given precision using the given function.
- * @method $this roundMicroseconds(float $precision = 1, string $function = "round") Round the current instance microsecond with given precision using the given function.
- * @method $this floorMicrosecond(float $precision = 1) Truncate the current instance microsecond with given precision.
- * @method $this floorMicroseconds(float $precision = 1) Truncate the current instance microsecond with given precision.
- * @method $this ceilMicrosecond(float $precision = 1) Ceil the current instance microsecond with given precision.
- * @method $this ceilMicroseconds(float $precision = 1) Ceil the current instance microsecond with given precision.
- */
-class CarbonPeriod implements Iterator, Countable, JsonSerializable
-{
-    use IntervalRounding;
-    use Mixin {
-        Mixin::mixin as baseMixin;
-    }
-    use Options;
-
-    /**
-     * Built-in filters.
-     *
-     * @var string
-     */
-    public const RECURRENCES_FILTER = [self::class, 'filterRecurrences'];
-    public const END_DATE_FILTER = [self::class, 'filterEndDate'];
-
-    /**
-     * Special value which can be returned by filters to end iteration. Also a filter.
-     *
-     * @var string
-     */
-    public const END_ITERATION = [self::class, 'endIteration'];
-
-    /**
-     * Exclude start date from iteration.
-     *
-     * @var int
-     */
-    public const EXCLUDE_START_DATE = 1;
-
-    /**
-     * Exclude end date from iteration.
-     *
-     * @var int
-     */
-    public const EXCLUDE_END_DATE = 2;
-
-    /**
-     * Yield CarbonImmutable instances.
-     *
-     * @var int
-     */
-    public const IMMUTABLE = 4;
-
-    /**
-     * Number of maximum attempts before giving up on finding next valid date.
-     *
-     * @var int
-     */
-    public const NEXT_MAX_ATTEMPTS = 1000;
-
-    /**
-     * The registered macros.
-     *
-     * @var array
-     */
-    protected static $macros = [];
-
-    /**
-     * Date class of iteration items.
-     *
-     * @var string
-     */
-    protected $dateClass = Carbon::class;
-
-    /**
-     * Underlying date interval instance. Always present, one day by default.
-     *
-     * @var CarbonInterval
-     */
-    protected $dateInterval;
-
-    /**
-     * Whether current date interval was set by default.
-     *
-     * @var bool
-     */
-    protected $isDefaultInterval;
-
-    /**
-     * The filters stack.
-     *
-     * @var array
-     */
-    protected $filters = [];
-
-    /**
-     * Period start date. Applied on rewind. Always present, now by default.
-     *
-     * @var CarbonInterface
-     */
-    protected $startDate;
-
-    /**
-     * Period end date. For inverted interval should be before the start date. Applied via a filter.
-     *
-     * @var CarbonInterface|null
-     */
-    protected $endDate;
-
-    /**
-     * Limit for number of recurrences. Applied via a filter.
-     *
-     * @var int|null
-     */
-    protected $recurrences;
-
-    /**
-     * Iteration options.
-     *
-     * @var int
-     */
-    protected $options;
-
-    /**
-     * Index of current date. Always sequential, even if some dates are skipped by filters.
-     * Equal to null only before the first iteration.
-     *
-     * @var int
-     */
-    protected $key;
-
-    /**
-     * Current date. May temporarily hold unaccepted value when looking for a next valid date.
-     * Equal to null only before the first iteration.
-     *
-     * @var CarbonInterface
-     */
-    protected $current;
-
-    /**
-     * Timezone of current date. Taken from the start date.
-     *
-     * @var \DateTimeZone|null
-     */
-    protected $timezone;
-
-    /**
-     * The cached validation result for current date.
-     *
-     * @var bool|string|null
-     */
-    protected $validationResult;
-
-    /**
-     * Timezone handler for settings() method.
-     *
-     * @var mixed
-     */
-    protected $tzName;
-
-    /**
-     * Make a CarbonPeriod instance from given variable if possible.
-     *
-     * @param mixed $var
-     *
-     * @return static|null
-     */
-    public static function make($var)
-    {
-        try {
-            return static::instance($var);
-        } catch (NotAPeriodException $e) {
-            return static::create($var);
-        }
-    }
-
-    /**
-     * Create a new instance from a DatePeriod or CarbonPeriod object.
-     *
-     * @param CarbonPeriod|DatePeriod $period
-     *
-     * @return static
-     */
-    public static function instance($period)
-    {
-        if ($period instanceof static) {
-            return $period->copy();
-        }
-
-        if ($period instanceof self) {
-            return new static(
-                $period->getStartDate(),
-                $period->getEndDate() ?: $period->getRecurrences(),
-                $period->getDateInterval(),
-                $period->getOptions()
-            );
-        }
-
-        if ($period instanceof DatePeriod) {
-            return new static(
-                $period->start,
-                $period->end ?: ($period->recurrences - 1),
-                $period->interval,
-                $period->include_start_date ? 0 : static::EXCLUDE_START_DATE
-            );
-        }
-
-        $class = \get_called_class();
-        $type = \gettype($period);
-
-        throw new NotAPeriodException(
-            'Argument 1 passed to '.$class.'::'.__METHOD__.'() '.
-            'must be an instance of DatePeriod or '.$class.', '.
-            ($type === 'object' ? 'instance of '.\get_class($period) : $type).' given.'
-        );
-    }
-
-    /**
-     * Create a new instance.
-     *
-     * @return static
-     */
-    public static function create(...$params)
-    {
-        return static::createFromArray($params);
-    }
-
-    /**
-     * Create a new instance from an array of parameters.
-     *
-     * @param array $params
-     *
-     * @return static
-     */
-    public static function createFromArray(array $params)
-    {
-        return new static(...$params);
-    }
-
-    /**
-     * Create CarbonPeriod from ISO 8601 string.
-     *
-     * @param string   $iso
-     * @param int|null $options
-     *
-     * @return static
-     */
-    public static function createFromIso($iso, $options = null)
-    {
-        $params = static::parseIso8601($iso);
-
-        $instance = static::createFromArray($params);
-
-        if ($options !== null) {
-            $instance->setOptions($options);
-        }
-
-        return $instance;
-    }
-
-    /**
-     * Return whether given interval contains non zero value of any time unit.
-     *
-     * @param \DateInterval $interval
-     *
-     * @return bool
-     */
-    protected static function intervalHasTime(DateInterval $interval)
-    {
-        return $interval->h || $interval->i || $interval->s || $interval->f;
-    }
-
-    /**
-     * Return whether given variable is an ISO 8601 specification.
-     *
-     * Note: Check is very basic, as actual validation will be done later when parsing.
-     * We just want to ensure that variable is not any other type of a valid parameter.
-     *
-     * @param mixed $var
-     *
-     * @return bool
-     */
-    protected static function isIso8601($var)
-    {
-        if (!\is_string($var)) {
-            return false;
-        }
-
-        // Match slash but not within a timezone name.
-        $part = '[a-z]+(?:[_-][a-z]+)*';
-
-        preg_match("#\b$part/$part\b|(/)#i", $var, $match);
-
-        return isset($match[1]);
-    }
-
-    /**
-     * Parse given ISO 8601 string into an array of arguments.
-     *
-     * @SuppressWarnings(PHPMD.ElseExpression)
-     *
-     * @param string $iso
-     *
-     * @return array
-     */
-    protected static function parseIso8601($iso)
-    {
-        $result = [];
-
-        $interval = null;
-        $start = null;
-        $end = null;
-
-        foreach (explode('/', $iso) as $key => $part) {
-            if ($key === 0 && preg_match('/^R([0-9]*)$/', $part, $match)) {
-                $parsed = \strlen($match[1]) ? (int) $match[1] : null;
-            } elseif ($interval === null && $parsed = CarbonInterval::make($part)) {
-                $interval = $part;
-            } elseif ($start === null && $parsed = Carbon::make($part)) {
-                $start = $part;
-            } elseif ($end === null && $parsed = Carbon::make(static::addMissingParts($start, $part))) {
-                $end = $part;
-            } else {
-                throw new InvalidPeriodParameterException("Invalid ISO 8601 specification: $iso.");
-            }
-
-            $result[] = $parsed;
-        }
-
-        return $result;
-    }
-
-    /**
-     * Add missing parts of the target date from the soure date.
-     *
-     * @param string $source
-     * @param string $target
-     *
-     * @return string
-     */
-    protected static function addMissingParts($source, $target)
-    {
-        $pattern = '/'.preg_replace('/[0-9]+/', '[0-9]+', preg_quote($target, '/')).'$/';
-
-        $result = preg_replace($pattern, $target, $source, 1, $count);
-
-        return $count ? $result : $target;
-    }
-
-    /**
-     * Register a custom macro.
-     *
-     * @example
-     * ```
-     * CarbonPeriod::macro('middle', function () {
-     *   return $this->getStartDate()->average($this->getEndDate());
-     * });
-     * echo CarbonPeriod::since('2011-05-12')->until('2011-06-03')->middle();
-     * ```
-     *
-     * @param string          $name
-     * @param object|callable $macro
-     *
-     * @return void
-     */
-    public static function macro($name, $macro)
-    {
-        static::$macros[$name] = $macro;
-    }
-
-    /**
-     * Register macros from a mixin object.
-     *
-     * @example
-     * ```
-     * CarbonPeriod::mixin(new class {
-     *   public function addDays() {
-     *     return function ($count = 1) {
-     *       return $this->setStartDate(
-     *         $this->getStartDate()->addDays($count)
-     *       )->setEndDate(
-     *         $this->getEndDate()->addDays($count)
-     *       );
-     *     };
-     *   }
-     *   public function subDays() {
-     *     return function ($count = 1) {
-     *       return $this->setStartDate(
-     *         $this->getStartDate()->subDays($count)
-     *       )->setEndDate(
-     *         $this->getEndDate()->subDays($count)
-     *       );
-     *     };
-     *   }
-     * });
-     * echo CarbonPeriod::create('2000-01-01', '2000-02-01')->addDays(5)->subDays(3);
-     * ```
-     *
-     * @param object|string $mixin
-     *
-     * @throws ReflectionException
-     *
-     * @return void
-     */
-    public static function mixin($mixin)
-    {
-        static::baseMixin($mixin);
-    }
-
-    /**
-     * Check if macro is registered.
-     *
-     * @param string $name
-     *
-     * @return bool
-     */
-    public static function hasMacro($name)
-    {
-        return isset(static::$macros[$name]);
-    }
-
-    /**
-     * Provide static proxy for instance aliases.
-     *
-     * @param string $method
-     * @param array  $parameters
-     *
-     * @return mixed
-     */
-    public static function __callStatic($method, $parameters)
-    {
-        $date = new static();
-
-        if (static::hasMacro($method)) {
-            return static::bindMacroContext(null, function () use (&$method, &$parameters, &$date) {
-                return $date->callMacro($method, $parameters);
-            });
-        }
-
-        return $date->$method(...$parameters);
-    }
-
-    /**
-     * CarbonPeriod constructor.
-     *
-     * @SuppressWarnings(PHPMD.ElseExpression)
-     *
-     * @throws InvalidArgumentException
-     */
-    public function __construct(...$arguments)
-    {
-        // Parse and assign arguments one by one. First argument may be an ISO 8601 spec,
-        // which will be first parsed into parts and then processed the same way.
-
-        $argumentsCount = \count($arguments);
-
-        if ($argumentsCount && static::isIso8601($iso = $arguments[0])) {
-            array_splice($arguments, 0, 1, static::parseIso8601($iso));
-        }
-
-        if ($argumentsCount === 1) {
-            if ($arguments[0] instanceof DatePeriod) {
-                $arguments = [
-                    $arguments[0]->start,
-                    $arguments[0]->end ?: ($arguments[0]->recurrences - 1),
-                    $arguments[0]->interval,
-                    $arguments[0]->include_start_date ? 0 : static::EXCLUDE_START_DATE,
-                ];
-            } elseif ($arguments[0] instanceof self) {
-                $arguments = [
-                    $arguments[0]->getStartDate(),
-                    $arguments[0]->getEndDate() ?: $arguments[0]->getRecurrences(),
-                    $arguments[0]->getDateInterval(),
-                    $arguments[0]->getOptions(),
-                ];
-            }
-        }
-
-        foreach ($arguments as $argument) {
-            if ($this->dateInterval === null &&
-                (
-                    \is_string($argument) && preg_match(
-                        '/^(\d(\d(?![\/-])|[^\d\/-]([\/-])?)*|P[T0-9].*|(?:\h*\d+(?:\.\d+)?\h*[a-z]+)+)$/i',
-                        $argument
-                    ) ||
-                    $argument instanceof DateInterval ||
-                    $argument instanceof Closure
-                ) &&
-                $parsed = @CarbonInterval::make($argument)
-            ) {
-                $this->setDateInterval($parsed);
-            } elseif ($this->startDate === null && $parsed = Carbon::make($argument)) {
-                $this->setStartDate($parsed);
-            } elseif ($this->endDate === null && $parsed = Carbon::make($argument)) {
-                $this->setEndDate($parsed);
-            } elseif ($this->recurrences === null && $this->endDate === null && is_numeric($argument)) {
-                $this->setRecurrences($argument);
-            } elseif ($this->options === null && (\is_int($argument) || $argument === null)) {
-                $this->setOptions($argument);
-            } else {
-                throw new InvalidPeriodParameterException('Invalid constructor parameters.');
-            }
-        }
-
-        if ($this->startDate === null) {
-            $this->setStartDate(Carbon::now());
-        }
-
-        if ($this->dateInterval === null) {
-            $this->setDateInterval(CarbonInterval::day());
-
-            $this->isDefaultInterval = true;
-        }
-
-        if ($this->options === null) {
-            $this->setOptions(0);
-        }
-    }
-
-    /**
-     * Get a copy of the instance.
-     *
-     * @return static
-     */
-    public function copy()
-    {
-        return clone $this;
-    }
-
-    /**
-     * Get a property allowing both `DatePeriod` snakeCase and camelCase names.
-     *
-     * @param string $name
-     *
-     * @return bool|CarbonInterface|CarbonInterval|int|null
-     */
-    public function __get(string $name)
-    {
-        switch (strtolower(preg_replace('/[A-Z]/', '_$0', $name))) {
-            case 'start':
-            case 'start_date':
-                return $this->getStartDate();
-            case 'end':
-            case 'end_date':
-                return $this->getEndDate();
-            case 'interval':
-            case 'date_interval':
-                return $this->getDateInterval();
-            case 'recurrences':
-                return $this->getRecurrences();
-            case 'include_start_date':
-                return $this->isStartIncluded();
-            case 'include_end_date':
-                return $this->isEndIncluded();
-            case 'current':
-                return $this->current();
-            default:
-                throw new UnknownGetterException($name);
-        }
-    }
-
-    /**
-     * Check if an attribute exists on the object
-     *
-     * @param string $name
-     *
-     * @return bool
-     */
-    public function __isset(string $name): bool
-    {
-        try {
-            $this->__get($name);
-        } catch (UnknownGetterException | ReflectionException $e) {
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * @alias copy
-     *
-     * Get a copy of the instance.
-     *
-     * @return static
-     */
-    public function clone()
-    {
-        return clone $this;
-    }
-
-    /**
-     * Set the iteration item class.
-     *
-     * @param string $dateClass
-     *
-     * @return $this
-     */
-    public function setDateClass(string $dateClass)
-    {
-        if (!is_a($dateClass, CarbonInterface::class, true)) {
-            throw new NotACarbonClassException($dateClass);
-        }
-
-        $this->dateClass = $dateClass;
-
-        if (is_a($dateClass, Carbon::class, true)) {
-            $this->toggleOptions(static::IMMUTABLE, false);
-        } elseif (is_a($dateClass, CarbonImmutable::class, true)) {
-            $this->toggleOptions(static::IMMUTABLE, true);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Returns iteration item date class.
-     *
-     * @return string
-     */
-    public function getDateClass(): string
-    {
-        return $this->dateClass;
-    }
-
-    /**
-     * Change the period date interval.
-     *
-     * @param DateInterval|string $interval
-     *
-     * @throws InvalidIntervalException
-     *
-     * @return $this
-     */
-    public function setDateInterval($interval)
-    {
-        if (!$interval = CarbonInterval::make($interval)) {
-            throw new InvalidIntervalException('Invalid interval.');
-        }
-
-        if ($interval->spec() === 'PT0S' && !$interval->f && !$interval->getStep()) {
-            throw new InvalidIntervalException('Empty interval is not accepted.');
-        }
-
-        $this->dateInterval = $interval;
-
-        $this->isDefaultInterval = false;
-
-        $this->handleChangedParameters();
-
-        return $this;
-    }
-
-    /**
-     * Invert the period date interval.
-     *
-     * @return $this
-     */
-    public function invertDateInterval()
-    {
-        $interval = $this->dateInterval->invert();
-
-        return $this->setDateInterval($interval);
-    }
-
-    /**
-     * Set start and end date.
-     *
-     * @param DateTime|DateTimeInterface|string      $start
-     * @param DateTime|DateTimeInterface|string|null $end
-     *
-     * @return $this
-     */
-    public function setDates($start, $end)
-    {
-        $this->setStartDate($start);
-        $this->setEndDate($end);
-
-        return $this;
-    }
-
-    /**
-     * Change the period options.
-     *
-     * @param int|null $options
-     *
-     * @throws InvalidArgumentException
-     *
-     * @return $this
-     */
-    public function setOptions($options)
-    {
-        if (!\is_int($options) && !\is_null($options)) {
-            throw new InvalidPeriodParameterException('Invalid options.');
-        }
-
-        $this->options = $options ?: 0;
-
-        $this->handleChangedParameters();
-
-        return $this;
-    }
-
-    /**
-     * Get the period options.
-     *
-     * @return int
-     */
-    public function getOptions()
-    {
-        return $this->options;
-    }
-
-    /**
-     * Toggle given options on or off.
-     *
-     * @param int       $options
-     * @param bool|null $state
-     *
-     * @throws \InvalidArgumentException
-     *
-     * @return $this
-     */
-    public function toggleOptions($options, $state = null)
-    {
-        if ($state === null) {
-            $state = ($this->options & $options) !== $options;
-        }
-
-        return $this->setOptions(
-            $state ?
-            $this->options | $options :
-            $this->options & ~$options
-        );
-    }
-
-    /**
-     * Toggle EXCLUDE_START_DATE option.
-     *
-     * @param bool $state
-     *
-     * @return $this
-     */
-    public function excludeStartDate($state = true)
-    {
-        return $this->toggleOptions(static::EXCLUDE_START_DATE, $state);
-    }
-
-    /**
-     * Toggle EXCLUDE_END_DATE option.
-     *
-     * @param bool $state
-     *
-     * @return $this
-     */
-    public function excludeEndDate($state = true)
-    {
-        return $this->toggleOptions(static::EXCLUDE_END_DATE, $state);
-    }
-
-    /**
-     * Get the underlying date interval.
-     *
-     * @return CarbonInterval
-     */
-    public function getDateInterval()
-    {
-        return $this->dateInterval->copy();
-    }
-
-    /**
-     * Get start date of the period.
-     *
-     * @param string|null $rounding Optional rounding 'floor', 'ceil', 'round' using the period interval.
-     *
-     * @return CarbonInterface
-     */
-    public function getStartDate(string $rounding = null)
-    {
-        $date = $this->startDate->copy();
-
-        return $rounding ? $date->round($this->getDateInterval(), $rounding) : $date;
-    }
-
-    /**
-     * Get end date of the period.
-     *
-     * @param string|null $rounding Optional rounding 'floor', 'ceil', 'round' using the period interval.
-     *
-     * @return CarbonInterface|null
-     */
-    public function getEndDate(string $rounding = null)
-    {
-        if (!$this->endDate) {
-            return null;
-        }
-
-        $date = $this->endDate->copy();
-
-        return $rounding ? $date->round($this->getDateInterval(), $rounding) : $date;
-    }
-
-    /**
-     * Get number of recurrences.
-     *
-     * @return int|null
-     */
-    public function getRecurrences()
-    {
-        return $this->recurrences;
-    }
-
-    /**
-     * Returns true if the start date should be excluded.
-     *
-     * @return bool
-     */
-    public function isStartExcluded()
-    {
-        return ($this->options & static::EXCLUDE_START_DATE) !== 0;
-    }
-
-    /**
-     * Returns true if the end date should be excluded.
-     *
-     * @return bool
-     */
-    public function isEndExcluded()
-    {
-        return ($this->options & static::EXCLUDE_END_DATE) !== 0;
-    }
-
-    /**
-     * Returns true if the start date should be included.
-     *
-     * @return bool
-     */
-    public function isStartIncluded()
-    {
-        return !$this->isStartExcluded();
-    }
-
-    /**
-     * Returns true if the end date should be included.
-     *
-     * @return bool
-     */
-    public function isEndIncluded()
-    {
-        return !$this->isEndExcluded();
-    }
-
-    /**
-     * Return the start if it's included by option, else return the start + 1 period interval.
-     *
-     * @return CarbonInterface
-     */
-    public function getIncludedStartDate()
-    {
-        $start = $this->getStartDate();
-
-        if ($this->isStartExcluded()) {
-            return $start->add($this->getDateInterval());
-        }
-
-        return $start;
-    }
-
-    /**
-     * Return the end if it's included by option, else return the end - 1 period interval.
-     * Warning: if the period has no fixed end, this method will iterate the period to calculate it.
-     *
-     * @return CarbonInterface
-     */
-    public function getIncludedEndDate()
-    {
-        $end = $this->getEndDate();
-
-        if (!$end) {
-            return $this->calculateEnd();
-        }
-
-        if ($this->isEndExcluded()) {
-            return $end->sub($this->getDateInterval());
-        }
-
-        return $end;
-    }
-
-    /**
-     * Add a filter to the stack.
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     *
-     * @param callable $callback
-     * @param string   $name
-     *
-     * @return $this
-     */
-    public function addFilter($callback, $name = null)
-    {
-        $tuple = $this->createFilterTuple(\func_get_args());
-
-        $this->filters[] = $tuple;
-
-        $this->handleChangedParameters();
-
-        return $this;
-    }
-
-    /**
-     * Prepend a filter to the stack.
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     *
-     * @param callable $callback
-     * @param string   $name
-     *
-     * @return $this
-     */
-    public function prependFilter($callback, $name = null)
-    {
-        $tuple = $this->createFilterTuple(\func_get_args());
-
-        array_unshift($this->filters, $tuple);
-
-        $this->handleChangedParameters();
-
-        return $this;
-    }
-
-    /**
-     * Remove a filter by instance or name.
-     *
-     * @param callable|string $filter
-     *
-     * @return $this
-     */
-    public function removeFilter($filter)
-    {
-        $key = \is_callable($filter) ? 0 : 1;
-
-        $this->filters = array_values(array_filter(
-            $this->filters,
-            function ($tuple) use ($key, $filter) {
-                return $tuple[$key] !== $filter;
-            }
-        ));
-
-        $this->updateInternalState();
-
-        $this->handleChangedParameters();
-
-        return $this;
-    }
-
-    /**
-     * Return whether given instance or name is in the filter stack.
-     *
-     * @param callable|string $filter
-     *
-     * @return bool
-     */
-    public function hasFilter($filter)
-    {
-        $key = \is_callable($filter) ? 0 : 1;
-
-        foreach ($this->filters as $tuple) {
-            if ($tuple[$key] === $filter) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Get filters stack.
-     *
-     * @return array
-     */
-    public function getFilters()
-    {
-        return $this->filters;
-    }
-
-    /**
-     * Set filters stack.
-     *
-     * @param array $filters
-     *
-     * @return $this
-     */
-    public function setFilters(array $filters)
-    {
-        $this->filters = $filters;
-
-        $this->updateInternalState();
-
-        $this->handleChangedParameters();
-
-        return $this;
-    }
-
-    /**
-     * Reset filters stack.
-     *
-     * @return $this
-     */
-    public function resetFilters()
-    {
-        $this->filters = [];
-
-        if ($this->endDate !== null) {
-            $this->filters[] = [static::END_DATE_FILTER, null];
-        }
-
-        if ($this->recurrences !== null) {
-            $this->filters[] = [static::RECURRENCES_FILTER, null];
-        }
-
-        $this->handleChangedParameters();
-
-        return $this;
-    }
-
-    /**
-     * Add a recurrences filter (set maximum number of recurrences).
-     *
-     * @param int|null $recurrences
-     *
-     * @throws \InvalidArgumentException
-     *
-     * @return $this
-     */
-    public function setRecurrences($recurrences)
-    {
-        if (!is_numeric($recurrences) && !\is_null($recurrences) || $recurrences < 0) {
-            throw new InvalidPeriodParameterException('Invalid number of recurrences.');
-        }
-
-        if ($recurrences === null) {
-            return $this->removeFilter(static::RECURRENCES_FILTER);
-        }
-
-        $this->recurrences = (int) $recurrences;
-
-        if (!$this->hasFilter(static::RECURRENCES_FILTER)) {
-            return $this->addFilter(static::RECURRENCES_FILTER);
-        }
-
-        $this->handleChangedParameters();
-
-        return $this;
-    }
-
-    /**
-     * Change the period start date.
-     *
-     * @param DateTime|DateTimeInterface|string $date
-     * @param bool|null                         $inclusive
-     *
-     * @throws InvalidPeriodDateException
-     *
-     * @return $this
-     */
-    public function setStartDate($date, $inclusive = null)
-    {
-        if (!$date = ([$this->dateClass, 'make'])($date)) {
-            throw new InvalidPeriodDateException('Invalid start date.');
-        }
-
-        $this->startDate = $date;
-
-        if ($inclusive !== null) {
-            $this->toggleOptions(static::EXCLUDE_START_DATE, !$inclusive);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Change the period end date.
-     *
-     * @param DateTime|DateTimeInterface|string|null $date
-     * @param bool|null                              $inclusive
-     *
-     * @throws \InvalidArgumentException
-     *
-     * @return $this
-     */
-    public function setEndDate($date, $inclusive = null)
-    {
-        if (!\is_null($date) && !$date = ([$this->dateClass, 'make'])($date)) {
-            throw new InvalidPeriodDateException('Invalid end date.');
-        }
-
-        if (!$date) {
-            return $this->removeFilter(static::END_DATE_FILTER);
-        }
-
-        $this->endDate = $date;
-
-        if ($inclusive !== null) {
-            $this->toggleOptions(static::EXCLUDE_END_DATE, !$inclusive);
-        }
-
-        if (!$this->hasFilter(static::END_DATE_FILTER)) {
-            return $this->addFilter(static::END_DATE_FILTER);
-        }
-
-        $this->handleChangedParameters();
-
-        return $this;
-    }
-
-    /**
-     * Check if the current position is valid.
-     *
-     * @return bool
-     */
-    public function valid()
-    {
-        return $this->validateCurrentDate() === true;
-    }
-
-    /**
-     * Return the current key.
-     *
-     * @return int|null
-     */
-    public function key()
-    {
-        return $this->valid()
-            ? $this->key
-            : null;
-    }
-
-    /**
-     * Return the current date.
-     *
-     * @return CarbonInterface|null
-     */
-    public function current()
-    {
-        return $this->valid()
-            ? $this->prepareForReturn($this->current)
-            : null;
-    }
-
-    /**
-     * Move forward to the next date.
-     *
-     * @throws RuntimeException
-     *
-     * @return void
-     */
-    public function next()
-    {
-        if ($this->current === null) {
-            $this->rewind();
-        }
-
-        if ($this->validationResult !== static::END_ITERATION) {
-            $this->key++;
-
-            $this->incrementCurrentDateUntilValid();
-        }
-    }
-
-    /**
-     * Rewind to the start date.
-     *
-     * Iterating over a date in the UTC timezone avoids bug during backward DST change.
-     *
-     * @see https://bugs.php.net/bug.php?id=72255
-     * @see https://bugs.php.net/bug.php?id=74274
-     * @see https://wiki.php.net/rfc/datetime_and_daylight_saving_time
-     *
-     * @throws RuntimeException
-     *
-     * @return void
-     */
-    public function rewind()
-    {
-        $this->key = 0;
-        $this->current = ([$this->dateClass, 'make'])($this->startDate);
-        $settings = $this->getSettings();
-
-        if ($this->hasLocalTranslator()) {
-            $settings['locale'] = $this->getTranslatorLocale();
-        }
-
-        $this->current->settings($settings);
-        $this->timezone = static::intervalHasTime($this->dateInterval) ? $this->current->getTimezone() : null;
-
-        if ($this->timezone) {
-            $this->current = $this->current->utc();
-        }
-
-        $this->validationResult = null;
-
-        if ($this->isStartExcluded() || $this->validateCurrentDate() === false) {
-            $this->incrementCurrentDateUntilValid();
-        }
-    }
-
-    /**
-     * Skip iterations and returns iteration state (false if ended, true if still valid).
-     *
-     * @param int $count steps number to skip (1 by default)
-     *
-     * @return bool
-     */
-    public function skip($count = 1)
-    {
-        for ($i = $count; $this->valid() && $i > 0; $i--) {
-            $this->next();
-        }
-
-        return $this->valid();
-    }
-
-    /**
-     * Format the date period as ISO 8601.
-     *
-     * @return string
-     */
-    public function toIso8601String()
-    {
-        $parts = [];
-
-        if ($this->recurrences !== null) {
-            $parts[] = 'R'.$this->recurrences;
-        }
-
-        $parts[] = $this->startDate->toIso8601String();
-
-        $parts[] = $this->dateInterval->spec();
-
-        if ($this->endDate !== null) {
-            $parts[] = $this->endDate->toIso8601String();
-        }
-
-        return implode('/', $parts);
-    }
-
-    /**
-     * Convert the date period into a string.
-     *
-     * @return string
-     */
-    public function toString()
-    {
-        $translator = ([$this->dateClass, 'getTranslator'])();
-
-        $parts = [];
-
-        $format = !$this->startDate->isStartOfDay() || $this->endDate && !$this->endDate->isStartOfDay()
-            ? 'Y-m-d H:i:s'
-            : 'Y-m-d';
-
-        if ($this->recurrences !== null) {
-            $parts[] = $this->translate('period_recurrences', [], $this->recurrences, $translator);
-        }
-
-        $parts[] = $this->translate('period_interval', [':interval' => $this->dateInterval->forHumans([
-            'join' => true,
-        ])], null, $translator);
-
-        $parts[] = $this->translate('period_start_date', [':date' => $this->startDate->rawFormat($format)], null, $translator);
-
-        if ($this->endDate !== null) {
-            $parts[] = $this->translate('period_end_date', [':date' => $this->endDate->rawFormat($format)], null, $translator);
-        }
-
-        $result = implode(' ', $parts);
-
-        return mb_strtoupper(mb_substr($result, 0, 1)).mb_substr($result, 1);
-    }
-
-    /**
-     * Format the date period as ISO 8601.
-     *
-     * @return string
-     */
-    public function spec()
-    {
-        return $this->toIso8601String();
-    }
-
-    /**
-     * Cast the current instance into the given class.
-     *
-     * @param string $className The $className::instance() method will be called to cast the current object.
-     *
-     * @return DatePeriod
-     */
-    public function cast(string $className)
-    {
-        if (!method_exists($className, 'instance')) {
-            if (is_a($className, DatePeriod::class, true)) {
-                return new $className(
-                    $this->getStartDate(),
-                    $this->getDateInterval(),
-                    $this->getEndDate() ? $this->getIncludedEndDate() : $this->getRecurrences(),
-                    $this->isStartExcluded() ? DatePeriod::EXCLUDE_START_DATE : 0
-                );
-            }
-
-            throw new InvalidCastException("$className has not the instance() method needed to cast the date.");
-        }
-
-        return $className::instance($this);
-    }
-
-    /**
-     * Return native DatePeriod PHP object matching the current instance.
-     *
-     * @example
-     * ```
-     * var_dump(CarbonPeriod::create('2021-01-05', '2021-02-15')->toDatePeriod());
-     * ```
-     *
-     * @return DatePeriod
-     */
-    public function toDatePeriod()
-    {
-        return $this->cast(DatePeriod::class);
-    }
-
-    /**
-     * Convert the date period into an array without changing current iteration state.
-     *
-     * @return CarbonInterface[]
-     */
-    public function toArray()
-    {
-        $state = [
-            $this->key,
-            $this->current ? $this->current->copy() : null,
-            $this->validationResult,
-        ];
-
-        $result = iterator_to_array($this);
-
-        [$this->key, $this->current, $this->validationResult] = $state;
-
-        return $result;
-    }
-
-    /**
-     * Count dates in the date period.
-     *
-     * @return int
-     */
-    public function count()
-    {
-        return \count($this->toArray());
-    }
-
-    /**
-     * Return the first date in the date period.
-     *
-     * @return CarbonInterface|null
-     */
-    public function first()
-    {
-        return ($this->toArray() ?: [])[0] ?? null;
-    }
-
-    /**
-     * Return the last date in the date period.
-     *
-     * @return CarbonInterface|null
-     */
-    public function last()
-    {
-        $array = $this->toArray();
-
-        return $array ? $array[\count($array) - 1] : null;
-    }
-
-    /**
-     * Convert the date period into a string.
-     *
-     * @return string
-     */
-    public function __toString()
-    {
-        return $this->toString();
-    }
-
-    /**
-     * Add aliases for setters.
-     *
-     * CarbonPeriod::days(3)->hours(5)->invert()
-     *     ->sinceNow()->until('2010-01-10')
-     *     ->filter(...)
-     *     ->count()
-     *
-     * Note: We use magic method to let static and instance aliases with the same names.
-     *
-     * @param string $method
-     * @param array  $parameters
-     *
-     * @return mixed
-     */
-    public function __call($method, $parameters)
-    {
-        if (static::hasMacro($method)) {
-            return static::bindMacroContext($this, function () use (&$method, &$parameters) {
-                return $this->callMacro($method, $parameters);
-            });
-        }
-
-        $roundedValue = $this->callRoundMethod($method, $parameters);
-
-        if ($roundedValue !== null) {
-            return $roundedValue;
-        }
-
-        $first = \count($parameters) >= 1 ? $parameters[0] : null;
-        $second = \count($parameters) >= 2 ? $parameters[1] : null;
-
-        switch ($method) {
-            case 'start':
-            case 'since':
-                return $this->setStartDate($first, $second);
-
-            case 'sinceNow':
-                return $this->setStartDate(new Carbon, $first);
-
-            case 'end':
-            case 'until':
-                return $this->setEndDate($first, $second);
-
-            case 'untilNow':
-                return $this->setEndDate(new Carbon, $first);
-
-            case 'dates':
-            case 'between':
-                return $this->setDates($first, $second);
-
-            case 'recurrences':
-            case 'times':
-                return $this->setRecurrences($first);
-
-            case 'options':
-                return $this->setOptions($first);
-
-            case 'toggle':
-                return $this->toggleOptions($first, $second);
-
-            case 'filter':
-            case 'push':
-                return $this->addFilter($first, $second);
-
-            case 'prepend':
-                return $this->prependFilter($first, $second);
-
-            case 'filters':
-                return $this->setFilters($first ?: []);
-
-            case 'interval':
-            case 'each':
-            case 'every':
-            case 'step':
-            case 'stepBy':
-                return $this->setDateInterval($first);
-
-            case 'invert':
-                return $this->invertDateInterval();
-
-            case 'years':
-            case 'year':
-            case 'months':
-            case 'month':
-            case 'weeks':
-            case 'week':
-            case 'days':
-            case 'dayz':
-            case 'day':
-            case 'hours':
-            case 'hour':
-            case 'minutes':
-            case 'minute':
-            case 'seconds':
-            case 'second':
-                return $this->setDateInterval((
-                    // Override default P1D when instantiating via fluent setters.
-                    [$this->isDefaultInterval ? new CarbonInterval('PT0S') : $this->dateInterval, $method]
-                )(
-                    \count($parameters) === 0 ? 1 : $first
-                ));
-        }
-
-        if ($this->localStrictModeEnabled ?? Carbon::isStrictModeEnabled()) {
-            throw new UnknownMethodException($method);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Set the instance's timezone from a string or object and add/subtract the offset difference.
-     *
-     * @param \DateTimeZone|string $timezone
-     *
-     * @return static
-     */
-    public function shiftTimezone($timezone)
-    {
-        $this->tzName = $timezone;
-        $this->timezone = $timezone;
-
-        return $this;
-    }
-
-    /**
-     * Returns the end is set, else calculated from start an recurrences.
-     *
-     * @param string|null $rounding Optional rounding 'floor', 'ceil', 'round' using the period interval.
-     *
-     * @return CarbonInterface
-     */
-    public function calculateEnd(string $rounding = null)
-    {
-        if ($end = $this->getEndDate($rounding)) {
-            return $end;
-        }
-
-        $dates = iterator_to_array($this);
-
-        $date = end($dates);
-
-        if ($date && $rounding) {
-            $date = $date->copy()->round($this->getDateInterval(), $rounding);
-        }
-
-        return $date;
-    }
-
-    /**
-     * Returns true if the current period overlaps the given one (if 1 parameter passed)
-     * or the period between 2 dates (if 2 parameters passed).
-     *
-     * @param CarbonPeriod|\DateTimeInterface|Carbon|CarbonImmutable|string $rangeOrRangeStart
-     * @param \DateTimeInterface|Carbon|CarbonImmutable|string|null         $rangeEnd
-     *
-     * @return bool
-     */
-    public function overlaps($rangeOrRangeStart, $rangeEnd = null)
-    {
-        $range = $rangeEnd ? static::create($rangeOrRangeStart, $rangeEnd) : $rangeOrRangeStart;
-
-        if (!($range instanceof self)) {
-            $range = static::create($range);
-        }
-
-        return $this->calculateEnd() > $range->getStartDate() && $range->calculateEnd() > $this->getStartDate();
-    }
-
-    /**
-     * Execute a given function on each date of the period.
-     *
-     * @example
-     * ```
-     * Carbon::create('2020-11-29')->daysUntil('2020-12-24')->forEach(function (Carbon $date) {
-     *   echo $date->diffInDays('2020-12-25')." days before Christmas!\n";
-     * });
-     * ```
-     *
-     * @param callable $callback
-     */
-    public function forEach(callable $callback)
-    {
-        foreach ($this as $date) {
-            $callback($date);
-        }
-    }
-
-    /**
-     * Execute a given function on each date of the period and yield the result of this function.
-     *
-     * @example
-     * ```
-     * $period = Carbon::create('2020-11-29')->daysUntil('2020-12-24');
-     * echo implode("\n", iterator_to_array($period->map(function (Carbon $date) {
-     *   return $date->diffInDays('2020-12-25').' days before Christmas!';
-     * })));
-     * ```
-     *
-     * @param callable $callback
-     *
-     * @return \Generator
-     */
-    public function map(callable $callback)
-    {
-        foreach ($this as $date) {
-            yield $callback($date);
-        }
-    }
-
-    /**
-     * Determines if the instance is equal to another.
-     * Warning: if options differ, instances wil never be equal.
-     *
-     * @param mixed $period
-     *
-     * @see equalTo()
-     *
-     * @return bool
-     */
-    public function eq($period): bool
-    {
-        return $this->equalTo($period);
-    }
-
-    /**
-     * Determines if the instance is equal to another.
-     * Warning: if options differ, instances wil never be equal.
-     *
-     * @param mixed $period
-     *
-     * @return bool
-     */
-    public function equalTo($period): bool
-    {
-        if (!($period instanceof self)) {
-            $period = self::make($period);
-        }
-
-        $end = $this->getEndDate();
-
-        return $period !== null
-            && $this->getDateInterval()->eq($period->getDateInterval())
-            && $this->getStartDate()->eq($period->getStartDate())
-            && ($end ? $end->eq($period->getEndDate()) : $this->getRecurrences() === $period->getRecurrences())
-            && ($this->getOptions() & (~static::IMMUTABLE)) === ($period->getOptions() & (~static::IMMUTABLE));
-    }
-
-    /**
-     * Determines if the instance is not equal to another.
-     * Warning: if options differ, instances wil never be equal.
-     *
-     * @param mixed $period
-     *
-     * @see notEqualTo()
-     *
-     * @return bool
-     */
-    public function ne($period): bool
-    {
-        return $this->notEqualTo($period);
-    }
-
-    /**
-     * Determines if the instance is not equal to another.
-     * Warning: if options differ, instances wil never be equal.
-     *
-     * @param mixed $period
-     *
-     * @return bool
-     */
-    public function notEqualTo($period): bool
-    {
-        return !$this->eq($period);
-    }
-
-    /**
-     * Determines if the start date is before an other given date.
-     * (Rather start/end are included by options is ignored.)
-     *
-     * @param mixed $date
-     *
-     * @return bool
-     */
-    public function startsBefore($date = null): bool
-    {
-        return $this->getStartDate()->lessThan($this->resolveCarbon($date));
-    }
-
-    /**
-     * Determines if the start date is before or the same as a given date.
-     * (Rather start/end are included by options is ignored.)
-     *
-     * @param mixed $date
-     *
-     * @return bool
-     */
-    public function startsBeforeOrAt($date = null): bool
-    {
-        return $this->getStartDate()->lessThanOrEqualTo($this->resolveCarbon($date));
-    }
-
-    /**
-     * Determines if the start date is after an other given date.
-     * (Rather start/end are included by options is ignored.)
-     *
-     * @param mixed $date
-     *
-     * @return bool
-     */
-    public function startsAfter($date = null): bool
-    {
-        return $this->getStartDate()->greaterThan($this->resolveCarbon($date));
-    }
-
-    /**
-     * Determines if the start date is after or the same as a given date.
-     * (Rather start/end are included by options is ignored.)
-     *
-     * @param mixed $date
-     *
-     * @return bool
-     */
-    public function startsAfterOrAt($date = null): bool
-    {
-        return $this->getStartDate()->greaterThanOrEqualTo($this->resolveCarbon($date));
-    }
-
-    /**
-     * Determines if the start date is the same as a given date.
-     * (Rather start/end are included by options is ignored.)
-     *
-     * @param mixed $date
-     *
-     * @return bool
-     */
-    public function startsAt($date = null): bool
-    {
-        return $this->getStartDate()->equalTo($this->resolveCarbon($date));
-    }
-
-    /**
-     * Determines if the end date is before an other given date.
-     * (Rather start/end are included by options is ignored.)
-     *
-     * @param mixed $date
-     *
-     * @return bool
-     */
-    public function endsBefore($date = null): bool
-    {
-        return $this->calculateEnd()->lessThan($this->resolveCarbon($date));
-    }
-
-    /**
-     * Determines if the end date is before or the same as a given date.
-     * (Rather start/end are included by options is ignored.)
-     *
-     * @param mixed $date
-     *
-     * @return bool
-     */
-    public function endsBeforeOrAt($date = null): bool
-    {
-        return $this->calculateEnd()->lessThanOrEqualTo($this->resolveCarbon($date));
-    }
-
-    /**
-     * Determines if the end date is after an other given date.
-     * (Rather start/end are included by options is ignored.)
-     *
-     * @param mixed $date
-     *
-     * @return bool
-     */
-    public function endsAfter($date = null): bool
-    {
-        return $this->calculateEnd()->greaterThan($this->resolveCarbon($date));
-    }
-
-    /**
-     * Determines if the end date is after or the same as a given date.
-     * (Rather start/end are included by options is ignored.)
-     *
-     * @param mixed $date
-     *
-     * @return bool
-     */
-    public function endsAfterOrAt($date = null): bool
-    {
-        return $this->calculateEnd()->greaterThanOrEqualTo($this->resolveCarbon($date));
-    }
-
-    /**
-     * Determines if the end date is the same as a given date.
-     * (Rather start/end are included by options is ignored.)
-     *
-     * @param mixed $date
-     *
-     * @return bool
-     */
-    public function endsAt($date = null): bool
-    {
-        return $this->calculateEnd()->equalTo($this->resolveCarbon($date));
-    }
-
-    /**
-     * Return true if start date is now or later.
-     * (Rather start/end are included by options is ignored.)
-     *
-     * @return bool
-     */
-    public function isStarted(): bool
-    {
-        return $this->startsBeforeOrAt();
-    }
-
-    /**
-     * Return true if end date is now or later.
-     * (Rather start/end are included by options is ignored.)
-     *
-     * @return bool
-     */
-    public function isEnded(): bool
-    {
-        return $this->endsBeforeOrAt();
-    }
-
-    /**
-     * Return true if now is between start date (included) and end date (excluded).
-     * (Rather start/end are included by options is ignored.)
-     *
-     * @return bool
-     */
-    public function isInProgress(): bool
-    {
-        return $this->isStarted() && !$this->isEnded();
-    }
-
-    /**
-     * Round the current instance at the given unit with given precision if specified and the given function.
-     *
-     * @param string                              $unit
-     * @param float|int|string|\DateInterval|null $precision
-     * @param string                              $function
-     *
-     * @return $this
-     */
-    public function roundUnit($unit, $precision = 1, $function = 'round')
-    {
-        $this->setStartDate($this->getStartDate()->roundUnit($unit, $precision, $function));
-
-        if ($this->endDate) {
-            $this->setEndDate($this->getEndDate()->roundUnit($unit, $precision, $function));
-        }
-
-        $this->setDateInterval($this->getDateInterval()->roundUnit($unit, $precision, $function));
-
-        return $this;
-    }
-
-    /**
-     * Truncate the current instance at the given unit with given precision if specified.
-     *
-     * @param string                              $unit
-     * @param float|int|string|\DateInterval|null $precision
-     *
-     * @return $this
-     */
-    public function floorUnit($unit, $precision = 1)
-    {
-        return $this->roundUnit($unit, $precision, 'floor');
-    }
-
-    /**
-     * Ceil the current instance at the given unit with given precision if specified.
-     *
-     * @param string                              $unit
-     * @param float|int|string|\DateInterval|null $precision
-     *
-     * @return $this
-     */
-    public function ceilUnit($unit, $precision = 1)
-    {
-        return $this->roundUnit($unit, $precision, 'ceil');
-    }
-
-    /**
-     * Round the current instance second with given precision if specified (else period interval is used).
-     *
-     * @param float|int|string|\DateInterval|null $precision
-     * @param string                              $function
-     *
-     * @return $this
-     */
-    public function round($precision = null, $function = 'round')
-    {
-        return $this->roundWith($precision ?? (string) $this->getDateInterval(), $function);
-    }
-
-    /**
-     * Round the current instance second with given precision if specified (else period interval is used).
-     *
-     * @param float|int|string|\DateInterval|null $precision
-     *
-     * @return $this
-     */
-    public function floor($precision = null)
-    {
-        return $this->round($precision, 'floor');
-    }
-
-    /**
-     * Ceil the current instance second with given precision if specified (else period interval is used).
-     *
-     * @param float|int|string|\DateInterval|null $precision
-     *
-     * @return $this
-     */
-    public function ceil($precision = null)
-    {
-        return $this->round($precision, 'ceil');
-    }
-
-    /**
-     * Specify data which should be serialized to JSON.
-     *
-     * @link https://php.net/manual/en/jsonserializable.jsonserialize.php
-     *
-     * @return CarbonInterface[]
-     */
-    public function jsonSerialize()
-    {
-        return $this->toArray();
-    }
-
-    /**
-     * Return true if the given date is between start and end.
-     *
-     * @param \Carbon\Carbon|\Carbon\CarbonPeriod|\Carbon\CarbonInterval|\DateInterval|\DatePeriod|\DateTimeInterface|string|null $date
-     *
-     * @return bool
-     */
-    public function contains($date = null): bool
-    {
-        $startMethod = 'startsBefore'.($this->isStartIncluded() ? 'OrAt' : '');
-        $endMethod = 'endsAfter'.($this->isEndIncluded() ? 'OrAt' : '');
-
-        return $this->$startMethod($date) && $this->$endMethod($date);
-    }
-
-    /**
-     * Return true if the current period follows a given other period (with no overlap).
-     * For instance, [2019-08-01 -> 2019-08-12] follows [2019-07-29 -> 2019-07-31]
-     * Note than in this example, follows() would be false if 2019-08-01 or 2019-07-31 was excluded by options.
-     *
-     * @param \Carbon\CarbonPeriod|\DatePeriod|string $period
-     *
-     * @return bool
-     */
-    public function follows($period, ...$arguments): bool
-    {
-        $period = $this->resolveCarbonPeriod($period, ...$arguments);
-
-        return $this->getIncludedStartDate()->equalTo($period->getIncludedEndDate()->add($period->getDateInterval()));
-    }
-
-    /**
-     * Return true if the given other period follows the current one (with no overlap).
-     * For instance, [2019-07-29 -> 2019-07-31] is followed by [2019-08-01 -> 2019-08-12]
-     * Note than in this example, isFollowedBy() would be false if 2019-08-01 or 2019-07-31 was excluded by options.
-     *
-     * @param \Carbon\CarbonPeriod|\DatePeriod|string $period
-     *
-     * @return bool
-     */
-    public function isFollowedBy($period, ...$arguments): bool
-    {
-        $period = $this->resolveCarbonPeriod($period, ...$arguments);
-
-        return $period->follows($this);
-    }
-
-    /**
-     * Return true if the given period either follows or is followed by the current one.
-     *
-     * @see follows()
-     * @see isFollowedBy()
-     *
-     * @param \Carbon\CarbonPeriod|\DatePeriod|string $period
-     *
-     * @return bool
-     */
-    public function isConsecutiveWith($period, ...$arguments): bool
-    {
-        return $this->follows($period, ...$arguments) || $this->isFollowedBy($period, ...$arguments);
-    }
-
-    /**
-     * Update properties after removing built-in filters.
-     *
-     * @return void
-     */
-    protected function updateInternalState()
-    {
-        if (!$this->hasFilter(static::END_DATE_FILTER)) {
-            $this->endDate = null;
-        }
-
-        if (!$this->hasFilter(static::RECURRENCES_FILTER)) {
-            $this->recurrences = null;
-        }
-    }
-
-    /**
-     * Create a filter tuple from raw parameters.
-     *
-     * Will create an automatic filter callback for one of Carbon's is* methods.
-     *
-     * @param array $parameters
-     *
-     * @return array
-     */
-    protected function createFilterTuple(array $parameters)
-    {
-        $method = array_shift($parameters);
-
-        if (!$this->isCarbonPredicateMethod($method)) {
-            return [$method, array_shift($parameters)];
-        }
-
-        return [function ($date) use ($method, $parameters) {
-            return ([$date, $method])(...$parameters);
-        }, $method];
-    }
-
-    /**
-     * Return whether given callable is a string pointing to one of Carbon's is* methods
-     * and should be automatically converted to a filter callback.
-     *
-     * @param callable $callable
-     *
-     * @return bool
-     */
-    protected function isCarbonPredicateMethod($callable)
-    {
-        return \is_string($callable) && substr($callable, 0, 2) === 'is' &&
-            (method_exists($this->dateClass, $callable) || ([$this->dateClass, 'hasMacro'])($callable));
-    }
-
-    /**
-     * Recurrences filter callback (limits number of recurrences).
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     *
-     * @param \Carbon\Carbon $current
-     * @param int            $key
-     *
-     * @return bool|string
-     */
-    protected function filterRecurrences($current, $key)
-    {
-        if ($key < $this->recurrences) {
-            return true;
-        }
-
-        return static::END_ITERATION;
-    }
-
-    /**
-     * End date filter callback.
-     *
-     * @param \Carbon\Carbon $current
-     *
-     * @return bool|string
-     */
-    protected function filterEndDate($current)
-    {
-        if (!$this->isEndExcluded() && $current == $this->endDate) {
-            return true;
-        }
-
-        if ($this->dateInterval->invert ? $current > $this->endDate : $current < $this->endDate) {
-            return true;
-        }
-
-        return static::END_ITERATION;
-    }
-
-    /**
-     * End iteration filter callback.
-     *
-     * @return string
-     */
-    protected function endIteration()
-    {
-        return static::END_ITERATION;
-    }
-
-    /**
-     * Handle change of the parameters.
-     */
-    protected function handleChangedParameters()
-    {
-        if (($this->getOptions() & static::IMMUTABLE) && $this->dateClass === Carbon::class) {
-            $this->setDateClass(CarbonImmutable::class);
-        } elseif (!($this->getOptions() & static::IMMUTABLE) && $this->dateClass === CarbonImmutable::class) {
-            $this->setDateClass(Carbon::class);
-        }
-
-        $this->validationResult = null;
-    }
-
-    /**
-     * Validate current date and stop iteration when necessary.
-     *
-     * Returns true when current date is valid, false if it is not, or static::END_ITERATION
-     * when iteration should be stopped.
-     *
-     * @return bool|string
-     */
-    protected function validateCurrentDate()
-    {
-        if ($this->current === null) {
-            $this->rewind();
-        }
-
-        // Check after the first rewind to avoid repeating the initial validation.
-        if ($this->validationResult !== null) {
-            return $this->validationResult;
-        }
-
-        return $this->validationResult = $this->checkFilters();
-    }
-
-    /**
-     * Check whether current value and key pass all the filters.
-     *
-     * @return bool|string
-     */
-    protected function checkFilters()
-    {
-        $current = $this->prepareForReturn($this->current);
-
-        foreach ($this->filters as $tuple) {
-            $result = \call_user_func(
-                $tuple[0],
-                $current->copy(),
-                $this->key,
-                $this
-            );
-
-            if ($result === static::END_ITERATION) {
-                return static::END_ITERATION;
-            }
-
-            if (!$result) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Prepare given date to be returned to the external logic.
-     *
-     * @param CarbonInterface $date
-     *
-     * @return CarbonInterface
-     */
-    protected function prepareForReturn(CarbonInterface $date)
-    {
-        $date = ([$this->dateClass, 'make'])($date);
-
-        if ($this->timezone) {
-            $date = $date->setTimezone($this->timezone);
-        }
-
-        return $date;
-    }
-
-    /**
-     * Keep incrementing the current date until a valid date is found or the iteration is ended.
-     *
-     * @throws RuntimeException
-     *
-     * @return void
-     */
-    protected function incrementCurrentDateUntilValid()
-    {
-        $attempts = 0;
-
-        do {
-            $this->current = $this->current->add($this->dateInterval);
-
-            $this->validationResult = null;
-
-            if (++$attempts > static::NEXT_MAX_ATTEMPTS) {
-                throw new UnreachableException('Could not find next valid date.');
-            }
-        } while ($this->validateCurrentDate() === false);
-    }
-
-    /**
-     * Call given macro.
-     *
-     * @param string $name
-     * @param array  $parameters
-     *
-     * @return mixed
-     */
-    protected function callMacro($name, $parameters)
-    {
-        $macro = static::$macros[$name];
-
-        if ($macro instanceof Closure) {
-            $boundMacro = @$macro->bindTo($this, static::class) ?: @$macro->bindTo(null, static::class);
-
-            return ($boundMacro ?: $macro)(...$parameters);
-        }
-
-        return $macro(...$parameters);
-    }
-
-    /**
-     * Return the Carbon instance passed through, a now instance in the same timezone
-     * if null given or parse the input if string given.
-     *
-     * @param \Carbon\Carbon|\Carbon\CarbonPeriod|\Carbon\CarbonInterval|\DateInterval|\DatePeriod|\DateTimeInterface|string|null $date
-     *
-     * @return \Carbon\CarbonInterface
-     */
-    protected function resolveCarbon($date = null)
-    {
-        return $this->getStartDate()->nowWithSameTz()->carbonize($date);
-    }
-
-    /**
-     * Resolve passed arguments or DatePeriod to a CarbonPeriod object.
-     *
-     * @param mixed $period
-     * @param mixed ...$arguments
-     *
-     * @return static
-     */
-    protected function resolveCarbonPeriod($period, ...$arguments)
-    {
-        if ($period instanceof self) {
-            return $period;
-        }
-
-        return $period instanceof DatePeriod
-            ? static::instance($period)
-            : static::create($period, ...$arguments);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPqAENFogogJpizZ9ty09JLNkzzFndA9pBk9sQDIQrqI1uU1DidqVcD6NJ2fe07klvLAUUnl8
+xqYDnYo8MzdXLZ4Lw35cub2PS2eKEKxxsOYoj73/Az3kQgMm65isUF8dv0dtxHRQHNpxqT+4WyWQ
+VbOqaDvg0+DaFK5aAU/IZtcwUuqZc/dIMMNYztS95CFD1QL12mwOM7ftdikaNeIGJP3wwaskIcrL
+y1iUfWej1mirN4EjAQgOrXxMPYI/d15Xv6S5q3hLgoldLC5HqzmP85H4TkZdR1TvzqqOOsWCcjGJ
+isacGJ1Zz/wlLF1SaQlse415uEqSgPwlok/lZnx7Nn40t5EOWhwKcgiI2ht8UTRUnSL4Cvo1Mb0G
+eti+6hSuBs4DS3d3nGCWKf1M5hqn+JQF1jNRKyRtUx0WmWyMjwLanQ+nLJkbhv4hItZdJ6JIGnab
+s5hmybszRGDG1jJWDjxXwUgMgyEho3Q2YF1wcHfyU5XCwzEe0gFPQ172ASak0rdMdAgy54Dtytpm
+oMFpKNz7BdopaIXIvH6gOEEurYsuoTHyfw0B/P9kCfqs8UBz9+K7hLymWYQHJVeDyylLa/e5fFq4
+fGle0Fj3je8L08PUhp8HJsehX1lfk2f8ZzM3kEYitwKmAsjwlHDw/pzddLrLI5WRYFtz1SMRC1A/
+qJgJIcJt/wYZTzqfuGL7qjT18rFn4bvHb125VGDf9sHQJvw3lTpq8hjzybEycHqM5B/SNb6nSNiz
+Zu66qLPPnYOqLgOeoz/NiYtW8pUnJiwtaiqq37u1zMvGl2RFLd7N/31PNHd2sN5z9FZIXc4+G7Gi
+eGadMHbcs8wAWY3hC/v9VLn98NsxwYUKf4CCBTz/UGPLr/E7ghaQCNSl4g4qlU1yQm91djdHIEGG
+xNtQhp8HqQr5JX/5VEqkxvOP5wUS7OYid+NUvau7RAoZ1QfCVKoFk4scTnI3YUJ9ehg5qmPmcNAh
+U+N6QpDfZoEjDMJUk7ZG4/VPM6JANAmZxwzGO5Z/iB1W6XSkcpf7yayeP8GTbLDKqkCaKKbnnH3l
+67LaGFpUEexBSQocNhBkgXOpEO8boE8SDgfdEUMYwMp34pKsM6aD12iEjI7KRd8HhRXfGZ8d++cZ
+hZN5ElNFoHC/hq75eSkRR/WoL2ENDBqKFQmrKvq33RP+S0YxXnJFMrV11mqti1P0ABOgP3hEH+46
+b1kY2OZbCxH6ewdj7c2I3RET0m/ErxUqXP1jviOR2tFBxHpcVGkQ7nmoM1cu7kcKiMPHfnLDE6gz
+YFAB663qXCeY815rYe+BVdKbzli0jKVr32Wg82LOlJ27o5qIv18mErHG3F/6BsZCye3BWJ496EHq
+NuOiS/kr85FM3waFNQ5Rao91liY1muF95eRJbBB/1Jb55lwfiubnKdvCmV3zWl6hiOu2CH8gt820
+p4zJ8bIxxIk87gjs+v7DmPG+p5APpSBVP9DOP9WbKudm/HzXKor0bBn66Smx3+iL7WRO8/qjCuY5
+fAYb4oZkKXp/BKtJHBQuFxeryOmFvhSA021hi5kTwNCKK+3CSfGgV1pLK9+seDK8W03OI1zoz30O
+JkVidQygSMiLZoJsVmHloyuAW3hCl8Lx6+JllyskuccilJfsX7vl2E6OlkdOrZYRNMDlEyw/vK2r
++nC9+c/8U5hsFxV9gG5w/z7FCBgkMZlZjLDuhu3XcuNLsHwlu8L5zvYSClTGtj7B7XDcCWlWnKWq
+2ETYhiMwrr/vnbhz5pWoScqlW9/pycnMAgDp0OUUjuaZgKnWzvsASRrs15dUXl788pDWmi7YLt2m
+1jzSDlbs7GMlgsI+vuIBOdcfgUhMZ+MOKIjO7rz3gG6pXVOs3Q7j6hKcYexFnUxlH5gOOXqDgLFt
+kHcBVSgSQCJHlgaujfI7RoiJMXQ/ftgeaaOYugEd/l0dRjXb3Y5vQoGWTFw3CG06p/E8wY5AuFvK
+fhunQtouhs8TQ9/BoDpXKY955qVcDD9dpZPgwpfd1C4hlwtozjp/cRaRCLyadzZh3KFRptM0B+NQ
+98x0uaFq8pHwTKJAu+jCaCuZecbIj/2YdozAhoCb9XS76wbHLHZYEPF7sAXNBkv3STO91/1ZLqyo
+Q6BMvzQ3K+xsqvYJd5VM7I5jLi0XP52Ux+v0gcs2/RQEVxUJrsxOmTe+64Ep+7couFRvdvGHDKnj
+bC/ypRds7Gp+Jdp6+7PxcA9HyExFED5mCOFyRJ0jXPSeMHphB2cBkUTnymukSskPrp/znNI3BZ97
+QBaPUnTfzUVIo5yA+iytPVUw3Kd7bk2hmhHjdKP/nlwAC0KgegJ1K9VcThGU3dAS5MWLSWgEzSFa
+iLuAEtVYXCqpxgKKdjetEtPf3HFD4Pply6C6AqnJfLzHs+JTjPeXYC08Yk/Z4vXTYhuJXsSHywOb
+vS/E6GeXeeGSx+S1tlc3sp9osRy1A8/wlwvHsfm6OUFidmLwuhW6PUPHcAiOulauDnF1BXezFyuQ
+tnbZ5GweXEe8igzG+QBYvmb/QR4ruP7IN/PbCRO0mxxCRXPCX1LVMTGUtBLsCbQdg1aTsOm6NE1G
+UkUCc2rFSWwH+K8JXOfkralkxDi+4J/Q5A3OviCs38Bq54vwklzxXdvDomIvp0czVi3Cc+0Bb6jF
+hRyQkr8oLXdscB3TQxMYN4tIPWt5w34giFTvxJr/ZWV+/sj7+RYboXkyXJknbkgx8OipjTzI+00W
+/yJ3wKjyjqpYdaiO6++GONMx0kIju+eh8zORTIjH2i2VCPjHt8bMppyNofEhSi+p/qldKeznfK/Z
+o4VZesZbzUZs7iSSPFSQU5SAyXoe7RSbmbRk8yTs0UUwoZMqxpeUM/IMqdKcVoHA6J/efNd8YoSa
+/ynddrfoMGo+W9kHCrEXsUG9gSH3cu7FYlAEhkMdVlPAMkPOIBRcKexCHRaf6tPPayjWuPkDY3AS
+Lbnk4iEjvOp4ONEa3ytzGyJva1GErVl3qtLp1H4ERtKmZWI0RRsZf25lrlzuA6AfP9fo4ruia8BM
+PlU3PLyhnCdKKlOxenqCfIK9SPsIIgDSuJTP06x/cx5vGOOKm/k0E/ZjfYDzY9ebadVQ2GVBgbwv
+l/HXnQLEIcrGWXo+WBKYXz+in8cZiddRH1/VDNc/EQfZxAmj8dP0H1MjGUgWW9ySQy9nsQUUu9Uv
+paVkCdz17eq0hU7ImM+mshznqQ9k8/5xmwC0VI/Bwo0O6PEAL4QMSgvFeaFwDHsd6Ih1dkCI4zAG
+DMi8zHMd0JBUhpqhmuMpFd5sDbbsCotYeQ+/tT12ccfRJ2klilxwT0l/TLXvx4Rmaw0k5hz7bsma
+7n24HMMfVb1ypqiz78DdwWZ9YHQjpIam7xyPl1VgZtx0rOMcwK1NwTiv1zmeS9Yxfx4K+eQBMWLQ
+2V/k+yBCXF0cC2BdyFhHRtcNObbce14VScLA2hl3TWjGkO6qAajr7p72deNqUNWXKYavLmR5Fcv9
++wqDbHD2I9zUcaD1i1UHsRkIW74WXFlab6kAev3Cmg/J48MCT4kUTnhkWBcABL6Lg48eJuE8S/UO
+IE2jqk+UGfhfap/MBfER6ztoSRpYGPHY6SYdoxMIks1BZPBfmk77TMlhBFVhhhRzVohy80L9zT+L
+uWunZpiwJ9MY8ZEbxgM0ld63C+IUTn/Wq1/vihBEmsCdN1B3xK9X3LNEw6Plj1917GmV9qA644kh
+6QkSfHCbb10NQd1cT5aL/axZtm83WODIj/h6wDqqN0VfgrgDVqvYipYebVHDASjfhaC7PpRxSqSf
+/W0+nAbPbU+2nM/PR7XnTDdznwBBJEjpsqiJl9qGV5qPjgGJ8FmztdkJ7l2PWkgH8623CRb1A3kn
+0gHtcw2UeIx3bEzNTBATq/LalybaW9fBu1JIHkvSJ7XtJ3s5PyqZsAXMbxKCYx/OFfZbcAoBf5Yr
+ttDw+ErpXT5FkeJ++tXv+RC4I46moC4JPJtxZtJkzDZTyHIVjELhy8Eh+qvALlrAU3bl1dFBV6Jt
+M/VwffAWAXhdiUnl/QxbbtHuBHe6f/rWXuMW2ey4uXDxgeUx1KMK5D5IGglO97OHC484bn5vBUat
+cR8j2yER9Jgyzx6RaWWGdHz7UhokoxCeI7N1lo4BRiHftNF7Xbl9yWGjjeSPHE6g3i/DGmVk5TiJ
+nsccwSCChMYhCwtchVxdcit64m0dzF1G1GLNJ0oWBKnWwgSITBr3buxHpTPXOQ5f1tF6NWuNUqPe
+hzFse/nPXY3jVg8oLlQ7XAHrG0QaYLwfNO8QdIdAnIOqMnHvoBlSkMsSHC84KTVmwunscUK0IAoT
+V2bMDGqk4ii0/jynOWa7e2mdSZktdo1htGoQWIKVKjbW9MME2nnWjg2CksaFlIZqL6H42sx3CInd
+jWRTP8MUJoAIZoJEvZNWoWYiObmUWIy/4sXvz2/QwLQ8D8Z0DJFkonYkAeJq5EpUm9CapxMfB+pQ
+R35FD1YXjv8EsL2AQGFMXvb0/VLgu4Mkuj5+hUW8vDnJfdAcYidULumaMqe6+WWWO+LhOPKz60ur
+cJ2zEdCxNfBjRKlUoZXbuhFg5HBpS6ZHZ6r70iaZeQ9ZqjxAmTQataw3SHD0xjTGBh9U9CN3P2e/
+StYFEvkAfGGzAhkolVxsMCqO/o3M2oyqiXXqkv18Q8SLdGybhNRBhQ3Kvwynzx7CKrkYrOwwXGio
+0fOC5071zepbw5xxw8Hl43lqrlOckOsEeBiFCo0Oud2FuffS/F11OJjBoyb84REAFhDPidi+Ase8
+NhDU0GELe+MU4Lx7TbSic6nkNmK1A5i2pYMR5Wion6gQjRPI6fJ8Vf4LSLGKqLDzfCRlzf+AWXr4
+bkONXjsE7p394b2ZVa99mLDNz4WuKBsB0JUlIK3rbhOFlJsr0ABQetBXtYr1kc27aVl8gxT/iVyk
+BVjElifUk/lw3AB2n2PtflDNu0OHqGK1UHWGJVoBw8wLrAFgAmO5RSwZxe1RaoG/CARpxyZA3fGM
+qIHMxmj5ziiz5LBTyTNXgtIdPmCpThhKwTS8qPcu1ugEIkCEsS/idEdumGxAEtICWmwc203+bxLv
+Ksab0F0d20DMUW/683CZHpfpOp3Pl2U70Xiq0FTYpvTKJncOTSmVEoTFE3zu/L3uCdUvEI7wS+aB
+WzlUKFzd9jsjZ6ZLP/oSLzeMzFcjfkL5yPqX+2L3mweczqJeSxEBISsvxW2hcwe+y0VHNx3GjZuE
+LjXetcS37L2wnqFQBNTA+T5CRV5Q1o5s0QtMn94Gl+d7NmI9cBKZLl7AJgdIUg81PEeTyPsjSVJS
+nU9l9OGZPAjOpNAhjuDaJeWVhdMGxxi1LeIEWbGIzEu4Gkx1VFno9wJmktAXEHcZsK+/e5ZwkF4b
+3GiBozAA/VU6yjlvK0GtAmy+Eb3Q6wonNMNbYFWNyAy0UuS99iT78O4b7AyqPjEa7Y7a7q4qObGE
+DRHEZQZ76Ut4hx9iFRY5kqwm2Lg53H4se1INDE6ujE5aL1Rapqm8ZU5D/toWTDRx++ldmbt9o5Ab
+214RZdL28JNpdFaJztXkM6NonQUbtDSBPN8kFhlHYg0Uz+o0zdMC4lwOQ8pBetRwEcKnmwb+8BNr
+CLRZ+uIc6whr43+gRkf6GR85VH79sFE4vZJK0FjAHwcf96hkG/D0Ejx8f2slE5O1elI27yOGyO07
+hB+6W26j4DrdaXQD6Doo4cEpxN0AW5VRdjsyKcDElKsjGEIiYIhcl2DZrrLYBXmNwT5PmQUAB8f2
++6bUhKngRp4r+Az+RkEcQK9EQcvjBtWNWULem0gngbyneUTSNGdOmLhvBa0esstukc4JxShM2kwu
+brODNSIhMIKHUNLwmU9T2DlMccSmVB6F+nM5W56dY+jkIMhxa6Y2aCxKpYpmxHvMTZv/nI5fFjrF
+Tz9Hrubp3Dk/aleD5Q4sdMn9ztL3Luz7wQkPYamBuGwa3wcG5Q87DLFJhBI6tOqzySfg48HdG76y
+yos0kSBnUWydyQoz6nJ5p39zLiRW2rgmxKkJ19ZtGbApftFyYRtQmSRbBCFidnsYJGp8OedPaHWw
+3DpSgywtWfqWKVgLiJ2TLnJwzEaqYY0afG6Hf2v5lS5G26NyVJzjiaqMq6ldUpOu5uCtbJkuhbIe
+Xd6lNZ3UJm93lU1oYfqQGSaO+BfXORE9y7iTTR+V8o2zOAlKnp12JcYOV7RH7TZaJspi/V4kz1yd
+8g8s/5yB9aIfxuZs1tpBo1KRN4IiJFL25C0/NuUtWG1Pojbt07jdNovpNJBtmAsEMlg3Pz1LfUTM
+acjtTiT3vz/fxHGqgD5ojKgpaMXmgdr9lUdrqWGUvowWApfOnw3aDtoDPbmpQqJxd8UFXms7R8gt
+0Q2/BjLgdmw4Er8hm22T+fFgCG1SfUxhxrtFJU7Bzznny+ps55mYtMQYCEP5D466IqDgHoNHNc/O
+wV3ITRLNQ3OY7tS5J8IWS0s5xp+3NtBh3+7b8O//LzVAorOpLM9lMAf/48AcsC1qBkiZVyahrlq6
+YsK4qw3CWtXL7Zyu2uDhXL6X6l+qp3eEshi+Qk8ExFyj01fikaGBdfDNtXHF6tMQppBKJ0+FKFAt
+yhKXXi7FQYdlAbj022Q8AlaJfFFAs3DUsdnKKKmuhi320dQZtc6c+UW/fhxkPpFKOGh/Z2vXY5fQ
+2fBwrw+I/qqLZ4k+XMDt/dMy5UEK2JHznVT3pNLWUzo0Cm/Sq9mt0Oq15KhK6GOcw+Gmjr4Md2WJ
+HPThlBe4HAlUXzNIU/El4EzD6p2GQg/oCtUwawGD19o0dRYxHPPqlf8H5+tDRidSZQSvL6h2ivWY
+iGa/SOBpxlPcaR8UbslrX6wHvIqgh3szhrbIjRn56hjZVgt8L1AGGhmzjvmpYa9D/wptMkiWTBEN
+Ou9xdB3DIxfe1gebE9vyVv8DPDlGWpwf08vgXJ2NDkpA12lZjIdOa0hdEM7IomI4jYruR/dGyKpg
+lURKZSfIjSXGJcCcnI6G6TWcYQmPgDzwKizoRgA2yfzT8JjubFTWftDAebUUpH7qIkHZI0dLYMFW
+SxQlHOzwKIGSl8E2dgvpD0b5P9utr4i7HXruTcrgkmQpyhKDTafQDyRry7hfFXKifynOY9R4Q/bx
+Gm4PIfAypY4P82JBC5AEXlT2XTHUsat6RtJR9xYqUaAWd/DKo2gMZGXVgh0VDYhEBVfgfoWj9pLw
+2FghicAHGmzs9WrNO06Oy8YDSrN/wBAgEqnrGf7kNm8CumIM3OtxalvoYq1s59zMGjGnPl2oTM1g
+Rj0/t1LdCCaRiT4uRFAnRtq507AX9FLTsXqrH1nZ82xy82E6PdYBff6f8RIp/4d0RXYPRuqoNjsx
+fesMCYbYTJ+TjpPn9q+mTC7jD4nurzRaxevZFWaJD20W5cQVo9LWzmdLoT3aOPoPe4wn4/JEDgjO
+LKu9s2EfKHmYXFKgsWMYFKHkoM/SsD8ZRFnV4AdsX+ghk/t3S1+KWUKAEjeUQf1oq4hy1aC9OtNT
+jq4YucgINxqKiq6185cZ13vAyrHie4tLjSZtQDrcA0PKqM2Rb8p3m0k5jTQvZ/LrK9LCKX73BQeA
++7l3sHHRWMqudzUWwc638SAsRjKx8pgQFX1SuCRWnaybLbuu8c9etZBu6PxLec53id7fokNY1Eq1
+GWh2bEF3lzhV5SJnS9A9PYTYUOheGeFz5p/FtBpNONdvKa9M5ybUBFzENOpCluQEsrqTNJ1lSjy1
+i2t4NxWYu0VAoxGrBWO4OZ9p7RagfZ94HXmw2f3PTcbJkXvl68lm/nwc/+DYvujLtpbiD22yWBg9
+ti63JLaKjZ7eaj+fTwZipIEoHFYzasnjmXKiKByhm5vF1GZldxJ6gKPRs3sQYECHnfSSPR1NYhYz
+CCsFZYT6Drs6gJWOsQfirKakOpLz8+Dn4VmN63XQAxeJJ2TqsAnMfvaNaSDExOyp5GbXBepbXYQm
+Fv/KcTOfHUxqoq5IJz3F7IfUW7Ssw45ly7ilYN0n8fAL83AiBYp14ISSS7b77bFmN9OaXMiapTIi
+ZggjZom4k46z47U66b/2kixSDvngYwYBGshCB1c/ofW/TC09bqWmFaWQOZBryLlEZKCDUnqAnZCB
+pARt2yYwGwHptI99kVURCayAYo9zoXEBdnrMBxONP3Fl6cbWHS0CvvkuZqriADXp9GGgwoOLcOSz
+5ZlKEOvUq2ZrYB7T+nVtnPlHwEQdtEVj2M0Qy0h/v4uiPqflJSMcTC0Qy8Q6mf/km5GvinQQGZKj
+XyWnZ4ke4xsZg9nFzLlTXFq/yOtZH9phl85TGkWjm4phyNOEZDCMwEIhFxfIbGrVqIxvbFue7BFS
+pXYzqWXR9WyfpgZ6Y/4UuFIyoXfqgYyw9AnBOw7R0KU1z2nAyYsinb9/GbfOVmJ0pL/JVBjpeGK8
+R6svAQs7rvTsi6SKGj0K4fatvVJlTOQKV576pyMmmO9FDBa/CfDuvNKCvvYsbBTxFbf56oT8w6b1
+1t0X1jS7dMZMv7rzR5i4aoKqpkB1Yf/h6Aeeu9VOMyBst8x3wABENrzn6PsvOAIdcmLYyJKWKa+y
+YalddlbOYkm6OG/uOjjd4/CUWvcKPQahvmcbok5DAF/zw0b5dlw2hH2FE77EkspSupYj7aPWhXPq
+6MSSEhDPyvn3/sHnkxrcFWhciYO0KI5pUsio9J2pq4L8ExoXWMzoMIlShy0AOGDP49+4jzXT9mje
+WckISVnxRGXGPkKg5XbB9DSPdkXH7zpwunnHbLVTcZ7mlj0D1I9HWENKL7Xx3w4qh+0R+imbDZK8
+gIVj4d5o/Mk3a2CL+LnNmXJn0Bi7Bn355NkZuDylPtyKxtBmQ6Lxjkym58o60BD7cPUC/kCHIyw+
+R+6FvQztHtNbW6j4y20umj1LVgjwVu5BPrZu96C6uCux5gozDD7O1eY2MhHp6JR80GxzfXVld586
+4DGk5f2rSSVJMA1sv02kAD7IJ9Tqs5RZshEE0aZe1Bh3Mv7FRf2FTO+Xuqsh8S34G+7bz0cibUmo
+7aeu0b544xTm3ZDjqOD6+gdz/XZV/ccN21SoupNzCYnaVhS58UbHWLqrVLPdXAVSoJjioDo5ZG6A
+7GA/B9dVxsj7ILQendlMT08zx5qLh0Z8xiTgudltqS7bm+/xb36i7vciHjmqhY6xRHuK2sOMq5rx
+laC8EGW+HJtxsXgyGVcL7a4ByrMtQiaIaaIjKaLPHjxchCLTt1oKbw+0RvosLxvjKotxGBB8Hsku
+5zGVbGmA4DGq1MEwYoJDkv9Dsq5N+nn1WnQSb1jbnW9OvbLlrLlAbhHyMnOij7fw3sL77y/7sUMJ
+xbeDeyBlaAyphbmX08ljG/vIdMd9q7Tcddp3Os6x+AXzKP4MY0cCjbpC4imZecsqBi+cno1cbiRx
+ZzMEnCPzlulYMrW0W0BbiK9RdhYZXVX630UVHGktigstbGz6IybBRZFE+RNRv61uY5yMuNDIDBLb
+zBDeaV8nXk6uGq2pIAekICsKvVQavn+mUM2oJgHRRrQL7+HHkgEzk77G3uB2gEjGeMZttOCz1eQj
+Cm/KcUREXbDAZjBKDr9aD3AJx3qp8qV9kox9IjNUfbeiCidqcYWIBt0vqPmWBGvKB4C9qgurcnRw
+wPnDFJ+Aiem9wDoKThqp2XJxEZHLBiXODiMfvfmb7lQjmDF8/ue93G8e68tsSkVDR+Le7BV76f96
+v7sckouMRF5AFH55af5M1CjjoLgDZR9ARbYuaP+t57C7KjsmUg+jl4oz2xILuM/fQL1UES6V6kjg
+qF1acyXAelD0krh327XSGCY477Mu9dHw56cJbwYhIe3mrHsukTT4wUJYu0u0TwvTruPwJ59jnxSx
+4IWFwJgsGrW0NrFfs3Gm50KW/3zCU/SYLOVqVt9WaLD6ZiZ1c7iPS+bfVBU+QtYnhdMhFVUng9Fa
+pVEFjS6MGCnCQokq7rvRKMqwqfGvZUMh8bb+aXh9z7RUrGUpyVSo+y0Ys8ohMS0xBP4B/+rI3DQr
+qvK8LGanuslqZwtSGc/dhlZ6X5sR11bQea+jUnqsWAs5y1jSEWD7ZI3FQsmJ3j+xuAcUmAXo7MH3
+IXtshpIECYBMg+F1eGsj01sbNj3iHdnyWbTVGbMkB69SGYW2mDD91M98Ydd8fJa/BH733Jkv2cvy
+6a0PXfXDDzit1YUYpAuDe16VrAAonAJAzRjkySuOwnFL6bad25X7hheqqgNn7NWH/AhVEH2xox+6
+pALDLY3gu5ZV8pbfggJCuiiVq2vUPDUdlzy5xi7y0dm9hwNZICN14RAH579kZh+qcDkqfuMXn6z8
+5B4uoIzq2WJaW8/jFkCY+saKzYudTJunVlm3LwXHSxzn2FABTczCvhHsCHlWZ6t5AWD3Xef/Gqxy
+MytZB30FUDKPx8bhfa6059wZ9isl7MOcowSDXAE8pOPZWOM05NtVin2yOLcCIkZReYAOsFWKjoFG
+0CuiLoCKSNiSUeYZUVaEzF6wQhoApw8MS0ori/8S8cFY2Xy2e5U7/nKFaOhwXYYYrupc0Tjhsy2+
+RMTv0MCqoKmDZxLHVQ4AeIHRChfi93I8XJ+TAPZRtaQFOSVFQC8vuJInkS1zVdImgrwMYJ/1tUZZ
+UtH2W75Q5Pv57ui/rKzosv7w3bMfQ7Zr0rgSdI8My9JZsHAsyTIi2WzttmnuLeQ33HZUo479DqlV
+0EEU05IaONz/7Wv8EzIDiXKlHx2FSYi9kU8fYuBSYmbjcP+dv5pfdS3K0KWG9Oi1UZw6xUrPZv4V
+rd4MjlIdTikZRa+EMPW7VhcNO3TNdgB4Yi1ZH2BgL9ascoC1luQK5yEHhCB4i9eoHBGDbjGD46x0
+QgePdaHaRS7TUDQPLhSG6v/F38aJi5IOW6KPjYnD+RPXOI6LDKk9SPZsEMMtIP9p+1WDbsntMqvG
+gHWkeVK+K4fGeyQxfukI8y8Z8BRV6OqHAG4dOCUs5FwHIEr3BYW6pfvbdRP/ys7/QXH1RMNjWk6L
+auqtIWLzJBSrGD9hlr0RVqdFa48cMi3QVB8nDxlawOUyywPEnI9zlRbJ8I7vTDSLYd+txpy1IUol
+HL70bWdMORV5rZRy8W/hMlkVBuUgmZfBpubrZ1yR+HXHZ7Fxd5S23kuM77wCxc7auwsZY44T/R3u
+MiNfiiUuQQ8178fvN86IeDWh4u3NCRypjNMep17tcBcls/EHm/SBYsGDwhgHCdbDSP223NKx3Ec2
+OUb7+4Wr+LJ/kAr7/oNxtFWUO/EInrmsioubHr404GEHNWEzW5wEZDtgLqpxlpc96CR4/mMPtHX7
+0Ig7icOb2NEVjohg8IC8Px+GUL46EUvqVAEbp/VrIgFEhn+4irhGD6or7eQ6QHxRcWc9FaXjm4Io
+/08e/qGu4w+CH8qKBIdmxPKz3XLD/zqLWf/ccp1g+yFIHXg4CkYiUH36sWs2mLs/xysuxJgzZLkg
+izrfKSr3DhXPRIBJhkX00OC7+SqE3bJnBOO9tT0lEtyfpPlc1ptg47LIKfEB/Cq0MO0q5ImaH4/f
+IsXI06wNIvO67Vw4SRI3A5ZMQURyY3g6jHvSs2OCKIcyJ5ohiqIg7ZMhVakrV11dc4Cv79qaJIGO
+C/iSxLHMRa5C5KgWbAg3/+WOXKRZhXBn9EtI5vwbjNUAxXqt9O3mXgzJCL6T6WrgrRmPFg7wzLSd
+aWQ0V5tidHyY9EccT1vi0AoD6Cc/GbeDpGedNrPz3v2gA9mo63YAjP2WtmnBeMJ60vO3VC/CjR4q
+1Q+Dn3NKqF7Z+Bu6wTKUcdRgbT9HkA8jLsvNz0OrSBoAeu8KJ233HcxHeCYp5EHOrpbFtFKafPXL
+Wd+JsyjkqoD2TJZPTlrWTdEhKu4UxCaRSVzZyqFCSGKRCqLc/2tN6O2hG/5vyXXvuvSMvOrqhBnG
+5hfuvgFE4Z6iQrpPaTCxRaGJGhI7lXyew7Y8jIhxraiGxeGfTxorzvFBWAXpg0FoRREmtnidbF4a
+D/H6INTs18COrD6TVc6WFb9Qi0BbIUdWl6iwzlOg5rgSBbekI8JKhqVAssv+V9mvvUGjQ++SH9WG
+QMx3OHxkJDCPxPiwl5gTgCjOqvnFgBEwYMt/pRdM4uVEXGOjxxdUvbUX+nfRohx6VA9IZCFYba5v
+maL+6nFT0PQHPSqzJuvlz5N4yM14HvuurZ3Vl6F/q7ykaCv5Y/CfW0FgdGvwKCuHnjKx0YCZY8ec
+XON4HadQM7Vc0gwbumukCAv3Vmt1lODRh+28M1PIbbx6pQOsfVQjPcuUaC7DIeJQ+17DdFO+QhMj
+Phcr4mJiNV+H+bSWtd0FQhlZWHOdJRRkEVzJUQjLuHM+2fUsuoqBHDbE8Ol8E3FoN5M06w6xhRCW
+mAex92WuhV6GKe2V0uguuYrLH1WTI9C6WUY12Nvq3WOKEefRGiuUHDAdhPb7oGrJrlcN0W1w4Xuv
+bsjCW59vsEBgrnHSgA8Nu/BurJek5gE3mGK7+vcIzoqrNSnb9eAPtDPnjvPEbwSqm3L2W3y4Df3a
+y9P+l4Qc3TpTm4Fc0lTu+Z9RSIJ9gfKqKawfqfEDJZAg2SBCoas8xOBgIoESEg39sAyRmkdONZhh
+IOiQHFsrpuf5Sh+xIGLEKV84qwUx2blQ+B5iUAHwe3WD3dKwhz8GboiuSYxZmhe/lOMkusTFRI5x
+olLbVHryVdumUQMeWDJ7DacNdcupBViQ31x0XEKJ+voJBgimuzDuUDVtQ3fWXZwfNVKmoIXDNmtl
+96GV1RJ/CwwFT8qjDKmd0SbuEsA2szGOkOWdxeaR5w0mKKbw8MFNDXRVFJCNG0aULyBeNF2qRMUb
+iGk82gC3/HuCTW3rwVt1qeNZyEAAEa8MIMV2cPGsZ1LYK8qCLDa7AAeqYCwbl1za4PptJZAP1gP6
+790v5wtrdCaM33NYhAX/pULos9Va0mQu/aNZSpcbBkR5iPP0jwqwRuNWEY1ucDyZKHIytbeheVL7
+br7W/xSCM+9+EHHEkdysqKQ6K++KfewUnPebPxHdLTeW+uNJgWgc6ygcaogITBUGUsFBD+nBdsy+
+KJr+BfK3gQsrEXSMzn393vLSyjTRHR59sg5CymUPSFyHxaCKt0k1Pziw2ccJgqo4QAd65msD9Pv3
+r8QEwByBNcFuG0/1a4v908S3q51LtspvxVG5c/9q6dInb3EXw1UR5Kz1nw/rNb8zxwy7gMuOu2IM
+sLCnBc0w+lkDIhThRoCRKnkT+v6qadbQ42qGX8T4CH4i31y4IQQ8BUtNgD3qLhGJwvKbr5TKJmit
++C+CCwYDtAYVOk6lWepN9QR/XIlKivvj0jheOSEsoulsAQwOCqFk5XRxUKUtuVOKohSOKKPR8w4g
+S7HRfKJiw6hMXHlM5EAcer0XiUeWsz25c1LBdMx4r2LrY6sJeiFEZMWJzNbe06vUEtXp/pXEgL6d
+BFPVAuTWV9dwvIOCQi4G2cv+4QSYKTTzvOC5GAU3itK6LyxB68lvO8TgPPoeHakqaYd8B5Klr/HX
+juUtNL6oDuvIJMOw3ivul9ui9l9ABtRGiBt2CiCaZQ8plhf65oHyuASsHCZgjANpH8ztRFA4GtpV
+Hf+K/oIu7G1cDIYcl9FulABEtMZyqcKXkXVPQA8dUkzsZ1FiOQEH0Eb7if7vlj2LCzuNZvBV8bkr
+twqSfls03WPjEFBikA76vDPkrC75Be73oQsX4DuA7qurSOj2v5Enzm6U68LUZupfnk/h94E2LmqU
+WCqn2CILsnIXgXkdXTb5m7PweoRqw+U7G91dLCOvb8bSjmKvxIp2tRNxUB4RCjx3I+SuIsmz2j/k
+tKstVuPmFGaPB2JL/n41sgPZEvQTYjwlFRbEQFNV/L/AYXgUW20tYWp56I9JaHirNO6/cZuSnQaZ
+9XXu2zTbQnZB3CcSZtsv9kymmRTPWrL2Rr44oZDFRaUoiulexSrX7HBoNW/l0gZLal1nqcLZRUha
+A9oi6owo875InnmjfV0HNWPaGCvOwxkxKDCWtjaxB9WVVlyngvxwN81kdGtbAH7Y6ryFtlgsPmUZ
+r8s385bd3I7s162mR7oYa7hZjBE8J89nRbCHcf2uAWECBeZvmPGYUhdq/hKguTt9yp24O5LiBaXM
+oIsnK4hWBzdgijK3TJZP+kC8uGaGO2mA9zJyka9Mw4JKlCMOAsTrRkvbbJkc2DMY9yERsM3/cojQ
+bkGG93GSiXVw0J/eBrMUG4K7awjZJE6livmITDLsW6x5rEzMasKSnoc21T3McdMMZFwcPEKJMAIF
+HBHcGZj011++axMjXbzlyMgxCnbVqER+1TYPCH7EHfGWEshCGqGToJAqfzUB5bwM/yhdq7mKf5wC
+8kj/vWpXdFOCvDvbYF87LlYZpxexMk4X32dC205g4YE+L0gZ3yg0VI905bgmJjC4V4QFs8qa8WSJ
+wShWJvSP/IEObHq8Ym1+BRxa6a0i2xuHVWX8E5XwLfKnPmT+xOhQ7vNbyxogBFI5Mxsy4svNZ27K
+/dI/ktwax/wxls7vB2sZQxn5iW+j7Akj2/+aKKCpttGIZainf3CUOkxzVV/aJcP6BUe1QA46nkFF
+FPL/MpJ+jVo1fJCmN97QboPAu7fbFe50Tmu/Y88GH0UIKzjq30l5dcyiDR03UsObuB7KwtxEa8Qd
+LwLNXhMCmGdotint9mj/C8HDPcZaG1/ahynD4EzI021klQ0geULgIDcVODJX4SWzHkBp4JxTXfSX
+ge6pLiFj91knQUW5wgFGH4kHdPCvWHjKLMYK5bwXr3lqmdrZsfbvgWuOTqpJGPxWmuzeb8d3zMzx
+k1TPko11to2+l7Naf+jN9v6LddNZxc37xuuANpr4XLSUvXVJ7ETqDm4Ac/n9XxhcYlAZbGH0/m6L
+HPDNhGOCljxTmIgRb02Kx0tertFVxlJStmNnkijS+Gvlje7lxRMdMJgHQpM+Mp1OYURFUMAMC7Tb
+CtKOvD9i5en+4BJUwFq2uETJrDG7um6qPLUH8nkC7RI6SQFMhOhTe/e+aBgnq8p5KAcyhy7iUMSI
+5D5Ty4756EJLG9BYrZZ54Sfcd9HY9iYJA0e64kCQ9FmYAWlzngy6FemvLTmfWTPO7wYckVi3oCE6
+CF2QLlNPjLKh9logvFnoDJJUqXdE2w2wvHVGrBwDT1ohA5YD6H4J3SdLo3gX3TRBzV3Nz6Y0evSS
+d3RSYOmR+VVS09C13KZ9BEdTqcAXhj6K0J6k6sla5x5CBJe74M84FurARdYYYSL7XkxKXFvUUstr
+3VRrdP01QO2QfPQlgZUcWz6swmP44urveK7Wj2jJp1zS3duKhSjKdHJ2wEukZEAwtakpwVR4h/H4
+r9O3n2TW0kLl+rL8OBeTFOSsmIglsEzTyG0LG20qxn4eKPUA7zFzLumiOB+JIClKTMfNjlN1fp51
+dZKEylmtQPMeIXetl2g8EzWof6IuLxGWX4SjSZq1aH9wE4nldknBLJaRxVZ5wd7apX0Q+Dt8e9/n
+jU76HOfjjj08PbjSVQ9TTmaQ8flMmC4lrpTHJkhX5GHfci4i5yaNgk0RLl+M1dFFoqwNRrcXG/Jd
+Cpxd6l/kjgQlzmcgTEBMQUiKhPKfhnRZyrMrjeyzpw+wB6MhEEIzTkF5WKeWy6MQEtoqXiPfRhPR
+XXhHw7orazzXkzkoD+3NhNE7yTyU066bGCP0yHwtEqbHaHWang1+7eKIWoFVn7TPSEL4wEeLp67A
+xSb+RLjJFqmTdNc1JOmbpGYLV5M44rOSh0MBLCHSRqiMHuoUzmETmFI79xApWCPktxPFmc0bzLoL
+nobWljacikZiBc/jatM4M+SpxNoUgkdmq0M3M2TOExQRTemHo2A9IYtAcv8xJCxglbcqiXFQ28+E
+0Krkkki89cTXm786R3ePITpv7EP5Ie8uYgmSteHS3aCfPaQhu+hKGBeEUvDg0DHt0wdDqYHiw/os
+M3s7CYwxngHbq1CBC1Y9kLNxacYULAneD49MFjpiz5H3jiv5rre6nzgS9uImkQeeOFR2TgGQL79y
+WuDZ0NBsSyvsXHdmn0pPY+LrVYde1OcQ2PZQCJdm8vhbdfFKXVoYuPmaj3GOrj/IOgZuM8MIwC7K
+sQknH8k2J473o6am8KdXvkpmSXtclm7H5IwWHtncw32gG7T54cD6bT49lYnsDri1Cc0Vm6RQwNJ8
+o89PC3KqfFfdAz3VCxrJmWHBf9ty/OIyFzAFtHZIqGusfNrkphmxl6UwkLmdopvrUsPLeBxJeKHj
+pJYdweF9U4uMR+EaTgUwqMW+nEe+mFIZTydqNwOY7ev/6tr6Hh/11IsDKwcy3MezWy8KqohjX9Hd
+rrMBUtzfIvyfhDkeslMv5wL/CqkI0iOw5EoTaFpb/+0EraKW2CE+fEG3OQg0/ey4M+D0eNUV3X9K
+uCkRVzGTdu7qiiXnqYlc8lidOfIhNjQq8p9ExeIn0lu4hb2MBZlNv1kLq9EUsPiXAsgFCU1milvC
+apgzm02ASdfvSTmu/QjginY/jwG5gJb3Km+7sxKhnzasTNuYLuZGrJQey+Wn02TvdndlDeMqM7vW
+r+oSW6kE9CKpRFsf+zcb7t0OQU4Gk5lj79+9bYb3SoBckfzlzzRVREpWTD6cWzAUbpj168amT+cq
+D66fzlEyYIlPVxjwrsAlSLPrPO2qGRSLRspM0j/ihQdBh+KGiRLl6+PBnJcHAqUAgQtUHDNJVBV7
+8RDNQZidnpxVX1kDqLz5VYXh6pbjHUCIQv6lk1ZPdIyugRF5j7FLu/Ce/yWi4Z69sHYZdXEXFeC+
+3YvhIt8mnbQvJQDy7vSaLk0iZqJ31gZMo73ZFLU6zw2S+sECBRKtidKh4EfakTG2sQ9/LT5ZMHMT
+x6y2nlx70Ry41lWlprwO5m2e8iazrtBWT9IiSIrLpYVmlwQ3NhzbTZIOCexOBgMjMhAWUK7gJSG9
+a/kr4g3rn2jOdiHfoPYQhc9f/uNHk6qS0exbd7BuCYCitOWeeq4Ts7Xdul82x603SFNnpnWNcwr1
+c+3JU7P2+7RjQYpqhxToLM6zN06uKISPkeI7rFggN9U+EBDH2ZDvDg7YOacW3cSHqxasd6Tjku4x
+OHMbJkLyL0EdYMKoGkLNJPrwU4oTks9BdiBPyKki2i1N5MEjIYvDDj0IyCFyyBK1edpDz3jJnXZw
+O9KAgxRs9NB5copamjqBdiuHQ+8oH7OGUdEY3ulxOv4UgToa4U3wfqftdnd4pyJsRtf3doa6O1da
+oS2mj8ZoJsEy1YZ3WymuUAcGPDEpPlIeNvjJOK6MJ2J+imj4dQ1veWRVvc5O9pJ/D6mXDMPXVngA
+U85mv2vlgpTXEIUbOVNio1AwUD0XSVIuaQQkOXbq6JeWgSvzrVE7CUBzmfq5808FsVjmMsjxwHmQ
+lyAvo+eYzcReinGGfXW690/oDoQZAjbRg/Q4bX2rqi1qofJSCiUglzbMjasQ1S8ultgy9jFSrOFt
+ZN7uG2qEZ6/jO+59gdVL6QrwnUO0NngH49QgQudQ1402vuxXjev5EB5eSKgGOuaCz7OvJlMyp8LU
+N7YmMG6hURgqa5+6ukntMHubprmzS3igpfN1HAGcaPJJei487LID6pWDZJT/nITk7aVwLBH1+c20
+v4/IrxLBJwkxHVCLwDHcNvMNV/yWx0tKN2C6yYrjRsDwt68F2apJSfISV8zlfVdG6p2HHdYD3FB5
+bGCcDSROTIEVJRgr9LhatVcqBCi3AL3TOGerJPwKz3UR0fxdHqT6R7atcgo8HmSX2varmJM1Fw2i
+BPD1CtIUwSFXIXM1H0Cm2Ov9mPChaXJaghMS0OBUt1i0Ek/aQAYpUVRO56363DJxlyxrWKWHtbNe
+Ohtk6Fsj4wA2t2hbPRTFXupzpbWxuPEZzrnqapSIPckAWB/C7yBzM/GrCpQ+5YtAYueXrd5FFxY9
+sdzC+ch/Tb9Wwbpyj9efI1HfW3CSMPI8NIXX/osOx4qTkeFFn5vAWD8EUPuQFWuI/nwG1Ha+NTWG
+iFuRtbNkeY27dbs1jpl494IJJa9xEsvXuOEM7oDSMdH4KiWk6YMSzsVWObtekKqMNDQujnxKruUM
+4y9Bx7OV5xZqxC5txrzQDvlQFeUL3VZIE7mT7/Q8F/qR6v83CRKD1aS3e4ICEAHiHGbZPSTWkJsn
+rmv2bQT3ujUMfvWW0DyX6EwiCA/rrxGrJvS21k2IO8uTh+9CJOVVYAwBBVg7Jgk27vUZ0uP0qj/n
+zIoatf9f6xrVWMeXyd+1KtVMBFMZj8wv3ZLUXbUK/oa5GkhPQnZPLfhvXLsOf0zSj/scRL4TrjNU
+AaodDkoSvyisT5HS8VvRafvgq5J/dmvhbjGdcmJ+ynnL2ENU0N2GImiR5P+tb9HY0gLbMPVVKu10
+jo/BWOtHTehpkKDUtIRF0MR7oG9IhVDXdKVCQhDXWNNqQ09q1JFNkuQvx5nMox7us9bS16tWCwFS
+eBIt6wP5cz/CFkIfIfga662gaNyIWZf7NgRtvSS5iDdrkId/i7/ApJKgTbwQnSYcLNVUh88Soy+d
+yRIIlqYHk3kje6BiItMnNLYxvhJ+E2pdcAilE/ojLEin/vpgCc/wBc91KtFqWgSNnz9QoV57irWI
+W1rLvTCqfKplm2VS1gkmYxy4jN6D3RFczadj2kL64+jhZThCCViZN7Tm0qgYyfL/2Nc550f60vgz
+dc29gIuMsB9qDGOGtcJhKCIYbp+oYrRACg9M1tqnw+WnOyJU8CJDWdKqhUetnoa9sNJtr8A2aUe2
+jrTSziCNjaMtzaePgSlpwc3jMdfl33NlZ0IRiMs3cSBvck5M2oxIuVnJR2kcZOsBYmhwXMeVhpHJ
+YI4lXIwhSg1ixvyogITsUxKHso7jJx7dmGfkW+/8OvDr4TZGe19THvRNdCa22yi5CuU3CQ9VgIpg
+AHl7kj0mPEv6ZZlv+/Ap+nRt6EIR/Ggkmq8JuLoVpI/3RFI7KXNa48xn9hk2N/HcnkLHfYE54zlQ
+96isAIWKuqIdVX8mR39Xz1Jlvb0Au/injrb85ydQ40IkzeKTtts3pXE1dhAqTACGrnYTez/ld/WV
+uQX34dyLAfhZ7KXw32XRh18gkZqCbBoXY0N7mcRdD+u4VPKczxL7e7b5CgB+mKF71AICtOKT133p
+lXfoh077iE27b6NEuF3jPns7/+v6WxK14bXOSf9wAj0iShCfdQCmiqM2P4u/m6x98KCMxTdUceIp
+ARyhpt6HZCA/bsVMJlJ9GEGTNeVnZzN9ppCiW+EOBjjVnNQIlf6aTWRbK7LeNmMMHWi2Z4kBNX0z
+u0F8bD+d9ozc76f40EXEjBFnrsrjbwaaGlvRGY62/C+MtG3lDhFZryTDbT5Wca8taqPLLmd/u4lm
+e3hJvWIJ+BcTL0GXk123ZS02ns2tml4DlmXtPJJGnx2bJSmESlcPMP84RQ1n55At0fZPCGZSRSlF
++QckpJRuW6f23zF3tFRR/q7iVdHfMEZ1GtOIuQxbXUl0x/lHFZGdHvIoowGc4LM6LIo3IniSefIv
+rmpX+/rKPTDHHmuIjH5Vjw41kEyYdSjLBV17mWwcCYA+eIXiOxUlXAXNLD+TkL4cXekxmqvcITVb
+0p9v/C+S5D6ZKycfoNkuZT+uBbDy5/vQ07kVf60VQx9dedE9N9oMMYYbnq093degUl7jCGBS/9/9
+hb1c3hR+6TcqcUnFefTkU0f3sRlUm9ssq0qVc01K2mFDJsw/cwmKMiJfJFzS2uaa0dQ3ySYiAObZ
+goySJKlYvv3Sxgeky/epOJtYdq/xKuE0n0PcR4T6N8OWwjxpgmM2bImdwPEogieWi2I5QlIXvjry
+HZljsb125B//n3H4+4U9Rd5LRZwSIyeajC2llXnfJbetoJ7acdb23lSTqTnvFv7dOnNT/fx7QP7j
+WMgi7dci76SUKx1MSklK56ENqPOksQ+wYJD3IWUVUDrJZypFfB95vXWooahNOOc2Pjrab9+y1C1H
+H9X85TY3JlHXgsxcs3ArZCXInguNzb9NSWkENyQGjQieH9+Qyf2yrqBkyim0TEVHYZuT6rbADs50
+cYV9sYNO++JNwVz6q0GV8fA9hgMJldInMiuqZ35JNHLIbeIzy/EXOADfcC8Th5M8gWIV0GueHjhX
+BXCGoLw90BwfC7Twk/VxUDL4QBrNoETDNrsrqFeACVLjuYDw7Ox84ffE9epsZ8n+FqGclTv4us0c
+3tWJvX5MFUmiIwgPo93s1Mxqapgr+NH/KZtGjDXXVjNsvhPs13wpqxOWY2AksTSCTqNInSCLU3Ha
+MR8le3rsGUVDpwJoecHBLpqZrXpSf3fP283lIZVquN2M7ooxwIIoV3z/1bN3puCS4JA9UXV6/FAl
+GcrdDACvUniKhNwTW/dHaiKrqBhUnD8daWfE66GdYtqcmlCg48XJVic0AupHEZgeAXb+MaHW2L9+
+/+sUiYC1gNh55YxXDtSI0XyQeEqN/aa+Ay7jvWoKS7BHLGrXvW+Qeoa8uhPRtZuehei4f6Hh0Gd2
+gc1pgyg09J8pkH3PAJibghjUiVilC2c+uyc1Sv8ZNDBQtHTjXAncdXvboKoOxYYxc6NbUX9Dq1fM
+voT++ejL0yFdlDFUukqkufANye/NONNlu9/CrY10wBbmDsIJBKjpPAeEEcE0kgp8ZoSTYYkstgFv
+3n7VrirUujhJeNKo9Wmnns0qKSygx4xfEdEffCAlu/r0Hz1rX7HDAGvE1IrPUPwT1SY/k8Qwo8Bt
++U0D7VGDwVvFKYehXRwT4CPZusbDjDcf4Ph1PUKjFaQRnwnnVT5Lt9Hr+Kv27WLKonAnhhciyDef
+TQpggrB10of0p+GEb8UPls4MRUfaQTP1ctQrAXyx77usa5GkUsDKiGVjVeaHK2AANEfktt8JLl0q
+OmC3RUAi20TP8aPZwauWpC5XWeCaJi4zrjo6jiuPSpE5u/IU2g3u9ngKSCRczrj8sQgMkpFjA7Ji
+UZhGciW4YikZBtRDkRY5uy+F7175oQakrlYAukEHjtV/q5X0LrdaOILkVcy5dHonsttUqUA4+SUX
+HQgq5JZD+PrL3tixzRdRZNIJHh62R4a6eZfnIJakXQyJ6RGcmi/fApAtN2Ts11625nhpM+sM/lKT
+MzvPSz4wgCS9wt3+B5BZiaX8rbmclwifoEiqnetRiSB/hxdMOCcGSE8zIg8u5CPUgVJ7cuU6mXho
+dZRx2NIJ7vE8xGhrb1IwLgf1QUooHhVCueB/cIPNiUkLMk8J9jHK76FX5qsnJi22jOdAXUf9wbQL
+Kw1o+iQPZGeIfLRa5USCLADpA60DMQ7RCeLrYWy8NHVzVQN4Ws2dvHyPglYPy3jQadTZ3jY63Mk2
+7vANR9Cv59QjRE8kMgVZ0asHbekO1AGQrQR0ypE66vGMrVIxOammvOvwk1lL0M1NeerQ5v0iohid
+hVn8N0bQuLzUTOWL61eLYk1z6pME1wRcq8wp09qTMEgRQ7wXlDvDsJ3/ZdYluov1doZEQO5gg7Mn
+RGHtDwdiVITFkmv4H4x1GZsVfwNPnPiNaY7DhVvSg3J3msrnpWwm+qs3rhzpXrCfQ3ZG5ogs3Ah0
++VGoWMk97TSSNzAS6xq+N4aVDKVPdfgXW8WnggN2SrdlYDTcH2zqNl64OgdiCOHi704mnztLbL0r
+LIvsKoukivHowhPp5XRvQBUFFto6+y22Dd1i/OzuCiSnhW5jQv4OO9HGntUwWobUL3JjaGKzTqXh
+2Ir7XfFZlFPfVC2b1eBksW4+E9R3RdqjNOmItvBxB5D52EmR/fLJvcwkFZy/92dHw++S9KQXVAA+
+mBDJ1alXgtQ4LNJSgl5myujR/sUa/lp+2975+oOCk2vlgPEKCr8kFLxQSMXZ+comZjv2c/pJwG2x
+yQOuW3ObmfU052cNBL09b2niqetEC6K677/rW8eqN2C0w6oq2U5SSyg4TRBme7AtTiy85E8RS3Wj
+w3zw1RR84NvwfUIngHcBVkCIW1OLwutHc5oQl1BkYoMmfZQtYZfWDR2Ou7T8zKojv1E94igUiDkl
+KyM5TxzTdOsuKuCxlSr2BqTgMp/SCGdsjfo1dS/Umsqhzso7emGbfEofeeApJOvE2LRGBmQfQ2/2
+GbPZLjSQDzIlGWmB7+ToG4z03qBsltJttw8MFVAVB2yHfhx46oR/DwfuvO271Yd/qdYjEUwij5jA
+QDLCRbprninBVW91XrT8mqdJAqZmqewx8QvgdVn4D0Iyf/CVOjrutz0jdEhG0XXkUEvNdURBxhTT
+PXL8Ge90Fl5wFghgWO8ac/q1rZemwzLclkJiaHMX6AtQ7jrG7YdpFsX9qHYV52q7qbf7dl6r/l1T
+aSeHnCcOZqYYRyv3VHjhMyWbEtaW0XNyDIDHqoFve3ORdI9lkGi8fEyGlofz8EVCAZjhk6vlFVGT
+6ACYGX69xSftYioZ2fIFjy/eAJDCQeeM7D+Vvr+VRU/wkoihLgAGnLCeQh+kiS5R2qZ+KXxNXHpj
+Cei9XY7puMaZFPX4PMtMc0c+Kf/7zXEYxHvfuXPHCVWp2CXNaiQIdarGEVgKIdDa79ieiapBfyNl
+38hBP8qkcVZmyivrBCJQCyISBn/uo54dLrvr+oxQyvdyGoeOzoa5/EdcMqZWpavTkQlfy+zy2daI
+zz0oU9WcEGYtG3a5Po7ViqWqxr2wyKyhJQXZkJB+6YIoozyU8JK62HFUZnYx9w1FVVUjp+u/t30j
+Fp3HEHCXt/MIjaTVZiHdrNvSUkCEurHF8vzWrQNAEjIBh/rDuy7PpPyLJ2xx2pXJ1Yz3Z19AXDVo
+cZb4sjaOmuDJ/A/QfUs3MJ9Gmz8IK0qSsgvCyaN63Nn/RISHkJ1mxksgiMZ1sXm9dO5Q/zloO84q
+qWdQGYaE95z89im+kV/gqUKJsORgbbkNeXvpx0qQ7MrsruL6lCSNFcXHGy36wYBCzwfEWOBnv8/4
+LZdnfnTuM1ektrMK6l+sRy4wz7nG9jE0zEglOSO7jGbwlOuj8dH2xOgRQl9WheT5qfmHLmuIkpdJ
+ianr3g7QnIG+t20oY5EEelDs0RbcwZKPIw2W/WoQzwI4fjwUrLeDAfGXdfnSW/qfYP6pKbydxDPU
+wye8DIAF8bS6Zc7QDVN3+4LIDDys7tvFCh6EcQMmIf82fiR8U0sb42QyQpSReZv5w1mAsU5R5sjC
+2yL+v0nwWeEC7E+WfzqfzEYDBt9sq1jQWYVck1mR/nEe8ZY0kBLYuqomuKbsXMWZYXAErY41GBhF
+Pm1C9i7AlqobPDAhGunEAhDz2M5VZGvhRkeIZ9aqJ2ul6wpwBS20hHO8k+8zmLDU3yi67BYcMR+2
+cuqKXJ09Q/G2H3ajaHI8zF1QKyhXo8cBS835w9EgAWF2hkrG39EMiUH+P6rwZPVFC748ICVGP8Qf
+bQ5tqKkElWDRPiseH6JjfKw1U7//HzEuK4fSCDjaA3iKKlxIRBeepKgQDVkQ0/wKBV2VyVfCVAEA
+gR3qAsZhAtFxI/+hYuYdtl335EgFGuIKmJSUTgclorCODUlwUNeNBUZM8H4absYyinrI+8msKCuu
+1l/Qms8YP0UUEkDXviEf6GiLDiF8S4ndLIS8mCnVDA//B1y45QaEcYDZHI423ovlDkI9Xb15u6xj
+QpyMtmYWVUE3EWD+WyDpZiqHMVkproR3A451RbPCwncpYwOXzr1KpyqffZPoPzPJS2rINiiU+U3K
+aIyCk7aWMXx1SdAN3Rb/n4ST0WDpNCAQ/qnj2aY5ciKu9BUNMm/ZUrBxzTcDMAwqVYEGxmSgXeDR
+1u+QK+iA8Z2LNNliDHEamTbgj3iQ6Ke8077vgT1iQF+sahFAOA3kNyCDCHL/XFriNfDemuHCP+Ko
+Hk0NwaTt64lW3d4IgbfWT4yiWQHbN2OpgFyPHD08RjM9AhFXA5nHl6CEwL/42WyWmDocXqbc7lRG
+QSFNt87b6U086AbyQ324ksasrNQpVH6E/jDgJal17lenlYke/lV9VJW/rht9Hp9APZEqBmVURbAP
+Tbsi+GjUUIHjaz/+CnYccw/XrcxDFKoh31gBY7Wha71kStNKahzDjlkHcKzx7LkE4/G7lCSpcDEf
+dsuOAIvlsp+J/P8QKA/7maflSzR3wUPnlw7Wgsh1Vq00woffl+RmX7vCN/GvA4psPGQ0N+FG3iud
+AA9ZraIbH48cs7noM29ULyLakGzA0nXSYnqDqYZ+i9BmdpC0S55uhGnGtgAezNgrk8gyDeS7VvgA
+T2Ia81sstxDogZtd3WpXH/P2d7bC7VhsY5CAydw4jQxlpjpI0rTUPCRtimDf4VP8wSN/SoZjukbU
+8m0XtfkIJZwn/Q4OZO97p5AkOmmRrO9Sv0kZoGUHnBIf9iMzBYHUQrAjMmt5AnlyB3f9Xwa8jlrR
+yt4WdTAz5X+aX++9U9Q4NhTqMIsxsj9rdivx3yYbQITwVNmeaHj++Izc6SuPAk6zQBjG5HYkks1N
+zUSWJeoKvkL5G326sw9XLckTN2z6afS7pdKISXuwhR9gsMS0jXo3i9dKl/iGi6nAJMT4t7eW6tRM
+JS4YJvFWMhkQkggmkWL8qwP5TNbxtzN8hZIIFxJBC5lP0uyiNG5AOF+QqfyhKuorcowTd2dIBSo+
+XOC1THWPludMVszAShwhQJrrSrrIJZN5VKMjcqfgsYX/4lKWc/ihke/Cu1oklKwfyTwwtMPZcB63
+AB2A9p1xdSUsINefTCLMEuXfcvQKe3sEn+VZlR4noq4A0JCAIbY8jouJO53UuVW/itsd7nWXLUfi
+Cg5d6LBED9wBt8UxcwGI7UCzG8+GI2eL52P1BSwZuS4iUgXHccNpL2YW1cbcB9Y4sCGuDYoUQ7Kx
+H2B5xZs7c0sgqwtvLfs8NgaUi64UuYuk53DZOeCJZaTq9SzNfWLbM8PY9ArHjh5X3wZ9WALskXIU
+8VyZKjy1kcSjMnPBYY2ZVBK2gKEaZc7reWUUW9m/HsqCJB6wD6rY47PLMS0RKRj4FpLcxJPwpVL+
+OQp2JWzh1g80qsSk0VQ79fQ1QCCHJZtB4iyMsdLYS1jMipsufOD8ydF1+0O2Vbwh97A12Ghvc5bJ
+qYibdTOl623YrI2E3sCHMMSoWbQXVryqiSG3Yey3vG1J9nZ4rulwQNJ+iKQJO+UVxsPxPfiIbOSo
+Ie4j3NqJL339hBJsGyvcO+2Su53rmU7GtAaXL5FJXw76yOB/WmobKjURIfLpPn3SyyNOQFbshlTs
+8jlM8ss91g0+wI+QjzXhoEgP/1Ja3idmuFyGjEbggPTIc8InrukfKJPjwcF/OQpXEAGBtSAblrrE
+Xse0JFQaGGMTFoS+VEgSycu8Naj4N5AUCGHMn4C6x8BXbD3ecKIVV3MWVlJWKpVVJZD2BFB1sJ86
+3PedoiFoZyCr786k9FaKGpj7rwhJOg8K45kV6FgLJqGqHjvq/X1UeK4IVQ3yhtNgLcIrRMnNoMK+
+3hh6XseG3CuU2zPB+RsTbJ9xj5EDpi1OQEXCV3585yagqfvCn1n7Fk2BrESMRHA8fRfk/FP3ZtQI
+peb6BZONCPbWmT0VJ+43xX9YjbfF6BBNIpvfzxxNbJeMsNxj8Pr9sFXLQj5Hk4EwgnQPkxzREbuC
+pcYpbqXncM2nwk8+N9bU50T8ovUxRSTab6jYZO1HdQU/9pSNrL2T2+NEU69HM59PLscYXH4VaeE1
+z0aee8CRLj88OTmlixiOgdsFqGNlxSA1NQVbv7eaH8/pTqHg5d4sloTljq+tts2oE5oHxrjfWi6q
+DefwPy4WeKRpFcebjt+x3ShDQExnuoZSLtDe1+hEY/wyBcE7+0x+fFbbQDA1Z8u0MWT8YAq2Xu93
+1Md7zweqF/s7g2rGz+HbvVQ1YlqgrcAeFdHP4eFEBLKx9wCQVqTjr/0SZvIC3dmD+qVd93adI2b8
+MUGLS04LCSHN+eNhUYd9PAxZ2aWwP3CNouy853wEVpLpY5KX/nFQuGCvewJ4IuZWW5eq/oOtN7Qo
+KP+FTQy0t8Lt3h/zOXnJ2AK63tv3esnmsxcnXfvQBHRE93jzC7t0cZqCfjaaJmO1tq2VDe2hKHiZ
+Mjxvv1GxB0VZpeHh98v1SFOZfyZ9yXydMuy9MO0VDiP2uf9bJkxkejmlUw6BP4YLzwGVZ+AvPea0
+4M/v6CDp/YXk3uhaifIT4aRuDK0H9JiRghrRJqLQsIxGiiLWgwF0mFcqHrwVcouPEr6k8DbNj9JD
+AJtucYkTv8B2adgqdlziNxNcJA5m5WzUgiIQ9m/nchzfivwfMu8jTME3PjaaLUQT2ZsZZ7N0MpUI
+gZHaO9aDUEF7Q/hgQKKdCTgmJtWSSMCgKCPFrVdbTgbvf2CYUQ0q4ArcK0ylBUPQsqo7KSDZmu2p
+5ZxB/rIr6TIHWoenr2d7bqHqKgdaa8PzLQWLXZJsr+A8h7dMvRDEAoXsZY7AVc0j+gto2Tg0R5gC
+LMf+P3PGMh+S7095Y1jSRy7ZEPdBc6ZlyNGbjz4PFuKaN5Sv4hJpx7o/Au4CmhmbyUQco9cgPJ37
++yTCoQkbWbn1vwNtQ8n9le9D1p3MvnBfYJIiU2FqEM9oS0Irs/s5E39QX2e2K3AgS87NyAaOqp9O
+jRwygoaXpoNZUqgm9CoBvxys4o8jnZ65Cjjk8zzbA4EhFNW5Rxun2kuaO9Z0W7AJByupzVLFQ/xa
+GMS/QrLPO77Xaz6Ii3gHOl4kBE+3N+HS5WaY+OzX4afIdB2Y/tnVuSjHh7v79qW2PdH3Q3iNOOj6
+jikgxI3/bbiB1gAVdnVruzZB2NUxSWsWgf7xLktEoXIiyE+ScM4c1mgZEZyPMQCgD/qzImlMy6AJ
+eWEURlBf9tqX5AoFRX6yicZOarsokgL2GQefQpk8/T7UpO9ZDCWNqTNneRW4ALJbXXmJ7qYVT3L9
+87H3RSfwdnFRGGUN1Pzi0/oWliloyrGzKjapC5BE7vXGhDmd3o/zOWNDb1fU5RuRZ5nCLs+heqeL
+2ZImpIMYj30Iv0gEn22Nn7EcfsqXNr6S6OkU3/zgNsO5gPqj4LuqfY0mKQ4nVXtWze1SBOJUSodP
+1chjbYBPE4cSJo4Lbts3Ir8uCdhY27i7M9hCIWS2JzsL33YEP51oyjlrRWHudOb91AEpzP1px9p3
+Gy3s4YWpkO4vse5FMqUkqbZU8sajS/9bL2fdBK9pUtupyTuueAf+x604vnd/Vbt4OhWYIBqHMT6q
+RPKukJQJrLrY9C089cnHaONvH8k3QJ7JK0JZ8wflu+XLRU/k3JElJsidCczo+2s0c+o8uGI9KD9h
+ld3L/otGyM6WIWw26IQDkwOxECNTwssrUEo8q5P7VWoltu7XAO4FTgFN8U29nGhETDIKRTofr1fJ
+/rpsXnETYo9veKea5neAfNzzyf2+R3lZL14XkX5maNUE0Q4XMZfVFlj2CVzZj3hjf6cCyb4F21wP
+vG+ij1skZyNq1A1Ha2QUdPX5o4hx2jWhogloOl+aVX1QD9gCyn1lOhn+LqOutXUrDyKgSXLvW6/u
+wvg2b1GeWyK8OjtqoiQCoIMmbaYqg8NeO9MNpAA0wxRS0qf0yCesZzxuqDXTJc9emNij/pgtgpj/
+TZN7Z3HdwiSinLz+yibtR7jkyzVIvYZ+QL2sy5U63NDht6h+zMwEZ0dhR2l3P4gP/gJYQTBqch6v
+Ox8+LLhHgAlSIaSQRT6xT341JKyBavqVJNMUMsR/09CIKowc+CfRVCSxhtvJ2CFFZC+PQrLnSqSa
+KPa0CNZP+7gR5ktgDpTUVwYcCWjDDafgNy9bMtns7qIwofRAwSJEzcIn+XfLWr2zfwlwBtn63Zfz
+CU9EqG9l/FzmEsml+5B2Kb4OkAxb6sfiL87zCLqGCv/W1b+ouYLpjLUclYWrI6zSNS5fwym9n4Tg
+yWbLaHo8DvPu9FkOfPF1e7lmlF3/JiVGS2/Bo8bcpCVPo8qFeUxyjMzJUIDXza4MEv/JR3vHDzxl
++eVvx9G332f/+YeI6JYTyWRAXlCGf6tTgsXtSWs73Tz4Ce/1Yzn6Oqilyr5cVrUt6jO+LGbLgQ4p
+Ply11IF93J+zGrYtBTUMrfAolBa52027W/tis35Qn4GaIeKZyFz4oBmZw6MF/dRoItgf0IDY/cfC
+jp1lKtvzaUjqyBSz0XDr77iqb9EbHt5LndUoNBcQXfvSBC63nsLXSAgHppvs2hIKqDFDyOyYBP5c
+tKj9R8g0EQHgcJwMrVL+5GB181Fd+RwU/ixF0T794Dk2wGYf6kxMZzVuQQAQdMc3nWPiIbQs8FdB
+Fpbb2bwaWNPH7IsumL7KdniqsqSLBVh3btroqEF4upyVjAHKqAlhRHMhcUCZblracYTJM0QNsdHh
+zXC6Sw8+ORYjPjxvLvf4vNpdX/KQY4H9MY+ALELTNMJcRwQQXM53w8cMx7+jKPvuMH7a9DlzQoPQ
+/q6Lu+j1MiZ+hI504rlR0AjxJjDdcWeVP7Q1QHew8W/ioMhSYwwY11taiYrwAV4z6n/ESzxu5tA/
+bZNw8m7kb8UlCvscHsIfVDpKxF7MHdBOmRlpIgp34K82MtZBu9EpuV016CeJ5fx9SkX4rC0jA9nK
+P3YO9QjToIqv4I0zCSTMNPzxN7h7ijp+NN0iNYdu24axSEwKGjhh0dsE82FnI7ZpJBFPwqZsqmxW
+XoCS7HmeXoVa6RWi8vL8JFLkxJfEco+kem/PYTRrZjVsd7TH7ZAJEFxyliAmemKa7rX5c6oY7Fp9
+iXAEcbjdcI24/Wx/rD7ScitBMh+WMqzbeveDZ9d2WboBkauPnAfIcegyy7ou/XrS2+4nJIHY5CeL
+/fIPsX45EZWU3ShAmA1+8dCi81zV5g51LFWUkfGY0NiPa8c+uDavYOPH5oBtU8O3/3PIf74tnuML
+PTqFfINslRwmBUw/JZ1VfXsyKK0N0Zt4ZjODwG3sIkkNFTHTW/ktCkbJ75EfJqsUwsBk1GKT3hCS
+QbEuCQPX6VdhRu9LkCgxSD9mNZAMSux95ilf8IpY/5irnRRony6jQ0sRSr6TBM3JBxEqmFcBFQc7
+HjFHcZFSV8nrD3fci4kPOvLSdfZJjoVRIJRrtL/h3S337CENtAng6F/JwE6UEbqGHw8ezBpDD3FZ
+66YkFtCnc1mbjd5zg9wJ4TpMWiqBw6PVEblX401oqTN1r7fORHvzOkCo2k7NL8fcTEeqRVMALXyI
+AUQ76JzNz/I1ucGa6YE6O3q8ASSUNwBS+iHbsZBCQavAbNe7RndLJxsa27EKLnsE5lo7WZQxar8R
+n/tF/SVUOI+K/pPJGnrbu/Z7gMj1pdFOBS8voL/xJMZ2YyNydbRaSnkr7X7R7yOrCSRL9MmTWqBI
+cSK6GBA5EN/dOcLmrvMaV5w3RO3FQLy5IG3ljqSmJwMBlWmpW8wMQwjdh71KbUeQ+7CdlkIrFSFa
+BRiKqG0sgu90ipDP/tpkESeP0HRz59W8RaazLNyaTD305GvSq3UbHiyVIRekz4Yoi0dIdkMYbrPz
+WSPqdHa586nXYC8SQn++jfRmVOKV7lc8a4CzgOcJ9KA2xDAfkSuPf21y7neE/GGTpM6lir9QMVRo
+LswwhPjD7e0IRCu460bUlK4B9DcIINjWQtGFxFdN1RlDzW2AeSoS+pynNiAs6C9scJ4R9yAuNmtI
+2DwxbAfjYXbkoz+E1DFBEtysiGkTIWyF+Ce1fpXDDuLktyFIKUfMj4jSjCtNHFp1plEmpfQm54Is
+NkDyo/gHpotEWFfhzHLmpVk1h1uRPbz02/qOBgRMjGLshsAYiQqRua8/aCedVlmD2fyidurRMw0D
+RjXCMQN6XxLzYXBBtavGE/hzn/AV6fbDyM+6QoEsVqTDXYjeWVg6jta+UvDntGdOWgfcNWBFm1JK
+ycoOFa+hcOh/X5XvO3QRIOnSbfryXOx9pm4HdhluhTQhYpdr/hzeXvR1RM/Vn0vTNlPX2QNUwHSQ
+XhrBQNERiBMKBYI+X+ETQOFsorsqjOQUEFhEFXAv4KE6spPWjzTZGPSgIorNN5RCA80DiBOwyjh2
+wt/AF+cXhwTUhTPc8hD88eh12jYk8ORaUhybT6ChjDNqlB99IMlP2AIrEgdVmMhG9QX3DIKBjPRu
+OLNkYPbryK7brgB+nsl6+vvn2z4GxiNOia5MVC1+CUIL6kKzzdBOt8j4D7LfvjetX2se1Dip9wNZ
+wOJb9EZTjR+2n6bL/m/3abx/2YeIvsjDpNCHnSM7A0hIliINr1WkQsKMfhES4/gUkEl2nWU0iTlL
+Y0uNfltipds5jK6aLX/BuPLOCvKuRJqm/Okwpd/x1NFcEEJxUgSWM8T9bbmsMigOuTy62v1/1BcF
+ccgX0VT2hE85vQzZgkz2CfGDQ+/0tOm9TLCG9olGdoIN4DSiACPce7regwRBMpBncGtZsB+q3CaC
+7Ok/6ItVyOug8gG+XQ5A+eWLqZEoxCELiXj5A5TTRBP88scdbDEyUYL2LUYsJO1JCiWWEtb4Hfcy
+TbLNzPbWk7xf6tiScsmEmBTAWtk/XZVSSd3WdoMI/JAJDv4MQzQR5jnACvyfG//ahC5airdTW9C7
+m2VKGP9u40Wf0Nj3hQ3gC9UwcEZHwgNcdsm/A3D3wZYzc87tQN0lcvplDg9dpzBWCPGcu+8PFMBt
++LvIe+X66AOti/BpQfa2ZZcqUUgvFXsZmJSv9wli6rkJuXN1Z2cl5j1TxRZQ4nfzQWjTBIm4Cg2X
+Uw6pUoVlIolfR8yroICikRa/L64+TQLTSZKnYKZHaTD1JXoybSTC7g8zNNhCi6S95+eaXtim0llZ
+k25FQ/i605Qtrb7Pr4pg4id4H2HJ78TEDW8M6Wh/RjwUWet3RtXDo3+P701QgxUhPyENmXfBTaa3
+eeVWmEGlkEjWAWlHdq9F5XFdw5MdoJsml97CK9kLsnB1Or7hRnksjFwhhBzdcsjKHTBexkWFjSjk
+neXmrPxCOkmMydRwuMeabCgXWP/YJSFAtNuh9DKZYF/49vygXfBCju3mx2AnPTqLBGoIIQAgWs2n
+i7jsIIhYazfdOZ2lXs1IySRl0syGkif79AMjGIh1cIHODbGUdIGL1NMrl/7o12MRrlnhtnutEqUc
+CjBESkehVupVwqsu2yMHeyu/3dIpc0xyQsDmq2nJ2yTfvwEwiqftjwhd5+4LnPz4eLIBI9Zt0ODi
+TfJ+CshN/jFZ3Hot7YyBFxedGHaLSPZd/m/VoB95c0Us1xYJzEaGgG0zTe8RiV7omUoKv8uckVAe
+616XVN5libRyLhRJv8sELqLRU7PSIMZkNaeBnHKAdAfRZ3QjfZuchZvYnkpjnSwRIJ3V0raQvGVr
+DVc4hP0h/vky7Rt/cVY6NTYANI81WytPFbGKRVjmuV5W5+mMbc4c4SdfpdGzONEyJJM8kRDZLuJ/
+XYXfM8PhwmUzel2B9RDFOFehQ9pMKGNGKBFeUTMCPGslBfWrcD3l4bm1yAhyqV31wvQdfK5lAvnW
+BoHXcysSE97mH4WqWjExPW0a46HS0+zhOQ5rqxa+2Y/0d5bX//Do4+yNl/YuQ6BKZoE/tmkEOCkC
+NVuu4XsPlXL/1NCYOG0np1buSm/8u8GViSXPw5UBWqgRTOVdDqG6XVJmDRCKn3U9Cpr4BJg3f8Ev
+Y/oX6V8L5oXqpUiQJii6WqCvbgO0eZ+VBlLjmvYfBQCeObZDU+mY0co//vIuZf066dJfFxpaaV4l
+/H16vophdTPXTfwDtf/eN0vR7iIV1yMjKrZRxkL+yi0iKsVju5f/29O5Kxkv+1Xg+mQwgoUKdvHA
+xQPMDoJX2KOVeaupAG5p3QQiTWK+t2fJ5aG/uSsPzHnnu09VW/xC38hguQIZ1aMEb/D41FNb4xO3
+Wqf7alnv17l/6F68DMk96mPdjQM2O4yO2iVatLQRkNPqtuA/82UDWO57G/hTWOlxfZWoZahnsmBb
+T5lgsIHUFp481Qb6JNzjekzVpicO1j6UYrGBD7HatZfmKfN1oVsA1FixI9ouA5cGo+nylG/L8DMR
+feZmI2TPK9715AaHTkSmbrFi14Zy4TGBJ390uWBbNCD1BNzwoBa/rcTKwMNUlIP/BUY9/IBRXnNw
+nPypopV87itQOs0nmsRmaLOAzz92Lf4N8uQYnwt2NwGOQOiQQtZZ+SGKf08ePAhwbp2CGXG5RMDO
+4jMHr1swxEitLj+ts09v8uHZVl9GJ46bvJRRRoRBLM3j74GQCtOsqT9R2lN7mGdthTU0yG3hTxP1
+VGkgG11g2oCATYiFtU4uLawtL+0PYjsWjIaaxbdgyWAMM4vDOTkuDpOCxlJMpQnngqAyE9bqX4x4
+Tyf7uO1by9ol2/weWdcK3qh/UpkWKvr9IjbHlYZtCy22y/TCdeM2QpevarWeEnBp01f/3Zt/t9J/
+NX4VJ8xXuDUhdYzDLvdzPvWcRKC7X6SN4BAsPzb574rBUfydjtbSbrJMXnlkyjuhYDr7JDA9X2yV
+zDFTcWiusgOkTNQpD4vZGpIWUxm4/I+Ip+VxV6F3mtpi6uJQmiHzUnz3SA8s9vxB7hIMkCvSyPcN
+KxKBaocRY+xtiOJRQb8uJaS7tmVROYrdzMU/1lEfMRiU1lHJ4OY2sWPRUSxNSRAEtnhShHanh5hA
+uj/7XJbTGa3wj0OGuD9ey78HVw8fZLPC65H7pSKGqUTu3lk7BPX0iqOKubCWi8xDCdg0uJ9MVM4b
+qyvPWMqFjiusfWowRFlGh1r9nPqtBAc8LjIbfqBg+zuK3EMBFY+F/9frhDj/AoxQvau5H0eDDKuZ
+eoKh+G+K5z0UHjzZX1VILnwC7b+ZTHOIwIsnljzqJftmfJOJMhVMx25i47QXI+nlPKScmcmrH+id
+K5uYuN7lrrlcLW16YNkuimYZWBL6HPoy60YX54t5gVLf/i8GFK4xdYZfz8URqfVUDA/vcc6SOHO8
+gbn8Yy7zjUIMxmfuswAIS9Ds2QLvDCXpW6Xa2F4nfP+IoqmlHnR6LcBowQ9Imn6a1Mjj4dpXBmeR
+bntf4u/nxkuDwslT5vNq3d4FiwDKbGaM0jzeYQBoXkvWBAOBZnbElLeXNrUZKKqrPDsJZI2qPwHY
+69IY10C2iT06/bK/AjYwC5i3YiutUrRBJS3Ru2hJnsZJ+Y3+rtiVSimLu62lrYDNcLW9PNXcXuZd
+m3FyEh0kSKvVMVloZRUqcnYTzvWpSjtWYrNOrj+Nxu+h0fjyZvzfVHFrLU9R8YtF9ZT6sV7E8aZ9
+RLJgUCym2yh+OzEukTfaUeHseZ7X7pNdOGXRD7K9/4PeXxElI2n4FjC7l8t1+FvfCIIAHJYS9BKb
+zHXvKYeLMVF1oVNRTu6SN0D3XO4QlFkcWUTfjxk0DYtokXeeQEbeMNFWdlV4JoeI0B7l4fE8X4tn
+N7IFIFFNYu9VYOOCRQhSd7s+tht6qMk60oQMW54X2mXrLCINxRXoyVLndj+dVjrMNu8nJDwyoRw8
+4KSGzfPZN4s0pP/tPDbZRBSUKNGDELwr2UWdkmQ25H5v/oyHypcu2aTplZcMhnTHOYpZSfYB/V/5
+gJ1wdbODE+mR2w27s8Q4mDwUXFhfaqqgGHeZT8iIjB5cXo8ngjKJJv76E5HyRVxFmycYSdKDFdzX
+wgLtC4lu2//GnforP0sYnvlqD6S6azEkbe9ptHHnT0vxhfDkgLsnMKCuNqqoCwDa4awLHLCX+oI/
+Uv7GifDgWJ883six5SWgtu4XfwlItAcqCZOXu266unuTroR7gX+UJ4bnivXFYOFLUFTRSIMjMhmb
+Zwz5myhl3anOV90QEN8nDbpgQobJrNU+CujEQ1Vyzs4iTsZs0iNuihDYN4xd0bPh4RaURejGPstw
+bSD/Yg8EoR7Y+QBrZ6XNku4kZFiDHkVmbjJluxBm3ubaAP5fwPX1J8e/9kdGa2LoXgLWU69PgIVP
+8Zlht3kN3WApBrzCBudQOViZfpzuLHtQ4rKLfr/7oD9JtojHQ2uIdy6T0//jq8TiUskJNj4REg/w
+KE0Ql161TCfVmHHQ2AXfqOgB4Hd0187OkM4NvXaN+MKMAMD3JC8uajaecGVhYi21XuiKNshJ79jw
+EizeIldMsl9ifL2v7FY/iXxPuiksfDfoWnXuaL5obXhCILXTeFwbYpJmFMqJHn+bG0Ds8ktdh+4U
+0Bx0mIm/kqRRbuHoNjATMqOD3TP+R9mbTuEpcVECSJ1Tdky6Q6UdriGlYDlgoMFKUCGD/h1geXqb
+ppBSFQftjRN8Ciy44Vh5Ta6XujakBkv8aVJJ9qP86H3UuwWic3W2DCFjOe3zhd1568xToc8XU6Yp
+g+/XZbGWrMdpa1zNi4r+fypclqIzXcfAj7hRfuRWf1PlQvoodQqPyNeuOz1HG//5AIU0IhvoC3XI
+EvSQblyqYqraFQjOpUe+5i73zFvJY9TgmbgqNCfSaKV3aOw2Ikrpy9pcdun7fmOHYHmCK+a4SJx+
+so4V0pzXvjJJQ04QXBeCxvW5o5Vr8y/P97MEM7PN5y3Mv+62cogrYuVGf5iCtZYevsPsSCKB0Xkm
+FjNQyII4h67n+zrZYOb+tyqqc9KI1B27BFEv3VMtaUXjdVEPkqWogZkSv4jPpeVhJHDdRLI9aI+6
+b4Sj5EZ+EDE6oziJOa577gmHRP/BTlb1SdoyAArdcPg0/4JrccWfnU7FHpbHXLU06f+pnRJD+GVM
++57WVzlxJCqWYP8xFmCw8sSpcGFdhTglYzptBQdsRe+bdrjtxp3oJoEgd2+7rGULsBqfR9u+bd7b
+k0arLzXKQSp7FQsOu5IY6llwBUQAXYQe9ng1Bq0aewLTW3DESFezsfQtLv4q1A+tCF4oNeZj0LJV
+w0ntS+J3mTSsu08JbODHwzXzgHqQLCQpf4TU5FVUj/sjtT79Ivz4ufCHC7naNA7DPcLXbiPkVTjJ
+AHMucQctrFVLZM8XXe/26Z4FdfgDrJdnGXs7RMSlZEaqbnSduwO9uVwRmbXWKhsuYpK3XQJUJ/bY
+37a1gQa5zKv0uB7nZoescKKOeE5moEggduDxzAhWBgNoYVznW+e41GZwKOCpL05zcGAoD/QPWHK3
+e4lOprPHdiI/qlym7kQK7lXwEKeqbE5Zo5HpIZqgwCorrDBAzvirLodiQUoh+HilyR40VsFUvEHU
+NGskOEBfZdV/6s7qEWuqz6JBA1ZnaRkws/cxoGTfquQXDYLcpytcajhikRHuz/m/1v/VKHCNBYjq
+5JK82XIx2s8UVkfO9lpWGFeE5kEqvyBygIGnQmJhjcXKPL+Kq4vzxGFp0x+7lit9NGWGa1iaDjhF
+NxgHr9nm7lXIBBfANhUJVgG2qPpysiioU2iX/zzNXLyVJu4dTTqVjZKsQ85htgvBxDsfkLV/dkti
+s3YShHsFaEUwvUHtRDXFvOCYdIkO1QHioUOQNgGW2iH3uXhB21/PLYKS90yQe5w96VonV/ucWFrG
+zNaPJWrWCKENpdc9LVTAudZtxFlYOZq6QxTU2Um6HeYJBsa2OxFzu7YMO+MxiTqo+xlbuvEzkfNm
+Ws+JJ9PYYzHgcPB+TJJiVDi/RgBbzLAabFQDdLbIBRXRXE20K0esrfQ5sEWbtf2qB/cU0yBjbx5g
+C68QvNEHSIrx497EwpG5JmVKlvnsYDEmT80lHVNdpy2kAgoBqdeNQWsciWiSQeC95X0q8Ubl03wD
+wa+Y75RJTXCBe3QFlTmfOMJoOQtoKo9q8DuWVj9h8BFIb94Rc+0jxBO3TchKwmLIHmQt8JxKfTNl
+Xk2OsK9BKJtQ/Jsket1u2F4G44v8urNy6r8t3jU4nC5hMD98xZwtUfBuLQ0fz/IBXzPIgVLq+nYZ
+gVQeSIHLD8RLXSQMxzQgUfkvhlG5ZSWttBopY87TToMBhfskOfmLt+qA8nZhwSeQkfCDLX56eoXT
+b7iR9WbdXPtuzPTVwZzPPnChQ/unPCZNnZQDCjlF4Y76Mp5cUtQTAqZdQ3ahI6S/I7vOlPqh/5sP
+YW67BorRXYWXJuw6GASA2adQwLA0V7iN9Z8kiYuzIBioiARheyG1NLRiObJpznEROnO8G8Tm4+m4
+xEiGKujMI8q0cYepjs2P7fJDIKNQl31wCRzrIwiuyQKfUHJ429vH/ZY8rNkITgZ0aBXFm8Ph5EKW
+O5eK3PfrOTvCCXFyRZaw7eMi6cG2jkFQP4z1V9Mua8rJgyybzZeoE/w00iVpT0/1GLw4qpKqxo5J
+v0lFeef289VaHD/rH9rvtH/fVXsrpCG8mpfLdj5iorB1rGZeeEOOcGvTrqA+SzcUlDpIP8KJJ2pL
+v0MM9YXDo+SuvpFLDpYIFI58i18RZJD7SJE+4Xwtwy0V9ioaVAbAyr6TPje7OOMPEoBeTv/1usSs
+i4hDn7afIwDf5hKuZ7+CKoRzgiiwkldBI5VXLB6/CTqrm1SJqNxCBhnNEJ78kVUifcW7BSR8LfTe
+2UfLwYNosHCqiWIphTRykbg+AE2JLtYMpn7i5W8BNusZeBy3pYwK2KSr5L7rSWzeCuVorHNlg4va
+IzvGaEDryoh2vaywWD5tjBVSkQVbtliky4xlqFjJDYxjOAA9bUgR5HB5a3UTUJjTKn6SeSx24oxk
++UVOwGQhWBnSfe/BlFzxqV/ywNqFalPmK/EHKGOYPdQmsst4IeOg9FGN05plAyQuBVLZpmRVS4m2
+q4R3PVS58LqB4wtagZ1S3btjNak/H/tURPHrXFXO4SDFm620y33Dsl/p9gypoE0MhFY/GDpGj4Wk
+2Wfa6/o3L/k9XnGFlcSwBixUBk0BfDT5MPvbbFfMxnB1KmPdDdjdE2xY4G8P2k22n2Q6qlwFxNKj
+8nAjqDsBgi6iJrulvncxPvWuYpXHMEkvcpw8tZVX+9/7cG2V6PZcp21i5TztFTT2hs2wWIS/oZjP
+ljQf76fsBZVIDHENkbhQRPId+4MHJcwOcKqXBQdvg0vyxk4YHJx4OKxp1Fo0TZUwV0s1QuQlFMH5
+k8/JnEIehawrWWByW1eTOp56O0IezXyNonWSOX6DyZQvkxrP1F65WS3H6KyvRldk6K0DIk/cGGz2
+Z00XZyMU/bwdbS2mVBTNhkVPCjzyp0Kmw86Z8NMhFpkd/g6UBj7ijLbLAgJs+o/GrRsNKf2PQg8s
+2BcW155VcGJkYcgoRliFXBT++c1QVizY+Gz9+8MRTA01nsgs/t9+QihY6u7P8bI1LJIwUdkTiOvu
+pm6sWI/3ulLIQ7ClJaRY5LHJ89GpWALjybzEDkdRppiuiVVwHEzxnopE/KVgCpkWxHQc2YsbLcHd
+fASHZSrnteK7wxQOhnSUGs0Lhlmdcdgr7EW/pVHY+A4RADFKb8hc8rfSh24XLKSa2NQQuGvJJV1c
+UQJdJzLTVekMZ6P9mYiH6pw35qbk5OoqM0LHlPDP9r8fiymvwBcLoRE2Pe6jH6rH5qB9/jA+8JC7
+9MXSUyRYM3Ze5/WA7glYKPej/mlru/Uy7kPj9ubiwWBDHbVFAZceQ3idvHmEZwAAngQx883BTSfS
+jPNTVMhy6UrOoPvk4759E14u+dco+KrYZvZ0Df7OKjBBIaaeIbwHXhXe6+lDxOA2N2vyHaE0m9q0
+HReTLhZRNn/61Ej3Az3smKpcoI6XACJsX2Y8dd32uPVmpXKodAo+CXFa0YoFw20uVHVfLYhfba2e
+4org73BcrXzt6af7sJ10dy2FBZb+udtPHvKqxg94z5cGSQtxn9zJ2lxnP4371UyvJJc6kmPt0czv
+pozd+gilXffXdkf6N/CVekpFM0s4i45S8qvvNNaMUgHnFaYRpFlpVKxJmgI0I6ndBs3oFrAsyS79
+EOloDabZPtdevOXbvKtatmgY7lGHMUXE2So8XPvkFiJlejcqtFs40rH8NFL3wXRXN9h7jrw2tNQV
+ZkTDV9ugv42vgtVjjsA2E+SB7X+knVaxKQG+D70MW5me9QVQxunT49UukQVXS31rDbeZCRML5Xcp
+8XhMHM/GFwNg0OM4/Pldo/3Elj63otbUewM7PHZgAMu5Rn1QbCmkoDwp7G1F0sLB34Pp+gLvrP1+
+/gAocCVvZINBND6kGT3gh7jgxktBRYI/s+C2o4BRK6xWkKKoPERQqCgRYkH/ogF3JYz2izE9K/P5
+4a9xXJJSm2W4enPVeK1TZihRaJaf7F+toGEYPXEKxQk2afygP9yTrz093MZ+peb96QKxjg9VJ6Rm
++z6KTomXwiFQrCTiaKV+F/P8Ciswi4+ymA2UU0jdkMGf69mzXsysDOKC1UVV98aEsWLlY6WB5YSb
+oifiAS2F+CiQ0ucXFU5PMiT6Q2Z+H4DOC/fL7iTUTiKroEuG/pLY/5VpVpFqhZ5gZUvwEooGwK7D
+qarC+2g4uz2E8D7hVww+u8bMzKAGB2bHxlJce+DoWXaSUl81wcPZPxGJ/Z6mv6+bH8kJzThD7WBF
+CkUVWtl8jIE+I31OgE0wxl6Rz8qQSH7iYQqBjmRk5Sfqiljx8XiBsJeAiHG6NhDzmSG4/zArXlJ7
+wraSFcDNoFhVedHI76B5ci1mn7rKq00oBjHgx2b1+31/9Yiuv+ssGBONC0R4Yf8lpqC3WXUiBZY1
+g2BUes7mixTt2Fp9d6snUjclPBHfEOK/R2su80lvbYxLxA6PMLmZnsqdUKYy7sjdukcpNtrG573O
+Ek3Jckt9nGbje3rf4Lz0zSnqGSMO9ZtX7NYsCkjlKXFB2y/3hGpKtWsQISUfoOYgeC8Lw6o81fFI
+sh6mRenjotfsop37J2LUIGnnRYC18xz3EEj4h6C1if2vlm1lCvZbTVfqPIhuCBhqlmps8Qwf9Uk1
++krms8zmSaCTS6gMWvfQiDN+YSxSXJqRNuEoMdTqVeELKbaVqIys0Dirh6GBZZ9iarJCdReSMdxH
+ShptL5xVWVXWZDbk2Q7Ors7PhfNhG+I9/sF5ToA+sdO7GX9TAy8BEcyNkIYmGGHERxM5GaiA7b/f
+WUJdD9uhfbJNBDASMHN6ppAmXfZaLsOsIP3FrJDyGfmlVJBI6qaDfmLAWS+TZPQnhK3AJOwOKjvT
+X5kfIOvjFlC4Fxd1ZUvezHOvV1GYwwFUmEiAJfslBrKvS9tBUBP4YoZ5U3hZ7I8v36Ax9sVL3aNx
+D5SQmr8E1OwVfhK9zsWUAx9kNewb6fcp44hUHSYKpCE9bgGqc7NU+YdpXTWvoK7nM4m2lr+5aRSG
+FX2uEdZuK7zvOF8aveSEjhyjnoldv8gdh9KgjdqGsPNwFqFLs/4wwoCHKGRJedLligJKfV+2Kzhh
+XgwgDE/Alnm15VeTq8tFdKZ+pGgNvE6wdSY/RoXXLapGAoL6DV1wT8tjzMI6aJzuNovCIZskCjvN
+TcuOvtgrmsMZq+YQMt26GJ07z03gAKofT1I+n2OvMP5VbjNSyf0EBZ3E6euzzpNduZlbRxQmB/mH
+vuo3Caa3Wr6Ue5YjGG8z7POty0nj7e4pmme2NHbUzHEhyIeRMly5O6ee/P7uXWleoQbkoB0hhpC6
+tE8pam6UR6EueYBbzMTayjblD3jd8DRexlGJYiQh+JaqgRr2/zVqFoJl3qUH/mfDXSPpR5RGnMwj
+wYe7XlAPL94x7dJS7io0jVXx9mE3XpCgmBTY4E+kbm8Lf5ATRq2N2DHYMwz0OCw4v8v2KXN7gKWF
+zdcaLVpxbEF279GSj+JPlMnQmyqNIKH4K8Fp2Uy1dDovm405nyI7OHC4EJMHhHCrnNCpFa/SuIsk
+NrQ0qEYuV/o3y5ovNlaa41SibApnHcycDPyohrYsdLQ8K3FJxa86L/K4HZijcNQ8Qh17HxCI2BCK
+0zsqLWFIk1EjwFatSutPEk7zNPrSyicrwRPUiofy8B726M7V1FjPI7eadtDnqSl1kNXkMeGj4Tjh
+bWrTK1jk97wwxqCxbtCWj6YGrZ8juGcXsnLYh94pmR5GB52gWoOcga576EjNP4zuZ+1q6PQ75gqF
+uETswwoEOEJvN+lKnNjweDwIEA4wscGk68cOAL3bm/G7UonyjtvRxp3S8Ymf8BEhI9zYoBrS6y+9
+v6/NUxW2GaqP01AU+wnD2Io+miU5wgrPch8zrr1EIVhsEu4ONvTDA85NVKVDd2cQ2VKwViJDHyBV
+DIV+v49Q+AjzPJ+82T70xUsC0P9akTTAdlCZ2gmSo3uNFbi2vg+3n3GvA+53cEvDIalHBh17sl0x
+w8rit5AKnJSFLwf9i/Uzn4y+DkFUMI7sT7gHZryITAUaIT3E0Avz+tEIM/+fHpahTvE8bm79V6WK
+N4FRdW1b9LFIABWXWyXLTN0tAuphP9oxqoa5OuxREBEeE2xIIeqZMri/znoZgs7ZmK6bOu37fO7L
+K/7lKAYUaqSMTwX1+hlwyMi3QCIZWZE94t70NqheP+f+dUGMe1O0rqmg3JvvQYnUkfj8fQX/Zhow
+3tedJHCOkL8T2CX+4xsdsMtrG38JtCshyJ3EAEc5GXDZ1+tudqAMUGEMA0xPj3e5EiBk9PMlsRqd
+SoOIgsIOTMMbdyrENbTiitL1Hc3/X2uAL90jclQB6q16NlWxfuYFZCgg7KLyq4FJcGk7IUhLwPmt
+qsd6FO5gIam9VSyoL/Xw/plZxJlIUD0cOnRxUuaBLmAogpeBEgaCBMf/H/jeOT8+UVLehaBAHZ/8
+/o98oJif9bDkHbYveq/sUWWHBeAInzrxLm9FvXzAM0yFz8ScOp9GGfk2kOTHPxgT8vFJwQgKEXHW
+5tbtUBZmwO3wC6V1zKaDoqeByUQqUC5OEvYRwbZPNUQeYOffnNtsJ9079thme48mCgfPoPVkJQlC
+c7qYP3A40hiiRy7rkL1N7b3NwrIrfVIAZ+KWWYFh9Ymd0Vci4W1S12YavvjLXo29pPS/bAY8DUqI
+AuMUaUd7p0rNzvoqP9b397TCstnI6OI4xDJ568wa9kDkMi1nwalCv408RmORkBUY4pxXLemLPsrg
+sFPafcGFMiaN27dwEQiCXiq5VDFfvQAp5i8Q3VvKyrhQZuDctFpEHQBwEietFnc0DHIz6qTOTR9y
+rAwhoxW24Z9X0IFjbG6s1IgoFn1XaUfVkt+L6KlEZBG1UwLkYSJbTe9f59DBXwFi2IK3o/1RSvfY
+8F+Z8/NHQf5nwZaAq2DVPj/b29No5ZJu+721qjc50ZjUKK09auC5kkFbppWOrvLErEIEMcyZJ83q
+fMzhOUfmfEf9mH87qkgdwNGNCQGBAsEbxzwCFs413B6zei45J0rFDI3DTw669G7O8ncc2l4422oK
+VNnDGDn5ZjTYLCJrgfkCHWUscj1JvOyBU/zeOIACtmRv756PaEQ0whUsej+oRHdPUJVk6fkzQ6aV
+5b94GfyFIGxeykiwWcQ1saMQhkzKEXS7guWoaT1XMt1c+DORUrneXHs/gwCfhEpO14dEcYGNua+m
+epS5Ainr0A2paVSRsZr22AFK724hhAH/bfLRAkgUg9rC1KdyvtBqWua8Uk3d8gbnJh+Sqtk2zuIa
+GKZ4+7FeWQXTLp/NHvTiSrBBE7gLRGkSKjyulkgrzmMHRMOLIAMZy/uNymdf4g6br64S/awG7Ho+
+TkYVWJ8ijxUpJfEa+dMimImolrUAc0TELfh6LPaXQ/MnsdcMzT5oQqmfE5JE5flgL/v03ya26Pxp
+f7aX4rgfANQCTUuNbE4x0bIBJp5s5Fo2iISrxLWOaITDcXFiTDJz0l1w6UYID1P8kA2+HrRYdpY8
+gXhIp90aIES3NJh1qt3k9NWJrJy+tlI7OHrQ7qQRlPvIOT/LAtLO6jiVbFmevpesfHQY9UvohFVe
+VViBBgVIB1ffT47LTnP6MCZmooonwwYKegzK+qGJlP7TyvwLzbEm45CLxDXbcsT3DFwYa3DfU7Hb
+eBkvdQiJL4kL7DPrgRAQ3JvJP5005iz5cyUatLVTbiMK6M7JayJEU3E581Pa7/DBTC4l0DYna07r
+K6x8g4aLEi7mL3b9jvgsV8s2I2vkX5bngSckJhEx0xLrSo+WobLcRS4DlPB6XbjsYtXCMhN7nx4B
+LJ1cQizRp3dwVuZ3HAJTg1CnEGnkquXhp8lHAdnvukyKpNCYVLcM06caycXwt05QvQkBd5CTISP6
+us+V/gcJL03mT+YXSEgdsfcwTx5KAzVOQD23+ngKEXzssXJoUcDloDJPm0slxMiTxhblKsQwc9D+
+gPXM3G/LLY/BTGyUXYvOC6F8H3XqWV3qsuzt95u4waqtucN5M1DIHkmV4psoyOJxsL83pP7PsdIn
+LiT6UvtA5aLnuBafZQcMyUdrXfJGIIALV4YHzI8ZQNTspAoscwPiIQoDyRDKSptqOgz6URHJa/+P
+MzjHu52VT6+w1lz22PSoiok/IinS9lu5TF5/NDhXvQKxX+Srq7stv/LABi05hWmZLDuRTHAvIlcH
+3Me/dN0TmizFwdM/n59JA8Tc6IpdBzEhPy/lHjjW1qkOD1cxsHNourclyho2UkA6CbBsZxoEl8xm
+5jqVGmUN3AxfmkWjgKn/cdxAjRbpwafOjnoxo9OUORBnrhAsighItfIjvQlY8XXUZplUpMqN91WF
+LTpD5SY5p/OUUfeYrhF97W5Nq8tmF/rWGuJ18OXFJfowAV5RwWhGSmDqQ+j/CpOtb4+I+oS78SF1
+H+McCr9Q9TfuhhQKmtKWh+SjZYVjAa7uOfLpZWXhog5xaYowxW5AJIEUOWNRDo2UZ8phbGXofnpX
+HdnKnrRs985fnUW7eGOVnOU6vQMfgOxYT64qqKjcm4iN/VIH5cXFLrg49WFn1BKpx17O6zsExKPL
+c9bJYhWaiMk0go5tIeD9o+1J32AF5DTcL5IzIHKzOZYM7wQNI+fgk5lLTfd+pVcIIXTYxxLxcrnR
+OOOIshmfbDexjWErbU1xADXAIGvdl3igRwATOxrG+lRPAm5P8wmGibDVj4hZYjC10hqEyZfbmJZo
+dE2T8pO3MHHye08dYOsHhT/CVD0NhCk1LI6s63QT8xigDWMk6TtLHAdgKEIyxpD3eQyHRD26N5tW
+9qF2NBbXUYAcEikq5ZTUG8TUyOmQwanXs/4F2Fcn9Rjam0g+wKKLDeqEcktKXkCUWMdJKB8H3sZr
+pw3Geq3PyvttXoUhqNH4XhLdLfN9zdLM+W8dPQQiuWUUBWr0wQxm6EpmO4kygMs8NN83h9SG1tw6
+egzZNcPaZhULROUYPg0keB6cyxJeTVtdc/4lZrpJfSOLObjdoPwBSD9hGhIQVQ6SvUR/gKkjflTi
+jPuJIWxVIwms3lJCJyo3gOl02c1H/cy2m726gEeezGREDQpWZeRpU+bocQ2KjJIHh57Pu1cHi2Zi
+uYmBPpEsWi4Quyo7hGaXVKjuMdV2WqtecMFrldXmLf75dyKGvlhYwH8HHv7NBKlffvAhkX54o2py
+ZSTKrBK1wnSCl+SU8/Ug5lqnV9BzM0UR7Y5ik2iV+0FHby0SFQOjthaTIpLjc0yShVVrfKLtL+pA
+3VIOkLSt1zdNPiFOC/lfA3Q+A3BI68KCeKG49JNyZONfaNEs/LMCYRJIxAUfk3Mi4jMEOi8YG+dV
+nUEDUMcmY1mbYwUCeWGQKhlz8LeaKI/oiFXksNGp45fWZnwSopJYpzZ3nN6n929xsoKIPh1YgUNe
+8asd7wvdjhH65042uzapXfU6GZJX+LM4dpzlX6ShDc1x/ce/QwAl10XeDd1K5eQHYrx8fuk7lfMJ
+6eq56IDWnaap0Eo8vI03+4IwUWnuDWUBKdyiq6B/B/Oz1ApTIPFLkn0bm8WCQwJnGXqxaBikXLSV
+2k0L5fIU1dykcmi2IWbm35eJYj3Ugeqlca+wbDMwTEGkW0I64q3Fo2t94CeaPmk4YfmGc8WEUSGo
+wzNtgaTKTyrJcQU9EuYDlTRl4y6J14fVwR/TNG9hSBfWDpfl7doXTmglkn0CDmzGlzJawwLjCJ7B
+20jZWP7sf8nyZfXsSz3yBfYXBNhvnKa5bXGC/SMGMAV5s9IZkED2ZLODsmXO1nfBDCdBrQhMw7bM
+q1VgoMq7sFRjz8tgKD8HUpDodA7TiPB4/1mOPK3HGSYr8juzFlTw9LgKYHhRl39uGdWlDnC2C26S
+5Vz265QrLSBmTNoHgKEzm0Jf6/ELkpxzUZsevmV4QZUfNa5Q/1X54RJ2iOooGYpRexwx/mkns/El
+0B6z7MEoNu+S8vFpbz07wZw3anFPHOmuTSYH2KNGUs+jw9ZtYxCC5ExYSUp/Yd0ZhgMfzToEqzAK
+pn78h/5dvR5atw3XtPgTzc1f+dRwXp4vUeLh032AMV7i1MYhulNlyiKa+Fij7k3uZarXLhpFoKzU
+kOhHAvbYM783cw74Skm8AM/tY2FpDLmTLS/8Iodna20vCZL8MXh/TKLmJIFLbRtDTmQL0T3f6qNE
+CJtS38QrzRhd+VAAqTMjZ3u4eEg1sVCVvgE64Fvx91h6he9yxK+atPaXHaGcJ823E35g92AfZRSa
+2EG1qYRz5HbKV9kVJjhwFX8WxHEwwulS40jWRbqLqp42hwc1x9iohJaJ+PT3zqlgYIO/56X/GR1v
+ZksRTD2H43VJeBTGLcO/NrTO3b9HgeWWuAASoDKQTdu5IGNpLRhRzXnowl9xQlAOifc4/RkKXlsk
+sneNR+dA4x2RmeJoWCgojzgW2w38kfw0f/yQ9s8nKO1RRXCA9qmSyCe6R8YVM+TotZsgcexXi8EZ
+vloMsWFXRPYGHG7msebPGCY7e4PKvGWm/8fWohQkywBfBRoNe02iZVdNhcXMLfkheMrFi7ccZrn1
+LJNniYSBRAkQvPIZKeG5KNY7DXdpuVbIA6zQ1ZQIJo2wdDf1KFlgD9B/4+McN/HKYYaFX3QKp9qU
+rGCNB1OLO2RpRAss+W4hT9SUr14MydB5TBHAED+BuuGYOOcwoynsksLf3A3jBKVKzSZgqxw9W3HO
+ByJTntitRKpg/LQNdCDqq/NsvaYFMwgosVJpU6EkykLx2TCQXIHO6vV76otuqBX/BMsgtu7HBrgQ
+N15TloTZplNJDicyHCSI6A20RCm3nZZga7TWszFQXJaCIQ42j0Cm4enkRldGiz+PXhLp9xZzJ3qw
+5eQgAulrFSiwYYUzGaD5jHVPcM1PezmURl4hHee2bXKFYq0RR7dkLOvNlfqzQEn44fGWpsrTG2q3
+xpTNfu+op/VA6ABO5t+gaEx/q6QCpz7/XMaolNUChTYAtJiUMmOvW8azNW3ZAbz1HbSXwFgbjbfm
+ZNb+j90NfIsfVIzuv4UCp1yntK6rFiuRRKXiZD7YsemUvgOYtFfpACi9ReH7ZEa3XT5TbPWcufYc
+pvgdSqk2X5BFbCjTdral+chJbbdlkI+JBFam24g1JiiSl15E/f/deJwEWyMVIEZwZF5PT2ZSKGKZ
+ATXTHu4q0zd9jnOtIDxaAXPSMgpi3UFtTkdgEPEbsZWXFRyf2Weq6CfErAVaqUaJz0mzsRwDbwcn
+lr3RXNYgdKJ5i+S4/+Qh/dtr6UHzHXlAxwWdl2qwvrXyKa6zOR82qfJDcS/NRIV0RtpGsYZeOegl
+cYqzat/jWnhIdIK+sxuouiIGofEoDYodjzd2QoBGsxPAhcsJESuDcvl7DQj1GaIDhccnLXJLNM4M
+xrlWqYffjLapYyXMNmU7LFwFHZICgx4QCUctG1AC6pNSgITCPHc23ovskrNhFKboMqhlTxcvhd7t
+TpaXAgw31+mdG6SiCexGz36qyvKOhzOnegju/PKbuGkVAW8MjmqNdjf5ftZxIiEw3fbMDC8YwMCs
+UnCD2IEY6xC1Ah5LAv1DIlls5EZ/Np8R1B5e7WcK++ahfNZY6xZTNn3/o00r7aH6FGUqVmPcf8Lj
+zp0RXbp7p7gQ6sfB9GrM+o1x8UuM2DapCaG4d+UP3CN/MjS0rHo0+btstrkQSizMlHcEFd0waDKT
+km1vE6p+tSgwbBi48eDYfR6pkTlY9CpdxGTG+m2cot65CZexULhWKUsLLC0nRCg2zEqDpJYL1Ehn
+5Kng5sWEZrC11X4VTErEMacmrefgKp8xXjebQOFjL+FLIWMKoaVBcglB7G6CPpL4wHlpmlDraW0s
+NobLYwejWipnU7mDn8SC87rQTKfIHLmj0ftO+LD6nCEZwpOVzpBx3++CZaYIW6+D0K5/NOCa0Y9c
+KAEJY9QwgG175uOE7VycAS44YLSvfvFgCDscmOsmILcUiwbcc3aATCxWOmcRXWzeFyGz4qY0lULd
+HoUNYjzHgDj/4FkNmvmM3BMRT/Vo9IVu0SRSTRsTZ8qCIAjFPMzwypRCtN11D9XCAOirDXiO/RE3
+Tyvgif0kEznUXo0iWPOgzx/K/5WpOwML0OdNh59u2q31PaAIWalPkn4Q7NXOOiWotDE+dawqPjUv
+iLZmIvCnMPzgPIC6HY6HerE1rnXLnYh35LXVWGvNO7q3U4c5Jkjz9W7P0B+SkmCxOUVysRXcf5h/
+0lFsT81OEQLLZqKR3R2r2knS4sDyd/OAC0eQvcUAYVV0VpEURkqmGWeb/ogbzuNv8NOQKLM/r3Mo
+Z9HQWE1yqJGI+Qx3NeBrD57begKJddZqX/Cfu5X+YLGMzs0Cf2rOQqJOasXmYAaf0MVKp+8bCIXK
+3NMrmh1FYPRgAyaUCNTaB7zsIPrNFRqdN4945CsO9k3oJAc8/V62C4PHZ7P76rn8UKin1E5+ibw1
+sDD01Vt/Qf3DoV9ANYQp8kvquJ3joPgvnGt1jg9B+hyQOLVOJyjAgnQQkqhrp2e6DIEPA6VHVOfn
+6fIH/D0A3mnSnMmtYj+dYk/d2mn7ordGcjVS+mmDD9vavTxfQGTpy4hMYfIfYI+haV+ByYGfFeXE
+7RxaRM+I0fzIzjAPyX//NvlIOEke0GvXm/g/J0yKDkNF5BQFOhKtxzgGteTxI1+T+TBIPmlKGWED
+vkDXEHarjV5BDzneiScN1yvLi+oQbOfDCqCKY0NQsJOQD/ZIBtbK36Os0+CNA1gneJFdOmAL4WAT
+oJ0ScXSqkzXHeP1zM74DcDUxPYNmbYF3B5dNI8UFxsBbh6DzxvrthZuQXGkO/YCH5pExQhU0JEsS
+STmbmRCK/sgEGhnXT/WctaC0pOPVgO3ECA12dzYJj3xclvbuknMgk1i2npWbKEJGeyIqqIet7mhY
+BP+iSPGCcSHmSsgbbLLShtIoi1PFUsFL5cXeoOtcSiHopb97rkA4DVm6Jl/1tz7aA7zl0HhXFqgK
+jQAGRhlfjKPI13JSpehknK3rXglVj6+H3luY2lcCIR1hp379eyZas0hsvVRm/QDDa4noouc2iMcM
+bd/2Vcv37eEiL0WsO/qflspV2yqB2MCkP9RXjyVvT/Ll6Z31bvAKPkIXGp4gD2P9BC/c7IhK54BM
+/Iz53ZSTFXbkUxvtYENaO8H8vk0/kjh5ML37Gl0TLbxmCDlqg45/KyR231tdCE8rvSux6bk3BnhN
+asByPTV6wFMkNLsBnuOqdKOTyn7ikioL2YFTuzZwj6AzvIi4MWYQt5M8J2L0EQU9/EBAFwNHAhk6
+JnN5zinwKnl0bj0LnanhB//LdKbxsF26zZrMvF7OT02UaufEzpgQrgqbFbEugouOn9nglIu22h4U
+saLBbLswYsShK4fM7+uIEdpBUfzD2XIUAn5d/H/5Aebm8NgBDifozg+kFO5GSUD45ksVmNQ4Knzn
+G8CJc3z17SryWesZ/P7ltyDSqdlllBgDiQ2Mk3sRZTCuYrahVZhZW7SOc/q7TWWiaueGggtoYCDb
+iaoQ3gFk7RJml/AbfXP30B2Pbrj1KXHNv0uqLmG0MW4uQiQLsYTeTlQtR7MV/AZ9sFHzBJEuh8Et
+maX4SgdMWgVDH4B2tMtul4cwvLPIpXuXgi07ISG/c98vwcqc6xaKiv5oMjm5AnmerWaW9r2KdCYB
+YkqpRPmJXvnlHS17zgEOXVGZ3SaLP9KYWss9L2NUWJWiCBpt7cw/z5fifHaVZdRPoya5qdNlM9y7
+OhtSBVOsPbxNYPl3zNAkHfN7ca22nLzSLS5V+9uNCHINfjBHN0CHimEAXX4vwnzeHew9WIFXbTqC
+NYMYJZ264c/pR9OFeBlNujFhQRi4MDzY1TxTWokYy0DgaqMTObGTQsSHW346jQCud8RC2oLwlLG4
+7CuiBSIU+Db0izscywUm8y78Dbglrm9ADdCPIYT229lhsl8JvHrowDd4XKy000BGHhToX4BUU1tR
+hMgWm28nU1LKIFZNt6c6SG68qzuusm+mBH2kGUjpwykistKjRuDNz2OaZN1wBzkkwccNashWvKrt
+J97wGCs/usRqXe9A4Xkfj5dj1uq4U6H7vVGW/coUhwzRppPWcaGpliIJBr09g8IiqH8AaB678Tt5
+8zYeUl1/CEC4otBKDNBG9OY5f+FAQ/+jovvAWXhGO91zz52Rwx/llbB4Plv+vEIYlL3/NDY2MmHv
+dkUnAaiDAMC+MvJhjsT3emyBhOVIOhX912F53BtDx5LGEI40DMTD9kfCKtf420SO87BwBeiqHuWg
+XZcTenqTE8gAkxa+iOBoj3P/mNEeNqrYfL1jZ+IwnWnihNAx9k46vuSt6USOWIZ/2ksobMEoGjKj
+9Xnr/q6zbCDlbPbkbsKg4n2dwG31IRWgMmvMmkF/vvXOwWJFx83kqKyspUYPyZJjU974oX/s614E
+sVwf+AjwgBKTYZbdateYQiyoI+Q1NOjkKDUxmrqdlwy+U81+SKVie+GQzUc5IbSvKzQcTqHF+dk3
+uz1enPnZS34Z1mQ0MYiDHFgr3YKWdrEz1dP/34cv2xugBczokPpeUc13Ggu41EmdVHqULt6SQ++s
+dB1dPwY2fDxSeewTx8B1mcM3g3ebq6YBtQw8KTgpL5p87Z8J3/9Q0P6DVxoM4Y6Dzn3WJ0wnTw0n
+gpRRnUZ4OrB2R2nUSLJqMSzY4aAoUxuHwJz3zGUFqLARy5Opoo7LzP1thTTZVAeIs8lzTPOvLpC/
+SN/Tdm7ap2u+GtQmGs/2fZYuTwU/zld3co2a0/ww0cpULaRnP6T69QN8cw/gEmDhczZRG9peO0j/
+qnNiRWP8ff24v5pYcUpo+TnbZ3uG4RtBAicIjFhC+MFhTcj4+QhNHfs4FtGlFK0Caroc87FxPx3D
+TMbusCGhvnK9N7h7whYXzjsIvY9ZpRfl9ScuGQWENlfNpDCzPTs9/QOJ+GpTFR+Wpj+OrdNZVr6B
+fp5FW/s2HU8daNEZKWygl7uLUMiJBjtkzD1Q6vqiX8a7AiwK5pBVZ/tlPgc1eOedsJsjk+8Eulf1
+oc12h47L6Vy8aOu1m603cbnrbCO4BEgYFd6TTXT9x5RogAa50kCcOWDOeWlOZgM1PwJur6ircmbJ
+K9gHgxTbQurlKQ5DJZw2BhEkc1VVb7VoeoAT8w92Z0d0VVfw/dfgnhGmnTKRsIzJdveUs4nQn3vJ
+sARXkqjD4RI+f3Gx98qO7+EoV/fgO2u4qjJBkJasrOgVrSxwJAfJjv2i45YrsSGGb2DKUaVl4EJ1
+49u4HUgvd+nGTTf4Beom8cZT0YxIdmfd9EuES1MX6h6nTE8rmUACugyfGXAcheNdUPx5iP6IH79v
+VUi4Sq64muAySWMfod3a+92/EewkwrzBF+TbrHJrmfcLDuKq/z6ZQsxfM6khAbkSSG7VdO88wM4C
+kFO9MRAHcapr1DYmMtVHPT/Q1Y3NdODGUKr1XKGn0AZEzxk+j1ZLE5R9/YHvydrqGPbUXvJJ7oLs
+/MJ8ul/8py++5lZ7NSzIGg+3u1L0ZHv4jA3Ehk7OAO46kS1BHgT10no9oR9pziLWJpsVs4oIxOli
+uiOCJKONsiX+zytWvBN+dgeOHoC0nkOWHujzhM6f0PhBhI9Y6FfPyydajzfaNLHVJuQfIU/SUS1F
+YWYxXjCU6P7+PVoIsQgzbJQrN4/8B14HUcNgpfUCAlFDQBE43o+i8U5IlKrn3uXsx5Fo/3kksPP0
+REVBVF2dmZZrkay1/f8h+yB2KdxWd+g8D/NlydqRlBkXDHUwRh/1igE670W8qGNMfVosqpyDWcGX
+tjBdwp3jxjzw5qKgNXiKfxd0Lg0wrBj4/XnmvI7sszFFT7j9hWqItpKBu/LXJFQsUiJXV5GmY+IF
+Z/8aYPopCaAQl4Sn4ovN7lw4F/yG7kRqcL0/f/rVBpTvSTH64Dk3gzq1QjxSxWjcwNAA0B0Pt/Am
+PDTDcM7YRjOjfZQSWlZh3OYor9RoezweSDkj5zlNnQcnG2iZJ9HDi7xjkiRFZWrduTQvJ1/5H1OV
+qyO/dt16bKfhQ67F4RgGOk1uWn8LOhcE4YUOE5K9CqO/a5Of5/Ka1//qBxYTO7N3+8OmgLs4N9qD
+/dpgMPR4wCOHXbjPLWOdIm3BbVNbrdPCmVV1g6FF/Ri+VUjqNbD5zPZTwRzIm/5JliIX3wlfFZYf
+szZzfEzQeRR0mzYKG14usruzMc0HPyesA6Q2ICnK41IBrzRZhImqlcznjXzfk1ACg8VJ04q5mwff
+dFCY+gh6wWsihl12n0n9dmHWDuk9PbteWmgT8z7pZ8I2I6CXQnXljGYHK0Jww3k4Omn7agXmuHX7
+/FGg1WfSm2wd4isLGav/4IYXP53pB9p3HwapDkbcU4t4kHEjv3yzqK5Sj9rzWrlsBMOuToM/mxks
+19o0QcmlHDk+PlXcUJvDSEhw0HqzTgLA0Zw8cQMrn1v6yi+eOfxv6fA5HLAqHy0UlGV1nUUkfYdy
+SmQmVu/B7cl9hneK+xstZCMir/IBgGOFITQpKg5b97jJ2Wwq0nofFeIEmvx5EN87gYhd/0zBTyLE
+IB9Dv7Bt4cycsc5MF+YsR32xKWE6kIc5EEuo4kBJyxAof+AXcDm3CFYncUN9eneiliF4fQmt2Ivr
+Ny+PJltuqhJLgVLMeDcVMNQ760I+JuurVCU0fMWOLecjp3vIVPKHBUbMUgWF0iBEGDhLBsdhKVbW
+3U1pBvFWU+wokNv988gY/EK0NhqVpityy9KV+RC46oJM/uhvqmGEgvSbm6GSTg0f2sB7iQLquyFG
+aHA7GvqtWMVuTRsylEGTG8IWV218SoFII9LvTzx47DyhMPtDdwbrZ8506NpB/G7ilHjGlPnkCr2i
+fL6ISH3wbjDyw4LqOcRasCaAd4xcyC4Dzkx9SKNkMFMcExikAP9wR8COvTz8laaSN4phIGy/yFbn
+1PahGACcGhdxaQ/wzokAUCWprrdv0PD51rBC2xPTMlACbKI7qqhT3mPEm2WfFa3S7dhN5KBRr3H1
+L7SZ1OEGkErdxQtLp08+ZBikWHofHN0iM71vps8ILD67d1MX197f3Qn2fX2VDDLbQ/nWXujX7VXU
+f24rg4nVuq5H2xSfzOCnYH9N+TTBA3yJHo95Mdzz1Cg9rlVlccfZiyVGw28nU59gn+DvhCUhecDO
+KVc2BiHs971kOZ1hokShyEJU4LKoRA1Fyyxch5J6fqpwLEfZmqRTtfmRLdwTamjdonY0OK87Szga
+MW8+OIUJ4/4NIkMSi2LCO/tlZbValZR3vIAIrxrAsYTve7ds7QH8OzQ2ceuM7fVwFUP/6bneo1aK
+1BOza9IV8GF3yx307sou3mWRb9O/DM2uXq5gEuWIhcaJK3qk/0PVcFKDrMCv0B7SoDiZfD1iXVJM
+wD4YcKBlbCwaW2L/CfMb5iolp0+GznZCiQUJ/bjUR1jw9xVtP5yGELMRBMwQedAK2gX+ngbhhBmF
+CAeBmwCuTAK4HxVZDI7rYgLIyqoaCle4Qp6TnjzBZP9xqY/TW9CgxDSBH9Dy7cNyazbbGe546GG5
+SNKHlTxeT2n+WB/RVfUNDfZLxjXxlMwgk5X7H3BHEa7osMSOgRMpQV86FNN6B4WH9iB6nlxgUJ23
+xUmOOi0dX8WtcFqaYbN6oE3NidI1pfpOsszHOwrdmjX0gQpqp+z9w10zjU1gnYtrmF4YqcFERWO4
+dwwRPbn1ABzm2dc4gn2yzAoF3M3LV6E5cRRN6NuhxdZkfYANLkIz/2IyGhVsLKEkW+fajyZkxU7o
+DAL4z+9/FGPQl+/IufhJpLG+S+KRP+Mh6YpDPPz+/X92ANfpOL25RUdbz/XP+X3M5oUD4dTbUD/G
+yom9RMKcFx283CjdvWuC9njLeZGE9hc4Jl3s8vjRZs/tDgnuDYN7SuQeHT0krhvn3rDb+Kd8qihW
+zP6k+32aJcTrsKwYr820ijRQC+FoKOqY2iFEuVUTqJQ69DLJkIGUWLARWij+qaRO+jCG4NdylyD/
+n93SEbnEEXAxUKCSOrrHGtNSCm9emyNn1XcMU4gJp4E4kfNm2x/RmsBo6YRF/6URdxBOQ5JVDCJ9
+SObzc91WzRgrSN9tTMFLwUpM8kj7015pAJrniKe5RukpEM4Om+DTSPhgCnpXzL3T0zGAiPzy1tAh
+MuH6FnAVst/Qdxb68LUcFbjmXcL210ODRrNp6N8e8o9Hukw/sS3U9S/vL0phsQyb2FW88YyeYyeJ
+kzYufe1WgfBmunRxPCzBjg2Kn6dCMCJLaeUGhwT7bSQK6+774St0veFGg6evhpWho808dXWk8im/
+Pb/Z/rlyI8uLT/xjkRxj+DhdKgK3isFgrsT9NCGDVQ2ESMj2Dbw+6u5XRGAJW3AJmqvBFOtMP3tZ
+MXVn3ig9D1YwndANy9RPmF+WrK7Di5Wh1vkDX4ckWCK957SJngmsv04dYWPOYo85FTIUDakWSm3A
+0tvwA1G8ND+TWEwO/onqXsIDqWtcLSNBe+0kSTYFH5xaQ8bHkWBta6x8qDKO6zIaH/NC7j0d95Hf
+f/mXtMFeMjz/hH0EPQvCElzecXNtHpg2privAmY6YJEKzOVrVzftuKRUjkVaNq5Z9Gj5wmlfw60P
+mvcJBRTYWOgPH0hf9VwQ2q3yz9AYcUslfKY1oOHYxIlccTCMFZ7v51OwSKE/UT4cWqAEiYEiXh6N
+49GCur8h+yzR9327mo5FVeR7nGcmBcaUTI1t40KeZy/zjRjFkYXKkCZ3CTU4JFNNX0jctSYVvF3D
+U/cYuLEt3OKZbUQhYBI32RNkTXIqgy82yiCE2CmWbgR0u5E8uk4HsC7deizpFi4KnrEDD/bX3EEA
+ugdsaBWSaRnrs1Uk2V/4RltFyJURfbxi2jC1jHMMD6YkecNYN0lRDi48kRXc8J9l+bT62sqh0Agr
++pQWJsbCEw6EwPKkexKqimLJvNH6SjeJYEkzVzQlz55dG49Q5lS2SklDEsC2IAOPqhH9jT80CeKd
+vLaSQLazwgkakRhGl6v2gHYnicpzol/KRZ2v9oqGZjqYnOHh0iYfXxlqPqwW92kvVk/6LK1gjuGX
+BySg+6iGFSsFbRu6QB3JgCf57O0lQ0KY3XCG5Db3KQ0PAkPdFhcGb0Qw/PQPHD612/sbmOseh7DB
+c8nfnG88b3Z5IZMCuKElQ5giwBHX9ZvjU7qHKQEjGtfMAx6lM/xq06lMKEgdDp9XUA5TVtmVjqie
+ld42R8EXcSCKJHc7pKSYhYqpKs+cPaWGIbgTYSaasZCjyLwJH6XqXDvnwvZbsQzuzq7MT6NYzg0V
+rp+8fe12fHgqHmPGgIt9s/3+Vmp9ZYvuXLHcvBGQ/ZzxBvoN1nlAXoO1lDVfjyMvRU4u3VTIq2Xn
+7+E+GU6MmiLK9QJwYk4VI1FLOvmDreoxNJr+qHwYFd4MrZGcVR1kbin7rUQFc+FOYIkcd1Tj9Hdu
+ILaNiCBSZfmkLzJD92fwlGk1I1sDvylB4h6tJoGtdSSk4Lzf6SGPuzvRy2pdC65ytcaYZcbMAo5x
+cZWaxIk6u2Uc2PCrjtVLkWnGP9nqA743eAgxcr8ngjxkcoIgoERSfePDHQ0WOgyCwMHjZmWHThlj
+lrP/gLPwsOb3JrZ1ZkgzvE1Ln2hWIv4tnNcRbLzMdqGGaziIy8WGoQeBtya7eYMLqnYAyzYzf8q8
+Fo5jjtzvPhA6AEw/UKRXRDipTbhZS5LXCqfg9zVfwbYATDkVG4GwOlRUAAAVZPaguU8Y1l1TBR7r
+rbwRetOoaVVzaLrY+hRvyYJ8msZ07/rrr+hpb7PyYvEI1FgKmcOomeGh6Lp7gFt4sZJKQynWpLZD
+/8ognuP9dMh353BKO38c3z7fy+6NPzZyNeTJfs9y4iw6QdP7zDjHNJ8Zs4ZrNLEvfuUts33PktpJ
+/R4Z52uRpFS/d0Qb7wGSqaRlDrTGFouzNXFBZ6ggfvexsI2zf6n3+OV6fAvhwD2fMqlEhL9VW6pv
+D04eOY/+fBXpFhM/O6/HuBnrAfNNKDq3hpsDFOxUjiodGcrjO+J3/SHimQ7yltHYY71S0fqmSl4N
+Ni+NhX+74INxZqUAocJRTAWnLbaG+9gqiL8qRqfM2vM0p68IYYeu9aAdo6swuRFjvIDzm+TuxQhn
+EghqgQDjc6pdEjCcPEo1VrOUa3IwM8tJKLruEJkH0ULk2KYfrJQPuAczLJDTFRDpLiEcChDImeKZ
+JtIqoaFsIZqONX1ybuCfenBWBT+bsvC+vqBm3xYTMmiONWSWswEYvzLfpVGSBWjQaAukOw2pggLu
+HmZrfaDNTUeiuezGzWgFgvkBmk4Lk/7EPK8GgaZDpu//FsbsOkMsx3c3GtRw5kWsqQOjRtRQfgWU
+Y7WsxBJQ9O22knvpDWLzKeWKpzaTemkIumz2etps/zF4aP8RFO3s64tNAmKeZSV64sBn+ijYxlZG
+8i5d4TUZLLQz19Ta1ec1O0bQp4nHeQccKVf9lKaQBhmukDMNVHBL5Btmb7ve0E+pg+Kr0owK79Eh
+Rg34BRWcWD/cyTEPxnWqHcqF6I9h/BpHSTegg3wRp3OOJpyAOjaObcWV8FZJuKyU8CqKsI+eGytC
+P3lYMyyzVgEvr+Cb0mNkYlWQKVquO7I50P0bZ6R3BddUvHDypM46RujBcNOvWRLUNaN8mAefHapM
+c6N0N/bmfCHuxNc2Yujgxtp7j4v/emmtagNa99bz2cSdy1fQsq1+vkPSjRQdkbdaH7GCCzYxo4cP
+iEgk/9KB5im/vfn1SU63BeclUYbgBfgl32NhbIsUja21E64AN5wtbvCo+PfPxVqflbXF0/m3EbjX
+0mhGgH6cM7ZsrACXhqqol0/phlHT9UoKaSN1m2b3UpjqS6N1tBgZFvqceLncocgx6RdjDMfbAAPt
+3ldvgorrf3ernU8TxUDiVS735ObJd2PJp7e0AIHkG11E909K1Kl2c3Dy1BrPg/ZYW5G65mr2fsRB
+5ICHu72JMQ10Z7WhjQLuFd6l0HdBrHhO6g4BpCO8ok5B3brIL5i/hwUhU6l1WH4nEOdNq0lxVC4f
+4pzYJhc79eb1h6yE3tSSBe2CavZR6HSh2Dg4bgLZTinQ6KfSRxgAYBkIcRqVHCjLuv4z6AidAaH1
+ip61R7NvK7TS3UhvVt1yUD267aKlnb7q1zGcLYSiqpZEih955d4KgwjzPzH4KZin+D1k00Mo/hKX
+nbE7Oc28sr040RXtwu9C68YjFhxThdjPKprDVlwA1gocYY45z/MsuUEWJrZlZ0EPiRsM0M0/3oTb
+IWCEKmd5YutnPdwtI7YFh5s3y9GWJnkT3s+QE1M+YSrZIO6+TqbJ0JELz3aOpxAiuPHU5Lzf/z+6
+DNg0pyR/0V7no48WgrQxq2GYlrzdFbhyqFBe/rXwBDcFQo6N8dAHjwaUt2D0FwcVdyOSFs74GzKP
+K+vDPOgQijN4OUAqMndPm3j4hBMi5VfnZbDG3WCsqGIHVET6Z/qTkrnOmuOI0r2BOKxfbAJAToor
+q4YZa111bb5+jhmXLZEgTD5rq8+nuzdKVY3sQP+MwPHuvATJ8jMVm5kcnZ3Vdwag2WYXRv7OT9H/
+4p5L0wWz69fve06sdEPxBe+tDXptolPjPA3A+csJ34rQ9fJmuQX0jtEUKugiFNPZSgBScSogphpD
+nudCM3tyBmsWQEShYjSE5E+QewT9mAH+90d/QTgGTUvOvIrMlH2Kcj7GuLe+IVSfsNqoJQPm3esX
+AdprEQZEaMQqPbvbfKpC191QTb2+k09OedfnU0tXfpzBRq1HSeivIlqWSPICZMs7uwgzsIG5p4yV
+NHSJUNoCrQmvgqGFnwZnKuxynzUM9TF087sDslCNORGUwAAkokZ+p1vibn0AeWCe9CMDc4jxBYHh
+KP8Ks3Op32bq1euedkdqdkct8CE7tZtOZ5OVlDFnBn+zabiTBYquzkwonw/RzR/98sxauxA0vk3S
+YBCzlYOeiFbRlCwRu7a4/WPk+uIBV/YGU/FL2/2rncEPn4DyCTlre0hOTCeRTRy5qW6L2VM2C/zd
+s+L0zg9Wl17olnrRQ9g8fLKAwiCLpm9jxoWAWXr38YjID2v4nDvdCtEsgVaX2Hvw+6PTmDMG15i/
+dzYXzU8xSoeogpZAgnkSeGnIkoLXTAioLmdiUASF2ifG7J6ZUrfCHTChFs+WCAMSTOtVvsShbwDi
+5eNSlX9lv9r1ahjywybxudcy9Nor6UYuTX3bBMXLRaRltRfOZmsgqyVH/2W2SxWwdAK17myzxWzf
+2MwmdsNEKSK8U8nY1ioNm0ZwTPiAgQlysiI2Q7EyR7XP42IyD1mtFMEtgxf4wdboz219qaiEHImK
+8l5QBsGVnuNysXMUc1dVNTTB9IQ3zq8pxLLf/xXjvYBQAIMcQ1HuKCYq5sUyj4XkhjoVoEL6YxhV
+MSeE318DfSsAdVEtyqZRlLEXbTjY3Jd5fQtw0c0/yi4peJ0gPzjqxS+dTt4VQwWPmdr4gYc/gKWi
+SMX3vloflYeM55y3eGnt1t4MUScVDKELrnVu/Y6IrZOqO5PexqpWn6v+c99YZ1wDPzhF24ZYNyg7
+1dJhWjN63mHwiMSHacajmp6GOH7Q8sDC7YD4rHxlnEJ8Da6q+CyWWy2nY6zPmkTMSwinFR68pHHk
+DNPecWoSTy4pm76hhh5eD6AnNZbzn58niPkma25wLl51HIgXURjYTNSSb2/YBYUh0eqwALfZrK6i
+jAc41MwbtGYPh4+vP0HHgsiTeGGmaFcp3dCc6tGvvj0lY1zwMYZGahbhvXSJDN8YUebhHObzkGsw
+t8rJIWCOHiy+lv/Tu8YaXONxWcOJvddiDhORAtroPbZCW6ZU2Domg9iXdD/KVjEEysNCudJxI15K
+6iTJptSDlSYx0/TEoTBx1msonyoOVCHcaDltNE6pPHmH0HBuB+X8UDtA+j5qcFhDlbIBaKuxHO4v
+gg5RtK9B

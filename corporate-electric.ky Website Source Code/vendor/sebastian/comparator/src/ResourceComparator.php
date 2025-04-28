@@ -1,54 +1,36 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of sebastian/comparator.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\Comparator;
-
-use function is_resource;
-
-/**
- * Compares resources for equality.
- */
-class ResourceComparator extends Comparator
-{
-    /**
-     * Returns whether the comparator can compare two values.
-     *
-     * @param mixed $expected The first value to compare
-     * @param mixed $actual   The second value to compare
-     *
-     * @return bool
-     */
-    public function accepts($expected, $actual)
-    {
-        return is_resource($expected) && is_resource($actual);
-    }
-
-    /**
-     * Asserts that two values are equal.
-     *
-     * @param mixed $expected     First value to compare
-     * @param mixed $actual       Second value to compare
-     * @param float $delta        Allowed numerical distance between two values to consider them equal
-     * @param bool  $canonicalize Arrays are sorted before comparison when set to true
-     * @param bool  $ignoreCase   Case is ignored when set to true
-     *
-     * @throws ComparisonFailure
-     */
-    public function assertEquals($expected, $actual, $delta = 0.0, $canonicalize = false, $ignoreCase = false)/*: void*/
-    {
-        if ($actual != $expected) {
-            throw new ComparisonFailure(
-                $expected,
-                $actual,
-                $this->exporter->export($expected),
-                $this->exporter->export($actual)
-            );
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

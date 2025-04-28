@@ -1,478 +1,103 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\String\Inflector;
-
-final class EnglishInflector implements InflectorInterface
-{
-    /**
-     * Map English plural to singular suffixes.
-     *
-     * @see http://english-zone.com/spelling/plurals.html
-     */
-    private static $pluralMap = [
-        // First entry: plural suffix, reversed
-        // Second entry: length of plural suffix
-        // Third entry: Whether the suffix may succeed a vocal
-        // Fourth entry: Whether the suffix may succeed a consonant
-        // Fifth entry: singular suffix, normal
-
-        // bacteria (bacterium), criteria (criterion), phenomena (phenomenon)
-        ['a', 1, true, true, ['on', 'um']],
-
-        // nebulae (nebula)
-        ['ea', 2, true, true, 'a'],
-
-        // services (service)
-        ['secivres', 8, true, true, 'service'],
-
-        // mice (mouse), lice (louse)
-        ['eci', 3, false, true, 'ouse'],
-
-        // geese (goose)
-        ['esee', 4, false, true, 'oose'],
-
-        // fungi (fungus), alumni (alumnus), syllabi (syllabus), radii (radius)
-        ['i', 1, true, true, 'us'],
-
-        // men (man), women (woman)
-        ['nem', 3, true, true, 'man'],
-
-        // children (child)
-        ['nerdlihc', 8, true, true, 'child'],
-
-        // oxen (ox)
-        ['nexo', 4, false, false, 'ox'],
-
-        // indices (index), appendices (appendix), prices (price)
-        ['seci', 4, false, true, ['ex', 'ix', 'ice']],
-
-        // selfies (selfie)
-        ['seifles', 7, true, true, 'selfie'],
-
-        // movies (movie)
-        ['seivom', 6, true, true, 'movie'],
-
-        // feet (foot)
-        ['teef', 4, true, true, 'foot'],
-
-        // geese (goose)
-        ['eseeg', 5, true, true, 'goose'],
-
-        // teeth (tooth)
-        ['hteet', 5, true, true, 'tooth'],
-
-        // news (news)
-        ['swen', 4, true, true, 'news'],
-
-        // series (series)
-        ['seires', 6, true, true, 'series'],
-
-        // babies (baby)
-        ['sei', 3, false, true, 'y'],
-
-        // accesses (access), addresses (address), kisses (kiss)
-        ['sess', 4, true, false, 'ss'],
-
-        // analyses (analysis), ellipses (ellipsis), fungi (fungus),
-        // neuroses (neurosis), theses (thesis), emphases (emphasis),
-        // oases (oasis), crises (crisis), houses (house), bases (base),
-        // atlases (atlas)
-        ['ses', 3, true, true, ['s', 'se', 'sis']],
-
-        // objectives (objective), alternative (alternatives)
-        ['sevit', 5, true, true, 'tive'],
-
-        // drives (drive)
-        ['sevird', 6, false, true, 'drive'],
-
-        // lives (life), wives (wife)
-        ['sevi', 4, false, true, 'ife'],
-
-        // moves (move)
-        ['sevom', 5, true, true, 'move'],
-
-        // hooves (hoof), dwarves (dwarf), elves (elf), leaves (leaf), caves (cave), staves (staff)
-        ['sev', 3, true, true, ['f', 've', 'ff']],
-
-        // axes (axis), axes (ax), axes (axe)
-        ['sexa', 4, false, false, ['ax', 'axe', 'axis']],
-
-        // indexes (index), matrixes (matrix)
-        ['sex', 3, true, false, 'x'],
-
-        // quizzes (quiz)
-        ['sezz', 4, true, false, 'z'],
-
-        // bureaus (bureau)
-        ['suae', 4, false, true, 'eau'],
-
-        // fees (fee), trees (tree), employees (employee)
-        ['see', 3, true, true, 'ee'],
-
-        // roses (rose), garages (garage), cassettes (cassette),
-        // waltzes (waltz), heroes (hero), bushes (bush), arches (arch),
-        // shoes (shoe)
-        ['se', 2, true, true, ['', 'e']],
-
-        // tags (tag)
-        ['s', 1, true, true, ''],
-
-        // chateaux (chateau)
-        ['xuae', 4, false, true, 'eau'],
-
-        // people (person)
-        ['elpoep', 6, true, true, 'person'],
-    ];
-
-    /**
-     * Map English singular to plural suffixes.
-     *
-     * @see http://english-zone.com/spelling/plurals.html
-     */
-    private static $singularMap = [
-        // First entry: singular suffix, reversed
-        // Second entry: length of singular suffix
-        // Third entry: Whether the suffix may succeed a vocal
-        // Fourth entry: Whether the suffix may succeed a consonant
-        // Fifth entry: plural suffix, normal
-
-        // criterion (criteria)
-        ['airetirc', 8, false, false, 'criterion'],
-
-        // nebulae (nebula)
-        ['aluben', 6, false, false, 'nebulae'],
-
-        // children (child)
-        ['dlihc', 5, true, true, 'children'],
-
-        // prices (price)
-        ['eci', 3, false, true, 'ices'],
-
-        // services (service)
-        ['ecivres', 7, true, true, 'services'],
-
-        // lives (life), wives (wife)
-        ['efi', 3, false, true, 'ives'],
-
-        // selfies (selfie)
-        ['eifles', 6, true, true, 'selfies'],
-
-        // movies (movie)
-        ['eivom', 5, true, true, 'movies'],
-
-        // lice (louse)
-        ['esuol', 5, false, true, 'lice'],
-
-        // mice (mouse)
-        ['esuom', 5, false, true, 'mice'],
-
-        // geese (goose)
-        ['esoo', 4, false, true, 'eese'],
-
-        // houses (house), bases (base)
-        ['es', 2, true, true, 'ses'],
-
-        // geese (goose)
-        ['esoog', 5, true, true, 'geese'],
-
-        // caves (cave)
-        ['ev', 2, true, true, 'ves'],
-
-        // drives (drive)
-        ['evird', 5, false, true, 'drives'],
-
-        // objectives (objective), alternative (alternatives)
-        ['evit', 4, true, true, 'tives'],
-
-        // moves (move)
-        ['evom', 4, true, true, 'moves'],
-
-        // staves (staff)
-        ['ffats', 5, true, true, 'staves'],
-
-        // hooves (hoof), dwarves (dwarf), elves (elf), leaves (leaf)
-        ['ff', 2, true, true, 'ffs'],
-
-        // hooves (hoof), dwarves (dwarf), elves (elf), leaves (leaf)
-        ['f', 1, true, true, ['fs', 'ves']],
-
-        // arches (arch)
-        ['hc', 2, true, true, 'ches'],
-
-        // bushes (bush)
-        ['hs', 2, true, true, 'shes'],
-
-        // teeth (tooth)
-        ['htoot', 5, true, true, 'teeth'],
-
-        // bacteria (bacterium), criteria (criterion), phenomena (phenomenon)
-        ['mu', 2, true, true, 'a'],
-
-        // men (man), women (woman)
-        ['nam', 3, true, true, 'men'],
-
-        // people (person)
-        ['nosrep', 6, true, true, ['persons', 'people']],
-
-        // bacteria (bacterium), criteria (criterion), phenomena (phenomenon)
-        ['noi', 3, true, true, 'ions'],
-
-        // seasons (season), treasons (treason), poisons (poison), lessons (lesson)
-        ['nos', 3, true, true, 'sons'],
-
-        // bacteria (bacterium), criteria (criterion), phenomena (phenomenon)
-        ['no', 2, true, true, 'a'],
-
-        // echoes (echo)
-        ['ohce', 4, true, true, 'echoes'],
-
-        // heroes (hero)
-        ['oreh', 4, true, true, 'heroes'],
-
-        // atlases (atlas)
-        ['salta', 5, true, true, 'atlases'],
-
-        // irises (iris)
-        ['siri', 4, true, true, 'irises'],
-
-        // analyses (analysis), ellipses (ellipsis), neuroses (neurosis)
-        // theses (thesis), emphases (emphasis), oases (oasis),
-        // crises (crisis)
-        ['sis', 3, true, true, 'ses'],
-
-        // accesses (access), addresses (address), kisses (kiss)
-        ['ss', 2, true, false, 'sses'],
-
-        // syllabi (syllabus)
-        ['suballys', 8, true, true, 'syllabi'],
-
-        // buses (bus)
-        ['sub', 3, true, true, 'buses'],
-
-        // circuses (circus)
-        ['suc', 3, true, true, 'cuses'],
-
-        // fungi (fungus), alumni (alumnus), syllabi (syllabus), radii (radius)
-        ['su', 2, true, true, 'i'],
-
-        // news (news)
-        ['swen', 4, true, true, 'news'],
-
-        // feet (foot)
-        ['toof', 4, true, true, 'feet'],
-
-        // chateaux (chateau), bureaus (bureau)
-        ['uae', 3, false, true, ['eaus', 'eaux']],
-
-        // oxen (ox)
-        ['xo', 2, false, false, 'oxen'],
-
-        // hoaxes (hoax)
-        ['xaoh', 4, true, false, 'hoaxes'],
-
-        // indices (index)
-        ['xedni', 5, false, true, ['indicies', 'indexes']],
-
-        // boxes (box)
-        ['xo', 2, false, true, 'oxes'],
-
-        // indexes (index), matrixes (matrix)
-        ['x', 1, true, false, ['cies', 'xes']],
-
-        // appendices (appendix)
-        ['xi', 2, false, true, 'ices'],
-
-        // babies (baby)
-        ['y', 1, false, true, 'ies'],
-
-        // quizzes (quiz)
-        ['ziuq', 4, true, false, 'quizzes'],
-
-        // waltzes (waltz)
-        ['z', 1, true, true, 'zes'],
-    ];
-
-    /**
-     * A list of words which should not be inflected, reversed.
-     */
-    private static $uninflected = [
-        '',
-        'atad',
-        'reed',
-        'kcabdeef',
-        'hsif',
-        'ofni',
-        'esoom',
-        'seires',
-        'peehs',
-        'seiceps',
-    ];
-
-    /**
-     * {@inheritdoc}
-     */
-    public function singularize(string $plural): array
-    {
-        $pluralRev = strrev($plural);
-        $lowerPluralRev = strtolower($pluralRev);
-        $pluralLength = \strlen($lowerPluralRev);
-
-        // Check if the word is one which is not inflected, return early if so
-        if (\in_array($lowerPluralRev, self::$uninflected, true)) {
-            return [$plural];
-        }
-
-        // The outer loop iterates over the entries of the plural table
-        // The inner loop $j iterates over the characters of the plural suffix
-        // in the plural table to compare them with the characters of the actual
-        // given plural suffix
-        foreach (self::$pluralMap as $map) {
-            $suffix = $map[0];
-            $suffixLength = $map[1];
-            $j = 0;
-
-            // Compare characters in the plural table and of the suffix of the
-            // given plural one by one
-            while ($suffix[$j] === $lowerPluralRev[$j]) {
-                // Let $j point to the next character
-                ++$j;
-
-                // Successfully compared the last character
-                // Add an entry with the singular suffix to the singular array
-                if ($j === $suffixLength) {
-                    // Is there any character preceding the suffix in the plural string?
-                    if ($j < $pluralLength) {
-                        $nextIsVocal = false !== strpos('aeiou', $lowerPluralRev[$j]);
-
-                        if (!$map[2] && $nextIsVocal) {
-                            // suffix may not succeed a vocal but next char is one
-                            break;
-                        }
-
-                        if (!$map[3] && !$nextIsVocal) {
-                            // suffix may not succeed a consonant but next char is one
-                            break;
-                        }
-                    }
-
-                    $newBase = substr($plural, 0, $pluralLength - $suffixLength);
-                    $newSuffix = $map[4];
-
-                    // Check whether the first character in the plural suffix
-                    // is uppercased. If yes, uppercase the first character in
-                    // the singular suffix too
-                    $firstUpper = ctype_upper($pluralRev[$j - 1]);
-
-                    if (\is_array($newSuffix)) {
-                        $singulars = [];
-
-                        foreach ($newSuffix as $newSuffixEntry) {
-                            $singulars[] = $newBase.($firstUpper ? ucfirst($newSuffixEntry) : $newSuffixEntry);
-                        }
-
-                        return $singulars;
-                    }
-
-                    return [$newBase.($firstUpper ? ucfirst($newSuffix) : $newSuffix)];
-                }
-
-                // Suffix is longer than word
-                if ($j === $pluralLength) {
-                    break;
-                }
-            }
-        }
-
-        // Assume that plural and singular is identical
-        return [$plural];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function pluralize(string $singular): array
-    {
-        $singularRev = strrev($singular);
-        $lowerSingularRev = strtolower($singularRev);
-        $singularLength = \strlen($lowerSingularRev);
-
-        // Check if the word is one which is not inflected, return early if so
-        if (\in_array($lowerSingularRev, self::$uninflected, true)) {
-            return [$singular];
-        }
-
-        // The outer loop iterates over the entries of the singular table
-        // The inner loop $j iterates over the characters of the singular suffix
-        // in the singular table to compare them with the characters of the actual
-        // given singular suffix
-        foreach (self::$singularMap as $map) {
-            $suffix = $map[0];
-            $suffixLength = $map[1];
-            $j = 0;
-
-            // Compare characters in the singular table and of the suffix of the
-            // given plural one by one
-
-            while ($suffix[$j] === $lowerSingularRev[$j]) {
-                // Let $j point to the next character
-                ++$j;
-
-                // Successfully compared the last character
-                // Add an entry with the plural suffix to the plural array
-                if ($j === $suffixLength) {
-                    // Is there any character preceding the suffix in the plural string?
-                    if ($j < $singularLength) {
-                        $nextIsVocal = false !== strpos('aeiou', $lowerSingularRev[$j]);
-
-                        if (!$map[2] && $nextIsVocal) {
-                            // suffix may not succeed a vocal but next char is one
-                            break;
-                        }
-
-                        if (!$map[3] && !$nextIsVocal) {
-                            // suffix may not succeed a consonant but next char is one
-                            break;
-                        }
-                    }
-
-                    $newBase = substr($singular, 0, $singularLength - $suffixLength);
-                    $newSuffix = $map[4];
-
-                    // Check whether the first character in the singular suffix
-                    // is uppercased. If yes, uppercase the first character in
-                    // the singular suffix too
-                    $firstUpper = ctype_upper($singularRev[$j - 1]);
-
-                    if (\is_array($newSuffix)) {
-                        $plurals = [];
-
-                        foreach ($newSuffix as $newSuffixEntry) {
-                            $plurals[] = $newBase.($firstUpper ? ucfirst($newSuffixEntry) : $newSuffixEntry);
-                        }
-
-                        return $plurals;
-                    }
-
-                    return [$newBase.($firstUpper ? ucfirst($newSuffix) : $newSuffix)];
-                }
-
-                // Suffix is longer than word
-                if ($j === $singularLength) {
-                    break;
-                }
-            }
-        }
-
-        // Assume that plural is singular with a trailing `s`
-        return [$singular.'s'];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+N78Uu773za7x6uqqE85sk1sJnB4=

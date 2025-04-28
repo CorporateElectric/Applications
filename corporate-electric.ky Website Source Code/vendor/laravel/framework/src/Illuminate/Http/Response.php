@@ -1,101 +1,55 @@
-<?php
-
-namespace Illuminate\Http;
-
-use ArrayObject;
-use Illuminate\Contracts\Support\Arrayable;
-use Illuminate\Contracts\Support\Jsonable;
-use Illuminate\Contracts\Support\Renderable;
-use Illuminate\Support\Traits\Macroable;
-use JsonSerializable;
-use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
-use Symfony\Component\HttpFoundation\ResponseHeaderBag;
-
-class Response extends SymfonyResponse
-{
-    use ResponseTrait, Macroable {
-        Macroable::__call as macroCall;
-    }
-
-    /**
-     * Create a new HTTP response.
-     *
-     * @param  mixed  $content
-     * @param  int  $status
-     * @param  array  $headers
-     * @return void
-     *
-     * @throws \InvalidArgumentException
-     */
-    public function __construct($content = '', $status = 200, array $headers = [])
-    {
-        $this->headers = new ResponseHeaderBag($headers);
-
-        $this->setContent($content);
-        $this->setStatusCode($status);
-        $this->setProtocolVersion('1.0');
-    }
-
-    /**
-     * Set the content on the response.
-     *
-     * @param  mixed  $content
-     * @return $this
-     */
-    public function setContent($content)
-    {
-        $this->original = $content;
-
-        // If the content is "JSONable" we will set the appropriate header and convert
-        // the content to JSON. This is useful when returning something like models
-        // from routes that will be automatically transformed to their JSON form.
-        if ($this->shouldBeJson($content)) {
-            $this->header('Content-Type', 'application/json');
-
-            $content = $this->morphToJson($content);
-        }
-
-        // If this content implements the "Renderable" interface then we will call the
-        // render method on the object so we will avoid any "__toString" exceptions
-        // that might be thrown and have their errors obscured by PHP's handling.
-        elseif ($content instanceof Renderable) {
-            $content = $content->render();
-        }
-
-        parent::setContent($content);
-
-        return $this;
-    }
-
-    /**
-     * Determine if the given content should be turned into JSON.
-     *
-     * @param  mixed  $content
-     * @return bool
-     */
-    protected function shouldBeJson($content)
-    {
-        return $content instanceof Arrayable ||
-               $content instanceof Jsonable ||
-               $content instanceof ArrayObject ||
-               $content instanceof JsonSerializable ||
-               is_array($content);
-    }
-
-    /**
-     * Morph the given content into JSON.
-     *
-     * @param  mixed  $content
-     * @return string
-     */
-    protected function morphToJson($content)
-    {
-        if ($content instanceof Jsonable) {
-            return $content->toJson();
-        } elseif ($content instanceof Arrayable) {
-            return json_encode($content->toArray());
-        }
-
-        return json_encode($content);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+90L+p/WCxxSYQ3OzBfkc8aZAcW==

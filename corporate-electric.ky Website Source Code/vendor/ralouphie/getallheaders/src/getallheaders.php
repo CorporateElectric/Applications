@@ -1,46 +1,48 @@
-<?php
-
-if (!function_exists('getallheaders')) {
-
-    /**
-     * Get all HTTP header key/values as an associative array for the current request.
-     *
-     * @return string[string] The HTTP header key/value pairs.
-     */
-    function getallheaders()
-    {
-        $headers = array();
-
-        $copy_server = array(
-            'CONTENT_TYPE'   => 'Content-Type',
-            'CONTENT_LENGTH' => 'Content-Length',
-            'CONTENT_MD5'    => 'Content-Md5',
-        );
-
-        foreach ($_SERVER as $key => $value) {
-            if (substr($key, 0, 5) === 'HTTP_') {
-                $key = substr($key, 5);
-                if (!isset($copy_server[$key]) || !isset($_SERVER[$key])) {
-                    $key = str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', $key))));
-                    $headers[$key] = $value;
-                }
-            } elseif (isset($copy_server[$key])) {
-                $headers[$copy_server[$key]] = $value;
-            }
-        }
-
-        if (!isset($headers['Authorization'])) {
-            if (isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
-                $headers['Authorization'] = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
-            } elseif (isset($_SERVER['PHP_AUTH_USER'])) {
-                $basic_pass = isset($_SERVER['PHP_AUTH_PW']) ? $_SERVER['PHP_AUTH_PW'] : '';
-                $headers['Authorization'] = 'Basic ' . base64_encode($_SERVER['PHP_AUTH_USER'] . ':' . $basic_pass);
-            } elseif (isset($_SERVER['PHP_AUTH_DIGEST'])) {
-                $headers['Authorization'] = $_SERVER['PHP_AUTH_DIGEST'];
-            }
-        }
-
-        return $headers;
-    }
-
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

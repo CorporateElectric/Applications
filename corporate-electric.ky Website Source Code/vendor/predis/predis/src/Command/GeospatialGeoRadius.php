@@ -1,71 +1,43 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Predis\Command;
-
-/**
- * @link http://redis.io/commands/georadius
- *
- * @author Daniele Alessandri <suppakilla@gmail.com>
- */
-class GeospatialGeoRadius extends Command
-{
-    /**
-     * {@inheritdoc}
-     */
-    public function getId()
-    {
-        return 'GEORADIUS';
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function filterArguments(array $arguments)
-    {
-        if ($arguments && is_array(end($arguments))) {
-            $options = array_change_key_case(array_pop($arguments), CASE_UPPER);
-
-            if (isset($options['WITHCOORD']) && $options['WITHCOORD'] == true) {
-                $arguments[] = 'WITHCOORD';
-            }
-
-            if (isset($options['WITHDIST']) && $options['WITHDIST'] == true) {
-                $arguments[] = 'WITHDIST';
-            }
-
-            if (isset($options['WITHHASH']) && $options['WITHHASH'] == true) {
-                $arguments[] = 'WITHHASH';
-            }
-
-            if (isset($options['COUNT'])) {
-                $arguments[] = 'COUNT';
-                $arguments[] = $options['COUNT'];
-            }
-
-            if (isset($options['SORT'])) {
-                $arguments[] = strtoupper($options['SORT']);
-            }
-
-            if (isset($options['STORE'])) {
-                $arguments[] = 'STORE';
-                $arguments[] = $options['STORE'];
-            }
-
-            if (isset($options['STOREDIST'])) {
-                $arguments[] = 'STOREDIST';
-                $arguments[] = $options['STOREDIST'];
-            }
-        }
-
-        return $arguments;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

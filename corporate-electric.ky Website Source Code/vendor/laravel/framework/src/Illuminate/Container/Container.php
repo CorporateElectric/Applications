@@ -1,1404 +1,430 @@
-<?php
-
-namespace Illuminate\Container;
-
-use ArrayAccess;
-use Closure;
-use Exception;
-use Illuminate\Contracts\Container\BindingResolutionException;
-use Illuminate\Contracts\Container\Container as ContainerContract;
-use LogicException;
-use ReflectionClass;
-use ReflectionException;
-use ReflectionParameter;
-
-class Container implements ArrayAccess, ContainerContract
-{
-    /**
-     * The current globally available container (if any).
-     *
-     * @var static
-     */
-    protected static $instance;
-
-    /**
-     * An array of the types that have been resolved.
-     *
-     * @var bool[]
-     */
-    protected $resolved = [];
-
-    /**
-     * The container's bindings.
-     *
-     * @var array[]
-     */
-    protected $bindings = [];
-
-    /**
-     * The container's method bindings.
-     *
-     * @var \Closure[]
-     */
-    protected $methodBindings = [];
-
-    /**
-     * The container's shared instances.
-     *
-     * @var object[]
-     */
-    protected $instances = [];
-
-    /**
-     * The registered type aliases.
-     *
-     * @var string[]
-     */
-    protected $aliases = [];
-
-    /**
-     * The registered aliases keyed by the abstract name.
-     *
-     * @var array[]
-     */
-    protected $abstractAliases = [];
-
-    /**
-     * The extension closures for services.
-     *
-     * @var array[]
-     */
-    protected $extenders = [];
-
-    /**
-     * All of the registered tags.
-     *
-     * @var array[]
-     */
-    protected $tags = [];
-
-    /**
-     * The stack of concretions currently being built.
-     *
-     * @var array[]
-     */
-    protected $buildStack = [];
-
-    /**
-     * The parameter override stack.
-     *
-     * @var array[]
-     */
-    protected $with = [];
-
-    /**
-     * The contextual binding map.
-     *
-     * @var array[]
-     */
-    public $contextual = [];
-
-    /**
-     * All of the registered rebound callbacks.
-     *
-     * @var array[]
-     */
-    protected $reboundCallbacks = [];
-
-    /**
-     * All of the global before resolving callbacks.
-     *
-     * @var \Closure[]
-     */
-    protected $globalBeforeResolvingCallbacks = [];
-
-    /**
-     * All of the global resolving callbacks.
-     *
-     * @var \Closure[]
-     */
-    protected $globalResolvingCallbacks = [];
-
-    /**
-     * All of the global after resolving callbacks.
-     *
-     * @var \Closure[]
-     */
-    protected $globalAfterResolvingCallbacks = [];
-
-    /**
-     * All of the before resolving callbacks by class type.
-     *
-     * @var array[]
-     */
-    protected $beforeResolvingCallbacks = [];
-
-    /**
-     * All of the resolving callbacks by class type.
-     *
-     * @var array[]
-     */
-    protected $resolvingCallbacks = [];
-
-    /**
-     * All of the after resolving callbacks by class type.
-     *
-     * @var array[]
-     */
-    protected $afterResolvingCallbacks = [];
-
-    /**
-     * Define a contextual binding.
-     *
-     * @param  array|string  $concrete
-     * @return \Illuminate\Contracts\Container\ContextualBindingBuilder
-     */
-    public function when($concrete)
-    {
-        $aliases = [];
-
-        foreach (Util::arrayWrap($concrete) as $c) {
-            $aliases[] = $this->getAlias($c);
-        }
-
-        return new ContextualBindingBuilder($this, $aliases);
-    }
-
-    /**
-     * Determine if the given abstract type has been bound.
-     *
-     * @param  string  $abstract
-     * @return bool
-     */
-    public function bound($abstract)
-    {
-        return isset($this->bindings[$abstract]) ||
-               isset($this->instances[$abstract]) ||
-               $this->isAlias($abstract);
-    }
-
-    /**
-     *  {@inheritdoc}
-     */
-    public function has($id)
-    {
-        return $this->bound($id);
-    }
-
-    /**
-     * Determine if the given abstract type has been resolved.
-     *
-     * @param  string  $abstract
-     * @return bool
-     */
-    public function resolved($abstract)
-    {
-        if ($this->isAlias($abstract)) {
-            $abstract = $this->getAlias($abstract);
-        }
-
-        return isset($this->resolved[$abstract]) ||
-               isset($this->instances[$abstract]);
-    }
-
-    /**
-     * Determine if a given type is shared.
-     *
-     * @param  string  $abstract
-     * @return bool
-     */
-    public function isShared($abstract)
-    {
-        return isset($this->instances[$abstract]) ||
-               (isset($this->bindings[$abstract]['shared']) &&
-               $this->bindings[$abstract]['shared'] === true);
-    }
-
-    /**
-     * Determine if a given string is an alias.
-     *
-     * @param  string  $name
-     * @return bool
-     */
-    public function isAlias($name)
-    {
-        return isset($this->aliases[$name]);
-    }
-
-    /**
-     * Register a binding with the container.
-     *
-     * @param  string  $abstract
-     * @param  \Closure|string|null  $concrete
-     * @param  bool  $shared
-     * @return void
-     */
-    public function bind($abstract, $concrete = null, $shared = false)
-    {
-        $this->dropStaleInstances($abstract);
-
-        // If no concrete type was given, we will simply set the concrete type to the
-        // abstract type. After that, the concrete type to be registered as shared
-        // without being forced to state their classes in both of the parameters.
-        if (is_null($concrete)) {
-            $concrete = $abstract;
-        }
-
-        // If the factory is not a Closure, it means it is just a class name which is
-        // bound into this container to the abstract type and we will just wrap it
-        // up inside its own Closure to give us more convenience when extending.
-        if (! $concrete instanceof Closure) {
-            if (! is_string($concrete)) {
-                throw new \TypeError(self::class.'::bind(): Argument #2 ($concrete) must be of type Closure|string|null');
-            }
-
-            $concrete = $this->getClosure($abstract, $concrete);
-        }
-
-        $this->bindings[$abstract] = compact('concrete', 'shared');
-
-        // If the abstract type was already resolved in this container we'll fire the
-        // rebound listener so that any objects which have already gotten resolved
-        // can have their copy of the object updated via the listener callbacks.
-        if ($this->resolved($abstract)) {
-            $this->rebound($abstract);
-        }
-    }
-
-    /**
-     * Get the Closure to be used when building a type.
-     *
-     * @param  string  $abstract
-     * @param  string  $concrete
-     * @return \Closure
-     */
-    protected function getClosure($abstract, $concrete)
-    {
-        return function ($container, $parameters = []) use ($abstract, $concrete) {
-            if ($abstract == $concrete) {
-                return $container->build($concrete);
-            }
-
-            return $container->resolve(
-                $concrete, $parameters, $raiseEvents = false
-            );
-        };
-    }
-
-    /**
-     * Determine if the container has a method binding.
-     *
-     * @param  string  $method
-     * @return bool
-     */
-    public function hasMethodBinding($method)
-    {
-        return isset($this->methodBindings[$method]);
-    }
-
-    /**
-     * Bind a callback to resolve with Container::call.
-     *
-     * @param  array|string  $method
-     * @param  \Closure  $callback
-     * @return void
-     */
-    public function bindMethod($method, $callback)
-    {
-        $this->methodBindings[$this->parseBindMethod($method)] = $callback;
-    }
-
-    /**
-     * Get the method to be bound in class@method format.
-     *
-     * @param  array|string  $method
-     * @return string
-     */
-    protected function parseBindMethod($method)
-    {
-        if (is_array($method)) {
-            return $method[0].'@'.$method[1];
-        }
-
-        return $method;
-    }
-
-    /**
-     * Get the method binding for the given method.
-     *
-     * @param  string  $method
-     * @param  mixed  $instance
-     * @return mixed
-     */
-    public function callMethodBinding($method, $instance)
-    {
-        return call_user_func($this->methodBindings[$method], $instance, $this);
-    }
-
-    /**
-     * Add a contextual binding to the container.
-     *
-     * @param  string  $concrete
-     * @param  string  $abstract
-     * @param  \Closure|string  $implementation
-     * @return void
-     */
-    public function addContextualBinding($concrete, $abstract, $implementation)
-    {
-        $this->contextual[$concrete][$this->getAlias($abstract)] = $implementation;
-    }
-
-    /**
-     * Register a binding if it hasn't already been registered.
-     *
-     * @param  string  $abstract
-     * @param  \Closure|string|null  $concrete
-     * @param  bool  $shared
-     * @return void
-     */
-    public function bindIf($abstract, $concrete = null, $shared = false)
-    {
-        if (! $this->bound($abstract)) {
-            $this->bind($abstract, $concrete, $shared);
-        }
-    }
-
-    /**
-     * Register a shared binding in the container.
-     *
-     * @param  string  $abstract
-     * @param  \Closure|string|null  $concrete
-     * @return void
-     */
-    public function singleton($abstract, $concrete = null)
-    {
-        $this->bind($abstract, $concrete, true);
-    }
-
-    /**
-     * Register a shared binding if it hasn't already been registered.
-     *
-     * @param  string  $abstract
-     * @param  \Closure|string|null  $concrete
-     * @return void
-     */
-    public function singletonIf($abstract, $concrete = null)
-    {
-        if (! $this->bound($abstract)) {
-            $this->singleton($abstract, $concrete);
-        }
-    }
-
-    /**
-     * "Extend" an abstract type in the container.
-     *
-     * @param  string  $abstract
-     * @param  \Closure  $closure
-     * @return void
-     *
-     * @throws \InvalidArgumentException
-     */
-    public function extend($abstract, Closure $closure)
-    {
-        $abstract = $this->getAlias($abstract);
-
-        if (isset($this->instances[$abstract])) {
-            $this->instances[$abstract] = $closure($this->instances[$abstract], $this);
-
-            $this->rebound($abstract);
-        } else {
-            $this->extenders[$abstract][] = $closure;
-
-            if ($this->resolved($abstract)) {
-                $this->rebound($abstract);
-            }
-        }
-    }
-
-    /**
-     * Register an existing instance as shared in the container.
-     *
-     * @param  string  $abstract
-     * @param  mixed  $instance
-     * @return mixed
-     */
-    public function instance($abstract, $instance)
-    {
-        $this->removeAbstractAlias($abstract);
-
-        $isBound = $this->bound($abstract);
-
-        unset($this->aliases[$abstract]);
-
-        // We'll check to determine if this type has been bound before, and if it has
-        // we will fire the rebound callbacks registered with the container and it
-        // can be updated with consuming classes that have gotten resolved here.
-        $this->instances[$abstract] = $instance;
-
-        if ($isBound) {
-            $this->rebound($abstract);
-        }
-
-        return $instance;
-    }
-
-    /**
-     * Remove an alias from the contextual binding alias cache.
-     *
-     * @param  string  $searched
-     * @return void
-     */
-    protected function removeAbstractAlias($searched)
-    {
-        if (! isset($this->aliases[$searched])) {
-            return;
-        }
-
-        foreach ($this->abstractAliases as $abstract => $aliases) {
-            foreach ($aliases as $index => $alias) {
-                if ($alias == $searched) {
-                    unset($this->abstractAliases[$abstract][$index]);
-                }
-            }
-        }
-    }
-
-    /**
-     * Assign a set of tags to a given binding.
-     *
-     * @param  array|string  $abstracts
-     * @param  array|mixed  ...$tags
-     * @return void
-     */
-    public function tag($abstracts, $tags)
-    {
-        $tags = is_array($tags) ? $tags : array_slice(func_get_args(), 1);
-
-        foreach ($tags as $tag) {
-            if (! isset($this->tags[$tag])) {
-                $this->tags[$tag] = [];
-            }
-
-            foreach ((array) $abstracts as $abstract) {
-                $this->tags[$tag][] = $abstract;
-            }
-        }
-    }
-
-    /**
-     * Resolve all of the bindings for a given tag.
-     *
-     * @param  string  $tag
-     * @return iterable
-     */
-    public function tagged($tag)
-    {
-        if (! isset($this->tags[$tag])) {
-            return [];
-        }
-
-        return new RewindableGenerator(function () use ($tag) {
-            foreach ($this->tags[$tag] as $abstract) {
-                yield $this->make($abstract);
-            }
-        }, count($this->tags[$tag]));
-    }
-
-    /**
-     * Alias a type to a different name.
-     *
-     * @param  string  $abstract
-     * @param  string  $alias
-     * @return void
-     *
-     * @throws \LogicException
-     */
-    public function alias($abstract, $alias)
-    {
-        if ($alias === $abstract) {
-            throw new LogicException("[{$abstract}] is aliased to itself.");
-        }
-
-        $this->aliases[$alias] = $abstract;
-
-        $this->abstractAliases[$abstract][] = $alias;
-    }
-
-    /**
-     * Bind a new callback to an abstract's rebind event.
-     *
-     * @param  string  $abstract
-     * @param  \Closure  $callback
-     * @return mixed
-     */
-    public function rebinding($abstract, Closure $callback)
-    {
-        $this->reboundCallbacks[$abstract = $this->getAlias($abstract)][] = $callback;
-
-        if ($this->bound($abstract)) {
-            return $this->make($abstract);
-        }
-    }
-
-    /**
-     * Refresh an instance on the given target and method.
-     *
-     * @param  string  $abstract
-     * @param  mixed  $target
-     * @param  string  $method
-     * @return mixed
-     */
-    public function refresh($abstract, $target, $method)
-    {
-        return $this->rebinding($abstract, function ($app, $instance) use ($target, $method) {
-            $target->{$method}($instance);
-        });
-    }
-
-    /**
-     * Fire the "rebound" callbacks for the given abstract type.
-     *
-     * @param  string  $abstract
-     * @return void
-     */
-    protected function rebound($abstract)
-    {
-        $instance = $this->make($abstract);
-
-        foreach ($this->getReboundCallbacks($abstract) as $callback) {
-            call_user_func($callback, $this, $instance);
-        }
-    }
-
-    /**
-     * Get the rebound callbacks for a given type.
-     *
-     * @param  string  $abstract
-     * @return array
-     */
-    protected function getReboundCallbacks($abstract)
-    {
-        return $this->reboundCallbacks[$abstract] ?? [];
-    }
-
-    /**
-     * Wrap the given closure such that its dependencies will be injected when executed.
-     *
-     * @param  \Closure  $callback
-     * @param  array  $parameters
-     * @return \Closure
-     */
-    public function wrap(Closure $callback, array $parameters = [])
-    {
-        return function () use ($callback, $parameters) {
-            return $this->call($callback, $parameters);
-        };
-    }
-
-    /**
-     * Call the given Closure / class@method and inject its dependencies.
-     *
-     * @param  callable|string  $callback
-     * @param  array<string, mixed>  $parameters
-     * @param  string|null  $defaultMethod
-     * @return mixed
-     *
-     * @throws \InvalidArgumentException
-     */
-    public function call($callback, array $parameters = [], $defaultMethod = null)
-    {
-        return BoundMethod::call($this, $callback, $parameters, $defaultMethod);
-    }
-
-    /**
-     * Get a closure to resolve the given type from the container.
-     *
-     * @param  string  $abstract
-     * @return \Closure
-     */
-    public function factory($abstract)
-    {
-        return function () use ($abstract) {
-            return $this->make($abstract);
-        };
-    }
-
-    /**
-     * An alias function name for make().
-     *
-     * @param  string|callable  $abstract
-     * @param  array  $parameters
-     * @return mixed
-     *
-     * @throws \Illuminate\Contracts\Container\BindingResolutionException
-     */
-    public function makeWith($abstract, array $parameters = [])
-    {
-        return $this->make($abstract, $parameters);
-    }
-
-    /**
-     * Resolve the given type from the container.
-     *
-     * @param  string|callable  $abstract
-     * @param  array  $parameters
-     * @return mixed
-     *
-     * @throws \Illuminate\Contracts\Container\BindingResolutionException
-     */
-    public function make($abstract, array $parameters = [])
-    {
-        return $this->resolve($abstract, $parameters);
-    }
-
-    /**
-     *  {@inheritdoc}
-     */
-    public function get($id)
-    {
-        try {
-            return $this->resolve($id);
-        } catch (Exception $e) {
-            if ($this->has($id)) {
-                throw $e;
-            }
-
-            throw new EntryNotFoundException($id, $e->getCode(), $e);
-        }
-    }
-
-    /**
-     * Resolve the given type from the container.
-     *
-     * @param  string|callable  $abstract
-     * @param  array  $parameters
-     * @param  bool  $raiseEvents
-     * @return mixed
-     *
-     * @throws \Illuminate\Contracts\Container\BindingResolutionException
-     */
-    protected function resolve($abstract, $parameters = [], $raiseEvents = true)
-    {
-        $abstract = $this->getAlias($abstract);
-
-        // First we'll fire any event handlers which handle the "before" resolving of
-        // specific types. This gives some hooks the chance to add various extends
-        // calls to change the resolution of objects that they're interested in.
-        if ($raiseEvents) {
-            $this->fireBeforeResolvingCallbacks($abstract, $parameters);
-        }
-
-        $concrete = $this->getContextualConcrete($abstract);
-
-        $needsContextualBuild = ! empty($parameters) || ! is_null($concrete);
-
-        // If an instance of the type is currently being managed as a singleton we'll
-        // just return an existing instance instead of instantiating new instances
-        // so the developer can keep using the same objects instance every time.
-        if (isset($this->instances[$abstract]) && ! $needsContextualBuild) {
-            return $this->instances[$abstract];
-        }
-
-        $this->with[] = $parameters;
-
-        if (is_null($concrete)) {
-            $concrete = $this->getConcrete($abstract);
-        }
-
-        // We're ready to instantiate an instance of the concrete type registered for
-        // the binding. This will instantiate the types, as well as resolve any of
-        // its "nested" dependencies recursively until all have gotten resolved.
-        if ($this->isBuildable($concrete, $abstract)) {
-            $object = $this->build($concrete);
-        } else {
-            $object = $this->make($concrete);
-        }
-
-        // If we defined any extenders for this type, we'll need to spin through them
-        // and apply them to the object being built. This allows for the extension
-        // of services, such as changing configuration or decorating the object.
-        foreach ($this->getExtenders($abstract) as $extender) {
-            $object = $extender($object, $this);
-        }
-
-        // If the requested type is registered as a singleton we'll want to cache off
-        // the instances in "memory" so we can return it later without creating an
-        // entirely new instance of an object on each subsequent request for it.
-        if ($this->isShared($abstract) && ! $needsContextualBuild) {
-            $this->instances[$abstract] = $object;
-        }
-
-        if ($raiseEvents) {
-            $this->fireResolvingCallbacks($abstract, $object);
-        }
-
-        // Before returning, we will also set the resolved flag to "true" and pop off
-        // the parameter overrides for this build. After those two things are done
-        // we will be ready to return back the fully constructed class instance.
-        $this->resolved[$abstract] = true;
-
-        array_pop($this->with);
-
-        return $object;
-    }
-
-    /**
-     * Get the concrete type for a given abstract.
-     *
-     * @param  string|callable  $abstract
-     * @return mixed
-     */
-    protected function getConcrete($abstract)
-    {
-        // If we don't have a registered resolver or concrete for the type, we'll just
-        // assume each type is a concrete name and will attempt to resolve it as is
-        // since the container should be able to resolve concretes automatically.
-        if (isset($this->bindings[$abstract])) {
-            return $this->bindings[$abstract]['concrete'];
-        }
-
-        return $abstract;
-    }
-
-    /**
-     * Get the contextual concrete binding for the given abstract.
-     *
-     * @param  string|callable  $abstract
-     * @return \Closure|string|array|null
-     */
-    protected function getContextualConcrete($abstract)
-    {
-        if (! is_null($binding = $this->findInContextualBindings($abstract))) {
-            return $binding;
-        }
-
-        // Next we need to see if a contextual binding might be bound under an alias of the
-        // given abstract type. So, we will need to check if any aliases exist with this
-        // type and then spin through them and check for contextual bindings on these.
-        if (empty($this->abstractAliases[$abstract])) {
-            return;
-        }
-
-        foreach ($this->abstractAliases[$abstract] as $alias) {
-            if (! is_null($binding = $this->findInContextualBindings($alias))) {
-                return $binding;
-            }
-        }
-    }
-
-    /**
-     * Find the concrete binding for the given abstract in the contextual binding array.
-     *
-     * @param  string|callable  $abstract
-     * @return \Closure|string|null
-     */
-    protected function findInContextualBindings($abstract)
-    {
-        return $this->contextual[end($this->buildStack)][$abstract] ?? null;
-    }
-
-    /**
-     * Determine if the given concrete is buildable.
-     *
-     * @param  mixed  $concrete
-     * @param  string  $abstract
-     * @return bool
-     */
-    protected function isBuildable($concrete, $abstract)
-    {
-        return $concrete === $abstract || $concrete instanceof Closure;
-    }
-
-    /**
-     * Instantiate a concrete instance of the given type.
-     *
-     * @param  \Closure|string  $concrete
-     * @return mixed
-     *
-     * @throws \Illuminate\Contracts\Container\BindingResolutionException
-     */
-    public function build($concrete)
-    {
-        // If the concrete type is actually a Closure, we will just execute it and
-        // hand back the results of the functions, which allows functions to be
-        // used as resolvers for more fine-tuned resolution of these objects.
-        if ($concrete instanceof Closure) {
-            return $concrete($this, $this->getLastParameterOverride());
-        }
-
-        try {
-            $reflector = new ReflectionClass($concrete);
-        } catch (ReflectionException $e) {
-            throw new BindingResolutionException("Target class [$concrete] does not exist.", 0, $e);
-        }
-
-        // If the type is not instantiable, the developer is attempting to resolve
-        // an abstract type such as an Interface or Abstract Class and there is
-        // no binding registered for the abstractions so we need to bail out.
-        if (! $reflector->isInstantiable()) {
-            return $this->notInstantiable($concrete);
-        }
-
-        $this->buildStack[] = $concrete;
-
-        $constructor = $reflector->getConstructor();
-
-        // If there are no constructors, that means there are no dependencies then
-        // we can just resolve the instances of the objects right away, without
-        // resolving any other types or dependencies out of these containers.
-        if (is_null($constructor)) {
-            array_pop($this->buildStack);
-
-            return new $concrete;
-        }
-
-        $dependencies = $constructor->getParameters();
-
-        // Once we have all the constructor's parameters we can create each of the
-        // dependency instances and then use the reflection instances to make a
-        // new instance of this class, injecting the created dependencies in.
-        try {
-            $instances = $this->resolveDependencies($dependencies);
-        } catch (BindingResolutionException $e) {
-            array_pop($this->buildStack);
-
-            throw $e;
-        }
-
-        array_pop($this->buildStack);
-
-        return $reflector->newInstanceArgs($instances);
-    }
-
-    /**
-     * Resolve all of the dependencies from the ReflectionParameters.
-     *
-     * @param  \ReflectionParameter[]  $dependencies
-     * @return array
-     *
-     * @throws \Illuminate\Contracts\Container\BindingResolutionException
-     */
-    protected function resolveDependencies(array $dependencies)
-    {
-        $results = [];
-
-        foreach ($dependencies as $dependency) {
-            // If the dependency has an override for this particular build we will use
-            // that instead as the value. Otherwise, we will continue with this run
-            // of resolutions and let reflection attempt to determine the result.
-            if ($this->hasParameterOverride($dependency)) {
-                $results[] = $this->getParameterOverride($dependency);
-
-                continue;
-            }
-
-            // If the class is null, it means the dependency is a string or some other
-            // primitive type which we can not resolve since it is not a class and
-            // we will just bomb out with an error since we have no-where to go.
-            $result = is_null(Util::getParameterClassName($dependency))
-                            ? $this->resolvePrimitive($dependency)
-                            : $this->resolveClass($dependency);
-
-            if ($dependency->isVariadic()) {
-                $results = array_merge($results, $result);
-            } else {
-                $results[] = $result;
-            }
-        }
-
-        return $results;
-    }
-
-    /**
-     * Determine if the given dependency has a parameter override.
-     *
-     * @param  \ReflectionParameter  $dependency
-     * @return bool
-     */
-    protected function hasParameterOverride($dependency)
-    {
-        return array_key_exists(
-            $dependency->name, $this->getLastParameterOverride()
-        );
-    }
-
-    /**
-     * Get a parameter override for a dependency.
-     *
-     * @param  \ReflectionParameter  $dependency
-     * @return mixed
-     */
-    protected function getParameterOverride($dependency)
-    {
-        return $this->getLastParameterOverride()[$dependency->name];
-    }
-
-    /**
-     * Get the last parameter override.
-     *
-     * @return array
-     */
-    protected function getLastParameterOverride()
-    {
-        return count($this->with) ? end($this->with) : [];
-    }
-
-    /**
-     * Resolve a non-class hinted primitive dependency.
-     *
-     * @param  \ReflectionParameter  $parameter
-     * @return mixed
-     *
-     * @throws \Illuminate\Contracts\Container\BindingResolutionException
-     */
-    protected function resolvePrimitive(ReflectionParameter $parameter)
-    {
-        if (! is_null($concrete = $this->getContextualConcrete('$'.$parameter->getName()))) {
-            return $concrete instanceof Closure ? $concrete($this) : $concrete;
-        }
-
-        if ($parameter->isDefaultValueAvailable()) {
-            return $parameter->getDefaultValue();
-        }
-
-        $this->unresolvablePrimitive($parameter);
-    }
-
-    /**
-     * Resolve a class based dependency from the container.
-     *
-     * @param  \ReflectionParameter  $parameter
-     * @return mixed
-     *
-     * @throws \Illuminate\Contracts\Container\BindingResolutionException
-     */
-    protected function resolveClass(ReflectionParameter $parameter)
-    {
-        try {
-            return $parameter->isVariadic()
-                        ? $this->resolveVariadicClass($parameter)
-                        : $this->make(Util::getParameterClassName($parameter));
-        }
-
-        // If we can not resolve the class instance, we will check to see if the value
-        // is optional, and if it is we will return the optional parameter value as
-        // the value of the dependency, similarly to how we do this with scalars.
-        catch (BindingResolutionException $e) {
-            if ($parameter->isDefaultValueAvailable()) {
-                return $parameter->getDefaultValue();
-            }
-
-            if ($parameter->isVariadic()) {
-                return [];
-            }
-
-            throw $e;
-        }
-    }
-
-    /**
-     * Resolve a class based variadic dependency from the container.
-     *
-     * @param  \ReflectionParameter  $parameter
-     * @return mixed
-     */
-    protected function resolveVariadicClass(ReflectionParameter $parameter)
-    {
-        $className = Util::getParameterClassName($parameter);
-
-        $abstract = $this->getAlias($className);
-
-        if (! is_array($concrete = $this->getContextualConcrete($abstract))) {
-            return $this->make($className);
-        }
-
-        return array_map(function ($abstract) {
-            return $this->resolve($abstract);
-        }, $concrete);
-    }
-
-    /**
-     * Throw an exception that the concrete is not instantiable.
-     *
-     * @param  string  $concrete
-     * @return void
-     *
-     * @throws \Illuminate\Contracts\Container\BindingResolutionException
-     */
-    protected function notInstantiable($concrete)
-    {
-        if (! empty($this->buildStack)) {
-            $previous = implode(', ', $this->buildStack);
-
-            $message = "Target [$concrete] is not instantiable while building [$previous].";
-        } else {
-            $message = "Target [$concrete] is not instantiable.";
-        }
-
-        throw new BindingResolutionException($message);
-    }
-
-    /**
-     * Throw an exception for an unresolvable primitive.
-     *
-     * @param  \ReflectionParameter  $parameter
-     * @return void
-     *
-     * @throws \Illuminate\Contracts\Container\BindingResolutionException
-     */
-    protected function unresolvablePrimitive(ReflectionParameter $parameter)
-    {
-        $message = "Unresolvable dependency resolving [$parameter] in class {$parameter->getDeclaringClass()->getName()}";
-
-        throw new BindingResolutionException($message);
-    }
-
-    /**
-     * Register a new before resolving callback for all types.
-     *
-     * @param  \Closure|string  $abstract
-     * @param  \Closure|null  $callback
-     * @return void
-     */
-    public function beforeResolving($abstract, Closure $callback = null)
-    {
-        if (is_string($abstract)) {
-            $abstract = $this->getAlias($abstract);
-        }
-
-        if ($abstract instanceof Closure && is_null($callback)) {
-            $this->globalBeforeResolvingCallbacks[] = $abstract;
-        } else {
-            $this->beforeResolvingCallbacks[$abstract][] = $callback;
-        }
-    }
-
-    /**
-     * Register a new resolving callback.
-     *
-     * @param  \Closure|string  $abstract
-     * @param  \Closure|null  $callback
-     * @return void
-     */
-    public function resolving($abstract, Closure $callback = null)
-    {
-        if (is_string($abstract)) {
-            $abstract = $this->getAlias($abstract);
-        }
-
-        if (is_null($callback) && $abstract instanceof Closure) {
-            $this->globalResolvingCallbacks[] = $abstract;
-        } else {
-            $this->resolvingCallbacks[$abstract][] = $callback;
-        }
-    }
-
-    /**
-     * Register a new after resolving callback for all types.
-     *
-     * @param  \Closure|string  $abstract
-     * @param  \Closure|null  $callback
-     * @return void
-     */
-    public function afterResolving($abstract, Closure $callback = null)
-    {
-        if (is_string($abstract)) {
-            $abstract = $this->getAlias($abstract);
-        }
-
-        if ($abstract instanceof Closure && is_null($callback)) {
-            $this->globalAfterResolvingCallbacks[] = $abstract;
-        } else {
-            $this->afterResolvingCallbacks[$abstract][] = $callback;
-        }
-    }
-
-    /**
-     * Fire all of the before resolving callbacks.
-     *
-     * @param  string  $abstract
-     * @param  array  $parameters
-     * @return void
-     */
-    protected function fireBeforeResolvingCallbacks($abstract, $parameters = [])
-    {
-        $this->fireBeforeCallbackArray($abstract, $parameters, $this->globalBeforeResolvingCallbacks);
-
-        foreach ($this->beforeResolvingCallbacks as $type => $callbacks) {
-            if ($type === $abstract || is_subclass_of($abstract, $type)) {
-                $this->fireBeforeCallbackArray($abstract, $parameters, $callbacks);
-            }
-        }
-    }
-
-    /**
-     * Fire an array of callbacks with an object.
-     *
-     * @param  string  $abstract
-     * @param  array  $parameters
-     * @param  array  $callbacks
-     * @return void
-     */
-    protected function fireBeforeCallbackArray($abstract, $parameters, array $callbacks)
-    {
-        foreach ($callbacks as $callback) {
-            $callback($abstract, $parameters, $this);
-        }
-    }
-
-    /**
-     * Fire all of the resolving callbacks.
-     *
-     * @param  string  $abstract
-     * @param  mixed  $object
-     * @return void
-     */
-    protected function fireResolvingCallbacks($abstract, $object)
-    {
-        $this->fireCallbackArray($object, $this->globalResolvingCallbacks);
-
-        $this->fireCallbackArray(
-            $object, $this->getCallbacksForType($abstract, $object, $this->resolvingCallbacks)
-        );
-
-        $this->fireAfterResolvingCallbacks($abstract, $object);
-    }
-
-    /**
-     * Fire all of the after resolving callbacks.
-     *
-     * @param  string  $abstract
-     * @param  mixed  $object
-     * @return void
-     */
-    protected function fireAfterResolvingCallbacks($abstract, $object)
-    {
-        $this->fireCallbackArray($object, $this->globalAfterResolvingCallbacks);
-
-        $this->fireCallbackArray(
-            $object, $this->getCallbacksForType($abstract, $object, $this->afterResolvingCallbacks)
-        );
-    }
-
-    /**
-     * Get all callbacks for a given type.
-     *
-     * @param  string  $abstract
-     * @param  object  $object
-     * @param  array  $callbacksPerType
-     *
-     * @return array
-     */
-    protected function getCallbacksForType($abstract, $object, array $callbacksPerType)
-    {
-        $results = [];
-
-        foreach ($callbacksPerType as $type => $callbacks) {
-            if ($type === $abstract || $object instanceof $type) {
-                $results = array_merge($results, $callbacks);
-            }
-        }
-
-        return $results;
-    }
-
-    /**
-     * Fire an array of callbacks with an object.
-     *
-     * @param  mixed  $object
-     * @param  array  $callbacks
-     * @return void
-     */
-    protected function fireCallbackArray($object, array $callbacks)
-    {
-        foreach ($callbacks as $callback) {
-            $callback($object, $this);
-        }
-    }
-
-    /**
-     * Get the container's bindings.
-     *
-     * @return array
-     */
-    public function getBindings()
-    {
-        return $this->bindings;
-    }
-
-    /**
-     * Get the alias for an abstract if available.
-     *
-     * @param  string  $abstract
-     * @return string
-     */
-    public function getAlias($abstract)
-    {
-        return isset($this->aliases[$abstract])
-                    ? $this->getAlias($this->aliases[$abstract])
-                    : $abstract;
-    }
-
-    /**
-     * Get the extender callbacks for a given type.
-     *
-     * @param  string  $abstract
-     * @return array
-     */
-    protected function getExtenders($abstract)
-    {
-        return $this->extenders[$this->getAlias($abstract)] ?? [];
-    }
-
-    /**
-     * Remove all of the extender callbacks for a given type.
-     *
-     * @param  string  $abstract
-     * @return void
-     */
-    public function forgetExtenders($abstract)
-    {
-        unset($this->extenders[$this->getAlias($abstract)]);
-    }
-
-    /**
-     * Drop all of the stale instances and aliases.
-     *
-     * @param  string  $abstract
-     * @return void
-     */
-    protected function dropStaleInstances($abstract)
-    {
-        unset($this->instances[$abstract], $this->aliases[$abstract]);
-    }
-
-    /**
-     * Remove a resolved instance from the instance cache.
-     *
-     * @param  string  $abstract
-     * @return void
-     */
-    public function forgetInstance($abstract)
-    {
-        unset($this->instances[$abstract]);
-    }
-
-    /**
-     * Clear all of the instances from the container.
-     *
-     * @return void
-     */
-    public function forgetInstances()
-    {
-        $this->instances = [];
-    }
-
-    /**
-     * Flush the container of all bindings and resolved instances.
-     *
-     * @return void
-     */
-    public function flush()
-    {
-        $this->aliases = [];
-        $this->resolved = [];
-        $this->bindings = [];
-        $this->instances = [];
-        $this->abstractAliases = [];
-    }
-
-    /**
-     * Get the globally available instance of the container.
-     *
-     * @return static
-     */
-    public static function getInstance()
-    {
-        if (is_null(static::$instance)) {
-            static::$instance = new static;
-        }
-
-        return static::$instance;
-    }
-
-    /**
-     * Set the shared instance of the container.
-     *
-     * @param  \Illuminate\Contracts\Container\Container|null  $container
-     * @return \Illuminate\Contracts\Container\Container|static
-     */
-    public static function setInstance(ContainerContract $container = null)
-    {
-        return static::$instance = $container;
-    }
-
-    /**
-     * Determine if a given offset exists.
-     *
-     * @param  string  $key
-     * @return bool
-     */
-    public function offsetExists($key)
-    {
-        return $this->bound($key);
-    }
-
-    /**
-     * Get the value at a given offset.
-     *
-     * @param  string  $key
-     * @return mixed
-     */
-    public function offsetGet($key)
-    {
-        return $this->make($key);
-    }
-
-    /**
-     * Set the value at a given offset.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @return void
-     */
-    public function offsetSet($key, $value)
-    {
-        $this->bind($key, $value instanceof Closure ? $value : function () use ($value) {
-            return $value;
-        });
-    }
-
-    /**
-     * Unset the value at a given offset.
-     *
-     * @param  string  $key
-     * @return void
-     */
-    public function offsetUnset($key)
-    {
-        unset($this->bindings[$key], $this->instances[$key], $this->resolved[$key]);
-    }
-
-    /**
-     * Dynamically access container services.
-     *
-     * @param  string  $key
-     * @return mixed
-     */
-    public function __get($key)
-    {
-        return $this[$key];
-    }
-
-    /**
-     * Dynamically set container services.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @return void
-     */
-    public function __set($key, $value)
-    {
-        $this[$key] = $value;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,75 +1,55 @@
-<?php
-
-namespace Illuminate\Console\Scheduling;
-
-use Illuminate\Console\Application;
-use Illuminate\Support\ProcessUtils;
-
-class CommandBuilder
-{
-    /**
-     * Build the command for the given event.
-     *
-     * @param  \Illuminate\Console\Scheduling\Event  $event
-     * @return string
-     */
-    public function buildCommand(Event $event)
-    {
-        if ($event->runInBackground) {
-            return $this->buildBackgroundCommand($event);
-        }
-
-        return $this->buildForegroundCommand($event);
-    }
-
-    /**
-     * Build the command for running the event in the foreground.
-     *
-     * @param  \Illuminate\Console\Scheduling\Event  $event
-     * @return string
-     */
-    protected function buildForegroundCommand(Event $event)
-    {
-        $output = ProcessUtils::escapeArgument($event->output);
-
-        return $this->ensureCorrectUser(
-            $event, $event->command.($event->shouldAppendOutput ? ' >> ' : ' > ').$output.' 2>&1'
-        );
-    }
-
-    /**
-     * Build the command for running the event in the background.
-     *
-     * @param  \Illuminate\Console\Scheduling\Event  $event
-     * @return string
-     */
-    protected function buildBackgroundCommand(Event $event)
-    {
-        $output = ProcessUtils::escapeArgument($event->output);
-
-        $redirect = $event->shouldAppendOutput ? ' >> ' : ' > ';
-
-        $finished = Application::formatCommandString('schedule:finish').' "'.$event->mutexName().'"';
-
-        if (windows_os()) {
-            return 'start /b cmd /c "('.$event->command.' & '.$finished.' "%errorlevel%")'.$redirect.$output.' 2>&1"';
-        }
-
-        return $this->ensureCorrectUser($event,
-            '('.$event->command.$redirect.$output.' 2>&1 ; '.$finished.' "$?") > '
-            .ProcessUtils::escapeArgument($event->getDefaultOutput()).' 2>&1 &'
-        );
-    }
-
-    /**
-     * Finalize the event's command syntax with the correct user.
-     *
-     * @param  \Illuminate\Console\Scheduling\Event  $event
-     * @param  string  $command
-     * @return string
-     */
-    protected function ensureCorrectUser(Event $event, $command)
-    {
-        return $event->user && ! windows_os() ? 'sudo -u '.$event->user.' -- sh -c \''.$command.'\'' : $command;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+2/dHENoiSJSHlW==

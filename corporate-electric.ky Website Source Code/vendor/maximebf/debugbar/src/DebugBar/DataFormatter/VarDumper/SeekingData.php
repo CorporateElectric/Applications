@@ -1,103 +1,59 @@
-<?php
-
-namespace DebugBar\DataFormatter\VarDumper;
-
-use Symfony\Component\VarDumper\Cloner\Cursor;
-use Symfony\Component\VarDumper\Cloner\Data;
-use Symfony\Component\VarDumper\Cloner\DumperInterface;
-use Symfony\Component\VarDumper\Cloner\Stub;
-
-/**
- * This class backports the seek() function from Symfony 3.2 to older versions - up to v2.6.  The
- * class should not be used with newer Symfony versions that provide the seek function, as it relies
- * on a lot of undocumented functionality.
- */
-class SeekingData extends Data
-{
-    // Because the class copies/pastes the seek() implementation from Symfony 3.2, we reproduce its
-    // copyright here; this class is subject to the following additional copyright:
-
-    /*
-     * Copyright (c) 2014-2017 Fabien Potencier
-     *
-     * Permission is hereby granted, free of charge, to any person obtaining a copy
-     * of this software and associated documentation files (the "Software"), to deal
-     * in the Software without restriction, including without limitation the rights
-     * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-     * copies of the Software, and to permit persons to whom the Software is furnished
-     * to do so, subject to the following conditions:
-     *
-     * The above copyright notice and this permission notice shall be included in all
-     * copies or substantial portions of the Software.
-     *
-     * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-     * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-     * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-     * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-     * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-     * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-     * THE SOFTWARE.
-     */
-    private $position = 0;
-    private $key = 0;
-
-    /**
-     * Seeks to a specific key in nested data structures.
-     *
-     * @param string|int $key The key to seek to
-     *
-     * @return self|null A clone of $this of null if the key is not set
-     */
-    public function seek($key)
-    {
-        $thisData = $this->getRawData();
-        $item = $thisData[$this->position][$this->key];
-
-        if (!$item instanceof Stub || !$item->position) {
-            return;
-        }
-        $keys = array($key);
-
-        switch ($item->type) {
-            case Stub::TYPE_OBJECT:
-                $keys[] = "\0+\0".$key;
-                $keys[] = "\0*\0".$key;
-                $keys[] = "\0~\0".$key;
-                $keys[] = "\0$item->class\0$key";
-            case Stub::TYPE_ARRAY:
-            case Stub::TYPE_RESOURCE:
-                break;
-            default:
-                return;
-        }
-
-        $data = null;
-        $children = $thisData[$item->position];
-
-        foreach ($keys as $key) {
-            if (isset($children[$key]) || array_key_exists($key, $children)) {
-                $data = clone $this;
-                $data->key = $key;
-                $data->position = $item->position;
-                break;
-            }
-        }
-
-        return $data;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function dump(DumperInterface $dumper)
-    {
-        // Override the base class dump to use the position and key
-        $refs = array(0);
-        $class = new \ReflectionClass($this);
-        $dumpItem = $class->getMethod('dumpItem');
-        $dumpItem->setAccessible(true);
-        $data = $this->getRawData();
-        $args = array($dumper, new Cursor(), &$refs, $data[$this->position][$this->key]);
-        $dumpItem->invokeArgs($this, $args);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+7oVrGFTW8TeU47o323sQVrrXnh0cj3NA

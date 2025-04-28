@@ -1,1166 +1,654 @@
-<?php
-
-namespace Barryvdh\Debugbar;
-
-use Barryvdh\Debugbar\DataCollector\AuthCollector;
-use Barryvdh\Debugbar\DataCollector\CacheCollector;
-use Barryvdh\Debugbar\DataCollector\EventCollector;
-use Barryvdh\Debugbar\DataCollector\FilesCollector;
-use Barryvdh\Debugbar\DataCollector\GateCollector;
-use Barryvdh\Debugbar\DataCollector\LaravelCollector;
-use Barryvdh\Debugbar\DataCollector\LogsCollector;
-use Barryvdh\Debugbar\DataCollector\ModelsCollector;
-use Barryvdh\Debugbar\DataCollector\MultiAuthCollector;
-use Barryvdh\Debugbar\DataCollector\QueryCollector;
-use Barryvdh\Debugbar\DataCollector\SessionCollector;
-use Barryvdh\Debugbar\DataCollector\RequestCollector;
-use Barryvdh\Debugbar\DataCollector\ViewCollector;
-use Barryvdh\Debugbar\Storage\SocketStorage;
-use Barryvdh\Debugbar\Storage\FilesystemStorage;
-use DebugBar\Bridge\MonologCollector;
-use DebugBar\Bridge\SwiftMailer\SwiftLogCollector;
-use DebugBar\Bridge\SwiftMailer\SwiftMailCollector;
-use DebugBar\DataCollector\ConfigCollector;
-use DebugBar\DataCollector\DataCollectorInterface;
-use DebugBar\DataCollector\ExceptionsCollector;
-use DebugBar\DataCollector\MemoryCollector;
-use DebugBar\DataCollector\MessagesCollector;
-use Barryvdh\Debugbar\DataCollector\PhpInfoCollector;
-use DebugBar\DataCollector\RequestDataCollector;
-use DebugBar\DataCollector\TimeDataCollector;
-use Barryvdh\Debugbar\DataFormatter\QueryFormatter;
-use Barryvdh\Debugbar\Support\Clockwork\ClockworkCollector;
-use DebugBar\DebugBar;
-use DebugBar\Storage\PdoStorage;
-use DebugBar\Storage\RedisStorage;
-use Exception;
-use Illuminate\Contracts\Foundation\Application;
-use Illuminate\Session\SessionManager;
-use Illuminate\Support\Str;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
-
-/**
- * Debug bar subclass which adds all without Request and with LaravelCollector.
- * Rest is added in Service Provider
- *
- * @method void emergency(...$message)
- * @method void alert(...$message)
- * @method void critical(...$message)
- * @method void error(...$message)
- * @method void warning(...$message)
- * @method void notice(...$message)
- * @method void info(...$message)
- * @method void debug(...$message)
- * @method void log(...$message)
- */
-class LaravelDebugbar extends DebugBar
-{
-    /**
-     * The Laravel application instance.
-     *
-     * @var \Illuminate\Foundation\Application
-     */
-    protected $app;
-
-    /**
-     * Normalized Laravel Version
-     *
-     * @var string
-     */
-    protected $version;
-
-    /**
-     * True when booted.
-     *
-     * @var bool
-     */
-    protected $booted = false;
-
-    /**
-     * True when enabled, false disabled an null for still unknown
-     *
-     * @var bool
-     */
-    protected $enabled = null;
-
-    /**
-     * True when this is a Lumen application
-     *
-     * @var bool
-     */
-    protected $is_lumen = false;
-
-    /**
-     * @param Application $app
-     */
-    public function __construct($app = null)
-    {
-        if (!$app) {
-            $app = app();   //Fallback when $app is not given
-        }
-        $this->app = $app;
-        $this->version = $app->version();
-        $this->is_lumen = Str::contains($this->version, 'Lumen');
-    }
-
-    /**
-     * Enable the Debugbar and boot, if not already booted.
-     */
-    public function enable()
-    {
-        $this->enabled = true;
-
-        if (!$this->booted) {
-            $this->boot();
-        }
-    }
-
-    /**
-     * Boot the debugbar (add collectors, renderer and listener)
-     */
-    public function boot()
-    {
-        if ($this->booted) {
-            return;
-        }
-
-        /** @var \Barryvdh\Debugbar\LaravelDebugbar $debugbar */
-        $debugbar = $this;
-
-        /** @var Application $app */
-        $app = $this->app;
-
-        // Set custom error handler
-        if ($app['config']->get('debugbar.error_handler', false)) {
-            set_error_handler([$this, 'handleError']);
-        }
-
-        $this->selectStorage($debugbar);
-
-        if ($this->shouldCollect('phpinfo', true)) {
-            $this->addCollector(new PhpInfoCollector());
-        }
-
-        if ($this->shouldCollect('messages', true)) {
-            $this->addCollector(new MessagesCollector());
-        }
-
-        if ($this->shouldCollect('time', true)) {
-            $this->addCollector(new TimeDataCollector());
-
-            if (! $this->isLumen()) {
-                $this->app->booted(
-                    function () use ($debugbar) {
-                        $startTime = $this->app['request']->server('REQUEST_TIME_FLOAT');
-                        if ($startTime) {
-                            $debugbar['time']->addMeasure('Booting', $startTime, microtime(true));
-                        }
-                    }
-                );
-            }
-
-            $debugbar->startMeasure('application', 'Application');
-        }
-
-        if ($this->shouldCollect('memory', true)) {
-            $this->addCollector(new MemoryCollector());
-        }
-
-        if ($this->shouldCollect('exceptions', true)) {
-            try {
-                $exceptionCollector = new ExceptionsCollector();
-                $exceptionCollector->setChainExceptions(
-                    $this->app['config']->get('debugbar.options.exceptions.chain', true)
-                );
-                $this->addCollector($exceptionCollector);
-            } catch (\Exception $e) {
-            }
-        }
-
-        if ($this->shouldCollect('laravel', false)) {
-            $this->addCollector(new LaravelCollector($this->app));
-        }
-
-        if ($this->shouldCollect('default_request', false)) {
-            $this->addCollector(new RequestDataCollector());
-        }
-
-        if ($this->shouldCollect('events', false) && isset($this->app['events'])) {
-            try {
-                $startTime = $this->app['request']->server('REQUEST_TIME_FLOAT');
-                $eventCollector = new EventCollector($startTime);
-                $this->addCollector($eventCollector);
-                $this->app['events']->subscribe($eventCollector);
-            } catch (\Exception $e) {
-                $this->addThrowable(
-                    new Exception(
-                        'Cannot add EventCollector to Laravel Debugbar: ' . $e->getMessage(),
-                        $e->getCode(),
-                        $e
-                    )
-                );
-            }
-        }
-
-        if ($this->shouldCollect('views', true) && isset($this->app['events'])) {
-            try {
-                $collectData = $this->app['config']->get('debugbar.options.views.data', true);
-                $this->addCollector(new ViewCollector($collectData));
-                $this->app['events']->listen(
-                    'composing:*',
-                    function ($view, $data = []) use ($debugbar) {
-                        if ($data) {
-                            $view = $data[0]; // For Laravel >= 5.4
-                        }
-                        $debugbar['views']->addView($view);
-                    }
-                );
-            } catch (\Exception $e) {
-                $this->addThrowable(
-                    new Exception(
-                        'Cannot add ViewCollector to Laravel Debugbar: ' . $e->getMessage(),
-                        $e->getCode(),
-                        $e
-                    )
-                );
-            }
-        }
-
-        if (!$this->isLumen() && $this->shouldCollect('route')) {
-            try {
-                $this->addCollector($this->app->make('Barryvdh\Debugbar\DataCollector\RouteCollector'));
-            } catch (\Exception $e) {
-                $this->addThrowable(
-                    new Exception(
-                        'Cannot add RouteCollector to Laravel Debugbar: ' . $e->getMessage(),
-                        $e->getCode(),
-                        $e
-                    )
-                );
-            }
-        }
-
-        if (!$this->isLumen() && $this->shouldCollect('log', true)) {
-            try {
-                if ($this->hasCollector('messages')) {
-                    $logger = new MessagesCollector('log');
-                    $this['messages']->aggregate($logger);
-                    $this->app['log']->listen(
-                        function ($level, $message = null, $context = null) use ($logger) {
-                            // Laravel 5.4 changed how the global log listeners are called. We must account for
-                            // the first argument being an "event object", where arguments are passed
-                            // via object properties, instead of individual arguments.
-                            if ($level instanceof \Illuminate\Log\Events\MessageLogged) {
-                                $message = $level->message;
-                                $context = $level->context;
-                                $level = $level->level;
-                            }
-
-                            try {
-                                $logMessage = (string) $message;
-                                if (mb_check_encoding($logMessage, 'UTF-8')) {
-                                    $logMessage .= (!empty($context) ? ' ' . json_encode($context) : '');
-                                } else {
-                                    $logMessage = "[INVALID UTF-8 DATA]";
-                                }
-                            } catch (\Exception $e) {
-                                $logMessage = "[Exception: " . $e->getMessage() . "]";
-                            }
-                            $logger->addMessage(
-                                '[' . date('H:i:s') . '] ' . "LOG.$level: " . $logMessage,
-                                $level,
-                                false
-                            );
-                        }
-                    );
-                } else {
-                    $this->addCollector(new MonologCollector($this->getMonologLogger()));
-                }
-            } catch (\Exception $e) {
-                $this->addThrowable(
-                    new Exception(
-                        'Cannot add LogsCollector to Laravel Debugbar: ' . $e->getMessage(),
-                        $e->getCode(),
-                        $e
-                    )
-                );
-            }
-        }
-
-        if ($this->shouldCollect('db', true) && isset($this->app['db'])) {
-            $db = $this->app['db'];
-            if (
-                $debugbar->hasCollector('time') && $this->app['config']->get(
-                    'debugbar.options.db.timeline',
-                    false
-                )
-            ) {
-                $timeCollector = $debugbar->getCollector('time');
-            } else {
-                $timeCollector = null;
-            }
-            $queryCollector = new QueryCollector($timeCollector);
-
-            $queryCollector->setDataFormatter(new QueryFormatter());
-
-            if ($this->app['config']->get('debugbar.options.db.with_params')) {
-                $queryCollector->setRenderSqlWithParams(true);
-            }
-
-            if ($this->app['config']->get('debugbar.options.db.backtrace')) {
-                $middleware = ! $this->is_lumen ? $this->app['router']->getMiddleware() : [];
-                $queryCollector->setFindSource(true, $middleware);
-            }
-
-            if ($this->app['config']->get('debugbar.options.db.backtrace_exclude_paths')) {
-                $excludePaths = $this->app['config']->get('debugbar.options.db.backtrace_exclude_paths');
-                $queryCollector->mergeBacktraceExcludePaths($excludePaths);
-            }
-
-            if ($this->app['config']->get('debugbar.options.db.explain.enabled')) {
-                $types = $this->app['config']->get('debugbar.options.db.explain.types');
-                $queryCollector->setExplainSource(true, $types);
-            }
-
-            if ($this->app['config']->get('debugbar.options.db.hints', true)) {
-                $queryCollector->setShowHints(true);
-            }
-
-            if ($this->app['config']->get('debugbar.options.db.show_copy', false)) {
-                $queryCollector->setShowCopyButton(true);
-            }
-
-            $this->addCollector($queryCollector);
-
-            try {
-                $db->listen(
-                    function (
-                        $query,
-                        $bindings = null,
-                        $time = null,
-                        $connectionName = null
-                    ) use (
-                        $db,
-                        $queryCollector
-                    ) {
-                        if (!$this->shouldCollect('db', true)) {
-                            return; // Issue 776 : We've turned off collecting after the listener was attached
-                        }
-                        // Laravel 5.2 changed the way some core events worked. We must account for
-                        // the first argument being an "event object", where arguments are passed
-                        // via object properties, instead of individual arguments.
-                        if ($query instanceof \Illuminate\Database\Events\QueryExecuted) {
-                            $bindings = $query->bindings;
-                            $time = $query->time;
-                            $connection = $query->connection;
-
-                            $query = $query->sql;
-                        } else {
-                            $connection = $db->connection($connectionName);
-                        }
-
-                        //allow collecting only queries slower than a specified amount of milliseconds
-                        $threshold = $this->app['config']->get('debugbar.options.db.slow_threshold', false);
-                        if (!$threshold || $time > $threshold) {
-                            $queryCollector->addQuery((string)$query, $bindings, $time, $connection);
-                        }
-                    }
-                );
-            } catch (\Exception $e) {
-                $this->addThrowable(
-                    new Exception(
-                        'Cannot add listen to Queries for Laravel Debugbar: ' . $e->getMessage(),
-                        $e->getCode(),
-                        $e
-                    )
-                );
-            }
-
-            try {
-                $db->getEventDispatcher()->listen(
-                    \Illuminate\Database\Events\TransactionBeginning::class,
-                    function ($transaction) use ($queryCollector) {
-                        $queryCollector->collectTransactionEvent('Begin Transaction', $transaction->connection);
-                    }
-                );
-
-                $db->getEventDispatcher()->listen(
-                    \Illuminate\Database\Events\TransactionCommitted::class,
-                    function ($transaction) use ($queryCollector) {
-                        $queryCollector->collectTransactionEvent('Commit Transaction', $transaction->connection);
-                    }
-                );
-
-                $db->getEventDispatcher()->listen(
-                    \Illuminate\Database\Events\TransactionRolledBack::class,
-                    function ($transaction) use ($queryCollector) {
-                        $queryCollector->collectTransactionEvent('Rollback Transaction', $transaction->connection);
-                    }
-                );
-
-                $db->getEventDispatcher()->listen(
-                    'connection.*.beganTransaction',
-                    function ($event, $params) use ($queryCollector) {
-                        $queryCollector->collectTransactionEvent('Begin Transaction', $params[0]);
-                    }
-                );
-
-                $db->getEventDispatcher()->listen(
-                    'connection.*.committed',
-                    function ($event, $params) use ($queryCollector) {
-                        $queryCollector->collectTransactionEvent('Commit Transaction', $params[0]);
-                    }
-                );
-
-                $db->getEventDispatcher()->listen(
-                    'connection.*.rollingBack',
-                    function ($event, $params) use ($queryCollector) {
-                        $queryCollector->collectTransactionEvent('Rollback Transaction', $params[0]);
-                    }
-                );
-            } catch (\Exception $e) {
-                $this->addThrowable(
-                    new Exception(
-                        'Cannot add listen transactions to Queries for Laravel Debugbar: ' . $e->getMessage(),
-                        $e->getCode(),
-                        $e
-                    )
-                );
-            }
-        }
-
-        if ($this->shouldCollect('models', true)) {
-            try {
-                $modelsCollector = $this->app->make('Barryvdh\Debugbar\DataCollector\ModelsCollector');
-                $this->addCollector($modelsCollector);
-            } catch (\Exception $e) {
-                // No Models collector
-            }
-        }
-
-        if ($this->shouldCollect('livewire', true) && $this->app->bound('livewire')) {
-            try {
-                $livewireCollector = $this->app->make('Barryvdh\Debugbar\DataCollector\LivewireCollector');
-                $this->addCollector($livewireCollector);
-            } catch (\Exception $e) {
-                $this->addThrowable(
-                    new Exception('Cannot add Livewire Collector: ' . $e->getMessage(), $e->getCode(), $e)
-                );
-            }
-        }
-
-        if ($this->shouldCollect('mail', true) && class_exists('Illuminate\Mail\MailServiceProvider')) {
-            try {
-                $mailer = $this->app['mailer']->getSwiftMailer();
-                $this->addCollector(new SwiftMailCollector($mailer));
-                if (
-                    $this->app['config']->get('debugbar.options.mail.full_log') && $this->hasCollector(
-                        'messages'
-                    )
-                ) {
-                    $this['messages']->aggregate(new SwiftLogCollector($mailer));
-                }
-            } catch (\Exception $e) {
-                $this->addThrowable(
-                    new Exception(
-                        'Cannot add MailCollector to Laravel Debugbar: ' . $e->getMessage(),
-                        $e->getCode(),
-                        $e
-                    )
-                );
-            }
-        }
-
-        if ($this->shouldCollect('logs', false)) {
-            try {
-                $file = $this->app['config']->get('debugbar.options.logs.file');
-                $this->addCollector(new LogsCollector($file));
-            } catch (\Exception $e) {
-                $this->addThrowable(
-                    new Exception(
-                        'Cannot add LogsCollector to Laravel Debugbar: ' . $e->getMessage(),
-                        $e->getCode(),
-                        $e
-                    )
-                );
-            }
-        }
-        if ($this->shouldCollect('files', false)) {
-            $this->addCollector(new FilesCollector($app));
-        }
-
-        if ($this->shouldCollect('auth', false)) {
-            try {
-                $guards = $this->app['config']->get('auth.guards', []);
-                $authCollector = new MultiAuthCollector($app['auth'], $guards);
-
-                $authCollector->setShowName(
-                    $this->app['config']->get('debugbar.options.auth.show_name')
-                );
-                $this->addCollector($authCollector);
-            } catch (\Exception $e) {
-                $this->addThrowable(
-                    new Exception(
-                        'Cannot add AuthCollector to Laravel Debugbar: ' . $e->getMessage(),
-                        $e->getCode(),
-                        $e
-                    )
-                );
-            }
-        }
-
-        if ($this->shouldCollect('gate', false)) {
-            try {
-                $gateCollector = $this->app->make('Barryvdh\Debugbar\DataCollector\GateCollector');
-                $this->addCollector($gateCollector);
-            } catch (\Exception $e) {
-                // No Gate collector
-            }
-        }
-
-        if ($this->shouldCollect('cache', false) && isset($this->app['events'])) {
-            try {
-                $collectValues = $this->app['config']->get('debugbar.options.cache.values', true);
-                $startTime = $this->app['request']->server('REQUEST_TIME_FLOAT');
-                $cacheCollector = new CacheCollector($startTime, $collectValues);
-                $this->addCollector($cacheCollector);
-                $this->app['events']->subscribe($cacheCollector);
-            } catch (\Exception $e) {
-                $this->addThrowable(
-                    new Exception(
-                        'Cannot add CacheCollector to Laravel Debugbar: ' . $e->getMessage(),
-                        $e->getCode(),
-                        $e
-                    )
-                );
-            }
-        }
-
-        $renderer = $this->getJavascriptRenderer();
-        $renderer->setIncludeVendors($this->app['config']->get('debugbar.include_vendors', true));
-        $renderer->setBindAjaxHandlerToFetch($app['config']->get('debugbar.capture_ajax', true));
-        $renderer->setBindAjaxHandlerToXHR($app['config']->get('debugbar.capture_ajax', true));
-
-        $this->booted = true;
-    }
-
-    public function shouldCollect($name, $default = false)
-    {
-        return $this->app['config']->get('debugbar.collectors.' . $name, $default);
-    }
-
-    /**
-     * Adds a data collector
-     *
-     * @param DataCollectorInterface $collector
-     *
-     * @throws DebugBarException
-     * @return $this
-     */
-    public function addCollector(DataCollectorInterface $collector)
-    {
-        parent::addCollector($collector);
-
-        if (method_exists($collector, 'useHtmlVarDumper')) {
-            $collector->useHtmlVarDumper();
-        }
-
-        return $this;
-    }
-
-    /**
-     * Handle silenced errors
-     *
-     * @param $level
-     * @param $message
-     * @param string $file
-     * @param int $line
-     * @param array $context
-     * @throws \ErrorException
-     */
-    public function handleError($level, $message, $file = '', $line = 0, $context = [])
-    {
-        if (error_reporting() & $level) {
-            throw new \ErrorException($message, 0, $level, $file, $line);
-        } else {
-            $this->addMessage($message, 'deprecation');
-        }
-    }
-
-    /**
-     * Starts a measure
-     *
-     * @param string $name Internal name, used to stop the measure
-     * @param string $label Public name
-     */
-    public function startMeasure($name, $label = null)
-    {
-        if ($this->hasCollector('time')) {
-            /** @var \DebugBar\DataCollector\TimeDataCollector $collector */
-            $collector = $this->getCollector('time');
-            $collector->startMeasure($name, $label);
-        }
-    }
-
-    /**
-     * Stops a measure
-     *
-     * @param string $name
-     */
-    public function stopMeasure($name)
-    {
-        if ($this->hasCollector('time')) {
-            /** @var \DebugBar\DataCollector\TimeDataCollector $collector */
-            $collector = $this->getCollector('time');
-            try {
-                $collector->stopMeasure($name);
-            } catch (\Exception $e) {
-                //  $this->addThrowable($e);
-            }
-        }
-    }
-
-    /**
-     * Adds an exception to be profiled in the debug bar
-     *
-     * @param Exception $e
-     * @deprecated in favor of addThrowable
-     */
-    public function addException(Exception $e)
-    {
-        return $this->addThrowable($e);
-    }
-
-    /**
-     * Adds an exception to be profiled in the debug bar
-     *
-     * @param Exception $e
-     */
-    public function addThrowable($e)
-    {
-        if ($this->hasCollector('exceptions')) {
-            /** @var \DebugBar\DataCollector\ExceptionsCollector $collector */
-            $collector = $this->getCollector('exceptions');
-            $collector->addThrowable($e);
-        }
-    }
-
-    /**
-     * Returns a JavascriptRenderer for this instance
-     *
-     * @param string $baseUrl
-     * @param string $basePathng
-     * @return JavascriptRenderer
-     */
-    public function getJavascriptRenderer($baseUrl = null, $basePath = null)
-    {
-        if ($this->jsRenderer === null) {
-            $this->jsRenderer = new JavascriptRenderer($this, $baseUrl, $basePath);
-        }
-        return $this->jsRenderer;
-    }
-
-    /**
-     * Modify the response and inject the debugbar (or data in headers)
-     *
-     * @param  \Symfony\Component\HttpFoundation\Request $request
-     * @param  \Symfony\Component\HttpFoundation\Response $response
-     * @return \Symfony\Component\HttpFoundation\Response
-     */
-    public function modifyResponse(Request $request, Response $response)
-    {
-        $app = $this->app;
-        if (!$this->isEnabled() || $this->isDebugbarRequest()) {
-            return $response;
-        }
-
-        // Show the Http Response Exception in the Debugbar, when available
-        if (isset($response->exception)) {
-            $this->addThrowable($response->exception);
-        }
-
-        if ($this->shouldCollect('config', false)) {
-            try {
-                $configCollector = new ConfigCollector();
-                $configCollector->setData($app['config']->all());
-                $this->addCollector($configCollector);
-            } catch (\Exception $e) {
-                $this->addThrowable(
-                    new Exception(
-                        'Cannot add ConfigCollector to Laravel Debugbar: ' . $e->getMessage(),
-                        $e->getCode(),
-                        $e
-                    )
-                );
-            }
-        }
-
-        if ($this->app->bound(SessionManager::class)) {
-
-            /** @var \Illuminate\Session\SessionManager $sessionManager */
-            $sessionManager = $app->make(SessionManager::class);
-            $httpDriver = new SymfonyHttpDriver($sessionManager, $response);
-            $this->setHttpDriver($httpDriver);
-
-            if ($this->shouldCollect('session') && ! $this->hasCollector('session')) {
-                try {
-                    $this->addCollector(new SessionCollector($sessionManager));
-                } catch (\Exception $e) {
-                    $this->addThrowable(
-                        new Exception(
-                            'Cannot add SessionCollector to Laravel Debugbar: ' . $e->getMessage(),
-                            $e->getCode(),
-                            $e
-                        )
-                    );
-                }
-            }
-        } else {
-            $sessionManager = null;
-        }
-
-        if ($this->shouldCollect('symfony_request', true) && !$this->hasCollector('request')) {
-            try {
-                $reqId = $this->getCurrentRequestId();
-                $this->addCollector(new RequestCollector($request, $response, $sessionManager, $reqId));
-            } catch (\Exception $e) {
-                $this->addThrowable(
-                    new Exception(
-                        'Cannot add SymfonyRequestCollector to Laravel Debugbar: ' . $e->getMessage(),
-                        $e->getCode(),
-                        $e
-                    )
-                );
-            }
-        }
-
-        if ($app['config']->get('debugbar.clockwork') && ! $this->hasCollector('clockwork')) {
-            try {
-                $this->addCollector(new ClockworkCollector($request, $response, $sessionManager));
-            } catch (\Exception $e) {
-                $this->addThrowable(
-                    new Exception(
-                        'Cannot add ClockworkCollector to Laravel Debugbar: ' . $e->getMessage(),
-                        $e->getCode(),
-                        $e
-                    )
-                );
-            }
-
-            $this->addClockworkHeaders($response);
-        }
-
-        if ($response->isRedirection()) {
-            try {
-                $this->stackData();
-            } catch (\Exception $e) {
-                $app['log']->error('Debugbar exception: ' . $e->getMessage());
-            }
-        } elseif (
-            $this->isJsonRequest($request) &&
-            $app['config']->get('debugbar.capture_ajax', true)
-        ) {
-            try {
-                $this->sendDataInHeaders(true);
-
-                if ($app['config']->get('debugbar.add_ajax_timing', false)) {
-                    $this->addServerTimingHeaders($response);
-                }
-            } catch (\Exception $e) {
-                $app['log']->error('Debugbar exception: ' . $e->getMessage());
-            }
-        } elseif (
-            ($response->headers->has('Content-Type') &&
-                strpos($response->headers->get('Content-Type'), 'html') === false) ||
-            $request->getRequestFormat() !== 'html' ||
-            $response->getContent() === false ||
-            $this->isJsonRequest($request)
-        ) {
-            try {
-                // Just collect + store data, don't inject it.
-                $this->collect();
-            } catch (\Exception $e) {
-                $app['log']->error('Debugbar exception: ' . $e->getMessage());
-            }
-        } elseif ($app['config']->get('debugbar.inject', true)) {
-            try {
-                $this->injectDebugbar($response);
-            } catch (\Exception $e) {
-                $app['log']->error('Debugbar exception: ' . $e->getMessage());
-            }
-        }
-
-
-
-        return $response;
-    }
-
-    /**
-     * Check if the Debugbar is enabled
-     * @return boolean
-     */
-    public function isEnabled()
-    {
-        if ($this->enabled === null) {
-            $config = $this->app['config'];
-            $configEnabled = value($config->get('debugbar.enabled'));
-
-            if ($configEnabled === null) {
-                $configEnabled = $config->get('app.debug');
-            }
-
-            $this->enabled = $configEnabled && !$this->app->runningInConsole() && !$this->app->environment('testing');
-        }
-
-        return $this->enabled;
-    }
-
-    /**
-     * Check if this is a request to the Debugbar OpenHandler
-     *
-     * @return bool
-     */
-    protected function isDebugbarRequest()
-    {
-        return $this->app['request']->segment(1) == $this->app['config']->get('debugbar.route_prefix');
-    }
-
-    /**
-     * @param  \Symfony\Component\HttpFoundation\Request $request
-     * @return bool
-     */
-    protected function isJsonRequest(Request $request)
-    {
-        // If XmlHttpRequest or Live, return true
-        if ($request->isXmlHttpRequest() || $request->headers->get('X-Livewire')) {
-            return true;
-        }
-
-        // Check if the request wants Json
-        $acceptable = $request->getAcceptableContentTypes();
-        return (isset($acceptable[0]) && $acceptable[0] == 'application/json');
-    }
-
-    /**
-     * Collects the data from the collectors
-     *
-     * @return array
-     */
-    public function collect()
-    {
-        /** @var Request $request */
-        $request = $this->app['request'];
-
-        $this->data = [
-            '__meta' => [
-                'id' => $this->getCurrentRequestId(),
-                'datetime' => date('Y-m-d H:i:s'),
-                'utime' => microtime(true),
-                'method' => $request->getMethod(),
-                'uri' => $request->getRequestUri(),
-                'ip' => $request->getClientIp()
-            ]
-        ];
-
-        foreach ($this->collectors as $name => $collector) {
-            $this->data[$name] = $collector->collect();
-        }
-
-        // Remove all invalid (non UTF-8) characters
-        array_walk_recursive(
-            $this->data,
-            function (&$item) {
-                if (is_string($item) && !mb_check_encoding($item, 'UTF-8')) {
-                    $item = mb_convert_encoding($item, 'UTF-8', 'UTF-8');
-                }
-            }
-        );
-
-        if ($this->storage !== null) {
-            $this->storage->save($this->getCurrentRequestId(), $this->data);
-        }
-
-        return $this->data;
-    }
-
-    /**
-     * Injects the web debug toolbar into the given Response.
-     *
-     * @param \Symfony\Component\HttpFoundation\Response $response A Response instance
-     * Based on https://github.com/symfony/WebProfilerBundle/blob/master/EventListener/WebDebugToolbarListener.php
-     */
-    public function injectDebugbar(Response $response)
-    {
-        $content = $response->getContent();
-
-        $renderer = $this->getJavascriptRenderer();
-        if ($this->getStorage()) {
-            $openHandlerUrl = route('debugbar.openhandler');
-            $renderer->setOpenHandlerUrl($openHandlerUrl);
-        }
-
-        $head = $renderer->renderHead();
-        $widget = $renderer->render();
-
-        // Try to put the js/css directly before the </head>
-        $pos = strripos($content, '</head>');
-        if (false !== $pos) {
-            $content = substr($content, 0, $pos) . $head . substr($content, $pos);
-        } else {
-            // Append the head before the widget
-            $widget = $head . $widget;
-        }
-
-        // Try to put the widget at the end, directly before the </body>
-        $pos = strripos($content, '</body>');
-        if (false !== $pos) {
-            $content = substr($content, 0, $pos) . $widget . substr($content, $pos);
-        } else {
-            $content = $content . $widget;
-        }
-
-        $original = null;
-        if ($response instanceof \Illuminate\Http\Response && $response->getOriginalContent()) {
-            $original = $response->getOriginalContent();
-        }
-
-        // Update the new content and reset the content length
-        $response->setContent($content);
-        $response->headers->remove('Content-Length');
-
-        // Restore original response (eg. the View or Ajax data)
-        if ($original) {
-            $response->original = $original;
-        }
-    }
-
-    /**
-     * Disable the Debugbar
-     */
-    public function disable()
-    {
-        $this->enabled = false;
-    }
-
-    /**
-     * Adds a measure
-     *
-     * @param string $label
-     * @param float $start
-     * @param float $end
-     */
-    public function addMeasure($label, $start, $end)
-    {
-        if ($this->hasCollector('time')) {
-            /** @var \DebugBar\DataCollector\TimeDataCollector $collector */
-            $collector = $this->getCollector('time');
-            $collector->addMeasure($label, $start, $end);
-        }
-    }
-
-    /**
-     * Utility function to measure the execution of a Closure
-     *
-     * @param string $label
-     * @param \Closure $closure
-     * @return mixed
-     */
-    public function measure($label, \Closure $closure)
-    {
-        if ($this->hasCollector('time')) {
-            /** @var \DebugBar\DataCollector\TimeDataCollector $collector */
-            $collector = $this->getCollector('time');
-            $result = $collector->measure($label, $closure);
-        } else {
-            $result = $closure();
-        }
-        return $result;
-    }
-
-    /**
-     * Collect data in a CLI request
-     *
-     * @return array
-     */
-    public function collectConsole()
-    {
-        if (!$this->isEnabled()) {
-            return;
-        }
-
-        $this->data = [
-            '__meta' => [
-                'id' => $this->getCurrentRequestId(),
-                'datetime' => date('Y-m-d H:i:s'),
-                'utime' => microtime(true),
-                'method' => 'CLI',
-                'uri' => isset($_SERVER['argv']) ? implode(' ', $_SERVER['argv']) : null,
-                'ip' => isset($_SERVER['SSH_CLIENT']) ? $_SERVER['SSH_CLIENT'] : null
-            ]
-        ];
-
-        foreach ($this->collectors as $name => $collector) {
-            $this->data[$name] = $collector->collect();
-        }
-
-        // Remove all invalid (non UTF-8) characters
-        array_walk_recursive(
-            $this->data,
-            function (&$item) {
-                if (is_string($item) && !mb_check_encoding($item, 'UTF-8')) {
-                    $item = mb_convert_encoding($item, 'UTF-8', 'UTF-8');
-                }
-            }
-        );
-
-        if ($this->storage !== null) {
-            $this->storage->save($this->getCurrentRequestId(), $this->data);
-        }
-
-        return $this->data;
-    }
-
-    /**
-     * Magic calls for adding messages
-     *
-     * @param string $method
-     * @param array $args
-     * @return mixed|void
-     */
-    public function __call($method, $args)
-    {
-        $messageLevels = ['emergency', 'alert', 'critical', 'error', 'warning', 'notice', 'info', 'debug', 'log'];
-        if (in_array($method, $messageLevels)) {
-            foreach ($args as $arg) {
-                $this->addMessage($arg, $method);
-            }
-        }
-    }
-
-    /**
-     * Adds a message to the MessagesCollector
-     *
-     * A message can be anything from an object to a string
-     *
-     * @param mixed $message
-     * @param string $label
-     */
-    public function addMessage($message, $label = 'info')
-    {
-        if ($this->hasCollector('messages')) {
-            /** @var \DebugBar\DataCollector\MessagesCollector $collector */
-            $collector = $this->getCollector('messages');
-            $collector->addMessage($message, $label);
-        }
-    }
-
-    /**
-     * Check the version of Laravel
-     *
-     * @param string $version
-     * @param string $operator (default: '>=')
-     * @return boolean
-     */
-    protected function checkVersion($version, $operator = ">=")
-    {
-        return version_compare($this->version, $version, $operator);
-    }
-
-    protected function isLumen()
-    {
-        return $this->is_lumen;
-    }
-
-    /**
-     * @param DebugBar $debugbar
-     */
-    protected function selectStorage(DebugBar $debugbar)
-    {
-        $config = $this->app['config'];
-        if ($config->get('debugbar.storage.enabled')) {
-            $driver = $config->get('debugbar.storage.driver', 'file');
-
-            switch ($driver) {
-                case 'pdo':
-                    $connection = $config->get('debugbar.storage.connection');
-                    $table = $this->app['db']->getTablePrefix() . 'phpdebugbar';
-                    $pdo = $this->app['db']->connection($connection)->getPdo();
-                    $storage = new PdoStorage($pdo, $table);
-                    break;
-                case 'redis':
-                    $connection = $config->get('debugbar.storage.connection');
-                    $client = $this->app['redis']->connection($connection);
-                    if (is_a($client, 'Illuminate\Redis\Connections\Connection', false)) {
-                        $client = $client->client();
-                    }
-                    $storage = new RedisStorage($client);
-                    break;
-                case 'custom':
-                    $class = $config->get('debugbar.storage.provider');
-                    $storage = $this->app->make($class);
-                    break;
-                case 'socket':
-                    $hostname = $config->get('debugbar.storage.hostname', '127.0.0.1');
-                    $port = $config->get('debugbar.storage.port', 2304);
-                    $storage = new SocketStorage($hostname, $port);
-                    break;
-                case 'file':
-                default:
-                    $path = $config->get('debugbar.storage.path');
-                    $storage = new FilesystemStorage($this->app['files'], $path);
-                    break;
-            }
-
-            $debugbar->setStorage($storage);
-        }
-    }
-
-    protected function addClockworkHeaders(Response $response)
-    {
-        $prefix = $this->app['config']->get('debugbar.route_prefix');
-        $response->headers->set('X-Clockwork-Id', $this->getCurrentRequestId(), true);
-        $response->headers->set('X-Clockwork-Version', 1, true);
-        $response->headers->set('X-Clockwork-Path', $prefix . '/clockwork/', true);
-    }
-
-    /**
-     * Add Server-Timing headers for the TimeData collector
-     *
-     * @see https://www.w3.org/TR/server-timing/
-     * @param Response $response
-     */
-    protected function addServerTimingHeaders(Response $response)
-    {
-        if ($this->hasCollector('time')) {
-            $collector = $this->getCollector('time');
-
-            $headers = [];
-            foreach ($collector->collect()['measures'] as $k => $m) {
-                $headers[] = sprintf('app;desc="%s";dur=%F', str_replace('"', "'", $m['label']), $m['duration'] * 1000);
-            }
-
-            $response->headers->set('Server-Timing', $headers, false);
-        }
-    }
-
-    /**
-     * @return \Monolog\Logger
-     * @throws Exception
-     */
-    private function getMonologLogger()
-    {
-        // The logging was refactored in Laravel 5.6
-        if ($this->checkVersion('5.6')) {
-            $logger = $this->app['log']->getLogger();
-        } else {
-            $logger = $this->app['log']->getMonolog();
-        }
-
-        if (get_class($logger) !== 'Monolog\Logger') {
-            throw new Exception('Logger is not a Monolog\Logger instance');
-        }
-
-        return $logger;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

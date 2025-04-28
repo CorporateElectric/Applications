@@ -1,93 +1,74 @@
-<?php
-
-namespace Spatie\Sitemap;
-
-use Illuminate\Contracts\Support\Responsable;
-use Illuminate\Support\Facades\Response;
-use Illuminate\Support\Facades\Storage;
-use Spatie\Sitemap\Tags\Tag;
-use Spatie\Sitemap\Tags\Url;
-
-class Sitemap implements Responsable
-{
-    /** @var array */
-    protected $tags = [];
-
-    public static function create(): self
-    {
-        return new static();
-    }
-
-    /**
-     * @param string|\Spatie\Sitemap\Tags\Tag $tag
-     *
-     * @return $this
-     */
-    public function add($tag): self
-    {
-        if (is_string($tag)) {
-            $tag = Url::create($tag);
-        }
-
-        if (! in_array($tag, $this->tags)) {
-            $this->tags[] = $tag;
-        }
-
-        return $this;
-    }
-
-    public function getTags(): array
-    {
-        return $this->tags;
-    }
-
-    public function getUrl(string $url): ?Url
-    {
-        return collect($this->tags)->first(function (Tag $tag) use ($url) {
-            return $tag->getType() === 'url' && $tag->url === $url;
-        });
-    }
-
-    public function hasUrl(string $url): bool
-    {
-        return (bool) $this->getUrl($url);
-    }
-
-    public function render(): string
-    {
-        sort($this->tags);
-
-        $tags = collect($this->tags)->unique('url');
-
-        return view('laravel-sitemap::sitemap')
-            ->with(compact('tags'))
-            ->render();
-    }
-
-    public function writeToFile(string $path): self
-    {
-        file_put_contents($path, $this->render());
-
-        return $this;
-    }
-
-    public function writeToDisk(string $disk, string $path): self
-    {
-        Storage::disk($disk)->put($path, $this->render());
-
-        return $this;
-    }
-
-    /**
-     * Create an HTTP response that represents the object.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Symfony\Component\HttpFoundation\Response
-     */
-    public function toResponse($request)
-    {
-        return Response::make($this->render(), 200, [
-            'Content-Type' => 'text/xml',
-        ]);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,267 +1,62 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Predis\Profile;
-
-/**
- * Server profile for Redis 2.8.
- *
- * @author Daniele Alessandri <suppakilla@gmail.com>
- */
-class RedisVersion280 extends RedisProfile
-{
-    /**
-     * {@inheritdoc}
-     */
-    public function getVersion()
-    {
-        return '2.8';
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getSupportedCommands()
-    {
-        return array(
-            /* ---------------- Redis 1.2 ---------------- */
-
-            /* commands operating on the key space */
-            'EXISTS' => 'Predis\Command\KeyExists',
-            'DEL' => 'Predis\Command\KeyDelete',
-            'TYPE' => 'Predis\Command\KeyType',
-            'KEYS' => 'Predis\Command\KeyKeys',
-            'RANDOMKEY' => 'Predis\Command\KeyRandom',
-            'RENAME' => 'Predis\Command\KeyRename',
-            'RENAMENX' => 'Predis\Command\KeyRenamePreserve',
-            'EXPIRE' => 'Predis\Command\KeyExpire',
-            'EXPIREAT' => 'Predis\Command\KeyExpireAt',
-            'TTL' => 'Predis\Command\KeyTimeToLive',
-            'MOVE' => 'Predis\Command\KeyMove',
-            'SORT' => 'Predis\Command\KeySort',
-            'DUMP' => 'Predis\Command\KeyDump',
-            'RESTORE' => 'Predis\Command\KeyRestore',
-
-            /* commands operating on string values */
-            'SET' => 'Predis\Command\StringSet',
-            'SETNX' => 'Predis\Command\StringSetPreserve',
-            'MSET' => 'Predis\Command\StringSetMultiple',
-            'MSETNX' => 'Predis\Command\StringSetMultiplePreserve',
-            'GET' => 'Predis\Command\StringGet',
-            'MGET' => 'Predis\Command\StringGetMultiple',
-            'GETSET' => 'Predis\Command\StringGetSet',
-            'INCR' => 'Predis\Command\StringIncrement',
-            'INCRBY' => 'Predis\Command\StringIncrementBy',
-            'DECR' => 'Predis\Command\StringDecrement',
-            'DECRBY' => 'Predis\Command\StringDecrementBy',
-
-            /* commands operating on lists */
-            'RPUSH' => 'Predis\Command\ListPushTail',
-            'LPUSH' => 'Predis\Command\ListPushHead',
-            'LLEN' => 'Predis\Command\ListLength',
-            'LRANGE' => 'Predis\Command\ListRange',
-            'LTRIM' => 'Predis\Command\ListTrim',
-            'LINDEX' => 'Predis\Command\ListIndex',
-            'LSET' => 'Predis\Command\ListSet',
-            'LREM' => 'Predis\Command\ListRemove',
-            'LPOP' => 'Predis\Command\ListPopFirst',
-            'RPOP' => 'Predis\Command\ListPopLast',
-            'RPOPLPUSH' => 'Predis\Command\ListPopLastPushHead',
-
-            /* commands operating on sets */
-            'SADD' => 'Predis\Command\SetAdd',
-            'SREM' => 'Predis\Command\SetRemove',
-            'SPOP' => 'Predis\Command\SetPop',
-            'SMOVE' => 'Predis\Command\SetMove',
-            'SCARD' => 'Predis\Command\SetCardinality',
-            'SISMEMBER' => 'Predis\Command\SetIsMember',
-            'SINTER' => 'Predis\Command\SetIntersection',
-            'SINTERSTORE' => 'Predis\Command\SetIntersectionStore',
-            'SUNION' => 'Predis\Command\SetUnion',
-            'SUNIONSTORE' => 'Predis\Command\SetUnionStore',
-            'SDIFF' => 'Predis\Command\SetDifference',
-            'SDIFFSTORE' => 'Predis\Command\SetDifferenceStore',
-            'SMEMBERS' => 'Predis\Command\SetMembers',
-            'SRANDMEMBER' => 'Predis\Command\SetRandomMember',
-
-            /* commands operating on sorted sets */
-            'ZADD' => 'Predis\Command\ZSetAdd',
-            'ZINCRBY' => 'Predis\Command\ZSetIncrementBy',
-            'ZREM' => 'Predis\Command\ZSetRemove',
-            'ZRANGE' => 'Predis\Command\ZSetRange',
-            'ZREVRANGE' => 'Predis\Command\ZSetReverseRange',
-            'ZRANGEBYSCORE' => 'Predis\Command\ZSetRangeByScore',
-            'ZCARD' => 'Predis\Command\ZSetCardinality',
-            'ZSCORE' => 'Predis\Command\ZSetScore',
-            'ZREMRANGEBYSCORE' => 'Predis\Command\ZSetRemoveRangeByScore',
-
-            /* connection related commands */
-            'PING' => 'Predis\Command\ConnectionPing',
-            'AUTH' => 'Predis\Command\ConnectionAuth',
-            'SELECT' => 'Predis\Command\ConnectionSelect',
-            'ECHO' => 'Predis\Command\ConnectionEcho',
-            'QUIT' => 'Predis\Command\ConnectionQuit',
-
-            /* remote server control commands */
-            'INFO' => 'Predis\Command\ServerInfoV26x',
-            'SLAVEOF' => 'Predis\Command\ServerSlaveOf',
-            'MONITOR' => 'Predis\Command\ServerMonitor',
-            'DBSIZE' => 'Predis\Command\ServerDatabaseSize',
-            'FLUSHDB' => 'Predis\Command\ServerFlushDatabase',
-            'FLUSHALL' => 'Predis\Command\ServerFlushAll',
-            'SAVE' => 'Predis\Command\ServerSave',
-            'BGSAVE' => 'Predis\Command\ServerBackgroundSave',
-            'LASTSAVE' => 'Predis\Command\ServerLastSave',
-            'SHUTDOWN' => 'Predis\Command\ServerShutdown',
-            'BGREWRITEAOF' => 'Predis\Command\ServerBackgroundRewriteAOF',
-
-            /* ---------------- Redis 2.0 ---------------- */
-
-            /* commands operating on string values */
-            'SETEX' => 'Predis\Command\StringSetExpire',
-            'APPEND' => 'Predis\Command\StringAppend',
-            'SUBSTR' => 'Predis\Command\StringSubstr',
-
-            /* commands operating on lists */
-            'BLPOP' => 'Predis\Command\ListPopFirstBlocking',
-            'BRPOP' => 'Predis\Command\ListPopLastBlocking',
-
-            /* commands operating on sorted sets */
-            'ZUNIONSTORE' => 'Predis\Command\ZSetUnionStore',
-            'ZINTERSTORE' => 'Predis\Command\ZSetIntersectionStore',
-            'ZCOUNT' => 'Predis\Command\ZSetCount',
-            'ZRANK' => 'Predis\Command\ZSetRank',
-            'ZREVRANK' => 'Predis\Command\ZSetReverseRank',
-            'ZREMRANGEBYRANK' => 'Predis\Command\ZSetRemoveRangeByRank',
-
-            /* commands operating on hashes */
-            'HSET' => 'Predis\Command\HashSet',
-            'HSETNX' => 'Predis\Command\HashSetPreserve',
-            'HMSET' => 'Predis\Command\HashSetMultiple',
-            'HINCRBY' => 'Predis\Command\HashIncrementBy',
-            'HGET' => 'Predis\Command\HashGet',
-            'HMGET' => 'Predis\Command\HashGetMultiple',
-            'HDEL' => 'Predis\Command\HashDelete',
-            'HEXISTS' => 'Predis\Command\HashExists',
-            'HLEN' => 'Predis\Command\HashLength',
-            'HKEYS' => 'Predis\Command\HashKeys',
-            'HVALS' => 'Predis\Command\HashValues',
-            'HGETALL' => 'Predis\Command\HashGetAll',
-
-            /* transactions */
-            'MULTI' => 'Predis\Command\TransactionMulti',
-            'EXEC' => 'Predis\Command\TransactionExec',
-            'DISCARD' => 'Predis\Command\TransactionDiscard',
-
-            /* publish - subscribe */
-            'SUBSCRIBE' => 'Predis\Command\PubSubSubscribe',
-            'UNSUBSCRIBE' => 'Predis\Command\PubSubUnsubscribe',
-            'PSUBSCRIBE' => 'Predis\Command\PubSubSubscribeByPattern',
-            'PUNSUBSCRIBE' => 'Predis\Command\PubSubUnsubscribeByPattern',
-            'PUBLISH' => 'Predis\Command\PubSubPublish',
-
-            /* remote server control commands */
-            'CONFIG' => 'Predis\Command\ServerConfig',
-
-            /* ---------------- Redis 2.2 ---------------- */
-
-            /* commands operating on the key space */
-            'PERSIST' => 'Predis\Command\KeyPersist',
-
-            /* commands operating on string values */
-            'STRLEN' => 'Predis\Command\StringStrlen',
-            'SETRANGE' => 'Predis\Command\StringSetRange',
-            'GETRANGE' => 'Predis\Command\StringGetRange',
-            'SETBIT' => 'Predis\Command\StringSetBit',
-            'GETBIT' => 'Predis\Command\StringGetBit',
-
-            /* commands operating on lists */
-            'RPUSHX' => 'Predis\Command\ListPushTailX',
-            'LPUSHX' => 'Predis\Command\ListPushHeadX',
-            'LINSERT' => 'Predis\Command\ListInsert',
-            'BRPOPLPUSH' => 'Predis\Command\ListPopLastPushHeadBlocking',
-
-            /* commands operating on sorted sets */
-            'ZREVRANGEBYSCORE' => 'Predis\Command\ZSetReverseRangeByScore',
-
-            /* transactions */
-            'WATCH' => 'Predis\Command\TransactionWatch',
-            'UNWATCH' => 'Predis\Command\TransactionUnwatch',
-
-            /* remote server control commands */
-            'OBJECT' => 'Predis\Command\ServerObject',
-            'SLOWLOG' => 'Predis\Command\ServerSlowlog',
-
-            /* ---------------- Redis 2.4 ---------------- */
-
-            /* remote server control commands */
-            'CLIENT' => 'Predis\Command\ServerClient',
-
-            /* ---------------- Redis 2.6 ---------------- */
-
-            /* commands operating on the key space */
-            'PTTL' => 'Predis\Command\KeyPreciseTimeToLive',
-            'PEXPIRE' => 'Predis\Command\KeyPreciseExpire',
-            'PEXPIREAT' => 'Predis\Command\KeyPreciseExpireAt',
-            'MIGRATE' => 'Predis\Command\KeyMigrate',
-
-            /* commands operating on string values */
-            'PSETEX' => 'Predis\Command\StringPreciseSetExpire',
-            'INCRBYFLOAT' => 'Predis\Command\StringIncrementByFloat',
-            'BITOP' => 'Predis\Command\StringBitOp',
-            'BITCOUNT' => 'Predis\Command\StringBitCount',
-
-            /* commands operating on hashes */
-            'HINCRBYFLOAT' => 'Predis\Command\HashIncrementByFloat',
-
-            /* scripting */
-            'EVAL' => 'Predis\Command\ServerEval',
-            'EVALSHA' => 'Predis\Command\ServerEvalSHA',
-            'SCRIPT' => 'Predis\Command\ServerScript',
-
-            /* remote server control commands */
-            'TIME' => 'Predis\Command\ServerTime',
-            'SENTINEL' => 'Predis\Command\ServerSentinel',
-
-            /* ---------------- Redis 2.8 ---------------- */
-
-            /* commands operating on the key space */
-            'SCAN' => 'Predis\Command\KeyScan',
-
-            /* commands operating on string values */
-            'BITPOS' => 'Predis\Command\StringBitPos',
-
-            /* commands operating on sets */
-            'SSCAN' => 'Predis\Command\SetScan',
-
-            /* commands operating on sorted sets */
-            'ZSCAN' => 'Predis\Command\ZSetScan',
-            'ZLEXCOUNT' => 'Predis\Command\ZSetLexCount',
-            'ZRANGEBYLEX' => 'Predis\Command\ZSetRangeByLex',
-            'ZREMRANGEBYLEX' => 'Predis\Command\ZSetRemoveRangeByLex',
-            'ZREVRANGEBYLEX' => 'Predis\Command\ZSetReverseRangeByLex',
-
-            /* commands operating on hashes */
-            'HSCAN' => 'Predis\Command\HashScan',
-
-            /* publish - subscribe */
-            'PUBSUB' => 'Predis\Command\PubSubPubsub',
-
-            /* commands operating on HyperLogLog */
-            'PFADD' => 'Predis\Command\HyperLogLogAdd',
-            'PFCOUNT' => 'Predis\Command\HyperLogLogCount',
-            'PFMERGE' => 'Predis\Command\HyperLogLogMerge',
-
-            /* remote server control commands */
-            'COMMAND' => 'Predis\Command\ServerCommand',
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

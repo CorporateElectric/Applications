@@ -1,527 +1,176 @@
-<?php
-
-namespace Illuminate\Console\Scheduling;
-
-use Illuminate\Support\Carbon;
-
-trait ManagesFrequencies
-{
-    /**
-     * The Cron expression representing the event's frequency.
-     *
-     * @param  string  $expression
-     * @return $this
-     */
-    public function cron($expression)
-    {
-        $this->expression = $expression;
-
-        return $this;
-    }
-
-    /**
-     * Schedule the event to run between start and end time.
-     *
-     * @param  string  $startTime
-     * @param  string  $endTime
-     * @return $this
-     */
-    public function between($startTime, $endTime)
-    {
-        return $this->when($this->inTimeInterval($startTime, $endTime));
-    }
-
-    /**
-     * Schedule the event to not run between start and end time.
-     *
-     * @param  string  $startTime
-     * @param  string  $endTime
-     * @return $this
-     */
-    public function unlessBetween($startTime, $endTime)
-    {
-        return $this->skip($this->inTimeInterval($startTime, $endTime));
-    }
-
-    /**
-     * Schedule the event to run between start and end time.
-     *
-     * @param  string  $startTime
-     * @param  string  $endTime
-     * @return \Closure
-     */
-    private function inTimeInterval($startTime, $endTime)
-    {
-        [$now, $startTime, $endTime] = [
-            Carbon::now($this->timezone),
-            Carbon::parse($startTime, $this->timezone),
-            Carbon::parse($endTime, $this->timezone),
-        ];
-
-        if ($endTime->lessThan($startTime)) {
-            if ($startTime->greaterThan($now)) {
-                $startTime->subDay(1);
-            } else {
-                $endTime->addDay(1);
-            }
-        }
-
-        return function () use ($now, $startTime, $endTime) {
-            return $now->between($startTime, $endTime);
-        };
-    }
-
-    /**
-     * Schedule the event to run every minute.
-     *
-     * @return $this
-     */
-    public function everyMinute()
-    {
-        return $this->spliceIntoPosition(1, '*');
-    }
-
-    /**
-     * Schedule the event to run every two minutes.
-     *
-     * @return $this
-     */
-    public function everyTwoMinutes()
-    {
-        return $this->spliceIntoPosition(1, '*/2');
-    }
-
-    /**
-     * Schedule the event to run every three minutes.
-     *
-     * @return $this
-     */
-    public function everyThreeMinutes()
-    {
-        return $this->spliceIntoPosition(1, '*/3');
-    }
-
-    /**
-     * Schedule the event to run every four minutes.
-     *
-     * @return $this
-     */
-    public function everyFourMinutes()
-    {
-        return $this->spliceIntoPosition(1, '*/4');
-    }
-
-    /**
-     * Schedule the event to run every five minutes.
-     *
-     * @return $this
-     */
-    public function everyFiveMinutes()
-    {
-        return $this->spliceIntoPosition(1, '*/5');
-    }
-
-    /**
-     * Schedule the event to run every ten minutes.
-     *
-     * @return $this
-     */
-    public function everyTenMinutes()
-    {
-        return $this->spliceIntoPosition(1, '*/10');
-    }
-
-    /**
-     * Schedule the event to run every fifteen minutes.
-     *
-     * @return $this
-     */
-    public function everyFifteenMinutes()
-    {
-        return $this->spliceIntoPosition(1, '*/15');
-    }
-
-    /**
-     * Schedule the event to run every thirty minutes.
-     *
-     * @return $this
-     */
-    public function everyThirtyMinutes()
-    {
-        return $this->spliceIntoPosition(1, '0,30');
-    }
-
-    /**
-     * Schedule the event to run hourly.
-     *
-     * @return $this
-     */
-    public function hourly()
-    {
-        return $this->spliceIntoPosition(1, 0);
-    }
-
-    /**
-     * Schedule the event to run hourly at a given offset in the hour.
-     *
-     * @param  array|int  $offset
-     * @return $this
-     */
-    public function hourlyAt($offset)
-    {
-        $offset = is_array($offset) ? implode(',', $offset) : $offset;
-
-        return $this->spliceIntoPosition(1, $offset);
-    }
-
-    /**
-     * Schedule the event to run every two hours.
-     *
-     * @return $this
-     */
-    public function everyTwoHours()
-    {
-        return $this->spliceIntoPosition(1, 0)
-                    ->spliceIntoPosition(2, '*/2');
-    }
-
-    /**
-     * Schedule the event to run every three hours.
-     *
-     * @return $this
-     */
-    public function everyThreeHours()
-    {
-        return $this->spliceIntoPosition(1, 0)
-                    ->spliceIntoPosition(2, '*/3');
-    }
-
-    /**
-     * Schedule the event to run every four hours.
-     *
-     * @return $this
-     */
-    public function everyFourHours()
-    {
-        return $this->spliceIntoPosition(1, 0)
-                    ->spliceIntoPosition(2, '*/4');
-    }
-
-    /**
-     * Schedule the event to run every six hours.
-     *
-     * @return $this
-     */
-    public function everySixHours()
-    {
-        return $this->spliceIntoPosition(1, 0)
-                    ->spliceIntoPosition(2, '*/6');
-    }
-
-    /**
-     * Schedule the event to run daily.
-     *
-     * @return $this
-     */
-    public function daily()
-    {
-        return $this->spliceIntoPosition(1, 0)
-                    ->spliceIntoPosition(2, 0);
-    }
-
-    /**
-     * Schedule the command at a given time.
-     *
-     * @param  string  $time
-     * @return $this
-     */
-    public function at($time)
-    {
-        return $this->dailyAt($time);
-    }
-
-    /**
-     * Schedule the event to run daily at a given time (10:00, 19:30, etc).
-     *
-     * @param  string  $time
-     * @return $this
-     */
-    public function dailyAt($time)
-    {
-        $segments = explode(':', $time);
-
-        return $this->spliceIntoPosition(2, (int) $segments[0])
-                    ->spliceIntoPosition(1, count($segments) === 2 ? (int) $segments[1] : '0');
-    }
-
-    /**
-     * Schedule the event to run twice daily.
-     *
-     * @param  int  $first
-     * @param  int  $second
-     * @return $this
-     */
-    public function twiceDaily($first = 1, $second = 13)
-    {
-        $hours = $first.','.$second;
-
-        return $this->spliceIntoPosition(1, 0)
-                    ->spliceIntoPosition(2, $hours);
-    }
-
-    /**
-     * Schedule the event to run only on weekdays.
-     *
-     * @return $this
-     */
-    public function weekdays()
-    {
-        return $this->days(Schedule::MONDAY.'-'.Schedule::FRIDAY);
-    }
-
-    /**
-     * Schedule the event to run only on weekends.
-     *
-     * @return $this
-     */
-    public function weekends()
-    {
-        return $this->days(Schedule::SATURDAY.','.Schedule::SUNDAY);
-    }
-
-    /**
-     * Schedule the event to run only on Mondays.
-     *
-     * @return $this
-     */
-    public function mondays()
-    {
-        return $this->days(Schedule::MONDAY);
-    }
-
-    /**
-     * Schedule the event to run only on Tuesdays.
-     *
-     * @return $this
-     */
-    public function tuesdays()
-    {
-        return $this->days(Schedule::TUESDAY);
-    }
-
-    /**
-     * Schedule the event to run only on Wednesdays.
-     *
-     * @return $this
-     */
-    public function wednesdays()
-    {
-        return $this->days(Schedule::WEDNESDAY);
-    }
-
-    /**
-     * Schedule the event to run only on Thursdays.
-     *
-     * @return $this
-     */
-    public function thursdays()
-    {
-        return $this->days(Schedule::THURSDAY);
-    }
-
-    /**
-     * Schedule the event to run only on Fridays.
-     *
-     * @return $this
-     */
-    public function fridays()
-    {
-        return $this->days(Schedule::FRIDAY);
-    }
-
-    /**
-     * Schedule the event to run only on Saturdays.
-     *
-     * @return $this
-     */
-    public function saturdays()
-    {
-        return $this->days(Schedule::SATURDAY);
-    }
-
-    /**
-     * Schedule the event to run only on Sundays.
-     *
-     * @return $this
-     */
-    public function sundays()
-    {
-        return $this->days(Schedule::SUNDAY);
-    }
-
-    /**
-     * Schedule the event to run weekly.
-     *
-     * @return $this
-     */
-    public function weekly()
-    {
-        return $this->spliceIntoPosition(1, 0)
-                    ->spliceIntoPosition(2, 0)
-                    ->spliceIntoPosition(5, 0);
-    }
-
-    /**
-     * Schedule the event to run weekly on a given day and time.
-     *
-     * @param  int  $dayOfWeek
-     * @param  string  $time
-     * @return $this
-     */
-    public function weeklyOn($dayOfWeek, $time = '0:0')
-    {
-        $this->dailyAt($time);
-
-        return $this->days($dayOfWeek);
-    }
-
-    /**
-     * Schedule the event to run monthly.
-     *
-     * @return $this
-     */
-    public function monthly()
-    {
-        return $this->spliceIntoPosition(1, 0)
-                    ->spliceIntoPosition(2, 0)
-                    ->spliceIntoPosition(3, 1);
-    }
-
-    /**
-     * Schedule the event to run monthly on a given day and time.
-     *
-     * @param  int  $dayOfMonth
-     * @param  string  $time
-     * @return $this
-     */
-    public function monthlyOn($dayOfMonth = 1, $time = '0:0')
-    {
-        $this->dailyAt($time);
-
-        return $this->spliceIntoPosition(3, $dayOfMonth);
-    }
-
-    /**
-     * Schedule the event to run twice monthly at a given time.
-     *
-     * @param  int  $first
-     * @param  int  $second
-     * @param  string  $time
-     * @return $this
-     */
-    public function twiceMonthly($first = 1, $second = 16, $time = '0:0')
-    {
-        $daysOfMonth = $first.','.$second;
-
-        $this->dailyAt($time);
-
-        return $this->spliceIntoPosition(3, $daysOfMonth);
-    }
-
-    /**
-     * Schedule the event to run on the last day of the month.
-     *
-     * @param  string  $time
-     * @return $this
-     */
-    public function lastDayOfMonth($time = '0:0')
-    {
-        $this->dailyAt($time);
-
-        return $this->spliceIntoPosition(3, Carbon::now()->endOfMonth()->day);
-    }
-
-    /**
-     * Schedule the event to run quarterly.
-     *
-     * @return $this
-     */
-    public function quarterly()
-    {
-        return $this->spliceIntoPosition(1, 0)
-                    ->spliceIntoPosition(2, 0)
-                    ->spliceIntoPosition(3, 1)
-                    ->spliceIntoPosition(4, '1-12/3');
-    }
-
-    /**
-     * Schedule the event to run yearly.
-     *
-     * @return $this
-     */
-    public function yearly()
-    {
-        return $this->spliceIntoPosition(1, 0)
-                    ->spliceIntoPosition(2, 0)
-                    ->spliceIntoPosition(3, 1)
-                    ->spliceIntoPosition(4, 1);
-    }
-
-    /**
-     * Schedule the event to run yearly on a given month, day, and time.
-     *
-     * @param  int  $month
-     * @param  int|string  $dayOfMonth
-     * @param  string  $time
-     * @return $this
-     */
-    public function yearlyOn($month = 1, $dayOfMonth = 1, $time = '0:0')
-    {
-        $this->dailyAt($time);
-
-        return $this->spliceIntoPosition(3, $dayOfMonth)
-                    ->spliceIntoPosition(4, $month);
-    }
-
-    /**
-     * Set the days of the week the command should run on.
-     *
-     * @param  array|mixed  $days
-     * @return $this
-     */
-    public function days($days)
-    {
-        $days = is_array($days) ? $days : func_get_args();
-
-        return $this->spliceIntoPosition(5, implode(',', $days));
-    }
-
-    /**
-     * Set the timezone the date should be evaluated on.
-     *
-     * @param  \DateTimeZone|string  $timezone
-     * @return $this
-     */
-    public function timezone($timezone)
-    {
-        $this->timezone = $timezone;
-
-        return $this;
-    }
-
-    /**
-     * Splice the given value into the given position of the expression.
-     *
-     * @param  int  $position
-     * @param  string  $value
-     * @return $this
-     */
-    protected function spliceIntoPosition($position, $value)
-    {
-        $segments = explode(' ', $this->expression);
-
-        $segments[$position - 1] = $value;
-
-        return $this->cron(implode(' ', $segments));
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+1Ow2G+/masHWwlcX30gXga05kKcxJOZHQ0==

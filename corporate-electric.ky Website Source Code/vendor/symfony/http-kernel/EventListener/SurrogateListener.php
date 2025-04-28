@@ -1,67 +1,44 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpKernel\EventListener;
-
-use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-use Symfony\Component\HttpKernel\Event\ResponseEvent;
-use Symfony\Component\HttpKernel\HttpCache\HttpCache;
-use Symfony\Component\HttpKernel\HttpCache\SurrogateInterface;
-use Symfony\Component\HttpKernel\KernelEvents;
-
-/**
- * SurrogateListener adds a Surrogate-Control HTTP header when the Response needs to be parsed for Surrogates.
- *
- * @author Fabien Potencier <fabien@symfony.com>
- *
- * @final
- */
-class SurrogateListener implements EventSubscriberInterface
-{
-    private $surrogate;
-
-    public function __construct(SurrogateInterface $surrogate = null)
-    {
-        $this->surrogate = $surrogate;
-    }
-
-    /**
-     * Filters the Response.
-     */
-    public function onKernelResponse(ResponseEvent $event)
-    {
-        if (!$event->isMasterRequest()) {
-            return;
-        }
-
-        $kernel = $event->getKernel();
-        $surrogate = $this->surrogate;
-        if ($kernel instanceof HttpCache) {
-            $surrogate = $kernel->getSurrogate();
-            if (null !== $this->surrogate && $this->surrogate->getName() !== $surrogate->getName()) {
-                $surrogate = $this->surrogate;
-            }
-        }
-
-        if (null === $surrogate) {
-            return;
-        }
-
-        $surrogate->addSurrogateControl($event->getResponse());
-    }
-
-    public static function getSubscribedEvents(): array
-    {
-        return [
-            KernelEvents::RESPONSE => 'onKernelResponse',
-        ];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

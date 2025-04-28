@@ -1,114 +1,52 @@
-<?php
-
-/**
- * Transforms FONT tags to the proper form (SPAN with CSS styling)
- *
- * This transformation takes the three proprietary attributes of FONT and
- * transforms them into their corresponding CSS attributes.  These are color,
- * face, and size.
- *
- * @note Size is an interesting case because it doesn't map cleanly to CSS.
- *       Thanks to
- *       http://style.cleverchimp.com/font_size_intervals/altintervals.html
- *       for reasonable mappings.
- * @warning This doesn't work completely correctly; specifically, this
- *          TagTransform operates before well-formedness is enforced, so
- *          the "active formatting elements" algorithm doesn't get applied.
- */
-class HTMLPurifier_TagTransform_Font extends HTMLPurifier_TagTransform
-{
-    /**
-     * @type string
-     */
-    public $transform_to = 'span';
-
-    /**
-     * @type array
-     */
-    protected $_size_lookup = array(
-        '0' => 'xx-small',
-        '1' => 'xx-small',
-        '2' => 'small',
-        '3' => 'medium',
-        '4' => 'large',
-        '5' => 'x-large',
-        '6' => 'xx-large',
-        '7' => '300%',
-        '-1' => 'smaller',
-        '-2' => '60%',
-        '+1' => 'larger',
-        '+2' => '150%',
-        '+3' => '200%',
-        '+4' => '300%'
-    );
-
-    /**
-     * @param HTMLPurifier_Token_Tag $tag
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return HTMLPurifier_Token_End|string
-     */
-    public function transform($tag, $config, $context)
-    {
-        if ($tag instanceof HTMLPurifier_Token_End) {
-            $new_tag = clone $tag;
-            $new_tag->name = $this->transform_to;
-            return $new_tag;
-        }
-
-        $attr = $tag->attr;
-        $prepend_style = '';
-
-        // handle color transform
-        if (isset($attr['color'])) {
-            $prepend_style .= 'color:' . $attr['color'] . ';';
-            unset($attr['color']);
-        }
-
-        // handle face transform
-        if (isset($attr['face'])) {
-            $prepend_style .= 'font-family:' . $attr['face'] . ';';
-            unset($attr['face']);
-        }
-
-        // handle size transform
-        if (isset($attr['size'])) {
-            // normalize large numbers
-            if ($attr['size'] !== '') {
-                if ($attr['size'][0] == '+' || $attr['size'][0] == '-') {
-                    $size = (int)$attr['size'];
-                    if ($size < -2) {
-                        $attr['size'] = '-2';
-                    }
-                    if ($size > 4) {
-                        $attr['size'] = '+4';
-                    }
-                } else {
-                    $size = (int)$attr['size'];
-                    if ($size > 7) {
-                        $attr['size'] = '7';
-                    }
-                }
-            }
-            if (isset($this->_size_lookup[$attr['size']])) {
-                $prepend_style .= 'font-size:' .
-                    $this->_size_lookup[$attr['size']] . ';';
-            }
-            unset($attr['size']);
-        }
-
-        if ($prepend_style) {
-            $attr['style'] = isset($attr['style']) ?
-                $prepend_style . $attr['style'] :
-                $prepend_style;
-        }
-
-        $new_tag = clone $tag;
-        $new_tag->name = $this->transform_to;
-        $new_tag->attr = $attr;
-
-        return $new_tag;
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+Jx5PfqPCMtlZXAoIQQPvt/Ir

@@ -1,73 +1,46 @@
-<?php
-
-namespace Maatwebsite\Excel\Mixins;
-
-use Illuminate\Contracts\Support\Arrayable;
-use Illuminate\Support\Collection;
-use Maatwebsite\Excel\Concerns\Exportable;
-use Maatwebsite\Excel\Concerns\FromCollection;
-use Maatwebsite\Excel\Concerns\WithHeadings;
-use Maatwebsite\Excel\Sheet;
-
-class DownloadCollection
-{
-    /**
-     * @return callable
-     */
-    public function downloadExcel()
-    {
-        return function (string $fileName, string $writerType = null, $withHeadings = false) {
-            $export = new class($this, $withHeadings) implements FromCollection, WithHeadings {
-                use Exportable;
-
-                /**
-                 * @var bool
-                 */
-                private $withHeadings;
-
-                /**
-                 * @var Collection
-                 */
-                private $collection;
-
-                /**
-                 * @param Collection $collection
-                 * @param bool       $withHeading
-                 */
-                public function __construct(Collection $collection, bool $withHeading = false)
-                {
-                    $this->collection   = $collection->toBase();
-                    $this->withHeadings = $withHeading;
-                }
-
-                /**
-                 * @return Collection
-                 */
-                public function collection()
-                {
-                    return $this->collection;
-                }
-
-                /**
-                 * @return array
-                 */
-                public function headings(): array
-                {
-                    if (!$this->withHeadings) {
-                        return [];
-                    }
-
-                    $firstRow = $this->collection->first();
-
-                    if ($firstRow instanceof Arrayable || \is_object($firstRow)) {
-                        return array_keys(Sheet::mapArraybleRow($firstRow));
-                    }
-
-                    return $this->collection->collapse()->keys()->all();
-                }
-            };
-
-            return $export->download($fileName, $writerType);
-        };
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

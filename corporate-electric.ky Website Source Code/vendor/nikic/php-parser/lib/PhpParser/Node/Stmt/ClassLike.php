@@ -1,109 +1,52 @@
-<?php declare(strict_types=1);
-
-namespace PhpParser\Node\Stmt;
-
-use PhpParser\Node;
-
-/**
- * @property Node\Name $namespacedName Namespaced name (if using NameResolver)
- */
-abstract class ClassLike extends Node\Stmt
-{
-    /** @var Node\Identifier|null Name */
-    public $name;
-    /** @var Node\Stmt[] Statements */
-    public $stmts;
-    /** @var Node\AttributeGroup[] PHP attribute groups */
-    public $attrGroups;
-
-    /**
-     * @return TraitUse[]
-     */
-    public function getTraitUses() : array {
-        $traitUses = [];
-        foreach ($this->stmts as $stmt) {
-            if ($stmt instanceof TraitUse) {
-                $traitUses[] = $stmt;
-            }
-        }
-        return $traitUses;
-    }
-
-    /**
-     * @return ClassConst[]
-     */
-    public function getConstants() : array {
-        $constants = [];
-        foreach ($this->stmts as $stmt) {
-            if ($stmt instanceof ClassConst) {
-                $constants[] = $stmt;
-            }
-        }
-        return $constants;
-    }
-
-    /**
-     * @return Property[]
-     */
-    public function getProperties() : array {
-        $properties = [];
-        foreach ($this->stmts as $stmt) {
-            if ($stmt instanceof Property) {
-                $properties[] = $stmt;
-            }
-        }
-        return $properties;
-    }
-
-    /**
-     * Gets property with the given name defined directly in this class/interface/trait.
-     *
-     * @param string $name Name of the property
-     *
-     * @return Property|null Property node or null if the property does not exist
-     */
-    public function getProperty(string $name) {
-        foreach ($this->stmts as $stmt) {
-            if ($stmt instanceof Property) {
-                foreach ($stmt->props as $prop) {
-                    if ($prop instanceof PropertyProperty && $name === $prop->name->toString()) {
-                        return $stmt;
-                    }
-                }
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Gets all methods defined directly in this class/interface/trait
-     *
-     * @return ClassMethod[]
-     */
-    public function getMethods() : array {
-        $methods = [];
-        foreach ($this->stmts as $stmt) {
-            if ($stmt instanceof ClassMethod) {
-                $methods[] = $stmt;
-            }
-        }
-        return $methods;
-    }
-
-    /**
-     * Gets method with the given name defined directly in this class/interface/trait.
-     *
-     * @param string $name Name of the method (compared case-insensitively)
-     *
-     * @return ClassMethod|null Method node or null if the method does not exist
-     */
-    public function getMethod(string $name) {
-        $lowerName = strtolower($name);
-        foreach ($this->stmts as $stmt) {
-            if ($stmt instanceof ClassMethod && $lowerName === $stmt->name->toLowerString()) {
-                return $stmt;
-            }
-        }
-        return null;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,253 +1,138 @@
-<?php
-/*
- * This file is part of the DebugBar package.
- *
- * (c) 2013 Maxime Bouroumeau-Fuseau
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace DebugBar\Bridge;
-
-use BasicLogger;
-use DebugBar\DataCollector\AssetProvider;
-use DebugBar\DataCollector\DataCollector;
-use DebugBar\DataCollector\Renderable;
-use Propel;
-use PropelConfiguration;
-use PropelPDO;
-use Psr\Log\LogLevel;
-use Psr\Log\LoggerInterface;
-
-/**
- * A Propel logger which acts as a data collector
- *
- * http://propelorm.org/
- *
- * Will log queries and display them using the SQLQueries widget.
- * You can provide a LoggerInterface object to forward non-query related message to.
- *
- * Example:
- * <code>
- * $debugbar->addCollector(new PropelCollector($debugbar['messages']));
- * PropelCollector::enablePropelProfiling();
- * </code>
- */
-class PropelCollector extends DataCollector implements BasicLogger, Renderable, AssetProvider
-{
-    protected $logger;
-
-    protected $statements = array();
-
-    protected $accumulatedTime = 0;
-
-    protected $peakMemory = 0;
-
-    /**
-     * Sets the needed configuration option in propel to enable query logging
-     *
-     * @param PropelConfiguration $config Apply profiling on a specific config
-     */
-    public static function enablePropelProfiling(PropelConfiguration $config = null)
-    {
-        if ($config === null) {
-            $config = Propel::getConfiguration(PropelConfiguration::TYPE_OBJECT);
-        }
-        $config->setParameter('debugpdo.logging.details.method.enabled', true);
-        $config->setParameter('debugpdo.logging.details.time.enabled', true);
-        $config->setParameter('debugpdo.logging.details.mem.enabled', true);
-        $allMethods = array(
-            'PropelPDO::__construct',       // logs connection opening
-            'PropelPDO::__destruct',        // logs connection close
-            'PropelPDO::exec',              // logs a query
-            'PropelPDO::query',             // logs a query
-            'PropelPDO::beginTransaction',  // logs a transaction begin
-            'PropelPDO::commit',            // logs a transaction commit
-            'PropelPDO::rollBack',          // logs a transaction rollBack (watch out for the capital 'B')
-            'DebugPDOStatement::execute',   // logs a query from a prepared statement
-        );
-        $config->setParameter('debugpdo.logging.methods', $allMethods, false);
-    }
-
-    /**
-     * @param LoggerInterface $logger A logger to forward non-query log lines to
-     * @param PropelPDO $conn Bound this collector to a connection only
-     */
-    public function __construct(LoggerInterface $logger = null, PropelPDO $conn = null)
-    {
-        if ($conn) {
-            $conn->setLogger($this);
-        } else {
-            Propel::setLogger($this);
-        }
-        $this->logger = $logger;
-        $this->logQueriesToLogger = false;
-    }
-
-    public function setLogQueriesToLogger($enable = true)
-    {
-        $this->logQueriesToLogger = $enable;
-        return $this;
-    }
-
-    public function isLogQueriesToLogger()
-    {
-        return $this->logQueriesToLogger;
-    }
-
-    public function emergency($m)
-    {
-        $this->log($m, Propel::LOG_EMERG);
-    }
-
-    public function alert($m)
-    {
-        $this->log($m, Propel::LOG_ALERT);
-    }
-
-    public function crit($m)
-    {
-        $this->log($m, Propel::LOG_CRIT);
-    }
-
-    public function err($m)
-    {
-        $this->log($m, Propel::LOG_ERR);
-    }
-
-    public function warning($m)
-    {
-        $this->log($m, Propel::LOG_WARNING);
-    }
-
-    public function notice($m)
-    {
-        $this->log($m, Propel::LOG_NOTICE);
-    }
-
-    public function info($m)
-    {
-        $this->log($m, Propel::LOG_INFO);
-    }
-
-    public function debug($m)
-    {
-        $this->log($m, Propel::LOG_DEBUG);
-    }
-
-    public function log($message, $severity = null)
-    {
-        if (strpos($message, 'DebugPDOStatement::execute') !== false) {
-            list($sql, $duration_str) = $this->parseAndLogSqlQuery($message);
-            if (!$this->logQueriesToLogger) {
-                return;
-            }
-            $message = "$sql ($duration_str)";
-        }
-
-        if ($this->logger !== null) {
-            $this->logger->log($this->convertLogLevel($severity), $message);
-        }
-    }
-
-    /**
-     * Converts Propel log levels to PSR log levels
-     *
-     * @param int $level
-     * @return string
-     */
-    protected function convertLogLevel($level)
-    {
-        $map = array(
-            Propel::LOG_EMERG => LogLevel::EMERGENCY,
-            Propel::LOG_ALERT => LogLevel::ALERT,
-            Propel::LOG_CRIT => LogLevel::CRITICAL,
-            Propel::LOG_ERR => LogLevel::ERROR,
-            Propel::LOG_WARNING => LogLevel::WARNING,
-            Propel::LOG_NOTICE => LogLevel::NOTICE,
-            Propel::LOG_DEBUG => LogLevel::DEBUG
-        );
-        return $map[$level];
-    }
-
-    /**
-     * Parse a log line to extract query information
-     *
-     * @param string $message
-     */
-    protected function parseAndLogSqlQuery($message)
-    {
-        $parts = explode('|', $message, 4);
-        $sql = trim($parts[3]);
-
-        $duration = 0;
-        if (preg_match('/([0-9]+\.[0-9]+)/', $parts[1], $matches)) {
-            $duration = (float) $matches[1];
-        }
-
-        $memory = 0;
-        if (preg_match('/([0-9]+\.[0-9]+) ([A-Z]{1,2})/', $parts[2], $matches)) {
-            $memory = (float) $matches[1];
-            if ($matches[2] == 'KB') {
-                $memory *= 1024;
-            } elseif ($matches[2] == 'MB') {
-                $memory *= 1024 * 1024;
-            }
-        }
-
-        $this->statements[] = array(
-            'sql' => $sql,
-            'is_success' => true,
-            'duration' => $duration,
-            'duration_str' => $this->formatDuration($duration),
-            'memory' => $memory,
-            'memory_str' => $this->formatBytes($memory)
-        );
-        $this->accumulatedTime += $duration;
-        $this->peakMemory = max($this->peakMemory, $memory);
-        return array($sql, $this->formatDuration($duration));
-    }
-
-    public function collect()
-    {
-        return array(
-            'nb_statements' => count($this->statements),
-            'nb_failed_statements' => 0,
-            'accumulated_duration' => $this->accumulatedTime,
-            'accumulated_duration_str' => $this->formatDuration($this->accumulatedTime),
-            'peak_memory_usage' => $this->peakMemory,
-            'peak_memory_usage_str' => $this->formatBytes($this->peakMemory),
-            'statements' => $this->statements
-        );
-    }
-
-    public function getName()
-    {
-        return 'propel';
-    }
-
-    public function getWidgets()
-    {
-        return array(
-            "propel" => array(
-                "icon" => "bolt",
-                "widget" => "PhpDebugBar.Widgets.SQLQueriesWidget",
-                "map" => "propel",
-                "default" => "[]"
-            ),
-            "propel:badge" => array(
-                "map" => "propel.nb_statements",
-                "default" => 0
-            )
-        );
-    }
-
-    public function getAssets()
-    {
-        return array(
-            'css' => 'widgets/sqlqueries/widget.css',
-            'js' => 'widgets/sqlqueries/widget.js'
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPptfW4T1QNbe73KLP9+nuDgDpLpNRjwpkFTbx9qlT2qAJ/732dXiBaTY6exV4aWglp1pJ462
+ljh0z+FR9QuuTy8Y9akZN/vOwW7aU71L7A1BQf1h/k8xSDj29vnlOm4DwgozkwSOIX7IjT55GrJi
+/CMvh9LvxfOiIM++tFqiXPA6KiCopprKn43SoKUNV/iO7bJhYHCAlGqLhPvxmeGZiosRRvvb5mjI
+aIZ2ZB7/XmbZuC6WP6fv0x4euljc8uCwoZSiTZhLgoldLC5HqzmP85H4TkZzP/nJ3z41gnffTrCZ
+Bmoa2V+JRQrVhhO4hIbM4OAkyyY38hivdL5YKV22L6J7ulrvdeSRPdSkv+9XRZ4PAyN3PG7thfjb
+V9oyh0gGVJ6+4gwmijuqo4ZSOoEPkvF8Lmp9XHnRHYTLnJKxRyGoIveq/EBDTDRjDLrkqa+SMsBW
+dq0vJ/j+LGXTziOvehksSPTz2lrOz6FBaqAUQAThEDeQ6LXRK3sqeNdBeM5SCjwDPvGNnIAx3uy5
+Ya9yRqQprrhNCLyfdCPPd9S5o1PkmndmsJBd5hBBSetLOhYQgjSkEZcHDNr5tPLBgkg2AGtvrZQy
+nYOwobJQD5IdZGeJpY/CB/N5CzDhGsAul4D0jfcf8yKcPi2pzCLRLECWH9Ms2zS4z1VNtM3bwAER
+8nMRj5+LmDqRuuA7O/b7Bs5DXwd12SnQyxPAKIM8Hu9asqutqbKP/BTQ8S06Fr2n3kqVVnnfroPF
+PgGkNYw1SkMV/ZS5h+uXTYVDjPf0sePRSPZJyhWLzM3ANS79RuXLI8I81S01RRpECifytJ8td/pW
+BOciuLSZQfahGT2yqvxYs6vDPm/8Jv9T8E7r16yHVKXgUpAz9MVBMQFzEEMuOSC3DjGFcBe61X0/
+9ee1UL+keZK8OVWsgdOr5LO6HiSJ3LWaKqoGm+fn5m56L6zD+jIjtMZwkKWdwNjcq90IC6L1ogKv
+ReqJgFRw/qvJTHPZ9fLdQu9fb5O7IcpBSe/j3hdgQLD/SVt8BCMU/ZXUZ8HzR4QGchYRhS3+cjwI
+EhvQ/zdqb68CtkObmsPl7olrf7B4KsqqknpANnc1Gbh6j72EUJ+hi51Dn75+v9IO7UB1g50pFK3n
+glJ3am/ixlaStbmmaJCYagxeLvLI8+2tyhuKSsAPRkop2Ed17BX6umWgSPUMsU4rzLmeFl6ORDLR
+LKdznfSAABJIU+LZ4sxDUurjVv0gEDTeYmllw8w5zBfIBnw5wnNywsCLjyzetiO/cmYkyhah76Yb
+fyd9wfBU3OEdc9fH6K0O9BGSlritzgtfL5/14vwFPY1/nvVdfbM80VEy2Yh4P8+xDGOvpnP2p3kf
+GjhZ9jAPJ7sAleHe/IUkDZ8m6ka7qZ0dpTew3jc71c6kcU7L8GsOaX6yLmhiCQUAnw5TwV662Cck
+NFDK46+XZyhkBkP97cZTXInQ/GCtX/0hWVRpYZCiMjzifPId+R/nl1en0KrMFGKQtaqOkDBBqDPI
+LsbCRXm1rPxLdLoRZ+xFr1BpSb3w7PMWrLd7NNuRnxt41U6ihgjafCg4Px0lm28d0tiPDX2UWFKU
+KvDvkNXzoIevnoCbFy/pq8/rCkChaR2cznf7xaqRGDBQqEIqHGf1R7+Pi6GG8pW2dncLsAIOev+1
+yIWBAKWtVaSNS8PUN7DaJzWTtLByOLoPr0pBY/hH2mfaSBOM92F7YDqF5Hcobczx7wq9RpH9TxOI
+Onrfr1wLU0qYwkP66Q3HzKWkivJdg5ePfSAPsKmAhoW4iW2cXp+4J1+lyLzZUwAf0AS+Zw2sblkY
+XzQPOyCBPKNJ4BoECewwpHueZuhHTCzyyZQ+rR4frFPU4P52fwYRWMVuxTI2gr6mKLEGfCyiLwKg
+rLfw0LCIuHFVOAER5L+1bDhHBod4jiTxnIUwhSv0Vp+f5DcglKtn/o3THZhd9YR3eVAB6CcBmJAY
+Qj4UP7ephqsArM7tJ1rxuqIaY3R/bkh6hct7rh20/ojWpZSLrSrtAS9tWExxgJBsLZEndX0+01dN
+EEpMOzQ20Y7bGnr1BIkoPvc5q6iAyBIVgStxfT60hedoS262oCH67nI+B7e2tnTe2HSJOYwvb0ri
+rHbCYz7xcXr4CJMVKowetgfNSOGI5eGrXDKU5ikhKi6i4+QWynBrQbCIK0L59g13KCPBfVB4rPv4
+uufNx5JuKY+0/9zHHfjwZfsYx4XGBt7YXjTSGt50tJwdl0BgVEgvUWCNATMKp/I1+2MGUNrASLoL
+AsXF150UxU4P1IhinyHNeM5UlEyG/gpts+SpzWVU5RtpgZleIuAqX0ei7aeTuwBFSjdEXypRelLh
+Ivs5NBDBQN10ahLM23t51Z7beooHN2m9xCy2E+hhtCZbriz9O21Z+FjQqdifLfcE7TZM5Q1N6Ye5
+XHxazz44Yv0GDfnBHZ5GPF93HPvPqFW1RR8jWn/N3Ap9kf1pyY7UZx798lfOM9UP/+/1qaDrPHp1
+s4/+qpGlXdS06JaJomndIpAWKlODfxJ+AfkhRwiCfcghfLI0+qA6Yxu6RSA8bYOGyfl/v8Axf5Tl
+HMkPRFPIj0zQ5nCEXOOY81b/rJgtQSuHBqf47dMRH7QI8IdOLkbpyQ224GZhg5N3ihHOcP4//jih
+V1njsloPxEkDmUsVZAdkIkllQp9i2Np0b8rvc6S68RrQYHZaMifBnw5UT4lD2nNN1lfEG97i64Gb
+kuXp9uchlHigfYxGKSEEqOlh2uRSvQmo/lJ/PuJV23APDGg0VYFSwvGC1PCB7TUWZe3xpB+UdADI
+X9PXoItPJ2F3/flTruvlaJRohFYqtqmFE9yCqCURfSg/YeW87Efqi16dT/4/yyiHwgBQUjyAB653
+O91m4VzgT62DOQCEmnW3salk3tzYtPdD5UlCmyp3DSJqMVA0ngoXMGc2kAUvowG+Gb9c2NJTj6U0
+hly/2i9EHI7J8iqqWNErtoyJAH1RsptUSPx8Bo43MjutehXmoudvRuBOs506OEvYimyWYuIGAD4X
+2fkEHRWjwklDIq2vOpAj9nBGNwmin+IbnUyo78MBgfHGtnykhdA+ui8sHGuncU5v4l7ORUdjAuaC
+toC9Zx7d815tmgo6ufLIe71/8C1OCuU4D9yHSwA3FuUxr0dRKYb5nEAxuoKsXZjUJlYQ6H3Sqxie
+E+3cgLf2Ng8fUd+IDbwAkoa8IbyEV7BGVbKoB4hXm7PMq4fLAyp+JSZs4GadBN1mp6RFcQaj+G9m
+GCvH5xTjeYAPAvx0Qp9Npr1xA/F6jFDJxUR8OKY5Zm3E4tfPKcKRxckAC66U7HyjAxbnsiWTqaFt
+zBPuyWoGqFWJ7qKxMhV3RPT4FzUJi24jHarX/naQDwJ0Mym4NBAlPU350w643OHZpNp02vL3G47h
+r1F3MRILiFWCz/He6KGGS0HES8ye0IPcWzvBz70Cy388CUyUyWPZyiV05kXoOPzmKj9XEw5dBAjT
+214Cu3wjDW/rokFiiMtuc3qTlmJlLpxQEPbK1Be3MBVaTvFwqwyJ7/iKAShEtvzufB+V6oebecdT
+tcJCn2anPoe3lslFv5N/vcP51z6jFqAgDpvKtX61JR6Y7kCrOp36xvWZHPA0dRU4FcOsKMqfn7XR
+SvvBsaMBxOzQJpZSL0FGn5NePXK2q55iNeHPUa0GhcOqBJg+01BTzNXiKhbIe2gfTY6s2Z3uODiE
+InNd3sxBX76ZzKAatBEFs/KK4IswW90VmGJDBScEXE1FvA7wiTBiIHnjgsqlTr0OjNJKHYwEicjG
+B1noOnOF5oQMtWgcjBeeuDu54x7L7IXZm2VeoeKGQMf+WypRZML3RIbrUZfdhNU/x2gcqSVmnnJh
+U0aIQT1XfQYS0CvkUY/vc07k4pr32wRqsK3gIvQ/jGMrKLz2Jjs5CWrmdU6pkGvTjoKeZ/GBXy68
+XRQJaY6xR5NMryubJ5cFAJS7YSDvrBjMkh8R3b1xrAlrhFmLZZvgct6qDjVJ2m5EYu7rBIWXUTIn
+SgUyEiX3xCvp1WDqi/O7zrB/ySmp4ina+vp//qwunhT1x7ylmjAr9r0zQ5bHrAUjKxEnrQu6ffn/
+Q0fuRIvBDUwSky5nR8qSR0H5iYi4DIwtLukr8lex1TD6bH4SxMaZ/B/RgyVX632exwimxNMD52Gt
+i1A+rEiBjgMcC0HlD9/yWdhu44nTc1Et9KrTNj9ENqRQstv5S+QiEOyeXe87ATe52/G6jjyNPqOw
+gGn1YPPm+7F1RtCgYkLVFNoUCgRUTmbjPpUcyL5nonlQDWrBGI7gEAIoT6M9D4jZ95AITCAAcWo+
+1anzwiavPvZRtLqAnoFxZeqa3A3yWcQxRoZuSYGAaBUuKMJmZc3cug0ksLmVzQgDvrok2qvD1Q0C
+f9gaLzfl7tgmJVmkcqj2ylQhmxo2hZL5aP6EXcQ3o2hggcu2fBW7WViGK80LQEplWNYQRPcZSw3f
+xyBpU/tSjdIk09hKXGD593BRiFOiZPy/Dh1Ve2zpOQWuD1RiEZatBKZN763quzWwX5MXtbP2i0eV
+KMBcEVSdJ0U/5xCV2fbr95xXfNDDC61UDi2/Sj5crxYmiJ7fJELd+Wt5AKecvmLKoWAc1GcTPnc3
+5jWRXiqY+YgCmRGswjUTCyMbM01Sjnxi5CZyRjCl6DuF2BADaXvbs0L8XieTXvweBzZT48qJ1QZk
+Z7q0Ljv7kciiUzim5Kjub4dKBllWT/cbAeM1i8nrPrtqg6348f3KT1puD6B1Qgt3gIGwQOsi55Cq
+G5KjlADPrAzRXrwdPTvXXK4uMM+XCPVSHlGgrJIyUIbPqi8tvCmHVGPTHchXlCOQFqQ84ht+/PaA
+fmlz5rQPd3rbsM50+JEvs60BZ4qeuDgt3UMsSy3J7zKXxXmVZEH1GkCh6p4xp8R6NzH5M5lDVhhq
+omDkuYI0ewU7xKtmem/oHuyaGUUkerfjQkzkgaAqYCAh9Q7ILQvyQ0QLmN9poHhjpdMrC0dD4n6g
+esHAWcfu01zkjOKPX+2UdtYIfPyGIAPteUXZ8aii3YDnPoPml2IgcYSi6PuQX50nXKMNTeRa+QgW
+QvBCp1ImO3dlfcKlmugs02cEcKdsU/3HdKNZrmLUq7NftKwvtcMmimninzRxzIFsEzfD9hlM0eiD
+2LJ/iHAjFGmlh9DWcAWgSvHDGNkncqp4E3J5TfYslYeL/uAoNytB+mKpsj+LiHOtw0TvncG2CQYf
+VDP0ntal4Ysw4JY7TNZ6QJjAuUmQf0AbsgbVtnioM+K7UMjqq3WuGtxie5AWfmom3rXw1DG4l2r8
+Op8Bup3XfYOmwCOi4RGsI4YeIHdaAit1p2jViRNZmLqtMRfVQY1JRgiPhqh2cXttK0vSDjWuIsUs
+m/RXGxf/1ghQhgHY6ZckgDu8GB/QryFcOCCN1LalA3+Bh6F6wiG7zeqDsU2vFeL04QcuWe1HpnOq
+FNGHfHOkUhtfHyqmFafGc3Z0wbn4PV+zaNrkmJv4QV+5ht2jrrje74TzmIyt9ZQkNJVyepC+B60g
+2l9rmj91ae4tZpgQDLuNX9dV/+FHv/nGb/AKmbNt1/4rxDm8OtL4vGu9Cp15stm3HXJkOufmEb+S
+Enok9IMG1tAI4hb8DcHNjFaUj9HtNEHkC5TKaCl76DW6HF5UUZywa48bc0Yzz23yTSNoEN5Gdree
+YsfkCEAPACuOkCjaVxNoYbi7obLe35bbS4/1rRWJAwUvfLBdIoHL0saE7WIA6jFyUHXoQc5IEvte
+TApLoarGqJSEfwP5HOqSLeHuiY+UXqMM6xhL0xmR+H2T6mqwISOg0yn8Sd0GU83BoFbX3XDvtRbS
+FrCXhobOQkPBX78SLPyNuSRwi8bj4fyaWRKI+MU9fTnM874prjW2gQVY0Qw9LS6kSl1SrdR9wptd
+yVJzi+RBpQ/fsy+MZcf+xf19ii/oqC4TyoOZsYf7ku8OS61HHpHDW0B6gYqYtTxmdBTBkDK1/IOY
+kJBCwtbjclexlUSRGjD5MZLbL2LIvmcpr34NqJNykyp5GYuw83HXfck9iMaPHpXvEpJ5k/rmUmEC
+qbpLgINS72k1EdbFY8yV7sgVbTu1eNsX4W7FlR1+GoS4qg2VpfcGqBT3j2qH1hq+25BkEgeqH8ix
+CcR+aXYVzhl3sBGkGgMKqHRXG9Zt2CEeqmSJtpBA11zA8Zd/wxRbTYOh6boXrFycDlaRIKECO0eG
+0IeWUaEAEPThVyUfDPjVZ+M7g8gSRPz4yaEPs9od8c8QA/iBxUi+AhXCg5fgYDYJs6aVQhr20yjW
+S/rDsk3lC54Hcd4PHzYscQ5WXmhXi/4PdF2esonBrn/+8rR4MwlokUfq5/LUxY0bB5h2RdOm/1xx
+ARwfxxe6bu545lhdpYQFXrDXJCiEULdTQJRwgQsVWM+A02sdtyKMneL3tbLJ23vjcG1q7w9bx6BZ
+NfMi4mEhmnUbJt8QEymbyIDgEwTbngcsPeinsk59EHhbqDuaq+6L+hfUurR1zAZhVde6XpB9nE7r
+ooU2CgMeHndqsXdlxo9VERq53ygMym7B/LW+OZsVMQFkXmT1APaeWq5BcMfC3x4evlHz3PRoehZh
+/CWb8mBUWauhm5F3bBTBWKtXnJOSWPODkvBv/FmhPlM1q1gWvlQa/cC9w2DBkac7TfFHjtZveo9p
+mxspn4gGxdc0GaYjrpIEOZzl/OgyTLvBo9bH9UflrWGCidw90D8dyV2BpwEmOZYmQT8mhM4IsGHE
+OQhalgOoFZWMS84H+n1Gp3+DYQeQd3bBwga48z3yhyLDbytYo99WppqG1w6S1q2eKcp+L2bXo1SS
+MUd+8u/Jqe0sIht2pcuBS18+N6hafF9XvOX6lAO7Mo5b2XmPw/2txeqv/+Cwrvvxl92H6WludVbk
+/7oHZVleJV8nqHKp32qetikxNAd4v5SX1tp4/0HtMdeZ8R86lySfZkBQMSlmnGYW9qR6vK73qXG5
+TsIcAjQXhRVdPyKtXaAU9/mwUPD9taySnC2XxUpQvmTB8VFO7yX7yA4gSnp5SjtY6yERK7sSDMly
+zCT+cJSBnY8ATxdTgXkMN59Bqt36rF76sTUT04o+wh0+ZjV+06yvuLMNdWfhjNdEAKTjHeJFwj3S
+OWMPpKDgS9cK+XoKT++oFVM7jnCUpfYkRJ16RFfINMkKktuOahrIgb2uvu2CwWcAX7Y73embx91f
+/j0sHqWpaaccTeJy3d//78vEk3CT53VNDoO5cxhnjDdFty2BbQEjh28+xqZpM6Btm7lNxsvWLtXp
+soxXe1PUGwJefbg/FxEunZXKp1b+O1sW0uYCg8tpQh1wiutstSqw8Y1nTDjSG7y7ai2IrcH+9d4q
+7GEFOIAY3yiXAGdPhxkVp0wDVpba4oOcVgcILJ+agyjrZxwSlu0jW/KnitZOFoiRri4XrbuUGsAB
+Qea2Yrrgs/7wO5mfaVw0PvCNiM4NgkdMSCVnegn106Z2AZUJIDjpSmCArLgwwR6aXoKeDCYkfK09
+LwIv9rjwpWvVoh/akswBdDrrNiOMxEvVMKPuiRgbICChwiPOdv6NCCQgJn8tQn0cxBTtSMQpH8OP
+XJfsj2IF3adiorxBE+UyvByXDNCm0ybKxbfSKssLC10kld3+hGxXZrXQjScxzo6aguXO8sU4E0bv
+zk810rEx6ZwBHH1abhADTphJeW8BEOW+oJKS0amaVTLXtVK1j5SILTRnWweUiBpcvibPhiwExKl8
+iYHAJwXIpYrSrsE7BU2N5Z8q7Obca7/gyvW5HtSTuwWqD+zZ1sFD7s41jlWHU7oJqsU3fNhMHVRl
+o7RkyL9RiPvoGgwbR0iKu/eQmjvmWoLQI+6CXunRSlOMopaSqf5jpZPg2ltgSFGPk2NX/bD27eUk
+sB6z7PEIG7rdxtuUzrwOOESDQPdhdl39kllvlzbztGXfwr8HGKLVS2Rw61pinTxVcwdgttL6zGJi
+SQEQxvt8DRhuEWsUq5IXJsx2ybBDPjhkcYwkPU7GmFNmsW8xxKf2ZQg1+sdB+B5lY6zWlze6JbNu
+6d33to3pjVuFxeqE3fL6qlo3EAu9dtnj3nlrkE2dmkDK/Odzw8D4yPTSK/VI9Ml0W8XY7RcNI0LZ
+E7W1rMQdCfrALorjacIzr7S6JmbVy8LD8kGwPHhq7nPIzSxGYdTbm1mVZlTx9CWhoeREzTHBDpA/
+usxc90WbqCpEMNm6RFoXZglY34YGOvD1WW2sbIZW6LYzdYtxTDBjHLCBOw2cholW2J3/lR+JL836
+rsAHeWjD9GVqNtU+z8//E9zpJ2ZFXDkT+tkVax4P6sB4gkWA1PBVzVB6wEH+vOVrue6oOd7AwvVT
+MtRD34DzkH74OYcaqop9DHSbc68ekOLvC/ZoyzV3Ql4s8INLd1wG+66gfomksaGt/GqmW32hNRAo
+4u1z9WBengusR1ntb9H4Mk7RECiaAPcZiv1O7XQyln/3g9PE/OW3OwXsJwYDi9iI6roDLdfa7Hzn
+mn2mniptfS4/ZNYVlerFtDXM6hvNQkAY+BfV62T67laMuCd47kPJ/CfP5/QCjU/TXKVYeYSw1VNK
+E97fHARat+MXNAWgnqXVP/+I6yhB7KxU+4vb9LgeJlmZsornw/g4Pt+ET9mUhCiXEk9GMjBWjiSb
+oO6GDuxmswIcV+ZDKgda1Ndu1G+MzVTcBbg6A5Mfxmb0qW6qcPJswub+vhETuXGlWzilhRJygpNA
+Y1qGsqbLO1EV44URNYaD4mw5sw+KhjOQCTnG0E8MD2o0sN37f36Kj4w0iGzc2+DFC3YWsTjU+OJ2
+/D7ADiVEeRbNVujuNbUAWKyFFXGPetLvQIg1w/JuI26eHqgWWVMhjjaEj4mP/fgheegB5DwwT3sY
+fUaZBYSZ459qnMfHFMUVLr5D8KQZA0rwddkXo8giD/h7aXowtPjrJvbnm9KzHcVpPaTan0TmRQeN
+UIE5xgxl9H7L4JwG/1hJMFWBn45rLAbiBFllGTgzc4mWgfAzRCMEXAxQ1ox8nG4grUe4zbg84VKb
+LGvTNCJqyyu/Roc+3pucRxPFU3LwejD27ottiUsVzueE0RspDZ1qiCSLQQA+AdqYa769Fv9pFNRo
+jn90v6ULN/6NwJ65bTo8NH5zGsAe3Kb8v1Qlgafi8YUtZqgEdlfyRZ/B33IZpVDinm2PgJEhe/Bs
+akbOr7Ynd7nFpgSRZWv9zdcqcNrEdEwp73wN5pthz5ebEfo1hqVn+EFX9am9/hkIl5DyeBCI1Vcw
+47G5kw00REi7HfGlzAYF1hTBUqKHPv4FR3fsBvxfV4GZr9rI/6DhMHCn6IkqgwpGeYEQhzwaWfOV
+LcJS/ggmKtjxums4v5tEzavTAJvsGBZyo/HoCyMHDnXhY16bATrs82ZKVDO/9PVdQic8XQNdTs0X
+r4eZX1NaxtvtRwXk1rlmqlAj6Y9bK/8khEK0ZjSfjVpcy3ZCgES897ANiZ+Q55SN8Wp1f33tCj6Y
+7kijh5KSKq7j3if9tF/23dgzyzjHR9KHgh3I4eyAdwU00/7hAsimrZVqr+XH679+WsWcCf8mY0OG
+xy01yhp71Zekd5QYiST3pBBdT8sljawHSgIaZkKDJ8edH3vSAaCuHjHpmZZa00CXd9ATzWSCxuGY
+ZhfPst+nqu/ALF/zaWc6txyBs83Z9nrB316Cu7aDiHGG9UQf5je6ae0u3dFWFUWMDexZoM5bIwm/
+yw7yvatRl8E0y0Q+KqNng/teQJ0il1C60o0S+wY4JY+EFVjPG4B5mK/7I2y99n/MUfaQTZgs0hLC
+Wlr096Q/b4LTxhp3PSfBy25Ox6TWH7nhK8XmAcflwRgu/LcVVOr/vBWoX89UA7GJ6knZp4YAedsG
+ZucQIweOVl7EWUrgUX2NsQ/iSN4ce0UEQpxqWJy0nDxz0Pvs8QBZJHjUvGPMnAWllX8RWUn2t4dh
+jGFBUiX6R2gwp+Aq1HojYlIJys/jvbApOJv3HSnC0mFWmMAJePv+AH/ERgImhuhBirXxPUzoKzD+
+JDunXysTwF5eg0AJi5gLj5oyMWE6GlDxdg9oSQy2CAl6lnGDkAMsmVYHaYPqjSwU+bawwnu/leSY
+SlzYAU2ijmAYZF66JlfDtsNwJqv5flzv9jRoupLXn5rdeZxGJNsRdXC2rYEvHmMeDFXmjgOacF7k
+7xA9SrB7ZTjyp1Sc5Yddik4MTBgReLELD9L4aYPY4unOJWD6OXqBjo5BhGP6/FWPiPMdFdaIk0==

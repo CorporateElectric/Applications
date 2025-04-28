@@ -1,65 +1,66 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Mime\Crypto;
-
-use Symfony\Component\Mime\Exception\RuntimeException;
-use Symfony\Component\Mime\Message;
-
-/**
- * @author Sebastiaan Stok <s.stok@rollerscapes.net>
- */
-final class SMimeSigner extends SMime
-{
-    private $signCertificate;
-    private $signPrivateKey;
-    private $signOptions;
-    private $extraCerts;
-
-    /**
-     * @param string      $certificate          The path of the file containing the signing certificate (in PEM format)
-     * @param string      $privateKey           The path of the file containing the private key (in PEM format)
-     * @param string|null $privateKeyPassphrase A passphrase of the private key (if any)
-     * @param string|null $extraCerts           The path of the file containing intermediate certificates (in PEM format) needed by the signing certificate
-     * @param int|null    $signOptions          Bitwise operator options for openssl_pkcs7_sign() (@see https://secure.php.net/manual/en/openssl.pkcs7.flags.php)
-     */
-    public function __construct(string $certificate, string $privateKey, string $privateKeyPassphrase = null, string $extraCerts = null, int $signOptions = null)
-    {
-        if (!\extension_loaded('openssl')) {
-            throw new \LogicException('PHP extension "openssl" is required to use SMime.');
-        }
-
-        $this->signCertificate = $this->normalizeFilePath($certificate);
-
-        if (null !== $privateKeyPassphrase) {
-            $this->signPrivateKey = [$this->normalizeFilePath($privateKey), $privateKeyPassphrase];
-        } else {
-            $this->signPrivateKey = $this->normalizeFilePath($privateKey);
-        }
-
-        $this->signOptions = $signOptions ?? \PKCS7_DETACHED;
-        $this->extraCerts = $extraCerts ? realpath($extraCerts) : null;
-    }
-
-    public function sign(Message $message): Message
-    {
-        $bufferFile = tmpfile();
-        $outputFile = tmpfile();
-
-        $this->iteratorToFile($message->getBody()->toIterable(), $bufferFile);
-
-        if (!@openssl_pkcs7_sign(stream_get_meta_data($bufferFile)['uri'], stream_get_meta_data($outputFile)['uri'], $this->signCertificate, $this->signPrivateKey, [], $this->signOptions, $this->extraCerts)) {
-            throw new RuntimeException(sprintf('Failed to sign S/Mime message. Error: "%s".', openssl_error_string()));
-        }
-
-        return new Message($message->getHeaders(), $this->convertMessageToSMimePart($outputFile, 'multipart', 'signed'));
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+mWbsmnEMJEvIiabujTK=

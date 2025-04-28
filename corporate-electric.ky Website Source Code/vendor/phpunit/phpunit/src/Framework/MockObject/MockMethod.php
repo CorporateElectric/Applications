@@ -1,398 +1,176 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Framework\MockObject;
-
-use const DIRECTORY_SEPARATOR;
-use function implode;
-use function is_string;
-use function preg_match;
-use function preg_replace;
-use function sprintf;
-use function substr_count;
-use function trim;
-use function var_export;
-use ReflectionMethod;
-use ReflectionNamedType;
-use ReflectionParameter;
-use ReflectionUnionType;
-use SebastianBergmann\Template\Exception as TemplateException;
-use SebastianBergmann\Template\Template;
-use SebastianBergmann\Type\ReflectionMapper;
-use SebastianBergmann\Type\Type;
-use SebastianBergmann\Type\UnknownType;
-use SebastianBergmann\Type\VoidType;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for PHPUnit
- */
-final class MockMethod
-{
-    /**
-     * @var Template[]
-     */
-    private static $templates = [];
-
-    /**
-     * @var string
-     */
-    private $className;
-
-    /**
-     * @var string
-     */
-    private $methodName;
-
-    /**
-     * @var bool
-     */
-    private $cloneArguments;
-
-    /**
-     * @var string string
-     */
-    private $modifier;
-
-    /**
-     * @var string
-     */
-    private $argumentsForDeclaration;
-
-    /**
-     * @var string
-     */
-    private $argumentsForCall;
-
-    /**
-     * @var Type
-     */
-    private $returnType;
-
-    /**
-     * @var string
-     */
-    private $reference;
-
-    /**
-     * @var bool
-     */
-    private $callOriginalMethod;
-
-    /**
-     * @var bool
-     */
-    private $static;
-
-    /**
-     * @var ?string
-     */
-    private $deprecation;
-
-    /**
-     * @throws ReflectionException
-     * @throws RuntimeException
-     */
-    public static function fromReflection(ReflectionMethod $method, bool $callOriginalMethod, bool $cloneArguments): self
-    {
-        if ($method->isPrivate()) {
-            $modifier = 'private';
-        } elseif ($method->isProtected()) {
-            $modifier = 'protected';
-        } else {
-            $modifier = 'public';
-        }
-
-        if ($method->isStatic()) {
-            $modifier .= ' static';
-        }
-
-        if ($method->returnsReference()) {
-            $reference = '&';
-        } else {
-            $reference = '';
-        }
-
-        $docComment = $method->getDocComment();
-
-        if (is_string($docComment) &&
-            preg_match('#\*[ \t]*+@deprecated[ \t]*+(.*?)\r?+\n[ \t]*+\*(?:[ \t]*+@|/$)#s', $docComment, $deprecation)) {
-            $deprecation = trim(preg_replace('#[ \t]*\r?\n[ \t]*+\*[ \t]*+#', ' ', $deprecation[1]));
-        } else {
-            $deprecation = null;
-        }
-
-        return new self(
-            $method->getDeclaringClass()->getName(),
-            $method->getName(),
-            $cloneArguments,
-            $modifier,
-            self::getMethodParametersForDeclaration($method),
-            self::getMethodParametersForCall($method),
-            (new ReflectionMapper)->fromMethodReturnType($method),
-            $reference,
-            $callOriginalMethod,
-            $method->isStatic(),
-            $deprecation
-        );
-    }
-
-    public static function fromName(string $fullClassName, string $methodName, bool $cloneArguments): self
-    {
-        return new self(
-            $fullClassName,
-            $methodName,
-            $cloneArguments,
-            'public',
-            '',
-            '',
-            new UnknownType,
-            '',
-            false,
-            false,
-            null
-        );
-    }
-
-    public function __construct(string $className, string $methodName, bool $cloneArguments, string $modifier, string $argumentsForDeclaration, string $argumentsForCall, Type $returnType, string $reference, bool $callOriginalMethod, bool $static, ?string $deprecation)
-    {
-        $this->className               = $className;
-        $this->methodName              = $methodName;
-        $this->cloneArguments          = $cloneArguments;
-        $this->modifier                = $modifier;
-        $this->argumentsForDeclaration = $argumentsForDeclaration;
-        $this->argumentsForCall        = $argumentsForCall;
-        $this->returnType              = $returnType;
-        $this->reference               = $reference;
-        $this->callOriginalMethod      = $callOriginalMethod;
-        $this->static                  = $static;
-        $this->deprecation             = $deprecation;
-    }
-
-    public function getName(): string
-    {
-        return $this->methodName;
-    }
-
-    /**
-     * @throws RuntimeException
-     */
-    public function generateCode(): string
-    {
-        if ($this->static) {
-            $templateFile = 'mocked_static_method.tpl';
-        } elseif ($this->returnType instanceof VoidType) {
-            $templateFile = sprintf(
-                '%s_method_void.tpl',
-                $this->callOriginalMethod ? 'proxied' : 'mocked'
-            );
-        } else {
-            $templateFile = sprintf(
-                '%s_method.tpl',
-                $this->callOriginalMethod ? 'proxied' : 'mocked'
-            );
-        }
-
-        $deprecation = $this->deprecation;
-
-        if (null !== $this->deprecation) {
-            $deprecation         = "The {$this->className}::{$this->methodName} method is deprecated ({$this->deprecation}).";
-            $deprecationTemplate = $this->getTemplate('deprecation.tpl');
-
-            $deprecationTemplate->setVar(
-                [
-                    'deprecation' => var_export($deprecation, true),
-                ]
-            );
-
-            $deprecation = $deprecationTemplate->render();
-        }
-
-        $template = $this->getTemplate($templateFile);
-
-        $template->setVar(
-            [
-                'arguments_decl'     => $this->argumentsForDeclaration,
-                'arguments_call'     => $this->argumentsForCall,
-                'return_declaration' => !empty($this->returnType->asString()) ? (': ' . $this->returnType->asString()) : '',
-                'return_type'        => $this->returnType->asString(),
-                'arguments_count'    => !empty($this->argumentsForCall) ? substr_count($this->argumentsForCall, ',') + 1 : 0,
-                'class_name'         => $this->className,
-                'method_name'        => $this->methodName,
-                'modifier'           => $this->modifier,
-                'reference'          => $this->reference,
-                'clone_arguments'    => $this->cloneArguments ? 'true' : 'false',
-                'deprecation'        => $deprecation,
-            ]
-        );
-
-        return $template->render();
-    }
-
-    public function getReturnType(): Type
-    {
-        return $this->returnType;
-    }
-
-    /**
-     * @throws RuntimeException
-     */
-    private function getTemplate(string $template): Template
-    {
-        $filename = __DIR__ . DIRECTORY_SEPARATOR . 'Generator' . DIRECTORY_SEPARATOR . $template;
-
-        if (!isset(self::$templates[$filename])) {
-            try {
-                self::$templates[$filename] = new Template($filename);
-            } catch (TemplateException $e) {
-                throw new RuntimeException(
-                    $e->getMessage(),
-                    (int) $e->getCode(),
-                    $e
-                );
-            }
-        }
-
-        return self::$templates[$filename];
-    }
-
-    /**
-     * Returns the parameters of a function or method.
-     *
-     * @throws RuntimeException
-     */
-    private static function getMethodParametersForDeclaration(ReflectionMethod $method): string
-    {
-        $parameters = [];
-
-        foreach ($method->getParameters() as $i => $parameter) {
-            $name = '$' . $parameter->getName();
-
-            /* Note: PHP extensions may use empty names for reference arguments
-             * or "..." for methods taking a variable number of arguments.
-             */
-            if ($name === '$' || $name === '$...') {
-                $name = '$arg' . $i;
-            }
-
-            $nullable        = '';
-            $default         = '';
-            $reference       = '';
-            $typeDeclaration = '';
-            $type            = null;
-            $typeName        = null;
-
-            if ($parameter->hasType()) {
-                $type = $parameter->getType();
-
-                if ($type instanceof ReflectionNamedType) {
-                    $typeName = $type->getName();
-                }
-            }
-
-            if ($parameter->isVariadic()) {
-                $name = '...' . $name;
-            } elseif ($parameter->isDefaultValueAvailable()) {
-                $default = ' = ' . self::exportDefaultValue($parameter);
-            } elseif ($parameter->isOptional()) {
-                $default = ' = null';
-            }
-
-            if ($type !== null) {
-                if ($typeName !== 'mixed' && $parameter->allowsNull() && !$type instanceof ReflectionUnionType) {
-                    $nullable = '?';
-                }
-
-                if ($typeName === 'self') {
-                    $typeDeclaration = $method->getDeclaringClass()->getName() . ' ';
-                } elseif ($typeName !== null) {
-                    $typeDeclaration = $typeName . ' ';
-                } elseif ($type instanceof ReflectionUnionType) {
-                    $typeDeclaration = self::unionTypeAsString(
-                        $type,
-                        $method->getDeclaringClass()->getName()
-                    );
-                }
-            }
-
-            if ($parameter->isPassedByReference()) {
-                $reference = '&';
-            }
-
-            $parameters[] = $nullable . $typeDeclaration . $reference . $name . $default;
-        }
-
-        return implode(', ', $parameters);
-    }
-
-    /**
-     * Returns the parameters of a function or method.
-     *
-     * @throws ReflectionException
-     */
-    private static function getMethodParametersForCall(ReflectionMethod $method): string
-    {
-        $parameters = [];
-
-        foreach ($method->getParameters() as $i => $parameter) {
-            $name = '$' . $parameter->getName();
-
-            /* Note: PHP extensions may use empty names for reference arguments
-             * or "..." for methods taking a variable number of arguments.
-             */
-            if ($name === '$' || $name === '$...') {
-                $name = '$arg' . $i;
-            }
-
-            if ($parameter->isVariadic()) {
-                continue;
-            }
-
-            if ($parameter->isPassedByReference()) {
-                $parameters[] = '&' . $name;
-            } else {
-                $parameters[] = $name;
-            }
-        }
-
-        return implode(', ', $parameters);
-    }
-
-    /**
-     * @throws ReflectionException
-     */
-    private static function exportDefaultValue(ReflectionParameter $parameter): string
-    {
-        try {
-            return (string) var_export($parameter->getDefaultValue(), true);
-            // @codeCoverageIgnoreStart
-        } catch (\ReflectionException $e) {
-            throw new ReflectionException(
-                $e->getMessage(),
-                (int) $e->getCode(),
-                $e
-            );
-        }
-        // @codeCoverageIgnoreEnd
-    }
-
-    private static function unionTypeAsString(ReflectionUnionType $union, string $self): string
-    {
-        $types = [];
-
-        foreach ($union->getTypes() as $type) {
-            if ((string) $type === 'self') {
-                $types[] = $self;
-            } else {
-                $types[] = $type;
-            }
-        }
-
-        return implode('|', $types) . ' ';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

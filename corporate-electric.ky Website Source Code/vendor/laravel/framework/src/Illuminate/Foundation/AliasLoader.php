@@ -1,243 +1,89 @@
-<?php
-
-namespace Illuminate\Foundation;
-
-class AliasLoader
-{
-    /**
-     * The array of class aliases.
-     *
-     * @var array
-     */
-    protected $aliases;
-
-    /**
-     * Indicates if a loader has been registered.
-     *
-     * @var bool
-     */
-    protected $registered = false;
-
-    /**
-     * The namespace for all real-time facades.
-     *
-     * @var string
-     */
-    protected static $facadeNamespace = 'Facades\\';
-
-    /**
-     * The singleton instance of the loader.
-     *
-     * @var \Illuminate\Foundation\AliasLoader
-     */
-    protected static $instance;
-
-    /**
-     * Create a new AliasLoader instance.
-     *
-     * @param  array  $aliases
-     * @return void
-     */
-    private function __construct($aliases)
-    {
-        $this->aliases = $aliases;
-    }
-
-    /**
-     * Get or create the singleton alias loader instance.
-     *
-     * @param  array  $aliases
-     * @return \Illuminate\Foundation\AliasLoader
-     */
-    public static function getInstance(array $aliases = [])
-    {
-        if (is_null(static::$instance)) {
-            return static::$instance = new static($aliases);
-        }
-
-        $aliases = array_merge(static::$instance->getAliases(), $aliases);
-
-        static::$instance->setAliases($aliases);
-
-        return static::$instance;
-    }
-
-    /**
-     * Load a class alias if it is registered.
-     *
-     * @param  string  $alias
-     * @return bool|null
-     */
-    public function load($alias)
-    {
-        if (static::$facadeNamespace && strpos($alias, static::$facadeNamespace) === 0) {
-            $this->loadFacade($alias);
-
-            return true;
-        }
-
-        if (isset($this->aliases[$alias])) {
-            return class_alias($this->aliases[$alias], $alias);
-        }
-    }
-
-    /**
-     * Load a real-time facade for the given alias.
-     *
-     * @param  string  $alias
-     * @return void
-     */
-    protected function loadFacade($alias)
-    {
-        require $this->ensureFacadeExists($alias);
-    }
-
-    /**
-     * Ensure that the given alias has an existing real-time facade class.
-     *
-     * @param  string  $alias
-     * @return string
-     */
-    protected function ensureFacadeExists($alias)
-    {
-        if (is_file($path = storage_path('framework/cache/facade-'.sha1($alias).'.php'))) {
-            return $path;
-        }
-
-        file_put_contents($path, $this->formatFacadeStub(
-            $alias, file_get_contents(__DIR__.'/stubs/facade.stub')
-        ));
-
-        return $path;
-    }
-
-    /**
-     * Format the facade stub with the proper namespace and class.
-     *
-     * @param  string  $alias
-     * @param  string  $stub
-     * @return string
-     */
-    protected function formatFacadeStub($alias, $stub)
-    {
-        $replacements = [
-            str_replace('/', '\\', dirname(str_replace('\\', '/', $alias))),
-            class_basename($alias),
-            substr($alias, strlen(static::$facadeNamespace)),
-        ];
-
-        return str_replace(
-            ['DummyNamespace', 'DummyClass', 'DummyTarget'], $replacements, $stub
-        );
-    }
-
-    /**
-     * Add an alias to the loader.
-     *
-     * @param  string  $alias
-     * @param  string  $class
-     * @return void
-     */
-    public function alias($alias, $class)
-    {
-        $this->aliases[$alias] = $class;
-    }
-
-    /**
-     * Register the loader on the auto-loader stack.
-     *
-     * @return void
-     */
-    public function register()
-    {
-        if (! $this->registered) {
-            $this->prependToLoaderStack();
-
-            $this->registered = true;
-        }
-    }
-
-    /**
-     * Prepend the load method to the auto-loader stack.
-     *
-     * @return void
-     */
-    protected function prependToLoaderStack()
-    {
-        spl_autoload_register([$this, 'load'], true, true);
-    }
-
-    /**
-     * Get the registered aliases.
-     *
-     * @return array
-     */
-    public function getAliases()
-    {
-        return $this->aliases;
-    }
-
-    /**
-     * Set the registered aliases.
-     *
-     * @param  array  $aliases
-     * @return void
-     */
-    public function setAliases(array $aliases)
-    {
-        $this->aliases = $aliases;
-    }
-
-    /**
-     * Indicates if the loader has been registered.
-     *
-     * @return bool
-     */
-    public function isRegistered()
-    {
-        return $this->registered;
-    }
-
-    /**
-     * Set the "registered" state of the loader.
-     *
-     * @param  bool  $value
-     * @return void
-     */
-    public function setRegistered($value)
-    {
-        $this->registered = $value;
-    }
-
-    /**
-     * Set the real-time facade namespace.
-     *
-     * @param  string  $namespace
-     * @return void
-     */
-    public static function setFacadeNamespace($namespace)
-    {
-        static::$facadeNamespace = rtrim($namespace, '\\').'\\';
-    }
-
-    /**
-     * Set the value of the singleton alias loader.
-     *
-     * @param  \Illuminate\Foundation\AliasLoader  $loader
-     * @return void
-     */
-    public static function setInstance($loader)
-    {
-        static::$instance = $loader;
-    }
-
-    /**
-     * Clone method.
-     *
-     * @return void
-     */
-    private function __clone()
-    {
-        //
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+P2OlUGQcJRiV3QDn

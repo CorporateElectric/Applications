@@ -1,676 +1,332 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Calculation;
-
-use DateTimeInterface;
-use PhpOffice\PhpSpreadsheet\Shared\Date;
-use PhpOffice\PhpSpreadsheet\Shared\StringHelper;
-use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
-
-class TextData
-{
-    private static $invalidChars;
-
-    private static function unicodeToOrd($character)
-    {
-        return unpack('V', iconv('UTF-8', 'UCS-4LE', $character))[1];
-    }
-
-    /**
-     * CHARACTER.
-     *
-     * @param string $character Value
-     *
-     * @return string
-     */
-    public static function CHARACTER($character)
-    {
-        $character = Functions::flattenSingleValue($character);
-
-        if (!is_numeric($character)) {
-            return Functions::VALUE();
-        }
-        $character = (int) $character;
-        if ($character < 1 || $character > 255) {
-            return Functions::VALUE();
-        }
-
-        return iconv('UCS-4LE', 'UTF-8', pack('V', $character));
-    }
-
-    /**
-     * TRIMNONPRINTABLE.
-     *
-     * @param mixed $stringValue Value to check
-     *
-     * @return string
-     */
-    public static function TRIMNONPRINTABLE($stringValue = '')
-    {
-        $stringValue = Functions::flattenSingleValue($stringValue);
-
-        if (is_bool($stringValue)) {
-            return ($stringValue) ? Calculation::getTRUE() : Calculation::getFALSE();
-        }
-
-        if (self::$invalidChars === null) {
-            self::$invalidChars = range(chr(0), chr(31));
-        }
-
-        if (is_string($stringValue) || is_numeric($stringValue)) {
-            return str_replace(self::$invalidChars, '', trim($stringValue, "\x00..\x1F"));
-        }
-
-        return null;
-    }
-
-    /**
-     * TRIMSPACES.
-     *
-     * @param mixed $stringValue Value to check
-     *
-     * @return string
-     */
-    public static function TRIMSPACES($stringValue = '')
-    {
-        $stringValue = Functions::flattenSingleValue($stringValue);
-        if (is_bool($stringValue)) {
-            return ($stringValue) ? Calculation::getTRUE() : Calculation::getFALSE();
-        }
-
-        if (is_string($stringValue) || is_numeric($stringValue)) {
-            return trim(preg_replace('/ +/', ' ', trim($stringValue, ' ')), ' ');
-        }
-
-        return null;
-    }
-
-    private static function convertBooleanValue($value)
-    {
-        if (Functions::getCompatibilityMode() == Functions::COMPATIBILITY_OPENOFFICE) {
-            return (int) $value;
-        }
-
-        return ($value) ? Calculation::getTRUE() : Calculation::getFALSE();
-    }
-
-    /**
-     * ASCIICODE.
-     *
-     * @param string $characters Value
-     *
-     * @return int|string A string if arguments are invalid
-     */
-    public static function ASCIICODE($characters)
-    {
-        if (($characters === null) || ($characters === '')) {
-            return Functions::VALUE();
-        }
-        $characters = Functions::flattenSingleValue($characters);
-        if (is_bool($characters)) {
-            $characters = self::convertBooleanValue($characters);
-        }
-
-        $character = $characters;
-        if (mb_strlen($characters, 'UTF-8') > 1) {
-            $character = mb_substr($characters, 0, 1, 'UTF-8');
-        }
-
-        return self::unicodeToOrd($character);
-    }
-
-    /**
-     * CONCATENATE.
-     *
-     * @return string
-     */
-    public static function CONCATENATE(...$args)
-    {
-        $returnValue = '';
-
-        // Loop through arguments
-        $aArgs = Functions::flattenArray($args);
-        foreach ($aArgs as $arg) {
-            if (is_bool($arg)) {
-                $arg = self::convertBooleanValue($arg);
-            }
-            $returnValue .= $arg;
-        }
-
-        return $returnValue;
-    }
-
-    /**
-     * DOLLAR.
-     *
-     * This function converts a number to text using currency format, with the decimals rounded to the specified place.
-     * The format used is $#,##0.00_);($#,##0.00)..
-     *
-     * @param float $value The value to format
-     * @param int $decimals The number of digits to display to the right of the decimal point.
-     *                                    If decimals is negative, number is rounded to the left of the decimal point.
-     *                                    If you omit decimals, it is assumed to be 2
-     *
-     * @return string
-     */
-    public static function DOLLAR($value = 0, $decimals = 2)
-    {
-        $value = Functions::flattenSingleValue($value);
-        $decimals = $decimals === null ? 0 : Functions::flattenSingleValue($decimals);
-
-        // Validate parameters
-        if (!is_numeric($value) || !is_numeric($decimals)) {
-            return Functions::VALUE();
-        }
-        $decimals = floor($decimals);
-
-        $mask = '$#,##0';
-        if ($decimals > 0) {
-            $mask .= '.' . str_repeat('0', $decimals);
-        } else {
-            $round = 10 ** abs($decimals);
-            if ($value < 0) {
-                $round = 0 - $round;
-            }
-            $value = MathTrig::MROUND($value, $round);
-        }
-        $mask = "$mask;($mask)";
-
-        return NumberFormat::toFormattedString($value, $mask);
-    }
-
-    /**
-     * SEARCHSENSITIVE.
-     *
-     * @param string $needle The string to look for
-     * @param string $haystack The string in which to look
-     * @param int $offset Offset within $haystack
-     *
-     * @return string
-     */
-    public static function SEARCHSENSITIVE($needle, $haystack, $offset = 1)
-    {
-        $needle = Functions::flattenSingleValue($needle);
-        $haystack = Functions::flattenSingleValue($haystack);
-        $offset = Functions::flattenSingleValue($offset);
-
-        if (!is_bool($needle)) {
-            if (is_bool($haystack)) {
-                $haystack = ($haystack) ? Calculation::getTRUE() : Calculation::getFALSE();
-            }
-
-            if (($offset > 0) && (StringHelper::countCharacters($haystack) > $offset)) {
-                if (StringHelper::countCharacters($needle) === 0) {
-                    return $offset;
-                }
-
-                $pos = mb_strpos($haystack, $needle, --$offset, 'UTF-8');
-                if ($pos !== false) {
-                    return ++$pos;
-                }
-            }
-        }
-
-        return Functions::VALUE();
-    }
-
-    /**
-     * SEARCHINSENSITIVE.
-     *
-     * @param string $needle The string to look for
-     * @param string $haystack The string in which to look
-     * @param int $offset Offset within $haystack
-     *
-     * @return string
-     */
-    public static function SEARCHINSENSITIVE($needle, $haystack, $offset = 1)
-    {
-        $needle = Functions::flattenSingleValue($needle);
-        $haystack = Functions::flattenSingleValue($haystack);
-        $offset = Functions::flattenSingleValue($offset);
-
-        if (!is_bool($needle)) {
-            if (is_bool($haystack)) {
-                $haystack = ($haystack) ? Calculation::getTRUE() : Calculation::getFALSE();
-            }
-
-            if (($offset > 0) && (StringHelper::countCharacters($haystack) > $offset)) {
-                if (StringHelper::countCharacters($needle) === 0) {
-                    return $offset;
-                }
-
-                $pos = mb_stripos($haystack, $needle, --$offset, 'UTF-8');
-                if ($pos !== false) {
-                    return ++$pos;
-                }
-            }
-        }
-
-        return Functions::VALUE();
-    }
-
-    /**
-     * FIXEDFORMAT.
-     *
-     * @param mixed $value Value to check
-     * @param int $decimals
-     * @param bool $no_commas
-     *
-     * @return string
-     */
-    public static function FIXEDFORMAT($value, $decimals = 2, $no_commas = false)
-    {
-        $value = Functions::flattenSingleValue($value);
-        $decimals = Functions::flattenSingleValue($decimals);
-        $no_commas = Functions::flattenSingleValue($no_commas);
-
-        // Validate parameters
-        if (!is_numeric($value) || !is_numeric($decimals)) {
-            return Functions::VALUE();
-        }
-        $decimals = (int) floor($decimals);
-
-        $valueResult = round($value, $decimals);
-        if ($decimals < 0) {
-            $decimals = 0;
-        }
-        if (!$no_commas) {
-            $valueResult = number_format(
-                $valueResult,
-                $decimals,
-                StringHelper::getDecimalSeparator(),
-                StringHelper::getThousandsSeparator()
-            );
-        }
-
-        return (string) $valueResult;
-    }
-
-    /**
-     * LEFT.
-     *
-     * @param string $value Value
-     * @param int $chars Number of characters
-     *
-     * @return string
-     */
-    public static function LEFT($value = '', $chars = 1)
-    {
-        $value = Functions::flattenSingleValue($value);
-        $chars = Functions::flattenSingleValue($chars);
-
-        if ($chars < 0) {
-            return Functions::VALUE();
-        }
-
-        if (is_bool($value)) {
-            $value = ($value) ? Calculation::getTRUE() : Calculation::getFALSE();
-        }
-
-        return mb_substr($value, 0, $chars, 'UTF-8');
-    }
-
-    /**
-     * MID.
-     *
-     * @param string $value Value
-     * @param int $start Start character
-     * @param int $chars Number of characters
-     *
-     * @return string
-     */
-    public static function MID($value = '', $start = 1, $chars = null)
-    {
-        $value = Functions::flattenSingleValue($value);
-        $start = Functions::flattenSingleValue($start);
-        $chars = Functions::flattenSingleValue($chars);
-
-        if (($start < 1) || ($chars < 0)) {
-            return Functions::VALUE();
-        }
-
-        if (is_bool($value)) {
-            $value = ($value) ? Calculation::getTRUE() : Calculation::getFALSE();
-        }
-
-        if (empty($chars)) {
-            return '';
-        }
-
-        return mb_substr($value, --$start, $chars, 'UTF-8');
-    }
-
-    /**
-     * RIGHT.
-     *
-     * @param string $value Value
-     * @param int $chars Number of characters
-     *
-     * @return string
-     */
-    public static function RIGHT($value = '', $chars = 1)
-    {
-        $value = Functions::flattenSingleValue($value);
-        $chars = Functions::flattenSingleValue($chars);
-
-        if ($chars < 0) {
-            return Functions::VALUE();
-        }
-
-        if (is_bool($value)) {
-            $value = ($value) ? Calculation::getTRUE() : Calculation::getFALSE();
-        }
-
-        return mb_substr($value, mb_strlen($value, 'UTF-8') - $chars, $chars, 'UTF-8');
-    }
-
-    /**
-     * STRINGLENGTH.
-     *
-     * @param string $value Value
-     *
-     * @return int
-     */
-    public static function STRINGLENGTH($value = '')
-    {
-        $value = Functions::flattenSingleValue($value);
-
-        if (is_bool($value)) {
-            $value = ($value) ? Calculation::getTRUE() : Calculation::getFALSE();
-        }
-
-        return mb_strlen($value, 'UTF-8');
-    }
-
-    /**
-     * LOWERCASE.
-     *
-     * Converts a string value to upper case.
-     *
-     * @param string $mixedCaseString
-     *
-     * @return string
-     */
-    public static function LOWERCASE($mixedCaseString)
-    {
-        $mixedCaseString = Functions::flattenSingleValue($mixedCaseString);
-
-        if (is_bool($mixedCaseString)) {
-            $mixedCaseString = ($mixedCaseString) ? Calculation::getTRUE() : Calculation::getFALSE();
-        }
-
-        return StringHelper::strToLower($mixedCaseString);
-    }
-
-    /**
-     * UPPERCASE.
-     *
-     * Converts a string value to upper case.
-     *
-     * @param string $mixedCaseString
-     *
-     * @return string
-     */
-    public static function UPPERCASE($mixedCaseString)
-    {
-        $mixedCaseString = Functions::flattenSingleValue($mixedCaseString);
-
-        if (is_bool($mixedCaseString)) {
-            $mixedCaseString = ($mixedCaseString) ? Calculation::getTRUE() : Calculation::getFALSE();
-        }
-
-        return StringHelper::strToUpper($mixedCaseString);
-    }
-
-    /**
-     * PROPERCASE.
-     *
-     * Converts a string value to upper case.
-     *
-     * @param string $mixedCaseString
-     *
-     * @return string
-     */
-    public static function PROPERCASE($mixedCaseString)
-    {
-        $mixedCaseString = Functions::flattenSingleValue($mixedCaseString);
-
-        if (is_bool($mixedCaseString)) {
-            $mixedCaseString = ($mixedCaseString) ? Calculation::getTRUE() : Calculation::getFALSE();
-        }
-
-        return StringHelper::strToTitle($mixedCaseString);
-    }
-
-    /**
-     * REPLACE.
-     *
-     * @param string $oldText String to modify
-     * @param int $start Start character
-     * @param int $chars Number of characters
-     * @param string $newText String to replace in defined position
-     *
-     * @return string
-     */
-    public static function REPLACE($oldText, $start, $chars, $newText)
-    {
-        $oldText = Functions::flattenSingleValue($oldText);
-        $start = Functions::flattenSingleValue($start);
-        $chars = Functions::flattenSingleValue($chars);
-        $newText = Functions::flattenSingleValue($newText);
-
-        $left = self::LEFT($oldText, $start - 1);
-        $right = self::RIGHT($oldText, self::STRINGLENGTH($oldText) - ($start + $chars) + 1);
-
-        return $left . $newText . $right;
-    }
-
-    /**
-     * SUBSTITUTE.
-     *
-     * @param string $text Value
-     * @param string $fromText From Value
-     * @param string $toText To Value
-     * @param int $instance Instance Number
-     *
-     * @return string
-     */
-    public static function SUBSTITUTE($text = '', $fromText = '', $toText = '', $instance = 0)
-    {
-        $text = Functions::flattenSingleValue($text);
-        $fromText = Functions::flattenSingleValue($fromText);
-        $toText = Functions::flattenSingleValue($toText);
-        $instance = floor(Functions::flattenSingleValue($instance));
-
-        if ($instance == 0) {
-            return str_replace($fromText, $toText, $text);
-        }
-
-        $pos = -1;
-        while ($instance > 0) {
-            $pos = mb_strpos($text, $fromText, $pos + 1, 'UTF-8');
-            if ($pos === false) {
-                break;
-            }
-            --$instance;
-        }
-
-        if ($pos !== false) {
-            return self::REPLACE($text, ++$pos, mb_strlen($fromText, 'UTF-8'), $toText);
-        }
-
-        return $text;
-    }
-
-    /**
-     * RETURNSTRING.
-     *
-     * @param mixed $testValue Value to check
-     *
-     * @return null|string
-     */
-    public static function RETURNSTRING($testValue = '')
-    {
-        $testValue = Functions::flattenSingleValue($testValue);
-
-        if (is_string($testValue)) {
-            return $testValue;
-        }
-
-        return null;
-    }
-
-    /**
-     * TEXTFORMAT.
-     *
-     * @param mixed $value Value to check
-     * @param string $format Format mask to use
-     *
-     * @return string
-     */
-    public static function TEXTFORMAT($value, $format)
-    {
-        $value = Functions::flattenSingleValue($value);
-        $format = Functions::flattenSingleValue($format);
-
-        if ((is_string($value)) && (!is_numeric($value)) && Date::isDateTimeFormatCode($format)) {
-            $value = DateTime::DATEVALUE($value);
-        }
-
-        return (string) NumberFormat::toFormattedString($value, $format);
-    }
-
-    /**
-     * VALUE.
-     *
-     * @param mixed $value Value to check
-     *
-     * @return DateTimeInterface|float|int|string A string if arguments are invalid
-     */
-    public static function VALUE($value = '')
-    {
-        $value = Functions::flattenSingleValue($value);
-
-        if (!is_numeric($value)) {
-            $numberValue = str_replace(
-                StringHelper::getThousandsSeparator(),
-                '',
-                trim($value, " \t\n\r\0\x0B" . StringHelper::getCurrencyCode())
-            );
-            if (is_numeric($numberValue)) {
-                return (float) $numberValue;
-            }
-
-            $dateSetting = Functions::getReturnDateType();
-            Functions::setReturnDateType(Functions::RETURNDATE_EXCEL);
-
-            if (strpos($value, ':') !== false) {
-                $timeValue = DateTime::TIMEVALUE($value);
-                if ($timeValue !== Functions::VALUE()) {
-                    Functions::setReturnDateType($dateSetting);
-
-                    return $timeValue;
-                }
-            }
-            $dateValue = DateTime::DATEVALUE($value);
-            if ($dateValue !== Functions::VALUE()) {
-                Functions::setReturnDateType($dateSetting);
-
-                return $dateValue;
-            }
-            Functions::setReturnDateType($dateSetting);
-
-            return Functions::VALUE();
-        }
-
-        return (float) $value;
-    }
-
-    /**
-     * NUMBERVALUE.
-     *
-     * @param mixed $value Value to check
-     * @param string $decimalSeparator decimal separator, defaults to locale defined value
-     * @param string $groupSeparator group/thosands separator, defaults to locale defined value
-     *
-     * @return float|string
-     */
-    public static function NUMBERVALUE($value = '', $decimalSeparator = null, $groupSeparator = null)
-    {
-        $value = Functions::flattenSingleValue($value);
-        $decimalSeparator = Functions::flattenSingleValue($decimalSeparator);
-        $groupSeparator = Functions::flattenSingleValue($groupSeparator);
-
-        if (!is_numeric($value)) {
-            $decimalSeparator = empty($decimalSeparator) ? StringHelper::getDecimalSeparator() : $decimalSeparator;
-            $groupSeparator = empty($groupSeparator) ? StringHelper::getThousandsSeparator() : $groupSeparator;
-
-            $decimalPositions = preg_match_all('/' . preg_quote($decimalSeparator) . '/', $value, $matches, PREG_OFFSET_CAPTURE);
-            if ($decimalPositions > 1) {
-                return Functions::VALUE();
-            }
-            $decimalOffset = array_pop($matches[0])[1];
-            if (strpos($value, $groupSeparator, $decimalOffset) !== false) {
-                return Functions::VALUE();
-            }
-
-            $value = str_replace([$groupSeparator, $decimalSeparator], ['', '.'], $value);
-
-            // Handle the special case of trailing % signs
-            $percentageString = rtrim($value, '%');
-            if (!is_numeric($percentageString)) {
-                return Functions::VALUE();
-            }
-
-            $percentageAdjustment = strlen($value) - strlen($percentageString);
-            if ($percentageAdjustment) {
-                $value = (float) $percentageString;
-                $value /= 10 ** ($percentageAdjustment * 2);
-            }
-        }
-
-        return (float) $value;
-    }
-
-    /**
-     * Compares two text strings and returns TRUE if they are exactly the same, FALSE otherwise.
-     * EXACT is case-sensitive but ignores formatting differences.
-     * Use EXACT to test text being entered into a document.
-     *
-     * @param $value1
-     * @param $value2
-     *
-     * @return bool
-     */
-    public static function EXACT($value1, $value2)
-    {
-        $value1 = Functions::flattenSingleValue($value1);
-        $value2 = Functions::flattenSingleValue($value2);
-
-        return (string) $value2 === (string) $value1;
-    }
-
-    /**
-     * TEXTJOIN.
-     *
-     * @param mixed $delimiter
-     * @param mixed $ignoreEmpty
-     * @param mixed $args
-     *
-     * @return string
-     */
-    public static function TEXTJOIN($delimiter, $ignoreEmpty, ...$args)
-    {
-        // Loop through arguments
-        $aArgs = Functions::flattenArray($args);
-        foreach ($aArgs as $key => &$arg) {
-            if ($ignoreEmpty && trim($arg) == '') {
-                unset($aArgs[$key]);
-            } elseif (is_bool($arg)) {
-                $arg = self::convertBooleanValue($arg);
-            }
-        }
-
-        return implode($delimiter, $aArgs);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

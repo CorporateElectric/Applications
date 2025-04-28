@@ -1,67 +1,31 @@
-<?php namespace Cviebrock\EloquentSluggable\Tests\Models;
-
-use Cviebrock\EloquentSluggable\Sluggable;
-use Illuminate\Database\Eloquent\Model;
-
-/**
- * Class Post
- *
- * @package Cviebrock\EloquentSluggable\Tests\Models
- *
- * @property integer id
- * @property string title
- * @property string|null subtitle
- * @property string|null slug
- * @property string|null dummy
- * @property integer author_id
- */
-class Post extends Model
-{
-
-    use Sluggable;
-
-    /**
-     * The table associated with the model.
-     *
-     * @var string
-     */
-    protected $table = 'posts';
-
-    /**
-     * Indicates if the model should be timestamped.
-     *
-     * @var bool
-     */
-    public $timestamps = false;
-
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array
-     */
-    protected $fillable = ['title', 'subtitle', 'slug', 'dummy', 'author_id'];
-
-    /**
-     * Convert the model to its string representation.
-     *
-     * @return string
-     */
-    public function __toString()
-    {
-        return $this->title;
-    }
-
-    /**
-     * Return the sluggable configuration array for this model.
-     *
-     * @return array
-     */
-    public function sluggable(): array
-    {
-        return [
-            'slug' => [
-                'source' => 'title'
-            ]
-        ];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+z68=

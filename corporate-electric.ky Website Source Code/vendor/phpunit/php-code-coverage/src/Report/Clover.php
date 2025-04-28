@@ -1,255 +1,169 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of phpunit/php-code-coverage.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\CodeCoverage\Report;
-
-use function count;
-use function dirname;
-use function file_put_contents;
-use function is_string;
-use function ksort;
-use function max;
-use function range;
-use function time;
-use DOMDocument;
-use SebastianBergmann\CodeCoverage\CodeCoverage;
-use SebastianBergmann\CodeCoverage\Directory;
-use SebastianBergmann\CodeCoverage\Driver\WriteOperationFailedException;
-use SebastianBergmann\CodeCoverage\Node\File;
-
-final class Clover
-{
-    /**
-     * @throws WriteOperationFailedException
-     */
-    public function process(CodeCoverage $coverage, ?string $target = null, ?string $name = null): string
-    {
-        $time = (string) time();
-
-        $xmlDocument               = new DOMDocument('1.0', 'UTF-8');
-        $xmlDocument->formatOutput = true;
-
-        $xmlCoverage = $xmlDocument->createElement('coverage');
-        $xmlCoverage->setAttribute('generated', $time);
-        $xmlDocument->appendChild($xmlCoverage);
-
-        $xmlProject = $xmlDocument->createElement('project');
-        $xmlProject->setAttribute('timestamp', $time);
-
-        if (is_string($name)) {
-            $xmlProject->setAttribute('name', $name);
-        }
-
-        $xmlCoverage->appendChild($xmlProject);
-
-        $packages = [];
-        $report   = $coverage->getReport();
-
-        foreach ($report as $item) {
-            if (!$item instanceof File) {
-                continue;
-            }
-
-            /* @var File $item */
-
-            $xmlFile = $xmlDocument->createElement('file');
-            $xmlFile->setAttribute('name', $item->pathAsString());
-
-            $classes      = $item->classesAndTraits();
-            $coverageData = $item->lineCoverageData();
-            $lines        = [];
-            $namespace    = 'global';
-
-            foreach ($classes as $className => $class) {
-                $classStatements        = 0;
-                $coveredClassStatements = 0;
-                $coveredMethods         = 0;
-                $classMethods           = 0;
-
-                foreach ($class['methods'] as $methodName => $method) {
-                    if ($method['executableLines'] == 0) {
-                        continue;
-                    }
-
-                    $classMethods++;
-                    $classStatements += $method['executableLines'];
-                    $coveredClassStatements += $method['executedLines'];
-
-                    if ($method['coverage'] == 100) {
-                        $coveredMethods++;
-                    }
-
-                    $methodCount = 0;
-
-                    foreach (range($method['startLine'], $method['endLine']) as $line) {
-                        if (isset($coverageData[$line]) && ($coverageData[$line] !== null)) {
-                            $methodCount = max($methodCount, count($coverageData[$line]));
-                        }
-                    }
-
-                    $lines[$method['startLine']] = [
-                        'ccn'        => $method['ccn'],
-                        'count'      => $methodCount,
-                        'crap'       => $method['crap'],
-                        'type'       => 'method',
-                        'visibility' => $method['visibility'],
-                        'name'       => $methodName,
-                    ];
-                }
-
-                if (!empty($class['package']['namespace'])) {
-                    $namespace = $class['package']['namespace'];
-                }
-
-                $xmlClass = $xmlDocument->createElement('class');
-                $xmlClass->setAttribute('name', $className);
-                $xmlClass->setAttribute('namespace', $namespace);
-
-                if (!empty($class['package']['fullPackage'])) {
-                    $xmlClass->setAttribute(
-                        'fullPackage',
-                        $class['package']['fullPackage']
-                    );
-                }
-
-                if (!empty($class['package']['category'])) {
-                    $xmlClass->setAttribute(
-                        'category',
-                        $class['package']['category']
-                    );
-                }
-
-                if (!empty($class['package']['package'])) {
-                    $xmlClass->setAttribute(
-                        'package',
-                        $class['package']['package']
-                    );
-                }
-
-                if (!empty($class['package']['subpackage'])) {
-                    $xmlClass->setAttribute(
-                        'subpackage',
-                        $class['package']['subpackage']
-                    );
-                }
-
-                $xmlFile->appendChild($xmlClass);
-
-                $xmlMetrics = $xmlDocument->createElement('metrics');
-                $xmlMetrics->setAttribute('complexity', (string) $class['ccn']);
-                $xmlMetrics->setAttribute('methods', (string) $classMethods);
-                $xmlMetrics->setAttribute('coveredmethods', (string) $coveredMethods);
-                $xmlMetrics->setAttribute('conditionals', (string) $class['executableBranches']);
-                $xmlMetrics->setAttribute('coveredconditionals', (string) $class['executedBranches']);
-                $xmlMetrics->setAttribute('statements', (string) $classStatements);
-                $xmlMetrics->setAttribute('coveredstatements', (string) $coveredClassStatements);
-                $xmlMetrics->setAttribute('elements', (string) ($classMethods + $classStatements + $class['executableBranches']));
-                $xmlMetrics->setAttribute('coveredelements', (string) ($coveredMethods + $coveredClassStatements + $class['executedBranches']));
-                $xmlClass->appendChild($xmlMetrics);
-            }
-
-            foreach ($coverageData as $line => $data) {
-                if ($data === null || isset($lines[$line])) {
-                    continue;
-                }
-
-                $lines[$line] = [
-                    'count' => count($data), 'type' => 'stmt',
-                ];
-            }
-
-            ksort($lines);
-
-            foreach ($lines as $line => $data) {
-                $xmlLine = $xmlDocument->createElement('line');
-                $xmlLine->setAttribute('num', (string) $line);
-                $xmlLine->setAttribute('type', $data['type']);
-
-                if (isset($data['name'])) {
-                    $xmlLine->setAttribute('name', $data['name']);
-                }
-
-                if (isset($data['visibility'])) {
-                    $xmlLine->setAttribute('visibility', $data['visibility']);
-                }
-
-                if (isset($data['ccn'])) {
-                    $xmlLine->setAttribute('complexity', (string) $data['ccn']);
-                }
-
-                if (isset($data['crap'])) {
-                    $xmlLine->setAttribute('crap', (string) $data['crap']);
-                }
-
-                $xmlLine->setAttribute('count', (string) $data['count']);
-                $xmlFile->appendChild($xmlLine);
-            }
-
-            $linesOfCode = $item->linesOfCode();
-
-            $xmlMetrics = $xmlDocument->createElement('metrics');
-            $xmlMetrics->setAttribute('loc', (string) $linesOfCode->linesOfCode());
-            $xmlMetrics->setAttribute('ncloc', (string) $linesOfCode->nonCommentLinesOfCode());
-            $xmlMetrics->setAttribute('classes', (string) $item->numberOfClassesAndTraits());
-            $xmlMetrics->setAttribute('methods', (string) $item->numberOfMethods());
-            $xmlMetrics->setAttribute('coveredmethods', (string) $item->numberOfTestedMethods());
-            $xmlMetrics->setAttribute('conditionals', (string) $item->numberOfExecutableBranches());
-            $xmlMetrics->setAttribute('coveredconditionals', (string) $item->numberOfExecutedBranches());
-            $xmlMetrics->setAttribute('statements', (string) $item->numberOfExecutableLines());
-            $xmlMetrics->setAttribute('coveredstatements', (string) $item->numberOfExecutedLines());
-            $xmlMetrics->setAttribute('elements', (string) ($item->numberOfMethods() + $item->numberOfExecutableLines() + $item->numberOfExecutableBranches()));
-            $xmlMetrics->setAttribute('coveredelements', (string) ($item->numberOfTestedMethods() + $item->numberOfExecutedLines() + $item->numberOfExecutedBranches()));
-            $xmlFile->appendChild($xmlMetrics);
-
-            if ($namespace === 'global') {
-                $xmlProject->appendChild($xmlFile);
-            } else {
-                if (!isset($packages[$namespace])) {
-                    $packages[$namespace] = $xmlDocument->createElement(
-                        'package'
-                    );
-
-                    $packages[$namespace]->setAttribute('name', $namespace);
-                    $xmlProject->appendChild($packages[$namespace]);
-                }
-
-                $packages[$namespace]->appendChild($xmlFile);
-            }
-        }
-
-        $linesOfCode = $report->linesOfCode();
-
-        $xmlMetrics = $xmlDocument->createElement('metrics');
-        $xmlMetrics->setAttribute('files', (string) count($report));
-        $xmlMetrics->setAttribute('loc', (string) $linesOfCode->linesOfCode());
-        $xmlMetrics->setAttribute('ncloc', (string) $linesOfCode->nonCommentLinesOfCode());
-        $xmlMetrics->setAttribute('classes', (string) $report->numberOfClassesAndTraits());
-        $xmlMetrics->setAttribute('methods', (string) $report->numberOfMethods());
-        $xmlMetrics->setAttribute('coveredmethods', (string) $report->numberOfTestedMethods());
-        $xmlMetrics->setAttribute('conditionals', (string) $report->numberOfExecutableBranches());
-        $xmlMetrics->setAttribute('coveredconditionals', (string) $report->numberOfExecutedBranches());
-        $xmlMetrics->setAttribute('statements', (string) $report->numberOfExecutableLines());
-        $xmlMetrics->setAttribute('coveredstatements', (string) $report->numberOfExecutedLines());
-        $xmlMetrics->setAttribute('elements', (string) ($report->numberOfMethods() + $report->numberOfExecutableLines() + $report->numberOfExecutableBranches()));
-        $xmlMetrics->setAttribute('coveredelements', (string) ($report->numberOfTestedMethods() + $report->numberOfExecutedLines() + $report->numberOfExecutedBranches()));
-        $xmlProject->appendChild($xmlMetrics);
-
-        $buffer = $xmlDocument->saveXML();
-
-        if ($target !== null) {
-            Directory::create(dirname($target));
-
-            if (@file_put_contents($target, $buffer) === false) {
-                throw new WriteOperationFailedException($target);
-            }
-        }
-
-        return $buffer;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

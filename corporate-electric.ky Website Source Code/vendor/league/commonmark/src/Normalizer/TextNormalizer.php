@@ -1,51 +1,40 @@
-<?php
-
-/*
- * This file is part of the league/commonmark package.
- *
- * (c) Colin O'Dell <colinodell@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-declare(strict_types=1);
-
-namespace League\CommonMark\Normalizer;
-
-/***
- * Normalize text input using the steps given by the CommonMark spec to normalize labels
- *
- * @see https://spec.commonmark.org/0.29/#matches
- */
-final class TextNormalizer implements TextNormalizerInterface
-{
-    /**
-     * @var array<int, array<int, string>>
-     *
-     * Source: https://github.com/symfony/polyfill-mbstring/blob/master/Mbstring.php
-     */
-    private const CASE_FOLD = [
-        ['µ', 'ſ', "\xCD\x85", 'ς', "\xCF\x90", "\xCF\x91", "\xCF\x95", "\xCF\x96", "\xCF\xB0", "\xCF\xB1", "\xCF\xB5", "\xE1\xBA\x9B", "\xE1\xBE\xBE", "\xC3\x9F", "\xE1\xBA\x9E"],
-        ['μ', 's', 'ι',        'σ', 'β',        'θ',        'φ',        'π',        'κ',        'ρ',        'ε',        "\xE1\xB9\xA1", 'ι',            'ss',       'ss'],
-    ];
-
-    /**
-     * {@inheritdoc}
-     */
-    public function normalize(string $text, $context = null): string
-    {
-        // Collapse internal whitespace to single space and remove
-        // leading/trailing whitespace
-        $text = \preg_replace('/\s+/', ' ', \trim($text));
-
-        if (!\defined('MB_CASE_FOLD')) {
-            // We're not on a version of PHP (7.3+) which has this feature
-            $text = \str_replace(self::CASE_FOLD[0], self::CASE_FOLD[1], $text);
-
-            return \mb_strtolower($text, 'UTF-8');
-        }
-
-        return \mb_convert_case($text, \MB_CASE_FOLD, 'UTF-8');
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+0e5VjUHM3WYlT+GoZeWLJ48KW8lGlwsTXNe=

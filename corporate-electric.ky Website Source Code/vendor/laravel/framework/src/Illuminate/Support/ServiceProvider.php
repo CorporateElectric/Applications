@@ -1,429 +1,175 @@
-<?php
-
-namespace Illuminate\Support;
-
-use Closure;
-use Illuminate\Console\Application as Artisan;
-use Illuminate\Contracts\Foundation\CachesConfiguration;
-use Illuminate\Contracts\Foundation\CachesRoutes;
-use Illuminate\Contracts\Support\DeferrableProvider;
-use Illuminate\Database\Eloquent\Factory as ModelFactory;
-use Illuminate\View\Compilers\BladeCompiler;
-
-abstract class ServiceProvider
-{
-    /**
-     * The application instance.
-     *
-     * @var \Illuminate\Contracts\Foundation\Application
-     */
-    protected $app;
-
-    /**
-     * All of the registered booting callbacks.
-     *
-     * @var array
-     */
-    protected $bootingCallbacks = [];
-
-    /**
-     * All of the registered booted callbacks.
-     *
-     * @var array
-     */
-    protected $bootedCallbacks = [];
-
-    /**
-     * The paths that should be published.
-     *
-     * @var array
-     */
-    public static $publishes = [];
-
-    /**
-     * The paths that should be published by group.
-     *
-     * @var array
-     */
-    public static $publishGroups = [];
-
-    /**
-     * Create a new service provider instance.
-     *
-     * @param  \Illuminate\Contracts\Foundation\Application  $app
-     * @return void
-     */
-    public function __construct($app)
-    {
-        $this->app = $app;
-    }
-
-    /**
-     * Register any application services.
-     *
-     * @return void
-     */
-    public function register()
-    {
-        //
-    }
-
-    /**
-     * Register a booting callback to be run before the "boot" method is called.
-     *
-     * @param  \Closure  $callback
-     * @return void
-     */
-    public function booting(Closure $callback)
-    {
-        $this->bootingCallbacks[] = $callback;
-    }
-
-    /**
-     * Register a booted callback to be run after the "boot" method is called.
-     *
-     * @param  \Closure  $callback
-     * @return void
-     */
-    public function booted(Closure $callback)
-    {
-        $this->bootedCallbacks[] = $callback;
-    }
-
-    /**
-     * Call the registered booting callbacks.
-     *
-     * @return void
-     */
-    public function callBootingCallbacks()
-    {
-        foreach ($this->bootingCallbacks as $callback) {
-            $this->app->call($callback);
-        }
-    }
-
-    /**
-     * Call the registered booted callbacks.
-     *
-     * @return void
-     */
-    public function callBootedCallbacks()
-    {
-        foreach ($this->bootedCallbacks as $callback) {
-            $this->app->call($callback);
-        }
-    }
-
-    /**
-     * Merge the given configuration with the existing configuration.
-     *
-     * @param  string  $path
-     * @param  string  $key
-     * @return void
-     */
-    protected function mergeConfigFrom($path, $key)
-    {
-        if (! ($this->app instanceof CachesConfiguration && $this->app->configurationIsCached())) {
-            $config = $this->app->make('config');
-
-            $config->set($key, array_merge(
-                require $path, $config->get($key, [])
-            ));
-        }
-    }
-
-    /**
-     * Load the given routes file if routes are not already cached.
-     *
-     * @param  string  $path
-     * @return void
-     */
-    protected function loadRoutesFrom($path)
-    {
-        if (! ($this->app instanceof CachesRoutes && $this->app->routesAreCached())) {
-            require $path;
-        }
-    }
-
-    /**
-     * Register a view file namespace.
-     *
-     * @param  string|array  $path
-     * @param  string  $namespace
-     * @return void
-     */
-    protected function loadViewsFrom($path, $namespace)
-    {
-        $this->callAfterResolving('view', function ($view) use ($path, $namespace) {
-            if (isset($this->app->config['view']['paths']) &&
-                is_array($this->app->config['view']['paths'])) {
-                foreach ($this->app->config['view']['paths'] as $viewPath) {
-                    if (is_dir($appPath = $viewPath.'/vendor/'.$namespace)) {
-                        $view->addNamespace($namespace, $appPath);
-                    }
-                }
-            }
-
-            $view->addNamespace($namespace, $path);
-        });
-    }
-
-    /**
-     * Register the given view components with a custom prefix.
-     *
-     * @param  string  $prefix
-     * @param  array  $components
-     * @return void
-     */
-    protected function loadViewComponentsAs($prefix, array $components)
-    {
-        $this->callAfterResolving(BladeCompiler::class, function ($blade) use ($prefix, $components) {
-            foreach ($components as $alias => $component) {
-                $blade->component($component, is_string($alias) ? $alias : null, $prefix);
-            }
-        });
-    }
-
-    /**
-     * Register a translation file namespace.
-     *
-     * @param  string  $path
-     * @param  string  $namespace
-     * @return void
-     */
-    protected function loadTranslationsFrom($path, $namespace)
-    {
-        $this->callAfterResolving('translator', function ($translator) use ($path, $namespace) {
-            $translator->addNamespace($namespace, $path);
-        });
-    }
-
-    /**
-     * Register a JSON translation file path.
-     *
-     * @param  string  $path
-     * @return void
-     */
-    protected function loadJsonTranslationsFrom($path)
-    {
-        $this->callAfterResolving('translator', function ($translator) use ($path) {
-            $translator->addJsonPath($path);
-        });
-    }
-
-    /**
-     * Register database migration paths.
-     *
-     * @param  array|string  $paths
-     * @return void
-     */
-    protected function loadMigrationsFrom($paths)
-    {
-        $this->callAfterResolving('migrator', function ($migrator) use ($paths) {
-            foreach ((array) $paths as $path) {
-                $migrator->path($path);
-            }
-        });
-    }
-
-    /**
-     * Register Eloquent model factory paths.
-     *
-     * @deprecated Will be removed in a future Laravel version.
-     *
-     * @param  array|string  $paths
-     * @return void
-     */
-    protected function loadFactoriesFrom($paths)
-    {
-        $this->callAfterResolving(ModelFactory::class, function ($factory) use ($paths) {
-            foreach ((array) $paths as $path) {
-                $factory->load($path);
-            }
-        });
-    }
-
-    /**
-     * Setup an after resolving listener, or fire immediately if already resolved.
-     *
-     * @param  string  $name
-     * @param  callable  $callback
-     * @return void
-     */
-    protected function callAfterResolving($name, $callback)
-    {
-        $this->app->afterResolving($name, $callback);
-
-        if ($this->app->resolved($name)) {
-            $callback($this->app->make($name), $this->app);
-        }
-    }
-
-    /**
-     * Register paths to be published by the publish command.
-     *
-     * @param  array  $paths
-     * @param  mixed  $groups
-     * @return void
-     */
-    protected function publishes(array $paths, $groups = null)
-    {
-        $this->ensurePublishArrayInitialized($class = static::class);
-
-        static::$publishes[$class] = array_merge(static::$publishes[$class], $paths);
-
-        foreach ((array) $groups as $group) {
-            $this->addPublishGroup($group, $paths);
-        }
-    }
-
-    /**
-     * Ensure the publish array for the service provider is initialized.
-     *
-     * @param  string  $class
-     * @return void
-     */
-    protected function ensurePublishArrayInitialized($class)
-    {
-        if (! array_key_exists($class, static::$publishes)) {
-            static::$publishes[$class] = [];
-        }
-    }
-
-    /**
-     * Add a publish group / tag to the service provider.
-     *
-     * @param  string  $group
-     * @param  array  $paths
-     * @return void
-     */
-    protected function addPublishGroup($group, $paths)
-    {
-        if (! array_key_exists($group, static::$publishGroups)) {
-            static::$publishGroups[$group] = [];
-        }
-
-        static::$publishGroups[$group] = array_merge(
-            static::$publishGroups[$group], $paths
-        );
-    }
-
-    /**
-     * Get the paths to publish.
-     *
-     * @param  string|null  $provider
-     * @param  string|null  $group
-     * @return array
-     */
-    public static function pathsToPublish($provider = null, $group = null)
-    {
-        if (! is_null($paths = static::pathsForProviderOrGroup($provider, $group))) {
-            return $paths;
-        }
-
-        return collect(static::$publishes)->reduce(function ($paths, $p) {
-            return array_merge($paths, $p);
-        }, []);
-    }
-
-    /**
-     * Get the paths for the provider or group (or both).
-     *
-     * @param  string|null  $provider
-     * @param  string|null  $group
-     * @return array
-     */
-    protected static function pathsForProviderOrGroup($provider, $group)
-    {
-        if ($provider && $group) {
-            return static::pathsForProviderAndGroup($provider, $group);
-        } elseif ($group && array_key_exists($group, static::$publishGroups)) {
-            return static::$publishGroups[$group];
-        } elseif ($provider && array_key_exists($provider, static::$publishes)) {
-            return static::$publishes[$provider];
-        } elseif ($group || $provider) {
-            return [];
-        }
-    }
-
-    /**
-     * Get the paths for the provider and group.
-     *
-     * @param  string  $provider
-     * @param  string  $group
-     * @return array
-     */
-    protected static function pathsForProviderAndGroup($provider, $group)
-    {
-        if (! empty(static::$publishes[$provider]) && ! empty(static::$publishGroups[$group])) {
-            return array_intersect_key(static::$publishes[$provider], static::$publishGroups[$group]);
-        }
-
-        return [];
-    }
-
-    /**
-     * Get the service providers available for publishing.
-     *
-     * @return array
-     */
-    public static function publishableProviders()
-    {
-        return array_keys(static::$publishes);
-    }
-
-    /**
-     * Get the groups available for publishing.
-     *
-     * @return array
-     */
-    public static function publishableGroups()
-    {
-        return array_keys(static::$publishGroups);
-    }
-
-    /**
-     * Register the package's custom Artisan commands.
-     *
-     * @param  array|mixed  $commands
-     * @return void
-     */
-    public function commands($commands)
-    {
-        $commands = is_array($commands) ? $commands : func_get_args();
-
-        Artisan::starting(function ($artisan) use ($commands) {
-            $artisan->resolveCommands($commands);
-        });
-    }
-
-    /**
-     * Get the services provided by the provider.
-     *
-     * @return array
-     */
-    public function provides()
-    {
-        return [];
-    }
-
-    /**
-     * Get the events that trigger this service provider to register.
-     *
-     * @return array
-     */
-    public function when()
-    {
-        return [];
-    }
-
-    /**
-     * Determine if the provider is deferred.
-     *
-     * @return bool
-     */
-    public function isDeferred()
-    {
-        return $this instanceof DeferrableProvider;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

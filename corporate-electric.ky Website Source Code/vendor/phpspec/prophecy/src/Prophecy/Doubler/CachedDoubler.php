@@ -1,66 +1,45 @@
-<?php
-
-/*
- * This file is part of the Prophecy.
- * (c) Konstantin Kudryashov <ever.zet@gmail.com>
- *     Marcello Duarte <marcello.duarte@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Prophecy\Doubler;
-
-use ReflectionClass;
-
-/**
- * Cached class doubler.
- * Prevents mirroring/creation of the same structure twice.
- *
- * @author Konstantin Kudryashov <ever.zet@gmail.com>
- */
-class CachedDoubler extends Doubler
-{
-    private static $classes = array();
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function createDoubleClass(ReflectionClass $class = null, array $interfaces)
-    {
-        $classId = $this->generateClassId($class, $interfaces);
-        if (isset(self::$classes[$classId])) {
-            return self::$classes[$classId];
-        }
-
-        return self::$classes[$classId] = parent::createDoubleClass($class, $interfaces);
-    }
-
-    /**
-     * @param ReflectionClass   $class
-     * @param ReflectionClass[] $interfaces
-     *
-     * @return string
-     */
-    private function generateClassId(ReflectionClass $class = null, array $interfaces)
-    {
-        $parts = array();
-        if (null !== $class) {
-            $parts[] = $class->getName();
-        }
-        foreach ($interfaces as $interface) {
-            $parts[] = $interface->getName();
-        }
-        foreach ($this->getClassPatches() as $patch) {
-            $parts[] = get_class($patch);
-        }
-        sort($parts);
-
-        return md5(implode('', $parts));
-    }
-
-    public function resetCache()
-    {
-        self::$classes = array();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

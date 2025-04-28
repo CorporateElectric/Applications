@@ -1,1327 +1,359 @@
-<?php
-
-namespace Illuminate\Database;
-
-use Closure;
-use DateTimeInterface;
-use Doctrine\DBAL\Connection as DoctrineConnection;
-use Exception;
-use Illuminate\Contracts\Events\Dispatcher;
-use Illuminate\Database\Events\QueryExecuted;
-use Illuminate\Database\Events\StatementPrepared;
-use Illuminate\Database\Events\TransactionBeginning;
-use Illuminate\Database\Events\TransactionCommitted;
-use Illuminate\Database\Events\TransactionRolledBack;
-use Illuminate\Database\Query\Builder as QueryBuilder;
-use Illuminate\Database\Query\Expression;
-use Illuminate\Database\Query\Grammars\Grammar as QueryGrammar;
-use Illuminate\Database\Query\Processors\Processor;
-use Illuminate\Database\Schema\Builder as SchemaBuilder;
-use Illuminate\Support\Arr;
-use LogicException;
-use PDO;
-use PDOStatement;
-
-class Connection implements ConnectionInterface
-{
-    use DetectsConcurrencyErrors,
-        DetectsLostConnections,
-        Concerns\ManagesTransactions;
-
-    /**
-     * The active PDO connection.
-     *
-     * @var \PDO|\Closure
-     */
-    protected $pdo;
-
-    /**
-     * The active PDO connection used for reads.
-     *
-     * @var \PDO|\Closure
-     */
-    protected $readPdo;
-
-    /**
-     * The name of the connected database.
-     *
-     * @var string
-     */
-    protected $database;
-
-    /**
-     * The table prefix for the connection.
-     *
-     * @var string
-     */
-    protected $tablePrefix = '';
-
-    /**
-     * The database connection configuration options.
-     *
-     * @var array
-     */
-    protected $config = [];
-
-    /**
-     * The reconnector instance for the connection.
-     *
-     * @var callable
-     */
-    protected $reconnector;
-
-    /**
-     * The query grammar implementation.
-     *
-     * @var \Illuminate\Database\Query\Grammars\Grammar
-     */
-    protected $queryGrammar;
-
-    /**
-     * The schema grammar implementation.
-     *
-     * @var \Illuminate\Database\Schema\Grammars\Grammar
-     */
-    protected $schemaGrammar;
-
-    /**
-     * The query post processor implementation.
-     *
-     * @var \Illuminate\Database\Query\Processors\Processor
-     */
-    protected $postProcessor;
-
-    /**
-     * The event dispatcher instance.
-     *
-     * @var \Illuminate\Contracts\Events\Dispatcher
-     */
-    protected $events;
-
-    /**
-     * The default fetch mode of the connection.
-     *
-     * @var int
-     */
-    protected $fetchMode = PDO::FETCH_OBJ;
-
-    /**
-     * The number of active transactions.
-     *
-     * @var int
-     */
-    protected $transactions = 0;
-
-    /**
-     * The transaction manager instance.
-     *
-     * @var \Illuminate\Database\DatabaseTransactionsManager
-     */
-    protected $transactionsManager;
-
-    /**
-     * Indicates if changes have been made to the database.
-     *
-     * @var int
-     */
-    protected $recordsModified = false;
-
-    /**
-     * All of the queries run against the connection.
-     *
-     * @var array
-     */
-    protected $queryLog = [];
-
-    /**
-     * Indicates whether queries are being logged.
-     *
-     * @var bool
-     */
-    protected $loggingQueries = false;
-
-    /**
-     * Indicates if the connection is in a "dry run".
-     *
-     * @var bool
-     */
-    protected $pretending = false;
-
-    /**
-     * The instance of Doctrine connection.
-     *
-     * @var \Doctrine\DBAL\Connection
-     */
-    protected $doctrineConnection;
-
-    /**
-     * The connection resolvers.
-     *
-     * @var array
-     */
-    protected static $resolvers = [];
-
-    /**
-     * Create a new database connection instance.
-     *
-     * @param  \PDO|\Closure  $pdo
-     * @param  string  $database
-     * @param  string  $tablePrefix
-     * @param  array  $config
-     * @return void
-     */
-    public function __construct($pdo, $database = '', $tablePrefix = '', array $config = [])
-    {
-        $this->pdo = $pdo;
-
-        // First we will setup the default properties. We keep track of the DB
-        // name we are connected to since it is needed when some reflective
-        // type commands are run such as checking whether a table exists.
-        $this->database = $database;
-
-        $this->tablePrefix = $tablePrefix;
-
-        $this->config = $config;
-
-        // We need to initialize a query grammar and the query post processors
-        // which are both very important parts of the database abstractions
-        // so we initialize these to their default values while starting.
-        $this->useDefaultQueryGrammar();
-
-        $this->useDefaultPostProcessor();
-    }
-
-    /**
-     * Set the query grammar to the default implementation.
-     *
-     * @return void
-     */
-    public function useDefaultQueryGrammar()
-    {
-        $this->queryGrammar = $this->getDefaultQueryGrammar();
-    }
-
-    /**
-     * Get the default query grammar instance.
-     *
-     * @return \Illuminate\Database\Query\Grammars\Grammar
-     */
-    protected function getDefaultQueryGrammar()
-    {
-        return new QueryGrammar;
-    }
-
-    /**
-     * Set the schema grammar to the default implementation.
-     *
-     * @return void
-     */
-    public function useDefaultSchemaGrammar()
-    {
-        $this->schemaGrammar = $this->getDefaultSchemaGrammar();
-    }
-
-    /**
-     * Get the default schema grammar instance.
-     *
-     * @return \Illuminate\Database\Schema\Grammars\Grammar
-     */
-    protected function getDefaultSchemaGrammar()
-    {
-        //
-    }
-
-    /**
-     * Set the query post processor to the default implementation.
-     *
-     * @return void
-     */
-    public function useDefaultPostProcessor()
-    {
-        $this->postProcessor = $this->getDefaultPostProcessor();
-    }
-
-    /**
-     * Get the default post processor instance.
-     *
-     * @return \Illuminate\Database\Query\Processors\Processor
-     */
-    protected function getDefaultPostProcessor()
-    {
-        return new Processor;
-    }
-
-    /**
-     * Get a schema builder instance for the connection.
-     *
-     * @return \Illuminate\Database\Schema\Builder
-     */
-    public function getSchemaBuilder()
-    {
-        if (is_null($this->schemaGrammar)) {
-            $this->useDefaultSchemaGrammar();
-        }
-
-        return new SchemaBuilder($this);
-    }
-
-    /**
-     * Begin a fluent query against a database table.
-     *
-     * @param  \Closure|\Illuminate\Database\Query\Builder|string  $table
-     * @param  string|null  $as
-     * @return \Illuminate\Database\Query\Builder
-     */
-    public function table($table, $as = null)
-    {
-        return $this->query()->from($table, $as);
-    }
-
-    /**
-     * Get a new query builder instance.
-     *
-     * @return \Illuminate\Database\Query\Builder
-     */
-    public function query()
-    {
-        return new QueryBuilder(
-            $this, $this->getQueryGrammar(), $this->getPostProcessor()
-        );
-    }
-
-    /**
-     * Run a select statement and return a single result.
-     *
-     * @param  string  $query
-     * @param  array  $bindings
-     * @param  bool  $useReadPdo
-     * @return mixed
-     */
-    public function selectOne($query, $bindings = [], $useReadPdo = true)
-    {
-        $records = $this->select($query, $bindings, $useReadPdo);
-
-        return array_shift($records);
-    }
-
-    /**
-     * Run a select statement against the database.
-     *
-     * @param  string  $query
-     * @param  array  $bindings
-     * @return array
-     */
-    public function selectFromWriteConnection($query, $bindings = [])
-    {
-        return $this->select($query, $bindings, false);
-    }
-
-    /**
-     * Run a select statement against the database.
-     *
-     * @param  string  $query
-     * @param  array  $bindings
-     * @param  bool  $useReadPdo
-     * @return array
-     */
-    public function select($query, $bindings = [], $useReadPdo = true)
-    {
-        return $this->run($query, $bindings, function ($query, $bindings) use ($useReadPdo) {
-            if ($this->pretending()) {
-                return [];
-            }
-
-            // For select statements, we'll simply execute the query and return an array
-            // of the database result set. Each element in the array will be a single
-            // row from the database table, and will either be an array or objects.
-            $statement = $this->prepared(
-                $this->getPdoForSelect($useReadPdo)->prepare($query)
-            );
-
-            $this->bindValues($statement, $this->prepareBindings($bindings));
-
-            $statement->execute();
-
-            return $statement->fetchAll();
-        });
-    }
-
-    /**
-     * Run a select statement against the database and returns a generator.
-     *
-     * @param  string  $query
-     * @param  array  $bindings
-     * @param  bool  $useReadPdo
-     * @return \Generator
-     */
-    public function cursor($query, $bindings = [], $useReadPdo = true)
-    {
-        $statement = $this->run($query, $bindings, function ($query, $bindings) use ($useReadPdo) {
-            if ($this->pretending()) {
-                return [];
-            }
-
-            // First we will create a statement for the query. Then, we will set the fetch
-            // mode and prepare the bindings for the query. Once that's done we will be
-            // ready to execute the query against the database and return the cursor.
-            $statement = $this->prepared($this->getPdoForSelect($useReadPdo)
-                              ->prepare($query));
-
-            $this->bindValues(
-                $statement, $this->prepareBindings($bindings)
-            );
-
-            // Next, we'll execute the query against the database and return the statement
-            // so we can return the cursor. The cursor will use a PHP generator to give
-            // back one row at a time without using a bunch of memory to render them.
-            $statement->execute();
-
-            return $statement;
-        });
-
-        while ($record = $statement->fetch()) {
-            yield $record;
-        }
-    }
-
-    /**
-     * Configure the PDO prepared statement.
-     *
-     * @param  \PDOStatement  $statement
-     * @return \PDOStatement
-     */
-    protected function prepared(PDOStatement $statement)
-    {
-        $statement->setFetchMode($this->fetchMode);
-
-        $this->event(new StatementPrepared(
-            $this, $statement
-        ));
-
-        return $statement;
-    }
-
-    /**
-     * Get the PDO connection to use for a select query.
-     *
-     * @param  bool  $useReadPdo
-     * @return \PDO
-     */
-    protected function getPdoForSelect($useReadPdo = true)
-    {
-        return $useReadPdo ? $this->getReadPdo() : $this->getPdo();
-    }
-
-    /**
-     * Run an insert statement against the database.
-     *
-     * @param  string  $query
-     * @param  array  $bindings
-     * @return bool
-     */
-    public function insert($query, $bindings = [])
-    {
-        return $this->statement($query, $bindings);
-    }
-
-    /**
-     * Run an update statement against the database.
-     *
-     * @param  string  $query
-     * @param  array  $bindings
-     * @return int
-     */
-    public function update($query, $bindings = [])
-    {
-        return $this->affectingStatement($query, $bindings);
-    }
-
-    /**
-     * Run a delete statement against the database.
-     *
-     * @param  string  $query
-     * @param  array  $bindings
-     * @return int
-     */
-    public function delete($query, $bindings = [])
-    {
-        return $this->affectingStatement($query, $bindings);
-    }
-
-    /**
-     * Execute an SQL statement and return the boolean result.
-     *
-     * @param  string  $query
-     * @param  array  $bindings
-     * @return bool
-     */
-    public function statement($query, $bindings = [])
-    {
-        return $this->run($query, $bindings, function ($query, $bindings) {
-            if ($this->pretending()) {
-                return true;
-            }
-
-            $statement = $this->getPdo()->prepare($query);
-
-            $this->bindValues($statement, $this->prepareBindings($bindings));
-
-            $this->recordsHaveBeenModified();
-
-            return $statement->execute();
-        });
-    }
-
-    /**
-     * Run an SQL statement and get the number of rows affected.
-     *
-     * @param  string  $query
-     * @param  array  $bindings
-     * @return int
-     */
-    public function affectingStatement($query, $bindings = [])
-    {
-        return $this->run($query, $bindings, function ($query, $bindings) {
-            if ($this->pretending()) {
-                return 0;
-            }
-
-            // For update or delete statements, we want to get the number of rows affected
-            // by the statement and return that back to the developer. We'll first need
-            // to execute the statement and then we'll use PDO to fetch the affected.
-            $statement = $this->getPdo()->prepare($query);
-
-            $this->bindValues($statement, $this->prepareBindings($bindings));
-
-            $statement->execute();
-
-            $this->recordsHaveBeenModified(
-                ($count = $statement->rowCount()) > 0
-            );
-
-            return $count;
-        });
-    }
-
-    /**
-     * Run a raw, unprepared query against the PDO connection.
-     *
-     * @param  string  $query
-     * @return bool
-     */
-    public function unprepared($query)
-    {
-        return $this->run($query, [], function ($query) {
-            if ($this->pretending()) {
-                return true;
-            }
-
-            $this->recordsHaveBeenModified(
-                $change = $this->getPdo()->exec($query) !== false
-            );
-
-            return $change;
-        });
-    }
-
-    /**
-     * Execute the given callback in "dry run" mode.
-     *
-     * @param  \Closure  $callback
-     * @return array
-     */
-    public function pretend(Closure $callback)
-    {
-        return $this->withFreshQueryLog(function () use ($callback) {
-            $this->pretending = true;
-
-            // Basically to make the database connection "pretend", we will just return
-            // the default values for all the query methods, then we will return an
-            // array of queries that were "executed" within the Closure callback.
-            $callback($this);
-
-            $this->pretending = false;
-
-            return $this->queryLog;
-        });
-    }
-
-    /**
-     * Execute the given callback in "dry run" mode.
-     *
-     * @param  \Closure  $callback
-     * @return array
-     */
-    protected function withFreshQueryLog($callback)
-    {
-        $loggingQueries = $this->loggingQueries;
-
-        // First we will back up the value of the logging queries property and then
-        // we'll be ready to run callbacks. This query log will also get cleared
-        // so we will have a new log of all the queries that are executed now.
-        $this->enableQueryLog();
-
-        $this->queryLog = [];
-
-        // Now we'll execute this callback and capture the result. Once it has been
-        // executed we will restore the value of query logging and give back the
-        // value of the callback so the original callers can have the results.
-        $result = $callback();
-
-        $this->loggingQueries = $loggingQueries;
-
-        return $result;
-    }
-
-    /**
-     * Bind values to their parameters in the given statement.
-     *
-     * @param  \PDOStatement  $statement
-     * @param  array  $bindings
-     * @return void
-     */
-    public function bindValues($statement, $bindings)
-    {
-        foreach ($bindings as $key => $value) {
-            $statement->bindValue(
-                is_string($key) ? $key : $key + 1,
-                $value,
-                is_int($value) ? PDO::PARAM_INT : PDO::PARAM_STR
-            );
-        }
-    }
-
-    /**
-     * Prepare the query bindings for execution.
-     *
-     * @param  array  $bindings
-     * @return array
-     */
-    public function prepareBindings(array $bindings)
-    {
-        $grammar = $this->getQueryGrammar();
-
-        foreach ($bindings as $key => $value) {
-            // We need to transform all instances of DateTimeInterface into the actual
-            // date string. Each query grammar maintains its own date string format
-            // so we'll just ask the grammar for the format to get from the date.
-            if ($value instanceof DateTimeInterface) {
-                $bindings[$key] = $value->format($grammar->getDateFormat());
-            } elseif (is_bool($value)) {
-                $bindings[$key] = (int) $value;
-            }
-        }
-
-        return $bindings;
-    }
-
-    /**
-     * Run a SQL statement and log its execution context.
-     *
-     * @param  string  $query
-     * @param  array  $bindings
-     * @param  \Closure  $callback
-     * @return mixed
-     *
-     * @throws \Illuminate\Database\QueryException
-     */
-    protected function run($query, $bindings, Closure $callback)
-    {
-        $this->reconnectIfMissingConnection();
-
-        $start = microtime(true);
-
-        // Here we will run this query. If an exception occurs we'll determine if it was
-        // caused by a connection that has been lost. If that is the cause, we'll try
-        // to re-establish connection and re-run the query with a fresh connection.
-        try {
-            $result = $this->runQueryCallback($query, $bindings, $callback);
-        } catch (QueryException $e) {
-            $result = $this->handleQueryException(
-                $e, $query, $bindings, $callback
-            );
-        }
-
-        // Once we have run the query we will calculate the time that it took to run and
-        // then log the query, bindings, and execution time so we will report them on
-        // the event that the developer needs them. We'll log time in milliseconds.
-        $this->logQuery(
-            $query, $bindings, $this->getElapsedTime($start)
-        );
-
-        return $result;
-    }
-
-    /**
-     * Run a SQL statement.
-     *
-     * @param  string  $query
-     * @param  array  $bindings
-     * @param  \Closure  $callback
-     * @return mixed
-     *
-     * @throws \Illuminate\Database\QueryException
-     */
-    protected function runQueryCallback($query, $bindings, Closure $callback)
-    {
-        // To execute the statement, we'll simply call the callback, which will actually
-        // run the SQL against the PDO connection. Then we can calculate the time it
-        // took to execute and log the query SQL, bindings and time in our memory.
-        try {
-            $result = $callback($query, $bindings);
-        }
-
-        // If an exception occurs when attempting to run a query, we'll format the error
-        // message to include the bindings with SQL, which will make this exception a
-        // lot more helpful to the developer instead of just the database's errors.
-        catch (Exception $e) {
-            throw new QueryException(
-                $query, $this->prepareBindings($bindings), $e
-            );
-        }
-
-        return $result;
-    }
-
-    /**
-     * Log a query in the connection's query log.
-     *
-     * @param  string  $query
-     * @param  array  $bindings
-     * @param  float|null  $time
-     * @return void
-     */
-    public function logQuery($query, $bindings, $time = null)
-    {
-        $this->event(new QueryExecuted($query, $bindings, $time, $this));
-
-        if ($this->loggingQueries) {
-            $this->queryLog[] = compact('query', 'bindings', 'time');
-        }
-    }
-
-    /**
-     * Get the elapsed time since a given starting point.
-     *
-     * @param  int  $start
-     * @return float
-     */
-    protected function getElapsedTime($start)
-    {
-        return round((microtime(true) - $start) * 1000, 2);
-    }
-
-    /**
-     * Handle a query exception.
-     *
-     * @param  \Illuminate\Database\QueryException  $e
-     * @param  string  $query
-     * @param  array  $bindings
-     * @param  \Closure  $callback
-     * @return mixed
-     *
-     * @throws \Illuminate\Database\QueryException
-     */
-    protected function handleQueryException(QueryException $e, $query, $bindings, Closure $callback)
-    {
-        if ($this->transactions >= 1) {
-            throw $e;
-        }
-
-        return $this->tryAgainIfCausedByLostConnection(
-            $e, $query, $bindings, $callback
-        );
-    }
-
-    /**
-     * Handle a query exception that occurred during query execution.
-     *
-     * @param  \Illuminate\Database\QueryException  $e
-     * @param  string  $query
-     * @param  array  $bindings
-     * @param  \Closure  $callback
-     * @return mixed
-     *
-     * @throws \Illuminate\Database\QueryException
-     */
-    protected function tryAgainIfCausedByLostConnection(QueryException $e, $query, $bindings, Closure $callback)
-    {
-        if ($this->causedByLostConnection($e->getPrevious())) {
-            $this->reconnect();
-
-            return $this->runQueryCallback($query, $bindings, $callback);
-        }
-
-        throw $e;
-    }
-
-    /**
-     * Reconnect to the database.
-     *
-     * @return void
-     *
-     * @throws \LogicException
-     */
-    public function reconnect()
-    {
-        if (is_callable($this->reconnector)) {
-            $this->doctrineConnection = null;
-
-            return call_user_func($this->reconnector, $this);
-        }
-
-        throw new LogicException('Lost connection and no reconnector available.');
-    }
-
-    /**
-     * Reconnect to the database if a PDO connection is missing.
-     *
-     * @return void
-     */
-    protected function reconnectIfMissingConnection()
-    {
-        if (is_null($this->pdo)) {
-            $this->reconnect();
-        }
-    }
-
-    /**
-     * Disconnect from the underlying PDO connection.
-     *
-     * @return void
-     */
-    public function disconnect()
-    {
-        $this->setPdo(null)->setReadPdo(null);
-    }
-
-    /**
-     * Register a database query listener with the connection.
-     *
-     * @param  \Closure  $callback
-     * @return void
-     */
-    public function listen(Closure $callback)
-    {
-        if (isset($this->events)) {
-            $this->events->listen(Events\QueryExecuted::class, $callback);
-        }
-    }
-
-    /**
-     * Fire an event for this connection.
-     *
-     * @param  string  $event
-     * @return array|null
-     */
-    protected function fireConnectionEvent($event)
-    {
-        if (! isset($this->events)) {
-            return;
-        }
-
-        switch ($event) {
-            case 'beganTransaction':
-                return $this->events->dispatch(new TransactionBeginning($this));
-            case 'committed':
-                return $this->events->dispatch(new TransactionCommitted($this));
-            case 'rollingBack':
-                return $this->events->dispatch(new TransactionRolledBack($this));
-        }
-    }
-
-    /**
-     * Fire the given event if possible.
-     *
-     * @param  mixed  $event
-     * @return void
-     */
-    protected function event($event)
-    {
-        if (isset($this->events)) {
-            $this->events->dispatch($event);
-        }
-    }
-
-    /**
-     * Get a new raw query expression.
-     *
-     * @param  mixed  $value
-     * @return \Illuminate\Database\Query\Expression
-     */
-    public function raw($value)
-    {
-        return new Expression($value);
-    }
-
-    /**
-     * Indicate if any records have been modified.
-     *
-     * @param  bool  $value
-     * @return void
-     */
-    public function recordsHaveBeenModified($value = true)
-    {
-        if (! $this->recordsModified) {
-            $this->recordsModified = $value;
-        }
-    }
-
-    /**
-     * Is Doctrine available?
-     *
-     * @return bool
-     */
-    public function isDoctrineAvailable()
-    {
-        return class_exists('Doctrine\DBAL\Connection');
-    }
-
-    /**
-     * Get a Doctrine Schema Column instance.
-     *
-     * @param  string  $table
-     * @param  string  $column
-     * @return \Doctrine\DBAL\Schema\Column
-     */
-    public function getDoctrineColumn($table, $column)
-    {
-        $schema = $this->getDoctrineSchemaManager();
-
-        return $schema->listTableDetails($table)->getColumn($column);
-    }
-
-    /**
-     * Get the Doctrine DBAL schema manager for the connection.
-     *
-     * @return \Doctrine\DBAL\Schema\AbstractSchemaManager
-     */
-    public function getDoctrineSchemaManager()
-    {
-        $connection = $this->getDoctrineConnection();
-
-        // Doctrine v2 expects one parameter while v3 expects two. 2nd will be ignored on v2...
-        return $this->getDoctrineDriver()->getSchemaManager(
-            $connection,
-            $connection->getDatabasePlatform()
-        );
-    }
-
-    /**
-     * Get the Doctrine DBAL database connection instance.
-     *
-     * @return \Doctrine\DBAL\Connection
-     */
-    public function getDoctrineConnection()
-    {
-        if (is_null($this->doctrineConnection)) {
-            $driver = $this->getDoctrineDriver();
-
-            $this->doctrineConnection = new DoctrineConnection(array_filter([
-                'pdo' => $this->getPdo(),
-                'dbname' => $this->getDatabaseName(),
-                'driver' => method_exists($driver, 'getName') ? $driver->getName() : null,
-                'serverVersion' => $this->getConfig('server_version'),
-            ]), $driver);
-        }
-
-        return $this->doctrineConnection;
-    }
-
-    /**
-     * Get the current PDO connection.
-     *
-     * @return \PDO
-     */
-    public function getPdo()
-    {
-        if ($this->pdo instanceof Closure) {
-            return $this->pdo = call_user_func($this->pdo);
-        }
-
-        return $this->pdo;
-    }
-
-    /**
-     * Get the current PDO connection parameter without executing any reconnect logic.
-     *
-     * @return \PDO|\Closure|null
-     */
-    public function getRawPdo()
-    {
-        return $this->pdo;
-    }
-
-    /**
-     * Get the current PDO connection used for reading.
-     *
-     * @return \PDO
-     */
-    public function getReadPdo()
-    {
-        if ($this->transactions > 0) {
-            return $this->getPdo();
-        }
-
-        if ($this->recordsModified && $this->getConfig('sticky')) {
-            return $this->getPdo();
-        }
-
-        if ($this->readPdo instanceof Closure) {
-            return $this->readPdo = call_user_func($this->readPdo);
-        }
-
-        return $this->readPdo ?: $this->getPdo();
-    }
-
-    /**
-     * Get the current read PDO connection parameter without executing any reconnect logic.
-     *
-     * @return \PDO|\Closure|null
-     */
-    public function getRawReadPdo()
-    {
-        return $this->readPdo;
-    }
-
-    /**
-     * Set the PDO connection.
-     *
-     * @param  \PDO|\Closure|null  $pdo
-     * @return $this
-     */
-    public function setPdo($pdo)
-    {
-        $this->transactions = 0;
-
-        $this->pdo = $pdo;
-
-        return $this;
-    }
-
-    /**
-     * Set the PDO connection used for reading.
-     *
-     * @param  \PDO|\Closure|null  $pdo
-     * @return $this
-     */
-    public function setReadPdo($pdo)
-    {
-        $this->readPdo = $pdo;
-
-        return $this;
-    }
-
-    /**
-     * Set the reconnect instance on the connection.
-     *
-     * @param  callable  $reconnector
-     * @return $this
-     */
-    public function setReconnector(callable $reconnector)
-    {
-        $this->reconnector = $reconnector;
-
-        return $this;
-    }
-
-    /**
-     * Get the database connection name.
-     *
-     * @return string|null
-     */
-    public function getName()
-    {
-        return $this->getConfig('name');
-    }
-
-    /**
-     * Get an option from the configuration options.
-     *
-     * @param  string|null  $option
-     * @return mixed
-     */
-    public function getConfig($option = null)
-    {
-        return Arr::get($this->config, $option);
-    }
-
-    /**
-     * Get the PDO driver name.
-     *
-     * @return string
-     */
-    public function getDriverName()
-    {
-        return $this->getConfig('driver');
-    }
-
-    /**
-     * Get the query grammar used by the connection.
-     *
-     * @return \Illuminate\Database\Query\Grammars\Grammar
-     */
-    public function getQueryGrammar()
-    {
-        return $this->queryGrammar;
-    }
-
-    /**
-     * Set the query grammar used by the connection.
-     *
-     * @param  \Illuminate\Database\Query\Grammars\Grammar  $grammar
-     * @return $this
-     */
-    public function setQueryGrammar(Query\Grammars\Grammar $grammar)
-    {
-        $this->queryGrammar = $grammar;
-
-        return $this;
-    }
-
-    /**
-     * Get the schema grammar used by the connection.
-     *
-     * @return \Illuminate\Database\Schema\Grammars\Grammar
-     */
-    public function getSchemaGrammar()
-    {
-        return $this->schemaGrammar;
-    }
-
-    /**
-     * Set the schema grammar used by the connection.
-     *
-     * @param  \Illuminate\Database\Schema\Grammars\Grammar  $grammar
-     * @return $this
-     */
-    public function setSchemaGrammar(Schema\Grammars\Grammar $grammar)
-    {
-        $this->schemaGrammar = $grammar;
-
-        return $this;
-    }
-
-    /**
-     * Get the query post processor used by the connection.
-     *
-     * @return \Illuminate\Database\Query\Processors\Processor
-     */
-    public function getPostProcessor()
-    {
-        return $this->postProcessor;
-    }
-
-    /**
-     * Set the query post processor used by the connection.
-     *
-     * @param  \Illuminate\Database\Query\Processors\Processor  $processor
-     * @return $this
-     */
-    public function setPostProcessor(Processor $processor)
-    {
-        $this->postProcessor = $processor;
-
-        return $this;
-    }
-
-    /**
-     * Get the event dispatcher used by the connection.
-     *
-     * @return \Illuminate\Contracts\Events\Dispatcher
-     */
-    public function getEventDispatcher()
-    {
-        return $this->events;
-    }
-
-    /**
-     * Set the event dispatcher instance on the connection.
-     *
-     * @param  \Illuminate\Contracts\Events\Dispatcher  $events
-     * @return $this
-     */
-    public function setEventDispatcher(Dispatcher $events)
-    {
-        $this->events = $events;
-
-        return $this;
-    }
-
-    /**
-     * Unset the event dispatcher for this connection.
-     *
-     * @return void
-     */
-    public function unsetEventDispatcher()
-    {
-        $this->events = null;
-    }
-
-    /**
-     * Set the transaction manager instance on the connection.
-     *
-     * @param  \Illuminate\Database\DatabaseTransactionsManager  $manager
-     * @return $this
-     */
-    public function setTransactionManager($manager)
-    {
-        $this->transactionsManager = $manager;
-
-        return $this;
-    }
-
-    /**
-     * Unset the transaction manager for this connection.
-     *
-     * @return void
-     */
-    public function unsetTransactionManager()
-    {
-        $this->transactionsManager = null;
-    }
-
-    /**
-     * Determine if the connection is in a "dry run".
-     *
-     * @return bool
-     */
-    public function pretending()
-    {
-        return $this->pretending === true;
-    }
-
-    /**
-     * Get the connection query log.
-     *
-     * @return array
-     */
-    public function getQueryLog()
-    {
-        return $this->queryLog;
-    }
-
-    /**
-     * Clear the query log.
-     *
-     * @return void
-     */
-    public function flushQueryLog()
-    {
-        $this->queryLog = [];
-    }
-
-    /**
-     * Enable the query log on the connection.
-     *
-     * @return void
-     */
-    public function enableQueryLog()
-    {
-        $this->loggingQueries = true;
-    }
-
-    /**
-     * Disable the query log on the connection.
-     *
-     * @return void
-     */
-    public function disableQueryLog()
-    {
-        $this->loggingQueries = false;
-    }
-
-    /**
-     * Determine whether we're logging queries.
-     *
-     * @return bool
-     */
-    public function logging()
-    {
-        return $this->loggingQueries;
-    }
-
-    /**
-     * Get the name of the connected database.
-     *
-     * @return string
-     */
-    public function getDatabaseName()
-    {
-        return $this->database;
-    }
-
-    /**
-     * Set the name of the connected database.
-     *
-     * @param  string  $database
-     * @return $this
-     */
-    public function setDatabaseName($database)
-    {
-        $this->database = $database;
-
-        return $this;
-    }
-
-    /**
-     * Get the table prefix for the connection.
-     *
-     * @return string
-     */
-    public function getTablePrefix()
-    {
-        return $this->tablePrefix;
-    }
-
-    /**
-     * Set the table prefix in use by the connection.
-     *
-     * @param  string  $prefix
-     * @return $this
-     */
-    public function setTablePrefix($prefix)
-    {
-        $this->tablePrefix = $prefix;
-
-        $this->getQueryGrammar()->setTablePrefix($prefix);
-
-        return $this;
-    }
-
-    /**
-     * Set the table prefix and return the grammar.
-     *
-     * @param  \Illuminate\Database\Grammar  $grammar
-     * @return \Illuminate\Database\Grammar
-     */
-    public function withTablePrefix(Grammar $grammar)
-    {
-        $grammar->setTablePrefix($this->tablePrefix);
-
-        return $grammar;
-    }
-
-    /**
-     * Register a connection resolver.
-     *
-     * @param  string  $driver
-     * @param  \Closure  $callback
-     * @return void
-     */
-    public static function resolverFor($driver, Closure $callback)
-    {
-        static::$resolvers[$driver] = $callback;
-    }
-
-    /**
-     * Get the connection resolver for the given driver.
-     *
-     * @param  string  $driver
-     * @return mixed
-     */
-    public static function getResolver($driver)
-    {
-        return static::$resolvers[$driver] ?? null;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+IuNw+KH7HWduDWd7/yz8zMkqG2xT40==

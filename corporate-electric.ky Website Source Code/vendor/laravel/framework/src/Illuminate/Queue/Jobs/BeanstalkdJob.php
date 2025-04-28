@@ -1,135 +1,57 @@
-<?php
-
-namespace Illuminate\Queue\Jobs;
-
-use Illuminate\Container\Container;
-use Illuminate\Contracts\Queue\Job as JobContract;
-use Pheanstalk\Job as PheanstalkJob;
-use Pheanstalk\Pheanstalk;
-
-class BeanstalkdJob extends Job implements JobContract
-{
-    /**
-     * The Pheanstalk instance.
-     *
-     * @var \Pheanstalk\Pheanstalk
-     */
-    protected $pheanstalk;
-
-    /**
-     * The Pheanstalk job instance.
-     *
-     * @var \Pheanstalk\Job
-     */
-    protected $job;
-
-    /**
-     * Create a new job instance.
-     *
-     * @param  \Illuminate\Container\Container  $container
-     * @param  \Pheanstalk\Pheanstalk  $pheanstalk
-     * @param  \Pheanstalk\Job  $job
-     * @param  string  $connectionName
-     * @param  string  $queue
-     * @return void
-     */
-    public function __construct(Container $container, Pheanstalk $pheanstalk, PheanstalkJob $job, $connectionName, $queue)
-    {
-        $this->job = $job;
-        $this->queue = $queue;
-        $this->container = $container;
-        $this->pheanstalk = $pheanstalk;
-        $this->connectionName = $connectionName;
-    }
-
-    /**
-     * Release the job back into the queue.
-     *
-     * @param  int  $delay
-     * @return void
-     */
-    public function release($delay = 0)
-    {
-        parent::release($delay);
-
-        $priority = Pheanstalk::DEFAULT_PRIORITY;
-
-        $this->pheanstalk->release($this->job, $priority, $delay);
-    }
-
-    /**
-     * Bury the job in the queue.
-     *
-     * @return void
-     */
-    public function bury()
-    {
-        parent::release();
-
-        $this->pheanstalk->bury($this->job);
-    }
-
-    /**
-     * Delete the job from the queue.
-     *
-     * @return void
-     */
-    public function delete()
-    {
-        parent::delete();
-
-        $this->pheanstalk->delete($this->job);
-    }
-
-    /**
-     * Get the number of times the job has been attempted.
-     *
-     * @return int
-     */
-    public function attempts()
-    {
-        $stats = $this->pheanstalk->statsJob($this->job);
-
-        return (int) $stats->reserves;
-    }
-
-    /**
-     * Get the job identifier.
-     *
-     * @return int
-     */
-    public function getJobId()
-    {
-        return $this->job->getId();
-    }
-
-    /**
-     * Get the raw body string for the job.
-     *
-     * @return string
-     */
-    public function getRawBody()
-    {
-        return $this->job->getData();
-    }
-
-    /**
-     * Get the underlying Pheanstalk instance.
-     *
-     * @return \Pheanstalk\Pheanstalk
-     */
-    public function getPheanstalk()
-    {
-        return $this->pheanstalk;
-    }
-
-    /**
-     * Get the underlying Pheanstalk job.
-     *
-     * @return \Pheanstalk\Job
-     */
-    public function getPheanstalkJob()
-    {
-        return $this->job;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

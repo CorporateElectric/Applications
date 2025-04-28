@@ -1,257 +1,166 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Contracts\Translation;
-
-use Symfony\Component\Translation\Exception\InvalidArgumentException;
-
-/**
- * A trait to help implement TranslatorInterface and LocaleAwareInterface.
- *
- * @author Fabien Potencier <fabien@symfony.com>
- */
-trait TranslatorTrait
-{
-    private $locale;
-
-    /**
-     * {@inheritdoc}
-     */
-    public function setLocale(string $locale)
-    {
-        $this->locale = $locale;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getLocale()
-    {
-        return $this->locale ?: (class_exists(\Locale::class) ? \Locale::getDefault() : 'en');
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function trans(?string $id, array $parameters = [], string $domain = null, string $locale = null): string
-    {
-        if (null === $id || '' === $id) {
-            return '';
-        }
-
-        if (!isset($parameters['%count%']) || !is_numeric($parameters['%count%'])) {
-            return strtr($id, $parameters);
-        }
-
-        $number = (float) $parameters['%count%'];
-        $locale = $locale ?: $this->getLocale();
-
-        $parts = [];
-        if (preg_match('/^\|++$/', $id)) {
-            $parts = explode('|', $id);
-        } elseif (preg_match_all('/(?:\|\||[^\|])++/', $id, $matches)) {
-            $parts = $matches[0];
-        }
-
-        $intervalRegexp = <<<'EOF'
-/^(?P<interval>
-    ({\s*
-        (\-?\d+(\.\d+)?[\s*,\s*\-?\d+(\.\d+)?]*)
-    \s*})
-
-        |
-
-    (?P<left_delimiter>[\[\]])
-        \s*
-        (?P<left>-Inf|\-?\d+(\.\d+)?)
-        \s*,\s*
-        (?P<right>\+?Inf|\-?\d+(\.\d+)?)
-        \s*
-    (?P<right_delimiter>[\[\]])
-)\s*(?P<message>.*?)$/xs
-EOF;
-
-        $standardRules = [];
-        foreach ($parts as $part) {
-            $part = trim(str_replace('||', '|', $part));
-
-            // try to match an explicit rule, then fallback to the standard ones
-            if (preg_match($intervalRegexp, $part, $matches)) {
-                if ($matches[2]) {
-                    foreach (explode(',', $matches[3]) as $n) {
-                        if ($number == $n) {
-                            return strtr($matches['message'], $parameters);
-                        }
-                    }
-                } else {
-                    $leftNumber = '-Inf' === $matches['left'] ? -\INF : (float) $matches['left'];
-                    $rightNumber = is_numeric($matches['right']) ? (float) $matches['right'] : \INF;
-
-                    if (('[' === $matches['left_delimiter'] ? $number >= $leftNumber : $number > $leftNumber)
-                        && (']' === $matches['right_delimiter'] ? $number <= $rightNumber : $number < $rightNumber)
-                    ) {
-                        return strtr($matches['message'], $parameters);
-                    }
-                }
-            } elseif (preg_match('/^\w+\:\s*(.*?)$/', $part, $matches)) {
-                $standardRules[] = $matches[1];
-            } else {
-                $standardRules[] = $part;
-            }
-        }
-
-        $position = $this->getPluralizationRule($number, $locale);
-
-        if (!isset($standardRules[$position])) {
-            // when there's exactly one rule given, and that rule is a standard
-            // rule, use this rule
-            if (1 === \count($parts) && isset($standardRules[0])) {
-                return strtr($standardRules[0], $parameters);
-            }
-
-            $message = sprintf('Unable to choose a translation for "%s" with locale "%s" for value "%d". Double check that this translation has the correct plural options (e.g. "There is one apple|There are %%count%% apples").', $id, $locale, $number);
-
-            if (class_exists(InvalidArgumentException::class)) {
-                throw new InvalidArgumentException($message);
-            }
-
-            throw new \InvalidArgumentException($message);
-        }
-
-        return strtr($standardRules[$position], $parameters);
-    }
-
-    /**
-     * Returns the plural position to use for the given locale and number.
-     *
-     * The plural rules are derived from code of the Zend Framework (2010-09-25),
-     * which is subject to the new BSD license (http://framework.zend.com/license/new-bsd).
-     * Copyright (c) 2005-2010 Zend Technologies USA Inc. (http://www.zend.com)
-     */
-    private function getPluralizationRule(int $number, string $locale): int
-    {
-        switch ('pt_BR' !== $locale && \strlen($locale) > 3 ? substr($locale, 0, strrpos($locale, '_')) : $locale) {
-            case 'af':
-            case 'bn':
-            case 'bg':
-            case 'ca':
-            case 'da':
-            case 'de':
-            case 'el':
-            case 'en':
-            case 'eo':
-            case 'es':
-            case 'et':
-            case 'eu':
-            case 'fa':
-            case 'fi':
-            case 'fo':
-            case 'fur':
-            case 'fy':
-            case 'gl':
-            case 'gu':
-            case 'ha':
-            case 'he':
-            case 'hu':
-            case 'is':
-            case 'it':
-            case 'ku':
-            case 'lb':
-            case 'ml':
-            case 'mn':
-            case 'mr':
-            case 'nah':
-            case 'nb':
-            case 'ne':
-            case 'nl':
-            case 'nn':
-            case 'no':
-            case 'oc':
-            case 'om':
-            case 'or':
-            case 'pa':
-            case 'pap':
-            case 'ps':
-            case 'pt':
-            case 'so':
-            case 'sq':
-            case 'sv':
-            case 'sw':
-            case 'ta':
-            case 'te':
-            case 'tk':
-            case 'ur':
-            case 'zu':
-                return (1 == $number) ? 0 : 1;
-
-            case 'am':
-            case 'bh':
-            case 'fil':
-            case 'fr':
-            case 'gun':
-            case 'hi':
-            case 'hy':
-            case 'ln':
-            case 'mg':
-            case 'nso':
-            case 'pt_BR':
-            case 'ti':
-            case 'wa':
-                return ((0 == $number) || (1 == $number)) ? 0 : 1;
-
-            case 'be':
-            case 'bs':
-            case 'hr':
-            case 'ru':
-            case 'sh':
-            case 'sr':
-            case 'uk':
-                return ((1 == $number % 10) && (11 != $number % 100)) ? 0 : ((($number % 10 >= 2) && ($number % 10 <= 4) && (($number % 100 < 10) || ($number % 100 >= 20))) ? 1 : 2);
-
-            case 'cs':
-            case 'sk':
-                return (1 == $number) ? 0 : ((($number >= 2) && ($number <= 4)) ? 1 : 2);
-
-            case 'ga':
-                return (1 == $number) ? 0 : ((2 == $number) ? 1 : 2);
-
-            case 'lt':
-                return ((1 == $number % 10) && (11 != $number % 100)) ? 0 : ((($number % 10 >= 2) && (($number % 100 < 10) || ($number % 100 >= 20))) ? 1 : 2);
-
-            case 'sl':
-                return (1 == $number % 100) ? 0 : ((2 == $number % 100) ? 1 : (((3 == $number % 100) || (4 == $number % 100)) ? 2 : 3));
-
-            case 'mk':
-                return (1 == $number % 10) ? 0 : 1;
-
-            case 'mt':
-                return (1 == $number) ? 0 : (((0 == $number) || (($number % 100 > 1) && ($number % 100 < 11))) ? 1 : ((($number % 100 > 10) && ($number % 100 < 20)) ? 2 : 3));
-
-            case 'lv':
-                return (0 == $number) ? 0 : (((1 == $number % 10) && (11 != $number % 100)) ? 1 : 2);
-
-            case 'pl':
-                return (1 == $number) ? 0 : ((($number % 10 >= 2) && ($number % 10 <= 4) && (($number % 100 < 12) || ($number % 100 > 14))) ? 1 : 2);
-
-            case 'cy':
-                return (1 == $number) ? 0 : ((2 == $number) ? 1 : (((8 == $number) || (11 == $number)) ? 2 : 3));
-
-            case 'ro':
-                return (1 == $number) ? 0 : (((0 == $number) || (($number % 100 > 0) && ($number % 100 < 20))) ? 1 : 2);
-
-            case 'ar':
-                return (0 == $number) ? 0 : ((1 == $number) ? 1 : ((2 == $number) ? 2 : ((($number % 100 >= 3) && ($number % 100 <= 10)) ? 3 : ((($number % 100 >= 11) && ($number % 100 <= 99)) ? 4 : 5))));
-
-            default:
-                return 0;
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

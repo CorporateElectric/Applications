@@ -1,505 +1,203 @@
-<?php namespace Cviebrock\EloquentSluggable\Tests;
-
-use Cviebrock\EloquentSluggable\Tests\Models\Author;
-use Cviebrock\EloquentSluggable\Tests\Models\Post;
-use Cviebrock\EloquentSluggable\Tests\Models\PostNotSluggable;
-use Cviebrock\EloquentSluggable\Tests\Models\PostShortConfig;
-use Cviebrock\EloquentSluggable\Tests\Models\PostWithCustomCallableMethod;
-use Cviebrock\EloquentSluggable\Tests\Models\PostWithCustomEngine;
-use Cviebrock\EloquentSluggable\Tests\Models\PostWithCustomEngine2;
-use Cviebrock\EloquentSluggable\Tests\Models\PostWithCustomMethod;
-use Cviebrock\EloquentSluggable\Tests\Models\PostWithCustomSeparator;
-use Cviebrock\EloquentSluggable\Tests\Models\PostWithCustomSource;
-use Cviebrock\EloquentSluggable\Tests\Models\PostWithCustomSuffix;
-use Cviebrock\EloquentSluggable\Tests\Models\PostWithEmptySeparator;
-use Cviebrock\EloquentSluggable\Tests\Models\PostWithForeignRuleset;
-use Cviebrock\EloquentSluggable\Tests\Models\PostWithMaxLength;
-use Cviebrock\EloquentSluggable\Tests\Models\PostWithMaxLengthSplitWords;
-use Cviebrock\EloquentSluggable\Tests\Models\PostWithMultipleSlugs;
-use Cviebrock\EloquentSluggable\Tests\Models\PostWithMultipleSources;
-use Cviebrock\EloquentSluggable\Tests\Models\PostWithNoSource;
-use Cviebrock\EloquentSluggable\Tests\Models\PostWithRelation;
-use Cviebrock\EloquentSluggable\Tests\Models\PostWithReservedSlug;
-
-/**
- * Class BaseTests
- *
- * @package Tests
- */
-class BaseTests extends TestCase
-{
-
-    /**
-     * Test basic slugging functionality.
-     */
-    public function testSimpleSlug()
-    {
-        $post = Post::create([
-            'title' => 'My First Post'
-        ]);
-        $this->assertEquals('my-first-post', $post->slug);
-    }
-
-    /**
-     * Test basic slugging functionality using short configuration syntax.
-     */
-    public function testShortConfig()
-    {
-        $post = PostShortConfig::create([
-            'title' => 'My First Post'
-        ]);
-        $this->assertEquals('my-first-post', $post->slug);
-    }
-
-    /**
-     * Test that accented characters and other stuff is "fixed".
-     */
-    public function testAccentedCharacters()
-    {
-        $post = Post::create([
-            'title' => 'My Dinner With André & François'
-        ]);
-        $this->assertEquals('my-dinner-with-andre-francois', $post->slug);
-    }
-
-    /**
-     * Test building a slug from multiple attributes.
-     */
-    public function testMultipleSource()
-    {
-        $post = PostWithMultipleSources::create([
-            'title' => 'A Post Title',
-            'subtitle' => 'A Subtitle'
-        ]);
-        $this->assertEquals('a-post-title-a-subtitle', $post->slug);
-    }
-
-    public function testLeadingTrailingSpaces()
-    {
-        $post = Post::create([
-            'title' => "\tMy First Post \r\n"
-        ]);
-        $this->assertEquals('my-first-post', $post->slug);
-    }
-
-    /**
-     * Test building a slug using a custom method.
-     */
-    public function testCustomMethod()
-    {
-        $post = PostWithCustomMethod::create([
-            'title' => 'A Post Title',
-            'subtitle' => 'A Subtitle'
-        ]);
-        $this->assertEquals('eltit-tsop-a', $post->slug);
-    }
-
-    /**
-     * Test building a slug using a custom method.
-     */
-    public function testCustomCallableMethod()
-    {
-        $post = PostWithCustomCallableMethod::create([
-            'title' => 'A Post Title',
-            'subtitle' => 'A Subtitle'
-        ]);
-        $this->assertEquals('eltit-tsop-a', $post->slug);
-    }
-
-    /**
-     * Test building a slug using a custom suffix.
-     */
-    public function testCustomSuffix()
-    {
-        for ($i = 0; $i < 20; $i++) {
-            $post = PostWithCustomSuffix::create([
-                'title' => 'A Post Title',
-                'subtitle' => 'A Subtitle',
-            ]);
-
-            if ($i === 0) {
-                $this->assertEquals('a-post-title', $post->slug);
-            } else {
-                $this->assertEquals('a-post-title-' . chr($i + 96), $post->slug);
-            }
-        }
-    }
-
-    /**
-     * Test building a slug using the __toString method.
-     */
-    public function testToStringMethod()
-    {
-        $post = PostWithNoSource::create([
-            'title' => 'A Post Title'
-        ]);
-        $this->assertEquals('a-post-title', $post->slug);
-    }
-
-    /**
-     * Test using a custom separator.
-     */
-    public function testCustomSeparator()
-    {
-        $post = PostWithCustomSeparator::create([
-            'title' => 'A post title'
-        ]);
-        $this->assertEquals('a.post.title', $post->slug);
-    }
-
-    /**
-     * Test using reserved word blocking.
-     */
-    public function testReservedWord()
-    {
-        $post = PostWithReservedSlug::create([
-            'title' => 'Add'
-        ]);
-        $this->assertEquals('add-2', $post->slug);
-    }
-
-    /**
-     * Test when reverting to a shorter version of a similar slug.
-     *
-     * @see https://github.com/cviebrock/eloquent-sluggable/issues/5
-     */
-    public function testIssue5()
-    {
-        $post = Post::create([
-            'title' => 'My first post'
-        ]);
-        $this->assertEquals('my-first-post', $post->slug);
-
-        $post->title = 'My first post rocks';
-        $post->slug = null;
-        $post->save();
-        $this->assertEquals('my-first-post-rocks', $post->slug);
-
-        $post->title = 'My first post';
-        $post->slug = null;
-        $post->save();
-        $this->assertEquals('my-first-post', $post->slug);
-    }
-
-    /**
-     * Test model replication.
-     *
-     * @see https://github.com/cviebrock/eloquent-sluggable/issues/20
-     */
-    public function testIssue20()
-    {
-        $post1 = Post::create([
-            'title' => 'My first post'
-        ]);
-        $this->assertEquals('my-first-post', $post1->slug);
-
-        $post2 = $post1->replicate();
-        $this->assertEquals('my-first-post-1', $post2->slug);
-    }
-
-    /**
-     * Test that we don't try and slug models that don't implement Sluggable.
-     */
-    public function testNonSluggableModels()
-    {
-        $post = new PostNotSluggable([
-            'title' => 'My First Post'
-        ]);
-        $post->save();
-        $this->assertEquals(null, $post->slug);
-    }
-
-    /**
-     * Test for max_length option.
-     */
-    public function testMaxLength()
-    {
-        $post = PostWithMaxLength::create([
-            'title' => 'A post with a really long title'
-        ]);
-        $this->assertEquals('a-post', $post->slug);
-    }
-
-    /**
-     * Test for max_length option with word splitting.
-     */
-    public function testMaxLengthSplitWords()
-    {
-        $post = PostWithMaxLengthSplitWords::create([
-            'title' => 'A post with a really long title'
-        ]);
-        $this->assertEquals('a-post-wit', $post->slug);
-    }
-
-    /**
-     * Test for max_length option with increments.
-     */
-    public function testMaxLengthWithIncrements()
-    {
-        for ($i = 0; $i < 20; $i++) {
-            $post = PostWithMaxLength::create([
-                'title' => 'A post with a really long title'
-            ]);
-            if ($i == 0) {
-                $this->assertEquals('a-post', $post->slug);
-            } elseif ($i < 10) {
-                $this->assertEquals('a-post-' . $i, $post->slug);
-            }
-        }
-    }
-
-    /**
-     * Test for max_length option with increments and word splitting.
-     */
-    public function testMaxLengthSplitWordsWithIncrements()
-    {
-        for ($i = 0; $i < 20; $i++) {
-            $post = PostWithMaxLengthSplitWords::create([
-                'title' => 'A post with a really long title'
-            ]);
-            if ($i == 0) {
-                $this->assertEquals('a-post-wit', $post->slug);
-            } elseif ($i < 10) {
-                $this->assertEquals('a-post-wit-' . $i, $post->slug);
-            }
-        }
-    }
-
-    /**
-     * Test for max_length option with a slug that might end in separator.
-     */
-    public function testMaxLengthDoesNotEndInSeparator()
-    {
-        $post = PostWithMaxLengthSplitWords::create([
-            'title' => 'It should work'
-        ]);
-        $this->assertEquals('it-should', $post->slug);
-    }
-
-    /**
-     * Test that models aren't slugged if the slug field is defined.
-     *
-     * @see https://github.com/cviebrock/eloquent-sluggable/issues/32
-     */
-    public function testDoesNotNeedSluggingWhenSlugIsSet()
-    {
-        $post = Post::create([
-            'title' => 'My first post',
-            'slug' => 'custom-slug'
-        ]);
-        $this->assertEquals('custom-slug', $post->slug);
-    }
-
-    /**
-     * Test that models aren't *re*slugged if the slug field is defined.
-     *
-     * @see https://github.com/cviebrock/eloquent-sluggable/issues/32
-     */
-    public function testDoesNotNeedSluggingWithUpdateWhenSlugIsSet()
-    {
-        $post = Post::create([
-            'title' => 'My first post',
-            'slug' => 'custom-slug'
-        ]);
-        $this->assertEquals('custom-slug', $post->slug);
-
-        $post->title = 'A New Title';
-        $post->save();
-        $this->assertEquals('custom-slug', $post->slug);
-
-        $post->title = 'A Another New Title';
-        $post->slug = 'new-custom-slug';
-        $post->save();
-        $this->assertEquals('new-custom-slug', $post->slug);
-    }
-
-    /**
-     * Test generating slug from related model field.
-     */
-    public function testSlugFromRelatedModel()
-    {
-        $author = Author::create([
-            'name' => 'Arthur Conan Doyle'
-        ]);
-        $post = new PostWithRelation([
-            'title' => 'First'
-        ]);
-        $post->author()->associate($author);
-        $post->save();
-        $this->assertEquals('arthur-conan-doyle-first', $post->slug);
-    }
-
-    /**
-     * Test generating slug when related model doesn't exists.
-     */
-    public function testSlugFromRelatedModelNotExists()
-    {
-        $post = PostWithRelation::create([
-            'title' => 'First'
-        ]);
-        $this->assertEquals('first', $post->slug);
-    }
-
-    /**
-     * Test that a null slug source creates a null slug.
-     */
-    public function testNullSourceGeneratesEmptySlug()
-    {
-        $post = PostWithCustomSource::create([
-            'title' => 'My Test Post'
-        ]);
-        $this->assertEquals(null, $post->slug);
-    }
-
-    /**
-     * Test that a zero length slug source creates a null slug.
-     */
-    public function testZeroLengthSourceGeneratesEmptySlug()
-    {
-        $post = Post::create([
-            'title' => ''
-        ]);
-        $this->assertNull($post->slug);
-    }
-
-    /**
-     * Test using custom Slugify rules.
-     */
-    public function testCustomEngineRules()
-    {
-        $post = new PostWithCustomEngine([
-            'title' => 'The quick brown fox jumps over the lazy dog'
-        ]);
-        $post->save();
-        $this->assertEquals('tha-qaack-brawn-fax-jamps-avar-tha-lazy-dag', $post->slug);
-    }
-
-    /**
-     * Test using additional custom Slugify rules.
-     */
-    public function testCustomEngineRules2()
-    {
-        $post = new PostWithCustomEngine2([
-            'title' => 'The quick brown fox/jumps over/the lazy dog'
-        ]);
-        $post->save();
-        $this->assertEquals('the-quick-brown-fox/jumps-over/the-lazy-dog', $post->slug);
-    }
-
-    /**
-     * Test using a custom Slugify ruleset.
-     */
-    public function testForeignRuleset()
-    {
-        $post = PostWithForeignRuleset::create([
-            'title' => 'Mia unua poŝto'
-        ]);
-        $this->assertEquals('mia-unua-posxto', $post->slug);
-    }
-
-    /**
-     * Test if using an empty separator works.
-     *
-     * @see https://github.com/cviebrock/eloquent-sluggable/issues/256
-     */
-    public function testEmptySeparator()
-    {
-        $post = new PostWithEmptySeparator([
-            'title' => 'My Test Post'
-        ]);
-        $post->save();
-        $this->assertEquals('mytestpost', $post->slug);
-    }
-
-    /**
-     * Test models with multiple slug fields.
-     */
-    public function testMultipleSlugs()
-    {
-        $post = new PostWithMultipleSlugs([
-            'title' => 'My Test Post',
-            'subtitle' => 'My Subtitle',
-        ]);
-        $post->save();
-
-        $this->assertEquals('my-test-post', $post->slug);
-        $this->assertEquals('my.subtitle', $post->dummy);
-    }
-
-    /**
-     * Test subscript characters in slug field
-     */
-    public function testSubscriptCharacters()
-    {
-        $post = new Post([
-            'title' => 'RDA-125-15/30/45m³/h CAV'
-        ]);
-        $post->save();
-
-        $this->assertEquals('rda-125-15-30-45m3-h-cav', $post->slug);
-    }
-
-    /**
-     * Test that a false-y string slug source creates a slug.
-     */
-    public function testFalsyString()
-    {
-        $post = Post::create([
-            'title' => '0'
-        ]);
-        $this->assertEquals('0', $post->slug);
-    }
-
-    /**
-     * Test that a false-y int slug source creates a slug.
-     */
-    public function testFalsyInt()
-    {
-        $post = Post::create([
-            'title' => 0
-        ]);
-        $this->assertEquals('0', $post->slug);
-    }
-
-    /**
-     * Test that a boolean true source creates a slug.
-     */
-    public function testTrueSource()
-    {
-        $post = Post::create([
-            'title' => true
-        ]);
-        $this->assertEquals('1', $post->slug);
-    }
-
-    /**
-     * Test that a boolean false slug source creates a slug.
-     */
-    public function testFalseSource()
-    {
-        $post = Post::create([
-            'title' => false
-        ]);
-        $this->assertEquals('0', $post->slug);
-    }
-
-    /**
-     * Test that manually setting the slug to "0" doesn't
-     * force a re-slugging.
-     */
-    public function testIssue527()
-    {
-        $post = Post::create([
-            'title' => 'example title'
-        ]);
-        $this->assertEquals('example-title', $post->slug);
-
-        $post->slug = '0';
-        $post->save();
-        $this->assertEquals('0', $post->slug);
-
-        $post->slug = '';
-        $post->save();
-        $this->assertEquals('example-title', $post->slug);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

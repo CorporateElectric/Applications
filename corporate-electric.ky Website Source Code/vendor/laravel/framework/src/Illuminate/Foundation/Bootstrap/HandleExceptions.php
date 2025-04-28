@@ -1,166 +1,82 @@
-<?php
-
-namespace Illuminate\Foundation\Bootstrap;
-
-use ErrorException;
-use Exception;
-use Illuminate\Contracts\Debug\ExceptionHandler;
-use Illuminate\Contracts\Foundation\Application;
-use Symfony\Component\Console\Output\ConsoleOutput;
-use Symfony\Component\ErrorHandler\Error\FatalError;
-use Throwable;
-
-class HandleExceptions
-{
-    /**
-     * Reserved memory so that errors can be displayed properly on memory exhaustion.
-     *
-     * @var string
-     */
-    public static $reservedMemory;
-
-    /**
-     * The application instance.
-     *
-     * @var \Illuminate\Contracts\Foundation\Application
-     */
-    protected $app;
-
-    /**
-     * Bootstrap the given application.
-     *
-     * @param  \Illuminate\Contracts\Foundation\Application  $app
-     * @return void
-     */
-    public function bootstrap(Application $app)
-    {
-        self::$reservedMemory = str_repeat('x', 10240);
-
-        $this->app = $app;
-
-        error_reporting(-1);
-
-        set_error_handler([$this, 'handleError']);
-
-        set_exception_handler([$this, 'handleException']);
-
-        register_shutdown_function([$this, 'handleShutdown']);
-
-        if (! $app->environment('testing')) {
-            ini_set('display_errors', 'Off');
-        }
-    }
-
-    /**
-     * Convert PHP errors to ErrorException instances.
-     *
-     * @param  int  $level
-     * @param  string  $message
-     * @param  string  $file
-     * @param  int  $line
-     * @param  array  $context
-     * @return void
-     *
-     * @throws \ErrorException
-     */
-    public function handleError($level, $message, $file = '', $line = 0, $context = [])
-    {
-        if (error_reporting() & $level) {
-            throw new ErrorException($message, 0, $level, $file, $line);
-        }
-    }
-
-    /**
-     * Handle an uncaught exception from the application.
-     *
-     * Note: Most exceptions can be handled via the try / catch block in
-     * the HTTP and Console kernels. But, fatal error exceptions must
-     * be handled differently since they are not normal exceptions.
-     *
-     * @param  \Throwable  $e
-     * @return void
-     */
-    public function handleException(Throwable $e)
-    {
-        try {
-            self::$reservedMemory = null;
-
-            $this->getExceptionHandler()->report($e);
-        } catch (Exception $e) {
-            //
-        }
-
-        if ($this->app->runningInConsole()) {
-            $this->renderForConsole($e);
-        } else {
-            $this->renderHttpResponse($e);
-        }
-    }
-
-    /**
-     * Render an exception to the console.
-     *
-     * @param  \Throwable  $e
-     * @return void
-     */
-    protected function renderForConsole(Throwable $e)
-    {
-        $this->getExceptionHandler()->renderForConsole(new ConsoleOutput, $e);
-    }
-
-    /**
-     * Render an exception as an HTTP response and send it.
-     *
-     * @param  \Throwable  $e
-     * @return void
-     */
-    protected function renderHttpResponse(Throwable $e)
-    {
-        $this->getExceptionHandler()->render($this->app['request'], $e)->send();
-    }
-
-    /**
-     * Handle the PHP shutdown event.
-     *
-     * @return void
-     */
-    public function handleShutdown()
-    {
-        if (! is_null($error = error_get_last()) && $this->isFatal($error['type'])) {
-            $this->handleException($this->fatalErrorFromPhpError($error, 0));
-        }
-    }
-
-    /**
-     * Create a new fatal error instance from an error array.
-     *
-     * @param  array  $error
-     * @param  int|null  $traceOffset
-     * @return \Symfony\Component\ErrorHandler\Error\FatalError
-     */
-    protected function fatalErrorFromPhpError(array $error, $traceOffset = null)
-    {
-        return new FatalError($error['message'], 0, $error, $traceOffset);
-    }
-
-    /**
-     * Determine if the error type is fatal.
-     *
-     * @param  int  $type
-     * @return bool
-     */
-    protected function isFatal($type)
-    {
-        return in_array($type, [E_COMPILE_ERROR, E_CORE_ERROR, E_ERROR, E_PARSE]);
-    }
-
-    /**
-     * Get an instance of the exception handler.
-     *
-     * @return \Illuminate\Contracts\Debug\ExceptionHandler
-     */
-    protected function getExceptionHandler()
-    {
-        return $this->app->make(ExceptionHandler::class);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

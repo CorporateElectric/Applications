@@ -1,83 +1,41 @@
-<?php
-
-namespace Illuminate\Foundation\Validation;
-
-use Illuminate\Contracts\Validation\Factory;
-use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
-
-trait ValidatesRequests
-{
-    /**
-     * Run the validation routine against the given validator.
-     *
-     * @param  \Illuminate\Contracts\Validation\Validator|array  $validator
-     * @param  \Illuminate\Http\Request|null  $request
-     * @return array
-     *
-     * @throws \Illuminate\Validation\ValidationException
-     */
-    public function validateWith($validator, Request $request = null)
-    {
-        $request = $request ?: request();
-
-        if (is_array($validator)) {
-            $validator = $this->getValidationFactory()->make($request->all(), $validator);
-        }
-
-        return $validator->validate();
-    }
-
-    /**
-     * Validate the given request with the given rules.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  array  $rules
-     * @param  array  $messages
-     * @param  array  $customAttributes
-     * @return array
-     *
-     * @throws \Illuminate\Validation\ValidationException
-     */
-    public function validate(Request $request, array $rules,
-                             array $messages = [], array $customAttributes = [])
-    {
-        return $this->getValidationFactory()->make(
-            $request->all(), $rules, $messages, $customAttributes
-        )->validate();
-    }
-
-    /**
-     * Validate the given request with the given rules.
-     *
-     * @param  string  $errorBag
-     * @param  \Illuminate\Http\Request  $request
-     * @param  array  $rules
-     * @param  array  $messages
-     * @param  array  $customAttributes
-     * @return array
-     *
-     * @throws \Illuminate\Validation\ValidationException
-     */
-    public function validateWithBag($errorBag, Request $request, array $rules,
-                                    array $messages = [], array $customAttributes = [])
-    {
-        try {
-            return $this->validate($request, $rules, $messages, $customAttributes);
-        } catch (ValidationException $e) {
-            $e->errorBag = $errorBag;
-
-            throw $e;
-        }
-    }
-
-    /**
-     * Get a validation factory instance.
-     *
-     * @return \Illuminate\Contracts\Validation\Factory
-     */
-    protected function getValidationFactory()
-    {
-        return app(Factory::class);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

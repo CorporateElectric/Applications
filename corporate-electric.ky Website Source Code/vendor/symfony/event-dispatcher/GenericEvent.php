@@ -1,170 +1,60 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\EventDispatcher;
-
-use Symfony\Contracts\EventDispatcher\Event;
-
-/**
- * Event encapsulation class.
- *
- * Encapsulates events thus decoupling the observer from the subject they encapsulate.
- *
- * @author Drak <drak@zikula.org>
- */
-class GenericEvent extends Event implements \ArrayAccess, \IteratorAggregate
-{
-    protected $subject;
-    protected $arguments;
-
-    /**
-     * Encapsulate an event with $subject and $args.
-     *
-     * @param mixed $subject   The subject of the event, usually an object or a callable
-     * @param array $arguments Arguments to store in the event
-     */
-    public function __construct($subject = null, array $arguments = [])
-    {
-        $this->subject = $subject;
-        $this->arguments = $arguments;
-    }
-
-    /**
-     * Getter for subject property.
-     *
-     * @return mixed The observer subject
-     */
-    public function getSubject()
-    {
-        return $this->subject;
-    }
-
-    /**
-     * Get argument by key.
-     *
-     * @return mixed Contents of array key
-     *
-     * @throws \InvalidArgumentException if key is not found
-     */
-    public function getArgument(string $key)
-    {
-        if ($this->hasArgument($key)) {
-            return $this->arguments[$key];
-        }
-
-        throw new \InvalidArgumentException(sprintf('Argument "%s" not found.', $key));
-    }
-
-    /**
-     * Add argument to event.
-     *
-     * @param mixed $value Value
-     *
-     * @return $this
-     */
-    public function setArgument(string $key, $value)
-    {
-        $this->arguments[$key] = $value;
-
-        return $this;
-    }
-
-    /**
-     * Getter for all arguments.
-     *
-     * @return array
-     */
-    public function getArguments()
-    {
-        return $this->arguments;
-    }
-
-    /**
-     * Set args property.
-     *
-     * @return $this
-     */
-    public function setArguments(array $args = [])
-    {
-        $this->arguments = $args;
-
-        return $this;
-    }
-
-    /**
-     * Has argument.
-     *
-     * @return bool
-     */
-    public function hasArgument(string $key)
-    {
-        return \array_key_exists($key, $this->arguments);
-    }
-
-    /**
-     * ArrayAccess for argument getter.
-     *
-     * @param string $key Array key
-     *
-     * @return mixed
-     *
-     * @throws \InvalidArgumentException if key does not exist in $this->args
-     */
-    public function offsetGet($key)
-    {
-        return $this->getArgument($key);
-    }
-
-    /**
-     * ArrayAccess for argument setter.
-     *
-     * @param string $key   Array key to set
-     * @param mixed  $value Value
-     */
-    public function offsetSet($key, $value)
-    {
-        $this->setArgument($key, $value);
-    }
-
-    /**
-     * ArrayAccess for unset argument.
-     *
-     * @param string $key Array key
-     */
-    public function offsetUnset($key)
-    {
-        if ($this->hasArgument($key)) {
-            unset($this->arguments[$key]);
-        }
-    }
-
-    /**
-     * ArrayAccess has argument.
-     *
-     * @param string $key Array key
-     *
-     * @return bool
-     */
-    public function offsetExists($key)
-    {
-        return $this->hasArgument($key);
-    }
-
-    /**
-     * IteratorAggregate for iterating over the object like an array.
-     *
-     * @return \ArrayIterator
-     */
-    public function getIterator()
-    {
-        return new \ArrayIterator($this->arguments);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

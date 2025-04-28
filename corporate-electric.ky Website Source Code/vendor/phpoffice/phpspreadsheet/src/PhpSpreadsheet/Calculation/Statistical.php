@@ -1,3906 +1,1486 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Calculation;
-
-use PhpOffice\PhpSpreadsheet\Shared\Trend\Trend;
-
-class Statistical
-{
-    const LOG_GAMMA_X_MAX_VALUE = 2.55e305;
-    const XMININ = 2.23e-308;
-    const EPS = 2.22e-16;
-    const MAX_VALUE = 1.2e308;
-    const MAX_ITERATIONS = 256;
-    const SQRT2PI = 2.5066282746310005024157652848110452530069867406099;
-
-    private static function checkTrendArrays(&$array1, &$array2)
-    {
-        if (!is_array($array1)) {
-            $array1 = [$array1];
-        }
-        if (!is_array($array2)) {
-            $array2 = [$array2];
-        }
-
-        $array1 = Functions::flattenArray($array1);
-        $array2 = Functions::flattenArray($array2);
-        foreach ($array1 as $key => $value) {
-            if ((is_bool($value)) || (is_string($value)) || ($value === null)) {
-                unset($array1[$key], $array2[$key]);
-            }
-        }
-        foreach ($array2 as $key => $value) {
-            if ((is_bool($value)) || (is_string($value)) || ($value === null)) {
-                unset($array1[$key], $array2[$key]);
-            }
-        }
-        $array1 = array_merge($array1);
-        $array2 = array_merge($array2);
-
-        return true;
-    }
-
-    /**
-     * Incomplete beta function.
-     *
-     * @author Jaco van Kooten
-     * @author Paul Meagher
-     *
-     * The computation is based on formulas from Numerical Recipes, Chapter 6.4 (W.H. Press et al, 1992).
-     *
-     * @param mixed $x require 0<=x<=1
-     * @param mixed $p require p>0
-     * @param mixed $q require q>0
-     *
-     * @return float 0 if x<0, p<=0, q<=0 or p+q>2.55E305 and 1 if x>1 to avoid errors and over/underflow
-     */
-    private static function incompleteBeta($x, $p, $q)
-    {
-        if ($x <= 0.0) {
-            return 0.0;
-        } elseif ($x >= 1.0) {
-            return 1.0;
-        } elseif (($p <= 0.0) || ($q <= 0.0) || (($p + $q) > self::LOG_GAMMA_X_MAX_VALUE)) {
-            return 0.0;
-        }
-        $beta_gam = exp((0 - self::logBeta($p, $q)) + $p * log($x) + $q * log(1.0 - $x));
-        if ($x < ($p + 1.0) / ($p + $q + 2.0)) {
-            return $beta_gam * self::betaFraction($x, $p, $q) / $p;
-        }
-
-        return 1.0 - ($beta_gam * self::betaFraction(1 - $x, $q, $p) / $q);
-    }
-
-    // Function cache for logBeta function
-    private static $logBetaCacheP = 0.0;
-
-    private static $logBetaCacheQ = 0.0;
-
-    private static $logBetaCacheResult = 0.0;
-
-    /**
-     * The natural logarithm of the beta function.
-     *
-     * @param mixed $p require p>0
-     * @param mixed $q require q>0
-     *
-     * @return float 0 if p<=0, q<=0 or p+q>2.55E305 to avoid errors and over/underflow
-     *
-     * @author Jaco van Kooten
-     */
-    private static function logBeta($p, $q)
-    {
-        if ($p != self::$logBetaCacheP || $q != self::$logBetaCacheQ) {
-            self::$logBetaCacheP = $p;
-            self::$logBetaCacheQ = $q;
-            if (($p <= 0.0) || ($q <= 0.0) || (($p + $q) > self::LOG_GAMMA_X_MAX_VALUE)) {
-                self::$logBetaCacheResult = 0.0;
-            } else {
-                self::$logBetaCacheResult = self::logGamma($p) + self::logGamma($q) - self::logGamma($p + $q);
-            }
-        }
-
-        return self::$logBetaCacheResult;
-    }
-
-    /**
-     * Evaluates of continued fraction part of incomplete beta function.
-     * Based on an idea from Numerical Recipes (W.H. Press et al, 1992).
-     *
-     * @author Jaco van Kooten
-     *
-     * @param mixed $x
-     * @param mixed $p
-     * @param mixed $q
-     *
-     * @return float
-     */
-    private static function betaFraction($x, $p, $q)
-    {
-        $c = 1.0;
-        $sum_pq = $p + $q;
-        $p_plus = $p + 1.0;
-        $p_minus = $p - 1.0;
-        $h = 1.0 - $sum_pq * $x / $p_plus;
-        if (abs($h) < self::XMININ) {
-            $h = self::XMININ;
-        }
-        $h = 1.0 / $h;
-        $frac = $h;
-        $m = 1;
-        $delta = 0.0;
-        while ($m <= self::MAX_ITERATIONS && abs($delta - 1.0) > Functions::PRECISION) {
-            $m2 = 2 * $m;
-            // even index for d
-            $d = $m * ($q - $m) * $x / (($p_minus + $m2) * ($p + $m2));
-            $h = 1.0 + $d * $h;
-            if (abs($h) < self::XMININ) {
-                $h = self::XMININ;
-            }
-            $h = 1.0 / $h;
-            $c = 1.0 + $d / $c;
-            if (abs($c) < self::XMININ) {
-                $c = self::XMININ;
-            }
-            $frac *= $h * $c;
-            // odd index for d
-            $d = -($p + $m) * ($sum_pq + $m) * $x / (($p + $m2) * ($p_plus + $m2));
-            $h = 1.0 + $d * $h;
-            if (abs($h) < self::XMININ) {
-                $h = self::XMININ;
-            }
-            $h = 1.0 / $h;
-            $c = 1.0 + $d / $c;
-            if (abs($c) < self::XMININ) {
-                $c = self::XMININ;
-            }
-            $delta = $h * $c;
-            $frac *= $delta;
-            ++$m;
-        }
-
-        return $frac;
-    }
-
-    /**
-     * logGamma function.
-     *
-     * @version 1.1
-     *
-     * @author Jaco van Kooten
-     *
-     * Original author was Jaco van Kooten. Ported to PHP by Paul Meagher.
-     *
-     * The natural logarithm of the gamma function. <br />
-     * Based on public domain NETLIB (Fortran) code by W. J. Cody and L. Stoltz <br />
-     * Applied Mathematics Division <br />
-     * Argonne National Laboratory <br />
-     * Argonne, IL 60439 <br />
-     * <p>
-     * References:
-     * <ol>
-     * <li>W. J. Cody and K. E. Hillstrom, 'Chebyshev Approximations for the Natural
-     *     Logarithm of the Gamma Function,' Math. Comp. 21, 1967, pp. 198-203.</li>
-     * <li>K. E. Hillstrom, ANL/AMD Program ANLC366S, DGAMMA/DLGAMA, May, 1969.</li>
-     * <li>Hart, Et. Al., Computer Approximations, Wiley and sons, New York, 1968.</li>
-     * </ol>
-     * </p>
-     * <p>
-     * From the original documentation:
-     * </p>
-     * <p>
-     * This routine calculates the LOG(GAMMA) function for a positive real argument X.
-     * Computation is based on an algorithm outlined in references 1 and 2.
-     * The program uses rational functions that theoretically approximate LOG(GAMMA)
-     * to at least 18 significant decimal digits. The approximation for X > 12 is from
-     * reference 3, while approximations for X < 12.0 are similar to those in reference
-     * 1, but are unpublished. The accuracy achieved depends on the arithmetic system,
-     * the compiler, the intrinsic functions, and proper selection of the
-     * machine-dependent constants.
-     * </p>
-     * <p>
-     * Error returns: <br />
-     * The program returns the value XINF for X .LE. 0.0 or when overflow would occur.
-     * The computation is believed to be free of underflow and overflow.
-     * </p>
-     *
-     * @return float MAX_VALUE for x < 0.0 or when overflow would occur, i.e. x > 2.55E305
-     */
-
-    // Function cache for logGamma
-    private static $logGammaCacheResult = 0.0;
-
-    private static $logGammaCacheX = 0.0;
-
-    private static function logGamma($x)
-    {
-        // Log Gamma related constants
-        static $lg_d1 = -0.5772156649015328605195174;
-        static $lg_d2 = 0.4227843350984671393993777;
-        static $lg_d4 = 1.791759469228055000094023;
-
-        static $lg_p1 = [
-            4.945235359296727046734888,
-            201.8112620856775083915565,
-            2290.838373831346393026739,
-            11319.67205903380828685045,
-            28557.24635671635335736389,
-            38484.96228443793359990269,
-            26377.48787624195437963534,
-            7225.813979700288197698961,
-        ];
-        static $lg_p2 = [
-            4.974607845568932035012064,
-            542.4138599891070494101986,
-            15506.93864978364947665077,
-            184793.2904445632425417223,
-            1088204.76946882876749847,
-            3338152.967987029735917223,
-            5106661.678927352456275255,
-            3074109.054850539556250927,
-        ];
-        static $lg_p4 = [
-            14745.02166059939948905062,
-            2426813.369486704502836312,
-            121475557.4045093227939592,
-            2663432449.630976949898078,
-            29403789566.34553899906876,
-            170266573776.5398868392998,
-            492612579337.743088758812,
-            560625185622.3951465078242,
-        ];
-        static $lg_q1 = [
-            67.48212550303777196073036,
-            1113.332393857199323513008,
-            7738.757056935398733233834,
-            27639.87074403340708898585,
-            54993.10206226157329794414,
-            61611.22180066002127833352,
-            36351.27591501940507276287,
-            8785.536302431013170870835,
-        ];
-        static $lg_q2 = [
-            183.0328399370592604055942,
-            7765.049321445005871323047,
-            133190.3827966074194402448,
-            1136705.821321969608938755,
-            5267964.117437946917577538,
-            13467014.54311101692290052,
-            17827365.30353274213975932,
-            9533095.591844353613395747,
-        ];
-        static $lg_q4 = [
-            2690.530175870899333379843,
-            639388.5654300092398984238,
-            41355999.30241388052042842,
-            1120872109.61614794137657,
-            14886137286.78813811542398,
-            101680358627.2438228077304,
-            341747634550.7377132798597,
-            446315818741.9713286462081,
-        ];
-        static $lg_c = [
-            -0.001910444077728,
-            8.4171387781295e-4,
-            -5.952379913043012e-4,
-            7.93650793500350248e-4,
-            -0.002777777777777681622553,
-            0.08333333333333333331554247,
-            0.0057083835261,
-        ];
-
-        // Rough estimate of the fourth root of logGamma_xBig
-        static $lg_frtbig = 2.25e76;
-        static $pnt68 = 0.6796875;
-
-        if ($x == self::$logGammaCacheX) {
-            return self::$logGammaCacheResult;
-        }
-        $y = $x;
-        if ($y > 0.0 && $y <= self::LOG_GAMMA_X_MAX_VALUE) {
-            if ($y <= self::EPS) {
-                $res = -log($y);
-            } elseif ($y <= 1.5) {
-                // ---------------------
-                //    EPS .LT. X .LE. 1.5
-                // ---------------------
-                if ($y < $pnt68) {
-                    $corr = -log($y);
-                    $xm1 = $y;
-                } else {
-                    $corr = 0.0;
-                    $xm1 = $y - 1.0;
-                }
-                if ($y <= 0.5 || $y >= $pnt68) {
-                    $xden = 1.0;
-                    $xnum = 0.0;
-                    for ($i = 0; $i < 8; ++$i) {
-                        $xnum = $xnum * $xm1 + $lg_p1[$i];
-                        $xden = $xden * $xm1 + $lg_q1[$i];
-                    }
-                    $res = $corr + $xm1 * ($lg_d1 + $xm1 * ($xnum / $xden));
-                } else {
-                    $xm2 = $y - 1.0;
-                    $xden = 1.0;
-                    $xnum = 0.0;
-                    for ($i = 0; $i < 8; ++$i) {
-                        $xnum = $xnum * $xm2 + $lg_p2[$i];
-                        $xden = $xden * $xm2 + $lg_q2[$i];
-                    }
-                    $res = $corr + $xm2 * ($lg_d2 + $xm2 * ($xnum / $xden));
-                }
-            } elseif ($y <= 4.0) {
-                // ---------------------
-                //    1.5 .LT. X .LE. 4.0
-                // ---------------------
-                $xm2 = $y - 2.0;
-                $xden = 1.0;
-                $xnum = 0.0;
-                for ($i = 0; $i < 8; ++$i) {
-                    $xnum = $xnum * $xm2 + $lg_p2[$i];
-                    $xden = $xden * $xm2 + $lg_q2[$i];
-                }
-                $res = $xm2 * ($lg_d2 + $xm2 * ($xnum / $xden));
-            } elseif ($y <= 12.0) {
-                // ----------------------
-                //    4.0 .LT. X .LE. 12.0
-                // ----------------------
-                $xm4 = $y - 4.0;
-                $xden = -1.0;
-                $xnum = 0.0;
-                for ($i = 0; $i < 8; ++$i) {
-                    $xnum = $xnum * $xm4 + $lg_p4[$i];
-                    $xden = $xden * $xm4 + $lg_q4[$i];
-                }
-                $res = $lg_d4 + $xm4 * ($xnum / $xden);
-            } else {
-                // ---------------------------------
-                //    Evaluate for argument .GE. 12.0
-                // ---------------------------------
-                $res = 0.0;
-                if ($y <= $lg_frtbig) {
-                    $res = $lg_c[6];
-                    $ysq = $y * $y;
-                    for ($i = 0; $i < 6; ++$i) {
-                        $res = $res / $ysq + $lg_c[$i];
-                    }
-                    $res /= $y;
-                    $corr = log($y);
-                    $res = $res + log(self::SQRT2PI) - 0.5 * $corr;
-                    $res += $y * ($corr - 1.0);
-                }
-            }
-        } else {
-            // --------------------------
-            //    Return for bad arguments
-            // --------------------------
-            $res = self::MAX_VALUE;
-        }
-        // ------------------------------
-        //    Final adjustments and return
-        // ------------------------------
-        self::$logGammaCacheX = $x;
-        self::$logGammaCacheResult = $res;
-
-        return $res;
-    }
-
-    //
-    //    Private implementation of the incomplete Gamma function
-    //
-    private static function incompleteGamma($a, $x)
-    {
-        static $max = 32;
-        $summer = 0;
-        for ($n = 0; $n <= $max; ++$n) {
-            $divisor = $a;
-            for ($i = 1; $i <= $n; ++$i) {
-                $divisor *= ($a + $i);
-            }
-            $summer += ($x ** $n / $divisor);
-        }
-
-        return $x ** $a * exp(0 - $x) * $summer;
-    }
-
-    //
-    //    Private implementation of the Gamma function
-    //
-    private static function gamma($data)
-    {
-        if ($data == 0.0) {
-            return 0;
-        }
-
-        static $p0 = 1.000000000190015;
-        static $p = [
-            1 => 76.18009172947146,
-            2 => -86.50532032941677,
-            3 => 24.01409824083091,
-            4 => -1.231739572450155,
-            5 => 1.208650973866179e-3,
-            6 => -5.395239384953e-6,
-        ];
-
-        $y = $x = $data;
-        $tmp = $x + 5.5;
-        $tmp -= ($x + 0.5) * log($tmp);
-
-        $summer = $p0;
-        for ($j = 1; $j <= 6; ++$j) {
-            $summer += ($p[$j] / ++$y);
-        }
-
-        return exp(0 - $tmp + log(self::SQRT2PI * $summer / $x));
-    }
-
-    /*
-     *                                inverse_ncdf.php
-     *                            -------------------
-     *    begin                : Friday, January 16, 2004
-     *    copyright            : (C) 2004 Michael Nickerson
-     *    email                : nickersonm@yahoo.com
-     *
-     */
-    private static function inverseNcdf($p)
-    {
-        //    Inverse ncdf approximation by Peter J. Acklam, implementation adapted to
-        //    PHP by Michael Nickerson, using Dr. Thomas Ziegler's C implementation as
-        //    a guide. http://home.online.no/~pjacklam/notes/invnorm/index.html
-        //    I have not checked the accuracy of this implementation. Be aware that PHP
-        //    will truncate the coeficcients to 14 digits.
-
-        //    You have permission to use and distribute this function freely for
-        //    whatever purpose you want, but please show common courtesy and give credit
-        //    where credit is due.
-
-        //    Input paramater is $p - probability - where 0 < p < 1.
-
-        //    Coefficients in rational approximations
-        static $a = [
-            1 => -3.969683028665376e+01,
-            2 => 2.209460984245205e+02,
-            3 => -2.759285104469687e+02,
-            4 => 1.383577518672690e+02,
-            5 => -3.066479806614716e+01,
-            6 => 2.506628277459239e+00,
-        ];
-
-        static $b = [
-            1 => -5.447609879822406e+01,
-            2 => 1.615858368580409e+02,
-            3 => -1.556989798598866e+02,
-            4 => 6.680131188771972e+01,
-            5 => -1.328068155288572e+01,
-        ];
-
-        static $c = [
-            1 => -7.784894002430293e-03,
-            2 => -3.223964580411365e-01,
-            3 => -2.400758277161838e+00,
-            4 => -2.549732539343734e+00,
-            5 => 4.374664141464968e+00,
-            6 => 2.938163982698783e+00,
-        ];
-
-        static $d = [
-            1 => 7.784695709041462e-03,
-            2 => 3.224671290700398e-01,
-            3 => 2.445134137142996e+00,
-            4 => 3.754408661907416e+00,
-        ];
-
-        //    Define lower and upper region break-points.
-        $p_low = 0.02425; //Use lower region approx. below this
-        $p_high = 1 - $p_low; //Use upper region approx. above this
-
-        if (0 < $p && $p < $p_low) {
-            //    Rational approximation for lower region.
-            $q = sqrt(-2 * log($p));
-
-            return ((((($c[1] * $q + $c[2]) * $q + $c[3]) * $q + $c[4]) * $q + $c[5]) * $q + $c[6]) /
-                    (((($d[1] * $q + $d[2]) * $q + $d[3]) * $q + $d[4]) * $q + 1);
-        } elseif ($p_low <= $p && $p <= $p_high) {
-            //    Rational approximation for central region.
-            $q = $p - 0.5;
-            $r = $q * $q;
-
-            return ((((($a[1] * $r + $a[2]) * $r + $a[3]) * $r + $a[4]) * $r + $a[5]) * $r + $a[6]) * $q /
-                   ((((($b[1] * $r + $b[2]) * $r + $b[3]) * $r + $b[4]) * $r + $b[5]) * $r + 1);
-        } elseif ($p_high < $p && $p < 1) {
-            //    Rational approximation for upper region.
-            $q = sqrt(-2 * log(1 - $p));
-
-            return -((((($c[1] * $q + $c[2]) * $q + $c[3]) * $q + $c[4]) * $q + $c[5]) * $q + $c[6]) /
-                     (((($d[1] * $q + $d[2]) * $q + $d[3]) * $q + $d[4]) * $q + 1);
-        }
-        //    If 0 < p < 1, return a null value
-        return Functions::NULL();
-    }
-
-    /**
-     * MS Excel does not count Booleans if passed as cell values, but they are counted if passed as literals.
-     * OpenOffice Calc always counts Booleans.
-     * Gnumeric never counts Booleans.
-     *
-     * @param mixed $arg
-     * @param mixed $k
-     *
-     * @return int|mixed
-     */
-    private static function testAcceptedBoolean($arg, $k)
-    {
-        if (
-            (is_bool($arg)) &&
-            ((!Functions::isCellValue($k) && (Functions::getCompatibilityMode() === Functions::COMPATIBILITY_EXCEL)) ||
-                (Functions::getCompatibilityMode() === Functions::COMPATIBILITY_OPENOFFICE))
-        ) {
-            $arg = (int) $arg;
-        }
-
-        return $arg;
-    }
-
-    /**
-     * @param mixed $arg
-     * @param mixed $k
-     *
-     * @return bool
-     */
-    private static function isAcceptedCountable($arg, $k)
-    {
-        if (
-            ((is_numeric($arg)) && (!is_string($arg))) ||
-                ((is_numeric($arg)) && (!Functions::isCellValue($k)) &&
-                    (Functions::getCompatibilityMode() !== Functions::COMPATIBILITY_GNUMERIC))
-        ) {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * AVEDEV.
-     *
-     * Returns the average of the absolute deviations of data points from their mean.
-     * AVEDEV is a measure of the variability in a data set.
-     *
-     * Excel Function:
-     *        AVEDEV(value1[,value2[, ...]])
-     *
-     * @param mixed ...$args Data values
-     *
-     * @return float|string
-     */
-    public static function AVEDEV(...$args)
-    {
-        $aArgs = Functions::flattenArrayIndexed($args);
-
-        // Return value
-        $returnValue = 0;
-
-        $aMean = self::AVERAGE(...$args);
-        if ($aMean === Functions::DIV0()) {
-            return Functions::NAN();
-        } elseif ($aMean === Functions::VALUE()) {
-            return Functions::VALUE();
-        }
-
-        $aCount = 0;
-        foreach ($aArgs as $k => $arg) {
-            $arg = self::testAcceptedBoolean($arg, $k);
-            // Is it a numeric value?
-            // Strings containing numeric values are only counted if they are string literals (not cell values)
-            //    and then only in MS Excel and in Open Office, not in Gnumeric
-            if ((is_string($arg)) && (!is_numeric($arg)) && (!Functions::isCellValue($k))) {
-                return Functions::VALUE();
-            }
-            if (self::isAcceptedCountable($arg, $k)) {
-                $returnValue += abs($arg - $aMean);
-                ++$aCount;
-            }
-        }
-
-        // Return
-        if ($aCount === 0) {
-            return Functions::DIV0();
-        }
-
-        return $returnValue / $aCount;
-    }
-
-    /**
-     * AVERAGE.
-     *
-     * Returns the average (arithmetic mean) of the arguments
-     *
-     * Excel Function:
-     *        AVERAGE(value1[,value2[, ...]])
-     *
-     * @param mixed ...$args Data values
-     *
-     * @return float|string
-     */
-    public static function AVERAGE(...$args)
-    {
-        $returnValue = $aCount = 0;
-
-        // Loop through arguments
-        foreach (Functions::flattenArrayIndexed($args) as $k => $arg) {
-            $arg = self::testAcceptedBoolean($arg, $k);
-            // Is it a numeric value?
-            // Strings containing numeric values are only counted if they are string literals (not cell values)
-            //    and then only in MS Excel and in Open Office, not in Gnumeric
-            if ((is_string($arg)) && (!is_numeric($arg)) && (!Functions::isCellValue($k))) {
-                return Functions::VALUE();
-            }
-            if (self::isAcceptedCountable($arg, $k)) {
-                $returnValue += $arg;
-                ++$aCount;
-            }
-        }
-
-        // Return
-        if ($aCount > 0) {
-            return $returnValue / $aCount;
-        }
-
-        return Functions::DIV0();
-    }
-
-    /**
-     * AVERAGEA.
-     *
-     * Returns the average of its arguments, including numbers, text, and logical values
-     *
-     * Excel Function:
-     *        AVERAGEA(value1[,value2[, ...]])
-     *
-     * @param mixed ...$args Data values
-     *
-     * @return float|string
-     */
-    public static function AVERAGEA(...$args)
-    {
-        $returnValue = null;
-
-        $aCount = 0;
-        // Loop through arguments
-        foreach (Functions::flattenArrayIndexed($args) as $k => $arg) {
-            if (
-                (is_bool($arg)) &&
-                (!Functions::isMatrixValue($k))
-            ) {
-            } else {
-                if ((is_numeric($arg)) || (is_bool($arg)) || ((is_string($arg) && ($arg != '')))) {
-                    if (is_bool($arg)) {
-                        $arg = (int) $arg;
-                    } elseif (is_string($arg)) {
-                        $arg = 0;
-                    }
-                    $returnValue += $arg;
-                    ++$aCount;
-                }
-            }
-        }
-
-        if ($aCount > 0) {
-            return $returnValue / $aCount;
-        }
-
-        return Functions::DIV0();
-    }
-
-    /**
-     * AVERAGEIF.
-     *
-     * Returns the average value from a range of cells that contain numbers within the list of arguments
-     *
-     * Excel Function:
-     *        AVERAGEIF(value1[,value2[, ...]],condition)
-     *
-     * @param mixed $aArgs Data values
-     * @param string $condition the criteria that defines which cells will be checked
-     * @param mixed[] $averageArgs Data values
-     *
-     * @return float|string
-     */
-    public static function AVERAGEIF($aArgs, $condition, $averageArgs = [])
-    {
-        $returnValue = 0;
-
-        $aArgs = Functions::flattenArray($aArgs);
-        $averageArgs = Functions::flattenArray($averageArgs);
-        if (empty($averageArgs)) {
-            $averageArgs = $aArgs;
-        }
-        $condition = Functions::ifCondition($condition);
-        $conditionIsNumeric = strpos($condition, '"') === false;
-
-        // Loop through arguments
-        $aCount = 0;
-        foreach ($aArgs as $key => $arg) {
-            if (!is_numeric($arg)) {
-                if ($conditionIsNumeric) {
-                    continue;
-                }
-                $arg = Calculation::wrapResult(strtoupper($arg));
-            } elseif (!$conditionIsNumeric) {
-                continue;
-            }
-            $testCondition = '=' . $arg . $condition;
-            if (Calculation::getInstance()->_calculateFormulaValue($testCondition)) {
-                $returnValue += $averageArgs[$key];
-                ++$aCount;
-            }
-        }
-
-        if ($aCount > 0) {
-            return $returnValue / $aCount;
-        }
-
-        return Functions::DIV0();
-    }
-
-    /**
-     * BETADIST.
-     *
-     * Returns the beta distribution.
-     *
-     * @param float $value Value at which you want to evaluate the distribution
-     * @param float $alpha Parameter to the distribution
-     * @param float $beta Parameter to the distribution
-     * @param mixed $rMin
-     * @param mixed $rMax
-     *
-     * @return float|string
-     */
-    public static function BETADIST($value, $alpha, $beta, $rMin = 0, $rMax = 1)
-    {
-        $value = Functions::flattenSingleValue($value);
-        $alpha = Functions::flattenSingleValue($alpha);
-        $beta = Functions::flattenSingleValue($beta);
-        $rMin = Functions::flattenSingleValue($rMin);
-        $rMax = Functions::flattenSingleValue($rMax);
-
-        if ((is_numeric($value)) && (is_numeric($alpha)) && (is_numeric($beta)) && (is_numeric($rMin)) && (is_numeric($rMax))) {
-            if (($value < $rMin) || ($value > $rMax) || ($alpha <= 0) || ($beta <= 0) || ($rMin == $rMax)) {
-                return Functions::NAN();
-            }
-            if ($rMin > $rMax) {
-                $tmp = $rMin;
-                $rMin = $rMax;
-                $rMax = $tmp;
-            }
-            $value -= $rMin;
-            $value /= ($rMax - $rMin);
-
-            return self::incompleteBeta($value, $alpha, $beta);
-        }
-
-        return Functions::VALUE();
-    }
-
-    /**
-     * BETAINV.
-     *
-     * Returns the inverse of the Beta distribution.
-     *
-     * @param float $probability Probability at which you want to evaluate the distribution
-     * @param float $alpha Parameter to the distribution
-     * @param float $beta Parameter to the distribution
-     * @param float $rMin Minimum value
-     * @param float $rMax Maximum value
-     *
-     * @return float|string
-     */
-    public static function BETAINV($probability, $alpha, $beta, $rMin = 0, $rMax = 1)
-    {
-        $probability = Functions::flattenSingleValue($probability);
-        $alpha = Functions::flattenSingleValue($alpha);
-        $beta = Functions::flattenSingleValue($beta);
-        $rMin = Functions::flattenSingleValue($rMin);
-        $rMax = Functions::flattenSingleValue($rMax);
-
-        if ((is_numeric($probability)) && (is_numeric($alpha)) && (is_numeric($beta)) && (is_numeric($rMin)) && (is_numeric($rMax))) {
-            if (($alpha <= 0) || ($beta <= 0) || ($rMin == $rMax) || ($probability <= 0) || ($probability > 1)) {
-                return Functions::NAN();
-            }
-            if ($rMin > $rMax) {
-                $tmp = $rMin;
-                $rMin = $rMax;
-                $rMax = $tmp;
-            }
-            $a = 0;
-            $b = 2;
-
-            $i = 0;
-            while ((($b - $a) > Functions::PRECISION) && ($i++ < self::MAX_ITERATIONS)) {
-                $guess = ($a + $b) / 2;
-                $result = self::BETADIST($guess, $alpha, $beta);
-                if (($result == $probability) || ($result == 0)) {
-                    $b = $a;
-                } elseif ($result > $probability) {
-                    $b = $guess;
-                } else {
-                    $a = $guess;
-                }
-            }
-            if ($i == self::MAX_ITERATIONS) {
-                return Functions::NA();
-            }
-
-            return round($rMin + $guess * ($rMax - $rMin), 12);
-        }
-
-        return Functions::VALUE();
-    }
-
-    /**
-     * BINOMDIST.
-     *
-     * Returns the individual term binomial distribution probability. Use BINOMDIST in problems with
-     *        a fixed number of tests or trials, when the outcomes of any trial are only success or failure,
-     *        when trials are independent, and when the probability of success is constant throughout the
-     *        experiment. For example, BINOMDIST can calculate the probability that two of the next three
-     *        babies born are male.
-     *
-     * @param float $value Number of successes in trials
-     * @param float $trials Number of trials
-     * @param float $probability Probability of success on each trial
-     * @param bool $cumulative
-     *
-     * @return float|string
-     */
-    public static function BINOMDIST($value, $trials, $probability, $cumulative)
-    {
-        $value = Functions::flattenSingleValue($value);
-        $trials = Functions::flattenSingleValue($trials);
-        $probability = Functions::flattenSingleValue($probability);
-
-        if ((is_numeric($value)) && (is_numeric($trials)) && (is_numeric($probability))) {
-            $value = floor($value);
-            $trials = floor($trials);
-            if (($value < 0) || ($value > $trials)) {
-                return Functions::NAN();
-            }
-            if (($probability < 0) || ($probability > 1)) {
-                return Functions::NAN();
-            }
-            if ((is_numeric($cumulative)) || (is_bool($cumulative))) {
-                if ($cumulative) {
-                    $summer = 0;
-                    for ($i = 0; $i <= $value; ++$i) {
-                        $summer += MathTrig::COMBIN($trials, $i) * $probability ** $i * (1 - $probability) ** ($trials - $i);
-                    }
-
-                    return $summer;
-                }
-
-                return MathTrig::COMBIN($trials, $value) * $probability ** $value * (1 - $probability) ** ($trials - $value);
-            }
-        }
-
-        return Functions::VALUE();
-    }
-
-    /**
-     * CHIDIST.
-     *
-     * Returns the one-tailed probability of the chi-squared distribution.
-     *
-     * @param float $value Value for the function
-     * @param float $degrees degrees of freedom
-     *
-     * @return float|string
-     */
-    public static function CHIDIST($value, $degrees)
-    {
-        $value = Functions::flattenSingleValue($value);
-        $degrees = Functions::flattenSingleValue($degrees);
-
-        if ((is_numeric($value)) && (is_numeric($degrees))) {
-            $degrees = floor($degrees);
-            if ($degrees < 1) {
-                return Functions::NAN();
-            }
-            if ($value < 0) {
-                if (Functions::getCompatibilityMode() == Functions::COMPATIBILITY_GNUMERIC) {
-                    return 1;
-                }
-
-                return Functions::NAN();
-            }
-
-            return 1 - (self::incompleteGamma($degrees / 2, $value / 2) / self::gamma($degrees / 2));
-        }
-
-        return Functions::VALUE();
-    }
-
-    /**
-     * CHIINV.
-     *
-     * Returns the one-tailed probability of the chi-squared distribution.
-     *
-     * @param float $probability Probability for the function
-     * @param float $degrees degrees of freedom
-     *
-     * @return float|string
-     */
-    public static function CHIINV($probability, $degrees)
-    {
-        $probability = Functions::flattenSingleValue($probability);
-        $degrees = Functions::flattenSingleValue($degrees);
-
-        if ((is_numeric($probability)) && (is_numeric($degrees))) {
-            $degrees = floor($degrees);
-
-            $xLo = 100;
-            $xHi = 0;
-
-            $x = $xNew = 1;
-            $dx = 1;
-            $i = 0;
-
-            while ((abs($dx) > Functions::PRECISION) && ($i++ < self::MAX_ITERATIONS)) {
-                // Apply Newton-Raphson step
-                $result = 1 - (self::incompleteGamma($degrees / 2, $x / 2) / self::gamma($degrees / 2));
-                $error = $result - $probability;
-                if ($error == 0.0) {
-                    $dx = 0;
-                } elseif ($error < 0.0) {
-                    $xLo = $x;
-                } else {
-                    $xHi = $x;
-                }
-                // Avoid division by zero
-                if ($result != 0.0) {
-                    $dx = $error / $result;
-                    $xNew = $x - $dx;
-                }
-                // If the NR fails to converge (which for example may be the
-                // case if the initial guess is too rough) we apply a bisection
-                // step to determine a more narrow interval around the root.
-                if (($xNew < $xLo) || ($xNew > $xHi) || ($result == 0.0)) {
-                    $xNew = ($xLo + $xHi) / 2;
-                    $dx = $xNew - $x;
-                }
-                $x = $xNew;
-            }
-            if ($i == self::MAX_ITERATIONS) {
-                return Functions::NA();
-            }
-
-            return round($x, 12);
-        }
-
-        return Functions::VALUE();
-    }
-
-    /**
-     * CONFIDENCE.
-     *
-     * Returns the confidence interval for a population mean
-     *
-     * @param float $alpha
-     * @param float $stdDev Standard Deviation
-     * @param float $size
-     *
-     * @return float|string
-     */
-    public static function CONFIDENCE($alpha, $stdDev, $size)
-    {
-        $alpha = Functions::flattenSingleValue($alpha);
-        $stdDev = Functions::flattenSingleValue($stdDev);
-        $size = Functions::flattenSingleValue($size);
-
-        if ((is_numeric($alpha)) && (is_numeric($stdDev)) && (is_numeric($size))) {
-            $size = floor($size);
-            if (($alpha <= 0) || ($alpha >= 1)) {
-                return Functions::NAN();
-            }
-            if (($stdDev <= 0) || ($size < 1)) {
-                return Functions::NAN();
-            }
-
-            return self::NORMSINV(1 - $alpha / 2) * $stdDev / sqrt($size);
-        }
-
-        return Functions::VALUE();
-    }
-
-    /**
-     * CORREL.
-     *
-     * Returns covariance, the average of the products of deviations for each data point pair.
-     *
-     * @param mixed $yValues array of mixed Data Series Y
-     * @param null|mixed $xValues array of mixed Data Series X
-     *
-     * @return float|string
-     */
-    public static function CORREL($yValues, $xValues = null)
-    {
-        if (($xValues === null) || (!is_array($yValues)) || (!is_array($xValues))) {
-            return Functions::VALUE();
-        }
-        if (!self::checkTrendArrays($yValues, $xValues)) {
-            return Functions::VALUE();
-        }
-        $yValueCount = count($yValues);
-        $xValueCount = count($xValues);
-
-        if (($yValueCount == 0) || ($yValueCount != $xValueCount)) {
-            return Functions::NA();
-        } elseif ($yValueCount == 1) {
-            return Functions::DIV0();
-        }
-
-        $bestFitLinear = Trend::calculate(Trend::TREND_LINEAR, $yValues, $xValues);
-
-        return $bestFitLinear->getCorrelation();
-    }
-
-    /**
-     * COUNT.
-     *
-     * Counts the number of cells that contain numbers within the list of arguments
-     *
-     * Excel Function:
-     *        COUNT(value1[,value2[, ...]])
-     *
-     * @param mixed ...$args Data values
-     *
-     * @return int
-     */
-    public static function COUNT(...$args)
-    {
-        $returnValue = 0;
-
-        // Loop through arguments
-        $aArgs = Functions::flattenArrayIndexed($args);
-        foreach ($aArgs as $k => $arg) {
-            $arg = self::testAcceptedBoolean($arg, $k);
-            // Is it a numeric value?
-            // Strings containing numeric values are only counted if they are string literals (not cell values)
-            //    and then only in MS Excel and in Open Office, not in Gnumeric
-            if (self::isAcceptedCountable($arg, $k)) {
-                ++$returnValue;
-            }
-        }
-
-        return $returnValue;
-    }
-
-    /**
-     * COUNTA.
-     *
-     * Counts the number of cells that are not empty within the list of arguments
-     *
-     * Excel Function:
-     *        COUNTA(value1[,value2[, ...]])
-     *
-     * @param mixed ...$args Data values
-     *
-     * @return int
-     */
-    public static function COUNTA(...$args)
-    {
-        $returnValue = 0;
-
-        // Loop through arguments
-        $aArgs = Functions::flattenArrayIndexed($args);
-        foreach ($aArgs as $k => $arg) {
-            // Nulls are counted if literals, but not if cell values
-            if ($arg !== null || (!Functions::isCellValue($k))) {
-                ++$returnValue;
-            }
-        }
-
-        return $returnValue;
-    }
-
-    /**
-     * COUNTBLANK.
-     *
-     * Counts the number of empty cells within the list of arguments
-     *
-     * Excel Function:
-     *        COUNTBLANK(value1[,value2[, ...]])
-     *
-     * @param mixed ...$args Data values
-     *
-     * @return int
-     */
-    public static function COUNTBLANK(...$args)
-    {
-        $returnValue = 0;
-
-        // Loop through arguments
-        $aArgs = Functions::flattenArray($args);
-        foreach ($aArgs as $arg) {
-            // Is it a blank cell?
-            if (($arg === null) || ((is_string($arg)) && ($arg == ''))) {
-                ++$returnValue;
-            }
-        }
-
-        return $returnValue;
-    }
-
-    /**
-     * COUNTIF.
-     *
-     * Counts the number of cells that contain numbers within the list of arguments
-     *
-     * Excel Function:
-     *        COUNTIF(value1[,value2[, ...]],condition)
-     *
-     * @param mixed $aArgs Data values
-     * @param string $condition the criteria that defines which cells will be counted
-     *
-     * @return int
-     */
-    public static function COUNTIF($aArgs, $condition)
-    {
-        $returnValue = 0;
-
-        $aArgs = Functions::flattenArray($aArgs);
-        $condition = Functions::ifCondition($condition);
-        $conditionIsNumeric = strpos($condition, '"') === false;
-        // Loop through arguments
-        foreach ($aArgs as $arg) {
-            if (!is_numeric($arg)) {
-                if ($conditionIsNumeric) {
-                    continue;
-                }
-                $arg = Calculation::wrapResult(strtoupper($arg));
-            } elseif (!$conditionIsNumeric) {
-                continue;
-            }
-            $testCondition = '=' . $arg . $condition;
-            if (Calculation::getInstance()->_calculateFormulaValue($testCondition)) {
-                // Is it a value within our criteria
-                ++$returnValue;
-            }
-        }
-
-        return $returnValue;
-    }
-
-    /**
-     * COUNTIFS.
-     *
-     * Counts the number of cells that contain numbers within the list of arguments
-     *
-     * Excel Function:
-     *        COUNTIFS(criteria_range1, criteria1, [criteria_range2, criteria2]…)
-     *
-     * @param mixed $args Criterias
-     *
-     * @return int
-     */
-    public static function COUNTIFS(...$args)
-    {
-        $arrayList = $args;
-
-        // Return value
-        $returnValue = 0;
-
-        if (empty($arrayList)) {
-            return $returnValue;
-        }
-
-        $aArgsArray = [];
-        $conditions = [];
-
-        while (count($arrayList) > 0) {
-            $aArgsArray[] = Functions::flattenArray(array_shift($arrayList));
-            $conditions[] = Functions::ifCondition(array_shift($arrayList));
-        }
-
-        // Loop through each arg and see if arguments and conditions are true
-        foreach (array_keys($aArgsArray[0]) as $index) {
-            $valid = true;
-
-            foreach ($conditions as $cidx => $condition) {
-                $conditionIsNumeric = strpos($condition, '"') === false;
-                $arg = $aArgsArray[$cidx][$index];
-
-                // Loop through arguments
-                if (!is_numeric($arg)) {
-                    if ($conditionIsNumeric) {
-                        $valid = false;
-
-                        break; // if false found, don't need to check other conditions
-                    }
-                    $arg = Calculation::wrapResult(strtoupper($arg));
-                } elseif (!$conditionIsNumeric) {
-                    $valid = false;
-
-                    break; // if false found, don't need to check other conditions
-                }
-                $testCondition = '=' . $arg . $condition;
-                if (!Calculation::getInstance()->_calculateFormulaValue($testCondition)) {
-                    // Is not a value within our criteria
-                    $valid = false;
-
-                    break; // if false found, don't need to check other conditions
-                }
-            }
-
-            if ($valid) {
-                ++$returnValue;
-            }
-        }
-
-        // Return
-        return $returnValue;
-    }
-
-    /**
-     * COVAR.
-     *
-     * Returns covariance, the average of the products of deviations for each data point pair.
-     *
-     * @param mixed $yValues array of mixed Data Series Y
-     * @param mixed $xValues array of mixed Data Series X
-     *
-     * @return float|string
-     */
-    public static function COVAR($yValues, $xValues)
-    {
-        if (!self::checkTrendArrays($yValues, $xValues)) {
-            return Functions::VALUE();
-        }
-        $yValueCount = count($yValues);
-        $xValueCount = count($xValues);
-
-        if (($yValueCount == 0) || ($yValueCount != $xValueCount)) {
-            return Functions::NA();
-        } elseif ($yValueCount == 1) {
-            return Functions::DIV0();
-        }
-
-        $bestFitLinear = Trend::calculate(Trend::TREND_LINEAR, $yValues, $xValues);
-
-        return $bestFitLinear->getCovariance();
-    }
-
-    /**
-     * CRITBINOM.
-     *
-     * Returns the smallest value for which the cumulative binomial distribution is greater
-     *        than or equal to a criterion value
-     *
-     * See https://support.microsoft.com/en-us/help/828117/ for details of the algorithm used
-     *
-     * @param float $trials number of Bernoulli trials
-     * @param float $probability probability of a success on each trial
-     * @param float $alpha criterion value
-     *
-     * @return int|string
-     *
-     * @TODO    Warning. This implementation differs from the algorithm detailed on the MS
-     *            web site in that $CumPGuessMinus1 = $CumPGuess - 1 rather than $CumPGuess - $PGuess
-     *            This eliminates a potential endless loop error, but may have an adverse affect on the
-     *            accuracy of the function (although all my tests have so far returned correct results).
-     */
-    public static function CRITBINOM($trials, $probability, $alpha)
-    {
-        $trials = floor(Functions::flattenSingleValue($trials));
-        $probability = Functions::flattenSingleValue($probability);
-        $alpha = Functions::flattenSingleValue($alpha);
-
-        if ((is_numeric($trials)) && (is_numeric($probability)) && (is_numeric($alpha))) {
-            $trials = (int) $trials;
-            if ($trials < 0) {
-                return Functions::NAN();
-            } elseif (($probability < 0.0) || ($probability > 1.0)) {
-                return Functions::NAN();
-            } elseif (($alpha < 0.0) || ($alpha > 1.0)) {
-                return Functions::NAN();
-            }
-
-            if ($alpha <= 0.5) {
-                $t = sqrt(log(1 / ($alpha * $alpha)));
-                $trialsApprox = 0 - ($t + (2.515517 + 0.802853 * $t + 0.010328 * $t * $t) / (1 + 1.432788 * $t + 0.189269 * $t * $t + 0.001308 * $t * $t * $t));
-            } else {
-                $t = sqrt(log(1 / (1 - $alpha) ** 2));
-                $trialsApprox = $t - (2.515517 + 0.802853 * $t + 0.010328 * $t * $t) / (1 + 1.432788 * $t + 0.189269 * $t * $t + 0.001308 * $t * $t * $t);
-            }
-
-            $Guess = floor($trials * $probability + $trialsApprox * sqrt($trials * $probability * (1 - $probability)));
-            if ($Guess < 0) {
-                $Guess = 0;
-            } elseif ($Guess > $trials) {
-                $Guess = $trials;
-            }
-
-            $TotalUnscaledProbability = $UnscaledPGuess = $UnscaledCumPGuess = 0.0;
-            $EssentiallyZero = 10e-12;
-
-            $m = floor($trials * $probability);
-            ++$TotalUnscaledProbability;
-            if ($m == $Guess) {
-                ++$UnscaledPGuess;
-            }
-            if ($m <= $Guess) {
-                ++$UnscaledCumPGuess;
-            }
-
-            $PreviousValue = 1;
-            $Done = false;
-            $k = $m + 1;
-            while ((!$Done) && ($k <= $trials)) {
-                $CurrentValue = $PreviousValue * ($trials - $k + 1) * $probability / ($k * (1 - $probability));
-                $TotalUnscaledProbability += $CurrentValue;
-                if ($k == $Guess) {
-                    $UnscaledPGuess += $CurrentValue;
-                }
-                if ($k <= $Guess) {
-                    $UnscaledCumPGuess += $CurrentValue;
-                }
-                if ($CurrentValue <= $EssentiallyZero) {
-                    $Done = true;
-                }
-                $PreviousValue = $CurrentValue;
-                ++$k;
-            }
-
-            $PreviousValue = 1;
-            $Done = false;
-            $k = $m - 1;
-            while ((!$Done) && ($k >= 0)) {
-                $CurrentValue = $PreviousValue * $k + 1 * (1 - $probability) / (($trials - $k) * $probability);
-                $TotalUnscaledProbability += $CurrentValue;
-                if ($k == $Guess) {
-                    $UnscaledPGuess += $CurrentValue;
-                }
-                if ($k <= $Guess) {
-                    $UnscaledCumPGuess += $CurrentValue;
-                }
-                if ($CurrentValue <= $EssentiallyZero) {
-                    $Done = true;
-                }
-                $PreviousValue = $CurrentValue;
-                --$k;
-            }
-
-            $PGuess = $UnscaledPGuess / $TotalUnscaledProbability;
-            $CumPGuess = $UnscaledCumPGuess / $TotalUnscaledProbability;
-
-            $CumPGuessMinus1 = $CumPGuess - 1;
-
-            while (true) {
-                if (($CumPGuessMinus1 < $alpha) && ($CumPGuess >= $alpha)) {
-                    return $Guess;
-                } elseif (($CumPGuessMinus1 < $alpha) && ($CumPGuess < $alpha)) {
-                    $PGuessPlus1 = $PGuess * ($trials - $Guess) * $probability / $Guess / (1 - $probability);
-                    $CumPGuessMinus1 = $CumPGuess;
-                    $CumPGuess = $CumPGuess + $PGuessPlus1;
-                    $PGuess = $PGuessPlus1;
-                    ++$Guess;
-                } elseif (($CumPGuessMinus1 >= $alpha) && ($CumPGuess >= $alpha)) {
-                    $PGuessMinus1 = $PGuess * $Guess * (1 - $probability) / ($trials - $Guess + 1) / $probability;
-                    $CumPGuess = $CumPGuessMinus1;
-                    $CumPGuessMinus1 = $CumPGuessMinus1 - $PGuess;
-                    $PGuess = $PGuessMinus1;
-                    --$Guess;
-                }
-            }
-        }
-
-        return Functions::VALUE();
-    }
-
-    /**
-     * DEVSQ.
-     *
-     * Returns the sum of squares of deviations of data points from their sample mean.
-     *
-     * Excel Function:
-     *        DEVSQ(value1[,value2[, ...]])
-     *
-     * @param mixed ...$args Data values
-     *
-     * @return float|string
-     */
-    public static function DEVSQ(...$args)
-    {
-        $aArgs = Functions::flattenArrayIndexed($args);
-
-        // Return value
-        $returnValue = null;
-
-        $aMean = self::AVERAGE($aArgs);
-        if ($aMean != Functions::DIV0()) {
-            $aCount = -1;
-            foreach ($aArgs as $k => $arg) {
-                // Is it a numeric value?
-                if (
-                    (is_bool($arg)) &&
-                    ((!Functions::isCellValue($k)) ||
-                    (Functions::getCompatibilityMode() == Functions::COMPATIBILITY_OPENOFFICE))
-                ) {
-                    $arg = (int) $arg;
-                }
-                if ((is_numeric($arg)) && (!is_string($arg))) {
-                    if ($returnValue === null) {
-                        $returnValue = ($arg - $aMean) ** 2;
-                    } else {
-                        $returnValue += ($arg - $aMean) ** 2;
-                    }
-                    ++$aCount;
-                }
-            }
-
-            // Return
-            if ($returnValue === null) {
-                return Functions::NAN();
-            }
-
-            return $returnValue;
-        }
-
-        return Functions::NA();
-    }
-
-    /**
-     * EXPONDIST.
-     *
-     *    Returns the exponential distribution. Use EXPONDIST to model the time between events,
-     *        such as how long an automated bank teller takes to deliver cash. For example, you can
-     *        use EXPONDIST to determine the probability that the process takes at most 1 minute.
-     *
-     * @param float $value Value of the function
-     * @param float $lambda The parameter value
-     * @param bool $cumulative
-     *
-     * @return float|string
-     */
-    public static function EXPONDIST($value, $lambda, $cumulative)
-    {
-        $value = Functions::flattenSingleValue($value);
-        $lambda = Functions::flattenSingleValue($lambda);
-        $cumulative = Functions::flattenSingleValue($cumulative);
-
-        if ((is_numeric($value)) && (is_numeric($lambda))) {
-            if (($value < 0) || ($lambda < 0)) {
-                return Functions::NAN();
-            }
-            if ((is_numeric($cumulative)) || (is_bool($cumulative))) {
-                if ($cumulative) {
-                    return 1 - exp(0 - $value * $lambda);
-                }
-
-                return $lambda * exp(0 - $value * $lambda);
-            }
-        }
-
-        return Functions::VALUE();
-    }
-
-    private static function betaFunction($a, $b)
-    {
-        return (self::gamma($a) * self::gamma($b)) / self::gamma($a + $b);
-    }
-
-    private static function regularizedIncompleteBeta($value, $a, $b)
-    {
-        return self::incompleteBeta($value, $a, $b) / self::betaFunction($a, $b);
-    }
-
-    /**
-     * F.DIST.
-     *
-     *    Returns the F probability distribution.
-     *    You can use this function to determine whether two data sets have different degrees of diversity.
-     *    For example, you can examine the test scores of men and women entering high school, and determine
-     *        if the variability in the females is different from that found in the males.
-     *
-     * @param float $value Value of the function
-     * @param int $u The numerator degrees of freedom
-     * @param int $v The denominator degrees of freedom
-     * @param bool $cumulative If cumulative is TRUE, F.DIST returns the cumulative distribution function;
-     *                         if FALSE, it returns the probability density function.
-     *
-     * @return float|string
-     */
-    public static function FDIST2($value, $u, $v, $cumulative)
-    {
-        $value = Functions::flattenSingleValue($value);
-        $u = Functions::flattenSingleValue($u);
-        $v = Functions::flattenSingleValue($v);
-        $cumulative = Functions::flattenSingleValue($cumulative);
-
-        if (is_numeric($value) && is_numeric($u) && is_numeric($v)) {
-            if ($value < 0 || $u < 1 || $v < 1) {
-                return Functions::NAN();
-            }
-
-            $cumulative = (bool) $cumulative;
-            $u = (int) $u;
-            $v = (int) $v;
-
-            if ($cumulative) {
-                $adjustedValue = ($u * $value) / ($u * $value + $v);
-
-                return self::incompleteBeta($adjustedValue, $u / 2, $v / 2);
-            }
-
-            return (self::gamma(($v + $u) / 2) / (self::gamma($u / 2) * self::gamma($v / 2))) *
-                (($u / $v) ** ($u / 2)) *
-                (($value ** (($u - 2) / 2)) / ((1 + ($u / $v) * $value) ** (($u + $v) / 2)));
-        }
-
-        return Functions::VALUE();
-    }
-
-    /**
-     * FISHER.
-     *
-     * Returns the Fisher transformation at x. This transformation produces a function that
-     *        is normally distributed rather than skewed. Use this function to perform hypothesis
-     *        testing on the correlation coefficient.
-     *
-     * @param float $value
-     *
-     * @return float|string
-     */
-    public static function FISHER($value)
-    {
-        $value = Functions::flattenSingleValue($value);
-
-        if (is_numeric($value)) {
-            if (($value <= -1) || ($value >= 1)) {
-                return Functions::NAN();
-            }
-
-            return 0.5 * log((1 + $value) / (1 - $value));
-        }
-
-        return Functions::VALUE();
-    }
-
-    /**
-     * FISHERINV.
-     *
-     * Returns the inverse of the Fisher transformation. Use this transformation when
-     *        analyzing correlations between ranges or arrays of data. If y = FISHER(x), then
-     *        FISHERINV(y) = x.
-     *
-     * @param float $value
-     *
-     * @return float|string
-     */
-    public static function FISHERINV($value)
-    {
-        $value = Functions::flattenSingleValue($value);
-
-        if (is_numeric($value)) {
-            return (exp(2 * $value) - 1) / (exp(2 * $value) + 1);
-        }
-
-        return Functions::VALUE();
-    }
-
-    /**
-     * FORECAST.
-     *
-     * Calculates, or predicts, a future value by using existing values. The predicted value is a y-value for a given x-value.
-     *
-     * @param float $xValue Value of X for which we want to find Y
-     * @param mixed $yValues array of mixed Data Series Y
-     * @param mixed $xValues of mixed Data Series X
-     *
-     * @return bool|float|string
-     */
-    public static function FORECAST($xValue, $yValues, $xValues)
-    {
-        $xValue = Functions::flattenSingleValue($xValue);
-        if (!is_numeric($xValue)) {
-            return Functions::VALUE();
-        } elseif (!self::checkTrendArrays($yValues, $xValues)) {
-            return Functions::VALUE();
-        }
-        $yValueCount = count($yValues);
-        $xValueCount = count($xValues);
-
-        if (($yValueCount == 0) || ($yValueCount != $xValueCount)) {
-            return Functions::NA();
-        } elseif ($yValueCount == 1) {
-            return Functions::DIV0();
-        }
-
-        $bestFitLinear = Trend::calculate(Trend::TREND_LINEAR, $yValues, $xValues);
-
-        return $bestFitLinear->getValueOfYForX($xValue);
-    }
-
-    /**
-     * GAMMA.
-     *
-     * Return the gamma function value.
-     *
-     * @param float $value
-     *
-     * @return float|string The result, or a string containing an error
-     */
-    public static function GAMMAFunction($value)
-    {
-        $value = Functions::flattenSingleValue($value);
-        if (!is_numeric($value)) {
-            return Functions::VALUE();
-        } elseif ((((int) $value) == ((float) $value)) && $value <= 0.0) {
-            return Functions::NAN();
-        }
-
-        return self::gamma($value);
-    }
-
-    /**
-     * GAMMADIST.
-     *
-     * Returns the gamma distribution.
-     *
-     * @param float $value Value at which you want to evaluate the distribution
-     * @param float $a Parameter to the distribution
-     * @param float $b Parameter to the distribution
-     * @param bool $cumulative
-     *
-     * @return float|string
-     */
-    public static function GAMMADIST($value, $a, $b, $cumulative)
-    {
-        $value = Functions::flattenSingleValue($value);
-        $a = Functions::flattenSingleValue($a);
-        $b = Functions::flattenSingleValue($b);
-
-        if ((is_numeric($value)) && (is_numeric($a)) && (is_numeric($b))) {
-            if (($value < 0) || ($a <= 0) || ($b <= 0)) {
-                return Functions::NAN();
-            }
-            if ((is_numeric($cumulative)) || (is_bool($cumulative))) {
-                if ($cumulative) {
-                    return self::incompleteGamma($a, $value / $b) / self::gamma($a);
-                }
-
-                return (1 / ($b ** $a * self::gamma($a))) * $value ** ($a - 1) * exp(0 - ($value / $b));
-            }
-        }
-
-        return Functions::VALUE();
-    }
-
-    /**
-     * GAMMAINV.
-     *
-     * Returns the inverse of the Gamma distribution.
-     *
-     * @param float $probability Probability at which you want to evaluate the distribution
-     * @param float $alpha Parameter to the distribution
-     * @param float $beta Parameter to the distribution
-     *
-     * @return float|string
-     */
-    public static function GAMMAINV($probability, $alpha, $beta)
-    {
-        $probability = Functions::flattenSingleValue($probability);
-        $alpha = Functions::flattenSingleValue($alpha);
-        $beta = Functions::flattenSingleValue($beta);
-
-        if ((is_numeric($probability)) && (is_numeric($alpha)) && (is_numeric($beta))) {
-            if (($alpha <= 0) || ($beta <= 0) || ($probability < 0) || ($probability > 1)) {
-                return Functions::NAN();
-            }
-
-            $xLo = 0;
-            $xHi = $alpha * $beta * 5;
-
-            $x = $xNew = 1;
-            $dx = 1024;
-            $i = 0;
-
-            while ((abs($dx) > Functions::PRECISION) && ($i++ < self::MAX_ITERATIONS)) {
-                // Apply Newton-Raphson step
-                $error = self::GAMMADIST($x, $alpha, $beta, true) - $probability;
-                if ($error < 0.0) {
-                    $xLo = $x;
-                } else {
-                    $xHi = $x;
-                }
-                $pdf = self::GAMMADIST($x, $alpha, $beta, false);
-                // Avoid division by zero
-                if ($pdf != 0.0) {
-                    $dx = $error / $pdf;
-                    $xNew = $x - $dx;
-                }
-                // If the NR fails to converge (which for example may be the
-                // case if the initial guess is too rough) we apply a bisection
-                // step to determine a more narrow interval around the root.
-                if (($xNew < $xLo) || ($xNew > $xHi) || ($pdf == 0.0)) {
-                    $xNew = ($xLo + $xHi) / 2;
-                    $dx = $xNew - $x;
-                }
-                $x = $xNew;
-            }
-            if ($i == self::MAX_ITERATIONS) {
-                return Functions::NA();
-            }
-
-            return $x;
-        }
-
-        return Functions::VALUE();
-    }
-
-    /**
-     * GAMMALN.
-     *
-     * Returns the natural logarithm of the gamma function.
-     *
-     * @param float $value
-     *
-     * @return float|string
-     */
-    public static function GAMMALN($value)
-    {
-        $value = Functions::flattenSingleValue($value);
-
-        if (is_numeric($value)) {
-            if ($value <= 0) {
-                return Functions::NAN();
-            }
-
-            return log(self::gamma($value));
-        }
-
-        return Functions::VALUE();
-    }
-
-    /**
-     * GAUSS.
-     *
-     * Calculates the probability that a member of a standard normal population will fall between
-     *     the mean and z standard deviations from the mean.
-     *
-     * @param float $value
-     *
-     * @return float|string The result, or a string containing an error
-     */
-    public static function GAUSS($value)
-    {
-        $value = Functions::flattenSingleValue($value);
-        if (!is_numeric($value)) {
-            return Functions::VALUE();
-        }
-
-        return self::NORMDIST($value, 0, 1, true) - 0.5;
-    }
-
-    /**
-     * GEOMEAN.
-     *
-     * Returns the geometric mean of an array or range of positive data. For example, you
-     *        can use GEOMEAN to calculate average growth rate given compound interest with
-     *        variable rates.
-     *
-     * Excel Function:
-     *        GEOMEAN(value1[,value2[, ...]])
-     *
-     * @param mixed ...$args Data values
-     *
-     * @return float|string
-     */
-    public static function GEOMEAN(...$args)
-    {
-        $aArgs = Functions::flattenArray($args);
-
-        $aMean = MathTrig::PRODUCT($aArgs);
-        if (is_numeric($aMean) && ($aMean > 0)) {
-            $aCount = self::COUNT($aArgs);
-            if (self::MIN($aArgs) > 0) {
-                return $aMean ** (1 / $aCount);
-            }
-        }
-
-        return Functions::NAN();
-    }
-
-    /**
-     * GROWTH.
-     *
-     * Returns values along a predicted exponential Trend
-     *
-     * @param mixed[] $yValues Data Series Y
-     * @param mixed[] $xValues Data Series X
-     * @param mixed[] $newValues Values of X for which we want to find Y
-     * @param bool $const a logical value specifying whether to force the intersect to equal 0
-     *
-     * @return array of float
-     */
-    public static function GROWTH($yValues, $xValues = [], $newValues = [], $const = true)
-    {
-        $yValues = Functions::flattenArray($yValues);
-        $xValues = Functions::flattenArray($xValues);
-        $newValues = Functions::flattenArray($newValues);
-        $const = ($const === null) ? true : (bool) Functions::flattenSingleValue($const);
-
-        $bestFitExponential = Trend::calculate(Trend::TREND_EXPONENTIAL, $yValues, $xValues, $const);
-        if (empty($newValues)) {
-            $newValues = $bestFitExponential->getXValues();
-        }
-
-        $returnArray = [];
-        foreach ($newValues as $xValue) {
-            $returnArray[0][] = $bestFitExponential->getValueOfYForX($xValue);
-        }
-
-        return $returnArray;
-    }
-
-    /**
-     * HARMEAN.
-     *
-     * Returns the harmonic mean of a data set. The harmonic mean is the reciprocal of the
-     *        arithmetic mean of reciprocals.
-     *
-     * Excel Function:
-     *        HARMEAN(value1[,value2[, ...]])
-     *
-     * @param mixed ...$args Data values
-     *
-     * @return float|string
-     */
-    public static function HARMEAN(...$args)
-    {
-        // Return value
-        $returnValue = 0;
-
-        // Loop through arguments
-        $aArgs = Functions::flattenArray($args);
-        if (self::MIN($aArgs) < 0) {
-            return Functions::NAN();
-        }
-        $aCount = 0;
-        foreach ($aArgs as $arg) {
-            // Is it a numeric value?
-            if ((is_numeric($arg)) && (!is_string($arg))) {
-                if ($arg <= 0) {
-                    return Functions::NAN();
-                }
-                $returnValue += (1 / $arg);
-                ++$aCount;
-            }
-        }
-
-        // Return
-        if ($aCount > 0) {
-            return 1 / ($returnValue / $aCount);
-        }
-
-        return Functions::NA();
-    }
-
-    /**
-     * HYPGEOMDIST.
-     *
-     * Returns the hypergeometric distribution. HYPGEOMDIST returns the probability of a given number of
-     * sample successes, given the sample size, population successes, and population size.
-     *
-     * @param float $sampleSuccesses Number of successes in the sample
-     * @param float $sampleNumber Size of the sample
-     * @param float $populationSuccesses Number of successes in the population
-     * @param float $populationNumber Population size
-     *
-     * @return float|string
-     */
-    public static function HYPGEOMDIST($sampleSuccesses, $sampleNumber, $populationSuccesses, $populationNumber)
-    {
-        $sampleSuccesses = Functions::flattenSingleValue($sampleSuccesses);
-        $sampleNumber = Functions::flattenSingleValue($sampleNumber);
-        $populationSuccesses = Functions::flattenSingleValue($populationSuccesses);
-        $populationNumber = Functions::flattenSingleValue($populationNumber);
-
-        if ((is_numeric($sampleSuccesses)) && (is_numeric($sampleNumber)) && (is_numeric($populationSuccesses)) && (is_numeric($populationNumber))) {
-            $sampleSuccesses = floor($sampleSuccesses);
-            $sampleNumber = floor($sampleNumber);
-            $populationSuccesses = floor($populationSuccesses);
-            $populationNumber = floor($populationNumber);
-
-            if (($sampleSuccesses < 0) || ($sampleSuccesses > $sampleNumber) || ($sampleSuccesses > $populationSuccesses)) {
-                return Functions::NAN();
-            }
-            if (($sampleNumber <= 0) || ($sampleNumber > $populationNumber)) {
-                return Functions::NAN();
-            }
-            if (($populationSuccesses <= 0) || ($populationSuccesses > $populationNumber)) {
-                return Functions::NAN();
-            }
-
-            return MathTrig::COMBIN($populationSuccesses, $sampleSuccesses) *
-                   MathTrig::COMBIN($populationNumber - $populationSuccesses, $sampleNumber - $sampleSuccesses) /
-                   MathTrig::COMBIN($populationNumber, $sampleNumber);
-        }
-
-        return Functions::VALUE();
-    }
-
-    /**
-     * INTERCEPT.
-     *
-     * Calculates the point at which a line will intersect the y-axis by using existing x-values and y-values.
-     *
-     * @param mixed[] $yValues Data Series Y
-     * @param mixed[] $xValues Data Series X
-     *
-     * @return float|string
-     */
-    public static function INTERCEPT($yValues, $xValues)
-    {
-        if (!self::checkTrendArrays($yValues, $xValues)) {
-            return Functions::VALUE();
-        }
-        $yValueCount = count($yValues);
-        $xValueCount = count($xValues);
-
-        if (($yValueCount == 0) || ($yValueCount != $xValueCount)) {
-            return Functions::NA();
-        } elseif ($yValueCount == 1) {
-            return Functions::DIV0();
-        }
-
-        $bestFitLinear = Trend::calculate(Trend::TREND_LINEAR, $yValues, $xValues);
-
-        return $bestFitLinear->getIntersect();
-    }
-
-    /**
-     * KURT.
-     *
-     * Returns the kurtosis of a data set. Kurtosis characterizes the relative peakedness
-     * or flatness of a distribution compared with the normal distribution. Positive
-     * kurtosis indicates a relatively peaked distribution. Negative kurtosis indicates a
-     * relatively flat distribution.
-     *
-     * @param array ...$args Data Series
-     *
-     * @return float|string
-     */
-    public static function KURT(...$args)
-    {
-        $aArgs = Functions::flattenArrayIndexed($args);
-        $mean = self::AVERAGE($aArgs);
-        $stdDev = self::STDEV($aArgs);
-
-        if ($stdDev > 0) {
-            $count = $summer = 0;
-            // Loop through arguments
-            foreach ($aArgs as $k => $arg) {
-                if (
-                    (is_bool($arg)) &&
-                    (!Functions::isMatrixValue($k))
-                ) {
-                } else {
-                    // Is it a numeric value?
-                    if ((is_numeric($arg)) && (!is_string($arg))) {
-                        $summer += (($arg - $mean) / $stdDev) ** 4;
-                        ++$count;
-                    }
-                }
-            }
-
-            // Return
-            if ($count > 3) {
-                return $summer * ($count * ($count + 1) / (($count - 1) * ($count - 2) * ($count - 3))) - (3 * ($count - 1) ** 2 / (($count - 2) * ($count - 3)));
-            }
-        }
-
-        return Functions::DIV0();
-    }
-
-    /**
-     * LARGE.
-     *
-     * Returns the nth largest value in a data set. You can use this function to
-     *        select a value based on its relative standing.
-     *
-     * Excel Function:
-     *        LARGE(value1[,value2[, ...]],entry)
-     *
-     * @param mixed $args Data values
-     *
-     * @return float|string The result, or a string containing an error
-     */
-    public static function LARGE(...$args)
-    {
-        $aArgs = Functions::flattenArray($args);
-        $entry = array_pop($aArgs);
-
-        if ((is_numeric($entry)) && (!is_string($entry))) {
-            $entry = (int) floor($entry);
-
-            // Calculate
-            $mArgs = [];
-            foreach ($aArgs as $arg) {
-                // Is it a numeric value?
-                if ((is_numeric($arg)) && (!is_string($arg))) {
-                    $mArgs[] = $arg;
-                }
-            }
-            $count = self::COUNT($mArgs);
-            --$entry;
-            if (($entry < 0) || ($entry >= $count) || ($count == 0)) {
-                return Functions::NAN();
-            }
-            rsort($mArgs);
-
-            return $mArgs[$entry];
-        }
-
-        return Functions::VALUE();
-    }
-
-    /**
-     * LINEST.
-     *
-     * Calculates the statistics for a line by using the "least squares" method to calculate a straight line that best fits your data,
-     *        and then returns an array that describes the line.
-     *
-     * @param mixed[] $yValues Data Series Y
-     * @param null|mixed[] $xValues Data Series X
-     * @param bool $const a logical value specifying whether to force the intersect to equal 0
-     * @param bool $stats a logical value specifying whether to return additional regression statistics
-     *
-     * @return array|int|string The result, or a string containing an error
-     */
-    public static function LINEST($yValues, $xValues = null, $const = true, $stats = false)
-    {
-        $const = ($const === null) ? true : (bool) Functions::flattenSingleValue($const);
-        $stats = ($stats === null) ? false : (bool) Functions::flattenSingleValue($stats);
-        if ($xValues === null) {
-            $xValues = range(1, count(Functions::flattenArray($yValues)));
-        }
-
-        if (!self::checkTrendArrays($yValues, $xValues)) {
-            return Functions::VALUE();
-        }
-        $yValueCount = count($yValues);
-        $xValueCount = count($xValues);
-
-        if (($yValueCount == 0) || ($yValueCount != $xValueCount)) {
-            return Functions::NA();
-        } elseif ($yValueCount == 1) {
-            return 0;
-        }
-
-        $bestFitLinear = Trend::calculate(Trend::TREND_LINEAR, $yValues, $xValues, $const);
-        if ($stats) {
-            return [
-                [
-                    $bestFitLinear->getSlope(),
-                    $bestFitLinear->getSlopeSE(),
-                    $bestFitLinear->getGoodnessOfFit(),
-                    $bestFitLinear->getF(),
-                    $bestFitLinear->getSSRegression(),
-                ],
-                [
-                    $bestFitLinear->getIntersect(),
-                    $bestFitLinear->getIntersectSE(),
-                    $bestFitLinear->getStdevOfResiduals(),
-                    $bestFitLinear->getDFResiduals(),
-                    $bestFitLinear->getSSResiduals(),
-                ],
-            ];
-        }
-
-        return [
-            $bestFitLinear->getSlope(),
-            $bestFitLinear->getIntersect(),
-        ];
-    }
-
-    /**
-     * LOGEST.
-     *
-     * Calculates an exponential curve that best fits the X and Y data series,
-     *        and then returns an array that describes the line.
-     *
-     * @param mixed[] $yValues Data Series Y
-     * @param null|mixed[] $xValues Data Series X
-     * @param bool $const a logical value specifying whether to force the intersect to equal 0
-     * @param bool $stats a logical value specifying whether to return additional regression statistics
-     *
-     * @return array|int|string The result, or a string containing an error
-     */
-    public static function LOGEST($yValues, $xValues = null, $const = true, $stats = false)
-    {
-        $const = ($const === null) ? true : (bool) Functions::flattenSingleValue($const);
-        $stats = ($stats === null) ? false : (bool) Functions::flattenSingleValue($stats);
-        if ($xValues === null) {
-            $xValues = range(1, count(Functions::flattenArray($yValues)));
-        }
-
-        if (!self::checkTrendArrays($yValues, $xValues)) {
-            return Functions::VALUE();
-        }
-        $yValueCount = count($yValues);
-        $xValueCount = count($xValues);
-
-        foreach ($yValues as $value) {
-            if ($value <= 0.0) {
-                return Functions::NAN();
-            }
-        }
-
-        if (($yValueCount == 0) || ($yValueCount != $xValueCount)) {
-            return Functions::NA();
-        } elseif ($yValueCount == 1) {
-            return 1;
-        }
-
-        $bestFitExponential = Trend::calculate(Trend::TREND_EXPONENTIAL, $yValues, $xValues, $const);
-        if ($stats) {
-            return [
-                [
-                    $bestFitExponential->getSlope(),
-                    $bestFitExponential->getSlopeSE(),
-                    $bestFitExponential->getGoodnessOfFit(),
-                    $bestFitExponential->getF(),
-                    $bestFitExponential->getSSRegression(),
-                ],
-                [
-                    $bestFitExponential->getIntersect(),
-                    $bestFitExponential->getIntersectSE(),
-                    $bestFitExponential->getStdevOfResiduals(),
-                    $bestFitExponential->getDFResiduals(),
-                    $bestFitExponential->getSSResiduals(),
-                ],
-            ];
-        }
-
-        return [
-            $bestFitExponential->getSlope(),
-            $bestFitExponential->getIntersect(),
-        ];
-    }
-
-    /**
-     * LOGINV.
-     *
-     * Returns the inverse of the normal cumulative distribution
-     *
-     * @param float $probability
-     * @param float $mean
-     * @param float $stdDev
-     *
-     * @return float|string The result, or a string containing an error
-     *
-     * @TODO    Try implementing P J Acklam's refinement algorithm for greater
-     *            accuracy if I can get my head round the mathematics
-     *            (as described at) http://home.online.no/~pjacklam/notes/invnorm/
-     */
-    public static function LOGINV($probability, $mean, $stdDev)
-    {
-        $probability = Functions::flattenSingleValue($probability);
-        $mean = Functions::flattenSingleValue($mean);
-        $stdDev = Functions::flattenSingleValue($stdDev);
-
-        if ((is_numeric($probability)) && (is_numeric($mean)) && (is_numeric($stdDev))) {
-            if (($probability < 0) || ($probability > 1) || ($stdDev <= 0)) {
-                return Functions::NAN();
-            }
-
-            return exp($mean + $stdDev * self::NORMSINV($probability));
-        }
-
-        return Functions::VALUE();
-    }
-
-    /**
-     * LOGNORMDIST.
-     *
-     * Returns the cumulative lognormal distribution of x, where ln(x) is normally distributed
-     * with parameters mean and standard_dev.
-     *
-     * @param float $value
-     * @param float $mean
-     * @param float $stdDev
-     *
-     * @return float|string The result, or a string containing an error
-     */
-    public static function LOGNORMDIST($value, $mean, $stdDev)
-    {
-        $value = Functions::flattenSingleValue($value);
-        $mean = Functions::flattenSingleValue($mean);
-        $stdDev = Functions::flattenSingleValue($stdDev);
-
-        if ((is_numeric($value)) && (is_numeric($mean)) && (is_numeric($stdDev))) {
-            if (($value <= 0) || ($stdDev <= 0)) {
-                return Functions::NAN();
-            }
-
-            return self::NORMSDIST((log($value) - $mean) / $stdDev);
-        }
-
-        return Functions::VALUE();
-    }
-
-    /**
-     * LOGNORM.DIST.
-     *
-     * Returns the lognormal distribution of x, where ln(x) is normally distributed
-     * with parameters mean and standard_dev.
-     *
-     * @param float $value
-     * @param float $mean
-     * @param float $stdDev
-     * @param bool $cumulative
-     *
-     * @return float|string The result, or a string containing an error
-     */
-    public static function LOGNORMDIST2($value, $mean, $stdDev, $cumulative = false)
-    {
-        $value = Functions::flattenSingleValue($value);
-        $mean = Functions::flattenSingleValue($mean);
-        $stdDev = Functions::flattenSingleValue($stdDev);
-        $cumulative = (bool) Functions::flattenSingleValue($cumulative);
-
-        if ((is_numeric($value)) && (is_numeric($mean)) && (is_numeric($stdDev))) {
-            if (($value <= 0) || ($stdDev <= 0)) {
-                return Functions::NAN();
-            }
-
-            if ($cumulative === true) {
-                return self::NORMSDIST2((log($value) - $mean) / $stdDev, true);
-            }
-
-            return (1 / (sqrt(2 * M_PI) * $stdDev * $value)) *
-                exp(0 - ((log($value) - $mean) ** 2 / (2 * $stdDev ** 2)));
-        }
-
-        return Functions::VALUE();
-    }
-
-    /**
-     * MAX.
-     *
-     * MAX returns the value of the element of the values passed that has the highest value,
-     *        with negative numbers considered smaller than positive numbers.
-     *
-     * Excel Function:
-     *        MAX(value1[,value2[, ...]])
-     *
-     * @param mixed ...$args Data values
-     *
-     * @return float
-     */
-    public static function MAX(...$args)
-    {
-        $returnValue = null;
-
-        // Loop through arguments
-        $aArgs = Functions::flattenArray($args);
-        foreach ($aArgs as $arg) {
-            // Is it a numeric value?
-            if ((is_numeric($arg)) && (!is_string($arg))) {
-                if (($returnValue === null) || ($arg > $returnValue)) {
-                    $returnValue = $arg;
-                }
-            }
-        }
-
-        if ($returnValue === null) {
-            return 0;
-        }
-
-        return $returnValue;
-    }
-
-    /**
-     * MAXA.
-     *
-     * Returns the greatest value in a list of arguments, including numbers, text, and logical values
-     *
-     * Excel Function:
-     *        MAXA(value1[,value2[, ...]])
-     *
-     * @param mixed ...$args Data values
-     *
-     * @return float
-     */
-    public static function MAXA(...$args)
-    {
-        $returnValue = null;
-
-        // Loop through arguments
-        $aArgs = Functions::flattenArray($args);
-        foreach ($aArgs as $arg) {
-            // Is it a numeric value?
-            if ((is_numeric($arg)) || (is_bool($arg)) || ((is_string($arg) && ($arg != '')))) {
-                if (is_bool($arg)) {
-                    $arg = (int) $arg;
-                } elseif (is_string($arg)) {
-                    $arg = 0;
-                }
-                if (($returnValue === null) || ($arg > $returnValue)) {
-                    $returnValue = $arg;
-                }
-            }
-        }
-
-        if ($returnValue === null) {
-            return 0;
-        }
-
-        return $returnValue;
-    }
-
-    /**
-     * MAXIFS.
-     *
-     * Counts the maximum value within a range of cells that contain numbers within the list of arguments
-     *
-     * Excel Function:
-     *        MAXIFS(max_range, criteria_range1, criteria1, [criteria_range2, criteria2], ...)
-     *
-     * @param mixed $args Data range and criterias
-     *
-     * @return float
-     */
-    public static function MAXIFS(...$args)
-    {
-        $arrayList = $args;
-
-        // Return value
-        $returnValue = null;
-
-        $maxArgs = Functions::flattenArray(array_shift($arrayList));
-        $aArgsArray = [];
-        $conditions = [];
-
-        while (count($arrayList) > 0) {
-            $aArgsArray[] = Functions::flattenArray(array_shift($arrayList));
-            $conditions[] = Functions::ifCondition(array_shift($arrayList));
-        }
-
-        // Loop through each arg and see if arguments and conditions are true
-        foreach ($maxArgs as $index => $value) {
-            $valid = true;
-
-            foreach ($conditions as $cidx => $condition) {
-                $arg = $aArgsArray[$cidx][$index];
-
-                // Loop through arguments
-                if (!is_numeric($arg)) {
-                    $arg = Calculation::wrapResult(strtoupper($arg));
-                }
-                $testCondition = '=' . $arg . $condition;
-                if (!Calculation::getInstance()->_calculateFormulaValue($testCondition)) {
-                    // Is not a value within our criteria
-                    $valid = false;
-
-                    break; // if false found, don't need to check other conditions
-                }
-            }
-
-            if ($valid) {
-                $returnValue = $returnValue === null ? $value : max($value, $returnValue);
-            }
-        }
-
-        // Return
-        return $returnValue;
-    }
-
-    /**
-     * MEDIAN.
-     *
-     * Returns the median of the given numbers. The median is the number in the middle of a set of numbers.
-     *
-     * Excel Function:
-     *        MEDIAN(value1[,value2[, ...]])
-     *
-     * @param mixed ...$args Data values
-     *
-     * @return float|string The result, or a string containing an error
-     */
-    public static function MEDIAN(...$args)
-    {
-        $returnValue = Functions::NAN();
-
-        $mArgs = [];
-        // Loop through arguments
-        $aArgs = Functions::flattenArray($args);
-        foreach ($aArgs as $arg) {
-            // Is it a numeric value?
-            if ((is_numeric($arg)) && (!is_string($arg))) {
-                $mArgs[] = $arg;
-            }
-        }
-
-        $mValueCount = count($mArgs);
-        if ($mValueCount > 0) {
-            sort($mArgs, SORT_NUMERIC);
-            $mValueCount = $mValueCount / 2;
-            if ($mValueCount == floor($mValueCount)) {
-                $returnValue = ($mArgs[$mValueCount--] + $mArgs[$mValueCount]) / 2;
-            } else {
-                $mValueCount = floor($mValueCount);
-                $returnValue = $mArgs[$mValueCount];
-            }
-        }
-
-        return $returnValue;
-    }
-
-    /**
-     * MIN.
-     *
-     * MIN returns the value of the element of the values passed that has the smallest value,
-     *        with negative numbers considered smaller than positive numbers.
-     *
-     * Excel Function:
-     *        MIN(value1[,value2[, ...]])
-     *
-     * @param mixed ...$args Data values
-     *
-     * @return float
-     */
-    public static function MIN(...$args)
-    {
-        $returnValue = null;
-
-        // Loop through arguments
-        $aArgs = Functions::flattenArray($args);
-        foreach ($aArgs as $arg) {
-            // Is it a numeric value?
-            if ((is_numeric($arg)) && (!is_string($arg))) {
-                if (($returnValue === null) || ($arg < $returnValue)) {
-                    $returnValue = $arg;
-                }
-            }
-        }
-
-        if ($returnValue === null) {
-            return 0;
-        }
-
-        return $returnValue;
-    }
-
-    /**
-     * MINA.
-     *
-     * Returns the smallest value in a list of arguments, including numbers, text, and logical values
-     *
-     * Excel Function:
-     *        MINA(value1[,value2[, ...]])
-     *
-     * @param mixed ...$args Data values
-     *
-     * @return float
-     */
-    public static function MINA(...$args)
-    {
-        $returnValue = null;
-
-        // Loop through arguments
-        $aArgs = Functions::flattenArray($args);
-        foreach ($aArgs as $arg) {
-            // Is it a numeric value?
-            if ((is_numeric($arg)) || (is_bool($arg)) || ((is_string($arg) && ($arg != '')))) {
-                if (is_bool($arg)) {
-                    $arg = (int) $arg;
-                } elseif (is_string($arg)) {
-                    $arg = 0;
-                }
-                if (($returnValue === null) || ($arg < $returnValue)) {
-                    $returnValue = $arg;
-                }
-            }
-        }
-
-        if ($returnValue === null) {
-            return 0;
-        }
-
-        return $returnValue;
-    }
-
-    /**
-     * MINIFS.
-     *
-     * Returns the minimum value within a range of cells that contain numbers within the list of arguments
-     *
-     * Excel Function:
-     *        MINIFS(min_range, criteria_range1, criteria1, [criteria_range2, criteria2], ...)
-     *
-     * @param mixed $args Data range and criterias
-     *
-     * @return float
-     */
-    public static function MINIFS(...$args)
-    {
-        $arrayList = $args;
-
-        // Return value
-        $returnValue = null;
-
-        $minArgs = Functions::flattenArray(array_shift($arrayList));
-        $aArgsArray = [];
-        $conditions = [];
-
-        while (count($arrayList) > 0) {
-            $aArgsArray[] = Functions::flattenArray(array_shift($arrayList));
-            $conditions[] = Functions::ifCondition(array_shift($arrayList));
-        }
-
-        // Loop through each arg and see if arguments and conditions are true
-        foreach ($minArgs as $index => $value) {
-            $valid = true;
-
-            foreach ($conditions as $cidx => $condition) {
-                $arg = $aArgsArray[$cidx][$index];
-
-                // Loop through arguments
-                if (!is_numeric($arg)) {
-                    $arg = Calculation::wrapResult(strtoupper($arg));
-                }
-                $testCondition = '=' . $arg . $condition;
-                if (!Calculation::getInstance()->_calculateFormulaValue($testCondition)) {
-                    // Is not a value within our criteria
-                    $valid = false;
-
-                    break; // if false found, don't need to check other conditions
-                }
-            }
-
-            if ($valid) {
-                $returnValue = $returnValue === null ? $value : min($value, $returnValue);
-            }
-        }
-
-        // Return
-        return $returnValue;
-    }
-
-    //
-    //    Special variant of array_count_values that isn't limited to strings and integers,
-    //        but can work with floating point numbers as values
-    //
-    private static function modeCalc($data)
-    {
-        $frequencyArray = [];
-        $index = 0;
-        $maxfreq = 0;
-        $maxfreqkey = '';
-        $maxfreqdatum = '';
-        foreach ($data as $datum) {
-            $found = false;
-            ++$index;
-            foreach ($frequencyArray as $key => $value) {
-                if ((string) $value['value'] == (string) $datum) {
-                    ++$frequencyArray[$key]['frequency'];
-                    $freq = $frequencyArray[$key]['frequency'];
-                    if ($freq > $maxfreq) {
-                        $maxfreq = $freq;
-                        $maxfreqkey = $key;
-                        $maxfreqdatum = $datum;
-                    } elseif ($freq == $maxfreq) {
-                        if ($frequencyArray[$key]['index'] < $frequencyArray[$maxfreqkey]['index']) {
-                            $maxfreqkey = $key;
-                            $maxfreqdatum = $datum;
-                        }
-                    }
-                    $found = true;
-
-                    break;
-                }
-            }
-            if (!$found) {
-                $frequencyArray[] = [
-                    'value' => $datum,
-                    'frequency' => 1,
-                    'index' => $index,
-                ];
-            }
-        }
-
-        if ($maxfreq <= 1) {
-            return Functions::NA();
-        }
-
-        return $maxfreqdatum;
-    }
-
-    /**
-     * MODE.
-     *
-     * Returns the most frequently occurring, or repetitive, value in an array or range of data
-     *
-     * Excel Function:
-     *        MODE(value1[,value2[, ...]])
-     *
-     * @param mixed ...$args Data values
-     *
-     * @return float|string The result, or a string containing an error
-     */
-    public static function MODE(...$args)
-    {
-        $returnValue = Functions::NA();
-
-        // Loop through arguments
-        $aArgs = Functions::flattenArray($args);
-
-        $mArgs = [];
-        foreach ($aArgs as $arg) {
-            // Is it a numeric value?
-            if ((is_numeric($arg)) && (!is_string($arg))) {
-                $mArgs[] = $arg;
-            }
-        }
-
-        if (!empty($mArgs)) {
-            return self::modeCalc($mArgs);
-        }
-
-        return $returnValue;
-    }
-
-    /**
-     * NEGBINOMDIST.
-     *
-     * Returns the negative binomial distribution. NEGBINOMDIST returns the probability that
-     *        there will be number_f failures before the number_s-th success, when the constant
-     *        probability of a success is probability_s. This function is similar to the binomial
-     *        distribution, except that the number of successes is fixed, and the number of trials is
-     *        variable. Like the binomial, trials are assumed to be independent.
-     *
-     * @param float $failures Number of Failures
-     * @param float $successes Threshold number of Successes
-     * @param float $probability Probability of success on each trial
-     *
-     * @return float|string The result, or a string containing an error
-     */
-    public static function NEGBINOMDIST($failures, $successes, $probability)
-    {
-        $failures = floor(Functions::flattenSingleValue($failures));
-        $successes = floor(Functions::flattenSingleValue($successes));
-        $probability = Functions::flattenSingleValue($probability);
-
-        if ((is_numeric($failures)) && (is_numeric($successes)) && (is_numeric($probability))) {
-            if (($failures < 0) || ($successes < 1)) {
-                return Functions::NAN();
-            } elseif (($probability < 0) || ($probability > 1)) {
-                return Functions::NAN();
-            }
-            if (Functions::getCompatibilityMode() == Functions::COMPATIBILITY_GNUMERIC) {
-                if (($failures + $successes - 1) <= 0) {
-                    return Functions::NAN();
-                }
-            }
-
-            return (MathTrig::COMBIN($failures + $successes - 1, $successes - 1)) * ($probability ** $successes) * ((1 - $probability) ** $failures);
-        }
-
-        return Functions::VALUE();
-    }
-
-    /**
-     * NORMDIST.
-     *
-     * Returns the normal distribution for the specified mean and standard deviation. This
-     * function has a very wide range of applications in statistics, including hypothesis
-     * testing.
-     *
-     * @param float $value
-     * @param float $mean Mean Value
-     * @param float $stdDev Standard Deviation
-     * @param bool $cumulative
-     *
-     * @return float|string The result, or a string containing an error
-     */
-    public static function NORMDIST($value, $mean, $stdDev, $cumulative)
-    {
-        $value = Functions::flattenSingleValue($value);
-        $mean = Functions::flattenSingleValue($mean);
-        $stdDev = Functions::flattenSingleValue($stdDev);
-
-        if ((is_numeric($value)) && (is_numeric($mean)) && (is_numeric($stdDev))) {
-            if ($stdDev < 0) {
-                return Functions::NAN();
-            }
-            if ((is_numeric($cumulative)) || (is_bool($cumulative))) {
-                if ($cumulative) {
-                    return 0.5 * (1 + Engineering::erfVal(($value - $mean) / ($stdDev * sqrt(2))));
-                }
-
-                return (1 / (self::SQRT2PI * $stdDev)) * exp(0 - (($value - $mean) ** 2 / (2 * ($stdDev * $stdDev))));
-            }
-        }
-
-        return Functions::VALUE();
-    }
-
-    /**
-     * NORMINV.
-     *
-     * Returns the inverse of the normal cumulative distribution for the specified mean and standard deviation.
-     *
-     * @param float $probability
-     * @param float $mean Mean Value
-     * @param float $stdDev Standard Deviation
-     *
-     * @return float|string The result, or a string containing an error
-     */
-    public static function NORMINV($probability, $mean, $stdDev)
-    {
-        $probability = Functions::flattenSingleValue($probability);
-        $mean = Functions::flattenSingleValue($mean);
-        $stdDev = Functions::flattenSingleValue($stdDev);
-
-        if ((is_numeric($probability)) && (is_numeric($mean)) && (is_numeric($stdDev))) {
-            if (($probability < 0) || ($probability > 1)) {
-                return Functions::NAN();
-            }
-            if ($stdDev < 0) {
-                return Functions::NAN();
-            }
-
-            return (self::inverseNcdf($probability) * $stdDev) + $mean;
-        }
-
-        return Functions::VALUE();
-    }
-
-    /**
-     * NORMSDIST.
-     *
-     * Returns the standard normal cumulative distribution function. The distribution has
-     * a mean of 0 (zero) and a standard deviation of one. Use this function in place of a
-     * table of standard normal curve areas.
-     *
-     * @param float $value
-     *
-     * @return float|string The result, or a string containing an error
-     */
-    public static function NORMSDIST($value)
-    {
-        $value = Functions::flattenSingleValue($value);
-        if (!is_numeric($value)) {
-            return Functions::VALUE();
-        }
-
-        return self::NORMDIST($value, 0, 1, true);
-    }
-
-    /**
-     * NORM.S.DIST.
-     *
-     * Returns the standard normal cumulative distribution function. The distribution has
-     * a mean of 0 (zero) and a standard deviation of one. Use this function in place of a
-     * table of standard normal curve areas.
-     *
-     * @param float $value
-     * @param bool $cumulative
-     *
-     * @return float|string The result, or a string containing an error
-     */
-    public static function NORMSDIST2($value, $cumulative)
-    {
-        $value = Functions::flattenSingleValue($value);
-        if (!is_numeric($value)) {
-            return Functions::VALUE();
-        }
-        $cumulative = (bool) Functions::flattenSingleValue($cumulative);
-
-        return self::NORMDIST($value, 0, 1, $cumulative);
-    }
-
-    /**
-     * NORMSINV.
-     *
-     * Returns the inverse of the standard normal cumulative distribution
-     *
-     * @param float $value
-     *
-     * @return float|string The result, or a string containing an error
-     */
-    public static function NORMSINV($value)
-    {
-        return self::NORMINV($value, 0, 1);
-    }
-
-    /**
-     * PERCENTILE.
-     *
-     * Returns the nth percentile of values in a range..
-     *
-     * Excel Function:
-     *        PERCENTILE(value1[,value2[, ...]],entry)
-     *
-     * @param mixed $args Data values
-     *
-     * @return float|string The result, or a string containing an error
-     */
-    public static function PERCENTILE(...$args)
-    {
-        $aArgs = Functions::flattenArray($args);
-
-        // Calculate
-        $entry = array_pop($aArgs);
-
-        if ((is_numeric($entry)) && (!is_string($entry))) {
-            if (($entry < 0) || ($entry > 1)) {
-                return Functions::NAN();
-            }
-            $mArgs = [];
-            foreach ($aArgs as $arg) {
-                // Is it a numeric value?
-                if ((is_numeric($arg)) && (!is_string($arg))) {
-                    $mArgs[] = $arg;
-                }
-            }
-            $mValueCount = count($mArgs);
-            if ($mValueCount > 0) {
-                sort($mArgs);
-                $count = self::COUNT($mArgs);
-                $index = $entry * ($count - 1);
-                $iBase = floor($index);
-                if ($index == $iBase) {
-                    return $mArgs[$index];
-                }
-                $iNext = $iBase + 1;
-                $iProportion = $index - $iBase;
-
-                return $mArgs[$iBase] + (($mArgs[$iNext] - $mArgs[$iBase]) * $iProportion);
-            }
-        }
-
-        return Functions::VALUE();
-    }
-
-    /**
-     * PERCENTRANK.
-     *
-     * Returns the rank of a value in a data set as a percentage of the data set.
-     *
-     * @param float[] $valueSet An array of, or a reference to, a list of numbers
-     * @param int $value the number whose rank you want to find
-     * @param int $significance the number of significant digits for the returned percentage value
-     *
-     * @return float|string (string if result is an error)
-     */
-    public static function PERCENTRANK($valueSet, $value, $significance = 3)
-    {
-        $valueSet = Functions::flattenArray($valueSet);
-        $value = Functions::flattenSingleValue($value);
-        $significance = ($significance === null) ? 3 : (int) Functions::flattenSingleValue($significance);
-
-        foreach ($valueSet as $key => $valueEntry) {
-            if (!is_numeric($valueEntry)) {
-                unset($valueSet[$key]);
-            }
-        }
-        sort($valueSet, SORT_NUMERIC);
-        $valueCount = count($valueSet);
-        if ($valueCount == 0) {
-            return Functions::NAN();
-        }
-
-        $valueAdjustor = $valueCount - 1;
-        if (($value < $valueSet[0]) || ($value > $valueSet[$valueAdjustor])) {
-            return Functions::NA();
-        }
-
-        $pos = array_search($value, $valueSet);
-        if ($pos === false) {
-            $pos = 0;
-            $testValue = $valueSet[0];
-            while ($testValue < $value) {
-                $testValue = $valueSet[++$pos];
-            }
-            --$pos;
-            $pos += (($value - $valueSet[$pos]) / ($testValue - $valueSet[$pos]));
-        }
-
-        return round($pos / $valueAdjustor, $significance);
-    }
-
-    /**
-     * PERMUT.
-     *
-     * Returns the number of permutations for a given number of objects that can be
-     *        selected from number objects. A permutation is any set or subset of objects or
-     *        events where internal order is significant. Permutations are different from
-     *        combinations, for which the internal order is not significant. Use this function
-     *        for lottery-style probability calculations.
-     *
-     * @param int $numObjs Number of different objects
-     * @param int $numInSet Number of objects in each permutation
-     *
-     * @return int|string Number of permutations, or a string containing an error
-     */
-    public static function PERMUT($numObjs, $numInSet)
-    {
-        $numObjs = Functions::flattenSingleValue($numObjs);
-        $numInSet = Functions::flattenSingleValue($numInSet);
-
-        if ((is_numeric($numObjs)) && (is_numeric($numInSet))) {
-            $numInSet = floor($numInSet);
-            if ($numObjs < $numInSet) {
-                return Functions::NAN();
-            }
-
-            return round(MathTrig::FACT($numObjs) / MathTrig::FACT($numObjs - $numInSet));
-        }
-
-        return Functions::VALUE();
-    }
-
-    /**
-     * POISSON.
-     *
-     * Returns the Poisson distribution. A common application of the Poisson distribution
-     * is predicting the number of events over a specific time, such as the number of
-     * cars arriving at a toll plaza in 1 minute.
-     *
-     * @param float $value
-     * @param float $mean Mean Value
-     * @param bool $cumulative
-     *
-     * @return float|string The result, or a string containing an error
-     */
-    public static function POISSON($value, $mean, $cumulative)
-    {
-        $value = Functions::flattenSingleValue($value);
-        $mean = Functions::flattenSingleValue($mean);
-
-        if ((is_numeric($value)) && (is_numeric($mean))) {
-            if (($value < 0) || ($mean <= 0)) {
-                return Functions::NAN();
-            }
-            if ((is_numeric($cumulative)) || (is_bool($cumulative))) {
-                if ($cumulative) {
-                    $summer = 0;
-                    $floor = floor($value);
-                    for ($i = 0; $i <= $floor; ++$i) {
-                        $summer += $mean ** $i / MathTrig::FACT($i);
-                    }
-
-                    return exp(0 - $mean) * $summer;
-                }
-
-                return (exp(0 - $mean) * $mean ** $value) / MathTrig::FACT($value);
-            }
-        }
-
-        return Functions::VALUE();
-    }
-
-    /**
-     * QUARTILE.
-     *
-     * Returns the quartile of a data set.
-     *
-     * Excel Function:
-     *        QUARTILE(value1[,value2[, ...]],entry)
-     *
-     * @param mixed $args Data values
-     *
-     * @return float|string The result, or a string containing an error
-     */
-    public static function QUARTILE(...$args)
-    {
-        $aArgs = Functions::flattenArray($args);
-
-        // Calculate
-        $entry = floor(array_pop($aArgs));
-
-        if ((is_numeric($entry)) && (!is_string($entry))) {
-            $entry /= 4;
-            if (($entry < 0) || ($entry > 1)) {
-                return Functions::NAN();
-            }
-
-            return self::PERCENTILE($aArgs, $entry);
-        }
-
-        return Functions::VALUE();
-    }
-
-    /**
-     * RANK.
-     *
-     * Returns the rank of a number in a list of numbers.
-     *
-     * @param int $value the number whose rank you want to find
-     * @param float[] $valueSet An array of, or a reference to, a list of numbers
-     * @param int $order Order to sort the values in the value set
-     *
-     * @return float|string The result, or a string containing an error
-     */
-    public static function RANK($value, $valueSet, $order = 0)
-    {
-        $value = Functions::flattenSingleValue($value);
-        $valueSet = Functions::flattenArray($valueSet);
-        $order = ($order === null) ? 0 : (int) Functions::flattenSingleValue($order);
-
-        foreach ($valueSet as $key => $valueEntry) {
-            if (!is_numeric($valueEntry)) {
-                unset($valueSet[$key]);
-            }
-        }
-
-        if ($order == 0) {
-            rsort($valueSet, SORT_NUMERIC);
-        } else {
-            sort($valueSet, SORT_NUMERIC);
-        }
-        $pos = array_search($value, $valueSet);
-        if ($pos === false) {
-            return Functions::NA();
-        }
-
-        return ++$pos;
-    }
-
-    /**
-     * RSQ.
-     *
-     * Returns the square of the Pearson product moment correlation coefficient through data points in known_y's and known_x's.
-     *
-     * @param mixed[] $yValues Data Series Y
-     * @param mixed[] $xValues Data Series X
-     *
-     * @return float|string The result, or a string containing an error
-     */
-    public static function RSQ($yValues, $xValues)
-    {
-        if (!self::checkTrendArrays($yValues, $xValues)) {
-            return Functions::VALUE();
-        }
-        $yValueCount = count($yValues);
-        $xValueCount = count($xValues);
-
-        if (($yValueCount == 0) || ($yValueCount != $xValueCount)) {
-            return Functions::NA();
-        } elseif ($yValueCount == 1) {
-            return Functions::DIV0();
-        }
-
-        $bestFitLinear = Trend::calculate(Trend::TREND_LINEAR, $yValues, $xValues);
-
-        return $bestFitLinear->getGoodnessOfFit();
-    }
-
-    /**
-     * SKEW.
-     *
-     * Returns the skewness of a distribution. Skewness characterizes the degree of asymmetry
-     * of a distribution around its mean. Positive skewness indicates a distribution with an
-     * asymmetric tail extending toward more positive values. Negative skewness indicates a
-     * distribution with an asymmetric tail extending toward more negative values.
-     *
-     * @param array ...$args Data Series
-     *
-     * @return float|string The result, or a string containing an error
-     */
-    public static function SKEW(...$args)
-    {
-        $aArgs = Functions::flattenArrayIndexed($args);
-        $mean = self::AVERAGE($aArgs);
-        $stdDev = self::STDEV($aArgs);
-
-        $count = $summer = 0;
-        // Loop through arguments
-        foreach ($aArgs as $k => $arg) {
-            if (
-                (is_bool($arg)) &&
-                (!Functions::isMatrixValue($k))
-            ) {
-            } else {
-                // Is it a numeric value?
-                if ((is_numeric($arg)) && (!is_string($arg))) {
-                    $summer += (($arg - $mean) / $stdDev) ** 3;
-                    ++$count;
-                }
-            }
-        }
-
-        if ($count > 2) {
-            return $summer * ($count / (($count - 1) * ($count - 2)));
-        }
-
-        return Functions::DIV0();
-    }
-
-    /**
-     * SLOPE.
-     *
-     * Returns the slope of the linear regression line through data points in known_y's and known_x's.
-     *
-     * @param mixed[] $yValues Data Series Y
-     * @param mixed[] $xValues Data Series X
-     *
-     * @return float|string The result, or a string containing an error
-     */
-    public static function SLOPE($yValues, $xValues)
-    {
-        if (!self::checkTrendArrays($yValues, $xValues)) {
-            return Functions::VALUE();
-        }
-        $yValueCount = count($yValues);
-        $xValueCount = count($xValues);
-
-        if (($yValueCount == 0) || ($yValueCount != $xValueCount)) {
-            return Functions::NA();
-        } elseif ($yValueCount == 1) {
-            return Functions::DIV0();
-        }
-
-        $bestFitLinear = Trend::calculate(Trend::TREND_LINEAR, $yValues, $xValues);
-
-        return $bestFitLinear->getSlope();
-    }
-
-    /**
-     * SMALL.
-     *
-     * Returns the nth smallest value in a data set. You can use this function to
-     *        select a value based on its relative standing.
-     *
-     * Excel Function:
-     *        SMALL(value1[,value2[, ...]],entry)
-     *
-     * @param mixed $args Data values
-     *
-     * @return float|string The result, or a string containing an error
-     */
-    public static function SMALL(...$args)
-    {
-        $aArgs = Functions::flattenArray($args);
-
-        // Calculate
-        $entry = array_pop($aArgs);
-
-        if ((is_numeric($entry)) && (!is_string($entry))) {
-            $entry = (int) floor($entry);
-
-            $mArgs = [];
-            foreach ($aArgs as $arg) {
-                // Is it a numeric value?
-                if ((is_numeric($arg)) && (!is_string($arg))) {
-                    $mArgs[] = $arg;
-                }
-            }
-            $count = self::COUNT($mArgs);
-            --$entry;
-            if (($entry < 0) || ($entry >= $count) || ($count == 0)) {
-                return Functions::NAN();
-            }
-            sort($mArgs);
-
-            return $mArgs[$entry];
-        }
-
-        return Functions::VALUE();
-    }
-
-    /**
-     * STANDARDIZE.
-     *
-     * Returns a normalized value from a distribution characterized by mean and standard_dev.
-     *
-     * @param float $value Value to normalize
-     * @param float $mean Mean Value
-     * @param float $stdDev Standard Deviation
-     *
-     * @return float|string Standardized value, or a string containing an error
-     */
-    public static function STANDARDIZE($value, $mean, $stdDev)
-    {
-        $value = Functions::flattenSingleValue($value);
-        $mean = Functions::flattenSingleValue($mean);
-        $stdDev = Functions::flattenSingleValue($stdDev);
-
-        if ((is_numeric($value)) && (is_numeric($mean)) && (is_numeric($stdDev))) {
-            if ($stdDev <= 0) {
-                return Functions::NAN();
-            }
-
-            return ($value - $mean) / $stdDev;
-        }
-
-        return Functions::VALUE();
-    }
-
-    /**
-     * STDEV.
-     *
-     * Estimates standard deviation based on a sample. The standard deviation is a measure of how
-     *        widely values are dispersed from the average value (the mean).
-     *
-     * Excel Function:
-     *        STDEV(value1[,value2[, ...]])
-     *
-     * @param mixed ...$args Data values
-     *
-     * @return float|string The result, or a string containing an error
-     */
-    public static function STDEV(...$args)
-    {
-        $aArgs = Functions::flattenArrayIndexed($args);
-
-        // Return value
-        $returnValue = null;
-
-        $aMean = self::AVERAGE($aArgs);
-        if ($aMean !== null) {
-            $aCount = -1;
-            foreach ($aArgs as $k => $arg) {
-                if (
-                    (is_bool($arg)) &&
-                    ((!Functions::isCellValue($k)) || (Functions::getCompatibilityMode() == Functions::COMPATIBILITY_OPENOFFICE))
-                ) {
-                    $arg = (int) $arg;
-                }
-                // Is it a numeric value?
-                if ((is_numeric($arg)) && (!is_string($arg))) {
-                    if ($returnValue === null) {
-                        $returnValue = ($arg - $aMean) ** 2;
-                    } else {
-                        $returnValue += ($arg - $aMean) ** 2;
-                    }
-                    ++$aCount;
-                }
-            }
-
-            // Return
-            if (($aCount > 0) && ($returnValue >= 0)) {
-                return sqrt($returnValue / $aCount);
-            }
-        }
-
-        return Functions::DIV0();
-    }
-
-    /**
-     * STDEVA.
-     *
-     * Estimates standard deviation based on a sample, including numbers, text, and logical values
-     *
-     * Excel Function:
-     *        STDEVA(value1[,value2[, ...]])
-     *
-     * @param mixed ...$args Data values
-     *
-     * @return float|string
-     */
-    public static function STDEVA(...$args)
-    {
-        $aArgs = Functions::flattenArrayIndexed($args);
-
-        $returnValue = null;
-
-        $aMean = self::AVERAGEA($aArgs);
-        if ($aMean !== null) {
-            $aCount = -1;
-            foreach ($aArgs as $k => $arg) {
-                if (
-                    (is_bool($arg)) &&
-                    (!Functions::isMatrixValue($k))
-                ) {
-                } else {
-                    // Is it a numeric value?
-                    if ((is_numeric($arg)) || (is_bool($arg)) || ((is_string($arg) & ($arg != '')))) {
-                        if (is_bool($arg)) {
-                            $arg = (int) $arg;
-                        } elseif (is_string($arg)) {
-                            $arg = 0;
-                        }
-                        if ($returnValue === null) {
-                            $returnValue = ($arg - $aMean) ** 2;
-                        } else {
-                            $returnValue += ($arg - $aMean) ** 2;
-                        }
-                        ++$aCount;
-                    }
-                }
-            }
-
-            if (($aCount > 0) && ($returnValue >= 0)) {
-                return sqrt($returnValue / $aCount);
-            }
-        }
-
-        return Functions::DIV0();
-    }
-
-    /**
-     * STDEVP.
-     *
-     * Calculates standard deviation based on the entire population
-     *
-     * Excel Function:
-     *        STDEVP(value1[,value2[, ...]])
-     *
-     * @param mixed ...$args Data values
-     *
-     * @return float|string
-     */
-    public static function STDEVP(...$args)
-    {
-        $aArgs = Functions::flattenArrayIndexed($args);
-
-        $returnValue = null;
-
-        $aMean = self::AVERAGE($aArgs);
-        if ($aMean !== null) {
-            $aCount = 0;
-            foreach ($aArgs as $k => $arg) {
-                if (
-                    (is_bool($arg)) &&
-                    ((!Functions::isCellValue($k)) || (Functions::getCompatibilityMode() == Functions::COMPATIBILITY_OPENOFFICE))
-                ) {
-                    $arg = (int) $arg;
-                }
-                // Is it a numeric value?
-                if ((is_numeric($arg)) && (!is_string($arg))) {
-                    if ($returnValue === null) {
-                        $returnValue = ($arg - $aMean) ** 2;
-                    } else {
-                        $returnValue += ($arg - $aMean) ** 2;
-                    }
-                    ++$aCount;
-                }
-            }
-
-            if (($aCount > 0) && ($returnValue >= 0)) {
-                return sqrt($returnValue / $aCount);
-            }
-        }
-
-        return Functions::DIV0();
-    }
-
-    /**
-     * STDEVPA.
-     *
-     * Calculates standard deviation based on the entire population, including numbers, text, and logical values
-     *
-     * Excel Function:
-     *        STDEVPA(value1[,value2[, ...]])
-     *
-     * @param mixed ...$args Data values
-     *
-     * @return float|string
-     */
-    public static function STDEVPA(...$args)
-    {
-        $aArgs = Functions::flattenArrayIndexed($args);
-
-        $returnValue = null;
-
-        $aMean = self::AVERAGEA($aArgs);
-        if ($aMean !== null) {
-            $aCount = 0;
-            foreach ($aArgs as $k => $arg) {
-                if (
-                    (is_bool($arg)) &&
-                    (!Functions::isMatrixValue($k))
-                ) {
-                } else {
-                    // Is it a numeric value?
-                    if ((is_numeric($arg)) || (is_bool($arg)) || ((is_string($arg) & ($arg != '')))) {
-                        if (is_bool($arg)) {
-                            $arg = (int) $arg;
-                        } elseif (is_string($arg)) {
-                            $arg = 0;
-                        }
-                        if ($returnValue === null) {
-                            $returnValue = ($arg - $aMean) ** 2;
-                        } else {
-                            $returnValue += ($arg - $aMean) ** 2;
-                        }
-                        ++$aCount;
-                    }
-                }
-            }
-
-            if (($aCount > 0) && ($returnValue >= 0)) {
-                return sqrt($returnValue / $aCount);
-            }
-        }
-
-        return Functions::DIV0();
-    }
-
-    /**
-     * STEYX.
-     *
-     * Returns the standard error of the predicted y-value for each x in the regression.
-     *
-     * @param mixed[] $yValues Data Series Y
-     * @param mixed[] $xValues Data Series X
-     *
-     * @return float|string
-     */
-    public static function STEYX($yValues, $xValues)
-    {
-        if (!self::checkTrendArrays($yValues, $xValues)) {
-            return Functions::VALUE();
-        }
-        $yValueCount = count($yValues);
-        $xValueCount = count($xValues);
-
-        if (($yValueCount == 0) || ($yValueCount != $xValueCount)) {
-            return Functions::NA();
-        } elseif ($yValueCount == 1) {
-            return Functions::DIV0();
-        }
-
-        $bestFitLinear = Trend::calculate(Trend::TREND_LINEAR, $yValues, $xValues);
-
-        return $bestFitLinear->getStdevOfResiduals();
-    }
-
-    /**
-     * TDIST.
-     *
-     * Returns the probability of Student's T distribution.
-     *
-     * @param float $value Value for the function
-     * @param float $degrees degrees of freedom
-     * @param float $tails number of tails (1 or 2)
-     *
-     * @return float|string The result, or a string containing an error
-     */
-    public static function TDIST($value, $degrees, $tails)
-    {
-        $value = Functions::flattenSingleValue($value);
-        $degrees = floor(Functions::flattenSingleValue($degrees));
-        $tails = floor(Functions::flattenSingleValue($tails));
-
-        if ((is_numeric($value)) && (is_numeric($degrees)) && (is_numeric($tails))) {
-            if (($value < 0) || ($degrees < 1) || ($tails < 1) || ($tails > 2)) {
-                return Functions::NAN();
-            }
-            //    tdist, which finds the probability that corresponds to a given value
-            //    of t with k degrees of freedom. This algorithm is translated from a
-            //    pascal function on p81 of "Statistical Computing in Pascal" by D
-            //    Cooke, A H Craven & G M Clark (1985: Edward Arnold (Pubs.) Ltd:
-            //    London). The above Pascal algorithm is itself a translation of the
-            //    fortran algoritm "AS 3" by B E Cooper of the Atlas Computer
-            //    Laboratory as reported in (among other places) "Applied Statistics
-            //    Algorithms", editied by P Griffiths and I D Hill (1985; Ellis
-            //    Horwood Ltd.; W. Sussex, England).
-            $tterm = $degrees;
-            $ttheta = atan2($value, sqrt($tterm));
-            $tc = cos($ttheta);
-            $ts = sin($ttheta);
-
-            if (($degrees % 2) == 1) {
-                $ti = 3;
-                $tterm = $tc;
-            } else {
-                $ti = 2;
-                $tterm = 1;
-            }
-
-            $tsum = $tterm;
-            while ($ti < $degrees) {
-                $tterm *= $tc * $tc * ($ti - 1) / $ti;
-                $tsum += $tterm;
-                $ti += 2;
-            }
-            $tsum *= $ts;
-            if (($degrees % 2) == 1) {
-                $tsum = Functions::M_2DIVPI * ($tsum + $ttheta);
-            }
-            $tValue = 0.5 * (1 + $tsum);
-            if ($tails == 1) {
-                return 1 - abs($tValue);
-            }
-
-            return 1 - abs((1 - $tValue) - $tValue);
-        }
-
-        return Functions::VALUE();
-    }
-
-    /**
-     * TINV.
-     *
-     * Returns the one-tailed probability of the chi-squared distribution.
-     *
-     * @param float $probability Probability for the function
-     * @param float $degrees degrees of freedom
-     *
-     * @return float|string The result, or a string containing an error
-     */
-    public static function TINV($probability, $degrees)
-    {
-        $probability = Functions::flattenSingleValue($probability);
-        $degrees = floor(Functions::flattenSingleValue($degrees));
-
-        if ((is_numeric($probability)) && (is_numeric($degrees))) {
-            $xLo = 100;
-            $xHi = 0;
-
-            $x = $xNew = 1;
-            $dx = 1;
-            $i = 0;
-
-            while ((abs($dx) > Functions::PRECISION) && ($i++ < self::MAX_ITERATIONS)) {
-                // Apply Newton-Raphson step
-                $result = self::TDIST($x, $degrees, 2);
-                $error = $result - $probability;
-                if ($error == 0.0) {
-                    $dx = 0;
-                } elseif ($error < 0.0) {
-                    $xLo = $x;
-                } else {
-                    $xHi = $x;
-                }
-                // Avoid division by zero
-                if ($result != 0.0) {
-                    $dx = $error / $result;
-                    $xNew = $x - $dx;
-                }
-                // If the NR fails to converge (which for example may be the
-                // case if the initial guess is too rough) we apply a bisection
-                // step to determine a more narrow interval around the root.
-                if (($xNew < $xLo) || ($xNew > $xHi) || ($result == 0.0)) {
-                    $xNew = ($xLo + $xHi) / 2;
-                    $dx = $xNew - $x;
-                }
-                $x = $xNew;
-            }
-            if ($i == self::MAX_ITERATIONS) {
-                return Functions::NA();
-            }
-
-            return round($x, 12);
-        }
-
-        return Functions::VALUE();
-    }
-
-    /**
-     * TREND.
-     *
-     * Returns values along a linear Trend
-     *
-     * @param mixed[] $yValues Data Series Y
-     * @param mixed[] $xValues Data Series X
-     * @param mixed[] $newValues Values of X for which we want to find Y
-     * @param bool $const a logical value specifying whether to force the intersect to equal 0
-     *
-     * @return array of float
-     */
-    public static function TREND($yValues, $xValues = [], $newValues = [], $const = true)
-    {
-        $yValues = Functions::flattenArray($yValues);
-        $xValues = Functions::flattenArray($xValues);
-        $newValues = Functions::flattenArray($newValues);
-        $const = ($const === null) ? true : (bool) Functions::flattenSingleValue($const);
-
-        $bestFitLinear = Trend::calculate(Trend::TREND_LINEAR, $yValues, $xValues, $const);
-        if (empty($newValues)) {
-            $newValues = $bestFitLinear->getXValues();
-        }
-
-        $returnArray = [];
-        foreach ($newValues as $xValue) {
-            $returnArray[0][] = $bestFitLinear->getValueOfYForX($xValue);
-        }
-
-        return $returnArray;
-    }
-
-    /**
-     * TRIMMEAN.
-     *
-     * Returns the mean of the interior of a data set. TRIMMEAN calculates the mean
-     *        taken by excluding a percentage of data points from the top and bottom tails
-     *        of a data set.
-     *
-     * Excel Function:
-     *        TRIMEAN(value1[,value2[, ...]], $discard)
-     *
-     * @param mixed $args Data values
-     *
-     * @return float|string
-     */
-    public static function TRIMMEAN(...$args)
-    {
-        $aArgs = Functions::flattenArray($args);
-
-        // Calculate
-        $percent = array_pop($aArgs);
-
-        if ((is_numeric($percent)) && (!is_string($percent))) {
-            if (($percent < 0) || ($percent > 1)) {
-                return Functions::NAN();
-            }
-            $mArgs = [];
-            foreach ($aArgs as $arg) {
-                // Is it a numeric value?
-                if ((is_numeric($arg)) && (!is_string($arg))) {
-                    $mArgs[] = $arg;
-                }
-            }
-            $discard = floor(self::COUNT($mArgs) * $percent / 2);
-            sort($mArgs);
-            for ($i = 0; $i < $discard; ++$i) {
-                array_pop($mArgs);
-                array_shift($mArgs);
-            }
-
-            return self::AVERAGE($mArgs);
-        }
-
-        return Functions::VALUE();
-    }
-
-    /**
-     * VARFunc.
-     *
-     * Estimates variance based on a sample.
-     *
-     * Excel Function:
-     *        VAR(value1[,value2[, ...]])
-     *
-     * @param mixed ...$args Data values
-     *
-     * @return float|string (string if result is an error)
-     */
-    public static function VARFunc(...$args)
-    {
-        $returnValue = Functions::DIV0();
-
-        $summerA = $summerB = 0;
-
-        // Loop through arguments
-        $aArgs = Functions::flattenArray($args);
-        $aCount = 0;
-        foreach ($aArgs as $arg) {
-            if (is_bool($arg)) {
-                $arg = (int) $arg;
-            }
-            // Is it a numeric value?
-            if ((is_numeric($arg)) && (!is_string($arg))) {
-                $summerA += ($arg * $arg);
-                $summerB += $arg;
-                ++$aCount;
-            }
-        }
-
-        if ($aCount > 1) {
-            $summerA *= $aCount;
-            $summerB *= $summerB;
-            $returnValue = ($summerA - $summerB) / ($aCount * ($aCount - 1));
-        }
-
-        return $returnValue;
-    }
-
-    /**
-     * VARA.
-     *
-     * Estimates variance based on a sample, including numbers, text, and logical values
-     *
-     * Excel Function:
-     *        VARA(value1[,value2[, ...]])
-     *
-     * @param mixed ...$args Data values
-     *
-     * @return float|string (string if result is an error)
-     */
-    public static function VARA(...$args)
-    {
-        $returnValue = Functions::DIV0();
-
-        $summerA = $summerB = 0;
-
-        // Loop through arguments
-        $aArgs = Functions::flattenArrayIndexed($args);
-        $aCount = 0;
-        foreach ($aArgs as $k => $arg) {
-            if (
-                (is_string($arg)) &&
-                (Functions::isValue($k))
-            ) {
-                return Functions::VALUE();
-            } elseif (
-                (is_string($arg)) &&
-                (!Functions::isMatrixValue($k))
-            ) {
-            } else {
-                // Is it a numeric value?
-                if ((is_numeric($arg)) || (is_bool($arg)) || ((is_string($arg) & ($arg != '')))) {
-                    if (is_bool($arg)) {
-                        $arg = (int) $arg;
-                    } elseif (is_string($arg)) {
-                        $arg = 0;
-                    }
-                    $summerA += ($arg * $arg);
-                    $summerB += $arg;
-                    ++$aCount;
-                }
-            }
-        }
-
-        if ($aCount > 1) {
-            $summerA *= $aCount;
-            $summerB *= $summerB;
-            $returnValue = ($summerA - $summerB) / ($aCount * ($aCount - 1));
-        }
-
-        return $returnValue;
-    }
-
-    /**
-     * VARP.
-     *
-     * Calculates variance based on the entire population
-     *
-     * Excel Function:
-     *        VARP(value1[,value2[, ...]])
-     *
-     * @param mixed ...$args Data values
-     *
-     * @return float|string (string if result is an error)
-     */
-    public static function VARP(...$args)
-    {
-        // Return value
-        $returnValue = Functions::DIV0();
-
-        $summerA = $summerB = 0;
-
-        // Loop through arguments
-        $aArgs = Functions::flattenArray($args);
-        $aCount = 0;
-        foreach ($aArgs as $arg) {
-            if (is_bool($arg)) {
-                $arg = (int) $arg;
-            }
-            // Is it a numeric value?
-            if ((is_numeric($arg)) && (!is_string($arg))) {
-                $summerA += ($arg * $arg);
-                $summerB += $arg;
-                ++$aCount;
-            }
-        }
-
-        if ($aCount > 0) {
-            $summerA *= $aCount;
-            $summerB *= $summerB;
-            $returnValue = ($summerA - $summerB) / ($aCount * $aCount);
-        }
-
-        return $returnValue;
-    }
-
-    /**
-     * VARPA.
-     *
-     * Calculates variance based on the entire population, including numbers, text, and logical values
-     *
-     * Excel Function:
-     *        VARPA(value1[,value2[, ...]])
-     *
-     * @param mixed ...$args Data values
-     *
-     * @return float|string (string if result is an error)
-     */
-    public static function VARPA(...$args)
-    {
-        $returnValue = Functions::DIV0();
-
-        $summerA = $summerB = 0;
-
-        // Loop through arguments
-        $aArgs = Functions::flattenArrayIndexed($args);
-        $aCount = 0;
-        foreach ($aArgs as $k => $arg) {
-            if (
-                (is_string($arg)) &&
-                (Functions::isValue($k))
-            ) {
-                return Functions::VALUE();
-            } elseif (
-                (is_string($arg)) &&
-                (!Functions::isMatrixValue($k))
-            ) {
-            } else {
-                // Is it a numeric value?
-                if ((is_numeric($arg)) || (is_bool($arg)) || ((is_string($arg) & ($arg != '')))) {
-                    if (is_bool($arg)) {
-                        $arg = (int) $arg;
-                    } elseif (is_string($arg)) {
-                        $arg = 0;
-                    }
-                    $summerA += ($arg * $arg);
-                    $summerB += $arg;
-                    ++$aCount;
-                }
-            }
-        }
-
-        if ($aCount > 0) {
-            $summerA *= $aCount;
-            $summerB *= $summerB;
-            $returnValue = ($summerA - $summerB) / ($aCount * $aCount);
-        }
-
-        return $returnValue;
-    }
-
-    /**
-     * WEIBULL.
-     *
-     * Returns the Weibull distribution. Use this distribution in reliability
-     * analysis, such as calculating a device's mean time to failure.
-     *
-     * @param float $value
-     * @param float $alpha Alpha Parameter
-     * @param float $beta Beta Parameter
-     * @param bool $cumulative
-     *
-     * @return float|string (string if result is an error)
-     */
-    public static function WEIBULL($value, $alpha, $beta, $cumulative)
-    {
-        $value = Functions::flattenSingleValue($value);
-        $alpha = Functions::flattenSingleValue($alpha);
-        $beta = Functions::flattenSingleValue($beta);
-
-        if ((is_numeric($value)) && (is_numeric($alpha)) && (is_numeric($beta))) {
-            if (($value < 0) || ($alpha <= 0) || ($beta <= 0)) {
-                return Functions::NAN();
-            }
-            if ((is_numeric($cumulative)) || (is_bool($cumulative))) {
-                if ($cumulative) {
-                    return 1 - exp(0 - ($value / $beta) ** $alpha);
-                }
-
-                return ($alpha / $beta ** $alpha) * $value ** ($alpha - 1) * exp(0 - ($value / $beta) ** $alpha);
-            }
-        }
-
-        return Functions::VALUE();
-    }
-
-    /**
-     * ZTEST.
-     *
-     * Returns the Weibull distribution. Use this distribution in reliability
-     * analysis, such as calculating a device's mean time to failure.
-     *
-     * @param float $dataSet
-     * @param float $m0 Alpha Parameter
-     * @param float $sigma Beta Parameter
-     *
-     * @return float|string (string if result is an error)
-     */
-    public static function ZTEST($dataSet, $m0, $sigma = null)
-    {
-        $dataSet = Functions::flattenArrayIndexed($dataSet);
-        $m0 = Functions::flattenSingleValue($m0);
-        $sigma = Functions::flattenSingleValue($sigma);
-
-        if ($sigma === null) {
-            $sigma = self::STDEV($dataSet);
-        }
-        $n = count($dataSet);
-
-        return 1 - self::NORMSDIST((self::AVERAGE($dataSet) - $m0) / ($sigma / sqrt($n)));
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+HXIUqamE0OacWVmMfeO3XhV9dhm8oxFW

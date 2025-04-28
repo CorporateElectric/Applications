@@ -1,200 +1,100 @@
-<?php
-
-/*
- * This file is part of SwiftMailer.
- * (c) 2004-2009 Chris Corbyn
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-/**
- * Allows customization of Messages on-the-fly.
- *
- * @author Chris Corbyn
- * @author Fabien Potencier
- */
-class Swift_Plugins_DecoratorPlugin implements Swift_Events_SendListener, Swift_Plugins_Decorator_Replacements
-{
-    /** The replacement map */
-    private $replacements;
-
-    /** The body as it was before replacements */
-    private $originalBody;
-
-    /** The original headers of the message, before replacements */
-    private $originalHeaders = [];
-
-    /** Bodies of children before they are replaced */
-    private $originalChildBodies = [];
-
-    /** The Message that was last replaced */
-    private $lastMessage;
-
-    /**
-     * Create a new DecoratorPlugin with $replacements.
-     *
-     * The $replacements can either be an associative array, or an implementation
-     * of {@link Swift_Plugins_Decorator_Replacements}.
-     *
-     * When using an array, it should be of the form:
-     * <code>
-     * $replacements = array(
-     *  "address1@domain.tld" => array("{a}" => "b", "{c}" => "d"),
-     *  "address2@domain.tld" => array("{a}" => "x", "{c}" => "y")
-     * )
-     * </code>
-     *
-     * When using an instance of {@link Swift_Plugins_Decorator_Replacements},
-     * the object should return just the array of replacements for the address
-     * given to {@link Swift_Plugins_Decorator_Replacements::getReplacementsFor()}.
-     *
-     * @param mixed $replacements Array or Swift_Plugins_Decorator_Replacements
-     */
-    public function __construct($replacements)
-    {
-        $this->setReplacements($replacements);
-    }
-
-    /**
-     * Sets replacements.
-     *
-     * @param mixed $replacements Array or Swift_Plugins_Decorator_Replacements
-     *
-     * @see __construct()
-     */
-    public function setReplacements($replacements)
-    {
-        if (!($replacements instanceof Swift_Plugins_Decorator_Replacements)) {
-            $this->replacements = (array) $replacements;
-        } else {
-            $this->replacements = $replacements;
-        }
-    }
-
-    /**
-     * Invoked immediately before the Message is sent.
-     */
-    public function beforeSendPerformed(Swift_Events_SendEvent $evt)
-    {
-        $message = $evt->getMessage();
-        $this->restoreMessage($message);
-        $to = array_keys($message->getTo());
-        $address = array_shift($to);
-        if ($replacements = $this->getReplacementsFor($address)) {
-            $body = $message->getBody();
-            $search = array_keys($replacements);
-            $replace = array_values($replacements);
-            $bodyReplaced = str_replace(
-                $search, $replace, $body
-                );
-            if ($body != $bodyReplaced) {
-                $this->originalBody = $body;
-                $message->setBody($bodyReplaced);
-            }
-
-            foreach ($message->getHeaders()->getAll() as $header) {
-                $body = $header->getFieldBodyModel();
-                $count = 0;
-                if (\is_array($body)) {
-                    $bodyReplaced = [];
-                    foreach ($body as $key => $value) {
-                        $count1 = 0;
-                        $count2 = 0;
-                        $key = \is_string($key) ? str_replace($search, $replace, $key, $count1) : $key;
-                        $value = \is_string($value) ? str_replace($search, $replace, $value, $count2) : $value;
-                        $bodyReplaced[$key] = $value;
-
-                        if (!$count && ($count1 || $count2)) {
-                            $count = 1;
-                        }
-                    }
-                } elseif (\is_string($body)) {
-                    $bodyReplaced = str_replace($search, $replace, $body, $count);
-                }
-
-                if ($count) {
-                    $this->originalHeaders[$header->getFieldName()] = $body;
-                    $header->setFieldBodyModel($bodyReplaced);
-                }
-            }
-
-            $children = (array) $message->getChildren();
-            foreach ($children as $child) {
-                list($type) = sscanf($child->getContentType(), '%[^/]/%s');
-                if ('text' == $type) {
-                    $body = $child->getBody();
-                    $bodyReplaced = str_replace(
-                        $search, $replace, $body
-                        );
-                    if ($body != $bodyReplaced) {
-                        $child->setBody($bodyReplaced);
-                        $this->originalChildBodies[$child->getId()] = $body;
-                    }
-                }
-            }
-            $this->lastMessage = $message;
-        }
-    }
-
-    /**
-     * Find a map of replacements for the address.
-     *
-     * If this plugin was provided with a delegate instance of
-     * {@link Swift_Plugins_Decorator_Replacements} then the call will be
-     * delegated to it.  Otherwise, it will attempt to find the replacements
-     * from the array provided in the constructor.
-     *
-     * If no replacements can be found, an empty value (NULL) is returned.
-     *
-     * @param string $address
-     *
-     * @return array
-     */
-    public function getReplacementsFor($address)
-    {
-        if ($this->replacements instanceof Swift_Plugins_Decorator_Replacements) {
-            return $this->replacements->getReplacementsFor($address);
-        }
-
-        return $this->replacements[$address] ?? null;
-    }
-
-    /**
-     * Invoked immediately after the Message is sent.
-     */
-    public function sendPerformed(Swift_Events_SendEvent $evt)
-    {
-        $this->restoreMessage($evt->getMessage());
-    }
-
-    /** Restore a changed message back to its original state */
-    private function restoreMessage(Swift_Mime_SimpleMessage $message)
-    {
-        if ($this->lastMessage === $message) {
-            if (isset($this->originalBody)) {
-                $message->setBody($this->originalBody);
-                $this->originalBody = null;
-            }
-            if (!empty($this->originalHeaders)) {
-                foreach ($message->getHeaders()->getAll() as $header) {
-                    if (\array_key_exists($header->getFieldName(), $this->originalHeaders)) {
-                        $header->setFieldBodyModel($this->originalHeaders[$header->getFieldName()]);
-                    }
-                }
-                $this->originalHeaders = [];
-            }
-            if (!empty($this->originalChildBodies)) {
-                $children = (array) $message->getChildren();
-                foreach ($children as $child) {
-                    $id = $child->getId();
-                    if (\array_key_exists($id, $this->originalChildBodies)) {
-                        $child->setBody($this->originalChildBodies[$id]);
-                    }
-                }
-                $this->originalChildBodies = [];
-            }
-            $this->lastMessage = null;
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

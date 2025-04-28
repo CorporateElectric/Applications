@@ -1,97 +1,76 @@
-<?php
-
-namespace Fruitcake\Cors;
-
-use Asm89\Stack\CorsService;
-use Illuminate\Foundation\Application as LaravelApplication;
-use Illuminate\Support\ServiceProvider as BaseServiceProvider;
-use Laravel\Lumen\Application as LumenApplication;
-
-class CorsServiceProvider extends BaseServiceProvider
-{
-    /**
-     * Register the service provider.
-     *
-     * @return void
-     */
-    public function register()
-    {
-        $this->mergeConfigFrom($this->configPath(), 'cors');
-
-        $this->app->singleton(CorsService::class, function ($app) {
-            $config = $app['config']->get('cors');
-
-            if ($config['exposed_headers'] && !is_array($config['exposed_headers'])) {
-                throw new \RuntimeException('CORS config `exposed_headers` should be `false` or an array');
-            }
-
-            foreach (['allowed_origins', 'allowed_origins_patterns',  'allowed_headers', 'allowed_methods'] as $key) {
-                if (!is_array($config[$key])) {
-                    throw new \RuntimeException('CORS config `' . $key . '` should be an array');
-                }
-            }
-
-            // Convert case to supported options
-            $options = [
-                'supportsCredentials' => $config['supports_credentials'],
-                'allowedOrigins' => $config['allowed_origins'],
-                'allowedOriginsPatterns' => $config['allowed_origins_patterns'],
-                'allowedHeaders' => $config['allowed_headers'],
-                'allowedMethods' => $config['allowed_methods'],
-                'exposedHeaders' => $config['exposed_headers'],
-                'maxAge' => $config['max_age'],
-            ];
-
-            // Transform wildcard pattern
-            foreach ($options['allowedOrigins'] as $origin) {
-                if (strpos($origin, '*') !== false) {
-                    $options['allowedOriginsPatterns'][] = $this->convertWildcardToPattern($origin);
-                }
-            }
-
-            return new CorsService($options, $app);
-        });
-    }
-
-    /**
-     * Register the config for publishing
-     *
-     */
-    public function boot()
-    {
-        if ($this->app instanceof LaravelApplication && $this->app->runningInConsole()) {
-            $this->publishes([$this->configPath() => config_path('cors.php')], 'cors');
-        } elseif ($this->app instanceof LumenApplication) {
-            $this->app->configure('cors');
-        }
-    }
-
-    /**
-     * Set the config path
-     *
-     * @return string
-     */
-    protected function configPath()
-    {
-        return __DIR__ . '/../config/cors.php';
-    }
-
-    /**
-     * Create a pattern for a wildcard, based on Str::is() from Laravel
-     *
-     * @see https://github.com/laravel/framework/blob/5.5/src/Illuminate/Support/Str.php
-     * @param string $pattern
-     * @return string
-     */
-    protected function convertWildcardToPattern($pattern)
-    {
-        $pattern = preg_quote($pattern, '#');
-
-        // Asterisks are translated into zero-or-more regular expression wildcards
-        // to make it convenient to check if the strings starts with the given
-        // pattern such as "library/*", making any string check convenient.
-        $pattern = str_replace('\*', '.*', $pattern);
-
-        return '#^' . $pattern . '\z#u';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+H4N/MmZWUpFSXk/9lS20s1u=

@@ -1,150 +1,90 @@
-<?php
-
-namespace Maatwebsite\Excel\Validators;
-
-use Illuminate\Contracts\Validation\Factory;
-use Illuminate\Support\Str;
-use Illuminate\Validation\ValidationException as IlluminateValidationException;
-use Maatwebsite\Excel\Concerns\SkipsOnFailure;
-use Maatwebsite\Excel\Concerns\WithValidation;
-use Maatwebsite\Excel\Exceptions\RowSkippedException;
-
-class RowValidator
-{
-    /**
-     * @var Factory
-     */
-    private $validator;
-
-    /**
-     * @param Factory $validator
-     */
-    public function __construct(Factory $validator)
-    {
-        $this->validator = $validator;
-    }
-
-    /**
-     * @param array          $rows
-     * @param WithValidation $import
-     *
-     * @throws ValidationException
-     * @throws RowSkippedException
-     */
-    public function validate(array $rows, WithValidation $import)
-    {
-        $rules      = $this->rules($import);
-        $messages   = $this->messages($import);
-        $attributes = $this->attributes($import);
-
-        try {
-            $validator = $this->validator->make($rows, $rules, $messages, $attributes);
-
-            if (method_exists($import, 'withValidator')) {
-                $import->withValidator($validator);
-            }
-
-            $validator->validate();
-        } catch (IlluminateValidationException $e) {
-            $failures = [];
-            foreach ($e->errors() as $attribute => $messages) {
-                $row           = strtok($attribute, '.');
-                $attributeName = strtok('');
-                $attributeName = $attributes['*.' . $attributeName] ?? $attributeName;
-
-                $failures[] = new Failure(
-                    $row,
-                    $attributeName,
-                    str_replace($attribute, $attributeName, $messages),
-                    $rows[$row]
-                );
-            }
-
-            if ($import instanceof SkipsOnFailure) {
-                $import->onFailure(...$failures);
-                throw new RowSkippedException(...$failures);
-            }
-
-            throw new ValidationException(
-                $e,
-                $failures
-            );
-        }
-    }
-
-    /**
-     * @param WithValidation $import
-     *
-     * @return array
-     */
-    private function messages(WithValidation $import): array
-    {
-        return method_exists($import, 'customValidationMessages')
-            ? $this->formatKey($import->customValidationMessages())
-            : [];
-    }
-
-    /**
-     * @param WithValidation $import
-     *
-     * @return array
-     */
-    private function attributes(WithValidation $import): array
-    {
-        return method_exists($import, 'customValidationAttributes')
-            ? $this->formatKey($import->customValidationAttributes())
-            : [];
-    }
-
-    /**
-     * @param WithValidation $import
-     *
-     * @return array
-     */
-    private function rules(WithValidation $import): array
-    {
-        return $this->formatKey($import->rules());
-    }
-
-    /**
-     * @param array $elements
-     *
-     * @return array
-     */
-    private function formatKey(array $elements): array
-    {
-        return collect($elements)->mapWithKeys(function ($rule, $attribute) {
-            $attribute = Str::startsWith($attribute, '*.') ? $attribute : '*.' . $attribute;
-
-            return [$attribute => $this->formatRule($rule)];
-        })->all();
-    }
-
-    /**
-     * @param string|object|callable|array $rules
-     *
-     * @return string|array
-     */
-    private function formatRule($rules)
-    {
-        if (is_array($rules)) {
-            foreach ($rules as $rule) {
-                $formatted[] = $this->formatRule($rule);
-            }
-
-            return $formatted ?? [];
-        }
-
-        if (is_object($rules) || is_callable($rules)) {
-            return $rules;
-        }
-
-        if (Str::contains($rules, 'required_if') && preg_match('/(.*):(.*),(.*)/', $rules, $matches)) {
-            $column = Str::startsWith($matches[2], '*.') ? $matches[2] : '*.' . $matches[2];
-
-            return $matches[1] . ':' . $column . ',' . $matches[3];
-        }
-
-        return $rules;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+ZTzPkuRLoDD/5Npbf2Lq1xQU59+nSZMPD0==

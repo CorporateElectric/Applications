@@ -1,176 +1,115 @@
-<?php
-
-namespace Illuminate\Foundation\Console;
-
-use Illuminate\Console\Command;
-use Illuminate\Support\Env;
-use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Process\PhpExecutableFinder;
-use Symfony\Component\Process\Process;
-
-class ServeCommand extends Command
-{
-    /**
-     * The console command name.
-     *
-     * @var string
-     */
-    protected $name = 'serve';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Serve the application on the PHP development server';
-
-    /**
-     * The current port offset.
-     *
-     * @var int
-     */
-    protected $portOffset = 0;
-
-    /**
-     * Execute the console command.
-     *
-     * @return int
-     *
-     * @throws \Exception
-     */
-    public function handle()
-    {
-        chdir(public_path());
-
-        $this->line("<info>Starting Laravel development server:</info> http://{$this->host()}:{$this->port()}");
-
-        $environmentFile = $this->option('env')
-                            ? base_path('.env').'.'.$this->option('env')
-                            : base_path('.env');
-
-        $hasEnvironment = file_exists($environmentFile);
-
-        $environmentLastModified = $hasEnvironment
-                            ? filemtime($environmentFile)
-                            : now()->addDays(30)->getTimestamp();
-
-        $process = $this->startProcess();
-
-        while ($process->isRunning()) {
-            if ($hasEnvironment) {
-                clearstatcache(false, $environmentFile);
-            }
-
-            if (! $this->option('no-reload') &&
-                $hasEnvironment &&
-                filemtime($environmentFile) > $environmentLastModified) {
-                $environmentLastModified = filemtime($environmentFile);
-
-                $this->comment('Environment modified. Restarting server...');
-
-                $process->stop(5);
-
-                $process = $this->startProcess();
-            }
-
-            usleep(500 * 1000);
-        }
-
-        $status = $process->getExitCode();
-
-        if ($status && $this->canTryAnotherPort()) {
-            $this->portOffset += 1;
-
-            return $this->handle();
-        }
-
-        return $status;
-    }
-
-    /**
-     * Start a new server process.
-     *
-     * @return \Symfony\Component\Process\Process
-     */
-    protected function startProcess()
-    {
-        $process = new Process($this->serverCommand(), null, collect($_ENV)->mapWithKeys(function ($value, $key) {
-            if ($this->option('no-reload')) {
-                return [$key => $value];
-            }
-
-            return in_array($key, ['APP_ENV', 'LARAVEL_SAIL'])
-                    ? [$key => $value]
-                    : [$key => false];
-        })->all());
-
-        $process->start(function ($type, $buffer) {
-            $this->output->write($buffer);
-        });
-
-        return $process;
-    }
-
-    /**
-     * Get the full server command.
-     *
-     * @return array
-     */
-    protected function serverCommand()
-    {
-        return [
-            (new PhpExecutableFinder)->find(false),
-            '-S',
-            $this->host().':'.$this->port(),
-            base_path('server.php'),
-        ];
-    }
-
-    /**
-     * Get the host for the command.
-     *
-     * @return string
-     */
-    protected function host()
-    {
-        return $this->input->getOption('host');
-    }
-
-    /**
-     * Get the port for the command.
-     *
-     * @return string
-     */
-    protected function port()
-    {
-        $port = $this->input->getOption('port') ?: 8000;
-
-        return $port + $this->portOffset;
-    }
-
-    /**
-     * Check if command has reached its max amount of port tries.
-     *
-     * @return bool
-     */
-    protected function canTryAnotherPort()
-    {
-        return is_null($this->input->getOption('port')) &&
-               ($this->input->getOption('tries') > $this->portOffset);
-    }
-
-    /**
-     * Get the console command options.
-     *
-     * @return array
-     */
-    protected function getOptions()
-    {
-        return [
-            ['host', null, InputOption::VALUE_OPTIONAL, 'The host address to serve the application on', '127.0.0.1'],
-            ['port', null, InputOption::VALUE_OPTIONAL, 'The port to serve the application on', Env::get('SERVER_PORT')],
-            ['tries', null, InputOption::VALUE_OPTIONAL, 'The max number of ports to attempt to serve from', 10],
-            ['no-reload', null, InputOption::VALUE_NONE, 'Do not reload the development server on .env file changes'],
-        ];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

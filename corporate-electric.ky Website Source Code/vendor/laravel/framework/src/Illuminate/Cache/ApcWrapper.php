@@ -1,92 +1,43 @@
-<?php
-
-namespace Illuminate\Cache;
-
-class ApcWrapper
-{
-    /**
-     * Indicates if APCu is supported.
-     *
-     * @var bool
-     */
-    protected $apcu = false;
-
-    /**
-     * Create a new APC wrapper instance.
-     *
-     * @return void
-     */
-    public function __construct()
-    {
-        $this->apcu = function_exists('apcu_fetch');
-    }
-
-    /**
-     * Get an item from the cache.
-     *
-     * @param  string  $key
-     * @return mixed
-     */
-    public function get($key)
-    {
-        return $this->apcu ? apcu_fetch($key) : apc_fetch($key);
-    }
-
-    /**
-     * Store an item in the cache.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @param  int  $seconds
-     * @return array|bool
-     */
-    public function put($key, $value, $seconds)
-    {
-        return $this->apcu ? apcu_store($key, $value, $seconds) : apc_store($key, $value, $seconds);
-    }
-
-    /**
-     * Increment the value of an item in the cache.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @return int|bool
-     */
-    public function increment($key, $value)
-    {
-        return $this->apcu ? apcu_inc($key, $value) : apc_inc($key, $value);
-    }
-
-    /**
-     * Decrement the value of an item in the cache.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @return int|bool
-     */
-    public function decrement($key, $value)
-    {
-        return $this->apcu ? apcu_dec($key, $value) : apc_dec($key, $value);
-    }
-
-    /**
-     * Remove an item from the cache.
-     *
-     * @param  string  $key
-     * @return bool
-     */
-    public function delete($key)
-    {
-        return $this->apcu ? apcu_delete($key) : apc_delete($key);
-    }
-
-    /**
-     * Remove all items from the cache.
-     *
-     * @return bool
-     */
-    public function flush()
-    {
-        return $this->apcu ? apcu_clear_cache() : apc_clear_cache('user');
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+ueNN+vgZ6+39KW==

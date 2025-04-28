@@ -1,75 +1,67 @@
-<?php
-
-namespace Facade\Ignition\SolutionProviders;
-
-use Facade\IgnitionContracts\BaseSolution;
-use Facade\IgnitionContracts\HasSolutionsForThrowable;
-use Illuminate\Support\Str;
-use ParseError;
-use Throwable;
-
-class MergeConflictSolutionProvider implements HasSolutionsForThrowable
-{
-    public function canSolve(Throwable $throwable): bool
-    {
-        if (! ($throwable instanceof ParseError)) {
-            return false;
-        }
-
-        if (! $this->hasMergeConflictExceptionMessage($throwable)) {
-            return false;
-        }
-
-        $file = file_get_contents($throwable->getFile());
-
-        if (strpos($file, '=======') === false) {
-            return false;
-        }
-
-        if (strpos($file, '>>>>>>>') === false) {
-            return false;
-        }
-
-        return true;
-    }
-
-    public function getSolutions(Throwable $throwable): array
-    {
-        $file = file_get_contents($throwable->getFile());
-        preg_match('/\>\>\>\>\>\>\> (.*?)\n/', $file, $matches);
-        $source = $matches[1];
-
-        $target = $this->getCurrentBranch(basename($throwable->getFile()));
-
-        return [
-            BaseSolution::create("Merge conflict from branch '$source' into $target")
-                ->setSolutionDescription('You have a Git merge conflict. To undo your merge do `git reset --hard HEAD`'),
-        ];
-    }
-
-    protected function getCurrentBranch(string $directory): string
-    {
-        $branch = "'".trim(shell_exec("cd ${directory}; git branch | grep \\* | cut -d ' ' -f2"))."'";
-
-        if (! isset($branch) || $branch === "''") {
-            $branch = 'current branch';
-        }
-
-        return $branch;
-    }
-
-    protected function hasMergeConflictExceptionMessage(Throwable $throwable): bool
-    {
-        // For PHP 7.x and below
-        if (Str::startsWith($throwable->getMessage(), 'syntax error, unexpected \'<<\'')) {
-            return true;
-        }
-
-        // For PHP 8+
-        if (Str::startsWith($throwable->getMessage(), 'syntax error, unexpected token "<<"')) {
-            return true;
-        }
-
-        return false;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+WVTWlYyAP0ILEUA3fuSMngEAeW1q

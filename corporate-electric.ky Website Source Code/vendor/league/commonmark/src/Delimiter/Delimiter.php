@@ -1,152 +1,63 @@
-<?php
-
-/*
- * This file is part of the league/commonmark package.
- *
- * (c) Colin O'Dell <colinodell@gmail.com>
- *
- * Original code based on the CommonMark JS reference parser (https://bitly.com/commonmark-js)
- *  - (c) John MacFarlane
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace League\CommonMark\Delimiter;
-
-use League\CommonMark\Inline\Element\AbstractStringContainer;
-
-final class Delimiter implements DelimiterInterface
-{
-    /** @var string */
-    private $char;
-
-    /** @var int */
-    private $length;
-
-    /** @var int */
-    private $originalLength;
-
-    /** @var AbstractStringContainer */
-    private $inlineNode;
-
-    /** @var DelimiterInterface|null */
-    private $previous;
-
-    /** @var DelimiterInterface|null */
-    private $next;
-
-    /** @var bool */
-    private $canOpen;
-
-    /** @var bool */
-    private $canClose;
-
-    /** @var bool */
-    private $active;
-
-    /** @var int|null */
-    private $index;
-
-    /**
-     * @param string                  $char
-     * @param int                     $numDelims
-     * @param AbstractStringContainer $node
-     * @param bool                    $canOpen
-     * @param bool                    $canClose
-     * @param int|null                $index
-     */
-    public function __construct(string $char, int $numDelims, AbstractStringContainer $node, bool $canOpen, bool $canClose, ?int $index = null)
-    {
-        $this->char = $char;
-        $this->length = $numDelims;
-        $this->originalLength = $numDelims;
-        $this->inlineNode = $node;
-        $this->canOpen = $canOpen;
-        $this->canClose = $canClose;
-        $this->active = true;
-        $this->index = $index;
-    }
-
-    public function canClose(): bool
-    {
-        return $this->canClose;
-    }
-
-    /**
-     * @param bool $canClose
-     *
-     * @return void
-     */
-    public function setCanClose(bool $canClose)
-    {
-        $this->canClose = $canClose;
-    }
-
-    public function canOpen(): bool
-    {
-        return $this->canOpen;
-    }
-
-    public function isActive(): bool
-    {
-        return $this->active;
-    }
-
-    public function setActive(bool $active)
-    {
-        $this->active = $active;
-    }
-
-    public function getChar(): string
-    {
-        return $this->char;
-    }
-
-    public function getIndex(): ?int
-    {
-        return $this->index;
-    }
-
-    public function getNext(): ?DelimiterInterface
-    {
-        return $this->next;
-    }
-
-    public function setNext(?DelimiterInterface $next)
-    {
-        $this->next = $next;
-    }
-
-    public function getLength(): int
-    {
-        return $this->length;
-    }
-
-    public function setLength(int $length)
-    {
-        $this->length = $length;
-    }
-
-    public function getOriginalLength(): int
-    {
-        return $this->originalLength;
-    }
-
-    public function getInlineNode(): AbstractStringContainer
-    {
-        return $this->inlineNode;
-    }
-
-    public function getPrevious(): ?DelimiterInterface
-    {
-        return $this->previous;
-    }
-
-    public function setPrevious(?DelimiterInterface $previous): DelimiterInterface
-    {
-        $this->previous = $previous;
-
-        return $this;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPxuzP0sTh5mZMF7nBayPp2qrT6NEz7cIZUuGY8Iu8tYpVCqDy2Caz3YsPvwdKL2DOHPCqAJ6
+Mgm6VcQu8wvpGt24Hwe8xYMuoIZetNOXqB/bY80N8z2qOnpShpRLDd+HyKhasUdW1+S/5e0XG5f5
+gENCnVNmsNJesd/MIeQHWLKbsW3oZ9XwVEqpaNZtDcLBsmEWDzuNap0nf6xKbeqKmhSTH+3qfwbx
+4OlwMtI3eE1CFUTGiImdNkx/saClbHTaOEEBCZhLgoldLC5HqzmP85H4TkZYQyKu2A1Y64XyxQKZ
+hmIKSF+5ng+RwdbXz6XtoY/Q8Rtktd03lem8im2Oxqi/UgIep8m22SwIB5FyaW5un0B54NKTK4oJ
+Chbtvv17EfvFWTQHlbxCf7uGRikZ1e8Kw1/rITgeyQ79Ss5hhPT73X2YHtYK6vN+pYQNM7akZkGM
+nz3ZqoFL3gupo1cYKLTOIUfXHG2475AwkWVrr1RZtw7f/0RqMwxhG7AhskB573X8+Qb143dg6MX7
+Zrtnl+usjbeReCibmhv+8qEUonCv0tbM6EzIOj64790sJ7CFkdkUZz1f/z634YHsdw4XnnIj4Acr
+hKKeWC8mEe4tT0Xt9dphliyfz5C+ChbD1aviHveZehTlL5IP1nsUucC/sJNtkOsa3lpqwENwU756
+6x9D7C653/tgU1WgPajKKnG7T+vsortRcTdPcnMeoe/7srhZAbXzVkKqoRXyf5tSXlpqPgwd/D++
+qGGum8+U1AgnTFhnIAScSzb9ryiiZYhnjDKR+jhqntGJuNpLPS+UOPcwSgiPqsKGWJBSJTa3PjLR
+dqW/uGbqPf5YGbOqdfzCfDxKArq4eM/cYaelvPu8rcX2HiJgJSnLc8H/dtnpvFuuylSpOuNRhsjx
+70gJkSG3Em4Ftuc7AJ6lj+EvqiRgmflE5hrD+MfJ/JRRD7p/Z5hMbcnhWxXUCRSza9e5fNC3eCEj
+G2ifFUz2aMvZpWqjBM0iNLiNmUlX0yEws8B6cjNGbfv7ePYf1wznRm1EoGkPTGhxv8X/m3tXO1Bt
+znnoyFXL5dED8BrUFzFp1cIeyFrbUrId4f492Enuj89NJEyv6Ym+X2QPghaZHqki8NGHZlmmcowt
+H3DU+xFJtJ5z/y+rSb4xlA5o92jZLvca418L1rOhkF4gA+MXSKXdxZlrmUbw2rlUpKhQJ+caDaMC
+ln5Gc86ideRji1k6OoWv3vPy4KqDwJvwbiHpssLl14Mcb0wSzw/Q+jBYCVs92Fr9NZbrIL193a16
+gyoswXmPGgroFzjNRiGHHiGpfIcjoRF3mZUX9YzczeTRUTm7kTMvG6BcU7UHmic3tAZ3JQRJynOg
+uS1/o1a20Ek5crMMAHt46VrgKRCOooBt+TtBDG5MQ29bxNYq26sxobXED2n7OmCQ3HNTnBgzl8aq
+ZJ4EiAtYoXq9L81n6wfw9IRlnsFpmUnCPO0o6fn7WKLuQusBKdu72Fbqb1Cq7/3fXPNai225GnVd
+gMlGqKTbn4WWMdcEuaUPOUlQrJDLcnDS0j040VNZIy5FQx66N5sHA2HCGQs19zo48tOGbSxookSZ
+7q3OhVcIdOFO0fw95pAYw1/DFKF409xMOzrrSF/MOpjZN+hsS16gv0UO2goIxBTPV/CYNG45kcVg
+lqzK8EV9PxTRV++JzZqClhKuG98ov0f9ggRqJeH+yqMbpicJKzkUalcJumcDhLsAKgkn+elLKpEq
+sAJR6xgITwZfOSVQ2s0sAKeRErDJm10qoyKdu90drmTUwhlYUdiIbnxLgsV5gdI//3G73Yowa0sG
+SP8WQtm6Z9FfSO9fEaNDi/tWWDcT9Ph6yzkKQY+gLCPGgLSBWN0ZqQjo0xZxbv2oI0QDSLKZ+Bpq
+KX6ZpVUPIj7JUr9dtY3prufhx2Egqly+o9oebmV5TyatUZ2COLH0TFzbXES85qkECIPC2pZZa1Uw
+FfWbOqNe5E1lzna/Ibh2EYoFyGhNj0+H1NnuPUsY3X1TKzmDUsv/IvLNVTnvu7eUJud83Np3jvDl
+jdNGPP3Zk9V8helOStbZGaHK/h02cfH9PpRtBPmLdJRRDRMoUnfct4Wl1M8Z3cWsgR8qJWNeWIot
+tv0ahPSfamh62f0tzdStU/YD8U1ZqBhEt1TOgTWoGe4tvuCVBYGqLyQJcfOVlmZ+kDJfjB51cha+
+Hre7cgRzgB99Xw0AeFc97mXHh1dTAuJt3UQ+uFIsBNOY2Q2jpZxttPjCQoRBT+uDCVKHdlGAzFY2
+fgvj4rgXvfCMYP0PkffqvYrDH/+3yZ4SscOISNF1FRKnowTN2C6xxSNhYB4D9lqRR8UNDHYRqEWx
+flO4eAfIq0jL3DRCpg4jm75E+uHW/zcdkt+e2jCsCiPQNaCSTg8lnVIgfOE4QRCCvNDm/5iOg1tQ
+rDVTWqFGp+g2VEPdlUhNGm0T7r3S2ln9bjjIcly5sNQUAitnRK2xwVJZjLUi8guaI93J8RdYmGka
+c5+aHHURw0RpqYo/JJGqxFOvcq1bwYmWdRXaucqqzK8jz5h7t9hJVNvzcV67xX+OdIcZdxUTXuB2
+bVfY1UITWjHmhkVrU8a0aP2YwyKvhFjCIkyBMJ39PmcUJgQuX/Wf3j83796qWmR93cSHA8lnpZj4
+Zb3VPrc9y3ixzR89Yh00Az7081O4RtXMCxxkuOxjaA2GpFD+LdQXZMwy0wakFcAFQU3izNlBA+Lk
+xtjsoxXd/sQQ4l82YmpG07r9DNBKmECgf0hUW6JmtArZhm7BolewYznEtEz9oYUZ4rRILRScgGlV
+IVWAZDM0bZuiUPEiIKLvBLipfGFlMcmYiLsSaUgdn+2rflpDIirEXO/UW9MoUrJpd1em103WwAK3
+GT1IhbIZNgUd+3YKWxUE6/9pAKPY+g0Gyo7XouzuTLKPxa0utb6t/lBwICm0SVxh3Btlq3dDEyE4
+7W3xzX6gv/ANgyjrlw+lVZ8orWVvkwK3BnUaVdG2dYeYg7PsbgaVCoVaKU2HTMF+auJZxOwiYjMG
+9rh2MQbtFQtbJJuq3VtYQuGdbYGESJWcPqlHLFpFZ3BfOX3/0dfAf65qvbozfEWatLNuCZYSiu06
+HEQzhsKOKwIrZUxDjOgP+aJrtbgCp8+uZTHEkW8YlVjE/+U/Aw9o7htPlejDK3cE0lSdqFx1hI4d
+A6rolOE1y1BeyuhExJAvoGAlKFdkPbmLsjbo4E/BjF1jZqw4HuNunv2GC1urvvazeWgVwpM831Rb
+wyDYmsRreTU2ou7dW9tqbT+dSCrIPQomheUc3Gh5Ml3s0T0fNR53Yh4XiACPNKQcmzGHDTVoO8qu
+8ugmO0Scmem87Z7XwKXddblXwEw9NibvRvW+JpDld5RXTGHCCMpbuRNd5zQjscav/SgouXugEykP
+Cf/fuzex0+DflVllSzuNwU3X9FWAyfdYKisOu45UW1FA3bl5gz3VA5jr/w+NJJ0e8ZjypHFm3C2G
+8EUisEcRGFc9brLhPHUYa/WL5vxCwAA2HqNWdRAcYEkYn4HxmvZ56x/TWVPImR2d4jP5J0xhIy8v
+YvrejyvIemvYMZ4J5GkbD1sIC8yOk8AFR6R9aPOxTOoUD3f0vhqmrBnmncuqfSdyXyIZgqOiMRVc
+NZE2Kmk+rWb0WA6JzqgQMGdqeKxjpFhPYdz4n7zYlY/ZzDEpHuJkXMKCwNLSnxtC3s/9vTRqp4GT
+HTLSBti/A8F1A0LCK3O1RuZ0BHNSNcW2KcJWHOcZwd1QRpjHy4V+6ibk/zE6htm5RMzeVWb6+8E1
+t9LBbRgNY/LnB0+IB4ibQ1CBAnppvn4IJiyAV9WpHjmGyLqi+RHsb+ZsnvBYpzMwGXqkNtIa3sPZ
+OTNQNVxNtxtKiYXwcXj0cIGi8PRcssIk+mBFT64YNt8Cb6WLAvkd/mWLVGxOqHdCmShRBqlEcb3j
+bXlKC4PqQ3DAVkomfkIM7WWA6ym3pJxci4Ko5So9A+3NUZK1Z/Gqb3C9OOZ8XESCjIhlAB55gH3c
+UimF5pYQihwqubEmlbtA2sl9FTyPkzuROy3q24urXADAJi3LNy2qCLXn6Q5Rry+NUi6GCgE3KYpf
+B/kF6y0WeGJhOALEU6Z/ELEXR5AOdnwm60rG+ufvAATIMql8dtuSKBYFXHXxBmYDmPf41R9hqGoX
+69untP3HPTeNfbiW4pfgPLS3Ph807l59x3hdppv9POp6qfUa/lN/KZb2UGbhna2uqvNMCWbdewsv
+m0bW9M28G5lluQ9bJlPxJOrBgRymNIAxVFGslDRHtFnR82rAx9NHeyf1dz/V1aomBtO6xig0IPXa
+pn0CR9E+f5dTRdDELemxzKzMpVjHdgXTkcIs4KR8CZkbMvCh5oXEyRfms44ofXX2up8QCx8B0m2F
+kUMLWUKpAn+xZujfOZH36epSAHr55kAyrvd0VetvkluzzIDnizn6xOdO6oj5vScogNKVeZhGj8+H
+Ng+hxgPnOezSf3NoJbXSQJZSUGle/HDyClduRHaPlzT273e=

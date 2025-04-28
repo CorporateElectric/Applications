@@ -1,45 +1,42 @@
-<?php
-
-namespace Illuminate\Redis\Connectors;
-
-use Illuminate\Contracts\Redis\Connector;
-use Illuminate\Redis\Connections\PredisClusterConnection;
-use Illuminate\Redis\Connections\PredisConnection;
-use Illuminate\Support\Arr;
-use Predis\Client;
-
-class PredisConnector implements Connector
-{
-    /**
-     * Create a new clustered Predis connection.
-     *
-     * @param  array  $config
-     * @param  array  $options
-     * @return \Illuminate\Redis\Connections\PredisConnection
-     */
-    public function connect(array $config, array $options)
-    {
-        $formattedOptions = array_merge(
-            ['timeout' => 10.0], $options, Arr::pull($config, 'options', [])
-        );
-
-        return new PredisConnection(new Client($config, $formattedOptions));
-    }
-
-    /**
-     * Create a new clustered Predis connection.
-     *
-     * @param  array  $config
-     * @param  array  $clusterOptions
-     * @param  array  $options
-     * @return \Illuminate\Redis\Connections\PredisClusterConnection
-     */
-    public function connectToCluster(array $config, array $clusterOptions, array $options)
-    {
-        $clusterSpecificOptions = Arr::pull($config, 'options', []);
-
-        return new PredisClusterConnection(new Client(array_values($config), array_merge(
-            $options, $clusterOptions, $clusterSpecificOptions
-        )));
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,59 +1,36 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of sebastian/comparator.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\Comparator;
-
-use function is_float;
-use function is_numeric;
-
-/**
- * Compares doubles for equality.
- */
-class DoubleComparator extends NumericComparator
-{
-    /**
-     * Smallest value available in PHP.
-     *
-     * @var float
-     */
-    public const EPSILON = 0.0000000001;
-
-    /**
-     * Returns whether the comparator can compare two values.
-     *
-     * @param mixed $expected The first value to compare
-     * @param mixed $actual   The second value to compare
-     *
-     * @return bool
-     */
-    public function accepts($expected, $actual)
-    {
-        return (is_float($expected) || is_float($actual)) && is_numeric($expected) && is_numeric($actual);
-    }
-
-    /**
-     * Asserts that two values are equal.
-     *
-     * @param mixed $expected     First value to compare
-     * @param mixed $actual       Second value to compare
-     * @param float $delta        Allowed numerical distance between two values to consider them equal
-     * @param bool  $canonicalize Arrays are sorted before comparison when set to true
-     * @param bool  $ignoreCase   Case is ignored when set to true
-     *
-     * @throws ComparisonFailure
-     */
-    public function assertEquals($expected, $actual, $delta = 0.0, $canonicalize = false, $ignoreCase = false)/*: void*/
-    {
-        if ($delta == 0) {
-            $delta = self::EPSILON;
-        }
-
-        parent::assertEquals($expected, $actual, $delta, $canonicalize, $ignoreCase);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
++BCRAbbshxTz7Bm0

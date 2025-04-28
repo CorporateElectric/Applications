@@ -1,68 +1,41 @@
-<?php
-
-/**
- * Implements safety checks for safe iframes.
- *
- * @warning This filter is *critical* for ensuring that %HTML.SafeIframe
- * works safely.
- */
-class HTMLPurifier_URIFilter_SafeIframe extends HTMLPurifier_URIFilter
-{
-    /**
-     * @type string
-     */
-    public $name = 'SafeIframe';
-
-    /**
-     * @type bool
-     */
-    public $always_load = true;
-
-    /**
-     * @type string
-     */
-    protected $regexp = null;
-
-    // XXX: The not so good bit about how this is all set up now is we
-    // can't check HTML.SafeIframe in the 'prepare' step: we have to
-    // defer till the actual filtering.
-    /**
-     * @param HTMLPurifier_Config $config
-     * @return bool
-     */
-    public function prepare($config)
-    {
-        $this->regexp = $config->get('URI.SafeIframeRegexp');
-        return true;
-    }
-
-    /**
-     * @param HTMLPurifier_URI $uri
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return bool
-     */
-    public function filter(&$uri, $config, $context)
-    {
-        // check if filter not applicable
-        if (!$config->get('HTML.SafeIframe')) {
-            return true;
-        }
-        // check if the filter should actually trigger
-        if (!$context->get('EmbeddedURI', true)) {
-            return true;
-        }
-        $token = $context->get('CurrentToken', true);
-        if (!($token && $token->name == 'iframe')) {
-            return true;
-        }
-        // check if we actually have some whitelists enabled
-        if ($this->regexp === null) {
-            return false;
-        }
-        // actually check the whitelists
-        return preg_match($this->regexp, $uri->toString());
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+7IOnSt6oyPqZefBr0RdRPO5ihtEdJPe=

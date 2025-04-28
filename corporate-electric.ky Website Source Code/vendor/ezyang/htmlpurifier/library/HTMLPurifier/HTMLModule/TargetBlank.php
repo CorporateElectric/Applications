@@ -1,24 +1,29 @@
-<?php
-
-/**
- * Module adds the target=blank attribute transformation to a tags.  It
- * is enabled by HTML.TargetBlank
- */
-class HTMLPurifier_HTMLModule_TargetBlank extends HTMLPurifier_HTMLModule
-{
-    /**
-     * @type string
-     */
-    public $name = 'TargetBlank';
-
-    /**
-     * @param HTMLPurifier_Config $config
-     */
-    public function setup($config)
-    {
-        $a = $this->addBlankElement('a');
-        $a->attr_transform_post[] = new HTMLPurifier_AttrTransform_TargetBlank();
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

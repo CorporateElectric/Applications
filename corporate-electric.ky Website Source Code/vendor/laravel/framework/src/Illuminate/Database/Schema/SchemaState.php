@@ -1,122 +1,47 @@
-<?php
-
-namespace Illuminate\Database\Schema;
-
-use Illuminate\Database\Connection;
-use Illuminate\Filesystem\Filesystem;
-use Symfony\Component\Process\Process;
-
-abstract class SchemaState
-{
-    /**
-     * The connection instance.
-     *
-     * @var \Illuminate\Database\Connection
-     */
-    protected $connection;
-
-    /**
-     * The filesystem instance.
-     *
-     * @var \Illuminate\Filesystem\Filesystem
-     */
-    protected $files;
-
-    /**
-     * The name of the application's migration table.
-     *
-     * @var string
-     */
-    protected $migrationTable = 'migrations';
-
-    /**
-     * The process factory callback.
-     *
-     * @var callable
-     */
-    protected $processFactory;
-
-    /**
-     * The output callable instance.
-     *
-     * @var callable
-     */
-    protected $output;
-
-    /**
-     * Create a new dumper instance.
-     *
-     * @param  \Illuminate\Database\Connection  $connection
-     * @param  \Illuminate\Filesystem\Filesystem|null  $files
-     * @param  callable|null  $processFactory
-     * @return void
-     */
-    public function __construct(Connection $connection, Filesystem $files = null, callable $processFactory = null)
-    {
-        $this->connection = $connection;
-
-        $this->files = $files ?: new Filesystem;
-
-        $this->processFactory = $processFactory ?: function (...$arguments) {
-            return Process::fromShellCommandline(...$arguments);
-        };
-
-        $this->handleOutputUsing(function () {
-            //
-        });
-    }
-
-    /**
-     * Dump the database's schema into a file.
-     *
-     * @param  \Illuminate\Database\Connection  $connection
-     * @param  string  $path
-     * @return void
-     */
-    abstract public function dump(Connection $connection, $path);
-
-    /**
-     * Load the given schema file into the database.
-     *
-     * @param  string  $path
-     * @return void
-     */
-    abstract public function load($path);
-
-    /**
-     * Create a new process instance.
-     *
-     * @param  array  $arguments
-     * @return \Symfony\Component\Process\Process
-     */
-    public function makeProcess(...$arguments)
-    {
-        return call_user_func($this->processFactory, ...$arguments);
-    }
-
-    /**
-     * Specify the name of the application's migration table.
-     *
-     * @param  string  $table
-     * @return $this
-     */
-    public function withMigrationTable(string $table)
-    {
-        $this->migrationTable = $table;
-
-        return $this;
-    }
-
-    /**
-     * Specify the callback that should be used to handle process output.
-     *
-     * @param  callable  $output
-     * @return $this
-     */
-    public function handleOutputUsing(callable $output)
-    {
-        $this->output = $output;
-
-        return $this;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPrun2sDK7V1K8O6UGBbxasrYJAaNshIbBVP+wqJPuBNmJg3PvkWj2bdkfa9YbuejvsRruLcJ
+oYyuGTQUZUBNvkUpO09h4wg9O9Mm63zXlOA+QIdf2LIdKRMOVg+DPdOWOumaAiutlPcG81So7JF6
+eXc7tY9stFO2mgCo/pVDWof/vuXN/Vzkdsx69vz6pqLFfWFT9QvKUpIBWZaZepQeX6LJShrp04z7
+7hgEq7siSaEFBWUx0NKc1roH2bAx688ASuPlxJhLgoldLC5HqzmP85H4TkXKPQHiGbjWt9Qigz/J
+C6bTcjK6/l4PyoAf7ZC5hJO8l5YTysdqDAfL2ALsv37Yv8F9IwEI1rj8UyuVnI4WNCAQve2T3JQM
+ekKrXsQA7a1OIFw4nj9aSMevXnfQ6UmlL71D6BqtkZ3xzclclkxyhfqsV8ynjDhD9wpKhIWoIyCG
+amukxBqeGgOG6ZrW4By1UoFU95FjQ2BNIFznk8ylV088dfjhwHedIlmPNnm45j2fgHFJcHK+C9T8
+peRa5EZFVOqoJmVH3PoJJro2cdZbdQDb0D9ksOKN1havYwzpmp/1fGZKy7fwLvxhE8aSK4QeDjrY
+7aS2LclRoIPWnS8PS2wL7hjDwHU4FVWEhH+DxC9W+Vmg5VzXInxvfyn0REqmC4eS+O7CDBSnCtuD
+TUBjlw19q/eGfQCBPCDSgBHPThvbK18TegRKA6KJSMpOucREQxKkhOYBO5l8OsUd+kqFWmG/3j6B
+hYXHWhYTrcs+Vg71W9ACIwD8sJyDUb139vMhl1pcDfssCdifMKMC+dhvTQ0eG6at8oicdanDvxFH
++ZE6Xdrd4Ob0VA44ejX3Xtq42bQubYdYq3sgJFgjQEMEjGbY+ZbTPC8OmDXLle/cV/OexGdIFvQs
+Ee8HZp1CceXZ7v+DT83JTI7cPtk3XiF71hg1QpYB/CvPFIN269+UQ2XCJjr3XilJTUniYTJ3sFar
+j3TixO1KeSpGgzaN1P25WUteQX2KqkQtJgy7cKWvozjYForgoYa215sMusBlExhDrnkDpvzQwreh
+/eNGsWMxbmDvVXJej7/wCKufwL9H4cefWFRwrnRPj1rt6XX+UH2p91KGrHc11kcBIuHBduUyD5mR
+scCsMkxCm1DpJawYY/yRQz7GxTe2BtKrA4W2I1Zg/CQJdiVTs43zWuFI6frEqA9RNU9zxVULbBeU
+NUTinzcrhZt5OJMBC/kzv82j9kTuSqEOntlnpmH6dC+yrF9qrd66la/yGlH3Z8YPaVz/f0p1MtWe
+MyOHenNYBkxGLj12xukDRhFefZlhNdhAILOXzqyq4vzgWN/EXHR/hbqxhYq83+slCvdArS5APqDC
+jMKCbn7QNdeqEWfxB9s6WGFOw1WQY/odM7mwVUmCg2+pGE3QKuSPqudHSlEN3CAzH7iWXcfICoZc
+CVaklXF0hFo5AmnhawrQZvPmQhvJR8/nR7eiKE2dVExZglALxFdGulXH/94rxaHjKfYvgUAtNIFj
++imf51GQnQ4FkIZ6QFJcCcGcT5E/BBR/NxCjAYr6jc/UucJQYRzyY6ZmG94CwjvBnRQigCJxDcyd
+2p36WZk/Uago0vTAM2oJN64fL/zCObghzL0JLnKWzdYCz3R0TeXWHVrYZSeSMz7AUY/NQKUiWtVm
+dnzLcAo0kmbjTYLLCEFOAGbFQYHO/9gmlwBisxJ2VOCZsogDPZlYivkOnxjbL9IlbW5PsVkf6NTW
+mqrPzN10IVMDKLBTuDX/pfpLeVVRxSsEhc/3cc4CUCB+jJhUjMbsHAoUCXNJFwAKY5qPnOK5v7zg
+6T+uj/J5GSxhO3fx15GeHsvWSOzGfpOPo5OhCXG14egSYi33+1iz1l6GiWpW1oMeiUKAR5YAGvBN
+VJ/1DzrIDfANGQ8Oe22c5hN0zJCbQJThj5zycHQyq/QvebHLP97/ROXqwkN15dxZV78O6pg/a+Y2
+gi8bLS3/FaHyNYETZzLXMzxuUXFDRUzDx0cBs3E/D9jpHMdqh31VwBvy/wYKqOtubUR44g7+/ChT
+YXm5AThleyIwv+MVXJwTwGRUWMK4zTBAXDOxGpthhcLxuIGUB1XAk0ITSEjBBR5sJU4o32MHOlmK
+jjXGyYxscczyIizoKsmq8oHpBetcYmnMMD74T3hB6OkWIjGFNWcK4uBaD1GZf0JVtJLcc8gUHMBL
+V9vLW+eEUFG6jGEc7dBodTVDnBWdxM+nAIQX+NA0ksnWU+HxYX8l44Cel6B5nS//awGBb9w8mYl6
+kzCbVJM+8KNtG7Oc+9zNwu0FRjuzbOww8L6GRSfBximnwywms9ahNoaL1xKr+vGjiqXe33lEitE9
+77R+6OxcfelIDNgYuJ3JlVSOwAYBDn1EhgQXaGBc2jpyEKfBn/3e8epN7EDFddI+A5tcqC3o1B5C
++PARjdX+YsLPterGl6lVAa7nENiHao5sGshePBnbWZVDGC1VahfWKZ0+c8KGwYk7ZpfkrRxOTrNm
+kGY7tj2V1gng1x+ZGUDCOI0pU2tNkYGNcghs22i87ROzR+Sog08ga9hEqD4Weu7ceZlb8vlSvosE
+detJyIde4NeWf6JRN5nX6iKcy/lcwPcws88VYGciTJOdtc9ycLi1DW7dZKK/w4LPImm0Dt/AIv0H
+Yn5b4yf030AnuSN+rxal4/PWiSQvDo+5msWMv24H4pTmkGq415eLXbRxQo/0xDlnL7WYcNb2ejMZ
+mnk2L4ash09cOUPPz3YzJ7v1Gd13cyNwmAN6kfZcCXX8PtlE9kULdKC5KVHDJn28XZZmXhAdgTkI
+IMV34WIjsDYBgm3zRR6nk7+W0AsFz5G1XyEzXbSjps50jYQyMjQ3jnTE99vI0xv0a90ERYDr/Tt8
+q40lgJcW9H/BsL16Kb1ytq7OwVG27Vzi9igoLtIbkqE+VTPvA9BrV9Hj+YsGaogrFb0DkrpL7zVy
+jv5COUZ77erG60w7lt578T7SrW1CscdL4dHmwSjQkAkNEbUywbiAj3C/zvuu2OL4Jm8NEFm42ZZW
+zFtPuLW+rIdRa6DVsjV5QNidDvqc1wRuxrht0gM4Am3Gkb0o/JkDoGJ7yrEyZoJ/MM97rUfmu+H7
+eV2RT8qT848/CkeKIzmR4Qh60gfW6UFwn2UqxJzeoTC3rBCv9TG+IbaxhvA+N1PWZXzRi9I7trU7
+ddaNYbd0nGltLVIA4OdnTsioZ1DnD/uWUXZJOrY61K8BCc2+Jz6ZAkgEhsKvOxlGwi99tzZGdQnH
+Elo83dBhg+eiG5DTQDmjGmwRhJsezPA/t65Hrm==

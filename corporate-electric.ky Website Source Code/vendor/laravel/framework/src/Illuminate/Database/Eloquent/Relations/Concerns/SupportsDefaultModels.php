@@ -1,63 +1,32 @@
-<?php
-
-namespace Illuminate\Database\Eloquent\Relations\Concerns;
-
-use Illuminate\Database\Eloquent\Model;
-
-trait SupportsDefaultModels
-{
-    /**
-     * Indicates if a default model instance should be used.
-     *
-     * Alternatively, may be a Closure or array.
-     *
-     * @var \Closure|array|bool
-     */
-    protected $withDefault;
-
-    /**
-     * Make a new related instance for the given model.
-     *
-     * @param  \Illuminate\Database\Eloquent\Model  $parent
-     * @return \Illuminate\Database\Eloquent\Model
-     */
-    abstract protected function newRelatedInstanceFor(Model $parent);
-
-    /**
-     * Return a new model instance in case the relationship does not exist.
-     *
-     * @param  \Closure|array|bool  $callback
-     * @return $this
-     */
-    public function withDefault($callback = true)
-    {
-        $this->withDefault = $callback;
-
-        return $this;
-    }
-
-    /**
-     * Get the default value for this relation.
-     *
-     * @param  \Illuminate\Database\Eloquent\Model  $parent
-     * @return \Illuminate\Database\Eloquent\Model|null
-     */
-    protected function getDefaultFor(Model $parent)
-    {
-        if (! $this->withDefault) {
-            return;
-        }
-
-        $instance = $this->newRelatedInstanceFor($parent);
-
-        if (is_callable($this->withDefault)) {
-            return call_user_func($this->withDefault, $instance, $parent) ?: $instance;
-        }
-
-        if (is_array($this->withDefault)) {
-            $instance->forceFill($this->withDefault);
-        }
-
-        return $instance;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+no+MvrY04gZzI5KwaxtyVNmgdQ4P8u6Yf9rYuW==

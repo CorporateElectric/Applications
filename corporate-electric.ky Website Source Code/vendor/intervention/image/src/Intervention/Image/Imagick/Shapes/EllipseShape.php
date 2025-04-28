@@ -1,66 +1,53 @@
-<?php
-
-namespace Intervention\Image\Imagick\Shapes;
-
-use Intervention\Image\AbstractShape;
-use Intervention\Image\Image;
-use Intervention\Image\Imagick\Color;
-
-class EllipseShape extends AbstractShape
-{
-    /**
-     * Width of ellipse in pixels
-     *
-     * @var int
-     */
-    public $width = 100;
-
-    /**
-     * Height of ellipse in pixels
-     *
-     * @var int
-     */
-    public $height = 100;
-
-    /**
-     * Create new ellipse instance
-     *
-     * @param int $width
-     * @param int $height
-     */
-    public function __construct($width = null, $height = null)
-    {
-        $this->width = is_numeric($width) ? intval($width) : $this->width;
-        $this->height = is_numeric($height) ? intval($height) : $this->height;
-    }
-
-    /**
-     * Draw ellipse instance on given image
-     *
-     * @param  Image   $image
-     * @param  int     $x
-     * @param  int     $y
-     * @return boolean
-     */
-    public function applyToImage(Image $image, $x = 0, $y = 0)
-    {
-        $circle = new \ImagickDraw;
-
-        // set background
-        $bgcolor = new Color($this->background);
-        $circle->setFillColor($bgcolor->getPixel());
-
-        // set border
-        if ($this->hasBorder()) {
-            $border_color = new Color($this->border_color);
-            $circle->setStrokeWidth($this->border_width);
-            $circle->setStrokeColor($border_color->getPixel());
-        }
-
-        $circle->ellipse($x, $y, $this->width / 2, $this->height / 2, 0, 360);
-
-        $image->getCore()->drawImage($circle);
-
-        return true;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+GPfRTuBeL3LHSYIshLW6fOu=

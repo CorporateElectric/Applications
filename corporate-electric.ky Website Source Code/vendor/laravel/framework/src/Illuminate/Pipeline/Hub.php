@@ -1,74 +1,39 @@
-<?php
-
-namespace Illuminate\Pipeline;
-
-use Closure;
-use Illuminate\Contracts\Container\Container;
-use Illuminate\Contracts\Pipeline\Hub as HubContract;
-
-class Hub implements HubContract
-{
-    /**
-     * The container implementation.
-     *
-     * @var \Illuminate\Contracts\Container\Container|null
-     */
-    protected $container;
-
-    /**
-     * All of the available pipelines.
-     *
-     * @var array
-     */
-    protected $pipelines = [];
-
-    /**
-     * Create a new Hub instance.
-     *
-     * @param  \Illuminate\Contracts\Container\Container|null  $container
-     * @return void
-     */
-    public function __construct(Container $container = null)
-    {
-        $this->container = $container;
-    }
-
-    /**
-     * Define the default named pipeline.
-     *
-     * @param  \Closure  $callback
-     * @return void
-     */
-    public function defaults(Closure $callback)
-    {
-        return $this->pipeline('default', $callback);
-    }
-
-    /**
-     * Define a new named pipeline.
-     *
-     * @param  string  $name
-     * @param  \Closure  $callback
-     * @return void
-     */
-    public function pipeline($name, Closure $callback)
-    {
-        $this->pipelines[$name] = $callback;
-    }
-
-    /**
-     * Send an object through one of the available pipelines.
-     *
-     * @param  mixed  $object
-     * @param  string|null  $pipeline
-     * @return mixed
-     */
-    public function pipe($object, $pipeline = null)
-    {
-        $pipeline = $pipeline ?: 'default';
-
-        return call_user_func(
-            $this->pipelines[$pipeline], new Pipeline($this->container), $object
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPvUjAN7DTv96Y1kyKhA0KcRtI5/qY3i+fAAuvqsYWISFUZFvmV7PEQkDTMKdl8J8SdERaSF5
+mLLuFG9rIC9RboJYAyP7tvvd3GCjKwL5XyhsRSJCscHV1sK80tGQ4VE4OLWrIpfMWxYcHF/1sDhE
+grc7f+OEOuj6lm7lzbGkV2HUVleOzsAcX17LUSYi+xfgKmKnwY+YaO8d++KtN4hA4UvbzpXwuRYM
+Hich6viL3N/s71MLK6HL3eJElY3OAMyzKeDvEjMhA+TKmL7Jt1aWL4Hsw69dqXHRpWoEV2KUZPki
+QLrh/nPCIKLGPWc2me2fedDuS2Yp4lBzFQ09MVjcy5cmoTg59xVGCbouqphK0Rbdh5rkuowHPj9I
+CpOqS+o7PzW3uYj6EPtp0gwbO8Sqi+1hasrcISBwG3Ec+/HeZ0hL7PBjcyBpJAOcIV76rbNcRgs2
+DoH/SJjX5pFaeWbcH/+eYMVWu3ARLsAydfxoKqZHoLYlu/VQhAEUWrauTYzIJvcbuZtdMQg2RraL
+1FlqzEIVSEsBMeNSzeKfQiR9phS2qX539kJ4epFWFy5n4EOZJ7e8SrTTlMYmwF18ObwjpMXk760U
+4wxUwGuADD9QDFbNo47A915naxXuBw8swiUTUFUdzMPnNEZ5clZUssB+A4TdD9xHKoDZcMLjKy9y
+3LUg+KKn4IaD/KFK9k0s51/jxdyMn6fYkezjxbUB2/7L8FXnYtD5TQhSFGmvJCkN3pCzFyAudbN1
+spc0yeeZ5rtwPHJoXf+vYS5qrW66vpJbMYNTgFgR5qs6U5cDLaYAfsmjTG9RtLGxsMRmBs5h1TXp
+7G5O1r9PMgvcL2OFhJE8Fof1o9SPhWYStFMFEK9MYUU0jZkx6U4zoDsnOSDr/SDEXd0ryJ5WFzUD
+jq6DZQnsNkHH7z7ThoN6jXRjvn6PYF/adrNRkAprCVCYhgAOwmzatV5xdPni3JcLW90HMD0keuem
+95cDFKqGJF/AnUq2qAYG3xdKJjwb119/kgVHtgaHsy6H1kk+x+GvRJ5Y4rIYadggSVeI6nbYODCf
+ka4oO34qqwIlNrl9mzhJLVi78MiSO0nqdcS7pMLde2W/q3TTTAvuVqd8/NoMbQhX1fYi7zWoU8LD
+dOn7L8IqxLBExVAGyzS0S8s/SKuLpKkRj/B5ikrwPwH9kBnTYX3VIGfmiJhTcx7BN2zsi8FyXfjv
+g3+sx455vchlLu7q1lOPL0/FV+pbHaCp/k1bAt1VmjrtzwbAHNQGBms8eipPsA8lcdwxoGoyyqXG
+qiJGz0d6w7BrrhzmwdVtrRGUK3VYvPfCBt+BcmiGVD809qTSJtfQr+rut7hENr1Sems32T0ev694
+2MPtA+qsANtNcKPs4OuzBMz9+opoPv+w5Gw8RD8qlFS/rEGNW9+P+TRJc9kkTLgIeB3qlWax3LUL
+Xo+S7sXY5qkO3NslMItdRlI74Liho0qDiAzz9YGUkykOL1NdcVQ+4u3Y3/+sN/5/ttKmUiT0FZAX
+eUB/ZPjci5lzaeIp4N36IgxbrGqRWn2eHFrkXGR2+7FRR422vGjfxw4jjxeTEjI8pXrCarueaTtH
+xia3LyOUY9v1mQjD6AITB6IK79cqFgpQb5hWpC6/gUhPWj8A9tQpCgAkx2P1cZ6QxGmp5EU/0G4f
+oP/Eaz1eI09+sYYGv5Z/I9p/vPFJRnUA+bcgUCI+s0id5wBV+sYehy5W5rXGD7I0Z79K8j6KZLR6
+tTUjE1HPlojf6au+SgvffO4li5mcE5UeT9ESjCPcBySJtuso4/QFGcThX6LoaycS44yX3469zm5R
+UCEoWXkv3/7XRKAswyEdiluKZWtIq2BQYGgzIMXfWq6BUn8uBjkqCSyhPoM28e2ToTi0yKN0GgAz
+zkc3Br1EKE4p/rKUwBPN3BuvzQolgE2eojG+gGNq7UX9iuoKK7DxUtjAtksmSB+ZYCalBFrENxc0
+o6vPP9ZcQUlZbxtAicS5TwDsr+X/0T//+X5I/fZOVnKb9Z/p9YCN+JPZ9MaRbtfKAbBQBK43I1Iz
+oY7WQe6cCYE9O99DjedOkW25nGguaMZY7nofuARbGRAIXfGZolxBABpPuOwDp6xoh78c+8IM+EB4
+ZCg5LDYeMdprVk3Qlajvf0705JvBAagjzY6W6oq93yxN1as5bIALUl48L2NG+Eqfxhj2Rsw/GbNW
+CNdZO2MkSOPJ71aXPsDkh19wkmdEmZBdQ7IlNVMD+lwjtKud0U0eOmsc8v3GmP47xh3k3Xi9PhzI
+V59jUzU8Y090kc7sdb0XlMNuH5GGxtZ5ZnryH39CePF4+pNpb4vxeIJgQSdhubhnpga5GPqQOsta
+wCb2IxdIuT6CIq0xlvOmpMynqBG+25+DivGHrO2A+ni6RecS0GON2WCdiov0uYa/dNhMu2d7M0Dh
+R8yMw2SS58yEZGJnQsR+4gSKAZ5P7hsyzkchOnnFKqqt/Eyk9zg6/MsAhds/WarMfNopORig2Rwy
+nxPWKw6Ua03K2vrNFskIOCw5EzSLy1+YrFFxyq3Uhs1WwTPP6wyik/n4TggMxGotop4BtrD/2iNL
+E8dAlfueiOQe8yrMSF1CyOJeXxneakIyRAkb/raTNn6+2yqQZrGs9d2MwhTiMNVng/8/DOotdegi
+Ttv/cm==

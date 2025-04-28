@@ -1,148 +1,94 @@
-<?php declare(strict_types = 1);
-/*
- * This file is part of PharIo\Version.
- *
- * (c) Arne Blankerts <arne@blankerts.de>, Sebastian Heuer <sebastian@phpeople.de>, Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PharIo\Version;
-
-class Version {
-    /** @var VersionNumber */
-    private $major;
-
-    /** @var VersionNumber */
-    private $minor;
-
-    /** @var VersionNumber */
-    private $patch;
-
-    /** @var PreReleaseSuffix */
-    private $preReleaseSuffix;
-
-    /**
-     * @param string $versionString
-     */
-    public function __construct($versionString) {
-        $this->ensureVersionStringIsValid($versionString);
-    }
-
-    public function getPreReleaseSuffix(): PreReleaseSuffix {
-        return $this->preReleaseSuffix;
-    }
-
-    public function getVersionString(): string {
-        $str = sprintf(
-            '%d.%d.%d',
-            $this->getMajor()->getValue(),
-            $this->getMinor()->getValue(),
-            $this->getPatch()->getValue()
-        );
-
-        if (!$this->hasPreReleaseSuffix()) {
-            return $str;
-        }
-
-        return $str . '-' . $this->getPreReleaseSuffix()->asString();
-    }
-
-    public function hasPreReleaseSuffix(): bool {
-        return $this->preReleaseSuffix !== null;
-    }
-
-    public function equals(Version $other): bool {
-        return $this->getVersionString() === $other->getVersionString();
-    }
-
-    public function isGreaterThan(Version $version): bool {
-        if ($version->getMajor()->getValue() > $this->getMajor()->getValue()) {
-            return false;
-        }
-
-        if ($version->getMajor()->getValue() < $this->getMajor()->getValue()) {
-            return true;
-        }
-
-        if ($version->getMinor()->getValue() > $this->getMinor()->getValue()) {
-            return false;
-        }
-
-        if ($version->getMinor()->getValue() < $this->getMinor()->getValue()) {
-            return true;
-        }
-
-        if ($version->getPatch()->getValue() > $this->getPatch()->getValue()) {
-            return false;
-        }
-
-        if ($version->getPatch()->getValue() < $this->getPatch()->getValue()) {
-            return true;
-        }
-
-        if (!$version->hasPreReleaseSuffix() && !$this->hasPreReleaseSuffix()) {
-            return false;
-        }
-
-        if ($version->hasPreReleaseSuffix() && !$this->hasPreReleaseSuffix()) {
-            return true;
-        }
-
-        if (!$version->hasPreReleaseSuffix() && $this->hasPreReleaseSuffix()) {
-            return false;
-        }
-
-        return $this->getPreReleaseSuffix()->isGreaterThan($version->getPreReleaseSuffix());
-    }
-
-    public function getMajor(): VersionNumber {
-        return $this->major;
-    }
-
-    public function getMinor(): VersionNumber {
-        return $this->minor;
-    }
-
-    public function getPatch(): VersionNumber {
-        return $this->patch;
-    }
-
-    private function parseVersion(array $matches): void {
-        $this->major = new VersionNumber((int)$matches['Major']);
-        $this->minor = new VersionNumber((int)$matches['Minor']);
-        $this->patch = isset($matches['Patch']) ? new VersionNumber((int)$matches['Patch']) : new VersionNumber(0);
-
-        if (isset($matches['PreReleaseSuffix'])) {
-            $this->preReleaseSuffix = new PreReleaseSuffix($matches['PreReleaseSuffix']);
-        }
-    }
-
-    /**
-     * @param string $version
-     *
-     * @throws InvalidVersionException
-     */
-    private function ensureVersionStringIsValid($version): void {
-        $regex = '/^v?
-            (?<Major>(0|(?:[1-9]\d*)))
-            \\.
-            (?<Minor>(0|(?:[1-9]\d*)))
-            (\\.
-                (?<Patch>(0|(?:[1-9]\d*)))
-            )?
-            (?:
-                -
-                (?<PreReleaseSuffix>(?:(dev|beta|b|rc|alpha|a|patch|p)\.?\d*))
-            )?       
-        $/xi';
-
-        if (\preg_match($regex, $version, $matches) !== 1) {
-            throw new InvalidVersionException(
-                \sprintf("Version string '%s' does not follow SemVer semantics", $version)
-            );
-        }
-
-        $this->parseVersion($matches);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+gygVNya=

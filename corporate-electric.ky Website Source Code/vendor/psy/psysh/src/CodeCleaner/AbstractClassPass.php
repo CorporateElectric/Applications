@@ -1,71 +1,52 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\CodeCleaner;
-
-use PhpParser\Node;
-use PhpParser\Node\Stmt\Class_;
-use PhpParser\Node\Stmt\ClassMethod;
-use Psy\Exception\FatalErrorException;
-
-/**
- * The abstract class pass handles abstract classes and methods, complaining if there are too few or too many of either.
- */
-class AbstractClassPass extends CodeCleanerPass
-{
-    private $class;
-    private $abstractMethods;
-
-    /**
-     * @throws FatalErrorException if the node is an abstract function with a body
-     *
-     * @param Node $node
-     */
-    public function enterNode(Node $node)
-    {
-        if ($node instanceof Class_) {
-            $this->class = $node;
-            $this->abstractMethods = [];
-        } elseif ($node instanceof ClassMethod) {
-            if ($node->isAbstract()) {
-                $name = \sprintf('%s::%s', $this->class->name, $node->name);
-                $this->abstractMethods[] = $name;
-
-                if ($node->stmts !== null) {
-                    $msg = \sprintf('Abstract function %s cannot contain body', $name);
-                    throw new FatalErrorException($msg, 0, \E_ERROR, null, $node->getLine());
-                }
-            }
-        }
-    }
-
-    /**
-     * @throws FatalErrorException if the node is a non-abstract class with abstract methods
-     *
-     * @param Node $node
-     */
-    public function leaveNode(Node $node)
-    {
-        if ($node instanceof Class_) {
-            $count = \count($this->abstractMethods);
-            if ($count > 0 && !$node->isAbstract()) {
-                $msg = \sprintf(
-                    'Class %s contains %d abstract method%s must therefore be declared abstract or implement the remaining methods (%s)',
-                    $node->name,
-                    $count,
-                    ($count === 1) ? '' : 's',
-                    \implode(', ', $this->abstractMethods)
-                );
-                throw new FatalErrorException($msg, 0, \E_ERROR, null, $node->getLine());
-            }
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

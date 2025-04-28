@@ -1,136 +1,95 @@
-<?php
-
-namespace Spatie\Crawler\Handlers;
-
-use function GuzzleHttp\Psr7\stream_for;
-use GuzzleHttp\Psr7\Uri;
-use GuzzleHttp\RedirectMiddleware;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\StreamInterface;
-use Psr\Http\Message\UriInterface;
-use Spatie\Crawler\Crawler;
-use Spatie\Crawler\CrawlerRobots;
-use Spatie\Crawler\CrawlSubdomains;
-use Spatie\Crawler\CrawlUrl;
-use Spatie\Crawler\LinkAdder;
-
-class CrawlRequestFulfilled
-{
-    /** @var \Spatie\Crawler\Crawler */
-    protected $crawler;
-
-    /** @var \Spatie\Crawler\LinkAdder */
-    protected $linkAdder;
-
-    public function __construct(Crawler $crawler)
-    {
-        $this->crawler = $crawler;
-
-        $this->linkAdder = new LinkAdder($this->crawler);
-    }
-
-    public function __invoke(ResponseInterface $response, $index)
-    {
-        $body = $this->getBody($response);
-
-        $robots = new CrawlerRobots(
-            $response->getHeaders(),
-            $body,
-            $this->crawler->mustRespectRobots()
-        );
-
-        $crawlUrl = $this->crawler->getCrawlQueue()->getUrlById($index);
-
-        if ($this->crawler->mayExecuteJavaScript()) {
-            $body = $this->getBodyAfterExecutingJavaScript($crawlUrl->url);
-
-            $response = $response->withBody(stream_for($body));
-        }
-
-        if ($robots->mayIndex()) {
-            $this->handleCrawled($response, $crawlUrl);
-        }
-
-        if (! $this->crawler->getCrawlProfile() instanceof CrawlSubdomains) {
-            if ($crawlUrl->url->getHost() !== $this->crawler->getBaseUrl()->getHost()) {
-                return;
-            }
-        }
-
-        if (! $robots->mayFollow()) {
-            return;
-        }
-
-        $baseUrl = $this->getBaseUrl($response, $crawlUrl);
-
-        $this->linkAdder->addFromHtml($body, $baseUrl);
-
-        usleep($this->crawler->getDelayBetweenRequests());
-    }
-
-    protected function getBaseUrl(ResponseInterface $response, CrawlUrl $crawlUrl)
-    {
-        $redirectHistory = $response->getHeader(RedirectMiddleware::HISTORY_HEADER);
-
-        if (empty($redirectHistory)) {
-            return $crawlUrl->url;
-        }
-
-        return new Uri(end($redirectHistory));
-    }
-
-    protected function handleCrawled(ResponseInterface $response, CrawlUrl $crawlUrl)
-    {
-        $this->crawler->getCrawlObservers()->crawled($crawlUrl, $response);
-    }
-
-    protected function convertBodyToString(StreamInterface $bodyStream, $readMaximumBytes = 1024 * 1024 * 2): string
-    {
-        if ($bodyStream->isSeekable()) {
-            $bodyStream->rewind();
-        }
-
-        $body = $bodyStream->read($readMaximumBytes);
-
-        return $body;
-    }
-
-    protected function getBody(ResponseInterface $response): string
-    {
-        $contentType = $response->getHeaderLine('Content-Type');
-
-        if (! $this->isMimetypeAllowedToParse($contentType)) {
-            return '';
-        }
-
-        return $this->convertBodyToString($response->getBody(), $this->crawler->getMaximumResponseSize());
-    }
-
-    protected function getBodyAfterExecutingJavaScript(UriInterface $url): string
-    {
-        $browsershot = $this->crawler->getBrowsershot();
-
-        $html = $browsershot->setUrl((string) $url)->bodyHtml();
-
-        return html_entity_decode($html);
-    }
-
-    protected function isMimetypeAllowedToParse($contentType): bool
-    {
-        if (empty($contentType)) {
-            return true;
-        }
-
-        if (! count($this->crawler->getParseableMimeTypes())) {
-            return true;
-        }
-
-        foreach ($this->crawler->getParseableMimeTypes() as $allowedType) {
-            if (stristr($contentType, $allowedType)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+Ld0=

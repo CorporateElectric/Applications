@@ -1,105 +1,35 @@
-<?php
-
-namespace Illuminate\Contracts\Routing;
-
-interface Registrar
-{
-    /**
-     * Register a new GET route with the router.
-     *
-     * @param  string  $uri
-     * @param  array|string|callable  $action
-     * @return \Illuminate\Routing\Route
-     */
-    public function get($uri, $action);
-
-    /**
-     * Register a new POST route with the router.
-     *
-     * @param  string  $uri
-     * @param  array|string|callable  $action
-     * @return \Illuminate\Routing\Route
-     */
-    public function post($uri, $action);
-
-    /**
-     * Register a new PUT route with the router.
-     *
-     * @param  string  $uri
-     * @param  array|string|callable  $action
-     * @return \Illuminate\Routing\Route
-     */
-    public function put($uri, $action);
-
-    /**
-     * Register a new DELETE route with the router.
-     *
-     * @param  string  $uri
-     * @param  array|string|callable  $action
-     * @return \Illuminate\Routing\Route
-     */
-    public function delete($uri, $action);
-
-    /**
-     * Register a new PATCH route with the router.
-     *
-     * @param  string  $uri
-     * @param  array|string|callable  $action
-     * @return \Illuminate\Routing\Route
-     */
-    public function patch($uri, $action);
-
-    /**
-     * Register a new OPTIONS route with the router.
-     *
-     * @param  string  $uri
-     * @param  array|string|callable  $action
-     * @return \Illuminate\Routing\Route
-     */
-    public function options($uri, $action);
-
-    /**
-     * Register a new route with the given verbs.
-     *
-     * @param  array|string  $methods
-     * @param  string  $uri
-     * @param  array|string|callable  $action
-     * @return \Illuminate\Routing\Route
-     */
-    public function match($methods, $uri, $action);
-
-    /**
-     * Route a resource to a controller.
-     *
-     * @param  string  $name
-     * @param  string  $controller
-     * @param  array  $options
-     * @return \Illuminate\Routing\PendingResourceRegistration
-     */
-    public function resource($name, $controller, array $options = []);
-
-    /**
-     * Create a route group with shared attributes.
-     *
-     * @param  array  $attributes
-     * @param  \Closure|string  $routes
-     * @return void
-     */
-    public function group(array $attributes, $routes);
-
-    /**
-     * Substitute the route bindings onto the route.
-     *
-     * @param  \Illuminate\Routing\Route  $route
-     * @return \Illuminate\Routing\Route
-     */
-    public function substituteBindings($route);
-
-    /**
-     * Substitute the implicit Eloquent model bindings for the route.
-     *
-     * @param  \Illuminate\Routing\Route  $route
-     * @return void
-     */
-    public function substituteImplicitBindings($route);
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

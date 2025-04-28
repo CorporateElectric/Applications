@@ -1,655 +1,273 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Style;
-
-use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-
-class Style extends Supervisor
-{
-    /**
-     * Font.
-     *
-     * @var Font
-     */
-    protected $font;
-
-    /**
-     * Fill.
-     *
-     * @var Fill
-     */
-    protected $fill;
-
-    /**
-     * Borders.
-     *
-     * @var Borders
-     */
-    protected $borders;
-
-    /**
-     * Alignment.
-     *
-     * @var Alignment
-     */
-    protected $alignment;
-
-    /**
-     * Number Format.
-     *
-     * @var NumberFormat
-     */
-    protected $numberFormat;
-
-    /**
-     * Protection.
-     *
-     * @var Protection
-     */
-    protected $protection;
-
-    /**
-     * Index of style in collection. Only used for real style.
-     *
-     * @var int
-     */
-    protected $index;
-
-    /**
-     * Use Quote Prefix when displaying in cell editor. Only used for real style.
-     *
-     * @var bool
-     */
-    protected $quotePrefix = false;
-
-    /**
-     * Create a new Style.
-     *
-     * @param bool $isSupervisor Flag indicating if this is a supervisor or not
-     *         Leave this value at default unless you understand exactly what
-     *    its ramifications are
-     * @param bool $isConditional Flag indicating if this is a conditional style or not
-     *       Leave this value at default unless you understand exactly what
-     *    its ramifications are
-     */
-    public function __construct($isSupervisor = false, $isConditional = false)
-    {
-        parent::__construct($isSupervisor);
-
-        // Initialise values
-        $this->font = new Font($isSupervisor, $isConditional);
-        $this->fill = new Fill($isSupervisor, $isConditional);
-        $this->borders = new Borders($isSupervisor, $isConditional);
-        $this->alignment = new Alignment($isSupervisor, $isConditional);
-        $this->numberFormat = new NumberFormat($isSupervisor, $isConditional);
-        $this->protection = new Protection($isSupervisor, $isConditional);
-
-        // bind parent if we are a supervisor
-        if ($isSupervisor) {
-            $this->font->bindParent($this);
-            $this->fill->bindParent($this);
-            $this->borders->bindParent($this);
-            $this->alignment->bindParent($this);
-            $this->numberFormat->bindParent($this);
-            $this->protection->bindParent($this);
-        }
-    }
-
-    /**
-     * Get the shared style component for the currently active cell in currently active sheet.
-     * Only used for style supervisor.
-     *
-     * @return Style
-     */
-    public function getSharedComponent()
-    {
-        $activeSheet = $this->getActiveSheet();
-        $selectedCell = $this->getActiveCell(); // e.g. 'A1'
-
-        if ($activeSheet->cellExists($selectedCell)) {
-            $xfIndex = $activeSheet->getCell($selectedCell)->getXfIndex();
-        } else {
-            $xfIndex = 0;
-        }
-
-        return $this->parent->getCellXfByIndex($xfIndex);
-    }
-
-    /**
-     * Get parent. Only used for style supervisor.
-     *
-     * @return Spreadsheet
-     */
-    public function getParent()
-    {
-        return $this->parent;
-    }
-
-    /**
-     * Build style array from subcomponents.
-     *
-     * @param array $array
-     *
-     * @return array
-     */
-    public function getStyleArray($array)
-    {
-        return ['quotePrefix' => $array];
-    }
-
-    /**
-     * Apply styles from array.
-     *
-     * <code>
-     * $spreadsheet->getActiveSheet()->getStyle('B2')->applyFromArray(
-     *     [
-     *         'font' => [
-     *             'name' => 'Arial',
-     *             'bold' => true,
-     *             'italic' => false,
-     *             'underline' => Font::UNDERLINE_DOUBLE,
-     *             'strikethrough' => false,
-     *             'color' => [
-     *                 'rgb' => '808080'
-     *             ]
-     *         ],
-     *         'borders' => [
-     *             'bottom' => [
-     *                 'borderStyle' => Border::BORDER_DASHDOT,
-     *                 'color' => [
-     *                     'rgb' => '808080'
-     *                 ]
-     *             ],
-     *             'top' => [
-     *                 'borderStyle' => Border::BORDER_DASHDOT,
-     *                 'color' => [
-     *                     'rgb' => '808080'
-     *                 ]
-     *             ]
-     *         ],
-     *         'alignment' => [
-     *             'horizontal' => Alignment::HORIZONTAL_CENTER,
-     *             'vertical' => Alignment::VERTICAL_CENTER,
-     *             'wrapText' => true,
-     *         ],
-     *         'quotePrefix'    => true
-     *     ]
-     * );
-     * </code>
-     *
-     * @param array $pStyles Array containing style information
-     * @param bool $pAdvanced advanced mode for setting borders
-     *
-     * @return $this
-     */
-    public function applyFromArray(array $pStyles, $pAdvanced = true)
-    {
-        if ($this->isSupervisor) {
-            $pRange = $this->getSelectedCells();
-
-            // Uppercase coordinate
-            $pRange = strtoupper($pRange);
-
-            // Is it a cell range or a single cell?
-            if (strpos($pRange, ':') === false) {
-                $rangeA = $pRange;
-                $rangeB = $pRange;
-            } else {
-                [$rangeA, $rangeB] = explode(':', $pRange);
-            }
-
-            // Calculate range outer borders
-            $rangeStart = Coordinate::coordinateFromString($rangeA);
-            $rangeEnd = Coordinate::coordinateFromString($rangeB);
-
-            // Translate column into index
-            $rangeStart0 = $rangeStart[0];
-            $rangeEnd0 = $rangeEnd[0];
-            $rangeStart[0] = Coordinate::columnIndexFromString($rangeStart[0]);
-            $rangeEnd[0] = Coordinate::columnIndexFromString($rangeEnd[0]);
-
-            // Make sure we can loop upwards on rows and columns
-            if ($rangeStart[0] > $rangeEnd[0] && $rangeStart[1] > $rangeEnd[1]) {
-                $tmp = $rangeStart;
-                $rangeStart = $rangeEnd;
-                $rangeEnd = $tmp;
-            }
-
-            // ADVANCED MODE:
-            if ($pAdvanced && isset($pStyles['borders'])) {
-                // 'allBorders' is a shorthand property for 'outline' and 'inside' and
-                //        it applies to components that have not been set explicitly
-                if (isset($pStyles['borders']['allBorders'])) {
-                    foreach (['outline', 'inside'] as $component) {
-                        if (!isset($pStyles['borders'][$component])) {
-                            $pStyles['borders'][$component] = $pStyles['borders']['allBorders'];
-                        }
-                    }
-                    unset($pStyles['borders']['allBorders']); // not needed any more
-                }
-                // 'outline' is a shorthand property for 'top', 'right', 'bottom', 'left'
-                //        it applies to components that have not been set explicitly
-                if (isset($pStyles['borders']['outline'])) {
-                    foreach (['top', 'right', 'bottom', 'left'] as $component) {
-                        if (!isset($pStyles['borders'][$component])) {
-                            $pStyles['borders'][$component] = $pStyles['borders']['outline'];
-                        }
-                    }
-                    unset($pStyles['borders']['outline']); // not needed any more
-                }
-                // 'inside' is a shorthand property for 'vertical' and 'horizontal'
-                //        it applies to components that have not been set explicitly
-                if (isset($pStyles['borders']['inside'])) {
-                    foreach (['vertical', 'horizontal'] as $component) {
-                        if (!isset($pStyles['borders'][$component])) {
-                            $pStyles['borders'][$component] = $pStyles['borders']['inside'];
-                        }
-                    }
-                    unset($pStyles['borders']['inside']); // not needed any more
-                }
-                // width and height characteristics of selection, 1, 2, or 3 (for 3 or more)
-                $xMax = min($rangeEnd[0] - $rangeStart[0] + 1, 3);
-                $yMax = min($rangeEnd[1] - $rangeStart[1] + 1, 3);
-
-                // loop through up to 3 x 3 = 9 regions
-                for ($x = 1; $x <= $xMax; ++$x) {
-                    // start column index for region
-                    $colStart = ($x == 3) ?
-                        Coordinate::stringFromColumnIndex($rangeEnd[0])
-                            : Coordinate::stringFromColumnIndex($rangeStart[0] + $x - 1);
-                    // end column index for region
-                    $colEnd = ($x == 1) ?
-                        Coordinate::stringFromColumnIndex($rangeStart[0])
-                            : Coordinate::stringFromColumnIndex($rangeEnd[0] - $xMax + $x);
-
-                    for ($y = 1; $y <= $yMax; ++$y) {
-                        // which edges are touching the region
-                        $edges = [];
-                        if ($x == 1) {
-                            // are we at left edge
-                            $edges[] = 'left';
-                        }
-                        if ($x == $xMax) {
-                            // are we at right edge
-                            $edges[] = 'right';
-                        }
-                        if ($y == 1) {
-                            // are we at top edge?
-                            $edges[] = 'top';
-                        }
-                        if ($y == $yMax) {
-                            // are we at bottom edge?
-                            $edges[] = 'bottom';
-                        }
-
-                        // start row index for region
-                        $rowStart = ($y == 3) ?
-                            $rangeEnd[1] : $rangeStart[1] + $y - 1;
-
-                        // end row index for region
-                        $rowEnd = ($y == 1) ?
-                            $rangeStart[1] : $rangeEnd[1] - $yMax + $y;
-
-                        // build range for region
-                        $range = $colStart . $rowStart . ':' . $colEnd . $rowEnd;
-
-                        // retrieve relevant style array for region
-                        $regionStyles = $pStyles;
-                        unset($regionStyles['borders']['inside']);
-
-                        // what are the inner edges of the region when looking at the selection
-                        $innerEdges = array_diff(['top', 'right', 'bottom', 'left'], $edges);
-
-                        // inner edges that are not touching the region should take the 'inside' border properties if they have been set
-                        foreach ($innerEdges as $innerEdge) {
-                            switch ($innerEdge) {
-                                case 'top':
-                                case 'bottom':
-                                    // should pick up 'horizontal' border property if set
-                                    if (isset($pStyles['borders']['horizontal'])) {
-                                        $regionStyles['borders'][$innerEdge] = $pStyles['borders']['horizontal'];
-                                    } else {
-                                        unset($regionStyles['borders'][$innerEdge]);
-                                    }
-
-                                    break;
-                                case 'left':
-                                case 'right':
-                                    // should pick up 'vertical' border property if set
-                                    if (isset($pStyles['borders']['vertical'])) {
-                                        $regionStyles['borders'][$innerEdge] = $pStyles['borders']['vertical'];
-                                    } else {
-                                        unset($regionStyles['borders'][$innerEdge]);
-                                    }
-
-                                    break;
-                            }
-                        }
-
-                        // apply region style to region by calling applyFromArray() in simple mode
-                        $this->getActiveSheet()->getStyle($range)->applyFromArray($regionStyles, false);
-                    }
-                }
-
-                // restore initial cell selection range
-                $this->getActiveSheet()->getStyle($pRange);
-
-                return $this;
-            }
-
-            // SIMPLE MODE:
-            // Selection type, inspect
-            if (preg_match('/^[A-Z]+1:[A-Z]+1048576$/', $pRange)) {
-                $selectionType = 'COLUMN';
-            } elseif (preg_match('/^A\d+:XFD\d+$/', $pRange)) {
-                $selectionType = 'ROW';
-            } else {
-                $selectionType = 'CELL';
-            }
-
-            // First loop through columns, rows, or cells to find out which styles are affected by this operation
-            switch ($selectionType) {
-                case 'COLUMN':
-                    $oldXfIndexes = [];
-                    for ($col = $rangeStart[0]; $col <= $rangeEnd[0]; ++$col) {
-                        $oldXfIndexes[$this->getActiveSheet()->getColumnDimensionByColumn($col)->getXfIndex()] = true;
-                    }
-                    foreach ($this->getActiveSheet()->getColumnIterator($rangeStart0, $rangeEnd0) as $columnIterator) {
-                        $cellIterator = $columnIterator->getCellIterator();
-                        $cellIterator->setIterateOnlyExistingCells(true);
-                        foreach ($cellIterator as $columnCell) {
-                            $columnCell->getStyle()->applyFromArray($pStyles);
-                        }
-                    }
-
-                    break;
-                case 'ROW':
-                    $oldXfIndexes = [];
-                    for ($row = $rangeStart[1]; $row <= $rangeEnd[1]; ++$row) {
-                        if ($this->getActiveSheet()->getRowDimension($row)->getXfIndex() == null) {
-                            $oldXfIndexes[0] = true; // row without explicit style should be formatted based on default style
-                        } else {
-                            $oldXfIndexes[$this->getActiveSheet()->getRowDimension($row)->getXfIndex()] = true;
-                        }
-                    }
-                    foreach ($this->getActiveSheet()->getRowIterator((int) $rangeStart[1], (int) $rangeEnd[1]) as $rowIterator) {
-                        $cellIterator = $rowIterator->getCellIterator();
-                        $cellIterator->setIterateOnlyExistingCells(true);
-                        foreach ($cellIterator as $rowCell) {
-                            $rowCell->getStyle()->applyFromArray($pStyles);
-                        }
-                    }
-
-                    break;
-                case 'CELL':
-                    $oldXfIndexes = [];
-                    for ($col = $rangeStart[0]; $col <= $rangeEnd[0]; ++$col) {
-                        for ($row = $rangeStart[1]; $row <= $rangeEnd[1]; ++$row) {
-                            $oldXfIndexes[$this->getActiveSheet()->getCellByColumnAndRow($col, $row)->getXfIndex()] = true;
-                        }
-                    }
-
-                    break;
-            }
-
-            // clone each of the affected styles, apply the style array, and add the new styles to the workbook
-            $workbook = $this->getActiveSheet()->getParent();
-            foreach ($oldXfIndexes as $oldXfIndex => $dummy) {
-                $style = $workbook->getCellXfByIndex($oldXfIndex);
-                $newStyle = clone $style;
-                $newStyle->applyFromArray($pStyles);
-
-                if ($existingStyle = $workbook->getCellXfByHashCode($newStyle->getHashCode())) {
-                    // there is already such cell Xf in our collection
-                    $newXfIndexes[$oldXfIndex] = $existingStyle->getIndex();
-                } else {
-                    // we don't have such a cell Xf, need to add
-                    $workbook->addCellXf($newStyle);
-                    $newXfIndexes[$oldXfIndex] = $newStyle->getIndex();
-                }
-            }
-
-            // Loop through columns, rows, or cells again and update the XF index
-            switch ($selectionType) {
-                case 'COLUMN':
-                    for ($col = $rangeStart[0]; $col <= $rangeEnd[0]; ++$col) {
-                        $columnDimension = $this->getActiveSheet()->getColumnDimensionByColumn($col);
-                        $oldXfIndex = $columnDimension->getXfIndex();
-                        $columnDimension->setXfIndex($newXfIndexes[$oldXfIndex]);
-                    }
-
-                    break;
-                case 'ROW':
-                    for ($row = $rangeStart[1]; $row <= $rangeEnd[1]; ++$row) {
-                        $rowDimension = $this->getActiveSheet()->getRowDimension($row);
-                        $oldXfIndex = $rowDimension->getXfIndex() === null ?
-                            0 : $rowDimension->getXfIndex(); // row without explicit style should be formatted based on default style
-                        $rowDimension->setXfIndex($newXfIndexes[$oldXfIndex]);
-                    }
-
-                    break;
-                case 'CELL':
-                    for ($col = $rangeStart[0]; $col <= $rangeEnd[0]; ++$col) {
-                        for ($row = $rangeStart[1]; $row <= $rangeEnd[1]; ++$row) {
-                            $cell = $this->getActiveSheet()->getCellByColumnAndRow($col, $row);
-                            $oldXfIndex = $cell->getXfIndex();
-                            $cell->setXfIndex($newXfIndexes[$oldXfIndex]);
-                        }
-                    }
-
-                    break;
-            }
-        } else {
-            // not a supervisor, just apply the style array directly on style object
-            if (isset($pStyles['fill'])) {
-                $this->getFill()->applyFromArray($pStyles['fill']);
-            }
-            if (isset($pStyles['font'])) {
-                $this->getFont()->applyFromArray($pStyles['font']);
-            }
-            if (isset($pStyles['borders'])) {
-                $this->getBorders()->applyFromArray($pStyles['borders']);
-            }
-            if (isset($pStyles['alignment'])) {
-                $this->getAlignment()->applyFromArray($pStyles['alignment']);
-            }
-            if (isset($pStyles['numberFormat'])) {
-                $this->getNumberFormat()->applyFromArray($pStyles['numberFormat']);
-            }
-            if (isset($pStyles['protection'])) {
-                $this->getProtection()->applyFromArray($pStyles['protection']);
-            }
-            if (isset($pStyles['quotePrefix'])) {
-                $this->quotePrefix = $pStyles['quotePrefix'];
-            }
-        }
-
-        return $this;
-    }
-
-    /**
-     * Get Fill.
-     *
-     * @return Fill
-     */
-    public function getFill()
-    {
-        return $this->fill;
-    }
-
-    /**
-     * Get Font.
-     *
-     * @return Font
-     */
-    public function getFont()
-    {
-        return $this->font;
-    }
-
-    /**
-     * Set font.
-     *
-     * @return $this
-     */
-    public function setFont(Font $font)
-    {
-        $this->font = $font;
-
-        return $this;
-    }
-
-    /**
-     * Get Borders.
-     *
-     * @return Borders
-     */
-    public function getBorders()
-    {
-        return $this->borders;
-    }
-
-    /**
-     * Get Alignment.
-     *
-     * @return Alignment
-     */
-    public function getAlignment()
-    {
-        return $this->alignment;
-    }
-
-    /**
-     * Get Number Format.
-     *
-     * @return NumberFormat
-     */
-    public function getNumberFormat()
-    {
-        return $this->numberFormat;
-    }
-
-    /**
-     * Get Conditional Styles. Only used on supervisor.
-     *
-     * @return Conditional[]
-     */
-    public function getConditionalStyles()
-    {
-        return $this->getActiveSheet()->getConditionalStyles($this->getActiveCell());
-    }
-
-    /**
-     * Set Conditional Styles. Only used on supervisor.
-     *
-     * @param Conditional[] $pValue Array of conditional styles
-     *
-     * @return $this
-     */
-    public function setConditionalStyles(array $pValue)
-    {
-        $this->getActiveSheet()->setConditionalStyles($this->getSelectedCells(), $pValue);
-
-        return $this;
-    }
-
-    /**
-     * Get Protection.
-     *
-     * @return Protection
-     */
-    public function getProtection()
-    {
-        return $this->protection;
-    }
-
-    /**
-     * Get quote prefix.
-     *
-     * @return bool
-     */
-    public function getQuotePrefix()
-    {
-        if ($this->isSupervisor) {
-            return $this->getSharedComponent()->getQuotePrefix();
-        }
-
-        return $this->quotePrefix;
-    }
-
-    /**
-     * Set quote prefix.
-     *
-     * @param bool $pValue
-     *
-     * @return $this
-     */
-    public function setQuotePrefix($pValue)
-    {
-        if ($pValue == '') {
-            $pValue = false;
-        }
-        if ($this->isSupervisor) {
-            $styleArray = ['quotePrefix' => $pValue];
-            $this->getActiveSheet()->getStyle($this->getSelectedCells())->applyFromArray($styleArray);
-        } else {
-            $this->quotePrefix = (bool) $pValue;
-        }
-
-        return $this;
-    }
-
-    /**
-     * Get hash code.
-     *
-     * @return string Hash code
-     */
-    public function getHashCode()
-    {
-        return md5(
-            $this->fill->getHashCode() .
-            $this->font->getHashCode() .
-            $this->borders->getHashCode() .
-            $this->alignment->getHashCode() .
-            $this->numberFormat->getHashCode() .
-            $this->protection->getHashCode() .
-            ($this->quotePrefix ? 't' : 'f') .
-            __CLASS__
-        );
-    }
-
-    /**
-     * Get own index in style collection.
-     *
-     * @return int
-     */
-    public function getIndex()
-    {
-        return $this->index;
-    }
-
-    /**
-     * Set own index in style collection.
-     *
-     * @param int $pValue
-     */
-    public function setIndex($pValue): void
-    {
-        $this->index = $pValue;
-    }
-
-    protected function exportArray1(): array
-    {
-        $exportedArray = [];
-        $this->exportArray2($exportedArray, 'alignment', $this->getAlignment());
-        $this->exportArray2($exportedArray, 'borders', $this->getBorders());
-        $this->exportArray2($exportedArray, 'fill', $this->getFill());
-        $this->exportArray2($exportedArray, 'font', $this->getFont());
-        $this->exportArray2($exportedArray, 'numberFormat', $this->getNumberFormat());
-        $this->exportArray2($exportedArray, 'protection', $this->getProtection());
-        $this->exportArray2($exportedArray, 'quotePrefx', $this->getQuotePrefix());
-
-        return $exportedArray;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+Jhe5N8YjA9UVnC0vCNxleLXbOh8=

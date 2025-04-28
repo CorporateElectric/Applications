@@ -1,264 +1,142 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\TextUI;
-
-use const PHP_EOL;
-use function count;
-use function explode;
-use function max;
-use function preg_replace_callback;
-use function str_pad;
-use function str_repeat;
-use function strlen;
-use function wordwrap;
-use PHPUnit\Util\Color;
-use SebastianBergmann\Environment\Console;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for PHPUnit
- */
-final class Help
-{
-    private const LEFT_MARGIN = '  ';
-
-    private const HELP_TEXT = [
-        'Usage' => [
-            ['text' => 'phpunit [options] UnitTest.php'],
-            ['text' => 'phpunit [options] <directory>'],
-        ],
-
-        'Code Coverage Options' => [
-            ['arg' => '--coverage-clover <file>', 'desc' => 'Generate code coverage report in Clover XML format'],
-            ['arg' => '--coverage-cobertura <file>', 'desc' => 'Generate code coverage report in Cobertura XML format'],
-            ['arg' => '--coverage-crap4j <file>', 'desc' => 'Generate code coverage report in Crap4J XML format'],
-            ['arg' => '--coverage-html <dir>', 'desc' => 'Generate code coverage report in HTML format'],
-            ['arg' => '--coverage-php <file>', 'desc' => 'Export PHP_CodeCoverage object to file'],
-            ['arg' => '--coverage-text <file>', 'desc' => 'Generate code coverage report in text format [default: standard output]'],
-            ['arg' => '--coverage-xml <dir>', 'desc' => 'Generate code coverage report in PHPUnit XML format'],
-            ['arg' => '--coverage-cache <dir>', 'desc' => 'Cache static analysis results'],
-            ['arg' => '--warm-coverage-cache', 'desc' => 'Warm static analysis cache'],
-            ['arg' => '--coverage-filter <dir>', 'desc' => 'Include <dir> in code coverage analysis'],
-            ['arg' => '--path-coverage', 'desc' => 'Perform path coverage analysis'],
-            ['arg' => '--disable-coverage-ignore', 'desc' => 'Disable annotations for ignoring code coverage'],
-            ['arg' => '--no-coverage', 'desc' => 'Ignore code coverage configuration'],
-        ],
-
-        'Logging Options' => [
-            ['arg' => '--log-junit <file>', 'desc' => 'Log test execution in JUnit XML format to file'],
-            ['arg' => '--log-teamcity <file>', 'desc' => 'Log test execution in TeamCity format to file'],
-            ['arg' => '--testdox-html <file>', 'desc' => 'Write agile documentation in HTML format to file'],
-            ['arg' => '--testdox-text <file>', 'desc' => 'Write agile documentation in Text format to file'],
-            ['arg' => '--testdox-xml <file>', 'desc' => 'Write agile documentation in XML format to file'],
-            ['arg' => '--reverse-list', 'desc' => 'Print defects in reverse order'],
-            ['arg' => '--no-logging', 'desc' => 'Ignore logging configuration'],
-        ],
-
-        'Test Selection Options' => [
-            ['arg' => '--list-suites', 'desc' => 'List available test suites'],
-            ['arg' => '--testsuite <name>', 'desc' => 'Filter which testsuite to run'],
-            ['arg' => '--list-groups', 'desc' => 'List available test groups'],
-            ['arg' => '--group <name>', 'desc' => 'Only runs tests from the specified group(s)'],
-            ['arg' => '--exclude-group <name>', 'desc' => 'Exclude tests from the specified group(s)'],
-            ['arg' => '--covers <name>', 'desc' => 'Only runs tests annotated with "@covers <name>"'],
-            ['arg' => '--uses <name>', 'desc' => 'Only runs tests annotated with "@uses <name>"'],
-            ['arg' => '--list-tests', 'desc' => 'List available tests'],
-            ['arg' => '--list-tests-xml <file>', 'desc' => 'List available tests in XML format'],
-            ['arg' => '--filter <pattern>', 'desc' => 'Filter which tests to run'],
-            ['arg' => '--test-suffix <suffixes>', 'desc' => 'Only search for test in files with specified suffix(es). Default: Test.php,.phpt'],
-        ],
-
-        'Test Execution Options' => [
-            ['arg' => '--dont-report-useless-tests', 'desc' => 'Do not report tests that do not test anything'],
-            ['arg'    => '--strict-coverage', 'desc' => 'Be strict about @covers annotation usage'],
-            ['arg'    => '--strict-global-state', 'desc' => 'Be strict about changes to global state'],
-            ['arg'    => '--disallow-test-output', 'desc' => 'Be strict about output during tests'],
-            ['arg'    => '--disallow-resource-usage', 'desc' => 'Be strict about resource usage during small tests'],
-            ['arg'    => '--enforce-time-limit', 'desc' => 'Enforce time limit based on test size'],
-            ['arg'    => '--default-time-limit <sec>', 'desc' => 'Timeout in seconds for tests without @small, @medium or @large'],
-            ['arg'    => '--disallow-todo-tests', 'desc' => 'Disallow @todo-annotated tests'],
-            ['spacer' => ''],
-
-            ['arg'    => '--process-isolation', 'desc' => 'Run each test in a separate PHP process'],
-            ['arg'    => '--globals-backup', 'desc' => 'Backup and restore $GLOBALS for each test'],
-            ['arg'    => '--static-backup', 'desc' => 'Backup and restore static attributes for each test'],
-            ['spacer' => ''],
-
-            ['arg'    => '--colors <flag>', 'desc' => 'Use colors in output ("never", "auto" or "always")'],
-            ['arg'    => '--columns <n>', 'desc' => 'Number of columns to use for progress output'],
-            ['arg'    => '--columns max', 'desc' => 'Use maximum number of columns for progress output'],
-            ['arg'    => '--stderr', 'desc' => 'Write to STDERR instead of STDOUT'],
-            ['arg'    => '--stop-on-defect', 'desc' => 'Stop execution upon first not-passed test'],
-            ['arg'    => '--stop-on-error', 'desc' => 'Stop execution upon first error'],
-            ['arg'    => '--stop-on-failure', 'desc' => 'Stop execution upon first error or failure'],
-            ['arg'    => '--stop-on-warning', 'desc' => 'Stop execution upon first warning'],
-            ['arg'    => '--stop-on-risky', 'desc' => 'Stop execution upon first risky test'],
-            ['arg'    => '--stop-on-skipped', 'desc' => 'Stop execution upon first skipped test'],
-            ['arg'    => '--stop-on-incomplete', 'desc' => 'Stop execution upon first incomplete test'],
-            ['arg'    => '--fail-on-incomplete', 'desc' => 'Treat incomplete tests as failures'],
-            ['arg'    => '--fail-on-risky', 'desc' => 'Treat risky tests as failures'],
-            ['arg'    => '--fail-on-skipped', 'desc' => 'Treat skipped tests as failures'],
-            ['arg'    => '--fail-on-warning', 'desc' => 'Treat tests with warnings as failures'],
-            ['arg'    => '-v|--verbose', 'desc' => 'Output more verbose information'],
-            ['arg'    => '--debug', 'desc' => 'Display debugging information'],
-            ['spacer' => ''],
-
-            ['arg'    => '--repeat <times>', 'desc' => 'Runs the test(s) repeatedly'],
-            ['arg'    => '--teamcity', 'desc' => 'Report test execution progress in TeamCity format'],
-            ['arg'    => '--testdox', 'desc' => 'Report test execution progress in TestDox format'],
-            ['arg'    => '--testdox-group', 'desc' => 'Only include tests from the specified group(s)'],
-            ['arg'    => '--testdox-exclude-group', 'desc' => 'Exclude tests from the specified group(s)'],
-            ['arg'    => '--no-interaction', 'desc' => 'Disable TestDox progress animation'],
-            ['arg'    => '--printer <printer>', 'desc' => 'TestListener implementation to use'],
-            ['spacer' => ''],
-
-            ['arg' => '--order-by <order>', 'desc' => 'Run tests in order: default|defects|duration|no-depends|random|reverse|size'],
-            ['arg' => '--random-order-seed <N>', 'desc' => 'Use a specific random seed <N> for random order'],
-            ['arg' => '--cache-result', 'desc' => 'Write test results to cache file'],
-            ['arg' => '--do-not-cache-result', 'desc' => 'Do not write test results to cache file'],
-        ],
-
-        'Configuration Options' => [
-            ['arg' => '--prepend <file>', 'desc' => 'A PHP script that is included as early as possible'],
-            ['arg' => '--bootstrap <file>', 'desc' => 'A PHP script that is included before the tests run'],
-            ['arg' => '-c|--configuration <file>', 'desc' => 'Read configuration from XML file'],
-            ['arg' => '--no-configuration', 'desc' => 'Ignore default configuration file (phpunit.xml)'],
-            ['arg' => '--extensions <extensions>', 'desc' => 'A comma separated list of PHPUnit extensions to load'],
-            ['arg' => '--no-extensions', 'desc' => 'Do not load PHPUnit extensions'],
-            ['arg' => '--include-path <path(s)>', 'desc' => 'Prepend PHP\'s include_path with given path(s)'],
-            ['arg' => '-d <key[=value]>', 'desc' => 'Sets a php.ini value'],
-            ['arg' => '--cache-result-file <file>', 'desc' => 'Specify result cache path and filename'],
-            ['arg' => '--generate-configuration', 'desc' => 'Generate configuration file with suggested settings'],
-            ['arg' => '--migrate-configuration', 'desc' => 'Migrate configuration file to current format'],
-        ],
-
-        'Miscellaneous Options' => [
-            ['arg' => '-h|--help', 'desc' => 'Prints this usage information'],
-            ['arg' => '--version', 'desc' => 'Prints the version and exits'],
-            ['arg' => '--atleast-version <min>', 'desc' => 'Checks that version is greater than min and exits'],
-            ['arg' => '--check-version', 'desc' => 'Check whether PHPUnit is the latest version'],
-        ],
-
-    ];
-
-    /**
-     * @var int Number of columns required to write the longest option name to the console
-     */
-    private $maxArgLength = 0;
-
-    /**
-     * @var int Number of columns left for the description field after padding and option
-     */
-    private $maxDescLength;
-
-    /**
-     * @var bool Use color highlights for sections, options and parameters
-     */
-    private $hasColor = false;
-
-    public function __construct(?int $width = null, ?bool $withColor = null)
-    {
-        if ($width === null) {
-            $width = (new Console)->getNumberOfColumns();
-        }
-
-        if ($withColor === null) {
-            $this->hasColor = (new Console)->hasColorSupport();
-        } else {
-            $this->hasColor = $withColor;
-        }
-
-        foreach (self::HELP_TEXT as $options) {
-            foreach ($options as $option) {
-                if (isset($option['arg'])) {
-                    $this->maxArgLength = max($this->maxArgLength, isset($option['arg']) ? strlen($option['arg']) : 0);
-                }
-            }
-        }
-
-        $this->maxDescLength = $width - $this->maxArgLength - 4;
-    }
-
-    /**
-     * Write the help file to the CLI, adapting width and colors to the console.
-     */
-    public function writeToConsole(): void
-    {
-        if ($this->hasColor) {
-            $this->writeWithColor();
-        } else {
-            $this->writePlaintext();
-        }
-    }
-
-    private function writePlaintext(): void
-    {
-        foreach (self::HELP_TEXT as $section => $options) {
-            print "{$section}:" . PHP_EOL;
-
-            if ($section !== 'Usage') {
-                print PHP_EOL;
-            }
-
-            foreach ($options as $option) {
-                if (isset($option['spacer'])) {
-                    print PHP_EOL;
-                }
-
-                if (isset($option['text'])) {
-                    print self::LEFT_MARGIN . $option['text'] . PHP_EOL;
-                }
-
-                if (isset($option['arg'])) {
-                    $arg = str_pad($option['arg'], $this->maxArgLength);
-                    print self::LEFT_MARGIN . $arg . ' ' . $option['desc'] . PHP_EOL;
-                }
-            }
-
-            print PHP_EOL;
-        }
-    }
-
-    private function writeWithColor(): void
-    {
-        foreach (self::HELP_TEXT as $section => $options) {
-            print Color::colorize('fg-yellow', "{$section}:") . PHP_EOL;
-
-            foreach ($options as $option) {
-                if (isset($option['spacer'])) {
-                    print PHP_EOL;
-                }
-
-                if (isset($option['text'])) {
-                    print self::LEFT_MARGIN . $option['text'] . PHP_EOL;
-                }
-
-                if (isset($option['arg'])) {
-                    $arg = Color::colorize('fg-green', str_pad($option['arg'], $this->maxArgLength));
-                    $arg = preg_replace_callback(
-                        '/(<[^>]+>)/',
-                        static function ($matches) {
-                            return Color::colorize('fg-cyan', $matches[0]);
-                        },
-                        $arg
-                    );
-                    $desc = explode(PHP_EOL, wordwrap($option['desc'], $this->maxDescLength, PHP_EOL));
-
-                    print self::LEFT_MARGIN . $arg . ' ' . $desc[0] . PHP_EOL;
-
-                    for ($i = 1; $i < count($desc); $i++) {
-                        print str_repeat(' ', $this->maxArgLength + 3) . $desc[$i] . PHP_EOL;
-                    }
-                }
-            }
-
-            print PHP_EOL;
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

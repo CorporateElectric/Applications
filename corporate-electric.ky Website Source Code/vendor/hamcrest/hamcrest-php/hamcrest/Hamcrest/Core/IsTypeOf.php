@@ -1,71 +1,54 @@
-<?php
-namespace Hamcrest\Core;
-
-/*
- Copyright (c) 2010 hamcrest.org
- */
-use Hamcrest\BaseMatcher;
-use Hamcrest\Description;
-
-/**
- * Tests whether the value has a built-in type.
- */
-class IsTypeOf extends BaseMatcher
-{
-
-    private $_theType;
-
-    /**
-     * Creates a new instance of IsTypeOf
-     *
-     * @param string $theType
-     *   The predicate evaluates to true for values with this built-in type.
-     */
-    public function __construct($theType)
-    {
-        $this->_theType = strtolower($theType);
-    }
-
-    public function matches($item)
-    {
-        return strtolower(gettype($item)) == $this->_theType;
-    }
-
-    public function describeTo(Description $description)
-    {
-        $description->appendText(self::getTypeDescription($this->_theType));
-    }
-
-    public function describeMismatch($item, Description $description)
-    {
-        if ($item === null) {
-            $description->appendText('was null');
-        } else {
-            $description->appendText('was ')
-                                    ->appendText(self::getTypeDescription(strtolower(gettype($item))))
-                                    ->appendText(' ')
-                                    ->appendValue($item)
-                                    ;
-        }
-    }
-
-    public static function getTypeDescription($type)
-    {
-        if ($type == 'null') {
-            return 'null';
-        }
-
-        return (strpos('aeiou', substr($type, 0, 1)) === false ? 'a ' : 'an ')
-                . $type;
-    }
-
-    /**
-     * Is the value a particular built-in type?
-     *
-     * @factory
-     */
-    public static function typeOf($theType)
-    {
-        return new self($theType);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

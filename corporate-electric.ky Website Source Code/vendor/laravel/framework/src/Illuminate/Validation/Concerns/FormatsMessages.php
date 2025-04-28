@@ -1,400 +1,182 @@
-<?php
-
-namespace Illuminate\Validation\Concerns;
-
-use Closure;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
-use Symfony\Component\HttpFoundation\File\UploadedFile;
-
-trait FormatsMessages
-{
-    use ReplacesAttributes;
-
-    /**
-     * Get the validation message for an attribute and rule.
-     *
-     * @param  string  $attribute
-     * @param  string  $rule
-     * @return string
-     */
-    protected function getMessage($attribute, $rule)
-    {
-        $inlineMessage = $this->getInlineMessage($attribute, $rule);
-
-        // First we will retrieve the custom message for the validation rule if one
-        // exists. If a custom validation message is being used we'll return the
-        // custom message, otherwise we'll keep searching for a valid message.
-        if (! is_null($inlineMessage)) {
-            return $inlineMessage;
-        }
-
-        $lowerRule = Str::snake($rule);
-
-        $customMessage = $this->getCustomMessageFromTranslator(
-            $customKey = "validation.custom.{$attribute}.{$lowerRule}"
-        );
-
-        // First we check for a custom defined validation message for the attribute
-        // and rule. This allows the developer to specify specific messages for
-        // only some attributes and rules that need to get specially formed.
-        if ($customMessage !== $customKey) {
-            return $customMessage;
-        }
-
-        // If the rule being validated is a "size" rule, we will need to gather the
-        // specific error message for the type of attribute being validated such
-        // as a number, file or string which all have different message types.
-        elseif (in_array($rule, $this->sizeRules)) {
-            return $this->getSizeMessage($attribute, $rule);
-        }
-
-        // Finally, if no developer specified messages have been set, and no other
-        // special messages apply for this rule, we will just pull the default
-        // messages out of the translator service for this validation rule.
-        $key = "validation.{$lowerRule}";
-
-        if ($key != ($value = $this->translator->get($key))) {
-            return $value;
-        }
-
-        return $this->getFromLocalArray(
-            $attribute, $lowerRule, $this->fallbackMessages
-        ) ?: $key;
-    }
-
-    /**
-     * Get the proper inline error message for standard and size rules.
-     *
-     * @param  string  $attribute
-     * @param  string  $rule
-     * @return string|null
-     */
-    protected function getInlineMessage($attribute, $rule)
-    {
-        $inlineEntry = $this->getFromLocalArray($attribute, Str::snake($rule));
-
-        return is_array($inlineEntry) && in_array($rule, $this->sizeRules)
-                    ? $inlineEntry[$this->getAttributeType($attribute)]
-                    : $inlineEntry;
-    }
-
-    /**
-     * Get the inline message for a rule if it exists.
-     *
-     * @param  string  $attribute
-     * @param  string  $lowerRule
-     * @param  array|null  $source
-     * @return string|null
-     */
-    protected function getFromLocalArray($attribute, $lowerRule, $source = null)
-    {
-        $source = $source ?: $this->customMessages;
-
-        $keys = ["{$attribute}.{$lowerRule}", $lowerRule];
-
-        // First we will check for a custom message for an attribute specific rule
-        // message for the fields, then we will check for a general custom line
-        // that is not attribute specific. If we find either we'll return it.
-        foreach ($keys as $key) {
-            foreach (array_keys($source) as $sourceKey) {
-                if (strpos($sourceKey, '*') !== false) {
-                    $pattern = str_replace('\*', '([^.]*)', preg_quote($sourceKey, '#'));
-
-                    if (preg_match('#^'.$pattern.'\z#u', $key) === 1) {
-                        return $source[$sourceKey];
-                    }
-
-                    continue;
-                }
-
-                if (Str::is($sourceKey, $key)) {
-                    return $source[$sourceKey];
-                }
-            }
-        }
-    }
-
-    /**
-     * Get the custom error message from translator.
-     *
-     * @param  string  $key
-     * @return string
-     */
-    protected function getCustomMessageFromTranslator($key)
-    {
-        if (($message = $this->translator->get($key)) !== $key) {
-            return $message;
-        }
-
-        // If an exact match was not found for the key, we will collapse all of these
-        // messages and loop through them and try to find a wildcard match for the
-        // given key. Otherwise, we will simply return the key's value back out.
-        $shortKey = preg_replace(
-            '/^validation\.custom\./', '', $key
-        );
-
-        return $this->getWildcardCustomMessages(Arr::dot(
-            (array) $this->translator->get('validation.custom')
-        ), $shortKey, $key);
-    }
-
-    /**
-     * Check the given messages for a wildcard key.
-     *
-     * @param  array  $messages
-     * @param  string  $search
-     * @param  string  $default
-     * @return string
-     */
-    protected function getWildcardCustomMessages($messages, $search, $default)
-    {
-        foreach ($messages as $key => $message) {
-            if ($search === $key || (Str::contains($key, ['*']) && Str::is($key, $search))) {
-                return $message;
-            }
-        }
-
-        return $default;
-    }
-
-    /**
-     * Get the proper error message for an attribute and size rule.
-     *
-     * @param  string  $attribute
-     * @param  string  $rule
-     * @return string
-     */
-    protected function getSizeMessage($attribute, $rule)
-    {
-        $lowerRule = Str::snake($rule);
-
-        // There are three different types of size validations. The attribute may be
-        // either a number, file, or string so we will check a few things to know
-        // which type of value it is and return the correct line for that type.
-        $type = $this->getAttributeType($attribute);
-
-        $key = "validation.{$lowerRule}.{$type}";
-
-        return $this->translator->get($key);
-    }
-
-    /**
-     * Get the data type of the given attribute.
-     *
-     * @param  string  $attribute
-     * @return string
-     */
-    protected function getAttributeType($attribute)
-    {
-        // We assume that the attributes present in the file array are files so that
-        // means that if the attribute does not have a numeric rule and the files
-        // list doesn't have it we'll just consider it a string by elimination.
-        if ($this->hasRule($attribute, $this->numericRules)) {
-            return 'numeric';
-        } elseif ($this->hasRule($attribute, ['Array'])) {
-            return 'array';
-        } elseif ($this->getValue($attribute) instanceof UploadedFile) {
-            return 'file';
-        }
-
-        return 'string';
-    }
-
-    /**
-     * Replace all error message place-holders with actual values.
-     *
-     * @param  string  $message
-     * @param  string  $attribute
-     * @param  string  $rule
-     * @param  array  $parameters
-     * @return string
-     */
-    public function makeReplacements($message, $attribute, $rule, $parameters)
-    {
-        $message = $this->replaceAttributePlaceholder(
-            $message, $this->getDisplayableAttribute($attribute)
-        );
-
-        $message = $this->replaceInputPlaceholder($message, $attribute);
-
-        if (isset($this->replacers[Str::snake($rule)])) {
-            return $this->callReplacer($message, $attribute, Str::snake($rule), $parameters, $this);
-        } elseif (method_exists($this, $replacer = "replace{$rule}")) {
-            return $this->$replacer($message, $attribute, $rule, $parameters);
-        }
-
-        return $message;
-    }
-
-    /**
-     * Get the displayable name of the attribute.
-     *
-     * @param  string  $attribute
-     * @return string
-     */
-    public function getDisplayableAttribute($attribute)
-    {
-        $primaryAttribute = $this->getPrimaryAttribute($attribute);
-
-        $expectedAttributes = $attribute != $primaryAttribute
-                    ? [$attribute, $primaryAttribute] : [$attribute];
-
-        foreach ($expectedAttributes as $name) {
-            // The developer may dynamically specify the array of custom attributes on this
-            // validator instance. If the attribute exists in this array it is used over
-            // the other ways of pulling the attribute name for this given attributes.
-            if (isset($this->customAttributes[$name])) {
-                return $this->customAttributes[$name];
-            }
-
-            // We allow for a developer to specify language lines for any attribute in this
-            // application, which allows flexibility for displaying a unique displayable
-            // version of the attribute name instead of the name used in an HTTP POST.
-            if ($line = $this->getAttributeFromTranslations($name)) {
-                return $line;
-            }
-        }
-
-        // When no language line has been specified for the attribute and it is also
-        // an implicit attribute we will display the raw attribute's name and not
-        // modify it with any of these replacements before we display the name.
-        if (isset($this->implicitAttributes[$primaryAttribute])) {
-            return ($formatter = $this->implicitAttributesFormatter)
-                            ? $formatter($attribute)
-                            : $attribute;
-        }
-
-        return str_replace('_', ' ', Str::snake($attribute));
-    }
-
-    /**
-     * Get the given attribute from the attribute translations.
-     *
-     * @param  string  $name
-     * @return string
-     */
-    protected function getAttributeFromTranslations($name)
-    {
-        return Arr::get($this->translator->get('validation.attributes'), $name);
-    }
-
-    /**
-     * Replace the :attribute placeholder in the given message.
-     *
-     * @param  string  $message
-     * @param  string  $value
-     * @return string
-     */
-    protected function replaceAttributePlaceholder($message, $value)
-    {
-        return str_replace(
-            [':attribute', ':ATTRIBUTE', ':Attribute'],
-            [$value, Str::upper($value), Str::ucfirst($value)],
-            $message
-        );
-    }
-
-    /**
-     * Replace the :input placeholder in the given message.
-     *
-     * @param  string  $message
-     * @param  string  $attribute
-     * @return string
-     */
-    protected function replaceInputPlaceholder($message, $attribute)
-    {
-        $actualValue = $this->getValue($attribute);
-
-        if (is_scalar($actualValue) || is_null($actualValue)) {
-            $message = str_replace(':input', $this->getDisplayableValue($attribute, $actualValue), $message);
-        }
-
-        return $message;
-    }
-
-    /**
-     * Get the displayable name of the value.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @return string
-     */
-    public function getDisplayableValue($attribute, $value)
-    {
-        if (isset($this->customValues[$attribute][$value])) {
-            return $this->customValues[$attribute][$value];
-        }
-
-        $key = "validation.values.{$attribute}.{$value}";
-
-        if (($line = $this->translator->get($key)) !== $key) {
-            return $line;
-        }
-
-        if (is_bool($value)) {
-            return $value ? 'true' : 'false';
-        }
-
-        return $value;
-    }
-
-    /**
-     * Transform an array of attributes to their displayable form.
-     *
-     * @param  array  $values
-     * @return array
-     */
-    protected function getAttributeList(array $values)
-    {
-        $attributes = [];
-
-        // For each attribute in the list we will simply get its displayable form as
-        // this is convenient when replacing lists of parameters like some of the
-        // replacement functions do when formatting out the validation message.
-        foreach ($values as $key => $value) {
-            $attributes[$key] = $this->getDisplayableAttribute($value);
-        }
-
-        return $attributes;
-    }
-
-    /**
-     * Call a custom validator message replacer.
-     *
-     * @param  string  $message
-     * @param  string  $attribute
-     * @param  string  $rule
-     * @param  array  $parameters
-     * @param  \Illuminate\Validation\Validator  $validator
-     * @return string|null
-     */
-    protected function callReplacer($message, $attribute, $rule, $parameters, $validator)
-    {
-        $callback = $this->replacers[$rule];
-
-        if ($callback instanceof Closure) {
-            return $callback(...func_get_args());
-        } elseif (is_string($callback)) {
-            return $this->callClassBasedReplacer($callback, $message, $attribute, $rule, $parameters, $validator);
-        }
-    }
-
-    /**
-     * Call a class based validator message replacer.
-     *
-     * @param  string  $callback
-     * @param  string  $message
-     * @param  string  $attribute
-     * @param  string  $rule
-     * @param  array  $parameters
-     * @param  \Illuminate\Validation\Validator  $validator
-     * @return string
-     */
-    protected function callClassBasedReplacer($callback, $message, $attribute, $rule, $parameters, $validator)
-    {
-        [$class, $method] = Str::parseCallback($callback, 'replace');
-
-        return $this->container->make($class)->{$method}(...array_slice(func_get_args(), 1));
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

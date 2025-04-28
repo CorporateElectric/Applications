@@ -1,539 +1,194 @@
-<?php
-
-/**
- * Our in-house implementation of a parser.
- *
- * A pure PHP parser, DirectLex has absolutely no dependencies, making
- * it a reasonably good default for PHP4.  Written with efficiency in mind,
- * it can be four times faster than HTMLPurifier_Lexer_PEARSax3, although it
- * pales in comparison to HTMLPurifier_Lexer_DOMLex.
- *
- * @todo Reread XML spec and document differences.
- */
-class HTMLPurifier_Lexer_DirectLex extends HTMLPurifier_Lexer
-{
-    /**
-     * @type bool
-     */
-    public $tracksLineNumbers = true;
-
-    /**
-     * Whitespace characters for str(c)spn.
-     * @type string
-     */
-    protected $_whitespace = "\x20\x09\x0D\x0A";
-
-    /**
-     * Callback function for script CDATA fudge
-     * @param array $matches, in form of array(opening tag, contents, closing tag)
-     * @return string
-     */
-    protected function scriptCallback($matches)
-    {
-        return $matches[1] . htmlspecialchars($matches[2], ENT_COMPAT, 'UTF-8') . $matches[3];
-    }
-
-    /**
-     * @param String $html
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return array|HTMLPurifier_Token[]
-     */
-    public function tokenizeHTML($html, $config, $context)
-    {
-        // special normalization for script tags without any armor
-        // our "armor" heurstic is a < sign any number of whitespaces after
-        // the first script tag
-        if ($config->get('HTML.Trusted')) {
-            $html = preg_replace_callback(
-                '#(<script[^>]*>)(\s*[^<].+?)(</script>)#si',
-                array($this, 'scriptCallback'),
-                $html
-            );
-        }
-
-        $html = $this->normalize($html, $config, $context);
-
-        $cursor = 0; // our location in the text
-        $inside_tag = false; // whether or not we're parsing the inside of a tag
-        $array = array(); // result array
-
-        // This is also treated to mean maintain *column* numbers too
-        $maintain_line_numbers = $config->get('Core.MaintainLineNumbers');
-
-        if ($maintain_line_numbers === null) {
-            // automatically determine line numbering by checking
-            // if error collection is on
-            $maintain_line_numbers = $config->get('Core.CollectErrors');
-        }
-
-        if ($maintain_line_numbers) {
-            $current_line = 1;
-            $current_col = 0;
-            $length = strlen($html);
-        } else {
-            $current_line = false;
-            $current_col = false;
-            $length = false;
-        }
-        $context->register('CurrentLine', $current_line);
-        $context->register('CurrentCol', $current_col);
-        $nl = "\n";
-        // how often to manually recalculate. This will ALWAYS be right,
-        // but it's pretty wasteful. Set to 0 to turn off
-        $synchronize_interval = $config->get('Core.DirectLexLineNumberSyncInterval');
-
-        $e = false;
-        if ($config->get('Core.CollectErrors')) {
-            $e =& $context->get('ErrorCollector');
-        }
-
-        // for testing synchronization
-        $loops = 0;
-
-        while (++$loops) {
-            // $cursor is either at the start of a token, or inside of
-            // a tag (i.e. there was a < immediately before it), as indicated
-            // by $inside_tag
-
-            if ($maintain_line_numbers) {
-                // $rcursor, however, is always at the start of a token.
-                $rcursor = $cursor - (int)$inside_tag;
-
-                // Column number is cheap, so we calculate it every round.
-                // We're interested at the *end* of the newline string, so
-                // we need to add strlen($nl) == 1 to $nl_pos before subtracting it
-                // from our "rcursor" position.
-                $nl_pos = strrpos($html, $nl, $rcursor - $length);
-                $current_col = $rcursor - (is_bool($nl_pos) ? 0 : $nl_pos + 1);
-
-                // recalculate lines
-                if ($synchronize_interval && // synchronization is on
-                    $cursor > 0 && // cursor is further than zero
-                    $loops % $synchronize_interval === 0) { // time to synchronize!
-                    $current_line = 1 + $this->substrCount($html, $nl, 0, $cursor);
-                }
-            }
-
-            $position_next_lt = strpos($html, '<', $cursor);
-            $position_next_gt = strpos($html, '>', $cursor);
-
-            // triggers on "<b>asdf</b>" but not "asdf <b></b>"
-            // special case to set up context
-            if ($position_next_lt === $cursor) {
-                $inside_tag = true;
-                $cursor++;
-            }
-
-            if (!$inside_tag && $position_next_lt !== false) {
-                // We are not inside tag and there still is another tag to parse
-                $token = new
-                HTMLPurifier_Token_Text(
-                    $this->parseText(
-                        substr(
-                            $html,
-                            $cursor,
-                            $position_next_lt - $cursor
-                        ), $config
-                    )
-                );
-                if ($maintain_line_numbers) {
-                    $token->rawPosition($current_line, $current_col);
-                    $current_line += $this->substrCount($html, $nl, $cursor, $position_next_lt - $cursor);
-                }
-                $array[] = $token;
-                $cursor = $position_next_lt + 1;
-                $inside_tag = true;
-                continue;
-            } elseif (!$inside_tag) {
-                // We are not inside tag but there are no more tags
-                // If we're already at the end, break
-                if ($cursor === strlen($html)) {
-                    break;
-                }
-                // Create Text of rest of string
-                $token = new
-                HTMLPurifier_Token_Text(
-                    $this->parseText(
-                        substr(
-                            $html,
-                            $cursor
-                        ), $config
-                    )
-                );
-                if ($maintain_line_numbers) {
-                    $token->rawPosition($current_line, $current_col);
-                }
-                $array[] = $token;
-                break;
-            } elseif ($inside_tag && $position_next_gt !== false) {
-                // We are in tag and it is well formed
-                // Grab the internals of the tag
-                $strlen_segment = $position_next_gt - $cursor;
-
-                if ($strlen_segment < 1) {
-                    // there's nothing to process!
-                    $token = new HTMLPurifier_Token_Text('<');
-                    $cursor++;
-                    continue;
-                }
-
-                $segment = substr($html, $cursor, $strlen_segment);
-
-                if ($segment === false) {
-                    // somehow, we attempted to access beyond the end of
-                    // the string, defense-in-depth, reported by Nate Abele
-                    break;
-                }
-
-                // Check if it's a comment
-                if (substr($segment, 0, 3) === '!--') {
-                    // re-determine segment length, looking for -->
-                    $position_comment_end = strpos($html, '-->', $cursor);
-                    if ($position_comment_end === false) {
-                        // uh oh, we have a comment that extends to
-                        // infinity. Can't be helped: set comment
-                        // end position to end of string
-                        if ($e) {
-                            $e->send(E_WARNING, 'Lexer: Unclosed comment');
-                        }
-                        $position_comment_end = strlen($html);
-                        $end = true;
-                    } else {
-                        $end = false;
-                    }
-                    $strlen_segment = $position_comment_end - $cursor;
-                    $segment = substr($html, $cursor, $strlen_segment);
-                    $token = new
-                    HTMLPurifier_Token_Comment(
-                        substr(
-                            $segment,
-                            3,
-                            $strlen_segment - 3
-                        )
-                    );
-                    if ($maintain_line_numbers) {
-                        $token->rawPosition($current_line, $current_col);
-                        $current_line += $this->substrCount($html, $nl, $cursor, $strlen_segment);
-                    }
-                    $array[] = $token;
-                    $cursor = $end ? $position_comment_end : $position_comment_end + 3;
-                    $inside_tag = false;
-                    continue;
-                }
-
-                // Check if it's an end tag
-                $is_end_tag = (strpos($segment, '/') === 0);
-                if ($is_end_tag) {
-                    $type = substr($segment, 1);
-                    $token = new HTMLPurifier_Token_End($type);
-                    if ($maintain_line_numbers) {
-                        $token->rawPosition($current_line, $current_col);
-                        $current_line += $this->substrCount($html, $nl, $cursor, $position_next_gt - $cursor);
-                    }
-                    $array[] = $token;
-                    $inside_tag = false;
-                    $cursor = $position_next_gt + 1;
-                    continue;
-                }
-
-                // Check leading character is alnum, if not, we may
-                // have accidently grabbed an emoticon. Translate into
-                // text and go our merry way
-                if (!ctype_alpha($segment[0])) {
-                    // XML:  $segment[0] !== '_' && $segment[0] !== ':'
-                    if ($e) {
-                        $e->send(E_NOTICE, 'Lexer: Unescaped lt');
-                    }
-                    $token = new HTMLPurifier_Token_Text('<');
-                    if ($maintain_line_numbers) {
-                        $token->rawPosition($current_line, $current_col);
-                        $current_line += $this->substrCount($html, $nl, $cursor, $position_next_gt - $cursor);
-                    }
-                    $array[] = $token;
-                    $inside_tag = false;
-                    continue;
-                }
-
-                // Check if it is explicitly self closing, if so, remove
-                // trailing slash. Remember, we could have a tag like <br>, so
-                // any later token processing scripts must convert improperly
-                // classified EmptyTags from StartTags.
-                $is_self_closing = (strrpos($segment, '/') === $strlen_segment - 1);
-                if ($is_self_closing) {
-                    $strlen_segment--;
-                    $segment = substr($segment, 0, $strlen_segment);
-                }
-
-                // Check if there are any attributes
-                $position_first_space = strcspn($segment, $this->_whitespace);
-
-                if ($position_first_space >= $strlen_segment) {
-                    if ($is_self_closing) {
-                        $token = new HTMLPurifier_Token_Empty($segment);
-                    } else {
-                        $token = new HTMLPurifier_Token_Start($segment);
-                    }
-                    if ($maintain_line_numbers) {
-                        $token->rawPosition($current_line, $current_col);
-                        $current_line += $this->substrCount($html, $nl, $cursor, $position_next_gt - $cursor);
-                    }
-                    $array[] = $token;
-                    $inside_tag = false;
-                    $cursor = $position_next_gt + 1;
-                    continue;
-                }
-
-                // Grab out all the data
-                $type = substr($segment, 0, $position_first_space);
-                $attribute_string =
-                    trim(
-                        substr(
-                            $segment,
-                            $position_first_space
-                        )
-                    );
-                if ($attribute_string) {
-                    $attr = $this->parseAttributeString(
-                        $attribute_string,
-                        $config,
-                        $context
-                    );
-                } else {
-                    $attr = array();
-                }
-
-                if ($is_self_closing) {
-                    $token = new HTMLPurifier_Token_Empty($type, $attr);
-                } else {
-                    $token = new HTMLPurifier_Token_Start($type, $attr);
-                }
-                if ($maintain_line_numbers) {
-                    $token->rawPosition($current_line, $current_col);
-                    $current_line += $this->substrCount($html, $nl, $cursor, $position_next_gt - $cursor);
-                }
-                $array[] = $token;
-                $cursor = $position_next_gt + 1;
-                $inside_tag = false;
-                continue;
-            } else {
-                // inside tag, but there's no ending > sign
-                if ($e) {
-                    $e->send(E_WARNING, 'Lexer: Missing gt');
-                }
-                $token = new
-                HTMLPurifier_Token_Text(
-                    '<' .
-                    $this->parseText(
-                        substr($html, $cursor), $config
-                    )
-                );
-                if ($maintain_line_numbers) {
-                    $token->rawPosition($current_line, $current_col);
-                }
-                // no cursor scroll? Hmm...
-                $array[] = $token;
-                break;
-            }
-            break;
-        }
-
-        $context->destroy('CurrentLine');
-        $context->destroy('CurrentCol');
-        return $array;
-    }
-
-    /**
-     * PHP 5.0.x compatible substr_count that implements offset and length
-     * @param string $haystack
-     * @param string $needle
-     * @param int $offset
-     * @param int $length
-     * @return int
-     */
-    protected function substrCount($haystack, $needle, $offset, $length)
-    {
-        static $oldVersion;
-        if ($oldVersion === null) {
-            $oldVersion = version_compare(PHP_VERSION, '5.1', '<');
-        }
-        if ($oldVersion) {
-            $haystack = substr($haystack, $offset, $length);
-            return substr_count($haystack, $needle);
-        } else {
-            return substr_count($haystack, $needle, $offset, $length);
-        }
-    }
-
-    /**
-     * Takes the inside of an HTML tag and makes an assoc array of attributes.
-     *
-     * @param string $string Inside of tag excluding name.
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return array Assoc array of attributes.
-     */
-    public function parseAttributeString($string, $config, $context)
-    {
-        $string = (string)$string; // quick typecast
-
-        if ($string == '') {
-            return array();
-        } // no attributes
-
-        $e = false;
-        if ($config->get('Core.CollectErrors')) {
-            $e =& $context->get('ErrorCollector');
-        }
-
-        // let's see if we can abort as quickly as possible
-        // one equal sign, no spaces => one attribute
-        $num_equal = substr_count($string, '=');
-        $has_space = strpos($string, ' ');
-        if ($num_equal === 0 && !$has_space) {
-            // bool attribute
-            return array($string => $string);
-        } elseif ($num_equal === 1 && !$has_space) {
-            // only one attribute
-            list($key, $quoted_value) = explode('=', $string);
-            $quoted_value = trim($quoted_value);
-            if (!$key) {
-                if ($e) {
-                    $e->send(E_ERROR, 'Lexer: Missing attribute key');
-                }
-                return array();
-            }
-            if (!$quoted_value) {
-                return array($key => '');
-            }
-            $first_char = @$quoted_value[0];
-            $last_char = @$quoted_value[strlen($quoted_value) - 1];
-
-            $same_quote = ($first_char == $last_char);
-            $open_quote = ($first_char == '"' || $first_char == "'");
-
-            if ($same_quote && $open_quote) {
-                // well behaved
-                $value = substr($quoted_value, 1, strlen($quoted_value) - 2);
-            } else {
-                // not well behaved
-                if ($open_quote) {
-                    if ($e) {
-                        $e->send(E_ERROR, 'Lexer: Missing end quote');
-                    }
-                    $value = substr($quoted_value, 1);
-                } else {
-                    $value = $quoted_value;
-                }
-            }
-            if ($value === false) {
-                $value = '';
-            }
-            return array($key => $this->parseAttr($value, $config));
-        }
-
-        // setup loop environment
-        $array = array(); // return assoc array of attributes
-        $cursor = 0; // current position in string (moves forward)
-        $size = strlen($string); // size of the string (stays the same)
-
-        // if we have unquoted attributes, the parser expects a terminating
-        // space, so let's guarantee that there's always a terminating space.
-        $string .= ' ';
-
-        $old_cursor = -1;
-        while ($cursor < $size) {
-            if ($old_cursor >= $cursor) {
-                throw new Exception("Infinite loop detected");
-            }
-            $old_cursor = $cursor;
-
-            $cursor += ($value = strspn($string, $this->_whitespace, $cursor));
-            // grab the key
-
-            $key_begin = $cursor; //we're currently at the start of the key
-
-            // scroll past all characters that are the key (not whitespace or =)
-            $cursor += strcspn($string, $this->_whitespace . '=', $cursor);
-
-            $key_end = $cursor; // now at the end of the key
-
-            $key = substr($string, $key_begin, $key_end - $key_begin);
-
-            if (!$key) {
-                if ($e) {
-                    $e->send(E_ERROR, 'Lexer: Missing attribute key');
-                }
-                $cursor += 1 + strcspn($string, $this->_whitespace, $cursor + 1); // prevent infinite loop
-                continue; // empty key
-            }
-
-            // scroll past all whitespace
-            $cursor += strspn($string, $this->_whitespace, $cursor);
-
-            if ($cursor >= $size) {
-                $array[$key] = $key;
-                break;
-            }
-
-            // if the next character is an equal sign, we've got a regular
-            // pair, otherwise, it's a bool attribute
-            $first_char = @$string[$cursor];
-
-            if ($first_char == '=') {
-                // key="value"
-
-                $cursor++;
-                $cursor += strspn($string, $this->_whitespace, $cursor);
-
-                if ($cursor === false) {
-                    $array[$key] = '';
-                    break;
-                }
-
-                // we might be in front of a quote right now
-
-                $char = @$string[$cursor];
-
-                if ($char == '"' || $char == "'") {
-                    // it's quoted, end bound is $char
-                    $cursor++;
-                    $value_begin = $cursor;
-                    $cursor = strpos($string, $char, $cursor);
-                    $value_end = $cursor;
-                } else {
-                    // it's not quoted, end bound is whitespace
-                    $value_begin = $cursor;
-                    $cursor += strcspn($string, $this->_whitespace, $cursor);
-                    $value_end = $cursor;
-                }
-
-                // we reached a premature end
-                if ($cursor === false) {
-                    $cursor = $size;
-                    $value_end = $cursor;
-                }
-
-                $value = substr($string, $value_begin, $value_end - $value_begin);
-                if ($value === false) {
-                    $value = '';
-                }
-                $array[$key] = $this->parseAttr($value, $config);
-                $cursor++;
-            } else {
-                // boolattr
-                if ($key !== '') {
-                    $array[$key] = $key;
-                } else {
-                    // purely theoretical
-                    if ($e) {
-                        $e->send(E_ERROR, 'Lexer: Missing attribute key');
-                    }
-                }
-            }
-        }
-        return $array;
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cP/dW8RspR9goIZ6qddC2921C0bfd7OShgkm7XJYOLp0wYkgULMnrn7KVDVsjuU9C0pLAyoiq
+it1cJ2/qMcxYI7PqHzpEwoXd7ValexkMu0dhH5TXXQEWoPRTgLpDLdqhW7qnCtHwOtLkd8WoVCtU
+6JHo50gHFx///prpPw3KmDj4f3Gndsc6gHJyMijlQnY6vNCEz9XKniu25E9xoeoVGxcNWFl/URvZ
+BBxGNJX4euvutG8o1uf4k5VSdDzJvCUtrhwQ4KqwrQihvrJ1KTFS6I1KH7ReNMasa+kJB+Y5lvXf
+aoxM4IN/1bWZ75dc94ViD+d7XitXd6cyCkvmgH5gHa4XwvckBqc78Eoz3k8kNN5ooSjvl4Tkinib
+eh8BDpGsZlfNoQz2TksEtGMJyXLdP24Ppq6y/WyZJiyg7KtXc8sOAs+8PihurYfXAiUwjVDYzq3z
+Xz39YCXuoWxBa8Ok/HQDbimu6/Lg0+OC3WEeywGQ9X424h0qXK2KH0xGJIob3bxbjuuxwF1WZleG
+6QqpaKAtAQA2DJ49rrrFfsrQ17iF1DOMjY17lGahCvaZTYcwkkyxxHBxhkfHdHSRSRXtR0AXRHPf
+61g4E9yw4yEvwDfu8L7hCWsDDZg//Y3QIv63FOsiaiW8FrdCSfL1I7eOKSszqEdPyUy2nVS2e5ZS
+cwRPx9p438t1h34tY07n8pusqSm2gQZ0u2kd1YwGqiYeAqNuq1N3+xLavaBAYKUx7P4UZ3xLRr8r
+MTgFO8CmOxI2hvzV4wKcNiX31DF/ZZzSso1nzQzWQ0xf44wKXDaehdD4XTlBQ6FDezHUqR6Tb7uS
+tcaVBjgdeOtFwxoHQg02wu39j9F685VXYmxwHX6SFcNJtIhQkoSSndSHE9q7ZusN6JKkA65RZbnh
+MvG9VT1GcC8F/OntqNqkL5GqvW0Mydu35PhRAejNJqPnck2JtuTk83OX4p74Y0fz1SKgQWh+iryx
+jmQnNqynIv13/ohnmtYU/zqCCr63G4K6UuYkuLN2lRrza4d72BfgxJO3JuKCcCnbgw3VJuvS3ybO
+gB9Iv4BES+1EDN0IfYkuiyZcy+vQWUOVkgk6UtQd7MlBh42TQmILU51I+khCGUqi+JRd9vMEwVCm
+L7ophq26Sd0j6/kin8yWT8h+r+tSyNOOxjDqn2iEYEMrdXZUiIOw3K0A2sz4EFoLdY1GB/CtrKm4
+RQJJaxQrTkMoKYaaeeDUw/jB4hJ4tqjDzDxlg7X2gtXMhyfuDt/LMchmYmjtI0sjuh2lLKnPhtPi
+l/+qxHCEx9OCDTQYohtWR0XXYgDwD2PmrVsgSVGn/b4XV+VR1WqoTqJg37Te7KQrkokXJFbZQUXw
+DU9BAJ+22QNRR3KDOFQO4XBgwydPfb0W1nRBLsj7LQ2DM0JCi1COXgprvP4VckFpZLLdl27ut85m
+yVC7weO4B9ZWhgMCsvJRN/evNtIdM7pyi/C/Uktb+50nVdTkBlqpX1LiCUGR0hJlQ63BlwMIE1DX
+LQm9LrL3R9NF0xuRQcvr/3uzIwcgK3tsU/8bhp4BHxFIwRP3rFoUoS/NxOl1dBJ4P2RGRN/qMWre
+lJz0qb8Z8xrHg4lw3nSe6kxV+4x0vwjY+TOYifDWNscp84fOVQWm6j9HhxwdnPapG3XcnHm6xQOJ
+LMUhHy3oVRv8QS1rEV/g1W5wtrwCXjm/9MbvyOoKfKOiBeWRRZK0VPNcR4nAuyJEQ1r/Q1A3LJxD
+WCZPleHFxT/hTZB7F/SQrW129J8/HM3T2dLxiguA+TfdJgR8Auqvkg7WkN/yDMjo/3MPRBV5nBdP
+r9KaB1ZADZNu6wi+GzXnJKSh5VRqwjbejaA9xlVWN0npy+6o2ZdYD6eO1I+lrE41sRHPtDGmNwBM
+bjE9SCKL19dbUjkiBQyVHgHxXTg9SOBJzMYIXpGkKNBgX/HSfK9Ef1/dRBbAzWDaevXUZ9u4kbZy
+tLPb9w3NCO2b3Y0co8LDK3foPEB63dn//U/ozR9BH/ZCuxnTxKRlxMbt/tN4zkTzPZUrNJKIUSQZ
+BjcARys/L9S7x/oQLb3h4DTty3eJ1fhoESN65tbD6LUhZYNb84LYVqEcuWwGK+p8AuaIbhTgBoXO
+j9svyU+/laBJE6U7b6u2su/rzy9aa8hspktTHGbCnSHrM4U1W40m8ctJpofhHYPjQvNOpnBdQI00
+Rjv7FXQO+KlhNpCSgN++oy8PmaGMeL45kw+/35a20tILVd/G0jzQrNCB/6y+9aGa9Kk8l2x0aRMP
+6VlQNq/Byb9+PszHeGUcmtKaL6bH2uv4XKapRCVbRgwxHv+2K9aVAdpkU49VbOgtzFFazHItnZfj
+4QOi3rc6LZTGsnNhIWHn71lnocee7w1sQ/IrKtyrm5GxW3KQsnx13MP3XgcSM5HMjF8YB1QXPGu6
+gov9Uc09pIeNhCj6LZ5kz4w+fUTJKhNjTEjaaFj0CtM2KahGl+vQNzXg7BprzmWzO/3iI9EYSdQg
+CWGmfN7cHjtiyWoWqg64mn2DbgNPOdHUcuZP3CIAqHD67KZazY4or9weJOiv0EBnN2CkZ2yNlFzS
+2fh340muVcW41Hz/V/1wshcLfTXxFq1yA/N6Hp5iEajIgOkV1HM0kwNR+FPB8oOz4EDXMlsJMokg
+o/HXh0EaYl74MopxodyjenglneY3K46ncMtXijXLueRQTqi2Mee+Of1Eom5CSZAmnu2LfXedtIfQ
+cztFigcWFnd2KQdBUREKOcd+vFlTldHqGlEqVVdEmxkKeTG/VZ//BvA63I875IQPs7WWYpiSf6uB
+FoZjxdTXjM8vCR/zbx88aB+4yynpZNeLNXvofgc0vr2nFs6fnTfQyDWzQ4D/CqM2leJwNDp7fVGq
+d/YIX975Ycxe1a8IyLhpVpIIvrU6RpUt1UW6D1d2eF0SyC5A9DGgp28DyR3gqIhL1XYIDCQars+3
+u0MhuL+LuHmHfW15cp5SEH/84Y9Om+fa3NgSYZqNC3UzRSXJREI8+YF/GFnDisXEKdd/2EUT/XmW
+nw2ZyxXLWqCfM1XQTsw8lusok9FFW3UZ9Te0YfW3VYu+dxKrkY6yx+bQsrKWXYgUyA641rprRjUi
+wobkJriCLuZczhpiMMu1sF7V/EQkoyXdSLR6YACE36f2AqndmmeMHtXDon5eefhl/zlYDYDNKseL
+rpKzwdMOHiLEwl5Qzd/XXQQamGygCu7nw5i8WztrNGfrhYBDBpQF8ngAtnlqcq9+ovhCjekR23hg
+9qEGEt8rEgzN4p+dYPNhl57XhYLCPfx7BL+dl7VEa+fosjUZXXN9bDpi0y/UNWXTwOtnOhmk3bK3
+U8xDFQXnVB+uY1OB8YPbTbfeeSvmaWU7QmUYISStTF5YKRqfVMOeaBxxEbqxAZ6nEepCZJ8ETanz
+un3gX84eb24mElTPrYm8xvTfqszXU2bj8PPQUVoivf5UZ0nxdOYZpTB0dFbtXMb+3/GuXJAQT58s
+WMaL34+07ZXNl58nqP4xq9KS7Pn53rsu5IETRnM17pMjbJVgAgNNNwZvgMdeiTusD6yt6m15H1JJ
+aTB23Yi7ISGcVyvBK5DRwHqwUBNgZ+0LNAdRb+JZfGzflymzx53+Jm5tq1HyxnokKaZO+sCj+DV1
+BUoDWW1ZRp9LTbbxZ/a96oy+aZ5CLFhDOtD1lFFA7gtpITPwm2RL7DvVHrcW90wgMpPNWTnoq+FZ
+HOalmwETv3COrvpuLvNKOMxp6yFylODFmZVREC3CPPcfa/4w13vBHmkQZWe69LCX3nnSRVy2iTCG
+hk9efaF13Xw3zO4NI54/JWkim24mWwoj8SPbu4QkFKQTDw/IbeigTAwggznS/BFU9aExNNH8GK8k
+Gbd6/AEAu81mVhxt8dd0k/V8MXp3cMMliIuwJux8CK7mCPY0ydl/F+EKlsGwZ5+DlD8PnVddIsSc
+c9LH3aySQnxzLmFF9j/AY+ImGo3Rd4hLnxJ3COmCe5t2Q01d8HXQOkoYqRQeXDnKFNOGeaCzPy+T
+cb9Fchos23XMxjFUYoxypeB5VHyla4G/Im+/eJEvOCKVFUIUyjU8UjSYR9Y4guViOlEqnrnbfGPU
+3H2PFe3qHLGvyBpcSwfBsgGl2JRmtdX382z5qQFTxz1rABPZtFGaTZ8vBGsdsTbDyQKQ6a9BgiQG
+Wr9mtaxpWimYscn9acOOHF+gOqK6OT1aCErS8OStF+jBQ9U5o2ZeY/iZhTGBOw59iTuioNyaALvd
+pR0us04WIP2cUlGCVP/zrMyZJEK0XndL5q8NhfY4WTW5tL7zyWsB31Y4ZItmX9ca29ajG5Jgnlub
+xwJ8GEqM7q9IwP65zCvi1i1Lljpt/H1cHVpqR/vZ5HnP09A04C009F+Zw/OmKHNvdHxNbEt1MXuQ
+HZRw8jXHBInRkDeY8zgetze+gCzpv62HWLd8B+DfX2B4xWdtIxQBhw/05f+P4dLyZkhzwQrv2dqz
+bljNAX8xM7Er5PbLNW4PFRK9f9OP8F/Xr4iOeG/d+yzL3d0x1Hj6B59y38zoS5QeTEMnnU4kYL5z
+mP4kYfqoOy4DOdk5s0Ls2jP8S5oHYoG1nr6O8yUY+vbITW8c02T2nctUb9DDpwDEacQqYJHsVwjH
+PLMuJs/i/TopVsDmIwgqqKqxqmOlQ+4aOHGSAivwjdetlO6IGisH58iYrE5mKU8eaqjPkoyNB71d
+FkpdGXKAWeCjVHBgJSTL/o3YSQkTsr8coPmAj9kdpFgNqRz1ZnwZ/YaX0Jq0ptVOFTGzGYFa4cYo
+mXIhqDxwMRXDG4pAESraG/ePNYGwf4tTZtsPcksqMV/sBXtgNlE69AGsIFaNK5S8CQygqV7BJQdd
+YMxdWF4KL5bNHIjFtevAHcynkkTWYpuPm2E8MMsJmgA3q5DmS4FanCEmgyeNBktyxkU1dUA4+Ie1
+jqE+g5ULzdgw9Z27LySw5MT/XiPXMzP3UWYeFTvK71/5HtY7OPyGb5NotDqHrkJQyTjxULq3ssqw
+B8fM1cqDx9yZVlFBB97iBdTpB1ZqEKG0hHnDcWQbgFl1s7oY0T6+Xu4lOmJtOwC8bGDbIZJP46A/
+Rrezuqeva4wvloRcoFrF+CL0TwQlVgfsqpFGxf2ra+eLLCZUunihCG3n5k5Td5Vy/l7MSAhvU0ww
+9rqH/mSoVVolKtskwRPR4Ms4n0qL0K3SLTksvKsHRZt19Q9xdAZ/kEO0cWons991nWtDEV3RcUDk
+1GpLKPeoZRtDoTS5hOFBMKTFiastrLPJXqe8wvGIt9QjVhPiNzyMyStXZuFjiS7Xk4XIPjXrEVQE
+qDUmikeHN/XXuP3q0FdfkgZmBB0Ct9ZTxtV/0Eo6N15N4DkiLSaf3g/Ws4t2JbVpACldgfQyDDti
+GBGX33tsUOYdY2FjiMSG4Fcs8R/efvDakcKTiFBw6gJ1EytG8g3jm7zMeSK+yuZRvFoCkgJIlpwN
+oVDhcP8BW2ozHS/dLQpgnamhgEc+X4LomAXuvYE+HJbk2bfmYfwl0ybD+gCtA4CIHxrln5UOv43O
+FyoNkLGRxm1Je5U4I2Dtb5qEkYNE9fD5y4UNfYWY48dRI11zwSxC6smj3MuQqnx+MmbamTxKGE5M
+1L9Q89vey+wEBE/2cgj0yAJBvJN50+/t3qHga86PMZLGg0U4to4S5ibCnYUxYRSIdVbfB0TofIsY
+qbGoMFvFtHtA9kFhnfxJyESwbh/4OoLjpIzzYLPUYi9aUyiES/4pKi3ZNhR71qOzMZ2C731gf+YL
+Bs0/ugV7+2uJ7vloOs+h9STLqT7NdlHPpfjiQeYbysnaW3RWrTYguO8C0zh1D13irrMr/hi1q0/g
+jdANT4oXx7WeQFyMn08OmuwIB7Krj8xK61pFHdwEUaFLSkEpvpR7zZUHztFa0lGfY2wUvq3TGH3G
+AIRrCL6b8VJSemdA3FajEiTTI9QhHpdiuz6SPA9ttSdVWRLOKNv8U/6MnbUiY0niTKWbhZWFZRE7
+h3tPIoiqTH0Iwrd1mU86H0vgZyUAOLuXwgzuNi4inuOIc79xGM/opREXCNvM9NVoJFPxqpf8ipV8
+mcAgLsh+1cALAgQnAmuZfej1OrBsXnvShXoNcTVbL9z9G4QzD5AfXhOieUiizWAomt54zRC2k4Ws
+mqd89mCV33ONAKUQiggvsczaMdJelVKlZNbgwSYJqQu51XBt1lWm/ty+UNpGmojaAYuptanlTpYe
+i83w/m4piJjqpdAl8xg7P2MDLQcrRaoUx7vtCiy+didRb0o4o2f1Pvelx3rm0Qakuye8s/Dk2E/B
+CpM5bjoaYj1HvpaejOdK86TU+tOvk5hwMiXn5Zdr3U1K4xo+Nrgc90wJ/2Aw/UsYAHeNkG+YuSRg
+tO+rED9VjHfay8C4FH2P198JVunCLoHCxAKiIYX42cC/CZWJz21eI2bhT0cXyF4bECo0caQ0tX6g
+X9Cuhw5NBlUaROUavNTjm2mQLG7OirO0kgCSk/qmQcpN85xeUY4SmRNdgnxaA/XOT5gm1HHXIZOs
+zuWncgkF6sm7G4R/YcP9JSPYJmwlUBQa0j4krtdRGtLvqCNIVWzxtaZ1SbjKVVFeqF9Meuxk+zhT
+ukSN8AfY8UPxpzvo/BYMVS8Ug8xzbZ1eRPLREQuSO5d7ogiL3iOt1dbHqbOR2FEWbb6vXTgqET7W
+1bUREYK8mkrbmFMFo6gA3/J0Gj2InzJj94OF0NBjGObLm8CzxSmXhwUoajg4FavWDcKQrMJzftDS
+AJI/GkWAa9B+gQbtoxNRLsHllEMN4SqlXuaJRxSeQH29wImCgQV7vb9Gu/obQNlnE80tRQCx7pkR
+ddYXdDR0zv6gGmF/MOnjJLBfpaSmkxtwqQcIrFDXRBYZoVzsHWpcGVyAWYxgS9bpK/Rwe3jpDlvf
+aXwNG4ET3TUXhvsN+nvgmidMDS86D/6ToRws/eM5GXOrksgjo1gmtiFinnm0ICazeTQ+FMdZ3xrZ
+sTAPT52jnuKX6lSSJk/HrBsG4o774tMGruIUAt3EjC/RgHKE3+Oz3/glyW+wtCJjDV8SULcBhu3S
+9IoolyWHNkgExWnJBaRNV7yXdcOQdRPiaLNQpfkxh/q98+gZ+ogRBAaVyhQX8+vfgaf3IOt5Xt24
+6HmmthiznBWN7OrkT9883eFeIdKprMYwmOB5SOxefKZFk8Swd903D9MMFJDLBQoTbR626/woECoX
+vMoCALtDZnSnZJ04/pCnPBklj/eQ9JtDGGuuJVOxkM5AVlq5/+VSguNa0NV6pHemitBppSIok+QX
+fAotZIpZN5okFNFV0cAcCAeg0pxkvZ/U3q2XuhD/WCWx+fkq4a619UfmdjJAhwWbg/Of1E3YL/vH
+W+EwTRqsIx5I1rLDe2PGf4pHoSGoxybjmvmaUePDPSR4Q71DOWDpGzwpQP9iKwjBcN1E9C7O985A
+fzlChAk9rGWsxMwZ5WRojxFG4i3T1dK7rPToO5oHEeJ/plQWh59nxeNOgA3O767EJEolOtl90NGW
+yWTqiTgy8/bN7ECVCr8D2bro/DsVxpredeiHMZMoqupTjyli6382kHjf7mDsEADBskAgsnBy5f+P
++xrbzGUeDCSAOS4oqIOuWpfObk+kMCwiJ0JeUusFP0NKEFOHPdyr7vTvg3doYtvxhfBQZoIGvJ28
+LyoeW5b9uSXPAciFJQNVmK0vypyaieAJIs0dt2ZiOcsAc/DVbQllwyJ4Cou6w36Lzb5U/6qcWP1B
+D+8qDv3JnZDhX99zmovXcMXhzECD1nLlu46qzrX8IVRld/nksW69bCTsdZ744xlsBXgT3IRu6487
+t4jOr65q6oVfubSGkzgwfbix8FzYPzqXvNuEjRJzAL4i5CA1eFRDEMsWC1P83GDuCjSCTanzMSgj
+NzdyaLmFxmO28ic5LT/zFVyGfEVgl/hsekd8XD9pYsZcAtVkUSijNqgoe4TNs9s9TfunmGnRIULu
+xR4Ev7DnNAHXuVWHuCvrIm5AJWJT6cbluJkJWHs6jZL55r61u29XAtXwdLPnkJgLSyzZgmEfnfc6
+yF8IaQI7SRJWA0YEvYPCWWo0H6hiMFfdRVYoqHnApxoTPbDVlSfK+a7KgV59QLjdXbfv30cmg9Aw
+gQdum/nUwF1EMzC5wyNy/U9c/VK1QaNdaCGZnPYx4J2XpxbCJTN2tMOSzqc0yEnrfFnvcUwdj0TO
+ZOEZaI++niTIGs7yCbvWQUC2xaK66TU5AwuqLFgmkjo+YE2azycKUGglvi0C6b6KXPFUx/hIvQTD
+DL9y+FMRT2Fii7X/UYWpZEvygkUgaspYG0aZykSdqOY8Vc6msdTLRkIs3iChOkCx6L/BXjnCPhnr
+kpIyR0nVLBRtFlRFyuJCf1nhW13jcnstKTmcODQwgaf3GDJs8A2EcBVeHRot3GEtmHzaXQto/Dzs
+jmhJ5pMK/woZGTquB9UrxKuVZuw5kG1ud1CH5+M1evP+cQ0aKKT5h2ed2VRql9R3DGRRpzCKaO/k
+xV0vQDj+Z2y51gY5SumUVULod3jNEQKsHyJJA6pCgJunHsr3s3R8VaWAx2tXTjHN7bA2YBxA17yR
+LZeAABwkYSXuZ55x8BSoqBErlcJ4VrLRiK2RNhG/7wF9RA58Pv5/HVfHSx4NNclosS+EA3fYil9v
+8ZQ0oHrAQMQC9BKbNPwp4m+avBkw/2C2HQcRd26SouLKZfSlE0dpSRxgtYWK/ZbMfNQ/4rUjOL+p
+z9Ni2o9xmb65Tv70xfUnOTzc0kSUaOucoTq3bP4/JGId7BWU7bVXY+CeWAzaePHF8p7aKpaXixJ4
+3ySvpY6UUnDE7B8R0niXizg9vHzAmQDUAXBf40ZvXCCJxGqBYVNksoA1n+p0yk7kZqHKOw6GlchD
+34Rx41mz7GN097IY5V9NYePxxRNXOMOG3XQCovr/OLmWW4mriULxbeP4/HD0mQkZ2LeCPLBvXtGG
+ICt/MiawDyi0nAD+2QEZbMHbdqXhnZBOmTctmM+edfAurlXFYrq9GBWreK4zuDEIMrDlP7DLLwkK
+l/JBWW5l0RiMeSSJcA70kg5syUiPk0O3W8Yj0CZtFyij8xnKMSr5VDCCTbnEB8dOz5mxEvuaiesn
+yS7K5ViiGRzsQAMOUlfjcZD3iEgZBrXrnqYyOCeG/JwqyoiCIZ8eFH8xcQihGMpJM2CCldb5hqlX
+nvrUrZ3NpgEmjNlWWcdbsX7S+rLsPk5PoZDwjA6kZHp0uUeLYAPHCHaRvPSMBsJjNeCkgNLVQYgF
+KTKBEpJMM/WxjBNKfDrNvKKR4q6FC+BvnMB9X/d8n7rEqoQMA8cvCu+5XQULwu6k9FRamC5TVzd0
+TaYKqQ7YZj/hhHSbrfzbXwvN6xZJa1WdpYnq0chWLzDV2lU3SdC7HiWPGmwZSNBIor2zzOrnjRm6
+qfsWuTkYBC3tWfyFniKjsC8qkPJaByJ10UhrntWsy1PoZ1z45D2OH0A/oUfi8IIX5dnUAGqMKQN+
+JVSPV/jAUjurM27aGa8TggfOHxEywks9MMx6RyWGSId+pjtUs7vwgxMtVSzyaRFvNN0OU/Wg2vX0
+/9pR6aQ9M2qlQ3K2zN/U276Ed7Kh/q8nB3yHhWRDmdm24wv2yY8kPWh3zdwlWUpBqFQcpyChXc4a
+t1BQMATPd6q1betd6Ppd3okcBvnNRaZMEWHbs3KMmvN7XDz5KjXjSofh3L68ZsIkQHsKwb2sDTm7
+vJZBGLnXK5lueCpPZDnE4XA6OU0wAvsVdLygEeAetzamKCMOANyL2lvhuOfVzpaC5cZ9z1GNiaZj
+Imvh038R/2oop+QMd44b8j7iqUUPPSSn4zMUGtCcMeD2ucUhwTAWAM4wd9FCmqDPm/NEPRRV7X+P
+jdPWVMKxgW8EzPHrlmwaCprz/D17P01cmxg8sgiSf8B4XwjJV94ply0it9Lfnm86A1o3IP4rmw4q
+NW9twqHIG06hHyYogpaDDLNue9lQSWETE8hbY09rCWjsGYWvm32jXRI6Qo/kkKoefo844bJg5Hz1
+2EOe9GMaNKWvmC1oeMv0yvskYOPnGPrHH93QiS0SiO1EGeiIQC/JgkQU5xj/TFJvLuTgoFNUmHhd
+l0t4ZH4RG1kNOVM6AeHnopU7r/jW6aRGPXYRSMdm1RWhUN23+9Ed5x4xYxjYyTH3AwlTCcE5nbd8
+rjbyOJP0M5fPzxNZ8Imq3zyUUpSDL7YNyTy4H75GTq+LA/dVS4QN/bNY+s+svSB4+juYyTzChBis
+CrHr3IWIFyjBL7YQUqbvSRHuK1SUO9tneVnBJDEbjfQybP78bs1hvFtIIWTcFm9xcBP8eMIevL0t
+QuLHBb9PaJDiRD15Te3nTFLr/o/jZ7zSR6kKMwV8Vuz22p3I/0PdCVrfV9ZKGLJwRAA987SqP+Nq
+Fk616VR4FScaAlAA5OXMCWh3pipV8OlzBd4bu0edAJ+ShmWQyC8czf6RG+xfGSrPe1VMupE0y5oX
+HOCnAml/jboeINrBf/kiXemrghY96WRs4HMrGiguy3JNqf+gra4jczQFwv+EgY3d2Pl+bO/XQque
+GHu0fsTqW/o7kkWASHUhTHM7ZnAKA7hJFqX4BrM++VVgByOAKjilkOvj6rS8tZ9rqjeZUNXP5mw0
+N9m77G/ZIb3JRBjnx7CZgTGevwQdsLu47hJiB3Vk+Y0G1CdA1YMRau4PIQXij1h/yivRpTFSb2bU
+EgqTXc3ho4AwT9kyveDiLJi74Z43T4q7f4zwAs1ZASBNmBx8Q/0kfjfThP7zX3c5yEsJ2U1Ym7mB
+Sa9k0g6z5sU8eaNZ/r7yJbOMFPHif0hnjyMZVr99BKlSmeM/0OHf9R4EtdzfWynLhXElzg0cOPTD
+H2U1xvRkL1TPPgvJZx1EBxzQD9abya+uNJETnUKkVGBwJuICWD97zR7F0vffb+AyTaYDwOU+7xsS
+5TfM92g9awuvqNmXID31vkfEUYamwZh7c47FtAYqj5g3iOPF8bWZ+pL2nB+dz9vHadQvDSyadJOi
+yfRSoVKoUt7zHZTaLfCu8QXUifg/0K5o/zGHOFK3sRuacVkQiwByBEVXXuOq5zruW8IFFIwY+rpn
+HOeI7QcHEkrmic6OUf3F+Gt0wQFRVchntaLxVOJkQfI2LHxvr9v7yg5cB/cKMhIiFlZO8ibcuYON
+qMEnZq+wVg758uygE2K/s2kgWAdqMd1LL/UX7Qf8/pAymx3GNc97BS15550q8pk7d8k2XcI4719l
+DOroj+qpCZAEVZ3s9Hj/WZISsBWjOkH4AkTfroLD77bXKHbfZpJPxg97/snAj76qwMhgLQyI1LdN
+DWx9l1loL9ZOmMyRukFLwfagR3saKyxxHxwfSc/fAGY7aBrE47HummQvHDsUgFI+wXapIMF/b+n+
+r7VcFxGfms4mSVNoffKNhr2wJ0JklsFMd8qJMm9bPbUZGgzsiCC69ghKxeMPaf1vK19jl06MdCf8
+97SLEoTsTleV8yw1VB8bMYvrFb6bKNtSpOOMCthBCQKzHLBUf2GN1uyG0sIGk/HQ3SHhoKQEfEfB
+ShMZft2IOhkuXbWjV4x+wQ4aGWCs8Tidov/yjcKJabC5/GkH69nqUmwMZ3T3E0gy83NsFwo8d88/
+mbg6cRVqSJvQU/mSIIjaw2UCDpDS1zc+dQ/IgjpDoKhxlqkT//+1VvpSTVFiXMRwu3BIosIEXSQ7
+JX7gw+AaNvSQrhwR+Nu6XB5AQa7Fb6zN7F/7SQcgyw52j7FhTnGcpl0AQX9zvl8FXOxczTLLFaqi
+ozkpEmDoqSEnXVuQDAaBBkbf7Ghk0evmoMIbT51FyWMm341ekki9uRVmx/E4RkHXtKHj8+3GK6dt
+B2QJbdj8biVY8VBdBVXjh0yTc6QNw/Mt0iGk/Wbdoy70WGO9IMRIilLGCkfA7Hopp/uTcs0HdY4e
+wDhE6dlQ7nC8zIomWxulixHxpDvNB1LwO4evuYOE80RFS2kq+o5EUOYlBwqSnM25Gob4gmg9Cr1n
+8y7B0jHz15VqzlHwKXWB7HNNaXPudVFdOKeRy26k8knGav3c5BjyVxx/YRuEV/87KlxZwR9pAfUU
+W49faIbt5J6QiMry7Xi5e/YZKnVaZ38aHVn5PfIESSEPBLYZM49nwvDLEOqAgBK+QewfYEov1LEY
+yyuUr+rSkDUcHwb2zjp0U9CJ96CvguqxUQC6IrmhShe0OhmMJu8SxU1MWBEEkz3KLjo5wlYEc3i1
+kHAzkPtDoHnvHlDXBCT6g9DiaG5/Ihg2hG5/o7ubosYDE/kSxjWRyiXnfyB1kuEUd8lS0niUDqM8
+Smcko+XM27U7Tg0IP82PLrCAnJX1tyAWiJ9M8vFBSoyPHvkpR6jsIP+WCo12e6cCN4QyOsNNPdtV
+sgW+NX9BE8d9Cp1jrInWKylPufCL/9Ep00jbzBbwJXMla8NkpLoEsbE6aaYMdau7rKWwMwdxFHkd
+q9eV5+7PS6OSo+kq0bEn+ZeYbtv8GCEDsuYfl/60q1ItQqvsVd+AJHXSszEIPkJ+rKwJ0SnjFR9K
+MVbo/kv7kNKPrt15DCGa6y+JGPPrVCk8cJH5PdmxK7kypwFiKdtec5C4ffdRhlSBTo0ZWzZIY21e
+NM44yUGVRxN8ivpHM73Khf/2f/6XyEeiEDQG+6mex2uziwQQf0od4G/0BfTbMxue7EEAMjE38++u
+nLFHfWdUsD7EkK+8J7IOmB1/h8qpkWUyoMNVGH4Y8XIRBEd95E7/R0f4TNFgRSHppWO4u1XiuVaa
+Bh8XzwX4+TWpH/YxOV+olJRq5P6TqnLZT9O0+n0Q+1CqV1k6pfpckrqwlfndx8ZdopbGkYILqoTj
+7uyNSam8br8dFb2NlFzibPonfvvLxTHUyvX979/VKchoWGVQ2hgba5bEnYUN9JJ8Vyt51KFj9cNh
+b4/mnLwPkGzGL7gJDqnsXBX6bpgM6P/Mp+o25nMR5L4p46jpWmY3/YvSk7lnRDi1Xl5WEa/O5Iyl
+XTZuc4lVe4L7807XPTzkZjQoyjGtPfrZux5f3BdU+dXdKhMiARrSxyDwbkrnLDw4mEK2v0IJ+UP+
+frKKbSJa/fTXGKHEfs7X9PqI0BkCI6ZhkXrsTz0MDlu1koMu7u1+0vbH/yej7KhswlmzOQ5C5Qij
+uyiCCJC93k4Q8P5UIFN/qLQO4HGBeyEvrSuDyidzSPl6tPldTPdHCAvrUuMi1XL89hpxg8kvBVGM
++UQ6LYjY4JM+mcY5a9LUERzg3WMEuw32NDAoxQ2H3GFd+OPvFPto5ftWiCzYSYyHztXpSVIb3hpH
+d+/RJx+2tEsSTWnri7cCiWCBi5bvvb/wlHZhXAwg99LvlgPwPjHUUv6aD4S+wIlL7BFhhs5vpt/e
+JV5c9xLnbUystkvztZg2KJ4xQc9pCAXCBx9heGeWt3JYGj/QXzE7o2hddproK5HmA75pT6hJXlEx
+qeUMZ+NxyGeK+eJk9o1lqWV4UHWsvp45fqQ83uxY2MUNTYMAsyFiJNgsc4NQ2Ih7QbfgqONZUmsS
+r+fF5V93cCR/PHqikgMgUVTDc03XmzRqvFQGZm5M9QMsqLalDPv/gOvrQ3AVLICJl2b/SV/DdmRC
+M3VvUiNemX92n9xIW1SxZm1VJ9Zs4Urp6C7GU5lok2x1aa15OGW93g3Qbqf0N889VUfxlOEcvM03
+11Kln0oVu2/KxP+g0grbtCiU+om8aZRXlOTee+oz2FUK3Q9Wttk6ioOYezdUgVcOkAW0JCjYGM4o
+MScFXB22nvzr3c6ayga1NQApIpcol50mD28QcIhQJ0wJYdVfAe3tTgXhmX92Hlr5JZilU0C+LQ61
+4gQhA2v6ObFXg56dP2FPkTdmk6lwX2Dx/XvMzgCcTPsLKihu/DJEcySI5DYOD0qOLIHu5YuLroD+
+GoLgfdz+Wr8mVIQyh4ashyf79aWiUtdZE7ojwNxyC4Bk+3EZziZ0zD8GY7Ux99WpWv5i1QvcnLiq
+dBwsDqMLbThUr33348Hz07mRbvh/AxdEsYSNwRSUuxwrcZFlTAYvdOJOt9wfknJuf0OCrMVpTLns
+krYf5enJi0xNRw20PyUMvTziRy4IQKN/z7Tleign6ATRDwf34vCXf32SiN/JToplidKdjZO877L6
+LPmvI7dOTMj0Ywv7+jdvXdi60OqSMF1kSHMQjVCWK+Vlta9JWdBFXkRP9xcSoV5zfK+KDdPQNVrH
+7ARyeY+YxOpG8cEQKyTiznbnBp7vHRMvJAJHutw6uN382/8SaKE2NS9idNc/0+gA9RxZmHcSQqqr
+fxFV+JOlrxa78goBhZig0xcMozYt9GbdxsnyVo2aIO9DmDCgos4V6dozDYTxOqOruyfPmCIDjH5X
+0SLZzpk9TBH7zTw3x6WTbaIebFZj+Im06r85+lOh8/e/H+qFrMn3n/IF3WXoFM+WnFg3IDSr1ldJ
+PH9P7Ok4xo4NpUpk/HdQa4z3boNbbbMzA4fuHabJ0+vw+B4APsR+QBVRrySO

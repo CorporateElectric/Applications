@@ -1,109 +1,69 @@
-<?php
-
-namespace Illuminate\Foundation\Console;
-
-use Illuminate\Console\Command;
-use Illuminate\Contracts\Console\Kernel as ConsoleKernelContract;
-use Illuminate\Filesystem\Filesystem;
-use Illuminate\Routing\RouteCollection;
-
-class RouteCacheCommand extends Command
-{
-    /**
-     * The console command name.
-     *
-     * @var string
-     */
-    protected $name = 'route:cache';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Create a route cache file for faster route registration';
-
-    /**
-     * The filesystem instance.
-     *
-     * @var \Illuminate\Filesystem\Filesystem
-     */
-    protected $files;
-
-    /**
-     * Create a new route command instance.
-     *
-     * @param  \Illuminate\Filesystem\Filesystem  $files
-     * @return void
-     */
-    public function __construct(Filesystem $files)
-    {
-        parent::__construct();
-
-        $this->files = $files;
-    }
-
-    /**
-     * Execute the console command.
-     *
-     * @return void
-     */
-    public function handle()
-    {
-        $this->call('route:clear');
-
-        $routes = $this->getFreshApplicationRoutes();
-
-        if (count($routes) === 0) {
-            return $this->error("Your application doesn't have any routes.");
-        }
-
-        foreach ($routes as $route) {
-            $route->prepareForSerialization();
-        }
-
-        $this->files->put(
-            $this->laravel->getCachedRoutesPath(), $this->buildRouteCacheFile($routes)
-        );
-
-        $this->info('Routes cached successfully!');
-    }
-
-    /**
-     * Boot a fresh copy of the application and get the routes.
-     *
-     * @return \Illuminate\Routing\RouteCollection
-     */
-    protected function getFreshApplicationRoutes()
-    {
-        return tap($this->getFreshApplication()['router']->getRoutes(), function ($routes) {
-            $routes->refreshNameLookups();
-            $routes->refreshActionLookups();
-        });
-    }
-
-    /**
-     * Get a fresh application instance.
-     *
-     * @return \Illuminate\Contracts\Foundation\Application
-     */
-    protected function getFreshApplication()
-    {
-        return tap(require $this->laravel->bootstrapPath().'/app.php', function ($app) {
-            $app->make(ConsoleKernelContract::class)->bootstrap();
-        });
-    }
-
-    /**
-     * Build the route cache file.
-     *
-     * @param  \Illuminate\Routing\RouteCollection  $routes
-     * @return string
-     */
-    protected function buildRouteCacheFile(RouteCollection $routes)
-    {
-        $stub = $this->files->get(__DIR__.'/stubs/routes.stub');
-
-        return str_replace('{{routes}}', var_export($routes->compile(), true), $stub);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+so+vrzrz7W==

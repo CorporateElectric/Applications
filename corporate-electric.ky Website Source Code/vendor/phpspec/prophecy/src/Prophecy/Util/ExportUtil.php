@@ -1,210 +1,89 @@
-<?php
-
-namespace Prophecy\Util;
-
-use Prophecy\Prophecy\ProphecyInterface;
-use SebastianBergmann\RecursionContext\Context;
-
-/*
- * This file is part of the Prophecy.
- * (c) Konstantin Kudryashov <ever.zet@gmail.com>
- *     Marcello Duarte <marcello.duarte@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-/**
- * This class is a modification from sebastianbergmann/exporter
- * @see https://github.com/sebastianbergmann/exporter
- */
-class ExportUtil
-{
-    /**
-     * Exports a value as a string
-     *
-     * The output of this method is similar to the output of print_r(), but
-     * improved in various aspects:
-     *
-     *  - NULL is rendered as "null" (instead of "")
-     *  - TRUE is rendered as "true" (instead of "1")
-     *  - FALSE is rendered as "false" (instead of "")
-     *  - Strings are always quoted with single quotes
-     *  - Carriage returns and newlines are normalized to \n
-     *  - Recursion and repeated rendering is treated properly
-     *
-     * @param  mixed  $value
-     * @param  int    $indentation The indentation level of the 2nd+ line
-     * @return string
-     */
-    public static function export($value, $indentation = 0)
-    {
-        return self::recursiveExport($value, $indentation);
-    }
-
-    /**
-     * Converts an object to an array containing all of its private, protected
-     * and public properties.
-     *
-     * @param  mixed $value
-     * @return array
-     */
-    public static function toArray($value)
-    {
-        if (!is_object($value)) {
-            return (array) $value;
-        }
-
-        $array = array();
-
-        foreach ((array) $value as $key => $val) {
-            // properties are transformed to keys in the following way:
-            // private   $property => "\0Classname\0property"
-            // protected $property => "\0*\0property"
-            // public    $property => "property"
-            if (preg_match('/^\0.+\0(.+)$/', $key, $matches)) {
-                $key = $matches[1];
-            }
-
-            // See https://github.com/php/php-src/commit/5721132
-            if ($key === "\0gcdata") {
-                continue;
-            }
-
-            $array[$key] = $val;
-        }
-
-        // Some internal classes like SplObjectStorage don't work with the
-        // above (fast) mechanism nor with reflection in Zend.
-        // Format the output similarly to print_r() in this case
-        if ($value instanceof \SplObjectStorage) {
-            // However, the fast method does work in HHVM, and exposes the
-            // internal implementation. Hide it again.
-            if (property_exists('\SplObjectStorage', '__storage')) {
-                unset($array['__storage']);
-            } elseif (property_exists('\SplObjectStorage', 'storage')) {
-                unset($array['storage']);
-            }
-
-            if (property_exists('\SplObjectStorage', '__key')) {
-                unset($array['__key']);
-            }
-
-            foreach ($value as $key => $val) {
-                $array[spl_object_hash($val)] = array(
-                    'obj' => $val,
-                    'inf' => $value->getInfo(),
-                );
-            }
-        }
-
-        return $array;
-    }
-
-    /**
-     * Recursive implementation of export
-     *
-     * @param  mixed                                       $value       The value to export
-     * @param  int                                         $indentation The indentation level of the 2nd+ line
-     * @param  \SebastianBergmann\RecursionContext\Context $processed   Previously processed objects
-     * @return string
-     * @see    SebastianBergmann\Exporter\Exporter::export
-     */
-    protected static function recursiveExport(&$value, $indentation, $processed = null)
-    {
-        if ($value === null) {
-            return 'null';
-        }
-
-        if ($value === true) {
-            return 'true';
-        }
-
-        if ($value === false) {
-            return 'false';
-        }
-
-        if (is_float($value) && floatval(intval($value)) === $value) {
-            return "$value.0";
-        }
-
-        if (is_resource($value)) {
-            return sprintf(
-                'resource(%d) of type (%s)',
-                $value,
-                get_resource_type($value)
-            );
-        }
-
-        if (is_string($value)) {
-            // Match for most non printable chars somewhat taking multibyte chars into account
-            if (preg_match('/[^\x09-\x0d\x20-\xff]/', $value)) {
-                return 'Binary String: 0x' . bin2hex($value);
-            }
-
-            return "'" .
-            str_replace(array("\r\n", "\n\r", "\r"), array("\n", "\n", "\n"), $value) .
-            "'";
-        }
-
-        $whitespace = str_repeat(' ', 4 * $indentation);
-
-        if (!$processed) {
-            $processed = new Context;
-        }
-
-        if (is_array($value)) {
-            if (($key = $processed->contains($value)) !== false) {
-                return 'Array &' . $key;
-            }
-
-            $array  = $value;
-            $key    = $processed->add($value);
-            $values = '';
-
-            if (count($array) > 0) {
-                foreach ($array as $k => $v) {
-                    $values .= sprintf(
-                        '%s    %s => %s' . "\n",
-                        $whitespace,
-                        self::recursiveExport($k, $indentation),
-                        self::recursiveExport($value[$k], $indentation + 1, $processed)
-                    );
-                }
-
-                $values = "\n" . $values . $whitespace;
-            }
-
-            return sprintf('Array &%s (%s)', $key, $values);
-        }
-
-        if (is_object($value)) {
-            $class = get_class($value);
-
-            if ($hash = $processed->contains($value)) {
-                return sprintf('%s:%s Object', $class, $hash);
-            }
-
-            $hash   = $processed->add($value);
-            $values = '';
-            $array  = self::toArray($value);
-
-            if (count($array) > 0) {
-                foreach ($array as $k => $v) {
-                    $values .= sprintf(
-                        '%s    %s => %s' . "\n",
-                        $whitespace,
-                        self::recursiveExport($k, $indentation),
-                        self::recursiveExport($v, $indentation + 1, $processed)
-                    );
-                }
-
-                $values = "\n" . $values . $whitespace;
-            }
-
-            return sprintf('%s:%s Object (%s)', $class, $hash, $values);
-        }
-
-        return var_export($value, true);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+JqMLHGjrfaMlflW6m4y=

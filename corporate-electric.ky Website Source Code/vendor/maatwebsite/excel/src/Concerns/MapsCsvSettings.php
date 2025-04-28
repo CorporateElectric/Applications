@@ -1,69 +1,44 @@
-<?php
-
-namespace Maatwebsite\Excel\Concerns;
-
-use Illuminate\Support\Arr;
-
-trait MapsCsvSettings
-{
-    /**
-     * @var string
-     */
-    protected static $delimiter = ',';
-
-    /**
-     * @var string
-     */
-    protected static $enclosure = '"';
-
-    /**
-     * @var string
-     */
-    protected static $lineEnding = PHP_EOL;
-
-    /**
-     * @var bool
-     */
-    protected static $useBom = false;
-
-    /**
-     * @var bool
-     */
-    protected static $includeSeparatorLine = false;
-
-    /**
-     * @var bool
-     */
-    protected static $excelCompatibility = false;
-
-    /**
-     * @var string
-     */
-    protected static $escapeCharacter = '\\';
-
-    /**
-     * @var bool
-     */
-    protected static $contiguous = false;
-
-    /**
-     * @var string
-     */
-    protected static $inputEncoding = 'UTF-8';
-
-    /**
-     * @param array $config
-     */
-    public static function applyCsvSettings(array $config)
-    {
-        static::$delimiter            = Arr::get($config, 'delimiter', static::$delimiter);
-        static::$enclosure            = Arr::get($config, 'enclosure', static::$enclosure);
-        static::$lineEnding           = Arr::get($config, 'line_ending', static::$lineEnding);
-        static::$useBom               = Arr::get($config, 'use_bom', static::$useBom);
-        static::$includeSeparatorLine = Arr::get($config, 'include_separator_line', static::$includeSeparatorLine);
-        static::$excelCompatibility   = Arr::get($config, 'excel_compatibility', static::$excelCompatibility);
-        static::$escapeCharacter      = Arr::get($config, 'escape_character', static::$escapeCharacter);
-        static::$contiguous           = Arr::get($config, 'contiguous', static::$contiguous);
-        static::$inputEncoding        = Arr::get($config, 'input_encoding', static::$inputEncoding);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

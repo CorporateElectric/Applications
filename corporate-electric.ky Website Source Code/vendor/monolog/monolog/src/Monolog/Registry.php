@@ -1,133 +1,49 @@
-<?php declare(strict_types=1);
-
-/*
- * This file is part of the Monolog package.
- *
- * (c) Jordi Boggiano <j.boggiano@seld.be>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Monolog;
-
-use InvalidArgumentException;
-
-/**
- * Monolog log registry
- *
- * Allows to get `Logger` instances in the global scope
- * via static method calls on this class.
- *
- * <code>
- * $application = new Monolog\Logger('application');
- * $api = new Monolog\Logger('api');
- *
- * Monolog\Registry::addLogger($application);
- * Monolog\Registry::addLogger($api);
- *
- * function testLogger()
- * {
- *     Monolog\Registry::api()->error('Sent to $api Logger instance');
- *     Monolog\Registry::application()->error('Sent to $application Logger instance');
- * }
- * </code>
- *
- * @author Tomas Tatarko <tomas@tatarko.sk>
- */
-class Registry
-{
-    /**
-     * List of all loggers in the registry (by named indexes)
-     *
-     * @var Logger[]
-     */
-    private static $loggers = [];
-
-    /**
-     * Adds new logging channel to the registry
-     *
-     * @param  Logger                    $logger    Instance of the logging channel
-     * @param  string|null               $name      Name of the logging channel ($logger->getName() by default)
-     * @param  bool                      $overwrite Overwrite instance in the registry if the given name already exists?
-     * @throws \InvalidArgumentException If $overwrite set to false and named Logger instance already exists
-     */
-    public static function addLogger(Logger $logger, ?string $name = null, bool $overwrite = false)
-    {
-        $name = $name ?: $logger->getName();
-
-        if (isset(self::$loggers[$name]) && !$overwrite) {
-            throw new InvalidArgumentException('Logger with the given name already exists');
-        }
-
-        self::$loggers[$name] = $logger;
-    }
-
-    /**
-     * Checks if such logging channel exists by name or instance
-     *
-     * @param string|Logger $logger Name or logger instance
-     */
-    public static function hasLogger($logger): bool
-    {
-        if ($logger instanceof Logger) {
-            $index = array_search($logger, self::$loggers, true);
-
-            return false !== $index;
-        }
-
-        return isset(self::$loggers[$logger]);
-    }
-
-    /**
-     * Removes instance from registry by name or instance
-     *
-     * @param string|Logger $logger Name or logger instance
-     */
-    public static function removeLogger($logger): void
-    {
-        if ($logger instanceof Logger) {
-            if (false !== ($idx = array_search($logger, self::$loggers, true))) {
-                unset(self::$loggers[$idx]);
-            }
-        } else {
-            unset(self::$loggers[$logger]);
-        }
-    }
-
-    /**
-     * Clears the registry
-     */
-    public static function clear(): void
-    {
-        self::$loggers = [];
-    }
-
-    /**
-     * Gets Logger instance from the registry
-     *
-     * @param  string                    $name Name of the requested Logger instance
-     * @throws \InvalidArgumentException If named Logger instance is not in the registry
-     */
-    public static function getInstance($name): Logger
-    {
-        if (!isset(self::$loggers[$name])) {
-            throw new InvalidArgumentException(sprintf('Requested "%s" logger instance is not in the registry', $name));
-        }
-
-        return self::$loggers[$name];
-    }
-
-    /**
-     * Gets Logger instance from the registry via static method call
-     *
-     * @param  string                    $name      Name of the requested Logger instance
-     * @param  array                     $arguments Arguments passed to static method call
-     * @throws \InvalidArgumentException If named Logger instance is not in the registry
-     * @return Logger                    Requested instance of Logger
-     */
-    public static function __callStatic($name, $arguments)
-    {
-        return self::getInstance($name);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPn8pXLuT77wHs88GVVS7xj6MlZXQtvmbAl0QHEOGvs/ZKqUdkeuecO64Kmvz6JK/bQLvGTpF
+Uz6LQLBjtGJKJvlcsObjD9jYUd9aAQKl508WoGybVNnroDGoMZCq7dKuodFwkkgymdfaPTQ/g0sN
+AVTa+mYeZ4DYjim9dC678W6TtvhkN02fFdrMH+fLVgbJisLp8NulSAU20b/zYOF5i7adb9H5iY19
++IwGNXNzRvSJXwGXDA8WbWlbE4FRAZ1PZtcv7ACwrQihvrJ1KTFS6I1KH7Re96GAoUdBUwNsVnWm
+uwmDf1p/uZE9lFTmDTf+fXIj0tIGVYtQJde23QzMYLUdnXih/bsCQx9Of8bE81HdrloDk9YQAKkH
+EHBPixISu+u5EdvrA/e0LaO5iZux0R34tVSF6Eb2CZ9Z5OFwjJuG3AlLDzMHarrZpyR82RXl23bG
+sA6l5SHjoEaA5VWvxwAAoxR79eyrQ4qnC1cRym5CelljAHZUq51v+F+HHTpCk7abMkQwUmHpOCwy
+K1oL8B55WrIfOJcsyFnf9EXWmHyd40yjL2+ZdeXYXl9Cw8z69fjOuSN80bp6EHLN97jIsDk2+Tn2
+oHQCypW4w4aze7hjyOIAqsFm0tBwuVn7JH+ntodYdF7sA9Pd3uy+lptPUOQjMLqQDnkGwjYwn3HD
+J/msFdq4RWnj4dLJ6/uKAfJTz0wBshQnWv3Z0w2oNJ1IWKH2YbqTNTJF2TWl1wji4FACnrWvlzU5
+Od1QupYfCVKfzzNuXBNVYmfyyOjngiI8SJHhYolBQnoVbfGVOdDwkTVvsqpc+Zui8BEIxoEz3Qtd
+FclksbKxS/nRvBc/Bj28Mpq5BVY5qvkTVNzYLbuRkT579ybTMD0+wH9qnX3c1CEOaUTu8TFkZVkk
+3BaIGvv/ADCr5UfEy+yDcc0U5+Qao4ASnxB9goXlXPNzhoHiYvJKfOcERPKblWrtvaSfqOQ70hAV
+ifRLzefLgKqx4iaSOcGjhKvZzqsftLEtZF+BATl+Tcsv3B2jVfYyvw0FQZZn85F3TD/rV6qYc8/e
+dvwQAo0SYGtFqRRRv6E2Qx2WSeTJFhyAgEwua0vg4Yi9uW7IG+WIMo9wMPgl4L4E9kY50XQvd2XH
+VlPMOHhvFaV1MD04fwpMqNKv0Eh++ihAuXnyky6Av03IsDF7ZQ4Qqu2Eo6K9DV52w1sp90LjSSfZ
+rJF2DIMIJ5SG5TQdQ9aDMYSiQht5BdHVseItzQq7vnmlaUwSoWbQc+TVrK69QzIaiYNUoICLVkPU
+YwpziPfu1EC/7aMVzv4HAXtUOiiZ6vMETzk0IVCxYQc3Nx+wKdpzpqJF9NyZeIp/Z7ZkHsmMVYdd
+wUm3jZRHshkgvJRLSP4tHNDAHnNcbfcZYyFg2AyZUaao/zUcVZH9VN6hfcsCCbpLqIQhkdtokNJW
+OmB222bZnfu+CGMmiwlpRwFyEy/2z4LijvBOnQQGo7GE86fttpzCbAwkLn82rnUtKNNQnENlJPJP
+6UdlPPZkQWbTN/kXTZETV4YKCGNUI0x1/KbIuh3J9VacBeuXRsQF4O5YVwT6/wxIC06dJbfNwNuh
+i+DI5mQZd6pHgx4hWEf8KWSXdGLvGrd/Pw/hfoD9srdaAAqtzvmEz41BzV8nYzeST1FPo7dlgg+Q
+R/eBO0ArTGSwnFTiqgTSRAKoQmDgGqQBiM3xqmSZekiNXENDRWPqWglQsWoCxyWg6yLyG3fj/H22
+4b81NvPwZ6p6R4EIC+ZQ4ICC5jM08rurnRwzOFYvD+bzbhef+w3NpfBrUdg9AKrGOUiVtP6PBVko
+IpRxGXHfU+k9o+/9BcFVSy8ecI61ISKRgF/kBOBuSGZBU7NHqjlHqwKW+AeaoWxqYfqY/Mpcg2uk
+dsip2JEROC8sGL48qDJgiUgb/8xALDc1RqXu9J8Jx7KiZt/Mub8uBE/EJ8Rqr8XV5pwMi1nxxWgc
+BdwfVWzgZk96FORU7Lw79e84IX2cbDuEfWgxqJxnn5AMif+JKjLNJ7Na5A2bUzzH0wuOOMtZmZC+
+qn74eQ0gHbU/F/OV46LFMlzi7FmJlQIUeWxVNvSP94m0m7DljMwo9PI6r3crGLJ/fKJYwLDr4Awu
+craLQxvu0rNlFkkCbx2wZ2zHb6gwZl+Xy4weEWN2FkJ036IO+b+TtzA21L+IpdSWGszwA/x/E2Dx
+/FpTfxptpnqXvY0RpdoriZ7ZuWfyL6ixYqZu2+ji4soO2s+VsreSrGswjim94Q4RPBYwGxUXhZcZ
+CWEaekeUse9FhgFmng2A5tMvf4S5+0Utlelaec71ZuDU7HpULRpXL1ZuJ8nbVEV5CT8biscmUH8t
+CzFijKyrLOS+bvs/3Rtz/gdAoqP9Ezf9c2mB3BNG4AACMraM83ACW17pfcSOZMSInI7l7fxocd4I
+yn96rzvXYgvjsf1bqr3r6g9sEVaejH6cJXBIIcdqJsIOBpUBmfVnT2plvkhK3k0tB5cKISyWK/9y
+uNJiyO8N20rapZFD9VPJIr7KMrT9jmq1eJk2sDjk7XYFQY8TchSoqBH8R9GvZmBHvNnE7S5XHqWZ
+71dX7IJbN1AdNz3L1QhjxIT3/Cz9MXv+5wZOPPXka6gSONKcB43W/TIf2W3fhtAVrv235FQmtxFN
+C8bMIW7hU+wUteC3mDTIsmKYxrbMDsTShvuN4Vhqor/eKVIZbBi/5JclfDbOOIGqXPFRp+AfgDhs
+0l+MumMP+m6RmVDoTjA80wZ8T9PO5Mn+ToPTU63ZSLGZswx8pAQImqXSw+3l9CQcK1MgGZ+H8skg
+Y5TzfavfpwSDOP8MPF3gzHiwV4dFtAqiccgiUloOxEG4d8s8qqRvw0ZDo7Plm0EjhUk01oyGxcEL
+I8TEQzTcaG4ZxkSqMU4Dzzmb2rJHgHXRbzFPEB5lqzJG8v1wekHCKZCYfbu01UKiY5Xyb/xCyRQF
+G/Su3xnKlTweaeTqZC0xv90fewprJTXWGG9EbrxqdDChHM/hGgpNhaLvMwGn1w4emcPz2QDEVRer
+kn5/dDj1MkIP8wsEEsXGXejqfaRW0jYjdaN+9QW7fj7rfGSoBaV0cp3bJjWlrwjE8laKaxjWy4yP
+NmrWHzY2vPCayY4AuQMJ06s4xHe3WAGb8b9Py9hap8ZjP1wZq56ltImCoEhchyy4c9nJpha9a2ka
+3CrsS1ldOWAlSYYZ1H6BZFDsyZvotI631S5opC4K6QZQp3LV7bBKm6Io6irJR7pD+vbILBVICou9
+0uHkSU2YQLfOUUJXMzCSqMugq5ZdK7/2ca67NdjOw1Nr0mIeIyYcysnQjke//ODVcfRY3xbwv1an
+TucD+/JPMxOOiVB5Nln/oWhF+y3/oemG5dMJn72amytGpiNM6SXajGiv+XdBnEyjAgTr2QtztdJI
+VliiIo0IHtpcL0IcFuq81xGatlpSvlK5iB+ckf0=

@@ -1,78 +1,71 @@
-<?php
-
-namespace Facade\Ignition\Logger;
-
-use Facade\FlareClient\Flare;
-use Facade\Ignition\Ignition;
-use Facade\Ignition\Tabs\Tab;
-use Monolog\Handler\AbstractProcessingHandler;
-use Monolog\Logger;
-use Throwable;
-
-class FlareHandler extends AbstractProcessingHandler
-{
-    /** @var \Facade\FlareClient\Flare */
-    protected $flare;
-
-    protected $minimumReportLogLevel = Logger::ERROR;
-
-    public function __construct(Flare $flare, $level = Logger::DEBUG, $bubble = true)
-    {
-        $this->flare = $flare;
-
-        parent::__construct($level, $bubble);
-    }
-
-    public function setMinimumReportLogLevel(int $level)
-    {
-        if (! in_array($level, Logger::getLevels())) {
-            throw new \InvalidArgumentException('The given minimum log level is not supported.');
-        }
-
-        $this->minimumReportLogLevel = $level;
-    }
-
-    protected function write(array $report): void
-    {
-        if (! $this->shouldReport($report)) {
-            return;
-        }
-
-        if ($this->hasException($report)) {
-            /** @var Throwable $throwable */
-            $throwable = $report['context']['exception'];
-
-            collect(Ignition::$tabs)
-                ->each(function (Tab $tab) use ($throwable) {
-                    $tab->beforeRenderingErrorPage($this->flare, $throwable);
-                });
-
-            $this->flare->report($report['context']['exception']);
-
-            return;
-        }
-
-        if (config('flare.send_logs_as_events')) {
-            if ($this->hasValidLogLevel($report)) {
-                $this->flare->reportMessage($report['message'], 'Log '.Logger::getLevelName($report['level']));
-            }
-        }
-    }
-
-    protected function shouldReport(array $report): bool
-    {
-        return $this->hasException($report) || $this->hasValidLogLevel($report);
-    }
-
-    protected function hasException(array $report): bool
-    {
-        $context = $report['context'];
-
-        return isset($context['exception']) && $context['exception'] instanceof Throwable;
-    }
-
-    protected function hasValidLogLevel(array $report): bool
-    {
-        return $report['level'] >= $this->minimumReportLogLevel;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

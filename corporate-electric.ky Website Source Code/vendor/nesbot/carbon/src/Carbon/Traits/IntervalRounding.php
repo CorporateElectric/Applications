@@ -1,56 +1,43 @@
-<?php
-
-/**
- * This file is part of the Carbon package.
- *
- * (c) Brian Nesbitt <brian@nesbot.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace Carbon\Traits;
-
-use Carbon\CarbonInterval;
-use Carbon\Exceptions\InvalidIntervalException;
-use DateInterval;
-
-/**
- * Trait to call rounding methods to interval or the interval of a period.
- */
-trait IntervalRounding
-{
-    protected function callRoundMethod(string $method, array $parameters)
-    {
-        $action = substr($method, 0, 4);
-
-        if ($action !== 'ceil') {
-            $action = substr($method, 0, 5);
-        }
-
-        if (\in_array($action, ['round', 'floor', 'ceil'])) {
-            return $this->{$action.'Unit'}(substr($method, \strlen($action)), ...$parameters);
-        }
-
-        return null;
-    }
-
-    protected function roundWith($precision, $function)
-    {
-        $unit = 'second';
-
-        if ($precision instanceof DateInterval) {
-            $precision = (string) CarbonInterval::instance($precision);
-        }
-
-        if (\is_string($precision) && preg_match('/^\s*(?<precision>\d+)?\s*(?<unit>\w+)(?<other>\W.*)?$/', $precision, $match)) {
-            if (trim($match['other'] ?? '') !== '') {
-                throw new InvalidIntervalException('Rounding is only possible with single unit intervals.');
-            }
-
-            $precision = (int) ($match['precision'] ?: 1);
-            $unit = $match['unit'];
-        }
-
-        return $this->roundUnit($unit, $precision, $function);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+OW==

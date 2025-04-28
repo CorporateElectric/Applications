@@ -1,97 +1,49 @@
-<?php
-/*
- * This file is part of sebastian/version.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace SebastianBergmann;
-
-final class Version
-{
-    /**
-     * @var string
-     */
-    private $path;
-
-    /**
-     * @var string
-     */
-    private $release;
-
-    /**
-     * @var string
-     */
-    private $version;
-
-    public function __construct(string $release, string $path)
-    {
-        $this->release = $release;
-        $this->path    = $path;
-    }
-
-    public function getVersion(): string
-    {
-        if ($this->version === null) {
-            if (\substr_count($this->release, '.') + 1 === 3) {
-                $this->version = $this->release;
-            } else {
-                $this->version = $this->release . '-dev';
-            }
-
-            $git = $this->getGitInformation($this->path);
-
-            if ($git) {
-                if (\substr_count($this->release, '.') + 1 === 3) {
-                    $this->version = $git;
-                } else {
-                    $git = \explode('-', $git);
-
-                    $this->version = $this->release . '-' . \end($git);
-                }
-            }
-        }
-
-        return $this->version;
-    }
-
-    /**
-     * @return bool|string
-     */
-    private function getGitInformation(string $path)
-    {
-        if (!\is_dir($path . DIRECTORY_SEPARATOR . '.git')) {
-            return false;
-        }
-
-        $process = \proc_open(
-            'git describe --tags',
-            [
-                1 => ['pipe', 'w'],
-                2 => ['pipe', 'w'],
-            ],
-            $pipes,
-            $path
-        );
-
-        if (!\is_resource($process)) {
-            return false;
-        }
-
-        $result = \trim(\stream_get_contents($pipes[1]));
-
-        \fclose($pipes[1]);
-        \fclose($pipes[2]);
-
-        $returnCode = \proc_close($process);
-
-        if ($returnCode !== 0) {
-            return false;
-        }
-
-        return $result;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+Yqwy/bKwtNp9fDZlrCCYZYrP1BO6uGwZmvwr4G==

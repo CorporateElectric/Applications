@@ -1,106 +1,30 @@
-<?php
-
-namespace Illuminate\Queue;
-
-class WorkerOptions
-{
-    /**
-     * The name of the worker.
-     *
-     * @var int
-     */
-    public $name;
-
-    /**
-     * The number of seconds to wait before retrying a job that encountered an uncaught exception.
-     *
-     * @var int
-     */
-    public $backoff;
-
-    /**
-     * The maximum amount of RAM the worker may consume.
-     *
-     * @var int
-     */
-    public $memory;
-
-    /**
-     * The maximum number of seconds a child worker may run.
-     *
-     * @var int
-     */
-    public $timeout;
-
-    /**
-     * The number of seconds to wait in between polling the queue.
-     *
-     * @var int
-     */
-    public $sleep;
-
-    /**
-     * The maximum amount of times a job may be attempted.
-     *
-     * @var int
-     */
-    public $maxTries;
-
-    /**
-     * Indicates if the worker should run in maintenance mode.
-     *
-     * @var bool
-     */
-    public $force;
-
-    /**
-     * Indicates if the worker should stop when queue is empty.
-     *
-     * @var bool
-     */
-    public $stopWhenEmpty;
-
-    /**
-     * The maximum number of jobs to run.
-     *
-     * @var int
-     */
-    public $maxJobs;
-
-    /**
-     * The maximum number of seconds a worker may live.
-     *
-     * @var int
-     */
-    public $maxTime;
-
-    /**
-     * Create a new worker options instance.
-     *
-     * @param  string  $name
-     * @param  int  $backoff
-     * @param  int  $memory
-     * @param  int  $timeout
-     * @param  int  $sleep
-     * @param  int  $maxTries
-     * @param  bool  $force
-     * @param  bool  $stopWhenEmpty
-     * @param  int  $maxJobs
-     * @param  int  $maxTime
-     * @return void
-     */
-    public function __construct($name = 'default', $backoff = 0, $memory = 128, $timeout = 60, $sleep = 3, $maxTries = 1,
-                                $force = false, $stopWhenEmpty = false, $maxJobs = 0, $maxTime = 0)
-    {
-        $this->name = $name;
-        $this->backoff = $backoff;
-        $this->sleep = $sleep;
-        $this->force = $force;
-        $this->memory = $memory;
-        $this->timeout = $timeout;
-        $this->maxTries = $maxTries;
-        $this->stopWhenEmpty = $stopWhenEmpty;
-        $this->maxJobs = $maxJobs;
-        $this->maxTime = $maxTime;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

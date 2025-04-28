@@ -1,51 +1,45 @@
-<?php
-
-/*
- * This file is part of the league/commonmark package.
- *
- * (c) Colin O'Dell <colinodell@gmail.com>
- *
- * Original code based on the CommonMark JS reference parser (https://bitly.com/commonmark-js)
- *  - (c) John MacFarlane
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace League\CommonMark\Inline\Parser;
-
-use League\CommonMark\Inline\Element\Newline;
-use League\CommonMark\Inline\Element\Text;
-use League\CommonMark\InlineParserContext;
-
-final class NewlineParser implements InlineParserInterface
-{
-    public function getCharacters(): array
-    {
-        return ["\n"];
-    }
-
-    public function parse(InlineParserContext $inlineContext): bool
-    {
-        $inlineContext->getCursor()->advanceBy(1);
-
-        // Check previous inline for trailing spaces
-        $spaces = 0;
-        $lastInline = $inlineContext->getContainer()->lastChild();
-        if ($lastInline instanceof Text) {
-            $trimmed = \rtrim($lastInline->getContent(), ' ');
-            $spaces = \strlen($lastInline->getContent()) - \strlen($trimmed);
-            if ($spaces) {
-                $lastInline->setContent($trimmed);
-            }
-        }
-
-        if ($spaces >= 2) {
-            $inlineContext->getContainer()->appendChild(new Newline(Newline::HARDBREAK));
-        } else {
-            $inlineContext->getContainer()->appendChild(new Newline(Newline::SOFTBREAK));
-        }
-
-        return true;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,61 +1,45 @@
-<?php namespace Cviebrock\EloquentSluggable\Tests;
-
-use Cviebrock\EloquentSluggable\Tests\Models\PostWithIncludeTrashed;
-use Cviebrock\EloquentSluggable\Tests\Models\PostWithSoftDeleting;
-use Cviebrock\EloquentSluggable\Tests\Models\PostWithSoftDeletingIncludeTrashed;
-
-/**
- * Class SoftDeleteTests
- *
- * @package Tests
- */
-class SoftDeleteTests extends TestCase
-{
-
-    /**
-     * Test uniqueness with soft deletes when we ignore trashed models.
-     */
-    public function testSoftDeletesWithoutTrashed()
-    {
-        $post1 = PostWithSoftDeleting::create([
-            'title' => 'A Post Title'
-        ]);
-        $this->assertEquals('a-post-title', $post1->slug);
-
-        $post1->delete();
-
-        $post2 = PostWithSoftDeleting::create([
-            'title' => 'A Post Title'
-        ]);
-        $this->assertEquals('a-post-title', $post2->slug);
-    }
-
-    /**
-     * Test uniqueness with soft deletes when we include trashed models.
-     */
-    public function testSoftDeletesWithTrashed()
-    {
-        $post1 = PostWithSoftDeletingIncludeTrashed::create([
-            'title' => 'A Post Title'
-        ]);
-        $this->assertEquals('a-post-title', $post1->slug);
-
-        $post1->delete();
-
-        $post2 = PostWithSoftDeletingIncludeTrashed::create([
-            'title' => 'A Post Title'
-        ]);
-        $this->assertEquals('a-post-title-1', $post2->slug);
-    }
-
-    /**
-     * Test that include_trashed is ignored if the model doesn't use the softDelete trait.
-     */
-    public function testSoftDeletesWithNonSoftDeleteModel()
-    {
-        $post1 = PostWithIncludeTrashed::create([
-            'title' => 'A Post Title'
-        ]);
-        $this->assertEquals('a-post-title', $post1->slug);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

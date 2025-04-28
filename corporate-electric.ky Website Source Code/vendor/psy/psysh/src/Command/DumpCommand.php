@@ -1,96 +1,65 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\Command;
-
-use Psy\Input\CodeArgument;
-use Psy\VarDumper\Presenter;
-use Psy\VarDumper\PresenterAware;
-use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Output\OutputInterface;
-
-/**
- * Dump an object or primitive.
- *
- * This is like var_dump but *way* awesomer.
- */
-class DumpCommand extends ReflectingCommand implements PresenterAware
-{
-    private $presenter;
-
-    /**
-     * PresenterAware interface.
-     *
-     * @param Presenter $presenter
-     */
-    public function setPresenter(Presenter $presenter)
-    {
-        $this->presenter = $presenter;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
-    {
-        $this
-            ->setName('dump')
-            ->setDefinition([
-                new CodeArgument('target', CodeArgument::REQUIRED, 'A target object or primitive to dump.'),
-                new InputOption('depth', '', InputOption::VALUE_REQUIRED, 'Depth to parse.', 10),
-                new InputOption('all', 'a', InputOption::VALUE_NONE, 'Include private and protected methods and properties.'),
-            ])
-            ->setDescription('Dump an object or primitive.')
-            ->setHelp(
-                <<<'HELP'
-Dump an object or primitive.
-
-This is like var_dump but <strong>way</strong> awesomer.
-
-e.g.
-<return>>>> dump $_</return>
-<return>>>> dump $someVar</return>
-<return>>>> dump $stuff->getAll()</return>
-HELP
-            );
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function execute(InputInterface $input, OutputInterface $output)
-    {
-        $depth = $input->getOption('depth');
-        $target = $this->resolveCode($input->getArgument('target'));
-        $output->page($this->presenter->present($target, $depth, $input->getOption('all') ? Presenter::VERBOSE : 0));
-
-        if (\is_object($target)) {
-            $this->setCommandScopeVariables(new \ReflectionObject($target));
-        }
-
-        return 0;
-    }
-
-    /**
-     * @deprecated Use `resolveCode` instead
-     *
-     * @param string $name
-     *
-     * @return mixed
-     */
-    protected function resolveTarget($name)
-    {
-        @\trigger_error('`resolveTarget` is deprecated; use `resolveCode` instead.', \E_USER_DEPRECATED);
-
-        return $this->resolveCode($name);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+GI8bMwoQegv0TCe=

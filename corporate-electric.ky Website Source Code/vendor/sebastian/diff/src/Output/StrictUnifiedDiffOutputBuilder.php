@@ -1,338 +1,152 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of sebastian/diff.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\Diff\Output;
-
-use function array_merge;
-use function array_splice;
-use function count;
-use function fclose;
-use function fopen;
-use function fwrite;
-use function is_bool;
-use function is_int;
-use function is_string;
-use function max;
-use function min;
-use function sprintf;
-use function stream_get_contents;
-use function substr;
-use SebastianBergmann\Diff\ConfigurationException;
-use SebastianBergmann\Diff\Differ;
-
-/**
- * Strict Unified diff output builder.
- *
- * Generates (strict) Unified diff's (unidiffs) with hunks.
- */
-final class StrictUnifiedDiffOutputBuilder implements DiffOutputBuilderInterface
-{
-    private static $default = [
-        'collapseRanges'      => true, // ranges of length one are rendered with the trailing `,1`
-        'commonLineThreshold' => 6,    // number of same lines before ending a new hunk and creating a new one (if needed)
-        'contextLines'        => 3,    // like `diff:  -u, -U NUM, --unified[=NUM]`, for patch/git apply compatibility best to keep at least @ 3
-        'fromFile'            => null,
-        'fromFileDate'        => null,
-        'toFile'              => null,
-        'toFileDate'          => null,
-    ];
-
-    /**
-     * @var bool
-     */
-    private $changed;
-
-    /**
-     * @var bool
-     */
-    private $collapseRanges;
-
-    /**
-     * @var int >= 0
-     */
-    private $commonLineThreshold;
-
-    /**
-     * @var string
-     */
-    private $header;
-
-    /**
-     * @var int >= 0
-     */
-    private $contextLines;
-
-    public function __construct(array $options = [])
-    {
-        $options = array_merge(self::$default, $options);
-
-        if (!is_bool($options['collapseRanges'])) {
-            throw new ConfigurationException('collapseRanges', 'a bool', $options['collapseRanges']);
-        }
-
-        if (!is_int($options['contextLines']) || $options['contextLines'] < 0) {
-            throw new ConfigurationException('contextLines', 'an int >= 0', $options['contextLines']);
-        }
-
-        if (!is_int($options['commonLineThreshold']) || $options['commonLineThreshold'] <= 0) {
-            throw new ConfigurationException('commonLineThreshold', 'an int > 0', $options['commonLineThreshold']);
-        }
-
-        $this->assertString($options, 'fromFile');
-        $this->assertString($options, 'toFile');
-        $this->assertStringOrNull($options, 'fromFileDate');
-        $this->assertStringOrNull($options, 'toFileDate');
-
-        $this->header = sprintf(
-            "--- %s%s\n+++ %s%s\n",
-            $options['fromFile'],
-            null === $options['fromFileDate'] ? '' : "\t" . $options['fromFileDate'],
-            $options['toFile'],
-            null === $options['toFileDate'] ? '' : "\t" . $options['toFileDate']
-        );
-
-        $this->collapseRanges      = $options['collapseRanges'];
-        $this->commonLineThreshold = $options['commonLineThreshold'];
-        $this->contextLines        = $options['contextLines'];
-    }
-
-    public function getDiff(array $diff): string
-    {
-        if (0 === count($diff)) {
-            return '';
-        }
-
-        $this->changed = false;
-
-        $buffer = fopen('php://memory', 'r+b');
-        fwrite($buffer, $this->header);
-
-        $this->writeDiffHunks($buffer, $diff);
-
-        if (!$this->changed) {
-            fclose($buffer);
-
-            return '';
-        }
-
-        $diff = stream_get_contents($buffer, -1, 0);
-
-        fclose($buffer);
-
-        // If the last char is not a linebreak: add it.
-        // This might happen when both the `from` and `to` do not have a trailing linebreak
-        $last = substr($diff, -1);
-
-        return "\n" !== $last && "\r" !== $last
-            ? $diff . "\n"
-            : $diff;
-    }
-
-    private function writeDiffHunks($output, array $diff): void
-    {
-        // detect "No newline at end of file" and insert into `$diff` if needed
-
-        $upperLimit = count($diff);
-
-        if (0 === $diff[$upperLimit - 1][1]) {
-            $lc = substr($diff[$upperLimit - 1][0], -1);
-
-            if ("\n" !== $lc) {
-                array_splice($diff, $upperLimit, 0, [["\n\\ No newline at end of file\n", Differ::NO_LINE_END_EOF_WARNING]]);
-            }
-        } else {
-            // search back for the last `+` and `-` line,
-            // check if has trailing linebreak, else add under it warning under it
-            $toFind = [1 => true, 2 => true];
-
-            for ($i = $upperLimit - 1; $i >= 0; --$i) {
-                if (isset($toFind[$diff[$i][1]])) {
-                    unset($toFind[$diff[$i][1]]);
-                    $lc = substr($diff[$i][0], -1);
-
-                    if ("\n" !== $lc) {
-                        array_splice($diff, $i + 1, 0, [["\n\\ No newline at end of file\n", Differ::NO_LINE_END_EOF_WARNING]]);
-                    }
-
-                    if (!count($toFind)) {
-                        break;
-                    }
-                }
-            }
-        }
-
-        // write hunks to output buffer
-
-        $cutOff      = max($this->commonLineThreshold, $this->contextLines);
-        $hunkCapture = false;
-        $sameCount   = $toRange = $fromRange = 0;
-        $toStart     = $fromStart = 1;
-        $i           = 0;
-
-        /** @var int $i */
-        foreach ($diff as $i => $entry) {
-            if (0 === $entry[1]) { // same
-                if (false === $hunkCapture) {
-                    ++$fromStart;
-                    ++$toStart;
-
-                    continue;
-                }
-
-                ++$sameCount;
-                ++$toRange;
-                ++$fromRange;
-
-                if ($sameCount === $cutOff) {
-                    $contextStartOffset = ($hunkCapture - $this->contextLines) < 0
-                        ? $hunkCapture
-                        : $this->contextLines;
-
-                    // note: $contextEndOffset = $this->contextLines;
-                    //
-                    // because we never go beyond the end of the diff.
-                    // with the cutoff/contextlines here the follow is never true;
-                    //
-                    // if ($i - $cutOff + $this->contextLines + 1 > \count($diff)) {
-                    //    $contextEndOffset = count($diff) - 1;
-                    // }
-                    //
-                    // ; that would be true for a trailing incomplete hunk case which is dealt with after this loop
-
-                    $this->writeHunk(
-                        $diff,
-                        $hunkCapture - $contextStartOffset,
-                        $i - $cutOff + $this->contextLines + 1,
-                        $fromStart - $contextStartOffset,
-                        $fromRange - $cutOff + $contextStartOffset + $this->contextLines,
-                        $toStart - $contextStartOffset,
-                        $toRange - $cutOff + $contextStartOffset + $this->contextLines,
-                        $output
-                    );
-
-                    $fromStart += $fromRange;
-                    $toStart += $toRange;
-
-                    $hunkCapture = false;
-                    $sameCount   = $toRange = $fromRange = 0;
-                }
-
-                continue;
-            }
-
-            $sameCount = 0;
-
-            if ($entry[1] === Differ::NO_LINE_END_EOF_WARNING) {
-                continue;
-            }
-
-            $this->changed = true;
-
-            if (false === $hunkCapture) {
-                $hunkCapture = $i;
-            }
-
-            if (Differ::ADDED === $entry[1]) { // added
-                ++$toRange;
-            }
-
-            if (Differ::REMOVED === $entry[1]) { // removed
-                ++$fromRange;
-            }
-        }
-
-        if (false === $hunkCapture) {
-            return;
-        }
-
-        // we end here when cutoff (commonLineThreshold) was not reached, but we where capturing a hunk,
-        // do not render hunk till end automatically because the number of context lines might be less than the commonLineThreshold
-
-        $contextStartOffset = $hunkCapture - $this->contextLines < 0
-            ? $hunkCapture
-            : $this->contextLines;
-
-        // prevent trying to write out more common lines than there are in the diff _and_
-        // do not write more than configured through the context lines
-        $contextEndOffset = min($sameCount, $this->contextLines);
-
-        $fromRange -= $sameCount;
-        $toRange -= $sameCount;
-
-        $this->writeHunk(
-            $diff,
-            $hunkCapture - $contextStartOffset,
-            $i - $sameCount + $contextEndOffset + 1,
-            $fromStart - $contextStartOffset,
-            $fromRange + $contextStartOffset + $contextEndOffset,
-            $toStart - $contextStartOffset,
-            $toRange + $contextStartOffset + $contextEndOffset,
-            $output
-        );
-    }
-
-    private function writeHunk(
-        array $diff,
-        int $diffStartIndex,
-        int $diffEndIndex,
-        int $fromStart,
-        int $fromRange,
-        int $toStart,
-        int $toRange,
-        $output
-    ): void {
-        fwrite($output, '@@ -' . $fromStart);
-
-        if (!$this->collapseRanges || 1 !== $fromRange) {
-            fwrite($output, ',' . $fromRange);
-        }
-
-        fwrite($output, ' +' . $toStart);
-
-        if (!$this->collapseRanges || 1 !== $toRange) {
-            fwrite($output, ',' . $toRange);
-        }
-
-        fwrite($output, " @@\n");
-
-        for ($i = $diffStartIndex; $i < $diffEndIndex; ++$i) {
-            if ($diff[$i][1] === Differ::ADDED) {
-                $this->changed = true;
-                fwrite($output, '+' . $diff[$i][0]);
-            } elseif ($diff[$i][1] === Differ::REMOVED) {
-                $this->changed = true;
-                fwrite($output, '-' . $diff[$i][0]);
-            } elseif ($diff[$i][1] === Differ::OLD) {
-                fwrite($output, ' ' . $diff[$i][0]);
-            } elseif ($diff[$i][1] === Differ::NO_LINE_END_EOF_WARNING) {
-                $this->changed = true;
-                fwrite($output, $diff[$i][0]);
-            }
-            //} elseif ($diff[$i][1] === Differ::DIFF_LINE_END_WARNING) { // custom comment inserted by PHPUnit/diff package
-                //  skip
-            //} else {
-                //  unknown/invalid
-            //}
-        }
-    }
-
-    private function assertString(array $options, string $option): void
-    {
-        if (!is_string($options[$option])) {
-            throw new ConfigurationException($option, 'a string', $options[$option]);
-        }
-    }
-
-    private function assertStringOrNull(array $options, string $option): void
-    {
-        if (null !== $options[$option] && !is_string($options[$option])) {
-            throw new ConfigurationException($option, 'a string or <null>', $options[$option]);
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,118 +1,69 @@
-<?php
-
-namespace Illuminate\Foundation\Console;
-
-use Illuminate\Console\GeneratorCommand;
-use Symfony\Component\Console\Input\InputOption;
-
-class NotificationMakeCommand extends GeneratorCommand
-{
-    /**
-     * The console command name.
-     *
-     * @var string
-     */
-    protected $name = 'make:notification';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Create a new notification class';
-
-    /**
-     * The type of class being generated.
-     *
-     * @var string
-     */
-    protected $type = 'Notification';
-
-    /**
-     * Execute the console command.
-     *
-     * @return void
-     */
-    public function handle()
-    {
-        if (parent::handle() === false && ! $this->option('force')) {
-            return;
-        }
-
-        if ($this->option('markdown')) {
-            $this->writeMarkdownTemplate();
-        }
-    }
-
-    /**
-     * Write the Markdown template for the mailable.
-     *
-     * @return void
-     */
-    protected function writeMarkdownTemplate()
-    {
-        $path = $this->viewPath(
-            str_replace('.', '/', $this->option('markdown')).'.blade.php'
-        );
-
-        if (! $this->files->isDirectory(dirname($path))) {
-            $this->files->makeDirectory(dirname($path), 0755, true);
-        }
-
-        $this->files->put($path, file_get_contents(__DIR__.'/stubs/markdown.stub'));
-    }
-
-    /**
-     * Build the class with the given name.
-     *
-     * @param  string  $name
-     * @return string
-     */
-    protected function buildClass($name)
-    {
-        $class = parent::buildClass($name);
-
-        if ($this->option('markdown')) {
-            $class = str_replace('DummyView', $this->option('markdown'), $class);
-        }
-
-        return $class;
-    }
-
-    /**
-     * Get the stub file for the generator.
-     *
-     * @return string
-     */
-    protected function getStub()
-    {
-        return $this->option('markdown')
-                        ? __DIR__.'/stubs/markdown-notification.stub'
-                        : __DIR__.'/stubs/notification.stub';
-    }
-
-    /**
-     * Get the default namespace for the class.
-     *
-     * @param  string  $rootNamespace
-     * @return string
-     */
-    protected function getDefaultNamespace($rootNamespace)
-    {
-        return $rootNamespace.'\Notifications';
-    }
-
-    /**
-     * Get the console command options.
-     *
-     * @return array
-     */
-    protected function getOptions()
-    {
-        return [
-            ['force', 'f', InputOption::VALUE_NONE, 'Create the class even if the notification already exists'],
-
-            ['markdown', 'm', InputOption::VALUE_OPTIONAL, 'Create a new Markdown template for the notification'],
-        ];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+1GUG0a17IKJ2vTzUZRGzz2Dk

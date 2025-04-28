@@ -1,73 +1,46 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\CssSelector\Parser\Tokenizer;
-
-use Symfony\Component\CssSelector\Parser\Handler;
-use Symfony\Component\CssSelector\Parser\Reader;
-use Symfony\Component\CssSelector\Parser\Token;
-use Symfony\Component\CssSelector\Parser\TokenStream;
-
-/**
- * CSS selector tokenizer.
- *
- * This component is a port of the Python cssselect library,
- * which is copyright Ian Bicking, @see https://github.com/SimonSapin/cssselect.
- *
- * @author Jean-François Simon <jeanfrancois.simon@sensiolabs.com>
- *
- * @internal
- */
-class Tokenizer
-{
-    /**
-     * @var Handler\HandlerInterface[]
-     */
-    private $handlers;
-
-    public function __construct()
-    {
-        $patterns = new TokenizerPatterns();
-        $escaping = new TokenizerEscaping($patterns);
-
-        $this->handlers = [
-            new Handler\WhitespaceHandler(),
-            new Handler\IdentifierHandler($patterns, $escaping),
-            new Handler\HashHandler($patterns, $escaping),
-            new Handler\StringHandler($patterns, $escaping),
-            new Handler\NumberHandler($patterns),
-            new Handler\CommentHandler(),
-        ];
-    }
-
-    /**
-     * Tokenize selector source code.
-     */
-    public function tokenize(Reader $reader): TokenStream
-    {
-        $stream = new TokenStream();
-
-        while (!$reader->isEOF()) {
-            foreach ($this->handlers as $handler) {
-                if ($handler->handle($reader, $stream)) {
-                    continue 2;
-                }
-            }
-
-            $stream->push(new Token(Token::TYPE_DELIMITER, $reader->getSubstring(1), $reader->getPosition()));
-            $reader->moveForward(1);
-        }
-
-        return $stream
-            ->push(new Token(Token::TYPE_FILE_END, null, $reader->getPosition()))
-            ->freeze();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+0gSChWsyLf7FW5zXCsTSkxpJBOzI

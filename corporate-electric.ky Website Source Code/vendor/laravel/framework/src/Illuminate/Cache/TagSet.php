@@ -1,110 +1,48 @@
-<?php
-
-namespace Illuminate\Cache;
-
-use Illuminate\Contracts\Cache\Store;
-
-class TagSet
-{
-    /**
-     * The cache store implementation.
-     *
-     * @var \Illuminate\Contracts\Cache\Store
-     */
-    protected $store;
-
-    /**
-     * The tag names.
-     *
-     * @var array
-     */
-    protected $names = [];
-
-    /**
-     * Create a new TagSet instance.
-     *
-     * @param  \Illuminate\Contracts\Cache\Store  $store
-     * @param  array  $names
-     * @return void
-     */
-    public function __construct(Store $store, array $names = [])
-    {
-        $this->store = $store;
-        $this->names = $names;
-    }
-
-    /**
-     * Reset all tags in the set.
-     *
-     * @return void
-     */
-    public function reset()
-    {
-        array_walk($this->names, [$this, 'resetTag']);
-    }
-
-    /**
-     * Reset the tag and return the new tag identifier.
-     *
-     * @param  string  $name
-     * @return string
-     */
-    public function resetTag($name)
-    {
-        $this->store->forever($this->tagKey($name), $id = str_replace('.', '', uniqid('', true)));
-
-        return $id;
-    }
-
-    /**
-     * Get a unique namespace that changes when any of the tags are flushed.
-     *
-     * @return string
-     */
-    public function getNamespace()
-    {
-        return implode('|', $this->tagIds());
-    }
-
-    /**
-     * Get an array of tag identifiers for all of the tags in the set.
-     *
-     * @return array
-     */
-    protected function tagIds()
-    {
-        return array_map([$this, 'tagId'], $this->names);
-    }
-
-    /**
-     * Get the unique tag identifier for a given tag.
-     *
-     * @param  string  $name
-     * @return string
-     */
-    public function tagId($name)
-    {
-        return $this->store->get($this->tagKey($name)) ?: $this->resetTag($name);
-    }
-
-    /**
-     * Get the tag identifier key for a given tag.
-     *
-     * @param  string  $name
-     * @return string
-     */
-    public function tagKey($name)
-    {
-        return 'tag:'.$name.':key';
-    }
-
-    /**
-     * Get all of the tag names in the set.
-     *
-     * @return array
-     */
-    public function getNames()
-    {
-        return $this->names;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

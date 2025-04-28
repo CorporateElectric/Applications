@@ -1,76 +1,48 @@
-<?php
-
-/**
- * This file is part of the ramsey/uuid library
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @copyright Copyright (c) Ben Ramsey <ben@benramsey.com>
- * @license http://opensource.org/licenses/MIT MIT
- */
-
-declare(strict_types=1);
-
-namespace Ramsey\Uuid\Provider\Node;
-
-use Ramsey\Uuid\Exception\InvalidArgumentException;
-use Ramsey\Uuid\Provider\NodeProviderInterface;
-use Ramsey\Uuid\Type\Hexadecimal;
-
-use function dechex;
-use function hexdec;
-use function str_pad;
-use function substr;
-
-use const STR_PAD_LEFT;
-
-/**
- * StaticNodeProvider provides a static node value with the multicast bit set
- *
- * @link http://tools.ietf.org/html/rfc4122#section-4.5 RFC 4122, § 4.5: Node IDs that Do Not Identify the Host
- */
-class StaticNodeProvider implements NodeProviderInterface
-{
-    /**
-     * @var Hexadecimal
-     */
-    private $node;
-
-    /**
-     * @param Hexadecimal $node The static node value to use
-     */
-    public function __construct(Hexadecimal $node)
-    {
-        if (strlen($node->toString()) > 12) {
-            throw new InvalidArgumentException(
-                'Static node value cannot be greater than 12 hexadecimal characters'
-            );
-        }
-
-        $this->node = $this->setMulticastBit($node);
-    }
-
-    public function getNode(): Hexadecimal
-    {
-        return $this->node;
-    }
-
-    /**
-     * Set the multicast bit for the static node value
-     */
-    private function setMulticastBit(Hexadecimal $node): Hexadecimal
-    {
-        $nodeHex = str_pad($node->toString(), 12, '0', STR_PAD_LEFT);
-        $firstOctet = substr($nodeHex, 0, 2);
-
-        $firstOctet = str_pad(
-            dechex(hexdec($firstOctet) | 0x01),
-            2,
-            '0',
-            STR_PAD_LEFT
-        );
-
-        return new Hexadecimal($firstOctet . substr($nodeHex, 2));
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+FxtwR3bs

@@ -1,88 +1,52 @@
-<?php declare(strict_types=1);
-
-/*
- * This file is part of the Monolog package.
- *
- * (c) Jordi Boggiano <j.boggiano@seld.be>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Monolog\Handler;
-
-use Monolog\Logger;
-use Monolog\Formatter\FormatterInterface;
-use Monolog\Formatter\LogmaticFormatter;
-
-/**
- * @author Julien Breux <julien.breux@gmail.com>
- */
-class LogmaticHandler extends SocketHandler
-{
-    /**
-     * @var string
-     */
-    private $logToken;
-
-    /**
-     * @var string
-     */
-    private $hostname;
-
-    /**
-     * @var string
-     */
-    private $appname;
-
-    /**
-     * @param string     $token    Log token supplied by Logmatic.
-     * @param string     $hostname Host name supplied by Logmatic.
-     * @param string     $appname  Application name supplied by Logmatic.
-     * @param bool       $useSSL   Whether or not SSL encryption should be used.
-     * @param int|string $level    The minimum logging level to trigger this handler.
-     * @param bool       $bubble   Whether or not messages that are handled should bubble up the stack.
-     *
-     * @throws MissingExtensionException If SSL encryption is set to true and OpenSSL is missing
-     */
-    public function __construct(string $token, string $hostname = '', string $appname = '', bool $useSSL = true, $level = Logger::DEBUG, bool $bubble = true)
-    {
-        if ($useSSL && !extension_loaded('openssl')) {
-            throw new MissingExtensionException('The OpenSSL PHP extension is required to use SSL encrypted connection for LogmaticHandler');
-        }
-
-        $endpoint = $useSSL ? 'ssl://api.logmatic.io:10515' : 'api.logmatic.io:10514';
-        $endpoint .= '/v1/';
-
-        parent::__construct($endpoint, $level, $bubble);
-
-        $this->logToken = $token;
-        $this->hostname = $hostname;
-        $this->appname  = $appname;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function generateDataStream(array $record): string
-    {
-        return $this->logToken . ' ' . $record['formatted'];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function getDefaultFormatter(): FormatterInterface
-    {
-        $formatter = new LogmaticFormatter();
-
-        if (!empty($this->hostname)) {
-            $formatter->setHostname($this->hostname);
-        }
-        if (!empty($this->appname)) {
-            $formatter->setAppname($this->appname);
-        }
-
-        return $formatter;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

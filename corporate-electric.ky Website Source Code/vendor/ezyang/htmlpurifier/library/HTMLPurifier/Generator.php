@@ -1,286 +1,127 @@
-<?php
-
-/**
- * Generates HTML from tokens.
- * @todo Refactor interface so that configuration/context is determined
- *       upon instantiation, no need for messy generateFromTokens() calls
- * @todo Make some of the more internal functions protected, and have
- *       unit tests work around that
- */
-class HTMLPurifier_Generator
-{
-
-    /**
-     * Whether or not generator should produce XML output.
-     * @type bool
-     */
-    private $_xhtml = true;
-
-    /**
-     * :HACK: Whether or not generator should comment the insides of <script> tags.
-     * @type bool
-     */
-    private $_scriptFix = false;
-
-    /**
-     * Cache of HTMLDefinition during HTML output to determine whether or
-     * not attributes should be minimized.
-     * @type HTMLPurifier_HTMLDefinition
-     */
-    private $_def;
-
-    /**
-     * Cache of %Output.SortAttr.
-     * @type bool
-     */
-    private $_sortAttr;
-
-    /**
-     * Cache of %Output.FlashCompat.
-     * @type bool
-     */
-    private $_flashCompat;
-
-    /**
-     * Cache of %Output.FixInnerHTML.
-     * @type bool
-     */
-    private $_innerHTMLFix;
-
-    /**
-     * Stack for keeping track of object information when outputting IE
-     * compatibility code.
-     * @type array
-     */
-    private $_flashStack = array();
-
-    /**
-     * Configuration for the generator
-     * @type HTMLPurifier_Config
-     */
-    protected $config;
-
-    /**
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     */
-    public function __construct($config, $context)
-    {
-        $this->config = $config;
-        $this->_scriptFix = $config->get('Output.CommentScriptContents');
-        $this->_innerHTMLFix = $config->get('Output.FixInnerHTML');
-        $this->_sortAttr = $config->get('Output.SortAttr');
-        $this->_flashCompat = $config->get('Output.FlashCompat');
-        $this->_def = $config->getHTMLDefinition();
-        $this->_xhtml = $this->_def->doctype->xml;
-    }
-
-    /**
-     * Generates HTML from an array of tokens.
-     * @param HTMLPurifier_Token[] $tokens Array of HTMLPurifier_Token
-     * @return string Generated HTML
-     */
-    public function generateFromTokens($tokens)
-    {
-        if (!$tokens) {
-            return '';
-        }
-
-        // Basic algorithm
-        $html = '';
-        for ($i = 0, $size = count($tokens); $i < $size; $i++) {
-            if ($this->_scriptFix && $tokens[$i]->name === 'script'
-                && $i + 2 < $size && $tokens[$i+2] instanceof HTMLPurifier_Token_End) {
-                // script special case
-                // the contents of the script block must be ONE token
-                // for this to work.
-                $html .= $this->generateFromToken($tokens[$i++]);
-                $html .= $this->generateScriptFromToken($tokens[$i++]);
-            }
-            $html .= $this->generateFromToken($tokens[$i]);
-        }
-
-        // Tidy cleanup
-        if (extension_loaded('tidy') && $this->config->get('Output.TidyFormat')) {
-            $tidy = new Tidy;
-            $tidy->parseString(
-                $html,
-                array(
-                   'indent'=> true,
-                   'output-xhtml' => $this->_xhtml,
-                   'show-body-only' => true,
-                   'indent-spaces' => 2,
-                   'wrap' => 68,
-                ),
-                'utf8'
-            );
-            $tidy->cleanRepair();
-            $html = (string) $tidy; // explicit cast necessary
-        }
-
-        // Normalize newlines to system defined value
-        if ($this->config->get('Core.NormalizeNewlines')) {
-            $nl = $this->config->get('Output.Newline');
-            if ($nl === null) {
-                $nl = PHP_EOL;
-            }
-            if ($nl !== "\n") {
-                $html = str_replace("\n", $nl, $html);
-            }
-        }
-        return $html;
-    }
-
-    /**
-     * Generates HTML from a single token.
-     * @param HTMLPurifier_Token $token HTMLPurifier_Token object.
-     * @return string Generated HTML
-     */
-    public function generateFromToken($token)
-    {
-        if (!$token instanceof HTMLPurifier_Token) {
-            trigger_error('Cannot generate HTML from non-HTMLPurifier_Token object', E_USER_WARNING);
-            return '';
-
-        } elseif ($token instanceof HTMLPurifier_Token_Start) {
-            $attr = $this->generateAttributes($token->attr, $token->name);
-            if ($this->_flashCompat) {
-                if ($token->name == "object") {
-                    $flash = new stdClass();
-                    $flash->attr = $token->attr;
-                    $flash->param = array();
-                    $this->_flashStack[] = $flash;
-                }
-            }
-            return '<' . $token->name . ($attr ? ' ' : '') . $attr . '>';
-
-        } elseif ($token instanceof HTMLPurifier_Token_End) {
-            $_extra = '';
-            if ($this->_flashCompat) {
-                if ($token->name == "object" && !empty($this->_flashStack)) {
-                    // doesn't do anything for now
-                }
-            }
-            return $_extra . '</' . $token->name . '>';
-
-        } elseif ($token instanceof HTMLPurifier_Token_Empty) {
-            if ($this->_flashCompat && $token->name == "param" && !empty($this->_flashStack)) {
-                $this->_flashStack[count($this->_flashStack)-1]->param[$token->attr['name']] = $token->attr['value'];
-            }
-            $attr = $this->generateAttributes($token->attr, $token->name);
-             return '<' . $token->name . ($attr ? ' ' : '') . $attr .
-                ( $this->_xhtml ? ' /': '' ) // <br /> v. <br>
-                . '>';
-
-        } elseif ($token instanceof HTMLPurifier_Token_Text) {
-            return $this->escape($token->data, ENT_NOQUOTES);
-
-        } elseif ($token instanceof HTMLPurifier_Token_Comment) {
-            return '<!--' . $token->data . '-->';
-        } else {
-            return '';
-
-        }
-    }
-
-    /**
-     * Special case processor for the contents of script tags
-     * @param HTMLPurifier_Token $token HTMLPurifier_Token object.
-     * @return string
-     * @warning This runs into problems if there's already a literal
-     *          --> somewhere inside the script contents.
-     */
-    public function generateScriptFromToken($token)
-    {
-        if (!$token instanceof HTMLPurifier_Token_Text) {
-            return $this->generateFromToken($token);
-        }
-        // Thanks <http://lachy.id.au/log/2005/05/script-comments>
-        $data = preg_replace('#//\s*$#', '', $token->data);
-        return '<!--//--><![CDATA[//><!--' . "\n" . trim($data) . "\n" . '//--><!]]>';
-    }
-
-    /**
-     * Generates attribute declarations from attribute array.
-     * @note This does not include the leading or trailing space.
-     * @param array $assoc_array_of_attributes Attribute array
-     * @param string $element Name of element attributes are for, used to check
-     *        attribute minimization.
-     * @return string Generated HTML fragment for insertion.
-     */
-    public function generateAttributes($assoc_array_of_attributes, $element = '')
-    {
-        $html = '';
-        if ($this->_sortAttr) {
-            ksort($assoc_array_of_attributes);
-        }
-        foreach ($assoc_array_of_attributes as $key => $value) {
-            if (!$this->_xhtml) {
-                // Remove namespaced attributes
-                if (strpos($key, ':') !== false) {
-                    continue;
-                }
-                // Check if we should minimize the attribute: val="val" -> val
-                if ($element && !empty($this->_def->info[$element]->attr[$key]->minimized)) {
-                    $html .= $key . ' ';
-                    continue;
-                }
-            }
-            // Workaround for Internet Explorer innerHTML bug.
-            // Essentially, Internet Explorer, when calculating
-            // innerHTML, omits quotes if there are no instances of
-            // angled brackets, quotes or spaces.  However, when parsing
-            // HTML (for example, when you assign to innerHTML), it
-            // treats backticks as quotes.  Thus,
-            //      <img alt="``" />
-            // becomes
-            //      <img alt=`` />
-            // becomes
-            //      <img alt='' />
-            // Fortunately, all we need to do is trigger an appropriate
-            // quoting style, which we do by adding an extra space.
-            // This also is consistent with the W3C spec, which states
-            // that user agents may ignore leading or trailing
-            // whitespace (in fact, most don't, at least for attributes
-            // like alt, but an extra space at the end is barely
-            // noticeable).  Still, we have a configuration knob for
-            // this, since this transformation is not necesary if you
-            // don't process user input with innerHTML or you don't plan
-            // on supporting Internet Explorer.
-            if ($this->_innerHTMLFix) {
-                if (strpos($value, '`') !== false) {
-                    // check if correct quoting style would not already be
-                    // triggered
-                    if (strcspn($value, '"\' <>') === strlen($value)) {
-                        // protect!
-                        $value .= ' ';
-                    }
-                }
-            }
-            $html .= $key.'="'.$this->escape($value).'" ';
-        }
-        return rtrim($html);
-    }
-
-    /**
-     * Escapes raw text data.
-     * @todo This really ought to be protected, but until we have a facility
-     *       for properly generating HTML here w/o using tokens, it stays
-     *       public.
-     * @param string $string String data to escape for HTML.
-     * @param int $quote Quoting style, like htmlspecialchars. ENT_NOQUOTES is
-     *               permissible for non-attribute output.
-     * @return string escaped data.
-     */
-    public function escape($string, $quote = null)
-    {
-        // Workaround for APC bug on Mac Leopard reported by sidepodcast
-        // http://htmlpurifier.org/phorum/read.php?3,4823,4846
-        if ($quote === null) {
-            $quote = ENT_COMPAT;
-        }
-        return htmlspecialchars($string, $quote, 'UTF-8');
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

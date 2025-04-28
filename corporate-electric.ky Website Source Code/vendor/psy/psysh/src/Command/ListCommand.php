@@ -1,280 +1,175 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\Command;
-
-use Psy\Command\ListCommand\ClassConstantEnumerator;
-use Psy\Command\ListCommand\ClassEnumerator;
-use Psy\Command\ListCommand\ConstantEnumerator;
-use Psy\Command\ListCommand\FunctionEnumerator;
-use Psy\Command\ListCommand\GlobalVariableEnumerator;
-use Psy\Command\ListCommand\MethodEnumerator;
-use Psy\Command\ListCommand\PropertyEnumerator;
-use Psy\Command\ListCommand\VariableEnumerator;
-use Psy\Exception\RuntimeException;
-use Psy\Input\CodeArgument;
-use Psy\Input\FilterOptions;
-use Psy\Output\ShellOutput;
-use Psy\VarDumper\Presenter;
-use Psy\VarDumper\PresenterAware;
-use Symfony\Component\Console\Formatter\OutputFormatter;
-use Symfony\Component\Console\Helper\TableHelper;
-use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Output\OutputInterface;
-
-/**
- * List available local variables, object properties, etc.
- */
-class ListCommand extends ReflectingCommand implements PresenterAware
-{
-    protected $presenter;
-    protected $enumerators;
-
-    /**
-     * PresenterAware interface.
-     *
-     * @param Presenter $presenter
-     */
-    public function setPresenter(Presenter $presenter)
-    {
-        $this->presenter = $presenter;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
-    {
-        list($grep, $insensitive, $invert) = FilterOptions::getOptions();
-
-        $this
-            ->setName('ls')
-            ->setAliases(['dir'])
-            ->setDefinition([
-                new CodeArgument('target', CodeArgument::OPTIONAL, 'A target class or object to list.'),
-
-                new InputOption('vars', '', InputOption::VALUE_NONE, 'Display variables.'),
-                new InputOption('constants', 'c', InputOption::VALUE_NONE, 'Display defined constants.'),
-                new InputOption('functions', 'f', InputOption::VALUE_NONE, 'Display defined functions.'),
-                new InputOption('classes', 'k', InputOption::VALUE_NONE, 'Display declared classes.'),
-                new InputOption('interfaces', 'I', InputOption::VALUE_NONE, 'Display declared interfaces.'),
-                new InputOption('traits', 't', InputOption::VALUE_NONE, 'Display declared traits.'),
-
-                new InputOption('no-inherit', '', InputOption::VALUE_NONE, 'Exclude inherited methods, properties and constants.'),
-
-                new InputOption('properties', 'p', InputOption::VALUE_NONE, 'Display class or object properties (public properties by default).'),
-                new InputOption('methods', 'm', InputOption::VALUE_NONE, 'Display class or object methods (public methods by default).'),
-
-                $grep,
-                $insensitive,
-                $invert,
-
-                new InputOption('globals', 'g', InputOption::VALUE_NONE, 'Include global variables.'),
-                new InputOption('internal', 'n', InputOption::VALUE_NONE, 'Limit to internal functions and classes.'),
-                new InputOption('user', 'u', InputOption::VALUE_NONE, 'Limit to user-defined constants, functions and classes.'),
-                new InputOption('category', 'C', InputOption::VALUE_REQUIRED, 'Limit to constants in a specific category (e.g. "date").'),
-
-                new InputOption('all', 'a', InputOption::VALUE_NONE, 'Include private and protected methods and properties.'),
-                new InputOption('long', 'l', InputOption::VALUE_NONE, 'List in long format: includes class names and method signatures.'),
-            ])
-            ->setDescription('List local, instance or class variables, methods and constants.')
-            ->setHelp(
-                <<<'HELP'
-List variables, constants, classes, interfaces, traits, functions, methods,
-and properties.
-
-Called without options, this will return a list of variables currently in scope.
-
-If a target object is provided, list properties, constants and methods of that
-target. If a class, interface or trait name is passed instead, list constants
-and methods on that class.
-
-e.g.
-<return>>>> ls</return>
-<return>>>> ls $foo</return>
-<return>>>> ls -k --grep mongo -i</return>
-<return>>>> ls -al ReflectionClass</return>
-<return>>>> ls --constants --category date</return>
-<return>>>> ls -l --functions --grep /^array_.*/</return>
-<return>>>> ls -l --properties new DateTime()</return>
-HELP
-            );
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function execute(InputInterface $input, OutputInterface $output)
-    {
-        $this->validateInput($input);
-        $this->initEnumerators();
-
-        $method = $input->getOption('long') ? 'writeLong' : 'write';
-
-        if ($target = $input->getArgument('target')) {
-            list($target, $reflector) = $this->getTargetAndReflector($target);
-        } else {
-            $reflector = null;
-        }
-
-        // @todo something cleaner than this :-/
-        if ($output instanceof ShellOutput && $input->getOption('long')) {
-            $output->startPaging();
-        }
-
-        foreach ($this->enumerators as $enumerator) {
-            $this->$method($output, $enumerator->enumerate($input, $reflector, $target));
-        }
-
-        if ($output instanceof ShellOutput && $input->getOption('long')) {
-            $output->stopPaging();
-        }
-
-        // Set some magic local variables
-        if ($reflector !== null) {
-            $this->setCommandScopeVariables($reflector);
-        }
-
-        return 0;
-    }
-
-    /**
-     * Initialize Enumerators.
-     */
-    protected function initEnumerators()
-    {
-        if (!isset($this->enumerators)) {
-            $mgr = $this->presenter;
-
-            $this->enumerators = [
-                new ClassConstantEnumerator($mgr),
-                new ClassEnumerator($mgr),
-                new ConstantEnumerator($mgr),
-                new FunctionEnumerator($mgr),
-                new GlobalVariableEnumerator($mgr),
-                new PropertyEnumerator($mgr),
-                new MethodEnumerator($mgr),
-                new VariableEnumerator($mgr, $this->context),
-            ];
-        }
-    }
-
-    /**
-     * Write the list items to $output.
-     *
-     * @param OutputInterface $output
-     * @param array           $result List of enumerated items
-     */
-    protected function write(OutputInterface $output, array $result)
-    {
-        if (\count($result) === 0) {
-            return;
-        }
-
-        foreach ($result as $label => $items) {
-            $names = \array_map([$this, 'formatItemName'], $items);
-            $output->writeln(\sprintf('<strong>%s</strong>: %s', $label, \implode(', ', $names)));
-        }
-    }
-
-    /**
-     * Write the list items to $output.
-     *
-     * Items are listed one per line, and include the item signature.
-     *
-     * @param OutputInterface $output
-     * @param array           $result List of enumerated items
-     */
-    protected function writeLong(OutputInterface $output, array $result)
-    {
-        if (\count($result) === 0) {
-            return;
-        }
-
-        $table = $this->getTable($output);
-
-        foreach ($result as $label => $items) {
-            $output->writeln('');
-            $output->writeln(\sprintf('<strong>%s:</strong>', $label));
-
-            $table->setRows([]);
-            foreach ($items as $item) {
-                $table->addRow([$this->formatItemName($item), $item['value']]);
-            }
-
-            if ($table instanceof TableHelper) {
-                $table->render($output);
-            } else {
-                $table->render();
-            }
-        }
-    }
-
-    /**
-     * Format an item name given its visibility.
-     *
-     * @param array $item
-     *
-     * @return string
-     */
-    private function formatItemName($item)
-    {
-        return \sprintf('<%s>%s</%s>', $item['style'], OutputFormatter::escape($item['name']), $item['style']);
-    }
-
-    /**
-     * Validate that input options make sense, provide defaults when called without options.
-     *
-     * @throws RuntimeException if options are inconsistent
-     *
-     * @param InputInterface $input
-     */
-    private function validateInput(InputInterface $input)
-    {
-        if (!$input->getArgument('target')) {
-            // if no target is passed, there can be no properties or methods
-            foreach (['properties', 'methods', 'no-inherit'] as $option) {
-                if ($input->getOption($option)) {
-                    throw new RuntimeException('--'.$option.' does not make sense without a specified target');
-                }
-            }
-
-            foreach (['globals', 'vars', 'constants', 'functions', 'classes', 'interfaces', 'traits'] as $option) {
-                if ($input->getOption($option)) {
-                    return;
-                }
-            }
-
-            // default to --vars if no other options are passed
-            $input->setOption('vars', true);
-        } else {
-            // if a target is passed, classes, functions, etc don't make sense
-            foreach (['vars', 'globals'] as $option) {
-                if ($input->getOption($option)) {
-                    throw new RuntimeException('--'.$option.' does not make sense with a specified target');
-                }
-            }
-
-            // @todo ensure that 'functions', 'classes', 'interfaces', 'traits' only accept namespace target?
-            foreach (['constants', 'properties', 'methods', 'functions', 'classes', 'interfaces', 'traits'] as $option) {
-                if ($input->getOption($option)) {
-                    return;
-                }
-            }
-
-            // default to --constants --properties --methods if no other options are passed
-            $input->setOption('constants', true);
-            $input->setOption('properties', true);
-            $input->setOption('methods', true);
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

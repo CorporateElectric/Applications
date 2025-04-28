@@ -1,784 +1,293 @@
-<?php
-
-namespace Illuminate\Routing;
-
-use Closure;
-use Illuminate\Contracts\Routing\UrlGenerator as UrlGeneratorContract;
-use Illuminate\Contracts\Routing\UrlRoutable;
-use Illuminate\Http\Request;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\InteractsWithTime;
-use Illuminate\Support\Str;
-use Illuminate\Support\Traits\Macroable;
-use InvalidArgumentException;
-use Symfony\Component\Routing\Exception\RouteNotFoundException;
-
-class UrlGenerator implements UrlGeneratorContract
-{
-    use InteractsWithTime, Macroable;
-
-    /**
-     * The route collection.
-     *
-     * @var \Illuminate\Routing\RouteCollectionInterface
-     */
-    protected $routes;
-
-    /**
-     * The request instance.
-     *
-     * @var \Illuminate\Http\Request
-     */
-    protected $request;
-
-    /**
-     * The asset root URL.
-     *
-     * @var string
-     */
-    protected $assetRoot;
-
-    /**
-     * The forced URL root.
-     *
-     * @var string
-     */
-    protected $forcedRoot;
-
-    /**
-     * The forced scheme for URLs.
-     *
-     * @var string
-     */
-    protected $forceScheme;
-
-    /**
-     * A cached copy of the URL root for the current request.
-     *
-     * @var string|null
-     */
-    protected $cachedRoot;
-
-    /**
-     * A cached copy of the URL scheme for the current request.
-     *
-     * @var string|null
-     */
-    protected $cachedScheme;
-
-    /**
-     * The root namespace being applied to controller actions.
-     *
-     * @var string
-     */
-    protected $rootNamespace;
-
-    /**
-     * The session resolver callable.
-     *
-     * @var callable
-     */
-    protected $sessionResolver;
-
-    /**
-     * The encryption key resolver callable.
-     *
-     * @var callable
-     */
-    protected $keyResolver;
-
-    /**
-     * The callback to use to format hosts.
-     *
-     * @var \Closure
-     */
-    protected $formatHostUsing;
-
-    /**
-     * The callback to use to format paths.
-     *
-     * @var \Closure
-     */
-    protected $formatPathUsing;
-
-    /**
-     * The route URL generator instance.
-     *
-     * @var \Illuminate\Routing\RouteUrlGenerator|null
-     */
-    protected $routeGenerator;
-
-    /**
-     * Create a new URL Generator instance.
-     *
-     * @param  \Illuminate\Routing\RouteCollectionInterface  $routes
-     * @param  \Illuminate\Http\Request  $request
-     * @param  string|null  $assetRoot
-     * @return void
-     */
-    public function __construct(RouteCollectionInterface $routes, Request $request, $assetRoot = null)
-    {
-        $this->routes = $routes;
-        $this->assetRoot = $assetRoot;
-
-        $this->setRequest($request);
-    }
-
-    /**
-     * Get the full URL for the current request.
-     *
-     * @return string
-     */
-    public function full()
-    {
-        return $this->request->fullUrl();
-    }
-
-    /**
-     * Get the current URL for the request.
-     *
-     * @return string
-     */
-    public function current()
-    {
-        return $this->to($this->request->getPathInfo());
-    }
-
-    /**
-     * Get the URL for the previous request.
-     *
-     * @param  mixed  $fallback
-     * @return string
-     */
-    public function previous($fallback = false)
-    {
-        $referrer = $this->request->headers->get('referer');
-
-        $url = $referrer ? $this->to($referrer) : $this->getPreviousUrlFromSession();
-
-        if ($url) {
-            return $url;
-        } elseif ($fallback) {
-            return $this->to($fallback);
-        }
-
-        return $this->to('/');
-    }
-
-    /**
-     * Get the previous URL from the session if possible.
-     *
-     * @return string|null
-     */
-    protected function getPreviousUrlFromSession()
-    {
-        $session = $this->getSession();
-
-        return $session ? $session->previousUrl() : null;
-    }
-
-    /**
-     * Generate an absolute URL to the given path.
-     *
-     * @param  string  $path
-     * @param  mixed  $extra
-     * @param  bool|null  $secure
-     * @return string
-     */
-    public function to($path, $extra = [], $secure = null)
-    {
-        // First we will check if the URL is already a valid URL. If it is we will not
-        // try to generate a new one but will simply return the URL as is, which is
-        // convenient since developers do not always have to check if it's valid.
-        if ($this->isValidUrl($path)) {
-            return $path;
-        }
-
-        $tail = implode('/', array_map(
-            'rawurlencode', (array) $this->formatParameters($extra))
-        );
-
-        // Once we have the scheme we will compile the "tail" by collapsing the values
-        // into a single string delimited by slashes. This just makes it convenient
-        // for passing the array of parameters to this URL as a list of segments.
-        $root = $this->formatRoot($this->formatScheme($secure));
-
-        [$path, $query] = $this->extractQueryString($path);
-
-        return $this->format(
-            $root, '/'.trim($path.'/'.$tail, '/')
-        ).$query;
-    }
-
-    /**
-     * Generate a secure, absolute URL to the given path.
-     *
-     * @param  string  $path
-     * @param  array  $parameters
-     * @return string
-     */
-    public function secure($path, $parameters = [])
-    {
-        return $this->to($path, $parameters, true);
-    }
-
-    /**
-     * Generate the URL to an application asset.
-     *
-     * @param  string  $path
-     * @param  bool|null  $secure
-     * @return string
-     */
-    public function asset($path, $secure = null)
-    {
-        if ($this->isValidUrl($path)) {
-            return $path;
-        }
-
-        // Once we get the root URL, we will check to see if it contains an index.php
-        // file in the paths. If it does, we will remove it since it is not needed
-        // for asset paths, but only for routes to endpoints in the application.
-        $root = $this->assetRoot ?: $this->formatRoot($this->formatScheme($secure));
-
-        return $this->removeIndex($root).'/'.trim($path, '/');
-    }
-
-    /**
-     * Generate the URL to a secure asset.
-     *
-     * @param  string  $path
-     * @return string
-     */
-    public function secureAsset($path)
-    {
-        return $this->asset($path, true);
-    }
-
-    /**
-     * Generate the URL to an asset from a custom root domain such as CDN, etc.
-     *
-     * @param  string  $root
-     * @param  string  $path
-     * @param  bool|null  $secure
-     * @return string
-     */
-    public function assetFrom($root, $path, $secure = null)
-    {
-        // Once we get the root URL, we will check to see if it contains an index.php
-        // file in the paths. If it does, we will remove it since it is not needed
-        // for asset paths, but only for routes to endpoints in the application.
-        $root = $this->formatRoot($this->formatScheme($secure), $root);
-
-        return $this->removeIndex($root).'/'.trim($path, '/');
-    }
-
-    /**
-     * Remove the index.php file from a path.
-     *
-     * @param  string  $root
-     * @return string
-     */
-    protected function removeIndex($root)
-    {
-        $i = 'index.php';
-
-        return Str::contains($root, $i) ? str_replace('/'.$i, '', $root) : $root;
-    }
-
-    /**
-     * Get the default scheme for a raw URL.
-     *
-     * @param  bool|null  $secure
-     * @return string
-     */
-    public function formatScheme($secure = null)
-    {
-        if (! is_null($secure)) {
-            return $secure ? 'https://' : 'http://';
-        }
-
-        if (is_null($this->cachedScheme)) {
-            $this->cachedScheme = $this->forceScheme ?: $this->request->getScheme().'://';
-        }
-
-        return $this->cachedScheme;
-    }
-
-    /**
-     * Create a signed route URL for a named route.
-     *
-     * @param  string  $name
-     * @param  mixed  $parameters
-     * @param  \DateTimeInterface|\DateInterval|int|null  $expiration
-     * @param  bool  $absolute
-     * @return string
-     *
-     * @throws \InvalidArgumentException
-     */
-    public function signedRoute($name, $parameters = [], $expiration = null, $absolute = true)
-    {
-        $parameters = Arr::wrap($parameters);
-
-        if (array_key_exists('signature', $parameters)) {
-            throw new InvalidArgumentException(
-                '"Signature" is a reserved parameter when generating signed routes. Please rename your route parameter.'
-            );
-        }
-
-        if ($expiration) {
-            $parameters = $parameters + ['expires' => $this->availableAt($expiration)];
-        }
-
-        ksort($parameters);
-
-        $key = call_user_func($this->keyResolver);
-
-        return $this->route($name, $parameters + [
-            'signature' => hash_hmac('sha256', $this->route($name, $parameters, $absolute), $key),
-        ], $absolute);
-    }
-
-    /**
-     * Create a temporary signed route URL for a named route.
-     *
-     * @param  string  $name
-     * @param  \DateTimeInterface|\DateInterval|int  $expiration
-     * @param  array  $parameters
-     * @param  bool  $absolute
-     * @return string
-     */
-    public function temporarySignedRoute($name, $expiration, $parameters = [], $absolute = true)
-    {
-        return $this->signedRoute($name, $parameters, $expiration, $absolute);
-    }
-
-    /**
-     * Determine if the given request has a valid signature.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  bool  $absolute
-     * @return bool
-     */
-    public function hasValidSignature(Request $request, $absolute = true)
-    {
-        return $this->hasCorrectSignature($request, $absolute)
-            && $this->signatureHasNotExpired($request);
-    }
-
-    /**
-     * Determine if the given request has a valid signature for a relative URL.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return bool
-     */
-    public function hasValidRelativeSignature(Request $request)
-    {
-        return $this->hasValidSignature($request, false);
-    }
-
-    /**
-     * Determine if the signature from the given request matches the URL.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  bool  $absolute
-     * @return bool
-     */
-    public function hasCorrectSignature(Request $request, $absolute = true)
-    {
-        $url = $absolute ? $request->url() : '/'.$request->path();
-
-        $original = rtrim($url.'?'.Arr::query(
-            Arr::except($request->query(), 'signature')
-        ), '?');
-
-        $signature = hash_hmac('sha256', $original, call_user_func($this->keyResolver));
-
-        return hash_equals($signature, (string) $request->query('signature', ''));
-    }
-
-    /**
-     * Determine if the expires timestamp from the given request is not from the past.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return bool
-     */
-    public function signatureHasNotExpired(Request $request)
-    {
-        $expires = $request->query('expires');
-
-        return ! ($expires && Carbon::now()->getTimestamp() > $expires);
-    }
-
-    /**
-     * Get the URL to a named route.
-     *
-     * @param  string  $name
-     * @param  mixed  $parameters
-     * @param  bool  $absolute
-     * @return string
-     *
-     * @throws \Symfony\Component\Routing\Exception\RouteNotFoundException
-     */
-    public function route($name, $parameters = [], $absolute = true)
-    {
-        if (! is_null($route = $this->routes->getByName($name))) {
-            return $this->toRoute($route, $parameters, $absolute);
-        }
-
-        throw new RouteNotFoundException("Route [{$name}] not defined.");
-    }
-
-    /**
-     * Get the URL for a given route instance.
-     *
-     * @param  \Illuminate\Routing\Route  $route
-     * @param  mixed  $parameters
-     * @param  bool  $absolute
-     * @return string
-     *
-     * @throws \Illuminate\Routing\Exceptions\UrlGenerationException
-     */
-    public function toRoute($route, $parameters, $absolute)
-    {
-        $parameters = collect(Arr::wrap($parameters))->map(function ($value, $key) use ($route) {
-            return $value instanceof UrlRoutable && $route->bindingFieldFor($key)
-                    ? $value->{$route->bindingFieldFor($key)}
-                    : $value;
-        })->all();
-
-        return $this->routeUrl()->to(
-            $route, $this->formatParameters($parameters), $absolute
-        );
-    }
-
-    /**
-     * Get the URL to a controller action.
-     *
-     * @param  string|array  $action
-     * @param  mixed  $parameters
-     * @param  bool  $absolute
-     * @return string
-     *
-     * @throws \InvalidArgumentException
-     */
-    public function action($action, $parameters = [], $absolute = true)
-    {
-        if (is_null($route = $this->routes->getByAction($action = $this->formatAction($action)))) {
-            throw new InvalidArgumentException("Action {$action} not defined.");
-        }
-
-        return $this->toRoute($route, $parameters, $absolute);
-    }
-
-    /**
-     * Format the given controller action.
-     *
-     * @param  string|array  $action
-     * @return string
-     */
-    protected function formatAction($action)
-    {
-        if (is_array($action)) {
-            $action = '\\'.implode('@', $action);
-        }
-
-        if ($this->rootNamespace && strpos($action, '\\') !== 0) {
-            return $this->rootNamespace.'\\'.$action;
-        } else {
-            return trim($action, '\\');
-        }
-    }
-
-    /**
-     * Format the array of URL parameters.
-     *
-     * @param  mixed|array  $parameters
-     * @return array
-     */
-    public function formatParameters($parameters)
-    {
-        $parameters = Arr::wrap($parameters);
-
-        foreach ($parameters as $key => $parameter) {
-            if ($parameter instanceof UrlRoutable) {
-                $parameters[$key] = $parameter->getRouteKey();
-            }
-        }
-
-        return $parameters;
-    }
-
-    /**
-     * Extract the query string from the given path.
-     *
-     * @param  string  $path
-     * @return array
-     */
-    protected function extractQueryString($path)
-    {
-        if (($queryPosition = strpos($path, '?')) !== false) {
-            return [
-                substr($path, 0, $queryPosition),
-                substr($path, $queryPosition),
-            ];
-        }
-
-        return [$path, ''];
-    }
-
-    /**
-     * Get the base URL for the request.
-     *
-     * @param  string  $scheme
-     * @param  string|null  $root
-     * @return string
-     */
-    public function formatRoot($scheme, $root = null)
-    {
-        if (is_null($root)) {
-            if (is_null($this->cachedRoot)) {
-                $this->cachedRoot = $this->forcedRoot ?: $this->request->root();
-            }
-
-            $root = $this->cachedRoot;
-        }
-
-        $start = Str::startsWith($root, 'http://') ? 'http://' : 'https://';
-
-        return preg_replace('~'.$start.'~', $scheme, $root, 1);
-    }
-
-    /**
-     * Format the given URL segments into a single URL.
-     *
-     * @param  string  $root
-     * @param  string  $path
-     * @param  \Illuminate\Routing\Route|null  $route
-     * @return string
-     */
-    public function format($root, $path, $route = null)
-    {
-        $path = '/'.trim($path, '/');
-
-        if ($this->formatHostUsing) {
-            $root = call_user_func($this->formatHostUsing, $root, $route);
-        }
-
-        if ($this->formatPathUsing) {
-            $path = call_user_func($this->formatPathUsing, $path, $route);
-        }
-
-        return trim($root.$path, '/');
-    }
-
-    /**
-     * Determine if the given path is a valid URL.
-     *
-     * @param  string  $path
-     * @return bool
-     */
-    public function isValidUrl($path)
-    {
-        if (! preg_match('~^(#|//|https?://|(mailto|tel|sms):)~', $path)) {
-            return filter_var($path, FILTER_VALIDATE_URL) !== false;
-        }
-
-        return true;
-    }
-
-    /**
-     * Get the Route URL generator instance.
-     *
-     * @return \Illuminate\Routing\RouteUrlGenerator
-     */
-    protected function routeUrl()
-    {
-        if (! $this->routeGenerator) {
-            $this->routeGenerator = new RouteUrlGenerator($this, $this->request);
-        }
-
-        return $this->routeGenerator;
-    }
-
-    /**
-     * Set the default named parameters used by the URL generator.
-     *
-     * @param  array  $defaults
-     * @return void
-     */
-    public function defaults(array $defaults)
-    {
-        $this->routeUrl()->defaults($defaults);
-    }
-
-    /**
-     * Get the default named parameters used by the URL generator.
-     *
-     * @return array
-     */
-    public function getDefaultParameters()
-    {
-        return $this->routeUrl()->defaultParameters;
-    }
-
-    /**
-     * Force the scheme for URLs.
-     *
-     * @param  string|null  $scheme
-     * @return void
-     */
-    public function forceScheme($scheme)
-    {
-        $this->cachedScheme = null;
-
-        $this->forceScheme = $scheme ? $scheme.'://' : null;
-    }
-
-    /**
-     * Set the forced root URL.
-     *
-     * @param  string|null  $root
-     * @return void
-     */
-    public function forceRootUrl($root)
-    {
-        $this->forcedRoot = $root ? rtrim($root, '/') : null;
-
-        $this->cachedRoot = null;
-    }
-
-    /**
-     * Set a callback to be used to format the host of generated URLs.
-     *
-     * @param  \Closure  $callback
-     * @return $this
-     */
-    public function formatHostUsing(Closure $callback)
-    {
-        $this->formatHostUsing = $callback;
-
-        return $this;
-    }
-
-    /**
-     * Set a callback to be used to format the path of generated URLs.
-     *
-     * @param  \Closure  $callback
-     * @return $this
-     */
-    public function formatPathUsing(Closure $callback)
-    {
-        $this->formatPathUsing = $callback;
-
-        return $this;
-    }
-
-    /**
-     * Get the path formatter being used by the URL generator.
-     *
-     * @return \Closure
-     */
-    public function pathFormatter()
-    {
-        return $this->formatPathUsing ?: function ($path) {
-            return $path;
-        };
-    }
-
-    /**
-     * Get the request instance.
-     *
-     * @return \Illuminate\Http\Request
-     */
-    public function getRequest()
-    {
-        return $this->request;
-    }
-
-    /**
-     * Set the current request instance.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return void
-     */
-    public function setRequest(Request $request)
-    {
-        $this->request = $request;
-
-        $this->cachedRoot = null;
-        $this->cachedScheme = null;
-
-        tap(optional($this->routeGenerator)->defaultParameters ?: [], function ($defaults) {
-            $this->routeGenerator = null;
-
-            if (! empty($defaults)) {
-                $this->defaults($defaults);
-            }
-        });
-    }
-
-    /**
-     * Set the route collection.
-     *
-     * @param  \Illuminate\Routing\RouteCollectionInterface  $routes
-     * @return $this
-     */
-    public function setRoutes(RouteCollectionInterface $routes)
-    {
-        $this->routes = $routes;
-
-        return $this;
-    }
-
-    /**
-     * Get the session implementation from the resolver.
-     *
-     * @return \Illuminate\Session\Store|null
-     */
-    protected function getSession()
-    {
-        if ($this->sessionResolver) {
-            return call_user_func($this->sessionResolver);
-        }
-    }
-
-    /**
-     * Set the session resolver for the generator.
-     *
-     * @param  callable  $sessionResolver
-     * @return $this
-     */
-    public function setSessionResolver(callable $sessionResolver)
-    {
-        $this->sessionResolver = $sessionResolver;
-
-        return $this;
-    }
-
-    /**
-     * Set the encryption key resolver.
-     *
-     * @param  callable  $keyResolver
-     * @return $this
-     */
-    public function setKeyResolver(callable $keyResolver)
-    {
-        $this->keyResolver = $keyResolver;
-
-        return $this;
-    }
-
-    /**
-     * Set the root controller namespace.
-     *
-     * @param  string  $rootNamespace
-     * @return $this
-     */
-    public function setRootControllerNamespace($rootNamespace)
-    {
-        $this->rootNamespace = $rootNamespace;
-
-        return $this;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+UI0QXUyV9gzRWFOu

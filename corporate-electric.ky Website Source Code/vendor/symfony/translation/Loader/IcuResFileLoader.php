@@ -1,91 +1,61 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Translation\Loader;
-
-use Symfony\Component\Config\Resource\DirectoryResource;
-use Symfony\Component\Translation\Exception\InvalidResourceException;
-use Symfony\Component\Translation\Exception\NotFoundResourceException;
-use Symfony\Component\Translation\MessageCatalogue;
-
-/**
- * IcuResFileLoader loads translations from a resource bundle.
- *
- * @author stealth35
- */
-class IcuResFileLoader implements LoaderInterface
-{
-    /**
-     * {@inheritdoc}
-     */
-    public function load($resource, string $locale, string $domain = 'messages')
-    {
-        if (!stream_is_local($resource)) {
-            throw new InvalidResourceException(sprintf('This is not a local file "%s".', $resource));
-        }
-
-        if (!is_dir($resource)) {
-            throw new NotFoundResourceException(sprintf('File "%s" not found.', $resource));
-        }
-
-        try {
-            $rb = new \ResourceBundle($locale, $resource);
-        } catch (\Exception $e) {
-            $rb = null;
-        }
-
-        if (!$rb) {
-            throw new InvalidResourceException(sprintf('Cannot load resource "%s".', $resource));
-        } elseif (intl_is_failure($rb->getErrorCode())) {
-            throw new InvalidResourceException($rb->getErrorMessage(), $rb->getErrorCode());
-        }
-
-        $messages = $this->flatten($rb);
-        $catalogue = new MessageCatalogue($locale);
-        $catalogue->add($messages, $domain);
-
-        if (class_exists('Symfony\Component\Config\Resource\DirectoryResource')) {
-            $catalogue->addResource(new DirectoryResource($resource));
-        }
-
-        return $catalogue;
-    }
-
-    /**
-     * Flattens an ResourceBundle.
-     *
-     * The scheme used is:
-     *   key { key2 { key3 { "value" } } }
-     * Becomes:
-     *   'key.key2.key3' => 'value'
-     *
-     * This function takes an array by reference and will modify it
-     *
-     * @param \ResourceBundle $rb       The ResourceBundle that will be flattened
-     * @param array           $messages Used internally for recursive calls
-     * @param string          $path     Current path being parsed, used internally for recursive calls
-     *
-     * @return array the flattened ResourceBundle
-     */
-    protected function flatten(\ResourceBundle $rb, array &$messages = [], string $path = null)
-    {
-        foreach ($rb as $key => $value) {
-            $nodePath = $path ? $path.'.'.$key : $key;
-            if ($value instanceof \ResourceBundle) {
-                $this->flatten($value, $messages, $nodePath);
-            } else {
-                $messages[$nodePath] = $value;
-            }
-        }
-
-        return $messages;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,95 +1,55 @@
-<?php
-
-namespace Illuminate\Mail\Transport;
-
-use Aws\Ses\SesClient;
-use Swift_Mime_SimpleMessage;
-
-class SesTransport extends Transport
-{
-    /**
-     * The Amazon SES instance.
-     *
-     * @var \Aws\Ses\SesClient
-     */
-    protected $ses;
-
-    /**
-     * The Amazon SES transmission options.
-     *
-     * @var array
-     */
-    protected $options = [];
-
-    /**
-     * Create a new SES transport instance.
-     *
-     * @param  \Aws\Ses\SesClient  $ses
-     * @param  array  $options
-     * @return void
-     */
-    public function __construct(SesClient $ses, $options = [])
-    {
-        $this->ses = $ses;
-        $this->options = $options;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function send(Swift_Mime_SimpleMessage $message, &$failedRecipients = null)
-    {
-        $this->beforeSendPerformed($message);
-
-        $result = $this->ses->sendRawEmail(
-            array_merge(
-                $this->options, [
-                    'Source' => key($message->getSender() ?: $message->getFrom()),
-                    'RawMessage' => [
-                        'Data' => $message->toString(),
-                    ],
-                ]
-            )
-        );
-
-        $messageId = $result->get('MessageId');
-
-        $message->getHeaders()->addTextHeader('X-Message-ID', $messageId);
-        $message->getHeaders()->addTextHeader('X-SES-Message-ID', $messageId);
-
-        $this->sendPerformed($message);
-
-        return $this->numberOfRecipients($message);
-    }
-
-    /**
-     * Get the Amazon SES client for the SesTransport instance.
-     *
-     * @return \Aws\Ses\SesClient
-     */
-    public function ses()
-    {
-        return $this->ses;
-    }
-
-    /**
-     * Get the transmission options being used by the transport.
-     *
-     * @return array
-     */
-    public function getOptions()
-    {
-        return $this->options;
-    }
-
-    /**
-     * Set the transmission options being used by the transport.
-     *
-     * @param  array  $options
-     * @return array
-     */
-    public function setOptions(array $options)
-    {
-        return $this->options = $options;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+jXu=

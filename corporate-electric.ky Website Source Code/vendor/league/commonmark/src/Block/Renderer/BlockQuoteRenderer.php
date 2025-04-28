@@ -1,50 +1,43 @@
-<?php
-
-/*
- * This file is part of the league/commonmark package.
- *
- * (c) Colin O'Dell <colinodell@gmail.com>
- *
- * Original code based on the CommonMark JS reference parser (https://bitly.com/commonmark-js)
- *  - (c) John MacFarlane
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace League\CommonMark\Block\Renderer;
-
-use League\CommonMark\Block\Element\AbstractBlock;
-use League\CommonMark\Block\Element\BlockQuote;
-use League\CommonMark\ElementRendererInterface;
-use League\CommonMark\HtmlElement;
-
-final class BlockQuoteRenderer implements BlockRendererInterface
-{
-    /**
-     * @param BlockQuote               $block
-     * @param ElementRendererInterface $htmlRenderer
-     * @param bool                     $inTightList
-     *
-     * @return HtmlElement
-     */
-    public function render(AbstractBlock $block, ElementRendererInterface $htmlRenderer, bool $inTightList = false)
-    {
-        if (!($block instanceof BlockQuote)) {
-            throw new \InvalidArgumentException('Incompatible block type: ' . \get_class($block));
-        }
-
-        $attrs = $block->getData('attributes', []);
-
-        $filling = $htmlRenderer->renderBlocks($block->children());
-        if ($filling === '') {
-            return new HtmlElement('blockquote', $attrs, $htmlRenderer->getOption('inner_separator', "\n"));
-        }
-
-        return new HtmlElement(
-            'blockquote',
-            $attrs,
-            $htmlRenderer->getOption('inner_separator', "\n") . $filling . $htmlRenderer->getOption('inner_separator', "\n")
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+4zlWg7kxj20/NHx+8l4uVsqZoKotgUaPSm==

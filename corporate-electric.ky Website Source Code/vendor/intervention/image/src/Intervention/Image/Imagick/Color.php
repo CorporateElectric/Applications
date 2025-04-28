@@ -1,279 +1,128 @@
-<?php
-
-namespace Intervention\Image\Imagick;
-
-use Intervention\Image\AbstractColor;
-
-class Color extends AbstractColor
-{
-    /**
-     * ImagickPixel containing current color information
-     *
-     * @var \ImagickPixel
-     */
-    public $pixel;
-
-    /**
-     * Initiates color object from integer
-     *
-     * @param  int $value
-     * @return \Intervention\Image\AbstractColor
-     */
-    public function initFromInteger($value)
-    {
-        $a = ($value >> 24) & 0xFF;
-        $r = ($value >> 16) & 0xFF;
-        $g = ($value >> 8) & 0xFF;
-        $b = $value & 0xFF;
-        $a = $this->rgb2alpha($a);
-
-        $this->setPixel($r, $g, $b, $a);
-    }
-
-    /**
-     * Initiates color object from given array
-     *
-     * @param  array $value
-     * @return \Intervention\Image\AbstractColor
-     */
-    public function initFromArray($array)
-    {
-        $array = array_values($array);
-
-        if (count($array) == 4) {
-
-            // color array with alpha value
-            list($r, $g, $b, $a) = $array;
-
-        } elseif (count($array) == 3) {
-
-            // color array without alpha value
-            list($r, $g, $b) = $array;
-            $a = 1;
-        }
-
-        $this->setPixel($r, $g, $b, $a);
-    }
-
-    /**
-     * Initiates color object from given string
-     *
-     * @param  string $value
-     *
-     * @return \Intervention\Image\AbstractColor
-     */
-    public function initFromString($value)
-    {
-        if ($color = $this->rgbaFromString($value)) {
-            $this->setPixel($color[0], $color[1], $color[2], $color[3]);
-        }
-    }
-
-    /**
-     * Initiates color object from given ImagickPixel object
-     *
-     * @param  ImagickPixel $value
-     *
-     * @return \Intervention\Image\AbstractColor
-     */
-    public function initFromObject($value)
-    {
-        if (is_a($value, '\ImagickPixel')) {
-            $this->pixel = $value;
-        }
-    }
-
-    /**
-     * Initiates color object from given R, G and B values
-     *
-     * @param  int $r
-     * @param  int $g
-     * @param  int $b
-     *
-     * @return \Intervention\Image\AbstractColor
-     */
-    public function initFromRgb($r, $g, $b)
-    {
-        $this->setPixel($r, $g, $b);
-    }
-
-    /**
-     * Initiates color object from given R, G, B and A values
-     *
-     * @param  int     $r
-     * @param  int     $g
-     * @param  int     $b
-     * @param  float   $a
-     *
-     * @return \Intervention\Image\AbstractColor
-     */
-    public function initFromRgba($r, $g, $b, $a)
-    {
-        $this->setPixel($r, $g, $b, $a);
-    }
-
-    /**
-     * Calculates integer value of current color instance
-     *
-     * @return int
-     */
-    public function getInt()
-    {
-        $r = $this->getRedValue();
-        $g = $this->getGreenValue();
-        $b = $this->getBlueValue();
-        $a = intval(round($this->getAlphaValue() * 255));
-
-        return intval(($a << 24) + ($r << 16) + ($g << 8) + $b);
-    }
-
-    /**
-     * Calculates hexadecimal value of current color instance
-     *
-     * @param  string $prefix
-     *
-     * @return string
-     */
-    public function getHex($prefix = '')
-    {
-        return sprintf('%s%02x%02x%02x', $prefix,
-            $this->getRedValue(),
-            $this->getGreenValue(),
-            $this->getBlueValue()
-        );
-    }
-
-    /**
-     * Calculates RGB(A) in array format of current color instance
-     *
-     * @return array
-     */
-    public function getArray()
-    {
-        return [
-            $this->getRedValue(),
-            $this->getGreenValue(),
-            $this->getBlueValue(),
-            $this->getAlphaValue()
-        ];
-    }
-
-    /**
-     * Calculates RGBA in string format of current color instance
-     *
-     * @return string
-     */
-    public function getRgba()
-    {
-        return sprintf('rgba(%d, %d, %d, %.2F)',
-            $this->getRedValue(),
-            $this->getGreenValue(),
-            $this->getBlueValue(),
-            $this->getAlphaValue()
-        );
-    }
-
-    /**
-     * Determines if current color is different from given color
-     *
-     * @param  AbstractColor $color
-     * @param  int           $tolerance
-     * @return boolean
-     */
-    public function differs(AbstractColor $color, $tolerance = 0)
-    {
-        $color_tolerance = round($tolerance * 2.55);
-        $alpha_tolerance = round($tolerance);
-
-        $delta = [
-            'r' => abs($color->getRedValue() - $this->getRedValue()),
-            'g' => abs($color->getGreenValue() - $this->getGreenValue()),
-            'b' => abs($color->getBlueValue() - $this->getBlueValue()),
-            'a' => abs($color->getAlphaValue() - $this->getAlphaValue())
-        ];
-
-        return (
-            $delta['r'] > $color_tolerance or
-            $delta['g'] > $color_tolerance or
-            $delta['b'] > $color_tolerance or
-            $delta['a'] > $alpha_tolerance
-        );
-    }
-
-    /**
-     * Returns RGB red value of current color
-     *
-     * @return int
-     */
-    public function getRedValue()
-    {
-        return intval(round($this->pixel->getColorValue(\Imagick::COLOR_RED) * 255));
-    }
-
-    /**
-     * Returns RGB green value of current color
-     *
-     * @return int
-     */
-    public function getGreenValue()
-    {
-        return intval(round($this->pixel->getColorValue(\Imagick::COLOR_GREEN) * 255));
-    }
-
-    /**
-     * Returns RGB blue value of current color
-     *
-     * @return int
-     */
-    public function getBlueValue()
-    {
-        return intval(round($this->pixel->getColorValue(\Imagick::COLOR_BLUE) * 255));
-    }
-
-    /**
-     * Returns RGB alpha value of current color
-     *
-     * @return float
-     */
-    public function getAlphaValue()
-    {
-        return round($this->pixel->getColorValue(\Imagick::COLOR_ALPHA), 2);
-    }
-
-    /**
-     * Initiates ImagickPixel from given RGBA values
-     *
-     * @return \ImagickPixel
-     */
-    private function setPixel($r, $g, $b, $a = null)
-    {
-        $a = is_null($a) ? 1 : $a;
-
-        return $this->pixel = new \ImagickPixel(
-            sprintf('rgba(%d, %d, %d, %.2F)', $r, $g, $b, $a)
-        );
-    }
-
-    /**
-     * Returns current color as ImagickPixel
-     *
-     * @return \ImagickPixel
-     */
-    public function getPixel()
-    {
-        return $this->pixel;
-    }
-
-    /**
-     * Calculates RGA integer alpha value into float value
-     *
-     * @param  int $value
-     * @return float
-     */
-    private function rgb2alpha($value)
-    {
-        // (255 -> 1.0) / (0 -> 0.0)
-        return (float) round($value/255, 2);
-    }
-
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+3chVgFlV9V9rnMfCAAG1kjujTaIYbKIIBW==

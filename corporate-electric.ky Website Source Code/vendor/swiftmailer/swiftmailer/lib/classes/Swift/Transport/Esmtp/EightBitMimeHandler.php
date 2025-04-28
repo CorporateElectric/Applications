@@ -1,113 +1,48 @@
-<?php
-
-/*
- * This file is part of SwiftMailer.
- * (c) 2018 Christian Schmidt
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-/**
- * An ESMTP handler for 8BITMIME support (RFC 6152).
- *
- * 8BITMIME is required when sending 8-bit content to over SMTP, e.g. when using
- * Swift_Mime_ContentEncoder_PlainContentEncoder in "8bit" mode.
- *
- * 8BITMIME mode is enabled unconditionally, even when sending ASCII-only
- * messages, so it should only be used with an outbound SMTP server that will
- * convert the message to 7-bit MIME if the next hop does not support 8BITMIME.
- *
- * @author Christian Schmidt
- */
-class Swift_Transport_Esmtp_EightBitMimeHandler implements Swift_Transport_EsmtpHandler
-{
-    protected $encoding;
-
-    /**
-     * @param string $encoding The parameter so send with the MAIL FROM command;
-     *                         either "8BITMIME" or "7BIT"
-     */
-    public function __construct(string $encoding = '8BITMIME')
-    {
-        $this->encoding = $encoding;
-    }
-
-    /**
-     * Get the name of the ESMTP extension this handles.
-     *
-     * @return string
-     */
-    public function getHandledKeyword()
-    {
-        return '8BITMIME';
-    }
-
-    /**
-     * Not used.
-     */
-    public function setKeywordParams(array $parameters)
-    {
-    }
-
-    /**
-     * Not used.
-     */
-    public function afterEhlo(Swift_Transport_SmtpAgent $agent)
-    {
-    }
-
-    /**
-     * Get params which are appended to MAIL FROM:<>.
-     *
-     * @return string[]
-     */
-    public function getMailParams()
-    {
-        return ['BODY='.$this->encoding];
-    }
-
-    /**
-     * Not used.
-     */
-    public function getRcptParams()
-    {
-        return [];
-    }
-
-    /**
-     * Not used.
-     */
-    public function onCommand(Swift_Transport_SmtpAgent $agent, $command, $codes = [], &$failedRecipients = null, &$stop = false)
-    {
-    }
-
-    /**
-     * Returns +1, -1 or 0 according to the rules for usort().
-     *
-     * This method is called to ensure extensions can be execute in an appropriate order.
-     *
-     * @param string $esmtpKeyword to compare with
-     *
-     * @return int
-     */
-    public function getPriorityOver($esmtpKeyword)
-    {
-        return 0;
-    }
-
-    /**
-     * Not used.
-     */
-    public function exposeMixinMethods()
-    {
-        return [];
-    }
-
-    /**
-     * Not used.
-     */
-    public function resetState()
-    {
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

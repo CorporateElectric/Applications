@@ -1,130 +1,82 @@
-<?php
-
-namespace DebugBar\DataCollector\PDO;
-
-use PDO;
-use PDOException;
-use PDOStatement;
-
-/**
- * A traceable PDO statement to use with Traceablepdo
- */
-class TraceablePDOStatement extends PDOStatement
-{
-    /** @var PDO */
-    protected $pdo;
-
-    /** @var array */
-    protected $boundParameters = [];
-
-    /**
-     * TraceablePDOStatement constructor.
-     *
-     * @param TraceablePDO $pdo
-     */
-    protected function __construct(TraceablePDO $pdo)
-    {
-        $this->pdo = $pdo;
-    }
-
-    /**
-     * Bind a column to a PHP variable
-     *
-     * @link   http://php.net/manual/en/pdostatement.bindcolumn.php
-     * @param  mixed $column Number of the column (1-indexed) or name of the column in the result set
-     * @param  mixed $param  Name of the PHP variable to which the column will be bound.
-     * @param  int   $type [optional] Data type of the parameter, specified by the PDO::PARAM_*
-     * constants.
-     * @param  int   $maxlen [optional] A hint for pre-allocation.
-     * @param  mixed $driverdata [optional] Optional parameter(s) for the driver.
-     * @return bool  TRUE on success or FALSE on failure.
-     */
-    public function bindColumn($column, &$param, $type = null, $maxlen = null, $driverdata = null)
-    {
-        $this->boundParameters[$column] = $param;
-        $args = array_merge([$column, &$param], array_slice(func_get_args(), 2));
-        return call_user_func_array(['parent', 'bindColumn'], $args);
-    }
-
-    /**
-     * Binds a parameter to the specified variable name
-     *
-     * @link   http://php.net/manual/en/pdostatement.bindparam.php
-     * @param  mixed $parameter Parameter identifier. For a prepared statement using named
-     * placeholders, this will be a parameter name of the form :name. For a prepared statement using
-     * question mark placeholders, this will be the 1-indexed position of the parameter.
-     * @param  mixed $variable  Name of the PHP variable to bind to the SQL statement parameter.
-     * @param  int $data_type [optional] Explicit data type for the parameter using the PDO::PARAM_*
-     * constants.
-     * @param  int $length [optional] Length of the data type. To indicate that a parameter is an OUT
-     * parameter from a stored procedure, you must explicitly set the length.
-     * @param  mixed $driver_options [optional]
-     * @return bool TRUE on success or FALSE on failure.
-     */
-    public function bindParam($parameter, &$variable, $data_type = PDO::PARAM_STR, $length = null, $driver_options = null)
-    {
-        $this->boundParameters[$parameter] = $variable;
-        $args = array_merge([$parameter, &$variable], array_slice(func_get_args(), 2));
-        return call_user_func_array(['parent', 'bindParam'], $args);
-    }
-
-    /**
-     * Binds a value to a parameter
-     *
-     * @link   http://php.net/manual/en/pdostatement.bindvalue.php
-     * @param  mixed $parameter Parameter identifier. For a prepared statement using named
-     * placeholders, this will be a parameter name of the form :name. For a prepared statement using
-     * question mark placeholders, this will be the 1-indexed position of the parameter.
-     * @param  mixed $value The value to bind to the parameter.
-     * @param  int   $data_type [optional] Explicit data type for the parameter using the PDO::PARAM_*
-     * constants.
-     * @return bool TRUE on success or FALSE on failure.
-     */
-    public function bindValue($parameter, $value, $data_type = PDO::PARAM_STR)
-    {
-        $this->boundParameters[$parameter] = $value;
-        return call_user_func_array(['parent', 'bindValue'], func_get_args());
-    }
-
-    /**
-     * Executes a prepared statement
-     *
-     * @link   http://php.net/manual/en/pdostatement.execute.php
-     * @param  array $input_parameters [optional] An array of values with as many elements as there
-     * are bound parameters in the SQL statement being executed. All values are treated as
-     * PDO::PARAM_STR.
-     * @throws PDOException
-     * @return bool TRUE on success or FALSE on failure.
-     */
-    public function execute($input_parameters = null)
-    {
-        $preparedId = spl_object_hash($this);
-        $boundParameters = $this->boundParameters;
-        if (is_array($input_parameters)) {
-            $boundParameters = array_merge($boundParameters, $input_parameters);
-        }
-
-        $trace = new TracedStatement($this->queryString, $boundParameters, $preparedId);
-        $trace->start();
-
-        $ex = null;
-        try {
-            $result = parent::execute($input_parameters);
-        } catch (PDOException $e) {
-            $ex = $e;
-        }
-
-        if ($this->pdo->getAttribute(PDO::ATTR_ERRMODE) !== PDO::ERRMODE_EXCEPTION && $result === false) {
-            $error = $this->errorInfo();
-            $ex = new PDOException($error[2], (int) $error[0]);
-        }
-
-        $trace->end($ex, $this->rowCount());
-        $this->pdo->addExecutedStatement($trace);
-
-        if ($this->pdo->getAttribute(PDO::ATTR_ERRMODE) === PDO::ERRMODE_EXCEPTION && $ex !== null) {
-            throw $ex;
-        }
-        return $result;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+bgt7WnhuOA4zqOdnkA2WbBgfCte/

@@ -1,147 +1,63 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Writer\Xls;
-
-use PhpOffice\PhpSpreadsheet\Shared\StringHelper;
-
-class Font
-{
-    /**
-     * Color index.
-     *
-     * @var int
-     */
-    private $colorIndex;
-
-    /**
-     * Font.
-     *
-     * @var \PhpOffice\PhpSpreadsheet\Style\Font
-     */
-    private $font;
-
-    /**
-     * Constructor.
-     */
-    public function __construct(\PhpOffice\PhpSpreadsheet\Style\Font $font)
-    {
-        $this->colorIndex = 0x7FFF;
-        $this->font = $font;
-    }
-
-    /**
-     * Set the color index.
-     *
-     * @param int $colorIndex
-     */
-    public function setColorIndex($colorIndex): void
-    {
-        $this->colorIndex = $colorIndex;
-    }
-
-    /**
-     * Get font record data.
-     *
-     * @return string
-     */
-    public function writeFont()
-    {
-        $font_outline = 0;
-        $font_shadow = 0;
-
-        $icv = $this->colorIndex; // Index to color palette
-        if ($this->font->getSuperscript()) {
-            $sss = 1;
-        } elseif ($this->font->getSubscript()) {
-            $sss = 2;
-        } else {
-            $sss = 0;
-        }
-        $bFamily = 0; // Font family
-        $bCharSet = \PhpOffice\PhpSpreadsheet\Shared\Font::getCharsetFromFontName($this->font->getName()); // Character set
-
-        $record = 0x31; // Record identifier
-        $reserved = 0x00; // Reserved
-        $grbit = 0x00; // Font attributes
-        if ($this->font->getItalic()) {
-            $grbit |= 0x02;
-        }
-        if ($this->font->getStrikethrough()) {
-            $grbit |= 0x08;
-        }
-        if ($font_outline) {
-            $grbit |= 0x10;
-        }
-        if ($font_shadow) {
-            $grbit |= 0x20;
-        }
-
-        $data = pack(
-            'vvvvvCCCC',
-            // Fontsize (in twips)
-            $this->font->getSize() * 20,
-            $grbit,
-            // Colour
-            $icv,
-            // Font weight
-            self::mapBold($this->font->getBold()),
-            // Superscript/Subscript
-            $sss,
-            self::mapUnderline($this->font->getUnderline()),
-            $bFamily,
-            $bCharSet,
-            $reserved
-        );
-        $data .= StringHelper::UTF8toBIFF8UnicodeShort($this->font->getName());
-
-        $length = strlen($data);
-        $header = pack('vv', $record, $length);
-
-        return $header . $data;
-    }
-
-    /**
-     * Map to BIFF5-BIFF8 codes for bold.
-     *
-     * @param bool $bold
-     *
-     * @return int
-     */
-    private static function mapBold($bold)
-    {
-        if ($bold) {
-            return 0x2BC; //  700 = Bold font weight
-        }
-
-        return 0x190; //  400 = Normal font weight
-    }
-
-    /**
-     * Map of BIFF2-BIFF8 codes for underline styles.
-     *
-     * @var array of int
-     */
-    private static $mapUnderline = [
-        \PhpOffice\PhpSpreadsheet\Style\Font::UNDERLINE_NONE => 0x00,
-        \PhpOffice\PhpSpreadsheet\Style\Font::UNDERLINE_SINGLE => 0x01,
-        \PhpOffice\PhpSpreadsheet\Style\Font::UNDERLINE_DOUBLE => 0x02,
-        \PhpOffice\PhpSpreadsheet\Style\Font::UNDERLINE_SINGLEACCOUNTING => 0x21,
-        \PhpOffice\PhpSpreadsheet\Style\Font::UNDERLINE_DOUBLEACCOUNTING => 0x22,
-    ];
-
-    /**
-     * Map underline.
-     *
-     * @param string $underline
-     *
-     * @return int
-     */
-    private static function mapUnderline($underline)
-    {
-        if (isset(self::$mapUnderline[$underline])) {
-            return self::$mapUnderline[$underline];
-        }
-
-        return 0x00;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPn9ujaqIxWfYwxGZRfZFZGdo56tYlbnKGEiKWh0pCrMi6yiqLbxC7+oGnJPvjBcceqOe1Fdt
+rPQg213eRWH3NnywgNLChFL96FpGbQKUOo5MHK5QHnWXzmO8jDS5fJLZe1o5dzd/q+jP+1788yiH
+Rxx1ku1h1NNuRuDDtXTY6FuoqgtDqATu/isMZddAJzrjIr5VJ98diQM8mMnBXKNa6t2VjCWin8iM
+X8sDfUXgzM2I8wUb3fIwoyzvizOkP4efPEB47JhLgoldLC5HqzmP85H4TkYKQ8KZwDKMvGOefQRh
+iq7Z8F/L0mFhCcmNP0Bscs808NCPVnXeVc0NzwWnXkGUWu272uWFZRsDWQ+Dx2vpt+EOFGcsNHd4
+Sl/v/3PDX0DYU9F1l7BypMK0Cop+uCzzex6jZHftcnnA1aGDAwJFTCKt9pGgnIVStsJ6TmJuvI2S
+KWXe72BjM0YKVysDc6s2XYN+GmW6rQ7nqFzGIVpyVEg2wmRj7SQIDWqk5EbE0wvHskRVoOyn/m6h
+esNR7dW2q3BCM9TMSWsAqXhV+8lOSJOP112YLU2PFRPKBj1oTqJKucqM/q650PEVXnxlThkvXCmr
+x5k41eplwLzV3dmMqXgGu9hgClRegenDR6t/4jyxsS0VE9KP7ykusKSWMfAu7+8TrIauLxJxwGqF
+iLjUgsAjWcowOeZqZObGKbfjolwmHBh74xP1zsV2B/mRdsu8nhf3nouqs5XZm65TAzroUQHTQ+ZN
+j33m1EwA0o/n8gX/2Qpze4emiQFr37fox208CLNBCq7ZrmdIgpyI/ZVizaVW71Bq7O7A+PG/E2R3
+cyhLE8eT62bTlS/OJwNW4VYLzknzuVBW4gEQEolpS1IDlBtBEeOvokq9aPBtl9DoXz6VKa2IrCSj
++PkEeQGIhq6arentkaJZshplufer50xY0Oe89pW/1qE2C+jMFPHOaYPyCuHau8AT33RyWU+Q4r7E
+qg1meGXD2cN/QN6POaxlGr7I68g+iz5DYcpi+zXNLCfdMjKshvRUe6cnBvgxWOcBRyi1J3RDEMPP
+ffTbvJXQhXRZJ0YIuQu9Ypd8ofSXWU1zTgpH2GnsWYNlNJHzfL93aLw1atDCNrL+VwELW8oYeWXZ
+/6yXvzZLHpXa/yAPBFq8sc7F2tYTbMt4egnpXhr5SLBlqsel7+DCWwQYIH/D8zTLZ9kPGd6RiIeg
+ZFp/itDQ5Mg/EGEx6/KmdBAiXHvTBkS21B9+9S+bbakRS4YRpVSFaC10kcm7r1J0mALpCRTb+6XJ
+p70um2M61XOqCVAwQD2U58a+dgMsmTavt7rcqFIM1iWL2VuCOqsD4bxHdQ3M3u+Su5khBOuLY11A
+olWhAX6sSswq98spjyZKWNE+Dq3ahOtWiEeELBGaSTmrfIRpT3ld0f7HuDrrutEQAqGjVo5MfODY
+EeDaDB7iGv3IQh9owXftt6IJwpFgB6uxUZ3Y63IPsxrjTmze6jJa5k6prtSofaa+Ggm4noRfvbKd
+R6Wld3gS8ZJcSkfJN7ss/uQ2RlzqbZe6nxEoCwg6Gdw1HK26Vk1F+39qNajprOCcVLiGMyyYotVl
+KkUf8R/D4uostAXlphFFkEFWpgN5uZiE1di5QU0s2oDLqtpDOb5iPT6kJFIRS/9yTy45iMeBMedp
+UgpI2kjEB1UlQ3jg/ns53kJigjzOzRmQKgmcRQqdAbmBQuSzxm4a03xHqPomS9FenEuUp5XnIipT
+zRJImdjKNrbbyKTpbC+izzTVws8b3oodGEf9WSbiSI9OEaSHohXTcQQV/6hKCiDOHQ9zok+5P88O
+prDMk2wahTwWZekNN9dqw8GXZ7lHjtPWNH02gBsrstWvuu6cub2fnwboETbQdBLYnLSrzyWCuOAj
+ZxxmqaArVjOS/ZTJKRO+2VFOA5yR0kkdteCOPdA7p0ahKkJuDsMS2n8WFHhEXXrRnk3JSOHlRy2i
+K+VN4PmL4LXcexpJoDk8AEnZBm5HAhGka4j/eg4A1+KK8STTPOF2OJlKXSl0kzuZwCBihHv2KFZs
+Dwb4/vjhMZvG5zLcx+E8piMfxEVP5s6h0TQ8cbHOgt/NWSFLPyl8B2fv1NXiXnkku4uNyazxes8r
+N0HwXHZq9u2hP7l0IOMfQhWi+DvoruT51Hc8fMDF4IIaAdgFyCvBVqP2ZIOO7h6AzSNjrmBqIBl7
+8y5PfK+juFUas9C7N7fBIKL11Umagj6k/uBEXNV/EKtlnWOjAj3N+KWlkPV0cTyGXjMVb4P0eoED
+Ge/bpX8MDBHC0ACwqJ8oj8A3U08QIbX20m+RT6ygt4Jr9bCHn7IPU+7ZeyEC2am6t0XRe0UBr4Oe
+mKjEoiv7G5W2PM2Xk59JO/+9Qxyf7TOrR736MVXyXoNRqeT3Y+UGwAgiLM0hdnSQZL5ER0JR6/xm
+16ywJq5J/GTERsik9mhbEPxTkLYZHRvb6Q8a9eTrvpV21VMSyEyHG8Q/8sbWbpLw7r8k+PWZcIlX
+EnRsIEwxQ1QDcYis4jbgqEhu+JNoSRzKJhLYE26+LJT9TT1SxcW/Lgs0NzAEJkDgZCEt85Yaxfs3
+rLiQaphxPAtzm4vYRDaA9kxYUBj6dBEedn87TmoA+oolhMMiYaIzXJaqnkTR5eTXHeCND+8+YgGM
+DEhMaB9O8T8lNLLQg7vPZ0IfGiKTSAWll57lvfnD7GEhWWqsxvJ3nQCto39JY0lFSwTIDtPehb/D
+B7nrUXHPLbG3JJFOOuB9kGc4Oegyw+PB1X9bz411ol5N0c4Vt3T3QHqiuxYc5EEP2iZ5aUW7tWro
++LOTy0T4d+J6Jnj9Q7rYjzLl2Nz3olR142enfKA/8O1iR/HlYjHoXK15UPXLdizPkXOULvlZ7gzC
+05YNN/jfkM1iqR+JWIvsg1Ig7BnpE8FHRyaVHkn2+bplvAS0mjrX3OIHUUF3qu07NcDyMLBdKMr2
+ytZFzwAbOdjMcEspw28wqztuZ/ifWx8/whvxpPwyOBttL3zYMyAkttan4wG7AeXLIoDvumUmcShL
+YCaUl9zCvRWbklXhUIFWOYMXN5t/eRzgbDafKJAHEvrlxe9d9Jap1XCMqCvlvDxyIJVuF+byxgX+
+ef6zfl+w7tFLd+obve5gdQn8mYPf4m15hwJlH/R0JBFws5+dT5LbmbibzF+YICCmcmCTnNBu3yxm
+3hKw6It6dnpdEuF+ZsndUO3iEYkQH0PODCCkCZDGa60k7evZ03UQdZ8UO4cKGI2rOGkrOXXsyaNW
+65An+1o9fep360vTOCpySJj/4yZuMSnAyzQbNXs3aJLgy2lXmzoFaIUGhrbSmO/Riq2Nz9xA4/dt
+aFq7JX40FsEW/dXoJbP1/ah6plHd3xy9sXAa8lXQl7V4e+6kUmfqQWS0zqG0fmcFH/zAPdfulrzt
+f1JEo3/Qs1kIr6PYbMlRfguJqMTN4Afn6KYiRcoll4zWmRd6IQA2V9rKXteCvFB6zM/dZBIZnuI2
+XbtA5E2ze06Frqah0Go+DAJEyyCYlZ8IQViXm+bzeHEmYO3JLcGT0yH6W8WlCHJdoHQKWrKxHQzx
+8j+15VOR/Zjidccyv8p6OG3qX2cdxPY/tQAY5v2WI34Gu5kivrFxnS/htGpyNw+KNWzMsjCcFNkC
+Jv8kuhO3Pu36zkFaqW3+We4dSDre9o8XZcdAUWC86Wjcz46EOlUYtlrFWXwGAWodz5Jfyqt1Jnvn
+yF1/0IdFEGLwcxuNSX3VjDlU2n1Txhb4wNxKOBp6b1UKQSY/E3J07MhpKf2KiA2LD0tdse+bBXqL
+tpLoCuT/C1M6HeRY+jDmz0Aw3QliSM1FHxBUuOlg7Iz4PsfvuNtG6c4s/JXOcYI574xPz00a2mOK
+5FTNbCQkBCL56bdo7sv3XEPdNDhxCbGO62pRgXI/dpe0qFt+4YZuHgElR2i6j5zyBxWtTAX3sS8p
+gYzKbIjnlfX87S/HaQmDhzLiVW4jCCuziyJY6WCAKScJNQzHgr6HqBhZOdsW4pjnxeGZdyQzsuJj
+95CnMtu564ZSJCAe24hwLwzV5lB70yHo+ZbnFyYGCv2T0cSFamJkSLbLFsHpqDhZM/DPXr5RL54U
+WGOMuOjuYUKuuK2PJHDmiUmB6WsRSWFzDqa2y1d48W1B4pwVq/KmWA5qdiplc1RYywEx60ekoLNS
+GPh/obH9jeD5f7wTCmk9kzht4Yr4xDIc8PjzLH61E7UwYcYkAgyLUoKBs8erHfN11NGNyz6QXj8j
+D8svwF/M22gqBkYLb0xLhsNRGKPDQTAR4yeCUmkGyEwqahqRl37FkeCjkq3R6XiGLaMI4I0OhCZr
+5S19kx4s9G3hb/2qx7Nl3Q1V2bHv0/YiDpPca91AbeQKNMuLdbTcM9UnvXjhDOorSewQ+OLRFIE0
+PIpb0wxPw6dSAKKu5KwK4QtDGArMBnvqo/N0mjDGy8ukFYOGzPCMVAdTkFGYdsOu2TPk2OQC5GxX
+52t+upefiT/qW4symgHy50q/

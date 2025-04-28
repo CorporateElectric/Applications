@@ -1,117 +1,64 @@
-<?php
-
-namespace Illuminate\Testing\Constraints;
-
-use Illuminate\Database\Connection;
-use PHPUnit\Framework\Constraint\Constraint;
-
-class SoftDeletedInDatabase extends Constraint
-{
-    /**
-     * Number of records that will be shown in the console in case of failure.
-     *
-     * @var int
-     */
-    protected $show = 3;
-
-    /**
-     * The database connection.
-     *
-     * @var \Illuminate\Database\Connection
-     */
-    protected $database;
-
-    /**
-     * The data that will be used to narrow the search in the database table.
-     *
-     * @var array
-     */
-    protected $data;
-
-    /**
-     * The name of the column that indicates soft deletion has occurred.
-     *
-     * @var string
-     */
-    protected $deletedAtColumn;
-
-    /**
-     * Create a new constraint instance.
-     *
-     * @param  \Illuminate\Database\Connection  $database
-     * @param  array  $data
-     * @param  string  $deletedAtColumn
-     * @return void
-     */
-    public function __construct(Connection $database, array $data, string $deletedAtColumn)
-    {
-        $this->data = $data;
-
-        $this->database = $database;
-
-        $this->deletedAtColumn = $deletedAtColumn;
-    }
-
-    /**
-     * Check if the data is found in the given table.
-     *
-     * @param  string  $table
-     * @return bool
-     */
-    public function matches($table): bool
-    {
-        return $this->database->table($table)
-                ->where($this->data)
-                ->whereNotNull($this->deletedAtColumn)
-                ->count() > 0;
-    }
-
-    /**
-     * Get the description of the failure.
-     *
-     * @param  string  $table
-     * @return string
-     */
-    public function failureDescription($table): string
-    {
-        return sprintf(
-            "any soft deleted row in the table [%s] matches the attributes %s.\n\n%s",
-            $table, $this->toString(), $this->getAdditionalInfo($table)
-        );
-    }
-
-    /**
-     * Get additional info about the records found in the database table.
-     *
-     * @param  string  $table
-     * @return string
-     */
-    protected function getAdditionalInfo($table)
-    {
-        $query = $this->database->table($table);
-
-        $results = $query->limit($this->show)->get();
-
-        if ($results->isEmpty()) {
-            return 'The table is empty';
-        }
-
-        $description = 'Found: '.json_encode($results, JSON_PRETTY_PRINT);
-
-        if ($query->count() > $this->show) {
-            $description .= sprintf(' and %s others', $query->count() - $this->show);
-        }
-
-        return $description;
-    }
-
-    /**
-     * Get a string representation of the object.
-     *
-     * @return string
-     */
-    public function toString(): string
-    {
-        return json_encode($this->data);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

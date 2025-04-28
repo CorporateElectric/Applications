@@ -1,90 +1,53 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Predis\Response\Iterator;
-
-/**
- * Outer iterator consuming streamable multibulk responses by yielding tuples of
- * keys and values.
- *
- * This wrapper is useful for responses to commands such as `HGETALL` that can
- * be iterater as $key => $value pairs.
- *
- * @author Daniele Alessandri <suppakilla@gmail.com>
- */
-class MultiBulkTuple extends MultiBulk implements \OuterIterator
-{
-    private $iterator;
-
-    /**
-     * @param MultiBulk $iterator Inner multibulk response iterator.
-     */
-    public function __construct(MultiBulk $iterator)
-    {
-        $this->checkPreconditions($iterator);
-
-        $this->size = count($iterator) / 2;
-        $this->iterator = $iterator;
-        $this->position = $iterator->getPosition();
-        $this->current = $this->size > 0 ? $this->getValue() : null;
-    }
-
-    /**
-     * Checks for valid preconditions.
-     *
-     * @param MultiBulk $iterator Inner multibulk response iterator.
-     *
-     * @throws \InvalidArgumentException
-     * @throws \UnexpectedValueException
-     */
-    protected function checkPreconditions(MultiBulk $iterator)
-    {
-        if ($iterator->getPosition() !== 0) {
-            throw new \InvalidArgumentException(
-                'Cannot initialize a tuple iterator using an already initiated iterator.'
-            );
-        }
-
-        if (($size = count($iterator)) % 2 !== 0) {
-            throw new \UnexpectedValueException('Invalid response size for a tuple iterator.');
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getInnerIterator()
-    {
-        return $this->iterator;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function __destruct()
-    {
-        $this->iterator->drop(true);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function getValue()
-    {
-        $k = $this->iterator->current();
-        $this->iterator->next();
-
-        $v = $this->iterator->current();
-        $this->iterator->next();
-
-        return array($k, $v);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

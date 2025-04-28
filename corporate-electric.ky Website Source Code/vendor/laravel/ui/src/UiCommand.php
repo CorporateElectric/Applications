@@ -1,91 +1,55 @@
-<?php
-
-namespace Laravel\Ui;
-
-use Illuminate\Console\Command;
-use InvalidArgumentException;
-
-class UiCommand extends Command
-{
-    /**
-     * The console command signature.
-     *
-     * @var string
-     */
-    protected $signature = 'ui
-                    { type : The preset type (bootstrap, vue, react) }
-                    { --auth : Install authentication UI scaffolding }
-                    { --option=* : Pass an option to the preset command }';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Swap the front-end scaffolding for the application';
-
-    /**
-     * Execute the console command.
-     *
-     * @return void
-     *
-     * @throws \InvalidArgumentException
-     */
-    public function handle()
-    {
-        if (static::hasMacro($this->argument('type'))) {
-            return call_user_func(static::$macros[$this->argument('type')], $this);
-        }
-
-        if (! in_array($this->argument('type'), ['bootstrap', 'vue', 'react'])) {
-            throw new InvalidArgumentException('Invalid preset.');
-        }
-
-        $this->{$this->argument('type')}();
-
-        if ($this->option('auth')) {
-            $this->call('ui:auth');
-        }
-    }
-
-    /**
-     * Install the "bootstrap" preset.
-     *
-     * @return void
-     */
-    protected function bootstrap()
-    {
-        Presets\Bootstrap::install();
-
-        $this->info('Bootstrap scaffolding installed successfully.');
-        $this->comment('Please run "npm install && npm run dev" to compile your fresh scaffolding.');
-    }
-
-    /**
-     * Install the "vue" preset.
-     *
-     * @return void
-     */
-    protected function vue()
-    {
-        Presets\Bootstrap::install();
-        Presets\Vue::install();
-
-        $this->info('Vue scaffolding installed successfully.');
-        $this->comment('Please run "npm install && npm run dev" to compile your fresh scaffolding.');
-    }
-
-    /**
-     * Install the "react" preset.
-     *
-     * @return void
-     */
-    protected function react()
-    {
-        Presets\Bootstrap::install();
-        Presets\React::install();
-
-        $this->info('React scaffolding installed successfully.');
-        $this->comment('Please run "npm install && npm run dev" to compile your fresh scaffolding.');
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

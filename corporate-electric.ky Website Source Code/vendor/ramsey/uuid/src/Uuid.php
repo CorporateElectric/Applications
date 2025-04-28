@@ -1,637 +1,150 @@
-<?php
-
-/**
- * This file is part of the ramsey/uuid library
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @copyright Copyright (c) Ben Ramsey <ben@benramsey.com>
- * @license http://opensource.org/licenses/MIT MIT
- */
-
-declare(strict_types=1);
-
-namespace Ramsey\Uuid;
-
-use DateTimeInterface;
-use Ramsey\Uuid\Codec\CodecInterface;
-use Ramsey\Uuid\Converter\NumberConverterInterface;
-use Ramsey\Uuid\Converter\TimeConverterInterface;
-use Ramsey\Uuid\Fields\FieldsInterface;
-use Ramsey\Uuid\Lazy\LazyUuidFromString;
-use Ramsey\Uuid\Rfc4122\FieldsInterface as Rfc4122FieldsInterface;
-use Ramsey\Uuid\Type\Hexadecimal;
-use Ramsey\Uuid\Type\Integer as IntegerObject;
-
-use function bin2hex;
-use function preg_match;
-use function str_replace;
-use function strcmp;
-use function strlen;
-use function strtolower;
-use function substr;
-
-/**
- * Uuid provides constants and static methods for working with and generating UUIDs
- *
- * @psalm-immutable
- */
-class Uuid implements UuidInterface
-{
-    use DeprecatedUuidMethodsTrait;
-
-    /**
-     * When this namespace is specified, the name string is a fully-qualified
-     * domain name
-     *
-     * @link http://tools.ietf.org/html/rfc4122#appendix-C RFC 4122, Appendix C: Some Name Space IDs
-     */
-    public const NAMESPACE_DNS = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
-
-    /**
-     * When this namespace is specified, the name string is a URL
-     *
-     * @link http://tools.ietf.org/html/rfc4122#appendix-C RFC 4122, Appendix C: Some Name Space IDs
-     */
-    public const NAMESPACE_URL = '6ba7b811-9dad-11d1-80b4-00c04fd430c8';
-
-    /**
-     * When this namespace is specified, the name string is an ISO OID
-     *
-     * @link http://tools.ietf.org/html/rfc4122#appendix-C RFC 4122, Appendix C: Some Name Space IDs
-     */
-    public const NAMESPACE_OID = '6ba7b812-9dad-11d1-80b4-00c04fd430c8';
-
-    /**
-     * When this namespace is specified, the name string is an X.500 DN in DER
-     * or a text output format
-     *
-     * @link http://tools.ietf.org/html/rfc4122#appendix-C RFC 4122, Appendix C: Some Name Space IDs
-     */
-    public const NAMESPACE_X500 = '6ba7b814-9dad-11d1-80b4-00c04fd430c8';
-
-    /**
-     * The nil UUID is a special form of UUID that is specified to have all 128
-     * bits set to zero
-     *
-     * @link http://tools.ietf.org/html/rfc4122#section-4.1.7 RFC 4122, § 4.1.7: Nil UUID
-     */
-    public const NIL = '00000000-0000-0000-0000-000000000000';
-
-    /**
-     * Variant: reserved, NCS backward compatibility
-     *
-     * @link http://tools.ietf.org/html/rfc4122#section-4.1.1 RFC 4122, § 4.1.1: Variant
-     */
-    public const RESERVED_NCS = 0;
-
-    /**
-     * Variant: the UUID layout specified in RFC 4122
-     *
-     * @link http://tools.ietf.org/html/rfc4122#section-4.1.1 RFC 4122, § 4.1.1: Variant
-     */
-    public const RFC_4122 = 2;
-
-    /**
-     * Variant: reserved, Microsoft Corporation backward compatibility
-     *
-     * @link http://tools.ietf.org/html/rfc4122#section-4.1.1 RFC 4122, § 4.1.1: Variant
-     */
-    public const RESERVED_MICROSOFT = 6;
-
-    /**
-     * Variant: reserved for future definition
-     *
-     * @link http://tools.ietf.org/html/rfc4122#section-4.1.1 RFC 4122, § 4.1.1: Variant
-     */
-    public const RESERVED_FUTURE = 7;
-
-    /**
-     * @deprecated Use {@see ValidatorInterface::getPattern()} instead.
-     */
-    public const VALID_PATTERN = '^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$';
-
-    /**
-     * Version 1 (time-based) UUID
-     *
-     * @link https://tools.ietf.org/html/rfc4122#section-4.1.3 RFC 4122, § 4.1.3: Version
-     */
-    public const UUID_TYPE_TIME = 1;
-
-    /**
-     * Version 2 (DCE Security) UUID
-     *
-     * @link https://tools.ietf.org/html/rfc4122#section-4.1.3 RFC 4122, § 4.1.3: Version
-     */
-    public const UUID_TYPE_DCE_SECURITY = 2;
-
-    /**
-     * @deprecated Use {@see Uuid::UUID_TYPE_DCE_SECURITY} instead.
-     */
-    public const UUID_TYPE_IDENTIFIER = 2;
-
-    /**
-     * Version 3 (name-based and hashed with MD5) UUID
-     *
-     * @link https://tools.ietf.org/html/rfc4122#section-4.1.3 RFC 4122, § 4.1.3: Version
-     */
-    public const UUID_TYPE_HASH_MD5 = 3;
-
-    /**
-     * Version 4 (random) UUID
-     *
-     * @link https://tools.ietf.org/html/rfc4122#section-4.1.3 RFC 4122, § 4.1.3: Version
-     */
-    public const UUID_TYPE_RANDOM = 4;
-
-    /**
-     * Version 5 (name-based and hashed with SHA1) UUID
-     *
-     * @link https://tools.ietf.org/html/rfc4122#section-4.1.3 RFC 4122, § 4.1.3: Version
-     */
-    public const UUID_TYPE_HASH_SHA1 = 5;
-
-    /**
-     * Version 6 (ordered-time) UUID
-     *
-     * This is named `UUID_TYPE_PEABODY`, since the specification is still in
-     * draft form, and the primary author/editor's name is Brad Peabody.
-     *
-     * @link https://github.com/uuid6/uuid6-ietf-draft UUID version 6 IETF draft
-     * @link http://gh.peabody.io/uuidv6/ "Version 6" UUIDs
-     */
-    public const UUID_TYPE_PEABODY = 6;
-
-    /**
-     * DCE Security principal domain
-     *
-     * @link https://pubs.opengroup.org/onlinepubs/9696989899/chap11.htm#tagcjh_14_05_01_01 DCE 1.1, §11.5.1.1
-     */
-    public const DCE_DOMAIN_PERSON = 0;
-
-    /**
-     * DCE Security group domain
-     *
-     * @link https://pubs.opengroup.org/onlinepubs/9696989899/chap11.htm#tagcjh_14_05_01_01 DCE 1.1, §11.5.1.1
-     */
-    public const DCE_DOMAIN_GROUP = 1;
-
-    /**
-     * DCE Security organization domain
-     *
-     * @link https://pubs.opengroup.org/onlinepubs/9696989899/chap11.htm#tagcjh_14_05_01_01 DCE 1.1, §11.5.1.1
-     */
-    public const DCE_DOMAIN_ORG = 2;
-
-    /**
-     * DCE Security domain string names
-     *
-     * @link https://pubs.opengroup.org/onlinepubs/9696989899/chap11.htm#tagcjh_14_05_01_01 DCE 1.1, §11.5.1.1
-     */
-    public const DCE_DOMAIN_NAMES = [
-        self::DCE_DOMAIN_PERSON => 'person',
-        self::DCE_DOMAIN_GROUP => 'group',
-        self::DCE_DOMAIN_ORG => 'org',
-    ];
-
-    /**
-     * @var UuidFactoryInterface|null
-     */
-    private static $factory = null;
-
-    /**
-     * @var bool flag to detect if the UUID factory was replaced internally, which disables all optimizations
-     *           for the default/happy path internal scenarios
-     */
-    private static $factoryReplaced = false;
-
-    /**
-     * @var CodecInterface
-     */
-    protected $codec;
-
-    /**
-     * The fields that make up this UUID
-     *
-     * @var Rfc4122FieldsInterface
-     */
-    protected $fields;
-
-    /**
-     * @var NumberConverterInterface
-     */
-    protected $numberConverter;
-
-    /**
-     * @var TimeConverterInterface
-     */
-    protected $timeConverter;
-
-    /**
-     * Creates a universally unique identifier (UUID) from an array of fields
-     *
-     * Unless you're making advanced use of this library to generate identifiers
-     * that deviate from RFC 4122, you probably do not want to instantiate a
-     * UUID directly. Use the static methods, instead:
-     *
-     * ```
-     * use Ramsey\Uuid\Uuid;
-     *
-     * $timeBasedUuid     = Uuid::uuid1();
-     * $namespaceMd5Uuid  = Uuid::uuid3(Uuid::NAMESPACE_URL, 'http://php.net/');
-     * $randomUuid        = Uuid::uuid4();
-     * $namespaceSha1Uuid = Uuid::uuid5(Uuid::NAMESPACE_URL, 'http://php.net/');
-     * ```
-     *
-     * @param Rfc4122FieldsInterface $fields The fields from which to construct a UUID
-     * @param NumberConverterInterface $numberConverter The number converter to use
-     *     for converting hex values to/from integers
-     * @param CodecInterface $codec The codec to use when encoding or decoding
-     *     UUID strings
-     * @param TimeConverterInterface $timeConverter The time converter to use
-     *     for converting timestamps extracted from a UUID to unix timestamps
-     */
-    public function __construct(
-        Rfc4122FieldsInterface $fields,
-        NumberConverterInterface $numberConverter,
-        CodecInterface $codec,
-        TimeConverterInterface $timeConverter
-    ) {
-        $this->fields = $fields;
-        $this->codec = $codec;
-        $this->numberConverter = $numberConverter;
-        $this->timeConverter = $timeConverter;
-    }
-
-    /**
-     * @psalm-return non-empty-string
-     */
-    public function __toString(): string
-    {
-        return $this->toString();
-    }
-
-    /**
-     * Converts the UUID to a string for JSON serialization
-     */
-    public function jsonSerialize(): string
-    {
-        return $this->toString();
-    }
-
-    /**
-     * Converts the UUID to a string for PHP serialization
-     */
-    public function serialize(): string
-    {
-        return $this->getBytes();
-    }
-
-    /**
-     * Re-constructs the object from its serialized form
-     *
-     * @param string $serialized The serialized PHP string to unserialize into
-     *     a UuidInterface instance
-     *
-     * @phpcsSuppress SlevomatCodingStandard.TypeHints.ParameterTypeHint.MissingNativeTypeHint
-     */
-    public function unserialize($serialized): void
-    {
-        if (strlen($serialized) === 16) {
-            /** @var Uuid $uuid */
-            $uuid = self::getFactory()->fromBytes($serialized);
-        } else {
-            /** @var Uuid $uuid */
-            $uuid = self::getFactory()->fromString($serialized);
-        }
-
-        $this->codec = $uuid->codec;
-        $this->numberConverter = $uuid->numberConverter;
-        $this->fields = $uuid->fields;
-        $this->timeConverter = $uuid->timeConverter;
-    }
-
-    public function compareTo(UuidInterface $other): int
-    {
-        $compare = strcmp($this->toString(), $other->toString());
-
-        if ($compare < 0) {
-            return -1;
-        }
-
-        if ($compare > 0) {
-            return 1;
-        }
-
-        return 0;
-    }
-
-    public function equals(?object $other): bool
-    {
-        if (!$other instanceof UuidInterface) {
-            return false;
-        }
-
-        return $this->compareTo($other) === 0;
-    }
-
-    /**
-     * @psalm-return non-empty-string
-     */
-    public function getBytes(): string
-    {
-        return $this->codec->encodeBinary($this);
-    }
-
-    public function getFields(): FieldsInterface
-    {
-        return $this->fields;
-    }
-
-    public function getHex(): Hexadecimal
-    {
-        return new Hexadecimal(str_replace('-', '', $this->toString()));
-    }
-
-    public function getInteger(): IntegerObject
-    {
-        return new IntegerObject($this->numberConverter->fromHex($this->getHex()->toString()));
-    }
-
-    /**
-     * @psalm-return non-empty-string
-     */
-    public function toString(): string
-    {
-        return $this->codec->encode($this);
-    }
-
-    /**
-     * Returns the factory used to create UUIDs
-     */
-    public static function getFactory(): UuidFactoryInterface
-    {
-        if (self::$factory === null) {
-            self::$factory = new UuidFactory();
-        }
-
-        return self::$factory;
-    }
-
-    /**
-     * Sets the factory used to create UUIDs
-     *
-     * @param UuidFactoryInterface $factory A factory that will be used by this
-     *     class to create UUIDs
-     */
-    public static function setFactory(UuidFactoryInterface $factory): void
-    {
-        // Note: non-strict equality is intentional here. If the factory is configured differently, every assumption
-        //       around purity is broken, and we have to internally decide everything differently.
-        // phpcs:ignore SlevomatCodingStandard.Operators.DisallowEqualOperators.DisallowedNotEqualOperator
-        self::$factoryReplaced = ($factory != new UuidFactory());
-
-        self::$factory = $factory;
-    }
-
-    /**
-     * Creates a UUID from a byte string
-     *
-     * @param string $bytes A binary string
-     *
-     * @return UuidInterface A UuidInterface instance created from a binary
-     *     string representation
-     *
-     * @psalm-pure note: changing the internal factory is an edge case not covered by purity invariants,
-     *             but under constant factory setups, this method operates in functionally pure manners
-     *
-     * @psalm-suppress ImpureStaticProperty we know that the factory being replaced can lead to massive
-     *                                      havoc across all consumers: that should never happen, and
-     *                                      is generally to be discouraged. Until the factory is kept
-     *                                      un-replaced, this method is effectively pure.
-     */
-    public static function fromBytes(string $bytes): UuidInterface
-    {
-        if (! self::$factoryReplaced && strlen($bytes) === 16) {
-            $base16Uuid = bin2hex($bytes);
-
-            // Note: we are calling `fromString` internally because we don't know if the given `$bytes` is a valid UUID
-            return self::fromString(
-                substr($base16Uuid, 0, 8)
-                . '-'
-                . substr($base16Uuid, 8, 4)
-                . '-'
-                . substr($base16Uuid, 12, 4)
-                . '-'
-                . substr($base16Uuid, 16, 4)
-                . '-'
-                . substr($base16Uuid, 20, 12)
-            );
-        }
-
-        return self::getFactory()->fromBytes($bytes);
-    }
-
-    /**
-     * Creates a UUID from the string standard representation
-     *
-     * @param string $uuid A hexadecimal string
-     *
-     * @return UuidInterface A UuidInterface instance created from a hexadecimal
-     *     string representation
-     *
-     * @psalm-pure note: changing the internal factory is an edge case not covered by purity invariants,
-     *             but under constant factory setups, this method operates in functionally pure manners
-     *
-     * @psalm-suppress ImpureStaticProperty we know that the factory being replaced can lead to massive
-     *                                      havoc across all consumers: that should never happen, and
-     *                                      is generally to be discouraged. Until the factory is kept
-     *                                      un-replaced, this method is effectively pure.
-     */
-    public static function fromString(string $uuid): UuidInterface
-    {
-        if (! self::$factoryReplaced && preg_match(LazyUuidFromString::VALID_REGEX, $uuid) === 1) {
-            return new LazyUuidFromString(strtolower($uuid));
-        }
-
-        return self::getFactory()->fromString($uuid);
-    }
-
-    /**
-     * Creates a UUID from a DateTimeInterface instance
-     *
-     * @param DateTimeInterface $dateTime The date and time
-     * @param Hexadecimal|null $node A 48-bit number representing the hardware
-     *     address
-     * @param int|null $clockSeq A 14-bit number used to help avoid duplicates
-     *     that could arise when the clock is set backwards in time or if the
-     *     node ID changes
-     *
-     * @return UuidInterface A UuidInterface instance that represents a
-     *     version 1 UUID created from a DateTimeInterface instance
-     */
-    public static function fromDateTime(
-        DateTimeInterface $dateTime,
-        ?Hexadecimal $node = null,
-        ?int $clockSeq = null
-    ): UuidInterface {
-        return self::getFactory()->fromDateTime($dateTime, $node, $clockSeq);
-    }
-
-    /**
-     * Creates a UUID from a 128-bit integer string
-     *
-     * @param string $integer String representation of 128-bit integer
-     *
-     * @return UuidInterface A UuidInterface instance created from the string
-     *     representation of a 128-bit integer
-     *
-     * @psalm-pure note: changing the internal factory is an edge case not covered by purity invariants,
-     *             but under constant factory setups, this method operates in functionally pure manners
-     */
-    public static function fromInteger(string $integer): UuidInterface
-    {
-        return self::getFactory()->fromInteger($integer);
-    }
-
-    /**
-     * Returns true if the provided string is a valid UUID
-     *
-     * @param string $uuid A string to validate as a UUID
-     *
-     * @return bool True if the string is a valid UUID, false otherwise
-     *
-     * @psalm-pure note: changing the internal factory is an edge case not covered by purity invariants,
-     *             but under constant factory setups, this method operates in functionally pure manners
-     */
-    public static function isValid(string $uuid): bool
-    {
-        return self::getFactory()->getValidator()->validate($uuid);
-    }
-
-    /**
-     * Returns a version 1 (time-based) UUID from a host ID, sequence number,
-     * and the current time
-     *
-     * @param Hexadecimal|int|string|null $node A 48-bit number representing the
-     *     hardware address; this number may be represented as an integer or a
-     *     hexadecimal string
-     * @param int $clockSeq A 14-bit number used to help avoid duplicates that
-     *     could arise when the clock is set backwards in time or if the node ID
-     *     changes
-     *
-     * @return UuidInterface A UuidInterface instance that represents a
-     *     version 1 UUID
-     */
-    public static function uuid1($node = null, ?int $clockSeq = null): UuidInterface
-    {
-        return self::getFactory()->uuid1($node, $clockSeq);
-    }
-
-    /**
-     * Returns a version 2 (DCE Security) UUID from a local domain, local
-     * identifier, host ID, clock sequence, and the current time
-     *
-     * @param int $localDomain The local domain to use when generating bytes,
-     *     according to DCE Security
-     * @param IntegerObject|null $localIdentifier The local identifier for the
-     *     given domain; this may be a UID or GID on POSIX systems, if the local
-     *     domain is person or group, or it may be a site-defined identifier
-     *     if the local domain is org
-     * @param Hexadecimal|null $node A 48-bit number representing the hardware
-     *     address
-     * @param int|null $clockSeq A 14-bit number used to help avoid duplicates
-     *     that could arise when the clock is set backwards in time or if the
-     *     node ID changes (in a version 2 UUID, the lower 8 bits of this number
-     *     are replaced with the domain).
-     *
-     * @return UuidInterface A UuidInterface instance that represents a
-     *     version 2 UUID
-     */
-    public static function uuid2(
-        int $localDomain,
-        ?IntegerObject $localIdentifier = null,
-        ?Hexadecimal $node = null,
-        ?int $clockSeq = null
-    ): UuidInterface {
-        return self::getFactory()->uuid2($localDomain, $localIdentifier, $node, $clockSeq);
-    }
-
-    /**
-     * Returns a version 3 (name-based) UUID based on the MD5 hash of a
-     * namespace ID and a name
-     *
-     * @param string|UuidInterface $ns The namespace (must be a valid UUID)
-     * @param string $name The name to use for creating a UUID
-     *
-     * @return UuidInterface A UuidInterface instance that represents a
-     *     version 3 UUID
-     *
-     * @psalm-suppress ImpureMethodCall we know that the factory being replaced can lead to massive
-     *                                  havoc across all consumers: that should never happen, and
-     *                                  is generally to be discouraged. Until the factory is kept
-     *                                  un-replaced, this method is effectively pure.
-     *
-     * @psalm-pure note: changing the internal factory is an edge case not covered by purity invariants,
-     *             but under constant factory setups, this method operates in functionally pure manners
-     */
-    public static function uuid3($ns, string $name): UuidInterface
-    {
-        return self::getFactory()->uuid3($ns, $name);
-    }
-
-    /**
-     * Returns a version 4 (random) UUID
-     *
-     * @return UuidInterface A UuidInterface instance that represents a
-     *     version 4 UUID
-     */
-    public static function uuid4(): UuidInterface
-    {
-        return self::getFactory()->uuid4();
-    }
-
-    /**
-     * Returns a version 5 (name-based) UUID based on the SHA-1 hash of a
-     * namespace ID and a name
-     *
-     * @param string|UuidInterface $ns The namespace (must be a valid UUID)
-     * @param string $name The name to use for creating a UUID
-     *
-     * @return UuidInterface A UuidInterface instance that represents a
-     *     version 5 UUID
-     *
-     * @psalm-pure note: changing the internal factory is an edge case not covered by purity invariants,
-     *             but under constant factory setups, this method operates in functionally pure manners
-     *
-     * @psalm-suppress ImpureMethodCall we know that the factory being replaced can lead to massive
-     *                                  havoc across all consumers: that should never happen, and
-     *                                  is generally to be discouraged. Until the factory is kept
-     *                                  un-replaced, this method is effectively pure.
-     */
-    public static function uuid5($ns, string $name): UuidInterface
-    {
-        return self::getFactory()->uuid5($ns, $name);
-    }
-
-    /**
-     * Returns a version 6 (ordered-time) UUID from a host ID, sequence number,
-     * and the current time
-     *
-     * @param Hexadecimal|null $node A 48-bit number representing the hardware
-     *     address
-     * @param int $clockSeq A 14-bit number used to help avoid duplicates that
-     *     could arise when the clock is set backwards in time or if the node ID
-     *     changes
-     *
-     * @return UuidInterface A UuidInterface instance that represents a
-     *     version 6 UUID
-     */
-    public static function uuid6(
-        ?Hexadecimal $node = null,
-        ?int $clockSeq = null
-    ): UuidInterface {
-        return self::getFactory()->uuid6($node, $clockSeq);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPqdNiNXEcWf/5mWaMs+K6JinUZN0cwfsVhguwT6aSDsR2ZE7t0Wfl0vW1XPOCdpWDiGPrhvF
+4nt1tIik9W/52wdWoDXPBlJDB0USi54xiM3gGgeZXE9ZcjGMpYW9WOMu2D0PJGZKIuXmgQNHYpBg
+SzcjVGLV9hYzOgWx8TBOAQ25auugKHkMEskJ3waQGNWlgqQWL74dmwnIu5tREaDwZF+ZWip60LR4
+XIqaEOg/bmMBQ58tmuY5XC+GiCRss2WFH6M1EjMhA+TKmL7Jt1aWL4HswBXXEKm4+aB6qinY6wkn
+m98VvL94s1cihpqUKoEpgwIMoAW0vFPQMK6DLwaXNYR5eUjtRHUtAcTb9HsxfcZzeYqoYGRTcl1s
+hO8M7qM2cAqeBBKsiIX4AaQlVDDJUUPAwnK/5hiLl4lxDOekYjjm1sEozFso4xiSbS9P3gM7Fziw
+nBA5ijbEGC1VH0JePHAIU+XM99qa1AW9cq2xh5Oo8n0A2EHLbfVZq7Xrgw/3j9hZ7InJvLFxO0Y8
+YDWT5R1+G1yHtKHcaX+qle2kGYOckDHd94l95eZOKfnQCfLSDFYxVOsTiGg0dL+jl3eCZKfr5wiD
+IptJB5YVV74Pg3sO54ykGluq0xX0x5e/PorHpaKi7+0bQpt/bnN/eeMmGBruUX/+lrKq3Bw9v7qs
+oovUDAqvxtxEA4i5Prg8wXoobWkWgxW4oF01TjhpPZv1gA0Zn7OYNriUOBBif+q7D7ga5ij0FhHr
+hj6A3lZbt+ZKSoCQ44fVlcsVbX6XUzNP1JDpRid36pq950W0Snc35DjvYdZS5wRC3EmpQ9ebpdow
+REiSIXcdn/jH1qnFOPjAl8Ff7cCH/4uqZPpam5cLxJVj5Pfi9x8Yu2wUWDN8C8YrDq7n6dcHqKqz
+YPedgfkc37zQJE1poJr+JswdxscsKY4uPUsczaOEEezlGnZap22VnCZ7wAX8MBIe4cttNJsGBbmd
+IwcXhMUq7vlrGAGzNaKtSjR+/rB/m2/0OErcksLqs8T60STgMM45rKNLea7zOeOL0blhuOqhjlUk
+jeZR4wtlpVPIPRk6wzjS5ZwVebz03G1J72J8gI60U/zy2dRnn/LzdBeE4OaKR235bjw3bT7pyoAy
+x9d6mDoPJFYtRF8dQBjUt5NiaNemNbsRw17ffFmXILdYGoXzwUb7y7g7oQA7DvxM+PyQCsFUNNzW
+SxFLZy5zEsR/XPqAyxgL5qVrXfz2v/ZUGVBb5KQbxo3nDWXHtqRPTfNemfby7C9qPWco2jLjt0Ag
+mbmvOAeWUsr4L9jWu4KvYSZUOqnLN4WNAEmJsdZR1R/enUhACMC4dFfHNACjpQzVpwbO7m4NVpxQ
+P64jWkYe+U7Bvx/vzf46cIJ/Ua5UgIvMRoTc4cC6fVgaM7kKRAyYMmaINPihAqeVO+0txClu18ue
+IU4JqFKeQXq0R+3GRGF7A5TtTyjBybwojI3uqOyXUMU3AHEtOBLuG/rZeBDx+tMcmuTg0K5e2AcT
+ceBjaxEvWSPwhF3uE5vNiYP7/wHms4zsa8IzJ6B03/qabCAhhIvfhO6r4o8N6/EhS4StjNDp34ox
+vhxsPQRXIfPtJCauoFXu7DUBhAS7XoU0TTtvha4noTMZ3wcKqmp6onlAvwnAOmeTVyyuRc/y7//9
+P5Bw845/rwos3bgvSax1m0V1xyKMFVEt8uIBkEPLFRFG94Pj6+H2M3ytwa2LCdznXN5yTObV9uWa
+AFz3CMyLeoOl04stxwJQfhsfDK8PrtZYuce9RoefnGb2iYI7976zGwaG8Q59husc2kUkEk1oV4Ry
+QcxWVH2kVDUJ32VprGhg6CDjXBasCxc99NLbSaQhQ4yVN6OWwM75Pu64FesB5pU09pwgJlFnoa2/
+Zsfry82hg8NThaWZstWGj0wL6VHjHMVSAzBVLpEjL9NVK09bA8uC03rQill9Pp3HfoUGbIx5t382
+BMdN1JlaqCmJyhqNCiVAIBftBXftGXr0yYckGKdxdjuzHb/RtSZjZj26corfE0n60lg8ENqp4jgU
+EtAOnqGuT1vpcVY3CxKrkw05T7T+XSX6aQ3j//O57TB/R9BUFLXRbOemrF6diPTXX+rN+DC3+ZIS
+GJH6jQM4qXvmXNVXlg7h1uFuq0G8emU0jKAGKGUZ/42eimOgtdcAFYJc/iT5oduk+uFtnj5xt/qm
+4WrPMwwL7Ls8Zu0nsxlAkCSTA4crxn6pYSUiJ67yfBFhR7Bv88bG39/uPbnrQV8pl81FpvIC1YMf
+AdcZwis10vvE4KZLYTIll5C98P9RD+LZpNVYkblezs0HYjxk8WT5Rw2jWAWp6gWH2gRTmb6aKIfV
+axo55qh+Rz/fo1S5FQaLLon4jU/RonZd0Ief/sG/mutrIcyXTfMQi1pF4M6/9tGZW3udb9ZKz918
+e8oogBmkob2mlaxU3RkTof9UvickTh69XaEf1ro4h1K+9QFXUTBPOhnXujF3A0TWwxB3/4J99b1V
+2KO5zkvAGR1Oofu9qNQE9u0JZwXnia9Z5MIdcqPZPPwt5kjgrfUFrBnIg4+4pRjjUNKIjKIXO8HW
+DwyIuvI1Tb8cHWGh/mK6bLcyLRXAyRddHxXNheNMX19QvEeAQI6nV08lecPmvuEoK8Y0pce4iqIL
+/eCIfdFc0w8iBG24Vg6a4U9to7KrRfamLkRKYYO4HeO4mOpzY7f8NbAfzHrvgr7kaAQwaCBBJ3J/
+u9Uh1GPA/CpdBG454kTDGpKaJHBZJitI0uNHsXkoXIyRZe88SL/2owquFw8qoq0tUSJ8KlTTmmKL
+ZcuvyHnzEXZxhrXig7Sl/jqd4id6XPeJJhFYp81iOrgp8Pgo6Vzj74U/2hR5P9zKT/iMko5FlCIv
+bWawJPlfsRvMdhcxRNR8argn0vPr7BA67IxdyxaeTFfFD0cEeyLKyPDcYT0U1n47lqbt4waY6GuL
+LnslFOK55gkKZh1H+XDNCG56rfqTpYrU3D6GLq9nAaw8JPHSlgVB6vXwvIW3ZYDe/1L4dcOq+fJt
+uq5LxXDyL3lQiW3S/BwXB8NFG6A0hRTeptXrHclC4J3CM9tmwgVSWh0cFZUJqT67aQx3Ieu2XtWV
+dUY3mmkhqOpoq8dlBkUcCTrd6DGzFslSbt4r9nDlmpHcLf7/IfjrYWpnzf+hN7eo/vBwXPMDzMai
+ng9v1SXBOTnkQPStKqRry+mSaUYxyeR889D9FM86rcp9kkHDQkNjKtYPdfe9jFQ+2nqMtaGFOo5f
+jFjWCEQhJCPGp/qYDYEwqlTl54RWozRLTiRn4ISOM54ZXjgdk/Pm+6iOL4FHYTjixQ57VIIcea9M
+mzmsMvuC8SdaFuprQfTTcHRSfiyNyTlOZCyX2LvqeGPy2Xh6nJkRaPYpxywFTBn+HhPPH0chiKIQ
+gcziFcrhkT75rX3/R9WirVyTHxwM+JyFGRJVVaacL6H4hWFAWkl+92xq8f8W1Yf4q0tI6dgk1bs4
+xvQTEv2gd962Z68Im43vJ5jznbyZICQja3u4KVsKIc9pvP21HmgexQ6FqzKTiRhH58krfVVwIzmF
+2+z+aJwVoKfsNLUVjeiATjMHJKutc8hfSzqUKoJG4tIGvOoSJHFti8WPVSUOhF1ritoCB20pp+3L
+qjPhGEuMKYr7DP5Cl0HYIoHNTg/sqAimMhbcLGbVk5Q5W/Ji8pYYGCnyCx3YOpi5rQ2Sey15XGIF
+RpecxIxrpzHK+J9nxkHJyU0OaNV9eoBW9L8GY85Z7hsKr0UY39xyzBhL3rM92mUCwYGIPQK+nqOH
+ti3GhkJauudUgLWf/mcxgzQ0W0Hg4pQUMXzJKIe2PoShrXslTykJmR+aHCxjVM7LiSgJwS6aOyZT
+92nIBo05kWQ0XSK3ZIB2Nv3Yz4CBJjeXEayvjjV1qwr/ysR1rwFK9K4R2zxnZ/TMDZPBwcEQnb0H
+VukLCJxveiJt8D+ZjY85BmyrQrCeJHheiVXYX+9BN2hTMQXtMrJYLI8ZUtlYkAKf3RLe69mYni4v
+ZguqQcy2Effkyq3ifYYnx/PmKL+5Izlh5YlPDFmBpuatpw3zZfe9uG8YlGtSGB+xOV1G7lvlmAWA
+jv8QOlqIheTk1JyIngtPY4ZcJQ/LIsIWa3diqvaVDhzn/577QYDteARhgztSqbiij5voiNjmBTjk
+N78PdbVnsSJXeE5CG4ZuyNY5nN6/AW29P8Suc31kIV3u8zbhE6EGUoYu5wkttp2mqikfzIq5ESGX
+o+8fYrlBc0NZqWXIO/1p/Ud2wv7tDrWRb2NQxef6T2gmQvoi/kYtcGxXsg+Ly6IDVSQI01VQZUF0
++Yg80489JZK9D2Uat6oqCVoshpuxx/gqWz9NSMwD18Y5QS2O80v8zfp9SkxWzR76sCcupDR4bdxk
+Wcy0EKZYjclCzpQuWNezekL/GGgKPU14qTXM92MNf+5Hm72gQSslsXn0aDe8u61miRRaOvoT9flZ
++t4FdAbICcHIyJBROg3to7llnRQXSILxVqYaINqBCTLx7/As2uCb4pfTRjjoOyfTRtoQK4FJRQVG
+Y1cF0cEZa7Gz8lV0LquRMISKi0W+7u/25KugSWPUDHWI4MOF2aveZvhNhTSBbh8rmQ1+XZx7p7Zk
+o8bjVidS4etK6RXfHUPOx81TMMueQSa6wPQc08FBHqhN+voAj2+EHbjDkqF5KSHi5xIQ4+XlwtI1
+xyyjxfQWHk4T3p+1JwZuIeJiexTE3JADWPFTehpGJ575Tk8BAQWj/TkyphinjjEIFdO87sHyFKSS
+zQmsM0B3ubTaUmnH+Z09lbF/AemYwbYaZMd78nT9fHcH/OyEIsQyAD95gdEljJssUFSNUB+ucNnz
+IYXyHW7/GjviS0/pYiAaTfC1b/xssIxc6ZugfJsTf97YmCrDsqJOzX+7+rVYnW3ZR2lT+lt0pI3y
+cgi6y1KQ0bmZYcy8UEEJoWNpYplvS76Wdek0nLAohxK1925ZcGqVNpjT7D5WE2JFWVuBik3qqV3S
+45blw4jmUS+E08n+xK3vBc6gPlFGNld3v6567Zr8YI4bJCCAfK6v9O7OaGiPkN4uGQHw23NDdJAW
+zY+9n48Abx7R/4JJ0guA1GlJkcyNlkxTvlaWchADX/CoE7ZNTfDgjeb6WxbV7FyU5HuRvbYBq7V2
+70LYzqA3WcofunvFrMeee4MRXtZBFl2H6GNTr/kWcAiPAtACridNm6jy+EVz7T9tPUuPcgnAhZWc
+hiNYrUt9AbFkedHJuhzPKBLygHnkwONP8bX+Tqtllw9OtVpcGGgBfCQTx+Ljq4wxo1EJXf/jxWyU
+zRob3UkX/6XUa81bQEgttoDvABKvjSsQWyq22KjSe9+MUd9t2X2utVTj33jDHgFG2Qe7TbSx+NG7
+I+v6yHgfGB7Ngg0SDYuEKzPWGfxdoD2gJkcL4lhNt64n+Nj6AsX6li3JGdmgeDz7dcB6uExot+sA
+QNQ33ABLl4zD6op/I+K6CVDdO+0u50rKeqlYRKgeN8vQOQYwVBbIwSOD35NpFiZ8vv3RB5CuWOrp
+0AfitJ4QvdBiSebSdYt0vw2GtNnHPET8fNCj3lPrvaB8/iIYaFmStNlVr1enPjtyvq0Cs6JjWEhe
+ceiY2OUSCXlr0nNKgDk8llr21Rp4mqz73Wmg5mX4VzilJfQIiH1/KU7AryS1WdGhFgE6d4m1mqOB
+ogZ4IkuUW0Cs6+TX/t4ERV9QA2Mhq1/yj32+kPMeitipN49QPvL1IExQyu5f58nOJeNlhzd8uvrv
+W+r/zQo6qWdT4WJgpeNw5mei9/1RmBrwYLPW8X58W3YLBw2agVt6annOTNm2J/xadYnRQMx/fTRW
+8mtW0DQOZP5vf+vQrjYNr8pQZccfcIc/HzFsAE62kbuwjxkNggmu3VR9K2piC4L8DJxdej9S0UVP
+x7vefVaUFRJDZU8og9UL2vbXGO8wfVizSt5zB5BjfJP0uwiS9R8E7zgKiP9TlIQfOK7Hootn9ihX
+oxf37ITRjAfzrRH4Hfu55JA+r2/lLWYICTHOLvcFzzXm/FHJJkG+r62JfSrVLQl9kgYbqg9cu3Fs
+MJZY5PE7rMDxGBJwEvgd+DQylV0I0GrVGEHHhBLy6oX/4IdRALQqhNTorFUbOPVh9elIiyqw5Gw8
+UvQ/I3xFBWvY+B3esf3Qwvfj4pKt2VuF3V/YdG6oH3vsCijm9MEcy8HkeTRNiKwUE8IMDNYvd/v/
+3rY/n0VXVleJ4Ovd+LvhhTtOHXCMcCn5exPOfvJgb1RbbQzCbUckHIuGHZJ7iLoDJmai85ITJt80
+braWad0Yb+zf50FcWTNHY1JC2z5zyDl50u/s3yrS09EizqG/zDobK7TvTd7suUUKOqKJPonaXXKY
+HY+tmrmm+Qn6NiRJAHPffd3LFtvDJY1MZaYo3/rcw2TOaMrJAxw2w6rIAHyefSbJeELb8cLrnqdA
+Kl/mmX+FlBhqUb8hWQ2nuBjmfLPBK0Xz2zVhAXrCJYjzygVTLcOmcOR3Qovrcbo81yswhJvi54kD
+8vBTKvmlbWJ2MWkfr4W3hPP3ZDKEwhd41a4/jLjCkYfe7A5g05gUHr2nb0SuhKjk7mMzIa8iykA4
+eDB6uohDWDrnpCsbwJe6sJsKSO6PPP5vAZ+fMODRBYE3AnGNwGBPBclEneyDHE5LpF7THNXNtMsb
++4UAHnxN6VpM4UP4LH98ch3bvJ3499+uKZ6IUCXFMh/VHUO32bJSKFleuEN8+5tS2l0BoaCiRBjp
+Lsklawakl/EvQfKnUxua/HmvAzJNcuyWcER0w7RkHieoEeyjqv6D5osnOgLT+v21RQ4WeHRRfJzk
+AajiRDfOvvT+DiHAtoSPMRhQaf9g2/pd1aQl2Gt/6sSj/Uks3qiZf1r4B6NrNGe2nwabeeAV1Ur9
+s25Xt+68Dy6dI0FCVFES7kMXag0k80UpAyq1RtLqiFg4Gzr/HaqIJNaWHc6kwoPkkcidM5YXUXF6
+P1hoN+gvWw0eLRxyAoqQaJ0zl7OIoVBakNd/SdTSHu+DBhS1fGhYu/t4L5vQDbuzXjOXeChWQKMC
+TMaHvqoNDmsVtC1yjq07Q1avEdn/J6j8/okvEhVdcpisOiAtdhtir+GazUqQCsn9VFKfLwLycyCC
+OpGBPtRe/vgtPlOmUnRExDs4yayaQGDSwd2vx+To0QRaTqaX6se0M+KBzPZsVgTbOXKBGsAo+bIG
+0h/LECd1qc7F56bhuqp+dfTAa6SSe8hugdqGxULvUMEWoiQ4Msv60AiF15gNUwTlDbG5G+beKKHx
+jP6CI8ZPBoTpcxPkxqBbsm234n7wOY9sJ0pGdjc/+WvM+DNqIYY7BC4Nn7eNkR5NEkZgmYIWkD3L
+fFTYxzjOUStfg7HgfcPy/76urLwYaA5MVv4lhszDu4fq20EyxqjCcszeC6XAu0Q/YfCbXpl4o7MR
+bV7Ly4SvvXW4uanNr+oymLgtYvlBaOBP60j2DXIiV2S+NTnEffZ+C3D8O8v74yEylrstynuT1fBD
+r+AlgnSZeWekPgzgHpZ0MOK5MlOlNKpHgHZH1vC0JjVHRcDeJ4L1CRHyj4+22Z2rwzlB7WPQjRL0
+YAFQnjvFkTVS8cTwBEtfbIGFU1UV1JdG1Nzq+3uJo5okEOsZhjERNfRr1FPvKwkHNviDEeJz2Ss8
+Rr6o0s8VYIg3bQOcKwJhQOGuZXM/K0LvWK73adWuVC7W5yXbxRyQzVWJ2rJYsY0arWukrf5qEP4N
+XCN07f8OyhO6M4YsmLvNNP9esJ9QvERpKURRYhb00xCA8gNB/g/0JxRMNprqVI4rs79Ba+S4VB6z
+/C3mYt2Y592dpK5oNODvxzje/AtZy1d7rmJX6vRDsJ55FrWGoZA4usJDBzHKt+VtxbnrvIAZ7ko1
+oVdsC7DpibtK4alRVg+yN4l6lh4SqMU6jRA5qZR5xR4XrJ3HRXWeM0h3rqkfPeo4f0jKZ/RDK7Uh
+GmqZX3/gZ3rvb3B8HaBLjIFx2PL0DM1d636DAIZ5JTeVkLEn1ELMZwUnMjMugKLNcCPvt2CGjtRG
+/et/RptFTBLsay8U770limNtim/1eSuAgGlPZjhb1AmVuRqSkaSbkuGzRlOZ1AWUO12D0o69uC4s
+K96S+q77rch0GK4PkwpuG1HUGHRCOyUjb7djEachOD5dp1WpLewU4NG809DpkcZ9hZNOpDx8KZe8
+sLIdYvXG8ygo2BEkBOONZkSFgvtY18YY0hDVjqGogjr13l2Gg5ItTQA/RVyrbDuOAgL9NsudtyV+
+XQxpPxxHSgJ0It3FT1hprPw7I//+ha/cue7JCixwbsC5YKGiB5YGqIxB42SiYcP/u2Q4UUv2ICv/
+drpoQeDGhrg6nuppHhPiDJGehWO4KXgWD7rCIn8IGdwb/iKo5TABsEEYjiiBU6zBHIJJFjSxBJVV
+V2s1WbS9RT6reB/cp4zswlhB7bLh8BYH6P9hpsCwjpa6H29FBVlaR229STh0DoMm6yQ4cw49irag
+CDHR8KX+4u5YxvfCVIvJ3jP0raCZy8wfm136m0WWk8iR4Lgmljt14L8PQ55OJFkhkEO9Xas7A1UK
+nS9L1FTfVMH+AWGNsOfyLVcUZUvuA8SVmrddfpxLU60RckYY4qmCzUxBgXuLoPYfKlhhCXJs1DMa
+8+hgwi6i6L2RnniryUDAc0iokz/NwoCVb31kkiJ3A4+2IJABdR7Cqmc7bhISOIIfX4LxTmARjxhH
+veh/bbmvbeEPwFaWcaCHsla5yWuf1RHnBRyrOKOvmkZcp0dzjoA234QGD1Pd+8PVkRoQb4U34MR7
+Sfl1kiifkA/XDdVNezQjgmSJOUtXY1ltcBnnZmJ3cTrtlNsjdHrbAXUhtvFnaS/9udjnInaJCC/P
+g4808zsEJu2p654VEDxmiqLq9h0ADCD7ApPQ/dyZ2Vz5jMaSOXOBO+k+VZR83XG76Nv8tqBi8vHq
+SxhXNDMtlShykq9Fq5qEJ5dFop39gKWkYEMgISyLonkjUdk7srZh8RFe5Fz8dd2sLG+JKkXMz8VH
+UqkQB4APVcQIthN7YLWRh/I27oixngkm/aR/LOVK/UH/eeL3w8k3Vq1xd9ov4590+MwHEEGHejza
+VAU8LNtHCiNvvUtIhjpf7ALZ/l0ov5wZ5cB4h2Xs3uvK6kcMzrl7bqVQNNMRS1/1YWM3gNYNYnjA
+Kz3nMB0qcZTmLuZR5bioY6+J234xxVXfIRMYuSxyGI/s+Pm8clhZ1jpKgAgCA7z84rU7eiGVX5lM
+jC8TE9UzmlvEmTPfPIIZdgpKeMDEyQy40L5P/vMV0xMtzXNXDrJZMH7q15sSoV9snngDuJNbhi90
+2jnLXIxSciY2/zkseM7b1x1PYjbUNA+t5ZwRVBx8CtEkFRJk2DqfsBSKTi54RUE6+r3r75G8y9o3
+GLVep6FFKjagPekDhzoG+nvLIl5avYSVfvQGdbgrB1rpuk5Ndv8igvWQWyYkaJ754rR71zEt6Lmj
+2UITYT93FUhIj54sB8PKERUbucs7XGwTz1d6YPSGcO3dHnnkvekwLEuB3RtqWMEMFhV5NHrQ22lU
+GIgEvcIJUFSBqF2Vq4FM5DYpsn3EYoFclhLrncn3q61xL3YocW+Dsnb3IhMG5G2zvesgnHDlNdvA
+e0jQgZgTLIyiR0EizMpQdBuHUSs7KWsJoBSfib+/W6n8luXabyvezdwy3KgmVe2Hpw2Sjh5FQdpn
+IL3ruQa5mBeghCHk7NEhFxYUs9NO4Jkh6nA7O5Z2WNkfq6/I808Xrica34d57P64PsUGpq9SC1bm
+PYlKeakHw+TsQt/b2hQ5UxKWEjZDzAQFxP5L8NTkKxVliQFvdUF0Vb+KVT5o++RYiehG1OXUW2xF
+HCaFnzItWQxYvXhYVRgHnSzoGCACUrrVGyjXm2bIsvOD/EFsVY8YseTEtLvK7ZEtx2fPXga5NVPK
+WEl3/eZ8ChTYoGYqAwggzJBQCrez7aWVQLcABsaVNVhmpnmh9Ok2df30c+rNdLGQ0LYKPdzS7bhH
+Y2eR9Qkvvaue22LXJwZwAnplHWbAdPmhHLPoUcTd8CLGiyaTu9AB9bAg/EdZ4afR79LolJsC+50t
+wrTPYPzNhRPZ1olqJOpnmnd3MVdYv65WPhCdLsQNJanVUCVDsf55CXm9DYKtkWXyTHAb6BUE4uMZ
+IIWd113p3kabg4Wrgfn1VoQebjXU8cpxjKqNAZre5sLMEAI/pmOcBu1eYHrhKrau5akbXKAmXIjb
+UQto4HJIIYWvFjyhm69AqDz/5c9iOCLpXn95nn0a4oIR/VcU4uh5XRDiPSA8749NWj/tA+PEhSlU
+g0YJQb8We0pjqcas2oJm5nAHJSIshYXCk54Q+XP6JkUoIuUNS0liakORADtTLSg9YVgLbL16CZ65
+9ae5qGMR39j/L2+SvgNEdcT+Qo7EXl30EzinNOJWXFGwQM6KSoK+xfktAZgccD+lbnHKOUpboa3L
+cZyROKP2MYK/13WHitOVq0DJlk2EBKjk5ljfOla6y67OOtd6QB/iN71M2oBNmXmDEQ5OdJfZ3Trg
+XzkNHBhSMMM2N/FlNnmVwIDA5qVAoBCUTqte5AE5XwvnDpPFCx95sSa8nGed0/Bs/QjbQNKXT5Mh
+uNLC0YIK2XKizmOk9fIgQBCUNleO4k9oqE7oUtt5XyKL9pPuyWlzH/MwFfgG4p5f//lYysxKk9sX
+9uO+ga/ur2Dq470tA06Tst1UcC4lsFuPeLiAkP/OQCLgBtqPZ3UCnO9xy2AwWuCiSH3yyHWbMviS
+kdGd5k4GGA2DzLLroeP+TDAoSWd/mFFR8SW33P53uAQHE9B/mXnCC19J7ErJUjj1gtAlKl94UF76
+r67xJuU+0wWpItoPQy3cQQBb5aO67/TlE5+BY6u3XvgxMnQx9rnhe+zIYDpDD+zaNrR6o/WLkZQS
+YUv7xfjgoaZWCvpANYlzQzJ1Z5huTp4cQGDt4LiIfF+XZiGeMvOshPE0Qz0Y5umqgSz+x0cHYBKW
+BDHVSFfvE03QRH/GaalPbFSxyrO5I3ToU0AMosSGS9uhELwzR+l4Q817MujI1uTW6Gu4l0+US1XI
+xO6o7zL9mgslmJGu

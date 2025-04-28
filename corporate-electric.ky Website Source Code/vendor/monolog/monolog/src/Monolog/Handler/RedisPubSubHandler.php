@@ -1,67 +1,43 @@
-<?php declare(strict_types=1);
-
-/*
- * This file is part of the Monolog package.
- *
- * (c) Jordi Boggiano <j.boggiano@seld.be>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Monolog\Handler;
-
-use Monolog\Formatter\LineFormatter;
-use Monolog\Formatter\FormatterInterface;
-use Monolog\Logger;
-
-/**
- * Sends the message to a Redis Pub/Sub channel using PUBLISH
- *
- * usage example:
- *
- *   $log = new Logger('application');
- *   $redis = new RedisPubSubHandler(new Predis\Client("tcp://localhost:6379"), "logs", Logger::WARNING);
- *   $log->pushHandler($redis);
- *
- * @author Gaëtan Faugère <gaetan@fauge.re>
- */
-class RedisPubSubHandler extends AbstractProcessingHandler
-{
-    private $redisClient;
-    private $channelKey;
-
-    /**
-     * @param \Predis\Client|\Redis $redis  The redis instance
-     * @param string                $key    The channel key to publish records to
-     * @param string|int            $level  The minimum logging level at which this handler will be triggered
-     * @param bool                  $bubble Whether the messages that are handled can bubble up the stack or not
-     */
-    public function __construct($redis, string $key, $level = Logger::DEBUG, bool $bubble = true)
-    {
-        if (!(($redis instanceof \Predis\Client) || ($redis instanceof \Redis))) {
-            throw new \InvalidArgumentException('Predis\Client or Redis instance required');
-        }
-
-        $this->redisClient = $redis;
-        $this->channelKey = $key;
-
-        parent::__construct($level, $bubble);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    protected function write(array $record): void
-    {
-        $this->redisClient->publish($this->channelKey, $record["formatted"]);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    protected function getDefaultFormatter(): FormatterInterface
-    {
-        return new LineFormatter();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

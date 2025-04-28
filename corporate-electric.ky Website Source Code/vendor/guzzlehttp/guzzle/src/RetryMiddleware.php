@@ -1,116 +1,60 @@
-<?php
-
-namespace GuzzleHttp;
-
-use GuzzleHttp\Promise as P;
-use GuzzleHttp\Promise\PromiseInterface;
-use Psr\Http\Message\RequestInterface;
-use Psr\Http\Message\ResponseInterface;
-
-/**
- * Middleware that retries requests based on the boolean result of
- * invoking the provided "decider" function.
- *
- * @final
- */
-class RetryMiddleware
-{
-    /**
-     * @var callable(RequestInterface, array): PromiseInterface
-     */
-    private $nextHandler;
-
-    /**
-     * @var callable
-     */
-    private $decider;
-
-    /**
-     * @var callable(int)
-     */
-    private $delay;
-
-    /**
-     * @param callable                                            $decider     Function that accepts the number of retries,
-     *                                                                         a request, [response], and [exception] and
-     *                                                                         returns true if the request is to be
-     *                                                                         retried.
-     * @param callable(RequestInterface, array): PromiseInterface $nextHandler Next handler to invoke.
-     * @param null|callable(int): int                             $delay       Function that accepts the number of retries
-     *                                                                         and returns the number of
-     *                                                                         milliseconds to delay.
-     */
-    public function __construct(callable $decider, callable $nextHandler, callable $delay = null)
-    {
-        $this->decider = $decider;
-        $this->nextHandler = $nextHandler;
-        $this->delay = $delay ?: __CLASS__ . '::exponentialDelay';
-    }
-
-    /**
-     * Default exponential backoff delay function.
-     *
-     * @return int milliseconds.
-     */
-    public static function exponentialDelay(int $retries): int
-    {
-        return (int) \pow(2, $retries - 1) * 1000;
-    }
-
-    public function __invoke(RequestInterface $request, array $options): PromiseInterface
-    {
-        if (!isset($options['retries'])) {
-            $options['retries'] = 0;
-        }
-
-        $fn = $this->nextHandler;
-        return $fn($request, $options)
-            ->then(
-                $this->onFulfilled($request, $options),
-                $this->onRejected($request, $options)
-            );
-    }
-
-    /**
-     * Execute fulfilled closure
-     */
-    private function onFulfilled(RequestInterface $request, array $options): callable
-    {
-        return function ($value) use ($request, $options) {
-            if (!($this->decider)(
-                $options['retries'],
-                $request,
-                $value,
-                null
-            )) {
-                return $value;
-            }
-            return $this->doRetry($request, $options, $value);
-        };
-    }
-
-    /**
-     * Execute rejected closure
-     */
-    private function onRejected(RequestInterface $req, array $options): callable
-    {
-        return function ($reason) use ($req, $options) {
-            if (!($this->decider)(
-                $options['retries'],
-                $req,
-                null,
-                $reason
-            )) {
-                return P\Create::rejectionFor($reason);
-            }
-            return $this->doRetry($req, $options);
-        };
-    }
-
-    private function doRetry(RequestInterface $request, array $options, ResponseInterface $response = null): PromiseInterface
-    {
-        $options['delay'] = ($this->delay)(++$options['retries'], $response);
-
-        return $this($request, $options);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

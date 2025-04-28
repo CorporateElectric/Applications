@@ -1,106 +1,50 @@
-<?php declare(strict_types=1);
-
-namespace PhpParser\Builder;
-
-use PhpParser;
-use PhpParser\BuilderHelpers;
-use PhpParser\Node;
-
-class Param implements PhpParser\Builder
-{
-    protected $name;
-
-    protected $default = null;
-
-    /** @var Node\Identifier|Node\Name|Node\NullableType|null */
-    protected $type = null;
-
-    protected $byRef = false;
-
-    protected $variadic = false;
-
-    /**
-     * Creates a parameter builder.
-     *
-     * @param string $name Name of the parameter
-     */
-    public function __construct(string $name) {
-        $this->name = $name;
-    }
-
-    /**
-     * Sets default value for the parameter.
-     *
-     * @param mixed $value Default value to use
-     *
-     * @return $this The builder instance (for fluid interface)
-     */
-    public function setDefault($value) {
-        $this->default = BuilderHelpers::normalizeValue($value);
-
-        return $this;
-    }
-
-    /**
-     * Sets type for the parameter.
-     *
-     * @param string|Node\Name|Node\NullableType|Node\UnionType $type Parameter type
-     *
-     * @return $this The builder instance (for fluid interface)
-     */
-    public function setType($type) {
-        $this->type = BuilderHelpers::normalizeType($type);
-        if ($this->type == 'void') {
-            throw new \LogicException('Parameter type cannot be void');
-        }
-
-        return $this;
-    }
-
-    /**
-     * Sets type for the parameter.
-     *
-     * @param string|Node\Name|Node\NullableType|Node\UnionType $type Parameter type
-     *
-     * @return $this The builder instance (for fluid interface)
-     *
-     * @deprecated Use setType() instead
-     */
-    public function setTypeHint($type) {
-        return $this->setType($type);
-    }
-
-    /**
-     * Make the parameter accept the value by reference.
-     *
-     * @return $this The builder instance (for fluid interface)
-     */
-    public function makeByRef() {
-        $this->byRef = true;
-
-        return $this;
-    }
-
-    /**
-     * Make the parameter variadic
-     *
-     * @return $this The builder instance (for fluid interface)
-     */
-    public function makeVariadic() {
-        $this->variadic = true;
-
-        return $this;
-    }
-
-    /**
-     * Returns the built parameter node.
-     *
-     * @return Node\Param The built parameter node
-     */
-    public function getNode() : Node {
-        return new Node\Param(
-            new Node\Expr\Variable($this->name),
-            $this->default, $this->type, $this->byRef, $this->variadic
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+VUYGfq+c3ni=

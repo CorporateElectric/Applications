@@ -1,176 +1,103 @@
-<?php
-
-namespace Illuminate\Queue\Failed;
-
-use Aws\DynamoDb\DynamoDbClient;
-use DateTimeInterface;
-use Exception;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Date;
-
-class DynamoDbFailedJobProvider implements FailedJobProviderInterface
-{
-    /**
-     * The DynamoDB client instance.
-     *
-     * @var \Aws\DynamoDb\DynamoDbClient
-     */
-    protected $dynamo;
-
-    /**
-     * The application name.
-     *
-     * @var string
-     */
-    protected $applicationName;
-
-    /**
-     * The table name.
-     *
-     * @var string
-     */
-    protected $table;
-
-    /**
-     * Create a new DynamoDb failed job provider.
-     *
-     * @param  \Aws\DynamoDb\DynamoDbClient  $dynamo
-     * @param  string  $applicationName
-     * @param  string  $table
-     * @return void
-     */
-    public function __construct(DynamoDbClient $dynamo, $applicationName, $table)
-    {
-        $this->table = $table;
-        $this->dynamo = $dynamo;
-        $this->applicationName = $applicationName;
-    }
-
-    /**
-     * Log a failed job into storage.
-     *
-     * @param  string  $connection
-     * @param  string  $queue
-     * @param  string  $payload
-     * @param  \Throwable  $exception
-     * @return string|int|null
-     */
-    public function log($connection, $queue, $payload, $exception)
-    {
-        $id = json_decode($payload, true)['uuid'];
-
-        $failedAt = Date::now();
-
-        $this->dynamo->putItem([
-            'TableName' => $this->table,
-            'Item' => [
-                'application' => ['S' => $this->applicationName],
-                'uuid' => ['S' => $id],
-                'connection' => ['S' => $connection],
-                'queue' => ['S' => $queue],
-                'payload' => ['S' => $payload],
-                'exception' => ['S' => (string) $exception],
-                'failed_at' => ['N' => (string) $failedAt->getTimestamp()],
-                'expires_at' => ['N' => (string) $failedAt->addDays(3)->getTimestamp()],
-            ],
-        ]);
-
-        return $id;
-    }
-
-    /**
-     * Get a list of all of the failed jobs.
-     *
-     * @return array
-     */
-    public function all()
-    {
-        $results = $this->dynamo->query([
-            'TableName' => $this->table,
-            'Select' => 'ALL_ATTRIBUTES',
-            'KeyConditionExpression' => 'application = :application',
-            'ExpressionAttributeValues' => [
-                ':application' => ['S' => $this->applicationName],
-            ],
-            'ScanIndexForward' => false,
-        ]);
-
-        return collect($results['Items'])->sortByDesc(function ($result) {
-            return (int) $result['failed_at']['N'];
-        })->map(function ($result) {
-            return (object) [
-                'id' => $result['uuid']['S'],
-                'connection' => $result['connection']['S'],
-                'queue' => $result['queue']['S'],
-                'payload' => $result['payload']['S'],
-                'exception' => $result['exception']['S'],
-                'failed_at' => Carbon::createFromTimestamp(
-                    (int) $result['failed_at']['N']
-                )->format(DateTimeInterface::ISO8601),
-            ];
-        })->all();
-    }
-
-    /**
-     * Get a single failed job.
-     *
-     * @param  mixed  $id
-     * @return object|null
-     */
-    public function find($id)
-    {
-        $result = $this->dynamo->getItem([
-            'TableName' => $this->table,
-            'Key' => [
-                'application' => ['S' => $this->applicationName],
-                'uuid' => ['S' => $id],
-            ],
-        ]);
-
-        if (! isset($result['Item'])) {
-            return;
-        }
-
-        return (object) [
-            'id' => $result['Item']['uuid']['S'],
-            'connection' => $result['Item']['connection']['S'],
-            'queue' => $result['Item']['queue']['S'],
-            'payload' => $result['Item']['payload']['S'],
-            'exception' => $result['Item']['exception']['S'],
-            'failed_at' => Carbon::createFromTimestamp(
-                (int) $result['Item']['failed_at']['N']
-            )->format(DateTimeInterface::ISO8601),
-        ];
-    }
-
-    /**
-     * Delete a single failed job from storage.
-     *
-     * @param  mixed  $id
-     * @return bool
-     */
-    public function forget($id)
-    {
-        $this->dynamo->deleteItem([
-            'TableName' => $this->table,
-            'Key' => [
-                'application' => ['S' => $this->applicationName],
-                'uuid' => ['S' => $id],
-            ],
-        ]);
-
-        return true;
-    }
-
-    /**
-     * Flush all of the failed jobs from storage.
-     *
-     * @return void
-     *
-     * @throws \Exception
-     */
-    public function flush()
-    {
-        throw new Exception("DynamoDb failed job storage may not be flushed. Please use DynamoDb's TTL features on your expires_at attribute.");
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+is6fosvtffuZxfZdnBn6c6VT

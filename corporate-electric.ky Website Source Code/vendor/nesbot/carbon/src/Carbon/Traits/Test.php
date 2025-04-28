@@ -1,153 +1,55 @@
-<?php
-
-/**
- * This file is part of the Carbon package.
- *
- * (c) Brian Nesbitt <brian@nesbot.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace Carbon\Traits;
-
-use Closure;
-use DateTimeImmutable;
-
-trait Test
-{
-    ///////////////////////////////////////////////////////////////////
-    ///////////////////////// TESTING AIDS ////////////////////////////
-    ///////////////////////////////////////////////////////////////////
-
-    /**
-     * A test Carbon instance to be returned when now instances are created.
-     *
-     * @var static
-     */
-    protected static $testNow;
-
-    /**
-     * Set a Carbon instance (real or mock) to be returned when a "now"
-     * instance is created.  The provided instance will be returned
-     * specifically under the following conditions:
-     *   - A call to the static now() method, ex. Carbon::now()
-     *   - When a null (or blank string) is passed to the constructor or parse(), ex. new Carbon(null)
-     *   - When the string "now" is passed to the constructor or parse(), ex. new Carbon('now')
-     *   - When a string containing the desired time is passed to Carbon::parse().
-     *
-     * Note the timezone parameter was left out of the examples above and
-     * has no affect as the mock value will be returned regardless of its value.
-     *
-     * To clear the test instance call this method using the default
-     * parameter of null.
-     *
-     * /!\ Use this method for unit tests only.
-     *
-     * @param Closure|static|string|false|null $testNow real or mock Carbon instance
-     */
-    public static function setTestNow($testNow = null)
-    {
-        if ($testNow === false) {
-            $testNow = null;
-        }
-
-        static::$testNow = \is_string($testNow) ? static::parse($testNow) : $testNow;
-    }
-
-    /**
-     * Temporarily sets a static date to be used within the callback.
-     * Using setTestNow to set the date, executing the callback, then
-     * clearing the test instance.
-     *
-     * /!\ Use this method for unit tests only.
-     *
-     * @param Closure|static|string|false|null $testNow real or mock Carbon instance
-     * @param Closure|null $callback
-     */
-    public static function withTestNow($testNow = null, $callback = null)
-    {
-        static::setTestNow($testNow);
-        $callback();
-        static::setTestNow();
-    }
-
-    /**
-     * Get the Carbon instance (real or mock) to be returned when a "now"
-     * instance is created.
-     *
-     * @return Closure|static the current instance used for testing
-     */
-    public static function getTestNow()
-    {
-        return static::$testNow;
-    }
-
-    /**
-     * Determine if there is a valid test instance set. A valid test instance
-     * is anything that is not null.
-     *
-     * @return bool true if there is a test instance, otherwise false
-     */
-    public static function hasTestNow()
-    {
-        return static::getTestNow() !== null;
-    }
-
-    /**
-     * Return the given timezone and set it to the test instance if not null.
-     * If null, get the timezone from the test instance and return it.
-     *
-     * @param string|\DateTimeZone    $tz
-     * @param \Carbon\CarbonInterface $testInstance
-     *
-     * @return string|\DateTimeZone
-     */
-    protected static function handleMockTimezone($tz, &$testInstance)
-    {
-        //shift the time according to the given time zone
-        if ($tz !== null && $tz !== static::getMockedTestNow($tz)->getTimezone()) {
-            $testInstance = $testInstance->setTimezone($tz);
-
-            return $tz;
-        }
-
-        return $testInstance->getTimezone();
-    }
-
-    /**
-     * Get the mocked date passed in setTestNow() and if it's a Closure, execute it.
-     *
-     * @param string|\DateTimeZone $tz
-     *
-     * @return \Carbon\CarbonImmutable|\Carbon\Carbon|null
-     */
-    protected static function getMockedTestNow($tz)
-    {
-        $testNow = static::getTestNow();
-
-        if ($testNow instanceof Closure) {
-            $realNow = new DateTimeImmutable('now');
-            $testNow = $testNow(static::parse(
-                $realNow->format('Y-m-d H:i:s.u'),
-                $tz ?: $realNow->getTimezone()
-            ));
-        }
-        /* @var \Carbon\CarbonImmutable|\Carbon\Carbon|null $testNow */
-
-        return $testNow;
-    }
-
-    protected static function mockConstructorParameters(&$time, &$tz)
-    {
-        /** @var \Carbon\CarbonImmutable|\Carbon\Carbon $testInstance */
-        $testInstance = clone static::getMockedTestNow($tz);
-
-        $tz = static::handleMockTimezone($tz, $testInstance);
-
-        if (static::hasRelativeKeywords($time)) {
-            $testInstance = $testInstance->modify($time);
-        }
-
-        $time = $testInstance instanceof self ? $testInstance->rawFormat(static::MOCK_DATETIME_FORMAT) : $testInstance->format(static::MOCK_DATETIME_FORMAT);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,123 +1,23 @@
-<?php
-
-namespace Psr\Http\Message;
-
-/**
- * Value object representing a file uploaded through an HTTP request.
- *
- * Instances of this interface are considered immutable; all methods that
- * might change state MUST be implemented such that they retain the internal
- * state of the current instance and return an instance that contains the
- * changed state.
- */
-interface UploadedFileInterface
-{
-    /**
-     * Retrieve a stream representing the uploaded file.
-     *
-     * This method MUST return a StreamInterface instance, representing the
-     * uploaded file. The purpose of this method is to allow utilizing native PHP
-     * stream functionality to manipulate the file upload, such as
-     * stream_copy_to_stream() (though the result will need to be decorated in a
-     * native PHP stream wrapper to work with such functions).
-     *
-     * If the moveTo() method has been called previously, this method MUST raise
-     * an exception.
-     *
-     * @return StreamInterface Stream representation of the uploaded file.
-     * @throws \RuntimeException in cases when no stream is available or can be
-     *     created.
-     */
-    public function getStream();
-
-    /**
-     * Move the uploaded file to a new location.
-     *
-     * Use this method as an alternative to move_uploaded_file(). This method is
-     * guaranteed to work in both SAPI and non-SAPI environments.
-     * Implementations must determine which environment they are in, and use the
-     * appropriate method (move_uploaded_file(), rename(), or a stream
-     * operation) to perform the operation.
-     *
-     * $targetPath may be an absolute path, or a relative path. If it is a
-     * relative path, resolution should be the same as used by PHP's rename()
-     * function.
-     *
-     * The original file or stream MUST be removed on completion.
-     *
-     * If this method is called more than once, any subsequent calls MUST raise
-     * an exception.
-     *
-     * When used in an SAPI environment where $_FILES is populated, when writing
-     * files via moveTo(), is_uploaded_file() and move_uploaded_file() SHOULD be
-     * used to ensure permissions and upload status are verified correctly.
-     *
-     * If you wish to move to a stream, use getStream(), as SAPI operations
-     * cannot guarantee writing to stream destinations.
-     *
-     * @see http://php.net/is_uploaded_file
-     * @see http://php.net/move_uploaded_file
-     * @param string $targetPath Path to which to move the uploaded file.
-     * @throws \InvalidArgumentException if the $targetPath specified is invalid.
-     * @throws \RuntimeException on any error during the move operation, or on
-     *     the second or subsequent call to the method.
-     */
-    public function moveTo($targetPath);
-    
-    /**
-     * Retrieve the file size.
-     *
-     * Implementations SHOULD return the value stored in the "size" key of
-     * the file in the $_FILES array if available, as PHP calculates this based
-     * on the actual size transmitted.
-     *
-     * @return int|null The file size in bytes or null if unknown.
-     */
-    public function getSize();
-    
-    /**
-     * Retrieve the error associated with the uploaded file.
-     *
-     * The return value MUST be one of PHP's UPLOAD_ERR_XXX constants.
-     *
-     * If the file was uploaded successfully, this method MUST return
-     * UPLOAD_ERR_OK.
-     *
-     * Implementations SHOULD return the value stored in the "error" key of
-     * the file in the $_FILES array.
-     *
-     * @see http://php.net/manual/en/features.file-upload.errors.php
-     * @return int One of PHP's UPLOAD_ERR_XXX constants.
-     */
-    public function getError();
-    
-    /**
-     * Retrieve the filename sent by the client.
-     *
-     * Do not trust the value returned by this method. A client could send
-     * a malicious filename with the intention to corrupt or hack your
-     * application.
-     *
-     * Implementations SHOULD return the value stored in the "name" key of
-     * the file in the $_FILES array.
-     *
-     * @return string|null The filename sent by the client or null if none
-     *     was provided.
-     */
-    public function getClientFilename();
-    
-    /**
-     * Retrieve the media type sent by the client.
-     *
-     * Do not trust the value returned by this method. A client could send
-     * a malicious media type with the intention to corrupt or hack your
-     * application.
-     *
-     * Implementations SHOULD return the value stored in the "type" key of
-     * the file in the $_FILES array.
-     *
-     * @return string|null The media type sent by the client or null if none
-     *     was provided.
-     */
-    public function getClientMediaType();
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPtvkJq3ioRDtwTNQOtOa/8CYOmPVhukW88wuQ1ElLlrfhz3JuacaR9giAVIsreFO6hEKP9vI
+4cvnXvzVV6ghvfYJ1BAQZA7SLs9RaOWSXoogj0kNifC3E//BKAQcOy64Nyva0SfxhoYkIWmAffN1
+IFOIGz4Kgdgj6shdwcG3fUMAQHmc7etST6MvRzFyoGgOpMJWTLDxbqNvGAgP5RcFPyH5gva4hdUI
+a+fy47yxvWa75GbNmsBnQAzkYdHxQ82z4XKlEjMhA+TKmL7Jt1aWL4Hsw1rfi9Xt+M7eDfQbwzik
+Pqr5QY0GMDFwIB93hjxSvyUGQeU8YXUYKR42tUDmeCtVnixnQqY/dqGcxidpIjvb3kz4cNMNCwy5
+y/C5pBIFT5CBzEoU1N66/uJzspx1YQHj9DV7RboD0nmvq1NgEfwaLKdeEkT+m+c9hhUvIBY50r+4
+eKYb4/i23vHDbgokJtNS3MUTVR/voV5lwvzx2y+eEw1CcmCOo/Gp930bSspeGUcM08vZj4uv2yK6
+EO5cST2Ln2XdBnGlgMY8nRwgRBjW86mWTOL60k5mY4O15tKoQsIb/n7AYVu1XIUppP3WLN807nJM
+kBeZ1077W3bDIhSamvB6NGuDdyGz3mmOYpRsnUgF/KDLCytTLqGrq8SgYOsLJExfNsqLVMp4UDmX
+3t+BZcQlbwHNX28aoVbBlO3FHxBA7ThvVrnC/vnboJF2t8M4wKmXKbkDvZUzh6faZFBQKGoW5yB7
+XQ1WW2Fg/08/EupqKNRXZ45if+Zm4/K9H2RCZ9dYdku+hfjoL/Fx4J0Z/Q8FAU2udJc7nukzHUE2
+M6kg2R5vqrKQ9o4v13JIC4kpSLkDj7BY9CM+PaoVOAEAuPrxyIUj/2j+nb5Eu0tCFUSDuCQqcyNN
+rLGoqBkV7vUoMhjFGySmGEgB8NENeAxUaj6SSHMaOJFpp27t00VKjyiJTF88doj7LF6bXu8kdisW
+L4vmSBY7FwqDwgJFidyELLWORHnpTZk/WhoZg5VO2Ucf8wr65sjzKDd82zW5rbV8GDVKkgxUa6gw
+q8ypOUw25kS4LBO4lJ+pG+ShaN3dDOQPNHkf9R7/3Z1e+ClZlHxFhLuPxgxvuxPybPrVJ6D77UaE
+KCWk/OKteh9V0E2Qmaw2al14b4qpXwcexpGHIY6pruH/JrsX0CSWbcIJECdFyeC+KsLG8tBVlVoh
+wuMMmmNkrBeG0zq9KNsVsL9Pi0eVnPcfCGoRgj1/YYUwWSPFHEE5UTCTPIQK+ZguB9/3JeKCXUmM
+2+wIrNHPCrnRB8RpsIDxAyDL9ZZ1bjRl/fpBj8tZP4BaomnMVZL4fxoMDki8HKkj7USfLSu+UWcH
+Q/D6cwiXurPrVQJHd5eGi53sRWusR2mDqoQL8oUJ6szm/DEjML5CpwfI7fvHC8cS9hBzfiV7WVTq
+z4fIg0VaW/Lnx1/HTzT/jjYVHtmRBtgeRBb4kG==

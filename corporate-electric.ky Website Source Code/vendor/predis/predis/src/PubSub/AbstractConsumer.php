@@ -1,219 +1,79 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Predis\PubSub;
-
-/**
- * Base implementation of a PUB/SUB consumer abstraction based on PHP iterators.
- *
- * @author Daniele Alessandri <suppakilla@gmail.com>
- */
-abstract class AbstractConsumer implements \Iterator
-{
-    const SUBSCRIBE = 'subscribe';
-    const UNSUBSCRIBE = 'unsubscribe';
-    const PSUBSCRIBE = 'psubscribe';
-    const PUNSUBSCRIBE = 'punsubscribe';
-    const MESSAGE = 'message';
-    const PMESSAGE = 'pmessage';
-    const PONG = 'pong';
-
-    const STATUS_VALID = 1;       // 0b0001
-    const STATUS_SUBSCRIBED = 2;  // 0b0010
-    const STATUS_PSUBSCRIBED = 4; // 0b0100
-
-    private $position = null;
-    private $statusFlags = self::STATUS_VALID;
-
-    /**
-     * Automatically stops the consumer when the garbage collector kicks in.
-     */
-    public function __destruct()
-    {
-        $this->stop(true);
-    }
-
-    /**
-     * Checks if the specified flag is valid based on the state of the consumer.
-     *
-     * @param int $value Flag.
-     *
-     * @return bool
-     */
-    protected function isFlagSet($value)
-    {
-        return ($this->statusFlags & $value) === $value;
-    }
-
-    /**
-     * Subscribes to the specified channels.
-     *
-     * @param mixed $channel,... One or more channel names.
-     */
-    public function subscribe($channel /*, ... */)
-    {
-        $this->writeRequest(self::SUBSCRIBE, func_get_args());
-        $this->statusFlags |= self::STATUS_SUBSCRIBED;
-    }
-
-    /**
-     * Unsubscribes from the specified channels.
-     *
-     * @param string ... One or more channel names.
-     */
-    public function unsubscribe(/* ... */)
-    {
-        $this->writeRequest(self::UNSUBSCRIBE, func_get_args());
-    }
-
-    /**
-     * Subscribes to the specified channels using a pattern.
-     *
-     * @param mixed $pattern,... One or more channel name patterns.
-     */
-    public function psubscribe($pattern /* ... */)
-    {
-        $this->writeRequest(self::PSUBSCRIBE, func_get_args());
-        $this->statusFlags |= self::STATUS_PSUBSCRIBED;
-    }
-
-    /**
-     * Unsubscribes from the specified channels using a pattern.
-     *
-     * @param string ... One or more channel name patterns.
-     */
-    public function punsubscribe(/* ... */)
-    {
-        $this->writeRequest(self::PUNSUBSCRIBE, func_get_args());
-    }
-
-    /**
-     * PING the server with an optional payload that will be echoed as a
-     * PONG message in the pub/sub loop.
-     *
-     * @param string $payload Optional PING payload.
-     */
-    public function ping($payload = null)
-    {
-        $this->writeRequest('PING', array($payload));
-    }
-
-    /**
-     * Closes the context by unsubscribing from all the subscribed channels. The
-     * context can be forcefully closed by dropping the underlying connection.
-     *
-     * @param bool $drop Indicates if the context should be closed by dropping the connection.
-     *
-     * @return bool Returns false when there are no pending messages.
-     */
-    public function stop($drop = false)
-    {
-        if (!$this->valid()) {
-            return false;
-        }
-
-        if ($drop) {
-            $this->invalidate();
-            $this->disconnect();
-        } else {
-            if ($this->isFlagSet(self::STATUS_SUBSCRIBED)) {
-                $this->unsubscribe();
-            }
-            if ($this->isFlagSet(self::STATUS_PSUBSCRIBED)) {
-                $this->punsubscribe();
-            }
-        }
-
-        return !$drop;
-    }
-
-    /**
-     * Closes the underlying connection when forcing a disconnection.
-     */
-    abstract protected function disconnect();
-
-    /**
-     * Writes a Redis command on the underlying connection.
-     *
-     * @param string $method    Command ID.
-     * @param array  $arguments Arguments for the command.
-     */
-    abstract protected function writeRequest($method, $arguments);
-
-    /**
-     * {@inheritdoc}
-     */
-    public function rewind()
-    {
-        // NOOP
-    }
-
-    /**
-     * Returns the last message payload retrieved from the server and generated
-     * by one of the active subscriptions.
-     *
-     * @return array
-     */
-    public function current()
-    {
-        return $this->getValue();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function key()
-    {
-        return $this->position;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function next()
-    {
-        if ($this->valid()) {
-            ++$this->position;
-        }
-
-        return $this->position;
-    }
-
-    /**
-     * Checks if the the consumer is still in a valid state to continue.
-     *
-     * @return bool
-     */
-    public function valid()
-    {
-        $isValid = $this->isFlagSet(self::STATUS_VALID);
-        $subscriptionFlags = self::STATUS_SUBSCRIBED | self::STATUS_PSUBSCRIBED;
-        $hasSubscriptions = ($this->statusFlags & $subscriptionFlags) > 0;
-
-        return $isValid && $hasSubscriptions;
-    }
-
-    /**
-     * Resets the state of the consumer.
-     */
-    protected function invalidate()
-    {
-        $this->statusFlags = 0;    // 0b0000;
-    }
-
-    /**
-     * Waits for a new message from the server generated by one of the active
-     * subscriptions and returns it when available.
-     *
-     * @return array
-     */
-    abstract protected function getValue();
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+pIofJxrQNm==

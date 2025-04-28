@@ -1,101 +1,51 @@
-<?php
-
-/*
- * This file is part of the Prophecy.
- * (c) Konstantin Kudryashov <ever.zet@gmail.com>
- *     Marcello Duarte <marcello.duarte@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Prophecy\Argument;
-
-/**
- * Arguments wildcarding.
- *
- * @author Konstantin Kudryashov <ever.zet@gmail.com>
- */
-class ArgumentsWildcard
-{
-    /**
-     * @var Token\TokenInterface[]
-     */
-    private $tokens = array();
-    private $string;
-
-    /**
-     * Initializes wildcard.
-     *
-     * @param array $arguments Array of argument tokens or values
-     */
-    public function __construct(array $arguments)
-    {
-        foreach ($arguments as $argument) {
-            if (!$argument instanceof Token\TokenInterface) {
-                $argument = new Token\ExactValueToken($argument);
-            }
-
-            $this->tokens[] = $argument;
-        }
-    }
-
-    /**
-     * Calculates wildcard match score for provided arguments.
-     *
-     * @param array $arguments
-     *
-     * @return false|int False OR integer score (higher - better)
-     */
-    public function scoreArguments(array $arguments)
-    {
-        if (0 == count($arguments) && 0 == count($this->tokens)) {
-            return 1;
-        }
-
-        $arguments  = array_values($arguments);
-        $totalScore = 0;
-        foreach ($this->tokens as $i => $token) {
-            $argument = isset($arguments[$i]) ? $arguments[$i] : null;
-            if (1 >= $score = $token->scoreArgument($argument)) {
-                return false;
-            }
-
-            $totalScore += $score;
-
-            if (true === $token->isLast()) {
-                return $totalScore;
-            }
-        }
-
-        if (count($arguments) > count($this->tokens)) {
-            return false;
-        }
-
-        return $totalScore;
-    }
-
-    /**
-     * Returns string representation for wildcard.
-     *
-     * @return string
-     */
-    public function __toString()
-    {
-        if (null === $this->string) {
-            $this->string = implode(', ', array_map(function ($token) {
-                return (string) $token;
-            }, $this->tokens));
-        }
-
-        return $this->string;
-    }
-
-    /**
-     * @return array
-     */
-    public function getTokens()
-    {
-        return $this->tokens;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+680=

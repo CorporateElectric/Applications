@@ -1,95 +1,60 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of sebastian/comparator.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\Comparator;
-
-use function abs;
-use function floor;
-use function sprintf;
-use DateInterval;
-use DateTime;
-use DateTimeInterface;
-use DateTimeZone;
-use Exception;
-
-/**
- * Compares DateTimeInterface instances for equality.
- */
-class DateTimeComparator extends ObjectComparator
-{
-    /**
-     * Returns whether the comparator can compare two values.
-     *
-     * @param mixed $expected The first value to compare
-     * @param mixed $actual   The second value to compare
-     *
-     * @return bool
-     */
-    public function accepts($expected, $actual)
-    {
-        return ($expected instanceof DateTime || $expected instanceof DateTimeInterface) &&
-               ($actual instanceof DateTime || $actual instanceof DateTimeInterface);
-    }
-
-    /**
-     * Asserts that two values are equal.
-     *
-     * @param mixed $expected     First value to compare
-     * @param mixed $actual       Second value to compare
-     * @param float $delta        Allowed numerical distance between two values to consider them equal
-     * @param bool  $canonicalize Arrays are sorted before comparison when set to true
-     * @param bool  $ignoreCase   Case is ignored when set to true
-     * @param array $processed    List of already processed elements (used to prevent infinite recursion)
-     *
-     * @throws Exception
-     * @throws ComparisonFailure
-     */
-    public function assertEquals($expected, $actual, $delta = 0.0, $canonicalize = false, $ignoreCase = false, array &$processed = [])/*: void*/
-    {
-        /** @var DateTimeInterface $expected */
-        /** @var DateTimeInterface $actual */
-        $absDelta = abs($delta);
-        $delta    = new DateInterval(sprintf('PT%dS', $absDelta));
-        $delta->f = $absDelta - floor($absDelta);
-
-        $actualClone = (clone $actual)
-            ->setTimezone(new DateTimeZone('UTC'));
-
-        $expectedLower = (clone $expected)
-            ->setTimezone(new DateTimeZone('UTC'))
-            ->sub($delta);
-
-        $expectedUpper = (clone $expected)
-            ->setTimezone(new DateTimeZone('UTC'))
-            ->add($delta);
-
-        if ($actualClone < $expectedLower || $actualClone > $expectedUpper) {
-            throw new ComparisonFailure(
-                $expected,
-                $actual,
-                $this->dateTimeToString($expected),
-                $this->dateTimeToString($actual),
-                false,
-                'Failed asserting that two DateTime objects are equal.'
-            );
-        }
-    }
-
-    /**
-     * Returns an ISO 8601 formatted string representation of a datetime or
-     * 'Invalid DateTimeInterface object' if the provided DateTimeInterface was not properly
-     * initialized.
-     */
-    private function dateTimeToString(DateTimeInterface $datetime): string
-    {
-        $string = $datetime->format('Y-m-d\TH:i:s.uO');
-
-        return $string ?: 'Invalid DateTimeInterface object';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+AvH5lQsOnnNe

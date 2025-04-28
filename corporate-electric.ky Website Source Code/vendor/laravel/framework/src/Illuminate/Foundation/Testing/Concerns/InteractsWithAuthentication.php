@@ -1,151 +1,67 @@
-<?php
-
-namespace Illuminate\Foundation\Testing\Concerns;
-
-use Illuminate\Contracts\Auth\Authenticatable as UserContract;
-
-trait InteractsWithAuthentication
-{
-    /**
-     * Set the currently logged in user for the application.
-     *
-     * @param  \Illuminate\Contracts\Auth\Authenticatable  $user
-     * @param  string|null  $driver
-     * @return $this
-     */
-    public function actingAs(UserContract $user, $driver = null)
-    {
-        return $this->be($user, $driver);
-    }
-
-    /**
-     * Set the currently logged in user for the application.
-     *
-     * @param  \Illuminate\Contracts\Auth\Authenticatable  $user
-     * @param  string|null  $driver
-     * @return $this
-     */
-    public function be(UserContract $user, $driver = null)
-    {
-        if (isset($user->wasRecentlyCreated) && $user->wasRecentlyCreated) {
-            $user->wasRecentlyCreated = false;
-        }
-
-        $this->app['auth']->guard($driver)->setUser($user);
-
-        $this->app['auth']->shouldUse($driver);
-
-        return $this;
-    }
-
-    /**
-     * Assert that the user is authenticated.
-     *
-     * @param  string|null  $guard
-     * @return $this
-     */
-    public function assertAuthenticated($guard = null)
-    {
-        $this->assertTrue($this->isAuthenticated($guard), 'The user is not authenticated');
-
-        return $this;
-    }
-
-    /**
-     * Assert that the user is not authenticated.
-     *
-     * @param  string|null  $guard
-     * @return $this
-     */
-    public function assertGuest($guard = null)
-    {
-        $this->assertFalse($this->isAuthenticated($guard), 'The user is authenticated');
-
-        return $this;
-    }
-
-    /**
-     * Return true if the user is authenticated, false otherwise.
-     *
-     * @param  string|null  $guard
-     * @return bool
-     */
-    protected function isAuthenticated($guard = null)
-    {
-        return $this->app->make('auth')->guard($guard)->check();
-    }
-
-    /**
-     * Assert that the user is authenticated as the given user.
-     *
-     * @param  \Illuminate\Contracts\Auth\Authenticatable  $user
-     * @param  string|null  $guard
-     * @return $this
-     */
-    public function assertAuthenticatedAs($user, $guard = null)
-    {
-        $expected = $this->app->make('auth')->guard($guard)->user();
-
-        $this->assertNotNull($expected, 'The current user is not authenticated.');
-
-        $this->assertInstanceOf(
-            get_class($expected), $user,
-            'The currently authenticated user is not who was expected'
-        );
-
-        $this->assertSame(
-            $expected->getAuthIdentifier(), $user->getAuthIdentifier(),
-            'The currently authenticated user is not who was expected'
-        );
-
-        return $this;
-    }
-
-    /**
-     * Assert that the given credentials are valid.
-     *
-     * @param  array  $credentials
-     * @param  string|null  $guard
-     * @return $this
-     */
-    public function assertCredentials(array $credentials, $guard = null)
-    {
-        $this->assertTrue(
-            $this->hasCredentials($credentials, $guard), 'The given credentials are invalid.'
-        );
-
-        return $this;
-    }
-
-    /**
-     * Assert that the given credentials are invalid.
-     *
-     * @param  array  $credentials
-     * @param  string|null  $guard
-     * @return $this
-     */
-    public function assertInvalidCredentials(array $credentials, $guard = null)
-    {
-        $this->assertFalse(
-            $this->hasCredentials($credentials, $guard), 'The given credentials are valid.'
-        );
-
-        return $this;
-    }
-
-    /**
-     * Return true if the credentials are valid, false otherwise.
-     *
-     * @param  array  $credentials
-     * @param  string|null  $guard
-     * @return bool
-     */
-    protected function hasCredentials(array $credentials, $guard = null)
-    {
-        $provider = $this->app->make('auth')->guard($guard)->getProvider();
-
-        $user = $provider->retrieveByCredentials($credentials);
-
-        return $user && $provider->validateCredentials($user, $credentials);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

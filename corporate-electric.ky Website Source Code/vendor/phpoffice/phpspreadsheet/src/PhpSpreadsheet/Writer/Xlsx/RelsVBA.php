@@ -1,40 +1,48 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Writer\Xlsx;
-
-use PhpOffice\PhpSpreadsheet\Shared\XMLWriter;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-
-class RelsVBA extends WriterPart
-{
-    /**
-     * Write relationships for a signed VBA Project.
-     *
-     * @return string XML Output
-     */
-    public function writeVBARelationships(Spreadsheet $spreadsheet)
-    {
-        // Create XML writer
-        $objWriter = null;
-        if ($this->getParentWriter()->getUseDiskCaching()) {
-            $objWriter = new XMLWriter(XMLWriter::STORAGE_DISK, $this->getParentWriter()->getDiskCachingDirectory());
-        } else {
-            $objWriter = new XMLWriter(XMLWriter::STORAGE_MEMORY);
-        }
-
-        // XML header
-        $objWriter->startDocument('1.0', 'UTF-8', 'yes');
-
-        // Relationships
-        $objWriter->startElement('Relationships');
-        $objWriter->writeAttribute('xmlns', 'http://schemas.openxmlformats.org/package/2006/relationships');
-        $objWriter->startElement('Relationship');
-        $objWriter->writeAttribute('Id', 'rId1');
-        $objWriter->writeAttribute('Type', 'http://schemas.microsoft.com/office/2006/relationships/vbaProjectSignature');
-        $objWriter->writeAttribute('Target', 'vbaProjectSignature.bin');
-        $objWriter->endElement();
-        $objWriter->endElement();
-
-        return $objWriter->getData();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+PLEfdBpOTcZr

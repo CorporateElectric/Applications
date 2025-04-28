@@ -1,161 +1,79 @@
-<?php
-
-/**
- * Validates Color as defined by CSS.
- */
-class HTMLPurifier_AttrDef_CSS_Color extends HTMLPurifier_AttrDef
-{
-
-    /**
-     * @type HTMLPurifier_AttrDef_CSS_AlphaValue
-     */
-    protected $alpha;
-
-    public function __construct()
-    {
-        $this->alpha = new HTMLPurifier_AttrDef_CSS_AlphaValue();
-    }
-
-    /**
-     * @param string $color
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return bool|string
-     */
-    public function validate($color, $config, $context)
-    {
-        static $colors = null;
-        if ($colors === null) {
-            $colors = $config->get('Core.ColorKeywords');
-        }
-
-        $color = trim($color);
-        if ($color === '') {
-            return false;
-        }
-
-        $lower = strtolower($color);
-        if (isset($colors[$lower])) {
-            return $colors[$lower];
-        }
-
-        if (preg_match('#(rgb|rgba|hsl|hsla)\(#', $color, $matches) === 1) {
-            $length = strlen($color);
-            if (strpos($color, ')') !== $length - 1) {
-                return false;
-            }
-
-            // get used function : rgb, rgba, hsl or hsla
-            $function = $matches[1];
-
-            $parameters_size = 3;
-            $alpha_channel = false;
-            if (substr($function, -1) === 'a') {
-                $parameters_size = 4;
-                $alpha_channel = true;
-            }
-
-            /*
-             * Allowed types for values :
-             * parameter_position => [type => max_value]
-             */
-            $allowed_types = array(
-                1 => array('percentage' => 100, 'integer' => 255),
-                2 => array('percentage' => 100, 'integer' => 255),
-                3 => array('percentage' => 100, 'integer' => 255),
-            );
-            $allow_different_types = false;
-
-            if (strpos($function, 'hsl') !== false) {
-                $allowed_types = array(
-                    1 => array('integer' => 360),
-                    2 => array('percentage' => 100),
-                    3 => array('percentage' => 100),
-                );
-                $allow_different_types = true;
-            }
-
-            $values = trim(str_replace($function, '', $color), ' ()');
-
-            $parts = explode(',', $values);
-            if (count($parts) !== $parameters_size) {
-                return false;
-            }
-
-            $type = false;
-            $new_parts = array();
-            $i = 0;
-
-            foreach ($parts as $part) {
-                $i++;
-                $part = trim($part);
-
-                if ($part === '') {
-                    return false;
-                }
-
-                // different check for alpha channel
-                if ($alpha_channel === true && $i === count($parts)) {
-                    $result = $this->alpha->validate($part, $config, $context);
-
-                    if ($result === false) {
-                        return false;
-                    }
-
-                    $new_parts[] = (string)$result;
-                    continue;
-                }
-
-                if (substr($part, -1) === '%') {
-                    $current_type = 'percentage';
-                } else {
-                    $current_type = 'integer';
-                }
-
-                if (!array_key_exists($current_type, $allowed_types[$i])) {
-                    return false;
-                }
-
-                if (!$type) {
-                    $type = $current_type;
-                }
-
-                if ($allow_different_types === false && $type != $current_type) {
-                    return false;
-                }
-
-                $max_value = $allowed_types[$i][$current_type];
-
-                if ($current_type == 'integer') {
-                    // Return value between range 0 -> $max_value
-                    $new_parts[] = (int)max(min($part, $max_value), 0);
-                } elseif ($current_type == 'percentage') {
-                    $new_parts[] = (float)max(min(rtrim($part, '%'), $max_value), 0) . '%';
-                }
-            }
-
-            $new_values = implode(',', $new_parts);
-
-            $color = $function . '(' . $new_values . ')';
-        } else {
-            // hexadecimal handling
-            if ($color[0] === '#') {
-                $hex = substr($color, 1);
-            } else {
-                $hex = $color;
-                $color = '#' . $color;
-            }
-            $length = strlen($hex);
-            if ($length !== 3 && $length !== 6) {
-                return false;
-            }
-            if (!ctype_xdigit($hex)) {
-                return false;
-            }
-        }
-        return $color;
-    }
-
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+a2e=

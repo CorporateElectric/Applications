@@ -1,92 +1,32 @@
-<?php
-
-namespace Intervention\Image;
-
-class Constraint
-{
-    /**
-     * Bit value of aspect ratio constraint
-     */
-    const ASPECTRATIO = 1;
-
-    /**
-     * Bit value of upsize constraint
-     */
-    const UPSIZE = 2;
-
-    /**
-     * Constraint size
-     *
-     * @var \Intervention\Image\Size
-     */
-    private $size;
-
-    /**
-     * Integer value of fixed parameters
-     *
-     * @var int
-     */
-    private $fixed = 0;
-
-    /**
-     * Create a new constraint based on size
-     *
-     * @param Size $size
-     */
-    public function __construct(Size $size)
-    {
-        $this->size = $size;
-    }
-
-    /**
-     * Returns current size of constraint
-     *
-     * @return \Intervention\Image\Size
-     */
-    public function getSize()
-    {
-        return $this->size;
-    }
-
-    /**
-     * Fix the given argument in current constraint
-     *
-     * @param  int $type
-     * @return void
-     */
-    public function fix($type)
-    {
-        $this->fixed = ($this->fixed & ~(1 << $type)) | (1 << $type);
-    }
-
-    /**
-     * Checks if given argument is fixed in current constraint
-     *
-     * @param  int  $type
-     * @return boolean
-     */
-    public function isFixed($type)
-    {
-        return (bool) ($this->fixed & (1 << $type));
-    }
-
-    /**
-     * Fixes aspect ratio in current constraint
-     *
-     * @return void
-     */
-    public function aspectRatio()
-    {
-        $this->fix(self::ASPECTRATIO);
-    }
-
-    /**
-     * Fixes possibility to size up in current constraint
-     *
-     * @return void
-     */
-    public function upsize()
-    {
-        $this->fix(self::UPSIZE);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+CxYCf2hh

@@ -1,70 +1,46 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of sebastian/diff.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\Diff;
-
-use function array_reverse;
-use function count;
-use function max;
-use SplFixedArray;
-
-final class TimeEfficientLongestCommonSubsequenceCalculator implements LongestCommonSubsequenceCalculator
-{
-    /**
-     * {@inheritdoc}
-     */
-    public function calculate(array $from, array $to): array
-    {
-        $common     = [];
-        $fromLength = count($from);
-        $toLength   = count($to);
-        $width      = $fromLength + 1;
-        $matrix     = new SplFixedArray($width * ($toLength + 1));
-
-        for ($i = 0; $i <= $fromLength; ++$i) {
-            $matrix[$i] = 0;
-        }
-
-        for ($j = 0; $j <= $toLength; ++$j) {
-            $matrix[$j * $width] = 0;
-        }
-
-        for ($i = 1; $i <= $fromLength; ++$i) {
-            for ($j = 1; $j <= $toLength; ++$j) {
-                $o          = ($j * $width) + $i;
-                $matrix[$o] = max(
-                    $matrix[$o - 1],
-                    $matrix[$o - $width],
-                    $from[$i - 1] === $to[$j - 1] ? $matrix[$o - $width - 1] + 1 : 0
-                );
-            }
-        }
-
-        $i = $fromLength;
-        $j = $toLength;
-
-        while ($i > 0 && $j > 0) {
-            if ($from[$i - 1] === $to[$j - 1]) {
-                $common[] = $from[$i - 1];
-                --$i;
-                --$j;
-            } else {
-                $o = ($j * $width) + $i;
-
-                if ($matrix[$o - $width] > $matrix[$o - 1]) {
-                    --$j;
-                } else {
-                    --$i;
-                }
-            }
-        }
-
-        return array_reverse($common);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+ZaU2S6b6pmHFid4qvnG=

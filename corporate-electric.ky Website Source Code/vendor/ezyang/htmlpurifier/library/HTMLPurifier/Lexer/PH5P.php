@@ -1,4788 +1,1376 @@
-<?php
-
-/**
- * Experimental HTML5-based parser using Jeroen van der Meer's PH5P library.
- * Occupies space in the HTML5 pseudo-namespace, which may cause conflicts.
- *
- * @note
- *    Recent changes to PHP's DOM extension have resulted in some fatal
- *    error conditions with the original version of PH5P. Pending changes,
- *    this lexer will punt to DirectLex if DOM throws an exception.
- */
-
-class HTMLPurifier_Lexer_PH5P extends HTMLPurifier_Lexer_DOMLex
-{
-    /**
-     * @param string $html
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return HTMLPurifier_Token[]
-     */
-    public function tokenizeHTML($html, $config, $context)
-    {
-        $new_html = $this->normalize($html, $config, $context);
-        $new_html = $this->wrapHTML($new_html, $config, $context, false /* no div */);
-        try {
-            $parser = new HTML5($new_html);
-            $doc = $parser->save();
-        } catch (DOMException $e) {
-            // Uh oh, it failed. Punt to DirectLex.
-            $lexer = new HTMLPurifier_Lexer_DirectLex();
-            $context->register('PH5PError', $e); // save the error, so we can detect it
-            return $lexer->tokenizeHTML($html, $config, $context); // use original HTML
-        }
-        $tokens = array();
-        $this->tokenizeDOM(
-            $doc->getElementsByTagName('html')->item(0)-> // <html>
-                  getElementsByTagName('body')->item(0) //   <body>
-            ,
-            $tokens, $config
-        );
-        return $tokens;
-    }
-}
-
-/*
-
-Copyright 2007 Jeroen van der Meer <http://jero.net/>
-
-Permission is hereby granted, free of charge, to any person obtaining a
-copy of this software and associated documentation files (the
-"Software"), to deal in the Software without restriction, including
-without limitation the rights to use, copy, modify, merge, publish,
-distribute, sublicense, and/or sell copies of the Software, and to
-permit persons to whom the Software is furnished to do so, subject to
-the following conditions:
-
-The above copyright notice and this permission notice shall be included
-in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-*/
-
-class HTML5
-{
-    private $data;
-    private $char;
-    private $EOF;
-    private $state;
-    private $tree;
-    private $token;
-    private $content_model;
-    private $escape = false;
-    private $entities = array(
-        'AElig;',
-        'AElig',
-        'AMP;',
-        'AMP',
-        'Aacute;',
-        'Aacute',
-        'Acirc;',
-        'Acirc',
-        'Agrave;',
-        'Agrave',
-        'Alpha;',
-        'Aring;',
-        'Aring',
-        'Atilde;',
-        'Atilde',
-        'Auml;',
-        'Auml',
-        'Beta;',
-        'COPY;',
-        'COPY',
-        'Ccedil;',
-        'Ccedil',
-        'Chi;',
-        'Dagger;',
-        'Delta;',
-        'ETH;',
-        'ETH',
-        'Eacute;',
-        'Eacute',
-        'Ecirc;',
-        'Ecirc',
-        'Egrave;',
-        'Egrave',
-        'Epsilon;',
-        'Eta;',
-        'Euml;',
-        'Euml',
-        'GT;',
-        'GT',
-        'Gamma;',
-        'Iacute;',
-        'Iacute',
-        'Icirc;',
-        'Icirc',
-        'Igrave;',
-        'Igrave',
-        'Iota;',
-        'Iuml;',
-        'Iuml',
-        'Kappa;',
-        'LT;',
-        'LT',
-        'Lambda;',
-        'Mu;',
-        'Ntilde;',
-        'Ntilde',
-        'Nu;',
-        'OElig;',
-        'Oacute;',
-        'Oacute',
-        'Ocirc;',
-        'Ocirc',
-        'Ograve;',
-        'Ograve',
-        'Omega;',
-        'Omicron;',
-        'Oslash;',
-        'Oslash',
-        'Otilde;',
-        'Otilde',
-        'Ouml;',
-        'Ouml',
-        'Phi;',
-        'Pi;',
-        'Prime;',
-        'Psi;',
-        'QUOT;',
-        'QUOT',
-        'REG;',
-        'REG',
-        'Rho;',
-        'Scaron;',
-        'Sigma;',
-        'THORN;',
-        'THORN',
-        'TRADE;',
-        'Tau;',
-        'Theta;',
-        'Uacute;',
-        'Uacute',
-        'Ucirc;',
-        'Ucirc',
-        'Ugrave;',
-        'Ugrave',
-        'Upsilon;',
-        'Uuml;',
-        'Uuml',
-        'Xi;',
-        'Yacute;',
-        'Yacute',
-        'Yuml;',
-        'Zeta;',
-        'aacute;',
-        'aacute',
-        'acirc;',
-        'acirc',
-        'acute;',
-        'acute',
-        'aelig;',
-        'aelig',
-        'agrave;',
-        'agrave',
-        'alefsym;',
-        'alpha;',
-        'amp;',
-        'amp',
-        'and;',
-        'ang;',
-        'apos;',
-        'aring;',
-        'aring',
-        'asymp;',
-        'atilde;',
-        'atilde',
-        'auml;',
-        'auml',
-        'bdquo;',
-        'beta;',
-        'brvbar;',
-        'brvbar',
-        'bull;',
-        'cap;',
-        'ccedil;',
-        'ccedil',
-        'cedil;',
-        'cedil',
-        'cent;',
-        'cent',
-        'chi;',
-        'circ;',
-        'clubs;',
-        'cong;',
-        'copy;',
-        'copy',
-        'crarr;',
-        'cup;',
-        'curren;',
-        'curren',
-        'dArr;',
-        'dagger;',
-        'darr;',
-        'deg;',
-        'deg',
-        'delta;',
-        'diams;',
-        'divide;',
-        'divide',
-        'eacute;',
-        'eacute',
-        'ecirc;',
-        'ecirc',
-        'egrave;',
-        'egrave',
-        'empty;',
-        'emsp;',
-        'ensp;',
-        'epsilon;',
-        'equiv;',
-        'eta;',
-        'eth;',
-        'eth',
-        'euml;',
-        'euml',
-        'euro;',
-        'exist;',
-        'fnof;',
-        'forall;',
-        'frac12;',
-        'frac12',
-        'frac14;',
-        'frac14',
-        'frac34;',
-        'frac34',
-        'frasl;',
-        'gamma;',
-        'ge;',
-        'gt;',
-        'gt',
-        'hArr;',
-        'harr;',
-        'hearts;',
-        'hellip;',
-        'iacute;',
-        'iacute',
-        'icirc;',
-        'icirc',
-        'iexcl;',
-        'iexcl',
-        'igrave;',
-        'igrave',
-        'image;',
-        'infin;',
-        'int;',
-        'iota;',
-        'iquest;',
-        'iquest',
-        'isin;',
-        'iuml;',
-        'iuml',
-        'kappa;',
-        'lArr;',
-        'lambda;',
-        'lang;',
-        'laquo;',
-        'laquo',
-        'larr;',
-        'lceil;',
-        'ldquo;',
-        'le;',
-        'lfloor;',
-        'lowast;',
-        'loz;',
-        'lrm;',
-        'lsaquo;',
-        'lsquo;',
-        'lt;',
-        'lt',
-        'macr;',
-        'macr',
-        'mdash;',
-        'micro;',
-        'micro',
-        'middot;',
-        'middot',
-        'minus;',
-        'mu;',
-        'nabla;',
-        'nbsp;',
-        'nbsp',
-        'ndash;',
-        'ne;',
-        'ni;',
-        'not;',
-        'not',
-        'notin;',
-        'nsub;',
-        'ntilde;',
-        'ntilde',
-        'nu;',
-        'oacute;',
-        'oacute',
-        'ocirc;',
-        'ocirc',
-        'oelig;',
-        'ograve;',
-        'ograve',
-        'oline;',
-        'omega;',
-        'omicron;',
-        'oplus;',
-        'or;',
-        'ordf;',
-        'ordf',
-        'ordm;',
-        'ordm',
-        'oslash;',
-        'oslash',
-        'otilde;',
-        'otilde',
-        'otimes;',
-        'ouml;',
-        'ouml',
-        'para;',
-        'para',
-        'part;',
-        'permil;',
-        'perp;',
-        'phi;',
-        'pi;',
-        'piv;',
-        'plusmn;',
-        'plusmn',
-        'pound;',
-        'pound',
-        'prime;',
-        'prod;',
-        'prop;',
-        'psi;',
-        'quot;',
-        'quot',
-        'rArr;',
-        'radic;',
-        'rang;',
-        'raquo;',
-        'raquo',
-        'rarr;',
-        'rceil;',
-        'rdquo;',
-        'real;',
-        'reg;',
-        'reg',
-        'rfloor;',
-        'rho;',
-        'rlm;',
-        'rsaquo;',
-        'rsquo;',
-        'sbquo;',
-        'scaron;',
-        'sdot;',
-        'sect;',
-        'sect',
-        'shy;',
-        'shy',
-        'sigma;',
-        'sigmaf;',
-        'sim;',
-        'spades;',
-        'sub;',
-        'sube;',
-        'sum;',
-        'sup1;',
-        'sup1',
-        'sup2;',
-        'sup2',
-        'sup3;',
-        'sup3',
-        'sup;',
-        'supe;',
-        'szlig;',
-        'szlig',
-        'tau;',
-        'there4;',
-        'theta;',
-        'thetasym;',
-        'thinsp;',
-        'thorn;',
-        'thorn',
-        'tilde;',
-        'times;',
-        'times',
-        'trade;',
-        'uArr;',
-        'uacute;',
-        'uacute',
-        'uarr;',
-        'ucirc;',
-        'ucirc',
-        'ugrave;',
-        'ugrave',
-        'uml;',
-        'uml',
-        'upsih;',
-        'upsilon;',
-        'uuml;',
-        'uuml',
-        'weierp;',
-        'xi;',
-        'yacute;',
-        'yacute',
-        'yen;',
-        'yen',
-        'yuml;',
-        'yuml',
-        'zeta;',
-        'zwj;',
-        'zwnj;'
-    );
-
-    const PCDATA = 0;
-    const RCDATA = 1;
-    const CDATA = 2;
-    const PLAINTEXT = 3;
-
-    const DOCTYPE = 0;
-    const STARTTAG = 1;
-    const ENDTAG = 2;
-    const COMMENT = 3;
-    const CHARACTR = 4;
-    const EOF = 5;
-
-    public function __construct($data)
-    {
-        $this->data = $data;
-        $this->char = -1;
-        $this->EOF = strlen($data);
-        $this->tree = new HTML5TreeConstructer;
-        $this->content_model = self::PCDATA;
-
-        $this->state = 'data';
-
-        while ($this->state !== null) {
-            $this->{$this->state . 'State'}();
-        }
-    }
-
-    public function save()
-    {
-        return $this->tree->save();
-    }
-
-    private function char()
-    {
-        return ($this->char < $this->EOF)
-            ? $this->data[$this->char]
-            : false;
-    }
-
-    private function character($s, $l = 0)
-    {
-        if ($s + $l < $this->EOF) {
-            if ($l === 0) {
-                return $this->data[$s];
-            } else {
-                return substr($this->data, $s, $l);
-            }
-        }
-    }
-
-    private function characters($char_class, $start)
-    {
-        return preg_replace('#^([' . $char_class . ']+).*#s', '\\1', substr($this->data, $start));
-    }
-
-    private function dataState()
-    {
-        // Consume the next input character
-        $this->char++;
-        $char = $this->char();
-
-        if ($char === '&' && ($this->content_model === self::PCDATA || $this->content_model === self::RCDATA)) {
-            /* U+0026 AMPERSAND (&)
-            When the content model flag is set to one of the PCDATA or RCDATA
-            states: switch to the entity data state. Otherwise: treat it as per
-            the "anything else"    entry below. */
-            $this->state = 'entityData';
-
-        } elseif ($char === '-') {
-            /* If the content model flag is set to either the RCDATA state or
-            the CDATA state, and the escape flag is false, and there are at
-            least three characters before this one in the input stream, and the
-            last four characters in the input stream, including this one, are
-            U+003C LESS-THAN SIGN, U+0021 EXCLAMATION MARK, U+002D HYPHEN-MINUS,
-            and U+002D HYPHEN-MINUS ("<!--"), then set the escape flag to true. */
-            if (($this->content_model === self::RCDATA || $this->content_model ===
-                    self::CDATA) && $this->escape === false &&
-                $this->char >= 3 && $this->character($this->char - 4, 4) === '<!--'
-            ) {
-                $this->escape = true;
-            }
-
-            /* In any case, emit the input character as a character token. Stay
-            in the data state. */
-            $this->emitToken(
-                array(
-                    'type' => self::CHARACTR,
-                    'data' => $char
-                )
-            );
-
-            /* U+003C LESS-THAN SIGN (<) */
-        } elseif ($char === '<' && ($this->content_model === self::PCDATA ||
-                (($this->content_model === self::RCDATA ||
-                        $this->content_model === self::CDATA) && $this->escape === false))
-        ) {
-            /* When the content model flag is set to the PCDATA state: switch
-            to the tag open state.
-
-            When the content model flag is set to either the RCDATA state or
-            the CDATA state and the escape flag is false: switch to the tag
-            open state.
-
-            Otherwise: treat it as per the "anything else" entry below. */
-            $this->state = 'tagOpen';
-
-            /* U+003E GREATER-THAN SIGN (>) */
-        } elseif ($char === '>') {
-            /* If the content model flag is set to either the RCDATA state or
-            the CDATA state, and the escape flag is true, and the last three
-            characters in the input stream including this one are U+002D
-            HYPHEN-MINUS, U+002D HYPHEN-MINUS, U+003E GREATER-THAN SIGN ("-->"),
-            set the escape flag to false. */
-            if (($this->content_model === self::RCDATA ||
-                    $this->content_model === self::CDATA) && $this->escape === true &&
-                $this->character($this->char, 3) === '-->'
-            ) {
-                $this->escape = false;
-            }
-
-            /* In any case, emit the input character as a character token.
-            Stay in the data state. */
-            $this->emitToken(
-                array(
-                    'type' => self::CHARACTR,
-                    'data' => $char
-                )
-            );
-
-        } elseif ($this->char === $this->EOF) {
-            /* EOF
-            Emit an end-of-file token. */
-            $this->EOF();
-
-        } elseif ($this->content_model === self::PLAINTEXT) {
-            /* When the content model flag is set to the PLAINTEXT state
-            THIS DIFFERS GREATLY FROM THE SPEC: Get the remaining characters of
-            the text and emit it as a character token. */
-            $this->emitToken(
-                array(
-                    'type' => self::CHARACTR,
-                    'data' => substr($this->data, $this->char)
-                )
-            );
-
-            $this->EOF();
-
-        } else {
-            /* Anything else
-            THIS DIFFERS GREATLY FROM THE SPEC: Get as many character that
-            otherwise would also be treated as a character token and emit it
-            as a single character token. Stay in the data state. */
-            $len = strcspn($this->data, '<&', $this->char);
-            $char = substr($this->data, $this->char, $len);
-            $this->char += $len - 1;
-
-            $this->emitToken(
-                array(
-                    'type' => self::CHARACTR,
-                    'data' => $char
-                )
-            );
-
-            $this->state = 'data';
-        }
-    }
-
-    private function entityDataState()
-    {
-        // Attempt to consume an entity.
-        $entity = $this->entity();
-
-        // If nothing is returned, emit a U+0026 AMPERSAND character token.
-        // Otherwise, emit the character token that was returned.
-        $char = (!$entity) ? '&' : $entity;
-        $this->emitToken(
-            array(
-                'type' => self::CHARACTR,
-                'data' => $char
-            )
-        );
-
-        // Finally, switch to the data state.
-        $this->state = 'data';
-    }
-
-    private function tagOpenState()
-    {
-        switch ($this->content_model) {
-            case self::RCDATA:
-            case self::CDATA:
-                /* If the next input character is a U+002F SOLIDUS (/) character,
-                consume it and switch to the close tag open state. If the next
-                input character is not a U+002F SOLIDUS (/) character, emit a
-                U+003C LESS-THAN SIGN character token and switch to the data
-                state to process the next input character. */
-                if ($this->character($this->char + 1) === '/') {
-                    $this->char++;
-                    $this->state = 'closeTagOpen';
-
-                } else {
-                    $this->emitToken(
-                        array(
-                            'type' => self::CHARACTR,
-                            'data' => '<'
-                        )
-                    );
-
-                    $this->state = 'data';
-                }
-                break;
-
-            case self::PCDATA:
-                // If the content model flag is set to the PCDATA state
-                // Consume the next input character:
-                $this->char++;
-                $char = $this->char();
-
-                if ($char === '!') {
-                    /* U+0021 EXCLAMATION MARK (!)
-                    Switch to the markup declaration open state. */
-                    $this->state = 'markupDeclarationOpen';
-
-                } elseif ($char === '/') {
-                    /* U+002F SOLIDUS (/)
-                    Switch to the close tag open state. */
-                    $this->state = 'closeTagOpen';
-
-                } elseif (preg_match('/^[A-Za-z]$/', $char)) {
-                    /* U+0041 LATIN LETTER A through to U+005A LATIN LETTER Z
-                    Create a new start tag token, set its tag name to the lowercase
-                    version of the input character (add 0x0020 to the character's code
-                    point), then switch to the tag name state. (Don't emit the token
-                    yet; further details will be filled in before it is emitted.) */
-                    $this->token = array(
-                        'name' => strtolower($char),
-                        'type' => self::STARTTAG,
-                        'attr' => array()
-                    );
-
-                    $this->state = 'tagName';
-
-                } elseif ($char === '>') {
-                    /* U+003E GREATER-THAN SIGN (>)
-                    Parse error. Emit a U+003C LESS-THAN SIGN character token and a
-                    U+003E GREATER-THAN SIGN character token. Switch to the data state. */
-                    $this->emitToken(
-                        array(
-                            'type' => self::CHARACTR,
-                            'data' => '<>'
-                        )
-                    );
-
-                    $this->state = 'data';
-
-                } elseif ($char === '?') {
-                    /* U+003F QUESTION MARK (?)
-                    Parse error. Switch to the bogus comment state. */
-                    $this->state = 'bogusComment';
-
-                } else {
-                    /* Anything else
-                    Parse error. Emit a U+003C LESS-THAN SIGN character token and
-                    reconsume the current input character in the data state. */
-                    $this->emitToken(
-                        array(
-                            'type' => self::CHARACTR,
-                            'data' => '<'
-                        )
-                    );
-
-                    $this->char--;
-                    $this->state = 'data';
-                }
-                break;
-        }
-    }
-
-    private function closeTagOpenState()
-    {
-        $next_node = strtolower($this->characters('A-Za-z', $this->char + 1));
-        $the_same = count($this->tree->stack) > 0 && $next_node === end($this->tree->stack)->nodeName;
-
-        if (($this->content_model === self::RCDATA || $this->content_model === self::CDATA) &&
-            (!$the_same || ($the_same && (!preg_match(
-                            '/[\t\n\x0b\x0c >\/]/',
-                            $this->character($this->char + 1 + strlen($next_node))
-                        ) || $this->EOF === $this->char)))
-        ) {
-            /* If the content model flag is set to the RCDATA or CDATA states then
-            examine the next few characters. If they do not match the tag name of
-            the last start tag token emitted (case insensitively), or if they do but
-            they are not immediately followed by one of the following characters:
-                * U+0009 CHARACTER TABULATION
-                * U+000A LINE FEED (LF)
-                * U+000B LINE TABULATION
-                * U+000C FORM FEED (FF)
-                * U+0020 SPACE
-                * U+003E GREATER-THAN SIGN (>)
-                * U+002F SOLIDUS (/)
-                * EOF
-            ...then there is a parse error. Emit a U+003C LESS-THAN SIGN character
-            token, a U+002F SOLIDUS character token, and switch to the data state
-            to process the next input character. */
-            $this->emitToken(
-                array(
-                    'type' => self::CHARACTR,
-                    'data' => '</'
-                )
-            );
-
-            $this->state = 'data';
-
-        } else {
-            /* Otherwise, if the content model flag is set to the PCDATA state,
-            or if the next few characters do match that tag name, consume the
-            next input character: */
-            $this->char++;
-            $char = $this->char();
-
-            if (preg_match('/^[A-Za-z]$/', $char)) {
-                /* U+0041 LATIN LETTER A through to U+005A LATIN LETTER Z
-                Create a new end tag token, set its tag name to the lowercase version
-                of the input character (add 0x0020 to the character's code point), then
-                switch to the tag name state. (Don't emit the token yet; further details
-                will be filled in before it is emitted.) */
-                $this->token = array(
-                    'name' => strtolower($char),
-                    'type' => self::ENDTAG
-                );
-
-                $this->state = 'tagName';
-
-            } elseif ($char === '>') {
-                /* U+003E GREATER-THAN SIGN (>)
-                Parse error. Switch to the data state. */
-                $this->state = 'data';
-
-            } elseif ($this->char === $this->EOF) {
-                /* EOF
-                Parse error. Emit a U+003C LESS-THAN SIGN character token and a U+002F
-                SOLIDUS character token. Reconsume the EOF character in the data state. */
-                $this->emitToken(
-                    array(
-                        'type' => self::CHARACTR,
-                        'data' => '</'
-                    )
-                );
-
-                $this->char--;
-                $this->state = 'data';
-
-            } else {
-                /* Parse error. Switch to the bogus comment state. */
-                $this->state = 'bogusComment';
-            }
-        }
-    }
-
-    private function tagNameState()
-    {
-        // Consume the next input character:
-        $this->char++;
-        $char = $this->character($this->char);
-
-        if (preg_match('/^[\t\n\x0b\x0c ]$/', $char)) {
-            /* U+0009 CHARACTER TABULATION
-            U+000A LINE FEED (LF)
-            U+000B LINE TABULATION
-            U+000C FORM FEED (FF)
-            U+0020 SPACE
-            Switch to the before attribute name state. */
-            $this->state = 'beforeAttributeName';
-
-        } elseif ($char === '>') {
-            /* U+003E GREATER-THAN SIGN (>)
-            Emit the current tag token. Switch to the data state. */
-            $this->emitToken($this->token);
-            $this->state = 'data';
-
-        } elseif ($this->char === $this->EOF) {
-            /* EOF
-            Parse error. Emit the current tag token. Reconsume the EOF
-            character in the data state. */
-            $this->emitToken($this->token);
-
-            $this->char--;
-            $this->state = 'data';
-
-        } elseif ($char === '/') {
-            /* U+002F SOLIDUS (/)
-            Parse error unless this is a permitted slash. Switch to the before
-            attribute name state. */
-            $this->state = 'beforeAttributeName';
-
-        } else {
-            /* Anything else
-            Append the current input character to the current tag token's tag name.
-            Stay in the tag name state. */
-            $this->token['name'] .= strtolower($char);
-            $this->state = 'tagName';
-        }
-    }
-
-    private function beforeAttributeNameState()
-    {
-        // Consume the next input character:
-        $this->char++;
-        $char = $this->character($this->char);
-
-        if (preg_match('/^[\t\n\x0b\x0c ]$/', $char)) {
-            /* U+0009 CHARACTER TABULATION
-            U+000A LINE FEED (LF)
-            U+000B LINE TABULATION
-            U+000C FORM FEED (FF)
-            U+0020 SPACE
-            Stay in the before attribute name state. */
-            $this->state = 'beforeAttributeName';
-
-        } elseif ($char === '>') {
-            /* U+003E GREATER-THAN SIGN (>)
-            Emit the current tag token. Switch to the data state. */
-            $this->emitToken($this->token);
-            $this->state = 'data';
-
-        } elseif ($char === '/') {
-            /* U+002F SOLIDUS (/)
-            Parse error unless this is a permitted slash. Stay in the before
-            attribute name state. */
-            $this->state = 'beforeAttributeName';
-
-        } elseif ($this->char === $this->EOF) {
-            /* EOF
-            Parse error. Emit the current tag token. Reconsume the EOF
-            character in the data state. */
-            $this->emitToken($this->token);
-
-            $this->char--;
-            $this->state = 'data';
-
-        } else {
-            /* Anything else
-            Start a new attribute in the current tag token. Set that attribute's
-            name to the current input character, and its value to the empty string.
-            Switch to the attribute name state. */
-            $this->token['attr'][] = array(
-                'name' => strtolower($char),
-                'value' => null
-            );
-
-            $this->state = 'attributeName';
-        }
-    }
-
-    private function attributeNameState()
-    {
-        // Consume the next input character:
-        $this->char++;
-        $char = $this->character($this->char);
-
-        if (preg_match('/^[\t\n\x0b\x0c ]$/', $char)) {
-            /* U+0009 CHARACTER TABULATION
-            U+000A LINE FEED (LF)
-            U+000B LINE TABULATION
-            U+000C FORM FEED (FF)
-            U+0020 SPACE
-            Stay in the before attribute name state. */
-            $this->state = 'afterAttributeName';
-
-        } elseif ($char === '=') {
-            /* U+003D EQUALS SIGN (=)
-            Switch to the before attribute value state. */
-            $this->state = 'beforeAttributeValue';
-
-        } elseif ($char === '>') {
-            /* U+003E GREATER-THAN SIGN (>)
-            Emit the current tag token. Switch to the data state. */
-            $this->emitToken($this->token);
-            $this->state = 'data';
-
-        } elseif ($char === '/' && $this->character($this->char + 1) !== '>') {
-            /* U+002F SOLIDUS (/)
-            Parse error unless this is a permitted slash. Switch to the before
-            attribute name state. */
-            $this->state = 'beforeAttributeName';
-
-        } elseif ($this->char === $this->EOF) {
-            /* EOF
-            Parse error. Emit the current tag token. Reconsume the EOF
-            character in the data state. */
-            $this->emitToken($this->token);
-
-            $this->char--;
-            $this->state = 'data';
-
-        } else {
-            /* Anything else
-            Append the current input character to the current attribute's name.
-            Stay in the attribute name state. */
-            $last = count($this->token['attr']) - 1;
-            $this->token['attr'][$last]['name'] .= strtolower($char);
-
-            $this->state = 'attributeName';
-        }
-    }
-
-    private function afterAttributeNameState()
-    {
-        // Consume the next input character:
-        $this->char++;
-        $char = $this->character($this->char);
-
-        if (preg_match('/^[\t\n\x0b\x0c ]$/', $char)) {
-            /* U+0009 CHARACTER TABULATION
-            U+000A LINE FEED (LF)
-            U+000B LINE TABULATION
-            U+000C FORM FEED (FF)
-            U+0020 SPACE
-            Stay in the after attribute name state. */
-            $this->state = 'afterAttributeName';
-
-        } elseif ($char === '=') {
-            /* U+003D EQUALS SIGN (=)
-            Switch to the before attribute value state. */
-            $this->state = 'beforeAttributeValue';
-
-        } elseif ($char === '>') {
-            /* U+003E GREATER-THAN SIGN (>)
-            Emit the current tag token. Switch to the data state. */
-            $this->emitToken($this->token);
-            $this->state = 'data';
-
-        } elseif ($char === '/' && $this->character($this->char + 1) !== '>') {
-            /* U+002F SOLIDUS (/)
-            Parse error unless this is a permitted slash. Switch to the
-            before attribute name state. */
-            $this->state = 'beforeAttributeName';
-
-        } elseif ($this->char === $this->EOF) {
-            /* EOF
-            Parse error. Emit the current tag token. Reconsume the EOF
-            character in the data state. */
-            $this->emitToken($this->token);
-
-            $this->char--;
-            $this->state = 'data';
-
-        } else {
-            /* Anything else
-            Start a new attribute in the current tag token. Set that attribute's
-            name to the current input character, and its value to the empty string.
-            Switch to the attribute name state. */
-            $this->token['attr'][] = array(
-                'name' => strtolower($char),
-                'value' => null
-            );
-
-            $this->state = 'attributeName';
-        }
-    }
-
-    private function beforeAttributeValueState()
-    {
-        // Consume the next input character:
-        $this->char++;
-        $char = $this->character($this->char);
-
-        if (preg_match('/^[\t\n\x0b\x0c ]$/', $char)) {
-            /* U+0009 CHARACTER TABULATION
-            U+000A LINE FEED (LF)
-            U+000B LINE TABULATION
-            U+000C FORM FEED (FF)
-            U+0020 SPACE
-            Stay in the before attribute value state. */
-            $this->state = 'beforeAttributeValue';
-
-        } elseif ($char === '"') {
-            /* U+0022 QUOTATION MARK (")
-            Switch to the attribute value (double-quoted) state. */
-            $this->state = 'attributeValueDoubleQuoted';
-
-        } elseif ($char === '&') {
-            /* U+0026 AMPERSAND (&)
-            Switch to the attribute value (unquoted) state and reconsume
-            this input character. */
-            $this->char--;
-            $this->state = 'attributeValueUnquoted';
-
-        } elseif ($char === '\'') {
-            /* U+0027 APOSTROPHE (')
-            Switch to the attribute value (single-quoted) state. */
-            $this->state = 'attributeValueSingleQuoted';
-
-        } elseif ($char === '>') {
-            /* U+003E GREATER-THAN SIGN (>)
-            Emit the current tag token. Switch to the data state. */
-            $this->emitToken($this->token);
-            $this->state = 'data';
-
-        } else {
-            /* Anything else
-            Append the current input character to the current attribute's value.
-            Switch to the attribute value (unquoted) state. */
-            $last = count($this->token['attr']) - 1;
-            $this->token['attr'][$last]['value'] .= $char;
-
-            $this->state = 'attributeValueUnquoted';
-        }
-    }
-
-    private function attributeValueDoubleQuotedState()
-    {
-        // Consume the next input character:
-        $this->char++;
-        $char = $this->character($this->char);
-
-        if ($char === '"') {
-            /* U+0022 QUOTATION MARK (")
-            Switch to the before attribute name state. */
-            $this->state = 'beforeAttributeName';
-
-        } elseif ($char === '&') {
-            /* U+0026 AMPERSAND (&)
-            Switch to the entity in attribute value state. */
-            $this->entityInAttributeValueState('double');
-
-        } elseif ($this->char === $this->EOF) {
-            /* EOF
-            Parse error. Emit the current tag token. Reconsume the character
-            in the data state. */
-            $this->emitToken($this->token);
-
-            $this->char--;
-            $this->state = 'data';
-
-        } else {
-            /* Anything else
-            Append the current input character to the current attribute's value.
-            Stay in the attribute value (double-quoted) state. */
-            $last = count($this->token['attr']) - 1;
-            $this->token['attr'][$last]['value'] .= $char;
-
-            $this->state = 'attributeValueDoubleQuoted';
-        }
-    }
-
-    private function attributeValueSingleQuotedState()
-    {
-        // Consume the next input character:
-        $this->char++;
-        $char = $this->character($this->char);
-
-        if ($char === '\'') {
-            /* U+0022 QUOTATION MARK (')
-            Switch to the before attribute name state. */
-            $this->state = 'beforeAttributeName';
-
-        } elseif ($char === '&') {
-            /* U+0026 AMPERSAND (&)
-            Switch to the entity in attribute value state. */
-            $this->entityInAttributeValueState('single');
-
-        } elseif ($this->char === $this->EOF) {
-            /* EOF
-            Parse error. Emit the current tag token. Reconsume the character
-            in the data state. */
-            $this->emitToken($this->token);
-
-            $this->char--;
-            $this->state = 'data';
-
-        } else {
-            /* Anything else
-            Append the current input character to the current attribute's value.
-            Stay in the attribute value (single-quoted) state. */
-            $last = count($this->token['attr']) - 1;
-            $this->token['attr'][$last]['value'] .= $char;
-
-            $this->state = 'attributeValueSingleQuoted';
-        }
-    }
-
-    private function attributeValueUnquotedState()
-    {
-        // Consume the next input character:
-        $this->char++;
-        $char = $this->character($this->char);
-
-        if (preg_match('/^[\t\n\x0b\x0c ]$/', $char)) {
-            /* U+0009 CHARACTER TABULATION
-            U+000A LINE FEED (LF)
-            U+000B LINE TABULATION
-            U+000C FORM FEED (FF)
-            U+0020 SPACE
-            Switch to the before attribute name state. */
-            $this->state = 'beforeAttributeName';
-
-        } elseif ($char === '&') {
-            /* U+0026 AMPERSAND (&)
-            Switch to the entity in attribute value state. */
-            $this->entityInAttributeValueState();
-
-        } elseif ($char === '>') {
-            /* U+003E GREATER-THAN SIGN (>)
-            Emit the current tag token. Switch to the data state. */
-            $this->emitToken($this->token);
-            $this->state = 'data';
-
-        } else {
-            /* Anything else
-            Append the current input character to the current attribute's value.
-            Stay in the attribute value (unquoted) state. */
-            $last = count($this->token['attr']) - 1;
-            $this->token['attr'][$last]['value'] .= $char;
-
-            $this->state = 'attributeValueUnquoted';
-        }
-    }
-
-    private function entityInAttributeValueState()
-    {
-        // Attempt to consume an entity.
-        $entity = $this->entity();
-
-        // If nothing is returned, append a U+0026 AMPERSAND character to the
-        // current attribute's value. Otherwise, emit the character token that
-        // was returned.
-        $char = (!$entity)
-            ? '&'
-            : $entity;
-
-        $last = count($this->token['attr']) - 1;
-        $this->token['attr'][$last]['value'] .= $char;
-    }
-
-    private function bogusCommentState()
-    {
-        /* Consume every character up to the first U+003E GREATER-THAN SIGN
-        character (>) or the end of the file (EOF), whichever comes first. Emit
-        a comment token whose data is the concatenation of all the characters
-        starting from and including the character that caused the state machine
-        to switch into the bogus comment state, up to and including the last
-        consumed character before the U+003E character, if any, or up to the
-        end of the file otherwise. (If the comment was started by the end of
-        the file (EOF), the token is empty.) */
-        $data = $this->characters('^>', $this->char);
-        $this->emitToken(
-            array(
-                'data' => $data,
-                'type' => self::COMMENT
-            )
-        );
-
-        $this->char += strlen($data);
-
-        /* Switch to the data state. */
-        $this->state = 'data';
-
-        /* If the end of the file was reached, reconsume the EOF character. */
-        if ($this->char === $this->EOF) {
-            $this->char = $this->EOF - 1;
-        }
-    }
-
-    private function markupDeclarationOpenState()
-    {
-        /* If the next two characters are both U+002D HYPHEN-MINUS (-)
-        characters, consume those two characters, create a comment token whose
-        data is the empty string, and switch to the comment state. */
-        if ($this->character($this->char + 1, 2) === '--') {
-            $this->char += 2;
-            $this->state = 'comment';
-            $this->token = array(
-                'data' => null,
-                'type' => self::COMMENT
-            );
-
-            /* Otherwise if the next seven chacacters are a case-insensitive match
-            for the word "DOCTYPE", then consume those characters and switch to the
-            DOCTYPE state. */
-        } elseif (strtolower($this->character($this->char + 1, 7)) === 'doctype') {
-            $this->char += 7;
-            $this->state = 'doctype';
-
-            /* Otherwise, is is a parse error. Switch to the bogus comment state.
-            The next character that is consumed, if any, is the first character
-            that will be in the comment. */
-        } else {
-            $this->char++;
-            $this->state = 'bogusComment';
-        }
-    }
-
-    private function commentState()
-    {
-        /* Consume the next input character: */
-        $this->char++;
-        $char = $this->char();
-
-        /* U+002D HYPHEN-MINUS (-) */
-        if ($char === '-') {
-            /* Switch to the comment dash state  */
-            $this->state = 'commentDash';
-
-            /* EOF */
-        } elseif ($this->char === $this->EOF) {
-            /* Parse error. Emit the comment token. Reconsume the EOF character
-            in the data state. */
-            $this->emitToken($this->token);
-            $this->char--;
-            $this->state = 'data';
-
-            /* Anything else */
-        } else {
-            /* Append the input character to the comment token's data. Stay in
-            the comment state. */
-            $this->token['data'] .= $char;
-        }
-    }
-
-    private function commentDashState()
-    {
-        /* Consume the next input character: */
-        $this->char++;
-        $char = $this->char();
-
-        /* U+002D HYPHEN-MINUS (-) */
-        if ($char === '-') {
-            /* Switch to the comment end state  */
-            $this->state = 'commentEnd';
-
-            /* EOF */
-        } elseif ($this->char === $this->EOF) {
-            /* Parse error. Emit the comment token. Reconsume the EOF character
-            in the data state. */
-            $this->emitToken($this->token);
-            $this->char--;
-            $this->state = 'data';
-
-            /* Anything else */
-        } else {
-            /* Append a U+002D HYPHEN-MINUS (-) character and the input
-            character to the comment token's data. Switch to the comment state. */
-            $this->token['data'] .= '-' . $char;
-            $this->state = 'comment';
-        }
-    }
-
-    private function commentEndState()
-    {
-        /* Consume the next input character: */
-        $this->char++;
-        $char = $this->char();
-
-        if ($char === '>') {
-            $this->emitToken($this->token);
-            $this->state = 'data';
-
-        } elseif ($char === '-') {
-            $this->token['data'] .= '-';
-
-        } elseif ($this->char === $this->EOF) {
-            $this->emitToken($this->token);
-            $this->char--;
-            $this->state = 'data';
-
-        } else {
-            $this->token['data'] .= '--' . $char;
-            $this->state = 'comment';
-        }
-    }
-
-    private function doctypeState()
-    {
-        /* Consume the next input character: */
-        $this->char++;
-        $char = $this->char();
-
-        if (preg_match('/^[\t\n\x0b\x0c ]$/', $char)) {
-            $this->state = 'beforeDoctypeName';
-
-        } else {
-            $this->char--;
-            $this->state = 'beforeDoctypeName';
-        }
-    }
-
-    private function beforeDoctypeNameState()
-    {
-        /* Consume the next input character: */
-        $this->char++;
-        $char = $this->char();
-
-        if (preg_match('/^[\t\n\x0b\x0c ]$/', $char)) {
-            // Stay in the before DOCTYPE name state.
-
-        } elseif (preg_match('/^[a-z]$/', $char)) {
-            $this->token = array(
-                'name' => strtoupper($char),
-                'type' => self::DOCTYPE,
-                'error' => true
-            );
-
-            $this->state = 'doctypeName';
-
-        } elseif ($char === '>') {
-            $this->emitToken(
-                array(
-                    'name' => null,
-                    'type' => self::DOCTYPE,
-                    'error' => true
-                )
-            );
-
-            $this->state = 'data';
-
-        } elseif ($this->char === $this->EOF) {
-            $this->emitToken(
-                array(
-                    'name' => null,
-                    'type' => self::DOCTYPE,
-                    'error' => true
-                )
-            );
-
-            $this->char--;
-            $this->state = 'data';
-
-        } else {
-            $this->token = array(
-                'name' => $char,
-                'type' => self::DOCTYPE,
-                'error' => true
-            );
-
-            $this->state = 'doctypeName';
-        }
-    }
-
-    private function doctypeNameState()
-    {
-        /* Consume the next input character: */
-        $this->char++;
-        $char = $this->char();
-
-        if (preg_match('/^[\t\n\x0b\x0c ]$/', $char)) {
-            $this->state = 'AfterDoctypeName';
-
-        } elseif ($char === '>') {
-            $this->emitToken($this->token);
-            $this->state = 'data';
-
-        } elseif (preg_match('/^[a-z]$/', $char)) {
-            $this->token['name'] .= strtoupper($char);
-
-        } elseif ($this->char === $this->EOF) {
-            $this->emitToken($this->token);
-            $this->char--;
-            $this->state = 'data';
-
-        } else {
-            $this->token['name'] .= $char;
-        }
-
-        $this->token['error'] = ($this->token['name'] === 'HTML')
-            ? false
-            : true;
-    }
-
-    private function afterDoctypeNameState()
-    {
-        /* Consume the next input character: */
-        $this->char++;
-        $char = $this->char();
-
-        if (preg_match('/^[\t\n\x0b\x0c ]$/', $char)) {
-            // Stay in the DOCTYPE name state.
-
-        } elseif ($char === '>') {
-            $this->emitToken($this->token);
-            $this->state = 'data';
-
-        } elseif ($this->char === $this->EOF) {
-            $this->emitToken($this->token);
-            $this->char--;
-            $this->state = 'data';
-
-        } else {
-            $this->token['error'] = true;
-            $this->state = 'bogusDoctype';
-        }
-    }
-
-    private function bogusDoctypeState()
-    {
-        /* Consume the next input character: */
-        $this->char++;
-        $char = $this->char();
-
-        if ($char === '>') {
-            $this->emitToken($this->token);
-            $this->state = 'data';
-
-        } elseif ($this->char === $this->EOF) {
-            $this->emitToken($this->token);
-            $this->char--;
-            $this->state = 'data';
-
-        } else {
-            // Stay in the bogus DOCTYPE state.
-        }
-    }
-
-    private function entity()
-    {
-        $start = $this->char;
-
-        // This section defines how to consume an entity. This definition is
-        // used when parsing entities in text and in attributes.
-
-        // The behaviour depends on the identity of the next character (the
-        // one immediately after the U+0026 AMPERSAND character):
-
-        switch ($this->character($this->char + 1)) {
-            // U+0023 NUMBER SIGN (#)
-            case '#':
-
-                // The behaviour further depends on the character after the
-                // U+0023 NUMBER SIGN:
-                switch ($this->character($this->char + 1)) {
-                    // U+0078 LATIN SMALL LETTER X
-                    // U+0058 LATIN CAPITAL LETTER X
-                    case 'x':
-                    case 'X':
-                        // Follow the steps below, but using the range of
-                        // characters U+0030 DIGIT ZERO through to U+0039 DIGIT
-                        // NINE, U+0061 LATIN SMALL LETTER A through to U+0066
-                        // LATIN SMALL LETTER F, and U+0041 LATIN CAPITAL LETTER
-                        // A, through to U+0046 LATIN CAPITAL LETTER F (in other
-                        // words, 0-9, A-F, a-f).
-                        $char = 1;
-                        $char_class = '0-9A-Fa-f';
-                        break;
-
-                    // Anything else
-                    default:
-                        // Follow the steps below, but using the range of
-                        // characters U+0030 DIGIT ZERO through to U+0039 DIGIT
-                        // NINE (i.e. just 0-9).
-                        $char = 0;
-                        $char_class = '0-9';
-                        break;
-                }
-
-                // Consume as many characters as match the range of characters
-                // given above.
-                $this->char++;
-                $e_name = $this->characters($char_class, $this->char + $char + 1);
-                $entity = $this->character($start, $this->char);
-                $cond = strlen($e_name) > 0;
-
-                // The rest of the parsing happens below.
-                break;
-
-            // Anything else
-            default:
-                // Consume the maximum number of characters possible, with the
-                // consumed characters case-sensitively matching one of the
-                // identifiers in the first column of the entities table.
-
-                $e_name = $this->characters('0-9A-Za-z;', $this->char + 1);
-                $len = strlen($e_name);
-
-                for ($c = 1; $c <= $len; $c++) {
-                    $id = substr($e_name, 0, $c);
-                    $this->char++;
-
-                    if (in_array($id, $this->entities)) {
-                        if ($e_name[$c - 1] !== ';') {
-                            if ($c < $len && $e_name[$c] == ';') {
-                                $this->char++; // consume extra semicolon
-                            }
-                        }
-                        $entity = $id;
-                        break;
-                    }
-                }
-
-                $cond = isset($entity);
-                // The rest of the parsing happens below.
-                break;
-        }
-
-        if (!$cond) {
-            // If no match can be made, then this is a parse error. No
-            // characters are consumed, and nothing is returned.
-            $this->char = $start;
-            return false;
-        }
-
-        // Return a character token for the character corresponding to the
-        // entity name (as given by the second column of the entities table).
-        return html_entity_decode('&' . rtrim($entity, ';') . ';', ENT_QUOTES, 'UTF-8');
-    }
-
-    private function emitToken($token)
-    {
-        $emit = $this->tree->emitToken($token);
-
-        if (is_int($emit)) {
-            $this->content_model = $emit;
-
-        } elseif ($token['type'] === self::ENDTAG) {
-            $this->content_model = self::PCDATA;
-        }
-    }
-
-    private function EOF()
-    {
-        $this->state = null;
-        $this->tree->emitToken(
-            array(
-                'type' => self::EOF
-            )
-        );
-    }
-}
-
-class HTML5TreeConstructer
-{
-    public $stack = array();
-
-    private $phase;
-    private $mode;
-    private $dom;
-    private $foster_parent = null;
-    private $a_formatting = array();
-
-    private $head_pointer = null;
-    private $form_pointer = null;
-
-    private $scoping = array('button', 'caption', 'html', 'marquee', 'object', 'table', 'td', 'th');
-    private $formatting = array(
-        'a',
-        'b',
-        'big',
-        'em',
-        'font',
-        'i',
-        'nobr',
-        's',
-        'small',
-        'strike',
-        'strong',
-        'tt',
-        'u'
-    );
-    private $special = array(
-        'address',
-        'area',
-        'base',
-        'basefont',
-        'bgsound',
-        'blockquote',
-        'body',
-        'br',
-        'center',
-        'col',
-        'colgroup',
-        'dd',
-        'dir',
-        'div',
-        'dl',
-        'dt',
-        'embed',
-        'fieldset',
-        'form',
-        'frame',
-        'frameset',
-        'h1',
-        'h2',
-        'h3',
-        'h4',
-        'h5',
-        'h6',
-        'head',
-        'hr',
-        'iframe',
-        'image',
-        'img',
-        'input',
-        'isindex',
-        'li',
-        'link',
-        'listing',
-        'menu',
-        'meta',
-        'noembed',
-        'noframes',
-        'noscript',
-        'ol',
-        'optgroup',
-        'option',
-        'p',
-        'param',
-        'plaintext',
-        'pre',
-        'script',
-        'select',
-        'spacer',
-        'style',
-        'tbody',
-        'textarea',
-        'tfoot',
-        'thead',
-        'title',
-        'tr',
-        'ul',
-        'wbr'
-    );
-
-    // The different phases.
-    const INIT_PHASE = 0;
-    const ROOT_PHASE = 1;
-    const MAIN_PHASE = 2;
-    const END_PHASE = 3;
-
-    // The different insertion modes for the main phase.
-    const BEFOR_HEAD = 0;
-    const IN_HEAD = 1;
-    const AFTER_HEAD = 2;
-    const IN_BODY = 3;
-    const IN_TABLE = 4;
-    const IN_CAPTION = 5;
-    const IN_CGROUP = 6;
-    const IN_TBODY = 7;
-    const IN_ROW = 8;
-    const IN_CELL = 9;
-    const IN_SELECT = 10;
-    const AFTER_BODY = 11;
-    const IN_FRAME = 12;
-    const AFTR_FRAME = 13;
-
-    // The different types of elements.
-    const SPECIAL = 0;
-    const SCOPING = 1;
-    const FORMATTING = 2;
-    const PHRASING = 3;
-
-    const MARKER = 0;
-
-    public function __construct()
-    {
-        $this->phase = self::INIT_PHASE;
-        $this->mode = self::BEFOR_HEAD;
-        $this->dom = new DOMDocument;
-
-        $this->dom->encoding = 'UTF-8';
-        $this->dom->preserveWhiteSpace = true;
-        $this->dom->substituteEntities = true;
-        $this->dom->strictErrorChecking = false;
-    }
-
-    // Process tag tokens
-    public function emitToken($token)
-    {
-        switch ($this->phase) {
-            case self::INIT_PHASE:
-                return $this->initPhase($token);
-                break;
-            case self::ROOT_PHASE:
-                return $this->rootElementPhase($token);
-                break;
-            case self::MAIN_PHASE:
-                return $this->mainPhase($token);
-                break;
-            case self::END_PHASE :
-                return $this->trailingEndPhase($token);
-                break;
-        }
-    }
-
-    private function initPhase($token)
-    {
-        /* Initially, the tree construction stage must handle each token
-        emitted from the tokenisation stage as follows: */
-
-        /* A DOCTYPE token that is marked as being in error
-        A comment token
-        A start tag token
-        An end tag token
-        A character token that is not one of one of U+0009 CHARACTER TABULATION,
-            U+000A LINE FEED (LF), U+000B LINE TABULATION, U+000C FORM FEED (FF),
-            or U+0020 SPACE
-        An end-of-file token */
-        if ((isset($token['error']) && $token['error']) ||
-            $token['type'] === HTML5::COMMENT ||
-            $token['type'] === HTML5::STARTTAG ||
-            $token['type'] === HTML5::ENDTAG ||
-            $token['type'] === HTML5::EOF ||
-            ($token['type'] === HTML5::CHARACTR && isset($token['data']) &&
-                !preg_match('/^[\t\n\x0b\x0c ]+$/', $token['data']))
-        ) {
-            /* This specification does not define how to handle this case. In
-            particular, user agents may ignore the entirety of this specification
-            altogether for such documents, and instead invoke special parse modes
-            with a greater emphasis on backwards compatibility. */
-
-            $this->phase = self::ROOT_PHASE;
-            return $this->rootElementPhase($token);
-
-            /* A DOCTYPE token marked as being correct */
-        } elseif (isset($token['error']) && !$token['error']) {
-            /* Append a DocumentType node to the Document  node, with the name
-            attribute set to the name given in the DOCTYPE token (which will be
-            "HTML"), and the other attributes specific to DocumentType objects
-            set to null, empty lists, or the empty string as appropriate. */
-            $doctype = new DOMDocumentType(null, null, 'HTML');
-
-            /* Then, switch to the root element phase of the tree construction
-            stage. */
-            $this->phase = self::ROOT_PHASE;
-
-            /* A character token that is one of one of U+0009 CHARACTER TABULATION,
-            U+000A LINE FEED (LF), U+000B LINE TABULATION, U+000C FORM FEED (FF),
-            or U+0020 SPACE */
-        } elseif (isset($token['data']) && preg_match(
-                '/^[\t\n\x0b\x0c ]+$/',
-                $token['data']
-            )
-        ) {
-            /* Append that character  to the Document node. */
-            $text = $this->dom->createTextNode($token['data']);
-            $this->dom->appendChild($text);
-        }
-    }
-
-    private function rootElementPhase($token)
-    {
-        /* After the initial phase, as each token is emitted from the tokenisation
-        stage, it must be processed as described in this section. */
-
-        /* A DOCTYPE token */
-        if ($token['type'] === HTML5::DOCTYPE) {
-            // Parse error. Ignore the token.
-
-            /* A comment token */
-        } elseif ($token['type'] === HTML5::COMMENT) {
-            /* Append a Comment node to the Document object with the data
-            attribute set to the data given in the comment token. */
-            $comment = $this->dom->createComment($token['data']);
-            $this->dom->appendChild($comment);
-
-            /* A character token that is one of one of U+0009 CHARACTER TABULATION,
-            U+000A LINE FEED (LF), U+000B LINE TABULATION, U+000C FORM FEED (FF),
-            or U+0020 SPACE */
-        } elseif ($token['type'] === HTML5::CHARACTR &&
-            preg_match('/^[\t\n\x0b\x0c ]+$/', $token['data'])
-        ) {
-            /* Append that character  to the Document node. */
-            $text = $this->dom->createTextNode($token['data']);
-            $this->dom->appendChild($text);
-
-            /* A character token that is not one of U+0009 CHARACTER TABULATION,
-                U+000A LINE FEED (LF), U+000B LINE TABULATION, U+000C FORM FEED
-                (FF), or U+0020 SPACE
-            A start tag token
-            An end tag token
-            An end-of-file token */
-        } elseif (($token['type'] === HTML5::CHARACTR &&
-                !preg_match('/^[\t\n\x0b\x0c ]+$/', $token['data'])) ||
-            $token['type'] === HTML5::STARTTAG ||
-            $token['type'] === HTML5::ENDTAG ||
-            $token['type'] === HTML5::EOF
-        ) {
-            /* Create an HTMLElement node with the tag name html, in the HTML
-            namespace. Append it to the Document object. Switch to the main
-            phase and reprocess the current token. */
-            $html = $this->dom->createElement('html');
-            $this->dom->appendChild($html);
-            $this->stack[] = $html;
-
-            $this->phase = self::MAIN_PHASE;
-            return $this->mainPhase($token);
-        }
-    }
-
-    private function mainPhase($token)
-    {
-        /* Tokens in the main phase must be handled as follows: */
-
-        /* A DOCTYPE token */
-        if ($token['type'] === HTML5::DOCTYPE) {
-            // Parse error. Ignore the token.
-
-            /* A start tag token with the tag name "html" */
-        } elseif ($token['type'] === HTML5::STARTTAG && $token['name'] === 'html') {
-            /* If this start tag token was not the first start tag token, then
-            it is a parse error. */
-
-            /* For each attribute on the token, check to see if the attribute
-            is already present on the top element of the stack of open elements.
-            If it is not, add the attribute and its corresponding value to that
-            element. */
-            foreach ($token['attr'] as $attr) {
-                if (!$this->stack[0]->hasAttribute($attr['name'])) {
-                    $this->stack[0]->setAttribute($attr['name'], $attr['value']);
-                }
-            }
-
-            /* An end-of-file token */
-        } elseif ($token['type'] === HTML5::EOF) {
-            /* Generate implied end tags. */
-            $this->generateImpliedEndTags();
-
-            /* Anything else. */
-        } else {
-            /* Depends on the insertion mode: */
-            switch ($this->mode) {
-                case self::BEFOR_HEAD:
-                    return $this->beforeHead($token);
-                    break;
-                case self::IN_HEAD:
-                    return $this->inHead($token);
-                    break;
-                case self::AFTER_HEAD:
-                    return $this->afterHead($token);
-                    break;
-                case self::IN_BODY:
-                    return $this->inBody($token);
-                    break;
-                case self::IN_TABLE:
-                    return $this->inTable($token);
-                    break;
-                case self::IN_CAPTION:
-                    return $this->inCaption($token);
-                    break;
-                case self::IN_CGROUP:
-                    return $this->inColumnGroup($token);
-                    break;
-                case self::IN_TBODY:
-                    return $this->inTableBody($token);
-                    break;
-                case self::IN_ROW:
-                    return $this->inRow($token);
-                    break;
-                case self::IN_CELL:
-                    return $this->inCell($token);
-                    break;
-                case self::IN_SELECT:
-                    return $this->inSelect($token);
-                    break;
-                case self::AFTER_BODY:
-                    return $this->afterBody($token);
-                    break;
-                case self::IN_FRAME:
-                    return $this->inFrameset($token);
-                    break;
-                case self::AFTR_FRAME:
-                    return $this->afterFrameset($token);
-                    break;
-                case self::END_PHASE:
-                    return $this->trailingEndPhase($token);
-                    break;
-            }
-        }
-    }
-
-    private function beforeHead($token)
-    {
-        /* Handle the token as follows: */
-
-        /* A character token that is one of one of U+0009 CHARACTER TABULATION,
-        U+000A LINE FEED (LF), U+000B LINE TABULATION, U+000C FORM FEED (FF),
-        or U+0020 SPACE */
-        if ($token['type'] === HTML5::CHARACTR &&
-            preg_match('/^[\t\n\x0b\x0c ]+$/', $token['data'])
-        ) {
-            /* Append the character to the current node. */
-            $this->insertText($token['data']);
-
-            /* A comment token */
-        } elseif ($token['type'] === HTML5::COMMENT) {
-            /* Append a Comment node to the current node with the data attribute
-            set to the data given in the comment token. */
-            $this->insertComment($token['data']);
-
-            /* A start tag token with the tag name "head" */
-        } elseif ($token['type'] === HTML5::STARTTAG && $token['name'] === 'head') {
-            /* Create an element for the token, append the new element to the
-            current node and push it onto the stack of open elements. */
-            $element = $this->insertElement($token);
-
-            /* Set the head element pointer to this new element node. */
-            $this->head_pointer = $element;
-
-            /* Change the insertion mode to "in head". */
-            $this->mode = self::IN_HEAD;
-
-            /* A start tag token whose tag name is one of: "base", "link", "meta",
-            "script", "style", "title". Or an end tag with the tag name "html".
-            Or a character token that is not one of U+0009 CHARACTER TABULATION,
-            U+000A LINE FEED (LF), U+000B LINE TABULATION, U+000C FORM FEED (FF),
-            or U+0020 SPACE. Or any other start tag token */
-        } elseif ($token['type'] === HTML5::STARTTAG ||
-            ($token['type'] === HTML5::ENDTAG && $token['name'] === 'html') ||
-            ($token['type'] === HTML5::CHARACTR && !preg_match(
-                    '/^[\t\n\x0b\x0c ]$/',
-                    $token['data']
-                ))
-        ) {
-            /* Act as if a start tag token with the tag name "head" and no
-            attributes had been seen, then reprocess the current token. */
-            $this->beforeHead(
-                array(
-                    'name' => 'head',
-                    'type' => HTML5::STARTTAG,
-                    'attr' => array()
-                )
-            );
-
-            return $this->inHead($token);
-
-            /* Any other end tag */
-        } elseif ($token['type'] === HTML5::ENDTAG) {
-            /* Parse error. Ignore the token. */
-        }
-    }
-
-    private function inHead($token)
-    {
-        /* Handle the token as follows: */
-
-        /* A character token that is one of one of U+0009 CHARACTER TABULATION,
-        U+000A LINE FEED (LF), U+000B LINE TABULATION, U+000C FORM FEED (FF),
-        or U+0020 SPACE.
-
-        THIS DIFFERS FROM THE SPEC: If the current node is either a title, style
-        or script element, append the character to the current node regardless
-        of its content. */
-        if (($token['type'] === HTML5::CHARACTR &&
-                preg_match('/^[\t\n\x0b\x0c ]+$/', $token['data'])) || (
-                $token['type'] === HTML5::CHARACTR && in_array(
-                    end($this->stack)->nodeName,
-                    array('title', 'style', 'script')
-                ))
-        ) {
-            /* Append the character to the current node. */
-            $this->insertText($token['data']);
-
-            /* A comment token */
-        } elseif ($token['type'] === HTML5::COMMENT) {
-            /* Append a Comment node to the current node with the data attribute
-            set to the data given in the comment token. */
-            $this->insertComment($token['data']);
-
-        } elseif ($token['type'] === HTML5::ENDTAG &&
-            in_array($token['name'], array('title', 'style', 'script'))
-        ) {
-            array_pop($this->stack);
-            return HTML5::PCDATA;
-
-            /* A start tag with the tag name "title" */
-        } elseif ($token['type'] === HTML5::STARTTAG && $token['name'] === 'title') {
-            /* Create an element for the token and append the new element to the
-            node pointed to by the head element pointer, or, if that is null
-            (innerHTML case), to the current node. */
-            if ($this->head_pointer !== null) {
-                $element = $this->insertElement($token, false);
-                $this->head_pointer->appendChild($element);
-
-            } else {
-                $element = $this->insertElement($token);
-            }
-
-            /* Switch the tokeniser's content model flag  to the RCDATA state. */
-            return HTML5::RCDATA;
-
-            /* A start tag with the tag name "style" */
-        } elseif ($token['type'] === HTML5::STARTTAG && $token['name'] === 'style') {
-            /* Create an element for the token and append the new element to the
-            node pointed to by the head element pointer, or, if that is null
-            (innerHTML case), to the current node. */
-            if ($this->head_pointer !== null) {
-                $element = $this->insertElement($token, false);
-                $this->head_pointer->appendChild($element);
-
-            } else {
-                $this->insertElement($token);
-            }
-
-            /* Switch the tokeniser's content model flag  to the CDATA state. */
-            return HTML5::CDATA;
-
-            /* A start tag with the tag name "script" */
-        } elseif ($token['type'] === HTML5::STARTTAG && $token['name'] === 'script') {
-            /* Create an element for the token. */
-            $element = $this->insertElement($token, false);
-            $this->head_pointer->appendChild($element);
-
-            /* Switch the tokeniser's content model flag  to the CDATA state. */
-            return HTML5::CDATA;
-
-            /* A start tag with the tag name "base", "link", or "meta" */
-        } elseif ($token['type'] === HTML5::STARTTAG && in_array(
-                $token['name'],
-                array('base', 'link', 'meta')
-            )
-        ) {
-            /* Create an element for the token and append the new element to the
-            node pointed to by the head element pointer, or, if that is null
-            (innerHTML case), to the current node. */
-            if ($this->head_pointer !== null) {
-                $element = $this->insertElement($token, false);
-                $this->head_pointer->appendChild($element);
-                array_pop($this->stack);
-
-            } else {
-                $this->insertElement($token);
-            }
-
-            /* An end tag with the tag name "head" */
-        } elseif ($token['type'] === HTML5::ENDTAG && $token['name'] === 'head') {
-            /* If the current node is a head element, pop the current node off
-            the stack of open elements. */
-            if ($this->head_pointer->isSameNode(end($this->stack))) {
-                array_pop($this->stack);
-
-                /* Otherwise, this is a parse error. */
-            } else {
-                // k
-            }
-
-            /* Change the insertion mode to "after head". */
-            $this->mode = self::AFTER_HEAD;
-
-            /* A start tag with the tag name "head" or an end tag except "html". */
-        } elseif (($token['type'] === HTML5::STARTTAG && $token['name'] === 'head') ||
-            ($token['type'] === HTML5::ENDTAG && $token['name'] !== 'html')
-        ) {
-            // Parse error. Ignore the token.
-
-            /* Anything else */
-        } else {
-            /* If the current node is a head element, act as if an end tag
-            token with the tag name "head" had been seen. */
-            if ($this->head_pointer->isSameNode(end($this->stack))) {
-                $this->inHead(
-                    array(
-                        'name' => 'head',
-                        'type' => HTML5::ENDTAG
-                    )
-                );
-
-                /* Otherwise, change the insertion mode to "after head". */
-            } else {
-                $this->mode = self::AFTER_HEAD;
-            }
-
-            /* Then, reprocess the current token. */
-            return $this->afterHead($token);
-        }
-    }
-
-    private function afterHead($token)
-    {
-        /* Handle the token as follows: */
-
-        /* A character token that is one of one of U+0009 CHARACTER TABULATION,
-        U+000A LINE FEED (LF), U+000B LINE TABULATION, U+000C FORM FEED (FF),
-        or U+0020 SPACE */
-        if ($token['type'] === HTML5::CHARACTR &&
-            preg_match('/^[\t\n\x0b\x0c ]+$/', $token['data'])
-        ) {
-            /* Append the character to the current node. */
-            $this->insertText($token['data']);
-
-            /* A comment token */
-        } elseif ($token['type'] === HTML5::COMMENT) {
-            /* Append a Comment node to the current node with the data attribute
-            set to the data given in the comment token. */
-            $this->insertComment($token['data']);
-
-            /* A start tag token with the tag name "body" */
-        } elseif ($token['type'] === HTML5::STARTTAG && $token['name'] === 'body') {
-            /* Insert a body element for the token. */
-            $this->insertElement($token);
-
-            /* Change the insertion mode to "in body". */
-            $this->mode = self::IN_BODY;
-
-            /* A start tag token with the tag name "frameset" */
-        } elseif ($token['type'] === HTML5::STARTTAG && $token['name'] === 'frameset') {
-            /* Insert a frameset element for the token. */
-            $this->insertElement($token);
-
-            /* Change the insertion mode to "in frameset". */
-            $this->mode = self::IN_FRAME;
-
-            /* A start tag token whose tag name is one of: "base", "link", "meta",
-            "script", "style", "title" */
-        } elseif ($token['type'] === HTML5::STARTTAG && in_array(
-                $token['name'],
-                array('base', 'link', 'meta', 'script', 'style', 'title')
-            )
-        ) {
-            /* Parse error. Switch the insertion mode back to "in head" and
-            reprocess the token. */
-            $this->mode = self::IN_HEAD;
-            return $this->inHead($token);
-
-            /* Anything else */
-        } else {
-            /* Act as if a start tag token with the tag name "body" and no
-            attributes had been seen, and then reprocess the current token. */
-            $this->afterHead(
-                array(
-                    'name' => 'body',
-                    'type' => HTML5::STARTTAG,
-                    'attr' => array()
-                )
-            );
-
-            return $this->inBody($token);
-        }
-    }
-
-    private function inBody($token)
-    {
-        /* Handle the token as follows: */
-
-        switch ($token['type']) {
-            /* A character token */
-            case HTML5::CHARACTR:
-                /* Reconstruct the active formatting elements, if any. */
-                $this->reconstructActiveFormattingElements();
-
-                /* Append the token's character to the current node. */
-                $this->insertText($token['data']);
-                break;
-
-            /* A comment token */
-            case HTML5::COMMENT:
-                /* Append a Comment node to the current node with the data
-                attribute set to the data given in the comment token. */
-                $this->insertComment($token['data']);
-                break;
-
-            case HTML5::STARTTAG:
-                switch ($token['name']) {
-                    /* A start tag token whose tag name is one of: "script",
-                    "style" */
-                    case 'script':
-                    case 'style':
-                        /* Process the token as if the insertion mode had been "in
-                        head". */
-                        return $this->inHead($token);
-                        break;
-
-                    /* A start tag token whose tag name is one of: "base", "link",
-                    "meta", "title" */
-                    case 'base':
-                    case 'link':
-                    case 'meta':
-                    case 'title':
-                        /* Parse error. Process the token as if the insertion mode
-                        had    been "in head". */
-                        return $this->inHead($token);
-                        break;
-
-                    /* A start tag token with the tag name "body" */
-                    case 'body':
-                        /* Parse error. If the second element on the stack of open
-                        elements is not a body element, or, if the stack of open
-                        elements has only one node on it, then ignore the token.
-                        (innerHTML case) */
-                        if (count($this->stack) === 1 || $this->stack[1]->nodeName !== 'body') {
-                            // Ignore
-
-                            /* Otherwise, for each attribute on the token, check to see
-                            if the attribute is already present on the body element (the
-                            second element)    on the stack of open elements. If it is not,
-                            add the attribute and its corresponding value to that
-                            element. */
-                        } else {
-                            foreach ($token['attr'] as $attr) {
-                                if (!$this->stack[1]->hasAttribute($attr['name'])) {
-                                    $this->stack[1]->setAttribute($attr['name'], $attr['value']);
-                                }
-                            }
-                        }
-                        break;
-
-                    /* A start tag whose tag name is one of: "address",
-                    "blockquote", "center", "dir", "div", "dl", "fieldset",
-                    "listing", "menu", "ol", "p", "ul" */
-                    case 'address':
-                    case 'blockquote':
-                    case 'center':
-                    case 'dir':
-                    case 'div':
-                    case 'dl':
-                    case 'fieldset':
-                    case 'listing':
-                    case 'menu':
-                    case 'ol':
-                    case 'p':
-                    case 'ul':
-                        /* If the stack of open elements has a p element in scope,
-                        then act as if an end tag with the tag name p had been
-                        seen. */
-                        if ($this->elementInScope('p')) {
-                            $this->emitToken(
-                                array(
-                                    'name' => 'p',
-                                    'type' => HTML5::ENDTAG
-                                )
-                            );
-                        }
-
-                        /* Insert an HTML element for the token. */
-                        $this->insertElement($token);
-                        break;
-
-                    /* A start tag whose tag name is "form" */
-                    case 'form':
-                        /* If the form element pointer is not null, ignore the
-                        token with a parse error. */
-                        if ($this->form_pointer !== null) {
-                            // Ignore.
-
-                            /* Otherwise: */
-                        } else {
-                            /* If the stack of open elements has a p element in
-                            scope, then act as if an end tag with the tag name p
-                            had been seen. */
-                            if ($this->elementInScope('p')) {
-                                $this->emitToken(
-                                    array(
-                                        'name' => 'p',
-                                        'type' => HTML5::ENDTAG
-                                    )
-                                );
-                            }
-
-                            /* Insert an HTML element for the token, and set the
-                            form element pointer to point to the element created. */
-                            $element = $this->insertElement($token);
-                            $this->form_pointer = $element;
-                        }
-                        break;
-
-                    /* A start tag whose tag name is "li", "dd" or "dt" */
-                    case 'li':
-                    case 'dd':
-                    case 'dt':
-                        /* If the stack of open elements has a p  element in scope,
-                        then act as if an end tag with the tag name p had been
-                        seen. */
-                        if ($this->elementInScope('p')) {
-                            $this->emitToken(
-                                array(
-                                    'name' => 'p',
-                                    'type' => HTML5::ENDTAG
-                                )
-                            );
-                        }
-
-                        $stack_length = count($this->stack) - 1;
-
-                        for ($n = $stack_length; 0 <= $n; $n--) {
-                            /* 1. Initialise node to be the current node (the
-                            bottommost node of the stack). */
-                            $stop = false;
-                            $node = $this->stack[$n];
-                            $cat = $this->getElementCategory($node->tagName);
-
-                            /* 2. If node is an li, dd or dt element, then pop all
-                            the    nodes from the current node up to node, including
-                            node, then stop this algorithm. */
-                            if ($token['name'] === $node->tagName || ($token['name'] !== 'li'
-                                    && ($node->tagName === 'dd' || $node->tagName === 'dt'))
-                            ) {
-                                for ($x = $stack_length; $x >= $n; $x--) {
-                                    array_pop($this->stack);
-                                }
-
-                                break;
-                            }
-
-                            /* 3. If node is not in the formatting category, and is
-                            not    in the phrasing category, and is not an address or
-                            div element, then stop this algorithm. */
-                            if ($cat !== self::FORMATTING && $cat !== self::PHRASING &&
-                                $node->tagName !== 'address' && $node->tagName !== 'div'
-                            ) {
-                                break;
-                            }
-                        }
-
-                        /* Finally, insert an HTML element with the same tag
-                        name as the    token's. */
-                        $this->insertElement($token);
-                        break;
-
-                    /* A start tag token whose tag name is "plaintext" */
-                    case 'plaintext':
-                        /* If the stack of open elements has a p  element in scope,
-                        then act as if an end tag with the tag name p had been
-                        seen. */
-                        if ($this->elementInScope('p')) {
-                            $this->emitToken(
-                                array(
-                                    'name' => 'p',
-                                    'type' => HTML5::ENDTAG
-                                )
-                            );
-                        }
-
-                        /* Insert an HTML element for the token. */
-                        $this->insertElement($token);
-
-                        return HTML5::PLAINTEXT;
-                        break;
-
-                    /* A start tag whose tag name is one of: "h1", "h2", "h3", "h4",
-                    "h5", "h6" */
-                    case 'h1':
-                    case 'h2':
-                    case 'h3':
-                    case 'h4':
-                    case 'h5':
-                    case 'h6':
-                        /* If the stack of open elements has a p  element in scope,
-                        then act as if an end tag with the tag name p had been seen. */
-                        if ($this->elementInScope('p')) {
-                            $this->emitToken(
-                                array(
-                                    'name' => 'p',
-                                    'type' => HTML5::ENDTAG
-                                )
-                            );
-                        }
-
-                        /* If the stack of open elements has in scope an element whose
-                        tag name is one of "h1", "h2", "h3", "h4", "h5", or "h6", then
-                        this is a parse error; pop elements from the stack until an
-                        element with one of those tag names has been popped from the
-                        stack. */
-                        while ($this->elementInScope(array('h1', 'h2', 'h3', 'h4', 'h5', 'h6'))) {
-                            array_pop($this->stack);
-                        }
-
-                        /* Insert an HTML element for the token. */
-                        $this->insertElement($token);
-                        break;
-
-                    /* A start tag whose tag name is "a" */
-                    case 'a':
-                        /* If the list of active formatting elements contains
-                        an element whose tag name is "a" between the end of the
-                        list and the last marker on the list (or the start of
-                        the list if there is no marker on the list), then this
-                        is a parse error; act as if an end tag with the tag name
-                        "a" had been seen, then remove that element from the list
-                        of active formatting elements and the stack of open
-                        elements if the end tag didn't already remove it (it
-                        might not have if the element is not in table scope). */
-                        $leng = count($this->a_formatting);
-
-                        for ($n = $leng - 1; $n >= 0; $n--) {
-                            if ($this->a_formatting[$n] === self::MARKER) {
-                                break;
-
-                            } elseif ($this->a_formatting[$n]->nodeName === 'a') {
-                                $this->emitToken(
-                                    array(
-                                        'name' => 'a',
-                                        'type' => HTML5::ENDTAG
-                                    )
-                                );
-                                break;
-                            }
-                        }
-
-                        /* Reconstruct the active formatting elements, if any. */
-                        $this->reconstructActiveFormattingElements();
-
-                        /* Insert an HTML element for the token. */
-                        $el = $this->insertElement($token);
-
-                        /* Add that element to the list of active formatting
-                        elements. */
-                        $this->a_formatting[] = $el;
-                        break;
-
-                    /* A start tag whose tag name is one of: "b", "big", "em", "font",
-                    "i", "nobr", "s", "small", "strike", "strong", "tt", "u" */
-                    case 'b':
-                    case 'big':
-                    case 'em':
-                    case 'font':
-                    case 'i':
-                    case 'nobr':
-                    case 's':
-                    case 'small':
-                    case 'strike':
-                    case 'strong':
-                    case 'tt':
-                    case 'u':
-                        /* Reconstruct the active formatting elements, if any. */
-                        $this->reconstructActiveFormattingElements();
-
-                        /* Insert an HTML element for the token. */
-                        $el = $this->insertElement($token);
-
-                        /* Add that element to the list of active formatting
-                        elements. */
-                        $this->a_formatting[] = $el;
-                        break;
-
-                    /* A start tag token whose tag name is "button" */
-                    case 'button':
-                        /* If the stack of open elements has a button element in scope,
-                        then this is a parse error; act as if an end tag with the tag
-                        name "button" had been seen, then reprocess the token. (We don't
-                        do that. Unnecessary.) */
-                        if ($this->elementInScope('button')) {
-                            $this->inBody(
-                                array(
-                                    'name' => 'button',
-                                    'type' => HTML5::ENDTAG
-                                )
-                            );
-                        }
-
-                        /* Reconstruct the active formatting elements, if any. */
-                        $this->reconstructActiveFormattingElements();
-
-                        /* Insert an HTML element for the token. */
-                        $this->insertElement($token);
-
-                        /* Insert a marker at the end of the list of active
-                        formatting elements. */
-                        $this->a_formatting[] = self::MARKER;
-                        break;
-
-                    /* A start tag token whose tag name is one of: "marquee", "object" */
-                    case 'marquee':
-                    case 'object':
-                        /* Reconstruct the active formatting elements, if any. */
-                        $this->reconstructActiveFormattingElements();
-
-                        /* Insert an HTML element for the token. */
-                        $this->insertElement($token);
-
-                        /* Insert a marker at the end of the list of active
-                        formatting elements. */
-                        $this->a_formatting[] = self::MARKER;
-                        break;
-
-                    /* A start tag token whose tag name is "xmp" */
-                    case 'xmp':
-                        /* Reconstruct the active formatting elements, if any. */
-                        $this->reconstructActiveFormattingElements();
-
-                        /* Insert an HTML element for the token. */
-                        $this->insertElement($token);
-
-                        /* Switch the content model flag to the CDATA state. */
-                        return HTML5::CDATA;
-                        break;
-
-                    /* A start tag whose tag name is "table" */
-                    case 'table':
-                        /* If the stack of open elements has a p element in scope,
-                        then act as if an end tag with the tag name p had been seen. */
-                        if ($this->elementInScope('p')) {
-                            $this->emitToken(
-                                array(
-                                    'name' => 'p',
-                                    'type' => HTML5::ENDTAG
-                                )
-                            );
-                        }
-
-                        /* Insert an HTML element for the token. */
-                        $this->insertElement($token);
-
-                        /* Change the insertion mode to "in table". */
-                        $this->mode = self::IN_TABLE;
-                        break;
-
-                    /* A start tag whose tag name is one of: "area", "basefont",
-                    "bgsound", "br", "embed", "img", "param", "spacer", "wbr" */
-                    case 'area':
-                    case 'basefont':
-                    case 'bgsound':
-                    case 'br':
-                    case 'embed':
-                    case 'img':
-                    case 'param':
-                    case 'spacer':
-                    case 'wbr':
-                        /* Reconstruct the active formatting elements, if any. */
-                        $this->reconstructActiveFormattingElements();
-
-                        /* Insert an HTML element for the token. */
-                        $this->insertElement($token);
-
-                        /* Immediately pop the current node off the stack of open elements. */
-                        array_pop($this->stack);
-                        break;
-
-                    /* A start tag whose tag name is "hr" */
-                    case 'hr':
-                        /* If the stack of open elements has a p element in scope,
-                        then act as if an end tag with the tag name p had been seen. */
-                        if ($this->elementInScope('p')) {
-                            $this->emitToken(
-                                array(
-                                    'name' => 'p',
-                                    'type' => HTML5::ENDTAG
-                                )
-                            );
-                        }
-
-                        /* Insert an HTML element for the token. */
-                        $this->insertElement($token);
-
-                        /* Immediately pop the current node off the stack of open elements. */
-                        array_pop($this->stack);
-                        break;
-
-                    /* A start tag whose tag name is "image" */
-                    case 'image':
-                        /* Parse error. Change the token's tag name to "img" and
-                        reprocess it. (Don't ask.) */
-                        $token['name'] = 'img';
-                        return $this->inBody($token);
-                        break;
-
-                    /* A start tag whose tag name is "input" */
-                    case 'input':
-                        /* Reconstruct the active formatting elements, if any. */
-                        $this->reconstructActiveFormattingElements();
-
-                        /* Insert an input element for the token. */
-                        $element = $this->insertElement($token, false);
-
-                        /* If the form element pointer is not null, then associate the
-                        input element with the form element pointed to by the form
-                        element pointer. */
-                        $this->form_pointer !== null
-                            ? $this->form_pointer->appendChild($element)
-                            : end($this->stack)->appendChild($element);
-
-                        /* Pop that input element off the stack of open elements. */
-                        array_pop($this->stack);
-                        break;
-
-                    /* A start tag whose tag name is "isindex" */
-                    case 'isindex':
-                        /* Parse error. */
-                        // w/e
-
-                        /* If the form element pointer is not null,
-                        then ignore the token. */
-                        if ($this->form_pointer === null) {
-                            /* Act as if a start tag token with the tag name "form" had
-                            been seen. */
-                            $this->inBody(
-                                array(
-                                    'name' => 'body',
-                                    'type' => HTML5::STARTTAG,
-                                    'attr' => array()
-                                )
-                            );
-
-                            /* Act as if a start tag token with the tag name "hr" had
-                            been seen. */
-                            $this->inBody(
-                                array(
-                                    'name' => 'hr',
-                                    'type' => HTML5::STARTTAG,
-                                    'attr' => array()
-                                )
-                            );
-
-                            /* Act as if a start tag token with the tag name "p" had
-                            been seen. */
-                            $this->inBody(
-                                array(
-                                    'name' => 'p',
-                                    'type' => HTML5::STARTTAG,
-                                    'attr' => array()
-                                )
-                            );
-
-                            /* Act as if a start tag token with the tag name "label"
-                            had been seen. */
-                            $this->inBody(
-                                array(
-                                    'name' => 'label',
-                                    'type' => HTML5::STARTTAG,
-                                    'attr' => array()
-                                )
-                            );
-
-                            /* Act as if a stream of character tokens had been seen. */
-                            $this->insertText(
-                                'This is a searchable index. ' .
-                                'Insert your search keywords here: '
-                            );
-
-                            /* Act as if a start tag token with the tag name "input"
-                            had been seen, with all the attributes from the "isindex"
-                            token, except with the "name" attribute set to the value
-                            "isindex" (ignoring any explicit "name" attribute). */
-                            $attr = $token['attr'];
-                            $attr[] = array('name' => 'name', 'value' => 'isindex');
-
-                            $this->inBody(
-                                array(
-                                    'name' => 'input',
-                                    'type' => HTML5::STARTTAG,
-                                    'attr' => $attr
-                                )
-                            );
-
-                            /* Act as if a stream of character tokens had been seen
-                            (see below for what they should say). */
-                            $this->insertText(
-                                'This is a searchable index. ' .
-                                'Insert your search keywords here: '
-                            );
-
-                            /* Act as if an end tag token with the tag name "label"
-                            had been seen. */
-                            $this->inBody(
-                                array(
-                                    'name' => 'label',
-                                    'type' => HTML5::ENDTAG
-                                )
-                            );
-
-                            /* Act as if an end tag token with the tag name "p" had
-                            been seen. */
-                            $this->inBody(
-                                array(
-                                    'name' => 'p',
-                                    'type' => HTML5::ENDTAG
-                                )
-                            );
-
-                            /* Act as if a start tag token with the tag name "hr" had
-                            been seen. */
-                            $this->inBody(
-                                array(
-                                    'name' => 'hr',
-                                    'type' => HTML5::ENDTAG
-                                )
-                            );
-
-                            /* Act as if an end tag token with the tag name "form" had
-                            been seen. */
-                            $this->inBody(
-                                array(
-                                    'name' => 'form',
-                                    'type' => HTML5::ENDTAG
-                                )
-                            );
-                        }
-                        break;
-
-                    /* A start tag whose tag name is "textarea" */
-                    case 'textarea':
-                        $this->insertElement($token);
-
-                        /* Switch the tokeniser's content model flag to the
-                        RCDATA state. */
-                        return HTML5::RCDATA;
-                        break;
-
-                    /* A start tag whose tag name is one of: "iframe", "noembed",
-                    "noframes" */
-                    case 'iframe':
-                    case 'noembed':
-                    case 'noframes':
-                        $this->insertElement($token);
-
-                        /* Switch the tokeniser's content model flag to the CDATA state. */
-                        return HTML5::CDATA;
-                        break;
-
-                    /* A start tag whose tag name is "select" */
-                    case 'select':
-                        /* Reconstruct the active formatting elements, if any. */
-                        $this->reconstructActiveFormattingElements();
-
-                        /* Insert an HTML element for the token. */
-                        $this->insertElement($token);
-
-                        /* Change the insertion mode to "in select". */
-                        $this->mode = self::IN_SELECT;
-                        break;
-
-                    /* A start or end tag whose tag name is one of: "caption", "col",
-                    "colgroup", "frame", "frameset", "head", "option", "optgroup",
-                    "tbody", "td", "tfoot", "th", "thead", "tr". */
-                    case 'caption':
-                    case 'col':
-                    case 'colgroup':
-                    case 'frame':
-                    case 'frameset':
-                    case 'head':
-                    case 'option':
-                    case 'optgroup':
-                    case 'tbody':
-                    case 'td':
-                    case 'tfoot':
-                    case 'th':
-                    case 'thead':
-                    case 'tr':
-                        // Parse error. Ignore the token.
-                        break;
-
-                    /* A start or end tag whose tag name is one of: "event-source",
-                    "section", "nav", "article", "aside", "header", "footer",
-                    "datagrid", "command" */
-                    case 'event-source':
-                    case 'section':
-                    case 'nav':
-                    case 'article':
-                    case 'aside':
-                    case 'header':
-                    case 'footer':
-                    case 'datagrid':
-                    case 'command':
-                        // Work in progress!
-                        break;
-
-                    /* A start tag token not covered by the previous entries */
-                    default:
-                        /* Reconstruct the active formatting elements, if any. */
-                        $this->reconstructActiveFormattingElements();
-
-                        $this->insertElement($token, true, true);
-                        break;
-                }
-                break;
-
-            case HTML5::ENDTAG:
-                switch ($token['name']) {
-                    /* An end tag with the tag name "body" */
-                    case 'body':
-                        /* If the second element in the stack of open elements is
-                        not a body element, this is a parse error. Ignore the token.
-                        (innerHTML case) */
-                        if (count($this->stack) < 2 || $this->stack[1]->nodeName !== 'body') {
-                            // Ignore.
-
-                            /* If the current node is not the body element, then this
-                            is a parse error. */
-                        } elseif (end($this->stack)->nodeName !== 'body') {
-                            // Parse error.
-                        }
-
-                        /* Change the insertion mode to "after body". */
-                        $this->mode = self::AFTER_BODY;
-                        break;
-
-                    /* An end tag with the tag name "html" */
-                    case 'html':
-                        /* Act as if an end tag with tag name "body" had been seen,
-                        then, if that token wasn't ignored, reprocess the current
-                        token. */
-                        $this->inBody(
-                            array(
-                                'name' => 'body',
-                                'type' => HTML5::ENDTAG
-                            )
-                        );
-
-                        return $this->afterBody($token);
-                        break;
-
-                    /* An end tag whose tag name is one of: "address", "blockquote",
-                    "center", "dir", "div", "dl", "fieldset", "listing", "menu",
-                    "ol", "pre", "ul" */
-                    case 'address':
-                    case 'blockquote':
-                    case 'center':
-                    case 'dir':
-                    case 'div':
-                    case 'dl':
-                    case 'fieldset':
-                    case 'listing':
-                    case 'menu':
-                    case 'ol':
-                    case 'pre':
-                    case 'ul':
-                        /* If the stack of open elements has an element in scope
-                        with the same tag name as that of the token, then generate
-                        implied end tags. */
-                        if ($this->elementInScope($token['name'])) {
-                            $this->generateImpliedEndTags();
-
-                            /* Now, if the current node is not an element with
-                            the same tag name as that of the token, then this
-                            is a parse error. */
-                            // w/e
-
-                            /* If the stack of open elements has an element in
-                            scope with the same tag name as that of the token,
-                            then pop elements from this stack until an element
-                            with that tag name has been popped from the stack. */
-                            for ($n = count($this->stack) - 1; $n >= 0; $n--) {
-                                if ($this->stack[$n]->nodeName === $token['name']) {
-                                    $n = -1;
-                                }
-
-                                array_pop($this->stack);
-                            }
-                        }
-                        break;
-
-                    /* An end tag whose tag name is "form" */
-                    case 'form':
-                        /* If the stack of open elements has an element in scope
-                        with the same tag name as that of the token, then generate
-                        implied    end tags. */
-                        if ($this->elementInScope($token['name'])) {
-                            $this->generateImpliedEndTags();
-
-                        }
-
-                        if (end($this->stack)->nodeName !== $token['name']) {
-                            /* Now, if the current node is not an element with the
-                            same tag name as that of the token, then this is a parse
-                            error. */
-                            // w/e
-
-                        } else {
-                            /* Otherwise, if the current node is an element with
-                            the same tag name as that of the token pop that element
-                            from the stack. */
-                            array_pop($this->stack);
-                        }
-
-                        /* In any case, set the form element pointer to null. */
-                        $this->form_pointer = null;
-                        break;
-
-                    /* An end tag whose tag name is "p" */
-                    case 'p':
-                        /* If the stack of open elements has a p element in scope,
-                        then generate implied end tags, except for p elements. */
-                        if ($this->elementInScope('p')) {
-                            $this->generateImpliedEndTags(array('p'));
-
-                            /* If the current node is not a p element, then this is
-                            a parse error. */
-                            // k
-
-                            /* If the stack of open elements has a p element in
-                            scope, then pop elements from this stack until the stack
-                            no longer has a p element in scope. */
-                            for ($n = count($this->stack) - 1; $n >= 0; $n--) {
-                                if ($this->elementInScope('p')) {
-                                    array_pop($this->stack);
-
-                                } else {
-                                    break;
-                                }
-                            }
-                        }
-                        break;
-
-                    /* An end tag whose tag name is "dd", "dt", or "li" */
-                    case 'dd':
-                    case 'dt':
-                    case 'li':
-                        /* If the stack of open elements has an element in scope
-                        whose tag name matches the tag name of the token, then
-                        generate implied end tags, except for elements with the
-                        same tag name as the token. */
-                        if ($this->elementInScope($token['name'])) {
-                            $this->generateImpliedEndTags(array($token['name']));
-
-                            /* If the current node is not an element with the same
-                            tag name as the token, then this is a parse error. */
-                            // w/e
-
-                            /* If the stack of open elements has an element in scope
-                            whose tag name matches the tag name of the token, then
-                            pop elements from this stack until an element with that
-                            tag name has been popped from the stack. */
-                            for ($n = count($this->stack) - 1; $n >= 0; $n--) {
-                                if ($this->stack[$n]->nodeName === $token['name']) {
-                                    $n = -1;
-                                }
-
-                                array_pop($this->stack);
-                            }
-                        }
-                        break;
-
-                    /* An end tag whose tag name is one of: "h1", "h2", "h3", "h4",
-                    "h5", "h6" */
-                    case 'h1':
-                    case 'h2':
-                    case 'h3':
-                    case 'h4':
-                    case 'h5':
-                    case 'h6':
-                        $elements = array('h1', 'h2', 'h3', 'h4', 'h5', 'h6');
-
-                        /* If the stack of open elements has in scope an element whose
-                        tag name is one of "h1", "h2", "h3", "h4", "h5", or "h6", then
-                        generate implied end tags. */
-                        if ($this->elementInScope($elements)) {
-                            $this->generateImpliedEndTags();
-
-                            /* Now, if the current node is not an element with the same
-                            tag name as that of the token, then this is a parse error. */
-                            // w/e
-
-                            /* If the stack of open elements has in scope an element
-                            whose tag name is one of "h1", "h2", "h3", "h4", "h5", or
-                            "h6", then pop elements from the stack until an element
-                            with one of those tag names has been popped from the stack. */
-                            while ($this->elementInScope($elements)) {
-                                array_pop($this->stack);
-                            }
-                        }
-                        break;
-
-                    /* An end tag whose tag name is one of: "a", "b", "big", "em",
-                    "font", "i", "nobr", "s", "small", "strike", "strong", "tt", "u" */
-                    case 'a':
-                    case 'b':
-                    case 'big':
-                    case 'em':
-                    case 'font':
-                    case 'i':
-                    case 'nobr':
-                    case 's':
-                    case 'small':
-                    case 'strike':
-                    case 'strong':
-                    case 'tt':
-                    case 'u':
-                        /* 1. Let the formatting element be the last element in
-                        the list of active formatting elements that:
-                            * is between the end of the list and the last scope
-                            marker in the list, if any, or the start of the list
-                            otherwise, and
-                            * has the same tag name as the token.
-                        */
-                        while (true) {
-                            for ($a = count($this->a_formatting) - 1; $a >= 0; $a--) {
-                                if ($this->a_formatting[$a] === self::MARKER) {
-                                    break;
-
-                                } elseif ($this->a_formatting[$a]->tagName === $token['name']) {
-                                    $formatting_element = $this->a_formatting[$a];
-                                    $in_stack = in_array($formatting_element, $this->stack, true);
-                                    $fe_af_pos = $a;
-                                    break;
-                                }
-                            }
-
-                            /* If there is no such node, or, if that node is
-                            also in the stack of open elements but the element
-                            is not in scope, then this is a parse error. Abort
-                            these steps. The token is ignored. */
-                            if (!isset($formatting_element) || ($in_stack &&
-                                    !$this->elementInScope($token['name']))
-                            ) {
-                                break;
-
-                                /* Otherwise, if there is such a node, but that node
-                                is not in the stack of open elements, then this is a
-                                parse error; remove the element from the list, and
-                                abort these steps. */
-                            } elseif (isset($formatting_element) && !$in_stack) {
-                                unset($this->a_formatting[$fe_af_pos]);
-                                $this->a_formatting = array_merge($this->a_formatting);
-                                break;
-                            }
-
-                            /* 2. Let the furthest block be the topmost node in the
-                            stack of open elements that is lower in the stack
-                            than the formatting element, and is not an element in
-                            the phrasing or formatting categories. There might
-                            not be one. */
-                            $fe_s_pos = array_search($formatting_element, $this->stack, true);
-                            $length = count($this->stack);
-
-                            for ($s = $fe_s_pos + 1; $s < $length; $s++) {
-                                $category = $this->getElementCategory($this->stack[$s]->nodeName);
-
-                                if ($category !== self::PHRASING && $category !== self::FORMATTING) {
-                                    $furthest_block = $this->stack[$s];
-                                }
-                            }
-
-                            /* 3. If there is no furthest block, then the UA must
-                            skip the subsequent steps and instead just pop all
-                            the nodes from the bottom of the stack of open
-                            elements, from the current node up to the formatting
-                            element, and remove the formatting element from the
-                            list of active formatting elements. */
-                            if (!isset($furthest_block)) {
-                                for ($n = $length - 1; $n >= $fe_s_pos; $n--) {
-                                    array_pop($this->stack);
-                                }
-
-                                unset($this->a_formatting[$fe_af_pos]);
-                                $this->a_formatting = array_merge($this->a_formatting);
-                                break;
-                            }
-
-                            /* 4. Let the common ancestor be the element
-                            immediately above the formatting element in the stack
-                            of open elements. */
-                            $common_ancestor = $this->stack[$fe_s_pos - 1];
-
-                            /* 5. If the furthest block has a parent node, then
-                            remove the furthest block from its parent node. */
-                            if ($furthest_block->parentNode !== null) {
-                                $furthest_block->parentNode->removeChild($furthest_block);
-                            }
-
-                            /* 6. Let a bookmark note the position of the
-                            formatting element in the list of active formatting
-                            elements relative to the elements on either side
-                            of it in the list. */
-                            $bookmark = $fe_af_pos;
-
-                            /* 7. Let node and last node  be the furthest block.
-                            Follow these steps: */
-                            $node = $furthest_block;
-                            $last_node = $furthest_block;
-
-                            while (true) {
-                                for ($n = array_search($node, $this->stack, true) - 1; $n >= 0; $n--) {
-                                    /* 7.1 Let node be the element immediately
-                                    prior to node in the stack of open elements. */
-                                    $node = $this->stack[$n];
-
-                                    /* 7.2 If node is not in the list of active
-                                    formatting elements, then remove node from
-                                    the stack of open elements and then go back
-                                    to step 1. */
-                                    if (!in_array($node, $this->a_formatting, true)) {
-                                        unset($this->stack[$n]);
-                                        $this->stack = array_merge($this->stack);
-
-                                    } else {
-                                        break;
-                                    }
-                                }
-
-                                /* 7.3 Otherwise, if node is the formatting
-                                element, then go to the next step in the overall
-                                algorithm. */
-                                if ($node === $formatting_element) {
-                                    break;
-
-                                    /* 7.4 Otherwise, if last node is the furthest
-                                    block, then move the aforementioned bookmark to
-                                    be immediately after the node in the list of
-                                    active formatting elements. */
-                                } elseif ($last_node === $furthest_block) {
-                                    $bookmark = array_search($node, $this->a_formatting, true) + 1;
-                                }
-
-                                /* 7.5 If node has any children, perform a
-                                shallow clone of node, replace the entry for
-                                node in the list of active formatting elements
-                                with an entry for the clone, replace the entry
-                                for node in the stack of open elements with an
-                                entry for the clone, and let node be the clone. */
-                                if ($node->hasChildNodes()) {
-                                    $clone = $node->cloneNode();
-                                    $s_pos = array_search($node, $this->stack, true);
-                                    $a_pos = array_search($node, $this->a_formatting, true);
-
-                                    $this->stack[$s_pos] = $clone;
-                                    $this->a_formatting[$a_pos] = $clone;
-                                    $node = $clone;
-                                }
-
-                                /* 7.6 Insert last node into node, first removing
-                                it from its previous parent node if any. */
-                                if ($last_node->parentNode !== null) {
-                                    $last_node->parentNode->removeChild($last_node);
-                                }
-
-                                $node->appendChild($last_node);
-
-                                /* 7.7 Let last node be node. */
-                                $last_node = $node;
-                            }
-
-                            /* 8. Insert whatever last node ended up being in
-                            the previous step into the common ancestor node,
-                            first removing it from its previous parent node if
-                            any. */
-                            if ($last_node->parentNode !== null) {
-                                $last_node->parentNode->removeChild($last_node);
-                            }
-
-                            $common_ancestor->appendChild($last_node);
-
-                            /* 9. Perform a shallow clone of the formatting
-                            element. */
-                            $clone = $formatting_element->cloneNode();
-
-                            /* 10. Take all of the child nodes of the furthest
-                            block and append them to the clone created in the
-                            last step. */
-                            while ($furthest_block->hasChildNodes()) {
-                                $child = $furthest_block->firstChild;
-                                $furthest_block->removeChild($child);
-                                $clone->appendChild($child);
-                            }
-
-                            /* 11. Append that clone to the furthest block. */
-                            $furthest_block->appendChild($clone);
-
-                            /* 12. Remove the formatting element from the list
-                            of active formatting elements, and insert the clone
-                            into the list of active formatting elements at the
-                            position of the aforementioned bookmark. */
-                            $fe_af_pos = array_search($formatting_element, $this->a_formatting, true);
-                            unset($this->a_formatting[$fe_af_pos]);
-                            $this->a_formatting = array_merge($this->a_formatting);
-
-                            $af_part1 = array_slice($this->a_formatting, 0, $bookmark - 1);
-                            $af_part2 = array_slice($this->a_formatting, $bookmark, count($this->a_formatting));
-                            $this->a_formatting = array_merge($af_part1, array($clone), $af_part2);
-
-                            /* 13. Remove the formatting element from the stack
-                            of open elements, and insert the clone into the stack
-                            of open elements immediately after (i.e. in a more
-                            deeply nested position than) the position of the
-                            furthest block in that stack. */
-                            $fe_s_pos = array_search($formatting_element, $this->stack, true);
-                            $fb_s_pos = array_search($furthest_block, $this->stack, true);
-                            unset($this->stack[$fe_s_pos]);
-
-                            $s_part1 = array_slice($this->stack, 0, $fb_s_pos);
-                            $s_part2 = array_slice($this->stack, $fb_s_pos + 1, count($this->stack));
-                            $this->stack = array_merge($s_part1, array($clone), $s_part2);
-
-                            /* 14. Jump back to step 1 in this series of steps. */
-                            unset($formatting_element, $fe_af_pos, $fe_s_pos, $furthest_block);
-                        }
-                        break;
-
-                    /* An end tag token whose tag name is one of: "button",
-                    "marquee", "object" */
-                    case 'button':
-                    case 'marquee':
-                    case 'object':
-                        /* If the stack of open elements has an element in scope whose
-                        tag name matches the tag name of the token, then generate implied
-                        tags. */
-                        if ($this->elementInScope($token['name'])) {
-                            $this->generateImpliedEndTags();
-
-                            /* Now, if the current node is not an element with the same
-                            tag name as the token, then this is a parse error. */
-                            // k
-
-                            /* Now, if the stack of open elements has an element in scope
-                            whose tag name matches the tag name of the token, then pop
-                            elements from the stack until that element has been popped from
-                            the stack, and clear the list of active formatting elements up
-                            to the last marker. */
-                            for ($n = count($this->stack) - 1; $n >= 0; $n--) {
-                                if ($this->stack[$n]->nodeName === $token['name']) {
-                                    $n = -1;
-                                }
-
-                                array_pop($this->stack);
-                            }
-
-                            $marker = end(array_keys($this->a_formatting, self::MARKER, true));
-
-                            for ($n = count($this->a_formatting) - 1; $n > $marker; $n--) {
-                                array_pop($this->a_formatting);
-                            }
-                        }
-                        break;
-
-                    /* Or an end tag whose tag name is one of: "area", "basefont",
-                    "bgsound", "br", "embed", "hr", "iframe", "image", "img",
-                    "input", "isindex", "noembed", "noframes", "param", "select",
-                    "spacer", "table", "textarea", "wbr" */
-                    case 'area':
-                    case 'basefont':
-                    case 'bgsound':
-                    case 'br':
-                    case 'embed':
-                    case 'hr':
-                    case 'iframe':
-                    case 'image':
-                    case 'img':
-                    case 'input':
-                    case 'isindex':
-                    case 'noembed':
-                    case 'noframes':
-                    case 'param':
-                    case 'select':
-                    case 'spacer':
-                    case 'table':
-                    case 'textarea':
-                    case 'wbr':
-                        // Parse error. Ignore the token.
-                        break;
-
-                    /* An end tag token not covered by the previous entries */
-                    default:
-                        for ($n = count($this->stack) - 1; $n >= 0; $n--) {
-                            /* Initialise node to be the current node (the bottommost
-                            node of the stack). */
-                            $node = end($this->stack);
-
-                            /* If node has the same tag name as the end tag token,
-                            then: */
-                            if ($token['name'] === $node->nodeName) {
-                                /* Generate implied end tags. */
-                                $this->generateImpliedEndTags();
-
-                                /* If the tag name of the end tag token does not
-                                match the tag name of the current node, this is a
-                                parse error. */
-                                // k
-
-                                /* Pop all the nodes from the current node up to
-                                node, including node, then stop this algorithm. */
-                                for ($x = count($this->stack) - $n; $x >= $n; $x--) {
-                                    array_pop($this->stack);
-                                }
-
-                            } else {
-                                $category = $this->getElementCategory($node);
-
-                                if ($category !== self::SPECIAL && $category !== self::SCOPING) {
-                                    /* Otherwise, if node is in neither the formatting
-                                    category nor the phrasing category, then this is a
-                                    parse error. Stop this algorithm. The end tag token
-                                    is ignored. */
-                                    return false;
-                                }
-                            }
-                        }
-                        break;
-                }
-                break;
-        }
-    }
-
-    private function inTable($token)
-    {
-        $clear = array('html', 'table');
-
-        /* A character token that is one of one of U+0009 CHARACTER TABULATION,
-        U+000A LINE FEED (LF), U+000B LINE TABULATION, U+000C FORM FEED (FF),
-        or U+0020 SPACE */
-        if ($token['type'] === HTML5::CHARACTR &&
-            preg_match('/^[\t\n\x0b\x0c ]+$/', $token['data'])
-        ) {
-            /* Append the character to the current node. */
-            $text = $this->dom->createTextNode($token['data']);
-            end($this->stack)->appendChild($text);
-
-            /* A comment token */
-        } elseif ($token['type'] === HTML5::COMMENT) {
-            /* Append a Comment node to the current node with the data
-            attribute set to the data given in the comment token. */
-            $comment = $this->dom->createComment($token['data']);
-            end($this->stack)->appendChild($comment);
-
-            /* A start tag whose tag name is "caption" */
-        } elseif ($token['type'] === HTML5::STARTTAG &&
-            $token['name'] === 'caption'
-        ) {
-            /* Clear the stack back to a table context. */
-            $this->clearStackToTableContext($clear);
-
-            /* Insert a marker at the end of the list of active
-            formatting elements. */
-            $this->a_formatting[] = self::MARKER;
-
-            /* Insert an HTML element for the token, then switch the
-            insertion mode to "in caption". */
-            $this->insertElement($token);
-            $this->mode = self::IN_CAPTION;
-
-            /* A start tag whose tag name is "colgroup" */
-        } elseif ($token['type'] === HTML5::STARTTAG &&
-            $token['name'] === 'colgroup'
-        ) {
-            /* Clear the stack back to a table context. */
-            $this->clearStackToTableContext($clear);
-
-            /* Insert an HTML element for the token, then switch the
-            insertion mode to "in column group". */
-            $this->insertElement($token);
-            $this->mode = self::IN_CGROUP;
-
-            /* A start tag whose tag name is "col" */
-        } elseif ($token['type'] === HTML5::STARTTAG &&
-            $token['name'] === 'col'
-        ) {
-            $this->inTable(
-                array(
-                    'name' => 'colgroup',
-                    'type' => HTML5::STARTTAG,
-                    'attr' => array()
-                )
-            );
-
-            $this->inColumnGroup($token);
-
-            /* A start tag whose tag name is one of: "tbody", "tfoot", "thead" */
-        } elseif ($token['type'] === HTML5::STARTTAG && in_array(
-                $token['name'],
-                array('tbody', 'tfoot', 'thead')
-            )
-        ) {
-            /* Clear the stack back to a table context. */
-            $this->clearStackToTableContext($clear);
-
-            /* Insert an HTML element for the token, then switch the insertion
-            mode to "in table body". */
-            $this->insertElement($token);
-            $this->mode = self::IN_TBODY;
-
-            /* A start tag whose tag name is one of: "td", "th", "tr" */
-        } elseif ($token['type'] === HTML5::STARTTAG &&
-            in_array($token['name'], array('td', 'th', 'tr'))
-        ) {
-            /* Act as if a start tag token with the tag name "tbody" had been
-            seen, then reprocess the current token. */
-            $this->inTable(
-                array(
-                    'name' => 'tbody',
-                    'type' => HTML5::STARTTAG,
-                    'attr' => array()
-                )
-            );
-
-            return $this->inTableBody($token);
-
-            /* A start tag whose tag name is "table" */
-        } elseif ($token['type'] === HTML5::STARTTAG &&
-            $token['name'] === 'table'
-        ) {
-            /* Parse error. Act as if an end tag token with the tag name "table"
-            had been seen, then, if that token wasn't ignored, reprocess the
-            current token. */
-            $this->inTable(
-                array(
-                    'name' => 'table',
-                    'type' => HTML5::ENDTAG
-                )
-            );
-
-            return $this->mainPhase($token);
-
-            /* An end tag whose tag name is "table" */
-        } elseif ($token['type'] === HTML5::ENDTAG &&
-            $token['name'] === 'table'
-        ) {
-            /* If the stack of open elements does not have an element in table
-            scope with the same tag name as the token, this is a parse error.
-            Ignore the token. (innerHTML case) */
-            if (!$this->elementInScope($token['name'], true)) {
-                return false;
-
-                /* Otherwise: */
-            } else {
-                /* Generate implied end tags. */
-                $this->generateImpliedEndTags();
-
-                /* Now, if the current node is not a table element, then this
-                is a parse error. */
-                // w/e
-
-                /* Pop elements from this stack until a table element has been
-                popped from the stack. */
-                while (true) {
-                    $current = end($this->stack)->nodeName;
-                    array_pop($this->stack);
-
-                    if ($current === 'table') {
-                        break;
-                    }
-                }
-
-                /* Reset the insertion mode appropriately. */
-                $this->resetInsertionMode();
-            }
-
-            /* An end tag whose tag name is one of: "body", "caption", "col",
-            "colgroup", "html", "tbody", "td", "tfoot", "th", "thead", "tr" */
-        } elseif ($token['type'] === HTML5::ENDTAG && in_array(
-                $token['name'],
-                array(
-                    'body',
-                    'caption',
-                    'col',
-                    'colgroup',
-                    'html',
-                    'tbody',
-                    'td',
-                    'tfoot',
-                    'th',
-                    'thead',
-                    'tr'
-                )
-            )
-        ) {
-            // Parse error. Ignore the token.
-
-            /* Anything else */
-        } else {
-            /* Parse error. Process the token as if the insertion mode was "in
-            body", with the following exception: */
-
-            /* If the current node is a table, tbody, tfoot, thead, or tr
-            element, then, whenever a node would be inserted into the current
-            node, it must instead be inserted into the foster parent element. */
-            if (in_array(
-                end($this->stack)->nodeName,
-                array('table', 'tbody', 'tfoot', 'thead', 'tr')
-            )
-            ) {
-                /* The foster parent element is the parent element of the last
-                table element in the stack of open elements, if there is a
-                table element and it has such a parent element. If there is no
-                table element in the stack of open elements (innerHTML case),
-                then the foster parent element is the first element in the
-                stack of open elements (the html  element). Otherwise, if there
-                is a table element in the stack of open elements, but the last
-                table element in the stack of open elements has no parent, or
-                its parent node is not an element, then the foster parent
-                element is the element before the last table element in the
-                stack of open elements. */
-                for ($n = count($this->stack) - 1; $n >= 0; $n--) {
-                    if ($this->stack[$n]->nodeName === 'table') {
-                        $table = $this->stack[$n];
-                        break;
-                    }
-                }
-
-                if (isset($table) && $table->parentNode !== null) {
-                    $this->foster_parent = $table->parentNode;
-
-                } elseif (!isset($table)) {
-                    $this->foster_parent = $this->stack[0];
-
-                } elseif (isset($table) && ($table->parentNode === null ||
-                        $table->parentNode->nodeType !== XML_ELEMENT_NODE)
-                ) {
-                    $this->foster_parent = $this->stack[$n - 1];
-                }
-            }
-
-            $this->inBody($token);
-        }
-    }
-
-    private function inCaption($token)
-    {
-        /* An end tag whose tag name is "caption" */
-        if ($token['type'] === HTML5::ENDTAG && $token['name'] === 'caption') {
-            /* If the stack of open elements does not have an element in table
-            scope with the same tag name as the token, this is a parse error.
-            Ignore the token. (innerHTML case) */
-            if (!$this->elementInScope($token['name'], true)) {
-                // Ignore
-
-                /* Otherwise: */
-            } else {
-                /* Generate implied end tags. */
-                $this->generateImpliedEndTags();
-
-                /* Now, if the current node is not a caption element, then this
-                is a parse error. */
-                // w/e
-
-                /* Pop elements from this stack until a caption element has
-                been popped from the stack. */
-                while (true) {
-                    $node = end($this->stack)->nodeName;
-                    array_pop($this->stack);
-
-                    if ($node === 'caption') {
-                        break;
-                    }
-                }
-
-                /* Clear the list of active formatting elements up to the last
-                marker. */
-                $this->clearTheActiveFormattingElementsUpToTheLastMarker();
-
-                /* Switch the insertion mode to "in table". */
-                $this->mode = self::IN_TABLE;
-            }
-
-            /* A start tag whose tag name is one of: "caption", "col", "colgroup",
-            "tbody", "td", "tfoot", "th", "thead", "tr", or an end tag whose tag
-            name is "table" */
-        } elseif (($token['type'] === HTML5::STARTTAG && in_array(
-                    $token['name'],
-                    array(
-                        'caption',
-                        'col',
-                        'colgroup',
-                        'tbody',
-                        'td',
-                        'tfoot',
-                        'th',
-                        'thead',
-                        'tr'
-                    )
-                )) || ($token['type'] === HTML5::ENDTAG &&
-                $token['name'] === 'table')
-        ) {
-            /* Parse error. Act as if an end tag with the tag name "caption"
-            had been seen, then, if that token wasn't ignored, reprocess the
-            current token. */
-            $this->inCaption(
-                array(
-                    'name' => 'caption',
-                    'type' => HTML5::ENDTAG
-                )
-            );
-
-            return $this->inTable($token);
-
-            /* An end tag whose tag name is one of: "body", "col", "colgroup",
-            "html", "tbody", "td", "tfoot", "th", "thead", "tr" */
-        } elseif ($token['type'] === HTML5::ENDTAG && in_array(
-                $token['name'],
-                array(
-                    'body',
-                    'col',
-                    'colgroup',
-                    'html',
-                    'tbody',
-                    'tfoot',
-                    'th',
-                    'thead',
-                    'tr'
-                )
-            )
-        ) {
-            // Parse error. Ignore the token.
-
-            /* Anything else */
-        } else {
-            /* Process the token as if the insertion mode was "in body". */
-            $this->inBody($token);
-        }
-    }
-
-    private function inColumnGroup($token)
-    {
-        /* A character token that is one of one of U+0009 CHARACTER TABULATION,
-        U+000A LINE FEED (LF), U+000B LINE TABULATION, U+000C FORM FEED (FF),
-        or U+0020 SPACE */
-        if ($token['type'] === HTML5::CHARACTR &&
-            preg_match('/^[\t\n\x0b\x0c ]+$/', $token['data'])
-        ) {
-            /* Append the character to the current node. */
-            $text = $this->dom->createTextNode($token['data']);
-            end($this->stack)->appendChild($text);
-
-            /* A comment token */
-        } elseif ($token['type'] === HTML5::COMMENT) {
-            /* Append a Comment node to the current node with the data
-            attribute set to the data given in the comment token. */
-            $comment = $this->dom->createComment($token['data']);
-            end($this->stack)->appendChild($comment);
-
-            /* A start tag whose tag name is "col" */
-        } elseif ($token['type'] === HTML5::STARTTAG && $token['name'] === 'col') {
-            /* Insert a col element for the token. Immediately pop the current
-            node off the stack of open elements. */
-            $this->insertElement($token);
-            array_pop($this->stack);
-
-            /* An end tag whose tag name is "colgroup" */
-        } elseif ($token['type'] === HTML5::ENDTAG &&
-            $token['name'] === 'colgroup'
-        ) {
-            /* If the current node is the root html element, then this is a
-            parse error, ignore the token. (innerHTML case) */
-            if (end($this->stack)->nodeName === 'html') {
-                // Ignore
-
-                /* Otherwise, pop the current node (which will be a colgroup
-                element) from the stack of open elements. Switch the insertion
-                mode to "in table". */
-            } else {
-                array_pop($this->stack);
-                $this->mode = self::IN_TABLE;
-            }
-
-            /* An end tag whose tag name is "col" */
-        } elseif ($token['type'] === HTML5::ENDTAG && $token['name'] === 'col') {
-            /* Parse error. Ignore the token. */
-
-            /* Anything else */
-        } else {
-            /* Act as if an end tag with the tag name "colgroup" had been seen,
-            and then, if that token wasn't ignored, reprocess the current token. */
-            $this->inColumnGroup(
-                array(
-                    'name' => 'colgroup',
-                    'type' => HTML5::ENDTAG
-                )
-            );
-
-            return $this->inTable($token);
-        }
-    }
-
-    private function inTableBody($token)
-    {
-        $clear = array('tbody', 'tfoot', 'thead', 'html');
-
-        /* A start tag whose tag name is "tr" */
-        if ($token['type'] === HTML5::STARTTAG && $token['name'] === 'tr') {
-            /* Clear the stack back to a table body context. */
-            $this->clearStackToTableContext($clear);
-
-            /* Insert a tr element for the token, then switch the insertion
-            mode to "in row". */
-            $this->insertElement($token);
-            $this->mode = self::IN_ROW;
-
-            /* A start tag whose tag name is one of: "th", "td" */
-        } elseif ($token['type'] === HTML5::STARTTAG &&
-            ($token['name'] === 'th' || $token['name'] === 'td')
-        ) {
-            /* Parse error. Act as if a start tag with the tag name "tr" had
-            been seen, then reprocess the current token. */
-            $this->inTableBody(
-                array(
-                    'name' => 'tr',
-                    'type' => HTML5::STARTTAG,
-                    'attr' => array()
-                )
-            );
-
-            return $this->inRow($token);
-
-            /* An end tag whose tag name is one of: "tbody", "tfoot", "thead" */
-        } elseif ($token['type'] === HTML5::ENDTAG &&
-            in_array($token['name'], array('tbody', 'tfoot', 'thead'))
-        ) {
-            /* If the stack of open elements does not have an element in table
-            scope with the same tag name as the token, this is a parse error.
-            Ignore the token. */
-            if (!$this->elementInScope($token['name'], true)) {
-                // Ignore
-
-                /* Otherwise: */
-            } else {
-                /* Clear the stack back to a table body context. */
-                $this->clearStackToTableContext($clear);
-
-                /* Pop the current node from the stack of open elements. Switch
-                the insertion mode to "in table". */
-                array_pop($this->stack);
-                $this->mode = self::IN_TABLE;
-            }
-
-            /* A start tag whose tag name is one of: "caption", "col", "colgroup",
-            "tbody", "tfoot", "thead", or an end tag whose tag name is "table" */
-        } elseif (($token['type'] === HTML5::STARTTAG && in_array(
-                    $token['name'],
-                    array('caption', 'col', 'colgroup', 'tbody', 'tfoor', 'thead')
-                )) ||
-            ($token['type'] === HTML5::STARTTAG && $token['name'] === 'table')
-        ) {
-            /* If the stack of open elements does not have a tbody, thead, or
-            tfoot element in table scope, this is a parse error. Ignore the
-            token. (innerHTML case) */
-            if (!$this->elementInScope(array('tbody', 'thead', 'tfoot'), true)) {
-                // Ignore.
-
-                /* Otherwise: */
-            } else {
-                /* Clear the stack back to a table body context. */
-                $this->clearStackToTableContext($clear);
-
-                /* Act as if an end tag with the same tag name as the current
-                node ("tbody", "tfoot", or "thead") had been seen, then
-                reprocess the current token. */
-                $this->inTableBody(
-                    array(
-                        'name' => end($this->stack)->nodeName,
-                        'type' => HTML5::ENDTAG
-                    )
-                );
-
-                return $this->mainPhase($token);
-            }
-
-            /* An end tag whose tag name is one of: "body", "caption", "col",
-            "colgroup", "html", "td", "th", "tr" */
-        } elseif ($token['type'] === HTML5::ENDTAG && in_array(
-                $token['name'],
-                array('body', 'caption', 'col', 'colgroup', 'html', 'td', 'th', 'tr')
-            )
-        ) {
-            /* Parse error. Ignore the token. */
-
-            /* Anything else */
-        } else {
-            /* Process the token as if the insertion mode was "in table". */
-            $this->inTable($token);
-        }
-    }
-
-    private function inRow($token)
-    {
-        $clear = array('tr', 'html');
-
-        /* A start tag whose tag name is one of: "th", "td" */
-        if ($token['type'] === HTML5::STARTTAG &&
-            ($token['name'] === 'th' || $token['name'] === 'td')
-        ) {
-            /* Clear the stack back to a table row context. */
-            $this->clearStackToTableContext($clear);
-
-            /* Insert an HTML element for the token, then switch the insertion
-            mode to "in cell". */
-            $this->insertElement($token);
-            $this->mode = self::IN_CELL;
-
-            /* Insert a marker at the end of the list of active formatting
-            elements. */
-            $this->a_formatting[] = self::MARKER;
-
-            /* An end tag whose tag name is "tr" */
-        } elseif ($token['type'] === HTML5::ENDTAG && $token['name'] === 'tr') {
-            /* If the stack of open elements does not have an element in table
-            scope with the same tag name as the token, this is a parse error.
-            Ignore the token. (innerHTML case) */
-            if (!$this->elementInScope($token['name'], true)) {
-                // Ignore.
-
-                /* Otherwise: */
-            } else {
-                /* Clear the stack back to a table row context. */
-                $this->clearStackToTableContext($clear);
-
-                /* Pop the current node (which will be a tr element) from the
-                stack of open elements. Switch the insertion mode to "in table
-                body". */
-                array_pop($this->stack);
-                $this->mode = self::IN_TBODY;
-            }
-
-            /* A start tag whose tag name is one of: "caption", "col", "colgroup",
-            "tbody", "tfoot", "thead", "tr" or an end tag whose tag name is "table" */
-        } elseif ($token['type'] === HTML5::STARTTAG && in_array(
-                $token['name'],
-                array('caption', 'col', 'colgroup', 'tbody', 'tfoot', 'thead', 'tr')
-            )
-        ) {
-            /* Act as if an end tag with the tag name "tr" had been seen, then,
-            if that token wasn't ignored, reprocess the current token. */
-            $this->inRow(
-                array(
-                    'name' => 'tr',
-                    'type' => HTML5::ENDTAG
-                )
-            );
-
-            return $this->inCell($token);
-
-            /* An end tag whose tag name is one of: "tbody", "tfoot", "thead" */
-        } elseif ($token['type'] === HTML5::ENDTAG &&
-            in_array($token['name'], array('tbody', 'tfoot', 'thead'))
-        ) {
-            /* If the stack of open elements does not have an element in table
-            scope with the same tag name as the token, this is a parse error.
-            Ignore the token. */
-            if (!$this->elementInScope($token['name'], true)) {
-                // Ignore.
-
-                /* Otherwise: */
-            } else {
-                /* Otherwise, act as if an end tag with the tag name "tr" had
-                been seen, then reprocess the current token. */
-                $this->inRow(
-                    array(
-                        'name' => 'tr',
-                        'type' => HTML5::ENDTAG
-                    )
-                );
-
-                return $this->inCell($token);
-            }
-
-            /* An end tag whose tag name is one of: "body", "caption", "col",
-            "colgroup", "html", "td", "th" */
-        } elseif ($token['type'] === HTML5::ENDTAG && in_array(
-                $token['name'],
-                array('body', 'caption', 'col', 'colgroup', 'html', 'td', 'th', 'tr')
-            )
-        ) {
-            /* Parse error. Ignore the token. */
-
-            /* Anything else */
-        } else {
-            /* Process the token as if the insertion mode was "in table". */
-            $this->inTable($token);
-        }
-    }
-
-    private function inCell($token)
-    {
-        /* An end tag whose tag name is one of: "td", "th" */
-        if ($token['type'] === HTML5::ENDTAG &&
-            ($token['name'] === 'td' || $token['name'] === 'th')
-        ) {
-            /* If the stack of open elements does not have an element in table
-            scope with the same tag name as that of the token, then this is a
-            parse error and the token must be ignored. */
-            if (!$this->elementInScope($token['name'], true)) {
-                // Ignore.
-
-                /* Otherwise: */
-            } else {
-                /* Generate implied end tags, except for elements with the same
-                tag name as the token. */
-                $this->generateImpliedEndTags(array($token['name']));
-
-                /* Now, if the current node is not an element with the same tag
-                name as the token, then this is a parse error. */
-                // k
-
-                /* Pop elements from this stack until an element with the same
-                tag name as the token has been popped from the stack. */
-                while (true) {
-                    $node = end($this->stack)->nodeName;
-                    array_pop($this->stack);
-
-                    if ($node === $token['name']) {
-                        break;
-                    }
-                }
-
-                /* Clear the list of active formatting elements up to the last
-                marker. */
-                $this->clearTheActiveFormattingElementsUpToTheLastMarker();
-
-                /* Switch the insertion mode to "in row". (The current node
-                will be a tr element at this point.) */
-                $this->mode = self::IN_ROW;
-            }
-
-            /* A start tag whose tag name is one of: "caption", "col", "colgroup",
-            "tbody", "td", "tfoot", "th", "thead", "tr" */
-        } elseif ($token['type'] === HTML5::STARTTAG && in_array(
-                $token['name'],
-                array(
-                    'caption',
-                    'col',
-                    'colgroup',
-                    'tbody',
-                    'td',
-                    'tfoot',
-                    'th',
-                    'thead',
-                    'tr'
-                )
-            )
-        ) {
-            /* If the stack of open elements does not have a td or th element
-            in table scope, then this is a parse error; ignore the token.
-            (innerHTML case) */
-            if (!$this->elementInScope(array('td', 'th'), true)) {
-                // Ignore.
-
-                /* Otherwise, close the cell (see below) and reprocess the current
-                token. */
-            } else {
-                $this->closeCell();
-                return $this->inRow($token);
-            }
-
-            /* A start tag whose tag name is one of: "caption", "col", "colgroup",
-            "tbody", "td", "tfoot", "th", "thead", "tr" */
-        } elseif ($token['type'] === HTML5::STARTTAG && in_array(
-                $token['name'],
-                array(
-                    'caption',
-                    'col',
-                    'colgroup',
-                    'tbody',
-                    'td',
-                    'tfoot',
-                    'th',
-                    'thead',
-                    'tr'
-                )
-            )
-        ) {
-            /* If the stack of open elements does not have a td or th element
-            in table scope, then this is a parse error; ignore the token.
-            (innerHTML case) */
-            if (!$this->elementInScope(array('td', 'th'), true)) {
-                // Ignore.
-
-                /* Otherwise, close the cell (see below) and reprocess the current
-                token. */
-            } else {
-                $this->closeCell();
-                return $this->inRow($token);
-            }
-
-            /* An end tag whose tag name is one of: "body", "caption", "col",
-            "colgroup", "html" */
-        } elseif ($token['type'] === HTML5::ENDTAG && in_array(
-                $token['name'],
-                array('body', 'caption', 'col', 'colgroup', 'html')
-            )
-        ) {
-            /* Parse error. Ignore the token. */
-
-            /* An end tag whose tag name is one of: "table", "tbody", "tfoot",
-            "thead", "tr" */
-        } elseif ($token['type'] === HTML5::ENDTAG && in_array(
-                $token['name'],
-                array('table', 'tbody', 'tfoot', 'thead', 'tr')
-            )
-        ) {
-            /* If the stack of open elements does not have an element in table
-            scope with the same tag name as that of the token (which can only
-            happen for "tbody", "tfoot" and "thead", or, in the innerHTML case),
-            then this is a parse error and the token must be ignored. */
-            if (!$this->elementInScope($token['name'], true)) {
-                // Ignore.
-
-                /* Otherwise, close the cell (see below) and reprocess the current
-                token. */
-            } else {
-                $this->closeCell();
-                return $this->inRow($token);
-            }
-
-            /* Anything else */
-        } else {
-            /* Process the token as if the insertion mode was "in body". */
-            $this->inBody($token);
-        }
-    }
-
-    private function inSelect($token)
-    {
-        /* Handle the token as follows: */
-
-        /* A character token */
-        if ($token['type'] === HTML5::CHARACTR) {
-            /* Append the token's character to the current node. */
-            $this->insertText($token['data']);
-
-            /* A comment token */
-        } elseif ($token['type'] === HTML5::COMMENT) {
-            /* Append a Comment node to the current node with the data
-            attribute set to the data given in the comment token. */
-            $this->insertComment($token['data']);
-
-            /* A start tag token whose tag name is "option" */
-        } elseif ($token['type'] === HTML5::STARTTAG &&
-            $token['name'] === 'option'
-        ) {
-            /* If the current node is an option element, act as if an end tag
-            with the tag name "option" had been seen. */
-            if (end($this->stack)->nodeName === 'option') {
-                $this->inSelect(
-                    array(
-                        'name' => 'option',
-                        'type' => HTML5::ENDTAG
-                    )
-                );
-            }
-
-            /* Insert an HTML element for the token. */
-            $this->insertElement($token);
-
-            /* A start tag token whose tag name is "optgroup" */
-        } elseif ($token['type'] === HTML5::STARTTAG &&
-            $token['name'] === 'optgroup'
-        ) {
-            /* If the current node is an option element, act as if an end tag
-            with the tag name "option" had been seen. */
-            if (end($this->stack)->nodeName === 'option') {
-                $this->inSelect(
-                    array(
-                        'name' => 'option',
-                        'type' => HTML5::ENDTAG
-                    )
-                );
-            }
-
-            /* If the current node is an optgroup element, act as if an end tag
-            with the tag name "optgroup" had been seen. */
-            if (end($this->stack)->nodeName === 'optgroup') {
-                $this->inSelect(
-                    array(
-                        'name' => 'optgroup',
-                        'type' => HTML5::ENDTAG
-                    )
-                );
-            }
-
-            /* Insert an HTML element for the token. */
-            $this->insertElement($token);
-
-            /* An end tag token whose tag name is "optgroup" */
-        } elseif ($token['type'] === HTML5::ENDTAG &&
-            $token['name'] === 'optgroup'
-        ) {
-            /* First, if the current node is an option element, and the node
-            immediately before it in the stack of open elements is an optgroup
-            element, then act as if an end tag with the tag name "option" had
-            been seen. */
-            $elements_in_stack = count($this->stack);
-
-            if ($this->stack[$elements_in_stack - 1]->nodeName === 'option' &&
-                $this->stack[$elements_in_stack - 2]->nodeName === 'optgroup'
-            ) {
-                $this->inSelect(
-                    array(
-                        'name' => 'option',
-                        'type' => HTML5::ENDTAG
-                    )
-                );
-            }
-
-            /* If the current node is an optgroup element, then pop that node
-            from the stack of open elements. Otherwise, this is a parse error,
-            ignore the token. */
-            if ($this->stack[$elements_in_stack - 1] === 'optgroup') {
-                array_pop($this->stack);
-            }
-
-            /* An end tag token whose tag name is "option" */
-        } elseif ($token['type'] === HTML5::ENDTAG &&
-            $token['name'] === 'option'
-        ) {
-            /* If the current node is an option element, then pop that node
-            from the stack of open elements. Otherwise, this is a parse error,
-            ignore the token. */
-            if (end($this->stack)->nodeName === 'option') {
-                array_pop($this->stack);
-            }
-
-            /* An end tag whose tag name is "select" */
-        } elseif ($token['type'] === HTML5::ENDTAG &&
-            $token['name'] === 'select'
-        ) {
-            /* If the stack of open elements does not have an element in table
-            scope with the same tag name as the token, this is a parse error.
-            Ignore the token. (innerHTML case) */
-            if (!$this->elementInScope($token['name'], true)) {
-                // w/e
-
-                /* Otherwise: */
-            } else {
-                /* Pop elements from the stack of open elements until a select
-                element has been popped from the stack. */
-                while (true) {
-                    $current = end($this->stack)->nodeName;
-                    array_pop($this->stack);
-
-                    if ($current === 'select') {
-                        break;
-                    }
-                }
-
-                /* Reset the insertion mode appropriately. */
-                $this->resetInsertionMode();
-            }
-
-            /* A start tag whose tag name is "select" */
-        } elseif ($token['name'] === 'select' &&
-            $token['type'] === HTML5::STARTTAG
-        ) {
-            /* Parse error. Act as if the token had been an end tag with the
-            tag name "select" instead. */
-            $this->inSelect(
-                array(
-                    'name' => 'select',
-                    'type' => HTML5::ENDTAG
-                )
-            );
-
-            /* An end tag whose tag name is one of: "caption", "table", "tbody",
-            "tfoot", "thead", "tr", "td", "th" */
-        } elseif (in_array(
-                $token['name'],
-                array(
-                    'caption',
-                    'table',
-                    'tbody',
-                    'tfoot',
-                    'thead',
-                    'tr',
-                    'td',
-                    'th'
-                )
-            ) && $token['type'] === HTML5::ENDTAG
-        ) {
-            /* Parse error. */
-            // w/e
-
-            /* If the stack of open elements has an element in table scope with
-            the same tag name as that of the token, then act as if an end tag
-            with the tag name "select" had been seen, and reprocess the token.
-            Otherwise, ignore the token. */
-            if ($this->elementInScope($token['name'], true)) {
-                $this->inSelect(
-                    array(
-                        'name' => 'select',
-                        'type' => HTML5::ENDTAG
-                    )
-                );
-
-                $this->mainPhase($token);
-            }
-
-            /* Anything else */
-        } else {
-            /* Parse error. Ignore the token. */
-        }
-    }
-
-    private function afterBody($token)
-    {
-        /* Handle the token as follows: */
-
-        /* A character token that is one of one of U+0009 CHARACTER TABULATION,
-        U+000A LINE FEED (LF), U+000B LINE TABULATION, U+000C FORM FEED (FF),
-        or U+0020 SPACE */
-        if ($token['type'] === HTML5::CHARACTR &&
-            preg_match('/^[\t\n\x0b\x0c ]+$/', $token['data'])
-        ) {
-            /* Process the token as it would be processed if the insertion mode
-            was "in body". */
-            $this->inBody($token);
-
-            /* A comment token */
-        } elseif ($token['type'] === HTML5::COMMENT) {
-            /* Append a Comment node to the first element in the stack of open
-            elements (the html element), with the data attribute set to the
-            data given in the comment token. */
-            $comment = $this->dom->createComment($token['data']);
-            $this->stack[0]->appendChild($comment);
-
-            /* An end tag with the tag name "html" */
-        } elseif ($token['type'] === HTML5::ENDTAG && $token['name'] === 'html') {
-            /* If the parser was originally created in order to handle the
-            setting of an element's innerHTML attribute, this is a parse error;
-            ignore the token. (The element will be an html element in this
-            case.) (innerHTML case) */
-
-            /* Otherwise, switch to the trailing end phase. */
-            $this->phase = self::END_PHASE;
-
-            /* Anything else */
-        } else {
-            /* Parse error. Set the insertion mode to "in body" and reprocess
-            the token. */
-            $this->mode = self::IN_BODY;
-            return $this->inBody($token);
-        }
-    }
-
-    private function inFrameset($token)
-    {
-        /* Handle the token as follows: */
-
-        /* A character token that is one of one of U+0009 CHARACTER TABULATION,
-        U+000A LINE FEED (LF), U+000B LINE TABULATION, U+000C FORM FEED (FF),
-        U+000D CARRIAGE RETURN (CR), or U+0020 SPACE */
-        if ($token['type'] === HTML5::CHARACTR &&
-            preg_match('/^[\t\n\x0b\x0c ]+$/', $token['data'])
-        ) {
-            /* Append the character to the current node. */
-            $this->insertText($token['data']);
-
-            /* A comment token */
-        } elseif ($token['type'] === HTML5::COMMENT) {
-            /* Append a Comment node to the current node with the data
-            attribute set to the data given in the comment token. */
-            $this->insertComment($token['data']);
-
-            /* A start tag with the tag name "frameset" */
-        } elseif ($token['name'] === 'frameset' &&
-            $token['type'] === HTML5::STARTTAG
-        ) {
-            $this->insertElement($token);
-
-            /* An end tag with the tag name "frameset" */
-        } elseif ($token['name'] === 'frameset' &&
-            $token['type'] === HTML5::ENDTAG
-        ) {
-            /* If the current node is the root html element, then this is a
-            parse error; ignore the token. (innerHTML case) */
-            if (end($this->stack)->nodeName === 'html') {
-                // Ignore
-
-            } else {
-                /* Otherwise, pop the current node from the stack of open
-                elements. */
-                array_pop($this->stack);
-
-                /* If the parser was not originally created in order to handle
-                the setting of an element's innerHTML attribute (innerHTML case),
-                and the current node is no longer a frameset element, then change
-                the insertion mode to "after frameset". */
-                $this->mode = self::AFTR_FRAME;
-            }
-
-            /* A start tag with the tag name "frame" */
-        } elseif ($token['name'] === 'frame' &&
-            $token['type'] === HTML5::STARTTAG
-        ) {
-            /* Insert an HTML element for the token. */
-            $this->insertElement($token);
-
-            /* Immediately pop the current node off the stack of open elements. */
-            array_pop($this->stack);
-
-            /* A start tag with the tag name "noframes" */
-        } elseif ($token['name'] === 'noframes' &&
-            $token['type'] === HTML5::STARTTAG
-        ) {
-            /* Process the token as if the insertion mode had been "in body". */
-            $this->inBody($token);
-
-            /* Anything else */
-        } else {
-            /* Parse error. Ignore the token. */
-        }
-    }
-
-    private function afterFrameset($token)
-    {
-        /* Handle the token as follows: */
-
-        /* A character token that is one of one of U+0009 CHARACTER TABULATION,
-        U+000A LINE FEED (LF), U+000B LINE TABULATION, U+000C FORM FEED (FF),
-        U+000D CARRIAGE RETURN (CR), or U+0020 SPACE */
-        if ($token['type'] === HTML5::CHARACTR &&
-            preg_match('/^[\t\n\x0b\x0c ]+$/', $token['data'])
-        ) {
-            /* Append the character to the current node. */
-            $this->insertText($token['data']);
-
-            /* A comment token */
-        } elseif ($token['type'] === HTML5::COMMENT) {
-            /* Append a Comment node to the current node with the data
-            attribute set to the data given in the comment token. */
-            $this->insertComment($token['data']);
-
-            /* An end tag with the tag name "html" */
-        } elseif ($token['name'] === 'html' &&
-            $token['type'] === HTML5::ENDTAG
-        ) {
-            /* Switch to the trailing end phase. */
-            $this->phase = self::END_PHASE;
-
-            /* A start tag with the tag name "noframes" */
-        } elseif ($token['name'] === 'noframes' &&
-            $token['type'] === HTML5::STARTTAG
-        ) {
-            /* Process the token as if the insertion mode had been "in body". */
-            $this->inBody($token);
-
-            /* Anything else */
-        } else {
-            /* Parse error. Ignore the token. */
-        }
-    }
-
-    private function trailingEndPhase($token)
-    {
-        /* After the main phase, as each token is emitted from the tokenisation
-        stage, it must be processed as described in this section. */
-
-        /* A DOCTYPE token */
-        if ($token['type'] === HTML5::DOCTYPE) {
-            // Parse error. Ignore the token.
-
-            /* A comment token */
-        } elseif ($token['type'] === HTML5::COMMENT) {
-            /* Append a Comment node to the Document object with the data
-            attribute set to the data given in the comment token. */
-            $comment = $this->dom->createComment($token['data']);
-            $this->dom->appendChild($comment);
-
-            /* A character token that is one of one of U+0009 CHARACTER TABULATION,
-            U+000A LINE FEED (LF), U+000B LINE TABULATION, U+000C FORM FEED (FF),
-            or U+0020 SPACE */
-        } elseif ($token['type'] === HTML5::CHARACTR &&
-            preg_match('/^[\t\n\x0b\x0c ]+$/', $token['data'])
-        ) {
-            /* Process the token as it would be processed in the main phase. */
-            $this->mainPhase($token);
-
-            /* A character token that is not one of U+0009 CHARACTER TABULATION,
-            U+000A LINE FEED (LF), U+000B LINE TABULATION, U+000C FORM FEED (FF),
-            or U+0020 SPACE. Or a start tag token. Or an end tag token. */
-        } elseif (($token['type'] === HTML5::CHARACTR &&
-                preg_match('/^[\t\n\x0b\x0c ]+$/', $token['data'])) ||
-            $token['type'] === HTML5::STARTTAG || $token['type'] === HTML5::ENDTAG
-        ) {
-            /* Parse error. Switch back to the main phase and reprocess the
-            token. */
-            $this->phase = self::MAIN_PHASE;
-            return $this->mainPhase($token);
-
-            /* An end-of-file token */
-        } elseif ($token['type'] === HTML5::EOF) {
-            /* OMG DONE!! */
-        }
-    }
-
-    private function insertElement($token, $append = true, $check = false)
-    {
-        // Proprietary workaround for libxml2's limitations with tag names
-        if ($check) {
-            // Slightly modified HTML5 tag-name modification,
-            // removing anything that's not an ASCII letter, digit, or hyphen
-            $token['name'] = preg_replace('/[^a-z0-9-]/i', '', $token['name']);
-            // Remove leading hyphens and numbers
-            $token['name'] = ltrim($token['name'], '-0..9');
-            // In theory, this should ever be needed, but just in case
-            if ($token['name'] === '') {
-                $token['name'] = 'span';
-            } // arbitrary generic choice
-        }
-
-        $el = $this->dom->createElement($token['name']);
-
-        foreach ($token['attr'] as $attr) {
-            if (!$el->hasAttribute($attr['name'])) {
-                $el->setAttribute($attr['name'], $attr['value']);
-            }
-        }
-
-        $this->appendToRealParent($el);
-        $this->stack[] = $el;
-
-        return $el;
-    }
-
-    private function insertText($data)
-    {
-        $text = $this->dom->createTextNode($data);
-        $this->appendToRealParent($text);
-    }
-
-    private function insertComment($data)
-    {
-        $comment = $this->dom->createComment($data);
-        $this->appendToRealParent($comment);
-    }
-
-    private function appendToRealParent($node)
-    {
-        if ($this->foster_parent === null) {
-            end($this->stack)->appendChild($node);
-
-        } elseif ($this->foster_parent !== null) {
-            /* If the foster parent element is the parent element of the
-            last table element in the stack of open elements, then the new
-            node must be inserted immediately before the last table element
-            in the stack of open elements in the foster parent element;
-            otherwise, the new node must be appended to the foster parent
-            element. */
-            for ($n = count($this->stack) - 1; $n >= 0; $n--) {
-                if ($this->stack[$n]->nodeName === 'table' &&
-                    $this->stack[$n]->parentNode !== null
-                ) {
-                    $table = $this->stack[$n];
-                    break;
-                }
-            }
-
-            if (isset($table) && $this->foster_parent->isSameNode($table->parentNode)) {
-                $this->foster_parent->insertBefore($node, $table);
-            } else {
-                $this->foster_parent->appendChild($node);
-            }
-
-            $this->foster_parent = null;
-        }
-    }
-
-    private function elementInScope($el, $table = false)
-    {
-        if (is_array($el)) {
-            foreach ($el as $element) {
-                if ($this->elementInScope($element, $table)) {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        $leng = count($this->stack);
-
-        for ($n = 0; $n < $leng; $n++) {
-            /* 1. Initialise node to be the current node (the bottommost node of
-            the stack). */
-            $node = $this->stack[$leng - 1 - $n];
-
-            if ($node->tagName === $el) {
-                /* 2. If node is the target node, terminate in a match state. */
-                return true;
-
-            } elseif ($node->tagName === 'table') {
-                /* 3. Otherwise, if node is a table element, terminate in a failure
-                state. */
-                return false;
-
-            } elseif ($table === true && in_array(
-                    $node->tagName,
-                    array(
-                        'caption',
-                        'td',
-                        'th',
-                        'button',
-                        'marquee',
-                        'object'
-                    )
-                )
-            ) {
-                /* 4. Otherwise, if the algorithm is the "has an element in scope"
-                variant (rather than the "has an element in table scope" variant),
-                and node is one of the following, terminate in a failure state. */
-                return false;
-
-            } elseif ($node === $node->ownerDocument->documentElement) {
-                /* 5. Otherwise, if node is an html element (root element), terminate
-                in a failure state. (This can only happen if the node is the topmost
-                node of the    stack of open elements, and prevents the next step from
-                being invoked if there are no more elements in the stack.) */
-                return false;
-            }
-
-            /* Otherwise, set node to the previous entry in the stack of open
-            elements and return to step 2. (This will never fail, since the loop
-            will always terminate in the previous step if the top of the stack
-            is reached.) */
-        }
-    }
-
-    private function reconstructActiveFormattingElements()
-    {
-        /* 1. If there are no entries in the list of active formatting elements,
-        then there is nothing to reconstruct; stop this algorithm. */
-        $formatting_elements = count($this->a_formatting);
-
-        if ($formatting_elements === 0) {
-            return false;
-        }
-
-        /* 3. Let entry be the last (most recently added) element in the list
-        of active formatting elements. */
-        $entry = end($this->a_formatting);
-
-        /* 2. If the last (most recently added) entry in the list of active
-        formatting elements is a marker, or if it is an element that is in the
-        stack of open elements, then there is nothing to reconstruct; stop this
-        algorithm. */
-        if ($entry === self::MARKER || in_array($entry, $this->stack, true)) {
-            return false;
-        }
-
-        for ($a = $formatting_elements - 1; $a >= 0; true) {
-            /* 4. If there are no entries before entry in the list of active
-            formatting elements, then jump to step 8. */
-            if ($a === 0) {
-                $step_seven = false;
-                break;
-            }
-
-            /* 5. Let entry be the entry one earlier than entry in the list of
-            active formatting elements. */
-            $a--;
-            $entry = $this->a_formatting[$a];
-
-            /* 6. If entry is neither a marker nor an element that is also in
-            thetack of open elements, go to step 4. */
-            if ($entry === self::MARKER || in_array($entry, $this->stack, true)) {
-                break;
-            }
-        }
-
-        while (true) {
-            /* 7. Let entry be the element one later than entry in the list of
-            active formatting elements. */
-            if (isset($step_seven) && $step_seven === true) {
-                $a++;
-                $entry = $this->a_formatting[$a];
-            }
-
-            /* 8. Perform a shallow clone of the element entry to obtain clone. */
-            $clone = $entry->cloneNode();
-
-            /* 9. Append clone to the current node and push it onto the stack
-            of open elements  so that it is the new current node. */
-            end($this->stack)->appendChild($clone);
-            $this->stack[] = $clone;
-
-            /* 10. Replace the entry for entry in the list with an entry for
-            clone. */
-            $this->a_formatting[$a] = $clone;
-
-            /* 11. If the entry for clone in the list of active formatting
-            elements is not the last entry in the list, return to step 7. */
-            if (end($this->a_formatting) !== $clone) {
-                $step_seven = true;
-            } else {
-                break;
-            }
-        }
-    }
-
-    private function clearTheActiveFormattingElementsUpToTheLastMarker()
-    {
-        /* When the steps below require the UA to clear the list of active
-        formatting elements up to the last marker, the UA must perform the
-        following steps: */
-
-        while (true) {
-            /* 1. Let entry be the last (most recently added) entry in the list
-            of active formatting elements. */
-            $entry = end($this->a_formatting);
-
-            /* 2. Remove entry from the list of active formatting elements. */
-            array_pop($this->a_formatting);
-
-            /* 3. If entry was a marker, then stop the algorithm at this point.
-            The list has been cleared up to the last marker. */
-            if ($entry === self::MARKER) {
-                break;
-            }
-        }
-    }
-
-    private function generateImpliedEndTags($exclude = array())
-    {
-        /* When the steps below require the UA to generate implied end tags,
-        then, if the current node is a dd element, a dt element, an li element,
-        a p element, a td element, a th  element, or a tr element, the UA must
-        act as if an end tag with the respective tag name had been seen and
-        then generate implied end tags again. */
-        $node = end($this->stack);
-        $elements = array_diff(array('dd', 'dt', 'li', 'p', 'td', 'th', 'tr'), $exclude);
-
-        while (in_array(end($this->stack)->nodeName, $elements)) {
-            array_pop($this->stack);
-        }
-    }
-
-    private function getElementCategory($node)
-    {
-        $name = $node->tagName;
-        if (in_array($name, $this->special)) {
-            return self::SPECIAL;
-        } elseif (in_array($name, $this->scoping)) {
-            return self::SCOPING;
-        } elseif (in_array($name, $this->formatting)) {
-            return self::FORMATTING;
-        } else {
-            return self::PHRASING;
-        }
-    }
-
-    private function clearStackToTableContext($elements)
-    {
-        /* When the steps above require the UA to clear the stack back to a
-        table context, it means that the UA must, while the current node is not
-        a table element or an html element, pop elements from the stack of open
-        elements. If this causes any elements to be popped from the stack, then
-        this is a parse error. */
-        while (true) {
-            $node = end($this->stack)->nodeName;
-
-            if (in_array($node, $elements)) {
-                break;
-            } else {
-                array_pop($this->stack);
-            }
-        }
-    }
-
-    private function resetInsertionMode()
-    {
-        /* 1. Let last be false. */
-        $last = false;
-        $leng = count($this->stack);
-
-        for ($n = $leng - 1; $n >= 0; $n--) {
-            /* 2. Let node be the last node in the stack of open elements. */
-            $node = $this->stack[$n];
-
-            /* 3. If node is the first node in the stack of open elements, then
-            set last to true. If the element whose innerHTML  attribute is being
-            set is neither a td  element nor a th element, then set node to the
-            element whose innerHTML  attribute is being set. (innerHTML  case) */
-            if ($this->stack[0]->isSameNode($node)) {
-                $last = true;
-            }
-
-            /* 4. If node is a select element, then switch the insertion mode to
-            "in select" and abort these steps. (innerHTML case) */
-            if ($node->nodeName === 'select') {
-                $this->mode = self::IN_SELECT;
-                break;
-
-                /* 5. If node is a td or th element, then switch the insertion mode
-                to "in cell" and abort these steps. */
-            } elseif ($node->nodeName === 'td' || $node->nodeName === 'th') {
-                $this->mode = self::IN_CELL;
-                break;
-
-                /* 6. If node is a tr element, then switch the insertion mode to
-                "in    row" and abort these steps. */
-            } elseif ($node->nodeName === 'tr') {
-                $this->mode = self::IN_ROW;
-                break;
-
-                /* 7. If node is a tbody, thead, or tfoot element, then switch the
-                insertion mode to "in table body" and abort these steps. */
-            } elseif (in_array($node->nodeName, array('tbody', 'thead', 'tfoot'))) {
-                $this->mode = self::IN_TBODY;
-                break;
-
-                /* 8. If node is a caption element, then switch the insertion mode
-                to "in caption" and abort these steps. */
-            } elseif ($node->nodeName === 'caption') {
-                $this->mode = self::IN_CAPTION;
-                break;
-
-                /* 9. If node is a colgroup element, then switch the insertion mode
-                to "in column group" and abort these steps. (innerHTML case) */
-            } elseif ($node->nodeName === 'colgroup') {
-                $this->mode = self::IN_CGROUP;
-                break;
-
-                /* 10. If node is a table element, then switch the insertion mode
-                to "in table" and abort these steps. */
-            } elseif ($node->nodeName === 'table') {
-                $this->mode = self::IN_TABLE;
-                break;
-
-                /* 11. If node is a head element, then switch the insertion mode
-                to "in body" ("in body"! not "in head"!) and abort these steps.
-                (innerHTML case) */
-            } elseif ($node->nodeName === 'head') {
-                $this->mode = self::IN_BODY;
-                break;
-
-                /* 12. If node is a body element, then switch the insertion mode to
-                "in body" and abort these steps. */
-            } elseif ($node->nodeName === 'body') {
-                $this->mode = self::IN_BODY;
-                break;
-
-                /* 13. If node is a frameset element, then switch the insertion
-                mode to "in frameset" and abort these steps. (innerHTML case) */
-            } elseif ($node->nodeName === 'frameset') {
-                $this->mode = self::IN_FRAME;
-                break;
-
-                /* 14. If node is an html element, then: if the head element
-                pointer is null, switch the insertion mode to "before head",
-                otherwise, switch the insertion mode to "after head". In either
-                case, abort these steps. (innerHTML case) */
-            } elseif ($node->nodeName === 'html') {
-                $this->mode = ($this->head_pointer === null)
-                    ? self::BEFOR_HEAD
-                    : self::AFTER_HEAD;
-
-                break;
-
-                /* 15. If last is true, then set the insertion mode to "in body"
-                and    abort these steps. (innerHTML case) */
-            } elseif ($last) {
-                $this->mode = self::IN_BODY;
-                break;
-            }
-        }
-    }
-
-    private function closeCell()
-    {
-        /* If the stack of open elements has a td or th element in table scope,
-        then act as if an end tag token with that tag name had been seen. */
-        foreach (array('td', 'th') as $cell) {
-            if ($this->elementInScope($cell, true)) {
-                $this->inCell(
-                    array(
-                        'name' => $cell,
-                        'type' => HTML5::ENDTAG
-                    )
-                );
-
-                break;
-            }
-        }
-    }
-
-    public function save()
-    {
-        return $this->dom;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

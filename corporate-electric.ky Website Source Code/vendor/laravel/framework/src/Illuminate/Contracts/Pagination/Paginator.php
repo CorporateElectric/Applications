@@ -1,124 +1,37 @@
-<?php
-
-namespace Illuminate\Contracts\Pagination;
-
-interface Paginator
-{
-    /**
-     * Get the URL for a given page.
-     *
-     * @param  int  $page
-     * @return string
-     */
-    public function url($page);
-
-    /**
-     * Add a set of query string values to the paginator.
-     *
-     * @param  array|string  $key
-     * @param  string|null  $value
-     * @return $this
-     */
-    public function appends($key, $value = null);
-
-    /**
-     * Get / set the URL fragment to be appended to URLs.
-     *
-     * @param  string|null  $fragment
-     * @return $this|string
-     */
-    public function fragment($fragment = null);
-
-    /**
-     * The URL for the next page, or null.
-     *
-     * @return string|null
-     */
-    public function nextPageUrl();
-
-    /**
-     * Get the URL for the previous page, or null.
-     *
-     * @return string|null
-     */
-    public function previousPageUrl();
-
-    /**
-     * Get all of the items being paginated.
-     *
-     * @return array
-     */
-    public function items();
-
-    /**
-     * Get the "index" of the first item being paginated.
-     *
-     * @return int
-     */
-    public function firstItem();
-
-    /**
-     * Get the "index" of the last item being paginated.
-     *
-     * @return int
-     */
-    public function lastItem();
-
-    /**
-     * Determine how many items are being shown per page.
-     *
-     * @return int
-     */
-    public function perPage();
-
-    /**
-     * Determine the current page being paginated.
-     *
-     * @return int
-     */
-    public function currentPage();
-
-    /**
-     * Determine if there are enough items to split into multiple pages.
-     *
-     * @return bool
-     */
-    public function hasPages();
-
-    /**
-     * Determine if there are more items in the data store.
-     *
-     * @return bool
-     */
-    public function hasMorePages();
-
-    /**
-     * Get the base path for paginator generated URLs.
-     *
-     * @return string|null
-     */
-    public function path();
-
-    /**
-     * Determine if the list of items is empty or not.
-     *
-     * @return bool
-     */
-    public function isEmpty();
-
-    /**
-     * Determine if the list of items is not empty.
-     *
-     * @return bool
-     */
-    public function isNotEmpty();
-
-    /**
-     * Render the paginator using a given view.
-     *
-     * @param  string|null  $view
-     * @param  array  $data
-     * @return string
-     */
-    public function render($view = null, $data = []);
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+OJk5rgNOtVe6ZZ35N9T116uNlLepYJ4=

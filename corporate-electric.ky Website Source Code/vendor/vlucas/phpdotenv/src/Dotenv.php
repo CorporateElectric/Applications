@@ -1,267 +1,95 @@
-<?php
-
-declare(strict_types=1);
-
-namespace Dotenv;
-
-use Dotenv\Exception\InvalidPathException;
-use Dotenv\Loader\Loader;
-use Dotenv\Loader\LoaderInterface;
-use Dotenv\Parser\Parser;
-use Dotenv\Parser\ParserInterface;
-use Dotenv\Repository\Adapter\ArrayAdapter;
-use Dotenv\Repository\Adapter\PutenvAdapter;
-use Dotenv\Repository\RepositoryBuilder;
-use Dotenv\Repository\RepositoryInterface;
-use Dotenv\Store\StoreBuilder;
-use Dotenv\Store\StoreInterface;
-use Dotenv\Store\StringStore;
-
-class Dotenv
-{
-    /**
-     * The store instance.
-     *
-     * @var \Dotenv\Store\StoreInterface
-     */
-    private $store;
-
-    /**
-     * The parser instance.
-     *
-     * @var \Dotenv\Parser\ParserInterface
-     */
-    private $parser;
-
-    /**
-     * The loader instance.
-     *
-     * @var \Dotenv\Loader\LoaderInterface
-     */
-    private $loader;
-
-    /**
-     * The repository instance.
-     *
-     * @var \Dotenv\Repository\RepositoryInterface
-     */
-    private $repository;
-
-    /**
-     * Create a new dotenv instance.
-     *
-     * @param \Dotenv\Store\StoreInterface           $store
-     * @param \Dotenv\Parser\ParserInterface         $parser
-     * @param \Dotenv\Loader\LoaderInterface         $loader
-     * @param \Dotenv\Repository\RepositoryInterface $repository
-     *
-     * @return void
-     */
-    public function __construct(
-        StoreInterface $store,
-        ParserInterface $parser,
-        LoaderInterface $loader,
-        RepositoryInterface $repository
-    ) {
-        $this->store = $store;
-        $this->parser = $parser;
-        $this->loader = $loader;
-        $this->repository = $repository;
-    }
-
-    /**
-     * Create a new dotenv instance.
-     *
-     * @param \Dotenv\Repository\RepositoryInterface $repository
-     * @param string|string[]                        $paths
-     * @param string|string[]|null                   $names
-     * @param bool                                   $shortCircuit
-     * @param string|null                            $fileEncoding
-     *
-     * @return \Dotenv\Dotenv
-     */
-    public static function create(RepositoryInterface $repository, $paths, $names = null, bool $shortCircuit = true, string $fileEncoding = null)
-    {
-        $builder = $names === null ? StoreBuilder::createWithDefaultName() : StoreBuilder::createWithNoNames();
-
-        foreach ((array) $paths as $path) {
-            $builder = $builder->addPath($path);
-        }
-
-        foreach ((array) $names as $name) {
-            $builder = $builder->addName($name);
-        }
-
-        if ($shortCircuit) {
-            $builder = $builder->shortCircuit();
-        }
-
-        return new self($builder->fileEncoding($fileEncoding)->make(), new Parser(), new Loader(), $repository);
-    }
-
-    /**
-     * Create a new mutable dotenv instance with default repository.
-     *
-     * @param string|string[]      $paths
-     * @param string|string[]|null $names
-     * @param bool                 $shortCircuit
-     * @param string|null          $fileEncoding
-     *
-     * @return \Dotenv\Dotenv
-     */
-    public static function createMutable($paths, $names = null, bool $shortCircuit = true, string $fileEncoding = null)
-    {
-        $repository = RepositoryBuilder::createWithDefaultAdapters()->make();
-
-        return self::create($repository, $paths, $names, $shortCircuit, $fileEncoding);
-    }
-
-    /**
-     * Create a new mutable dotenv instance with default repository with the putenv adapter.
-     *
-     * @param string|string[]      $paths
-     * @param string|string[]|null $names
-     * @param bool                 $shortCircuit
-     * @param string|null          $fileEncoding
-     *
-     * @return \Dotenv\Dotenv
-     */
-    public static function createUnsafeMutable($paths, $names = null, bool $shortCircuit = true, string $fileEncoding = null)
-    {
-        $repository = RepositoryBuilder::createWithDefaultAdapters()
-            ->addAdapter(PutenvAdapter::class)
-            ->make();
-
-        return self::create($repository, $paths, $names, $shortCircuit, $fileEncoding);
-    }
-
-    /**
-     * Create a new immutable dotenv instance with default repository.
-     *
-     * @param string|string[]      $paths
-     * @param string|string[]|null $names
-     * @param bool                 $shortCircuit
-     * @param string|null          $fileEncoding
-     *
-     * @return \Dotenv\Dotenv
-     */
-    public static function createImmutable($paths, $names = null, bool $shortCircuit = true, string $fileEncoding = null)
-    {
-        $repository = RepositoryBuilder::createWithDefaultAdapters()->immutable()->make();
-
-        return self::create($repository, $paths, $names, $shortCircuit, $fileEncoding);
-    }
-
-    /**
-     * Create a new immutable dotenv instance with default repository with the putenv adapter.
-     *
-     * @param string|string[]      $paths
-     * @param string|string[]|null $names
-     * @param bool                 $shortCircuit
-     * @param string|null          $fileEncoding
-     *
-     * @return \Dotenv\Dotenv
-     */
-    public static function createUnsafeImmutable($paths, $names = null, bool $shortCircuit = true, string $fileEncoding = null)
-    {
-        $repository = RepositoryBuilder::createWithDefaultAdapters()
-            ->addAdapter(PutenvAdapter::class)
-            ->immutable()
-            ->make();
-
-        return self::create($repository, $paths, $names, $shortCircuit, $fileEncoding);
-    }
-
-    /**
-     * Create a new dotenv instance with an array backed repository.
-     *
-     * @param string|string[]      $paths
-     * @param string|string[]|null $names
-     * @param bool                 $shortCircuit
-     * @param string|null          $fileEncoding
-     *
-     * @return \Dotenv\Dotenv
-     */
-    public static function createArrayBacked($paths, $names = null, bool $shortCircuit = true, string $fileEncoding = null)
-    {
-        $repository = RepositoryBuilder::createWithNoAdapters()->addAdapter(ArrayAdapter::class)->make();
-
-        return self::create($repository, $paths, $names, $shortCircuit, $fileEncoding);
-    }
-
-    /**
-     * Parse the given content and resolve nested variables.
-     *
-     * This method behaves just like load(), only without mutating your actual
-     * environment. We do this by using an array backed repository.
-     *
-     * @param string $content
-     *
-     * @throws \Dotenv\Exception\InvalidFileException
-     *
-     * @return array<string,string|null>
-     */
-    public static function parse(string $content)
-    {
-        $repository = RepositoryBuilder::createWithNoAdapters()->addAdapter(ArrayAdapter::class)->make();
-
-        $phpdotenv = new self(new StringStore($content), new Parser(), new Loader(), $repository);
-
-        return $phpdotenv->load();
-    }
-
-    /**
-     * Read and load environment file(s).
-     *
-     * @throws \Dotenv\Exception\InvalidPathException|\Dotenv\Exception\InvalidEncodingException|\Dotenv\Exception\InvalidFileException
-     *
-     * @return array<string,string|null>
-     */
-    public function load()
-    {
-        $entries = $this->parser->parse($this->store->read());
-
-        return $this->loader->load($this->repository, $entries);
-    }
-
-    /**
-     * Read and load environment file(s), silently failing if no files can be read.
-     *
-     * @throws \Dotenv\Exception\InvalidEncodingException|\Dotenv\Exception\InvalidFileException
-     *
-     * @return array<string,string|null>
-     */
-    public function safeLoad()
-    {
-        try {
-            return $this->load();
-        } catch (InvalidPathException $e) {
-            // suppressing exception
-            return [];
-        }
-    }
-
-    /**
-     * Required ensures that the specified variables exist, and returns a new validator object.
-     *
-     * @param string|string[] $variables
-     *
-     * @return \Dotenv\Validator
-     */
-    public function required($variables)
-    {
-        return (new Validator($this->repository, (array) $variables))->required();
-    }
-
-    /**
-     * Returns a new validator object that won't check if the specified variables exist.
-     *
-     * @param string|string[] $variables
-     *
-     * @return \Dotenv\Validator
-     */
-    public function ifPresent($variables)
-    {
-        return new Validator($this->repository, (array) $variables);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

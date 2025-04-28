@@ -1,78 +1,51 @@
-<?php
-
-namespace Illuminate\Foundation\Console;
-
-use Illuminate\Console\Command;
-use Illuminate\Foundation\Support\Providers\EventServiceProvider;
-use Illuminate\Support\Str;
-
-class EventGenerateCommand extends Command
-{
-    /**
-     * The console command name.
-     *
-     * @var string
-     */
-    protected $name = 'event:generate';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Generate the missing events and listeners based on registration';
-
-    /**
-     * Execute the console command.
-     *
-     * @return void
-     */
-    public function handle()
-    {
-        $providers = $this->laravel->getProviders(EventServiceProvider::class);
-
-        foreach ($providers as $provider) {
-            foreach ($provider->listens() as $event => $listeners) {
-                $this->makeEventAndListeners($event, $listeners);
-            }
-        }
-
-        $this->info('Events and listeners generated successfully!');
-    }
-
-    /**
-     * Make the event and listeners for the given event.
-     *
-     * @param  string  $event
-     * @param  array  $listeners
-     * @return void
-     */
-    protected function makeEventAndListeners($event, $listeners)
-    {
-        if (! Str::contains($event, '\\')) {
-            return;
-        }
-
-        $this->callSilent('make:event', ['name' => $event]);
-
-        $this->makeListeners($event, $listeners);
-    }
-
-    /**
-     * Make the listeners for the given event.
-     *
-     * @param  string  $event
-     * @param  array  $listeners
-     * @return void
-     */
-    protected function makeListeners($event, $listeners)
-    {
-        foreach ($listeners as $listener) {
-            $listener = preg_replace('/@.+$/', '', $listener);
-
-            $this->callSilent('make:listener', array_filter(
-                ['name' => $listener, '--event' => $event]
-            ));
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

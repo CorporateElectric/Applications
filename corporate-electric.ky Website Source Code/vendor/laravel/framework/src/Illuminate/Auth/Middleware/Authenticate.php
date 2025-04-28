@@ -1,97 +1,46 @@
-<?php
-
-namespace Illuminate\Auth\Middleware;
-
-use Closure;
-use Illuminate\Auth\AuthenticationException;
-use Illuminate\Contracts\Auth\Factory as Auth;
-use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
-
-class Authenticate implements AuthenticatesRequests
-{
-    /**
-     * The authentication factory instance.
-     *
-     * @var \Illuminate\Contracts\Auth\Factory
-     */
-    protected $auth;
-
-    /**
-     * Create a new middleware instance.
-     *
-     * @param  \Illuminate\Contracts\Auth\Factory  $auth
-     * @return void
-     */
-    public function __construct(Auth $auth)
-    {
-        $this->auth = $auth;
-    }
-
-    /**
-     * Handle an incoming request.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure  $next
-     * @param  string[]  ...$guards
-     * @return mixed
-     *
-     * @throws \Illuminate\Auth\AuthenticationException
-     */
-    public function handle($request, Closure $next, ...$guards)
-    {
-        $this->authenticate($request, $guards);
-
-        return $next($request);
-    }
-
-    /**
-     * Determine if the user is logged in to any of the given guards.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  array  $guards
-     * @return void
-     *
-     * @throws \Illuminate\Auth\AuthenticationException
-     */
-    protected function authenticate($request, array $guards)
-    {
-        if (empty($guards)) {
-            $guards = [null];
-        }
-
-        foreach ($guards as $guard) {
-            if ($this->auth->guard($guard)->check()) {
-                return $this->auth->shouldUse($guard);
-            }
-        }
-
-        $this->unauthenticated($request, $guards);
-    }
-
-    /**
-     * Handle an unauthenticated user.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  array  $guards
-     * @return void
-     *
-     * @throws \Illuminate\Auth\AuthenticationException
-     */
-    protected function unauthenticated($request, array $guards)
-    {
-        throw new AuthenticationException(
-            'Unauthenticated.', $guards, $this->redirectTo($request)
-        );
-    }
-
-    /**
-     * Get the path the user should be redirected to when they are not authenticated.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return string|null
-     */
-    protected function redirectTo($request)
-    {
-        //
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

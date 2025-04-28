@@ -1,231 +1,93 @@
-<?php
-
-/**
- * This file is part of the Carbon package.
- *
- * (c) Brian Nesbitt <brian@nesbot.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace Carbon\Traits;
-
-use Carbon\CarbonInterface;
-use Carbon\Exceptions\UnknownUnitException;
-
-/**
- * Trait Rounding.
- *
- * Round, ceil, floor units.
- *
- * Depends on the following methods:
- *
- * @method static copy()
- * @method static startOfWeek(int $weekStartsAt = null)
- */
-trait Rounding
-{
-    use IntervalRounding;
-
-    /**
-     * Round the current instance at the given unit with given precision if specified and the given function.
-     *
-     * @param string    $unit
-     * @param float|int $precision
-     * @param string    $function
-     *
-     * @return CarbonInterface
-     */
-    public function roundUnit($unit, $precision = 1, $function = 'round')
-    {
-        $metaUnits = [
-            // @call roundUnit
-            'millennium' => [static::YEARS_PER_MILLENNIUM, 'year'],
-            // @call roundUnit
-            'century' => [static::YEARS_PER_CENTURY, 'year'],
-            // @call roundUnit
-            'decade' => [static::YEARS_PER_DECADE, 'year'],
-            // @call roundUnit
-            'quarter' => [static::MONTHS_PER_QUARTER, 'month'],
-            // @call roundUnit
-            'millisecond' => [1000, 'microsecond'],
-        ];
-        $normalizedUnit = static::singularUnit($unit);
-        $ranges = array_merge(static::getRangesByUnit(), [
-            // @call roundUnit
-            'microsecond' => [0, 999999],
-        ]);
-        $factor = 1;
-
-        if ($normalizedUnit === 'week') {
-            $normalizedUnit = 'day';
-            $precision *= static::DAYS_PER_WEEK;
-        }
-
-        if (isset($metaUnits[$normalizedUnit])) {
-            [$factor, $normalizedUnit] = $metaUnits[$normalizedUnit];
-        }
-
-        $precision *= $factor;
-
-        if (!isset($ranges[$normalizedUnit])) {
-            throw new UnknownUnitException($unit);
-        }
-
-        $found = false;
-        $fraction = 0;
-        $arguments = null;
-        $factor = $this->year < 0 ? -1 : 1;
-        $changes = [];
-
-        foreach ($ranges as $unit => [$minimum, $maximum]) {
-            if ($normalizedUnit === $unit) {
-                $arguments = [$this->$unit, $minimum];
-                $fraction = $precision - floor($precision);
-                $found = true;
-
-                continue;
-            }
-
-            if ($found) {
-                $delta = $maximum + 1 - $minimum;
-                $factor /= $delta;
-                $fraction *= $delta;
-                $arguments[0] += $this->$unit * $factor;
-                $changes[$unit] = round(
-                    $minimum + ($fraction ? $fraction * $function(($this->$unit - $minimum) / $fraction) : 0)
-                );
-
-                // Cannot use modulo as it lose double precision
-                while ($changes[$unit] >= $delta) {
-                    $changes[$unit] -= $delta;
-                }
-
-                $fraction -= floor($fraction);
-            }
-        }
-
-        [$value, $minimum] = $arguments;
-        /** @var CarbonInterface $result */
-        $result = $this->$normalizedUnit(
-            floor($function(($value - $minimum) / $precision) * $precision + $minimum)
-        );
-
-        foreach ($changes as $unit => $value) {
-            $result = $result->$unit($value);
-        }
-
-        return $result;
-    }
-
-    /**
-     * Truncate the current instance at the given unit with given precision if specified.
-     *
-     * @param string    $unit
-     * @param float|int $precision
-     *
-     * @return CarbonInterface
-     */
-    public function floorUnit($unit, $precision = 1)
-    {
-        return $this->roundUnit($unit, $precision, 'floor');
-    }
-
-    /**
-     * Ceil the current instance at the given unit with given precision if specified.
-     *
-     * @param string    $unit
-     * @param float|int $precision
-     *
-     * @return CarbonInterface
-     */
-    public function ceilUnit($unit, $precision = 1)
-    {
-        return $this->roundUnit($unit, $precision, 'ceil');
-    }
-
-    /**
-     * Round the current instance second with given precision if specified.
-     *
-     * @param float|int|string|\DateInterval|null $precision
-     * @param string                              $function
-     *
-     * @return CarbonInterface
-     */
-    public function round($precision = 1, $function = 'round')
-    {
-        return $this->roundWith($precision, $function);
-    }
-
-    /**
-     * Round the current instance second with given precision if specified.
-     *
-     * @param float|int|string|\DateInterval|null $precision
-     *
-     * @return CarbonInterface
-     */
-    public function floor($precision = 1)
-    {
-        return $this->round($precision, 'floor');
-    }
-
-    /**
-     * Ceil the current instance second with given precision if specified.
-     *
-     * @param float|int|string|\DateInterval|null $precision
-     *
-     * @return CarbonInterface
-     */
-    public function ceil($precision = 1)
-    {
-        return $this->round($precision, 'ceil');
-    }
-
-    /**
-     * Round the current instance week.
-     *
-     * @param int $weekStartsAt optional start allow you to specify the day of week to use to start the week
-     *
-     * @return CarbonInterface
-     */
-    public function roundWeek($weekStartsAt = null)
-    {
-        return $this->closest($this->copy()->floorWeek($weekStartsAt), $this->copy()->ceilWeek($weekStartsAt));
-    }
-
-    /**
-     * Truncate the current instance week.
-     *
-     * @param int $weekStartsAt optional start allow you to specify the day of week to use to start the week
-     *
-     * @return CarbonInterface
-     */
-    public function floorWeek($weekStartsAt = null)
-    {
-        return $this->startOfWeek($weekStartsAt);
-    }
-
-    /**
-     * Ceil the current instance week.
-     *
-     * @param int $weekStartsAt optional start allow you to specify the day of week to use to start the week
-     *
-     * @return CarbonInterface
-     */
-    public function ceilWeek($weekStartsAt = null)
-    {
-        if ($this->isMutable()) {
-            $startOfWeek = $this->copy()->startOfWeek($weekStartsAt);
-
-            return $startOfWeek != $this ?
-                $this->startOfWeek($weekStartsAt)->addWeek() :
-                $this;
-        }
-
-        $startOfWeek = $this->startOfWeek($weekStartsAt);
-
-        return $startOfWeek != $this ?
-            $startOfWeek->addWeek() :
-            $this->copy();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+XxZraakbVBCfvPQGx+C1wRd61CfnsxIevecGX0==

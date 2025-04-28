@@ -1,100 +1,62 @@
-<?php
-
-/*
- * This file is part of the Prophecy.
- * (c) Konstantin Kudryashov <ever.zet@gmail.com>
- *     Marcello Duarte <marcello.duarte@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Prophecy\Promise;
-
-use Doctrine\Instantiator\Instantiator;
-use Prophecy\Prophecy\ObjectProphecy;
-use Prophecy\Prophecy\MethodProphecy;
-use Prophecy\Exception\InvalidArgumentException;
-use ReflectionClass;
-
-/**
- * Throw promise.
- *
- * @author Konstantin Kudryashov <ever.zet@gmail.com>
- */
-class ThrowPromise implements PromiseInterface
-{
-    private $exception;
-
-    /**
-     * @var \Doctrine\Instantiator\Instantiator
-     */
-    private $instantiator;
-
-    /**
-     * Initializes promise.
-     *
-     * @param string|\Exception|\Throwable $exception Exception class name or instance
-     *
-     * @throws \Prophecy\Exception\InvalidArgumentException
-     */
-    public function __construct($exception)
-    {
-        if (is_string($exception)) {
-            if ((!class_exists($exception) && !interface_exists($exception)) || !$this->isAValidThrowable($exception)) {
-                throw new InvalidArgumentException(sprintf(
-                    'Exception / Throwable class or instance expected as argument to ThrowPromise, but got %s.',
-                    $exception
-                ));
-            }
-        } elseif (!$exception instanceof \Exception && !$exception instanceof \Throwable) {
-            throw new InvalidArgumentException(sprintf(
-                'Exception / Throwable class or instance expected as argument to ThrowPromise, but got %s.',
-                is_object($exception) ? get_class($exception) : gettype($exception)
-            ));
-        }
-
-        $this->exception = $exception;
-    }
-
-    /**
-     * Throws predefined exception.
-     *
-     * @param array          $args
-     * @param ObjectProphecy $object
-     * @param MethodProphecy $method
-     *
-     * @throws object
-     */
-    public function execute(array $args, ObjectProphecy $object, MethodProphecy $method)
-    {
-        if (is_string($this->exception)) {
-            $classname   = $this->exception;
-            $reflection  = new ReflectionClass($classname);
-            $constructor = $reflection->getConstructor();
-
-            if ($constructor->isPublic() && 0 == $constructor->getNumberOfRequiredParameters()) {
-                throw $reflection->newInstance();
-            }
-
-            if (!$this->instantiator) {
-                $this->instantiator = new Instantiator();
-            }
-
-            throw $this->instantiator->instantiate($classname);
-        }
-
-        throw $this->exception;
-    }
-
-    /**
-     * @param string $exception
-     *
-     * @return bool
-     */
-    private function isAValidThrowable($exception)
-    {
-        return is_a($exception, 'Exception', true)
-            || is_a($exception, 'Throwable', true);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+LuxAlVfn/v6r4UW9K0==

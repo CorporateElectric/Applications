@@ -1,67 +1,45 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\CodeCleaner;
-
-use PhpParser\Node;
-use PhpParser\Node\Expr\Array_;
-use PhpParser\Node\Expr\BinaryOp;
-use PhpParser\Node\Expr\ClassConstFetch;
-use PhpParser\Node\Expr\ConstFetch;
-use PhpParser\Node\Expr\Instanceof_;
-use PhpParser\Node\Scalar;
-use PhpParser\Node\Scalar\Encapsed;
-use Psy\Exception\FatalErrorException;
-
-/**
- * Validate that the instanceof statement does not receive a scalar value or a non-class constant.
- *
- * @author Martin Hasoň <martin.hason@gmail.com>
- */
-class InstanceOfPass extends CodeCleanerPass
-{
-    const EXCEPTION_MSG = 'instanceof expects an object instance, constant given';
-
-    private $atLeastPhp73;
-
-    public function __construct()
-    {
-        $this->atLeastPhp73 = \version_compare(\PHP_VERSION, '7.3', '>=');
-    }
-
-    /**
-     * Validate that the instanceof statement does not receive a scalar value or a non-class constant.
-     *
-     * @throws FatalErrorException if a scalar or a non-class constant is given
-     *
-     * @param Node $node
-     */
-    public function enterNode(Node $node)
-    {
-        // Basically everything is allowed in PHP 7.3 :)
-        if ($this->atLeastPhp73) {
-            return;
-        }
-
-        if (!$node instanceof Instanceof_) {
-            return;
-        }
-
-        if (($node->expr instanceof Scalar && !$node->expr instanceof Encapsed) ||
-            $node->expr instanceof BinaryOp ||
-            $node->expr instanceof Array_ ||
-            $node->expr instanceof ConstFetch ||
-            $node->expr instanceof ClassConstFetch
-        ) {
-            throw new FatalErrorException(self::EXCEPTION_MSG, 0, \E_ERROR, null, $node->getLine());
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

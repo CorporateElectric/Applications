@@ -1,149 +1,60 @@
-<?php
-
-namespace Illuminate\Auth;
-
-use Illuminate\Contracts\Auth\Guard;
-use Illuminate\Contracts\Auth\UserProvider;
-use Illuminate\Http\Request;
-
-class TokenGuard implements Guard
-{
-    use GuardHelpers;
-
-    /**
-     * The request instance.
-     *
-     * @var \Illuminate\Http\Request
-     */
-    protected $request;
-
-    /**
-     * The name of the query string item from the request containing the API token.
-     *
-     * @var string
-     */
-    protected $inputKey;
-
-    /**
-     * The name of the token "column" in persistent storage.
-     *
-     * @var string
-     */
-    protected $storageKey;
-
-    /**
-     * Indicates if the API token is hashed in storage.
-     *
-     * @var bool
-     */
-    protected $hash = false;
-
-    /**
-     * Create a new authentication guard.
-     *
-     * @param  \Illuminate\Contracts\Auth\UserProvider  $provider
-     * @param  \Illuminate\Http\Request  $request
-     * @param  string  $inputKey
-     * @param  string  $storageKey
-     * @param  bool  $hash
-     * @return void
-     */
-    public function __construct(
-        UserProvider $provider,
-        Request $request,
-        $inputKey = 'api_token',
-        $storageKey = 'api_token',
-        $hash = false)
-    {
-        $this->hash = $hash;
-        $this->request = $request;
-        $this->provider = $provider;
-        $this->inputKey = $inputKey;
-        $this->storageKey = $storageKey;
-    }
-
-    /**
-     * Get the currently authenticated user.
-     *
-     * @return \Illuminate\Contracts\Auth\Authenticatable|null
-     */
-    public function user()
-    {
-        // If we've already retrieved the user for the current request we can just
-        // return it back immediately. We do not want to fetch the user data on
-        // every call to this method because that would be tremendously slow.
-        if (! is_null($this->user)) {
-            return $this->user;
-        }
-
-        $user = null;
-
-        $token = $this->getTokenForRequest();
-
-        if (! empty($token)) {
-            $user = $this->provider->retrieveByCredentials([
-                $this->storageKey => $this->hash ? hash('sha256', $token) : $token,
-            ]);
-        }
-
-        return $this->user = $user;
-    }
-
-    /**
-     * Get the token for the current request.
-     *
-     * @return string
-     */
-    public function getTokenForRequest()
-    {
-        $token = $this->request->query($this->inputKey);
-
-        if (empty($token)) {
-            $token = $this->request->input($this->inputKey);
-        }
-
-        if (empty($token)) {
-            $token = $this->request->bearerToken();
-        }
-
-        if (empty($token)) {
-            $token = $this->request->getPassword();
-        }
-
-        return $token;
-    }
-
-    /**
-     * Validate a user's credentials.
-     *
-     * @param  array  $credentials
-     * @return bool
-     */
-    public function validate(array $credentials = [])
-    {
-        if (empty($credentials[$this->inputKey])) {
-            return false;
-        }
-
-        $credentials = [$this->storageKey => $credentials[$this->inputKey]];
-
-        if ($this->provider->retrieveByCredentials($credentials)) {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Set the current request instance.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return $this
-     */
-    public function setRequest(Request $request)
-    {
-        $this->request = $request;
-
-        return $this;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

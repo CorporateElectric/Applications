@@ -1,157 +1,51 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Chart;
-
-class Legend
-{
-    /** Legend positions */
-    const XL_LEGEND_POSITION_BOTTOM = -4107; //    Below the chart.
-    const XL_LEGEND_POSITION_CORNER = 2; //    In the upper right-hand corner of the chart border.
-    const XL_LEGEND_POSITION_CUSTOM = -4161; //    A custom position.
-    const XL_LEGEND_POSITION_LEFT = -4131; //    Left of the chart.
-    const XL_LEGEND_POSITION_RIGHT = -4152; //    Right of the chart.
-    const XL_LEGEND_POSITION_TOP = -4160; //    Above the chart.
-
-    const POSITION_RIGHT = 'r';
-    const POSITION_LEFT = 'l';
-    const POSITION_BOTTOM = 'b';
-    const POSITION_TOP = 't';
-    const POSITION_TOPRIGHT = 'tr';
-
-    private static $positionXLref = [
-        self::XL_LEGEND_POSITION_BOTTOM => self::POSITION_BOTTOM,
-        self::XL_LEGEND_POSITION_CORNER => self::POSITION_TOPRIGHT,
-        self::XL_LEGEND_POSITION_CUSTOM => '??',
-        self::XL_LEGEND_POSITION_LEFT => self::POSITION_LEFT,
-        self::XL_LEGEND_POSITION_RIGHT => self::POSITION_RIGHT,
-        self::XL_LEGEND_POSITION_TOP => self::POSITION_TOP,
-    ];
-
-    /**
-     * Legend position.
-     *
-     * @var string
-     */
-    private $position = self::POSITION_RIGHT;
-
-    /**
-     * Allow overlay of other elements?
-     *
-     * @var bool
-     */
-    private $overlay = true;
-
-    /**
-     * Legend Layout.
-     *
-     * @var Layout
-     */
-    private $layout;
-
-    /**
-     * Create a new Legend.
-     *
-     * @param string $position
-     * @param bool $overlay
-     */
-    public function __construct($position = self::POSITION_RIGHT, ?Layout $layout = null, $overlay = false)
-    {
-        $this->setPosition($position);
-        $this->layout = $layout;
-        $this->setOverlay($overlay);
-    }
-
-    /**
-     * Get legend position as an excel string value.
-     *
-     * @return string
-     */
-    public function getPosition()
-    {
-        return $this->position;
-    }
-
-    /**
-     * Get legend position using an excel string value.
-     *
-     * @param string $position see self::POSITION_*
-     *
-     * @return bool
-     */
-    public function setPosition($position)
-    {
-        if (!in_array($position, self::$positionXLref)) {
-            return false;
-        }
-
-        $this->position = $position;
-
-        return true;
-    }
-
-    /**
-     * Get legend position as an Excel internal numeric value.
-     *
-     * @return int
-     */
-    public function getPositionXL()
-    {
-        return array_search($this->position, self::$positionXLref);
-    }
-
-    /**
-     * Set legend position using an Excel internal numeric value.
-     *
-     * @param int $positionXL see self::XL_LEGEND_POSITION_*
-     *
-     * @return bool
-     */
-    public function setPositionXL($positionXL)
-    {
-        if (!isset(self::$positionXLref[$positionXL])) {
-            return false;
-        }
-
-        $this->position = self::$positionXLref[$positionXL];
-
-        return true;
-    }
-
-    /**
-     * Get allow overlay of other elements?
-     *
-     * @return bool
-     */
-    public function getOverlay()
-    {
-        return $this->overlay;
-    }
-
-    /**
-     * Set allow overlay of other elements?
-     *
-     * @param bool $overlay
-     *
-     * @return bool
-     */
-    public function setOverlay($overlay)
-    {
-        if (!is_bool($overlay)) {
-            return false;
-        }
-
-        $this->overlay = $overlay;
-
-        return true;
-    }
-
-    /**
-     * Get Layout.
-     *
-     * @return Layout
-     */
-    public function getLayout()
-    {
-        return $this->layout;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

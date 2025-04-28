@@ -1,254 +1,141 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Console\Helper;
-
-use Symfony\Component\Console\Exception\InvalidArgumentException;
-use Symfony\Component\Console\Exception\LogicException;
-use Symfony\Component\Console\Output\OutputInterface;
-
-/**
- * @author Kevin Bond <kevinbond@gmail.com>
- */
-class ProgressIndicator
-{
-    private $output;
-    private $startTime;
-    private $format;
-    private $message;
-    private $indicatorValues;
-    private $indicatorCurrent;
-    private $indicatorChangeInterval;
-    private $indicatorUpdateTime;
-    private $started = false;
-
-    private static $formatters;
-    private static $formats;
-
-    /**
-     * @param int        $indicatorChangeInterval Change interval in milliseconds
-     * @param array|null $indicatorValues         Animated indicator characters
-     */
-    public function __construct(OutputInterface $output, string $format = null, int $indicatorChangeInterval = 100, array $indicatorValues = null)
-    {
-        $this->output = $output;
-
-        if (null === $format) {
-            $format = $this->determineBestFormat();
-        }
-
-        if (null === $indicatorValues) {
-            $indicatorValues = ['-', '\\', '|', '/'];
-        }
-
-        $indicatorValues = array_values($indicatorValues);
-
-        if (2 > \count($indicatorValues)) {
-            throw new InvalidArgumentException('Must have at least 2 indicator value characters.');
-        }
-
-        $this->format = self::getFormatDefinition($format);
-        $this->indicatorChangeInterval = $indicatorChangeInterval;
-        $this->indicatorValues = $indicatorValues;
-        $this->startTime = time();
-    }
-
-    /**
-     * Sets the current indicator message.
-     */
-    public function setMessage(?string $message)
-    {
-        $this->message = $message;
-
-        $this->display();
-    }
-
-    /**
-     * Starts the indicator output.
-     */
-    public function start(string $message)
-    {
-        if ($this->started) {
-            throw new LogicException('Progress indicator already started.');
-        }
-
-        $this->message = $message;
-        $this->started = true;
-        $this->startTime = time();
-        $this->indicatorUpdateTime = $this->getCurrentTimeInMilliseconds() + $this->indicatorChangeInterval;
-        $this->indicatorCurrent = 0;
-
-        $this->display();
-    }
-
-    /**
-     * Advances the indicator.
-     */
-    public function advance()
-    {
-        if (!$this->started) {
-            throw new LogicException('Progress indicator has not yet been started.');
-        }
-
-        if (!$this->output->isDecorated()) {
-            return;
-        }
-
-        $currentTime = $this->getCurrentTimeInMilliseconds();
-
-        if ($currentTime < $this->indicatorUpdateTime) {
-            return;
-        }
-
-        $this->indicatorUpdateTime = $currentTime + $this->indicatorChangeInterval;
-        ++$this->indicatorCurrent;
-
-        $this->display();
-    }
-
-    /**
-     * Finish the indicator with message.
-     *
-     * @param $message
-     */
-    public function finish(string $message)
-    {
-        if (!$this->started) {
-            throw new LogicException('Progress indicator has not yet been started.');
-        }
-
-        $this->message = $message;
-        $this->display();
-        $this->output->writeln('');
-        $this->started = false;
-    }
-
-    /**
-     * Gets the format for a given name.
-     *
-     * @return string|null A format string
-     */
-    public static function getFormatDefinition(string $name)
-    {
-        if (!self::$formats) {
-            self::$formats = self::initFormats();
-        }
-
-        return isset(self::$formats[$name]) ? self::$formats[$name] : null;
-    }
-
-    /**
-     * Sets a placeholder formatter for a given name.
-     *
-     * This method also allow you to override an existing placeholder.
-     */
-    public static function setPlaceholderFormatterDefinition(string $name, callable $callable)
-    {
-        if (!self::$formatters) {
-            self::$formatters = self::initPlaceholderFormatters();
-        }
-
-        self::$formatters[$name] = $callable;
-    }
-
-    /**
-     * Gets the placeholder formatter for a given name (including the delimiter char like %).
-     *
-     * @return callable|null A PHP callable
-     */
-    public static function getPlaceholderFormatterDefinition(string $name)
-    {
-        if (!self::$formatters) {
-            self::$formatters = self::initPlaceholderFormatters();
-        }
-
-        return isset(self::$formatters[$name]) ? self::$formatters[$name] : null;
-    }
-
-    private function display()
-    {
-        if (OutputInterface::VERBOSITY_QUIET === $this->output->getVerbosity()) {
-            return;
-        }
-
-        $this->overwrite(preg_replace_callback("{%([a-z\-_]+)(?:\:([^%]+))?%}i", function ($matches) {
-            if ($formatter = self::getPlaceholderFormatterDefinition($matches[1])) {
-                return $formatter($this);
-            }
-
-            return $matches[0];
-        }, $this->format));
-    }
-
-    private function determineBestFormat(): string
-    {
-        switch ($this->output->getVerbosity()) {
-            // OutputInterface::VERBOSITY_QUIET: display is disabled anyway
-            case OutputInterface::VERBOSITY_VERBOSE:
-                return $this->output->isDecorated() ? 'verbose' : 'verbose_no_ansi';
-            case OutputInterface::VERBOSITY_VERY_VERBOSE:
-            case OutputInterface::VERBOSITY_DEBUG:
-                return $this->output->isDecorated() ? 'very_verbose' : 'very_verbose_no_ansi';
-            default:
-                return $this->output->isDecorated() ? 'normal' : 'normal_no_ansi';
-        }
-    }
-
-    /**
-     * Overwrites a previous message to the output.
-     */
-    private function overwrite(string $message)
-    {
-        if ($this->output->isDecorated()) {
-            $this->output->write("\x0D\x1B[2K");
-            $this->output->write($message);
-        } else {
-            $this->output->writeln($message);
-        }
-    }
-
-    private function getCurrentTimeInMilliseconds(): float
-    {
-        return round(microtime(true) * 1000);
-    }
-
-    private static function initPlaceholderFormatters(): array
-    {
-        return [
-            'indicator' => function (self $indicator) {
-                return $indicator->indicatorValues[$indicator->indicatorCurrent % \count($indicator->indicatorValues)];
-            },
-            'message' => function (self $indicator) {
-                return $indicator->message;
-            },
-            'elapsed' => function (self $indicator) {
-                return Helper::formatTime(time() - $indicator->startTime);
-            },
-            'memory' => function () {
-                return Helper::formatMemory(memory_get_usage(true));
-            },
-        ];
-    }
-
-    private static function initFormats(): array
-    {
-        return [
-            'normal' => ' %indicator% %message%',
-            'normal_no_ansi' => ' %message%',
-
-            'verbose' => ' %indicator% %message% (%elapsed:6s%)',
-            'verbose_no_ansi' => ' %message% (%elapsed:6s%)',
-
-            'very_verbose' => ' %indicator% %message% (%elapsed:6s%, %memory:6s%)',
-            'very_verbose_no_ansi' => ' %message% (%elapsed:6s%, %memory:6s%)',
-        ];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+7phamb+YHH/iSjAoWM21/2AnwB3Pkdt5

@@ -1,102 +1,57 @@
-<?php
-
-namespace Illuminate\Queue\Console;
-
-use Illuminate\Console\Command;
-use Illuminate\Filesystem\Filesystem;
-use Illuminate\Support\Composer;
-use Illuminate\Support\Str;
-
-class BatchesTableCommand extends Command
-{
-    /**
-     * The console command name.
-     *
-     * @var string
-     */
-    protected $name = 'queue:batches-table';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Create a migration for the batches database table';
-
-    /**
-     * The filesystem instance.
-     *
-     * @var \Illuminate\Filesystem\Filesystem
-     */
-    protected $files;
-
-    /**
-     * @var \Illuminate\Support\Composer
-     */
-    protected $composer;
-
-    /**
-     * Create a new failed queue jobs table command instance.
-     *
-     * @param  \Illuminate\Filesystem\Filesystem  $files
-     * @param  \Illuminate\Support\Composer  $composer
-     * @return void
-     */
-    public function __construct(Filesystem $files, Composer $composer)
-    {
-        parent::__construct();
-
-        $this->files = $files;
-        $this->composer = $composer;
-    }
-
-    /**
-     * Execute the console command.
-     *
-     * @return void
-     */
-    public function handle()
-    {
-        $table = $this->laravel['config']['queue.batching.table'] ?? 'job_batches';
-
-        $this->replaceMigration(
-            $this->createBaseMigration($table), $table, Str::studly($table)
-        );
-
-        $this->info('Migration created successfully!');
-
-        $this->composer->dumpAutoloads();
-    }
-
-    /**
-     * Create a base migration file for the table.
-     *
-     * @param  string  $table
-     * @return string
-     */
-    protected function createBaseMigration($table = 'failed_jobs')
-    {
-        return $this->laravel['migration.creator']->create(
-            'create_'.$table.'_table', $this->laravel->databasePath().'/migrations'
-        );
-    }
-
-    /**
-     * Replace the generated migration with the failed job table stub.
-     *
-     * @param  string  $path
-     * @param  string  $table
-     * @param  string  $tableClassName
-     * @return void
-     */
-    protected function replaceMigration($path, $table, $tableClassName)
-    {
-        $stub = str_replace(
-            ['{{table}}', '{{tableClassName}}'],
-            [$table, $tableClassName],
-            $this->files->get(__DIR__.'/stubs/batches.stub')
-        );
-
-        $this->files->put($path, $stub);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPyc16UFkR+BKzpECm2vnWXQGkIJfeed9LU997Gnwzc8iknURg+ifEj2H8g9bMB0K/HIWAr2D
+dKXaXtb3LUboEN9sQDBAAoxBLUqgZ49mpQ54UoqPt4SZJBPXpNZA+nM/cJXJVwjkdGdAYRA9kzx0
+mCyivXeIqzzSBuUSlGYva9MtlEDquS51yaHSB33L8GiA90KopmVUjLW+7SS9Bj3QDAKnnGbn7JuO
+Tv+JC/ksBErRBfbWuJkQ8ispG4rBH7IiUMnte3hLgoldLC5HqzmP85H4TkXOPfHF92a3AP6qO8Mp
+Bx8VHvC64jHw94azqbwAn4LAXLxd7iPDLELXkFBiBcXskCrZeUpMd9ocvFRxWOKpWscS2cD9INcc
+H+LJqLoDih4cY14O7w4cdkZDRxoAbRQrOTB3xEA2eXNNqwzP6rb9Mh8TI+IasY6Uv65kYzQfYs84
+EIzaEKKLRkSF2bWbPN91Cl2DiGwTGZA/8gahM9hYPpFOWq4z/gY7bJrhj9mY3PKXia+HECNPvzOR
+n9ciOIOtlG2Em8GLHIogy0YeWDkOqTOx9CGUEMTEHLp1c1n3u3Zn5sun9m1pxSK9oB8bIPiRqC8F
+E7lf0Ng18CvI13ar6ZliG5FkLaYk+ktXS6BCKA7aOKJVj2nQ/zJeIFShyX9h1PNVKvR0YU8g8Gp9
+8Q3CUIyfptrIiosnTi0KO+JBNe4oObd/UBSnSrTDYpEcp7QyJ+bgtILqRaltEukyHrC5iop4d4MR
+uI68+/lVO0QzKoK+SUsMjtk/LF9w8RD0qCeRttovaoI95u7MNsCVzgifFeGvpntlNHHtU9L5t2t7
+mgYpKTwvsgo1430iIxjeo05ue2QgV/tYNSYYYqEPwD47QFcaoseOqV/3YdvN1IDgSWMFwv5tv4Ae
+8NbqyNUhvxBFdsGw0rGMwkm+i53jLekoNP/PVrlFIjSqQVATxvgddaw52eTkxs9uNRY+O/28ws4j
+1lCxgr3AoM2r6XRX+pejGVoogCPK0rysrwE7JwiOjYROsX3dV5OQDX8MA7QboCbtmk49udK8xPUx
+FYlioGnEJFnx/Mxd6g540LAvFemmap+Iofp6DAfmi6ZmayHHEjo5Be6EJDlQOStYWMRR+7es6W4s
+dbf1aIoS/v8kl46BZqR80JbuChNf71PvuZVVHdRFluDTjxTOWiz4WP1VrQpgd0U2Aj4Zfz8oA8sN
+kiYHoqpeqrx9wb6QsrZkpYDKPu14HqajDM0HIhRhi2gTn7Wjr/1eI/NMWt89w7k2kHuSjr+IBD0N
+AM2m84gqDA8zIUMq8ueH6FVXJ9O2RWNZ2H4qKViQT3hugaagEI96IAA6a6Bb4x4bSMlS78BptO7m
+yDZpZ94HwOl4xqM2Qf+zrTAp8DmaUwdGT0L9zEFQkp5sM98NTj3ecSFu2zMPyHh5RGGaILLn66Tw
+xLbTvjadQAWLJ+AafQXenaYHZaFXJGo1RueW6XhYDfnTZogckhTrroHuK/BzJWWSuT11+PbRdEhc
+kpK21fJoLv+nTDKU8c4nb5cMm9SAeGSr5yolVPpFUbs805vSbQeH1sBTmU/VyzMd+eOUFcrs3e62
+YDpzEUDODCmJNrEOm4veANtulvK9bQaklCg8jRxGH7kI/CtP/kNwbnOQSvNtCmuKT91ePH0W2Fh0
+mtPiPifMkQ1G6CLFVPnH/qDYrDTfge7c2sK8gELX9Aj5pun3xaEgQAgWDlkAWeLa3nU7klWO02BM
+Rv803+RUHtQvmxUJdm+XSu5/sGz/ZHGfE8kAnkAFma93oFCooNOEZOOY6vTSnPlLFnNYhmb+FwZE
+gbUpiup8M7Y33vddtBjFmXsu+rCNFli31CexcXDZZEnMX68gCIwLfjqW5qSSF/+S3D8nLsUS0ZGk
+R37818X3QMzhHHLqC7B1dLQm4OZlweJKoB98jIyu/Lv5TG6g3lNZfAmng9oc04R+1XV90EeCihxl
+VOI0jt9Et24Ivv+0Gmd19TD2Tv9rrjc0i+T5aBrKz9XS0vORwe9AGLqTxprQCY6969ucEPpjd2Jv
+G4eZAo16lfjcCuhYAgcsrdcTdM8Y0z0Mg4/jnFsa972jClSAqhdI9664Id+7XpJKY0y9ZW3dKyON
+C/SQg5iPPi+pFWTSedJP7P0FixdUdSO6fBZrmrfP9A0uhN/eIdjXXcGt07HOqUqj6JhBBvdZg1k8
+2vo0fhEJfq58rDPxYPSJrFKZxizcDj3jL6sRU+fvd+M+vkm4VM2p0Aq7Eg20KS+8CzYTRnR5sNl0
+afKDKkWidJKnoHs+sOA0xeZQxpZO2PH6heK/6MVqCjATA9DPGn9y4CkLKqYRlZaFtHU79IDQl3B2
+QCHNCIc6SSDdge3Y2BqMi7ni1/+QezXbu4b122zIX6NVUi4okHXNT0wmfAkO9tMZo8MwXeEE3bzj
+BzVSsDRi4tAELtDx9j4kUiGYI/Nzm50Ts37Ipeh+jLHkgBDg8KqKOYNnTH7j72c9t6LDQapoarpM
+iRYYk7c0B8xOkgOBeLgzOwvM4M5y4QxDFNbTwZu9Tk2ISYKq/uae8DFAgY8lZw/RTUe7Zww+3XRF
+h3yIt7c/ehqht6TphsD13sE8tD4SAfzbnxx+9rJ69hnVVFOHAQS2ufrdqIQQTwbcorQc4bV5QPQa
+RhSdTOAzTRlHGWv8jNW7pw7ERujDNqCGiGM43XVwBX1F5ojRLT6RVKvhaBOL/MLC/+4nzSMBOQv6
+gV79OUmAfjsD/gZLCRSVFIAaM215LZxZU4PG1opkwOoB1wPiqPTowZXNOcJJKLhNK8HzS54ffj4v
+Bp101NTipOZnsbsvzJPYMMaL2i472vAjXEkHsy1G001H7Tw0Z4tHaEWgeWecjGWgeaF96+afsqdK
+N2qc7WG767mLgnGzInmb2k6CdfwtFbOhTvaXktZbMMhDOTOeUr3opt3/0tNDKUaYVI9PAqgn5X1W
+6TflBnQtMyFmDrGgrLZKXwkV9YlQXzKsPP0aD4ZRnRGRWRxQkaAkj/zYJKwtpDQKSpi4jVlyELCk
+mu5u6c7lwxOddlyQn+yNCrAxlaSUFU4v2ZTd09RYKGPtMwOqcqaVKfWNVp4UzbnDRXyHXrCH2pDj
+nbei49gSBfM6aSXirB/rImcVRr0U8CyqG3dumYICdFfI9h4rp/AF8T4rpb5u1fB8PUkHx8IEZvZT
+n2DmarHAPapLOCpgIJegfg5l8sHpkf7xooZ3zWoRmczBibw2FWyBhpz6ImPcNqOmR0WUh3k0wiXX
+c+FSnEuezp7HERXsExZbW0V1obMp8ONqzL7XZVoNsqFAFvEgDkEXEhsyAd858iIij9uVyd56d0DF
+R50xCCna2ByqroI4RXOttI7x9yVeOCSBXkK/0kB96QIGYpI/eEP46VAWL59entSYfV4ZIkS62Jgg
+v764SKCYqPtDGMQtKAqOcf7dIQEHOSQMwTe4L0M8z4sNWeBNc5kezpHkQAoMJHyY5u3A3fkq1tR7
+YVOIRcAW7dfIMYaAfFtlM0QFd6VZWbLFZF8utFNazZsmkmaLXz7ly/MLyzutmILUrPQPA0pHPOOm
+Cryf5re0Smtri2aq4YB9Eku/Re5ZqYfUnm0j74HVCTJn/aUZaXCxmowfwuykq2gID5lkHUxf+5e3
+aanGLRhhWJ5M92sRLMn/OEuh3GQcAHvHtcj1wKPjMXfSOEWGX53KLu1EEE5ZnkYllUbYWObV36Ef
+xbiXmIpy58V7/KLVuEdtiEytkrvrM2WlJatU+Jt8xuTqgYEeEuh0N1/JPsGT+CaphiUWpxyV8IEN
+lbdxqjV9UM4QM65v/dX+VCdkngGGb65xFPCcXmLRGIR7w86902fVU3uRyUgkM4mIoWStzMI50H3B
+6b1geX9o8y//mS6w5Fq31KLHn3CTrgy0c1AQ2nv6RVaSjOY5BJ8eOQE4eC6P6tqi/tR7FK0E2hEn
+lMNosUjYL92zwYR/Pc6N5fQjz9/NPRcTsn+CZNLO520SbBmkC9QqTn/ZPVSH2NseBdcPaZTVmIXe
+G8un5oB3qWfrL5FU7zjuh2vcpU+2fOrDzRMGygKaNrRK

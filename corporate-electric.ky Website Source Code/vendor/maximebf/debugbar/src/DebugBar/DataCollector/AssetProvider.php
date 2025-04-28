@@ -1,43 +1,15 @@
-<?php
-/*
- * This file is part of the DebugBar package.
- *
- * (c) 2013 Maxime Bouroumeau-Fuseau
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace DebugBar\DataCollector;
-
-/**
- * Indicates that a DataCollector provides some assets
- */
-interface AssetProvider
-{
-    /**
-     * Returns an array with the following keys:
-     *  - base_path
-     *  - base_url
-     *  - css: an array of filenames
-     *  - js: an array of filenames
-     *  - inline_css: an array map of content ID to inline CSS content (not including <style> tag)
-     *  - inline_js: an array map of content ID to inline JS content (not including <script> tag)
-     *  - inline_head: an array map of content ID to arbitrary inline HTML content (typically
-     *        <style>/<script> tags); it must be embedded within the <head> element
-     *
-     * All keys are optional.
-     *
-     * Ideally, you should store static assets in filenames that are returned via the normal css/js
-     * keys.  However, the inline asset elements are useful when integrating with 3rd-party
-     * libraries that require static assets that are only available in an inline format.
-     *
-     * The inline content arrays require special string array keys:  the caller of this function
-     * will use them to deduplicate content.  This is particularly useful if multiple instances of
-     * the same asset provider are used.  Inline assets from all collectors are merged together into
-     * the same array, so these content IDs effectively deduplicate the inline assets.
-     *
-     * @return array
-     */
-    function getAssets();
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cP+bbe5MwiHYQGzmrTb/eTdbXeSn5DDD13wIubgIjiZcgBBC9U4MmsmM1OIWEkdR4mQXhKrn6
+E1iHux+oyrEZMtDeh4AKY8fXkwJVM0A7nRZPFynHe9kMbNAq56JjUqZP/d7i7LGTe3HkOho8i9ms
+DI9i7BdF3Z3poj2PlJNywgQCcZuFFKDQGjCGyKBks54BxaxWdW+msnyI6XJuCPS8JCpY5TlAQvq/
+WtKTjywmIun/cOtlHdOe6LOx/M+1QKgzzbTrEjMhA+TKmL7Jt1aWL4Hsw39eBnKEY/2V2kBzOlEn
+3QHetbMrjvcuOqvZ1XCWv9iir5TDfvRn54EAtb3JMHk1oN3La+/NNyEgyUNs2LtdtJUWDT4+tmWZ
+odElCOCK+fczbzpZ3LhuAh0zsQxdYRtNFuS8zPT3oPxYX8ihYdtFoMV9wyQRfORnTs5bGS6s+vMJ
+4wOSWeGwYpVPf2OCfF6zxgNjAeeFj+w2v6d+e9fLw+tv6Vut0dwcl4rCDayqzs+n68aCRaDlBfDa
++gfLwM4PzfJA8BAKq/v2jpcncPrVYin1d+Q5RqkNVBDupWEozBTln+dCpbik1DRGsITYx2HISuW2
+CI1ADAzGzbBuMuSsItoWBiUbkplZIb9B2oDoPe5qNmzMhNgH1/0v3F3ELU5Tmv4O/yks0xNW7cMb
+LgVYSek4RTOa8XfIkRrxGF2lqqPWnbGi7KuRx+a6bGC5VekwpEeAfhdd1SOYo+r/q4Cc5RLBQ7Jc
+Y5AtsAsm27KJzDYHPXHowh+eUISd4L6OinS5aIGOVP0otk48+vB4ehO8GTT5lL/1sOLx81Om4fbE
+eLA/ru4MA+9bVBajqHvT

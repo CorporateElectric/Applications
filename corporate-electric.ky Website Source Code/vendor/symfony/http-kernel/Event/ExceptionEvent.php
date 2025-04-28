@@ -1,76 +1,41 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpKernel\Event;
-
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpKernel\HttpKernelInterface;
-
-/**
- * Allows to create a response for a thrown exception.
- *
- * Call setResponse() to set the response that will be returned for the
- * current request. The propagation of this event is stopped as soon as a
- * response is set.
- *
- * You can also call setThrowable() to replace the thrown exception. This
- * exception will be thrown if no response is set during processing of this
- * event.
- *
- * @author Bernhard Schussek <bschussek@gmail.com>
- */
-final class ExceptionEvent extends RequestEvent
-{
-    private $throwable;
-
-    /**
-     * @var bool
-     */
-    private $allowCustomResponseCode = false;
-
-    public function __construct(HttpKernelInterface $kernel, Request $request, int $requestType, \Throwable $e)
-    {
-        parent::__construct($kernel, $request, $requestType);
-
-        $this->setThrowable($e);
-    }
-
-    public function getThrowable(): \Throwable
-    {
-        return $this->throwable;
-    }
-
-    /**
-     * Replaces the thrown exception.
-     *
-     * This exception will be thrown if no response is set in the event.
-     */
-    public function setThrowable(\Throwable $exception): void
-    {
-        $this->throwable = $exception;
-    }
-
-    /**
-     * Mark the event as allowing a custom response code.
-     */
-    public function allowCustomResponseCode(): void
-    {
-        $this->allowCustomResponseCode = true;
-    }
-
-    /**
-     * Returns true if the event allows a custom response code.
-     */
-    public function isAllowingCustomResponseCode(): bool
-    {
-        return $this->allowCustomResponseCode;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

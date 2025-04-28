@@ -7,6 +7,10 @@ var MediaManager = (function() {
             if (id != null) {
                 $("#data_id").val(id);
                 $("#recordId").val(recordId);
+                if(id == 'photo_gallery'){
+                    $(".media_manager").removeClass("multiple-selection");
+                    $(".media_manager").attr("data-multiple" , false);
+                }
                 MediaManager.init();
             } else {
                 alert("Missing 1 parameter");
@@ -374,7 +378,7 @@ var MediaManager = (function() {
             });
         },
         selectImage: function(image_id) {
-            if (image_id != null && image_id != "" && image_id != false) 
+            if (image_id != null && image_id != "" && image_id != false)
             {
                 var data_id = $("#data_id").val();
                 var imgIDArr = [];
@@ -658,7 +662,7 @@ var MediaManager = (function() {
             }
         },
         insertMedia: function () {
-             
+
             if ($('#photoDiv').length > 0){
                 var image_id = $('.img-box-active').attr('id');
                     var image = $('.img-box-active img').attr('src');
@@ -684,9 +688,9 @@ var MediaManager = (function() {
 
                     $('#' + data_id).parents('.fileinput.fileinput-new').find('.overflow_layer').css('display', 'block');
                     $('#' + data_id).parents('.fileinput.fileinput-new').find('.overflow_layer .removeimg').show();
- 
+
             }
-                  
+
             if ($('.contains_thumb').hasClass('img-box-active')) {
                 var multiple_selection = $('.media_manager.multiple-selection').data('multiple');
 //                alert(multiple_selection);
@@ -781,7 +785,7 @@ var MediaManager = (function() {
                 //$('.removeimg').show();
                 //$('.image_thumb .overflow_layer').css('display', 'block');
             } else {
-                
+
                 openAlertDialogForImage('Please select the image and click on "Insert Media" button to proceed.');
             }
         },
@@ -834,7 +838,7 @@ var MediaManager = (function() {
                     var video_name = $("#" + video_id).data("video_name");
                     $("#video_name").show();
                     $("#video_name").val(video_name);
-                   
+
 
                     /* for video-gallery module  */
                     var video_thumb = $(".active_video img").attr("src");
@@ -2654,7 +2658,7 @@ insertDocument: function () {
             });
         },
         setDocumentListTab: function(userid, doc_id = false) {
-            
+
             $(".loader").show();
             $.ajax({
                 type: "POST",
@@ -2665,7 +2669,7 @@ insertDocument: function () {
                     userid: userid
                 },
                 success: function(data) {
-                   
+
                     $(".loader").hide();
                     var lastPopedPopover;
                     $(".popovers").popover();
@@ -2866,7 +2870,7 @@ insertDocument: function () {
             $(".recent_uploads").hide();
             $('.user_uploaded').hide();
             $('.image_cropper').show();
-            $('body').loader(loaderConfig);            
+            $('body').loader(loaderConfig);
 
             $.ajax({
                 type: "POST",
@@ -2932,7 +2936,7 @@ insertDocument: function () {
             $('body').loader(loaderConfig);
             $("#save_as_new").off('click');
             $("#save_and_overwrite").off('click');
-            
+
             $.ajax({
                 type: "POST",
                 cache: true,
@@ -2943,7 +2947,7 @@ insertDocument: function () {
                     overwrite: overwrite
                 },
                 success: function(data) {
-                    if (data) {                        
+                    if (data) {
                         if (overwrite) {
                             MediaManager.cropImage(image_id);
                         }else {

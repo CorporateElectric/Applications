@@ -1,49 +1,41 @@
-<?php
-
-/**
- * XHTML 1.1 Image Module provides basic image embedding.
- * @note There is specialized code for removing empty images in
- *       HTMLPurifier_Strategy_RemoveForeignElements
- */
-class HTMLPurifier_HTMLModule_Image extends HTMLPurifier_HTMLModule
-{
-
-    /**
-     * @type string
-     */
-    public $name = 'Image';
-
-    /**
-     * @param HTMLPurifier_Config $config
-     */
-    public function setup($config)
-    {
-        $max = $config->get('HTML.MaxImgLength');
-        $img = $this->addElement(
-            'img',
-            'Inline',
-            'Empty',
-            'Common',
-            array(
-                'alt*' => 'Text',
-                // According to the spec, it's Length, but percents can
-                // be abused, so we allow only Pixels.
-                'height' => 'Pixels#' . $max,
-                'width' => 'Pixels#' . $max,
-                'longdesc' => 'URI',
-                'src*' => new HTMLPurifier_AttrDef_URI(true), // embedded
-            )
-        );
-        if ($max === null || $config->get('HTML.Trusted')) {
-            $img->attr['height'] =
-            $img->attr['width'] = 'Length';
-        }
-
-        // kind of strange, but splitting things up would be inefficient
-        $img->attr_transform_pre[] =
-        $img->attr_transform_post[] =
-            new HTMLPurifier_AttrTransform_ImgRequired();
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

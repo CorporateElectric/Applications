@@ -1,208 +1,137 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\Output;
-
-use Symfony\Component\Console\Formatter\OutputFormatter;
-use Symfony\Component\Console\Formatter\OutputFormatterInterface;
-use Symfony\Component\Console\Formatter\OutputFormatterStyle;
-use Symfony\Component\Console\Output\ConsoleOutput;
-
-/**
- * A ConsoleOutput subclass specifically for Psy Shell output.
- */
-class ShellOutput extends ConsoleOutput
-{
-    const NUMBER_LINES = 128;
-
-    private $paging = 0;
-    private $pager;
-
-    /**
-     * Construct a ShellOutput instance.
-     *
-     * @param mixed                         $verbosity (default: self::VERBOSITY_NORMAL)
-     * @param bool|null                     $decorated (default: null)
-     * @param OutputFormatterInterface|null $formatter (default: null)
-     * @param string|OutputPager|null       $pager     (default: null)
-     */
-    public function __construct($verbosity = self::VERBOSITY_NORMAL, $decorated = null, OutputFormatterInterface $formatter = null, $pager = null)
-    {
-        parent::__construct($verbosity, $decorated, $formatter);
-
-        $this->initFormatters();
-
-        if ($pager === null) {
-            $this->pager = new PassthruPager($this);
-        } elseif (\is_string($pager)) {
-            $this->pager = new ProcOutputPager($this, $pager);
-        } elseif ($pager instanceof OutputPager) {
-            $this->pager = $pager;
-        } else {
-            throw new \InvalidArgumentException('Unexpected pager parameter: '.$pager);
-        }
-    }
-
-    /**
-     * Page multiple lines of output.
-     *
-     * The output pager is started
-     *
-     * If $messages is callable, it will be called, passing this output instance
-     * for rendering. Otherwise, all passed $messages are paged to output.
-     *
-     * Upon completion, the output pager is flushed.
-     *
-     * @param string|array|\Closure $messages A string, array of strings or a callback
-     * @param int                   $type     (default: 0)
-     */
-    public function page($messages, $type = 0)
-    {
-        if (\is_string($messages)) {
-            $messages = (array) $messages;
-        }
-
-        if (!\is_array($messages) && !\is_callable($messages)) {
-            throw new \InvalidArgumentException('Paged output requires a string, array or callback');
-        }
-
-        $this->startPaging();
-
-        if (\is_callable($messages)) {
-            $messages($this);
-        } else {
-            $this->write($messages, true, $type);
-        }
-
-        $this->stopPaging();
-    }
-
-    /**
-     * Start sending output to the output pager.
-     */
-    public function startPaging()
-    {
-        $this->paging++;
-    }
-
-    /**
-     * Stop paging output and flush the output pager.
-     */
-    public function stopPaging()
-    {
-        $this->paging--;
-        $this->closePager();
-    }
-
-    /**
-     * Writes a message to the output.
-     *
-     * Optionally, pass `$type | self::NUMBER_LINES` as the $type parameter to
-     * number the lines of output.
-     *
-     * @throws \InvalidArgumentException When unknown output type is given
-     *
-     * @param string|array $messages The message as an array of lines or a single string
-     * @param bool         $newline  Whether to add a newline or not
-     * @param int          $type     The type of output
-     */
-    public function write($messages, $newline = false, $type = 0)
-    {
-        if ($this->getVerbosity() === self::VERBOSITY_QUIET) {
-            return;
-        }
-
-        $messages = (array) $messages;
-
-        if ($type & self::NUMBER_LINES) {
-            $pad = \strlen((string) \count($messages));
-            $template = $this->isDecorated() ? "<aside>%{$pad}s</aside>: %s" : "%{$pad}s: %s";
-
-            if ($type & self::OUTPUT_RAW) {
-                $messages = \array_map([OutputFormatter::class, 'escape'], $messages);
-            }
-
-            foreach ($messages as $i => $line) {
-                $messages[$i] = \sprintf($template, $i, $line);
-            }
-
-            // clean this up for super.
-            $type = $type & ~self::NUMBER_LINES & ~self::OUTPUT_RAW;
-        }
-
-        parent::write($messages, $newline, $type);
-    }
-
-    /**
-     * Writes a message to the output.
-     *
-     * Handles paged output, or writes directly to the output stream.
-     *
-     * @param string $message A message to write to the output
-     * @param bool   $newline Whether to add a newline or not
-     */
-    public function doWrite($message, $newline)
-    {
-        if ($this->paging > 0) {
-            $this->pager->doWrite($message, $newline);
-        } else {
-            parent::doWrite($message, $newline);
-        }
-    }
-
-    /**
-     * Flush and close the output pager.
-     */
-    private function closePager()
-    {
-        if ($this->paging <= 0) {
-            $this->pager->close();
-        }
-    }
-
-    /**
-     * Initialize output formatter styles.
-     */
-    private function initFormatters()
-    {
-        $formatter = $this->getFormatter();
-
-        $formatter->setStyle('warning', new OutputFormatterStyle('black', 'yellow'));
-        $formatter->setStyle('error', new OutputFormatterStyle('white', 'red', ['bold']));
-        $formatter->setStyle('aside', new OutputFormatterStyle('blue'));
-        $formatter->setStyle('strong', new OutputFormatterStyle(null, null, ['bold']));
-        $formatter->setStyle('return', new OutputFormatterStyle('cyan'));
-        $formatter->setStyle('urgent', new OutputFormatterStyle('red'));
-        $formatter->setStyle('hidden', new OutputFormatterStyle('black'));
-
-        // Visibility
-        $formatter->setStyle('public', new OutputFormatterStyle(null, null, ['bold']));
-        $formatter->setStyle('protected', new OutputFormatterStyle('yellow'));
-        $formatter->setStyle('private', new OutputFormatterStyle('red'));
-        $formatter->setStyle('global', new OutputFormatterStyle('cyan', null, ['bold']));
-        $formatter->setStyle('const', new OutputFormatterStyle('cyan'));
-        $formatter->setStyle('class', new OutputFormatterStyle('blue', null, ['underscore']));
-        $formatter->setStyle('function', new OutputFormatterStyle(null));
-        $formatter->setStyle('default', new OutputFormatterStyle(null));
-
-        // Types
-        $formatter->setStyle('number', new OutputFormatterStyle('magenta'));
-        $formatter->setStyle('string', new OutputFormatterStyle('green'));
-        $formatter->setStyle('bool', new OutputFormatterStyle('cyan'));
-        $formatter->setStyle('keyword', new OutputFormatterStyle('yellow'));
-        $formatter->setStyle('comment', new OutputFormatterStyle('blue'));
-        $formatter->setStyle('object', new OutputFormatterStyle('blue'));
-        $formatter->setStyle('resource', new OutputFormatterStyle('yellow'));
-
-        // Code-specific formatting
-        $formatter->setStyle('inline_html', new OutputFormatterStyle('cyan'));
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+TPg5ilPZKZe=

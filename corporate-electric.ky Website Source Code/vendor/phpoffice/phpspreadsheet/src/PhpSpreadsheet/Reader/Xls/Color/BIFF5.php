@@ -1,81 +1,30 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Reader\Xls\Color;
-
-class BIFF5
-{
-    protected static $map = [
-        0x08 => '000000',
-        0x09 => 'FFFFFF',
-        0x0A => 'FF0000',
-        0x0B => '00FF00',
-        0x0C => '0000FF',
-        0x0D => 'FFFF00',
-        0x0E => 'FF00FF',
-        0x0F => '00FFFF',
-        0x10 => '800000',
-        0x11 => '008000',
-        0x12 => '000080',
-        0x13 => '808000',
-        0x14 => '800080',
-        0x15 => '008080',
-        0x16 => 'C0C0C0',
-        0x17 => '808080',
-        0x18 => '8080FF',
-        0x19 => '802060',
-        0x1A => 'FFFFC0',
-        0x1B => 'A0E0F0',
-        0x1C => '600080',
-        0x1D => 'FF8080',
-        0x1E => '0080C0',
-        0x1F => 'C0C0FF',
-        0x20 => '000080',
-        0x21 => 'FF00FF',
-        0x22 => 'FFFF00',
-        0x23 => '00FFFF',
-        0x24 => '800080',
-        0x25 => '800000',
-        0x26 => '008080',
-        0x27 => '0000FF',
-        0x28 => '00CFFF',
-        0x29 => '69FFFF',
-        0x2A => 'E0FFE0',
-        0x2B => 'FFFF80',
-        0x2C => 'A6CAF0',
-        0x2D => 'DD9CB3',
-        0x2E => 'B38FEE',
-        0x2F => 'E3E3E3',
-        0x30 => '2A6FF9',
-        0x31 => '3FB8CD',
-        0x32 => '488436',
-        0x33 => '958C41',
-        0x34 => '8E5E42',
-        0x35 => 'A0627A',
-        0x36 => '624FAC',
-        0x37 => '969696',
-        0x38 => '1D2FBE',
-        0x39 => '286676',
-        0x3A => '004500',
-        0x3B => '453E01',
-        0x3C => '6A2813',
-        0x3D => '85396A',
-        0x3E => '4A3285',
-        0x3F => '424242',
-    ];
-
-    /**
-     * Map color array from BIFF5 built-in color index.
-     *
-     * @param int $color
-     *
-     * @return array
-     */
-    public static function lookup($color)
-    {
-        if (isset(self::$map[$color])) {
-            return ['rgb' => self::$map[$color]];
-        }
-
-        return ['rgb' => '000000'];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+QLIdZBruKS0Pt9ioyn3M5HZu6tGqrgwzRU9t

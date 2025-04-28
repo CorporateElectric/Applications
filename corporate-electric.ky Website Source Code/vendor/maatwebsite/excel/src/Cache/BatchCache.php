@@ -1,142 +1,75 @@
-<?php
-
-namespace Maatwebsite\Excel\Cache;
-
-use Psr\SimpleCache\CacheInterface;
-
-class BatchCache implements CacheInterface
-{
-    /**
-     * @var CacheInterface
-     */
-    protected $cache;
-
-    /**
-     * @var MemoryCache
-     */
-    protected $memory;
-
-    /**
-     * @param CacheInterface $cache
-     * @param MemoryCache    $memory
-     */
-    public function __construct(CacheInterface $cache, MemoryCache $memory)
-    {
-        $this->cache  = $cache;
-        $this->memory = $memory;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function get($key, $default = null)
-    {
-        if ($this->memory->has($key)) {
-            return $this->memory->get($key);
-        }
-
-        return $this->cache->get($key, $default);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function set($key, $value, $ttl = null)
-    {
-        $this->memory->set($key, $value, $ttl);
-
-        if ($this->memory->reachedMemoryLimit()) {
-            return $this->cache->setMultiple($this->memory->flush(), $ttl);
-        }
-
-        return true;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function delete($key)
-    {
-        if ($this->memory->has($key)) {
-            return $this->memory->delete($key);
-        }
-
-        return $this->cache->delete($key);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function clear()
-    {
-        $this->memory->clear();
-
-        return $this->cache->clear();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getMultiple($keys, $default = null)
-    {
-        // Check if all keys are still in memory
-        $memory              = $this->memory->getMultiple($keys, $default);
-        $actualItemsInMemory = count(array_filter($memory));
-
-        if ($actualItemsInMemory === count($keys)) {
-            return $memory;
-        }
-
-        // Get all rows from cache if none is hold in memory.
-        if ($actualItemsInMemory === 0) {
-            return $this->cache->getMultiple($keys, $default);
-        }
-
-        // Add missing values from cache.
-        foreach ($this->cache->getMultiple($keys, $default) as $key => $value) {
-            if (null !== $value) {
-                $memory[$key] = $value;
-            }
-        }
-
-        return $memory;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function setMultiple($values, $ttl = null)
-    {
-        $this->memory->setMultiple($values, $ttl);
-
-        if ($this->memory->reachedMemoryLimit()) {
-            return $this->cache->setMultiple($this->memory->flush(), $ttl);
-        }
-
-        return true;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function deleteMultiple($keys)
-    {
-        $keys = is_array($keys) ? $keys : iterator_to_array($keys);
-
-        $this->memory->deleteMultiple($keys);
-
-        return $this->cache->deleteMultiple($keys);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function has($key)
-    {
-        if ($this->memory->has($key)) {
-            return true;
-        }
-
-        return $this->cache->has($key);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

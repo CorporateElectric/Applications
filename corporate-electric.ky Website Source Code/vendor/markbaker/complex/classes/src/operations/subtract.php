@@ -1,46 +1,37 @@
-<?php
-
-/**
- *
- * Function code for the complex subtraction operation
- *
- * @copyright  Copyright (c) 2013-2018 Mark Baker (https://github.com/MarkBaker/PHPComplex)
- * @license    https://opensource.org/licenses/MIT    MIT
- */
-namespace Complex;
-
-/**
- * Subtracts two or more complex numbers
- *
- * @param     array of string|integer|float|Complex    $complexValues   The numbers to subtract
- * @return    Complex
- */
-function subtract(...$complexValues): Complex
-{
-    if (count($complexValues) < 2) {
-        throw new \Exception('This function requires at least 2 arguments');
-    }
-
-    $base = array_shift($complexValues);
-    $result = clone Complex::validateComplexArgument($base);
-
-    foreach ($complexValues as $complex) {
-        $complex = Complex::validateComplexArgument($complex);
-
-        if ($result->isComplex() && $complex->isComplex() &&
-            $result->getSuffix() !== $complex->getSuffix()) {
-            throw new Exception('Suffix Mismatch');
-        }
-
-        $real = $result->getReal() - $complex->getReal();
-        $imaginary = $result->getImaginary() - $complex->getImaginary();
-
-        $result = new Complex(
-            $real,
-            $imaginary,
-            ($imaginary == 0.0) ? null : max($result->getSuffix(), $complex->getSuffix())
-        );
-    }
-
-    return $result;
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+r9RSltKVLFcMkoCxyvS=

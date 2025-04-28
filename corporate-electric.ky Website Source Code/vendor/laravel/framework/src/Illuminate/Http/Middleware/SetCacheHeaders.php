@@ -1,64 +1,50 @@
-<?php
-
-namespace Illuminate\Http\Middleware;
-
-use Closure;
-use Illuminate\Support\Carbon;
-
-class SetCacheHeaders
-{
-    /**
-     * Add cache related HTTP headers.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure  $next
-     * @param  string|array  $options
-     * @return \Symfony\Component\HttpFoundation\Response
-     *
-     * @throws \InvalidArgumentException
-     */
-    public function handle($request, Closure $next, $options = [])
-    {
-        $response = $next($request);
-
-        if (! $request->isMethodCacheable() || ! $response->getContent()) {
-            return $response;
-        }
-
-        if (is_string($options)) {
-            $options = $this->parseOptions($options);
-        }
-
-        if (isset($options['etag']) && $options['etag'] === true) {
-            $options['etag'] = md5($response->getContent());
-        }
-
-        if (isset($options['last_modified'])) {
-            if (is_numeric($options['last_modified'])) {
-                $options['last_modified'] = Carbon::createFromTimestamp($options['last_modified']);
-            } else {
-                $options['last_modified'] = Carbon::parse($options['last_modified']);
-            }
-        }
-
-        $response->setCache($options);
-        $response->isNotModified($request);
-
-        return $response;
-    }
-
-    /**
-     * Parse the given header options.
-     *
-     * @param  string  $options
-     * @return array
-     */
-    protected function parseOptions($options)
-    {
-        return collect(explode(';', $options))->mapWithKeys(function ($option) {
-            $data = explode('=', $option, 2);
-
-            return [$data[0] => $data[1] ?? true];
-        })->all();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+k1SXTIYDg1IOW0C=

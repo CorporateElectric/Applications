@@ -1,107 +1,64 @@
-<?php
-/**
- * Mockery
- *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://github.com/padraic/mockery/blob/master/LICENSE
- * If you did not receive a copy of the license and are unable to
- * obtain it through the world-wide-web, please send an email
- * to padraic@php.net so we can send you a copy immediately.
- *
- * @category   Mockery
- * @package    Mockery
- * @copyright  Copyright (c) 2010 Pádraic Brady (http://blog.astrumfutura.com)
- * @license    http://github.com/padraic/mockery/blob/master/LICENSE New BSD License
- */
-
-namespace Mockery;
-
-class VerificationDirector
-{
-    private $receivedMethodCalls;
-    private $expectation;
-
-    public function __construct(ReceivedMethodCalls $receivedMethodCalls, VerificationExpectation $expectation)
-    {
-        $this->receivedMethodCalls = $receivedMethodCalls;
-        $this->expectation = $expectation;
-    }
-
-    public function verify()
-    {
-        return $this->receivedMethodCalls->verify($this->expectation);
-    }
-
-    public function with(...$args)
-    {
-        return $this->cloneApplyAndVerify("with", $args);
-    }
-
-    public function withArgs($args)
-    {
-        return $this->cloneApplyAndVerify("withArgs", array($args));
-    }
-
-    public function withNoArgs()
-    {
-        return $this->cloneApplyAndVerify("withNoArgs", array());
-    }
-
-    public function withAnyArgs()
-    {
-        return $this->cloneApplyAndVerify("withAnyArgs", array());
-    }
-
-    public function times($limit = null)
-    {
-        return $this->cloneWithoutCountValidatorsApplyAndVerify("times", array($limit));
-    }
-
-    public function once()
-    {
-        return $this->cloneWithoutCountValidatorsApplyAndVerify("once", array());
-    }
-
-    public function twice()
-    {
-        return $this->cloneWithoutCountValidatorsApplyAndVerify("twice", array());
-    }
-
-    public function atLeast()
-    {
-        return $this->cloneWithoutCountValidatorsApplyAndVerify("atLeast", array());
-    }
-
-    public function atMost()
-    {
-        return $this->cloneWithoutCountValidatorsApplyAndVerify("atMost", array());
-    }
-
-    public function between($minimum, $maximum)
-    {
-        return $this->cloneWithoutCountValidatorsApplyAndVerify("between", array($minimum, $maximum));
-    }
-
-    protected function cloneWithoutCountValidatorsApplyAndVerify($method, $args)
-    {
-        $expectation = clone $this->expectation;
-        $expectation->clearCountValidators();
-        call_user_func_array(array($expectation, $method), $args);
-        $director = new VerificationDirector($this->receivedMethodCalls, $expectation);
-        $director->verify();
-        return $director;
-    }
-
-    protected function cloneApplyAndVerify($method, $args)
-    {
-        $expectation = clone $this->expectation;
-        call_user_func_array(array($expectation, $method), $args);
-        $director = new VerificationDirector($this->receivedMethodCalls, $expectation);
-        $director->verify();
-        return $director;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cP+CTGOAMpBcrRz7KeTY6niKSWax1ZKYtHOAuqcZ2hKbUY6xLhihgPiirbibUBNPOdEoxGB5P
+PyW0phRQ29dwKhWKzLzNlbXOKSr1QoPMX9nvTjcdEfME+maNXeqj2xSandgeBqkO3OxE8ZQS94LZ
+6VSgXmOaTz3zab5Sb8kPZn129qAIEA/d2NCRyyb0I8fL64xtqCiPT/PVq9/HteLX97VTkHrXeyfQ
+QJXtOnjj7r4iTpEzMW5YBOX7UJbiKgrgaWG+EjMhA+TKmL7Jt1aWL4Hsw29bM0Ek4K7CzE0ur2El
+nkOg/+uuE1LhryWpDz+Z0H6qHiIGD/S8zRqokd1xU/+nghpp+ew0+BMOnJ7Ec2bJFLvSCvofBh+o
+yYOcsRXvqAFucQeu8BclGGP9Gw5I6cbPRnsd4iz+ry7URRTwhYDV47qvVCTKXZDK+1Udjjuj/Yz7
+s0JyMKXgmXiq9WmqyVxM2aB3BMVeu2V9lKpC2GgPOS/hZc4G77GuDqFBHKbsD8yTDATAgWTA0/QP
+S/7vI9miRA7f/Eja0T6ca6i/hw3R+c9gh0UCjpDv7g19na/rIDzoHR0Wenlihz2QBj8VL+TwsPmK
+rfq8KoRQm1GuUK3v8XCVdxCf5196vRglOlWsr+/3vo2uRJrDulL6+N4GhVezNvz8K/CCBOHIan02
+uQQbtFcD1I1uArvmTmgqn/dGBHWN+1VqnRIYwg7PQLjaIKD0BYCV7gTD7LlDzksARGo72KF3XGIE
+EK/VClgqhXzzhUx4priB8YGupVktC+aqXZU4LqgsWRLZQgovTd+N5drDVn02fCf5GagepIJCCQKx
+c2vpH0hfh5kcwljf5J09KfdeasKBPPtytqM1ntmWqonATvgUPNOKx3wKgJ5bGO0xCqOVjmjXZYzi
+yOqVS2GLe2FjJ7SaIiokSXOQJE+6O0ChfrOCo6vwTVyuGLrGP6vm3jw7XEmdULd0c1oucuIilyOU
+e7M7sP+yMWSJN5Oh3CFPcdDFac0DRacqfuebpuT2Kvmmo3Ui77ZEQIKwd67t6HboYYNUxeewL+u5
+KBdeyKsBOpHNTU3y2jLBLbr+uHJv14Y88EzowMRiIHZ77u/G4zJiE9t7SoFurZQ98y+CgkriNlDH
+/iZseNHIn57hIodvr4+vC2XJqx8QBptYlv6/5i3S9BmumAglzMiij4eo7e5ONmYG1FsAZmW7P549
+GOTje43rbJyvTIjKX7yDiSyJXe5hXFXB1jbBn28I7ErWfaERLDhbA8IT5RvZbyPsa9pvaSzgoss0
+muTQUP2EJlB24SnMDxAxxDajlh+OULLUSqnWuuP4PtKAcdxhJo7Jhn9XIGcjwH5f1oBFQKfj95Pz
+I86zwVIP5JynSfxX5Eb7msX8WRs429r9iB6F1mrd07bPmPFqU9NlxYgD3WmBWXlbHHxCtTbDJsZf
+v+c1PHo7ngy1xUSXx5cJZOXqQLB2yDjItkOznxIrQxanPNB/mq2FUqAbNw4SdbxQkuUlLSNSmqmr
+tpMDV8M5CmHUcMvXWWr31q5Ss/1EPcWOWY6YZybvrMBYofDjnR5kIGQUIuqEchiFAvP0ICUUW4Ku
+Y4fKnXqdTGWkMEcIiDW6+93XHhFkQECEssbUdAaPBSTlUMOzGgl8IKK4Yjl6o2lCY9URy1mPHqGQ
+kB0H4xZSjiADAarWtg1i2REiHdw6EbGtt/r+lewzZUACbvjZ1JT6XVOF87k1LnRuLM/VZXhIf/OT
+fB4NvtOWMRlU0JOdDhUbTGSJ71wtGXD2ioQoUdbpYEGGenh5EAC2GAPTq5Tq/o8jsnRLdVFRZXVw
+Tf7fYDBYpddmMD9/U5+P5JQtgxHFueLIUHXP65WgabrpjwbKDdA0rX+U1bXuh6NgjQkJcyRlp8Ed
+1gJ/mQH+lTagIDL8YHyXMwNhhTWM+3i4jYxgO1tMpPxskOB9HvSIf4VCAAKnosywGaCT1FN6cAP2
+i5uQQlDPgabgUJJrsCc5wdpNUh5ZxHDrjMp/4v2+VKJUlVW0apw0GelWOxPAVZa/uhgIMuQrZxww
+rERk+0nvaXlJ9ccT4iOEUvL8IZQ8ZXI75ZkR/AwPE50X5GTwtZRrWf5KDUYMCMnvrBWl5k/o0rNX
+oIu4n3c9BsALtzc8pk/LOo+WSt9xqQu3OzR/1tb4ZocUz+ab1K2kbatIbExIdGN2CS08Rv9vP/D7
+biTaJH2CTISC2Ivs/vX4VPi325c2+0JAbPuRZwNnBEQZY9j44cQPTGz2jiMdReoBwJk54BhTsLwF
+WP0RKk5ARG1G0NjtmYUPUZQlva7K5BnccYmju5F0kqekRX+vlWD2uUlBqbsDcofHgaN/NOYe4nxf
+01hgaKhFVeHQ1CKdRCO+g1l0oP7225CfRcR8tSPVOjCBIwBnVcFU9QBS6FWjXAMMDjEiUel5OsVf
+PSznoS5kCAy5VTXaDAga7GRi3La47u4NBo9M5q844y0HTeGdQNWHkDBq8G4RAI+GWzyDP1pa+81e
+fHzaVc8CNn2aiqrT9M89dq13d9I8es9xXRJ1QwkSHW7b3+lV9n9FXSMc/YxypoeCLxz5x0xx9tuP
+2ILRPzdL8gopnktjdI3bSf5mXNxp/L4m3umB2VqdQ7vz4Ifr+5Q5WABJKf80BoMSNnF/Kbem4jud
+GXS7RKoG8Bx8kjtqXknX6OfkQ75nqvcA5t0Do4J9sVfcwIeiwTvPIWaxBbuqxHmv2lysrJftnh7I
+aVUZSnNZ0ABRXiq3t0+Mea9SUp5glLyhDW5fZMw2YRio9UFUvvEKjwmKbm1ZzWh44RYbPRT1nrvq
+yvbwtD2HEN1br0kA8PqIZUQzc2icn2FgNcZ4RKaNwj4UJlPOIfxeSYtKoenhskSO9GXHwLk7vuAq
+IuWh5mjnDG2wg9BXA6FDN+k2PodoH/AQwbt2P/R8TFIKHaxo45wlD87NNDVwbGLlMuji7DXVJj9S
+E3Owe6WSZIOxM5ut3wWRsA8p+D2GusQM19BcY7u13OMAD7RxirYd0eifew8NbhRBGIlYJBmb/90g
+AoVxHgEL06CRw+eanAOU42TB+WPBhsBCSHGdT/oIFRaCpzPTV/+w70dJQ8LgLyhh/iPm2DqMc0id
+WY61r1VOsgszZhj68iD94vp2xEoERGRxVXUceet8e6KJZKlH/SYiopS57bEC7uYPJAGL0kIWCnw2
+cEfspgLkJBYp9iOOhq+B64jJolYVmfMfHq7vZAWQ4XSXaK6xd42V7DyjGvNRukc6BC3/Z17DhSts
+U/4/t3v5Ju+9GK3Az+QzfKUPxz1SQumJjUALVZypvDq+VR7SqYPFmDMMV+9lliZYTQLX26dE55mD
+U8DXo7JPHkv7c+Ts+x8vNHpvaELXhluuiPw8NA3RugRNJbN6zXKvUBscAqZB84i4aWsjSo1Lsz51
+7DpuMNWnOj0K/xypPcXTb6fEfW5cmZTGo39cLnCrgKlP3yO7qYFCeaO03ehSIfJVVwIXYEgjGBUY
+bh3BL6kzehrDsgvthcrRiLYWm0MHvDwLtAh5fD59TRZ4jpJnOfnDdPZJm0M6fiych0SeICl6P7Bj
+BUT9M3fRN1/p/7WUsTDmMKT5lP2EEO0rT5nk1RCLBIEb5fizbEYHhDEpI8YK37qglKuUDd2t3OJZ
+RHxIeu6I2oc5GVEjsEe1eYqxBtSTnVJQugqI1ZMzK1KwkwxgxzDQ9MnTZNEzjM3j5FBQW2jOCfn/
+TJTABfAGLClliP6kCNMGzXHuQD1h4BFgAP0cZMCiaqMfm0eSZGr24yEucsi1uP70hY3xInbNom4p
+KxhdG4imTwhKLCDs/vvXefG4PTMdhTwOPQ1r2UdMPjVDmVvULQntVns/Ho6DenijZIi5RRpR0Fl7
+PCovNEwm2CNxjBdM+PoxjTbelPpWibZY5rdOArwCZXuouQW0LKv5y3qUtg1Q3y6Ea/T5Ds0nR7pa
+VmZ2OK+VmkY73qOo5u1u/FcFuMAEQbw9PiHl7QXcePwuCCUtOJzsLaLH+qpveAw5InLEjMu1RHbR
+bfVFFJY4WTGUPYRJpzl1mPWQuJqfDFTO7d2mF+zKLOVQNsZtae9QKakwDf3xA9F+DPm2ufHFQtww
+Q55ytwpfVa6MNpLpSLP2Q2+QfYGOQlmbRK0uAHtpoyq5UY7Y86eQlx6nzrryn3gOB4WU1h5yrOJ+
+LuioG4SCz8Zs7y+Rtfx/8P7PL7HzlEt7H9eGfvT9Jz4ncIWoduKFVhseGLby1l2DAhNe5lOdp42y
+r+G3CubsFpMvceBMixde1wwyg8fcbSMGGXttq20bfov57kZONdaTWrSNLG4kQeuLdRud/QIVyP8o
+ZM94FRumAqzKEt9J0XiPbzRBDlx6vQetiQswWX/rHw7rwPntJnWKHeeIoN2VqGsjXt/aBQ7K8bCT
+biOiNW7yvoF9VtBdNvGXrOl5Uj0ckXKuNGJ9rTNiczaPPdBmSL0RNU9lHuECjPCzGE1w+LUSUqu6
+Ac3yjxXgAY2UQREgJqXX3FYOmJT6m6e7/QAkPC73kZBeeACL9+Xv36aM/kIqQz96A+fJd6gakrMm
+5Halb0==

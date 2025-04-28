@@ -1,100 +1,52 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Framework\Constraint;
-
-use function sprintf;
-use function trim;
-use PHPUnit\Framework\ExpectationFailedException;
-use SebastianBergmann\Comparator\ComparisonFailure;
-use SebastianBergmann\Comparator\Factory as ComparatorFactory;
-
-/**
- * @no-named-arguments Parameter names are not covered by the backward compatibility promise for PHPUnit
- */
-final class IsEqualWithDelta extends Constraint
-{
-    /**
-     * @var mixed
-     */
-    private $value;
-
-    /**
-     * @var float
-     */
-    private $delta;
-
-    public function __construct($value, float $delta)
-    {
-        $this->value = $value;
-        $this->delta = $delta;
-    }
-
-    /**
-     * Evaluates the constraint for parameter $other.
-     *
-     * If $returnResult is set to false (the default), an exception is thrown
-     * in case of a failure. null is returned otherwise.
-     *
-     * If $returnResult is true, the result of the evaluation is returned as
-     * a boolean value instead: true in case of success, false in case of a
-     * failure.
-     *
-     * @throws ExpectationFailedException
-     */
-    public function evaluate($other, string $description = '', bool $returnResult = false): ?bool
-    {
-        // If $this->value and $other are identical, they are also equal.
-        // This is the most common path and will allow us to skip
-        // initialization of all the comparators.
-        if ($this->value === $other) {
-            return true;
-        }
-
-        $comparatorFactory = ComparatorFactory::getInstance();
-
-        try {
-            $comparator = $comparatorFactory->getComparatorFor(
-                $this->value,
-                $other
-            );
-
-            $comparator->assertEquals(
-                $this->value,
-                $other,
-                $this->delta
-            );
-        } catch (ComparisonFailure $f) {
-            if ($returnResult) {
-                return false;
-            }
-
-            throw new ExpectationFailedException(
-                trim($description . "\n" . $f->getMessage()),
-                $f
-            );
-        }
-
-        return true;
-    }
-
-    /**
-     * Returns a string representation of the constraint.
-     *
-     * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
-     */
-    public function toString(): string
-    {
-        return sprintf(
-            'is equal to %s with delta <%F>>',
-            $this->exporter()->export($this->value),
-            $this->delta
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+ayviv35LZVyp9top0A79vH7o

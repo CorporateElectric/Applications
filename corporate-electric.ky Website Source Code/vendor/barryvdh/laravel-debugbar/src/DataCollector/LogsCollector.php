@@ -1,143 +1,88 @@
-<?php
-
-namespace Barryvdh\Debugbar\DataCollector;
-
-use DebugBar\DataCollector\MessagesCollector;
-use Psr\Log\LogLevel;
-use ReflectionClass;
-
-class LogsCollector extends MessagesCollector
-{
-    protected $lines = 124;
-
-    public function __construct($path = null, $name = 'logs')
-    {
-        parent::__construct($name);
-
-        $path = $path ?: $this->getLogsFile();
-        $this->getStorageLogs($path);
-    }
-
-    /**
-     * Get the path to the logs file
-     *
-     * @return string
-     */
-    public function getLogsFile()
-    {
-        // default daily rotating logs (Laravel 5.0)
-        $path = storage_path() . '/logs/laravel-' . date('Y-m-d') . '.log';
-
-        // single file logs
-        if (!file_exists($path)) {
-            $path = storage_path() . '/logs/laravel.log';
-        }
-
-        return $path;
-    }
-
-    /**
-     * get logs apache in app/storage/logs
-     * only 24 last of current day
-     *
-     * @param string $path
-     *
-     * @return array
-     */
-    public function getStorageLogs($path)
-    {
-        if (!file_exists($path)) {
-            return;
-        }
-
-        //Load the latest lines, guessing about 15x the number of log entries (for stack traces etc)
-        $file = implode("", $this->tailFile($path, $this->lines));
-
-        foreach ($this->getLogs($file) as $log) {
-            $this->addMessage($log['header'] . $log['stack'], $log['level'], false);
-        }
-    }
-
-    /**
-     * By Ain Tohvri (ain)
-     * http://tekkie.flashbit.net/php/tail-functionality-in-php
-     * @param string $file
-     * @param int $lines
-     * @return array
-     */
-    protected function tailFile($file, $lines)
-    {
-        $handle = fopen($file, "r");
-        $linecounter = $lines;
-        $pos = -2;
-        $beginning = false;
-        $text = [];
-        while ($linecounter > 0) {
-            $t = " ";
-            while ($t != "\n") {
-                if (fseek($handle, $pos, SEEK_END) == -1) {
-                    $beginning = true;
-                    break;
-                }
-                $t = fgetc($handle);
-                $pos--;
-            }
-            $linecounter--;
-            if ($beginning) {
-                rewind($handle);
-            }
-            $text[$lines - $linecounter - 1] = fgets($handle);
-            if ($beginning) {
-                break;
-            }
-        }
-        fclose($handle);
-        return array_reverse($text);
-    }
-
-    /**
-     * Search a string for log entries
-     * Based on https://github.com/mikemand/logviewer/blob/master/src/Kmd/Logviewer/Logviewer.php by mikemand
-     *
-     * @param $file
-     * @return array
-     */
-    public function getLogs($file)
-    {
-        $pattern = "/\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\].*/";
-
-        $log_levels = $this->getLevels();
-
-        // There has GOT to be a better way of doing this...
-        preg_match_all($pattern, $file, $headings);
-        $log_data = preg_split($pattern, $file);
-
-        $log = [];
-        foreach ($headings as $h) {
-            for ($i = 0, $j = count($h); $i < $j; $i++) {
-                foreach ($log_levels as $ll) {
-                    if (strpos(strtolower($h[$i]), strtolower('.' . $ll))) {
-                        $log[] = ['level' => $ll, 'header' => $h[$i], 'stack' => $log_data[$i]];
-                    }
-                }
-            }
-        }
-
-        $log = array_reverse($log);
-
-        return $log;
-    }
-
-    /**
-     * Get the log levels from psr/log.
-     * Based on https://github.com/mikemand/logviewer/blob/master/src/Kmd/Logviewer/Logviewer.php by mikemand
-     *
-     * @access public
-     * @return array
-     */
-    public function getLevels()
-    {
-        $class = new ReflectionClass(new LogLevel());
-        return $class->getConstants();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,56 +1,47 @@
-<?php
-
-/**
- *
- * Function code for the complex division operation
- *
- * @copyright  Copyright (c) 2013-2018 Mark Baker (https://github.com/MarkBaker/PHPComplex)
- * @license    https://opensource.org/licenses/MIT    MIT
- */
-namespace Complex;
-
-/**
- * Divides two or more complex numbers
- *
- * @param     array of string|integer|float|Complex    $complexValues   The numbers to divide
- * @return    Complex
- */
-function divideinto(...$complexValues): Complex
-{
-    if (count($complexValues) < 2) {
-        throw new \Exception('This function requires at least 2 arguments');
-    }
-
-    $base = array_shift($complexValues);
-    $result = clone Complex::validateComplexArgument($base);
-
-    foreach ($complexValues as $complex) {
-        $complex = Complex::validateComplexArgument($complex);
-
-        if ($result->isComplex() && $complex->isComplex() &&
-            $result->getSuffix() !== $complex->getSuffix()) {
-            throw new Exception('Suffix Mismatch');
-        }
-        if ($result->getReal() == 0.0 && $result->getImaginary() == 0.0) {
-            throw new \InvalidArgumentException('Division by zero');
-        }
-
-        $delta1 = ($complex->getReal() * $result->getReal()) +
-            ($complex->getImaginary() * $result->getImaginary());
-        $delta2 = ($complex->getImaginary() * $result->getReal()) -
-            ($complex->getReal() * $result->getImaginary());
-        $delta3 = ($result->getReal() * $result->getReal()) +
-            ($result->getImaginary() * $result->getImaginary());
-
-        $real = $delta1 / $delta3;
-        $imaginary = $delta2 / $delta3;
-
-        $result = new Complex(
-            $real,
-            $imaginary,
-            ($imaginary == 0.0) ? null : max($result->getSuffix(), $complex->getSuffix())
-        );
-    }
-
-    return $result;
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

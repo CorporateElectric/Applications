@@ -1,111 +1,66 @@
-<?php
-
-namespace Illuminate\Foundation\Console;
-
-use Illuminate\Console\Command;
-use Illuminate\Console\ConfirmableTrait;
-use Illuminate\Encryption\Encrypter;
-
-class KeyGenerateCommand extends Command
-{
-    use ConfirmableTrait;
-
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
-    protected $signature = 'key:generate
-                    {--show : Display the key instead of modifying files}
-                    {--force : Force the operation to run when in production}';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Set the application key';
-
-    /**
-     * Execute the console command.
-     *
-     * @return void
-     */
-    public function handle()
-    {
-        $key = $this->generateRandomKey();
-
-        if ($this->option('show')) {
-            return $this->line('<comment>'.$key.'</comment>');
-        }
-
-        // Next, we will replace the application key in the environment file so it is
-        // automatically setup for this developer. This key gets generated using a
-        // secure random byte generator and is later base64 encoded for storage.
-        if (! $this->setKeyInEnvironmentFile($key)) {
-            return;
-        }
-
-        $this->laravel['config']['app.key'] = $key;
-
-        $this->info('Application key set successfully.');
-    }
-
-    /**
-     * Generate a random key for the application.
-     *
-     * @return string
-     */
-    protected function generateRandomKey()
-    {
-        return 'base64:'.base64_encode(
-            Encrypter::generateKey($this->laravel['config']['app.cipher'])
-        );
-    }
-
-    /**
-     * Set the application key in the environment file.
-     *
-     * @param  string  $key
-     * @return bool
-     */
-    protected function setKeyInEnvironmentFile($key)
-    {
-        $currentKey = $this->laravel['config']['app.key'];
-
-        if (strlen($currentKey) !== 0 && (! $this->confirmToProceed())) {
-            return false;
-        }
-
-        $this->writeNewEnvironmentFileWith($key);
-
-        return true;
-    }
-
-    /**
-     * Write a new environment file with the given key.
-     *
-     * @param  string  $key
-     * @return void
-     */
-    protected function writeNewEnvironmentFileWith($key)
-    {
-        file_put_contents($this->laravel->environmentFilePath(), preg_replace(
-            $this->keyReplacementPattern(),
-            'APP_KEY='.$key,
-            file_get_contents($this->laravel->environmentFilePath())
-        ));
-    }
-
-    /**
-     * Get a regex pattern that will match env APP_KEY with any random key.
-     *
-     * @return string
-     */
-    protected function keyReplacementPattern()
-    {
-        $escaped = preg_quote('='.$this->laravel['config']['app.key'], '/');
-
-        return "/^APP_KEY{$escaped}/m";
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,226 +1,170 @@
-<?php
-
-namespace PhpParser;
-
-use PhpParser\Node\Expr;
-use PhpParser\Node\Scalar;
-
-/**
- * Evaluates constant expressions.
- *
- * This evaluator is able to evaluate all constant expressions (as defined by PHP), which can be
- * evaluated without further context. If a subexpression is not of this type, a user-provided
- * fallback evaluator is invoked. To support all constant expressions that are also supported by
- * PHP (and not already handled by this class), the fallback evaluator must be able to handle the
- * following node types:
- *
- *  * All Scalar\MagicConst\* nodes.
- *  * Expr\ConstFetch nodes. Only null/false/true are already handled by this class.
- *  * Expr\ClassConstFetch nodes.
- *
- * The fallback evaluator should throw ConstExprEvaluationException for nodes it cannot evaluate.
- *
- * The evaluation is dependent on runtime configuration in two respects: Firstly, floating
- * point to string conversions are affected by the precision ini setting. Secondly, they are also
- * affected by the LC_NUMERIC locale.
- */
-class ConstExprEvaluator
-{
-    private $fallbackEvaluator;
-
-    /**
-     * Create a constant expression evaluator.
-     *
-     * The provided fallback evaluator is invoked whenever a subexpression cannot be evaluated. See
-     * class doc comment for more information.
-     *
-     * @param callable|null $fallbackEvaluator To call if subexpression cannot be evaluated
-     */
-    public function __construct(callable $fallbackEvaluator = null) {
-        $this->fallbackEvaluator = $fallbackEvaluator ?? function(Expr $expr) {
-            throw new ConstExprEvaluationException(
-                "Expression of type {$expr->getType()} cannot be evaluated"
-            );
-        };
-    }
-
-    /**
-     * Silently evaluates a constant expression into a PHP value.
-     *
-     * Thrown Errors, warnings or notices will be converted into a ConstExprEvaluationException.
-     * The original source of the exception is available through getPrevious().
-     *
-     * If some part of the expression cannot be evaluated, the fallback evaluator passed to the
-     * constructor will be invoked. By default, if no fallback is provided, an exception of type
-     * ConstExprEvaluationException is thrown.
-     *
-     * See class doc comment for caveats and limitations.
-     *
-     * @param Expr $expr Constant expression to evaluate
-     * @return mixed Result of evaluation
-     *
-     * @throws ConstExprEvaluationException if the expression cannot be evaluated or an error occurred
-     */
-    public function evaluateSilently(Expr $expr) {
-        set_error_handler(function($num, $str, $file, $line) {
-            throw new \ErrorException($str, 0, $num, $file, $line);
-        });
-
-        try {
-            return $this->evaluate($expr);
-        } catch (\Throwable $e) {
-            if (!$e instanceof ConstExprEvaluationException) {
-                $e = new ConstExprEvaluationException(
-                    "An error occurred during constant expression evaluation", 0, $e);
-            }
-            throw $e;
-        } finally {
-            restore_error_handler();
-        }
-    }
-
-    /**
-     * Directly evaluates a constant expression into a PHP value.
-     *
-     * May generate Error exceptions, warnings or notices. Use evaluateSilently() to convert these
-     * into a ConstExprEvaluationException.
-     *
-     * If some part of the expression cannot be evaluated, the fallback evaluator passed to the
-     * constructor will be invoked. By default, if no fallback is provided, an exception of type
-     * ConstExprEvaluationException is thrown.
-     *
-     * See class doc comment for caveats and limitations.
-     *
-     * @param Expr $expr Constant expression to evaluate
-     * @return mixed Result of evaluation
-     *
-     * @throws ConstExprEvaluationException if the expression cannot be evaluated
-     */
-    public function evaluateDirectly(Expr $expr) {
-        return $this->evaluate($expr);
-    }
-
-    private function evaluate(Expr $expr) {
-        if ($expr instanceof Scalar\LNumber
-            || $expr instanceof Scalar\DNumber
-            || $expr instanceof Scalar\String_
-        ) {
-            return $expr->value;
-        }
-
-        if ($expr instanceof Expr\Array_) {
-            return $this->evaluateArray($expr);
-        }
-
-        // Unary operators
-        if ($expr instanceof Expr\UnaryPlus) {
-            return +$this->evaluate($expr->expr);
-        }
-        if ($expr instanceof Expr\UnaryMinus) {
-            return -$this->evaluate($expr->expr);
-        }
-        if ($expr instanceof Expr\BooleanNot) {
-            return !$this->evaluate($expr->expr);
-        }
-        if ($expr instanceof Expr\BitwiseNot) {
-            return ~$this->evaluate($expr->expr);
-        }
-
-        if ($expr instanceof Expr\BinaryOp) {
-            return $this->evaluateBinaryOp($expr);
-        }
-
-        if ($expr instanceof Expr\Ternary) {
-            return $this->evaluateTernary($expr);
-        }
-
-        if ($expr instanceof Expr\ArrayDimFetch && null !== $expr->dim) {
-            return $this->evaluate($expr->var)[$this->evaluate($expr->dim)];
-        }
-
-        if ($expr instanceof Expr\ConstFetch) {
-            return $this->evaluateConstFetch($expr);
-        }
-
-        return ($this->fallbackEvaluator)($expr);
-    }
-
-    private function evaluateArray(Expr\Array_ $expr) {
-        $array = [];
-        foreach ($expr->items as $item) {
-            if (null !== $item->key) {
-                $array[$this->evaluate($item->key)] = $this->evaluate($item->value);
-            } else {
-                $array[] = $this->evaluate($item->value);
-            }
-        }
-        return $array;
-    }
-
-    private function evaluateTernary(Expr\Ternary $expr) {
-        if (null === $expr->if) {
-            return $this->evaluate($expr->cond) ?: $this->evaluate($expr->else);
-        }
-
-        return $this->evaluate($expr->cond)
-            ? $this->evaluate($expr->if)
-            : $this->evaluate($expr->else);
-    }
-
-    private function evaluateBinaryOp(Expr\BinaryOp $expr) {
-        if ($expr instanceof Expr\BinaryOp\Coalesce
-            && $expr->left instanceof Expr\ArrayDimFetch
-        ) {
-            // This needs to be special cased to respect BP_VAR_IS fetch semantics
-            return $this->evaluate($expr->left->var)[$this->evaluate($expr->left->dim)]
-                ?? $this->evaluate($expr->right);
-        }
-
-        // The evaluate() calls are repeated in each branch, because some of the operators are
-        // short-circuiting and evaluating the RHS in advance may be illegal in that case
-        $l = $expr->left;
-        $r = $expr->right;
-        switch ($expr->getOperatorSigil()) {
-            case '&':   return $this->evaluate($l) &   $this->evaluate($r);
-            case '|':   return $this->evaluate($l) |   $this->evaluate($r);
-            case '^':   return $this->evaluate($l) ^   $this->evaluate($r);
-            case '&&':  return $this->evaluate($l) &&  $this->evaluate($r);
-            case '||':  return $this->evaluate($l) ||  $this->evaluate($r);
-            case '??':  return $this->evaluate($l) ??  $this->evaluate($r);
-            case '.':   return $this->evaluate($l) .   $this->evaluate($r);
-            case '/':   return $this->evaluate($l) /   $this->evaluate($r);
-            case '==':  return $this->evaluate($l) ==  $this->evaluate($r);
-            case '>':   return $this->evaluate($l) >   $this->evaluate($r);
-            case '>=':  return $this->evaluate($l) >=  $this->evaluate($r);
-            case '===': return $this->evaluate($l) === $this->evaluate($r);
-            case 'and': return $this->evaluate($l) and $this->evaluate($r);
-            case 'or':  return $this->evaluate($l) or  $this->evaluate($r);
-            case 'xor': return $this->evaluate($l) xor $this->evaluate($r);
-            case '-':   return $this->evaluate($l) -   $this->evaluate($r);
-            case '%':   return $this->evaluate($l) %   $this->evaluate($r);
-            case '*':   return $this->evaluate($l) *   $this->evaluate($r);
-            case '!=':  return $this->evaluate($l) !=  $this->evaluate($r);
-            case '!==': return $this->evaluate($l) !== $this->evaluate($r);
-            case '+':   return $this->evaluate($l) +   $this->evaluate($r);
-            case '**':  return $this->evaluate($l) **  $this->evaluate($r);
-            case '<<':  return $this->evaluate($l) <<  $this->evaluate($r);
-            case '>>':  return $this->evaluate($l) >>  $this->evaluate($r);
-            case '<':   return $this->evaluate($l) <   $this->evaluate($r);
-            case '<=':  return $this->evaluate($l) <=  $this->evaluate($r);
-            case '<=>': return $this->evaluate($l) <=> $this->evaluate($r);
-        }
-
-        throw new \Exception('Should not happen');
-    }
-
-    private function evaluateConstFetch(Expr\ConstFetch $expr) {
-        $name = $expr->name->toLowerString();
-        switch ($name) {
-            case 'null': return null;
-            case 'false': return false;
-            case 'true': return true;
-        }
-
-        return ($this->fallbackEvaluator)($expr);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+TCc0GfdgU5hFmsMixBRQrWFr

@@ -1,62 +1,36 @@
-<?php
-
-/**
- * This file is part of the ramsey/uuid library
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @copyright Copyright (c) Ben Ramsey <ben@benramsey.com>
- * @license http://opensource.org/licenses/MIT MIT
- */
-
-declare(strict_types=1);
-
-namespace Ramsey\Uuid\Converter\Number;
-
-use Ramsey\Uuid\Converter\NumberConverterInterface;
-use Ramsey\Uuid\Math\CalculatorInterface;
-use Ramsey\Uuid\Type\Integer as IntegerObject;
-
-/**
- * GenericNumberConverter uses the provided calculate to convert decimal
- * numbers to and from hexadecimal values
- *
- * @psalm-immutable
- */
-class GenericNumberConverter implements NumberConverterInterface
-{
-    /**
-     * @var CalculatorInterface
-     */
-    private $calculator;
-
-    public function __construct(CalculatorInterface $calculator)
-    {
-        $this->calculator = $calculator;
-    }
-
-    /**
-     * @inheritDoc
-     * @psalm-pure
-     * @psalm-return numeric-string
-     * @psalm-suppress MoreSpecificReturnType we know that the retrieved `string` is never empty
-     * @psalm-suppress LessSpecificReturnStatement we know that the retrieved `string` is never empty
-     */
-    public function fromHex(string $hex): string
-    {
-        return $this->calculator->fromBase($hex, 16)->toString();
-    }
-
-    /**
-     * @inheritDoc
-     * @psalm-pure
-     * @psalm-return non-empty-string
-     * @psalm-suppress MoreSpecificReturnType we know that the retrieved `string` is never empty
-     * @psalm-suppress LessSpecificReturnStatement we know that the retrieved `string` is never empty
-     */
-    public function toHex(string $number): string
-    {
-        return $this->calculator->toBase(new IntegerObject($number), 16);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+EIHYY+OBsE3B9VTmShfCwVuejfaU6/u=

@@ -1,93 +1,35 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Reader\Xlsx;
-
-class Theme
-{
-    /**
-     * Theme Name.
-     *
-     * @var string
-     */
-    private $themeName;
-
-    /**
-     * Colour Scheme Name.
-     *
-     * @var string
-     */
-    private $colourSchemeName;
-
-    /**
-     * Colour Map.
-     *
-     * @var array of string
-     */
-    private $colourMap;
-
-    /**
-     * Create a new Theme.
-     *
-     * @param mixed $themeName
-     * @param mixed $colourSchemeName
-     * @param mixed $colourMap
-     */
-    public function __construct($themeName, $colourSchemeName, $colourMap)
-    {
-        // Initialise values
-        $this->themeName = $themeName;
-        $this->colourSchemeName = $colourSchemeName;
-        $this->colourMap = $colourMap;
-    }
-
-    /**
-     * Get Theme Name.
-     *
-     * @return string
-     */
-    public function getThemeName()
-    {
-        return $this->themeName;
-    }
-
-    /**
-     * Get colour Scheme Name.
-     *
-     * @return string
-     */
-    public function getColourSchemeName()
-    {
-        return $this->colourSchemeName;
-    }
-
-    /**
-     * Get colour Map Value by Position.
-     *
-     * @param mixed $index
-     *
-     * @return string
-     */
-    public function getColourByIndex($index)
-    {
-        if (isset($this->colourMap[$index])) {
-            return $this->colourMap[$index];
-        }
-
-        return null;
-    }
-
-    /**
-     * Implement PHP __clone to create a deep clone, not just a shallow copy.
-     */
-    public function __clone()
-    {
-        $vars = get_object_vars($this);
-        foreach ($vars as $key => $value) {
-            if ((is_object($value)) && ($key != '_parent')) {
-                $this->$key = clone $value;
-            } else {
-                $this->$key = $value;
-            }
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+LrlVlo2Ih8L9Ntg+qEAGa/hyho3uhQK=

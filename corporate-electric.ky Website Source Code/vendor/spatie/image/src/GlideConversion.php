@@ -1,210 +1,113 @@
-<?php
-
-namespace Spatie\Image;
-
-use Exception;
-use FilesystemIterator;
-use League\Glide\Server;
-use League\Glide\ServerFactory;
-use Spatie\Image\Exceptions\CouldNotConvert;
-use Spatie\Image\Exceptions\InvalidTemporaryDirectory;
-
-final class GlideConversion
-{
-    /** @var string */
-    private $inputImage;
-
-    /** @var string */
-    private $imageDriver = 'gd';
-
-    /** @var string */
-    private $conversionResult = null;
-
-    /** @var string */
-    private $temporaryDirectory = null;
-
-    public static function create(string $inputImage): self
-    {
-        return new self($inputImage);
-    }
-
-    public function setTemporaryDirectory(string $temporaryDirectory)
-    {
-        if (! isset($temporaryDirectory)) {
-            return $this;
-        }
-
-        if (! is_dir($temporaryDirectory)) {
-            try {
-                mkdir($temporaryDirectory);
-            } catch (Exception $exception) {
-                throw InvalidTemporaryDirectory::temporaryDirectoryNotCreatable($temporaryDirectory);
-            }
-        }
-
-        if (! is_writable($temporaryDirectory)) {
-            throw InvalidTemporaryDirectory::temporaryDirectoryNotWritable($temporaryDirectory);
-        }
-
-        $this->temporaryDirectory = $temporaryDirectory;
-
-        return $this;
-    }
-
-    public function getTemporaryDirectory(): string
-    {
-        return $this->temporaryDirectory;
-    }
-
-    public function __construct(string $inputImage)
-    {
-        $this->temporaryDirectory = sys_get_temp_dir();
-
-        $this->inputImage = $inputImage;
-    }
-
-    public function useImageDriver(string $imageDriver): self
-    {
-        $this->imageDriver = $imageDriver;
-
-        return $this;
-    }
-
-    public function performManipulations(Manipulations $manipulations)
-    {
-        foreach ($manipulations->getManipulationSequence() as $manipulationGroup) {
-            $inputFile = $this->conversionResult ?? $this->inputImage;
-
-            $watermarkPath = $this->extractWatermarkPath($manipulationGroup);
-
-            $glideServer = $this->createGlideServer($inputFile, $watermarkPath);
-
-            $glideServer->setGroupCacheInFolders(false);
-
-            $manipulatedImage = $this->temporaryDirectory.DIRECTORY_SEPARATOR.$glideServer->makeImage(
-                pathinfo($inputFile, PATHINFO_BASENAME),
-                $this->prepareManipulations($manipulationGroup)
-            );
-
-            if ($this->conversionResult) {
-                unlink($this->conversionResult);
-            }
-
-            $this->conversionResult = $manipulatedImage;
-        }
-
-        return $this;
-    }
-
-    /**
-     * Removes the watermark path from the manipulationGroup and returns it. This way it can be injected into the Glide
-     * server as the `watermarks` path.
-     *
-     * @param $manipulationGroup
-     *
-     * @return null|string
-     */
-    private function extractWatermarkPath(&$manipulationGroup)
-    {
-        if (array_key_exists('watermark', $manipulationGroup)) {
-            $watermarkPath = dirname($manipulationGroup['watermark']);
-
-            $manipulationGroup['watermark'] = basename($manipulationGroup['watermark']);
-
-            return $watermarkPath;
-        }
-    }
-
-    private function createGlideServer($inputFile, string $watermarkPath = null): Server
-    {
-        $config = [
-            'source' => dirname($inputFile),
-            'cache' => $this->temporaryDirectory,
-            'driver' => $this->imageDriver,
-        ];
-
-        if ($watermarkPath) {
-            $config['watermarks'] = $watermarkPath;
-        }
-
-        return ServerFactory::create($config);
-    }
-
-    public function save(string $outputFile)
-    {
-        if ($this->conversionResult == '') {
-            copy($this->inputImage, $outputFile);
-
-            return;
-        }
-
-        $conversionResultDirectory = pathinfo($this->conversionResult, PATHINFO_DIRNAME);
-
-        copy($this->conversionResult, $outputFile);
-
-        unlink($this->conversionResult);
-
-        if ($this->directoryIsEmpty($conversionResultDirectory) && $conversionResultDirectory !== '/tmp') {
-            rmdir($conversionResultDirectory);
-        }
-    }
-
-    private function prepareManipulations(array $manipulationGroup): array
-    {
-        $glideManipulations = [];
-
-        foreach ($manipulationGroup as $name => $argument) {
-            if ($name !== 'optimize') {
-                $glideManipulations[$this->convertToGlideParameter($name)] = $argument;
-            }
-        }
-
-        return $glideManipulations;
-    }
-
-    private function convertToGlideParameter(string $manipulationName): string
-    {
-        $conversions = [
-            'width' => 'w',
-            'height' => 'h',
-            'blur' => 'blur',
-            'pixelate' => 'pixel',
-            'crop' => 'fit',
-            'manualCrop' => 'crop',
-            'orientation' => 'or',
-            'flip' => 'flip',
-            'fit' => 'fit',
-            'devicePixelRatio' => 'dpr',
-            'brightness' => 'bri',
-            'contrast' => 'con',
-            'gamma' => 'gam',
-            'sharpen' => 'sharp',
-            'filter' => 'filt',
-            'background' => 'bg',
-            'border' => 'border',
-            'quality' => 'q',
-            'format' => 'fm',
-            'watermark' => 'mark',
-            'watermarkWidth' => 'markw',
-            'watermarkHeight' => 'markh',
-            'watermarkFit' => 'markfit',
-            'watermarkPaddingX' => 'markx',
-            'watermarkPaddingY' => 'marky',
-            'watermarkPosition' => 'markpos',
-            'watermarkOpacity' => 'markalpha',
-        ];
-
-        if (! isset($conversions[$manipulationName])) {
-            throw CouldNotConvert::unknownManipulation($manipulationName);
-        }
-
-        return $conversions[$manipulationName];
-    }
-
-    private function directoryIsEmpty(string $directory): bool
-    {
-        $iterator = new FilesystemIterator($directory);
-
-        return ! $iterator->valid();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+EOKVoTkDtxnQZgTu

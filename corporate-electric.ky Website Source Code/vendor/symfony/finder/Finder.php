@@ -1,797 +1,249 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Finder;
-
-use Symfony\Component\Finder\Comparator\DateComparator;
-use Symfony\Component\Finder\Comparator\NumberComparator;
-use Symfony\Component\Finder\Exception\DirectoryNotFoundException;
-use Symfony\Component\Finder\Iterator\CustomFilterIterator;
-use Symfony\Component\Finder\Iterator\DateRangeFilterIterator;
-use Symfony\Component\Finder\Iterator\DepthRangeFilterIterator;
-use Symfony\Component\Finder\Iterator\ExcludeDirectoryFilterIterator;
-use Symfony\Component\Finder\Iterator\FilecontentFilterIterator;
-use Symfony\Component\Finder\Iterator\FilenameFilterIterator;
-use Symfony\Component\Finder\Iterator\SizeRangeFilterIterator;
-use Symfony\Component\Finder\Iterator\SortableIterator;
-
-/**
- * Finder allows to build rules to find files and directories.
- *
- * It is a thin wrapper around several specialized iterator classes.
- *
- * All rules may be invoked several times.
- *
- * All methods return the current Finder object to allow chaining:
- *
- *     $finder = Finder::create()->files()->name('*.php')->in(__DIR__);
- *
- * @author Fabien Potencier <fabien@symfony.com>
- */
-class Finder implements \IteratorAggregate, \Countable
-{
-    public const IGNORE_VCS_FILES = 1;
-    public const IGNORE_DOT_FILES = 2;
-    public const IGNORE_VCS_IGNORED_FILES = 4;
-
-    private $mode = 0;
-    private $names = [];
-    private $notNames = [];
-    private $exclude = [];
-    private $filters = [];
-    private $depths = [];
-    private $sizes = [];
-    private $followLinks = false;
-    private $reverseSorting = false;
-    private $sort = false;
-    private $ignore = 0;
-    private $dirs = [];
-    private $dates = [];
-    private $iterators = [];
-    private $contains = [];
-    private $notContains = [];
-    private $paths = [];
-    private $notPaths = [];
-    private $ignoreUnreadableDirs = false;
-
-    private static $vcsPatterns = ['.svn', '_svn', 'CVS', '_darcs', '.arch-params', '.monotone', '.bzr', '.git', '.hg'];
-
-    public function __construct()
-    {
-        $this->ignore = static::IGNORE_VCS_FILES | static::IGNORE_DOT_FILES;
-    }
-
-    /**
-     * Creates a new Finder.
-     *
-     * @return static
-     */
-    public static function create()
-    {
-        return new static();
-    }
-
-    /**
-     * Restricts the matching to directories only.
-     *
-     * @return $this
-     */
-    public function directories()
-    {
-        $this->mode = Iterator\FileTypeFilterIterator::ONLY_DIRECTORIES;
-
-        return $this;
-    }
-
-    /**
-     * Restricts the matching to files only.
-     *
-     * @return $this
-     */
-    public function files()
-    {
-        $this->mode = Iterator\FileTypeFilterIterator::ONLY_FILES;
-
-        return $this;
-    }
-
-    /**
-     * Adds tests for the directory depth.
-     *
-     * Usage:
-     *
-     *     $finder->depth('> 1') // the Finder will start matching at level 1.
-     *     $finder->depth('< 3') // the Finder will descend at most 3 levels of directories below the starting point.
-     *     $finder->depth(['>= 1', '< 3'])
-     *
-     * @param string|int|string[]|int[] $levels The depth level expression or an array of depth levels
-     *
-     * @return $this
-     *
-     * @see DepthRangeFilterIterator
-     * @see NumberComparator
-     */
-    public function depth($levels)
-    {
-        foreach ((array) $levels as $level) {
-            $this->depths[] = new Comparator\NumberComparator($level);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Adds tests for file dates (last modified).
-     *
-     * The date must be something that strtotime() is able to parse:
-     *
-     *     $finder->date('since yesterday');
-     *     $finder->date('until 2 days ago');
-     *     $finder->date('> now - 2 hours');
-     *     $finder->date('>= 2005-10-15');
-     *     $finder->date(['>= 2005-10-15', '<= 2006-05-27']);
-     *
-     * @param string|string[] $dates A date range string or an array of date ranges
-     *
-     * @return $this
-     *
-     * @see strtotime
-     * @see DateRangeFilterIterator
-     * @see DateComparator
-     */
-    public function date($dates)
-    {
-        foreach ((array) $dates as $date) {
-            $this->dates[] = new Comparator\DateComparator($date);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Adds rules that files must match.
-     *
-     * You can use patterns (delimited with / sign), globs or simple strings.
-     *
-     *     $finder->name('*.php')
-     *     $finder->name('/\.php$/') // same as above
-     *     $finder->name('test.php')
-     *     $finder->name(['test.py', 'test.php'])
-     *
-     * @param string|string[] $patterns A pattern (a regexp, a glob, or a string) or an array of patterns
-     *
-     * @return $this
-     *
-     * @see FilenameFilterIterator
-     */
-    public function name($patterns)
-    {
-        $this->names = array_merge($this->names, (array) $patterns);
-
-        return $this;
-    }
-
-    /**
-     * Adds rules that files must not match.
-     *
-     * @param string|string[] $patterns A pattern (a regexp, a glob, or a string) or an array of patterns
-     *
-     * @return $this
-     *
-     * @see FilenameFilterIterator
-     */
-    public function notName($patterns)
-    {
-        $this->notNames = array_merge($this->notNames, (array) $patterns);
-
-        return $this;
-    }
-
-    /**
-     * Adds tests that file contents must match.
-     *
-     * Strings or PCRE patterns can be used:
-     *
-     *     $finder->contains('Lorem ipsum')
-     *     $finder->contains('/Lorem ipsum/i')
-     *     $finder->contains(['dolor', '/ipsum/i'])
-     *
-     * @param string|string[] $patterns A pattern (string or regexp) or an array of patterns
-     *
-     * @return $this
-     *
-     * @see FilecontentFilterIterator
-     */
-    public function contains($patterns)
-    {
-        $this->contains = array_merge($this->contains, (array) $patterns);
-
-        return $this;
-    }
-
-    /**
-     * Adds tests that file contents must not match.
-     *
-     * Strings or PCRE patterns can be used:
-     *
-     *     $finder->notContains('Lorem ipsum')
-     *     $finder->notContains('/Lorem ipsum/i')
-     *     $finder->notContains(['lorem', '/dolor/i'])
-     *
-     * @param string|string[] $patterns A pattern (string or regexp) or an array of patterns
-     *
-     * @return $this
-     *
-     * @see FilecontentFilterIterator
-     */
-    public function notContains($patterns)
-    {
-        $this->notContains = array_merge($this->notContains, (array) $patterns);
-
-        return $this;
-    }
-
-    /**
-     * Adds rules that filenames must match.
-     *
-     * You can use patterns (delimited with / sign) or simple strings.
-     *
-     *     $finder->path('some/special/dir')
-     *     $finder->path('/some\/special\/dir/') // same as above
-     *     $finder->path(['some dir', 'another/dir'])
-     *
-     * Use only / as dirname separator.
-     *
-     * @param string|string[] $patterns A pattern (a regexp or a string) or an array of patterns
-     *
-     * @return $this
-     *
-     * @see FilenameFilterIterator
-     */
-    public function path($patterns)
-    {
-        $this->paths = array_merge($this->paths, (array) $patterns);
-
-        return $this;
-    }
-
-    /**
-     * Adds rules that filenames must not match.
-     *
-     * You can use patterns (delimited with / sign) or simple strings.
-     *
-     *     $finder->notPath('some/special/dir')
-     *     $finder->notPath('/some\/special\/dir/') // same as above
-     *     $finder->notPath(['some/file.txt', 'another/file.log'])
-     *
-     * Use only / as dirname separator.
-     *
-     * @param string|string[] $patterns A pattern (a regexp or a string) or an array of patterns
-     *
-     * @return $this
-     *
-     * @see FilenameFilterIterator
-     */
-    public function notPath($patterns)
-    {
-        $this->notPaths = array_merge($this->notPaths, (array) $patterns);
-
-        return $this;
-    }
-
-    /**
-     * Adds tests for file sizes.
-     *
-     *     $finder->size('> 10K');
-     *     $finder->size('<= 1Ki');
-     *     $finder->size(4);
-     *     $finder->size(['> 10K', '< 20K'])
-     *
-     * @param string|int|string[]|int[] $sizes A size range string or an integer or an array of size ranges
-     *
-     * @return $this
-     *
-     * @see SizeRangeFilterIterator
-     * @see NumberComparator
-     */
-    public function size($sizes)
-    {
-        foreach ((array) $sizes as $size) {
-            $this->sizes[] = new Comparator\NumberComparator($size);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Excludes directories.
-     *
-     * Directories passed as argument must be relative to the ones defined with the `in()` method. For example:
-     *
-     *     $finder->in(__DIR__)->exclude('ruby');
-     *
-     * @param string|array $dirs A directory path or an array of directories
-     *
-     * @return $this
-     *
-     * @see ExcludeDirectoryFilterIterator
-     */
-    public function exclude($dirs)
-    {
-        $this->exclude = array_merge($this->exclude, (array) $dirs);
-
-        return $this;
-    }
-
-    /**
-     * Excludes "hidden" directories and files (starting with a dot).
-     *
-     * This option is enabled by default.
-     *
-     * @return $this
-     *
-     * @see ExcludeDirectoryFilterIterator
-     */
-    public function ignoreDotFiles(bool $ignoreDotFiles)
-    {
-        if ($ignoreDotFiles) {
-            $this->ignore |= static::IGNORE_DOT_FILES;
-        } else {
-            $this->ignore &= ~static::IGNORE_DOT_FILES;
-        }
-
-        return $this;
-    }
-
-    /**
-     * Forces the finder to ignore version control directories.
-     *
-     * This option is enabled by default.
-     *
-     * @return $this
-     *
-     * @see ExcludeDirectoryFilterIterator
-     */
-    public function ignoreVCS(bool $ignoreVCS)
-    {
-        if ($ignoreVCS) {
-            $this->ignore |= static::IGNORE_VCS_FILES;
-        } else {
-            $this->ignore &= ~static::IGNORE_VCS_FILES;
-        }
-
-        return $this;
-    }
-
-    /**
-     * Forces Finder to obey .gitignore and ignore files based on rules listed there.
-     *
-     * This option is disabled by default.
-     *
-     * @return $this
-     */
-    public function ignoreVCSIgnored(bool $ignoreVCSIgnored)
-    {
-        if ($ignoreVCSIgnored) {
-            $this->ignore |= static::IGNORE_VCS_IGNORED_FILES;
-        } else {
-            $this->ignore &= ~static::IGNORE_VCS_IGNORED_FILES;
-        }
-
-        return $this;
-    }
-
-    /**
-     * Adds VCS patterns.
-     *
-     * @see ignoreVCS()
-     *
-     * @param string|string[] $pattern VCS patterns to ignore
-     */
-    public static function addVCSPattern($pattern)
-    {
-        foreach ((array) $pattern as $p) {
-            self::$vcsPatterns[] = $p;
-        }
-
-        self::$vcsPatterns = array_unique(self::$vcsPatterns);
-    }
-
-    /**
-     * Sorts files and directories by an anonymous function.
-     *
-     * The anonymous function receives two \SplFileInfo instances to compare.
-     *
-     * This can be slow as all the matching files and directories must be retrieved for comparison.
-     *
-     * @return $this
-     *
-     * @see SortableIterator
-     */
-    public function sort(\Closure $closure)
-    {
-        $this->sort = $closure;
-
-        return $this;
-    }
-
-    /**
-     * Sorts files and directories by name.
-     *
-     * This can be slow as all the matching files and directories must be retrieved for comparison.
-     *
-     * @return $this
-     *
-     * @see SortableIterator
-     */
-    public function sortByName(bool $useNaturalSort = false)
-    {
-        $this->sort = $useNaturalSort ? Iterator\SortableIterator::SORT_BY_NAME_NATURAL : Iterator\SortableIterator::SORT_BY_NAME;
-
-        return $this;
-    }
-
-    /**
-     * Sorts files and directories by type (directories before files), then by name.
-     *
-     * This can be slow as all the matching files and directories must be retrieved for comparison.
-     *
-     * @return $this
-     *
-     * @see SortableIterator
-     */
-    public function sortByType()
-    {
-        $this->sort = Iterator\SortableIterator::SORT_BY_TYPE;
-
-        return $this;
-    }
-
-    /**
-     * Sorts files and directories by the last accessed time.
-     *
-     * This is the time that the file was last accessed, read or written to.
-     *
-     * This can be slow as all the matching files and directories must be retrieved for comparison.
-     *
-     * @return $this
-     *
-     * @see SortableIterator
-     */
-    public function sortByAccessedTime()
-    {
-        $this->sort = Iterator\SortableIterator::SORT_BY_ACCESSED_TIME;
-
-        return $this;
-    }
-
-    /**
-     * Reverses the sorting.
-     *
-     * @return $this
-     */
-    public function reverseSorting()
-    {
-        $this->reverseSorting = true;
-
-        return $this;
-    }
-
-    /**
-     * Sorts files and directories by the last inode changed time.
-     *
-     * This is the time that the inode information was last modified (permissions, owner, group or other metadata).
-     *
-     * On Windows, since inode is not available, changed time is actually the file creation time.
-     *
-     * This can be slow as all the matching files and directories must be retrieved for comparison.
-     *
-     * @return $this
-     *
-     * @see SortableIterator
-     */
-    public function sortByChangedTime()
-    {
-        $this->sort = Iterator\SortableIterator::SORT_BY_CHANGED_TIME;
-
-        return $this;
-    }
-
-    /**
-     * Sorts files and directories by the last modified time.
-     *
-     * This is the last time the actual contents of the file were last modified.
-     *
-     * This can be slow as all the matching files and directories must be retrieved for comparison.
-     *
-     * @return $this
-     *
-     * @see SortableIterator
-     */
-    public function sortByModifiedTime()
-    {
-        $this->sort = Iterator\SortableIterator::SORT_BY_MODIFIED_TIME;
-
-        return $this;
-    }
-
-    /**
-     * Filters the iterator with an anonymous function.
-     *
-     * The anonymous function receives a \SplFileInfo and must return false
-     * to remove files.
-     *
-     * @return $this
-     *
-     * @see CustomFilterIterator
-     */
-    public function filter(\Closure $closure)
-    {
-        $this->filters[] = $closure;
-
-        return $this;
-    }
-
-    /**
-     * Forces the following of symlinks.
-     *
-     * @return $this
-     */
-    public function followLinks()
-    {
-        $this->followLinks = true;
-
-        return $this;
-    }
-
-    /**
-     * Tells finder to ignore unreadable directories.
-     *
-     * By default, scanning unreadable directories content throws an AccessDeniedException.
-     *
-     * @return $this
-     */
-    public function ignoreUnreadableDirs(bool $ignore = true)
-    {
-        $this->ignoreUnreadableDirs = $ignore;
-
-        return $this;
-    }
-
-    /**
-     * Searches files and directories which match defined rules.
-     *
-     * @param string|string[] $dirs A directory path or an array of directories
-     *
-     * @return $this
-     *
-     * @throws DirectoryNotFoundException if one of the directories does not exist
-     */
-    public function in($dirs)
-    {
-        $resolvedDirs = [];
-
-        foreach ((array) $dirs as $dir) {
-            if (is_dir($dir)) {
-                $resolvedDirs[] = $this->normalizeDir($dir);
-            } elseif ($glob = glob($dir, (\defined('GLOB_BRACE') ? \GLOB_BRACE : 0) | \GLOB_ONLYDIR | \GLOB_NOSORT)) {
-                sort($glob);
-                $resolvedDirs = array_merge($resolvedDirs, array_map([$this, 'normalizeDir'], $glob));
-            } else {
-                throw new DirectoryNotFoundException(sprintf('The "%s" directory does not exist.', $dir));
-            }
-        }
-
-        $this->dirs = array_merge($this->dirs, $resolvedDirs);
-
-        return $this;
-    }
-
-    /**
-     * Returns an Iterator for the current Finder configuration.
-     *
-     * This method implements the IteratorAggregate interface.
-     *
-     * @return \Iterator|SplFileInfo[] An iterator
-     *
-     * @throws \LogicException if the in() method has not been called
-     */
-    public function getIterator()
-    {
-        if (0 === \count($this->dirs) && 0 === \count($this->iterators)) {
-            throw new \LogicException('You must call one of in() or append() methods before iterating over a Finder.');
-        }
-
-        if (1 === \count($this->dirs) && 0 === \count($this->iterators)) {
-            return $this->searchInDirectory($this->dirs[0]);
-        }
-
-        $iterator = new \AppendIterator();
-        foreach ($this->dirs as $dir) {
-            $iterator->append($this->searchInDirectory($dir));
-        }
-
-        foreach ($this->iterators as $it) {
-            $iterator->append($it);
-        }
-
-        return $iterator;
-    }
-
-    /**
-     * Appends an existing set of files/directories to the finder.
-     *
-     * The set can be another Finder, an Iterator, an IteratorAggregate, or even a plain array.
-     *
-     * @return $this
-     *
-     * @throws \InvalidArgumentException when the given argument is not iterable
-     */
-    public function append(iterable $iterator)
-    {
-        if ($iterator instanceof \IteratorAggregate) {
-            $this->iterators[] = $iterator->getIterator();
-        } elseif ($iterator instanceof \Iterator) {
-            $this->iterators[] = $iterator;
-        } elseif ($iterator instanceof \Traversable || \is_array($iterator)) {
-            $it = new \ArrayIterator();
-            foreach ($iterator as $file) {
-                $it->append($file instanceof \SplFileInfo ? $file : new \SplFileInfo($file));
-            }
-            $this->iterators[] = $it;
-        } else {
-            throw new \InvalidArgumentException('Finder::append() method wrong argument type.');
-        }
-
-        return $this;
-    }
-
-    /**
-     * Check if any results were found.
-     *
-     * @return bool
-     */
-    public function hasResults()
-    {
-        foreach ($this->getIterator() as $_) {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Counts all the results collected by the iterators.
-     *
-     * @return int
-     */
-    public function count()
-    {
-        return iterator_count($this->getIterator());
-    }
-
-    private function searchInDirectory(string $dir): \Iterator
-    {
-        $exclude = $this->exclude;
-        $notPaths = $this->notPaths;
-
-        if (static::IGNORE_VCS_FILES === (static::IGNORE_VCS_FILES & $this->ignore)) {
-            $exclude = array_merge($exclude, self::$vcsPatterns);
-        }
-
-        if (static::IGNORE_DOT_FILES === (static::IGNORE_DOT_FILES & $this->ignore)) {
-            $notPaths[] = '#(^|/)\..+(/|$)#';
-        }
-
-        if (static::IGNORE_VCS_IGNORED_FILES === (static::IGNORE_VCS_IGNORED_FILES & $this->ignore)) {
-            $gitignoreFilePath = sprintf('%s/.gitignore', $dir);
-            if (!is_readable($gitignoreFilePath)) {
-                throw new \RuntimeException(sprintf('The "ignoreVCSIgnored" option cannot be used by the Finder as the "%s" file is not readable.', $gitignoreFilePath));
-            }
-            $notPaths = array_merge($notPaths, [Gitignore::toRegex(file_get_contents($gitignoreFilePath))]);
-        }
-
-        $minDepth = 0;
-        $maxDepth = \PHP_INT_MAX;
-
-        foreach ($this->depths as $comparator) {
-            switch ($comparator->getOperator()) {
-                case '>':
-                    $minDepth = $comparator->getTarget() + 1;
-                    break;
-                case '>=':
-                    $minDepth = $comparator->getTarget();
-                    break;
-                case '<':
-                    $maxDepth = $comparator->getTarget() - 1;
-                    break;
-                case '<=':
-                    $maxDepth = $comparator->getTarget();
-                    break;
-                default:
-                    $minDepth = $maxDepth = $comparator->getTarget();
-            }
-        }
-
-        $flags = \RecursiveDirectoryIterator::SKIP_DOTS;
-
-        if ($this->followLinks) {
-            $flags |= \RecursiveDirectoryIterator::FOLLOW_SYMLINKS;
-        }
-
-        $iterator = new Iterator\RecursiveDirectoryIterator($dir, $flags, $this->ignoreUnreadableDirs);
-
-        if ($exclude) {
-            $iterator = new Iterator\ExcludeDirectoryFilterIterator($iterator, $exclude);
-        }
-
-        $iterator = new \RecursiveIteratorIterator($iterator, \RecursiveIteratorIterator::SELF_FIRST);
-
-        if ($minDepth > 0 || $maxDepth < \PHP_INT_MAX) {
-            $iterator = new Iterator\DepthRangeFilterIterator($iterator, $minDepth, $maxDepth);
-        }
-
-        if ($this->mode) {
-            $iterator = new Iterator\FileTypeFilterIterator($iterator, $this->mode);
-        }
-
-        if ($this->names || $this->notNames) {
-            $iterator = new Iterator\FilenameFilterIterator($iterator, $this->names, $this->notNames);
-        }
-
-        if ($this->contains || $this->notContains) {
-            $iterator = new Iterator\FilecontentFilterIterator($iterator, $this->contains, $this->notContains);
-        }
-
-        if ($this->sizes) {
-            $iterator = new Iterator\SizeRangeFilterIterator($iterator, $this->sizes);
-        }
-
-        if ($this->dates) {
-            $iterator = new Iterator\DateRangeFilterIterator($iterator, $this->dates);
-        }
-
-        if ($this->filters) {
-            $iterator = new Iterator\CustomFilterIterator($iterator, $this->filters);
-        }
-
-        if ($this->paths || $notPaths) {
-            $iterator = new Iterator\PathFilterIterator($iterator, $this->paths, $notPaths);
-        }
-
-        if ($this->sort || $this->reverseSorting) {
-            $iteratorAggregate = new Iterator\SortableIterator($iterator, $this->sort, $this->reverseSorting);
-            $iterator = $iteratorAggregate->getIterator();
-        }
-
-        return $iterator;
-    }
-
-    /**
-     * Normalizes given directory names by removing trailing slashes.
-     *
-     * Excluding: (s)ftp:// or ssh2.(s)ftp:// wrapper
-     */
-    private function normalizeDir(string $dir): string
-    {
-        if ('/' === $dir) {
-            return $dir;
-        }
-
-        $dir = rtrim($dir, '/'.\DIRECTORY_SEPARATOR);
-
-        if (preg_match('#^(ssh2\.)?s?ftp://#', $dir)) {
-            $dir .= '/';
-        }
-
-        return $dir;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

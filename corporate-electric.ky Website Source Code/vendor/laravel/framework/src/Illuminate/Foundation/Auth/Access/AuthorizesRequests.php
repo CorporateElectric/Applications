@@ -1,127 +1,69 @@
-<?php
-
-namespace Illuminate\Foundation\Auth\Access;
-
-use Illuminate\Contracts\Auth\Access\Gate;
-use Illuminate\Support\Str;
-
-trait AuthorizesRequests
-{
-    /**
-     * Authorize a given action for the current user.
-     *
-     * @param  mixed  $ability
-     * @param  mixed|array  $arguments
-     * @return \Illuminate\Auth\Access\Response
-     *
-     * @throws \Illuminate\Auth\Access\AuthorizationException
-     */
-    public function authorize($ability, $arguments = [])
-    {
-        [$ability, $arguments] = $this->parseAbilityAndArguments($ability, $arguments);
-
-        return app(Gate::class)->authorize($ability, $arguments);
-    }
-
-    /**
-     * Authorize a given action for a user.
-     *
-     * @param  \Illuminate\Contracts\Auth\Authenticatable|mixed  $user
-     * @param  mixed  $ability
-     * @param  mixed|array  $arguments
-     * @return \Illuminate\Auth\Access\Response
-     *
-     * @throws \Illuminate\Auth\Access\AuthorizationException
-     */
-    public function authorizeForUser($user, $ability, $arguments = [])
-    {
-        [$ability, $arguments] = $this->parseAbilityAndArguments($ability, $arguments);
-
-        return app(Gate::class)->forUser($user)->authorize($ability, $arguments);
-    }
-
-    /**
-     * Guesses the ability's name if it wasn't provided.
-     *
-     * @param  mixed  $ability
-     * @param  mixed|array  $arguments
-     * @return array
-     */
-    protected function parseAbilityAndArguments($ability, $arguments)
-    {
-        if (is_string($ability) && strpos($ability, '\\') === false) {
-            return [$ability, $arguments];
-        }
-
-        $method = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 3)[2]['function'];
-
-        return [$this->normalizeGuessedAbilityName($method), $ability];
-    }
-
-    /**
-     * Normalize the ability name that has been guessed from the method name.
-     *
-     * @param  string  $ability
-     * @return string
-     */
-    protected function normalizeGuessedAbilityName($ability)
-    {
-        $map = $this->resourceAbilityMap();
-
-        return $map[$ability] ?? $ability;
-    }
-
-    /**
-     * Authorize a resource action based on the incoming request.
-     *
-     * @param  string  $model
-     * @param  string|null  $parameter
-     * @param  array  $options
-     * @param  \Illuminate\Http\Request|null  $request
-     * @return void
-     */
-    public function authorizeResource($model, $parameter = null, array $options = [], $request = null)
-    {
-        $parameter = $parameter ?: Str::snake(class_basename($model));
-
-        $middleware = [];
-
-        foreach ($this->resourceAbilityMap() as $method => $ability) {
-            $modelName = in_array($method, $this->resourceMethodsWithoutModels()) ? $model : $parameter;
-
-            $middleware["can:{$ability},{$modelName}"][] = $method;
-        }
-
-        foreach ($middleware as $middlewareName => $methods) {
-            $this->middleware($middlewareName, $options)->only($methods);
-        }
-    }
-
-    /**
-     * Get the map of resource methods to ability names.
-     *
-     * @return array
-     */
-    protected function resourceAbilityMap()
-    {
-        return [
-            'index' => 'viewAny',
-            'show' => 'view',
-            'create' => 'create',
-            'store' => 'create',
-            'edit' => 'update',
-            'update' => 'update',
-            'destroy' => 'delete',
-        ];
-    }
-
-    /**
-     * Get the list of resource methods which do not have model parameters.
-     *
-     * @return array
-     */
-    protected function resourceMethodsWithoutModels()
-    {
-        return ['index', 'create', 'store'];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

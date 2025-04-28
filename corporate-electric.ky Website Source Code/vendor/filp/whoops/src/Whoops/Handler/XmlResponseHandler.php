@@ -1,107 +1,67 @@
-<?php
-/**
- * Whoops - php errors for cool kids
- * @author Filipe Dobreira <http://github.com/filp>
- */
-
-namespace Whoops\Handler;
-
-use SimpleXMLElement;
-use Whoops\Exception\Formatter;
-
-/**
- * Catches an exception and converts it to an XML
- * response. Additionally can also return exception
- * frames for consumption by an API.
- */
-class XmlResponseHandler extends Handler
-{
-    /**
-     * @var bool
-     */
-    private $returnFrames = false;
-
-    /**
-     * @param  bool|null  $returnFrames
-     * @return bool|$this
-     */
-    public function addTraceToOutput($returnFrames = null)
-    {
-        if (func_num_args() == 0) {
-            return $this->returnFrames;
-        }
-
-        $this->returnFrames = (bool) $returnFrames;
-        return $this;
-    }
-
-    /**
-     * @return int
-     */
-    public function handle()
-    {
-        $response = [
-            'error' => Formatter::formatExceptionAsDataArray(
-                $this->getInspector(),
-                $this->addTraceToOutput()
-            ),
-        ];
-
-        echo self::toXml($response);
-
-        return Handler::QUIT;
-    }
-
-    /**
-     * @return string
-     */
-    public function contentType()
-    {
-        return 'application/xml';
-    }
-
-    /**
-     * @param  SimpleXMLElement  $node Node to append data to, will be modified in place
-     * @param  array|\Traversable $data
-     * @return SimpleXMLElement  The modified node, for chaining
-     */
-    private static function addDataToNode(\SimpleXMLElement $node, $data)
-    {
-        assert(is_array($data) || $data instanceof Traversable);
-
-        foreach ($data as $key => $value) {
-            if (is_numeric($key)) {
-                // Convert the key to a valid string
-                $key = "unknownNode_". (string) $key;
-            }
-
-            // Delete any char not allowed in XML element names
-            $key = preg_replace('/[^a-z0-9\-\_\.\:]/i', '', $key);
-
-            if (is_array($value)) {
-                $child = $node->addChild($key);
-                self::addDataToNode($child, $value);
-            } else {
-                $value = str_replace('&', '&amp;', print_r($value, true));
-                $node->addChild($key, $value);
-            }
-        }
-
-        return $node;
-    }
-
-    /**
-     * The main function for converting to an XML document.
-     *
-     * @param  array|\Traversable $data
-     * @return string            XML
-     */
-    private static function toXml($data)
-    {
-        assert(is_array($data) || $data instanceof Traversable);
-
-        $node = simplexml_load_string("<?xml version='1.0' encoding='utf-8'?><root />");
-
-        return self::addDataToNode($node, $data)->asXML();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

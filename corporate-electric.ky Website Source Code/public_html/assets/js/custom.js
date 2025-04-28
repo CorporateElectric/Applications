@@ -80,27 +80,27 @@ function closeNav() {
       console.log(Date.now(), eventName, element.getAttribute("data-src"));
     }
     var callback_enter = function (element) {
-      
+
     };
     var callback_exit = function (element) {
-      
+
     };
     var callback_loading = function (element) {
-      
+
     };
     var callback_loaded = function (element) {
-      
+
     };
     var callback_error = function (element) {
-     
+
       element.src = site_url + "/assets/images/no-image.png";
-      
+
     };
     var callback_finish = function () {
-      
+
     };
     var callback_cancel = function (element) {
-     
+
     };
     var ll = new LazyLoad({
       threshold: 0,
@@ -173,8 +173,8 @@ function toggleForm() {
     /* Table div Wrap S */
         $(document).ready(function() {
 		   $('.cms table').wrap('<div class="table-responsive"></div>');
-		   $('.events-calender .fc-view-container').wrap('<div class="table-responsive"></div>');		   
-    	   $('[data-toggle="tooltip"]').tooltip(); 
+		   $('.events-calender .fc-view-container').wrap('<div class="table-responsive"></div>');
+    	   $('[data-toggle="tooltip"]').tooltip();
 
         });
 
@@ -210,9 +210,9 @@ function toggleForm() {
 
                     }
 
-                    $img.replaceWith($svg);    
+                    $img.replaceWith($svg);
 
-                }, 'xml');    
+                }, 'xml');
 
             });
 
@@ -235,7 +235,7 @@ $(".panel_listing.panel-group").on("hidden.bs.collapse", toggleIcon);
 $(".panel_listing.panel-group").on("shown.bs.collapse", toggleIcon);
 
 
-// Model issue	
+// Model issue
 ( function($) {
 	function iframeModalOpen(){
 		$('.modal_notes .close').on('click', function(e) {
@@ -261,10 +261,10 @@ $(".panel_listing.panel-group").on("shown.bs.collapse", toggleIcon);
 		iframeModalOpen();
 	});
 
-} ) ( jQuery ); 
-$('.related_services .owl-carousel').owlCarousel({      
+} ) ( jQuery );
+$('.related_services .owl-carousel').owlCarousel({
     items:1,
-    loop:true,      
+    loop:true,
     dots:true,
     margin:10,
     autoplay:true,
@@ -273,23 +273,23 @@ $('.related_services .owl-carousel').owlCarousel({
     smartSpeed:1500,
     responsive:{
         0:{
-            items:1,                        
-        },                  
+            items:1,
+        },
         568:{
-            items:2,        
-        },                  
+            items:2,
+        },
         1000:{
             items:3,
             margin:30,
-        }       
+        }
     }
 });
 
 /* Home page */
 
-$('.services_section .owl-carousel').owlCarousel({    
+$('.services_section .owl-carousel').owlCarousel({
   items:1,
-  loop:false,   
+  loop:false,
   dots:false,
   nav:false,
   margin:20,
@@ -300,17 +300,17 @@ $('.services_section .owl-carousel').owlCarousel({
   smartSpeed:1500,
   responsive:{
     0:{
-      items:1,            
-    },          
+      items:1,
+    },
     576:{
-      items:2,    
+      items:2,
     },
     768:{
-      items:3,    
-    },          
+      items:3,
+    },
     1200:{
       items:4,
-    }   
+    }
   }
 });
 
@@ -336,9 +336,9 @@ $('.ourclient_section .owl-carousel').owlCarousel({
   }
 });
 
-$('.ourwork-section .owl-carousel').owlCarousel({        
+$('.ourwork-section .owl-carousel').owlCarousel({
     items:1,
-    loop:true,      
+    loop:true,
     dots:false,
     nav:true,
     margin:33,
@@ -350,18 +350,18 @@ $('.ourwork-section .owl-carousel').owlCarousel({
     smartSpeed:1500,
     responsive:{
         0:{
-            items:2,    
-            autoWidth:true                  
-        },                  
+            items:2,
+            autoWidth:true
+        },
         576:{
-            items:2,        
+            items:2,
         },
         768:{
-            items:3,        
-        },                  
+            items:3,
+        },
         1200:{
             items:4,
-        }       
+        }
     }
 });
 
@@ -421,3 +421,11 @@ $('.featured_blog_slider .owl-carousel').owlCarousel({
     //     images.setAttribute('height', 'auto');
     //     images.setAttribute('width', 'auto');
     // }
+    $('.service_owl_slider .owl-carousel').owlCarousel({
+        loop:false,
+        items:1,
+        dots:true,
+        autoplay:true,
+        autoplayTimeout:5000,
+        autoplayHoverPause:false,
+    });

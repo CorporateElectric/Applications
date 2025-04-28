@@ -1,390 +1,128 @@
-<?php
-
-/**
- *
- * Class for the management of Complex numbers
- *
- * @copyright  Copyright (c) 2013-2018 Mark Baker (https://github.com/MarkBaker/PHPComplex)
- * @license    https://opensource.org/licenses/MIT    MIT
- */
-namespace Complex;
-
-/**
- * Complex Number object.
- *
- * @package Complex
- *
- * @method float abs()
- * @method Complex acos()
- * @method Complex acosh()
- * @method Complex acot()
- * @method Complex acoth()
- * @method Complex acsc()
- * @method Complex acsch()
- * @method float argument()
- * @method Complex asec()
- * @method Complex asech()
- * @method Complex asin()
- * @method Complex asinh()
- * @method Complex atan()
- * @method Complex atanh()
- * @method Complex conjugate()
- * @method Complex cos()
- * @method Complex cosh()
- * @method Complex cot()
- * @method Complex coth()
- * @method Complex csc()
- * @method Complex csch()
- * @method Complex exp()
- * @method Complex inverse()
- * @method Complex ln()
- * @method Complex log2()
- * @method Complex log10()
- * @method Complex negative()
- * @method Complex pow(int|float $power)
- * @method float rho()
- * @method Complex sec()
- * @method Complex sech()
- * @method Complex sin()
- * @method Complex sinh()
- * @method Complex sqrt()
- * @method Complex tan()
- * @method Complex tanh()
- * @method float theta()
- * @method Complex add(...$complexValues)
- * @method Complex subtract(...$complexValues)
- * @method Complex multiply(...$complexValues)
- * @method Complex divideby(...$complexValues)
- * @method Complex divideinto(...$complexValues)
- */
-class Complex
-{
-    /**
-     * @constant    Euler's Number.
-     */
-    const EULER = 2.7182818284590452353602874713526624977572;
-
-    /**
-     * @constant    Regexp to split an input string into real and imaginary components and suffix
-     */
-    const NUMBER_SPLIT_REGEXP =
-        '` ^
-            (                                   # Real part
-                [-+]?(\d+\.?\d*|\d*\.?\d+)          # Real value (integer or float)
-                ([Ee][-+]?[0-2]?\d{1,3})?           # Optional real exponent for scientific format
-            )
-            (                                   # Imaginary part
-                [-+]?(\d+\.?\d*|\d*\.?\d+)          # Imaginary value (integer or float)
-                ([Ee][-+]?[0-2]?\d{1,3})?           # Optional imaginary exponent for scientific format
-            )?
-            (                                   # Imaginary part is optional
-                ([-+]?)                             # Imaginary (implicit 1 or -1) only
-                ([ij]?)                             # Imaginary i or j - depending on whether mathematical or engineering
-            )
-        $`uix';
-
-    /**
-     * @var    float    $realPart    The value of of this complex number on the real plane.
-     */
-    protected $realPart = 0.0;
-
-    /**
-     * @var    float    $imaginaryPart    The value of of this complex number on the imaginary plane.
-     */
-    protected $imaginaryPart = 0.0;
-
-    /**
-     * @var    string    $suffix    The suffix for this complex number (i or j).
-     */
-    protected $suffix;
-
-
-    /**
-     * Validates whether the argument is a valid complex number, converting scalar or array values if possible
-     *
-     * @param     mixed    $complexNumber   The value to parse
-     * @return    array
-     * @throws    Exception    If the argument isn't a Complex number or cannot be converted to one
-     */
-    private static function parseComplex($complexNumber)
-    {
-        // Test for real number, with no imaginary part
-        if (is_numeric($complexNumber)) {
-            return [$complexNumber, 0, null];
-        }
-
-        // Fix silly human errors
-        $complexNumber = str_replace(
-            ['+-', '-+', '++', '--'],
-            ['-', '-', '+', '+'],
-            $complexNumber
-        );
-
-        // Basic validation of string, to parse out real and imaginary parts, and any suffix
-        $validComplex = preg_match(
-            self::NUMBER_SPLIT_REGEXP,
-            $complexNumber,
-            $complexParts
-        );
-
-        if (!$validComplex) {
-            // Neither real nor imaginary part, so test to see if we actually have a suffix
-            $validComplex = preg_match('/^([\-\+]?)([ij])$/ui', $complexNumber, $complexParts);
-            if (!$validComplex) {
-                throw new Exception('Invalid complex number');
-            }
-            // We have a suffix, so set the real to 0, the imaginary to either 1 or -1 (as defined by the sign)
-            $imaginary = 1;
-            if ($complexParts[1] === '-') {
-                $imaginary = 0 - $imaginary;
-            }
-            return [0, $imaginary, $complexParts[2]];
-        }
-
-        // If we don't have an imaginary part, identify whether it should be +1 or -1...
-        if (($complexParts[4] === '') && ($complexParts[9] !== '')) {
-            if ($complexParts[7] !== $complexParts[9]) {
-                $complexParts[4] = 1;
-                if ($complexParts[8] === '-') {
-                    $complexParts[4] = -1;
-                }
-            } else {
-                // ... or if we have only the real and no imaginary part
-                //  (in which case our real should be the imaginary)
-                $complexParts[4] = $complexParts[1];
-                $complexParts[1] = 0;
-            }
-        }
-
-        // Return real and imaginary parts and suffix as an array, and set a default suffix if user input lazily
-        return [
-            $complexParts[1],
-            $complexParts[4],
-            !empty($complexParts[9]) ? $complexParts[9] : 'i'
-        ];
-    }
-
-
-    public function __construct($realPart = 0.0, $imaginaryPart = null, $suffix = 'i')
-    {
-        if ($imaginaryPart === null) {
-            if (is_array($realPart)) {
-                // We have an array of (potentially) real and imaginary parts, and any suffix
-                list ($realPart, $imaginaryPart, $suffix) = array_values($realPart) + [0.0, 0.0, 'i'];
-            } elseif ((is_string($realPart)) || (is_numeric($realPart))) {
-                // We've been given a string to parse to extract the real and imaginary parts, and any suffix
-                list($realPart, $imaginaryPart, $suffix) = self::parseComplex($realPart);
-            }
-        }
-
-        if ($imaginaryPart != 0.0 && empty($suffix)) {
-            $suffix = 'i';
-        } elseif ($imaginaryPart == 0.0 && !empty($suffix)) {
-            $suffix = '';
-        }
-
-        // Set parsed values in our properties
-        $this->realPart = (float) $realPart;
-        $this->imaginaryPart = (float) $imaginaryPart;
-        $this->suffix = strtolower($suffix);
-    }
-
-    /**
-     * Gets the real part of this complex number
-     *
-     * @return Float
-     */
-    public function getReal(): float
-    {
-        return $this->realPart;
-    }
-
-    /**
-     * Gets the imaginary part of this complex number
-     *
-     * @return Float
-     */
-    public function getImaginary(): float
-    {
-        return $this->imaginaryPart;
-    }
-
-    /**
-     * Gets the suffix of this complex number
-     *
-     * @return String
-     */
-    public function getSuffix(): string
-    {
-        return $this->suffix;
-    }
-
-    /**
-     * Returns true if this is a real value, false if a complex value
-     *
-     * @return Bool
-     */
-    public function isReal(): bool
-    {
-        return $this->imaginaryPart == 0.0;
-    }
-
-    /**
-     * Returns true if this is a complex value, false if a real value
-     *
-     * @return Bool
-     */
-    public function isComplex(): bool
-    {
-        return !$this->isReal();
-    }
-
-    public function format(): string
-    {
-        $str = "";
-        if ($this->imaginaryPart != 0.0) {
-            if (\abs($this->imaginaryPart) != 1.0) {
-                $str .= $this->imaginaryPart . $this->suffix;
-            } else {
-                $str .= (($this->imaginaryPart < 0.0) ? '-' : '') . $this->suffix;
-            }
-        }
-        if ($this->realPart != 0.0) {
-            if (($str) && ($this->imaginaryPart > 0.0)) {
-                $str = "+" . $str;
-            }
-            $str = $this->realPart . $str;
-        }
-        if (!$str) {
-            $str = "0.0";
-        }
-
-        return $str;
-    }
-
-    public function __toString(): string
-    {
-        return $this->format();
-    }
-
-    /**
-     * Validates whether the argument is a valid complex number, converting scalar or array values if possible
-     *
-     * @param     mixed    $complex   The value to validate
-     * @return    Complex
-     * @throws    Exception    If the argument isn't a Complex number or cannot be converted to one
-     */
-    public static function validateComplexArgument($complex): Complex
-    {
-        if (is_scalar($complex) || is_array($complex)) {
-            $complex = new Complex($complex);
-        } elseif (!is_object($complex) || !($complex instanceof Complex)) {
-            throw new Exception('Value is not a valid complex number');
-        }
-
-        return $complex;
-    }
-
-    /**
-     * Returns the reverse of this complex number
-     *
-     * @return    Complex
-     */
-    public function reverse(): Complex
-    {
-        return new Complex(
-            $this->imaginaryPart,
-            $this->realPart,
-            ($this->realPart == 0.0) ? null : $this->suffix
-        );
-    }
-
-    public function invertImaginary(): Complex
-    {
-        return new Complex(
-            $this->realPart,
-            $this->imaginaryPart * -1,
-            ($this->imaginaryPart == 0.0) ? null : $this->suffix
-        );
-    }
-
-    public function invertReal(): Complex
-    {
-        return new Complex(
-            $this->realPart * -1,
-            $this->imaginaryPart,
-            ($this->imaginaryPart == 0.0) ? null : $this->suffix
-        );
-    }
-
-    protected static $functions = [
-        'abs',
-        'acos',
-        'acosh',
-        'acot',
-        'acoth',
-        'acsc',
-        'acsch',
-        'argument',
-        'asec',
-        'asech',
-        'asin',
-        'asinh',
-        'atan',
-        'atanh',
-        'conjugate',
-        'cos',
-        'cosh',
-        'cot',
-        'coth',
-        'csc',
-        'csch',
-        'exp',
-        'inverse',
-        'ln',
-        'log2',
-        'log10',
-        'negative',
-        'pow',
-        'rho',
-        'sec',
-        'sech',
-        'sin',
-        'sinh',
-        'sqrt',
-        'tan',
-        'tanh',
-        'theta',
-    ];
-
-    protected static $operations = [
-        'add',
-        'subtract',
-        'multiply',
-        'divideby',
-        'divideinto',
-    ];
-
-    /**
-     * Returns the result of the function call or operation
-     *
-     * @return    Complex|float
-     * @throws    Exception|\InvalidArgumentException
-     */
-    public function __call($functionName, $arguments)
-    {
-        $functionName = strtolower(str_replace('_', '', $functionName));
-
-        // Test for function calls
-        if (in_array($functionName, self::$functions, true)) {
-            $functionName = "\\" . __NAMESPACE__ . "\\{$functionName}";
-            return $functionName($this, ...$arguments);
-        }
-        // Test for operation calls
-        if (in_array($functionName, self::$operations, true)) {
-            $functionName = "\\" . __NAMESPACE__ . "\\{$functionName}";
-            return $functionName($this, ...$arguments);
-        }
-        throw new Exception('Complex Function or Operation does not exist');
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,117 +1,61 @@
-<?php
-/*
- * This file is part of the DebugBar package.
- *
- * (c) 2013 Maxime Bouroumeau-Fuseau
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace DebugBar;
-
-/**
- * Handler to list and open saved dataset
- */
-class OpenHandler
-{
-    protected $debugBar;
-
-    /**
-     * @param DebugBar $debugBar
-     * @throws DebugBarException
-     */
-    public function __construct(DebugBar $debugBar)
-    {
-        if (!$debugBar->isDataPersisted()) {
-            throw new DebugBarException("DebugBar must have a storage backend to use OpenHandler");
-        }
-        $this->debugBar = $debugBar;
-    }
-
-    /**
-     * Handles the current request
-     *
-     * @param array $request Request data
-     * @param bool $echo
-     * @param bool $sendHeader
-     * @return string
-     * @throws DebugBarException
-     */
-    public function handle($request = null, $echo = true, $sendHeader = true)
-    {
-        if ($request === null) {
-            $request = $_REQUEST;
-        }
-
-        $op = 'find';
-        if (isset($request['op'])) {
-            $op = $request['op'];
-            if (!in_array($op, array('find', 'get', 'clear'))) {
-                throw new DebugBarException("Invalid operation '{$request['op']}'");
-            }
-        }
-
-        if ($sendHeader) {
-            $this->debugBar->getHttpDriver()->setHeaders(array(
-                    'Content-Type' => 'application/json'
-                ));
-        }
-
-        $response = json_encode(call_user_func(array($this, $op), $request));
-        if ($echo) {
-            echo $response;
-        }
-        return $response;
-    }
-
-    /**
-     * Find operation
-     * @param $request
-     * @return array
-     */
-    protected function find($request)
-    {
-        $max = 20;
-        if (isset($request['max'])) {
-            $max = $request['max'];
-        }
-
-        $offset = 0;
-        if (isset($request['offset'])) {
-            $offset = $request['offset'];
-        }
-
-        $filters = array();
-        foreach (array('utime', 'datetime', 'ip', 'uri', 'method') as $key) {
-            if (isset($request[$key])) {
-                $filters[$key] = $request[$key];
-            }
-        }
-
-        return $this->debugBar->getStorage()->find($filters, $max, $offset);
-    }
-
-    /**
-     * Get operation
-     * @param $request
-     * @return array
-     * @throws DebugBarException
-     */
-    protected function get($request)
-    {
-        if (!isset($request['id'])) {
-            throw new DebugBarException("Missing 'id' parameter in 'get' operation");
-        }
-        return $this->debugBar->getStorage()->get($request['id']);
-    }
-
-    /**
-     * Clear operation
-     */
-    protected function clear($request)
-    {
-        $this->debugBar->getStorage()->clear();
-        return array('success' => true);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

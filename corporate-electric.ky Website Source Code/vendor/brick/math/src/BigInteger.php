@@ -1,1134 +1,406 @@
-<?php
-
-declare(strict_types=1);
-
-namespace Brick\Math;
-
-use Brick\Math\Exception\DivisionByZeroException;
-use Brick\Math\Exception\IntegerOverflowException;
-use Brick\Math\Exception\MathException;
-use Brick\Math\Exception\NegativeNumberException;
-use Brick\Math\Exception\NumberFormatException;
-use Brick\Math\Internal\Calculator;
-
-/**
- * An arbitrary-size integer.
- *
- * All methods accepting a number as a parameter accept either a BigInteger instance,
- * an integer, or a string representing an arbitrary size integer.
- *
- * @psalm-immutable
- */
-final class BigInteger extends BigNumber
-{
-    /**
-     * The value, as a string of digits with optional leading minus sign.
-     *
-     * No leading zeros must be present.
-     * No leading minus sign must be present if the number is zero.
-     *
-     * @var string
-     */
-    private $value;
-
-    /**
-     * Protected constructor. Use a factory method to obtain an instance.
-     *
-     * @param string $value A string of digits, with optional leading minus sign.
-     */
-    protected function __construct(string $value)
-    {
-        $this->value = $value;
-    }
-
-    /**
-     * Creates a BigInteger of the given value.
-     *
-     * @param BigNumber|int|float|string $value
-     *
-     * @return BigInteger
-     *
-     * @throws MathException If the value cannot be converted to a BigInteger.
-     *
-     * @psalm-pure
-     */
-    public static function of($value) : BigNumber
-    {
-        return parent::of($value)->toBigInteger();
-    }
-
-    /**
-     * Creates a number from a string in a given base.
-     *
-     * The string can optionally be prefixed with the `+` or `-` sign.
-     *
-     * Bases greater than 36 are not supported by this method, as there is no clear consensus on which of the lowercase
-     * or uppercase characters should come first. Instead, this method accepts any base up to 36, and does not
-     * differentiate lowercase and uppercase characters, which are considered equal.
-     *
-     * For bases greater than 36, and/or custom alphabets, use the fromArbitraryBase() method.
-     *
-     * @param string $number The number to convert, in the given base.
-     * @param int    $base   The base of the number, between 2 and 36.
-     *
-     * @return BigInteger
-     *
-     * @throws NumberFormatException     If the number is empty, or contains invalid chars for the given base.
-     * @throws \InvalidArgumentException If the base is out of range.
-     *
-     * @psalm-pure
-     */
-    public static function fromBase(string $number, int $base) : BigInteger
-    {
-        if ($number === '') {
-            throw new NumberFormatException('The number cannot be empty.');
-        }
-
-        if ($base < 2 || $base > 36) {
-            throw new \InvalidArgumentException(\sprintf('Base %d is not in range 2 to 36.', $base));
-        }
-
-        if ($number[0] === '-') {
-            $sign = '-';
-            $number = \substr($number, 1);
-        } elseif ($number[0] === '+') {
-            $sign = '';
-            $number = \substr($number, 1);
-        } else {
-            $sign = '';
-        }
-
-        if ($number === '') {
-            throw new NumberFormatException('The number cannot be empty.');
-        }
-
-        $number = \ltrim($number, '0');
-
-        if ($number === '') {
-            // The result will be the same in any base, avoid further calculation.
-            return BigInteger::zero();
-        }
-
-        if ($number === '1') {
-            // The result will be the same in any base, avoid further calculation.
-            return new BigInteger($sign . '1');
-        }
-
-        $pattern = '/[^' . \substr(Calculator::ALPHABET, 0, $base) . ']/';
-
-        if (\preg_match($pattern, \strtolower($number), $matches) === 1) {
-            throw new NumberFormatException(\sprintf('"%s" is not a valid character in base %d.', $matches[0], $base));
-        }
-
-        if ($base === 10) {
-            // The number is usable as is, avoid further calculation.
-            return new BigInteger($sign . $number);
-        }
-
-        $result = Calculator::get()->fromBase($number, $base);
-
-        return new BigInteger($sign . $result);
-    }
-
-    /**
-     * Parses a string containing an integer in an arbitrary base, using a custom alphabet.
-     *
-     * Because this method accepts an alphabet with any character, including dash, it does not handle negative numbers.
-     *
-     * @param string $number   The number to parse.
-     * @param string $alphabet The alphabet, for example '01' for base 2, or '01234567' for base 8.
-     *
-     * @return BigInteger
-     *
-     * @throws NumberFormatException     If the given number is empty or contains invalid chars for the given alphabet.
-     * @throws \InvalidArgumentException If the alphabet does not contain at least 2 chars.
-     *
-     * @psalm-pure
-     */
-    public static function fromArbitraryBase(string $number, string $alphabet) : BigInteger
-    {
-        if ($number === '') {
-            throw new NumberFormatException('The number cannot be empty.');
-        }
-
-        $base = \strlen($alphabet);
-
-        if ($base < 2) {
-            throw new \InvalidArgumentException('The alphabet must contain at least 2 chars.');
-        }
-
-        $pattern = '/[^' . \preg_quote($alphabet, '/') . ']/';
-
-        if (\preg_match($pattern, $number, $matches) === 1) {
-            throw NumberFormatException::charNotInAlphabet($matches[0]);
-        }
-
-        $number = Calculator::get()->fromArbitraryBase($number, $alphabet, $base);
-
-        return new BigInteger($number);
-    }
-
-    /**
-     * Translates a string of bytes containing the binary representation of a BigInteger into a BigInteger.
-     *
-     * The input string is assumed to be in big-endian byte-order: the most significant byte is in the zeroth element.
-     *
-     * If `$signed` is true, the input is assumed to be in two's-complement representation, and the leading bit is
-     * interpreted as a sign bit. If `$signed` is false, the input is interpreted as an unsigned number, and the
-     * resulting BigInteger will always be positive or zero.
-     *
-     * This method can be used to retrieve a number exported by `toBytes()`, as long as the `$signed` flags match.
-     *
-     * @param string $value  The byte string.
-     * @param bool   $signed Whether to interpret as a signed number in two's-complement representation with a leading
-     *                       sign bit.
-     *
-     * @return BigInteger
-     *
-     * @throws NumberFormatException If the string is empty.
-     */
-    public static function fromBytes(string $value, bool $signed = true) : BigInteger
-    {
-        if ($value === '') {
-            throw new NumberFormatException('The byte string must not be empty.');
-        }
-
-        $twosComplement = false;
-
-        if ($signed) {
-            $x = \ord($value[0]);
-
-            if (($twosComplement = ($x >= 0x80))) {
-                $value = ~$value;
-            }
-        }
-
-        $number = self::fromBase(\bin2hex($value), 16);
-
-        if ($twosComplement) {
-            return $number->plus(1)->negated();
-        }
-
-        return $number;
-    }
-
-    /**
-     * Generates a pseudo-random number in the range 0 to 2^numBits - 1.
-     *
-     * Using the default random bytes generator, this method is suitable for cryptographic use.
-     *
-     * @param int           $numBits              The number of bits.
-     * @param callable|null $randomBytesGenerator A function that accepts a number of bytes as an integer, and returns a
-     *                                            string of random bytes of the given length. Defaults to the
-     *                                            `random_bytes()` function.
-     *
-     * @return BigInteger
-     *
-     * @throws \InvalidArgumentException If $numBits is negative.
-     */
-    public static function randomBits(int $numBits, ?callable $randomBytesGenerator = null) : BigInteger
-    {
-        if ($numBits < 0) {
-            throw new \InvalidArgumentException('The number of bits cannot be negative.');
-        }
-
-        if ($numBits === 0) {
-            return BigInteger::zero();
-        }
-
-        if ($randomBytesGenerator === null) {
-            $randomBytesGenerator = 'random_bytes';
-        }
-
-        $byteLength = \intdiv($numBits - 1, 8) + 1;
-
-        $extraBits = ($byteLength * 8 - $numBits);
-        $bitmask   = \chr(0xFF >> $extraBits);
-
-        $randomBytes    = $randomBytesGenerator($byteLength);
-        $randomBytes[0] = $randomBytes[0] & $bitmask;
-
-        return self::fromBytes($randomBytes, false);
-    }
-
-    /**
-     * Generates a pseudo-random number between `$min` and `$max`.
-     *
-     * Using the default random bytes generator, this method is suitable for cryptographic use.
-     *
-     * @param BigNumber|int|float|string $min                  The lower bound. Must be convertible to a BigInteger.
-     * @param BigNumber|int|float|string $max                  The upper bound. Must be convertible to a BigInteger.
-     * @param callable|null              $randomBytesGenerator A function that accepts a number of bytes as an integer,
-     *                                                         and returns a string of random bytes of the given length.
-     *                                                         Defaults to the `random_bytes()` function.
-     *
-     * @return BigInteger
-     *
-     * @throws MathException If one of the parameters cannot be converted to a BigInteger,
-     *                       or `$min` is greater than `$max`.
-     */
-    public static function randomRange($min, $max, ?callable $randomBytesGenerator = null) : BigInteger
-    {
-        $min = BigInteger::of($min);
-        $max = BigInteger::of($max);
-
-        if ($min->isGreaterThan($max)) {
-            throw new MathException('$min cannot be greater than $max.');
-        }
-
-        if ($min->isEqualTo($max)) {
-            return $min;
-        }
-
-        $diff      = $max->minus($min);
-        $bitLength = $diff->getBitLength();
-
-        // try until the number is in range (50% to 100% chance of success)
-        do {
-            $randomNumber = self::randomBits($bitLength, $randomBytesGenerator);
-        } while ($randomNumber->isGreaterThan($diff));
-
-        return $randomNumber->plus($min);
-    }
-
-    /**
-     * Returns a BigInteger representing zero.
-     *
-     * @return BigInteger
-     *
-     * @psalm-pure
-     */
-    public static function zero() : BigInteger
-    {
-        /** @psalm-suppress ImpureStaticVariable */
-        static $zero;
-
-        if ($zero === null) {
-            $zero = new BigInteger('0');
-        }
-
-        return $zero;
-    }
-
-    /**
-     * Returns a BigInteger representing one.
-     *
-     * @return BigInteger
-     *
-     * @psalm-pure
-     */
-    public static function one() : BigInteger
-    {
-        /** @psalm-suppress ImpureStaticVariable */
-        static $one;
-
-        if ($one === null) {
-            $one = new BigInteger('1');
-        }
-
-        return $one;
-    }
-
-    /**
-     * Returns a BigInteger representing ten.
-     *
-     * @return BigInteger
-     *
-     * @psalm-pure
-     */
-    public static function ten() : BigInteger
-    {
-        /** @psalm-suppress ImpureStaticVariable */
-        static $ten;
-
-        if ($ten === null) {
-            $ten = new BigInteger('10');
-        }
-
-        return $ten;
-    }
-
-    /**
-     * Returns the sum of this number and the given one.
-     *
-     * @param BigNumber|int|float|string $that The number to add. Must be convertible to a BigInteger.
-     *
-     * @return BigInteger The result.
-     *
-     * @throws MathException If the number is not valid, or is not convertible to a BigInteger.
-     */
-    public function plus($that) : BigInteger
-    {
-        $that = BigInteger::of($that);
-
-        if ($that->value === '0') {
-            return $this;
-        }
-
-        if ($this->value === '0') {
-            return $that;
-        }
-
-        $value = Calculator::get()->add($this->value, $that->value);
-
-        return new BigInteger($value);
-    }
-
-    /**
-     * Returns the difference of this number and the given one.
-     *
-     * @param BigNumber|int|float|string $that The number to subtract. Must be convertible to a BigInteger.
-     *
-     * @return BigInteger The result.
-     *
-     * @throws MathException If the number is not valid, or is not convertible to a BigInteger.
-     */
-    public function minus($that) : BigInteger
-    {
-        $that = BigInteger::of($that);
-
-        if ($that->value === '0') {
-            return $this;
-        }
-
-        $value = Calculator::get()->sub($this->value, $that->value);
-
-        return new BigInteger($value);
-    }
-
-    /**
-     * Returns the product of this number and the given one.
-     *
-     * @param BigNumber|int|float|string $that The multiplier. Must be convertible to a BigInteger.
-     *
-     * @return BigInteger The result.
-     *
-     * @throws MathException If the multiplier is not a valid number, or is not convertible to a BigInteger.
-     */
-    public function multipliedBy($that) : BigInteger
-    {
-        $that = BigInteger::of($that);
-
-        if ($that->value === '1') {
-            return $this;
-        }
-
-        if ($this->value === '1') {
-            return $that;
-        }
-
-        $value = Calculator::get()->mul($this->value, $that->value);
-
-        return new BigInteger($value);
-    }
-
-    /**
-     * Returns the result of the division of this number by the given one.
-     *
-     * @param BigNumber|int|float|string $that         The divisor. Must be convertible to a BigInteger.
-     * @param int                        $roundingMode An optional rounding mode.
-     *
-     * @return BigInteger The result.
-     *
-     * @throws MathException If the divisor is not a valid number, is not convertible to a BigInteger, is zero,
-     *                       or RoundingMode::UNNECESSARY is used and the remainder is not zero.
-     */
-    public function dividedBy($that, int $roundingMode = RoundingMode::UNNECESSARY) : BigInteger
-    {
-        $that = BigInteger::of($that);
-
-        if ($that->value === '1') {
-            return $this;
-        }
-
-        if ($that->value === '0') {
-            throw DivisionByZeroException::divisionByZero();
-        }
-
-        $result = Calculator::get()->divRound($this->value, $that->value, $roundingMode);
-
-        return new BigInteger($result);
-    }
-
-    /**
-     * Returns this number exponentiated to the given value.
-     *
-     * @param int $exponent The exponent.
-     *
-     * @return BigInteger The result.
-     *
-     * @throws \InvalidArgumentException If the exponent is not in the range 0 to 1,000,000.
-     */
-    public function power(int $exponent) : BigInteger
-    {
-        if ($exponent === 0) {
-            return BigInteger::one();
-        }
-
-        if ($exponent === 1) {
-            return $this;
-        }
-
-        if ($exponent < 0 || $exponent > Calculator::MAX_POWER) {
-            throw new \InvalidArgumentException(\sprintf(
-                'The exponent %d is not in the range 0 to %d.',
-                $exponent,
-                Calculator::MAX_POWER
-            ));
-        }
-
-        return new BigInteger(Calculator::get()->pow($this->value, $exponent));
-    }
-
-    /**
-     * Returns the quotient of the division of this number by the given one.
-     *
-     * @param BigNumber|int|float|string $that The divisor. Must be convertible to a BigInteger.
-     *
-     * @return BigInteger
-     *
-     * @throws DivisionByZeroException If the divisor is zero.
-     */
-    public function quotient($that) : BigInteger
-    {
-        $that = BigInteger::of($that);
-
-        if ($that->value === '1') {
-            return $this;
-        }
-
-        if ($that->value === '0') {
-            throw DivisionByZeroException::divisionByZero();
-        }
-
-        $quotient = Calculator::get()->divQ($this->value, $that->value);
-
-        return new BigInteger($quotient);
-    }
-
-    /**
-     * Returns the remainder of the division of this number by the given one.
-     *
-     * The remainder, when non-zero, has the same sign as the dividend.
-     *
-     * @param BigNumber|int|float|string $that The divisor. Must be convertible to a BigInteger.
-     *
-     * @return BigInteger
-     *
-     * @throws DivisionByZeroException If the divisor is zero.
-     */
-    public function remainder($that) : BigInteger
-    {
-        $that = BigInteger::of($that);
-
-        if ($that->value === '1') {
-            return BigInteger::zero();
-        }
-
-        if ($that->value === '0') {
-            throw DivisionByZeroException::divisionByZero();
-        }
-
-        $remainder = Calculator::get()->divR($this->value, $that->value);
-
-        return new BigInteger($remainder);
-    }
-
-    /**
-     * Returns the quotient and remainder of the division of this number by the given one.
-     *
-     * @param BigNumber|int|float|string $that The divisor. Must be convertible to a BigInteger.
-     *
-     * @return BigInteger[] An array containing the quotient and the remainder.
-     *
-     * @throws DivisionByZeroException If the divisor is zero.
-     */
-    public function quotientAndRemainder($that) : array
-    {
-        $that = BigInteger::of($that);
-
-        if ($that->value === '0') {
-            throw DivisionByZeroException::divisionByZero();
-        }
-
-        [$quotient, $remainder] = Calculator::get()->divQR($this->value, $that->value);
-
-        return [
-            new BigInteger($quotient),
-            new BigInteger($remainder)
-        ];
-    }
-
-    /**
-     * Returns the modulo of this number and the given one.
-     *
-     * The modulo operation yields the same result as the remainder operation when both operands are of the same sign,
-     * and may differ when signs are different.
-     *
-     * The result of the modulo operation, when non-zero, has the same sign as the divisor.
-     *
-     * @param BigNumber|int|float|string $that The divisor. Must be convertible to a BigInteger.
-     *
-     * @return BigInteger
-     *
-     * @throws DivisionByZeroException If the divisor is zero.
-     */
-    public function mod($that) : BigInteger
-    {
-        $that = BigInteger::of($that);
-
-        if ($that->value === '0') {
-            throw DivisionByZeroException::modulusMustNotBeZero();
-        }
-
-        $value = Calculator::get()->mod($this->value, $that->value);
-
-        return new BigInteger($value);
-    }
-
-    /**
-     * Returns the modular multiplicative inverse of this BigInteger modulo $m.
-     *
-     * @param BigInteger $m
-     *
-     * @return BigInteger
-     *
-     * @throws DivisionByZeroException If $m is zero.
-     * @throws NegativeNumberException If $m is negative.
-     * @throws MathException           If this BigInteger has no multiplicative inverse mod m (that is, this BigInteger
-     *                                 is not relatively prime to m).
-     */
-    public function modInverse(BigInteger $m) : BigInteger
-    {
-        if ($m->value === '0') {
-            throw DivisionByZeroException::modulusMustNotBeZero();
-        }
-
-        if ($m->isNegative()) {
-            throw new NegativeNumberException('Modulus must not be negative.');
-        }
-
-        if ($m->value === '1') {
-            return BigInteger::zero();
-        }
-
-        $value = Calculator::get()->modInverse($this->value, $m->value);
-
-        if ($value === null) {
-            throw new MathException('Unable to compute the modInverse for the given modulus.');
-        }
-
-        return new BigInteger($value);
-    }
-
-    /**
-     * Returns this number raised into power with modulo.
-     *
-     * This operation only works on positive numbers.
-     *
-     * @param BigNumber|int|float|string $exp The exponent. Must be positive or zero.
-     * @param BigNumber|int|float|string $mod The modulus. Must be strictly positive.
-     *
-     * @return BigInteger
-     *
-     * @throws NegativeNumberException If any of the operands is negative.
-     * @throws DivisionByZeroException If the modulus is zero.
-     */
-    public function modPow($exp, $mod) : BigInteger
-    {
-        $exp = BigInteger::of($exp);
-        $mod = BigInteger::of($mod);
-
-        if ($this->isNegative() || $exp->isNegative() || $mod->isNegative()) {
-            throw new NegativeNumberException('The operands cannot be negative.');
-        }
-
-        if ($mod->isZero()) {
-            throw DivisionByZeroException::modulusMustNotBeZero();
-        }
-
-        $result = Calculator::get()->modPow($this->value, $exp->value, $mod->value);
-
-        return new BigInteger($result);
-    }
-
-    /**
-     * Returns the greatest common divisor of this number and the given one.
-     *
-     * The GCD is always positive, unless both operands are zero, in which case it is zero.
-     *
-     * @param BigNumber|int|float|string $that The operand. Must be convertible to an integer number.
-     *
-     * @return BigInteger
-     */
-    public function gcd($that) : BigInteger
-    {
-        $that = BigInteger::of($that);
-
-        if ($that->value === '0' && $this->value[0] !== '-') {
-            return $this;
-        }
-
-        if ($this->value === '0' && $that->value[0] !== '-') {
-            return $that;
-        }
-
-        $value = Calculator::get()->gcd($this->value, $that->value);
-
-        return new BigInteger($value);
-    }
-
-    /**
-     * Returns the integer square root number of this number, rounded down.
-     *
-     * The result is the largest x such that x² ≤ n.
-     *
-     * @return BigInteger
-     *
-     * @throws NegativeNumberException If this number is negative.
-     */
-    public function sqrt() : BigInteger
-    {
-        if ($this->value[0] === '-') {
-            throw new NegativeNumberException('Cannot calculate the square root of a negative number.');
-        }
-
-        $value = Calculator::get()->sqrt($this->value);
-
-        return new BigInteger($value);
-    }
-
-    /**
-     * Returns the absolute value of this number.
-     *
-     * @return BigInteger
-     */
-    public function abs() : BigInteger
-    {
-        return $this->isNegative() ? $this->negated() : $this;
-    }
-
-    /**
-     * Returns the inverse of this number.
-     *
-     * @return BigInteger
-     */
-    public function negated() : BigInteger
-    {
-        return new BigInteger(Calculator::get()->neg($this->value));
-    }
-
-    /**
-     * Returns the integer bitwise-and combined with another integer.
-     *
-     * This method returns a negative BigInteger if and only if both operands are negative.
-     *
-     * @param BigNumber|int|float|string $that The operand. Must be convertible to an integer number.
-     *
-     * @return BigInteger
-     */
-    public function and($that) : BigInteger
-    {
-        $that = BigInteger::of($that);
-
-        return new BigInteger(Calculator::get()->and($this->value, $that->value));
-    }
-
-    /**
-     * Returns the integer bitwise-or combined with another integer.
-     *
-     * This method returns a negative BigInteger if and only if either of the operands is negative.
-     *
-     * @param BigNumber|int|float|string $that The operand. Must be convertible to an integer number.
-     *
-     * @return BigInteger
-     */
-    public function or($that) : BigInteger
-    {
-        $that = BigInteger::of($that);
-
-        return new BigInteger(Calculator::get()->or($this->value, $that->value));
-    }
-
-    /**
-     * Returns the integer bitwise-xor combined with another integer.
-     *
-     * This method returns a negative BigInteger if and only if exactly one of the operands is negative.
-     *
-     * @param BigNumber|int|float|string $that The operand. Must be convertible to an integer number.
-     *
-     * @return BigInteger
-     */
-    public function xor($that) : BigInteger
-    {
-        $that = BigInteger::of($that);
-
-        return new BigInteger(Calculator::get()->xor($this->value, $that->value));
-    }
-
-    /**
-     * Returns the bitwise-not of this BigInteger.
-     *
-     * @return BigInteger
-     */
-    public function not() : BigInteger
-    {
-        return $this->negated()->minus(1);
-    }
-
-    /**
-     * Returns the integer left shifted by a given number of bits.
-     *
-     * @param int $distance The distance to shift.
-     *
-     * @return BigInteger
-     */
-    public function shiftedLeft(int $distance) : BigInteger
-    {
-        if ($distance === 0) {
-            return $this;
-        }
-
-        if ($distance < 0) {
-            return $this->shiftedRight(- $distance);
-        }
-
-        return $this->multipliedBy(BigInteger::of(2)->power($distance));
-    }
-
-    /**
-     * Returns the integer right shifted by a given number of bits.
-     *
-     * @param int $distance The distance to shift.
-     *
-     * @return BigInteger
-     */
-    public function shiftedRight(int $distance) : BigInteger
-    {
-        if ($distance === 0) {
-            return $this;
-        }
-
-        if ($distance < 0) {
-            return $this->shiftedLeft(- $distance);
-        }
-
-        $operand = BigInteger::of(2)->power($distance);
-
-        if ($this->isPositiveOrZero()) {
-            return $this->quotient($operand);
-        }
-
-        return $this->dividedBy($operand, RoundingMode::UP);
-    }
-
-    /**
-     * Returns the number of bits in the minimal two's-complement representation of this BigInteger, excluding a sign bit.
-     *
-     * For positive BigIntegers, this is equivalent to the number of bits in the ordinary binary representation.
-     * Computes (ceil(log2(this < 0 ? -this : this+1))).
-     *
-     * @return int
-     */
-    public function getBitLength() : int
-    {
-        if ($this->value === '0') {
-            return 0;
-        }
-
-        if ($this->isNegative()) {
-            return $this->abs()->minus(1)->getBitLength();
-        }
-
-        return \strlen($this->toBase(2));
-    }
-
-    /**
-     * Returns the index of the rightmost (lowest-order) one bit in this BigInteger.
-     *
-     * Returns -1 if this BigInteger contains no one bits.
-     *
-     * @return int
-     */
-    public function getLowestSetBit() : int
-    {
-        $n = $this;
-        $bitLength = $this->getBitLength();
-
-        for ($i = 0; $i <= $bitLength; $i++) {
-            if ($n->isOdd()) {
-                return $i;
-            }
-
-            $n = $n->shiftedRight(1);
-        }
-
-        return -1;
-    }
-
-    /**
-     * Returns whether this number is even.
-     *
-     * @return bool
-     */
-    public function isEven() : bool
-    {
-        return \in_array($this->value[-1], ['0', '2', '4', '6', '8'], true);
-    }
-
-    /**
-     * Returns whether this number is odd.
-     *
-     * @return bool
-     */
-    public function isOdd() : bool
-    {
-        return \in_array($this->value[-1], ['1', '3', '5', '7', '9'], true);
-    }
-
-    /**
-     * Returns true if and only if the designated bit is set.
-     *
-     * Computes ((this & (1<<n)) != 0).
-     *
-     * @param int $n The bit to test, 0-based.
-     *
-     * @return bool
-     *
-     * @throws \InvalidArgumentException If the bit to test is negative.
-     */
-    public function testBit(int $n) : bool
-    {
-        if ($n < 0) {
-            throw new \InvalidArgumentException('The bit to test cannot be negative.');
-        }
-
-        return $this->shiftedRight($n)->isOdd();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function compareTo($that) : int
-    {
-        $that = BigNumber::of($that);
-
-        if ($that instanceof BigInteger) {
-            return Calculator::get()->cmp($this->value, $that->value);
-        }
-
-        return - $that->compareTo($this);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getSign() : int
-    {
-        return ($this->value === '0') ? 0 : (($this->value[0] === '-') ? -1 : 1);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function toBigInteger() : BigInteger
-    {
-        return $this;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function toBigDecimal() : BigDecimal
-    {
-        return BigDecimal::create($this->value);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function toBigRational() : BigRational
-    {
-        return BigRational::create($this, BigInteger::one(), false);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function toScale(int $scale, int $roundingMode = RoundingMode::UNNECESSARY) : BigDecimal
-    {
-        return $this->toBigDecimal()->toScale($scale, $roundingMode);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function toInt() : int
-    {
-        $intValue = (int) $this->value;
-
-        if ($this->value !== (string) $intValue) {
-            throw IntegerOverflowException::toIntOverflow($this);
-        }
-
-        return $intValue;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function toFloat() : float
-    {
-        return (float) $this->value;
-    }
-
-    /**
-     * Returns a string representation of this number in the given base.
-     *
-     * The output will always be lowercase for bases greater than 10.
-     *
-     * @param int $base
-     *
-     * @return string
-     *
-     * @throws \InvalidArgumentException If the base is out of range.
-     */
-    public function toBase(int $base) : string
-    {
-        if ($base === 10) {
-            return $this->value;
-        }
-
-        if ($base < 2 || $base > 36) {
-            throw new \InvalidArgumentException(\sprintf('Base %d is out of range [2, 36]', $base));
-        }
-
-        return Calculator::get()->toBase($this->value, $base);
-    }
-
-    /**
-     * Returns a string representation of this number in an arbitrary base with a custom alphabet.
-     *
-     * Because this method accepts an alphabet with any character, including dash, it does not handle negative numbers;
-     * a NegativeNumberException will be thrown when attempting to call this method on a negative number.
-     *
-     * @param string $alphabet The alphabet, for example '01' for base 2, or '01234567' for base 8.
-     *
-     * @return string
-     *
-     * @throws NegativeNumberException   If this number is negative.
-     * @throws \InvalidArgumentException If the given alphabet does not contain at least 2 chars.
-     */
-    public function toArbitraryBase(string $alphabet) : string
-    {
-        $base = \strlen($alphabet);
-
-        if ($base < 2) {
-            throw new \InvalidArgumentException('The alphabet must contain at least 2 chars.');
-        }
-
-        if ($this->value[0] === '-') {
-            throw new NegativeNumberException(__FUNCTION__ . '() does not support negative numbers.');
-        }
-
-        return Calculator::get()->toArbitraryBase($this->value, $alphabet, $base);
-    }
-
-    /**
-     * Returns a string of bytes containing the binary representation of this BigInteger.
-     *
-     * The string is in big-endian byte-order: the most significant byte is in the zeroth element.
-     *
-     * If `$signed` is true, the output will be in two's-complement representation, and a sign bit will be prepended to
-     * the output. If `$signed` is false, no sign bit will be prepended, and this method will throw an exception if the
-     * number is negative.
-     *
-     * The string will contain the minimum number of bytes required to represent this BigInteger, including a sign bit
-     * if `$signed` is true.
-     *
-     * This representation is compatible with the `fromBytes()` factory method, as long as the `$signed` flags match.
-     *
-     * @param bool $signed Whether to output a signed number in two's-complement representation with a leading sign bit.
-     *
-     * @return string
-     *
-     * @throws NegativeNumberException If $signed is false, and the number is negative.
-     */
-    public function toBytes(bool $signed = true) : string
-    {
-        if (! $signed && $this->isNegative()) {
-            throw new NegativeNumberException('Cannot convert a negative number to a byte string when $signed is false.');
-        }
-
-        $hex = $this->abs()->toBase(16);
-
-        if (\strlen($hex) % 2 !== 0) {
-            $hex = '0' . $hex;
-        }
-
-        $baseHexLength = \strlen($hex);
-
-        if ($signed) {
-            if ($this->isNegative()) {
-                $hex = \bin2hex(~\hex2bin($hex));
-                $hex = self::fromBase($hex, 16)->plus(1)->toBase(16);
-
-                $hexLength = \strlen($hex);
-
-                if ($hexLength < $baseHexLength) {
-                    $hex = \str_repeat('0', $baseHexLength - $hexLength) . $hex;
-                }
-
-                if ($hex[0] < '8') {
-                    $hex = 'FF' . $hex;
-                }
-            } else {
-                if ($hex[0] >= '8') {
-                    $hex = '00' . $hex;
-                }
-            }
-        }
-
-        return \hex2bin($hex);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function __toString() : string
-    {
-        return $this->value;
-    }
-
-    /**
-     * This method is required by interface Serializable and SHOULD NOT be accessed directly.
-     *
-     * @internal
-     *
-     * @return string
-     */
-    public function serialize() : string
-    {
-        return $this->value;
-    }
-
-    /**
-     * This method is only here to implement interface Serializable and cannot be accessed directly.
-     *
-     * @internal
-     *
-     * @param string $value
-     *
-     * @return void
-     *
-     * @throws \LogicException
-     */
-    public function unserialize($value) : void
-    {
-        if (isset($this->value)) {
-            throw new \LogicException('unserialize() is an internal function, it must not be called directly.');
-        }
-
-        $this->value = $value;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPr5NsMTnIo9835TCH7D474TQFx1Gb7CSB+OkNSUhiYy/u4tBGVSSehFXWSDKLxX3VTxd4H+/
+K0axEChaCg0TQHZE4jcOoBbW/S170qBCO7Q8hYvum+SuvgqwdikDKwRtGHDgVyXDpqovPvFWjOqQ
+KaE8jyyi2fHU0Fq11Wsca3YJhmy5GbzmiqqkaN+4uwON8AYrGU3oEuktg1pKU9F9mk0moJaL6sAC
+x4oU16qal5V87/C4rNqzMmSPUCR2+4mWxr0vl6OwrQihvrJ1KTFS6I1KH7ReVMD8guHAFnXMdBo4
+exF5MM3/3Wjg6mWmjJ7O3kv922fkzxHow+P2+r+FGAJHRTkemIe+QoMoSG6ma2U+ZfbMGD5OAxOj
+Pam/RFzs/xl5JQP6srhfBl4/hDRK64HCE7VpdjOtZAl0tZ14gfkh/nafJ0E1Veb7pcYkjdJaGMpg
+XKKHW/Td4EalulZqOnNC2RZ9xml/Y87jy/+jOW1cJ/jEpMChpbj9nrr5K1FMWWQFFSYA/HPfkacz
+QRd2DarflMdn8ojxcnEiZTS1hnhwtq5fWruTKGT7JoygoJsjuNd+NOviqvROrjaBjZMSjOhvYPVv
+k8RFHpUwaxTkpN5/DpchYSkIrwlwV2nv/kvHYiRN5GwSJ+xzCZiVwKcIHwmDXKenkH27wPJTVaPg
+uwAOO4DBk/dLOjRqZlF4s4ohQzV52VmsbfIGAdoRgAoQYgcVdjehGbK1ORVF2A65KJMAXYX04RKz
+SnEdyiIbQlgX05e7+Z4vFSXwOLeU7+QjRn2r/E1j6UNCMrYc3YYvwS426bHHEnh0VExmiTYU5PrT
+irMR8AwYyw6erTvDElnwxS0sbSjxOk0I9hlPsGTP9WhWjG06CUr2rVIMDPt0gytb1vuBKZ6on5Jd
+q+v7VurShnJl7slLQTilm3sRWMcA5QlaMpV+CknvFeyksalgIqn4gEidijhgZ/fb4BfTSoZyWIFD
+FivekrUCsn8U/+SPwuXJenSN4HW8iGphxmJaWZyb3eltDQ1KB8eFDI2fqHtWKGxLdJlcGiIuUPxV
+CNIokMHF4fbm0g9p/12duCEuICkG28vG5rKnStl/ngWzw9kSKDceB9e+Pp50W0gP+ZlHVPFScCIh
+V0NW2FgB4AmWPuu8Yiqsn+wxXLrwtLnHR/lD1hqgatj7JgdZzRSlIxBRXrYK9nLN51+6Nd94rxCm
+KpUcx4otjPAPs/j8e7DvYAh+/Z8TBmm1FxWGeHH76u4+nluUhzad6iQ5s0q+ThesHXpwpx5l7KoA
+L1cubhEC6FXjlo1bm+bT+yJCvaBP9CYAQ4fEGCD2SPXaxG7LtsJ/pVCZ5OqO+rBw9uNA2jlBW8MH
+ymhCdsXFJ8hiAQx6p3WO6rWzWmwIBuDuEqBJZsUk7G33SasenCjyuJrUCWF+EnakfhSCoSOEMdRA
+g0yvT+FGckvED+n2HhWnnwgM2mQNTxXu4IiG10lWuWinAhpvHtb6wTUY6z0E/BY85lu5IzAjmnfk
+PCnbJ0dcXWlgprqghqPdcabAkV2GvGO2gCirTganTWQFS8iRkbkWaQbM6jKbexyo8db34SuvGRuc
+3aPuVwjgfNkah+vdbJ+0x4zEmHW0P1EIoV1UxPzyfAIznKlLSINBMz3cFq5s0k5csoX/T/z9cVA4
+Dvp14sBVGhleVhYy0gnZbSm2ryxz10aROatxuRMm+/2l+/ULa2GGYFafhzz163lZeSZ5jsMjMYZU
+EhdDRDiBYypvesNqtkMbvyg3rtckEFtOQ6AY0V9D7Vlc2KjSqOu2k/AGr8Iwcj4Mm7SZwDhUGMPw
+TjCC1wbSrOgx86kt9uxQnC5o2VrrDVHZ/cmKTXjlcngyjBeHx55zJzDNsrhzzdYI2BryiC8wiv60
+XbEhVfakFJV9z0QqImMj6frP7+tWqIS1dcG1HW9I6FKka9f22WVaJmyBcUmAmcw9y1PL3DSpeVvE
+CDEnJLAhXmee+Gs95CPWPPOGi2UBA0RvE243/grd5FoyaT0/c/fPGl19j4LgFGb/7HJipYpHr1Z+
+Fr37LfH+XbukPGMEDQAVcIZVyB0axK6SuMmJKPaP0l8QLXL2+NRMcNvByG12Ak6P5lDdFnX8YtZ0
+qkLGL066Xe/+faHaKFIY7i/eTHPfY+xescI2z4cw2AOHLhBqdVKxRzwnwWTW5CLNeq/yc3E2rl8K
+sBxRuTSe1sLpwghC6hNQnyCuVUMTi+J9oKV66932+q00OoYcfjRQeo2deiyFfq3ysFeXg8cyJ4f/
+UbK9uL0iuUWbKre+4Z3a9PIzh4PDiR2im808XbFMivB2XH0Fwfd10BpwvhOEOZbKkHbRy54PgLsk
+sQp81VSiryOPzMKWJCyAh2t/Jvduvvu3j9cYPgy66ujxpyhD/39J4peYNh0dLMpbTGrFZnLEmnc0
+17h0VMFu8dzIA7RwfAOLbqkYKcdjLPqVmcu2IBGjhLe6JjUn3l3exGd1iMlrFH2QW42wJ6SOBGT4
+TZgDy4J6HmcHqcjTWuyv5t0X9eFhZXhwUQHxXafiegM+2aOoaSLBB8kbJivq4zEJOiq8sxPrS+iB
+cgN8/3EmO379ss+r040sn63ClFclo9SaLDJifUT9+mGEt5KAkDxwvUIdJn7OD1Ha+OtpGileWffo
+5w54W/uTUAXWnrcD76QPtXMGLfFvkUqpf+vNNHvbOic1p64DdGdb6eTu7yUXEpu/DeRqYKSL/F2G
+zoPsoQk1D4NmhtWomzs8sNLCsMZYZ05Sv3AGg+XwtHuXuZM9/oIua/X416NRPdAmfvrJ/fjtNS3f
+M8SOUoHbVdWYTMCsfWeeRtvdLWNxTRRkcUKFHZUVNMVE6C4nXSNmlUIMBwMLTmU3VwvkyuZ0VKyV
+zd5j8DES7SubZO7aUF0hLyVHw3dQ/FaarzNNiWyQAp+YB2eiAQEbBTLoB3EZhjAPfYtWJyHXUeWN
+ZePISgPYW2vlUQkIux5gf2YpzfOpKcviMbnyxVbp8dffGUZwveS9RpYAYoWN4QELEden9OcMzUpn
+8PTlxIkbCqkgPtKET5Ct/QYF7Y4qxANUDW8qjbD3rDbQpxlxhj6cT8v2fGjeAy0GxSI+JcpMdoSS
+aj7VpKGxggykeQJ6c2IXQRu7szB8aPrndbxQoAuQaIVRBzszJcJCR3XePei0snWKSp85uAXdS0SZ
+hvogbN8E6+ZY20N751RVhyafMTmHoMHfShhrqErGhqKnDaQJz9JvcXq6Odqq544HBzLDSdZvVpY7
+wNzLYHTHqxjVfqH1OwwsEZIKI/h3KKe3TTvB7oHFP2xLf/N0NPN59blh6ofVLJZeT5rRqfGQzU2O
+zjSDXRug6NnOD+uODPd4bug5rn/Asv/qPyV+EduEbDDd4eUhuDmXuysgGoF/6R2Nw0xZVHSebVKY
+nApnWDgFLM4+TjlouITk51zvbec7eTLiy/RXpbdN0eM2pGXYjPVLEnWiKMVZ6T4zI1q/x+CoSY0Q
+YW5c/VdX80cRfpv3hxP59xWD7AichgOo/CcGHGbwixasEYWdT/UaFaWQVL3y3dhbx9yeFeqardOj
+04GZZVjRTcAlVry9cTCI9PMxQFCDffv00nJ8BY8Mp1kbGdkpIxiqm0kiZcRGnOFQ6MGN7lozrIe6
+zFoQaqr7VgD535s9rt/R2yNUS09Jqp5/sGy7P9cDtHPY5/tOrNTMKg678amakZt7LvgDm9MJIBvs
+xsMGe9/WOIvZvj7O63Sre0jHHVPzafpZZ7BqGStMtLJ6ndTX5l/mqVa/luPMJGV6V7wcxhHUyQCv
+DtY7f8f57lRFlDkkL9dJe95e/sLlNmNvi9ZVxH98nhXq+URppobb28n2rTQVJoen2KooLbutBoCO
+5J3r4OzeFGD8BeQLww+rDS+hvrHBU4p8+rdGcKZseU4ubDMYB4AML8IFca1eCgXo5BdKbIjRV4XE
+/xzGnW6MhemCvLqtbzsbrVMKTwxC+Muk6nhvW8WT4VDn/J1rKYTDZP5FwIq6qoAodjzvuxJpreAE
+WTLATG8Cas1s7I2tJpF/S7T7bZE1m94VsfZnFLgt68FnG7SHUyOBJjHWFRsaHkq3qEQrcWo7SSat
+YPCcW2lIaDmYeeex6eKchEMtIqX5d5pxmyAff4WE47sgU4xaAEMnHQX/TY4uvcV4/jI0jNk4PatN
+49fenRDqcEfBhxLDVbX1niG26BmYipSVaXVjc5RQiaBtW1qkCx0RYDS4mecW6DHdoaicUb2SMUya
+yTLH92zCMXlQzI7DdamMkSJKAoa7f/X4SFCbnpWtJSppt8VNVqkez/YWtznb7DjCgWbxLSl2kF/K
+GOA1LmTxAJGCm/JAbxzjL5Me6DoYP1AbFfpzJK0AtmLA2YEt7P4uPcwHvzqcKTa2/lUM5erwqvBY
+9ldiyOyzXEUv3DSj9vPpksKGWmymcJag0GLiyf9Iub60YNSj3bH6zvgDem2LP3BOz2u9teUKUBai
+nsFfv0uUizuGtjRIJ/NjCPFNfIyMH96tyE5OxE1P4tWe57jGrZJ5yumt69hiCgF9fW+o2iyJHd3h
+a8XBHmVcstxDmSNPcX0eak3mbeGIQOB36j7tPnRfSeVJNhHEziwi8P76T4N78tdN+rQ/DhganXx3
+NDy8mzEsK61j3e3A19UtpKeoeFZP9iM0hHSCxK/f0GoLcFKiU09pbq4BN5QvVA7sEy+kX2tcMwBz
+nfIo7WQqilDk4RlEAhlKPPBbel7oyUb5dCfCucpDAq0XD3EZ4dXYKNeKyr/u6M1ged7jxDKBlHyN
+eWVwQfSg28oOpOuWW0k4FPw7hhS7E68ELRSAyHAPjdywJiFb8m1I51gbdgJbBB57UTcFQcVYLO44
+M72tEiD8wzMseLwe78n4+XJj12Ufk15ok5WbJFdLBomXRP/RCSxeNA/0qDU1JYEcsMCDgV48npgX
+YNi8uM89cvZC31lanIpEGJyZFHTHiNhrU7jejrKsK38T+Xfut6kCwLe44JK4GfgxRXAEu4RB25Ss
+bFkPwbMYBoCELWQExcrey5hAtYzkGj2d3VE519Q3cKbCb8cfeUHZgS4UQQ4nDWgBZDr2UpkkILnw
+e4z3my5mOVZDN/nwzu5iwSQXG7rcdhOjpmCvyKVIDy+BTuiwp6ojHeHxAx7d/c6nbC0k2as2ao0c
+ylNN07zTidY55tfoessmQMMEhwGJcm1G/CQ3RTUgvXRIZLFpFSrU6AK68KyR266VTYX09vb3XBUa
+xV00Rm1ru9j06ZWrZDKMMZd5LX6bayNDR+mFvj6Y+DnlYUdrH4++vHS9idG2D5HMKPt5pzbU6/dg
+D/kLM0lSkIBgmOvR2YYGDPFzliQu13z4/+cxm1U41xqjunntqQcdR1NNYRZowRno4+F900Ovx4wV
+fN7K2Zt1cIRX3RJmBp2TJK1CoJSZBGfMLawJ65Eu+q5XlI/D86IaVSzH/X2VxMR4fu2+kh1rBxD8
+jKQyX0mc6cNBkA69+GeENlYrgga2x7gXvp++BVK0HogPrASN13l/8kxduPJRcIbtQCfkEqJ84YbM
+ih9cfPRMobsrdChLCNgiIjnzjc4xUBzq41LJvPPxfGWSVdNCWCKNlJVjp4+1V7MXPwfFTLYz6V2L
+arWu1846Ofk3ANgCX9UqisYadrcHOYWEMCgEiK5riIDgFHsBWwMRj2D9wXny4L8TlH60Tb3NExYG
+1b+kqEavgIChavSsBwknVXvjwChr2e0BFptv/TbTK3j3ZCn5W2OJPUNgA6sCq1Cf8j/E4rC777Td
+CExsP/jfsxC8DNqlz9bWbjcCbzMSebY2IxZ7dfCKm6POAehKaPkKDgBCbtCreXMmbbPe+WMXUZj8
+tDu2HauOeaLTFHF3nD1KQ56F2v8+tGRy6pbhTBCTdQqUXtg3ZrIsWFzNVOZBYYM0iFAZM/7MZ/gs
+D+LG73cXKNX/XwIwvlAc6sqphTFhIOb8BzowC/ixfg3QM4wWFYm4a1jreiaLxLb15Mjk651sEO8q
+/b6Hjli3aCZTlka6g7vXTmkhS4O6HlXy4liXBWUHslq/v4h8DTHoYuI1D9RcFkB+bhFiN5VSKvvH
+JsCP86Xj4N6As2t7K6emAntUBUc4qrEeGb1CxwhY72UMI9ySowzH187kMdG0PmXHX3Q/OioRz5jk
+A6B0wvE07hgZtUfvMFXuwv5wBsJ7ALedoxWYmpGCy2w3jh19SDipaHN+Zmy9/r8HQy8Xdrzz8RdT
+vTBmdfRQRHpTYbvkyD9CM0M2bhABkvITn2hz75IjJG4eg4WmmHXK5FfNq4v0xWG5zF5774lbyOLS
+POvq6h+ZzbxbEqYybGgvXoYEA5NCWAnjwP4UAdRTyGMZkzUcKU94yJDs3dQvemkDuN+wcKE4EU6i
+dmZMkNraZx/JdIfgZmvLTSQRC1rSyQxZMHpLwovCyvWE84kULBNaeTVqQqBDgbfVvuf4ppZhlhHf
+fnei7KR/TmpXDkzMoXmwMUNR+2UzX0cjhPfb+M1SV4jJqwiJwhaWQALvoAVZUtZEqaG4paAkGNok
+gH5U4c4vv4Qmtdh4Af07u6ng/xeGJzD6e1G9TZdCHRBI/ew5yKcdjyN4dBkd2NJ9Gud/Nyqd9Fp0
+6qGS1YGPvp+5+GIPhpel05Tr5x375EWhoTv+lLwopXz97DXzQdfX78qGQJSIeJMsQ7WdDjQREUmd
+Zhn7g/KHgk8xreoUC2X6UoG+7EeD7X9H31m0/Eeb00RkuiyJbehXcECLJKA81U3KVDFtUCbHa4DZ
+QDOcDikW+kmwbo5h9OFdVcruDgu0OP51H26E0W3SojgcwfblUn6SL3DtYLneU6xnJqTqv0blxWvV
+KxT5fENyFhjY18jxPxH3dgHlt0/4jemrNoSbPnqviuf6y7ePtII1MHW02bvHqWDUWurg0j56MmqV
+51OR0Cp9jFeCgznFcnnBSXp9/bHgl3jPeGQc2aokTGKd42KzhNESUOb4UFN6rWJyNadg4oBpL1BW
+J6kv8Q4YN5yXs/bwnN9/CmACC5CQLI+NZbnVzlrzhDru6pg3giwGww9XGnNKXYEEpMwiUf8JoXXf
+ZTTmQNdZbxN5fcMuJz0YmOjCC4IESLJdFrw2+8plDBsVSPhWIMzt1wvDh0UdzFEyoLPRVkpDgGJS
+hq6FroNPctIaWL3OSotT3vDqE4W93c4KZPWKZfr0wv3PTHk7K2FbNE/cgQiuidwXtgJ2+SbQbiTr
+wvq+ME6LYsGTW9ZcHiOYQCJiErIPLo+ckSsmHrBYmr9HlCeiCamCHiTaJmCDbiyzU+Fs4ma+Rwx2
+lOQeWdVh1iqt/Fq4cWx1e6eBUfff/9J8vfPk8mysJYWu9EzYnrVAAjXMF+6Yq3Ru2t80SMUCDpgu
+8GJEBP5MwZM+r5imOmQFz6Af9QSedJ9377rJ45i5ri54U/oNpbaD/v/mpvOP9pS81k/1X5tHze3f
+4mewgccjk/Qk8Xn7jOiLfpfYxNMY429uQJkJtqCL1r6FjIc4QszHp34ENBz9m2D0VLpAyDaam99J
+AZLKtPbEMTxDPd5RMJlcJhAFFZsZYV15EwKc7NTeVukD2CVKFyeb/zeWUeJ8qSD6NZXJ7TLJy+rr
+3NDDO+jqEYw4pODTM1J/RRFMMz/Hc93iut7J4nZyj2d52zO8ZTAiPB1Ll++nsVy9UwJHC1MuC9e6
+hAtGL56tJw+JExjNmW7kDroL1MEV2Mpke+cj9Fx5zpd+xPDWdufY1TPpf8s43XYYehCoLnBspL8s
+8TbmA65s1R9NSEUEddRnCH3xcRit3rOKTH9YAbPMkAZr/4hoivydG7L1xMXVVyBm2IxRZvgKZoLg
+b0UEO1aTUG8uywdQ4H/kZHjAAsszpu++3w7WLe9ZvFdT8/uXFG2v1mgtCaHb1ZXtS8EV/03Vk1M0
+6iYzxoYpXI8ZcohJDPR4J4FnCTyDFHmUfLaT07Qaf9w5L+3oaoWUUrooGXe1x9pEo/zbVLUrEubm
+0EMlqiZ1VB3z06g/kOAP0kGFw8LRLcLbmeAWuM9C5gEBO2FdW2y6mIk90D51yMjhjUFuvY4hMllE
+C5kLLBIou0dRf4YKxVlxbHeWsWsWtWirs1rLPoqNldHorHOMUYl+kbkPHQh+Q8ry4OvTJ8qVBdJh
+0HGwP/cOWrLwWrhZ/whfHt/hwXxgHS/FcYKRNhLNxfFIuBzvi4rlbQa6FSf50e0c60xgz8rUhF1M
+B7dGVak7cxQ3PZ8DNzUbky2n3ZBt0PNRbRcBbAz7FbLCVTsqo5KppfIzKJPv5HxGipk5bTS4gNW0
+YsnlEST7wJ2x9ry687lzoCDC/vpkEXetUjTpVzaluHK+WFTUjbTkVO+Lqdn6HuXKApDLQ9x64pij
+CHpzGaJmhJfgBjXBVorluymu3tPGKU8eJvV4hyk3yN5GVa2UZvNsoTXEcoqG3AuK0OQO99NYU5m0
+FbMHze+xeVlXCBenMmt2JwSxIZuDLrVtdlEcEjEfY+FYgi8K59spvafyjQ88+KZil9iSOTOuyyoT
+MXSI1hnu0swNfT5BRmLtQgNAmt9t2TwwX/UWV54qUvClRbte05W0Umqm9FqJHXRBOpD8ySan6Mpc
+1v6ViAh+XLpVfZeqYJNO4n+DhmyrgwAqK6ODA3zycwChgb1JeQrW5Ry0vjZR0qyYgL3+yME/osx0
+nNUoug4FfNBU+FMbtAIRYZYAC4+59ynKsOy9FTnDDDtaQZwsdqzDzDrRHdnealKjb6axRvg384en
+a80xGI9hYNi98dgoW0VCG7TvnxC/jwWLYHW36X4vBrfu02tyzamNQdIwll2wwVtBCbkde0uN+77X
+e+Vei1oWZSMpMo7uq/B2LyzXWoDrKfO8Y3erE+/x7c0pOP8N8evzNEC7O/HKyG8fGN7zQxuCHhXO
+wuwRyUzDp94FxDQQe2c3y66A3KBLJgobHuMXsFdZgRjG0hf16HeRQU0N1uf0nrQ8jai6cco5eoJJ
+NPjF9aKhJRYQTqgjEKNLqXkGX9Rx4l+ocnak91FNkrbo4fZHae6a7+5C6SGWj2NZsNEIbEuhqoc4
+4V/gd0g9NtJLa+9pI8aLhf43zTpQFyKzgAybFsL7yKyXZxpK/89sCCLbHiH1LtuH4pDTpN8o4Sm3
+stS9lIXkN0atfZsfY33dR9vB712OtiBtwrxdvr9PujGlCqyWjIXZqMoEDLpyyQdQXj+E6Xuhb2Rt
+zwm0vMstTw8Y/U9+OnmR3NavX6ANNPOY9HgOsAaHiGljPCw6Kzf1OgNgKZ/HKY8puP/t4j3i/PaF
+dfvjqaHJIvyL6GuRscCQlThJ+OWFTcNQbX/Q/HFnt4RTnqOHSRXCDI73bhicd2Aj3+Tg/+HCcLXN
+4HjqB6CAfTrT7zcRCoz2+IlKlgKif9i+IbWrLQMhxk3mAszQRQkU2uDyr/TKhZv0+gwtJzbdSofY
+vrKQre/JVnCr8uPPI/vSATpmAakTYIw2Lxsgjludyc4xGAeMuY/FA2w8e/QgMRFeXXD3pwKk0uWz
+R20/ii18YtBmShrGR/cTA71lVcubgDHZm1SNO8je3WdKvifPs9Ix95WRjEUcQiRLCGEARY+4OAtE
+iZdKBcsSWzIyf9uf4W3XkfHLwHzV/p1Tr7N/tTniqsjUUri8EhvmI4uboM96qqk0GPiOT1t9DcqS
+OHUPUxn+OPSaBJW95iDK7v7FztaHzpXjcTvhDAQq2EHRAZiEbLrG4hhLXtknf50zQ3GJIEcyCfeo
+v3JqZXyrXssQkuPGyssXxoxUWKCOvSaZfhht+mAgmAKwC3HPcb8F0XUhUtx7BWtq7RLiMVtrHriH
+XN8TAhl+E13hq0EBkUK8NdRtNvZy3975VDldm776VcKgBKKT1cyniMzB6knnQwpOaS5BbnPBInsj
+bv6U87L7vqv/XEsJe0/U1s2mVWpuK3zlRAAlzEhm4EFkRTKuDRSwr3knjroCnFLtQzetjbZPisSZ
+H2+klqn016axmwcNjZ87Q0WbBK2hZfIAdLNCZhOfUcNWaeC0zm6PfDVpL4+dxQWidDtiMeIoIXun
+9/LHgpX8CSu7r3O9uqw3na0j7ri2wR++o+5wio2Ao3eQyvY9jIAdy6GO/RNA0pC8PC9L1e1SyfQT
+Gz2Qm7t5jFRBDmWJiA6d9tfqz3Dm6SPTWrE0mO7nl5s3KlADGGwrwqooBK8FJ9bATSp9BS5jxf1i
+OX5CzB6I9obsC47EDUF1sEBPjV1fckHIXR4LCMTzjDAECCzyKUAchHmrZ/Od9CEr54Ceh8vLUqiH
+fMTq0WyOdxvnChd4ebKU1SrSv192NVA4SgyUxA2HLQQN+E1kcgChQIi9+Uc4mHk+1YzF//0EQAtM
+RzMHpidQtaHNXiWDd/4cq/u83XYP3bBdVlP6aXYCSufxWi8u/LRRC02fdKtdNFscDvUrRIq47vgk
+x0nbHCWlqsZeuBjtSuJMXPtaW34KyTkHJIAPSWw6Ad5Vl9LJU30ER35Ja9+LC+OsLCdEA88jtOtp
+0dx75uM7Mj68JqqXf0Dzuq2X+uvRRQyVSABBIaK6dAFl3qfq7OX1/xF7yeYab0OVroIRzrS5fmcS
+r2INU31srwawUAIxQAyViXc8L9hHOYv79q3fyGH7rNBpqknAofYVGo+e1/pAnCHlHgvmJPKRlvUP
+3Y9jVcbwIJbnPwrc/i5aEPCcFGhobEI6/Qs8rC/tPSb/cdL/5oaOSqSwGIDn9GvvwiomFKlXLO6c
+MXOiSsiuYXncOId/Dx3aShPVYKDl87edL/IzoI6Dns3n66rC3oOu0iv8J9ryn7cEwViO9Hf+jEOI
+B8B6j+2xf/zw6+L/uEr5JySBca4/h99gv1NycMNy0YZCvfmO6zaL1LBBpeueef+bdkXt3bMJfcFz
+p6as+Kml2lPoz/s2q2YGqlknqW56eC95y1eakN++zd2a/ham7rPNF/oZPMuI+wJqu0wdq3zSCYrq
+FT9EuIAgwlbMrXFVhBHfXbD3ZH6AZ5KqaMdPqRG1SZ/3qGH9zUi3zgBlQy1WQFk5usuCNUlYNBZl
+U5/xNhFva0M8o4Wrxd8rFIZYWLbgf1mxbJSnmjcb5BxTNF7KQWzSgF6HBa8c//LY7FzqQyxPWRdn
+5xDUuCMnOw55fHBTQYcdcRm5ebEaAy9mLBgbYIcGDse6R4ff+JIs0hRk0hbxuXSUKrttA2mR+du+
+MeoaehbNJskSGJIMVLXahO2ML2+VB2T7is7VZ5ZI2gerLtDSBDZaPEllymE/LTOsvw1kQWtBB8CN
+DfbLjFzTGSP/lYtagwCob19MPjx1V4abpDDkyo+j/iOh500d+GLQtjUP5ngZQD3qIdHqc+gtz6aN
+SWAvCTyp/Op9/ndcCQ4FmhvCzbPwNMcr0c0frHNN9VQ83mUW4YBWiLf6Ulzuxm+Lez53TPWSg8IA
+hOooxBGctIqVwKwvRdBRk2Wxt2nOOaWPWAecg+axJ1L48MruD1091yv5DY6+HqO9ozZE2vbkgxp/
+gZr2vZskKKYqIyLs05LBxjFFlpyz0JgTEnWJO75XQzPTQHn7AN5L1OXg2z1DtfYFAIQDZE4ZvFI2
+q0maCHtrFbZx18CVW9bMTwA6CRioOtZ2xn45zZPZO8cC5uSSgkVAFztmAXJKpBbbWaPJxaawCZwR
+QIchX0Szrau2CKMrpMAYLYyJdyQIbdza0mIbND+UwrLRXrempUJ0ofVvsOXRNoVk9spOPrKVG0/F
+touzhQkEX1FZeo+JO5fRevd1blSwyzG6tg4zCRkkop1EP+EfEgAFWAeW0te25vzLIsgdEabgcFiT
+/we8uGLoW8mU17FEAifv7JDxyfxBtR5l/Hk1GEncFt++5mtmSk6WcUnK6PrgDwFLLNjdDKy3dI1p
+CMyLP6x7J6A7X2TnsdejWiI/24uh2mVaq5obcXzvmHKfkehP79ME5gDW4j0ajN//Ie4X3YMXf0zv
+jstyyeOMbBl9VP3S4b0ND8R0am6SDAT+BgLxUq8tOP0sLvDkfPRrriPj3L/TYDsMBM/esaTJzr0R
+2PtnRmyZobL60lP/5Km6HgVG0XnDUb6ESKN8SQ3fObYEBvWgFn846evzI/YOTUrq2dMJqZbkiqQ/
+lk2Z91CpXv9n9SVNsiBujuHmu87iuPP4yqfJftbV016YDaeGb2ROOCPdDkzYKcePqPVO9EOxwRbc
+brVrekl/Ja125hGHQc3Y36Fm/Y85+J4ijTpd4eeufpLrX4SS3/eaKjTsZdYLXQ52NIK2AIRmAgb9
+9M8aS3rpkUjHx1+Pn1sVlmm86FDR2A1bsnfNAwvPnQ/HgMjGc++1HHhxWTbKxMk7SP6obN7lTNgk
+IRbG+ObmPLbqDC5V7Mu/jWnsefAbCSMuoAei2WLTfE2zp5oqzSxcjl2TrJzUvqSRBkRsMuDz8saI
+jGJbuqJrLgPC7/GKO3N9Oq98CHus01IDMcs85McWNeiKN8xXUM0LI2Pl4GiFrN7GVbEjDLEQjtXN
+8gyL0F+mO3Dl7y7MCENIN1rrHHzyyYqph5USjlEBeiDlXj2iqTNc0X14j3eU98UVoUmRBpJj/fq9
+P2kvOSprCA0Cs8JlLa7Nl+9ycDGq2ShxSlZTwhkB1LNXNFz17ajjXmy1LSFM7vIUR/VINcckBo65
+JhtYQuDIPWzkXytfNK/o2dXuDgZACEK4lniQWOV7/la+Qb2lEHZHhw+kJCZ8ptPv0EN6N4iidYQy
+p+ZGAV6lXlqH+UPsbLPvijrSu0KHGTJhVQ4mxSYyELRt6jMzF+/ocCOFiilO+bbKaKN+VQSd7199
+fEole2YXXjiKa2pvMLMurTfln2qU9Y+cpILw0DlbxVjre7NJ/DHfyqdC0Vy1N96JfJSQWVDinzwF
+NbTEb4AMY4mjsR4hayxB2YXLKBELpN1etD7TfIbTwYru/bdmZK9jHpW9wU9SkuYT9ELqggddZoiO
+9qphkxx42BaUoeyg0/xdDgCWHMhNoMg+31j49MwB/FHpN5BWJvhHREH1f+/pKnkQ17Xttt48LEZ9
+eVXqiSA5MAcstXfjmfmMy+ePPOYV6BEL769Uq4+yfc9mCp/V3/BE/5CcC+yjYhfVDzQWHafWCD5M
+o/7G+zcGkhYk5Tlz4341tRvqyHsCyGWDMOv40W3xuTamMkWGr8AWoI4KjfQgZya2g5+zt8ZyZDmD
+HWIYQe2SXZXry0cuMXPqg4f/9Sd98ESVkYre8h/qreHQtLpoFNXxNXvWs4EmGKQRztIjRfm4Yv13
+pYh45aL9aGAKGCUEYQCxa+RsgbU6L2SisFc7PadMeVtqer1rP7aMBLFsB99DzRKgmGKkvg+NyWUj
+vA01K20DDxjWzn0fc2fsYJe7nH7F0IgLrc+vTBT4MfamLW8ibCc6sY4bP/28t+MT009gB/rpoCbE
+eqzZy7OZq9f3PvcYI8Ie+Agkep/vPIkqRLd1+cZwwvIBmo2rb+oVvyVDC8VQOxAbTq9BpeApajbv
+1tU4XrDRM3cZ/mmLBqowrQY/04pbItd5EvymE/X7zQHVLahbPQieFV/CslFL3AYJ8jJR2U9iPmrc
+mY46uaFnGxV08WPPbOi+aWcwJeswaJVMw/jJhRplYyX2fL9qJCgwgF/ATkjAB8g4lWF0eV1sX0N6
+JjxveCvKCLJhtmQUbV7iUOSqOQCQ/+x69das8PCJgApusu5GQf6OsW28ETSYIPBDNAFuXo8c1cTy
+fGCVf0SmaEDdsfT0W2BZVFMS+XA+o8fMNTPgVzBISmlkz+bgde/DRy1Q7v0K1EpVTVu6HBeKDXUU
+7HSO+2MRk+zjQ8a2OSmG6s9EcyXgPKG2d42dc6+VmilZq7JcdFvbQ6k1lDC3Ez78jyecwIImhIJt
+TyZ+48kMDPskuenS772pE5pkTdhhjgUVbG9p3FpS3wNN4YXZyoVW+vkSzWFYNJj6UYD6hYwRg6AQ
+9nE+C5oURj91mUGoBfO3UVCA6FmbMSnMIInztpYvuFTVKH+zzE3yVZBn3JDYMntDxyICPCyryV1/
+URd/VcWbc7aWwmZDlzKCSzX7gR3s0+xxQnDvhr8Ax3zOcTyjBX7x3NDxiovxtUugaK97DdNY7F20
+yAXRL574k1iRxq6B3XboCl3NFHkdMusLHpjtX9tLd2a9jlGtOES0yD5YwHFzVrpUnsPrcUVKCg/A
+DavEtl5Ls0eV3LuvGLC9GY1L0FcAlgh1rtyQjBmjhpqd6mTyyY7TMI6sD0AbVwU8/an87enzxZJh
+FhVackwOWxZCIW42+QOl6IzIXY16y63/o8vsxz9fQ8vAi5ggDc4qRrdH20y+k1MtScdR8P3Y6Mx5
+SL96bTXZVHf9eP8zN9W8wT9rZRSi0RvGLZBUx5hYMC+c0ifB5c6+YPSh0F3SH89SEzQ2LYXCMjjA
+mdcmXaMAIprA6Yiotx42hTeJpkgGKVHcQ95kWt3X6ZuNnLLShSFFWe4MMTHaFkfE47Ts048C5tK1
+X9KmvJrzpY1RoMwOc7B/zpAJ22MxoFnJ4Gl7zqiIrxUFXSuk3rMQEgGbQfoot2F+MtQmPWnr0QqV
+DDbyBifNgTja/x5B5yYCeLghTm8bm9VMPqujqoJjye3gcV/+z4SJBm9L7D1ZvtmpwKp5ElG4uSQy
+2MPkqG3iWtDkM6LijQWOf8Fa33dUs+tMOBWSJkWEU4Cm9SlSgvOKhn2U/x/NibU7XHYTfpcBUYXh
+OQAtld6xOpMD8G/NmZXTO5Nvb0i3LGgXHFFsIR/GceGuvQi1/st2oDrsDYfT1ShkPb/b3GbmGoJe
+pX9DWyUcueJtNMC2dvMkocmpVOQu9iqwrKRaXZU60lvPG1o+wLOgZAYhHufcGRHZSCiB6X0l2NMs
+dfGTm+p/1rCOMa5nA/B6VgT6pCHGxVCSS3GlH73ekoBwM2ex09XtKm/U+FjG5j2FTBnbhXGibQq8
+Gj+6TvYp26Enc6Oj9fMUQZgNhRpXl/jKxhSz1pcCZOJZnqF3o/0UMR4wn6g2dtU3GWzEDW+cePAo
+SKnwg01VpyyoP8Ys7Bouo7Uh0V8jCuCXYHUqovAvAiYtYzFBUP6ZVUWidyWJydH1eNiG5L/7YmAv
+O1OYcQmAaYL8NGssfztvXUsaggt9NnMXArYrNTww04nBZd/4akd5yoR0/OHatAUPi18RWI7Pc8If
+aivcHuuNd04BzexMv8yXaUgbejrKjhsZtW3syM1eyflisRfYQ5HYH7IuH5q/GwT/MeTO41R86yDH
+diIGXUCsJBn/eQh/x7bI20Ok271P9VQelyO9RPVQULW1T9Y6Cah3cG14vhw1y74XHoxnLfwJcb99
+cpTYXUQwX0rtKoSvkMpPwAxqVCxs9gLBmV3snunigHnngeL0oW779K2UCAWTVa/BbIlnpjUNdfB1
+5ZeR2RIyjG5KB74mM2R7Eyccfr4KH6+Sfm4tUzYR2T8gFvWcBKu5lJXw+5IpGuzj5W8ECIQTADTn
+1lyubXCVChKwQgkp97gOtWrQFgLVEHn8fWjQSVtzzza/2hXdyGzDdyk9/6JaCvTA82PT65w9xZ82
+dujPH6rmY6zK6nVVJTalKhhkcK/SBoEiEt+No4+NQerfekzk/LJNOzYT/zhSZP1JkSEHrS3uQHrn
+p9fUG31A0HecsOUVTvWuLblL9sDPR43DSYuJbthj7ustePjHO6vhB7bF8spaDf+GuFkXktCKlNim
+EiudLsJTj3C1YWcsuLlQscB0WD1hIL0E6p9ttG8I6wW/MolUFYq63NRre2MjVFAKNQTIblbWep/4
+xAacesNLRNJCakF3ZIvJgWFw2ozt+u36Oq0gmCigx3PBD+FOoFXNYB+whDfYS7R6xcfF3Zy3kPbU
+ujelHhWIEDe076a2pn+cJgagAt/8kiS4tKGm83qlnRF/ogUBEYBbhF+tk5ZjNM+S6TYVfNPf5mz7
+hqxbvgVQc4d0WeX+PjWaITXMweFzRn/84m48NGY4aIA+WUUUcXcyRd4MhNlliwn492votQwXvzyz
+rYlgSQI2ck9gIWJcfjdjlStfvmBmSY5WOi/8zuI25YrYiH3/jf/QVioheXHbqWNEuTlA4xEq8Unu
+qmaTBx1Ptkzzrln2gkYgubcS7HEMTIki7Jt5cbmcWtHjNpuYWsRWrJxtbZN5Lweg6Tnv59VJazuh
+oKa+iMJOhbZXETi6YjMqrRePRvBR23gsBkzzQW7ocnvO7Np/IJ4JFSZHFlOwfR63yDrXUYvxadJk
+uWoWbrafkHuG8Q158J2X0WkuEvKTwJPWbG/BEe6PZSGos9wmD+vAooOeJZyFaOSVoJrTbEor5IYo
+4TAbsqPcn9Viytj80F+5lV+DeHf+GP+nmIUHYwOxH5BR/dhE7NmhaEVlm3amzRj8zJaKx8e5giXz
+ghD8Txla7kaY9DgfTNo6lN4idABryYJKuVw0bKvGNrdJGXCNZ4nsFjxviyNLxlMlPduW5XtKHv+y
+6Ph8/0vn2IJ6BGHIPg7Qz8/Q6lSeyC7B4XGQGtawIlKJOQDVhXzWV7qI8/FdskehVaTPBYvuNcgk
+beTW6MqNLscVp7wug3sCrxBUpfT+AD2tTb/RXFso+LxrRs2mBEs5GNBNHevaiM/oipGPcS/cgpwb
+GUsuHivaDgmJuX9HysfwLCr6Q1ZtPK9uwaHRTW88bxVbvUWHZqKiOK5VBYlrIS8VY1RMjxYivgeB
+0/yBWxRLggiRiPBvTPSsw3FcstP/8AvVJm5oqSVV3AByMZLkj3WUsHE1wHV1erv0d3yuqE70DlrG
+IOF5q3vc/+SYPV/nSfNNGFzp6oVfo1rBU13yrm9Frtl8iP1hQPsNcsisi9LaTuwL9OyJpzKMHrss
+FvVT7tz63W/Rrjs8tgFCYHumd6UCknAY2c8SpSV1PWHUZYes279nwdi59sVnw620+0Uq6c7kIehe
+fVKZhTocjwusXk5EyT9Rp3Y0TRgEeIFO5bUz+qY8Hbzs11CPbf1THiHlrAJshHiOepdpDPY8535U
+2uPGE4s9Twd7riEgd6EGyatwBmu2jR60qMFsI35j7yL8N3Ug0mCmkpbelFe9rUZ0/G7Vm8ZYDWHy
+9/W1z2UDAbwpuQvXvBEskG7g5z19dbQqSF2XmFfwCRJpMOqdDbN9WM1+vtKztSK0T3FNys2W/+Ly
+lw3mCYakqKAU/ItHg1mOhcnxFNo3v0289FcsSdu3Gm0wUea/m5jRm76UxYUsy3P4HjDg4ADJmwo4
+Usz/T17CrmGUuapcoOfio7wrgCCQqb5GGPmkortr8OrbeNg5y5MPlQdzdgP4UzwCowYvkbqD7+NK
+ivaiHZtKJfabvEebiEySKZsU4tChWA8YE3XEGnARebUMEN2NhQ8qBV5qPRlT/DJcAA1N8WVmjvtZ
+kiu2VuuQ3MBJlnhVZlREXEh2LLkYVuwesZfeomh1KY5iRmiqQmakDaUxKELbrca5OQ+hocfiZGYw
+2jmwN52Nt6BzYIAzp2NPY/EjIr440qKZCwLr0wUFHEH27aP6DdHilf2kcCzP9gQtpNcNzIZM539s
+J9MRKzLc5z74tBaRPjmeaN2b269NuojfThtmwxZVLQbMA6q+uwEk2Weid4VIQHeRWOynbRymCi4e
+EmcKacMAIbaPKwFxLUcq3sv4xUGY4Phs5+7p+ZYDNpHURGInHlFg8STsPx5/rwmxpu8I6Iio5zDs
+gna2qm1J2+2UQ82ADJPHYddzpCTjZa/V3jZkllD6dygjIhii8kEJ5FyUqaAxGy5ICZu21nS85P7Y
+KreKanXoNMEu11wUI3LMfwOwL1DuuBx7KEUumSsJN8qmhaiif+H+vn5eR2BFyUIvPpi/C1YIqUjv
+7CFMGeAZZceGQL6wFQ4pIulGvCyosJCinEogtkbpPV4ifeMpwQgXKM+dK+RovDPSJKQ23ysZbwOp
+CHtjcml+QYdYmb3hzJUMY9qKQaypqWle0sTOjpMrOG1dn6APt/MqzgPk75e9UgDsjtZ9DTF065Id
+1RxUz4I3w7YawMRDgPLzyPt1+lDVroyLK3il1nI4YrP9ele4bS4l8J7XBFgH/G14x8PfU0x5DNfA
+7KfcqsHUEOc0D7b1//UxjtPxFjet65AfTxElMsLVc0Y4+9rp5qAKJ7IQ5JHU9XHhX4OfQ1kol17k
+4lby8lQAwNtk3xBJ32ejeToeSYzAshWGUVAXpEzY0IPSo7HsZ8gFxi5M25PShcwuukDst7Q2ewgO
+mqwTUpXC5zcHksYHxM4CUqR/Ge4wii20IkA/CVYgGFXgPYXmxBbdUmGHJ4crw2zdcJaS3oq7iMVZ
+3VN4hwrHLfrsuPwwV177KXuVT9z8oGVTgony/VZrKLVFc+O/ys9Ov6+mbAWgINEtOiSScVT3KvHR
+fft7bVrBRA6W+wh8UAkJQKb6tQ9j4WZsdsQZUa5deykmtvv92ONfJrzF1H6OMWPsjIsoBLs+0Amj
+USjH8ksHwpZxTtPCC8JwiIzeeIwkewSrgj9iKbMlHx/nPbKFJ3rH6iwEKbkzZKWdbapJSndHtQ18
+GnMnvVG/wv/YAZHrCU4M8jqcwRRc9plUWku5BwwOasZ6S0VIGCfiS8O1Eno1/Ug5mSLo6sQTkNtw
+Ycn1stSxYd9EUchWj1USbNjrKLJmSUPiAigSiT7yfdqaGOWb6YtSboFJ8yAYgbDBtOf5zqNTG8fM
++vZROjOZapBWA/HOUdruUHth9NyXNIsNFr77ciZv4CWXxAZwqVWklCgLhp7YN8v/nQGqlq4YZ6kR
+fRbh4+Cm7LXqX9vFPvowmrI1HFzBCaJxRvShC1g7eNiZJvPUKmz3e7gq87sYOeBkYArIs6qx1myX
+K+WoE1XCch8lY2FaKUmPubHHAs8JxIPYW+2P3Ce+yqVFU5tVtWpCBRagx4z6WaaKvrOsU2EVIc2v
+qj8i9icicI3k8OqHoJDbelE1vBSB1U4IypMdue2RMh8bK4RE8pE9tkrpmB+4cg1B9XQjq00Wydzx
+6Lgnc4Xnora0iaFV88AMHWssFfHG/tdZbcjPE9NxctaORUln97FD/zkoLUXbiFeEzOzEg6xfWnOC
+tPaQ7RWVY4bHd9SCTAsFAjRT+KngADHGPaf+/djIp5bHiWdiZ6SRKdMgLWNNUHC7JlFsJPWb40Mb
+pSNHSDhPCKjQVdthXzuKob5DzH5Z5UcXwuxPUiOc6fkazmwZCJFPl4Vs9+WwNdET1faeHC2YO4Vz
+0krimN3cfJ1t4wFwZuT6PR3iMCOSgfqVASrYYZkUUehJblSE6yiTG3tzfbLr8KR7mtvpnQ3cqkb4
+vPWwdDU1iaZGFL+wM50MyeeNmeQNLggKGS7BQh5Pep1TWyxkFIJHNzOMW2VxXEMC7DO+9SHSYHNZ
+KR5L13yPIrexT3WCt5uUPDxW+0zD5SPl3ZF0ARui1c7QcelXUXG+BVf2caQCOLhYNR20coF36/RD
+uOv7PQU70Q8p/8Dkn+kO4NrX7oRTH4LZJ3cePjYleNVixsjHHO+beQmsgXYDc3gFNKbZkqiBPHzQ
+WQEjaBtebeXPjpTpySd6kQ7lIu0uMZxNCwHeqhdbiXKc/jG3YWl+flMH9MjU6syB+7M67aC8sSPM
+fJH2/wu8hEsQXJaxcygnt9WWJgTDbV5Z1+LudPI3ur9O2HdWkEtMf+eTE7jxKl5gD28/cjY1aFLk
+Otu4NqRWCCPPsHhamSZu2xAIYpB22EkeSNpzV8rdCYzL/hTTVaeeGm3BT48xHe7DNxzx8MMKTKKB
+AdNaROp+Tv5QCIByIBPOr00C9UMrQUAAnSKCpB6IfNL+Pt7/e9kTsuAq7EC1d1BmRvswOegCDVyY
+TxVC86YoguVWvhtMJa4Q87XknY+ALhJjI6KQgHkT77F0W56PeM4tyaltP0zZiedtCGIf+CWva0rQ
+8kRVLMyh22VK377SewofmilE6IhyEHGajWimtKYQrrELWgA2b941CnF7vFDeAFyhbxchf7jWCpCf
+W1GBjCpOKQPDgZ8pRSQtm7BxMYZqHjDVXSL4kfP8EvXdq94cS1CjugNGewv5Kp2suadmY2vhIUfj
+VC0olaDay/Zjv00+bxx9MsXZgDgOsvAvkgAIbjj/n1S+io5fRH5mATsuRUgMDVkWI4LVTKwA9m9U
+NX+HRmtkf5Oq2McSQy7XVYxsVnP4Nic5nAO3JsLBftZlaPnu9TkAATEsM75bNRJD79ibgqbp6y2p
+NGo/DbtYKKZX6mO4cEtJc00GsJv5+J5Z1LgfTRYaKPZNga9tWz/mD+1wulO5bTe8JtU36Kklc2pO
+m+dnFQdx9kfSBnRNniTOMccxTucxs34BIulZzj+r95DWPWKZFYwlPWcyMqE4wBqSMYsYkZD/MiaT
+Xeg73PPKUFZPK76Dn7s7OYew6iE5pp0I+6LsQZ8QaZqBs6pDr9wfMd52rBE0PJ13OYqT4LU+u3TE
+wjWCwI29gK+8mPK84MnMgdRe7PBwBHpVk/QS0f13gGQHQcWXwihQE0sTGF1VPGyMlpicf3UTpJ+J
+7t8RYNRxjhg0IYXKv4uaTHXsYuNADsit6wX1uUSBadqSb+ZEQu26CTRkPdFubEeRSgQRT79oiPJd
+2bFBf6suX6rBlNzueuyAkyTuW5Cpeqa03zkMfV9FCn3nZJUXd/uj8TBHMxjj647dxWGjQfb/biLi
+I07+WAl3qT0GKwEQTUWiyTr+nLMLsDCoHXEo2OLKFvA2ae1qbVjmc4MIuY/VDyPyObijwTGX0wp0
+1esX+8o2y9AgpcZKTQQS+MrB776NdUO9VtSEk3vkDXfAVfVTEBn0mRhEC7qWB5k6l8l0U0YGsOWc
+ThqPY9uuXiJmk0smwD5/p0MeY4T4r1qPjGYQGy9Z7IzN2Q60E5KQ4R9rAX/+2LbFdUkx4sRps2/u
+wQ/+uc3+2cmghdtvMtSRsUX3fz3w54gWTfuTpfm31v6W4JSbTfLrTQqYqD+nTmmuotc6Cdg5H5KC
+RCgvGWRusZKWc9uP9I5x7PGDXBzrVb1hYDH8n0EhbR2Og9O9rnfytRiOM3GNOYx0ZdkPK6A3g66Y
+SbtfY5tSa0caiT7o7fwucKZaw5ZMgGKb+DYroDP878L/Z6IzZ79+TcnlHCCW2vfGnYbnSUBC6Aqv
+M+/p9/TGhxjMlRMC7x5xqsjXdBOjfXF6rDAF1Hw2JdhUnwYEOnDrBoibbYudCseABvnGmTitciyR
+2AMoldZq+RmNVt9KBPz6MpRRvxV5ccwVq6UL+/fqRSqVFjOo9ZfmOgRe3AqXlfgmtWun9qR1TDzS
+QqVDeI56h6ewt/xCq7SqKiHpC+voiaGJa2evbx9hH9YpwInV6FUDhs1dhXIM8oG8/3A6an6ZYRzK
+fvMj2TONZVJtRXNcf2nuaxW3zDMXFohlPKiOH6ZidWQ+dg0rQi0j9Kt/oZrPXsAU2aS7CfKNghFr
+FckByYSi1v/KmP+kt5G3BDprUou7FzB6lduPZc/SkNE7VLxene/Zg3sWRTL6nKu6Ga9XKPKSt2MG
+zjp0voXNd70XVvVnEBcOIl8JXvCrOrbanrMVLliqqe7G7PvoiBD2LqCvngXfxm//VFGXA62YxME3
+yq090t7SZOj04ILlOqfj0RlWDsj6in8sMkrxCkGCLofya7gHo1WqHu6eyVWqFepjtq+UvbWkxfOE
+qmvfpVOYNYMtLRhhjfmeIwAVK9rCBQXIEFsqyzUQOCRNXags1KghSuu4sKd5/ibCmjl4UUadD6u+
+WihuuSPIuHK6vK+OAqlR7uL2Ct0bQE2/oe/HLXHew+iVZPKASf+JisstrlDuyUresukXTCExLhO6
+176/1joM9dXqPyY4RJa7bGETuh6qyaLLgwQThlnZosxnLFRKFsPqz4i5DdTFV/R+A/yjQO5LxszK
+OOg0O39wuSTKwJWSOOerGh6XH0c2uINSEUF+63E4qZDWrsLuW+gUoIZIJGlqIAl+LmW7Z2o7ejan
+v4OrgKA350IR2naXi2nzCjsZlzdc71+mE1YEbN8X673RR0Yz//r+x9FnvlzJ4jOFD0mEc1xSNiH9
+amWLAoT9XnQoVQRp5FwCawEsDLqeILYKZBso6QYSYaxWxeg3fCWlstfh7t7YZr3fkQePo4/bGDJQ
+hX6Q25srHl3rZZaWqOmuypF+AubgDJreVPyKog3hhKyQ+8Nyp8GiiaPfuRip6uVA9YrGAqpXo9Rn
+3esqezfcV3bezgCxopG+eWuL806NO1pUftPUMK/0Ch1sItomfwZ/x9yNtO42ZdNjJ2UiYgskx/Gz
+AsR/O2wsNudbLAhLzAfkTTXVLjx4iAUADCAY+tK4TjjP2Q6ZLHrWKYVw/3hi6Rc1chzh74BeyDQT
+AfVcgfs9xSKDkAbulIGWh6fAkI6wY2uqzwn0CLchhMzWAV1JMKonvOlQxfqASeOa4AfEa+anelmW
+VZgIjr/3QgelBqAjZabS68O93hKXJFIJk48PaLMYOJ2yvHodcMe0qYGodLhPipd06UtbpphQLzzR
+o8uv9dHxIMZZy8p6wwh2i0+Cp+bt3c9QVBKl8WBiGkEkvPkMCAMsACiA4X8iIkKvQCaGKRW0rVFa
+ObRHxl2lV6xfUOYZlbR8+FIhvLgN98FgAtUKwZKqU0Pmv3/ArGkOvNlu9g5PPD3/AQuTuIfbEQI9
+ktIXE3YRCw22WixSa94tCj4CSRl5j7UN6KNxP1YxKF+610OIlAhSH6L6us9JEIVTuf4zilL+49rd
++OPVVm+QAKhmDlKhMzZ2JbRfrGOHprCi83WXevTTgCWx2Jq3Z2jlAbVWGhYzPSj4kVnGLSqg73sa
+s0fi4q30BdSLu0tnOxGFZWHOf6LWB19amlZXBDFBQV+gfdYs4MceSLje7TEXPuYgYkTT75JriTeA
+QTngoEIeywUBc0fo/HIVGr06GazX87Lw/roiHpxJK+VEtPKShfyukbI8OCWEJFeugFaOa9WM5yTE
+qKaciJ0w6PwST1p0fDeRMcXgj8PmSm+1sOC9XLI73lQQ9YdbJ5+9AMuvlA2RwHMLGOc8T//Gq2Im
+eKhgzK8YQFTGJ64CxNggxmDgBTB99+cTkPOEcHnbOZGWDcb698TF+HJSQi89ER1R0AgY1Vk/QZzP
+4/90+7ZvjAlnsX4jvOUkc8GF9HEGAMw4qTAfu/lz1dGKygNcmoqD19CeiUv7R2kUMzMOQkdfsXsZ
+UFqLt5lY4Mg1aqNa0rKxmOTfszOa2RluZ3a7SeNRvfXT34WUOM7mJUgfkV/TbwcHdRRzyyqMLhQy
+7n7+S5AYexnVXntdKX8O6rE0rXmTsUjb7duzKu2STtyxyar9s1ZtvJ61MODDHqm2QIqAjgf//LGC
++7GGIkPz6TrU967U3odAv8M5b0f0yy2+wdviUC8rEAmqTcexv4rvNdV8+CEs5SPltkl5ir6Pi7yR
+tPo2PDzFw2AEwblYyTa0vBU0aRqGyIORHW8+1G25n99xXI+B3xd1d5aW7vRhFsQG7NeU/0mtsuNb
+M01FatFQx8PSqO/JInLN7NeVH5dVnuUri0rHseZqQyZi+W8j3uDiax22cZZvXxXN6yRwjh+RMnOH
+vI2bgTksT6C9HJxc8rxsahiuyOuujoRTgEYUAkuejuHl6tCroWmK6/s/mJFSRaVI1G9PGN5+aT2w
+bfXCK0TMTV55zXs4DJVGEg0hADgjm0VAeQy00+6heYwpDve1NuxVspqxjLhub1+JsERLRLwTd+RH
+2IE3C1CIHw5JQj2vbOKwnr49HgjVfMh7a++4RdjMTYwEQYXfNgo8dwxgcCWZhBj6DDGk+bNwOP4v
+ftC397PQ1Fv64cH693L0CzOOXDJ+PSpiJBZ9OdWkxpOqNSAOK2jzOc8/94aiyJGlC/5QrQe/nU8c
+++Kri+wqQpP7/0GJEmG720W5CBCnDSPGWsXtYEUSpVt7z21LXleHswpUYuoRj5PWsC2UdLB7il3S
+Q37HQhf1Y9wSbyuGHZCF/zWOfNg/cdwK6YxSP7TzRrYM+D3wZCrdpPHxRHuzE5DNnLSD5fmrkvB7
++nTL+2h6f9cTioXlWd7YK+xWCrBvfQvS0bZuTcGiW5AjVhUXckgj41nJueTwdPi137ZDCrJgW4EW
+VXhZs855KRbI6K+qLmGIxIVk8vloWHZhMVpG2vwf6vn5raXpVsUIpjLQ/w2P+vheXptmwIlrly9r
+c+JtNvleXyJSL6SaexR3rL0wOPiIYcE4snIOoK8twgkKVCX3A7jLqCKue/Y+vgttIRtejdtOnwzS
+7I40U2x9T6LLakXD6NkE6+eZ2q7zACnqQvT8gJi4DkWfLRKEPCiUQfmPd9fzeczFGF02UL3zvapd
+fJT+TZJKNUePiH1OhESu3N6ipcxJ7pB/W16okUBevsUR57uoiKsNRqdd8UIyKBY6lQSl/l/KvPLr
+3eFlnMm3xlRF6JsfcOgXHzkXxoSjOhfJiica0WfNtdcqfVtGKG2wgbnYqlfxYrylyJQ/YXdm1ic5
+R58w7WpzcoNhukIHs2kOP5CYeaSYKQTWShL+tSK8dSRV8wJzW1EhH/H82IWSy04W7TY18wZ3VMOb
+hiD8Jkau+jOcyGb6OlHuaox42ezigjF/ptL0Ev0raizRnflGyvflgiM1itdWLrpUxEBKbwpdgxx6
+4LZMtOrDZzJOZNvxmwS5tXQPcLdteRWnLuZybAB4VUVADt69wMcemOnaftxXgu/XweMDBM+7Bu+3
+w3fLeS+21GQ8ak4SNYrN4PUbXYV4UFa3CBOOg2OQZ/eTneCsxs6FuW/mxX8EGBJPKOmVDmHWeM8a
+GZLNkSW2L5pQqvjGxbZZ4GNt0oTzbGqlRTmmIFboiphBLyluuDttTSdtOWmFMHaYJIAD9asFHENt
+8CNYkz/Vst2aGMfUB2sFNT3tME9N+STZba5lOoA9dczhUnHpqS/7XDxqMtHcKc99moyTYxVks1AS
+46hgc9ZnbT0sJUcg1mGrLFS+BXTs/08PCTVEVAuQ0r3F5MVhQItKcWAjn7hx7lJWflzkIdVNoxcE
+6YJKEY2cHYiAMK9Pt23rpODJOyX0QDeZPh0igI5YDB4hevyXPDObR5b2rOIg8NI8oaz6hrgT5pBj
+zlmfmfjjoXbTs4zLDgageFfrSKAmw8M31idUI+/fxNAIpjLiMVhHsq593YUwqN10d6pwh7DVlwv2
+jzVZJaGXYCrcW1gNiTDVnsWNKdVaaO3AtcY9I6aALUYakZr9gz/l73Fh98Garq3j2rnwcRbq0sBG
+RjdFeuTcMXlLzArlgS0/2ilp4g9hNcmrbpUCdWDLxF72ilYVuffbjoap1fTF8kHEToCZOs8VPd0U
+QygTash8LcT2xG08jox2xtqsHTXQp5FLlg16Pi+coShCA3V0aF6BrA6YWm/K/pJWxZM4FLhzyWsx
+urjUGbcs419yBV+FAErgHggWoqJSMssNLKGCrfDSwx8gM56TSb6tDKwrm6oLvOisEra1opjsw3qK
+5HyEggNrD1JCvsqXC/N3xE6pxW5rR2cESaBB+O8zQZ0us+Selae07fkHFg1QaGDHDPKadQafUsrN
+BI/jLBr3u0W8LeCRx/xMeVW1JkmfdHz0+NfEqKwS/vi7zd5F+9Yw0mtLriFpFQ7V97gyHIwHXVpf
+Ra99MOQXq+AFgNAj19g+8kZVJM1PHc3gkFrZ8zXS0a/9xjb6umlEfMy0Lib3EhKE5cUyQ5Q5YfF/
+wcrGYqxXwFU+KFkvmlilHUS6xOVr2uIX+g2VOoZKEVes7P5idZux7UsD0vytsvqIL75zRRR8xnk/
+LHk9HSTvy08HTQwN7eFv64Goo+66QCTuzsrLppuaYvkj4YGkeL+LPiYqKJUNFptAWOlSATFmM8sF
+Q55QJE5meItg3hvA8BB9wNZvZlA6ZSjTqwEshOzPA5MQc13FX/YVvmtbj+6yJR4vlBES6vgDzjVQ
+IQ5zff2kkS9HdSnNRHbJO/PfiQFaDsHkYKuc3nbaXuY7A0jXorwkFl1w1fHuEEKk1lAuQU9gSCxf
+Um2H/ktxqoY1NCfnX3+iJYdj4vo4WntsiAy9yO0VT41jqeeSt6JooNNL5JOD/Y1CUJJ0FKAnPk3z
+KDERcqXLEbP+7X6bjE1qnOJToC32ssBSi1O9sBPAGuEZcmSYpoLMWvx/DJ6hiTqI6q2TsL0xnngU
+kPmaDN7ThLTm/titBX0wxjP1dCVSnxQ84lbcfON3aaK/u/i8bTfb1H7xHoOeXQDZ1gsfwW+0veEB
+JA5GrdWC2FCEoyNsr3KDDQ28oSrhKWsPZ7GE3vkP71ZKLOL0OvHnzdAq4aY4MB6U/VAuCzMUHxb/
+V2Sa/jtjsmFQ1HRJEHIoLs8bB/y2jAk+ggO5a9l6ft+qNP6XiYWD1kXkWYJ0Jy+nLDG9kLOMANuj
+EIlET0ld0sU970acE4CU2hHoD+wTuhGW30LZp9yAbkREWoTYVdJnEZbr9zC9snf2uc+2LaAx1s9i
+0I4AaXpyHA1gzBIrXw8PjwhK5XgDfbPDPfqJuTfJXp0ZpzqC9YVTSf3Tfhz6kvQF04JZfSbJo0/+
+fDYZz1kafb+Puqh9J9SYpyvjkJuwzTZiVYSbPAa3LSViozEp66EA9/8RFHVTNThggWrpNEYe6Wz1
++1K9eTACnI3V7e+aNdFAvoe8mVZ3cB0n70LpBs2n0ki8VqZO9vazJVy637a6pkZiMyczXhelrzY9
+Re0RC8Zrw8DhVT+0oTJYjOyMSY/XihSGBePWfqRPFmcU2jXYsjzlJqL0Q2n24JwmofoNgLHORNen
+iRZB8EmENKehf0ktGvrVdleM26P5HrweytD4P8xYlco8uWDWtq2ICbBgJ4IhK8AH1qbYwrQQnHek
+ZXGvKjcHsoPI1yg+5oiD+vQG4weJ0U0mTxVw8d3JOcLgcU74QtVFLtiSKpCOqiR3BTYOgiGrbPPq
+W+0WUaPdPmhq7vRIisqUZkxB+ld6TlP77EnsnM9cHA22WSIuZC68PpKjCYf1Zs/lzCXtooRp/xX1
+XC4DL1hunqAm4juTPS7fMEI9uEEystOMmjHs8hunro0P3dk9UMBPDb3xo0cjbntM6b8SZMs+TygW
+Pa9ZNeP++QNm7r9KjNTOFv3a14gsy5axIwH380jHj8qJ5ni1MMwY8PYin0CZHKu8doEJEfPBBvUI
+iA0YhfLn/mGNc2gQ+DL81CFQvxoSJfA+TK7PlVnMKdSAjuQuKTT2Ngfn1CTBUh9yxiSZUdE7sThG
+yTrtiy2LZKBrI7NcP5J4Xt03l7jn27bBc3cS3m8ROSJi1ynLv7dfxjR2TAtm3SlfpNnMR8Vp/d3i
+zF+rtgnh34S4nx7a4bQp6pjmCaS6H5x+TlPd7k99Qf+nJimAy7E/+KuwbJHMq2M1MLFHHhcgYddx
+6E2/49pa9FhgAh3IP1t8rKaTDkXcA4GXXN3EMa939sCxUG+g07HkIzrohXphIrEpPheRYAuM06kH
+G2LLdGrilPCHuuutP2w3dQOwwgkORDsmyu3qvzs+rkztarh/4lYUVSOCc8RhosRuPOlSFdUhTXA2
+kgviRNbQ8xWDljPburcD6pOTlq//nOznEAxw/A77zsysDh3hRqNFei0TlHRF/0/uawW1kamXeBKb
+bgj5xxl7U5wjTy5fZH251b/QPOE+kpQ7r1XaWXnF4ec40+Z4zHFKHT5hrK2ccGm53d7hNMps/rTe
+ABlhOBh4rhZE3o7uRvIGrxtFFmJYwNSNL3bNPo0Ulkjri5NUc2P+8gC0huZmGCOacNhnYi1nDEp3
+lBSfPZXnNHJSBusLuXgj/fIpIlatJUAi/hHpoq/KUTzJbg0Bae2Am8/3D5tmAg80VAL8EwJmQGsx
+2qEraW3RQ4uVmXgG+8jmdluoY3jrr3FDp+0+N+y5gq/oEXGQtjSfeOfeO8Y96qeuZh9+xoZ4Y5s5
+KK/QnEWXZKP0UEXh2JfUJli7G3IMYWsIUxvE4EM8KcWvtivcTmMQdrelAZHLxcn7U0V3ojxaC9n9
+TVf7aVuPcruj/K5ifHgQpt1BhxNqkmLG/M2nOV4aHee+Y74F8QYGvd/5C/UTjaIOCS8noNP6LFnU
+ZeYh1+ND7VOn1U4FZOynNrIt0ito26iHCDepfRvS4LFlq3CH6o0TTJY+Jdzs8f+o8uE5Jl1qTVGW
+6niJK9SSE85AhwUI7vYajYoCJYOaiYhfrWvAXJE+K7PsIFGZj9yoKJVrH1Hq9ybfsucmWKcLAbY4
+BkbUUPc3K4x3CoNpeEvWGz9d02adQsNYM7KGyPIqSDTc/jPbMwqJaQB2oBJ0lkvlRVt/OcZTf10w
+OpI2b8E2HN/82+sCBlBRlCbuhAVBryB0Q5wIOrrWlPyg7ohd4dRAp6vNdD5JulIwZn9OT2SL8n/e
+4mW2vnInyTR4WMBAMEfB2Xl9RhsKRbpQMs0lBPcLIKjKE1PPrE3Ld0E45s3kUNIf6l4/GA2YA4kt
+c5Pm2VOfNg5Qy6RjrcT5/9WoSSE9TtezHF7dTo1NY9I9FWYdJr+NVruRvDDK//JnK0v2CAC2SXyp
+NCocQprbKYCP6g1tiQKEkXDklqh/QDEX7JfpFiy9f0Jie+iaQs6EEvKlfbbV9KqHu2gBMB65Ri2K
+VXXnNNjvsBUh0GAk1Dn+PTHepkMlXnZty4UBfFKwYrsm3aIumY3olstEQJPPTDwqLiUU+OhBexPl
+NvyK9EI7yjKnlnz/HHY8v44LwSGbIfuYzD2BEbnAzJ9cJm1CPac6eniXwfBwLGiiYaTUCpt4n/qh
+Mj3SgI4KP9UkcVHEl1xmwNqw/3vyakTq+XmzMY8qTWNaEm069ydZHZGcI8OoDgMuyc4h+I/bWTHV
+d+gO7ycN1RLaH5qq6sdPEiupuc+tdlzC2kTaiXFpzlo/8MI8sGnbxAKXAqx9PXooEa3NpnAMBp1t
+kZqbZQRLdip+oX4lQyS6YAHCyui8ayhgeIJytLSzYY/3pLyq48Wc/Xk30+YOdr5IOdMtpAI7I2Ok
+carxDmIojPBtMVBEgz+AU7edLUI7DEsinitu+92JRzrMjf4r4Pv4JEbLhiPh7kAXakgQtAVF8/Wc
+42oRzW66Nibl2TEK1ihcGaMqWnyROx4MASmEFL9CQ5qUqSt5+spvMzL91nPLt+QjEfYDOz47DGyz
+m00Dv47mjZIx/1hAp5azIw/fN7YIJRCXWGLkiiaYriquvKkgz+NO15+FEEAQTJPJDVhL8bzxKgM2
+G+OoVW9bbsmWQZZMX8EnFU3gkJyAIpBLlAbs6ds7x8FzAb+69dG8fI6d+ji7uLcYStM/Xe2hbdb+
+pznSnGy33rQw5ZRmBHJ20cN8K3ZVIdv2WpUlITVtsgGeYtkySowP2L21d+XFvrp1Icf2zl/uaGYV
+3KJnCIZB49ZxDHV1MkRubBO3PXGHknYW8BNvnJzTjw1w0xUfBUPYsYQTa9giQSXunHxLzoREYuaT
+yFiGsCZAzy/EgnfN1lHl5SnFfYfRXH9oeOY1/VI5oDmp1kC8wymJafRftr+b7TTxJ1PQVZKK2LmQ
+XSjdaiuiVkKmlULd+hUDohXyTAKZaoG9cGroPwhifmeF8pj63vubH1Gc5jsRTbNNqJTBM+jpzZPk
+yeeCtZWwqF70SAtUuBBvUiHmaQt4RqFQjzDeRT5HgCRUdWzT0yjrPTjNiPMyJ4obyCv+D8TF4bei
+MuoLX2Sr8PXW72pgkUA650ZnkAgldnhNDxTG4cClAJN9vCImM6N264u63cinXszU5HeQ4/1+Gvn3
+5fTzEbJJNYO8HPh4xcFMD0kUrjwtHlmvTT1nzqJgd9k/VqbF4Nswz4fl0T203sebswruEadezvfN
+yFr3M710EQH4+ksMZXCfJiVuXYqjhGy8H5MpZ7/Ayg7l0MgAjgriE578I3GwUqX3jov3Yn59Okxt
+/WgBrQ2gfBjqr5h5ZirkgF+qj1Sx60VfYchYPyi232pZOrs3NtqRGF/hxi5qUYcooSEEeEl5JCHv
+n8aHIkdrTPRqoM1avzHWE9dCjN2GdrSO6bI7cWCQUO3zUkpUD1WR5aX6xoTFUsompiCaLi+cazpo
+VqimrPWT1WZ9yn5n45PiBNTvCfxYUFgcmma0qqTUEgqfvMmNIr+BXZupKoLxRxr6lLwvOtHMcbxA
+MzMv4I13nELBwMfzo7wOm4plAzpBznvpbMO1nSKfLUlYDJ8jhhxjeWUy2PC9elzxz0AE6TYW/0nC
+M/fX05yH7d/6NomaZk9Ki1NUWWpR2c+V8tf3l27BaXT0j7dBCskuRUv99qwcu14rxA4HAlPvJGfN
+JHJ2/6tI82e6cJTt63GAi5inbdXygAKJrdAxWKPmiZyb5c1eC9VuVUQzm7yMe8TF72ydAf/sFV1v
+70GXFKGImRKp/JB7GtnreCm1nZPEKnshcRQskjuBt+z9P8OPrCgpUZj00WDGnkI+TGMgwUlnfc39
+oR66TMUhgeYBnnHvwNAFUdlRnIAem70jWgNrEW7+sK43MsOSIqe/lKcvlMtUaIUllkn33qx1aiUg
+CpgNdZWTvx5VgTym+b8DJ1ZNDa97znQgaEEFt8cPz8E/VozBIVyUfwUOt6CoUe7emf5+MWN4ON1I
+XzcJxt95C3WgJ8Ia+uDNaEp2HFVwNfbYstC2Y50UIIOPLNAMVMEkLpsb3quMwpB7Qww/zW+2kL5k
+RnnZt6iNhk/ZEA4gtiN7

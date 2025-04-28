@@ -1,174 +1,86 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\VarDumper\Caster;
-
-use Symfony\Component\VarDumper\Cloner\Stub;
-
-/**
- * Helper for filtering out properties in casters.
- *
- * @author Nicolas Grekas <p@tchwork.com>
- *
- * @final
- */
-class Caster
-{
-    public const EXCLUDE_VERBOSE = 1;
-    public const EXCLUDE_VIRTUAL = 2;
-    public const EXCLUDE_DYNAMIC = 4;
-    public const EXCLUDE_PUBLIC = 8;
-    public const EXCLUDE_PROTECTED = 16;
-    public const EXCLUDE_PRIVATE = 32;
-    public const EXCLUDE_NULL = 64;
-    public const EXCLUDE_EMPTY = 128;
-    public const EXCLUDE_NOT_IMPORTANT = 256;
-    public const EXCLUDE_STRICT = 512;
-
-    public const PREFIX_VIRTUAL = "\0~\0";
-    public const PREFIX_DYNAMIC = "\0+\0";
-    public const PREFIX_PROTECTED = "\0*\0";
-
-    /**
-     * Casts objects to arrays and adds the dynamic property prefix.
-     *
-     * @param bool $hasDebugInfo Whether the __debugInfo method exists on $obj or not
-     *
-     * @return array The array-cast of the object, with prefixed dynamic properties
-     */
-    public static function castObject(object $obj, string $class, bool $hasDebugInfo = false, string $debugClass = null): array
-    {
-        if ($hasDebugInfo) {
-            try {
-                $debugInfo = $obj->__debugInfo();
-            } catch (\Exception $e) {
-                // ignore failing __debugInfo()
-                $hasDebugInfo = false;
-            }
-        }
-
-        $a = $obj instanceof \Closure ? [] : (array) $obj;
-
-        if ($obj instanceof \__PHP_Incomplete_Class) {
-            return $a;
-        }
-
-        if ($a) {
-            static $publicProperties = [];
-            $debugClass = $debugClass ?? get_debug_type($obj);
-
-            $i = 0;
-            $prefixedKeys = [];
-            foreach ($a as $k => $v) {
-                if ("\0" !== ($k[0] ?? '')) {
-                    if (!isset($publicProperties[$class])) {
-                        foreach ((new \ReflectionClass($class))->getProperties(\ReflectionProperty::IS_PUBLIC) as $prop) {
-                            $publicProperties[$class][$prop->name] = true;
-                        }
-                    }
-                    if (!isset($publicProperties[$class][$k])) {
-                        $prefixedKeys[$i] = self::PREFIX_DYNAMIC.$k;
-                    }
-                } elseif ($debugClass !== $class && 1 === strpos($k, $class)) {
-                    $prefixedKeys[$i] = "\0".$debugClass.strrchr($k, "\0");
-                }
-                ++$i;
-            }
-            if ($prefixedKeys) {
-                $keys = array_keys($a);
-                foreach ($prefixedKeys as $i => $k) {
-                    $keys[$i] = $k;
-                }
-                $a = array_combine($keys, $a);
-            }
-        }
-
-        if ($hasDebugInfo && \is_array($debugInfo)) {
-            foreach ($debugInfo as $k => $v) {
-                if (!isset($k[0]) || "\0" !== $k[0]) {
-                    if (\array_key_exists(self::PREFIX_DYNAMIC.$k, $a)) {
-                        continue;
-                    }
-                    $k = self::PREFIX_VIRTUAL.$k;
-                }
-
-                unset($a[$k]);
-                $a[$k] = $v;
-            }
-        }
-
-        return $a;
-    }
-
-    /**
-     * Filters out the specified properties.
-     *
-     * By default, a single match in the $filter bit field filters properties out, following an "or" logic.
-     * When EXCLUDE_STRICT is set, an "and" logic is applied: all bits must match for a property to be removed.
-     *
-     * @param array    $a                The array containing the properties to filter
-     * @param int      $filter           A bit field of Caster::EXCLUDE_* constants specifying which properties to filter out
-     * @param string[] $listedProperties List of properties to exclude when Caster::EXCLUDE_VERBOSE is set, and to preserve when Caster::EXCLUDE_NOT_IMPORTANT is set
-     * @param int      &$count           Set to the number of removed properties
-     *
-     * @return array The filtered array
-     */
-    public static function filter(array $a, int $filter, array $listedProperties = [], ?int &$count = 0): array
-    {
-        $count = 0;
-
-        foreach ($a as $k => $v) {
-            $type = self::EXCLUDE_STRICT & $filter;
-
-            if (null === $v) {
-                $type |= self::EXCLUDE_NULL & $filter;
-                $type |= self::EXCLUDE_EMPTY & $filter;
-            } elseif (false === $v || '' === $v || '0' === $v || 0 === $v || 0.0 === $v || [] === $v) {
-                $type |= self::EXCLUDE_EMPTY & $filter;
-            }
-            if ((self::EXCLUDE_NOT_IMPORTANT & $filter) && !\in_array($k, $listedProperties, true)) {
-                $type |= self::EXCLUDE_NOT_IMPORTANT;
-            }
-            if ((self::EXCLUDE_VERBOSE & $filter) && \in_array($k, $listedProperties, true)) {
-                $type |= self::EXCLUDE_VERBOSE;
-            }
-
-            if (!isset($k[1]) || "\0" !== $k[0]) {
-                $type |= self::EXCLUDE_PUBLIC & $filter;
-            } elseif ('~' === $k[1]) {
-                $type |= self::EXCLUDE_VIRTUAL & $filter;
-            } elseif ('+' === $k[1]) {
-                $type |= self::EXCLUDE_DYNAMIC & $filter;
-            } elseif ('*' === $k[1]) {
-                $type |= self::EXCLUDE_PROTECTED & $filter;
-            } else {
-                $type |= self::EXCLUDE_PRIVATE & $filter;
-            }
-
-            if ((self::EXCLUDE_STRICT & $filter) ? $type === $filter : $type) {
-                unset($a[$k]);
-                ++$count;
-            }
-        }
-
-        return $a;
-    }
-
-    public static function castPhpIncompleteClass(\__PHP_Incomplete_Class $c, array $a, Stub $stub, bool $isNested): array
-    {
-        if (isset($a['__PHP_Incomplete_Class_Name'])) {
-            $stub->class .= '('.$a['__PHP_Incomplete_Class_Name'].')';
-            unset($a['__PHP_Incomplete_Class_Name']);
-        }
-
-        return $a;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,192 +1,81 @@
-<?php
-
-/**
- * This file is part of cocur/slugify.
- *
- * (c) Florian Eckerstorfer <florian@eckerstorfer.co>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Cocur\Slugify;
-
-use Cocur\Slugify\RuleProvider\DefaultRuleProvider;
-use Cocur\Slugify\RuleProvider\RuleProviderInterface;
-
-/**
- * Slugify
- *
- * @package   Cocur\Slugify
- * @author    Florian Eckerstorfer <florian@eckerstorfer.co>
- * @author    Ivo Bathke <ivo.bathke@gmail.com>
- * @author    Marchenko Alexandr
- * @copyright 2012-2015 Florian Eckerstorfer
- * @license   http://www.opensource.org/licenses/MIT The MIT License
- */
-class Slugify implements SlugifyInterface
-{
-    const LOWERCASE_NUMBERS_DASHES = '/[^A-Za-z0-9]+/';
-
-    /**
-     * @var array<string,string>
-     */
-    protected $rules = [];
-
-    /**
-     * @var RuleProviderInterface
-     */
-    protected $provider;
-
-    /**
-     * @var array<string,mixed>
-     */
-    protected $options = [
-        'regexp'    => self::LOWERCASE_NUMBERS_DASHES,
-        'separator' => '-',
-        'lowercase' => true,
-        'lowercase_after_regexp' => false,
-        'trim' => true,
-        'strip_tags' => false,
-        'rulesets'  => [
-            'default',
-            // Languages are preferred if they appear later, list is ordered by number of
-            // websites in that language
-            // https://en.wikipedia.org/wiki/Languages_used_on_the_Internet#Content_languages_for_websites
-            'armenian',
-            'azerbaijani',
-            'burmese',
-            'hindi',
-            'georgian',
-            'norwegian',
-            'vietnamese',
-            'ukrainian',
-            'latvian',
-            'finnish',
-            'greek',
-            'czech',
-            'arabic',
-            'slovak',
-            'turkish',
-            'polish',
-            'german',
-            'russian',
-            'romanian'
-        ],
-    ];
-
-    /**
-     * @param array                 $options
-     * @param RuleProviderInterface $provider
-     */
-    public function __construct(array $options = [], RuleProviderInterface $provider = null)
-    {
-        $this->options  = array_merge($this->options, $options);
-        $this->provider = $provider ? $provider : new DefaultRuleProvider();
-
-        foreach ($this->options['rulesets'] as $ruleSet) {
-            $this->activateRuleSet($ruleSet);
-        }
-    }
-
-    /**
-     * Returns the slug-version of the string.
-     *
-     * @param string            $string  String to slugify
-     * @param string|array|null $options Options
-     *
-     * @return string Slugified version of the string
-     */
-    public function slugify($string, $options = null)
-    {
-        // BC: the second argument used to be the separator
-        if (is_string($options)) {
-            $separator            = $options;
-            $options              = [];
-            $options['separator'] = $separator;
-        }
-
-        $options = array_merge($this->options, (array) $options);
-
-        // Add a custom ruleset without touching the default rules
-        if (isset($options['ruleset'])) {
-            $rules = array_merge($this->rules, $this->provider->getRules($options['ruleset']));
-        } else {
-            $rules = $this->rules;
-        }
-
-        $string = ($options['strip_tags'])
-            ? strip_tags($string)
-            : $string;
-
-        $string = strtr($string, $rules);
-        unset($rules);
-
-        if ($options['lowercase'] && !$options['lowercase_after_regexp']) {
-            $string = mb_strtolower($string);
-        }
-
-        $string = preg_replace($options['regexp'], $options['separator'], $string);
-
-        if ($options['lowercase'] && $options['lowercase_after_regexp']) {
-            $string = mb_strtolower($string);
-        }
-
-        return ($options['trim'])
-            ? trim($string, $options['separator'])
-            : $string;
-    }
-
-    /**
-     * Adds a custom rule to Slugify.
-     *
-     * @param string $character   Character
-     * @param string $replacement Replacement character
-     *
-     * @return Slugify
-     */
-    public function addRule($character, $replacement)
-    {
-        $this->rules[$character] = $replacement;
-
-        return $this;
-    }
-
-    /**
-     * Adds multiple rules to Slugify.
-     *
-     * @param array <string,string> $rules
-     *
-     * @return Slugify
-     */
-    public function addRules(array $rules)
-    {
-        foreach ($rules as $character => $replacement) {
-            $this->addRule($character, $replacement);
-        }
-
-        return $this;
-    }
-
-    /**
-     * @param string $ruleSet
-     *
-     * @return Slugify
-     */
-    public function activateRuleSet($ruleSet)
-    {
-        return $this->addRules($this->provider->getRules($ruleSet));
-    }
-
-    /**
-     * Static method to create new instance of {@see Slugify}.
-     *
-     * @param array <string,mixed> $options
-     *
-     * @return Slugify
-     */
-    public static function create(array $options = [])
-    {
-        return new static($options);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

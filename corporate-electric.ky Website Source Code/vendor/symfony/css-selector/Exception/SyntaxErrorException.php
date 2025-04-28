@@ -1,65 +1,44 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\CssSelector\Exception;
-
-use Symfony\Component\CssSelector\Parser\Token;
-
-/**
- * ParseException is thrown when a CSS selector syntax is not valid.
- *
- * This component is a port of the Python cssselect library,
- * which is copyright Ian Bicking, @see https://github.com/SimonSapin/cssselect.
- *
- * @author Jean-François Simon <jeanfrancois.simon@sensiolabs.com>
- */
-class SyntaxErrorException extends ParseException
-{
-    /**
-     * @return self
-     */
-    public static function unexpectedToken(string $expectedValue, Token $foundToken)
-    {
-        return new self(sprintf('Expected %s, but %s found.', $expectedValue, $foundToken));
-    }
-
-    /**
-     * @return self
-     */
-    public static function pseudoElementFound(string $pseudoElement, string $unexpectedLocation)
-    {
-        return new self(sprintf('Unexpected pseudo-element "::%s" found %s.', $pseudoElement, $unexpectedLocation));
-    }
-
-    /**
-     * @return self
-     */
-    public static function unclosedString(int $position)
-    {
-        return new self(sprintf('Unclosed/invalid string at %s.', $position));
-    }
-
-    /**
-     * @return self
-     */
-    public static function nestedNot()
-    {
-        return new self('Got nested ::not().');
-    }
-
-    /**
-     * @return self
-     */
-    public static function stringAsFunctionArgument()
-    {
-        return new self('String not allowed as function argument.');
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

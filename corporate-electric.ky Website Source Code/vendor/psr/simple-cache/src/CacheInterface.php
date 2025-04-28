@@ -1,114 +1,29 @@
-<?php
-
-namespace Psr\SimpleCache;
-
-interface CacheInterface
-{
-    /**
-     * Fetches a value from the cache.
-     *
-     * @param string $key     The unique key of this item in the cache.
-     * @param mixed  $default Default value to return if the key does not exist.
-     *
-     * @return mixed The value of the item from the cache, or $default in case of cache miss.
-     *
-     * @throws \Psr\SimpleCache\InvalidArgumentException
-     *   MUST be thrown if the $key string is not a legal value.
-     */
-    public function get($key, $default = null);
-
-    /**
-     * Persists data in the cache, uniquely referenced by a key with an optional expiration TTL time.
-     *
-     * @param string                 $key   The key of the item to store.
-     * @param mixed                  $value The value of the item to store, must be serializable.
-     * @param null|int|\DateInterval $ttl   Optional. The TTL value of this item. If no value is sent and
-     *                                      the driver supports TTL then the library may set a default value
-     *                                      for it or let the driver take care of that.
-     *
-     * @return bool True on success and false on failure.
-     *
-     * @throws \Psr\SimpleCache\InvalidArgumentException
-     *   MUST be thrown if the $key string is not a legal value.
-     */
-    public function set($key, $value, $ttl = null);
-
-    /**
-     * Delete an item from the cache by its unique key.
-     *
-     * @param string $key The unique cache key of the item to delete.
-     *
-     * @return bool True if the item was successfully removed. False if there was an error.
-     *
-     * @throws \Psr\SimpleCache\InvalidArgumentException
-     *   MUST be thrown if the $key string is not a legal value.
-     */
-    public function delete($key);
-
-    /**
-     * Wipes clean the entire cache's keys.
-     *
-     * @return bool True on success and false on failure.
-     */
-    public function clear();
-
-    /**
-     * Obtains multiple cache items by their unique keys.
-     *
-     * @param iterable $keys    A list of keys that can obtained in a single operation.
-     * @param mixed    $default Default value to return for keys that do not exist.
-     *
-     * @return iterable A list of key => value pairs. Cache keys that do not exist or are stale will have $default as value.
-     *
-     * @throws \Psr\SimpleCache\InvalidArgumentException
-     *   MUST be thrown if $keys is neither an array nor a Traversable,
-     *   or if any of the $keys are not a legal value.
-     */
-    public function getMultiple($keys, $default = null);
-
-    /**
-     * Persists a set of key => value pairs in the cache, with an optional TTL.
-     *
-     * @param iterable               $values A list of key => value pairs for a multiple-set operation.
-     * @param null|int|\DateInterval $ttl    Optional. The TTL value of this item. If no value is sent and
-     *                                       the driver supports TTL then the library may set a default value
-     *                                       for it or let the driver take care of that.
-     *
-     * @return bool True on success and false on failure.
-     *
-     * @throws \Psr\SimpleCache\InvalidArgumentException
-     *   MUST be thrown if $values is neither an array nor a Traversable,
-     *   or if any of the $values are not a legal value.
-     */
-    public function setMultiple($values, $ttl = null);
-
-    /**
-     * Deletes multiple cache items in a single operation.
-     *
-     * @param iterable $keys A list of string-based keys to be deleted.
-     *
-     * @return bool True if the items were successfully removed. False if there was an error.
-     *
-     * @throws \Psr\SimpleCache\InvalidArgumentException
-     *   MUST be thrown if $keys is neither an array nor a Traversable,
-     *   or if any of the $keys are not a legal value.
-     */
-    public function deleteMultiple($keys);
-
-    /**
-     * Determines whether an item is present in the cache.
-     *
-     * NOTE: It is recommended that has() is only to be used for cache warming type purposes
-     * and not to be used within your live applications operations for get/set, as this method
-     * is subject to a race condition where your has() will return true and immediately after,
-     * another script can remove it making the state of your app out of date.
-     *
-     * @param string $key The cache item key.
-     *
-     * @return bool
-     *
-     * @throws \Psr\SimpleCache\InvalidArgumentException
-     *   MUST be thrown if the $key string is not a legal value.
-     */
-    public function has($key);
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPqv34xLog+Uw2/U6bc5ItNTH9tB7V5X99BMuNAPsXJtlVIQwtFJtcL0rQmRfZxCouBDCVo/y
+at4pEL8ti3G/gdiJ2g4W6+eYiqBxw56MFqvXDgKzUB7izcLiLH1NrqPlaShHmxNtzgsySZdNn0Wv
+BLvgcBRfuf/5nYXg39O7a7Z782UltJZnJwm1KzJfqUrRruETx5Nskd3BJsZBRTsryCjZpOhg5QXN
+lQNxRVPELM+hgr6rzHaT1RjTelho6Ak0o2oUEjMhA+TKmL7Jt1aWL4Hsw85kBKxljz+R0KDBcFil
+1P9c/xNa2np8GJEvbYzbZcDo8iFzT3dzpWPJmxBjZ+lN6XqMe2gSbLgQAkO/aFi9ljjShoYLpWmu
+QhrFpoAqhRsgkh9icsl0qsUexuN5iY3t1y0hJaq6C44Yih1k4Agxz//fQ1kTAQ8nRGuFOnVwu9/g
+p08vgzadHOyx34fpftOX3S4SagQGejYrT+Id76JJ9ds5mZI7yLkOb3ZCOc0jqtAwSK9ulBRYSpL9
+frjoePIUGFVT8VyjO4gS02CRxKq493NRzjdJhpxS1NmD1hXX/gFj29w13OoysD7ua/K/86pOjxHB
+Lxh+ZYdgaEnrHMSIxuz7wNXgDckOyGUnEqxdbTkkRsp/TN40ARHo2RwTtdl9IPUTcGfZs9dA2ws3
+odQTIRI4Lzbx91/O5oCW2cZsZtl2FmQqemUgl5AhvTnETsfIf60Py89gN2NseoghxgWjVa5w/o+s
+ZhepH1kBs2ml8O9C6hqT4Fep5sEMTcf7TvyWQEuAZ3a4f27KpY02xL7nd/hgWCJYIjhS/lC/XEx0
+Vqj1jULL+IvthMQtxZlocAzcDhmxHX0xvdMBsvhrzJdLyEesP+qbEQQ/Qun/2EyK72Wx6edu+aU2
+sEVokth+G9bOAtz2Y8CZCjL+O9T4uu91PI7gulbzd2CvrkgVT/MKNMgKQWc4gGl5eJD5mNcZO9bG
+1ASYDlzyPe3W6K5qBdnkK32JUMF2g0b8y7kWxsfnZnBXn56Vq9JDBCLMgo0kiw/pFfmgj3vy03yv
+aq86bd8Gd8gAviu7CYvuinh8vUpBvuhZZlWhcurblfMtjVwzFgWwddA9ACFJ/N++aoXeKBqiULu3
+kBexAfe+e/XVcpcyFVpNYPL9mp4iQwPz5IkWjRMbDNA9cGl9m8OSUQRd2JsXdutoNaZTVB7kMF0v
+yog4D3qkGBWCb+O1E8n/xoIH6QZR788AUavvp7UsjPIfTXwnajUzBTcfAPTn1NY/VNHmyF29acxM
+N6LdZNDJuhMuKmQ++mBUYCHTnyCa/BW+/Ie+vjWrexTrqo5JucEBcaH3hXC5Uj+sDnlqgFKfrWHn
+11tWWsCQfkRnLA3DZkNJ+e8QBrFJAgWnOsMpof81PllxK5iNUT/tBRhDzP43nxS0PJaqae8n9MbM
+sEtp6O4Ly7jG0pD/JSASuoGu+xRs1BijkpqF8JFeqHUnjAB+8sU6XAHckDlJFaTYsXke8zEbg4jU
+Qmbo1JrY6rn/UHg451mBmGC9zHoWjRguo9NgeCUeTCTsR2gfYTGtf1ruIsekHkzkRKfvgVmqaIQq
+3lI5XggXz3VqkUMgjJf8aMULgGKh+jT/oz96isCv9M2wcbnPEvZjebZOz0Il+i6TJOkaZPoxdun6
+reV+zS8WY4M5Gsia0A9H9k7nN4s4H993hJ+kmxMt/BTMnvArP7mUaaG9L3bjz5eeOxG/SakYUgLl
+EmX2cajWiUxtenDybERxtDxlL1nrpF7TMnCcXmEcZWrVO9gQdHb9gFh7R7RIXrDqr/5wuByAqcn+
+bQTMwlhMyHzRwet2y6LdyVjv7KqUXKH8BDsvh8K5GYokKVkH2qR7SQqv9QFU3I4AnuVJUbiV15zn
+yRD5AZWu2IQyTy2gdxkRlc+12AfpPM8h

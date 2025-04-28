@@ -1,71 +1,52 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Predis\Cluster\Distributor;
-
-/**
- * This class implements an hashring-based distributor that uses the same
- * algorithm of libketama to distribute keys in a cluster using client-side
- * sharding.
- *
- * @author Daniele Alessandri <suppakilla@gmail.com>
- * @author Lorenzo Castelli <lcastelli@gmail.com>
- */
-class KetamaRing extends HashRing
-{
-    const DEFAULT_REPLICAS = 160;
-
-    /**
-     * @param mixed $nodeHashCallback Callback returning a string used to calculate the hash of nodes.
-     */
-    public function __construct($nodeHashCallback = null)
-    {
-        parent::__construct($this::DEFAULT_REPLICAS, $nodeHashCallback);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function addNodeToRing(&$ring, $node, $totalNodes, $replicas, $weightRatio)
-    {
-        $nodeObject = $node['object'];
-        $nodeHash = $this->getNodeHash($nodeObject);
-        $replicas = (int) floor($weightRatio * $totalNodes * ($replicas / 4));
-
-        for ($i = 0; $i < $replicas; ++$i) {
-            $unpackedDigest = unpack('V4', md5("$nodeHash-$i", true));
-
-            foreach ($unpackedDigest as $key) {
-                $ring[$key] = $nodeObject;
-            }
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function hash($value)
-    {
-        $hash = unpack('V', md5($value, true));
-
-        return $hash[1];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function wrapAroundStrategy($upper, $lower, $ringKeysCount)
-    {
-        // Binary search for the first item in ringkeys with a value greater
-        // or equal to the key. If no such item exists, return the first item.
-        return $lower < $ringKeysCount ? $lower : 0;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+OBFYnLV0

@@ -1,85 +1,50 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Finder;
-
-/**
- * Extends \SplFileInfo to support relative paths.
- *
- * @author Fabien Potencier <fabien@symfony.com>
- */
-class SplFileInfo extends \SplFileInfo
-{
-    private $relativePath;
-    private $relativePathname;
-
-    /**
-     * @param string $file             The file name
-     * @param string $relativePath     The relative path
-     * @param string $relativePathname The relative path name
-     */
-    public function __construct(string $file, string $relativePath, string $relativePathname)
-    {
-        parent::__construct($file);
-        $this->relativePath = $relativePath;
-        $this->relativePathname = $relativePathname;
-    }
-
-    /**
-     * Returns the relative path.
-     *
-     * This path does not contain the file name.
-     *
-     * @return string the relative path
-     */
-    public function getRelativePath()
-    {
-        return $this->relativePath;
-    }
-
-    /**
-     * Returns the relative path name.
-     *
-     * This path contains the file name.
-     *
-     * @return string the relative path name
-     */
-    public function getRelativePathname()
-    {
-        return $this->relativePathname;
-    }
-
-    public function getFilenameWithoutExtension(): string
-    {
-        $filename = $this->getFilename();
-
-        return pathinfo($filename, \PATHINFO_FILENAME);
-    }
-
-    /**
-     * Returns the contents of the file.
-     *
-     * @return string the contents of the file
-     *
-     * @throws \RuntimeException
-     */
-    public function getContents()
-    {
-        set_error_handler(function ($type, $msg) use (&$error) { $error = $msg; });
-        $content = file_get_contents($this->getPathname());
-        restore_error_handler();
-        if (false === $content) {
-            throw new \RuntimeException($error);
-        }
-
-        return $content;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+UxW=

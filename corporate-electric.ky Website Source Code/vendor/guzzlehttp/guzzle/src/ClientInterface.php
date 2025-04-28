@@ -1,84 +1,29 @@
-<?php
-
-namespace GuzzleHttp;
-
-use GuzzleHttp\Exception\GuzzleException;
-use GuzzleHttp\Promise\PromiseInterface;
-use Psr\Http\Message\RequestInterface;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\UriInterface;
-
-/**
- * Client interface for sending HTTP requests.
- */
-interface ClientInterface
-{
-    /**
-     * The Guzzle major version.
-     */
-    const MAJOR_VERSION = 7;
-
-    /**
-     * Send an HTTP request.
-     *
-     * @param RequestInterface $request Request to send
-     * @param array            $options Request options to apply to the given
-     *                                  request and to the transfer.
-     *
-     * @throws GuzzleException
-     */
-    public function send(RequestInterface $request, array $options = []): ResponseInterface;
-
-    /**
-     * Asynchronously send an HTTP request.
-     *
-     * @param RequestInterface $request Request to send
-     * @param array            $options Request options to apply to the given
-     *                                  request and to the transfer.
-     */
-    public function sendAsync(RequestInterface $request, array $options = []): PromiseInterface;
-
-    /**
-     * Create and send an HTTP request.
-     *
-     * Use an absolute path to override the base path of the client, or a
-     * relative path to append to the base path of the client. The URL can
-     * contain the query string as well.
-     *
-     * @param string              $method  HTTP method.
-     * @param string|UriInterface $uri     URI object or string.
-     * @param array               $options Request options to apply.
-     *
-     * @throws GuzzleException
-     */
-    public function request(string $method, $uri, array $options = []): ResponseInterface;
-
-    /**
-     * Create and send an asynchronous HTTP request.
-     *
-     * Use an absolute path to override the base path of the client, or a
-     * relative path to append to the base path of the client. The URL can
-     * contain the query string as well. Use an array to provide a URL
-     * template and additional variables to use in the URL template expansion.
-     *
-     * @param string              $method  HTTP method
-     * @param string|UriInterface $uri     URI object or string.
-     * @param array               $options Request options to apply.
-     */
-    public function requestAsync(string $method, $uri, array $options = []): PromiseInterface;
-
-    /**
-     * Get a client configuration option.
-     *
-     * These options include default request options of the client, a "handler"
-     * (if utilized by the concrete client), and a "base_uri" if utilized by
-     * the concrete client.
-     *
-     * @param string|null $option The config option to retrieve.
-     *
-     * @return mixed
-     *
-     * @deprecated ClientInterface::getConfig will be removed in guzzlehttp/guzzle:8.0.
-     */
-    public function getConfig(?string $option = null);
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPzdI7KFFEEPqbcQ8O9NLIS0s33ICtsLH3Dig7Vzt5+4VLmPJKCKdop/vMqb5WsYGZSf9k+Bq
+q+vCFYS8RBGtnqtT27+naOtF2iwWGqrw7crNYAOzIkcz+or38Dm+kDwtSTtdg1IyUxhiHz8uCC0J
+p/8jQpkLZ6lbrbOh4WIjX+9XwgX4bwcRZXKgchZ511DthJd0wMMytJ/QuqiXwqx1PejhojGDs1c3
+5VssIkGTsu8z7wsQv24EaJ45Yl5hvfUOBWvogZhLgoldLC5HqzmP85H4TkWgQQj1s9d+MFElG6qJ
+Cr/QI1owrJxOIpSFyx+Mv7++7p0xmmqdRCjWJDlNQCWsYB9QuhGuntKLEH7KxCx3N2Y7V9WqmBF3
+at30sSS0Wk1omKCm+OGswkriuw6cdIlTyFlyEvZj+sfJrqlqbjnPuEaT/ZzwI/wsO1KdHYJeOT+4
+jHg/TW3QQ5vq7qWJNdrqySF3ASR6td5OaAETOu7udxTMpgjbwDNYoIQJdce0gaywUOw7r7j4svaj
+CkDTn5r6lzlEnx11cUrOuvFfPEOKkYStexqlo8KIwwKDn15q6lyJ1odW/KPwaMfAX8P9Ib00OdKd
+/MKFAccogDUXiuX9E2ONahhxqaUY54WAzbBOCZ9qCrS6eXKaAnBldA/0z2EB68yaUNXUyd1td79t
+H7EJL/tFCX8MSS7IK93jwLFgIOdqy7+4J3NJpkDppirzOdYQCWhI8Zac83wOf8JqVbv+eyam1Mbd
+jWMlLHliZPnAo8JkM98xL6eM2UQNwUYeGRCNryoqLrmilBUO//HKgnjinuEWAwx+O6PZ4sjNfW2H
+dB7tvqKjQDWFq4ECcN+vFT3eyAshcHXAuLdf+JRDX2IWAUrRf4mcQxJPjzxEzBD5HILof0zmnV/m
+mDrrdmr8HiKKl15bAlvKFOGrL1fJQIHvDvbor4V8nKUHJLI99Z6Reyk8np0RGPLomBxvimS5CP3J
+axpRlSW5uo9iDYM+Qt4XnwLzt5ikpKMWihQnsEtzjx3wMPJDTeZFYqvoaz8M85y9yTzh1UM3Eg5H
+roBzqpMxU1rC7yH/fs7zl6+NuLHx4GHrf6C1tx+nE5LE6D10M4eaClZOt2uzWDqZAi9usnBa7r3A
+G+BO8fPZjb3X5I06/uFdCUAiKvULos9CfCqlQzVx45nHbP9A9xpHawqj595HkG6klvI2m6hV21f8
++RNEhEmYwFeeBnOqic/U7vuXEZRxRbbLzHOJ6KX+nuL/Fa1Tna0I6uDWL02IsytcQYDqypBljVY0
+q9uSOJX35P2ro/LLHHXCM59fOYqK3wIAjQaBHTxr9s0emNILFlCn3zfyM8RhSn/a9sfd7Sxd/FZP
++POBuFG9PlJDTSJ00841JO/kHX4NSBCC4Uoo67y5dL530lAQFceUorWdritp6t+UqcwHW3y2eeyF
+dSyxHFvdeY1DQvc1C3L4yPQyzau9nINT013P3k/7bbKKHHegKmltvF/kNHtU950kaZutekIMvrDs
+cI3hJ+9gfPYnU7W8MJGQHN5YbwYW1nGumUw6+RZ9eApvzsV7mv/dBj5pii2ai/uptufBR28hqkd1
+lT04QwI3wVXaStWHhtpa3DUO7803m9KAl+qF9R7FvNdnpDSgYGq3L803wBe1jLr3YYDR0md8GuAS
+qOP3rwogmpAAbF+HKct1unnXeHzwhqX7ncyWdQn7WoMLwhOHkKq8HpV7VxuO8wV4ZYx2cLs9QqrC
+8wVyh+c0yPnCTJ0JFPAJZZ2BU4+46nDVhXEsjr4We3dFz7iYlEsdV5T020jFJgSG9qiPokTfTt1i
+PqAO9HDd3s+wHH2V7Qwu25GoPciSwbv2VHJTkPtXTQks5hwvT+Po379nroAT0P1BygNOpMwcVF7K
+hEhdiSEs69BOl15PXUO=

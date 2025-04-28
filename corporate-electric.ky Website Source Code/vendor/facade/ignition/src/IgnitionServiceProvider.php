@@ -1,448 +1,287 @@
-<?php
-
-namespace Facade\Ignition;
-
-use Exception;
-use Facade\FlareClient\Flare;
-use Facade\FlareClient\Http\Client;
-use Facade\Ignition\Commands\SolutionMakeCommand;
-use Facade\Ignition\Commands\SolutionProviderMakeCommand;
-use Facade\Ignition\Commands\TestCommand;
-use Facade\Ignition\Context\LaravelContextDetector;
-use Facade\Ignition\DumpRecorder\DumpRecorder;
-use Facade\Ignition\ErrorPage\IgnitionWhoopsHandler;
-use Facade\Ignition\ErrorPage\Renderer;
-use Facade\Ignition\Exceptions\InvalidConfig;
-use Facade\Ignition\Http\Controllers\ExecuteSolutionController;
-use Facade\Ignition\Http\Controllers\HealthCheckController;
-use Facade\Ignition\Http\Controllers\ScriptController;
-use Facade\Ignition\Http\Controllers\ShareReportController;
-use Facade\Ignition\Http\Controllers\StyleController;
-use Facade\Ignition\Http\Middleware\IgnitionConfigValueEnabled;
-use Facade\Ignition\Http\Middleware\IgnitionEnabled;
-use Facade\Ignition\Logger\FlareHandler;
-use Facade\Ignition\LogRecorder\LogRecorder;
-use Facade\Ignition\Middleware\AddDumps;
-use Facade\Ignition\Middleware\AddEnvironmentInformation;
-use Facade\Ignition\Middleware\AddGitInformation;
-use Facade\Ignition\Middleware\AddLogs;
-use Facade\Ignition\Middleware\AddQueries;
-use Facade\Ignition\Middleware\AddSolutions;
-use Facade\Ignition\Middleware\CustomizeGrouping;
-use Facade\Ignition\Middleware\SetNotifierName;
-use Facade\Ignition\QueryRecorder\QueryRecorder;
-use Facade\Ignition\SolutionProviders\BadMethodCallSolutionProvider;
-use Facade\Ignition\SolutionProviders\DefaultDbNameSolutionProvider;
-use Facade\Ignition\SolutionProviders\IncorrectValetDbCredentialsSolutionProvider;
-use Facade\Ignition\SolutionProviders\InvalidRouteActionSolutionProvider;
-use Facade\Ignition\SolutionProviders\MergeConflictSolutionProvider;
-use Facade\Ignition\SolutionProviders\MissingAppKeySolutionProvider;
-use Facade\Ignition\SolutionProviders\MissingColumnSolutionProvider;
-use Facade\Ignition\SolutionProviders\MissingImportSolutionProvider;
-use Facade\Ignition\SolutionProviders\MissingLivewireComponentSolutionProvider;
-use Facade\Ignition\SolutionProviders\MissingMixManifestSolutionProvider;
-use Facade\Ignition\SolutionProviders\MissingPackageSolutionProvider;
-use Facade\Ignition\SolutionProviders\RunningLaravelDuskInProductionProvider;
-use Facade\Ignition\SolutionProviders\SolutionProviderRepository;
-use Facade\Ignition\SolutionProviders\TableNotFoundSolutionProvider;
-use Facade\Ignition\SolutionProviders\UndefinedPropertySolutionProvider;
-use Facade\Ignition\SolutionProviders\UndefinedVariableSolutionProvider;
-use Facade\Ignition\SolutionProviders\UnknownValidationSolutionProvider;
-use Facade\Ignition\SolutionProviders\ViewNotFoundSolutionProvider;
-use Facade\Ignition\Views\Engines\CompilerEngine;
-use Facade\Ignition\Views\Engines\PhpEngine;
-use Facade\IgnitionContracts\SolutionProviderRepository as SolutionProviderRepositoryContract;
-use Illuminate\Foundation\Application;
-use Illuminate\Log\Events\MessageLogged;
-use Illuminate\Log\LogManager;
-use Illuminate\Queue\QueueManager;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\ServiceProvider;
-use Illuminate\View\Engines\CompilerEngine as LaravelCompilerEngine;
-use Illuminate\View\Engines\PhpEngine as LaravelPhpEngine;
-use Monolog\Logger;
-use Throwable;
-use Whoops\Handler\HandlerInterface;
-
-class IgnitionServiceProvider extends ServiceProvider
-{
-    public function boot()
-    {
-        if ($this->app->runningInConsole()) {
-            $this->publishes([
-                __DIR__.'/../config/flare.php' => config_path('flare.php'),
-            ], 'flare-config');
-
-            $this->publishes([
-                __DIR__.'/../config/ignition.php' => config_path('ignition.php'),
-            ], 'ignition-config');
-        }
-
-        $this
-            ->registerViewEngines()
-            ->registerHousekeepingRoutes()
-            ->registerLogHandler()
-            ->registerCommands();
-
-        if ($this->app->bound('queue')) {
-            $this->setupQueue($this->app->get('queue'));
-        }
-
-        $this->app->make(QueryRecorder::class)->register();
-        $this->app->make(LogRecorder::class)->register();
-        $this->app->make(DumpRecorder::class)->register();
-    }
-
-    public function register()
-    {
-        $this->mergeConfigFrom(__DIR__.'/../config/flare.php', 'flare');
-        $this->mergeConfigFrom(__DIR__.'/../config/ignition.php', 'ignition');
-
-        $this
-            ->registerSolutionProviderRepository()
-            ->registerExceptionRenderer()
-            ->registerWhoopsHandler()
-            ->registerIgnitionConfig()
-            ->registerFlare()
-            ->registerLogRecorder()
-            ->registerDumpCollector();
-
-        if (config('flare.reporting.report_queries')) {
-            $this->registerQueryRecorder();
-        }
-
-        if (config('flare.reporting.anonymize_ips')) {
-            $this->app->get(Flare::class)->anonymizeIp();
-        }
-
-        $this->registerBuiltInMiddleware();
-    }
-
-    protected function registerViewEngines()
-    {
-        if (! $this->hasCustomViewEnginesRegistered()) {
-            return $this;
-        }
-
-        $this->app->make('view.engine.resolver')->register('php', function () {
-            return new PhpEngine($this->app['files']);
-        });
-
-        $this->app->make('view.engine.resolver')->register('blade', function () {
-            if (class_exists(\Livewire\CompilerEngineForIgnition::class)) {
-                return new \Livewire\CompilerEngineForIgnition($this->app['blade.compiler']);
-            }
-
-            return new CompilerEngine($this->app['blade.compiler']);
-        });
-
-        return $this;
-    }
-
-    protected function registerHousekeepingRoutes()
-    {
-        if ($this->app->runningInConsole()) {
-            return $this;
-        }
-
-        Route::group([
-            'as' => 'ignition.',
-            'prefix' => config('ignition.housekeeping_endpoint_prefix', '_ignition'),
-            'middleware' => [IgnitionEnabled::class],
-        ], function () {
-            Route::get('health-check', HealthCheckController::class)->name('healthCheck');
-
-            Route::post('execute-solution', ExecuteSolutionController::class)
-                ->middleware(IgnitionConfigValueEnabled::class.':enableRunnableSolutions')
-                ->name('executeSolution');
-
-            Route::post('share-report', ShareReportController::class)
-                ->middleware(IgnitionConfigValueEnabled::class.':enableShareButton')
-                ->name('shareReport');
-
-            Route::get('scripts/{script}', ScriptController::class)->name('scripts');
-            Route::get('styles/{style}', StyleController::class)->name('styles');
-        });
-
-        return $this;
-    }
-
-    protected function registerSolutionProviderRepository()
-    {
-        $this->app->singleton(SolutionProviderRepositoryContract::class, function () {
-            $defaultSolutions = $this->getDefaultSolutions();
-
-            return new SolutionProviderRepository($defaultSolutions);
-        });
-
-        return $this;
-    }
-
-    protected function registerExceptionRenderer()
-    {
-        $this->app->bind(Renderer::class, function () {
-            return new Renderer(__DIR__.'/../resources/views/');
-        });
-
-        return $this;
-    }
-
-    protected function registerWhoopsHandler()
-    {
-        $this->app->bind(HandlerInterface::class, function (Application $app) {
-            return $app->make(IgnitionWhoopsHandler::class);
-        });
-
-        return $this;
-    }
-
-    protected function registerIgnitionConfig()
-    {
-        $this->app->singleton(IgnitionConfig::class, function () {
-            $options = [];
-
-            try {
-                if ($configPath = $this->getConfigFileLocation()) {
-                    $options = require $configPath;
-                }
-            } catch (Throwable $e) {
-                // possible open_basedir restriction
-            }
-
-            return new IgnitionConfig($options);
-        });
-
-        return $this;
-    }
-
-    protected function registerFlare()
-    {
-        $this->app->singleton('flare.http', function () {
-            return new Client(
-                config('flare.key'),
-                config('flare.secret'),
-                config('flare.base_url', 'https://flareapp.io/api')
-            );
-        });
-
-        $this->app->alias('flare.http', Client::class);
-
-        $this->app->singleton(Flare::class, function () {
-            $client = new Flare($this->app->get('flare.http'), new LaravelContextDetector, $this->app);
-            $client->applicationPath(base_path());
-            $client->stage(config('app.env'));
-
-            return $client;
-        });
-
-        return $this;
-    }
-
-    protected function registerLogHandler()
-    {
-        $this->app->singleton('flare.logger', function ($app) {
-            $handler = new FlareHandler($app->make(Flare::class));
-
-            $logLevelString = config('logging.channels.flare.level', 'error');
-
-            $logLevel = $this->getLogLevel($logLevelString);
-
-            $handler->setMinimumReportLogLevel($logLevel);
-
-            $logger = new Logger('Flare');
-            $logger->pushHandler($handler);
-
-            return $logger;
-        });
-
-        if ($this->app['log'] instanceof LogManager) {
-            Log::extend('flare', function ($app) {
-                return $app['flare.logger'];
-            });
-        } else {
-            $this->bindLogListener();
-        }
-
-        return $this;
-    }
-
-    protected function getLogLevel(string $logLevelString): int
-    {
-        $logLevel = Logger::getLevels()[strtoupper($logLevelString)] ?? null;
-
-        if (! $logLevel) {
-            throw InvalidConfig::invalidLogLevel($logLevelString);
-        }
-
-        return $logLevel;
-    }
-
-    protected function registerLogRecorder()
-    {
-        $logCollector = $this->app->make(LogRecorder::class);
-
-        $this->app->singleton(LogRecorder::class);
-
-        $this->app->instance(LogRecorder::class, $logCollector);
-
-        return $this;
-    }
-
-    protected function registerDumpCollector()
-    {
-        $dumpCollector = $this->app->make(DumpRecorder::class);
-
-        $this->app->singleton(DumpRecorder::class);
-
-        $this->app->instance(DumpRecorder::class, $dumpCollector);
-
-        return $this;
-    }
-
-    protected function registerCommands()
-    {
-        $this->app->bind('command.flare:test', TestCommand::class);
-        $this->app->bind('command.make:solution', SolutionMakeCommand::class);
-        $this->app->bind('command.make:solution-provider', SolutionProviderMakeCommand::class);
-
-        if ($this->app['config']->get('flare.key')) {
-            $this->commands(['command.flare:test']);
-        }
-
-        if ($this->app['config']->get('ignition.register_commands', false)) {
-            $this->commands(['command.make:solution']);
-            $this->commands(['command.make:solution-provider']);
-        }
-
-        return $this;
-    }
-
-    protected function registerQueryRecorder()
-    {
-        $queryCollector = $this->app->make(QueryRecorder::class);
-
-        $this->app->singleton(QueryRecorder::class);
-
-        $this->app->instance(QueryRecorder::class, $queryCollector);
-
-        return $this;
-    }
-
-    protected function registerBuiltInMiddleware()
-    {
-        $middleware = collect([
-            SetNotifierName::class,
-            AddEnvironmentInformation::class,
-            AddLogs::class,
-            AddDumps::class,
-            AddQueries::class,
-            AddSolutions::class,
-        ])
-        ->map(function (string $middlewareClass) {
-            return $this->app->make($middlewareClass);
-        });
-
-        if (config('flare.reporting.collect_git_information')) {
-            $middleware[] = (new AddGitInformation());
-        }
-
-        if (! is_null(config('flare.reporting.grouping_type'))) {
-            $middleware[] = new CustomizeGrouping(config('flare.reporting.grouping_type'));
-        }
-
-        foreach ($middleware as $singleMiddleware) {
-            $this->app->get(Flare::class)->registerMiddleware($singleMiddleware);
-        }
-
-        return $this;
-    }
-
-    protected function getDefaultSolutions(): array
-    {
-        return [
-            IncorrectValetDbCredentialsSolutionProvider::class,
-            MissingAppKeySolutionProvider::class,
-            DefaultDbNameSolutionProvider::class,
-            BadMethodCallSolutionProvider::class,
-            TableNotFoundSolutionProvider::class,
-            MissingImportSolutionProvider::class,
-            MissingPackageSolutionProvider::class,
-            InvalidRouteActionSolutionProvider::class,
-            ViewNotFoundSolutionProvider::class,
-            UndefinedVariableSolutionProvider::class,
-            MergeConflictSolutionProvider::class,
-            RunningLaravelDuskInProductionProvider::class,
-            MissingColumnSolutionProvider::class,
-            UnknownValidationSolutionProvider::class,
-            UndefinedPropertySolutionProvider::class,
-            MissingMixManifestSolutionProvider::class,
-            MissingLivewireComponentSolutionProvider::class,
-        ];
-    }
-
-    protected function hasCustomViewEnginesRegistered()
-    {
-        $resolver = $this->app->make('view.engine.resolver');
-
-        if (! $resolver->resolve('php') instanceof LaravelPhpEngine) {
-            return false;
-        }
-
-        if (! $resolver->resolve('blade') instanceof LaravelCompilerEngine) {
-            return false;
-        }
-
-        return true;
-    }
-
-    protected function bindLogListener()
-    {
-        $this->app['log']->listen(function (MessageLogged $messageLogged) {
-            if (config('flare.key')) {
-                try {
-                    $this->app['flare.logger']->log(
-                        $messageLogged->level,
-                        $messageLogged->message,
-                        $messageLogged->context
-                    );
-                } catch (Exception $exception) {
-                    return;
-                }
-            }
-        });
-    }
-
-    protected function getConfigFileLocation(): ?string
-    {
-        $configFullPath = base_path().DIRECTORY_SEPARATOR.'.ignition';
-
-        if (file_exists($configFullPath)) {
-            return $configFullPath;
-        }
-
-        $configFullPath = Arr::get($_SERVER, 'HOME', '').DIRECTORY_SEPARATOR.'.ignition';
-
-        if (file_exists($configFullPath)) {
-            return $configFullPath;
-        }
-
-        return null;
-    }
-
-    protected function setupQueue(QueueManager $queue)
-    {
-        $queue->looping(function () {
-            $this->app->get(Flare::class)->reset();
-
-            if (config('flare.reporting.report_queries')) {
-                $this->app->make(QueryRecorder::class)->reset();
-            }
-
-            $this->app->make(LogRecorder::class)->reset();
-
-            $this->app->make(DumpRecorder::class)->reset();
-        });
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPyV1715oK+Kc2p+9CeDVVDTzonX8NpN2G+cBQfjQgZ1TmfRotIdymK6sDJ7HrmvyZxqcn6eS
+R9G5ApwRSChdpITWsloPNFNMrM0n3TVSrJOKEw9wGO9afTLpY5qN6oELzh1Fb43QceRuVLllwejs
+MCaJKzR2N2Dw+DmFNWIvjAxSQxP+GTEiMnW/q/oaTP0VVfpyw+NkPuuOEb0OrZLG/o17AMeMYuCi
+jDtO2zoJyKfsHyfxkYYOI8Fg/1YA3m82V04ZKZhLgoldLC5HqzmP85H4TkYOQBcNntiCfaEzNYUZ
+CrVQFMhmH1VmtKZEagxzzZl43zFL19sVs/fI3Y4XXVxwkalYkZAtRvP293KC1SgDM6xNHSqvGa81
+BIN6zkTU9wmRULzFkUXlKz+JHXzSo2EUlQr9znxOLpdal+Bkc4foi0UaIAG65jWTKFId9MFLdSuF
+b6zzZJXaHaxqaHUjzj06gz4hcgUAWnk2vd7DkqvIWtzjZrh8634psk5DDkHI/d0WKwde1Ec4PPhT
+t5F+en6c3SN14tMMi3TKvQ8NHrq+q5prANRGXH7aIi86OjMN0Uo4tpKcMmpD5FHkX37oYhWOPPEv
+JGe1iQKKsB8FaY00O7buZhjeDI2TEfoeAsvh7CixBBPaveSxTdkeDGV8iNkcOgaVxOV+zKoCFNM8
+YcFfpPii6sEsIvXIQPI5oZybi+oNPv2HiRo1KktP9oNlzSmq6IK1nagZqr+pjnAoDkmVifYjXpCh
+tocc3URe7ltZi7+Tius5e8gvnyIi2/OaculnsXccyvkrWeozsxFtv12RQJM8z03bb/0E6kOiCUmW
+o68jd0JFCHZ7bsW78BXv4QQIQIQTFNNo4Z3EJF03+XQGAp0uMRxqguspauSfyueNPeUJQgDJR6zx
+A4WHGx3EWgXhQqlMlJJu69aNrev6Nq14A9Fn1rUJj+O1BmjRr6qizfCQOuEHCaNi1MSvfMiIZnbi
+J+CIG6C2h6sBo1ukh8UmVapin+chRzJhrXPiHRf/ZnSooHDS1ttFgpvjD5wKb+hdlL1bNPbSUVJZ
+/fvoJCgGizKmmdIzkbj4knguslBYB50d1pMamSxNcnW/o5Hd6Nk8+5LMkCdw+uLqRmcRyX49qL9l
+qttHIX3/gqP39eDD628fTcEYuJErT/sVJ0SM9w+TeaiE2E7KDaNIVJtwQgT/mT2apuX/vrj+so+E
+K4/I2gGOJy1oY8/UrkS9t4aMI057/uudq+PdITEfiSczFMztDZsV03OTBmZWkvDgHSQ1+U9Qm7NA
+qrLdmMvz/UgVXckUR/n/HoCnpdpcRaMR5jJnruxhQ6binwKkZBeK1TPW4Sz5J1m2gwtvs3rV8FZm
+S6yUbnokqZv61yg5fzMuCVn4Z3CmugNf+/zkCx7I3O1CStS1wKDCjvYP5B2T6S3aDeoIFRyexpO0
+JsyspjS1hfu+eWRy9eu3lpboraMaoiDS10j3GFpFQ0GFD4YvY7qaMiRWiROcvin8J9cTeUbejmSJ
+5/N6ZD/jhfCRqwlDB6aZtnK87UV3dJ6FqSuTTYJwlCX9ZIvt2LBsXknAcgKqEiD8LpKZJ9T+s8y5
+T4i9ueaMx/EEt4IoDWx5vQFFStCfHksC3F6vqJvDg6wq0+IHXZdxWZvHPVil729gSf8d40H0HR+n
+stMkkudr4NcsRXQZ7vWp9ZIS/THh4rKeaFbJzumkbspztQTHKfF6Jj2Bh2qedPz20Z8vcS++YCuN
+xXs5zdWpRVnG/S7KGP4SNJ1j2xb1Dzcti7wweuqiRsebA0RgfheorQ8Rgi9BwjiadIW8U//Dk/vg
+17zpG2+Dbrw1M8MZohkKi48/aNSdCALW33Ch6pyeob1zmPoNYCcmGIPJ6DzDrsz27YuDz8Fw7kX2
+mHwFttV+gU1vGts14ST2osJvheUIB6dHZxfeLxEUKSUKQvd9dXiqkgPHeNBCPxvgKxB4d+e1xU1l
+YDVFIEPJvU2gUNJSHOsSq0r2A2rfUih8iHCWMyrwJ9ZogHs1/kJiE3jcdMjKLMv85jMGt/Bqi8SA
+mrt/d/PVgzgvPZ6u/C+Fx2n7MGkTJLl+YBEsV07ayHseZyyEpXN0o5GpYX/TVrERX9qx41SAztQg
+vJYCKNxL8QfmpQPgh1qBec9d5q5CrX63ksXVyZjAp54L9/Xz78n0k6s1V8QVkEmYx6HD+FUcZAxC
+MLnAETOAgemqO0M1pU1GmGaTJSPI4HPoOi/KybW4M6E9ftfeUKl/KQ5NAFQhhC+JW59vJUaUZBZj
+6T5VnrhBRRsUFIX13RlUc81LJYeuoSHO5pczXJ0AVzwyCFcGmXw2wE/yt7ds6UvnWWWogC9B3HM2
+Mh4W6lpaaHFbXeFE4/GRz9xSkCGur/7WiWHcb77PRl/nWcdJHj1Nr9INXDYPTLLPRzVnFwEeYNWU
+Q5vfAJjwP6nvFmr1/qH4OdOI5ANJEEqI39qnlZkAD2+qwwX3ho44J7DqGiBe0DJF9SzM1Mx40lvh
+N2M84nALHRJ7+bbBRmF/J4A9bV69oQbbIY1QYG4B0MY3jIWklpvH8WZNEkMQ9MbHhdIznE/oZXSd
+5glSN/svmQpbIyXeH99Zq9aiZLc7MshqAYxUAUmJDsLwV/gIkquNvcVnrH55RpHKLKBQZhX648On
+wZf7l5MhdziYbIhYp5ORR1PqA/PplZGSPxLJnecrBrkFTqBBrzfYc2fIsqi4yfY8CIPVymeMQWZh
+uFflNcwOGM9pf76Efj18QGYITXln8vXUvTPkimT+9hDl1e05vxNAoJl5CVjHS69GT/yPdLRwH5W5
+W8gn6pZkPqlr9VDIOv2g8dduKY/WRonmNccLqOshz5SWkm8pW3a8s2YFpnUWe6HOi98Tjs2ZLZNY
+LM1o6w4f/+wT+I1DJGG1gMu1tm/PUIfrIPh30j0Jck2Z7McQRvJo9nE1U3UVf70wMQ7E7ZXFBwYk
+SqwlvcK9mqG+reyR/2FxQRtVxKFf1PC/UXa+RxCo5xcVfHtxU4BF1AhNxcfx8t0vQk3PrMtwIJRW
+revlRENmtZLLxQiIGE8E8MtSqMw4yjcyCcRPVW/++igKbKd/Els/ong5y3sNuzM6cyA121zB5PQA
+AhDXVNm7ff3V4VS0wxweo8YcrE/yLzgvsDENr0TQPs/1snWigNI6jFkaequKexLVtIbUka+FlJlJ
+craL3li6G0I1fZ27qt+sYLHFfjoZUY6k890IoicFg1stVtHdz6MSbQF3uOTWxGKRRKtdrh/QPtHi
+EOS4AtLR49G/xlss1If54oED6SGLlGCU8LA+8hp5C9y+1+848GE5pITV+BeMJ4gtCk/+GcDvzceu
+ocK7v/3/2M4LxGOk1dNvKSLWDaLChnGABSoVVgYf9eOHQiZBSj9+bypjIRsYxfTmwy17C/uIijfh
+Y/8D/1IhQVzoo6nOtJOOjDV6uvaGqq0/Nbh5OWGMvgEdNzgDI3dPRL5aZ4/vo31SH2lwovdIVtcF
+9Okv8Lz1nBGu6zDKb+YzpP1xBnvza/jXvFNgghettwXUtpaaw8SkEQvXuROfo7Yq1zQwccjOImBH
+RLLRdfgd07nvUhmGEOAeeBk1i7YVfIEOUBqjByDvXWi7M+B8fiRUwGDSCJIh/4j8AsCD97vHWL8r
+63lwNRzqdmFi47cwHuqlp1ZMCP9rVjECXcdiUnOYGN7wTk9OBxHYAD+7Mf1UCqi5TAVpy3en6jl3
+p0ilELbf1IcL/AfipJsFqaVtcvrVsrcqJpe+gcCgHex1xz94EnCXnNb/zvolhQsyHj5dbepdx+pU
+a02gJ4l1nxqHmPXwiV8Ta0ebQ9GZkr+Dgwo1bkZG0mlemyLgvFXgT06jbEbqmZMQxX3wiYPlzA70
+p/KHCkcg5WS7JbjnKiplTjP1xTjtuqgFr4PTXUGkqGXKb2OuZ/4rtR06Z4FJ1zLlk8BIVLEfX0ws
+4ZrNNI4mhdZqxA8L85D6xXbSq/DUUEwbVY4z9YOiL/pMeyjddjBGwDWCzEMtby0VfAhTX50+ttYU
+EPWu5ApJLfjz/ugzqriCKHPTsV7PtxfSqfYw+mKVFgyX1Zw6C7ZHQIjeSorgOC2c12882/e+smXh
+SLOqLHs1S7jNFTe7SeH8w6po1KMFElJc7mTasMdSXYBopxqRnMSpJhFtepRQOwfX0h8ZNT7Gr0R7
+tVECN4ov+3Hp2PTdR/LrLWdwn9hhyGo1xyXyqaGCs/JAKd6kPQLD0RRblB/U0jPj2Dpu4XZZAjOO
+TpeOa1qkECBULHIMlNHoC8dfBDoh/WnAfP5k9AT/o5sIM2Pw8TOE6KmvT+aw8AGFdTG1Av6aJRk8
+HSsZ7fl2a7dSiY4oyvVQEYxfDLnz1+xu2Y+2p6e3vBEC2KTTqT1552NMgItIq7YXk76MKO18ArEI
+RdH33UaIoqoIRcVVC2s6g6wFHrwlRK9dfv2/NT3NmEOt0Y6Z14MoUwyNLZPj/+kvMqgri6je5yFe
+/Va6N92i4jExL+FF8XZqZXYmsqnzLf+bk3G5QZ0/OMhUjM2wYCb8JC16QYT0hZh9W+5O27tK8i0p
+oFnEcoGWP/TvC8677ZuUQ+qX7//u6iuUGH5b8BWWmfwbpVWIx80zpixnAwgDcaursK8/Y81BhYpN
+mqO8QzxG+Izeg0WnM0tPnYnZ5PsPRdgEWRG80ezQVeNPwjPbllKJnhPz144uUvkl1rxSUjLyVuLW
+wFSQ6HpxMaRffS0no/pTzFTudh62NZvLtYWejpH6KcYvY3dFYf4PPYEG/LVbljuwukWLCTBzZI+E
+3NK922f65vMSl/4jRgQAhMwtUfL6a5HXwVoxOGwyC/3kkNyx7ieJsXDHgPFgUSx9FgZEUrKTEqvc
+f9DbZLMEztoug0Q6Dcu/Evui1HeWjHPdxB0pivjMJPPdf48kAu0fkGX+5BCxo4eknqLVcj33StLg
+jGyCzvu+NI7PVY/7mjp7jYTTktQKC5dmhNSkUbiFpozcXZQUrZ2Xdr1a9mEyxaHh7HT2BSiHz6MY
+8MAZldZ3cOiC5MuvTP30jjm8V5LMEUGrq2Se7YYvZf8UHub21WKwM4l6MVWuBACccQidGdy7HatP
+uPutLKkikpsyfcoUk4N4xdvD0SVd0lq2l0aogGxNEu56iqX9Ie8OBIb13mlv192w6GXNMeSiWFKQ
+vva+L8/4VbAY9h/f0WwzX4j7N3HD7iDpYEx2x93XhtickQuesTUC2GnhZDEU2SYHstbUxulxT5Wb
+BblK0OHjlixKnNoa5x+ixQX54niW+KYkLjt7Td8/qXrIEEfpnEG9FyZf0ADrOqjVNyIjSPybqqM5
+4miherc65AMQmKRJE6CzFKopD4frVKSnEInLpWBAh4uENvJMDcR21ATul3TPw4xh7fnsE0cORxar
+kXA3/oUsZVVwsYrMPSKN6ZiDQG7mtEbSqy7D+O4e2hWIRiOMi8dvp1PpB9cPBJbqus0IqSkPapQu
+9Ni4qkNLN4Fp8zu66XHO6M/6zE9T2wQH0fjTVu4BgHJMqhSRHKlVZeNeAiExgFaIk3boj++zvomr
+3AQPpHc3Sv4o4zn73zI39KZMtBGZ9dBOJtq+XRI1vLnSwtLeG7dWsezv9VJQBAFbFL3l26znEw2G
+mD2pgsCac65mrF1jH5whBvi7XcA+iA3MepxWOqRHpf5ra6ciDrtrjugTnZj/aYjOuag1Jmg1RR9s
+K2Fe6pRwArybvG/Hkx3wQ3ZViE6ziN9+gViww/4SSLL4/N+iNwmuuavKOhsMQITXaoREga8hsyn8
+bdsaYPAR9vOVebpwzQYhAYNL1KaplYYViLlKPknNgKPWyr6jKS7Xs473OggjIypc8aVXLRCNdv/p
+Z0t/xj0tZLiBkpYZ2twZaGUVSb08VFR10HwK0sqMY/zDEeXiyPB4tMQELpNDeNmd7VDkzOvPP4vz
+5EJV8w2VEoFnf7aP1KPxUJj5DyK2fYyBKh22E/sx6DG4qknTAm/RE5BFkXeW79dhSIDqXygskCD5
+l1YrsDfxCnpfxllpmc++fN9Qs69P+iS4ImbzWpPXsFa4gFIJPwQ5AEQ7dxgFypqtM59bsLR6CmX9
+xJ6R/fspkT+943lr3zkBmve/H4GM4oeYKQ8VZpHREYRdbg/s3uP8UNuZcpKw3Zq5/6TJWUxjQvl0
+bgvOg+eaxrTMt9SbMuEIKIi9wrqsJX8W/8Nmoodc6lyVN+3HaaLN5H4K+JQVHgBicaHgmN5nbBkZ
+OyheEwhiiEzqVcG7926ZutK569DbFObpUmW11H5osXkNnkdgY6nRh3tcxEth4EFv6aGr1JrcK5Sz
+x8Ai7hc69QJDgZPHJL13YO1CYhe1d9vGe5yNvd/3UI5ksfZKoyTP4J0tXnoQz2IPCsnMwWkwNfut
+EY6eosxFOsnDDjNuSJeE5Xz6IOIfm41c7YxeBOouQ+SFNwLl1d002uFpoui7tSwvb/vmxRskTXJO
+wN6wbft+FnCUxpFdrqHfUbxNHwT4P5n29/jKQuRzs6dOp7wijcBs43vnAfNfKxRfenlYg2jRl/rU
+TQaYl0pYuawmwx29/pBns054PEThlBbdCLNOCSTd9IDzgLzy3DrPS4YGeNnCzmJOsfoKGZKj4c/8
+S1IzyhqOP9VDLK0gnLhhS3gOC9SY/dbERtJPiSeY6aWju841+GYKMDPTkJN3M0IdHnt9bxYFkqKA
+uKdEWNchOthY5jfYUGew0RfekLtjwe4fDCSd5YiONAWot+TQyYV9DnGulO2QcwxVbVEI8rGJIuRv
+oFXZvxyQiFWTXV6lpDgVd4DA11CYWjOIGYHRvjoBitAMACXaainBgtyrHESJzoP7hhfVuvsyJcIF
+UrEUr2ITSHddMOWH/xDzQA/HNnM6KQDU7YcmV59Z7vamG7X6ELFwp6yL8Ky8R34YPfDQA7CvBQ+P
+GLl5BfRLGEtrieJcjudUgVHHxIRH/8PbmMmVYJ8+g1n74mc+1aj5oG8Vq0ET/iwCCvW6IxYehYkY
+yy7t82Dtk52RIl3+ZEtO5AJn67lBQdeZ3UippIx/uscqdkziZGsab55xmRb8CxnEswlM2W+dBRYY
+urukZBgVI4DItu9usjmjVAVI4zfh2qbZBXq4PT9vELt7SyUTysMy9Fv1/FIo0+n1OQM7q1sM2noT
+nhk98ljMEYILej/rXhx3AS2iGq5oiB0Fh61jEOwIGL+ZwgAZLlxuVvvtrMgzLykPVjhJLmJRsXck
+4TslnGjrbwiW9jMga/ncBXwWIAUJuNdHrjliJ+H/APjqmm5L4ZSdApssrxuC0xlOqb0sWsUh3Eju
+b/M5LWsnWHoa8/pE5pEUMLR4Y5YN2CbGsU4M+1X3Hf6XBTN2yCFq3uC3WJ7GQNIcGiZ9v52zNJ13
+1kUjjPZj5b0fPqgFLkoFoj4YeFMd+d7ig/5YAXhPtv04bLi57eiwf7rmNJfl5PFcuG+jnb018vGx
+hAGBvMfWSshbA92kG8ApNiv61dBDT0o/ABdD28QCP9sWJbUwKXSTAKZopPGAVJfZQqSgf/w6lIaf
+BSBX2lybx8aRqb8k0C3PzHG0PuV1GeWnguovchRua1fHRZiDRtKmCiPy/o5MM3SX98NyiprQM+zT
+B3BvZC76qlT4yShSszYE+UQU2bT/V0rFrR3G+aHOiLoytRLPTFdmyNCcLq3zhQ9nAbNS+Adx44I9
+fmxa5JKnvLeN7598yEnHkGu5VcvwbdAQrPSL5cQTdMl3ued5bBlL7h6qeYFJLYXlKSOFKZNHEepD
+rpJM4zpCyaKij3UuBgsAV/IbhHeXA7pGUfcw3zEN4fn76vBbjORENETm6TtGoEe3B+/eScM78TV0
+y/abRaZRjGKmbE1M0Plgi7MjqqwSFSZqd/fva3BKvUfrSYnBw4FiBbBn82mmiYjwqqAI+djVgwoK
+jby2xTI/77T+y9YVbIx/vbpvXKAvSMdiXEBTe1Dlff6uNx7MvhDnkBKwff+8Fh5Sw+ggtEReegD7
+IqWFKgsK1hovvKOMAMOOEx9IiaX6mT8xMt/fMQf5rBpiy8jWZ9CkjbNleZ03SOPWDAp+xuq/lgBa
+qPttcvt0+eELpc7TTYOgKK+VkuKRevZnzBH1h7F12J1t7BaGzYPIUOl5BHrYocGJ9bS2SmBs8qH6
+BxAB1ybFC+CtJlJ9+qEUFn9UVUBHPBpOtZzTnFxOzhnQyZch/fCBZj7pS7YW8KaSmHe1xZQAH2Oi
+YcqRmv5KFySDRCk0q6EfBHAye2oxGvw45fZMLdl2yYPpXv2nk8o5WLT+9JQDwcrLyQij5EDTINrk
+023EPZBT2bBs5yGYler6x/ESmAVzSoHI4GkvAAPYP78MgIECcAENuEI5Z1CjL4H6C+F6grqPLU1r
+oumA0KBk27oLU0Dd89L3Z5/HXFwe3tth2/38cneoY7iTa+D9cYxx0GuSWF1Jh8t/OhVwu7eKydAx
+L3CftRrNZXna4ggrEdPN6GvyHwNO44O0UlAJEzyOTvXq4X5I6a/eWGz+7L/2NKX0zDzEsW51090S
+GMYF9cKAPMJEfZiGIZvJWbkr249pqalThqqKaanX31+k3bHzlS9uy3gQx/PR+1QL1t0ncnnyoZ55
+DYHutZGg6eJk7amcWo/LE06IdNeNZZRmHiuuJOYjsgwVURkhw9MUWoSeGH202uToxxBqpBUfs9W4
+DANT6dIyjUjhNmQ4T4hJhaBcux5SEtvdkBilcVZ2a9gaqk7XfMrjtycWpVeVhko/pz3u6FqEcf+G
+Z43f2MVgkwormo0akK5l7ZDr4CNiO+UbFLL+jVeGMrgiL7zAZjcgkvRLYmvWGVN0oG+Njm0Spz3N
+puvegBrtpaMMSPjpjyNsibqdJy28Z7MKYO3/AnQfR1ad2RaDXq0WvtwcjVQjmMlF3qkKYojVE/Pr
+XdnvUBN0NIPY/e/w0vywZXJDBlwWv6hmm74eGOUeFVcUFdk/h4vBKOEhPe2LYkIdi2WrmRpjfHhJ
+7W5jLl/uV0sU4SjKte9laHVfiiZfrtrnZKQvXGLP3efNqLL6DtnvMnhKf21cesx9107qgOOJIpu8
+6SbCNIPuL8tbJWltrTGGozKe+53ABB/xrjNbfxnFYe3WexWrfmvtgRra8Lg6tx0xi8611zfBVd9V
+1qPeSlSH92tZNere8LRdZNkqBrWaXryvgLRuAADeGByTRR4jEK5kHH5FQayuvOjdNj/h0BghNm+B
+aBbpnca6pe00IqgMPg8KvGLB5AAgnld7yk5KsBNI079b9LKMYp8ttAvTwwyXELG/XVEz1R1o4/8j
+8fLWQA8U589j6nkfkmzA5EX2z8AbeeDZ2bizehbkJieC/uYNkklkylvVdLHp2feHOGDfHfJe9zCu
+IzyeIM/r1wllkpJ9aN8BliNqdCASITTvP4yTWUHbxXT2bj5BED/XRdAzCCVje7dOE57PDejbFhYK
+JgcmozMQPk031Y5zXVpR8UUttDjGXGytq35SKKdTMBjXzmG04bRu+5EgZiqJcEFO4Eci/DSICR56
+E/xgyAleYhHDN4RrHVLwFVP/uJCQIEegLOT/kB9UL7jjTP1flSydtLI2AAxSj8v5IbZqA5uXKoK1
+STHXrQsJ0oZoNmkKgLNFwAJuilO3xr9PZhUMAmgXGUvNUBHfP4i9LuEzO8X6hDzALVseft4OiWKu
+eO0XKMFbJbK+R5pUs3+DL01sk7vp2AgThJyT55BMutCWVCPPMeR8QJMKekbrtLOdmPtwnrPGUeAp
+DRHihkNd4vMkY+w0J2tELG1Cdj0fDVQXhJzK0EPLhdzjluzw9M2N3BuxXxw+I0Cpi98hJ5oWcs8A
+Ge3l+1lSwuiY/J0dKunWnQIGUgebn4pkb2udvxggGVH/CrP352ommcCxvnkVzIM+EMy/58/qpk3y
+i5zbO+Y2vVRL5gMPoVSws9LPjjoHtItYfslyh49ljbfRFqBKpiV1Gm6tWKPm0upUpKFJQ5FRozUF
+ZmqlA1S+WeFaVHaSrPXcR8L/PX3AcKOPwLLnBFngIsccpgYtTBPi4Akv2X2wVAa7b8fgZh98hLAk
+NI6BsZdexkVxv5CPvk3BZ5EeJyXubRo/YftOfeldvTDJhzHavhm4P9qPdI7ulqF2zrl1zMU+O8rD
+bkQXbtgQvH9ZKyOY7QXLrae3s4QEwJRdjVEx9WdWOYApagCrkkYRPHannNtPek9wMxuPbT3uuwUm
+MsCEZo3nJkQJ9kgi6AimK1h9zgHKxlJmGdDB7m+6DUpmJIIPuu9wOOJC/4DffNtADvIhUqXShV98
+lzrGTSo1W+dLSTrEbEFniKKxhZweQyH6foqXZiqb9zGPFjBv6dhxPsRyjTdKnG3nYZBbaXDrhjAJ
+i6c71vesxnZ38VvM/w2CnA+9utvtRfuTHkMewG/hQx74tElrmXiqnVlcSKLR2Vdb+mLOD8lK41pO
+TdGLMk9qBf1zxOPRB2Xweuo5YJZ65oki72Xxx9EiNEk/IIhbuNuipXpRgLCCrXTvuUt6w1Gq1Nam
+iXu0JqpapxKflG/f5pg5rMzeGhVeUd4jsKQXgUpVe3vUsPkPQAJQme4LDVOjOQn+uhifc6f/TCcA
+GvrJHSylkTAAjYb2nNjZ+h3otyKQ3je8V4/WvLcGMV5MXpTwu+n0xT5vdsKSrRSjTPSxYJPHyRA2
+1sOR5Yl/eX8ntZemmk1L2BmHGvD/O9PupAIPqVvi0v+wrtWstfVVbcWrdrYZoGG6UaRytbPETpCg
+aSjsjcNZABouNg35GxBU64gtjLt8/60RyA1pZk7UjeJSQZWhET+8Fc09ZQWNaSC4BIw+W4ykl/dG
+CBEmYjAqRtMyRJZHnH8H3+S8k0q8wbdUTetXGbzpMLtQI4d5+f+BbFfw/DwPdu0/iBmD0ptI187S
+e2Kv5vBp/MsLjb1ovUBy1lBrEM7j98pv6VpT/8B/2CiFlfjfe9y0M2z20/KbyfjFNYDlyo/E96r/
+C/iCLZaLywryJZjyZBkYkDjmaGECfsEergmRvUMZ82Qwxd6Fr1nzcXtsI7TWwMHhG4FHslp71N1u
+8CyAnBRd6X7yIjVN0VxlCE9he22iGnvXna66ZC7pal/YX/O0Ap/y8lI7bwxzHYNX7EHfppZZBTRc
+aWmD0der92+AXeQcmm3IJAQmXuAsix8djknJPFbi16c2pnC0tlGmj6erbgGRLFknneLpDqaJHcOu
+GDfmIdrkxcrccQ6lVpW5ulqaP6e9PaROdLnHn1HuHhl8CSYpD/N2dDTysHquGkySQ6Q374GSonfx
+hvpBsKEwya0s306815IE0y0LtKXK/wmhhz85iBN9iP+ZxWcxOPpWoDyVbAKS+ivsd74n9S5xU3WK
+JVM6bpdrVvISGlrt2H0a3RlIhLgR90uGGGGuMun2fn3aXJkGJ0W3a2XxJexpOpdc5uBP9QQJ2KS2
+Tvs7za/y2AEgmAgsGdNEmN1V9otz9cyjwgX0Ht7rrycUOMWE5DWpIK5CusK404+Swkzc2iBbIU6v
+JuvOq+DhcLs92yfAgt2jHTq9HmtnGlEePq9ogxWa+HS+drQuiE7Twc5rNYlLDeO3Xa5YvcQG0vwi
+ihb9bV5rwD399DjtxmHuXhmFcn0FXX4khlWVkSqPM3YhPgEMNZvUYeQ5I2CBTRGv8ixZeg5h5iuc
+Z0BkMu/BMSX12bgDvnSX13hMJdoOPFxKRb3TOvFgAA/25SnrLKeXCXFnp9UhGrXTOPUXLnmi5XT9
+pyP1yvgvRurI8meO/NC2EVnuXNnEg1ck/ZfJzLi/2RHvSjUYXYFQRbIj+GIk98OcmevGY4TyggbM
+K9CnQmXHi1UWr86/t7nEPkXN6KblkZtsvfQW8axFQIww9+gxKy8sLH4m81b1HmHcQcT6dsWSNsUP
+9Z4k8ZNPWT0cGDwhLHAWn8vQW5SV8SrmUuGNQvou/egeuyA3a7yDyvURj9+r5UW62+BA8HcnOrv4
+jVm95xVhhwMq+LxzldvEV3jnEuOFSS02cO1vc135pZNPH4b9cqbRh1+96J9A1hGlLb0lohy9rRCZ
+EpW48sBWDs6/l9vB+hGMhMT2APN2v0xIstbySHUp6DkKqlH30G1V4aE/s1dhQQwSFIDoTAE5LWf7
+qziklbOj3ECQtNAhLPQTWJ8Qy8rVJMW8HpxKB2zJQqD4EHnzgGFANgPj5b6whrZl7rGG2DM2+ad0
+n0o+If0p6USNTc96pI2gliB4opQvERn3Ctar0vuZHUvEb57miruxpNcPvt8dNPUupx6Rk9cvqnvZ
+xWrZ+Ks2DfDyBuybNesl5OcrHGwBnFpHwpeFkRlQ2pSNX3eaPGEdCAQtgjZqmCHHDmb4IG5OXRE+
+4JV9CfDJsgqj4UpXFi4raKbJ5f1Vw9c8P8NnW6qq039Jdl9MWdAH+KXABDSJFKR7cQ0NppvdX05n
+n76UD3uxBJeUM5Fc8EjtdJOHtAgWSfPlH/YNbkylRZjZqGiuBBsntHl/oihNhLvlowsGHa5tg6xk
+i5Qh1uOJi57Tm1Wpse3kZrUwqeFgjj66vxCrwu7mC1dJ/kUZ5PmZeYV7eliIszX8OXjPHS3DBd8A
+QAYQqb7m03Ivh/aoCWIOZw5xNfhu+9TqO18lxf7j59IrZ0kgnLIUs1QVrQW0Qo3ON6M4G2iGKYdC
+y+C1RK2RfAczTdgITqdwSFHE76T8nPeF5O6Dr+TEvNruzmu6djinSaoS5w7iPWUEGJVCsUpssdmx
+kHDyg0hyimFhcqmrDD0QikvC6wKkAO8rzjTY4IM1b6WaWOb5bo5W5rrGbkVd/SlttXfp7kli5dlp
+myxxdyCAnlhsWEHmDKMcN36ipIS5uJ1HS2ULkfRX7gNZJm+bBrA7TPBsxMIEmMvy1Ax2sa2tTfXD
+HyrCW3F9nMXMqummnu39PQ1H0TcB2wzG+lQLENwvbRy7+dIBl7f9INsMO0Elgi6MqYIhZooSVOYe
+oyXNvg03YqAD1U8Vq0sXrkv21LX6XE8CxtSJxUEWQZqxCEN7A0CA18FjgC+57av5kqZJkZAseGjt
+ces9ZRg892vs58BH+6LFcpH51FT1oUbjGhTME96ASjmRl+4ek7jhbwKYs/5C30w4vOo/RmdZKGky
+5KLD8OAprNjlAZK5+I5V4ecjD4E78oObh5QajfWdWnxHScmgEhG5XRhe2hnR/zElxmTatOuSA1rG
+otmZyXxW60RJ2L5cmJcdc4jrCxv3mnkvtCWBN6dwd0xsx95RCfLT1ozhvLjcu8kbQdcawc0FrHAr
+vOAwnBzUikrA14ZDQXJ2Sh4x1yJOMYOZjLr12OLCyrAHrAs/EGflWNM2UDimBS0zB5CGJIpQXKsA
+Uz5KsywcY453mrC86z7xzJh3YSSWLZq9ccFBGGwNzDcZbZxe6wdKmGnIlKJkUVCTHqafWWIMaelz
+7apSMf2abMH2rEQq846PM6u1dxpP9Xcb+au2y5WLxvcei68fZ0WzZMF+uj5Sr26xpXzDrGpCcusq
+IvT5XhYzaAxgvWWGRNS8haV/rKfgmaeAsWz1WKV+2U+GplA+deZQxCogeEffbFvcDtCHbdh4Evgs
+eU9xD5iFwi0V0FcxTXddITsunJY8RCZgTfxWm2KMxF7/egbUf3lRhAaMpZAALJ+JRdAuwDpI1DAZ
+18pmgyK4Jmcqyia2D7yNPXEGqWuH/inQUK6kcIvu4hVRYlKmEK0XctbbN4fd8SuupqAaetrdChKO
+awW9YPkOY/1tSxnfG8xaXm/m9pQ6mA+xQC0d75IvXwV/uajmCIBxCCEgUCNRHYNh5Pr7rT19jBYQ
+h0rX0XQOrhTpW+H7rsQLbv0UTxkUeFSeI93UkYGmj1UpHA9haxno4Dzkt5JaPodX1gBNd98xIp5Y
+hJeSWPm+W9iaEmq4Bd7jTeG94DTvqdxrlr9I+tHKOOSjAjKRydnwnehUEa0T0YTo5hKNYScWnQzn
+9CKaSkYvjWT2qNhixH7NodXTMb5YerzjchrZLB1QGuC3QeWvQAB9hfKJyNNuu+SaySd4plIcCThc
+9NI22Itjz/biMjAeZGkycfbB3UZe+72ZuQ+ZsKmbZ7KaEOJi+1g/mRWn8Hk0pFiBXGhVEkhYjqU3
+lFmkMNuaKa7JGF2NWlsNSFQJAIvuEOCrz8hv2PtHdUG5YjwgcFLiMXM9eWVxLfoXkH6ulW+KGIXO
+UmiDU6g/mWihxV6w47N2RWnppwfBUlyeRcttD5xPEm0s1hJJAUwnK7qh/f1zfteZj6mzkbU9eHm3
+rR7rbskMB1CkhEpnBHfIVHQavVgxLMr8vTD9jCcEPA7KWaduSabHdbQ6K1jIg61J1OFTsbzftpGp
+x2tb1FoRXIqHyF5ijnX9qC37mMJSEEhgMadHpFXIYnmE2hO1CV39GcXU8NwEAILNo658Yy4MebO0
+GRq/NVY/fQVzhtKWTTZGn2ef7ccwCNmEkJAqKv5VgjKThi0QYtjQfd1ST7Gr7xzg9MfmYzBrvhFp
+eOyASju2ryMCClF5wbq/u0GMyr2vXQvt8INrTmFA1zxiLuwFcNJJjCsey0s4ECfV/trguoYxNWrq
+j3hLhwqRtlFmVxL/Zd6ly4dk5Se21JyRHMw48ixuTMwKxqt9/TSRYEPdA7hGt+2wTVQ3OTZuwSTF
+t+iAvcHWwVmlqife0pVc6Y77VjSB5LC/A7tAhlYP3W6ZwyE6x0erBzi8Qtqj2Ri5NQszmJ4gXhnm
+X1QauftWAmblbywM0QqwpMW7rWeCaN3CFH5rL5jDVFsGgkDbRYvvtgabL8OtE01QiHUwDhrreNjA
+fWoDlU56fVugBAVuTwXAGW+6ym/pYk9dcCqrOsw5z6ZT3J6SCCRxXM4bqqaxcZPUAPcuvY1EjG3y
+7X8Z9XiLaGufHiwQ/m0fG+oiPyf4Ec8IrWJULWL00+s65lzb47y8cDz0vgGLEgUsR1F+YLHRnNnj
+H0+utuMjKj3SEwyhrvd8oQIGTRTze6qoKZ8N6stZfXJSGT5kDD2wc1Xejse2Bs1dN9tG8z37MsJD
+VHC0Oc6nEKlWMJRv4uuhuTvS4zCtaIFdBr00SKTXlwdQuVhguLsbP5ofQYnHsu23jR0IZXCx+Q86
+n8VGOwFQ3HZgtSXfY9k1N1P8E72u1hgl6s82nLwEKNMPA8gO3avD/gOHLvCphuHvXv+CNw5YtJq/
+tjRhZK4n+/Rv4vzSKWBaZGdXETaw6DJ54OCI6p54D/gLbLHH4yCAL0IfTAm89mXA9ufMX+AUyMMY
+trA95VfrECvMTpTlRJF/JtBWEliRu7bx7SrTVNU9cAJq/pRBD/6+eXGCQ6M5Hs00Qj7eniUwZUL1
+5zgATDl/bVCMAB8MkAZeEPtQ5QM5cKTP3MPGtQi79h0cwoZjAgWZWAC9vAVk6nIux6oM8IeQBVNv
+87u/Jz34ZF+b1vW5kufEIQWY3MLmTpEAgGI2nZgxLuckReV8u2ZGWzruJNqpBCdzU5b68jy8s3tw
+T/+bz2DGhb/vdhv07MhfDh8H2O5m3e5KvtRgRe4/qOyp5ND0qG38DR4TcuRe5kt1XlWD3X1h0Bdn
+Y91l7pHh9S7N6PuT2FDoHBupZ4nAfQUQkwgF90N3qgf/zk1GyFYsmVDGtIxFCIpbwDUyeEpiW91p
+gsJxb/GM0m8zBznXsknwEcMF41q/ki+OD4b4NXbvqQ8cnYEIY1jqu1kWbwLUUcS1g/kh4ktO8fKS
++4vX52QS4ERBiJeSKO8Ox9UjuLy4uRvaUKuG/wGCOWL9FrLxPX1IcHdNFszy/XEixLoLjT9oDTD1
+E3XNYtTfeJSotin8y59ep0y88HIvPNn0HhuInKHgvoHwyrO3/H6jWdlaDmNjzjMYRhqC77CY3yvn
+RJEJP4hIzYvuwhF5UDNAz7+bX6LyGSCVZc4cBvULSawnG8n/BV7RhmRrsd9FLBAzLi5ZLaD3yZi1
+vNfNz+5lhBACCrpxtVi4E0VyOFy0Cxa9p6PJaf/k8lBi6TFEAwuUlXISN7OAXDMtiKz1NtDgM1bT
+zjQz/0OuiLVf0/D0hU8d6kR+OjFjwuMj2EJilTVLKJkUM/6z+v1Cc2rjA2yevOwiUEV9C2JH/0Ld
+dh0EJLB9aBnFu2Ht5/D3ouzrBhzaaco+7vO/j77QBpChsQCENCYVQBmYkFiUc9OuToJUzQuI7j3q
+szVD5RJikzIcFYlvBU6OzxjeQ0c2tweH5P3X3yCpe4hR5oB4vLj1wpZne/WmxDLzrNicBK5JRIiS
+hfW/Q6Esld1VRLoA4wVpP90tQPlWuCP8H33yMJfxAO3xOLtNVa9vQyApUrr9y9eu/q1Kb3RWtaFh
+0e4nfObpjoxazYbE6n05ZGwIhYjDo8HmFwyUajTfMXyN1qEG5oE6Yk+4b55ISu1ukt1Flw24kBFx
+OfUqTvkFMujsLHWz612ogYYjKMnSPx2vAR0xMy0wqHM+TolfWwuRiz8jUGEt0Q4QWrn3h5Uz6fmt
+a5uKJ3srVVf2HeHXGRJmpnWv16O+psU6pId05b4Xi9piqISR+Y5MVdVT8FVFbdg/PLdnPTEjXWK+
+Vs6yWh2TRiUCCGGWxMOaXWuf87xfhd2R80et8wEPxLKBTsoqkhZI5SaImI7xUN5DYiqXO0safl+J
+0O8DHOw8zTdFnfOv0J82K5BKlrJ/4X9GCnkMhCGH5TrO+fAuEU63AdiEIL4wYjbZv5k8jen1SgfG
+efb2uqC/h/TZVVKOLDgOtHjW7JqqxYs1DZDIt0zC9tGHwLbzE62ek3kYRphxEDNwbHUpIINRH+Hu
+RZ5LyzKcgpBeAoa/v1d7GcSWkEI2TnarVpQvAAq/pzm70oppiqtpVgGUg+REO6oaR3riBvVSuOef
+XO2C5NIZAZkI0yPCfg93xNPsX+q7gIoQXIqlLiT9e63uaLgfkwquBIW5SERFNk5GXWcWtI1WTM9M
+fCzY5PqZjJlZ2T2V70SJosG6oF6cgC54on4FJepNBjF4K0fZuzofgWNzjnGN2kYOWIvf/a6bWUnl
+m+XSEeYJmAZ+kbk4tte5sKfm2EwDkFrTrq9AfD4OM+uo6na2yEtE8VBewGLCeI+5oUPbXumM+Luc
+3Mh3nLsQbizRMf13tDDxKcRbk+Hhtfh/mkOi47WDsemUrwSpEI5VNvwugn9Jz4LSDFG5j7PmzfKY
++M+PszwPNMF1lBZlxq1749cW6t6+izYhYjoQUwEwzO61eSNlNRBefD/7DctO4se7yLDPfJhw7cYk
+Td4Hl/dKMVWTcR0LYwLcTPomRWrkADyM+zBwPaW2zW4NE1oZJik26cOVNPNwHCBhulyLQaTV3EoA
+ZeBb4GxassEwGx5WbxVl/S2agicI0lzq3RuWMZgwRrgh+z4ZnHWfqI6CJIQNV+RuWCD74TKX1ib6
+/KZuQaewQpF9HG2ETTAoDO5qrjh2orJpYLllI5ExysxaTS1R7wGGpQ3FCIpYTHuUINPJwOzoE1Jt
+f51KEiKzkqLRMCFH4xgrwh+rrENk6klN9/az/fbvbAwboPsb6Tga+w2zCDL6jFn0stVS4ubUsAGl
+nPcA9+ca07umwnyWAV3OkrDmeUm11aWIDHmNgcgPSw0oFV8Jc5ldvJs0mhGHhkJlPE20EU9s5Alj
+x3hEDoMB9VrXcm3u138GMLZcaGPLHz9TCP3v4u8n4KUKqNUfeOifLAFynykL/jxt0DK1Dop3fuvG
+kfPq50tpwZ+dvK1f1cKrlCUH0Cp1aG7JFX2HM71AC+Xs3ONvOLQk+je78MeTHRan/aQ1E0N7kqNP
+pQdGcZDuU52TWUn0uqjohBz8+/K/LEmXubx+XAHtFZHd7Q3Czg3df8Wc5592xhAYZzCw8oDY+CMZ
+sefBQuoMV5JrfR/B6XmtGZzhucy4JhENIwRGoYpeVnAwOkjOOT9cJS4LcHkytZk3AixPq6fuwp5D
+REkxZEXH1/iIGO5D5sjlmOKpHuWQ6jqegZrWyxj9SAwUUV22Qmc7n7JrmZCIPU2J0jHSVUsW6tdF
+rKRyVo9Iz9SLE5/6Zbbdn96mofZbq964jp5g25eGJANAnFIacsH9bx1Ropxhqk+aQqkXneUUW9+s
+pKuh6OODlKq0mHjEj6KiRaVOtsAXo00nEmuIjlNVWK4GVctVu9NwFiNNpug0bNTNEduufvE+HiMs
+CUtLqoL6RrBqWWClmeVDz5qUXf4329HMJpeqDdHoK8V/l6YMZR9VNWpZ3HpcH93JwlVT7o76B6mg
+gCah7m/6N3XiSLkvf1/QVIsiTnFqZyHT52hGyHjYmC2SW3DKUFdqvVXOYXvKTNpX9MHTic6xRDy2
+I6nkf07nfwRJj4RSJnfnTHpa1GMxjAPgYHu6pEiu9CoFvdLqK5xSMKN3Xh+nuNfUUcuGe0NqNSLc
+4/zbXl4Qy0gUKaeawt9xNKWQqBZ3OQYHOqRWP28w1gHyJLxxp5+L7Cn4AfIcfqNWHGrsxZF8VjNA
+H/EcbzerE/oFzWc8fBcg02aavGlxtxBhprN6P0tbIJ+BhLiEgWj/b/TOIVmdrIZyenSsSiegJiLf
+pqKCwLS2018k9Trx/B1DFNufNiYwFfBtjxEM0PsDkNIceasl+mKetCIQ2/tvDeXpQeog8nsfTivz
+S83Z3T6b+XDlyx80q8Bpc3U585tYO7bbM4Ycvt2WVv6j5ZjgswUQXkz9cS8rI23NpLfGvuai+FGY
+R1Nzp1kLmq0ImLRgnZYU6g2s8R+NguKdWiPwjp5S/uq9xqIwbNWISMroD/4/qVxV14rMRTEeATpI
+L281PUEzpuXdQUja0YxA7N+XeCNtGRFf+USI1sc8uA+CzYF5VygXJpsRrtcze7DvX5ZErpxNI7a4
+BgLTNuDAhezpZHfibgqUDtE6oFP3wz9fRTRh1IEyJdyr5UXLgEEENZNVYLTLtZWHyQV2E7h2IF6v
+6GpHuol5hRDnfn1nkZs6ZrFBaB5tdyZRiHZn3UsOr+BKjNsHcYOjACxNVQ/lPuDvePVGKRbYJLoJ
+svo7G1Baim15Koj1Av3mCMWLZ4mxWSg46/U8f6qiGDMY2u5pv0sl9uEvUP2q4xLUnbcZwTLFzGhD
+5sMg47RFJNTzI0x/utKz0ArmUymO6GFrFtv4Nwh6Wu2dkDwIHcQWnKpjf/IlCu0/T036MLsbfFnZ
+ocOHSyFpL9BhRr5l1W/ZSP59wUtcczG7MPR/1AcCGW1vLUUUPHbvEZJuSP3+UdVUI6zRnjOuH98B
+nuUdOmGGDLMpaklxAXjJqQKf0+rXjI1mnrTmU57AbVIxXgVBAksczGF+yu+ed/LG20g/v2MEYCz4
+qdc5K54ktuynAqbQdeS9qrAvYMvMgJPYelFRCmNf4ePfzC6T932Wu5HsBwxErIstzb4B596KKIL2
+gIKaEikthwB8PExAkDmkRD2AM550eyCRV3QbCZuAjbLuidgsHGh6nFJ+McDKYD5AXRn39tNzcr87
+n37l1+MoD5Vcg3Q+C8ZS8TL+Rw8etVrn4Ap+lS3hN6rL8eCwEq1JHUqEmFoV3ARd4E6+PixQ1Q/M
+IEO3yG0xGBydFa3+mszqoFEeGrUpWgfVbeQhLwwsyWdsqXA5MMsmzPvMbJQnc+8wYwPkmEEtQQlA
+EMiJ2jR9wHH6CKIsCBfT4KzNHykdGtYJCoQSigucKxoSRv7ZFaSQLBaPdj/KoApCr2M2/omMLgpJ
+OLV7sf4cDkVjyZHDgrWwJvA13Mra3tn+MDRxR216bfhQJmIJ+1C4x2K18Gg+qXKOUXkR/DDN4DXx
++LuLtxjE3vxQUnv2GIPUzfSaaGPzZ9syvQB+fjnNTOUrJG9wMfm0OBQVf0HHq+AEvinf2mugcXig
+NZ34lrIYMFim9rhKcdqCf0hH9WcDjibSlbxbLRRNojL5b7uNsJdVQVVR/m6vlhM78FYNGHu+NT0F
+quK+BgIjHu20jhtiTuzC2pzsj9w2zOfzOoKuh3cfh2YVs2fTk6pUYlB+5BYFZ8yOhZE4nLfjK9Oa
+adsHxReUpuV4jGYrMvwIO4+fDxZvKdRXfTu26Ko1U96RR/qdGwi4eiuqnB3XtQI1AH4Ysv7GQqTG
+/u7QyXbLTB+3XyOc00qPgvHou9F3DbVOjcvKyBIPTe37IBF88rxm+7c3LG3dCDI+Wt7/25BE0WXl
+bOhSvAhvjgtKbJLElO35ZMPBZ6rOdSU37QFOqXzS1W7LIr+ElL/eaTzwdmBI6FsBLISlUzfO548W
+J+iD+TX5V+bKjCdrDw2rOAvzSp+wfPCrE8rvM76qHrG/3oh4Ep0ssL89ZNysumFO0zJGU38OFumV
+2IObNXHRXtipUZ0dm1ppLz3r2Os0dhTIEV2jhw0iQDl6Lk/8qkDi4+7MVKSUOiun5b3/3ZXpDYMY
+odaIUNrJs7NKSn+sQpQzMlrIpcCfM7kowwDSAsAuG9tGC11HmmLPzYN3irn1fOsOTMhNPo3wBbVK
+qwPgxnrAGQgtXhV8aUZh/C3ToSWAOwpnpQuLna44jLETBJ40nBvKXcNsW480ndACWP1grz4xQiqq
+0RpaphLpsXo4gvcaSS5Srk/LXz0gtk2anMw5sRdpWwl41gwUVL3dZoxwVe2QLLoxXB9uys/idnyp
+4Wyr8dGd4Vt29XMsrP5GaIGOsNIQTsaPMkxZr/VPBYs52hYrvUAQmvBIawcCG4ixOSGbN+loYIyl
+T9XmEfYCkQtIYdsLpkLoeosNjMbZa8QPWnW7KhYADGSBtv8lj8pnsBBZaPGHFwz1N+w7UfksY4l/
+XFiiIIzT+q3D6pya7SblRNg10baIayvSHaVXizgUaf6QOOm5GvRIJZzRzdKffbkH+fvbwQi9/w1x
+D2P0zfEMbQHBJIl8gfx9reST670z5B3ifDm+ur4+/t7arWWT4AlG9AjXymTSLPxnMt+hPyVMCD7W
+x/rzpj9XtadUrs0StaKeLmAYRAALHrcTDySAAM8qAaLOl6uFxpSJJ8znzNSsUKHEtCFJKmzyh2hi
+6hEDhfx/MfO+hm0QowL0UIaINmN810TTAi2LD4UFW2O8rDxVZraGpIR3eyu9CMTTc6wjEnZLrzng
+M9ItZ/+cWa+z8D3xrql1Z1DDgNH2TFGMNaPHl4APAzgYqJR3Qz+WbgcbEKND3yqZR2o1zWfiTHD0
+dRzWoN6wCbVAElpwP7lVHf0jggwfnQAZTmNCbriHVsfTUm4JWCc1AnNEV3xg7UKf8c5Mw544bRgN
+Kh1Rq/kGbhCwrA3xS35Ufq6sZeVoqvb64ihsC2zaiprDJvKENB7T5FxPT2OLJauCPswkKqU/Epf2
+UqFacmSohpNDNB/Fj6oIUOuYivnqRyCiPHqpBKF2p9E+t3bHJ6o5lC6KSi4oCMiu/EgcLJL9FnBU
+kyV60sPQpvn/VveEzlxMtmbEkajfxaeCM595YJjEQsAHWOmdiPyW8kgVNOK7X/8g2Ft6JUtGrP9z
+B+17XVXvCh0g2kpmXt4zOqR7yZeGVuzRG1wpQkkNczSwNLX7aF3FJdcraBle5SxK5vsa7JKFWDYQ
+BKy3k74dhZujsJxrdgTL4AJlr0J9gStikTBtDRipFSDizmM5D0Cx2fASVdVZpJ4o5ULvm19s+N3F
+Tk7tLGDksb8DFMhHbELoT1JN9RNSeai7h0xc33a=

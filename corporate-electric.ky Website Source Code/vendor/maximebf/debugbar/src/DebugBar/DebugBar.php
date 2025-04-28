@@ -1,493 +1,206 @@
-<?php
-/*
- * This file is part of the DebugBar package.
- *
- * (c) 2013 Maxime Bouroumeau-Fuseau
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace DebugBar;
-
-use ArrayAccess;
-use DebugBar\DataCollector\DataCollectorInterface;
-use DebugBar\Storage\StorageInterface;
-
-/**
- * Main DebugBar object
- *
- * Manages data collectors. DebugBar provides an array-like access
- * to collectors by name.
- *
- * <code>
- *     $debugbar = new DebugBar();
- *     $debugbar->addCollector(new DataCollector\MessagesCollector());
- *     $debugbar['messages']->addMessage("foobar");
- * </code>
- */
-class DebugBar implements ArrayAccess
-{
-    public static $useOpenHandlerWhenSendingDataHeaders = false;
-
-    protected $collectors = array();
-
-    protected $data;
-
-    protected $jsRenderer;
-
-    protected $requestIdGenerator;
-
-    protected $requestId;
-
-    protected $storage;
-
-    protected $httpDriver;
-
-    protected $stackSessionNamespace = 'PHPDEBUGBAR_STACK_DATA';
-
-    protected $stackAlwaysUseSessionStorage = false;
-
-    /**
-     * Adds a data collector
-     *
-     * @param DataCollectorInterface $collector
-     *
-     * @throws DebugBarException
-     * @return $this
-     */
-    public function addCollector(DataCollectorInterface $collector)
-    {
-        if ($collector->getName() === '__meta') {
-            throw new DebugBarException("'__meta' is a reserved name and cannot be used as a collector name");
-        }
-        if (isset($this->collectors[$collector->getName()])) {
-            throw new DebugBarException("'{$collector->getName()}' is already a registered collector");
-        }
-        $this->collectors[$collector->getName()] = $collector;
-        return $this;
-    }
-
-    /**
-     * Checks if a data collector has been added
-     *
-     * @param string $name
-     * @return boolean
-     */
-    public function hasCollector($name)
-    {
-        return isset($this->collectors[$name]);
-    }
-
-    /**
-     * Returns a data collector
-     *
-     * @param string $name
-     * @return DataCollectorInterface
-     * @throws DebugBarException
-     */
-    public function getCollector($name)
-    {
-        if (!isset($this->collectors[$name])) {
-            throw new DebugBarException("'$name' is not a registered collector");
-        }
-        return $this->collectors[$name];
-    }
-
-    /**
-     * Returns an array of all data collectors
-     *
-     * @return array[DataCollectorInterface]
-     */
-    public function getCollectors()
-    {
-        return $this->collectors;
-    }
-
-    /**
-     * Sets the request id generator
-     *
-     * @param RequestIdGeneratorInterface $generator
-     * @return $this
-     */
-    public function setRequestIdGenerator(RequestIdGeneratorInterface $generator)
-    {
-        $this->requestIdGenerator = $generator;
-        return $this;
-    }
-
-    /**
-     * @return RequestIdGeneratorInterface
-     */
-    public function getRequestIdGenerator()
-    {
-        if ($this->requestIdGenerator === null) {
-            $this->requestIdGenerator = new RequestIdGenerator();
-        }
-        return $this->requestIdGenerator;
-    }
-
-    /**
-     * Returns the id of the current request
-     *
-     * @return string
-     */
-    public function getCurrentRequestId()
-    {
-        if ($this->requestId === null) {
-            $this->requestId = $this->getRequestIdGenerator()->generate();
-        }
-        return $this->requestId;
-    }
-
-    /**
-     * Sets the storage backend to use to store the collected data
-     *
-     * @param StorageInterface $storage
-     * @return $this
-     */
-    public function setStorage(StorageInterface $storage = null)
-    {
-        $this->storage = $storage;
-        return $this;
-    }
-
-    /**
-     * @return StorageInterface
-     */
-    public function getStorage()
-    {
-        return $this->storage;
-    }
-
-    /**
-     * Checks if the data will be persisted
-     *
-     * @return boolean
-     */
-    public function isDataPersisted()
-    {
-        return $this->storage !== null;
-    }
-
-    /**
-     * Sets the HTTP driver
-     *
-     * @param HttpDriverInterface $driver
-     * @return $this
-     */
-    public function setHttpDriver(HttpDriverInterface $driver)
-    {
-        $this->httpDriver = $driver;
-        return $this;
-    }
-
-    /**
-     * Returns the HTTP driver
-     *
-     * If no http driver where defined, a PhpHttpDriver is automatically created
-     *
-     * @return HttpDriverInterface
-     */
-    public function getHttpDriver()
-    {
-        if ($this->httpDriver === null) {
-            $this->httpDriver = new PhpHttpDriver();
-        }
-        return $this->httpDriver;
-    }
-
-    /**
-     * Collects the data from the collectors
-     *
-     * @return array
-     */
-    public function collect()
-    {
-        if (php_sapi_name() === 'cli') {
-            $ip = gethostname();
-            if ($ip) {
-                $ip = gethostbyname($ip);
-            } else {
-                $ip = '127.0.0.1';
-            }
-            $request_variables = array(
-                'method' => 'CLI',
-                'uri' => isset($_SERVER['SCRIPT_FILENAME']) ? realpath($_SERVER['SCRIPT_FILENAME']) : null,
-                'ip' => $ip
-            );
-        } else {
-            $request_variables = array(
-                'method' => isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : null,
-                'uri' => isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : null,
-                'ip' => isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : null
-            );
-        }
-        $this->data = array(
-            '__meta' => array_merge(
-                array(
-                    'id' => $this->getCurrentRequestId(),
-                    'datetime' => date('Y-m-d H:i:s'),
-                    'utime' => microtime(true)
-                ),
-                $request_variables
-            )
-        );
-
-        foreach ($this->collectors as $name => $collector) {
-            $this->data[$name] = $collector->collect();
-        }
-
-        // Remove all invalid (non UTF-8) characters
-        array_walk_recursive($this->data, function (&$item) {
-                if (is_string($item) && !mb_check_encoding($item, 'UTF-8')) {
-                    $item = mb_convert_encoding($item, 'UTF-8', 'UTF-8');
-                }
-            });
-
-        if ($this->storage !== null) {
-            $this->storage->save($this->getCurrentRequestId(), $this->data);
-        }
-
-        return $this->data;
-    }
-
-    /**
-     * Returns collected data
-     *
-     * Will collect the data if none have been collected yet
-     *
-     * @return array
-     */
-    public function getData()
-    {
-        if ($this->data === null) {
-            $this->collect();
-        }
-        return $this->data;
-    }
-
-    /**
-     * Returns an array of HTTP headers containing the data
-     *
-     * @param string $headerName
-     * @param integer $maxHeaderLength
-     * @return array
-     */
-    public function getDataAsHeaders($headerName = 'phpdebugbar', $maxHeaderLength = 4096, $maxTotalHeaderLength = 250000)
-    {
-        $data = rawurlencode(json_encode(array(
-            'id' => $this->getCurrentRequestId(),
-            'data' => $this->getData()
-        )));
-
-        if (strlen($data) > $maxTotalHeaderLength) {
-            $data = rawurlencode(json_encode(array(
-                'error' => 'Maximum header size exceeded'
-            )));
-        }
-
-        $chunks = array();
-
-        while (strlen($data) > $maxHeaderLength) {
-            $chunks[] = substr($data, 0, $maxHeaderLength);
-            $data = substr($data, $maxHeaderLength);
-        }
-        $chunks[] = $data;
-
-        $headers = array();
-        for ($i = 0, $c = count($chunks); $i < $c; $i++) {
-            $name = $headerName . ($i > 0 ? "-$i" : '');
-            $headers[$name] = $chunks[$i];
-        }
-
-        return $headers;
-    }
-
-    /**
-     * Sends the data through the HTTP headers
-     *
-     * @param bool $useOpenHandler
-     * @param string $headerName
-     * @param integer $maxHeaderLength
-     * @return $this
-     */
-    public function sendDataInHeaders($useOpenHandler = null, $headerName = 'phpdebugbar', $maxHeaderLength = 4096)
-    {
-        if ($useOpenHandler === null) {
-            $useOpenHandler = self::$useOpenHandlerWhenSendingDataHeaders;
-        }
-        if ($useOpenHandler && $this->storage !== null) {
-            $this->getData();
-            $headerName .= '-id';
-            $headers = array($headerName => $this->getCurrentRequestId());
-        } else {
-            $headers = $this->getDataAsHeaders($headerName, $maxHeaderLength);
-        }
-        $this->getHttpDriver()->setHeaders($headers);
-        return $this;
-    }
-
-    /**
-     * Stacks the data in the session for later rendering
-     */
-    public function stackData()
-    {
-        $http = $this->initStackSession();
-
-        $data = null;
-        if (!$this->isDataPersisted() || $this->stackAlwaysUseSessionStorage) {
-            $data = $this->getData();
-        } elseif ($this->data === null) {
-            $this->collect();
-        }
-
-        $stack = $http->getSessionValue($this->stackSessionNamespace);
-        $stack[$this->getCurrentRequestId()] = $data;
-        $http->setSessionValue($this->stackSessionNamespace, $stack);
-        return $this;
-    }
-
-    /**
-     * Checks if there is stacked data in the session
-     *
-     * @return boolean
-     */
-    public function hasStackedData()
-    {
-        try {
-            $http = $this->initStackSession();
-        } catch (DebugBarException $e) {
-            return false;
-        }
-        return count($http->getSessionValue($this->stackSessionNamespace)) > 0;
-    }
-
-    /**
-     * Returns the data stacked in the session
-     *
-     * @param boolean $delete Whether to delete the data in the session
-     * @return array
-     */
-    public function getStackedData($delete = true)
-    {
-        $http = $this->initStackSession();
-        $stackedData = $http->getSessionValue($this->stackSessionNamespace);
-        if ($delete) {
-            $http->deleteSessionValue($this->stackSessionNamespace);
-        }
-
-        $datasets = array();
-        if ($this->isDataPersisted() && !$this->stackAlwaysUseSessionStorage) {
-            foreach ($stackedData as $id => $data) {
-                $datasets[$id] = $this->getStorage()->get($id);
-            }
-        } else {
-            $datasets = $stackedData;
-        }
-
-        return $datasets;
-    }
-
-    /**
-     * Sets the key to use in the $_SESSION array
-     *
-     * @param string $ns
-     * @return $this
-     */
-    public function setStackDataSessionNamespace($ns)
-    {
-        $this->stackSessionNamespace = $ns;
-        return $this;
-    }
-
-    /**
-     * Returns the key used in the $_SESSION array
-     *
-     * @return string
-     */
-    public function getStackDataSessionNamespace()
-    {
-        return $this->stackSessionNamespace;
-    }
-
-    /**
-     * Sets whether to only use the session to store stacked data even
-     * if a storage is enabled
-     *
-     * @param boolean $enabled
-     * @return $this
-     */
-    public function setStackAlwaysUseSessionStorage($enabled = true)
-    {
-        $this->stackAlwaysUseSessionStorage = $enabled;
-        return $this;
-    }
-
-    /**
-     * Checks if the session is always used to store stacked data
-     * even if a storage is enabled
-     *
-     * @return boolean
-     */
-    public function isStackAlwaysUseSessionStorage()
-    {
-        return $this->stackAlwaysUseSessionStorage;
-    }
-
-    /**
-     * Initializes the session for stacked data
-     * @return HttpDriverInterface
-     * @throws DebugBarException
-     */
-    protected function initStackSession()
-    {
-        $http = $this->getHttpDriver();
-        if (!$http->isSessionStarted()) {
-            throw new DebugBarException("Session must be started before using stack data in the debug bar");
-        }
-
-        if (!$http->hasSessionValue($this->stackSessionNamespace)) {
-            $http->setSessionValue($this->stackSessionNamespace, array());
-        }
-
-        return $http;
-    }
-
-    /**
-     * Returns a JavascriptRenderer for this instance
-     * @param string $baseUrl
-     * @param string $basePath
-     * @return JavascriptRenderer
-     */
-    public function getJavascriptRenderer($baseUrl = null, $basePath = null)
-    {
-        if ($this->jsRenderer === null) {
-            $this->jsRenderer = new JavascriptRenderer($this, $baseUrl, $basePath);
-        }
-        return $this->jsRenderer;
-    }
-
-    // --------------------------------------------
-    // ArrayAccess implementation
-
-    public function offsetSet($key, $value)
-    {
-        throw new DebugBarException("DebugBar[] is read-only");
-    }
-
-    public function offsetGet($key)
-    {
-        return $this->getCollector($key);
-    }
-
-    public function offsetExists($key)
-    {
-        return $this->hasCollector($key);
-    }
-
-    public function offsetUnset($key)
-    {
-        throw new DebugBarException("DebugBar[] is read-only");
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

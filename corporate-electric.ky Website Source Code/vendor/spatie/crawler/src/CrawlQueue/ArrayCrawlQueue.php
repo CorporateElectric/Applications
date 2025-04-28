@@ -1,102 +1,59 @@
-<?php
-
-namespace Spatie\Crawler\CrawlQueue;
-
-use Psr\Http\Message\UriInterface;
-use Spatie\Crawler\CrawlUrl;
-use Spatie\Crawler\Exception\InvalidUrl;
-use Spatie\Crawler\Exception\UrlNotFoundByIndex;
-
-class ArrayCrawlQueue implements CrawlQueue
-{
-    /**
-     * All known URLs, indexed by URL string.
-     *
-     * @var CrawlUrl[]
-     */
-    protected $urls = [];
-
-    /**
-     * Pending URLs, indexed by URL string.
-     *
-     * @var CrawlUrl[]
-     */
-    protected $pendingUrls = [];
-
-    public function add(CrawlUrl $url): CrawlQueue
-    {
-        $urlString = (string) $url->url;
-
-        if (! isset($this->urls[$urlString])) {
-            $url->setId($urlString);
-
-            $this->urls[$urlString] = $url;
-            $this->pendingUrls[$urlString] = $url;
-        }
-
-        return $this;
-    }
-
-    public function hasPendingUrls(): bool
-    {
-        return (bool) $this->pendingUrls;
-    }
-
-    public function getUrlById($id): CrawlUrl
-    {
-        if (! isset($this->urls[$id])) {
-            throw new UrlNotFoundByIndex("Crawl url {$id} not found in collection.");
-        }
-
-        return $this->urls[$id];
-    }
-
-    public function hasAlreadyBeenProcessed(CrawlUrl $url): bool
-    {
-        $url = (string) $url->url;
-
-        if (isset($this->pendingUrls[$url])) {
-            return false;
-        }
-
-        if (isset($this->urls[$url])) {
-            return true;
-        }
-
-        return false;
-    }
-
-    public function markAsProcessed(CrawlUrl $crawlUrl)
-    {
-        $url = (string) $crawlUrl->url;
-
-        unset($this->pendingUrls[$url]);
-    }
-
-    /**
-     * @param CrawlUrl|UriInterface $crawlUrl
-     *
-     * @return bool
-     */
-    public function has($crawlUrl): bool
-    {
-        if ($crawlUrl instanceof CrawlUrl) {
-            $url = (string) $crawlUrl->url;
-        } elseif ($crawlUrl instanceof UriInterface) {
-            $url = (string) $crawlUrl;
-        } else {
-            throw InvalidUrl::unexpectedType($crawlUrl);
-        }
-
-        return isset($this->urls[$url]);
-    }
-
-    public function getFirstPendingUrl(): ?CrawlUrl
-    {
-        foreach ($this->pendingUrls as $pendingUrl) {
-            return $pendingUrl;
-        }
-
-        return null;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+U1zziZAqmnebUsWDRe4XzYguHCUwn0==

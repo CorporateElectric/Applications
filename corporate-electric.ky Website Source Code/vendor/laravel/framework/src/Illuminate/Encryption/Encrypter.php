@@ -1,239 +1,109 @@
-<?php
-
-namespace Illuminate\Encryption;
-
-use Illuminate\Contracts\Encryption\DecryptException;
-use Illuminate\Contracts\Encryption\Encrypter as EncrypterContract;
-use Illuminate\Contracts\Encryption\EncryptException;
-use RuntimeException;
-
-class Encrypter implements EncrypterContract
-{
-    /**
-     * The encryption key.
-     *
-     * @var string
-     */
-    protected $key;
-
-    /**
-     * The algorithm used for encryption.
-     *
-     * @var string
-     */
-    protected $cipher;
-
-    /**
-     * Create a new encrypter instance.
-     *
-     * @param  string  $key
-     * @param  string  $cipher
-     * @return void
-     *
-     * @throws \RuntimeException
-     */
-    public function __construct($key, $cipher = 'AES-128-CBC')
-    {
-        $key = (string) $key;
-
-        if (static::supported($key, $cipher)) {
-            $this->key = $key;
-            $this->cipher = $cipher;
-        } else {
-            throw new RuntimeException('The only supported ciphers are AES-128-CBC and AES-256-CBC with the correct key lengths.');
-        }
-    }
-
-    /**
-     * Determine if the given key and cipher combination is valid.
-     *
-     * @param  string  $key
-     * @param  string  $cipher
-     * @return bool
-     */
-    public static function supported($key, $cipher)
-    {
-        $length = mb_strlen($key, '8bit');
-
-        return ($cipher === 'AES-128-CBC' && $length === 16) ||
-               ($cipher === 'AES-256-CBC' && $length === 32);
-    }
-
-    /**
-     * Create a new encryption key for the given cipher.
-     *
-     * @param  string  $cipher
-     * @return string
-     */
-    public static function generateKey($cipher)
-    {
-        return random_bytes($cipher === 'AES-128-CBC' ? 16 : 32);
-    }
-
-    /**
-     * Encrypt the given value.
-     *
-     * @param  mixed  $value
-     * @param  bool  $serialize
-     * @return string
-     *
-     * @throws \Illuminate\Contracts\Encryption\EncryptException
-     */
-    public function encrypt($value, $serialize = true)
-    {
-        $iv = random_bytes(openssl_cipher_iv_length($this->cipher));
-
-        // First we will encrypt the value using OpenSSL. After this is encrypted we
-        // will proceed to calculating a MAC for the encrypted value so that this
-        // value can be verified later as not having been changed by the users.
-        $value = \openssl_encrypt(
-            $serialize ? serialize($value) : $value,
-            $this->cipher, $this->key, 0, $iv
-        );
-
-        if ($value === false) {
-            throw new EncryptException('Could not encrypt the data.');
-        }
-
-        // Once we get the encrypted value we'll go ahead and base64_encode the input
-        // vector and create the MAC for the encrypted value so we can then verify
-        // its authenticity. Then, we'll JSON the data into the "payload" array.
-        $mac = $this->hash($iv = base64_encode($iv), $value);
-
-        $json = json_encode(compact('iv', 'value', 'mac'), JSON_UNESCAPED_SLASHES);
-
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new EncryptException('Could not encrypt the data.');
-        }
-
-        return base64_encode($json);
-    }
-
-    /**
-     * Encrypt a string without serialization.
-     *
-     * @param  string  $value
-     * @return string
-     *
-     * @throws \Illuminate\Contracts\Encryption\EncryptException
-     */
-    public function encryptString($value)
-    {
-        return $this->encrypt($value, false);
-    }
-
-    /**
-     * Decrypt the given value.
-     *
-     * @param  string  $payload
-     * @param  bool  $unserialize
-     * @return mixed
-     *
-     * @throws \Illuminate\Contracts\Encryption\DecryptException
-     */
-    public function decrypt($payload, $unserialize = true)
-    {
-        $payload = $this->getJsonPayload($payload);
-
-        $iv = base64_decode($payload['iv']);
-
-        // Here we will decrypt the value. If we are able to successfully decrypt it
-        // we will then unserialize it and return it out to the caller. If we are
-        // unable to decrypt this value we will throw out an exception message.
-        $decrypted = \openssl_decrypt(
-            $payload['value'], $this->cipher, $this->key, 0, $iv
-        );
-
-        if ($decrypted === false) {
-            throw new DecryptException('Could not decrypt the data.');
-        }
-
-        return $unserialize ? unserialize($decrypted) : $decrypted;
-    }
-
-    /**
-     * Decrypt the given string without unserialization.
-     *
-     * @param  string  $payload
-     * @return string
-     *
-     * @throws \Illuminate\Contracts\Encryption\DecryptException
-     */
-    public function decryptString($payload)
-    {
-        return $this->decrypt($payload, false);
-    }
-
-    /**
-     * Create a MAC for the given value.
-     *
-     * @param  string  $iv
-     * @param  mixed  $value
-     * @return string
-     */
-    protected function hash($iv, $value)
-    {
-        return hash_hmac('sha256', $iv.$value, $this->key);
-    }
-
-    /**
-     * Get the JSON array from the given payload.
-     *
-     * @param  string  $payload
-     * @return array
-     *
-     * @throws \Illuminate\Contracts\Encryption\DecryptException
-     */
-    protected function getJsonPayload($payload)
-    {
-        $payload = json_decode(base64_decode($payload), true);
-
-        // If the payload is not valid JSON or does not have the proper keys set we will
-        // assume it is invalid and bail out of the routine since we will not be able
-        // to decrypt the given value. We'll also check the MAC for this encryption.
-        if (! $this->validPayload($payload)) {
-            throw new DecryptException('The payload is invalid.');
-        }
-
-        if (! $this->validMac($payload)) {
-            throw new DecryptException('The MAC is invalid.');
-        }
-
-        return $payload;
-    }
-
-    /**
-     * Verify that the encryption payload is valid.
-     *
-     * @param  mixed  $payload
-     * @return bool
-     */
-    protected function validPayload($payload)
-    {
-        return is_array($payload) && isset($payload['iv'], $payload['value'], $payload['mac']) &&
-               strlen(base64_decode($payload['iv'], true)) === openssl_cipher_iv_length($this->cipher);
-    }
-
-    /**
-     * Determine if the MAC for the given payload is valid.
-     *
-     * @param  array  $payload
-     * @return bool
-     */
-    protected function validMac(array $payload)
-    {
-        return hash_equals(
-            $this->hash($payload['iv'], $payload['value']), $payload['mac']
-        );
-    }
-
-    /**
-     * Get the encryption key.
-     *
-     * @return string
-     */
-    public function getKey()
-    {
-        return $this->key;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

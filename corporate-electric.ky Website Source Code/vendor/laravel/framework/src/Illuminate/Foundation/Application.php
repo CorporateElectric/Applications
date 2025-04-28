@@ -1,1346 +1,464 @@
-<?php
-
-namespace Illuminate\Foundation;
-
-use Closure;
-use Illuminate\Container\Container;
-use Illuminate\Contracts\Foundation\Application as ApplicationContract;
-use Illuminate\Contracts\Foundation\CachesConfiguration;
-use Illuminate\Contracts\Foundation\CachesRoutes;
-use Illuminate\Contracts\Http\Kernel as HttpKernelContract;
-use Illuminate\Events\EventServiceProvider;
-use Illuminate\Filesystem\Filesystem;
-use Illuminate\Foundation\Bootstrap\LoadEnvironmentVariables;
-use Illuminate\Foundation\Events\LocaleUpdated;
-use Illuminate\Http\Request;
-use Illuminate\Log\LogServiceProvider;
-use Illuminate\Routing\RoutingServiceProvider;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Collection;
-use Illuminate\Support\Env;
-use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Str;
-use RuntimeException;
-use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
-use Symfony\Component\HttpKernel\Exception\HttpException;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-use Symfony\Component\HttpKernel\HttpKernelInterface;
-
-class Application extends Container implements ApplicationContract, CachesConfiguration, CachesRoutes, HttpKernelInterface
-{
-    /**
-     * The Laravel framework version.
-     *
-     * @var string
-     */
-    const VERSION = '8.22.1';
-
-    /**
-     * The base path for the Laravel installation.
-     *
-     * @var string
-     */
-    protected $basePath;
-
-    /**
-     * Indicates if the application has been bootstrapped before.
-     *
-     * @var bool
-     */
-    protected $hasBeenBootstrapped = false;
-
-    /**
-     * Indicates if the application has "booted".
-     *
-     * @var bool
-     */
-    protected $booted = false;
-
-    /**
-     * The array of booting callbacks.
-     *
-     * @var callable[]
-     */
-    protected $bootingCallbacks = [];
-
-    /**
-     * The array of booted callbacks.
-     *
-     * @var callable[]
-     */
-    protected $bootedCallbacks = [];
-
-    /**
-     * The array of terminating callbacks.
-     *
-     * @var callable[]
-     */
-    protected $terminatingCallbacks = [];
-
-    /**
-     * All of the registered service providers.
-     *
-     * @var \Illuminate\Support\ServiceProvider[]
-     */
-    protected $serviceProviders = [];
-
-    /**
-     * The names of the loaded service providers.
-     *
-     * @var array
-     */
-    protected $loadedProviders = [];
-
-    /**
-     * The deferred services and their providers.
-     *
-     * @var array
-     */
-    protected $deferredServices = [];
-
-    /**
-     * The custom application path defined by the developer.
-     *
-     * @var string
-     */
-    protected $appPath;
-
-    /**
-     * The custom database path defined by the developer.
-     *
-     * @var string
-     */
-    protected $databasePath;
-
-    /**
-     * The custom storage path defined by the developer.
-     *
-     * @var string
-     */
-    protected $storagePath;
-
-    /**
-     * The custom environment path defined by the developer.
-     *
-     * @var string
-     */
-    protected $environmentPath;
-
-    /**
-     * The environment file to load during bootstrapping.
-     *
-     * @var string
-     */
-    protected $environmentFile = '.env';
-
-    /**
-     * Indicates if the application is running in the console.
-     *
-     * @var bool|null
-     */
-    protected $isRunningInConsole;
-
-    /**
-     * The application namespace.
-     *
-     * @var string
-     */
-    protected $namespace;
-
-    /**
-     * The prefixes of absolute cache paths for use during normalization.
-     *
-     * @var string[]
-     */
-    protected $absoluteCachePathPrefixes = ['/', '\\'];
-
-    /**
-     * Create a new Illuminate application instance.
-     *
-     * @param  string|null  $basePath
-     * @return void
-     */
-    public function __construct($basePath = null)
-    {
-        if ($basePath) {
-            $this->setBasePath($basePath);
-        }
-
-        $this->registerBaseBindings();
-        $this->registerBaseServiceProviders();
-        $this->registerCoreContainerAliases();
-    }
-
-    /**
-     * Get the version number of the application.
-     *
-     * @return string
-     */
-    public function version()
-    {
-        return static::VERSION;
-    }
-
-    /**
-     * Register the basic bindings into the container.
-     *
-     * @return void
-     */
-    protected function registerBaseBindings()
-    {
-        static::setInstance($this);
-
-        $this->instance('app', $this);
-
-        $this->instance(Container::class, $this);
-        $this->singleton(Mix::class);
-
-        $this->singleton(PackageManifest::class, function () {
-            return new PackageManifest(
-                new Filesystem, $this->basePath(), $this->getCachedPackagesPath()
-            );
-        });
-    }
-
-    /**
-     * Register all of the base service providers.
-     *
-     * @return void
-     */
-    protected function registerBaseServiceProviders()
-    {
-        $this->register(new EventServiceProvider($this));
-        $this->register(new LogServiceProvider($this));
-        $this->register(new RoutingServiceProvider($this));
-    }
-
-    /**
-     * Run the given array of bootstrap classes.
-     *
-     * @param  string[]  $bootstrappers
-     * @return void
-     */
-    public function bootstrapWith(array $bootstrappers)
-    {
-        $this->hasBeenBootstrapped = true;
-
-        foreach ($bootstrappers as $bootstrapper) {
-            $this['events']->dispatch('bootstrapping: '.$bootstrapper, [$this]);
-
-            $this->make($bootstrapper)->bootstrap($this);
-
-            $this['events']->dispatch('bootstrapped: '.$bootstrapper, [$this]);
-        }
-    }
-
-    /**
-     * Register a callback to run after loading the environment.
-     *
-     * @param  \Closure  $callback
-     * @return void
-     */
-    public function afterLoadingEnvironment(Closure $callback)
-    {
-        return $this->afterBootstrapping(
-            LoadEnvironmentVariables::class, $callback
-        );
-    }
-
-    /**
-     * Register a callback to run before a bootstrapper.
-     *
-     * @param  string  $bootstrapper
-     * @param  \Closure  $callback
-     * @return void
-     */
-    public function beforeBootstrapping($bootstrapper, Closure $callback)
-    {
-        $this['events']->listen('bootstrapping: '.$bootstrapper, $callback);
-    }
-
-    /**
-     * Register a callback to run after a bootstrapper.
-     *
-     * @param  string  $bootstrapper
-     * @param  \Closure  $callback
-     * @return void
-     */
-    public function afterBootstrapping($bootstrapper, Closure $callback)
-    {
-        $this['events']->listen('bootstrapped: '.$bootstrapper, $callback);
-    }
-
-    /**
-     * Determine if the application has been bootstrapped before.
-     *
-     * @return bool
-     */
-    public function hasBeenBootstrapped()
-    {
-        return $this->hasBeenBootstrapped;
-    }
-
-    /**
-     * Set the base path for the application.
-     *
-     * @param  string  $basePath
-     * @return $this
-     */
-    public function setBasePath($basePath)
-    {
-        $this->basePath = rtrim($basePath, '\/');
-
-        $this->bindPathsInContainer();
-
-        return $this;
-    }
-
-    /**
-     * Bind all of the application paths in the container.
-     *
-     * @return void
-     */
-    protected function bindPathsInContainer()
-    {
-        $this->instance('path', $this->path());
-        $this->instance('path.base', $this->basePath());
-        $this->instance('path.lang', $this->langPath());
-        $this->instance('path.config', $this->configPath());
-        $this->instance('path.public', $this->publicPath());
-        $this->instance('path.storage', $this->storagePath());
-        $this->instance('path.database', $this->databasePath());
-        $this->instance('path.resources', $this->resourcePath());
-        $this->instance('path.bootstrap', $this->bootstrapPath());
-    }
-
-    /**
-     * Get the path to the application "app" directory.
-     *
-     * @param  string  $path
-     * @return string
-     */
-    public function path($path = '')
-    {
-        $appPath = $this->appPath ?: $this->basePath.DIRECTORY_SEPARATOR.'app';
-
-        return $appPath.($path ? DIRECTORY_SEPARATOR.$path : $path);
-    }
-
-    /**
-     * Set the application directory.
-     *
-     * @param  string  $path
-     * @return $this
-     */
-    public function useAppPath($path)
-    {
-        $this->appPath = $path;
-
-        $this->instance('path', $path);
-
-        return $this;
-    }
-
-    /**
-     * Get the base path of the Laravel installation.
-     *
-     * @param  string  $path Optionally, a path to append to the base path
-     * @return string
-     */
-    public function basePath($path = '')
-    {
-        return $this->basePath.($path ? DIRECTORY_SEPARATOR.$path : $path);
-    }
-
-    /**
-     * Get the path to the bootstrap directory.
-     *
-     * @param  string  $path Optionally, a path to append to the bootstrap path
-     * @return string
-     */
-    public function bootstrapPath($path = '')
-    {
-        return $this->basePath.DIRECTORY_SEPARATOR.'bootstrap'.($path ? DIRECTORY_SEPARATOR.$path : $path);
-    }
-
-    /**
-     * Get the path to the application configuration files.
-     *
-     * @param  string  $path Optionally, a path to append to the config path
-     * @return string
-     */
-    public function configPath($path = '')
-    {
-        return $this->basePath.DIRECTORY_SEPARATOR.'config'.($path ? DIRECTORY_SEPARATOR.$path : $path);
-    }
-
-    /**
-     * Get the path to the database directory.
-     *
-     * @param  string  $path Optionally, a path to append to the database path
-     * @return string
-     */
-    public function databasePath($path = '')
-    {
-        return ($this->databasePath ?: $this->basePath.DIRECTORY_SEPARATOR.'database').($path ? DIRECTORY_SEPARATOR.$path : $path);
-    }
-
-    /**
-     * Set the database directory.
-     *
-     * @param  string  $path
-     * @return $this
-     */
-    public function useDatabasePath($path)
-    {
-        $this->databasePath = $path;
-
-        $this->instance('path.database', $path);
-
-        return $this;
-    }
-
-    /**
-     * Get the path to the language files.
-     *
-     * @return string
-     */
-    public function langPath()
-    {
-        return $this->resourcePath().DIRECTORY_SEPARATOR.'lang';
-    }
-
-    /**
-     * Get the path to the public / web directory.
-     *
-     * @return string
-     */
-    public function publicPath()
-    {
-        return $this->basePath.DIRECTORY_SEPARATOR.'public';
-    }
-
-    /**
-     * Get the path to the storage directory.
-     *
-     * @return string
-     */
-    public function storagePath()
-    {
-        return $this->storagePath ?: $this->basePath.DIRECTORY_SEPARATOR.'storage';
-    }
-
-    /**
-     * Set the storage directory.
-     *
-     * @param  string  $path
-     * @return $this
-     */
-    public function useStoragePath($path)
-    {
-        $this->storagePath = $path;
-
-        $this->instance('path.storage', $path);
-
-        return $this;
-    }
-
-    /**
-     * Get the path to the resources directory.
-     *
-     * @param  string  $path
-     * @return string
-     */
-    public function resourcePath($path = '')
-    {
-        return $this->basePath.DIRECTORY_SEPARATOR.'resources'.($path ? DIRECTORY_SEPARATOR.$path : $path);
-    }
-
-    /**
-     * Get the path to the environment file directory.
-     *
-     * @return string
-     */
-    public function environmentPath()
-    {
-        return $this->environmentPath ?: $this->basePath;
-    }
-
-    /**
-     * Set the directory for the environment file.
-     *
-     * @param  string  $path
-     * @return $this
-     */
-    public function useEnvironmentPath($path)
-    {
-        $this->environmentPath = $path;
-
-        return $this;
-    }
-
-    /**
-     * Set the environment file to be loaded during bootstrapping.
-     *
-     * @param  string  $file
-     * @return $this
-     */
-    public function loadEnvironmentFrom($file)
-    {
-        $this->environmentFile = $file;
-
-        return $this;
-    }
-
-    /**
-     * Get the environment file the application is using.
-     *
-     * @return string
-     */
-    public function environmentFile()
-    {
-        return $this->environmentFile ?: '.env';
-    }
-
-    /**
-     * Get the fully qualified path to the environment file.
-     *
-     * @return string
-     */
-    public function environmentFilePath()
-    {
-        return $this->environmentPath().DIRECTORY_SEPARATOR.$this->environmentFile();
-    }
-
-    /**
-     * Get or check the current application environment.
-     *
-     * @param  string|array  $environments
-     * @return string|bool
-     */
-    public function environment(...$environments)
-    {
-        if (count($environments) > 0) {
-            $patterns = is_array($environments[0]) ? $environments[0] : $environments;
-
-            return Str::is($patterns, $this['env']);
-        }
-
-        return $this['env'];
-    }
-
-    /**
-     * Determine if application is in local environment.
-     *
-     * @return bool
-     */
-    public function isLocal()
-    {
-        return $this['env'] === 'local';
-    }
-
-    /**
-     * Determine if application is in production environment.
-     *
-     * @return bool
-     */
-    public function isProduction()
-    {
-        return $this['env'] === 'production';
-    }
-
-    /**
-     * Detect the application's current environment.
-     *
-     * @param  \Closure  $callback
-     * @return string
-     */
-    public function detectEnvironment(Closure $callback)
-    {
-        $args = $_SERVER['argv'] ?? null;
-
-        return $this['env'] = (new EnvironmentDetector)->detect($callback, $args);
-    }
-
-    /**
-     * Determine if the application is running in the console.
-     *
-     * @return bool
-     */
-    public function runningInConsole()
-    {
-        if ($this->isRunningInConsole === null) {
-            $this->isRunningInConsole = Env::get('APP_RUNNING_IN_CONSOLE') ?? (\PHP_SAPI === 'cli' || \PHP_SAPI === 'phpdbg');
-        }
-
-        return $this->isRunningInConsole;
-    }
-
-    /**
-     * Determine if the application is running unit tests.
-     *
-     * @return bool
-     */
-    public function runningUnitTests()
-    {
-        return $this['env'] === 'testing';
-    }
-
-    /**
-     * Register all of the configured providers.
-     *
-     * @return void
-     */
-    public function registerConfiguredProviders()
-    {
-        $providers = Collection::make($this->config['app.providers'])
-                        ->partition(function ($provider) {
-                            return strpos($provider, 'Illuminate\\') === 0;
-                        });
-
-        $providers->splice(1, 0, [$this->make(PackageManifest::class)->providers()]);
-
-        (new ProviderRepository($this, new Filesystem, $this->getCachedServicesPath()))
-                    ->load($providers->collapse()->toArray());
-    }
-
-    /**
-     * Register a service provider with the application.
-     *
-     * @param  \Illuminate\Support\ServiceProvider|string  $provider
-     * @param  bool  $force
-     * @return \Illuminate\Support\ServiceProvider
-     */
-    public function register($provider, $force = false)
-    {
-        if (($registered = $this->getProvider($provider)) && ! $force) {
-            return $registered;
-        }
-
-        // If the given "provider" is a string, we will resolve it, passing in the
-        // application instance automatically for the developer. This is simply
-        // a more convenient way of specifying your service provider classes.
-        if (is_string($provider)) {
-            $provider = $this->resolveProvider($provider);
-        }
-
-        $provider->register();
-
-        // If there are bindings / singletons set as properties on the provider we
-        // will spin through them and register them with the application, which
-        // serves as a convenience layer while registering a lot of bindings.
-        if (property_exists($provider, 'bindings')) {
-            foreach ($provider->bindings as $key => $value) {
-                $this->bind($key, $value);
-            }
-        }
-
-        if (property_exists($provider, 'singletons')) {
-            foreach ($provider->singletons as $key => $value) {
-                $this->singleton($key, $value);
-            }
-        }
-
-        $this->markAsRegistered($provider);
-
-        // If the application has already booted, we will call this boot method on
-        // the provider class so it has an opportunity to do its boot logic and
-        // will be ready for any usage by this developer's application logic.
-        if ($this->isBooted()) {
-            $this->bootProvider($provider);
-        }
-
-        return $provider;
-    }
-
-    /**
-     * Get the registered service provider instance if it exists.
-     *
-     * @param  \Illuminate\Support\ServiceProvider|string  $provider
-     * @return \Illuminate\Support\ServiceProvider|null
-     */
-    public function getProvider($provider)
-    {
-        return array_values($this->getProviders($provider))[0] ?? null;
-    }
-
-    /**
-     * Get the registered service provider instances if any exist.
-     *
-     * @param  \Illuminate\Support\ServiceProvider|string  $provider
-     * @return array
-     */
-    public function getProviders($provider)
-    {
-        $name = is_string($provider) ? $provider : get_class($provider);
-
-        return Arr::where($this->serviceProviders, function ($value) use ($name) {
-            return $value instanceof $name;
-        });
-    }
-
-    /**
-     * Resolve a service provider instance from the class name.
-     *
-     * @param  string  $provider
-     * @return \Illuminate\Support\ServiceProvider
-     */
-    public function resolveProvider($provider)
-    {
-        return new $provider($this);
-    }
-
-    /**
-     * Mark the given provider as registered.
-     *
-     * @param  \Illuminate\Support\ServiceProvider  $provider
-     * @return void
-     */
-    protected function markAsRegistered($provider)
-    {
-        $this->serviceProviders[] = $provider;
-
-        $this->loadedProviders[get_class($provider)] = true;
-    }
-
-    /**
-     * Load and boot all of the remaining deferred providers.
-     *
-     * @return void
-     */
-    public function loadDeferredProviders()
-    {
-        // We will simply spin through each of the deferred providers and register each
-        // one and boot them if the application has booted. This should make each of
-        // the remaining services available to this application for immediate use.
-        foreach ($this->deferredServices as $service => $provider) {
-            $this->loadDeferredProvider($service);
-        }
-
-        $this->deferredServices = [];
-    }
-
-    /**
-     * Load the provider for a deferred service.
-     *
-     * @param  string  $service
-     * @return void
-     */
-    public function loadDeferredProvider($service)
-    {
-        if (! $this->isDeferredService($service)) {
-            return;
-        }
-
-        $provider = $this->deferredServices[$service];
-
-        // If the service provider has not already been loaded and registered we can
-        // register it with the application and remove the service from this list
-        // of deferred services, since it will already be loaded on subsequent.
-        if (! isset($this->loadedProviders[$provider])) {
-            $this->registerDeferredProvider($provider, $service);
-        }
-    }
-
-    /**
-     * Register a deferred provider and service.
-     *
-     * @param  string  $provider
-     * @param  string|null  $service
-     * @return void
-     */
-    public function registerDeferredProvider($provider, $service = null)
-    {
-        // Once the provider that provides the deferred service has been registered we
-        // will remove it from our local list of the deferred services with related
-        // providers so that this container does not try to resolve it out again.
-        if ($service) {
-            unset($this->deferredServices[$service]);
-        }
-
-        $this->register($instance = new $provider($this));
-
-        if (! $this->isBooted()) {
-            $this->booting(function () use ($instance) {
-                $this->bootProvider($instance);
-            });
-        }
-    }
-
-    /**
-     * Resolve the given type from the container.
-     *
-     * @param  string  $abstract
-     * @param  array  $parameters
-     * @return mixed
-     */
-    public function make($abstract, array $parameters = [])
-    {
-        $this->loadDeferredProviderIfNeeded($abstract = $this->getAlias($abstract));
-
-        return parent::make($abstract, $parameters);
-    }
-
-    /**
-     * Resolve the given type from the container.
-     *
-     * @param  string  $abstract
-     * @param  array  $parameters
-     * @param  bool  $raiseEvents
-     * @return mixed
-     */
-    protected function resolve($abstract, $parameters = [], $raiseEvents = true)
-    {
-        $this->loadDeferredProviderIfNeeded($abstract = $this->getAlias($abstract));
-
-        return parent::resolve($abstract, $parameters, $raiseEvents);
-    }
-
-    /**
-     * Load the deferred provider if the given type is a deferred service and the instance has not been loaded.
-     *
-     * @param  string  $abstract
-     * @return void
-     */
-    protected function loadDeferredProviderIfNeeded($abstract)
-    {
-        if ($this->isDeferredService($abstract) && ! isset($this->instances[$abstract])) {
-            $this->loadDeferredProvider($abstract);
-        }
-    }
-
-    /**
-     * Determine if the given abstract type has been bound.
-     *
-     * @param  string  $abstract
-     * @return bool
-     */
-    public function bound($abstract)
-    {
-        return $this->isDeferredService($abstract) || parent::bound($abstract);
-    }
-
-    /**
-     * Determine if the application has booted.
-     *
-     * @return bool
-     */
-    public function isBooted()
-    {
-        return $this->booted;
-    }
-
-    /**
-     * Boot the application's service providers.
-     *
-     * @return void
-     */
-    public function boot()
-    {
-        if ($this->isBooted()) {
-            return;
-        }
-
-        // Once the application has booted we will also fire some "booted" callbacks
-        // for any listeners that need to do work after this initial booting gets
-        // finished. This is useful when ordering the boot-up processes we run.
-        $this->fireAppCallbacks($this->bootingCallbacks);
-
-        array_walk($this->serviceProviders, function ($p) {
-            $this->bootProvider($p);
-        });
-
-        $this->booted = true;
-
-        $this->fireAppCallbacks($this->bootedCallbacks);
-    }
-
-    /**
-     * Boot the given service provider.
-     *
-     * @param  \Illuminate\Support\ServiceProvider  $provider
-     * @return void
-     */
-    protected function bootProvider(ServiceProvider $provider)
-    {
-        $provider->callBootingCallbacks();
-
-        if (method_exists($provider, 'boot')) {
-            $this->call([$provider, 'boot']);
-        }
-
-        $provider->callBootedCallbacks();
-    }
-
-    /**
-     * Register a new boot listener.
-     *
-     * @param  callable  $callback
-     * @return void
-     */
-    public function booting($callback)
-    {
-        $this->bootingCallbacks[] = $callback;
-    }
-
-    /**
-     * Register a new "booted" listener.
-     *
-     * @param  callable  $callback
-     * @return void
-     */
-    public function booted($callback)
-    {
-        $this->bootedCallbacks[] = $callback;
-
-        if ($this->isBooted()) {
-            $this->fireAppCallbacks([$callback]);
-        }
-    }
-
-    /**
-     * Call the booting callbacks for the application.
-     *
-     * @param  callable[]  $callbacks
-     * @return void
-     */
-    protected function fireAppCallbacks(array $callbacks)
-    {
-        foreach ($callbacks as $callback) {
-            $callback($this);
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function handle(SymfonyRequest $request, int $type = self::MASTER_REQUEST, bool $catch = true)
-    {
-        return $this[HttpKernelContract::class]->handle(Request::createFromBase($request));
-    }
-
-    /**
-     * Determine if middleware has been disabled for the application.
-     *
-     * @return bool
-     */
-    public function shouldSkipMiddleware()
-    {
-        return $this->bound('middleware.disable') &&
-               $this->make('middleware.disable') === true;
-    }
-
-    /**
-     * Get the path to the cached services.php file.
-     *
-     * @return string
-     */
-    public function getCachedServicesPath()
-    {
-        return $this->normalizeCachePath('APP_SERVICES_CACHE', 'cache/services.php');
-    }
-
-    /**
-     * Get the path to the cached packages.php file.
-     *
-     * @return string
-     */
-    public function getCachedPackagesPath()
-    {
-        return $this->normalizeCachePath('APP_PACKAGES_CACHE', 'cache/packages.php');
-    }
-
-    /**
-     * Determine if the application configuration is cached.
-     *
-     * @return bool
-     */
-    public function configurationIsCached()
-    {
-        return is_file($this->getCachedConfigPath());
-    }
-
-    /**
-     * Get the path to the configuration cache file.
-     *
-     * @return string
-     */
-    public function getCachedConfigPath()
-    {
-        return $this->normalizeCachePath('APP_CONFIG_CACHE', 'cache/config.php');
-    }
-
-    /**
-     * Determine if the application routes are cached.
-     *
-     * @return bool
-     */
-    public function routesAreCached()
-    {
-        return $this['files']->exists($this->getCachedRoutesPath());
-    }
-
-    /**
-     * Get the path to the routes cache file.
-     *
-     * @return string
-     */
-    public function getCachedRoutesPath()
-    {
-        return $this->normalizeCachePath('APP_ROUTES_CACHE', 'cache/routes-v7.php');
-    }
-
-    /**
-     * Determine if the application events are cached.
-     *
-     * @return bool
-     */
-    public function eventsAreCached()
-    {
-        return $this['files']->exists($this->getCachedEventsPath());
-    }
-
-    /**
-     * Get the path to the events cache file.
-     *
-     * @return string
-     */
-    public function getCachedEventsPath()
-    {
-        return $this->normalizeCachePath('APP_EVENTS_CACHE', 'cache/events.php');
-    }
-
-    /**
-     * Normalize a relative or absolute path to a cache file.
-     *
-     * @param  string  $key
-     * @param  string  $default
-     * @return string
-     */
-    protected function normalizeCachePath($key, $default)
-    {
-        if (is_null($env = Env::get($key))) {
-            return $this->bootstrapPath($default);
-        }
-
-        return Str::startsWith($env, $this->absoluteCachePathPrefixes)
-                ? $env
-                : $this->basePath($env);
-    }
-
-    /**
-     * Add new prefix to list of absolute path prefixes.
-     *
-     * @param  string  $prefix
-     * @return $this
-     */
-    public function addAbsoluteCachePathPrefix($prefix)
-    {
-        $this->absoluteCachePathPrefixes[] = $prefix;
-
-        return $this;
-    }
-
-    /**
-     * Determine if the application is currently down for maintenance.
-     *
-     * @return bool
-     */
-    public function isDownForMaintenance()
-    {
-        return is_file($this->storagePath().'/framework/down');
-    }
-
-    /**
-     * Throw an HttpException with the given data.
-     *
-     * @param  int  $code
-     * @param  string  $message
-     * @param  array  $headers
-     * @return void
-     *
-     * @throws \Symfony\Component\HttpKernel\Exception\HttpException
-     * @throws \Symfony\Component\HttpKernel\Exception\NotFoundHttpException
-     */
-    public function abort($code, $message = '', array $headers = [])
-    {
-        if ($code == 404) {
-            throw new NotFoundHttpException($message);
-        }
-
-        throw new HttpException($code, $message, null, $headers);
-    }
-
-    /**
-     * Register a terminating callback with the application.
-     *
-     * @param  callable|string  $callback
-     * @return $this
-     */
-    public function terminating($callback)
-    {
-        $this->terminatingCallbacks[] = $callback;
-
-        return $this;
-    }
-
-    /**
-     * Terminate the application.
-     *
-     * @return void
-     */
-    public function terminate()
-    {
-        foreach ($this->terminatingCallbacks as $terminating) {
-            $this->call($terminating);
-        }
-    }
-
-    /**
-     * Get the service providers that have been loaded.
-     *
-     * @return array
-     */
-    public function getLoadedProviders()
-    {
-        return $this->loadedProviders;
-    }
-
-    /**
-     * Determine if the given service provider is loaded.
-     *
-     * @param  string  $provider
-     * @return bool
-     */
-    public function providerIsLoaded(string $provider)
-    {
-        return isset($this->loadedProviders[$provider]);
-    }
-
-    /**
-     * Get the application's deferred services.
-     *
-     * @return array
-     */
-    public function getDeferredServices()
-    {
-        return $this->deferredServices;
-    }
-
-    /**
-     * Set the application's deferred services.
-     *
-     * @param  array  $services
-     * @return void
-     */
-    public function setDeferredServices(array $services)
-    {
-        $this->deferredServices = $services;
-    }
-
-    /**
-     * Add an array of services to the application's deferred services.
-     *
-     * @param  array  $services
-     * @return void
-     */
-    public function addDeferredServices(array $services)
-    {
-        $this->deferredServices = array_merge($this->deferredServices, $services);
-    }
-
-    /**
-     * Determine if the given service is a deferred service.
-     *
-     * @param  string  $service
-     * @return bool
-     */
-    public function isDeferredService($service)
-    {
-        return isset($this->deferredServices[$service]);
-    }
-
-    /**
-     * Configure the real-time facade namespace.
-     *
-     * @param  string  $namespace
-     * @return void
-     */
-    public function provideFacades($namespace)
-    {
-        AliasLoader::setFacadeNamespace($namespace);
-    }
-
-    /**
-     * Get the current application locale.
-     *
-     * @return string
-     */
-    public function getLocale()
-    {
-        return $this['config']->get('app.locale');
-    }
-
-    /**
-     * Get the current application locale.
-     *
-     * @return string
-     */
-    public function currentLocale()
-    {
-        return $this->getLocale();
-    }
-
-    /**
-     * Get the current application fallback locale.
-     *
-     * @return string
-     */
-    public function getFallbackLocale()
-    {
-        return $this['config']->get('app.fallback_locale');
-    }
-
-    /**
-     * Set the current application locale.
-     *
-     * @param  string  $locale
-     * @return void
-     */
-    public function setLocale($locale)
-    {
-        $this['config']->set('app.locale', $locale);
-
-        $this['translator']->setLocale($locale);
-
-        $this['events']->dispatch(new LocaleUpdated($locale));
-    }
-
-    /**
-     * Set the current application fallback locale.
-     *
-     * @param  string  $fallbackLocale
-     * @return void
-     */
-    public function setFallbackLocale($fallbackLocale)
-    {
-        $this['config']->set('app.fallback_locale', $fallbackLocale);
-
-        $this['translator']->setFallback($fallbackLocale);
-    }
-
-    /**
-     * Determine if application locale is the given locale.
-     *
-     * @param  string  $locale
-     * @return bool
-     */
-    public function isLocale($locale)
-    {
-        return $this->getLocale() == $locale;
-    }
-
-    /**
-     * Register the core class aliases in the container.
-     *
-     * @return void
-     */
-    public function registerCoreContainerAliases()
-    {
-        foreach ([
-            'app'                  => [self::class, \Illuminate\Contracts\Container\Container::class, \Illuminate\Contracts\Foundation\Application::class, \Psr\Container\ContainerInterface::class],
-            'auth'                 => [\Illuminate\Auth\AuthManager::class, \Illuminate\Contracts\Auth\Factory::class],
-            'auth.driver'          => [\Illuminate\Contracts\Auth\Guard::class],
-            'blade.compiler'       => [\Illuminate\View\Compilers\BladeCompiler::class],
-            'cache'                => [\Illuminate\Cache\CacheManager::class, \Illuminate\Contracts\Cache\Factory::class],
-            'cache.store'          => [\Illuminate\Cache\Repository::class, \Illuminate\Contracts\Cache\Repository::class, \Psr\SimpleCache\CacheInterface::class],
-            'cache.psr6'           => [\Symfony\Component\Cache\Adapter\Psr16Adapter::class, \Symfony\Component\Cache\Adapter\AdapterInterface::class, \Psr\Cache\CacheItemPoolInterface::class],
-            'config'               => [\Illuminate\Config\Repository::class, \Illuminate\Contracts\Config\Repository::class],
-            'cookie'               => [\Illuminate\Cookie\CookieJar::class, \Illuminate\Contracts\Cookie\Factory::class, \Illuminate\Contracts\Cookie\QueueingFactory::class],
-            'encrypter'            => [\Illuminate\Encryption\Encrypter::class, \Illuminate\Contracts\Encryption\Encrypter::class],
-            'db'                   => [\Illuminate\Database\DatabaseManager::class, \Illuminate\Database\ConnectionResolverInterface::class],
-            'db.connection'        => [\Illuminate\Database\Connection::class, \Illuminate\Database\ConnectionInterface::class],
-            'events'               => [\Illuminate\Events\Dispatcher::class, \Illuminate\Contracts\Events\Dispatcher::class],
-            'files'                => [\Illuminate\Filesystem\Filesystem::class],
-            'filesystem'           => [\Illuminate\Filesystem\FilesystemManager::class, \Illuminate\Contracts\Filesystem\Factory::class],
-            'filesystem.disk'      => [\Illuminate\Contracts\Filesystem\Filesystem::class],
-            'filesystem.cloud'     => [\Illuminate\Contracts\Filesystem\Cloud::class],
-            'hash'                 => [\Illuminate\Hashing\HashManager::class],
-            'hash.driver'          => [\Illuminate\Contracts\Hashing\Hasher::class],
-            'translator'           => [\Illuminate\Translation\Translator::class, \Illuminate\Contracts\Translation\Translator::class],
-            'log'                  => [\Illuminate\Log\LogManager::class, \Psr\Log\LoggerInterface::class],
-            'mail.manager'         => [\Illuminate\Mail\MailManager::class, \Illuminate\Contracts\Mail\Factory::class],
-            'mailer'               => [\Illuminate\Mail\Mailer::class, \Illuminate\Contracts\Mail\Mailer::class, \Illuminate\Contracts\Mail\MailQueue::class],
-            'auth.password'        => [\Illuminate\Auth\Passwords\PasswordBrokerManager::class, \Illuminate\Contracts\Auth\PasswordBrokerFactory::class],
-            'auth.password.broker' => [\Illuminate\Auth\Passwords\PasswordBroker::class, \Illuminate\Contracts\Auth\PasswordBroker::class],
-            'queue'                => [\Illuminate\Queue\QueueManager::class, \Illuminate\Contracts\Queue\Factory::class, \Illuminate\Contracts\Queue\Monitor::class],
-            'queue.connection'     => [\Illuminate\Contracts\Queue\Queue::class],
-            'queue.failer'         => [\Illuminate\Queue\Failed\FailedJobProviderInterface::class],
-            'redirect'             => [\Illuminate\Routing\Redirector::class],
-            'redis'                => [\Illuminate\Redis\RedisManager::class, \Illuminate\Contracts\Redis\Factory::class],
-            'redis.connection'     => [\Illuminate\Redis\Connections\Connection::class, \Illuminate\Contracts\Redis\Connection::class],
-            'request'              => [\Illuminate\Http\Request::class, \Symfony\Component\HttpFoundation\Request::class],
-            'router'               => [\Illuminate\Routing\Router::class, \Illuminate\Contracts\Routing\Registrar::class, \Illuminate\Contracts\Routing\BindingRegistrar::class],
-            'session'              => [\Illuminate\Session\SessionManager::class],
-            'session.store'        => [\Illuminate\Session\Store::class, \Illuminate\Contracts\Session\Session::class],
-            'url'                  => [\Illuminate\Routing\UrlGenerator::class, \Illuminate\Contracts\Routing\UrlGenerator::class],
-            'validator'            => [\Illuminate\Validation\Factory::class, \Illuminate\Contracts\Validation\Factory::class],
-            'view'                 => [\Illuminate\View\Factory::class, \Illuminate\Contracts\View\Factory::class],
-        ] as $key => $aliases) {
-            foreach ($aliases as $alias) {
-                $this->alias($key, $alias);
-            }
-        }
-    }
-
-    /**
-     * Flush the container of all bindings and resolved instances.
-     *
-     * @return void
-     */
-    public function flush()
-    {
-        parent::flush();
-
-        $this->buildStack = [];
-        $this->loadedProviders = [];
-        $this->bootedCallbacks = [];
-        $this->bootingCallbacks = [];
-        $this->deferredServices = [];
-        $this->reboundCallbacks = [];
-        $this->serviceProviders = [];
-        $this->resolvingCallbacks = [];
-        $this->terminatingCallbacks = [];
-        $this->beforeResolvingCallbacks = [];
-        $this->afterResolvingCallbacks = [];
-        $this->globalBeforeResolvingCallbacks = [];
-        $this->globalResolvingCallbacks = [];
-        $this->globalAfterResolvingCallbacks = [];
-    }
-
-    /**
-     * Get the application namespace.
-     *
-     * @return string
-     *
-     * @throws \RuntimeException
-     */
-    public function getNamespace()
-    {
-        if (! is_null($this->namespace)) {
-            return $this->namespace;
-        }
-
-        $composer = json_decode(file_get_contents($this->basePath('composer.json')), true);
-
-        foreach ((array) data_get($composer, 'autoload.psr-4') as $namespace => $path) {
-            foreach ((array) $path as $pathChoice) {
-                if (realpath($this->path()) === realpath($this->basePath($pathChoice))) {
-                    return $this->namespace = $namespace;
-                }
-            }
-        }
-
-        throw new RuntimeException('Unable to detect application namespace.');
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+5xOb/QTpJF2nc+kFMe10YE92vpJMirgP9ki=

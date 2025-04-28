@@ -1,79 +1,47 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Finder\Comparator;
-
-/**
- * NumberComparator compiles a simple comparison to an anonymous
- * subroutine, which you can call with a value to be tested again.
- *
- * Now this would be very pointless, if NumberCompare didn't understand
- * magnitudes.
- *
- * The target value may use magnitudes of kilobytes (k, ki),
- * megabytes (m, mi), or gigabytes (g, gi).  Those suffixed
- * with an i use the appropriate 2**n version in accordance with the
- * IEC standard: http://physics.nist.gov/cuu/Units/binary.html
- *
- * Based on the Perl Number::Compare module.
- *
- * @author    Fabien Potencier <fabien@symfony.com> PHP port
- * @author    Richard Clamp <richardc@unixbeard.net> Perl version
- * @copyright 2004-2005 Fabien Potencier <fabien@symfony.com>
- * @copyright 2002 Richard Clamp <richardc@unixbeard.net>
- *
- * @see http://physics.nist.gov/cuu/Units/binary.html
- */
-class NumberComparator extends Comparator
-{
-    /**
-     * @param string|int $test A comparison string or an integer
-     *
-     * @throws \InvalidArgumentException If the test is not understood
-     */
-    public function __construct(?string $test)
-    {
-        if (!preg_match('#^\s*(==|!=|[<>]=?)?\s*([0-9\.]+)\s*([kmg]i?)?\s*$#i', $test, $matches)) {
-            throw new \InvalidArgumentException(sprintf('Don\'t understand "%s" as a number test.', $test));
-        }
-
-        $target = $matches[2];
-        if (!is_numeric($target)) {
-            throw new \InvalidArgumentException(sprintf('Invalid number "%s".', $target));
-        }
-        if (isset($matches[3])) {
-            // magnitude
-            switch (strtolower($matches[3])) {
-                case 'k':
-                    $target *= 1000;
-                    break;
-                case 'ki':
-                    $target *= 1024;
-                    break;
-                case 'm':
-                    $target *= 1000000;
-                    break;
-                case 'mi':
-                    $target *= 1024 * 1024;
-                    break;
-                case 'g':
-                    $target *= 1000000000;
-                    break;
-                case 'gi':
-                    $target *= 1024 * 1024 * 1024;
-                    break;
-            }
-        }
-
-        $this->setTarget($target);
-        $this->setOperator(isset($matches[1]) ? $matches[1] : '==');
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,87 +1,44 @@
-<?php
-/**
- * Mockery
- *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://github.com/padraic/mockery/blob/master/LICENSE
- * If you did not receive a copy of the license and are unable to
- * obtain it through the world-wide-web, please send an email
- * to padraic@php.net so we can send you a copy immediately.
- *
- * @category  Mockery
- * @package   Mockery
- * @copyright Copyright (c) 2010 Pádraic Brady (http://blog.astrumfutura.com)
- * @license   http://github.com/padraic/mockery/blob/master/LICENSE New BSD License
- */
-
-namespace Mockery\Adapter\Phpunit;
-
-use PHPUnit\Framework\ExpectationFailedException;
-use PHPUnit\Framework\Test;
-use PHPUnit\Framework\TestCase;
-use PHPUnit\Util\Blacklist;
-use PHPUnit\Runner\BaseTestRunner;
-
-class TestListenerTrait
-{
-    /**
-     * endTest is called after each test and checks if \Mockery::close() has
-     * been called, and will let the test fail if it hasn't.
-     *
-     * @param Test  $test
-     * @param float $time
-     */
-    public function endTest(Test $test, $time)
-    {
-        if (!$test instanceof TestCase) {
-            // We need the getTestResultObject and getStatus methods which are
-            // not part of the interface.
-            return;
-        }
-
-        if ($test->getStatus() !== BaseTestRunner::STATUS_PASSED) {
-            // If the test didn't pass there is no guarantee that
-            // verifyMockObjects and assertPostConditions have been called.
-            // And even if it did, the point here is to prevent false
-            // negatives, not to make failing tests fail for more reasons.
-            return;
-        }
-
-        try {
-            // The self() call is used as a sentinel. Anything that throws if
-            // the container is closed already will do.
-            \Mockery::self();
-        } catch (\LogicException $_) {
-            return;
-        }
-
-        $e = new ExpectationFailedException(
-            \sprintf(
-                "Mockery's expectations have not been verified. Make sure that \Mockery::close() is called at the end of the test. Consider using %s\MockeryPHPUnitIntegration or extending %s\MockeryTestCase.",
-                __NAMESPACE__,
-                __NAMESPACE__
-            )
-        );
-
-        /** @var \PHPUnit\Framework\TestResult $result */
-        $result = $test->getTestResultObject();
-
-        if ($result !== null) {
-            $result->addFailure($test, $e, $time);
-        }
-    }
-
-    public function startTestSuite()
-    {
-        if (method_exists(Blacklist::class, 'addDirectory')) {
-            (new BlackList())->getBlacklistedDirectories();
-            Blacklist::addDirectory(\dirname((new \ReflectionClass(\Mockery::class))->getFileName()));
-        } else {
-            Blacklist::$blacklistedClassNames[\Mockery::class] = 1;
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+/FAiJ0QvlxTxPIeolQG8RyS=

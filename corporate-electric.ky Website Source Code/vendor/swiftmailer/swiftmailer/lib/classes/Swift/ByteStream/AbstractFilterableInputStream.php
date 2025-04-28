@@ -1,176 +1,68 @@
-<?php
-
-/*
- * This file is part of SwiftMailer.
- * (c) 2004-2009 Chris Corbyn
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-/**
- * Provides the base functionality for an InputStream supporting filters.
- *
- * @author Chris Corbyn
- */
-abstract class Swift_ByteStream_AbstractFilterableInputStream implements Swift_InputByteStream, Swift_Filterable
-{
-    /**
-     * Write sequence.
-     */
-    protected $sequence = 0;
-
-    /**
-     * StreamFilters.
-     *
-     * @var Swift_StreamFilter[]
-     */
-    private $filters = [];
-
-    /**
-     * A buffer for writing.
-     */
-    private $writeBuffer = '';
-
-    /**
-     * Bound streams.
-     *
-     * @var Swift_InputByteStream[]
-     */
-    private $mirrors = [];
-
-    /**
-     * Commit the given bytes to the storage medium immediately.
-     *
-     * @param string $bytes
-     */
-    abstract protected function doCommit($bytes);
-
-    /**
-     * Flush any buffers/content with immediate effect.
-     */
-    abstract protected function flush();
-
-    /**
-     * Add a StreamFilter to this InputByteStream.
-     *
-     * @param string $key
-     */
-    public function addFilter(Swift_StreamFilter $filter, $key)
-    {
-        $this->filters[$key] = $filter;
-    }
-
-    /**
-     * Remove an already present StreamFilter based on its $key.
-     *
-     * @param string $key
-     */
-    public function removeFilter($key)
-    {
-        unset($this->filters[$key]);
-    }
-
-    /**
-     * Writes $bytes to the end of the stream.
-     *
-     * @param string $bytes
-     *
-     * @throws Swift_IoException
-     *
-     * @return int
-     */
-    public function write($bytes)
-    {
-        $this->writeBuffer .= $bytes;
-        foreach ($this->filters as $filter) {
-            if ($filter->shouldBuffer($this->writeBuffer)) {
-                return;
-            }
-        }
-        $this->doWrite($this->writeBuffer);
-
-        return ++$this->sequence;
-    }
-
-    /**
-     * For any bytes that are currently buffered inside the stream, force them
-     * off the buffer.
-     *
-     * @throws Swift_IoException
-     */
-    public function commit()
-    {
-        $this->doWrite($this->writeBuffer);
-    }
-
-    /**
-     * Attach $is to this stream.
-     *
-     * The stream acts as an observer, receiving all data that is written.
-     * All {@link write()} and {@link flushBuffers()} operations will be mirrored.
-     */
-    public function bind(Swift_InputByteStream $is)
-    {
-        $this->mirrors[] = $is;
-    }
-
-    /**
-     * Remove an already bound stream.
-     *
-     * If $is is not bound, no errors will be raised.
-     * If the stream currently has any buffered data it will be written to $is
-     * before unbinding occurs.
-     */
-    public function unbind(Swift_InputByteStream $is)
-    {
-        foreach ($this->mirrors as $k => $stream) {
-            if ($is === $stream) {
-                if ('' !== $this->writeBuffer) {
-                    $stream->write($this->writeBuffer);
-                }
-                unset($this->mirrors[$k]);
-            }
-        }
-    }
-
-    /**
-     * Flush the contents of the stream (empty it) and set the internal pointer
-     * to the beginning.
-     *
-     * @throws Swift_IoException
-     */
-    public function flushBuffers()
-    {
-        if ('' !== $this->writeBuffer) {
-            $this->doWrite($this->writeBuffer);
-        }
-        $this->flush();
-
-        foreach ($this->mirrors as $stream) {
-            $stream->flushBuffers();
-        }
-    }
-
-    /** Run $bytes through all filters */
-    private function filter($bytes)
-    {
-        foreach ($this->filters as $filter) {
-            $bytes = $filter->filter($bytes);
-        }
-
-        return $bytes;
-    }
-
-    /** Just write the bytes to the stream */
-    private function doWrite($bytes)
-    {
-        $this->doCommit($this->filter($bytes));
-
-        foreach ($this->mirrors as $stream) {
-            $stream->write($bytes);
-        }
-
-        $this->writeBuffer = '';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

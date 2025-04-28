@@ -1,69 +1,41 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\CssSelector;
-
-use Symfony\Component\CssSelector\Parser\Shortcut\ClassParser;
-use Symfony\Component\CssSelector\Parser\Shortcut\ElementParser;
-use Symfony\Component\CssSelector\Parser\Shortcut\EmptyStringParser;
-use Symfony\Component\CssSelector\Parser\Shortcut\HashParser;
-use Symfony\Component\CssSelector\XPath\Extension\HtmlExtension;
-use Symfony\Component\CssSelector\XPath\Translator;
-
-/**
- * CssSelectorConverter is the main entry point of the component and can convert CSS
- * selectors to XPath expressions.
- *
- * @author Christophe Coevoet <stof@notk.org>
- */
-class CssSelectorConverter
-{
-    private $translator;
-    private $cache;
-
-    private static $xmlCache = [];
-    private static $htmlCache = [];
-
-    /**
-     * @param bool $html Whether HTML support should be enabled. Disable it for XML documents
-     */
-    public function __construct(bool $html = true)
-    {
-        $this->translator = new Translator();
-
-        if ($html) {
-            $this->translator->registerExtension(new HtmlExtension($this->translator));
-            $this->cache = &self::$htmlCache;
-        } else {
-            $this->cache = &self::$xmlCache;
-        }
-
-        $this->translator
-            ->registerParserShortcut(new EmptyStringParser())
-            ->registerParserShortcut(new ElementParser())
-            ->registerParserShortcut(new ClassParser())
-            ->registerParserShortcut(new HashParser())
-        ;
-    }
-
-    /**
-     * Translates a CSS expression to its XPath equivalent.
-     *
-     * Optionally, a prefix can be added to the resulting XPath
-     * expression with the $prefix parameter.
-     *
-     * @return string
-     */
-    public function toXPath(string $cssExpr, string $prefix = 'descendant-or-self::')
-    {
-        return $this->cache[$prefix][$cssExpr] ?? $this->cache[$prefix][$cssExpr] = $this->translator->cssToXPath($cssExpr, $prefix);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+qvkj2gi3jG==

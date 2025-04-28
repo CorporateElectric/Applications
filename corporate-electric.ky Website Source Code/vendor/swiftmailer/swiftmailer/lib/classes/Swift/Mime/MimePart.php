@@ -1,199 +1,90 @@
-<?php
-
-/*
- * This file is part of SwiftMailer.
- * (c) 2004-2009 Chris Corbyn
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-/**
- * A MIME part, in a multipart message.
- *
- * @author Chris Corbyn
- */
-class Swift_Mime_MimePart extends Swift_Mime_SimpleMimeEntity
-{
-    /** The format parameter last specified by the user */
-    protected $userFormat;
-
-    /** The charset last specified by the user */
-    protected $userCharset;
-
-    /** The delsp parameter last specified by the user */
-    protected $userDelSp;
-
-    /** The nesting level of this MimePart */
-    private $nestingLevel = self::LEVEL_ALTERNATIVE;
-
-    /**
-     * Create a new MimePart with $headers, $encoder and $cache.
-     *
-     * @param string $charset
-     */
-    public function __construct(Swift_Mime_SimpleHeaderSet $headers, Swift_Mime_ContentEncoder $encoder, Swift_KeyCache $cache, Swift_IdGenerator $idGenerator, $charset = null)
-    {
-        parent::__construct($headers, $encoder, $cache, $idGenerator);
-        $this->setContentType('text/plain');
-        if (null !== $charset) {
-            $this->setCharset($charset);
-        }
-    }
-
-    /**
-     * Set the body of this entity, either as a string, or as an instance of
-     * {@link Swift_OutputByteStream}.
-     *
-     * @param mixed  $body
-     * @param string $contentType optional
-     * @param string $charset     optional
-     *
-     * @return $this
-     */
-    public function setBody($body, $contentType = null, $charset = null)
-    {
-        if (isset($charset)) {
-            $this->setCharset($charset);
-        }
-        $body = $this->convertString($body);
-
-        parent::setBody($body, $contentType);
-
-        return $this;
-    }
-
-    /**
-     * Get the character set of this entity.
-     *
-     * @return string
-     */
-    public function getCharset()
-    {
-        return $this->getHeaderParameter('Content-Type', 'charset');
-    }
-
-    /**
-     * Set the character set of this entity.
-     *
-     * @param string $charset
-     *
-     * @return $this
-     */
-    public function setCharset($charset)
-    {
-        $this->setHeaderParameter('Content-Type', 'charset', $charset);
-        if ($charset !== $this->userCharset) {
-            $this->clearCache();
-        }
-        $this->userCharset = $charset;
-        parent::charsetChanged($charset);
-
-        return $this;
-    }
-
-    /**
-     * Get the format of this entity (i.e. flowed or fixed).
-     *
-     * @return string
-     */
-    public function getFormat()
-    {
-        return $this->getHeaderParameter('Content-Type', 'format');
-    }
-
-    /**
-     * Set the format of this entity (flowed or fixed).
-     *
-     * @param string $format
-     *
-     * @return $this
-     */
-    public function setFormat($format)
-    {
-        $this->setHeaderParameter('Content-Type', 'format', $format);
-        $this->userFormat = $format;
-
-        return $this;
-    }
-
-    /**
-     * Test if delsp is being used for this entity.
-     *
-     * @return bool
-     */
-    public function getDelSp()
-    {
-        return 'yes' === $this->getHeaderParameter('Content-Type', 'delsp');
-    }
-
-    /**
-     * Turn delsp on or off for this entity.
-     *
-     * @param bool $delsp
-     *
-     * @return $this
-     */
-    public function setDelSp($delsp = true)
-    {
-        $this->setHeaderParameter('Content-Type', 'delsp', $delsp ? 'yes' : null);
-        $this->userDelSp = $delsp;
-
-        return $this;
-    }
-
-    /**
-     * Get the nesting level of this entity.
-     *
-     * @see LEVEL_TOP, LEVEL_ALTERNATIVE, LEVEL_MIXED, LEVEL_RELATED
-     *
-     * @return int
-     */
-    public function getNestingLevel()
-    {
-        return $this->nestingLevel;
-    }
-
-    /**
-     * Receive notification that the charset has changed on this document, or a
-     * parent document.
-     *
-     * @param string $charset
-     */
-    public function charsetChanged($charset)
-    {
-        $this->setCharset($charset);
-    }
-
-    /** Fix the content-type and encoding of this entity */
-    protected function fixHeaders()
-    {
-        parent::fixHeaders();
-        if (\count($this->getChildren())) {
-            $this->setHeaderParameter('Content-Type', 'charset', null);
-            $this->setHeaderParameter('Content-Type', 'format', null);
-            $this->setHeaderParameter('Content-Type', 'delsp', null);
-        } else {
-            $this->setCharset($this->userCharset);
-            $this->setFormat($this->userFormat);
-            $this->setDelSp($this->userDelSp);
-        }
-    }
-
-    /** Set the nesting level of this entity */
-    protected function setNestingLevel($level)
-    {
-        $this->nestingLevel = $level;
-    }
-
-    /** Encode charset when charset is not utf-8 */
-    protected function convertString($string)
-    {
-        $charset = strtolower($this->getCharset());
-        if (!\in_array($charset, ['utf-8', 'iso-8859-1', 'iso-8859-15', ''])) {
-            return mb_convert_encoding($string, $charset, 'utf-8');
-        }
-
-        return $string;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+756ukAgtRmVtqW==

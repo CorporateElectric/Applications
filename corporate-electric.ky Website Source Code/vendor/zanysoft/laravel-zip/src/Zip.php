@@ -1,652 +1,242 @@
-<?php namespace ZanySoft\Zip;
-
-use \ZipArchive;
-use \Exception;
-
-/**
- * ZanySoft\Zip - ZipArchive toolbox
- *
- * This class provide methods to handle single zip archive
- *
- * @package     ZanySoft\Zip
- * @author      ZanySoft <info@zanysoft.co>
- * @license     MIT
- *
- */
-
-class Zip {
-
-    /**
-     * Select files to skip
-     *
-     * @var string
-     */
-    private $skip_mode = "NONE";
-
-    /**
-     * Supported skip modes
-     *
-     * @var bool
-     */
-    private $supported_skip_modes = array("HIDDEN", "ZANYSOFT", "ALL", "NONE");
-
-    /**
-     * Mask for the extraction folder (if it should be created)
-     *
-     * @var int
-     */
-    private $mask = 0777;
-
-    /**
-     * ZipArchive internal pointer
-     *
-     * @var object
-     */
-    private $zip_archive = null;
-
-    /**
-     * zip file name
-     *
-     * @var string
-     */
-    private $zip_file = null;
-
-    /**
-     * zip file password (only for extract)
-     *
-     * @var string
-     */
-    private $password = null;
-
-    /**
-     * Current base path
-     *
-     * @var string
-     */
-    private $path = null;
-
-    /**
-     * Array of well known zip status codes
-     *
-     * @var array
-     */
-    private static $zip_status_codes = Array(
-        ZipArchive::ER_OK           => 'No error',
-        ZipArchive::ER_MULTIDISK    => 'Multi-disk zip archives not supported',
-        ZipArchive::ER_RENAME       => 'Renaming temporary file failed',
-        ZipArchive::ER_CLOSE        => 'Closing zip archive failed',
-        ZipArchive::ER_SEEK         => 'Seek error',
-        ZipArchive::ER_READ         => 'Read error',
-        ZipArchive::ER_WRITE        => 'Write error',
-        ZipArchive::ER_CRC          => 'CRC error',
-        ZipArchive::ER_ZIPCLOSED    => 'Containing zip archive was closed',
-        ZipArchive::ER_NOENT        => 'No such file',
-        ZipArchive::ER_EXISTS       => 'File already exists',
-        ZipArchive::ER_OPEN         => 'Can\'t open file',
-        ZipArchive::ER_TMPOPEN      => 'Failure to create temporary file',
-        ZipArchive::ER_ZLIB         => 'Zlib error',
-        ZipArchive::ER_MEMORY       => 'Malloc failure',
-        ZipArchive::ER_CHANGED      => 'Entry has been changed',
-        ZipArchive::ER_COMPNOTSUPP  => 'Compression method not supported',
-        ZipArchive::ER_EOF          => 'Premature EOF',
-        ZipArchive::ER_INVAL        => 'Invalid argument',
-        ZipArchive::ER_NOZIP        => 'Not a zip archive',
-        ZipArchive::ER_INTERNAL     => 'Internal error',
-        ZipArchive::ER_INCONS       => 'Zip archive inconsistent',
-        ZipArchive::ER_REMOVE       => 'Can\'t remove file',
-        ZipArchive::ER_DELETED      => 'Entry has been deleted'
-    );
-
-    /**
-     * Class constructor
-     *
-     * @param   string  $zip_file   ZIP file name
-     *
-     */
-    public function __construct($zip_file) {
-
-        if ( empty($zip_file) ) throw new \Exception(self::getStatus(ZipArchive::ER_NOENT));
-
-        $this->zip_file = $zip_file;
-
-    }
-
-    /**
-     * Open a zip archive
-     *
-     * @param   string  $zip_file   ZIP file name
-     *
-     * @return  \ZanySoft\Zip\Zip
-     */
-    public static function open($zip_file) {
-
-        try {
-
-            $zip = new Zip($zip_file);
-
-            $zip->setArchive(self::openZipFile($zip_file));
-
-        } catch (\Exception $ze) {
-
-            throw $ze;
-
-        }
-
-        return $zip;
-
-    }
-
-    /**
-     * Check a zip archive
-     *
-     * @param   string  $zip_file   ZIP file name
-     *
-     * @return  bool
-     */
-    public static function check($zip_file) {
-
-        try {
-
-            $zip = self::openZipFile($zip_file, ZipArchive::CHECKCONS);
-
-            $zip->close();
-
-        } catch (Exception $ze) {
-
-            throw $ze;
-
-        }
-
-        return true;
-
-    }
-
-    /**
-     * Create a new zip archive
-     *
-     * @param   string  $zip_file   ZIP file name
-     * @param   bool    $overwrite  overwrite existing file (if any)
-     *
-     * @return  \ZanySoft\Zip\Zip
-     */
-    public static function create($zip_file, $overwrite = false) {
-
-        $overwrite = filter_var($overwrite, FILTER_VALIDATE_BOOLEAN, array(
-            "options" => array(
-                "default" => false
-            )
-        ));
-
-        try {
-
-            $zip = new Zip($zip_file);
-
-            if ( $overwrite ) $zip->setArchive(self::openZipFile($zip_file, ZipArchive::CREATE | ZipArchive::OVERWRITE));
-
-            else $zip->setArchive(self::openZipFile($zip_file, ZipArchive::CREATE));
-
-        } catch (Exception $ze) {
-
-            throw $ze;
-
-        }
-
-        return $zip;
-
-    }
-
-    /**
-     * Set files to skip
-     *
-     * @param   string  $mode   [HIDDEN, ZANYSOFT, ALL, NONE]
-     *
-     * @return  \ZanySoft\Zip\Zip
-     */
-    final public function setSkipped($mode) {
-
-        $mode = strtoupper($mode);
-
-        if ( !in_array($mode, $this->supported_skip_modes) ) throw new Exception("Unsupported skip mode");
-
-        $this->skip_mode = $mode;
-
-        return $this;
-
-    }
-
-    /**
-     * Get current skip mode (HIDDEN, ZANYSOFT, ALL, NONE)
-     *
-     * @return  string
-     */
-    final public function getSkipped() {
-
-        return $this->skip_mode;
-
-    }
-
-    /**
-     * Set extraction password
-     *
-     * @param   string  $password
-     *
-     * @return  \ZanySoft\Zip\Zip
-     */
-    final public function setPassword($password) {
-
-        $this->password = $password;
-
-        return $this;
-
-    }
-
-    /**
-     * Get current extraction password
-     *
-     * @return  string
-     */
-    final public function getPassword() {
-
-        return $this->password;
-
-    }
-
-    /**
-     * Set current base path (just to add relative files to zip archive)
-     *
-     * @param   string  $path
-     *
-     * @return  \ZanySoft\Zip\Zip
-     */
-    final public function setPath($path) {
-
-        if ( !file_exists($path) ) throw new Exception("Not existent path");
-
-        $this->path = $path[strlen($path) - 1] == "/" ? $path : $path."/";
-
-        return $this;
-
-    }
-
-    /**
-     * Get current base path
-     *
-     * @return  string
-     */
-    final public function getPath() {
-
-        return $this->path;
-
-    }
-
-    /**
-     * Set extraction folder mask
-     *
-     * @param   int     $mask
-     *
-     * @return  \ZanySoft\Zip\Zip
-     */
-    final public function setMask($mask) {
-
-        $mask = filter_var($mask, FILTER_VALIDATE_INT, array(
-            "options" => array(
-                "max_range" => 0777,
-                "default" => 0777
-            ), 'flags' => FILTER_FLAG_ALLOW_OCTAL
-        ));
-
-        $this->mask = $mask;
-
-        return $this;
-
-    }
-
-    /**
-     * Get current extraction folder mask
-     *
-     * @return  int
-     */
-    final public function getMask() {
-
-        return $this->mask;
-
-    }
-
-    /**
-     * Set the current ZipArchive object
-     *
-     * @param   \ZipArchive     $zip
-     *
-     * @return  \ZanySoft\Zip\Zip
-     */
-    final public function setArchive(ZipArchive $zip) {
-
-        $this->zip_archive = $zip;
-
-        return $this;
-
-    }
-
-    /**
-     * Get current ZipArchive object
-     *
-     * @return  \ZipArchive
-     */
-    final public function getArchive() {
-
-        return $this->zip_archive;
-
-    }
-
-    /**
-     * Get current zip file
-     *
-     * @return  string
-     */
-    final public function getZipFile() {
-
-        return $this->zip_file;
-
-    }
-
-    /**
-     * Get a list of files in archive (array)
-     *
-     * @return  array
-     */
-    public function listFiles() {
-
-        $list = Array();
-
-        for ( $i = 0; $i < $this->zip_archive->numFiles; $i++ ) {
-
-            $name = $this->zip_archive->getNameIndex($i);
-
-            if ( $name === false ) throw new Exception(self::getStatus($this->zip_archive->status));
-
-            array_push($list, $name);
-
-        }
-
-        return $list;
-
-    }
-
-    /**
-     * Extract files from zip archive
-     *
-     * @param   string  $destination    Destination path
-     * @param   mixed   $files          (optional) a filename or an array of filenames
-     *
-     * @return  bool
-     */
-    public function extract($destination, $files = null) {
-
-        if ( empty($destination) ) throw new Exception('Invalid destination path');
-
-        if ( !file_exists($destination) ) {
-
-            $omask = umask(0);
-
-            $action = mkdir($destination, $this->mask, true);
-
-            umask($omask);
-
-            if ( $action === false ) throw new Exception("Error creating folder ".$destination);
-
-        }
-
-        if ( !is_writable($destination) ) throw new Exception('Destination path not writable');
-        
-        if (!is_array($files) && !is_string($files) && !is_null($files)) {
-            throw new Exception('Invalid extractable files');
-        }
-        
-	$files = is_array($files) ? $files : is_string($files) ? [$files]: $files;
-
-        if (@sizeof($files) != 0 ) {
-            $file_matrix = $files;
-        } else {
-            $file_matrix = $this->getArchiveFiles();
-        }
-
-        if ( !empty($this->password) ) $this->zip_archive->setPassword($this->password);
-
-        $extract = $this->zip_archive->extractTo($destination, $file_matrix);
-
-        if ( $extract === false ) throw new Exception(self::getStatus($this->zip_archive->status));
-
-        return true;
-
-    }
-
-    /**
-     * Add files to zip archive
-     *
-     * @param   mixed   $file_name_or_array     filename to add or an array of filenames
-     * @param   bool    $flatten_root_folder    in case of directory, specify if root folder should be flatten or not
-     *
-     * @return  \ZanySoft\Zip\Zip
-     */
-    public function add($file_name_or_array, $flatten_root_folder = false) {
-
-        if ( empty($file_name_or_array) ) throw new Exception(self::getStatus(ZipArchive::ER_NOENT));
-
-        $flatten_root_folder = filter_var($flatten_root_folder, FILTER_VALIDATE_BOOLEAN, array(
-            "options" => array(
-                "default" => false
-            )
-        ));
-
-        try {
-
-            if ( is_array($file_name_or_array) ) {
-
-                foreach ( $file_name_or_array as $file_name ) $this->addItem($file_name, $flatten_root_folder);
-
-            } else $this->addItem($file_name_or_array, $flatten_root_folder);
-
-        } catch (Exception $ze) {
-
-            throw $ze;
-
-        }
-
-        return $this;
-
-    }
-
-    /**
-     * Delete files from zip archive
-     *
-     * @param   mixed   $file_name_or_array     filename to delete or an array of filenames
-     *
-     * @return  \ZanySoft\Zip\Zip
-     */
-    public function delete($file_name_or_array) {
-
-        if ( empty($file_name_or_array) ) throw new Exception(self::getStatus(ZipArchive::ER_NOENT));
-
-        try {
-
-            if ( is_array($file_name_or_array) ) {
-
-                foreach ( $file_name_or_array as $file_name ) $this->deleteItem($file_name);
-
-            } else $this->deleteItem($file_name_or_array);
-
-        } catch (Exception $ze) {
-
-            throw $ze;
-
-        }
-
-        return $this;
-
-    }
-
-    /**
-     * Close the zip archive
-     *
-     * @return  bool
-     */
-    public function close() {
-
-        if ( $this->zip_archive->close() === false ) throw new Exception(self::getStatus($this->zip_archive->status));
-
-        return true;
-
-    }
-
-    /**
-     * Get a list of file contained in zip archive before extraction
-     *
-     * @return  array
-     */
-    private function getArchiveFiles() {
-
-        $list = array();
-
-        for ( $i = 0; $i < $this->zip_archive->numFiles; $i++ ) {
-
-            $file = $this->zip_archive->statIndex($i);
-
-            if ( $file === false ) continue;
-
-            $name = str_replace('\\', '/', $file['name']);
-
-            if ( $name[0] == "." AND in_array($this->skip_mode, array("HIDDEN", "ALL")) ) continue;
-
-            if ( $name[0] == "." AND @$name[1] == "_" AND in_array($this->skip_mode, array("ZANYSOFT", "ALL")) ) continue;
-
-            array_push($list, $name);
-
-        }
-
-        return $list;
-
-    }
-
-    /**
-     * Add item to zip archive
-     *
-     * @param   string $file       File to add (realpath)
-     * @param   bool   $flatroot   (optional) If true, source directory will be not included
-     * @param   string $base       (optional) Base to record in zip file
-     *
-     */
-    private function addItem($file, $flatroot = false, $base = null) {
-
-        $file = is_null($this->path) ? $file : $this->path.$file;
-
-        $real_file = str_replace('\\', '/', realpath($file));
-
-        $real_name = basename($real_file);
-
-        if ( !is_null($base) ) {
-
-            if ( $real_name[0] == "." AND in_array($this->skip_mode, array("HIDDEN", "ALL")) ) return;
-
-            if ( $real_name[0] == "." AND @$real_name[1] == "_" AND in_array($this->skip_mode, array("ZANYSOFT", "ALL")) ) return;
-
-        }
-
-        if ( is_dir($real_file) ) {
-
-            if ( !$flatroot ) {
-
-                $folder_target = is_null($base) ? $real_name : $base.$real_name;
-
-                $new_folder = $this->zip_archive->addEmptyDir($folder_target);
-
-                if ( $new_folder === false ) throw new Exception(self::getStatus($this->zip_archive->status));
-
-            } else {
-
-                $folder_target = null;
-
-            }
-
-            foreach ( new \DirectoryIterator($real_file) as $path ) {
-
-                if ( $path->isDot() ) continue;
-
-                $file_real = $path->getPathname();
-
-                $base = is_null($folder_target) ? null : ($folder_target."/");
-
-                try {
-
-                    $this->addItem($file_real, false, $base);
-
-                } catch (Exception $ze) {
-
-                    throw $ze;
-
-                }
-
-            }
-
-        }
-        else if ( is_file($real_file) ) {
-
-            $file_target = is_null($base) ? $real_name : $base.$real_name;
-
-            $add_file = $this->zip_archive->addFile($real_file, $file_target);
-
-            if ( $add_file === false ) throw new Exception(self::getStatus($this->zip_archive->status));
-
-        } else return;
-
-    }
-
-    /**
-     * Delete item from zip archive
-     *
-     * @param   string $file   File to delete (zippath)
-     *
-     */
-    private function deleteItem($file) {
-
-        $deleted = $this->zip_archive->deleteName($file);
-
-        if ( $deleted === false ) throw new \Exception(self::getStatus($this->zip_archive->status));
-
-    }
-
-    /**
-     * Open a zip file
-     *
-     * @param   string $zip_file   ZIP status code
-     * @param   int    $flags      ZIP status code
-     *
-     * @return  \ZipArchive
-     */
-    private static function openZipFile($zip_file, $flags = null) {
-
-        $zip = new ZipArchive();
-
-        $open = $zip->open($zip_file, $flags);
-
-        if ( $open !== true ) throw new \Exception(self::getStatus($open));
-
-        return $zip;
-
-    }
-
-    /**
-     * Get status from zip status code
-     *
-     * @param   int $code   ZIP status code
-     *
-     * @return  string
-     */
-    private static function getStatus($code) {
-
-        if ( array_key_exists($code, self::$zip_status_codes) ) return self::$zip_status_codes[$code];
-
-        else return sprintf('Unknown status %s', $code);
-
-    }
-
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,82 +1,52 @@
-<?php
-
-namespace Laravel\Ui\Presets;
-
-use Illuminate\Filesystem\Filesystem;
-use Illuminate\Support\Arr;
-
-class Vue extends Preset
-{
-    /**
-     * Install the preset.
-     *
-     * @return void
-     */
-    public static function install()
-    {
-        static::ensureComponentDirectoryExists();
-        static::updatePackages();
-        static::updateWebpackConfiguration();
-        static::updateBootstrapping();
-        static::updateComponent();
-        static::removeNodeModules();
-    }
-
-    /**
-     * Update the given package array.
-     *
-     * @param  array  $packages
-     * @return array
-     */
-    protected static function updatePackageArray(array $packages)
-    {
-        return [
-            'resolve-url-loader' => '^2.3.1',
-            'sass' => '^1.20.1',
-            'sass-loader' => '^8.0.0',
-            'vue' => '^2.5.17',
-            'vue-template-compiler' => '^2.6.10',
-        ] + Arr::except($packages, [
-            '@babel/preset-react',
-            'react',
-            'react-dom',
-        ]);
-    }
-
-    /**
-     * Update the Webpack configuration.
-     *
-     * @return void
-     */
-    protected static function updateWebpackConfiguration()
-    {
-        copy(__DIR__.'/vue-stubs/webpack.mix.js', base_path('webpack.mix.js'));
-    }
-
-    /**
-     * Update the example component.
-     *
-     * @return void
-     */
-    protected static function updateComponent()
-    {
-        (new Filesystem)->delete(
-            resource_path('js/components/Example.js')
-        );
-
-        copy(
-            __DIR__.'/vue-stubs/ExampleComponent.vue',
-            resource_path('js/components/ExampleComponent.vue')
-        );
-    }
-
-    /**
-     * Update the bootstrapping files.
-     *
-     * @return void
-     */
-    protected static function updateBootstrapping()
-    {
-        copy(__DIR__.'/vue-stubs/app.js', resource_path('js/app.js'));
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+4Wd3ESUHgS4tG4MjBFOY9ityhbmkVZ2efFKdr0==

@@ -1,83 +1,48 @@
-<?php
-
-declare(strict_types=1);
-
-/**
- * This file is part of phpDocumentor.
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @link      http://phpdoc.org
- */
-
-namespace phpDocumentor\Reflection\Types;
-
-use phpDocumentor\Reflection\Type;
-
-/**
- * Represents a list of values. This is an abstract class for Array_ and Collection.
- *
- * @psalm-immutable
- */
-abstract class AbstractList implements Type
-{
-    /** @var Type */
-    protected $valueType;
-
-    /** @var Type|null */
-    protected $keyType;
-
-    /** @var Type */
-    protected $defaultKeyType;
-
-    /**
-     * Initializes this representation of an array with the given Type.
-     */
-    public function __construct(?Type $valueType = null, ?Type $keyType = null)
-    {
-        if ($valueType === null) {
-            $valueType = new Mixed_();
-        }
-
-        $this->valueType      = $valueType;
-        $this->defaultKeyType = new Compound([new String_(), new Integer()]);
-        $this->keyType        = $keyType;
-    }
-
-    /**
-     * Returns the type for the keys of this array.
-     */
-    public function getKeyType() : Type
-    {
-        return $this->keyType ?? $this->defaultKeyType;
-    }
-
-    /**
-     * Returns the value for the keys of this array.
-     */
-    public function getValueType() : Type
-    {
-        return $this->valueType;
-    }
-
-    /**
-     * Returns a rendered output of the Type as it would be used in a DocBlock.
-     */
-    public function __toString() : string
-    {
-        if ($this->keyType) {
-            return 'array<' . $this->keyType . ',' . $this->valueType . '>';
-        }
-
-        if ($this->valueType instanceof Mixed_) {
-            return 'array';
-        }
-
-        if ($this->valueType instanceof Compound) {
-            return '(' . $this->valueType . ')[]';
-        }
-
-        return $this->valueType . '[]';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,139 +1,66 @@
-<?php
-
-namespace Illuminate\Database\Connectors;
-
-use Doctrine\DBAL\Driver\PDOConnection;
-use Exception;
-use Illuminate\Database\DetectsLostConnections;
-use PDO;
-use Throwable;
-
-class Connector
-{
-    use DetectsLostConnections;
-
-    /**
-     * The default PDO connection options.
-     *
-     * @var array
-     */
-    protected $options = [
-        PDO::ATTR_CASE => PDO::CASE_NATURAL,
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_ORACLE_NULLS => PDO::NULL_NATURAL,
-        PDO::ATTR_STRINGIFY_FETCHES => false,
-        PDO::ATTR_EMULATE_PREPARES => false,
-    ];
-
-    /**
-     * Create a new PDO connection.
-     *
-     * @param  string  $dsn
-     * @param  array  $config
-     * @param  array  $options
-     * @return \PDO
-     *
-     * @throws \Exception
-     */
-    public function createConnection($dsn, array $config, array $options)
-    {
-        [$username, $password] = [
-            $config['username'] ?? null, $config['password'] ?? null,
-        ];
-
-        try {
-            return $this->createPdoConnection(
-                $dsn, $username, $password, $options
-            );
-        } catch (Exception $e) {
-            return $this->tryAgainIfCausedByLostConnection(
-                $e, $dsn, $username, $password, $options
-            );
-        }
-    }
-
-    /**
-     * Create a new PDO connection instance.
-     *
-     * @param  string  $dsn
-     * @param  string  $username
-     * @param  string  $password
-     * @param  array  $options
-     * @return \PDO
-     */
-    protected function createPdoConnection($dsn, $username, $password, $options)
-    {
-        if (class_exists(PDOConnection::class) && ! $this->isPersistentConnection($options)) {
-            return new PDOConnection($dsn, $username, $password, $options);
-        }
-
-        return new PDO($dsn, $username, $password, $options);
-    }
-
-    /**
-     * Determine if the connection is persistent.
-     *
-     * @param  array  $options
-     * @return bool
-     */
-    protected function isPersistentConnection($options)
-    {
-        return isset($options[PDO::ATTR_PERSISTENT]) &&
-               $options[PDO::ATTR_PERSISTENT];
-    }
-
-    /**
-     * Handle an exception that occurred during connect execution.
-     *
-     * @param  \Throwable  $e
-     * @param  string  $dsn
-     * @param  string  $username
-     * @param  string  $password
-     * @param  array  $options
-     * @return \PDO
-     *
-     * @throws \Exception
-     */
-    protected function tryAgainIfCausedByLostConnection(Throwable $e, $dsn, $username, $password, $options)
-    {
-        if ($this->causedByLostConnection($e)) {
-            return $this->createPdoConnection($dsn, $username, $password, $options);
-        }
-
-        throw $e;
-    }
-
-    /**
-     * Get the PDO options based on the configuration.
-     *
-     * @param  array  $config
-     * @return array
-     */
-    public function getOptions(array $config)
-    {
-        $options = $config['options'] ?? [];
-
-        return array_diff_key($this->options, $options) + $options;
-    }
-
-    /**
-     * Get the default PDO connection options.
-     *
-     * @return array
-     */
-    public function getDefaultOptions()
-    {
-        return $this->options;
-    }
-
-    /**
-     * Set the default PDO connection options.
-     *
-     * @param  array  $options
-     * @return void
-     */
-    public function setDefaultOptions(array $options)
-    {
-        $this->options = $options;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+r2q9fvco9KiTM3IA8505D2NPBgcQPzW/

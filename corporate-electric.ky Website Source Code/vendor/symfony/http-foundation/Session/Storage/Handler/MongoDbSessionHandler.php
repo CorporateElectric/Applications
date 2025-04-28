@@ -1,187 +1,96 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpFoundation\Session\Storage\Handler;
-
-/**
- * Session handler using the mongodb/mongodb package and MongoDB driver extension.
- *
- * @author Markus Bachmann <markus.bachmann@bachi.biz>
- *
- * @see https://packagist.org/packages/mongodb/mongodb
- * @see https://php.net/mongodb
- */
-class MongoDbSessionHandler extends AbstractSessionHandler
-{
-    private $mongo;
-
-    /**
-     * @var \MongoDB\Collection
-     */
-    private $collection;
-
-    /**
-     * @var array
-     */
-    private $options;
-
-    /**
-     * Constructor.
-     *
-     * List of available options:
-     *  * database: The name of the database [required]
-     *  * collection: The name of the collection [required]
-     *  * id_field: The field name for storing the session id [default: _id]
-     *  * data_field: The field name for storing the session data [default: data]
-     *  * time_field: The field name for storing the timestamp [default: time]
-     *  * expiry_field: The field name for storing the expiry-timestamp [default: expires_at].
-     *
-     * It is strongly recommended to put an index on the `expiry_field` for
-     * garbage-collection. Alternatively it's possible to automatically expire
-     * the sessions in the database as described below:
-     *
-     * A TTL collections can be used on MongoDB 2.2+ to cleanup expired sessions
-     * automatically. Such an index can for example look like this:
-     *
-     *     db.<session-collection>.ensureIndex(
-     *         { "<expiry-field>": 1 },
-     *         { "expireAfterSeconds": 0 }
-     *     )
-     *
-     * More details on: https://docs.mongodb.org/manual/tutorial/expire-data/
-     *
-     * If you use such an index, you can drop `gc_probability` to 0 since
-     * no garbage-collection is required.
-     *
-     * @throws \InvalidArgumentException When "database" or "collection" not provided
-     */
-    public function __construct(\MongoDB\Client $mongo, array $options)
-    {
-        if (!isset($options['database']) || !isset($options['collection'])) {
-            throw new \InvalidArgumentException('You must provide the "database" and "collection" option for MongoDBSessionHandler.');
-        }
-
-        $this->mongo = $mongo;
-
-        $this->options = array_merge([
-            'id_field' => '_id',
-            'data_field' => 'data',
-            'time_field' => 'time',
-            'expiry_field' => 'expires_at',
-        ], $options);
-    }
-
-    /**
-     * @return bool
-     */
-    public function close()
-    {
-        return true;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function doDestroy(string $sessionId)
-    {
-        $this->getCollection()->deleteOne([
-            $this->options['id_field'] => $sessionId,
-        ]);
-
-        return true;
-    }
-
-    /**
-     * @return bool
-     */
-    public function gc($maxlifetime)
-    {
-        $this->getCollection()->deleteMany([
-            $this->options['expiry_field'] => ['$lt' => new \MongoDB\BSON\UTCDateTime()],
-        ]);
-
-        return true;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function doWrite(string $sessionId, string $data)
-    {
-        $expiry = new \MongoDB\BSON\UTCDateTime((time() + (int) ini_get('session.gc_maxlifetime')) * 1000);
-
-        $fields = [
-            $this->options['time_field'] => new \MongoDB\BSON\UTCDateTime(),
-            $this->options['expiry_field'] => $expiry,
-            $this->options['data_field'] => new \MongoDB\BSON\Binary($data, \MongoDB\BSON\Binary::TYPE_OLD_BINARY),
-        ];
-
-        $this->getCollection()->updateOne(
-            [$this->options['id_field'] => $sessionId],
-            ['$set' => $fields],
-            ['upsert' => true]
-        );
-
-        return true;
-    }
-
-    /**
-     * @return bool
-     */
-    public function updateTimestamp($sessionId, $data)
-    {
-        $expiry = new \MongoDB\BSON\UTCDateTime((time() + (int) ini_get('session.gc_maxlifetime')) * 1000);
-
-        $this->getCollection()->updateOne(
-            [$this->options['id_field'] => $sessionId],
-            ['$set' => [
-                $this->options['time_field'] => new \MongoDB\BSON\UTCDateTime(),
-                $this->options['expiry_field'] => $expiry,
-            ]]
-        );
-
-        return true;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function doRead(string $sessionId)
-    {
-        $dbData = $this->getCollection()->findOne([
-            $this->options['id_field'] => $sessionId,
-            $this->options['expiry_field'] => ['$gte' => new \MongoDB\BSON\UTCDateTime()],
-        ]);
-
-        if (null === $dbData) {
-            return '';
-        }
-
-        return $dbData[$this->options['data_field']]->getData();
-    }
-
-    private function getCollection(): \MongoDB\Collection
-    {
-        if (null === $this->collection) {
-            $this->collection = $this->mongo->selectCollection($this->options['database'], $this->options['collection']);
-        }
-
-        return $this->collection;
-    }
-
-    /**
-     * @return \MongoDB\Client
-     */
-    protected function getMongo()
-    {
-        return $this->mongo;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

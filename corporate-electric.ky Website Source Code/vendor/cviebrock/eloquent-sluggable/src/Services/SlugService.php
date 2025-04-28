@@ -1,440 +1,220 @@
-<?php namespace Cviebrock\EloquentSluggable\Services;
-
-use Cocur\Slugify\Slugify;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Collection;
-
-/**
- * Class SlugService
- *
- * @package Cviebrock\EloquentSluggable\Services
- */
-class SlugService
-{
-
-    /**
-     * @var \Illuminate\Database\Eloquent\Model;
-     */
-    protected $model;
-
-    /**
-     * Slug the current model.
-     *
-     * @param \Illuminate\Database\Eloquent\Model $model
-     * @param bool $force
-     *
-     * @return bool
-     */
-    public function slug(Model $model, bool $force = false): bool
-    {
-        $this->setModel($model);
-
-        $attributes = [];
-
-        foreach ($this->model->sluggable() as $attribute => $config) {
-            if (is_numeric($attribute)) {
-                $attribute = $config;
-                $config = $this->getConfiguration();
-            } else {
-                $config = $this->getConfiguration($config);
-            }
-
-            $slug = $this->buildSlug($attribute, $config, $force);
-
-            if ($slug !== null) {
-                $this->model->setAttribute($attribute, $slug);
-                $attributes[] = $attribute;
-            }
-        }
-
-        return $this->model->isDirty($attributes);
-    }
-
-    /**
-     * Get the sluggable configuration for the current model,
-     * including default values where not specified.
-     *
-     * @param array $overrides
-     *
-     * @return array
-     */
-    public function getConfiguration(array $overrides = []): array
-    {
-        $defaultConfig = config('sluggable', []);
-
-        return array_merge($defaultConfig, $overrides);
-    }
-
-    /**
-     * Build the slug for the given attribute of the current model.
-     *
-     * @param string $attribute
-     * @param array $config
-     * @param bool $force
-     *
-     * @return null|string
-     */
-    public function buildSlug(string $attribute, array $config, bool $force = null)
-    {
-        $slug = $this->model->getAttribute($attribute);
-
-        if ($force || $this->needsSlugging($attribute, $config)) {
-            $source = $this->getSlugSource($config['source']);
-
-            if ($source || is_numeric($source)) {
-                $slug = $this->generateSlug($source, $config, $attribute);
-                $slug = $this->validateSlug($slug, $config, $attribute);
-                $slug = $this->makeSlugUnique($slug, $config, $attribute);
-            }
-        }
-
-        return $slug;
-    }
-
-    /**
-     * Determines whether the model needs slugging.
-     *
-     * @param string $attribute
-     * @param array $config
-     *
-     * @return bool
-     */
-    protected function needsSlugging(string $attribute, array $config): bool
-    {
-        $value = $this->model->getAttributeValue($attribute);
-
-        if (
-            $config['onUpdate'] === true ||
-            $value === null ||
-            trim($value) === ''
-        ) {
-            return true;
-        }
-
-        if ($this->model->isDirty($attribute)) {
-            return false;
-        }
-
-        return (!$this->model->exists);
-    }
-
-    /**
-     * Get the source string for the slug.
-     *
-     * @param mixed $from
-     *
-     * @return string
-     */
-    protected function getSlugSource($from): string
-    {
-        if (is_null($from)) {
-            return $this->model->__toString();
-        }
-
-        $sourceStrings = array_map(function($key) {
-            $value = data_get($this->model, $key, $this->model->getAttribute($key));
-            if (is_bool($value)) {
-                $value = (int) $value;
-            }
-
-            return $value;
-        }, (array) $from);
-
-        return implode(' ', $sourceStrings);
-    }
-
-    /**
-     * Generate a slug from the given source string.
-     *
-     * @param string $source
-     * @param array $config
-     * @param string $attribute
-     *
-     * @return string
-     * @throws \UnexpectedValueException
-     */
-    protected function generateSlug(string $source, array $config, string $attribute): string
-    {
-        $separator = $config['separator'];
-        $method = $config['method'];
-        $maxLength = $config['maxLength'];
-        $maxLengthKeepWords = $config['maxLengthKeepWords'];
-
-        if ($method === null) {
-            $slugEngine = $this->getSlugEngine($attribute);
-            $slug = $slugEngine->slugify($source, $separator);
-        } elseif (is_callable($method)) {
-            $slug = call_user_func($method, $source, $separator);
-        } else {
-            throw new \UnexpectedValueException('Sluggable "method" for ' . get_class($this->model) . ':' . $attribute . ' is not callable nor null.');
-        }
-
-        $len = mb_strlen($slug);
-        if (is_string($slug) && $maxLength && $len > $maxLength) {
-            $reverseOffset = $maxLength - $len;
-            $lastSeparatorPos = mb_strrpos($slug, $separator, $reverseOffset);
-            if ($maxLengthKeepWords && $lastSeparatorPos !== false) {
-                $slug = mb_substr($slug, 0, $lastSeparatorPos);
-            } else {
-                $slug = trim(mb_substr($slug, 0, $maxLength), $separator);
-            }
-        }
-
-        return $slug;
-    }
-
-    /**
-     * Return a class that has a `slugify()` method, used to convert
-     * strings into slugs.
-     *
-     * @param string $attribute
-     *
-     * @return \Cocur\Slugify\Slugify
-     */
-    protected function getSlugEngine(string $attribute): Slugify
-    {
-        static $slugEngines = [];
-
-        $key = get_class($this->model) . '.' . $attribute;
-
-        if (!array_key_exists($key, $slugEngines)) {
-            $engine = new Slugify();
-            if (method_exists($this->model, 'customizeSlugEngine')) {
-                $engine = $this->model->customizeSlugEngine($engine, $attribute);
-            }
-
-            $slugEngines[$key] = $engine;
-        }
-
-        return $slugEngines[$key];
-    }
-
-    /**
-     * Checks that the given slug is not a reserved word.
-     *
-     * @param string $slug
-     * @param array $config
-     * @param string $attribute
-     *
-     * @return string
-     * @throws \UnexpectedValueException
-     */
-    protected function validateSlug(string $slug, array $config, string $attribute): string
-    {
-        $separator = $config['separator'];
-        $reserved = $config['reserved'];
-
-        if ($reserved === null) {
-            return $slug;
-        }
-
-        // check for reserved names
-        if ($reserved instanceof \Closure) {
-            $reserved = $reserved($this->model);
-        }
-
-        if (is_array($reserved)) {
-            if (in_array($slug, $reserved)) {
-                $method = $config['uniqueSuffix'];
-                if ($method === null) {
-                    $suffix = $this->generateSuffix($slug, $separator, collect($reserved));
-                } elseif (is_callable($method)) {
-                    $suffix = $method($slug, $separator, collect($reserved));
-                } else {
-                    throw new \UnexpectedValueException('Sluggable "uniqueSuffix" for ' . get_class($this->model) . ':' . $attribute . ' is not null, or a closure.');
-                }
-
-                return $slug . $separator . $suffix;
-            }
-
-            return $slug;
-        }
-
-        throw new \UnexpectedValueException('Sluggable "reserved" for ' . get_class($this->model) . ':' . $attribute . ' is not null, an array, or a closure that returns null/array.');
-    }
-
-    /**
-     * Checks if the slug should be unique, and makes it so if needed.
-     *
-     * @param string $slug
-     * @param array $config
-     * @param string $attribute
-     *
-     * @return string
-     * @throws \UnexpectedValueException
-     */
-    protected function makeSlugUnique(string $slug, array $config, string $attribute): string
-    {
-        if (!$config['unique']) {
-            return $slug;
-        }
-
-        $separator = $config['separator'];
-
-        // find all models where the slug is like the current one
-        $list = $this->getExistingSlugs($slug, $attribute, $config);
-
-        // if ...
-        // 	a) the list is empty, or
-        // 	b) our slug isn't in the list
-        // ... we are okay
-        if (
-            $list->count() === 0 ||
-            $list->contains($slug) === false
-        ) {
-            return $slug;
-        }
-
-        // if our slug is in the list, but
-        // 	a) it's for our model, or
-        //  b) it looks like a suffixed version of our slug
-        // ... we are also okay (use the current slug)
-        if ($list->has($this->model->getKey())) {
-            $currentSlug = $list->get($this->model->getKey());
-
-            if (
-                $currentSlug === $slug ||
-                !$slug || strpos($currentSlug, $slug) === 0
-            ) {
-                return $currentSlug;
-            }
-        }
-
-        $method = $config['uniqueSuffix'];
-        if ($method === null) {
-            $suffix = $this->generateSuffix($slug, $separator, $list);
-        } elseif (is_callable($method)) {
-            $suffix = $method($slug, $separator, $list);
-        } else {
-            throw new \UnexpectedValueException('Sluggable "uniqueSuffix" for ' . get_class($this->model) . ':' . $attribute . ' is not null, or a closure.');
-        }
-
-        return $slug . $separator . $suffix;
-    }
-
-    /**
-     * Generate a unique suffix for the given slug (and list of existing, "similar" slugs.
-     *
-     * @param string $slug
-     * @param string $separator
-     * @param \Illuminate\Support\Collection $list
-     *
-     * @return string
-     */
-    protected function generateSuffix(string $slug, string $separator, Collection $list): string
-    {
-        $len = strlen($slug . $separator);
-
-        // If the slug already exists, but belongs to
-        // our model, return the current suffix.
-        if ($list->search($slug) === $this->model->getKey()) {
-            $suffix = explode($separator, $slug);
-
-            return end($suffix);
-        }
-
-        $list->transform(function($value, $key) use ($len) {
-            return (int) substr($value, $len);
-        });
-
-        // find the highest value and return one greater.
-        return $list->max() + 1;
-    }
-
-    /**
-     * Get all existing slugs that are similar to the given slug.
-     *
-     * @param string $slug
-     * @param string $attribute
-     * @param array $config
-     *
-     * @return \Illuminate\Support\Collection
-     */
-    protected function getExistingSlugs(string $slug, string $attribute, array $config): Collection
-    {
-        $includeTrashed = $config['includeTrashed'];
-
-        $query = $this->model->newQuery()
-            ->findSimilarSlugs($attribute, $config, $slug);
-
-        // use the model scope to find similar slugs
-        if (method_exists($this->model, 'scopeWithUniqueSlugConstraints')) {
-            $query->withUniqueSlugConstraints($this->model, $attribute, $config, $slug);
-        }
-
-        // include trashed models if required
-        if ($includeTrashed && $this->usesSoftDeleting()) {
-            $query->withTrashed();
-        }
-
-        // get the list of all matching slugs
-        $results = $query->select([$attribute, $this->model->getQualifiedKeyName()])
-            ->get()
-            ->toBase();
-
-        // key the results and return
-        return $results->pluck($attribute, $this->model->getKeyName());
-    }
-
-    /**
-     * Does this model use softDeleting?
-     *
-     * @return bool
-     */
-    protected function usesSoftDeleting(): bool
-    {
-        return method_exists($this->model, 'bootSoftDeletes');
-    }
-
-    /**
-     * Generate a unique slug for a given string.
-     *
-     * @param \Illuminate\Database\Eloquent\Model|string $model
-     * @param string $attribute
-     * @param string $fromString
-     * @param array|null $config
-     *
-     * @return string
-     * @throws \InvalidArgumentException
-     * @throws \UnexpectedValueException
-     */
-    public static function createSlug($model, string $attribute, string $fromString, array $config = null): string
-    {
-        if (is_string($model)) {
-            $model = new $model;
-        }
-        /** @var static $instance */
-        $instance = (new static())->setModel($model);
-
-        if ($config === null) {
-            $config = Arr::get($model->sluggable(), $attribute);
-            if ($config === null) {
-                $modelClass = get_class($model);
-                throw new \InvalidArgumentException("Argument 2 passed to SlugService::createSlug ['{$attribute}'] is not a valid slug attribute for model {$modelClass}.");
-            }
-        } elseif (!is_array($config)) {
-            throw new \UnexpectedValueException('SlugService::createSlug expects an array or null as the fourth argument; ' . gettype($config) . ' given.');
-        }
-
-        $config = $instance->getConfiguration($config);
-
-        $slug = $instance->generateSlug($fromString, $config, $attribute);
-        $slug = $instance->validateSlug($slug, $config, $attribute);
-        $slug = $instance->makeSlugUnique($slug, $config, $attribute);
-
-        return $slug;
-    }
-
-    /**
-     * @param \Illuminate\Database\Eloquent\Model $model
-     *
-     * @return $this
-     */
-    public function setModel(Model $model)
-    {
-        $this->model = $model;
-
-        return $this;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

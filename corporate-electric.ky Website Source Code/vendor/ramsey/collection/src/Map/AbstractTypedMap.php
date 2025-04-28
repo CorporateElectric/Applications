@@ -1,57 +1,39 @@
-<?php
-
-/**
- * This file is part of the ramsey/collection library
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @copyright Copyright (c) Ben Ramsey <ben@benramsey.com>
- * @license http://opensource.org/licenses/MIT MIT
- */
-
-declare(strict_types=1);
-
-namespace Ramsey\Collection\Map;
-
-use Ramsey\Collection\Exception\InvalidArgumentException;
-use Ramsey\Collection\Tool\TypeTrait;
-use Ramsey\Collection\Tool\ValueToStringTrait;
-
-/**
- * This class provides a basic implementation of `TypedMapInterface`, to
- * minimize the effort required to implement this interface.
- */
-abstract class AbstractTypedMap extends AbstractMap implements TypedMapInterface
-{
-    use TypeTrait;
-    use ValueToStringTrait;
-
-    /**
-     * Sets the given value to the given offset in the map.
-     *
-     * @param mixed $offset The offset to set.
-     * @param mixed $value The value to set at the given offset.
-     *
-     * @throws InvalidArgumentException if the offset or value do not match the
-     *     expected types.
-     */
-    public function offsetSet($offset, $value): void
-    {
-        if ($this->checkType($this->getKeyType(), $offset) === false) {
-            throw new InvalidArgumentException(
-                'Key must be of type ' . $this->getKeyType() . '; key is '
-                . $this->toolValueToString($offset)
-            );
-        }
-
-        if ($this->checkType($this->getValueType(), $value) === false) {
-            throw new InvalidArgumentException(
-                'Value must be of type ' . $this->getValueType() . '; value is '
-                . $this->toolValueToString($value)
-            );
-        }
-
-        parent::offsetSet($offset, $value);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

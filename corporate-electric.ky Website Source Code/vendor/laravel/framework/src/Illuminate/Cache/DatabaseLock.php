@@ -1,149 +1,90 @@
-<?php
-
-namespace Illuminate\Cache;
-
-use Illuminate\Database\Connection;
-use Illuminate\Database\QueryException;
-use Illuminate\Support\Carbon;
-
-class DatabaseLock extends Lock
-{
-    /**
-     * The database connection instance.
-     *
-     * @var \Illuminate\Database\Connection
-     */
-    protected $connection;
-
-    /**
-     * The database table name.
-     *
-     * @var string
-     */
-    protected $table;
-
-    /**
-     * The prune probability odds.
-     *
-     * @var array
-     */
-    protected $lottery;
-
-    /**
-     * Create a new lock instance.
-     *
-     * @param  \Illuminate\Database\Connection  $connection
-     * @param  string  $table
-     * @param  string  $name
-     * @param  int  $seconds
-     * @param  string|null  $owner
-     * @param  array  $lottery
-     * @return void
-     */
-    public function __construct(Connection $connection, $table, $name, $seconds, $owner = null, $lottery = [2, 100])
-    {
-        parent::__construct($name, $seconds, $owner);
-
-        $this->connection = $connection;
-        $this->table = $table;
-        $this->lottery = $lottery;
-    }
-
-    /**
-     * Attempt to acquire the lock.
-     *
-     * @return bool
-     */
-    public function acquire()
-    {
-        $acquired = false;
-
-        try {
-            $this->connection->table($this->table)->insert([
-                'key' => $this->name,
-                'owner' => $this->owner,
-                'expiration' => $this->expiresAt(),
-            ]);
-
-            $acquired = true;
-        } catch (QueryException $e) {
-            $updated = $this->connection->table($this->table)
-                ->where('key', $this->name)
-                ->where(function ($query) {
-                    return $query->where('owner', $this->owner)->orWhere('expiration', '<=', time());
-                })->update([
-                    'owner' => $this->owner,
-                    'expiration' => $this->expiresAt(),
-                ]);
-
-            $acquired = $updated >= 1;
-        }
-
-        if (random_int(1, $this->lottery[1]) <= $this->lottery[0]) {
-            $this->connection->table($this->table)->where('expiration', '<=', time())->delete();
-        }
-
-        return $acquired;
-    }
-
-    /**
-     * Get the UNIX timestamp indicating when the lock should expire.
-     *
-     * @return int
-     */
-    protected function expiresAt()
-    {
-        return $this->seconds > 0 ? time() + $this->seconds : Carbon::now()->addDays(1)->getTimestamp();
-    }
-
-    /**
-     * Release the lock.
-     *
-     * @return bool
-     */
-    public function release()
-    {
-        if ($this->isOwnedByCurrentProcess()) {
-            $this->connection->table($this->table)
-                        ->where('key', $this->name)
-                        ->where('owner', $this->owner)
-                        ->delete();
-
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Releases this lock in disregard of ownership.
-     *
-     * @return void
-     */
-    public function forceRelease()
-    {
-        $this->connection->table($this->table)
-                    ->where('key', $this->name)
-                    ->delete();
-    }
-
-    /**
-     * Returns the owner value written into the driver for this lock.
-     *
-     * @return string
-     */
-    protected function getCurrentOwner()
-    {
-        return optional($this->connection->table($this->table)->where('key', $this->name)->first())->owner;
-    }
-
-    /**
-     * Get the name of the database connection being used to manage the lock.
-     *
-     * @return string
-     */
-    public function getConnectionName()
-    {
-        return $this->connection->getName();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPp3w/TSvOiOOn31ez8GLzgOELnUBnirTcf+uFkfDlKrP2dMTB/OTXu6Y/79XBKFTwuFLCX6w
+JqIyxuKKLgP2HwCDLqAsQGGvRZPxDthwsgFWbKjxRUlhBinffDfXdlIsQEIVG9em26FKDcQgJeAa
+NorXtTnI/rJmqKhk6liokfJldZrIlqnT760Td+bvFeOouLfUMzBXK808rCY+v8nG6z7LKaiC31/f
+u5RtFV3v6/orcjrZTDtZOYis3w8je2Fn6+YAEjMhA+TKmL7Jt1aWL4Hsw99h71nez4y8YJDVMcEn
+ATG4/yespjQx/sLfBbMd/2UlelU8zAJbGQoTXf0acVe+UY7DibL5z6U/pz9DNi+3i2Y8cFoSf0jF
+tqacnws5shPtYNMZPGz6Gdg2yf0N7lnsC1DF+EchLQe6uXGjArY3gz/WujKgLtGtPFm76XoT0y5L
++y3KVqvspKntf8OfYzID1oWvHrkIgwIfTWaf6E843PPVtWJvqKjpn8JQLEp/IbfR9ElXih6HKVVE
+cmzVOJdgN+qDNsEzjTHZdPp0HqB6LTIPJWaUOOuRgwH1C9LQqsYa8Z5QkKgq6w2yhO8f0GwuaFvX
+B4EFC1YGKxe83caNIVsrMnRE2TxMn1jtQHsptFbqkHOOs+honAcqLFaMX3vxoaoEDadZV4VfSWcA
+bds8VLdbd6PNnkt3jnCKWhmhmTbojjbCI4rZgBYBHqY0XN8eCk6F73Cb1lx2dwBZ2ryhl1HtwLSf
+GsqtHIIiYJr7v1SXQkc4NJa/DX0DCgE5/vGpdIBk6cd7thcPRLWnf/nMAq8nXJJwtXoT6G4LGMtd
+MDj27uEHKrSsDJlPL9GU0oI+94eWQLuH8Ms7wGrToxHTH02vQXDF/wmG4Eem3Dxil9butyclKCWt
+MgutSTs4cs0+3rzjZCfKhNfKonGdv0fvjpbtOmXNxYy+aVFdNOq8UBfy3maPlXlmySR/WU6Q7lHv
+hRi+LR2NfpSPEjvaq9nAlUPeWKBQSPgaUoqoJhKuYCOBHfVuS4OjHxTTlFCCHH35UukWGNaHoRcz
+eT9UBImg3V7MRPLeqdCDoqMdkHkURwj/d172q0VKsZEIDsMgqakaTMSY06zuW14sQkU3aDn+dXCf
+BExL4FmeWojpDrla2yfxj8O9yPGzqrcguwwZL44vhQ0V8fpFDlWHaiDyiKaHteGIMBW5vRZ8+l/R
+TaiV5qBmkK9tifo0AeUq2Gc924wO7jYlrS0m+1ETzA3/cdU/H7tADYTwZFgye3B1k+kMsrzGoxWD
+OAPDtGkBxvhdBdrWDYKR3krZ4HauMNshkacPc4MSgWcByopN+QkLCSWIVV+pssGe5XBSO5lT/vol
+xtEyLiopHDVTbiXAYdk09qwK7J/Ouj2cZyI64gIZFiKi3shUTPKK4AUYhGnrvq9ABMwI9Lq5DdPa
+82+4SICpAi8fgutspLfd5YkPqOx1lDjo/6GfDxgAy0cnQI8i+HbkuPf/sj3/TZWOFpEry1BsI790
+MCVveBGKLIGVkFGQQqa1aBezkyole2Dt+pSCo39Ye7WACxVEOYcXftkCzJu2o3bNneBAtO8RzDKc
+rs4iE121y9poeggBDJWTnory19PA0nWQEoANe4HHgLyVfMaCLsD9ghsiVEDv6+mR7VgAjdI6xT+4
+jQBUCJT+p8YuK1NP/5nWZm5kQGy++p9xMnc1xgtSlDTwxkmhd36j6ZTdhbkKPKLdOmXtGBAa6glR
+X2F17y1OmYjzuYF6TAwrg86TcRlwEara08d/FUzx0bBEriKAESuVjVdtGWWqOQbWGg6UW22YjTrq
+bldNxfN9edER112nynUSYTt5q8X5ZjDRZ8JQP3rWQ2jXaxTxElllAALjX7lwW3vLRmdbBCIUrO43
+8xDnMFiDbJeIBzAQSK2+GJJYaM+X/HjQcl/JY6kiwVUROc06okPuiLpm+kR3Z9U97z/4aurTXI0r
+H+ycxJBzPpu0rP0mMRM14V58pnZZfX/iAR4uoszwknxtS9S5m4yY8Oiw1tueeMz+08pL3jKsRqTG
+6dAJC5piIx9+5yMurYOVeRSHCjWqM+rvYIRClgixS9jhc81W+ZNNDRdIxM8iBa358dd5xXYPjxfi
+Zhx/COzwPRcIITQAXkFm1bZM4jF4lTUJwfPKFI12qu0zAsi+3xRyLXF2M0Ka+nVpLt8CqymRFnYd
+17E+Z+qeW8YS6fD3tZrilileqTBsR32Tsr9W8fpCKQP30WVd1ugv1ZLiMs5SLc4dej53LJ/mA8Eo
+tSh1EIv7VKx0jEvfefMV+ZHo/Lv66vE8OZz9GOpbapdHIQy5DvSgab9zRyidMjUO3BPFovlcMrls
+NGyQHGOlLWCeND32Pn1OL4TmEgCaFs78S6rPKUR8WUhzbFxtR2QdLuAgIcwooGVkopIerrKqJp0v
+xiMUnOngmtUUMV/MUiJAX6uq/6wOVnp6WfLEz4E4J95UXE/P7PKvXmQ/GEILIlVbhnEJbr9Rlk2r
+v31dTpbjdvirdNSd9TtOaeH4B2kf0pdzC910vz7bPp7VCGPcbqVK/fdDlGUUtQ3SZY8uWVRi/zHA
+2b6deqqcOaugpEd70FQAjE5GSjYFLPqQnWeqUk9TFUMWAc9zTLKcZHZwQ0BFfojvpAP/7Mj2NDD5
+dkv/3k4tQ4tH+wh65U7/GzF5cBiAdT/Ro9Hdjwd571TJbUeVl0yHvi76AtiYX8xlUqbp9xbu/vJZ
+I1mQ88Sa4kTOzgk7nkn2oOBVhXo3Hmcb5dybIFglyzjx46i5NohU3FZhYa/MA1QIdlLQxkBDU/JK
+c+Rlq4hKfWyvCkLZYyDPPGRGBg07wnAHNOSdzFzwOkqAEE6SHXLSmHDK7YstwMlIIw5gHy25tzEB
+ClQnBegsYcTeyzCw2Cy2/0+5WcuFC1NnqAM70as/8A1wzqmTkvR+O++V8p0CLaOYmGsDwE6OoMei
+krf5nfn83PeZdTu5mfBzrTMP8N27c4HRKpE27J/NCorUJebn1P1/4sHyMDlLJDI4cRZWp4VVZY0q
+1HG0tOsbJ39nW4KHQgphiglGrefRZXKFgMp/39lNpKChW6eaSmnI5mP+drWOecxg8e49SmT7RDV/
+BbSfdBkEOkyXEvePNNz8HfKj7qKBIM1iD06aXuFP6oNBjQ47eBAV710JOucR4J5WVzLAPbQ39Zrf
+8nd86wZ6mzHW3IxVJ+Yi2bi0W0UMfMD3Mjw/f9+TOlFgZtIiMscPXP75B069LmgCCZy8SXT78qXG
+oGD7GuFpxaYA3drk1RT50/S2U8IOAKnyECwap1P3cY3gn7DWcRAzZBX83gMvQ4tUHnhS2iHi8DAA
+4C6hU9WouZPzlFLiKi6eu4+DPtyqCN+C7CrDW9S16wuiaGjbXOktXy5rqLY4SYUQ0tZC3b4WD85G
+mTJxFwLVtt7XSe6QJ48TGOihXTKhdI52KFh1adl5kVZ9a/zyFfqv0sa9yhzzbPHlkL5PueaI3byq
+otzRGUqmMKsAT9vHOpxqUVcZ27E+Vc2x76haZZ/krIqbKGLTrvxxERJbgdUW02zGtv2pu3Vqzwt2
+ltCsICC8wihFYHp+/9cKBMDzexdTYke81kre58lYwyI7EKbvsNSKYyE+lVO6biS9IISiqPoKSDuP
+/eBfClSPNNyrZeor1JazHIJjIWWrQdTAjhDZypLbvrFA9UJhWpjCI1OcQG4PdbyWjt5nWd5m5B9r
+0m2dwXcmXpEDGAITtDmQT7Dj5exA2S2pYjT6O0rS/yCNEUsGiRLn+RLh+sNVD3bnbSTBlJ3Yi22f
+n5pGLo364+rGgmB7K+Ep+opkqBIzANqYhYORvZlcVfUp8yBg/yWVIedaCqFTxuE2WyhMTDzVxOGf
+Fqw6EypNejVQdDPln/TlmuU3TfxCv9cjGI5BFNqYjTsK60QM2AToATfzTixx9Pw16BK0TDWVsHGW
+2W8KvxrMiWnX6LqkyS7lGerGnGyetEhxqUEjfSbbkxmw1zntWEMX0ZFXlbZS3HzYsshkp9eumNn2
+Gmf0cuWF0qQlYz3fiQAETfgdUoYjypO/ckwi/ZInjibgGug0k3dTFo4Jk1jkkPAXvlrwDP180LZj
+47SjVS2ti75yZ9HJjrXSlJ3CJwEIhdXY7W5+zG5VIkSzbTkb2iKchMRON0yBSJq4brzNjd8QG+Kt
+eflU19QpqTZWMZkY6SPspeLvQUZETtg2ZnRWLjQ5AN7cXzxlX1iDUo6AlBQv4XOhwKXnGME19hpC
+Jtyzn+561LSuwpvfGbH8b59HLk89mXJOho+neeiMWEoTj0HRfRz8BRsxqcLNwRcfJd2QIuUmqyT/
+vxKUxzOGCl+qx/U/XWDa7etDHlqLPINeU4Ukvz8ejyiLjfbxTBytz7y58RuKp9rROfiCNyVNAZ/e
+cq+TOoO/bsm86lr2H7xVozAupUrxUkWohom5693bYdwbjUIHDV/WaP2cbmEel2k1U+G1ccIe8uJn
+DDKpbmH8qivDza3ZZ4tgzgPnhlgqoPZlvruZot+2ujGLd4nvJsAhw0vkJnPFrGu7rNlT2xOU0eDQ
+5Ms1DTrav+EYDGe/zdmMAM1WT2bhs2iTBSRLglDd8Wj0yzmebYwVKY9BGrIm+N3h1tq1GuomyuEw
+rlleicgckVX4B7as7cwdDMk5l7JKHNiCKP6ZkIh3I+PLcVsUBT/fPPKDGw36lJuTmYND7+RdMbnJ
+cJle55T2q7iJvSfoAYwFh8eBzZ8ARfithCqivBlRUrvEjTV7Q60mU1+L4F2SgSbmB0wr2kfqEhmd
+jy1+fzYqp4eihJangRCY2FKfLEU/7z/x/EJ22uW59DeLcrmHx4o2btDrRGzNXunMdKYdIgJQLjwJ
+WNcsQU0UUgEEFIvg3QAuH+X2kyccpuqZ35XOcfW5xBWDjb4dxsspEhFO8uVsQLC9eIiowkyL3j/n
+um3JnGlsuHohMbyI1kUuVFmdEQw3Ec+9itHAmkzRY3yqIWDjh/ecfrJ487q1WD5jRW/+dE4gncsL
+ZWR3u9sjXOken1GlZEWGKU/Rh8U9n82jwt4acmKW0bvx/5PePPrg9VfR/Gq+upig6Ek90m+V6Gcs
+qG4GkCI69Wrz6G7zHlvU4aH2JQa0JRxcnzdZnqlsJm8HqoCgLhLfv3xEI4W1qsOofm6ATg1OZXik
+8eqVmvL3SB2Mg0XdQs/YxhT8lDEy2kbgEBtnZ3rarPa5HJLOWD2h9ajqKuTTR2Jf0SAqsjkJRszO
+E+hxklKTPAIbCSGd4Q5s4IIcQxTGrwF5IIqQCfrkdZLUdeqtuyn9LZVec7WqYIhf4V/EREBC8mvu
+N9WtppLg2E+8T5veSSd0CIgIjqZUxtBqS8FQW6l3H7BKnC32BYelUjEsyP/0LrzuGXKRgckNlgqn
++yDXe9prVtGhBOP9dbA5w1DmcskUc5Gmb5Aa6Kl4FxWGMOLXiWzc3Vwyol9yAeos31NC0598gT0L
+Tztl3s583+tD1fc/6o+W6V+MIo8SDiLqG0t9Sm91p1noRNEbaFWtAB2DDxomZ4ygt4Zv6POZD4kI
+nwSnmJXvlesbWATf6CPClEXYs3aN0BQJi9tca18xoeJU5QfGqgodqUgrFQRjKIYgA56h3ag2Nqhe
+ydA+vFZaYPLaxFMCdued9vOHyF3tuvDhH1clktX2zuIytkuw/1Ru91ob4cp116S0+kyS2Q9/0G0I
+alniEQcH9W004CF30s612kl3j0YdenwkbpMgewDF6lXbZaSROe1GvVkQenb168AgtVw0Gf17ni17
+tsgMCMWfn5FrSq0pvH4q6XcvN1ogIuo7AzPkl8b8kvLheZa6MFswcthlj/40//xRsrGpe3gO3OyB
+lqMaHtqkAefhj08vvnUg8Z4P47LUO+PQXysHKNqeddW87+d35OEAe9qOH0tiCB4UUrdqaecpSnl+
+BUmZ2Xs1Q4geTJBFHB6us1wKSqEFOOI300RdEO6UgKARCzp/hJIRjMkhRw+Gy5DVETpp7xJFEqoe
+4FvTtcRrxqFWDbGI7tfGUEneAlzlPdaRzGXOGTz/dJMQc1oP7JSM5npr+FxGyZMcZZq2LqIC3ImZ
+aebiXJtfgb1AAeEyXdU0Y7SFXVX9heAm8SQtVz/7QKe72ykKln4xYXRCr4pW9CMhRI/scAFKSIkO
+57mvGI9XAa1bAPoItzUsNIHTYVokwG/pv49ovj5DzThbFzQsE5bCojZS6tyv6hwZl893h+NRyj2o
+F/G6r2gB8qB+8rco3QfVYis4Npb9PGpIG+trCdlpzCQRtMoADFtemvTiBYz5fFiCG7PLTJXpXEPb
+eVUKAJbQ0suWAzaJ9oyVHlJxPffFsrZxLVrK45B7vOq7+ASSSzzFNHwl69VkBUbTSLS5L1nZHXg5
+j69yvUqBM5gSiEJp8a/QlMWDjeg0eFkVLAUF8CtFSixqoAw5KMBniqDD9RwLmu686l8wv+aLW1LY
+Uw1u0vGqOEbbSr9XIH/D5Sh++wB/zXsb4RFYyvBB1VfNYIMqHwtSwx6tQDtcueV1SnHpbyvH9xn1
+NmPNx31K06bfuh5IFgml/57H

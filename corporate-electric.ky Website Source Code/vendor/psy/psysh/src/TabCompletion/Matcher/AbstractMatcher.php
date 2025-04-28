@@ -1,196 +1,68 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\TabCompletion\Matcher;
-
-/**
- * Abstract tab completion Matcher.
- *
- * @author Marc Garcia <markcial@gmail.com>
- */
-abstract class AbstractMatcher
-{
-    /** Syntax types */
-    const CONSTANT_SYNTAX = '^[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*$';
-    const VAR_SYNTAX = '^\$[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*$';
-    const MISC_OPERATORS = '+-*/^|&';
-    /** Token values */
-    const T_OPEN_TAG = 'T_OPEN_TAG';
-    const T_VARIABLE = 'T_VARIABLE';
-    const T_OBJECT_OPERATOR = 'T_OBJECT_OPERATOR';
-    const T_DOUBLE_COLON = 'T_DOUBLE_COLON';
-    const T_NEW = 'T_NEW';
-    const T_CLONE = 'T_CLONE';
-    const T_NS_SEPARATOR = 'T_NS_SEPARATOR';
-    const T_STRING = 'T_STRING';
-    const T_NAME_QUALIFIED = 'T_NAME_QUALIFIED';
-    const T_WHITESPACE = 'T_WHITESPACE';
-    const T_AND_EQUAL = 'T_AND_EQUAL';
-    const T_BOOLEAN_AND = 'T_BOOLEAN_AND';
-    const T_BOOLEAN_OR = 'T_BOOLEAN_OR';
-
-    const T_ENCAPSED_AND_WHITESPACE = 'T_ENCAPSED_AND_WHITESPACE';
-    const T_REQUIRE = 'T_REQUIRE';
-    const T_REQUIRE_ONCE = 'T_REQUIRE_ONCE';
-    const T_INCLUDE = 'T_INCLUDE';
-    const T_INCLUDE_ONCE = 'T_INCLUDE_ONCE';
-
-    /**
-     * Check whether this matcher can provide completions for $tokens.
-     *
-     * @param array $tokens Tokenized readline input
-     *
-     * @return bool
-     */
-    public function hasMatched(array $tokens)
-    {
-        return false;
-    }
-
-    /**
-     * Get current readline input word.
-     *
-     * @param array $tokens Tokenized readline input (see token_get_all)
-     *
-     * @return string
-     */
-    protected function getInput(array $tokens)
-    {
-        $var = '';
-        $firstToken = \array_pop($tokens);
-        if (self::tokenIs($firstToken, self::T_STRING)) {
-            $var = $firstToken[1];
-        }
-
-        return $var;
-    }
-
-    /**
-     * Get current namespace and class (if any) from readline input.
-     *
-     * @param array $tokens Tokenized readline input (see token_get_all)
-     *
-     * @return string
-     */
-    protected function getNamespaceAndClass($tokens)
-    {
-        $class = '';
-        while (self::hasToken(
-            [self::T_NS_SEPARATOR, self::T_STRING, self::T_NAME_QUALIFIED],
-            $token = \array_pop($tokens)
-        )) {
-            if (self::needCompleteClass($token)) {
-                continue;
-            }
-
-            $class = $token[1].$class;
-        }
-
-        return $class;
-    }
-
-    /**
-     * Provide tab completion matches for readline input.
-     *
-     * @param array $tokens information substracted with get_token_all
-     * @param array $info   readline_info object
-     *
-     * @return array The matches resulting from the query
-     */
-    abstract public function getMatches(array $tokens, array $info = []);
-
-    /**
-     * Check whether $word starts with $prefix.
-     *
-     * @param string $prefix
-     * @param string $word
-     *
-     * @return bool
-     */
-    public static function startsWith($prefix, $word)
-    {
-        return \preg_match(\sprintf('#^%s#', $prefix), $word);
-    }
-
-    /**
-     * Check whether $token matches a given syntax pattern.
-     *
-     * @param mixed  $token  A PHP token (see token_get_all)
-     * @param string $syntax A syntax pattern (default: variable pattern)
-     *
-     * @return bool
-     */
-    public static function hasSyntax($token, $syntax = self::VAR_SYNTAX)
-    {
-        if (!\is_array($token)) {
-            return false;
-        }
-
-        $regexp = \sprintf('#%s#', $syntax);
-
-        return (bool) \preg_match($regexp, $token[1]);
-    }
-
-    /**
-     * Check whether $token type is $which.
-     *
-     * @param mixed  $token A PHP token (see token_get_all)
-     * @param string $which A PHP token type
-     *
-     * @return bool
-     */
-    public static function tokenIs($token, $which)
-    {
-        if (!\is_array($token)) {
-            return false;
-        }
-
-        return \token_name($token[0]) === $which;
-    }
-
-    /**
-     * Check whether $token is an operator.
-     *
-     * @param mixed $token A PHP token (see token_get_all)
-     *
-     * @return bool
-     */
-    public static function isOperator($token)
-    {
-        if (!\is_string($token)) {
-            return false;
-        }
-
-        return \strpos(self::MISC_OPERATORS, $token) !== false;
-    }
-
-    public static function needCompleteClass($token)
-    {
-        return \in_array($token[1], ['doc', 'ls', 'show']);
-    }
-
-    /**
-     * Check whether $token type is present in $coll.
-     *
-     * @param array $coll  A list of token types
-     * @param mixed $token A PHP token (see token_get_all)
-     *
-     * @return bool
-     */
-    public static function hasToken(array $coll, $token)
-    {
-        if (!\is_array($token)) {
-            return false;
-        }
-
-        return \in_array(\token_name($token[0]), $coll);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+1IvvOZ5LOfMA7maEha6aMQ0=

@@ -1,39 +1,32 @@
-<?php
-
-namespace Maatwebsite\Excel;
-
-use Maatwebsite\Excel\Events\AfterSheet;
-use Maatwebsite\Excel\Events\BeforeExport;
-use Maatwebsite\Excel\Events\BeforeSheet;
-use Maatwebsite\Excel\Events\BeforeWriting;
-use Maatwebsite\Excel\Events\Event;
-
-trait RegistersCustomConcerns
-{
-    /**
-     * @var array
-     */
-    private static $eventMap = [
-        BeforeWriting::class => Writer::class,
-        BeforeExport::class  => Writer::class,
-        BeforeSheet::class   => Sheet::class,
-        AfterSheet::class    => Sheet::class,
-    ];
-
-    /**
-     * @param string   $concern
-     * @param callable $handler
-     * @param string   $event
-     */
-    public static function extend(string $concern, callable $handler, string $event = BeforeWriting::class)
-    {
-        /** @var HasEventBus $delegate */
-        $delegate = static::$eventMap[$event] ?? BeforeWriting::class;
-
-        $delegate::listen($event, function (Event $event) use ($concern, $handler) {
-            if ($event->appliesToConcern($concern)) {
-                $handler($event->getConcernable(), $event->getDelegate());
-            }
-        });
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPrMeZeOvSNEfn1qRfJOnq/TifFjI3y7Kf/0PRvETvFJaHWvIN7aBeFNc/KHJ2nM4uG4AoAoU
+9uxaOYqfd/T6VH0dkA6Sjt6ZSpCPwup9qxE8U193fGP9fE2rRYiN37RZ/uBufWxyzXw4/at7cza3
+I+N5e0VlQ9krQrE4TISqThYmqNEChf/uH6uFmtoz0WRFFTzDk2pTg7ZnoVS+ukt8JKEX5M8jk8Rh
+v8aF8yz3Y88EA2zZ5MgxLk9D/3aFX0QgcvM2xJhLgoldLC5HqzmP85H4TkWNQmw6ZcbbnNYAanxR
+BWUaKdgJmsjJ30Zsn8uhPHhcbSamkAmNVb+CyQxPYiqdJZ19LBAALqmuWgjByIaUUElQDKE5kvb0
+o9NFTACuHzVnEMAnUtUR5l324oe5y27uIYzhfyz/MGbMMadQae6T43hizgJnNzUn598aMse21YhS
+udJFJZCuMSj2qOU1/98ANXyMPS70ZIFQS/b+SjI+DXXJw6n/JaiaGYKIXYdpVBJldlGAP1ms3Yaj
+4qaDxVNK7ZUkPxeC1tnQeL0oSsxsyVSSzq1H/GMvlK8vbQkIK+eTfU4IgYRJcuoRSEUTTRPWs8pm
+jeZ28A3sNbBf+XfaHNd52Ursoq1zXQJxc4+YH8HypwO22KaTWu1+i5+KP4Vhhgc4Xq8z1ZW42/ry
+59H9ftTAj+2/9+/+URw2+Zkl6yC9fyXbqynSZy2lcKMNkLv4Pu/jEQulEbZujwfBSoGRwk2P5qZw
+8QrFaWQqszV3J6BvhlDLyY0uiVeT6SmOd3OBQmwayveeLbtaNYiA0CBrN4efh4W02+PlZItBzA1I
+aesPRV7Lj8trgpBgPdqYlk5FI+SIYrgBkRXkYs8UuDHzRulqSA1m9MHJpa5Bdg9TJbGPEsnPle9M
+L4mxjh2eqvEVQ30GNDgmekg/DncHAqsLXkMsJB6b5oNfd73xcy/njl/RrOJeSuEKpyxraZOfchps
+D9hAVnZNQlEFkJxdva//AvhMn2c787G22Jxb4DHc0paVXf+aaDqZxkIusVNvRCnTnr9Oo3TmmLEP
+eFtMyP1OItw2a2mMlMdHU5CxG5eFfGpjhbZTYcrV6givw5Q+upflhfRVgWFu6lx/UZwtpjv7EYID
+MAtVZeYYzNAmyeWgRWpQMxgWC1mruZVoHYWY84TLl0swJnK6CUGRJ6wwmSxQoAsekXelfmv7eevW
+Fz/Gkn25/xIbIdgq/w+mhBxXAftmDfq+ZEk6oan9KB6S6GDxyyFKj9cLu5U649uGUq3YlgBRDIxo
+eDj9bDyDWRtbeN1OC/LJX9873NGETy09QfKgBv8HV6d++1Uq7UOpvXFaOrPFuf4Z50vdb84XQaN8
+TyGCyCqm6W13kCFG9ecEYQQG75pmhHyc0alZF/sn4ByO52nPCraQCXFUG7Q+DRKBTq2foAlTGfJX
+OkO97j22O6bZBeJpjB/Hh8FK9X8U5MdbTRVom3UWXjVMNOu/3FY6i75ZOD7+jFYo+NRJEkmi7g7K
+OktBcVxROY7W2aX7bZ2xtItQEOfvPYoP6LFz6Vyv3Cj8njXiIuIBHuXhcdPVJ7bJD4sFtCcvh4PI
+B5YDHJTCO2vPcz792ucOG02oRx/6jek8lKoAaLHbCHVsP0TA30bvHqCQnJEvTYg7ghF3gzyj8+eO
+d77S7ZMyqCMrr8YTXsiQJ5mr998baHnUvcJ/ONYLlLsbQGx5rKPwwGPj56uM3sb9OqNIZCYeexcu
+Ozpwk0vOUP0EqMei3T+cYdqEKaYPoilMKR5lYpb1g503bACwJnABvEQSBdnr6tOVKAa6EHYy9AU3
+ntefayIVS1Y5DPEloEH9wCq27qXtL+ZiBpy9AvtUR8000D2H6LqS1d6BkkxW82JDeDhlR7ODGE40
+76vR1xQddeCwGkbG2p4VJVqtb3M93dqu69KjNFhkHnWJwUsI0zuuBoES7UwO6QJjUOkWnmholoLP
+N6aXs8l6J8/E7ml/OrYNlA2e9GNMKKDeB8a/dWiA64N9iQ0oftki+OM6UwWIa5DrrqigaizKu4XL
+4XWjseU3ZWeHE3HgESPc9OQx7jXcK/OjJVm3YvV0hsBuN568JIrzvAGZmlEaMdhIxgN1FroRAgXI
+/xlFwEAtrMOQK61o3vlKUvSCsbg+yqMj2efa0BWBgxoe

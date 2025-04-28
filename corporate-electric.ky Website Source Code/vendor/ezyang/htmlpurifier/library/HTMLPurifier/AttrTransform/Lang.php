@@ -1,31 +1,31 @@
-<?php
-
-/**
- * Post-transform that copies lang's value to xml:lang (and vice-versa)
- * @note Theoretically speaking, this could be a pre-transform, but putting
- *       post is more efficient.
- */
-class HTMLPurifier_AttrTransform_Lang extends HTMLPurifier_AttrTransform
-{
-
-    /**
-     * @param array $attr
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return array
-     */
-    public function transform($attr, $config, $context)
-    {
-        $lang = isset($attr['lang']) ? $attr['lang'] : false;
-        $xml_lang = isset($attr['xml:lang']) ? $attr['xml:lang'] : false;
-
-        if ($lang !== false && $xml_lang === false) {
-            $attr['xml:lang'] = $lang;
-        } elseif ($xml_lang !== false) {
-            $attr['lang'] = $xml_lang;
-        }
-        return $attr;
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+BCJANgZeAw3RgrB15DvgMP9xOrkvobcmUw58+G==

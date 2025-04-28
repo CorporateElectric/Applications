@@ -1,278 +1,111 @@
-<?php
-
-namespace Illuminate\Redis;
-
-use Closure;
-use Illuminate\Contracts\Redis\Factory;
-use Illuminate\Redis\Connections\Connection;
-use Illuminate\Redis\Connectors\PhpRedisConnector;
-use Illuminate\Redis\Connectors\PredisConnector;
-use Illuminate\Support\ConfigurationUrlParser;
-use InvalidArgumentException;
-
-/**
- * @mixin \Illuminate\Redis\Connections\Connection
- */
-class RedisManager implements Factory
-{
-    /**
-     * The application instance.
-     *
-     * @var \Illuminate\Contracts\Foundation\Application
-     */
-    protected $app;
-
-    /**
-     * The name of the default driver.
-     *
-     * @var string
-     */
-    protected $driver;
-
-    /**
-     * The registered custom driver creators.
-     *
-     * @var array
-     */
-    protected $customCreators = [];
-
-    /**
-     * The Redis server configurations.
-     *
-     * @var array
-     */
-    protected $config;
-
-    /**
-     * The Redis connections.
-     *
-     * @var mixed
-     */
-    protected $connections;
-
-    /**
-     * Indicates whether event dispatcher is set on connections.
-     *
-     * @var bool
-     */
-    protected $events = false;
-
-    /**
-     * Create a new Redis manager instance.
-     *
-     * @param  \Illuminate\Contracts\Foundation\Application  $app
-     * @param  string  $driver
-     * @param  array  $config
-     * @return void
-     */
-    public function __construct($app, $driver, array $config)
-    {
-        $this->app = $app;
-        $this->driver = $driver;
-        $this->config = $config;
-    }
-
-    /**
-     * Get a Redis connection by name.
-     *
-     * @param  string|null  $name
-     * @return \Illuminate\Redis\Connections\Connection
-     */
-    public function connection($name = null)
-    {
-        $name = $name ?: 'default';
-
-        if (isset($this->connections[$name])) {
-            return $this->connections[$name];
-        }
-
-        return $this->connections[$name] = $this->configure(
-            $this->resolve($name), $name
-        );
-    }
-
-    /**
-     * Resolve the given connection by name.
-     *
-     * @param  string|null  $name
-     * @return \Illuminate\Redis\Connections\Connection
-     *
-     * @throws \InvalidArgumentException
-     */
-    public function resolve($name = null)
-    {
-        $name = $name ?: 'default';
-
-        $options = $this->config['options'] ?? [];
-
-        if (isset($this->config[$name])) {
-            return $this->connector()->connect(
-                $this->parseConnectionConfiguration($this->config[$name]),
-                $options
-            );
-        }
-
-        if (isset($this->config['clusters'][$name])) {
-            return $this->resolveCluster($name);
-        }
-
-        throw new InvalidArgumentException("Redis connection [{$name}] not configured.");
-    }
-
-    /**
-     * Resolve the given cluster connection by name.
-     *
-     * @param  string  $name
-     * @return \Illuminate\Redis\Connections\Connection
-     */
-    protected function resolveCluster($name)
-    {
-        return $this->connector()->connectToCluster(
-            array_map(function ($config) {
-                return $this->parseConnectionConfiguration($config);
-            }, $this->config['clusters'][$name]),
-            $this->config['clusters']['options'] ?? [],
-            $this->config['options'] ?? []
-        );
-    }
-
-    /**
-     * Configure the given connection to prepare it for commands.
-     *
-     * @param  \Illuminate\Redis\Connections\Connection  $connection
-     * @param  string  $name
-     * @return \Illuminate\Redis\Connections\Connection
-     */
-    protected function configure(Connection $connection, $name)
-    {
-        $connection->setName($name);
-
-        if ($this->events && $this->app->bound('events')) {
-            $connection->setEventDispatcher($this->app->make('events'));
-        }
-
-        return $connection;
-    }
-
-    /**
-     * Get the connector instance for the current driver.
-     *
-     * @return \Illuminate\Contracts\Redis\Connector
-     */
-    protected function connector()
-    {
-        $customCreator = $this->customCreators[$this->driver] ?? null;
-
-        if ($customCreator) {
-            return $customCreator();
-        }
-
-        switch ($this->driver) {
-            case 'predis':
-                return new PredisConnector;
-            case 'phpredis':
-                return new PhpRedisConnector;
-        }
-    }
-
-    /**
-     * Parse the Redis connection configuration.
-     *
-     * @param  mixed  $config
-     * @return array
-     */
-    protected function parseConnectionConfiguration($config)
-    {
-        $parsed = (new ConfigurationUrlParser)->parseConfiguration($config);
-
-        $driver = strtolower($parsed['driver'] ?? '');
-
-        if (in_array($driver, ['tcp', 'tls'])) {
-            $parsed['scheme'] = $driver;
-        }
-
-        return array_filter($parsed, function ($key) {
-            return ! in_array($key, ['driver', 'username'], true);
-        }, ARRAY_FILTER_USE_KEY);
-    }
-
-    /**
-     * Return all of the created connections.
-     *
-     * @return array
-     */
-    public function connections()
-    {
-        return $this->connections;
-    }
-
-    /**
-     * Enable the firing of Redis command events.
-     *
-     * @return void
-     */
-    public function enableEvents()
-    {
-        $this->events = true;
-    }
-
-    /**
-     * Disable the firing of Redis command events.
-     *
-     * @return void
-     */
-    public function disableEvents()
-    {
-        $this->events = false;
-    }
-
-    /**
-     * Set the default driver.
-     *
-     * @param  string  $driver
-     * @return void
-     */
-    public function setDriver($driver)
-    {
-        $this->driver = $driver;
-    }
-
-    /**
-     * Disconnect the given connection and remove from local cache.
-     *
-     * @param  string|null  $name
-     * @return void
-     */
-    public function purge($name = null)
-    {
-        $name = $name ?: 'default';
-
-        unset($this->connections[$name]);
-    }
-
-    /**
-     * Register a custom driver creator Closure.
-     *
-     * @param  string  $driver
-     * @param  \Closure  $callback
-     * @return $this
-     */
-    public function extend($driver, Closure $callback)
-    {
-        $this->customCreators[$driver] = $callback->bindTo($this, $this);
-
-        return $this;
-    }
-
-    /**
-     * Pass methods onto the default Redis connection.
-     *
-     * @param  string  $method
-     * @param  array  $parameters
-     * @return mixed
-     */
-    public function __call($method, $parameters)
-    {
-        return $this->connection()->{$method}(...$parameters);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

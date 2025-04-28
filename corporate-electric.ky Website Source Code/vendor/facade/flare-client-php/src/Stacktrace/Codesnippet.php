@@ -1,72 +1,49 @@
-<?php
-
-namespace Facade\FlareClient\Stacktrace;
-
-use RuntimeException;
-
-class Codesnippet
-{
-    /** @var int */
-    private $surroundingLine = 1;
-
-    /** @var int */
-    private $snippetLineCount = 9;
-
-    public function surroundingLine(int $surroundingLine): self
-    {
-        $this->surroundingLine = $surroundingLine;
-
-        return $this;
-    }
-
-    public function snippetLineCount(int $snippetLineCount): self
-    {
-        $this->snippetLineCount = $snippetLineCount;
-
-        return $this;
-    }
-
-    public function get(string $fileName): array
-    {
-        if (! file_exists($fileName)) {
-            return [];
-        }
-
-        try {
-            $file = new File($fileName);
-
-            [$startLineNumber, $endLineNumber] = $this->getBounds($file->numberOfLines());
-
-            $code = [];
-
-            $line = $file->getLine($startLineNumber);
-
-            $currentLineNumber = $startLineNumber;
-
-            while ($currentLineNumber <= $endLineNumber) {
-                $code[$currentLineNumber] = rtrim(substr($line, 0, 250));
-
-                $line = $file->getNextLine();
-                $currentLineNumber++;
-            }
-
-            return $code;
-        } catch (RuntimeException $exception) {
-            return [];
-        }
-    }
-
-    private function getBounds($totalNumberOfLineInFile): array
-    {
-        $startLine = max($this->surroundingLine - floor($this->snippetLineCount / 2), 1);
-
-        $endLine = $startLine + ($this->snippetLineCount - 1);
-
-        if ($endLine > $totalNumberOfLineInFile) {
-            $endLine = $totalNumberOfLineInFile;
-            $startLine = max($endLine - ($this->snippetLineCount - 1), 1);
-        }
-
-        return [$startLine, $endLine];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+Cx1+R4Uo

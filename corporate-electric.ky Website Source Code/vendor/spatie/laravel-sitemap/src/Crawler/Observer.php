@@ -1,64 +1,38 @@
-<?php
-
-namespace Spatie\Sitemap\Crawler;
-
-use GuzzleHttp\Exception\RequestException;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\UriInterface;
-use Spatie\Crawler\CrawlObserver;
-
-class Observer extends CrawlObserver
-{
-    /** @var callable */
-    protected $hasCrawled;
-
-    public function __construct(callable $hasCrawled)
-    {
-        $this->hasCrawled = $hasCrawled;
-    }
-
-    /**
-     * Called when the crawler will crawl the url.
-     *
-     * @param \Psr\Http\Message\UriInterface $url
-     */
-    public function willCrawl(UriInterface $url)
-    {
-    }
-
-    /**
-     * Called when the crawl has ended.
-     */
-    public function finishedCrawling()
-    {
-    }
-
-    /**
-     * Called when the crawler has crawled the given url successfully.
-     *
-     * @param \Psr\Http\Message\UriInterface      $url
-     * @param \Psr\Http\Message\ResponseInterface $response
-     * @param \Psr\Http\Message\UriInterface|null $foundOnUrl
-     */
-    public function crawled(
-        UriInterface $url,
-        ResponseInterface $response,
-        ?UriInterface $foundOnUrl = null
-    ) {
-        ($this->hasCrawled)($url, $response);
-    }
-
-    /**
-     * Called when the crawler had a problem crawling the given url.
-     *
-     * @param \Psr\Http\Message\UriInterface         $url
-     * @param \GuzzleHttp\Exception\RequestException $requestException
-     * @param \Psr\Http\Message\UriInterface|null    $foundOnUrl
-     */
-    public function crawlFailed(
-        UriInterface $url,
-        RequestException $requestException,
-        ?UriInterface $foundOnUrl = null
-    ) {
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+5E4D+hdSXWNOy+6UnPc9lRUaUbJMmW==

@@ -1,243 +1,70 @@
-<?php
-
-namespace Illuminate\Bus;
-
-use Closure;
-use Illuminate\Bus\Events\BatchDispatched;
-use Illuminate\Contracts\Container\Container;
-use Illuminate\Contracts\Events\Dispatcher as EventDispatcher;
-use Illuminate\Queue\SerializableClosure;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Collection;
-use Throwable;
-
-class PendingBatch
-{
-    /**
-     * The IoC container instance.
-     *
-     * @var \Illuminate\Contracts\Container\Container
-     */
-    protected $container;
-
-    /**
-     * The batch name.
-     *
-     * @var string
-     */
-    public $name = '';
-
-    /**
-     * The jobs that belong to the batch.
-     *
-     * @var \Illuminate\Support\Collection
-     */
-    public $jobs;
-
-    /**
-     * The batch options.
-     *
-     * @var array
-     */
-    public $options = [];
-
-    /**
-     * Create a new pending batch instance.
-     *
-     * @param  \Illuminate\Contracts\Container\Container  $container
-     * @param  \Illuminate\Support\Collection  $jobs
-     * @return void
-     */
-    public function __construct(Container $container, Collection $jobs)
-    {
-        $this->container = $container;
-        $this->jobs = $jobs;
-    }
-
-    /**
-     * Add a callback to be executed after all jobs in the batch have executed successfully.
-     *
-     * @param  callable  $callback
-     * @return $this
-     */
-    public function then($callback)
-    {
-        $this->options['then'][] = $callback instanceof Closure
-                        ? new SerializableClosure($callback)
-                        : $callback;
-
-        return $this;
-    }
-
-    /**
-     * Get the "then" callbacks that have been registered with the pending batch.
-     *
-     * @return array
-     */
-    public function thenCallbacks()
-    {
-        return $this->options['then'] ?? [];
-    }
-
-    /**
-     * Add a callback to be executed after the first failing job in the batch.
-     *
-     * @param  callable  $callback
-     * @return $this
-     */
-    public function catch($callback)
-    {
-        $this->options['catch'][] = $callback instanceof Closure
-                    ? new SerializableClosure($callback)
-                    : $callback;
-
-        return $this;
-    }
-
-    /**
-     * Get the "catch" callbacks that have been registered with the pending batch.
-     *
-     * @return array
-     */
-    public function catchCallbacks()
-    {
-        return $this->options['catch'] ?? [];
-    }
-
-    /**
-     * Add a callback to be executed after the batch has finished executing.
-     *
-     * @param  callable  $callback
-     * @return $this
-     */
-    public function finally($callback)
-    {
-        $this->options['finally'][] = $callback instanceof Closure
-                    ? new SerializableClosure($callback)
-                    : $callback;
-
-        return $this;
-    }
-
-    /**
-     * Get the "finally" callbacks that have been registered with the pending batch.
-     *
-     * @return array
-     */
-    public function finallyCallbacks()
-    {
-        return $this->options['finally'] ?? [];
-    }
-
-    /**
-     * Indicate that the batch should not be cancelled when a job within the batch fails.
-     *
-     * @param  bool  $allowFailures
-     * @return $this
-     */
-    public function allowFailures($allowFailures = true)
-    {
-        $this->options['allowFailures'] = $allowFailures;
-
-        return $this;
-    }
-
-    /**
-     * Determine if the pending batch allows jobs to fail without cancelling the batch.
-     *
-     * @return bool
-     */
-    public function allowsFailures()
-    {
-        return Arr::get($this->options, 'allowFailures', false) === true;
-    }
-
-    /**
-     * Set the name for the batch.
-     *
-     * @param  string  $name
-     * @return $this
-     */
-    public function name(string $name)
-    {
-        $this->name = $name;
-
-        return $this;
-    }
-
-    /**
-     * Specify the queue connection that the batched jobs should run on.
-     *
-     * @param  string  $connection
-     * @return $this
-     */
-    public function onConnection(string $connection)
-    {
-        $this->options['connection'] = $connection;
-
-        return $this;
-    }
-
-    /**
-     * Get the connection used by the pending batch.
-     *
-     * @return string|null
-     */
-    public function connection()
-    {
-        return $this->options['connection'] ?? null;
-    }
-
-    /**
-     * Specify the queue that the batched jobs should run on.
-     *
-     * @param  string  $queue
-     * @return $this
-     */
-    public function onQueue(string $queue)
-    {
-        $this->options['queue'] = $queue;
-
-        return $this;
-    }
-
-    /**
-     * Get the queue used by the pending batch.
-     *
-     * @return string|null
-     */
-    public function queue()
-    {
-        return $this->options['queue'] ?? null;
-    }
-
-    /**
-     * Dispatch the batch.
-     *
-     * @return \Illuminate\Bus\Batch
-     *
-     * @throws \Throwable
-     */
-    public function dispatch()
-    {
-        $repository = $this->container->make(BatchRepository::class);
-
-        try {
-            $batch = $repository->store($this);
-
-            $batch = $batch->add($this->jobs);
-        } catch (Throwable $e) {
-            if (isset($batch)) {
-                $repository->delete($batch->id);
-            }
-
-            throw $e;
-        }
-
-        $this->container->make(EventDispatcher::class)->dispatch(
-            new BatchDispatched($batch)
-        );
-
-        return $batch;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+baaIxUkw1ze6A0==

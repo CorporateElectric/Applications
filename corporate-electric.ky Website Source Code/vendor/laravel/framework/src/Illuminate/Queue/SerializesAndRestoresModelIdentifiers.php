@@ -1,116 +1,76 @@
-<?php
-
-namespace Illuminate\Queue;
-
-use Illuminate\Contracts\Database\ModelIdentifier;
-use Illuminate\Contracts\Queue\QueueableCollection;
-use Illuminate\Contracts\Queue\QueueableEntity;
-use Illuminate\Database\Eloquent\Collection as EloquentCollection;
-use Illuminate\Database\Eloquent\Relations\Concerns\AsPivot;
-use Illuminate\Database\Eloquent\Relations\Pivot;
-
-trait SerializesAndRestoresModelIdentifiers
-{
-    /**
-     * Get the property value prepared for serialization.
-     *
-     * @param  mixed  $value
-     * @return mixed
-     */
-    protected function getSerializedPropertyValue($value)
-    {
-        if ($value instanceof QueueableCollection) {
-            return new ModelIdentifier(
-                $value->getQueueableClass(),
-                $value->getQueueableIds(),
-                $value->getQueueableRelations(),
-                $value->getQueueableConnection()
-            );
-        }
-
-        if ($value instanceof QueueableEntity) {
-            return new ModelIdentifier(
-                get_class($value),
-                $value->getQueueableId(),
-                $value->getQueueableRelations(),
-                $value->getQueueableConnection()
-            );
-        }
-
-        return $value;
-    }
-
-    /**
-     * Get the restored property value after deserialization.
-     *
-     * @param  mixed  $value
-     * @return mixed
-     */
-    protected function getRestoredPropertyValue($value)
-    {
-        if (! $value instanceof ModelIdentifier) {
-            return $value;
-        }
-
-        return is_array($value->id)
-                ? $this->restoreCollection($value)
-                : $this->restoreModel($value);
-    }
-
-    /**
-     * Restore a queueable collection instance.
-     *
-     * @param  \Illuminate\Contracts\Database\ModelIdentifier  $value
-     * @return \Illuminate\Database\Eloquent\Collection
-     */
-    protected function restoreCollection($value)
-    {
-        if (! $value->class || count($value->id) === 0) {
-            return new EloquentCollection;
-        }
-
-        $collection = $this->getQueryForModelRestoration(
-            (new $value->class)->setConnection($value->connection), $value->id
-        )->useWritePdo()->get();
-
-        if (is_a($value->class, Pivot::class, true) ||
-            in_array(AsPivot::class, class_uses($value->class))) {
-            return $collection;
-        }
-
-        $collection = $collection->keyBy->getKey();
-
-        $collectionClass = get_class($collection);
-
-        return new $collectionClass(
-            collect($value->id)->map(function ($id) use ($collection) {
-                return $collection[$id] ?? null;
-            })->filter()
-        );
-    }
-
-    /**
-     * Restore the model from the model identifier instance.
-     *
-     * @param  \Illuminate\Contracts\Database\ModelIdentifier  $value
-     * @return \Illuminate\Database\Eloquent\Model
-     */
-    public function restoreModel($value)
-    {
-        return $this->getQueryForModelRestoration(
-            (new $value->class)->setConnection($value->connection), $value->id
-        )->useWritePdo()->firstOrFail()->load($value->relations ?? []);
-    }
-
-    /**
-     * Get the query for model restoration.
-     *
-     * @param  \Illuminate\Database\Eloquent\Model  $model
-     * @param  array|int  $ids
-     * @return \Illuminate\Database\Eloquent\Builder
-     */
-    protected function getQueryForModelRestoration($model, $ids)
-    {
-        return $model->newQueryForRestoration($ids);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+0m9u6L1GGSiAagnqMT+Yb9NTL0==

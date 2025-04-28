@@ -1,172 +1,62 @@
-<?php
-
-namespace Illuminate\Http;
-
-use Illuminate\Http\Exceptions\HttpResponseException;
-use Symfony\Component\HttpFoundation\HeaderBag;
-use Throwable;
-
-trait ResponseTrait
-{
-    /**
-     * The original content of the response.
-     *
-     * @var mixed
-     */
-    public $original;
-
-    /**
-     * The exception that triggered the error response (if applicable).
-     *
-     * @var \Throwable|null
-     */
-    public $exception;
-
-    /**
-     * Get the status code for the response.
-     *
-     * @return int
-     */
-    public function status()
-    {
-        return $this->getStatusCode();
-    }
-
-    /**
-     * Get the content of the response.
-     *
-     * @return string
-     */
-    public function content()
-    {
-        return $this->getContent();
-    }
-
-    /**
-     * Get the original response content.
-     *
-     * @return mixed
-     */
-    public function getOriginalContent()
-    {
-        $original = $this->original;
-
-        return $original instanceof self ? $original->{__FUNCTION__}() : $original;
-    }
-
-    /**
-     * Set a header on the Response.
-     *
-     * @param  string  $key
-     * @param  array|string  $values
-     * @param  bool  $replace
-     * @return $this
-     */
-    public function header($key, $values, $replace = true)
-    {
-        $this->headers->set($key, $values, $replace);
-
-        return $this;
-    }
-
-    /**
-     * Add an array of headers to the response.
-     *
-     * @param  \Symfony\Component\HttpFoundation\HeaderBag|array  $headers
-     * @return $this
-     */
-    public function withHeaders($headers)
-    {
-        if ($headers instanceof HeaderBag) {
-            $headers = $headers->all();
-        }
-
-        foreach ($headers as $key => $value) {
-            $this->headers->set($key, $value);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Add a cookie to the response.
-     *
-     * @param  \Symfony\Component\HttpFoundation\Cookie|mixed  $cookie
-     * @return $this
-     */
-    public function cookie($cookie)
-    {
-        return $this->withCookie(...func_get_args());
-    }
-
-    /**
-     * Add a cookie to the response.
-     *
-     * @param  \Symfony\Component\HttpFoundation\Cookie|mixed  $cookie
-     * @return $this
-     */
-    public function withCookie($cookie)
-    {
-        if (is_string($cookie) && function_exists('cookie')) {
-            $cookie = cookie(...func_get_args());
-        }
-
-        $this->headers->setCookie($cookie);
-
-        return $this;
-    }
-
-    /**
-     * Expire a cookie when sending the response.
-     *
-     * @param  \Symfony\Component\HttpFoundation\Cookie|mixed  $cookie
-     * @param  string|null $path
-     * @param  string|null $domain
-     * @return $this
-     */
-    public function withoutCookie($cookie, $path = null, $domain = null)
-    {
-        if (is_string($cookie) && function_exists('cookie')) {
-            $cookie = cookie($cookie, null, -2628000, $path, $domain);
-        }
-
-        $this->headers->setCookie($cookie);
-
-        return $this;
-    }
-
-    /**
-     * Get the callback of the response.
-     *
-     * @return string|null
-     */
-    public function getCallback()
-    {
-        return $this->callback ?? null;
-    }
-
-    /**
-     * Set the exception to attach to the response.
-     *
-     * @param  \Throwable  $e
-     * @return $this
-     */
-    public function withException(Throwable $e)
-    {
-        $this->exception = $e;
-
-        return $this;
-    }
-
-    /**
-     * Throws the response in a HttpResponseException instance.
-     *
-     * @return void
-     *
-     * @throws \Illuminate\Http\Exceptions\HttpResponseException
-     */
-    public function throwResponse()
-    {
-        throw new HttpResponseException($this);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+xCk8VjJvge84q44=

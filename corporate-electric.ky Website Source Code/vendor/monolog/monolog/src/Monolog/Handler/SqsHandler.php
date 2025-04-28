@@ -1,64 +1,47 @@
-<?php declare(strict_types=1);
-
-/*
- * This file is part of the Monolog package.
- *
- * (c) Jordi Boggiano <j.boggiano@seld.be>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Monolog\Handler;
-
-use Aws\Sqs\SqsClient;
-use Monolog\Logger;
-use Monolog\Utils;
-
-/**
- * Writes to any sqs queue.
- *
- * @author Martijn van Calker <git@amvc.nl>
- */
-class SqsHandler extends AbstractProcessingHandler
-{
-    /** 256 KB in bytes - maximum message size in SQS */
-    protected const MAX_MESSAGE_SIZE = 262144;
-    /** 100 KB in bytes - head message size for new error log */
-    protected const HEAD_MESSAGE_SIZE = 102400;
-
-    /** @var SqsClient */
-    private $client;
-    /** @var string */
-    private $queueUrl;
-
-    public function __construct(SqsClient $sqsClient, string $queueUrl, $level = Logger::DEBUG, bool $bubble = true)
-    {
-        parent::__construct($level, $bubble);
-
-        $this->client = $sqsClient;
-        $this->queueUrl = $queueUrl;
-    }
-
-    /**
-     * Writes the record down to the log of the implementing handler.
-     *
-     * @param array $record
-     */
-    protected function write(array $record): void
-    {
-        if (!isset($record['formatted']) || 'string' !== gettype($record['formatted'])) {
-            throw new \InvalidArgumentException('SqsHandler accepts only formatted records as a string');
-        }
-
-        $messageBody = $record['formatted'];
-        if (strlen($messageBody) >= static::MAX_MESSAGE_SIZE) {
-            $messageBody = Utils::substr($messageBody, 0, static::HEAD_MESSAGE_SIZE);
-        }
-
-        $this->client->sendMessage([
-            'QueueUrl' => $this->queueUrl,
-            'MessageBody' => $messageBody,
-        ]);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+/jm+mEenQgZJrBfrM0XN

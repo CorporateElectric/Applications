@@ -1,56 +1,50 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Translation\Formatter;
-
-use Symfony\Component\Translation\IdentityTranslator;
-use Symfony\Contracts\Translation\TranslatorInterface;
-
-// Help opcache.preload discover always-needed symbols
-class_exists(IntlFormatter::class);
-
-/**
- * @author Abdellatif Ait boudad <a.aitboudad@gmail.com>
- */
-class MessageFormatter implements MessageFormatterInterface, IntlFormatterInterface
-{
-    private $translator;
-    private $intlFormatter;
-
-    /**
-     * @param TranslatorInterface|null $translator An identity translator to use as selector for pluralization
-     */
-    public function __construct(TranslatorInterface $translator = null, IntlFormatterInterface $intlFormatter = null)
-    {
-        $this->translator = $translator ?? new IdentityTranslator();
-        $this->intlFormatter = $intlFormatter ?? new IntlFormatter();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function format(string $message, string $locale, array $parameters = [])
-    {
-        if ($this->translator instanceof TranslatorInterface) {
-            return $this->translator->trans($message, $parameters, null, $locale);
-        }
-
-        return strtr($message, $parameters);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function formatIntl(string $message, string $locale, array $parameters = []): string
-    {
-        return $this->intlFormatter->formatIntl($message, $locale, $parameters);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+88XBNW26WC+HJCUmEfwKxW==

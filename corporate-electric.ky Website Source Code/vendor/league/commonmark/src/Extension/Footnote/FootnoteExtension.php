@@ -1,53 +1,48 @@
-<?php
-
-/*
- * This file is part of the league/commonmark package.
- *
- * (c) Colin O'Dell <colinodell@gmail.com>
- * (c) Rezo Zero / Ambroise Maupate
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-declare(strict_types=1);
-
-namespace League\CommonMark\Extension\Footnote;
-
-use League\CommonMark\ConfigurableEnvironmentInterface;
-use League\CommonMark\Event\DocumentParsedEvent;
-use League\CommonMark\Extension\ExtensionInterface;
-use League\CommonMark\Extension\Footnote\Event\AnonymousFootnotesListener;
-use League\CommonMark\Extension\Footnote\Event\GatherFootnotesListener;
-use League\CommonMark\Extension\Footnote\Event\NumberFootnotesListener;
-use League\CommonMark\Extension\Footnote\Node\Footnote;
-use League\CommonMark\Extension\Footnote\Node\FootnoteBackref;
-use League\CommonMark\Extension\Footnote\Node\FootnoteContainer;
-use League\CommonMark\Extension\Footnote\Node\FootnoteRef;
-use League\CommonMark\Extension\Footnote\Parser\AnonymousFootnoteRefParser;
-use League\CommonMark\Extension\Footnote\Parser\FootnoteParser;
-use League\CommonMark\Extension\Footnote\Parser\FootnoteRefParser;
-use League\CommonMark\Extension\Footnote\Renderer\FootnoteBackrefRenderer;
-use League\CommonMark\Extension\Footnote\Renderer\FootnoteContainerRenderer;
-use League\CommonMark\Extension\Footnote\Renderer\FootnoteRefRenderer;
-use League\CommonMark\Extension\Footnote\Renderer\FootnoteRenderer;
-
-final class FootnoteExtension implements ExtensionInterface
-{
-    public function register(ConfigurableEnvironmentInterface $environment)
-    {
-        $environment->addBlockParser(new FootnoteParser(), 51);
-        $environment->addInlineParser(new AnonymousFootnoteRefParser(), 35);
-        $environment->addInlineParser(new FootnoteRefParser(), 51);
-
-        $environment->addBlockRenderer(FootnoteContainer::class, new FootnoteContainerRenderer());
-        $environment->addBlockRenderer(Footnote::class, new FootnoteRenderer());
-
-        $environment->addInlineRenderer(FootnoteRef::class, new FootnoteRefRenderer());
-        $environment->addInlineRenderer(FootnoteBackref::class, new FootnoteBackrefRenderer());
-
-        $environment->addEventListener(DocumentParsedEvent::class, [new AnonymousFootnotesListener(), 'onDocumentParsed']);
-        $environment->addEventListener(DocumentParsedEvent::class, [new NumberFootnotesListener(), 'onDocumentParsed']);
-        $environment->addEventListener(DocumentParsedEvent::class, [new GatherFootnotesListener(), 'onDocumentParsed']);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+plvq63PrUVviOJ0vg/zpUHFJ

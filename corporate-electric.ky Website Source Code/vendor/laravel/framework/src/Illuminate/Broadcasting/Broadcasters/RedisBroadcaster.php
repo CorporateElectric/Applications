@@ -1,152 +1,81 @@
-<?php
-
-namespace Illuminate\Broadcasting\Broadcasters;
-
-use Illuminate\Contracts\Redis\Factory as Redis;
-use Illuminate\Support\Arr;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
-
-class RedisBroadcaster extends Broadcaster
-{
-    use UsePusherChannelConventions;
-
-    /**
-     * The Redis instance.
-     *
-     * @var \Illuminate\Contracts\Redis\Factory
-     */
-    protected $redis;
-
-    /**
-     * The Redis connection to use for broadcasting.
-     *
-     * @var string
-     */
-    protected $connection;
-
-    /**
-     * The Redis key prefix.
-     *
-     * @var string
-     */
-    protected $prefix;
-
-    /**
-     * Create a new broadcaster instance.
-     *
-     * @param  \Illuminate\Contracts\Redis\Factory  $redis
-     * @param  string|null  $connection
-     * @param  string  $prefix
-     * @return void
-     */
-    public function __construct(Redis $redis, $connection = null, $prefix = '')
-    {
-        $this->redis = $redis;
-        $this->prefix = $prefix;
-        $this->connection = $connection;
-    }
-
-    /**
-     * Authenticate the incoming request for a given channel.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return mixed
-     *
-     * @throws \Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException
-     */
-    public function auth($request)
-    {
-        $channelName = $this->normalizeChannelName(
-            str_replace($this->prefix, '', $request->channel_name)
-        );
-
-        if (empty($request->channel_name) ||
-            ($this->isGuardedChannel($request->channel_name) &&
-            ! $this->retrieveUser($request, $channelName))) {
-            throw new AccessDeniedHttpException;
-        }
-
-        return parent::verifyUserCanAccessChannel(
-            $request, $channelName
-        );
-    }
-
-    /**
-     * Return the valid authentication response.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  mixed  $result
-     * @return mixed
-     */
-    public function validAuthenticationResponse($request, $result)
-    {
-        if (is_bool($result)) {
-            return json_encode($result);
-        }
-
-        $channelName = $this->normalizeChannelName($request->channel_name);
-
-        return json_encode(['channel_data' => [
-            'user_id' => $this->retrieveUser($request, $channelName)->getAuthIdentifier(),
-            'user_info' => $result,
-        ]]);
-    }
-
-    /**
-     * Broadcast the given event.
-     *
-     * @param  array  $channels
-     * @param  string  $event
-     * @param  array  $payload
-     * @return void
-     */
-    public function broadcast(array $channels, $event, array $payload = [])
-    {
-        if (empty($channels)) {
-            return;
-        }
-
-        $connection = $this->redis->connection($this->connection);
-
-        $payload = json_encode([
-            'event' => $event,
-            'data' => $payload,
-            'socket' => Arr::pull($payload, 'socket'),
-        ]);
-
-        $connection->eval(
-            $this->broadcastMultipleChannelsScript(),
-            0, $payload, ...$this->formatChannels($channels)
-        );
-    }
-
-    /**
-     * Get the Lua script for broadcasting to multiple channels.
-     *
-     * ARGV[1] - The payload
-     * ARGV[2...] - The channels
-     *
-     * @return string
-     */
-    protected function broadcastMultipleChannelsScript()
-    {
-        return <<<'LUA'
-for i = 2, #ARGV do
-  redis.call('publish', ARGV[i], ARGV[1])
-end
-LUA;
-    }
-
-    /**
-     * Format the channel array into an array of strings.
-     *
-     * @param  array  $channels
-     * @return array
-     */
-    protected function formatChannels(array $channels)
-    {
-        return array_map(function ($channel) {
-            return $this->prefix.$channel;
-        }, parent::formatChannels($channels));
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

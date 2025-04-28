@@ -1,170 +1,66 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Predis\PubSub;
-
-/**
- * Method-dispatcher loop built around the client-side abstraction of a Redis
- * PUB / SUB context.
- *
- * @author Daniele Alessandri <suppakilla@gmail.com>
- */
-class DispatcherLoop
-{
-    private $pubsub;
-
-    protected $callbacks;
-    protected $defaultCallback;
-    protected $subscriptionCallback;
-
-    /**
-     * @param Consumer $pubsub PubSub consumer instance used by the loop.
-     */
-    public function __construct(Consumer $pubsub)
-    {
-        $this->callbacks = array();
-        $this->pubsub = $pubsub;
-    }
-
-    /**
-     * Checks if the passed argument is a valid callback.
-     *
-     * @param mixed $callable A callback.
-     *
-     * @throws \InvalidArgumentException
-     */
-    protected function assertCallback($callable)
-    {
-        if (!is_callable($callable)) {
-            throw new \InvalidArgumentException('The given argument must be a callable object.');
-        }
-    }
-
-    /**
-     * Returns the underlying PUB / SUB context.
-     *
-     * @return Consumer
-     */
-    public function getPubSubConsumer()
-    {
-        return $this->pubsub;
-    }
-
-    /**
-     * Sets a callback that gets invoked upon new subscriptions.
-     *
-     * @param mixed $callable A callback.
-     */
-    public function subscriptionCallback($callable = null)
-    {
-        if (isset($callable)) {
-            $this->assertCallback($callable);
-        }
-
-        $this->subscriptionCallback = $callable;
-    }
-
-    /**
-     * Sets a callback that gets invoked when a message is received on a
-     * channel that does not have an associated callback.
-     *
-     * @param mixed $callable A callback.
-     */
-    public function defaultCallback($callable = null)
-    {
-        if (isset($callable)) {
-            $this->assertCallback($callable);
-        }
-
-        $this->subscriptionCallback = $callable;
-    }
-
-    /**
-     * Binds a callback to a channel.
-     *
-     * @param string   $channel  Channel name.
-     * @param callable $callback A callback.
-     */
-    public function attachCallback($channel, $callback)
-    {
-        $callbackName = $this->getPrefixKeys().$channel;
-
-        $this->assertCallback($callback);
-        $this->callbacks[$callbackName] = $callback;
-        $this->pubsub->subscribe($channel);
-    }
-
-    /**
-     * Stops listening to a channel and removes the associated callback.
-     *
-     * @param string $channel Redis channel.
-     */
-    public function detachCallback($channel)
-    {
-        $callbackName = $this->getPrefixKeys().$channel;
-
-        if (isset($this->callbacks[$callbackName])) {
-            unset($this->callbacks[$callbackName]);
-            $this->pubsub->unsubscribe($channel);
-        }
-    }
-
-    /**
-     * Starts the dispatcher loop.
-     */
-    public function run()
-    {
-        foreach ($this->pubsub as $message) {
-            $kind = $message->kind;
-
-            if ($kind !== Consumer::MESSAGE && $kind !== Consumer::PMESSAGE) {
-                if (isset($this->subscriptionCallback)) {
-                    $callback = $this->subscriptionCallback;
-                    call_user_func($callback, $message);
-                }
-
-                continue;
-            }
-
-            if (isset($this->callbacks[$message->channel])) {
-                $callback = $this->callbacks[$message->channel];
-                call_user_func($callback, $message->payload);
-            } elseif (isset($this->defaultCallback)) {
-                $callback = $this->defaultCallback;
-                call_user_func($callback, $message);
-            }
-        }
-    }
-
-    /**
-     * Terminates the dispatcher loop.
-     */
-    public function stop()
-    {
-        $this->pubsub->stop();
-    }
-
-    /**
-     * Return the prefix used for keys.
-     *
-     * @return string
-     */
-    protected function getPrefixKeys()
-    {
-        $options = $this->pubsub->getClient()->getOptions();
-
-        if (isset($options->prefix)) {
-            return $options->prefix->getPrefix();
-        }
-
-        return '';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

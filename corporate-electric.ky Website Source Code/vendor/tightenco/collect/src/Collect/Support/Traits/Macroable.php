@@ -1,116 +1,54 @@
-<?php
-
-namespace Tightenco\Collect\Support\Traits;
-
-use BadMethodCallException;
-use Closure;
-use ReflectionClass;
-use ReflectionMethod;
-
-trait Macroable
-{
-    /**
-     * The registered string macros.
-     *
-     * @var array
-     */
-    protected static $macros = [];
-
-    /**
-     * Register a custom macro.
-     *
-     * @param  string  $name
-     * @param  object|callable  $macro
-     * @return void
-     */
-    public static function macro($name, $macro)
-    {
-        static::$macros[$name] = $macro;
-    }
-
-    /**
-     * Mix another object into the class.
-     *
-     * @param  object  $mixin
-     * @param  bool  $replace
-     * @return void
-     *
-     * @throws \ReflectionException
-     */
-    public static function mixin($mixin, $replace = true)
-    {
-        $methods = (new ReflectionClass($mixin))->getMethods(
-            ReflectionMethod::IS_PUBLIC | ReflectionMethod::IS_PROTECTED
-        );
-
-        foreach ($methods as $method) {
-            if ($replace || ! static::hasMacro($method->name)) {
-                $method->setAccessible(true);
-                static::macro($method->name, $method->invoke($mixin));
-            }
-        }
-    }
-
-    /**
-     * Checks if macro is registered.
-     *
-     * @param  string  $name
-     * @return bool
-     */
-    public static function hasMacro($name)
-    {
-        return isset(static::$macros[$name]);
-    }
-
-    /**
-     * Dynamically handle calls to the class.
-     *
-     * @param  string  $method
-     * @param  array  $parameters
-     * @return mixed
-     *
-     * @throws \BadMethodCallException
-     */
-    public static function __callStatic($method, $parameters)
-    {
-        if (! static::hasMacro($method)) {
-            throw new BadMethodCallException(sprintf(
-                'Method %s::%s does not exist.', static::class, $method
-            ));
-        }
-
-        $macro = static::$macros[$method];
-
-        if ($macro instanceof Closure) {
-            return call_user_func_array(Closure::bind($macro, null, static::class), $parameters);
-        }
-
-        return $macro(...$parameters);
-    }
-
-    /**
-     * Dynamically handle calls to the class.
-     *
-     * @param  string  $method
-     * @param  array  $parameters
-     * @return mixed
-     *
-     * @throws \BadMethodCallException
-     */
-    public function __call($method, $parameters)
-    {
-        if (! static::hasMacro($method)) {
-            throw new BadMethodCallException(sprintf(
-                'Method %s::%s does not exist.', static::class, $method
-            ));
-        }
-
-        $macro = static::$macros[$method];
-
-        if ($macro instanceof Closure) {
-            return call_user_func_array($macro->bindTo($this, static::class), $parameters);
-        }
-
-        return $macro(...$parameters);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

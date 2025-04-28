@@ -1,198 +1,74 @@
-<?php
-
-/**
- * Parses string representations into their corresponding native PHP
- * variable type. The base implementation does a simple type-check.
- */
-class HTMLPurifier_VarParser
-{
-
-    const C_STRING = 1;
-    const ISTRING = 2;
-    const TEXT = 3;
-    const ITEXT = 4;
-    const C_INT = 5;
-    const C_FLOAT = 6;
-    const C_BOOL = 7;
-    const LOOKUP = 8;
-    const ALIST = 9;
-    const HASH = 10;
-    const C_MIXED = 11;
-
-    /**
-     * Lookup table of allowed types. Mainly for backwards compatibility, but
-     * also convenient for transforming string type names to the integer constants.
-     */
-    public static $types = array(
-        'string' => self::C_STRING,
-        'istring' => self::ISTRING,
-        'text' => self::TEXT,
-        'itext' => self::ITEXT,
-        'int' => self::C_INT,
-        'float' => self::C_FLOAT,
-        'bool' => self::C_BOOL,
-        'lookup' => self::LOOKUP,
-        'list' => self::ALIST,
-        'hash' => self::HASH,
-        'mixed' => self::C_MIXED
-    );
-
-    /**
-     * Lookup table of types that are string, and can have aliases or
-     * allowed value lists.
-     */
-    public static $stringTypes = array(
-        self::C_STRING => true,
-        self::ISTRING => true,
-        self::TEXT => true,
-        self::ITEXT => true,
-    );
-
-    /**
-     * Validate a variable according to type.
-     * It may return NULL as a valid type if $allow_null is true.
-     *
-     * @param mixed $var Variable to validate
-     * @param int $type Type of variable, see HTMLPurifier_VarParser->types
-     * @param bool $allow_null Whether or not to permit null as a value
-     * @return string Validated and type-coerced variable
-     * @throws HTMLPurifier_VarParserException
-     */
-    final public function parse($var, $type, $allow_null = false)
-    {
-        if (is_string($type)) {
-            if (!isset(HTMLPurifier_VarParser::$types[$type])) {
-                throw new HTMLPurifier_VarParserException("Invalid type '$type'");
-            } else {
-                $type = HTMLPurifier_VarParser::$types[$type];
-            }
-        }
-        $var = $this->parseImplementation($var, $type, $allow_null);
-        if ($allow_null && $var === null) {
-            return null;
-        }
-        // These are basic checks, to make sure nothing horribly wrong
-        // happened in our implementations.
-        switch ($type) {
-            case (self::C_STRING):
-            case (self::ISTRING):
-            case (self::TEXT):
-            case (self::ITEXT):
-                if (!is_string($var)) {
-                    break;
-                }
-                if ($type == self::ISTRING || $type == self::ITEXT) {
-                    $var = strtolower($var);
-                }
-                return $var;
-            case (self::C_INT):
-                if (!is_int($var)) {
-                    break;
-                }
-                return $var;
-            case (self::C_FLOAT):
-                if (!is_float($var)) {
-                    break;
-                }
-                return $var;
-            case (self::C_BOOL):
-                if (!is_bool($var)) {
-                    break;
-                }
-                return $var;
-            case (self::LOOKUP):
-            case (self::ALIST):
-            case (self::HASH):
-                if (!is_array($var)) {
-                    break;
-                }
-                if ($type === self::LOOKUP) {
-                    foreach ($var as $k) {
-                        if ($k !== true) {
-                            $this->error('Lookup table contains value other than true');
-                        }
-                    }
-                } elseif ($type === self::ALIST) {
-                    $keys = array_keys($var);
-                    if (array_keys($keys) !== $keys) {
-                        $this->error('Indices for list are not uniform');
-                    }
-                }
-                return $var;
-            case (self::C_MIXED):
-                return $var;
-            default:
-                $this->errorInconsistent(get_class($this), $type);
-        }
-        $this->errorGeneric($var, $type);
-    }
-
-    /**
-     * Actually implements the parsing. Base implementation does not
-     * do anything to $var. Subclasses should overload this!
-     * @param mixed $var
-     * @param int $type
-     * @param bool $allow_null
-     * @return string
-     */
-    protected function parseImplementation($var, $type, $allow_null)
-    {
-        return $var;
-    }
-
-    /**
-     * Throws an exception.
-     * @throws HTMLPurifier_VarParserException
-     */
-    protected function error($msg)
-    {
-        throw new HTMLPurifier_VarParserException($msg);
-    }
-
-    /**
-     * Throws an inconsistency exception.
-     * @note This should not ever be called. It would be called if we
-     *       extend the allowed values of HTMLPurifier_VarParser without
-     *       updating subclasses.
-     * @param string $class
-     * @param int $type
-     * @throws HTMLPurifier_Exception
-     */
-    protected function errorInconsistent($class, $type)
-    {
-        throw new HTMLPurifier_Exception(
-            "Inconsistency in $class: " . HTMLPurifier_VarParser::getTypeName($type) .
-            " not implemented"
-        );
-    }
-
-    /**
-     * Generic error for if a type didn't work.
-     * @param mixed $var
-     * @param int $type
-     */
-    protected function errorGeneric($var, $type)
-    {
-        $vtype = gettype($var);
-        $this->error("Expected type " . HTMLPurifier_VarParser::getTypeName($type) . ", got $vtype");
-    }
-
-    /**
-     * @param int $type
-     * @return string
-     */
-    public static function getTypeName($type)
-    {
-        static $lookup;
-        if (!$lookup) {
-            // Lazy load the alternative lookup table
-            $lookup = array_flip(HTMLPurifier_VarParser::$types);
-        }
-        if (!isset($lookup[$type])) {
-            return 'unknown';
-        }
-        return $lookup[$type];
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+45/TaRAVVh7CX7VBNIdXMNowHrB2LG==

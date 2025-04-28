@@ -1,150 +1,77 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\Util;
-
-use Psy\Exception\RuntimeException;
-use Psy\Reflection\ReflectionClassConstant;
-use Psy\Reflection\ReflectionConstant_;
-use Psy\Reflection\ReflectionNamespace;
-
-/**
- * A utility class for getting Reflectors.
- */
-class Mirror
-{
-    const CONSTANT = 1;
-    const METHOD = 2;
-    const STATIC_PROPERTY = 4;
-    const PROPERTY = 8;
-
-    /**
-     * Get a Reflector for a function, class or instance, constant, method or property.
-     *
-     * Optionally, pass a $filter param to restrict the types of members checked. For example, to only Reflectors for
-     * static properties and constants, pass:
-     *
-     *    $filter = Mirror::CONSTANT | Mirror::STATIC_PROPERTY
-     *
-     * @throws \Psy\Exception\RuntimeException when a $member specified but not present on $value
-     * @throws \InvalidArgumentException       if $value is something other than an object or class/function name
-     *
-     * @param mixed  $value  Class or function name, or variable instance
-     * @param string $member Optional: property, constant or method name (default: null)
-     * @param int    $filter (default: CONSTANT | METHOD | PROPERTY | STATIC_PROPERTY)
-     *
-     * @return \Reflector
-     */
-    public static function get($value, $member = null, $filter = 15)
-    {
-        if ($member === null && \is_string($value)) {
-            if (\function_exists($value)) {
-                return new \ReflectionFunction($value);
-            } elseif (\defined($value) || ReflectionConstant_::isMagicConstant($value)) {
-                return new ReflectionConstant_($value);
-            }
-        }
-
-        $class = self::getClass($value);
-
-        if ($member === null) {
-            return $class;
-        } elseif ($filter & self::CONSTANT && $class->hasConstant($member)) {
-            return ReflectionClassConstant::create($value, $member);
-        } elseif ($filter & self::METHOD && $class->hasMethod($member)) {
-            return $class->getMethod($member);
-        } elseif ($filter & self::PROPERTY && $class->hasProperty($member)) {
-            return $class->getProperty($member);
-        } elseif ($filter & self::STATIC_PROPERTY && $class->hasProperty($member) && $class->getProperty($member)->isStatic()) {
-            return $class->getProperty($member);
-        } else {
-            throw new RuntimeException(\sprintf('Unknown member %s on class %s', $member, \is_object($value) ? \get_class($value) : $value));
-        }
-    }
-
-    /**
-     * Get a ReflectionClass (or ReflectionObject, or ReflectionNamespace) if possible.
-     *
-     * @throws \InvalidArgumentException if $value is not a namespace or class name or instance
-     *
-     * @param mixed $value
-     *
-     * @return \ReflectionClass|ReflectionNamespace
-     */
-    private static function getClass($value)
-    {
-        if (\is_object($value)) {
-            return new \ReflectionObject($value);
-        }
-
-        if (!\is_string($value)) {
-            throw new \InvalidArgumentException('Mirror expects an object or class');
-        }
-
-        if (\class_exists($value) || \interface_exists($value) || \trait_exists($value)) {
-            return new \ReflectionClass($value);
-        }
-
-        $namespace = \preg_replace('/(^\\\\|\\\\$)/', '', $value);
-        if (self::namespaceExists($namespace)) {
-            return new ReflectionNamespace($namespace);
-        }
-
-        throw new \InvalidArgumentException('Unknown namespace, class or function: '.$value);
-    }
-
-    /**
-     * Check declared namespaces for a given namespace.
-     */
-    private static function namespaceExists($value)
-    {
-        return \in_array(\strtolower($value), self::getDeclaredNamespaces());
-    }
-
-    /**
-     * Get an array of all currently declared namespaces.
-     *
-     * Note that this relies on at least one function, class, interface, trait
-     * or constant to have been declared in that namespace.
-     */
-    private static function getDeclaredNamespaces()
-    {
-        $functions = \get_defined_functions();
-
-        $allNames = \array_merge(
-            $functions['internal'],
-            $functions['user'],
-            \get_declared_classes(),
-            \get_declared_interfaces(),
-            \get_declared_traits(),
-            \array_keys(\get_defined_constants())
-        );
-
-        $namespaces = [];
-        foreach ($allNames as $name) {
-            $chunks = \explode('\\', \strtolower($name));
-
-            // the last one is the function or class or whatever...
-            \array_pop($chunks);
-
-            while (!empty($chunks)) {
-                $namespaces[\implode('\\', $chunks)] = true;
-                \array_pop($chunks);
-            }
-        }
-
-        $namespaceNames = \array_keys($namespaces);
-
-        \sort($namespaceNames);
-
-        return $namespaceNames;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

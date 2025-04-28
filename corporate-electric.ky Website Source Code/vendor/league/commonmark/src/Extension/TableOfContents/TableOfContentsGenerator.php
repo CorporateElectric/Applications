@@ -1,154 +1,105 @@
-<?php
-
-/*
- * This file is part of the league/commonmark package.
- *
- * (c) Colin O'Dell <colinodell@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace League\CommonMark\Extension\TableOfContents;
-
-use League\CommonMark\Block\Element\Document;
-use League\CommonMark\Block\Element\Heading;
-use League\CommonMark\Block\Element\ListBlock;
-use League\CommonMark\Block\Element\ListData;
-use League\CommonMark\Block\Element\ListItem;
-use League\CommonMark\Block\Element\Paragraph;
-use League\CommonMark\Exception\InvalidOptionException;
-use League\CommonMark\Extension\HeadingPermalink\HeadingPermalink;
-use League\CommonMark\Extension\TableOfContents\Node\TableOfContents;
-use League\CommonMark\Extension\TableOfContents\Normalizer\AsIsNormalizerStrategy;
-use League\CommonMark\Extension\TableOfContents\Normalizer\FlatNormalizerStrategy;
-use League\CommonMark\Extension\TableOfContents\Normalizer\NormalizerStrategyInterface;
-use League\CommonMark\Extension\TableOfContents\Normalizer\RelativeNormalizerStrategy;
-use League\CommonMark\Inline\Element\Link;
-
-final class TableOfContentsGenerator implements TableOfContentsGeneratorInterface
-{
-    public const STYLE_BULLET = ListBlock::TYPE_BULLET;
-    public const STYLE_ORDERED = ListBlock::TYPE_ORDERED;
-
-    public const NORMALIZE_DISABLED = 'as-is';
-    public const NORMALIZE_RELATIVE = 'relative';
-    public const NORMALIZE_FLAT = 'flat';
-
-    /** @var string */
-    private $style;
-    /** @var string */
-    private $normalizationStrategy;
-    /** @var int */
-    private $minHeadingLevel;
-    /** @var int */
-    private $maxHeadingLevel;
-
-    public function __construct(string $style, string $normalizationStrategy, int $minHeadingLevel, int $maxHeadingLevel)
-    {
-        $this->style = $style;
-        $this->normalizationStrategy = $normalizationStrategy;
-        $this->minHeadingLevel = $minHeadingLevel;
-        $this->maxHeadingLevel = $maxHeadingLevel;
-    }
-
-    public function generate(Document $document): ?TableOfContents
-    {
-        $toc = $this->createToc($document);
-
-        $normalizer = $this->getNormalizer($toc);
-
-        $firstHeading = null;
-
-        foreach ($this->getHeadingLinks($document) as $headingLink) {
-            $heading = $headingLink->parent();
-            // Make sure this is actually tied to a heading
-            if (!$heading instanceof Heading) {
-                continue;
-            }
-
-            // Skip any headings outside the configured min/max levels
-            if ($heading->getLevel() < $this->minHeadingLevel || $heading->getLevel() > $this->maxHeadingLevel) {
-                continue;
-            }
-
-            // Keep track of the first heading we see - we might need this later
-            $firstHeading = $firstHeading ?? $heading;
-
-            // Keep track of the start and end lines
-            $toc->setStartLine($firstHeading->getStartLine());
-            $toc->setEndLine($heading->getEndLine());
-
-            // Create the new link
-            $link = new Link('#' . $headingLink->getSlug(), $heading->getStringContent());
-            $paragraph = new Paragraph();
-            $paragraph->setStartLine($heading->getStartLine());
-            $paragraph->setEndLine($heading->getEndLine());
-            $paragraph->appendChild($link);
-
-            $listItem = new ListItem($toc->getListData());
-            $listItem->setStartLine($heading->getStartLine());
-            $listItem->setEndLine($heading->getEndLine());
-            $listItem->appendChild($paragraph);
-
-            // Add it to the correct place
-            $normalizer->addItem($heading->getLevel(), $listItem);
-        }
-
-        // Don't add the TOC if no headings were present
-        if (!$toc->hasChildren() || $firstHeading === null) {
-            return null;
-        }
-
-        return $toc;
-    }
-
-    private function createToc(Document $document): TableOfContents
-    {
-        $listData = new ListData();
-
-        if ($this->style === self::STYLE_BULLET) {
-            $listData->type = ListBlock::TYPE_BULLET;
-        } elseif ($this->style === self::STYLE_ORDERED) {
-            $listData->type = ListBlock::TYPE_ORDERED;
-        } else {
-            throw new InvalidOptionException(\sprintf('Invalid table of contents list style "%s"', $this->style));
-        }
-
-        $toc = new TableOfContents($listData);
-
-        $toc->setStartLine($document->getStartLine());
-        $toc->setEndLine($document->getEndLine());
-
-        return $toc;
-    }
-
-    /**
-     * @param Document $document
-     *
-     * @return iterable<HeadingPermalink>
-     */
-    private function getHeadingLinks(Document $document)
-    {
-        $walker = $document->walker();
-        while ($event = $walker->next()) {
-            if ($event->isEntering() && ($node = $event->getNode()) instanceof HeadingPermalink) {
-                yield $node;
-            }
-        }
-    }
-
-    private function getNormalizer(TableOfContents $toc): NormalizerStrategyInterface
-    {
-        switch ($this->normalizationStrategy) {
-            case self::NORMALIZE_DISABLED:
-                return new AsIsNormalizerStrategy($toc);
-            case self::NORMALIZE_RELATIVE:
-                return new RelativeNormalizerStrategy($toc);
-            case self::NORMALIZE_FLAT:
-                return new FlatNormalizerStrategy($toc);
-            default:
-                throw new InvalidOptionException(\sprintf('Invalid table of contents normalization strategy "%s"', $this->normalizationStrategy));
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+7uv1yG==

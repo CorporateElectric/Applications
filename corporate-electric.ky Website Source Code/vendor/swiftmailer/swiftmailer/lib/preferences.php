@@ -1,19 +1,34 @@
-<?php
-
-/****************************************************************************/
-/*                                                                          */
-/* YOU MAY WISH TO MODIFY OR REMOVE THE FOLLOWING LINES WHICH SET DEFAULTS  */
-/*                                                                          */
-/****************************************************************************/
-
-$preferences = Swift_Preferences::getInstance();
-
-// Sets the default charset so that setCharset() is not needed elsewhere
-$preferences->setCharset('utf-8');
-
-// Without these lines the default caching mechanism is "array" but this uses a lot of memory.
-// If possible, use a disk cache to enable attaching large attachments etc.
-// You can override the default temporary directory by setting the TMPDIR environment variable.
-if (@is_writable($tmpDir = sys_get_temp_dir())) {
-    $preferences->setTempDir($tmpDir)->setCacheType('disk');
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+cqlwwxUisi6H

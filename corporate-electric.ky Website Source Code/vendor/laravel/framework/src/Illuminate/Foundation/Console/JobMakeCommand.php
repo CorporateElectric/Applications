@@ -1,78 +1,47 @@
-<?php
-
-namespace Illuminate\Foundation\Console;
-
-use Illuminate\Console\GeneratorCommand;
-use Symfony\Component\Console\Input\InputOption;
-
-class JobMakeCommand extends GeneratorCommand
-{
-    /**
-     * The console command name.
-     *
-     * @var string
-     */
-    protected $name = 'make:job';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Create a new job class';
-
-    /**
-     * The type of class being generated.
-     *
-     * @var string
-     */
-    protected $type = 'Job';
-
-    /**
-     * Get the stub file for the generator.
-     *
-     * @return string
-     */
-    protected function getStub()
-    {
-        return $this->option('sync')
-                        ? $this->resolveStubPath('/stubs/job.stub')
-                        : $this->resolveStubPath('/stubs/job.queued.stub');
-    }
-
-    /**
-     * Resolve the fully-qualified path to the stub.
-     *
-     * @param  string  $stub
-     * @return string
-     */
-    protected function resolveStubPath($stub)
-    {
-        return file_exists($customPath = $this->laravel->basePath(trim($stub, '/')))
-                        ? $customPath
-                        : __DIR__.$stub;
-    }
-
-    /**
-     * Get the default namespace for the class.
-     *
-     * @param  string  $rootNamespace
-     * @return string
-     */
-    protected function getDefaultNamespace($rootNamespace)
-    {
-        return $rootNamespace.'\Jobs';
-    }
-
-    /**
-     * Get the console command options.
-     *
-     * @return array
-     */
-    protected function getOptions()
-    {
-        return [
-            ['sync', null, InputOption::VALUE_NONE, 'Indicates that job should be synchronous'],
-        ];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+mBrn1m5O9FGe5F+Tas4Msa2fqQS+OZZQ

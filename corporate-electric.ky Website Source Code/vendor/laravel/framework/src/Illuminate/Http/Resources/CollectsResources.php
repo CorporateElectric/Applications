@@ -1,65 +1,46 @@
-<?php
-
-namespace Illuminate\Http\Resources;
-
-use Illuminate\Pagination\AbstractPaginator;
-use Illuminate\Support\Collection;
-use Illuminate\Support\Str;
-
-trait CollectsResources
-{
-    /**
-     * Map the given collection resource into its individual resources.
-     *
-     * @param  mixed  $resource
-     * @return mixed
-     */
-    protected function collectResource($resource)
-    {
-        if ($resource instanceof MissingValue) {
-            return $resource;
-        }
-
-        if (is_array($resource)) {
-            $resource = new Collection($resource);
-        }
-
-        $collects = $this->collects();
-
-        $this->collection = $collects && ! $resource->first() instanceof $collects
-            ? $resource->mapInto($collects)
-            : $resource->toBase();
-
-        return $resource instanceof AbstractPaginator
-                    ? $resource->setCollection($this->collection)
-                    : $this->collection;
-    }
-
-    /**
-     * Get the resource that this resource collects.
-     *
-     * @return string|null
-     */
-    protected function collects()
-    {
-        if ($this->collects) {
-            return $this->collects;
-        }
-
-        if (Str::endsWith(class_basename($this), 'Collection') &&
-            (class_exists($class = Str::replaceLast('Collection', '', get_class($this))) ||
-             class_exists($class = Str::replaceLast('Collection', 'Resource', get_class($this))))) {
-            return $class;
-        }
-    }
-
-    /**
-     * Get an iterator for the resource collection.
-     *
-     * @return \ArrayIterator
-     */
-    public function getIterator()
-    {
-        return $this->collection->getIterator();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+jfh6FpgaNaQQEm==

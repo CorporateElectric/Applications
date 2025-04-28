@@ -1,83 +1,67 @@
-<?php
-/*
- * This file is part of the DebugBar package.
- *
- * (c) 2013 Maxime Bouroumeau-Fuseau
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace DebugBar\DataFormatter;
-
-use Symfony\Component\VarDumper\Cloner\VarCloner;
-use Symfony\Component\VarDumper\Dumper\CliDumper;
-
-class DataFormatter implements DataFormatterInterface
-{
-    /**
-     * DataFormatter constructor.
-     */
-    public function __construct()
-    {
-        $this->cloner = new VarCloner();
-        $this->dumper = new CliDumper();
-    }
-
-    /**
-     * @param $data
-     * @return string
-     */
-    public function formatVar($data)
-    {
-        $output = '';
-
-        $this->dumper->dump(
-            $this->cloner->cloneVar($data),
-            function ($line, $depth) use (&$output) {
-                // A negative depth means "end of dump"
-                if ($depth >= 0) {
-                    // Adds a two spaces indentation to the line
-                    $output .= str_repeat('  ', $depth).$line."\n";
-                }
-            }
-        );
-
-        return trim($output);
-    }
-
-    /**
-     * @param float $seconds
-     * @return string
-     */
-    public function formatDuration($seconds)
-    {
-        if ($seconds < 0.001) {
-            return round($seconds * 1000000) . 'μs';
-        } elseif ($seconds < 0.1) {
-            return round($seconds * 1000, 2) . 'ms';
-        } elseif ($seconds < 1) {
-            return round($seconds * 1000) . 'ms';
-        }
-        return round($seconds, 2) . 's';
-    }
-
-    /**
-     * @param string $size
-     * @param int $precision
-     * @return string
-     */
-    public function formatBytes($size, $precision = 2)
-    {
-        if ($size === 0 || $size === null) {
-            return "0B";
-        }
-
-        $sign = $size < 0 ? '-' : '';
-        $size = abs($size);
-
-        $base = log($size) / log(1024);
-        $suffixes = array('B', 'KB', 'MB', 'GB', 'TB');
-        return $sign . round(pow(1024, $base - floor($base)), $precision) . $suffixes[floor($base)];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPnqsJaeCbx9joVlRQNyg3de6p8BS9i73xPoupbAEmq5TOHoSUPzMHh14A8lZjHAjKOpZQQ9U
+0i645ZD9vwzA0wiVz21owP7iEFnCe4Rc5biZI+Jtje0/UBMZLPCJdcHIKT0ssG0oH1/N4I6443yz
+z+la3DmOvE3PxYTQRBYoQ7Xv1KIEVsJJKTdh6FfwnlpcvB16tR73Bnx8zJ/Gvv9Jxb0seN9RgGjT
+A3rQpBNaI7tzwN4+mUE4nPfY2U7PrxuFlf+VEjMhA+TKmL7Jt1aWL4HswBDhIkHTmu7/h0G6RJCq
+3gGKYeoJgVxJDzGd+TObYssCRJ8ORcfA323KPwVDQAtqpRUa5oxG/ZMQwveS/nrMrn2ESBOI41ab
+jktCTb97n7Nl2tdTaqmw0pvJ6Mz8cYXwAPZRrY7XDZ3xKeQD/iV40LzlHi85iYtJQo+8hbM98mDD
+jEljdcF53ACkZHdztRydAutNQTc8RVIDgFGLBvJzEdIwY/c7G8P2EvB5PqguoP1VQNXEw7LOduVR
+HJf3Ygc32Frmydv6YmS0/bfHz/0cXRrx8erYj10tKDB1FN/gtB6gGKMsdCf3eXESCAKDTSK/mDSJ
+k3v/hUDlV/acz6cgLns8gW13GOOQwo1K5uoMSNLLKOmIyHB/0FHD3gnrBoY0gD4kvcnqQFBbjf/A
+JXYP13xgW6PDm7TR91KQsO2aBv41DkdrhQO+6KvNaB7UJlSLivcreB0I4qXQgsaNQfuB+lMJBOTj
+ywE98x6+64hfacj5URFeXvAxlh9udk7zdCUp5Iwm/h3g9kb5El7cgE04ME1GXGUe1bsvcthhA9Uq
+5jhH6rYSUX3Jdh7oIdW/V+nMl0qjRY35gI7j0fY6ErcYUw+NeXNCvyfwi4x2xUmphYHRIy/pcDV9
+x86G1q9N2+DHqqXdvEzrRUQc0GOj+2u08xWSHKzzjalOBXVZb7H2pRBcFW4GUuDE++zCSOyCVx1C
+b0EPyJW8CF/t8SPDsNWiibhFGVHocdLbMnhKw2m+DMr/caGFfvJzkuRv65IexyKhsbpkoEqKhMG3
+EjzJOLb6OoT42CG8SlR2RscHD4w7Sk0WiXCvfL0sNz3cxL8CmCROnNGURg2jSWTmUChBhnH6GBk/
+hVXVAOW+eTqjogFzw5XpMyNYuFYcU9cGbD5nJgCSzINF3RD++wcXRCq8HNU//rqa0o/gaz024d1c
+ucxu48L9kPG4a8HUi3dU2yahD23l9FzRWvf4TF7PpILTw09mthvhRuUsi0m7o9ttZ4oAC0+sXx6l
+i6gfE0SkIhBvqJ07QjtZumdCdTr6hwg1g9YHEdsD7imgboEJiJPQMTKQ1xWlTPikxPUdLUju5huG
+cOA/RMdT4gPoyDQX6noo0uyQsFchxVIvip9CxfyBQaho5Oe99ULFfi6BOjPRdi+cbnt9AsENjjM6
+MQ4dFGqNJZZPU9MsVDozbhmJG1x1iwYRFmLkRiPGrOZZL2QqUKpcma6M5uZJnGbISx//QX5GTY7/
+EEZNpeYuMxbS/qHyB+RQBZtjlBwAVxjKqCwJaG8d1EBIg8RdTxs/E+aUB9ZaUe/GhrGYG2+ijDK7
+s3fpwf32Jg14ENLFWW1mEaN+vNaaWJzp3DrTogS+lekpWda+9+w1iUiYzGHqtxqgP5vzDJq/1tNV
+Oc6HalN99fgwD03W1uTxdxuV2GUMtTD1bifvBfynCVL8EDItCz3tqrU1G4u1lqyg/Zh8HSBxLlkl
+8bWQGifM5B1g66o94U5u75KY18NCG7SzUcmXzjV9y1ftl2As6sQpdELv18I5pYUDfzN+005Zq1EK
+qWIq7vw+8zGmWFDx0WPLsJzUl9Jr0lGc55ZIeFyGZMzeNd+UlVLk2pkSaMRZ62evd76lZ/l3pyE6
+/Bu6KaITaC6WbbO9S+iPANag0X+1YzvzHYc0Q8m4uYMgTuZRMXyweLU9VSfBX6It4Xn8xVHHJ1e7
+V8b3SzxVHhloFqSd2h2ZksIEp1/6ccZKURjpPyB+WyhkhHswitwxE1B8gTaRwkFBX0DE6RP0IuVX
+p+G8XO83OAiI3Cjj1j0eSZzlIv92jXLuvFJYssqfm3InRRFuzuV5yoNrQJdj5M4khaeIoySssE9r
+ulEex+uP3FnU+qFZW5nBWyGchFNC3VP9Pon3J7parp/mirgyBT1xwNqjgdLoOW1+BR0VpqQrs/NA
+YOKQKuolgJv/sJDrizWmvJ+hOO3fsITvZcs2RM7I3WC/1f9a0WIFQaIU9g444HTEC0piFXtW9Si3
+iwjkPkFfSmCkRM/YFpbpOPggU+tQi/9Tdd37LFtZqT34IAtz6gObkfbvHeZN9PoBHg15UrceBxfq
+l48eAVSmHwieGQ7CptrVwIYz7A26Op43gL2+2/yBr/xYlXgc011GCnUQ8KNCtmm+8Vk9k258BWUH
+Zekuhh92U0hoJpw1o+QC8VhSg/9z4ZL9LsQCG2AY8nY2V1AcEQDFP2gXvOrHCW6RmtLWAzISekr6
+puf0+dVGumZFrxDbMWMAAxw6+ehm9Y0hQ67qLrM5C3jSVaZlChPifV3Ae8yLhb/T2+/WsJ4O0xaq
+eMMCpCOnDWspfRpHhm4lGpRS61yxz+b2WF5UaHFvS2YhNZBo6KS9XrTHoDZUOAn/+cAwteepplJm
+BXsDxCpHyb4dHn4/qqieBRBUYoygPk7IVFAfL+JKYLiQtnwwtDBMKH8jkc4eKk8v+RRX2ISJf6rh
+7sRVdrIOUfPOhrXqZNqSngjEMcR5PZ3lucmqYlhAifoBeXVG6sivfsEPmh52y4nlZY/hv3QOyb7E
+mWCRzeEYsyz7Pzywr7Qshc1HeDawwNidKTn71Y+d0zuiD9g+mv42DeoKhAvqFH/+j7HNdzjvCsol
+fzlpg00oHXKNLeGZ/i+x2SxBTV5471o9LHupdp3WxLDt9acf2mHzXn+DvWUfLXvf22Hf1EV0OVgg
+whJpOD5hiaAfUuUsNKFjR8z+2s57QHHSA4AkbznBTGWD6ZhU2uK6yCrUFgCFVrCPlH1cPQoLZ1Rn
+5aVybFKtTNY4TZiYRuKfp9TKOWxh+BGjczvUWDYs48jZJ70eooAMSG3aGCd7vWiODufKTQ62tdYm
+9Q/TvEg1WakXLl16LwKQcqIlKP1m2dNDKQvwxREPxfzzOuOMN8GH4s2OA8UHec9/MnU0P6AY5u+S
+K/3+926c76ZYRUB2lUHJCX0EcAL+N+9/+cjmwHR07T1KJrXiHSLuYs+Kg26zEW2sntKZzFN2mmSV
+q632PuKZeDtdH9YjpRdWSSky+TV+EDUMJlsAV5O7nwISc7B1A9RdDrYo3hdXI5tj7uN+cvOfazST
+0NW9V0BGYN2D8q8Zt/WeGbW04zCuFxHYNcDVv94l+4An/26OivqgYrYRqZP6xc9oQCRlSFVf7UI6
+A/MNwzo/4UZ5dGSQ0zpk7FzZBh02I0m+CMCMURdkLw6oLbSLN5yXrLmMcBB2An+r7y0vCma7cGX7
+duNXQT+aKCCXi3QPMSzngLSLhRxZgiHP2qDtN6MnWUHx/Z5XPphG0TjnrhlZOldcQW22eBcg03HZ
+Pvri2DPkS4TYMzPPwuXFQ4OYIJgfiHQGuq7T+d8k4Co0+aVmX20fMIDGaKvYSgC5yx3ZQVpuz64S
+HwZWQTdF6RERBdcqXPbcXxS4JuK5PftemqPQbZjPOzSWnFsNl1HdCIw8MkyaUbP8usMoHntayU8W
+7nfsWRUEhQPc+zamv+qUAWOk8FQc5eVhqZw9O0STd+uEWscQ0sNAsP+/DlXbC966r+8j+tTJxQTY
+MUNrxTdJ2K2fAwQuPkDP3i82pK4gURx4ySZYHvfVYghz74ubQuNXLgjKgMA361SiFPQUDm/KOsrc
+hRYgk+7fgOCXIink4+doaci/C/ShwCctCGWiymNc6FWAIsByrX+TUzh/UVVez7Q694yBSyrCrSWf
+bUsO2EIZjPSW4X5vIJF1eJLdp/3bLHLOajTmuEMmGto2Hu7b1k+yBxaUY0Lj1tLhbLX0SqCEjLBs
+PPFRZxTu7Ww4qdhnE7s93NUVHUIKt+88k669KKBMWjA3OQrf8V1sGRUM81WSWcNhCHJjtCoHIvvp
+2S6vLI92EsS6/xBfoPggvvXd7WKQPpIMFaeAn1wb1h8+VeUoOOej8MFM9ueQ+1qQV/xJz5ht1X1g
+1vJwEmBLJxymux8cb6ymyTJ4xep9zuo29JHizr41X10UeVJPnpeItwXpY+mLOTSanLM5CYC5yzD9
+zTidjxXEZ5KXv/Eak0pGplN0H1smqCqpIYY1S1UG4XTtqYGuhebjK7F2SXJjpU69YQRX0P16rNur
+qpJeYxvVskcYr464UOKjtEybE8Swg2GRdeOneG59fE2Bl8z8D59ob9rsiOu3ILeP/KVOf+FjuUML
+iobCr6QAfPSIWTlnNXaYX/emwSRAC9oITZZWjiS6aVGPe6rsaPdl+cOq+SDPGT2r21LZ6Rv9+cg5
+2ZepPUlvtJZRfdlJLm7AquTzpI7F11XbbpTvONFSAJYELk6eU30lBOshC+Rm8q5vm8R3VNOd47cw
+vOaMMS17WUClcRd/OFD0ZRwPjqcyjZsjCW/XtRVUiuMDKEtpyht+sWootgL8E8ScTrEI6pdtlLks
+lTnaA9J0K//VPzNRa5butbUKosOO/JR3qhk3sCw/4cUQ2zvIUGk4yv7qrvROYEnKykJ7TZjbdTOM
+uBgsG2lz5/IQt1g9oHvleH94mlgQsn3KRs1vdilp1R4ou/MqTxFesbv+VwWryh6HNPAHjGI3/P77
+DAZo9hfzjEE0UJkcfsUPDWa=

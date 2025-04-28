@@ -1,64 +1,29 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Worksheet;
-
-class Column
-{
-    /**
-     * \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet.
-     *
-     * @var Worksheet
-     */
-    private $parent;
-
-    /**
-     * Column index.
-     *
-     * @var string
-     */
-    private $columnIndex;
-
-    /**
-     * Create a new column.
-     *
-     * @param Worksheet $parent
-     * @param string $columnIndex
-     */
-    public function __construct(?Worksheet $parent = null, $columnIndex = 'A')
-    {
-        // Set parent and column index
-        $this->parent = $parent;
-        $this->columnIndex = $columnIndex;
-    }
-
-    /**
-     * Destructor.
-     */
-    public function __destruct()
-    {
-        $this->parent = null;
-    }
-
-    /**
-     * Get column index as string eg: 'A'.
-     *
-     * @return string
-     */
-    public function getColumnIndex()
-    {
-        return $this->columnIndex;
-    }
-
-    /**
-     * Get cell iterator.
-     *
-     * @param int $startRow The row number at which to start iterating
-     * @param int $endRow Optionally, the row number at which to stop iterating
-     *
-     * @return ColumnCellIterator
-     */
-    public function getCellIterator($startRow = 1, $endRow = null)
-    {
-        return new ColumnCellIterator($this->parent, $this->columnIndex, $startRow, $endRow);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cP/enHYQX6Ri9l8NJ1Rryx08CmjL0ts87QPYurfb86k4l3AN3gta8K/Tx3knvK9+42QNhBdVd
+R374mZyHyV2dTTQFG6PAcMoBCt4np7VEKgRzznYEzSD9fdGKM8aqMu9+w67tWJJbXOzA2kJJqIGX
+oNkIJ0CGO8Wn1EzuE5XcqN8lQqnFw4Nok7mKuPiKBCR2JCpfgazZAMGh9F83H1/3RSpFophiBHae
+oiACEWYsBSR0VxJMzn7a4S7/BncuH5LSO0r2EjMhA+TKmL7Jt1aWL4HswE1bN4R5JupYkLIfSjik
+TDWM/tWPDvklF/dVEjsL6Q+CTUWBz/fkzHilT5D4XoFK4z39HdXih3gWvjLmUmICDgi4d9WfiFDJ
+0Kdtvgan2sBrrROZK0gM8JF2cneYtqOYuojBGkx8EmvFz3P0cUe3Hc3UtEhtmRWUXvZnWvLxjBd5
+UV106/dPencgi/uEPyCKJiNs3SvgFv/ykqKVIX4uXiiUW+z02+C03lJEBWIs54n/TRO0galYg7Hy
+Vke/bx9cQzZLH3vwSE1Kh4MWBy46Py0k9ik1WgDDNaeE9HXxO7dlo4KFDBkk5eic6oPX64DI2LEf
+EWQFCYze8jX668cImkfRHO9oZiCPAasx8PUo3+DG4pNCmF1h+TS1SOBhxJlQgJ32oGZRXKsdcOAx
+nXUiyEdywKYZYodI1A1XsCrWvXzAkEqVdQk4qTdMy2kFfKAPyuwaY4oVW+Nazx5bXKNh7eHlVwji
+JZDCALIpexi9DQNJZbuTinv0TA+3mYM7Dy43+m5J6x4X9P+iIt5JLmnyCFCbBKBAZT2nfWcMxKrs
+XkUm80zEGaP56SfhJemdt64cd30OY+Ckv6M20UxWdEI/BxwBq7Ue/mcbwUBdpbfau+HREzeCNcir
+fx3HLll6oGbobJfxCguOUO/zXGCff1dIe0TFvO7jGhfy+KfFgW8VfjWLyoMt9H/oyJj7PMIQUFOC
+NORTsedWV4MeH7IlHKbgu6XE2f/TnTW+wWcaEbS8uQpfu/QPKinoMGCA1FTbloitLdIBXxxkLVCS
+ookl+ZVcnMO9w0GYuTEHM+MFY5gSp4MvrN28XYda2BVq6lcfi2x6PJzjcTqVmVxVPErklCe8dqOZ
+JfYU19xzEPfceEqJA/Xv4XW3oqIh/XHUoc4XSOhC3Dm85KsuFILJ+u4XivMj97q5sVTWKdWmtUaN
+kPfYp20a4LQxv3Gr1zGomFQz60YJGfYwIp1FK7xaF+OWdpc7kAIwGyJErj5pIBxz511JVXH+3+wy
+dgZUM9ThznJ1dmNJ5WuL5/bT6jqOYC4FPdvmJ813VIw2L9pn2deLcIo1cU1t7ShoaEm5IzWu7NFs
+4dDptg5WCvOQslV/auUhRNaJDnSJ3XISZqoi+6q3fZiq0kRRkaPomv/GmrqtGEcqftCzGRVi6wgp
+Hio6ca9Ta4+6wt1oYhF8edamjK1/gM+DCx1KjDYH2yQFUv+lrGDca0gyGKyDFnxtLyDXVrmlSMOz
+HyNcDWjjjyOdZL2dTbbszHPZYdFpevK2B6Kw0H5Gm898R58af9dCYdKt5SkhdkBC5NbVJ3YQyvSW
+cn9u8qpuoLzB2hx5PmhksUJcVCWjj+U85i+kgKxW3Qymlx0787vkAj5szx7vYIUx4qatJayFryKS
+996lCEwjG6G/kYhazZkix3g9GGN8neeTWc1k9Xlokt7h9VEmDxeNDW60ge4MD1oz/+JVxmkddWKq
+ulNtNlPW0iyQSP3y5tRUhHR70+xNYvJVcPsWC0KvfrHwS2is4vIokwHPvPujd09eDRmLP3fXda5q
+COM1HTv+jV4VbR3lWU155hkFAyxfj5kRh6ZwJcsW7T/BFhvh02aILDZ7HgBehh3+PCn+SoBHPZrN
+hYFt4/tSte+DlrVef97SgQuIL73x

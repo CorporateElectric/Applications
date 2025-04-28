@@ -1,582 +1,225 @@
-<?php
-
-namespace Illuminate\Redis\Connections;
-
-use Closure;
-use Illuminate\Contracts\Redis\Connection as ConnectionContract;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
-use Redis;
-use RedisCluster;
-use RedisException;
-
-/**
- * @mixin \Redis
- */
-class PhpRedisConnection extends Connection implements ConnectionContract
-{
-    /**
-     * The connection creation callback.
-     *
-     * @var callable
-     */
-    protected $connector;
-
-    /**
-     * The connection configuration array.
-     *
-     * @var array
-     */
-    protected $config;
-
-    /**
-     * Create a new PhpRedis connection.
-     *
-     * @param  \Redis  $client
-     * @param  callable|null  $connector
-     * @param  array  $config
-     * @return void
-     */
-    public function __construct($client, callable $connector = null, array $config = [])
-    {
-        $this->client = $client;
-        $this->config = $config;
-        $this->connector = $connector;
-    }
-
-    /**
-     * Returns the value of the given key.
-     *
-     * @param  string  $key
-     * @return string|null
-     */
-    public function get($key)
-    {
-        $result = $this->command('get', [$key]);
-
-        return $result !== false ? $result : null;
-    }
-
-    /**
-     * Get the values of all the given keys.
-     *
-     * @param  array  $keys
-     * @return array
-     */
-    public function mget(array $keys)
-    {
-        return array_map(function ($value) {
-            return $value !== false ? $value : null;
-        }, $this->command('mget', [$keys]));
-    }
-
-    /**
-     * Set the string value in argument as value of the key.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @param  string|null  $expireResolution
-     * @param  int|null  $expireTTL
-     * @param  string|null  $flag
-     * @return bool
-     */
-    public function set($key, $value, $expireResolution = null, $expireTTL = null, $flag = null)
-    {
-        return $this->command('set', [
-            $key,
-            $value,
-            $expireResolution ? [$flag, $expireResolution => $expireTTL] : null,
-        ]);
-    }
-
-    /**
-     * Set the given key if it doesn't exist.
-     *
-     * @param  string  $key
-     * @param  string  $value
-     * @return int
-     */
-    public function setnx($key, $value)
-    {
-        return (int) $this->command('setnx', [$key, $value]);
-    }
-
-    /**
-     * Get the value of the given hash fields.
-     *
-     * @param  string  $key
-     * @param  mixed  $dictionary
-     * @return array
-     */
-    public function hmget($key, ...$dictionary)
-    {
-        if (count($dictionary) === 1) {
-            $dictionary = $dictionary[0];
-        }
-
-        return array_values($this->command('hmget', [$key, $dictionary]));
-    }
-
-    /**
-     * Set the given hash fields to their respective values.
-     *
-     * @param  string  $key
-     * @param  mixed  $dictionary
-     * @return int
-     */
-    public function hmset($key, ...$dictionary)
-    {
-        if (count($dictionary) === 1) {
-            $dictionary = $dictionary[0];
-        } else {
-            $input = collect($dictionary);
-
-            $dictionary = $input->nth(2)->combine($input->nth(2, 1))->toArray();
-        }
-
-        return $this->command('hmset', [$key, $dictionary]);
-    }
-
-    /**
-     * Set the given hash field if it doesn't exist.
-     *
-     * @param  string  $hash
-     * @param  string  $key
-     * @param  string  $value
-     * @return int
-     */
-    public function hsetnx($hash, $key, $value)
-    {
-        return (int) $this->command('hsetnx', [$hash, $key, $value]);
-    }
-
-    /**
-     * Removes the first count occurrences of the value element from the list.
-     *
-     * @param  string  $key
-     * @param  int  $count
-     * @param  mixed  $value
-     * @return int|false
-     */
-    public function lrem($key, $count, $value)
-    {
-        return $this->command('lrem', [$key, $value, $count]);
-    }
-
-    /**
-     * Removes and returns the first element of the list stored at key.
-     *
-     * @param  mixed  $arguments
-     * @return array|null
-     */
-    public function blpop(...$arguments)
-    {
-        $result = $this->command('blpop', $arguments);
-
-        return empty($result) ? null : $result;
-    }
-
-    /**
-     * Removes and returns the last element of the list stored at key.
-     *
-     * @param  mixed  $arguments
-     * @return array|null
-     */
-    public function brpop(...$arguments)
-    {
-        $result = $this->command('brpop', $arguments);
-
-        return empty($result) ? null : $result;
-    }
-
-    /**
-     * Removes and returns a random element from the set value at key.
-     *
-     * @param  string  $key
-     * @param  int|null  $count
-     * @return mixed|false
-     */
-    public function spop($key, $count = 1)
-    {
-        return $this->command('spop', [$key, $count]);
-    }
-
-    /**
-     * Add one or more members to a sorted set or update its score if it already exists.
-     *
-     * @param  string  $key
-     * @param  mixed  $dictionary
-     * @return int
-     */
-    public function zadd($key, ...$dictionary)
-    {
-        if (is_array(end($dictionary))) {
-            foreach (array_pop($dictionary) as $member => $score) {
-                $dictionary[] = $score;
-                $dictionary[] = $member;
-            }
-        }
-
-        $options = [];
-
-        foreach (array_slice($dictionary, 0, 3) as $i => $value) {
-            if (in_array($value, ['nx', 'xx', 'ch', 'incr', 'NX', 'XX', 'CH', 'INCR'], true)) {
-                $options[] = $value;
-
-                unset($dictionary[$i]);
-            }
-        }
-
-        return $this->command('zadd', array_merge([$key], [$options], array_values($dictionary)));
-    }
-
-    /**
-     * Return elements with score between $min and $max.
-     *
-     * @param  string  $key
-     * @param  mixed  $min
-     * @param  mixed  $max
-     * @param  array  $options
-     * @return array
-     */
-    public function zrangebyscore($key, $min, $max, $options = [])
-    {
-        if (isset($options['limit']) && Arr::isAssoc($options['limit'])) {
-            $options['limit'] = [
-                $options['limit']['offset'],
-                $options['limit']['count'],
-            ];
-        }
-
-        return $this->command('zRangeByScore', [$key, $min, $max, $options]);
-    }
-
-    /**
-     * Return elements with score between $min and $max.
-     *
-     * @param  string  $key
-     * @param  mixed  $min
-     * @param  mixed  $max
-     * @param  array  $options
-     * @return array
-     */
-    public function zrevrangebyscore($key, $min, $max, $options = [])
-    {
-        if (isset($options['limit']) && Arr::isAssoc($options['limit'])) {
-            $options['limit'] = [
-                $options['limit']['offset'],
-                $options['limit']['count'],
-            ];
-        }
-
-        return $this->command('zRevRangeByScore', [$key, $min, $max, $options]);
-    }
-
-    /**
-     * Find the intersection between sets and store in a new set.
-     *
-     * @param  string  $output
-     * @param  array  $keys
-     * @param  array  $options
-     * @return int
-     */
-    public function zinterstore($output, $keys, $options = [])
-    {
-        return $this->command('zinterstore', [$output, $keys,
-            $options['weights'] ?? null,
-            $options['aggregate'] ?? 'sum',
-        ]);
-    }
-
-    /**
-     * Find the union between sets and store in a new set.
-     *
-     * @param  string  $output
-     * @param  array  $keys
-     * @param  array  $options
-     * @return int
-     */
-    public function zunionstore($output, $keys, $options = [])
-    {
-        return $this->command('zunionstore', [$output, $keys,
-            $options['weights'] ?? null,
-            $options['aggregate'] ?? 'sum',
-        ]);
-    }
-
-    /**
-     * Scans all keys based on options.
-     *
-     * @param  mixed  $cursor
-     * @param  array  $options
-     * @return mixed
-     */
-    public function scan($cursor, $options = [])
-    {
-        $result = $this->client->scan($cursor,
-            $options['match'] ?? '*',
-            $options['count'] ?? 10
-        );
-
-        if ($result === false) {
-            $result = [];
-        }
-
-        return $cursor === 0 && empty($result) ? false : [$cursor, $result];
-    }
-
-    /**
-     * Scans the given set for all values based on options.
-     *
-     * @param  string  $key
-     * @param  mixed  $cursor
-     * @param  array  $options
-     * @return mixed
-     */
-    public function zscan($key, $cursor, $options = [])
-    {
-        $result = $this->client->zscan($key, $cursor,
-            $options['match'] ?? '*',
-            $options['count'] ?? 10
-        );
-
-        if ($result === false) {
-            $result = [];
-        }
-
-        return $cursor === 0 && empty($result) ? false : [$cursor, $result];
-    }
-
-    /**
-     * Scans the given hash for all values based on options.
-     *
-     * @param  string  $key
-     * @param  mixed  $cursor
-     * @param  array  $options
-     * @return mixed
-     */
-    public function hscan($key, $cursor, $options = [])
-    {
-        $result = $this->client->hscan($key, $cursor,
-            $options['match'] ?? '*',
-            $options['count'] ?? 10
-        );
-
-        if ($result === false) {
-            $result = [];
-        }
-
-        return $cursor === 0 && empty($result) ? false : [$cursor, $result];
-    }
-
-    /**
-     * Scans the given set for all values based on options.
-     *
-     * @param  string  $key
-     * @param  mixed  $cursor
-     * @param  array  $options
-     * @return mixed
-     */
-    public function sscan($key, $cursor, $options = [])
-    {
-        $result = $this->client->sscan($key, $cursor,
-            $options['match'] ?? '*',
-            $options['count'] ?? 10
-        );
-
-        if ($result === false) {
-            $result = [];
-        }
-
-        return $cursor === 0 && empty($result) ? false : [$cursor, $result];
-    }
-
-    /**
-     * Execute commands in a pipeline.
-     *
-     * @param  callable|null  $callback
-     * @return \Redis|array
-     */
-    public function pipeline(callable $callback = null)
-    {
-        $pipeline = $this->client()->pipeline();
-
-        return is_null($callback)
-            ? $pipeline
-            : tap($pipeline, $callback)->exec();
-    }
-
-    /**
-     * Execute commands in a transaction.
-     *
-     * @param  callable|null  $callback
-     * @return \Redis|array
-     */
-    public function transaction(callable $callback = null)
-    {
-        $transaction = $this->client()->multi();
-
-        return is_null($callback)
-            ? $transaction
-            : tap($transaction, $callback)->exec();
-    }
-
-    /**
-     * Evaluate a LUA script serverside, from the SHA1 hash of the script instead of the script itself.
-     *
-     * @param  string  $script
-     * @param  int  $numkeys
-     * @param  mixed  $arguments
-     * @return mixed
-     */
-    public function evalsha($script, $numkeys, ...$arguments)
-    {
-        return $this->command('evalsha', [
-            $this->script('load', $script), $arguments, $numkeys,
-        ]);
-    }
-
-    /**
-     * Evaluate a script and return its result.
-     *
-     * @param  string  $script
-     * @param  int  $numberOfKeys
-     * @param  dynamic  $arguments
-     * @return mixed
-     */
-    public function eval($script, $numberOfKeys, ...$arguments)
-    {
-        return $this->command('eval', [$script, $arguments, $numberOfKeys]);
-    }
-
-    /**
-     * Subscribe to a set of given channels for messages.
-     *
-     * @param  array|string  $channels
-     * @param  \Closure  $callback
-     * @return void
-     */
-    public function subscribe($channels, Closure $callback)
-    {
-        $this->client->subscribe((array) $channels, function ($redis, $channel, $message) use ($callback) {
-            $callback($message, $channel);
-        });
-    }
-
-    /**
-     * Subscribe to a set of given channels with wildcards.
-     *
-     * @param  array|string  $channels
-     * @param  \Closure  $callback
-     * @return void
-     */
-    public function psubscribe($channels, Closure $callback)
-    {
-        $this->client->psubscribe((array) $channels, function ($redis, $pattern, $channel, $message) use ($callback) {
-            $callback($message, $channel);
-        });
-    }
-
-    /**
-     * Subscribe to a set of given channels for messages.
-     *
-     * @param  array|string  $channels
-     * @param  \Closure  $callback
-     * @param  string  $method
-     * @return void
-     */
-    public function createSubscription($channels, Closure $callback, $method = 'subscribe')
-    {
-        //
-    }
-
-    /**
-     * Flush the selected Redis database.
-     *
-     * @return void
-     */
-    public function flushdb()
-    {
-        if (! $this->client instanceof RedisCluster) {
-            return $this->command('flushdb');
-        }
-
-        foreach ($this->client->_masters() as [$host, $port]) {
-            $redis = tap(new Redis)->connect($host, $port);
-
-            if (isset($this->config['password']) && ! empty($this->config['password'])) {
-                $redis->auth($this->config['password']);
-            }
-
-            $redis->flushDb();
-        }
-    }
-
-    /**
-     * Execute a raw command.
-     *
-     * @param  array  $parameters
-     * @return mixed
-     */
-    public function executeRaw(array $parameters)
-    {
-        return $this->command('rawCommand', $parameters);
-    }
-
-    /**
-     * Run a command against the Redis database.
-     *
-     * @param  string  $method
-     * @param  array  $parameters
-     * @return mixed
-     *
-     * @throws \RedisException
-     */
-    public function command($method, array $parameters = [])
-    {
-        try {
-            return parent::command($method, $parameters);
-        } catch (RedisException $e) {
-            if (Str::contains($e->getMessage(), 'went away')) {
-                $this->client = $this->connector ? call_user_func($this->connector) : $this->client;
-            }
-
-            throw $e;
-        }
-    }
-
-    /**
-     * Disconnects from the Redis instance.
-     *
-     * @return void
-     */
-    public function disconnect()
-    {
-        $this->client->close();
-    }
-
-    /**
-     * Apply prefix to the given key if necessary.
-     *
-     * @param  string  $key
-     * @return string
-     */
-    private function applyPrefix($key)
-    {
-        $prefix = (string) $this->client->getOption(Redis::OPT_PREFIX);
-
-        return $prefix.$key;
-    }
-
-    /**
-     * Pass other method calls down to the underlying client.
-     *
-     * @param  string  $method
-     * @param  array  $parameters
-     * @return mixed
-     */
-    public function __call($method, $parameters)
-    {
-        return parent::__call(strtolower($method), $parameters);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

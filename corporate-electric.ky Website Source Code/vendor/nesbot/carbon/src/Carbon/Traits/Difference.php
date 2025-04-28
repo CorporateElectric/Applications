@@ -1,1124 +1,342 @@
-<?php
-
-/**
- * This file is part of the Carbon package.
- *
- * (c) Brian Nesbitt <brian@nesbot.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace Carbon\Traits;
-
-use Carbon\Carbon;
-use Carbon\CarbonImmutable;
-use Carbon\CarbonInterface;
-use Carbon\CarbonInterval;
-use Carbon\CarbonPeriod;
-use Carbon\Translator;
-use Closure;
-use DateInterval;
-use DateTimeInterface;
-
-/**
- * Trait Difference.
- *
- * Depends on the following methods:
- *
- * @method bool lessThan($date)
- * @method static copy()
- * @method static resolveCarbon($date = null)
- * @method static Translator translator()
- */
-trait Difference
-{
-    /**
-     * @codeCoverageIgnore
-     *
-     * @param CarbonInterval $diff
-     */
-    protected static function fixNegativeMicroseconds(CarbonInterval $diff)
-    {
-        if ($diff->s !== 0 || $diff->i !== 0 || $diff->h !== 0 || $diff->d !== 0 || $diff->m !== 0 || $diff->y !== 0) {
-            $diff->f = (round($diff->f * 1000000) + 1000000) / 1000000;
-            $diff->s--;
-
-            if ($diff->s < 0) {
-                $diff->s += 60;
-                $diff->i--;
-
-                if ($diff->i < 0) {
-                    $diff->i += 60;
-                    $diff->h--;
-
-                    if ($diff->h < 0) {
-                        $diff->h += 24;
-                        $diff->d--;
-
-                        if ($diff->d < 0) {
-                            $diff->d += 30;
-                            $diff->m--;
-
-                            if ($diff->m < 0) {
-                                $diff->m += 12;
-                                $diff->y--;
-                            }
-                        }
-                    }
-                }
-            }
-
-            return;
-        }
-
-        $diff->f *= -1;
-        $diff->invert();
-    }
-
-    /**
-     * @param DateInterval $diff
-     * @param bool         $absolute
-     *
-     * @return CarbonInterval
-     */
-    protected static function fixDiffInterval(DateInterval $diff, $absolute)
-    {
-        $diff = CarbonInterval::instance($diff);
-
-        // Work-around for https://bugs.php.net/bug.php?id=77145
-        // @codeCoverageIgnoreStart
-        if ($diff->f > 0 && $diff->y === -1 && $diff->m === 11 && $diff->d >= 27 && $diff->h === 23 && $diff->i === 59 && $diff->s === 59) {
-            $diff->y = 0;
-            $diff->m = 0;
-            $diff->d = 0;
-            $diff->h = 0;
-            $diff->i = 0;
-            $diff->s = 0;
-            $diff->f = (1000000 - round($diff->f * 1000000)) / 1000000;
-            $diff->invert();
-        } elseif ($diff->f < 0) {
-            static::fixNegativeMicroseconds($diff);
-        }
-        // @codeCoverageIgnoreEnd
-
-        if ($absolute && $diff->invert) {
-            $diff->invert();
-        }
-
-        return $diff;
-    }
-
-    /**
-     * Get the difference as a DateInterval instance.
-     * Return relative interval (negative if
-     *
-     * @param \Carbon\CarbonInterface|\DateTimeInterface|string|null $date
-     * @param bool                                                   $absolute Get the absolute of the difference
-     *
-     * @return DateInterval
-     */
-    public function diff($date = null, $absolute = false)
-    {
-        return parent::diff($this->resolveCarbon($date), (bool) $absolute);
-    }
-
-    /**
-     * Get the difference as a CarbonInterval instance.
-     * Return absolute interval (always positive) unless you pass false to the second argument.
-     *
-     * @param \Carbon\CarbonInterface|\DateTimeInterface|string|null $date
-     * @param bool                                                   $absolute Get the absolute of the difference
-     *
-     * @return CarbonInterval
-     */
-    public function diffAsCarbonInterval($date = null, $absolute = true)
-    {
-        return static::fixDiffInterval($this->diff($this->resolveCarbon($date), $absolute), $absolute);
-    }
-
-    /**
-     * Get the difference in years
-     *
-     * @param \Carbon\CarbonInterface|\DateTimeInterface|string|null $date
-     * @param bool                                                   $absolute Get the absolute of the difference
-     *
-     * @return int
-     */
-    public function diffInYears($date = null, $absolute = true)
-    {
-        return (int) $this->diff($this->resolveCarbon($date), $absolute)->format('%r%y');
-    }
-
-    /**
-     * Get the difference in quarters rounded down.
-     *
-     * @param \Carbon\CarbonInterface|\DateTimeInterface|string|null $date
-     * @param bool                                                   $absolute Get the absolute of the difference
-     *
-     * @return int
-     */
-    public function diffInQuarters($date = null, $absolute = true)
-    {
-        return (int) ($this->diffInMonths($date, $absolute) / static::MONTHS_PER_QUARTER);
-    }
-
-    /**
-     * Get the difference in months rounded down.
-     *
-     * @param \Carbon\CarbonInterface|\DateTimeInterface|string|null $date
-     * @param bool                                                   $absolute Get the absolute of the difference
-     *
-     * @return int
-     */
-    public function diffInMonths($date = null, $absolute = true)
-    {
-        $date = $this->resolveCarbon($date);
-
-        return $this->diffInYears($date, $absolute) * static::MONTHS_PER_YEAR + (int) $this->diff($date, $absolute)->format('%r%m');
-    }
-
-    /**
-     * Get the difference in weeks rounded down.
-     *
-     * @param \Carbon\CarbonInterface|\DateTimeInterface|string|null $date
-     * @param bool                                                   $absolute Get the absolute of the difference
-     *
-     * @return int
-     */
-    public function diffInWeeks($date = null, $absolute = true)
-    {
-        return (int) ($this->diffInDays($date, $absolute) / static::DAYS_PER_WEEK);
-    }
-
-    /**
-     * Get the difference in days rounded down.
-     *
-     * @param \Carbon\CarbonInterface|\DateTimeInterface|string|null $date
-     * @param bool                                                   $absolute Get the absolute of the difference
-     *
-     * @return int
-     */
-    public function diffInDays($date = null, $absolute = true)
-    {
-        return (int) $this->diff($this->resolveCarbon($date), $absolute)->format('%r%a');
-    }
-
-    /**
-     * Get the difference in days using a filter closure rounded down.
-     *
-     * @param Closure                                                $callback
-     * @param \Carbon\CarbonInterface|\DateTimeInterface|string|null $date
-     * @param bool                                                   $absolute Get the absolute of the difference
-     *
-     * @return int
-     */
-    public function diffInDaysFiltered(Closure $callback, $date = null, $absolute = true)
-    {
-        return $this->diffFiltered(CarbonInterval::day(), $callback, $date, $absolute);
-    }
-
-    /**
-     * Get the difference in hours using a filter closure rounded down.
-     *
-     * @param Closure                                                $callback
-     * @param \Carbon\CarbonInterface|\DateTimeInterface|string|null $date
-     * @param bool                                                   $absolute Get the absolute of the difference
-     *
-     * @return int
-     */
-    public function diffInHoursFiltered(Closure $callback, $date = null, $absolute = true)
-    {
-        return $this->diffFiltered(CarbonInterval::hour(), $callback, $date, $absolute);
-    }
-
-    /**
-     * Get the difference by the given interval using a filter closure.
-     *
-     * @param CarbonInterval                                         $ci       An interval to traverse by
-     * @param Closure                                                $callback
-     * @param \Carbon\CarbonInterface|\DateTimeInterface|string|null $date
-     * @param bool                                                   $absolute Get the absolute of the difference
-     *
-     * @return int
-     */
-    public function diffFiltered(CarbonInterval $ci, Closure $callback, $date = null, $absolute = true)
-    {
-        $start = $this;
-        $end = $this->resolveCarbon($date);
-        $inverse = false;
-
-        if ($end < $start) {
-            $start = $end;
-            $end = $this;
-            $inverse = true;
-        }
-
-        $options = CarbonPeriod::EXCLUDE_END_DATE | ($this->isMutable() ? 0 : CarbonPeriod::IMMUTABLE);
-        $diff = $ci->toPeriod($start, $end, $options)->filter($callback)->count();
-
-        return $inverse && !$absolute ? -$diff : $diff;
-    }
-
-    /**
-     * Get the difference in weekdays rounded down.
-     *
-     * @param \Carbon\CarbonInterface|\DateTimeInterface|string|null $date
-     * @param bool                                                   $absolute Get the absolute of the difference
-     *
-     * @return int
-     */
-    public function diffInWeekdays($date = null, $absolute = true)
-    {
-        return $this->diffInDaysFiltered(function (CarbonInterface $date) {
-            return $date->isWeekday();
-        }, $date, $absolute);
-    }
-
-    /**
-     * Get the difference in weekend days using a filter rounded down.
-     *
-     * @param \Carbon\CarbonInterface|\DateTimeInterface|string|null $date
-     * @param bool                                                   $absolute Get the absolute of the difference
-     *
-     * @return int
-     */
-    public function diffInWeekendDays($date = null, $absolute = true)
-    {
-        return $this->diffInDaysFiltered(function (CarbonInterface $date) {
-            return $date->isWeekend();
-        }, $date, $absolute);
-    }
-
-    /**
-     * Get the difference in hours rounded down.
-     *
-     * @param \Carbon\CarbonInterface|\DateTimeInterface|string|null $date
-     * @param bool                                                   $absolute Get the absolute of the difference
-     *
-     * @return int
-     */
-    public function diffInHours($date = null, $absolute = true)
-    {
-        return (int) ($this->diffInSeconds($date, $absolute) / static::SECONDS_PER_MINUTE / static::MINUTES_PER_HOUR);
-    }
-
-    /**
-     * Get the difference in hours rounded down using timestamps.
-     *
-     * @param \Carbon\CarbonInterface|\DateTimeInterface|string|null $date
-     * @param bool                                                   $absolute Get the absolute of the difference
-     *
-     * @return int
-     */
-    public function diffInRealHours($date = null, $absolute = true)
-    {
-        return (int) ($this->diffInRealSeconds($date, $absolute) / static::SECONDS_PER_MINUTE / static::MINUTES_PER_HOUR);
-    }
-
-    /**
-     * Get the difference in minutes rounded down.
-     *
-     * @param \Carbon\CarbonInterface|\DateTimeInterface|string|null $date
-     * @param bool                                                   $absolute Get the absolute of the difference
-     *
-     * @return int
-     */
-    public function diffInMinutes($date = null, $absolute = true)
-    {
-        return (int) ($this->diffInSeconds($date, $absolute) / static::SECONDS_PER_MINUTE);
-    }
-
-    /**
-     * Get the difference in minutes rounded down using timestamps.
-     *
-     * @param \Carbon\CarbonInterface|\DateTimeInterface|string|null $date
-     * @param bool                                                   $absolute Get the absolute of the difference
-     *
-     * @return int
-     */
-    public function diffInRealMinutes($date = null, $absolute = true)
-    {
-        return (int) ($this->diffInRealSeconds($date, $absolute) / static::SECONDS_PER_MINUTE);
-    }
-
-    /**
-     * Get the difference in seconds rounded down.
-     *
-     * @param \Carbon\CarbonInterface|\DateTimeInterface|string|null $date
-     * @param bool                                                   $absolute Get the absolute of the difference
-     *
-     * @return int
-     */
-    public function diffInSeconds($date = null, $absolute = true)
-    {
-        $diff = $this->diff($date);
-
-        if ($diff->days === 0) {
-            $diff = static::fixDiffInterval($diff, $absolute);
-        }
-
-        $value = (((($diff->m || $diff->y ? $diff->days : $diff->d) * static::HOURS_PER_DAY) +
-            $diff->h) * static::MINUTES_PER_HOUR +
-            $diff->i) * static::SECONDS_PER_MINUTE +
-            $diff->s;
-
-        return $absolute || !$diff->invert ? $value : -$value;
-    }
-
-    /**
-     * Get the difference in microseconds.
-     *
-     * @param \Carbon\CarbonInterface|\DateTimeInterface|string|null $date
-     * @param bool                                                   $absolute Get the absolute of the difference
-     *
-     * @return int
-     */
-    public function diffInMicroseconds($date = null, $absolute = true)
-    {
-        $diff = $this->diff($date);
-        $value = (int) round(((((($diff->m || $diff->y ? $diff->days : $diff->d) * static::HOURS_PER_DAY) +
-            $diff->h) * static::MINUTES_PER_HOUR +
-            $diff->i) * static::SECONDS_PER_MINUTE +
-            ($diff->f + $diff->s)) * static::MICROSECONDS_PER_SECOND);
-
-        return $absolute || !$diff->invert ? $value : -$value;
-    }
-
-    /**
-     * Get the difference in milliseconds rounded down.
-     *
-     * @param \Carbon\CarbonInterface|\DateTimeInterface|string|null $date
-     * @param bool                                                   $absolute Get the absolute of the difference
-     *
-     * @return int
-     */
-    public function diffInMilliseconds($date = null, $absolute = true)
-    {
-        return (int) ($this->diffInMicroseconds($date, $absolute) / static::MICROSECONDS_PER_MILLISECOND);
-    }
-
-    /**
-     * Get the difference in seconds using timestamps.
-     *
-     * @param \Carbon\CarbonInterface|\DateTimeInterface|string|null $date
-     * @param bool                                                   $absolute Get the absolute of the difference
-     *
-     * @return int
-     */
-    public function diffInRealSeconds($date = null, $absolute = true)
-    {
-        /** @var CarbonInterface $date */
-        $date = $this->resolveCarbon($date);
-        $value = $date->getTimestamp() - $this->getTimestamp();
-
-        return $absolute ? abs($value) : $value;
-    }
-
-    /**
-     * Get the difference in microseconds using timestamps.
-     *
-     * @param \Carbon\CarbonInterface|\DateTimeInterface|string|null $date
-     * @param bool                                                   $absolute Get the absolute of the difference
-     *
-     * @return int
-     */
-    public function diffInRealMicroseconds($date = null, $absolute = true)
-    {
-        /** @var CarbonInterface $date */
-        $date = $this->resolveCarbon($date);
-        $value = ($date->timestamp - $this->timestamp) * static::MICROSECONDS_PER_SECOND +
-            $date->micro - $this->micro;
-
-        return $absolute ? abs($value) : $value;
-    }
-
-    /**
-     * Get the difference in milliseconds rounded down using timestamps.
-     *
-     * @param \Carbon\CarbonInterface|\DateTimeInterface|string|null $date
-     * @param bool                                                   $absolute Get the absolute of the difference
-     *
-     * @return int
-     */
-    public function diffInRealMilliseconds($date = null, $absolute = true)
-    {
-        return (int) ($this->diffInRealMicroseconds($date, $absolute) / static::MICROSECONDS_PER_MILLISECOND);
-    }
-
-    /**
-     * Get the difference in seconds as float (microsecond-precision).
-     *
-     * @param \Carbon\CarbonInterface|\DateTimeInterface|string|null $date
-     * @param bool                                                   $absolute Get the absolute of the difference
-     *
-     * @return float
-     */
-    public function floatDiffInSeconds($date = null, $absolute = true)
-    {
-        return $this->diffInMicroseconds($date, $absolute) / static::MICROSECONDS_PER_SECOND;
-    }
-
-    /**
-     * Get the difference in minutes as float (microsecond-precision).
-     *
-     * @param \Carbon\CarbonInterface|\DateTimeInterface|string|null $date
-     * @param bool                                                   $absolute Get the absolute of the difference
-     *
-     * @return float
-     */
-    public function floatDiffInMinutes($date = null, $absolute = true)
-    {
-        return $this->floatDiffInSeconds($date, $absolute) / static::SECONDS_PER_MINUTE;
-    }
-
-    /**
-     * Get the difference in hours as float (microsecond-precision).
-     *
-     * @param \Carbon\CarbonInterface|\DateTimeInterface|string|null $date
-     * @param bool                                                   $absolute Get the absolute of the difference
-     *
-     * @return float
-     */
-    public function floatDiffInHours($date = null, $absolute = true)
-    {
-        return $this->floatDiffInMinutes($date, $absolute) / static::MINUTES_PER_HOUR;
-    }
-
-    /**
-     * Get the difference in days as float (microsecond-precision).
-     *
-     * @param \Carbon\CarbonInterface|\DateTimeInterface|string|null $date
-     * @param bool                                                   $absolute Get the absolute of the difference
-     *
-     * @return float
-     */
-    public function floatDiffInDays($date = null, $absolute = true)
-    {
-        $hoursDiff = $this->floatDiffInHours($date, $absolute);
-        $interval = $this->diff($date, $absolute);
-
-        if ($interval->y === 0 && $interval->m === 0 && $interval->d === 0) {
-            return $hoursDiff / static::HOURS_PER_DAY;
-        }
-
-        $daysDiff = (int) $interval->format('%r%a');
-
-        return $daysDiff + fmod($hoursDiff, static::HOURS_PER_DAY) / static::HOURS_PER_DAY;
-    }
-
-    /**
-     * Get the difference in weeks as float (microsecond-precision).
-     *
-     * @param \Carbon\CarbonInterface|\DateTimeInterface|string|null $date
-     * @param bool                                                   $absolute Get the absolute of the difference
-     *
-     * @return float
-     */
-    public function floatDiffInWeeks($date = null, $absolute = true)
-    {
-        return $this->floatDiffInDays($date, $absolute) / static::DAYS_PER_WEEK;
-    }
-
-    /**
-     * Get the difference in months as float (microsecond-precision).
-     *
-     * @param \Carbon\CarbonInterface|\DateTimeInterface|string|null $date
-     * @param bool                                                   $absolute Get the absolute of the difference
-     *
-     * @return float
-     */
-    public function floatDiffInMonths($date = null, $absolute = true)
-    {
-        $start = $this;
-        $end = $this->resolveCarbon($date);
-        $ascending = ($start <= $end);
-        $sign = $absolute || $ascending ? 1 : -1;
-        if (!$ascending) {
-            [$start, $end] = [$end, $start];
-        }
-        $monthsDiff = $start->diffInMonths($end);
-        /** @var Carbon|CarbonImmutable $floorEnd */
-        $floorEnd = $start->copy()->addMonths($monthsDiff);
-
-        if ($floorEnd >= $end) {
-            return $sign * $monthsDiff;
-        }
-
-        /** @var Carbon|CarbonImmutable $startOfMonthAfterFloorEnd */
-        $startOfMonthAfterFloorEnd = $floorEnd->copy()->addMonth()->startOfMonth();
-
-        if ($startOfMonthAfterFloorEnd > $end) {
-            return $sign * ($monthsDiff + $floorEnd->floatDiffInDays($end) / $floorEnd->daysInMonth);
-        }
-
-        return $sign * ($monthsDiff + $floorEnd->floatDiffInDays($startOfMonthAfterFloorEnd) / $floorEnd->daysInMonth + $startOfMonthAfterFloorEnd->floatDiffInDays($end) / $end->daysInMonth);
-    }
-
-    /**
-     * Get the difference in year as float (microsecond-precision).
-     *
-     * @param \Carbon\CarbonInterface|\DateTimeInterface|string|null $date
-     * @param bool                                                   $absolute Get the absolute of the difference
-     *
-     * @return float
-     */
-    public function floatDiffInYears($date = null, $absolute = true)
-    {
-        $start = $this;
-        $end = $this->resolveCarbon($date);
-        $ascending = ($start <= $end);
-        $sign = $absolute || $ascending ? 1 : -1;
-        if (!$ascending) {
-            [$start, $end] = [$end, $start];
-        }
-        $yearsDiff = $start->diffInYears($end);
-        /** @var Carbon|CarbonImmutable $floorEnd */
-        $floorEnd = $start->copy()->addYears($yearsDiff);
-
-        if ($floorEnd >= $end) {
-            return $sign * $yearsDiff;
-        }
-
-        /** @var Carbon|CarbonImmutable $startOfYearAfterFloorEnd */
-        $startOfYearAfterFloorEnd = $floorEnd->copy()->addYear()->startOfYear();
-
-        if ($startOfYearAfterFloorEnd > $end) {
-            return $sign * ($yearsDiff + $floorEnd->floatDiffInDays($end) / $floorEnd->daysInYear);
-        }
-
-        return $sign * ($yearsDiff + $floorEnd->floatDiffInDays($startOfYearAfterFloorEnd) / $floorEnd->daysInYear + $startOfYearAfterFloorEnd->floatDiffInDays($end) / $end->daysInYear);
-    }
-
-    /**
-     * Get the difference in seconds as float (microsecond-precision) using timestamps.
-     *
-     * @param \Carbon\CarbonInterface|\DateTimeInterface|string|null $date
-     * @param bool                                                   $absolute Get the absolute of the difference
-     *
-     * @return float
-     */
-    public function floatDiffInRealSeconds($date = null, $absolute = true)
-    {
-        return $this->diffInRealMicroseconds($date, $absolute) / static::MICROSECONDS_PER_SECOND;
-    }
-
-    /**
-     * Get the difference in minutes as float (microsecond-precision) using timestamps.
-     *
-     * @param \Carbon\CarbonInterface|\DateTimeInterface|string|null $date
-     * @param bool                                                   $absolute Get the absolute of the difference
-     *
-     * @return float
-     */
-    public function floatDiffInRealMinutes($date = null, $absolute = true)
-    {
-        return $this->floatDiffInRealSeconds($date, $absolute) / static::SECONDS_PER_MINUTE;
-    }
-
-    /**
-     * Get the difference in hours as float (microsecond-precision) using timestamps.
-     *
-     * @param \Carbon\CarbonInterface|\DateTimeInterface|string|null $date
-     * @param bool                                                   $absolute Get the absolute of the difference
-     *
-     * @return float
-     */
-    public function floatDiffInRealHours($date = null, $absolute = true)
-    {
-        return $this->floatDiffInRealMinutes($date, $absolute) / static::MINUTES_PER_HOUR;
-    }
-
-    /**
-     * Get the difference in days as float (microsecond-precision).
-     *
-     * @param \Carbon\CarbonInterface|\DateTimeInterface|string|null $date
-     * @param bool                                                   $absolute Get the absolute of the difference
-     *
-     * @return float
-     */
-    public function floatDiffInRealDays($date = null, $absolute = true)
-    {
-        $hoursDiff = $this->floatDiffInRealHours($date, $absolute);
-
-        return ($hoursDiff < 0 ? -1 : 1) * $this->diffInDays($date) + fmod($hoursDiff, static::HOURS_PER_DAY) / static::HOURS_PER_DAY;
-    }
-
-    /**
-     * Get the difference in weeks as float (microsecond-precision).
-     *
-     * @param \Carbon\CarbonInterface|\DateTimeInterface|string|null $date
-     * @param bool                                                   $absolute Get the absolute of the difference
-     *
-     * @return float
-     */
-    public function floatDiffInRealWeeks($date = null, $absolute = true)
-    {
-        return $this->floatDiffInRealDays($date, $absolute) / static::DAYS_PER_WEEK;
-    }
-
-    /**
-     * Get the difference in months as float (microsecond-precision) using timestamps.
-     *
-     * @param \Carbon\CarbonInterface|\DateTimeInterface|string|null $date
-     * @param bool                                                   $absolute Get the absolute of the difference
-     *
-     * @return float
-     */
-    public function floatDiffInRealMonths($date = null, $absolute = true)
-    {
-        $start = $this;
-        $end = $this->resolveCarbon($date);
-        $ascending = ($start <= $end);
-        $sign = $absolute || $ascending ? 1 : -1;
-        if (!$ascending) {
-            [$start, $end] = [$end, $start];
-        }
-        $monthsDiff = $start->diffInMonths($end);
-        /** @var Carbon|CarbonImmutable $floorEnd */
-        $floorEnd = $start->copy()->addMonths($monthsDiff);
-
-        if ($floorEnd >= $end) {
-            return $sign * $monthsDiff;
-        }
-
-        /** @var Carbon|CarbonImmutable $startOfMonthAfterFloorEnd */
-        $startOfMonthAfterFloorEnd = $floorEnd->copy()->addMonth()->startOfMonth();
-
-        if ($startOfMonthAfterFloorEnd > $end) {
-            return $sign * ($monthsDiff + $floorEnd->floatDiffInRealDays($end) / $floorEnd->daysInMonth);
-        }
-
-        return $sign * ($monthsDiff + $floorEnd->floatDiffInRealDays($startOfMonthAfterFloorEnd) / $floorEnd->daysInMonth + $startOfMonthAfterFloorEnd->floatDiffInRealDays($end) / $end->daysInMonth);
-    }
-
-    /**
-     * Get the difference in year as float (microsecond-precision) using timestamps.
-     *
-     * @param \Carbon\CarbonInterface|\DateTimeInterface|string|null $date
-     * @param bool                                                   $absolute Get the absolute of the difference
-     *
-     * @return float
-     */
-    public function floatDiffInRealYears($date = null, $absolute = true)
-    {
-        $start = $this;
-        $end = $this->resolveCarbon($date);
-        $ascending = ($start <= $end);
-        $sign = $absolute || $ascending ? 1 : -1;
-        if (!$ascending) {
-            [$start, $end] = [$end, $start];
-        }
-        $yearsDiff = $start->diffInYears($end);
-        /** @var Carbon|CarbonImmutable $floorEnd */
-        $floorEnd = $start->copy()->addYears($yearsDiff);
-
-        if ($floorEnd >= $end) {
-            return $sign * $yearsDiff;
-        }
-
-        /** @var Carbon|CarbonImmutable $startOfYearAfterFloorEnd */
-        $startOfYearAfterFloorEnd = $floorEnd->copy()->addYear()->startOfYear();
-
-        if ($startOfYearAfterFloorEnd > $end) {
-            return $sign * ($yearsDiff + $floorEnd->floatDiffInRealDays($end) / $floorEnd->daysInYear);
-        }
-
-        return $sign * ($yearsDiff + $floorEnd->floatDiffInRealDays($startOfYearAfterFloorEnd) / $floorEnd->daysInYear + $startOfYearAfterFloorEnd->floatDiffInRealDays($end) / $end->daysInYear);
-    }
-
-    /**
-     * The number of seconds since midnight.
-     *
-     * @return int
-     */
-    public function secondsSinceMidnight()
-    {
-        return $this->diffInSeconds($this->copy()->startOfDay());
-    }
-
-    /**
-     * The number of seconds until 23:59:59.
-     *
-     * @return int
-     */
-    public function secondsUntilEndOfDay()
-    {
-        return $this->diffInSeconds($this->copy()->endOfDay());
-    }
-
-    /**
-     * Get the difference in a human readable format in the current locale from current instance to an other
-     * instance given (or now if null given).
-     *
-     * @example
-     * ```
-     * echo Carbon::tomorrow()->diffForHumans() . "\n";
-     * echo Carbon::tomorrow()->diffForHumans(['parts' => 2]) . "\n";
-     * echo Carbon::tomorrow()->diffForHumans(['parts' => 3, 'join' => true]) . "\n";
-     * echo Carbon::tomorrow()->diffForHumans(Carbon::yesterday()) . "\n";
-     * echo Carbon::tomorrow()->diffForHumans(Carbon::yesterday(), ['short' => true]) . "\n";
-     * ```
-     *
-     * @param Carbon|\DateTimeInterface|string|array|null $other   if array passed, will be used as parameters array, see $syntax below;
-     *                                                             if null passed, now will be used as comparison reference;
-     *                                                             if any other type, it will be converted to date and used as reference.
-     * @param int|array                                   $syntax  if array passed, parameters will be extracted from it, the array may contains:
-     *                                                             - 'syntax' entry (see below)
-     *                                                             - 'short' entry (see below)
-     *                                                             - 'parts' entry (see below)
-     *                                                             - 'options' entry (see below)
-     *                                                             - 'join' entry determines how to join multiple parts of the string
-     *                                                             `  - if $join is a string, it's used as a joiner glue
-     *                                                             `  - if $join is a callable/closure, it get the list of string and should return a string
-     *                                                             `  - if $join is an array, the first item will be the default glue, and the second item
-     *                                                             `    will be used instead of the glue for the last item
-     *                                                             `  - if $join is true, it will be guessed from the locale ('list' translation file entry)
-     *                                                             `  - if $join is missing, a space will be used as glue
-     *                                                             - 'other' entry (see above)
-     *                                                             if int passed, it add modifiers:
-     *                                                             Possible values:
-     *                                                             - CarbonInterface::DIFF_ABSOLUTE          no modifiers
-     *                                                             - CarbonInterface::DIFF_RELATIVE_TO_NOW   add ago/from now modifier
-     *                                                             - CarbonInterface::DIFF_RELATIVE_TO_OTHER add before/after modifier
-     *                                                             Default value: CarbonInterface::DIFF_ABSOLUTE
-     * @param bool                                        $short   displays short format of time units
-     * @param int                                         $parts   maximum number of parts to display (default value: 1: single unit)
-     * @param int                                         $options human diff options
-     *
-     * @return string
-     */
-    public function diffForHumans($other = null, $syntax = null, $short = false, $parts = 1, $options = null)
-    {
-        /* @var CarbonInterface $this */
-        if (\is_array($other)) {
-            $other['syntax'] = \array_key_exists('syntax', $other) ? $other['syntax'] : $syntax;
-            $syntax = $other;
-            $other = $syntax['other'] ?? null;
-        }
-
-        $intSyntax = &$syntax;
-        if (\is_array($syntax)) {
-            $syntax['syntax'] = $syntax['syntax'] ?? null;
-            $intSyntax = &$syntax['syntax'];
-        }
-        $intSyntax = (int) ($intSyntax === null ? static::DIFF_RELATIVE_AUTO : $intSyntax);
-        $intSyntax = $intSyntax === static::DIFF_RELATIVE_AUTO && $other === null ? static::DIFF_RELATIVE_TO_NOW : $intSyntax;
-
-        $parts = min(7, max(1, (int) $parts));
-
-        return $this->diffAsCarbonInterval($other, false)
-            ->setLocalTranslator($this->getLocalTranslator())
-            ->forHumans($syntax, (bool) $short, $parts, $options ?? $this->localHumanDiffOptions ?? static::getHumanDiffOptions());
-    }
-
-    /**
-     * @alias diffForHumans
-     *
-     * Get the difference in a human readable format in the current locale from current instance to an other
-     * instance given (or now if null given).
-     *
-     * @param Carbon|\DateTimeInterface|string|array|null $other   if array passed, will be used as parameters array, see $syntax below;
-     *                                                             if null passed, now will be used as comparison reference;
-     *                                                             if any other type, it will be converted to date and used as reference.
-     * @param int|array                                   $syntax  if array passed, parameters will be extracted from it, the array may contains:
-     *                                                             - 'syntax' entry (see below)
-     *                                                             - 'short' entry (see below)
-     *                                                             - 'parts' entry (see below)
-     *                                                             - 'options' entry (see below)
-     *                                                             - 'join' entry determines how to join multiple parts of the string
-     *                                                             `  - if $join is a string, it's used as a joiner glue
-     *                                                             `  - if $join is a callable/closure, it get the list of string and should return a string
-     *                                                             `  - if $join is an array, the first item will be the default glue, and the second item
-     *                                                             `    will be used instead of the glue for the last item
-     *                                                             `  - if $join is true, it will be guessed from the locale ('list' translation file entry)
-     *                                                             `  - if $join is missing, a space will be used as glue
-     *                                                             - 'other' entry (see above)
-     *                                                             if int passed, it add modifiers:
-     *                                                             Possible values:
-     *                                                             - CarbonInterface::DIFF_ABSOLUTE          no modifiers
-     *                                                             - CarbonInterface::DIFF_RELATIVE_TO_NOW   add ago/from now modifier
-     *                                                             - CarbonInterface::DIFF_RELATIVE_TO_OTHER add before/after modifier
-     *                                                             Default value: CarbonInterface::DIFF_ABSOLUTE
-     * @param bool                                        $short   displays short format of time units
-     * @param int                                         $parts   maximum number of parts to display (default value: 1: single unit)
-     * @param int                                         $options human diff options
-     *
-     * @return string
-     */
-    public function from($other = null, $syntax = null, $short = false, $parts = 1, $options = null)
-    {
-        return $this->diffForHumans($other, $syntax, $short, $parts, $options);
-    }
-
-    /**
-     * @alias diffForHumans
-     *
-     * Get the difference in a human readable format in the current locale from current instance to an other
-     * instance given (or now if null given).
-     */
-    public function since($other = null, $syntax = null, $short = false, $parts = 1, $options = null)
-    {
-        return $this->diffForHumans($other, $syntax, $short, $parts, $options);
-    }
-
-    /**
-     * Get the difference in a human readable format in the current locale from an other
-     * instance given (or now if null given) to current instance.
-     *
-     * When comparing a value in the past to default now:
-     * 1 hour from now
-     * 5 months from now
-     *
-     * When comparing a value in the future to default now:
-     * 1 hour ago
-     * 5 months ago
-     *
-     * When comparing a value in the past to another value:
-     * 1 hour after
-     * 5 months after
-     *
-     * When comparing a value in the future to another value:
-     * 1 hour before
-     * 5 months before
-     *
-     * @param Carbon|\DateTimeInterface|string|array|null $other   if array passed, will be used as parameters array, see $syntax below;
-     *                                                             if null passed, now will be used as comparison reference;
-     *                                                             if any other type, it will be converted to date and used as reference.
-     * @param int|array                                   $syntax  if array passed, parameters will be extracted from it, the array may contains:
-     *                                                             - 'syntax' entry (see below)
-     *                                                             - 'short' entry (see below)
-     *                                                             - 'parts' entry (see below)
-     *                                                             - 'options' entry (see below)
-     *                                                             - 'join' entry determines how to join multiple parts of the string
-     *                                                             `  - if $join is a string, it's used as a joiner glue
-     *                                                             `  - if $join is a callable/closure, it get the list of string and should return a string
-     *                                                             `  - if $join is an array, the first item will be the default glue, and the second item
-     *                                                             `    will be used instead of the glue for the last item
-     *                                                             `  - if $join is true, it will be guessed from the locale ('list' translation file entry)
-     *                                                             `  - if $join is missing, a space will be used as glue
-     *                                                             - 'other' entry (see above)
-     *                                                             if int passed, it add modifiers:
-     *                                                             Possible values:
-     *                                                             - CarbonInterface::DIFF_ABSOLUTE          no modifiers
-     *                                                             - CarbonInterface::DIFF_RELATIVE_TO_NOW   add ago/from now modifier
-     *                                                             - CarbonInterface::DIFF_RELATIVE_TO_OTHER add before/after modifier
-     *                                                             Default value: CarbonInterface::DIFF_ABSOLUTE
-     * @param bool                                        $short   displays short format of time units
-     * @param int                                         $parts   maximum number of parts to display (default value: 1: single unit)
-     * @param int                                         $options human diff options
-     *
-     * @return string
-     */
-    public function to($other = null, $syntax = null, $short = false, $parts = 1, $options = null)
-    {
-        if (!$syntax && !$other) {
-            $syntax = CarbonInterface::DIFF_RELATIVE_TO_NOW;
-        }
-
-        return $this->resolveCarbon($other)->diffForHumans($this, $syntax, $short, $parts, $options);
-    }
-
-    /**
-     * @alias to
-     *
-     * Get the difference in a human readable format in the current locale from an other
-     * instance given (or now if null given) to current instance.
-     *
-     * @param Carbon|\DateTimeInterface|string|array|null $other   if array passed, will be used as parameters array, see $syntax below;
-     *                                                             if null passed, now will be used as comparison reference;
-     *                                                             if any other type, it will be converted to date and used as reference.
-     * @param int|array                                   $syntax  if array passed, parameters will be extracted from it, the array may contains:
-     *                                                             - 'syntax' entry (see below)
-     *                                                             - 'short' entry (see below)
-     *                                                             - 'parts' entry (see below)
-     *                                                             - 'options' entry (see below)
-     *                                                             - 'join' entry determines how to join multiple parts of the string
-     *                                                             `  - if $join is a string, it's used as a joiner glue
-     *                                                             `  - if $join is a callable/closure, it get the list of string and should return a string
-     *                                                             `  - if $join is an array, the first item will be the default glue, and the second item
-     *                                                             `    will be used instead of the glue for the last item
-     *                                                             `  - if $join is true, it will be guessed from the locale ('list' translation file entry)
-     *                                                             `  - if $join is missing, a space will be used as glue
-     *                                                             - 'other' entry (see above)
-     *                                                             if int passed, it add modifiers:
-     *                                                             Possible values:
-     *                                                             - CarbonInterface::DIFF_ABSOLUTE          no modifiers
-     *                                                             - CarbonInterface::DIFF_RELATIVE_TO_NOW   add ago/from now modifier
-     *                                                             - CarbonInterface::DIFF_RELATIVE_TO_OTHER add before/after modifier
-     *                                                             Default value: CarbonInterface::DIFF_ABSOLUTE
-     * @param bool                                        $short   displays short format of time units
-     * @param int                                         $parts   maximum number of parts to display (default value: 1: single unit)
-     * @param int                                         $options human diff options
-     *
-     * @return string
-     */
-    public function until($other = null, $syntax = null, $short = false, $parts = 1, $options = null)
-    {
-        return $this->to($other, $syntax, $short, $parts, $options);
-    }
-
-    /**
-     * Get the difference in a human readable format in the current locale from current
-     * instance to now.
-     *
-     * @param int|array $syntax  if array passed, parameters will be extracted from it, the array may contains:
-     *                           - 'syntax' entry (see below)
-     *                           - 'short' entry (see below)
-     *                           - 'parts' entry (see below)
-     *                           - 'options' entry (see below)
-     *                           - 'join' entry determines how to join multiple parts of the string
-     *                           `  - if $join is a string, it's used as a joiner glue
-     *                           `  - if $join is a callable/closure, it get the list of string and should return a string
-     *                           `  - if $join is an array, the first item will be the default glue, and the second item
-     *                           `    will be used instead of the glue for the last item
-     *                           `  - if $join is true, it will be guessed from the locale ('list' translation file entry)
-     *                           `  - if $join is missing, a space will be used as glue
-     *                           if int passed, it add modifiers:
-     *                           Possible values:
-     *                           - CarbonInterface::DIFF_ABSOLUTE          no modifiers
-     *                           - CarbonInterface::DIFF_RELATIVE_TO_NOW   add ago/from now modifier
-     *                           - CarbonInterface::DIFF_RELATIVE_TO_OTHER add before/after modifier
-     *                           Default value: CarbonInterface::DIFF_ABSOLUTE
-     * @param bool      $short   displays short format of time units
-     * @param int       $parts   maximum number of parts to display (default value: 1: single unit)
-     * @param int       $options human diff options
-     *
-     * @return string
-     */
-    public function fromNow($syntax = null, $short = false, $parts = 1, $options = null)
-    {
-        $other = null;
-
-        if ($syntax instanceof DateTimeInterface) {
-            [$other, $syntax, $short, $parts, $options] = array_pad(\func_get_args(), 5, null);
-        }
-
-        return $this->from($other, $syntax, $short, $parts, $options);
-    }
-
-    /**
-     * Get the difference in a human readable format in the current locale from an other
-     * instance given to now
-     *
-     * @param int|array $syntax  if array passed, parameters will be extracted from it, the array may contains:
-     *                           - 'syntax' entry (see below)
-     *                           - 'short' entry (see below)
-     *                           - 'parts' entry (see below)
-     *                           - 'options' entry (see below)
-     *                           - 'join' entry determines how to join multiple parts of the string
-     *                           `  - if $join is a string, it's used as a joiner glue
-     *                           `  - if $join is a callable/closure, it get the list of string and should return a string
-     *                           `  - if $join is an array, the first item will be the default glue, and the second item
-     *                           `    will be used instead of the glue for the last item
-     *                           `  - if $join is true, it will be guessed from the locale ('list' translation file entry)
-     *                           `  - if $join is missing, a space will be used as glue
-     *                           if int passed, it add modifiers:
-     *                           Possible values:
-     *                           - CarbonInterface::DIFF_ABSOLUTE          no modifiers
-     *                           - CarbonInterface::DIFF_RELATIVE_TO_NOW   add ago/from now modifier
-     *                           - CarbonInterface::DIFF_RELATIVE_TO_OTHER add before/after modifier
-     *                           Default value: CarbonInterface::DIFF_ABSOLUTE
-     * @param bool      $short   displays short format of time units
-     * @param int       $parts   maximum number of parts to display (default value: 1: single part)
-     * @param int       $options human diff options
-     *
-     * @return string
-     */
-    public function toNow($syntax = null, $short = false, $parts = 1, $options = null)
-    {
-        return $this->to(null, $syntax, $short, $parts, $options);
-    }
-
-    /**
-     * Get the difference in a human readable format in the current locale from an other
-     * instance given to now
-     *
-     * @param int|array $syntax  if array passed, parameters will be extracted from it, the array may contains:
-     *                           - 'syntax' entry (see below)
-     *                           - 'short' entry (see below)
-     *                           - 'parts' entry (see below)
-     *                           - 'options' entry (see below)
-     *                           - 'join' entry determines how to join multiple parts of the string
-     *                           `  - if $join is a string, it's used as a joiner glue
-     *                           `  - if $join is a callable/closure, it get the list of string and should return a string
-     *                           `  - if $join is an array, the first item will be the default glue, and the second item
-     *                           `    will be used instead of the glue for the last item
-     *                           `  - if $join is true, it will be guessed from the locale ('list' translation file entry)
-     *                           `  - if $join is missing, a space will be used as glue
-     *                           if int passed, it add modifiers:
-     *                           Possible values:
-     *                           - CarbonInterface::DIFF_ABSOLUTE          no modifiers
-     *                           - CarbonInterface::DIFF_RELATIVE_TO_NOW   add ago/from now modifier
-     *                           - CarbonInterface::DIFF_RELATIVE_TO_OTHER add before/after modifier
-     *                           Default value: CarbonInterface::DIFF_ABSOLUTE
-     * @param bool      $short   displays short format of time units
-     * @param int       $parts   maximum number of parts to display (default value: 1: single part)
-     * @param int       $options human diff options
-     *
-     * @return string
-     */
-    public function ago($syntax = null, $short = false, $parts = 1, $options = null)
-    {
-        $other = null;
-
-        if ($syntax instanceof DateTimeInterface) {
-            [$other, $syntax, $short, $parts, $options] = array_pad(\func_get_args(), 5, null);
-        }
-
-        return $this->from($other, $syntax, $short, $parts, $options);
-    }
-
-    /**
-     * Get the difference in a human readable format in the current locale from current instance to an other
-     * instance given (or now if null given).
-     *
-     * @return string
-     */
-    public function timespan($other = null, $timezone = null)
-    {
-        if (!$other instanceof DateTimeInterface) {
-            $other = static::parse($other, $timezone);
-        }
-
-        return $this->diffForHumans($other, [
-            'join' => ', ',
-            'syntax' => CarbonInterface::DIFF_ABSOLUTE,
-            'options' => CarbonInterface::NO_ZERO_DIFF,
-            'parts' => -1,
-        ]);
-    }
-
-    /**
-     * Returns either the close date "Friday 15h30", or a calendar date "10/09/2017" is farthest than 7 days from now.
-     *
-     * @param Carbon|\DateTimeInterface|string|null $referenceTime
-     * @param array                                 $formats
-     *
-     * @return string
-     */
-    public function calendar($referenceTime = null, array $formats = [])
-    {
-        /** @var CarbonInterface $current */
-        $current = $this->copy()->startOfDay();
-        /** @var CarbonInterface $other */
-        $other = $this->resolveCarbon($referenceTime)->copy()->setTimezone($this->getTimezone())->startOfDay();
-        $diff = $other->diffInDays($current, false);
-        $format = $diff < -6 ? 'sameElse' : (
-            $diff < -1 ? 'lastWeek' : (
-                $diff < 0 ? 'lastDay' : (
-                    $diff < 1 ? 'sameDay' : (
-                        $diff < 2 ? 'nextDay' : (
-                            $diff < 7 ? 'nextWeek' : 'sameElse'
-                        )
-                    )
-                )
-            )
-        );
-        $format = array_merge($this->getCalendarFormats(), $formats)[$format];
-        if ($format instanceof Closure) {
-            $format = $format($current, $other) ?? '';
-        }
-
-        return $this->isoFormat(\strval($format));
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPrhrFcMacuDAiGUhHau/YKxjkmiMvYJeGeku4PDrjGquUiHaPhVHQ19Nx30uDMTrs++h5Dhs
+sdTywh8Hl5tzB4Rc9llVtVr1xJF2eCogHjAQx5GWwU5LG1xhLgXoE32vxhj0oknV55vfTh6bS9dK
+DiFddCYGuzEYbAIzafNPCQPWynDFASIxlv/EIqk6pUUoQ0XRuIt0yI3qph1WuQN91MBDuBXYqHmO
+SQN7T6yHYpzT8X/r1uKuNsuDk9QcNbWMg+xrEjMhA+TKmL7Jt1aWL4Hsw45lwTbPnj66QQNuRKkk
+DT9A/xjwVSWgOX32FrKbxeq+Ao7qmLonb5E/mmX84d5i/Q4V6jwRy0w+p0NXQuhjWTi0OSkqz/5r
+8yPwo6uF6TW8bnWEgvok/aEoBjlZY5Sx/mOc28aqarQWyKlry9ShjROuqo3bLAVckow9HbB0fgLR
+juHTmdHHSX0CaDFyG/AdR85IKvxm2cZYzz8OKajhcDOHOwA7eoUSMERd+G0a4/IlvGcj4blzKUSg
+ErPPp+Vo7CRzV7wCM1dXFzhL9lobV9vmvTetDiBfyorEB5OKYxc6xyBLo69BBz1MPLz33JH39VA6
+dv57tcSj9n5cCbtl0dFyOXrkXd8JfTOIq89HlvrvAMvI0sCuUJg6ertexAT8RKRj1RqxH6THP4xI
+CNZMuk2juYQ+pCC4adk6lbLzOOJw4wqBqulNb//93dG0RNXItKjYNTZKTiLtqcXlz3IQpyWlwJzn
+U8xw6Ane9MZh0E7zFN63trZiy5vBn13BFKubvWBIkrI7KHH0itUS+DgV6BCTmmSSbmh7x8TLjNIZ
+xf87sVEL6264yhJYPdVPqRN7xJs2RgjxgLXWogMcE295j6j9GvzbZYcAaofE/3alMu+dht6uD8IH
+EWcV1ILuXioANllooJdwnyIQY6OZJKJLSDx4IGjLu2uVQHzISiPERtgxEM4raqxe/SmWIkZLyStc
+SJYTfXoR4ztNXxpDSnoCtPDhSxr1lxul1BG5UHcW4NgElHRyCx6M8dlu+WllI/v4BVy1DL9RWRuO
+QPDKcOmPuogf7Fiatd0FRWvOywkpBL0t4SEzyqyADw04iL349PIgAfeasbpwYI1rhM6PK5AsQZxI
+i9Oq21MdhkSLrwgQPdSP/ohawxAUowm5B0DgJlaR3jsRGfS28iMBmCdbcIHCGgwouDlsTSsZHue6
+8RDMOqI1pkWGt3zXyrA+aVlhbiIkxwDx5in15DtVPCy80YtuWSjhT8TDBLpGfr0NjEZpFkZx2EJ1
+PfF/V25gZHdEhnU5/xFYAvsj13GKEtnjs7hVSOtp3GiJeGAjx8z9//pZK1JoyNOGfY59+a3ZI3SQ
+fl+R9uEYC93cuuht4bCuYgOWExJMqPYZl2fTijSjOJXeChqbReZgHYL8+yvgvCFZ6MsrFXBBP/vj
+jVvBsIlgXzdjPeixgSrik6CcsObPBhT3qBKRSrBQ8xGodl3RnbZ7XjdUlgW/+9TyOnK64dfsDD/7
+vSk/gZH7RQj8lVt2P6jHt1zHyf0f4MkBDCErt13iKs+lOcVSkxo3pG4EGkvswp2p8hmJuLhrw8YJ
+UgrNKOJz77C/bzAUUo5Kn1+Q3aC4PsEj9++8wLDLmfWYJIwxsX/D3JViRYAkp/EtQN1ABlx/vxiX
+x8NZ+2YlNsPQoK3/n224OFo/sw4Y9l4LGwLVJTfQJU4CzJLlGmjZYijtEslVLVYZklQRIqpOtnp4
+uhYkRSNIQwqg/E16AacO4890EOuQ8ms+jjVM9X9Q8THVLJsyySuUACmtSyMF89of8CPtTQik8cR+
+oz1cqkMP3LkdK+wX7nyXiTgcjlYyxKl4t86xlP/eAMDAnCz/TJyEb53dpXxjSJxwtdCa7tm/2E6c
+E7bG/hKSuc3W7g6guxNAle0010OmzOMppaYvEEVa40n+phPUmsCEmJrC/tBCqbekWdOiO3V2Y2Np
+XBTeqxTE/dbLLXCH6F/tngF6W1Tth1vYm9axr55RbrHZk5QbKpO2SXz17RsQcHXAsvwmso+7t4T+
+nonQTvM5P92qXX9CUmmzahbDK19MbHhAL4T/Z1WCXKUfPNmNWoxyM9YzdgnswYuYQ2OdlFL0bphS
+qAtDTitNLQAZbizBQgTztNElP5Rt7YuZQRGalN3v6s4TYsx6FKf8gonCZI87Q6kHv2UGCSoVDcEM
+opAA/TM8eHnrPogJpDegRsLTIF2STsdrtug7tCBbHwfJ7yTXPz3Jpg0BnNg3nThnHx2p/gpi1ynr
+1PhAQV7w73xCa1r7rOWCFrZ3T/6XjMDPAR9xvvmRBMKAblUVXvK85f9bIX0BXDXzn3/ZPzoyeoWQ
+ggZY6Kk8naiE+/lxes7Dxxzsw96n5Szq5kc/CNzQK8TwIfLFN7pQY7AMGym2sBgKTsWJtPljoHqc
+sT5s41NqNemNySh4P8XJ7zHipufcxJAcS5sSSHPunMC3TE2MXJL1MePe9PCFuaa9kiCDZGAL1k6A
+DafZChoXBM5J2RG4lxHWYsMCkfVXimDp6bLS+0d3O2KD+vDqZxPPMu3mBOg9jwkwAQuS4lnR1IpL
+KZ1vLz8OR2rxtrkf3c3vrMthJc2rjTcMwRYZIApJNFCt9uY+pR7LfBt1iY3lQyCW2BE11e7Q9I1R
+hrrPAr1b/0eDNmYCNnZ32cFvaaggP9D59eNnkI7Ed0q0siE8+5ir9ptSP8qcpEyezazxVP34tKvK
+Bbl/c/GvhJw6Q8CE0v+KsQj0mO2aa9cpzfZBdP+Gh/Ntb59/HoJtdibeyVmlZNf24mPauR/kr+eU
+G1na+9Hfh8JLcA679+ZPup3V8Hs+8eHa5+URnFqHdfUD7fhbChJWkIbIc7bwW5G3VmMoXx1zzwtp
+2bzursKqpj4GeBnAqNyHpHGH/ELpO+Zwg5dw28POJ1Xd8KQHJU3tiXsDGBQhvSf+8EPOGreDj1r2
+gQ7LVqp9p+VNAmyB3DkzLjhllR3sr98UAcAXEcMe1XbwXR112h8TPw9B+VdAUimcAmaDePIDL1Rr
+xahCpMpzY/ak3EeSzAF2YCorBK95nrJXht/jqi4+TG9ZhfKwTM0vM8Ezlrs3eThDfWrCrE9FVd7f
+edTVLUNl5ACcjmQSE6t59CQrLNqZ6mmOrmSZ3X6fYgHNrhzJmjkknBY86ZZZrPDZo4rfD8D3US2y
+fjYa4UVMeV6bRJarXloRhseUNzMLxJgReI4Oe5mKy9TnVA4JPoL5yF/0UZ6FbjW/WBkEDrIvy8jw
+m2TXuiX65/a2hQKVWVMWxLdWtmEpWVTSzrEBr32NvRMBYglZ9QqnNHhlLsNHiQ/44fEPdIVyH7Eh
+x/n3v6YAORsiUnaHrpfSmWdAYdcwQg/mtuYd9tp9g0HDuXXvt6LueRvXFMgTewJRQIRnHQTgBDqE
+I28VCAJvtTupmelYDqU6v4FsGU1TJnvwULFiKZYdXaMAS311gfMM32LG5PhNYXzT4FI2v6eJe4/V
+VTTfrP4gBp8DLdXxTWN+iBhfPafREQBEi5P75KGugXQ2pRy8Ex+vwUvPSJawecm09AmOn3ksLHnd
+N/SdmV/lsup+SFOWJJuR4MQ+pd29xiGGLThG6yko03u3L6hxQ3DICJEghSU6q2ZPYnpRpUHMGAn9
+sAlDW9zF55vnyRgOhi5848sVGb9akBp8lB4pBgmijKw/atngCs36rwrFzAB7h8mT26BMn3rlu6QO
+64xy+a+LBLcxcNh7CPF+Iipw6L5Uin0mJ8AIBVu/EufI2mWvQrx/YgMX315+twrbSRUWGlT4+qJ4
+XTU31hUQ9DO+Z/lq3vJNWXo/6++DKPy5zMnUWvyqRfrXS47lViBHc5qTIRXwC0HBOt0Xz1L2jj/Y
+vaggamOgMGMWI8R0t2t2qteQtSb9EudCa7EPD+RwGBcNt9fqCJa9f1QyWgTnEEXWIMB+/R1hrOQs
+aN8ZW6FL5Zfd67LsrfQk2HSxT9E5lQqkdHNrExZrRRIa0iV10ovG1j/yWQWaLEpmeVkqirOP512k
+o8vcwCVDM0ulhhj/ifwYA1xvPUE9B6TsLN5U21FmzMKoPUrL5zbsLxepynsRgIrfA4X2exip7qEZ
+iOCf9sWlTDbZg/xLWijWFX5yRgAoK5yq5HmHCkHJOpJkuEFj/l6WPhcM0tJ35toCksmClJDz0f0T
+c3UbL6aBeyEZxYxUQQKaf3kiXXIDP6aanOl3PRhe/AtWQ/kktpxR0gP5ibxFiSC8hKUpIRWHu5fk
+2s2EB0od3kWHmswd/5b6REi/mrkhq+MrSpgK49lNE5eZFswoKN/T9rNIl9241wo1xjOvSA7GPgxG
+wb8subyC5R64bx6EhMjSlSfarc8NiwXBO8fUV+C51EGvnoP7SvIF/HWMi/WKykd53FsG8ggCu8TH
+8nN71uqdN1DcrNldUUFUD/DrHmchv2b7IsZOpXPuEl3RrwtsC4jKEDDpXjQgGPcGbBuO/rBOpG/8
+cWxqwoWq/ci34eblAsnaQDmp4KJNpkoP0f0urLyZ+GpoBTDK7O8SjYiszWlgwioGhIqfLUmKJz8g
+Dnr/LSe9UBmwlC8D+d4qpt/JCL1/XhUUPAlVxD2OQQJ5KaXAoeLxT7G+rr+DZdfhxjKZn6ftutou
+0KsUJ4kmEMVDco18rwFMSkJy0Ezo2nUJq5KaNvAl/T3MVorgi0wfJGxQT33A95OCKX5nis5BvqSr
+Z2drjzTWy9hHgvLthLXWAec6/LIunLU0kwJEv/0fnH4WLnBytF4TmIfQ3UQqo0g5OIoUwXD/KLR5
+Y72GeSOw4abF9ecd82Znp+CMTABlfdx/vrvy0kvi970cpUaS6nN4PtSIvNkU2PF6YcFcPVBSWouf
+OvzsmEmdFzIZzx7jqs1os/yIONoqG86fSZwbFzqgwPZKaNe1AANUDNYXtza8e8gVYdZwlMs69dW6
+qjFAQmbUQxG8Z6/viKoCqiLHuyFz/0U7i4r2ygRxPsd1Z0oRoCtJXWq8OdzHLOoEgFLK/K/nS3Iv
+rHdiDQwcN3GB1fK3FLVzT0DxdmG4Y32xs2IeGIX73cqMab5N3fyUMFZR6y/1w01vhxV0s4Fzdxq0
+t5xqjHmSOovDCH/jQjzbwpaEMswG+bMlErVYYR4Yqc1gMyze4I1GPV9WMW63C74Vn95k21pijhQ/
+boBxswsDSrKs6q2g346qTjJMKPirJLX9Y7biorycDcazDK3m06YtC+KKMdY2tSQGZ0KmodjV8oUO
+VISkG0nB3yDJnIXzOw9x1EPEf0NOMirn4YDTfEggdm307y6Sr1mqeZr8KqeooLpkrHdfbiLbe8jy
+akmq+/PXBFvIy30vpZGcoeFthFyANOhD9X3kJJLO5hqAKoYniRqMm8DQyaHIDjlRYpg9w9VTkMcO
+4DU/qlXhRPRMAbmriwF3pRwNv3GZSl6P8t86rt6OTYogJ7JPA15vIlFcw6Es8G0PEHONraK+Bg5v
+YTimZBmz5YNW4CZhtHLj00wEbxLcN/GilTWXR1jK/wSJBWwzybg7l5aQMMb1N+Sv3aA2XdLHA0GT
+fGG8U2u5X/4KLJZFY+SzmHkoTUnqEeWS7imIaTycBOoQuvexrxeXtup4VS1S4Gi8X4H//zC1ChF/
+EZsGFQvP891g67ei2aXPQXVRUi2KNRXWiKM2/XLDcbTpXP/bEEK9EsNf+bp6CU/ATvivd0/6dsL1
+5tWZb5hWnSxM3bcRYv06+upmpT4YuH8Ix4yo2pApkYld9R9kORVzXj/yYQY54xIgPLY7/8D+dTlr
+rJObG5mnDake3QjYfIbh5hJfKe41E0Hlmrmh+qEoDQKARIZ386M0IkmRDWKCpiufdJ/xWLNmvHwv
+NWOQRqx7lUxLqaraSod1QHOZBq6XNuRbj+zZLlg6VZSQ/G1kGsq/CPgG7nivXUmpYeockdrx9rrk
+GGIN2oZ9zyaiJcLyBPdOxflAkIAIoMKf4B0rQcRwXoNZq9qciLXlXUV2yLwhrp/3FrFmhAOMtvMU
+qAj37fPuniaFo30AGwPTvf8mcmywh49k0GgCjEVvZqUiEovdKbczsZGPbp9ztmOHWZ88jza6RHad
+PtatWFADtmYB5Yg0muiFWannYw/Ppbt8g1tL7SameVwhawHU4A/vmJe/vHbCvBCFjiyZwPXWy2YH
+503AYfGlQ+sIuzmvuLBtiozmXzL9t5/r6T7QsUIk8Lni+9itSI+bL0ZNvnWzpmzyHV/8+2Cgffvs
+nQFObHq/rjrvLBBhleTQQZMxqgegbPzZYkGkG96jNvOwjchje7pl69/Qta/R0lNvykfNapPcnCaq
+Ad1+TdR7JaZiCxLv+3AT56cppdCjJzCzarfONYFFTSjZdQW02s0my26QXWtwXrdS/8EVZKxxuA9e
+qZxl2zV5bsWXLAwHNs0co07Ygelevb5aZvKkhDSm/EriJpbZibtZ7NtxrdSwSE6x91raN3CEaEAB
+6GLK2f8w8c2Cj1EVmtWur8vhDWouuyPkP4LTmWYv/U3oEuK1S6gCFeVAAugKyRrvSiEHPl4GOwt+
+wlTroFvm4tgrBnxKUKCw/xMlK6/qcbUBxUU5/8nuY8EDIXAeC1PjRzKdHkVXXVPf86uN1/dh9fwb
+U017X1qQl1AdpSNOcrjoUIUPSkc5jK2c73UhNqmN57xNNQNzakFgQG8Gece4HjZoxZx+ubAuAfz1
+Eza1AgLHeYWah5DbzcKAleBCpsGxmY82Y+/R0hnKHYTrZUxCqniBlZMkDmfMqZDYSexobgJrQACF
+qz7LLb8tD0ry6Oz+Cbs45EfABSXPFgzNoTtdssdd3GdIK1EjgrhSsMR9e/tkrXAs7nsXnkP5PZG2
+zweQKJlD6P1boHcyqm4G5vH5ltzQ8HwVttzHrAgfP3f+jgSS2YtCm2KnSG4SAdoDGqG2sSO5D9SG
+8hwAy09aEwHwa4Sbhf/HBe5HS0h8IiNVnOSopCBia68hbaEmeaL96wgWuGJM3y9vVaxxMcYElVV1
+3soZSCllOEVOIjAJpX5SYWDiyrBurPofWqhNcX1IOBfxpdjAYjt+geABnlEPy7T2chVm+63zsy3a
+fvnH9l6P9dJW/k61fwJ/xDS58Ad2ob6oD87QKnzaHVs9BPT9ugCZrgsAIN+QAYo4hn2NS04Q5Mt9
+YM7VynHXvXHzt4ppIejpD41RJgoZ07xbckKGu1EjdLehVkU0GUPXnxE0P0jjd+a6QTlcv5kKNALq
+Z9PqBOxIDnjCICmBQUtxiXPTvwqkmShrIrPXd1/1CyxpDwV9jSA0mghrUsf1Brz+N1dyBaM2rBy9
+YSL54XYGRZeEAVfbyp7Ezy9jSGR7EAEFR2Pb2YiBuVrq/eExSCOCtUZRgmsxKp06pv2fyjeiIejK
+BgY9Ntefwgj99Gi2zqqUUxaPVWHjeroQg3xLHXR0hY4PORLTYBcsgIzyuBYzle4jswoLp2RjllK7
+kk77sxSBnc+t8wC8aK3Eg0jMfuDkMQA9D5Kc4M43gVRtzZZ1E+FDhCkQJLEIjrwmJkf4X2kzrHPW
+PttuoBqsQihIG2aWfeY2QxSP8AmWJp7W5Mf8sSy3MBdADbF/ALnINmH8J9lRNwXNksp33eecaomw
+dsZdqM4XBu5pSIJd53wSqpbS0CFDx9bv3fPceK50v005m/TB3VCOZhpZNITujICBPHSrRN+tGRKi
+nrQPy2MjspbHw69ZHmJbmKvlsLVF9GDryDs1n7LEQIYqRxiL1rXN6jGm2gfiTIXhg9ATS1szz6ch
+SpOaZBa14Wzliho/zVyP8uWf8zffwTihnuoTqlzs3vHHyaIDtIcrm6bL0LxrZvehML+eXfoGRLFN
+T/YbQOGphkfj5XAzJeXkvJ+kLhwSsLF5RoaAnqfhoDhVuhhxwO2wakH91/MH9wRSs7IsGsQWAD6J
+ZzpH47einJ32Gibm6IN114BDtXNu2NqOJSV0bIoMh5p/qhbdYPmSNbsoOqtk71fBEZJVTFizjfUd
+45PLLign0WyL0mmJRVU9pBb6whvXJhwWE51pcwXqMblb8qrhBPB1ChE+kM805Akir0qkFVdYmKh8
+nsdYbn1EStPvr+8jO+khtE5FnHsIBry9L57KTloYRlCrYXRL6TcOUXn2ABVV1e16//l6n4uePN5Z
+uFAj0X03gNmFjNcWQduoqMgLBtdqB1fymtxLxeRn+bBCMKem/7/VoTqhGs5i0h/ip3ZRtZ3WUWcy
+RbA8Ql3qylrJxtnBg17H3d+OgmnmaZYiZn6a2m8GgzpQBQ/zXBu4NlZsmsNa02FP5Y3HtYJC1kP0
+PxZaC//freIzmQfKb+2G1sR877uBO8A342gUtuO5BHd3toUCfivmUQ2IyAWmR+bKn6B+TaiiDfJP
+GMJmamwR5n5zHJSs0Bu9VxccYkCHzFr72ghE/E2JlV9s/ODBOlhPr3Ubb8M8oVlKpmPutHSmb+pa
+nL7Mn02GiAJVHtvWWQCHQZrCZJ3CHs6y/iQDz9/nZZE/yz1t2uYIu7y6Z7c5aB7HyxOxLtxXDk1l
+voFr3VPVzX/38tS3pj/kbUC8cGGx4tsiYwS3WZfW8+8f2lxn8lIRbUnBRkUojj3NzkzHyLIFzWsp
+Ufw2fxNPhHbY98vg0ILpN4yPU9+zgvIQlHoWko2vS8XJ1CUh2PQJdcaaH4SXMqocvai4nKiGs6au
+T/GYiWLwYFu2B1d1a0KAEyZTR1W9YL9SrVN6VMkYoK6JGEKIKXaC4VrzMqsSrhNHlrDUQE+reKnG
+/mmBPfq5B5F2SkFA+II695ndWhPugATMFiqMqI2QR/1TzyVrq8bU2XYcLCtcMWdCYWTiN97/q3LM
+TaYNDq48ljNy/i4KZTutUHCIC7uI4Py+cvKv4vabgeFcHyT65hkbtkjKz4GkkIckrGDthSkyRF+h
+JndmFV89S2hTC0PxLGwxAPIvU6d2+Sye5N6azsWW9Z7BCfXiFgIn+O5yAZlu8KCIFRH8qLSg1AJY
+XaDRaj72rfIymr7/THPnTPvlLOQggmUCVl+bLCGvCNdX71WvZY5NwrV4/lIul52FPGRqMQptCDFB
+J3NYuW8XEMgFXWRuQtaECuJCilabnhBjZu/FIGqXfrU5jozNqQn9KbG4Z/f1t47wQQ0hDKoNr3we
+//C5ZN6t1eALuh3rrxJZh+v48ZVjEIWFBU79N1HrdoMpaC1X9HO3MiAU/yHoaGMnjMCYKqjZ9ouc
+YuK0meRV1N7aysUEmVvTNZEotw51vgZs5Ql+1ErBrYdG1T7MyQPeIhotUcRwX+wsMZjYMfTADrOT
+X5g/VyuIxvqjcGU26ycP0quNIQEa2c8eYMr6usp71Pou4qJhe8W1FpE+gc9NOnNkvLiutgMIQueD
+4nNmz9BQ1euXtTEdu6tAGlk0GmB3cCTw9s3DH9vCp2m+wnYVlWJBQIlUyCDi7bYUKipiym9QJbcF
+QyZdcZzukZe1SkAsKZVEUCo4ekztUnZrhRmtsOFXI9Hiu+UiS3NvcmHgLbVqTn5gZl53vINXK9Fm
+XgiKU4AnqMpV9shtSc/fLkaLO0flJ8crt1FcjZOwWLqCS/eisph55Agreo+AfyIg8UVcQLIeu4x1
+GzRdNHguZBQg8pBJNAPtHmPSLPHj9MWTcCYQ8r8XOQW25718Z+tKzXm2lXBpUXNS8InMkO+Wz3Ym
+PZlESyqp03LODwbD3xfZAr0GL1uK01kZ2rNiuXVd1pCKXylR2jCFajwUuifmF+iJxnMwziOxQqpt
+bNk39XI+G1nDDDomtQROtnyKwz7uFl9kFHvzrx1bmUNMFtMEjNJ+9nNXTHSNh5kAGg9QOKvPhOTc
+6G0d8FB+cdSZnRjgc4mL+cnPyVieeKGoQfkerzb/hU4YDNlZS8W+dqdD/PnLT9gojJh00KZPPZ/n
+t48bc7RZidAQWI7RQ94dYnyxy867ZeOf/6iJrP2aS3D449j8h9Ho+BYybThlNfdx+sVHk/MKP/TT
+s3LZTwFlNO5qn4ImddHXySjAaXSEZVrA+fILN1G2zM9G8mUKJ5ppwcC1PBF9FRuCiNh/zpPB91iw
+ocF4E0I2amjrHAOVhAMTJS4E9GpL/F54sBQsrUuoaMsEMOOp23Nc74uSSa78hltyk5tC33LiTwn6
+l3vPbswZo6BdROsTp3ANetq41TOYvS10GlHjvHi2wdiwywjvZwAeXr9DlN76mzoZ98aMzgdESC52
+zUto0hoCM7+0tl2IVq6ncqSIdTJjFKHUui7P7efuMKtWtW5RuZE58zKGA8MsxYksdlC9R+k66WJI
+0Jki4lxv6h8cvn+vAzXZ91QVtfxPLpbK4P/AST/aLHHP8H1wqy+F9D2STGl1DtTxJYMTdpO2HWaE
+DJH5gSRk0lIjc8lc5P25PZ/LA2QI8I1znWi6RpIybvUed4GpMy3mHdiIb0tp1o4oNxobV9mYlu7c
+KDwfKowKdf1QKOnrq3tLI7KNLWkLkR5DOVJoEUxChwuYTKk4Mx8TEzh7QVdJ84xdKp63/DLl9ZPi
+a2+w4CNw72JQEtbqkodrtVSgx3z4Z7DzhLpXcIx/KIZimQ2SZTjuj2ncohbMu+0FEU6sL6KaMYdV
+XqfwBmAwIYM0x+GMRBNbnb8/mApHm6+2cnQfwg7k9r361L5KoZtjmlzn3/VnORdwrPhLuwa+Sb0E
+S6l0ELcPcb6Owktwh+rrwRGG7HhP4QCBo90/YphX8atIkc924ZN7ocUZmjp+aa/UGFWPQK0FDFUs
+8VbBgm6XQ8NiEJPJJXVHJwZQdNzz4FXgkYKRq4fy/NvwJcyWg+vMb7jplxnSykVh36MFCbJAyzIR
+lAkyJJAsW34cmxEIvnv1o50ghKR6+w06AJPRVFpzMi8q281Jw1U/RrIiFkRuKVNQLRjXQUmDu1OC
+SV/mXXZSY4Pl3OseDTdTb6spukkXWiHSYBQGt6ZeASaS787V71fjy7/VBc/wsFgohvdoruLvIPUT
+cwqv1WknDuO2Cr2IbCDoMw6HUDQkl0Xv98nzDMxy2nGx1QUA2L5fAhlG7tn8Nhp6Gp10LV85tdeI
+G9F0LV/MJKaCKiiYXNlQDwswU0RYxVpaHRoEmNeTkf6CHh/mcbDl0NtI0/JTsq4edX90zJD1MUeG
+kLUQoQ1Frsh89AdNZ97j2RcZxabw1kuMswXbm8uwIz9ZKryKlAl0TT/uMXYWDhajSaR3AzWG20i/
+Qs2B1XC0y81QVUlhIr3LyE+XxJ7/kfdicWTtSIGX9uJbW0fh20hJ7M8D4FzcoKlVgPNtQ9ftHQEg
+6xr0nsKI63MOoJkMe8DaOUg31afNwi40I9fDjN/0ii1pGoNQSxr6TadE8tkeIUOBNBPK6SmfZgAv
+bMdXn6VRBABSXDn1Dqf6fE3Qx+drPXPlQne87vG2Wsi7QGsuYENMsJtW+SRI+EQfGPYXPa2KSz3U
+Au5x7MJ6It2Ca0boZUfFAViiMIHtCW861cRMTgH5Vz2Sbw0z+QLnob28NIrBR9J2LX5903JoFJwe
+jo2zeeX6bkV5T9Epc2xKc91S/TcUNhJytC5vgojZRhPBp6CzDbQ700f8crmzypj8dOEdbwItQIZD
+zA6LIMtyPJV9MtHD8Y75wHr81crKeXYKd4Vp7L6x67X2YBqlunG0Mv9zAt6Cz10LIFHL9hGIpQ9c
+eGe3BLbwzG5Tk9eQwyyQ/PB7W+qRnZhYgVECOi86wXdD0WZMg1Gv4/Zegz0Z1nl06ldRIrqQjYDh
+6l2X8Um5Ajj+QaeBqqs50GnHermA6TubNwzn02nBqCgC+wsblOvFxJTB83ukJNlM85Og1+HJMa0s
+oZAOthoqLsfH+e1hIjcoWLMZOiNBHBbc5RmT3Itmqkql9fu7TD1A9oNzvG8e7CxYb+aBWTTLrPbD
+ys1SbqruzCmp8X81xbJDoQ7Ag9kkE+oktvzAxAa3bFPVqYvBPAJrfkAWdCXsh5Iop23R7QMKZErQ
+O2Ir/ewnGsnLI3CEwT2qpwrGSex3tMZKMDeGkzGILPKizfE/MfP6zq5V+u24qrNHixRYgBndxMVH
+K1P61XL1qe4sapD4jYLKTAItkBTgfPDYPdgMKxMKJG2NVnb/2uGmx0ty3Iv5H1JmvnKqTEPieI1Q
+b/9Pn1HLRkOo6klJDcEKpX7DPNfFn8v2bm4mHj3po2vzXDpeijjU/RK9OYTw7gZVhVI95qXdp/he
+4vHF+Hul2o2NP0qhCdL3JSFkJA4u3MpJ+8+fG3vZQ+oL5UtTeZGk/456tApP4ci5Xg6+W+7XSr4W
+aqCqUzWfZdFvU50wyf3ETgIExHQ5VifCDT1V/8Nf78Im4BLClH2MlasT67LngBn44lI3uk5DCVjz
+Ob3CM0Cl9/zVMJvNfv7+n1xuKHxXcZgpZRyCBgIIPDzV4NAffr36lDx7W9dWoA0zdkCGT0A+rdMO
+YVkxLEf/rTMfS62JFUQjpUVz0tqhAgj6bu+2U87Lniq86RlULTcXatlYjcRwKQj7821y/pUoMbcz
+pLSKKte5vlDGDZ3KT5sDpwJrK9ocWFTA4E4Rnm5JkRczUDyeRo35I38tTpgTpG5aq+7xMKrO++xG
+PBLw1YKOP4vEuS8N2z9hB3rKhKa0pbF9nqsgj12DG08/A7TAK4Q5ylHHEgDqlubZEzTMtMSW0uEC
+EwOG/LonPOBQ79Ope/h6W8upqUoYT7ziwuS4uJfzpYZu9LmoGtSv28GIJQLTRazIPb5ZTGlHdc1B
+4kc0SgtixLgzQJw/TG5hB9Yc5QJEhCg1HAPohb9HgKldPxCWZljxDpWgL5vtRLkDQfF8QgUb2rWw
+szneJ4kLk5HlYAfpMIP46+3wIZQXvaF/Ux4TWbJzy3CNyHLfUac26rQYc2ihRz7iTl8ptGlST6zL
+N5/06WCLFhNTgXALXmx0YxkkpJFOQyTI7en+hXGtuEhTjEuLSSlgsEDw9SznaBPCmzPpeG9sjIVY
++czE8IVEV3NnWPTlwrW8ruJ7swNR0WuqsiNY6uexx3T6BjLAfDxZXtno0zsuJe/t2m7pfZDO48YJ
+Y+Yfo5tMO+76kNdjGaSTt8bK2abt7gCX9vQe1oy3VDs9BU35zZ46mhr/W9CCGg6HlB/DVaJC+gRY
+H/mAo9TxDMbMWogC75+V3z01vNYnBYRiZW9nDrEWpEztgVHAHyvLM/WhiivlyASQY09hJ/zxnJxD
+p8/NsOHYVz53k2haB9+4ijRV+I01cDyoOAVuzZQi+gLKwbNHbFqhZb9ByP3UIN90x4RVMZ/fgn3v
+K0rYSWGqQp7pTfKcjeTDRHzWFcwSWiTO/6piVYBO9WVoHZCkCNmjQBMlm0ql+hlvXMd0qdoZ37Fr
+LSkxZwCcoqkfocBYsC1FYfTc3zWH/8AerfwaVOGevjET8c8kkRzCDelL6UECHmrwX8Ew60QBo/Ps
+rAsdEU4imDYw0DGH712IBZtvLU5YGeW89NOuOwPezfa0pW/NM/D9TSLjkZ+7PGimRbiryvz6O1Rq
+TVO8vz1JvHAGjVtPcLnesqwrFPv+NJ1KA3O2WwH78VChUGIqFRlvV60gHNdy6jJsg+MH9ojZ1cir
+8F4QiyrCFaYKatBMyid04Nsi1NvuRv4mVr04YvZ+WTAaZ4g8msleNyCq1gyRqjdY9cdVkovbeGnA
+QNLhZNuz1/3rEaUi15ZctPD2CNGmVRMBG+wjNW/WmvHDHlisT8lSVG6+Rzb13mFgkXimvQ0oIMTt
+/BzBAcXMUtVeXLoKyGJJObI07NijWBlmNsEd2OiNVmzXX9togmToR99sJpi9uAeaR5P1n0P0FKnn
+acRdXxTaN239osVwnIpYecliMaNBGdm3ZmLuoeESS4FSuXkwJzfkNtQC38kucMdVozVJvfGwL0J/
+thaCeO2cgcYPYcnTMgjfAF//1HnKR+fFvE2odrsepwaOq12asbvkVJsZoe8h/Q5RwMJwjHYchfOV
+l8yguUibStmIM4XZsVOKRe4G2TqZFS7pAzwaXO/mwJu6HCshNZiWAVMLFTkXzHxK1xyx2RiMBzKa
+1lP65iEAfKAVCM8b1mHQKsmN89JkgAbiLEA2HgC+mKiiQwWRaA1uKL/LUc0RbQOm47fFuAxV5DJI
+1rnjZMMkfK1gpRabmrnvyGYEp5Ihh8aOiJv/xcXkPhlIzzUUUjbcUA7dXGcft4TxVDbKH+bGbXrb
+VKJkHUdv5iPFBiBLU+0CqkJRh0ddnQca4d9w3kG/3F93Vwys36hl+pySzzmxX8A5Nn8AvNioRMQA
+vXkpzQ207XWrk9OhoLl0r8QWrpFwJ/dc4f60SMPa87ldg0nvV7rSDn/jLNlwUfxpN6XjJsjqeTrV
+6sVJL78kwfw3KzNlTyhqc/islTslgRCTWpcFnv0ku1WzQMJ1LQ9QZUJRgsV36D/UBcg5XatHgclj
+RLd70cztX9buTwr0Z4ImsG+Apzy0GSg8sgX7XEufCRO9HNSgYSxNXueDXZCPJkxOo837PwCHdAYM
+RbAth1gZx91agXNLHlpbalSUcrkJy/jB/9sh37+E/dSQyaVsHOFTNUqu4SKuCCwLqHmfWOrBACtB
+Xjnu7Oa3JhD2FXZqLcrrwyl3BPfxtuJX5qpWGij4WBcHc48quVKuXxtx1rJF0fUQxCZXYV2FwAIi
+AFlMI5/4Az8hObPBgHfprGHqQ6jiy1MEXlnrERSNqy6+raS0AJzVtHo9WXg82Gs2MyO/otbYNXoS
+VsQFw4qMvcubYcR2gtQC8btX5D1gnS0iaQNtBUb8CXaOKsKEHrTAJh4YCfxWR1Fs1uZQzeH/YOmX
+8aSqAYyJDEdwicTeWhQ1ekYJysBeU3VQbx6UkjInfEZWGzuKPAUZWd7IcKhOmGHfrEQV6sJX1bP4
+rmHzdJbhx558epDUyvssWcwdWFzqNDKDlKNDeovTDQqq3tR/YGrX1QYbMiQuAxhrltPKUjKLfHd/
+gsgoMTR8l54zZrHyI/iXieepoavhtbCj0Cpk3YO3oIZp0fSZNGxDBAXisu2Vj1lJhJIak7ucdlf6
+ckZgggFR1q44SjhqhmEw9U1NxRyJz9z3AToFAQ5YndDy05VpGPsNV+BhJLdRcilKdb7JLmVUTqxL
+7qti4SVByvwW6AkCU7Bo68sGuy6TsbUTPoMCxmezCFrJdkZjyyv62SjeDHfCiMDewxQju2BC29ts
+a70wsEBHMXy3hTrxdB/GYHxqFvRl29UVmjVYlqAitOmhigba0v6T7U4im5pYdslizuCCOkTZL5jB
+mMQ4R6GmHD1RmKCOjQEcGW3svWKGpZImyXUUgMhz84H1vPml8nfHHnjlvHMyuoW/xJ/Za2mvUXYk
+TCO3CfWq50OvHmKUyCa6Kp8xShqCgjJvw6x8XQ0lWwu2l2DPFtTiNIxSyT8k9SJ6CqPJEcY1DFuj
+ZUX/pd4A9Ypa8tRQnSE5CzZlWjg0xCiVy/jstz8tJsVLNNfX9PY1L51i4/FuyfvDwv8UOEyrjdW9
+toeIetrzVzyducmN7knl9mNsXnQZTWMy/Wvulbmth5D/40IAwRqnko7aw8sRX5PW8NeCJiR9EE4I
+T8RwoX+mV/ELN688n3NzHuGPzvZgqA/EVO092mo4MTa54mbXtFpVMbWtz03VHeTI70XXaIPpnK7z
+RDGW7+yAlyqXvRvlDFiHcwpQkZ+yYH3+vBrHf7tq/Ub+AgbqSdMJ2Iyj7dpBG08A/Qc0ONasCvN+
+oh0EsIm4M5ffLbuu3xdqKVuKKGRtyhBNiKQ9n0pkkHksDrV9nkyWU5vm9men3OnteH99qwf6gaZp
+khnvxNr7p0vAKXNxN8cOc5pCfYeMKLsQZx4CvLPAydHngHcghB8Gmm/Pe/RiYUcqKN0PSUg7Hko6
+d2fteAsaiT3chvyzyNY5Fex/y8+vU4g0ygLbp240ZHGPvGeudvpdy5hiCVBp5D0Y0ErFnlNdwnwR
+uGkNGcKAhroohlxRFIO7XNXawvDinqS1coJAD/KrOAtstlyF4NqGbyNpJQFh8tCWaWXc4KdV2wYd
+jyYD7jmewQepoRNcseIQLB5yUBxtCdi6b+Yp/zU0nZR3tCHhrxs55j9wMTW2h/LSY2oqPoPHwHkz
+2pChyvZ17vgMTjxo4yklkN3RzXGOxrWKTgbeOkQRqZrI5V9hrL/pAofaEDXS0hCTDKXnhS3qYK+9
+8l/4Z7OdUqd9yMmt0in59ipQCG1HqbOCOL6C7aW8lazdVfx+dxIu8Kp8ivhC+pD91WdSRCpePuLJ
+68ndLee8KTAXvTLkxv1cvP7E1MPMCQKR7y52Yni4phhjt4o7LzpUyl6XuJsoNPFfGDoIpMB83eMe
+xARByUFVHCAHS4n29IMRDSHHj2t4jhMvVoMDLJvVtk8wFaNFXEpXCEFr2Hi1Vlulxgy0B1di7Ron
+l4cqTPB/5VoRpJMfnbb1COxquA8Xc648yeN88UPm7mEDyQD3Y746x45hhefrw548tqfCek64E6cW
+cWiZ9eGCi/D5ec7T6tvetg5nfHJp2SbwkXHkURegxcdfNy2l4g3gWR1uGz92bK25hCG9fu+3C4Wr
+2Oq9eWktvMpOuF9HAL8RkoMD2RAbXs9zzizh4Ph+2movyb7aZ5GBwiE0W48c8hu7XZTfT4BpyZBK
+LjU9e4Z5fDJlfCXCqsoeWkQ5JJs+dwih/nDMIbi5hBH19WHTQVCkytluRhWEs/bSE0/+uqFH0qNU
+VZrF65+AjnG4KsVHK/aXxGh6iX0owkJ44v4EYAu+z87V0Z6gkH+nEkRmukWzBvo8GJqN0PY8EjQO
+Ts8FtecyyXKo8UVqAQeJIQu+09PRalusDisX63ghk8GI5wRablaZBpDCBYGI9nLQC9rt41Sm152U
+E5F3f/7OXDXtNM63UyPGwddYc6p0TRGM6IsqMViXr2nQeUMGRdr9dkbGtBC1KOfMVQpBaFAtzaj7
+9GICuboVR5sUEJXJrUPkyU9aZ8Iknumu/5bXNTisui20umvyASYvHvZwa2t1vHNTU5B01Nt/+C7k
+cj9GU5ru51K05UmEWDgL7hAxIYbexBxMefO5IlBrkpON1LkBU6d6TbLpZSZBlTA/3djPwTWDZeMj
+TeJVfHDqT0gHFq80a0zAO0/AXfnZKhLVZ+l/0yU6HOBoabBVxHksOlZ8+rpD9fwTCnid7+92EYEm
+8IZuYirYxdkwWY0fjgmVXHTip/1hQsv5GucyC/EDMwOH4E6lb+qhxajUplDkf+dQ3rExRl7GrJDg
+BvibCNHtjgmvnFpxkb/KLgxRzJe6Fa4uAZrP5Vyn1+hQtAPvDOsKJuQlj4hR22lgn/ohqO9lkq2B
+ds5PU3qlxxIP8zymu2BJhxwaVbdDNDWQLVzLON9n2rBpNSnuDUhAk8yqs9xLBln9DODFJO0l2wYh
+qQhWRJBjIeR3RaixA5GM51eHHqjPSXsXqFLzbPTH5YSUzqd0ub1a13Tj1ZE/L0vE6ZBiZPK5rZTh
+Xbad0giaKHiqUktGj4qFe5vYNzHrd6cL6IpEyYVqxDUA8iNWjqyaL2m3j7XtnaSExUGlxavAD92Q
+zJe0fYEjGggUxJrrmFA/Cfm62mqDtdMglVZ8JzwD4LKsQY/qkl9mFWpfmxkBTCAmfgjLCfHDMb0+
+C4ByzUYcmsNC9/lRgRdEN8l0JAkFNkMm+nYGKSumh4epemrODqsvz0vWCIkrdQBJVpula1GTH1p0
+KAcBQLWuBUZ34nGOoKVJ91+ZR5xHEDodOOuqFHvkPYUcpsZziGLKCHRhjtf938/mkEXC839AAaUo
+YMtR40033n7JdHb1eFQ04rXHeNIBt6eNqqaaBGSGjA/Yi2bSat+CbAMSrNqv9v+Uamv46T25TPrQ
+Vs1PGeEGlS0A+FFBUh+KBKqmBfejdK9CLUPD/lGYyrlXDfGNgmbDy15yd19ZhBRR5LM2YRL3f3sb
+oEGIMnc4fDu7E4S2f+ST94cftyztvoQIvgyUE8InppAMk8zbepNBK6EocI0OCCi8aSUvS3Zo6mwv
+f/c1c9YO01Yey1FkWy8oAHciSImZf67qtqXV6QDv5LzV/w4aJP82kNX4EcsGGtPHi0rNetgSUp65
+yNmLjavh6vz8h7yY9vv4pPXGJdohCSioDuLE9xCrY3gDHLRrG6din03j3Brpvc10R5vqc3Y9EmCi
+87Go4F9RuP77ZjrxRcZvx1Z0XxRYUJqDn5+aRbHok1VPwXShZZBwXAXb4DXvPntXWhcqbgwVBtKF
+CcjWEHulWnatZnK257bw7aOrXdJOx5hS0HOI8yyB9IaWAxnDp21PZqguJg/zmvxsFbtWmEMiJ29k
+bnMeclmZoxS7xzc/pNjmVKhfjU8KwKYPZ4jq1Gi6NZk/7RFt7U24lg8c7zwJ2/JYJ9DRBH0Fo7YL
+mGIE857/yEvjTDzZX4XqKfy0HGuNUpfM9yhq5XMW3gDzUWZzvCHiAGNmIeA5uqFo34vS7LpJ5TVf
+G85sCfH4QItfzcjtOTBOHOFrSVRwEVH7YPU8mvuxIPEtC3SuhjMSNTwY4zBqiHZrmYH767rSxQ3o
++kpysGswDyiWko3nqS63L7jvtfcwe+/tlMX1xXpCAjX8+ZcMIWJAz838NIYUiwjPX0W/MmrLuah0
+d0qbSqz2EhftRcCSsRDMHBVE53gDTaWFSzaTxe5P8QDOzn17iNPRFiSz++sUgrSq3nQW1fZTH8GZ
+vWV9JmlMBcoy/ZQbpVqVJncfsEPEjOi2yOyHZ030jy7BDn/LZCWEFNH5SobKYmgpLmj5f1I2L8DM
+4AXz9x/LnN8Ybs4govnou84cW134RBFwL6rfEb5rPDgQqcnT4NJyI1E0MJfjXutG7Y84OKvR3gGE
+b839HXun0MvkJSJfo10p4YlygAkGDvIqIZrHhfLJyr4uPloaXuoDQd+aJ0USlkmxsiM0tw5thWIh
+Q8I/ntHsQO0ZqNVAprdBMTHjbv/2Kn68YXwD2tCfGBr7LskJJbV/balhQNnLE5QYc+TNS7orqDNc
+7Gb3tF/avDWLOvMD/pGnYnSR6FJ97v90cPCacPPrdBBfjT1YHZg4G/WwdoctYjnC4nppobEWXIrO
+ox2mLtOuv1/nI6fu/qYmqziXdPqqRBtIhEmmo8LfCw+4pFg84hYC8K28tVD1WYMRhD4tbHiQU+pG
+VbFKfhODWZslR9Q4jMhPMP4wKQhxfDMdzL5/UTdbrIgF0if3VrBn4bn06ON9xdaIWTomWjHpPp1w
+Hd8n5eO3dZ8h1FmViTC8p2marWqqSY9hlZEHyaKYAp/tX5CtCRoe5I086a28mr4uxmk/Vvwzn9Fl
+QJLW3cenGStc6BwrTgkRpN5xKOb3W1iJZscr4pVqdGI3ung5QKfRVUf7UJs+hYos41hRVq0g/Jvq
+j9vpLnM6EbF2eoL6DphsmZ0Cti2lmnC0NXpsWpb32169b/OkHhb3GNgtBxVlbc6Cjj4BQviUTvip
+SqZY+mp4TeOupNjWgObLMUiFKY0RElEc0/jv45EBCJY0+lioNOMDsG2WHCEVS+UV4dNCoQ7GoMXl
+Jq0jWD/aGkdD6vt+J0CAcCaMH0jC7k6RJ2MCU2zu2lj2LkVYCr8ri8CviQU7PeZkxuBawVdc+1oM
+2EteillSgdblNJa8+OCcGqO4tkI+8vLHzY3n7CNfDZLkytGEH08Ur/ZNv/NEoVTBVA6z6TgEcX5v
+HvOcuP0TJEp3Mq/5U8yanAVpY6ydwsxrxzejzsRcOcGoen2H7vYnAyJPHFujZvqdcNgGWB4GH88F
+rLinC4Emyp07aBzSHRdzGvr6jEIr4gB/UbCRsbsbNgxzf94wagh8GlUVpist8Ura5v3IgW1gyqvW
+Z7HlUH9p8ozOu6ulAphqRSWfzhTCg8P+/S8c8t4e3QwLBY5zFYkvksC3840zV5A9o2KLsLad7tCF
+6Aa64eehhd/Si6pSYzPtXM2Xx3NlRAneAtL+MXSG6x0+VA8qXKymkhbjJBEGjDphR6OXZ0qmxcIE
+aCBcWvmsOMD+KJ8LiH5N5PUVZUoxoA/wjUuerDd+6PoBa4fZswfUKoM4ABn9ghnSiPbHnsor3KLy
+lqkjMDJ6R5NPnSRHcpMooxh5mWWP4V/RTFS+0+9TXBCuzDtM0H//8JqqHBZNxG03DP645Oqgmycn
+5z8SsPRur0zoFNP8h8L+14TdlkqBG8Hy/RhNktQ9TxJ0h3OBsn3mquZtOK3wWpCrBsyj4NFPwejD
+GsuhW7HYNjOk4jCYItRtEB3ighUNwzaoVftKcgXk/8+mg/IF4rFJbTbhcQtA0tmCCqDhS3HVLGBS
+fzIiMizVnMDqQdCPGv0uHONwT2R3fo9GtH5zs6OdI9thBCj7eHyQkZDmphatBwtKkcD/IYo6OLNp
+7SQIbPe/PtloyqL5HrTxhPIrO3AzfNpEJgPRk49ZsvL6tpCKADOJ3+9Y6RxzOtnQnfcSoMdpA1rv
+gMXYLGZoq2sItDBTAbwGrEKeSIZAcmVxi6aJjcuoT/EWkiC5MhkRuYTB4m9DuOdP9BzdYLqFgugb
+T/5MG/7OKXWM02twJT0MwaQS4LC/jhStsGHuq+fzE4snZjdTO2p2n9+Yh3wqS7UG1x5ECWnLtQhR
+2wvn+HwCKPcKDSyDg9Zy7C6wd5aT6IrgiF9y8b/fqLIxarNmlTD8poTNPapH8uECLWTDm3VoL1Lc
+kjFgDK6Eytc2tf5289/4WsWpCwToA6OQmxIc5ZGFNVSnvhGgPx1G0Fk7LKuM5XXMPiOZrc7Uxhk6
+JcMB5h9f2U76YNKgXOJsPG6NXUCI9m9Qhi7f/Gn5/H8FVolFIr/dQooxQU5pamWSwkhS4BmxATCb
+YNfwafA/O04RFlyDX2ljA6bjN7URtIlenuQ88WMuAh7umdkDvhzgZmfoxj8GOIRTObioHyDDsBtW
+Boy5SEz/dAn0x6pfIroxBYDEA3snD1odFZzzaS6wHIC0Jd3tz2oMgEz/pENoPPGmrSZucdXCiUKX
+L6DqTdDN90h4ppwRjxwLdPHjzSLJZyjKdzY3NgSaxorPbL+RKjQivPBPNzd+m1thHfF4mXC9RXhu
+kVsajHdaxfx3oG/Xgr6Z5OLG3vGx4ZraBuVlHRoqDgKn0qaBySvTw28B2lCEVxyPfPtP5Y1XZrw0
+ZV3Cg1lWLYWujY4TWlehTZKKR3Fh7BVcc9ZONN2P2ns1lpB9BXGZP80Vge1u89f2qBOam1HMocpC
+tcHWLJSXkGtl+SPP+6+7nsimv+Z4m2ONw4rU3qvcWKFfjiNx5KW1jGRsRdL7/NFjbjuoga+IWvxq
+60vcR3E0lrqSiKoPD+y4x9QOWx2EmdtH35+3FKwQZeoXI8cncZxvFP3tgWLJduhkE6h5bFlEdOFx
++qUuXfHMrA+TG02DOaBpgA/k3jegBe8PTcNFzj/ew3NsG5CgC3P5AxQa87pjNr8RgsmWpY335spF
+L2q8bpbyw1e7ZpUMEWK3Xfc5inXsJ+ATo/N2HCl6/K78SZqf7SX2M18nb2pYHbGCIL7YaYndSDGu
+3V7cmqU7w5uED7C7htHMhWI5hGQ85Ry7xj+RvmEq4gtexfvR0gpD9yMQEABRXwreeg+E/Av49ipO
+cWmBPVQpVrLLCqlzuJWp54h0z8jDgMTy73FXkKi8JqKDsZU+2zNQJVCXlNIKlmiVN4MG7GueXv3U
+fJigWmTTHsYABGLFbOp2jdvQD5V6BOipFGchCezipwETly6T87f+k26Y9CpPNmU5LDMtM2Om8ABi
+tUQV1oMfhbKtrci5Aok6D3CcMUec4oTgHc43+i1aM65y43EF92bmpXsb5DxQJh+hB/WH9yhygTq9
+hdFWTO+s0qUdvhyg4DCS2YrJxAfNQG/IkQXwedMF3TMGLgPVPNopniU+uVJ6KtsJ+YbNeafDKYju
+/tam/+MLBnJmHDctaSkxXZ4+aJ7Ove05KV9gkAeKq3kHBdHr4CKwpvThrVfMfj33heMEj9S+bzqT
+uLeEmGxhCG98pOxm9RMsf/U9BZcCf30WKn6x2K54gEGuyOrafKmLTSajieqmoUkL60dGbihXBCZW
+x2kuBwW7tJPwl/p3Nlzdk/xbppwBrqsRcQ12/JiaZPrC98YC0+JqRBJRN4/j3q4FKpvx99dDawqK
+VrL+2sbDvMdQUbmdSTHVtHmr4bLAd+u1c9zYHu1b2ToInUn7I2XZCQpPBFDHnq+iBiWcHgykpZr9
+iVm+IsWt2y4DitDLSMvYFGWpeV8sdG6tJ2vFvcR/Sie3DcaYCk2ycf2zHO9nDolG4g/5dw6S/xSZ
++mMPchTzlenuy13wvEUnUsGjWv9uGeE/XjTvpfbXZuosxTKJWAYHuL418MAisUiBKpYHiYA8N/V7
+uLEGa9vwXXYb1MUnCeexMse0VRpWFRtojnjywI613mRouycYeMVf89z2hxuhKYTwImXDPAw++NEx
+dWw6+MRujcyPjsLljJ6AAEipQLmSEituscfKtXD2GD87lAFP0YYfC3woMsWDBVRKh2DBKxwlR0Xg
+WLRo2PV0p6ukBDFworAHh4usdqBQjOLkJdT+8brs7WUx6vuoc2OuXfXLI3grxMXfdEuX7svkOXc3
+352bgN8sD3EgtUnqsBFT0VK28MMxEGbOZ0N3jCISus0xMVyAbF3okpwbDX55/3A8mlQ/62j3yKkn
+aU75klk3Uq55GC4NaPPrUk7lz7qm6fbtBunP6wv4Nn0HEBoNKw955mGVwe7Qy7rgH7NybwiW489v
+7fenztOOvOQE4zjUTehE6cfKdHZ6TN2RgbBoMUg7fR3MkJBhwJLsG6FqUqGMIt70/tfRp1HPaCHA
+1GM3opbAMt9Ofg2R/AYN9TyGvxPFUFZna8DJpiYe19sfmc5B4iWJI1GEcem6wiba+cdfBoMi+bht
+mb+geb1cM0v17C2w9CWkK130ip6Px9KuCNjuszqSskO1xnM1xeeoERuzDcbe86Yii/Cgd6LMOuqE
+4yFDzXuZe5RQBbP3DPWMBcvXWrXP1OA2C4TFle6XIZ4oqAhzQGIGDzt9/DySwELQDd4ovMrr383u
+YJqYOc3siHez3pvX4p7lt05k2BSKXAZmj9HigCsyFm7vvosGTabppPA+atPKaGm/pLtXq3BJ22L/
+URMuWFo6xyFmABYtfoEi8wULPvu8NnLLz6xpf76NXimJ7KGfufj0XD2MxVjd+8ArJpFYRNFtY6hL
+wrCxwoYeoJNwjCFFZT7DMkWeQ4aoElZMg4i1g5psiNvagnALzP6fMk8Mw+vdWN4+3tPbw0VOaNxf
+DaT/vQYvh4e3BWS+YgqubwUk4TJiZ5/jFMjmDTH6nNkm4deHwCdwy60QQDa+d3ebyUROa8i6dFRM
+sKbEcla9G0bjLnS63Tcol6UhLk3hSRm5DgM8qtvy0Oby90W/QqSDkbQsuGEjYyXgjg/xsQN6xqQz
+hVSIe4BR65aut+XeW92BnCqjU6bRM8tht5LzmCLO+tXzibG88fjO6zjtpYzyqo+ieYlb8ewO/29Z
+k9XjTEmhbIkjgRww9Ly15FAbE6n5N8ZFEIkRg3aRENtj5kAVbIchL122x4AZJuZoueG2dnQhq3M4
++9eXxJhc58F5q5Yz1AMINaSs0emE436YrPLHqWXEy9mVIVkdNe0gepAV4/y9Hx9+Nxpi69Y22sGW
+YUAsYMXsVFasqWXCeLVGiCC6ko7ZqMBnqFNqQJFgCskyS4KDlmStKQ1m0EsOaameuFAPlFmrFI4d
+2MyQcZDNMlgsAWk6Vx212Nga20VIhf+je3utqbvsDH/3GFW+MJANEzqtBy076TsRNiHBbCKLtAZr
+ID9NniZIIKhMvSLVoVR98/wQEZ80V9ITv57KHqnntBLgs9LTv2SnSZG++C6RSzPYMWSWbqWBDvMg
+aPUKCpv+LMR7SSY6LOnGfkCR4QUftOlOWzES7FCpIGkVja5QXUpm5e7n0XtWi6qebi4cVFcF2hum
+xM9iYbZmKOBz9XVywdbh/uYBwRA9YdRPbUwURRJcRzG8aNCtBks3qNeo+kNm1fi4oAm9XHf7daJp
+9SJgLjuqAqxZhm/x72vthgdEz8ePmXm8sYI7JX+erY0bf9KdXrEQJp6vXb6ifj4QT04UXe3711No
+L2xgZtIhMa3IFiL/cAoESKu8uTQH1sIVZZlirkmCTZCAGSzs3Is20IR5a6IZEo4rGqtbvqV5MYj/
+BWKfz7EAKjKuPTZbh1IBXcM4mTQwt1XJtPgT/FKDh1+M+mNLiqORFtbmnB5K7sWrydzPac99g89a
+8zssDTlPVeyXtyYwhu280PWsryE4LCgEIFJ54qDCTGdJMfozuvILOK7PQM3/o/CVXZewseE+M60f
+qQyAUpshOL2cB2Jn5o4NzUWXAXKmQyahGmx5mxeuOXRn2sua2ei3mILPf1IbKkMdgB9bMNyjXvL2
+R2tPS66A3OkhiUQE4Q+u32V2Yv2OAfNgYO6qi9JKbZrh4mcR/4ThM20I6exDjNinqUft8gcisBQi
+BcpmIKdTknM0yS3s/BNifiNzaxKabVNYy/ati3x1BZx7SG/xdIFTvuKUEEcX0JjUAbNkLFB5/jHO
+OvmviCFmqrMaHachAujMQxMmumBQgNjZwLSrbWrbv9WzDTLVcXqnp/QjnQIt916KtivJxOuBAO62
+bjbaa5fQMfPNPdpDV91t0wncMkRpOIjL0Go4/Egi4GwErTZ9pSFT93JrHRVzQsmwlogDQjCsgaxQ
+VVt+sDhW4r/t48CNlsOCG27rXmfc9gsfxhZjoYfuo5U9/MJ/rhTpk/fTFL9lyzwC8etUDjNsfj8o
+lJOJeohhgniIizaU98B0zbHWL0shvCiEVBpi8qDznDOYzt5FqaXZ+3RKVNCWFhbxXWo3pufCS6Hm
+5JTsnsNEqvyuItN4MAsXtikQWn9eKWXDhtbnuMDvHHxyiaLmCz/EJPoEofoB+uKhx2xAOUMs0VLW
+D9G1x9c/h2Yd7XxanP5jWHe2rPJ3sYRoScC65cl/HaKkH8r8AaqRSLyYnY8w8KKzTvm9BQK/xpOi
+PoVy1BVv5iw/8oljLJ3IjfaRygYHQJ43qvxmGXwKrC7ABInydCj1HaY7iCFgoy+babI14t9FHdp0
+WbGZuneYD/zgVUK1yqoO4/dck32MOHFn21uq0s80iP9sDWH1niwyDLAPrI16/WPfxM6BRvtydQqd
+Dyuupq6wL4j2ydjmHIgx4yfpxmaJRXzrG0ANwGTYsZ2NVE+2NA1lhrmprbGuThyBsjMEu+djshw7
+Go0tmkpCjQUjvvIeiqKum3vKJKyo78IeyOZ769FnhxWUoAQqkuhbBK+b+zcHqKJmJOx7BjHApoL1
+u83bImTS2tbbmKJEYni93y4Q+Exj5FKIRkmkutpsZa+qFM3Zn9xQUWql0+2i/w8EkPa2JM2t2oZN
+YrFRnkOSA/Il5wX68nvpTvNY3Ic+PzzweQUSrGu23Ckn/sA/IdAlNQC/N23t1HdoYcO/lGYvWU9k
+TXfIce6LqvcPiSysAZ5+1WXUWWlw6OnhX6uX6/HAGT9MZ2Gr4gGULHOelH2jP6uERpLXk9m9Wsub
+YKmBamgwcV9m7Lu6OqMWKbwbO1a1qnUL1KslHsZ4uxjz1nNHLWD2ZChfZrLyIWFwVBamf5BDUNWq
+GhCNZfeX7oeTdG+QpT4Kl78hccXxyPb1rWpuFhtnxNBYuq+bB8v4/weaRrMJx9JHmYrJybieUm11
+kzpRSNqDGItz5O/kx8SI65RU9ZxzOSKAnur9astMDrzfk7jgbHoyMWe1kcXsMz508t7HS6sm9kUQ
+bW==

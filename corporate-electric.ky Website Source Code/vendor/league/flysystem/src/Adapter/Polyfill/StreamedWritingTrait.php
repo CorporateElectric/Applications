@@ -1,60 +1,35 @@
-<?php
-
-namespace League\Flysystem\Adapter\Polyfill;
-
-use League\Flysystem\Config;
-use League\Flysystem\Util;
-
-trait StreamedWritingTrait
-{
-    /**
-     * Stream fallback delegator.
-     *
-     * @param string   $path
-     * @param resource $resource
-     * @param Config   $config
-     * @param string   $fallback
-     *
-     * @return mixed fallback result
-     */
-    protected function stream($path, $resource, Config $config, $fallback)
-    {
-        Util::rewindStream($resource);
-        $contents = stream_get_contents($resource);
-        $fallbackCall = [$this, $fallback];
-
-        return call_user_func($fallbackCall, $path, $contents, $config);
-    }
-
-    /**
-     * Write using a stream.
-     *
-     * @param string   $path
-     * @param resource $resource
-     * @param Config   $config
-     *
-     * @return mixed false or file metadata
-     */
-    public function writeStream($path, $resource, Config $config)
-    {
-        return $this->stream($path, $resource, $config, 'write');
-    }
-
-    /**
-     * Update a file using a stream.
-     *
-     * @param string   $path
-     * @param resource $resource
-     * @param Config   $config   Config object or visibility setting
-     *
-     * @return mixed false of file metadata
-     */
-    public function updateStream($path, $resource, Config $config)
-    {
-        return $this->stream($path, $resource, $config, 'update');
-    }
-
-    // Required abstract methods
-    abstract public function write($pash, $contents, Config $config);
-    abstract public function update($pash, $contents, Config $config);
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

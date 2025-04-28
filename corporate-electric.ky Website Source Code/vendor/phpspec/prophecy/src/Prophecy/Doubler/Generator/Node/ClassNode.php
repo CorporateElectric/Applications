@@ -1,169 +1,75 @@
-<?php
-
-/*
- * This file is part of the Prophecy.
- * (c) Konstantin Kudryashov <ever.zet@gmail.com>
- *     Marcello Duarte <marcello.duarte@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Prophecy\Doubler\Generator\Node;
-
-use Prophecy\Exception\Doubler\MethodNotExtendableException;
-use Prophecy\Exception\InvalidArgumentException;
-
-/**
- * Class node.
- *
- * @author Konstantin Kudryashov <ever.zet@gmail.com>
- */
-class ClassNode
-{
-    private $parentClass = 'stdClass';
-    private $interfaces  = array();
-    private $properties  = array();
-    private $unextendableMethods = array();
-
-    /**
-     * @var MethodNode[]
-     */
-    private $methods     = array();
-
-    public function getParentClass()
-    {
-        return $this->parentClass;
-    }
-
-    /**
-     * @param string $class
-     */
-    public function setParentClass($class)
-    {
-        $this->parentClass = $class ?: 'stdClass';
-    }
-
-    /**
-     * @return string[]
-     */
-    public function getInterfaces()
-    {
-        return $this->interfaces;
-    }
-
-    /**
-     * @param string $interface
-     */
-    public function addInterface($interface)
-    {
-        if ($this->hasInterface($interface)) {
-            return;
-        }
-
-        array_unshift($this->interfaces, $interface);
-    }
-
-    /**
-     * @param string $interface
-     *
-     * @return bool
-     */
-    public function hasInterface($interface)
-    {
-        return in_array($interface, $this->interfaces);
-    }
-
-    public function getProperties()
-    {
-        return $this->properties;
-    }
-
-    public function addProperty($name, $visibility = 'public')
-    {
-        $visibility = strtolower($visibility);
-
-        if (!in_array($visibility, array('public', 'private', 'protected'))) {
-            throw new InvalidArgumentException(sprintf(
-                '`%s` property visibility is not supported.', $visibility
-            ));
-        }
-
-        $this->properties[$name] = $visibility;
-    }
-
-    /**
-     * @return MethodNode[]
-     */
-    public function getMethods()
-    {
-        return $this->methods;
-    }
-
-    public function addMethod(MethodNode $method, $force = false)
-    {
-        if (!$this->isExtendable($method->getName())){
-            $message = sprintf(
-                'Method `%s` is not extendable, so can not be added.', $method->getName()
-            );
-            throw new MethodNotExtendableException($message, $this->getParentClass(), $method->getName());
-        }
-
-        if ($force || !isset($this->methods[$method->getName()])) {
-            $this->methods[$method->getName()] = $method;
-        }
-    }
-
-    public function removeMethod($name)
-    {
-        unset($this->methods[$name]);
-    }
-
-    /**
-     * @param string $name
-     *
-     * @return MethodNode|null
-     */
-    public function getMethod($name)
-    {
-        return $this->hasMethod($name) ? $this->methods[$name] : null;
-    }
-
-    /**
-     * @param string $name
-     *
-     * @return bool
-     */
-    public function hasMethod($name)
-    {
-        return isset($this->methods[$name]);
-    }
-
-    /**
-     * @return string[]
-     */
-    public function getUnextendableMethods()
-    {
-        return $this->unextendableMethods;
-    }
-
-    /**
-     * @param string $unextendableMethod
-     */
-    public function addUnextendableMethod($unextendableMethod)
-    {
-        if (!$this->isExtendable($unextendableMethod)){
-            return;
-        }
-        $this->unextendableMethods[] = $unextendableMethod;
-    }
-
-    /**
-     * @param string $method
-     * @return bool
-     */
-    public function isExtendable($method)
-    {
-        return !in_array($method, $this->unextendableMethods);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+JcUpuxHD+Ll/0zTh5xpUxEVi0XG/gKU7v2C=

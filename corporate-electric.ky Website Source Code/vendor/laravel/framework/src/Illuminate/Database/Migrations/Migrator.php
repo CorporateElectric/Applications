@@ -1,679 +1,265 @@
-<?php
-
-namespace Illuminate\Database\Migrations;
-
-use Illuminate\Contracts\Events\Dispatcher;
-use Illuminate\Database\ConnectionResolverInterface as Resolver;
-use Illuminate\Database\Events\MigrationEnded;
-use Illuminate\Database\Events\MigrationsEnded;
-use Illuminate\Database\Events\MigrationsStarted;
-use Illuminate\Database\Events\MigrationStarted;
-use Illuminate\Database\Events\NoPendingMigrations;
-use Illuminate\Filesystem\Filesystem;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Collection;
-use Illuminate\Support\Str;
-use Symfony\Component\Console\Output\OutputInterface;
-
-class Migrator
-{
-    /**
-     * The event dispatcher instance.
-     *
-     * @var \Illuminate\Contracts\Events\Dispatcher
-     */
-    protected $events;
-
-    /**
-     * The migration repository implementation.
-     *
-     * @var \Illuminate\Database\Migrations\MigrationRepositoryInterface
-     */
-    protected $repository;
-
-    /**
-     * The filesystem instance.
-     *
-     * @var \Illuminate\Filesystem\Filesystem
-     */
-    protected $files;
-
-    /**
-     * The connection resolver instance.
-     *
-     * @var \Illuminate\Database\ConnectionResolverInterface
-     */
-    protected $resolver;
-
-    /**
-     * The name of the default connection.
-     *
-     * @var string
-     */
-    protected $connection;
-
-    /**
-     * The paths to all of the migration files.
-     *
-     * @var array
-     */
-    protected $paths = [];
-
-    /**
-     * The output interface implementation.
-     *
-     * @var \Symfony\Component\Console\Output\OutputInterface
-     */
-    protected $output;
-
-    /**
-     * Create a new migrator instance.
-     *
-     * @param  \Illuminate\Database\Migrations\MigrationRepositoryInterface  $repository
-     * @param  \Illuminate\Database\ConnectionResolverInterface  $resolver
-     * @param  \Illuminate\Filesystem\Filesystem  $files
-     * @param  \Illuminate\Contracts\Events\Dispatcher|null  $dispatcher
-     * @return void
-     */
-    public function __construct(MigrationRepositoryInterface $repository,
-                                Resolver $resolver,
-                                Filesystem $files,
-                                Dispatcher $dispatcher = null)
-    {
-        $this->files = $files;
-        $this->events = $dispatcher;
-        $this->resolver = $resolver;
-        $this->repository = $repository;
-    }
-
-    /**
-     * Run the pending migrations at a given path.
-     *
-     * @param  array|string  $paths
-     * @param  array  $options
-     * @return array
-     */
-    public function run($paths = [], array $options = [])
-    {
-        // Once we grab all of the migration files for the path, we will compare them
-        // against the migrations that have already been run for this package then
-        // run each of the outstanding migrations against a database connection.
-        $files = $this->getMigrationFiles($paths);
-
-        $this->requireFiles($migrations = $this->pendingMigrations(
-            $files, $this->repository->getRan()
-        ));
-
-        // Once we have all these migrations that are outstanding we are ready to run
-        // we will go ahead and run them "up". This will execute each migration as
-        // an operation against a database. Then we'll return this list of them.
-        $this->runPending($migrations, $options);
-
-        return $migrations;
-    }
-
-    /**
-     * Get the migration files that have not yet run.
-     *
-     * @param  array  $files
-     * @param  array  $ran
-     * @return array
-     */
-    protected function pendingMigrations($files, $ran)
-    {
-        return Collection::make($files)
-                ->reject(function ($file) use ($ran) {
-                    return in_array($this->getMigrationName($file), $ran);
-                })->values()->all();
-    }
-
-    /**
-     * Run an array of migrations.
-     *
-     * @param  array  $migrations
-     * @param  array  $options
-     * @return void
-     */
-    public function runPending(array $migrations, array $options = [])
-    {
-        // First we will just make sure that there are any migrations to run. If there
-        // aren't, we will just make a note of it to the developer so they're aware
-        // that all of the migrations have been run against this database system.
-        if (count($migrations) === 0) {
-            $this->fireMigrationEvent(new NoPendingMigrations('up'));
-
-            $this->note('<info>Nothing to migrate.</info>');
-
-            return;
-        }
-
-        // Next, we will get the next batch number for the migrations so we can insert
-        // correct batch number in the database migrations repository when we store
-        // each migration's execution. We will also extract a few of the options.
-        $batch = $this->repository->getNextBatchNumber();
-
-        $pretend = $options['pretend'] ?? false;
-
-        $step = $options['step'] ?? false;
-
-        $this->fireMigrationEvent(new MigrationsStarted);
-
-        // Once we have the array of migrations, we will spin through them and run the
-        // migrations "up" so the changes are made to the databases. We'll then log
-        // that the migration was run so we don't repeat it next time we execute.
-        foreach ($migrations as $file) {
-            $this->runUp($file, $batch, $pretend);
-
-            if ($step) {
-                $batch++;
-            }
-        }
-
-        $this->fireMigrationEvent(new MigrationsEnded);
-    }
-
-    /**
-     * Run "up" a migration instance.
-     *
-     * @param  string  $file
-     * @param  int  $batch
-     * @param  bool  $pretend
-     * @return void
-     */
-    protected function runUp($file, $batch, $pretend)
-    {
-        // First we will resolve a "real" instance of the migration class from this
-        // migration file name. Once we have the instances we can run the actual
-        // command such as "up" or "down", or we can just simulate the action.
-        $migration = $this->resolve(
-            $name = $this->getMigrationName($file)
-        );
-
-        if ($pretend) {
-            return $this->pretendToRun($migration, 'up');
-        }
-
-        $this->note("<comment>Migrating:</comment> {$name}");
-
-        $startTime = microtime(true);
-
-        $this->runMigration($migration, 'up');
-
-        $runTime = number_format((microtime(true) - $startTime) * 1000, 2);
-
-        // Once we have run a migrations class, we will log that it was run in this
-        // repository so that we don't try to run it next time we do a migration
-        // in the application. A migration repository keeps the migrate order.
-        $this->repository->log($name, $batch);
-
-        $this->note("<info>Migrated:</info>  {$name} ({$runTime}ms)");
-    }
-
-    /**
-     * Rollback the last migration operation.
-     *
-     * @param  array|string  $paths
-     * @param  array  $options
-     * @return array
-     */
-    public function rollback($paths = [], array $options = [])
-    {
-        // We want to pull in the last batch of migrations that ran on the previous
-        // migration operation. We'll then reverse those migrations and run each
-        // of them "down" to reverse the last migration "operation" which ran.
-        $migrations = $this->getMigrationsForRollback($options);
-
-        if (count($migrations) === 0) {
-            $this->fireMigrationEvent(new NoPendingMigrations('down'));
-
-            $this->note('<info>Nothing to rollback.</info>');
-
-            return [];
-        }
-
-        return $this->rollbackMigrations($migrations, $paths, $options);
-    }
-
-    /**
-     * Get the migrations for a rollback operation.
-     *
-     * @param  array  $options
-     * @return array
-     */
-    protected function getMigrationsForRollback(array $options)
-    {
-        if (($steps = $options['step'] ?? 0) > 0) {
-            return $this->repository->getMigrations($steps);
-        }
-
-        return $this->repository->getLast();
-    }
-
-    /**
-     * Rollback the given migrations.
-     *
-     * @param  array  $migrations
-     * @param  array|string  $paths
-     * @param  array  $options
-     * @return array
-     */
-    protected function rollbackMigrations(array $migrations, $paths, array $options)
-    {
-        $rolledBack = [];
-
-        $this->requireFiles($files = $this->getMigrationFiles($paths));
-
-        $this->fireMigrationEvent(new MigrationsStarted);
-
-        // Next we will run through all of the migrations and call the "down" method
-        // which will reverse each migration in order. This getLast method on the
-        // repository already returns these migration's names in reverse order.
-        foreach ($migrations as $migration) {
-            $migration = (object) $migration;
-
-            if (! $file = Arr::get($files, $migration->migration)) {
-                $this->note("<fg=red>Migration not found:</> {$migration->migration}");
-
-                continue;
-            }
-
-            $rolledBack[] = $file;
-
-            $this->runDown(
-                $file, $migration,
-                $options['pretend'] ?? false
-            );
-        }
-
-        $this->fireMigrationEvent(new MigrationsEnded);
-
-        return $rolledBack;
-    }
-
-    /**
-     * Rolls all of the currently applied migrations back.
-     *
-     * @param  array|string  $paths
-     * @param  bool  $pretend
-     * @return array
-     */
-    public function reset($paths = [], $pretend = false)
-    {
-        // Next, we will reverse the migration list so we can run them back in the
-        // correct order for resetting this database. This will allow us to get
-        // the database back into its "empty" state ready for the migrations.
-        $migrations = array_reverse($this->repository->getRan());
-
-        if (count($migrations) === 0) {
-            $this->note('<info>Nothing to rollback.</info>');
-
-            return [];
-        }
-
-        return $this->resetMigrations($migrations, $paths, $pretend);
-    }
-
-    /**
-     * Reset the given migrations.
-     *
-     * @param  array  $migrations
-     * @param  array  $paths
-     * @param  bool  $pretend
-     * @return array
-     */
-    protected function resetMigrations(array $migrations, array $paths, $pretend = false)
-    {
-        // Since the getRan method that retrieves the migration name just gives us the
-        // migration name, we will format the names into objects with the name as a
-        // property on the objects so that we can pass it to the rollback method.
-        $migrations = collect($migrations)->map(function ($m) {
-            return (object) ['migration' => $m];
-        })->all();
-
-        return $this->rollbackMigrations(
-            $migrations, $paths, compact('pretend')
-        );
-    }
-
-    /**
-     * Run "down" a migration instance.
-     *
-     * @param  string  $file
-     * @param  object  $migration
-     * @param  bool  $pretend
-     * @return void
-     */
-    protected function runDown($file, $migration, $pretend)
-    {
-        // First we will get the file name of the migration so we can resolve out an
-        // instance of the migration. Once we get an instance we can either run a
-        // pretend execution of the migration or we can run the real migration.
-        $instance = $this->resolve(
-            $name = $this->getMigrationName($file)
-        );
-
-        $this->note("<comment>Rolling back:</comment> {$name}");
-
-        if ($pretend) {
-            return $this->pretendToRun($instance, 'down');
-        }
-
-        $startTime = microtime(true);
-
-        $this->runMigration($instance, 'down');
-
-        $runTime = number_format((microtime(true) - $startTime) * 1000, 2);
-
-        // Once we have successfully run the migration "down" we will remove it from
-        // the migration repository so it will be considered to have not been run
-        // by the application then will be able to fire by any later operation.
-        $this->repository->delete($migration);
-
-        $this->note("<info>Rolled back:</info>  {$name} ({$runTime}ms)");
-    }
-
-    /**
-     * Run a migration inside a transaction if the database supports it.
-     *
-     * @param  object  $migration
-     * @param  string  $method
-     * @return void
-     */
-    protected function runMigration($migration, $method)
-    {
-        $connection = $this->resolveConnection(
-            $migration->getConnection()
-        );
-
-        $callback = function () use ($migration, $method) {
-            if (method_exists($migration, $method)) {
-                $this->fireMigrationEvent(new MigrationStarted($migration, $method));
-
-                $migration->{$method}();
-
-                $this->fireMigrationEvent(new MigrationEnded($migration, $method));
-            }
-        };
-
-        $this->getSchemaGrammar($connection)->supportsSchemaTransactions()
-            && $migration->withinTransaction
-                    ? $connection->transaction($callback)
-                    : $callback();
-    }
-
-    /**
-     * Pretend to run the migrations.
-     *
-     * @param  object  $migration
-     * @param  string  $method
-     * @return void
-     */
-    protected function pretendToRun($migration, $method)
-    {
-        foreach ($this->getQueries($migration, $method) as $query) {
-            $name = get_class($migration);
-
-            $this->note("<info>{$name}:</info> {$query['query']}");
-        }
-    }
-
-    /**
-     * Get all of the queries that would be run for a migration.
-     *
-     * @param  object  $migration
-     * @param  string  $method
-     * @return array
-     */
-    protected function getQueries($migration, $method)
-    {
-        // Now that we have the connections we can resolve it and pretend to run the
-        // queries against the database returning the array of raw SQL statements
-        // that would get fired against the database system for this migration.
-        $db = $this->resolveConnection(
-            $migration->getConnection()
-        );
-
-        return $db->pretend(function () use ($migration, $method) {
-            if (method_exists($migration, $method)) {
-                $migration->{$method}();
-            }
-        });
-    }
-
-    /**
-     * Resolve a migration instance from a file.
-     *
-     * @param  string  $file
-     * @return object
-     */
-    public function resolve($file)
-    {
-        $class = Str::studly(implode('_', array_slice(explode('_', $file), 4)));
-
-        return new $class;
-    }
-
-    /**
-     * Get all of the migration files in a given path.
-     *
-     * @param  string|array  $paths
-     * @return array
-     */
-    public function getMigrationFiles($paths)
-    {
-        return Collection::make($paths)->flatMap(function ($path) {
-            return Str::endsWith($path, '.php') ? [$path] : $this->files->glob($path.'/*_*.php');
-        })->filter()->values()->keyBy(function ($file) {
-            return $this->getMigrationName($file);
-        })->sortBy(function ($file, $key) {
-            return $key;
-        })->all();
-    }
-
-    /**
-     * Require in all the migration files in a given path.
-     *
-     * @param  array  $files
-     * @return void
-     */
-    public function requireFiles(array $files)
-    {
-        foreach ($files as $file) {
-            $this->files->requireOnce($file);
-        }
-    }
-
-    /**
-     * Get the name of the migration.
-     *
-     * @param  string  $path
-     * @return string
-     */
-    public function getMigrationName($path)
-    {
-        return str_replace('.php', '', basename($path));
-    }
-
-    /**
-     * Register a custom migration path.
-     *
-     * @param  string  $path
-     * @return void
-     */
-    public function path($path)
-    {
-        $this->paths = array_unique(array_merge($this->paths, [$path]));
-    }
-
-    /**
-     * Get all of the custom migration paths.
-     *
-     * @return array
-     */
-    public function paths()
-    {
-        return $this->paths;
-    }
-
-    /**
-     * Get the default connection name.
-     *
-     * @return string
-     */
-    public function getConnection()
-    {
-        return $this->connection;
-    }
-
-    /**
-     * Execute the given callback using the given connection as the default connection.
-     *
-     * @param  string  $name
-     * @param  callable  $callback
-     * @return mixed
-     */
-    public function usingConnection($name, callable $callback)
-    {
-        $previousConnection = $this->resolver->getDefaultConnection();
-
-        $this->setConnection($name);
-
-        return tap($callback(), function () use ($previousConnection) {
-            $this->setConnection($previousConnection);
-        });
-    }
-
-    /**
-     * Set the default connection name.
-     *
-     * @param  string  $name
-     * @return void
-     */
-    public function setConnection($name)
-    {
-        if (! is_null($name)) {
-            $this->resolver->setDefaultConnection($name);
-        }
-
-        $this->repository->setSource($name);
-
-        $this->connection = $name;
-    }
-
-    /**
-     * Resolve the database connection instance.
-     *
-     * @param  string  $connection
-     * @return \Illuminate\Database\Connection
-     */
-    public function resolveConnection($connection)
-    {
-        return $this->resolver->connection($connection ?: $this->connection);
-    }
-
-    /**
-     * Get the schema grammar out of a migration connection.
-     *
-     * @param  \Illuminate\Database\Connection  $connection
-     * @return \Illuminate\Database\Schema\Grammars\Grammar
-     */
-    protected function getSchemaGrammar($connection)
-    {
-        if (is_null($grammar = $connection->getSchemaGrammar())) {
-            $connection->useDefaultSchemaGrammar();
-
-            $grammar = $connection->getSchemaGrammar();
-        }
-
-        return $grammar;
-    }
-
-    /**
-     * Get the migration repository instance.
-     *
-     * @return \Illuminate\Database\Migrations\MigrationRepositoryInterface
-     */
-    public function getRepository()
-    {
-        return $this->repository;
-    }
-
-    /**
-     * Determine if the migration repository exists.
-     *
-     * @return bool
-     */
-    public function repositoryExists()
-    {
-        return $this->repository->repositoryExists();
-    }
-
-    /**
-     * Determine if any migrations have been run.
-     *
-     * @return bool
-     */
-    public function hasRunAnyMigrations()
-    {
-        return $this->repositoryExists() && count($this->repository->getRan()) > 0;
-    }
-
-    /**
-     * Delete the migration repository data store.
-     *
-     * @return void
-     */
-    public function deleteRepository()
-    {
-        return $this->repository->deleteRepository();
-    }
-
-    /**
-     * Get the file system instance.
-     *
-     * @return \Illuminate\Filesystem\Filesystem
-     */
-    public function getFilesystem()
-    {
-        return $this->files;
-    }
-
-    /**
-     * Set the output implementation that should be used by the console.
-     *
-     * @param  \Symfony\Component\Console\Output\OutputInterface  $output
-     * @return $this
-     */
-    public function setOutput(OutputInterface $output)
-    {
-        $this->output = $output;
-
-        return $this;
-    }
-
-    /**
-     * Write a note to the console's output.
-     *
-     * @param  string  $message
-     * @return void
-     */
-    protected function note($message)
-    {
-        if ($this->output) {
-            $this->output->writeln($message);
-        }
-    }
-
-    /**
-     * Fire the given event for the migration.
-     *
-     * @param  \Illuminate\Contracts\Database\Events\MigrationEvent  $event
-     * @return void
-     */
-    public function fireMigrationEvent($event)
-    {
-        if ($this->events) {
-            $this->events->dispatch($event);
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPwqOx0M2bDGgM/bv9cdnZ1UzBsRgl/qYigcuZ8HLkJt1YxfNaVk4RmJa/HS83qSr0y/eiKKB
+QiikOImszjJA0BGmoC8PCGYyKhdXuGZW7zzutioZMEUrkiodcFX4hUycc3GNe2CzI+zRtvRboYLG
+lq5w1vy5uyczaz61GNPvxgfUTuzIZ8Yg8QuA4Qi+Nb5M7atL3/8zauD13gYJ2VXfbVr3G5qcXjKW
+8E6nEKtNfMBVzg/8mnjpljsEVezGdr5SKM4vEjMhA+TKmL7Jt1aWL4Hsw95fU+m801DpKtLCtFCn
+PLqeykHBbWeKUAnmW4rE0HWuCBBHherqGV/rXcVvrlnOU8Fab8+qwatA3AITtuSJznEMudnVxI+2
+FfLfZGySOEorVkOlesGGmMVL4ihV/4CbzS27+5iLOqWpSRMU2qIQaj5v0GxCtmExRth4Rq6U+s2G
+Rw5g5ZfScXKfjcllRCyij39tcfAZJSvHdS9NmPP27V+za71cE0+wqK/atdGAMbqVVGlV8EVSVrZH
+gNtwh0o8xGW4ud5juza8Wbs3FZxs3bYk7teBHhw+rTWnaPbwZtSizfrAa31+slzGNcGAaahZSgeu
+99M30y6ddOgzz1ORIE+vay2pY9jC321b9amsFeWcEuOcWdx/v7GgmV8okjSObLYuJ2BmG5GgRWdb
+AAfxcXlLEPY9fof0swiuxNE2GRHsc2S/N3P19g6rpSovw27+I8xT13ZSrkU1yuvmXjcH1E7asNe6
+ZuzUXylghs8d8FVEJghYA4cik6DuKi+4tyy2/9l5Ta13PET/gjSlP1iJV1P3dAuXOnj83A5IcAB2
+ehiXR/V4wJHyYKQlRXAM2hIS6P6VYup5SXbywBmlrgpiPpM/j3R9wbQ6gicsA7zAvMwR48d1CSLF
+B4Ms+V6FrbvCtvvghLVUOsNgMxaoIn0fEDPa1HOCnGJ/lSa0zl/pRH7roslhjo9AkiuRcyscwQ0A
+5qcB09s6TpE7WXEHaH2J2xughmvk/rEEXg2h8eYXG+fnY06He0mQeRpClxMOrBrv6DMljBzZX13x
+xWgNGWMh/qPdQleFtC8e7xfC3ce6UoXlVZG7vbqcZSzh04/zddDFitVWOuD5ZHmFkhuFs28MpuQ0
+8MR0kPClVqyUDeC1AYZDA0p6MGK9sUklVCSu0UsOgexck6eDNw1Dl4uDliOZ95uSYT4++krPVCjZ
+5tCGxDfItFn/v5fe4RbHnfZWZsxfPv2TVAaamCVGYxoH/zonsqc0Y9H2RJrw4FujBORzyl64Dr4g
+p8glUpZEXVXz7/lFEAn1lxw1Ajhz/iYl6icpPk55z6OogcH7hNZhHAqzK38e/K/vK1Vt0n3lqacZ
+pJ2inFLLFw61xTjJqiZ9AXqqS60OrCBmQYnekSny2HIFvGNmz/wfW10jXluPKW/ZNvxc+jSBEeYj
+sNXGVJuAdJWFdV58JudutsySBp5tOGRTdlcOBmZoO97ByJyVxEYocTQVta5UN1bAOd0UaFgif3fm
+pr8cjCp3q8tqFeSRvp4fHpxJZTQgaCJenoQIYT7NbEmv0eA8Q5LUm3YBaFMwVgotXZ9EjhnKqxxT
+WBmryYN0Q5Z7t5k3EslNLTSq2ApwD5rXQ5x6FH6aZh6vNGP9GaVs3NvQy5GaIdrOVlBt9TV3ESKO
+GPt/wt6VDzilGB0vcHyi1pT0hmGCcZ8o7nvt+V8heVWzX2ulygbZvq4Ycg9MMth7jAvC45DnDxq2
+c5H7bZwE6XIuFOc0YCwvxIQSvxfBt45JuTUP7a2yMC0juF9hvrjWDFvJUCxqs8YIQwdeTeZK6vpM
+Sj+pFxCMjNVgdYBv6q9VRNiT3u47/fRzhr//CEDNw3wLSiWdbLl5UKJq89WRj61HjKvy89QaLkSd
+Fj/flp6LS3uRRPkoJjUJMfVXxAH0HeDIlowQ9GMOau6xmk1yZkirS50MlVevEZjK/o9+f4EBJpjq
+ntgZ1dkbBts5HkKCPt1UC3uK26HcfJBF9gKj6P+wPAvGpYHe9fTYnEDE3aYMNGv6oZWF3/yujFkf
+EqvDdhh9rhpopcF/wXj84Hb+OZ+HsHIem0aQxbfw7heSbK96rauGMfr8vhE6vmtj39WBJ0w9pa9t
+AvecSjtxTAP1pGH5zG001P/MmKRw2J6RvYtuRlPIeWPLSOSfTRB2OFOwhzCHsNX1mEL+ZZypBKvT
+vdJiSTxHIe0hBo5ixs9AID/p03QDSR+v3bdATCNHckmHbsZSp1iQZbJbf2z+R2uwU5GZ+7lbsi6k
+BHLjp/3eD28raO0m/5zyNa/v6SFNrexnJyCdS/Yx0oKh32GQ7N9M9YriCVLDIjAXOz0XHoPtqEAp
+Y3ulQ5Jx0Xc6pPEQEmtaq/ifhbJ+bELQ/m4cRAuU0dZH9uJjkbuxlIrOdcnfI9QQL31Zq5CPce74
+M0e3k66DtGifUfRy9SLU2jxOWQDGzO7VL24s8f16Jo26JURxNe9XQHU3wFZjYOWvFlmOu0QgsCYg
+UOiPVx16upCGbVzyjM+UslsXWnp2W6naSlUG7hw005LhtUVcCvdptJwOP/xXgXXcCzrky2O0Exa+
+EBh1JGf7iXtuiJleOrUYqc2J2ruJ/qmHqrlP7pv5+A3qY1TuNH24BOe2wveA4FMbRAHSIriKlNy5
+Dh1janiBnRKZw/tUGVFFZbTATDOdkpG7PU9dmyeBPNdRFNllW+5803ElQxKFzwjz+7lUS03/7bp8
+BxQRPSl0FWUHWotD0v1gOpJYU1Obom/1sFlkO/NG6fLyqLdzRdviKLUMK4zYFmbxtBpNlG2iosrn
+fKBMEFZRmExSwa5Ikv8YMJAuZc0qOiQV3Bl9eoenTt6jILmROREaGUenIIlFgPL67Lexk16NeiGq
+5Ip8OK71XyhH/cxQvPOEcPO4IKFpj19rkARlpdsUJJP6WzaGcFnelNt+svZA3gSPLKGDwKViGAIT
+0HYV41Zg+4ovBgTqWJX0TVz/fUxW1iFxnbaR8kIHqxZAIcpt666FrCCJt2q66XYjYVgiZXkcGrfn
+iEPv1dtjxHQSRc9gXFf7qnU9WMGXi4ivCWM5ZWuURf8EMTyQR0rDO4DblNNu18ZCGNsdVU6Mz2NF
+yiDxj3k5eG533EuR8gjL5qnLbbREUrsOBa0VGRCGoSWpiwWW30lzmsM331DPsiOlNvUtAzfuTI5P
+OyhBmtKIx3KqK6HJIQrxFutKGSbnt2uomZdLJdx2f4hCQVN8Xy0bKlNB6ShPQQENxrbDlzmX7F1q
+hcU1E1X0GrOrnFCneCD+uxbicNLpLm0LisxJIjUg+qXl6Z2wI4nwGWmmzYOwgmjpEEZReFcsksyc
+9Zcid3gFDVp35jt1zvuhixR4YaFbtWzAxIIHmOGlcU9n6UR8ZXgYv5541OzBgZUbeeR+7tFOd9tT
+xNW9j1wbmdWSNXn+DMbTPz6LNNybXPxuMlJh+xknncuiuWm+CczdJT3FaR98SYjDx1AGqFKEqe0o
+yObXTYSmyURPYJLRMRpQDKPQna4JYaJysI5CtTP+bC7b5LEsmkvr6Zr4y1BWdYYwYrcpzkktM5rV
+sCd/GX3DTJQ4Rm20Ft/h0xwXd6KThkkb/deIoKKkHD4GDwCmydrwZN4Z8yJg3x84QRtoGCdyCXAi
+xNmBvnLyKZDTp3TWsuaDDaeQ8b6DuSm7ci/mCAIs67LtKD/wjx69k5dC0o8VpW8KCgE6hXb8A+YL
+lQZ2Kpc/adNktVA3xA7odyydoykMYWbbnaLZaU30M15j2YItTn6An9E9ZT7HhbYF4QOMnx7GEZNl
+w1XPLQynV7GgJWebFyHP3HVoKMduGznNTAwfzKtYg679fyrvPlGeCp9VUO/iobYYNQhAKt7eL+3c
+2Au2EbnVTJTEax3vSxGphb3CqbGzYjKoBMCzPRF2BJ6x2ZUC+3Qc59wxfZWBf0/EcMSeBuzy91dZ
+4UPB+Msh+DMf0Gvk7iOL7LiqauQy3dV4TgOhXPAasaFCgFV82CxosUaUcbQX66ZbXF4NH/t8QVSI
+uwHuRPlMxlEOXOnidQ3FR6A/uTxypqDAwQ4I6oC+Pj7Dr0sFSD2eVJM0DRWB1Hsk2NqXjSwHAspw
+fbCUHyEPeB3MD//L325gapd65hjCL5ecAKD5hvn8cj1nceiILKPtafZOe3tlsIJ2QmRTr8UzKrVZ
+Q+zCsp1XI6yia3hMDKgdid8qnF0143FA38uovaUyjAUfpNS+lx6ug4OMmNgfwU9d5FHwAakuMQ8F
+84felFJpbYbasBzfSUhhZI1hBRlftQHIHp9H2WXPhHAdop5hvWfkeo3xAZeW2wczaTMEY2w8FYa3
++V+hnEgdLyiV9sdGBZ7oeETvjLjdy+bcUDZ82dg4HaYTEH5FjqgDItFsZ9dkSykrSEcmSVmThK2A
+NDlXz0toV5OOfMtEICeWZ3WOTOQB8cxlpR1fFjud0ZwJnUzwirzm/zPIIijqVg7BZrEDC9DtM3No
+WHOImgk9nin/LV8zituB0fE04uWz8ZGaVXQmuw7d/bpWfTbNMPzN637ft4zt53F3kRf5ienWeP2N
+ZbICCspaoeNbGlZgDwB9EUxsdF47wxzMfqXbpJV9QqnYV3F6RwLr3G/l78gB2Awg++OEvIgI7xRu
+t/nP2htuBoHxpSVwxAirdi/9BWwfLGaQgEos9uY2ZTqcQXnZlTl2OEcY7ReQD5rqFmEETgnffhfZ
+w1DXwshIHbZn+S7oHybVjCm8kUQsoyEpBId3XgVwWA/N7zkIrj+YVgKcEDj9lzPTJDjHDAyni6um
+L7PA7GPtjyel2Yt/UtizqObMvQQbp4zr0tPttqTeGFSKVzd7klq0t6I3IwnOEKLXxE+2cQguFWPl
+habRH5Sd9wkFwotEI9PNvKNx6otJoqU7S/1HsGfnVssYkREvV6wAVLK3S8nGa52W/vs7/knyf5d5
+67gIBWSkFUmABBF4LZu6Dm6Fju8MOmwNQpbJoGiDoMh+Ql5C4U3BcIJ93HIGqFwS6vvkUMd78vZl
+zSMHIXSfi3J2muWlaLXbokPC7vUgYzNs4/gnNcaLcbNfd5gGftgClRmW3pJIPbcY3KYeeKxIndbp
+jL79o3F5ThGc2s1Fo8OKJ35WCqg03x2KV+biGQsPXmsIHfIDNWBATHUM/rGYknj9wg2SweOVu9Cn
+rj69Tj5tyvLsLnX+/WRtNmwcWtYLcD9MbjzKIp/a79VcKNENfrDR4geblt9jD4yLrqq+2Q2xAxg4
+ORfhBIN71JwurwlY0oVHucMffQ8Uti2jqI5/88LHFkoWuqJUaDB/wK2etjQLRr0WnnJtFp/kndrL
+ljhbYHgDyMwim/2QBL5S/fC63tAMuegUO8iYNe1k1NsfNwkRFkeTMVzzlAX8omnqsQvqDbRbe6S2
+OVVliMA0XqaWUDI1JLOTU1UhQb7wOmVtliVzlczyqcmrqomEZFp55voObhtty5H7pdAw5C9unZ2c
+m6L41KUaneumB/Nj9+kZPBiNl7PqJYpFawXvztFpHqIBi5VSBcHIWW2OEbp8hCIXadkAwMsdgcn6
+/LdHmVtHG6RBQ2cOrrPSyFLniiXJW0XZL68Zwbrl2CCV5u8S4fvB7Bz4uPG1Bx2lR35/TwPvvJXK
+PQhP5nAtQEKjnmLw997ytb8jiXpc3qfF2LdKSnawvDc0Ce0GzD3dn5eGTyh1WUjFfWmmmiirE10s
+QiQzqA3fzedxLEbDRRcbxhnTIzYro7Eph/999i17NognSY4P5NA64bpXj+KxXSIDM0tFAQjxApiH
+vH1nGWnHfhdvKDIbM5xeVBZuL3XTlO5VZkgV5O8vVGOERmd4NhviLIsXrWUHg/qomEUqrHl/aKKz
+HtUpCd3hf7MlL/AXxF78sojmXOVNV2F9vXOt4bp+HgZAkRM8wrRETSP22XZd4ga/gbDTvDQ+EpBu
+lUPK/1zCB9I5sXBe+nOAmB70oGdd9lhDJnNudyJ11Eqek4iRxyTgcvHRRwD8wLvhgvoQ6EDN9drr
+Znv0WCwwxzK/UjzYnXHUaQUP6ifYDBe8LLOpxgZL1FQRApJfL9Frlhrw1Ymb3OIh3ryidk+HSYQm
+Y/dIs/xHFMbolSVTs9I15BNKnZ8AGHUCwWGiSCetlUtaY+qC0RrH8r7g6W5AkIWBWddTU8SAsotv
+feWvDMl6ACvwTpJJCWAxBNOF8tp+ZeWl9RHGhKBask34GcVzIF2txF5w5rBcs5LR1LfBzA2B0OYj
+3fvg/bhRp3G1BGR6ksHUagEM0SznCtC2p5FNh7Gz8T5x8+KjALG4hqpYwJlePKEDpb8qCWcS97y1
++H/HDd98yCLBIxcix535LTrjtN0njHxgjauXUGM6H0aXEuctec4S4dMi15Z1njAyZuhfUEqYl/SG
+iUyRP1yjE1Z1cnNGjvZ8sWBZ3he7CHSfiI7H4Vw8cYi3o2k5QKWLLonu1PU6E+ZgsnDYPYQzfuB6
+ZOh3Y0PADCIIrfUmyoea0ix3NrL+1LIUQ9oyP7PU+jKTQiVjii7L6YNL3cLU/h/s7N3oVzOajKd6
+KrXcMI6LVRP3+zVajv7XvuZaK+BuXtv5ZwHr5kA6WhziF+WuSmr1sfq+jyEJrsCY8v8r8BQcGWtT
+ZacZKT3rC4vz/bMDgjrqHIhIBF8+9G+HglzS3ALxeplwaq/aXYjWfQguvE0EJQFCwGc/OK9wNc8R
+rqvPixMPA1ELrospEKUC9sGe5QipguZrYd1+SvU3CqbN64wsIjHnULtbWpzr+fzBfTBVn6tkmN2Y
+pBcneDLH1KkgJlUW3/J/eIUMs6e68RGqploOvm40ZPjomdJ2sCcewYch9k9jMYqADuvseQiFrCbS
+yAoW7uT4IKSC2PI5kuYOlM0pkn1ZyqCjPMEOJEfE38AWP447SQ+Oarceeu7s5FTHRJEmqc4097pf
+McqPD540tZ9SlL3EpcTgpWTN3p43omq1GBiN5yiWwsCo7FXkzUlPmSZVsEf94QdHrCH2+6neWhhY
+GhrmXudIge8f84fM7aXBv4FmVyhx3gETJCz/knd45tdhRcyA9y0QSE0npOaN1nuvt3YP2y0Mevap
+USoan+zIL6uM475rq/pU7LTpd0dm5phVEr2I/hqMOMGsfuNMwyCn5IuQeMdL1SMFfJ2ptW1PE9J8
+RkMmz4yffjhxN2y0KTtAkEfHx2cgIwFEuh9uRPsIA5QGT+zYcUHLz87IPaHu9TEAIXn7YMFGuKM2
+7797EUsSidb0SFy4yYPAGv4kHa1ryKkQe3IbsDXZX6FI3Sqc6Sxlh9ieeOAVGiIOM0Ev/pbUxggc
+B95uXQv5XqnxKMOun3wPTpJAUiO5byJzH+9U1s5RWJZJCjciRc9bbl7CnV7NFrKqUoneQUx1hS5g
+T9mAFovrYhiNsq6XKDpkcWbkCT6ylGMvdpfnX2xDSF0t8mUdx37LL67ijNp2Q8kAQSk+dmGEJfFL
+eXAlA9sDjLJPjyZSKaGQtNpkY9AerVcAnGQKIqymdfQ0tE6qN83GUb9cjHfQS02FqwFXL5RDtybc
+7ROT1sel8JZjC/NnRLPY5+Bo8TsWXGHoj9RWd42VduGx7i+dVDOG/p9yCyqoCTtLtBTxsadEoHor
+YimiYHaWXsU6MU2alL/zhFEE015D6YTIIGzN/rhqGvTocGUNDkabjrVz+Q2N+/oarIPQB53xSYrC
+7Xy9oV7znW/SsMMiQRVO7jKYSz+LJULmAqH/xTJLLzDbX8xIxO/bDeJntA47WEbE50SEzZZOXuZa
+b1bUX81vcfYu5OLIqswmf1vSK0ktv1VMA7VwUq486jwmc0FKV0df5VE4nkqiGCiUjJNIV6Btcr/Y
+iSLqcnkWd6Tnop1BDCpq7AAJdJkDmTWELzmZfDFsi4keBxx99KhlaMPmUsiMFKIAY26zNXzZUvO6
+v2Tqmy/isB4+BWMHdYBPCwRYEWPzlsKp7MZKJTByRV4P1xdKWVIwzV8jN4dtyNVPgB4A2xptygN/
+ubPN3o/vsS4OuvSq/3z0P6XvKyua9rHRt3CZa4kX6HmLHLI3nc7Uz0g5lSmCgDc9qgb5Ca4lzaXJ
+9rGYBNqldOQk6TzE+X7CAnudNj2iHzZnqELqKxzOP3sBrWiB0CjPehwXlOKk2JArUoH+hxi1YSRS
+i2u+9gwWHGIjUBiJmz6yiMkkbdwyo9xCwkqtOU5VPR7lWSdPVmXjIedIRZeC3k2OnXpFTzz4NLct
+TxC8JY3UqL11jUvmv5mu3fjkceG6drFXs48/DBD7fdwsEd7kvjDgdu0XCHN7NXJFuKJGeG7dapfH
+OnNnzu1oZFk+v9vBK0HgaTMha6rZ3tfJJTBYatafN+cIpZascuCeTLyXhVDQEx/2Bez9yi/Jmg7B
+XJB02G3jlzUq55G5RH06z0rBiRd8Jn1Mku9P2nkTol6o8iMqJbXmCONta6qfsCPRgySzSPJxXYpw
+6gw8R91rPz/P4f8cluVTGWvrd02gpPM5StN6iJhFcKKejPdR99598iEFLGxVo1NvB0DToDYsKYgt
+ZlNWtt0D8QqzAVJVZutSN0dsIVndd+v7ijZNK44LMnoqPB91dm19AZZ5GhMwFUo5f+TxhhgpfDW2
+2Rb+HoIVXeCBewZ/lUtNghsISEq9Re57D5KxraPN/tQtW5E/B8FVnmgV8hC4e9r+Ua2W2sKatqol
+wRpGU7ooNlaiaW+vN26cyr40ixDq/gAIXzkwD1xvT/43N8Vp38R0vntIlir8dGnRfQaZRmSOCWRG
+5QyhLwNLdNLOA3aN3HvxJrlgRnBiUQwCAgODke56LPeBkc0MJgoy8P0sNmstfiUe8sQU184MwPhj
+ny7ll1gIe44lQAooJmgaIptAtcTxLpsw8xL835iYnhoWMFBKMcan4wHuPD6IJvJtrDrOZRMvQgXi
+gWLbbLV6/RoqeDOOmhL9+n6yPqnuiZ3axSmF7fQPkVUJTw/fKB1fZj2l5yiR6Ua0S9XNMV1tHJRP
+HdR/uNLLpBST0O9QEkmxAqEnFU1pOjvJWOas3qQxA6IUdh9iM84O4HibNe5cnwbOUfx4N/DqXiK1
+7MZmUSp9HJbp2mC+oBL8RVDRIh4SQEu7tlx5Fxud00MsFU/UCuQuxnaLHX1vMGYe3jo4CLC0fhdK
+bGibNS+dO29x7VtWUF2MXDzKl7QV35PxsumXIIRTYctjKqDun53kUCOl9tGpmyY7id1rzx7iMsvN
+4o7XXwqRns15p14pbw/7H0FVHHUz3tcDYi4qAUNE/spxbbdd133X1HXc9u7RPMyk21+k0csLC/Hw
+MMbiZmOQJdt0UQrY8V19mfkgLeAMqfzzZCHu9CQfLg4Mm1Ejv5g+4GxmaLAmrZqY1MgoOdlcxojk
+fuDqaUXj7fHDsdskt8AcHTD6JT0AhEL23uL+yXInXCbxXX6m21pnt9o/iQcMNp4Gu4494Y8bTUIq
+LKPJIzY/IXr9ruaFNl4cD5GrLeSqwDtTqL38CT5djt809leNY8XdC//fKwJqIWzY8r2JVwqrdYdJ
+Ky5Svts9c/ZkghraCOJVqlt0R61Y1PQP3brSODNO2lZerZMfBXz4uB7ZUL2tMWXM7KKH4Axhap3t
+zDdqkYW2h3UjCSkxM6TvymUPm+5jvR07Espdq+L+jtznAdRy/7UGMG6qPqHrJD8tTd9W50upE02h
+vcT2DWbalGAHN2k5D7LRw+GvJwTMQ1LI8p7MD5K9pqVUNxdhdnnj550DaPj1ubknSCGXte+8N5Tl
+yxwuStxieNb4oCbaj5zdwJOXq289MHuh2BGd0KUb04YBQUywQCKUj3UbKLGkHBto/iflRVz2k0AW
+3FXyQDGGSg+0hTeF9RgEhgazxZrStihevb2J4dpcLuPmWBxqh3fEnn+PffB8DFo6I4DVqgOoShkQ
+6UsMoIJoffNf/nJteV7u/UNe9Ee8woivcOJ+RK78tl4tOtPGatYniniqsvZG89eYHu0JjTG98OfD
+ydSY3oGvCA8z+AAMonhE5fw25pKviibkNvXDNt+jWJ6yn0N/LMkkeoGlQ6o8YxTLX+Jt+YRFijw1
+JJzWIcO4bzMoynH7Woaxoy6N72Mujb+YP2179Hy7UOHexKKZhzp5TV4AnGt1vo75itb8S1BeHOGk
+WRvYcwAGzGQ7OhQOGWAXYbQSC/TpLC3N8J0j6ZlFIj2iioN2/dPLuZTp7/qeyDekHo9uGHOx0U84
+THRt+af+6+C1Jv3nc5PZIbf0Bdin5ViRxwuS1+77QYNcVaUWvKxJA/dfYmKIK1Gd85smTs6xChfC
+kmy8HdG3EDErEp1aQLX85j4xTVbw4Bs4kQAgAhWvk1lfV1SQu9NCGMdXh/Z9cX8xi08RylkcCmr0
+LeILfoJ/phKBPFCmAQJa3CulJd0BGRDDqZWlL+y5FRMqqCOEK9qGjbaliYckCKG4nXoAShgrEKMO
+AkgWzO30kYIZbRzfthbJyngCSoY6JN1SQ0sJoPH0+L9opSITsoBv7eCIU/ukX8zvBerTU4xp9tnf
+ymGR76yB/Kj9AXysDChHZXQVJqhbQ1sIAJ2tZvEnhmLBuXFe7YLDZlAYhIvKE5ntZpR/OW/AyTbV
+1kiBL6oFqebGSKy22xkmPjBY2L/YU+XxS0msdDSdwwRiQmbPzm2aG5K79ZJ7ZzGIizfFk0ZKHzQX
+zf1ysNCMZOh+napzGbnHjcUPFwV7JvCBvyMERqMN12TzaUi82Y1AsKJtMazd7OrbfLxwDxg+bpzn
+JzWllBuVrSHwAUAFj8/45LHhghA2prm17CRR87RWfmsXX+RO661ELML6nfVsicPGcA7dYR5X4ldW
+Cu1BWRABiZaN1pCKYDr8r4QHNO6avFbmbUYpJcOpCdU0TfXrSWhMX7e1dhiHXUfgw43Mz0n0iH0P
+UXyFUcF1I1eqO0wn30Uu/idaFGJN6vkh707IRc0CQUFr6XculuRv8Yk10uMd4IlVbMu1mMkfJkbb
+S1H+IzxEhqS//ulyvmW68jL3UN9a5fdJX/R0PSNVAm2taLaHBOrDfzUgkNQsWxVPTPOiAkJPG34p
++4RUrRLcRVrL1Z7lrr3QIGcuatQq65gg7xmWejw9UVG98OQMTQd5RcK8EG146NZJyOBSr7/AkrcR
+EdT7hOZsQyeVp8tSlqXa7n/EPI0DhpkRiM8KHJSixRbfHdmbN6/W6Bgm73LKE2T+i9q5w/QL8lLF
+xIkHfiK9Ld3q4+Fr29oH71t/rNfhzsEQS8s3PAVqab/hT9H15ZInlm7OSUHX2Tquh5qNry9EDOqr
+HJS1RZIk3BCqgbCvNAZPTDoWHW+WNXe5joIHv+pwwPc5WjGAxm8vKoOekH+Tp1L/BpcylXJpVgWR
+UK1/QMCVZVdw67XfntJRFTSEiWxiEiNBt8uqkszEK/MHD+tkGcFHNt0VtZbZalpGcROh2ZbHfgZN
+Vu0DXSD5C5Sbqr+MR57f0mfyQiA3hzSBhuyCRwi1bNzCslEG3s0XNTs4+S3DIxCoU14YyJMxyuNd
+Qyx4RDI45Sieq0vySKfBaKUh7Sr62JcTmPd6soAP8Ll7t6/n+M1UpGE6/ckgWez4U10EdpsguuCA
+DSltU02psuVOqUKEp/DbT1KAr5n7zZTnxlnDAYPKJaRK22AGqOS4kSQiAiyxyXgnhlLQkFFdeRq+
+d/UUxNFKgUdcFqTBv6EAsPlyVFZ0obPJnFPRIENiFlBAmUF52IeapVq2JSvMiIcqrBxRwq6DUkWz
+LO0JseUDlmHp/rg1RgP015ETfRWj1OlDOo1no/fEr49Ns8gzPJuHdPzCqFCl+T8st4CK1AARCXYU
+YJ1CcrvUO4LDCIKWK8Iw9KFyt0+NA0xPdA0NktamWSG7YDXOEWmeXnLVItJesxv+333pyfpwyX1i
+kDtc1D40lAfB8YORVfGfZZEtLYWnCv1U8g3FG9KMo/guUwNft4ZmHsWNRHLNiGS9tAOjVJ0V0aE7
+Liqq2wndP4/U/eEUXqos/B8Ul420mdwXHTDQrrrRt5fKlshmSA1Scb7CqOSJa2uUYUep8RePrUAh
+OaE0BvEwPcADc6jmq4Gb5bzxg8gfKDfQ8Z+rI26P3GRF4jgg2h5kDjnRkv72eCrC7mUcQKGeadUI
+1XgiuEP3RbCUQjEJgBF14FNXKu64Va6h3MGe/3rc0YUSQs9qnf5cSyDUEe7iI1GMZUSC/vw6KTBP
+4vuRD6yl2zehrVmw/rOluq0cD/U20HWQ2vr167MRw/Mr2pYLR7ksOZlPwCoKQCM9LbnUT4O5gj10
+R8ZkSQdzsAhH/0OvdfiVPOEUb0loLY4vvaf82/P6cn5reqVilSZxPbxKJoDFzFyxhJAWQix8l2Ve
+nvVX1+BhE8qMB8oCgHcDTy03en4XR8FGHBJvI2FntJGVJGpZi4ojhZsElE6PJ5hUTMNM/P2xpPYv
+RYxdx8CRQR7bBE6o7z1DTElyFZVI4zalVwGuCdObRtO9sP0f1mc2IqiBKVNznZiS4G3kQqcRofXI
+YabAhu6IJPsLdEvC3rv+46JfrTi8HM0hrSXF1ep6CjsBZif6Rh+dyIzh39lZRzmFHUIQi5rpswv1
+Ao3kXw9QcFF+Nj0zrW9o2sfW6zOVcL4hknfmXS4iXjEDfUqIyy0QT0Nl0zHb5WwtesYjTsU+4JYh
+ahEg1OBLgqVWWTdaFjfP+65IJwkWxNWJ6VN0Ha2d1/HwXJ9BBqy7n8cyDCEPVE/TmxJR37DBScRg
+WNzaxcJGn4CEz2KjGDNrSo1JIJl149BVybswucY0ssFzT0lBn2128qPjB/JKclq+ciiTiMA+i40L
+eTbrih+nVNM6MzQw5nYXblzsbi1nI26uxd0Mz2LxSQ/uvv4dRljh3QBQ+Nm0jbDWkP1XB0N3vNgk
+g8piCytWeUVaXkGggQtGrLm9DMFWoSDELYM/yNOKMCv5anrn+kP5HZYSkmKT3j5++XLtCKqayp4m
+ifSIsoC0S8Q4umxfO5MPDemEL2PUQsqRqfxe/S6nk39d75HRaQImqXYikkYydhA0Q/OIQI/89xG1
+t8vhWkhzBh5yMEc7HPMQM6iPn1kYHFxK/lAqLQ3z/nWt7v0hFevRJ2TM/74A761nPPM36nAJEQEn
+2GsHVkIoT0q+PI63RV7xfUXDVfIAXEEIYLqj9Fsxw7dy7X3krXODayiY55ZRtXOeQ+BnoRtJIaq9
+AYIEjf2RN9AS3TJ5AOwGVoPVjrRBhWdn1d0OUKJc9fOkmBjWnQKgOxWuJ34IFu687L/JkgUnZtEt
+dzmrx/n2kqTwlxiYadYBMS+0U+BXshbgU7k8rA2S7q+mpatLW1thtInlO9IKimMrjSeHqXEV6gCL
+EKYxw01svWbOyyuDwDxdAj7ohKXhVTjpQDtWmBy8GvapzYZ7p6U8cPmH06owsdO71/9jU5LJp58X
+lBy1xyS8ce2nmYv7Uszj5CDY9WrQU95lmxbfW3dsAJ4ccASRaQZVm45zWIsX13Wxne+x+4YjV/wB
+95GkkjTixzfocMcTGCyB5y31tR0vCXCjQ7e6WNO8yh5SCNDKRQ5yXF1cuGTk+4eDplBe1COgS/Hx
+18y4ScVbdixaKKVWLLiFlclv1bddEO2BpprwSTFz0ltmTAoti4p5vvHW9vhYkw+V7T4hRTN/oDv5
+WDrXHQIsnTqWrSB3JEF2BhXopJR3ZVlbWIROI3B3ObI/AhZ8FsZ0lxkAHnK6A6b8jHObWacegE8w
+J9pbItZWt+r7gJM3INotGfkM2BfC3ozDZS4+X3ZulLFLGcDqsqYnr7XaVP3XcIrYf7r7bezHBx8P
+8jpbeMV/w+09+l/YQn3s+7OZuPGzHalQQVYwwEnOBrombgepchMNnbJYFTOoDD4OYeKO2IH7yK7u
+lpf+Cul3hEmoUvYBu741xom4hA84YOnSKImNGfp02wrN2PLpAMx0TJ8x05LsXu9o5UqcHEUoxQzQ
+kFi62gzDGkJU+IdmOP6BUh8JgNn/yS5jqiiVxTf8wGLZ592fkaM88QTCVew4pMEdaG5t8RZTPuoT
+IpjrcjzEI62jC2p0YspLo3fOKMpXYbZa7hjf26u9TrNhRZEFn57cS6cbAwvszC28b9eeBt7WLFE4
+1nS7kPOBpd0oC1fB0WGuH1wBXV01cJVnXA5inL2ZOD0iIKTe73amj7Ahqwum9MHjpZMaFTiZ+Pal
+dtqHq6frMDyl1VZRedCQVba3zIdh0E3ucaLE3NVcVKxV9IssQXfQMN2E/5CC2zP9PrBed1C3cPqm
+UmlbfNFCZZSr36A/fPldAAEhpYGv/uJS8qwVdJJLWOt39vx5GwVhN3y1kDjxuv2eVdjYNNZhXLes
+uRg87LkHNpd9zi88OLIqEgWRssEJDr2X7fpJCan7NKaTiq0xJStYUwoROp7vf3O6gN+ayzkKAtTz
+JunAq3/sbxnTT2Gk1JBg49LdLxCvEdQE5brpcm/lNOx/i2tX8RaNzZGGINBZYq5orNJoi0IMK9nJ
+yOh/vVG+aaScY3WA2/pB9SHEY9Mvv7GOYXnEGwKIdW1UBfCT5tMWi7ATJgAeHUI8fYDHSJkppQ2Z
+artrLJvug3c+2OgqLVdPSPimjaNwn4cJN81r0BMFhVYg7/V0XEnw93MSMlWUNoeaI+8jIq3Qsypp
+l2aIdlWnG9AKRM4mSdPqjkAOQPeY7XBZzaLBM+G4PT1Oo++a8ltxbTQU+34mYii9xmUsXerheTAr
+yuebGrOTMFURhVESzVxFhwdeso7Nx6NlBPG/HVcJIUVC5y/WaLeIbbearQxj7oVHZ2sDvumpw2YK
+Xm2MSo1GJzomwyR0lD9Y4m1IDciKAk4aXQj/f6Rvvl3IzPKDv0+kveQCZPVy8HJnXD3ftmlrqC0S
+AuYHn9lPTDtDKxaBKaVHgSZ0H47vuI88qzVhfNpNz1V3maM77TdE2IJNnRcX4LySp0SjKF3UISmr
+QoAQjbzvKFUOqqUqmBuIcOWRm4FQbFQGqCdohksUxuoi2/JF5xzPYgXlMGDTSU1mHhhq/r8CXCei
+phL/9PQD9489W3+3iQLTZiNTx3OiGupRvMAyAqLDrVFymkmEGcQNktQdDVJn5xDfht/b1mFjIAc2
+Zcn63Ua1M58ErQq1BbZVCmIgQNaW0uEHLYD317nrqrxzLJszTeo3VIEAFv9CieDHu4MUPLCBkvRy
+NiUi5q8v0Ajj6r4HkJrpV6e3hFCCRLQHbrqV+GG1Q75OZSNNOyNUTS8lvfnJ1O90VfJV680iwInd
+X9zkIef5+Tdv3dc3PqCaCho+4nNbTxXnatVjENd5N84DHqUlpHRa9J+EFhEaK1aarxe1R5uRE6X3
+JdJ7J8oP9Cmah6Z4HzI3nQWkasTSaXVEip5eHgntECFiLwWIAnEBrlYGf9bXGxbOK1BDcBmcTYun
+a2XnCAq4gCDIEBmQN6QsaJE0RCsA4lORboLd/IufR0NAZ5Pwe9HSRDVwpK1sbPOxsgcMgbiY3t9E
+b/XKFhhuk58/f9FJW8JDRw9Q4DdgpmgYtgiL5Ac37Hz3wGFtN+1I2QuosZv3Ox4ujXoJ94BNI9ZK
+1+MA8jUwFwIXxqiovL0mr3RvxcMxR+wMzQNm2KbaZcOwP3NMD7703K0CI+aUFeBiyOdPuYsFl1nm
+8WV9ZipN6L/vRC4tNbyS7WR4HFN/owkzLnnO/qx7DIp3wttRTpS4VVOvc00njMXegGYWy7J+9eQZ
+EL1+LeHBv0hbOxSS3LoAvrlDOvdOZqh84kLuNQ/k22IjpKQ2KWgR28kwdlh47dXeumaOD4TMfE/X
+PPz6tA8vlrjo4LEjCPCXluAnZ0aUP0pxkV+E8h6AFZiKMghmnlWGsnJI8jpE0Htg1bQKJOaKeNmR
+gD7S2SrlGZuuC8dQLdMSLjvSmfLqiKl3tJztTu6Qn9NLr1o95FHyp7kDusdI8UGqeuQcP0wLZjl7
+gxRn4lhbxHOghkwB40Wui3T8Kq+B29Gvguy3fKZsgc6M7lfF03jPt81RjqcvIo0BD7Ucj9vB4m5G
+z4KqyjL6zIeKXccglo6UOB+lxAkN+18bZsBf1HEfjFJDD1y/W3cg7JqnyOHpY8mZKp2yE93DGmm/
+PeGv/OUtY2js2emOQ1d7u/aY+aRGILA1RbAk6HCmrdl0Sjh7zMlJ+8OoAMwO7dLMQOA1Xs3ZPkns
+3KRKbKneaWy37e7ekSqxnQd4SBdeW0dbetzbSb/mYpx6ItzH+F+w9Dl+Gkh6CZjkNk8IEM4IB7p8
+LbGgleLD1FYRN8UByC9A4mcQVsSSeftCEpctnVrPUo01dmLOxNSeZuQVPKB8vdpK/FTVGdFPkrCe
+XPiiY08lB7jGXHbfuburQgXmmR39eET0tBtsLZUX3/yi4uHnor8jAn1eK0bmYMxkJh7IgNYCtWIf
+EY5VvmNgzIloXLRW1IYtY8uj9TWryqWg7dqFJoh3sWUStz/lcEGZWQfXl6LJposMy3fbGi/physl
+xVEuIXUlNcJfDEJnLh3DDRWKL0n7p0cHb4Es2amEbzc4SRNLnalwZiQOThK0E2edxbuAAGJEXu7q
+zt0xr1y424tJfafUGBVOiUf3OBcPwEg7KAVlJYsx0P7kymVfmwaK/Iw5+hS7gvuLcb675SWGo65D
+q9qEg7zexDcoXs6kXXEp89GTGxeM94OnwJTtCh3jgqpgpfqXi5dR7OPNlaoIyaJDV0oPTFuIVgUX
+NAGa//1vS5Lr5OE7a3yOKdXs3vQ6Lt8m/FaVHNR8KhNE5rW7mqzdJDq95Z56KpY63kdyNL87IaMK
+/83ObNvMEcf1fEzqfoGkmejadeJvvKIwbpty5z1g6MJDno1W4NuJf8xDJmoVEoCz8fxLCc+ch0f+
+mC/kYEyzrdn0ivxc8pBx+qzVdxfkSlcRk/fLyiNUFtxZy7lwP5x8Or9bh4vMDxChmI2TYZU8U3+4
+nJDYPb3LYwkqDr1nGYof29z/bu3MunNGv9898i/8nJYKTZErvrJ0rxvLaeNxCwFHgJjrt4Jk1Io3
+rVPwVaUJsw4YppsrCjBxedbg4kN59y/oDLmL84AI15V/zoDSSTbiDjVpW3GUU6zhU+xX7BS/iJr7
+4GCkbxJC7EdNbuWtfvietL+9PmDsVx4KDbjWOZwkSCXw6SAHCyX2wmxQ6smmXUcVKi2OA1cM3QPR
+30W0QqX7CJ1DkEK387c6pNQPeMlrzWBNVpJjk7/bxWZwxbzle+hRiRSU48irQhng0c7iR2gL7lBM
+9KrSlPtvnVtUFXeZTf93W0e7sj2qEG+zGOxMB8ky8c0ATEzdWEQULqZiCrH0+sFB7fCDbtVxENi9
+J+RUjLbW7TCDYuQCXbcMWg7LFz+UTcL+B/SOf94pEFYu7lzGEgQkLKCXKIniFO1A23VqJ1TD0i2v
+nuGFIHWi6r/ZvRkNkmr5l9PbkKj1a+MPoaO4tHY90srG+PIYA4QUoGG6CaRZ3hda65c+0fUAi8am
+Z5m1hgnPrXcA5W9mKlxXgDUx3r7rhakXzSbM76Uyva3ASVS+iOEIXSo+DezFmWZbbb2NOw/nFmYD
+rboLVZAGLh6MuqN7HFbNBBEKsDfw7yKPCC4GHNYqulWocDTWMUC2YvxYdAW81Kx+rrs7cctNoXLs
+WrAPSoS1GCpOhggwYN+qoJZPwIXzolBxuwQsHIduD5fsadmIp5I+W5SzheU5xFLCMojmZe5Ja+P6
+augN1u+c3vj0JdKqcPpSVLB2ZcEe3CRqncJJA/Pe/j8ubPZ6as5u/yV5gCzvBPb3iCwV3mUgsvkK
+f+n4Q2KQX/DaH50tUe6pe2kgmdwJETQSlAsusGbFtLZ46gjPWHcbtWnEq4c6T3cjZ8EfDGw+xA0m
+yKEOr/YDVIriWc+2vj/RNxkkxwKa+3z+235rikZwByQ7fQi2w6LLY7wjPsu/C65mEBwnpoBCqvKw
+Xl3ijSUDLe39ofSnB78sfZJtrwVuRZtRATbIRLEh6/sf5HXjD4TCqjptKv2d3q7hBdP2g0Bv+iUB
+pY4vj9vkdTfsykIyFnZnacZ0yXro3mu69ordwPpJX23AUFuS+n8H8FYNQW3zA2Gbv7v5pj4RPLu1
+YFoth8rrX//+Gb5bL8zDluJc6w/eZcZ4mPazizp2U5g/NsgvHiJ/o1f+4lFh1N+Zeuxop/9OQFLq
+NvzSssnezCB3unXcqForACNHoRCUMYn3EXoD88S7LizXs2dalSHTC3jrGlgRaXLNNjAhqLgQP52H
+OHwP+JHnRoitEcVzBja4pbBu1ABHiD6gqfRo1ChK4pCcimVBMv56s16n/F8QhFnutOFgRzMW/YQA
+8D4VGIr1RsqKkUwA80/DbgebCLAgbkv/JrSiD+31Cq7sySJcH2OUFItZk/9DbU+32gzImjohg1y+
+r3qsTbmSw4saTXSf9GDkNeNZtqN/mwMQ35Z4C2QTfsUSJ2TzwBCAzV5M1b3lbQXi/9gus4ZCXZWG
+M5oaKAk/6g0ZoKYilKwvmrlrkzNdtpJiZXzfo2ToUBJumzQVbEjqklK+72VlT52oPhWmJ+suGy49
+sQqq6W3coQHBx8OG1P/crCfyY7m9PfImAUK909F81yf8SS3Cqk/VqosBkyZ7HbluUteky0sghjTh
+TfefUYo8pe4QfNv6ZwVHGtpYhCGe30/AvjdERA5FV7Up3lj0wRVFCEb+7VolG6AuH7BRKgW8YBdW
+bH02yzt344psdYts7SIMC7Y+6zTkn2pux6WxRviEDl7l333rd1edtYJBseBwFJD6qRQqoxz3Kngg
+PcE5JHiEziLXi9adYWcXMbc7tQGF/xM4DsmKbCE9GTzjQ4+yAzdawqNRwUPRxEFkraMcDzeaqsN8
+xg6KSJ5T915h5NEukdM5dIaJjkBvaR2uPuAHfoifgAuMnGjfuSgMVC25UHwXrOwLz2eYdqkwHKkD
+CXad0luWGgagwjGJtwJ2Rh/IYesg/GT6vpieCA3OnARtNsWC/LxTTTAKPZKeh2Ka5Lo4ieWrgvwr
+tFqc/+V4uOOTcvx0iSNVf78PmDJcw0FToNhYmqvGssLMatEYlEyxtZPW1lUkNIuq6lvN1PJcxFYO
+cHT9qW1ZTzwh+UmZq8focUOt4OMf8vI7r85DxFDsUQwiWCCbVuL2c5SHmOPLhKgxunF/vQvlTxN+
+nMMq/GjV8hUzkTI6SSSviOkwDctVTXCr/bHdEGMJ1httkNfeOa8QrQLqRceNWb9d5ylTC7nrIPRm
+gyQsie9g8QSmjap81HMIfq+gCn3bqeCLbobR+VXxbK/70Q8wNwZhMKoy9EF2Qf9gQEN+oHO5vZrC
+VdhhQRvLRioFNWfdTzvWg8h7WNs8FzaRhsuwkI44p06h94WY+aX0LqRkQarY3oubFR0W8sEtwN4M
+gDRSRsXU1JGowzoXkUoJUB3WQPYS65UptSU9c2EIgjqXn0S0gyKIiwYsBVeIya+5v8zQgrW5W9J7
+crT/zKYu1gd30Ter/C//WsvZ+TzdH0XxchTFvLU1LeHjHLO8hjgKvj8N8HAlQQjlYZ3k5q4p6HL8
+IoyprBVcb7887rt1C9mNENAUbwd/XUe4nKl3+pRGh+0I2qAtIHa2V5xWZdvqW9sR0b6ioigZXK6x
+16Tu6h+0quM2R9+nKFXVKHvciS9Ba7ZUslbpirnoaUR+48xWr0qRmTKtb35bNPWz1ypqRhWB06da
+tRi99EEki/Z4FauDdBgj/0u9aQ8co1drj9tNpqpqASm9kFu+uyScyevo4YWF8kjV2cL5KGaoQi8t
+mw0o66b6zv99nySjzEGM/fvrXSzmqa1rIKEOQWCPLFMjLa0gSvQF4r04g03Z+Ss3zEAKa9mUeuW8
+JBlMEaJhMzvELbj46OMVMLYHiH8EtmgfrphQIrzWp4iFL0ueDNjNkQMnkoR9hxifNsKFP6BD99/m
+Nfevh5b90V+NFOFPjE0kITogEr6w/8GBOm==

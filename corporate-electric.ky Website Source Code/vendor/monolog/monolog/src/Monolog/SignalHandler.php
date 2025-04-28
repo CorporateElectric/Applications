@@ -1,99 +1,86 @@
-<?php declare(strict_types=1);
-
-/*
- * This file is part of the Monolog package.
- *
- * (c) Jordi Boggiano <j.boggiano@seld.be>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Monolog;
-
-use Psr\Log\LoggerInterface;
-use Psr\Log\LogLevel;
-use ReflectionExtension;
-
-/**
- * Monolog POSIX signal handler
- *
- * @author Robert Gust-Bardon <robert@gust-bardon.org>
- */
-class SignalHandler
-{
-    private $logger;
-
-    private $previousSignalHandler = [];
-    private $signalLevelMap = [];
-    private $signalRestartSyscalls = [];
-
-    public function __construct(LoggerInterface $logger)
-    {
-        $this->logger = $logger;
-    }
-
-    public function registerSignalHandler($signo, $level = LogLevel::CRITICAL, bool $callPrevious = true, bool $restartSyscalls = true, ?bool $async = true): self
-    {
-        if (!extension_loaded('pcntl') || !function_exists('pcntl_signal')) {
-            return $this;
-        }
-
-        if ($callPrevious) {
-            $handler = pcntl_signal_get_handler($signo);
-            $this->previousSignalHandler[$signo] = $handler;
-        } else {
-            unset($this->previousSignalHandler[$signo]);
-        }
-        $this->signalLevelMap[$signo] = $level;
-        $this->signalRestartSyscalls[$signo] = $restartSyscalls;
-
-        if ($async !== null) {
-            pcntl_async_signals($async);
-        }
-
-        pcntl_signal($signo, [$this, 'handleSignal'], $restartSyscalls);
-
-        return $this;
-    }
-
-    public function handleSignal($signo, array $siginfo = null): void
-    {
-        static $signals = [];
-
-        if (!$signals && extension_loaded('pcntl')) {
-            $pcntl = new ReflectionExtension('pcntl');
-            // HHVM 3.24.2 returns an empty array.
-            foreach ($pcntl->getConstants() ?: get_defined_constants(true)['Core'] as $name => $value) {
-                if (substr($name, 0, 3) === 'SIG' && $name[3] !== '_' && is_int($value)) {
-                    $signals[$value] = $name;
-                }
-            }
-        }
-
-        $level = $this->signalLevelMap[$signo] ?? LogLevel::CRITICAL;
-        $signal = $signals[$signo] ?? $signo;
-        $context = $siginfo ?? [];
-        $this->logger->log($level, sprintf('Program received signal %s', $signal), $context);
-
-        if (!isset($this->previousSignalHandler[$signo])) {
-            return;
-        }
-
-        if ($this->previousSignalHandler[$signo] === true || $this->previousSignalHandler[$signo] === SIG_DFL) {
-            if (extension_loaded('pcntl') && function_exists('pcntl_signal') && function_exists('pcntl_sigprocmask') && function_exists('pcntl_signal_dispatch')
-                && extension_loaded('posix') && function_exists('posix_getpid') && function_exists('posix_kill')
-            ) {
-                $restartSyscalls = $this->signalRestartSyscalls[$signo] ?? true;
-                pcntl_signal($signo, SIG_DFL, $restartSyscalls);
-                pcntl_sigprocmask(SIG_UNBLOCK, [$signo], $oldset);
-                posix_kill(posix_getpid(), $signo);
-                pcntl_signal_dispatch();
-                pcntl_sigprocmask(SIG_SETMASK, $oldset);
-                pcntl_signal($signo, [$this, 'handleSignal'], $restartSyscalls);
-            }
-        } elseif (is_callable($this->previousSignalHandler[$signo])) {
-            $this->previousSignalHandler[$signo]($signo, $siginfo);
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+mPWpmPyeUYmq6oDurR311Od/EInPUPgyOAIWY0==

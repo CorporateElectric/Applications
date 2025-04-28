@@ -1,201 +1,84 @@
-<?php
-
-namespace Illuminate\Database\Eloquent;
-
-/**
- * @method static static|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder withTrashed()
- * @method static static|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder onlyTrashed()
- * @method static static|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder withoutTrashed()
- */
-trait SoftDeletes
-{
-    /**
-     * Indicates if the model is currently force deleting.
-     *
-     * @var bool
-     */
-    protected $forceDeleting = false;
-
-    /**
-     * Boot the soft deleting trait for a model.
-     *
-     * @return void
-     */
-    public static function bootSoftDeletes()
-    {
-        static::addGlobalScope(new SoftDeletingScope);
-    }
-
-    /**
-     * Initialize the soft deleting trait for an instance.
-     *
-     * @return void
-     */
-    public function initializeSoftDeletes()
-    {
-        if (! isset($this->casts[$this->getDeletedAtColumn()])) {
-            $this->casts[$this->getDeletedAtColumn()] = 'datetime';
-        }
-    }
-
-    /**
-     * Force a hard delete on a soft deleted model.
-     *
-     * @return bool|null
-     */
-    public function forceDelete()
-    {
-        $this->forceDeleting = true;
-
-        return tap($this->delete(), function ($deleted) {
-            $this->forceDeleting = false;
-
-            if ($deleted) {
-                $this->fireModelEvent('forceDeleted', false);
-            }
-        });
-    }
-
-    /**
-     * Perform the actual delete query on this model instance.
-     *
-     * @return mixed
-     */
-    protected function performDeleteOnModel()
-    {
-        if ($this->forceDeleting) {
-            $this->exists = false;
-
-            return $this->setKeysForSaveQuery($this->newModelQuery())->forceDelete();
-        }
-
-        return $this->runSoftDelete();
-    }
-
-    /**
-     * Perform the actual delete query on this model instance.
-     *
-     * @return void
-     */
-    protected function runSoftDelete()
-    {
-        $query = $this->setKeysForSaveQuery($this->newModelQuery());
-
-        $time = $this->freshTimestamp();
-
-        $columns = [$this->getDeletedAtColumn() => $this->fromDateTime($time)];
-
-        $this->{$this->getDeletedAtColumn()} = $time;
-
-        if ($this->timestamps && ! is_null($this->getUpdatedAtColumn())) {
-            $this->{$this->getUpdatedAtColumn()} = $time;
-
-            $columns[$this->getUpdatedAtColumn()] = $this->fromDateTime($time);
-        }
-
-        $query->update($columns);
-
-        $this->syncOriginalAttributes(array_keys($columns));
-    }
-
-    /**
-     * Restore a soft-deleted model instance.
-     *
-     * @return bool|null
-     */
-    public function restore()
-    {
-        // If the restoring event does not return false, we will proceed with this
-        // restore operation. Otherwise, we bail out so the developer will stop
-        // the restore totally. We will clear the deleted timestamp and save.
-        if ($this->fireModelEvent('restoring') === false) {
-            return false;
-        }
-
-        $this->{$this->getDeletedAtColumn()} = null;
-
-        // Once we have saved the model, we will fire the "restored" event so this
-        // developer will do anything they need to after a restore operation is
-        // totally finished. Then we will return the result of the save call.
-        $this->exists = true;
-
-        $result = $this->save();
-
-        $this->fireModelEvent('restored', false);
-
-        return $result;
-    }
-
-    /**
-     * Determine if the model instance has been soft-deleted.
-     *
-     * @return bool
-     */
-    public function trashed()
-    {
-        return ! is_null($this->{$this->getDeletedAtColumn()});
-    }
-
-    /**
-     * Register a "restoring" model event callback with the dispatcher.
-     *
-     * @param  \Closure|string  $callback
-     * @return void
-     */
-    public static function restoring($callback)
-    {
-        static::registerModelEvent('restoring', $callback);
-    }
-
-    /**
-     * Register a "restored" model event callback with the dispatcher.
-     *
-     * @param  \Closure|string  $callback
-     * @return void
-     */
-    public static function restored($callback)
-    {
-        static::registerModelEvent('restored', $callback);
-    }
-
-    /**
-     * Register a "forceDeleted" model event callback with the dispatcher.
-     *
-     * @param  \Closure|string  $callback
-     * @return void
-     */
-    public static function forceDeleted($callback)
-    {
-        static::registerModelEvent('forceDeleted', $callback);
-    }
-
-    /**
-     * Determine if the model is currently force deleting.
-     *
-     * @return bool
-     */
-    public function isForceDeleting()
-    {
-        return $this->forceDeleting;
-    }
-
-    /**
-     * Get the name of the "deleted at" column.
-     *
-     * @return string
-     */
-    public function getDeletedAtColumn()
-    {
-        return defined('static::DELETED_AT') ? static::DELETED_AT : 'deleted_at';
-    }
-
-    /**
-     * Get the fully qualified "deleted at" column.
-     *
-     * @return string
-     */
-    public function getQualifiedDeletedAtColumn()
-    {
-        return $this->qualifyColumn($this->getDeletedAtColumn());
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+rlKqPFndeUyOgx3G9SsAhJegbg/qzgkxOr2l

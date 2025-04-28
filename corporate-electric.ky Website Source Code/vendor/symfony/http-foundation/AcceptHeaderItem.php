@@ -1,177 +1,62 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpFoundation;
-
-/**
- * Represents an Accept-* header item.
- *
- * @author Jean-François Simon <contact@jfsimon.fr>
- */
-class AcceptHeaderItem
-{
-    private $value;
-    private $quality = 1.0;
-    private $index = 0;
-    private $attributes = [];
-
-    public function __construct(string $value, array $attributes = [])
-    {
-        $this->value = $value;
-        foreach ($attributes as $name => $value) {
-            $this->setAttribute($name, $value);
-        }
-    }
-
-    /**
-     * Builds an AcceptHeaderInstance instance from a string.
-     *
-     * @return self
-     */
-    public static function fromString(?string $itemValue)
-    {
-        $parts = HeaderUtils::split($itemValue ?? '', ';=');
-
-        $part = array_shift($parts);
-        $attributes = HeaderUtils::combine($parts);
-
-        return new self($part[0], $attributes);
-    }
-
-    /**
-     * Returns header value's string representation.
-     *
-     * @return string
-     */
-    public function __toString()
-    {
-        $string = $this->value.($this->quality < 1 ? ';q='.$this->quality : '');
-        if (\count($this->attributes) > 0) {
-            $string .= '; '.HeaderUtils::toString($this->attributes, ';');
-        }
-
-        return $string;
-    }
-
-    /**
-     * Set the item value.
-     *
-     * @return $this
-     */
-    public function setValue(string $value)
-    {
-        $this->value = $value;
-
-        return $this;
-    }
-
-    /**
-     * Returns the item value.
-     *
-     * @return string
-     */
-    public function getValue()
-    {
-        return $this->value;
-    }
-
-    /**
-     * Set the item quality.
-     *
-     * @return $this
-     */
-    public function setQuality(float $quality)
-    {
-        $this->quality = $quality;
-
-        return $this;
-    }
-
-    /**
-     * Returns the item quality.
-     *
-     * @return float
-     */
-    public function getQuality()
-    {
-        return $this->quality;
-    }
-
-    /**
-     * Set the item index.
-     *
-     * @return $this
-     */
-    public function setIndex(int $index)
-    {
-        $this->index = $index;
-
-        return $this;
-    }
-
-    /**
-     * Returns the item index.
-     *
-     * @return int
-     */
-    public function getIndex()
-    {
-        return $this->index;
-    }
-
-    /**
-     * Tests if an attribute exists.
-     *
-     * @return bool
-     */
-    public function hasAttribute(string $name)
-    {
-        return isset($this->attributes[$name]);
-    }
-
-    /**
-     * Returns an attribute by its name.
-     *
-     * @param mixed $default
-     *
-     * @return mixed
-     */
-    public function getAttribute(string $name, $default = null)
-    {
-        return isset($this->attributes[$name]) ? $this->attributes[$name] : $default;
-    }
-
-    /**
-     * Returns all attributes.
-     *
-     * @return array
-     */
-    public function getAttributes()
-    {
-        return $this->attributes;
-    }
-
-    /**
-     * Set an attribute.
-     *
-     * @return $this
-     */
-    public function setAttribute(string $name, string $value)
-    {
-        if ('q' === $name) {
-            $this->quality = (float) $value;
-        } else {
-            $this->attributes[$name] = $value;
-        }
-
-        return $this;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

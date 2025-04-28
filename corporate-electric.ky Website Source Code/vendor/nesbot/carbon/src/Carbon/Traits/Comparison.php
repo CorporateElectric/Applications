@@ -1,1043 +1,229 @@
-<?php
-
-/**
- * This file is part of the Carbon package.
- *
- * (c) Brian Nesbitt <brian@nesbot.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace Carbon\Traits;
-
-use BadMethodCallException;
-use Carbon\CarbonInterface;
-use Carbon\Exceptions\BadComparisonUnitException;
-use InvalidArgumentException;
-
-/**
- * Trait Comparison.
- *
- * Comparison utils and testers. All the following methods return booleans.
- * nowWithSameTz
- *
- * Depends on the following methods:
- *
- * @method static        resolveCarbon($date)
- * @method static        copy()
- * @method static        nowWithSameTz()
- * @method static static yesterday($timezone = null)
- * @method static static tomorrow($timezone = null)
- */
-trait Comparison
-{
-    /**
-     * Determines if the instance is equal to another
-     *
-     * @example
-     * ```
-     * Carbon::parse('2018-07-25 12:45:16')->eq('2018-07-25 12:45:16'); // true
-     * Carbon::parse('2018-07-25 12:45:16')->eq(Carbon::parse('2018-07-25 12:45:16')); // true
-     * Carbon::parse('2018-07-25 12:45:16')->eq('2018-07-25 12:45:17'); // false
-     * ```
-     *
-     * @param \Carbon\Carbon|\DateTimeInterface|mixed $date
-     *
-     * @see equalTo()
-     *
-     * @return bool
-     */
-    public function eq($date): bool
-    {
-        return $this->equalTo($date);
-    }
-
-    /**
-     * Determines if the instance is equal to another
-     *
-     * @example
-     * ```
-     * Carbon::parse('2018-07-25 12:45:16')->equalTo('2018-07-25 12:45:16'); // true
-     * Carbon::parse('2018-07-25 12:45:16')->equalTo(Carbon::parse('2018-07-25 12:45:16')); // true
-     * Carbon::parse('2018-07-25 12:45:16')->equalTo('2018-07-25 12:45:17'); // false
-     * ```
-     *
-     * @param \Carbon\Carbon|\DateTimeInterface|mixed $date
-     *
-     * @return bool
-     */
-    public function equalTo($date): bool
-    {
-        return $this == $date;
-    }
-
-    /**
-     * Determines if the instance is not equal to another
-     *
-     * @example
-     * ```
-     * Carbon::parse('2018-07-25 12:45:16')->ne('2018-07-25 12:45:16'); // false
-     * Carbon::parse('2018-07-25 12:45:16')->ne(Carbon::parse('2018-07-25 12:45:16')); // false
-     * Carbon::parse('2018-07-25 12:45:16')->ne('2018-07-25 12:45:17'); // true
-     * ```
-     *
-     * @param \Carbon\Carbon|\DateTimeInterface|mixed $date
-     *
-     * @see notEqualTo()
-     *
-     * @return bool
-     */
-    public function ne($date): bool
-    {
-        return $this->notEqualTo($date);
-    }
-
-    /**
-     * Determines if the instance is not equal to another
-     *
-     * @example
-     * ```
-     * Carbon::parse('2018-07-25 12:45:16')->notEqualTo('2018-07-25 12:45:16'); // false
-     * Carbon::parse('2018-07-25 12:45:16')->notEqualTo(Carbon::parse('2018-07-25 12:45:16')); // false
-     * Carbon::parse('2018-07-25 12:45:16')->notEqualTo('2018-07-25 12:45:17'); // true
-     * ```
-     *
-     * @param \Carbon\Carbon|\DateTimeInterface|mixed $date
-     *
-     * @return bool
-     */
-    public function notEqualTo($date): bool
-    {
-        return !$this->equalTo($date);
-    }
-
-    /**
-     * Determines if the instance is greater (after) than another
-     *
-     * @example
-     * ```
-     * Carbon::parse('2018-07-25 12:45:16')->gt('2018-07-25 12:45:15'); // true
-     * Carbon::parse('2018-07-25 12:45:16')->gt('2018-07-25 12:45:16'); // false
-     * Carbon::parse('2018-07-25 12:45:16')->gt('2018-07-25 12:45:17'); // false
-     * ```
-     *
-     * @param \Carbon\Carbon|\DateTimeInterface|mixed $date
-     *
-     * @see greaterThan()
-     *
-     * @return bool
-     */
-    public function gt($date): bool
-    {
-        return $this->greaterThan($date);
-    }
-
-    /**
-     * Determines if the instance is greater (after) than another
-     *
-     * @example
-     * ```
-     * Carbon::parse('2018-07-25 12:45:16')->greaterThan('2018-07-25 12:45:15'); // true
-     * Carbon::parse('2018-07-25 12:45:16')->greaterThan('2018-07-25 12:45:16'); // false
-     * Carbon::parse('2018-07-25 12:45:16')->greaterThan('2018-07-25 12:45:17'); // false
-     * ```
-     *
-     * @param \Carbon\Carbon|\DateTimeInterface|mixed $date
-     *
-     * @return bool
-     */
-    public function greaterThan($date): bool
-    {
-        return $this > $date;
-    }
-
-    /**
-     * Determines if the instance is greater (after) than another
-     *
-     * @example
-     * ```
-     * Carbon::parse('2018-07-25 12:45:16')->isAfter('2018-07-25 12:45:15'); // true
-     * Carbon::parse('2018-07-25 12:45:16')->isAfter('2018-07-25 12:45:16'); // false
-     * Carbon::parse('2018-07-25 12:45:16')->isAfter('2018-07-25 12:45:17'); // false
-     * ```
-     *
-     * @param \Carbon\Carbon|\DateTimeInterface|mixed $date
-     *
-     * @see greaterThan()
-     *
-     * @return bool
-     */
-    public function isAfter($date): bool
-    {
-        return $this->greaterThan($date);
-    }
-
-    /**
-     * Determines if the instance is greater (after) than or equal to another
-     *
-     * @example
-     * ```
-     * Carbon::parse('2018-07-25 12:45:16')->gte('2018-07-25 12:45:15'); // true
-     * Carbon::parse('2018-07-25 12:45:16')->gte('2018-07-25 12:45:16'); // true
-     * Carbon::parse('2018-07-25 12:45:16')->gte('2018-07-25 12:45:17'); // false
-     * ```
-     *
-     * @param \Carbon\Carbon|\DateTimeInterface|mixed $date
-     *
-     * @see greaterThanOrEqualTo()
-     *
-     * @return bool
-     */
-    public function gte($date): bool
-    {
-        return $this->greaterThanOrEqualTo($date);
-    }
-
-    /**
-     * Determines if the instance is greater (after) than or equal to another
-     *
-     * @example
-     * ```
-     * Carbon::parse('2018-07-25 12:45:16')->greaterThanOrEqualTo('2018-07-25 12:45:15'); // true
-     * Carbon::parse('2018-07-25 12:45:16')->greaterThanOrEqualTo('2018-07-25 12:45:16'); // true
-     * Carbon::parse('2018-07-25 12:45:16')->greaterThanOrEqualTo('2018-07-25 12:45:17'); // false
-     * ```
-     *
-     * @param \Carbon\Carbon|\DateTimeInterface|mixed $date
-     *
-     * @return bool
-     */
-    public function greaterThanOrEqualTo($date): bool
-    {
-        return $this >= $date;
-    }
-
-    /**
-     * Determines if the instance is less (before) than another
-     *
-     * @example
-     * ```
-     * Carbon::parse('2018-07-25 12:45:16')->lt('2018-07-25 12:45:15'); // false
-     * Carbon::parse('2018-07-25 12:45:16')->lt('2018-07-25 12:45:16'); // false
-     * Carbon::parse('2018-07-25 12:45:16')->lt('2018-07-25 12:45:17'); // true
-     * ```
-     *
-     * @param \Carbon\Carbon|\DateTimeInterface|mixed $date
-     *
-     * @see lessThan()
-     *
-     * @return bool
-     */
-    public function lt($date): bool
-    {
-        return $this->lessThan($date);
-    }
-
-    /**
-     * Determines if the instance is less (before) than another
-     *
-     * @example
-     * ```
-     * Carbon::parse('2018-07-25 12:45:16')->lessThan('2018-07-25 12:45:15'); // false
-     * Carbon::parse('2018-07-25 12:45:16')->lessThan('2018-07-25 12:45:16'); // false
-     * Carbon::parse('2018-07-25 12:45:16')->lessThan('2018-07-25 12:45:17'); // true
-     * ```
-     *
-     * @param \Carbon\Carbon|\DateTimeInterface|mixed $date
-     *
-     * @return bool
-     */
-    public function lessThan($date): bool
-    {
-        return $this < $date;
-    }
-
-    /**
-     * Determines if the instance is less (before) than another
-     *
-     * @example
-     * ```
-     * Carbon::parse('2018-07-25 12:45:16')->isBefore('2018-07-25 12:45:15'); // false
-     * Carbon::parse('2018-07-25 12:45:16')->isBefore('2018-07-25 12:45:16'); // false
-     * Carbon::parse('2018-07-25 12:45:16')->isBefore('2018-07-25 12:45:17'); // true
-     * ```
-     *
-     * @param \Carbon\Carbon|\DateTimeInterface|mixed $date
-     *
-     * @see lessThan()
-     *
-     * @return bool
-     */
-    public function isBefore($date): bool
-    {
-        return $this->lessThan($date);
-    }
-
-    /**
-     * Determines if the instance is less (before) or equal to another
-     *
-     * @example
-     * ```
-     * Carbon::parse('2018-07-25 12:45:16')->lte('2018-07-25 12:45:15'); // false
-     * Carbon::parse('2018-07-25 12:45:16')->lte('2018-07-25 12:45:16'); // true
-     * Carbon::parse('2018-07-25 12:45:16')->lte('2018-07-25 12:45:17'); // true
-     * ```
-     *
-     * @param \Carbon\Carbon|\DateTimeInterface|mixed $date
-     *
-     * @see lessThanOrEqualTo()
-     *
-     * @return bool
-     */
-    public function lte($date): bool
-    {
-        return $this->lessThanOrEqualTo($date);
-    }
-
-    /**
-     * Determines if the instance is less (before) or equal to another
-     *
-     * @example
-     * ```
-     * Carbon::parse('2018-07-25 12:45:16')->lessThanOrEqualTo('2018-07-25 12:45:15'); // false
-     * Carbon::parse('2018-07-25 12:45:16')->lessThanOrEqualTo('2018-07-25 12:45:16'); // true
-     * Carbon::parse('2018-07-25 12:45:16')->lessThanOrEqualTo('2018-07-25 12:45:17'); // true
-     * ```
-     *
-     * @param \Carbon\Carbon|\DateTimeInterface|mixed $date
-     *
-     * @return bool
-     */
-    public function lessThanOrEqualTo($date): bool
-    {
-        return $this <= $date;
-    }
-
-    /**
-     * Determines if the instance is between two others.
-     *
-     * The third argument allow you to specify if bounds are included or not (true by default)
-     * but for when you including/excluding bounds may produce different results in your application,
-     * we recommend to use the explicit methods ->betweenIncluded() or ->betweenExcluded() instead.
-     *
-     * @example
-     * ```
-     * Carbon::parse('2018-07-25')->between('2018-07-14', '2018-08-01'); // true
-     * Carbon::parse('2018-07-25')->between('2018-08-01', '2018-08-20'); // false
-     * Carbon::parse('2018-07-25')->between('2018-07-25', '2018-08-01'); // true
-     * Carbon::parse('2018-07-25')->between('2018-07-25', '2018-08-01', false); // false
-     * ```
-     *
-     * @param \Carbon\Carbon|\DateTimeInterface|mixed $date1
-     * @param \Carbon\Carbon|\DateTimeInterface|mixed $date2
-     * @param bool                                    $equal Indicates if an equal to comparison should be done
-     *
-     * @return bool
-     */
-    public function between($date1, $date2, $equal = true): bool
-    {
-        $date1 = $this->resolveCarbon($date1);
-        $date2 = $this->resolveCarbon($date2);
-
-        if ($date1->greaterThan($date2)) {
-            [$date1, $date2] = [$date2, $date1];
-        }
-
-        if ($equal) {
-            return $this->greaterThanOrEqualTo($date1) && $this->lessThanOrEqualTo($date2);
-        }
-
-        return $this->greaterThan($date1) && $this->lessThan($date2);
-    }
-
-    /**
-     * Determines if the instance is between two others, bounds included.
-     *
-     * @example
-     * ```
-     * Carbon::parse('2018-07-25')->betweenIncluded('2018-07-14', '2018-08-01'); // true
-     * Carbon::parse('2018-07-25')->betweenIncluded('2018-08-01', '2018-08-20'); // false
-     * Carbon::parse('2018-07-25')->betweenIncluded('2018-07-25', '2018-08-01'); // true
-     * ```
-     *
-     * @param \Carbon\Carbon|\DateTimeInterface|mixed $date1
-     * @param \Carbon\Carbon|\DateTimeInterface|mixed $date2
-     *
-     * @return bool
-     */
-    public function betweenIncluded($date1, $date2): bool
-    {
-        return $this->between($date1, $date2, true);
-    }
-
-    /**
-     * Determines if the instance is between two others, bounds excluded.
-     *
-     * @example
-     * ```
-     * Carbon::parse('2018-07-25')->betweenExcluded('2018-07-14', '2018-08-01'); // true
-     * Carbon::parse('2018-07-25')->betweenExcluded('2018-08-01', '2018-08-20'); // false
-     * Carbon::parse('2018-07-25')->betweenExcluded('2018-07-25', '2018-08-01'); // false
-     * ```
-     *
-     * @param \Carbon\Carbon|\DateTimeInterface|mixed $date1
-     * @param \Carbon\Carbon|\DateTimeInterface|mixed $date2
-     *
-     * @return bool
-     */
-    public function betweenExcluded($date1, $date2): bool
-    {
-        return $this->between($date1, $date2, false);
-    }
-
-    /**
-     * Determines if the instance is between two others
-     *
-     * @example
-     * ```
-     * Carbon::parse('2018-07-25')->isBetween('2018-07-14', '2018-08-01'); // true
-     * Carbon::parse('2018-07-25')->isBetween('2018-08-01', '2018-08-20'); // false
-     * Carbon::parse('2018-07-25')->isBetween('2018-07-25', '2018-08-01'); // true
-     * Carbon::parse('2018-07-25')->isBetween('2018-07-25', '2018-08-01', false); // false
-     * ```
-     *
-     * @param \Carbon\Carbon|\DateTimeInterface|mixed $date1
-     * @param \Carbon\Carbon|\DateTimeInterface|mixed $date2
-     * @param bool                                    $equal Indicates if an equal to comparison should be done
-     *
-     * @return bool
-     */
-    public function isBetween($date1, $date2, $equal = true): bool
-    {
-        return $this->between($date1, $date2, $equal);
-    }
-
-    /**
-     * Determines if the instance is a weekday.
-     *
-     * @example
-     * ```
-     * Carbon::parse('2019-07-14')->isWeekday(); // false
-     * Carbon::parse('2019-07-15')->isWeekday(); // true
-     * ```
-     *
-     * @return bool
-     */
-    public function isWeekday()
-    {
-        return !$this->isWeekend();
-    }
-
-    /**
-     * Determines if the instance is a weekend day.
-     *
-     * @example
-     * ```
-     * Carbon::parse('2019-07-14')->isWeekend(); // true
-     * Carbon::parse('2019-07-15')->isWeekend(); // false
-     * ```
-     *
-     * @return bool
-     */
-    public function isWeekend()
-    {
-        return \in_array($this->dayOfWeek, static::$weekendDays);
-    }
-
-    /**
-     * Determines if the instance is yesterday.
-     *
-     * @example
-     * ```
-     * Carbon::yesterday()->isYesterday(); // true
-     * Carbon::tomorrow()->isYesterday(); // false
-     * ```
-     *
-     * @return bool
-     */
-    public function isYesterday()
-    {
-        return $this->toDateString() === static::yesterday($this->getTimezone())->toDateString();
-    }
-
-    /**
-     * Determines if the instance is today.
-     *
-     * @example
-     * ```
-     * Carbon::today()->isToday(); // true
-     * Carbon::tomorrow()->isToday(); // false
-     * ```
-     *
-     * @return bool
-     */
-    public function isToday()
-    {
-        return $this->toDateString() === $this->nowWithSameTz()->toDateString();
-    }
-
-    /**
-     * Determines if the instance is tomorrow.
-     *
-     * @example
-     * ```
-     * Carbon::tomorrow()->isTomorrow(); // true
-     * Carbon::yesterday()->isTomorrow(); // false
-     * ```
-     *
-     * @return bool
-     */
-    public function isTomorrow()
-    {
-        return $this->toDateString() === static::tomorrow($this->getTimezone())->toDateString();
-    }
-
-    /**
-     * Determines if the instance is in the future, ie. greater (after) than now.
-     *
-     * @example
-     * ```
-     * Carbon::now()->addHours(5)->isFuture(); // true
-     * Carbon::now()->subHours(5)->isFuture(); // false
-     * ```
-     *
-     * @return bool
-     */
-    public function isFuture()
-    {
-        return $this->greaterThan($this->nowWithSameTz());
-    }
-
-    /**
-     * Determines if the instance is in the past, ie. less (before) than now.
-     *
-     * @example
-     * ```
-     * Carbon::now()->subHours(5)->isPast(); // true
-     * Carbon::now()->addHours(5)->isPast(); // false
-     * ```
-     *
-     * @return bool
-     */
-    public function isPast()
-    {
-        return $this->lessThan($this->nowWithSameTz());
-    }
-
-    /**
-     * Determines if the instance is a leap year.
-     *
-     * @example
-     * ```
-     * Carbon::parse('2020-01-01')->isLeapYear(); // true
-     * Carbon::parse('2019-01-01')->isLeapYear(); // false
-     * ```
-     *
-     * @return bool
-     */
-    public function isLeapYear()
-    {
-        return $this->rawFormat('L') === '1';
-    }
-
-    /**
-     * Determines if the instance is a long year
-     *
-     * @example
-     * ```
-     * Carbon::parse('2015-01-01')->isLongYear(); // true
-     * Carbon::parse('2016-01-01')->isLongYear(); // false
-     * ```
-     *
-     * @see https://en.wikipedia.org/wiki/ISO_8601#Week_dates
-     *
-     * @return bool
-     */
-    public function isLongYear()
-    {
-        return static::create($this->year, 12, 28, 0, 0, 0, $this->tz)->weekOfYear === 53;
-    }
-
-    /**
-     * Compares the formatted values of the two dates.
-     *
-     * @example
-     * ```
-     * Carbon::parse('2019-06-13')->isSameAs('Y-d', Carbon::parse('2019-12-13')); // true
-     * Carbon::parse('2019-06-13')->isSameAs('Y-d', Carbon::parse('2019-06-14')); // false
-     * ```
-     *
-     * @param string                                        $format date formats to compare.
-     * @param \Carbon\Carbon|\DateTimeInterface|string|null $date   instance to compare with or null to use current day.
-     *
-     * @return bool
-     */
-    public function isSameAs($format, $date = null)
-    {
-        return $this->rawFormat($format) === $this->resolveCarbon($date)->rawFormat($format);
-    }
-
-    /**
-     * Determines if the instance is in the current unit given.
-     *
-     * @example
-     * ```
-     * Carbon::parse('2019-01-13')->isSameUnit('year', Carbon::parse('2019-12-25')); // true
-     * Carbon::parse('2018-12-13')->isSameUnit('year', Carbon::parse('2019-12-25')); // false
-     * ```
-     *
-     * @param string                                 $unit singular unit string
-     * @param \Carbon\Carbon|\DateTimeInterface|null $date instance to compare with or null to use current day.
-     *
-     * @throws BadComparisonUnitException
-     *
-     * @return bool
-     */
-    public function isSameUnit($unit, $date = null)
-    {
-        $units = [
-            // @call isSameUnit
-            'year' => 'Y',
-            // @call isSameUnit
-            'week' => 'o-W',
-            // @call isSameUnit
-            'day' => 'Y-m-d',
-            // @call isSameUnit
-            'hour' => 'Y-m-d H',
-            // @call isSameUnit
-            'minute' => 'Y-m-d H:i',
-            // @call isSameUnit
-            'second' => 'Y-m-d H:i:s',
-            // @call isSameUnit
-            'micro' => 'Y-m-d H:i:s.u',
-            // @call isSameUnit
-            'microsecond' => 'Y-m-d H:i:s.u',
-        ];
-
-        if (!isset($units[$unit])) {
-            if (isset($this->$unit)) {
-                return $this->$unit === $this->resolveCarbon($date)->$unit;
-            }
-
-            if ($this->localStrictModeEnabled ?? static::isStrictModeEnabled()) {
-                throw new BadComparisonUnitException($unit);
-            }
-
-            return false;
-        }
-
-        return $this->isSameAs($units[$unit], $date);
-    }
-
-    /**
-     * Determines if the instance is in the current unit given.
-     *
-     * @example
-     * ```
-     * Carbon::now()->isCurrentUnit('hour'); // true
-     * Carbon::now()->subHours(2)->isCurrentUnit('hour'); // false
-     * ```
-     *
-     * @param string $unit The unit to test.
-     *
-     * @throws BadMethodCallException
-     *
-     * @return bool
-     */
-    public function isCurrentUnit($unit)
-    {
-        return $this->{'isSame'.ucfirst($unit)}();
-    }
-
-    /**
-     * Checks if the passed in date is in the same quarter as the instance quarter (and year if needed).
-     *
-     * @example
-     * ```
-     * Carbon::parse('2019-01-12')->isSameQuarter(Carbon::parse('2019-03-01')); // true
-     * Carbon::parse('2019-01-12')->isSameQuarter(Carbon::parse('2019-04-01')); // false
-     * Carbon::parse('2019-01-12')->isSameQuarter(Carbon::parse('2018-03-01')); // false
-     * Carbon::parse('2019-01-12')->isSameQuarter(Carbon::parse('2018-03-01'), false); // true
-     * ```
-     *
-     * @param \Carbon\Carbon|\DateTimeInterface|string|null $date       The instance to compare with or null to use current day.
-     * @param bool                                          $ofSameYear Check if it is the same month in the same year.
-     *
-     * @return bool
-     */
-    public function isSameQuarter($date = null, $ofSameYear = true)
-    {
-        $date = $this->resolveCarbon($date);
-
-        return $this->quarter === $date->quarter && (!$ofSameYear || $this->isSameYear($date));
-    }
-
-    /**
-     * Checks if the passed in date is in the same month as the instance´s month.
-     *
-     * @example
-     * ```
-     * Carbon::parse('2019-01-12')->isSameMonth(Carbon::parse('2019-01-01')); // true
-     * Carbon::parse('2019-01-12')->isSameMonth(Carbon::parse('2019-02-01')); // false
-     * Carbon::parse('2019-01-12')->isSameMonth(Carbon::parse('2018-01-01')); // false
-     * Carbon::parse('2019-01-12')->isSameMonth(Carbon::parse('2018-01-01'), false); // true
-     * ```
-     *
-     * @param \Carbon\Carbon|\DateTimeInterface|null $date       The instance to compare with or null to use the current date.
-     * @param bool                                   $ofSameYear Check if it is the same month in the same year.
-     *
-     * @return bool
-     */
-    public function isSameMonth($date = null, $ofSameYear = true)
-    {
-        return $this->isSameAs($ofSameYear ? 'Y-m' : 'm', $date);
-    }
-
-    /**
-     * Checks if this day is a specific day of the week.
-     *
-     * @example
-     * ```
-     * Carbon::parse('2019-07-17')->isDayOfWeek(Carbon::WEDNESDAY); // true
-     * Carbon::parse('2019-07-17')->isDayOfWeek(Carbon::FRIDAY); // false
-     * Carbon::parse('2019-07-17')->isDayOfWeek('Wednesday'); // true
-     * Carbon::parse('2019-07-17')->isDayOfWeek('Friday'); // false
-     * ```
-     *
-     * @param int $dayOfWeek
-     *
-     * @return bool
-     */
-    public function isDayOfWeek($dayOfWeek)
-    {
-        if (\is_string($dayOfWeek) && \defined($constant = static::class.'::'.strtoupper($dayOfWeek))) {
-            $dayOfWeek = \constant($constant);
-        }
-
-        return $this->dayOfWeek === $dayOfWeek;
-    }
-
-    /**
-     * Check if its the birthday. Compares the date/month values of the two dates.
-     *
-     * @example
-     * ```
-     * Carbon::now()->subYears(5)->isBirthday(); // true
-     * Carbon::now()->subYears(5)->subDay()->isBirthday(); // false
-     * Carbon::parse('2019-06-05')->isBirthday(Carbon::parse('2001-06-05')); // true
-     * Carbon::parse('2019-06-05')->isBirthday(Carbon::parse('2001-06-06')); // false
-     * ```
-     *
-     * @param \Carbon\Carbon|\DateTimeInterface|null $date The instance to compare with or null to use current day.
-     *
-     * @return bool
-     */
-    public function isBirthday($date = null)
-    {
-        return $this->isSameAs('md', $date);
-    }
-
-    /**
-     * Check if today is the last day of the Month
-     *
-     * @example
-     * ```
-     * Carbon::parse('2019-02-28')->isLastOfMonth(); // true
-     * Carbon::parse('2019-03-28')->isLastOfMonth(); // false
-     * Carbon::parse('2019-03-30')->isLastOfMonth(); // false
-     * Carbon::parse('2019-03-31')->isLastOfMonth(); // true
-     * Carbon::parse('2019-04-30')->isLastOfMonth(); // true
-     * ```
-     *
-     * @return bool
-     */
-    public function isLastOfMonth()
-    {
-        return $this->day === $this->daysInMonth;
-    }
-
-    /**
-     * Check if the instance is start of day / midnight.
-     *
-     * @example
-     * ```
-     * Carbon::parse('2019-02-28 00:00:00')->isStartOfDay(); // true
-     * Carbon::parse('2019-02-28 00:00:00.999999')->isStartOfDay(); // true
-     * Carbon::parse('2019-02-28 00:00:01')->isStartOfDay(); // false
-     * Carbon::parse('2019-02-28 00:00:00.000000')->isStartOfDay(true); // true
-     * Carbon::parse('2019-02-28 00:00:00.000012')->isStartOfDay(true); // false
-     * ```
-     *
-     * @param bool $checkMicroseconds check time at microseconds precision
-     *
-     * @return bool
-     */
-    public function isStartOfDay($checkMicroseconds = false)
-    {
-        /* @var CarbonInterface $this */
-        return $checkMicroseconds
-            ? $this->rawFormat('H:i:s.u') === '00:00:00.000000'
-            : $this->rawFormat('H:i:s') === '00:00:00';
-    }
-
-    /**
-     * Check if the instance is end of day.
-     *
-     * @example
-     * ```
-     * Carbon::parse('2019-02-28 23:59:59.999999')->isEndOfDay(); // true
-     * Carbon::parse('2019-02-28 23:59:59.123456')->isEndOfDay(); // true
-     * Carbon::parse('2019-02-28 23:59:59')->isEndOfDay(); // true
-     * Carbon::parse('2019-02-28 23:59:58.999999')->isEndOfDay(); // false
-     * Carbon::parse('2019-02-28 23:59:59.999999')->isEndOfDay(true); // true
-     * Carbon::parse('2019-02-28 23:59:59.123456')->isEndOfDay(true); // false
-     * Carbon::parse('2019-02-28 23:59:59')->isEndOfDay(true); // false
-     * ```
-     *
-     * @param bool $checkMicroseconds check time at microseconds precision
-     *
-     * @return bool
-     */
-    public function isEndOfDay($checkMicroseconds = false)
-    {
-        /* @var CarbonInterface $this */
-        return $checkMicroseconds
-            ? $this->rawFormat('H:i:s.u') === '23:59:59.999999'
-            : $this->rawFormat('H:i:s') === '23:59:59';
-    }
-
-    /**
-     * Check if the instance is start of day / midnight.
-     *
-     * @example
-     * ```
-     * Carbon::parse('2019-02-28 00:00:00')->isMidnight(); // true
-     * Carbon::parse('2019-02-28 00:00:00.999999')->isMidnight(); // true
-     * Carbon::parse('2019-02-28 00:00:01')->isMidnight(); // false
-     * ```
-     *
-     * @return bool
-     */
-    public function isMidnight()
-    {
-        return $this->isStartOfDay();
-    }
-
-    /**
-     * Check if the instance is midday.
-     *
-     * @example
-     * ```
-     * Carbon::parse('2019-02-28 11:59:59.999999')->isMidday(); // false
-     * Carbon::parse('2019-02-28 12:00:00')->isMidday(); // true
-     * Carbon::parse('2019-02-28 12:00:00.999999')->isMidday(); // true
-     * Carbon::parse('2019-02-28 12:00:01')->isMidday(); // false
-     * ```
-     *
-     * @return bool
-     */
-    public function isMidday()
-    {
-        /* @var CarbonInterface $this */
-        return $this->rawFormat('G:i:s') === static::$midDayAt.':00:00';
-    }
-
-    /**
-     * Checks if the (date)time string is in a given format.
-     *
-     * @example
-     * ```
-     * Carbon::hasFormat('11:12:45', 'h:i:s'); // true
-     * Carbon::hasFormat('13:12:45', 'h:i:s'); // false
-     * ```
-     *
-     * @param string $date
-     * @param string $format
-     *
-     * @return bool
-     */
-    public static function hasFormat($date, $format)
-    {
-        // createFromFormat() is known to handle edge cases silently.
-        // E.g. "1975-5-1" (Y-n-j) will still be parsed correctly when "Y-m-d" is supplied as the format.
-        // To ensure we're really testing against our desired format, perform an additional regex validation.
-
-        return self::matchFormatPattern((string) $date, preg_quote((string) $format, '/'), static::$regexFormats);
-    }
-
-    /**
-     * Checks if the (date)time string is in a given format.
-     *
-     * @example
-     * ```
-     * Carbon::hasFormatWithModifiers('31/08/2015', 'd#m#Y'); // true
-     * Carbon::hasFormatWithModifiers('31/08/2015', 'm#d#Y'); // false
-     * ```
-     *
-     * @param string $date
-     * @param string $format
-     *
-     * @return bool
-     */
-    public static function hasFormatWithModifiers($date, $format): bool
-    {
-        return self::matchFormatPattern((string) $date, (string) $format, array_merge(static::$regexFormats, static::$regexFormatModifiers));
-    }
-
-    /**
-     * Checks if the (date)time string is in a given format and valid to create a
-     * new instance.
-     *
-     * @example
-     * ```
-     * Carbon::canBeCreatedFromFormat('11:12:45', 'h:i:s'); // true
-     * Carbon::canBeCreatedFromFormat('13:12:45', 'h:i:s'); // false
-     * ```
-     *
-     * @param string $date
-     * @param string $format
-     *
-     * @return bool
-     */
-    public static function canBeCreatedFromFormat($date, $format)
-    {
-        try {
-            // Try to create a DateTime object. Throws an InvalidArgumentException if the provided time string
-            // doesn't match the format in any way.
-            if (!static::rawCreateFromFormat($format, $date)) {
-                return false;
-            }
-        } catch (InvalidArgumentException $e) {
-            return false;
-        }
-
-        return static::hasFormatWithModifiers($date, $format);
-    }
-
-    /**
-     * Returns true if the current date matches the given string.
-     *
-     * @example
-     * ```
-     * var_dump(Carbon::parse('2019-06-02 12:23:45')->is('2019')); // true
-     * var_dump(Carbon::parse('2019-06-02 12:23:45')->is('2018')); // false
-     * var_dump(Carbon::parse('2019-06-02 12:23:45')->is('2019-06')); // true
-     * var_dump(Carbon::parse('2019-06-02 12:23:45')->is('06-02')); // true
-     * var_dump(Carbon::parse('2019-06-02 12:23:45')->is('2019-06-02')); // true
-     * var_dump(Carbon::parse('2019-06-02 12:23:45')->is('Sunday')); // true
-     * var_dump(Carbon::parse('2019-06-02 12:23:45')->is('June')); // true
-     * var_dump(Carbon::parse('2019-06-02 12:23:45')->is('12:23')); // true
-     * var_dump(Carbon::parse('2019-06-02 12:23:45')->is('12:23:45')); // true
-     * var_dump(Carbon::parse('2019-06-02 12:23:45')->is('12:23:00')); // false
-     * var_dump(Carbon::parse('2019-06-02 12:23:45')->is('12h')); // true
-     * var_dump(Carbon::parse('2019-06-02 15:23:45')->is('3pm')); // true
-     * var_dump(Carbon::parse('2019-06-02 15:23:45')->is('3am')); // false
-     * ```
-     *
-     * @param string $tester day name, month name, hour, date, etc. as string
-     *
-     * @return bool
-     */
-    public function is(string $tester)
-    {
-        $tester = trim($tester);
-
-        if (preg_match('/^\d+$/', $tester)) {
-            return $this->year === \intval($tester);
-        }
-
-        if (preg_match('/^\d{3,}-\d{1,2}$/', $tester)) {
-            return $this->isSameMonth(static::parse($tester));
-        }
-
-        if (preg_match('/^\d{1,2}-\d{1,2}$/', $tester)) {
-            return $this->isSameDay(static::parse($this->year.'-'.$tester));
-        }
-
-        $modifier = preg_replace('/(\d)h$/i', '$1:00', $tester);
-
-        /* @var CarbonInterface $max */
-        $median = static::parse('5555-06-15 12:30:30.555555')->modify($modifier);
-        $current = $this->copy();
-        /* @var CarbonInterface $other */
-        $other = $this->copy()->modify($modifier);
-
-        if ($current->eq($other)) {
-            return true;
-        }
-
-        if (preg_match('/\d:\d{1,2}:\d{1,2}$/', $tester)) {
-            return $current->startOfSecond()->eq($other);
-        }
-
-        if (preg_match('/\d:\d{1,2}$/', $tester)) {
-            return $current->startOfMinute()->eq($other);
-        }
-
-        if (preg_match('/\d(h|am|pm)$/', $tester)) {
-            return $current->startOfHour()->eq($other);
-        }
-
-        if (preg_match(
-            '/^(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d+$/i',
-            $tester
-        )) {
-            return $current->startOfMonth()->eq($other->startOfMonth());
-        }
-
-        $units = [
-            'month' => [1, 'year'],
-            'day' => [1, 'month'],
-            'hour' => [0, 'day'],
-            'minute' => [0, 'hour'],
-            'second' => [0, 'minute'],
-            'microsecond' => [0, 'second'],
-        ];
-
-        foreach ($units as $unit => [$minimum, $startUnit]) {
-            if ($median->$unit === $minimum) {
-                $current = $current->startOf($startUnit);
-
-                break;
-            }
-        }
-
-        return $current->eq($other);
-    }
-
-    /**
-     * Checks if the (date)time string is in a given format with
-     * given list of pattern replacements.
-     *
-     * @example
-     * ```
-     * Carbon::hasFormat('11:12:45', 'h:i:s'); // true
-     * Carbon::hasFormat('13:12:45', 'h:i:s'); // false
-     * ```
-     *
-     * @param string $date
-     * @param string $format
-     * @param array  $replacements
-     *
-     * @return bool
-     */
-    private static function matchFormatPattern(string $date, string $format, array $replacements): bool
-    {
-        // Preg quote, but remove escaped backslashes since we'll deal with escaped characters in the format string.
-        $regex = str_replace('\\\\', '\\', $format);
-        // Replace not-escaped letters
-        $regex = preg_replace_callback(
-            '/(?<!\\\\)((?:\\\\{2})*)(['.implode('', array_keys($replacements)).'])/',
-            function ($match) use ($replacements) {
-                return $match[1].strtr($match[2], $replacements);
-            },
-            $regex
-        );
-        // Replace escaped letters by the letter itself
-        $regex = preg_replace('/(?<!\\\\)((?:\\\\{2})*)\\\\(\w)/', '$1$2', $regex);
-        // Escape not escaped slashes
-        $regex = preg_replace('#(?<!\\\\)((?:\\\\{2})*)/#', '$1\\/', $regex);
-
-        return (bool) @preg_match('/^'.$regex.'$/', $date);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+KdP2UfY/RVjn0AK4U4T+

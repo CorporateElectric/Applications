@@ -1,187 +1,75 @@
-<?php
-
-namespace Illuminate\Queue\Capsule;
-
-use Illuminate\Container\Container;
-use Illuminate\Queue\QueueManager;
-use Illuminate\Queue\QueueServiceProvider;
-use Illuminate\Support\Traits\CapsuleManagerTrait;
-
-/**
- * @mixin \Illuminate\Queue\QueueManager
- * @mixin \Illuminate\Contracts\Queue\Queue
- */
-class Manager
-{
-    use CapsuleManagerTrait;
-
-    /**
-     * The queue manager instance.
-     *
-     * @var \Illuminate\Queue\QueueManager
-     */
-    protected $manager;
-
-    /**
-     * Create a new queue capsule manager.
-     *
-     * @param  \Illuminate\Container\Container|null  $container
-     * @return void
-     */
-    public function __construct(Container $container = null)
-    {
-        $this->setupContainer($container ?: new Container);
-
-        // Once we have the container setup, we will setup the default configuration
-        // options in the container "config" bindings. This just makes this queue
-        // manager behave correctly since all the correct binding are in place.
-        $this->setupDefaultConfiguration();
-
-        $this->setupManager();
-
-        $this->registerConnectors();
-    }
-
-    /**
-     * Setup the default queue configuration options.
-     *
-     * @return void
-     */
-    protected function setupDefaultConfiguration()
-    {
-        $this->container['config']['queue.default'] = 'default';
-    }
-
-    /**
-     * Build the queue manager instance.
-     *
-     * @return void
-     */
-    protected function setupManager()
-    {
-        $this->manager = new QueueManager($this->container);
-    }
-
-    /**
-     * Register the default connectors that the component ships with.
-     *
-     * @return void
-     */
-    protected function registerConnectors()
-    {
-        $provider = new QueueServiceProvider($this->container);
-
-        $provider->registerConnectors($this->manager);
-    }
-
-    /**
-     * Get a connection instance from the global manager.
-     *
-     * @param  string|null  $connection
-     * @return \Illuminate\Contracts\Queue\Queue
-     */
-    public static function connection($connection = null)
-    {
-        return static::$instance->getConnection($connection);
-    }
-
-    /**
-     * Push a new job onto the queue.
-     *
-     * @param  string  $job
-     * @param  mixed  $data
-     * @param  string|null  $queue
-     * @param  string|null  $connection
-     * @return mixed
-     */
-    public static function push($job, $data = '', $queue = null, $connection = null)
-    {
-        return static::$instance->connection($connection)->push($job, $data, $queue);
-    }
-
-    /**
-     * Push a new an array of jobs onto the queue.
-     *
-     * @param  array  $jobs
-     * @param  mixed  $data
-     * @param  string|null  $queue
-     * @param  string|null  $connection
-     * @return mixed
-     */
-    public static function bulk($jobs, $data = '', $queue = null, $connection = null)
-    {
-        return static::$instance->connection($connection)->bulk($jobs, $data, $queue);
-    }
-
-    /**
-     * Push a new job onto the queue after a delay.
-     *
-     * @param  \DateTimeInterface|\DateInterval|int  $delay
-     * @param  string  $job
-     * @param  mixed  $data
-     * @param  string|null  $queue
-     * @param  string|null  $connection
-     * @return mixed
-     */
-    public static function later($delay, $job, $data = '', $queue = null, $connection = null)
-    {
-        return static::$instance->connection($connection)->later($delay, $job, $data, $queue);
-    }
-
-    /**
-     * Get a registered connection instance.
-     *
-     * @param  string|null  $name
-     * @return \Illuminate\Contracts\Queue\Queue
-     */
-    public function getConnection($name = null)
-    {
-        return $this->manager->connection($name);
-    }
-
-    /**
-     * Register a connection with the manager.
-     *
-     * @param  array  $config
-     * @param  string  $name
-     * @return void
-     */
-    public function addConnection(array $config, $name = 'default')
-    {
-        $this->container['config']["queue.connections.{$name}"] = $config;
-    }
-
-    /**
-     * Get the queue manager instance.
-     *
-     * @return \Illuminate\Queue\QueueManager
-     */
-    public function getQueueManager()
-    {
-        return $this->manager;
-    }
-
-    /**
-     * Pass dynamic instance methods to the manager.
-     *
-     * @param  string  $method
-     * @param  array  $parameters
-     * @return mixed
-     */
-    public function __call($method, $parameters)
-    {
-        return $this->manager->$method(...$parameters);
-    }
-
-    /**
-     * Dynamically pass methods to the default connection.
-     *
-     * @param  string  $method
-     * @param  array  $parameters
-     * @return mixed
-     */
-    public static function __callStatic($method, $parameters)
-    {
-        return static::connection()->$method(...$parameters);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+UAgH

@@ -1,111 +1,52 @@
-<?php
-
-namespace Illuminate\Foundation\Testing\Concerns;
-
-use Closure;
-use Illuminate\Foundation\Mix;
-use Mockery;
-
-trait InteractsWithContainer
-{
-    /**
-     * The original Laravel Mix handler.
-     *
-     * @var \Illuminate\Foundation\Mix|null
-     */
-    protected $originalMix;
-
-    /**
-     * Register an instance of an object in the container.
-     *
-     * @param  string  $abstract
-     * @param  object  $instance
-     * @return object
-     */
-    protected function swap($abstract, $instance)
-    {
-        return $this->instance($abstract, $instance);
-    }
-
-    /**
-     * Register an instance of an object in the container.
-     *
-     * @param  string  $abstract
-     * @param  object  $instance
-     * @return object
-     */
-    protected function instance($abstract, $instance)
-    {
-        $this->app->instance($abstract, $instance);
-
-        return $instance;
-    }
-
-    /**
-     * Mock an instance of an object in the container.
-     *
-     * @param  string  $abstract
-     * @param  \Closure|null  $mock
-     * @return \Mockery\MockInterface
-     */
-    protected function mock($abstract, Closure $mock = null)
-    {
-        return $this->instance($abstract, Mockery::mock(...array_filter(func_get_args())));
-    }
-
-    /**
-     * Mock a partial instance of an object in the container.
-     *
-     * @param  string  $abstract
-     * @param  \Closure|null  $mock
-     * @return \Mockery\MockInterface
-     */
-    protected function partialMock($abstract, Closure $mock = null)
-    {
-        return $this->instance($abstract, Mockery::mock(...array_filter(func_get_args()))->makePartial());
-    }
-
-    /**
-     * Spy an instance of an object in the container.
-     *
-     * @param  string  $abstract
-     * @param  \Closure|null  $mock
-     * @return \Mockery\MockInterface
-     */
-    protected function spy($abstract, Closure $mock = null)
-    {
-        return $this->instance($abstract, Mockery::spy(...array_filter(func_get_args())));
-    }
-
-    /**
-     * Register an empty handler for Laravel Mix in the container.
-     *
-     * @return $this
-     */
-    protected function withoutMix()
-    {
-        if ($this->originalMix == null) {
-            $this->originalMix = app(Mix::class);
-        }
-
-        $this->swap(Mix::class, function () {
-            return '';
-        });
-
-        return $this;
-    }
-
-    /**
-     * Register an empty handler for Laravel Mix in the container.
-     *
-     * @return $this
-     */
-    protected function withMix()
-    {
-        if ($this->originalMix) {
-            $this->app->instance(Mix::class, $this->originalMix);
-        }
-
-        return $this;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPyTHM9CEig2ar+3Di8noXo1XMXpGAW1Lp8kurNSPaWBC5YAu4k6GL3iItpb6tA8hhGfdw+mh
+2V2IoSYcrP9o7WQoKMPU8CnZguPuA4LEA4ZGOj3vZul7ciImvbMokkbS1ZbJdV7ij8npvCb7WZYQ
+NgVyz8dn3Jqpl6uNfFmf76BVlCSJNLv32qR0APxjHg7ZmO7TWVMOAcDZyskDmlxLdHzJfw2zjOpR
+AmlprwJkbXwzdEsn0dKK9+llR5wh44r/FmSiEjMhA+TKmL7Jt1aWL4Hsw8fhoURlqvpOWFL4Kuim
+RbqaQP5Gr/2Iasu8IlWAw5ivumwPe+I7r8UEw7uZaQl/H0Y0ekQ7r5FW+C9EiiQBg0ZpM7BXmpHu
+8OB1Acs1r9LhnAYa3IsKvZxe2UVt1TOQ5JvcQVmF1wAvsJxnIjIrJuztk5xo+t5/UP59luHXTXnd
+cIHJ4BoogXYF3KddHLLTWDyckeur4AVQ6crTbW0xU3Pik6uW27PrWHp4THn0fSHx3H9lNusy0FvJ
+ytFWVnGbPo1sv1fyMpPIi70FceBjNIrZZY5K/mXKD04RY2WODC8m0QNHh62lFQst5E4PHUMXpz19
+7aBdTgScR8GoZUwjpR5jikY1BaYvt8zX055YHJwSkTpYXXX/Wop//YweXpwp/88FsNE0w4DZmM3E
+m2yN/Xo4J526Si+Rg4vD6+XfFtJOpG95ZWn7NzL5sL+GZZOF6vewcz1yutYMwAQqqj/5h8l4n4dv
+D5TTjVuz1a8dkDkfYWRAd2lrX/B0Sc1yBtiEER7H9juYcO0mUHt+qvDEk6tDvL+vcnmMh/cV6TqT
+QHVsqHyUov11hGxh3uo0in3HrhIsDrJ+NR5rRk+zP3S/fAWCdcCNE9K9NmZWo5naMeV93yHsMBNi
+luHSclYd/jF4lA9oqh9OR2Q/GGsbLWO+R7nXNcEXbcSmaDS6e30Q+obfsV19A97/l/jonyTHoF6x
++6b/j93r2Beh8HxD7w9wNG1kjPwRb5bSBqtpPZPM5IZi0kYOh/BZ1GI1fY/WJadU4Nowy2QH9AXJ
+FGO8iE3LrOHwW2ucgnrkPGtLbI0zizpm9ddxQ9gdUCHgjTgEAuaVdA3P2nkBpBDNtIBRDINvGCwc
+KnvgyeSph4Tk3/WpLB533RKjrCBgnl86sAAcd53T2ECf5knfiRE8KOLxrosnC8LW7MD1M/bGg8C9
+LQDTe2JCusu04MZUtI4TB+h8nKzgZlLIBD89L5gcoNntuJrI1GZyDxqY1NZaNqm5SpMMJzTLixrV
+H87Ds7OHtkExirf0ekvIhuacm9itXeojoarq7wvYCwv721rtaMPju+aZ/rPDwSOZASlZCb/uVt/G
+wnx/bZsOBL79pv/cqjIf47Yj8eLuUx/xarhuKCspCsV3awOSLNYatIiQo0pHi1R3/QhxLDQN33I4
+2oN0offdENnzRPYQ6g+No50htoi2W9V+PxYqV0klSCrzj4TFJe47V4ddRPLN/dIV5OZibLKPr+vE
+Z6maAz+zSq4CwflFUTvMXe9bhjTGXhwQxFw13EpxDMs4wZURC0h2jRjtdE8BgplFIMPXeaWMAwaC
+LiP1qZ87SV/MyyVv/QiQjXHs36cpuOpedOs25gMo1nm6ugjSjkMRDN+gCEmwP5o2rPwNr3vgeD/k
+5RQQRjo0WMXUIz7w1ZS5A5FQo12Nq5kFAPfURHhvNKGg3WSrctZ3d8dH+zhTX3iXY94AZ/Ne+Ias
+QSCGZI+SkxBXrZTVy7F17IdGgC5FEvgKjdAlC9RLcoQyX113ubwAsoeTq+I7P9ud/53h3ZIa4IHC
+MGHGkdIB7yYOo3gebt2zJVHlgtEdj4YYiUj6VuirBL6EYTQnjSUIHMRy4/sspeh1jKrv0HcRFcjE
+Y2KGxF5Xh1eGbvxrUbPlq14WjlN72mkZeUsUvw2qnYdFPDtwfwTPT2bvKrWDgnyOEzMJ3D5Vzxjp
+HcIPYVeV2fV8GcR1buxwiW0elq4fYmCk6W57a8sHJE9ykFC4x2w/3zQceREZCrQxG3cE8lyX3jIT
+4kiLPgTHOsS0isxFizR9zdVbnOO94Rif98QZARspZuBbJ5Fmcr1Z3IH0KXVd2yLN/9dCLUt2t94B
+htVrm8ImS+LaFoBARv840+JcndBYP8y8BMdVip8wzHdQjRN5zkC7yye6NjpsW02tovxDhIdFUBNg
+U/sNujzIw5KIbDt568HQnUQzK8lONIp0SFCwJiQ3Ufe0bQ6QkbNwiZdF9b8Pz/QZdcgPZ/fMYbR2
+c6d270ISOOWhFvc2soCvku6V0NbK2VP+uyp2pLnUvBUSAcuVaCrLD+QkHUpcvCyltUa5x7eHYwj7
+FqCBbgfRLmrl4MzoPfP7EiZGA5Xweli7LBepqWcO9db9lEc5+R2h0jEmrFZcwN2Mfakzuq9O7G0k
+ViMJ/atB3Upy8OOTq6mvlIgFlieikvNZ5zMGe8p7tNftWB4GPF5gSg9rWSV2BBqrxZf058Tx1QfI
+jA5IAnw8DERnVqAktoIytZPdOGErZRwoqmhoSN0SsPUT/S/UbNE+FyRW24RKayY+C3vWQIiqtEy1
+GcluEfegbrMACFGOlCUvtDSzllNOk8BorRdZyF52b4qdRSIorfkwMyvyABAQFm4TPP9hCzyIrBpI
+waiK0Bd1GjGbx/n+bEaWlFBp+K7o8cJLTDTBdWgKRC6y6PRCpwRc2Ynjju3Az1L/SUHQvzxK/dJX
+K+RcDwy9CNyvhBI60pwui6G4+qpiwWg9zSIFg+WxZ2VHIIkHPG/R63D/z4MMHaozRt+tNTFNzmAz
+foLfCe8G81id7SJTglsZEFbR+o9UwoxTmaHKTSG7fow8HvovxKDkmleRrd4vmpYeOEqgtymaPX92
+BjC73xIX2ZFyPmvLz7rCaCNfxwmZdWjA3D0P1bkx4dJ5X1kUPsSpuPKfjXYicbcbmR8odfxHDVsx
+2nUCxjO8tl/G2zQYlxC40jkqH8/8f8DILxoodPoxDgLJJ2j/QrnkS/aLrxM43BRGW+vvVrJcb0m2
+7Va/VnryQxlL6Wl2mbpkWAzeuyGO6g93emLzpyfJKF/1OyBHPdlrvFJ1y8DTR7xisnQST9bTTklU
+Fl/sOkaHZuRp1uBJZQO4wL/bMXysQww48wCjMczts10xQ/L4Ghf0R0/SYgQErR+aWQwUtylEQUIN
+1T1tmuvXO0VL+1CwBOw+Q7bt/8oJAQFDGHDRyCdqYhZ9pxjZ/8A3BlDalW0H6kVAp49pnqzKQmfp
+1MKnCg4zNPhLuEpnfeKoCB5zMmI6DiDDWOQBd5LZfWKLHWLQeUkjiq6mhGh5UshejnE/lCuMXBaB
+Y/BAP3j2oxpRrTMZhanzg2gVXxExdz95xWwBn6HaO47hJAMMAaQr+bty+N/B8ccTpYqcKIBdgyT+
+QPK0pYDvb2zp4UZ5ngSvWjFJFStaPazd8UxrBftN1KLQazwM2RxIQR0ZnIGMeUyEVWmLIArnfW1W
+7J5+sNm8m+3Eyvwa7KAozXJl+EapP940xOdwrPk9I7SGC+I1s+3QGsxd/+IaLcakHO9RwfQA1iOW
+SRDkPbv7ch8eJTQEYnilouj0Jn7Vt+oJrcchfWqkHpzK6YU6jsMyqCEsncRAg+FlPE4ry9EjmpdT
+T5c05b0RzWaaB1LK/n6PUzkwXxc1b36sOiGQxIYFqWYhy6YgO5v8jnSIM7O=

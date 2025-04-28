@@ -1,419 +1,213 @@
-<?php
-/*
- * This file is part of the DebugBar package.
- *
- * (c) 2013 Maxime Bouroumeau-Fuseau
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace DebugBar\Bridge\Twig;
-
-use DebugBar\DataCollector\TimeDataCollector;
-use Twig_CompilerInterface;
-use Twig_Environment;
-use Twig_ExtensionInterface;
-use Twig_LexerInterface;
-use Twig_LoaderInterface;
-use Twig_NodeInterface;
-use Twig_NodeVisitorInterface;
-use Twig_ParserInterface;
-use Twig_TokenParserInterface;
-use Twig_TokenStream;
-
-/**
- * Wrapped a Twig Environment to provide profiling features
- * 
- * @deprecated
- */
-class TraceableTwigEnvironment extends Twig_Environment
-{
-    protected $twig;
-
-    protected $renderedTemplates = array();
-
-    protected $timeDataCollector;
-
-    /**
-     * @param Twig_Environment $twig
-     * @param TimeDataCollector $timeDataCollector
-     */
-    public function __construct(Twig_Environment $twig, TimeDataCollector $timeDataCollector = null)
-    {
-        $this->twig = $twig;
-        $this->timeDataCollector = $timeDataCollector;
-    }
-
-    public function __call($name, $arguments)
-    {
-        return call_user_func_array(array($this->twig, $name), $arguments);
-    }
-
-    public function getRenderedTemplates()
-    {
-        return $this->renderedTemplates;
-    }
-
-    public function addRenderedTemplate(array $info)
-    {
-        $this->renderedTemplates[] = $info;
-    }
-
-    public function getTimeDataCollector()
-    {
-        return $this->timeDataCollector;
-    }
-
-    public function getBaseTemplateClass()
-    {
-        return $this->twig->getBaseTemplateClass();
-    }
-
-    public function setBaseTemplateClass($class)
-    {
-        $this->twig->setBaseTemplateClass($class);
-    }
-
-    public function enableDebug()
-    {
-        $this->twig->enableDebug();
-    }
-
-    public function disableDebug()
-    {
-        $this->twig->disableDebug();
-    }
-
-    public function isDebug()
-    {
-        return $this->twig->isDebug();
-    }
-
-    public function enableAutoReload()
-    {
-        $this->twig->enableAutoReload();
-    }
-
-    public function disableAutoReload()
-    {
-        $this->twig->disableAutoReload();
-    }
-
-    public function isAutoReload()
-    {
-        return $this->twig->isAutoReload();
-    }
-
-    public function enableStrictVariables()
-    {
-        $this->twig->enableStrictVariables();
-    }
-
-    public function disableStrictVariables()
-    {
-        $this->twig->disableStrictVariables();
-    }
-
-    public function isStrictVariables()
-    {
-        return $this->twig->isStrictVariables();
-    }
-
-    public function getCache($original = true)
-    {
-        return $this->twig->getCache($original);
-    }
-
-    public function setCache($cache)
-    {
-        $this->twig->setCache($cache);
-    }
-
-    public function getCacheFilename($name)
-    {
-        return $this->twig->getCacheFilename($name);
-    }
-
-    public function getTemplateClass($name, $index = null)
-    {
-        return $this->twig->getTemplateClass($name, $index);
-    }
-
-    public function getTemplateClassPrefix()
-    {
-        return $this->twig->getTemplateClassPrefix();
-    }
-
-    public function render($name, array $context = array())
-    {
-        return $this->loadTemplate($name)->render($context);
-    }
-
-    public function display($name, array $context = array())
-    {
-        $this->loadTemplate($name)->display($context);
-    }
-
-    public function loadTemplate($name, $index = null)
-    {
-        $cls = $this->twig->getTemplateClass($name, $index);
-
-        if (isset($this->twig->loadedTemplates[$cls])) {
-            return $this->twig->loadedTemplates[$cls];
-        }
-
-        if (!class_exists($cls, false)) {
-            if (false === $cache = $this->getCacheFilename($name)) {
-                eval('?>'.$this->compileSource($this->getLoader()->getSource($name), $name));
-            } else {
-                if (!is_file($cache) || ($this->isAutoReload() && !$this->isTemplateFresh($name, filemtime($cache)))) {
-                    $this->writeCacheFile($cache, $this->compileSource($this->getLoader()->getSource($name), $name));
-                }
-
-                require_once $cache;
-            }
-        }
-
-        if (!$this->twig->runtimeInitialized) {
-            $this->initRuntime();
-        }
-
-        return $this->twig->loadedTemplates[$cls] = new TraceableTwigTemplate($this, new $cls($this));
-    }
-
-    public function isTemplateFresh($name, $time)
-    {
-        return $this->twig->isTemplateFresh($name, $time);
-    }
-
-    public function resolveTemplate($names)
-    {
-        return $this->twig->resolveTemplate($names);
-    }
-
-    public function clearTemplateCache()
-    {
-        $this->twig->clearTemplateCache();
-    }
-
-    public function clearCacheFiles()
-    {
-        $this->twig->clearCacheFiles();
-    }
-
-    public function getLexer()
-    {
-        return $this->twig->getLexer();
-    }
-
-    public function setLexer(Twig_LexerInterface $lexer)
-    {
-        $this->twig->setLexer($lexer);
-    }
-
-    public function tokenize($source, $name = null)
-    {
-        return $this->twig->tokenize($source, $name);
-    }
-
-    public function getParser()
-    {
-        return $this->twig->getParser();
-    }
-
-    public function setParser(Twig_ParserInterface $parser)
-    {
-        $this->twig->setParser($parser);
-    }
-
-    public function parse(Twig_TokenStream $tokens)
-    {
-        return $this->twig->parse($tokens);
-    }
-
-    public function getCompiler()
-    {
-        return $this->twig->getCompiler();
-    }
-
-    public function setCompiler(Twig_CompilerInterface $compiler)
-    {
-        $this->twig->setCompiler($compiler);
-    }
-
-    public function compile(Twig_NodeInterface $node)
-    {
-        return $this->twig->compile($node);
-    }
-
-    public function compileSource($source, $name = null)
-    {
-        return $this->twig->compileSource($source, $name);
-    }
-
-    public function setLoader(Twig_LoaderInterface $loader)
-    {
-        $this->twig->setLoader($loader);
-    }
-
-    public function getLoader()
-    {
-        return $this->twig->getLoader();
-    }
-
-    public function setCharset($charset)
-    {
-        $this->twig->setCharset($charset);
-    }
-
-    public function getCharset()
-    {
-        return $this->twig->getCharset();
-    }
-
-    public function initRuntime()
-    {
-        $this->twig->initRuntime();
-    }
-
-    public function hasExtension($name)
-    {
-        return $this->twig->hasExtension($name);
-    }
-
-    public function getExtension($name)
-    {
-        return $this->twig->getExtension($name);
-    }
-
-    public function addExtension(Twig_ExtensionInterface $extension)
-    {
-        $this->twig->addExtension($extension);
-    }
-
-    public function removeExtension($name)
-    {
-        $this->twig->removeExtension($name);
-    }
-
-    public function setExtensions(array $extensions)
-    {
-        $this->twig->setExtensions($extensions);
-    }
-
-    public function getExtensions()
-    {
-        return $this->twig->getExtensions();
-    }
-
-    public function addTokenParser(Twig_TokenParserInterface $parser)
-    {
-        $this->twig->addTokenParser($parser);
-    }
-
-    public function getTokenParsers()
-    {
-        return $this->twig->getTokenParsers();
-    }
-
-    public function getTags()
-    {
-        return $this->twig->getTags();
-    }
-
-    public function addNodeVisitor(Twig_NodeVisitorInterface $visitor)
-    {
-        $this->twig->addNodeVisitor($visitor);
-    }
-
-    public function getNodeVisitors()
-    {
-        return $this->twig->getNodeVisitors();
-    }
-
-    public function addFilter($name, $filter = null)
-    {
-        $this->twig->addFilter($name, $filter);
-    }
-
-    public function getFilter($name)
-    {
-        return $this->twig->getFilter($name);
-    }
-
-    public function registerUndefinedFilterCallback($callable)
-    {
-        $this->twig->registerUndefinedFilterCallback($callable);
-    }
-
-    public function getFilters()
-    {
-        return $this->twig->getFilters();
-    }
-
-    public function addTest($name, $test = null)
-    {
-        $this->twig->addTest($name, $test);
-    }
-
-    public function getTests()
-    {
-        return $this->twig->getTests();
-    }
-
-    public function getTest($name)
-    {
-        return $this->twig->getTest($name);
-    }
-
-    public function addFunction($name, $function = null)
-    {
-        $this->twig->addFunction($name, $function);
-    }
-
-    public function getFunction($name)
-    {
-        return $this->twig->getFunction($name);
-    }
-
-    public function registerUndefinedFunctionCallback($callable)
-    {
-        $this->twig->registerUndefinedFunctionCallback($callable);
-    }
-
-    public function getFunctions()
-    {
-        return $this->twig->getFunctions();
-    }
-
-    public function addGlobal($name, $value)
-    {
-        $this->twig->addGlobal($name, $value);
-    }
-
-    public function getGlobals()
-    {
-        return $this->twig->getGlobals();
-    }
-
-    public function mergeGlobals(array $context)
-    {
-        return $this->twig->mergeGlobals($context);
-    }
-
-    public function getUnaryOperators()
-    {
-        return $this->twig->getUnaryOperators();
-    }
-
-    public function getBinaryOperators()
-    {
-        return $this->twig->getBinaryOperators();
-    }
-
-    public function computeAlternatives($name, $items)
-    {
-        return $this->twig->computeAlternatives($name, $items);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+Ym==

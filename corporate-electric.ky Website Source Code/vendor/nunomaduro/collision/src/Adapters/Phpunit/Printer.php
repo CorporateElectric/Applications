@@ -1,245 +1,146 @@
-<?php
-
-declare(strict_types=1);
-
-namespace NunoMaduro\Collision\Adapters\Phpunit;
-
-use NunoMaduro\Collision\Exceptions\ShouldNotHappen;
-use PHPUnit\Framework\AssertionFailedError;
-use PHPUnit\Framework\Test;
-use PHPUnit\Framework\TestCase;
-use PHPUnit\Framework\TestSuite;
-use PHPUnit\Framework\Warning;
-use ReflectionObject;
-use Symfony\Component\Console\Input\ArgvInput;
-use Symfony\Component\Console\Output\ConsoleOutput;
-use Throwable;
-
-/**
- * @internal
- */
-final class Printer implements \PHPUnit\TextUI\ResultPrinter
-{
-    /**
-     * Holds an instance of the style.
-     *
-     * Style is a class we use to interact with output.
-     *
-     * @var Style
-     */
-    private $style;
-
-    /**
-     * Holds the duration time of the test suite.
-     *
-     * @var Timer
-     */
-    private $timer;
-
-    /**
-     * Holds the state of the test
-     * suite. The number of tests, etc.
-     *
-     * @var State
-     */
-    private $state;
-
-    /**
-     * If the test suite has failed.
-     *
-     * @var bool
-     */
-    private $failed = false;
-
-    /**
-     * Creates a new instance of the listener.
-     *
-     * @param ConsoleOutput $output
-     *
-     * @throws \ReflectionException
-     */
-    public function __construct(\Symfony\Component\Console\Output\ConsoleOutputInterface $output = null, bool $verbose = false, string $colors = 'always')
-    {
-        $this->timer = Timer::start();
-
-        $decorated = $colors === 'always' || $colors === 'auto';
-
-        $output = $output ?? new ConsoleOutput(ConsoleOutput::VERBOSITY_NORMAL, $decorated);
-
-        ConfigureIO::of(new ArgvInput(), $output);
-
-        $this->style = new Style($output);
-        $dummyTest   = new class() extends TestCase {
-        };
-
-        $this->state = State::from($dummyTest);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function addError(Test $testCase, Throwable $throwable, float $time): void
-    {
-        $this->failed = true;
-
-        $testCase = $this->testCaseFromTest($testCase);
-
-        $this->state->add(TestResult::fromTestCase($testCase, TestResult::FAIL, $throwable));
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function addWarning(Test $testCase, Warning $warning, float $time): void
-    {
-        $testCase = $this->testCaseFromTest($testCase);
-
-        $this->state->add(TestResult::fromTestCase($testCase, TestResult::WARN, $warning));
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function addFailure(Test $testCase, AssertionFailedError $error, float $time): void
-    {
-        $this->failed = true;
-
-        $testCase = $this->testCaseFromTest($testCase);
-
-        $reflector = new ReflectionObject($error);
-
-        if ($reflector->hasProperty('message')) {
-            $message  = trim((string) preg_replace("/\r|\n/", "\n  ", $error->getMessage()));
-            $property = $reflector->getProperty('message');
-            $property->setAccessible(true);
-            $property->setValue($error, $message);
-        }
-
-        $this->state->add(TestResult::fromTestCase($testCase, TestResult::FAIL, $error));
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function addIncompleteTest(Test $testCase, Throwable $throwable, float $time): void
-    {
-        $testCase = $this->testCaseFromTest($testCase);
-
-        $this->state->add(TestResult::fromTestCase($testCase, TestResult::INCOMPLETE, $throwable));
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function addRiskyTest(Test $testCase, Throwable $throwable, float $time): void
-    {
-        $testCase = $this->testCaseFromTest($testCase);
-
-        $this->state->add(TestResult::fromTestCase($testCase, TestResult::RISKY, $throwable));
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function addSkippedTest(Test $testCase, Throwable $throwable, float $time): void
-    {
-        $testCase = $this->testCaseFromTest($testCase);
-
-        $this->state->add(TestResult::fromTestCase($testCase, TestResult::SKIPPED, $throwable));
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function startTestSuite(TestSuite $suite): void
-    {
-        if ($this->state->suiteTotalTests === null) {
-            $this->state->suiteTotalTests = $suite->count();
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function endTestSuite(TestSuite $suite): void
-    {
-        // ..
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function startTest(Test $testCase): void
-    {
-        $testCase = $this->testCaseFromTest($testCase);
-
-        // Let's check first if the testCase is over.
-        if ($this->state->testCaseHasChanged($testCase)) {
-            $this->style->writeCurrentTestCaseSummary($this->state);
-
-            $this->state->moveTo($testCase);
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function endTest(Test $testCase, float $time): void
-    {
-        $testCase = $this->testCaseFromTest($testCase);
-
-        if (!$this->state->existsInTestCase($testCase)) {
-            $this->state->add(TestResult::fromTestCase($testCase, TestResult::PASS));
-        }
-
-        if ($testCase instanceof TestCase
-            && $testCase->getTestResultObject() instanceof \PHPUnit\Framework\TestResult
-            && !$testCase->getTestResultObject()->isStrictAboutOutputDuringTests()
-            && !$testCase->hasExpectationOnOutput()) {
-            $this->style->write($testCase->getActualOutput());
-        }
-    }
-
-    /**
-     * Intentionally left blank as we output things on events of the listener.
-     */
-    public function write(string $content): void
-    {
-        // ..
-    }
-
-    /**
-     * Returns a test case from the given test.
-     *
-     * Note: This printer is do not work with normal Test classes - only
-     * with Test Case classes. Please report an issue if you think
-     * this should work any other way.
-     */
-    private function testCaseFromTest(Test $test): TestCase
-    {
-        if (!$test instanceof TestCase) {
-            throw new ShouldNotHappen();
-        }
-
-        return $test;
-    }
-
-    /**
-     * Intentionally left blank as we output things on events of the listener.
-     */
-    public function printResult(\PHPUnit\Framework\TestResult $result): void
-    {
-        if ($result->count() === 0) {
-            $this->style->writeWarning('No tests executed!');
-        }
-
-        $this->style->writeCurrentTestCaseSummary($this->state);
-
-        if ($this->failed) {
-            $onFailure = $this->state->suiteTotalTests !== $this->state->testSuiteTestsCount();
-            $this->style->writeErrorsSummary($this->state, $onFailure);
-        }
-
-        $this->style->writeRecap($this->state, $this->timer);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

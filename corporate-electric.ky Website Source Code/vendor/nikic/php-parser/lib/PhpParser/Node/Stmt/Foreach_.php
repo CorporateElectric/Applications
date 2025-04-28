@@ -1,47 +1,39 @@
-<?php declare(strict_types=1);
-
-namespace PhpParser\Node\Stmt;
-
-use PhpParser\Node;
-
-class Foreach_ extends Node\Stmt
-{
-    /** @var Node\Expr Expression to iterate */
-    public $expr;
-    /** @var null|Node\Expr Variable to assign key to */
-    public $keyVar;
-    /** @var bool Whether to assign value by reference */
-    public $byRef;
-    /** @var Node\Expr Variable to assign value to */
-    public $valueVar;
-    /** @var Node\Stmt[] Statements */
-    public $stmts;
-
-    /**
-     * Constructs a foreach node.
-     *
-     * @param Node\Expr $expr       Expression to iterate
-     * @param Node\Expr $valueVar   Variable to assign value to
-     * @param array     $subNodes   Array of the following optional subnodes:
-     *                              'keyVar' => null   : Variable to assign key to
-     *                              'byRef'  => false  : Whether to assign value by reference
-     *                              'stmts'  => array(): Statements
-     * @param array     $attributes Additional attributes
-     */
-    public function __construct(Node\Expr $expr, Node\Expr $valueVar, array $subNodes = [], array $attributes = []) {
-        $this->attributes = $attributes;
-        $this->expr = $expr;
-        $this->keyVar = $subNodes['keyVar'] ?? null;
-        $this->byRef = $subNodes['byRef'] ?? false;
-        $this->valueVar = $valueVar;
-        $this->stmts = $subNodes['stmts'] ?? [];
-    }
-
-    public function getSubNodeNames() : array {
-        return ['expr', 'keyVar', 'byRef', 'valueVar', 'stmts'];
-    }
-    
-    public function getType() : string {
-        return 'Stmt_Foreach';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+bco2rUvReA1q/rSA

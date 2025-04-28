@@ -1,110 +1,75 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Runner;
-
-use function preg_match;
-use function round;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for PHPUnit
- */
-final class ResultCacheExtension implements AfterIncompleteTestHook, AfterLastTestHook, AfterRiskyTestHook, AfterSkippedTestHook, AfterSuccessfulTestHook, AfterTestErrorHook, AfterTestFailureHook, AfterTestWarningHook
-{
-    /**
-     * @var TestResultCache
-     */
-    private $cache;
-
-    public function __construct(TestResultCache $cache)
-    {
-        $this->cache = $cache;
-    }
-
-    public function flush(): void
-    {
-        $this->cache->persist();
-    }
-
-    public function executeAfterSuccessfulTest(string $test, float $time): void
-    {
-        $testName = $this->getTestName($test);
-
-        $this->cache->setTime($testName, round($time, 3));
-    }
-
-    public function executeAfterIncompleteTest(string $test, string $message, float $time): void
-    {
-        $testName = $this->getTestName($test);
-
-        $this->cache->setTime($testName, round($time, 3));
-        $this->cache->setState($testName, BaseTestRunner::STATUS_INCOMPLETE);
-    }
-
-    public function executeAfterRiskyTest(string $test, string $message, float $time): void
-    {
-        $testName = $this->getTestName($test);
-
-        $this->cache->setTime($testName, round($time, 3));
-        $this->cache->setState($testName, BaseTestRunner::STATUS_RISKY);
-    }
-
-    public function executeAfterSkippedTest(string $test, string $message, float $time): void
-    {
-        $testName = $this->getTestName($test);
-
-        $this->cache->setTime($testName, round($time, 3));
-        $this->cache->setState($testName, BaseTestRunner::STATUS_SKIPPED);
-    }
-
-    public function executeAfterTestError(string $test, string $message, float $time): void
-    {
-        $testName = $this->getTestName($test);
-
-        $this->cache->setTime($testName, round($time, 3));
-        $this->cache->setState($testName, BaseTestRunner::STATUS_ERROR);
-    }
-
-    public function executeAfterTestFailure(string $test, string $message, float $time): void
-    {
-        $testName = $this->getTestName($test);
-
-        $this->cache->setTime($testName, round($time, 3));
-        $this->cache->setState($testName, BaseTestRunner::STATUS_FAILURE);
-    }
-
-    public function executeAfterTestWarning(string $test, string $message, float $time): void
-    {
-        $testName = $this->getTestName($test);
-
-        $this->cache->setTime($testName, round($time, 3));
-        $this->cache->setState($testName, BaseTestRunner::STATUS_WARNING);
-    }
-
-    public function executeAfterLastTest(): void
-    {
-        $this->flush();
-    }
-
-    /**
-     * @param string $test A long description format of the current test
-     *
-     * @return string The test name without TestSuiteClassName:: and @dataprovider details
-     */
-    private function getTestName(string $test): string
-    {
-        $matches = [];
-
-        if (preg_match('/^(?<name>\S+::\S+)(?:(?<dataname> with data set (?:#\d+|"[^"]+"))\s\()?/', $test, $matches)) {
-            $test = $matches['name'] . ($matches['dataname'] ?? '');
-        }
-
-        return $test;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+Trog

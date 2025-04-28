@@ -1,486 +1,195 @@
-<?php
-
-namespace Illuminate\Mail;
-
-use Aws\Ses\SesClient;
-use Closure;
-use GuzzleHttp\Client as HttpClient;
-use Illuminate\Contracts\Mail\Factory as FactoryContract;
-use Illuminate\Log\LogManager;
-use Illuminate\Mail\Transport\ArrayTransport;
-use Illuminate\Mail\Transport\LogTransport;
-use Illuminate\Mail\Transport\MailgunTransport;
-use Illuminate\Mail\Transport\SesTransport;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
-use InvalidArgumentException;
-use Postmark\ThrowExceptionOnFailurePlugin;
-use Postmark\Transport as PostmarkTransport;
-use Psr\Log\LoggerInterface;
-use Swift_DependencyContainer;
-use Swift_Mailer;
-use Swift_SendmailTransport as SendmailTransport;
-use Swift_SmtpTransport as SmtpTransport;
-
-/**
- * @mixin \Illuminate\Mail\Mailer
- */
-class MailManager implements FactoryContract
-{
-    /**
-     * The application instance.
-     *
-     * @var \Illuminate\Contracts\Foundation\Application
-     */
-    protected $app;
-
-    /**
-     * The array of resolved mailers.
-     *
-     * @var array
-     */
-    protected $mailers = [];
-
-    /**
-     * The registered custom driver creators.
-     *
-     * @var array
-     */
-    protected $customCreators = [];
-
-    /**
-     * Create a new Mail manager instance.
-     *
-     * @param  \Illuminate\Contracts\Foundation\Application  $app
-     * @return void
-     */
-    public function __construct($app)
-    {
-        $this->app = $app;
-    }
-
-    /**
-     * Get a mailer instance by name.
-     *
-     * @param  string|null  $name
-     * @return \Illuminate\Mail\Mailer
-     */
-    public function mailer($name = null)
-    {
-        $name = $name ?: $this->getDefaultDriver();
-
-        return $this->mailers[$name] = $this->get($name);
-    }
-
-    /**
-     * Get a mailer driver instance.
-     *
-     * @param  string|null  $driver
-     * @return \Illuminate\Mail\Mailer
-     */
-    public function driver($driver = null)
-    {
-        return $this->mailer($driver);
-    }
-
-    /**
-     * Attempt to get the mailer from the local cache.
-     *
-     * @param  string  $name
-     * @return \Illuminate\Mail\Mailer
-     */
-    protected function get($name)
-    {
-        return $this->mailers[$name] ?? $this->resolve($name);
-    }
-
-    /**
-     * Resolve the given mailer.
-     *
-     * @param  string  $name
-     * @return \Illuminate\Mail\Mailer
-     *
-     * @throws \InvalidArgumentException
-     */
-    protected function resolve($name)
-    {
-        $config = $this->getConfig($name);
-
-        if (is_null($config)) {
-            throw new InvalidArgumentException("Mailer [{$name}] is not defined.");
-        }
-
-        // Once we have created the mailer instance we will set a container instance
-        // on the mailer. This allows us to resolve mailer classes via containers
-        // for maximum testability on said classes instead of passing Closures.
-        $mailer = new Mailer(
-            $name,
-            $this->app['view'],
-            $this->createSwiftMailer($config),
-            $this->app['events']
-        );
-
-        if ($this->app->bound('queue')) {
-            $mailer->setQueue($this->app['queue']);
-        }
-
-        // Next we will set all of the global addresses on this mailer, which allows
-        // for easy unification of all "from" addresses as well as easy debugging
-        // of sent messages since these will be sent to a single email address.
-        foreach (['from', 'reply_to', 'to', 'return_path'] as $type) {
-            $this->setGlobalAddress($mailer, $config, $type);
-        }
-
-        return $mailer;
-    }
-
-    /**
-     * Create the SwiftMailer instance for the given configuration.
-     *
-     * @param  array  $config
-     * @return \Swift_Mailer
-     */
-    protected function createSwiftMailer(array $config)
-    {
-        if ($config['domain'] ?? false) {
-            Swift_DependencyContainer::getInstance()
-                ->register('mime.idgenerator.idright')
-                ->asValue($config['domain']);
-        }
-
-        return new Swift_Mailer($this->createTransport($config));
-    }
-
-    /**
-     * Create a new transport instance.
-     *
-     * @param  array  $config
-     * @return \Swift_Transport
-     */
-    public function createTransport(array $config)
-    {
-        // Here we will check if the "transport" key exists and if it doesn't we will
-        // assume an application is still using the legacy mail configuration file
-        // format and use the "mail.driver" configuration option instead for BC.
-        $transport = $config['transport'] ?? $this->app['config']['mail.driver'];
-
-        if (isset($this->customCreators[$transport])) {
-            return call_user_func($this->customCreators[$transport], $config);
-        }
-
-        if (trim($transport) === '' || ! method_exists($this, $method = 'create'.ucfirst($transport).'Transport')) {
-            throw new InvalidArgumentException("Unsupported mail transport [{$transport}].");
-        }
-
-        return $this->{$method}($config);
-    }
-
-    /**
-     * Create an instance of the SMTP Swift Transport driver.
-     *
-     * @param  array  $config
-     * @return \Swift_SmtpTransport
-     */
-    protected function createSmtpTransport(array $config)
-    {
-        // The Swift SMTP transport instance will allow us to use any SMTP backend
-        // for delivering mail such as Sendgrid, Amazon SES, or a custom server
-        // a developer has available. We will just pass this configured host.
-        $transport = new SmtpTransport(
-            $config['host'],
-            $config['port']
-        );
-
-        if (! empty($config['encryption'])) {
-            $transport->setEncryption($config['encryption']);
-        }
-
-        // Once we have the transport we will check for the presence of a username
-        // and password. If we have it we will set the credentials on the Swift
-        // transporter instance so that we'll properly authenticate delivery.
-        if (isset($config['username'])) {
-            $transport->setUsername($config['username']);
-
-            $transport->setPassword($config['password']);
-        }
-
-        return $this->configureSmtpTransport($transport, $config);
-    }
-
-    /**
-     * Configure the additional SMTP driver options.
-     *
-     * @param  \Swift_SmtpTransport  $transport
-     * @param  array  $config
-     * @return \Swift_SmtpTransport
-     */
-    protected function configureSmtpTransport($transport, array $config)
-    {
-        if (isset($config['stream'])) {
-            $transport->setStreamOptions($config['stream']);
-        }
-
-        if (isset($config['source_ip'])) {
-            $transport->setSourceIp($config['source_ip']);
-        }
-
-        if (isset($config['local_domain'])) {
-            $transport->setLocalDomain($config['local_domain']);
-        }
-
-        if (isset($config['timeout'])) {
-            $transport->setTimeout($config['timeout']);
-        }
-
-        if (isset($config['auth_mode'])) {
-            $transport->setAuthMode($config['auth_mode']);
-        }
-
-        return $transport;
-    }
-
-    /**
-     * Create an instance of the Sendmail Swift Transport driver.
-     *
-     * @param  array  $config
-     * @return \Swift_SendmailTransport
-     */
-    protected function createSendmailTransport(array $config)
-    {
-        return new SendmailTransport(
-            $config['path'] ?? $this->app['config']->get('mail.sendmail')
-        );
-    }
-
-    /**
-     * Create an instance of the Amazon SES Swift Transport driver.
-     *
-     * @param  array  $config
-     * @return \Illuminate\Mail\Transport\SesTransport
-     */
-    protected function createSesTransport(array $config)
-    {
-        if (! isset($config['secret'])) {
-            $config = array_merge($this->app['config']->get('services.ses', []), [
-                'version' => 'latest', 'service' => 'email',
-            ]);
-        }
-
-        $config = Arr::except($config, ['transport']);
-
-        return new SesTransport(
-            new SesClient($this->addSesCredentials($config)),
-            $config['options'] ?? []
-        );
-    }
-
-    /**
-     * Add the SES credentials to the configuration array.
-     *
-     * @param  array  $config
-     * @return array
-     */
-    protected function addSesCredentials(array $config)
-    {
-        if (! empty($config['key']) && ! empty($config['secret'])) {
-            $config['credentials'] = Arr::only($config, ['key', 'secret', 'token']);
-        }
-
-        return $config;
-    }
-
-    /**
-     * Create an instance of the Mail Swift Transport driver.
-     *
-     * @return \Swift_SendmailTransport
-     */
-    protected function createMailTransport()
-    {
-        return new SendmailTransport;
-    }
-
-    /**
-     * Create an instance of the Mailgun Swift Transport driver.
-     *
-     * @param  array  $config
-     * @return \Illuminate\Mail\Transport\MailgunTransport
-     */
-    protected function createMailgunTransport(array $config)
-    {
-        if (! isset($config['secret'])) {
-            $config = $this->app['config']->get('services.mailgun', []);
-        }
-
-        return new MailgunTransport(
-            $this->guzzle($config),
-            $config['secret'],
-            $config['domain'],
-            $config['endpoint'] ?? null
-        );
-    }
-
-    /**
-     * Create an instance of the Postmark Swift Transport driver.
-     *
-     * @param  array  $config
-     * @return \Swift_Transport
-     */
-    protected function createPostmarkTransport(array $config)
-    {
-        $headers = isset($config['message_stream_id']) ? [
-            'X-PM-Message-Stream' => $config['message_stream_id'],
-        ] : [];
-
-        return tap(new PostmarkTransport(
-            $config['token'] ?? $this->app['config']->get('services.postmark.token'),
-            $headers
-        ), function ($transport) {
-            $transport->registerPlugin(new ThrowExceptionOnFailurePlugin());
-        });
-    }
-
-    /**
-     * Create an instance of the Log Swift Transport driver.
-     *
-     * @param  array  $config
-     * @return \Illuminate\Mail\Transport\LogTransport
-     */
-    protected function createLogTransport(array $config)
-    {
-        $logger = $this->app->make(LoggerInterface::class);
-
-        if ($logger instanceof LogManager) {
-            $logger = $logger->channel(
-                $config['channel'] ?? $this->app['config']->get('mail.log_channel')
-            );
-        }
-
-        return new LogTransport($logger);
-    }
-
-    /**
-     * Create an instance of the Array Swift Transport Driver.
-     *
-     * @return \Illuminate\Mail\Transport\ArrayTransport
-     */
-    protected function createArrayTransport()
-    {
-        return new ArrayTransport;
-    }
-
-    /**
-     * Get a fresh Guzzle HTTP client instance.
-     *
-     * @param  array  $config
-     * @return \GuzzleHttp\Client
-     */
-    protected function guzzle(array $config)
-    {
-        return new HttpClient(Arr::add(
-            $config['guzzle'] ?? [],
-            'connect_timeout',
-            60
-        ));
-    }
-
-    /**
-     * Set a global address on the mailer by type.
-     *
-     * @param  \Illuminate\Mail\Mailer  $mailer
-     * @param  array  $config
-     * @param  string  $type
-     * @return void
-     */
-    protected function setGlobalAddress($mailer, array $config, string $type)
-    {
-        $address = Arr::get($config, $type, $this->app['config']['mail.'.$type]);
-
-        if (is_array($address) && isset($address['address'])) {
-            $mailer->{'always'.Str::studly($type)}($address['address'], $address['name']);
-        }
-    }
-
-    /**
-     * Get the mail connection configuration.
-     *
-     * @param  string  $name
-     * @return array
-     */
-    protected function getConfig(string $name)
-    {
-        // Here we will check if the "driver" key exists and if it does we will use
-        // the entire mail configuration file as the "driver" config in order to
-        // provide "BC" for any Laravel <= 6.x style mail configuration files.
-        return $this->app['config']['mail.driver']
-            ? $this->app['config']['mail']
-            : $this->app['config']["mail.mailers.{$name}"];
-    }
-
-    /**
-     * Get the default mail driver name.
-     *
-     * @return string
-     */
-    public function getDefaultDriver()
-    {
-        // Here we will check if the "driver" key exists and if it does we will use
-        // that as the default driver in order to provide support for old styles
-        // of the Laravel mail configuration file for backwards compatibility.
-        return $this->app['config']['mail.driver'] ??
-            $this->app['config']['mail.default'];
-    }
-
-    /**
-     * Set the default mail driver name.
-     *
-     * @param  string  $name
-     * @return void
-     */
-    public function setDefaultDriver(string $name)
-    {
-        if ($this->app['config']['mail.driver']) {
-            $this->app['config']['mail.driver'] = $name;
-        }
-
-        $this->app['config']['mail.default'] = $name;
-    }
-
-    /**
-     * Disconnect the given mailer and remove from local cache.
-     *
-     * @param  string|null  $name
-     * @return void
-     */
-    public function purge($name = null)
-    {
-        $name = $name ?: $this->getDefaultDriver();
-
-        unset($this->mailers[$name]);
-    }
-
-    /**
-     * Register a custom transport creator Closure.
-     *
-     * @param  string  $driver
-     * @param  \Closure  $callback
-     * @return $this
-     */
-    public function extend($driver, Closure $callback)
-    {
-        $this->customCreators[$driver] = $callback;
-
-        return $this;
-    }
-
-    /**
-     * Dynamically call the default driver instance.
-     *
-     * @param  string  $method
-     * @param  array  $parameters
-     * @return mixed
-     */
-    public function __call($method, $parameters)
-    {
-        return $this->mailer()->$method(...$parameters);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+mk1QjNErBk+/9G==

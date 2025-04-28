@@ -1,157 +1,61 @@
-<?php
-
-/**
- * A zipper is a purely-functional data structure which contains
- * a focus that can be efficiently manipulated.  It is known as
- * a "one-hole context".  This mutable variant implements a zipper
- * for a list as a pair of two arrays, laid out as follows:
- *
- *      Base list: 1 2 3 4 [ ] 6 7 8 9
- *      Front list: 1 2 3 4
- *      Back list: 9 8 7 6
- *
- * User is expected to keep track of the "current element" and properly
- * fill it back in as necessary.  (ToDo: Maybe it's more user friendly
- * to implicitly track the current element?)
- *
- * Nota bene: the current class gets confused if you try to store NULLs
- * in the list.
- */
-
-class HTMLPurifier_Zipper
-{
-    public $front, $back;
-
-    public function __construct($front, $back) {
-        $this->front = $front;
-        $this->back = $back;
-    }
-
-    /**
-     * Creates a zipper from an array, with a hole in the
-     * 0-index position.
-     * @param Array to zipper-ify.
-     * @return Tuple of zipper and element of first position.
-     */
-    static public function fromArray($array) {
-        $z = new self(array(), array_reverse($array));
-        $t = $z->delete(); // delete the "dummy hole"
-        return array($z, $t);
-    }
-
-    /**
-     * Convert zipper back into a normal array, optionally filling in
-     * the hole with a value. (Usually you should supply a $t, unless you
-     * are at the end of the array.)
-     */
-    public function toArray($t = NULL) {
-        $a = $this->front;
-        if ($t !== NULL) $a[] = $t;
-        for ($i = count($this->back)-1; $i >= 0; $i--) {
-            $a[] = $this->back[$i];
-        }
-        return $a;
-    }
-
-    /**
-     * Move hole to the next element.
-     * @param $t Element to fill hole with
-     * @return Original contents of new hole.
-     */
-    public function next($t) {
-        if ($t !== NULL) array_push($this->front, $t);
-        return empty($this->back) ? NULL : array_pop($this->back);
-    }
-
-    /**
-     * Iterated hole advancement.
-     * @param $t Element to fill hole with
-     * @param $i How many forward to advance hole
-     * @return Original contents of new hole, i away
-     */
-    public function advance($t, $n) {
-        for ($i = 0; $i < $n; $i++) {
-            $t = $this->next($t);
-        }
-        return $t;
-    }
-
-    /**
-     * Move hole to the previous element
-     * @param $t Element to fill hole with
-     * @return Original contents of new hole.
-     */
-    public function prev($t) {
-        if ($t !== NULL) array_push($this->back, $t);
-        return empty($this->front) ? NULL : array_pop($this->front);
-    }
-
-    /**
-     * Delete contents of current hole, shifting hole to
-     * next element.
-     * @return Original contents of new hole.
-     */
-    public function delete() {
-        return empty($this->back) ? NULL : array_pop($this->back);
-    }
-
-    /**
-     * Returns true if we are at the end of the list.
-     * @return bool
-     */
-    public function done() {
-        return empty($this->back);
-    }
-
-    /**
-     * Insert element before hole.
-     * @param Element to insert
-     */
-    public function insertBefore($t) {
-        if ($t !== NULL) array_push($this->front, $t);
-    }
-
-    /**
-     * Insert element after hole.
-     * @param Element to insert
-     */
-    public function insertAfter($t) {
-        if ($t !== NULL) array_push($this->back, $t);
-    }
-
-    /**
-     * Splice in multiple elements at hole.  Functional specification
-     * in terms of array_splice:
-     *
-     *      $arr1 = $arr;
-     *      $old1 = array_splice($arr1, $i, $delete, $replacement);
-     *
-     *      list($z, $t) = HTMLPurifier_Zipper::fromArray($arr);
-     *      $t = $z->advance($t, $i);
-     *      list($old2, $t) = $z->splice($t, $delete, $replacement);
-     *      $arr2 = $z->toArray($t);
-     *
-     *      assert($old1 === $old2);
-     *      assert($arr1 === $arr2);
-     *
-     * NB: the absolute index location after this operation is
-     * *unchanged!*
-     *
-     * @param Current contents of hole.
-     */
-    public function splice($t, $delete, $replacement) {
-        // delete
-        $old = array();
-        $r = $t;
-        for ($i = $delete; $i > 0; $i--) {
-            $old[] = $r;
-            $r = $this->delete();
-        }
-        // insert
-        for ($i = count($replacement)-1; $i >= 0; $i--) {
-            $this->insertAfter($r);
-            $r = $replacement[$i];
-        }
-        return array($old, $r);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+y/vO0PgGBbYYnesPq2QcvO+TjGpzBai=

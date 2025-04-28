@@ -1,44 +1,36 @@
-<?php namespace Zizaco\Entrust\Traits;
-
-/**
- * This file is part of Entrust,
- * a role & permission management solution for Laravel.
- *
- * @license MIT
- * @package Zizaco\Entrust
- */
-
-use Illuminate\Support\Facades\Config;
-
-trait EntrustPermissionTrait
-{
-    /**
-     * Many-to-Many relations with role model.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
-     */
-    public function roles()
-    {
-        return $this->belongsToMany(Config::get('entrust.role'), Config::get('entrust.permission_role_table'), Config::get('entrust.permission_foreign_key'), Config::get('entrust.role_foreign_key'));
-    }
-
-    /**
-     * Boot the permission model
-     * Attach event listener to remove the many-to-many records when trying to delete
-     * Will NOT delete any records if the permission model uses soft deletes.
-     *
-     * @return void|bool
-     */
-    public static function boot()
-    {
-        parent::boot();
-
-        static::deleting(function($permission) {
-            if (!method_exists(Config::get('entrust.permission'), 'bootSoftDeletes')) {
-                $permission->roles()->sync([]);
-            }
-
-            return true;
-        });
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,64 +1,57 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Debug;
-
-@trigger_error(sprintf('The "%s" class is deprecated since Symfony 4.4, use "%s" instead.', Debug::class, \Symfony\Component\ErrorHandler\Debug::class), \E_USER_DEPRECATED);
-
-/**
- * Registers all the debug tools.
- *
- * @author Fabien Potencier <fabien@symfony.com>
- *
- * @deprecated since Symfony 4.4, use Symfony\Component\ErrorHandler\Debug instead.
- */
-class Debug
-{
-    private static $enabled = false;
-
-    /**
-     * Enables the debug tools.
-     *
-     * This method registers an error handler and an exception handler.
-     *
-     * @param int  $errorReportingLevel The level of error reporting you want
-     * @param bool $displayErrors       Whether to display errors (for development) or just log them (for production)
-     */
-    public static function enable($errorReportingLevel = \E_ALL, $displayErrors = true)
-    {
-        if (static::$enabled) {
-            return;
-        }
-
-        static::$enabled = true;
-
-        if (null !== $errorReportingLevel) {
-            error_reporting($errorReportingLevel);
-        } else {
-            error_reporting(\E_ALL);
-        }
-
-        if (!\in_array(\PHP_SAPI, ['cli', 'phpdbg'], true)) {
-            ini_set('display_errors', 0);
-            ExceptionHandler::register();
-        } elseif ($displayErrors && (!filter_var(ini_get('log_errors'), \FILTER_VALIDATE_BOOLEAN) || ini_get('error_log'))) {
-            // CLI - display errors only if they're not already logged to STDERR
-            ini_set('display_errors', 1);
-        }
-        if ($displayErrors) {
-            ErrorHandler::register(new ErrorHandler(new BufferingLogger()));
-        } else {
-            ErrorHandler::register()->throwAt(0, true);
-        }
-
-        DebugClassLoader::enable();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

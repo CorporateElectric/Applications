@@ -1,122 +1,64 @@
-<?php
-
-namespace League\Flysystem\Util;
-
-use League\Flysystem\Util;
-
-/**
- * @internal
- */
-class ContentListingFormatter
-{
-    /**
-     * @var string
-     */
-    private $directory;
-
-    /**
-     * @var bool
-     */
-    private $recursive;
-
-    /**
-     * @var bool
-     */
-    private $caseSensitive;
-
-    /**
-     * @param string $directory
-     * @param bool   $recursive
-     */
-    public function __construct($directory, $recursive, $caseSensitive = true)
-    {
-        $this->directory = rtrim($directory, '/');
-        $this->recursive = $recursive;
-        $this->caseSensitive = $caseSensitive;
-    }
-
-    /**
-     * Format contents listing.
-     *
-     * @param array $listing
-     *
-     * @return array
-     */
-    public function formatListing(array $listing)
-    {
-        $listing = array_filter(array_map([$this, 'addPathInfo'], $listing), [$this, 'isEntryOutOfScope']);
-
-        return $this->sortListing(array_values($listing));
-    }
-
-    private function addPathInfo(array $entry)
-    {
-        return $entry + Util::pathinfo($entry['path']);
-    }
-
-    /**
-     * Determine if the entry is out of scope.
-     *
-     * @param array $entry
-     *
-     * @return bool
-     */
-    private function isEntryOutOfScope(array $entry)
-    {
-        if (empty($entry['path']) && $entry['path'] !== '0') {
-            return false;
-        }
-
-        if ($this->recursive) {
-            return $this->residesInDirectory($entry);
-        }
-
-        return $this->isDirectChild($entry);
-    }
-
-    /**
-     * Check if the entry resides within the parent directory.
-     *
-     * @param array $entry
-     *
-     * @return bool
-     */
-    private function residesInDirectory(array $entry)
-    {
-        if ($this->directory === '') {
-            return true;
-        }
-
-        return $this->caseSensitive
-            ? strpos($entry['path'], $this->directory . '/') === 0
-            : stripos($entry['path'], $this->directory . '/') === 0;
-    }
-
-    /**
-     * Check if the entry is a direct child of the directory.
-     *
-     * @param array $entry
-     *
-     * @return bool
-     */
-    private function isDirectChild(array $entry)
-    {
-        return $this->caseSensitive
-            ? $entry['dirname'] === $this->directory
-            : strcasecmp($this->directory, $entry['dirname']) === 0;
-    }
-
-    /**
-     * @param array $listing
-     *
-     * @return array
-     */
-    private function sortListing(array $listing)
-    {
-        usort($listing, function ($a, $b) {
-            return strcasecmp($a['path'], $b['path']);
-        });
-
-        return $listing;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

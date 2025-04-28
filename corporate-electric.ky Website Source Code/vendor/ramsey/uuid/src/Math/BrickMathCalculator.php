@@ -1,144 +1,98 @@
-<?php
-
-/**
- * This file is part of the ramsey/uuid library
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @copyright Copyright (c) Ben Ramsey <ben@benramsey.com>
- * @license http://opensource.org/licenses/MIT MIT
- */
-
-declare(strict_types=1);
-
-namespace Ramsey\Uuid\Math;
-
-use Brick\Math\BigDecimal;
-use Brick\Math\BigInteger;
-use Brick\Math\Exception\MathException;
-use Brick\Math\RoundingMode as BrickMathRounding;
-use Ramsey\Uuid\Exception\InvalidArgumentException;
-use Ramsey\Uuid\Type\Decimal;
-use Ramsey\Uuid\Type\Hexadecimal;
-use Ramsey\Uuid\Type\Integer as IntegerObject;
-use Ramsey\Uuid\Type\NumberInterface;
-
-/**
- * A calculator using the brick/math library for arbitrary-precision arithmetic
- *
- * @psalm-immutable
- */
-final class BrickMathCalculator implements CalculatorInterface
-{
-    private const ROUNDING_MODE_MAP = [
-        RoundingMode::UNNECESSARY => BrickMathRounding::UNNECESSARY,
-        RoundingMode::UP => BrickMathRounding::UP,
-        RoundingMode::DOWN => BrickMathRounding::DOWN,
-        RoundingMode::CEILING => BrickMathRounding::CEILING,
-        RoundingMode::FLOOR => BrickMathRounding::FLOOR,
-        RoundingMode::HALF_UP => BrickMathRounding::HALF_UP,
-        RoundingMode::HALF_DOWN => BrickMathRounding::HALF_DOWN,
-        RoundingMode::HALF_CEILING => BrickMathRounding::HALF_CEILING,
-        RoundingMode::HALF_FLOOR => BrickMathRounding::HALF_FLOOR,
-        RoundingMode::HALF_EVEN => BrickMathRounding::HALF_EVEN,
-    ];
-
-    public function add(NumberInterface $augend, NumberInterface ...$addends): NumberInterface
-    {
-        $sum = BigInteger::of($augend->toString());
-
-        foreach ($addends as $addend) {
-            $sum = $sum->plus($addend->toString());
-        }
-
-        return new IntegerObject((string) $sum);
-    }
-
-    public function subtract(NumberInterface $minuend, NumberInterface ...$subtrahends): NumberInterface
-    {
-        $difference = BigInteger::of($minuend->toString());
-
-        foreach ($subtrahends as $subtrahend) {
-            $difference = $difference->minus($subtrahend->toString());
-        }
-
-        return new IntegerObject((string) $difference);
-    }
-
-    public function multiply(NumberInterface $multiplicand, NumberInterface ...$multipliers): NumberInterface
-    {
-        $product = BigInteger::of($multiplicand->toString());
-
-        foreach ($multipliers as $multiplier) {
-            $product = $product->multipliedBy($multiplier->toString());
-        }
-
-        return new IntegerObject((string) $product);
-    }
-
-    public function divide(
-        int $roundingMode,
-        int $scale,
-        NumberInterface $dividend,
-        NumberInterface ...$divisors
-    ): NumberInterface {
-        $brickRounding = $this->getBrickRoundingMode($roundingMode);
-
-        $quotient = BigDecimal::of($dividend->toString());
-
-        foreach ($divisors as $divisor) {
-            $quotient = $quotient->dividedBy($divisor->toString(), $scale, $brickRounding);
-        }
-
-        if ($scale === 0) {
-            return new IntegerObject((string) $quotient->toBigInteger());
-        }
-
-        return new Decimal((string) $quotient);
-    }
-
-    public function fromBase(string $value, int $base): IntegerObject
-    {
-        try {
-            return new IntegerObject((string) BigInteger::fromBase($value, $base));
-        } catch (MathException | \InvalidArgumentException $exception) {
-            throw new InvalidArgumentException(
-                $exception->getMessage(),
-                (int) $exception->getCode(),
-                $exception
-            );
-        }
-    }
-
-    public function toBase(IntegerObject $value, int $base): string
-    {
-        try {
-            return BigInteger::of($value->toString())->toBase($base);
-        } catch (MathException | \InvalidArgumentException $exception) {
-            throw new InvalidArgumentException(
-                $exception->getMessage(),
-                (int) $exception->getCode(),
-                $exception
-            );
-        }
-    }
-
-    public function toHexadecimal(IntegerObject $value): Hexadecimal
-    {
-        return new Hexadecimal($this->toBase($value, 16));
-    }
-
-    public function toInteger(Hexadecimal $value): IntegerObject
-    {
-        return $this->fromBase($value->toString(), 16);
-    }
-
-    /**
-     * Maps ramsey/uuid rounding modes to those used by brick/math
-     */
-    private function getBrickRoundingMode(int $roundingMode): int
-    {
-        return self::ROUNDING_MODE_MAP[$roundingMode] ?? 0;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

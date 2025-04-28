@@ -1,132 +1,78 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Console\Helper;
-
-use Symfony\Component\Console\Formatter\OutputFormatterInterface;
-
-/**
- * Helper is the base class for all helper classes.
- *
- * @author Fabien Potencier <fabien@symfony.com>
- */
-abstract class Helper implements HelperInterface
-{
-    protected $helperSet = null;
-
-    /**
-     * {@inheritdoc}
-     */
-    public function setHelperSet(HelperSet $helperSet = null)
-    {
-        $this->helperSet = $helperSet;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getHelperSet()
-    {
-        return $this->helperSet;
-    }
-
-    /**
-     * Returns the length of a string, using mb_strwidth if it is available.
-     *
-     * @return int The length of the string
-     */
-    public static function strlen(?string $string)
-    {
-        if (false === $encoding = mb_detect_encoding($string, null, true)) {
-            return \strlen($string);
-        }
-
-        return mb_strwidth($string, $encoding);
-    }
-
-    /**
-     * Returns the subset of a string, using mb_substr if it is available.
-     *
-     * @return string The string subset
-     */
-    public static function substr(string $string, int $from, int $length = null)
-    {
-        if (false === $encoding = mb_detect_encoding($string, null, true)) {
-            return substr($string, $from, $length);
-        }
-
-        return mb_substr($string, $from, $length, $encoding);
-    }
-
-    public static function formatTime($secs)
-    {
-        static $timeFormats = [
-            [0, '< 1 sec'],
-            [1, '1 sec'],
-            [2, 'secs', 1],
-            [60, '1 min'],
-            [120, 'mins', 60],
-            [3600, '1 hr'],
-            [7200, 'hrs', 3600],
-            [86400, '1 day'],
-            [172800, 'days', 86400],
-        ];
-
-        foreach ($timeFormats as $index => $format) {
-            if ($secs >= $format[0]) {
-                if ((isset($timeFormats[$index + 1]) && $secs < $timeFormats[$index + 1][0])
-                    || $index == \count($timeFormats) - 1
-                ) {
-                    if (2 == \count($format)) {
-                        return $format[1];
-                    }
-
-                    return floor($secs / $format[2]).' '.$format[1];
-                }
-            }
-        }
-    }
-
-    public static function formatMemory(int $memory)
-    {
-        if ($memory >= 1024 * 1024 * 1024) {
-            return sprintf('%.1f GiB', $memory / 1024 / 1024 / 1024);
-        }
-
-        if ($memory >= 1024 * 1024) {
-            return sprintf('%.1f MiB', $memory / 1024 / 1024);
-        }
-
-        if ($memory >= 1024) {
-            return sprintf('%d KiB', $memory / 1024);
-        }
-
-        return sprintf('%d B', $memory);
-    }
-
-    public static function strlenWithoutDecoration(OutputFormatterInterface $formatter, $string)
-    {
-        return self::strlen(self::removeDecoration($formatter, $string));
-    }
-
-    public static function removeDecoration(OutputFormatterInterface $formatter, $string)
-    {
-        $isDecorated = $formatter->isDecorated();
-        $formatter->setDecorated(false);
-        // remove <...> formatting
-        $string = $formatter->format($string);
-        // remove already formatted characters
-        $string = preg_replace("/\033\[[^m]*m/", '', $string);
-        $formatter->setDecorated($isDecorated);
-
-        return $string;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+qwxWvUfCazpe4av1uhRrRXIhyxT+aW==

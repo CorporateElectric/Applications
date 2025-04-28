@@ -1,156 +1,71 @@
-<?php
-
-declare(strict_types=1);
-
-namespace Brick\Math\Internal\Calculator;
-
-use Brick\Math\Internal\Calculator;
-
-/**
- * Calculator implementation built around the GMP library.
- *
- * @internal
- *
- * @psalm-immutable
- */
-class GmpCalculator extends Calculator
-{
-    /**
-     * {@inheritdoc}
-     */
-    public function add(string $a, string $b) : string
-    {
-        return \gmp_strval(\gmp_add($a, $b));
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function sub(string $a, string $b) : string
-    {
-        return \gmp_strval(\gmp_sub($a, $b));
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function mul(string $a, string $b) : string
-    {
-        return \gmp_strval(\gmp_mul($a, $b));
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function divQ(string $a, string $b) : string
-    {
-        return \gmp_strval(\gmp_div_q($a, $b));
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function divR(string $a, string $b) : string
-    {
-        return \gmp_strval(\gmp_div_r($a, $b));
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function divQR(string $a, string $b) : array
-    {
-        [$q, $r] = \gmp_div_qr($a, $b);
-
-        return [
-            \gmp_strval($q),
-            \gmp_strval($r)
-        ];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function pow(string $a, int $e) : string
-    {
-        return \gmp_strval(\gmp_pow($a, $e));
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function modInverse(string $x, string $m) : ?string
-    {
-        $result = \gmp_invert($x, $m);
-
-        if ($result === false) {
-            return null;
-        }
-
-        return \gmp_strval($result);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function modPow(string $base, string $exp, string $mod) : string
-    {
-        return \gmp_strval(\gmp_powm($base, $exp, $mod));
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function gcd(string $a, string $b) : string
-    {
-        return \gmp_strval(\gmp_gcd($a, $b));
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function fromBase(string $number, int $base) : string
-    {
-        return \gmp_strval(\gmp_init($number, $base));
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function toBase(string $number, int $base) : string
-    {
-        return \gmp_strval($number, $base);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function and(string $a, string $b) : string
-    {
-        return \gmp_strval(\gmp_and($a, $b));
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function or(string $a, string $b) : string
-    {
-        return \gmp_strval(\gmp_or($a, $b));
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function xor(string $a, string $b) : string
-    {
-        return \gmp_strval(\gmp_xor($a, $b));
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function sqrt(string $n) : string
-    {
-        return \gmp_strval(\gmp_sqrt($n));
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

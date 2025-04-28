@@ -1,68 +1,36 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Framework\MockObject\Rule;
-
-use function is_string;
-use PHPUnit\Framework\Constraint\Constraint;
-use PHPUnit\Framework\InvalidArgumentException;
-use PHPUnit\Framework\MockObject\Invocation as BaseInvocation;
-use PHPUnit\Framework\MockObject\MethodNameConstraint;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for PHPUnit
- */
-final class MethodName
-{
-    /**
-     * @var Constraint
-     */
-    private $constraint;
-
-    /**
-     * @param Constraint|string $constraint
-     *
-     * @throws InvalidArgumentException
-     */
-    public function __construct($constraint)
-    {
-        if (is_string($constraint)) {
-            $constraint = new MethodNameConstraint($constraint);
-        }
-
-        if (!$constraint instanceof Constraint) {
-            throw InvalidArgumentException::create(1, 'PHPUnit\Framework\Constraint\Constraint object or string');
-        }
-
-        $this->constraint = $constraint;
-    }
-
-    public function toString(): string
-    {
-        return 'method name ' . $this->constraint->toString();
-    }
-
-    /**
-     * @throws \PHPUnit\Framework\ExpectationFailedException
-     * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
-     */
-    public function matches(BaseInvocation $invocation): bool
-    {
-        return $this->matchesName($invocation->getMethodName());
-    }
-
-    /**
-     * @throws \PHPUnit\Framework\ExpectationFailedException
-     * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
-     */
-    public function matchesName(string $methodName): bool
-    {
-        return (bool) $this->constraint->evaluate($methodName, '', true);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

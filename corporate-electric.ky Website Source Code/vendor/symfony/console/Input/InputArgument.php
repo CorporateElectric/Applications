@@ -1,129 +1,51 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Console\Input;
-
-use Symfony\Component\Console\Exception\InvalidArgumentException;
-use Symfony\Component\Console\Exception\LogicException;
-
-/**
- * Represents a command line argument.
- *
- * @author Fabien Potencier <fabien@symfony.com>
- */
-class InputArgument
-{
-    public const REQUIRED = 1;
-    public const OPTIONAL = 2;
-    public const IS_ARRAY = 4;
-
-    private $name;
-    private $mode;
-    private $default;
-    private $description;
-
-    /**
-     * @param string               $name        The argument name
-     * @param int|null             $mode        The argument mode: self::REQUIRED or self::OPTIONAL
-     * @param string               $description A description text
-     * @param string|string[]|null $default     The default value (for self::OPTIONAL mode only)
-     *
-     * @throws InvalidArgumentException When argument mode is not valid
-     */
-    public function __construct(string $name, int $mode = null, string $description = '', $default = null)
-    {
-        if (null === $mode) {
-            $mode = self::OPTIONAL;
-        } elseif ($mode > 7 || $mode < 1) {
-            throw new InvalidArgumentException(sprintf('Argument mode "%s" is not valid.', $mode));
-        }
-
-        $this->name = $name;
-        $this->mode = $mode;
-        $this->description = $description;
-
-        $this->setDefault($default);
-    }
-
-    /**
-     * Returns the argument name.
-     *
-     * @return string The argument name
-     */
-    public function getName()
-    {
-        return $this->name;
-    }
-
-    /**
-     * Returns true if the argument is required.
-     *
-     * @return bool true if parameter mode is self::REQUIRED, false otherwise
-     */
-    public function isRequired()
-    {
-        return self::REQUIRED === (self::REQUIRED & $this->mode);
-    }
-
-    /**
-     * Returns true if the argument can take multiple values.
-     *
-     * @return bool true if mode is self::IS_ARRAY, false otherwise
-     */
-    public function isArray()
-    {
-        return self::IS_ARRAY === (self::IS_ARRAY & $this->mode);
-    }
-
-    /**
-     * Sets the default value.
-     *
-     * @param string|string[]|null $default The default value
-     *
-     * @throws LogicException When incorrect default value is given
-     */
-    public function setDefault($default = null)
-    {
-        if (self::REQUIRED === $this->mode && null !== $default) {
-            throw new LogicException('Cannot set a default value except for InputArgument::OPTIONAL mode.');
-        }
-
-        if ($this->isArray()) {
-            if (null === $default) {
-                $default = [];
-            } elseif (!\is_array($default)) {
-                throw new LogicException('A default value for an array argument must be an array.');
-            }
-        }
-
-        $this->default = $default;
-    }
-
-    /**
-     * Returns the default value.
-     *
-     * @return string|string[]|null The default value
-     */
-    public function getDefault()
-    {
-        return $this->default;
-    }
-
-    /**
-     * Returns the description text.
-     *
-     * @return string The description text
-     */
-    public function getDescription()
-    {
-        return $this->description;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+xXcSwMynfW/TIN4=

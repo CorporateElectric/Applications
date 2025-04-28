@@ -1,286 +1,135 @@
-<?php
-
-namespace Illuminate\Foundation\Testing\Concerns;
-
-use Illuminate\Contracts\Bus\Dispatcher as BusDispatcherContract;
-use Illuminate\Contracts\Events\Dispatcher as EventsDispatcherContract;
-use Illuminate\Contracts\Notifications\Dispatcher as NotificationDispatcher;
-use Illuminate\Support\Facades\Event;
-use Mockery;
-
-trait MocksApplicationServices
-{
-    /**
-     * All of the fired events.
-     *
-     * @var array
-     */
-    protected $firedEvents = [];
-
-    /**
-     * All of the fired model events.
-     *
-     * @var array
-     */
-    protected $firedModelEvents = [];
-
-    /**
-     * All of the dispatched jobs.
-     *
-     * @var array
-     */
-    protected $dispatchedJobs = [];
-
-    /**
-     * All of the dispatched notifications.
-     *
-     * @var array
-     */
-    protected $dispatchedNotifications = [];
-
-    /**
-     * Specify a list of events that should be fired for the given operation.
-     *
-     * These events will be mocked, so that handlers will not actually be executed.
-     *
-     * @param  array|string  $events
-     * @return $this
-     *
-     * @throws \Exception
-     */
-    public function expectsEvents($events)
-    {
-        $events = is_array($events) ? $events : func_get_args();
-
-        $this->withoutEvents();
-
-        $this->beforeApplicationDestroyed(function () use ($events) {
-            $fired = $this->getFiredEvents($events);
-
-            $this->assertEmpty(
-                $eventsNotFired = array_diff($events, $fired),
-                'These expected events were not fired: ['.implode(', ', $eventsNotFired).']'
-            );
-        });
-
-        return $this;
-    }
-
-    /**
-     * Specify a list of events that should not be fired for the given operation.
-     *
-     * These events will be mocked, so that handlers will not actually be executed.
-     *
-     * @param  array|string  $events
-     * @return $this
-     */
-    public function doesntExpectEvents($events)
-    {
-        $events = is_array($events) ? $events : func_get_args();
-
-        $this->withoutEvents();
-
-        $this->beforeApplicationDestroyed(function () use ($events) {
-            $this->assertEmpty(
-                $fired = $this->getFiredEvents($events),
-                'These unexpected events were fired: ['.implode(', ', $fired).']'
-            );
-        });
-
-        return $this;
-    }
-
-    /**
-     * Mock the event dispatcher so all events are silenced and collected.
-     *
-     * @return $this
-     */
-    protected function withoutEvents()
-    {
-        $mock = Mockery::mock(EventsDispatcherContract::class)->shouldIgnoreMissing();
-
-        $mock->shouldReceive('dispatch', 'until')->andReturnUsing(function ($called) {
-            $this->firedEvents[] = $called;
-        });
-
-        Event::clearResolvedInstances();
-
-        $this->app->instance('events', $mock);
-
-        return $this;
-    }
-
-    /**
-     * Filter the given events against the fired events.
-     *
-     * @param  array  $events
-     * @return array
-     */
-    protected function getFiredEvents(array $events)
-    {
-        return $this->getDispatched($events, $this->firedEvents);
-    }
-
-    /**
-     * Specify a list of jobs that should be dispatched for the given operation.
-     *
-     * These jobs will be mocked, so that handlers will not actually be executed.
-     *
-     * @param  array|string  $jobs
-     * @return $this
-     */
-    protected function expectsJobs($jobs)
-    {
-        $jobs = is_array($jobs) ? $jobs : func_get_args();
-
-        $this->withoutJobs();
-
-        $this->beforeApplicationDestroyed(function () use ($jobs) {
-            $dispatched = $this->getDispatchedJobs($jobs);
-
-            $this->assertEmpty(
-                $jobsNotDispatched = array_diff($jobs, $dispatched),
-                'These expected jobs were not dispatched: ['.implode(', ', $jobsNotDispatched).']'
-            );
-        });
-
-        return $this;
-    }
-
-    /**
-     * Specify a list of jobs that should not be dispatched for the given operation.
-     *
-     * These jobs will be mocked, so that handlers will not actually be executed.
-     *
-     * @param  array|string  $jobs
-     * @return $this
-     */
-    protected function doesntExpectJobs($jobs)
-    {
-        $jobs = is_array($jobs) ? $jobs : func_get_args();
-
-        $this->withoutJobs();
-
-        $this->beforeApplicationDestroyed(function () use ($jobs) {
-            $this->assertEmpty(
-                $dispatched = $this->getDispatchedJobs($jobs),
-                'These unexpected jobs were dispatched: ['.implode(', ', $dispatched).']'
-            );
-        });
-
-        return $this;
-    }
-
-    /**
-     * Mock the job dispatcher so all jobs are silenced and collected.
-     *
-     * @return $this
-     */
-    protected function withoutJobs()
-    {
-        $mock = Mockery::mock(BusDispatcherContract::class)->shouldIgnoreMissing();
-
-        $mock->shouldReceive('dispatch', 'dispatchNow')->andReturnUsing(function ($dispatched) {
-            $this->dispatchedJobs[] = $dispatched;
-        });
-
-        $this->app->instance(
-            BusDispatcherContract::class, $mock
-        );
-
-        return $this;
-    }
-
-    /**
-     * Filter the given jobs against the dispatched jobs.
-     *
-     * @param  array  $jobs
-     * @return array
-     */
-    protected function getDispatchedJobs(array $jobs)
-    {
-        return $this->getDispatched($jobs, $this->dispatchedJobs);
-    }
-
-    /**
-     * Filter the given classes against an array of dispatched classes.
-     *
-     * @param  array  $classes
-     * @param  array  $dispatched
-     * @return array
-     */
-    protected function getDispatched(array $classes, array $dispatched)
-    {
-        return array_filter($classes, function ($class) use ($dispatched) {
-            return $this->wasDispatched($class, $dispatched);
-        });
-    }
-
-    /**
-     * Check if the given class exists in an array of dispatched classes.
-     *
-     * @param  string  $needle
-     * @param  array  $haystack
-     * @return bool
-     */
-    protected function wasDispatched($needle, array $haystack)
-    {
-        foreach ($haystack as $dispatched) {
-            if ((is_string($dispatched) && ($dispatched === $needle || is_subclass_of($dispatched, $needle))) ||
-                $dispatched instanceof $needle) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Mock the notification dispatcher so all notifications are silenced.
-     *
-     * @return $this
-     */
-    protected function withoutNotifications()
-    {
-        $mock = Mockery::mock(NotificationDispatcher::class);
-
-        $mock->shouldReceive('send')->andReturnUsing(function ($notifiable, $instance, $channels = []) {
-            $this->dispatchedNotifications[] = compact(
-                'notifiable', 'instance', 'channels'
-            );
-        });
-
-        $this->app->instance(NotificationDispatcher::class, $mock);
-
-        return $this;
-    }
-
-    /**
-     * Specify a notification that is expected to be dispatched.
-     *
-     * @param  mixed  $notifiable
-     * @param  string  $notification
-     * @return $this
-     */
-    protected function expectsNotification($notifiable, $notification)
-    {
-        $this->withoutNotifications();
-
-        $this->beforeApplicationDestroyed(function () use ($notifiable, $notification) {
-            foreach ($this->dispatchedNotifications as $dispatched) {
-                $notified = $dispatched['notifiable'];
-
-                if (($notified === $notifiable ||
-                     $notified->getKey() == $notifiable->getKey()) &&
-                    get_class($dispatched['instance']) === $notification
-                ) {
-                    return $this;
-                }
-            }
-
-            $this->fail('The following expected notification were not dispatched: ['.$notification.']');
-        });
-
-        return $this;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,151 +1,76 @@
-<?php
-
-namespace GuzzleHttp\Psr7;
-
-use Psr\Http\Message\StreamInterface;
-
-/**
- * Stream decorator trait
- * @property StreamInterface stream
- */
-trait StreamDecoratorTrait
-{
-    /**
-     * @param StreamInterface $stream Stream to decorate
-     */
-    public function __construct(StreamInterface $stream)
-    {
-        $this->stream = $stream;
-    }
-
-    /**
-     * Magic method used to create a new stream if streams are not added in
-     * the constructor of a decorator (e.g., LazyOpenStream).
-     *
-     * @param string $name Name of the property (allows "stream" only).
-     *
-     * @return StreamInterface
-     */
-    public function __get($name)
-    {
-        if ($name == 'stream') {
-            $this->stream = $this->createStream();
-            return $this->stream;
-        }
-
-        throw new \UnexpectedValueException("$name not found on class");
-    }
-
-    public function __toString()
-    {
-        try {
-            if ($this->isSeekable()) {
-                $this->seek(0);
-            }
-            return $this->getContents();
-        } catch (\Exception $e) {
-            // Really, PHP? https://bugs.php.net/bug.php?id=53648
-            trigger_error('StreamDecorator::__toString exception: '
-                . (string) $e, E_USER_ERROR);
-            return '';
-        }
-    }
-
-    public function getContents()
-    {
-        return Utils::copyToString($this);
-    }
-
-    /**
-     * Allow decorators to implement custom methods
-     *
-     * @param string $method Missing method name
-     * @param array  $args   Method arguments
-     *
-     * @return mixed
-     */
-    public function __call($method, array $args)
-    {
-        $result = call_user_func_array([$this->stream, $method], $args);
-
-        // Always return the wrapped object if the result is a return $this
-        return $result === $this->stream ? $this : $result;
-    }
-
-    public function close()
-    {
-        $this->stream->close();
-    }
-
-    public function getMetadata($key = null)
-    {
-        return $this->stream->getMetadata($key);
-    }
-
-    public function detach()
-    {
-        return $this->stream->detach();
-    }
-
-    public function getSize()
-    {
-        return $this->stream->getSize();
-    }
-
-    public function eof()
-    {
-        return $this->stream->eof();
-    }
-
-    public function tell()
-    {
-        return $this->stream->tell();
-    }
-
-    public function isReadable()
-    {
-        return $this->stream->isReadable();
-    }
-
-    public function isWritable()
-    {
-        return $this->stream->isWritable();
-    }
-
-    public function isSeekable()
-    {
-        return $this->stream->isSeekable();
-    }
-
-    public function rewind()
-    {
-        $this->seek(0);
-    }
-
-    public function seek($offset, $whence = SEEK_SET)
-    {
-        $this->stream->seek($offset, $whence);
-    }
-
-    public function read($length)
-    {
-        return $this->stream->read($length);
-    }
-
-    public function write($string)
-    {
-        return $this->stream->write($string);
-    }
-
-    /**
-     * Implement in subclasses to dynamically create streams when requested.
-     *
-     * @return StreamInterface
-     *
-     * @throws \BadMethodCallException
-     */
-    protected function createStream()
-    {
-        throw new \BadMethodCallException('Not implemented');
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+fyEGxt6aMGxNBaVB14nPpuWT5x9SjYU3EE4=

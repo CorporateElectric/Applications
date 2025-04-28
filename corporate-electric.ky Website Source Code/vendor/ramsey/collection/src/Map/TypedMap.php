@@ -1,137 +1,33 @@
-<?php
-
-/**
- * This file is part of the ramsey/collection library
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @copyright Copyright (c) Ben Ramsey <ben@benramsey.com>
- * @license http://opensource.org/licenses/MIT MIT
- */
-
-declare(strict_types=1);
-
-namespace Ramsey\Collection\Map;
-
-use Ramsey\Collection\Tool\TypeTrait;
-
-/**
- * A `TypedMap` represents a map of elements where key and value are typed.
- *
- * Each element is identified by a key with defined type and a value of defined
- * type. The keys of the map must be unique. The values on the map can be=
- * repeated but each with its own different key.
- *
- * The most common case is to use a string type key, but it's not limited to
- * this type of keys.
- *
- * This is a direct implementation of `TypedMapInterface`, provided for the sake
- * of convenience.
- *
- * Example usage:
- *
- * ```php
- * $map = new TypedMap('string', Foo::class);
- * $map['x'] = new Foo();
- * foreach ($map as $key => $value) {
- *     // do something with $key, it will be a Foo::class
- * }
- *
- * // this will throw an exception since key must be string
- * $map[10] = new Foo();
- *
- * // this will throw an exception since value must be a Foo
- * $map['bar'] = 'bar';
- *
- * // initialize map with contents
- * $map = new TypedMap('string', Foo::class, [
- *     new Foo(), new Foo(), new Foo()
- * ]);
- * ```
- *
- * It is preferable to subclass `AbstractTypedMap` to create your own typed map
- * implementation:
- *
- * ```php
- * class FooTypedMap extends AbstractTypedMap
- * {
- *     public function getKeyType()
- *     {
- *         return 'int';
- *     }
- *
- *     public function getValueType()
- *     {
- *          return Foo::class;
- *     }
- * }
- * ```
- *
- * … but you also may use the `TypedMap` class:
- *
- * ```php
- * class FooTypedMap extends TypedMap
- * {
- *     public function __constructor(array $data = [])
- *     {
- *         parent::__construct('int', Foo::class, $data);
- *     }
- * }
- * ```
- */
-class TypedMap extends AbstractTypedMap
-{
-    use TypeTrait;
-
-    /**
-     * The data type of keys stored in this collection.
-     *
-     * A map key's type is immutable once it is set. For this reason, this
-     * property is set private.
-     *
-     * @var string data type of the map key.
-     */
-    private $keyType;
-
-    /**
-     * The data type of values stored in this collection.
-     *
-     * A map values's type is immutable once it is set. For this reason, this
-     * property is set private.
-     *
-     * @var string data type of the map value.
-     */
-    private $valueType;
-
-    /**
-     * Constructs a map object of the specified key and value types,
-     * optionally with the specified data.
-     *
-     * @param string $keyType The data type of the map's keys.
-     * @param string $valueType The data type of the map's values.
-     * @param mixed[] $data The initial data to set for this map.
-     */
-    public function __construct(string $keyType, string $valueType, array $data = [])
-    {
-        $this->keyType = $keyType;
-        $this->valueType = $valueType;
-        parent::__construct($data);
-    }
-
-    /**
-     * Return the type used on the key.
-     */
-    public function getKeyType(): string
-    {
-        return $this->keyType;
-    }
-
-    /**
-     * Return the type forced on the values.
-     */
-    public function getValueType(): string
-    {
-        return $this->valueType;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+wj6O0AyBp6eb

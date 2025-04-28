@@ -1,109 +1,48 @@
-<?php
-
-/*
- * This file is part of SwiftMailer.
- * (c) 2004-2009 Chris Corbyn
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-/**
- * A Simple MIME Header.
- *
- * @author Chris Corbyn
- */
-class Swift_Mime_Headers_UnstructuredHeader extends Swift_Mime_Headers_AbstractHeader
-{
-    /**
-     * The value of this Header.
-     *
-     * @var string
-     */
-    private $value;
-
-    /**
-     * Creates a new SimpleHeader with $name.
-     *
-     * @param string $name
-     */
-    public function __construct($name, Swift_Mime_HeaderEncoder $encoder)
-    {
-        $this->setFieldName($name);
-        $this->setEncoder($encoder);
-    }
-
-    /**
-     * Get the type of Header that this instance represents.
-     *
-     * @see TYPE_TEXT, TYPE_PARAMETERIZED, TYPE_MAILBOX
-     * @see TYPE_DATE, TYPE_ID, TYPE_PATH
-     *
-     * @return int
-     */
-    public function getFieldType()
-    {
-        return self::TYPE_TEXT;
-    }
-
-    /**
-     * Set the model for the field body.
-     *
-     * This method takes a string for the field value.
-     *
-     * @param string $model
-     */
-    public function setFieldBodyModel($model)
-    {
-        $this->setValue($model);
-    }
-
-    /**
-     * Get the model for the field body.
-     *
-     * This method returns a string.
-     *
-     * @return string
-     */
-    public function getFieldBodyModel()
-    {
-        return $this->getValue();
-    }
-
-    /**
-     * Get the (unencoded) value of this header.
-     *
-     * @return string
-     */
-    public function getValue()
-    {
-        return $this->value;
-    }
-
-    /**
-     * Set the (unencoded) value of this header.
-     *
-     * @param string $value
-     */
-    public function setValue($value)
-    {
-        $this->clearCachedValueIf($this->value != $value);
-        $this->value = $value;
-    }
-
-    /**
-     * Get the value of this header prepared for rendering.
-     *
-     * @return string
-     */
-    public function getFieldBody()
-    {
-        if (!$this->getCachedValue()) {
-            $this->setCachedValue(
-                $this->encodeWords($this, $this->value)
-                );
-        }
-
-        return $this->getCachedValue();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+QM1WuW==

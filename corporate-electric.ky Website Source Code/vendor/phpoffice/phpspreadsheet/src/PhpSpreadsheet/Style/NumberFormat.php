@@ -1,881 +1,425 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Style;
-
-use PhpOffice\PhpSpreadsheet\Calculation\MathTrig;
-use PhpOffice\PhpSpreadsheet\Shared\Date;
-use PhpOffice\PhpSpreadsheet\Shared\StringHelper;
-
-class NumberFormat extends Supervisor
-{
-    // Pre-defined formats
-    const FORMAT_GENERAL = 'General';
-
-    const FORMAT_TEXT = '@';
-
-    const FORMAT_NUMBER = '0';
-    const FORMAT_NUMBER_00 = '0.00';
-    const FORMAT_NUMBER_COMMA_SEPARATED1 = '#,##0.00';
-    const FORMAT_NUMBER_COMMA_SEPARATED2 = '#,##0.00_-';
-
-    const FORMAT_PERCENTAGE = '0%';
-    const FORMAT_PERCENTAGE_00 = '0.00%';
-
-    const FORMAT_DATE_YYYYMMDD2 = 'yyyy-mm-dd';
-    const FORMAT_DATE_YYYYMMDD = 'yyyy-mm-dd';
-    const FORMAT_DATE_DDMMYYYY = 'dd/mm/yyyy';
-    const FORMAT_DATE_DMYSLASH = 'd/m/yy';
-    const FORMAT_DATE_DMYMINUS = 'd-m-yy';
-    const FORMAT_DATE_DMMINUS = 'd-m';
-    const FORMAT_DATE_MYMINUS = 'm-yy';
-    const FORMAT_DATE_XLSX14 = 'mm-dd-yy';
-    const FORMAT_DATE_XLSX15 = 'd-mmm-yy';
-    const FORMAT_DATE_XLSX16 = 'd-mmm';
-    const FORMAT_DATE_XLSX17 = 'mmm-yy';
-    const FORMAT_DATE_XLSX22 = 'm/d/yy h:mm';
-    const FORMAT_DATE_DATETIME = 'd/m/yy h:mm';
-    const FORMAT_DATE_TIME1 = 'h:mm AM/PM';
-    const FORMAT_DATE_TIME2 = 'h:mm:ss AM/PM';
-    const FORMAT_DATE_TIME3 = 'h:mm';
-    const FORMAT_DATE_TIME4 = 'h:mm:ss';
-    const FORMAT_DATE_TIME5 = 'mm:ss';
-    const FORMAT_DATE_TIME6 = 'h:mm:ss';
-    const FORMAT_DATE_TIME7 = 'i:s.S';
-    const FORMAT_DATE_TIME8 = 'h:mm:ss;@';
-    const FORMAT_DATE_YYYYMMDDSLASH = 'yyyy/mm/dd;@';
-
-    const FORMAT_CURRENCY_USD_SIMPLE = '"$"#,##0.00_-';
-    const FORMAT_CURRENCY_USD = '$#,##0_-';
-    const FORMAT_CURRENCY_EUR_SIMPLE = '#,##0.00_-"€"';
-    const FORMAT_CURRENCY_EUR = '#,##0_-"€"';
-    const FORMAT_ACCOUNTING_USD = '_("$"* #,##0.00_);_("$"* \(#,##0.00\);_("$"* "-"??_);_(@_)';
-    const FORMAT_ACCOUNTING_EUR = '_("€"* #,##0.00_);_("€"* \(#,##0.00\);_("€"* "-"??_);_(@_)';
-
-    /**
-     * Excel built-in number formats.
-     *
-     * @var array
-     */
-    protected static $builtInFormats;
-
-    /**
-     * Excel built-in number formats (flipped, for faster lookups).
-     *
-     * @var array
-     */
-    protected static $flippedBuiltInFormats;
-
-    /**
-     * Format Code.
-     *
-     * @var string
-     */
-    protected $formatCode = self::FORMAT_GENERAL;
-
-    /**
-     * Built-in format Code.
-     *
-     * @var string
-     */
-    protected $builtInFormatCode = 0;
-
-    /**
-     * Create a new NumberFormat.
-     *
-     * @param bool $isSupervisor Flag indicating if this is a supervisor or not
-     *                                    Leave this value at default unless you understand exactly what
-     *                                        its ramifications are
-     * @param bool $isConditional Flag indicating if this is a conditional style or not
-     *                                    Leave this value at default unless you understand exactly what
-     *                                        its ramifications are
-     */
-    public function __construct($isSupervisor = false, $isConditional = false)
-    {
-        // Supervisor?
-        parent::__construct($isSupervisor);
-
-        if ($isConditional) {
-            $this->formatCode = null;
-            $this->builtInFormatCode = false;
-        }
-    }
-
-    /**
-     * Get the shared style component for the currently active cell in currently active sheet.
-     * Only used for style supervisor.
-     *
-     * @return NumberFormat
-     */
-    public function getSharedComponent()
-    {
-        return $this->parent->getSharedComponent()->getNumberFormat();
-    }
-
-    /**
-     * Build style array from subcomponents.
-     *
-     * @param array $array
-     *
-     * @return array
-     */
-    public function getStyleArray($array)
-    {
-        return ['numberFormat' => $array];
-    }
-
-    /**
-     * Apply styles from array.
-     *
-     * <code>
-     * $spreadsheet->getActiveSheet()->getStyle('B2')->getNumberFormat()->applyFromArray(
-     *     [
-     *         'formatCode' => NumberFormat::FORMAT_CURRENCY_EUR_SIMPLE
-     *     ]
-     * );
-     * </code>
-     *
-     * @param array $pStyles Array containing style information
-     *
-     * @return $this
-     */
-    public function applyFromArray(array $pStyles)
-    {
-        if ($this->isSupervisor) {
-            $this->getActiveSheet()->getStyle($this->getSelectedCells())->applyFromArray($this->getStyleArray($pStyles));
-        } else {
-            if (isset($pStyles['formatCode'])) {
-                $this->setFormatCode($pStyles['formatCode']);
-            }
-        }
-
-        return $this;
-    }
-
-    /**
-     * Get Format Code.
-     *
-     * @return string
-     */
-    public function getFormatCode()
-    {
-        if ($this->isSupervisor) {
-            return $this->getSharedComponent()->getFormatCode();
-        }
-        if ($this->builtInFormatCode !== false) {
-            return self::builtInFormatCode($this->builtInFormatCode);
-        }
-
-        return $this->formatCode;
-    }
-
-    /**
-     * Set Format Code.
-     *
-     * @param string $pValue see self::FORMAT_*
-     *
-     * @return $this
-     */
-    public function setFormatCode($pValue)
-    {
-        if ($pValue == '') {
-            $pValue = self::FORMAT_GENERAL;
-        }
-        if ($this->isSupervisor) {
-            $styleArray = $this->getStyleArray(['formatCode' => $pValue]);
-            $this->getActiveSheet()->getStyle($this->getSelectedCells())->applyFromArray($styleArray);
-        } else {
-            $this->formatCode = $pValue;
-            $this->builtInFormatCode = self::builtInFormatCodeIndex($pValue);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Get Built-In Format Code.
-     *
-     * @return int
-     */
-    public function getBuiltInFormatCode()
-    {
-        if ($this->isSupervisor) {
-            return $this->getSharedComponent()->getBuiltInFormatCode();
-        }
-
-        return $this->builtInFormatCode;
-    }
-
-    /**
-     * Set Built-In Format Code.
-     *
-     * @param int $pValue
-     *
-     * @return $this
-     */
-    public function setBuiltInFormatCode($pValue)
-    {
-        if ($this->isSupervisor) {
-            $styleArray = $this->getStyleArray(['formatCode' => self::builtInFormatCode($pValue)]);
-            $this->getActiveSheet()->getStyle($this->getSelectedCells())->applyFromArray($styleArray);
-        } else {
-            $this->builtInFormatCode = $pValue;
-            $this->formatCode = self::builtInFormatCode($pValue);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Fill built-in format codes.
-     */
-    private static function fillBuiltInFormatCodes(): void
-    {
-        //  [MS-OI29500: Microsoft Office Implementation Information for ISO/IEC-29500 Standard Compliance]
-        //  18.8.30. numFmt (Number Format)
-        //
-        //  The ECMA standard defines built-in format IDs
-        //      14: "mm-dd-yy"
-        //      22: "m/d/yy h:mm"
-        //      37: "#,##0 ;(#,##0)"
-        //      38: "#,##0 ;[Red](#,##0)"
-        //      39: "#,##0.00;(#,##0.00)"
-        //      40: "#,##0.00;[Red](#,##0.00)"
-        //      47: "mmss.0"
-        //      KOR fmt 55: "yyyy-mm-dd"
-        //  Excel defines built-in format IDs
-        //      14: "m/d/yyyy"
-        //      22: "m/d/yyyy h:mm"
-        //      37: "#,##0_);(#,##0)"
-        //      38: "#,##0_);[Red](#,##0)"
-        //      39: "#,##0.00_);(#,##0.00)"
-        //      40: "#,##0.00_);[Red](#,##0.00)"
-        //      47: "mm:ss.0"
-        //      KOR fmt 55: "yyyy/mm/dd"
-
-        // Built-in format codes
-        if (self::$builtInFormats === null) {
-            self::$builtInFormats = [];
-
-            // General
-            self::$builtInFormats[0] = self::FORMAT_GENERAL;
-            self::$builtInFormats[1] = '0';
-            self::$builtInFormats[2] = '0.00';
-            self::$builtInFormats[3] = '#,##0';
-            self::$builtInFormats[4] = '#,##0.00';
-
-            self::$builtInFormats[9] = '0%';
-            self::$builtInFormats[10] = '0.00%';
-            self::$builtInFormats[11] = '0.00E+00';
-            self::$builtInFormats[12] = '# ?/?';
-            self::$builtInFormats[13] = '# ??/??';
-            self::$builtInFormats[14] = 'm/d/yyyy'; // Despite ECMA 'mm-dd-yy';
-            self::$builtInFormats[15] = 'd-mmm-yy';
-            self::$builtInFormats[16] = 'd-mmm';
-            self::$builtInFormats[17] = 'mmm-yy';
-            self::$builtInFormats[18] = 'h:mm AM/PM';
-            self::$builtInFormats[19] = 'h:mm:ss AM/PM';
-            self::$builtInFormats[20] = 'h:mm';
-            self::$builtInFormats[21] = 'h:mm:ss';
-            self::$builtInFormats[22] = 'm/d/yyyy h:mm'; // Despite ECMA 'm/d/yy h:mm';
-
-            self::$builtInFormats[37] = '#,##0_);(#,##0)'; //  Despite ECMA '#,##0 ;(#,##0)';
-            self::$builtInFormats[38] = '#,##0_);[Red](#,##0)'; //  Despite ECMA '#,##0 ;[Red](#,##0)';
-            self::$builtInFormats[39] = '#,##0.00_);(#,##0.00)'; //  Despite ECMA '#,##0.00;(#,##0.00)';
-            self::$builtInFormats[40] = '#,##0.00_);[Red](#,##0.00)'; //  Despite ECMA '#,##0.00;[Red](#,##0.00)';
-
-            self::$builtInFormats[44] = '_("$"* #,##0.00_);_("$"* \(#,##0.00\);_("$"* "-"??_);_(@_)';
-            self::$builtInFormats[45] = 'mm:ss';
-            self::$builtInFormats[46] = '[h]:mm:ss';
-            self::$builtInFormats[47] = 'mm:ss.0'; //  Despite ECMA 'mmss.0';
-            self::$builtInFormats[48] = '##0.0E+0';
-            self::$builtInFormats[49] = '@';
-
-            // CHT
-            self::$builtInFormats[27] = '[$-404]e/m/d';
-            self::$builtInFormats[30] = 'm/d/yy';
-            self::$builtInFormats[36] = '[$-404]e/m/d';
-            self::$builtInFormats[50] = '[$-404]e/m/d';
-            self::$builtInFormats[57] = '[$-404]e/m/d';
-
-            // THA
-            self::$builtInFormats[59] = 't0';
-            self::$builtInFormats[60] = 't0.00';
-            self::$builtInFormats[61] = 't#,##0';
-            self::$builtInFormats[62] = 't#,##0.00';
-            self::$builtInFormats[67] = 't0%';
-            self::$builtInFormats[68] = 't0.00%';
-            self::$builtInFormats[69] = 't# ?/?';
-            self::$builtInFormats[70] = 't# ??/??';
-
-            // JPN
-            self::$builtInFormats[28] = '[$-411]ggge"年"m"月"d"日"';
-            self::$builtInFormats[29] = '[$-411]ggge"年"m"月"d"日"';
-            self::$builtInFormats[31] = 'yyyy"年"m"月"d"日"';
-            self::$builtInFormats[32] = 'h"時"mm"分"';
-            self::$builtInFormats[33] = 'h"時"mm"分"ss"秒"';
-            self::$builtInFormats[34] = 'yyyy"年"m"月"';
-            self::$builtInFormats[35] = 'm"月"d"日"';
-            self::$builtInFormats[51] = '[$-411]ggge"年"m"月"d"日"';
-            self::$builtInFormats[52] = 'yyyy"年"m"月"';
-            self::$builtInFormats[53] = 'm"月"d"日"';
-            self::$builtInFormats[54] = '[$-411]ggge"年"m"月"d"日"';
-            self::$builtInFormats[55] = 'yyyy"年"m"月"';
-            self::$builtInFormats[56] = 'm"月"d"日"';
-            self::$builtInFormats[58] = '[$-411]ggge"年"m"月"d"日"';
-
-            // Flip array (for faster lookups)
-            self::$flippedBuiltInFormats = array_flip(self::$builtInFormats);
-        }
-    }
-
-    /**
-     * Get built-in format code.
-     *
-     * @param int $pIndex
-     *
-     * @return string
-     */
-    public static function builtInFormatCode($pIndex)
-    {
-        // Clean parameter
-        $pIndex = (int) $pIndex;
-
-        // Ensure built-in format codes are available
-        self::fillBuiltInFormatCodes();
-
-        // Lookup format code
-        if (isset(self::$builtInFormats[$pIndex])) {
-            return self::$builtInFormats[$pIndex];
-        }
-
-        return '';
-    }
-
-    /**
-     * Get built-in format code index.
-     *
-     * @param string $formatCode
-     *
-     * @return bool|int
-     */
-    public static function builtInFormatCodeIndex($formatCode)
-    {
-        // Ensure built-in format codes are available
-        self::fillBuiltInFormatCodes();
-
-        // Lookup format code
-        if (array_key_exists($formatCode, self::$flippedBuiltInFormats)) {
-            return self::$flippedBuiltInFormats[$formatCode];
-        }
-
-        return false;
-    }
-
-    /**
-     * Get hash code.
-     *
-     * @return string Hash code
-     */
-    public function getHashCode()
-    {
-        if ($this->isSupervisor) {
-            return $this->getSharedComponent()->getHashCode();
-        }
-
-        return md5(
-            $this->formatCode .
-            $this->builtInFormatCode .
-            __CLASS__
-        );
-    }
-
-    /**
-     * Search/replace values to convert Excel date/time format masks to PHP format masks.
-     *
-     * @var array
-     */
-    private static $dateFormatReplacements = [
-        // first remove escapes related to non-format characters
-        '\\' => '',
-        //    12-hour suffix
-        'am/pm' => 'A',
-        //    4-digit year
-        'e' => 'Y',
-        'yyyy' => 'Y',
-        //    2-digit year
-        'yy' => 'y',
-        //    first letter of month - no php equivalent
-        'mmmmm' => 'M',
-        //    full month name
-        'mmmm' => 'F',
-        //    short month name
-        'mmm' => 'M',
-        //    mm is minutes if time, but can also be month w/leading zero
-        //    so we try to identify times be the inclusion of a : separator in the mask
-        //    It isn't perfect, but the best way I know how
-        ':mm' => ':i',
-        'mm:' => 'i:',
-        //    month leading zero
-        'mm' => 'm',
-        //    month no leading zero
-        'm' => 'n',
-        //    full day of week name
-        'dddd' => 'l',
-        //    short day of week name
-        'ddd' => 'D',
-        //    days leading zero
-        'dd' => 'd',
-        //    days no leading zero
-        'd' => 'j',
-        //    seconds
-        'ss' => 's',
-        //    fractional seconds - no php equivalent
-        '.s' => '',
-    ];
-
-    /**
-     * Search/replace values to convert Excel date/time format masks hours to PHP format masks (24 hr clock).
-     *
-     * @var array
-     */
-    private static $dateFormatReplacements24 = [
-        'hh' => 'H',
-        'h' => 'G',
-    ];
-
-    /**
-     * Search/replace values to convert Excel date/time format masks hours to PHP format masks (12 hr clock).
-     *
-     * @var array
-     */
-    private static $dateFormatReplacements12 = [
-        'hh' => 'h',
-        'h' => 'g',
-    ];
-
-    private static function setLowercaseCallback($matches)
-    {
-        return mb_strtolower($matches[0]);
-    }
-
-    private static function escapeQuotesCallback($matches)
-    {
-        return '\\' . implode('\\', str_split($matches[1]));
-    }
-
-    private static function formatAsDate(&$value, &$format): void
-    {
-        // strip off first part containing e.g. [$-F800] or [$USD-409]
-        // general syntax: [$<Currency string>-<language info>]
-        // language info is in hexadecimal
-        // strip off chinese part like [DBNum1][$-804]
-        $format = preg_replace('/^(\[[0-9A-Za-z]*\])*(\[\$[A-Z]*-[0-9A-F]*\])/i', '', $format);
-
-        // OpenOffice.org uses upper-case number formats, e.g. 'YYYY', convert to lower-case;
-        //    but we don't want to change any quoted strings
-        $format = preg_replace_callback('/(?:^|")([^"]*)(?:$|")/', ['self', 'setLowercaseCallback'], $format);
-
-        // Only process the non-quoted blocks for date format characters
-        $blocks = explode('"', $format);
-        foreach ($blocks as $key => &$block) {
-            if ($key % 2 == 0) {
-                $block = strtr($block, self::$dateFormatReplacements);
-                if (!strpos($block, 'A')) {
-                    // 24-hour time format
-                    // when [h]:mm format, the [h] should replace to the hours of the value * 24
-                    if (false !== strpos($block, '[h]')) {
-                        $hours = (int) ($value * 24);
-                        $block = str_replace('[h]', $hours, $block);
-
-                        continue;
-                    }
-                    $block = strtr($block, self::$dateFormatReplacements24);
-                } else {
-                    // 12-hour time format
-                    $block = strtr($block, self::$dateFormatReplacements12);
-                }
-            }
-        }
-        $format = implode('"', $blocks);
-
-        // escape any quoted characters so that DateTime format() will render them correctly
-        $format = preg_replace_callback('/"(.*)"/U', ['self', 'escapeQuotesCallback'], $format);
-
-        $dateObj = Date::excelToDateTimeObject($value);
-        $value = $dateObj->format($format);
-    }
-
-    private static function formatAsPercentage(&$value, &$format): void
-    {
-        if ($format === self::FORMAT_PERCENTAGE) {
-            $value = round((100 * $value), 0) . '%';
-        } else {
-            if (preg_match('/\.[#0]+/', $format, $m)) {
-                $s = substr($m[0], 0, 1) . (strlen($m[0]) - 1);
-                $format = str_replace($m[0], $s, $format);
-            }
-            if (preg_match('/^[#0]+/', $format, $m)) {
-                $format = str_replace($m[0], strlen($m[0]), $format);
-            }
-            $format = '%' . str_replace('%', 'f%%', $format);
-
-            $value = sprintf($format, 100 * $value);
-        }
-    }
-
-    private static function formatAsFraction(&$value, &$format): void
-    {
-        $sign = ($value < 0) ? '-' : '';
-
-        $integerPart = floor(abs($value));
-        $decimalPart = trim(fmod(abs($value), 1), '0.');
-        $decimalLength = strlen($decimalPart);
-        $decimalDivisor = 10 ** $decimalLength;
-
-        $GCD = MathTrig::GCD($decimalPart, $decimalDivisor);
-
-        $adjustedDecimalPart = $decimalPart / $GCD;
-        $adjustedDecimalDivisor = $decimalDivisor / $GCD;
-
-        if ((strpos($format, '0') !== false)) {
-            $value = "$sign$integerPart $adjustedDecimalPart/$adjustedDecimalDivisor";
-        } elseif ((strpos($format, '#') !== false)) {
-            if ($integerPart == 0) {
-                $value = "$sign$adjustedDecimalPart/$adjustedDecimalDivisor";
-            } else {
-                $value = "$sign$integerPart $adjustedDecimalPart/$adjustedDecimalDivisor";
-            }
-        } elseif ((substr($format, 0, 3) == '? ?')) {
-            if ($integerPart == 0) {
-                $integerPart = '';
-            }
-            $value = "$sign$integerPart $adjustedDecimalPart/$adjustedDecimalDivisor";
-        } else {
-            $adjustedDecimalPart += $integerPart * $adjustedDecimalDivisor;
-            $value = "$sign$adjustedDecimalPart/$adjustedDecimalDivisor";
-        }
-    }
-
-    private static function mergeComplexNumberFormatMasks($numbers, $masks)
-    {
-        $decimalCount = strlen($numbers[1]);
-        $postDecimalMasks = [];
-
-        do {
-            $tempMask = array_pop($masks);
-            $postDecimalMasks[] = $tempMask;
-            $decimalCount -= strlen($tempMask);
-        } while ($decimalCount > 0);
-
-        return [
-            implode('.', $masks),
-            implode('.', array_reverse($postDecimalMasks)),
-        ];
-    }
-
-    private static function processComplexNumberFormatMask($number, $mask)
-    {
-        $result = $number;
-        $maskingBlockCount = preg_match_all('/0+/', $mask, $maskingBlocks, PREG_OFFSET_CAPTURE);
-
-        if ($maskingBlockCount > 1) {
-            $maskingBlocks = array_reverse($maskingBlocks[0]);
-
-            foreach ($maskingBlocks as $block) {
-                $divisor = 1 . $block[0];
-                $size = strlen($block[0]);
-                $offset = $block[1];
-
-                $blockValue = sprintf(
-                    '%0' . $size . 'd',
-                    fmod($number, $divisor)
-                );
-                $number = floor($number / $divisor);
-                $mask = substr_replace($mask, $blockValue, $offset, $size);
-            }
-            if ($number > 0) {
-                $mask = substr_replace($mask, $number, $offset, 0);
-            }
-            $result = $mask;
-        }
-
-        return $result;
-    }
-
-    private static function complexNumberFormatMask($number, $mask, $splitOnPoint = true)
-    {
-        $sign = ($number < 0.0);
-        $number = abs($number);
-
-        if ($splitOnPoint && strpos($mask, '.') !== false && strpos($number, '.') !== false) {
-            $numbers = explode('.', $number);
-            $masks = explode('.', $mask);
-            if (count($masks) > 2) {
-                $masks = self::mergeComplexNumberFormatMasks($numbers, $masks);
-            }
-            $result1 = self::complexNumberFormatMask($numbers[0], $masks[0], false);
-            $result2 = strrev(self::complexNumberFormatMask(strrev($numbers[1]), strrev($masks[1]), false));
-
-            return (($sign) ? '-' : '') . $result1 . '.' . $result2;
-        }
-
-        $result = self::processComplexNumberFormatMask($number, $mask);
-
-        return (($sign) ? '-' : '') . $result;
-    }
-
-    private static function formatStraightNumericValue($value, $format, array $matches, $useThousands, $number_regex)
-    {
-        $left = $matches[1];
-        $dec = $matches[2];
-        $right = $matches[3];
-
-        // minimun width of formatted number (including dot)
-        $minWidth = strlen($left) + strlen($dec) + strlen($right);
-        if ($useThousands) {
-            $value = number_format(
-                $value,
-                strlen($right),
-                StringHelper::getDecimalSeparator(),
-                StringHelper::getThousandsSeparator()
-            );
-            $value = preg_replace($number_regex, $value, $format);
-        } else {
-            if (preg_match('/[0#]E[+-]0/i', $format)) {
-                //    Scientific format
-                $value = sprintf('%5.2E', $value);
-            } elseif (preg_match('/0([^\d\.]+)0/', $format) || substr_count($format, '.') > 1) {
-                if ($value == (int) $value && substr_count($format, '.') === 1) {
-                    $value *= 10 ** strlen(explode('.', $format)[1]);
-                }
-                $value = self::complexNumberFormatMask($value, $format);
-            } else {
-                $sprintf_pattern = "%0$minWidth." . strlen($right) . 'f';
-                $value = sprintf($sprintf_pattern, $value);
-                $value = preg_replace($number_regex, $value, $format);
-            }
-        }
-
-        return $value;
-    }
-
-    private static function formatAsNumber($value, $format)
-    {
-        // The "_" in this string has already been stripped out,
-        // so this test is never true. Furthermore, testing
-        // on Excel shows this format uses Euro symbol, not "EUR".
-        //if ($format === self::FORMAT_CURRENCY_EUR_SIMPLE) {
-        //    return 'EUR ' . sprintf('%1.2f', $value);
-        //}
-
-        // Some non-number strings are quoted, so we'll get rid of the quotes, likewise any positional * symbols
-        $format = str_replace(['"', '*'], '', $format);
-
-        // Find out if we need thousands separator
-        // This is indicated by a comma enclosed by a digit placeholder:
-        //        #,#   or   0,0
-        $useThousands = preg_match('/(#,#|0,0)/', $format);
-        if ($useThousands) {
-            $format = preg_replace('/0,0/', '00', $format);
-            $format = preg_replace('/#,#/', '##', $format);
-        }
-
-        // Scale thousands, millions,...
-        // This is indicated by a number of commas after a digit placeholder:
-        //        #,   or    0.0,,
-        $scale = 1; // same as no scale
-        $matches = [];
-        if (preg_match('/(#|0)(,+)/', $format, $matches)) {
-            $scale = 1000 ** strlen($matches[2]);
-
-            // strip the commas
-            $format = preg_replace('/0,+/', '0', $format);
-            $format = preg_replace('/#,+/', '#', $format);
-        }
-
-        if (preg_match('/#?.*\?\/\?/', $format, $m)) {
-            if ($value != (int) $value) {
-                self::formatAsFraction($value, $format);
-            }
-        } else {
-            // Handle the number itself
-
-            // scale number
-            $value = $value / $scale;
-            // Strip #
-            $format = preg_replace('/\\#/', '0', $format);
-            // Remove locale code [$-###]
-            $format = preg_replace('/\[\$\-.*\]/', '', $format);
-
-            $n = '/\\[[^\\]]+\\]/';
-            $m = preg_replace($n, '', $format);
-            $number_regex = '/(0+)(\\.?)(0*)/';
-            if (preg_match($number_regex, $m, $matches)) {
-                $value = self::formatStraightNumericValue($value, $format, $matches, $useThousands, $number_regex);
-            }
-        }
-
-        if (preg_match('/\[\$(.*)\]/u', $format, $m)) {
-            //  Currency or Accounting
-            $currencyCode = $m[1];
-            [$currencyCode] = explode('-', $currencyCode);
-            if ($currencyCode == '') {
-                $currencyCode = StringHelper::getCurrencyCode();
-            }
-            $value = preg_replace('/\[\$([^\]]*)\]/u', $currencyCode, $value);
-        }
-
-        return $value;
-    }
-
-    private static function splitFormatCompare($value, $cond, $val, $dfcond, $dfval)
-    {
-        if (!$cond) {
-            $cond = $dfcond;
-            $val = $dfval;
-        }
-        switch ($cond) {
-            case '>':
-                return $value > $val;
-
-            case '<':
-                return $value < $val;
-
-            case '<=':
-                return $value <= $val;
-
-            case '<>':
-                return $value != $val;
-
-            case '=':
-                return $value == $val;
-        }
-
-        return $value >= $val;
-    }
-
-    private static function splitFormat($sections, $value)
-    {
-        // Extract the relevant section depending on whether number is positive, negative, or zero?
-        // Text not supported yet.
-        // Here is how the sections apply to various values in Excel:
-        //   1 section:   [POSITIVE/NEGATIVE/ZERO/TEXT]
-        //   2 sections:  [POSITIVE/ZERO/TEXT] [NEGATIVE]
-        //   3 sections:  [POSITIVE/TEXT] [NEGATIVE] [ZERO]
-        //   4 sections:  [POSITIVE] [NEGATIVE] [ZERO] [TEXT]
-        $cnt = count($sections);
-        $color_regex = '/\\[(' . implode('|', Color::NAMED_COLORS) . ')\\]/';
-        $cond_regex = '/\\[(>|>=|<|<=|=|<>)([+-]?\\d+([.]\\d+)?)\\]/';
-        $colors = ['', '', '', '', ''];
-        $condops = ['', '', '', '', ''];
-        $condvals = [0, 0, 0, 0, 0];
-        for ($idx = 0; $idx < $cnt; ++$idx) {
-            if (preg_match($color_regex, $sections[$idx], $matches)) {
-                $colors[$idx] = $matches[0];
-                $sections[$idx] = preg_replace($color_regex, '', $sections[$idx]);
-            }
-            if (preg_match($cond_regex, $sections[$idx], $matches)) {
-                $condops[$idx] = $matches[1];
-                $condvals[$idx] = $matches[2];
-                $sections[$idx] = preg_replace($cond_regex, '', $sections[$idx]);
-            }
-        }
-        $color = $colors[0];
-        $format = $sections[0];
-        $absval = $value;
-        switch ($cnt) {
-            case 2:
-                $absval = abs($value);
-                if (!self::splitFormatCompare($value, $condops[0], $condvals[0], '>=', 0)) {
-                    $color = $colors[1];
-                    $format = $sections[1];
-                }
-
-                break;
-            case 3:
-            case 4:
-                $absval = abs($value);
-                if (!self::splitFormatCompare($value, $condops[0], $condvals[0], '>', 0)) {
-                    if (self::splitFormatCompare($value, $condops[1], $condvals[1], '<', 0)) {
-                        $color = $colors[1];
-                        $format = $sections[1];
-                    } else {
-                        $color = $colors[2];
-                        $format = $sections[2];
-                    }
-                }
-
-                break;
-        }
-
-        return [$color, $format, $absval];
-    }
-
-    /**
-     * Convert a value in a pre-defined format to a PHP string.
-     *
-     * @param mixed $value Value to format
-     * @param string $format Format code, see = self::FORMAT_*
-     * @param array $callBack Callback function for additional formatting of string
-     *
-     * @return string Formatted string
-     */
-    public static function toFormattedString($value, $format, $callBack = null)
-    {
-        // For now we do not treat strings although section 4 of a format code affects strings
-        if (!is_numeric($value)) {
-            return $value;
-        }
-
-        // For 'General' format code, we just pass the value although this is not entirely the way Excel does it,
-        // it seems to round numbers to a total of 10 digits.
-        if (($format === self::FORMAT_GENERAL) || ($format === self::FORMAT_TEXT)) {
-            return $value;
-        }
-
-        // Convert any other escaped characters to quoted strings, e.g. (\T to "T")
-        $format = preg_replace('/(\\\(((.)(?!((AM\/PM)|(A\/P))))|([^ ])))(?=(?:[^"]|"[^"]*")*$)/u', '"${2}"', $format);
-
-        // Get the sections, there can be up to four sections, separated with a semi-colon (but only if not a quoted literal)
-        $sections = preg_split('/(;)(?=(?:[^"]|"[^"]*")*$)/u', $format);
-
-        [$colors, $format, $value] = self::splitFormat($sections, $value);
-
-        // In Excel formats, "_" is used to add spacing,
-        //    The following character indicates the size of the spacing, which we can't do in HTML, so we just use a standard space
-        $format = preg_replace('/_./', ' ', $format);
-
-        // Let's begin inspecting the format and converting the value to a formatted string
-
-        //  Check for date/time characters (not inside quotes)
-        if (preg_match('/(\[\$[A-Z]*-[0-9A-F]*\])*[hmsdy](?=(?:[^"]|"[^"]*")*$)/miu', $format, $matches)) {
-            // datetime format
-            self::formatAsDate($value, $format);
-        } else {
-            if (substr($format, 0, 1) === '"' && substr($format, -1, 1) === '"') {
-                $value = substr($format, 1, -1);
-            } elseif (preg_match('/%$/', $format)) {
-                // % number format
-                self::formatAsPercentage($value, $format);
-            } else {
-                $value = self::formatAsNumber($value, $format);
-            }
-        }
-
-        // Additional formatting provided by callback function
-        if ($callBack !== null) {
-            [$writerInstance, $function] = $callBack;
-            $value = $writerInstance->$function($value, $colors);
-        }
-
-        return $value;
-    }
-
-    protected function exportArray1(): array
-    {
-        $exportedArray = [];
-        $this->exportArray2($exportedArray, 'formatCode', $this->getFormatCode());
-
-        return $exportedArray;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

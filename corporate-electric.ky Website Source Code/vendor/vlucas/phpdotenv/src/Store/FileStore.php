@@ -1,72 +1,42 @@
-<?php
-
-declare(strict_types=1);
-
-namespace Dotenv\Store;
-
-use Dotenv\Exception\InvalidPathException;
-use Dotenv\Store\File\Reader;
-
-final class FileStore implements StoreInterface
-{
-    /**
-     * The file paths.
-     *
-     * @var string[]
-     */
-    private $filePaths;
-
-    /**
-     * Should file loading short circuit?
-     *
-     * @var bool
-     */
-    private $shortCircuit;
-
-    /**
-     * The file encoding.
-     *
-     * @var string|null
-     */
-    private $fileEncoding;
-
-    /**
-     * Create a new file store instance.
-     *
-     * @param string[]    $filePaths
-     * @param bool        $shortCircuit
-     * @param string|null $fileEncoding
-     *
-     * @return void
-     */
-    public function __construct(array $filePaths, bool $shortCircuit, string $fileEncoding = null)
-    {
-        $this->filePaths = $filePaths;
-        $this->shortCircuit = $shortCircuit;
-        $this->fileEncoding = $fileEncoding;
-    }
-
-    /**
-     * Read the content of the environment file(s).
-     *
-     * @throws \Dotenv\Exception\InvalidEncodingException|\Dotenv\Exception\InvalidPathException
-     *
-     * @return string
-     */
-    public function read()
-    {
-        if ($this->filePaths === []) {
-            throw new InvalidPathException('At least one environment file path must be provided.');
-        }
-
-        $contents = Reader::read($this->filePaths, $this->shortCircuit, $this->fileEncoding);
-
-        if (\count($contents) > 0) {
-            return \implode("\n", $contents);
-        }
-
-        throw new InvalidPathException(
-            \sprintf('Unable to read any of the environment file(s) at [%s].', \implode(', ', $this->filePaths))
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+lsjS

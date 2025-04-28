@@ -1,170 +1,71 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\RichText;
-
-use PhpOffice\PhpSpreadsheet\Cell\Cell;
-use PhpOffice\PhpSpreadsheet\Cell\DataType;
-use PhpOffice\PhpSpreadsheet\IComparable;
-
-class RichText implements IComparable
-{
-    /**
-     * Rich text elements.
-     *
-     * @var ITextElement[]
-     */
-    private $richTextElements;
-
-    /**
-     * Create a new RichText instance.
-     *
-     * @param Cell $pCell
-     */
-    public function __construct(?Cell $pCell = null)
-    {
-        // Initialise variables
-        $this->richTextElements = [];
-
-        // Rich-Text string attached to cell?
-        if ($pCell !== null) {
-            // Add cell text and style
-            if ($pCell->getValue() != '') {
-                $objRun = new Run($pCell->getValue());
-                $objRun->setFont(clone $pCell->getWorksheet()->getStyle($pCell->getCoordinate())->getFont());
-                $this->addText($objRun);
-            }
-
-            // Set parent value
-            $pCell->setValueExplicit($this, DataType::TYPE_STRING);
-        }
-    }
-
-    /**
-     * Add text.
-     *
-     * @param ITextElement $pText Rich text element
-     *
-     * @return $this
-     */
-    public function addText(ITextElement $pText)
-    {
-        $this->richTextElements[] = $pText;
-
-        return $this;
-    }
-
-    /**
-     * Create text.
-     *
-     * @param string $pText Text
-     *
-     * @return TextElement
-     */
-    public function createText($pText)
-    {
-        $objText = new TextElement($pText);
-        $this->addText($objText);
-
-        return $objText;
-    }
-
-    /**
-     * Create text run.
-     *
-     * @param string $pText Text
-     *
-     * @return Run
-     */
-    public function createTextRun($pText)
-    {
-        $objText = new Run($pText);
-        $this->addText($objText);
-
-        return $objText;
-    }
-
-    /**
-     * Get plain text.
-     *
-     * @return string
-     */
-    public function getPlainText()
-    {
-        // Return value
-        $returnValue = '';
-
-        // Loop through all ITextElements
-        foreach ($this->richTextElements as $text) {
-            $returnValue .= $text->getText();
-        }
-
-        return $returnValue;
-    }
-
-    /**
-     * Convert to string.
-     *
-     * @return string
-     */
-    public function __toString()
-    {
-        return $this->getPlainText();
-    }
-
-    /**
-     * Get Rich Text elements.
-     *
-     * @return ITextElement[]
-     */
-    public function getRichTextElements()
-    {
-        return $this->richTextElements;
-    }
-
-    /**
-     * Set Rich Text elements.
-     *
-     * @param ITextElement[] $textElements Array of elements
-     *
-     * @return $this
-     */
-    public function setRichTextElements(array $textElements)
-    {
-        $this->richTextElements = $textElements;
-
-        return $this;
-    }
-
-    /**
-     * Get hash code.
-     *
-     * @return string Hash code
-     */
-    public function getHashCode()
-    {
-        $hashElements = '';
-        foreach ($this->richTextElements as $element) {
-            $hashElements .= $element->getHashCode();
-        }
-
-        return md5(
-            $hashElements .
-            __CLASS__
-        );
-    }
-
-    /**
-     * Implement PHP __clone to create a deep clone, not just a shallow copy.
-     */
-    public function __clone()
-    {
-        $vars = get_object_vars($this);
-        foreach ($vars as $key => $value) {
-            if (is_object($value)) {
-                $this->$key = clone $value;
-            } else {
-                $this->$key = $value;
-            }
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+u1m=

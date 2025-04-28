@@ -1,85 +1,45 @@
-<?php
-
-/**
- * Definition cache decorator class that saves all cache retrievals
- * to PHP's memory; good for unit tests or circumstances where
- * there are lots of configuration objects floating around.
- */
-class HTMLPurifier_DefinitionCache_Decorator_Memory extends HTMLPurifier_DefinitionCache_Decorator
-{
-    /**
-     * @type array
-     */
-    protected $definitions;
-
-    /**
-     * @type string
-     */
-    public $name = 'Memory';
-
-    /**
-     * @return HTMLPurifier_DefinitionCache_Decorator_Memory
-     */
-    public function copy()
-    {
-        return new HTMLPurifier_DefinitionCache_Decorator_Memory();
-    }
-
-    /**
-     * @param HTMLPurifier_Definition $def
-     * @param HTMLPurifier_Config $config
-     * @return mixed
-     */
-    public function add($def, $config)
-    {
-        $status = parent::add($def, $config);
-        if ($status) {
-            $this->definitions[$this->generateKey($config)] = $def;
-        }
-        return $status;
-    }
-
-    /**
-     * @param HTMLPurifier_Definition $def
-     * @param HTMLPurifier_Config $config
-     * @return mixed
-     */
-    public function set($def, $config)
-    {
-        $status = parent::set($def, $config);
-        if ($status) {
-            $this->definitions[$this->generateKey($config)] = $def;
-        }
-        return $status;
-    }
-
-    /**
-     * @param HTMLPurifier_Definition $def
-     * @param HTMLPurifier_Config $config
-     * @return mixed
-     */
-    public function replace($def, $config)
-    {
-        $status = parent::replace($def, $config);
-        if ($status) {
-            $this->definitions[$this->generateKey($config)] = $def;
-        }
-        return $status;
-    }
-
-    /**
-     * @param HTMLPurifier_Config $config
-     * @return mixed
-     */
-    public function get($config)
-    {
-        $key = $this->generateKey($config);
-        if (isset($this->definitions[$key])) {
-            return $this->definitions[$key];
-        }
-        $this->definitions[$key] = parent::get($config);
-        return $this->definitions[$key];
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

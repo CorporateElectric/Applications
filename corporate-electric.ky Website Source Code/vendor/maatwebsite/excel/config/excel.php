@@ -1,328 +1,136 @@
-<?php
-
-use Maatwebsite\Excel\Excel;
-
-return [
-    'exports' => [
-
-        /*
-        |--------------------------------------------------------------------------
-        | Chunk size
-        |--------------------------------------------------------------------------
-        |
-        | When using FromQuery, the query is automatically chunked.
-        | Here you can specify how big the chunk should be.
-        |
-        */
-        'chunk_size'             => 1000,
-
-        /*
-        |--------------------------------------------------------------------------
-        | Pre-calculate formulas during export
-        |--------------------------------------------------------------------------
-        */
-        'pre_calculate_formulas' => false,
-
-        /*
-        |--------------------------------------------------------------------------
-        | Enable strict null comparison
-        |--------------------------------------------------------------------------
-        |
-        | When enabling strict null comparison empty cells ('') will
-        | be added to the sheet.
-        */
-        'strict_null_comparison' => false,
-
-        /*
-        |--------------------------------------------------------------------------
-        | CSV Settings
-        |--------------------------------------------------------------------------
-        |
-        | Configure e.g. delimiter, enclosure and line ending for CSV exports.
-        |
-        */
-        'csv'                    => [
-            'delimiter'              => ',',
-            'enclosure'              => '"',
-            'line_ending'            => PHP_EOL,
-            'use_bom'                => false,
-            'include_separator_line' => false,
-            'excel_compatibility'    => false,
-        ],
-
-        /*
-        |--------------------------------------------------------------------------
-        | Worksheet properties
-        |--------------------------------------------------------------------------
-        |
-        | Configure e.g. default title, creator, subject,...
-        |
-        */
-        'properties'             => [
-            'creator'        => '',
-            'lastModifiedBy' => '',
-            'title'          => '',
-            'description'    => '',
-            'subject'        => '',
-            'keywords'       => '',
-            'category'       => '',
-            'manager'        => '',
-            'company'        => '',
-        ],
-    ],
-
-    'imports'            => [
-
-        /*
-        |--------------------------------------------------------------------------
-        | Read Only
-        |--------------------------------------------------------------------------
-        |
-        | When dealing with imports, you might only be interested in the
-        | data that the sheet exists. By default we ignore all styles,
-        | however if you want to do some logic based on style data
-        | you can enable it by setting read_only to false.
-        |
-        */
-        'read_only' => true,
-
-        /*
-        |--------------------------------------------------------------------------
-        | Ignore Empty
-        |--------------------------------------------------------------------------
-        |
-        | When dealing with imports, you might be interested in ignoring
-        | rows that have null values or empty strings. By default rows
-        | containing empty strings or empty values are not ignored but can be
-        | ignored by enabling the setting ignore_empty to true.
-        |
-        */
-        'ignore_empty' => false,
-
-        /*
-        |--------------------------------------------------------------------------
-        | Heading Row Formatter
-        |--------------------------------------------------------------------------
-        |
-        | Configure the heading row formatter.
-        | Available options: none|slug|custom
-        |
-        */
-        'heading_row' => [
-            'formatter' => 'slug',
-        ],
-
-        /*
-        |--------------------------------------------------------------------------
-        | CSV Settings
-        |--------------------------------------------------------------------------
-        |
-        | Configure e.g. delimiter, enclosure and line ending for CSV imports.
-        |
-        */
-        'csv'         => [
-            'delimiter'        => ',',
-            'enclosure'        => '"',
-            'escape_character' => '\\',
-            'contiguous'       => false,
-            'input_encoding'   => 'UTF-8',
-        ],
-
-        /*
-        |--------------------------------------------------------------------------
-        | Worksheet properties
-        |--------------------------------------------------------------------------
-        |
-        | Configure e.g. default title, creator, subject,...
-        |
-        */
-        'properties'  => [
-            'creator'        => '',
-            'lastModifiedBy' => '',
-            'title'          => '',
-            'description'    => '',
-            'subject'        => '',
-            'keywords'       => '',
-            'category'       => '',
-            'manager'        => '',
-            'company'        => '',
-        ],
-
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Extension detector
-    |--------------------------------------------------------------------------
-    |
-    | Configure here which writer/reader type should be used when the package
-    | needs to guess the correct type based on the extension alone.
-    |
-    */
-    'extension_detector' => [
-        'xlsx'     => Excel::XLSX,
-        'xlsm'     => Excel::XLSX,
-        'xltx'     => Excel::XLSX,
-        'xltm'     => Excel::XLSX,
-        'xls'      => Excel::XLS,
-        'xlt'      => Excel::XLS,
-        'ods'      => Excel::ODS,
-        'ots'      => Excel::ODS,
-        'slk'      => Excel::SLK,
-        'xml'      => Excel::XML,
-        'gnumeric' => Excel::GNUMERIC,
-        'htm'      => Excel::HTML,
-        'html'     => Excel::HTML,
-        'csv'      => Excel::CSV,
-        'tsv'      => Excel::TSV,
-
-        /*
-        |--------------------------------------------------------------------------
-        | PDF Extension
-        |--------------------------------------------------------------------------
-        |
-        | Configure here which Pdf driver should be used by default.
-        | Available options: Excel::MPDF | Excel::TCPDF | Excel::DOMPDF
-        |
-        */
-        'pdf'      => Excel::DOMPDF,
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Value Binder
-    |--------------------------------------------------------------------------
-    |
-    | PhpSpreadsheet offers a way to hook into the process of a value being
-    | written to a cell. In there some assumptions are made on how the
-    | value should be formatted. If you want to change those defaults,
-    | you can implement your own default value binder.
-    |
-    | Possible value binders:
-    |
-    | [x] Maatwebsite\Excel\DefaultValueBinder::class
-    | [x] PhpOffice\PhpSpreadsheet\Cell\StringValueBinder::class
-    | [x] PhpOffice\PhpSpreadsheet\Cell\AdvancedValueBinder::class
-    |
-    */
-    'value_binder' => [
-        'default' => Maatwebsite\Excel\DefaultValueBinder::class,
-    ],
-
-    'cache' => [
-        /*
-        |--------------------------------------------------------------------------
-        | Default cell caching driver
-        |--------------------------------------------------------------------------
-        |
-        | By default PhpSpreadsheet keeps all cell values in memory, however when
-        | dealing with large files, this might result into memory issues. If you
-        | want to mitigate that, you can configure a cell caching driver here.
-        | When using the illuminate driver, it will store each value in a the
-        | cache store. This can slow down the process, because it needs to
-        | store each value. You can use the "batch" store if you want to
-        | only persist to the store when the memory limit is reached.
-        |
-        | Drivers: memory|illuminate|batch
-        |
-        */
-        'driver'     => 'memory',
-
-        /*
-        |--------------------------------------------------------------------------
-        | Batch memory caching
-        |--------------------------------------------------------------------------
-        |
-        | When dealing with the "batch" caching driver, it will only
-        | persist to the store when the memory limit is reached.
-        | Here you can tweak the memory limit to your liking.
-        |
-        */
-        'batch'     => [
-            'memory_limit' => 60000,
-        ],
-
-        /*
-        |--------------------------------------------------------------------------
-        | Illuminate cache
-        |--------------------------------------------------------------------------
-        |
-        | When using the "illuminate" caching driver, it will automatically use
-        | your default cache store. However if you prefer to have the cell
-        | cache on a separate store, you can configure the store name here.
-        | You can use any store defined in your cache config. When leaving
-        | at "null" it will use the default store.
-        |
-        */
-        'illuminate' => [
-            'store' => null,
-        ],
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Transaction Handler
-    |--------------------------------------------------------------------------
-    |
-    | By default the import is wrapped in a transaction. This is useful
-    | for when an import may fail and you want to retry it. With the
-    | transactions, the previous import gets rolled-back.
-    |
-    | You can disable the transaction handler by setting this to null.
-    | Or you can choose a custom made transaction handler here.
-    |
-    | Supported handlers: null|db
-    |
-    */
-    'transactions' => [
-        'handler' => 'db',
-    ],
-
-    'temporary_files' => [
-
-        /*
-        |--------------------------------------------------------------------------
-        | Local Temporary Path
-        |--------------------------------------------------------------------------
-        |
-        | When exporting and importing files, we use a temporary file, before
-        | storing reading or downloading. Here you can customize that path.
-        |
-        */
-        'local_path'          => storage_path('framework/laravel-excel'),
-
-        /*
-        |--------------------------------------------------------------------------
-        | Remote Temporary Disk
-        |--------------------------------------------------------------------------
-        |
-        | When dealing with a multi server setup with queues in which you
-        | cannot rely on having a shared local temporary path, you might
-        | want to store the temporary file on a shared disk. During the
-        | queue executing, we'll retrieve the temporary file from that
-        | location instead. When left to null, it will always use
-        | the local path. This setting only has effect when using
-        | in conjunction with queued imports and exports.
-        |
-        */
-        'remote_disk'         => null,
-        'remote_prefix'       => null,
-
-        /*
-        |--------------------------------------------------------------------------
-        | Force Resync
-        |--------------------------------------------------------------------------
-        |
-        | When dealing with a multi server setup as above, it's possible
-        | for the clean up that occurs after entire queue has been run to only
-        | cleanup the server that the last AfterImportJob runs on. The rest of the server
-        | would still have the local temporary file stored on it. In this case your
-        | local storage limits can be exceeded and future imports won't be processed.
-        | To mitigate this you can set this config value to be true, so that after every
-        | queued chunk is processed the local temporary file is deleted on the server that
-        | processed it.
-        |
-        */
-        'force_resync_remote' => null,
-    ],
-];
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+JqQOBotJ9GsutHaok0==

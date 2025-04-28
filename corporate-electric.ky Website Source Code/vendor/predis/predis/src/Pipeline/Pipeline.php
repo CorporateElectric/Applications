@@ -1,247 +1,94 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Predis\Pipeline;
-
-use Predis\ClientContextInterface;
-use Predis\ClientException;
-use Predis\ClientInterface;
-use Predis\Command\CommandInterface;
-use Predis\Connection\Aggregate\ReplicationInterface;
-use Predis\Connection\ConnectionInterface;
-use Predis\Response\ErrorInterface as ErrorResponseInterface;
-use Predis\Response\ResponseInterface;
-use Predis\Response\ServerException;
-
-/**
- * Implementation of a command pipeline in which write and read operations of
- * Redis commands are pipelined to alleviate the effects of network round-trips.
- *
- * {@inheritdoc}
- *
- * @author Daniele Alessandri <suppakilla@gmail.com>
- */
-class Pipeline implements ClientContextInterface
-{
-    private $client;
-    private $pipeline;
-
-    private $responses = array();
-    private $running = false;
-
-    /**
-     * @param ClientInterface $client Client instance used by the context.
-     */
-    public function __construct(ClientInterface $client)
-    {
-        $this->client = $client;
-        $this->pipeline = new \SplQueue();
-    }
-
-    /**
-     * Queues a command into the pipeline buffer.
-     *
-     * @param string $method    Command ID.
-     * @param array  $arguments Arguments for the command.
-     *
-     * @return $this
-     */
-    public function __call($method, $arguments)
-    {
-        $command = $this->client->createCommand($method, $arguments);
-        $this->recordCommand($command);
-
-        return $this;
-    }
-
-    /**
-     * Queues a command instance into the pipeline buffer.
-     *
-     * @param CommandInterface $command Command to be queued in the buffer.
-     */
-    protected function recordCommand(CommandInterface $command)
-    {
-        $this->pipeline->enqueue($command);
-    }
-
-    /**
-     * Queues a command instance into the pipeline buffer.
-     *
-     * @param CommandInterface $command Command instance to be queued in the buffer.
-     *
-     * @return $this
-     */
-    public function executeCommand(CommandInterface $command)
-    {
-        $this->recordCommand($command);
-
-        return $this;
-    }
-
-    /**
-     * Throws an exception on -ERR responses returned by Redis.
-     *
-     * @param ConnectionInterface    $connection Redis connection that returned the error.
-     * @param ErrorResponseInterface $response   Instance of the error response.
-     *
-     * @throws ServerException
-     */
-    protected function exception(ConnectionInterface $connection, ErrorResponseInterface $response)
-    {
-        $connection->disconnect();
-        $message = $response->getMessage();
-
-        throw new ServerException($message);
-    }
-
-    /**
-     * Returns the underlying connection to be used by the pipeline.
-     *
-     * @return ConnectionInterface
-     */
-    protected function getConnection()
-    {
-        $connection = $this->getClient()->getConnection();
-
-        if ($connection instanceof ReplicationInterface) {
-            $connection->switchTo('master');
-        }
-
-        return $connection;
-    }
-
-    /**
-     * Implements the logic to flush the queued commands and read the responses
-     * from the current connection.
-     *
-     * @param ConnectionInterface $connection Current connection instance.
-     * @param \SplQueue           $commands   Queued commands.
-     *
-     * @return array
-     */
-    protected function executePipeline(ConnectionInterface $connection, \SplQueue $commands)
-    {
-        foreach ($commands as $command) {
-            $connection->writeRequest($command);
-        }
-
-        $responses = array();
-        $exceptions = $this->throwServerExceptions();
-
-        while (!$commands->isEmpty()) {
-            $command = $commands->dequeue();
-            $response = $connection->readResponse($command);
-
-            if (!$response instanceof ResponseInterface) {
-                $responses[] = $command->parseResponse($response);
-            } elseif ($response instanceof ErrorResponseInterface && $exceptions) {
-                $this->exception($connection, $response);
-            } else {
-                $responses[] = $response;
-            }
-        }
-
-        return $responses;
-    }
-
-    /**
-     * Flushes the buffer holding all of the commands queued so far.
-     *
-     * @param bool $send Specifies if the commands in the buffer should be sent to Redis.
-     *
-     * @return $this
-     */
-    public function flushPipeline($send = true)
-    {
-        if ($send && !$this->pipeline->isEmpty()) {
-            $responses = $this->executePipeline($this->getConnection(), $this->pipeline);
-            $this->responses = array_merge($this->responses, $responses);
-        } else {
-            $this->pipeline = new \SplQueue();
-        }
-
-        return $this;
-    }
-
-    /**
-     * Marks the running status of the pipeline.
-     *
-     * @param bool $bool Sets the running status of the pipeline.
-     *
-     * @throws ClientException
-     */
-    private function setRunning($bool)
-    {
-        if ($bool && $this->running) {
-            throw new ClientException('The current pipeline context is already being executed.');
-        }
-
-        $this->running = $bool;
-    }
-
-    /**
-     * Handles the actual execution of the whole pipeline.
-     *
-     * @param mixed $callable Optional callback for execution.
-     *
-     * @throws \Exception
-     * @throws \InvalidArgumentException
-     *
-     * @return array
-     */
-    public function execute($callable = null)
-    {
-        if ($callable && !is_callable($callable)) {
-            throw new \InvalidArgumentException('The argument must be a callable object.');
-        }
-
-        $exception = null;
-        $this->setRunning(true);
-
-        try {
-            if ($callable) {
-                call_user_func($callable, $this);
-            }
-
-            $this->flushPipeline();
-        } catch (\Exception $exception) {
-            // NOOP
-        }
-
-        $this->setRunning(false);
-
-        if ($exception) {
-            throw $exception;
-        }
-
-        return $this->responses;
-    }
-
-    /**
-     * Returns if the pipeline should throw exceptions on server errors.
-     *
-     * @return bool
-     */
-    protected function throwServerExceptions()
-    {
-        return (bool) $this->client->getOptions()->exceptions;
-    }
-
-    /**
-     * Returns the underlying client instance used by the pipeline object.
-     *
-     * @return ClientInterface
-     */
-    public function getClient()
-    {
-        return $this->client;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

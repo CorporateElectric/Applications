@@ -1,38 +1,32 @@
-<?php
-
-declare(strict_types=1);
-
-namespace NunoMaduro\Collision\Adapters\Laravel;
-
-use Facade\IgnitionContracts\SolutionProviderRepository;
-use NunoMaduro\Collision\Contracts\SolutionsRepository;
-use Throwable;
-
-/**
- * @internal
- */
-final class IgnitionSolutionsRepository implements SolutionsRepository
-{
-    /**
-     * Holds an instance of ignition solutions provider repository.
-     *
-     * @var \Facade\IgnitionContracts\SolutionProviderRepository
-     */
-    protected $solutionProviderRepository;
-
-    /**
-     * IgnitionSolutionsRepository constructor.
-     */
-    public function __construct(SolutionProviderRepository $solutionProviderRepository)
-    {
-        $this->solutionProviderRepository = $solutionProviderRepository;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getFromThrowable(Throwable $throwable): array
-    {
-        return $this->solutionProviderRepository->getSolutionsForThrowable($throwable);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+eQEnOG==

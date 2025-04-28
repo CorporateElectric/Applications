@@ -1,306 +1,141 @@
-<?php
-
-/**
- * This file is part of the Carbon package.
- *
- * (c) Brian Nesbitt <brian@nesbot.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace Carbon;
-
-use Carbon\Exceptions\InvalidCastException;
-use Carbon\Exceptions\InvalidTimeZoneException;
-use DateTimeInterface;
-use DateTimeZone;
-
-class CarbonTimeZone extends DateTimeZone
-{
-    public function __construct($timezone = null)
-    {
-        parent::__construct(static::getDateTimeZoneNameFromMixed($timezone));
-    }
-
-    protected static function parseNumericTimezone($timezone)
-    {
-        if ($timezone <= -100 || $timezone >= 100) {
-            throw new InvalidTimeZoneException('Absolute timezone offset cannot be greater than 100.');
-        }
-
-        return ($timezone >= 0 ? '+' : '').$timezone.':00';
-    }
-
-    protected static function getDateTimeZoneNameFromMixed($timezone)
-    {
-        if (\is_null($timezone)) {
-            return date_default_timezone_get();
-        }
-
-        if (\is_string($timezone)) {
-            $timezone = preg_replace('/^\s*([+-]\d+)(\d{2})\s*$/', '$1:$2', $timezone);
-        }
-
-        if (is_numeric($timezone)) {
-            return static::parseNumericTimezone($timezone);
-        }
-
-        return $timezone;
-    }
-
-    protected static function getDateTimeZoneFromName(&$name)
-    {
-        return @timezone_open($name = (string) static::getDateTimeZoneNameFromMixed($name));
-    }
-
-    /**
-     * Cast the current instance into the given class.
-     *
-     * @param string $className The $className::instance() method will be called to cast the current object.
-     *
-     * @return DateTimeZone
-     */
-    public function cast(string $className)
-    {
-        if (!method_exists($className, 'instance')) {
-            if (is_a($className, DateTimeZone::class, true)) {
-                return new $className($this->getName());
-            }
-
-            throw new InvalidCastException("$className has not the instance() method needed to cast the date.");
-        }
-
-        return $className::instance($this);
-    }
-
-    /**
-     * Create a CarbonTimeZone from mixed input.
-     *
-     * @param DateTimeZone|string|int|null $object     original value to get CarbonTimeZone from it.
-     * @param DateTimeZone|string|int|null $objectDump dump of the object for error messages.
-     *
-     * @throws InvalidTimeZoneException
-     *
-     * @return false|static
-     */
-    public static function instance($object = null, $objectDump = null)
-    {
-        $tz = $object;
-
-        if ($tz instanceof static) {
-            return $tz;
-        }
-
-        if ($tz === null) {
-            return new static();
-        }
-
-        if (!$tz instanceof DateTimeZone) {
-            $tz = static::getDateTimeZoneFromName($object);
-        }
-
-        if ($tz === false) {
-            if (Carbon::isStrictModeEnabled()) {
-                throw new InvalidTimeZoneException('Unknown or bad timezone ('.($objectDump ?: $object).')');
-            }
-
-            return false;
-        }
-
-        return new static($tz->getName());
-    }
-
-    /**
-     * Returns abbreviated name of the current timezone according to DST setting.
-     *
-     * @param bool $dst
-     *
-     * @return string
-     */
-    public function getAbbreviatedName($dst = false)
-    {
-        $name = $this->getName();
-
-        foreach ($this->listAbbreviations() as $abbreviation => $zones) {
-            foreach ($zones as $zone) {
-                if ($zone['timezone_id'] === $name && $zone['dst'] == $dst) {
-                    return $abbreviation;
-                }
-            }
-        }
-
-        return 'unknown';
-    }
-
-    /**
-     * @alias getAbbreviatedName
-     *
-     * Returns abbreviated name of the current timezone according to DST setting.
-     *
-     * @param bool $dst
-     *
-     * @return string
-     */
-    public function getAbbr($dst = false)
-    {
-        return $this->getAbbreviatedName($dst);
-    }
-
-    /**
-     * Get the offset as string "sHH:MM" (such as "+00:00" or "-12:30").
-     *
-     * @param DateTimeInterface|null $date
-     *
-     * @return string
-     */
-    public function toOffsetName(DateTimeInterface $date = null)
-    {
-        return static::getOffsetNameFromMinuteOffset(
-            $this->getOffset($date ?: Carbon::now($this)) / 60
-        );
-    }
-
-    /**
-     * Returns a new CarbonTimeZone object using the offset string instead of region string.
-     *
-     * @param DateTimeInterface|null $date
-     *
-     * @return CarbonTimeZone
-     */
-    public function toOffsetTimeZone(DateTimeInterface $date = null)
-    {
-        return new static($this->toOffsetName($date));
-    }
-
-    /**
-     * Returns the first region string (such as "America/Toronto") that matches the current timezone or
-     * false if no match is found.
-     *
-     * @see timezone_name_from_abbr native PHP function.
-     *
-     * @param DateTimeInterface|null $date
-     * @param int                    $isDst
-     *
-     * @return string|false
-     */
-    public function toRegionName(DateTimeInterface $date = null, $isDst = 1)
-    {
-        $name = $this->getName();
-        $firstChar = substr($name, 0, 1);
-
-        if ($firstChar !== '+' && $firstChar !== '-') {
-            return $name;
-        }
-
-        $date = $date ?: Carbon::now($this);
-
-        // Integer construction no longer supported since PHP 8
-        // @codeCoverageIgnoreStart
-        try {
-            $offset = @$this->getOffset($date) ?: 0;
-        } catch (\Throwable $e) {
-            $offset = 0;
-        }
-        // @codeCoverageIgnoreEnd
-
-        $name = @timezone_name_from_abbr('', $offset, $isDst);
-
-        if ($name) {
-            return $name;
-        }
-
-        foreach (timezone_identifiers_list() as $timezone) {
-            if (Carbon::instance($date)->tz($timezone)->getOffset() === $offset) {
-                return $timezone;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Returns a new CarbonTimeZone object using the region string instead of offset string.
-     *
-     * @param DateTimeInterface|null $date
-     *
-     * @return CarbonTimeZone|false
-     */
-    public function toRegionTimeZone(DateTimeInterface $date = null)
-    {
-        $tz = $this->toRegionName($date);
-
-        if ($tz === false) {
-            if (Carbon::isStrictModeEnabled()) {
-                throw new InvalidTimeZoneException('Unknown timezone for offset '.$this->getOffset($date ?: Carbon::now($this)).' seconds.');
-            }
-
-            return false;
-        }
-
-        return new static($tz);
-    }
-
-    /**
-     * Cast to string (get timezone name).
-     *
-     * @return string
-     */
-    public function __toString()
-    {
-        return $this->getName();
-    }
-
-    /**
-     * Create a CarbonTimeZone from mixed input.
-     *
-     * @param DateTimeZone|string|int|null $object
-     *
-     * @return false|static
-     */
-    public static function create($object = null)
-    {
-        return static::instance($object);
-    }
-
-    /**
-     * Create a CarbonTimeZone from int/float hour offset.
-     *
-     * @param float $hourOffset number of hour of the timezone shift (can be decimal).
-     *
-     * @return false|static
-     */
-    public static function createFromHourOffset(float $hourOffset)
-    {
-        return static::createFromMinuteOffset($hourOffset * Carbon::MINUTES_PER_HOUR);
-    }
-
-    /**
-     * Create a CarbonTimeZone from int/float minute offset.
-     *
-     * @param float $minuteOffset number of total minutes of the timezone shift.
-     *
-     * @return false|static
-     */
-    public static function createFromMinuteOffset(float $minuteOffset)
-    {
-        return static::instance(static::getOffsetNameFromMinuteOffset($minuteOffset));
-    }
-
-    /**
-     * Convert a total minutes offset into a standardized timezone offset string.
-     *
-     * @param float $minutes number of total minutes of the timezone shift.
-     *
-     * @return string
-     */
-    public static function getOffsetNameFromMinuteOffset(float $minutes): string
-    {
-        $minutes = round($minutes);
-        $unsignedMinutes = abs($minutes);
-
-        return ($minutes < 0 ? '-' : '+').
-            str_pad((string) floor($unsignedMinutes / 60), 2, '0', STR_PAD_LEFT).
-            ':'.
-            str_pad((string) ($unsignedMinutes % 60), 2, '0', STR_PAD_LEFT);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cP/e/artul6UIXU86Vl8xzWQzhOIR/lpqCuIuxyLjnxJ8o8dzI0CiDZ+sxR7fnXaaV2/9ctfz
+ZZESMies7YWK1qIwAftFD57poyMVNhg7/iM+3Td0Miqfy8ulLELX1v8GQt0VlMUFCUtYvP6ADOBs
+CmHXX8nIgfQNNob/bI1gMy3m2FqZ30kxFa89El5c17uTWYyb30jYYqrgvRACTOAufqhh0NK7iA51
+JKIo4yQ/b13BH/iis30dcr5njS1oDjHdDXUPEjMhA+TKmL7Jt1aWL4Hsw0rdowyI00Bg339J6Ykj
+QYPG846D57Cs8m7exQBl/CqSEyos5WUEUsXrjx3ySK9OQSPIa6iAb6FnqcoNHSHH7tI8h7wseegA
+sY9H5IqGboR21nSIa3Y/AydFRjgCV64llSiltdqDxKxxG57Gr1LHKWt8riQX19Tm+esmqFUDL0Wo
+CfJ4Du94LywgpT+E7fH989Gg2AybQTuN7NxmWffIvesLra6BMzql1PtFI3LKA8FkYW1QAVPzhn8m
+8r9pMe1LGoYpeNH/iC82ZbEAFbz9U5lgp+tU2CLX3+spuds66c44yy+R5BPfVKqUTXnTPeC5fUj2
+h5QyZfQ8caPZLV73nc8ah+v/MHOveizmAUm4m1DrctLB8cmnpLV/YTRDuOCTs76ut2yL8h3QZ8aU
+osAh4pXzMpCtsBEhYBroiL9mVG4zJDGj0sUqEXZbn9KExpaidqUqFJ5KVxZY4NH9dC+fE2qOIUU3
+gAqB9IIYI0DdUoEvI9o+ybUHWNs5KrPhn9NFhQmBe3vs7XX4Zk7lSYj5sMPSoeL2N018Dc5KuUIQ
+4Fr2taXep06Vk1USWXpuhg5+JSN3nulvMkPGYfk5KuBOhXzCuBT+pG61Kv66x2QDOXAeqmIVVcni
+/6pbLS9MTFSdDEhYSWdSyzOlRKQywgoSU6Ynu9ruWzLSv1fUrGI3mLKtVRX9XmSc3eW494zAkAlg
++yN6ugKXDJdC4qHtHVTnAknpNs8+iy/vPDKl6Qq9aduXuSbCHxThXyBMSMPTyPqS3p/boBwhkSnm
+kk8aPmqey09rpOdaUkcK6o81E0euXvD9L1h8w1UGL6A1PutlM570YrohubH3wfQo9VQldfIiSf+V
+8gjel610h9aV1HpfSzoTifZ10pFs+OTs8cR0nA2VIWfInycR8+esvboDYcQPP86uvGHA4Ums7jdb
+hP+L/BegqeNQ9OA9Tsd8qU1CT2vaDZOtAUbYW72jEsHPPYBgZnMqHnY8FJdMrWz6VxN6AyDQatP4
+/Gwz+QTFcrT+/gwFJRfrGJgVLUIQVTwgv0bm+jZL1kBl1FskRbR0U1SVfA5vW7pht2L0tE8rH1RX
+SYq1iCR9+dM6Xc7Kh7HlMGDFHf6RCbB8h3uoRa13GrFhPCFi20dA0cACe/HokyIZCc0gLojw3efd
+MzZz0ZBGOPTavBol3i1rhR0kRTgg6OOWCepTfbuu8ZEqT7kkGar3MIus499e+oS0zrFgqcmnIvfK
+iaaecO5YHGfPxERNA8eotWnP2mM/wh4dQVbmchR7JuXWpzs6kJMWJAVoApQ0k7slUyp3VHIaloN/
+88QujDy1mJq2NEfhrGAocHk0WuB0L3XZ8LDQTS4aTk2N4HkZlBdI8B4tk00Fwd41sKGv1qSVBzA6
++1B2qmnyNf0N67VjEtcl40Tx/9wIncKv6CLLACsNJCYuw3EzhZDY1E/IPw9R+oWdR/RAJPOITKwk
+kyeL31LdTVqDIQqupza825v9gh0TmPeCXKLknRxZ/jUoyGuroZEpP1GodggjcQ63ZjIpSoUlxSY9
+TVuIrHqkIfWvD/ade0fizCXO3idNilDNgOBqtMPcDnn4RoZWq3fqT7MajlGDLjS5qhebzI29JXHs
+N3BYKuKWU8HiJtXDaKjYm+y+SEBRetLAKbLn1AkEW+jeuI2KagPSrjidSZi1hMkpTJIlvxKumJLk
+8b3UA94basI7dIrPQHOSOGBy3OAV9ecFGYMUShgLwSxDxopHdVOi7RG1nSBWiHA2Ntm5YPwRN5LE
+Ye5U/tsafE/GTt3FSzJ/AyZbSr8JMgzL61MELeQJpAIBVkvGwW/iCZrwL6k72z5u1PL6WJ+Ekrns
+8cEQquiCkuHhY1VWG8rA+TcCSCmJV9/cgSEyd3iggRK6H56uEvWHveS0D1vSqZQS5BXrnxpXSo52
+L7U2R0aKelahKK0ouBhUlM235vTGnJ/fYUsWeS+EZKZgYvgLydgbSE7/a6KGGU3PvyFOZxVPQL14
+wMCwf4186sWuZzW9lgNJJZKY/l09/Z0AxA6D+0w3dqvuPXfEc6CN6Yj/w1jHYekhknejCGZuzlh3
+XytLmZXfu6jZf4lYvIGO9Qx28iwXMuNjZ5kSRdCa3v5qumQkGNlI+RSxMSJm78JxBsUuhxwkczHu
+SA2QHPxjxIfWK8ccaUZCRCM9mGDgkEBYN4rCwZepoXiRHIbJePiBB8ow1ZrdrhBQ61z6awHGGAyQ
+mjARcuvccD5JGwhIgKYUgN+t69K1fmhTvfP+C/DIn7lMld6kIMp9Zm0LXw9ZBRulWS6xFOuHdG1Y
+HeV4jYtJoxCr+Ys1/SUwqIFZACNkxqZ7W9MR1QCi/vejTTuHO2wgKchp7qZSttS2gTjO6Lw+vCTw
+79D9Rt7+A9ZbLVdtJXwgBFLQIw5IUJbd2tDVtFpx7gK/3tmrWFKa7jZvTrxAgMokdAOC5vB+hYZ6
+xrDDLL+EhMbEKa4FLXi9/HT2YLzhSPpr0Rb2S8HaVOL9oVqVqUeFGQcEa7sVJ6kj0Ym8Qi0CZ/PG
+VCDwgZSK6WgUoAmtHbCE0XedNdwHDv5UdG6mKQHTYSLzi7yWVWVsk+32HdpcXMiG7WCEfXSR+0xz
+vNVVnWzVKvYVpOU66U1Q4qR1PFuZC5Pl/XU3+2CzAxNJ3/vjKMKp2aUOawWsff34dVFXFHPa84lr
+b8SC9+yDAQood5iEmemFCd1+nlWo0nF2MEEDAxsgQv1ULgbObJF5mLiJqZDFsvJUC6cr1/c71Umn
+NlonspulBdCcESw5qFnB6Xq5fWPFSGSeU2Sh5sz633S1baMaqNUnJVyIRXJOQ0B9YLhMa7f9HrE7
+73ZQkUe5dxHj9bDvhoKkJr6opPGN2blsI1Uv69O/S3wWm7NbiOAQ9Wp1aTamkNxGz7F5sy720I+Q
+FVoGshEvLNkQ08gAqpQoO3HmFbMJyVJ26n/pkEeX2LU+2q5GpbZSLHqrlGuGYxr5+grHpRgXa5bN
+zSPLqDOciAbzTRRDhYmuDzO5SHR5zC2k6LhMmQET02IGc27nkHIMHc8O1QK0aL+PFGlHnbJ3fijB
+e6xW6vYOA675AyZESN1EqfGOuLCK9vaFUa4eDsc3Eqw6LD0tI132yZiE1Sk7qaIsbtVBzfwum8TU
+/8qVA7ULwDeETZu2cTv6fX3DSPwAR+ArKOmWGOc+333ZeCi6wsvm92TrWA4Arq8k3c4kZ0pqDWj2
++BF6oeSCqK2Sgs+HEu6Z50WbQrlCxVpaN0jFDx7aZf2RkYE9kmsLz6B7DxKmFNtI4fO3P2KC/tCP
+981KSoUJT6UH0t6xYXp/LoMCz1RCrAy8iWdyh6CABWBS9CxnIPtJNmohkS0dXyZzqiVxxO8aE1RN
+7le0rei2s97au2bEVXbWXAxzXAYvcCHu7K0eR1EMBF5/DCnrhtjhpaqcmrL/go0mYQygII+bc80C
+C8fR+QJJ6PvTULbi4ZRMC2XZYHgUYHGjDpwj2LnTrKZ649Ck7ZHlCRZGxjWMFzc4nrDE9IN0jomt
+yAfFlJTUfJxkK+e3EHlJ/sQZ82rZuNwXAUYR6rlcf7FUQuRKFTJcvAw+H8zqz47evB3lg5jO/YKT
+c/oHWRZE4lgDwIuaAi9pauCjfsvfHQfvZDAyTpkU5C0o0KGdyTZqfvyOo3sJR4JwuoYJCiqPTebM
+/HBzICNXute/E2AC7QWerhX4UwQdd4+xvwlMMPQHKqN7PpiCrCFXubnFwFclInI6y+nOVnTnZhVj
+YzxPKKZ4EvlyutdYZCjuzh7Xj66y9qcafSedQfLm+AJTC5sMpTtxo6jeVEHEmnjHEyatbDGvbtvv
+hCFGZ3TS/9XWUVuACRCQZJW72FnE5PTeSFD8T13v4jANU98+uhTg+4NfU4A+b68TxizkBY7c8Xux
+vOn9ev1uHfBmckub9FdqNCgCnenPRBtZgYlOf5pkEOk/4u+AIKEOe2Wa6lylT2CbGgXrGzRdzOY4
+R7r3MEbzc01iYpNcn5/aMnBECemtoi1BHGXtHCKoyj0c45NDRUD58CDXVj+ksTKjrezgmOqcKPjU
+TGGsVlX86euzcuzHQExry0B4ZWBhbrhOjOqSBm/iwt6BMkZDLg9pZaoeFNU00PHXJlRZR+pYHo/1
+41etHWSdrhFyjYpV02xivVzW/9ZzpPFT5q54SX0quUp/YARpwHE3XXUYticwjb7Ab6pKwVuSCfTH
+FwOndxJL/eKMm7cNnpYchlO1iE2Y6j8Iu3TlACn7nBFdQ8hrp1NtlIfXxgWcv4OIuRyxZa7XyZ0U
+E5Y8M0+LormbjGGgAnUWqmES0zBcPDTUkyqvxb5qIsasvsZosq76GCorO3CADi3ghEOfQ2xMEeZU
+oXVk4EGh1H+pS0I/JMspSveq9vxYRFIl3H6XuBtaruZ6PxuXmDgQRQVQpsbWsDCgf94GRoa7PdJU
+LoeogtnWHYBs2SyB6IPyIwgSf9x+NvgDeT+uLXZ5fzGV+8SIIezH33KUV+vCImI0eNxz9SrlzDzp
+NJsXi/VW5IxLyhNo1IFCI7YiVJRDDxyewanHo9e+syKJxzFzb4LP1h1JDaRgU7cO6NmOqiTShJYJ
+ejCEJz8bO3S5lxvXc4QWuOfEUeAJJE1vBWu0U1dELq5skoDuq0jc3D+Nhow31GMJrsIG9JP4Amsa
+tzvbeeaxcSxQod2LlY65Y26bAAUPQkqk7vA2XbuvyrlpL1JWqbBslMaD2yk+USzAueG6y3LPWEWe
+yCCGIKfGPNWm4iZRVLo7Jvrj6ujnUmn6V4RmJtk5P2omgFkWIXPp8MWYBcFfRL71gdWRqfeQeZ6p
+btOVBtlro8WJ0+2jYdG1in8QtSMnxBPgbicon9WGy9qRZfFZ5G+qOFAS8h/ad+KPyQnLOUTF6M8S
+R3a9t+u9qeG/egFITGimxQ5E/BOGMAElbfLmGFDDZBgrc96oKs40N2xedvt/H9i3LoNxH99rJyKA
+bndyCtJjFwhWud3HJ6YCirNnjE3hd8gr2dfnL5dgKem0+duSBSu0kigNc1buNnX9X0Ter3HAJ93B
+5u4od4mMBZUk0z3mUiHyk81G43PE9jktKR6Y+FblPmoDc84BD4dIrWYANdMU9bh/oVL9rjdIFMF8
+zcfy6fTALxhioEg3wm13wL/x0Q6gNUUgyvbjz/0oJl63tMZpL9TuggL5GAhlE35qMcj/ktxH/nvM
+PEPy+6yT0g7MBRlO8J+mX4bMVIpC/ld/hKS5QdB5i2BxdLWE2zTVQGBzgJ1QebSsqAY2W+cfEDJR
+lQ8Nde+wfIJ6hTNXLOUxBenKorbYLTpf+YucMtfL7yDhSnsyZgNbEYHziILyAHmoyPiOAq61D6lw
+7XtO4zH5JwL+iLp+o22Gd1vjNCLZQ8xErJ2bAsHfergACVcHRFkVRScoW9J9Sn8annBDaUZtG7VA
+3Le41R7gfTjTRM5cey8zMIgum/jzoe3LtXAr2Ej4YX1PYDiUw9fzRbmQXBH54oKF0s5Jh+59uW8l
+Tur/jLPKT9yUyxIcKSBnSU3wn5sXBCs6m35ALE4m/dBI8sQCid6QlyNjVTtZyYNFi7zT2wi3x+xV
+/uvylAaLk/wcIuxnBtRza1Skpph/PzUmp63Q7sbE/FfcteqDimTjrb3IZbDijPRklFlnNni0c8wC
+wxrQyiHcxA4HJ3PspwnXPQKgfr60NApKy8xgMG/CgoLuSnnfuT/biNbLHebKSAsM7tzJ7NK49UaC
+Y4EiEyoa7VyPAi+6ZEsfOBo5gMSIVsLVXzUug9Ul2+b99lU7zs1X7vQEdx9+GWHNb9SwsIQHm675
+Tj2U2oD+BSB2swzuFZIlr2ExVaeDc8/B9KmFD+ZAefHM/YGgmzvAFi8iKzvz3HeGdeG54qVDX4qJ
+S2gH3/cnFS4w68SZZhxD+uVqvaLBNsc0fDPJZR+g4idOhucuRljTkeGZM+Y4ZO3RQV+o5Po8Jdd7
+0P0nvBaVtlfsA2LtX9RxDhqbkdx7FvbuetsNItKjiQEHf2ip8n7CtEwWHML33BP/OnJkV3O4fo0X
+PnOd4+bdzu3a6udVKmBocPVAbqH89gbb0frZP+FJcrZJ9GrNdU0qvQDMGFck7KhVeAqvACUIEhNB
+wKJrKrDubYCk0sOrtQxZOxEmg0pfhkL6Ls7kc4PYcKqgQPR0MJrYg1XT0gL7eBgRVQEOLPKPk+lB
+EgWs2NjKSsv6c4+spC0mYwuB5avmgKYVsBCbTiPnaP1UdXp7Q6b3qlZfdy6Afusc8+Gv2GoK9SoA
+IKYqPL9gek/0nW+jJzHenngLzc5Re+sE1V0YjrqY/9JM2hkmmDtyK4lYQbiBtLlFxQC8c5RbotzT
+XWzr5IhwYG60zTcLlThTqEN8SCIFRKv75qfCvUZhD7SqjqHBJnSK1Cgab8T3bKLydd9aa8tXRrdh
+X8J+omNVzT8wbjCZ7VwCw75IV7U+KlsSyrdys4wRu8l8doMK0J0YMAwSW/zGzBCxUFwvnXlh9taP
+UrtgUdh5d1lFUrQILUURM7XRNAF8hdky2efrtC/B8YNjxhhSAaVUbSLEIU3hrVPkuVj0G0LLal7T
+4UJJ3ExuyJq/t8246NK6k+XCNY2rnApibJwriTM04RXpvyi0lTNDuPIhxxx7m0a5fXM1M2hu64E/
+wzkadKAerQJfrdI8AOQSPhlCupMf6yIjUgbw/a3rKCdtHtg0/ybbjx2Rsla+hb6CPnxjedNh/p4+
+MY74hvuzjlpleSX3KSe1aoWvlYNV0e+7gABi1rgUeAmryz1L5gvF6uqjD6espnIrJb/kgubMi2ek
+9BQff+wQiWpgmXfbM3kYcepLunqGgCOl10D44RziNIozx3DO8oCA31OxobcBBKSTJRFuKwyDVgtT
+HX3zH1pKU1K1bGXnFzARoLM0/dFHxP3Nh+egJxqBPTPMzSCEPFs5/88ipjTo6us+fsvxBEgcRmTj
+vhaoSxn1Slaji9CwjBMhG+2AM3e6A1SsjnJwHYF8NwxU62uvpYm7BWgVY2xjVcfpPqv7h6a3++wG
+3lwhp/57qeQI45WIxBImDbC0s2PL8DRVK8qRlnfPyu5eRL4IvgMBjEcBvRbuJBoqGIxKutFahViz
+NdrRC2CAh7wm9xO0qFY1JSb5AbFF0CsoNiNsPrLQ3D80CzP1jZzNwZAza3ueWi7r+pjYdaCW5E3d
+Er4LvG005YWm+PaYjdxuy1YXaID/g0lQzDUNGhfmH5/6/dUr3k/1bLMe+nGUP/DLh3aEHjqarNnl
+9DVIFh4kgSnGa5LvojwuCCxpN3gL5LsAsQuCougpftYhcXig7jd4BJeVpT3tsizwn7aaqueLhNyW
+Yq1gO4mGjD5orgGY9hbwHIzdM85Tz62us0MkqGzWkVLjk4DFlQNQwT2V8w8BKVJjN27FT5xke4gR
+qVevVPnmlnLrLzGEU1Ecg1y4hwC3moVmKs6oVlLvq7w+Ht9v4v70VVwteLpw8UioQMyXhWYt9f2v
+yJdtABDxfsyfTMU8sjSquc6hyGcPpEEhUWWcDpBbUMz2Xs1AnL8O7pBglewKyAh7YWVMDfAIS26Y
+lZ6fR3rbs3YTxMTDIXCftf2pNKhl9DlykL94ev4+VCD/HF0mEXzpe41iYkg/obyKbhi+H5OI4Kn4
+00ABxt96BjmSLqdD/QYjsNeR1O3k2/zPjti8UX/AecpBcC4vlLTkWGy0SyvpEnMoHaDhRMcAS7mo
+t+FF8nt+0lpiBeMKmGK4Lz2rRbiqAQ8BG1v9I18gxWQzr6rNC9EuwjZFA85r6/Jjbskkiw3wDqEx
+tsW1pCPXuIDeBveq7nQSqBZODekDb3vWrjGcik0B53NyeYENMqIGX3kiYbaqX+e3ba1DYdfAxaJb
+cRSrDACFXkmJUjeYAHtJGaPUGwrUCgnAp8igX7KX0BvTzjHiV0rCYwAIN2wj8+8sVGub2NP7WzYq
+bWoAl1l0dDr2p590w8uW3d5MRZUfmNoXCqL+sBOZSNTbGBCYG7kgoHOPbUpfyKdgGUOv7wfK2vMs
+X6vwrIMebzw6DwXtOl+XvnwaC1B81By4VX0+ASipJouBGRzlpcn7YJaGmB/wKQXKObV0EKDT2Ws2
+Fcr+8A+osprAu+LiC5Myxd24mGKt5euThpMQ/8c87u3t+nBRTQVqVG2kvryGZC8tsjgRFXRZWzba
+BtUmV3qap1AaKnPUgiTV7TBvwInIySTsVuNM7hvKYVYWOk6URcFSWKgqG2lj4M/bcofOKbweM6Aj
+MYmlz9XmYD+LmEr7r3fKBbVt2GHzb6rnbcZ662bQFxvExTlY8UDOCUy8bvfbB/24jfucKF3kw+Jl
+5iMM2RGLP8+BCXg7OP2Ux1661Hv4kaiUCbYz6ujf+E9oSG/4iPaLNUXT/s1sQSUnjNGz9At77Ukt
+m1sBoAfSNvtepTk7JERoRlyNsY/+NiTjfj43zNJ7pdLC+H0ltt3D8TbMUWEffDBPnhvMczppsmDv
+IhoCvKEkIru6uoQxm0ZltkO5H1otTnTeVJv8h5k3Ul4ezIzpjF1dEKIBBmYwKcax85VRfApoh7em
+o4O/AAtyR7NKQ/apO/ofXXZofwm5udrkj7jDVhMMUaZRxaBXYMfiZmLkVNfQsoOanheZdsnY8REi
+sQ84H3S2RVxjBxncZJyKOPcYMDFzU7Ouwm1oQGL6NrFehZRsZwfEaElYQpTEPoFZvARMAJsq3/eV
+EzsfxEBnZNCVr2Ne1NrIwfQZNtnCFuNMe6k9PVqZtD77d9i3yfg/5J7DKb7hQbu7cC2OlSPQ+1Tp
+gL+ojYCby9rdhvPLAUxj/hgd3A1DlJtW10HABYRAdSdkJkqzCxtzs9rMFMxQeKRHB5fDdmeC44yW
+NEEC0FA6ZwP9u2PK7Eg9fnCE+g5E8n0Lnr9GaNfXvKc7J8nNCE4jfoJKnl7f6vb8Uet8e+zWegkf
+m77sZmwPY5yly0wvBmLN4KS1bfZYjn5MMXu8Yle3pFFiLERkvBK7cfqo7ZtthcGGAhUvJmMhsAUa
+7g4AvUVp0vK3KXOOujdOLHYOqhJxvrJrEGp8Rz/xon8Di2IK9U2OtIfiydUr3vRhV/zJ7erVSjnG
+IlhxmVFwg3Vz+QxzXL1VX/4w5v7uf1mMnZdfP3w8vkDoGFpqvHhby4Ymm7vp+hoImaEHoU2gOBEl
+U55dCS+B4RSM0sl2IZeWrHGMfOtWQ5+r0JXjSSvhgL7BXC7i4WYFgIBrEXTaNvnUmCTh6yP2y0dM
+eNR8zpvBt7hW+DEwv/6K0heH0LmSDYVpPD90maucrIxBrEWq1z3x6WVLIUPzaDyuoS2go32IONX1
+qP/vr1lsyqS7NGlNjKYppnqJUryPWZLGY3i+O4W16QzsUVA+N3wb0VZ4SNHcMypNP/FBD+wGYho+
+b9mZ8n/n2qJzfE2HG4xfK9hcl2vn/niQbRHNMaBJo+cYgpKDpf26knJq4y7aqKSAplnqwjuGvon9
+TWWEgdNlIjqrqDwQHOIFH1KQ1Bo+MvwOFzb0i4TBLeZtPbL0ee77RiOT8GM+9srNB7prUCrYTBHY
+7BNEucut8N7mEd5yI8Z8Wv62FyMMifmg4CL/mSHgc4EEIKsd9VKA79ifr6HB/dL8crhBwnj7fBD/
+3MkmzVg495Hk5TOWm3sWqZ868l5vDeuBZpYsCDZheui9B3rG3Q7EacMukNwFLK0JO4MbSMraK3dt
+LUpH+jBUBc3LzuBMZdeT8VQClTDXeG56QARhA3tz90YPXVhOVEQkLUvabSciS1xc50CiZ0OWlPx5
+DrLAHa5OkjYEzZHXa3NuXrrRt1Cq3ZWwWrfAIg9is/++uvOfh9A3LXL2x+m7BnOebYuBYmcCSyOu
+io/oqL4IO2X1J7CN8/a1pfSl4NIkjyhxQSYYUd/JEHjQ/LfBYHYyn7+fK0T4+z6273/4bTz4ZnJu
+zhfPUxgvg1Uf7dda5EezLofCGiSnacEvNDGDGR1AsHFikFUIaTpZQFEY0eg4lKzu+1gJBReNu8iJ
+c9p/ymJSXt+6ZuWCdDwVxwgr/9gh5OFcqpvcsSSNZ0JmMVQJ6eWSAmSMfuilQojxdyZnXIQES+jW
+oYwl2I/nAE5/vr30Pn6hA7gQP3rgcyaHzkGO8qKiQkxmUk6+qAoUd11CXQJ+majnSOCTNyn4tKg4
+e+TKmqxdLzeCY4JfHvkDCrJZcvfoObHfXjnaYI8oww6txc3kZazXCPcrgT6zFm==

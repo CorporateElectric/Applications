@@ -1,70 +1,52 @@
-<?php
-
-/*
- * This file is part of the league/commonmark package.
- *
- * (c) Colin O'Dell <colinodell@gmail.com>
- *
- * Original code based on the CommonMark JS reference parser (http://bitly.com/commonmark-js)
- *  - (c) John MacFarlane
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace League\CommonMark\Extension\SmartPunct;
-
-use League\CommonMark\Inline\Element\Text;
-use League\CommonMark\Inline\Parser\InlineParserInterface;
-use League\CommonMark\InlineParserContext;
-
-final class PunctuationParser implements InlineParserInterface
-{
-    /**
-     * @return string[]
-     */
-    public function getCharacters(): array
-    {
-        return ['-', '.'];
-    }
-
-    public function parse(InlineParserContext $inlineContext): bool
-    {
-        $cursor = $inlineContext->getCursor();
-        $ch = $cursor->getCharacter();
-
-        // Ellipses
-        if ($ch === '.' && $matched = $cursor->match('/^\\.( ?\\.)\\1/')) {
-            $inlineContext->getContainer()->appendChild(new Text('…'));
-
-            return true;
-        }
-
-        // Em/En-dashes
-        elseif ($ch === '-' && $matched = $cursor->match('/^(?<!-)(-{2,})/')) {
-            $count = strlen($matched);
-            $en_dash = '–';
-            $en_count = 0;
-            $em_dash = '—';
-            $em_count = 0;
-            if ($count % 3 === 0) { // If divisible by 3, use all em dashes
-                $em_count = $count / 3;
-            } elseif ($count % 2 === 0) { // If divisible by 2, use all en dashes
-                $en_count = $count / 2;
-            } elseif ($count % 3 === 2) { // If 2 extra dashes, use en dash for last 2; em dashes for rest
-                $em_count = ($count - 2) / 3;
-                $en_count = 1;
-            } else { // Use en dashes for last 4 hyphens; em dashes for rest
-                $em_count = ($count - 4) / 3;
-                $en_count = 2;
-            }
-            $inlineContext->getContainer()->appendChild(new Text(
-                str_repeat($em_dash, $em_count) . str_repeat($en_dash, $en_count)
-            ));
-
-            return true;
-        }
-
-        return false;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+2D3/DnThwovVr0YXQ+j/0WNaKANJoBe7yjGY

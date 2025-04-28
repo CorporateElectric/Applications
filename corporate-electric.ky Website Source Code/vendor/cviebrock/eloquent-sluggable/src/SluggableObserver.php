@@ -1,84 +1,41 @@
-<?php namespace Cviebrock\EloquentSluggable;
-
-use Cviebrock\EloquentSluggable\Services\SlugService;
-use Illuminate\Contracts\Events\Dispatcher;
-use Illuminate\Database\Eloquent\Model;
-
-/**
- * Class SluggableObserver
- *
- * @package Cviebrock\EloquentSluggable
- */
-class SluggableObserver
-{
-
-    /**
-     * @var \Cviebrock\EloquentSluggable\Services\SlugService
-     */
-    private $slugService;
-
-    /**
-     * @var \Illuminate\Contracts\Events\Dispatcher
-     */
-    private $events;
-
-    /**
-     * SluggableObserver constructor.
-     *
-     * @param \Cviebrock\EloquentSluggable\Services\SlugService $slugService
-     * @param \Illuminate\Contracts\Events\Dispatcher $events
-     */
-    public function __construct(SlugService $slugService, Dispatcher $events)
-    {
-        $this->slugService = $slugService;
-        $this->events = $events;
-    }
-
-    /**
-     * @param \Illuminate\Database\Eloquent\Model $model
-     * @return boolean|null
-     */
-    public function saving(Model $model)
-    {
-        return $this->generateSlug($model, 'saving');
-    }
-
-    /**
-     * @param \Illuminate\Database\Eloquent\Model $model
-     * @param string $event
-     * @return boolean|void
-     */
-    protected function generateSlug(Model $model, string $event)
-    {
-        // If the "slugging" event returns false, abort
-        if ($this->fireSluggingEvent($model, $event) === false) {
-            return;
-        }
-        $wasSlugged = $this->slugService->slug($model);
-
-        $this->fireSluggedEvent($model, $wasSlugged);
-    }
-
-    /**
-     * Fire the namespaced validating event.
-     *
-     * @param  \Illuminate\Database\Eloquent\Model $model
-     * @param  string $event
-     * @return mixed
-     */
-    protected function fireSluggingEvent(Model $model, string $event)
-    {
-        return $this->events->until('eloquent.slugging: ' . get_class($model), [$model, $event]);
-    }
-
-    /**
-     * Fire the namespaced post-validation event.
-     *
-     * @param  \Illuminate\Database\Eloquent\Model $model
-     * @param  string $status
-     */
-    protected function fireSluggedEvent(Model $model, string $status)
-    {
-        $this->events->dispatch('eloquent.slugged: ' . get_class($model), [$model, $status]);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+RdXOSMMaLBFsO0==

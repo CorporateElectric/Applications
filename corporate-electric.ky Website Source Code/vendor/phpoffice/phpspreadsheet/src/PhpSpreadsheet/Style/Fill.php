@@ -1,325 +1,131 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Style;
-
-class Fill extends Supervisor
-{
-    // Fill types
-    const FILL_NONE = 'none';
-    const FILL_SOLID = 'solid';
-    const FILL_GRADIENT_LINEAR = 'linear';
-    const FILL_GRADIENT_PATH = 'path';
-    const FILL_PATTERN_DARKDOWN = 'darkDown';
-    const FILL_PATTERN_DARKGRAY = 'darkGray';
-    const FILL_PATTERN_DARKGRID = 'darkGrid';
-    const FILL_PATTERN_DARKHORIZONTAL = 'darkHorizontal';
-    const FILL_PATTERN_DARKTRELLIS = 'darkTrellis';
-    const FILL_PATTERN_DARKUP = 'darkUp';
-    const FILL_PATTERN_DARKVERTICAL = 'darkVertical';
-    const FILL_PATTERN_GRAY0625 = 'gray0625';
-    const FILL_PATTERN_GRAY125 = 'gray125';
-    const FILL_PATTERN_LIGHTDOWN = 'lightDown';
-    const FILL_PATTERN_LIGHTGRAY = 'lightGray';
-    const FILL_PATTERN_LIGHTGRID = 'lightGrid';
-    const FILL_PATTERN_LIGHTHORIZONTAL = 'lightHorizontal';
-    const FILL_PATTERN_LIGHTTRELLIS = 'lightTrellis';
-    const FILL_PATTERN_LIGHTUP = 'lightUp';
-    const FILL_PATTERN_LIGHTVERTICAL = 'lightVertical';
-    const FILL_PATTERN_MEDIUMGRAY = 'mediumGray';
-
-    /**
-     * @var int
-     */
-    public $startcolorIndex;
-
-    /**
-     * @var int
-     */
-    public $endcolorIndex;
-
-    /**
-     * Fill type.
-     *
-     * @var string
-     */
-    protected $fillType = self::FILL_NONE;
-
-    /**
-     * Rotation.
-     *
-     * @var float
-     */
-    protected $rotation = 0;
-
-    /**
-     * Start color.
-     *
-     * @var Color
-     */
-    protected $startColor;
-
-    /**
-     * End color.
-     *
-     * @var Color
-     */
-    protected $endColor;
-
-    /**
-     * Create a new Fill.
-     *
-     * @param bool $isSupervisor Flag indicating if this is a supervisor or not
-     *                                    Leave this value at default unless you understand exactly what
-     *                                        its ramifications are
-     * @param bool $isConditional Flag indicating if this is a conditional style or not
-     *                                    Leave this value at default unless you understand exactly what
-     *                                        its ramifications are
-     */
-    public function __construct($isSupervisor = false, $isConditional = false)
-    {
-        // Supervisor?
-        parent::__construct($isSupervisor);
-
-        // Initialise values
-        if ($isConditional) {
-            $this->fillType = null;
-        }
-        $this->startColor = new Color(Color::COLOR_WHITE, $isSupervisor, $isConditional);
-        $this->endColor = new Color(Color::COLOR_BLACK, $isSupervisor, $isConditional);
-
-        // bind parent if we are a supervisor
-        if ($isSupervisor) {
-            $this->startColor->bindParent($this, 'startColor');
-            $this->endColor->bindParent($this, 'endColor');
-        }
-    }
-
-    /**
-     * Get the shared style component for the currently active cell in currently active sheet.
-     * Only used for style supervisor.
-     *
-     * @return Fill
-     */
-    public function getSharedComponent()
-    {
-        return $this->parent->getSharedComponent()->getFill();
-    }
-
-    /**
-     * Build style array from subcomponents.
-     *
-     * @param array $array
-     *
-     * @return array
-     */
-    public function getStyleArray($array)
-    {
-        return ['fill' => $array];
-    }
-
-    /**
-     * Apply styles from array.
-     *
-     * <code>
-     * $spreadsheet->getActiveSheet()->getStyle('B2')->getFill()->applyFromArray(
-     *     [
-     *         'fillType' => Fill::FILL_GRADIENT_LINEAR,
-     *         'rotation' => 0,
-     *         'startColor' => [
-     *             'rgb' => '000000'
-     *         ],
-     *         'endColor' => [
-     *             'argb' => 'FFFFFFFF'
-     *         ]
-     *     ]
-     * );
-     * </code>
-     *
-     * @param array $pStyles Array containing style information
-     *
-     * @return $this
-     */
-    public function applyFromArray(array $pStyles)
-    {
-        if ($this->isSupervisor) {
-            $this->getActiveSheet()->getStyle($this->getSelectedCells())->applyFromArray($this->getStyleArray($pStyles));
-        } else {
-            if (isset($pStyles['fillType'])) {
-                $this->setFillType($pStyles['fillType']);
-            }
-            if (isset($pStyles['rotation'])) {
-                $this->setRotation($pStyles['rotation']);
-            }
-            if (isset($pStyles['startColor'])) {
-                $this->getStartColor()->applyFromArray($pStyles['startColor']);
-            }
-            if (isset($pStyles['endColor'])) {
-                $this->getEndColor()->applyFromArray($pStyles['endColor']);
-            }
-            if (isset($pStyles['color'])) {
-                $this->getStartColor()->applyFromArray($pStyles['color']);
-                $this->getEndColor()->applyFromArray($pStyles['color']);
-            }
-        }
-
-        return $this;
-    }
-
-    /**
-     * Get Fill Type.
-     *
-     * @return string
-     */
-    public function getFillType()
-    {
-        if ($this->isSupervisor) {
-            return $this->getSharedComponent()->getFillType();
-        }
-
-        return $this->fillType;
-    }
-
-    /**
-     * Set Fill Type.
-     *
-     * @param string $pValue Fill type, see self::FILL_*
-     *
-     * @return $this
-     */
-    public function setFillType($pValue)
-    {
-        if ($this->isSupervisor) {
-            $styleArray = $this->getStyleArray(['fillType' => $pValue]);
-            $this->getActiveSheet()->getStyle($this->getSelectedCells())->applyFromArray($styleArray);
-        } else {
-            $this->fillType = $pValue;
-        }
-
-        return $this;
-    }
-
-    /**
-     * Get Rotation.
-     *
-     * @return float
-     */
-    public function getRotation()
-    {
-        if ($this->isSupervisor) {
-            return $this->getSharedComponent()->getRotation();
-        }
-
-        return $this->rotation;
-    }
-
-    /**
-     * Set Rotation.
-     *
-     * @param float $pValue
-     *
-     * @return $this
-     */
-    public function setRotation($pValue)
-    {
-        if ($this->isSupervisor) {
-            $styleArray = $this->getStyleArray(['rotation' => $pValue]);
-            $this->getActiveSheet()->getStyle($this->getSelectedCells())->applyFromArray($styleArray);
-        } else {
-            $this->rotation = $pValue;
-        }
-
-        return $this;
-    }
-
-    /**
-     * Get Start Color.
-     *
-     * @return Color
-     */
-    public function getStartColor()
-    {
-        return $this->startColor;
-    }
-
-    /**
-     * Set Start Color.
-     *
-     * @return $this
-     */
-    public function setStartColor(Color $pValue)
-    {
-        // make sure parameter is a real color and not a supervisor
-        $color = $pValue->getIsSupervisor() ? $pValue->getSharedComponent() : $pValue;
-
-        if ($this->isSupervisor) {
-            $styleArray = $this->getStartColor()->getStyleArray(['argb' => $color->getARGB()]);
-            $this->getActiveSheet()->getStyle($this->getSelectedCells())->applyFromArray($styleArray);
-        } else {
-            $this->startColor = $color;
-        }
-
-        return $this;
-    }
-
-    /**
-     * Get End Color.
-     *
-     * @return Color
-     */
-    public function getEndColor()
-    {
-        return $this->endColor;
-    }
-
-    /**
-     * Set End Color.
-     *
-     * @return $this
-     */
-    public function setEndColor(Color $pValue)
-    {
-        // make sure parameter is a real color and not a supervisor
-        $color = $pValue->getIsSupervisor() ? $pValue->getSharedComponent() : $pValue;
-
-        if ($this->isSupervisor) {
-            $styleArray = $this->getEndColor()->getStyleArray(['argb' => $color->getARGB()]);
-            $this->getActiveSheet()->getStyle($this->getSelectedCells())->applyFromArray($styleArray);
-        } else {
-            $this->endColor = $color;
-        }
-
-        return $this;
-    }
-
-    /**
-     * Get hash code.
-     *
-     * @return string Hash code
-     */
-    public function getHashCode()
-    {
-        if ($this->isSupervisor) {
-            return $this->getSharedComponent()->getHashCode();
-        }
-        // Note that we don't care about colours for fill type NONE, but could have duplicate NONEs with
-        //  different hashes if we don't explicitly prevent this
-        return md5(
-            $this->getFillType() .
-            $this->getRotation() .
-            ($this->getFillType() !== self::FILL_NONE ? $this->getStartColor()->getHashCode() : '') .
-            ($this->getFillType() !== self::FILL_NONE ? $this->getEndColor()->getHashCode() : '') .
-            __CLASS__
-        );
-    }
-
-    protected function exportArray1(): array
-    {
-        $exportedArray = [];
-        $this->exportArray2($exportedArray, 'endColor', $this->getEndColor());
-        $this->exportArray2($exportedArray, 'fillType', $this->getFillType());
-        $this->exportArray2($exportedArray, 'rotation', $this->getRotation());
-        $this->exportArray2($exportedArray, 'startColor', $this->getStartColor());
-
-        return $exportedArray;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPuGU+lzsUR7Uy0JTRzmE50AteX1apJU1Ug2uXZUGN+1OD7GrM8Xh7NApsFhfwI+Qb5vXlFR2
+e7BzWNtbH4rx650mEIkZI+0h4FjlGSxNfej3aNQbgOoMiu3P1XY6I0G0oolvMDowAYChAnhtiZYv
+fg33hSHyo3czuzRkb/KRn0m4+yn3+WGiBlh3zQqD8OxTYSL9g/b2GFFcc6DOj+9Nis/RZuHTk5oq
+vryTMtCDSuKD5dau4qOx9NUUGxn3pW5FBpWMEjMhA+TKmL7Jt1aWL4Hsw85e+Jsk0ThrSIQMfoEl
+F+DJ7t1igaKrenZ2a3VCyC2/ZRZZB9Q9u8qHX6D17PG2Wp+J85QiZ8ekEZ8uZxnshkEgOhrV/aM0
+Y1FOOCL4N8HuWEvhUMWPFTSaa4skE7oUV6yfa1iT9XC7/BBSE1Ut/ckiuZ45cGxLQGcf4WAOK/hI
+I4gdROajyM06Xso3VIe9xIhD60nE4nB6eHrnw6UtaTuuxoL1wz09sFH9tv0INb/d6P0WPqjqh0t1
+QC4W+3ZiUusYG73rbKb54GGdxGt/ElDYmndG35wANOuLcxqofclTLfRbSZ8n8zMnEU9Z3NFeL0z4
+AHF7VJVXjBeqt87Vus8KoIUW08VhRN94rWkbK7x6JzpFtgrdwdQKlqUYJL30HFu7evRpu+U9B4sK
+++BV+OKQrU+VMl8DeeRmAsFiuspJYWv266jzvAJWw46PbuktqL/fjVL9qIqaWx6ONpVuNd+qjN6p
+dS6qqp6cwNwGFxrfaJWGo5ZCX2w5LjbW0GmW6stX0LuzJyXPBQW2TCL9KPeDVt87PEvoGXjeIZMh
+FlES+ELanwBQdsGqZGaOoPOzNsh/YGmflh/UMsiT1JJz45I40G8rx4fzvamM4pJyLVzI66Om6Qu9
+8F8J9eoQ6g2jaleAskynxFKp9r13v3v+dkGmcCYB8UWHDviLPj/t51CM1TDVOIEOA0s15bCzyJBT
+pxLEvSFMqvaaXQxbOlyYMiLc5Cx+9wcYNlHCmIgY636H2UE/H38wSVaJjEiRjDONd0Rej3g1DG+G
+JoE8CsbZ0j8LcF/7IM7wW/qmwJ5VAFwQ55Z0rFTJ1PVjWoDQz3WHMGc60aT3IAYN0h6jZMHtiJVA
+QMuKI3YOXmWD3Peli1ahJJtQPPDMewvhDSpIihHHI1QZGezhoLLH/0ZPADE7b9GaDzp/Wi83ds/6
+MAw5I7zNIijnM52Gvt/86rBldQKPY9ffDleHtBKzl2VWtz40qgOF3nzW9KIWa1L0t/E80+lkRzkn
++5/lAAcEwz1y7I/qH4ILEpYt51tpC91uKcObBy9AEZAixr1ce1ldjtPKKQmaw+R0K//OtocGDHrE
+3UtQgHQFt9nfLmolocadNCzct5Kz+9QspKaXGCHRVYr4AjEZr20K+h2G+vKUomTruS/FrLLFr7BM
+lpZx3500Z0DxbPG5EAtCoJ9JpdUwGZIYxlfQwVYEK2r9kbIN+nrfxV+uoFNB7fv5ARuTHui0z9Dc
+P2N+od4FyUY8OFEpXSAw+hmwXe0RDVpuvprluXq8ce3WA18m8XxY33xr+qlXICHIQbL7O2PpL8fh
+njauWCEZnADUnzwx49JK606QV52S6f6UKMSPCpfhcLELkCckjoKaBz6FSlQjfDt73Wr6E/XUXyR3
+fMN8Q2LCJsgAyN45mMrhQWZ/grX0pWrAh2PNp+d0JuzWuIOz+W0wK56/+I8R8qZCrR3+kE/nrZ1Y
+5DJaIe4IZKJSh/KZ7/FCajxHd0FFrG2kyifoM9c661KKVd65iItcb2iHraH/7suGq3wLH/33x5kq
+pgySyd+zVHGnBtRmRcdIPN5C658wjkROQ4HNdXLAULUn9EA/WBBI18EoPYJ0zOA20PEp4K+dHJ00
+EQfMkQAqDvkl4tSW+8I02dXSJQrN+n+/PT5PQ4s7PGf3RM+y9TmSB2sZuOjE04gm+wej1HVu62VL
+yuOP8k51vXmdeObK6zD9Qs46FUX/V8xRWvS1qk6bOtez9T3EQSECta0MmKGlL15gb0UYDOV1zsRE
+Mwx8p3PzwvJLEwo5zdVbnazHA4jP/BB56tQVHCRLZXcc5BZeNY6qT3hB+OW0dbpzxyeaxMKskRpW
+cnn4702IyxH27KQp8lpamPUsPEeMcxDL7pdXZ6wBi/YXwDB2noNdsWYBh/84BJ46ke1JoMkw+nef
+pMKhP/X1iAXYAgckW80DonKBH/mI85gHg12PdChLbIlrv5RCffVntqC69WJR6e0dHD+Z08CEpMoK
+iyKoWOCpz2IpXsibcnf5GEyX/wpsNNOJxijVYCMu4rjVEASnv5P7tluh2bNrfrdrv9v03NfT750l
+AxZXA66jivKtmyP8RXCHFpY7IsBcuYrL/pCsR9ywVPooVZ5YUCZsqrLns3/ZuoAJp0c25jNm+OjZ
+gkEG72skkgVVDGd/HseCA3wclrpicIQNt95lOCyc96+/9M+GoD8HHHgEsY9IHa2YRwYF1La4jkdG
+4qGgl+2kV5VlYtQync56ZvOOB4JzkRPqOSG4oOIFuQ9H9DbmAAAMugdC7n3z8/gO69kcA6wST+Iy
+0lu2ScQv+wX/q4aICrdg6+ZOh1+rfNkDINmHaClpgG3cHqaqJ+aIcAhPHSN+YtWUlavgSEzAmtaz
+tK7UCi6TdynOBwZNUcV4wBWGNUNEx22G2VmPDpa4e+iUrWJG9XaBrqqYUe7Ml7jl/h5Oto4VaHy9
+XpIrDmLqCKz+zVxHrmMUP0o1fM2dWEeHW9SODu7CVYbM9bxSShFHY3+XOAIsj8FUBEP+aluPYWoQ
+YmDtGOcqN1rcy1+5FIn+M9xFERLP67RAoo/ZLFmZNZYA7kkGUQgOEZONFhtzn/CbjkAquQ6uIpaj
+K7GjRn30zzeBoPDCfzFAEOYNTPhEvZPCseUbZID6aCTAVb2jMm8WEFoLOqyGHy0rYHNaYp8HQ3zA
+9PZMgidBZvWVlclngK7rT3WdfKY9lpgvQ+hR1GgfCk1T7wws8v+9qfHXuWzxOzEkJrI0tegdo0OO
+Rc+Llo0kD94fhvl8Z0xmBnMuWsfHEXLftPRx+Z86Ul+96mhnNyt9FLZy18we4frHzcm3Xrn28Rk/
+3EmkK38YJC6eRAalmmIQdnBa2YeR3DmlYpcI86rd78MeUT3BSSTYb4YHk5vSt8KJROciABLG5kJc
+mUXCWLBIvIvGdtl9g/UUsfJebZP+WFG/AHPilAjT6emBrJNccLfc+eT8jmO5ptMxxM+lr+Q6Uxpt
+yEGvdRwJTY5xVuTqCmunWyvrQjXpgqCFlF4eJ96psjXmP7jXLHiqiShoQRozN1OlYI7DBa5RXyTs
+y49/NMP1ZAyfwVkbDKkmK1WxL2yQ71GwuBMGKOModZIauzW3xkZtDfZVaDGUbEhBHENwdIO0eKpw
+rYTB/pyMQ8tOVuV9ofSD0BJ9eAIbEupU75q9+O+4LUs/W8UY2XBlIxXTJXqEnOs5eTISwpB6SIcz
+AujZpPH3RNWMbFBOhgx0OL/rUNs5mYpbn5G3YtpQ3mkSRRgT45RDLpDuDYM9YcZsHoJSIRHNsuNL
+RRNpAOQkJ174fSZPIEry2kIg3/TW4U9ZlQkQBFwF+qtfKQN9vZ/g5+QmlnfbIXbiistLelKITywM
+nrS8/6a6zo+aAECBmKv9eHJx943CCm3E6BsRNF8vZ54H8fFHwF2TYLSMQ0dCXTh/kcy6lu7PuGSZ
+49YbpSf8vAAah6cOcqFrSj1+zZSDZqyCIZ2ZjyyFs7bEyefx/EP070tSyHxEp96auY+irAn/dyL8
+TwRp6Jw0vkdOjsHFQm/1ONf4nbZ9SbZcBnIkWCN38HCXKeyGw/2ijkdVuQyMhlVgMDD88O9WcHqb
+QKDhjS+hJYeSqxuz//J9RJb7pL/ISdfSE1s0OxwxxSXyhedAlpNg6HAvkZZsY+RWhEP9GdXnER9O
+IMMBiAzA2I3SBSDkPC3gVzPQAIfl4Z5a/YA9Zu2T1Tdsybwz3XZR2FX1zy5E8N90+8Mo34RNGmZc
+R2Zt84w2BLlzOf2F8jsX49wQH0DRPs+db0HWyUqepYmwVYCrve6b3x2wIJ8Lrctn9qzu0Ci+c+sN
+LpPDwDJ62pGoSnC++5vVpZrM7mn78Hy8bWoaVReca/W4w/1qsRFgGGOZXGHdn00t7rcswMnmzKlz
+XxGCPtffIXxqKtcI0Lkb2ux+IMA4EY9fpz9YwJlI9c1HWibODCQQxRWbjuSmElGw7wYErYvejFSH
+46D/MeZSW/nGx+jCypkMMM1zie5Mc/g1mvsg4YjgUpDhSS+d4KfnTnWPECMPDu40LbRnRrl+JX3+
+MpYBUJwXc7Lpf631PZ3k/XBLxikTnklm4pa+uHnCUck/GWE3Ra5ew3Ycp9D/jChMgtLTb2amSjSb
+NZA9R62FVGnYO+Bg24oNuTa5i7yh5GkitTbxLydfz51LMcZF0qPmwFC1/r17LdnZR7fr1ClVkPmi
+jIo9crFtyYlu6gUkH8B3H2QVOmgHenp+q73zOvVUb5dl/VDU8GNm5ATJandgJdUGZdRqaQ039Aw/
+ZEZ09/EwiSMYQZ10wrvoh1bWiiolfDwR+9Pma/wtIUR8NSMvoGjNeYpTTwRE1lnsJmxL/EzkBNJC
+8NEHkb8bJ9NAHnNLbcW+Wc2iQ6atoVf19J+lrY2/QrNS5sdVzhPlSw5iVfL3LQ/XofSdpi8NWxWg
+mj2OEvG8eNBiVfjMyuazQ0KF9BuH3GFePGq+CPAZPzY8KITImX+mHo6B7hxvKWr2/jGVXzRM4qwc
+W1ggoOd2FQxJ2xX9643XjyQVep1CaMRxa4b2iMv7/kQvDkmopaWjDBkJ/1sp/vm8SQ6sseWo4wCm
+DGOnq4gfSczHD5VHYpWMSwqKglxbxyBDFQx2dgHR8kRns8KibGUPJBW5u5zkkv1GU48AONNchYXq
+HteVi13FMwB1N9a4PgNngJ3KeT3VRFbmsr4fxbY2KOtP5/uV5wXixytuXJFlZ0bpavux8IEsVPqc
+a6A+4X9ruvFkbQj+49X0vB/5jGVe/ga7w7OjA2YyOIuQDMN9KakImQL7beoolra57spIM6JT7rw6
+TjOH9joYVflGxNsvWEPz7RgrISMPgRMkBm2E63QDMYLvJd9kKZxCYcnXAy+zUoXk33NKbb2+fdAY
+xgn3sK3Kt2v+WiA+9Fj0tjr+6jFUqL0Vv6Su1JLdctfPOv9WM5FdZBupUDgjWUw3zbiskmxSIqEM
+jOFIzbn+G/7fHJlG5+WZq1YD7IeDSIfPCjZ2Vmt/y5RQV1MRf9LfFJU7nvBOmwFkC/r5cBRKu98z
+V3uuoW5tHBIho6vLNqB57x44Ivcr240N2EBk+lWZtRQ1tsvM+uzvtWrgzL84hNp2WmeRislAeA9x
+UAcK2QQEUfl8YLMPcQn5UQSsmKffRgEA8wOJ7q3LYDzz2kuZGMK2Ky6Tzu+Tvt4Dn5Izzu2Gayjq
+clACcP6k1GSeB4yZhkPOXMHR4DO24szkd1Celf/oXIN1W253FQ0n+lrujblLFITir1Pwj5Pxpw7O
+m2RmWHrhjHHEeM9RQ6k8t7qxZBIs09aYxCklx6HQfGKT+vrWE509++g3L4zkB8fppgJpSgP6dCU2
+0dzMHVxGgQKiipcAAK+Xpem5DuBrgTdg3mMyEo6wVRZrBZIFdnsyjKubIJwvM6m7D2iWfz1ebM0z
+shqDDSrkRrtdPuoU2LAXLCmQ9Sa8R3sPCgzDOkg+5+srdISZ9F1sGi+Fs1uH4FGTzf5Rqm5GCGcp
+qlc+ed2UKNj0rbJfzB+zQq9f2ASeVo/sSA1zOWo4rGGcsIB8CYcdESpB6J5xjnqr4/COeSJRu49b
+cgikVjSxHbl0RX74yjFIgXt/WKvqcnyaYJUjXmPTfMlal2EoVYpr2IO7YxI7v6C4t3taub/At/vW
+c3Qv/VLOWmXLdTLo0mbFlUdip5fk1c5AD1aKCiUoM0eDdjn03Rn1h5BEwl871P3rSo9Z+lfvK5rm
+36ksIbofhcLV8EFsnNi7OTPIVGn3WqDVaU1TXLRhmtbmjDhnzTtJo/Evm1RsYmtjaMM51d8ijgdr
+sNhrYxADN9p/r0Z/ZcOsLp9j9TSUXi9xUKIOzi5xH2hlPSFT595RJnyNOtME/s7k8luEOyEIENnm
+tV6iAYig1eP+XwVSgA4mUFHxmqosXFPnkatnzf6NRcwhglrweF7vtHx/sRgyU//GAH6BygRp/r0D
+0j7npXhZy/fa38icgz+GaRoC2XXbr9PgbSWCcuf1LsNk8tFMBuroMm/zwp3b23RaUp+mU+foaAY1
+v6et9HY1nqooNjx6pdg1nFkIIS96Lwo3RQkU9F5/yrGcxZzCdRCrxVbPXu2Ba6AnyLPKEnq09l3t
+ggDWaCyt+Gf6e0GtQeyACyTg7SvLFQ2eumNYMOozIgYLrOmenYsZ6clQHbvDwcCHtBskKgbpS0H7
+6NDLsCvLN+JOTkW019kDRMwuuNRk+rl/pXmwM/IWyOnxZHywyKbDqlGL58hkr4FKVa26FVEu9dbr
+Iawyb6BtBc/6e4ENvArd1ziPLKUUnDfR9cOOO70Lg16riEU82wb1EcKoMDc69MJAmoEukDDWeBL9
+I4wQrtH4QXlplj8iYo6u3FEjac5cMuK8dCWxQGKrHDFli4kNHHOYsP9f37vg5XsPXNEfcfmtZUWt
+JWiJE6Gq/BWAYGSJd3vAXpOmVH9Ebi00wffJEDU80lrgz9/dI4Nl3tM9ONnWWPxhpXb1cziDPabn
+OcMrOiVM3BkGH2EoPXaNoR0noamHnK60x59p1mc5LtGUXxVzI374KFopWLVc74EEtUaKSd0wRo15
+QZ139wED7GxzNBohCmyO6HOLPa0JWMx+cF+Ba8unWuj1+e944/F+VqfXdAQDBLS9f7h/KLelGeAX
+dBVjHHeMLAzhgRsUf2cTRJ8IhPSKPNXSADarqZyBHfHkJZUrhU2dkQs7GxWXIIJ/dEdzjdh5Jqiq
+HXqUkHe4e1cNV9Eyl2BKcZY1HOllKTvvP+aQwbTtkWih8kdr2RLFN9xSg/bnOEYDWzWPube27fO0
+SrZId0jcLcz2Q6GcdeanLbbkVSrrMC4lOIwb8qN5Dt3umBohuVLZ0H4UPczsHiiYeSBSs0JwQgpd
+PgIk/wRmg4vOSOLqui5TolPlgpytk4igDxOh2QImOpdTS1eUrlXKrqPUT4Y5Gi7VJo6GJ2iSmIaS
+sC04zWTnZOsseTjASuZVc0M/KEIr6l+c+26DZltiOYssATBa8V0av4iWoArPT64Du2ueU1si/4NZ
+c3+JXCs079d/fUO3ykxO88zg9ArpKwILLXz+NWelznV+YQqC+epBJIYqW/aimrVExGkOCtRPBSBj
+VUV4YwOJpcrrFJIiFu2j3PEvsNAnW84F0Ex4G/34fu70YG1AzaNRd31coihAlByMLHexvtrxLX02
+N5Kp8xjU/fE3Hlv9GkTW4SNPwjhLfWs5G8vFQyq2uQT9UIH+8pE6WEJxQNNIEK3QAWIseX8+PRXb
+6i1vc51evrDXPNVviaK8vE3fcGKtbmzHrVCkic/7SS9Yd3TsD/cGBQxfVL4Hj/yKNoWJua2lyiST
+7npoALC5XVzdOCtePOFC+o62eY6yLnR3/XePryaTlueY276T9S+2a8y+RpW+ZmU/+uwwDO+uIRxD
+sxfwCTB9esbo9mO5XOmiddQ0aACHGyTpW8jLLbvcjC8hms+e/x8V7hxX5STYG90D9TfoHcg9OLJV
+evnC4aTjzDWe1tpgCOKilOY9iNNf2UfCIDjfYhir31FnK6PGjWdSJ4cS+WtlrBZao5mRStik3zDq
+34WZkiQH85g3sK4ZgcYsKuDmLChNyRDPT+tn15SIaSw1+l6wwXu5jJHo0DkKZP3ckS2JPrSSp1Nh
++ZN7KaYS/7FOWe9z6/zl1lDVmw4pAMdcZYzQpnevu1+1ut85PF7gKI35PTHJ/y9b3qqkk6VeGA1P
+JXvWpO0qZ295CBrMeNZDAVEDcsprK4SPtDzoPnTJbJFEAuZx6GvZkYOBUukLiDT4FHmQZF2f50bK
+XvgOZw8tWNnp/wmDRZXlEfETGQxof3vrgPMOmIPUQAWZzxLYY0BDdvAtR/NOlBcIpU66F+4Pfdm5
+zqltDJ4bi+B0of7qUn5/vaiE7mupaHNdSWHh/lKH6FC8s7IIhWYp99UzbtWMRxImMNZnoevMMU6/
+qZXWu8809mBAudkDQpyTXEFcLfu+r9T7Q2B34PoZyq/QoxM6NzxVd6Kkh6NHeItB/aeUi3GZ+vK8
+AXvqB/y1GRTLkcY77IuuTLJCdnwaOh7irVXPQY6TartBMyMoGFohWX4nemQc85+26ZeFaIRmIbVu
+kiQ5hpv0aE/CGcn0uRkJFQpOl98TsU2iPSZ8y2+3RRSNSY1c48pvxDF5/YKP0lNvtphgZG45wJ8z
+Fd62oNCQDLk1y1tcMqg09YE0qnuAjymGKSES2cVlaEXv4H15lFERr5DpOUOgWsxME0ctw3Xt/k2R
+Da4cNIvDYb/1uptoD8RXXNV+itW3S75QmwBvss/aWOYSGImUIjKVkP9FWKOwYij1jsuQdkRpIe++
+Mmv82r0G574cAJdsmAZdEozlictt3haAPshNbF6svwi+1xepxV8cPY6UUdltABQBnxO6pEgZ/Gr+
+y/UwLWDRWZjpvE1a7BL5P+msxrgtLRqtVqV/s5SNTL3gxsV7mY/UgpltJSd3Pgt5iAELmTPFaUoJ
+sYqK8/8qEIXDcOEfNqRThqv/E3tb+Uv++MY0hvIfspqohfJjoacmRShrbE06Mk9Yz8hcQsKVWAiO
+wpApNdmbPxwLxXmh8WXpd9hCcV9dPM8HFktuZbhmG9LSBSUoyUqvs8TtNusoCfkHI/hyjtMCJ+Qv
+n8GC1SeVrKvmUiXqB0G5f2HsThGFkbItYkL5ZJd24Uf8WfbYxWr6AO3tyFVVSApBMHsJObmlO/sl
+m4xy2j23W286k9axgYGnWc4/+CrRgF8tE+cqxyssCKl6b+GWlFkaliuw1dGKWyg8NmEbn+3DMHmo
+U55wWWPlqnGXXjyYEu+ammCEm2v34bplywK5NImUQ9EIYND/yyHHnEyY7yac1hwf8AiamPUcWess
+wxB/AuqF0hkLZuyHlJDxPo1GmvU1IfM982xwroozj5Qievx/Z724lgRmT5LSLlu9fqgFAuLscvcN
+/5uwbovOAoahYd4rczS5EwWN12L/Yrb4WZyYBDapdp8h/Ble/pt8AdLtfFDE5+7yy9ZDbHVOxY/d
+WOCHIfGIjZ7A5tnBHsMg9cX4i0lXc2fCZaVGHbM+P9xx5sHP0ddDFO9qub+6STdX61MetO0L1J9z
+wGWw7rRW/8MRltlE6rdnMjHb/0xrMOEqQWAUsoFFvNO9L99eFK8eZrYVt/NK8hTFJTy98e63zYAT
+Gf3nIqRYgYLDdMwtxRtylnXcLt/NutfVOF7gRP4uf0f+vNPhzDHNMT6cTqvfnb7a0cgNqBneHR8u
+dTTrV34D3YRMuB216ytsBz/kuKp2aGQ/9/HVGGoKqEnodz3WBNx249IiIIcMddID3dvHhDHWR1am
+c2PNQ1x0XH9ZXA1cBzlrVJ7zQwaDdZ2Gr5Q8IGS1A47UfsfaEFH6jr1mkKRggSlLIJ+DEYzscxQA
+YMUT4rpwN0W+YFEA1lSr4FQcMunWNnF4Ng9DTRKFYTYkXg7bPG==

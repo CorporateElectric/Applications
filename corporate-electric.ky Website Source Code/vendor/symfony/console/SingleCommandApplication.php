@@ -1,67 +1,49 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Console;
-
-use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Output\OutputInterface;
-
-/**
- * @author Grégoire Pineau <lyrixx@lyrixx.info>
- */
-class SingleCommandApplication extends Command
-{
-    private $version = 'UNKNOWN';
-    private $autoExit = true;
-    private $running = false;
-
-    public function setVersion(string $version): self
-    {
-        $this->version = $version;
-
-        return $this;
-    }
-
-    /**
-     * @final
-     */
-    public function setAutoExit(bool $autoExit): self
-    {
-        $this->autoExit = $autoExit;
-
-        return $this;
-    }
-
-    public function run(InputInterface $input = null, OutputInterface $output = null): int
-    {
-        if ($this->running) {
-            return parent::run($input, $output);
-        }
-
-        // We use the command name as the application name
-        $application = new Application($this->getName() ?: 'UNKNOWN', $this->version);
-        $application->setAutoExit($this->autoExit);
-        // Fix the usage of the command displayed with "--help"
-        $this->setName($_SERVER['argv'][0]);
-        $application->add($this);
-        $application->setDefaultCommand($this->getName(), true);
-
-        $this->running = true;
-        try {
-            $ret = $application->run($input, $output);
-        } finally {
-            $this->running = false;
-        }
-
-        return $ret ?? 1;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+aAC=

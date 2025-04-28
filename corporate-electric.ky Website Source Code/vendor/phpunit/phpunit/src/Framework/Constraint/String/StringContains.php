@@ -1,85 +1,43 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Framework\Constraint;
-
-use function mb_stripos;
-use function mb_strtolower;
-use function sprintf;
-use function strpos;
-
-/**
- * @no-named-arguments Parameter names are not covered by the backward compatibility promise for PHPUnit
- */
-final class StringContains extends Constraint
-{
-    /**
-     * @var string
-     */
-    private $string;
-
-    /**
-     * @var bool
-     */
-    private $ignoreCase;
-
-    public function __construct(string $string, bool $ignoreCase = false)
-    {
-        $this->string     = $string;
-        $this->ignoreCase = $ignoreCase;
-    }
-
-    /**
-     * Returns a string representation of the constraint.
-     */
-    public function toString(): string
-    {
-        if ($this->ignoreCase) {
-            $string = mb_strtolower($this->string, 'UTF-8');
-        } else {
-            $string = $this->string;
-        }
-
-        return sprintf(
-            'contains "%s"',
-            $string
-        );
-    }
-
-    /**
-     * Evaluates the constraint for parameter $other. Returns true if the
-     * constraint is met, false otherwise.
-     *
-     * @param mixed $other value or object to evaluate
-     */
-    protected function matches($other): bool
-    {
-        if ('' === $this->string) {
-            return true;
-        }
-
-        if ($this->ignoreCase) {
-            /*
-             * We must use the multi byte safe version so we can accurately compare non latin upper characters with
-             * their lowercase equivalents.
-             */
-            return mb_stripos($other, $this->string, 0, 'UTF-8') !== false;
-        }
-
-        /*
-         * Use the non multi byte safe functions to see if the string is contained in $other.
-         *
-         * This function is very fast and we don't care about the character position in the string.
-         *
-         * Additionally, we want this method to be binary safe so we can check if some binary data is in other binary
-         * data.
-         */
-        return strpos($other, $this->string) !== false;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

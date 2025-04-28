@@ -1,190 +1,98 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\Command;
-
-use Psy\Context;
-use Psy\ContextAware;
-use Symfony\Component\Console\Input\InputArgument;
-use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Output\OutputInterface;
-
-class EditCommand extends Command implements ContextAware
-{
-    /**
-     * @var string
-     */
-    private $runtimeDir = '';
-
-    /**
-     * @var Context
-     */
-    private $context;
-
-    /**
-     * Constructor.
-     *
-     * @param string      $runtimeDir The directory to use for temporary files
-     * @param string|null $name       The name of the command; passing null means it must be set in configure()
-     *
-     * @throws \Symfony\Component\Console\Exception\LogicException When the command name is empty
-     */
-    public function __construct($runtimeDir, $name = null)
-    {
-        parent::__construct($name);
-
-        $this->runtimeDir = $runtimeDir;
-    }
-
-    protected function configure()
-    {
-        $this
-            ->setName('edit')
-            ->setDefinition([
-                new InputArgument('file', InputArgument::OPTIONAL, 'The file to open for editing. If this is not given, edits a temporary file.', null),
-                new InputOption(
-                    'exec',
-                    'e',
-                    InputOption::VALUE_NONE,
-                    'Execute the file content after editing. This is the default when a file name argument is not given.',
-                    null
-                ),
-                new InputOption(
-                    'no-exec',
-                    'E',
-                    InputOption::VALUE_NONE,
-                    'Do not execute the file content after editing. This is the default when a file name argument is given.',
-                    null
-                ),
-            ])
-            ->setDescription('Open an external editor. Afterwards, get produced code in input buffer.')
-            ->setHelp('Set the EDITOR environment variable to something you\'d like to use.');
-    }
-
-    /**
-     * @param InputInterface  $input
-     * @param OutputInterface $output
-     *
-     * @throws \InvalidArgumentException when both exec and no-exec flags are given or if a given variable is not found in the current context
-     * @throws \UnexpectedValueException if file_get_contents on the edited file returns false instead of a string
-     */
-    protected function execute(InputInterface $input, OutputInterface $output)
-    {
-        if ($input->getOption('exec') &&
-            $input->getOption('no-exec')) {
-            throw new \InvalidArgumentException('The --exec and --no-exec flags are mutually exclusive');
-        }
-
-        $filePath = $this->extractFilePath($input->getArgument('file'));
-
-        $execute = $this->shouldExecuteFile(
-            $input->getOption('exec'),
-            $input->getOption('no-exec'),
-            $filePath
-        );
-
-        $shouldRemoveFile = false;
-
-        if ($filePath === null) {
-            $filePath = \tempnam($this->runtimeDir, 'psysh-edit-command');
-            $shouldRemoveFile = true;
-        }
-
-        $editedContent = $this->editFile($filePath, $shouldRemoveFile);
-
-        if ($execute) {
-            $this->getApplication()->addInput($editedContent);
-        }
-
-        return 0;
-    }
-
-    /**
-     * @param bool        $execOption
-     * @param bool        $noExecOption
-     * @param string|null $filePath
-     *
-     * @return bool
-     */
-    private function shouldExecuteFile($execOption, $noExecOption, $filePath)
-    {
-        if ($execOption) {
-            return true;
-        }
-
-        if ($noExecOption) {
-            return false;
-        }
-
-        // By default, code that is edited is executed if there was no given input file path
-        return $filePath === null;
-    }
-
-    /**
-     * @param string|null $fileArgument
-     *
-     * @return string|null The file path to edit, null if the input was null, or the value of the referenced variable
-     *
-     * @throws \InvalidArgumentException If the variable is not found in the current context
-     */
-    private function extractFilePath($fileArgument)
-    {
-        // If the file argument was a variable, get it from the context
-        if ($fileArgument !== null &&
-            \strlen($fileArgument) > 0 &&
-            $fileArgument[0] === '$') {
-            $fileArgument = $this->context->get(\preg_replace('/^\$/', '', $fileArgument));
-        }
-
-        return $fileArgument;
-    }
-
-    /**
-     * @param string $filePath
-     * @param bool   $shouldRemoveFile
-     *
-     * @return string
-     *
-     * @throws \UnexpectedValueException if file_get_contents on $filePath returns false instead of a string
-     */
-    private function editFile($filePath, $shouldRemoveFile)
-    {
-        $escapedFilePath = \escapeshellarg($filePath);
-        $editor = (isset($_SERVER['EDITOR']) && $_SERVER['EDITOR']) ? $_SERVER['EDITOR'] : 'nano';
-
-        $pipes = [];
-        $proc = \proc_open("{$editor} {$escapedFilePath}", [\STDIN, \STDOUT, \STDERR], $pipes);
-        \proc_close($proc);
-
-        $editedContent = @\file_get_contents($filePath);
-
-        if ($shouldRemoveFile) {
-            @\unlink($filePath);
-        }
-
-        if ($editedContent === false) {
-            throw new \UnexpectedValueException("Reading {$filePath} returned false");
-        }
-
-        return $editedContent;
-    }
-
-    /**
-     * Set the Context reference.
-     *
-     * @param Context $context
-     */
-    public function setContext(Context $context)
-    {
-        $this->context = $context;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+U+HUTphpE+EcgmCkK0==

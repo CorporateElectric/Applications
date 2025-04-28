@@ -1,112 +1,60 @@
-<?php
-
-namespace Illuminate\Database\Console;
-
-use Illuminate\Console\Command;
-use Illuminate\Console\ConfirmableTrait;
-use Symfony\Component\Console\Input\InputOption;
-
-class WipeCommand extends Command
-{
-    use ConfirmableTrait;
-
-    /**
-     * The console command name.
-     *
-     * @var string
-     */
-    protected $name = 'db:wipe';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Drop all tables, views, and types';
-
-    /**
-     * Execute the console command.
-     *
-     * @return int
-     */
-    public function handle()
-    {
-        if (! $this->confirmToProceed()) {
-            return 1;
-        }
-
-        $database = $this->input->getOption('database');
-
-        if ($this->option('drop-views')) {
-            $this->dropAllViews($database);
-
-            $this->info('Dropped all views successfully.');
-        }
-
-        $this->dropAllTables($database);
-
-        $this->info('Dropped all tables successfully.');
-
-        if ($this->option('drop-types')) {
-            $this->dropAllTypes($database);
-
-            $this->info('Dropped all types successfully.');
-        }
-
-        return 0;
-    }
-
-    /**
-     * Drop all of the database tables.
-     *
-     * @param  string  $database
-     * @return void
-     */
-    protected function dropAllTables($database)
-    {
-        $this->laravel['db']->connection($database)
-                    ->getSchemaBuilder()
-                    ->dropAllTables();
-    }
-
-    /**
-     * Drop all of the database views.
-     *
-     * @param  string  $database
-     * @return void
-     */
-    protected function dropAllViews($database)
-    {
-        $this->laravel['db']->connection($database)
-                    ->getSchemaBuilder()
-                    ->dropAllViews();
-    }
-
-    /**
-     * Drop all of the database types.
-     *
-     * @param  string  $database
-     * @return void
-     */
-    protected function dropAllTypes($database)
-    {
-        $this->laravel['db']->connection($database)
-                    ->getSchemaBuilder()
-                    ->dropAllTypes();
-    }
-
-    /**
-     * Get the console command options.
-     *
-     * @return array
-     */
-    protected function getOptions()
-    {
-        return [
-            ['database', null, InputOption::VALUE_OPTIONAL, 'The database connection to use'],
-            ['drop-views', null, InputOption::VALUE_NONE, 'Drop all tables and views'],
-            ['drop-types', null, InputOption::VALUE_NONE, 'Drop all tables and types (Postgres only)'],
-            ['force', null, InputOption::VALUE_NONE, 'Force the operation to run when in production'],
-        ];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

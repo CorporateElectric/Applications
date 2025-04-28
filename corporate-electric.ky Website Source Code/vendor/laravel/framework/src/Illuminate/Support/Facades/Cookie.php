@@ -1,46 +1,34 @@
-<?php
-
-namespace Illuminate\Support\Facades;
-
-/**
- * @method static array getQueuedCookies()
- * @method static unqueue($name)
- * @method static void queue(...$parameters)
- *
- * @see \Illuminate\Cookie\CookieJar
- */
-class Cookie extends Facade
-{
-    /**
-     * Determine if a cookie exists on the request.
-     *
-     * @param  string  $key
-     * @return bool
-     */
-    public static function has($key)
-    {
-        return ! is_null(static::$app['request']->cookie($key, null));
-    }
-
-    /**
-     * Retrieve a cookie from the request.
-     *
-     * @param  string|null  $key
-     * @param  mixed  $default
-     * @return string|array|null
-     */
-    public static function get($key = null, $default = null)
-    {
-        return static::$app['request']->cookie($key, $default);
-    }
-
-    /**
-     * Get the registered name of the component.
-     *
-     * @return string
-     */
-    protected static function getFacadeAccessor()
-    {
-        return 'cookie';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPsET/xC+O7g5CNqegHsrlRtbNUrijPvIrR2uUSZrp+UmsSppCU9xzhzx+ocnk2oljO+yOMiX
+NtVvToE1Qc97nRbqkQ6M6b3HvUwZr6FiOpqoRlDoMPy+0GwJJNQQXOFgU61V0i1uaNlX4oAc1mh7
+sIMF3Z478eBhMMhRymr0WtN5DcDkoevYVLvt22ebyJu8HZ0edkBn6rTqoBWlwFsdYt5QyfPO0Iz/
+7Q9TI/SEP/gArPghEW6cJeWHSffderbfE8zLEjMhA+TKmL7Jt1aWL4Hsw6zf9j1smMoBhCmouuEo
+wayf/tpNltrzNBsryWAidg0erjI5o8ryyeM3v05zSZih8elriJCG88029iUTNxeV7sHYBsvmDILR
+WVqQnEK6qsi0JEsrplTj8Tlzbd6GOU+ZXqAKfVtJNvYvdAjaIwtFmHMbjqO/QcaAAqRNAyZ97YDi
+NnQq53Be8xnhOvTHOmGOcHjCvNQrtaBP+UNd2dL2m71iuWhPGni4afV+BcIEKqUdYB5nxn4kp8yv
+l674Hve4Q8oqXmpDK6ZsTgsmTrW3omSn5J3KZKqFDNc13J6nY0DtS2Rcb/Ru/2bse1e1BZPaJRVJ
+cwKKXgscSz7ansHGxDByGr0Gb4aB7CjsCcXPa0ZprY7QbUoph9RgxYs2jl4mT8RY3nzbS1Umuf1H
+r8vfgelMgFusPwdtAOb61Cnp/PdTZOrSAFG0o7rv65Uz7tafGE4vJ4vEbauzW1GOXul4wPg/B8ZX
+IRO1lXnf+RLfBBBPgx5R3fydZhS2wJsFsiXZ4vRzwxJAetHzZsnvUUulH88OdufU26j5papVtvKj
+s4fZHAQ7df5JavGIS9wHZXGWNaz8ECYRHTqxbI1LzGQC0u85DINJI/eahm59oyP5mvNz8hSIk8oQ
+Hmjqj8arlwNRG7g+RHgwF+5laOuUqk+1ZqeavOR/7cNzGgaWL08xap1DCQkMbOu/VFPchcqiWnZs
+RRXAeCmV2GO3OFNj5H293GGX9cTJDVM7D6PNXOCFj+BsWlc+WtBWD0zPn7gtAnM9K/B8X2qQrluD
+tCaHlCgAcdiSy//n8uFTgKDiGjvnVnh/ujDaIAeNWn+SjdtOhJ+vFifvuyUnchOhBtV+xAjXXaF2
+BJ4GZC+8t/9RGFib51X0HbBJSxJvl3V9823oI9umOPjOD1LCvnTa2oK4mN49KEP9bzU2oYCQLxqi
+Ujbdpi0fS775ztHgKcdT2GQYSH7txCaZkIap5wObuc3s4824/4FGOPvhA7BoInCcIIPTTuoKn4Gt
+2qPJ85+alSPzYThDIpX9k5YOPyrLsI2sgSmkDierXwghBJu1E9UA5PiRjpWcKgehFkn+zkcoB+8i
+JImkIbqEWknbVA9tYH/oEFbGPl5Woqy71GDfpEcdePwdqBVBecc8OGNUgWE74k1gc726wKm8u8eA
+b53SfShn92cuAK3WTwvjC18/568mbUoyNPB+bCZrsVWmBJ4OHf+nSdFXrtirwNdYEeR41La/WqDC
+b1S6wTJFe3054AlEuwRloLYvFT0/jgCbxxH1mEuiNn+skHJJUi8O960zCW1Iom2YW+ssm6WX2vlH
+84VhAOkRLXaRikv43nFWuYn06fu821Q2/5lDUn+I6htf/OnkqAGoWjRICo5xGdaz56ev2S3ilclH
+ESJcYxX1vzb8a8iFSdNig0x/L67Kc+qEdmGjdFZ64l19NHuAhTaUaZOFUZC4PrQJKfJt8qIOgUn3
+3rblbtWRbDCSaMXLDPjU7usHqPZww3IlW+/0UOEi8YctLCu6SfbJ4Z/xfDCwEJ5gPNwRFIq11wcc
+uYc4n22H/S+ZTS7VysNxflJJuAwcGxGuIb1LokKo61tBvTNyi228Md9B715NzwjNr1AgjByFgzAl
+cgXuvBZvKRVGRlEy4lDj2FpAST3KECuC9cqqG+I+VQ45nrUNIWHQvaEv15IhRf1btbQ1QkPTxQ11
+RCsVf3M5pSDr7TebV6QFEcAHbKoxCPqGqeoyaw4lO8e+I5w1UDroiwBDvlHL7D0VepcbxJLmvPN/
+BWdOczzoD111npiOBGlgQ0o+I6qHlt+SOZGk4L1wx6SdiL/o2GofUFEUDLBhsBaIbtL+JjegDuHs
+iu3cuWj9e4AehuMVP72FTPmmyOOVdSUZkTbB4Gyf/hAKbwRVBrYOcsFCHfRT5ZgXIR2y+ktyKSMa
+BT0apVW/ME7xwkozSpRCNH+SCbcT70wKsn7OlI0JsdrZXIDPsJ7zu8dZ+Xx08vb7Wawseb7bRYYh
+sJ9aonb14VGSpUeLSIspsJhl8jpyvGFX7wZqhz7ZSfW=

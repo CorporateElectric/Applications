@@ -1,189 +1,76 @@
-<?php
-/*
- * This file is part of the DebugBar package.
- *
- * (c) 2013 Maxime Bouroumeau-Fuseau
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace DebugBar\DataCollector;
-
-use ArrayAccess;
-use DebugBar\DebugBarException;
-
-/**
- * Aggregates data from multiple collectors
- *
- * <code>
- * $aggcollector = new AggregateCollector('foobar');
- * $aggcollector->addCollector(new MessagesCollector('msg1'));
- * $aggcollector->addCollector(new MessagesCollector('msg2'));
- * $aggcollector['msg1']->addMessage('hello world');
- * </code>
- */
-class AggregatedCollector implements DataCollectorInterface, ArrayAccess
-{
-    protected $name;
-
-    protected $mergeProperty;
-
-    protected $sort;
-
-    protected $collectors = array();
-
-    /**
-     * @param string $name
-     * @param string $mergeProperty
-     * @param boolean $sort
-     */
-    public function __construct($name, $mergeProperty = null, $sort = false)
-    {
-        $this->name = $name;
-        $this->mergeProperty = $mergeProperty;
-        $this->sort = $sort;
-    }
-
-    /**
-     * @param DataCollectorInterface $collector
-     */
-    public function addCollector(DataCollectorInterface $collector)
-    {
-        $this->collectors[$collector->getName()] = $collector;
-    }
-
-    /**
-     * @return array
-     */
-    public function getCollectors()
-    {
-        return $this->collectors;
-    }
-
-    /**
-     * Merge data from one of the key/value pair of the collected data
-     *
-     * @param string $property
-     */
-    public function setMergeProperty($property)
-    {
-        $this->mergeProperty = $property;
-    }
-
-    /**
-     * @return string
-     */
-    public function getMergeProperty()
-    {
-        return $this->mergeProperty;
-    }
-
-    /**
-     * Sorts the collected data
-     *
-     * If true, sorts using sort()
-     * If it is a string, sorts the data using the value from a key/value pair of the array
-     *
-     * @param bool|string $sort
-     */
-    public function setSort($sort)
-    {
-        $this->sort = $sort;
-    }
-
-    /**
-     * @return bool|string
-     */
-    public function getSort()
-    {
-        return $this->sort;
-    }
-
-    /**
-     * @return array
-     */
-    public function collect()
-    {
-        $aggregate = array();
-        foreach ($this->collectors as $collector) {
-            $data = $collector->collect();
-            if ($this->mergeProperty !== null) {
-                $data = $data[$this->mergeProperty];
-            }
-            $aggregate = array_merge($aggregate, $data);
-        }
-
-        return $this->sort($aggregate);
-    }
-
-    /**
-     * Sorts the collected data
-     *
-     * @param array $data
-     * @return array
-     */
-    protected function sort($data)
-    {
-        if (is_string($this->sort)) {
-            $p = $this->sort;
-            usort($data, function ($a, $b) use ($p) {
-                if ($a[$p] == $b[$p]) {
-                    return 0;
-                }
-                return $a[$p] < $b[$p] ? -1 : 1;
-            });
-        } elseif ($this->sort === true) {
-            sort($data);
-        }
-        return $data;
-    }
-
-    /**
-     * @return string
-     */
-    public function getName()
-    {
-        return $this->name;
-    }
-
-    // --------------------------------------------
-    // ArrayAccess implementation
-
-    /**
-     * @param mixed $key
-     * @param mixed $value
-     * @throws DebugBarException
-     */
-    public function offsetSet($key, $value)
-    {
-        throw new DebugBarException("AggregatedCollector[] is read-only");
-    }
-
-    /**
-     * @param mixed $key
-     * @return mixed
-     */
-    public function offsetGet($key)
-    {
-        return $this->collectors[$key];
-    }
-
-    /**
-     * @param mixed $key
-     * @return bool
-     */
-    public function offsetExists($key)
-    {
-        return isset($this->collectors[$key]);
-    }
-
-    /**
-     * @param mixed $key
-     * @throws DebugBarException
-     */
-    public function offsetUnset($key)
-    {
-        throw new DebugBarException("AggregatedCollector[] is read-only");
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+UMEMdwFbUL5j1OMWjYYSDxi=

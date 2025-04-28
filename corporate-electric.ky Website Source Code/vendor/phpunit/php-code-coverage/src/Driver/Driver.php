@@ -1,167 +1,53 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of phpunit/php-code-coverage.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\CodeCoverage\Driver;
-
-use function sprintf;
-use SebastianBergmann\CodeCoverage\BranchAndPathCoverageNotSupportedException;
-use SebastianBergmann\CodeCoverage\DeadCodeDetectionNotSupportedException;
-use SebastianBergmann\CodeCoverage\Filter;
-use SebastianBergmann\CodeCoverage\NoCodeCoverageDriverAvailableException;
-use SebastianBergmann\CodeCoverage\NoCodeCoverageDriverWithPathCoverageSupportAvailableException;
-use SebastianBergmann\CodeCoverage\RawCodeCoverageData;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for phpunit/php-code-coverage
- */
-abstract class Driver
-{
-    /**
-     * @var int
-     *
-     * @see http://xdebug.org/docs/code_coverage
-     */
-    public const LINE_NOT_EXECUTABLE = -2;
-
-    /**
-     * @var int
-     *
-     * @see http://xdebug.org/docs/code_coverage
-     */
-    public const LINE_NOT_EXECUTED = -1;
-
-    /**
-     * @var int
-     *
-     * @see http://xdebug.org/docs/code_coverage
-     */
-    public const LINE_EXECUTED = 1;
-
-    /**
-     * @var int
-     *
-     * @see http://xdebug.org/docs/code_coverage
-     */
-    public const BRANCH_NOT_HIT = 0;
-
-    /**
-     * @var int
-     *
-     * @see http://xdebug.org/docs/code_coverage
-     */
-    public const BRANCH_HIT = 1;
-
-    /**
-     * @var bool
-     */
-    private $collectBranchAndPathCoverage = false;
-
-    /**
-     * @var bool
-     */
-    private $detectDeadCode = false;
-
-    /**
-     * @throws NoCodeCoverageDriverAvailableException
-     * @throws PcovNotAvailableException
-     * @throws PhpdbgNotAvailableException
-     * @throws XdebugNotAvailableException
-     * @throws Xdebug2NotEnabledException
-     * @throws Xdebug3NotEnabledException
-     *
-     * @deprecated Use DriverSelector::forLineCoverage() instead
-     */
-    public static function forLineCoverage(Filter $filter): self
-    {
-        return (new Selector)->forLineCoverage($filter);
-    }
-
-    /**
-     * @throws NoCodeCoverageDriverWithPathCoverageSupportAvailableException
-     * @throws XdebugNotAvailableException
-     * @throws Xdebug2NotEnabledException
-     * @throws Xdebug3NotEnabledException
-     *
-     * @deprecated Use DriverSelector::forLineAndPathCoverage() instead
-     */
-    public static function forLineAndPathCoverage(Filter $filter): self
-    {
-        return (new Selector)->forLineAndPathCoverage($filter);
-    }
-
-    public function canCollectBranchAndPathCoverage(): bool
-    {
-        return false;
-    }
-
-    public function collectsBranchAndPathCoverage(): bool
-    {
-        return $this->collectBranchAndPathCoverage;
-    }
-
-    /**
-     * @throws BranchAndPathCoverageNotSupportedException
-     */
-    public function enableBranchAndPathCoverage(): void
-    {
-        if (!$this->canCollectBranchAndPathCoverage()) {
-            throw new BranchAndPathCoverageNotSupportedException(
-                sprintf(
-                    '%s does not support branch and path coverage',
-                    $this->nameAndVersion()
-                )
-            );
-        }
-
-        $this->collectBranchAndPathCoverage = true;
-    }
-
-    public function disableBranchAndPathCoverage(): void
-    {
-        $this->collectBranchAndPathCoverage = false;
-    }
-
-    public function canDetectDeadCode(): bool
-    {
-        return false;
-    }
-
-    public function detectsDeadCode(): bool
-    {
-        return $this->detectDeadCode;
-    }
-
-    /**
-     * @throws DeadCodeDetectionNotSupportedException
-     */
-    public function enableDeadCodeDetection(): void
-    {
-        if (!$this->canDetectDeadCode()) {
-            throw new DeadCodeDetectionNotSupportedException(
-                sprintf(
-                    '%s does not support dead code detection',
-                    $this->nameAndVersion()
-                )
-            );
-        }
-
-        $this->detectDeadCode = true;
-    }
-
-    public function disableDeadCodeDetection(): void
-    {
-        $this->detectDeadCode = false;
-    }
-
-    abstract public function nameAndVersion(): string;
-
-    abstract public function start(): void;
-
-    abstract public function stop(): RawCodeCoverageData;
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,249 +1,83 @@
-<?php
-
-namespace Illuminate\Bus;
-
-use Closure;
-use Illuminate\Queue\CallQueuedClosure;
-use Illuminate\Queue\SerializableClosure;
-use Illuminate\Support\Arr;
-use RuntimeException;
-
-trait Queueable
-{
-    /**
-     * The name of the connection the job should be sent to.
-     *
-     * @var string|null
-     */
-    public $connection;
-
-    /**
-     * The name of the queue the job should be sent to.
-     *
-     * @var string|null
-     */
-    public $queue;
-
-    /**
-     * The name of the connection the chain should be sent to.
-     *
-     * @var string|null
-     */
-    public $chainConnection;
-
-    /**
-     * The name of the queue the chain should be sent to.
-     *
-     * @var string|null
-     */
-    public $chainQueue;
-
-    /**
-     * The callbacks to be executed on chain failure.
-     *
-     * @var array|null
-     */
-    public $chainCatchCallbacks;
-
-    /**
-     * The number of seconds before the job should be made available.
-     *
-     * @var \DateTimeInterface|\DateInterval|int|null
-     */
-    public $delay;
-
-    /**
-     * Indicates whether the job should be dispatched after all database transactions have committed.
-     *
-     * @var bool|null
-     */
-    public $afterCommit;
-
-    /**
-     * The middleware the job should be dispatched through.
-     *
-     * @var array
-     */
-    public $middleware = [];
-
-    /**
-     * The jobs that should run if this job is successful.
-     *
-     * @var array
-     */
-    public $chained = [];
-
-    /**
-     * Set the desired connection for the job.
-     *
-     * @param  string|null  $connection
-     * @return $this
-     */
-    public function onConnection($connection)
-    {
-        $this->connection = $connection;
-
-        return $this;
-    }
-
-    /**
-     * Set the desired queue for the job.
-     *
-     * @param  string|null  $queue
-     * @return $this
-     */
-    public function onQueue($queue)
-    {
-        $this->queue = $queue;
-
-        return $this;
-    }
-
-    /**
-     * Set the desired connection for the chain.
-     *
-     * @param  string|null  $connection
-     * @return $this
-     */
-    public function allOnConnection($connection)
-    {
-        $this->chainConnection = $connection;
-        $this->connection = $connection;
-
-        return $this;
-    }
-
-    /**
-     * Set the desired queue for the chain.
-     *
-     * @param  string|null  $queue
-     * @return $this
-     */
-    public function allOnQueue($queue)
-    {
-        $this->chainQueue = $queue;
-        $this->queue = $queue;
-
-        return $this;
-    }
-
-    /**
-     * Set the desired delay for the job.
-     *
-     * @param  \DateTimeInterface|\DateInterval|int|null  $delay
-     * @return $this
-     */
-    public function delay($delay)
-    {
-        $this->delay = $delay;
-
-        return $this;
-    }
-
-    /**
-     * Indicate that the job should be dispatched after all database transactions have committed.
-     *
-     * @return $this
-     */
-    public function afterCommit()
-    {
-        $this->afterCommit = true;
-
-        return $this;
-    }
-
-    /**
-     * Indicate that the job should not wait until database transactions have been committed before dispatching.
-     *
-     * @return $this
-     */
-    public function beforeCommit()
-    {
-        $this->afterCommit = false;
-
-        return $this;
-    }
-
-    /**
-     * Specify the middleware the job should be dispatched through.
-     *
-     * @param  array|object  $middleware
-     * @return $this
-     */
-    public function through($middleware)
-    {
-        $this->middleware = Arr::wrap($middleware);
-
-        return $this;
-    }
-
-    /**
-     * Set the jobs that should run if this job is successful.
-     *
-     * @param  array  $chain
-     * @return $this
-     */
-    public function chain($chain)
-    {
-        $this->chained = collect($chain)->map(function ($job) {
-            return $this->serializeJob($job);
-        })->all();
-
-        return $this;
-    }
-
-    /**
-     * Serialize a job for queuing.
-     *
-     * @param  mixed  $job
-     * @return string
-     */
-    protected function serializeJob($job)
-    {
-        if ($job instanceof Closure) {
-            if (! class_exists(CallQueuedClosure::class)) {
-                throw new RuntimeException(
-                    'To enable support for closure jobs, please install the illuminate/queue package.'
-                );
-            }
-
-            $job = CallQueuedClosure::create($job);
-        }
-
-        return serialize($job);
-    }
-
-    /**
-     * Dispatch the next job on the chain.
-     *
-     * @return void
-     */
-    public function dispatchNextJobInChain()
-    {
-        if (! empty($this->chained)) {
-            dispatch(tap(unserialize(array_shift($this->chained)), function ($next) {
-                $next->chained = $this->chained;
-
-                $next->onConnection($next->connection ?: $this->chainConnection);
-                $next->onQueue($next->queue ?: $this->chainQueue);
-
-                $next->chainConnection = $this->chainConnection;
-                $next->chainQueue = $this->chainQueue;
-                $next->chainCatchCallbacks = $this->chainCatchCallbacks;
-            }));
-        }
-    }
-
-    /**
-     * Invoke all of the chain's failed job callbacks.
-     *
-     * @param  \Throwable  $e
-     * @return void
-     */
-    public function invokeChainCatchCallbacks($e)
-    {
-        collect($this->chainCatchCallbacks)->each(function ($callback) use ($e) {
-            $callback instanceof SerializableClosure ? $callback->__invoke($e) : call_user_func($callback, $e);
-        });
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

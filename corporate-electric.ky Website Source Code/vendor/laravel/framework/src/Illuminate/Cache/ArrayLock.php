@@ -1,102 +1,55 @@
-<?php
-
-namespace Illuminate\Cache;
-
-use Illuminate\Support\Carbon;
-
-class ArrayLock extends Lock
-{
-    /**
-     * The parent array cache store.
-     *
-     * @var \Illuminate\Cache\ArrayStore
-     */
-    protected $store;
-
-    /**
-     * Create a new lock instance.
-     *
-     * @param  \Illuminate\Cache\ArrayStore  $store
-     * @param  string  $name
-     * @param  int  $seconds
-     * @param  string|null  $owner
-     * @return void
-     */
-    public function __construct($store, $name, $seconds, $owner = null)
-    {
-        parent::__construct($name, $seconds, $owner);
-
-        $this->store = $store;
-    }
-
-    /**
-     * Attempt to acquire the lock.
-     *
-     * @return bool
-     */
-    public function acquire()
-    {
-        $expiration = $this->store->locks[$this->name]['expiresAt'] ?? Carbon::now()->addSecond();
-
-        if ($this->exists() && $expiration->isFuture()) {
-            return false;
-        }
-
-        $this->store->locks[$this->name] = [
-            'owner' => $this->owner,
-            'expiresAt' => $this->seconds === 0 ? null : Carbon::now()->addSeconds($this->seconds),
-        ];
-
-        return true;
-    }
-
-    /**
-     * Determine if the current lock exists.
-     *
-     * @return bool
-     */
-    protected function exists()
-    {
-        return isset($this->store->locks[$this->name]);
-    }
-
-    /**
-     * Release the lock.
-     *
-     * @return bool
-     */
-    public function release()
-    {
-        if (! $this->exists()) {
-            return false;
-        }
-
-        if (! $this->isOwnedByCurrentProcess()) {
-            return false;
-        }
-
-        $this->forceRelease();
-
-        return true;
-    }
-
-    /**
-     * Returns the owner value written into the driver for this lock.
-     *
-     * @return string
-     */
-    protected function getCurrentOwner()
-    {
-        return $this->store->locks[$this->name]['owner'];
-    }
-
-    /**
-     * Releases this lock in disregard of ownership.
-     *
-     * @return void
-     */
-    public function forceRelease()
-    {
-        unset($this->store->locks[$this->name]);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+uP89PtqhLvkKZw8ngfWvPOq=

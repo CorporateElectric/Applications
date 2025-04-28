@@ -1,93 +1,59 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of phpunit/php-code-coverage.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\CodeCoverage\Driver;
-
-use const PHP_SAPI;
-use const PHP_VERSION;
-use function array_diff;
-use function array_keys;
-use function array_merge;
-use function get_included_files;
-use function phpdbg_end_oplog;
-use function phpdbg_get_executable;
-use function phpdbg_start_oplog;
-use SebastianBergmann\CodeCoverage\RawCodeCoverageData;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for phpunit/php-code-coverage
- */
-final class PhpdbgDriver extends Driver
-{
-    /**
-     * @throws PhpdbgNotAvailableException
-     */
-    public function __construct()
-    {
-        if (PHP_SAPI !== 'phpdbg') {
-            throw new PhpdbgNotAvailableException;
-        }
-    }
-
-    public function start(): void
-    {
-        phpdbg_start_oplog();
-    }
-
-    public function stop(): RawCodeCoverageData
-    {
-        static $fetchedLines = [];
-
-        $dbgData = phpdbg_end_oplog();
-
-        if ($fetchedLines === []) {
-            $sourceLines = phpdbg_get_executable();
-        } else {
-            $newFiles = array_diff(get_included_files(), array_keys($fetchedLines));
-
-            $sourceLines = [];
-
-            if ($newFiles) {
-                $sourceLines = phpdbg_get_executable(['files' => $newFiles]);
-            }
-        }
-
-        foreach ($sourceLines as $file => $lines) {
-            foreach ($lines as $lineNo => $numExecuted) {
-                $sourceLines[$file][$lineNo] = self::LINE_NOT_EXECUTED;
-            }
-        }
-
-        $fetchedLines = array_merge($fetchedLines, $sourceLines);
-
-        return RawCodeCoverageData::fromXdebugWithoutPathCoverage(
-            $this->detectExecutedLines($fetchedLines, $dbgData)
-        );
-    }
-
-    public function nameAndVersion(): string
-    {
-        return 'PHPDBG ' . PHP_VERSION;
-    }
-
-    private function detectExecutedLines(array $sourceLines, array $dbgData): array
-    {
-        foreach ($dbgData as $file => $coveredLines) {
-            foreach ($coveredLines as $lineNo => $numExecuted) {
-                // phpdbg also reports $lineNo=0 when e.g. exceptions get thrown.
-                // make sure we only mark lines executed which are actually executable.
-                if (isset($sourceLines[$file][$lineNo])) {
-                    $sourceLines[$file][$lineNo] = self::LINE_EXECUTED;
-                }
-            }
-        }
-
-        return $sourceLines;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+fdct

@@ -1,153 +1,65 @@
-<?php
-
-namespace Illuminate\Http\Client;
-
-use OutOfBoundsException;
-
-class ResponseSequence
-{
-    /**
-     * The responses in the sequence.
-     *
-     * @var array
-     */
-    protected $responses;
-
-    /**
-     * Indicates that invoking this sequence when it is empty should throw an exception.
-     *
-     * @var bool
-     */
-    protected $failWhenEmpty = true;
-
-    /**
-     * The response that should be returned when the sequence is empty.
-     *
-     * @var \GuzzleHttp\Promise\PromiseInterface
-     */
-    protected $emptyResponse;
-
-    /**
-     * Create a new response sequence.
-     *
-     * @param  array  $responses
-     * @return void
-     */
-    public function __construct(array $responses)
-    {
-        $this->responses = $responses;
-    }
-
-    /**
-     * Push a response to the sequence.
-     *
-     * @param  string|array  $body
-     * @param  int  $status
-     * @param  array  $headers
-     * @return $this
-     */
-    public function push($body = '', int $status = 200, array $headers = [])
-    {
-        $body = is_array($body) ? json_encode($body) : $body;
-
-        return $this->pushResponse(
-            Factory::response($body, $status, $headers)
-        );
-    }
-
-    /**
-     * Push a response with the given status code to the sequence.
-     *
-     * @param  int  $status
-     * @param  array  $headers
-     * @return $this
-     */
-    public function pushStatus(int $status, array $headers = [])
-    {
-        return $this->pushResponse(
-            Factory::response('', $status, $headers)
-        );
-    }
-
-    /**
-     * Push response with the contents of a file as the body to the sequence.
-     *
-     * @param  string  $filePath
-     * @param  int  $status
-     * @param  array  $headers
-     * @return $this
-     */
-    public function pushFile(string $filePath, int $status = 200, array $headers = [])
-    {
-        $string = file_get_contents($filePath);
-
-        return $this->pushResponse(
-            Factory::response($string, $status, $headers)
-        );
-    }
-
-    /**
-     * Push a response to the sequence.
-     *
-     * @param  mixed  $response
-     * @return $this
-     */
-    public function pushResponse($response)
-    {
-        $this->responses[] = $response;
-
-        return $this;
-    }
-
-    /**
-     * Make the sequence return a default response when it is empty.
-     *
-     * @param  \GuzzleHttp\Promise\PromiseInterface|\Closure  $response
-     * @return $this
-     */
-    public function whenEmpty($response)
-    {
-        $this->failWhenEmpty = false;
-        $this->emptyResponse = $response;
-
-        return $this;
-    }
-
-    /**
-     * Make the sequence return a default response when it is empty.
-     *
-     * @return $this
-     */
-    public function dontFailWhenEmpty()
-    {
-        return $this->whenEmpty(Factory::response());
-    }
-
-    /**
-     * Indicate that this sequence has depleted all of its responses.
-     *
-     * @return bool
-     */
-    public function isEmpty()
-    {
-        return count($this->responses) === 0;
-    }
-
-    /**
-     * Get the next response in the sequence.
-     *
-     * @return mixed
-     */
-    public function __invoke()
-    {
-        if ($this->failWhenEmpty && count($this->responses) === 0) {
-            throw new OutOfBoundsException('A request was made, but the response sequence is empty.');
-        }
-
-        if (! $this->failWhenEmpty && count($this->responses) === 0) {
-            return value($this->emptyResponse ?? Factory::response());
-        }
-
-        return array_shift($this->responses);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPqYnovDx4J2a0drUi5+rBKA3wx7Vx5Nz6xgujSusETUOockYZ839firEPqCj5k/SaSV7fXSA
+ImVPGxhY3CFAZ6ifvS+Se8RKyP7zM9mEuu0ZYQf065ZPyN2sFWKlG370HfkjAluZXt9FJWifoQK8
+nSYd6TuNeeDRhn13EiKZGN9VkW5/DsWgG71iSv28/TFFOfHp+6fVv+Onytt6t4DrvLoxwzbCvqYS
+K1f8cZhZC53b0Z282Ta6cd7hSSksaDUg2VxyEjMhA+TKmL7Jt1aWL4Hsw3Ph+3QFNMpwbIc2Oiio
+gHyj/qBV7hYwngdHKoMXNvLkMpSeN0bq28j5EmCpzC4O0wyEUbWTptDw4c/Gl4wkAb+u5SwWeyzg
+SKkMTSvlKZXhpAqHo5ilx5PVa+l5SY+qOvIcbpA1LAv08R75TRho9Cc9ndmnGA8zDPnXA1Nw7+pa
+dXo6QMthySaHOE6/O2huB/Qqt8KUL501fSffuELgSPW287mfhgMInAJshy46o5jaZXvUr5L3CeU3
+sdPjZAuLewttBi5vam67Om3gX2zmozNdA+BPL49TggKvFo5/UdPl7S1cFffPHVUwRd4WUROsYmEI
+CUmmpgx8auXJIllUDpUF+DK2vlWP8/iLSASsZsLUsdGQm7JavgD02KxHUS3ba2ZE0YC1nTlZzga9
+YXkKZ40spwhY03K2IcXHPBU0CcAao3gRVIQmaU3KZEasKIbWzmb0+UkdQgZ+Gz3SbZBi4sj1cPWc
+sySTWCuthTZqobPRp3yVfcGLg2gcwGECku4/crUmbcnv2clUcBXTPCIbT1R1XyXhZLinG58uXdVT
+3futXVAYJTUgE4hk+wAk/0m4ctn9xPQir8ghYfEGXK09NqEGR44FxvRmi7vlrGPZjkxqpq8739La
+959/dIHYm5h+RSXpgAspdQugtmTSkcCvX91gDYgW8J5GgOqU1ASSBL6jx/JDbDdEFX4jcoAQjMMy
+xVioFqvsOa5d3MsT87NMyX4YX1e2Nk/R42WHEDIIJVOQXcqh8n3TAVi+3im3Yq6Y1RmZhlFS4Z3P
+zkoFwCzubLsSxz1L/+ywwrWxHQ1ru35OMYjnRZve6Xpl3acOy5TVlkfRrLBkzwpmjGfC+rLSq/QI
+9NMNsuu0ZK5tJjCts6gt+Z+tyk1Wl+fwZ7tn60tvV1YrR+ZsuAuUUy4bA1m0MdjC692OlwoD8Zxd
+lsonqwohkU/S/QNo4HH8sg+R5Cekz/E+gXYZy76d0PU8CKBPc4tVZyPIHmnH9N5x+fxNZUlU3ogg
+G5E50qstGClrNwuKSsoEhOJMqPXM9uwB9r7T5qEQvTTn25ZvrMWDT2VYCwqvIMxeDVhcYLhgM4vF
++yY75ywKcRRYd50s6cSOZW5jtPncjjPX283Gs+EDnuQbNmlQqj8nAVxUwnWZkR/6sPEdjTce0OYb
+LDf6egkPgNErjpdFzqB0XTTF53rKXtQDIXaUCFBDQFsBhmRTPWznPigGDyyPY68fuujO1X5ysoYA
+k3XbmShfuoUhAKQCjh7rWYEh1hbJLcJGr/UFgbHLHv2dcIt73MNlvQyQHttaM/zKoD5QWP0VOnmP
+rjLy4DndEm+9o62rw56sUNEu+YRtqQ8w+mjAIiASdZM1vzXAVa5geyVrPpfoeEH4uB69XeN+5EIT
+H0o0DkRnTEu5BP2/5u6eME0ij7gj+dQQRtTQON+M3latiQV7MELba2SAefcK4R7pOzgg0zbpy9ls
+WPl7BGsCFXJRsObyOxkQJZ8BbYKzUaZ7oqZHeURlUogUASEHd/CFoAmgX6WM1xfJivnxSKyrgKog
+J5yYd2IYA8Ic6KhAIBhch8eaoJqQJmIRNM0+bgkrpLOu6gQ7/79x0O1DySEUg3G5sVUhijCQ43xv
+IhtkZv5pf+bZ/g2zuuu+8QdK/vr266MQWcjHRL76ddFNMO6aqlsroA9E4eHfY+bPEDvVqf6OjBMg
+l5Uwh1+1Fg2wqpDAr9oz6UaW1KtFdHEZdmPldS4R/2Gm+BoS0JV5FvdOrIOd3LlN5SAJ1/yNixLu
+izxyEq/9OUqNcyiVvdPKRgbbbPs9FH/NSOepfs87HLG4pN1ucuUESZaPcYGQJcQEhVVW4DV4nPeK
+B/4+5SCW68N4uWPmmv3G4CBa5FfoMIlkaY65d5vwbU0zQIopHfdxahKFFJICDof6AOARUFCki8/f
+1dW6iPQzoClMzRHflXGoRgaNt1wTQshKZtOFGReDIKrYVtFN2gALg9Xpbnv8HTcMm3v2oyU3Bmyi
+ydi5RUNxyjxBn+hGXxdd8xo87q76DoGeDix+kNJ+XF5zomLxfOPsR5w8trVRubLPuP4PJI+zk58C
+Lru6sToaRFiogbQ9fiPTbjIttKlf3QuXUrnbGminZyGFjDhwVUG65S10+JCDlv7qsUE04d7n+GbF
+ELbPOWUJZWA8u87ZPy/FTXAypu7z/IHKixR6mAcWZul5t/5ZgAKlFiuH9W0wzDvXYaMz8pr1Gk2h
+iP85+pwyeVfsvxv1er2qwhDW0GYZZAisrRVsJg71fVUkUu6EIOCWmv8BLuwmZFDoZRq92XhdmQoa
+czFC8f/gazMHLfvx33SY4o5Ys8puhc8zclxFIWhBtYuMKWfkiiShUun42+y0PYA3lc2HrtRY4NIt
+coYvsT+5ukoRhP+zRwgWi0wxNcpT2El+DIDcp1YDtUbDdt/f87A19PMWvDrdl5luovXbiQNNMI6A
+w2LNEh8qsGYxedcaKvMbUpdTOmcGxkJcNrU7Jj28uMLrux4Gk5VFeO6G/dBrg/42wylOHEi77sGi
+YglCYvYzfFLl9w4pwNj3tT98QwTwKJ4v7fzERxtTIkKj6hpWPb8wvMEEtcoGk2FT30vmYIzAH0Gu
+MkM0goKhdWvXEPfop49uJlUTC4qKWr0oWVqi28cPvXs+31ISZ0qG21pae7jVtdEcaCm/OfdaHyol
+vxdm4ZiqjofrA1lQBq6HxpOdglQn4lRuR/SO+fkYPsa4+PgJCIgeVzNOV6Kr+ZRCfLocFq12K7oo
+xPhccfxGwE8JP11s7d7VH4wMmbIxeQYI5ml21mEORHBoaZfE5ly+x8tWzsG75BhXTa8UkzP5nrju
+7Xan8lQX03AM47kTp55CAiWY+up1+vz/ktsClOciO4OQ1zOmMYuSteUxmWmk32jB58ikW/i41eC6
+IYiuQ+MwvIlt73MyHLITgP1MeHEXREZzwV7BcN4A0PwcuK9ejbSbN9NjGQQAGxH5egZkdqSjngQp
+GvqZsXhXwH4KgaKihUQ0U5wuoZsPPlJibMc8eNAd1l5+Lmid3TnNh35U9/ifdLyvvHXHFhc40F2f
+RU8MInPRqjIavsx39thlaqiogdDKIU9KVcZuUCi5/A7hQ5iiRnbiKtsZ1trR3GHDYShhgoH6+NZd
+V8JelB7yEprM/sC5M1WXxgskFZIlBdDGoKrd36OzjqKLNWyxAXexsw1UHHf6BYswl+7V8dInXNeT
+3IbU5Lltu20KNc4kd0zTWAKKgXAr/Td3SHUK3dZCXxL6GFUqnxvziVX3bEVQbOV1MNpplVnXSP7T
+eOKgagq7JtO+aM/JjFsxocOYTgh+8qKM83KHnzbx7yfWXhob4TRrpRuGbu+odCtjt7hc8/5e+WYs
+k0usw+oZNY/86TPEN5JU359o7G+sFQp4AxDv5IPpChWAqnAus2cARUWMqUzwtpsAqkCKrgD4ed2c
+YHiwU2qbEmNTxbgIQT85chqa6sfhTQ6unxuOa6hU5Wgv4ruL7XJ/kHB9OCl3a88QWF25I+32C/ZQ
+zLnsf2/8e7B7p5sPviX/j0nGunRRSTC0DbTnSYMPhQEtoJLgGRIie+TjtZMxekhPHXAG3CJDLt3y
+sjFTsM4X4F6u6ZHaJVDjeUsuX1stKV7C8ghnEd7gUSqpLvMqyncF/q+IpB66qw+qraXO5UDw+nhK
+/C4QRuvUceXZVOh3yIhhMpTecor714PITWYDPIq6Lj/xkaPDARI9sIo7xg2ClI4Ea60oKPcAaGya
+pFd6zJeiYhk8zgW7SPFSsusQQVqFgtO0rdTQbckmxloULqWRBzQ1nWx0MR5SsPM2O8ERr8O7sCPW
+A4NKXSUxqrFj0/+pjxoE9A1I6a2xqv8Ugie2ZecdFGWenqkX/RQzs5ZhQL4TrWDD/p5kBcNG5Erb
+pol/R7mNGIyRFcWvQbZaMuGGlxOHxFYvCp+YXGzZwLdvmnLC1IXrSuZs9NWMHGM+NAeZ900PqzOB
+cQbNMnG5nCSFOtsotiesldFZbxYyfD1VP571l3UkRrbwCDXarqv8o5Feu2DQJreYJQQSqycsKW3P
+7sahL72Vp5r+86fw9OLbjDXey5DhgyLGaccelPk/EUc6HpeG+SQFKbjB3ig1WA0RDbMvluzOea01
+dmOQwd9jXCNDC1fG9rAa9aKLD6iPLs2PEikJzx4EwLR9WncaZWSnYnxuO2x8OhkyId3+AKtk34Hn
+WQp0ROdTUfwvQISZNuJ0eiNhktYjIspE/NXIrHbhGKyL3gsQmzBxbw1Wl/SziNXbthrkUXLqnuhF
+HvGAKWzNcqxqOoIidw21JStO7q+vogRPsvcYvzxk4vePsEF6yZ6pdK6QMjnEvBp6Ic4JF+DZQs33
+kOCCMU05vKEyBsQ8aG==

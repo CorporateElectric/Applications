@@ -1,70 +1,33 @@
-<?php
-
-/*
- * This file is part of SwiftMailer.
- * (c) 2004-2009 Chris Corbyn
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-/**
- * Interface for the EventDispatcher which handles the event dispatching layer.
- *
- * @author Chris Corbyn
- */
-interface Swift_Events_EventDispatcher
-{
-    /**
-     * Create a new SendEvent for $source and $message.
-     *
-     * @return Swift_Events_SendEvent
-     */
-    public function createSendEvent(Swift_Transport $source, Swift_Mime_SimpleMessage $message);
-
-    /**
-     * Create a new CommandEvent for $source and $command.
-     *
-     * @param string $command      That will be executed
-     * @param array  $successCodes That are needed
-     *
-     * @return Swift_Events_CommandEvent
-     */
-    public function createCommandEvent(Swift_Transport $source, $command, $successCodes = []);
-
-    /**
-     * Create a new ResponseEvent for $source and $response.
-     *
-     * @param string $response
-     * @param bool   $valid    If the response is valid
-     *
-     * @return Swift_Events_ResponseEvent
-     */
-    public function createResponseEvent(Swift_Transport $source, $response, $valid);
-
-    /**
-     * Create a new TransportChangeEvent for $source.
-     *
-     * @return Swift_Events_TransportChangeEvent
-     */
-    public function createTransportChangeEvent(Swift_Transport $source);
-
-    /**
-     * Create a new TransportExceptionEvent for $source.
-     *
-     * @return Swift_Events_TransportExceptionEvent
-     */
-    public function createTransportExceptionEvent(Swift_Transport $source, Swift_TransportException $ex);
-
-    /**
-     * Bind an event listener to this dispatcher.
-     */
-    public function bindEventListener(Swift_Events_EventListener $listener);
-
-    /**
-     * Dispatch the given Event to all suitable listeners.
-     *
-     * @param string $target method
-     */
-    public function dispatchEvent(Swift_Events_EventObject $evt, $target);
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

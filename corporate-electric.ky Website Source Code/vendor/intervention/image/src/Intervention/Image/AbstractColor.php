@@ -1,229 +1,108 @@
-<?php
-
-namespace Intervention\Image;
-
-use Intervention\Image\Exception\NotReadableException;
-use Intervention\Image\Exception\NotSupportedException;
-
-abstract class AbstractColor
-{
-    /**
-     * Initiates color object from integer
-     *
-     * @param  int $value
-     * @return \Intervention\Image\AbstractColor
-     */
-    abstract public function initFromInteger($value);
-
-    /**
-     * Initiates color object from given array
-     *
-     * @param  array $value
-     * @return \Intervention\Image\AbstractColor
-     */
-    abstract public function initFromArray($value);
-
-    /**
-     * Initiates color object from given string
-     *
-     * @param  string $value
-     * @return \Intervention\Image\AbstractColor
-     */
-    abstract public function initFromString($value);
-
-    /**
-     * Initiates color object from given ImagickPixel object
-     *
-     * @param  ImagickPixel $value
-     * @return \Intervention\Image\AbstractColor
-     */
-    abstract public function initFromObject($value);
-
-    /**
-     * Initiates color object from given R, G and B values
-     *
-     * @param  int $r
-     * @param  int $g
-     * @param  int $b
-     * @return \Intervention\Image\AbstractColor
-     */
-    abstract public function initFromRgb($r, $g, $b);
-
-    /**
-     * Initiates color object from given R, G, B and A values
-     *
-     * @param  int $r
-     * @param  int $g
-     * @param  int $b
-     * @param  float   $a
-     * @return \Intervention\Image\AbstractColor
-     */
-    abstract public function initFromRgba($r, $g, $b, $a);
-
-    /**
-     * Calculates integer value of current color instance
-     *
-     * @return int
-     */
-    abstract public function getInt();
-
-    /**
-     * Calculates hexadecimal value of current color instance
-     *
-     * @param  string $prefix
-     * @return string
-     */
-    abstract public function getHex($prefix);
-
-    /**
-     * Calculates RGB(A) in array format of current color instance
-     *
-     * @return array
-     */
-    abstract public function getArray();
-
-    /**
-     * Calculates RGBA in string format of current color instance
-     *
-     * @return string
-     */
-    abstract public function getRgba();
-
-    /**
-     * Determines if current color is different from given color
-     *
-     * @param  AbstractColor $color
-     * @param  int           $tolerance
-     * @return boolean
-     */
-    abstract public function differs(AbstractColor $color, $tolerance = 0);
-
-    /**
-     * Creates new instance
-     *
-     * @param mixed $value
-     */
-    public function __construct($value = null)
-    {
-        $this->parse($value);
-    }
-
-    /**
-     * Parses given value as color
-     *
-     * @param  mixed $value
-     * @return \Intervention\Image\AbstractColor
-     */
-    public function parse($value)
-    {
-        switch (true) {
-
-            case is_string($value):
-                $this->initFromString($value);
-                break;
-
-            case is_int($value):
-                $this->initFromInteger($value);
-                break;
-
-            case is_array($value):
-                $this->initFromArray($value);
-                break;
-
-            case is_object($value):
-                $this->initFromObject($value);
-                break;
-
-            case is_null($value):
-                $this->initFromArray([255, 255, 255, 0]);
-                break;
-
-            default:
-                throw new NotReadableException(
-                    "Color format ({$value}) cannot be read."
-                );
-        }
-
-        return $this;
-    }
-
-    /**
-     * Formats current color instance into given format
-     *
-     * @param  string $type
-     * @return mixed
-     */
-    public function format($type)
-    {
-        switch (strtolower($type)) {
-
-            case 'rgba':
-                return $this->getRgba();
-
-            case 'hex':
-                return $this->getHex('#');
-
-            case 'int':
-            case 'integer':
-                return $this->getInt();
-
-            case 'array':
-                return $this->getArray();
-
-            case 'obj':
-            case 'object':
-                return $this;
-
-            default:
-                throw new NotSupportedException(
-                    "Color format ({$type}) is not supported."
-                );
-        }
-    }
-
-    /**
-     * Reads RGBA values from string into array
-     *
-     * @param  string $value
-     * @return array
-     */
-    protected function rgbaFromString($value)
-    {
-        $result = false;
-
-        // parse color string in hexidecimal format like #cccccc or cccccc or ccc
-        $hexPattern = '/^#?([a-f0-9]{1,2})([a-f0-9]{1,2})([a-f0-9]{1,2})$/i';
-
-        // parse color string in format rgb(140, 140, 140)
-        $rgbPattern = '/^rgb ?\(([0-9]{1,3}), ?([0-9]{1,3}), ?([0-9]{1,3})\)$/i';
-
-        // parse color string in format rgba(255, 0, 0, 0.5)
-        $rgbaPattern = '/^rgba ?\(([0-9]{1,3}), ?([0-9]{1,3}), ?([0-9]{1,3}), ?([0-9.]{1,4})\)$/i';
-
-        if (preg_match($hexPattern, $value, $matches)) {
-            $result = [];
-            $result[0] = strlen($matches[1]) == '1' ? hexdec($matches[1].$matches[1]) : hexdec($matches[1]);
-            $result[1] = strlen($matches[2]) == '1' ? hexdec($matches[2].$matches[2]) : hexdec($matches[2]);
-            $result[2] = strlen($matches[3]) == '1' ? hexdec($matches[3].$matches[3]) : hexdec($matches[3]);
-            $result[3] = 1;
-        } elseif (preg_match($rgbPattern, $value, $matches)) {
-            $result = [];
-            $result[0] = ($matches[1] >= 0 && $matches[1] <= 255) ? intval($matches[1]) : 0;
-            $result[1] = ($matches[2] >= 0 && $matches[2] <= 255) ? intval($matches[2]) : 0;
-            $result[2] = ($matches[3] >= 0 && $matches[3] <= 255) ? intval($matches[3]) : 0;
-            $result[3] = 1;
-        } elseif (preg_match($rgbaPattern, $value, $matches)) {
-            $result = [];
-            $result[0] = ($matches[1] >= 0 && $matches[1] <= 255) ? intval($matches[1]) : 0;
-            $result[1] = ($matches[2] >= 0 && $matches[2] <= 255) ? intval($matches[2]) : 0;
-            $result[2] = ($matches[3] >= 0 && $matches[3] <= 255) ? intval($matches[3]) : 0;
-            $result[3] = ($matches[4] >= 0 && $matches[4] <= 1) ? $matches[4] : 0;
-        } else {
-            throw new NotReadableException(
-                "Unable to read color ({$value})."
-            );
-        }
-
-        return $result;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPnpoY23DRd4NY3GT0raVYgnFHLvsJ3JwKVWt0SJ9IplzQFxovICL4XACz34njjh/dNywt1dv
+5aOQ6BQg35DoWyot1++XdsBAzRR8mLwkg/4jpTKzA1iQc1KAN0ChaHXcM2nBsLrCY8C0EmsEQCrf
+q/D8CTmE8c/X0KLik5P8o2d/tBu3hKuOnGR6A9TNtwc8PPr21TAf24OD15PvXoibzoDFlcc68gt2
+NUiYd/ZAcvo/q5y9vM6HbVxSQuHbGZXcOdEIK2SwrQihvrJ1KTFS6I1KH7ReB695D9+Z0AHwyIqN
+Ex8nr6WYSqT/T9TbmiRvS54Ac4sH8m5gTTbdlPc3CmjnRp2x877jKeZ92zZMCoxxKhjj3Df9NUfF
+r8WxuGPKVAZpVfjmTlBs53Ndr41ojnRphKzgJYoUfzpgstn0j97qFo9P3Cpo7GsH5ujxe5QoolIQ
+IPEG6XIW1fFcPMX2/yR1zyRC7yXL8Pg6GfSHe1hqXVPcjJ8DsZH3JiVrXoaQCLk9JiF399yLzn3B
+E6Te1A1/IY8ndpcDmc9/iWMCka/O5gggBHdoTf7eS3OCf6ONXvd5W+g/aGywNV/ZwmBcI1EEpqta
+frN6TtLh0x1a1Q2cZnwB96aC1TBh+L1noPZHlnJ3GXUB/mW3D+iX7V+8/bJ95CdHBVCMS5D450QW
++2/bEb1HM84MBh+1YCFbzSvmspjCOB1vVkEfw4r11XkuoeWsYXGXavU+4dFjqKcSExMUZozOM9zM
+2uFR4f8D66B0453Xqeci/Sw5hufCPMhGJyP4p13MLqn0jY9zbDmgBxwlKBlw3zT2+3qErzB5n4kC
+m4yDsgoHu7R3Bnuq/103NfmC0uQt7hkagvK0Eq/OVci7JTJ94YY5XoJtkXJRuqKet/c1FNaQrKJx
+dF/UtyLlLaCjOKNN9yF3zEILsoo23PD5QxCRj/6FTgdWC5iKx+hImIP+SKyB+OG72Yy8BBZGR9VV
+YytZhzSKtmPap5mvT1hcAdv0BnTyUchko7wRJdE8S2+ch5kxD77Ay2z6jVW/0XGKrLdI3dSIsbap
+geWuKdbcrQGMzjwhcvRhO6VsXM+AxH7qfsfRX79yJK8F1N51b6dwZKMurHspbUmTcm5ftT5d7X/Y
+m6CxDZFxT0H4ewu5JpyAcHD8Qn9hKRqgDp6U3Yo9QW6D1QQubMuNr35lpUHX8nTd0ZZZlF51oycR
+1gEUtrVWsegGizOCz0LF7zX813dEpCXjxZC1qL5IvEFSoLzO9DrWI5efAP9y2k2TvoYMCM4uQq00
+ZKyI4f6E/yH3SesWY6j+7eg7qV0r2XMWJ+MAIgONswbXEMjJ9uhBYBjHr4YztIp/8zPQ9nagmQ3u
+budIsiIO1qHu/PMPVgMWxMXY7JgIckcN0GY5OzJXMSlyqAUausjWXzls/ghXQAnz/uipFRySf10L
+Tgm+rTgpa8aBYp+Y89YZuUKbP1T9ubU50m++CRrlWlpqraQanqP7xXta2K2H7/iSs2UqLcPtyC/U
+zVVFtNOBj9oHWByj0o8ekk+GXoh5Dnc0Q+1Q5Pcd8z+0I5b4FeFmjK0aIwAeQlZ7jBSAe5HWz8mY
+kNrrT14+G6gZBNQIUIXjOmcN+BKZegLyWWBtQ9QWmCG3qWWnLM/O5qN4ye288v9IBtUFsf/ljDyx
+9L+/ZPg6E6O9QgfPRdZ1hX124FzJkEOmCxUfa5qF+a+uJVubaqRKriC+qjUZGsqvf8vsgOed7Xbo
+XthRsyOwjxSXdYkeWC/zQWwJ57dQV2CIvZ+QUtim7y/n0IO+HWj1nqedVji9rVvF24nbTbleNTUs
+ws7u9e5QD6YBP5/SyEzIpd1T9ceWKQIXiSL51VeepoCVtXZKgbDXn1WG3M9BwWIr9csieONU3I0P
+ZHQb3k4ry2oz/Ou2gy6IvUKMyGff10/i0PLLg3+EX+nitZzJWEwklEms/gzjiI723FRqwTBOUMCA
+ugzqhh8V6jCxeB897LbfysC0oJEUowuSdr0FwmCcXQZwbwUgwMYkhqkpg/G53/1h/nr+JTSuOmQg
+9nhUl3/cSsSodo4VYLgg8vC300lgNfqjZ9jORZkg7WKEW/8hyJufGUphNxlQ6gl4tRgWQ+5h35yf
+6UzRAHNWkQkpgth2wBHSrvs5draF4RFIUSiCS50JLO8iLeIdbOntdjnn+BMEgyziwYUKeWKC01Xs
+jGPpiW0Ei0ZKfgWPGpj1VAIXTGu1WJD557deWXFrvfUIaaC0rBm219BQlaQftHaKYuG864vRvzKa
+Azdey6Of+ZQPWXAU7JaFn0FhTnm7UAIlOKhG+frdzmqfZybDIay+JAVsyKMqeB+7lHjaDuK1p9CL
+0K1kgDawQxFq9DuMv09kTuHgNvbHYL5jGRYLobar2AMleAEcGFWR3pqa+AzQHVfTQXLzrowoOgrW
+WQ1egu0FPk/M/mgyLbbw6PbREaZhN8YmOhEJ7YFtCCBnZJ86edHgppH67eVR2E7MbGUTMavYlpLY
+zdl9UhQllwxG5QWuIjHNQBDoKGRJ//CDBa/kcWx+bD9l8ZHgIrs8WwN9bpGQZ7J0VVOKe+AoWXC1
+fWS2uDjNRvouQRGVGBBfns3pWhzt/lfJnp4T6J/UgVLrHR6ujJcbdwosg32klDJnI0u01iomeufc
+vc1ul++l7vy/NssuTPcPgaXh89ldqRNmbLhkk8OINnWvX0jQmXmjcl7DygZ4wjUoAZQj24DNc7Ob
+/s/WpizA9xtggEEbUujoNbMuvhpMctMYMJC4JpTrRxVDVNkB5bA2jgVNnLHBEw0w4ktxYAyMoMwI
+Gdudvojs6KavEwp3YOA/Gbh0FfsqENq9jaawONaYjWG5MneAdOQESeEFpFY89KlESk01ZzJYVBir
+oPJ7HcuwkIF3T2199CWCuusSUTCmTwmH2eaV13c0CW+wVE/+ea+3leYtoAgY6CYJXHu3UfcwlBv2
+5DjCc85BaszZQ2/oMoSm210qCx32JcBE1ZCTesiz6dlzRv0r1aPBm1onafTwp7KWb2smwgJEJRit
+HagTFtMbxWDZRp/C1iT8fxf83xQBnEFKBYgmicI1V0eMKZUhWFZzxIPLwgRqIZB7cCNNndJEVRhd
+aYlBerH/TgBR+xA0vsLXhHRn1lTc3aScMMeTnpALRWt6WYnh0H6DEEcaGsEbWYu7RCYj2dNVRMQl
+Ne+zNNAClranFonPdbj1cbBTR+XPEinbQmL8dvPvzuKcv/wCfh0xM1pqfzDxXC5IVL7yLeVSfIqC
+7JTbIDq2Yk6LTrA6IxkJCO0VJkyiUG2lECv+nfUhPiD9WBY87h/14P7SDDQhUsNF1YaeaC6OLW2z
+ixGgjlolKoTvbk5Iczp7QG6U21Z3gPiN8bz6z4pkfLcQoEn1+rmbOmgz8kTIYQ8dEdAQbzThvPKP
+QDZeT0wdRcJcs53/WYUE7oCA1fHZP/2z76Kv4BSQ6CuuzyvUgINnwy+UZVIhLSkiPKBKgEJH0Kak
+aDmMhYvs6Fk9bj0tpNjRhLnzc3SjZI7g/tMmxNClSnT8UxDsap9ywPjSwxFle5MkTahOMoMbG0a4
+joy9oFhP4s8E2z4VXu7+OMQ1dsOR1hZmmg5p0DQcvIkz2BGhuF77VN6wVhyllwWuyzVjiiJ+jyEC
+2QKS3j6wZr9wE4wPLC27BlWAKWw5nkLG428wpLTRqlcrMqRDS4U59m7DFMFPLrOVPAQF1r/YFPzO
+1FzmsIjT5drnK73k8uwFjPqSfmoZSkNLQ6sy0iQhoXX0KaPz/uXQNksCOG9wQL4PQPxbIlZDWRaf
+Et3LukDgOzlgfqD+CZwr1otXCEZFdmzr0twpbvDK2umQGl91tJN8p0LJSyk4moI4LHPC2jk6nWx6
+RGx3J8JhSCMHcHPFT0mBAPZSL5ewZl/CYqLb6TKi2VuBpoRRN6w7jHXYUs84jJbEPhVJoLaOHZzB
+yloIUjq0AdYGVXyRWuewfjZtdfw9yyHaPFd2uYAfdbPzmr7GJurapxnCHQSVdkNzGvVJuD5DHxdz
+ZOhSqV9jqb51wT69gsZSAyZiMzkT/0NSWCWKzrWaE2Vb03IQWRFlgIt5T8n0K0R6Oww2SWtkyjOc
+KWevL3Etq1Qsob/hk9oESuD0lK5iySq5OfT0QcG3fGRsYfKSvQUKZO0vOyLps75pvBRMafnGnoEy
+fn+Ps2Julmrt7i3o6ucWdTIhlcwH2ieMCBM6PyyRHC7bGLilXdXsrfYTi7GcW3gO+aoscc/NeyFR
+dSI0hG168z/vwJKQxTzZgQ+Ytvc1NLxy5Kw925l7BKPAgzMfAmSUTEnbYfs3fazvJG6wZ/gpjccE
+x7SvBWtKqzn/Qi7B7RO25GY+s/AMS1j6wc7zBIeCLOyJJI8MQeAkYaMjwU+8f4qOwaZ9DpwYDd6Y
+ZcLLGOC7QG7GHKqRF/FmXVd18+a9QsMukvSiygKJolHS50ObafkG504h5lzGQQkKcvNOjqISOtw5
+iC0hVpK63dfnD2RCi9xBKqVr4Qh3J223qR0JKA9J7s5D9qOBwiPcqKLlqFWNcOZSGvT7xlZbMAJw
+y33USFwqFptL95EMSTIcy3eK3GN+fqW6x3ZeHgfGq9gy9YyhWOh7gpiwDVG+KtsrFjpkr2wK8mxr
+ArzSqWv4yWEZe1p5Kat/Z8FuYqEhOdou9sLSRjCr8pPPm1D0QYJrx5+SoCNE8rbE/I/3LH4fbJ5Z
+5ruz/e+gLbF+xyvmFxAZE8oN0SOLZJrneFED6hA68tYnREL4Y7gKogRmdlNE69BHSiIyOEQep9+F
+e2kl4H8OM4piozZncmTW2VlLkgrbbT7siO3AJshPcva1VQfMm2iwXKDz8E1G6vD9YKxkaYRm8lxP
+Bys4FXxANIvWfihAvrdD4QLBoKdkf5fBV6lgAqEUA5CTXYH5TYj0V474+JzZYIlWwIqR/rQT2FoH
+Iw080Y8iBWZyLof5i6hbKhVplgkzZpyuYWE7Sj13JyxjEzN5c53dxMFi3AyEEQoKkLHdI1bG/A0B
+aC4tAkRo/gF0z2AVvSKAbzuCezQs2O38DoSvQS0rCY+ZMWSsVXqNFuXzsrR9JN+2WDcI3AtpyLvc
+jP08thimFnRdASErPjWu7aFgdE7dS1zdxkIg1zwodAchiF26aEt+52xA/mHU7hYrFX7/qFuc45M6
+gRMbwBzcyLEMk7QqyVAxFvCt5wcAmLZ5Z/kZqSLiMf/mUeCFUaNtpO7gY0D+yxDltVhdhWno8+lE
+R6RFKs1D9bPyIroHhTRveZJwLKZagaylmPAZC014A70c8ismcCkmYUbC6qsngrP6VEQPCaDv8WaY
+yaH22+fxQlranB5GD/8d+uVGTP0xrkamXOourKz6PAMdvSJvCueucjwwcRDfRfN3wq5cHyquqeq0
+s/OMnS0kxuW2naqPdhATwkwDyJJ3clCZaC5TGuRRzKh2+PLovElqu+D5hdfL71TIvzfOFwbqivQK
+iuwYY64du1qBEMyDZVIE8ZlQM7Rz3FzB/S24bf1n+OBoixvr3tly0pLFo9AuKjg0wwEzq3tJwFG1
+UUiKeX89QNTvN9a9JKtOnHoRf6hNVolee+8oBezdXtuBYQtx5BgbfeDcEv+LkmiaIwa5IbQ669x6
+NuyAQqxEl7p9xhADVvr7ceyLzVWKPWQ54YBnuD/uLBiZ9Wmpi9F0YdF1/z/rfZZSKAGfl8bRyYAT
+uViLGhvQgtB8g8i0yEF5KfGPzKXVOfXte2j+OxGc4gBa9CTqtXSbvx709dOmakvjiDeJ5UFd5ren
+t7nd2kNT4DOjjYy919OLTAg7XB7mgnpMka2FSzQKDw9e7AIOYTUmlSztX9v9vNvzXaD18syWnfk0
+3LYauE5/Zl+h4CaKYSn4RcOIUhRJse98TsNa8QEgWQjQN+48v1TTrO8B+HvfW3bCKOUdPBeRtq9W
+elTpDAF/3xY8as/uU2MzVGRww4ji8s+IlwydOAobFo1pZTmYceGLZmrFh6pSjG7Zz26OSe9AMcuZ
+Lr8P9Ol8jFR0bQ0WadmfcbDAUqEmXmpoG+ii+F/+vCbiPohAoM+0ViCm7f6LsTgv8OPH1eTQKa5u
+to+V1dth4GQuVwVyu3kT9A+LRDLrjXrkERHbcWUd0He3cV6TbWAo27P9kZHTaehhQAz/lQ4tcVZr
+R13O+P8e33eEk/vKutH1yRwbl5zZhAG9A4CsV5p/V8az72DCtwKNZEWPkGuePDDyCtNLEGOn17qQ
+S4i456qItP29K8yQ8VbEBwZ1NAJQwmHQOGaV64m21fVPyguj92fFTi9CEGdl05yTxTMQ1rDwoJ2+
+FuNmEunAKMXdLocuSl9DGGyvd9DXW15uHWnc+gnVCbqLZk4WGaY6qswJHA/uOnyI9X1TxWipAwnc
+uRMAQR+2oPaSNfrtTjVHshDYv5M29q0LVxC8PwCmAC1AfZHkipGlPAJg7cO2GeT80fvYiHk4QswJ
+A7XElZjmUmw8Xse8jWnNtAt7cupMePoMb3i4DYwID/GDcWYFgg+8Hbn3iIV47m0PI5i4PHspS2+e
+Slz6EwJKNRqGrHKZdL11TT69JQFB1X2vk4+sGHx9lwIsY1gGQ8CbZ/kA7JbqGIR08DcmsEcKqqSO
+Uy4KROHnftrnuu1s/hryP+XAB273oaTy5zmgiQGdjqORtROpXFjFekdh1pfA8UE1+EHiJxxU4hE+
+Gjwnh4sqSwV++TZlVH4OGG70cazG+a5RSZ+uAITnTdFjfOlEAXoIhuFrlL+SGstSPPPN3Ts9ijSO
+5RAtLLaWw8iZ/KSLrx9Ou8nbDLS9eBedcLHZXhStecwZd2enw327yLhpcGkrGX/r6XiVKpZ603Th
+Y85xUH1CVfBktQ4P+opZnwRYSRvKfw/6W4jOisXKLDy6eWvZLz9lCW4muUjweiP6W0SfXsAPmLmD
+Jfn4iaRMLitRLhi8BcOsPbrvxq7b0UjLAMlaly00lb3xZ5KnXYgxR7APUxnAaSIrgnXSKLqLhmzC
+XfGP9AeUILGW4gQWl7kkqzcE+oKko1yI3Ul/a+IbA+Xa7m5Ivb5pIb6SQgtSkO8gdnywpS1zND2L
+gpGFTVS7kzqa21XjewL27tpFcA0oG5Ztx8jgrEe2ZZS5GB85ghqsxwsz1ozvX3rV9Su6FfsS/02E
+igXy5nHB6ctHSDSHlcxIDKM4CnxZR/uguBsmnrb0vQs4ZdfNgdCwxPYY4cur1XR7yjKczKXaB3b6
+o2AGYZswBtIOe9txOC2Or55lZzHW5n4n0HaCpwaV77zTOGvWexu/2zYmXBeHTiZnqi7kuroUiEHS
+H9VreaIiApHr0vZDmtb1L78FYifRJHfLLLb4FWhVjcAZN3HV9fvAFO795JxOjkdYY68fRWbEDzyj
+qPc7IjtaXmgWiZ3//DTTEuRpiq47UPyKLYd1stNoAm6FtonmwSz97+aAoG4BT8xEQy1wAUT4sCH3
+DyT3XVwZu3AhXviC78agugWC6gQ7dHqzHBEe7mMin5UlxxDke2N8u2AqQNqtvP3y3OFxnij4tK9E
+EmWB+hvlsLrGkj3G2uJ7eKm5qVqAfOrFN0LRbXvwuE41FWu80lzcnaGQK+NOdpJW+wXxNl7PLnBY
+tjugl8UK7Vv1yR0uMsJe5rC4XsfD1ezRTrFjsmrObaohYU/XJkmMvb4wt1PuERq3o4DkPK7K9kFP
+sPGTpSrlc/MExm1oc5LgtcQVvUGaJGF3yGhSGSctCf9+UXgdLd8gBotyeYc1XlPUBHsZXq6xY3cb
+o13E3DHdL8/T3mJXCOXXhU520TLHsz8XPq70QUTMlf4glYJiuTqWb6B/s7hYrEOYLWCCWTnfMAmx
+wVPDVvEomc4WSua3Ir0rwUdTi2r+pFv8YQCCKILQWqJ0xJhejJHNK/phYnoiW1HuiVfH3PMCnhlI
+GAtQtHKa1R6Abn4Vut1QgTHhfUd4ccdbvFeTWSebzgnu8ZF/r9/L+fC3zwG+26sj

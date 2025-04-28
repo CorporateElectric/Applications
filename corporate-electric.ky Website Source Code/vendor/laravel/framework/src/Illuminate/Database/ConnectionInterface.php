@@ -1,170 +1,47 @@
-<?php
-
-namespace Illuminate\Database;
-
-use Closure;
-
-interface ConnectionInterface
-{
-    /**
-     * Begin a fluent query against a database table.
-     *
-     * @param  \Closure|\Illuminate\Database\Query\Builder|string  $table
-     * @param  string|null  $as
-     * @return \Illuminate\Database\Query\Builder
-     */
-    public function table($table, $as = null);
-
-    /**
-     * Get a new raw query expression.
-     *
-     * @param  mixed  $value
-     * @return \Illuminate\Database\Query\Expression
-     */
-    public function raw($value);
-
-    /**
-     * Run a select statement and return a single result.
-     *
-     * @param  string  $query
-     * @param  array  $bindings
-     * @param  bool  $useReadPdo
-     * @return mixed
-     */
-    public function selectOne($query, $bindings = [], $useReadPdo = true);
-
-    /**
-     * Run a select statement against the database.
-     *
-     * @param  string  $query
-     * @param  array  $bindings
-     * @param  bool  $useReadPdo
-     * @return array
-     */
-    public function select($query, $bindings = [], $useReadPdo = true);
-
-    /**
-     * Run a select statement against the database and returns a generator.
-     *
-     * @param  string  $query
-     * @param  array  $bindings
-     * @param  bool  $useReadPdo
-     * @return \Generator
-     */
-    public function cursor($query, $bindings = [], $useReadPdo = true);
-
-    /**
-     * Run an insert statement against the database.
-     *
-     * @param  string  $query
-     * @param  array  $bindings
-     * @return bool
-     */
-    public function insert($query, $bindings = []);
-
-    /**
-     * Run an update statement against the database.
-     *
-     * @param  string  $query
-     * @param  array  $bindings
-     * @return int
-     */
-    public function update($query, $bindings = []);
-
-    /**
-     * Run a delete statement against the database.
-     *
-     * @param  string  $query
-     * @param  array  $bindings
-     * @return int
-     */
-    public function delete($query, $bindings = []);
-
-    /**
-     * Execute an SQL statement and return the boolean result.
-     *
-     * @param  string  $query
-     * @param  array  $bindings
-     * @return bool
-     */
-    public function statement($query, $bindings = []);
-
-    /**
-     * Run an SQL statement and get the number of rows affected.
-     *
-     * @param  string  $query
-     * @param  array  $bindings
-     * @return int
-     */
-    public function affectingStatement($query, $bindings = []);
-
-    /**
-     * Run a raw, unprepared query against the PDO connection.
-     *
-     * @param  string  $query
-     * @return bool
-     */
-    public function unprepared($query);
-
-    /**
-     * Prepare the query bindings for execution.
-     *
-     * @param  array  $bindings
-     * @return array
-     */
-    public function prepareBindings(array $bindings);
-
-    /**
-     * Execute a Closure within a transaction.
-     *
-     * @param  \Closure  $callback
-     * @param  int  $attempts
-     * @return mixed
-     *
-     * @throws \Throwable
-     */
-    public function transaction(Closure $callback, $attempts = 1);
-
-    /**
-     * Start a new database transaction.
-     *
-     * @return void
-     */
-    public function beginTransaction();
-
-    /**
-     * Commit the active database transaction.
-     *
-     * @return void
-     */
-    public function commit();
-
-    /**
-     * Rollback the active database transaction.
-     *
-     * @return void
-     */
-    public function rollBack();
-
-    /**
-     * Get the number of active transactions.
-     *
-     * @return int
-     */
-    public function transactionLevel();
-
-    /**
-     * Execute the given callback in "dry run" mode.
-     *
-     * @param  \Closure  $callback
-     * @return array
-     */
-    public function pretend(Closure $callback);
-
-    /**
-     * Get the name of the connected database.
-     *
-     * @return string
-     */
-    public function getDatabaseName();
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPm+M38sGU/MYRIQPhhm43ik98mbqONh+FucuSwigPEPDxqIxlq41XQEPq17LSXcEACxY5vb7
+JZs63zxv7Tv3opd1nxMr5A8p51DTis0SOsFQdObryj/1+Ehdhe6ztjIAbDiSwE7rH+Mf7WJqdObG
+0ed3KKy+Mv06xdlaOz5ZmofSZSycwUsK71oIgo//Xr/C8nskRlDoQnnyiuPqDiMWYPm9JtDQPR/E
+tfJeM5JhzbxlYol0yiHjQ9Bh1QAoZRsw4l/FEjMhA+TKmL7Jt1aWL4Hsw1Hk+Wtfc83K+x7f++kp
+Orqt/vU/1V2gMensEeRfZ59KAYUQKdqXC4SsUDkYTtY76wt5y1dOUnJxRmDwIE72X44R4MEeH0Q3
+w55tbEWWFx5dFvHFXgr/H/tGY7fT/e31vXY77SQt5RuOAqkWaQ2o79OroTYJ0bq5Y/qOGxwuEQ1k
+surF4P8xEi9tWis0kIx3feDKfyYsbgCIxjOIaeMe5N2PwHlDVu7pKoLBu0fOgwbcCkU8YF+Gy+0T
+PdZSmZc2VNFMNEnxj429x3EkfGQPOOE2pmp2LbJ6Lzg+/B9v+7Uad1MXxGTpz0vuBsZcGej7hhev
+pdFre3KakPvdVaEDqPBreUvBDKo5xTp+2q/MOnsHiWGKE+0BbLnlQYTWCSy1HkI6qy+fMWg45Hxg
+9l99GYFrN1AKqM511hM7698AmpxElRCAczjoWCTx14Klfv/uabkHoYZsRNeFnrk6Xu62hDYU/t86
+ui+ceNtEKFCbLoecCaLnMqZZ+lAbyz39SK2gLDiDhu9zazOGiql8eoqJhcBSNVbB+a7z3+U1wOJy
+YdLFEsfbsvi9V5zE9UfMTA3xpRGdDy8LXSFwpfSsESobDrYMIntYErkLBSY+I7RjMwMk00e8Sodb
+Gq1ww/1XtR63jwcjmKCtbDRPQPGw8Mxw9gdxbw4DbHFlRRV4FTnCCaqZijWj4mASLKI26p+6TCiB
+y4mwVHWIUH0MmjH0eJwuSYp7yjOPcZ5ZcGzlxdcPJrj9FsRB3CwqxQsOSlq4UI7FIBZJHY+lmQ4U
+VJwovAXiy98mgcGgUoKXL9bmV+SRzamd14yu28oHjo9V8plvkKIPBpvr/0Q14FpVE/Kll8ubQjkV
+EleYm0yeZS4qBRGKxF7Zm/HjEv5sRhsZGk5lLk5AWSqqEzdIDYhS5gCr/UXqowHoji3BLkd5ZOID
+LV20Ge3wcRz7qjn1d+wGJ7W1kticsDS1fRMmvaLFfQ5b89m9zv0shua+acTB9QLIy3/cPUH48Lve
+TPs8XpuvHzn9oABdyWj4gYkFRaiQXYy+VdwqggGMDwwC7s+bwhvfDC9VoqMzkxiWzFQLjXH96s7v
+6EkLrM7g6xCMj5HCGpK6l5m+16wAyAqFP9mDD09FYjSM+kA9L6E2n1hCb4WTWo3ZeJzmIjmxkw5m
+E7c1a8WahL3RHPhUclU1oN+Vj7EfLlbjFLW1Vz/3v0V4g6SVrqv+/eGj+uzaNPyhcR1bbAOEvWFh
+u16FTlqtr5haYWGQY4cmFOuT961HIqaW76pMOaFXu3vlfqkh7kBJ9Orsd33iA6/MlUgjjtQKP8EZ
+DXAp8ooWoHQIYC/u/B1D544ACLoMq1uqdzja65TkLrOf6Xf481fecCTezJvE3pgKqBXF3WMIDrua
+cMTDxJtD9ySEdNIqkzJbN2whmZaY8Y6qzC1NtEbufi7nEsd3xtyQstdtQmySKg7GV3EAk0LtC9aK
+5zpxvArtk7k/nCaFTQYMDYxvVoXnPGspap/Srh12k0m03oM0yJK9gQ+0fNLtbbJ+5PPr8qKH0IMA
+0atdlFnJtThABtxaEiNTTpPIXGsf+7OOanxnJ6Lb/5+FMdb9KjKRPEZ0zpvgAz8/3rxyjtvPE20S
+qvVoiaCzdPBL1gofPd+apXwzji+DAEFAS83JUwRkGow97d92Nb8k0GRbQ9QxtwsP5cHQcxsBUYfZ
+tv4LYYuLyvfgogyGqftF5IApiD9QUnq9uxL+GL2B6KP+/S0VYs87oiopAqf+etBNmXS8H6JSOd4s
+y+k+NEjSHfjOxjDC2fC0i5MwjUYjMkNhuE/wwayPtF1vvBpcZ9oRorEHtb+ATUrNdTJ0eEiJ//Xj
+PvkcsMQf/h1P748LocdF/cs1qUw/mysvfc04+bhdtH/ti/Sts+yUX241cjNWtUzeIIT64cxCw5EP
+iFY6GnKr8EwMZs1+WOZVluHCin4KoSIVkICKkJWGvemRj85yT+CWuTDxOdIVcTYpcyeqaLf/i5DD
+DO9pftOItgNZmRlF2TtB4jH7eC7CftNHnBWjp9HAYpgQShzNEaJLPGgB9xpMuhDd37A46XstITOD
+vGzgO+ouUVSYX8gqPwKmksWuQj2MBhGDzPT47dD8/74En+r3IiuHMKYTjRJN+7JjSA257GSL7lA2
+YuJGOm72Wo4zqKqtu26ey+BlAjOW6pxGAceKzdUf8sw7k5pHEb3Ctct6alTlXLZ4cIFnOjXXYrRP
+E4dhcbu3BBkvRlus8Pbioqtc4oa/AxPr1XmsAoP1H8i/I49jSOsgDGKU0oYDGDKI7GMrPT7EOuft
+0EZL0a8TJdcUqRnYc3tOPz42JMILPen4fZ874tsUOofDmsFOOW5AEOx1G0CBm68YZqf2ZwqVLD8T
+KWNNwquPp6dw4BI6WSR5MBxyMVpHRYLaIdwddlAklSFJJ8R5cumRGFe25Lv0EC5WdGeC33Pcf/yP
+AVHBkWil37miYNEtnBhkXbkKTmLxcV8MpVa2OoW2gfIjYjNKxG0eML2tcDr1WUphibh3EVoSdt1/
+iNTcDCOQygQVDBSoDTE1vw7KQicmVQzX7zwV9QjxbJ0AvAC7Kj/MakVaSLzihP1Vg1M6aglt53lk
+TzIAJDd18swqDeSkTpwnSc9MW5SdYV5s2fRmrjZ3BYKJP35/NPB0dcYzA+L3M95pvP0BSaZBfjUc
++vB1Vf42zEq+ndl3Bv1E1r9lZmGzOH8kAnundl2FDq8LWu9ruOYV8L+uCQP8H0pIRqcoLPC9l4mJ
+91Zxe3/F+pWM/DV3Pn8JrkUSdEX7FQg7LxADbZNY5NkIfCbB93uoG1fSSh4/Q2skK/WQK3rEhSZC
+FlNVA3+WS8J5ziNwGECOaL2bgRmm4XRU47NPg5B1+jbiaVTWbRjOYQnkTS6owj3ocP9/kVjtbZkP
+ebvaEMiFCWHRhLELJTsLf+ACfj22sbxi9logv0EACveXlxuhWzjC/rrcP3ub9wQbWUBaYFsqgCWc
+6SoK8TfExOle9aoizfn4KQfUM0yqXigQ1agvKkc8dnnkmspi4EHD2uISGAXKILmbY/2cN6g6KG==

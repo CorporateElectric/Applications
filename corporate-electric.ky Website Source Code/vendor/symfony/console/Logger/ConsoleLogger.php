@@ -1,126 +1,85 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Console\Logger;
-
-use Psr\Log\AbstractLogger;
-use Psr\Log\InvalidArgumentException;
-use Psr\Log\LogLevel;
-use Symfony\Component\Console\Output\ConsoleOutputInterface;
-use Symfony\Component\Console\Output\OutputInterface;
-
-/**
- * PSR-3 compliant console logger.
- *
- * @author Kévin Dunglas <dunglas@gmail.com>
- *
- * @see https://www.php-fig.org/psr/psr-3/
- */
-class ConsoleLogger extends AbstractLogger
-{
-    public const INFO = 'info';
-    public const ERROR = 'error';
-
-    private $output;
-    private $verbosityLevelMap = [
-        LogLevel::EMERGENCY => OutputInterface::VERBOSITY_NORMAL,
-        LogLevel::ALERT => OutputInterface::VERBOSITY_NORMAL,
-        LogLevel::CRITICAL => OutputInterface::VERBOSITY_NORMAL,
-        LogLevel::ERROR => OutputInterface::VERBOSITY_NORMAL,
-        LogLevel::WARNING => OutputInterface::VERBOSITY_NORMAL,
-        LogLevel::NOTICE => OutputInterface::VERBOSITY_VERBOSE,
-        LogLevel::INFO => OutputInterface::VERBOSITY_VERY_VERBOSE,
-        LogLevel::DEBUG => OutputInterface::VERBOSITY_DEBUG,
-    ];
-    private $formatLevelMap = [
-        LogLevel::EMERGENCY => self::ERROR,
-        LogLevel::ALERT => self::ERROR,
-        LogLevel::CRITICAL => self::ERROR,
-        LogLevel::ERROR => self::ERROR,
-        LogLevel::WARNING => self::INFO,
-        LogLevel::NOTICE => self::INFO,
-        LogLevel::INFO => self::INFO,
-        LogLevel::DEBUG => self::INFO,
-    ];
-    private $errored = false;
-
-    public function __construct(OutputInterface $output, array $verbosityLevelMap = [], array $formatLevelMap = [])
-    {
-        $this->output = $output;
-        $this->verbosityLevelMap = $verbosityLevelMap + $this->verbosityLevelMap;
-        $this->formatLevelMap = $formatLevelMap + $this->formatLevelMap;
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * @return void
-     */
-    public function log($level, $message, array $context = [])
-    {
-        if (!isset($this->verbosityLevelMap[$level])) {
-            throw new InvalidArgumentException(sprintf('The log level "%s" does not exist.', $level));
-        }
-
-        $output = $this->output;
-
-        // Write to the error output if necessary and available
-        if (self::ERROR === $this->formatLevelMap[$level]) {
-            if ($this->output instanceof ConsoleOutputInterface) {
-                $output = $output->getErrorOutput();
-            }
-            $this->errored = true;
-        }
-
-        // the if condition check isn't necessary -- it's the same one that $output will do internally anyway.
-        // We only do it for efficiency here as the message formatting is relatively expensive.
-        if ($output->getVerbosity() >= $this->verbosityLevelMap[$level]) {
-            $output->writeln(sprintf('<%1$s>[%2$s] %3$s</%1$s>', $this->formatLevelMap[$level], $level, $this->interpolate($message, $context)), $this->verbosityLevelMap[$level]);
-        }
-    }
-
-    /**
-     * Returns true when any messages have been logged at error levels.
-     *
-     * @return bool
-     */
-    public function hasErrored()
-    {
-        return $this->errored;
-    }
-
-    /**
-     * Interpolates context values into the message placeholders.
-     *
-     * @author PHP Framework Interoperability Group
-     */
-    private function interpolate(string $message, array $context): string
-    {
-        if (false === strpos($message, '{')) {
-            return $message;
-        }
-
-        $replacements = [];
-        foreach ($context as $key => $val) {
-            if (null === $val || is_scalar($val) || (\is_object($val) && method_exists($val, '__toString'))) {
-                $replacements["{{$key}}"] = $val;
-            } elseif ($val instanceof \DateTimeInterface) {
-                $replacements["{{$key}}"] = $val->format(\DateTime::RFC3339);
-            } elseif (\is_object($val)) {
-                $replacements["{{$key}}"] = '[object '.\get_class($val).']';
-            } else {
-                $replacements["{{$key}}"] = '['.\gettype($val).']';
-            }
-        }
-
-        return strtr($message, $replacements);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

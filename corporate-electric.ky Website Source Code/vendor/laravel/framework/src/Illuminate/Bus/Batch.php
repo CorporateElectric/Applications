@@ -1,466 +1,189 @@
-<?php
-
-namespace Illuminate\Bus;
-
-use Carbon\CarbonImmutable;
-use Closure;
-use Illuminate\Contracts\Queue\Factory as QueueFactory;
-use Illuminate\Contracts\Support\Arrayable;
-use Illuminate\Queue\CallQueuedClosure;
-use Illuminate\Queue\SerializableClosure;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Collection;
-use JsonSerializable;
-use Throwable;
-
-class Batch implements Arrayable, JsonSerializable
-{
-    /**
-     * The queue factory implementation.
-     *
-     * @var \Illuminate\Contracts\Queue\Factory
-     */
-    protected $queue;
-
-    /**
-     * The repository implementation.
-     *
-     * @var \Illuminate\Bus\BatchRepository
-     */
-    protected $repository;
-
-    /**
-     * The batch ID.
-     *
-     * @var string
-     */
-    public $id;
-
-    /**
-     * The batch name.
-     *
-     * @var string
-     */
-    public $name;
-
-    /**
-     * The total number of jobs that belong to the batch.
-     *
-     * @var int
-     */
-    public $totalJobs;
-
-    /**
-     * The total number of jobs that are still pending.
-     *
-     * @var int
-     */
-    public $pendingJobs;
-
-    /**
-     * The total number of jobs that have failed.
-     *
-     * @var int
-     */
-    public $failedJobs;
-
-    /**
-     * The IDs of the jobs that have failed.
-     *
-     * @var array
-     */
-    public $failedJobIds;
-
-    /**
-     * The batch options.
-     *
-     * @var array
-     */
-    public $options;
-
-    /**
-     * The date indicating when the batch was created.
-     *
-     * @var \Carbon\CarbonImmutable
-     */
-    public $createdAt;
-
-    /**
-     * The date indicating when the batch was cancelled.
-     *
-     * @var \Carbon\CarbonImmutable|null
-     */
-    public $cancelledAt;
-
-    /**
-     * The date indicating when the batch was finished.
-     *
-     * @var \Carbon\CarbonImmutable|null
-     */
-    public $finishedAt;
-
-    /**
-     * Create a new batch instance.
-     *
-     * @param  \Illuminate\Contracts\Queue\Factory  $queue
-     * @param  \Illuminate\Bus\BatchRepository  $repository
-     * @param  string  $id
-     * @param  string  $name
-     * @param  int  $totalJobs
-     * @param  int  $pendingJobs
-     * @param  int  $failedJobs
-     * @param  array  $failedJobIds
-     * @param  array  $options
-     * @param  \Carbon\CarbonImmutable  $createdAt
-     * @param  \Carbon\CarbonImmutable|null  $cancelledAt
-     * @param  \Carbon\CarbonImmutable|null  $finishedAt
-     * @return void
-     */
-    public function __construct(QueueFactory $queue,
-                                BatchRepository $repository,
-                                string $id,
-                                string $name,
-                                int $totalJobs,
-                                int $pendingJobs,
-                                int $failedJobs,
-                                array $failedJobIds,
-                                array $options,
-                                CarbonImmutable $createdAt,
-                                ?CarbonImmutable $cancelledAt = null,
-                                ?CarbonImmutable $finishedAt = null)
-    {
-        $this->queue = $queue;
-        $this->repository = $repository;
-        $this->id = $id;
-        $this->name = $name;
-        $this->totalJobs = $totalJobs;
-        $this->pendingJobs = $pendingJobs;
-        $this->failedJobs = $failedJobs;
-        $this->failedJobIds = $failedJobIds;
-        $this->options = $options;
-        $this->createdAt = $createdAt;
-        $this->cancelledAt = $cancelledAt;
-        $this->finishedAt = $finishedAt;
-    }
-
-    /**
-     * Get a fresh instance of the batch represented by this ID.
-     *
-     * @return self
-     */
-    public function fresh()
-    {
-        return $this->repository->find($this->id);
-    }
-
-    /**
-     * Add additional jobs to the batch.
-     *
-     * @param  \Illuminate\Support\Collection|array  $jobs
-     * @return self
-     */
-    public function add($jobs)
-    {
-        $count = 0;
-
-        $jobs = Collection::wrap($jobs)->map(function ($job) use (&$count) {
-            $job = $job instanceof Closure ? CallQueuedClosure::create($job) : $job;
-
-            if (is_array($job)) {
-                $count += count($job);
-
-                return with($this->prepareBatchedChain($job), function ($chain) {
-                    return $chain->first()
-                            ->allOnQueue($this->options['queue'] ?? null)
-                            ->allOnConnection($this->options['connection'] ?? null)
-                            ->chain($chain->slice(1)->values()->all());
-                });
-            } else {
-                $job->withBatchId($this->id);
-
-                $count++;
-            }
-
-            return $job;
-        });
-
-        $this->repository->transaction(function () use ($jobs, $count) {
-            $this->repository->incrementTotalJobs($this->id, $count);
-
-            $this->queue->connection($this->options['connection'] ?? null)->bulk(
-                $jobs->all(),
-                $data = '',
-                $this->options['queue'] ?? null
-            );
-        });
-
-        return $this->fresh();
-    }
-
-    /**
-     * Prepare a chain that exists within the jobs being added.
-     *
-     * @param  array  $chain
-     * @return \Illuminate\Support\Collection
-     */
-    protected function prepareBatchedChain(array $chain)
-    {
-        return collect($chain)->map(function ($job) {
-            $job = $job instanceof Closure ? CallQueuedClosure::create($job) : $job;
-
-            return $job->withBatchId($this->id);
-        });
-    }
-
-    /**
-     * Get the total number of jobs that have been processed by the batch thus far.
-     *
-     * @return int
-     */
-    public function processedJobs()
-    {
-        return $this->totalJobs - $this->pendingJobs;
-    }
-
-    /**
-     * Get the percentage of jobs that have been processed (between 0-100).
-     *
-     * @return int
-     */
-    public function progress()
-    {
-        return $this->totalJobs > 0 ? round(($this->processedJobs() / $this->totalJobs) * 100) : 0;
-    }
-
-    /**
-     * Record that a job within the batch finished successfully, executing any callbacks if necessary.
-     *
-     * @param  string  $jobId
-     * @return void
-     */
-    public function recordSuccessfulJob(string $jobId)
-    {
-        $counts = $this->decrementPendingJobs($jobId);
-
-        if ($counts->pendingJobs === 0) {
-            $this->repository->markAsFinished($this->id);
-        }
-
-        if ($counts->pendingJobs === 0 && $this->hasThenCallbacks()) {
-            $batch = $this->fresh();
-
-            collect($this->options['then'])->each(function ($handler) use ($batch) {
-                $this->invokeHandlerCallback($handler, $batch);
-            });
-        }
-
-        if ($counts->allJobsHaveRanExactlyOnce() && $this->hasFinallyCallbacks()) {
-            $batch = $this->fresh();
-
-            collect($this->options['finally'])->each(function ($handler) use ($batch) {
-                $this->invokeHandlerCallback($handler, $batch);
-            });
-        }
-    }
-
-    /**
-     * Decrement the pending jobs for the batch.
-     *
-     * @param  string  $jobId
-     * @return \Illuminate\Bus\UpdatedBatchJobCounts
-     */
-    public function decrementPendingJobs(string $jobId)
-    {
-        return $this->repository->decrementPendingJobs($this->id, $jobId);
-    }
-
-    /**
-     * Determine if the batch has finished executing.
-     *
-     * @return bool
-     */
-    public function finished()
-    {
-        return ! is_null($this->finishedAt);
-    }
-
-    /**
-     * Determine if the batch has "success" callbacks.
-     *
-     * @return bool
-     */
-    public function hasThenCallbacks()
-    {
-        return isset($this->options['then']) && ! empty($this->options['then']);
-    }
-
-    /**
-     * Determine if the batch allows jobs to fail without cancelling the batch.
-     *
-     * @return bool
-     */
-    public function allowsFailures()
-    {
-        return Arr::get($this->options, 'allowFailures', false) === true;
-    }
-
-    /**
-     * Determine if the batch has job failures.
-     *
-     * @return bool
-     */
-    public function hasFailures()
-    {
-        return $this->failedJobs > 0;
-    }
-
-    /**
-     * Record that a job within the batch failed to finish successfully, executing any callbacks if necessary.
-     *
-     * @param  string  $jobId
-     * @param  \Throwable  $e
-     * @return void
-     */
-    public function recordFailedJob(string $jobId, $e)
-    {
-        $counts = $this->incrementFailedJobs($jobId);
-
-        if ($counts->failedJobs === 1 && ! $this->allowsFailures()) {
-            $this->cancel();
-        }
-
-        if ($counts->failedJobs === 1 && $this->hasCatchCallbacks()) {
-            $batch = $this->fresh();
-
-            collect($this->options['catch'])->each(function ($handler) use ($batch, $e) {
-                $this->invokeHandlerCallback($handler, $batch, $e);
-            });
-        }
-
-        if ($counts->allJobsHaveRanExactlyOnce() && $this->hasFinallyCallbacks()) {
-            $batch = $this->fresh();
-
-            collect($this->options['finally'])->each(function ($handler) use ($batch, $e) {
-                $this->invokeHandlerCallback($handler, $batch, $e);
-            });
-        }
-    }
-
-    /**
-     * Increment the failed jobs for the batch.
-     *
-     * @param  string  $jobId
-     * @return \Illuminate\Bus\UpdatedBatchJobCounts
-     */
-    public function incrementFailedJobs(string $jobId)
-    {
-        return $this->repository->incrementFailedJobs($this->id, $jobId);
-    }
-
-    /**
-     * Determine if the batch has "catch" callbacks.
-     *
-     * @return bool
-     */
-    public function hasCatchCallbacks()
-    {
-        return isset($this->options['catch']) && ! empty($this->options['catch']);
-    }
-
-    /**
-     * Determine if the batch has "then" callbacks.
-     *
-     * @return bool
-     */
-    public function hasFinallyCallbacks()
-    {
-        return isset($this->options['finally']) && ! empty($this->options['finally']);
-    }
-
-    /**
-     * Cancel the batch.
-     *
-     * @return void
-     */
-    public function cancel()
-    {
-        $this->repository->cancel($this->id);
-    }
-
-    /**
-     * Determine if the batch has been cancelled.
-     *
-     * @return bool
-     */
-    public function canceled()
-    {
-        return $this->cancelled();
-    }
-
-    /**
-     * Determine if the batch has been cancelled.
-     *
-     * @return bool
-     */
-    public function cancelled()
-    {
-        return ! is_null($this->cancelledAt);
-    }
-
-    /**
-     * Delete the batch from storage.
-     *
-     * @return void
-     */
-    public function delete()
-    {
-        $this->repository->delete($this->id);
-    }
-
-    /**
-     * Invoke a batch callback handler.
-     *
-     * @param  \Illuminate\Queue\SerializableClosure|callable  $handler
-     * @param  \Illuminate\Bus\Batch  $batch
-     * @param  \Throwable|null  $e
-     * @return void
-     */
-    protected function invokeHandlerCallback($handler, Batch $batch, Throwable $e = null)
-    {
-        return $handler instanceof SerializableClosure
-                    ? $handler->__invoke($batch, $e)
-                    : call_user_func($handler, $batch, $e);
-    }
-
-    /**
-     * Convert the batch to an array.
-     *
-     * @return array
-     */
-    public function toArray()
-    {
-        return [
-            'id' => $this->id,
-            'name' => $this->name,
-            'totalJobs' => $this->totalJobs,
-            'pendingJobs' => $this->pendingJobs,
-            'processedJobs' => $this->processedJobs(),
-            'progress' => $this->progress(),
-            'failedJobs' => $this->failedJobs,
-            'options' => $this->options,
-            'createdAt' => $this->createdAt,
-            'cancelledAt' => $this->cancelledAt,
-            'finishedAt' => $this->finishedAt,
-        ];
-    }
-
-    /**
-     * Get the JSON serializable representation of the object.
-     *
-     * @return array
-     */
-    public function jsonSerialize()
-    {
-        return $this->toArray();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

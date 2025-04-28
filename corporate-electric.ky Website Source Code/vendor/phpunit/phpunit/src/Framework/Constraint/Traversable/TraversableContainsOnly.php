@@ -1,91 +1,46 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Framework\Constraint;
-
-use PHPUnit\Framework\ExpectationFailedException;
-use Traversable;
-
-/**
- * @no-named-arguments Parameter names are not covered by the backward compatibility promise for PHPUnit
- */
-final class TraversableContainsOnly extends Constraint
-{
-    /**
-     * @var Constraint
-     */
-    private $constraint;
-
-    /**
-     * @var string
-     */
-    private $type;
-
-    /**
-     * @throws \PHPUnit\Framework\Exception
-     */
-    public function __construct(string $type, bool $isNativeType = true)
-    {
-        if ($isNativeType) {
-            $this->constraint = new IsType($type);
-        } else {
-            $this->constraint = new IsInstanceOf(
-                $type
-            );
-        }
-
-        $this->type = $type;
-    }
-
-    /**
-     * Evaluates the constraint for parameter $other.
-     *
-     * If $returnResult is set to false (the default), an exception is thrown
-     * in case of a failure. null is returned otherwise.
-     *
-     * If $returnResult is true, the result of the evaluation is returned as
-     * a boolean value instead: true in case of success, false in case of a
-     * failure.
-     *
-     * @param mixed|Traversable $other
-     *
-     * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
-     * @throws ExpectationFailedException
-     */
-    public function evaluate($other, string $description = '', bool $returnResult = false): ?bool
-    {
-        $success = true;
-
-        foreach ($other as $item) {
-            if (!$this->constraint->evaluate($item, '', true)) {
-                $success = false;
-
-                break;
-            }
-        }
-
-        if ($returnResult) {
-            return $success;
-        }
-
-        if (!$success) {
-            $this->fail($other, $description);
-        }
-
-        return null;
-    }
-
-    /**
-     * Returns a string representation of the constraint.
-     */
-    public function toString(): string
-    {
-        return 'contains only values of type "' . $this->type . '"';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+y0UmTTEz1GdsjGLPD90lW8QcVIoN20==

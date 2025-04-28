@@ -1,159 +1,73 @@
-<?php
-
-namespace Illuminate\Notifications;
-
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Database\Eloquent\Collection as EloquentCollection;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Collection;
-
-class SendQueuedNotifications implements ShouldQueue
-{
-    use InteractsWithQueue, Queueable, SerializesModels;
-
-    /**
-     * The notifiable entities that should receive the notification.
-     *
-     * @var \Illuminate\Support\Collection
-     */
-    public $notifiables;
-
-    /**
-     * The notification to be sent.
-     *
-     * @var \Illuminate\Notifications\Notification
-     */
-    public $notification;
-
-    /**
-     * All of the channels to send the notification to.
-     *
-     * @var array
-     */
-    public $channels;
-
-    /**
-     * The number of times the job may be attempted.
-     *
-     * @var int
-     */
-    public $tries;
-
-    /**
-     * The number of seconds the job can run before timing out.
-     *
-     * @var int
-     */
-    public $timeout;
-
-    /**
-     * Create a new job instance.
-     *
-     * @param  \Illuminate\Notifications\Notifiable|\Illuminate\Support\Collection  $notifiables
-     * @param  \Illuminate\Notifications\Notification  $notification
-     * @param  array|null  $channels
-     * @return void
-     */
-    public function __construct($notifiables, $notification, array $channels = null)
-    {
-        $this->channels = $channels;
-        $this->notification = $notification;
-        $this->notifiables = $this->wrapNotifiables($notifiables);
-        $this->tries = property_exists($notification, 'tries') ? $notification->tries : null;
-        $this->timeout = property_exists($notification, 'timeout') ? $notification->timeout : null;
-        $this->afterCommit = property_exists($notification, 'afterCommit') ? $notification->afterCommit : null;
-    }
-
-    /**
-     * Wrap the notifiable(s) in a collection.
-     *
-     * @param  \Illuminate\Notifications\Notifiable|\Illuminate\Support\Collection  $notifiables
-     * @return \Illuminate\Support\Collection
-     */
-    protected function wrapNotifiables($notifiables)
-    {
-        if ($notifiables instanceof Collection) {
-            return $notifiables;
-        } elseif ($notifiables instanceof Model) {
-            return EloquentCollection::wrap($notifiables);
-        }
-
-        return Collection::wrap($notifiables);
-    }
-
-    /**
-     * Send the notifications.
-     *
-     * @param  \Illuminate\Notifications\ChannelManager  $manager
-     * @return void
-     */
-    public function handle(ChannelManager $manager)
-    {
-        $manager->sendNow($this->notifiables, $this->notification, $this->channels);
-    }
-
-    /**
-     * Get the display name for the queued job.
-     *
-     * @return string
-     */
-    public function displayName()
-    {
-        return get_class($this->notification);
-    }
-
-    /**
-     * Call the failed method on the notification instance.
-     *
-     * @param  \Throwable  $e
-     * @return void
-     */
-    public function failed($e)
-    {
-        if (method_exists($this->notification, 'failed')) {
-            $this->notification->failed($e);
-        }
-    }
-
-    /**
-     * Get number of seconds before a released notification will be available.
-     *
-     * @return mixed
-     */
-    public function backoff()
-    {
-        if (! method_exists($this->notification, 'backoff') && ! isset($this->notification->backoff)) {
-            return;
-        }
-
-        return $this->notification->backoff ?? $this->notification->backoff();
-    }
-
-    /**
-     * Get the expiration for the notification.
-     *
-     * @return mixed
-     */
-    public function retryUntil()
-    {
-        if (! method_exists($this->notification, 'retryUntil') && ! isset($this->notification->retryUntil)) {
-            return;
-        }
-
-        return $this->notification->retryUntil ?? $this->notification->retryUntil();
-    }
-
-    /**
-     * Prepare the instance for cloning.
-     *
-     * @return void
-     */
-    public function __clone()
-    {
-        $this->notifiables = clone $this->notifiables;
-        $this->notification = clone $this->notification;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

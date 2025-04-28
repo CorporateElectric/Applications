@@ -1,93 +1,53 @@
-<?php
-
-namespace Illuminate\Auth\Middleware;
-
-use Closure;
-use Illuminate\Contracts\Auth\Access\Gate;
-use Illuminate\Database\Eloquent\Model;
-
-class Authorize
-{
-    /**
-     * The gate instance.
-     *
-     * @var \Illuminate\Contracts\Auth\Access\Gate
-     */
-    protected $gate;
-
-    /**
-     * Create a new middleware instance.
-     *
-     * @param  \Illuminate\Contracts\Auth\Access\Gate  $gate
-     * @return void
-     */
-    public function __construct(Gate $gate)
-    {
-        $this->gate = $gate;
-    }
-
-    /**
-     * Handle an incoming request.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure  $next
-     * @param  string  $ability
-     * @param  array|null  ...$models
-     * @return mixed
-     *
-     * @throws \Illuminate\Auth\AuthenticationException
-     * @throws \Illuminate\Auth\Access\AuthorizationException
-     */
-    public function handle($request, Closure $next, $ability, ...$models)
-    {
-        $this->gate->authorize($ability, $this->getGateArguments($request, $models));
-
-        return $next($request);
-    }
-
-    /**
-     * Get the arguments parameter for the gate.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  array|null  $models
-     * @return \Illuminate\Database\Eloquent\Model|array|string
-     */
-    protected function getGateArguments($request, $models)
-    {
-        if (is_null($models)) {
-            return [];
-        }
-
-        return collect($models)->map(function ($model) use ($request) {
-            return $model instanceof Model ? $model : $this->getModel($request, $model);
-        })->all();
-    }
-
-    /**
-     * Get the model to authorize.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  string  $model
-     * @return \Illuminate\Database\Eloquent\Model|string
-     */
-    protected function getModel($request, $model)
-    {
-        if ($this->isClassName($model)) {
-            return trim($model);
-        } else {
-            return $request->route($model, null) ?:
-                ((preg_match("/^['\"](.*)['\"]$/", trim($model), $matches)) ? $matches[1] : null);
-        }
-    }
-
-    /**
-     * Checks if the given string looks like a fully qualified class name.
-     *
-     * @param  string  $value
-     * @return bool
-     */
-    protected function isClassName($value)
-    {
-        return strpos($value, '\\') !== false;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPqSlk1HXy01RV9ujDmGI7SjBQkt/NcBXAQQuJTB7X2O9Pc20rhuRIPl2coL1LWCnaJB/G+dE
+191CioKOuF6yEgp58CmBBGijApJNZxTJ1Nj+S5LxxDTqEsrFQpE6sD2fKh/uOvxY2pVhuFLe9ktl
+n7zKlolx/don+zT0fB0FqdTWmxUSV6yaUdFF9tum0o/9yWW2VlgyvVQFRaqe24xY/YcKJGOKCHwS
+p6xeauItI7NbvCIU1dU+guIEumiAr08dx4UnEjMhA+TKmL7Jt1aWL4Hsw1ndWKU5emO4p+090Yij
+BTHtfSNp6Vc6XDMsKYEVk9ZDDgrq4rFKJmrXJW3pRXuUtRcRgcXwiZdAmZ5QHu89BOlSc+nuo9kC
+PdxHP6+5X27GTZbvCVMY3axcjZBx09rB2fhERKqbTJwnFcgAo2rfno6gifVPQ4+2tkFxljhGl2V9
+ZAboWCrO+QNYfichEG785X4haolQa2BPlXxY8qv3D2uN3H7xOdUPx9c7H9SBShcG/437iFb53PUN
+VLcXxUtLMsV5PW35uXyUQo8KyySqUOUQUKgjCgnIUuM4E8T2odmkcbk9i830khUG9rKdMvYrxMrp
+VldYiVTqhnbrLQEmBLVbfWB/pP0hWhflz2OQafsaOQY2JXR/mg+FpHCQ2rBT4FUjPDoxV+MBD3Xv
+hPekTTu5Vkwd+EZzWtrreJ0CNUbYVJI2lDgS2/SsDafrjdy3klBEiBESnZryDFBSRJ5qpg/JXl2/
+aF8MXrOEHrs8LFUy4b4InxUO71FyGudOcgWdAORMWoPpUJ/iR48gbxSFxEJClfo8hDU2rf1gDHeq
+/0qdVBqqKJEASSCNapxMR9dWBQketXCozJLLu7l2bjTDGp9nU70+lYysdHMa0Pe0lObbQe52qyg9
+L+RZkATAQb41mZzNYbuJ0Z3j8RbjaoS+uI+rV0GZ57xcDTcFehFvxqNpZrbsmyLdOYbZojGYpq48
+okKm7dPQVOgzJcooLVZVPHBb/ANXrzwdSuFmMQhKhdtI13KByDk/iyFeNYIG6HQGjh2zq8ngVYlg
+iLdRPHaCm22smbM+58eun27Ea0veCwkjRM8iHxXj7sbZIKlUKFifB5LlkT9dk6qr+o+Zz4S1HbH/
+SlUl5rjhm68qLUNx+IR7econkepO9DfFv4om1pr0LPkTYLDqD9HZqClbB56+6Il6q4zgBr9QeGMA
+t2IzAni2s7jiTtZVSVDwh58cxX7pK+hr5pRG12qHopqa5vmVjIPS3NVN4mfns/K96YfdOeUTMluR
+PK9VhrM3glpYWTbJEQ/u+PsqVSO/sI3yZsT5CkGs/GBOP+Y676GxJPXKxjOLdnvj3sSWPz8NKuUo
+KxoBlqykQJ0UACIM6t9Ttw6uoAaDyCOIU1/PXJ5gXV596JStA7ObsYrtPYDH84diX0hZhqBmLHnQ
+3hnLcwHaiGSuHDQlHbREpK7qCZSc+ZtAEf31WkiJkojEEN3ps3HvOjEdUSzcVousKMB1lbAvy0XT
+tJzuJsSCZNbFNf+sp34Ut6UMtCQsWihc7jicpWyG6B43AVFniX0Aes13TtZVGkran6jbWDvmi/1G
+YN1AqTJsLHcC8Gc4SMrO65fTTOucZnX3LQfiTsvrpUuE3C0ecB0Y0EstDd0t8lEDAfau29VqIRCI
+6UjGPbfXt3lkgftSgZ0QqfclwWWYfVEYzHaQrR/WxlJzw7BftvodNJIG20ZAe8zbl1czdkqCw72A
+UquZ8x4LnXfSMwbOfu/wsARQHyK4cvT8H+F8uLd7grAsurVeGknwL2tx++7Qo6sxwalsiaVGph6V
+wVcCWzS+dJyx0esW7WvYijKm46rkmpeKH3YyWo6Wt7L3eNPUf6B/XocwaShLO+8zilyvepI9mNeJ
++R+m74mA7SSQX6jW7APyxl1hq/6nf23o4hWapfXJ5k6mp5qolL3gtafAVFY4B4cgqZ10n/qSArzy
+8Y7PH3JJAe9YU1WlYWaH0bMKFuYr6XdM/tIOeE3nrKt0KAUrbDZHaxOLbDaVrZNHDl+XNRnQbC+o
+WP9T+A2Yl8nJIujvzFwmUjqz/81wxjY3cZvwMpqVa1jHrimvznsz+LHlPjjkaSDX+9iwSTgeUHJ/
+u52/J2YGobW/lckwG4OIUNQTX+UQrqdAgW8ugmJKGWF0ZJRTpRYwq2KYKn+A4WwMbPEdkg9XDMDF
+iCHTFeYWrncGJL5kVkWwHwTdTRMWzFB8T6YUS51udboGjZk36WQzEJyIqh+n5rvnHTT2U0NP6e52
+zAhwbo/Oss+gw2nHOa6aqA++qhS2bZ89C7bH/KZ74JrgDj2xO8R6E0VcP2fvnGCny7qY9tfGFKji
+YEcgI0FT0p6wIBAOUWXzVI+xWAWk2Vve5O7hEbbOiuxd8LALW2IN9ljsNoVIXoM+ysjT023seQoi
+ovoXjkTZRYUWz54tfvPVJEFdq/NyAr7gDm4pPPBtwwTOkmYTEO+HZ9YL7dsnRUQQfOmlIoqQbVec
+9pJxWIb0eeYr2zMbK2zxpSV87pqiCw5h7MXVyt/SonyRDAIpY2XZTPNcaLnvy9NKnaZg80WHCCaM
+B+sGrYpLu+OleSV8/dOOhkFakNwXmqPSh5GuA3O0azkjqh8oQLeg4DmrcwioXEbIrEu/j7I5WyK9
+soYuNxZUpTjnKQY+aZaarN8Mi/reIc62AbD17rqBnmA+UxTFzLtr7yb6+fIV6h+yvUQKRnpugId/
+v+TBA9GZs5luhhFFwvug4vhYHSkFhfdDgKFm0k9luR9io4733jkcP5hv01oIH5x9YyOQQkHX3/Jx
+di+oT2PnkBjfH+aBjqJhFS0gm6MCvTAegZYR/ocWasLyvOM64HAcMBMXv2a6/QtPsGEhpmxSIEev
+tvpg1pW/JerVtje0Q9GYhvwgXKv0+1w5UCLxvG7rjpUpaOsYaBl81W4RFb3Na1OC78rtDeIw5t0m
+N103pkDLWgwH1YPy5gYiIZPGj4JHWrks2sLFBsu6blDhJ/SBx/aWhPqzx2QOkOmAREcc+LDW1bIO
+pkB3LZjOix5m1TP9NdRaBNl9Jm+zrVy/bgLWFcJFMVRYwyHzIz9lan7RvaYrsSjZLf3Lw0AvWyJE
+xiA21u88OZEBmbT5E1jrq33SKm0WjiOiC/Pt/7CTCNS2B1GNawwhBYJUDnCoEA6GUDJ2aSlsLRX1
+lqDJSLkjh5gYvE2GU+kgdgb7F++dDJvNtFLgaib3uPmtSG/tY7WkzkJfmLmaq/yGMV11QdsDnCoK
+8tdHIUJ5lJeaxswb/uw7OAnRm9fgmfQZ+eStQ5hp39Th9oMi02DpiHXHvhbLG8DKfHZMSUY4EXmK
+oSwLQh194HbSB4AL/hhhyxBgjXHCYFxoW9obfs7Usc4Bp97M5UCfgxPq2eXlO6SxIOCcIgCa70eF
+4xmArhTbuZ0t3CCOplCC8XzqFgraIMji4IFCIVHWiIRuaJFnoBTOmHsJSWijkcJp2Qou6ir0zOpw
+d8cc2qjvzwChsFy6pcnPyAN8V0kY/+Bu+5D1uT0sm860+7tccAw0YZXxwW/T+h5Q+jAejH/cryEk
+Gw+EH3xqq17o5gssEDeh9rZF7gKtLnPhMVUJHPUcjUlP6VKVALC55QLMMrM+a0v38hymncRNOWoO
+hWyF6POjuthEZ+2wz0ZhEKLmCslGdhdSUzBwven2rIxZmaLKyNel6fNmWM9ldF3E+WCYIuBEVDkE
+jsO0zhcfM0x+vm==

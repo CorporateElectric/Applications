@@ -1,122 +1,48 @@
-<?php
-
-/**
- * Generic property list implementation
- */
-class HTMLPurifier_PropertyList
-{
-    /**
-     * Internal data-structure for properties.
-     * @type array
-     */
-    protected $data = array();
-
-    /**
-     * Parent plist.
-     * @type HTMLPurifier_PropertyList
-     */
-    protected $parent;
-
-    /**
-     * Cache.
-     * @type array
-     */
-    protected $cache;
-
-    /**
-     * @param HTMLPurifier_PropertyList $parent Parent plist
-     */
-    public function __construct($parent = null)
-    {
-        $this->parent = $parent;
-    }
-
-    /**
-     * Recursively retrieves the value for a key
-     * @param string $name
-     * @throws HTMLPurifier_Exception
-     */
-    public function get($name)
-    {
-        if ($this->has($name)) {
-            return $this->data[$name];
-        }
-        // possible performance bottleneck, convert to iterative if necessary
-        if ($this->parent) {
-            return $this->parent->get($name);
-        }
-        throw new HTMLPurifier_Exception("Key '$name' not found");
-    }
-
-    /**
-     * Sets the value of a key, for this plist
-     * @param string $name
-     * @param mixed $value
-     */
-    public function set($name, $value)
-    {
-        $this->data[$name] = $value;
-    }
-
-    /**
-     * Returns true if a given key exists
-     * @param string $name
-     * @return bool
-     */
-    public function has($name)
-    {
-        return array_key_exists($name, $this->data);
-    }
-
-    /**
-     * Resets a value to the value of it's parent, usually the default. If
-     * no value is specified, the entire plist is reset.
-     * @param string $name
-     */
-    public function reset($name = null)
-    {
-        if ($name == null) {
-            $this->data = array();
-        } else {
-            unset($this->data[$name]);
-        }
-    }
-
-    /**
-     * Squashes this property list and all of its property lists into a single
-     * array, and returns the array. This value is cached by default.
-     * @param bool $force If true, ignores the cache and regenerates the array.
-     * @return array
-     */
-    public function squash($force = false)
-    {
-        if ($this->cache !== null && !$force) {
-            return $this->cache;
-        }
-        if ($this->parent) {
-            return $this->cache = array_merge($this->parent->squash($force), $this->data);
-        } else {
-            return $this->cache = $this->data;
-        }
-    }
-
-    /**
-     * Returns the parent plist.
-     * @return HTMLPurifier_PropertyList
-     */
-    public function getParent()
-    {
-        return $this->parent;
-    }
-
-    /**
-     * Sets the parent plist.
-     * @param HTMLPurifier_PropertyList $plist Parent plist
-     */
-    public function setParent($plist)
-    {
-        $this->parent = $plist;
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+BpIHxI93/VtEJpXjLAMuQLoI

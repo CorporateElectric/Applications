@@ -1,83 +1,47 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Predis\Command;
-
-/**
- * @link http://redis.io/commands/sort
- *
- * @author Daniele Alessandri <suppakilla@gmail.com>
- */
-class KeySort extends Command
-{
-    /**
-     * {@inheritdoc}
-     */
-    public function getId()
-    {
-        return 'SORT';
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function filterArguments(array $arguments)
-    {
-        if (count($arguments) === 1) {
-            return $arguments;
-        }
-
-        $query = array($arguments[0]);
-        $sortParams = array_change_key_case($arguments[1], CASE_UPPER);
-
-        if (isset($sortParams['BY'])) {
-            $query[] = 'BY';
-            $query[] = $sortParams['BY'];
-        }
-
-        if (isset($sortParams['GET'])) {
-            $getargs = $sortParams['GET'];
-
-            if (is_array($getargs)) {
-                foreach ($getargs as $getarg) {
-                    $query[] = 'GET';
-                    $query[] = $getarg;
-                }
-            } else {
-                $query[] = 'GET';
-                $query[] = $getargs;
-            }
-        }
-
-        if (isset($sortParams['LIMIT']) &&
-            is_array($sortParams['LIMIT']) &&
-            count($sortParams['LIMIT']) == 2) {
-            $query[] = 'LIMIT';
-            $query[] = $sortParams['LIMIT'][0];
-            $query[] = $sortParams['LIMIT'][1];
-        }
-
-        if (isset($sortParams['SORT'])) {
-            $query[] = strtoupper($sortParams['SORT']);
-        }
-
-        if (isset($sortParams['ALPHA']) && $sortParams['ALPHA'] == true) {
-            $query[] = 'ALPHA';
-        }
-
-        if (isset($sortParams['STORE'])) {
-            $query[] = 'STORE';
-            $query[] = $sortParams['STORE'];
-        }
-
-        return $query;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+NhEsuY+V4RgAINcx

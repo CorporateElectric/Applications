@@ -1,233 +1,88 @@
-<?php
-
-declare(strict_types=1);
-
-namespace Carbon\PHPStan;
-
-use Closure;
-use PHPStan\Reflection\Php\BuiltinMethodReflection;
-use PHPStan\TrinaryLogic;
-use ReflectionClass;
-use ReflectionFunction;
-use ReflectionMethod;
-use ReflectionParameter;
-use ReflectionType;
-use stdClass;
-use Throwable;
-
-final class Macro implements BuiltinMethodReflection
-{
-    /**
-     * The class name.
-     *
-     * @var class-string
-     */
-    private $className;
-
-    /**
-     * The method name.
-     *
-     * @var string
-     */
-    private $methodName;
-
-    /**
-     * The reflection function/method.
-     *
-     * @var ReflectionFunction|ReflectionMethod
-     */
-    private $reflectionFunction;
-
-    /**
-     * The parameters.
-     *
-     * @var ReflectionParameter[]
-     */
-    private $parameters;
-
-    /**
-     * The is static.
-     *
-     * @var bool
-     */
-    private $static = false;
-
-    /**
-     * Macro constructor.
-     *
-     * @param string $className
-     * @phpstan-param class-string $className
-     *
-     * @param string   $methodName
-     * @param callable $macro
-     */
-    public function __construct(string $className, string $methodName, $macro)
-    {
-        $this->className = $className;
-        $this->methodName = $methodName;
-        $this->reflectionFunction = \is_array($macro)
-            ? new ReflectionMethod($macro[0], $macro[1])
-            : new ReflectionFunction($macro);
-        $this->parameters = $this->reflectionFunction->getParameters();
-
-        if ($this->reflectionFunction->isClosure()) {
-            try {
-                /** @var Closure $closure */
-                $closure = $this->reflectionFunction->getClosure();
-                $boundClosure = Closure::bind($closure, new stdClass);
-                $this->static = (!$boundClosure || (new ReflectionFunction($boundClosure))->getClosureThis() === null);
-            } catch (Throwable $e) {
-                $this->static = true;
-            }
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getDeclaringClass(): ReflectionClass
-    {
-        return new ReflectionClass($this->className);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function isPrivate(): bool
-    {
-        return false;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function isPublic(): bool
-    {
-        return true;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function isFinal(): bool
-    {
-        return false;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function isInternal(): bool
-    {
-        return false;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function isAbstract(): bool
-    {
-        return false;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function isStatic(): bool
-    {
-        return $this->static;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getDocComment(): ?string
-    {
-        return $this->reflectionFunction->getDocComment() ?: null;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getFileName()
-    {
-        return $this->reflectionFunction->getFileName();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getName(): string
-    {
-        return $this->methodName;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getParameters(): array
-    {
-        return $this->parameters;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getReturnType(): ?ReflectionType
-    {
-        return $this->reflectionFunction->getReturnType();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getStartLine()
-    {
-        return $this->reflectionFunction->getStartLine();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getEndLine()
-    {
-        return $this->reflectionFunction->getEndLine();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function isDeprecated(): TrinaryLogic
-    {
-        return TrinaryLogic::createFromBoolean(
-            $this->reflectionFunction->isDeprecated() ||
-            preg_match('/@deprecated/i', $this->getDocComment() ?: '')
-        );
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function isVariadic(): bool
-    {
-        return $this->reflectionFunction->isVariadic();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getPrototype(): BuiltinMethodReflection
-    {
-        return $this;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getReflection(): ?ReflectionMethod
-    {
-        return $this->reflectionFunction instanceof ReflectionMethod
-            ? $this->reflectionFunction
-            : null;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

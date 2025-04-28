@@ -1,125 +1,30 @@
-<?php
-
-namespace Psr\Log;
-
-/**
- * Describes a logger instance.
- *
- * The message MUST be a string or object implementing __toString().
- *
- * The message MAY contain placeholders in the form: {foo} where foo
- * will be replaced by the context data in key "foo".
- *
- * The context array can contain arbitrary data. The only assumption that
- * can be made by implementors is that if an Exception instance is given
- * to produce a stack trace, it MUST be in a key named "exception".
- *
- * See https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-3-logger-interface.md
- * for the full interface specification.
- */
-interface LoggerInterface
-{
-    /**
-     * System is unusable.
-     *
-     * @param string  $message
-     * @param mixed[] $context
-     *
-     * @return void
-     */
-    public function emergency($message, array $context = array());
-
-    /**
-     * Action must be taken immediately.
-     *
-     * Example: Entire website down, database unavailable, etc. This should
-     * trigger the SMS alerts and wake you up.
-     *
-     * @param string  $message
-     * @param mixed[] $context
-     *
-     * @return void
-     */
-    public function alert($message, array $context = array());
-
-    /**
-     * Critical conditions.
-     *
-     * Example: Application component unavailable, unexpected exception.
-     *
-     * @param string  $message
-     * @param mixed[] $context
-     *
-     * @return void
-     */
-    public function critical($message, array $context = array());
-
-    /**
-     * Runtime errors that do not require immediate action but should typically
-     * be logged and monitored.
-     *
-     * @param string  $message
-     * @param mixed[] $context
-     *
-     * @return void
-     */
-    public function error($message, array $context = array());
-
-    /**
-     * Exceptional occurrences that are not errors.
-     *
-     * Example: Use of deprecated APIs, poor use of an API, undesirable things
-     * that are not necessarily wrong.
-     *
-     * @param string  $message
-     * @param mixed[] $context
-     *
-     * @return void
-     */
-    public function warning($message, array $context = array());
-
-    /**
-     * Normal but significant events.
-     *
-     * @param string  $message
-     * @param mixed[] $context
-     *
-     * @return void
-     */
-    public function notice($message, array $context = array());
-
-    /**
-     * Interesting events.
-     *
-     * Example: User logs in, SQL logs.
-     *
-     * @param string  $message
-     * @param mixed[] $context
-     *
-     * @return void
-     */
-    public function info($message, array $context = array());
-
-    /**
-     * Detailed debug information.
-     *
-     * @param string  $message
-     * @param mixed[] $context
-     *
-     * @return void
-     */
-    public function debug($message, array $context = array());
-
-    /**
-     * Logs with an arbitrary level.
-     *
-     * @param mixed   $level
-     * @param string  $message
-     * @param mixed[] $context
-     *
-     * @return void
-     *
-     * @throws \Psr\Log\InvalidArgumentException
-     */
-    public function log($level, $message, array $context = array());
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,56 +1,45 @@
-<?php
-
-/**
- * Performs miscellaneous cross attribute validation and filtering for
- * input elements. This is meant to be a post-transform.
- */
-class HTMLPurifier_AttrTransform_Input extends HTMLPurifier_AttrTransform
-{
-    /**
-     * @type HTMLPurifier_AttrDef_HTML_Pixels
-     */
-    protected $pixels;
-
-    public function __construct()
-    {
-        $this->pixels = new HTMLPurifier_AttrDef_HTML_Pixels();
-    }
-
-    /**
-     * @param array $attr
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return array
-     */
-    public function transform($attr, $config, $context)
-    {
-        if (!isset($attr['type'])) {
-            $t = 'text';
-        } else {
-            $t = strtolower($attr['type']);
-        }
-        if (isset($attr['checked']) && $t !== 'radio' && $t !== 'checkbox') {
-            unset($attr['checked']);
-        }
-        if (isset($attr['maxlength']) && $t !== 'text' && $t !== 'password') {
-            unset($attr['maxlength']);
-        }
-        if (isset($attr['size']) && $t !== 'text' && $t !== 'password') {
-            $result = $this->pixels->validate($attr['size'], $config, $context);
-            if ($result === false) {
-                unset($attr['size']);
-            } else {
-                $attr['size'] = $result;
-            }
-        }
-        if (isset($attr['src']) && $t !== 'image') {
-            unset($attr['src']);
-        }
-        if (!isset($attr['value']) && ($t === 'radio' || $t === 'checkbox')) {
-            $attr['value'] = '';
-        }
-        return $attr;
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

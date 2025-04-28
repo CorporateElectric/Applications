@@ -1,67 +1,44 @@
-<?php
-namespace Hamcrest\Core;
-
-/*
- Copyright (c) 2009 hamcrest.org
- */
-use Hamcrest\Description;
-use Hamcrest\DiagnosingMatcher;
-
-/**
- * Tests whether the value is an instance of a class.
- */
-class IsInstanceOf extends DiagnosingMatcher
-{
-
-    private $_theClass;
-
-    /**
-     * Creates a new instance of IsInstanceOf
-     *
-     * @param string $theClass
-     *   The predicate evaluates to true for instances of this class
-     *   or one of its subclasses.
-     */
-    public function __construct($theClass)
-    {
-        $this->_theClass = $theClass;
-    }
-
-    protected function matchesWithDiagnosticDescription($item, Description $mismatchDescription)
-    {
-        if (!is_object($item)) {
-            $mismatchDescription->appendText('was ')->appendValue($item);
-
-            return false;
-        }
-
-        if (!($item instanceof $this->_theClass)) {
-            $mismatchDescription->appendText('[' . get_class($item) . '] ')
-                                                    ->appendValue($item);
-
-            return false;
-        }
-
-        return true;
-    }
-
-    public function describeTo(Description $description)
-    {
-        $description->appendText('an instance of ')
-                                ->appendText($this->_theClass)
-                                ;
-    }
-
-    /**
-     * Is the value an instance of a particular type?
-     * This version assumes no relationship between the required type and
-     * the signature of the method that sets it up, for example in
-     * <code>assertThat($anObject, anInstanceOf('Thing'));</code>
-     *
-     * @factory any
-     */
-    public static function anInstanceOf($theClass)
-    {
-        return new self($theClass);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

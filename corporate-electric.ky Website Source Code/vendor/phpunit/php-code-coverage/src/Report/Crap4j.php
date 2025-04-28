@@ -1,153 +1,109 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of phpunit/php-code-coverage.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\CodeCoverage\Report;
-
-use function date;
-use function dirname;
-use function file_put_contents;
-use function htmlspecialchars;
-use function is_string;
-use function round;
-use DOMDocument;
-use SebastianBergmann\CodeCoverage\CodeCoverage;
-use SebastianBergmann\CodeCoverage\Directory;
-use SebastianBergmann\CodeCoverage\Driver\WriteOperationFailedException;
-use SebastianBergmann\CodeCoverage\Node\File;
-
-final class Crap4j
-{
-    /**
-     * @var int
-     */
-    private $threshold;
-
-    public function __construct(int $threshold = 30)
-    {
-        $this->threshold = $threshold;
-    }
-
-    /**
-     * @throws WriteOperationFailedException
-     */
-    public function process(CodeCoverage $coverage, ?string $target = null, ?string $name = null): string
-    {
-        $document               = new DOMDocument('1.0', 'UTF-8');
-        $document->formatOutput = true;
-
-        $root = $document->createElement('crap_result');
-        $document->appendChild($root);
-
-        $project = $document->createElement('project', is_string($name) ? $name : '');
-        $root->appendChild($project);
-        $root->appendChild($document->createElement('timestamp', date('Y-m-d H:i:s')));
-
-        $stats       = $document->createElement('stats');
-        $methodsNode = $document->createElement('methods');
-
-        $report = $coverage->getReport();
-        unset($coverage);
-
-        $fullMethodCount     = 0;
-        $fullCrapMethodCount = 0;
-        $fullCrapLoad        = 0;
-        $fullCrap            = 0;
-
-        foreach ($report as $item) {
-            $namespace = 'global';
-
-            if (!$item instanceof File) {
-                continue;
-            }
-
-            $file = $document->createElement('file');
-            $file->setAttribute('name', $item->pathAsString());
-
-            $classes = $item->classesAndTraits();
-
-            foreach ($classes as $className => $class) {
-                foreach ($class['methods'] as $methodName => $method) {
-                    $crapLoad = $this->crapLoad((float) $method['crap'], $method['ccn'], $method['coverage']);
-
-                    $fullCrap += $method['crap'];
-                    $fullCrapLoad += $crapLoad;
-                    $fullMethodCount++;
-
-                    if ($method['crap'] >= $this->threshold) {
-                        $fullCrapMethodCount++;
-                    }
-
-                    $methodNode = $document->createElement('method');
-
-                    if (!empty($class['namespace'])) {
-                        $namespace = $class['namespace'];
-                    }
-
-                    $methodNode->appendChild($document->createElement('package', $namespace));
-                    $methodNode->appendChild($document->createElement('className', $className));
-                    $methodNode->appendChild($document->createElement('methodName', $methodName));
-                    $methodNode->appendChild($document->createElement('methodSignature', htmlspecialchars($method['signature'])));
-                    $methodNode->appendChild($document->createElement('fullMethod', htmlspecialchars($method['signature'])));
-                    $methodNode->appendChild($document->createElement('crap', (string) $this->roundValue((float) $method['crap'])));
-                    $methodNode->appendChild($document->createElement('complexity', (string) $method['ccn']));
-                    $methodNode->appendChild($document->createElement('coverage', (string) $this->roundValue($method['coverage'])));
-                    $methodNode->appendChild($document->createElement('crapLoad', (string) round($crapLoad)));
-
-                    $methodsNode->appendChild($methodNode);
-                }
-            }
-        }
-
-        $stats->appendChild($document->createElement('name', 'Method Crap Stats'));
-        $stats->appendChild($document->createElement('methodCount', (string) $fullMethodCount));
-        $stats->appendChild($document->createElement('crapMethodCount', (string) $fullCrapMethodCount));
-        $stats->appendChild($document->createElement('crapLoad', (string) round($fullCrapLoad)));
-        $stats->appendChild($document->createElement('totalCrap', (string) $fullCrap));
-
-        $crapMethodPercent = 0;
-
-        if ($fullMethodCount > 0) {
-            $crapMethodPercent = $this->roundValue((100 * $fullCrapMethodCount) / $fullMethodCount);
-        }
-
-        $stats->appendChild($document->createElement('crapMethodPercent', (string) $crapMethodPercent));
-
-        $root->appendChild($stats);
-        $root->appendChild($methodsNode);
-
-        $buffer = $document->saveXML();
-
-        if ($target !== null) {
-            Directory::create(dirname($target));
-
-            if (@file_put_contents($target, $buffer) === false) {
-                throw new WriteOperationFailedException($target);
-            }
-        }
-
-        return $buffer;
-    }
-
-    private function crapLoad(float $crapValue, int $cyclomaticComplexity, float $coveragePercent): float
-    {
-        $crapLoad = 0;
-
-        if ($crapValue >= $this->threshold) {
-            $crapLoad += $cyclomaticComplexity * (1.0 - $coveragePercent / 100);
-            $crapLoad += $cyclomaticComplexity / $this->threshold;
-        }
-
-        return $crapLoad;
-    }
-
-    private function roundValue(float $value): float
-    {
-        return round($value, 2);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

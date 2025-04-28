@@ -1,246 +1,171 @@
-<?php declare(strict_types=1);
-
-namespace PhpParser\NodeVisitor;
-
-use PhpParser\ErrorHandler;
-use PhpParser\NameContext;
-use PhpParser\Node;
-use PhpParser\Node\Expr;
-use PhpParser\Node\Name;
-use PhpParser\Node\Name\FullyQualified;
-use PhpParser\Node\Stmt;
-use PhpParser\NodeVisitorAbstract;
-
-class NameResolver extends NodeVisitorAbstract
-{
-    /** @var NameContext Naming context */
-    protected $nameContext;
-
-    /** @var bool Whether to preserve original names */
-    protected $preserveOriginalNames;
-
-    /** @var bool Whether to replace resolved nodes in place, or to add resolvedNode attributes */
-    protected $replaceNodes;
-
-    /**
-     * Constructs a name resolution visitor.
-     *
-     * Options:
-     *  * preserveOriginalNames (default false): An "originalName" attribute will be added to
-     *    all name nodes that underwent resolution.
-     *  * replaceNodes (default true): Resolved names are replaced in-place. Otherwise, a
-     *    resolvedName attribute is added. (Names that cannot be statically resolved receive a
-     *    namespacedName attribute, as usual.)
-     *
-     * @param ErrorHandler|null $errorHandler Error handler
-     * @param array $options Options
-     */
-    public function __construct(ErrorHandler $errorHandler = null, array $options = []) {
-        $this->nameContext = new NameContext($errorHandler ?? new ErrorHandler\Throwing);
-        $this->preserveOriginalNames = $options['preserveOriginalNames'] ?? false;
-        $this->replaceNodes = $options['replaceNodes'] ?? true;
-    }
-
-    /**
-     * Get name resolution context.
-     *
-     * @return NameContext
-     */
-    public function getNameContext() : NameContext {
-        return $this->nameContext;
-    }
-
-    public function beforeTraverse(array $nodes) {
-        $this->nameContext->startNamespace();
-        return null;
-    }
-
-    public function enterNode(Node $node) {
-        if ($node instanceof Stmt\Namespace_) {
-            $this->nameContext->startNamespace($node->name);
-        } elseif ($node instanceof Stmt\Use_) {
-            foreach ($node->uses as $use) {
-                $this->addAlias($use, $node->type, null);
-            }
-        } elseif ($node instanceof Stmt\GroupUse) {
-            foreach ($node->uses as $use) {
-                $this->addAlias($use, $node->type, $node->prefix);
-            }
-        } elseif ($node instanceof Stmt\Class_) {
-            if (null !== $node->extends) {
-                $node->extends = $this->resolveClassName($node->extends);
-            }
-
-            foreach ($node->implements as &$interface) {
-                $interface = $this->resolveClassName($interface);
-            }
-
-            $this->resolveAttrGroups($node);
-            if (null !== $node->name) {
-                $this->addNamespacedName($node);
-            }
-        } elseif ($node instanceof Stmt\Interface_) {
-            foreach ($node->extends as &$interface) {
-                $interface = $this->resolveClassName($interface);
-            }
-
-            $this->resolveAttrGroups($node);
-            $this->addNamespacedName($node);
-        } elseif ($node instanceof Stmt\Trait_) {
-            $this->resolveAttrGroups($node);
-            $this->addNamespacedName($node);
-        } elseif ($node instanceof Stmt\Function_) {
-            $this->resolveSignature($node);
-            $this->resolveAttrGroups($node);
-            $this->addNamespacedName($node);
-        } elseif ($node instanceof Stmt\ClassMethod
-                  || $node instanceof Expr\Closure
-                  || $node instanceof Expr\ArrowFunction
-        ) {
-            $this->resolveSignature($node);
-            $this->resolveAttrGroups($node);
-        } elseif ($node instanceof Stmt\Property) {
-            if (null !== $node->type) {
-                $node->type = $this->resolveType($node->type);
-            }
-            $this->resolveAttrGroups($node);
-        } elseif ($node instanceof Stmt\Const_) {
-            foreach ($node->consts as $const) {
-                $this->addNamespacedName($const);
-            }
-        } else if ($node instanceof Stmt\ClassConst) {
-            $this->resolveAttrGroups($node);
-        } elseif ($node instanceof Expr\StaticCall
-                  || $node instanceof Expr\StaticPropertyFetch
-                  || $node instanceof Expr\ClassConstFetch
-                  || $node instanceof Expr\New_
-                  || $node instanceof Expr\Instanceof_
-        ) {
-            if ($node->class instanceof Name) {
-                $node->class = $this->resolveClassName($node->class);
-            }
-        } elseif ($node instanceof Stmt\Catch_) {
-            foreach ($node->types as &$type) {
-                $type = $this->resolveClassName($type);
-            }
-        } elseif ($node instanceof Expr\FuncCall) {
-            if ($node->name instanceof Name) {
-                $node->name = $this->resolveName($node->name, Stmt\Use_::TYPE_FUNCTION);
-            }
-        } elseif ($node instanceof Expr\ConstFetch) {
-            $node->name = $this->resolveName($node->name, Stmt\Use_::TYPE_CONSTANT);
-        } elseif ($node instanceof Stmt\TraitUse) {
-            foreach ($node->traits as &$trait) {
-                $trait = $this->resolveClassName($trait);
-            }
-
-            foreach ($node->adaptations as $adaptation) {
-                if (null !== $adaptation->trait) {
-                    $adaptation->trait = $this->resolveClassName($adaptation->trait);
-                }
-
-                if ($adaptation instanceof Stmt\TraitUseAdaptation\Precedence) {
-                    foreach ($adaptation->insteadof as &$insteadof) {
-                        $insteadof = $this->resolveClassName($insteadof);
-                    }
-                }
-            }
-        }
-
-        return null;
-    }
-
-    private function addAlias(Stmt\UseUse $use, $type, Name $prefix = null) {
-        // Add prefix for group uses
-        $name = $prefix ? Name::concat($prefix, $use->name) : $use->name;
-        // Type is determined either by individual element or whole use declaration
-        $type |= $use->type;
-
-        $this->nameContext->addAlias(
-            $name, (string) $use->getAlias(), $type, $use->getAttributes()
-        );
-    }
-
-    /** @param Stmt\Function_|Stmt\ClassMethod|Expr\Closure $node */
-    private function resolveSignature($node) {
-        foreach ($node->params as $param) {
-            $param->type = $this->resolveType($param->type);
-            $this->resolveAttrGroups($param);
-        }
-        $node->returnType = $this->resolveType($node->returnType);
-    }
-
-    private function resolveType($node) {
-        if ($node instanceof Name) {
-            return $this->resolveClassName($node);
-        }
-        if ($node instanceof Node\NullableType) {
-            $node->type = $this->resolveType($node->type);
-            return $node;
-        }
-        if ($node instanceof Node\UnionType) {
-            foreach ($node->types as &$type) {
-                $type = $this->resolveType($type);
-            }
-            return $node;
-        }
-        return $node;
-    }
-
-    /**
-     * Resolve name, according to name resolver options.
-     *
-     * @param Name $name Function or constant name to resolve
-     * @param int  $type One of Stmt\Use_::TYPE_*
-     *
-     * @return Name Resolved name, or original name with attribute
-     */
-    protected function resolveName(Name $name, int $type) : Name {
-        if (!$this->replaceNodes) {
-            $resolvedName = $this->nameContext->getResolvedName($name, $type);
-            if (null !== $resolvedName) {
-                $name->setAttribute('resolvedName', $resolvedName);
-            } else {
-                $name->setAttribute('namespacedName', FullyQualified::concat(
-                    $this->nameContext->getNamespace(), $name, $name->getAttributes()));
-            }
-            return $name;
-        }
-
-        if ($this->preserveOriginalNames) {
-            // Save the original name
-            $originalName = $name;
-            $name = clone $originalName;
-            $name->setAttribute('originalName', $originalName);
-        }
-
-        $resolvedName = $this->nameContext->getResolvedName($name, $type);
-        if (null !== $resolvedName) {
-            return $resolvedName;
-        }
-
-        // unqualified names inside a namespace cannot be resolved at compile-time
-        // add the namespaced version of the name as an attribute
-        $name->setAttribute('namespacedName', FullyQualified::concat(
-            $this->nameContext->getNamespace(), $name, $name->getAttributes()));
-        return $name;
-    }
-
-    protected function resolveClassName(Name $name) {
-        return $this->resolveName($name, Stmt\Use_::TYPE_NORMAL);
-    }
-
-    protected function addNamespacedName(Node $node) {
-        $node->namespacedName = Name::concat(
-            $this->nameContext->getNamespace(), (string) $node->name);
-    }
-
-    protected function resolveAttrGroups(Node $node)
-    {
-        foreach ($node->attrGroups as $attrGroup) {
-            foreach ($attrGroup->attrs as $attr) {
-                $attr->name = $this->resolveClassName($attr->name);
-            }
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,68 +1,52 @@
-<?php
-
-/*
- * This file is part of the league/commonmark package.
- *
- * (c) Colin O'Dell <colinodell@gmail.com>
- *
- * Original code based on the CommonMark JS reference parser (https://bitly.com/commonmark-js)
- *  - (c) John MacFarlane
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace League\CommonMark\Inline\Renderer;
-
-use League\CommonMark\ElementRendererInterface;
-use League\CommonMark\HtmlElement;
-use League\CommonMark\Inline\Element\AbstractInline;
-use League\CommonMark\Inline\Element\Image;
-use League\CommonMark\Util\ConfigurationAwareInterface;
-use League\CommonMark\Util\ConfigurationInterface;
-use League\CommonMark\Util\RegexHelper;
-
-final class ImageRenderer implements InlineRendererInterface, ConfigurationAwareInterface
-{
-    /**
-     * @var ConfigurationInterface
-     */
-    protected $config;
-
-    /**
-     * @param Image                    $inline
-     * @param ElementRendererInterface $htmlRenderer
-     *
-     * @return HtmlElement
-     */
-    public function render(AbstractInline $inline, ElementRendererInterface $htmlRenderer)
-    {
-        if (!($inline instanceof Image)) {
-            throw new \InvalidArgumentException('Incompatible inline type: ' . \get_class($inline));
-        }
-
-        $attrs = $inline->getData('attributes', []);
-
-        $forbidUnsafeLinks = !$this->config->get('allow_unsafe_links');
-        if ($forbidUnsafeLinks && RegexHelper::isLinkPotentiallyUnsafe($inline->getUrl())) {
-            $attrs['src'] = '';
-        } else {
-            $attrs['src'] = $inline->getUrl();
-        }
-
-        $alt = $htmlRenderer->renderInlines($inline->children());
-        $alt = \preg_replace('/\<[^>]*alt="([^"]*)"[^>]*\>/', '$1', $alt);
-        $attrs['alt'] = \preg_replace('/\<[^>]*\>/', '', $alt);
-
-        if (isset($inline->data['title'])) {
-            $attrs['title'] = $inline->data['title'];
-        }
-
-        return new HtmlElement('img', $attrs, '', true);
-    }
-
-    public function setConfiguration(ConfigurationInterface $configuration)
-    {
-        $this->config = $configuration;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+GXxpFXTEhMrh5JL/Hgza9CkxLZ8j9aszFzlIk0==

@@ -1,54 +1,30 @@
-<?php
-
-namespace Illuminate\Foundation\Events;
-
-trait Dispatchable
-{
-    /**
-     * Dispatch the event with the given arguments.
-     *
-     * @return void
-     */
-    public static function dispatch()
-    {
-        return event(new static(...func_get_args()));
-    }
-
-    /**
-     * Dispatch the event with the given arguments if the given truth test passes.
-     *
-     * @param  bool  $boolean
-     * @param  mixed  ...$arguments
-     * @return void
-     */
-    public static function dispatchIf($boolean, ...$arguments)
-    {
-        if ($boolean) {
-            return event(new static(...$arguments));
-        }
-    }
-
-    /**
-     * Dispatch the event with the given arguments unless the given truth test passes.
-     *
-     * @param  bool  $boolean
-     * @param  mixed  ...$arguments
-     * @return void
-     */
-    public static function dispatchUnless($boolean, ...$arguments)
-    {
-        if (! $boolean) {
-            return event(new static(...$arguments));
-        }
-    }
-
-    /**
-     * Broadcast the event with the given arguments.
-     *
-     * @return \Illuminate\Broadcasting\PendingBroadcast
-     */
-    public static function broadcast()
-    {
-        return broadcast(new static(...func_get_args()));
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+vXs6pvLy776RQUqCPWrKj0ToIq4=

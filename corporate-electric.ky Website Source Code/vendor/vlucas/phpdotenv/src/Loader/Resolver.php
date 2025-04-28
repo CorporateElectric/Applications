@@ -1,65 +1,45 @@
-<?php
-
-declare(strict_types=1);
-
-namespace Dotenv\Loader;
-
-use Dotenv\Parser\Value;
-use Dotenv\Repository\RepositoryInterface;
-use Dotenv\Util\Regex;
-use Dotenv\Util\Str;
-use PhpOption\Option;
-
-final class Resolver
-{
-    /**
-     * This class is a singleton.
-     *
-     * @codeCoverageIgnore
-     *
-     * @return void
-     */
-    private function __construct()
-    {
-        //
-    }
-
-    /**
-     * Resolve the nested variables in the given value.
-     *
-     * Replaces ${varname} patterns in the allowed positions in the variable
-     * value by an existing environment variable.
-     *
-     * @param \Dotenv\Repository\RepositoryInterface $repository
-     * @param \Dotenv\Parser\Value                   $value
-     *
-     * @return string
-     */
-    public static function resolve(RepositoryInterface $repository, Value $value)
-    {
-        return \array_reduce($value->getVars(), static function (string $s, int $i) use ($repository) {
-            return Str::substr($s, 0, $i).self::resolveVariable($repository, Str::substr($s, $i));
-        }, $value->getChars());
-    }
-
-    /**
-     * Resolve a single nested variable.
-     *
-     * @param \Dotenv\Repository\RepositoryInterface $repository
-     * @param string                                 $str
-     *
-     * @return string
-     */
-    private static function resolveVariable(RepositoryInterface $repository, string $str)
-    {
-        return Regex::replaceCallback(
-            '/\A\${([a-zA-Z0-9_.]+)}/',
-            static function (array $matches) use ($repository) {
-                return Option::fromValue($repository->get($matches[1]))
-                    ->getOrElse($matches[0]);
-            },
-            $str,
-            1
-        )->success()->getOrElse($str);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPxAiqm6pSIWsIXn68W/6VNm3ObFKiIn4XCk5xR8TClgEg1S4zUUfUIopRv2MnCxiAV1FdNhz
+UbvI05Z+6jIsdEdRfMI8kD0SKru4CXgpjBJBSn5On4/OZwGWvIKqM4+VEAqJ+wgDP1vMheGMdvZu
+p7HAh6eFQ+nW3duV/zQK+ml+Vrx6IE8Xqi9FKIi0h/x1zJaUCTFR2vEJg8GD+oaf9w8o3MqNVgYC
+5N+iyT3ZfabhPDz6meCQhlaurInuCCnhpw+mr3hLgoldLC5HqzmP85H4TkYEQLySGGBS0ovp1EVR
+DqwR5F+AHWVf7VxAODzd7rQeQ3iSyNR7/M92MF9LZHy7tl3Q77bzu8G0TL+rO+IWv1IQqsT6USy+
+WP5cGmUNHB462ii2mYk85aHc5OmCGsleRhY5f+67GdmrTMjDKh1i8it8oyK4u9W1PqqJiylaFlem
+3PTd7ZXSUK2qX/ATNduM+o0bw5g1qfcug/yXJAnUzuU4RVRYcAhrU5Zx0uYGe9/i2AyE6WoxFu5g
++DcNY3iGhZTqsCpqhyHxaJMPUQePWecqKOCSpYmiXEnix/Il6NQ32cGhZFc8LHr4tAFfNM1I1P97
+1/tlybkzZcYV532/qiPreB84/bqldDP3dGsIUohwH55s//kF4zKMExRZDs24s8B7aVUNyBvLP0xo
+nFA5zSfXBvllTvx+LloDJYGZENaoaHM/5JHh5qLJShRgTO2L3TK+k61EhXmmcMmjOP62GBkfpZBo
+voxnRrVnABS5JCEAZWAHjV+AFkNjrJxkShXvqWHVG/aZfVeeMaT8ly+PLAM7YqPFVH+8ftuYlctD
+pHYZY6vDakLUX9/XaWxqb6yTyM50XbYP4+WQqvyidty5erC8724zVoezPy+/UwDQI8n5/dWZpW5f
+2ihWJc4XXNkezWpUJttBFb4sqYRBZ/dvSCE3NR0wDjzJvA+mBjXvYC2hFW10trOG9SP9o3hU6KIO
+dNnKd3tiUaBqP1jZUFgeyW1GZeihml7yZnAcJboHB5KdyftVkXecyxwcilRCQKHNrcnTR1hiOA5s
+yrAD08PqUdlmX3sg9Bxe41atisODae0Q3Dowa5JZYVbqCkOUKBaldmrEFRLqHrjnRBwuRp3KtNcA
+VgqD9dL6AQWTQhsK6akX+//c/GAMIoT3axqpl8OhD8Lo4TYA4CriN3g9C+951lcduohB2ELiaIJ5
+2A7bvckPBL3cj4t8wy2M5nPrq5aquXg6Fn4iRou9BTdrKVXIVeyAk7RNJwFuik8HWlIaHcvw/aif
+9FSDDxQ3f1Dg/4k6vX+TT0WI9xpDLBGo3oDO8BnzWDT7BKL/RYWkuxiqMe7w/WTFAxBh4RQosaAp
+w4B1KbPZIg94GLcPRbdMZxp1ZUmjZhuPrhpEb9ZyfjLEB6AjB6vYO1U9u1Gzrcpc/n/WAu54PDhp
+sVbJkknecrVfmg8jWjBZd8bWS65ACkoM157RmicZsLpJdpuxtBUHKPMaXLyDkZBWPP+R+DBb/0R0
+q2gz/33mPWzpvRdsHVQW+dfwN+BjKMf9BGlMmiPMLXpWbjXEGY31gegAX22DSXvK59GGtg0GQOaD
+Ji5Uc7s19/3mp/dqrlg3jbmzJ5uR7VvRTeQmjOquJRpUXj+UKuPheRK4fQ4aU/jEUIRULIoSfQEF
+BrFDPUzYPRHU92PB/tCzJR+/NirTyFNhLVrgH70dTDAoFrJo99OhSplvoizTk6hv2RlWuNm8I0xE
+uQBzZVnO5EObiSR9HQfgXDGq7YF3khBtNoeE+Skup+tbCTFIiPvmmXPasF1PNfQ28JetbE3R7Qxw
+8LB+fho3LfaHqgVLZh+xbd4LHhYsnVqcaoRHUSoCAZ39Aq8IDqJMg8hLdpJRWyK8KhV4qIyAc59h
+cnSm1z5oO7+ZZ04+f2tdautn1hxOir/rzqSbfc45v5mEAScjPXLkCaeTynWo88obBVoRo3/x9Eb5
+WngB/FObYkXn9bZwdwsHB9ynCm38jlpv5Q/vKgEFAbseatwStjWPBHaMlUm9wiQEXhql104YEjNd
+LR1sLkyZBPcE6UXDxtT1fZk0EJSe+sYyzYVfpc96MvvZf9mKaAWIA1qY1kMKWTLl9eY94aI1VqwM
+ac3jBBFFhcDChtL0+EEuNrQ4rX1E47GlNwglGQgH1nJTjP48rC9IfjXFWMqsFJiEetHGOVNlLrs2
+1jBEXezn/DkLk5oFAV2cFzIa+o9/kE1HKjwj6OIabjKotXcPGHWHbB8CAb4shYHC7wPsQb9yznkV
+KSS/KbHT+C74PlT+TaMNKPMtcmJp6yLD5vzzsSZxGcvbBYh96gEnEjO8qPkLJtw2hEo5dbHUQ4eW
+BIhkahfuWyiS4x4XPCkq0FyYIwH107p/Qk3a/9PYGa1U18L/AuVe+Q6lKoDBjwEbzaILy4r6R0rV
+cpr5Rbv2saCSH1bdjAzar0MNG4G/da7105r3kLq1pnegH37xEnNhoIRCnlepZPV9Z+D5Aug09mmS
+xyYCW1+V2G+3gQNSbF9/9vDMakCWRybksZLeai8kKJhIZ704FmlJrFxUV+WQvdD/AujEEKBme5tK
+RshAnqNTGRS4hEVzlMwOyP3XBCiuKJTMzOt5Zw8N/kITQMqoZ7tg5I4fP2OvqoPvww5VTmbou1mw
+VSAULyrwqeUDU6I6tmBqz2ZE1HYkE1jnq995XRjUT4yEoDZOrzmqoni00yGX/utLlwqKelCp4Az1
+O8QRN4OV2uIEq1flSCXA1tr4ng9rJ2DB9QlD1TfBpa9gyj8TaT+gFNwtCMbW1tzPQZsoSRjfCcpV
+f044cmnOTk/UOL6fpv3xOBHPCy0rZDmkvWXyCpkebnZ2m19nXdUsfIJl47Dzpj2DyYzMijjULqxe
+PUUGTCC0YowMHPN1YQja5Q5la6KjEBp+mzcEJZhqa8uaeWTgh6+roB+xC4osrgqIFpk/3tbZoRcx
+vne0EtQCLIcjtuQIyI9G+s6n5nr9TwD9h3Lq6+Q1zZj2d50eQAsAwBz9xih5g6HVie64jrnQ3pcJ
+VJ77EY3RvLXNA9/jbqsWR68r282G6oL11gRpta+bSX5HPK7hyGiADb+zMCqZIkHkBnVdGQ7LB7O2
+VipS6nI70nmYXU9zLK2aH1jUQG==

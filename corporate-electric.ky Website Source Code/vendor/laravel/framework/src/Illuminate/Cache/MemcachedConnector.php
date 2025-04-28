@@ -1,87 +1,45 @@
-<?php
-
-namespace Illuminate\Cache;
-
-use Memcached;
-
-class MemcachedConnector
-{
-    /**
-     * Create a new Memcached connection.
-     *
-     * @param  array  $servers
-     * @param  string|null  $connectionId
-     * @param  array  $options
-     * @param  array  $credentials
-     * @return \Memcached
-     */
-    public function connect(array $servers, $connectionId = null, array $options = [], array $credentials = [])
-    {
-        $memcached = $this->getMemcached(
-            $connectionId, $credentials, $options
-        );
-
-        if (! $memcached->getServerList()) {
-            // For each server in the array, we'll just extract the configuration and add
-            // the server to the Memcached connection. Once we have added all of these
-            // servers we'll verify the connection is successful and return it back.
-            foreach ($servers as $server) {
-                $memcached->addServer(
-                    $server['host'], $server['port'], $server['weight']
-                );
-            }
-        }
-
-        return $memcached;
-    }
-
-    /**
-     * Get a new Memcached instance.
-     *
-     * @param  string|null  $connectionId
-     * @param  array  $credentials
-     * @param  array  $options
-     * @return \Memcached
-     */
-    protected function getMemcached($connectionId, array $credentials, array $options)
-    {
-        $memcached = $this->createMemcachedInstance($connectionId);
-
-        if (count($credentials) === 2) {
-            $this->setCredentials($memcached, $credentials);
-        }
-
-        if (count($options)) {
-            $memcached->setOptions($options);
-        }
-
-        return $memcached;
-    }
-
-    /**
-     * Create the Memcached instance.
-     *
-     * @param  string|null  $connectionId
-     * @return \Memcached
-     */
-    protected function createMemcachedInstance($connectionId)
-    {
-        return empty($connectionId) ? new Memcached : new Memcached($connectionId);
-    }
-
-    /**
-     * Set the SASL credentials on the Memcached connection.
-     *
-     * @param  \Memcached  $memcached
-     * @param  array  $credentials
-     * @return void
-     */
-    protected function setCredentials($memcached, $credentials)
-    {
-        [$username, $password] = $credentials;
-
-        $memcached->setOption(Memcached::OPT_BINARY_PROTOCOL, true);
-
-        $memcached->setSaslAuthData($username, $password);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,73 +1,61 @@
-<?php
-
-namespace League\Glide\Urls;
-
-use League\Glide\Signatures\Signature;
-use PHPUnit\Framework\TestCase;
-
-class UrlBuilderTest extends TestCase
-{
-    public function testCreateInstance()
-    {
-        $this->assertInstanceOf('League\Glide\Urls\UrlBuilder', new UrlBuilder());
-    }
-
-    public function testGetUrl()
-    {
-        $urlBuilder = new UrlBuilder('http://example.com');
-
-        $this->assertEquals(
-            'http://example.com/image.jpg?w=100',
-            $urlBuilder->getUrl('image.jpg', ['w' => '100'])
-        );
-    }
-
-    public function testGetUrlWithNoDomain()
-    {
-        $urlBuilder = new UrlBuilder();
-
-        $this->assertEquals(
-            '/image.jpg?w=100',
-            $urlBuilder->getUrl('image.jpg', ['w' => '100'])
-        );
-    }
-
-    public function testGetUrlWithDomainAndPort()
-    {
-        $urlBuilder = new UrlBuilder('http://localhost:8000');
-
-        $this->assertEquals(
-            'http://localhost:8000/image.jpg?w=100',
-            $urlBuilder->getUrl('image.jpg', ['w' => '100'])
-        );
-    }
-
-    public function testGetUrlWithProtocolRelativeDomain()
-    {
-        $urlBuilder = new UrlBuilder('//localhost:8000');
-
-        $this->assertEquals(
-            '//localhost:8000/image.jpg?w=100',
-            $urlBuilder->getUrl('image.jpg', ['w' => '100'])
-        );
-    }
-
-    public function testGetUrlWithToken()
-    {
-        $urlBuilder = new UrlBuilder('http://example.com', new Signature('example-sign-key'));
-
-        $this->assertEquals(
-            'http://example.com/image.jpg?w=100&s=e1b69d4b79ecf33283128819fd008906',
-            $urlBuilder->getUrl('image.jpg', ['w' => '100'])
-        );
-    }
-
-    public function testGetInvalidUrl()
-    {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('Not a valid path.');
-
-        $urlBuilder = new UrlBuilder(':80');
-        $urlBuilder->getUrl('image.jpg');
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+wASb

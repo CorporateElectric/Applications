@@ -1,205 +1,70 @@
-<?php
-
-namespace Illuminate\Foundation\Bus;
-
-use Illuminate\Container\Container;
-use Illuminate\Contracts\Bus\Dispatcher;
-use Illuminate\Contracts\Cache\Repository as Cache;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
-
-class PendingDispatch
-{
-    /**
-     * The job.
-     *
-     * @var mixed
-     */
-    protected $job;
-
-    /**
-     * Indicates if the job should be dispatched immediately after sending the response.
-     *
-     * @var bool
-     */
-    protected $afterResponse = false;
-
-    /**
-     * Create a new pending job dispatch.
-     *
-     * @param  mixed  $job
-     * @return void
-     */
-    public function __construct($job)
-    {
-        $this->job = $job;
-    }
-
-    /**
-     * Set the desired connection for the job.
-     *
-     * @param  string|null  $connection
-     * @return $this
-     */
-    public function onConnection($connection)
-    {
-        $this->job->onConnection($connection);
-
-        return $this;
-    }
-
-    /**
-     * Set the desired queue for the job.
-     *
-     * @param  string|null  $queue
-     * @return $this
-     */
-    public function onQueue($queue)
-    {
-        $this->job->onQueue($queue);
-
-        return $this;
-    }
-
-    /**
-     * Set the desired connection for the chain.
-     *
-     * @param  string|null  $connection
-     * @return $this
-     */
-    public function allOnConnection($connection)
-    {
-        $this->job->allOnConnection($connection);
-
-        return $this;
-    }
-
-    /**
-     * Set the desired queue for the chain.
-     *
-     * @param  string|null  $queue
-     * @return $this
-     */
-    public function allOnQueue($queue)
-    {
-        $this->job->allOnQueue($queue);
-
-        return $this;
-    }
-
-    /**
-     * Set the desired delay for the job.
-     *
-     * @param  \DateTimeInterface|\DateInterval|int|null  $delay
-     * @return $this
-     */
-    public function delay($delay)
-    {
-        $this->job->delay($delay);
-
-        return $this;
-    }
-
-    /**
-     * Indicate that the job should be dispatched after all database transactions have committed.
-     *
-     * @return $this
-     */
-    public function afterCommit()
-    {
-        $this->job->afterCommit();
-
-        return $this;
-    }
-
-    /**
-     * Indicate that the job should not wait until database transactions have been committed before dispatching.
-     *
-     * @return $this
-     */
-    public function beforeCommit()
-    {
-        $this->job->beforeCommit();
-
-        return $this;
-    }
-
-    /**
-     * Set the jobs that should run if this job is successful.
-     *
-     * @param  array  $chain
-     * @return $this
-     */
-    public function chain($chain)
-    {
-        $this->job->chain($chain);
-
-        return $this;
-    }
-
-    /**
-     * Indicate that the job should be dispatched after the response is sent to the browser.
-     *
-     * @return $this
-     */
-    public function afterResponse()
-    {
-        $this->afterResponse = true;
-
-        return $this;
-    }
-
-    /**
-     * Determine if the job should be dispatched.
-     *
-     * @return bool
-     */
-    protected function shouldDispatch()
-    {
-        if (! $this->job instanceof ShouldBeUnique) {
-            return true;
-        }
-
-        $uniqueId = method_exists($this->job, 'uniqueId')
-                    ? $this->job->uniqueId()
-                    : ($this->job->uniqueId ?? '');
-
-        $cache = method_exists($this->job, 'uniqueVia')
-                    ? $this->job->uniqueVia()
-                    : Container::getInstance()->make(Cache::class);
-
-        return (bool) $cache->lock(
-            $key = 'laravel_unique_job:'.get_class($this->job).$uniqueId,
-            $this->job->uniqueFor ?? 0
-        )->get();
-    }
-
-    /**
-     * Dynamically proxy methods to the underlying job.
-     *
-     * @param  string  $method
-     * @param  array  $parameters
-     * @return $this
-     */
-    public function __call($method, $parameters)
-    {
-        $this->job->{$method}(...$parameters);
-
-        return $this;
-    }
-
-    /**
-     * Handle the object's destruction.
-     *
-     * @return void
-     */
-    public function __destruct()
-    {
-        if (! $this->shouldDispatch()) {
-            return;
-        } elseif ($this->afterResponse) {
-            app(Dispatcher::class)->dispatchAfterResponse($this->job);
-        } else {
-            app(Dispatcher::class)->dispatch($this->job);
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPpYGiGYtC0elJbqaAz0aXFsRDRHkMEUL/esud+ARaEP3kf47KiaXpX6VenfdDdLk+TA60egR
+zJaNnpSitDW4BHqXD4O66vx4hOqxBDGbSrDrE2YDe4cwiRUuLQHzfHgV6fMA8ypkqB1YBPMl7HwN
+G97Jl7Pl2mGZK2606Wz9hTuD2fLkxWApFafbzsCYjVFRBEJ7YnSOPqlIwQNI9Y43WBgKhIkJOaeI
+KMRrL1KjlbJXljyr67CLyiBKPmazEF/6g/s+EjMhA+TKmL7Jt1aWL4HswFPXNAiPs4cR5K3VmqEm
+Prqw4H6zHjxMVobPaWclkyjONsy/cY0MV1KCYD+/CFgpmXCptSELaqbK01GG7uhAO90f5gMX6GaX
+j0S7sl8R9HT5PxofIO4KrEbkI6RCvtsd+XF6n2+mg1qXe53Bj1/JE5htHKwupW+W/cKFbED4jB64
+v/kIbprt/rI42Ax/i8W4EMztxKcewYKKcK844HHccRXRudMMV2nmihaLW86Flv9jID98Ifv3q51n
+ZHa89u20tRy8rzXpTCHslb1qqiSYLA+8JvfBMbutlze8fi1z6uWmNn/wRsU/eY4cswnPG6fZdQii
+uvbA7TUUZCRvSe/3e8aDqUMubX5fLxGw/jVK7LJIkYyU6OtBHZj2Q0ipyMEckcNAsqwAzyjFfAD4
+ZfrPl77ezvA8ojfgi+HmDdvbQ/0BmGWb/lbn2Ahy3q4cmTKGYlzq/BMilBSLi04Ocnn34xp0/wR2
+d2QyNYj/BIoX0fMBv9U3smwb8RPn5tEl0bW/QG3hJGk4qugPEl4QZMH9OV4JPg6JJo4M7sVS/Udl
+UqadsYtb0U9QQEGNOAIczRyTO+n3mvbyPJkeYFGeoqBEMjzx5nJd6XQE7fzTb0J/S+aSp2YCaRLI
+w5Zf7TeEeBTdfkn90Pday5BLcI67DfEUVBi8EaXsN53i9locpKLtqV+YnwTlCBBhvUmTBIDsNmth
+HU8EBKcqqZ5zDh/ZZgv40lMASFyerY6SH/Z98PjX/8h0nI/pDjn8ZoHpodSadHpLD7QkULDhgwOk
+NUZ5yOTd/ZjHGBaeDSDSFJe/rJZz+catPtmm+BP44L1Awt0Wo22DFqkxc/GQyC7d3Tt/P2fpOx6F
+5rCaRlH4wW92X24eSqAMkZQgliQwEhKgqf42WguaZ6q5grLWcDjIGd5VB+JfvB87goXTvOFRof6u
+Fq0+msqtfZ9MzFVbmua3b1FwCpdERVfGg97VHBWuqfK5w+GlpFu+Z32JbEYANZfUDOCz810hHtNe
+WuwM016l4IVSC2hxfaW5LevSEM6iRIuVI2ajWuNfSU7lypITYDQybK8VqKGdvpzRuyjV0j8RuvXK
+Vtahw/NDfdDKUIW+Ch5bFTfBTT23w83Ol0z4AXkqE5TliR0DioGosdY8Hv4wnaWJIrw1lGne49Qh
+v7D276OdumEv4X/oPcNnq1FKDDSud46/BttlAS4QzIZ8GZfWkrT1b9C4SODvl/S0sPefsMQiCJQN
+Ril2Vpg+eQyis3K5UVx/mNB4nkUTfT0LS6Pe8/z4OqryHdmCkB8uXW/pC3qmQ1pXR/4YiBb2OKJK
+LDXLEp8v/87DZBHYfVZKMdgs3AtEXosT/PB60vyDsl9LuDXOghwN2xTfNKIOeIjXczHJ6mFixmX9
+WIEi+bpwCgd0zEdIx22EKAZeKx+eV5y48y2lpf/HFcXvttOoAGDGLnZxlQP34H/lx1H1ZEzh0ONl
+rip6z2Y3WPB+Pxqr+awasbGWQgT4OmXtZGGXW5Tux2KNaFJbOVw2r1EGTgIqnkrXZMOGPOBRPXBr
+Aped+yUBsr7w5L2AnqqGr7AzoYJczvug0v4OBORXvee9l6ou8llAuvGVdt62OaTH00V0pBc8At5q
+xIAadexuGwUjV677MAOi0rvc7p7pj60Lrcbz+5PU0fIuAq0DDF5LTUp2+4LGso3xT0C4+CbQRg02
+7QJeq+7YEsivm0A4uYfKFLqxC31cZ4+I5+QB4GBXNaFjWOBJ4XSNSBd0h5UcY6MLHjKYNae4qfTL
+FbPNHeUz7kQl0iX1QK06lnoZKDk/7izwg3ArBW+pshO11x50duOcbttQ3XQNpBJ6y2kOa9kDStPb
+r8loPjFNJbsy/HaGJY4UrNbOP+5+/rbtdR2fq0YY3vu+1QZo1YM+FUV/FLQGvbw874JJqFvShuiD
+z5/xyl8/E1+5ijIifzS+h2C+6AkVhXHeJhWAFr1Ztqpdx+3l74jUzz60A8yCRMZFjYvXHEbSu1kZ
+Gy9k/8EyVp7sFgYZ+0rdkDHcUOmG+C60cXvVIVIKtZAMtspqpRu1+nFc3ZTbZXZDdGY+g5RpclWu
+YrJpsatsvu8t0LOFc4ahiXOwmar6kGvHpfJrSOoSUI11/mTx5uMt4rE3JfcPgNNtsaa303Hi4pJW
+pcWoiHx4hZwhXMkSLvTBhhWiMrsxhc7Tqn53dJ80g+cBphQETqCbDgX3fYSwIdz6QuCZVG5+rjbU
+5SsN+aioe4hCYMH5SId0ULng4MYra69xz9hMlSD5M2Y2EgCzXOTvB3Q3Jlz5dmczByp+10lYyOrK
+lilzAv88OgYXTTE8SNoUAmW/du3tkv+NvBF2za+15XQvw5XwqfaxDZZ/1mBXK/appIFdn4MHoubY
+xOlVCpv3o1MxB3THlQ+C0RIe3UFJAxIYqsyF3FFmdoQbWp+7yFwHB0+iaPw5E3PgKRFRcYSAUpab
+X7u1Nd2BaInydKDcDrq2kHCZ7EoTmvhObnicTdbOcWybUEajORClaYCYKRhtO/naOmjLjj8H0KyA
+H36bchLyWL8k8BuTCJg99KFoe2fnMfpgHvbqJlo8sbeixMPzRVcUIzCZElZ82mNAKVF8V1Oquw3u
+EeW7LbBqpizjqkc44IWmJVnlG9YaddBFX+bWqavIef3/Q6A9LbQQnceRHAHZ05871fRROtz0k2QW
+z16dXTdcZ6XysJOHNTLqARBDDIbpXZtKByfREhJbSOh6vM6ZSW3rGfTXB572g4wub76IVkKqGBbf
+NVxguHmxwupurGqZdHFhEEuxFuXiGH1MXa4s/z7MvavPnJBGpNPuJxDS+tB0S2IDNAyiAC/Vs+vI
+mLvolts54GHs33CadSGqNmetW82wnH8np/GKmzmLI1cQxK1D766wD6ksgDioCeyFHhDyZ0l2X7Kg
+JGXlZzcLzin39+69MW0160vCMlirzN2m/9N2dFSclhouFd5nYTiQPwtOtM44lT8nVBu7hdJBqcVI
+PWdnMpumHH3Y4Z4gMqB+shgfffyM3Xn3p6D47k8xqMBiLYRcf+0tyP00PAHyKIbLFOywVKjTXIvh
+Gu3ZBrYFr6ZGzaUIa8lgxljsFnf3/luQus6sQBX4sNYObzl5N3810/R3em9R9X0uMIWHzH/uhCTu
+oCssOiHDFrfL/hBZ09KS/v2uOCmbSQHtcHTnaNjn/nA6qzfK/8EYbK84gkIUV4JdNAH70M/1d8LM
++gpRcmK2bLpn5uuWYIkO17X5/qE0hmdmSeOMgmMTi9zkBaQslnmFyZ/uTY9SOmB7RH0fHCXyWt6a
+YTunMMstSn8c8DV2ZfkKYJXhCKISb5xda0Xm9L11IURJfQkzUMjnDXfSFfb//aLEn/sOG7yoxPC1
+lCH04nWB6nU5khyAX7FCBGy+UZ8oqeHfa0xju89mmu+/U1xR/m5IMP64R3+5TuVgIGNI4FJbWUQO
+s0YKYnP6LLj2uWHHb7tFnMie1Tw+OM/Y6ERIco577AigXbG7jg/SQKSgSakRpgZhbw3m0P+sjUsp
+KCcbTdD3m80r9ZXkZEZ6esEFL0lcgHyYOv5/OikQldJwO0s6d/zKgz1bjDx5e+LlMxFCisIIbrHI
+sZWvv0YIcVQAb760KEfCmtI8kkkn7Tlk6yFdlWB4psZvqW13gMDziBC6UORAkVMToaijlhadBt9v
+pERBBJxIjncxomMQgulEPH0ER5MzioOjlUC0YrQBYI5ZJyA4UQqmXyUCrT6yzJta8+URLAg4mrXr
+gA9FrC7CW8/Sx41R1GPLA5xPg97/ZC7C56POjQRdTGHqIPYco14hvivcighLDwNwGrPuKI9yTSs+
+9JsvsaGiLl9/KgbTXUdDYlBwAdE2zLlmgm4mQz6vwSKTGGVt/3BGqMtt6A7Yow3d7nFn/ntwrzsH
+sirTvjdR3WTPhfd6/8X+vzr+iElmDy4/UGIXp0340Qb/q+J1fCcNIL7rT8Hnc4iqNyQM09FEMsRM
+ufqxv4c5r9oXugRPQ88CfqqPXhyRYXakY/ccOna3ToG7U+DQv0KJEpM8WwmriwzAwqqicr6jfesI
+D5f0ArLk6qpAQrjuokc/jRJ2jF2nUG0Nq8TBRUz7Verp/P5LV1sBWh4iJzPAhuS1AJABU0a+25IL
+7OeWSH5bvauqmUhreUFzbA1XoH+Zt+bipYLmLIwbyDDcmocsUPGdlMIsyGNADHaTlK5XTuXxWbe5
+nHwn5uB6tHUzpW1Cgbvaok1170rq4n39Km51/PUNZL1QlZ+XqZ0pCajNwQXZBq3wdZxxIgKGZaB8
+GifA506S1s+llW84KqZLqg0G03Jc/TCedgDOall7/iG5Sch0YaIEoq2FtqUdO1TXbBKRh3A+urKk
+WLqHXzTGbprKflB65W2y+vSJ5UmXSUa5hDZLFTxlRmT32a61FjmkKO1ANM2hDDQLt2bUoMVzSVcY
+YXEkdh3IvztpvXbMqmdLXll9X0IKNU3O3wM+QPqDMyrzsbjPEvEmgBhoblBP7zq+MCzXhnxY5AYP
+D337Y5rnGWw1dKaUptSaV5IPvAEft0o5y4wFOWDCyaBFZaogcda6PA4HjkWhxqqgLvN29YGdX5fQ
+kvoOfErLQ6k6iX6BoGdEttQpYbSaAszC9U7Yv1dPOWr1VmSDKeJHyZcZ0EHZ4OnidMQtm3vL0kFK
+7pNnsvXFA7OEgnGX4I59QFIhquj2Wj17Z+z6syp53vUGfZCh6deNDpFUc3yQ6b9OnY09fhtn1XMb
+uShqR0==

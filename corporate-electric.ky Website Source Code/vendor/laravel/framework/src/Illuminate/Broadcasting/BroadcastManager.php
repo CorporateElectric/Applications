@@ -1,348 +1,145 @@
-<?php
-
-namespace Illuminate\Broadcasting;
-
-use Ably\AblyRest;
-use Closure;
-use Illuminate\Broadcasting\Broadcasters\AblyBroadcaster;
-use Illuminate\Broadcasting\Broadcasters\LogBroadcaster;
-use Illuminate\Broadcasting\Broadcasters\NullBroadcaster;
-use Illuminate\Broadcasting\Broadcasters\PusherBroadcaster;
-use Illuminate\Broadcasting\Broadcasters\RedisBroadcaster;
-use Illuminate\Contracts\Broadcasting\Factory as FactoryContract;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
-use Illuminate\Contracts\Bus\Dispatcher as BusDispatcherContract;
-use Illuminate\Contracts\Foundation\CachesRoutes;
-use InvalidArgumentException;
-use Psr\Log\LoggerInterface;
-use Pusher\Pusher;
-
-/**
- * @mixin \Illuminate\Contracts\Broadcasting\Broadcaster
- */
-class BroadcastManager implements FactoryContract
-{
-    /**
-     * The application instance.
-     *
-     * @var \Illuminate\Contracts\Container\Container
-     */
-    protected $app;
-
-    /**
-     * The array of resolved broadcast drivers.
-     *
-     * @var array
-     */
-    protected $drivers = [];
-
-    /**
-     * The registered custom driver creators.
-     *
-     * @var array
-     */
-    protected $customCreators = [];
-
-    /**
-     * Create a new manager instance.
-     *
-     * @param  \Illuminate\Contracts\Container\Container  $app
-     * @return void
-     */
-    public function __construct($app)
-    {
-        $this->app = $app;
-    }
-
-    /**
-     * Register the routes for handling broadcast authentication and sockets.
-     *
-     * @param  array|null  $attributes
-     * @return void
-     */
-    public function routes(array $attributes = null)
-    {
-        if ($this->app instanceof CachesRoutes && $this->app->routesAreCached()) {
-            return;
-        }
-
-        $attributes = $attributes ?: ['middleware' => ['web']];
-
-        $this->app['router']->group($attributes, function ($router) {
-            $router->match(
-                ['get', 'post'], '/broadcasting/auth',
-                '\\'.BroadcastController::class.'@authenticate'
-            )->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
-        });
-    }
-
-    /**
-     * Get the socket ID for the given request.
-     *
-     * @param  \Illuminate\Http\Request|null  $request
-     * @return string|null
-     */
-    public function socket($request = null)
-    {
-        if (! $request && ! $this->app->bound('request')) {
-            return;
-        }
-
-        $request = $request ?: $this->app['request'];
-
-        return $request->header('X-Socket-ID');
-    }
-
-    /**
-     * Begin broadcasting an event.
-     *
-     * @param  mixed|null  $event
-     * @return \Illuminate\Broadcasting\PendingBroadcast
-     */
-    public function event($event = null)
-    {
-        return new PendingBroadcast($this->app->make('events'), $event);
-    }
-
-    /**
-     * Queue the given event for broadcast.
-     *
-     * @param  mixed  $event
-     * @return void
-     */
-    public function queue($event)
-    {
-        if ($event instanceof ShouldBroadcastNow) {
-            return $this->app->make(BusDispatcherContract::class)->dispatchNow(new BroadcastEvent(clone $event));
-        }
-
-        $queue = null;
-
-        if (method_exists($event, 'broadcastQueue')) {
-            $queue = $event->broadcastQueue();
-        } elseif (isset($event->broadcastQueue)) {
-            $queue = $event->broadcastQueue;
-        } elseif (isset($event->queue)) {
-            $queue = $event->queue;
-        }
-
-        $this->app->make('queue')->connection($event->connection ?? null)->pushOn(
-            $queue, new BroadcastEvent(clone $event)
-        );
-    }
-
-    /**
-     * Get a driver instance.
-     *
-     * @param  string|null  $driver
-     * @return mixed
-     */
-    public function connection($driver = null)
-    {
-        return $this->driver($driver);
-    }
-
-    /**
-     * Get a driver instance.
-     *
-     * @param  string|null  $name
-     * @return mixed
-     */
-    public function driver($name = null)
-    {
-        $name = $name ?: $this->getDefaultDriver();
-
-        return $this->drivers[$name] = $this->get($name);
-    }
-
-    /**
-     * Attempt to get the connection from the local cache.
-     *
-     * @param  string  $name
-     * @return \Illuminate\Contracts\Broadcasting\Broadcaster
-     */
-    protected function get($name)
-    {
-        return $this->drivers[$name] ?? $this->resolve($name);
-    }
-
-    /**
-     * Resolve the given broadcaster.
-     *
-     * @param  string  $name
-     * @return \Illuminate\Contracts\Broadcasting\Broadcaster
-     *
-     * @throws \InvalidArgumentException
-     */
-    protected function resolve($name)
-    {
-        $config = $this->getConfig($name);
-
-        if (isset($this->customCreators[$config['driver']])) {
-            return $this->callCustomCreator($config);
-        }
-
-        $driverMethod = 'create'.ucfirst($config['driver']).'Driver';
-
-        if (! method_exists($this, $driverMethod)) {
-            throw new InvalidArgumentException("Driver [{$config['driver']}] is not supported.");
-        }
-
-        return $this->{$driverMethod}($config);
-    }
-
-    /**
-     * Call a custom driver creator.
-     *
-     * @param  array  $config
-     * @return mixed
-     */
-    protected function callCustomCreator(array $config)
-    {
-        return $this->customCreators[$config['driver']]($this->app, $config);
-    }
-
-    /**
-     * Create an instance of the driver.
-     *
-     * @param  array  $config
-     * @return \Illuminate\Contracts\Broadcasting\Broadcaster
-     */
-    protected function createPusherDriver(array $config)
-    {
-        $pusher = new Pusher(
-            $config['key'], $config['secret'],
-            $config['app_id'], $config['options'] ?? []
-        );
-
-        if ($config['log'] ?? false) {
-            $pusher->setLogger($this->app->make(LoggerInterface::class));
-        }
-
-        return new PusherBroadcaster($pusher);
-    }
-
-    /**
-     * Create an instance of the driver.
-     *
-     * @param  array  $config
-     * @return \Illuminate\Contracts\Broadcasting\Broadcaster
-     */
-    protected function createAblyDriver(array $config)
-    {
-        return new AblyBroadcaster(new AblyRest($config));
-    }
-
-    /**
-     * Create an instance of the driver.
-     *
-     * @param  array  $config
-     * @return \Illuminate\Contracts\Broadcasting\Broadcaster
-     */
-    protected function createRedisDriver(array $config)
-    {
-        return new RedisBroadcaster(
-            $this->app->make('redis'), $config['connection'] ?? null,
-            $this->app['config']->get('database.redis.options.prefix', '')
-        );
-    }
-
-    /**
-     * Create an instance of the driver.
-     *
-     * @param  array  $config
-     * @return \Illuminate\Contracts\Broadcasting\Broadcaster
-     */
-    protected function createLogDriver(array $config)
-    {
-        return new LogBroadcaster(
-            $this->app->make(LoggerInterface::class)
-        );
-    }
-
-    /**
-     * Create an instance of the driver.
-     *
-     * @param  array  $config
-     * @return \Illuminate\Contracts\Broadcasting\Broadcaster
-     */
-    protected function createNullDriver(array $config)
-    {
-        return new NullBroadcaster;
-    }
-
-    /**
-     * Get the connection configuration.
-     *
-     * @param  string  $name
-     * @return array
-     */
-    protected function getConfig($name)
-    {
-        if (! is_null($name) && $name !== 'null') {
-            return $this->app['config']["broadcasting.connections.{$name}"];
-        }
-
-        return ['driver' => 'null'];
-    }
-
-    /**
-     * Get the default driver name.
-     *
-     * @return string
-     */
-    public function getDefaultDriver()
-    {
-        return $this->app['config']['broadcasting.default'];
-    }
-
-    /**
-     * Set the default driver name.
-     *
-     * @param  string  $name
-     * @return void
-     */
-    public function setDefaultDriver($name)
-    {
-        $this->app['config']['broadcasting.default'] = $name;
-    }
-
-    /**
-     * Disconnect the given disk and remove from local cache.
-     *
-     * @param  string|null  $name
-     * @return void
-     */
-    public function purge($name = null)
-    {
-        $name = $name ?? $this->getDefaultDriver();
-
-        unset($this->drivers[$name]);
-    }
-
-    /**
-     * Register a custom driver creator Closure.
-     *
-     * @param  string  $driver
-     * @param  \Closure  $callback
-     * @return $this
-     */
-    public function extend($driver, Closure $callback)
-    {
-        $this->customCreators[$driver] = $callback;
-
-        return $this;
-    }
-
-    /**
-     * Dynamically call the default driver instance.
-     *
-     * @param  string  $method
-     * @param  array  $parameters
-     * @return mixed
-     */
-    public function __call($method, $parameters)
-    {
-        return $this->driver()->$method(...$parameters);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

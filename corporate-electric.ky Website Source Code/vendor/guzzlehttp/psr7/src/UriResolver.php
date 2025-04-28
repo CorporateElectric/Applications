@@ -1,220 +1,115 @@
-<?php
-
-namespace GuzzleHttp\Psr7;
-
-use Psr\Http\Message\UriInterface;
-
-/**
- * Resolves a URI reference in the context of a base URI and the opposite way.
- *
- * @author Tobias Schultze
- *
- * @link https://tools.ietf.org/html/rfc3986#section-5
- */
-final class UriResolver
-{
-    /**
-     * Removes dot segments from a path and returns the new path.
-     *
-     * @param string $path
-     *
-     * @return string
-     * @link http://tools.ietf.org/html/rfc3986#section-5.2.4
-     */
-    public static function removeDotSegments($path)
-    {
-        if ($path === '' || $path === '/') {
-            return $path;
-        }
-
-        $results = [];
-        $segments = explode('/', $path);
-        foreach ($segments as $segment) {
-            if ($segment === '..') {
-                array_pop($results);
-            } elseif ($segment !== '.') {
-                $results[] = $segment;
-            }
-        }
-
-        $newPath = implode('/', $results);
-
-        if ($path[0] === '/' && (!isset($newPath[0]) || $newPath[0] !== '/')) {
-            // Re-add the leading slash if necessary for cases like "/.."
-            $newPath = '/' . $newPath;
-        } elseif ($newPath !== '' && ($segment === '.' || $segment === '..')) {
-            // Add the trailing slash if necessary
-            // If newPath is not empty, then $segment must be set and is the last segment from the foreach
-            $newPath .= '/';
-        }
-
-        return $newPath;
-    }
-
-    /**
-     * Converts the relative URI into a new URI that is resolved against the base URI.
-     *
-     * @param UriInterface $base Base URI
-     * @param UriInterface $rel  Relative URI
-     *
-     * @return UriInterface
-     * @link http://tools.ietf.org/html/rfc3986#section-5.2
-     */
-    public static function resolve(UriInterface $base, UriInterface $rel)
-    {
-        if ((string) $rel === '') {
-            // we can simply return the same base URI instance for this same-document reference
-            return $base;
-        }
-
-        if ($rel->getScheme() != '') {
-            return $rel->withPath(self::removeDotSegments($rel->getPath()));
-        }
-
-        if ($rel->getAuthority() != '') {
-            $targetAuthority = $rel->getAuthority();
-            $targetPath = self::removeDotSegments($rel->getPath());
-            $targetQuery = $rel->getQuery();
-        } else {
-            $targetAuthority = $base->getAuthority();
-            if ($rel->getPath() === '') {
-                $targetPath = $base->getPath();
-                $targetQuery = $rel->getQuery() != '' ? $rel->getQuery() : $base->getQuery();
-            } else {
-                if ($rel->getPath()[0] === '/') {
-                    $targetPath = $rel->getPath();
-                } else {
-                    if ($targetAuthority != '' && $base->getPath() === '') {
-                        $targetPath = '/' . $rel->getPath();
-                    } else {
-                        $lastSlashPos = strrpos($base->getPath(), '/');
-                        if ($lastSlashPos === false) {
-                            $targetPath = $rel->getPath();
-                        } else {
-                            $targetPath = substr($base->getPath(), 0, $lastSlashPos + 1) . $rel->getPath();
-                        }
-                    }
-                }
-                $targetPath = self::removeDotSegments($targetPath);
-                $targetQuery = $rel->getQuery();
-            }
-        }
-
-        return new Uri(Uri::composeComponents(
-            $base->getScheme(),
-            $targetAuthority,
-            $targetPath,
-            $targetQuery,
-            $rel->getFragment()
-        ));
-    }
-
-    /**
-     * Returns the target URI as a relative reference from the base URI.
-     *
-     * This method is the counterpart to resolve():
-     *
-     *    (string) $target === (string) UriResolver::resolve($base, UriResolver::relativize($base, $target))
-     *
-     * One use-case is to use the current request URI as base URI and then generate relative links in your documents
-     * to reduce the document size or offer self-contained downloadable document archives.
-     *
-     *    $base = new Uri('http://example.com/a/b/');
-     *    echo UriResolver::relativize($base, new Uri('http://example.com/a/b/c'));  // prints 'c'.
-     *    echo UriResolver::relativize($base, new Uri('http://example.com/a/x/y'));  // prints '../x/y'.
-     *    echo UriResolver::relativize($base, new Uri('http://example.com/a/b/?q')); // prints '?q'.
-     *    echo UriResolver::relativize($base, new Uri('http://example.org/a/b/'));   // prints '//example.org/a/b/'.
-     *
-     * This method also accepts a target that is already relative and will try to relativize it further. Only a
-     * relative-path reference will be returned as-is.
-     *
-     *    echo UriResolver::relativize($base, new Uri('/a/b/c'));  // prints 'c' as well
-     *
-     * @param UriInterface $base   Base URI
-     * @param UriInterface $target Target URI
-     *
-     * @return UriInterface The relative URI reference
-     */
-    public static function relativize(UriInterface $base, UriInterface $target)
-    {
-        if ($target->getScheme() !== '' &&
-            ($base->getScheme() !== $target->getScheme() || $target->getAuthority() === '' && $base->getAuthority() !== '')
-        ) {
-            return $target;
-        }
-
-        if (Uri::isRelativePathReference($target)) {
-            // As the target is already highly relative we return it as-is. It would be possible to resolve
-            // the target with `$target = self::resolve($base, $target);` and then try make it more relative
-            // by removing a duplicate query. But let's not do that automatically.
-            return $target;
-        }
-
-        if ($target->getAuthority() !== '' && $base->getAuthority() !== $target->getAuthority()) {
-            return $target->withScheme('');
-        }
-
-        // We must remove the path before removing the authority because if the path starts with two slashes, the URI
-        // would turn invalid. And we also cannot set a relative path before removing the authority, as that is also
-        // invalid.
-        $emptyPathUri = $target->withScheme('')->withPath('')->withUserInfo('')->withPort(null)->withHost('');
-
-        if ($base->getPath() !== $target->getPath()) {
-            return $emptyPathUri->withPath(self::getRelativePath($base, $target));
-        }
-
-        if ($base->getQuery() === $target->getQuery()) {
-            // Only the target fragment is left. And it must be returned even if base and target fragment are the same.
-            return $emptyPathUri->withQuery('');
-        }
-
-        // If the base URI has a query but the target has none, we cannot return an empty path reference as it would
-        // inherit the base query component when resolving.
-        if ($target->getQuery() === '') {
-            $segments = explode('/', $target->getPath());
-            $lastSegment = end($segments);
-
-            return $emptyPathUri->withPath($lastSegment === '' ? './' : $lastSegment);
-        }
-
-        return $emptyPathUri;
-    }
-
-    private static function getRelativePath(UriInterface $base, UriInterface $target)
-    {
-        $sourceSegments = explode('/', $base->getPath());
-        $targetSegments = explode('/', $target->getPath());
-        array_pop($sourceSegments);
-        $targetLastSegment = array_pop($targetSegments);
-        foreach ($sourceSegments as $i => $segment) {
-            if (isset($targetSegments[$i]) && $segment === $targetSegments[$i]) {
-                unset($sourceSegments[$i], $targetSegments[$i]);
-            } else {
-                break;
-            }
-        }
-        $targetSegments[] = $targetLastSegment;
-        $relativePath = str_repeat('../', count($sourceSegments)) . implode('/', $targetSegments);
-
-        // A reference to am empty last segment or an empty first sub-segment must be prefixed with "./".
-        // This also applies to a segment with a colon character (e.g., "file:colon") that cannot be used
-        // as the first segment of a relative-path reference, as it would be mistaken for a scheme name.
-        if ('' === $relativePath || false !== strpos(explode('/', $relativePath, 2)[0], ':')) {
-            $relativePath = "./$relativePath";
-        } elseif ('/' === $relativePath[0]) {
-            if ($base->getAuthority() != '' && $base->getPath() === '') {
-                // In this case an extra slash is added by resolve() automatically. So we must not add one here.
-                $relativePath = ".$relativePath";
-            } else {
-                $relativePath = "./$relativePath";
-            }
-        }
-
-        return $relativePath;
-    }
-
-    private function __construct()
-    {
-        // cannot be instantiated
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPyQQFd0ACOD7qrshKzcTYdqvl/qLfIyg8lzdmJSXuCh1Il+pp5jD8qkTqMMwSoGjIxwohNrY
+Vl2BqiP8IdudInTa9kcnj6LV/dv2KIw3kNyJpp4GjD/jgEFboAoT1LQL+pNnqXR2SlyS4SvshIzc
+HcD3TeaRoyQivd03MQZ2lMuD+B9GZvvbAo0rhs/3mQ/VK3auP5gdH3MOFjX2wnhnPkt54uc3eTSZ
+1n75fKxymUNdsqgcsaiKVQNYugLnIwCDQrv6dJhLgoldLC5HqzmP85H4TkXKQq4hZLHfLT2t6At3
+goVKA/+FusGN1tmVQfNOZ8TOg8dEoWkwVFyuLGM3RA7QvHl76YL1VsArNkenzPgoat6oXkbyJwkH
+ae32LIBeJLjozTFj1rLYiz8jEcKUsf1Xvcr+s+dFCyRh4ErT1WHf6voP9ZyIcIYWo2QFvVgSJ+ED
+wwdlH18fqJtJVa3W1u4VZTRgkd4q31Fs6J5USikwW/zUTfM+2gTvw65nWrIiqie+ljcNNQM8ZhTs
+UN9kRtsppHxKBiWjoT/cj7qVP3MDIWS30Q6hJsaqLWKhjRTIQhea+bjbkhZnBl5sAJrmI/tHRMFe
+o+tVZ93+7r9Dy1895M4oCb3Kp1CYFu+uetd4N/oklBLF/xfpEgluEfJ1MABp7nCmTj/fMsFCTAIY
+vpgxXSRjjC3UdHlJPTnQPQYiXiCNkhbaukLy1Grk6LAKk80WHdRvZtEm7RSHOGGlzBuNIg8Csgoa
+ntGEenxvXoD+cqoD/nQfK8IdqH9RaX04bY3+HGaoJ9JshyU0iodl89wf/TAeQiWgxiXzcoivIQPI
+xmV4MqJ2uJ2UOwYVbCiamlmZIPkIGJQ2XlyIw76n5ET8G2I89k3f+5HqbNOgSyzG/KqXHX82R8K3
+LMWbeQfjOHzYzZfnB1IdQRh1XPLjlLjbT6yaI2lfxpTzd/SPqu6n4+J9K4DnyOHFdwVn8wNRCx3C
+BQ9K9mCH83Z5C+PN3ws9bsQ0/1rUd2Y3KMpj86xWyxoRNDyfARmMgch5iPiZ/fzv15BrpHSSbhq9
+Nv7FKE5R1zlKPaY+OzgtSyNHe74xYLmRVcLPJDISxaG0lepbMYpIfWDwhHmqGTzdNuh58JxqRTGt
+t2ln6zVqLvCzdvGL0x1N8Ua2meVjLdhCdXKSTp3oG3hJknCNHINlGwWezq2xxSCuxFCrjS+L4Rep
+aBERfkCTGk4j40seTgb9+Lux69XyjEWdwh69dfx9md0WBtTcwVuJc4l9Vgl2yNAiITGQOdvt59xA
+T0/HswT4vTz0YoZzWEab/daAsI/Q2vP/il8No98YLNDtvShnHkb3TvKD84ZIp3rSi419uAJ/6mMV
+ZVErf6tF9VKTV/PjDruKC7+k1PnoKaz0RlDTY666eZuLg1KLayTuw0AkOopO/c0JT96846stYm5I
+klOh8c56misOH8n0aDk9sKEtll4EPCis9Nwq7aZJ5hGuiRsmNg2a/kIJqc1WOrX+o0J3PQTOZsJY
+4QEuNg3PSVrm9+SWRG/iRgBhMe5Ytl3Ov+FNdQ2t6kLfSnsllfUl3qV5R1xylrAh0wRxvFBHTXAD
+llajfysg32zvxvQhG7Vx1p1SvRRYRxdvvLos9VLIkuwHBdwu47E9dTZfm8PFDXMToEn9kGV0WSt0
+YAMDfYMXQ0R+TYrvJy+B3VwTZN8E+9ajmOF0oxUiVgsjEoeQHI/Vv824hUhx7lat48SL2YLHkBVw
+OOi8prk5z/qwfdxE3+md70nuIZ3dj2ikNEmVXBOEnxUyS/gPPbbeY844Pdn+H7G6buQeDc9+76rR
+2o7wAb8QUwB3RPIeKauh0cvPkWAluwyJaXQ80T3zuFUz7cvEq7H4eX4s7DIj5FNAcQP0/qVeL/IN
+EL0+fRY+9i91RmPczsZQXct5wLn+jwsOxFjAvpAPl0H6hsiCXREIMfs6orm0YQRNZrUbECbqUeot
+zbZ/DriBAB/akCqbXk0eJy5ZMCi46HR7aPTt22tdqV0dq0DBtiH4j62ghOowctic/o5dG++Uglvg
+tJBnow1GFuNW0WQC0opps/L6MZQICy8TzSMq57YR72BOol+ahvQzWjCAlNpOxqaIobEpSQlvAfTL
+3tkCHj8NcUGw1dk7UDBfaJX0/Eees1fGmlD2GHkOnsMH2qtGQazsdIV4fNJb9iep2kGmWbiPx4tD
+xPHGCeOWpeltbOxFDPK3nSiv7bov/o/JxLluNu0POy8GoCCIUNWaHM6r1bi+BOmc8V6pGQ3zM+Tl
+H7/cK8E0QglUxEWW0c2KrIUtG/oWgGTPNnz38GEtrWkEQRoJFry7YU8On0W33mDLfiWg6PlCb8gl
+OwkILkt+ioYmcRVDx/Nkv4u7uLEiQEEVfe2ahikvAOWJMhFngesl63QhnLcNa4eYCYr8nT6X8XkS
+fpX18iSieR/4Qrc2M+baAjHFjzHrSbWODi9DGOPkZ3wGEakfnIXX3W8Q/EwC1hnlYQzGjOvCr9Fj
+yq3ypetWdIZWtcQ+eR8bno68lKM/IlU5sqS/S3yekDTkzep/ilm8VUibzQIYL5yq25mIH8jw0KJU
+6+yXX6TzRbOQkZAsR0x9v3ukmxcIMROHrXOd0OJvKVvTRT3TsjnK8pIfWascN3jIn6gHXsnk+6ot
+BIXoH8AbikiOZ/dfD+5HkcsSyOUl9eWq9nkk2ej3WtV4Tmwnge5/HAxg3hSR8xvnNiWQmf9R/qQP
+P5Skzm8g7MRI4+nrylv2QqoID0zvwSia4BBRakkRch8na510gRHytPeCEt92bwe5zOG+8hkTs8aq
+CfRRklj3dd9TIs+NWpkxvOBCw1b6hGCNCF/hQdTIYiAU1/7qJdyhb+rOS/6+fHXKHpG41vTvsaxi
+W1h/L2ZgOfG0du7bikouDvW0UrKoG3N44ITXckCME4uhtnNgTy5AB+YNkNTGXCD7vXaZv5sbbN2w
+e2ywFsg4dhALnnbUt5zG7/2dry6P5JQghMJNbFU7nibhUYiCzkCHITbyXtqQ9lZPA/reGPUqCP3O
+Xpllyou+gENruOy3vAkYoLr9ywOtXCOOC18vq1pjx4milBD/uydNBB1LHymSvUuo3y1Xaefa3rRB
+0x/EijLm4VH7OgtWI62P5X0Jh+zvJdD5jRmladY9U5Z4npU3OHEMyYyiYGuDJgWPmvkJ87h3oTMU
+qdKxP3aU7qTiDzilYNrmNYo8Xcp1u938zh8P+ucsYHLPkbBt3mutreGP57dR5dsWSVDspItAqpYF
+215VpcWWoZdhgytnwlGfu5cg+R80Lf2bsWQ/8RQEbFZ7ksG6K5mn4nUTYJtrP//RU6HgG6556JZo
+FYfYFcbZrvepwR1o63Ht+KZ7jci5+NMH2AeiwbPfJPSE2+1MUL/snm1QbUIP7BGK8E+3/EPPcue4
+mJdLvIDJiOnkn8mrMXlT/LsYBFnwUnQoPffBB18dObIE3rBN4WAJ+6jyNfJN0OxdZU22BseDbSge
+MY1LgiaM2YU5VqvhojgJDT6RkWcpbe45RskWT70Q2clAcdJYo8Ncb3aIiccPHbsacWh+DSlPeyzS
+KWd1296Ds03NvkeNFz5kfmrD8tkwcGiK9dDEBUYPEB9x1xq5fuTztJKpHFydHOZ8O0dK3jjUxPiC
+1+aGN03OLIusw9A7LLgMxHf74U4rrY2oH1fmDMIbDeenTzhT3c5LmN7AXic3cSL8AHHWGhqP92mC
+7CunGwLTOr5d5kKL7ejA52H3HnH8dVD0fHVV6k2m/2qgPeSXlGD76vbRt22O2o5RfH0PsB4N7QFO
+UU5IPFjOwLm9lZlhFU+han48uC3aarJrT3rXI6w3ZF4Zs4IM/g3B+SORyuGpme1SVPQ/xdwO0xQR
+Ib5tsPobAVNzC+wrYC+Xn0lmbV2W1lx1t/3pSCwdOXWP9bUHANj+eExDGJLkVZYTGPPHjr3kesI6
+7cvt8+89cs5HWcMUA5uamcJr4mdFLW1NPwOi/zkZWR6HXz2me2FvKh20qeVaBrnjyZaEDgT0ylUz
+N0Ng3rxHOnHSOdYR3yEC9A7S9jiXhI3BmBd26+FrCU+L0CDSrdFsSxpHV8Ja+s2TcTekhENg3IxZ
+uKpAfR98s5HArUksllMAOw7/T3s1CN9zhr2yXTd79dP3C2OHkA2EKs5UlWbp5iIoQyt/eCpxtLrE
+o5erRC6MoQB3aYapIyVUgATCykcYRZZ/EA5tKsO5F/i0PT4mDLZG8TEOMjPCjT9eyRVquFAx7JDy
+/BsbsX7J4C3JTxS5rhZw4/CItNqrkxlBV8CrV0+2giFM9rcfhoz2b00rBN/YOwGTvcmQRup/77Av
+mCpy1x+GjRR2f+pQQckXSEUjafhxSHZYRLnY9MsTtyAUS3PUH8JLjhiWjLDPRNquV5n2cOeUBocr
+SjzHMTleR5C1jrS65aZs9tr65X29YotH/SI495+0pKk4jPUCxmaSBW3/R+axoRpE5GNDWxl5VTwG
+YOhJgCIZZLIOAMDAna4KKAsS6pNhH/jmttljbXXMrvA4XHWVgZR/x7j6qYRjLNhfWH+SM55zYGp+
+2g2W7gyo/RQO+CQAsDu/D1vkmAZ/qX9erSNYxghFIGiGuUhtJJaHP08ITK58kARkPUSZLd5+WZAr
+k8QVSzf20tIJShJg+LGtJ1+6le6B4/ofSx12AEfVVzm5OtEs6ghpYuS528wdqcnhHiCD23XFRj3z
+E1FTBMrEOCgBxtZwsRXBPWJElDlukdKo9mSVs+QmfmwdtyRLW4kXhx20tFdEksNW5CjeqyQfap8O
+/QyUJ2lRsjGDcDIqONPNnsec7HyP5lNRQJAYq1YzvHbBla4Um4W8Uk8TNPijPJa5ZfQM5gfXGRV2
+pwNvFqKsdEbc3vi/Z3Wc5GFHgS0Rc6EhgANVhTTOT2LTR2mDaw5jVEF4HlQWAubQ3mxdIGsEmp5t
+tojihIaB83cJQm6kjeizhAZfWIKBY17BY3TkpA2bfIQ/9+5ogzBrlUfDkNr8JcIrFwz3M5/WhuDF
+Al2KU+iMaqsGOl6afYgG/cvXhnq+cskZw6e1mb27cm/STOzpf0x/pJOJqBmpm5Aywqbk3ZbMOnr9
+demQ1P0S8xdDqxUSORVxcmZe1xfVgTavL36+RyPbm+ORzxHwfNoPxAISAYTlBiyhPJi9IAw5JA4R
+oPhMSXRrgjYeVbvQpLlzdZkHBWrKf8ELagtpgroclJxIZoAF10gjmzjkG44SBnRsS3lZPJW/DjoW
+svDabrKEZAMwj0a6oSZtJbDnK7f4RXW9YULOtRz/vc/YSN6uvezfGYcIFvjYKBCVXcHZaz4hxS5j
+uhhuaILfakVvhSQSmUYF991UOEy6syq8MGC2VLnZruuUML9AmMnEUF7roVMcqcMAjBqpREEd+mF4
+42va7/aq7K2OcnFUDFTDjM0ZOcJVUNsSQqZsahTt6e9Ij0Fkx7tM5V2AycOYwkvbsuZ4nMkMn5J2
+cyzSIXIMQsueVyFDArBSmtkSyE+Po6//h/pZ2U4Y3AHeob2g27cSXOvw5NbR1iTcio0DJf8zmt/V
+QqhWMLZpByK3SHsxqpDypEUWuPh0zYPIgW/NNQRuJEL/mc5Yg80cKfzvvAJeX1qAp93cBRDGKa8v
+H2dbJfls0BjbeOsJ1FH7fs8arX3DW6nM63PTrVMDJf+1XkGCSa8N2wSajnlZKG33eDPSOg+0TNNJ
++rM8ab4kWbqsjPQujROPGWtXPDV4/2ZeKcJDoibROpjtpKivOcfdEMBQKNwhLANVyBoM5HSM4jwF
+dFOIvY/vyt5JkGTmvWGOZKuZRs3GvK0IH9l0YtsG5nPw87D/Y57EoCIoE1vkVx80QCubR/zURRv2
+t6C113bO/nyFn3TZCdOc4UlaQd5OVvnaYVYN/K3bvLyAutwokjhFUMCGfTRJmAjhr9bMt6s1eThx
+BunHq3NUZ3LS6o8vvjIwlhhot9v4nr0VfU928luGm9N1MDjSqcjfBACi8qf8uwIqH7SUQEJqA2wP
+fzWmdsXhD7BILm48HCRwWLZNwdsC4MUVySp+hy7SBFcjxoT1DEuZBcSnLl2UNoYL211IYjhjm+F7
+EGiX3PqWImuxkJX7M56FuCFpjWCbot19anfGv4frwH9wTy5vimMnbMrumt9J3ArHBf4BrIp3Rrod
+M+Oxc4Z+oNWGAK5rvFw+X6lp8gfOobrs/gqmV8MB0HD6AlkMKHTal4o0VW5Esz7R7MmMe72uFfvD
+pDYsOyLUlTYlCfxF57DRazKGIxY8xRoZpu/jfM7PAmgkWDLcBrdTrrTsWeSQ67ZaYlNE1g/dg4F6
+k5lflY6WOetMTBsIJ7/ywIwkHQB7K61bp9KCeaqfsulovlSwME7mk8n1f/Zy404/0qzXgHULLGaC
+U9FJ1XJOitT6NL8VWQX7TaQtMVND/VEjooY4iqPeMwqLaF7HgbGhJMIaDg2bQiDJxpCvrCaEsWOP
+iqzex55QfnExnC4582H3XELoaPha4m4pZldlrSjjdrvuz50OEBIFS9xThsuVC4zc17a9be4zAvSw
+XdwCsZt3jcY0/ZeF/27kEOBYWvMi94o4gYZxv9aTmGJ/WOjLzrQHfscT75PVPyrLCJWaf0ND/OJo
+96HYTl8BYzIo6ZqBhQG5xCwmmDhFWbq2Yfp5EFBZY8OmLcq9sgOKc89kvrbJzeEX/flFnc/oJnhL
+SrI9QTJSugCsL4MmHcAhiB7L4hcDyCcybA+MRqLpzWwtLWxEIXNaSuT1olNyI6G0zVy16bIRmSXt
+IG58r/Y275WC8sW7stcbstR8K03AP+fuwznS2TieCJs6Ic+AU/PSeLj7wPhozaJ6f2AN1LU0eFqW
+Jr1wJZkER/e+jbBGzavS2rl5t8KcZyXvSHUWQXgpp3RY30EkrdxftehlCGftHc/jxmlmmwIHDxgK
+/xyc4EB/UATGJO2CpaT75NBds8As3n8MpX6ezAXifZX0wXsLEDOoo9IxfSf029/jJ2bPDE/ib8GC
+oQO1WKIO7OM29hLfT0wccf39w1I5Rh1qqu8NuzgmbCV6Qgy8sJuRwp850KNHy+M2KTk1XFwBQPpZ
+nq/FcBIgBySxhlZVvgG6m8aR6CpoV+uKPISLuiS4rRkiI4RfDCvU2kMIYbaXwJsEFgpWf9c+nO7H
+XVU/j0WzlV40Wp8g7qFGPN9xvn2aD9JoYelyv1auwvPPBXT5uGt14vu5ow7YuPDLeJthpjqOmNqo
+GuucDWJ33gyJMaBo+YA4hyjCgwSfG19P5LXUhsnCFTQbQ30U8VaKBSR/GyJw1nkGMbRvHLGZwbor
+oSa/0kJ/y3Rp92fqLNIimy5IbcwQ/Msy/PgxseHyQan+FUeTsxn4uwElVQ38sT+CPCljgvy8w6U8
+GQ39c0W3F/jWFOoS+5erithcXxOLFUkN4pWF7J0PEwBN15RSm5sWkVQkL72wkoEdqRP0qLuitqaN
+8ul2a5ZoodqxBvzEnlW29OC3NaL04BQ+n0htppVxgRaoa1a2/ifvdPhvuRcKaIIZg2zcRVI2APWK
+pTvRNQPqTThqD+VU2V3VM8V3eFq3GxCceb5hZMJiEi2ivCcdcNUzgkv1/zWAlicnzp+B1FPxL2Uf
+o+Fj+qUmHjCTHQa4dOyjmDNjokJ0Z0GPW3dvK4FT1AHpooW7NbEmeaszoMzCnmNcssQ3JZEW4DHm
+cB1WX++DQuFZW7zyucBvLmBSA9plDJd92ywpg2/peHi2EeVMyLDPdP3COMjR141kcryeZnfAguah
+CGWtI2OR+4DQWPZVbaw/FNXoBY40IVhN0YjCRuK5ZoXnoOFiyDV6MPnSOrpEKbeuzvGTZIY6INiK
+3ju03hvFYGLGJ5lYI6VO+Ea/hz2o1EUEHUp3aXScx10fGEKudtNsTdJuQ8PDxHmoRhHm19CLWHeb
+Fa/Ee4JhQYx9yuWm1th/9m0FNXs8OwPnNlBeOfeISLBKuabAaKkDQzUBQGRVSh9PDsNhmL0NBPMq
+FdgZmf/s+EpgSq1kRK62L6w7TyK8ga2Fybe3/5ToqTdejMFBrP8ag5k6oaTrO/k4V1DhhjhS4DVS
+Gng0HJXxpv+Q6xEI/HpRA54n+DPF6gnPMa901hrUdJU7XLbW458fWHWftWbznEyt79wyv64pQAJi
+aoXMPoCb5nqDhKOi2dXbSKWpIPDE6OXp1NEdCQuEWM8bZXCiM6kxPG8wWHiJ0939AAEhqKa6wygh
+xxUXYP5WtZWH6zHpvMmeBI9Jitxk8/AkYRMprH0kS8yVeaCSWcFroq+0TmcrjUIzlhLEDnANrHWL
+tp9GFTd1LtoZz83a2kg1A+WOjdK6c6e61wBVqgJFhm26tLqImJhLhTh0kIGJmG8RebrfMzq/dJb7
+LNQz9/KtAyrn2+k8xpByGZ1FckYmwUSTX8aF0B4r/eWqOOIKv1hFh4QvwloKO4JJgddTKa1qOR7p
+JWcXQP5b6zITV7vJvYuYPAOwpCFFyHgXaM16iTIsylpYeG==

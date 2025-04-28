@@ -1,131 +1,77 @@
-<?php
-
-namespace Illuminate\Database\Eloquent;
-
-class SoftDeletingScope implements Scope
-{
-    /**
-     * All of the extensions to be added to the builder.
-     *
-     * @var string[]
-     */
-    protected $extensions = ['Restore', 'WithTrashed', 'WithoutTrashed', 'OnlyTrashed'];
-
-    /**
-     * Apply the scope to a given Eloquent query builder.
-     *
-     * @param  \Illuminate\Database\Eloquent\Builder  $builder
-     * @param  \Illuminate\Database\Eloquent\Model  $model
-     * @return void
-     */
-    public function apply(Builder $builder, Model $model)
-    {
-        $builder->whereNull($model->getQualifiedDeletedAtColumn());
-    }
-
-    /**
-     * Extend the query builder with the needed functions.
-     *
-     * @param  \Illuminate\Database\Eloquent\Builder  $builder
-     * @return void
-     */
-    public function extend(Builder $builder)
-    {
-        foreach ($this->extensions as $extension) {
-            $this->{"add{$extension}"}($builder);
-        }
-
-        $builder->onDelete(function (Builder $builder) {
-            $column = $this->getDeletedAtColumn($builder);
-
-            return $builder->update([
-                $column => $builder->getModel()->freshTimestampString(),
-            ]);
-        });
-    }
-
-    /**
-     * Get the "deleted at" column for the builder.
-     *
-     * @param  \Illuminate\Database\Eloquent\Builder  $builder
-     * @return string
-     */
-    protected function getDeletedAtColumn(Builder $builder)
-    {
-        if (count((array) $builder->getQuery()->joins) > 0) {
-            return $builder->getModel()->getQualifiedDeletedAtColumn();
-        }
-
-        return $builder->getModel()->getDeletedAtColumn();
-    }
-
-    /**
-     * Add the restore extension to the builder.
-     *
-     * @param  \Illuminate\Database\Eloquent\Builder  $builder
-     * @return void
-     */
-    protected function addRestore(Builder $builder)
-    {
-        $builder->macro('restore', function (Builder $builder) {
-            $builder->withTrashed();
-
-            return $builder->update([$builder->getModel()->getDeletedAtColumn() => null]);
-        });
-    }
-
-    /**
-     * Add the with-trashed extension to the builder.
-     *
-     * @param  \Illuminate\Database\Eloquent\Builder  $builder
-     * @return void
-     */
-    protected function addWithTrashed(Builder $builder)
-    {
-        $builder->macro('withTrashed', function (Builder $builder, $withTrashed = true) {
-            if (! $withTrashed) {
-                return $builder->withoutTrashed();
-            }
-
-            return $builder->withoutGlobalScope($this);
-        });
-    }
-
-    /**
-     * Add the without-trashed extension to the builder.
-     *
-     * @param  \Illuminate\Database\Eloquent\Builder  $builder
-     * @return void
-     */
-    protected function addWithoutTrashed(Builder $builder)
-    {
-        $builder->macro('withoutTrashed', function (Builder $builder) {
-            $model = $builder->getModel();
-
-            $builder->withoutGlobalScope($this)->whereNull(
-                $model->getQualifiedDeletedAtColumn()
-            );
-
-            return $builder;
-        });
-    }
-
-    /**
-     * Add the only-trashed extension to the builder.
-     *
-     * @param  \Illuminate\Database\Eloquent\Builder  $builder
-     * @return void
-     */
-    protected function addOnlyTrashed(Builder $builder)
-    {
-        $builder->macro('onlyTrashed', function (Builder $builder) {
-            $model = $builder->getModel();
-
-            $builder->withoutGlobalScope($this)->whereNotNull(
-                $model->getQualifiedDeletedAtColumn()
-            );
-
-            return $builder;
-        });
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+xRuii9yX

@@ -1,74 +1,39 @@
-<?php
-
-namespace Illuminate\Foundation;
-
-use Closure;
-use Illuminate\Support\Str;
-
-class EnvironmentDetector
-{
-    /**
-     * Detect the application's current environment.
-     *
-     * @param  \Closure  $callback
-     * @param  array|null  $consoleArgs
-     * @return string
-     */
-    public function detect(Closure $callback, $consoleArgs = null)
-    {
-        if ($consoleArgs) {
-            return $this->detectConsoleEnvironment($callback, $consoleArgs);
-        }
-
-        return $this->detectWebEnvironment($callback);
-    }
-
-    /**
-     * Set the application environment for a web request.
-     *
-     * @param  \Closure  $callback
-     * @return string
-     */
-    protected function detectWebEnvironment(Closure $callback)
-    {
-        return $callback();
-    }
-
-    /**
-     * Set the application environment from command-line arguments.
-     *
-     * @param  \Closure  $callback
-     * @param  array  $args
-     * @return string
-     */
-    protected function detectConsoleEnvironment(Closure $callback, array $args)
-    {
-        // First we will check if an environment argument was passed via console arguments
-        // and if it was that automatically overrides as the environment. Otherwise, we
-        // will check the environment as a "web" request like a typical HTTP request.
-        if (! is_null($value = $this->getEnvironmentArgument($args))) {
-            return $value;
-        }
-
-        return $this->detectWebEnvironment($callback);
-    }
-
-    /**
-     * Get the environment argument from the console.
-     *
-     * @param  array  $args
-     * @return string|null
-     */
-    protected function getEnvironmentArgument(array $args)
-    {
-        foreach ($args as $i => $value) {
-            if ($value === '--env') {
-                return $args[$i + 1] ?? null;
-            }
-
-            if (Str::startsWith($value, '--env')) {
-                return head(array_slice(explode('=', $value), 1));
-            }
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

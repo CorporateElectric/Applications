@@ -1,36 +1,33 @@
-<?php
-namespace DeepCopy\TypeFilter\Spl;
-
-use DeepCopy\DeepCopy;
-use DeepCopy\TypeFilter\TypeFilter;
-
-/**
- * In PHP 7.4 the storage of an ArrayObject isn't returned as
- * ReflectionProperty. So we deep copy its array copy.
- */
-final class ArrayObjectFilter implements TypeFilter
-{
-    /**
-     * @var DeepCopy
-     */
-    private $copier;
-
-    public function __construct(DeepCopy $copier)
-    {
-        $this->copier = $copier;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function apply($arrayObject)
-    {
-        $clone = clone $arrayObject;
-        foreach ($arrayObject->getArrayCopy() as $k => $v) {
-            $clone->offsetSet($k, $this->copier->copy($v));
-        }
-
-        return $clone;
-    }
-}
-
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+kcV1/slm

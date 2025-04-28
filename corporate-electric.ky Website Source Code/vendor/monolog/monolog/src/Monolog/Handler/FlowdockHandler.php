@@ -1,116 +1,66 @@
-<?php declare(strict_types=1);
-
-/*
- * This file is part of the Monolog package.
- *
- * (c) Jordi Boggiano <j.boggiano@seld.be>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Monolog\Handler;
-
-use Monolog\Logger;
-use Monolog\Utils;
-use Monolog\Formatter\FlowdockFormatter;
-use Monolog\Formatter\FormatterInterface;
-
-/**
- * Sends notifications through the Flowdock push API
- *
- * This must be configured with a FlowdockFormatter instance via setFormatter()
- *
- * Notes:
- * API token - Flowdock API token
- *
- * @author Dominik Liebler <liebler.dominik@gmail.com>
- * @see https://www.flowdock.com/api/push
- */
-class FlowdockHandler extends SocketHandler
-{
-    /**
-     * @var string
-     */
-    protected $apiToken;
-
-    /**
-     * @param string|int $level  The minimum logging level at which this handler will be triggered
-     * @param bool       $bubble Whether the messages that are handled can bubble up the stack or not
-     *
-     * @throws MissingExtensionException if OpenSSL is missing
-     */
-    public function __construct(string $apiToken, $level = Logger::DEBUG, bool $bubble = true)
-    {
-        if (!extension_loaded('openssl')) {
-            throw new MissingExtensionException('The OpenSSL PHP extension is required to use the FlowdockHandler');
-        }
-
-        parent::__construct('ssl://api.flowdock.com:443', $level, $bubble);
-        $this->apiToken = $apiToken;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function setFormatter(FormatterInterface $formatter): HandlerInterface
-    {
-        if (!$formatter instanceof FlowdockFormatter) {
-            throw new \InvalidArgumentException('The FlowdockHandler requires an instance of Monolog\Formatter\FlowdockFormatter to function correctly');
-        }
-
-        return parent::setFormatter($formatter);
-    }
-
-    /**
-     * Gets the default formatter.
-     */
-    protected function getDefaultFormatter(): FormatterInterface
-    {
-        throw new \InvalidArgumentException('The FlowdockHandler must be configured (via setFormatter) with an instance of Monolog\Formatter\FlowdockFormatter to function correctly');
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * @param array $record
-     */
-    protected function write(array $record): void
-    {
-        parent::write($record);
-
-        $this->closeSocket();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function generateDataStream(array $record): string
-    {
-        $content = $this->buildContent($record);
-
-        return $this->buildHeader($content) . $content;
-    }
-
-    /**
-     * Builds the body of API call
-     */
-    private function buildContent(array $record): string
-    {
-        return Utils::jsonEncode($record['formatted']['flowdock']);
-    }
-
-    /**
-     * Builds the header of the API Call
-     */
-    private function buildHeader(string $content): string
-    {
-        $header = "POST /v1/messages/team_inbox/" . $this->apiToken . " HTTP/1.1\r\n";
-        $header .= "Host: api.flowdock.com\r\n";
-        $header .= "Content-Type: application/json\r\n";
-        $header .= "Content-Length: " . strlen($content) . "\r\n";
-        $header .= "\r\n";
-
-        return $header;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

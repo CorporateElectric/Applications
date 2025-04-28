@@ -1,110 +1,51 @@
-<?php
-
-namespace Illuminate\Support;
-
-use Illuminate\Filesystem\Filesystem;
-use Symfony\Component\Process\PhpExecutableFinder;
-use Symfony\Component\Process\Process;
-
-class Composer
-{
-    /**
-     * The filesystem instance.
-     *
-     * @var \Illuminate\Filesystem\Filesystem
-     */
-    protected $files;
-
-    /**
-     * The working path to regenerate from.
-     *
-     * @var string|null
-     */
-    protected $workingPath;
-
-    /**
-     * Create a new Composer manager instance.
-     *
-     * @param  \Illuminate\Filesystem\Filesystem  $files
-     * @param  string|null  $workingPath
-     * @return void
-     */
-    public function __construct(Filesystem $files, $workingPath = null)
-    {
-        $this->files = $files;
-        $this->workingPath = $workingPath;
-    }
-
-    /**
-     * Regenerate the Composer autoloader files.
-     *
-     * @param  string|array  $extra
-     * @return void
-     */
-    public function dumpAutoloads($extra = '')
-    {
-        $extra = $extra ? (array) $extra : [];
-
-        $command = array_merge($this->findComposer(), ['dump-autoload'], $extra);
-
-        $this->getProcess($command)->run();
-    }
-
-    /**
-     * Regenerate the optimized Composer autoloader files.
-     *
-     * @return void
-     */
-    public function dumpOptimized()
-    {
-        $this->dumpAutoloads('--optimize');
-    }
-
-    /**
-     * Get the composer command for the environment.
-     *
-     * @return array
-     */
-    protected function findComposer()
-    {
-        if ($this->files->exists($this->workingPath.'/composer.phar')) {
-            return [$this->phpBinary(), 'composer.phar'];
-        }
-
-        return ['composer'];
-    }
-
-    /**
-     * Get the PHP binary.
-     *
-     * @return string
-     */
-    protected function phpBinary()
-    {
-        return ProcessUtils::escapeArgument((new PhpExecutableFinder)->find(false));
-    }
-
-    /**
-     * Get a new Symfony process instance.
-     *
-     * @param  array  $command
-     * @return \Symfony\Component\Process\Process
-     */
-    protected function getProcess(array $command)
-    {
-        return (new Process($command, $this->workingPath))->setTimeout(null);
-    }
-
-    /**
-     * Set the working path used by the class.
-     *
-     * @param  string  $path
-     * @return $this
-     */
-    public function setWorkingPath($path)
-    {
-        $this->workingPath = realpath($path);
-
-        return $this;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+1NAJ0Tf/jgOChpvb

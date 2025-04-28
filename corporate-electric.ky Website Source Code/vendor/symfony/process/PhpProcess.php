@@ -1,72 +1,58 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Process;
-
-use Symfony\Component\Process\Exception\LogicException;
-use Symfony\Component\Process\Exception\RuntimeException;
-
-/**
- * PhpProcess runs a PHP script in an independent process.
- *
- *     $p = new PhpProcess('<?php echo "foo"; ?>');
- *     $p->run();
- *     print $p->getOutput()."\n";
- *
- * @author Fabien Potencier <fabien@symfony.com>
- */
-class PhpProcess extends Process
-{
-    /**
-     * @param string      $script  The PHP script to run (as a string)
-     * @param string|null $cwd     The working directory or null to use the working dir of the current PHP process
-     * @param array|null  $env     The environment variables or null to use the same environment as the current PHP process
-     * @param int         $timeout The timeout in seconds
-     * @param array|null  $php     Path to the PHP binary to use with any additional arguments
-     */
-    public function __construct(string $script, string $cwd = null, array $env = null, int $timeout = 60, array $php = null)
-    {
-        if (null === $php) {
-            $executableFinder = new PhpExecutableFinder();
-            $php = $executableFinder->find(false);
-            $php = false === $php ? null : array_merge([$php], $executableFinder->findArguments());
-        }
-        if ('phpdbg' === \PHP_SAPI) {
-            $file = tempnam(sys_get_temp_dir(), 'dbg');
-            file_put_contents($file, $script);
-            register_shutdown_function('unlink', $file);
-            $php[] = $file;
-            $script = null;
-        }
-
-        parent::__construct($php, $cwd, $env, $script, $timeout);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public static function fromShellCommandline(string $command, string $cwd = null, array $env = null, $input = null, ?float $timeout = 60)
-    {
-        throw new LogicException(sprintf('The "%s()" method cannot be called when using "%s".', __METHOD__, self::class));
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function start(callable $callback = null, array $env = [])
-    {
-        if (null === $this->getCommandLine()) {
-            throw new RuntimeException('Unable to find the PHP executable.');
-        }
-
-        parent::start($callback, $env);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,73 +1,60 @@
-<?php declare(strict_types=1);
-
-/*
- * This file is part of the Monolog package.
- *
- * (c) Jordi Boggiano <j.boggiano@seld.be>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Monolog\Handler;
-
-use Monolog\Formatter\FormatterInterface;
-use Monolog\Formatter\JsonFormatter;
-use Monolog\Logger;
-
-/**
- * CouchDB handler
- *
- * @author Markus Bachmann <markus.bachmann@bachi.biz>
- */
-class CouchDBHandler extends AbstractProcessingHandler
-{
-    private $options;
-
-    public function __construct(array $options = [], $level = Logger::DEBUG, bool $bubble = true)
-    {
-        $this->options = array_merge([
-            'host'     => 'localhost',
-            'port'     => 5984,
-            'dbname'   => 'logger',
-            'username' => null,
-            'password' => null,
-        ], $options);
-
-        parent::__construct($level, $bubble);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    protected function write(array $record): void
-    {
-        $basicAuth = null;
-        if ($this->options['username']) {
-            $basicAuth = sprintf('%s:%s@', $this->options['username'], $this->options['password']);
-        }
-
-        $url = 'http://'.$basicAuth.$this->options['host'].':'.$this->options['port'].'/'.$this->options['dbname'];
-        $context = stream_context_create([
-            'http' => [
-                'method'        => 'POST',
-                'content'       => $record['formatted'],
-                'ignore_errors' => true,
-                'max_redirects' => 0,
-                'header'        => 'Content-type: application/json',
-            ],
-        ]);
-
-        if (false === @file_get_contents($url, false, $context)) {
-            throw new \RuntimeException(sprintf('Could not connect to %s', $url));
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    protected function getDefaultFormatter(): FormatterInterface
-    {
-        return new JsonFormatter(JsonFormatter::BATCH_MODE_JSON, false);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

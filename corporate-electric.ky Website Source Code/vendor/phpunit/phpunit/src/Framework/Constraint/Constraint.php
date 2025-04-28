@@ -1,269 +1,69 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Framework\Constraint;
-
-use function sprintf;
-use Countable;
-use PHPUnit\Framework\ExpectationFailedException;
-use PHPUnit\Framework\SelfDescribing;
-use SebastianBergmann\Comparator\ComparisonFailure;
-use SebastianBergmann\Exporter\Exporter;
-
-/**
- * @no-named-arguments Parameter names are not covered by the backward compatibility promise for PHPUnit
- */
-abstract class Constraint implements Countable, SelfDescribing
-{
-    /**
-     * @var ?Exporter
-     */
-    private $exporter;
-
-    /**
-     * Evaluates the constraint for parameter $other.
-     *
-     * If $returnResult is set to false (the default), an exception is thrown
-     * in case of a failure. null is returned otherwise.
-     *
-     * If $returnResult is true, the result of the evaluation is returned as
-     * a boolean value instead: true in case of success, false in case of a
-     * failure.
-     *
-     * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
-     * @throws ExpectationFailedException
-     */
-    public function evaluate($other, string $description = '', bool $returnResult = false): ?bool
-    {
-        $success = false;
-
-        if ($this->matches($other)) {
-            $success = true;
-        }
-
-        if ($returnResult) {
-            return $success;
-        }
-
-        if (!$success) {
-            $this->fail($other, $description);
-        }
-
-        return null;
-    }
-
-    /**
-     * Counts the number of constraint elements.
-     */
-    public function count(): int
-    {
-        return 1;
-    }
-
-    protected function exporter(): Exporter
-    {
-        if ($this->exporter === null) {
-            $this->exporter = new Exporter;
-        }
-
-        return $this->exporter;
-    }
-
-    /**
-     * Evaluates the constraint for parameter $other. Returns true if the
-     * constraint is met, false otherwise.
-     *
-     * This method can be overridden to implement the evaluation algorithm.
-     *
-     * @param mixed $other value or object to evaluate
-     * @codeCoverageIgnore
-     */
-    protected function matches($other): bool
-    {
-        return false;
-    }
-
-    /**
-     * Throws an exception for the given compared value and test description.
-     *
-     * @param mixed             $other             evaluated value or object
-     * @param string            $description       Additional information about the test
-     * @param ComparisonFailure $comparisonFailure
-     *
-     * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
-     * @throws ExpectationFailedException
-     *
-     * @psalm-return never-return
-     */
-    protected function fail($other, $description, ComparisonFailure $comparisonFailure = null): void
-    {
-        $failureDescription = sprintf(
-            'Failed asserting that %s.',
-            $this->failureDescription($other)
-        );
-
-        $additionalFailureDescription = $this->additionalFailureDescription($other);
-
-        if ($additionalFailureDescription) {
-            $failureDescription .= "\n" . $additionalFailureDescription;
-        }
-
-        if (!empty($description)) {
-            $failureDescription = $description . "\n" . $failureDescription;
-        }
-
-        throw new ExpectationFailedException(
-            $failureDescription,
-            $comparisonFailure
-        );
-    }
-
-    /**
-     * Return additional failure description where needed.
-     *
-     * The function can be overridden to provide additional failure
-     * information like a diff
-     *
-     * @param mixed $other evaluated value or object
-     */
-    protected function additionalFailureDescription($other): string
-    {
-        return '';
-    }
-
-    /**
-     * Returns the description of the failure.
-     *
-     * The beginning of failure messages is "Failed asserting that" in most
-     * cases. This method should return the second part of that sentence.
-     *
-     * To provide additional failure information additionalFailureDescription
-     * can be used.
-     *
-     * @param mixed $other evaluated value or object
-     *
-     * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
-     */
-    protected function failureDescription($other): string
-    {
-        return $this->exporter()->export($other) . ' ' . $this->toString();
-    }
-
-    /**
-     * Returns a custom string representation of the constraint object when it
-     * appears in context of an $operator expression.
-     *
-     * The purpose of this method is to provide meaningful descriptive string
-     * in context of operators such as LogicalNot. Native PHPUnit constraints
-     * are supported out of the box by LogicalNot, but externally developed
-     * ones had no way to provide correct strings in this context.
-     *
-     * The method shall return empty string, when it does not handle
-     * customization by itself.
-     *
-     * @param Operator $operator the $operator of the expression
-     * @param mixed    $role     role of $this constraint in the $operator expression
-     */
-    protected function toStringInContext(Operator $operator, $role): string
-    {
-        return '';
-    }
-
-    /**
-     * Returns the description of the failure when this constraint appears in
-     * context of an $operator expression.
-     *
-     * The purpose of this method is to provide meaningful failue description
-     * in context of operators such as LogicalNot. Native PHPUnit constraints
-     * are supported out of the box by LogicalNot, but externally developed
-     * ones had no way to provide correct messages in this context.
-     *
-     * The method shall return empty string, when it does not handle
-     * customization by itself.
-     *
-     * @param Operator $operator the $operator of the expression
-     * @param mixed    $role     role of $this constraint in the $operator expression
-     * @param mixed    $other    evaluated value or object
-     */
-    protected function failureDescriptionInContext(Operator $operator, $role, $other): string
-    {
-        $string = $this->toStringInContext($operator, $role);
-
-        if ($string === '') {
-            return '';
-        }
-
-        return $this->exporter()->export($other) . ' ' . $string;
-    }
-
-    /**
-     * Reduces the sub-expression starting at $this by skipping degenerate
-     * sub-expression and returns first descendant constraint that starts
-     * a non-reducible sub-expression.
-     *
-     * Returns $this for terminal constraints and for operators that start
-     * non-reducible sub-expression, or the nearest descendant of $this that
-     * starts a non-reducible sub-expression.
-     *
-     * A constraint expression may be modelled as a tree with non-terminal
-     * nodes (operators) and terminal nodes. For example:
-     *
-     *      LogicalOr           (operator, non-terminal)
-     *      + LogicalAnd        (operator, non-terminal)
-     *      | + IsType('int')   (terminal)
-     *      | + GreaterThan(10) (terminal)
-     *      + LogicalNot        (operator, non-terminal)
-     *        + IsType('array') (terminal)
-     *
-     * A degenerate sub-expression is a part of the tree, that effectively does
-     * not contribute to the evaluation of the expression it appears in. An example
-     * of degenerate sub-expression is a BinaryOperator constructed with single
-     * operand or nested BinaryOperators, each with single operand. An
-     * expression involving a degenerate sub-expression is equivalent to a
-     * reduced expression with the degenerate sub-expression removed, for example
-     *
-     *      LogicalAnd          (operator)
-     *      + LogicalOr         (degenerate operator)
-     *      | + LogicalAnd      (degenerate operator)
-     *      |   + IsType('int') (terminal)
-     *      + GreaterThan(10)   (terminal)
-     *
-     * is equivalent to
-     *
-     *      LogicalAnd          (operator)
-     *      + IsType('int')     (terminal)
-     *      + GreaterThan(10)   (terminal)
-     *
-     * because the subexpression
-     *
-     *      + LogicalOr
-     *        + LogicalAnd
-     *          + -
-     *
-     * is degenerate. Calling reduce() on the LogicalOr object above, as well
-     * as on LogicalAnd, shall return the IsType('int') instance.
-     *
-     * Other specific reductions can be implemented, for example cascade of
-     * LogicalNot operators
-     *
-     *      + LogicalNot
-     *        + LogicalNot
-     *          +LogicalNot
-     *           + IsTrue
-     *
-     * can be reduced to
-     *
-     *      LogicalNot
-     *      + IsTrue
-     */
-    protected function reduce(): self
-    {
-        return $this;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

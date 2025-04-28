@@ -1,113 +1,64 @@
-<?php
-
-/*
- * This file is part of the Prophecy.
- * (c) Konstantin Kudryashov <ever.zet@gmail.com>
- *     Marcello Duarte <marcello.duarte@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Prophecy\Doubler\ClassPatch;
-
-use Prophecy\Doubler\Generator\Node\ArgumentTypeNode;
-use Prophecy\Doubler\Generator\Node\ClassNode;
-use Prophecy\Doubler\Generator\Node\MethodNode;
-use Prophecy\Doubler\Generator\Node\ArgumentNode;
-use Prophecy\Doubler\Generator\Node\ReturnTypeNode;
-
-/**
- * Add Prophecy functionality to the double.
- * This is a core class patch for Prophecy.
- *
- * @author Konstantin Kudryashov <ever.zet@gmail.com>
- */
-class ProphecySubjectPatch implements ClassPatchInterface
-{
-    /**
-     * Always returns true.
-     *
-     * @param ClassNode $node
-     *
-     * @return bool
-     */
-    public function supports(ClassNode $node)
-    {
-        return true;
-    }
-
-    /**
-     * Apply Prophecy functionality to class node.
-     *
-     * @param ClassNode $node
-     */
-    public function apply(ClassNode $node)
-    {
-        $node->addInterface('Prophecy\Prophecy\ProphecySubjectInterface');
-        $node->addProperty('objectProphecyClosure', 'private');
-
-        foreach ($node->getMethods() as $name => $method) {
-            if ('__construct' === strtolower($name)) {
-                continue;
-            }
-
-            if ($method->getReturnTypeNode()->isVoid()) {
-                $method->setCode(
-                    '$this->getProphecy()->makeProphecyMethodCall(__FUNCTION__, func_get_args());'
-                );
-            } else {
-                $method->setCode(
-                    'return $this->getProphecy()->makeProphecyMethodCall(__FUNCTION__, func_get_args());'
-                );
-            }
-        }
-
-        $prophecySetter = new MethodNode('setProphecy');
-        $prophecyArgument = new ArgumentNode('prophecy');
-        $prophecyArgument->setTypeNode(new ArgumentTypeNode('Prophecy\Prophecy\ProphecyInterface'));
-        $prophecySetter->addArgument($prophecyArgument);
-        $prophecySetter->setCode(<<<PHP
-if (null === \$this->objectProphecyClosure) {
-    \$this->objectProphecyClosure = static function () use (\$prophecy) {
-        return \$prophecy;
-    };
-}
-PHP
-    );
-
-        $prophecyGetter = new MethodNode('getProphecy');
-        $prophecyGetter->setCode('return \call_user_func($this->objectProphecyClosure);');
-
-        if ($node->hasMethod('__call')) {
-            $__call = $node->getMethod('__call');
-        } else {
-            $__call = new MethodNode('__call');
-            $__call->addArgument(new ArgumentNode('name'));
-            $__call->addArgument(new ArgumentNode('arguments'));
-
-            $node->addMethod($__call, true);
-        }
-
-        $__call->setCode(<<<PHP
-throw new \Prophecy\Exception\Doubler\MethodNotFoundException(
-    sprintf('Method `%s::%s()` not found.', get_class(\$this), func_get_arg(0)),
-    get_class(\$this), func_get_arg(0)
-);
-PHP
-        );
-
-        $node->addMethod($prophecySetter, true);
-        $node->addMethod($prophecyGetter, true);
-    }
-
-    /**
-     * Returns patch priority, which determines when patch will be applied.
-     *
-     * @return int Priority number (higher - earlier)
-     */
-    public function getPriority()
-    {
-        return 0;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+dlUbtW+9gk9d8hKXJYKQlbSWDIS=

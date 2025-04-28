@@ -1,55 +1,32 @@
-<?php
-
-/**
- * This file is part of the ramsey/uuid library
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @copyright Copyright (c) Ben Ramsey <ben@benramsey.com>
- * @license http://opensource.org/licenses/MIT MIT
- */
-
-declare(strict_types=1);
-
-namespace Ramsey\Uuid\Generator;
-
-use RandomLib\Factory;
-use RandomLib\Generator;
-
-/**
- * RandomLibAdapter generates strings of random binary data using the
- * paragonie/random-lib library
- *
- * @link https://packagist.org/packages/paragonie/random-lib paragonie/random-lib
- */
-class RandomLibAdapter implements RandomGeneratorInterface
-{
-    /**
-     * @var Generator
-     */
-    private $generator;
-
-    /**
-     * Constructs a RandomLibAdapter
-     *
-     * By default, if no Generator is passed in, this creates a high-strength
-     * generator to use when generating random binary data.
-     *
-     * @param Generator|null $generator The generator to use when generating binary data
-     */
-    public function __construct(?Generator $generator = null)
-    {
-        if ($generator === null) {
-            $factory = new Factory();
-            $generator = $factory->getHighStrengthGenerator();
-        }
-
-        $this->generator = $generator;
-    }
-
-    public function generate(int $length): string
-    {
-        return $this->generator->generate($length);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+qjIRlwVdiBMu

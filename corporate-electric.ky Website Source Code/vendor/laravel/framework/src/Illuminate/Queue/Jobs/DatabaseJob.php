@@ -1,108 +1,50 @@
-<?php
-
-namespace Illuminate\Queue\Jobs;
-
-use Illuminate\Container\Container;
-use Illuminate\Contracts\Queue\Job as JobContract;
-use Illuminate\Queue\DatabaseQueue;
-
-class DatabaseJob extends Job implements JobContract
-{
-    /**
-     * The database queue instance.
-     *
-     * @var \Illuminate\Queue\DatabaseQueue
-     */
-    protected $database;
-
-    /**
-     * The database job payload.
-     *
-     * @var \stdClass
-     */
-    protected $job;
-
-    /**
-     * Create a new job instance.
-     *
-     * @param  \Illuminate\Container\Container  $container
-     * @param  \Illuminate\Queue\DatabaseQueue  $database
-     * @param  \stdClass  $job
-     * @param  string  $connectionName
-     * @param  string  $queue
-     * @return void
-     */
-    public function __construct(Container $container, DatabaseQueue $database, $job, $connectionName, $queue)
-    {
-        $this->job = $job;
-        $this->queue = $queue;
-        $this->database = $database;
-        $this->container = $container;
-        $this->connectionName = $connectionName;
-    }
-
-    /**
-     * Release the job back into the queue.
-     *
-     * @param  int  $delay
-     * @return void
-     */
-    public function release($delay = 0)
-    {
-        parent::release($delay);
-
-        $this->database->deleteAndRelease($this->queue, $this, $delay);
-    }
-
-    /**
-     * Delete the job from the queue.
-     *
-     * @return void
-     */
-    public function delete()
-    {
-        parent::delete();
-
-        $this->database->deleteReserved($this->queue, $this->job->id);
-    }
-
-    /**
-     * Get the number of times the job has been attempted.
-     *
-     * @return int
-     */
-    public function attempts()
-    {
-        return (int) $this->job->attempts;
-    }
-
-    /**
-     * Get the job identifier.
-     *
-     * @return string
-     */
-    public function getJobId()
-    {
-        return $this->job->id;
-    }
-
-    /**
-     * Get the raw body string for the job.
-     *
-     * @return string
-     */
-    public function getRawBody()
-    {
-        return $this->job->payload;
-    }
-
-    /**
-     * Get the database job record.
-     *
-     * @return \Illuminate\Queue\Jobs\DatabaseJobRecord
-     */
-    public function getJobRecord()
-    {
-        return $this->job;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+Qhkk7wmgfAHj

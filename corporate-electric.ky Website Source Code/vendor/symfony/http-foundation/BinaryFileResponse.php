@@ -1,361 +1,203 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpFoundation;
-
-use Symfony\Component\HttpFoundation\File\Exception\FileException;
-use Symfony\Component\HttpFoundation\File\File;
-
-/**
- * BinaryFileResponse represents an HTTP response delivering a file.
- *
- * @author Niklas Fiekas <niklas.fiekas@tu-clausthal.de>
- * @author stealth35 <stealth35-php@live.fr>
- * @author Igor Wiedler <igor@wiedler.ch>
- * @author Jordan Alliot <jordan.alliot@gmail.com>
- * @author Sergey Linnik <linniksa@gmail.com>
- */
-class BinaryFileResponse extends Response
-{
-    protected static $trustXSendfileTypeHeader = false;
-
-    /**
-     * @var File
-     */
-    protected $file;
-    protected $offset = 0;
-    protected $maxlen = -1;
-    protected $deleteFileAfterSend = false;
-
-    /**
-     * @param \SplFileInfo|string $file               The file to stream
-     * @param int                 $status             The response status code
-     * @param array               $headers            An array of response headers
-     * @param bool                $public             Files are public by default
-     * @param string|null         $contentDisposition The type of Content-Disposition to set automatically with the filename
-     * @param bool                $autoEtag           Whether the ETag header should be automatically set
-     * @param bool                $autoLastModified   Whether the Last-Modified header should be automatically set
-     */
-    public function __construct($file, int $status = 200, array $headers = [], bool $public = true, string $contentDisposition = null, bool $autoEtag = false, bool $autoLastModified = true)
-    {
-        parent::__construct(null, $status, $headers);
-
-        $this->setFile($file, $contentDisposition, $autoEtag, $autoLastModified);
-
-        if ($public) {
-            $this->setPublic();
-        }
-    }
-
-    /**
-     * @param \SplFileInfo|string $file               The file to stream
-     * @param int                 $status             The response status code
-     * @param array               $headers            An array of response headers
-     * @param bool                $public             Files are public by default
-     * @param string|null         $contentDisposition The type of Content-Disposition to set automatically with the filename
-     * @param bool                $autoEtag           Whether the ETag header should be automatically set
-     * @param bool                $autoLastModified   Whether the Last-Modified header should be automatically set
-     *
-     * @return static
-     *
-     * @deprecated since Symfony 5.2, use __construct() instead.
-     */
-    public static function create($file = null, int $status = 200, array $headers = [], bool $public = true, string $contentDisposition = null, bool $autoEtag = false, bool $autoLastModified = true)
-    {
-        trigger_deprecation('symfony/http-foundation', '5.2', 'The "%s()" method is deprecated, use "new %s()" instead.', __METHOD__, static::class);
-
-        return new static($file, $status, $headers, $public, $contentDisposition, $autoEtag, $autoLastModified);
-    }
-
-    /**
-     * Sets the file to stream.
-     *
-     * @param \SplFileInfo|string $file The file to stream
-     *
-     * @return $this
-     *
-     * @throws FileException
-     */
-    public function setFile($file, string $contentDisposition = null, bool $autoEtag = false, bool $autoLastModified = true)
-    {
-        if (!$file instanceof File) {
-            if ($file instanceof \SplFileInfo) {
-                $file = new File($file->getPathname());
-            } else {
-                $file = new File((string) $file);
-            }
-        }
-
-        if (!$file->isReadable()) {
-            throw new FileException('File must be readable.');
-        }
-
-        $this->file = $file;
-
-        if ($autoEtag) {
-            $this->setAutoEtag();
-        }
-
-        if ($autoLastModified) {
-            $this->setAutoLastModified();
-        }
-
-        if ($contentDisposition) {
-            $this->setContentDisposition($contentDisposition);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Gets the file.
-     *
-     * @return File The file to stream
-     */
-    public function getFile()
-    {
-        return $this->file;
-    }
-
-    /**
-     * Automatically sets the Last-Modified header according the file modification date.
-     */
-    public function setAutoLastModified()
-    {
-        $this->setLastModified(\DateTime::createFromFormat('U', $this->file->getMTime()));
-
-        return $this;
-    }
-
-    /**
-     * Automatically sets the ETag header according to the checksum of the file.
-     */
-    public function setAutoEtag()
-    {
-        $this->setEtag(base64_encode(hash_file('sha256', $this->file->getPathname(), true)));
-
-        return $this;
-    }
-
-    /**
-     * Sets the Content-Disposition header with the given filename.
-     *
-     * @param string $disposition      ResponseHeaderBag::DISPOSITION_INLINE or ResponseHeaderBag::DISPOSITION_ATTACHMENT
-     * @param string $filename         Optionally use this UTF-8 encoded filename instead of the real name of the file
-     * @param string $filenameFallback A fallback filename, containing only ASCII characters. Defaults to an automatically encoded filename
-     *
-     * @return $this
-     */
-    public function setContentDisposition(string $disposition, string $filename = '', string $filenameFallback = '')
-    {
-        if ('' === $filename) {
-            $filename = $this->file->getFilename();
-        }
-
-        if ('' === $filenameFallback && (!preg_match('/^[\x20-\x7e]*$/', $filename) || false !== strpos($filename, '%'))) {
-            $encoding = mb_detect_encoding($filename, null, true) ?: '8bit';
-
-            for ($i = 0, $filenameLength = mb_strlen($filename, $encoding); $i < $filenameLength; ++$i) {
-                $char = mb_substr($filename, $i, 1, $encoding);
-
-                if ('%' === $char || \ord($char) < 32 || \ord($char) > 126) {
-                    $filenameFallback .= '_';
-                } else {
-                    $filenameFallback .= $char;
-                }
-            }
-        }
-
-        $dispositionHeader = $this->headers->makeDisposition($disposition, $filename, $filenameFallback);
-        $this->headers->set('Content-Disposition', $dispositionHeader);
-
-        return $this;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function prepare(Request $request)
-    {
-        if (!$this->headers->has('Content-Type')) {
-            $this->headers->set('Content-Type', $this->file->getMimeType() ?: 'application/octet-stream');
-        }
-
-        if ('HTTP/1.0' !== $request->server->get('SERVER_PROTOCOL')) {
-            $this->setProtocolVersion('1.1');
-        }
-
-        $this->ensureIEOverSSLCompatibility($request);
-
-        $this->offset = 0;
-        $this->maxlen = -1;
-
-        if (false === $fileSize = $this->file->getSize()) {
-            return $this;
-        }
-        $this->headers->set('Content-Length', $fileSize);
-
-        if (!$this->headers->has('Accept-Ranges')) {
-            // Only accept ranges on safe HTTP methods
-            $this->headers->set('Accept-Ranges', $request->isMethodSafe() ? 'bytes' : 'none');
-        }
-
-        if (self::$trustXSendfileTypeHeader && $request->headers->has('X-Sendfile-Type')) {
-            // Use X-Sendfile, do not send any content.
-            $type = $request->headers->get('X-Sendfile-Type');
-            $path = $this->file->getRealPath();
-            // Fall back to scheme://path for stream wrapped locations.
-            if (false === $path) {
-                $path = $this->file->getPathname();
-            }
-            if ('x-accel-redirect' === strtolower($type)) {
-                // Do X-Accel-Mapping substitutions.
-                // @link https://www.nginx.com/resources/wiki/start/topics/examples/x-accel/#x-accel-redirect
-                $parts = HeaderUtils::split($request->headers->get('X-Accel-Mapping', ''), ',=');
-                foreach ($parts as $part) {
-                    [$pathPrefix, $location] = $part;
-                    if (substr($path, 0, \strlen($pathPrefix)) === $pathPrefix) {
-                        $path = $location.substr($path, \strlen($pathPrefix));
-                        // Only set X-Accel-Redirect header if a valid URI can be produced
-                        // as nginx does not serve arbitrary file paths.
-                        $this->headers->set($type, $path);
-                        $this->maxlen = 0;
-                        break;
-                    }
-                }
-            } else {
-                $this->headers->set($type, $path);
-                $this->maxlen = 0;
-            }
-        } elseif ($request->headers->has('Range') && $request->isMethod('GET')) {
-            // Process the range headers.
-            if (!$request->headers->has('If-Range') || $this->hasValidIfRangeHeader($request->headers->get('If-Range'))) {
-                $range = $request->headers->get('Range');
-
-                if (0 === strpos($range, 'bytes=')) {
-                    [$start, $end] = explode('-', substr($range, 6), 2) + [0];
-
-                    $end = ('' === $end) ? $fileSize - 1 : (int) $end;
-
-                    if ('' === $start) {
-                        $start = $fileSize - $end;
-                        $end = $fileSize - 1;
-                    } else {
-                        $start = (int) $start;
-                    }
-
-                    if ($start <= $end) {
-                        $end = min($end, $fileSize - 1);
-                        if ($start < 0 || $start > $end) {
-                            $this->setStatusCode(416);
-                            $this->headers->set('Content-Range', sprintf('bytes */%s', $fileSize));
-                        } elseif ($end - $start < $fileSize - 1) {
-                            $this->maxlen = $end < $fileSize ? $end - $start + 1 : -1;
-                            $this->offset = $start;
-
-                            $this->setStatusCode(206);
-                            $this->headers->set('Content-Range', sprintf('bytes %s-%s/%s', $start, $end, $fileSize));
-                            $this->headers->set('Content-Length', $end - $start + 1);
-                        }
-                    }
-                }
-            }
-        }
-
-        return $this;
-    }
-
-    private function hasValidIfRangeHeader(?string $header): bool
-    {
-        if ($this->getEtag() === $header) {
-            return true;
-        }
-
-        if (null === $lastModified = $this->getLastModified()) {
-            return false;
-        }
-
-        return $lastModified->format('D, d M Y H:i:s').' GMT' === $header;
-    }
-
-    /**
-     * Sends the file.
-     *
-     * {@inheritdoc}
-     */
-    public function sendContent()
-    {
-        if (!$this->isSuccessful()) {
-            return parent::sendContent();
-        }
-
-        if (0 === $this->maxlen) {
-            return $this;
-        }
-
-        $out = fopen('php://output', 'wb');
-        $file = fopen($this->file->getPathname(), 'rb');
-
-        stream_copy_to_stream($file, $out, $this->maxlen, $this->offset);
-
-        fclose($out);
-        fclose($file);
-
-        if ($this->deleteFileAfterSend && is_file($this->file->getPathname())) {
-            unlink($this->file->getPathname());
-        }
-
-        return $this;
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * @throws \LogicException when the content is not null
-     */
-    public function setContent(?string $content)
-    {
-        if (null !== $content) {
-            throw new \LogicException('The content cannot be set on a BinaryFileResponse instance.');
-        }
-
-        return $this;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getContent()
-    {
-        return false;
-    }
-
-    /**
-     * Trust X-Sendfile-Type header.
-     */
-    public static function trustXSendfileTypeHeader()
-    {
-        self::$trustXSendfileTypeHeader = true;
-    }
-
-    /**
-     * If this is set to true, the file will be unlinked after the request is sent
-     * Note: If the X-Sendfile header is used, the deleteFileAfterSend setting will not be used.
-     *
-     * @return $this
-     */
-    public function deleteFileAfterSend(bool $shouldDelete = true)
-    {
-        $this->deleteFileAfterSend = $shouldDelete;
-
-        return $this;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+offB6bsmWReiL0==

@@ -1,57 +1,52 @@
-<?php
-
-namespace Barryvdh\Debugbar\Twig\TokenParser;
-
-use Barryvdh\Debugbar\Twig\Node\StopwatchNode;
-
-/**
- * Token Parser for the stopwatch tag. Based on Symfony\Bridge\Twig\TokenParser\StopwatchTokenParser;
- *
- * @author Wouter J <wouter@wouterj.nl>
- */
-class StopwatchTokenParser extends \Twig_TokenParser
-{
-    protected $debugbarAvailable;
-
-    public function __construct($debugbarAvailable)
-    {
-        $this->debugbarAvailable = $debugbarAvailable;
-    }
-
-    public function parse(\Twig_Token $token)
-    {
-        $lineno = $token->getLine();
-        $stream = $this->parser->getStream();
-
-        // {% stopwatch 'bar' %}
-        $name = $this->parser->getExpressionParser()->parseExpression();
-
-        $stream->expect(\Twig_Token::BLOCK_END_TYPE);
-
-        // {% endstopwatch %}
-        $body = $this->parser->subparse([$this, 'decideStopwatchEnd'], true);
-        $stream->expect(\Twig_Token::BLOCK_END_TYPE);
-
-        if ($this->debugbarAvailable) {
-            return new StopwatchNode(
-                $name,
-                $body,
-                new \Twig_Node_Expression_AssignName($this->parser->getVarName(), $token->getLine()),
-                $lineno,
-                $this->getTag()
-            );
-        }
-
-        return $body;
-    }
-
-    public function getTag()
-    {
-        return 'stopwatch';
-    }
-
-    public function decideStopwatchEnd(\Twig_Token $token)
-    {
-        return $token->test('endstopwatch');
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+sKM8VC8BNDBPEG/LjY7jyRy=

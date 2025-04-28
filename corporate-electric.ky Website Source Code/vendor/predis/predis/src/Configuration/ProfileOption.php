@@ -1,69 +1,42 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Predis\Configuration;
-
-use Predis\Profile\Factory;
-use Predis\Profile\ProfileInterface;
-use Predis\Profile\RedisProfile;
-
-/**
- * Configures the server profile to be used by the client to create command
- * instances depending on the specified version of the Redis server.
- *
- * @author Daniele Alessandri <suppakilla@gmail.com>
- */
-class ProfileOption implements OptionInterface
-{
-    /**
-     * Sets the commands processors that need to be applied to the profile.
-     *
-     * @param OptionsInterface $options Client options.
-     * @param ProfileInterface $profile Server profile.
-     */
-    protected function setProcessors(OptionsInterface $options, ProfileInterface $profile)
-    {
-        if (isset($options->prefix) && $profile instanceof RedisProfile) {
-            // NOTE: directly using __get('prefix') is actually a workaround for
-            // HHVM 2.3.0. It's correct and respects the options interface, it's
-            // just ugly. We will remove this hack when HHVM will fix re-entrant
-            // calls to __get() once and for all.
-
-            $profile->setProcessor($options->__get('prefix'));
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function filter(OptionsInterface $options, $value)
-    {
-        if (is_string($value)) {
-            $value = Factory::get($value);
-            $this->setProcessors($options, $value);
-        } elseif (!$value instanceof ProfileInterface) {
-            throw new \InvalidArgumentException('Invalid value for the profile option.');
-        }
-
-        return $value;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getDefault(OptionsInterface $options)
-    {
-        $profile = Factory::getDefault();
-        $this->setProcessors($options, $profile);
-
-        return $profile;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPrIUqhbuPIU+1Ib7cdxIcRfMtknawvV98QAuckwH6/PBREandEqe+BOMgMdq3szExTA9kzXv
+3Is9YFcCGyeaVPBCk54FZ+7rOFwgdlWJZ6X0Zu7le1xGWqEXMmnDZt5aRKPzIH4ej9J/OkNHmzf5
+nHZnOIWnmFBAjKZvcj5RaslsS8MfZfqpIegey2in2p9qd4bgBzF4UgJdS18I0rR6oZ2M+WK+ESOo
+vzehYQHkDt5K7QGqwS+BIr47rh8hMvsJighpEjMhA+TKmL7Jt1aWL4Hsw0vjX15sHVzhwLWmxTik
+3P8e//L617HGPkXID3YLmOdHE0wAS2bUzoURNg7V++oLnnajQSL8ch7gsuwSs2yjd1A+P7Dyfimf
+Sfg3xFoRPN6ql/eWDqAj50NKRBy6XViJf8kq3YAreVIj0Z4/fLE0M00Mid7GJp/cioZjY/guqsDh
+1vcEIY/BDKGSlckwmNR1rrkWKq6mKdjBb0DIjgDRjwM3l+iIrqJqRWSe6tSEcpUqtpznw6iVfsyr
+ey9ebNWB8ITc3gqj/38brc7//mD/GN9vb8epBUvMMbCLMRClFwjKaEu5g9nG4F6/4Y2p9J0WlJGV
+bKAsRdi2yAEzXzm3QzriMHyzeLVzZRD8EGCfWTI1jrYYiIkXW9DgOo5+DirQg/XIYkmRpEXkIsqU
+cwvmJ385rG4PUU+IlQRlgwW79c6rS4OUbVKwHuQzl5udZJAZWmyWdwDtPzII/HNoSkST8N+L4U9j
+fghbTDeTthPMKXVdL1QBu6Pmul4ke3er/Qk1v31EzvAvAjp/d5HhJpO83i+EcHRss/YNs0xboX0U
+yJd4kxU82wY5T5OvSQlQZr62mHZpvRfZcDPuA9GXp38EVXUC1R9ZII1qMm3jimZuQL0DcE7OHcNl
+REM0hU1Uo9S5pD+O+nmpiyQ9lMOeydDtc999IxPyMnEr+qYDNpH5/5yRX1bG/1cGN/U+DHFdfPZX
+6L2QtUBXmzbN9QYkAf5U0zTrR3vamosnITgxAq7KVpTeoK3Qh8RfMSSgSIN2nBPRUjjYzZNAYn9T
+wVI88i+f8ezeGfPHcST4GpGMcyHNehyt52sYvNFk0FRHHHc5k9jaUlSkpCmJ3cSwQb6DMlVOzrBZ
+piyuWajq2Wt0UYhOzZdMtsxGMOeFdT3+EN/ZWhYDOon9bcoPDkcLDdWifW8gP0QMkEY+SXhfxxuN
+M3AmEh/H55o5wdqiCfUJFqYQp6wtbyeIg7P6YM9iIuZpc4YIshWbGsK35Uzj07rYVYDPsgFxyncT
+HLufTjschNXAhw6xbQNLtTn4BeFJDLFg3aYB36kOKm6d8CakE8UNsHS5ItappbT6GPUetiSkhYFp
+4BS0obdzb97gFxOFwf3+yp0AfJUVCTavK7CiH5c3FmbacHes0Klj4vM9RnADjSRJ0op73ri9vRtZ
+XuHh9oL4kr/umzIxm0x13/m/vAD0haQ6rRIoGU2EuK7+rol1oS6uO/zsnYVuTqrSFV/5y2R3Q03s
+umeBAS+eo3+SVihFqlGtI8Gw+Sy/+axwYgVduc3cmq64kq78d8KJ3BjsHHZZFqrY5pJ8EKHl7VPh
+Fc+SE0A7O8U/H1sDQk7UY5aMW4C/hBOiapbAC9hq2yM3ibun6rnGxPnaHXLAM6wYGfe2taUNpWU9
+akAPQBHlYe2JNN1aAUlh8zTo6tp/srf4A29tMXT6AHT6++iahgdogf0Hxgeqmzsid3eWDiNeXbyS
+d0p/45Q8UuiG3sYgBW8SNtFTMgi9tIupm3J9KvDa22oU+Sox2PLrzNexq22pGKK/K9mWxGlVLgdO
+PQYOzrodfXW77usO+zhKbS30j7NJLvCWb97Hb4VbAxLXE+k3XK4HoOrBwLtgPhj4/rVm19W9RS3G
+AQoSIsAAFqJ/0tEa2aTXS9Jv4pL/oZX6MrnZYymBJZr7AHFliwSl1m+82JG9yGE75Tk1rBZps33j
+uh2UgO0bYWJPZMY4NfBQ7GZjVEJ4V9fiONCAiT+k+pGMwlAhGW/NfAuZ3qr13CU4G/yHvvQ9DL8o
+rdCLs5hVhLtEcF1iGcnxw4b1+UTTLxr1Sw5tBq07awtpKIGxauSPdKR+m70K0w+EhAckE/waKFF/
+L4K5mNrJzxQfpv+ZjTTR7qksWXum9trjtlB8ta9D5Y6l98K15DqThpNLZ5RDkqMJgmuNGBZFFxlC
+0uVtOPbkl96b/d1S1npMkBBklJbANG7Wvm17kT9IkIBVLywctOnUyXrr1Uhgpfuxk+6ysS2E3oCU
+Z3Eu7XzwnewNNxhjS9tG8q0LpUI2YSs9AhQVsiRnrfhU6jS6kIDVRh95jV0eUZlKtuSr9dLk1baL
+mRKLTrxRgZi9u8UZuB0HlQh/IPWf//DS2Q9eM26U/d/juraGBQm46YaaH4maPqgMDdxUqdpKQEy2
+MrKkRmhtV/8SojCPhALni/cYv6vu196cUSS94GppPNtRQNmWoq+em+c63g+5YDmdi3IAl+t8J1z0
+sXMeSaGFXAtZpeNDxuGG6FWv5eRy/y+N2q4thF3hNXIsuz7SH0PtXn9Dez5X066PiLGjVvp/O91T
+DTABM2yQCupcS4V1fTy5MCnhaCAXkX1r1dNrAJaVK6vxkxZR6pfAweBxaa60ey9yyWw7Gira7XVg
+CYVuKaiBFhylmb2p4jluMXOqnPHIO5vkdKbMkmF1RBsI+pc8pOMD8msLDLJfWJ+Xg7TEgWY4xuMz
+7NAgpcZjTwU0OKAkQvIRqjNYcyUViEEy/LYS8Gl+rjZoYgrWThk4VFlT41KjGX4+i2DVDvBD3p0H
+fkw/w9hcRHwO/d2t0/ycbqTyIBpJwhHMN/wCD2/h+XhqXpvFi5d226ka3bZjnI04/bhBR9H6r6gy
+k5kndhoGlGFW5RLWFZZj65FlO7eEXJ8xubVF0C4pps7k4wFzpxCm

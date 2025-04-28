@@ -1,598 +1,184 @@
-<?php
-
-namespace Illuminate\View;
-
-use Illuminate\Contracts\Container\Container;
-use Illuminate\Contracts\Events\Dispatcher;
-use Illuminate\Contracts\Support\Arrayable;
-use Illuminate\Contracts\View\Factory as FactoryContract;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
-use Illuminate\Support\Traits\Macroable;
-use Illuminate\View\Engines\EngineResolver;
-use InvalidArgumentException;
-
-class Factory implements FactoryContract
-{
-    use Macroable,
-        Concerns\ManagesComponents,
-        Concerns\ManagesEvents,
-        Concerns\ManagesLayouts,
-        Concerns\ManagesLoops,
-        Concerns\ManagesStacks,
-        Concerns\ManagesTranslations;
-
-    /**
-     * The engine implementation.
-     *
-     * @var \Illuminate\View\Engines\EngineResolver
-     */
-    protected $engines;
-
-    /**
-     * The view finder implementation.
-     *
-     * @var \Illuminate\View\ViewFinderInterface
-     */
-    protected $finder;
-
-    /**
-     * The event dispatcher instance.
-     *
-     * @var \Illuminate\Contracts\Events\Dispatcher
-     */
-    protected $events;
-
-    /**
-     * The IoC container instance.
-     *
-     * @var \Illuminate\Contracts\Container\Container
-     */
-    protected $container;
-
-    /**
-     * Data that should be available to all templates.
-     *
-     * @var array
-     */
-    protected $shared = [];
-
-    /**
-     * The extension to engine bindings.
-     *
-     * @var array
-     */
-    protected $extensions = [
-        'blade.php' => 'blade',
-        'php' => 'php',
-        'css' => 'file',
-        'html' => 'file',
-    ];
-
-    /**
-     * The view composer events.
-     *
-     * @var array
-     */
-    protected $composers = [];
-
-    /**
-     * The number of active rendering operations.
-     *
-     * @var int
-     */
-    protected $renderCount = 0;
-
-    /**
-     * The "once" block IDs that have been rendered.
-     *
-     * @var array
-     */
-    protected $renderedOnce = [];
-
-    /**
-     * Create a new view factory instance.
-     *
-     * @param  \Illuminate\View\Engines\EngineResolver  $engines
-     * @param  \Illuminate\View\ViewFinderInterface  $finder
-     * @param  \Illuminate\Contracts\Events\Dispatcher  $events
-     * @return void
-     */
-    public function __construct(EngineResolver $engines, ViewFinderInterface $finder, Dispatcher $events)
-    {
-        $this->finder = $finder;
-        $this->events = $events;
-        $this->engines = $engines;
-
-        $this->share('__env', $this);
-    }
-
-    /**
-     * Get the evaluated view contents for the given view.
-     *
-     * @param  string  $path
-     * @param  \Illuminate\Contracts\Support\Arrayable|array  $data
-     * @param  array  $mergeData
-     * @return \Illuminate\Contracts\View\View
-     */
-    public function file($path, $data = [], $mergeData = [])
-    {
-        $data = array_merge($mergeData, $this->parseData($data));
-
-        return tap($this->viewInstance($path, $path, $data), function ($view) {
-            $this->callCreator($view);
-        });
-    }
-
-    /**
-     * Get the evaluated view contents for the given view.
-     *
-     * @param  string  $view
-     * @param  \Illuminate\Contracts\Support\Arrayable|array  $data
-     * @param  array  $mergeData
-     * @return \Illuminate\Contracts\View\View
-     */
-    public function make($view, $data = [], $mergeData = [])
-    {
-        $path = $this->finder->find(
-            $view = $this->normalizeName($view)
-        );
-
-        // Next, we will create the view instance and call the view creator for the view
-        // which can set any data, etc. Then we will return the view instance back to
-        // the caller for rendering or performing other view manipulations on this.
-        $data = array_merge($mergeData, $this->parseData($data));
-
-        return tap($this->viewInstance($view, $path, $data), function ($view) {
-            $this->callCreator($view);
-        });
-    }
-
-    /**
-     * Get the first view that actually exists from the given list.
-     *
-     * @param  array  $views
-     * @param  \Illuminate\Contracts\Support\Arrayable|array  $data
-     * @param  array  $mergeData
-     * @return \Illuminate\Contracts\View\View
-     *
-     * @throws \InvalidArgumentException
-     */
-    public function first(array $views, $data = [], $mergeData = [])
-    {
-        $view = Arr::first($views, function ($view) {
-            return $this->exists($view);
-        });
-
-        if (! $view) {
-            throw new InvalidArgumentException('None of the views in the given array exist.');
-        }
-
-        return $this->make($view, $data, $mergeData);
-    }
-
-    /**
-     * Get the rendered content of the view based on a given condition.
-     *
-     * @param  bool  $condition
-     * @param  string  $view
-     * @param  \Illuminate\Contracts\Support\Arrayable|array  $data
-     * @param  array  $mergeData
-     * @return string
-     */
-    public function renderWhen($condition, $view, $data = [], $mergeData = [])
-    {
-        if (! $condition) {
-            return '';
-        }
-
-        return $this->make($view, $this->parseData($data), $mergeData)->render();
-    }
-
-    /**
-     * Get the rendered contents of a partial from a loop.
-     *
-     * @param  string  $view
-     * @param  array  $data
-     * @param  string  $iterator
-     * @param  string  $empty
-     * @return string
-     */
-    public function renderEach($view, $data, $iterator, $empty = 'raw|')
-    {
-        $result = '';
-
-        // If is actually data in the array, we will loop through the data and append
-        // an instance of the partial view to the final result HTML passing in the
-        // iterated value of this data array, allowing the views to access them.
-        if (count($data) > 0) {
-            foreach ($data as $key => $value) {
-                $result .= $this->make(
-                    $view, ['key' => $key, $iterator => $value]
-                )->render();
-            }
-        }
-
-        // If there is no data in the array, we will render the contents of the empty
-        // view. Alternatively, the "empty view" could be a raw string that begins
-        // with "raw|" for convenience and to let this know that it is a string.
-        else {
-            $result = Str::startsWith($empty, 'raw|')
-                        ? substr($empty, 4)
-                        : $this->make($empty)->render();
-        }
-
-        return $result;
-    }
-
-    /**
-     * Normalize a view name.
-     *
-     * @param  string  $name
-     * @return string
-     */
-    protected function normalizeName($name)
-    {
-        return ViewName::normalize($name);
-    }
-
-    /**
-     * Parse the given data into a raw array.
-     *
-     * @param  mixed  $data
-     * @return array
-     */
-    protected function parseData($data)
-    {
-        return $data instanceof Arrayable ? $data->toArray() : $data;
-    }
-
-    /**
-     * Create a new view instance from the given arguments.
-     *
-     * @param  string  $view
-     * @param  string  $path
-     * @param  \Illuminate\Contracts\Support\Arrayable|array  $data
-     * @return \Illuminate\Contracts\View\View
-     */
-    protected function viewInstance($view, $path, $data)
-    {
-        return new View($this, $this->getEngineFromPath($path), $view, $path, $data);
-    }
-
-    /**
-     * Determine if a given view exists.
-     *
-     * @param  string  $view
-     * @return bool
-     */
-    public function exists($view)
-    {
-        try {
-            $this->finder->find($view);
-        } catch (InvalidArgumentException $e) {
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * Get the appropriate view engine for the given path.
-     *
-     * @param  string  $path
-     * @return \Illuminate\Contracts\View\Engine
-     *
-     * @throws \InvalidArgumentException
-     */
-    public function getEngineFromPath($path)
-    {
-        if (! $extension = $this->getExtension($path)) {
-            throw new InvalidArgumentException("Unrecognized extension in file: {$path}.");
-        }
-
-        $engine = $this->extensions[$extension];
-
-        return $this->engines->resolve($engine);
-    }
-
-    /**
-     * Get the extension used by the view file.
-     *
-     * @param  string  $path
-     * @return string|null
-     */
-    protected function getExtension($path)
-    {
-        $extensions = array_keys($this->extensions);
-
-        return Arr::first($extensions, function ($value) use ($path) {
-            return Str::endsWith($path, '.'.$value);
-        });
-    }
-
-    /**
-     * Add a piece of shared data to the environment.
-     *
-     * @param  array|string  $key
-     * @param  mixed|null  $value
-     * @return mixed
-     */
-    public function share($key, $value = null)
-    {
-        $keys = is_array($key) ? $key : [$key => $value];
-
-        foreach ($keys as $key => $value) {
-            $this->shared[$key] = $value;
-        }
-
-        return $value;
-    }
-
-    /**
-     * Increment the rendering counter.
-     *
-     * @return void
-     */
-    public function incrementRender()
-    {
-        $this->renderCount++;
-    }
-
-    /**
-     * Decrement the rendering counter.
-     *
-     * @return void
-     */
-    public function decrementRender()
-    {
-        $this->renderCount--;
-    }
-
-    /**
-     * Check if there are no active render operations.
-     *
-     * @return bool
-     */
-    public function doneRendering()
-    {
-        return $this->renderCount == 0;
-    }
-
-    /**
-     * Determine if the given once token has been rendered.
-     *
-     * @param  string  $id
-     * @return bool
-     */
-    public function hasRenderedOnce(string $id)
-    {
-        return isset($this->renderedOnce[$id]);
-    }
-
-    /**
-     * Mark the given once token as having been rendered.
-     *
-     * @param  string  $id
-     * @return void
-     */
-    public function markAsRenderedOnce(string $id)
-    {
-        $this->renderedOnce[$id] = true;
-    }
-
-    /**
-     * Add a location to the array of view locations.
-     *
-     * @param  string  $location
-     * @return void
-     */
-    public function addLocation($location)
-    {
-        $this->finder->addLocation($location);
-    }
-
-    /**
-     * Add a new namespace to the loader.
-     *
-     * @param  string  $namespace
-     * @param  string|array  $hints
-     * @return $this
-     */
-    public function addNamespace($namespace, $hints)
-    {
-        $this->finder->addNamespace($namespace, $hints);
-
-        return $this;
-    }
-
-    /**
-     * Prepend a new namespace to the loader.
-     *
-     * @param  string  $namespace
-     * @param  string|array  $hints
-     * @return $this
-     */
-    public function prependNamespace($namespace, $hints)
-    {
-        $this->finder->prependNamespace($namespace, $hints);
-
-        return $this;
-    }
-
-    /**
-     * Replace the namespace hints for the given namespace.
-     *
-     * @param  string  $namespace
-     * @param  string|array  $hints
-     * @return $this
-     */
-    public function replaceNamespace($namespace, $hints)
-    {
-        $this->finder->replaceNamespace($namespace, $hints);
-
-        return $this;
-    }
-
-    /**
-     * Register a valid view extension and its engine.
-     *
-     * @param  string  $extension
-     * @param  string  $engine
-     * @param  \Closure|null  $resolver
-     * @return void
-     */
-    public function addExtension($extension, $engine, $resolver = null)
-    {
-        $this->finder->addExtension($extension);
-
-        if (isset($resolver)) {
-            $this->engines->register($engine, $resolver);
-        }
-
-        unset($this->extensions[$extension]);
-
-        $this->extensions = array_merge([$extension => $engine], $this->extensions);
-    }
-
-    /**
-     * Flush all of the factory state like sections and stacks.
-     *
-     * @return void
-     */
-    public function flushState()
-    {
-        $this->renderCount = 0;
-        $this->renderedOnce = [];
-
-        $this->flushSections();
-        $this->flushStacks();
-    }
-
-    /**
-     * Flush all of the section contents if done rendering.
-     *
-     * @return void
-     */
-    public function flushStateIfDoneRendering()
-    {
-        if ($this->doneRendering()) {
-            $this->flushState();
-        }
-    }
-
-    /**
-     * Get the extension to engine bindings.
-     *
-     * @return array
-     */
-    public function getExtensions()
-    {
-        return $this->extensions;
-    }
-
-    /**
-     * Get the engine resolver instance.
-     *
-     * @return \Illuminate\View\Engines\EngineResolver
-     */
-    public function getEngineResolver()
-    {
-        return $this->engines;
-    }
-
-    /**
-     * Get the view finder instance.
-     *
-     * @return \Illuminate\View\ViewFinderInterface
-     */
-    public function getFinder()
-    {
-        return $this->finder;
-    }
-
-    /**
-     * Set the view finder instance.
-     *
-     * @param  \Illuminate\View\ViewFinderInterface  $finder
-     * @return void
-     */
-    public function setFinder(ViewFinderInterface $finder)
-    {
-        $this->finder = $finder;
-    }
-
-    /**
-     * Flush the cache of views located by the finder.
-     *
-     * @return void
-     */
-    public function flushFinderCache()
-    {
-        $this->getFinder()->flush();
-    }
-
-    /**
-     * Get the event dispatcher instance.
-     *
-     * @return \Illuminate\Contracts\Events\Dispatcher
-     */
-    public function getDispatcher()
-    {
-        return $this->events;
-    }
-
-    /**
-     * Set the event dispatcher instance.
-     *
-     * @param  \Illuminate\Contracts\Events\Dispatcher  $events
-     * @return void
-     */
-    public function setDispatcher(Dispatcher $events)
-    {
-        $this->events = $events;
-    }
-
-    /**
-     * Get the IoC container instance.
-     *
-     * @return \Illuminate\Contracts\Container\Container
-     */
-    public function getContainer()
-    {
-        return $this->container;
-    }
-
-    /**
-     * Set the IoC container instance.
-     *
-     * @param  \Illuminate\Contracts\Container\Container  $container
-     * @return void
-     */
-    public function setContainer(Container $container)
-    {
-        $this->container = $container;
-    }
-
-    /**
-     * Get an item from the shared data.
-     *
-     * @param  string  $key
-     * @param  mixed  $default
-     * @return mixed
-     */
-    public function shared($key, $default = null)
-    {
-        return Arr::get($this->shared, $key, $default);
-    }
-
-    /**
-     * Get all of the shared data for the environment.
-     *
-     * @return array
-     */
-    public function getShared()
-    {
-        return $this->shared;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

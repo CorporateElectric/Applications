@@ -1,285 +1,156 @@
-<?php declare(strict_types=1);
-
-namespace PhpParser;
-
-use PhpParser\Node\Name;
-use PhpParser\Node\Name\FullyQualified;
-use PhpParser\Node\Stmt;
-
-class NameContext
-{
-    /** @var null|Name Current namespace */
-    protected $namespace;
-
-    /** @var Name[][] Map of format [aliasType => [aliasName => originalName]] */
-    protected $aliases = [];
-
-    /** @var Name[][] Same as $aliases but preserving original case */
-    protected $origAliases = [];
-
-    /** @var ErrorHandler Error handler */
-    protected $errorHandler;
-
-    /**
-     * Create a name context.
-     *
-     * @param ErrorHandler $errorHandler Error handling used to report errors
-     */
-    public function __construct(ErrorHandler $errorHandler) {
-        $this->errorHandler = $errorHandler;
-    }
-
-    /**
-     * Start a new namespace.
-     *
-     * This also resets the alias table.
-     *
-     * @param Name|null $namespace Null is the global namespace
-     */
-    public function startNamespace(Name $namespace = null) {
-        $this->namespace = $namespace;
-        $this->origAliases = $this->aliases = [
-            Stmt\Use_::TYPE_NORMAL   => [],
-            Stmt\Use_::TYPE_FUNCTION => [],
-            Stmt\Use_::TYPE_CONSTANT => [],
-        ];
-    }
-
-    /**
-     * Add an alias / import.
-     *
-     * @param Name   $name        Original name
-     * @param string $aliasName   Aliased name
-     * @param int    $type        One of Stmt\Use_::TYPE_*
-     * @param array  $errorAttrs Attributes to use to report an error
-     */
-    public function addAlias(Name $name, string $aliasName, int $type, array $errorAttrs = []) {
-        // Constant names are case sensitive, everything else case insensitive
-        if ($type === Stmt\Use_::TYPE_CONSTANT) {
-            $aliasLookupName = $aliasName;
-        } else {
-            $aliasLookupName = strtolower($aliasName);
-        }
-
-        if (isset($this->aliases[$type][$aliasLookupName])) {
-            $typeStringMap = [
-                Stmt\Use_::TYPE_NORMAL   => '',
-                Stmt\Use_::TYPE_FUNCTION => 'function ',
-                Stmt\Use_::TYPE_CONSTANT => 'const ',
-            ];
-
-            $this->errorHandler->handleError(new Error(
-                sprintf(
-                    'Cannot use %s%s as %s because the name is already in use',
-                    $typeStringMap[$type], $name, $aliasName
-                ),
-                $errorAttrs
-            ));
-            return;
-        }
-
-        $this->aliases[$type][$aliasLookupName] = $name;
-        $this->origAliases[$type][$aliasName] = $name;
-    }
-
-    /**
-     * Get current namespace.
-     *
-     * @return null|Name Namespace (or null if global namespace)
-     */
-    public function getNamespace() {
-        return $this->namespace;
-    }
-
-    /**
-     * Get resolved name.
-     *
-     * @param Name $name Name to resolve
-     * @param int  $type One of Stmt\Use_::TYPE_{FUNCTION|CONSTANT}
-     *
-     * @return null|Name Resolved name, or null if static resolution is not possible
-     */
-    public function getResolvedName(Name $name, int $type) {
-        // don't resolve special class names
-        if ($type === Stmt\Use_::TYPE_NORMAL && $name->isSpecialClassName()) {
-            if (!$name->isUnqualified()) {
-                $this->errorHandler->handleError(new Error(
-                    sprintf("'\\%s' is an invalid class name", $name->toString()),
-                    $name->getAttributes()
-                ));
-            }
-            return $name;
-        }
-
-        // fully qualified names are already resolved
-        if ($name->isFullyQualified()) {
-            return $name;
-        }
-
-        // Try to resolve aliases
-        if (null !== $resolvedName = $this->resolveAlias($name, $type)) {
-            return $resolvedName;
-        }
-
-        if ($type !== Stmt\Use_::TYPE_NORMAL && $name->isUnqualified()) {
-            if (null === $this->namespace) {
-                // outside of a namespace unaliased unqualified is same as fully qualified
-                return new FullyQualified($name, $name->getAttributes());
-            }
-
-            // Cannot resolve statically
-            return null;
-        }
-
-        // if no alias exists prepend current namespace
-        return FullyQualified::concat($this->namespace, $name, $name->getAttributes());
-    }
-
-    /**
-     * Get resolved class name.
-     *
-     * @param Name $name Class ame to resolve
-     *
-     * @return Name Resolved name
-     */
-    public function getResolvedClassName(Name $name) : Name {
-        return $this->getResolvedName($name, Stmt\Use_::TYPE_NORMAL);
-    }
-
-    /**
-     * Get possible ways of writing a fully qualified name (e.g., by making use of aliases).
-     *
-     * @param string $name Fully-qualified name (without leading namespace separator)
-     * @param int    $type One of Stmt\Use_::TYPE_*
-     *
-     * @return Name[] Possible representations of the name
-     */
-    public function getPossibleNames(string $name, int $type) : array {
-        $lcName = strtolower($name);
-
-        if ($type === Stmt\Use_::TYPE_NORMAL) {
-            // self, parent and static must always be unqualified
-            if ($lcName === "self" || $lcName === "parent" || $lcName === "static") {
-                return [new Name($name)];
-            }
-        }
-
-        // Collect possible ways to write this name, starting with the fully-qualified name
-        $possibleNames = [new FullyQualified($name)];
-
-        if (null !== $nsRelativeName = $this->getNamespaceRelativeName($name, $lcName, $type)) {
-            // Make sure there is no alias that makes the normally namespace-relative name
-            // into something else
-            if (null === $this->resolveAlias($nsRelativeName, $type)) {
-                $possibleNames[] = $nsRelativeName;
-            }
-        }
-
-        // Check for relevant namespace use statements
-        foreach ($this->origAliases[Stmt\Use_::TYPE_NORMAL] as $alias => $orig) {
-            $lcOrig = $orig->toLowerString();
-            if (0 === strpos($lcName, $lcOrig . '\\')) {
-                $possibleNames[] = new Name($alias . substr($name, strlen($lcOrig)));
-            }
-        }
-
-        // Check for relevant type-specific use statements
-        foreach ($this->origAliases[$type] as $alias => $orig) {
-            if ($type === Stmt\Use_::TYPE_CONSTANT) {
-                // Constants are are complicated-sensitive
-                $normalizedOrig = $this->normalizeConstName($orig->toString());
-                if ($normalizedOrig === $this->normalizeConstName($name)) {
-                    $possibleNames[] = new Name($alias);
-                }
-            } else {
-                // Everything else is case-insensitive
-                if ($orig->toLowerString() === $lcName) {
-                    $possibleNames[] = new Name($alias);
-                }
-            }
-        }
-
-        return $possibleNames;
-    }
-
-    /**
-     * Get shortest representation of this fully-qualified name.
-     *
-     * @param string $name Fully-qualified name (without leading namespace separator)
-     * @param int    $type One of Stmt\Use_::TYPE_*
-     *
-     * @return Name Shortest representation
-     */
-    public function getShortName(string $name, int $type) : Name {
-        $possibleNames = $this->getPossibleNames($name, $type);
-
-        // Find shortest name
-        $shortestName = null;
-        $shortestLength = \INF;
-        foreach ($possibleNames as $possibleName) {
-            $length = strlen($possibleName->toCodeString());
-            if ($length < $shortestLength) {
-                $shortestName = $possibleName;
-                $shortestLength = $length;
-            }
-        }
-
-       return $shortestName;
-    }
-
-    private function resolveAlias(Name $name, $type) {
-        $firstPart = $name->getFirst();
-
-        if ($name->isQualified()) {
-            // resolve aliases for qualified names, always against class alias table
-            $checkName = strtolower($firstPart);
-            if (isset($this->aliases[Stmt\Use_::TYPE_NORMAL][$checkName])) {
-                $alias = $this->aliases[Stmt\Use_::TYPE_NORMAL][$checkName];
-                return FullyQualified::concat($alias, $name->slice(1), $name->getAttributes());
-            }
-        } elseif ($name->isUnqualified()) {
-            // constant aliases are case-sensitive, function aliases case-insensitive
-            $checkName = $type === Stmt\Use_::TYPE_CONSTANT ? $firstPart : strtolower($firstPart);
-            if (isset($this->aliases[$type][$checkName])) {
-                // resolve unqualified aliases
-                return new FullyQualified($this->aliases[$type][$checkName], $name->getAttributes());
-            }
-        }
-
-        // No applicable aliases
-        return null;
-    }
-
-    private function getNamespaceRelativeName(string $name, string $lcName, int $type) {
-        if (null === $this->namespace) {
-            return new Name($name);
-        }
-
-        if ($type === Stmt\Use_::TYPE_CONSTANT) {
-            // The constants true/false/null always resolve to the global symbols, even inside a
-            // namespace, so they may be used without qualification
-            if ($lcName === "true" || $lcName === "false" || $lcName === "null") {
-                return new Name($name);
-            }
-        }
-
-        $namespacePrefix = strtolower($this->namespace . '\\');
-        if (0 === strpos($lcName, $namespacePrefix)) {
-            return new Name(substr($name, strlen($namespacePrefix)));
-        }
-
-        return null;
-    }
-
-    private function normalizeConstName(string $name) {
-        $nsSep = strrpos($name, '\\');
-        if (false === $nsSep) {
-            return $name;
-        }
-
-        // Constants have case-insensitive namespace and case-sensitive short-name
-        $ns = substr($name, 0, $nsSep);
-        $shortName = substr($name, $nsSep + 1);
-        return strtolower($ns) . '\\' . $shortName;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+jkHKJgi=

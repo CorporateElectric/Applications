@@ -1,138 +1,69 @@
-<?php
-
-/*
- * This file is part of the Prophecy.
- * (c) Konstantin Kudryashov <ever.zet@gmail.com>
- *     Marcello Duarte <marcello.duarte@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Prophecy;
-
-use Prophecy\Doubler\CachedDoubler;
-use Prophecy\Doubler\Doubler;
-use Prophecy\Doubler\LazyDouble;
-use Prophecy\Doubler\ClassPatch;
-use Prophecy\Prophecy\ObjectProphecy;
-use Prophecy\Prophecy\RevealerInterface;
-use Prophecy\Prophecy\Revealer;
-use Prophecy\Call\CallCenter;
-use Prophecy\Util\StringUtil;
-use Prophecy\Exception\Prediction\PredictionException;
-use Prophecy\Exception\Prediction\AggregateException;
-
-/**
- * Prophet creates prophecies.
- *
- * @author Konstantin Kudryashov <ever.zet@gmail.com>
- */
-class Prophet
-{
-    private $doubler;
-    private $revealer;
-    private $util;
-
-    /**
-     * @var ObjectProphecy[]
-     */
-    private $prophecies = array();
-
-    /**
-     * Initializes Prophet.
-     *
-     * @param null|Doubler           $doubler
-     * @param null|RevealerInterface $revealer
-     * @param null|StringUtil        $util
-     */
-    public function __construct(
-        Doubler $doubler = null,
-        RevealerInterface $revealer = null,
-        StringUtil $util = null
-    ) {
-        if (null === $doubler) {
-            $doubler = new CachedDoubler();
-            $doubler->registerClassPatch(new ClassPatch\SplFileInfoPatch);
-            $doubler->registerClassPatch(new ClassPatch\TraversablePatch);
-            $doubler->registerClassPatch(new ClassPatch\ThrowablePatch);
-            $doubler->registerClassPatch(new ClassPatch\DisableConstructorPatch);
-            $doubler->registerClassPatch(new ClassPatch\ProphecySubjectPatch);
-            $doubler->registerClassPatch(new ClassPatch\ReflectionClassNewInstancePatch);
-            $doubler->registerClassPatch(new ClassPatch\HhvmExceptionPatch());
-            $doubler->registerClassPatch(new ClassPatch\MagicCallPatch);
-            $doubler->registerClassPatch(new ClassPatch\KeywordPatch);
-        }
-
-        $this->doubler  = $doubler;
-        $this->revealer = $revealer ?: new Revealer;
-        $this->util     = $util ?: new StringUtil;
-    }
-
-    /**
-     * Creates new object prophecy.
-     *
-     * @param null|string $classOrInterface Class or interface name
-     *
-     * @return ObjectProphecy
-     */
-    public function prophesize($classOrInterface = null)
-    {
-        $this->prophecies[] = $prophecy = new ObjectProphecy(
-            new LazyDouble($this->doubler),
-            new CallCenter($this->util),
-            $this->revealer
-        );
-
-        if ($classOrInterface && class_exists($classOrInterface)) {
-            return $prophecy->willExtend($classOrInterface);
-        }
-
-        if ($classOrInterface && interface_exists($classOrInterface)) {
-            return $prophecy->willImplement($classOrInterface);
-        }
-
-        return $prophecy;
-    }
-
-    /**
-     * Returns all created object prophecies.
-     *
-     * @return ObjectProphecy[]
-     */
-    public function getProphecies()
-    {
-        return $this->prophecies;
-    }
-
-    /**
-     * Returns Doubler instance assigned to this Prophet.
-     *
-     * @return Doubler
-     */
-    public function getDoubler()
-    {
-        return $this->doubler;
-    }
-
-    /**
-     * Checks all predictions defined by prophecies of this Prophet.
-     *
-     * @throws Exception\Prediction\AggregateException If any prediction fails
-     */
-    public function checkPredictions()
-    {
-        $exception = new AggregateException("Some predictions failed:\n");
-        foreach ($this->prophecies as $prophecy) {
-            try {
-                $prophecy->checkProphecyMethodsPredictions();
-            } catch (PredictionException $e) {
-                $exception->append($e);
-            }
-        }
-
-        if (count($exception->getExceptions())) {
-            throw $exception;
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cP+TlNBcy/AI+kQB9cewHp197qMPIRDYegFfuyy1krckqKlykQiaD3DJ7/ESf9vblDrShd9MW
+XyNQUewYp9guCJUFCSgGcnpz+mDgPnYOyyz3B1IYAbZOarkAlToWlXCWWPrca+2B6fbaHRuuIXe9
+BcGh+gu919pf7saJyjuqvT7PMem7GTh4Nkj8l22mifKxlTN4YpzEipg1a9JBz9FNQ50nAt+1hDhw
+SPsHBO5jV1aIpQSMU5cRlodrev4dFdIyJlshfJhLgoldLC5HqzmP85H4TkWaRltRbVz3hr//5tqJ
+ioeGNl+Qy3OfG7jOykiv7v1bICQOFng4LP/8upOuvrSXefK1eIasfwq9385ZTra/nSILQhSYmd+A
+GyyKlZb/Z+RvZI7BrUXdZQYwHiCHY84SrE34dC3sdt/OAEo0uEqVgBQ6e9qc5XUhyVNyPegFstn/
+9VQqJARh8V2kAaKVP4skCQCrVCBPQlsS1ymfdr2CzILbwKPpetGlkYN+4vBUSTs0I/3wH6DQ37QC
+qWnjTsN1FnkJNLaT5TWhgVe4gm7i6L/D7ych8AQy6xmmS3dwRPkn+90OyB5hZHeeuHeutCaGJeL1
+4AzVVhaSmptOvBA3zfnYqQ+GO99JCbLb3GEmIkzVJw8JCHZXCGjL4NejDj5iTdj3otba5VfoZ2X5
+1As9LkB4hoHO1TnK8PevqKszqQxNRbUAAtMJyoRD9n0ZFq1/2bgI6qro4AglApWgYfiQMcQgZK34
+PpBeSZQCR5q3VIKSYi1oWgo0nuQdJtD3OyyfVuMAb0hKIMPJeQdEW1UNHQcRzgBdVBAOyNdIttJf
+669pSBnJrhaO7ltN4LjVA1XlcJdB6WemvC4fAZBRbZIonTaR5nAJB6TMHW2+hlJ4iz/vpvB+E/s0
+WrQhAECvX19m0Kpi/BjEjZckL8C0knQh7XJlB9LVYFtjVEHkx7jl8vuLb+wWslIKJjP/vyQbOdH9
+iJa8Y9me65x/XNpGmoOx3aqoO1H5I8RHinkCLfCzbFcHHkrgW7Ym0hmoJ67ofPaRxo9/mWa0ehjg
+uMFtSwgwwVUva9BWEzJEjcOknVYN6oe9vIAh868+JhQWy9R5mAdLr2WozeIt5qAGYYQ1gvbTpZZQ
+56QPsnYfZNtX6UnRQdDRYZ7LNeGNcegCsdSxXyVqGNmu9x+Kr5dVyxINHXbbySzETFfE762ZgvHh
+PaCWGw0YHTXBtpRGteaOqmTLuB1nUVuF7fHvspJMy3KaJQyabTIht+tqiEEGks5iIL+zVYRUa7ic
+aY8XgKuJ30kt5lBw2xxpaltW7t2qdAvgb3bpozvqBG4/4kIq2jVD/hh6wpQ1V0AXDMQPgyITGsdc
+a29HrNVQ3jj0+dd9JVRZnK+1C7Ll8FT3bbTFATzYZ8DxjrVKc9xmQ8sV+CS0rprG4GZ7NzKmJDz8
++N8xrGh/nLlSFoU8yv4dr3wymWqipcZPBFjJ9HABDjCQfLVq46sLvn8McsNxNhQo7Jwki/1Wt1+e
+IFzvsmxDqCXV345Brm/ObGm65hEkk9QsslSbtJgOdScEJpW7QqKLdsl7NoB1vikYzzGMdopZCALv
+GsVISMxPGHTHH3zDE0PNEB+yukQLshpG8OexVYTN5WyNtmwjdKowmb08mZwXLoIJqle4tQkduDYE
+CXWr+JqSndHnYce8/vttPzbJV4pkMBU5ikXz8CV4cLXdtlTdTiqa980Ccf4kQn3q4QcpVYuHENGC
+V5C8jvACe5WIricnp0Lebkg5It1KNZyd1pDj3r1tGOntYOsyGKaLVcBka/DegOqkQDX8vTvdxOvM
+YF7ojkUuh2bxW/8wrfrKiV1rtnph/kI3p7J+vwPGkKeFPW0dcaFxT7yXI2cAwEeaEHp3gBIbAOSv
+iotRIZanRgqqUMMxGUnsxJgu/ISjqfQfqCqGuIUKjJdw2VCnROYi97wvN/szkSIKDyRuLxWB+STk
++AoKNxhdOgTSPv1XKDLyootAH0DB3264V2HspdEhkLuMd6WOP8nzerV/kJkcLy8IRlNOBfaw2I7V
+lW7ZwMx6p4enAwcDJTFlkqCcpwYzbiaZNpxOnxswmytcRamtZfwwYUfmwDKahzScH5aGqaqmHrYV
+RMyUgQoewT8jSHgIqY/iJKSDTbeT0q+fHQNlYw7UBYgNT+GLPXdDU9K1paWzYA6jk4gIZKY7N7/v
+CqG1KWdh8eoNO0mljHs+9lRFXWM+Kf4lDMkyZ8afYrSv3k2f1fxAgIaFnaZZI3U3hIpNBiMUaITK
+q1P5JVWJMZrYDtM8dzoJa1z2tnXYkmhGvc6ve780RnMM0sUcLdPHom3oxTdRHPpf0Aeo9xIhkHLj
+qYe4TiL53NT3OULE3neKPnhVZj50rZ1F2sYU0Soxkp0bJFuZNuS2rO+4DUHRcsR0XLcI3hZE6T/P
+YXAS+DGcXrdMh3ykj5xm82rNFzIB11xyTBHtI1N1TFps+kqYWB9FG92Vdnngs5V2WFjgNSuhum8k
+7V1n7klofnyFygqOTKwpn+9OU95JTQ1lJBOlODqghX2B2VqWhjPQwdMxfnzKPAyYYPMlXeE4ufQF
+5QKNKAj6V7K/LviJYo4wyzKtN0uMxlR1iQRpaSiDmQffSnJ0XdEDuhLqKPnSuKpHycv3lcjO5OB5
+JumAjTn0Sd1k2j1OOhKDtXG4zej9beNTeS4NRohq/ChS0qm30+aWoKXpIRqv+pWwXxLD2KUafeF8
+7DXHjyz3WtmlIQHNE2iqB8A0+p0Ui/ZD6mipG21nkC85UD3JSkJSo8e/HuaEaFyFHy0ez5ea7R5a
+oo8wn5RqzDS3BAQBsDoxKs+OnjwBe26gj26gOnTM2gxY5lqtklJW6aeddOv0A8JWfUiHETzqRsWb
+v31JH6idPtdZ3dsgq1nyYFQacN1q/KnMCX630DXOeUuZmOy5hb/Hbe9+ViskjrenzLQU1iMO6b0L
+dchom2pL1MzTgY6SQv++9qV0bsIgXHhrn9GAqCTJw7z8cXzToU0zBAiWwvtOa0/nL1hm4/Qu5NJj
+QtExfM3vQfOqV4hocUKK0oEv/K0z9C7tabypnycrVCAxvRW6yDSxHACk19oP9WNCPAHO/mcdWBNl
+ltU7tkQ+YKMQpQfiNhJmQDh1eXiZ86lHq82m1S5hyukUhkNsiC9ef3vFYPLPhLwAmGZ2+NU139rt
+v+smKREqAgwmqeJq5eJ+SDwXxrqCCGmnnQ11B6A9fPVMkByzG4mLUCDqWdyUMfjo6/CKFms0pcyS
+7z1rtSzNqglI3J53XDCTlphrEb7Wk/IK3BIQNs8zHx3V7r8+gs3BHwl410BZfkg9rMzUIg10ItPs
+57QYtHHJG8vJqZtrPhwR/CU4TN5FWrooWeGbm4UGdneJCV+5dJZc+ALzFMfGhDauedul8RPa7kPu
+QShzkRsRx/Z0Fy3GJeTUbiD3oJF/dlifGRh2RYVCD9KSDA1o8yED6NcjW1EoeBVII77WyJHW8bId
+Odw/KVs8vOzjOA8t11RUpJKUSYGWjdOcqDKM1Lw35yS1aEBxnDJ8tbur+Ynk2ZwW7KbSo2DLNOvf
+mk+QSbUgVJOeBrxRy43m3Gvs0QWSt98DAAoyfaqaQAjYiqVFNhIuuN8bP8QzO/JPf9yuJG0iq8gP
+P+S23AZcKO7OAqWKm+XJqsj79fP/1ASFa+sZJuBbk2O3TWh9h664UQPP4Mh8sH5yzaLJOlosL9ub
+vl7sCSFS64mX2AKRnPYJp/VEILeEG649qej/2MQNFPQvSkeD7P+RLv9cO18VJXNIyMnqDVQKxXgE
+ymd9qrqY8MiD79S5OPRscsxPxXbM1EOd0xEQIaEAMn2mMZEfk/tkrv37tStGe373vQIxsw5y7gFH
+O/13wl5/VzH/XsAhFQ6Bjb287azUn1sQfsadlf7onYgxeo/e9jYNQaGFlHZrINKIqAUdDWzLZf2i
+75nIzLi/0d1+rhILXPtb7vUf6sB2SbHqhf9huqN9FI69XLV8L84+mrhH6Ir9al25Zv3eaUamUv/6
+y++xvDQagxjXLWFqwtvQywN3YPljAfPokYe0CFmtRFPLm9JttsUzY3AM9jQWK6uSqt3ljg7wswfP
+coNmzmx/wL7fwEul532WLw/BW9doaBVd4SY9pQ3OFj7QtuOP9p/gJiZoqEHK/y9P+pEaA7/ugG0E
+p3y6TdWdSczJLynfLFZtJ5OYLZ5T+/uOiBBxd8DcmfTwtX0hssXSI87MpSK5LJUeC3ksm+BALVeC
+vTB8RU0UNtwwTQlxIQ7zzyHinjU2stgKg0GINmbWXRUXMI3LgdazEp76bQ4YAvA2TYkkDNikOZrM
+4+ed/eMBk2HX/vlURLI8/zGoYELzcMhsoLdTEcc+1r9atvX0QQ4bbO58iOURP/m+TFFvoU1ZH83K
+UXypdOqPxyTrGMhfqZNhiTjfutZyhtb5ezBK+D3vkwd8AZNzbOF+nheFMjSJMDepQ8akl9G4sz1R
+XFSvXmDVJux/6BQO2EwR/ZHck+t/QwjZo418+1pQR8fUTYbFnvWsiZ47HYLY6G42LwOWwA/aaxK6
+Dtb/evLmBrigRPiG1qOct3Bfc9PzKGvOKwZ515+y2OrUiDcLBP5t2f3wkNv1M8iuvO4PrNaOR86V
+fMfKT7KosGndL4Qf8UfimzMT/9aTh4+ZvWMBZ00hjutTPuiPQvBK9NT07NmbY0yT3Yva+b4FSkje
+jrBTBNjBpBPw6AqVDHTzd/OkxTgddAf8UROTA7ory3ZId1KquyojtQvH9KrNGS0LJA80z7dmgrro
+5sPX8nSQTXidiT1L5h4zShZyAxnHZca5Vs+md4NfMEB08Y0C2Arflv1t2tu8J4WTfRqvXWRyCr6o
+QvZysFQEx+Te+pC729hHPRfcM0a+9o4+aMhq+u0+SNW6KkUthdkE1yEykyAA7gNbWTtlQoKGZQdl
+/cl64wUKj2LtnfvD2XHRUQzMpnRg

@@ -1,138 +1,40 @@
-<?php
-
-/**
- * This file is part of the ramsey/collection library
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @copyright Copyright (c) Ben Ramsey <ben@benramsey.com>
- * @license http://opensource.org/licenses/MIT MIT
- */
-
-declare(strict_types=1);
-
-namespace Ramsey\Collection\Map;
-
-use Ramsey\Collection\ArrayInterface;
-
-/**
- * An object that maps keys to values.
- *
- * A map cannot contain duplicate keys; each key can map to at most one value.
- */
-interface MapInterface extends ArrayInterface
-{
-    /**
-     * Returns `true` if this map contains a mapping for the specified key.
-     *
-     * @param mixed $key The key to check in the map.
-     */
-    public function containsKey($key): bool;
-
-    /**
-     * Returns `true` if this map maps one or more keys to the specified value.
-     *
-     * This performs a strict type check on the value.
-     *
-     * @param mixed $value The value to check in the map.
-     */
-    public function containsValue($value): bool;
-
-    /**
-     * Return an array of the keys contained in this map.
-     *
-     * @return mixed[]
-     */
-    public function keys(): array;
-
-    /**
-     * Returns the value to which the specified key is mapped, `null` if this
-     * map contains no mapping for the key, or (optionally) `$defaultValue` if
-     * this map contains no mapping for the key.
-     *
-     * @param mixed $key The key to return from the map.
-     * @param mixed $defaultValue The default value to use if `$key` is not found.
-     *
-     * @return mixed|null the value or `null` if the key could not be found.
-     */
-    public function get($key, $defaultValue = null);
-
-    /**
-     * Associates the specified value with the specified key in this map.
-     *
-     * If the map previously contained a mapping for the key, the old value is
-     * replaced by the specified value.
-     *
-     * @param mixed $key The key to put or replace in the map.
-     * @param mixed $value The value to store at `$key`.
-     *
-     * @return mixed|null the previous value associated with key, or `null` if
-     *     there was no mapping for `$key`.
-     */
-    public function put($key, $value);
-
-    /**
-     * Associates the specified value with the specified key in this map only if
-     * it is not already set.
-     *
-     * If there is already a value associated with `$key`, this returns that
-     * value without replacing it.
-     *
-     * @param mixed $key The key to put in the map.
-     * @param mixed $value The value to store at `$key`.
-     *
-     * @return mixed|null the previous value associated with key, or `null` if
-     *     there was no mapping for `$key`.
-     */
-    public function putIfAbsent($key, $value);
-
-    /**
-     * Removes the mapping for a key from this map if it is present.
-     *
-     * @param mixed $key The key to remove from the map.
-     *
-     * @return mixed|null the previous value associated with key, or `null` if
-     *     there was no mapping for `$key`.
-     */
-    public function remove($key);
-
-    /**
-     * Removes the entry for the specified key only if it is currently mapped to
-     * the specified value.
-     *
-     * This performs a strict type check on the value.
-     *
-     * @param mixed $key The key to remove from the map.
-     * @param mixed $value The value to match.
-     *
-     * @return bool true if the value was removed.
-     */
-    public function removeIf($key, $value): bool;
-
-    /**
-     * Replaces the entry for the specified key only if it is currently mapped
-     * to some value.
-     *
-     * @param mixed $key The key to replace.
-     * @param mixed $value The value to set at `$key`.
-     *
-     * @return mixed|null the previous value associated with key, or `null` if
-     *     there was no mapping for `$key`.
-     */
-    public function replace($key, $value);
-
-    /**
-     * Replaces the entry for the specified key only if currently mapped to the
-     * specified value.
-     *
-     * This performs a strict type check on the value.
-     *
-     * @param mixed $key The key to remove from the map.
-     * @param mixed $oldValue The value to match.
-     * @param mixed $newValue The value to use as a replacement.
-     *
-     * @return bool true if the value was replaced.
-     */
-    public function replaceIf($key, $oldValue, $newValue): bool;
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

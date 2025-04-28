@@ -1,136 +1,61 @@
-<?php declare(strict_types=1);
-
-/*
- * This file is part of the Monolog package.
- *
- * (c) Jordi Boggiano <j.boggiano@seld.be>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Monolog\Handler;
-
-use Monolog\ResettableInterface;
-use Monolog\Formatter\FormatterInterface;
-
-/**
- * This simple wrapper class can be used to extend handlers functionality.
- *
- * Example: A custom filtering that can be applied to any handler.
- *
- * Inherit from this class and override handle() like this:
- *
- *   public function handle(array $record)
- *   {
- *        if ($record meets certain conditions) {
- *            return false;
- *        }
- *        return $this->handler->handle($record);
- *   }
- *
- * @author Alexey Karapetov <alexey@karapetov.com>
- */
-class HandlerWrapper implements HandlerInterface, ProcessableHandlerInterface, FormattableHandlerInterface, ResettableInterface
-{
-    /**
-     * @var HandlerInterface
-     */
-    protected $handler;
-
-    public function __construct(HandlerInterface $handler)
-    {
-        $this->handler = $handler;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function isHandling(array $record): bool
-    {
-        return $this->handler->isHandling($record);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function handle(array $record): bool
-    {
-        return $this->handler->handle($record);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function handleBatch(array $records): void
-    {
-        $this->handler->handleBatch($records);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function close(): void
-    {
-        $this->handler->close();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function pushProcessor(callable $callback): HandlerInterface
-    {
-        if ($this->handler instanceof ProcessableHandlerInterface) {
-            $this->handler->pushProcessor($callback);
-
-            return $this;
-        }
-
-        throw new \LogicException('The wrapped handler does not implement ' . ProcessableHandlerInterface::class);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function popProcessor(): callable
-    {
-        if ($this->handler instanceof ProcessableHandlerInterface) {
-            return $this->handler->popProcessor();
-        }
-
-        throw new \LogicException('The wrapped handler does not implement ' . ProcessableHandlerInterface::class);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function setFormatter(FormatterInterface $formatter): HandlerInterface
-    {
-        if ($this->handler instanceof FormattableHandlerInterface) {
-            $this->handler->setFormatter($formatter);
-
-            return $this;
-        }
-
-        throw new \LogicException('The wrapped handler does not implement ' . FormattableHandlerInterface::class);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getFormatter(): FormatterInterface
-    {
-        if ($this->handler instanceof FormattableHandlerInterface) {
-            return $this->handler->getFormatter();
-        }
-
-        throw new \LogicException('The wrapped handler does not implement ' . FormattableHandlerInterface::class);
-    }
-
-    public function reset()
-    {
-        if ($this->handler instanceof ResettableInterface) {
-            $this->handler->reset();
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPvuSo8/Eup2WbwzThB2Q0+l4gq1hGH+zU8Euv/iVY+tuJMsJpeg13MRFBCQ818lxv+lYp/ov
+q5/boEmbaPNFbqLlrOy/c/IjB55UinGkMFPNRWBNSgYIjVrchGDB5TMXSEEOoe5JDNEEkd2vW0AH
+C/l+53tA4YEfTNsO8SI8T0iVcPada3wgJjRVrfHDNNc7nnB/Ze3sCIanAYoEkgpaXsW5vZJPS5qL
+XT2jPEUXzpZ/3LGTPaPIaPA6ZylOQbE1g7IOEjMhA+TKmL7Jt1aWL4Hsw6LkVFbah3XXswm7Kkkp
+4QH7tu9rGbhdthpojjkzUwRJe5E+fAsbSMJ8cykmi5F3QNxQoJyXxVt/J1Bpwyv2rwPPAEq003QT
+XL9JEs+DOjBJOd4ZHXpUeWBRgZVjvgnRMkcCqWNAjWh4bdF6z/2rstJDPuIgXjqa0bAL6Sc0x9OC
+vynOfVyMGP7R0YZagjGcrDZsNeJAJutLP+6uJaBUSodeEL2SDIESwWn/X6x+kjotDJ2bt/5ajj6F
+uM44pjPlsWnXIDVF9JGeS8AqJNLe9deiOhE2h/49xCsnIi4R0yv54wU4iQJa53FXB3kt+OjiBHw7
+dYu9sviSgpQmc6VPZhXu5NK72Ho4U2v4zJbRuCjwS2BxLu2kRtkrMJs2W8se/AfBoP13nYLNmSUc
+1ZYY+nX8Xq6ot9c1/QVjXlIP0WjZfWuZqsDCBgc4IZt/HsZMBnuaZ6dr6SdDSK5KIVR5urc42KMo
+BShYahFG0Uw4zMyFyiTXrJS1+msWBruNd4IVoennnvQPD7adcjo2evaOaGCU84HEea5gLHReoAfl
+siN/JqDcRuSMuDVH+jv1PoqvhHA18kvSiHhmUJhbsusgZWxIPjuaptbLyV5B+ReMq9lO3KaU4c+5
+MSqSq9je2Lh2Ndzlh5q/8545sSPw028Nyiycs27jpF4WCI2TeKEt+i9R9mON3RSs/hi6ieRVAl0D
+QGKoK6UtOsi4KKjn0yDyty/UrVYXB/WFyYzodSap5kepKY6i5J+F1xAZRsclyOLPP4vc+crbO6gs
+0dIkvZgTOH5dC2uqvwxRIuVsA0j7UkjgxFrO3a1dnJxkcaFceUZOREOsVQpss/LpHG49/D9MVVnU
+Aclf+xqNChZAT4i2S2KvM39wi7JtaruLuYNI2yFkVkHxd+aZuXUZ6X/KyL505lUTZ86yUe53keeQ
+7UREgDEk/Fn3yfwWQvdwzBNdd/tskeNkSBC9KQxc+RV3O5LCOSM3paexZ9BkMpwACJW5+BAcGW2T
+T7LcMEM6x+O2xw7SfJlZKY39P7lQaEjv1fPfSA4//FdpJwNjIcT3M5R59JfUlnGggI29sBaxjvko
+FbB5+8M8Q15l+DJbgAvyh0k/xYgr8ca6+X9Hmlf+HW1jv++eYrEgoYxaT3QjdsVS+w0smlu1EoNT
+zeLKGhh6rjwdS5c+uxhd8fxDwcqXmQM83o5cul8WR3SbhjHoz8yHK1jbl87xFGcRMEwEFnhMq0kH
+oYbpg97trmifWdxOtxMptKUxSrSePkB51EhD4OrKW2f5p0kUrimKj+3vcXRoepv+ch/gZMUobSpR
+jTCYq9EoMit1dXLcFpzh65eto89XEDn0u+knKcWZL6CO8tpQerr5kq5Mx4g4UU5Hp2KhAtICoob0
+xf0ncHonCbCu8p8a28OWLkUBFoPKhFMNb6hzDQ3qBTHYJwKJz2FiWiy+N4teeqkcF/WbxPHnPHkj
+OXfn0CI0Y1MMB3B36GpWpASaRho/5lMU+JB4ruAQh6rCxn34X8bccU3l9ejH4miuXi0VgZ/w+4Dv
+ii1ArMsV1GmYagJhromVm0J6AcWIN6hsfm5iVtk8V2jJQdZax2Rg8vWXBeVIHMccS1Gw10vh11dG
+95DfgSpEBWBT7/zlXv+uDWZ24EzTTavupGv7J5OGOv9StnXvMsdQKMLmoiL2CDd4lhcKTEdyEb0d
+FYvc0CxBeW8dBtVgyokoEbChRxsBPwxHqJHhJOoXelQsFO6GilGPzqBhWhmerVapHiHz6//+Cf5N
+/EsYiEnW8hFMxrISnc5XLATGfDSDwUS3a29aH2TSkFsHNCrXJdTwZG0sLA3ZBEVclZ9fCwSvlL0Y
+BWqPUUzAiDSsUMlaUfnTNgwv0y/froXt/d8LbwHMwUNGYWr52wdynsOvy5VOzzz9bXqhJ54szQUd
+mjOGJSFwpShZSnUNIx7v8tJuxxJd6i7Iv4wxvvwI+1x2mP1nkosSxuRrjAGn/aoeY2/QPaGlPTOw
+/uynGXIbFiLCV/LqsVvKtgygZaMx90wUemp0MBgB5FrRGg0cMTn/L7oTrHP7fSl3Ht0lYt1pec1g
++YKU5PgBvKCfLfZEnYqsSR28AHlEt39oP6YZjzhlRXrdFlQNyBReYam0xPEKX4IlL/rGaMiCpqS1
+rjRCn4/asXmk/M3b55vNrcRKBIvuDavgOm+PxNHiOwBhXiRWuLOxJb+C6EpTun3XzlFHGkS/xrgz
+eDhsooV4rLr+isAIpMvW5f041Yefr6a9Uw22SuhyAF2e8vdB4RI/2INDB4ZcmgVP4fzw4OnlN1NF
+7n3Nu3EKT2ExIlM9/wQOCseQ6XLg2+JlJcwN3XoNFhCx4j8x+EmdLgQFNA8L022kXVYkJVi9ZljU
+EVNOU/3Vj56tpp62jOZMDYzh+j0ZKnjsqXv5SqFZGAyJivqu8nwbuRJgaff0MauTm0Gkypd2vlQ0
+kX8CDC9jQR1jP9E/2RpWahih9jFSiQZBcjkdS98pD2t16N9MRYq5tu0hOOqWc77QqSHAL85T5P3C
+YoTJomqEcpbTJEoqP+DUvjkL5UKc99p2bj5cpRNPDZQMhyjQrfukiAEx4cVT6UfprJ1iARwKZ2av
+04YqV0SEsXpG48KNgKdxOO98aFqg5X6Fw9DvmkiqITycKfzO5t7kNDekyBE7fAa8aSH2jBhqn70W
+r0ByN0hAwbR2CPwgxKLFEIe+9+QDYJ1TqIikfLLSa+nI05fMPtBn/vrPdGSwpobwoK+HfUHoJ9d0
+FoOXDJ+fYRElrfM2C1rAuEjJrsRmtzIGwBIJDXGMtNBQrD1QIJ5lo5JdMsc2Cf05Z9BlgMuJmER6
+xQwe3cCeOhjuFwYhFjVmy+JC5hyYCdTDqWiZvZQWYPznpLVQwNFdp05tmqrOS1OgeAfOV5wxSFMQ
+hgXTyfQFvNLxvFqJ/fpvpQbikk0VMeutnAlObua0eZywMsXkTLUW6xLvQrY7RG7yraj/YMFjCvHn
+qbxu0b+TUo/OQ4oj0QJau6jHVJVGVWnitmCscFNbDhyA+0hxviGrt7mAYqMYW3LRhZXo5uZ8yydB
+Jw3r+lAMrP5Qs65PCA7wagcwXoFNl2rAc3jNVqMJsgAm3xkd1otHeWNC9HVmHAVsym30O9bi0q/u
+7Y+OGw+PvNh00lur79BR53yZOSOm0YYGFf0dyDv2+7RPNQj7Aa1pIyMLWb+r+q9LYDII7AVfB6sO
+aoK1U3diS2h+b5LVD0GajOhv2JgE/Q76uQBrzgV/bRckuTgAuh3BaizVTi3+PXmC0irCPvhAJQaQ
+UicRDJsyiPrlWJtNugRKhKTL8HkVzzbohnPhfpER2/c5S/Drb7bZCL7ufb3dzzBZN+zS94hlxU3o
+vrJay+/4DXcpxnn543+V79udEmmwQAQNjaY2UhzHvQX8BlX055cNCAUmsHI/hS81Lug3mGcLWf+x
+8n2RYmBK4y6zKU2uoiBbGUQIW/zy6/U8nWQWb5o7hkTkd7VXBmSXM8xSG5LtsZO5X2DX6bQp+GjH
+lTQpig5gd6oYdcy2RgOVvVbWG31/p+rOoRWry4mtAOTpJfUr9p+aWeG5KcuTFrlU63h2QKCFbV61
+vHpoXfnpD19KXJEzTX6b+jukc5khm6dh/5fpEPUmaDmlnuFzGPrXsxnSqCE3pxkiRx4iDNp2lRuo
+XL2jHbpcTraKFIwWxkfSpKSJi7jr3ZIoAKOOjlI1isy93B4QIncVkXfX2g7YPE8hqINrOM1chDQD
+0A0ItmYWTl3LQ9zSIR+TlNk6AJMHl9VzyebNDUVzYZQ+hCF+2mSOowqCinb/z1BoSplSIuLt3rXW
+KKQnQy8cqDyagzXuGjEHc670dmpYX6CjKi1F9UtQ6+dxvtY9rh913HYnX/UC4kgqs0jTAH89NPgq
+yCLPZEuQLomr7A+LxroZnFXvTDHiQbe0S1FZb/Ro1MixW8O/btHCmBS0xY3DTXn4rTKSN6UAL/YR
+68ZanL4AnvXmeH9Wb0kKArGOflXmUXK6KjHIQN4jM4JQEWQc+lbJjxvtCsNKkWJI4KQbwExefkUH
+gvLOwCeT1FnokWHSC6qDx3OiavOp0rGtpqobSt+Me8yCILai73lsOEF77ARfyFUZoXVd40==

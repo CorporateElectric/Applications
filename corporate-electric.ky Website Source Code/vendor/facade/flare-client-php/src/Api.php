@@ -1,76 +1,50 @@
-<?php
-
-namespace Facade\FlareClient;
-
-use Facade\FlareClient\Http\Client;
-use Facade\FlareClient\Truncation\ReportTrimmer;
-
-class Api
-{
-    /** @var \Facade\FlareClient\Http\Client */
-    private $client;
-
-    /** @var bool */
-    public static $sendInBatches = true;
-
-    /** @var array */
-    private $queue = [];
-
-    public function __construct(Client $client)
-    {
-        $this->client = $client;
-
-        register_shutdown_function([$this, 'sendQueuedReports']);
-    }
-
-    public static function sendReportsInBatches(bool $batchSending = true)
-    {
-        static::$sendInBatches = $batchSending;
-    }
-
-    public function report(Report $report)
-    {
-        try {
-            if (static::$sendInBatches) {
-                $this->addReportToQueue($report);
-            } else {
-                $this->sendReportToApi($report);
-            }
-        } catch (\Exception $e) {
-            //
-        }
-    }
-
-    public function sendTestReport(Report $report)
-    {
-        $this->sendReportToApi($report);
-    }
-
-    private function addReportToQueue(Report $report)
-    {
-        $this->queue[] = $report;
-    }
-
-    public function sendQueuedReports()
-    {
-        try {
-            foreach ($this->queue as $report) {
-                $this->sendReportToApi($report);
-            }
-        } catch (\Exception $e) {
-            //
-        } finally {
-            $this->queue = [];
-        }
-    }
-
-    private function sendReportToApi(Report $report)
-    {
-        $this->client->post('reports', $this->truncateReport($report->toArray()));
-    }
-
-    private function truncateReport(array $payload): array
-    {
-        return (new ReportTrimmer())->trim($payload);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
++vDtPFQjg3ZIeAjKcZcg

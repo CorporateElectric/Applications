@@ -1,203 +1,88 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Framework;
-
-use function array_filter;
-use function array_map;
-use function array_values;
-use function count;
-use function explode;
-use function in_array;
-use function strpos;
-use function trim;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for PHPUnit
- */
-final class ExecutionOrderDependency
-{
-    /**
-     * @var string
-     */
-    private $className = '';
-
-    /**
-     * @var string
-     */
-    private $methodName = '';
-
-    /**
-     * @var bool
-     */
-    private $useShallowClone = false;
-
-    /**
-     * @var bool
-     */
-    private $useDeepClone = false;
-
-    public static function createFromDependsAnnotation(string $className, string $annotation): self
-    {
-        // Split clone option and target
-        $parts = explode(' ', trim($annotation), 2);
-
-        if (count($parts) === 1) {
-            $cloneOption = '';
-            $target      = $parts[0];
-        } else {
-            $cloneOption = $parts[0];
-            $target      = $parts[1];
-        }
-
-        // Prefix provided class for targets assumed to be in scope
-        if ($target !== '' && strpos($target, '::') === false) {
-            $target = $className . '::' . $target;
-        }
-
-        return new self($target, null, $cloneOption);
-    }
-
-    /**
-     * @psalm-param list<ExecutionOrderDependency> $dependencies
-     *
-     * @psalm-return list<ExecutionOrderDependency>
-     */
-    public static function filterInvalid(array $dependencies): array
-    {
-        return array_values(
-            array_filter(
-                $dependencies,
-                static function (self $d) {
-                    return $d->isValid();
-                }
-            )
-        );
-    }
-
-    /**
-     * @psalm-param list<ExecutionOrderDependency> $existing
-     * @psalm-param list<ExecutionOrderDependency> $additional
-     *
-     * @psalm-return list<ExecutionOrderDependency>
-     */
-    public static function mergeUnique(array $existing, array $additional): array
-    {
-        $existingTargets = array_map(
-            static function ($dependency) {
-                return $dependency->getTarget();
-            },
-            $existing
-        );
-
-        foreach ($additional as $dependency) {
-            if (in_array($dependency->getTarget(), $existingTargets, true)) {
-                continue;
-            }
-
-            $existingTargets[] = $dependency->getTarget();
-            $existing[]        = $dependency;
-        }
-
-        return $existing;
-    }
-
-    /**
-     * @psalm-param list<ExecutionOrderDependency> $left
-     * @psalm-param list<ExecutionOrderDependency> $right
-     *
-     * @psalm-return list<ExecutionOrderDependency>
-     */
-    public static function diff(array $left, array $right): array
-    {
-        if ($right === []) {
-            return $left;
-        }
-
-        if ($left === []) {
-            return [];
-        }
-
-        $diff         = [];
-        $rightTargets = array_map(
-            static function ($dependency) {
-                return $dependency->getTarget();
-            },
-            $right
-        );
-
-        foreach ($left as $dependency) {
-            if (in_array($dependency->getTarget(), $rightTargets, true)) {
-                continue;
-            }
-
-            $diff[] = $dependency;
-        }
-
-        return $diff;
-    }
-
-    public function __construct(string $classOrCallableName, ?string $methodName = null, ?string $option = null)
-    {
-        if ($classOrCallableName === '') {
-            return;
-        }
-
-        if (strpos($classOrCallableName, '::') !== false) {
-            [$this->className, $this->methodName] = explode('::', $classOrCallableName);
-        } else {
-            $this->className  = $classOrCallableName;
-            $this->methodName = !empty($methodName) ? $methodName : 'class';
-        }
-
-        if ($option === 'clone') {
-            $this->useDeepClone = true;
-        } elseif ($option === 'shallowClone') {
-            $this->useShallowClone = true;
-        }
-    }
-
-    public function __toString(): string
-    {
-        return $this->getTarget();
-    }
-
-    public function isValid(): bool
-    {
-        // Invalid dependencies can be declared and are skipped by the runner
-        return $this->className !== '' && $this->methodName !== '';
-    }
-
-    public function useShallowClone(): bool
-    {
-        return $this->useShallowClone;
-    }
-
-    public function useDeepClone(): bool
-    {
-        return $this->useDeepClone;
-    }
-
-    public function targetIsClass(): bool
-    {
-        return $this->methodName === 'class';
-    }
-
-    public function getTarget(): string
-    {
-        return $this->isValid()
-            ? $this->className . '::' . $this->methodName
-            : '';
-    }
-
-    public function getTargetClassName(): string
-    {
-        return $this->className;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPtbOQd503Mz77P7/JrAJ50Yi6/t4ILioS8MuXwrU+d8Dj5oKPm1vuKElSFlAAmEt4pDsKnlz
+CtjvOHUzcflXR5rb6MdefXSSXCBAAwrrUFHoYxBYpM4FlJA5x4kObZN02CLrCcE4bz6SIBuURzkf
+1R2YVSeCJZ6DdXjB7B4vIGkttp9fBRS8l7MvfMcfyjIJ3iszyVDGakES0b1soNsR6TTLwIjslWm7
+XE3yJlQtaMzV4n3+kWsYgHz5EeodCtplSLGfEjMhA+TKmL7Jt1aWL4HswDHavQ7gGK/PeIOcrGki
+C11p/zv638DhwbJwBiYwVQCU2JZXiDXesuNNL9amhGu9M/kJ4rRk4Vdv6nn9YgG9usTs7Df7bJHw
+NWgWtLgY9ogYOnMpR5OwPNPpOgWlB8Nmdpxm6tyY+gp15+MMvRM3tuVtGyhvE3eWJ0txJ/ZM4rNR
+ozRkCFwmzBy+K0eo6kmkFz8TKlJhCniLUjvk5GS/wBg+HRT/mfDS5H2QWSMkvaPY+Stjy7BhoY6M
+iK7nuAwLl1BJlDqEbXUO946yPXNbNlyKNnxlxkymDA3DoN+Vd4ehOm0NJ5EMvoDCSbuStKuB2a3j
+aUZ9NDBwh1sVp6XxLwVzyxA8IWfH/Ojc5o6LccJb70SRQ5MPMdnv0ospbE+zNYh0UU4g9yml99W8
+UHGzXx8w77Tx76xOP6B2LJbzW4OVskY4SW9L9kXKD5beXBcQJWN6dLmVcImnGoIf3wsXbMwn6Msc
+z2VvqFShyW60Or8FA/53HNuJyL2fQ2dAlnalqMt+g8ad+5sPrKTdSL6q6o0TETzQ56SeYznChg//
+uHJMK230mmTR6uHQrdn+8cZbMiYOjFlLpYKMP9ItNdFjlkwMyJxdn8ukX5K2JgqIHKO1hojQzBwN
+vxqku5Fz9hQAEMt8ZS+913CewcF/0XB0Ids4VPPiBT+CMy/3b7bf9W0PdmW7abj4O6fX5rBsRZ+A
+zQHdYSZhtRJoOKHTocfvFf+JY1HKi913TxDS8Em0RJlYe9XMo/2tkVRVNnRAuPEoXd48KgnUtqMg
+QWOROTsZOH/vyLYyygESK/wMSJPeNu7ABRhggFs1kcUUZFg7JawnpV5IIMocaToYMoV+87K2SFIi
+RU6WKiLXGrkJk6uLsYBS+6VGFKvniqScBPwdNuzHFT6K931/CsJ0Fl9mVkwfz39R+OZZo7xzdlB2
+vSqlyQIjI9GLi/KYQPr86d+lUVwM8EKLRTtiOhpFsofpKml8FxjlanVTmLRdbME7qDPzRgHaqoL9
+n6ifmLhpWFqPwkXe6GVgxGfqztWCydlV9FpIxizsjenAwtMHONNRxKnhhvq2Ue+qNe/OZ0MyU4kW
+ALryL1MeNn8Er8yS/9Zg/jA/4XfJZhtFJm+ZtNTg3zKle7OQ12TuwzHHEk0acIXAK7/pcWlw7sg3
+Snxh9dwj3z3Rc/UYknfrzuL3o27DsNGt6VfZ4Xow0AUAxCYuxliLxNzzj/k8DuKLLdNi5TM7L5oQ
+BaRn98FE51fSr6KkGRSlOboTE8FkUSMo06XvvRmP0esW/aLz6XLrBA9CJx9MPU2Bqa1F3F2I2hxn
+Z5yNqhRy14lQ8aoZ0pkZ8ibAXAfiRtxMCvldQ5HaBnCCpAmbl13BsWt6dc5fOO8Dwz7ddY1Ti6qv
+h4sdoqLkUeieI0WOG5q/0p/kSP5aBfDV0TYXsbQNf0hTFTnD5vBQGX7+L+pvKFuEOnhG9b24TofM
+RllhJ3T9bH8C42BmIKk+sktKklJ103CbsdFKWSfEnTbrpab5/8zvNcIDgA2ZEVGL1ljVDxx3Tx1i
+1FFHkm4Ln2dQs/QyWC1Usf0Hd56C8C60L/6d1s5aQjev1dfSZIndy0hz26rTJgdYGrR7HI3v+DV6
+3YsGn93up5b0o6geQyJMj2xcpfkYB0KnN92ggixYQL8DvXK0YIcL/Ht0vrWwiz8tVhp5PPfSfZwE
+eIJ+OB+Hi37IjlNAymYgR7yd0276D4cAcM2ePfyYTX3FtuokC+neXq+yKdIkoxbXJF/9+Ya1dlkb
+RWdUxsIPNO43jLqMukXbimdbGkG6MI3bpi9t4lWYvsR0+WV3ET8ur7afp2sA5ENAEW0CgF9yYSaB
+cnrycQ8irVeYvIQWbLpkJrqFKVdyhjA6m/fXCwsNLIk6SGIghrc21nEF6erkBTaaZB+4Ix/Q7mxz
++JItErXZG829T6n1dj17WTUeMV96natJLZc97Vs4PToQj0nGS5N4ospbVLmrhrQzR2TvFvc/k8oS
+PDsUVmCF9Es46mtf7BhKiYE2cjlzWILqQghL3TjujvsZIrIftkcAKRunRbsbwwJCMgcj60Ijt2+d
+tvKU0NtTtSp0vRuvxVyikLeKxxHV//zJr1JGxg7h2NqFyJNGVim0pY660nYx4U7Tb3shf4JaMdVd
+P8xz6dDuDZ8vjaWMvT4YqEP9FjY4OjML9bg9N2dxpywP36fTA71QHk/WIYEmcwnWJF6IOpIhgGxL
+HHrKl4zIOOKxVdzik6yV/ITzSZCad42qo5m2TTL/jFuZPUOral8zw4j7LBExKQtzwZVTDOhlOv1j
+cILhMfaBc3E+r3EndBrCFMK81kPZqRLHFqG8L+6J6JHBRobPtcBPFSVxD5jDOkly7S0U0Mj5Zop8
+24EammPIbprRmWcrktJVEp6w+jgdQ42NdMbV5B2Z09IUJFvYa9WgEzV2tSHvb6iBBqF/b+0BTn5d
+ncPfqV24Ggw8cXEQwX61tRt/cdDN12eLW4C1TDKWeUT205WoVp9p0/udHiXSEIgR7mZoBzUn/6Lv
+ENIHS3zndstYJGSBDMkr24jdPnzsIZy/RjED29Qj1dt7FlxSX3CmNX/RkKZFZKNDmwK+CFprdDf1
+qUzVj3RvQAqSFvB0r0XIAlOwhabdhi82Sxgd1S7EYgv+v1/CoTGIGboP/gOkOw8gD3blKNgO6gkg
+IzmC5UWx3ShcOh0njs5bBdWcVAJEUUxLjW0HZRB4fsFQhXinKWUE4yjfvgdC1oHT3/vPU9ICjYVx
+KZvae437kBd2CswZzPiNqx9iFWkJCF+KQpNVyJ/UkKVndBLEZfSCCjEbUW3kYitN+DweapqMzUj9
+ByqMNW+E64aRV0HT7p5r/2LTUlGO6qeocGglGcufqycKVE7mP88mhZd++ooT5JVQn2bFs5ZZfTPk
+xvqnYHJt+4gOBc+KQTAuLoF4vVjJLysPiqUxvxkGkVspYS4KK096i31L4rDcAMpMg/NzmULQjNbd
+PFbtkNnVLoteEcNYv+i4EZ2Sr1Y9iSLaZ86risNXu/sAETOzEfhbPQ0qJgE/yJu6HGICwWtzQ4AC
+EXUMFNYUkzIOEGkYw9Sw47e2mFantba5HhRp2ZYUA2sJJgnLqKP5A87tyP8mcLC/Kk8XIqd2uipU
+YIPWrf17gDuYehPb7T4FjxXGfz2LDeGCmHZL/veOoNaRQnGhwY920E0RkaDvhluNy07cDU+DnV0G
+JB9/OBWfv736Tl2wrO5/1RFfjH/dkJRU57F0arfULz6mHvahBjdgnRNDFGs2U5+/f+2YBU43SbfG
+vaoznIUEtp8WA5idbAIeaBDwN/9WR1ahj7MM8//abMZKLtawpW/oKLol8JU0KKWnd5qT2ED9vEXo
+ANx73RYkjiS9L2fVWxH/72FsQ79N3oWlkGK0plw56ewC++aSTmyR8dbC6Ll/LlG0blyHh9rxeHHs
+5nJgilLP0/C9N18XbrJZYLTERJJBP0ubsr3sHHP948wYt5YVZfv5VG2i0a9307tPGVTTEQ1WKCc0
+LqciYqPtpBvYOaXOYADpomkbvrjK6/YkFUyEBt8daGAm4RRN5mdbLGm5eX7khCEOh8j0UHBGY8Zv
+wo57iUQRzqzrlQ4Mc11KoUdrv3DftY8d94TGm+/nZDg1Tu3Dv8St4GPCRqMoufTqYvWJPljDNAiY
+9qj+7i/IPxEFk+T2ciCBuBSFMYNzaRWdjnG8NNytO9r+LG22t5RLaXXbtJD8X+VSu6EJd+ZA16aj
+QqC7aDK7krickJI5FRKNWVMP6PIBK98CJ52scFH30MTG3Wu7+ThSl6yjaTH3a1Wz26j704UJUehf
+8/y3C8CIdkVi61tRgnvWiFSzaUmZjnJxGGP6zMaEpK3KuesfXylAFZUeXk1PFHIVPE2/bjUoAzXV
+hvVsf78EUIPrPCJ9XnPDmou6y8HWLGbdY6atL5q1o9UurDor+idQKi3cSGvqP0V1qhHDhdMUSw7c
+nUxddX+a5QjMz61tu/79l1iPdzBPg0CLwMIEGLmD48S18oQkho3GVS/HeecYGXvfd0JtxjKoo0r6
+cjwjLKubN5qdc7JxBZZDAIj1bSXG/EU4SHlbK4hvrG01TscaoobYU1BiG4UhROIZkEHIWtVY/uuI
+6Q/Jq2rWcwwgHBS/tlwUEilWlb8LBndeIURnzmfsT4g/GBlpR5YLNEMUYm20Tdn2WqjPS+bWhmFh
+n3RcjGluAya0vOV8dh16uCOzUeoZJzCG0V1Q5zVMqiPvubCCfvh09dCcJtMsVSuIBrdkmgISmWcD
+Ufuer8Nd6EH4wigT9IV5Jj6UuJifimW//V3m1J2Kp96qbgLXYhznqsWi7daROxLqP3EgyCTLVevJ
+qThpK/UxRs/83QdVO+7EM+9nrWd6PKX3nYpOhnqENttOgHf4ehE1KSgonGRxGkeDNWgmeKL7ULho
+EoLGrhVHNaxmLnNdjaVswHQtpekK948vgxkFY2o9A+vEEnnU7MAeHgcxVJdv+8CgQw/8fbRMyHgb
+MWCZMNI0RTSOXWFcx+hF4J0Q7Brw4bRkSCM1h6T/SMblygs0/bAYXfxAJIb9u8zqeK0EhokYZuWd
+Xeply0QS7eU1Wo/jPD4Drhq/jZRqxwKSWk1HSXKe+xMMIT4Giz+dpLJY3wTIqRajgb6xhAPPytd7
+r+dJiNVh1ZrKCQMhg/gHYn/Bw7EKBHr+x5vetewb09eicyiVh4ckD/exUdCnJQkE88H1o57hrYLb
+SUjCLMFb8vx4uqotl+dxzcr0wVXyMkA6kACryYWlFszB1Tv2vHdBQf18twbOzaxpLbjQ6q7CHbW7
+rOtIdasE0D1hegKz8IYZzYYIUgcSc06ynKatr9h//R0QzpTRCXKxdaj9EMhAISOiDbL3GiiHqC+V
+BnII6ctfCYwkJ1sKfcqAwct1Ucg3d6JbOKfT9k1jradbRba2TGkyzrYGdIQvYkM4p4eCGtVnAYbQ
+3wzCDgV+C1v9rcen9zR+IqImmC0m2+li80f0a75Gs2tnfDzTICdmZKK0qaYnMAVNryljiWTrZOeV
+1L7g+VrZ/ZPkxq/cO2gF11y4xJsuqhdWsL645gOXBiXiTaPFgqDkQLPejkHNLtgvcetOaUpWaSL7
+t5fo5Xjxj6jMnVgfUqpGJfP+WAeeXJb2iWlEdk1t3hB1CL66elZcZHjzabajiERMvT27s2MHuHxS
+2upwon0s3COzKHaWP1UkJZclam2vitDJjXGq0yf2sivHcGsyZ3tRPW78oTW3z6Fglnu6n5r6Ay4R
+HK0GYl6mdrv/SMDkDBQAJ+o3SIJFvV20WhqJdoAJ8BWmTIRo3AyrhIOFoP7fnm5mVoKbS0Jy4KY0
+JZyFlicxjir2b/+Z/mbLwOcLdpztYecfZFc4u6mJH1KNQjEHdlsX1C7WzWvfM95+AjlwMgfUDZUt
+ZKrG+HdeG7/dfe5/jdjSJUk40znbAWNzf29poq/jf5qCFLIlWamgji/ffd0Bvac3etsKPYgFNofG
+tYm+4apJYvDjWWdxkpD/9pT/2g/0Zp+2eJZiVCOCXSdqGqg78aCEzaZT5fVWnox/zZxsg7IZgdDd
+DSSRLdOTdvsO9XXuOsko1HflMWUEVcKOnTCqRhGsOmA1TfFjSN5kD49kLAtlS0JD70Kl+u+1R3cd
+i5TUY+19MCeg7PqAtELPlYL1SFmndFLH5Jtd/mhxHCf7j+h4GGe3Q4CXayUjzuY096GSLytmVcdD
+zKkHpmhh45du2W6hUzpCTi5Xnels2+Ayu3UqFalSKIF5kj3SwB0oe9E4fgkvYZdxoNMQzKXqtdm9
+TKCRSGNoFfVH/kb5HlSdQ/tnpCKghCpRf1mzgwPUGjC1dP2i6Z8HIS49zdrSdAJIu5axCres3jE4
+g4jgsjJJKzPPgSGXCdBcofthAvrw1dztu+bByTp1LRvXUroPNCOjxveunXQvf1dm/GfnQ49r9lIy
+DMqX3Cu328azVFJkWCrXHcbNKxRiLQoBGo77IVl/ECAoBTuiYL4/uuO/79cAHSsVXNY5ZXVaULcQ
+ozTxNOD6sDDkJNq36ggamENISCpXTk8NUk9kwN5aCIE3tcxFfXzdzl+8lCcdqil5OgIMSwGYpliu
+YKU5b1QWYyWm1Uz51EythdleTEm=

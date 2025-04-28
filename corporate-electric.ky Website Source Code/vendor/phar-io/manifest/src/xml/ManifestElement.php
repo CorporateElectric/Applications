@@ -1,66 +1,48 @@
-<?php declare(strict_types = 1);
-/*
- * This file is part of PharIo\Manifest.
- *
- * (c) Arne Blankerts <arne@blankerts.de>, Sebastian Heuer <sebastian@phpeople.de>, Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PharIo\Manifest;
-
-use DOMElement;
-use DOMNodeList;
-
-class ManifestElement {
-    public const XMLNS = 'https://phar.io/xml/manifest/1.0';
-
-    /** @var DOMElement */
-    private $element;
-
-    public function __construct(DOMElement $element) {
-        $this->element = $element;
-    }
-
-    protected function getAttributeValue(string $name): string {
-        if (!$this->element->hasAttribute($name)) {
-            throw new ManifestElementException(
-                \sprintf(
-                    'Attribute %s not set on element %s',
-                    $name,
-                    $this->element->localName
-                )
-            );
-        }
-
-        return $this->element->getAttribute($name);
-    }
-
-    protected function getChildByName(string $elementName): DOMElement {
-        $element = $this->element->getElementsByTagNameNS(self::XMLNS, $elementName)->item(0);
-
-        if (!$element instanceof DOMElement) {
-            throw new ManifestElementException(
-                \sprintf('Element %s missing', $elementName)
-            );
-        }
-
-        return $element;
-    }
-
-    protected function getChildrenByName(string $elementName): DOMNodeList {
-        $elementList = $this->element->getElementsByTagNameNS(self::XMLNS, $elementName);
-
-        if ($elementList->length === 0) {
-            throw new ManifestElementException(
-                \sprintf('Element(s) %s missing', $elementName)
-            );
-        }
-
-        return $elementList;
-    }
-
-    protected function hasChild(string $elementName): bool {
-        return $this->element->getElementsByTagNameNS(self::XMLNS, $elementName)->length !== 0;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+KHUyiYMN2cu4nQYxh28KmlMaKPKu/QAAZQRS

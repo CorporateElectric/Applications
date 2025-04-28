@@ -1,328 +1,96 @@
-<?php
-
-declare(strict_types=1);
-
-namespace Doctrine\Common\Lexer;
-
-use ReflectionClass;
-use const PREG_SPLIT_DELIM_CAPTURE;
-use const PREG_SPLIT_NO_EMPTY;
-use const PREG_SPLIT_OFFSET_CAPTURE;
-use function implode;
-use function in_array;
-use function preg_split;
-use function sprintf;
-use function substr;
-
-/**
- * Base class for writing simple lexers, i.e. for creating small DSLs.
- */
-abstract class AbstractLexer
-{
-    /**
-     * Lexer original input string.
-     *
-     * @var string
-     */
-    private $input;
-
-    /**
-     * Array of scanned tokens.
-     *
-     * Each token is an associative array containing three items:
-     *  - 'value'    : the string value of the token in the input string
-     *  - 'type'     : the type of the token (identifier, numeric, string, input
-     *                 parameter, none)
-     *  - 'position' : the position of the token in the input string
-     *
-     * @var array
-     */
-    private $tokens = [];
-
-    /**
-     * Current lexer position in input string.
-     *
-     * @var int
-     */
-    private $position = 0;
-
-    /**
-     * Current peek of current lexer position.
-     *
-     * @var int
-     */
-    private $peek = 0;
-
-    /**
-     * The next token in the input.
-     *
-     * @var array|null
-     */
-    public $lookahead;
-
-    /**
-     * The last matched/seen token.
-     *
-     * @var array|null
-     */
-    public $token;
-
-    /**
-     * Composed regex for input parsing.
-     *
-     * @var string
-     */
-    private $regex;
-
-    /**
-     * Sets the input data to be tokenized.
-     *
-     * The Lexer is immediately reset and the new input tokenized.
-     * Any unprocessed tokens from any previous input are lost.
-     *
-     * @param string $input The input to be tokenized.
-     *
-     * @return void
-     */
-    public function setInput($input)
-    {
-        $this->input  = $input;
-        $this->tokens = [];
-
-        $this->reset();
-        $this->scan($input);
-    }
-
-    /**
-     * Resets the lexer.
-     *
-     * @return void
-     */
-    public function reset()
-    {
-        $this->lookahead = null;
-        $this->token     = null;
-        $this->peek      = 0;
-        $this->position  = 0;
-    }
-
-    /**
-     * Resets the peek pointer to 0.
-     *
-     * @return void
-     */
-    public function resetPeek()
-    {
-        $this->peek = 0;
-    }
-
-    /**
-     * Resets the lexer position on the input to the given position.
-     *
-     * @param int $position Position to place the lexical scanner.
-     *
-     * @return void
-     */
-    public function resetPosition($position = 0)
-    {
-        $this->position = $position;
-    }
-
-    /**
-     * Retrieve the original lexer's input until a given position.
-     *
-     * @param int $position
-     *
-     * @return string
-     */
-    public function getInputUntilPosition($position)
-    {
-        return substr($this->input, 0, $position);
-    }
-
-    /**
-     * Checks whether a given token matches the current lookahead.
-     *
-     * @param int|string $token
-     *
-     * @return bool
-     */
-    public function isNextToken($token)
-    {
-        return $this->lookahead !== null && $this->lookahead['type'] === $token;
-    }
-
-    /**
-     * Checks whether any of the given tokens matches the current lookahead.
-     *
-     * @param array $tokens
-     *
-     * @return bool
-     */
-    public function isNextTokenAny(array $tokens)
-    {
-        return $this->lookahead !== null && in_array($this->lookahead['type'], $tokens, true);
-    }
-
-    /**
-     * Moves to the next token in the input string.
-     *
-     * @return bool
-     */
-    public function moveNext()
-    {
-        $this->peek      = 0;
-        $this->token     = $this->lookahead;
-        $this->lookahead = isset($this->tokens[$this->position])
-            ? $this->tokens[$this->position++] : null;
-
-        return $this->lookahead !== null;
-    }
-
-    /**
-     * Tells the lexer to skip input tokens until it sees a token with the given value.
-     *
-     * @param string $type The token type to skip until.
-     *
-     * @return void
-     */
-    public function skipUntil($type)
-    {
-        while ($this->lookahead !== null && $this->lookahead['type'] !== $type) {
-            $this->moveNext();
-        }
-    }
-
-    /**
-     * Checks if given value is identical to the given token.
-     *
-     * @param mixed      $value
-     * @param int|string $token
-     *
-     * @return bool
-     */
-    public function isA($value, $token)
-    {
-        return $this->getType($value) === $token;
-    }
-
-    /**
-     * Moves the lookahead token forward.
-     *
-     * @return array|null The next token or NULL if there are no more tokens ahead.
-     */
-    public function peek()
-    {
-        if (isset($this->tokens[$this->position + $this->peek])) {
-            return $this->tokens[$this->position + $this->peek++];
-        }
-
-        return null;
-    }
-
-    /**
-     * Peeks at the next token, returns it and immediately resets the peek.
-     *
-     * @return array|null The next token or NULL if there are no more tokens ahead.
-     */
-    public function glimpse()
-    {
-        $peek       = $this->peek();
-        $this->peek = 0;
-
-        return $peek;
-    }
-
-    /**
-     * Scans the input string for tokens.
-     *
-     * @param string $input A query string.
-     *
-     * @return void
-     */
-    protected function scan($input)
-    {
-        if (! isset($this->regex)) {
-            $this->regex = sprintf(
-                '/(%s)|%s/%s',
-                implode(')|(', $this->getCatchablePatterns()),
-                implode('|', $this->getNonCatchablePatterns()),
-                $this->getModifiers()
-            );
-        }
-
-        $flags   = PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_OFFSET_CAPTURE;
-        $matches = preg_split($this->regex, $input, -1, $flags);
-
-        if ($matches === false) {
-            // Work around https://bugs.php.net/78122
-            $matches = [[$input, 0]];
-        }
-
-        foreach ($matches as $match) {
-            // Must remain before 'value' assignment since it can change content
-            $type = $this->getType($match[0]);
-
-            $this->tokens[] = [
-                'value' => $match[0],
-                'type'  => $type,
-                'position' => $match[1],
-            ];
-        }
-    }
-
-    /**
-     * Gets the literal for a given token.
-     *
-     * @param int|string $token
-     *
-     * @return int|string
-     */
-    public function getLiteral($token)
-    {
-        $className = static::class;
-        $reflClass = new ReflectionClass($className);
-        $constants = $reflClass->getConstants();
-
-        foreach ($constants as $name => $value) {
-            if ($value === $token) {
-                return $className . '::' . $name;
-            }
-        }
-
-        return $token;
-    }
-
-    /**
-     * Regex modifiers
-     *
-     * @return string
-     */
-    protected function getModifiers()
-    {
-        return 'iu';
-    }
-
-    /**
-     * Lexical catchable patterns.
-     *
-     * @return array
-     */
-    abstract protected function getCatchablePatterns();
-
-    /**
-     * Lexical non-catchable patterns.
-     *
-     * @return array
-     */
-    abstract protected function getNonCatchablePatterns();
-
-    /**
-     * Retrieve token type. Also processes the token value if necessary.
-     *
-     * @param string $value
-     *
-     * @return int|string|null
-     */
-    abstract protected function getType(&$value);
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

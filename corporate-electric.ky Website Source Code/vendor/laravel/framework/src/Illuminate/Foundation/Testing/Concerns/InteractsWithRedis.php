@@ -1,116 +1,63 @@
-<?php
-
-namespace Illuminate\Foundation\Testing\Concerns;
-
-use Exception;
-use Illuminate\Foundation\Application;
-use Illuminate\Redis\RedisManager;
-use Illuminate\Support\Env;
-
-trait InteractsWithRedis
-{
-    /**
-     * Indicate connection failed if redis is not available.
-     *
-     * @var bool
-     */
-    private static $connectionFailedOnceWithDefaultsSkip = false;
-
-    /**
-     * Redis manager instance.
-     *
-     * @var \Illuminate\Redis\RedisManager[]
-     */
-    private $redis;
-
-    /**
-     * Setup redis connection.
-     *
-     * @return void
-     */
-    public function setUpRedis()
-    {
-        $app = $this->app ?? new Application;
-        $host = Env::get('REDIS_HOST', '127.0.0.1');
-        $port = Env::get('REDIS_PORT', 6379);
-
-        if (! extension_loaded('redis')) {
-            $this->markTestSkipped('The redis extension is not installed. Please install the extension to enable '.__CLASS__);
-
-            return;
-        }
-
-        if (static::$connectionFailedOnceWithDefaultsSkip) {
-            $this->markTestSkipped('Trying default host/port failed, please set environment variable REDIS_HOST & REDIS_PORT to enable '.__CLASS__);
-
-            return;
-        }
-
-        foreach ($this->redisDriverProvider() as $driver) {
-            $this->redis[$driver[0]] = new RedisManager($app, $driver[0], [
-                'cluster' => false,
-                'options' => [
-                    'prefix' => 'test_',
-                ],
-                'default' => [
-                    'host' => $host,
-                    'port' => $port,
-                    'database' => 5,
-                    'timeout' => 0.5,
-                    'name' => 'default',
-                ],
-            ]);
-        }
-
-        try {
-            $this->redis['phpredis']->connection()->flushdb();
-        } catch (Exception $e) {
-            if ($host === '127.0.0.1' && $port === 6379 && Env::get('REDIS_HOST') === null) {
-                static::$connectionFailedOnceWithDefaultsSkip = true;
-                $this->markTestSkipped('Trying default host/port failed, please set environment variable REDIS_HOST & REDIS_PORT to enable '.__CLASS__);
-            }
-        }
-    }
-
-    /**
-     * Teardown redis connection.
-     *
-     * @return void
-     */
-    public function tearDownRedis()
-    {
-        $this->redis['phpredis']->connection()->flushdb();
-
-        foreach ($this->redisDriverProvider() as $driver) {
-            $this->redis[$driver[0]]->connection()->disconnect();
-        }
-    }
-
-    /**
-     * Get redis driver provider.
-     *
-     * @return array
-     */
-    public function redisDriverProvider()
-    {
-        return [
-            ['predis'],
-            ['phpredis'],
-        ];
-    }
-
-    /**
-     * Run test if redis is available.
-     *
-     * @param  callable  $callback
-     * @return void
-     */
-    public function ifRedisAvailable($callback)
-    {
-        $this->setUpRedis();
-
-        $callback();
-
-        $this->tearDownRedis();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

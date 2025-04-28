@@ -1,65 +1,41 @@
-<?php
-
-/*
- * This file is part of SwiftMailer.
- * (c) 2009 Fabien Potencier
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-/**
- * Replaces the sender of a message.
- *
- * @author Arjen Brouwer
- */
-class Swift_Plugins_ImpersonatePlugin implements Swift_Events_SendListener
-{
-    /**
-     * The sender to impersonate.
-     *
-     * @var string
-     */
-    private $sender;
-
-    /**
-     * Create a new ImpersonatePlugin to impersonate $sender.
-     *
-     * @param string $sender address
-     */
-    public function __construct($sender)
-    {
-        $this->sender = $sender;
-    }
-
-    /**
-     * Invoked immediately before the Message is sent.
-     */
-    public function beforeSendPerformed(Swift_Events_SendEvent $evt)
-    {
-        $message = $evt->getMessage();
-        $headers = $message->getHeaders();
-
-        // save current recipients
-        $headers->addPathHeader('X-Swift-Return-Path', $message->getReturnPath());
-
-        // replace them with the one to send to
-        $message->setReturnPath($this->sender);
-    }
-
-    /**
-     * Invoked immediately after the Message is sent.
-     */
-    public function sendPerformed(Swift_Events_SendEvent $evt)
-    {
-        $message = $evt->getMessage();
-
-        // restore original headers
-        $headers = $message->getHeaders();
-
-        if ($headers->has('X-Swift-Return-Path')) {
-            $message->setReturnPath($headers->get('X-Swift-Return-Path')->getAddress());
-            $headers->removeAll('X-Swift-Return-Path');
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+c2uWEcnc7AnsK77aEjiu/hSaBW2rjwkOD0==

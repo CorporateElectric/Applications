@@ -1,136 +1,65 @@
-<?php
-
-namespace Intervention\Image;
-
-use Intervention\Image\Exception\NotSupportedException;
-
-abstract class AbstractDriver
-{
-    /**
-     * Decoder instance to init images from
-     *
-     * @var \Intervention\Image\AbstractDecoder
-     */
-    public $decoder;
-
-    /**
-     * Image encoder instance
-     *
-     * @var \Intervention\Image\AbstractEncoder
-     */
-    public $encoder;
-
-    /**
-     * Creates new image instance
-     *
-     * @param  int     $width
-     * @param  int     $height
-     * @param  string  $background
-     * @return \Intervention\Image\Image
-     */
-    abstract public function newImage($width, $height, $background);
-
-    /**
-     * Reads given string into color object
-     *
-     * @param  string $value
-     * @return AbstractColor
-     */
-    abstract public function parseColor($value);
-
-    /**
-     * Checks if core module installation is available
-     *
-     * @return boolean
-     */
-    abstract protected function coreAvailable();
-
-    /**
-     * Returns clone of given core
-     *
-     * @return mixed
-     */
-    public function cloneCore($core)
-    {
-        return clone $core;
-    }
-
-    /**
-     * Initiates new image from given input
-     *
-     * @param  mixed $data
-     * @return \Intervention\Image\Image
-     */
-    public function init($data)
-    {
-        return $this->decoder->init($data);
-    }
-
-    /**
-     * Encodes given image
-     *
-     * @param  Image   $image
-     * @param  string  $format
-     * @param  int     $quality
-     * @return \Intervention\Image\Image
-     */
-    public function encode($image, $format, $quality)
-    {
-        return $this->encoder->process($image, $format, $quality);
-    }
-
-    /**
-     * Executes named command on given image
-     *
-     * @param  Image  $image
-     * @param  string $name
-     * @param  array $arguments
-     * @return \Intervention\Image\Commands\AbstractCommand
-     */
-    public function executeCommand($image, $name, $arguments)
-    {
-        $commandName = $this->getCommandClassName($name);
-        $command = new $commandName($arguments);
-        $command->execute($image);
-
-        return $command;
-    }
-
-    /**
-     * Returns classname of given command name
-     *
-     * @param  string $name
-     * @return string
-     */
-    private function getCommandClassName($name)
-    {
-        $name = mb_convert_case($name[0], MB_CASE_UPPER, 'utf-8') . mb_substr($name, 1, mb_strlen($name));
-        
-        $drivername = $this->getDriverName();
-        $classnameLocal = sprintf('\Intervention\Image\%s\Commands\%sCommand', $drivername, ucfirst($name));
-        $classnameGlobal = sprintf('\Intervention\Image\Commands\%sCommand', ucfirst($name));
-
-        if (class_exists($classnameLocal)) {
-            return $classnameLocal;
-        } elseif (class_exists($classnameGlobal)) {
-            return $classnameGlobal;
-        }
-
-        throw new NotSupportedException(
-            "Command ({$name}) is not available for driver ({$drivername})."
-        );
-    }
-
-    /**
-     * Returns name of current driver instance
-     *
-     * @return string
-     */
-    public function getDriverName()
-    {
-        $reflect = new \ReflectionClass($this);
-        $namespace = $reflect->getNamespaceName();
-
-        return substr(strrchr($namespace, "\\"), 1);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

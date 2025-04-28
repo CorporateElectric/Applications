@@ -1,111 +1,83 @@
-<?php namespace Zizaco\Entrust;
-
-/**
- * This file is part of Entrust,
- * a role & permission management solution for Laravel.
- *
- * @license MIT
- * @package Zizaco\Entrust
- */
-
-use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Config;
-
-class MigrationCommand extends Command
-{
-    /**
-     * The console command name.
-     *
-     * @var string
-     */
-    protected $name = 'entrust:migration';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Creates a migration following the Entrust specifications.';
-   
-    /**
-     * Execute the console command.
-     *
-     * @return void
-     */
-    public function fire()
-    {
-        $this->handle();
-    }
-
-    /**
-     * Execute the console command for Laravel 5.5+.
-     *
-     * @return void
-     */
-    public function handle()
-    {
-        $this->laravel->view->addNamespace('entrust', substr(__DIR__, 0, -8).'views');
-
-        $rolesTable          = Config::get('entrust.roles_table');
-        $roleUserTable       = Config::get('entrust.role_user_table');
-        $permissionsTable    = Config::get('entrust.permissions_table');
-        $permissionRoleTable = Config::get('entrust.permission_role_table');
-
-        $this->line('');
-        $this->info( "Tables: $rolesTable, $roleUserTable, $permissionsTable, $permissionRoleTable" );
-
-        $message = "A migration that creates '$rolesTable', '$roleUserTable', '$permissionsTable', '$permissionRoleTable'".
-        " tables will be created in database/migrations directory";
-
-        $this->comment($message);
-        $this->line('');
-
-        if ($this->confirm("Proceed with the migration creation? [Yes|no]", "Yes")) {
-
-            $this->line('');
-
-            $this->info("Creating migration...");
-            if ($this->createMigration($rolesTable, $roleUserTable, $permissionsTable, $permissionRoleTable)) {
-
-                $this->info("Migration successfully created!");
-            } else {
-                $this->error(
-                    "Couldn't create migration.\n Check the write permissions".
-                    " within the database/migrations directory."
-                );
-            }
-
-            $this->line('');
-
-        }
-    }
-
-    /**
-     * Create the migration.
-     *
-     * @param string $name
-     *
-     * @return bool
-     */
-    protected function createMigration($rolesTable, $roleUserTable, $permissionsTable, $permissionRoleTable)
-    {
-        $migrationFile = base_path("/database/migrations")."/".date('Y_m_d_His')."_entrust_setup_tables.php";
-
-        $userModelName = Config::get('auth.providers.users.model');
-        $userModel = new $userModelName();
-        $usersTable = $userModel->getTable();
-        $userKeyName = $userModel->getKeyName();
-
-        $data = compact('rolesTable', 'roleUserTable', 'permissionsTable', 'permissionRoleTable', 'usersTable', 'userKeyName');
-
-        $output = $this->laravel->view->make('entrust::generators.migration')->with($data)->render();
-
-        if (!file_exists($migrationFile) && $fs = fopen($migrationFile, 'x')) {
-            fwrite($fs, $output);
-            fclose($fs);
-            return true;
-        }
-
-        return false;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

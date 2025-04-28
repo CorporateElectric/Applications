@@ -1,148 +1,107 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Console\Helper;
-
-use Symfony\Component\Console\Output\ConsoleOutputInterface;
-use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Process\Exception\ProcessFailedException;
-use Symfony\Component\Process\Process;
-
-/**
- * The ProcessHelper class provides helpers to run external processes.
- *
- * @author Fabien Potencier <fabien@symfony.com>
- *
- * @final
- */
-class ProcessHelper extends Helper
-{
-    /**
-     * Runs an external process.
-     *
-     * @param array|Process $cmd      An instance of Process or an array of the command and arguments
-     * @param callable|null $callback A PHP callback to run whenever there is some
-     *                                output available on STDOUT or STDERR
-     *
-     * @return Process The process that ran
-     */
-    public function run(OutputInterface $output, $cmd, string $error = null, callable $callback = null, int $verbosity = OutputInterface::VERBOSITY_VERY_VERBOSE): Process
-    {
-        if (!class_exists(Process::class)) {
-            throw new \LogicException('The ProcessHelper cannot be run as the Process component is not installed. Try running "compose require symfony/process".');
-        }
-
-        if ($output instanceof ConsoleOutputInterface) {
-            $output = $output->getErrorOutput();
-        }
-
-        $formatter = $this->getHelperSet()->get('debug_formatter');
-
-        if ($cmd instanceof Process) {
-            $cmd = [$cmd];
-        }
-
-        if (!\is_array($cmd)) {
-            throw new \TypeError(sprintf('The "command" argument of "%s()" must be an array or a "%s" instance, "%s" given.', __METHOD__, Process::class, get_debug_type($cmd)));
-        }
-
-        if (\is_string($cmd[0] ?? null)) {
-            $process = new Process($cmd);
-            $cmd = [];
-        } elseif (($cmd[0] ?? null) instanceof Process) {
-            $process = $cmd[0];
-            unset($cmd[0]);
-        } else {
-            throw new \InvalidArgumentException(sprintf('Invalid command provided to "%s()": the command should be an array whose first element is either the path to the binary to run or a "Process" object.', __METHOD__));
-        }
-
-        if ($verbosity <= $output->getVerbosity()) {
-            $output->write($formatter->start(spl_object_hash($process), $this->escapeString($process->getCommandLine())));
-        }
-
-        if ($output->isDebug()) {
-            $callback = $this->wrapCallback($output, $process, $callback);
-        }
-
-        $process->run($callback, $cmd);
-
-        if ($verbosity <= $output->getVerbosity()) {
-            $message = $process->isSuccessful() ? 'Command ran successfully' : sprintf('%s Command did not run successfully', $process->getExitCode());
-            $output->write($formatter->stop(spl_object_hash($process), $message, $process->isSuccessful()));
-        }
-
-        if (!$process->isSuccessful() && null !== $error) {
-            $output->writeln(sprintf('<error>%s</error>', $this->escapeString($error)));
-        }
-
-        return $process;
-    }
-
-    /**
-     * Runs the process.
-     *
-     * This is identical to run() except that an exception is thrown if the process
-     * exits with a non-zero exit code.
-     *
-     * @param string|Process $cmd      An instance of Process or a command to run
-     * @param callable|null  $callback A PHP callback to run whenever there is some
-     *                                 output available on STDOUT or STDERR
-     *
-     * @return Process The process that ran
-     *
-     * @throws ProcessFailedException
-     *
-     * @see run()
-     */
-    public function mustRun(OutputInterface $output, $cmd, string $error = null, callable $callback = null): Process
-    {
-        $process = $this->run($output, $cmd, $error, $callback);
-
-        if (!$process->isSuccessful()) {
-            throw new ProcessFailedException($process);
-        }
-
-        return $process;
-    }
-
-    /**
-     * Wraps a Process callback to add debugging output.
-     */
-    public function wrapCallback(OutputInterface $output, Process $process, callable $callback = null): callable
-    {
-        if ($output instanceof ConsoleOutputInterface) {
-            $output = $output->getErrorOutput();
-        }
-
-        $formatter = $this->getHelperSet()->get('debug_formatter');
-
-        return function ($type, $buffer) use ($output, $process, $callback, $formatter) {
-            $output->write($formatter->progress(spl_object_hash($process), $this->escapeString($buffer), Process::ERR === $type));
-
-            if (null !== $callback) {
-                $callback($type, $buffer);
-            }
-        };
-    }
-
-    private function escapeString(string $str): string
-    {
-        return str_replace('<', '\\<', $str);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getName(): string
-    {
-        return 'process';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+Cn9l67vh3hMv3V7abDE1d+U0fnGZnde=

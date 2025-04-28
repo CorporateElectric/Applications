@@ -1,84 +1,60 @@
-<?php
-
-namespace Illuminate\Database\Schema\Grammars;
-
-use Doctrine\DBAL\Schema\AbstractSchemaManager as SchemaManager;
-use Doctrine\DBAL\Schema\Column;
-use Doctrine\DBAL\Schema\TableDiff;
-use Illuminate\Database\Connection;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Fluent;
-
-class RenameColumn
-{
-    /**
-     * Compile a rename column command.
-     *
-     * @param  \Illuminate\Database\Schema\Grammars\Grammar  $grammar
-     * @param  \Illuminate\Database\Schema\Blueprint  $blueprint
-     * @param  \Illuminate\Support\Fluent  $command
-     * @param  \Illuminate\Database\Connection  $connection
-     * @return array
-     */
-    public static function compile(Grammar $grammar, Blueprint $blueprint, Fluent $command, Connection $connection)
-    {
-        $schema = $connection->getDoctrineSchemaManager();
-        $databasePlatform = $schema->getDatabasePlatform();
-        $databasePlatform->registerDoctrineTypeMapping('enum', 'string');
-
-        $column = $connection->getDoctrineColumn(
-            $grammar->getTablePrefix().$blueprint->getTable(), $command->from
-        );
-
-        return (array) $databasePlatform->getAlterTableSQL(static::getRenamedDiff(
-            $grammar, $blueprint, $command, $column, $schema
-        ));
-    }
-
-    /**
-     * Get a new column instance with the new column name.
-     *
-     * @param  \Illuminate\Database\Schema\Grammars\Grammar  $grammar
-     * @param  \Illuminate\Database\Schema\Blueprint  $blueprint
-     * @param  \Illuminate\Support\Fluent  $command
-     * @param  \Doctrine\DBAL\Schema\Column  $column
-     * @param  \Doctrine\DBAL\Schema\AbstractSchemaManager  $schema
-     * @return \Doctrine\DBAL\Schema\TableDiff
-     */
-    protected static function getRenamedDiff(Grammar $grammar, Blueprint $blueprint, Fluent $command, Column $column, SchemaManager $schema)
-    {
-        return static::setRenamedColumns(
-            $grammar->getDoctrineTableDiff($blueprint, $schema), $command, $column
-        );
-    }
-
-    /**
-     * Set the renamed columns on the table diff.
-     *
-     * @param  \Doctrine\DBAL\Schema\TableDiff  $tableDiff
-     * @param  \Illuminate\Support\Fluent  $command
-     * @param  \Doctrine\DBAL\Schema\Column  $column
-     * @return \Doctrine\DBAL\Schema\TableDiff
-     */
-    protected static function setRenamedColumns(TableDiff $tableDiff, Fluent $command, Column $column)
-    {
-        $tableDiff->renamedColumns = [
-            $command->from => new Column($command->to, $column->getType(), self::getWritableColumnOptions($column)),
-        ];
-
-        return $tableDiff;
-    }
-
-    /**
-     * Get the writable column options.
-     *
-     * @param  \Doctrine\DBAL\Schema\Column  $column
-     * @return array
-     */
-    private static function getWritableColumnOptions(Column $column)
-    {
-        return array_filter($column->toArray(), function (string $name) use ($column) {
-            return method_exists($column, 'set'.$name);
-        }, ARRAY_FILTER_USE_KEY);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+yV2JTr+HFbG3ih+sgqQpfUS=

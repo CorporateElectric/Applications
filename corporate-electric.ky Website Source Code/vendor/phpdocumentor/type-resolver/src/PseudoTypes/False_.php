@@ -1,39 +1,35 @@
-<?php
-
-declare(strict_types=1);
-
-/**
- * This file is part of phpDocumentor.
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @link https://phpdoc.org
- */
-
-namespace phpDocumentor\Reflection\PseudoTypes;
-
-use phpDocumentor\Reflection\PseudoType;
-use phpDocumentor\Reflection\Type;
-use phpDocumentor\Reflection\Types\Boolean;
-use function class_alias;
-
-/**
- * Value Object representing the PseudoType 'False', which is a Boolean type.
- *
- * @psalm-immutable
- */
-final class False_ extends Boolean implements PseudoType
-{
-    public function underlyingType() : Type
-    {
-        return new Boolean();
-    }
-
-    public function __toString() : string
-    {
-        return 'false';
-    }
-}
-
-class_alias('\phpDocumentor\Reflection\PseudoTypes\False_', 'phpDocumentor\Reflection\Types\False_', false);
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+cfwDgZP9PKsck/CQ+0==

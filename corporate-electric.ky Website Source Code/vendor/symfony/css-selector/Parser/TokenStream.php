@@ -1,171 +1,57 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\CssSelector\Parser;
-
-use Symfony\Component\CssSelector\Exception\InternalErrorException;
-use Symfony\Component\CssSelector\Exception\SyntaxErrorException;
-
-/**
- * CSS selector token stream.
- *
- * This component is a port of the Python cssselect library,
- * which is copyright Ian Bicking, @see https://github.com/SimonSapin/cssselect.
- *
- * @author Jean-François Simon <jeanfrancois.simon@sensiolabs.com>
- *
- * @internal
- */
-class TokenStream
-{
-    /**
-     * @var Token[]
-     */
-    private $tokens = [];
-
-    /**
-     * @var Token[]
-     */
-    private $used = [];
-
-    /**
-     * @var int
-     */
-    private $cursor = 0;
-
-    /**
-     * @var Token|null
-     */
-    private $peeked;
-
-    /**
-     * @var bool
-     */
-    private $peeking = false;
-
-    /**
-     * Pushes a token.
-     *
-     * @return $this
-     */
-    public function push(Token $token): self
-    {
-        $this->tokens[] = $token;
-
-        return $this;
-    }
-
-    /**
-     * Freezes stream.
-     *
-     * @return $this
-     */
-    public function freeze(): self
-    {
-        return $this;
-    }
-
-    /**
-     * Returns next token.
-     *
-     * @throws InternalErrorException If there is no more token
-     */
-    public function getNext(): Token
-    {
-        if ($this->peeking) {
-            $this->peeking = false;
-            $this->used[] = $this->peeked;
-
-            return $this->peeked;
-        }
-
-        if (!isset($this->tokens[$this->cursor])) {
-            throw new InternalErrorException('Unexpected token stream end.');
-        }
-
-        return $this->tokens[$this->cursor++];
-    }
-
-    /**
-     * Returns peeked token.
-     */
-    public function getPeek(): Token
-    {
-        if (!$this->peeking) {
-            $this->peeked = $this->getNext();
-            $this->peeking = true;
-        }
-
-        return $this->peeked;
-    }
-
-    /**
-     * Returns used tokens.
-     *
-     * @return Token[]
-     */
-    public function getUsed(): array
-    {
-        return $this->used;
-    }
-
-    /**
-     * Returns nex identifier token.
-     *
-     * @return string The identifier token value
-     *
-     * @throws SyntaxErrorException If next token is not an identifier
-     */
-    public function getNextIdentifier(): string
-    {
-        $next = $this->getNext();
-
-        if (!$next->isIdentifier()) {
-            throw SyntaxErrorException::unexpectedToken('identifier', $next);
-        }
-
-        return $next->getValue();
-    }
-
-    /**
-     * Returns nex identifier or star delimiter token.
-     *
-     * @return string|null The identifier token value or null if star found
-     *
-     * @throws SyntaxErrorException If next token is not an identifier or a star delimiter
-     */
-    public function getNextIdentifierOrStar(): ?string
-    {
-        $next = $this->getNext();
-
-        if ($next->isIdentifier()) {
-            return $next->getValue();
-        }
-
-        if ($next->isDelimiter(['*'])) {
-            return null;
-        }
-
-        throw SyntaxErrorException::unexpectedToken('identifier or "*"', $next);
-    }
-
-    /**
-     * Skips next whitespace if any.
-     */
-    public function skipWhitespace()
-    {
-        $peek = $this->getPeek();
-
-        if ($peek->isWhitespace()) {
-            $this->getNext();
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

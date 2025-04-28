@@ -1,112 +1,75 @@
-<?php
-
-class HTMLPurifier_Injector_RemoveEmpty extends HTMLPurifier_Injector
-{
-    /**
-     * @type HTMLPurifier_Context
-     */
-    private $context;
-
-    /**
-     * @type HTMLPurifier_Config
-     */
-    private $config;
-
-    /**
-     * @type HTMLPurifier_AttrValidator
-     */
-    private $attrValidator;
-
-    /**
-     * @type bool
-     */
-    private $removeNbsp;
-
-    /**
-     * @type bool
-     */
-    private $removeNbspExceptions;
-
-    /**
-     * Cached contents of %AutoFormat.RemoveEmpty.Predicate
-     * @type array
-     */
-    private $exclude;
-
-    /**
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return void
-     */
-    public function prepare($config, $context)
-    {
-        parent::prepare($config, $context);
-        $this->config = $config;
-        $this->context = $context;
-        $this->removeNbsp = $config->get('AutoFormat.RemoveEmpty.RemoveNbsp');
-        $this->removeNbspExceptions = $config->get('AutoFormat.RemoveEmpty.RemoveNbsp.Exceptions');
-        $this->exclude = $config->get('AutoFormat.RemoveEmpty.Predicate');
-        foreach ($this->exclude as $key => $attrs) {
-            if (!is_array($attrs)) {
-                // HACK, see HTMLPurifier/Printer/ConfigForm.php
-                $this->exclude[$key] = explode(';', $attrs);
-            }
-        }
-        $this->attrValidator = new HTMLPurifier_AttrValidator();
-    }
-
-    /**
-     * @param HTMLPurifier_Token $token
-     */
-    public function handleElement(&$token)
-    {
-        if (!$token instanceof HTMLPurifier_Token_Start) {
-            return;
-        }
-        $next = false;
-        $deleted = 1; // the current tag
-        for ($i = count($this->inputZipper->back) - 1; $i >= 0; $i--, $deleted++) {
-            $next = $this->inputZipper->back[$i];
-            if ($next instanceof HTMLPurifier_Token_Text) {
-                if ($next->is_whitespace) {
-                    continue;
-                }
-                if ($this->removeNbsp && !isset($this->removeNbspExceptions[$token->name])) {
-                    $plain = str_replace("\xC2\xA0", "", $next->data);
-                    $isWsOrNbsp = $plain === '' || ctype_space($plain);
-                    if ($isWsOrNbsp) {
-                        continue;
-                    }
-                }
-            }
-            break;
-        }
-        if (!$next || ($next instanceof HTMLPurifier_Token_End && $next->name == $token->name)) {
-            $this->attrValidator->validateToken($token, $this->config, $this->context);
-            $token->armor['ValidateAttributes'] = true;
-            if (isset($this->exclude[$token->name])) {
-                $r = true;
-                foreach ($this->exclude[$token->name] as $elem) {
-                    if (!isset($token->attr[$elem])) $r = false;
-                }
-                if ($r) return;
-            }
-            if (isset($token->attr['id']) || isset($token->attr['name'])) {
-                return;
-            }
-            $token = $deleted + 1;
-            for ($b = 0, $c = count($this->inputZipper->front); $b < $c; $b++) {
-                $prev = $this->inputZipper->front[$b];
-                if ($prev instanceof HTMLPurifier_Token_Text && $prev->is_whitespace) {
-                    continue;
-                }
-                break;
-            }
-            // This is safe because we removed the token that triggered this.
-            $this->rewindOffset($b+$deleted);
-            return;
-        }
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

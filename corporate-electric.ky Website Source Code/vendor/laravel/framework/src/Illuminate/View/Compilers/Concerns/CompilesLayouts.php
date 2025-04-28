@@ -1,133 +1,47 @@
-<?php
-
-namespace Illuminate\View\Compilers\Concerns;
-
-use Illuminate\View\Factory as ViewFactory;
-
-trait CompilesLayouts
-{
-    /**
-     * The name of the last section that was started.
-     *
-     * @var string
-     */
-    protected $lastSection;
-
-    /**
-     * Compile the extends statements into valid PHP.
-     *
-     * @param  string  $expression
-     * @return string
-     */
-    protected function compileExtends($expression)
-    {
-        $expression = $this->stripParentheses($expression);
-
-        $echo = "<?php echo \$__env->make({$expression}, \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>";
-
-        $this->footer[] = $echo;
-
-        return '';
-    }
-
-    /**
-     * Compile the extends-first statements into valid PHP.
-     *
-     * @param  string  $expression
-     * @return string
-     */
-    protected function compileExtendsFirst($expression)
-    {
-        $expression = $this->stripParentheses($expression);
-
-        $echo = "<?php echo \$__env->first({$expression}, \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>";
-
-        $this->footer[] = $echo;
-
-        return '';
-    }
-
-    /**
-     * Compile the section statements into valid PHP.
-     *
-     * @param  string  $expression
-     * @return string
-     */
-    protected function compileSection($expression)
-    {
-        $this->lastSection = trim($expression, "()'\" ");
-
-        return "<?php \$__env->startSection{$expression}; ?>";
-    }
-
-    /**
-     * Replace the @parent directive to a placeholder.
-     *
-     * @return string
-     */
-    protected function compileParent()
-    {
-        return ViewFactory::parentPlaceholder($this->lastSection ?: '');
-    }
-
-    /**
-     * Compile the yield statements into valid PHP.
-     *
-     * @param  string  $expression
-     * @return string
-     */
-    protected function compileYield($expression)
-    {
-        return "<?php echo \$__env->yieldContent{$expression}; ?>";
-    }
-
-    /**
-     * Compile the show statements into valid PHP.
-     *
-     * @return string
-     */
-    protected function compileShow()
-    {
-        return '<?php echo $__env->yieldSection(); ?>';
-    }
-
-    /**
-     * Compile the append statements into valid PHP.
-     *
-     * @return string
-     */
-    protected function compileAppend()
-    {
-        return '<?php $__env->appendSection(); ?>';
-    }
-
-    /**
-     * Compile the overwrite statements into valid PHP.
-     *
-     * @return string
-     */
-    protected function compileOverwrite()
-    {
-        return '<?php $__env->stopSection(true); ?>';
-    }
-
-    /**
-     * Compile the stop statements into valid PHP.
-     *
-     * @return string
-     */
-    protected function compileStop()
-    {
-        return '<?php $__env->stopSection(); ?>';
-    }
-
-    /**
-     * Compile the end-section statements into valid PHP.
-     *
-     * @return string
-     */
-    protected function compileEndsection()
-    {
-        return '<?php $__env->stopSection(); ?>';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

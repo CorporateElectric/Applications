@@ -1,97 +1,37 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Mime\Crypto;
-
-/**
- * A helper providing autocompletion for available DkimSigner options.
- *
- * @author Fabien Potencier <fabien@symfony.com>
- */
-final class DkimOptions
-{
-    private $options = [];
-
-    public function toArray(): array
-    {
-        return $this->options;
-    }
-
-    /**
-     * @return $this
-     */
-    public function algorithm(int $algo): self
-    {
-        $this->options['algorithm'] = $algo;
-
-        return $this;
-    }
-
-    /**
-     * @return $this
-     */
-    public function signatureExpirationDelay(int $show): self
-    {
-        $this->options['signature_expiration_delay'] = $show;
-
-        return $this;
-    }
-
-    /**
-     * @return $this
-     */
-    public function bodyMaxLength(int $max): self
-    {
-        $this->options['body_max_length'] = $max;
-
-        return $this;
-    }
-
-    /**
-     * @return $this
-     */
-    public function bodyShowLength(bool $show): self
-    {
-        $this->options['body_show_length'] = $show;
-
-        return $this;
-    }
-
-    /**
-     * @return $this
-     */
-    public function headerCanon(string $canon): self
-    {
-        $this->options['header_canon'] = $canon;
-
-        return $this;
-    }
-
-    /**
-     * @return $this
-     */
-    public function bodyCanon(string $canon): self
-    {
-        $this->options['body_canon'] = $canon;
-
-        return $this;
-    }
-
-    /**
-     * @return $this
-     */
-    public function headersToIgnore(array $headers): self
-    {
-        $this->options['headers_to_ignore'] = $headers;
-
-        return $this;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+tHibA8OfwMrTv0WoLSPfv0tLjWpMgw6lLhuz

@@ -1,217 +1,95 @@
-<?php
-
-namespace Illuminate\Cookie;
-
-use Illuminate\Contracts\Cookie\QueueingFactory as JarContract;
-use Illuminate\Support\Arr;
-use Illuminate\Support\InteractsWithTime;
-use Illuminate\Support\Traits\Macroable;
-use Symfony\Component\HttpFoundation\Cookie;
-
-class CookieJar implements JarContract
-{
-    use InteractsWithTime, Macroable;
-
-    /**
-     * The default path (if specified).
-     *
-     * @var string
-     */
-    protected $path = '/';
-
-    /**
-     * The default domain (if specified).
-     *
-     * @var string
-     */
-    protected $domain;
-
-    /**
-     * The default secure setting (defaults to null).
-     *
-     * @var bool|null
-     */
-    protected $secure;
-
-    /**
-     * The default SameSite option (defaults to lax).
-     *
-     * @var string
-     */
-    protected $sameSite = 'lax';
-
-    /**
-     * All of the cookies queued for sending.
-     *
-     * @var \Symfony\Component\HttpFoundation\Cookie[]
-     */
-    protected $queued = [];
-
-    /**
-     * Create a new cookie instance.
-     *
-     * @param  string  $name
-     * @param  string  $value
-     * @param  int  $minutes
-     * @param  string|null  $path
-     * @param  string|null  $domain
-     * @param  bool|null  $secure
-     * @param  bool  $httpOnly
-     * @param  bool  $raw
-     * @param  string|null  $sameSite
-     * @return \Symfony\Component\HttpFoundation\Cookie
-     */
-    public function make($name, $value, $minutes = 0, $path = null, $domain = null, $secure = null, $httpOnly = true, $raw = false, $sameSite = null)
-    {
-        [$path, $domain, $secure, $sameSite] = $this->getPathAndDomain($path, $domain, $secure, $sameSite);
-
-        $time = ($minutes == 0) ? 0 : $this->availableAt($minutes * 60);
-
-        return new Cookie($name, $value, $time, $path, $domain, $secure, $httpOnly, $raw, $sameSite);
-    }
-
-    /**
-     * Create a cookie that lasts "forever" (five years).
-     *
-     * @param  string  $name
-     * @param  string  $value
-     * @param  string|null  $path
-     * @param  string|null  $domain
-     * @param  bool|null  $secure
-     * @param  bool  $httpOnly
-     * @param  bool  $raw
-     * @param  string|null  $sameSite
-     * @return \Symfony\Component\HttpFoundation\Cookie
-     */
-    public function forever($name, $value, $path = null, $domain = null, $secure = null, $httpOnly = true, $raw = false, $sameSite = null)
-    {
-        return $this->make($name, $value, 2628000, $path, $domain, $secure, $httpOnly, $raw, $sameSite);
-    }
-
-    /**
-     * Expire the given cookie.
-     *
-     * @param  string  $name
-     * @param  string|null  $path
-     * @param  string|null  $domain
-     * @return \Symfony\Component\HttpFoundation\Cookie
-     */
-    public function forget($name, $path = null, $domain = null)
-    {
-        return $this->make($name, null, -2628000, $path, $domain);
-    }
-
-    /**
-     * Determine if a cookie has been queued.
-     *
-     * @param  string  $key
-     * @param  string|null  $path
-     * @return bool
-     */
-    public function hasQueued($key, $path = null)
-    {
-        return ! is_null($this->queued($key, null, $path));
-    }
-
-    /**
-     * Get a queued cookie instance.
-     *
-     * @param  string  $key
-     * @param  mixed  $default
-     * @param  string|null  $path
-     * @return \Symfony\Component\HttpFoundation\Cookie|null
-     */
-    public function queued($key, $default = null, $path = null)
-    {
-        $queued = Arr::get($this->queued, $key, $default);
-
-        if ($path === null) {
-            return Arr::last($queued, null, $default);
-        }
-
-        return Arr::get($queued, $path, $default);
-    }
-
-    /**
-     * Queue a cookie to send with the next response.
-     *
-     * @param  array  $parameters
-     * @return void
-     */
-    public function queue(...$parameters)
-    {
-        if (isset($parameters[0]) && $parameters[0] instanceof Cookie) {
-            $cookie = $parameters[0];
-        } else {
-            $cookie = $this->make(...array_values($parameters));
-        }
-
-        if (! isset($this->queued[$cookie->getName()])) {
-            $this->queued[$cookie->getName()] = [];
-        }
-
-        $this->queued[$cookie->getName()][$cookie->getPath()] = $cookie;
-    }
-
-    /**
-     * Remove a cookie from the queue.
-     *
-     * @param  string  $name
-     * @param  string|null  $path
-     * @return void
-     */
-    public function unqueue($name, $path = null)
-    {
-        if ($path === null) {
-            unset($this->queued[$name]);
-
-            return;
-        }
-
-        unset($this->queued[$name][$path]);
-
-        if (empty($this->queued[$name])) {
-            unset($this->queued[$name]);
-        }
-    }
-
-    /**
-     * Get the path and domain, or the default values.
-     *
-     * @param  string  $path
-     * @param  string  $domain
-     * @param  bool|null  $secure
-     * @param  string|null  $sameSite
-     * @return array
-     */
-    protected function getPathAndDomain($path, $domain, $secure = null, $sameSite = null)
-    {
-        return [$path ?: $this->path, $domain ?: $this->domain, is_bool($secure) ? $secure : $this->secure, $sameSite ?: $this->sameSite];
-    }
-
-    /**
-     * Set the default path and domain for the jar.
-     *
-     * @param  string  $path
-     * @param  string  $domain
-     * @param  bool  $secure
-     * @param  string|null  $sameSite
-     * @return $this
-     */
-    public function setDefaultPathAndDomain($path, $domain, $secure = false, $sameSite = null)
-    {
-        [$this->path, $this->domain, $this->secure, $this->sameSite] = [$path, $domain, $secure, $sameSite];
-
-        return $this;
-    }
-
-    /**
-     * Get the cookies which have been queued for the next request.
-     *
-     * @return \Symfony\Component\HttpFoundation\Cookie[]
-     */
-    public function getQueuedCookies()
-    {
-        return Arr::flatten($this->queued);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+gEms3L47PZE9xHyLx4/hPqcwnwWke0==

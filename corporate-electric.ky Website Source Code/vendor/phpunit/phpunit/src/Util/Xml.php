@@ -1,193 +1,91 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Util;
-
-use const ENT_QUOTES;
-use function assert;
-use function class_exists;
-use function htmlspecialchars;
-use function mb_convert_encoding;
-use function ord;
-use function preg_replace;
-use function settype;
-use function strlen;
-use DOMCharacterData;
-use DOMDocument;
-use DOMElement;
-use DOMNode;
-use DOMText;
-use ReflectionClass;
-use ReflectionException;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for PHPUnit
- */
-final class Xml
-{
-    /**
-     * @deprecated Only used by assertEqualXMLStructure()
-     */
-    public static function import(DOMElement $element): DOMElement
-    {
-        return (new DOMDocument)->importNode($element, true);
-    }
-
-    /**
-     * @deprecated Only used by assertEqualXMLStructure()
-     */
-    public static function removeCharacterDataNodes(DOMNode $node): void
-    {
-        if ($node->hasChildNodes()) {
-            for ($i = $node->childNodes->length - 1; $i >= 0; $i--) {
-                if (($child = $node->childNodes->item($i)) instanceof DOMCharacterData) {
-                    $node->removeChild($child);
-                }
-            }
-        }
-    }
-
-    /**
-     * Escapes a string for the use in XML documents.
-     *
-     * Any Unicode character is allowed, excluding the surrogate blocks, FFFE,
-     * and FFFF (not even as character reference).
-     *
-     * @see https://www.w3.org/TR/xml/#charsets
-     */
-    public static function prepareString(string $string): string
-    {
-        return preg_replace(
-            '/[\\x00-\\x08\\x0b\\x0c\\x0e-\\x1f\\x7f]/',
-            '',
-            htmlspecialchars(
-                self::convertToUtf8($string),
-                ENT_QUOTES
-            )
-        );
-    }
-
-    /**
-     * "Convert" a DOMElement object into a PHP variable.
-     */
-    public static function xmlToVariable(DOMElement $element)
-    {
-        $variable = null;
-
-        switch ($element->tagName) {
-            case 'array':
-                $variable = [];
-
-                foreach ($element->childNodes as $entry) {
-                    if (!$entry instanceof DOMElement || $entry->tagName !== 'element') {
-                        continue;
-                    }
-                    $item = $entry->childNodes->item(0);
-
-                    if ($item instanceof DOMText) {
-                        $item = $entry->childNodes->item(1);
-                    }
-
-                    $value = self::xmlToVariable($item);
-
-                    if ($entry->hasAttribute('key')) {
-                        $variable[(string) $entry->getAttribute('key')] = $value;
-                    } else {
-                        $variable[] = $value;
-                    }
-                }
-
-                break;
-
-            case 'object':
-                $className = $element->getAttribute('class');
-
-                if ($element->hasChildNodes()) {
-                    $arguments       = $element->childNodes->item(0)->childNodes;
-                    $constructorArgs = [];
-
-                    foreach ($arguments as $argument) {
-                        if ($argument instanceof DOMElement) {
-                            $constructorArgs[] = self::xmlToVariable($argument);
-                        }
-                    }
-
-                    try {
-                        assert(class_exists($className));
-
-                        $variable = (new ReflectionClass($className))->newInstanceArgs($constructorArgs);
-                        // @codeCoverageIgnoreStart
-                    } catch (ReflectionException $e) {
-                        throw new Exception(
-                            $e->getMessage(),
-                            (int) $e->getCode(),
-                            $e
-                        );
-                    }
-                    // @codeCoverageIgnoreEnd
-                } else {
-                    $variable = new $className;
-                }
-
-                break;
-
-            case 'boolean':
-                $variable = $element->textContent === 'true';
-
-                break;
-
-            case 'integer':
-            case 'double':
-            case 'string':
-                $variable = $element->textContent;
-
-                settype($variable, $element->tagName);
-
-                break;
-        }
-
-        return $variable;
-    }
-
-    private static function convertToUtf8(string $string): string
-    {
-        if (!self::isUtf8($string)) {
-            $string = mb_convert_encoding($string, 'UTF-8');
-        }
-
-        return $string;
-    }
-
-    private static function isUtf8(string $string): bool
-    {
-        $length = strlen($string);
-
-        for ($i = 0; $i < $length; $i++) {
-            if (ord($string[$i]) < 0x80) {
-                $n = 0;
-            } elseif ((ord($string[$i]) & 0xE0) === 0xC0) {
-                $n = 1;
-            } elseif ((ord($string[$i]) & 0xF0) === 0xE0) {
-                $n = 2;
-            } elseif ((ord($string[$i]) & 0xF0) === 0xF0) {
-                $n = 3;
-            } else {
-                return false;
-            }
-
-            for ($j = 0; $j < $n; $j++) {
-                if ((++$i === $length) || ((ord($string[$i]) & 0xC0) !== 0x80)) {
-                    return false;
-                }
-            }
-        }
-
-        return true;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

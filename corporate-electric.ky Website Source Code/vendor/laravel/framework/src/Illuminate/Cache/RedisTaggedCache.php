@@ -1,198 +1,92 @@
-<?php
-
-namespace Illuminate\Cache;
-
-class RedisTaggedCache extends TaggedCache
-{
-    /**
-     * Forever reference key.
-     *
-     * @var string
-     */
-    const REFERENCE_KEY_FOREVER = 'forever_ref';
-    /**
-     * Standard reference key.
-     *
-     * @var string
-     */
-    const REFERENCE_KEY_STANDARD = 'standard_ref';
-
-    /**
-     * Store an item in the cache.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @param  \DateTimeInterface|\DateInterval|int|null  $ttl
-     * @return bool
-     */
-    public function put($key, $value, $ttl = null)
-    {
-        if ($ttl === null) {
-            return $this->forever($key, $value);
-        }
-
-        $this->pushStandardKeys($this->tags->getNamespace(), $key);
-
-        return parent::put($key, $value, $ttl);
-    }
-
-    /**
-     * Increment the value of an item in the cache.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @return void
-     */
-    public function increment($key, $value = 1)
-    {
-        $this->pushStandardKeys($this->tags->getNamespace(), $key);
-
-        parent::increment($key, $value);
-    }
-
-    /**
-     * Decrement the value of an item in the cache.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @return void
-     */
-    public function decrement($key, $value = 1)
-    {
-        $this->pushStandardKeys($this->tags->getNamespace(), $key);
-
-        parent::decrement($key, $value);
-    }
-
-    /**
-     * Store an item in the cache indefinitely.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @return bool
-     */
-    public function forever($key, $value)
-    {
-        $this->pushForeverKeys($this->tags->getNamespace(), $key);
-
-        return parent::forever($key, $value);
-    }
-
-    /**
-     * Remove all items from the cache.
-     *
-     * @return bool
-     */
-    public function flush()
-    {
-        $this->deleteForeverKeys();
-        $this->deleteStandardKeys();
-
-        return parent::flush();
-    }
-
-    /**
-     * Store standard key references into store.
-     *
-     * @param  string  $namespace
-     * @param  string  $key
-     * @return void
-     */
-    protected function pushStandardKeys($namespace, $key)
-    {
-        $this->pushKeys($namespace, $key, self::REFERENCE_KEY_STANDARD);
-    }
-
-    /**
-     * Store forever key references into store.
-     *
-     * @param  string  $namespace
-     * @param  string  $key
-     * @return void
-     */
-    protected function pushForeverKeys($namespace, $key)
-    {
-        $this->pushKeys($namespace, $key, self::REFERENCE_KEY_FOREVER);
-    }
-
-    /**
-     * Store a reference to the cache key against the reference key.
-     *
-     * @param  string  $namespace
-     * @param  string  $key
-     * @param  string  $reference
-     * @return void
-     */
-    protected function pushKeys($namespace, $key, $reference)
-    {
-        $fullKey = $this->store->getPrefix().sha1($namespace).':'.$key;
-
-        foreach (explode('|', $namespace) as $segment) {
-            $this->store->connection()->sadd($this->referenceKey($segment, $reference), $fullKey);
-        }
-    }
-
-    /**
-     * Delete all of the items that were stored forever.
-     *
-     * @return void
-     */
-    protected function deleteForeverKeys()
-    {
-        $this->deleteKeysByReference(self::REFERENCE_KEY_FOREVER);
-    }
-
-    /**
-     * Delete all standard items.
-     *
-     * @return void
-     */
-    protected function deleteStandardKeys()
-    {
-        $this->deleteKeysByReference(self::REFERENCE_KEY_STANDARD);
-    }
-
-    /**
-     * Find and delete all of the items that were stored against a reference.
-     *
-     * @param  string  $reference
-     * @return void
-     */
-    protected function deleteKeysByReference($reference)
-    {
-        foreach (explode('|', $this->tags->getNamespace()) as $segment) {
-            $this->deleteValues($segment = $this->referenceKey($segment, $reference));
-
-            $this->store->connection()->del($segment);
-        }
-    }
-
-    /**
-     * Delete item keys that have been stored against a reference.
-     *
-     * @param  string  $referenceKey
-     * @return void
-     */
-    protected function deleteValues($referenceKey)
-    {
-        $values = array_unique($this->store->connection()->smembers($referenceKey));
-
-        if (count($values) > 0) {
-            foreach (array_chunk($values, 1000) as $valuesChunk) {
-                $this->store->connection()->del(...$valuesChunk);
-            }
-        }
-    }
-
-    /**
-     * Get the reference key for the segment.
-     *
-     * @param  string  $segment
-     * @param  string  $suffix
-     * @return string
-     */
-    protected function referenceKey($segment, $suffix)
-    {
-        return $this->store->getPrefix().$segment.':'.$suffix;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

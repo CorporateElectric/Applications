@@ -1,217 +1,113 @@
-<?php
-
-namespace Mariuzzo\LaravelJsLocalization\Generators;
-
-use InvalidArgumentException;
-use Illuminate\Filesystem\Filesystem as File;
-use Illuminate\Support\Str;
-use JShrink\Minifier;
-
-/**
- * The LangJsGenerator class.
- *
- * @author  Rubens Mariuzzo <rubens@mariuzzo.com>
- */
-class LangJsGenerator
-{
-    /**
-     * The file service.
-     *
-     * @var File
-     */
-    protected $file;
-
-    /**
-     * The source path of the language files.
-     *
-     * @var string
-     */
-    protected $sourcePath;
-
-    /**
-     * List of messages should be included in build.
-     *
-     * @var array
-     */
-    protected $messagesIncluded = [];
-
-    /**
-     * Name of the domain in which all string-translation should be stored under.
-     * More about string-translation: https://laravel.com/docs/master/localization#retrieving-translation-strings
-     *
-     * @var string
-     */
-    protected $stringsDomain = 'strings';
-
-    /**
-     * Construct a new LangJsGenerator instance.
-     *
-     * @param File   $file       The file service instance.
-     * @param string $sourcePath The source path of the language files.
-     */
-    public function __construct(File $file, $sourcePath, $messagesIncluded = [])
-    {
-        $this->file = $file;
-        $this->sourcePath = $sourcePath;
-        $this->messagesIncluded = $messagesIncluded;
-    }
-
-    /**
-     * Generate a JS lang file from all language files.
-     *
-     * @param string $target  The target directory.
-     * @param array  $options Array of options.
-     *
-     * @return int
-     */
-    public function generate($target, $options)
-    {
-        if ($options['source']) {
-            $this->sourcePath = $options['source'];
-        }
-
-        $messages = $this->getMessages($options['no-sort']);
-        $this->prepareTarget($target);
-
-        if ($options['no-lib']) {
-            $template = $this->file->get(__DIR__.'/Templates/messages.js');
-        } else if ($options['json']) {
-            $template = $this->file->get(__DIR__.'/Templates/messages.json');
-        } else {
-            $template = $this->file->get(__DIR__.'/Templates/langjs_with_messages.js');
-            $langjs = $this->file->get(__DIR__.'/../../../../lib/lang.min.js');
-            $template = str_replace('\'{ langjs }\';', $langjs, $template);
-        }
-
-        $template = str_replace('\'{ messages }\'', json_encode($messages), $template);
-
-        if ($options['compress']) {
-            $template = Minifier::minify($template);
-        }
-
-        return $this->file->put($target, $template);
-    }
-
-    /**
-     * Recursively sorts all messages by key.
-     *
-     * @param array $messages The messages to sort by key.
-     */
-    protected function sortMessages(&$messages)
-    {
-        if (is_array($messages)) {
-            ksort($messages);
-
-            foreach ($messages as $key => &$value) {
-                $this->sortMessages($value);
-            }
-        }
-    }
-
-    /**
-     * Return all language messages.
-     *
-     * @param bool $noSort Whether sorting of the messages should be skipped.
-     * @return array
-     *
-     * @throws \Exception
-     */
-    protected function getMessages($noSort)
-    {
-        $messages = [];
-        $path = $this->sourcePath;
-
-        if (!$this->file->exists($path)) {
-            throw new \Exception("${path} doesn't exists!");
-        }
-
-        foreach ($this->file->allFiles($path) as $file) {
-            $pathName = $file->getRelativePathName();
-            $extension = $this->file->extension($pathName);
-            if ($extension != 'php' && $extension != 'json') {
-                continue;
-            }
-
-            if ($this->isMessagesExcluded($pathName)) {
-                continue;
-            }
-
-            $key = substr($pathName, 0, -4);
-            $key = str_replace('\\', '.', $key);
-            $key = str_replace('/', '.', $key);
-
-            if (Str::startsWith($key, 'vendor')) {
-                $key = $this->getVendorKey($key);
-            }
-
-            $fullPath = $path.DIRECTORY_SEPARATOR.$pathName;
-            if ($extension == 'php') {
-                $messages[$key] = include $fullPath;
-            } else {
-                $key = $key.$this->stringsDomain;
-                $fileContent = file_get_contents($fullPath);
-                $messages[$key] = json_decode($fileContent, true);
-
-                if (json_last_error() !== JSON_ERROR_NONE) {
-                    throw new InvalidArgumentException('Error while decode ' . basename($fullPath) . ': ' . json_last_error_msg());
-                }
-            }
-        }
-
-        if (!$noSort)
-        {
-            $this->sortMessages($messages);
-        }
-
-        return $messages;
-    }
-
-    /**
-     * Prepare the target directory.
-     *
-     * @param string $target The target directory.
-     */
-    protected function prepareTarget($target)
-    {
-        $dirname = dirname($target);
-
-        if (!$this->file->exists($dirname)) {
-            $this->file->makeDirectory($dirname, 0755, true);
-        }
-    }
-
-    /**
-     * If messages should be excluded from build.
-     *
-     * @param string $filePath
-     *
-     * @return bool
-     */
-    protected function isMessagesExcluded($filePath)
-    {
-        if (empty($this->messagesIncluded)) {
-            return false;
-        }
-
-        $filePath = str_replace(DIRECTORY_SEPARATOR, '/', $filePath);
-
-        $localeDirSeparatorPosition = strpos($filePath, '/');
-        $filePath = substr($filePath, $localeDirSeparatorPosition);
-        $filePath = ltrim($filePath, '/');
-        $filePath = substr($filePath, 0, -4);
-
-        if (in_array($filePath, $this->messagesIncluded)) {
-            return false;
-        }
-
-        return true;
-    }
-
-    private function getVendorKey($key)
-    {
-        $keyParts = explode('.', $key, 4);
-        unset($keyParts[0]);
-
-        return $keyParts[2] .'.'. $keyParts[1] . '::' . $keyParts[3];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

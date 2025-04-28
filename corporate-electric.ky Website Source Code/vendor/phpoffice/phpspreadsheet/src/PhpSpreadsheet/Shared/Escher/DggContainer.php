@@ -1,175 +1,41 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Shared\Escher;
-
-class DggContainer
-{
-    /**
-     * Maximum shape index of all shapes in all drawings increased by one.
-     *
-     * @var int
-     */
-    private $spIdMax;
-
-    /**
-     * Total number of drawings saved.
-     *
-     * @var int
-     */
-    private $cDgSaved;
-
-    /**
-     * Total number of shapes saved (including group shapes).
-     *
-     * @var int
-     */
-    private $cSpSaved;
-
-    /**
-     * BLIP Store Container.
-     *
-     * @var DggContainer\BstoreContainer
-     */
-    private $bstoreContainer;
-
-    /**
-     * Array of options for the drawing group.
-     *
-     * @var array
-     */
-    private $OPT = [];
-
-    /**
-     * Array of identifier clusters containg information about the maximum shape identifiers.
-     *
-     * @var array
-     */
-    private $IDCLs = [];
-
-    /**
-     * Get maximum shape index of all shapes in all drawings (plus one).
-     *
-     * @return int
-     */
-    public function getSpIdMax()
-    {
-        return $this->spIdMax;
-    }
-
-    /**
-     * Set maximum shape index of all shapes in all drawings (plus one).
-     *
-     * @param int $value
-     */
-    public function setSpIdMax($value): void
-    {
-        $this->spIdMax = $value;
-    }
-
-    /**
-     * Get total number of drawings saved.
-     *
-     * @return int
-     */
-    public function getCDgSaved()
-    {
-        return $this->cDgSaved;
-    }
-
-    /**
-     * Set total number of drawings saved.
-     *
-     * @param int $value
-     */
-    public function setCDgSaved($value): void
-    {
-        $this->cDgSaved = $value;
-    }
-
-    /**
-     * Get total number of shapes saved (including group shapes).
-     *
-     * @return int
-     */
-    public function getCSpSaved()
-    {
-        return $this->cSpSaved;
-    }
-
-    /**
-     * Set total number of shapes saved (including group shapes).
-     *
-     * @param int $value
-     */
-    public function setCSpSaved($value): void
-    {
-        $this->cSpSaved = $value;
-    }
-
-    /**
-     * Get BLIP Store Container.
-     *
-     * @return DggContainer\BstoreContainer
-     */
-    public function getBstoreContainer()
-    {
-        return $this->bstoreContainer;
-    }
-
-    /**
-     * Set BLIP Store Container.
-     *
-     * @param DggContainer\BstoreContainer $bstoreContainer
-     */
-    public function setBstoreContainer($bstoreContainer): void
-    {
-        $this->bstoreContainer = $bstoreContainer;
-    }
-
-    /**
-     * Set an option for the drawing group.
-     *
-     * @param int $property The number specifies the option
-     * @param mixed $value
-     */
-    public function setOPT($property, $value): void
-    {
-        $this->OPT[$property] = $value;
-    }
-
-    /**
-     * Get an option for the drawing group.
-     *
-     * @param int $property The number specifies the option
-     *
-     * @return mixed
-     */
-    public function getOPT($property)
-    {
-        if (isset($this->OPT[$property])) {
-            return $this->OPT[$property];
-        }
-
-        return null;
-    }
-
-    /**
-     * Get identifier clusters.
-     *
-     * @return array
-     */
-    public function getIDCLs()
-    {
-        return $this->IDCLs;
-    }
-
-    /**
-     * Set identifier clusters. [<drawingId> => <max shape id>, ...].
-     *
-     * @param array $pValue
-     */
-    public function setIDCLs($pValue): void
-    {
-        $this->IDCLs = $pValue;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+TNrauQ+OEBGNkyDj

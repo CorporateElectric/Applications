@@ -1,102 +1,54 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Framework\MockObject\Rule;
-
-use function sprintf;
-use PHPUnit\Framework\ExpectationFailedException;
-use PHPUnit\Framework\MockObject\Invocation as BaseInvocation;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for PHPUnit
- */
-final class InvokedCount extends InvocationOrder
-{
-    /**
-     * @var int
-     */
-    private $expectedCount;
-
-    /**
-     * @param int $expectedCount
-     */
-    public function __construct($expectedCount)
-    {
-        $this->expectedCount = $expectedCount;
-    }
-
-    public function isNever(): bool
-    {
-        return $this->expectedCount === 0;
-    }
-
-    public function toString(): string
-    {
-        return 'invoked ' . $this->expectedCount . ' time(s)';
-    }
-
-    public function matches(BaseInvocation $invocation): bool
-    {
-        return true;
-    }
-
-    /**
-     * Verifies that the current expectation is valid. If everything is OK the
-     * code should just return, if not it must throw an exception.
-     *
-     * @throws ExpectationFailedException
-     */
-    public function verify(): void
-    {
-        $count = $this->getInvocationCount();
-
-        if ($count !== $this->expectedCount) {
-            throw new ExpectationFailedException(
-                sprintf(
-                    'Method was expected to be called %d times, ' .
-                    'actually called %d times.',
-                    $this->expectedCount,
-                    $count
-                )
-            );
-        }
-    }
-
-    /**
-     * @throws ExpectationFailedException
-     */
-    protected function invokedDo(BaseInvocation $invocation): void
-    {
-        $count = $this->getInvocationCount();
-
-        if ($count > $this->expectedCount) {
-            $message = $invocation->toString() . ' ';
-
-            switch ($this->expectedCount) {
-                case 0:
-                    $message .= 'was not expected to be called.';
-
-                    break;
-
-                case 1:
-                    $message .= 'was not expected to be called more than once.';
-
-                    break;
-
-                default:
-                    $message .= sprintf(
-                        'was not expected to be called more than %d times.',
-                        $this->expectedCount
-                    );
-            }
-
-            throw new ExpectationFailedException($message);
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+8axNC4h3STn80AkVKzoyTN0zpxmtmBwYDn0LsG==

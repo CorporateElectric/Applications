@@ -1,146 +1,73 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\Command\ListCommand;
-
-use Symfony\Component\Console\Input\InputInterface;
-
-/**
- * Method Enumerator class.
- */
-class MethodEnumerator extends Enumerator
-{
-    /**
-     * {@inheritdoc}
-     */
-    protected function listItems(InputInterface $input, \Reflector $reflector = null, $target = null)
-    {
-        // only list methods when a Reflector is present.
-        if ($reflector === null) {
-            return [];
-        }
-
-        // We can only list methods on actual class (or object) reflectors.
-        if (!$reflector instanceof \ReflectionClass) {
-            return [];
-        }
-
-        // only list methods if we are specifically asked
-        if (!$input->getOption('methods')) {
-            return [];
-        }
-
-        $showAll = $input->getOption('all');
-        $noInherit = $input->getOption('no-inherit');
-        $methods = $this->prepareMethods($this->getMethods($showAll, $reflector, $noInherit));
-
-        if (empty($methods)) {
-            return [];
-        }
-
-        $ret = [];
-        $ret[$this->getKindLabel($reflector)] = $methods;
-
-        return $ret;
-    }
-
-    /**
-     * Get defined methods for the given class or object Reflector.
-     *
-     * @param bool       $showAll   Include private and protected methods
-     * @param \Reflector $reflector
-     * @param bool       $noInherit Exclude inherited methods
-     *
-     * @return array
-     */
-    protected function getMethods($showAll, \Reflector $reflector, $noInherit = false)
-    {
-        $className = $reflector->getName();
-
-        $methods = [];
-        foreach ($reflector->getMethods() as $name => $method) {
-            // For some reason PHP reflection shows private methods from the parent class, even
-            // though they're effectively worthless. Let's suppress them here, like --no-inherit
-            if (($noInherit || $method->isPrivate()) && $method->getDeclaringClass()->getName() !== $className) {
-                continue;
-            }
-
-            if ($showAll || $method->isPublic()) {
-                $methods[$method->getName()] = $method;
-            }
-        }
-
-        \ksort($methods, \SORT_NATURAL | \SORT_FLAG_CASE);
-
-        return $methods;
-    }
-
-    /**
-     * Prepare formatted method array.
-     *
-     * @param array $methods
-     *
-     * @return array
-     */
-    protected function prepareMethods(array $methods)
-    {
-        // My kingdom for a generator.
-        $ret = [];
-
-        foreach ($methods as $name => $method) {
-            if ($this->showItem($name)) {
-                $ret[$name] = [
-                    'name'  => $name,
-                    'style' => $this->getVisibilityStyle($method),
-                    'value' => $this->presentSignature($method),
-                ];
-            }
-        }
-
-        return $ret;
-    }
-
-    /**
-     * Get a label for the particular kind of "class" represented.
-     *
-     * @param \ReflectionClass $reflector
-     *
-     * @return string
-     */
-    protected function getKindLabel(\ReflectionClass $reflector)
-    {
-        if ($reflector->isInterface()) {
-            return 'Interface Methods';
-        } elseif (\method_exists($reflector, 'isTrait') && $reflector->isTrait()) {
-            return 'Trait Methods';
-        } else {
-            return 'Class Methods';
-        }
-    }
-
-    /**
-     * Get output style for the given method's visibility.
-     *
-     * @param \ReflectionMethod $method
-     *
-     * @return string
-     */
-    private function getVisibilityStyle(\ReflectionMethod $method)
-    {
-        if ($method->isPublic()) {
-            return self::IS_PUBLIC;
-        } elseif ($method->isProtected()) {
-            return self::IS_PROTECTED;
-        } else {
-            return self::IS_PRIVATE;
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,99 +1,40 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Translation\Util;
-
-/**
- * ArrayConverter generates tree like structure from a message catalogue.
- * e.g. this
- *   'foo.bar1' => 'test1',
- *   'foo.bar2' => 'test2'
- * converts to follows:
- *   foo:
- *     bar1: test1
- *     bar2: test2.
- *
- * @author Gennady Telegin <gtelegin@gmail.com>
- */
-class ArrayConverter
-{
-    /**
-     * Converts linear messages array to tree-like array.
-     * For example this array('foo.bar' => 'value') will be converted to ['foo' => ['bar' => 'value']].
-     *
-     * @param array $messages Linear messages array
-     *
-     * @return array Tree-like messages array
-     */
-    public static function expandToTree(array $messages)
-    {
-        $tree = [];
-
-        foreach ($messages as $id => $value) {
-            $referenceToElement = &self::getElementByPath($tree, explode('.', $id));
-
-            $referenceToElement = $value;
-
-            unset($referenceToElement);
-        }
-
-        return $tree;
-    }
-
-    private static function &getElementByPath(array &$tree, array $parts)
-    {
-        $elem = &$tree;
-        $parentOfElem = null;
-
-        foreach ($parts as $i => $part) {
-            if (isset($elem[$part]) && \is_string($elem[$part])) {
-                /* Process next case:
-                 *    'foo': 'test1',
-                 *    'foo.bar': 'test2'
-                 *
-                 * $tree['foo'] was string before we found array {bar: test2}.
-                 *  Treat new element as string too, e.g. add $tree['foo.bar'] = 'test2';
-                 */
-                $elem = &$elem[implode('.', \array_slice($parts, $i))];
-                break;
-            }
-            $parentOfElem = &$elem;
-            $elem = &$elem[$part];
-        }
-
-        if ($elem && \is_array($elem) && $parentOfElem) {
-            /* Process next case:
-             *    'foo.bar': 'test1'
-             *    'foo': 'test2'
-             *
-             * $tree['foo'] was array = {bar: 'test1'} before we found string constant `foo`.
-             * Cancel treating $tree['foo'] as array and cancel back it expansion,
-             *  e.g. make it $tree['foo.bar'] = 'test1' again.
-             */
-            self::cancelExpand($parentOfElem, $part, $elem);
-        }
-
-        return $elem;
-    }
-
-    private static function cancelExpand(array &$tree, string $prefix, array $node)
-    {
-        $prefix .= '.';
-
-        foreach ($node as $id => $value) {
-            if (\is_string($value)) {
-                $tree[$prefix.$id] = $value;
-            } else {
-                self::cancelExpand($tree, $prefix.$id, $value);
-            }
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+13LJmzfAbZDvMQy1XEvo

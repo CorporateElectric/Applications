@@ -1,64 +1,56 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\VarDumper\Caster;
-
-use Symfony\Component\VarDumper\Cloner\Stub;
-
-/**
- * Represents the main properties of a PHP variable, pre-casted by a caster.
- *
- * @author Nicolas Grekas <p@tchwork.com>
- */
-class CutStub extends Stub
-{
-    public function __construct($value)
-    {
-        $this->value = $value;
-
-        switch (\gettype($value)) {
-            case 'object':
-                $this->type = self::TYPE_OBJECT;
-                $this->class = \get_class($value);
-
-                if ($value instanceof \Closure) {
-                    ReflectionCaster::castClosure($value, [], $this, true, Caster::EXCLUDE_VERBOSE);
-                }
-
-                $this->cut = -1;
-                break;
-
-            case 'array':
-                $this->type = self::TYPE_ARRAY;
-                $this->class = self::ARRAY_ASSOC;
-                $this->cut = $this->value = \count($value);
-                break;
-
-            case 'resource':
-            case 'unknown type':
-            case 'resource (closed)':
-                $this->type = self::TYPE_RESOURCE;
-                $this->handle = (int) $value;
-                if ('Unknown' === $this->class = @get_resource_type($value)) {
-                    $this->class = 'Closed';
-                }
-                $this->cut = -1;
-                break;
-
-            case 'string':
-                $this->type = self::TYPE_STRING;
-                $this->class = preg_match('//u', $value) ? self::STRING_UTF8 : self::STRING_BINARY;
-                $this->cut = self::STRING_BINARY === $this->class ? \strlen($value) : mb_strlen($value, 'UTF-8');
-                $this->value = '';
-                break;
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

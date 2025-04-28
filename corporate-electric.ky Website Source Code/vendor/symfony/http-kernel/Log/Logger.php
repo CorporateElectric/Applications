@@ -1,115 +1,103 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpKernel\Log;
-
-use Psr\Log\AbstractLogger;
-use Psr\Log\InvalidArgumentException;
-use Psr\Log\LogLevel;
-
-/**
- * Minimalist PSR-3 logger designed to write in stderr or any other stream.
- *
- * @author Kévin Dunglas <dunglas@gmail.com>
- */
-class Logger extends AbstractLogger
-{
-    private static $levels = [
-        LogLevel::DEBUG => 0,
-        LogLevel::INFO => 1,
-        LogLevel::NOTICE => 2,
-        LogLevel::WARNING => 3,
-        LogLevel::ERROR => 4,
-        LogLevel::CRITICAL => 5,
-        LogLevel::ALERT => 6,
-        LogLevel::EMERGENCY => 7,
-    ];
-
-    private $minLevelIndex;
-    private $formatter;
-    private $handle;
-
-    public function __construct(string $minLevel = null, $output = null, callable $formatter = null)
-    {
-        if (null === $minLevel) {
-            $minLevel = null === $output || 'php://stdout' === $output || 'php://stderr' === $output ? LogLevel::ERROR : LogLevel::WARNING;
-
-            if (isset($_ENV['SHELL_VERBOSITY']) || isset($_SERVER['SHELL_VERBOSITY'])) {
-                switch ((int) (isset($_ENV['SHELL_VERBOSITY']) ? $_ENV['SHELL_VERBOSITY'] : $_SERVER['SHELL_VERBOSITY'])) {
-                    case -1: $minLevel = LogLevel::ERROR; break;
-                    case 1: $minLevel = LogLevel::NOTICE; break;
-                    case 2: $minLevel = LogLevel::INFO; break;
-                    case 3: $minLevel = LogLevel::DEBUG; break;
-                }
-            }
-        }
-
-        if (!isset(self::$levels[$minLevel])) {
-            throw new InvalidArgumentException(sprintf('The log level "%s" does not exist.', $minLevel));
-        }
-
-        $this->minLevelIndex = self::$levels[$minLevel];
-        $this->formatter = $formatter ?: [$this, 'format'];
-        if ($output && false === $this->handle = \is_resource($output) ? $output : @fopen($output, 'a')) {
-            throw new InvalidArgumentException(sprintf('Unable to open "%s".', $output));
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * @return void
-     */
-    public function log($level, $message, array $context = [])
-    {
-        if (!isset(self::$levels[$level])) {
-            throw new InvalidArgumentException(sprintf('The log level "%s" does not exist.', $level));
-        }
-
-        if (self::$levels[$level] < $this->minLevelIndex) {
-            return;
-        }
-
-        $formatter = $this->formatter;
-        if ($this->handle) {
-            @fwrite($this->handle, $formatter($level, $message, $context));
-        } else {
-            error_log($formatter($level, $message, $context, false));
-        }
-    }
-
-    private function format(string $level, string $message, array $context, bool $prefixDate = true): string
-    {
-        if (false !== strpos($message, '{')) {
-            $replacements = [];
-            foreach ($context as $key => $val) {
-                if (null === $val || is_scalar($val) || (\is_object($val) && method_exists($val, '__toString'))) {
-                    $replacements["{{$key}}"] = $val;
-                } elseif ($val instanceof \DateTimeInterface) {
-                    $replacements["{{$key}}"] = $val->format(\DateTime::RFC3339);
-                } elseif (\is_object($val)) {
-                    $replacements["{{$key}}"] = '[object '.\get_class($val).']';
-                } else {
-                    $replacements["{{$key}}"] = '['.\gettype($val).']';
-                }
-            }
-
-            $message = strtr($message, $replacements);
-        }
-
-        $log = sprintf('[%s] %s', $level, $message).\PHP_EOL;
-        if ($prefixDate) {
-            $log = date(\DateTime::RFC3339).' '.$log;
-        }
-
-        return $log;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+JQk3rI7jKcqk9RXI06qYUb5WobE8eaUA9Qy=

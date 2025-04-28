@@ -1,65 +1,41 @@
-<?php
-
-/*
- * This file is part of the Prophecy.
- * (c) Konstantin Kudryashov <ever.zet@gmail.com>
- *     Marcello Duarte <marcello.duarte@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Prophecy\Prediction;
-
-use Prophecy\Call\Call;
-use Prophecy\Prophecy\ObjectProphecy;
-use Prophecy\Prophecy\MethodProphecy;
-use Prophecy\Exception\InvalidArgumentException;
-use Closure;
-
-/**
- * Callback prediction.
- *
- * @author Konstantin Kudryashov <ever.zet@gmail.com>
- */
-class CallbackPrediction implements PredictionInterface
-{
-    private $callback;
-
-    /**
-     * Initializes callback prediction.
-     *
-     * @param callable $callback Custom callback
-     *
-     * @throws \Prophecy\Exception\InvalidArgumentException
-     */
-    public function __construct($callback)
-    {
-        if (!is_callable($callback)) {
-            throw new InvalidArgumentException(sprintf(
-                'Callable expected as an argument to CallbackPrediction, but got %s.',
-                gettype($callback)
-            ));
-        }
-
-        $this->callback = $callback;
-    }
-
-    /**
-     * Executes preset callback.
-     *
-     * @param Call[]         $calls
-     * @param ObjectProphecy $object
-     * @param MethodProphecy $method
-     */
-    public function check(array $calls, ObjectProphecy $object, MethodProphecy $method)
-    {
-        $callback = $this->callback;
-
-        if ($callback instanceof Closure && method_exists('Closure', 'bind')) {
-            $callback = Closure::bind($callback, $object);
-        }
-
-        call_user_func($callback, $calls, $object, $method);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+vg+q1RzfmhcajLVg

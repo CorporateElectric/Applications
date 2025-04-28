@@ -1,96 +1,72 @@
-<?php
-
-/**
- * Provides lookup array of attribute types to HTMLPurifier_AttrDef objects
- */
-class HTMLPurifier_AttrTypes
-{
-    /**
-     * Lookup array of attribute string identifiers to concrete implementations.
-     * @type HTMLPurifier_AttrDef[]
-     */
-    protected $info = array();
-
-    /**
-     * Constructs the info array, supplying default implementations for attribute
-     * types.
-     */
-    public function __construct()
-    {
-        // XXX This is kind of poor, since we don't actually /clone/
-        // instances; instead, we use the supplied make() attribute. So,
-        // the underlying class must know how to deal with arguments.
-        // With the old implementation of Enum, that ignored its
-        // arguments when handling a make dispatch, the IAlign
-        // definition wouldn't work.
-
-        // pseudo-types, must be instantiated via shorthand
-        $this->info['Enum']    = new HTMLPurifier_AttrDef_Enum();
-        $this->info['Bool']    = new HTMLPurifier_AttrDef_HTML_Bool();
-
-        $this->info['CDATA']    = new HTMLPurifier_AttrDef_Text();
-        $this->info['ID']       = new HTMLPurifier_AttrDef_HTML_ID();
-        $this->info['Length']   = new HTMLPurifier_AttrDef_HTML_Length();
-        $this->info['MultiLength'] = new HTMLPurifier_AttrDef_HTML_MultiLength();
-        $this->info['NMTOKENS'] = new HTMLPurifier_AttrDef_HTML_Nmtokens();
-        $this->info['Pixels']   = new HTMLPurifier_AttrDef_HTML_Pixels();
-        $this->info['Text']     = new HTMLPurifier_AttrDef_Text();
-        $this->info['URI']      = new HTMLPurifier_AttrDef_URI();
-        $this->info['LanguageCode'] = new HTMLPurifier_AttrDef_Lang();
-        $this->info['Color']    = new HTMLPurifier_AttrDef_HTML_Color();
-        $this->info['IAlign']   = self::makeEnum('top,middle,bottom,left,right');
-        $this->info['LAlign']   = self::makeEnum('top,bottom,left,right');
-        $this->info['FrameTarget'] = new HTMLPurifier_AttrDef_HTML_FrameTarget();
-
-        // unimplemented aliases
-        $this->info['ContentType'] = new HTMLPurifier_AttrDef_Text();
-        $this->info['ContentTypes'] = new HTMLPurifier_AttrDef_Text();
-        $this->info['Charsets'] = new HTMLPurifier_AttrDef_Text();
-        $this->info['Character'] = new HTMLPurifier_AttrDef_Text();
-
-        // "proprietary" types
-        $this->info['Class'] = new HTMLPurifier_AttrDef_HTML_Class();
-
-        // number is really a positive integer (one or more digits)
-        // FIXME: ^^ not always, see start and value of list items
-        $this->info['Number']   = new HTMLPurifier_AttrDef_Integer(false, false, true);
-    }
-
-    private static function makeEnum($in)
-    {
-        return new HTMLPurifier_AttrDef_Clone(new HTMLPurifier_AttrDef_Enum(explode(',', $in)));
-    }
-
-    /**
-     * Retrieves a type
-     * @param string $type String type name
-     * @return HTMLPurifier_AttrDef Object AttrDef for type
-     */
-    public function get($type)
-    {
-        // determine if there is any extra info tacked on
-        if (strpos($type, '#') !== false) {
-            list($type, $string) = explode('#', $type, 2);
-        } else {
-            $string = '';
-        }
-
-        if (!isset($this->info[$type])) {
-            trigger_error('Cannot retrieve undefined attribute type ' . $type, E_USER_ERROR);
-            return;
-        }
-        return $this->info[$type]->make($string);
-    }
-
-    /**
-     * Sets a new implementation for a type
-     * @param string $type String type name
-     * @param HTMLPurifier_AttrDef $impl Object AttrDef for type
-     */
-    public function set($type, $impl)
-    {
-        $this->info[$type] = $impl;
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

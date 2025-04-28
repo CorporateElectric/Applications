@@ -1,408 +1,173 @@
-<?php
-
-namespace Illuminate\Cache;
-
-use Aws\DynamoDb\DynamoDbClient;
-use Closure;
-use Illuminate\Contracts\Cache\Factory as FactoryContract;
-use Illuminate\Contracts\Cache\Store;
-use Illuminate\Contracts\Events\Dispatcher as DispatcherContract;
-use Illuminate\Support\Arr;
-use InvalidArgumentException;
-
-/**
- * @mixin \Illuminate\Contracts\Cache\Repository
- */
-class CacheManager implements FactoryContract
-{
-    /**
-     * The application instance.
-     *
-     * @var \Illuminate\Contracts\Foundation\Application
-     */
-    protected $app;
-
-    /**
-     * The array of resolved cache stores.
-     *
-     * @var array
-     */
-    protected $stores = [];
-
-    /**
-     * The registered custom driver creators.
-     *
-     * @var array
-     */
-    protected $customCreators = [];
-
-    /**
-     * Create a new Cache manager instance.
-     *
-     * @param  \Illuminate\Contracts\Foundation\Application  $app
-     * @return void
-     */
-    public function __construct($app)
-    {
-        $this->app = $app;
-    }
-
-    /**
-     * Get a cache store instance by name, wrapped in a repository.
-     *
-     * @param  string|null  $name
-     * @return \Illuminate\Contracts\Cache\Repository
-     */
-    public function store($name = null)
-    {
-        $name = $name ?: $this->getDefaultDriver();
-
-        return $this->stores[$name] = $this->get($name);
-    }
-
-    /**
-     * Get a cache driver instance.
-     *
-     * @param  string|null  $driver
-     * @return \Illuminate\Contracts\Cache\Repository
-     */
-    public function driver($driver = null)
-    {
-        return $this->store($driver);
-    }
-
-    /**
-     * Attempt to get the store from the local cache.
-     *
-     * @param  string  $name
-     * @return \Illuminate\Contracts\Cache\Repository
-     */
-    protected function get($name)
-    {
-        return $this->stores[$name] ?? $this->resolve($name);
-    }
-
-    /**
-     * Resolve the given store.
-     *
-     * @param  string  $name
-     * @return \Illuminate\Contracts\Cache\Repository
-     *
-     * @throws \InvalidArgumentException
-     */
-    protected function resolve($name)
-    {
-        $config = $this->getConfig($name);
-
-        if (is_null($config)) {
-            throw new InvalidArgumentException("Cache store [{$name}] is not defined.");
-        }
-
-        if (isset($this->customCreators[$config['driver']])) {
-            return $this->callCustomCreator($config);
-        } else {
-            $driverMethod = 'create'.ucfirst($config['driver']).'Driver';
-
-            if (method_exists($this, $driverMethod)) {
-                return $this->{$driverMethod}($config);
-            } else {
-                throw new InvalidArgumentException("Driver [{$config['driver']}] is not supported.");
-            }
-        }
-    }
-
-    /**
-     * Call a custom driver creator.
-     *
-     * @param  array  $config
-     * @return mixed
-     */
-    protected function callCustomCreator(array $config)
-    {
-        return $this->customCreators[$config['driver']]($this->app, $config);
-    }
-
-    /**
-     * Create an instance of the APC cache driver.
-     *
-     * @param  array  $config
-     * @return \Illuminate\Cache\Repository
-     */
-    protected function createApcDriver(array $config)
-    {
-        $prefix = $this->getPrefix($config);
-
-        return $this->repository(new ApcStore(new ApcWrapper, $prefix));
-    }
-
-    /**
-     * Create an instance of the array cache driver.
-     *
-     * @param  array  $config
-     * @return \Illuminate\Cache\Repository
-     */
-    protected function createArrayDriver(array $config)
-    {
-        return $this->repository(new ArrayStore($config['serialize'] ?? false));
-    }
-
-    /**
-     * Create an instance of the file cache driver.
-     *
-     * @param  array  $config
-     * @return \Illuminate\Cache\Repository
-     */
-    protected function createFileDriver(array $config)
-    {
-        return $this->repository(new FileStore($this->app['files'], $config['path'], $config['permission'] ?? null));
-    }
-
-    /**
-     * Create an instance of the Memcached cache driver.
-     *
-     * @param  array  $config
-     * @return \Illuminate\Cache\Repository
-     */
-    protected function createMemcachedDriver(array $config)
-    {
-        $prefix = $this->getPrefix($config);
-
-        $memcached = $this->app['memcached.connector']->connect(
-            $config['servers'],
-            $config['persistent_id'] ?? null,
-            $config['options'] ?? [],
-            array_filter($config['sasl'] ?? [])
-        );
-
-        return $this->repository(new MemcachedStore($memcached, $prefix));
-    }
-
-    /**
-     * Create an instance of the Null cache driver.
-     *
-     * @return \Illuminate\Cache\Repository
-     */
-    protected function createNullDriver()
-    {
-        return $this->repository(new NullStore);
-    }
-
-    /**
-     * Create an instance of the Redis cache driver.
-     *
-     * @param  array  $config
-     * @return \Illuminate\Cache\Repository
-     */
-    protected function createRedisDriver(array $config)
-    {
-        $redis = $this->app['redis'];
-
-        $connection = $config['connection'] ?? 'default';
-
-        $store = new RedisStore($redis, $this->getPrefix($config), $connection);
-
-        return $this->repository(
-            $store->setLockConnection($config['lock_connection'] ?? $connection)
-        );
-    }
-
-    /**
-     * Create an instance of the database cache driver.
-     *
-     * @param  array  $config
-     * @return \Illuminate\Cache\Repository
-     */
-    protected function createDatabaseDriver(array $config)
-    {
-        $connection = $this->app['db']->connection($config['connection'] ?? null);
-
-        $store = new DatabaseStore(
-            $connection,
-            $config['table'],
-            $this->getPrefix($config),
-            $config['lock_table'] ?? 'cache_locks',
-            $config['lock_lottery'] ?? [2, 100]
-        );
-
-        return $this->repository($store->setLockConnection(
-            $this->app['db']->connection($config['lock_connection'] ?? $config['connection'] ?? null)
-        ));
-    }
-
-    /**
-     * Create an instance of the DynamoDB cache driver.
-     *
-     * @param  array  $config
-     * @return \Illuminate\Cache\Repository
-     */
-    protected function createDynamodbDriver(array $config)
-    {
-        $dynamoConfig = [
-            'region' => $config['region'],
-            'version' => 'latest',
-            'endpoint' => $config['endpoint'] ?? null,
-        ];
-
-        if ($config['key'] && $config['secret']) {
-            $dynamoConfig['credentials'] = Arr::only(
-                $config, ['key', 'secret', 'token']
-            );
-        }
-
-        return $this->repository(
-            new DynamoDbStore(
-                new DynamoDbClient($dynamoConfig),
-                $config['table'],
-                $config['attributes']['key'] ?? 'key',
-                $config['attributes']['value'] ?? 'value',
-                $config['attributes']['expiration'] ?? 'expires_at',
-                $this->getPrefix($config)
-            )
-        );
-    }
-
-    /**
-     * Create a new cache repository with the given implementation.
-     *
-     * @param  \Illuminate\Contracts\Cache\Store  $store
-     * @return \Illuminate\Cache\Repository
-     */
-    public function repository(Store $store)
-    {
-        return tap(new Repository($store), function ($repository) {
-            $this->setEventDispatcher($repository);
-        });
-    }
-
-    /**
-     * Set the event dispatcher on the given repository instance.
-     *
-     * @param  \Illuminate\Cache\Repository  $repository
-     * @return void
-     */
-    protected function setEventDispatcher(Repository $repository)
-    {
-        if (! $this->app->bound(DispatcherContract::class)) {
-            return;
-        }
-
-        $repository->setEventDispatcher(
-            $this->app[DispatcherContract::class]
-        );
-    }
-
-    /**
-     * Re-set the event dispatcher on all resolved cache repositories.
-     *
-     * @return void
-     */
-    public function refreshEventDispatcher()
-    {
-        array_map([$this, 'setEventDispatcher'], $this->stores);
-    }
-
-    /**
-     * Get the cache prefix.
-     *
-     * @param  array  $config
-     * @return string
-     */
-    protected function getPrefix(array $config)
-    {
-        return $config['prefix'] ?? $this->app['config']['cache.prefix'];
-    }
-
-    /**
-     * Get the cache connection configuration.
-     *
-     * @param  string  $name
-     * @return array
-     */
-    protected function getConfig($name)
-    {
-        if (! is_null($name) && $name !== 'null') {
-            return $this->app['config']["cache.stores.{$name}"];
-        }
-
-        return ['driver' => 'null'];
-    }
-
-    /**
-     * Get the default cache driver name.
-     *
-     * @return string
-     */
-    public function getDefaultDriver()
-    {
-        return $this->app['config']['cache.default'];
-    }
-
-    /**
-     * Set the default cache driver name.
-     *
-     * @param  string  $name
-     * @return void
-     */
-    public function setDefaultDriver($name)
-    {
-        $this->app['config']['cache.default'] = $name;
-    }
-
-    /**
-     * Unset the given driver instances.
-     *
-     * @param  array|string|null  $name
-     * @return $this
-     */
-    public function forgetDriver($name = null)
-    {
-        $name = $name ?? $this->getDefaultDriver();
-
-        foreach ((array) $name as $cacheName) {
-            if (isset($this->stores[$cacheName])) {
-                unset($this->stores[$cacheName]);
-            }
-        }
-
-        return $this;
-    }
-
-    /**
-     * Disconnect the given driver and remove from local cache.
-     *
-     * @param  string|null  $name
-     * @return void
-     */
-    public function purge($name = null)
-    {
-        $name = $name ?? $this->getDefaultDriver();
-
-        unset($this->stores[$name]);
-    }
-
-    /**
-     * Register a custom driver creator Closure.
-     *
-     * @param  string  $driver
-     * @param  \Closure  $callback
-     * @return $this
-     */
-    public function extend($driver, Closure $callback)
-    {
-        $this->customCreators[$driver] = $callback->bindTo($this, $this);
-
-        return $this;
-    }
-
-    /**
-     * Dynamically call the default driver instance.
-     *
-     * @param  string  $method
-     * @param  array  $parameters
-     * @return mixed
-     */
-    public function __call($method, $parameters)
-    {
-        return $this->store()->$method(...$parameters);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+I63/ImBp1AkGBCKh

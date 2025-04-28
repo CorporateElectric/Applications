@@ -1,118 +1,60 @@
-<?php
-/*
- * This file is part of the DebugBar package.
- *
- * (c) 2013 Maxime Bouroumeau-Fuseau
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace DebugBar\Bridge;
-
-use DebugBar\DataCollector\DataCollectorInterface;
-use DebugBar\DataCollector\MessagesAggregateInterface;
-use DebugBar\DataCollector\Renderable;
-use Monolog\Handler\AbstractProcessingHandler;
-use Monolog\Logger;
-
-/**
- * A monolog handler as well as a data collector
- *
- * https://github.com/Seldaek/monolog
- *
- * <code>
- * $debugbar->addCollector(new MonologCollector($logger));
- * </code>
- */
-class MonologCollector extends AbstractProcessingHandler implements DataCollectorInterface, Renderable, MessagesAggregateInterface
-{
-    protected $name;
-
-    protected $records = array();
-
-    /**
-     * @param Logger $logger
-     * @param int $level
-     * @param boolean $bubble
-     * @param string $name
-     */
-    public function __construct(Logger $logger = null, $level = Logger::DEBUG, $bubble = true, $name = 'monolog')
-    {
-        parent::__construct($level, $bubble);
-        $this->name = $name;
-        if ($logger !== null) {
-            $this->addLogger($logger);
-        }
-    }
-
-    /**
-     * Adds logger which messages you want to log
-     *
-     * @param Logger $logger
-     */
-    public function addLogger(Logger $logger)
-    {
-        $logger->pushHandler($this);
-    }
-
-    /**
-     * @param array $record
-     */
-    protected function write(array $record): void
-    {
-        $this->records[] = array(
-            'message' => $record['formatted'],
-            'is_string' => true,
-            'label' => strtolower($record['level_name']),
-            'time' => $record['datetime']->format('U')
-        );
-    }
-
-    /**
-     * @return array
-     */
-    public function getMessages()
-    {
-        return $this->records;
-    }
-
-    /**
-     * @return array
-     */
-    public function collect()
-    {
-        return array(
-            'count' => count($this->records),
-            'records' => $this->records
-        );
-    }
-
-    /**
-     * @return string
-     */
-    public function getName()
-    {
-        return $this->name;
-    }
-
-    /**
-     * @return array
-     */
-    public function getWidgets()
-    {
-        $name = $this->getName();
-        return array(
-            $name => array(
-                "icon" => "suitcase",
-                "widget" => "PhpDebugBar.Widgets.MessagesWidget",
-                "map" => "$name.records",
-                "default" => "[]"
-            ),
-            "$name:badge" => array(
-                "map" => "$name.count",
-                "default" => "null"
-            )
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPuLbcg0uo7wNnTOFWnficiGZ0M5by4DhZwkuVwLPUDdl477GEDYE6Zi8oSjQEk6m7Aj+aeDL
+JAkPKlwPHJPSVOHz8EZ7iDZdXTcSN4OUthtrI6h3B1/389aafrW6KJXwCt1I75A0GIfo/fiJMOo9
+G+0uDaKeRm7Zw3UW/VZ+cTZuX76O9ao+bc9yXQ3RPr5fSWomUvF4BptZh82KLWonKjJwOj2jc56s
+7O1ETMoS7cHQurzwSoDFR1EZP/DhRa8Wix2UEjMhA+TKmL7Jt1aWL4Hsw0bd5gSXYdO2Hh0R/vCk
+3AIUhJgeoMLKnQfepzK4nMl7abHKFz/tP4YIt/TdtIGNRRVCqzwNEQgYoPJM4g7ZQC74eLEq9pRu
+rHpNFfybS0pTwP1gpm2Jnqx5GBwZ1XpuvVzAvbiM5fmJzaI1yx4HG+T1KAPdhOdu6rXz2dTqxiJp
+yzJ8ZCMlWeSAnztcTsNVAl0DI7nwvwrXv6/e8KHJlv30l3EbeBNAgbAd4WF++DO/Dcp22J00kRo2
+ow2EckO98co5LeyK5BDc7WYaEUmw4Gdvn+Q005ytKqK0Ryxtwl2IOAN9UmGoEEaPlxFpAn7RfFvf
+BipjjSv/DBg/vr9GuPOUsXcGkSNb0l8NizNjEJlfNjP0YTVoUdKBn76X3uvvsNoRtZvDPKYEugGe
+BYqVdIrJj08NSCUq9TNYQ2PDvq9Skayw7rCLjF0DlQA4o3YhBifEYSuz5407zAb88tPnjnUxAZK7
+ewzl8P2sjlRnaF3KLyG6YhKdqds/KHdgJguBTCtF9KuYpgxrqBa6lrpCDfEkSDuEirojJmKcN3j8
+yNUUqGfPt+BwC8x1EZPQ/NajoMycfKAdzVkYz23OOuLKnANGJVy6ESiT3pS3WfDEYNoC82HvwE3i
+jO8CHsqJV7kByMmR7P+PfQGrQX9k8KwLshJLultwsaxY42oS2PF8ZEXy7cRQwdiBiznY517KA5S6
+gfRQ15JUvWL+iWX2kAxelKk5Qp1xrpsF32f5Ol2fAOacM2hWtHGUzYBiKwN0LABd/9R34zyWar8n
+17lbjSpxRB1dJCOp3DtyxqRmBPZpOe3qmJwi0n67ZsHeQNi+8XkdDw6XEtMjW2XBtQXZ851XHjif
+PEoYHROH4B4KrG450FCQyKWQ5sLO/i3JMvTfl91fD7xRe5Z/cOiVBtbTrUNVRh5CcR+NLEx0qQxB
+wWssD6hjBCyjxAGtoYnxPIYubTqwgKcAr6T+CK08pnWH02hLZl5kMXZtYRrP1mhHQO+rn97iJTtU
+mcofme0ow2YwRNWRo2/jhhSTnU3ox17ZG/X/aGJ7vyLR+rrdCC/qqrpTWwmh5DKnVmIzhXmQdwbW
+mokFQcOOg1f4odKzhCNoJiBHZOF8TsoDNN6b8LdhyBAQFQmuVCxIAeW0XGpCaEczZIZW+JXLWSpq
+9T8AONCdo7uRQhGpTuJYJpAWerQklP+ck5T7FPHVRPX/VAZB3o53I9idIZ5vRQoESelnb6XpBGSm
+HDJPafB6wEYJ6hU7LpFmPJKDhaJuHks5dTBv9JS6wSZ6omvZ+tmTxNxTj0NiSZQ0OGeNzYDEm2GS
+EMgebJuHwuL4iqInFIKJzfdvqytzX/E6k82uPZPuPsNFXZVHaWY0fi/OCU8cQNyKujhokKDWY4Mv
+53f2Ffs8RUDLkjbds3dhji09XulGCtNy7S9R/osZ/n8pWSB0hzOEtCtRUBYQbJ/Pgy4HyiLuHP03
+LH/ZwmXcxwvhLyDm1hkwTOIY1w0FSeyvGKhKW9QuuMeoRkrpJHUAiIEu1iL/8J9inQM8Wbqp0xP4
+wQWLuOU31SWoouoJHYNnwCPgDchiZ3L0HuvQp6iAfvEgFGJhPLYwPAz+HC4L8JxMuktinDIMpySZ
+aiMb/BsXyqkVL6Ayhhsk5H05gNv4EepYOst5JTAmXFSeJ+SM0IJ4O2X813VL4Qcn4zulQ9D9cQng
+LH864CDXQWttUckagkTypH4Z439DnKMQHshmgvLKTM3KiRj4j6Co7Mdx4fBO7Cgycs8b9sVpv7VE
+103pz3bnQaFPDIkOaq8NhpgE/NHihggVXX1e3wRFCViSHzF75GuOeaovGsNxRBUBN2jAQXDI83vH
+eNrDOCX0txiqRsrlpIZ8UvQmwlV0LrGIA8NDhMdzMXRk0ViaZYGTf5E6yXKAiAqVRmxWfGsnXGA/
+3iZ67iWmSsqjIuWIzO0f5c59524P/oZS3ECR3mzq8dtg+Kf09ng0bJGBSPPal7H1GS1g9hS4jdN+
+fV7s2Q+m7GoCdDZmZ2yUA9rSPm0205TkA/8weijPVABNgGoNObyiGBS4QgjlLfw2/1VsLHY0OZLa
+rrfXKgteDFgG/zhCbVlvLd68bwwI79WQfpIVerC3+mbDAaVfrEb2++Wk7jK38fI6x4Tghcy9UCvI
+u3MDNCX9RIXP4WtBn4GaVPUAS8efeimvptUnCFufKI4C2UeWgzuP72KXZGMdPE0mGeh+9a2dwBYn
+R/3BmxNOsbBzU1uxqqvI0KKcsZY7AxYqKT7UYFGkyZ5IddOanEUGegN6ohL97fYJZwa3jYQEb3RQ
+XhxVXh4vTYqczJGSol2972Zl0IDo5cCL64rbMog0fVgAcHnJqSi1oG9sp4rJtRKgLLi6Aij47yPI
+RrJSizcnmjxqj6KTVETMtHMpJlkQRAAH1i8mvoTfhRETERUt10pahQT19BOSVOn3gIkcLD1gND+k
+0h7sn6FvDPTVWqvWL/stDf1mzm6pYj1IaoI3B1yLzifjadWQ0snsHTK75mSAIOPhJIZpdR0mVAsy
+IcOjL8IoFbjp41IrxsN5x6qJgjiNfESbQZveFqRxPZX0o3Vde0NozNyree07BASFYPqW0Lley4ju
+uJfovg98cXVpi/6Q4bfsne8IGO4vWIsBXbx/IGGavFx/LRa+iqr0jBlKNf+Anpq/rhmJgr9mJjYa
+Lt+F2H10oWziqzBeeexQDhoWfEz6FrLGoF99hm0PSKMUuMK3oXqM1dj1cqQYa/fq6u0sM+1ti8oq
+ITkNtMFHuMsQHnv8td4sdaQG7dpX/xaGmD6eMIPg3vT/XKLpRFTvuVYdhJ9ajggPcVf2IXMB+0AE
+nKffu407mfYNFt2IHpYEiJSkKrKmriXmvQCP6eYQhMROG9sddeCxiVHAm5u67zA/8IJJ/a/cu5Yr
+FdVEGq6pEBiQ1vChYc0urfkpWURWCPqZnuj5u4trxf9WLvgLdnYnQxYL3tdxhQT3fDXFT9DE1Zrw
+H1k/gvuMO+wD+WDHPKnIry149qfklby7zmqh26uOCch+ZANIZisa+y4OOLasdBmDuQ3rS88gVZ90
+9FHx0VwL2k0ij+4NL3CN5CaRcK8mpj/8kxB1UJAUVnQ5K8/vEV5pJk5wPElU6JbjGHcpYxBlWqPz
+pbdF+u2bi/B+V0LIf5W2ffylTP4S18ifKVAWg70PXwfIuxb79Kq5Lu/ltmSRaFJ2IuOeq1C49wLI
+bEEBco76J9UN7AR5up2ousLe/sTBOK4s8FLCTe+6+a2QgUtQjx1pGwl56+MjgHrAfog4u8X75bjA
+P8K/j1Y40UEvIZ81i8zFvrZfrkUJ9numjOxxo/lYUolC2D845u7AWBUc/AWJ9tz5HZF2bGSeRTv7
+EF0nSNc+OhQsU6K2Y1K1G270Y93ytmFtPAsNCYiABn3SX4ZbfyTfQ4rawZAjPZwrTGJvwV/XPDAD
+hvICWtnBAFpcL/D8DghugUcbOlkpZ9t5d0mlHSL+QZgzivnyxLkT/N4uz0jt6ILNeruQY2oKRSIR
+J2+qzCklsnnX1W+AVUIRIrlGn57TKsh8BsG1mzRIvpsugZNevKjXxhtfZ5BrKJUnoXc0poJ+BTgv
+6gqq3xZlwkQKGE2HhkxydIgCPBD34uJcUsYds2118XnPDSxLQ4lVdgN4VPL75QO/DZ7X61N4L0S7
+x3qEsFDXAiIOwO3RG6uMgOwQmn4uFjMc7+RIYsZACW3jP9kYqzhwO7FVf/73LmVQvuMN2Ujod0mU
+nRD2gp0zoQpjGqfNBvJRnECcDdcH27OzJuUaYV/KXsXXmz4uX5nu82so/gtRMuDJGlzNusUeK8AB
+rnL342dh8GmCvkJTToeYM78ayGeCUsDzNvqaEpE3Dz7HPlparO95D5YayVXX9AZ7lrIkkUjHE+dn
+60HA0FWwN9fjkLE2YpYrelRiQ2Nc0EwYrwuxfFSH6tbZO6PESGnT7aSimmJELhdx6jqEzfju5XEF
+LG62zM0lwv4WSlXjkNFBHA9UaaidaPSmwty7511oZvGfU2BqCakAA0qhW6S3A7+hED3elm==

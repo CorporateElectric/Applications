@@ -1,76 +1,42 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Predis\Configuration;
-
-use Predis\Connection\Aggregate\ClusterInterface;
-use Predis\Connection\Aggregate\PredisCluster;
-use Predis\Connection\Aggregate\RedisCluster;
-
-/**
- * Configures an aggregate connection used for clustering
- * multiple Redis nodes using various implementations with
- * different algorithms or strategies.
- *
- * @author Daniele Alessandri <suppakilla@gmail.com>
- */
-class ClusterOption implements OptionInterface
-{
-    /**
-     * Creates a new cluster connection from on a known descriptive name.
-     *
-     * @param OptionsInterface $options Instance of the client options.
-     * @param string           $id      Descriptive identifier of the cluster type (`predis`, `redis-cluster`)
-     *
-     * @return ClusterInterface|null
-     */
-    protected function createByDescription(OptionsInterface $options, $id)
-    {
-        switch ($id) {
-            case 'predis':
-            case 'predis-cluster':
-                return new PredisCluster();
-
-            case 'redis':
-            case 'redis-cluster':
-                return new RedisCluster($options->connections);
-
-            default:
-                return;
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function filter(OptionsInterface $options, $value)
-    {
-        if (is_string($value)) {
-            $value = $this->createByDescription($options, $value);
-        }
-
-        if (!$value instanceof ClusterInterface) {
-            throw new \InvalidArgumentException(
-                "An instance of type 'Predis\Connection\Aggregate\ClusterInterface' was expected."
-            );
-        }
-
-        return $value;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getDefault(OptionsInterface $options)
-    {
-        return new PredisCluster();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

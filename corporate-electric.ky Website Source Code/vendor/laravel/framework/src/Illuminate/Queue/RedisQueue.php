@@ -1,365 +1,165 @@
-<?php
-
-namespace Illuminate\Queue;
-
-use Illuminate\Contracts\Queue\ClearableQueue;
-use Illuminate\Contracts\Queue\Queue as QueueContract;
-use Illuminate\Contracts\Redis\Factory as Redis;
-use Illuminate\Queue\Jobs\RedisJob;
-use Illuminate\Support\Str;
-
-class RedisQueue extends Queue implements QueueContract, ClearableQueue
-{
-    /**
-     * The Redis factory implementation.
-     *
-     * @var \Illuminate\Contracts\Redis\Factory
-     */
-    protected $redis;
-
-    /**
-     * The connection name.
-     *
-     * @var string
-     */
-    protected $connection;
-
-    /**
-     * The name of the default queue.
-     *
-     * @var string
-     */
-    protected $default;
-
-    /**
-     * The expiration time of a job.
-     *
-     * @var int|null
-     */
-    protected $retryAfter = 60;
-
-    /**
-     * The maximum number of seconds to block for a job.
-     *
-     * @var int|null
-     */
-    protected $blockFor = null;
-
-    /**
-     * Create a new Redis queue instance.
-     *
-     * @param  \Illuminate\Contracts\Redis\Factory  $redis
-     * @param  string  $default
-     * @param  string|null  $connection
-     * @param  int  $retryAfter
-     * @param  int|null  $blockFor
-     * @param  bool  $dispatchAfterCommit
-     * @return void
-     */
-    public function __construct(Redis $redis,
-                                $default = 'default',
-                                $connection = null,
-                                $retryAfter = 60,
-                                $blockFor = null,
-                                $dispatchAfterCommit = false)
-    {
-        $this->redis = $redis;
-        $this->default = $default;
-        $this->blockFor = $blockFor;
-        $this->connection = $connection;
-        $this->retryAfter = $retryAfter;
-        $this->dispatchAfterCommit = $dispatchAfterCommit;
-    }
-
-    /**
-     * Get the size of the queue.
-     *
-     * @param  string|null  $queue
-     * @return int
-     */
-    public function size($queue = null)
-    {
-        $queue = $this->getQueue($queue);
-
-        return $this->getConnection()->eval(
-            LuaScripts::size(), 3, $queue, $queue.':delayed', $queue.':reserved'
-        );
-    }
-
-    /**
-     * Push an array of jobs onto the queue.
-     *
-     * @param  array  $jobs
-     * @param  mixed  $data
-     * @param  string|null  $queue
-     * @return void
-     */
-    public function bulk($jobs, $data = '', $queue = null)
-    {
-        $this->getConnection()->pipeline(function () use ($jobs, $data, $queue) {
-            $this->getConnection()->transaction(function () use ($jobs, $data, $queue) {
-                foreach ((array) $jobs as $job) {
-                    $this->push($job, $data, $queue);
-                }
-            });
-        });
-    }
-
-    /**
-     * Push a new job onto the queue.
-     *
-     * @param  object|string  $job
-     * @param  mixed  $data
-     * @param  string|null  $queue
-     * @return mixed
-     */
-    public function push($job, $data = '', $queue = null)
-    {
-        return $this->enqueueUsing(
-            $job,
-            $this->createPayload($job, $this->getQueue($queue), $data),
-            $queue,
-            null,
-            function ($payload, $queue) {
-                return $this->pushRaw($payload, $queue);
-            }
-        );
-    }
-
-    /**
-     * Push a raw payload onto the queue.
-     *
-     * @param  string  $payload
-     * @param  string|null  $queue
-     * @param  array  $options
-     * @return mixed
-     */
-    public function pushRaw($payload, $queue = null, array $options = [])
-    {
-        $this->getConnection()->eval(
-            LuaScripts::push(), 2, $this->getQueue($queue),
-            $this->getQueue($queue).':notify', $payload
-        );
-
-        return json_decode($payload, true)['id'] ?? null;
-    }
-
-    /**
-     * Push a new job onto the queue after a delay.
-     *
-     * @param  \DateTimeInterface|\DateInterval|int  $delay
-     * @param  object|string  $job
-     * @param  mixed  $data
-     * @param  string|null  $queue
-     * @return mixed
-     */
-    public function later($delay, $job, $data = '', $queue = null)
-    {
-        return $this->enqueueUsing(
-            $job,
-            $this->createPayload($job, $this->getQueue($queue), $data),
-            $queue,
-            $delay,
-            function ($payload, $queue, $delay) {
-                return $this->laterRaw($delay, $payload, $queue);
-            }
-        );
-    }
-
-    /**
-     * Push a raw job onto the queue after a delay.
-     *
-     * @param  \DateTimeInterface|\DateInterval|int  $delay
-     * @param  string  $payload
-     * @param  string|null  $queue
-     * @return mixed
-     */
-    protected function laterRaw($delay, $payload, $queue = null)
-    {
-        $this->getConnection()->zadd(
-            $this->getQueue($queue).':delayed', $this->availableAt($delay), $payload
-        );
-
-        return json_decode($payload, true)['id'] ?? null;
-    }
-
-    /**
-     * Create a payload string from the given job and data.
-     *
-     * @param  string  $job
-     * @param  string  $queue
-     * @param  mixed  $data
-     * @return array
-     */
-    protected function createPayloadArray($job, $queue, $data = '')
-    {
-        return array_merge(parent::createPayloadArray($job, $queue, $data), [
-            'id' => $this->getRandomId(),
-            'attempts' => 0,
-        ]);
-    }
-
-    /**
-     * Pop the next job off of the queue.
-     *
-     * @param  string|null  $queue
-     * @return \Illuminate\Contracts\Queue\Job|null
-     */
-    public function pop($queue = null)
-    {
-        $this->migrate($prefixed = $this->getQueue($queue));
-
-        [$job, $reserved] = $this->retrieveNextJob($prefixed);
-
-        if ($reserved) {
-            return new RedisJob(
-                $this->container, $this, $job,
-                $reserved, $this->connectionName, $queue ?: $this->default
-            );
-        }
-    }
-
-    /**
-     * Migrate any delayed or expired jobs onto the primary queue.
-     *
-     * @param  string  $queue
-     * @return void
-     */
-    protected function migrate($queue)
-    {
-        $this->migrateExpiredJobs($queue.':delayed', $queue);
-
-        if (! is_null($this->retryAfter)) {
-            $this->migrateExpiredJobs($queue.':reserved', $queue);
-        }
-    }
-
-    /**
-     * Migrate the delayed jobs that are ready to the regular queue.
-     *
-     * @param  string  $from
-     * @param  string  $to
-     * @return array
-     */
-    public function migrateExpiredJobs($from, $to)
-    {
-        return $this->getConnection()->eval(
-            LuaScripts::migrateExpiredJobs(), 3, $from, $to, $to.':notify', $this->currentTime()
-        );
-    }
-
-    /**
-     * Retrieve the next job from the queue.
-     *
-     * @param  string  $queue
-     * @param  bool  $block
-     * @return array
-     */
-    protected function retrieveNextJob($queue, $block = true)
-    {
-        $nextJob = $this->getConnection()->eval(
-            LuaScripts::pop(), 3, $queue, $queue.':reserved', $queue.':notify',
-            $this->availableAt($this->retryAfter)
-        );
-
-        if (empty($nextJob)) {
-            return [null, null];
-        }
-
-        [$job, $reserved] = $nextJob;
-
-        if (! $job && ! is_null($this->blockFor) && $block &&
-            $this->getConnection()->blpop([$queue.':notify'], $this->blockFor)) {
-            return $this->retrieveNextJob($queue, false);
-        }
-
-        return [$job, $reserved];
-    }
-
-    /**
-     * Delete a reserved job from the queue.
-     *
-     * @param  string  $queue
-     * @param  \Illuminate\Queue\Jobs\RedisJob  $job
-     * @return void
-     */
-    public function deleteReserved($queue, $job)
-    {
-        $this->getConnection()->zrem($this->getQueue($queue).':reserved', $job->getReservedJob());
-    }
-
-    /**
-     * Delete a reserved job from the reserved queue and release it.
-     *
-     * @param  string  $queue
-     * @param  \Illuminate\Queue\Jobs\RedisJob  $job
-     * @param  int  $delay
-     * @return void
-     */
-    public function deleteAndRelease($queue, $job, $delay)
-    {
-        $queue = $this->getQueue($queue);
-
-        $this->getConnection()->eval(
-            LuaScripts::release(), 2, $queue.':delayed', $queue.':reserved',
-            $job->getReservedJob(), $this->availableAt($delay)
-        );
-    }
-
-    /**
-     * Delete all of the jobs from the queue.
-     *
-     * @param  string  $queue
-     * @return int
-     */
-    public function clear($queue)
-    {
-        $queue = $this->getQueue($queue);
-
-        return $this->getConnection()->eval(
-            LuaScripts::clear(), 4, $queue, $queue.':delayed',
-            $queue.':reserved', $queue.':notify'
-        );
-    }
-
-    /**
-     * Get a random ID string.
-     *
-     * @return string
-     */
-    protected function getRandomId()
-    {
-        return Str::random(32);
-    }
-
-    /**
-     * Get the queue or return the default.
-     *
-     * @param  string|null  $queue
-     * @return string
-     */
-    public function getQueue($queue)
-    {
-        return 'queues:'.($queue ?: $this->default);
-    }
-
-    /**
-     * Get the connection for the queue.
-     *
-     * @return \Illuminate\Redis\Connections\Connection
-     */
-    public function getConnection()
-    {
-        return $this->redis->connection($this->connection);
-    }
-
-    /**
-     * Get the underlying Redis instance.
-     *
-     * @return \Illuminate\Contracts\Redis\Factory
-     */
-    public function getRedis()
-    {
-        return $this->redis;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

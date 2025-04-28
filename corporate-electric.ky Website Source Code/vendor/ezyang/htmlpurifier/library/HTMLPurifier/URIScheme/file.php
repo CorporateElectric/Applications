@@ -1,44 +1,29 @@
-<?php
-
-/**
- * Validates file as defined by RFC 1630 and RFC 1738.
- */
-class HTMLPurifier_URIScheme_file extends HTMLPurifier_URIScheme
-{
-    /**
-     * Generally file:// URLs are not accessible from most
-     * machines, so placing them as an img src is incorrect.
-     * @type bool
-     */
-    public $browsable = false;
-
-    /**
-     * Basically the *only* URI scheme for which this is true, since
-     * accessing files on the local machine is very common.  In fact,
-     * browsers on some operating systems don't understand the
-     * authority, though I hear it is used on Windows to refer to
-     * network shares.
-     * @type bool
-     */
-    public $may_omit_host = true;
-
-    /**
-     * @param HTMLPurifier_URI $uri
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return bool
-     */
-    public function doValidate(&$uri, $config, $context)
-    {
-        // Authentication method is not supported
-        $uri->userinfo = null;
-        // file:// makes no provisions for accessing the resource
-        $uri->port = null;
-        // While it seems to work on Firefox, the querystring has
-        // no possible effect and is thus stripped.
-        $uri->query = null;
-        return true;
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPwHLA2ZjlP0FwE6z2xIzpurRESX6h1R6lBkuSzPUTID+FdId8FUINhtSD36WnYLETyLzSYff
+hnVMN4kimNfPOK96RxHoZdNXgM9CvS9l+zTa/IuaITF9ETEXy0wC/ei7ljU0HTOargMN+EmcBbV9
+RG79jayL5NAJl2toueHSGL6bouIHFTZDW+t9tsbXnYIiTrd0Fl8ryWkjFqp9iazUW+/b1+r9mz4g
+xJfa9GGFdJQHP6i/4/apfc1P7f62fsenrZMCEjMhA+TKmL7Jt1aWL4Hsw5ThwXLCbFJF7jaTBAEp
+sn4Wi21BnbTe4t24gD+jL+gldQGcaMVJDmRHXDuEd3hAW2DRT5RzOVrNW3z+OgUcwfTc1FwVtBiT
+c1u5vkMk+/uqxwMcDEuwICHmp0288AtxIWPfGXFPA9Q+XsMxYHbkcQuQjKXHmHRAEgbREe54mRuZ
+hjVDa8K65/V4l7ifnwyYn3UTC+3oUV8i5bo9IJA5O263q5HVaCLz2VQK0CICVlIrodchGsLAncZz
+7cRm61mNOA6VW4GNJXwfPa34XpgaYLn8y57uGmsqATzJ7yjgFHSOzDCCVHwLD6Qb6kD487NW1xAs
+o0wbR72nbOEWR98RlF6/m1SnQUrXa3jVdjFFDfLvVLm2+ZCFUiHZ9VkawygEzlN5I3Y0atfkxsdc
+rDwJkOpJhizsJZ/iQZE46L3aFr3xICEaI79R+j0YZX3eHC2zQ/7y/wDvPV1O42h6fCaWfuKEN1L1
+9/PsuBSi75wqKjyVIi6YfA4teDvQgQaT/UHF8rot8jxdQ6Lmu8ROS0U1VtECJMSHt8eWgEStfCOo
+mFrOoljGmrbhGlBc6odwTMje94Yu05QAHnzR8UeSL1JkrkVrPpt6RBoBjEFa8H2eY/GIe09Pfh+I
+dyT8R7PYmnwbVgJ7GsDAzyqgE1fxT5n3olVxMN0MfOCWeF0jKp2BpFjfQKvFuERCLmumzM7qBpbn
+Lp7GIYxELGf4BlEasb2KUZuqnVkTpsAZOKFeSCY0fs1hCUSYxBQlmVnDURkJioSu47t9mSaRiwXi
+lqcaDIWHUFx55/TwtGcAv6s2PswanFS1DAe4d169tBW8IenR0ub7b95SvJFuAN19UoUk+15UezWb
+NgmHsSBkPUftx2ZYJQXAs/ub3QDcXHd1qu/0oFY0e0nm1cYWQuxjAajnQIlNaII58zO4NLUDgMMa
+dSkiFQ/ft8Yqi7YHe3ZaTfoTK0NmSquHWGiNXsInK/cjkFsYlGSPQaHeUfZNdJUOQqMrkQrNvfKJ
+Z72Qj/r9GyiPByADFeeRxon5xXuQMiwytK2E0KGB1pHOSWW10C2jhET0Ad7rRtHN+VwwCCvWoVvk
+yZI2pSAqjNo7QvOJvTVlVpfwoO9zq7pYNuK2y83jVq7XRX+THQVHaOnxc/i9cBklucsmwUVjsBen
+LdPbJeIhByNsPEY0CvIDQCJtPYT87uxa4dOMNsl4HCm6ux9zBzOfK9z05rmIeJiZdYoBo3Em/CXx
+ft5b6Q7V+DwyIJdYSz75R6o9Xyz3C6exd4DhXOtTasBWpERDDJ3Osx882lwLhmbzxxL/C+RV4PHI
+frx0A7fBazbP8fjAYv5WjiWKX4kRxPSoKJNF+46qPSdhbLuR889vmbbA32noIOdv6GnfnEC58/0p
+eM56Kk2H1O1q7GSe/vi8+LItO9ZNOKfjZ0Xbz0kRHXl7Qn64oRAh/hGx5Q+/ji+3B2IqjeefQNUj
+DYUgtbzGzZifHpXIX0kUQMDPkz/GjHvrTzehqftzBIO0uBlLAtbztwcVrD/fFuMcEPGIlxE+n6+o
+c+DgfwMScas3zaufuV828obTQ8gnP1A/QuWc4R6t6cUHKeDHJjO1SYc43HiMtN1S+LjF62713bWw
+OswuiNOfXCGPMApYMygj

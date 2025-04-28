@@ -1,60 +1,60 @@
-<?php declare(strict_types=1);
-
-namespace PhpParser\Lexer\TokenEmulator;
-
-abstract class KeywordEmulator extends TokenEmulator
-{
-    abstract function getKeywordString(): string;
-    abstract function getKeywordToken(): int;
-
-    public function isEmulationNeeded(string $code): bool
-    {
-        return strpos(strtolower($code), $this->getKeywordString()) !== false;
-    }
-
-    public function emulate(string $code, array $tokens): array
-    {
-        $keywordString = $this->getKeywordString();
-        foreach ($tokens as $i => $token) {
-            if ($token[0] === T_STRING && strtolower($token[1]) === $keywordString) {
-                $previousNonSpaceToken = $this->getPreviousNonSpaceToken($tokens, $i);
-                if ($previousNonSpaceToken !== null && $previousNonSpaceToken[0] === \T_OBJECT_OPERATOR) {
-                    continue;
-                }
-
-                $tokens[$i][0] = $this->getKeywordToken();
-            }
-        }
-
-        return $tokens;
-    }
-
-    /**
-     * @param mixed[] $tokens
-     * @return mixed[]|null
-     */
-    private function getPreviousNonSpaceToken(array $tokens, int $start)
-    {
-        for ($i = $start - 1; $i >= 0; --$i) {
-            if ($tokens[$i][0] === T_WHITESPACE) {
-                continue;
-            }
-
-            return $tokens[$i];
-        }
-
-        return null;
-    }
-
-    public function reverseEmulate(string $code, array $tokens): array
-    {
-        $keywordToken = $this->getKeywordToken();
-        foreach ($tokens as $i => $token) {
-            if ($token[0] === $keywordToken) {
-                $tokens[$i][0] = \T_STRING;
-            }
-        }
-
-        return $tokens;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

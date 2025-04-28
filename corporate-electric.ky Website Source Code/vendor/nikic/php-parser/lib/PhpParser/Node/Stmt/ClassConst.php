@@ -1,71 +1,48 @@
-<?php declare(strict_types=1);
-
-namespace PhpParser\Node\Stmt;
-
-use PhpParser\Node;
-
-class ClassConst extends Node\Stmt
-{
-    /** @var int Modifiers */
-    public $flags;
-    /** @var Node\Const_[] Constant declarations */
-    public $consts;
-    /** @var Node\AttributeGroup[] */
-    public $attrGroups;
-
-    /**
-     * Constructs a class const list node.
-     *
-     * @param Node\Const_[]         $consts     Constant declarations
-     * @param int                   $flags      Modifiers
-     * @param array                 $attributes Additional attributes
-     * @param Node\AttributeGroup[] $attrGroups PHP attribute groups
-     */
-    public function __construct(
-        array $consts,
-        int $flags = 0,
-        array $attributes = [],
-        array $attrGroups = []
-    ) {
-        $this->attributes = $attributes;
-        $this->flags = $flags;
-        $this->consts = $consts;
-        $this->attrGroups = $attrGroups;
-    }
-
-    public function getSubNodeNames() : array {
-        return ['attrGroups', 'flags', 'consts'];
-    }
-
-    /**
-     * Whether constant is explicitly or implicitly public.
-     *
-     * @return bool
-     */
-    public function isPublic() : bool {
-        return ($this->flags & Class_::MODIFIER_PUBLIC) !== 0
-            || ($this->flags & Class_::VISIBILITY_MODIFIER_MASK) === 0;
-    }
-
-    /**
-     * Whether constant is protected.
-     *
-     * @return bool
-     */
-    public function isProtected() : bool {
-        return (bool) ($this->flags & Class_::MODIFIER_PROTECTED);
-    }
-
-    /**
-     * Whether constant is private.
-     *
-     * @return bool
-     */
-    public function isPrivate() : bool {
-        return (bool) ($this->flags & Class_::MODIFIER_PRIVATE);
-    }
-
-    public function getType() : string {
-        return 'Stmt_ClassConst';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+lDKhkRw27zK7LrDDj0nlqEm=

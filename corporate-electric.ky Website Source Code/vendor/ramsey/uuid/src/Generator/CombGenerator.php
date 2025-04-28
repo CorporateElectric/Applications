@@ -1,127 +1,53 @@
-<?php
-
-/**
- * This file is part of the ramsey/uuid library
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @copyright Copyright (c) Ben Ramsey <ben@benramsey.com>
- * @license http://opensource.org/licenses/MIT MIT
- */
-
-declare(strict_types=1);
-
-namespace Ramsey\Uuid\Generator;
-
-use Ramsey\Uuid\Converter\NumberConverterInterface;
-use Ramsey\Uuid\Exception\InvalidArgumentException;
-
-use function bin2hex;
-use function explode;
-use function hex2bin;
-use function microtime;
-use function str_pad;
-use function substr;
-
-use const STR_PAD_LEFT;
-
-/**
- * CombGenerator generates COMBs (combined UUID/timestamp)
- *
- * The CombGenerator, when used with the StringCodec (and, by proxy, the
- * TimestampLastCombCodec) or the TimestampFirstCombCodec, combines the current
- * timestamp with a UUID (hence the name "COMB"). The timestamp either appears
- * as the first or last 48 bits of the COMB, depending on the codec used.
- *
- * By default, COMBs will have the timestamp set as the last 48 bits of the
- * identifier.
- *
- * ``` php
- * $factory = new UuidFactory();
- *
- * $factory->setRandomGenerator(new CombGenerator(
- *     $factory->getRandomGenerator(),
- *     $factory->getNumberConverter()
- * ));
- *
- * $comb = $factory->uuid4();
- * ```
- *
- * To generate a COMB with the timestamp as the first 48 bits, set the
- * TimestampFirstCombCodec as the codec.
- *
- * ``` php
- * $factory->setCodec(new TimestampFirstCombCodec($factory->getUuidBuilder()));
- * ```
- *
- * @link https://www.informit.com/articles/printerfriendly/25862 The Cost of GUIDs as Primary Keys
- */
-class CombGenerator implements RandomGeneratorInterface
-{
-    public const TIMESTAMP_BYTES = 6;
-
-    /**
-     * @var RandomGeneratorInterface
-     */
-    private $randomGenerator;
-
-    /**
-     * @var NumberConverterInterface
-     */
-    private $converter;
-
-    public function __construct(
-        RandomGeneratorInterface $generator,
-        NumberConverterInterface $numberConverter
-    ) {
-        $this->converter = $numberConverter;
-        $this->randomGenerator = $generator;
-    }
-
-    /**
-     * @throws InvalidArgumentException if $length is not a positive integer
-     *     greater than or equal to CombGenerator::TIMESTAMP_BYTES
-     *
-     * @inheritDoc
-     */
-    public function generate(int $length): string
-    {
-        if ($length < self::TIMESTAMP_BYTES || $length < 0) {
-            throw new InvalidArgumentException(
-                'Length must be a positive integer greater than or equal to ' . self::TIMESTAMP_BYTES
-            );
-        }
-
-        $hash = '';
-        if (self::TIMESTAMP_BYTES > 0 && $length > self::TIMESTAMP_BYTES) {
-            $hash = $this->randomGenerator->generate($length - self::TIMESTAMP_BYTES);
-        }
-
-        $lsbTime = str_pad(
-            $this->converter->toHex($this->timestamp()),
-            self::TIMESTAMP_BYTES * 2,
-            '0',
-            STR_PAD_LEFT
-        );
-
-        return (string) hex2bin(
-            str_pad(
-                bin2hex((string) $hash),
-                $length - self::TIMESTAMP_BYTES,
-                '0'
-            )
-            . $lsbTime
-        );
-    }
-
-    /**
-     * Returns current timestamp a string integer, precise to 0.00001 seconds
-     */
-    private function timestamp(): string
-    {
-        $time = explode(' ', microtime(false));
-
-        return $time[1] . substr($time[0], 2, 5);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPwIc5Ot9Y+wYb1U0hZ+B9ScSjWezEqmPeAwu4wWYslVs2KzIcWtNZYu6Ew7/mzNgh74FUPl2
+CgEiGN5f+Bi/vHrM70TJN74SZVMstzkZoy7AySrj0taz5qZBlj0gAQPN/RUByOZmGi6YacGkEdEr
+6O8HV26k65DNu5AgOCX4DGSwikNdPx7Vq94lggZOgddZnKzUJK2+82GdnGjmOCxD8vhzlgLP4AOS
+KUvz00aA9R5MGNvqCj3bvqYeB5X8gHJAxIGuEjMhA+TKmL7Jt1aWL4Hsw7ndiqgdYRqCF+guwGii
+l98s/pfr7vQcMsbS59hS0zKbHc8Ls5D7D5UP3kUIGlHkZEiW2eDaMqpECLls9Qs2Wax0tI0Xhxj9
+ueoOzfz5OTJ81GEY7rEJPv8DWZGza5kfTqM6lI9dWCO8hXsLQXwgwztp7S/nU27/AW84syw2d0vy
+jACQu/Jt9U3jKwYDeG6EfdxWi9h9goLm6MMLwZLYzranIc7t+XvVpY3gKtz3tdf+Ry67kSuLsan3
+KnzhNxqDf5Yp7ONzsHfp/ylp/tODvK+Xny71SJ+L7MGKjHB+HyBDowKXG0UYZ73dIPxzuedf+ixv
+sD+4RLwfavg9QamRqZLwMgyI8flM2fI7VqxLXk9O0YZ/H4Ln0tMjfRQ785gZG+wSe4fe2fQR/rHW
+3LD1IxjGelAcYjDTsgtcMTtSDBT16oMR0sM7nBdqDayk7D1VnMu8Q8MRR06xPyn5sfKJg6dgllDk
+buQAkHXdD7qc/ynIb3HRhDp4Tp2UTzNhIsUjd9/29Ws66EBTMe3khbs9oSRL3l6Fu0FZd+2qPGiL
+JQnOTerwK7A+wG8hkCBbw8CKVNCKZ5b9ps4+j/hlEj80sRjLOYvk3ed2omYpdfJxNhE3yh3OJCPp
++CVS2+BqTEdP6Hr7xL4WWi/+k/b6S9aeW5m0/QWRBxamN405pHxERtmsuycpeYaHZNhlfFBAwGCk
+YYFINCCMn9W0zrq0uC8Hzxu8gK6QCLNPLYWXyJD2kh+6fAmZVpKRtZ/O7aBleJVAiQ+GWzjqs2Mj
+GaA5zdPbaqnQkgzysfJp+zMGSbj6fEDg8scREqLu0EwOflB37uXxWeOjAWL02C1JtU68l3SrdE9+
+q4ZxX0ElM/RvrYOmB6fBoSIr3tKRKrLjudDewxQ9ymuFCVUbMA2hIsHXkRJOwSenyAquviiqE1jD
+y+Uv33LrmxjvdNew/MHOEpxUkDz5/xBqABR9T+QSm0ex5NJZyAYwG8FM5e11w6AnBYmsPGBYpsPt
+twnJUlBE+QH0/+NP9BuTln3c+vhwY78SdGnBow7/Z7i07rKR/pc4jQ7nNtDeqdnLULu2fm/1pWhx
+FjDnOudDy0V8ou+uKGToJp+iM5dXtFwJADvmuSaLVtjcM178Nc7+WzaSNdzBrYqDYj7ldeRonxBK
+XfXomOvndgBqekos35tuTt/ANthnwaMUq/dGTR8sobrPSFMNgIXh6N80NpOKKobjQaiRWgSkzbkR
+ly0eKuS6u2CqPfcOAsTzdiYJsy6t0bkQYjAwLY47tasVpiub5FOg6gClJe9BTwY4CKDWnVUjFpPK
+b39udVrV5WZT31/87MdKBzYswJyf6ghYIVeaRuvKCXLcyFS19F1MyVoXomRVRg1PjWV4sJ8CcATC
+/o/bRXKl+rCfk6n9eZUbazetmpHL+6JNO1Wo85xtxlweyBVfoOoo08yLD19ZhCSvi1cJAdFL1zsw
+I1YzBT5yD9eIz22Clf1chdGkZJf5rGA/dWWWgAkagwIE5BBkWC+BFllh/9FITwjbeXAgIu5tebk2
+vXkJ6SouaxTrXDUPtmoNUTYQK3j/QqBjW+2FzJRkobnKe5lX2Tua3pvI6XBkWwYaQPpK3/s1T/WP
+67xmQsx0l3K2wAXTp+BPC/sE4H4kv5dCpa/CKk4gc/dxKgzPJYl6L18HIuwdCnvzU7Q9vZiadFdF
+w7G4YkCDGN7ocljOzRU4v4GAlp5FzDZhugMFxKqD3u3Y26u7Xt6LDlzMAyeg6SiWCzxJb7GNGGoS
+M+cO0v5iOpu/EtTDOv2mlaUqvISsnBhK6JM/VaqafHWxeolL3dmQSOYJFnkZEEbKqttGB+NfDtzd
+ct8MkqFUQuBw8L7oXfeHIcQfHNoV+95clYnOp1F/UVRyxkDNnLrk+sIFhu4U4+/yVLQTjak9HeJD
+r7vpTf+gU8i2aaBIqnCkCaeza/WgThmlnsFjtTTSani8VExlTV+sS7uLsB1ocOXS6k36anvxn/Fs
+RurlPvW7d1ToRT/YfojDg1Uqtq/KjDbJuHdkEXjV+9a6P1zQAaFlaI07BXGgyNz1/SmFi2YDAyYN
+87Q3OuGzY0/vp+HICfvRtP86QC0UW/UY1tDVDphjRHThLc30nvCPSzsv/I4IrgTVQdnzxvrLjYov
+qpDxU0y8aaznjHR5RbaHJgdU2/rlk+NMzfjfLUHsu64mUK8Mfes+N32gUGif78Toyu77f1kFbbIu
+0mV2owkVFrImWE2vSRw8rJ07DezPs+iJL5CPitUxYvYNnMNU2D9ItF0+NkrXTzdxk3ANMGAZX0R2
+klqrBzYhrED2V3ZwHRoIkSB2oemrCU2olA3BpAvR4PlXlpULLAZTmRWXKFi2qJ2JStSJ8AvQe0kq
+GgGzeAJUxksQOmH9OiFJWRB7D/6HH7mMu/yF+0JkxibQrlUyhQ4DcIwZtQyUnZLM2XqSTuX/gya9
+81rS3VlfFwYvXMsOv1ONxMVI1RLM99TbWg5B+nSmpkNR752QfvBqTLLRw5CWGSvuKBydBqdRzPXr
+wktXTQUJ0G2a0m353jtsnN8dATILOn2eawoXriteVIUk8Hq/TRkCmWC20IUsJtsf4+v+hpKYjeIR
+AP879equcYkEqo0EbSSEItK3+L9fDAwyiBIIu6b9ZJimCg1Ps1HqE0c9cYnv7pDtD1+D2KNCLete
+t72IHQyRlHLidRgPLdw5eCjuFO9or4BwFaQDx0ps6tYkTybyuPyzbb4M7Sz0rBXDG8HEuSuAQ4dw
+1/LAFdDqUSBjq1rcGtnNNZYWzNkARswAVqsM106NAEDnl9ZL7KpLJEIJ3RNTwqgJInUz+KrlLG6S
+BAfdy0XQywfAjSDKB+pHra8i3PJM8bhqn5g+maeWq/Ud8jf8gUiAoGjoUfp4CwtayvE4uYVif5nW
+gCbknNrqQpAfQCMkQ9/LK1JiD8z83P19RUlOqpCMJ1MfW5204E+jjZIUFwtQNXBPM3EZ4y6j6rO7
+7pqrogOO2KFkRBgOS5wmvRWmxfNqnHxNiLTj/aZUq4c1XzsciRkFebIZ19OG/aNnKxd1OSt+HSKC
+8cY2g+5d8Hyib6mrkWAwQDbh9JSf973LhZD89Ew1vZOS99qOPOMGzuBQmQTf/xtHLApM074bYQGv
+XyXGNlTxkFKC8yXJdopNlFjJuSEY1nGQFQEoRIKlV1fR4yJC7lD4yfyhjYp4JFts7TBFFLqwU6yq
+JRDmYSTveQj4PxmlsE4scg9qpgQ6kyBB9y4VlyZONzQACiV0+1BdOccfirCk3YWkJ6xNjyeDLrLf
+7HFvMzKPUy6ENLGCJXg17PFRa3bBXPWVPrinWU67KlqpqM26RdinhF/kG297VCv42W9F2NebO5+h
+cuJx+jpt4HokIpOeuZ3v2hb/VYQ4I6ndgcwGsU3m5u6X1QlK/fs6ScBoENR/JMSCw7RFOkRmj1eZ
+R91dfC1QdrLnkz1J8nYomHEK3m==

@@ -1,73 +1,30 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Calculation\Engine;
-
-class CyclicReferenceStack
-{
-    /**
-     * The call stack for calculated cells.
-     *
-     * @var mixed[]
-     */
-    private $stack = [];
-
-    /**
-     * Return the number of entries on the stack.
-     *
-     * @return int
-     */
-    public function count()
-    {
-        return count($this->stack);
-    }
-
-    /**
-     * Push a new entry onto the stack.
-     *
-     * @param mixed $value
-     */
-    public function push($value): void
-    {
-        $this->stack[$value] = $value;
-    }
-
-    /**
-     * Pop the last entry from the stack.
-     *
-     * @return mixed
-     */
-    public function pop()
-    {
-        return array_pop($this->stack);
-    }
-
-    /**
-     * Test to see if a specified entry exists on the stack.
-     *
-     * @param mixed $value The value to test
-     *
-     * @return bool
-     */
-    public function onStack($value)
-    {
-        return isset($this->stack[$value]);
-    }
-
-    /**
-     * Clear the stack.
-     */
-    public function clear(): void
-    {
-        $this->stack = [];
-    }
-
-    /**
-     * Return an array of all entries on the stack.
-     *
-     * @return mixed[]
-     */
-    public function showStack()
-    {
-        return $this->stack;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

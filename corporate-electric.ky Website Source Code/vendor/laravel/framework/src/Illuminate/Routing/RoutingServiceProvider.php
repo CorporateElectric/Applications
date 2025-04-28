@@ -1,183 +1,116 @@
-<?php
-
-namespace Illuminate\Routing;
-
-use Illuminate\Contracts\Container\BindingResolutionException;
-use Illuminate\Contracts\Routing\ResponseFactory as ResponseFactoryContract;
-use Illuminate\Contracts\Routing\UrlGenerator as UrlGeneratorContract;
-use Illuminate\Contracts\View\Factory as ViewFactoryContract;
-use Illuminate\Routing\Contracts\ControllerDispatcher as ControllerDispatcherContract;
-use Illuminate\Support\ServiceProvider;
-use Nyholm\Psr7\Factory\Psr17Factory;
-use Nyholm\Psr7\Response as PsrResponse;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\ServerRequestInterface;
-use Symfony\Bridge\PsrHttpMessage\Factory\PsrHttpFactory;
-
-class RoutingServiceProvider extends ServiceProvider
-{
-    /**
-     * Register the service provider.
-     *
-     * @return void
-     */
-    public function register()
-    {
-        $this->registerRouter();
-        $this->registerUrlGenerator();
-        $this->registerRedirector();
-        $this->registerPsrRequest();
-        $this->registerPsrResponse();
-        $this->registerResponseFactory();
-        $this->registerControllerDispatcher();
-    }
-
-    /**
-     * Register the router instance.
-     *
-     * @return void
-     */
-    protected function registerRouter()
-    {
-        $this->app->singleton('router', function ($app) {
-            return new Router($app['events'], $app);
-        });
-    }
-
-    /**
-     * Register the URL generator service.
-     *
-     * @return void
-     */
-    protected function registerUrlGenerator()
-    {
-        $this->app->singleton('url', function ($app) {
-            $routes = $app['router']->getRoutes();
-
-            // The URL generator needs the route collection that exists on the router.
-            // Keep in mind this is an object, so we're passing by references here
-            // and all the registered routes will be available to the generator.
-            $app->instance('routes', $routes);
-
-            return new UrlGenerator(
-                $routes, $app->rebinding(
-                    'request', $this->requestRebinder()
-                ), $app['config']['app.asset_url']
-            );
-        });
-
-        $this->app->extend('url', function (UrlGeneratorContract $url, $app) {
-            // Next we will set a few service resolvers on the URL generator so it can
-            // get the information it needs to function. This just provides some of
-            // the convenience features to this URL generator like "signed" URLs.
-            $url->setSessionResolver(function () {
-                return $this->app['session'] ?? null;
-            });
-
-            $url->setKeyResolver(function () {
-                return $this->app->make('config')->get('app.key');
-            });
-
-            // If the route collection is "rebound", for example, when the routes stay
-            // cached for the application, we will need to rebind the routes on the
-            // URL generator instance so it has the latest version of the routes.
-            $app->rebinding('routes', function ($app, $routes) {
-                $app['url']->setRoutes($routes);
-            });
-
-            return $url;
-        });
-    }
-
-    /**
-     * Get the URL generator request rebinder.
-     *
-     * @return \Closure
-     */
-    protected function requestRebinder()
-    {
-        return function ($app, $request) {
-            $app['url']->setRequest($request);
-        };
-    }
-
-    /**
-     * Register the Redirector service.
-     *
-     * @return void
-     */
-    protected function registerRedirector()
-    {
-        $this->app->singleton('redirect', function ($app) {
-            $redirector = new Redirector($app['url']);
-
-            // If the session is set on the application instance, we'll inject it into
-            // the redirector instance. This allows the redirect responses to allow
-            // for the quite convenient "with" methods that flash to the session.
-            if (isset($app['session.store'])) {
-                $redirector->setSession($app['session.store']);
-            }
-
-            return $redirector;
-        });
-    }
-
-    /**
-     * Register a binding for the PSR-7 request implementation.
-     *
-     * @return void
-     */
-    protected function registerPsrRequest()
-    {
-        $this->app->bind(ServerRequestInterface::class, function ($app) {
-            if (class_exists(Psr17Factory::class) && class_exists(PsrHttpFactory::class)) {
-                $psr17Factory = new Psr17Factory;
-
-                return (new PsrHttpFactory($psr17Factory, $psr17Factory, $psr17Factory, $psr17Factory))
-                    ->createRequest($app->make('request'));
-            }
-
-            throw new BindingResolutionException('Unable to resolve PSR request. Please install the symfony/psr-http-message-bridge and nyholm/psr7 packages.');
-        });
-    }
-
-    /**
-     * Register a binding for the PSR-7 response implementation.
-     *
-     * @return void
-     */
-    protected function registerPsrResponse()
-    {
-        $this->app->bind(ResponseInterface::class, function () {
-            if (class_exists(PsrResponse::class)) {
-                return new PsrResponse;
-            }
-
-            throw new BindingResolutionException('Unable to resolve PSR response. Please install the nyholm/psr7 package.');
-        });
-    }
-
-    /**
-     * Register the response factory implementation.
-     *
-     * @return void
-     */
-    protected function registerResponseFactory()
-    {
-        $this->app->singleton(ResponseFactoryContract::class, function ($app) {
-            return new ResponseFactory($app[ViewFactoryContract::class], $app['redirect']);
-        });
-    }
-
-    /**
-     * Register the controller dispatcher.
-     *
-     * @return void
-     */
-    protected function registerControllerDispatcher()
-    {
-        $this->app->singleton(ControllerDispatcherContract::class, function ($app) {
-            return new ControllerDispatcher($app);
-        });
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

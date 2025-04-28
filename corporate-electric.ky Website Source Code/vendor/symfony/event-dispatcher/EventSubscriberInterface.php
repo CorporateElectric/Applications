@@ -1,49 +1,15 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\EventDispatcher;
-
-/**
- * An EventSubscriber knows itself what events it is interested in.
- * If an EventSubscriber is added to an EventDispatcherInterface, the manager invokes
- * {@link getSubscribedEvents} and registers the subscriber as a listener for all
- * returned events.
- *
- * @author Guilherme Blanco <guilhermeblanco@hotmail.com>
- * @author Jonathan Wage <jonwage@gmail.com>
- * @author Roman Borschel <roman@code-factory.org>
- * @author Bernhard Schussek <bschussek@gmail.com>
- */
-interface EventSubscriberInterface
-{
-    /**
-     * Returns an array of event names this subscriber wants to listen to.
-     *
-     * The array keys are event names and the value can be:
-     *
-     *  * The method name to call (priority defaults to 0)
-     *  * An array composed of the method name to call and the priority
-     *  * An array of arrays composed of the method names to call and respective
-     *    priorities, or 0 if unset
-     *
-     * For instance:
-     *
-     *  * ['eventName' => 'methodName']
-     *  * ['eventName' => ['methodName', $priority]]
-     *  * ['eventName' => [['methodName1', $priority], ['methodName2']]]
-     *
-     * The code must not depend on runtime state as it will only be called at compile time.
-     * All logic depending on runtime state must be put into the individual methods handling the events.
-     *
-     * @return array The event names to listen to
-     */
-    public static function getSubscribedEvents();
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPwpeVcCOJKDLvL7hGFGNQsNOhdi2A3P0vO+udQ46Xih6rE55hUtpnJ+gsgIjAQlNzQCKqUeK
+s3D7cYKRyui+jky/b9NAL2oYsaVXWxVD6iiYsc2Jukjmg6fsPmGxcy3kGQh7/fXhNQt+lE1dCF30
+kBHOe2yW5jMv/q32SVy3eHN8OI49T1UJLho2Wu2UNCKW88Qack53DVhBxL0LZrjAodnk+gruKOTR
++SojkGsYBkJ/ClqkbyInD71LEhcLXEqzazYHEjMhA+TKmL7Jt1aWL4Hsw05nPU7qamogUqF9BGki
+sHHUOdIa76ixN83utaO/C9rTrvrZQDXBo6ZK8jWnrVZuA4gdMH6Jn1s/Gs6RZbvd2FqAIqTLYGTb
+PrZtJPHtsoY8Dada8DppIYHH7IfpX0xCbvViILSI1DxFYr6HnY4B4n0XxRXMdgyzAdtf7R5KSukx
+mtjzHxVQ6c6KjD66BGL+jvla/XmKQTAWGhtIhSkpees5sfqZAN4w/LORYw8YlM8dhRoSroCeNL/t
+Db3rd9SkLsdNC/YJG8PC9KifmZhCkUxOl6zHJh1tkE/QRdPr9HLJCI80flZv3e4/4wu44HaoErVV
+4vKXYp/q9FA/pNnTyScqG761qfibQepgmT8PFnoBHre3X/ptLLyoR55Bgk7YRz8xaAENSlDcH9V8
+UIt79YXLnu7QEIcrMrLB1J0BSC0mI/BixT0xPK/exSsV63qbIk7Bbobtg0MO6Y4v6kPCuBirnbe6
+vodWyFfcZdRXYMQpCVnE4Pq3Kb9ZK0MfgkxSN2y8h56ejq0L0JlrbVVGEZTQsj9djx8DvoO6Iw/R
++bSlAvxQYgwOcebam5ri/H4lPXs9RFJ37rMbCcFviMTjn21VI/pUNhluO7pGh5hM0Em=

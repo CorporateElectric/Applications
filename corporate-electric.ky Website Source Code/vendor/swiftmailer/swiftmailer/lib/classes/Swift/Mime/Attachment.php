@@ -1,144 +1,70 @@
-<?php
-
-/*
- * This file is part of SwiftMailer.
- * (c) 2004-2009 Chris Corbyn
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-/**
- * An attachment, in a multipart message.
- *
- * @author Chris Corbyn
- */
-class Swift_Mime_Attachment extends Swift_Mime_SimpleMimeEntity
-{
-    /** Recognized MIME types */
-    private $mimeTypes = [];
-
-    /**
-     * Create a new Attachment with $headers, $encoder and $cache.
-     *
-     * @param array $mimeTypes
-     */
-    public function __construct(Swift_Mime_SimpleHeaderSet $headers, Swift_Mime_ContentEncoder $encoder, Swift_KeyCache $cache, Swift_IdGenerator $idGenerator, $mimeTypes = [])
-    {
-        parent::__construct($headers, $encoder, $cache, $idGenerator);
-        $this->setDisposition('attachment');
-        $this->setContentType('application/octet-stream');
-        $this->mimeTypes = $mimeTypes;
-    }
-
-    /**
-     * Get the nesting level used for this attachment.
-     *
-     * Always returns {@link LEVEL_MIXED}.
-     *
-     * @return int
-     */
-    public function getNestingLevel()
-    {
-        return self::LEVEL_MIXED;
-    }
-
-    /**
-     * Get the Content-Disposition of this attachment.
-     *
-     * By default attachments have a disposition of "attachment".
-     *
-     * @return string
-     */
-    public function getDisposition()
-    {
-        return $this->getHeaderFieldModel('Content-Disposition');
-    }
-
-    /**
-     * Set the Content-Disposition of this attachment.
-     *
-     * @param string $disposition
-     *
-     * @return $this
-     */
-    public function setDisposition($disposition)
-    {
-        if (!$this->setHeaderFieldModel('Content-Disposition', $disposition)) {
-            $this->getHeaders()->addParameterizedHeader('Content-Disposition', $disposition);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Get the filename of this attachment when downloaded.
-     *
-     * @return string
-     */
-    public function getFilename()
-    {
-        return $this->getHeaderParameter('Content-Disposition', 'filename');
-    }
-
-    /**
-     * Set the filename of this attachment.
-     *
-     * @param string $filename
-     *
-     * @return $this
-     */
-    public function setFilename($filename)
-    {
-        $this->setHeaderParameter('Content-Disposition', 'filename', $filename);
-        $this->setHeaderParameter('Content-Type', 'name', $filename);
-
-        return $this;
-    }
-
-    /**
-     * Get the file size of this attachment.
-     *
-     * @return int
-     */
-    public function getSize()
-    {
-        return $this->getHeaderParameter('Content-Disposition', 'size');
-    }
-
-    /**
-     * Set the file size of this attachment.
-     *
-     * @param int $size
-     *
-     * @return $this
-     */
-    public function setSize($size)
-    {
-        $this->setHeaderParameter('Content-Disposition', 'size', $size);
-
-        return $this;
-    }
-
-    /**
-     * Set the file that this attachment is for.
-     *
-     * @param string $contentType optional
-     *
-     * @return $this
-     */
-    public function setFile(Swift_FileStream $file, $contentType = null)
-    {
-        $this->setFilename(basename($file->getPath()));
-        $this->setBody($file, $contentType);
-        if (!isset($contentType)) {
-            $extension = strtolower(substr($file->getPath(), strrpos($file->getPath(), '.') + 1));
-
-            if (\array_key_exists($extension, $this->mimeTypes)) {
-                $this->setContentType($this->mimeTypes[$extension]);
-            }
-        }
-
-        return $this;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

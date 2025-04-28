@@ -1,279 +1,122 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Shared;
-
-use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-
-class Xls
-{
-    /**
-     * Get the width of a column in pixels. We use the relationship y = ceil(7x) where
-     * x is the width in intrinsic Excel units (measuring width in number of normal characters)
-     * This holds for Arial 10.
-     *
-     * @param Worksheet $sheet The sheet
-     * @param string $col The column
-     *
-     * @return int The width in pixels
-     */
-    public static function sizeCol($sheet, $col = 'A')
-    {
-        // default font of the workbook
-        $font = $sheet->getParent()->getDefaultStyle()->getFont();
-
-        $columnDimensions = $sheet->getColumnDimensions();
-
-        // first find the true column width in pixels (uncollapsed and unhidden)
-        if (isset($columnDimensions[$col]) && $columnDimensions[$col]->getWidth() != -1) {
-            // then we have column dimension with explicit width
-            $columnDimension = $columnDimensions[$col];
-            $width = $columnDimension->getWidth();
-            $pixelWidth = Drawing::cellDimensionToPixels($width, $font);
-        } elseif ($sheet->getDefaultColumnDimension()->getWidth() != -1) {
-            // then we have default column dimension with explicit width
-            $defaultColumnDimension = $sheet->getDefaultColumnDimension();
-            $width = $defaultColumnDimension->getWidth();
-            $pixelWidth = Drawing::cellDimensionToPixels($width, $font);
-        } else {
-            // we don't even have any default column dimension. Width depends on default font
-            $pixelWidth = Font::getDefaultColumnWidthByFont($font, true);
-        }
-
-        // now find the effective column width in pixels
-        if (isset($columnDimensions[$col]) && !$columnDimensions[$col]->getVisible()) {
-            $effectivePixelWidth = 0;
-        } else {
-            $effectivePixelWidth = $pixelWidth;
-        }
-
-        return $effectivePixelWidth;
-    }
-
-    /**
-     * Convert the height of a cell from user's units to pixels. By interpolation
-     * the relationship is: y = 4/3x. If the height hasn't been set by the user we
-     * use the default value. If the row is hidden we use a value of zero.
-     *
-     * @param Worksheet $sheet The sheet
-     * @param int $row The row index (1-based)
-     *
-     * @return int The width in pixels
-     */
-    public static function sizeRow($sheet, $row = 1)
-    {
-        // default font of the workbook
-        $font = $sheet->getParent()->getDefaultStyle()->getFont();
-
-        $rowDimensions = $sheet->getRowDimensions();
-
-        // first find the true row height in pixels (uncollapsed and unhidden)
-        if (isset($rowDimensions[$row]) && $rowDimensions[$row]->getRowHeight() != -1) {
-            // then we have a row dimension
-            $rowDimension = $rowDimensions[$row];
-            $rowHeight = $rowDimension->getRowHeight();
-            $pixelRowHeight = (int) ceil(4 * $rowHeight / 3); // here we assume Arial 10
-        } elseif ($sheet->getDefaultRowDimension()->getRowHeight() != -1) {
-            // then we have a default row dimension with explicit height
-            $defaultRowDimension = $sheet->getDefaultRowDimension();
-            $rowHeight = $defaultRowDimension->getRowHeight();
-            $pixelRowHeight = Drawing::pointsToPixels($rowHeight);
-        } else {
-            // we don't even have any default row dimension. Height depends on default font
-            $pointRowHeight = Font::getDefaultRowHeightByFont($font);
-            $pixelRowHeight = Font::fontSizeToPixels($pointRowHeight);
-        }
-
-        // now find the effective row height in pixels
-        if (isset($rowDimensions[$row]) && !$rowDimensions[$row]->getVisible()) {
-            $effectivePixelRowHeight = 0;
-        } else {
-            $effectivePixelRowHeight = $pixelRowHeight;
-        }
-
-        return $effectivePixelRowHeight;
-    }
-
-    /**
-     * Get the horizontal distance in pixels between two anchors
-     * The distanceX is found as sum of all the spanning columns widths minus correction for the two offsets.
-     *
-     * @param string $startColumn
-     * @param int $startOffsetX Offset within start cell measured in 1/1024 of the cell width
-     * @param string $endColumn
-     * @param int $endOffsetX Offset within end cell measured in 1/1024 of the cell width
-     *
-     * @return int Horizontal measured in pixels
-     */
-    public static function getDistanceX(Worksheet $sheet, $startColumn = 'A', $startOffsetX = 0, $endColumn = 'A', $endOffsetX = 0)
-    {
-        $distanceX = 0;
-
-        // add the widths of the spanning columns
-        $startColumnIndex = Coordinate::columnIndexFromString($startColumn);
-        $endColumnIndex = Coordinate::columnIndexFromString($endColumn);
-        for ($i = $startColumnIndex; $i <= $endColumnIndex; ++$i) {
-            $distanceX += self::sizeCol($sheet, Coordinate::stringFromColumnIndex($i));
-        }
-
-        // correct for offsetX in startcell
-        $distanceX -= (int) floor(self::sizeCol($sheet, $startColumn) * $startOffsetX / 1024);
-
-        // correct for offsetX in endcell
-        $distanceX -= (int) floor(self::sizeCol($sheet, $endColumn) * (1 - $endOffsetX / 1024));
-
-        return $distanceX;
-    }
-
-    /**
-     * Get the vertical distance in pixels between two anchors
-     * The distanceY is found as sum of all the spanning rows minus two offsets.
-     *
-     * @param int $startRow (1-based)
-     * @param int $startOffsetY Offset within start cell measured in 1/256 of the cell height
-     * @param int $endRow (1-based)
-     * @param int $endOffsetY Offset within end cell measured in 1/256 of the cell height
-     *
-     * @return int Vertical distance measured in pixels
-     */
-    public static function getDistanceY(Worksheet $sheet, $startRow = 1, $startOffsetY = 0, $endRow = 1, $endOffsetY = 0)
-    {
-        $distanceY = 0;
-
-        // add the widths of the spanning rows
-        for ($row = $startRow; $row <= $endRow; ++$row) {
-            $distanceY += self::sizeRow($sheet, $row);
-        }
-
-        // correct for offsetX in startcell
-        $distanceY -= (int) floor(self::sizeRow($sheet, $startRow) * $startOffsetY / 256);
-
-        // correct for offsetX in endcell
-        $distanceY -= (int) floor(self::sizeRow($sheet, $endRow) * (1 - $endOffsetY / 256));
-
-        return $distanceY;
-    }
-
-    /**
-     * Convert 1-cell anchor coordinates to 2-cell anchor coordinates
-     * This function is ported from PEAR Spreadsheet_Writer_Excel with small modifications.
-     *
-     * Calculate the vertices that define the position of the image as required by
-     * the OBJ record.
-     *
-     *         +------------+------------+
-     *         |     A      |      B     |
-     *   +-----+------------+------------+
-     *   |     |(x1,y1)     |            |
-     *   |  1  |(A1)._______|______      |
-     *   |     |    |              |     |
-     *   |     |    |              |     |
-     *   +-----+----|    BITMAP    |-----+
-     *   |     |    |              |     |
-     *   |  2  |    |______________.     |
-     *   |     |            |        (B2)|
-     *   |     |            |     (x2,y2)|
-     *   +---- +------------+------------+
-     *
-     * Example of a bitmap that covers some of the area from cell A1 to cell B2.
-     *
-     * Based on the width and height of the bitmap we need to calculate 8 vars:
-     *     $col_start, $row_start, $col_end, $row_end, $x1, $y1, $x2, $y2.
-     * The width and height of the cells are also variable and have to be taken into
-     * account.
-     * The values of $col_start and $row_start are passed in from the calling
-     * function. The values of $col_end and $row_end are calculated by subtracting
-     * the width and height of the bitmap from the width and height of the
-     * underlying cells.
-     * The vertices are expressed as a percentage of the underlying cell width as
-     * follows (rhs values are in pixels):
-     *
-     *       x1 = X / W *1024
-     *       y1 = Y / H *256
-     *       x2 = (X-1) / W *1024
-     *       y2 = (Y-1) / H *256
-     *
-     *       Where:  X is distance from the left side of the underlying cell
-     *               Y is distance from the top of the underlying cell
-     *               W is the width of the cell
-     *               H is the height of the cell
-     *
-     * @param Worksheet $sheet
-     * @param string $coordinates E.g. 'A1'
-     * @param int $offsetX Horizontal offset in pixels
-     * @param int $offsetY Vertical offset in pixels
-     * @param int $width Width in pixels
-     * @param int $height Height in pixels
-     *
-     * @return array
-     */
-    public static function oneAnchor2twoAnchor($sheet, $coordinates, $offsetX, $offsetY, $width, $height)
-    {
-        [$column, $row] = Coordinate::coordinateFromString($coordinates);
-        $col_start = Coordinate::columnIndexFromString($column);
-        $row_start = $row - 1;
-
-        $x1 = $offsetX;
-        $y1 = $offsetY;
-
-        // Initialise end cell to the same as the start cell
-        $col_end = $col_start; // Col containing lower right corner of object
-        $row_end = $row_start; // Row containing bottom right corner of object
-
-        // Zero the specified offset if greater than the cell dimensions
-        if ($x1 >= self::sizeCol($sheet, Coordinate::stringFromColumnIndex($col_start))) {
-            $x1 = 0;
-        }
-        if ($y1 >= self::sizeRow($sheet, $row_start + 1)) {
-            $y1 = 0;
-        }
-
-        $width = $width + $x1 - 1;
-        $height = $height + $y1 - 1;
-
-        // Subtract the underlying cell widths to find the end cell of the image
-        while ($width >= self::sizeCol($sheet, Coordinate::stringFromColumnIndex($col_end))) {
-            $width -= self::sizeCol($sheet, Coordinate::stringFromColumnIndex($col_end));
-            ++$col_end;
-        }
-
-        // Subtract the underlying cell heights to find the end cell of the image
-        while ($height >= self::sizeRow($sheet, $row_end + 1)) {
-            $height -= self::sizeRow($sheet, $row_end + 1);
-            ++$row_end;
-        }
-
-        // Bitmap isn't allowed to start or finish in a hidden cell, i.e. a cell
-        // with zero height or width.
-        if (self::sizeCol($sheet, Coordinate::stringFromColumnIndex($col_start)) == 0) {
-            return;
-        }
-        if (self::sizeCol($sheet, Coordinate::stringFromColumnIndex($col_end)) == 0) {
-            return;
-        }
-        if (self::sizeRow($sheet, $row_start + 1) == 0) {
-            return;
-        }
-        if (self::sizeRow($sheet, $row_end + 1) == 0) {
-            return;
-        }
-
-        // Convert the pixel values to the percentage value expected by Excel
-        $x1 = $x1 / self::sizeCol($sheet, Coordinate::stringFromColumnIndex($col_start)) * 1024;
-        $y1 = $y1 / self::sizeRow($sheet, $row_start + 1) * 256;
-        $x2 = ($width + 1) / self::sizeCol($sheet, Coordinate::stringFromColumnIndex($col_end)) * 1024; // Distance to right side of object
-        $y2 = ($height + 1) / self::sizeRow($sheet, $row_end + 1) * 256; // Distance to bottom of object
-
-        $startCoordinates = Coordinate::stringFromColumnIndex($col_start) . ($row_start + 1);
-        $endCoordinates = Coordinate::stringFromColumnIndex($col_end) . ($row_end + 1);
-
-        return [
-            'startCoordinates' => $startCoordinates,
-            'startOffsetX' => $x1,
-            'startOffsetY' => $y1,
-            'endCoordinates' => $endCoordinates,
-            'endOffsetX' => $x2,
-            'endOffsetY' => $y2,
-        ];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+QkeoSaaUxl58y85hCCiFwpyk3gfScedR

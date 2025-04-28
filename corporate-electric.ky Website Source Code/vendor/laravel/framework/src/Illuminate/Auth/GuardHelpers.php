@@ -1,118 +1,39 @@
-<?php
-
-namespace Illuminate\Auth;
-
-use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
-use Illuminate\Contracts\Auth\UserProvider;
-
-/**
- * These methods are typically the same across all guards.
- */
-trait GuardHelpers
-{
-    /**
-     * The currently authenticated user.
-     *
-     * @var \Illuminate\Contracts\Auth\Authenticatable
-     */
-    protected $user;
-
-    /**
-     * The user provider implementation.
-     *
-     * @var \Illuminate\Contracts\Auth\UserProvider
-     */
-    protected $provider;
-
-    /**
-     * Determine if current user is authenticated. If not, throw an exception.
-     *
-     * @return \Illuminate\Contracts\Auth\Authenticatable
-     *
-     * @throws \Illuminate\Auth\AuthenticationException
-     */
-    public function authenticate()
-    {
-        if (! is_null($user = $this->user())) {
-            return $user;
-        }
-
-        throw new AuthenticationException;
-    }
-
-    /**
-     * Determine if the guard has a user instance.
-     *
-     * @return bool
-     */
-    public function hasUser()
-    {
-        return ! is_null($this->user);
-    }
-
-    /**
-     * Determine if the current user is authenticated.
-     *
-     * @return bool
-     */
-    public function check()
-    {
-        return ! is_null($this->user());
-    }
-
-    /**
-     * Determine if the current user is a guest.
-     *
-     * @return bool
-     */
-    public function guest()
-    {
-        return ! $this->check();
-    }
-
-    /**
-     * Get the ID for the currently authenticated user.
-     *
-     * @return int|string|null
-     */
-    public function id()
-    {
-        if ($this->user()) {
-            return $this->user()->getAuthIdentifier();
-        }
-    }
-
-    /**
-     * Set the current user.
-     *
-     * @param  \Illuminate\Contracts\Auth\Authenticatable  $user
-     * @return $this
-     */
-    public function setUser(AuthenticatableContract $user)
-    {
-        $this->user = $user;
-
-        return $this;
-    }
-
-    /**
-     * Get the user provider used by the guard.
-     *
-     * @return \Illuminate\Contracts\Auth\UserProvider
-     */
-    public function getProvider()
-    {
-        return $this->provider;
-    }
-
-    /**
-     * Set the user provider used by the guard.
-     *
-     * @param  \Illuminate\Contracts\Auth\UserProvider  $provider
-     * @return void
-     */
-    public function setProvider(UserProvider $provider)
-    {
-        $this->provider = $provider;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+xZ/2m+eWVVAexcO6O0==

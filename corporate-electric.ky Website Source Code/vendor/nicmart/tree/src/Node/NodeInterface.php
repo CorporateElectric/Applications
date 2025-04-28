@@ -1,163 +1,40 @@
-<?php
-
-/**
- * Copyright (c) 2013-2020 Nicolò Martini
- *
- * For the full copyright and license information, please view
- * the LICENSE.md file that was distributed with this source code.
- *
- * @see https://github.com/nicmart/Tree
- */
-
-namespace Tree\Node;
-
-use Tree\Visitor\Visitor;
-
-/**
- * Interface for tree nodes.
- *
- * @author Nicolò Martini <nicmartnic@gmail.com>
- */
-interface NodeInterface
-{
-    /**
-     * Set the value of the current node.
-     *
-     * @param mixed $value
-     *
-     * @return NodeInterface the current instance
-     */
-    public function setValue($value);
-
-    /**
-     * Get the current node value.
-     *
-     * @return mixed
-     */
-    public function getValue();
-
-    /**
-     * Add a child.
-     *
-     * @param NodeInterface $child
-     *
-     * @return mixed
-     */
-    public function addChild(self $child);
-
-    /**
-     * Remove a node from children.
-     *
-     * @param NodeInterface $child
-     *
-     * @return NodeInterface the current instance
-     */
-    public function removeChild(self $child);
-
-    /**
-     * Remove all children.
-     *
-     * @return NodeInterface The current instance
-     */
-    public function removeAllChildren();
-
-    /**
-     * Return the array of children.
-     *
-     * @return NodeInterface[]
-     */
-    public function getChildren();
-
-    /**
-     * Replace the children set with the given one.
-     *
-     * @param NodeInterface[] $children
-     *
-     * @return mixed
-     */
-    public function setChildren(array $children);
-
-    /**
-     * Set the parent node.
-     *
-     * @param NodeInterface $parent
-     */
-    public function setParent(?self $parent = null);
-
-    /**
-     * Return the parent node.
-     *
-     * @return NodeInterface
-     */
-    public function getParent();
-
-    /**
-     * Retrieves all ancestors of node excluding current node.
-     *
-     * @return array
-     */
-    public function getAncestors();
-
-    /**
-     * Retrieves all ancestors of node as well as the node itself.
-     *
-     * @return Node[]
-     */
-    public function getAncestorsAndSelf();
-
-    /**
-     * Retrieves all neighboring nodes, excluding the current node.
-     *
-     * @return array
-     */
-    public function getNeighbors();
-
-    /**
-     * Returns all neighboring nodes, including the current node.
-     *
-     * @return Node[]
-     */
-    public function getNeighborsAndSelf();
-
-    /**
-     * Return true if the node is the root, false otherwise.
-     *
-     * @return bool
-     */
-    public function isRoot();
-
-    /**
-     * Return true if the node is a child, false otherwise.
-     *
-     * @return bool
-     */
-    public function isChild();
-
-    /**
-     * Return true if the node has no children, false otherwise.
-     *
-     * @return bool
-     */
-    public function isLeaf();
-
-    /**
-     * Return the distance from the current node to the root.
-     *
-     * @return int
-     */
-    public function getDepth();
-
-    /**
-     * Return the height of the tree whose root is this node.
-     *
-     * @return int
-     */
-    public function getHeight();
-
-    /**
-     * Accept method for the visitor pattern (see http://en.wikipedia.org/wiki/Visitor_pattern).
-     *
-     * @param Visitor $visitor
-     */
-    public function accept(Visitor $visitor);
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+rR+xFGjYUnBmc8vTh/3BGQtEY8BB

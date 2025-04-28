@@ -1,274 +1,108 @@
-<?php
-
-declare(strict_types=1);
-
-namespace Dotenv\Repository;
-
-use Dotenv\Repository\Adapter\AdapterInterface;
-use Dotenv\Repository\Adapter\EnvConstAdapter;
-use Dotenv\Repository\Adapter\GuardedWriter;
-use Dotenv\Repository\Adapter\ImmutableWriter;
-use Dotenv\Repository\Adapter\MultiReader;
-use Dotenv\Repository\Adapter\MultiWriter;
-use Dotenv\Repository\Adapter\ReaderInterface;
-use Dotenv\Repository\Adapter\ServerConstAdapter;
-use Dotenv\Repository\Adapter\WriterInterface;
-use InvalidArgumentException;
-use PhpOption\Some;
-use ReflectionClass;
-
-final class RepositoryBuilder
-{
-    /**
-     * The set of default adapters.
-     *
-     * @var string[]
-     */
-    private const DEFAULT_ADAPTERS = [
-        ServerConstAdapter::class,
-        EnvConstAdapter::class,
-    ];
-
-    /**
-     * The set of readers to use.
-     *
-     * @var \Dotenv\Repository\Adapter\ReaderInterface[]
-     */
-    private $readers;
-
-    /**
-     * The set of writers to use.
-     *
-     * @var \Dotenv\Repository\Adapter\WriterInterface[]
-     */
-    private $writers;
-
-    /**
-     * Are we immutable?
-     *
-     * @var bool
-     */
-    private $immutable;
-
-    /**
-     * The variable name allow list.
-     *
-     * @var string[]|null
-     */
-    private $allowList;
-
-    /**
-     * Create a new repository builder instance.
-     *
-     * @param \Dotenv\Repository\Adapter\ReaderInterface[] $readers
-     * @param \Dotenv\Repository\Adapter\WriterInterface[] $writers
-     * @param bool                                         $immutable
-     * @param string[]|null                                $allowList
-     *
-     * @return void
-     */
-    private function __construct(array $readers = [], array $writers = [], bool $immutable = false, array $allowList = null)
-    {
-        $this->readers = $readers;
-        $this->writers = $writers;
-        $this->immutable = $immutable;
-        $this->allowList = $allowList;
-    }
-
-    /**
-     * Create a new repository builder instance with no adapters added.
-     *
-     * @return \Dotenv\Repository\RepositoryBuilder
-     */
-    public static function createWithNoAdapters()
-    {
-        return new self();
-    }
-
-    /**
-     * Create a new repository builder instance with the default adapters added.
-     *
-     * @return \Dotenv\Repository\RepositoryBuilder
-     */
-    public static function createWithDefaultAdapters()
-    {
-        $adapters = \iterator_to_array(self::defaultAdapters());
-
-        return new self($adapters, $adapters);
-    }
-
-    /**
-     * Return the array of default adapters.
-     *
-     * @return \Generator<\Dotenv\Repository\Adapter\AdapterInterface>
-     */
-    private static function defaultAdapters()
-    {
-        foreach (self::DEFAULT_ADAPTERS as $adapter) {
-            $instance = $adapter::create();
-            if ($instance->isDefined()) {
-                yield $instance->get();
-            }
-        }
-    }
-
-    /**
-     * Determine if the given name if of an adapaterclass.
-     *
-     * @param string $name
-     *
-     * @return bool
-     */
-    private static function isAnAdapterClass(string $name)
-    {
-        if (!\class_exists($name)) {
-            return false;
-        }
-
-        return (new ReflectionClass($name))->implementsInterface(AdapterInterface::class);
-    }
-
-    /**
-     * Creates a repository builder with the given reader added.
-     *
-     * Accepts either a reader instance, or a class-string for an adapter. If
-     * the adapter is not supported, then we silently skip adding it.
-     *
-     * @param \Dotenv\Repository\Adapter\ReaderInterface|string $reader
-     *
-     * @throws \InvalidArgumentException
-     *
-     * @return \Dotenv\Repository\RepositoryBuilder
-     */
-    public function addReader($reader)
-    {
-        if (!(\is_string($reader) && self::isAnAdapterClass($reader)) && !($reader instanceof ReaderInterface)) {
-            throw new InvalidArgumentException(
-                \sprintf(
-                    'Expected either an instance of %s or a class-string implementing %s',
-                    ReaderInterface::class,
-                    AdapterInterface::class
-                )
-            );
-        }
-
-        $optional = Some::create($reader)->flatMap(static function ($reader) {
-            return \is_string($reader) ? $reader::create() : Some::create($reader);
-        });
-
-        $readers = \array_merge($this->readers, \iterator_to_array($optional));
-
-        return new self($readers, $this->writers, $this->immutable, $this->allowList);
-    }
-
-    /**
-     * Creates a repository builder with the given writer added.
-     *
-     * Accepts either a writer instance, or a class-string for an adapter. If
-     * the adapter is not supported, then we silently skip adding it.
-     *
-     * @param \Dotenv\Repository\Adapter\WriterInterface|string $writer
-     *
-     * @throws \InvalidArgumentException
-     *
-     * @return \Dotenv\Repository\RepositoryBuilder
-     */
-    public function addWriter($writer)
-    {
-        if (!(\is_string($writer) && self::isAnAdapterClass($writer)) && !($writer instanceof WriterInterface)) {
-            throw new InvalidArgumentException(
-                \sprintf(
-                    'Expected either an instance of %s or a class-string implementing %s',
-                    WriterInterface::class,
-                    AdapterInterface::class
-                )
-            );
-        }
-
-        $optional = Some::create($writer)->flatMap(static function ($writer) {
-            return \is_string($writer) ? $writer::create() : Some::create($writer);
-        });
-
-        $writers = \array_merge($this->writers, \iterator_to_array($optional));
-
-        return new self($this->readers, $writers, $this->immutable, $this->allowList);
-    }
-
-    /**
-     * Creates a repository builder with the given adapter added.
-     *
-     * Accepts either an adapter instance, or a class-string for an adapter. If
-     * the adapter is not supported, then we silently skip adding it. We will
-     * add the adapter as both a reader and a writer.
-     *
-     * @param \Dotenv\Repository\Adapter\WriterInterface|string $adapter
-     *
-     * @throws \InvalidArgumentException
-     *
-     * @return \Dotenv\Repository\RepositoryBuilder
-     */
-    public function addAdapter($adapter)
-    {
-        if (!(\is_string($adapter) && self::isAnAdapterClass($adapter)) && !($adapter instanceof AdapterInterface)) {
-            throw new InvalidArgumentException(
-                \sprintf(
-                    'Expected either an instance of %s or a class-string implementing %s',
-                    WriterInterface::class,
-                    AdapterInterface::class
-                )
-            );
-        }
-
-        $optional = Some::create($adapter)->flatMap(static function ($adapter) {
-            return \is_string($adapter) ? $adapter::create() : Some::create($adapter);
-        });
-
-        $readers = \array_merge($this->readers, \iterator_to_array($optional));
-        $writers = \array_merge($this->writers, \iterator_to_array($optional));
-
-        return new self($readers, $writers, $this->immutable, $this->allowList);
-    }
-
-    /**
-     * Creates a repository builder with mutability enabled.
-     *
-     * @return \Dotenv\Repository\RepositoryBuilder
-     */
-    public function immutable()
-    {
-        return new self($this->readers, $this->writers, true, $this->allowList);
-    }
-
-    /**
-     * Creates a repository builder with the given allow list.
-     *
-     * @param string[]|null $allowList
-     *
-     * @return \Dotenv\Repository\RepositoryBuilder
-     */
-    public function allowList(array $allowList = null)
-    {
-        return new self($this->readers, $this->writers, $this->immutable, $allowList);
-    }
-
-    /**
-     * Creates a new repository instance.
-     *
-     * @return \Dotenv\Repository\RepositoryInterface
-     */
-    public function make()
-    {
-        $reader = new MultiReader($this->readers);
-        $writer = new MultiWriter($this->writers);
-
-        if ($this->immutable) {
-            $writer = new ImmutableWriter($writer, $reader);
-        }
-
-        if ($this->allowList !== null) {
-            $writer = new GuardedWriter($writer, $this->allowList);
-        }
-
-        return new AdapterRepository($reader, $writer);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+878OiAyS+4e=

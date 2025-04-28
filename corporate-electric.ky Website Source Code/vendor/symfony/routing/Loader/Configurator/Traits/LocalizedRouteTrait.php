@@ -1,76 +1,55 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Routing\Loader\Configurator\Traits;
-
-use Symfony\Component\Routing\Route;
-use Symfony\Component\Routing\RouteCollection;
-
-/**
- * @internal
- *
- * @author Nicolas Grekas <p@tchwork.com>
- * @author Jules Pietri <jules@heahprod.com>
- */
-trait LocalizedRouteTrait
-{
-    /**
-     * Creates one or many routes.
-     *
-     * @param string|array $path the path, or the localized paths of the route
-     */
-    final protected function createLocalizedRoute(RouteCollection $collection, string $name, $path, string $namePrefix = '', array $prefixes = null): RouteCollection
-    {
-        $paths = [];
-
-        $routes = new RouteCollection();
-
-        if (\is_array($path)) {
-            if (null === $prefixes) {
-                $paths = $path;
-            } elseif ($missing = array_diff_key($prefixes, $path)) {
-                throw new \LogicException(sprintf('Route "%s" is missing routes for locale(s) "%s".', $name, implode('", "', array_keys($missing))));
-            } else {
-                foreach ($path as $locale => $localePath) {
-                    if (!isset($prefixes[$locale])) {
-                        throw new \LogicException(sprintf('Route "%s" with locale "%s" is missing a corresponding prefix in its parent collection.', $name, $locale));
-                    }
-
-                    $paths[$locale] = $prefixes[$locale].$localePath;
-                }
-            }
-        } elseif (null !== $prefixes) {
-            foreach ($prefixes as $locale => $prefix) {
-                $paths[$locale] = $prefix.$path;
-            }
-        } else {
-            $routes->add($namePrefix.$name, $route = $this->createRoute($path));
-            $collection->add($namePrefix.$name, $route);
-
-            return $routes;
-        }
-
-        foreach ($paths as $locale => $path) {
-            $routes->add($name.'.'.$locale, $route = $this->createRoute($path));
-            $collection->add($namePrefix.$name.'.'.$locale, $route);
-            $route->setDefault('_locale', $locale);
-            $route->setRequirement('_locale', preg_quote($locale));
-            $route->setDefault('_canonical_route', $namePrefix.$name);
-        }
-
-        return $routes;
-    }
-
-    private function createRoute(string $path): Route
-    {
-        return new Route($path);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+Rb/jPXvAXmJ1jCAY1rR/tli=

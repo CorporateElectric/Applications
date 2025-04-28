@@ -1,62 +1,38 @@
-<?php
-
-namespace Illuminate\Database\Eloquent\Factories;
-
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\HasOneOrMany;
-use Illuminate\Database\Eloquent\Relations\MorphOneOrMany;
-
-class Relationship
-{
-    /**
-     * The related factory instance.
-     *
-     * @var \Illuminate\Database\Eloquent\Factories\Factory
-     */
-    protected $factory;
-
-    /**
-     * The relationship name.
-     *
-     * @var string
-     */
-    protected $relationship;
-
-    /**
-     * Create a new child relationship instance.
-     *
-     * @param  \Illuminate\Database\Eloquent\Factories\Factory  $factory
-     * @param  string  $relationship
-     * @return void
-     */
-    public function __construct(Factory $factory, $relationship)
-    {
-        $this->factory = $factory;
-        $this->relationship = $relationship;
-    }
-
-    /**
-     * Create the child relationship for the given parent model.
-     *
-     * @param  \Illuminate\Database\Eloquent\Model  $parent
-     * @return void
-     */
-    public function createFor(Model $parent)
-    {
-        $relationship = $parent->{$this->relationship}();
-
-        if ($relationship instanceof MorphOneOrMany) {
-            $this->factory->state([
-                $relationship->getMorphType() => $relationship->getMorphClass(),
-                $relationship->getForeignKeyName() => $relationship->getParentKey(),
-            ])->create([], $parent);
-        } elseif ($relationship instanceof HasOneOrMany) {
-            $this->factory->state([
-                $relationship->getForeignKeyName() => $relationship->getParentKey(),
-            ])->create([], $parent);
-        } elseif ($relationship instanceof BelongsToMany) {
-            $relationship->attach($this->factory->create([], $parent));
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

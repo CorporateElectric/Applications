@@ -1,1152 +1,443 @@
-<?php
-/*
- * This file is part of the DebugBar package.
- *
- * (c) 2013 Maxime Bouroumeau-Fuseau
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace DebugBar;
-
-use DebugBar\DataCollector\AssetProvider;
-use DebugBar\DataCollector\Renderable;
-
-/**
- * Renders the debug bar using the client side javascript implementation
- *
- * Generates all the needed initialization code of controls
- */
-class JavascriptRenderer
-{
-    const INITIALIZE_CONSTRUCTOR = 2;
-
-    const INITIALIZE_CONTROLS = 4;
-
-    const REPLACEABLE_TAG = "{--DEBUGBAR_OB_START_REPLACE_ME--}";
-
-    const RELATIVE_PATH = 'path';
-
-    const RELATIVE_URL = 'url';
-
-    protected $debugBar;
-
-    protected $baseUrl;
-
-    protected $basePath;
-
-    protected $cssVendors = array(
-        'fontawesome' => 'vendor/font-awesome/css/font-awesome.min.css',
-        'highlightjs' => 'vendor/highlightjs/styles/github.css'
-    );
-
-    protected $jsVendors = array(
-        'jquery' => 'vendor/jquery/dist/jquery.min.js',
-        'highlightjs' => 'vendor/highlightjs/highlight.pack.js'
-    );
-
-    protected $includeVendors = true;
-
-    protected $cssFiles = array('debugbar.css', 'widgets.css', 'openhandler.css');
-
-    protected $jsFiles = array('debugbar.js', 'widgets.js', 'openhandler.js');
-
-    protected $additionalAssets = array();
-
-    protected $javascriptClass = 'PhpDebugBar.DebugBar';
-
-    protected $variableName = 'phpdebugbar';
-
-    protected $enableJqueryNoConflict = true;
-
-    protected $useRequireJs = false;
-
-    protected $initialization;
-
-    protected $controls = array();
-
-    protected $ignoredCollectors = array();
-
-    protected $ajaxHandlerClass = 'PhpDebugBar.AjaxHandler';
-
-    protected $ajaxHandlerBindToFetch = false;
-
-    protected $ajaxHandlerBindToJquery = true;
-
-    protected $ajaxHandlerBindToXHR = false;
-
-    protected $ajaxHandlerAutoShow = true;
-
-    protected $openHandlerClass = 'PhpDebugBar.OpenHandler';
-
-    protected $openHandlerUrl;
-
-    /**
-     * @param \DebugBar\DebugBar $debugBar
-     * @param string $baseUrl
-     * @param string $basePath
-     */
-    public function __construct(DebugBar $debugBar, $baseUrl = null, $basePath = null)
-    {
-        $this->debugBar = $debugBar;
-
-        if ($baseUrl === null) {
-            $baseUrl = '/vendor/maximebf/debugbar/src/DebugBar/Resources';
-        }
-        $this->baseUrl = $baseUrl;
-
-        if ($basePath === null) {
-            $basePath = __DIR__ . DIRECTORY_SEPARATOR . 'Resources';
-        }
-        $this->basePath = $basePath;
-
-        // bitwise operations cannot be done in class definition :(
-        $this->initialization = self::INITIALIZE_CONSTRUCTOR | self::INITIALIZE_CONTROLS;
-    }
-
-    /**
-     * Sets options from an array
-     *
-     * Options:
-     *  - base_path
-     *  - base_url
-     *  - include_vendors
-     *  - javascript_class
-     *  - variable_name
-     *  - initialization
-     *  - enable_jquery_noconflict
-     *  - controls
-     *  - disable_controls
-     *  - ignore_collectors
-     *  - ajax_handler_classname
-     *  - ajax_handler_bind_to_jquery
-     *  - ajax_handler_auto_show
-     *  - open_handler_classname
-     *  - open_handler_url
-     *
-     * @param array $options [description]
-     */
-    public function setOptions(array $options)
-    {
-        if (array_key_exists('base_path', $options)) {
-            $this->setBasePath($options['base_path']);
-        }
-        if (array_key_exists('base_url', $options)) {
-            $this->setBaseUrl($options['base_url']);
-        }
-        if (array_key_exists('include_vendors', $options)) {
-            $this->setIncludeVendors($options['include_vendors']);
-        }
-        if (array_key_exists('javascript_class', $options)) {
-            $this->setJavascriptClass($options['javascript_class']);
-        }
-        if (array_key_exists('variable_name', $options)) {
-            $this->setVariableName($options['variable_name']);
-        }
-        if (array_key_exists('initialization', $options)) {
-            $this->setInitialization($options['initialization']);
-        }
-        if (array_key_exists('enable_jquery_noconflict', $options)) {
-            $this->setEnableJqueryNoConflict($options['enable_jquery_noconflict']);
-        }
-        if (array_key_exists('use_requirejs', $options)) {
-            $this->setUseRequireJs($options['use_requirejs']);
-        }
-        if (array_key_exists('controls', $options)) {
-            foreach ($options['controls'] as $name => $control) {
-                $this->addControl($name, $control);
-            }
-        }
-        if (array_key_exists('disable_controls', $options)) {
-            foreach ((array) $options['disable_controls'] as $name) {
-                $this->disableControl($name);
-            }
-        }
-        if (array_key_exists('ignore_collectors', $options)) {
-            foreach ((array) $options['ignore_collectors'] as $name) {
-                $this->ignoreCollector($name);
-            }
-        }
-        if (array_key_exists('ajax_handler_classname', $options)) {
-            $this->setAjaxHandlerClass($options['ajax_handler_classname']);
-        }
-        if (array_key_exists('ajax_handler_bind_to_jquery', $options)) {
-            $this->setBindAjaxHandlerToJquery($options['ajax_handler_bind_to_jquery']);
-        }
-        if (array_key_exists('ajax_handler_auto_show', $options)) {
-            $this->setAjaxHandlerAutoShow($options['ajax_handler_auto_show']);
-        }
-        if (array_key_exists('open_handler_classname', $options)) {
-            $this->setOpenHandlerClass($options['open_handler_classname']);
-        }
-        if (array_key_exists('open_handler_url', $options)) {
-            $this->setOpenHandlerUrl($options['open_handler_url']);
-        }
-    }
-
-    /**
-     * Sets the path which assets are relative to
-     *
-     * @param string $path
-     */
-    public function setBasePath($path)
-    {
-        $this->basePath = $path;
-        return $this;
-    }
-
-    /**
-     * Returns the path which assets are relative to
-     *
-     * @return string
-     */
-    public function getBasePath()
-    {
-        return $this->basePath;
-    }
-
-    /**
-     * Sets the base URL from which assets will be served
-     *
-     * @param string $url
-     */
-    public function setBaseUrl($url)
-    {
-        $this->baseUrl = $url;
-        return $this;
-    }
-
-    /**
-     * Returns the base URL from which assets will be served
-     *
-     * @return string
-     */
-    public function getBaseUrl()
-    {
-        return $this->baseUrl;
-    }
-
-    /**
-     * Whether to include vendor assets
-     *
-     * You can only include js or css vendors using
-     * setIncludeVendors('css') or setIncludeVendors('js')
-     *
-     * @param boolean $enabled
-     */
-    public function setIncludeVendors($enabled = true)
-    {
-        if (is_string($enabled)) {
-            $enabled = array($enabled);
-        }
-        $this->includeVendors = $enabled;
-
-        if (!$enabled || (is_array($enabled) && !in_array('js', $enabled))) {
-            // no need to call jQuery.noConflict() if we do not include our own version
-            $this->enableJqueryNoConflict = false;
-        }
-
-        return $this;
-    }
-
-    /**
-     * Checks if vendors assets are included
-     *
-     * @return boolean
-     */
-    public function areVendorsIncluded()
-    {
-        return $this->includeVendors !== false;
-    }
-
-    /**
-     * Disable a specific vendor's assets.
-     *
-     * @param  string $name "jquery", "fontawesome", "highlightjs"
-     *
-     * @return void
-     */
-    public function disableVendor($name)
-    {
-        if (array_key_exists($name, $this->cssVendors)) {
-            unset($this->cssVendors[$name]);
-        }
-        if (array_key_exists($name, $this->jsVendors)) {
-            unset($this->jsVendors[$name]);
-        }
-    }
-
-    /**
-     * Sets the javascript class name
-     *
-     * @param string $className
-     */
-    public function setJavascriptClass($className)
-    {
-        $this->javascriptClass = $className;
-        return $this;
-    }
-
-    /**
-     * Returns the javascript class name
-     *
-     * @return string
-     */
-    public function getJavascriptClass()
-    {
-        return $this->javascriptClass;
-    }
-
-    /**
-     * Sets the variable name of the class instance
-     *
-     * @param string $name
-     */
-    public function setVariableName($name)
-    {
-        $this->variableName = $name;
-        return $this;
-    }
-
-    /**
-     * Returns the variable name of the class instance
-     *
-     * @return string
-     */
-    public function getVariableName()
-    {
-        return $this->variableName;
-    }
-
-    /**
-     * Sets what should be initialized
-     *
-     *  - INITIALIZE_CONSTRUCTOR: only initializes the instance
-     *  - INITIALIZE_CONTROLS: initializes the controls and data mapping
-     *  - INITIALIZE_CONSTRUCTOR | INITIALIZE_CONTROLS: initialize everything (default)
-     *
-     * @param integer $init
-     */
-    public function setInitialization($init)
-    {
-        $this->initialization = $init;
-        return $this;
-    }
-
-    /**
-     * Returns what should be initialized
-     *
-     * @return integer
-     */
-    public function getInitialization()
-    {
-        return $this->initialization;
-    }
-
-    /**
-     * Sets whether to call jQuery.noConflict()
-     *
-     * @param boolean $enabled
-     */
-    public function setEnableJqueryNoConflict($enabled = true)
-    {
-        $this->enableJqueryNoConflict = $enabled;
-        return $this;
-    }
-
-    /**
-     * Checks if jQuery.noConflict() will be called
-     *
-     * @return boolean
-     */
-    public function isJqueryNoConflictEnabled()
-    {
-        return $this->enableJqueryNoConflict;
-    }
-
-    /**
-     * Sets whether to use RequireJS or not
-     *
-     * @param boolean $enabled
-     * @return $this
-     */
-    public function setUseRequireJs($enabled = true)
-    {
-        $this->useRequireJs = $enabled;
-        return $this;
-    }
-
-    /**
-     * Checks if RequireJS is used
-     *
-     * @return boolean
-     */
-    public function isRequireJsUsed()
-    {
-        return $this->useRequireJs;
-    }
-
-    /**
-     * Adds a control to initialize
-     *
-     * Possible options:
-     *  - icon: icon name
-     *  - tooltip: string
-     *  - widget: widget class name
-     *  - title: tab title
-     *  - map: a property name from the data to map the control to
-     *  - default: a js string, default value of the data map
-     *
-     * "icon" or "widget" are at least needed
-     *
-     * @param string $name
-     * @param array $options
-     */
-    public function addControl($name, array $options)
-    {
-        if (count(array_intersect(array_keys($options), array('icon', 'widget', 'tab', 'indicator'))) === 0) {
-            throw new DebugBarException("Not enough options for control '$name'");
-        }
-        $this->controls[$name] = $options;
-        return $this;
-    }
-
-    /**
-     * Disables a control
-     *
-     * @param string $name
-     */
-    public function disableControl($name)
-    {
-        $this->controls[$name] = null;
-        return $this;
-    }
-
-    /**
-     * Returns the list of controls
-     *
-     * This does not include controls provided by collectors
-     *
-     * @return array
-     */
-    public function getControls()
-    {
-        return $this->controls;
-    }
-
-    /**
-     * Ignores widgets provided by a collector
-     *
-     * @param string $name
-     */
-    public function ignoreCollector($name)
-    {
-        $this->ignoredCollectors[] = $name;
-        return $this;
-    }
-
-    /**
-     * Returns the list of ignored collectors
-     *
-     * @return array
-     */
-    public function getIgnoredCollectors()
-    {
-        return $this->ignoredCollectors;
-    }
-
-    /**
-     * Sets the class name of the ajax handler
-     *
-     * Set to false to disable
-     *
-     * @param string $className
-     */
-    public function setAjaxHandlerClass($className)
-    {
-        $this->ajaxHandlerClass = $className;
-        return $this;
-    }
-
-    /**
-     * Returns the class name of the ajax handler
-     *
-     * @return string
-     */
-    public function getAjaxHandlerClass()
-    {
-        return $this->ajaxHandlerClass;
-    }
-
-    /**
-     * Sets whether to call bindToFetch() on the ajax handler
-     *
-     * @param boolean $bind
-     */
-    public function setBindAjaxHandlerToFetch($bind = true)
-    {
-        $this->ajaxHandlerBindToFetch = $bind;
-        return $this;
-    }
-
-    /**
-     * Checks whether bindToFetch() will be called on the ajax handler
-     *
-     * @return boolean
-     */
-    public function isAjaxHandlerBoundToFetch()
-    {
-        return $this->ajaxHandlerBindToFetch;
-    }
-
-    /**
-     * Sets whether to call bindToJquery() on the ajax handler
-     *
-     * @param boolean $bind
-     */
-    public function setBindAjaxHandlerToJquery($bind = true)
-    {
-        $this->ajaxHandlerBindToJquery = $bind;
-        return $this;
-    }
-
-    /**
-     * Checks whether bindToJquery() will be called on the ajax handler
-     *
-     * @return boolean
-     */
-    public function isAjaxHandlerBoundToJquery()
-    {
-        return $this->ajaxHandlerBindToJquery;
-    }
-
-    /**
-     * Sets whether to call bindToXHR() on the ajax handler
-     *
-     * @param boolean $bind
-     */
-    public function setBindAjaxHandlerToXHR($bind = true)
-    {
-        $this->ajaxHandlerBindToXHR = $bind;
-        return $this;
-    }
-
-    /**
-     * Checks whether bindToXHR() will be called on the ajax handler
-     *
-     * @return boolean
-     */
-    public function isAjaxHandlerBoundToXHR()
-    {
-        return $this->ajaxHandlerBindToXHR;
-    }
-
-    /**
-     * Sets whether new ajax debug data will be immediately shown.  Setting to false could be useful
-     * if there are a lot of tracking events cluttering things.
-     *
-     * @param boolean $autoShow
-     */
-    public function setAjaxHandlerAutoShow($autoShow = true)
-    {
-        $this->ajaxHandlerAutoShow = $autoShow;
-        return $this;
-    }
-
-    /**
-     * Checks whether the ajax handler will immediately show new ajax requests.
-     *
-     * @return boolean
-     */
-    public function isAjaxHandlerAutoShow()
-    {
-        return $this->ajaxHandlerAutoShow;
-    }
-
-    /**
-     * Sets the class name of the js open handler
-     *
-     * @param string $className
-     */
-    public function setOpenHandlerClass($className)
-    {
-        $this->openHandlerClass = $className;
-        return $this;
-    }
-
-    /**
-     * Returns the class name of the js open handler
-     *
-     * @return string
-     */
-    public function getOpenHandlerClass()
-    {
-        return $this->openHandlerClass;
-    }
-
-    /**
-     * Sets the url of the open handler
-     *
-     * @param string $url
-     */
-    public function setOpenHandlerUrl($url)
-    {
-        $this->openHandlerUrl = $url;
-        return $this;
-    }
-
-    /**
-     * Returns the url for the open handler
-     *
-     * @return string
-     */
-    public function getOpenHandlerUrl()
-    {
-        return $this->openHandlerUrl;
-    }
-
-    /**
-     * Add assets stored in files to render in the head
-     *
-     * @param array $cssFiles An array of filenames
-     * @param array $jsFiles  An array of filenames
-     * @param string $basePath Base path of those files
-     * @param string $baseUrl  Base url of those files
-     * @return $this
-     */
-    public function addAssets($cssFiles, $jsFiles, $basePath = null, $baseUrl = null)
-    {
-        $this->additionalAssets[] = array(
-            'base_path' => $basePath,
-            'base_url' => $baseUrl,
-            'css' => (array) $cssFiles,
-            'js' => (array) $jsFiles
-        );
-        return $this;
-    }
-
-    /**
-     * Add inline assets to render inline in the head.  Ideally, you should store static assets in
-     * files that you add with the addAssets function.  However, adding inline assets is useful when
-     * integrating with 3rd-party libraries that require static assets that are only available in an
-     * inline format.
-     *
-     * The inline content arrays require special string array keys:  they are used to deduplicate
-     * content.  This is particularly useful if multiple instances of the same asset end up being
-     * added.  Inline assets from all collectors are merged together into the same array, so these
-     * content IDs effectively deduplicate the inline assets.
-     *
-     * @param array $inlineCss  An array map of content ID to inline CSS content (not including <style> tag)
-     * @param array $inlineJs   An array map of content ID to inline JS content (not including <script> tag)
-     * @param array $inlineHead An array map of content ID to arbitrary inline HTML content (typically
-     *                          <style>/<script> tags); it must be embedded within the <head> element
-     * @return $this
-     */
-    public function addInlineAssets($inlineCss, $inlineJs, $inlineHead)
-    {
-        $this->additionalAssets[] = array(
-            'inline_css' => (array) $inlineCss,
-            'inline_js' => (array) $inlineJs,
-            'inline_head' => (array) $inlineHead
-        );
-        return $this;
-    }
-
-    /**
-     * Returns the list of asset files
-     *
-     * @param string $type 'css', 'js', 'inline_css', 'inline_js', 'inline_head', or null for all
-     * @param string $relativeTo The type of path to which filenames must be relative (path, url or null)
-     * @return array
-     */
-    public function getAssets($type = null, $relativeTo = self::RELATIVE_PATH)
-    {
-        $cssFiles = $this->cssFiles;
-        $jsFiles = $this->jsFiles;
-        $inlineCss = array();
-        $inlineJs = array();
-        $inlineHead = array();
-
-        if ($this->includeVendors !== false) {
-            if ($this->includeVendors === true || in_array('css', $this->includeVendors)) {
-                $cssFiles = array_merge($this->cssVendors, $cssFiles);
-            }
-            if ($this->includeVendors === true || in_array('js', $this->includeVendors)) {
-                $jsFiles = array_merge($this->jsVendors, $jsFiles);
-            }
-        }
-
-        if ($relativeTo) {
-            $root = $this->getRelativeRoot($relativeTo, $this->basePath, $this->baseUrl);
-            $cssFiles = $this->makeUriRelativeTo($cssFiles, $root);
-            $jsFiles = $this->makeUriRelativeTo($jsFiles, $root);
-        }
-
-        $additionalAssets = $this->additionalAssets;
-        // finds assets provided by collectors
-        foreach ($this->debugBar->getCollectors() as $collector) {
-            if (($collector instanceof AssetProvider) && !in_array($collector->getName(), $this->ignoredCollectors)) {
-                $additionalAssets[] = $collector->getAssets();
-            }
-        }
-
-        foreach ($additionalAssets as $assets) {
-            $basePath = isset($assets['base_path']) ? $assets['base_path'] : null;
-            $baseUrl = isset($assets['base_url']) ? $assets['base_url'] : null;
-            $root = $this->getRelativeRoot($relativeTo,
-                $this->makeUriRelativeTo($basePath, $this->basePath),
-                $this->makeUriRelativeTo($baseUrl, $this->baseUrl));
-            if (isset($assets['css'])) {
-                $cssFiles = array_merge($cssFiles, $this->makeUriRelativeTo((array) $assets['css'], $root));
-            }
-            if (isset($assets['js'])) {
-                $jsFiles = array_merge($jsFiles, $this->makeUriRelativeTo((array) $assets['js'], $root));
-            }
-
-            if (isset($assets['inline_css'])) {
-                $inlineCss = array_merge($inlineCss, (array) $assets['inline_css']);
-            }
-            if (isset($assets['inline_js'])) {
-                $inlineJs = array_merge($inlineJs, (array) $assets['inline_js']);
-            }
-            if (isset($assets['inline_head'])) {
-                $inlineHead = array_merge($inlineHead, (array) $assets['inline_head']);
-            }
-        }
-
-        // Deduplicate files
-        $cssFiles = array_unique($cssFiles);
-        $jsFiles = array_unique($jsFiles);
-
-        return $this->filterAssetArray(array($cssFiles, $jsFiles, $inlineCss, $inlineJs, $inlineHead), $type);
-    }
-
-    /**
-     * Returns the correct base according to the type
-     *
-     * @param string $relativeTo
-     * @param string $basePath
-     * @param string $baseUrl
-     * @return string
-     */
-    protected function getRelativeRoot($relativeTo, $basePath, $baseUrl)
-    {
-        if ($relativeTo === self::RELATIVE_PATH) {
-            return $basePath;
-        }
-        if ($relativeTo === self::RELATIVE_URL) {
-            return $baseUrl;
-        }
-        return null;
-    }
-
-    /**
-     * Makes a URI relative to another
-     *
-     * @param string|array $uri
-     * @param string $root
-     * @return string
-     */
-    protected function makeUriRelativeTo($uri, $root)
-    {
-        if (!$root) {
-            return $uri;
-        }
-
-        if (is_array($uri)) {
-            $uris = array();
-            foreach ($uri as $u) {
-                $uris[] = $this->makeUriRelativeTo($u, $root);
-            }
-            return $uris;
-        }
-
-        if (substr($uri, 0, 1) === '/' || preg_match('/^([a-zA-Z]+:\/\/|[a-zA-Z]:\/|[a-zA-Z]:\\\)/', $uri)) {
-            return $uri;
-        }
-        return rtrim($root, '/') . "/$uri";
-    }
-
-    /**
-     * Filters a tuple of (css, js, inline_css, inline_js, inline_head) assets according to $type
-     *
-     * @param array $array
-     * @param string $type 'css', 'js', 'inline_css', 'inline_js', 'inline_head', or null for all
-     * @return array
-     */
-    protected function filterAssetArray($array, $type = null)
-    {
-        $types = array('css', 'js', 'inline_css', 'inline_js', 'inline_head');
-        $typeIndex = array_search(strtolower($type), $types);
-        return $typeIndex !== false ? $array[$typeIndex] : $array;
-    }
-
-    /**
-     * Returns an array where all items are Assetic AssetCollection:
-     *  - The first one contains the CSS files
-     *  - The second one contains the JS files
-     *  - The third one contains arbitrary inline HTML (typically composed of <script>/<style>
-     *    elements); it must be embedded within the <head> element
-     *
-     * @param string $type Optionally return only 'css', 'js', or 'inline_head' collection
-     * @return array|\Assetic\Asset\AssetCollection
-     */
-    public function getAsseticCollection($type = null)
-    {
-        $types = array('css', 'js', 'inline_head');
-        $typeIndex = array_search(strtolower($type), $types);
-
-        list($cssFiles, $jsFiles, $inlineCss, $inlineJs, $inlineHead) = $this->getAssets();
-        $collections = array(
-            $this->createAsseticCollection($cssFiles, $inlineCss),
-            $this->createAsseticCollection($jsFiles, $inlineJs),
-            $this->createAsseticCollection(null, $inlineHead)
-        );
-        return $typeIndex !== false ? $collections[$typeIndex] : $collections;
-    }
-
-    /**
-     * Create an Assetic AssetCollection with the given content.
-     * Filenames will be converted to absolute path using
-     * the base path.
-     *
-     * @param array|null $files Array of asset filenames.
-     * @param array|null $content Array of inline asset content.
-     * @return \Assetic\Asset\AssetCollection
-     */
-    protected function createAsseticCollection($files = null, $content = null)
-    {
-        $assets = array();
-        if ($files) {
-            foreach ($files as $file) {
-                $assets[] = new \Assetic\Asset\FileAsset($file);
-            }
-        }
-        if ($content) {
-            foreach ($content as $item) {
-                $assets[] = new \Assetic\Asset\StringAsset($item);
-            }
-        }
-        return new \Assetic\Asset\AssetCollection($assets);
-    }
-
-    /**
-     * Write all CSS assets to standard output or in a file
-     *
-     * @param string $targetFilename
-     */
-    public function dumpCssAssets($targetFilename = null)
-    {
-        $this->dumpAssets($this->getAssets('css'), $this->getAssets('inline_css'), $targetFilename);
-    }
-
-    /**
-     * Write all JS assets to standard output or in a file
-     *
-     * @param string $targetFilename
-     */
-    public function dumpJsAssets($targetFilename = null)
-    {
-        $this->dumpAssets($this->getAssets('js'), $this->getAssets('inline_js'), $targetFilename, $this->useRequireJs);
-    }
-
-    /**
-     * Write all inline HTML header assets to standard output or in a file (only returns assets not
-     * already returned by dumpCssAssets or dumpJsAssets)
-     *
-     * @param string $targetFilename
-     */
-    public function dumpHeadAssets($targetFilename = null)
-    {
-        $this->dumpAssets(null, $this->getAssets('inline_head'), $targetFilename);
-    }
-
-    /**
-     * Write assets to standard output or in a file
-     *
-     * @param array|null $files Filenames containing assets
-     * @param array|null $content Inline content to dump
-     * @param string $targetFilename
-     * @param bool $useRequireJs
-     */
-    protected function dumpAssets($files = null, $content = null, $targetFilename = null, $useRequireJs = false)
-    {
-        $dumpedContent = '';
-        if ($files) {
-            foreach ($files as $file) {
-                $dumpedContent .= file_get_contents($file) . "\n";
-            }
-        }
-        if ($content) {
-            foreach ($content as $item) {
-                $dumpedContent .= $item . "\n";
-            }
-        }
-        if ($useRequireJs) {
-            $dumpedContent = "define('debugbar', ['jquery'], function($){\r\n" . $dumpedContent . "\r\n return PhpDebugBar; \r\n});";
-        }
-        if ($targetFilename !== null) {
-            file_put_contents($targetFilename, $dumpedContent);
-        } else {
-            echo $dumpedContent;
-        }
-    }
-
-    /**
-     * Renders the html to include needed assets
-     *
-     * Only useful if Assetic is not used
-     *
-     * @return string
-     */
-    public function renderHead()
-    {
-        list($cssFiles, $jsFiles, $inlineCss, $inlineJs, $inlineHead) = $this->getAssets(null, self::RELATIVE_URL);
-        $html = '';
-
-        foreach ($cssFiles as $file) {
-            $html .= sprintf('<link rel="stylesheet" type="text/css" href="%s">' . "\n", $file);
-        }
-
-        foreach ($inlineCss as $content) {
-            $html .= sprintf('<style type="text/css">%s</style>' . "\n", $content);
-        }
-
-        foreach ($jsFiles as $file) {
-            $html .= sprintf('<script type="text/javascript" src="%s"></script>' . "\n", $file);
-        }
-
-        foreach ($inlineJs as $content) {
-            $html .= sprintf('<script type="text/javascript">%s</script>' . "\n", $content);
-        }
-
-        foreach ($inlineHead as $content) {
-            $html .= $content . "\n";
-        }
-
-        if ($this->enableJqueryNoConflict && !$this->useRequireJs) {
-            $html .= '<script type="text/javascript">jQuery.noConflict(true);</script>' . "\n";
-        }
-
-        return $html;
-    }
-
-    /**
-     * Register shutdown to display the debug bar
-     *
-     * @param boolean $here Set position of HTML. True if is to current position or false for end file
-     * @param boolean $initialize Whether to render the de bug bar initialization code
-     * @param bool $renderStackedData
-     * @param bool $head
-     * @return string Return "{--DEBUGBAR_OB_START_REPLACE_ME--}" or return an empty string if $here == false
-     */
-    public function renderOnShutdown($here = true, $initialize = true, $renderStackedData = true, $head = false)
-    {
-        register_shutdown_function(array($this, "replaceTagInBuffer"), $here, $initialize, $renderStackedData, $head);
-
-        if (ob_get_level() === 0) {
-            ob_start();
-        }
-
-        return ($here) ? self::REPLACEABLE_TAG : "";
-    }
-
-    /**
-     * Same as renderOnShutdown() with $head = true
-     *
-     * @param boolean $here
-     * @param boolean $initialize
-     * @param boolean $renderStackedData
-     * @return string
-     */
-    public function renderOnShutdownWithHead($here = true, $initialize = true, $renderStackedData = true)
-    {
-        return $this->renderOnShutdown($here, $initialize, $renderStackedData, true);
-    }
-
-    /**
-     * Is callback function for register_shutdown_function(...)
-     *
-     * @param boolean $here Set position of HTML. True if is to current position or false for end file
-     * @param boolean $initialize Whether to render the de bug bar initialization code
-     * @param bool $renderStackedData
-     * @param bool $head
-     */
-    public function replaceTagInBuffer($here = true, $initialize = true, $renderStackedData = true, $head = false)
-    {
-        $render = ($head ? $this->renderHead() : "")
-                . $this->render($initialize, $renderStackedData);
-
-        $current = ($here && ob_get_level() > 0) ? ob_get_clean() : self::REPLACEABLE_TAG;
-
-        echo str_replace(self::REPLACEABLE_TAG, $render, $current, $count);
-
-        if ($count === 0) {
-            echo $render;
-        }
-    }
-
-    /**
-     * Returns the code needed to display the debug bar
-     *
-     * AJAX request should not render the initialization code.
-     *
-     * @param boolean $initialize Whether or not to render the debug bar initialization code
-     * @param boolean $renderStackedData Whether or not to render the stacked data
-     * @return string
-     */
-    public function render($initialize = true, $renderStackedData = true)
-    {
-        $js = '';
-
-        if ($initialize) {
-            $js = $this->getJsInitializationCode();
-        }
-
-        if ($renderStackedData && $this->debugBar->hasStackedData()) {
-            foreach ($this->debugBar->getStackedData() as $id => $data) {
-                $js .= $this->getAddDatasetCode($id, $data, '(stacked)');
-            }
-        }
-
-        $suffix = !$initialize ? '(ajax)' : null;
-        $js .= $this->getAddDatasetCode($this->debugBar->getCurrentRequestId(), $this->debugBar->getData(), $suffix);
-
-        if ($this->useRequireJs){
-            return "<script type=\"text/javascript\">\nrequire(['debugbar'], function(PhpDebugBar){ $js });\n</script>\n";
-        } else {
-            return "<script type=\"text/javascript\">\n$js\n</script>\n";
-        }
-
-    }
-
-    /**
-     * Returns the js code needed to initialize the debug bar
-     *
-     * @return string
-     */
-    protected function getJsInitializationCode()
-    {
-        $js = '';
-
-        if (($this->initialization & self::INITIALIZE_CONSTRUCTOR) === self::INITIALIZE_CONSTRUCTOR) {
-            $js .= sprintf("var %s = new %s();\n", $this->variableName, $this->javascriptClass);
-        }
-
-        if (($this->initialization & self::INITIALIZE_CONTROLS) === self::INITIALIZE_CONTROLS) {
-            $js .= $this->getJsControlsDefinitionCode($this->variableName);
-        }
-
-        if ($this->ajaxHandlerClass) {
-            $js .= sprintf("%s.ajaxHandler = new %s(%s, undefined, %s);\n",
-                $this->variableName,
-                $this->ajaxHandlerClass,
-                $this->variableName,
-                $this->ajaxHandlerAutoShow ? 'true' : 'false'
-            );
-            if ($this->ajaxHandlerBindToFetch) {
-                $js .= sprintf("%s.ajaxHandler.bindToFetch();\n", $this->variableName);
-            }
-            if ($this->ajaxHandlerBindToXHR) {
-                $js .= sprintf("%s.ajaxHandler.bindToXHR();\n", $this->variableName);
-            } elseif ($this->ajaxHandlerBindToJquery) {
-                $js .= sprintf("if (jQuery) %s.ajaxHandler.bindToJquery(jQuery);\n", $this->variableName);
-            }
-        }
-
-        if ($this->openHandlerUrl !== null) {
-            $js .= sprintf("%s.setOpenHandler(new %s(%s));\n", $this->variableName,
-                $this->openHandlerClass,
-                json_encode(array("url" => $this->openHandlerUrl)));
-        }
-
-        return $js;
-    }
-
-    /**
-     * Returns the js code needed to initialized the controls and data mapping of the debug bar
-     *
-     * Controls can be defined by collectors themselves or using {@see addControl()}
-     *
-     * @param string $varname Debug bar's variable name
-     * @return string
-     */
-    protected function getJsControlsDefinitionCode($varname)
-    {
-        $js = '';
-        $dataMap = array();
-        $excludedOptions = array('indicator', 'tab', 'map', 'default', 'widget', 'position');
-
-        // finds controls provided by collectors
-        $widgets = array();
-        foreach ($this->debugBar->getCollectors() as $collector) {
-            if (($collector instanceof Renderable) && !in_array($collector->getName(), $this->ignoredCollectors)) {
-                if ($w = $collector->getWidgets()) {
-                    $widgets = array_merge($widgets, $w);
-                }
-            }
-        }
-        $controls = array_merge($widgets, $this->controls);
-
-        foreach (array_filter($controls) as $name => $options) {
-            $opts = array_diff_key($options, array_flip($excludedOptions));
-
-            if (isset($options['tab']) || isset($options['widget'])) {
-                if (!isset($opts['title'])) {
-                    $opts['title'] = ucfirst(str_replace('_', ' ', $name));
-                }
-                $js .= sprintf("%s.addTab(\"%s\", new %s({%s%s}));\n",
-                    $varname,
-                    $name,
-                    isset($options['tab']) ? $options['tab'] : 'PhpDebugBar.DebugBar.Tab',
-                    substr(json_encode($opts, JSON_FORCE_OBJECT), 1, -1),
-                    isset($options['widget']) ? sprintf('%s"widget": new %s()', count($opts) ? ', ' : '', $options['widget']) : ''
-                );
-            } elseif (isset($options['indicator']) || isset($options['icon'])) {
-                $js .= sprintf("%s.addIndicator(\"%s\", new %s(%s), \"%s\");\n",
-                    $varname,
-                    $name,
-                    isset($options['indicator']) ? $options['indicator'] : 'PhpDebugBar.DebugBar.Indicator',
-                    json_encode($opts, JSON_FORCE_OBJECT),
-                    isset($options['position']) ? $options['position'] : 'right'
-                );
-            }
-
-            if (isset($options['map']) && isset($options['default'])) {
-                $dataMap[$name] = array($options['map'], $options['default']);
-            }
-        }
-
-        // creates the data mapping object
-        $mapJson = array();
-        foreach ($dataMap as $name => $values) {
-            $mapJson[] = sprintf('"%s": ["%s", %s]', $name, $values[0], $values[1]);
-        }
-        $js .= sprintf("%s.setDataMap({\n%s\n});\n", $varname, implode(",\n", $mapJson));
-
-        // activate state restoration
-        $js .= sprintf("%s.restoreState();\n", $varname);
-
-        return $js;
-    }
-
-    /**
-     * Returns the js code needed to add a dataset
-     *
-     * @param string $requestId
-     * @param array $data
-     * @param mixed $suffix
-     * @return string
-     */
-    protected function getAddDatasetCode($requestId, $data, $suffix = null)
-    {
-        $js = sprintf("%s.addDataSet(%s, \"%s\"%s);\n",
-            $this->variableName,
-            json_encode($data),
-            $requestId,
-            $suffix ? ", " . json_encode($suffix) : ''
-        );
-        return $js;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

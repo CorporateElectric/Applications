@@ -1,140 +1,72 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\Command\TimeitCommand;
-
-use PhpParser\Node;
-use PhpParser\Node\Arg;
-use PhpParser\Node\Expr;
-use PhpParser\Node\Expr\StaticCall;
-use PhpParser\Node\FunctionLike;
-use PhpParser\Node\Name\FullyQualified as FullyQualifiedName;
-use PhpParser\Node\Stmt\Expression;
-use PhpParser\Node\Stmt\Return_;
-use PhpParser\NodeVisitorAbstract;
-use Psy\CodeCleaner\NoReturnValue;
-use Psy\Command\TimeitCommand;
-
-/**
- * A node visitor for instrumenting code to be executed by the `timeit` command.
- *
- * Injects `TimeitCommand::markStart()` at the start of code to be executed, and
- * `TimeitCommand::markEnd()` at the end, and on top-level return statements.
- */
-class TimeitVisitor extends NodeVisitorAbstract
-{
-    private $functionDepth;
-
-    /**
-     * {@inheritdoc}
-     */
-    public function beforeTraverse(array $nodes)
-    {
-        $this->functionDepth = 0;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function enterNode(Node $node)
-    {
-        // keep track of nested function-like nodes, because they can have
-        // returns statements... and we don't want to call markEnd for those.
-        if ($node instanceof FunctionLike) {
-            $this->functionDepth++;
-
-            return;
-        }
-
-        // replace any top-level `return` statements with a `markEnd` call
-        if ($this->functionDepth === 0 && $node instanceof Return_) {
-            return new Return_($this->getEndCall($node->expr), $node->getAttributes());
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function leaveNode(Node $node)
-    {
-        if ($node instanceof FunctionLike) {
-            $this->functionDepth--;
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function afterTraverse(array $nodes)
-    {
-        // prepend a `markStart` call
-        \array_unshift($nodes, $this->maybeExpression($this->getStartCall()));
-
-        // append a `markEnd` call (wrapping the final node, if it's an expression)
-        $last = $nodes[\count($nodes) - 1];
-        if ($last instanceof Expr) {
-            \array_pop($nodes);
-            $nodes[] = $this->getEndCall($last);
-        } elseif ($last instanceof Expression) {
-            \array_pop($nodes);
-            $nodes[] = new Expression($this->getEndCall($last->expr), $last->getAttributes());
-        } elseif ($last instanceof Return_) {
-            // nothing to do here, we're already ending with a return call
-        } else {
-            $nodes[] = $this->maybeExpression($this->getEndCall());
-        }
-
-        return $nodes;
-    }
-
-    /**
-     * Get PhpParser AST nodes for a `markStart` call.
-     *
-     * @return \PhpParser\Node\Expr\StaticCall
-     */
-    private function getStartCall()
-    {
-        return new StaticCall(new FullyQualifiedName(TimeitCommand::class), 'markStart');
-    }
-
-    /**
-     * Get PhpParser AST nodes for a `markEnd` call.
-     *
-     * Optionally pass in a return value.
-     *
-     * @param Expr|null $arg
-     *
-     * @return \PhpParser\Node\Expr\StaticCall
-     */
-    private function getEndCall(Expr $arg = null)
-    {
-        if ($arg === null) {
-            $arg = NoReturnValue::create();
-        }
-
-        return new StaticCall(new FullyQualifiedName(TimeitCommand::class), 'markEnd', [new Arg($arg)]);
-    }
-
-    /**
-     * Compatibility shim for PHP Parser 3.x.
-     *
-     * Wrap $expr in a PhpParser\Node\Stmt\Expression if the class exists.
-     *
-     * @param \PhpParser\Node $expr
-     * @param array           $attrs
-     *
-     * @return \PhpParser\Node\Expr|\PhpParser\Node\Stmt\Expression
-     */
-    private function maybeExpression($expr, $attrs = [])
-    {
-        return \class_exists(Expression::class) ? new Expression($expr, $attrs) : $expr;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+03FMptm56d7A0xp1Yz2lgcK+7W0=

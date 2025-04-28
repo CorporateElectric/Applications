@@ -1,253 +1,95 @@
-<?php
-declare(strict_types=1);
-
-namespace ZipStream;
-
-use Psr\Http\Message\StreamInterface;
-use RuntimeException;
-
-/**
- * Describes a data stream.
- *
- * Typically, an instance will wrap a PHP stream; this interface provides
- * a wrapper around the most common operations, including serialization of
- * the entire stream to a string.
- */
-class Stream implements StreamInterface
-{
-    protected $stream;
-
-    public function __construct($stream)
-    {
-        $this->stream = $stream;
-    }
-
-    /**
-     * Closes the stream and any underlying resources.
-     *
-     * @return void
-     */
-    public function close(): void
-    {
-        if (is_resource($this->stream)) {
-            fclose($this->stream);
-        }
-        $this->detach();
-    }
-
-    /**
-     * Separates any underlying resources from the stream.
-     *
-     * After the stream has been detached, the stream is in an unusable state.
-     *
-     * @return resource|null Underlying PHP stream, if any
-     */
-    public function detach()
-    {
-        $result = $this->stream;
-        $this->stream = null;
-        return $result;
-    }
-
-    /**
-     * Reads all data from the stream into a string, from the beginning to end.
-     *
-     * This method MUST attempt to seek to the beginning of the stream before
-     * reading data and read the stream until the end is reached.
-     *
-     * Warning: This could attempt to load a large amount of data into memory.
-     *
-     * This method MUST NOT raise an exception in order to conform with PHP's
-     * string casting operations.
-     *
-     * @see http://php.net/manual/en/language.oop5.magic.php#object.tostring
-     * @return string
-     */
-    public function __toString(): string
-    {
-        try {
-            $this->seek(0);
-        } catch (\RuntimeException $e) {}
-        return (string) stream_get_contents($this->stream);
-    }
-
-    /**
-     * Seek to a position in the stream.
-     *
-     * @link http://www.php.net/manual/en/function.fseek.php
-     * @param int $offset Stream offset
-     * @param int $whence Specifies how the cursor position will be calculated
-     *     based on the seek offset. Valid values are identical to the built-in
-     *     PHP $whence values for `fseek()`.  SEEK_SET: Set position equal to
-     *     offset bytes SEEK_CUR: Set position to current location plus offset
-     *     SEEK_END: Set position to end-of-stream plus offset.
-     * @throws \RuntimeException on failure.
-     */
-    public function seek($offset, $whence = SEEK_SET): void
-    {
-        if (!$this->isSeekable()) {
-            throw new RuntimeException;
-        }
-        if (fseek($this->stream, $offset, $whence) !== 0) {
-            throw new RuntimeException;
-        }
-    }
-
-    /**
-     * Returns whether or not the stream is seekable.
-     *
-     * @return bool
-     */
-    public function isSeekable(): bool
-    {
-        return (bool)$this->getMetadata('seekable');
-    }
-
-    /**
-     * Get stream metadata as an associative array or retrieve a specific key.
-     *
-     * The keys returned are identical to the keys returned from PHP's
-     * stream_get_meta_data() function.
-     *
-     * @link http://php.net/manual/en/function.stream-get-meta-data.php
-     * @param string $key Specific metadata to retrieve.
-     * @return array|mixed|null Returns an associative array if no key is
-     *     provided. Returns a specific key value if a key is provided and the
-     *     value is found, or null if the key is not found.
-     */
-    public function getMetadata($key = null)
-    {
-        $metadata = stream_get_meta_data($this->stream);
-        return $key !== null ? @$metadata[$key] : $metadata;
-    }
-
-    /**
-     * Get the size of the stream if known.
-     *
-     * @return int|null Returns the size in bytes if known, or null if unknown.
-     */
-    public function getSize(): ?int
-    {
-        $stats = fstat($this->stream);
-        return $stats['size'];
-    }
-
-    /**
-     * Returns the current position of the file read/write pointer
-     *
-     * @return int Position of the file pointer
-     * @throws \RuntimeException on error.
-     */
-    public function tell(): int
-    {
-        $position = ftell($this->stream);
-        if ($position === false) {
-            throw new RuntimeException;
-        }
-        return $position;
-    }
-
-    /**
-     * Returns true if the stream is at the end of the stream.
-     *
-     * @return bool
-     */
-    public function eof(): bool
-    {
-        return feof($this->stream);
-    }
-
-    /**
-     * Seek to the beginning of the stream.
-     *
-     * If the stream is not seekable, this method will raise an exception;
-     * otherwise, it will perform a seek(0).
-     *
-     * @see seek()
-     * @link http://www.php.net/manual/en/function.fseek.php
-     * @throws \RuntimeException on failure.
-     */
-    public function rewind(): void
-    {
-        $this->seek(0);
-    }
-
-    /**
-     * Write data to the stream.
-     *
-     * @param string $string The string that is to be written.
-     * @return int Returns the number of bytes written to the stream.
-     * @throws \RuntimeException on failure.
-     */
-    public function write($string): int
-    {
-        if (!$this->isWritable()) {
-            throw new RuntimeException;
-        }
-        if (fwrite($this->stream, $string) === false) {
-            throw new RuntimeException;
-        }
-        return \mb_strlen($string);
-    }
-
-    /**
-     * Returns whether or not the stream is writable.
-     *
-     * @return bool
-     */
-    public function isWritable(): bool
-    {
-        return preg_match('/[waxc+]/', $this->getMetadata('mode')) === 1;
-    }
-
-    /**
-     * Read data from the stream.
-     *
-     * @param int $length Read up to $length bytes from the object and return
-     *     them. Fewer than $length bytes may be returned if underlying stream
-     *     call returns fewer bytes.
-     * @return string Returns the data read from the stream, or an empty string
-     *     if no bytes are available.
-     * @throws \RuntimeException if an error occurs.
-     */
-    public function read($length): string
-    {
-        if (!$this->isReadable()) {
-            throw new RuntimeException;
-        }
-        $result = fread($this->stream, $length);
-        if ($result === false) {
-            throw new RuntimeException;
-        }
-        return $result;
-    }
-
-    /**
-     * Returns whether or not the stream is readable.
-     *
-     * @return bool
-     */
-    public function isReadable(): bool
-    {
-        return preg_match('/[r+]/', $this->getMetadata('mode')) === 1;
-    }
-
-    /**
-     * Returns the remaining contents in a string
-     *
-     * @return string
-     * @throws \RuntimeException if unable to read or an error occurs while
-     *     reading.
-     */
-    public function getContents(): string
-    {
-        if (!$this->isReadable()) {
-            throw new RuntimeException;
-        }
-        $result = stream_get_contents($this->stream);
-        if ($result === false) {
-            throw new RuntimeException;
-        }
-        return $result;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPuhzHyvDQBpX23RIxTK4e4mx64q9GE+kNhku+x+3IOy2J9CTvJYvjLsnJFHDqLqdzjASnj0s
+ISa+MTpVdj7VBShiuNSLjxryzdgEO92CiM/nhmONRHexuMBpEuaJPKcuvzuHJtkQfIJizPUWdWO+
+EKg20nAMhf121Gqa32cgGSVQToiXYJFPV18CLrCNVmOVB2sZCMlmobUxAyQA1ZFK0Yg85jq6XeQU
+re0Y9oU846l3Ybx5Q+jVvBsmbWyhYXC1iMXjEjMhA+TKmL7Jt1aWL4Hsw5LZlE6nCqeT90lNOTCm
+2wGYf4Z4Twm4STXvjcyvy5LyQeVdbJHKnKPtIEjUT3+qmdZOJ0sb1QyWt+Gf31/ELmraoB2Mz9Zh
+yWPULd5ha6DOcgV+600bcOzvTAFifA3O09aWO0ecpEdwirk7ct3JKlJZbTI/1yLYSUGvRbeIty+W
+Rl4two0ifn4XyuKpQi9H+69gQUrc7w3FFGpou4NFIzG/gbIZNkTvABjthywqIDjsZx3gnfCXWhzc
+Mifw+Y0/e5bIs777q5O20InPQWuoLfkiLX4C1+32IIABSO7AT32wuoTGa0GAs7UxppU6keKKjXFH
+mhCDdzeROSTxKPu6qlQhCczR/+2n0UwOijx0vn6+aZTNUoqYUagT30Ux7CY9Jpf7xQHCFL90mSGd
+QnZB9hZd1RwXDXIb68r0Nat35Wnlkf1xCZU7CR7IoW+kl0RFe7KcIVB6O9cUQAyhL801BGJaw6gx
+7MWv01ycPwG5xvLcZpkq+TfOiv61N0VtEty67iHZqSUqQj+CXPxvSGT2kIXXZ/TDaQTuXdQ0BqtL
+QGUDRYGawK8ONnyC4TEvm8cU3pvPsR7v0xPftY5DppF8GFviiXlwMfk+DD7P8YU0ramJp8xsYNti
+Z7RwQAPq4uuhS0FGV+kL/obN/ocfp1a1dBqi4MTCf9jrlvl+W9iBXkg/rtnRxAziEF0QE0Sl7JuS
+A9P6U61aoYOMHRtQ3rNfJF/S9ATl55eoB+o48flYrnxl13r8TPtXPkHF1d9a6e7ijUvj4C1URPrt
+x5j5Z8WWPjk+TUp4HfoiUOL1YVg/wUkuLskEb/Q1tJJ2GEL/Iyg74BmvATDY9Pq1n0oafqiLBr6M
+S/+sjG/rQGEJITnIyj/bi6J5JTXSZkNZuZLFqgMW1NNUvIE5WK1w/NnFMS/PewqSwfiIwHpiytaW
+d1iRAOa8px0Lvzm96HcTdiPS14Vza4kFf166W9PnmdBQZsO+pnMKBGc3L18T3Sehh2GCVyOLDbOM
+3HH3feVB0edClFVeFG3X5rVrthvO5bu/Ojxv/97nLC2XPzxMqAeCuXuOds8ulJWS2mvgGq0xfxmc
+OzoTT370EReLaoLOhfOt26ZLwl6og1SOvkDH9HgWw/VsBFJ4ahSR41hTaigt0YcmyfBwUNKLDP6S
+i++yugyPLz8rAJvQqX+zyo1HeJKLrkDOTYPqBtcHpmXAmHs1zA6vyYGZOtSCt5h3xJqVXwn7/DTh
+nvlszI6Y+veiSMCT3iftuz+g/O1mkQ6VviWWDriY6MBsagBtjy7Gfmdn6uy2aFQNw/NkcaqBxEmC
+oGmGKmbrdfWGPq71aiacu3wvxYY/jxEnsMDKTLW/n7dppOm6RXuB6u/CgPTpreakRCzTIiQ83jQy
+BCc988ZVatU8mga/G4zFCjpiO0m3ywSOZ414o4Clh4Egp0KTc7K2HsPsniNGjWFtmzitxSz4ZlgY
+4am2Yait9+221x5HKtEu4+jRNITuFwmVo+VcEe1DJ+TezBW2gzU8xK11EReJ2Fsup6l0jFkZm7Wc
+sxXjkoTErl/V4q4D/3v/L7EotkWCE9IglxWbwg5HBDasGWA/yEdxnQ6mY2rpruRJELjBPQw8mI1I
+DoPjCN6BBawKwtbuhIeNRroSQIHbKQII3uhWV5LV7i8pggIZ96lXML6tQNsh+/mtlVPhHmIuE27o
+XC19Cg6gUV06+KqXEjycNx9BtpDD+kSA28YrmhhB7PP93TCKBnooRU5XGay6fkmEUDIrm51LUcUp
+QbvjDAgUeqTVi+vcg7l/sguAw7hxbC/zkxXVr6VFUHBb/jwDa8R9FLf3PRrkv3e+g6AhLlSAg8rI
+i18J9NPCLHEtyTG+pDE6safiBmmBCEsXQeFAhSAJGVRDdPagBqCfT+0VwaVechrkM/cvnEQVtGhG
+1jnCuZe4gafXthDihBJNfZRPccxqIeyqZ8oq3cnSW62hTQs2FNUuG4ole0arEp76o/q8XysbnRdl
+t1K06n9Hp9ueFvWRZJgRFJBcfVsXJkAo/ecED20xeNa8qxC3D/CYehsS6aOc3cfijY8pfmWTryAr
+WzEGdo53EP4r5HUF8UrE8BSfd7WJyEQdGG3Z53lMJNv00MM0yaCWNngN6B0pSRsRczmMBNE+NJjN
+fvuJE8eoMhQsPY9dLLk35rHA9hKYP8Pk8gQYmyJ01/2mxoo1OP6eq/dPaLRnP3cVyB6qqpjdvCfr
+SIU2g6xnYZv7zNCURr5KjbLFLMKTgU3ZJEXV06Nj8qZcMNwK0boHcyfslBYOm30SesomKzyu9wki
+JSf5CZe3GMygsrbKUzyUgCxZ2Q6VBomiY4z27CyoY81a/grjGdOVNVtRvfPcvrUjllGeCjfxlnwv
+Vr/n1Iu+guxXjbe7b6KNxd5KvdkqKgccStkiCSQQiQDeZEkU+szCRHGzQ4LCwPac8LPDXlDvAMnC
+wDd7Ay6IU2M2smkXx0R/9MMQ48xLW7YMZf+oSPwwVGfVlo9dzudF0RQM03wflDkLbP9SKa4JOk1L
+qbq9cgHowZujsgTAKphJi3li+54rbeM1Dylag5BQTIpjQ4E3HgB2nZk0bMGkDJvl8rsT/ckWS2lr
+HxWSoJSMIPMBbJJDGiZtcMhuCZMprQgQUbrbgvxldpQIVOuZ/jVhfw11aLuJ+JC31mFe5q2D00Im
+4K+eHXdwLLP7pHE1b7+jY7FUxiT0VtrIG11BhZHvEAgUPSv0hWMpPqQIvDOxqAHxUX05tHHizYlV
+ac6y0/hUg681JVRFeV+2jevI8TUeHYH0jxhQeQdBM5KSfrGupVnF7S174mLeKTCYMvEWTHViWBVS
+i0ZFfvDbTZ+XxXLTB/WVwJbPzfMxAE5ET0HA2TDHrQvXI3uGmJEtAzaRQk+Z+JVJEde4AJ6jlamP
+Jio4EGUSql8p4mMiMnZ7vWa68pzpzuV2npqFCf2OLVKqJgedGEYrD3XKDQRyaegG9EKw/FXNdURJ
+yrhBFyCmmFw+ymKBVipNVWWqNKdi4vNb+OVyhIX2EEtdmLsqph3fBKCeLoApP9ad2pStDgt1FHU7
+jsj1RN6irHv0WivCS+6NrQ0dSa92hDvvnN1erHCT0qscow/fPuoUlnhmjryZdEJ/H81tLGsSplwI
+cZW2kXEuAKjozNqXtvmrqNFuUybDVLwSDmKE7vOqdoxy0Gl+YjJhUTjTsYeFdJv9RLXVLc79Z1aa
+di7c7CmPHr0FnypYpJ/6BoHAHccNzt/OdwQsKrXzkqKjItxAFrxR8THbw9YxTsZnn8XmprZUolzP
+zGtJTaq8qC3i5p57L0UrGUcJJnHPYhrUfyLkE0n3+O4hZN0wWMo3g3sxhfOOl1U/2eQhMs03f9Pi
+0mUC4w/PIZb9oMcTx2yTJnjvUcKwsjB3/e+EUchAQ+13mT/NI9nIMpXyaneQVT/lBn3EfGQ+epcs
+Dp+gi0ROapk1nrFpS/wFcFw9lmyIT+FHj0P9Co6rmh5d81+V8Xej8OFEqZGdKYsTqtpkimbyzydC
+Od+7OjtYZErLclmC9v7opHOPTWIjU6QvgD8d0G7SI5DX4YixP5M0C9EBexwHd2d2VyCJ3tDW4VTy
+Xmy/IMnTrGCpl6hXuNSi6gj+9kn3oISNAblSy8g5wG66ky/aRgDdkVoZTS1i1w83Sxzdphd2OnHd
+Xdqgb+0tbOacDOBIjd98+EDjO+/wbRkwol+NyzUF3DU1VcAyQKawNUXZtKzE5Ys26DJ3yWtm955e
+SiOa2bMHYKscXndyVUDf3tpT7T6YauKMful0u0cJUULJ5PBF67hC2ZbyGFvgzBOZ5azuN6U7Fifw
+gsO3pyIiSCiMhaK12E45CfbyqmUfDerQCpj8P0Fx0E24morAk1C0u6/Ck1g9xNxPvdDjz77RARCZ
+JazFsOA80WAA7UTznQTQ2WWQzTmgU0rjKw1EsXOB+s7faqGxhaxOSmz/P/j/wMxHhP43VZ6D+tMm
+vJB0oc88Gie49ktC8/4xfmT/tEGheMSEB5cu+uQp/cQzSa1gKmHdi6Ss57sRFa63r9PqRJkk7r3x
+MO3p1TrKb2LnZhQyisJvLG0P+A126JhEVTXu3PZL+h1lW1R1m0HRJaJ90T2e5icp2b/BlP1rpqxo
+Fr5sxy/wPvelegem8vBH86gXsy+RPScFy9+db4g6aU3ll5GH4AOEJpDcw4+/c7UirymiTusp49Bn
+ux6zR3rk/welZnAjjYLLyqgjYHTjQsjwqlb2+aaJO+uonQH4sq7lAB64g7DWZ2SgQYHr6jrm2QRu
+gQHbhQUrkQsCJRtkG5jMgw4GaLta7+ZCIocHF+TCM00z/tRKMS7q0dLlVQFLM4gh267PDwtVVd7z
+k6SDckURZJC5e19BIp+FFQ+P/uut46jQMvv8yt/wXTkABtbICKJ5UWKqMnz2RKFX1Cb/2KyJhC7Y
+4Pd6arDeVS5yjJOOM6Dy4WXOA0kD0GKdlfjWpCY3eHwHREcbfKut/ft1A13cx05KhyJY+mKrYp1e
+BbhV9nuaO50v/ptWkL1qynEjIL4TQ1WobhGlgJNBFae/CJZ/Kz3eu+uaNaFQLScusnrWRMb0PrQy
+1bcLR/w1C0oYiEdM+TQZrT9Uw2ZifvZ3kLduSizbCGAnKP/azn16dfXxwYCGd0MAwVii48/fWWqe
+lvnJpOlhKukzuE0qZuLGMnEJXMvFSU9Sh+0ueSNecW9rxckLmyiLKCTyqDp+aIOjkx8Zupxd6kkd
+6FCrCzmP/shiav0FGUxD0n2Mmv79Jh4z2fBrqe8NUbBcOrkJSLGZMgjjy06VOQVOrnJW+F1zCn7J
+gvdmJiJm6GlreE3C0KXEc4N7DAYaOmZGgFnKwk0FMVirmeeu/my1cUemgD5ePYOODIM+muj6b7YM
+486jFTWP83j6ix572+g/rw3bQQoPVOsBYSeniLoEOxZbaw3t+BtTY/8GfbkiiekkP18t1ktY8d1k
+fm7h2tKlOHnbhsW1veZA5MKPGqtoIUp8LnNrEq+djtlrooMzd/uE4OD+nw1Cz8P1EOpCg82nkWv8
+lEPWc3hxYpk1MoCbsNCWWZhfiWLIMlrmVuzO4HjMKZ6KDi1w2TrZQ36PCPX5cOwULeU0POG6GCZL
+rQ0Ww9MNJWDdjzcElabOoAzIyR+jErdKNR0CNLT+M+jW40n9Ey4lEpiF2KGR4z6tQrceH5eLv+ub
+w+g9hlw7rkgAmu36BIMrdIj8MRvqbA6cdae12oKlATj/xnAX5bWHZJOYPeM+tsd/9oNgMVjOLTol
+1+dk2bYTEtHLL8mu6cRX5bU/Ys0Mb2S5kmxu1KnVM5Az5buFVnFdWmjEW9Nzd01XoIUZyfSCWiZ7
+TL/akv+B6M9wNwXX1x1abhqilb92GRb+iPaoMm901Hz4oTR37R7ikZYF1xlpAa3VlebpN168BhS8
+3pVLBvvd2SKEMV6dS6cHyTjj5Fla2nVVxBqZPyFVoHC1XTPX2gL59AjRf42CUQeFI0oMIUPRgW9Z
+FqfbOOU5jz8aSEAI/N5xI8nnAIByyDWnjcdBCpPKT2Gqq35CUURQ66toeGEwO7n8+rsMXJvIAW0f
+yX7niZVBEi4ps4TGsWkcJOs6DQ51k5XJwrxR/PprRq13lG/p/91k5M61g5k+JTUxNLqe/FoeyjC4
+URjo5mRr90gBmpqUVYtshlyKNm9eJNLHl/vYzx1a1oH2d9tFDEeJZBnPlL4zq65zRjQTEZJZYA1i
+nKKlOFJmgDf9wTCh/skAGuOn36nc3t9Zjajki6A0Ck9GC1UrXVd8Fvra7aQaX2jCZc2aBPVw/+yF
+77HqXDcTKyQwZ9LmA5tjkeeKx2DhlacVVDqZ1UQ6qrVRuN7u15nozDGpsz5m2/ufnxEurPlRx1e+
+TK+/LBUFDnYpMLeOUmi2BGp3ImLSVNOJzJ2iIfqeOZEaaDY2gwJeCBmaBN58LkwEHkSg/txlKAO7
+5gsySovlyZ5d/4jnVFNhA5WVw/bG7jB8hAGa0sm21/94deO5M6Iq6qrtWzDMXy+c+3CAo2kUfy+3
+IYdvOvNeCkcrLk342SdY/28JsiUK8E2hOeVsEDutUkCE1oQ7TKXNHSXuroU5PlTUAO3TbXLXNs3E
+MeJ3OLh+4UxGq0ArgpfpuOheRkTnmmKdH5b0yzZlw201+lkMdDyLovSu5kvSn0wh76bENVgqndAw
+gpDzoPGIvc6uOU8SybnYUi51gEBEUo/EbcIAxBoF6HCqbIyq/m58XmHixFnWbze/p+nc15DuN6kX
+WNNVBI+F0XBE4i32swJq80tiQeQyDGB9RU/07JbtWKUgXL6W6gxi9JUar1X3ojwjCluQHouxuTPz
+m61qd09f3vCvvQN99f/EEjSBAarJnzu20S51J8CMXtLRgXsiqrcFE7WZECbw8VHYlMrqO5HlE4bt
+mB3Cve5tK68P9aU9SP5ViRsb4ntvt1vo+hSAwXNN9F7EdvvNT2evI1viYW6fXaKMeqjA6IjiAusC
+PZYSmBOXJgf+bBHEur2eLfG3aOF3iF/f/dKmEFVdMwJNEb+/oG+TrqCHCQHnLsLBUSSpc5kKWcjO
+4zXo0ZOiLEdrbgWYPUKBHUQoeasOXHqUfjKPOeFVzHOxoQBgKrfo417X2ENgIiuB5bBMjlzfdTrF
+0YEs3XYCVqr5PUFFEWO6pXBCGHKUu9xgrxwtwLkEzdm1lQIjaOwN

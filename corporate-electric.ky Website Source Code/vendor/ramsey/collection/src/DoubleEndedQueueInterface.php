@@ -1,309 +1,37 @@
-<?php
-
-/**
- * This file is part of the ramsey/collection library
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @copyright Copyright (c) Ben Ramsey <ben@benramsey.com>
- * @license http://opensource.org/licenses/MIT MIT
- */
-
-declare(strict_types=1);
-
-namespace Ramsey\Collection;
-
-use Ramsey\Collection\Exception\NoSuchElementException;
-
-/**
- * A linear collection that supports element insertion and removal at both ends.
- *
- * Most `DoubleEndedQueueInterface` implementations place no fixed limits on the
- * number of elements they may contain, but this interface supports
- * capacity-restricted double-ended queues as well as those with no fixed size
- * limit.
- *
- * This interface defines methods to access the elements at both ends of the
- * double-ended queue. Methods are provided to insert, remove, and examine the
- * element. Each of these methods exists in two forms: one throws an exception
- * if the operation fails, the other returns a special value (either `null` or
- * `false`, depending on the operation). The latter form of the insert operation
- * is designed specifically for use with capacity-restricted implementations; in
- * most implementations, insert operations cannot fail.
- *
- * The twelve methods described above are summarized in the following table:
- *
- * <table>
- * <caption>Summary of DoubleEndedQueueInterface methods</caption>
- * <thead>
- * <tr>
- * <th></th>
- * <th colspan=2>First Element (Head)</th>
- * <th colspan=2>Last Element (Tail)</th>
- * </tr>
- * <tr>
- * <td></td>
- * <td><em>Throws exception</em></td>
- * <td><em>Special value</em></td>
- * <td><em>Throws exception</em></td>
- * <td><em>Special value</em></td>
- * </tr>
- * </thead>
- * <tbody>
- * <tr>
- * <th>Insert</th>
- * <td><code>addFirst()</code></td>
- * <td><code>offerFirst()</code></td>
- * <td><code>addLast()</code></td>
- * <td><code>offerLast()</code></td>
- * </tr>
- * <tr>
- * <th>Remove</th>
- * <td><code>removeFirst()</code></td>
- * <td><code>pollFirst()</code></td>
- * <td><code>removeLast()</code></td>
- * <td><code>pollLast()</code></td>
- * </tr>
- * <tr>
- * <th>Examine</th>
- * <td><code>firstElement()</code></td>
- * <td><code>peekFirst()</code></td>
- * <td><code>lastElement()</code></td>
- * <td><code>peekLast()</code></td>
- * </tr>
- * </tbody>
- * </table>
- *
- * This interface extends the `QueueInterface`. When a double-ended queue is
- * used as a queue, FIFO (first-in-first-out) behavior results. Elements are
- * added at the end of the double-ended queue and removed from the beginning.
- * The methods inherited from the `QueueInterface` are precisely equivalent to
- * `DoubleEndedQueueInterface` methods as indicated in the following table:
- *
- * <table>
- * <caption>Comparison of QueueInterface and DoubleEndedQueueInterface methods</caption>
- * <thead>
- * <tr>
- * <th>QueueInterface Method</th>
- * <th>DoubleEndedQueueInterface Method</th>
- * </tr>
- * </thead>
- * <tbody>
- * <tr>
- * <td><code>add()</code></td>
- * <td><code>addLast()</code></td>
- * </tr>
- * <tr>
- * <td><code>offer()</code></td>
- * <td><code>offerLast()</code></td>
- * </tr>
- * <tr>
- * <td><code>remove()</code></td>
- * <td><code>removeFirst()</code></td>
- * </tr>
- * <tr>
- * <td><code>poll()</code></td>
- * <td><code>pollFirst()</code></td>
- * </tr>
- * <tr>
- * <td><code>element()</code></td>
- * <td><code>firstElement()</code></td>
- * </tr>
- * <tr>
- * <td><code>peek()</code></td>
- * <td><code>peekFirst()</code></td>
- * </tr>
- * </tbody>
- * </table>
- *
- * Double-ended queues can also be used as LIFO (last-in-first-out) stacks. When
- * a double-ended queue is used as a stack, elements are pushed and popped from
- * the beginning of the double-ended queue. Stack concepts are precisely
- * equivalent to `DoubleEndedQueueInterface` methods as indicated in the table
- * below:
- *
- * <table>
- * <caption>Comparison of stack concepts and DoubleEndedQueueInterface methods</caption>
- * <thead>
- * <tr>
- * <th>Stack concept</th>
- * <th>DoubleEndedQueueInterface Method</th>
- * </tr>
- * </thead>
- * <tbody>
- * <tr>
- * <td><em>push</em></td>
- * <td><code>addFirst()</code></td>
- * </tr>
- * <tr>
- * <td><em>pop</em></td>
- * <td><code>removeFirst()</code></td>
- * </tr>
- * <tr>
- * <td><em>peek</em></td>
- * <td><code>peekFirst()</code></td>
- * </tr>
- * </tbody>
- * </table>
- *
- * Note that the `peek()` method works equally well when a double-ended queue is
- * used as a queue or a stack; in either case, elements are drawn from the
- * beginning of the double-ended queue.
- *
- * While `DoubleEndedQueueInterface` implementations are not strictly required
- * to prohibit the insertion of `null` elements, they are strongly encouraged to
- * do so. Users of any `DoubleEndedQueueInterface` implementations that do allow
- * `null` elements are strongly encouraged *not* to take advantage of the
- * ability to insert nulls. This is so because `null` is used as a special
- * return value by various methods to indicated that the double-ended queue is
- * empty.
- */
-interface DoubleEndedQueueInterface extends QueueInterface
-{
-    /**
-     * Inserts the specified element at the front of this queue if it is
-     * possible to do so immediately without violating capacity restrictions.
-     *
-     * When using a capacity-restricted double-ended queue, it is generally
-     * preferable to use the `offerFirst()` method.
-     *
-     * @param mixed $element The element to add to the front of this queue.
-     *
-     * @return bool `true` if this queue changed as a result of the call.
-     *
-     * @throws \RuntimeException if a queue refuses to add a particular element
-     *     for any reason other than that it already contains the element.
-     *     Implementations should use a more-specific exception that extends
-     *     `\RuntimeException`.
-     */
-    public function addFirst($element): bool;
-
-    /**
-     * Inserts the specified element at the end of this queue if it is possible
-     * to do so immediately without violating capacity restrictions.
-     *
-     * When using a capacity-restricted double-ended queue, it is generally
-     * preferable to use the `offerLast()` method.
-     *
-     * This method is equivalent to `add()`.
-     *
-     * @param mixed $element The element to add to the end of this queue.
-     *
-     * @return bool `true` if this queue changed as a result of the call.
-     *
-     * @throws \RuntimeException if a queue refuses to add a particular element
-     *     for any reason other than that it already contains the element.
-     *     Implementations should use a more-specific exception that extends
-     *     `\RuntimeException`.
-     */
-    public function addLast($element): bool;
-
-    /**
-     * Inserts the specified element at the front of this queue if it is
-     * possible to do so immediately without violating capacity restrictions.
-     *
-     * When using a capacity-restricted queue, this method is generally
-     * preferable to `addFirst()`, which can fail to insert an element only by
-     * throwing an exception.
-     *
-     * @param mixed $element The element to add to the front of this queue.
-     *
-     * @return bool `true` if the element was added to this queue, else `false`.
-     */
-    public function offerFirst($element): bool;
-
-    /**
-     * Inserts the specified element at the end of this queue if it is possible
-     * to do so immediately without violating capacity restrictions.
-     *
-     * When using a capacity-restricted queue, this method is generally
-     * preferable to `addLast()` which can fail to insert an element only by
-     * throwing an exception.
-     *
-     * @param mixed $element The element to add to the end of this queue.
-     *
-     * @return bool `true` if the element was added to this queue, else `false`.
-     */
-    public function offerLast($element): bool;
-
-    /**
-     * Retrieves and removes the head of this queue.
-     *
-     * This method differs from `pollFirst()` only in that it throws an
-     * exception if this queue is empty.
-     *
-     * @return mixed the first element in this queue.
-     *
-     * @throws NoSuchElementException if this queue is empty.
-     */
-    public function removeFirst();
-
-    /**
-     * Retrieves and removes the tail of this queue.
-     *
-     * This method differs from `pollLast()` only in that it throws an exception
-     * if this queue is empty.
-     *
-     * @return mixed the last element in this queue.
-     *
-     * @throws NoSuchElementException if this queue is empty.
-     */
-    public function removeLast();
-
-    /**
-     * Retrieves and removes the head of this queue, or returns `null` if this
-     * queue is empty.
-     *
-     * @return mixed|null the head of this queue, or `null` if this queue is empty.
-     */
-    public function pollFirst();
-
-    /**
-     * Retrieves and removes the tail of this queue, or returns `null` if this
-     * queue is empty.
-     *
-     * @return mixed|null the tail of this queue, or `null` if this queue is empty.
-     */
-    public function pollLast();
-
-    /**
-     * Retrieves, but does not remove, the head of this queue.
-     *
-     * This method differs from `peekFirst()` only in that it throws an
-     * exception if this queue is empty.
-     *
-     * @return mixed the head of this queue.
-     *
-     * @throws NoSuchElementException if this queue is empty.
-     */
-    public function firstElement();
-
-    /**
-     * Retrieves, but does not remove, the tail of this queue.
-     *
-     * This method differs from `peekLast()` only in that it throws an exception
-     * if this queue is empty.
-     *
-     * @return mixed the tail of this queue.
-     *
-     * @throws NoSuchElementException if this queue is empty.
-     */
-    public function lastElement();
-
-    /**
-     * Retrieves, but does not remove, the head of this queue, or returns `null`
-     * if this queue is empty.
-     *
-     * @return mixed|null the head of this queue, or `null` if this queue is empty.
-     */
-    public function peekFirst();
-
-    /**
-     * Retrieves, but does not remove, the tail of this queue, or returns `null`
-     * if this queue is empty.
-     *
-     * @return mixed|null the tail of this queue, or `null` if this queue is empty.
-     */
-    public function peekLast();
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+BzHZus8vyOKfh+hiu+f9WgxoNgImzTomh3HjCG==

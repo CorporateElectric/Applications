@@ -1,46 +1,33 @@
-<?php
-
-/**
- * Validates tel (for phone numbers).
- *
- * The relevant specifications for this protocol are RFC 3966 and RFC 5341,
- * but this class takes a much simpler approach: we normalize phone
- * numbers so that they only include (possibly) a leading plus,
- * and then any number of digits and x'es.
- */
-
-class HTMLPurifier_URIScheme_tel extends HTMLPurifier_URIScheme
-{
-    /**
-     * @type bool
-     */
-    public $browsable = false;
-
-    /**
-     * @type bool
-     */
-    public $may_omit_host = true;
-
-    /**
-     * @param HTMLPurifier_URI $uri
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return bool
-     */
-    public function doValidate(&$uri, $config, $context)
-    {
-        $uri->userinfo = null;
-        $uri->host     = null;
-        $uri->port     = null;
-
-        // Delete all non-numeric characters, non-x characters
-        // from phone number, EXCEPT for a leading plus sign.
-        $uri->path = preg_replace('/(?!^\+)[^\dx]/', '',
-                     // Normalize e(x)tension to lower-case
-                     str_replace('X', 'x', $uri->path));
-
-        return true;
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+naTQ

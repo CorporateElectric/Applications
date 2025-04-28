@@ -1,69 +1,51 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Mime;
-
-use Symfony\Component\Mime\Exception\InvalidArgumentException;
-use Symfony\Component\Mime\Exception\LogicException;
-
-/**
- * Guesses the MIME type using the PECL extension FileInfo.
- *
- * @author Bernhard Schussek <bschussek@gmail.com>
- */
-class FileinfoMimeTypeGuesser implements MimeTypeGuesserInterface
-{
-    private $magicFile;
-
-    /**
-     * @param string $magicFile A magic file to use with the finfo instance
-     *
-     * @see http://www.php.net/manual/en/function.finfo-open.php
-     */
-    public function __construct(string $magicFile = null)
-    {
-        $this->magicFile = $magicFile;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function isGuesserSupported(): bool
-    {
-        return \function_exists('finfo_open');
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function guessMimeType(string $path): ?string
-    {
-        if (!is_file($path) || !is_readable($path)) {
-            throw new InvalidArgumentException(sprintf('The "%s" file does not exist or is not readable.', $path));
-        }
-
-        if (!$this->isGuesserSupported()) {
-            throw new LogicException(sprintf('The "%s" guesser is not supported.', __CLASS__));
-        }
-
-        if (false === $finfo = new \finfo(\FILEINFO_MIME_TYPE, $this->magicFile)) {
-            return null;
-        }
-        $mimeType = $finfo->file($path);
-
-        if ($mimeType && 0 === (\strlen($mimeType) % 2)) {
-            $mimeStart = substr($mimeType, 0, \strlen($mimeType) >> 1);
-            $mimeType = $mimeStart.$mimeStart === $mimeType ? $mimeStart : $mimeType;
-        }
-
-        return $mimeType;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

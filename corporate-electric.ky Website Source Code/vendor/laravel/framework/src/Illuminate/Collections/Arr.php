@@ -1,681 +1,240 @@
-<?php
-
-namespace Illuminate\Support;
-
-use ArrayAccess;
-use Illuminate\Support\Traits\Macroable;
-use InvalidArgumentException;
-
-class Arr
-{
-    use Macroable;
-
-    /**
-     * Determine whether the given value is array accessible.
-     *
-     * @param  mixed  $value
-     * @return bool
-     */
-    public static function accessible($value)
-    {
-        return is_array($value) || $value instanceof ArrayAccess;
-    }
-
-    /**
-     * Add an element to an array using "dot" notation if it doesn't exist.
-     *
-     * @param  array  $array
-     * @param  string  $key
-     * @param  mixed  $value
-     * @return array
-     */
-    public static function add($array, $key, $value)
-    {
-        if (is_null(static::get($array, $key))) {
-            static::set($array, $key, $value);
-        }
-
-        return $array;
-    }
-
-    /**
-     * Collapse an array of arrays into a single array.
-     *
-     * @param  iterable  $array
-     * @return array
-     */
-    public static function collapse($array)
-    {
-        $results = [];
-
-        foreach ($array as $values) {
-            if ($values instanceof Collection) {
-                $values = $values->all();
-            } elseif (! is_array($values)) {
-                continue;
-            }
-
-            $results[] = $values;
-        }
-
-        return array_merge([], ...$results);
-    }
-
-    /**
-     * Cross join the given arrays, returning all possible permutations.
-     *
-     * @param  iterable  ...$arrays
-     * @return array
-     */
-    public static function crossJoin(...$arrays)
-    {
-        $results = [[]];
-
-        foreach ($arrays as $index => $array) {
-            $append = [];
-
-            foreach ($results as $product) {
-                foreach ($array as $item) {
-                    $product[$index] = $item;
-
-                    $append[] = $product;
-                }
-            }
-
-            $results = $append;
-        }
-
-        return $results;
-    }
-
-    /**
-     * Divide an array into two arrays. One with keys and the other with values.
-     *
-     * @param  array  $array
-     * @return array
-     */
-    public static function divide($array)
-    {
-        return [array_keys($array), array_values($array)];
-    }
-
-    /**
-     * Flatten a multi-dimensional associative array with dots.
-     *
-     * @param  iterable  $array
-     * @param  string  $prepend
-     * @return array
-     */
-    public static function dot($array, $prepend = '')
-    {
-        $results = [];
-
-        foreach ($array as $key => $value) {
-            if (is_array($value) && ! empty($value)) {
-                $results = array_merge($results, static::dot($value, $prepend.$key.'.'));
-            } else {
-                $results[$prepend.$key] = $value;
-            }
-        }
-
-        return $results;
-    }
-
-    /**
-     * Get all of the given array except for a specified array of keys.
-     *
-     * @param  array  $array
-     * @param  array|string  $keys
-     * @return array
-     */
-    public static function except($array, $keys)
-    {
-        static::forget($array, $keys);
-
-        return $array;
-    }
-
-    /**
-     * Determine if the given key exists in the provided array.
-     *
-     * @param  \ArrayAccess|array  $array
-     * @param  string|int  $key
-     * @return bool
-     */
-    public static function exists($array, $key)
-    {
-        if ($array instanceof Enumerable) {
-            return $array->has($key);
-        }
-
-        if ($array instanceof ArrayAccess) {
-            return $array->offsetExists($key);
-        }
-
-        return array_key_exists($key, $array);
-    }
-
-    /**
-     * Return the first element in an array passing a given truth test.
-     *
-     * @param  iterable  $array
-     * @param  callable|null  $callback
-     * @param  mixed  $default
-     * @return mixed
-     */
-    public static function first($array, callable $callback = null, $default = null)
-    {
-        if (is_null($callback)) {
-            if (empty($array)) {
-                return value($default);
-            }
-
-            foreach ($array as $item) {
-                return $item;
-            }
-        }
-
-        foreach ($array as $key => $value) {
-            if ($callback($value, $key)) {
-                return $value;
-            }
-        }
-
-        return value($default);
-    }
-
-    /**
-     * Return the last element in an array passing a given truth test.
-     *
-     * @param  array  $array
-     * @param  callable|null  $callback
-     * @param  mixed  $default
-     * @return mixed
-     */
-    public static function last($array, callable $callback = null, $default = null)
-    {
-        if (is_null($callback)) {
-            return empty($array) ? value($default) : end($array);
-        }
-
-        return static::first(array_reverse($array, true), $callback, $default);
-    }
-
-    /**
-     * Flatten a multi-dimensional array into a single level.
-     *
-     * @param  iterable  $array
-     * @param  int  $depth
-     * @return array
-     */
-    public static function flatten($array, $depth = INF)
-    {
-        $result = [];
-
-        foreach ($array as $item) {
-            $item = $item instanceof Collection ? $item->all() : $item;
-
-            if (! is_array($item)) {
-                $result[] = $item;
-            } else {
-                $values = $depth === 1
-                    ? array_values($item)
-                    : static::flatten($item, $depth - 1);
-
-                foreach ($values as $value) {
-                    $result[] = $value;
-                }
-            }
-        }
-
-        return $result;
-    }
-
-    /**
-     * Remove one or many array items from a given array using "dot" notation.
-     *
-     * @param  array  $array
-     * @param  array|string  $keys
-     * @return void
-     */
-    public static function forget(&$array, $keys)
-    {
-        $original = &$array;
-
-        $keys = (array) $keys;
-
-        if (count($keys) === 0) {
-            return;
-        }
-
-        foreach ($keys as $key) {
-            // if the exact key exists in the top-level, remove it
-            if (static::exists($array, $key)) {
-                unset($array[$key]);
-
-                continue;
-            }
-
-            $parts = explode('.', $key);
-
-            // clean up before each pass
-            $array = &$original;
-
-            while (count($parts) > 1) {
-                $part = array_shift($parts);
-
-                if (isset($array[$part]) && is_array($array[$part])) {
-                    $array = &$array[$part];
-                } else {
-                    continue 2;
-                }
-            }
-
-            unset($array[array_shift($parts)]);
-        }
-    }
-
-    /**
-     * Get an item from an array using "dot" notation.
-     *
-     * @param  \ArrayAccess|array  $array
-     * @param  string|int|null  $key
-     * @param  mixed  $default
-     * @return mixed
-     */
-    public static function get($array, $key, $default = null)
-    {
-        if (! static::accessible($array)) {
-            return value($default);
-        }
-
-        if (is_null($key)) {
-            return $array;
-        }
-
-        if (static::exists($array, $key)) {
-            return $array[$key];
-        }
-
-        if (strpos($key, '.') === false) {
-            return $array[$key] ?? value($default);
-        }
-
-        foreach (explode('.', $key) as $segment) {
-            if (static::accessible($array) && static::exists($array, $segment)) {
-                $array = $array[$segment];
-            } else {
-                return value($default);
-            }
-        }
-
-        return $array;
-    }
-
-    /**
-     * Check if an item or items exist in an array using "dot" notation.
-     *
-     * @param  \ArrayAccess|array  $array
-     * @param  string|array  $keys
-     * @return bool
-     */
-    public static function has($array, $keys)
-    {
-        $keys = (array) $keys;
-
-        if (! $array || $keys === []) {
-            return false;
-        }
-
-        foreach ($keys as $key) {
-            $subKeyArray = $array;
-
-            if (static::exists($array, $key)) {
-                continue;
-            }
-
-            foreach (explode('.', $key) as $segment) {
-                if (static::accessible($subKeyArray) && static::exists($subKeyArray, $segment)) {
-                    $subKeyArray = $subKeyArray[$segment];
-                } else {
-                    return false;
-                }
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Determine if any of the keys exist in an array using "dot" notation.
-     *
-     * @param  \ArrayAccess|array  $array
-     * @param  string|array  $keys
-     * @return bool
-     */
-    public static function hasAny($array, $keys)
-    {
-        if (is_null($keys)) {
-            return false;
-        }
-
-        $keys = (array) $keys;
-
-        if (! $array) {
-            return false;
-        }
-
-        if ($keys === []) {
-            return false;
-        }
-
-        foreach ($keys as $key) {
-            if (static::has($array, $key)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Determines if an array is associative.
-     *
-     * An array is "associative" if it doesn't have sequential numerical keys beginning with zero.
-     *
-     * @param  array  $array
-     * @return bool
-     */
-    public static function isAssoc(array $array)
-    {
-        $keys = array_keys($array);
-
-        return array_keys($keys) !== $keys;
-    }
-
-    /**
-     * Get a subset of the items from the given array.
-     *
-     * @param  array  $array
-     * @param  array|string  $keys
-     * @return array
-     */
-    public static function only($array, $keys)
-    {
-        return array_intersect_key($array, array_flip((array) $keys));
-    }
-
-    /**
-     * Pluck an array of values from an array.
-     *
-     * @param  iterable  $array
-     * @param  string|array|int|null  $value
-     * @param  string|array|null  $key
-     * @return array
-     */
-    public static function pluck($array, $value, $key = null)
-    {
-        $results = [];
-
-        [$value, $key] = static::explodePluckParameters($value, $key);
-
-        foreach ($array as $item) {
-            $itemValue = data_get($item, $value);
-
-            // If the key is "null", we will just append the value to the array and keep
-            // looping. Otherwise we will key the array using the value of the key we
-            // received from the developer. Then we'll return the final array form.
-            if (is_null($key)) {
-                $results[] = $itemValue;
-            } else {
-                $itemKey = data_get($item, $key);
-
-                if (is_object($itemKey) && method_exists($itemKey, '__toString')) {
-                    $itemKey = (string) $itemKey;
-                }
-
-                $results[$itemKey] = $itemValue;
-            }
-        }
-
-        return $results;
-    }
-
-    /**
-     * Explode the "value" and "key" arguments passed to "pluck".
-     *
-     * @param  string|array  $value
-     * @param  string|array|null  $key
-     * @return array
-     */
-    protected static function explodePluckParameters($value, $key)
-    {
-        $value = is_string($value) ? explode('.', $value) : $value;
-
-        $key = is_null($key) || is_array($key) ? $key : explode('.', $key);
-
-        return [$value, $key];
-    }
-
-    /**
-     * Push an item onto the beginning of an array.
-     *
-     * @param  array  $array
-     * @param  mixed  $value
-     * @param  mixed  $key
-     * @return array
-     */
-    public static function prepend($array, $value, $key = null)
-    {
-        if (func_num_args() == 2) {
-            array_unshift($array, $value);
-        } else {
-            $array = [$key => $value] + $array;
-        }
-
-        return $array;
-    }
-
-    /**
-     * Get a value from the array, and remove it.
-     *
-     * @param  array  $array
-     * @param  string  $key
-     * @param  mixed  $default
-     * @return mixed
-     */
-    public static function pull(&$array, $key, $default = null)
-    {
-        $value = static::get($array, $key, $default);
-
-        static::forget($array, $key);
-
-        return $value;
-    }
-
-    /**
-     * Get one or a specified number of random values from an array.
-     *
-     * @param  array  $array
-     * @param  int|null  $number
-     * @param  bool|false  $preserveKeys
-     * @return mixed
-     *
-     * @throws \InvalidArgumentException
-     */
-    public static function random($array, $number = null, $preserveKeys = false)
-    {
-        $requested = is_null($number) ? 1 : $number;
-
-        $count = count($array);
-
-        if ($requested > $count) {
-            throw new InvalidArgumentException(
-                "You requested {$requested} items, but there are only {$count} items available."
-            );
-        }
-
-        if (is_null($number)) {
-            return $array[array_rand($array)];
-        }
-
-        if ((int) $number === 0) {
-            return [];
-        }
-
-        $keys = array_rand($array, $number);
-
-        $results = [];
-
-        if ($preserveKeys) {
-            foreach ((array) $keys as $key) {
-                $results[$key] = $array[$key];
-            }
-        } else {
-            foreach ((array) $keys as $key) {
-                $results[] = $array[$key];
-            }
-        }
-
-        return $results;
-    }
-
-    /**
-     * Set an array item to a given value using "dot" notation.
-     *
-     * If no key is given to the method, the entire array will be replaced.
-     *
-     * @param  array  $array
-     * @param  string|null  $key
-     * @param  mixed  $value
-     * @return array
-     */
-    public static function set(&$array, $key, $value)
-    {
-        if (is_null($key)) {
-            return $array = $value;
-        }
-
-        $keys = explode('.', $key);
-
-        foreach ($keys as $i => $key) {
-            if (count($keys) === 1) {
-                break;
-            }
-
-            unset($keys[$i]);
-
-            // If the key doesn't exist at this depth, we will just create an empty array
-            // to hold the next value, allowing us to create the arrays to hold final
-            // values at the correct depth. Then we'll keep digging into the array.
-            if (! isset($array[$key]) || ! is_array($array[$key])) {
-                $array[$key] = [];
-            }
-
-            $array = &$array[$key];
-        }
-
-        $array[array_shift($keys)] = $value;
-
-        return $array;
-    }
-
-    /**
-     * Shuffle the given array and return the result.
-     *
-     * @param  array  $array
-     * @param  int|null  $seed
-     * @return array
-     */
-    public static function shuffle($array, $seed = null)
-    {
-        if (is_null($seed)) {
-            shuffle($array);
-        } else {
-            mt_srand($seed);
-            shuffle($array);
-            mt_srand();
-        }
-
-        return $array;
-    }
-
-    /**
-     * Sort the array using the given callback or "dot" notation.
-     *
-     * @param  array  $array
-     * @param  callable|array|string|null  $callback
-     * @return array
-     */
-    public static function sort($array, $callback = null)
-    {
-        return Collection::make($array)->sortBy($callback)->all();
-    }
-
-    /**
-     * Recursively sort an array by keys and values.
-     *
-     * @param  array  $array
-     * @param  int  $options
-     * @param  bool  $descending
-     * @return array
-     */
-    public static function sortRecursive($array, $options = SORT_REGULAR, $descending = false)
-    {
-        foreach ($array as &$value) {
-            if (is_array($value)) {
-                $value = static::sortRecursive($value, $options, $descending);
-            }
-        }
-
-        if (static::isAssoc($array)) {
-            $descending
-                    ? krsort($array, $options)
-                    : ksort($array, $options);
-        } else {
-            $descending
-                    ? rsort($array, $options)
-                    : sort($array, $options);
-        }
-
-        return $array;
-    }
-
-    /**
-     * Convert the array into a query string.
-     *
-     * @param  array  $array
-     * @return string
-     */
-    public static function query($array)
-    {
-        return http_build_query($array, '', '&', PHP_QUERY_RFC3986);
-    }
-
-    /**
-     * Filter the array using the given callback.
-     *
-     * @param  array  $array
-     * @param  callable  $callback
-     * @return array
-     */
-    public static function where($array, callable $callback)
-    {
-        return array_filter($array, $callback, ARRAY_FILTER_USE_BOTH);
-    }
-
-    /**
-     * If the given value is not an array and not null, wrap it in one.
-     *
-     * @param  mixed  $value
-     * @return array
-     */
-    public static function wrap($value)
-    {
-        if (is_null($value)) {
-            return [];
-        }
-
-        return is_array($value) ? $value : [$value];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+ZgBtZFKA

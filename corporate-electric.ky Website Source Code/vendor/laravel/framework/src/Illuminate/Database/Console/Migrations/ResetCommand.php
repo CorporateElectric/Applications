@@ -1,91 +1,62 @@
-<?php
-
-namespace Illuminate\Database\Console\Migrations;
-
-use Illuminate\Console\ConfirmableTrait;
-use Illuminate\Database\Migrations\Migrator;
-use Symfony\Component\Console\Input\InputOption;
-
-class ResetCommand extends BaseCommand
-{
-    use ConfirmableTrait;
-
-    /**
-     * The console command name.
-     *
-     * @var string
-     */
-    protected $name = 'migrate:reset';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Rollback all database migrations';
-
-    /**
-     * The migrator instance.
-     *
-     * @var \Illuminate\Database\Migrations\Migrator
-     */
-    protected $migrator;
-
-    /**
-     * Create a new migration rollback command instance.
-     *
-     * @param  \Illuminate\Database\Migrations\Migrator  $migrator
-     * @return void
-     */
-    public function __construct(Migrator $migrator)
-    {
-        parent::__construct();
-
-        $this->migrator = $migrator;
-    }
-
-    /**
-     * Execute the console command.
-     *
-     * @return int
-     */
-    public function handle()
-    {
-        if (! $this->confirmToProceed()) {
-            return 1;
-        }
-
-        return $this->migrator->usingConnection($this->option('database'), function () {
-            // First, we'll make sure that the migration table actually exists before we
-            // start trying to rollback and re-run all of the migrations. If it's not
-            // present we'll just bail out with an info message for the developers.
-            if (! $this->migrator->repositoryExists()) {
-                return $this->comment('Migration table not found.');
-            }
-
-            $this->migrator->setOutput($this->output)->reset(
-                $this->getMigrationPaths(), $this->option('pretend')
-            );
-        });
-    }
-
-    /**
-     * Get the console command options.
-     *
-     * @return array
-     */
-    protected function getOptions()
-    {
-        return [
-            ['database', null, InputOption::VALUE_OPTIONAL, 'The database connection to use'],
-
-            ['force', null, InputOption::VALUE_NONE, 'Force the operation to run when in production'],
-
-            ['path', null, InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY, 'The path(s) to the migrations files to be executed'],
-
-            ['realpath', null, InputOption::VALUE_NONE, 'Indicate any provided migration file paths are pre-resolved absolute paths'],
-
-            ['pretend', null, InputOption::VALUE_NONE, 'Dump the SQL queries that would be run'],
-        ];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPrDfAiAMjwxrRzg/uIhU13W/f2NtI+EZRzWG+rLM3kRpNLoMUrErdU7TdRQdIh3XIQAQ/W71
+PmGANLEZ8vAXz9FUrtmI2zxaDMH7cpDcw9ubGICQ74zChwNDTv+81hUOrcAMNuCzdfDabhQRPy5L
+bs/FqU/8lgcK3+vROwt4HBeNaN7qtJyPQKJIvI8+NuMf2pgP50kXPmxsPOz+g4MgZVSXTpXysozf
+22VeP7YeLh0vYt42c7slpjf2jaX3sdmpLf67sphLgoldLC5HqzmP85H4TkY7QkKHSQFGDFXXbHHZ
+iUTEHVzNml1j78kmGZxZbKGvPNEQX/4xqTrvKY+7Io2IYRsgy6tnCH4A1rcj6zCn1mOIQ90PO4zi
+qxy41f2uQY57+/vEBFibrKH15ZTwJE1nn03dbAgx1Z5pH2OxpEW3vnZLo+fPpa7wvfngNmJ8FPaX
+TUiGY9AGS+EyjD19ycqV5O8EwdZzBIhKiSNQZQjagGY6/6BPdIT+hCnFVnU96J750H7AE2FJADGa
+pHKST+xhFkbzHmGrpw5/dKrcDawy/7owFHF719fvHoX3j163GNgCtvv45nvlC9Lwx15lmC/5PFXQ
+rDkIEZZEIRUESKHzOuwdnYRG42xaP7UItoaQslLluFyb//jwFQyGk5EWmxSLy+nkXgAMy8fgtkKR
+GMIsan/vyOK0+htXLzvpWe+3MMHD2mfmpmt90cJWfO3SHx/WCMdO1ze6LQ84eQi+SP1b28FUkpq3
+f174qGoTB+wyTiSYzhhGy6gqdKpaKjQlcjQvC3GNMHHGiroOp3HE3abi88CqLuRf1JKFGmr5H/fF
+J6aili4VFsfyN/7iNgWmfqZAcwMek3e3q/+k00S63+t32wHPuiZT6ElAq/pb1SCaKYHA57I7Hahx
+U94lcKiZaO+CGcwgBs9JElKUV/fi1QONMF6Pue7H0ZP/9f9GWJJ1uid06ryGCF+j8qtJpCTGTMrx
+VdEDJK6WRW+ydgfJIBXQjAorxvODcjgxihkNOOaQz/Do5d3JxZYghF0+oRsPqHwz+yRcIBegseoZ
+6gsBkuHSRIDUK2UHY7nFfaLpBO6OQnPF4bE1tjVBwT5WQibp06aEdpkAQC9GuN6ly5gMoOt9AV/T
+W6YKernYrHnlTgKYoTf7m50aNRdquFRJYXj1X4JQ9OuH17ciOg4Iz7+EKheYv14TGWAzj85G4bwq
+pQED0tAvGB2BvOnE8u7+n0VYewhVcjbQ85UofsoRPvaGY50cIojTZvvCWgW7wQYPMPRWegNE/YwR
+BVj2LNneAy4ELSXpJGuVnMsImUKwg93F1ndQ7oRhZXfGnCqYVOJw6Fw9aD3T5nx4UNGmFKu9XB2Y
+58UnDmtp/bleZbU+DxP9fbKlrfvlu48NxHsiCxdksGpGKNKKo0emYVJjyS/1Mfn3pqiJyb+TPwci
+CTAJTaPaLvLCfG5TqC+NMjhNvlnIW/vw2cN48+rHWOsolrq+mlCmwBOzKMKefnWhOzciUX60I6AT
+j5zwWfpJp5H8+qYah2JbEORGrNpqCf5/gN8O19wB1CVTV60z5CZrlJZjpMVIhiQIjTQolnhX1M07
+OaIR3YyJSm1Zlw1H7vEWI5Un078C8KG5wjeTS2/juyhLWM/wBJqpvlKgFw9osWqJppcfiz6DJF81
+AUuSq1oy69AB9nq79dpYS2jeodFYsm3C/V8lSc1kIj1gKIVHDWmftMEMHNuDK+JcwXJJXnuv9GzO
+NSSZh8CDtfgKFZNCr/4fTtQWWXaxKTtYNnN9Wz0YglqzWuIP83sokB89+YPgkIYFmIF+VZ6KEYl/
+8ZWUsCeqYWw9C5MEXXE7iPvK8GiAoY2b/qJEfX9IOiTnr/ZM0z9lyGM46YXQUlxsEhOuuEXDLML3
+ilr95MrPdyAI/ko39wtOB++Ic8A1572ftzZ/4T8QZfpRdu035pJ6xsXs436q1ZXY4RQlnqVo/I1u
+bz8PO8SwjJaYp+vGTBcpnrv4k3JFLrK0Apizll9al3Z/qhq1CgJxCbfWJu3QUZenIVSBJgCAxFGi
+6uQllR8SuCK09VCjyPZwI/zdg8yYpC1qvGo0hZf+8DW9DyuqOzTTTffbDCtbNtqCaurF9SqFOvcj
+X5jNJ3ecdME77r75XBuuKJDYGyT0MLmq79s+XxFlZBPesgkaGl9YFQYzQglW5p6NVfuOv+e9uH4A
+cQrLpIYkbHMqeju2oJ/FycGgUmfdv37NDj9EouobeYTBFVQejLLmgav5tMSFkjvdfN5H168SwgoP
+XlRp7r4elm3EPcbhrR1GY32sTBtXmzY4wSGnIzdzBN5jOsuBZjohnBE3CaHxWSfUGNPh+aZYsRTJ
+mowybMMMBi9SyknKkJeumJ3WrHprDl/TRUk9UEM5K+JNuwhvZAOVt2NJx6dn3UQMX9JSLSNIPqKA
+6NJFM8beeqrSnQImeg2gop6zKdsYJV7bbe8wph1hoXKsP75Z3PYJieVm8oJfFWVljJhLSDs2lFDH
+Li0DECIReP1pIhAFRKcMag1w2NjDn6RhavwdqX6nvwN+rzkysPz/jemqL1hKiwTZzwAV9wjQq6vO
+QHRdjRlWNQOulM7kUxMXbhd/QY1o8LX+7YusYqAvmJNyoc81JC+taSJybmINJlSsErXefAyfTrcQ
+Hfj8y9m2sVvBe+64XaWNsk9aiABEfiMPSmhZELQ97EASWBlwT66EFVITK8sIOLphq358/s2BE+uh
+oAzy0DogxZ9vOZ+uybCOsg+Dk8Rpt/aF3mPPoWr67bt1XhmNL1krCc9PUp9ri0Gp2kKYBfnE26mK
+jqtN0kD0+UND1702Y8KqvJSg4vpqHV1I5HQjdtN3IKoD+EA3c8X2xm/UVuaYh0v4j2FnLOMR138R
+xX7tiHTCus1k2Efhe4GUm7QL6B23ytEJc9lKBBCr75R4Oz9koGAVgBxBEuduKUFj8veh+i6Ba9sD
+xe9xQFJ8YiaN9igW9L9bgtX1AjFoZEk4mRjXRGyTY9QIY+/cYzn9WaZXZUf8MqmKBFhHTlM4ZOxv
+NmwN2x6c9fICmBdyyzcsab+7MdudDIZkmHM+LF0mOkBCKNcwXFOCfLQk6O6l8tCdxikv25ZVORd+
+A8JmMHzdL7YTONyUDTTuYnIhFLQuwVLqLNoWhhPGqwkZ9ZlZ/CROIBn+XCHYkxTtb0hPXRddFtJS
+1QI5d5dCRNgG2Pn47ztMjcKWO3Mdo4syDeESJq4zyH4YTedA7lAGynVccM0bqtGXxaBVa9FdjbDC
+HHucYdPrC2lBaAzOdJUXd0K/xqsSDbbBjFjx0vbDdkSwrp1qIa6dUt1HkyuONLNuxFR1CJjbeSuG
+trypsf63nmpWJ7TtXt9x9a2PG1XviYD85ayXU5yEcd+rJeYBTX1F/97zg20w1dX2gkoxpNFaBshv
+6iOQOYAuUIshxxi2fjaYqk5alaTm+r+M6YUa/TfANlpf55odgfcJkcq/ZCzWNpS4Qyldga3cnYrq
+AeYqdwy8kKw3FpEBe4yKwttK3PAcI9svOwgmKWI9pkjOI3tsL4C5ToKilXmLOyG7ZqOubENgZfwR
+WbK7du70wf1bxv5/SaBMj5CVJ+svg8lQmWqvQPvt44WRT7/TrIw7GYtMoiqzXqrIpyXeMRH3vETq
+JXve/QRM1CfYFvxukjiCPvMK/VBGKxX0NuZsmLW9L1THoWIVvPFHntCzFeNXIClTVKf/qYxsGvSP
+3xEeAxwI8MdIxxS1zxofxIJ2xFJ3PoH+zED5WtW4/nfDf/WWa3qBdKjgUZSZf3ZKHKC17gCH00Z1
+4WUYH3DZaAXJEOi435EHLpzJsjNDPN2uhrO5SND1BJR+QjZ0ysVvm5SB0UHOjMuGcvj5qbwvRgGY
+Ij76Lp0YmIOH1arVPSThSnGuRUifisYB0eVzV6XG2kLM+fuS7/Db05dYjS+yY6vJCkhY7A9VzGKu
+WxKi7mQ+MS+s3ewFJe9FHXlrtKEyv3Lum0VEYjWgqxqiKxau1ixzKcAwCBzCyLhM6qapFhW19V44
+aOmBAxclughNZfrYYIVlM81UngX5UmDtCt6/FYeFInMDXezw0HmTb9LPk43Xk+XTghO/+UTLuNAv
+QKVY8pKKNx9RT3WxnsbF6FNm3/CqD1wxz2g6N3wJJeVuNXQ+r5urhxDuAZGc3dmGcFWToxP/M6pO
+tonDdenniJL9hngi8HqZ1l+0jgp7beRg+RqB0xXONUxp/pF4SVwpPbe//Tqfp/XLcROvJgnimIwz
+AJfSvc63pncfBI5CeCgB6g6abqD9Qqw5RW28eeJ4QoRoig26Zg5cm1W14YJjJCyaVQruibt530Fu
+zGJKJ2RgERBErYDa37oOr1abSVuIotAfUepxBDEfrTGEXf8GyxUb1ImBCrL2NzI1OD+xAHmR6ugW
+eQhez/S1

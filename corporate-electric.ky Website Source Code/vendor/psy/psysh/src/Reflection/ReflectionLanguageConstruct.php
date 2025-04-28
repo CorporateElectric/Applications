@@ -1,164 +1,55 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\Reflection;
-
-/**
- * A fake ReflectionFunction but for language constructs.
- */
-class ReflectionLanguageConstruct extends \ReflectionFunctionAbstract
-{
-    public $keyword;
-
-    /**
-     * Language construct parameter definitions.
-     */
-    private static $languageConstructs = [
-        'isset' => [
-            'var' => [],
-            '...' => [
-                'isOptional'   => true,
-                'defaultValue' => null,
-            ],
-        ],
-
-        'unset' => [
-            'var' => [],
-            '...' => [
-                'isOptional'   => true,
-                'defaultValue' => null,
-            ],
-        ],
-
-        'empty' => [
-            'var' => [],
-        ],
-
-        'echo' => [
-            'arg1' => [],
-            '...'  => [
-                'isOptional'   => true,
-                'defaultValue' => null,
-            ],
-        ],
-
-        'print' => [
-            'arg' => [],
-        ],
-
-        'die' => [
-            'status' => [
-                'isOptional'   => true,
-                'defaultValue' => 0,
-            ],
-        ],
-
-        'exit' => [
-            'status' => [
-                'isOptional'   => true,
-                'defaultValue' => 0,
-            ],
-        ],
-    ];
-
-    /**
-     * Construct a ReflectionLanguageConstruct object.
-     *
-     * @param string $keyword
-     */
-    public function __construct($keyword)
-    {
-        if (!self::isLanguageConstruct($keyword)) {
-            throw new \InvalidArgumentException('Unknown language construct: '.$keyword);
-        }
-
-        $this->keyword = $keyword;
-    }
-
-    /**
-     * This can't (and shouldn't) do anything :).
-     *
-     * @throws \RuntimeException
-     */
-    public static function export($name)
-    {
-        throw new \RuntimeException('Not yet implemented because it\'s unclear what I should do here :)');
-    }
-
-    /**
-     * Get language construct name.
-     *
-     * @return string
-     */
-    public function getName()
-    {
-        return $this->keyword;
-    }
-
-    /**
-     * None of these return references.
-     *
-     * @return bool
-     */
-    public function returnsReference()
-    {
-        return false;
-    }
-
-    /**
-     * Get language construct params.
-     *
-     * @return array
-     */
-    public function getParameters()
-    {
-        $params = [];
-        foreach (self::$languageConstructs[$this->keyword] as $parameter => $opts) {
-            $params[] = new ReflectionLanguageConstructParameter($this->keyword, $parameter, $opts);
-        }
-
-        return $params;
-    }
-
-    /**
-     * Gets the file name from a language construct.
-     *
-     * (Hint: it always returns false)
-     *
-     * @return bool false
-     */
-    public function getFileName()
-    {
-        return false;
-    }
-
-    /**
-     * To string.
-     *
-     * @return string
-     */
-    public function __toString()
-    {
-        return $this->getName();
-    }
-
-    /**
-     * Check whether keyword is a (known) language construct.
-     *
-     * @param string $keyword
-     *
-     * @return bool
-     */
-    public static function isLanguageConstruct($keyword)
-    {
-        return \array_key_exists($keyword, self::$languageConstructs);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

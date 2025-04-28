@@ -1,70 +1,36 @@
-<?php
-
-/*
- * This file is part of the league/commonmark package.
- *
- * (c) Colin O'Dell <colinodell@gmail.com>
- *
- * Original code based on the CommonMark JS reference parser (https://bitly.com/commonmark-js)
- *  - (c) John MacFarlane
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace League\CommonMark\Util;
-
-/**
- * @internal
- * @phpstan-template T
- * @phpstan-implements \IteratorAggregate<T>
- */
-final class PrioritizedList implements \IteratorAggregate
-{
-    /**
-     * @var array<int, array<mixed>>
-     * @phpstan-var array<int, array<T>>
-     */
-    private $list = [];
-
-    /**
-     * @var iterable<mixed>|null
-     * @phpstan-var iterable<T>|null
-     */
-    private $optimized;
-
-    /**
-     * @param mixed $item
-     * @param int   $priority
-     *
-     * @phpstan-param T $item
-     */
-    public function add($item, int $priority): void
-    {
-        $this->list[$priority][] = $item;
-        $this->optimized = null;
-    }
-
-    /**
-     * @return iterable<int, mixed>
-     *
-     * @phpstan-return iterable<int, T>
-     */
-    public function getIterator(): iterable
-    {
-        if ($this->optimized === null) {
-            \krsort($this->list);
-
-            $sorted = [];
-            foreach ($this->list as $group) {
-                foreach ($group as $item) {
-                    $sorted[] = $item;
-                }
-            }
-
-            $this->optimized = new \ArrayIterator($sorted);
-        }
-
-        return $this->optimized;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+j5s30B/8KAnC6V0Y

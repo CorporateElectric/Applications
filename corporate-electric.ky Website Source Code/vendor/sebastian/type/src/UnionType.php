@@ -1,115 +1,60 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of sebastian/type.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\Type;
-
-use function count;
-use function implode;
-use function sort;
-
-final class UnionType extends Type
-{
-    /**
-     * @psalm-var list<Type>
-     */
-    private $types;
-
-    /**
-     * @throws RuntimeException
-     */
-    public function __construct(Type ...$types)
-    {
-        $this->ensureMinimumOfTwoTypes(...$types);
-        $this->ensureOnlyValidTypes(...$types);
-
-        $this->types = $types;
-    }
-
-    public function isAssignable(Type $other): bool
-    {
-        foreach ($this->types as $type) {
-            if ($type->isAssignable($other)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    public function asString(): string
-    {
-        return $this->name();
-    }
-
-    /**
-     * @deprecated
-     *
-     * @codeCoverageIgnore
-     */
-    public function getReturnTypeDeclaration(): string
-    {
-        return ': ' . $this->name();
-    }
-
-    public function name(): string
-    {
-        $types = [];
-
-        foreach ($this->types as $type) {
-            $types[] = $type->name();
-        }
-
-        sort($types);
-
-        return implode('|', $types);
-    }
-
-    public function allowsNull(): bool
-    {
-        foreach ($this->types as $type) {
-            if ($type instanceof NullType) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * @throws RuntimeException
-     */
-    private function ensureMinimumOfTwoTypes(Type ...$types): void
-    {
-        if (count($types) < 2) {
-            throw new RuntimeException(
-                'A union type must be composed of at least two types'
-            );
-        }
-    }
-
-    /**
-     * @throws RuntimeException
-     */
-    private function ensureOnlyValidTypes(Type ...$types): void
-    {
-        foreach ($types as $type) {
-            if ($type instanceof UnknownType) {
-                throw new RuntimeException(
-                    'A union type must not be composed of an unknown type'
-                );
-            }
-
-            if ($type instanceof VoidType) {
-                throw new RuntimeException(
-                    'A union type must not be composed of a void type'
-                );
-            }
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,92 +1,43 @@
-<?php
-
-namespace Illuminate\Database;
-
-class ConnectionResolver implements ConnectionResolverInterface
-{
-    /**
-     * All of the registered connections.
-     *
-     * @var array
-     */
-    protected $connections = [];
-
-    /**
-     * The default connection name.
-     *
-     * @var string
-     */
-    protected $default;
-
-    /**
-     * Create a new connection resolver instance.
-     *
-     * @param  array  $connections
-     * @return void
-     */
-    public function __construct(array $connections = [])
-    {
-        foreach ($connections as $name => $connection) {
-            $this->addConnection($name, $connection);
-        }
-    }
-
-    /**
-     * Get a database connection instance.
-     *
-     * @param  string|null  $name
-     * @return \Illuminate\Database\ConnectionInterface
-     */
-    public function connection($name = null)
-    {
-        if (is_null($name)) {
-            $name = $this->getDefaultConnection();
-        }
-
-        return $this->connections[$name];
-    }
-
-    /**
-     * Add a connection to the resolver.
-     *
-     * @param  string  $name
-     * @param  \Illuminate\Database\ConnectionInterface  $connection
-     * @return void
-     */
-    public function addConnection($name, ConnectionInterface $connection)
-    {
-        $this->connections[$name] = $connection;
-    }
-
-    /**
-     * Check if a connection has been registered.
-     *
-     * @param  string  $name
-     * @return bool
-     */
-    public function hasConnection($name)
-    {
-        return isset($this->connections[$name]);
-    }
-
-    /**
-     * Get the default connection name.
-     *
-     * @return string
-     */
-    public function getDefaultConnection()
-    {
-        return $this->default;
-    }
-
-    /**
-     * Set the default connection name.
-     *
-     * @param  string  $name
-     * @return void
-     */
-    public function setDefaultConnection($name)
-    {
-        $this->default = $name;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPyraoR+dpp6mljDSd3cnOmZ++Knl3oUlJQQurxqWthytMKfNtFRgDdxsu/up9DW/CkG6Ily1
+6C9o7KfKZPjiTRMDiZ7ytlVUU+HpD2bdpelpamrcDqAeGjQTipQ31DiE/TEpLiELAsjLpNJLshj5
+4B1JRUfmpXIkmsPWSdznAUx1E9O5YQ/FybBcLm2Woe05MVMSiOnzX20kHS3U3roCtY5boCBvvG9x
+kUxry7ngA4XR8fVyUd6FCEOPmN7ucc8RE/fpEjMhA+TKmL7Jt1aWL4Hsw8bkkX4U97ZuJVXQWhCl
+R5rE/n+N87boRaHqhIFmSU2QlJaCaNQ8tIIzaJFHYx7uZBYObCS+3ehSwQ8/3jUY38xy2u++daQY
+JacShGk9nwRA/3a0LxByfNIQxSY3Zr63etihxy6A5mGRflNFvD1FnXGSfCqcQIP7/3E8T3FVyjrJ
+J7hfxyODYEftsyul8WxHvLg9efhEyz/f+VedtdQpfxzaECTNb7aGEkfqkYG/pJOIm+1qJE7mzMte
+wgyBoaK7n2K8Jz63fnYo1GpEoeUDjjhSyvr4eY90aXiADpwGZrGDZXpUS1NB/wkMZQ1NanT/ado1
+kdGx2DZPJWX1nV6895T4JuWdkCvLDmPPcUm5+v8kTd9HvHCp9SdG5F43W3lgjOTzVQJvMs7mCVEU
+OOqCZqCk0+pgWbIkvn3Y9pBZwTmYOq6asnv2V+vpRJXftOFIDtuPsQj3HjcWmZ8Gq6OBp2ErtiVJ
+aaKE4hxwP4BrWH4D70WZV08mPqVO08weP7pB2Tb1fmn37wXTt1ivbs+39o7D7VwnEzU7aBZ+43ER
+TaQwEjBBGhOW3wSoMc1XjQxzYOI1ypkIKo8QLDPy7pl9T5Tg6jNQHnAtlKvIVZzBHLVQzv8Znx1n
+GQ6F/zhNrenSeNjoxtGFW3CobGgDEVijRw42qu/Cn7eD1mtDX3b87VxiD3KwtLnBj5uiEJgtqvjs
+l2mumXMyEV10FGYl85tsHTdVHdsyUc+4ROuAjwBKEr7IFTb5lY7Qm4h3QJFDeDaX3hXSXmRSKjBS
+gxzJOWQ3AHmGDNNXM4wgjKAf5EI2CBbtb5eumTNF6p+gxx7dVbJKED4haJ5KzrV5DW20xt064lK6
+DT10aASF3yujSuGSLzkAU9gsOD1qCuyXCufIrAgDAhOz2gxMyjIA8WPsWWstzlb2OypJmZgZFTip
+2ObY7unfKL9HtUyWDkZ9X1HyCETlmBiQXfM5TOssjOq/kuOv8i5y/veY9U5zTPTj5aIHlbtlXddu
+w73oNi5HFN2lqFrPuHv23YvmHkTlh49YrCGsrK4qtzFY+BI2WbOEdOzz1FrIsbQYKCqolL28kbOb
+BVb3V9J+VardTgl70fN4sB8ne4O0kCbVyEU1EBA37HbpU8keUuVtWU8TR32KI/ANpR1KTmeU2NBW
+sDTut3btLC9gvPXGFGwuJc031A79l7GxXGyohJOVKi0jEvclgMMeHS1TTJN4JVr1UHxRgWgs7QTZ
+gNJ35j1z8GvWu/BAH6FE+IUy4bhFGD97l8Z98uhaOzD4FLw1wYZ/H74dlMJIMfMf3P3mVa2On3iL
+A7oqhSFq2z1xA2++JvAWJq4mrJ+BWL/cpCClwAVMWSpehBozjV6m5X9wR+dOQeIQENdnHDZDrpT2
+JzcHIipRcN8xARfmW/dt6jVe4Hbfe/JtndFhkNHMe0GplYdI1gjrpCTdas94K/coRe6ialKznWgD
+xDfSt3uC+Ks/nBnGgAiI09GSE6IO/ljJe2GoM2NXB190achOeMrXbJxVp+gjGg4Q4SECvaoL/Tzv
+I/ax1GiTic7l4W+4/RR3ZC1FLfcFwFTddNsjpXkRNRfI6orVGNRElY1OXkVQ1RWdLXe5Lpi46qSo
+Vjynoy+mrM1TTkdE/9YhefLifqGN540q77Rt+zrMfB3S7ALKuMzfRUSvN/xBymlpmRNAFcJn28jK
+Fy9mMDUOJphM6vR+QFOlJkUcX7GjkjAha6g/L4/4JEnOq9E55HEmq6roRrGhgx5jBGissxaRW9Us
+Sl+oJO8q9sCJAE4dILwiXjy7HUWI25JMRr96i7nLan7GnauQeKyVuCXEgnlm4A36ZcZcPk/zEUUw
+l5AhWDEAfitNQiSpDSgisqDho18//siFirdx7pSTz+78wRKQVHxTkmk0zNdC7NGaJszyy94V7Ju6
+HW6Q/suJYM8rVoMNBiiPr7SfPufnr4Asmq8IW1IL6IJERhBFupwQEohnEisusf4pGSDeNoRVktr8
+O+VPWUl4dPD0ga5MWX84MowlpaDDGf3jVEglIVKFPBiKdhlHXOBjdsqLAa5QM3aT183ex2Q5zqJa
+R62G82SiWiu2yCfq69ll+O20QUFl06BRfaMC7UuifB0KLziakXITVH2A3eFEbY6StyiFxAqn+oKK
+ohSZpnLSNI127J/Bke7hL4iNI6JUOnShvRA0OyqwrOBLZLXQq2FiJ7xuB2A9As0SIuJCP/tLAOQE
+q/Jh9Beps9moL5HUb2THRJ3lZsQ5UhJKjHLy0sJnqOzT/vdeB5pAmsHNud8GfLyH8yOkMSt54K3Y
+4tyt8qZ+wWsDV/JC1kBmUJTmV9Loh7ASZ5XXBrIf4fhrl84IZBlhhXK85lwyei4dalCbN0NCbPpP
+qGR9CEtw8hKEpyLfR2bx/r0lWKuGAld8k65hKaltmR+M7x0tSsIHUsSJGyy/nsOBAmFq0k6g+NnF
+Q/yeYTCLSsajvk532Xgyn2xPOzQBLkCAgIAVYTr4elyDredr2+C0IXFtE1QynIeG2sji5KxwYVHZ
+U2Kn5rcD39M+chePpYUy3+8xBSG2hOAMFSGx5MYQ9d5vD9Hj2pJlzbk9i0jrVooRVxuFw/FUMCqH
+Q/vzwj94V0+mvlL1c9D6kIWIWhmPKFu2ZCXgobTa+LJK8tLXSYi73xKt8FqRzoALGbaOi2CeT9mY
+JYj8Lm8amBIrsq6/

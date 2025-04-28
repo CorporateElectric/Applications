@@ -1,252 +1,100 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpFoundation\Session\Storage;
-
-use Symfony\Component\HttpFoundation\Session\SessionBagInterface;
-
-/**
- * MockArraySessionStorage mocks the session for unit tests.
- *
- * No PHP session is actually started since a session can be initialized
- * and shutdown only once per PHP execution cycle.
- *
- * When doing functional testing, you should use MockFileSessionStorage instead.
- *
- * @author Fabien Potencier <fabien@symfony.com>
- * @author Bulat Shakirzyanov <mallluhuct@gmail.com>
- * @author Drak <drak@zikula.org>
- */
-class MockArraySessionStorage implements SessionStorageInterface
-{
-    /**
-     * @var string
-     */
-    protected $id = '';
-
-    /**
-     * @var string
-     */
-    protected $name;
-
-    /**
-     * @var bool
-     */
-    protected $started = false;
-
-    /**
-     * @var bool
-     */
-    protected $closed = false;
-
-    /**
-     * @var array
-     */
-    protected $data = [];
-
-    /**
-     * @var MetadataBag
-     */
-    protected $metadataBag;
-
-    /**
-     * @var array|SessionBagInterface[]
-     */
-    protected $bags = [];
-
-    public function __construct(string $name = 'MOCKSESSID', MetadataBag $metaBag = null)
-    {
-        $this->name = $name;
-        $this->setMetadataBag($metaBag);
-    }
-
-    public function setSessionData(array $array)
-    {
-        $this->data = $array;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function start()
-    {
-        if ($this->started) {
-            return true;
-        }
-
-        if (empty($this->id)) {
-            $this->id = $this->generateId();
-        }
-
-        $this->loadSession();
-
-        return true;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function regenerate(bool $destroy = false, int $lifetime = null)
-    {
-        if (!$this->started) {
-            $this->start();
-        }
-
-        $this->metadataBag->stampNew($lifetime);
-        $this->id = $this->generateId();
-
-        return true;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getId()
-    {
-        return $this->id;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function setId(string $id)
-    {
-        if ($this->started) {
-            throw new \LogicException('Cannot set session ID after the session has started.');
-        }
-
-        $this->id = $id;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getName()
-    {
-        return $this->name;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function setName(string $name)
-    {
-        $this->name = $name;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function save()
-    {
-        if (!$this->started || $this->closed) {
-            throw new \RuntimeException('Trying to save a session that was not started yet or was already closed.');
-        }
-        // nothing to do since we don't persist the session data
-        $this->closed = false;
-        $this->started = false;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function clear()
-    {
-        // clear out the bags
-        foreach ($this->bags as $bag) {
-            $bag->clear();
-        }
-
-        // clear out the session
-        $this->data = [];
-
-        // reconnect the bags to the session
-        $this->loadSession();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function registerBag(SessionBagInterface $bag)
-    {
-        $this->bags[$bag->getName()] = $bag;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getBag(string $name)
-    {
-        if (!isset($this->bags[$name])) {
-            throw new \InvalidArgumentException(sprintf('The SessionBagInterface "%s" is not registered.', $name));
-        }
-
-        if (!$this->started) {
-            $this->start();
-        }
-
-        return $this->bags[$name];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function isStarted()
-    {
-        return $this->started;
-    }
-
-    public function setMetadataBag(MetadataBag $bag = null)
-    {
-        if (null === $bag) {
-            $bag = new MetadataBag();
-        }
-
-        $this->metadataBag = $bag;
-    }
-
-    /**
-     * Gets the MetadataBag.
-     *
-     * @return MetadataBag
-     */
-    public function getMetadataBag()
-    {
-        return $this->metadataBag;
-    }
-
-    /**
-     * Generates a session ID.
-     *
-     * This doesn't need to be particularly cryptographically secure since this is just
-     * a mock.
-     *
-     * @return string
-     */
-    protected function generateId()
-    {
-        return hash('sha256', uniqid('ss_mock_', true));
-    }
-
-    protected function loadSession()
-    {
-        $bags = array_merge($this->bags, [$this->metadataBag]);
-
-        foreach ($bags as $bag) {
-            $key = $bag->getStorageKey();
-            $this->data[$key] = isset($this->data[$key]) ? $this->data[$key] : [];
-            $bag->initialize($this->data[$key]);
-        }
-
-        $this->started = true;
-        $this->closed = false;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+ItgGZH5ZkhKWhsGhpie=

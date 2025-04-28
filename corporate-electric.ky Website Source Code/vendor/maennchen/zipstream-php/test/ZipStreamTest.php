@@ -1,586 +1,397 @@
-<?php
-declare(strict_types=1);
-
-namespace ZipStreamTest;
-
-use org\bovigo\vfs\vfsStream;
-use GuzzleHttp\Psr7\Response;
-use PHPUnit\Framework\TestCase;
-use ZipStream\File;
-use ZipStream\Option\Archive as ArchiveOptions;
-use ZipStream\Option\File as FileOptions;
-use ZipStream\Option\Method;
-use ZipStream\ZipStream;
-
-/**
- * Test Class for the Main ZipStream CLass
- */
-class ZipStreamTest extends TestCase
-{
-    const OSX_ARCHIVE_UTILITY =
-        '/System/Library/CoreServices/Applications/Archive Utility.app/Contents/MacOS/Archive Utility';
-
-    public function testFileNotFoundException(): void
-    {
-        $this->expectException(\ZipStream\Exception\FileNotFoundException::class);
-        // Get ZipStream Object
-        $zip = new ZipStream();
-
-        // Trigger error by adding a file which doesn't exist
-        $zip->addFileFromPath('foobar.php', '/foo/bar/foobar.php');
-    }
-
-    public function testFileNotReadableException(): void
-    {
-        // create new virtual filesystem
-        $root = vfsStream::setup('vfs');
-        // create a virtual file with no permissions
-        $file = vfsStream::newFile('foo.txt', 0000)->at($root)->setContent('bar');
-        $zip = new ZipStream();
-        $this->expectException(\ZipStream\Exception\FileNotReadableException::class);
-        $zip->addFileFromPath('foo.txt', $file->url());
-    }
-
-    public function testDostime(): void
-    {
-        // Allows testing of protected method
-        $class = new \ReflectionClass(File::class);
-        $method = $class->getMethod('dostime');
-        $method->setAccessible(true);
-
-        $this->assertSame($method->invoke(null, 1416246368), 1165069764);
-
-        // January 1 1980 - DOS Epoch.
-        $this->assertSame($method->invoke(null, 315532800), 2162688);
-
-        // January 1 1970 -> January 1 1980 due to minimum DOS Epoch.  @todo Throw Exception?
-        $this->assertSame($method->invoke(null, 0), 2162688);
-    }
-
-    public function testAddFile(): void
-    {
-        [$tmp, $stream] = $this->getTmpFileStream();
-
-        $options = new ArchiveOptions();
-        $options->setOutputStream($stream);
-
-        $zip = new ZipStream(null, $options);
-
-        $zip->addFile('sample.txt', 'Sample String Data');
-        $zip->addFile('test/sample.txt', 'More Simple Sample Data');
-
-        $zip->finish();
-        fclose($stream);
-
-        $tmpDir = $this->validateAndExtractZip($tmp);
-
-        $files = $this->getRecursiveFileList($tmpDir);
-        $this->assertEquals(['sample.txt', 'test/sample.txt'], $files);
-
-        $this->assertStringEqualsFile($tmpDir . '/sample.txt', 'Sample String Data');
-        $this->assertStringEqualsFile($tmpDir . '/test/sample.txt', 'More Simple Sample Data');
-    }
-
-    /**
-     * @return array
-     */
-    protected function getTmpFileStream(): array
-    {
-        $tmp = tempnam(sys_get_temp_dir(), 'zipstreamtest');
-        $stream = fopen($tmp, 'wb+');
-
-        return array($tmp, $stream);
-    }
-
-    /**
-     * @param string $tmp
-     * @return string
-     */
-    protected function validateAndExtractZip($tmp): string
-    {
-        $tmpDir = $this->getTmpDir();
-
-        $zipArch = new \ZipArchive;
-        $res = $zipArch->open($tmp);
-
-        if ($res !== true) {
-            $this->fail("Failed to open {$tmp}. Code: $res");
-
-            return $tmpDir;
-        }
-
-        $this->assertEquals(0, $zipArch->status);
-        $this->assertEquals(0, $zipArch->statusSys);
-
-        $zipArch->extractTo($tmpDir);
-        $zipArch->close();
-
-        return $tmpDir;
-    }
-
-    protected function getTmpDir(): string
-    {
-        $tmp = tempnam(sys_get_temp_dir(), 'zipstreamtest');
-        unlink($tmp);
-        mkdir($tmp) or $this->fail('Failed to make directory');
-
-        return $tmp;
-    }
-
-    /**
-     * @param string $path
-     * @return string[]
-     */
-    protected function getRecursiveFileList(string $path): array
-    {
-        $data = array();
-        $path = (string)realpath($path);
-        $files = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($path));
-
-        $pathLen = strlen($path);
-        foreach ($files as $file) {
-            $filePath = $file->getRealPath();
-            if (!is_dir($filePath)) {
-                $data[] = substr($filePath, $pathLen + 1);
-            }
-        }
-
-        sort($data);
-
-        return $data;
-    }
-
-    public function testAddFileUtf8NameComment(): void
-    {
-        [$tmp, $stream] = $this->getTmpFileStream();
-
-        $options = new ArchiveOptions();
-        $options->setOutputStream($stream);
-
-        $zip = new ZipStream(null, $options);
-
-        $name = 'árvíztűrő tükörfúrógép.txt';
-        $content = 'Sample String Data';
-        $comment =
-            'Filename has every special characters ' .
-            'from Hungarian language in lowercase. ' .
-            'In uppercase: ÁÍŰŐÜÖÚÓÉ';
-
-        $fileOptions = new FileOptions();
-        $fileOptions->setComment($comment);
-
-        $zip->addFile($name, $content, $fileOptions);
-        $zip->finish();
-        fclose($stream);
-
-        $tmpDir = $this->validateAndExtractZip($tmp);
-
-        $files = $this->getRecursiveFileList($tmpDir);
-        $this->assertEquals(array($name), $files);
-        $this->assertStringEqualsFile($tmpDir . '/' . $name, $content);
-
-        $zipArch = new \ZipArchive();
-        $zipArch->open($tmp);
-        $this->assertEquals($comment, $zipArch->getCommentName($name));
-    }
-
-    public function testAddFileUtf8NameNonUtfComment(): void
-    {
-        $this->expectException(\ZipStream\Exception\EncodingException::class);
-
-        $stream = $this->getTmpFileStream()[1];
-
-        $options = new ArchiveOptions();
-        $options->setOutputStream($stream);
-
-        $zip = new ZipStream(null, $options);
-
-        $name = 'á.txt';
-        $content = 'any';
-        $comment = 'á';
-
-        $fileOptions = new FileOptions();
-        $fileOptions->setComment(mb_convert_encoding($comment, 'ISO-8859-2', 'UTF-8'));
-
-        $zip->addFile($name, $content, $fileOptions);
-    }
-
-    public function testAddFileNonUtf8NameUtfComment(): void
-    {
-        $this->expectException(\ZipStream\Exception\EncodingException::class);
-
-        $stream = $this->getTmpFileStream()[1];
-
-        $options = new ArchiveOptions();
-        $options->setOutputStream($stream);
-
-        $zip = new ZipStream(null, $options);
-
-        $name = 'á.txt';
-        $content = 'any';
-        $comment = 'á';
-
-        $fileOptions = new FileOptions();
-        $fileOptions->setComment($comment);
-
-        $zip->addFile(mb_convert_encoding($name, 'ISO-8859-2', 'UTF-8'), $content, $fileOptions);
-    }
-
-    public function testAddFileWithStorageMethod(): void
-    {
-        [$tmp, $stream] = $this->getTmpFileStream();
-
-        $options = new ArchiveOptions();
-        $options->setOutputStream($stream);
-
-        $zip = new ZipStream(null, $options);
-
-        $fileOptions = new FileOptions();
-        $fileOptions->setMethod(Method::STORE());
-
-        $zip->addFile('sample.txt', 'Sample String Data', $fileOptions);
-        $zip->addFile('test/sample.txt', 'More Simple Sample Data');
-        $zip->finish();
-        fclose($stream);
-
-        $zipArch = new \ZipArchive();
-        $zipArch->open($tmp);
-
-        $sample1 = $zipArch->statName('sample.txt');
-        $sample12 = $zipArch->statName('test/sample.txt');
-        $this->assertEquals($sample1['comp_method'], Method::STORE);
-        $this->assertEquals($sample12['comp_method'], Method::DEFLATE);
-
-        $zipArch->close();
-    }
-
-    public function testDecompressFileWithMacUnarchiver(): void
-    {
-        if (!file_exists(self::OSX_ARCHIVE_UTILITY)) {
-            $this->markTestSkipped('The Mac OSX Archive Utility is not available.');
-        }
-
-        [$tmp, $stream] = $this->getTmpFileStream();
-
-        $options = new ArchiveOptions();
-        $options->setOutputStream($stream);
-
-        $zip = new ZipStream(null, $options);
-
-        $folder = uniqid('', true);
-
-        $zip->addFile($folder . '/sample.txt', 'Sample Data');
-        $zip->finish();
-        fclose($stream);
-
-        exec(escapeshellarg(self::OSX_ARCHIVE_UTILITY) . ' ' . escapeshellarg($tmp), $output, $returnStatus);
-
-        $this->assertEquals(0, $returnStatus);
-        $this->assertCount(0, $output);
-
-        $this->assertFileExists(dirname($tmp) . '/' . $folder . '/sample.txt');
-        $this->assertStringEqualsFile(dirname($tmp) . '/' . $folder . '/sample.txt', 'Sample Data');
-    }
-
-    public function testAddFileFromPath(): void
-    {
-        [$tmp, $stream] = $this->getTmpFileStream();
-
-        $options = new ArchiveOptions();
-        $options->setOutputStream($stream);
-
-        $zip = new ZipStream(null, $options);
-
-        [$tmpExample, $streamExample] = $this->getTmpFileStream();
-        fwrite($streamExample, 'Sample String Data');
-        fclose($streamExample);
-        $zip->addFileFromPath('sample.txt', $tmpExample);
-
-        [$tmpExample, $streamExample] = $this->getTmpFileStream();
-        fwrite($streamExample, 'More Simple Sample Data');
-        fclose($streamExample);
-        $zip->addFileFromPath('test/sample.txt', $tmpExample);
-
-        $zip->finish();
-        fclose($stream);
-
-        $tmpDir = $this->validateAndExtractZip($tmp);
-
-        $files = $this->getRecursiveFileList($tmpDir);
-        $this->assertEquals(array('sample.txt', 'test/sample.txt'), $files);
-
-        $this->assertStringEqualsFile($tmpDir . '/sample.txt', 'Sample String Data');
-        $this->assertStringEqualsFile($tmpDir . '/test/sample.txt', 'More Simple Sample Data');
-    }
-
-    public function testAddFileFromPathWithStorageMethod(): void
-    {
-        [$tmp, $stream] = $this->getTmpFileStream();
-
-        $options = new ArchiveOptions();
-        $options->setOutputStream($stream);
-
-        $zip = new ZipStream(null, $options);
-
-        $fileOptions = new FileOptions();
-        $fileOptions->setMethod(Method::STORE());
-
-        [$tmpExample, $streamExample] = $this->getTmpFileStream();
-        fwrite($streamExample, 'Sample String Data');
-        fclose($streamExample);
-        $zip->addFileFromPath('sample.txt', $tmpExample, $fileOptions);
-
-        [$tmpExample, $streamExample] = $this->getTmpFileStream();
-        fwrite($streamExample, 'More Simple Sample Data');
-        fclose($streamExample);
-        $zip->addFileFromPath('test/sample.txt', $tmpExample);
-
-        $zip->finish();
-        fclose($stream);
-
-        $zipArch = new \ZipArchive();
-        $zipArch->open($tmp);
-
-        $sample1 = $zipArch->statName('sample.txt');
-        $this->assertEquals(Method::STORE, $sample1['comp_method']);
-
-        $sample2 = $zipArch->statName('test/sample.txt');
-        $this->assertEquals(Method::DEFLATE, $sample2['comp_method']);
-
-        $zipArch->close();
-    }
-
-    public function testAddLargeFileFromPath(): void
-    {
-        $methods = [Method::DEFLATE(), Method::STORE()];
-        $falseTrue = [false, true];
-        foreach ($methods as $method) {
-            foreach ($falseTrue as $zeroHeader) {
-                foreach ($falseTrue as $zip64) {
-                    if ($zeroHeader && $method->equals(Method::DEFLATE())) {
-                        continue;
-                    }
-                    $this->addLargeFileFileFromPath($method, $zeroHeader, $zip64);
-                }
-            }
-        }
-    }
-
-    protected function addLargeFileFileFromPath($method, $zeroHeader, $zip64): void
-    {
-        [$tmp, $stream] = $this->getTmpFileStream();
-
-        $options = new ArchiveOptions();
-        $options->setOutputStream($stream);
-        $options->setLargeFileMethod($method);
-        $options->setLargeFileSize(5);
-        $options->setZeroHeader($zeroHeader);
-        $options->setEnableZip64($zip64);
-
-        $zip = new ZipStream(null, $options);
-
-        [$tmpExample, $streamExample] = $this->getTmpFileStream();
-        for ($i = 0; $i <= 10000; $i++) {
-            fwrite($streamExample, sha1((string)$i));
-            if ($i % 100 === 0) {
-                fwrite($streamExample, "\n");
-            }
-        }
-        fclose($streamExample);
-        $shaExample = sha1_file($tmpExample);
-        $zip->addFileFromPath('sample.txt', $tmpExample);
-        unlink($tmpExample);
-
-        $zip->finish();
-        fclose($stream);
-
-        $tmpDir = $this->validateAndExtractZip($tmp);
-
-        $files = $this->getRecursiveFileList($tmpDir);
-        $this->assertEquals(array('sample.txt'), $files);
-
-        $this->assertEquals(sha1_file($tmpDir . '/sample.txt'), $shaExample, "SHA-1 Mismatch Method: {$method}");
-    }
-
-    public function testAddFileFromStream(): void
-    {
-        [$tmp, $stream] = $this->getTmpFileStream();
-
-        $options = new ArchiveOptions();
-        $options->setOutputStream($stream);
-
-        $zip = new ZipStream(null, $options);
-
-        // In this test we can't use temporary stream to feed data
-        // because zlib.deflate filter gives empty string before PHP 7
-        // it works fine with file stream
-        $streamExample = fopen(__FILE__, 'rb');
-        $zip->addFileFromStream('sample.txt', $streamExample);
-//        fclose($streamExample);
-
-        $fileOptions = new FileOptions();
-        $fileOptions->setMethod(Method::STORE());
-
-        $streamExample2 = fopen('php://temp', 'wb+');
-        fwrite($streamExample2, 'More Simple Sample Data');
-        rewind($streamExample2); // move the pointer back to the beginning of file.
-        $zip->addFileFromStream('test/sample.txt', $streamExample2, $fileOptions);
-//        fclose($streamExample2);
-
-        $zip->finish();
-        fclose($stream);
-
-        $tmpDir = $this->validateAndExtractZip($tmp);
-
-        $files = $this->getRecursiveFileList($tmpDir);
-        $this->assertEquals(array('sample.txt', 'test/sample.txt'), $files);
-
-        $this->assertStringEqualsFile(__FILE__, file_get_contents($tmpDir . '/sample.txt'));
-        $this->assertStringEqualsFile($tmpDir . '/test/sample.txt', 'More Simple Sample Data');
-    }
-
-    public function testAddFileFromStreamWithStorageMethod(): void
-    {
-        [$tmp, $stream] = $this->getTmpFileStream();
-
-        $options = new ArchiveOptions();
-        $options->setOutputStream($stream);
-
-        $zip = new ZipStream(null, $options);
-
-        $fileOptions = new FileOptions();
-        $fileOptions->setMethod(Method::STORE());
-
-        $streamExample = fopen('php://temp', 'wb+');
-        fwrite($streamExample, 'Sample String Data');
-        rewind($streamExample); // move the pointer back to the beginning of file.
-        $zip->addFileFromStream('sample.txt', $streamExample, $fileOptions);
-//        fclose($streamExample);
-
-        $streamExample2 = fopen('php://temp', 'bw+');
-        fwrite($streamExample2, 'More Simple Sample Data');
-        rewind($streamExample2); // move the pointer back to the beginning of file.
-        $zip->addFileFromStream('test/sample.txt', $streamExample2);
-//        fclose($streamExample2);
-
-        $zip->finish();
-        fclose($stream);
-
-        $zipArch = new \ZipArchive();
-        $zipArch->open($tmp);
-
-        $sample1 = $zipArch->statName('sample.txt');
-        $this->assertEquals(Method::STORE, $sample1['comp_method']);
-
-        $sample2 = $zipArch->statName('test/sample.txt');
-        $this->assertEquals(Method::DEFLATE, $sample2['comp_method']);
-
-        $zipArch->close();
-    }
-
-    public function testAddFileFromPsr7Stream(): void
-    {
-        [$tmp, $stream] = $this->getTmpFileStream();
-
-        $options = new ArchiveOptions();
-        $options->setOutputStream($stream);
-
-        $zip = new ZipStream(null, $options);
-
-        $body = 'Sample String Data';
-        $response = new Response(200, [], $body);
-
-        $fileOptions = new FileOptions();
-        $fileOptions->setMethod(Method::STORE());
-
-        $zip->addFileFromPsr7Stream('sample.json', $response->getBody(), $fileOptions);
-        $zip->finish();
-        fclose($stream);
-
-        $tmpDir = $this->validateAndExtractZip($tmp);
-
-        $files = $this->getRecursiveFileList($tmpDir);
-        $this->assertEquals(array('sample.json'), $files);
-        $this->assertStringEqualsFile($tmpDir . '/sample.json', $body);
-    }
-
-    public function testAddFileFromPsr7StreamWithFileSizeSet(): void
-    {
-        [$tmp, $stream] = $this->getTmpFileStream();
-
-        $options = new ArchiveOptions();
-        $options->setOutputStream($stream);
-
-        $zip = new ZipStream(null, $options);
-
-        $body = 'Sample String Data';
-        $fileSize = strlen($body);
-        // Add fake padding
-        $fakePadding = "\0\0\0\0\0\0";
-        $response = new Response(200, [], $body . $fakePadding);
-
-        $fileOptions = new FileOptions();
-        $fileOptions->setMethod(Method::STORE());
-        $fileOptions->setSize($fileSize);
-        $zip->addFileFromPsr7Stream('sample.json', $response->getBody(), $fileOptions);
-        $zip->finish();
-        fclose($stream);
-
-        $tmpDir = $this->validateAndExtractZip($tmp);
-
-        $files = $this->getRecursiveFileList($tmpDir);
-        $this->assertEquals(array('sample.json'), $files);
-        $this->assertStringEqualsFile($tmpDir . '/sample.json', $body);
-    }
-
-    public function testCreateArchiveWithFlushOptionSet(): void
-    {
-        [$tmp, $stream] = $this->getTmpFileStream();
-
-        $options = new ArchiveOptions();
-        $options->setOutputStream($stream);
-        $options->setFlushOutput(true);
-
-        $zip = new ZipStream(null, $options);
-
-        $zip->addFile('sample.txt', 'Sample String Data');
-        $zip->addFile('test/sample.txt', 'More Simple Sample Data');
-
-        $zip->finish();
-        fclose($stream);
-
-        $tmpDir = $this->validateAndExtractZip($tmp);
-
-        $files = $this->getRecursiveFileList($tmpDir);
-        $this->assertEquals(['sample.txt', 'test/sample.txt'], $files);
-
-        $this->assertStringEqualsFile($tmpDir . '/sample.txt', 'Sample String Data');
-        $this->assertStringEqualsFile($tmpDir . '/test/sample.txt', 'More Simple Sample Data');
-    }
-
-    public function testCreateArchiveWithOutputBufferingOffAndFlushOptionSet(): void
-    {
-        // WORKAROUND (1/2): remove phpunit's output buffer in order to run test without any buffering
-        ob_end_flush();
-        $this->assertEquals(0, ob_get_level());
-
-        [$tmp, $stream] = $this->getTmpFileStream();
-
-        $options = new ArchiveOptions();
-        $options->setOutputStream($stream);
-        $options->setFlushOutput(true);
-
-        $zip = new ZipStream(null, $options);
-
-        $zip->addFile('sample.txt', 'Sample String Data');
-
-        $zip->finish();
-        fclose($stream);
-
-        $tmpDir = $this->validateAndExtractZip($tmp);
-        $this->assertStringEqualsFile($tmpDir . '/sample.txt', 'Sample String Data');
-
-        // WORKAROUND (2/2): add back output buffering so that PHPUnit doesn't complain that it is missing
-        ob_start();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPrfAOwP9HbYA54psXOb2fNKtHOhGu7GzsRAudICIN5jTW5nOoqMFicHyUMZT1ZR5fL8gFwXD
+NUXVCSjkJ3RoDIzlJyskQy8NGhyzRcwD7ZZ0slQ7/WzzClTpU84FIK7Fu1Ymuzvkoq5SyxWcsu8k
+typcFKudugGXKB+pwDtYe7LeAv/Gba+CvYe/D10nUuiIqN5lUqChAgfHLJkfrxy2pLHudorvSWiv
+P+8tKMXGou4uFLUmDL3cV8k+uQ3qw0VQvjxBEjMhA+TKmL7Jt1aWL4HswCfcV5UYZeOD1SPY5aEm
+2AHm/y35hgoaeXK+m98GVui+CvG+uNSVWqKtLX+Rbn+/WBp4fW/YaNYBjTa+inx3VuM9G1UcUds3
+iATnkQV8iJ6hu9JR3tVBWakl5mvrN2JamLmnBZsaf7NEHyndHCEF1eHCP/N2R90ccDZVBdvGvZIh
+Be/WwIGr9tBrgmsdwKfrmo8NyhpHkBGDUNSRlp5FZ1ecf31TY46Brs6T3gSKuRkVE0HYDoLPEy1U
+BGQ28e5C0bKSQUm8TH8tmxxRW182VEMqkV/JRylLmvgbJtSXMCdlwNQ8b5CRsB/GzN5Kp+PqyRCH
+VnejwLGDvMN8LU8qwQ4p83U7xQXaYpdXPEFD5+UkCmB/T/+bkWAejDYRJkFF44lbS6tpAkSpkMfQ
+1YvIR3U+S/iOc/KTgusoQspdSwpo6lXDeVojCvuowiPiPA86bEFAA6DVMXvYW+hxyshPKQLHMNEs
+wF9OaUEHgHxDqTZVaK8ENg5j10XuJyJhLYUjw58C5bTizn5N2z8T3Y6Ogu1/eLALPu5sxy3gKoYM
+nb2xBir74wPzUSGO1ufLRA8ZuvSbEpYEbvpWTvhFgBk1TBq8T1qdWQdYKxlkNgf46th0pL8uBGcv
+u/h0SHV1OLQdZFPBHsGsWu8NkJ6i2gK9toGmBEqn/DO6TL4W8gGkMo60TYLVshI6D0MCj7WSyh+9
+aIDUQCV9RskYmKXvQqn9UBKeTkuz7UEHv/QyU4/n1GT6E939ypJsJCSdMVkFkyD+t0WPbarSKLB/
+2dIV5fWUb2eAiW9I99qSHuWwg8GsVew/rJKJK6Qs78aTC+DxVcf5/itbrPWRfRl5zACN/RnKpc0z
+Qw7CaZ1oImvoJrJGaLo6CWT43nxg5opUHz+wTSoWfXnxtyimtSP8kossHAGf3qG+fSHuIOPiFc7d
+VPM6OTCDw7NFavgagzmvepWlvVuS6/fGeOr6Q8tjjxfJY4idDroUfBpxZJsqo5ynmtdignYwi6yb
+qSI8lMobz+MrLfTn81hAVX8HLij5yxMLtUXJLDv8BayH3+a8gjHYmZdsLC2uu5A9Ebb23mTiTAum
+1Kol/SnOv1rqDgZklU41igzzMmzjSd+8gHqX725tE4xmjb3P0hse2S/c1fiFbkYAt+a2PY0bKFrY
+CGIFwsqgqL3awuQ6FnisaJVLqvIBBcG17ZgQW2S0Ys4vZT62qutvf5CAHaG6A1zEZTqXUIlRbkXt
+b8CJi3BF28TsKmAv6fxuCRUbicIWZkU7xL5o7hbM2IN4LwvfY9fQJ4/rHLxPUuvZdBxky0K/3CLo
+x6Y1cAEr4lzsFp+3IG38PbqOtNJDgwo3B00C2rMTreMWmHvjyJdoh2fw5UWgOd/Fho4XLOnwaU0b
+QagQz147sDmOZL7vQqSVqZVLJM/dzrJZ+HOTj3CPM3UO/5NO7uCoxbfeRDPrsOS34z+JuMADaWUo
+cqIFod2nptrLlfrkRLKRaZDLjL/yWfHpJFM3xrAkOMeu9ftAgK+UiDIhLrZjLuJUtND3SMV/mhT/
+Ij91MOUFeYn2hHXegI3sK+UIEyx8LyWKHP9jvjMtevbC3ctyUjTRxiIZY0wRty+EEdZVTsVSMPt9
+3kekbcUF1xDNy1eYy4tT0w6+i/8uCDN0KbwFcfsOZu35yAD+fnVpTVzLn/NyXOEvFxX4wHQS9qKc
+suvIbpP60qRmU05NQR3U8qWgSovCFy5Rd8niep36sJaHSq9bALobZhFsJoBs3lzqVJvCWUdhQnac
+ZhzYk6T6Eu0kj4V6442TykqnYh2y3WI9wa9k8vTYFnQ6hjEmQWxMUcWOjCZeCg9Chib/IOmOJorO
+DuceiJRLq1HxB6dE/1/T3Xx//hpRkemJumf0Qy7Wxoz+3uD2rBSZbnxDgfsfvWY+/aDV7KPvFMyN
+0DpAXKZptfNXePi9Nou72v8KsQ3d3BvJPlpWhj6pqDmm3RserfWO56fC4fj7IMG1GqhN0A+l99Vh
+40aYX8lPBEqX/Me5EMHqRDs8aaTvi91EjxJW+OKln6xNaDDFbi56U16DlImbxhxIqK8WkXlxZA7e
+RFGQevz9HkbvaYisfKXrATz7GTFAPv9QVIEm8d2PB+MhNCK4BWwijYiDfmlGFHeHIYpw0hp+bQbH
+yU2Ej4Sf6NlOOAldcP+Vmk6uH914Xp1Jn0ddXp4281bgz1OXGlVEiXQusLEN1w47wum7Pafx1QW2
+b/bOvrI0Wl5Vd4XCtxIh5Ro/BehBWRdrxeBHtaGZUoxQyx6VJXb/MfTJsR9Jm8AVItmJkIRenKXy
+vJ+6LjdfXVsTtZhL8jLX+XuZN+D652CEWUWsHlSPoRRAdGCGK5VjNEbwjktALinb9wluua3DANOB
+vQJCNLrpAEGxkmHhOQoOx7WvUHFTJTJGEkJwirafWyvTHPIl09T0iyCZm+htWRaqJ2/fP0eS+nQE
+yP7cAM14sfuEQunKi25cxu4SxsRIn9phbehp3O5fWy5iexmpU1bh9QSHGrHxdj6mQmdyx0iQsiPz
+zZrobyMa1rOVGzTm4QecAHThJ3g4QSO312ckdnr/b8Rl78rWLktSzV1RZbZzyiyr8aQN7WZp031S
+P97Gi2jC3nU7sxC5UltpJHHJQN1YrMMK9J+m+JDDuUYWzNMKSmjaPdPAu5UDLJGF4/FFIr0PPScr
+9Y6XteaAbD9HCYYFiShS4eEi9YgrLGj04Ohtd6KNuvqEmjFDaGaURf4EIzVNifM9YJPbz+D3i1vi
+DIv4aMLf0Q+9vMmRiEPZLOwVN7KYtGJzPlELQ9ZXtjdNP9TxmshhEF+1qosN+koq4OE1SFyHLstw
+ObKEgM/BOTsffapKWFizbMG3IfAbEZeRueT0cB0KBl+hXKJVpCY9pVGjtTXsOIFQlTkYH5KEkL/o
+At7wYSGHzdDq8usQIEJTbDW/7zzmAzzEriDMU4YeIfeGErqeulaGzdJPKJcepM4N7e3inVEaTMPq
+FQ3l2eCHBg9uiGCDOWnqFKah/0puoTJb5u5uMe9i0qIb5HfaQ47RRaaju4ffMDEXfPyVhKcRbdZk
+Zdt3gK/P2DtNhplSwZ5TZI11YQGkk0r7p9sC/jPL87Pq2sDbk7bm4QQy1dlX9vbhip9QjZQRYT1X
+LbbO4KiTiLYG9XaI/ro318B/xYPIFqvCFsXBbvzeJUnMQLGnqiz76BbJBbGPQ32DUSorR2OYzWRf
+K2tLqsOuctG42Q+m5XuKjxgPOPUXR+kTGeu/reTlFVGs5YdDG/GaEHgxxWNY5RGbNlTbo9kAluvQ
+Q2+3PQwpVbMeEGZqGsyOpEVE+IlfbhObTlJFQxitwj0ffS66ItJAg1wYCu3ROokNUGQJwxkynBEY
+sCfOqxyMV54FzXAej0BFyUfLOx7660yobamxctk46y7YdugFL8Ae0gyLEP5M3Hv3pRgkIokNCBrg
+DLq9Amc336GixdYIIgN+JtzNNM/dQEIlGlNkIdbU9+3a/nR9vhfggYl/M66JBVo83rTPZneEottV
+EXiYmPLzNJIdor6YCEMd5hYNxkqqTS8x2i7RU6pVqxehVvu/WrauJWqGQcvNEgV+SbQueC4rMS3S
+gF5+kSEZhZ8KUzDYhBYIuK0lusPa2usV8/dVmUXPgKfTa6c1rcRTXqPohYo4t/o2rX4RVUtdCm77
+NFF9HUiJj5Wz89x9PKS/28eY2zIdQx6lR2iOLIy3J7VzyTEwLLj23p8QuO37VosGoDRWz3w9qP8U
+W0vM+YRxmcSW7kcXPkZAIBzAmjFjqGOKQnB+/4ENRS3Qwujd5kavOkugTbSiGNIZJu7FU+r8vtsD
+8BEPWNIPmjjIbXmJV0FEE8ASzJZxAd7m7QYYxmIRSg9vR12T3wTFUBQvR6xUXoVf8U105FpspOfi
+e6X1tX4GYbGatrS81QBMEkrzExR+wEdrmShECWtDNMbWhPSAFwX2NgB1a+8pq9Dx6J0JR/h4PhUH
+huiwPYKhiuGkPTfCx4oCkWCU507sqeX5/xWNmNMzMsDGxcM53xh0fcCvsdpbIvlVNyRi2KlHbenZ
+0G7D8QjtDnwKYF+EZx+MCqwNqYN7e9pL5lK0vigtJ23jjhbK/uFXlsalaH89w+mWjfPJzf0Y457e
+2ObQ4QwpPDb+uYIKeEYl5adcD5uCabNjOUttdj/NIylsm6KiDW+P3Pyb7Mf6OwTAWIUZcyGFlYQB
+oxVMz90VOnffe+KExlx58JTuFbSjdCC36djd9S1CxrUmTifMxK8LMHh17e6vC4YlgvKcfKh6WGL9
+jSDbr/eQpx0TXMi+wFZHzT0qdmNEiTv4O1tTK4riq8RdPYoGkmYLjTsj47shaKknUNkBgsbvUTPo
+x/2DaRD1r9mxgZ5JqjoISBChscdTDOOl6KPTYRyZSEeYwNHEhg+xmizWIORhQgEyC5MrtTfturii
+mDBFkLMOUbMIc1iU0ehYDk2ZBj0S2GzMoEaxCMjaf/GjqJUJebO7cPnG2ttR8ITg1x6WDKxEa3Kl
+6+FbBqxzm49PiWM2hXup/ObCNAshuzltM4ZrbdPZnS++VhNyjINvU0bfHpLEQ7+U1xJ8Me0igSxZ
+TAzyhSPtu05WIuYpZZYoTTaNhVlD9LVak0J9FYCuVJct+Jf5bgTIH0k2XGxrxZPTzgGk3cvcdY/A
+htbxUCxY6/1ev4UyTcidbjH5coDPfi0dFTC1t5rEeY2VsrtAAMsTFkwEK+TG+vkAGElXtc1Yfj+e
+WHZlyWdwP54TKDUDai/8CnuFHCsYUNkHyGXe5CjWdOF35wwnb4VXIq41kRXvrpTEH8Q80/SDij0J
+eGrkx3yCQoMKBYnaUh49Bp3XknGs2aEwFcl8fuXs46CmFGJ2T4kqDo4FnEg8TvdMQcw1FSEsycHa
+DDQ6RJrhd79g69gqjfvXoBp5pkeWx2EIC4o6IKM4iLOksKfjG0jRroa3H+FA1KHHOnzg3b2U5mlF
+Hy4d2uzw8yGWZRS63L3WW7fmb4j1eoZwJbQ6VqkhME1PUpBlwvoWOZjAAvoQPtn647NKHKXpTfOC
+uc0HAeE+ezsvr8dT4QbXOIf6BReSV3L4V8qKjo/HYxCXaKn+0YCNA2NYdAaPpVocysHz3PN8N8sV
+PP5e3kFyp6KpYR7Oa9IkpzXUGHLcjKn7lMqHkOb7d5YBTSBmMB+rc+H7voXupPRFwsHTSDOjsA8z
+LajOafwbV2JwC8YxbxtiTE7dhtvnGIMZ0ZPKEsfkYoWQ1xlZNt8LtXDV/y4/8nMaKaKWanV/9qB5
+6mWkfT8EhtqLeBLbZ+Lvcy6uWuFOUWdBHOhFin/Jy2f2eoYgX2/cpMKvkGtT6ZJb5EDFRaLSOs3L
+raWISL0avD+MiqM3UL/IY/DDycKvagr9slFVBF306Abt1a84lSTGYQ7WT+tiqhLXZr0nL0s2KkwR
+Fr+Imp1m0umPHg5Z3Vff/CVgdutTvxx85ZTLE1e6hp2vo1PHyVCFCZdK+LytRG+/iwoKUL1x9Wuk
+xylHcG3yjWLyVcYqUQKGozDILYMgad1lUEC+1taB6LafVLeRrS2mnWxv8Bw806F2CtK2W98CWHL6
+rfrmJ9jh8VoK/NQsz0DDQnasmOqXEk/B85D9w2YhCbACXYr0rxEOSTWZ5jLzK6gaqaXS5k0xKohE
+Jlp3Tlp7rzsj7PKSqWKd9bt8utq+/UbvUc3Jcc7AnShGyGQ3tokn0zTou1DxWsKipvBS4ky1wiJE
+skdomn6sJqo3E6QWR2J5MzCnP356Z56KBT0BTYVsYgz7LqOJvtDRz69CJZAV2RRUWnJ2xhZXeFKx
++vfTdLNx9AMTR5fMjtdy8RQ46GeUHAfBZZH9L/RBge+d1rOYuaP21tptCWhhyFGig7zs7/bKCP00
+YU/LR7j2rNMiaS60ewOo8hOzumYbDHh+w7MzS6ITti88ziiUwnKOW1xIQnWLO//61gpZ9YnSrZ3P
+EVHkwxdjf0D5hWg6cYyjP4lI0JdDIMbDLXeETsmtDrh/1pCMLc4bGEbDeok3qTIXsB1J9bTHT13Q
+E25qPSrNq3PWpydESXjkWZ3bGsZwmMcL3a9CSneLrbbcnhnfVARtyy+KWxwBJpM63l0Y1enhzCpb
+S9bZMbxxQnmUIUVbyW72c3Pk9U1AU3QLkeuLbGl0lVVJqEPqylsa1CTmTthed6/euV5pK4V0Ldio
+zm+bmABN9jy0+SoBO92vmPKN8PsWTBBurEGptT3f8+KbLzmdtjMi3bpgDfzwBHPlHIlxVJl+eFyd
+P08V1wuIcAo/2molUEzD4Qms/vzx6Lb5yOmWCOfEBIlN8dJSeS068uXifKgxzMAGrxsgqhUZmT2O
+zFLCcwcTVsmnKvzyvzioIX73rBKBn8Q2OxHnDKwtDnbc2Uy4RaCKUM06j9cdATwX9i6GyK8Zp5l1
+4jEh+DX1BlvONSZSS5JN643DJqWkwsSKhbJfI/QOL2H+WcgmY+1uREjnOA6pDWjD5i8s3EAi9xNg
+wfqoKyyfpHijolzZnXmziyMzMXiYfiIG6KKfm6BKzt2upkZXa3b4XCXSH5D5iMBzPxlFVxmt+/41
+U0i77NATnr862RWNGAyGh5ms0WHjj4pM+oKa1sQgv46aas5LBT6xIFblUKMq/4B/hjJ/roPy5Vul
+CdYsyz62tQXzt51XKo+d0J3GjNjH55GmHRx4USt2TQr+ZR3v/k01o4k8b2UAoHrBCdLGZCr/VxLX
+JFsjbeKXgD1QqV342yb4iToSx0Nb1cu2W59K3uhqAlGc/Oi6Masy4ROG6d3hOWHxYP7ZhnA9FhTY
+isRhJ+MoKmDB9zIFBG5aoy0BiUAe7xsn7BcK+V9c7FX9o/PUdnWb/zUYctJOnB7of0kmBRB97wjQ
+7ksmCYJZ5Z1j9nTwfb4HW5/+1ZVE/bQtPIlS/y81cpbMmjnrg6O1QdtFRb0QiQtGhJ0PgVYlo9FQ
+XE0q5bGYzu86hbUU0Y3hYNeS0l+N6A6B859ZLhAAHwV3G1VLQII83WZyYT0XBXBhbbe2N3YgFgBr
+IKhYiZrS0D9y4pFP/yzwa8hPG4AK08m83wYCtOBgGms6tpb8z1lzMcG6rVwKkqQ5RTuFVGQ4QX6J
+6sf2UIjGPsMKR+hFHeMzBQvKuneeAVvoaMkd5q0BtMiRnoPpSN1L591HDXKsc7FibJC4JlObdvol
+aJHCz21T5VyAG9f0tLYZEvU8nxi0ZWGrlXh6I4VvUf9g1bkjOepfdhPtwfiiaw52CISNFUVQRt1v
+RXn8T9axuWcSIGuMOZz8yMJYozGeax9p/rkfxcgBc2cPScY9ALsKeURHrAIntgvpCM4paGazFMCf
+0A7bWhIZhA7iZ2VT8lJzt+53Hfs0M5lwEsY+f4tkrpxUr2vKY10/1Z+JbnRDQ4wURvtHNb79nfrO
+LPrkANRYbtu1R6JFtXjCcFOvHiV6aisJP8g7GkwBEmeZkgozdP1k9iT0GZ26Bnh25nFYXzNGFiYA
+zy6NFPTMJXtlztNzQEhiJhSEUB+a8SUJKfwSOhOT5HM9rLkYg5Tcej7yFsmzzuuoSaq6qPFbysYS
+TivvRwVu72D3oRBuvGTFoTA3yoUXvqouDdolbG2EzrdqHTSgpgJN9XthE5tXmEQ+4EddcjOzAy3p
+WvXUg5G+pKkp59SbCYWs3dB6DQYPpcl/X/ih3+sxksd8ZlsmaYWkwrwebxie1zCexxgr3E6K0Uyw
+8LWDtt5GzMvgUhi2MqwZPDXH/7nxtaYrXhGm8dgszEL7vzeiLZktw2FnFcVibKu9OMyEzIl6D5qn
+gFkVw9DrxJzW50hNcena9H/2JiJnIuXz87Lxo8LlCuTMgLPVufPwsLLve8JyrGMmXj5vjNrpB0+H
+AXh/mrsMVLPcPJbL1KOddx3uCGScpETOWeAJXqDHHIlm6IzGQutwvFGud+hLWrJDELz/AcCOooP1
+C450tg/nwOqOIfOP9buPrRW8MKBZggG7bIAmDhU/AcGlWfOhtbzs8F6cBc665yn1Pdo7IFzEGY/k
+VxmnaUyvHT78ldVVjF+QlKnAweifghm4VDD9z0Ur5n5tnvOn9aKwR5A7N/r5dTq6yYFODg4XUiMG
+u2erNI7i4LM7xCzT+ZeegBm+KqVd9xf+71YJ/OEkWogd9cfM5JbwZbgtzmXLNWqCYBpKMFnZ7kMs
+/cnq94u+PLp7raYPXze37HhYCJJnjysA8wod8uBE/+pWnAyB/g+92mJoKSXDirKzzNrwtyKae0DD
+JNDkSJECHPlh+C3iIiwL8gHhI7SjPBnuSnv9NPKXVTniQCeN80Z1DzCP7wZbU5nb6jXAQEstXTOt
+4wgyHedaibT0VmerJevoZKTe/WKzQgPX/w8w6pBPEM8Q0DCKOI6Soo01evmBZj4SNhBInmlbs6Bl
+z8iS+pQ6KeidciwhPxbsElyUBIOvgnh8ZpK1fie5P36bhMmU/jIAuXoVOKuCxqcDFu4uChKBVkae
+GMiBbI8hFmYnOvE5m5e5iM84cCMHciJ2Lw7aa/I4d+nuqpecb7VEkxGwytzLfsHRBOIZBFfzrGmu
+eghSZozpnoaHVmIwYvRHijxVdczTIVjhq4LTyDzTI2zpAxPmU8gJAJ3qpSp72kF/AewFlZ1dFeb+
+owaj7zJja6c+vEf+IXeVq/Vysox678cf3o2565JJ9ETjCrfjkblh7pZ/4HClRw2rHNAzlXrAl00V
+XMa0TljPj/k40KydcWPn2jlbc8ndHDgHh5pHtw5lnlYPEBkGsHXk+KpDLnwGi1VngBkvOiothdld
+IbJH33uM6/b6E+uEiawTL3Uqn0Q00hOwIWRUUvAe3/7PcrHYJ6XH9iQmNHCzNxA/2hDIDRhyJhW6
+iG9RacysBZS2yYBZo74Nte7OOXjVeJHYkk3BG4m84uvhx/nJl4x5T801wH35adEO30jBHObgEXEG
+uS/kfIEk85u/1CWjB8ozmw9dI/qDLHDAWNYNr6qtEdNb68HQfVMmCqYiIOCzXrkt/MlK0nZjHZGS
+8+h8mfVI8RUO5b5y+OcuSp4eG4pnntKVjOd4CnlGZGl7gGio24jG+NK07xw18nk6p6UvCarQGp2J
+L4PKRruh9mjoxDwyVxJKiApnzE0oifmeLZiO70eN3GZ1MNEB2jtnSOgVCBO4clYacQMi+7+PXujt
+q7yfQ36kr8YwsfMKiJUhdT3QcFgrZ/uFAWn1vCWiXdLIZlYzQ19rufiGvoqquAP9suk86FLugqT/
+nfSWEROVaj4JgfsSfq5gYww98z0GYUfjqmOHRHuqRH9tGxW9cRwdx39NYesvIs+82+MHueEcjtVu
+R9mDRxjRqXoQTqlVoNxuSHHtyoGY4FPPgxI8PBAbRV19bDSo2xT04GBbtuDAgJkDHd/ON3ufLb9h
+6MiWGWyJ3mE/KK8l+1HbSoZfYZxXAfFN11H1VIfo9q/99bShkXhrqJBj+7+3P8HsJD7Qw9SbWL9a
+lCb1Io8xbYF9xevZYVwYojcCOnstcGKKvKZ5MeEdIkzny4Id5KcccKNXnDAUHDNDuVBJI2w6B2GY
+8PXWsmrS94l5O+mullyknV0kpWIwqnyluefY6qyiYWshpVNRwEADmRfQdT4HhtTQlRut+fvj2C2l
+/hSLdl2+iTP5/j0gujNryg0mV9h9OGEtBzPA6U/eqr6c/NtAfh9B6ZgC5X7SD5gXwGwwEOTUb6bi
+6P2HLJltKkQwZYZakgPDwPisQeQD8TwG6VjV3ETQFupPGWXCzUAduMga7p7/DA6ZFjl1k2OKfbRU
+vibClWj4Q3+izb/y+naFRUFPrHm23tHTD0PnNd1wQFK9QDbla+emZgKDSvLmG3kRWjSS5QCM2uCu
+ObTP1nAA+7zKPaVj+IQDYcaMgApv6tDFQD4133yWwxt/rHbH5qDcIjy4kDchqj316g0ntGbK8xy+
+hjhls61wEgF6yhLOANBXkNek3fXpJFwNMs5eBz26CsG5topDtw6d64b5ygyAOg7nB8NjQnUxYhIH
+V6Rqg7z/yeZ2VazYf9q1mVyhr9ph2EtFQV90k+9Uc5EEoddzwxMCdAjSYyA3VwXf0o5y2FcnFvTI
+MB6ng/UMFSnGYA+f6GQtI/+z03V4v9gKWwaVvMbNJcXzwuXoQzvPeT//kmWd+snLMi0azBHixlW3
+qPipwrqS3j3ZFOwiI23nJ9EIZEI2opg3sKGleGdMcsuVKCN+cx5lfByt0hbPtXEamWEbjh8aDav6
+knjxLmmGqYl94Un6ae3L9Kcsh+OYNy6r+P1jQAfNxJGSlI6shwZIgbMIuOK8yyjWWz8LxFMXcHe7
+L1p3PO4vKsbAtA99GNRkl9D2wzpAvdIv8HfFE4jlWDsQuOAGdqG9fTwWnMvYX4DZhQ32NrRUDKt6
+Qs7+Dlz80ePAdVOYX2W+CgeDrjAUpcN6D85aQNdRScsmH8kQY/APohpBZFu//qOCDC4hXjdm7KRx
+Ti/EpgzLZJs1VCtLHiCg0v5sTPrJD9e5Qt3g95HeTysmC0iJcUsjAq9zd0DrdqyBI4L55+MHPXN3
+aWiciPHO9/5GYtT43nI3gp6NzK+e+IRSNh+SJrXecSWpzbBdPI27X01fcnpUhGcDNR8M71CiVYTc
+3o6fc8QR0BYfi1Qq5V8lKOGX2DmuvEugdAn4sUVwB3XeByiaGvEKD0YYCmk23nprl1Wog2K0FsR9
+lPTEKiOfIuDHcVqYLVD+3bNSveTUFQqEp3lYRP6s50jvicpP0XBnl8X0RZi5nB9u0ey2XZa7fKrM
+8fceLA6gdVEsfscMcPFWkgy0VD0N4lzaGySvLfnQKBvIY5sQ6XzfxJtTTbx/54k5QruQi+QUwMII
+W8GHZ4PqlPEwBSf+XbsBxqFtwjS6/A7la0QLj5G+PlSfx761Fjme9IfXrd1Lv03iuCVlajJepWTm
+f5B6k+0GO5Lvrq2uCs6N6xPq/8KfxuimqS8tQBFbQl3MEsoAbn8uGzgMAg5kezclVQsFBRYSbPS7
+hrr7+Udh4ghNq+2Yz5R8K+7b5/b8d09fMkn8Ao/eBDZvlA10UrPfwQ/0rKQJKIO+4hQog6+J0+aI
+c34o86lsifwhUqC7pi2JhI0M/xeid9MlKHjW1R5QMK+Q7nR75V+uTYYKWq5njptXMcmY3ZGf28RU
+kRmvF+EZHDtFWeTDy663gsiBvog8LQ00QWSGPXG4fJuG/jyZ9dSsHVdVdfL/PjtRDMcLjdLjIU48
+eie9ZwcnfimLGzbYPtBV1ead60D3yamXta/q94qSfVxl0IAQpT7WODZ9Yrswem1S+sEvpHTeB2RN
+8evTFSb+S0NbtYkmmQUzmV72jZj8AZ4ZBSIT6J7Wqnsb9yF4/BX63uitV641xuJjya8VitYS6wpI
+HQz/DhISTjCO7AQqtRCJYkV5uB9iOi7U83JJ5q+1Y93WHeGpfI9x7y6J56IQg2CBqOdbXvQGd+O5
+T/lDzVN9qRTa5jtEYav3gTkH7BKcoVNwecR/Ul5egkkt+AqGuhTFqYfnuCcCgnLXfGtgRc8+aKAW
+ihY+ak/LOZ2USQnQFYQW0Bidxwr+tAWryHspJ2AA7L/tad111re2eCOmapW9p8HD9Xl/+GFGKG5Q
+Yewn7jLOMsmL6NLXcqigBj0kXwWapw3ERTAsg9jZLmDTT4LgVpKAxwQ+HVSLX5QLQ8g41HXdXCF6
+LUSssUp58cjZAjIDzotpvs5Q8PKzDp2a+Sb7FIhrjJtrroujkaxMpx8w9zkez0aYyADSK3NgnXzK
+0TLwLTR5zc69lqhFWveZxLnElyKVtsuAEoYvrZUskcxqc7eS6f+1pgULYhpEzkNjKUf/jrACFfGA
+mY+2hNhnm6AafcanDUjy5prklOj/m0Xm+w9h+ECjB9GhZnu0TG9r53YhbYXj5tzHw3dsdvuNMRcn
+VcuuXJ4ZWr52GLI7i66f37NI19Gu8uYfgvABuYFXkSK1o+/VCsSxtk4oS1VYwX+uqeN9C/nGakgS
+lafTykaLxVdO4Lf4NFQREzbb8UilhqYvcb4Ggl0+kE9ndhCrQXCJRY0d4igQ49C0QNmoCZ1ugQoF
+Zss4HuI2sw8Jc7Uc0ecnX8mboZQVFKuvJrAPGCdYRAtJ8HDJpXKNi5tECiHqk0tSCYBB1JiTqPXk
+lSndCRo7kiRYcmchzQireS4Zgjw5AMHXCFk5fHf1aJY5n7JKbIywLCSKkXf+1+mkHetf1z2RmqIr
+2GLP7OSgV/62xJB/vDq67YdAbAJ52HKQ6NBKIwG3xPjfECnJDx9Ru18uFHhrna02TwjFMb/eyZE5
+CffwWc1LSyhW76GFNUa9cN2AUXNtUhy4R04SWDSKKsBeDj18w8v6Bj+cw2pIH+lFPzAino7L0X3F
+SlcVnxc1AmLjIbp7/36Ke5mevdfXnqD1VIu6Ll7LXYfeQ63B1jqOC5hbqQt/eiZInM0nvQ0u/pzD
+Z3GH/HQ1T8J8L6iVGi03SjXSiTQcfjALnYUCfLoLqojIPteWLUcHLWmtMK/KnpR6yZUMyND89eD5
+QtE1NdDso19nYsDIxnKJhNxr598m+YP6909l32jiBOOeViKVS0xVU2siS7B62EePvG1+r9XAlwBk
+xDR6ClvMhmeCgcFVOoS2QUB2+riCk1aduSb6S1Adh9ArHzLDVv36DV1QFYfbao9EEyCoGMQy0yMV
+uyRV6r/7ctPABPE7KeWHJ7WkCbKFECPPfTo5g6ASDCVy6oPDB4neql3Ys+v90nbeG/upftTH9kl1
+GHTvX+q9K5tNoH5gjPSwDmJJ6/x01f7/7L74n0jbSsnqnURnlBw6cfSBcIICjtMT7hGEVnIaDjPy
+huC9z8skU47fmyndhyfzsuHQ+8vGwLUVsjdOtV4inks2FI4URPijPEyJduUSq6pgYiwzHubYBW4v
+xQtRrriR4EcqcGL8L1kw22VSTl5HHsz/IsF0l96BwJQZjj57Yrin1E0ej0NVqwBFHs9UkAtMXFLu
+AP42RdrbRUznfQdVUGkmI0xUj5/nmjhBPiKjn84cAcKUYxzaO4XO2rV5nRvf15rtsKKEcgrW+aS1
+O0ahxYpKxYbdU4vtwcqMqof/YLO4iOsvIMCKPNQnxAklK62h6Wg7FxAu2JYOnan6wCzFcOzCik9z
+unKLyMmUbHZHDGeexpyenL7V1IpW7BB7YIK6U+OE3VJMHZr7MAaIU0J1dBwhOTGeWste4W8SD19f
+YIxU/QDu6KzAyRuuT/s0hFNi2HjcW5iQUJV5Oe6/ih0Uo62Qr8E1vSQVVj32PDhurV8gcdYGquAC
+nKydZqkq5fKD2R5FBwA+KhJNMUy1LyuKkZD6Xq2KBt2WYGlnQ/9GiJ+vPbFizyQgjDjH7wCTDQmE
+vYF29fX5J/h9odn+CUav5Djyc0Cm5K9SpiB5RXFzKyo4EAmYeZY/omxu090DO2JaEhSeLilcWKIQ
+pyBzcvsPcGUo9FUFdNkIBc2EJiyuaX1RfqY0vWXCn/MmcbBaZljF5lsjQwbm8kZXAwosh3voP/be
+HZJopxsrd0YIVBy+Z+V9r8hydxqKI8VdoGWDmFUfWV92H7pLyrbqEeDTv99L16G+FG4etxOLExgt
+fGyZcgtpKfgFB/xOCCm7Y41qVyfc/vU6w21UQGQCUCP3cu7y4oiHljst0HN8+O1bEeJvHrVcb67o
+A1gtMQ12KfRk31zL2WNeJadL21MkZFIEqtiKgZsPiE6WyuR8rupKjyafruYrGtIwy3XUNeSkPF+5
+U2m4L9ZCLb8pr1ilsuVC4qnvjkajG+U4vD6JLbKv3hkvHMWEfA6oV2EDYbFqD9YmBx7VJR5Fdawv
+xR0c8m5A6+mu3A/xY+38eMELNJ6xxRa6yEF7N7mr05MLo09BSR8HmDl1CDPK1xmwqhQlFR1NCsAA
+JuJvmWbCvc6jTDfJ5ueSMO3/ROwQpfEbXt4gNLlYOf1gtEe3+UVzYOcRsAU8H/8H3JNgCVZVD8Nc
+Tst9ewJvZyFes52/7IYWT2AHUkCW2C9bT0NYwNbYZ+LDfPxUkowdaGns8NWwg0z93g32d6/gv7Z5
+ZGSCkJ/VdRn+4UOx/surmvk80vXKKcs+TJe8dlflBY3qLTPFXLD0FRYuL+1QXW2nd4Dp5nvKuHOY
+QEp1LifjR80LQI2InbHinBeOO/kFwp0Tva01DZHfX6zVYPa5lXSl/wBxrJlu6yixn+yCCMcG7tj4
+P5Cigr1OpLIktRBLzP3dZ15lxDL0zRQo37xspQVlnHWrBsl6/ODbBPvxxoGQ9ZzF6wtgtaSLraP7
+dbYEoyzAr1uGZJSS/mbZ+AnWEAhlXnKHyf8PDuuPxmemcPeIdN9keKaLl0jQ+Gy08ZJkwHLkYnRe
+b2UJ0OHetOBXCfS60WGlw4cntPwGrvWaEU+gknCo1wD5qNJPplL1dXZktweSlSvsWjnIE5DKUJ7w
+AS0vYRB4J5u/Hosdx+1r8nDmiWJgjjcfjPKbapXr6NaKQ/2t2sjin0vkmyS1iml55zysO+quZQlN
+rK3KIx7RxWRQu8Q/mGJ8AX9vgdB7hOb4EQUxr/824tYsprCRy1oUqgO6WeNvDjXNVKH8kwxvGGFs
+OWzPyyymQ1w45+I18WS7mUiKoGch/8R9fRKXhJBrfe5JjAuSMRcZ+JsGyJCbPnpoaWXAZNVLeLy5
+VkE2Je/ZVeH2mmb6b0232ReHfCuQ2zbydY1rL4OeLXjKq5dTPXegJ3hkPcsnwg/NmVUh8FpG7Fso
+ymJnBury5u5DO4tmUtIAb73OxYGaZfVkk8wXYztGV5UbtOBGGJJeoUTKh2nc1ynKPhtfUBV4qVq8
+i3Mc2+38jpVtrK6mg1umdTvtRWLppuB14WB0XdbLLMnIVCB7COjuiU12zCiSCa4Rh3Zy5SLBOeiX
+HecCPnJZLXnGOx2uosYvBN7jOBUdBj0AZrBzmSPJTC92/5cRwgBlRgt2RTd1oTOf0RFqrgtD1WxP
+tbwV5bhQR5TdUjV5pTC777ts0X1q577E2sJjl0L1Ir36PlDV8BaclkMbOOhrHcb5ekpzd2FRUDwy
+glcdenaUPLHk9TfZ/5lHrYeJtq/BqiK8YRqGt80oT4bgwvlU3rakKYf8EyEtdJSbhfYQoGjujU2Y
+CqX+TvEYoou2lNiqWGU+d08e1Tj62hE96EYe7vnW4q3exlsMtqhjgpHvEJ5Vpl2dLhuil12oKOxC
+HL5SvgTamzweHp8u63TwQYd/R62v6IjU3xP/ggDbICp4wOAtxdima/A6ydKgJUgjFjcucbc4Ht3B
+oRBW/Mgkr032RVMlaLWzLUfjuotGTxPT0EWtUH2xbOO65D5fTRS58+ZZhwS7cOLtOrNgl84/MGYH
+yqqjVRgq1vdBRObHA8Zfm3FCvPY+Eyx3IQ91VdX+0kUj3YYrYSxyVm5lR9In/jHUZYdfz06P1wOs
+auYvvxbI7tHC2J41tLSUfOUxfq0odwfh/8QvquMb6oJSPVe9SiSdOSwZfxepuH72z8S36TjXnYW6
+ogGQNsgPOuhAHy7JVHMwWXGB26fvweKS/7amUXbivDRFrurr93bdk22lEy7uBOH5f+9hh4uTIvke
+s2yB48m/lsLoK9exfAJIzJx6ItPHoak0+vpOi5n3RwUJCFlkqps4x3uo+KX7gYEPSWdrzFxRl1hD
+XAmWKLB5QRkGkzqKhZ3QdvMr6A31U4++uF/GT+2A+vZBZcfyeVJwLhctD+dCV+SsTWexDdd2okeh
+kAVi7ktK2gwaYiz9PJVDwBiOj/ps8h7Oor2YR1Z6kw/9eOm/U/vo3RuEddrqj9/oBL5QQoIhwtwP
+ocGmi22j0Kl49HUnYJh2pIS6bDCeCChNd7nMElTV8GuoaPS+Mb+EuW5nJLSz07ShsbQJIKYFdv7e
+oFALeQROAP+E8f5ugT8c4p8ehVjpacTwsR7JdE1MNNPyydCYAvFvRfoK1N6PrlOQaZ2BzDdh68lt
+qnRDymhHZ07tcObl9FHg3cr6cEGFwnLYhOp19ybGEM/h3a6OGLAMdXSgxKO/QmGHi+VaTrit185C
+YnttNW+imeAqgm1E4ARS8XNzjerdu3BWX52a+Vbm63WUQHCFVPA7jpiRUB8ln0xkt2r09ZZKVHyw
+jGZQ8a5Ho4iZRhC+2vAItfWQ61oFdA0kFiCV9SXSIoNyWDTOi1RWTxSkCVBNqFPTco4s0YPa11nS
+3MtebXwK/nVUNReCmZEhTQo7w2xmSBX9phYrwNSHb58Na5xANujRBc8K4ZqM3DQQXLRmPIzoycXl
+uPjYWXRXPt/mEa1rPbM9V7tPq3+seEToHPN1MDkHYwSDVLqFMDrUsGya0Op/Yovn0gUR6+0Jkbt4
+GS43SArQSEVXBuUGhtmlKhkd2vf3zQh4yHTqHJcRBzqnyciBmxAJI72lPV+U3ruBXF1p43Jj0vVL
+rinKV2yhoz71t3Zn5BH3xGJNmbmXrGiK9g0QRRivlvyW8uqZLcF9yAopMgIhyZKvfqKZKfDUDvl2
+82dSDt2HJ9D2KbUWcU994zABop2FaPEQJA00VhB1arUPOfEGGVGKVgcNCo7RbKjmGcTDBvftVCHQ
+0R4OrqZUmqacKG1YMGDf5kG+h2RwhjxnuqCKNhMYDRkUyZs65ooRBiRajmIIPZhjcc994oE+04YE
+lKj8m7MueGzUjv5kmSqATC1VDNSEnzJu6GQJerR4byuVSh2GxRVHPbLxJJ71MBgxJ0fp4xr9VdpQ
+++bFlypo38pJtGglEmWXd8msg6hQVzup+lOCyZikfFmg8PnvBIrHjoF+QhuN5WOlQ9XKD8gB4rYX
+j7WC8+wxMSuXOAnyGLAwRMGt5nHfRpgB0ta3n8Lxr/vEE31+MOLO2jO8tUp2ShjEmEFTn6m42RU+
+xSZXHHA36X3zdtoNmTZIYAvZlIj27SVkqE/NnIma1CK2MaNeg0ufEsB8DKyddK46COx0QCpSqKDR
+re4jD6B8mLvczf/q7P3XpbhZ4KetQmw2LExi5kCYT3dp8KbESK3uA/KodkSBPuBdw10aJjiTLt3i
+BAaRr0YBEBfdO3VhCHHwJsYKaQIsUkLcTMaHzyo3g5qiPnQGYknZyv4ry9/GxZGL3ybYtnYc4MRR
+bUftfzgRwYgYIxlIbCnowMovWavGtGEktK7Tn8XN6B3jvYCNEOlkDffXjaeiSzQ7dIkGmt7r6ARB
+1WQK7zurFy3n2t8m4dInqyjOR2Se9Gt+L+1aGWCNjeI1AwhkiVtSo9VldKYKcAbv3mfp/PWljXfm
+xligjxtzS85/vJhXvxIx/O+5ERiRiUj1CtSctgDd4rYNLUcqNtsBu5dgIDNYJI2DDAwJym3qR7wK
+6bjyzYl1Y/a8lfFMntKVNh0CTqpVhhOABnvR0XHnc93lvYs+B6r5u9F4znymbg33jXYC5MXHXHP4
+dad9rQT/slxR6pr7ObzZQtKgmcfwME6OKPeH2/m9+wFek9EOLdSW0qpqe2edXfhTApxnqWGK8Kb9
+YqFHo7R5mqqpIDt4itYiEeLQI+2H6gjopMFvXx1HlYbRAiPGoga2xkgz1rsGqCko6vcqbG8wlZWu
+t8i5FbJ4OwLU0+/CXs5Ees+OHMckK4UgtPE8i3NEkca4rTefUBJVw4D1ewIYzynAw0nZwtfctb+P
+zGy1agR6xSby4AT6dgfDDDxtbbGrGqvT9IS0ajQ2DSBbJRXO2dpxbjdXD9JezwO1rp5DAJlEfQtN
+6tR/vLLSQXIQ7xo+PRwQL5AjvJkOwpyTkRtjQkVwdlyAw7iSMSGF0IsTq+0eWIzODazlH4WdU4MZ
+DnLc3a2WWE4RKVqE4chCHMzJntGWNqtbMDc0Z0fOHvGh8Ro3cER3gSiNxCmwvNEb96vgzQwPaWIf
+PgBpJlx6zTMpSmPfesGjKBjg6OehuMLN6yf2E2LAx5YR+dIT8A8Xs1T3wwG5fT7kKx9bsEOFu1YL
+cQSMgOVOG8RROvHCVSf+g3wW77K8oMR9zAmOcA3+ZxPAyvyMQAL0sNKKaXOmr+ToMHYD0qRWE84q
+NDjQqKlZKYf9jzwHVMmZ9vorKXAskc7GBnHkBWSEVwMbFM8UxvauvnoBxpNZhGE1n1ZE/tufIbjn
+H0YaJDFCuvuNNlj9msYLz7c8wcOSpH74cF2qS1R/Rf/NR2V6nwgpJuVQDV9oxwPK3I7fEQlXjoWt
+XFsP/1UmzzmNZ9a7VD5Tox8tKWkUrdFS70b6fGbOVod/dg3zxndU6RFr6H98dMZRZWKtCP1UVJJb
+MmA22FUALowb5sFkUv+OitkmgZFFw0KU8oTeNXvD7SaN8Y45FHjKIGgRVAtYgWFOTWk5YVb5+VEv
+Q4NEssPI0EunCA0enL7e2H41CwHCMfCKEVY+b/Wq9ypwPqHvYe26AXVjFMSr4VEtGMUchu3jj7tC
+1k+DDJG4ONZSSUX+yxUjXRNtYYP0uoKOEnieTkasLP4V5FysbDrrzl1ArwVccPDetwb2KDR+ci5g
+Q/2//LP3DcZm74thR9LOW6IdnE4qbLJ7j1ZwetmRLMA1jpGoY1Elw6MHT3HV2rBSEIwJ9ReQJOHQ
+4fWXo8A8tnKcWSjYQ/UVa2XLwrwZKGg2Uzd9R+GlFyTaIfOGTS/M8o2S1ggeOaKefr3eq6kHO9ts
+v1LaN6Fl5FZGBvu8h6zE93uAe0T7+W+wvaVriRJ/K5cGtAyBEWadeaixqo8sP7hSviFDhhGMGJKg
+nMkaUCWqG8lNOnObVz6qS7Fz6QiF4bJyrJyIxJi2rfb9oGcwTvQXaZtzdl31C8xInYDHSuOKv6cy
+cXZXqcpIBfqfo5V1ll2By70EUEKzdN4IdjQtRgTaxfLf/+iNPDZl2r00MQOS8Ghqti/lxi8SnuyI
+sacEaRDmp6jESi3QnIjkI4cUXeU4OtSXOXf5cUjaVYQhmzLCK1n/rIyomBEcpqjM9y9K9LTtZYut
+/JTBom72d88/JTn/Cmbqx2iGMUIRU5z8uWRnCLFQa++xbMYFODe8byGVuYqC+nLFGOinXx2+bMfF
+NewnfNElrqFW17Aki9qkaJPtheo5BPQxGuoiD9tQRy4vT25TUIe16WRmD1zvNMCnCoRfInVMIdjG
+UhW7W9waRExap25DKY2dWA44t+Q0mjIAInId3L2aO7GZuTdCGkqXQTz993hoB1yAhNrMqljZVpiT
+JdYKacR/ujy2I3T2R9HXikSrsIqv88kPqwUv/wISNmWm9MRNkmKmXUtgwpsmdl9d9LlsalUIiyYX
+//JsY82tV5Aaqtnvad3wVkclZDZAnNjLPk9/0cFC/LVyZqB0ZssHg4QYomaD7niAmKjaYu0W8+6j
+hLuLGyyWtGFLmEp3cynEoIw2vR5mUYUrQJfIQiqK/zLrUGSWm3ZPV1CvVTVvNOLPgvcs4Z44+H1u
+pWUk5i9IO3ViHKqQcrOG6Cv7evkSbLtsvgdh8p8NXhaEmTNTDSCumnHauU2jGZbHpSEz9llOyHgH
++eGWG9Yv8O+fAdrPcaOR2CpVSTTFWEU6Sd2NYXPNruFzQ8X96WqmCzIoxRY0NRMtkdAFoZd8u6r/
+JNtE1isnaxgGc9B4w43usHZFbD7yoBEHRXITTpLkzwdESE8rZfT3yJN8vqEaGxIS6ELGhSNC07pJ
+YCL4SnHDN/VuZ92pkOkNR6oagaUf+XbjO9fX6rgA+6IuaRoynWzefnRkPRsddZ/v8bd2WcH7l6y6
+YFKu0vZAVPYG9d9S4cdBk7FpxxCEWhakCw1qH4r3pK3lPgQWdxZv4SS7wSy2cvxQmfWgrFRWyT3B
+94HWTqvl5r9Y/zYK3/+ThqBAycU5xM4CmVvYA0WstJwyT5HK4D3Ngf+XeZLPDkjQSogFLHpOv7Rb
+r9puZckNJhjUCRXV/zu5WmVUXLYkWurrLslUSFbuLDS055w/lAu2eNlIm7CxU5lJVEdvkZr40rcC
+bZAPXZjuK2CwdstAlVg4GhlDi36OPmQDCd+6mXyUhe5ZpwEXFU7+/EcnVXz/7hepgDML/BnVJMwm
+UyDro0zfgHILc0m4aRgsE9PpLUYzMJCDCA7Tg9HkV/qHLWiq9/mqQMeTbgc9ZniFCNsJboxRBD+c
+SUB/vZ47tUxh+6t6vdM06OtvnlYhhQ1hkqKIawCbIhKSKbF08aDJUd8L2SOD7RaL94LS/SUQTKjb
+iRozehHf88zWWjFvW31q/68fSUTxsNlTkSRbS3yjM+BZ2zdQg61HEIHRV2M+wqOggXG7/+JwIcZh
+ZK4gsnW208si1NNve7//JDA3fIiELgoFL6utXpDBpZ3wnn2+CSHj4d/jazWx9YrYxSvmpmbK2bM6
+lMdWarxt8n+RKG/qV13NXTtvpOISRQD8WRd4Pi947NKzUc3idWAsQoFGM+eHoi/5ilB2nnXLNvDE
+1zMn0w1syJxAd+hsbYb63XX6paaLxUg0y36dCWkZ8KJ7MlsOGWhxj5CgnWns8COnphiDRb9garOm
+90opg052Inv8Oy49dPtm+tHfqqRdX7dlfOZ9QQtU0r2z+Bo6yOivFUhyb/NlRB3/YSQndb9r3zXo
+tWft79CJF+iZkgYXZWbjB//QCk7q+1pi/RYtkfov5iXreeGp5X0LnEc8AwL8oSsdSv4XGi/WyDLt
+cZ2loqg9v+Zuk1BjzDYanVOuXbpuGdcn1Hwu2DzJ5r+EwRcX/aWGGO2HZ1K4Yi61OI/ylXUgd8oI
+6ls+SNNkQsiXgTCnnCZ2uTlzPca/3eOplyFkY3PmCVS6ViDRvI9bxMaDxBERAwE8HSG0vRV+45nB
+Yql+hsywEOQrXlS/UZ3ilAK+GTd3eZHkvqGrVgJuAeCDBuNaM6n9asF7546lnFx9zqXXNPSk7kGW
+zLMOyWYRPocZGr7PlHV1evGaRzDjjPuhGDs/9UVv8ALyUkvLBF2KPSPayqeCmaTM42zeqAsGgUdg
+NtXVxMig3ZFtkCcF+1cIKugytO/4mI4AVfbknTnWMolpHUG2yJr3T0+hRnH2iQDsDkrxYhq3/sQb
+V0xzNmjZgS8VCHrbmUw0SIK96ogtpg9PpIQK0Ufqyt69zsC1Oghb8hw+v5XIapDBcvwDaHdqWBhX
+J5uL/7y5uIRfvIOTzmaH+dfi04yrxxaZhuM/TfMCrg7klQhJZuYzcm8B9faSwmHbn5ZTVNbTIeI9
+fhcUKw5C2sJd9nrVZ2bTEqY1oDuHKdBBmwpvVJKzd9oLzZU0byB9zd5FnoxINJv5oMoGWqRHhBbn
+rVm3b9OSKw9s2jJOH1b/bPyX705PNKGo4cfapSIPWEA6ERg4ng0aOcV2pVD7Que1KOJ+S0n6pp+W
+VLZiCKt0ot4xyeVW1wPu3MPom242JCB1qEQR6hMIPMAnvvtSRMbd1XM4slTFLekOHjM4RkD7bej8
+h0tWzd9byiZn+Tvw4Muc8xNJcU82VFZvwwHRGjni1v4lmp6Zmmqih3XVbaGOFeyXlVa/HAKXXbEx
+ANDGVYe1WuwANpjVZVHbxDc8Kt6Jy5Vg1TS1jYkDXYXGrQHnldXnVX4nTXZnbszQiDJSxd8/ORXO
+mYiVTTSUq5bwC0ja/DEitb4sK+z2gq07TmRQE4Z5iJ7EsDyW/QzMjhMfFzgm+vPDfG1k9s5fbkMp
+TZZ/US4Nca8piJyrbUpi32ECDnqh4SRfecsXL6na/p57mC26biPkU+2p1Ntlq6Kf3UjVouZNV7v/
+XtVF1v6bEiE1+aKXlbAJnX/DTZ96+kYsRa2LZ9isxsgVL+MHSHOe+FIvQ0AMOeY1+ALIEu5Mri/L
+ZmjWRl1kGxbVTt4t64tB+IlF4z8N+P7aW3e0fVGDmGoDt0OWHUVSA//AkrN8azcNrmTGldaBxuy+
+dizs5vPNw8fmOfPGqbVhORjLXP6GvDZekLDtWjX5JDSpzwZNAxVDeF4g5/giPAuNAYoBEvag5iS2
+K27O2KzXX7cdzkIqiNo8cz27mH8Jljh5GU3UsQNTFx8w4x4DQfc6IsY1Igi3kOVrYDrtKpRBRSRh
+pI8MTWZkLegWuHmjNXOp0YvkAQfPmdfsLFa8RGquLKO7mM65KxT2L7Ih54vt7BQQsxmDNfNPIZAU
+/xJak9w2In85QDrCKCwCaGNUH7ZngUZEQ919EFQcej+eN2o5ZZ8JFzhyufoz1H2qqLqXAn6CycH2
+Y8j4VK2X60pCsvEYDibNljklzMwNhYfdrnGsnzG1kVOj7wq22Am07S9x9IjyclWsrZlRegT2yxaV
+j1eb3QWs2VM9NB6YBAle8jRfW4SC2fxKPZOwb/tTINdbBMiHmYFAn0qhWpOhPimv8G7t563ooiWt
+2XSbNXVNlKcSGCgXLh3UTF+m8IDpH3Mu8iqF4xDdEbEWI/AgqNGAHuA2w9x3O9OB+yDp/vU159Cp
+01Z8sMNQe2k8Pax+8LYlhxAtGSEv5U4A0Z2bynJMgy8ovE1iefvpN6zjA25ugRHojfOmqQQUPlep
+ijUKClrsEbOHNRUBsx3d3VRjDhgCkqg9RZgr1oGPvEpYaRNqYwdvpFlRP+wWB6Nr5TaVsLX8w1rA
+p0RtD93k5eDM1anXc4+tENrz8gTp+q+3qSy2/JwbyB1klk+FwYw3zqHxmobVYD/1aR4+YPscUovZ
+T7uM75sB7qakHNdCePtt8KPNSjO+bPK2N3thR9DWEERiN2fuwBiRL1dYHDOwSt8pK4k+z79aRbvm
+1SX1H0JIfsNgXKRSen6YaXKUJDk7bu4zGFeUTS4VV/7AbmAxuaM10byPo5h0RsegNpSrde1IiE3H
+s7k4ACcXRErkWobB+aPHTWMkk37IVCvZHfsAxPp6MpXBN7BP2rZEPuZ0jO/Yqa6Q9bYB4TkOMlP7
+Ge6Re6peR2W/9UWQfh/leNBb15wvjwpbW13yTUy5V4dom1N37K9EDlTacm4OOE2bKbUV2JWgcQkm
+2zGW5vvOdk+cYB3BPDUgaVaFFvkJc5oBmPSkgR3Q+yKAyItJHvz5doKMLghFD0380J5LyVCCBfE0
+ppa1kWPpuKhOClsqMK6/B7tOg5d4lonNXXdh+Sh7EzSPSl9sdaW+fgjjOkjiLOAT7Q12NLSsR+1S
+yEkrDYwb12qVofLDMJ27EKC9MPS2W7sRvUuPejt9uIfn5dxWMBHDaC3pXEMOP2C+aPDhaCu6Pa9c
+4WbSm8hLVsLXbSiJJW7Zvq7MiLgyMXBlF/karH7yCG6MJYX1c0G8ZrCsVyz1EMZn2pbll8Svsrdi
+CD88IJkB6Fd30Kp+FxyB12r2lnLj6F2FXDIsYy6z3o0Qs0HRUWJAruaGQyEGYfck3ZgR5PvrFUO+
+jg7QicqpJm8khK3g05Qf4ltERHIWf4B5SDwQ9AVvTisaXHuC4hinBZKn4RQgcuLNIM0MKYW67LEI
+tjqcnvS8eEU19u0X8Wl5nLJGK6mEJaLtOSYABegEQQJUl0YXag9311OXtxw3ItFCoNZUKK37j6Dn
+ZZ5Z+kX3PZB95FwqybneBxo/ND1/K8epbq+YpRrn5Q3AmrkywbjfKhhfwOx55ZXEQ5KI0a44eptW
+Bi/dxhIqD+1d6NVc1qNoqtyN2B9w0zo+isS5xYuvlmJ9Ft7oyivGjrF0YAcam3IpwiIU7SIk/T3A
+/RwvridiztfZ4NjeGisQGBIsMLKMjMPMjKX783ex/wHiXtz3RqhUoIegHAII9ozUqOTIIi9qv3VC
+ZHpro3kW9hyPIPw2XO6y4S2vanfVJ+o2axik1D6JyN5+nHma3DbGfKzpbDmAoIOeaLX8nRwmRHho
+YAxjYG3h+HuVwimZjGOF/mw1IqNMHJ/fYsl5HV7E0MfljuE+HeYChW7XQ40a6ZZa+RTeCP0fGwxU
+rmC3uxCcoa68Ff2Vi1tOvObWHA5OC09dEg+vIl5rjn04yqBc/W/elQZfFUVI6Fb7q0/ai7VmYYIZ
+GtLsxh0HSrhSCxuJ+//zQS5cLFD6d1XA0Rqri7GKBMbCiOwH8IqJlEoEKTyVd2VPBgNnw4Kn7sxz
+d8wkdiX9EN8lPIRMdkgvzTGaHXqSkhFEVMLrsgFScVp2hjWwz/jEdJLwiKi48c8Ip7fMSroUfLbk
+hAza2NeUdWPFnyd/eP8Orhgm2Bs5KbS5hARQUSRbFhLJu6ZZfxDug6p/VquURDbmH81p1AXuHN7H
+t9Vy70Rbiv7U36nWlOLWE6EZOM6rW6q2PWLevr0V7uPZJvUxowfEX1Bjpy5CpDmpi87rdJtywM3W
+45TLPjZ7OXc6CqFfobHpQF8pRGaE3tNZ4q2+yNxxLSBctD+OQbWWb5pObgjbheIgHnQpevgAuhMW
+o982YZQTr7LmkAsiDYUmMZUrwH6wwo8cD1a7apyq5TKJSDIVx0OFG9ic9CD+texj8qNojiF9ntj6
+VLxb2YJWsxeapjbhuNrfZyv85uraOcv5CjwEPSnzlYsjwZgTVYTwRVu+F//tNC+4gaVC/6X1RxQc
+iCDGwWnH8WfZW4NlDTaamL4KxHMZTi7TJl0L04UQypgECy0ok6NG0xxa7mNudCCICZq0+SwtROrg
+LOyrVgy+ZFiHtea9SvV+uCB8Xcc7JnnJkVBA+g5j1UC+OvxaFuTabJEtzzSNG6JiS8CiYbPMAJuf
+FjKSYdJITA+/0UVLGYAR2twS8w2sixXOY+4ocVtZI8X8cB+P9lp7bmCZziG1tYwi9x57i6hkO06w
+UKeTKSxhl8k8glFUBOGoSKgcPsx6LSpHSk2DsyKjA70GT2HnkndvEIvq0a+iQ8xGneY35hFBrbP7
+5e7dFZ9xm+t1wQTvSLPKpI+W471CXoh6Z3WuDnF33H0tSMoJrTIyAYF0xvPu6hHZYjnnPfWsmD0Z
+PlCOghGJkOw7+cCCZwjfI0cBj1TluGUg9NX+AYcBiNRRjs7xFQUOi3U4wmX8z42UzuzmktblTRCc
+B/pMR0qc6KpKokEvT/resoWIsvnnCvveiCD0gO5D6jAk1dlVLesElC4JkJM3oYjLSwpd07ercwF6
+LMwypIGvotseFRK0lasddmKIfZcO4lJbQLYIwYyv4bqHdip6Fr64EFAU8mpfQkYmk8MK+Hin5KiP
+lyHmYQPw9Bh5o2CrsIP9hWFFaR4p9LHDxbUGcBQofpblcVS5hiHjDkHsHhsILdqvR21QIeZupogm
+3WS1tcO/lrW/2RBSbErI78h6hI6sJIBDbAI9lHIY5DKv/BnFB8PxDPpyQdrE4W+3dVmvnL4cRHzi
+h9ObkaKqCDjdgbxKr0TDfK3xBqvcdGgxismZtr3UDkUZxSNxrYnF6fMOpvYaQSY6Sdab6vScqHzn
+HId8dor5EoXtU3tmmPF7WGBvyUiQky1SRLzDXvye2BQJc997iPW6y6DGtchXdyKhdvgUcYYK4asM
+uz2cP/DX3HoHQcuMTHDVpTpTc0e6M4h1AB4lAGSexSqLqMRbV32WGhnmGa/RRzGuKfAvKnqecwzV
+daj7WwkC2ZfLQVAov10AdKYnMlvdDCxwrOJ0tbZ4eOj9RWELL3MxxUR6sEIumvbQ4uEoutqD3i2R
+Ced9bmlBAKxVKUIK6TTyvPBnRN3cAE2IlKd13Dczs0tMaFdB5xGvKi4R+umQ/UXvjRyr9hv6Iibv
+Z6FeBjsYTDQ51y6ZL7LZyE9uq9KI9WaQn/imGurXPmFTKaa3HSA+Wbna8ZiTQ0pyH3A/46R2+neI
+jgMkWgYeTNWIKv7QTTdBJfwSCjQNOZ7k6yvm+8qe3kaYazsMenNBt5g1uIby+AQL7UZPuZ/oRP6a
+rfJtA33t7GokAUBHfDZbAREDDc3zt6IjP0acQUbOX9X70VWSE3xJHkTm4FBMrr6l5jArdOzJGpap
+KWypCmZAToVPYOh8XSUTpTPZNoAYg2zz4bvyw1QeBKvJgDFeiRIOYkErBQragAfzolqKJOAPMni0
+2XSq7ZlxkywJw3O5GIEIfzAMjb2rA1vAH0SZMLifoc0SoSWx1NgCcwymbouxmvNdC8mksAWH5sGw
+TlNbeCqx13O/8OYOY4sj1QemVbHlunk9Gsdvp0Kk2JMXKmBaWpDSkjsc7dWaMz0Vi5EnE9INmWxC
+oNdo8+eIgUAScf8CU1kAf0r8R1hj7F13ghVq7ZDLwrOTEzzRbIUVR693ocaPwxxgI4l8RJ/QOpVg
+/pOWWMao8waGG+uFlpPUG3wFyBIg9lKVAxWZSISIy5ynqqL3P/dAyK8gJboRXdb56brM2vjIVw9V
+1yfg8zjBGfxghMmZPhPAl7QhVVXGeOKuSP+IQMeUmv2AmzeGXZu3e0/BsQpj0X0m3dbP+2jmgRUU
+w3Kaa0OEdN78AGypXNxrUv5hnHucPQd3VgEsOfS7QQycK7gOCgejYbvvenbGWa4QyXnlROOgYFik
+DydHu382Ospo/39Hoz3HnCOCZe5XYKm78MDjcNr6KJUo6n/38QiGhrWO6JWobx6yX/qFfdif1gQ3
+e8ULRZaN/p4VBWJ0lZB01KO2B5AH4oMCzseh7mFsaDG2hFtNvzGvyrR7uq98R2X56cnOaFrXraJ5
+EJYBXrwEbNK6w8UQtj5NCV+vL3rh/y3xs16guGIWHmAphfUuZLIeApbjcqO4pLi/BG0Xnot/Q3Zw
+Ma25AlBo3/jTWjYUh+n3VAhXLJ63DelhqUjIICXJcBRllErSrkfFs9dq9cD4odmgHkzTXgZ10x3a
+a90/YsnnufSA7i3QHI2MmyZZoV/luuNd5o3cdW0SlSYgDuy9FRX7Z3z93fP/GAFievY2JS0ImCEU
+EsfyfYpue8Pg7dv+kowHzbg8SvjZlZxoZGhGfYJYkg4PU1xA6h1OreDMSF67+f2+Dw9DsJIHntch
+NabnMCpwZRsSQDcHgnPgEfUBli4sJlwKyp8219T8KhKEI7UwkSN8LsAyiNO4W473TeIP4nDjCk+V
+8Ip/n4y7el2v+nRLYaz3vKoPqRzW2FawIMZSWDITmqN8JdPJY6mkpox2J0hSIq6jG2M+DU/a5OgK
+vRknGIkfOaKS5onKrRJ/oYqeNYFXYDbCEtUxh850bRqGRVkOqGDk8fxSXTnf/tnXbjtaEbpt2R5c
+BA/IX8Wi4jCwmEBKbaGBKGxH4dZzRud+ieoYVbRC2d6c6uuTK54uPcijHgyceBZz2P8pXmpchZDo
+EmOTaGyHwTPnworrrx9IrkOdwMhi6+ipmVmSZ+10cK7GElU1hHR0EZlypssTmdgnq5X+HqLnw0Jm
+pvvcT1GAr22GNJvYQ/IrBUgOAim+muuSccqJnFXDP0cblMZjNsydWVPoFIsAyOqI6PEN/6Bbff6M
+MdEQ9M+QxPuIiaBUnZAcKMPYJd9IRzAT6GnFqk0DNE589CU5n61KamVQ7+oFh0wTofLiLDBW0U0z
+DmFmppPPQFTaM+ar1YVXqUQK8mSpXjwqyfAcZp8nb10OtY7GPIda6xP8KGUYTxc6OeMEDxapxQt4
+We8WM+bOYAixtb0lcWER/YkYNb59v0tI5RYPhHPNssMZh7miqw+JBJWT4abkX8BaAMYnGkpscsm3
+5E0EqFS86++PY13lV08TfDIdYttPB2yQizC7Y31CBkLTRqOGpf66knjr1eUEtRgOM/4TzA+77HGj
+wC6l04UBH7tUxCn/jE6ZumsB0cyqo67JbQ4o7k2KDgdy0TQHreIiGv4VJf1mbSDYNzOYJYYS0dLI
+EmmSRTw0RS2NMro8NWkJ/fSEe81oJYT6+4QNzVNmtep0+0OTCpLMON0GffwL6uMJfpaS6dzb57ob
+1Og1jTwEI5kFLFAFSGm9yLIaseI/xFkVLrjg0HNlstABFYhlMMJa9GYQoEabK9MA6/hh78/kbAFW
+Kt+JkjekyQa7yv2Mln3bjr6yrWPrdjlx7PPbrsxsva+hAflz9RZ+VjFp2l1xIteBlqC07MmuJnz8
+IG08LMFGBlNio+OlPpfd+utiB7ZnH+emMQFwtubo9TaHDS7oGzPC9GgPHCKvWofLPaPjZuM/qIOh
+1lLOOi5H4eH/WrRtslQWj6duzfgC2rbyVcbbZS/teVt4hzCXjYgyJ8BaP6Hp7gArjMeYkdvgZDu2
+qijODh/ldawGC/Il4b+EWs6rsjxkPuVhOjtnSrMzKHc+sRSW2+S/cNITRmiUlgT7Q8SmLXe8wXNl
+IkSaaDU4bHTixOBEB3U6k01j9bQsNwuVKrtjfKku7HQMefcUTLmPwbWAZmseMqu/naZGCmp9QDgV
+TEeaqcrNin/yA4B4V20RszL+94dTULtG9DZw2YJx+7ubJB7q5Hb4z0jvQoXlmP7ZsekSUk/bPa6u
+58Z2r9JTMF97vkNgZyt6236w1l1484ActlIQQMQNQWFr0Pq/hTQhXF7wbPKqgiTsBwDjYRK/tqoO
+Tm3K6rbjwSW8kH9lzC/xsRnGS3384IavrFbM56et7MNuSCak1GVhcuRosQFg+L3f+eooRtZ/Kxdc
+5uw8g8QGPfznYol2njP2N8RJ90FEh6iBB7GAHjWkq4w9Gg5Ez/vDIqbNUAU/pBx6rt84EOvscSKp
+gsfBvBMtrB1AjtxIx4uBcJuR23FCfilikRHBfT5OHnyIaLSE1jtMTon1QOvr3JtJug78u6h/DsiB
++I1F45iXekZiMU1qwtBJmR9W7krZ1gm9kjPBQbz8L4kdHS78+/REEmppDmVvNRwRoN+BAlyoJ/AN
+l+SJKDpQzBzOS1sNMnv6pJaZm/9jIkZk4T57m08Tmm3JLntYpSRjnJzmmoJfqWRnwRUDspJ8Sd8x
+uUlDaNNE8P2+ecMmRQxbVKv0/EvDAcoOzixXSjV1HdkRZ6Q/oBkErlpxqyms3XdJf2oINomTbnr+
+nIb7ueNzePV8f0G1zyhy/9nlRwHjy/r5Pb6xVZy+bad3mYjee1ruKsQu6N27DpOOBI+wBKSmv+5k
+xxPkU6a/7UxSASW/VhG+iHtXlL2/8ELTsNzqBwGrd/qIB/0m6WLM2DRUI5nNJXuWHhE3rslWRGL6
+bbo6hbJ+ZZXZoSbL8NiOGRwp8Lx3YRacXuJDHQnU+IY7OSMRD3Ztshc0Pp0qpNstmbIFKQJweLgi
+9z+rHDt8V7h9sGvxb3T3UVS5pzjBgEisXRxBbinzHnkOPmndj9NVb5e9xVgOsJrpkYpMSwq8X1jO
+BfuQF/vvl4PmEDKGO3wSIIAQPvseQCUMQCi4Zl5AHzHY61JfBszpsMSqZiH0BuRW5KG3zCXDxH4S
+UiKGll+mSSOWmtYm5b/taJlmCfDpJT6mm+suSR7pEhWYrRrRS0slbow+rXBUS5GZNKdVqP29vfPp
+7iYhWvLULZAcEONRC1mmFOY0oufP5pxR6utlFrLA1VqqORa/BJbkCOExBnB3uDSbLWyLeidOoX6T
+7L56uSVMHcsMC65jlAZ3FREGUPKbkwtgKb6WL/C3/Xt9VuRE1HuNjC+k8LX/9j0Fl1MIE4X811Zl
+bBn+SlLyj1izOjqSUxE+1P5FKLtJHf6xG7VyxHYzJ73tqjIPGKVdAfan160Tc8mkRA9uoA9QI+fw
+3rmFLZXGtSMfEli1kpTsm9mjUYYNEaMgJww6stknaO+rTPm98TteWTsVcxuw5S2ZR8HZs2gfsOAH
+xbDQuIzW1+1AZOaORYPh1xhoouwo9hmGwSmQMmxM5MacNjG9HevLbDaUqXbGgd4Og4U2N5WhfCei
+igUcZ0p3hVapum8hZXR8CHg+5+ASCqJLip4tfDPn7+t5E9WJU2iM8DwOB/2yQdAcUrRoGKqoHJEk
+do0NMC6iZw7MH7yIL/sxFkr/Cjx2JatDgBpmnBS=

@@ -1,77 +1,42 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Predis\Command;
-
-/**
- * Base class used to implement an higher level abstraction for commands based
- * on Lua scripting with EVAL and EVALSHA.
- *
- * @link http://redis.io/commands/eval
- *
- * @author Daniele Alessandri <suppakilla@gmail.com>
- */
-abstract class ScriptCommand extends ServerEvalSHA
-{
-    /**
-     * Gets the body of a Lua script.
-     *
-     * @return string
-     */
-    abstract public function getScript();
-
-    /**
-     * Specifies the number of arguments that should be considered as keys.
-     *
-     * The default behaviour for the base class is to return 0 to indicate that
-     * all the elements of the arguments array should be considered as keys, but
-     * subclasses can enforce a static number of keys.
-     *
-     * @return int
-     */
-    protected function getKeysCount()
-    {
-        return 0;
-    }
-
-    /**
-     * Returns the elements from the arguments that are identified as keys.
-     *
-     * @return array
-     */
-    public function getKeys()
-    {
-        return array_slice($this->getArguments(), 2, $this->getKeysCount());
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function filterArguments(array $arguments)
-    {
-        if (($numkeys = $this->getKeysCount()) && $numkeys < 0) {
-            $numkeys = count($arguments) + $numkeys;
-        }
-
-        return array_merge(array(sha1($this->getScript()), (int) $numkeys), $arguments);
-    }
-
-    /**
-     * @return array
-     */
-    public function getEvalArguments()
-    {
-        $arguments = $this->getArguments();
-        $arguments[0] = $this->getScript();
-
-        return $arguments;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

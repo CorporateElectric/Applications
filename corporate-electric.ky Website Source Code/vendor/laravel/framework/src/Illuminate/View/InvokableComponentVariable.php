@@ -1,95 +1,46 @@
-<?php
-
-namespace Illuminate\View;
-
-use ArrayIterator;
-use Closure;
-use Illuminate\Contracts\Support\DeferringDisplayableValue;
-use Illuminate\Support\Enumerable;
-use IteratorAggregate;
-
-class InvokableComponentVariable implements DeferringDisplayableValue, IteratorAggregate
-{
-    /**
-     * The callable instance to resolve the variable value.
-     *
-     * @var \Closure
-     */
-    protected $callable;
-
-    /**
-     * Create a new variable instance.
-     *
-     * @param  \Closure  $callable
-     * @return void
-     */
-    public function __construct(Closure $callable)
-    {
-        $this->callable = $callable;
-    }
-
-    /**
-     * Resolve the displayable value that the class is deferring.
-     *
-     * @return \Illuminate\Contracts\Support\Htmlable|string
-     */
-    public function resolveDisplayableValue()
-    {
-        return $this->__invoke();
-    }
-
-    /**
-     * Get an interator instance for the variable.
-     *
-     * @return \ArrayIterator
-     */
-    public function getIterator()
-    {
-        $result = $this->__invoke();
-
-        return new ArrayIterator($result instanceof Enumerable ? $result->all() : $result);
-    }
-
-    /**
-     * Dynamically proxy attribute access to the variable.
-     *
-     * @param  string  $key
-     * @return mixed
-     */
-    public function __get($key)
-    {
-        return $this->__invoke()->{$key};
-    }
-
-    /**
-     * Dynamically proxy method access to the variable.
-     *
-     * @param  string  $method
-     * @param  array  $parameters
-     * @return mixed
-     */
-    public function __call($method, $parameters)
-    {
-        return $this->__invoke()->{$method}(...$parameters);
-    }
-
-    /**
-     * Resolve the variable.
-     *
-     * @return mixed
-     */
-    public function __invoke()
-    {
-        return call_user_func($this->callable);
-    }
-
-    /**
-     * Resolve the variable as a string.
-     *
-     * @return mixed
-     */
-    public function __toString()
-    {
-        return (string) $this->__invoke();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

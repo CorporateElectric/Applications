@@ -1,44 +1,78 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-require __DIR__.'/shared.php';
-
-// This is a basic example on how to use the Predis\Monitor\Consumer class. You
-// can use redis-cli to send commands to the same Redis instance your client is
-// connected to, and then type "ECHO QUIT_MONITOR" in redis-cli when you want to
-// exit the monitor loop and terminate this script in a graceful way.
-
-// Create a client and disable r/w timeout on the socket.
-$client = new Predis\Client($single_server + array('read_write_timeout' => 0));
-
-// Use only one instance of DateTime, we will update the timestamp later.
-$timestamp = new DateTime();
-
-foreach (($monitor = $client->monitor()) as $event) {
-    $timestamp->setTimestamp((int) $event->timestamp);
-
-    // If we notice a ECHO command with the message QUIT_MONITOR, we stop the
-    // monitor consumer and then break the loop.
-    if ($event->command === 'ECHO' && $event->arguments === '"QUIT_MONITOR"') {
-        echo 'Exiting the monitor loop...', PHP_EOL;
-        $monitor->stop();
-        break;
-    }
-
-    echo "* Received {$event->command} on DB {$event->database} at {$timestamp->format(DateTime::W3C)}", PHP_EOL;
-    if (isset($event->arguments)) {
-        echo "    Arguments: {$event->arguments}", PHP_EOL;
-    }
-}
-
-// Say goodbye :-)
-$version = redis_version($client->info());
-echo "Goodbye from Redis $version!", PHP_EOL;
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

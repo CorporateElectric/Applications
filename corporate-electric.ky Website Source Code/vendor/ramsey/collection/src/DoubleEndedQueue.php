@@ -1,288 +1,76 @@
-<?php
-
-/**
- * This file is part of the ramsey/collection library
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @copyright Copyright (c) Ben Ramsey <ben@benramsey.com>
- * @license http://opensource.org/licenses/MIT MIT
- */
-
-declare(strict_types=1);
-
-namespace Ramsey\Collection;
-
-use Ramsey\Collection\Exception\InvalidArgumentException;
-use Ramsey\Collection\Exception\NoSuchElementException;
-
-/**
- * This class provides a basic implementation of `DoubleEndedQueueInterface`, to
- * minimize the effort required to implement this interface.
- */
-class DoubleEndedQueue extends Queue implements DoubleEndedQueueInterface
-{
-    /**
-     * Index of the last element in the queue.
-     *
-     * @var int
-     */
-    private $tail = -1;
-
-    /**
-     * Sets the given value to the given offset in the queue.
-     *
-     * Since arbitrary offsets may not be manipulated in a queue, this method
-     * serves only to fulfill the `ArrayAccess` interface requirements. It is
-     * invoked by other operations when adding values to the queue.
-     *
-     * @link http://php.net/manual/en/arrayaccess.offsetset.php ArrayAccess::offsetSet()
-     *
-     * @param mixed|null $offset The offset is ignored and is treated as `null`.
-     * @param mixed $value The value to set at the given offset.
-     *
-     * @throws InvalidArgumentException when the value does not match the
-     *     specified type for this queue.
-     */
-    public function offsetSet($offset, $value): void
-    {
-        if ($this->checkType($this->getType(), $value) === false) {
-            throw new InvalidArgumentException(
-                'Value must be of type ' . $this->getType() . '; value is '
-                . $this->toolValueToString($value)
-            );
-        }
-
-        $this->tail++;
-
-        $this->data[$this->tail] = $value;
-    }
-
-    /**
-     * Ensures that the specified element is inserted at the front of this queue.
-     *
-     * @see self::offerFirst()
-     *
-     * @param mixed $element The element to add to this queue.
-     *
-     * @return bool `true` if this queue changed as a result of the call.
-     *
-     * @throws InvalidArgumentException when the value does not match the
-     *     specified type for this queue.
-     */
-    public function addFirst($element): bool
-    {
-        if ($this->checkType($this->getType(), $element) === false) {
-            throw new InvalidArgumentException(
-                'Value must be of type ' . $this->getType() . '; value is '
-                . $this->toolValueToString($element)
-            );
-        }
-
-        $this->index--;
-
-        $this->data[$this->index] = $element;
-
-        return true;
-    }
-
-    /**
-     * Ensures that the specified element in inserted at the end of this queue.
-     *
-     * @see Queue::add()
-     *
-     * @param mixed $element The element to add to this queue.
-     *
-     * @return bool `true` if this queue changed as a result of the call.
-     *
-     * @throws InvalidArgumentException when the value does not match the
-     *     specified type for this queue.
-     */
-    public function addLast($element): bool
-    {
-        return $this->add($element);
-    }
-
-    /**
-     * Inserts the specified element at the front this queue.
-     *
-     * @see self::addFirst()
-     *
-     * @param mixed $element The element to add to this queue.
-     *
-     * @return bool `true` if the element was added to this queue, else `false`.
-     */
-    public function offerFirst($element): bool
-    {
-        try {
-            return $this->addFirst($element);
-        } catch (InvalidArgumentException $e) {
-            return false;
-        }
-    }
-
-    /**
-     * Inserts the specified element at the end this queue.
-     *
-     * @see self::addLast()
-     * @see Queue::offer()
-     *
-     * @param mixed $element The element to add to this queue.
-     *
-     * @return bool `true` if the element was added to this queue, else `false`.
-     */
-    public function offerLast($element): bool
-    {
-        return $this->offer($element);
-    }
-
-    /**
-     * Retrieves and removes the head of this queue.
-     *
-     * This method differs from `pollFirst()` only in that it throws an
-     * exception if this queue is empty.
-     *
-     * @see self::pollFirst()
-     * @see Queue::remove()
-     *
-     * @return mixed the head of this queue.
-     *
-     * @throws NoSuchElementException if this queue is empty.
-     */
-    public function removeFirst()
-    {
-        return $this->remove();
-    }
-
-    /**
-     * Retrieves and removes the tail of this queue.
-     *
-     * This method differs from `pollLast()` only in that it throws an exception
-     * if this queue is empty.
-     *
-     * @see self::pollLast()
-     *
-     * @return mixed the tail of this queue.
-     *
-     * @throws NoSuchElementException if this queue is empty.
-     */
-    public function removeLast()
-    {
-        if ($this->count() === 0) {
-            throw new NoSuchElementException('Can\'t return element from Queue. Queue is empty.');
-        }
-
-        $tail = $this[$this->tail];
-
-        unset($this[$this->tail]);
-        $this->tail--;
-
-        return $tail;
-    }
-
-    /**
-     * Retrieves and removes the head of this queue, or returns `null` if this
-     * queue is empty.
-     *
-     * @see self::removeFirst()
-     *
-     * @return mixed|null the head of this queue, or `null` if this queue is empty.
-     */
-    public function pollFirst()
-    {
-        return $this->poll();
-    }
-
-    /**
-     * Retrieves and removes the tail of this queue, or returns `null` if this
-     * queue is empty.
-     *
-     * @see self::removeLast()
-     *
-     * @return mixed|null the tail of this queue, or `null` if this queue is empty.
-     */
-    public function pollLast()
-    {
-        if ($this->count() === 0) {
-            return null;
-        }
-
-        $tail = $this[$this->tail];
-
-        unset($this[$this->tail]);
-        $this->tail--;
-
-        return $tail;
-    }
-
-    /**
-     * Retrieves, but does not remove, the head of this queue.
-     *
-     * This method differs from `peekFirst()` only in that it throws an
-     * exception if this queue is empty.
-     *
-     * @see self::peekFirst()
-     * @see Queue::element()
-     *
-     * @return mixed the head of this queue.
-     *
-     * @throws NoSuchElementException if this queue is empty.
-     */
-    public function firstElement()
-    {
-        return $this->element();
-    }
-
-    /**
-     * Retrieves, but does not remove, the tail of this queue.
-     *
-     * This method differs from `peekLast()` only in that it throws an exception
-     * if this queue is empty.
-     *
-     * @see self::peekLast()
-     *
-     * @return mixed the tail of this queue.
-     *
-     * @throws NoSuchElementException if this queue is empty.
-     */
-    public function lastElement()
-    {
-        if ($this->count() === 0) {
-            throw new NoSuchElementException('Can\'t return element from Queue. Queue is empty.');
-        }
-
-        return $this->data[$this->tail];
-    }
-
-    /**
-     * Retrieves, but does not remove, the head of this queue, or returns `null`
-     * if this queue is empty.
-     *
-     * @see self::firstElement()
-     * @see Queue::peek()
-     *
-     * @return mixed|null the head of this queue, or `null` if this queue is empty.
-     */
-    public function peekFirst()
-    {
-        return $this->peek();
-    }
-
-    /**
-     * Retrieves, but does not remove, the tail of this queue, or returns `null`
-     * if this queue is empty.
-     *
-     * @see self::lastElement()
-     *
-     * @return mixed|null the tail of this queue, or `null` if this queue is empty
-     */
-    public function peekLast()
-    {
-        if ($this->count() === 0) {
-            return null;
-        }
-
-        return $this->data[$this->tail];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+Stt+9LSDSEr2GGO3qYQCZdktafD8sm==

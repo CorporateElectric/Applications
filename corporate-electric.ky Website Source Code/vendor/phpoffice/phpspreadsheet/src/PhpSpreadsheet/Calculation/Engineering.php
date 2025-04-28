@@ -1,1971 +1,619 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Calculation;
-
-use Complex\Complex;
-use Complex\Exception as ComplexException;
-use PhpOffice\PhpSpreadsheet\Calculation\Engineering\ConvertUOM;
-
-class Engineering
-{
-    /**
-     * EULER.
-     */
-    const EULER = 2.71828182845904523536;
-
-    /**
-     * parseComplex.
-     *
-     * Parses a complex number into its real and imaginary parts, and an I or J suffix
-     *
-     * @deprecated 2.0.0 No longer used by internal code. Please use the Complex\Complex class instead
-     *
-     * @param string $complexNumber The complex number
-     *
-     * @return mixed[] Indexed on "real", "imaginary" and "suffix"
-     */
-    public static function parseComplex($complexNumber)
-    {
-        $complex = new Complex($complexNumber);
-
-        return [
-            'real' => $complex->getReal(),
-            'imaginary' => $complex->getImaginary(),
-            'suffix' => $complex->getSuffix(),
-        ];
-    }
-
-    /**
-     * Formats a number base string value with leading zeroes.
-     *
-     * @param string $xVal The "number" to pad
-     * @param int $places The length that we want to pad this value
-     *
-     * @return string The padded "number"
-     */
-    private static function nbrConversionFormat($xVal, $places)
-    {
-        if ($places !== null) {
-            if (is_numeric($places)) {
-                $places = (int) $places;
-            } else {
-                return Functions::VALUE();
-            }
-            if ($places < 0) {
-                return Functions::NAN();
-            }
-            if (strlen($xVal) <= $places) {
-                return substr(str_pad($xVal, $places, '0', STR_PAD_LEFT), -10);
-            }
-
-            return Functions::NAN();
-        }
-
-        return substr($xVal, -10);
-    }
-
-    /**
-     * BESSELI.
-     *
-     *    Returns the modified Bessel function In(x), which is equivalent to the Bessel function evaluated
-     *        for purely imaginary arguments
-     *
-     *    Excel Function:
-     *        BESSELI(x,ord)
-     *
-     * @param float $x The value at which to evaluate the function.
-     *                                If x is nonnumeric, BESSELI returns the #VALUE! error value.
-     * @param int $ord The order of the Bessel function.
-     *                                If ord is not an integer, it is truncated.
-     *                                If $ord is nonnumeric, BESSELI returns the #VALUE! error value.
-     *                                If $ord < 0, BESSELI returns the #NUM! error value.
-     *
-     * @return float|string Result, or a string containing an error
-     */
-    public static function BESSELI($x, $ord)
-    {
-        $x = ($x === null) ? 0.0 : Functions::flattenSingleValue($x);
-        $ord = ($ord === null) ? 0.0 : Functions::flattenSingleValue($ord);
-
-        if ((is_numeric($x)) && (is_numeric($ord))) {
-            $ord = floor($ord);
-            if ($ord < 0) {
-                return Functions::NAN();
-            }
-
-            if (abs($x) <= 30) {
-                $fResult = $fTerm = ($x / 2) ** $ord / MathTrig::FACT($ord);
-                $ordK = 1;
-                $fSqrX = ($x * $x) / 4;
-                do {
-                    $fTerm *= $fSqrX;
-                    $fTerm /= ($ordK * ($ordK + $ord));
-                    $fResult += $fTerm;
-                } while ((abs($fTerm) > 1e-12) && (++$ordK < 100));
-            } else {
-                $f_2_PI = 2 * M_PI;
-
-                $fXAbs = abs($x);
-                $fResult = exp($fXAbs) / sqrt($f_2_PI * $fXAbs);
-                if (($ord & 1) && ($x < 0)) {
-                    $fResult = -$fResult;
-                }
-            }
-
-            return (is_nan($fResult)) ? Functions::NAN() : $fResult;
-        }
-
-        return Functions::VALUE();
-    }
-
-    /**
-     * BESSELJ.
-     *
-     *    Returns the Bessel function
-     *
-     *    Excel Function:
-     *        BESSELJ(x,ord)
-     *
-     * @param float $x The value at which to evaluate the function.
-     *                                If x is nonnumeric, BESSELJ returns the #VALUE! error value.
-     * @param int $ord The order of the Bessel function. If n is not an integer, it is truncated.
-     *                                If $ord is nonnumeric, BESSELJ returns the #VALUE! error value.
-     *                                If $ord < 0, BESSELJ returns the #NUM! error value.
-     *
-     * @return float|string Result, or a string containing an error
-     */
-    public static function BESSELJ($x, $ord)
-    {
-        $x = ($x === null) ? 0.0 : Functions::flattenSingleValue($x);
-        $ord = ($ord === null) ? 0.0 : Functions::flattenSingleValue($ord);
-
-        if ((is_numeric($x)) && (is_numeric($ord))) {
-            $ord = floor($ord);
-            if ($ord < 0) {
-                return Functions::NAN();
-            }
-
-            $fResult = 0;
-            if (abs($x) <= 30) {
-                $fResult = $fTerm = ($x / 2) ** $ord / MathTrig::FACT($ord);
-                $ordK = 1;
-                $fSqrX = ($x * $x) / -4;
-                do {
-                    $fTerm *= $fSqrX;
-                    $fTerm /= ($ordK * ($ordK + $ord));
-                    $fResult += $fTerm;
-                } while ((abs($fTerm) > 1e-12) && (++$ordK < 100));
-            } else {
-                $f_PI_DIV_2 = M_PI / 2;
-                $f_PI_DIV_4 = M_PI / 4;
-
-                $fXAbs = abs($x);
-                $fResult = sqrt(Functions::M_2DIVPI / $fXAbs) * cos($fXAbs - $ord * $f_PI_DIV_2 - $f_PI_DIV_4);
-                if (($ord & 1) && ($x < 0)) {
-                    $fResult = -$fResult;
-                }
-            }
-
-            return (is_nan($fResult)) ? Functions::NAN() : $fResult;
-        }
-
-        return Functions::VALUE();
-    }
-
-    private static function besselK0($fNum)
-    {
-        if ($fNum <= 2) {
-            $fNum2 = $fNum * 0.5;
-            $y = ($fNum2 * $fNum2);
-            $fRet = -log($fNum2) * self::BESSELI($fNum, 0) +
-                (-0.57721566 + $y * (0.42278420 + $y * (0.23069756 + $y * (0.3488590e-1 + $y * (0.262698e-2 + $y *
-                                    (0.10750e-3 + $y * 0.74e-5))))));
-        } else {
-            $y = 2 / $fNum;
-            $fRet = exp(-$fNum) / sqrt($fNum) *
-                (1.25331414 + $y * (-0.7832358e-1 + $y * (0.2189568e-1 + $y * (-0.1062446e-1 + $y *
-                                (0.587872e-2 + $y * (-0.251540e-2 + $y * 0.53208e-3))))));
-        }
-
-        return $fRet;
-    }
-
-    private static function besselK1($fNum)
-    {
-        if ($fNum <= 2) {
-            $fNum2 = $fNum * 0.5;
-            $y = ($fNum2 * $fNum2);
-            $fRet = log($fNum2) * self::BESSELI($fNum, 1) +
-                (1 + $y * (0.15443144 + $y * (-0.67278579 + $y * (-0.18156897 + $y * (-0.1919402e-1 + $y *
-                                    (-0.110404e-2 + $y * (-0.4686e-4))))))) / $fNum;
-        } else {
-            $y = 2 / $fNum;
-            $fRet = exp(-$fNum) / sqrt($fNum) *
-                (1.25331414 + $y * (0.23498619 + $y * (-0.3655620e-1 + $y * (0.1504268e-1 + $y * (-0.780353e-2 + $y *
-                                    (0.325614e-2 + $y * (-0.68245e-3)))))));
-        }
-
-        return $fRet;
-    }
-
-    /**
-     * BESSELK.
-     *
-     *    Returns the modified Bessel function Kn(x), which is equivalent to the Bessel functions evaluated
-     *        for purely imaginary arguments.
-     *
-     *    Excel Function:
-     *        BESSELK(x,ord)
-     *
-     * @param float $x The value at which to evaluate the function.
-     *                                If x is nonnumeric, BESSELK returns the #VALUE! error value.
-     * @param int $ord The order of the Bessel function. If n is not an integer, it is truncated.
-     *                                If $ord is nonnumeric, BESSELK returns the #VALUE! error value.
-     *                                If $ord < 0, BESSELK returns the #NUM! error value.
-     *
-     * @return float|string Result, or a string containing an error
-     */
-    public static function BESSELK($x, $ord)
-    {
-        $x = ($x === null) ? 0.0 : Functions::flattenSingleValue($x);
-        $ord = ($ord === null) ? 0.0 : Functions::flattenSingleValue($ord);
-
-        if ((is_numeric($x)) && (is_numeric($ord))) {
-            if (($ord < 0) || ($x == 0.0)) {
-                return Functions::NAN();
-            }
-
-            switch (floor($ord)) {
-                case 0:
-                    $fBk = self::besselK0($x);
-
-                    break;
-                case 1:
-                    $fBk = self::besselK1($x);
-
-                    break;
-                default:
-                    $fTox = 2 / $x;
-                    $fBkm = self::besselK0($x);
-                    $fBk = self::besselK1($x);
-                    for ($n = 1; $n < $ord; ++$n) {
-                        $fBkp = $fBkm + $n * $fTox * $fBk;
-                        $fBkm = $fBk;
-                        $fBk = $fBkp;
-                    }
-            }
-
-            return (is_nan($fBk)) ? Functions::NAN() : $fBk;
-        }
-
-        return Functions::VALUE();
-    }
-
-    private static function besselY0($fNum)
-    {
-        if ($fNum < 8.0) {
-            $y = ($fNum * $fNum);
-            $f1 = -2957821389.0 + $y * (7062834065.0 + $y * (-512359803.6 + $y * (10879881.29 + $y * (-86327.92757 + $y * 228.4622733))));
-            $f2 = 40076544269.0 + $y * (745249964.8 + $y * (7189466.438 + $y * (47447.26470 + $y * (226.1030244 + $y))));
-            $fRet = $f1 / $f2 + 0.636619772 * self::BESSELJ($fNum, 0) * log($fNum);
-        } else {
-            $z = 8.0 / $fNum;
-            $y = ($z * $z);
-            $xx = $fNum - 0.785398164;
-            $f1 = 1 + $y * (-0.1098628627e-2 + $y * (0.2734510407e-4 + $y * (-0.2073370639e-5 + $y * 0.2093887211e-6)));
-            $f2 = -0.1562499995e-1 + $y * (0.1430488765e-3 + $y * (-0.6911147651e-5 + $y * (0.7621095161e-6 + $y * (-0.934945152e-7))));
-            $fRet = sqrt(0.636619772 / $fNum) * (sin($xx) * $f1 + $z * cos($xx) * $f2);
-        }
-
-        return $fRet;
-    }
-
-    private static function besselY1($fNum)
-    {
-        if ($fNum < 8.0) {
-            $y = ($fNum * $fNum);
-            $f1 = $fNum * (-0.4900604943e13 + $y * (0.1275274390e13 + $y * (-0.5153438139e11 + $y * (0.7349264551e9 + $y *
-                                (-0.4237922726e7 + $y * 0.8511937935e4)))));
-            $f2 = 0.2499580570e14 + $y * (0.4244419664e12 + $y * (0.3733650367e10 + $y * (0.2245904002e8 + $y *
-                            (0.1020426050e6 + $y * (0.3549632885e3 + $y)))));
-            $fRet = $f1 / $f2 + 0.636619772 * (self::BESSELJ($fNum, 1) * log($fNum) - 1 / $fNum);
-        } else {
-            $fRet = sqrt(0.636619772 / $fNum) * sin($fNum - 2.356194491);
-        }
-
-        return $fRet;
-    }
-
-    /**
-     * BESSELY.
-     *
-     * Returns the Bessel function, which is also called the Weber function or the Neumann function.
-     *
-     *    Excel Function:
-     *        BESSELY(x,ord)
-     *
-     * @param float $x The value at which to evaluate the function.
-     *                                If x is nonnumeric, BESSELK returns the #VALUE! error value.
-     * @param int $ord The order of the Bessel function. If n is not an integer, it is truncated.
-     *                                If $ord is nonnumeric, BESSELK returns the #VALUE! error value.
-     *                                If $ord < 0, BESSELK returns the #NUM! error value.
-     *
-     * @return float|string Result, or a string containing an error
-     */
-    public static function BESSELY($x, $ord)
-    {
-        $x = ($x === null) ? 0.0 : Functions::flattenSingleValue($x);
-        $ord = ($ord === null) ? 0.0 : Functions::flattenSingleValue($ord);
-
-        if ((is_numeric($x)) && (is_numeric($ord))) {
-            if (($ord < 0) || ($x == 0.0)) {
-                return Functions::NAN();
-            }
-
-            switch (floor($ord)) {
-                case 0:
-                    $fBy = self::besselY0($x);
-
-                    break;
-                case 1:
-                    $fBy = self::besselY1($x);
-
-                    break;
-                default:
-                    $fTox = 2 / $x;
-                    $fBym = self::besselY0($x);
-                    $fBy = self::besselY1($x);
-                    for ($n = 1; $n < $ord; ++$n) {
-                        $fByp = $n * $fTox * $fBy - $fBym;
-                        $fBym = $fBy;
-                        $fBy = $fByp;
-                    }
-            }
-
-            return (is_nan($fBy)) ? Functions::NAN() : $fBy;
-        }
-
-        return Functions::VALUE();
-    }
-
-    /**
-     * BINTODEC.
-     *
-     * Return a binary value as decimal.
-     *
-     * Excel Function:
-     *        BIN2DEC(x)
-     *
-     * @param string $x The binary number (as a string) that you want to convert. The number
-     *                                cannot contain more than 10 characters (10 bits). The most significant
-     *                                bit of number is the sign bit. The remaining 9 bits are magnitude bits.
-     *                                Negative numbers are represented using two's-complement notation.
-     *                                If number is not a valid binary number, or if number contains more than
-     *                                10 characters (10 bits), BIN2DEC returns the #NUM! error value.
-     *
-     * @return string
-     */
-    public static function BINTODEC($x)
-    {
-        $x = Functions::flattenSingleValue($x);
-
-        if (is_bool($x)) {
-            if (Functions::getCompatibilityMode() == Functions::COMPATIBILITY_OPENOFFICE) {
-                $x = (int) $x;
-            } else {
-                return Functions::VALUE();
-            }
-        }
-        if (Functions::getCompatibilityMode() == Functions::COMPATIBILITY_GNUMERIC) {
-            $x = floor($x);
-        }
-        $x = (string) $x;
-        if (strlen($x) > preg_match_all('/[01]/', $x, $out)) {
-            return Functions::NAN();
-        }
-        if (strlen($x) > 10) {
-            return Functions::NAN();
-        } elseif (strlen($x) == 10) {
-            //    Two's Complement
-            $x = substr($x, -9);
-
-            return '-' . (512 - bindec($x));
-        }
-
-        return bindec($x);
-    }
-
-    /**
-     * BINTOHEX.
-     *
-     * Return a binary value as hex.
-     *
-     * Excel Function:
-     *        BIN2HEX(x[,places])
-     *
-     * @param string $x The binary number (as a string) that you want to convert. The number
-     *                                cannot contain more than 10 characters (10 bits). The most significant
-     *                                bit of number is the sign bit. The remaining 9 bits are magnitude bits.
-     *                                Negative numbers are represented using two's-complement notation.
-     *                                If number is not a valid binary number, or if number contains more than
-     *                                10 characters (10 bits), BIN2HEX returns the #NUM! error value.
-     * @param int $places The number of characters to use. If places is omitted, BIN2HEX uses the
-     *                                minimum number of characters necessary. Places is useful for padding the
-     *                                return value with leading 0s (zeros).
-     *                                If places is not an integer, it is truncated.
-     *                                If places is nonnumeric, BIN2HEX returns the #VALUE! error value.
-     *                                If places is negative, BIN2HEX returns the #NUM! error value.
-     *
-     * @return string
-     */
-    public static function BINTOHEX($x, $places = null)
-    {
-        $x = Functions::flattenSingleValue($x);
-        $places = Functions::flattenSingleValue($places);
-
-        // Argument X
-        if (is_bool($x)) {
-            if (Functions::getCompatibilityMode() == Functions::COMPATIBILITY_OPENOFFICE) {
-                $x = (int) $x;
-            } else {
-                return Functions::VALUE();
-            }
-        }
-        if (Functions::getCompatibilityMode() == Functions::COMPATIBILITY_GNUMERIC) {
-            $x = floor($x);
-        }
-        $x = (string) $x;
-        if (strlen($x) > preg_match_all('/[01]/', $x, $out)) {
-            return Functions::NAN();
-        }
-        if (strlen($x) > 10) {
-            return Functions::NAN();
-        } elseif (strlen($x) == 10) {
-            //    Two's Complement
-            return str_repeat('F', 8) . substr(strtoupper(dechex(bindec(substr($x, -9)))), -2);
-        }
-        $hexVal = (string) strtoupper(dechex(bindec($x)));
-
-        return self::nbrConversionFormat($hexVal, $places);
-    }
-
-    /**
-     * BINTOOCT.
-     *
-     * Return a binary value as octal.
-     *
-     * Excel Function:
-     *        BIN2OCT(x[,places])
-     *
-     * @param string $x The binary number (as a string) that you want to convert. The number
-     *                                cannot contain more than 10 characters (10 bits). The most significant
-     *                                bit of number is the sign bit. The remaining 9 bits are magnitude bits.
-     *                                Negative numbers are represented using two's-complement notation.
-     *                                If number is not a valid binary number, or if number contains more than
-     *                                10 characters (10 bits), BIN2OCT returns the #NUM! error value.
-     * @param int $places The number of characters to use. If places is omitted, BIN2OCT uses the
-     *                                minimum number of characters necessary. Places is useful for padding the
-     *                                return value with leading 0s (zeros).
-     *                                If places is not an integer, it is truncated.
-     *                                If places is nonnumeric, BIN2OCT returns the #VALUE! error value.
-     *                                If places is negative, BIN2OCT returns the #NUM! error value.
-     *
-     * @return string
-     */
-    public static function BINTOOCT($x, $places = null)
-    {
-        $x = Functions::flattenSingleValue($x);
-        $places = Functions::flattenSingleValue($places);
-
-        if (is_bool($x)) {
-            if (Functions::getCompatibilityMode() == Functions::COMPATIBILITY_OPENOFFICE) {
-                $x = (int) $x;
-            } else {
-                return Functions::VALUE();
-            }
-        }
-        if (Functions::getCompatibilityMode() == Functions::COMPATIBILITY_GNUMERIC) {
-            $x = floor($x);
-        }
-        $x = (string) $x;
-        if (strlen($x) > preg_match_all('/[01]/', $x, $out)) {
-            return Functions::NAN();
-        }
-        if (strlen($x) > 10) {
-            return Functions::NAN();
-        } elseif (strlen($x) == 10) {
-            //    Two's Complement
-            return str_repeat('7', 7) . substr(strtoupper(decoct(bindec(substr($x, -9)))), -3);
-        }
-        $octVal = (string) decoct(bindec($x));
-
-        return self::nbrConversionFormat($octVal, $places);
-    }
-
-    /**
-     * DECTOBIN.
-     *
-     * Return a decimal value as binary.
-     *
-     * Excel Function:
-     *        DEC2BIN(x[,places])
-     *
-     * @param string $x The decimal integer you want to convert. If number is negative,
-     *                                valid place values are ignored and DEC2BIN returns a 10-character
-     *                                (10-bit) binary number in which the most significant bit is the sign
-     *                                bit. The remaining 9 bits are magnitude bits. Negative numbers are
-     *                                represented using two's-complement notation.
-     *                                If number < -512 or if number > 511, DEC2BIN returns the #NUM! error
-     *                                value.
-     *                                If number is nonnumeric, DEC2BIN returns the #VALUE! error value.
-     *                                If DEC2BIN requires more than places characters, it returns the #NUM!
-     *                                error value.
-     * @param int $places The number of characters to use. If places is omitted, DEC2BIN uses
-     *                                the minimum number of characters necessary. Places is useful for
-     *                                padding the return value with leading 0s (zeros).
-     *                                If places is not an integer, it is truncated.
-     *                                If places is nonnumeric, DEC2BIN returns the #VALUE! error value.
-     *                                If places is zero or negative, DEC2BIN returns the #NUM! error value.
-     *
-     * @return string
-     */
-    public static function DECTOBIN($x, $places = null)
-    {
-        $x = Functions::flattenSingleValue($x);
-        $places = Functions::flattenSingleValue($places);
-
-        if (is_bool($x)) {
-            if (Functions::getCompatibilityMode() == Functions::COMPATIBILITY_OPENOFFICE) {
-                $x = (int) $x;
-            } else {
-                return Functions::VALUE();
-            }
-        }
-        $x = (string) $x;
-        if (strlen($x) > preg_match_all('/[-0123456789.]/', $x, $out)) {
-            return Functions::VALUE();
-        }
-
-        $x = (string) floor($x);
-        if ($x < -512 || $x > 511) {
-            return Functions::NAN();
-        }
-
-        $r = decbin($x);
-        // Two's Complement
-        $r = substr($r, -10);
-        if (strlen($r) >= 11) {
-            return Functions::NAN();
-        }
-
-        return self::nbrConversionFormat($r, $places);
-    }
-
-    /**
-     * DECTOHEX.
-     *
-     * Return a decimal value as hex.
-     *
-     * Excel Function:
-     *        DEC2HEX(x[,places])
-     *
-     * @param string $x The decimal integer you want to convert. If number is negative,
-     *                                places is ignored and DEC2HEX returns a 10-character (40-bit)
-     *                                hexadecimal number in which the most significant bit is the sign
-     *                                bit. The remaining 39 bits are magnitude bits. Negative numbers
-     *                                are represented using two's-complement notation.
-     *                                If number < -549,755,813,888 or if number > 549,755,813,887,
-     *                                DEC2HEX returns the #NUM! error value.
-     *                                If number is nonnumeric, DEC2HEX returns the #VALUE! error value.
-     *                                If DEC2HEX requires more than places characters, it returns the
-     *                                #NUM! error value.
-     * @param int $places The number of characters to use. If places is omitted, DEC2HEX uses
-     *                                the minimum number of characters necessary. Places is useful for
-     *                                padding the return value with leading 0s (zeros).
-     *                                If places is not an integer, it is truncated.
-     *                                If places is nonnumeric, DEC2HEX returns the #VALUE! error value.
-     *                                If places is zero or negative, DEC2HEX returns the #NUM! error value.
-     *
-     * @return string
-     */
-    public static function DECTOHEX($x, $places = null)
-    {
-        $x = Functions::flattenSingleValue($x);
-        $places = Functions::flattenSingleValue($places);
-
-        if (is_bool($x)) {
-            if (Functions::getCompatibilityMode() == Functions::COMPATIBILITY_OPENOFFICE) {
-                $x = (int) $x;
-            } else {
-                return Functions::VALUE();
-            }
-        }
-        $x = (string) $x;
-        if (strlen($x) > preg_match_all('/[-0123456789.]/', $x, $out)) {
-            return Functions::VALUE();
-        }
-        $x = (string) floor($x);
-        $r = strtoupper(dechex($x));
-        if (strlen($r) == 8) {
-            //    Two's Complement
-            $r = 'FF' . $r;
-        }
-
-        return self::nbrConversionFormat($r, $places);
-    }
-
-    /**
-     * DECTOOCT.
-     *
-     * Return an decimal value as octal.
-     *
-     * Excel Function:
-     *        DEC2OCT(x[,places])
-     *
-     * @param string $x The decimal integer you want to convert. If number is negative,
-     *                                places is ignored and DEC2OCT returns a 10-character (30-bit)
-     *                                octal number in which the most significant bit is the sign bit.
-     *                                The remaining 29 bits are magnitude bits. Negative numbers are
-     *                                represented using two's-complement notation.
-     *                                If number < -536,870,912 or if number > 536,870,911, DEC2OCT
-     *                                returns the #NUM! error value.
-     *                                If number is nonnumeric, DEC2OCT returns the #VALUE! error value.
-     *                                If DEC2OCT requires more than places characters, it returns the
-     *                                #NUM! error value.
-     * @param int $places The number of characters to use. If places is omitted, DEC2OCT uses
-     *                                the minimum number of characters necessary. Places is useful for
-     *                                padding the return value with leading 0s (zeros).
-     *                                If places is not an integer, it is truncated.
-     *                                If places is nonnumeric, DEC2OCT returns the #VALUE! error value.
-     *                                If places is zero or negative, DEC2OCT returns the #NUM! error value.
-     *
-     * @return string
-     */
-    public static function DECTOOCT($x, $places = null)
-    {
-        $xorig = $x;
-        $x = Functions::flattenSingleValue($x);
-        $places = Functions::flattenSingleValue($places);
-
-        if (is_bool($x)) {
-            if (Functions::getCompatibilityMode() == Functions::COMPATIBILITY_OPENOFFICE) {
-                $x = (int) $x;
-            } else {
-                return Functions::VALUE();
-            }
-        }
-        $x = (string) $x;
-        if (strlen($x) > preg_match_all('/[-0123456789.]/', $x, $out)) {
-            return Functions::VALUE();
-        }
-        $x = (string) floor($x);
-        $r = decoct($x);
-        if (strlen($r) == 11) {
-            //    Two's Complement
-            $r = substr($r, -10);
-        }
-
-        return self::nbrConversionFormat($r, $places);
-    }
-
-    /**
-     * HEXTOBIN.
-     *
-     * Return a hex value as binary.
-     *
-     * Excel Function:
-     *        HEX2BIN(x[,places])
-     *
-     * @param string $x the hexadecimal number you want to convert.
-     *                  Number cannot contain more than 10 characters.
-     *                  The most significant bit of number is the sign bit (40th bit from the right).
-     *                  The remaining 9 bits are magnitude bits.
-     *                  Negative numbers are represented using two's-complement notation.
-     *                  If number is negative, HEX2BIN ignores places and returns a 10-character binary number.
-     *                  If number is negative, it cannot be less than FFFFFFFE00,
-     *                      and if number is positive, it cannot be greater than 1FF.
-     *                  If number is not a valid hexadecimal number, HEX2BIN returns the #NUM! error value.
-     *                  If HEX2BIN requires more than places characters, it returns the #NUM! error value.
-     * @param int $places The number of characters to use. If places is omitted,
-     *                                    HEX2BIN uses the minimum number of characters necessary. Places
-     *                                    is useful for padding the return value with leading 0s (zeros).
-     *                                    If places is not an integer, it is truncated.
-     *                                    If places is nonnumeric, HEX2BIN returns the #VALUE! error value.
-     *                                    If places is negative, HEX2BIN returns the #NUM! error value.
-     *
-     * @return string
-     */
-    public static function HEXTOBIN($x, $places = null)
-    {
-        $x = Functions::flattenSingleValue($x);
-        $places = Functions::flattenSingleValue($places);
-
-        if (is_bool($x)) {
-            return Functions::VALUE();
-        }
-        $x = (string) $x;
-        if (strlen($x) > preg_match_all('/[0123456789ABCDEF]/', strtoupper($x), $out)) {
-            return Functions::NAN();
-        }
-
-        return self::DECTOBIN(self::HEXTODEC($x), $places);
-    }
-
-    /**
-     * HEXTODEC.
-     *
-     * Return a hex value as decimal.
-     *
-     * Excel Function:
-     *        HEX2DEC(x)
-     *
-     * @param string $x The hexadecimal number you want to convert. This number cannot
-     *                                contain more than 10 characters (40 bits). The most significant
-     *                                bit of number is the sign bit. The remaining 39 bits are magnitude
-     *                                bits. Negative numbers are represented using two's-complement
-     *                                notation.
-     *                                If number is not a valid hexadecimal number, HEX2DEC returns the
-     *                                #NUM! error value.
-     *
-     * @return string
-     */
-    public static function HEXTODEC($x)
-    {
-        $x = Functions::flattenSingleValue($x);
-
-        if (is_bool($x)) {
-            return Functions::VALUE();
-        }
-        $x = (string) $x;
-        if (strlen($x) > preg_match_all('/[0123456789ABCDEF]/', strtoupper($x), $out)) {
-            return Functions::NAN();
-        }
-
-        if (strlen($x) > 10) {
-            return Functions::NAN();
-        }
-
-        $binX = '';
-        foreach (str_split($x) as $char) {
-            $binX .= str_pad(base_convert($char, 16, 2), 4, '0', STR_PAD_LEFT);
-        }
-        if (strlen($binX) == 40 && $binX[0] == '1') {
-            for ($i = 0; $i < 40; ++$i) {
-                $binX[$i] = ($binX[$i] == '1' ? '0' : '1');
-            }
-
-            return (bindec($binX) + 1) * -1;
-        }
-
-        return bindec($binX);
-    }
-
-    /**
-     * HEXTOOCT.
-     *
-     * Return a hex value as octal.
-     *
-     * Excel Function:
-     *        HEX2OCT(x[,places])
-     *
-     * @param string $x The hexadecimal number you want to convert. Number cannot
-     *                                    contain more than 10 characters. The most significant bit of
-     *                                    number is the sign bit. The remaining 39 bits are magnitude
-     *                                    bits. Negative numbers are represented using two's-complement
-     *                                    notation.
-     *                                    If number is negative, HEX2OCT ignores places and returns a
-     *                                    10-character octal number.
-     *                                    If number is negative, it cannot be less than FFE0000000, and
-     *                                    if number is positive, it cannot be greater than 1FFFFFFF.
-     *                                    If number is not a valid hexadecimal number, HEX2OCT returns
-     *                                    the #NUM! error value.
-     *                                    If HEX2OCT requires more than places characters, it returns
-     *                                    the #NUM! error value.
-     * @param int $places The number of characters to use. If places is omitted, HEX2OCT
-     *                                    uses the minimum number of characters necessary. Places is
-     *                                    useful for padding the return value with leading 0s (zeros).
-     *                                    If places is not an integer, it is truncated.
-     *                                    If places is nonnumeric, HEX2OCT returns the #VALUE! error
-     *                                    value.
-     *                                    If places is negative, HEX2OCT returns the #NUM! error value.
-     *
-     * @return string
-     */
-    public static function HEXTOOCT($x, $places = null)
-    {
-        $x = Functions::flattenSingleValue($x);
-        $places = Functions::flattenSingleValue($places);
-
-        if (is_bool($x)) {
-            return Functions::VALUE();
-        }
-        $x = (string) $x;
-        if (strlen($x) > preg_match_all('/[0123456789ABCDEF]/', strtoupper($x), $out)) {
-            return Functions::NAN();
-        }
-
-        $decimal = self::HEXTODEC($x);
-        if ($decimal < -536870912 || $decimal > 536870911) {
-            return Functions::NAN();
-        }
-
-        return self::DECTOOCT($decimal, $places);
-    }
-
-    /**
-     * OCTTOBIN.
-     *
-     * Return an octal value as binary.
-     *
-     * Excel Function:
-     *        OCT2BIN(x[,places])
-     *
-     * @param string $x The octal number you want to convert. Number may not
-     *                                    contain more than 10 characters. The most significant
-     *                                    bit of number is the sign bit. The remaining 29 bits
-     *                                    are magnitude bits. Negative numbers are represented
-     *                                    using two's-complement notation.
-     *                                    If number is negative, OCT2BIN ignores places and returns
-     *                                    a 10-character binary number.
-     *                                    If number is negative, it cannot be less than 7777777000,
-     *                                    and if number is positive, it cannot be greater than 777.
-     *                                    If number is not a valid octal number, OCT2BIN returns
-     *                                    the #NUM! error value.
-     *                                    If OCT2BIN requires more than places characters, it
-     *                                    returns the #NUM! error value.
-     * @param int $places The number of characters to use. If places is omitted,
-     *                                    OCT2BIN uses the minimum number of characters necessary.
-     *                                    Places is useful for padding the return value with
-     *                                    leading 0s (zeros).
-     *                                    If places is not an integer, it is truncated.
-     *                                    If places is nonnumeric, OCT2BIN returns the #VALUE!
-     *                                    error value.
-     *                                    If places is negative, OCT2BIN returns the #NUM! error
-     *                                    value.
-     *
-     * @return string
-     */
-    public static function OCTTOBIN($x, $places = null)
-    {
-        $x = Functions::flattenSingleValue($x);
-        $places = Functions::flattenSingleValue($places);
-
-        if (is_bool($x)) {
-            return Functions::VALUE();
-        }
-        $x = (string) $x;
-        if (preg_match_all('/[01234567]/', $x, $out) != strlen($x)) {
-            return Functions::NAN();
-        }
-
-        return self::DECTOBIN(self::OCTTODEC($x), $places);
-    }
-
-    /**
-     * OCTTODEC.
-     *
-     * Return an octal value as decimal.
-     *
-     * Excel Function:
-     *        OCT2DEC(x)
-     *
-     * @param string $x The octal number you want to convert. Number may not contain
-     *                                more than 10 octal characters (30 bits). The most significant
-     *                                bit of number is the sign bit. The remaining 29 bits are
-     *                                magnitude bits. Negative numbers are represented using
-     *                                two's-complement notation.
-     *                                If number is not a valid octal number, OCT2DEC returns the
-     *                                #NUM! error value.
-     *
-     * @return string
-     */
-    public static function OCTTODEC($x)
-    {
-        $x = Functions::flattenSingleValue($x);
-
-        if (is_bool($x)) {
-            return Functions::VALUE();
-        }
-        $x = (string) $x;
-        if (preg_match_all('/[01234567]/', $x, $out) != strlen($x)) {
-            return Functions::NAN();
-        }
-        $binX = '';
-        foreach (str_split($x) as $char) {
-            $binX .= str_pad(decbin((int) $char), 3, '0', STR_PAD_LEFT);
-        }
-        if (strlen($binX) == 30 && $binX[0] == '1') {
-            for ($i = 0; $i < 30; ++$i) {
-                $binX[$i] = ($binX[$i] == '1' ? '0' : '1');
-            }
-
-            return (bindec($binX) + 1) * -1;
-        }
-
-        return bindec($binX);
-    }
-
-    /**
-     * OCTTOHEX.
-     *
-     * Return an octal value as hex.
-     *
-     * Excel Function:
-     *        OCT2HEX(x[,places])
-     *
-     * @param string $x The octal number you want to convert. Number may not contain
-     *                                    more than 10 octal characters (30 bits). The most significant
-     *                                    bit of number is the sign bit. The remaining 29 bits are
-     *                                    magnitude bits. Negative numbers are represented using
-     *                                    two's-complement notation.
-     *                                    If number is negative, OCT2HEX ignores places and returns a
-     *                                    10-character hexadecimal number.
-     *                                    If number is not a valid octal number, OCT2HEX returns the
-     *                                    #NUM! error value.
-     *                                    If OCT2HEX requires more than places characters, it returns
-     *                                    the #NUM! error value.
-     * @param int $places The number of characters to use. If places is omitted, OCT2HEX
-     *                                    uses the minimum number of characters necessary. Places is useful
-     *                                    for padding the return value with leading 0s (zeros).
-     *                                    If places is not an integer, it is truncated.
-     *                                    If places is nonnumeric, OCT2HEX returns the #VALUE! error value.
-     *                                    If places is negative, OCT2HEX returns the #NUM! error value.
-     *
-     * @return string
-     */
-    public static function OCTTOHEX($x, $places = null)
-    {
-        $x = Functions::flattenSingleValue($x);
-        $places = Functions::flattenSingleValue($places);
-
-        if (is_bool($x)) {
-            return Functions::VALUE();
-        }
-        $x = (string) $x;
-        if (preg_match_all('/[01234567]/', $x, $out) != strlen($x)) {
-            return Functions::NAN();
-        }
-        $hexVal = strtoupper(dechex(self::OCTTODEC($x)));
-
-        return self::nbrConversionFormat($hexVal, $places);
-    }
-
-    /**
-     * COMPLEX.
-     *
-     * Converts real and imaginary coefficients into a complex number of the form x +/- yi or x +/- yj.
-     *
-     * Excel Function:
-     *        COMPLEX(realNumber,imaginary[,suffix])
-     *
-     * @param float $realNumber the real coefficient of the complex number
-     * @param float $imaginary the imaginary coefficient of the complex number
-     * @param string $suffix The suffix for the imaginary component of the complex number.
-     *                                        If omitted, the suffix is assumed to be "i".
-     *
-     * @return string
-     */
-    public static function COMPLEX($realNumber = 0.0, $imaginary = 0.0, $suffix = 'i')
-    {
-        $realNumber = ($realNumber === null) ? 0.0 : Functions::flattenSingleValue($realNumber);
-        $imaginary = ($imaginary === null) ? 0.0 : Functions::flattenSingleValue($imaginary);
-        $suffix = ($suffix === null) ? 'i' : Functions::flattenSingleValue($suffix);
-
-        if (
-            ((is_numeric($realNumber)) && (is_numeric($imaginary))) &&
-            (($suffix == 'i') || ($suffix == 'j') || ($suffix == ''))
-        ) {
-            $complex = new Complex($realNumber, $imaginary, $suffix);
-
-            return (string) $complex;
-        }
-
-        return Functions::VALUE();
-    }
-
-    /**
-     * IMAGINARY.
-     *
-     * Returns the imaginary coefficient of a complex number in x + yi or x + yj text format.
-     *
-     * Excel Function:
-     *        IMAGINARY(complexNumber)
-     *
-     * @param string $complexNumber the complex number for which you want the imaginary
-     *                                         coefficient
-     *
-     * @return float
-     */
-    public static function IMAGINARY($complexNumber)
-    {
-        $complexNumber = Functions::flattenSingleValue($complexNumber);
-
-        return (new Complex($complexNumber))->getImaginary();
-    }
-
-    /**
-     * IMREAL.
-     *
-     * Returns the real coefficient of a complex number in x + yi or x + yj text format.
-     *
-     * Excel Function:
-     *        IMREAL(complexNumber)
-     *
-     * @param string $complexNumber the complex number for which you want the real coefficient
-     *
-     * @return float
-     */
-    public static function IMREAL($complexNumber)
-    {
-        $complexNumber = Functions::flattenSingleValue($complexNumber);
-
-        return (new Complex($complexNumber))->getReal();
-    }
-
-    /**
-     * IMABS.
-     *
-     * Returns the absolute value (modulus) of a complex number in x + yi or x + yj text format.
-     *
-     * Excel Function:
-     *        IMABS(complexNumber)
-     *
-     * @param string $complexNumber the complex number for which you want the absolute value
-     *
-     * @return float
-     */
-    public static function IMABS($complexNumber)
-    {
-        $complexNumber = Functions::flattenSingleValue($complexNumber);
-
-        return (new Complex($complexNumber))->abs();
-    }
-
-    /**
-     * IMARGUMENT.
-     *
-     * Returns the argument theta of a complex number, i.e. the angle in radians from the real
-     * axis to the representation of the number in polar coordinates.
-     *
-     * Excel Function:
-     *        IMARGUMENT(complexNumber)
-     *
-     * @param string $complexNumber the complex number for which you want the argument theta
-     *
-     * @return float|string
-     */
-    public static function IMARGUMENT($complexNumber)
-    {
-        $complexNumber = Functions::flattenSingleValue($complexNumber);
-
-        $complex = new Complex($complexNumber);
-        if ($complex->getReal() == 0.0 && $complex->getImaginary() == 0.0) {
-            return Functions::DIV0();
-        }
-
-        return $complex->argument();
-    }
-
-    /**
-     * IMCONJUGATE.
-     *
-     * Returns the complex conjugate of a complex number in x + yi or x + yj text format.
-     *
-     * Excel Function:
-     *        IMCONJUGATE(complexNumber)
-     *
-     * @param string $complexNumber the complex number for which you want the conjugate
-     *
-     * @return string
-     */
-    public static function IMCONJUGATE($complexNumber)
-    {
-        $complexNumber = Functions::flattenSingleValue($complexNumber);
-
-        return (string) (new Complex($complexNumber))->conjugate();
-    }
-
-    /**
-     * IMCOS.
-     *
-     * Returns the cosine of a complex number in x + yi or x + yj text format.
-     *
-     * Excel Function:
-     *        IMCOS(complexNumber)
-     *
-     * @param string $complexNumber the complex number for which you want the cosine
-     *
-     * @return float|string
-     */
-    public static function IMCOS($complexNumber)
-    {
-        $complexNumber = Functions::flattenSingleValue($complexNumber);
-
-        return (string) (new Complex($complexNumber))->cos();
-    }
-
-    /**
-     * IMCOSH.
-     *
-     * Returns the hyperbolic cosine of a complex number in x + yi or x + yj text format.
-     *
-     * Excel Function:
-     *        IMCOSH(complexNumber)
-     *
-     * @param string $complexNumber the complex number for which you want the hyperbolic cosine
-     *
-     * @return float|string
-     */
-    public static function IMCOSH($complexNumber)
-    {
-        $complexNumber = Functions::flattenSingleValue($complexNumber);
-
-        return (string) (new Complex($complexNumber))->cosh();
-    }
-
-    /**
-     * IMCOT.
-     *
-     * Returns the cotangent of a complex number in x + yi or x + yj text format.
-     *
-     * Excel Function:
-     *        IMCOT(complexNumber)
-     *
-     * @param string $complexNumber the complex number for which you want the cotangent
-     *
-     * @return float|string
-     */
-    public static function IMCOT($complexNumber)
-    {
-        $complexNumber = Functions::flattenSingleValue($complexNumber);
-
-        return (string) (new Complex($complexNumber))->cot();
-    }
-
-    /**
-     * IMCSC.
-     *
-     * Returns the cosecant of a complex number in x + yi or x + yj text format.
-     *
-     * Excel Function:
-     *        IMCSC(complexNumber)
-     *
-     * @param string $complexNumber the complex number for which you want the cosecant
-     *
-     * @return float|string
-     */
-    public static function IMCSC($complexNumber)
-    {
-        $complexNumber = Functions::flattenSingleValue($complexNumber);
-
-        return (string) (new Complex($complexNumber))->csc();
-    }
-
-    /**
-     * IMCSCH.
-     *
-     * Returns the hyperbolic cosecant of a complex number in x + yi or x + yj text format.
-     *
-     * Excel Function:
-     *        IMCSCH(complexNumber)
-     *
-     * @param string $complexNumber the complex number for which you want the hyperbolic cosecant
-     *
-     * @return float|string
-     */
-    public static function IMCSCH($complexNumber)
-    {
-        $complexNumber = Functions::flattenSingleValue($complexNumber);
-
-        return (string) (new Complex($complexNumber))->csch();
-    }
-
-    /**
-     * IMSIN.
-     *
-     * Returns the sine of a complex number in x + yi or x + yj text format.
-     *
-     * Excel Function:
-     *        IMSIN(complexNumber)
-     *
-     * @param string $complexNumber the complex number for which you want the sine
-     *
-     * @return float|string
-     */
-    public static function IMSIN($complexNumber)
-    {
-        $complexNumber = Functions::flattenSingleValue($complexNumber);
-
-        return (string) (new Complex($complexNumber))->sin();
-    }
-
-    /**
-     * IMSINH.
-     *
-     * Returns the hyperbolic sine of a complex number in x + yi or x + yj text format.
-     *
-     * Excel Function:
-     *        IMSINH(complexNumber)
-     *
-     * @param string $complexNumber the complex number for which you want the hyperbolic sine
-     *
-     * @return float|string
-     */
-    public static function IMSINH($complexNumber)
-    {
-        $complexNumber = Functions::flattenSingleValue($complexNumber);
-
-        return (string) (new Complex($complexNumber))->sinh();
-    }
-
-    /**
-     * IMSEC.
-     *
-     * Returns the secant of a complex number in x + yi or x + yj text format.
-     *
-     * Excel Function:
-     *        IMSEC(complexNumber)
-     *
-     * @param string $complexNumber the complex number for which you want the secant
-     *
-     * @return float|string
-     */
-    public static function IMSEC($complexNumber)
-    {
-        $complexNumber = Functions::flattenSingleValue($complexNumber);
-
-        return (string) (new Complex($complexNumber))->sec();
-    }
-
-    /**
-     * IMSECH.
-     *
-     * Returns the hyperbolic secant of a complex number in x + yi or x + yj text format.
-     *
-     * Excel Function:
-     *        IMSECH(complexNumber)
-     *
-     * @param string $complexNumber the complex number for which you want the hyperbolic secant
-     *
-     * @return float|string
-     */
-    public static function IMSECH($complexNumber)
-    {
-        $complexNumber = Functions::flattenSingleValue($complexNumber);
-
-        return (string) (new Complex($complexNumber))->sech();
-    }
-
-    /**
-     * IMTAN.
-     *
-     * Returns the tangent of a complex number in x + yi or x + yj text format.
-     *
-     * Excel Function:
-     *        IMTAN(complexNumber)
-     *
-     * @param string $complexNumber the complex number for which you want the tangent
-     *
-     * @return float|string
-     */
-    public static function IMTAN($complexNumber)
-    {
-        $complexNumber = Functions::flattenSingleValue($complexNumber);
-
-        return (string) (new Complex($complexNumber))->tan();
-    }
-
-    /**
-     * IMSQRT.
-     *
-     * Returns the square root of a complex number in x + yi or x + yj text format.
-     *
-     * Excel Function:
-     *        IMSQRT(complexNumber)
-     *
-     * @param string $complexNumber the complex number for which you want the square root
-     *
-     * @return string
-     */
-    public static function IMSQRT($complexNumber)
-    {
-        $complexNumber = Functions::flattenSingleValue($complexNumber);
-
-        $theta = self::IMARGUMENT($complexNumber);
-        if ($theta === Functions::DIV0()) {
-            return '0';
-        }
-
-        return (string) (new Complex($complexNumber))->sqrt();
-    }
-
-    /**
-     * IMLN.
-     *
-     * Returns the natural logarithm of a complex number in x + yi or x + yj text format.
-     *
-     * Excel Function:
-     *        IMLN(complexNumber)
-     *
-     * @param string $complexNumber the complex number for which you want the natural logarithm
-     *
-     * @return string
-     */
-    public static function IMLN($complexNumber)
-    {
-        $complexNumber = Functions::flattenSingleValue($complexNumber);
-
-        $complex = new Complex($complexNumber);
-        if ($complex->getReal() == 0.0 && $complex->getImaginary() == 0.0) {
-            return Functions::NAN();
-        }
-
-        return (string) (new Complex($complexNumber))->ln();
-    }
-
-    /**
-     * IMLOG10.
-     *
-     * Returns the common logarithm (base 10) of a complex number in x + yi or x + yj text format.
-     *
-     * Excel Function:
-     *        IMLOG10(complexNumber)
-     *
-     * @param string $complexNumber the complex number for which you want the common logarithm
-     *
-     * @return string
-     */
-    public static function IMLOG10($complexNumber)
-    {
-        $complexNumber = Functions::flattenSingleValue($complexNumber);
-
-        $complex = new Complex($complexNumber);
-        if ($complex->getReal() == 0.0 && $complex->getImaginary() == 0.0) {
-            return Functions::NAN();
-        }
-
-        return (string) (new Complex($complexNumber))->log10();
-    }
-
-    /**
-     * IMLOG2.
-     *
-     * Returns the base-2 logarithm of a complex number in x + yi or x + yj text format.
-     *
-     * Excel Function:
-     *        IMLOG2(complexNumber)
-     *
-     * @param string $complexNumber the complex number for which you want the base-2 logarithm
-     *
-     * @return string
-     */
-    public static function IMLOG2($complexNumber)
-    {
-        $complexNumber = Functions::flattenSingleValue($complexNumber);
-
-        $complex = new Complex($complexNumber);
-        if ($complex->getReal() == 0.0 && $complex->getImaginary() == 0.0) {
-            return Functions::NAN();
-        }
-
-        return (string) (new Complex($complexNumber))->log2();
-    }
-
-    /**
-     * IMEXP.
-     *
-     * Returns the exponential of a complex number in x + yi or x + yj text format.
-     *
-     * Excel Function:
-     *        IMEXP(complexNumber)
-     *
-     * @param string $complexNumber the complex number for which you want the exponential
-     *
-     * @return string
-     */
-    public static function IMEXP($complexNumber)
-    {
-        $complexNumber = Functions::flattenSingleValue($complexNumber);
-
-        return (string) (new Complex($complexNumber))->exp();
-    }
-
-    /**
-     * IMPOWER.
-     *
-     * Returns a complex number in x + yi or x + yj text format raised to a power.
-     *
-     * Excel Function:
-     *        IMPOWER(complexNumber,realNumber)
-     *
-     * @param string $complexNumber the complex number you want to raise to a power
-     * @param float $realNumber the power to which you want to raise the complex number
-     *
-     * @return string
-     */
-    public static function IMPOWER($complexNumber, $realNumber)
-    {
-        $complexNumber = Functions::flattenSingleValue($complexNumber);
-        $realNumber = Functions::flattenSingleValue($realNumber);
-
-        if (!is_numeric($realNumber)) {
-            return Functions::VALUE();
-        }
-
-        return (string) (new Complex($complexNumber))->pow($realNumber);
-    }
-
-    /**
-     * IMDIV.
-     *
-     * Returns the quotient of two complex numbers in x + yi or x + yj text format.
-     *
-     * Excel Function:
-     *        IMDIV(complexDividend,complexDivisor)
-     *
-     * @param string $complexDividend the complex numerator or dividend
-     * @param string $complexDivisor the complex denominator or divisor
-     *
-     * @return string
-     */
-    public static function IMDIV($complexDividend, $complexDivisor)
-    {
-        $complexDividend = Functions::flattenSingleValue($complexDividend);
-        $complexDivisor = Functions::flattenSingleValue($complexDivisor);
-
-        try {
-            return (string) (new Complex($complexDividend))->divideby(new Complex($complexDivisor));
-        } catch (ComplexException $e) {
-            return Functions::NAN();
-        }
-    }
-
-    /**
-     * IMSUB.
-     *
-     * Returns the difference of two complex numbers in x + yi or x + yj text format.
-     *
-     * Excel Function:
-     *        IMSUB(complexNumber1,complexNumber2)
-     *
-     * @param string $complexNumber1 the complex number from which to subtract complexNumber2
-     * @param string $complexNumber2 the complex number to subtract from complexNumber1
-     *
-     * @return string
-     */
-    public static function IMSUB($complexNumber1, $complexNumber2)
-    {
-        $complexNumber1 = Functions::flattenSingleValue($complexNumber1);
-        $complexNumber2 = Functions::flattenSingleValue($complexNumber2);
-
-        try {
-            return (string) (new Complex($complexNumber1))->subtract(new Complex($complexNumber2));
-        } catch (ComplexException $e) {
-            return Functions::NAN();
-        }
-    }
-
-    /**
-     * IMSUM.
-     *
-     * Returns the sum of two or more complex numbers in x + yi or x + yj text format.
-     *
-     * Excel Function:
-     *        IMSUM(complexNumber[,complexNumber[,...]])
-     *
-     * @param string ...$complexNumbers Series of complex numbers to add
-     *
-     * @return string
-     */
-    public static function IMSUM(...$complexNumbers)
-    {
-        // Return value
-        $returnValue = new Complex(0.0);
-        $aArgs = Functions::flattenArray($complexNumbers);
-
-        try {
-            // Loop through the arguments
-            foreach ($aArgs as $complex) {
-                $returnValue = $returnValue->add(new Complex($complex));
-            }
-        } catch (ComplexException $e) {
-            return Functions::NAN();
-        }
-
-        return (string) $returnValue;
-    }
-
-    /**
-     * IMPRODUCT.
-     *
-     * Returns the product of two or more complex numbers in x + yi or x + yj text format.
-     *
-     * Excel Function:
-     *        IMPRODUCT(complexNumber[,complexNumber[,...]])
-     *
-     * @param string ...$complexNumbers Series of complex numbers to multiply
-     *
-     * @return string
-     */
-    public static function IMPRODUCT(...$complexNumbers)
-    {
-        // Return value
-        $returnValue = new Complex(1.0);
-        $aArgs = Functions::flattenArray($complexNumbers);
-
-        try {
-            // Loop through the arguments
-            foreach ($aArgs as $complex) {
-                $returnValue = $returnValue->multiply(new Complex($complex));
-            }
-        } catch (ComplexException $e) {
-            return Functions::NAN();
-        }
-
-        return (string) $returnValue;
-    }
-
-    /**
-     * DELTA.
-     *
-     * Tests whether two values are equal. Returns 1 if number1 = number2; returns 0 otherwise.
-     *    Use this function to filter a set of values. For example, by summing several DELTA
-     *    functions you calculate the count of equal pairs. This function is also known as the
-     * Kronecker Delta function.
-     *
-     *    Excel Function:
-     *        DELTA(a[,b])
-     *
-     * @param float $a the first number
-     * @param float $b The second number. If omitted, b is assumed to be zero.
-     *
-     * @return int
-     */
-    public static function DELTA($a, $b = 0)
-    {
-        $a = Functions::flattenSingleValue($a);
-        $b = Functions::flattenSingleValue($b);
-
-        return (int) ($a == $b);
-    }
-
-    /**
-     * GESTEP.
-     *
-     *    Excel Function:
-     *        GESTEP(number[,step])
-     *
-     *    Returns 1 if number >= step; returns 0 (zero) otherwise
-     *    Use this function to filter a set of values. For example, by summing several GESTEP
-     * functions you calculate the count of values that exceed a threshold.
-     *
-     * @param float $number the value to test against step
-     * @param float $step The threshold value.
-     *                                    If you omit a value for step, GESTEP uses zero.
-     *
-     * @return int
-     */
-    public static function GESTEP($number, $step = 0)
-    {
-        $number = Functions::flattenSingleValue($number);
-        $step = Functions::flattenSingleValue($step);
-
-        return (int) ($number >= $step);
-    }
-
-    //
-    //    Private method to calculate the erf value
-    //
-    private static $twoSqrtPi = 1.128379167095512574;
-
-    public static function erfVal($x)
-    {
-        if (abs($x) > 2.2) {
-            return 1 - self::erfcVal($x);
-        }
-        $sum = $term = $x;
-        $xsqr = ($x * $x);
-        $j = 1;
-        do {
-            $term *= $xsqr / $j;
-            $sum -= $term / (2 * $j + 1);
-            ++$j;
-            $term *= $xsqr / $j;
-            $sum += $term / (2 * $j + 1);
-            ++$j;
-            if ($sum == 0.0) {
-                break;
-            }
-        } while (abs($term / $sum) > Functions::PRECISION);
-
-        return self::$twoSqrtPi * $sum;
-    }
-
-    /**
-     * Validate arguments passed to the bitwise functions.
-     *
-     * @param mixed $value
-     *
-     * @return int
-     */
-    private static function validateBitwiseArgument($value)
-    {
-        $value = Functions::flattenSingleValue($value);
-
-        if (is_int($value)) {
-            return $value;
-        } elseif (is_numeric($value)) {
-            if ($value == (int) ($value)) {
-                $value = (int) ($value);
-                if (($value > 2 ** 48 - 1) || ($value < 0)) {
-                    throw new Exception(Functions::NAN());
-                }
-
-                return $value;
-            }
-
-            throw new Exception(Functions::NAN());
-        }
-
-        throw new Exception(Functions::VALUE());
-    }
-
-    /**
-     * BITAND.
-     *
-     * Returns the bitwise AND of two integer values.
-     *
-     * Excel Function:
-     *        BITAND(number1, number2)
-     *
-     * @param int $number1
-     * @param int $number2
-     *
-     * @return int|string
-     */
-    public static function BITAND($number1, $number2)
-    {
-        try {
-            $number1 = self::validateBitwiseArgument($number1);
-            $number2 = self::validateBitwiseArgument($number2);
-        } catch (Exception $e) {
-            return $e->getMessage();
-        }
-
-        return $number1 & $number2;
-    }
-
-    /**
-     * BITOR.
-     *
-     * Returns the bitwise OR of two integer values.
-     *
-     * Excel Function:
-     *        BITOR(number1, number2)
-     *
-     * @param int $number1
-     * @param int $number2
-     *
-     * @return int|string
-     */
-    public static function BITOR($number1, $number2)
-    {
-        try {
-            $number1 = self::validateBitwiseArgument($number1);
-            $number2 = self::validateBitwiseArgument($number2);
-        } catch (Exception $e) {
-            return $e->getMessage();
-        }
-
-        return $number1 | $number2;
-    }
-
-    /**
-     * BITXOR.
-     *
-     * Returns the bitwise XOR of two integer values.
-     *
-     * Excel Function:
-     *        BITXOR(number1, number2)
-     *
-     * @param int $number1
-     * @param int $number2
-     *
-     * @return int|string
-     */
-    public static function BITXOR($number1, $number2)
-    {
-        try {
-            $number1 = self::validateBitwiseArgument($number1);
-            $number2 = self::validateBitwiseArgument($number2);
-        } catch (Exception $e) {
-            return $e->getMessage();
-        }
-
-        return $number1 ^ $number2;
-    }
-
-    /**
-     * BITLSHIFT.
-     *
-     * Returns the number value shifted left by shift_amount bits.
-     *
-     * Excel Function:
-     *        BITLSHIFT(number, shift_amount)
-     *
-     * @param int $number
-     * @param int $shiftAmount
-     *
-     * @return int|string
-     */
-    public static function BITLSHIFT($number, $shiftAmount)
-    {
-        try {
-            $number = self::validateBitwiseArgument($number);
-        } catch (Exception $e) {
-            return $e->getMessage();
-        }
-
-        $shiftAmount = Functions::flattenSingleValue($shiftAmount);
-
-        $result = $number << $shiftAmount;
-        if ($result > 2 ** 48 - 1) {
-            return Functions::NAN();
-        }
-
-        return $result;
-    }
-
-    /**
-     * BITRSHIFT.
-     *
-     * Returns the number value shifted right by shift_amount bits.
-     *
-     * Excel Function:
-     *        BITRSHIFT(number, shift_amount)
-     *
-     * @param int $number
-     * @param int $shiftAmount
-     *
-     * @return int|string
-     */
-    public static function BITRSHIFT($number, $shiftAmount)
-    {
-        try {
-            $number = self::validateBitwiseArgument($number);
-        } catch (Exception $e) {
-            return $e->getMessage();
-        }
-
-        $shiftAmount = Functions::flattenSingleValue($shiftAmount);
-
-        return $number >> $shiftAmount;
-    }
-
-    /**
-     * ERF.
-     *
-     * Returns the error function integrated between the lower and upper bound arguments.
-     *
-     *    Note: In Excel 2007 or earlier, if you input a negative value for the upper or lower bound arguments,
-     *            the function would return a #NUM! error. However, in Excel 2010, the function algorithm was
-     *            improved, so that it can now calculate the function for both positive and negative ranges.
-     *            PhpSpreadsheet follows Excel 2010 behaviour, and accepts negative arguments.
-     *
-     *    Excel Function:
-     *        ERF(lower[,upper])
-     *
-     * @param float $lower lower bound for integrating ERF
-     * @param float $upper upper bound for integrating ERF.
-     *                                If omitted, ERF integrates between zero and lower_limit
-     *
-     * @return float|string
-     */
-    public static function ERF($lower, $upper = null)
-    {
-        $lower = Functions::flattenSingleValue($lower);
-        $upper = Functions::flattenSingleValue($upper);
-
-        if (is_numeric($lower)) {
-            if ($upper === null) {
-                return self::erfVal($lower);
-            }
-            if (is_numeric($upper)) {
-                return self::erfVal($upper) - self::erfVal($lower);
-            }
-        }
-
-        return Functions::VALUE();
-    }
-
-    /**
-     * ERFPRECISE.
-     *
-     * Returns the error function integrated between the lower and upper bound arguments.
-     *
-     *    Excel Function:
-     *        ERF.PRECISE(limit)
-     *
-     * @param float $limit bound for integrating ERF
-     *
-     * @return float|string
-     */
-    public static function ERFPRECISE($limit)
-    {
-        $limit = Functions::flattenSingleValue($limit);
-
-        return self::ERF($limit);
-    }
-
-    //
-    //    Private method to calculate the erfc value
-    //
-    private static $oneSqrtPi = 0.564189583547756287;
-
-    private static function erfcVal($x)
-    {
-        if (abs($x) < 2.2) {
-            return 1 - self::erfVal($x);
-        }
-        if ($x < 0) {
-            return 2 - self::ERFC(-$x);
-        }
-        $a = $n = 1;
-        $b = $c = $x;
-        $d = ($x * $x) + 0.5;
-        $q1 = $q2 = $b / $d;
-        $t = 0;
-        do {
-            $t = $a * $n + $b * $x;
-            $a = $b;
-            $b = $t;
-            $t = $c * $n + $d * $x;
-            $c = $d;
-            $d = $t;
-            $n += 0.5;
-            $q1 = $q2;
-            $q2 = $b / $d;
-        } while ((abs($q1 - $q2) / $q2) > Functions::PRECISION);
-
-        return self::$oneSqrtPi * exp(-$x * $x) * $q2;
-    }
-
-    /**
-     * ERFC.
-     *
-     *    Returns the complementary ERF function integrated between x and infinity
-     *
-     *    Note: In Excel 2007 or earlier, if you input a negative value for the lower bound argument,
-     *        the function would return a #NUM! error. However, in Excel 2010, the function algorithm was
-     *        improved, so that it can now calculate the function for both positive and negative x values.
-     *            PhpSpreadsheet follows Excel 2010 behaviour, and accepts nagative arguments.
-     *
-     *    Excel Function:
-     *        ERFC(x)
-     *
-     * @param float $x The lower bound for integrating ERFC
-     *
-     * @return float|string
-     */
-    public static function ERFC($x)
-    {
-        $x = Functions::flattenSingleValue($x);
-
-        if (is_numeric($x)) {
-            return self::erfcVal($x);
-        }
-
-        return Functions::VALUE();
-    }
-
-    /**
-     *    getConversionGroups
-     * Returns a list of the different conversion groups for UOM conversions.
-     *
-     * @Deprecated Use the getConversionCategories() method in the ConvertUOM class instead
-     *
-     * @return array
-     */
-    public static function getConversionGroups()
-    {
-        return Engineering\ConvertUOM::getConversionCategories();
-    }
-
-    /**
-     *    getConversionGroupUnits
-     * Returns an array of units of measure, for a specified conversion group, or for all groups.
-     *
-     * @Deprecated Use the getConversionCategoryUnits() method in the ConvertUOM class instead
-     *
-     * @param null|mixed $category
-     *
-     * @return array
-     */
-    public static function getConversionGroupUnits($category = null)
-    {
-        return Engineering\ConvertUOM::getConversionCategoryUnits($category);
-    }
-
-    /**
-     * getConversionGroupUnitDetails.
-     *
-     * @Deprecated Use the getConversionCategoryUnitDetails() method in the ConvertUOM class instead
-     *
-     * @param null|mixed $category
-     *
-     * @return array
-     */
-    public static function getConversionGroupUnitDetails($category = null)
-    {
-        return Engineering\ConvertUOM::getConversionCategoryUnitDetails($category);
-    }
-
-    /**
-     *    getConversionMultipliers
-     * Returns an array of the Multiplier prefixes that can be used with Units of Measure in CONVERTUOM().
-     *
-     * @Deprecated Use the getConversionMultipliers() method in the ConvertUOM class instead
-     *
-     * @return array of mixed
-     */
-    public static function getConversionMultipliers()
-    {
-        return Engineering\ConvertUOM::getConversionMultipliers();
-    }
-
-    /**
-     *    getBinaryConversionMultipliers
-     * Returns an array of the additional Multiplier prefixes that can be used with Information Units of Measure in CONVERTUOM().
-     *
-     * @Deprecated Use the getBinaryConversionMultipliers() method in the ConvertUOM class instead
-     *
-     * @return array of mixed
-     */
-    public static function getBinaryConversionMultipliers()
-    {
-        return Engineering\ConvertUOM::getBinaryConversionMultipliers();
-    }
-
-    /**
-     * CONVERTUOM.
-     *
-     * Converts a number from one measurement system to another.
-     *    For example, CONVERT can translate a table of distances in miles to a table of distances
-     * in kilometers.
-     *
-     *    Excel Function:
-     *        CONVERT(value,fromUOM,toUOM)
-     *
-     * @Deprecated Use the CONVERT() method in the ConvertUOM class instead
-     *
-     * @param float|int $value the value in fromUOM to convert
-     * @param string $fromUOM the units for value
-     * @param string $toUOM the units for the result
-     *
-     * @return float|string
-     */
-    public static function CONVERTUOM($value, $fromUOM, $toUOM)
-    {
-        return Engineering\ConvertUOM::CONVERT($value, $fromUOM, $toUOM);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+3lczxxWBqSzXhagRyBW=

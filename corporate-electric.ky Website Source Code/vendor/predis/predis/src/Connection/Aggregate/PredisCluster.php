@@ -1,235 +1,97 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Predis\Connection\Aggregate;
-
-use Predis\Cluster\PredisStrategy;
-use Predis\Cluster\StrategyInterface;
-use Predis\Command\CommandInterface;
-use Predis\Connection\NodeConnectionInterface;
-use Predis\NotSupportedException;
-
-/**
- * Abstraction for a cluster of aggregate connections to various Redis servers
- * implementing client-side sharding based on pluggable distribution strategies.
- *
- * @author Daniele Alessandri <suppakilla@gmail.com>
- *
- * @todo Add the ability to remove connections from pool.
- */
-class PredisCluster implements ClusterInterface, \IteratorAggregate, \Countable
-{
-    private $pool;
-    private $strategy;
-    private $distributor;
-
-    /**
-     * @param StrategyInterface $strategy Optional cluster strategy.
-     */
-    public function __construct(StrategyInterface $strategy = null)
-    {
-        $this->pool = array();
-        $this->strategy = $strategy ?: new PredisStrategy();
-        $this->distributor = $this->strategy->getDistributor();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function isConnected()
-    {
-        foreach ($this->pool as $connection) {
-            if ($connection->isConnected()) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function connect()
-    {
-        foreach ($this->pool as $connection) {
-            $connection->connect();
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function disconnect()
-    {
-        foreach ($this->pool as $connection) {
-            $connection->disconnect();
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function add(NodeConnectionInterface $connection)
-    {
-        $parameters = $connection->getParameters();
-
-        if (isset($parameters->alias)) {
-            $this->pool[$parameters->alias] = $connection;
-        } else {
-            $this->pool[] = $connection;
-        }
-
-        $weight = isset($parameters->weight) ? $parameters->weight : null;
-        $this->distributor->add($connection, $weight);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function remove(NodeConnectionInterface $connection)
-    {
-        if (($id = array_search($connection, $this->pool, true)) !== false) {
-            unset($this->pool[$id]);
-            $this->distributor->remove($connection);
-
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Removes a connection instance using its alias or index.
-     *
-     * @param string $connectionID Alias or index of a connection.
-     *
-     * @return bool Returns true if the connection was in the pool.
-     */
-    public function removeById($connectionID)
-    {
-        if ($connection = $this->getConnectionById($connectionID)) {
-            return $this->remove($connection);
-        }
-
-        return false;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getConnection(CommandInterface $command)
-    {
-        $slot = $this->strategy->getSlot($command);
-
-        if (!isset($slot)) {
-            throw new NotSupportedException(
-                "Cannot use '{$command->getId()}' over clusters of connections."
-            );
-        }
-
-        $node = $this->distributor->getBySlot($slot);
-
-        return $node;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getConnectionById($connectionID)
-    {
-        return isset($this->pool[$connectionID]) ? $this->pool[$connectionID] : null;
-    }
-
-    /**
-     * Retrieves a connection instance from the cluster using a key.
-     *
-     * @param string $key Key string.
-     *
-     * @return NodeConnectionInterface
-     */
-    public function getConnectionByKey($key)
-    {
-        $hash = $this->strategy->getSlotByKey($key);
-        $node = $this->distributor->getBySlot($hash);
-
-        return $node;
-    }
-
-    /**
-     * Returns the underlying command hash strategy used to hash commands by
-     * using keys found in their arguments.
-     *
-     * @return StrategyInterface
-     */
-    public function getClusterStrategy()
-    {
-        return $this->strategy;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function count()
-    {
-        return count($this->pool);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getIterator()
-    {
-        return new \ArrayIterator($this->pool);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function writeRequest(CommandInterface $command)
-    {
-        $this->getConnection($command)->writeRequest($command);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function readResponse(CommandInterface $command)
-    {
-        return $this->getConnection($command)->readResponse($command);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function executeCommand(CommandInterface $command)
-    {
-        return $this->getConnection($command)->executeCommand($command);
-    }
-
-    /**
-     * Executes the specified Redis command on all the nodes of a cluster.
-     *
-     * @param CommandInterface $command A Redis command.
-     *
-     * @return array
-     */
-    public function executeCommandOnNodes(CommandInterface $command)
-    {
-        $responses = array();
-
-        foreach ($this->pool as $connection) {
-            $responses[] = $connection->executeCommand($command);
-        }
-
-        return $responses;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

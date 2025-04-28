@@ -1,106 +1,77 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpKernel\Debug;
-
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\RequestStack;
-use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
-
-/**
- * Formats debug file links.
- *
- * @author Jérémy Romey <jeremy@free-agent.fr>
- *
- * @final
- */
-class FileLinkFormatter
-{
-    private $fileLinkFormat;
-    private $requestStack;
-    private $baseDir;
-    private $urlFormat;
-
-    /**
-     * @param string|\Closure $urlFormat the URL format, or a closure that returns it on-demand
-     */
-    public function __construct($fileLinkFormat = null, RequestStack $requestStack = null, string $baseDir = null, $urlFormat = null)
-    {
-        $fileLinkFormat = $fileLinkFormat ?: ini_get('xdebug.file_link_format') ?: get_cfg_var('xdebug.file_link_format');
-        if ($fileLinkFormat && !\is_array($fileLinkFormat)) {
-            $i = strpos($f = $fileLinkFormat, '&', max(strrpos($f, '%f'), strrpos($f, '%l'))) ?: \strlen($f);
-            $fileLinkFormat = [substr($f, 0, $i)] + preg_split('/&([^>]++)>/', substr($f, $i), -1, \PREG_SPLIT_DELIM_CAPTURE);
-        }
-
-        $this->fileLinkFormat = $fileLinkFormat;
-        $this->requestStack = $requestStack;
-        $this->baseDir = $baseDir;
-        $this->urlFormat = $urlFormat;
-    }
-
-    public function format(string $file, int $line)
-    {
-        if ($fmt = $this->getFileLinkFormat()) {
-            for ($i = 1; isset($fmt[$i]); ++$i) {
-                if (0 === strpos($file, $k = $fmt[$i++])) {
-                    $file = substr_replace($file, $fmt[$i], 0, \strlen($k));
-                    break;
-                }
-            }
-
-            return strtr($fmt[0], ['%f' => $file, '%l' => $line]);
-        }
-
-        return false;
-    }
-
-    /**
-     * @internal
-     */
-    public function __sleep(): array
-    {
-        $this->fileLinkFormat = $this->getFileLinkFormat();
-
-        return ['fileLinkFormat'];
-    }
-
-    /**
-     * @internal
-     */
-    public static function generateUrlFormat(UrlGeneratorInterface $router, string $routeName, string $queryString): ?string
-    {
-        try {
-            return $router->generate($routeName).$queryString;
-        } catch (\Throwable $e) {
-            return null;
-        }
-    }
-
-    private function getFileLinkFormat()
-    {
-        if ($this->fileLinkFormat) {
-            return $this->fileLinkFormat;
-        }
-
-        if ($this->requestStack && $this->baseDir && $this->urlFormat) {
-            $request = $this->requestStack->getMasterRequest();
-
-            if ($request instanceof Request && (!$this->urlFormat instanceof \Closure || $this->urlFormat = ($this->urlFormat)())) {
-                return [
-                    $request->getSchemeAndHttpHost().$this->urlFormat,
-                    $this->baseDir.\DIRECTORY_SEPARATOR, '',
-                ];
-            }
-        }
-
-        return null;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

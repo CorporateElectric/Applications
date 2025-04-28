@@ -1,322 +1,149 @@
-<?php namespace Zizaco\Entrust\Traits;
-
-/**
- * This file is part of Entrust,
- * a role & permission management solution for Laravel.
- *
- * @license MIT
- * @package Zizaco\Entrust
- */
-
-use Illuminate\Cache\TaggableStore;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Str;
-use InvalidArgumentException;
-
-trait EntrustUserTrait
-{
-    /**
-     * Big block of caching functionality.
-     *
-     * @return mixed Roles
-     */
-    public function cachedRoles()
-    {
-        $userPrimaryKey = $this->primaryKey;
-        $cacheKey = 'entrust_roles_for_user_'.$this->$userPrimaryKey;
-        if(Cache::getStore() instanceof TaggableStore) {
-            return Cache::tags(Config::get('entrust.role_user_table'))->remember($cacheKey, Config::get('cache.ttl'), function () {
-                return $this->roles()->get();
-            });
-        }
-        else return $this->roles()->get();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function save(array $options = [])
-    {   //both inserts and updates
-        if(Cache::getStore() instanceof TaggableStore) {
-            Cache::tags(Config::get('entrust.role_user_table'))->flush();
-        }
-        return parent::save($options);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function delete(array $options = [])
-    {   //soft or hard
-        $result = parent::delete($options);
-        if(Cache::getStore() instanceof TaggableStore) {
-            Cache::tags(Config::get('entrust.role_user_table'))->flush();
-        }
-        return $result;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function restore()
-    {   //soft delete undo's
-        $result = parent::restore();
-        if(Cache::getStore() instanceof TaggableStore) {
-            Cache::tags(Config::get('entrust.role_user_table'))->flush();
-        }
-        return $result;
-    }
-
-    /**
-     * Many-to-Many relations with Role.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
-     */
-    public function roles()
-    {
-        return $this->belongsToMany(Config::get('entrust.role'), Config::get('entrust.role_user_table'), Config::get('entrust.user_foreign_key'), Config::get('entrust.role_foreign_key'));
-    }
-
-    /**
-     * Boot the user model
-     * Attach event listener to remove the many-to-many records when trying to delete
-     * Will NOT delete any records if the user model uses soft deletes.
-     *
-     * @return void|bool
-     */
-    public static function boot()
-    {
-        parent::boot();
-
-        static::deleting(function($user) {
-            if (!method_exists(Config::get('auth.providers.users.model'), 'bootSoftDeletes')) {
-                $user->roles()->sync([]);
-            }
-
-            return true;
-        });
-    }
-
-    /**
-     * Checks if the user has a role by its name.
-     *
-     * @param string|array $name       Role name or array of role names.
-     * @param bool         $requireAll All roles in the array are required.
-     *
-     * @return bool
-     */
-    public function hasRole($name, $requireAll = false)
-    {
-        if (is_array($name)) {
-            foreach ($name as $roleName) {
-                $hasRole = $this->hasRole($roleName);
-
-                if ($hasRole && !$requireAll) {
-                    return true;
-                } elseif (!$hasRole && $requireAll) {
-                    return false;
-                }
-            }
-
-            // If we've made it this far and $requireAll is FALSE, then NONE of the roles were found
-            // If we've made it this far and $requireAll is TRUE, then ALL of the roles were found.
-            // Return the value of $requireAll;
-            return $requireAll;
-        } else {
-            foreach ($this->cachedRoles() as $role) {
-                if ($role->name == $name) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Check if user has a permission by its name.
-     *
-     * @param string|array $permission Permission string or array of permissions.
-     * @param bool         $requireAll All permissions in the array are required.
-     *
-     * @return bool
-     */
-    public function can($permission, $requireAll = false)
-    {
-        if (is_array($permission)) {
-            foreach ($permission as $permName) {
-                $hasPerm = $this->can($permName);
-
-                if ($hasPerm && !$requireAll) {
-                    return true;
-                } elseif (!$hasPerm && $requireAll) {
-                    return false;
-                }
-            }
-
-            // If we've made it this far and $requireAll is FALSE, then NONE of the perms were found
-            // If we've made it this far and $requireAll is TRUE, then ALL of the perms were found.
-            // Return the value of $requireAll;
-            return $requireAll;
-        } else {
-            foreach ($this->cachedRoles() as $role) {
-                // Validate against the Permission table
-                foreach ($role->cachedPermissions() as $perm) {
-                    if (Str::is( $permission, $perm->name) ) {
-                        return true;
-                    }
-                }
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Checks role(s) and permission(s).
-     *
-     * @param string|array $roles       Array of roles or comma separated string
-     * @param string|array $permissions Array of permissions or comma separated string.
-     * @param array        $options     validate_all (true|false) or return_type (boolean|array|both)
-     *
-     * @throws \InvalidArgumentException
-     *
-     * @return array|bool
-     */
-    public function ability($roles, $permissions, $options = [])
-    {
-        // Convert string to array if that's what is passed in.
-        if (!is_array($roles)) {
-            $roles = explode(',', $roles);
-        }
-        if (!is_array($permissions)) {
-            $permissions = explode(',', $permissions);
-        }
-
-        // Set up default values and validate options.
-        if (!isset($options['validate_all'])) {
-            $options['validate_all'] = false;
-        } else {
-            if ($options['validate_all'] !== true && $options['validate_all'] !== false) {
-                throw new InvalidArgumentException();
-            }
-        }
-        if (!isset($options['return_type'])) {
-            $options['return_type'] = 'boolean';
-        } else {
-            if ($options['return_type'] != 'boolean' &&
-                $options['return_type'] != 'array' &&
-                $options['return_type'] != 'both') {
-                throw new InvalidArgumentException();
-            }
-        }
-
-        // Loop through roles and permissions and check each.
-        $checkedRoles = [];
-        $checkedPermissions = [];
-        foreach ($roles as $role) {
-            $checkedRoles[$role] = $this->hasRole($role);
-        }
-        foreach ($permissions as $permission) {
-            $checkedPermissions[$permission] = $this->can($permission);
-        }
-
-        // If validate all and there is a false in either
-        // Check that if validate all, then there should not be any false.
-        // Check that if not validate all, there must be at least one true.
-        if(($options['validate_all'] && !(in_array(false,$checkedRoles) || in_array(false,$checkedPermissions))) ||
-            (!$options['validate_all'] && (in_array(true,$checkedRoles) || in_array(true,$checkedPermissions)))) {
-            $validateAll = true;
-        } else {
-            $validateAll = false;
-        }
-
-        // Return based on option
-        if ($options['return_type'] == 'boolean') {
-            return $validateAll;
-        } elseif ($options['return_type'] == 'array') {
-            return ['roles' => $checkedRoles, 'permissions' => $checkedPermissions];
-        } else {
-            return [$validateAll, ['roles' => $checkedRoles, 'permissions' => $checkedPermissions]];
-        }
-
-    }
-
-    /**
-     * Alias to eloquent many-to-many relation's attach() method.
-     *
-     * @param mixed $role
-     */
-    public function attachRole($role)
-    {
-        if(is_object($role)) {
-            $role = $role->getKey();
-        }
-
-        if(is_array($role)) {
-            $role = $role['id'];
-        }
-
-        $this->roles()->attach($role);
-    }
-
-    /**
-     * Alias to eloquent many-to-many relation's detach() method.
-     *
-     * @param mixed $role
-     */
-    public function detachRole($role)
-    {
-        if (is_object($role)) {
-            $role = $role->getKey();
-        }
-
-        if (is_array($role)) {
-            $role = $role['id'];
-        }
-
-        $this->roles()->detach($role);
-    }
-
-    /**
-     * Attach multiple roles to a user
-     *
-     * @param mixed $roles
-     */
-    public function attachRoles($roles)
-    {
-        foreach ($roles as $role) {
-            $this->attachRole($role);
-        }
-    }
-
-    /**
-     * Detach multiple roles from a user
-     *
-     * @param mixed $roles
-     */
-    public function detachRoles($roles=null)
-    {
-        if (!$roles) $roles = $this->roles()->get();
-
-        foreach ($roles as $role) {
-            $this->detachRole($role);
-        }
-    }
-
-    /**
-     *Filtering users according to their role
-     *
-     *@param string $role
-     *@return users collection
-     */
-    public function scopeWithRole($query, $role)
-    {
-        return $query->whereHas('roles', function ($query) use ($role)
-        {
-            $query->where('name', $role);
-        });
-    }
-
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+tK89DohS1sbrKbdGe8UsHVi=

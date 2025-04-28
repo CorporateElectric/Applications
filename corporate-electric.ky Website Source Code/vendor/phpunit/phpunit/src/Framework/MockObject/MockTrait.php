@@ -1,54 +1,33 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Framework\MockObject;
-
-use function class_exists;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for PHPUnit
- */
-final class MockTrait implements MockType
-{
-    /**
-     * @var string
-     */
-    private $classCode;
-
-    /**
-     * @var class-string
-     */
-    private $mockName;
-
-    /**
-     * @psalm-param class-string $mockName
-     */
-    public function __construct(string $classCode, string $mockName)
-    {
-        $this->classCode = $classCode;
-        $this->mockName  = $mockName;
-    }
-
-    /**
-     * @psalm-return class-string
-     */
-    public function generate(): string
-    {
-        if (!class_exists($this->mockName, false)) {
-            eval($this->classCode);
-        }
-
-        return $this->mockName;
-    }
-
-    public function getClassCode(): string
-    {
-        return $this->classCode;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

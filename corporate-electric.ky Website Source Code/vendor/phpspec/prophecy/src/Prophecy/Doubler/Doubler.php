@@ -1,146 +1,74 @@
-<?php
-
-/*
- * This file is part of the Prophecy.
- * (c) Konstantin Kudryashov <ever.zet@gmail.com>
- *     Marcello Duarte <marcello.duarte@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Prophecy\Doubler;
-
-use Doctrine\Instantiator\Instantiator;
-use Prophecy\Doubler\ClassPatch\ClassPatchInterface;
-use Prophecy\Doubler\Generator\ClassMirror;
-use Prophecy\Doubler\Generator\ClassCreator;
-use Prophecy\Exception\InvalidArgumentException;
-use ReflectionClass;
-
-/**
- * Cached class doubler.
- * Prevents mirroring/creation of the same structure twice.
- *
- * @author Konstantin Kudryashov <ever.zet@gmail.com>
- */
-class Doubler
-{
-    private $mirror;
-    private $creator;
-    private $namer;
-
-    /**
-     * @var ClassPatchInterface[]
-     */
-    private $patches = array();
-
-    /**
-     * @var \Doctrine\Instantiator\Instantiator
-     */
-    private $instantiator;
-
-    /**
-     * Initializes doubler.
-     *
-     * @param ClassMirror   $mirror
-     * @param ClassCreator  $creator
-     * @param NameGenerator $namer
-     */
-    public function __construct(ClassMirror $mirror = null, ClassCreator $creator = null,
-                                NameGenerator $namer = null)
-    {
-        $this->mirror  = $mirror  ?: new ClassMirror;
-        $this->creator = $creator ?: new ClassCreator;
-        $this->namer   = $namer   ?: new NameGenerator;
-    }
-
-    /**
-     * Returns list of registered class patches.
-     *
-     * @return ClassPatchInterface[]
-     */
-    public function getClassPatches()
-    {
-        return $this->patches;
-    }
-
-    /**
-     * Registers new class patch.
-     *
-     * @param ClassPatchInterface $patch
-     */
-    public function registerClassPatch(ClassPatchInterface $patch)
-    {
-        $this->patches[] = $patch;
-
-        @usort($this->patches, function (ClassPatchInterface $patch1, ClassPatchInterface $patch2) {
-            return $patch2->getPriority() - $patch1->getPriority();
-        });
-    }
-
-    /**
-     * Creates double from specific class or/and list of interfaces.
-     *
-     * @param ReflectionClass   $class
-     * @param ReflectionClass[] $interfaces Array of ReflectionClass instances
-     * @param array             $args       Constructor arguments
-     *
-     * @return DoubleInterface
-     *
-     * @throws \Prophecy\Exception\InvalidArgumentException
-     */
-    public function double(ReflectionClass $class = null, array $interfaces, array $args = null)
-    {
-        foreach ($interfaces as $interface) {
-            if (!$interface instanceof ReflectionClass) {
-                throw new InvalidArgumentException(sprintf(
-                    "[ReflectionClass \$interface1 [, ReflectionClass \$interface2]] array expected as\n".
-                    "a second argument to `Doubler::double(...)`, but got %s.",
-                    is_object($interface) ? get_class($interface).' class' : gettype($interface)
-                ));
-            }
-        }
-
-        $classname  = $this->createDoubleClass($class, $interfaces);
-        $reflection = new ReflectionClass($classname);
-
-        if (null !== $args) {
-            return $reflection->newInstanceArgs($args);
-        }
-        if ((null === $constructor = $reflection->getConstructor())
-            || ($constructor->isPublic() && !$constructor->isFinal())) {
-            return $reflection->newInstance();
-        }
-
-        if (!$this->instantiator) {
-            $this->instantiator = new Instantiator();
-        }
-
-        return $this->instantiator->instantiate($classname);
-    }
-
-    /**
-     * Creates double class and returns its FQN.
-     *
-     * @param ReflectionClass   $class
-     * @param ReflectionClass[] $interfaces
-     *
-     * @return string
-     */
-    protected function createDoubleClass(ReflectionClass $class = null, array $interfaces)
-    {
-        $name = $this->namer->name($class, $interfaces);
-        $node = $this->mirror->reflect($class, $interfaces);
-
-        foreach ($this->patches as $patch) {
-            if ($patch->supports($node)) {
-                $patch->apply($node);
-            }
-        }
-
-        $this->creator->create($name, $node);
-
-        return $name;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

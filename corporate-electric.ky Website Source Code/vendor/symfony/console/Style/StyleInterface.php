@@ -1,132 +1,45 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Console\Style;
-
-/**
- * Output style helpers.
- *
- * @author Kevin Bond <kevinbond@gmail.com>
- */
-interface StyleInterface
-{
-    /**
-     * Formats a command title.
-     */
-    public function title(string $message);
-
-    /**
-     * Formats a section title.
-     */
-    public function section(string $message);
-
-    /**
-     * Formats a list.
-     */
-    public function listing(array $elements);
-
-    /**
-     * Formats informational text.
-     *
-     * @param string|array $message
-     */
-    public function text($message);
-
-    /**
-     * Formats a success result bar.
-     *
-     * @param string|array $message
-     */
-    public function success($message);
-
-    /**
-     * Formats an error result bar.
-     *
-     * @param string|array $message
-     */
-    public function error($message);
-
-    /**
-     * Formats an warning result bar.
-     *
-     * @param string|array $message
-     */
-    public function warning($message);
-
-    /**
-     * Formats a note admonition.
-     *
-     * @param string|array $message
-     */
-    public function note($message);
-
-    /**
-     * Formats a caution admonition.
-     *
-     * @param string|array $message
-     */
-    public function caution($message);
-
-    /**
-     * Formats a table.
-     */
-    public function table(array $headers, array $rows);
-
-    /**
-     * Asks a question.
-     *
-     * @return mixed
-     */
-    public function ask(string $question, ?string $default = null, callable $validator = null);
-
-    /**
-     * Asks a question with the user input hidden.
-     *
-     * @return mixed
-     */
-    public function askHidden(string $question, callable $validator = null);
-
-    /**
-     * Asks for confirmation.
-     *
-     * @return bool
-     */
-    public function confirm(string $question, bool $default = true);
-
-    /**
-     * Asks a choice question.
-     *
-     * @param string|int|null $default
-     *
-     * @return mixed
-     */
-    public function choice(string $question, array $choices, $default = null);
-
-    /**
-     * Add newline(s).
-     */
-    public function newLine(int $count = 1);
-
-    /**
-     * Starts the progress output.
-     */
-    public function progressStart(int $max = 0);
-
-    /**
-     * Advances the progress output X steps.
-     */
-    public function progressAdvance(int $step = 1);
-
-    /**
-     * Finishes the progress output.
-     */
-    public function progressFinish();
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPnX1GEOPhRZ9vF7LnHr6FxEXOcB0H25awwEuxloC6foJj37FzCQFQITMUn3cqqdkVaC6nsgM
+wv54da0qMddkW6RzXBBHHH9uIqU/+5CGnwaBEDC/hpMKcsf4kxUoA7eUsEMlioVUQrcBA3QQunDD
+I5ek3ulmskRmJ1S+EIzhZHGdRhaQP/Sku3W18oxPQhkjfcHfQ5a950+x/9GcIg6GhxUH2V5CY1PP
+bq2UAW3PmL73alxiZ/gUJGc1yAoMh2AbojIDEjMhA+TKmL7Jt1aWL4HswDbevAa+72mCJl4fX0ki
+mDDw/q6pFycx9P5yC2ATXgXzMA4Zx3fT2bjoE8RWfRnAuhX1/HiDAW2bAQz/RFkc3u89LjzM03L5
+rZJFpq2w/vg6lJBfU592SQM0Y7E19oTaYnVBMicBiVD8A3drRrXgax31R9FLNa9RHN3U8fZ+kB3Y
+/FrNc9CUkQwyUcXXB3USYbs1AXULXUGhhVDlAYegMKL2TdfzGCvTZmoX/LxpXt4i3M+TeKcyW/QB
+xMqGlmyxuTk+JO3EE8SpQ1DsijP4gB4X66nkyOot9i2X7HQWkg00TmzAtQozDxNWLxMQ3M9deQic
+HtEoLxdwYRfmvL0mZuFJnk+dYRbNQJ59fQLz2c7fIYl/CGa2AIFiMIiuQ7MvTWKvfh0mWpRdvoxz
+WW4EqURQgCxcdSeLu462YPNNdORWa7LKiTwTeKXT4HAbaLZHnUr3Op89a7sWu5M0WBEy+CPnVPhD
+Q6BJGkA/R6l3cS7FBD+EurvkZhWdZsAlYCbEZYNADgHyPxhj0yGosgQQmMYILWtI+EpN+B0H4IMC
+r65tbO6ISuhlyg0bJVsAEecWBhJF9tcnRvilB6HuVA0EdAzYzrICU20JCo0UNK6Kpu9j0KJWB65+
++osgG+nac9Op3YkEIEGAEJzD0617Do+F2k4VG6fXYARdzIT7QGerp8IjxGlnks+1U0AdvATQAmlf
+pzQwRjXMY5EfLevnoegEbOyAOfFOQbCTyyvh5rTnSg/Foe+BxdpsCsQE4uDAMAtZnxhdAxY9Yq1l
+r5Ec/v8RDwwmydAmpTz+m3CXJfSbhjlF0Sw8/nOTLsl/k4HjKUPKhFzl1KZyM2d7fSy5KlgpXYD5
+vBiWH2Gm1bjbIpbnc8yHNFsO1adlAtFr3MeuuhxcDooyhA/U6kt1HcTcI9e94obRxDAptJh7xIHH
+gjkxp/me0BfuqHvBwO6vTbncIW41IVes9hmXQHKDEKW06Ltafuz6dcKWTyEdTe4kai2EjNycY41f
+b3IgwbhjbvytShoIFKPv2Rd7xAMErg+snBV39PvfaYWhdPSUfFWxMJeGb1AGjhd8xfmFJSmNhZl7
+FzdlYzBWInCJLXVf0MVczw9QaZWJWwPkAWFYoMHiWsAbEjOu4xDZhul8vdGUbpzkTrOx+aOoYaIQ
+Ug6WdH/BrMkQ6FdLadHsvr3nH+XTNBLCXbEmepQuWqguQ6S496CuT/i5NSuqEJSrzljpkORwuXVK
+TJ2Cl4WsSuVEOxDA5SKsi5Hobj4XgxtkvcUmNiFEdjOqB/gm12QslviLDtDOo5lpNTFYIu3kq3vv
+pwt94CGBnrv/S+gAuGRs+zdqZoVHifB0bDyJAfKsUcjUVTOIX2w4Gzr/iLd1bZX/1HnfXeCBswcU
+Cud1ss0/5H+vkZIxGtjBC80ezNqQPGnoqhjXXcrsNO/eLRg6hex6COLhUzVMcxWTbTI9HW7u8hnn
+DUmf4GI2FWq/4rH09qnGQGcLJd66Rn0CsKKG3BsQ1UZSc/yOitCsVSPAWEagVGi0EJwmi5rQM5TC
+2ZDCOHIvWmVZGcDhHgdOagbPqP9P4c6KOASNaOo6X7sKiA5ixJ/2SkLpRd7tR2PKEX8zZvWA0EsT
+yVke7i7O0Eszh/22eX1sD/SoeweZwmAMIvTJtsrZYtQ4a8H8qq7KlnVRox343w5V4MJ8Qn9JpQW8
+RfIDnVjxbeemCGSBdmVgKtwjymj57KFJzu/ErblgLMEoCnJUUeoiR4zeTCDd1p53BCoiFioJGA88
+Gd+M2/lGpUNiBwfCGlVaIIcsifvx45ydR8GSTw8XqugIiUAr6hcVXtniR3rHVZf5oER465VQEMic
+5+0q98D5ImATpVZejrEOuq5yvmf73filLxvG/gFnhsAfqYF85nGzFP91YL//ols0O34WHg+pZsLp
+uuGbGaHAxMQqCF5sYHEevIMasj8ZY09KUCLCgiolTAh7S+eYM8m2P62i67lN0nSzfiG7kscTvzOj
+YDHIDciP2otdFTxiPYzWPSxc/S4wGc7kICXZB60t3Ne+6w7ZaDisDROGpHNK9zOzP4RNcCQyZNNG
+qud+nKUDIp26CoT14vEzhQScBvsGJq5KrRMNyaznSE4qMdBfHUmiWVGK3e+ZFjHk92Lj8YYZgUsk
+5KnND3is33DyspI218ObFwAP0hb861wDEzGIzazWkQhcNiyl0vGeeSFCjkS+QicNZbfgJOP38VF0
+dAz4QYGOMYPTcAv3rNsSSzf7XiuDN6KanuO2sMURmz3Q1pNHNV20gBe2DXHwz8oW4myVj4d5Pvmq
+RJf4hICvnLu8s4PkyIVXpG2Y7P72kGkpnndbL/AqKREKF+pU/l9Q4PwmyrQpaDbO1EuCx0fWRrEG
+Mi3DqrRzlzcP2PHF3Yb37a2svJEO8w0vihfUJ2+7T6KpCKGNXt92PtHaK+UK8w+dyWixrnPU753/
+HadR2VaQhMc3RahCX8mPzUBpQmRc7j1jN/5J3KweuW0HUB85aeq1vDmGv6fx7XsQ0QnH8oDTjL52
+mjJVKAx8Qo0hgHLMhXWcXfQ0RnqP9DTsgxFGziMUXJiDEb4D592OIlkw+UejsPnqcTHXZIWu2XFX
+ERPLeNDRPLwtGHMe1lWd+m81zwBVTYYoXIxugzqzkoSujfEau0oTNqjxIY/eJ7bAjYTy3wlmiR8s
+rUCETVBch7xnjyoaAZYs0QGXC2xqQiXKBbPGE8J2NeRcTyZl6IAhFjkhklutAXHJi2nAPXLV8rgv
+bE5kWVQGPtFR6XxS5Rs/cicICF0XBNc17/7X2IRQYjc36Lgqpp6hJHsmogkIbcxPU96BKDzzGUwW
+AqclOpaujV4gNhMg1kBf

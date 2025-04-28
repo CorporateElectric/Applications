@@ -1,92 +1,42 @@
-<?php
-
-/**
- * Definition for list containers ul and ol.
- *
- * What does this do?  The big thing is to handle ol/ul at the top
- * level of list nodes, which should be handled specially by /folding/
- * them into the previous list node.  We generally shouldn't ever
- * see other disallowed elements, because the autoclose behavior
- * in MakeWellFormed handles it.
- */
-class HTMLPurifier_ChildDef_List extends HTMLPurifier_ChildDef
-{
-    /**
-     * @type string
-     */
-    public $type = 'list';
-    /**
-     * @type array
-     */
-    // lying a little bit, so that we can handle ul and ol ourselves
-    // XXX: This whole business with 'wrap' is all a bit unsatisfactory
-    public $elements = array('li' => true, 'ul' => true, 'ol' => true);
-
-    /**
-     * @param array $children
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return array
-     */
-    public function validateChildren($children, $config, $context)
-    {
-        // Flag for subclasses
-        $this->whitespace = false;
-
-        // if there are no tokens, delete parent node
-        if (empty($children)) {
-            return false;
-        }
-
-        // if li is not allowed, delete parent node
-        if (!isset($config->getHTMLDefinition()->info['li'])) {
-            trigger_error("Cannot allow ul/ol without allowing li", E_USER_WARNING);
-            return false;
-        }
-
-        // the new set of children
-        $result = array();
-
-        // a little sanity check to make sure it's not ALL whitespace
-        $all_whitespace = true;
-
-        $current_li = null;
-
-        foreach ($children as $node) {
-            if (!empty($node->is_whitespace)) {
-                $result[] = $node;
-                continue;
-            }
-            $all_whitespace = false; // phew, we're not talking about whitespace
-
-            if ($node->name === 'li') {
-                // good
-                $current_li = $node;
-                $result[] = $node;
-            } else {
-                // we want to tuck this into the previous li
-                // Invariant: we expect the node to be ol/ul
-                // ToDo: Make this more robust in the case of not ol/ul
-                // by distinguishing between existing li and li created
-                // to handle non-list elements; non-list elements should
-                // not be appended to an existing li; only li created
-                // for non-list. This distinction is not currently made.
-                if ($current_li === null) {
-                    $current_li = new HTMLPurifier_Node_Element('li');
-                    $result[] = $current_li;
-                }
-                $current_li->children[] = $node;
-                $current_li->empty = false; // XXX fascinating! Check for this error elsewhere ToDo
-            }
-        }
-        if (empty($result)) {
-            return false;
-        }
-        if ($all_whitespace) {
-            return false;
-        }
-        return $result;
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+uR+R1JXAY7P+nuwx2hj0lVi9

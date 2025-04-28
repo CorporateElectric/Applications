@@ -1,135 +1,66 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\ExecutionLoop;
-
-use Psy\Exception\ParseErrorException;
-use Psy\ParserFactory;
-use Psy\Shell;
-
-/**
- * A runkit-based code reloader, which is pretty much magic.
- */
-class RunkitReloader extends AbstractListener
-{
-    private $parser;
-    private $timestamps = [];
-
-    /**
-     * Only enabled if Runkit is installed.
-     *
-     * @return bool
-     */
-    public static function isSupported()
-    {
-        return \extension_loaded('runkit');
-    }
-
-    /**
-     * Construct a Runkit Reloader.
-     *
-     * @todo Pass in Parser Factory instance for dependency injection?
-     */
-    public function __construct()
-    {
-        $parserFactory = new ParserFactory();
-        $this->parser = $parserFactory->createParser();
-    }
-
-    /**
-     * Reload code on input.
-     *
-     * @param Shell  $shell
-     * @param string $input
-     */
-    public function onInput(Shell $shell, $input)
-    {
-        $this->reload($shell);
-    }
-
-    /**
-     * Look through included files and update anything with a new timestamp.
-     *
-     * @param Shell $shell
-     */
-    private function reload(Shell $shell)
-    {
-        \clearstatcache();
-        $modified = [];
-
-        foreach (\get_included_files() as $file) {
-            $timestamp = \filemtime($file);
-
-            if (!isset($this->timestamps[$file])) {
-                $this->timestamps[$file] = $timestamp;
-                continue;
-            }
-
-            if ($this->timestamps[$file] === $timestamp) {
-                continue;
-            }
-
-            if (!$this->lintFile($file)) {
-                $msg = \sprintf('Modified file "%s" could not be reloaded', $file);
-                $shell->writeException(new ParseErrorException($msg));
-                continue;
-            }
-
-            $modified[] = $file;
-            $this->timestamps[$file] = $timestamp;
-        }
-
-        // switch (count($modified)) {
-        //     case 0:
-        //         return;
-
-        //     case 1:
-        //         printf("Reloading modified file: \"%s\"\n", str_replace(getcwd(), '.', $file));
-        //         break;
-
-        //     default:
-        //         printf("Reloading %d modified files\n", count($modified));
-        //         break;
-        // }
-
-        foreach ($modified as $file) {
-            runkit_import($file, (
-                RUNKIT_IMPORT_FUNCTIONS |
-                RUNKIT_IMPORT_CLASSES |
-                RUNKIT_IMPORT_CLASS_METHODS |
-                RUNKIT_IMPORT_CLASS_CONSTS |
-                RUNKIT_IMPORT_CLASS_PROPS |
-                RUNKIT_IMPORT_OVERRIDE
-            ));
-        }
-    }
-
-    /**
-     * Should this file be re-imported?
-     *
-     * Use PHP-Parser to ensure that the file is valid PHP.
-     *
-     * @param string $file
-     *
-     * @return bool
-     */
-    private function lintFile($file)
-    {
-        // first try to parse it
-        try {
-            $this->parser->parse(\file_get_contents($file));
-        } catch (\Exception $e) {
-            return false;
-        }
-
-        return true;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+H2pFRxanPQnW

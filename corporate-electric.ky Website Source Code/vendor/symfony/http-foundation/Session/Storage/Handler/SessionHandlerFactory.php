@@ -1,85 +1,82 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpFoundation\Session\Storage\Handler;
-
-use Doctrine\DBAL\DriverManager;
-use Symfony\Component\Cache\Adapter\AbstractAdapter;
-use Symfony\Component\Cache\Traits\RedisClusterProxy;
-use Symfony\Component\Cache\Traits\RedisProxy;
-
-/**
- * @author Nicolas Grekas <p@tchwork.com>
- */
-class SessionHandlerFactory
-{
-    /**
-     * @param \Redis|\RedisArray|\RedisCluster|\Predis\ClientInterface|RedisProxy|RedisClusterProxy|\Memcached|\PDO|string $connection Connection or DSN
-     */
-    public static function createHandler($connection): AbstractSessionHandler
-    {
-        if (!\is_string($connection) && !\is_object($connection)) {
-            throw new \TypeError(sprintf('Argument 1 passed to "%s()" must be a string or a connection object, "%s" given.', __METHOD__, get_debug_type($connection)));
-        }
-
-        switch (true) {
-            case $connection instanceof \Redis:
-            case $connection instanceof \RedisArray:
-            case $connection instanceof \RedisCluster:
-            case $connection instanceof \Predis\ClientInterface:
-            case $connection instanceof RedisProxy:
-            case $connection instanceof RedisClusterProxy:
-                return new RedisSessionHandler($connection);
-
-            case $connection instanceof \Memcached:
-                return new MemcachedSessionHandler($connection);
-
-            case $connection instanceof \PDO:
-                return new PdoSessionHandler($connection);
-
-            case !\is_string($connection):
-                throw new \InvalidArgumentException(sprintf('Unsupported Connection: "%s".', get_debug_type($connection)));
-            case 0 === strpos($connection, 'file://'):
-                return new StrictSessionHandler(new NativeFileSessionHandler(substr($connection, 7)));
-
-            case 0 === strpos($connection, 'redis:'):
-            case 0 === strpos($connection, 'rediss:'):
-            case 0 === strpos($connection, 'memcached:'):
-                if (!class_exists(AbstractAdapter::class)) {
-                    throw new \InvalidArgumentException(sprintf('Unsupported DSN "%s". Try running "composer require symfony/cache".', $connection));
-                }
-                $handlerClass = 0 === strpos($connection, 'memcached:') ? MemcachedSessionHandler::class : RedisSessionHandler::class;
-                $connection = AbstractAdapter::createConnection($connection, ['lazy' => true]);
-
-                return new $handlerClass($connection);
-
-            case 0 === strpos($connection, 'pdo_oci://'):
-                if (!class_exists(DriverManager::class)) {
-                    throw new \InvalidArgumentException(sprintf('Unsupported DSN "%s". Try running "composer require doctrine/dbal".', $connection));
-                }
-                $connection = DriverManager::getConnection(['url' => $connection])->getWrappedConnection();
-                // no break;
-
-            case 0 === strpos($connection, 'mssql://'):
-            case 0 === strpos($connection, 'mysql://'):
-            case 0 === strpos($connection, 'mysql2://'):
-            case 0 === strpos($connection, 'pgsql://'):
-            case 0 === strpos($connection, 'postgres://'):
-            case 0 === strpos($connection, 'postgresql://'):
-            case 0 === strpos($connection, 'sqlsrv://'):
-            case 0 === strpos($connection, 'sqlite://'):
-            case 0 === strpos($connection, 'sqlite3://'):
-                return new PdoSessionHandler($connection);
-        }
-
-        throw new \InvalidArgumentException(sprintf('Unsupported Connection: "%s".', $connection));
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

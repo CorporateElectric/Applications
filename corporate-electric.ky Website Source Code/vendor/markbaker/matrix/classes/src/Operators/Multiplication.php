@@ -1,77 +1,56 @@
-<?php
-
-namespace Matrix\Operators;
-
-use Matrix\Matrix;
-use \Matrix\Builder;
-use Matrix\Exception;
-
-class Multiplication extends Operator
-{
-    /**
-     * Execute the multiplication
-     *
-     * @param mixed $value The matrix or numeric value to multiply the current base value by
-     * @throws Exception If the provided argument is not appropriate for the operation
-     * @return $this The operation object, allowing multiple multiplications to be chained
-     **/
-    public function execute($value): Operator
-    {
-        if (is_array($value)) {
-            $value = new Matrix($value);
-        }
-
-        if (is_object($value) && ($value instanceof Matrix)) {
-            return $this->multiplyMatrix($value);
-        } elseif (is_numeric($value)) {
-            return $this->multiplyScalar($value);
-        }
-
-        throw new Exception('Invalid argument for multiplication');
-    }
-
-    /**
-     * Execute the multiplication for a scalar
-     *
-     * @param mixed $value The numeric value to multiply with the current base value
-     * @return $this The operation object, allowing multiple mutiplications to be chained
-     **/
-    protected function multiplyScalar($value): Operator
-    {
-        for ($row = 0; $row < $this->rows; ++$row) {
-            for ($column = 0; $column < $this->columns; ++$column) {
-                $this->matrix[$row][$column] *= $value;
-            }
-        }
-
-        return $this;
-    }
-
-    /**
-     * Execute the multiplication for a matrix
-     *
-     * @param Matrix $value The numeric value to multiply with the current base value
-     * @return $this The operation object, allowing multiple mutiplications to be chained
-     * @throws Exception If the provided argument is not appropriate for the operation
-     **/
-    protected function multiplyMatrix(Matrix $value): Operator
-    {
-        $this->validateReflectingDimensions($value);
-
-        $newRows = $this->rows;
-        $newColumns = $value->columns;
-        $matrix = Builder::createFilledMatrix(0, $newRows, $newColumns)
-            ->toArray();
-        for ($row = 0; $row < $newRows; ++$row) {
-            for ($column = 0; $column < $newColumns; ++$column) {
-                $columnData = $value->getColumns($column + 1)->toArray();
-                foreach ($this->matrix[$row] as $key => $valueData) {
-                    $matrix[$row][$column] += $valueData * $columnData[$key][0];
-                }
-            }
-        }
-        $this->matrix = $matrix;
-
-        return $this;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

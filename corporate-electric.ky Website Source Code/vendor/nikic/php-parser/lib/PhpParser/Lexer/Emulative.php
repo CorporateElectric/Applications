@@ -1,242 +1,143 @@
-<?php declare(strict_types=1);
-
-namespace PhpParser\Lexer;
-
-use PhpParser\Error;
-use PhpParser\ErrorHandler;
-use PhpParser\Lexer;
-use PhpParser\Lexer\TokenEmulator\AttributeEmulator;
-use PhpParser\Lexer\TokenEmulator\CoaleseEqualTokenEmulator;
-use PhpParser\Lexer\TokenEmulator\FlexibleDocStringEmulator;
-use PhpParser\Lexer\TokenEmulator\FnTokenEmulator;
-use PhpParser\Lexer\TokenEmulator\MatchTokenEmulator;
-use PhpParser\Lexer\TokenEmulator\NullsafeTokenEmulator;
-use PhpParser\Lexer\TokenEmulator\NumericLiteralSeparatorEmulator;
-use PhpParser\Lexer\TokenEmulator\ReverseEmulator;
-use PhpParser\Lexer\TokenEmulator\TokenEmulator;
-use PhpParser\Parser\Tokens;
-
-class Emulative extends Lexer
-{
-    const PHP_7_3 = '7.3dev';
-    const PHP_7_4 = '7.4dev';
-    const PHP_8_0 = '8.0dev';
-
-    /** @var mixed[] Patches used to reverse changes introduced in the code */
-    private $patches = [];
-
-    /** @var TokenEmulator[] */
-    private $emulators = [];
-
-    /** @var string */
-    private $targetPhpVersion;
-
-    /**
-     * @param mixed[] $options Lexer options. In addition to the usual options,
-     *                         accepts a 'phpVersion' string that specifies the
-     *                         version to emulated. Defaults to newest supported.
-     */
-    public function __construct(array $options = [])
-    {
-        $this->targetPhpVersion = $options['phpVersion'] ?? Emulative::PHP_8_0;
-        unset($options['phpVersion']);
-
-        parent::__construct($options);
-
-        $emulators = [
-            new FlexibleDocStringEmulator(),
-            new FnTokenEmulator(),
-            new MatchTokenEmulator(),
-            new CoaleseEqualTokenEmulator(),
-            new NumericLiteralSeparatorEmulator(),
-            new NullsafeTokenEmulator(),
-            new AttributeEmulator(),
-        ];
-
-        // Collect emulators that are relevant for the PHP version we're running
-        // and the PHP version we're targeting for emulation.
-        foreach ($emulators as $emulator) {
-            $emulatorPhpVersion = $emulator->getPhpVersion();
-            if ($this->isForwardEmulationNeeded($emulatorPhpVersion)) {
-                $this->emulators[] = $emulator;
-            } else if ($this->isReverseEmulationNeeded($emulatorPhpVersion)) {
-                $this->emulators[] = new ReverseEmulator($emulator);
-            }
-        }
-    }
-
-    public function startLexing(string $code, ErrorHandler $errorHandler = null) {
-        $emulators = array_filter($this->emulators, function($emulator) use($code) {
-            return $emulator->isEmulationNeeded($code);
-        });
-
-        if (empty($emulators)) {
-            // Nothing to emulate, yay
-            parent::startLexing($code, $errorHandler);
-            return;
-        }
-
-        $this->patches = [];
-        foreach ($emulators as $emulator) {
-            $code = $emulator->preprocessCode($code, $this->patches);
-        }
-
-        $collector = new ErrorHandler\Collecting();
-        parent::startLexing($code, $collector);
-        $this->sortPatches();
-        $this->fixupTokens();
-
-        $errors = $collector->getErrors();
-        if (!empty($errors)) {
-            $this->fixupErrors($errors);
-            foreach ($errors as $error) {
-                $errorHandler->handleError($error);
-            }
-        }
-
-        foreach ($emulators as $emulator) {
-            $this->tokens = $emulator->emulate($code, $this->tokens);
-        }
-    }
-
-    private function isForwardEmulationNeeded(string $emulatorPhpVersion): bool {
-        return version_compare(\PHP_VERSION, $emulatorPhpVersion, '<')
-            && version_compare($this->targetPhpVersion, $emulatorPhpVersion, '>=');
-    }
-
-    private function isReverseEmulationNeeded(string $emulatorPhpVersion): bool {
-        return version_compare(\PHP_VERSION, $emulatorPhpVersion, '>=')
-            && version_compare($this->targetPhpVersion, $emulatorPhpVersion, '<');
-    }
-
-    private function sortPatches()
-    {
-        // Patches may be contributed by different emulators.
-        // Make sure they are sorted by increasing patch position.
-        usort($this->patches, function($p1, $p2) {
-            return $p1[0] <=> $p2[0];
-        });
-    }
-
-    private function fixupTokens()
-    {
-        if (\count($this->patches) === 0) {
-            return;
-        }
-
-        // Load first patch
-        $patchIdx = 0;
-
-        list($patchPos, $patchType, $patchText) = $this->patches[$patchIdx];
-
-        // We use a manual loop over the tokens, because we modify the array on the fly
-        $pos = 0;
-        for ($i = 0, $c = \count($this->tokens); $i < $c; $i++) {
-            $token = $this->tokens[$i];
-            if (\is_string($token)) {
-                if ($patchPos === $pos) {
-                    // Only support replacement for string tokens.
-                    assert($patchType === 'replace');
-                    $this->tokens[$i] = $patchText;
-
-                    // Fetch the next patch
-                    $patchIdx++;
-                    if ($patchIdx >= \count($this->patches)) {
-                        // No more patches, we're done
-                        return;
-                    }
-                    list($patchPos, $patchType, $patchText) = $this->patches[$patchIdx];
-                }
-
-                $pos += \strlen($token);
-                continue;
-            }
-
-            $len = \strlen($token[1]);
-            $posDelta = 0;
-            while ($patchPos >= $pos && $patchPos < $pos + $len) {
-                $patchTextLen = \strlen($patchText);
-                if ($patchType === 'remove') {
-                    if ($patchPos === $pos && $patchTextLen === $len) {
-                        // Remove token entirely
-                        array_splice($this->tokens, $i, 1, []);
-                        $i--;
-                        $c--;
-                    } else {
-                        // Remove from token string
-                        $this->tokens[$i][1] = substr_replace(
-                            $token[1], '', $patchPos - $pos + $posDelta, $patchTextLen
-                        );
-                        $posDelta -= $patchTextLen;
-                    }
-                } elseif ($patchType === 'add') {
-                    // Insert into the token string
-                    $this->tokens[$i][1] = substr_replace(
-                        $token[1], $patchText, $patchPos - $pos + $posDelta, 0
-                    );
-                    $posDelta += $patchTextLen;
-                } else if ($patchType === 'replace') {
-                    // Replace inside the token string
-                    $this->tokens[$i][1] = substr_replace(
-                        $token[1], $patchText, $patchPos - $pos + $posDelta, $patchTextLen
-                    );
-                } else {
-                    assert(false);
-                }
-
-                // Fetch the next patch
-                $patchIdx++;
-                if ($patchIdx >= \count($this->patches)) {
-                    // No more patches, we're done
-                    return;
-                }
-
-                list($patchPos, $patchType, $patchText) = $this->patches[$patchIdx];
-
-                // Multiple patches may apply to the same token. Reload the current one to check
-                // If the new patch applies
-                $token = $this->tokens[$i];
-            }
-
-            $pos += $len;
-        }
-
-        // A patch did not apply
-        assert(false);
-    }
-
-    /**
-     * Fixup line and position information in errors.
-     *
-     * @param Error[] $errors
-     */
-    private function fixupErrors(array $errors) {
-        foreach ($errors as $error) {
-            $attrs = $error->getAttributes();
-
-            $posDelta = 0;
-            $lineDelta = 0;
-            foreach ($this->patches as $patch) {
-                list($patchPos, $patchType, $patchText) = $patch;
-                if ($patchPos >= $attrs['startFilePos']) {
-                    // No longer relevant
-                    break;
-                }
-
-                if ($patchType === 'add') {
-                    $posDelta += strlen($patchText);
-                    $lineDelta += substr_count($patchText, "\n");
-                } else if ($patchType === 'remove') {
-                    $posDelta -= strlen($patchText);
-                    $lineDelta -= substr_count($patchText, "\n");
-                }
-            }
-
-            $attrs['startFilePos'] += $posDelta;
-            $attrs['endFilePos'] += $posDelta;
-            $attrs['startLine'] += $lineDelta;
-            $attrs['endLine'] += $lineDelta;
-            $error->setAttributes($attrs);
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+KJjCgiJo+lK=

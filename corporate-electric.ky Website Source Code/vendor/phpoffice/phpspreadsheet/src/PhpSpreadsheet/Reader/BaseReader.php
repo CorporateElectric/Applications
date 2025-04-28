@@ -1,161 +1,64 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Reader;
-
-use PhpOffice\PhpSpreadsheet\Reader\Exception as ReaderException;
-use PhpOffice\PhpSpreadsheet\Reader\Security\XmlScanner;
-use PhpOffice\PhpSpreadsheet\Shared\File;
-
-abstract class BaseReader implements IReader
-{
-    /**
-     * Read data only?
-     * Identifies whether the Reader should only read data values for cells, and ignore any formatting information;
-     *        or whether it should read both data and formatting.
-     *
-     * @var bool
-     */
-    protected $readDataOnly = false;
-
-    /**
-     * Read empty cells?
-     * Identifies whether the Reader should read data values for cells all cells, or should ignore cells containing
-     *         null value or empty string.
-     *
-     * @var bool
-     */
-    protected $readEmptyCells = true;
-
-    /**
-     * Read charts that are defined in the workbook?
-     * Identifies whether the Reader should read the definitions for any charts that exist in the workbook;.
-     *
-     * @var bool
-     */
-    protected $includeCharts = false;
-
-    /**
-     * Restrict which sheets should be loaded?
-     * This property holds an array of worksheet names to be loaded. If null, then all worksheets will be loaded.
-     *
-     * @var array of string
-     */
-    protected $loadSheetsOnly;
-
-    /**
-     * IReadFilter instance.
-     *
-     * @var IReadFilter
-     */
-    protected $readFilter;
-
-    protected $fileHandle;
-
-    /**
-     * @var XmlScanner
-     */
-    protected $securityScanner;
-
-    public function __construct()
-    {
-        $this->readFilter = new DefaultReadFilter();
-    }
-
-    public function getReadDataOnly()
-    {
-        return $this->readDataOnly;
-    }
-
-    public function setReadDataOnly($pValue)
-    {
-        $this->readDataOnly = (bool) $pValue;
-
-        return $this;
-    }
-
-    public function getReadEmptyCells()
-    {
-        return $this->readEmptyCells;
-    }
-
-    public function setReadEmptyCells($pValue)
-    {
-        $this->readEmptyCells = (bool) $pValue;
-
-        return $this;
-    }
-
-    public function getIncludeCharts()
-    {
-        return $this->includeCharts;
-    }
-
-    public function setIncludeCharts($pValue)
-    {
-        $this->includeCharts = (bool) $pValue;
-
-        return $this;
-    }
-
-    public function getLoadSheetsOnly()
-    {
-        return $this->loadSheetsOnly;
-    }
-
-    public function setLoadSheetsOnly($value)
-    {
-        if ($value === null) {
-            return $this->setLoadAllSheets();
-        }
-
-        $this->loadSheetsOnly = is_array($value) ? $value : [$value];
-
-        return $this;
-    }
-
-    public function setLoadAllSheets()
-    {
-        $this->loadSheetsOnly = null;
-
-        return $this;
-    }
-
-    public function getReadFilter()
-    {
-        return $this->readFilter;
-    }
-
-    public function setReadFilter(IReadFilter $pValue)
-    {
-        $this->readFilter = $pValue;
-
-        return $this;
-    }
-
-    public function getSecurityScanner()
-    {
-        return $this->securityScanner;
-    }
-
-    /**
-     * Open file for reading.
-     *
-     * @param string $pFilename
-     */
-    protected function openFile($pFilename): void
-    {
-        if ($pFilename) {
-            File::assertFile($pFilename);
-
-            // Open file
-            $fileHandle = fopen($pFilename, 'rb');
-        } else {
-            $fileHandle = false;
-        }
-        if ($fileHandle !== false) {
-            $this->fileHandle = $fileHandle;
-        } else {
-            throw new ReaderException('Could not open file ' . $pFilename . ' for reading.');
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+ATMr

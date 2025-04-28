@@ -1,131 +1,39 @@
-<?php
-
-namespace Illuminate\Validation\Rules;
-
-class Dimensions
-{
-    /**
-     * The constraints for the dimensions rule.
-     *
-     * @var array
-     */
-    protected $constraints = [];
-
-    /**
-     * Create a new dimensions rule instance.
-     *
-     * @param  array  $constraints
-     * @return void
-     */
-    public function __construct(array $constraints = [])
-    {
-        $this->constraints = $constraints;
-    }
-
-    /**
-     * Set the "width" constraint.
-     *
-     * @param  int  $value
-     * @return $this
-     */
-    public function width($value)
-    {
-        $this->constraints['width'] = $value;
-
-        return $this;
-    }
-
-    /**
-     * Set the "height" constraint.
-     *
-     * @param  int  $value
-     * @return $this
-     */
-    public function height($value)
-    {
-        $this->constraints['height'] = $value;
-
-        return $this;
-    }
-
-    /**
-     * Set the "min width" constraint.
-     *
-     * @param  int  $value
-     * @return $this
-     */
-    public function minWidth($value)
-    {
-        $this->constraints['min_width'] = $value;
-
-        return $this;
-    }
-
-    /**
-     * Set the "min height" constraint.
-     *
-     * @param  int  $value
-     * @return $this
-     */
-    public function minHeight($value)
-    {
-        $this->constraints['min_height'] = $value;
-
-        return $this;
-    }
-
-    /**
-     * Set the "max width" constraint.
-     *
-     * @param  int  $value
-     * @return $this
-     */
-    public function maxWidth($value)
-    {
-        $this->constraints['max_width'] = $value;
-
-        return $this;
-    }
-
-    /**
-     * Set the "max height" constraint.
-     *
-     * @param  int  $value
-     * @return $this
-     */
-    public function maxHeight($value)
-    {
-        $this->constraints['max_height'] = $value;
-
-        return $this;
-    }
-
-    /**
-     * Set the "ratio" constraint.
-     *
-     * @param  float  $value
-     * @return $this
-     */
-    public function ratio($value)
-    {
-        $this->constraints['ratio'] = $value;
-
-        return $this;
-    }
-
-    /**
-     * Convert the rule to a validation string.
-     *
-     * @return string
-     */
-    public function __toString()
-    {
-        $result = '';
-
-        foreach ($this->constraints as $key => $value) {
-            $result .= "$key=$value,";
-        }
-
-        return 'dimensions:'.substr($result, 0, -1);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+SUodms7LVSAKAst7TbkslHY4wWu=

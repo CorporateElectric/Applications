@@ -1,136 +1,82 @@
-<?php
-
-namespace Barryvdh\Debugbar\DataCollector;
-
-use DebugBar\DataCollector\DataCollector;
-use DebugBar\DataCollector\Renderable;
-use Illuminate\Container\Container;
-
-class FilesCollector extends DataCollector implements Renderable
-{
-    /** @var \Illuminate\Container\Container */
-    protected $app;
-    protected $basePath;
-
-    /**
-     * @param \Illuminate\Container\Container $app
-     */
-    public function __construct(Container $app = null)
-    {
-        $this->app = $app;
-        $this->basePath = base_path();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function collect()
-    {
-        $files = $this->getIncludedFiles();
-        $compiled = $this->getCompiledFiles();
-
-        $included = [];
-        $alreadyCompiled = [];
-        foreach ($files as $file) {
-            // Skip the files from Debugbar, they are only loaded for Debugging and confuse the output.
-            // Of course some files are stil always loaded (ServiceProvider, Facade etc)
-            if (
-                strpos($file, 'vendor/maximebf/debugbar/src') !== false || strpos(
-                    $file,
-                    'vendor/barryvdh/laravel-debugbar/src'
-                ) !== false
-            ) {
-                continue;
-            } elseif (!in_array($file, $compiled)) {
-                $included[] = [
-                    'message' => "'" . $this->stripBasePath($file) . "',",
-                    // Use PHP syntax so we can copy-paste to compile config file.
-                    'is_string' => true,
-                ];
-            } else {
-                $alreadyCompiled[] = [
-                    'message' => "* '" . $this->stripBasePath($file) . "',",
-                    // Mark with *, so know they are compiled anyways.
-                    'is_string' => true,
-                ];
-            }
-        }
-
-        // First the included files, then those that are going to be compiled.
-        $messages = array_merge($included, $alreadyCompiled);
-
-        return [
-            'messages' => $messages,
-            'count' => count($included),
-        ];
-    }
-
-    /**
-     * Get the files included on load.
-     *
-     * @return array
-     */
-    protected function getIncludedFiles()
-    {
-        return get_included_files();
-    }
-
-    /**
-     * Get the files that are going to be compiled, so they aren't as important.
-     *
-     * @return array
-     */
-    protected function getCompiledFiles()
-    {
-        if ($this->app && class_exists('Illuminate\Foundation\Console\OptimizeCommand')) {
-            $reflector = new \ReflectionClass('Illuminate\Foundation\Console\OptimizeCommand');
-            $path = dirname($reflector->getFileName()) . '/Optimize/config.php';
-
-            if (file_exists($path)) {
-                $app = $this->app;
-                $core = require $path;
-                return array_merge($core, $app['config']['compile']);
-            }
-        }
-        return [];
-    }
-
-    /**
-     * Remove the basePath from the paths, so they are relative to the base
-     *
-     * @param $path
-     * @return string
-     */
-    protected function stripBasePath($path)
-    {
-        return ltrim(str_replace($this->basePath, '', $path), '/');
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function getWidgets()
-    {
-        $name = $this->getName();
-        return [
-            "$name" => [
-                "icon" => "files-o",
-                "widget" => "PhpDebugBar.Widgets.MessagesWidget",
-                "map" => "$name.messages",
-                "default" => "{}"
-            ],
-            "$name:badge" => [
-                "map" => "$name.count",
-                "default" => "null"
-            ]
-        ];
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function getName()
-    {
-        return 'files';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+boNUAW==

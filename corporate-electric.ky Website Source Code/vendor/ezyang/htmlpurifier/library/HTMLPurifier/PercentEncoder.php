@@ -1,111 +1,52 @@
-<?php
-
-/**
- * Class that handles operations involving percent-encoding in URIs.
- *
- * @warning
- *      Be careful when reusing instances of PercentEncoder. The object
- *      you use for normalize() SHOULD NOT be used for encode(), or
- *      vice-versa.
- */
-class HTMLPurifier_PercentEncoder
-{
-
-    /**
-     * Reserved characters to preserve when using encode().
-     * @type array
-     */
-    protected $preserve = array();
-
-    /**
-     * String of characters that should be preserved while using encode().
-     * @param bool $preserve
-     */
-    public function __construct($preserve = false)
-    {
-        // unreserved letters, ought to const-ify
-        for ($i = 48; $i <= 57; $i++) { // digits
-            $this->preserve[$i] = true;
-        }
-        for ($i = 65; $i <= 90; $i++) { // upper-case
-            $this->preserve[$i] = true;
-        }
-        for ($i = 97; $i <= 122; $i++) { // lower-case
-            $this->preserve[$i] = true;
-        }
-        $this->preserve[45] = true; // Dash         -
-        $this->preserve[46] = true; // Period       .
-        $this->preserve[95] = true; // Underscore   _
-        $this->preserve[126]= true; // Tilde        ~
-
-        // extra letters not to escape
-        if ($preserve !== false) {
-            for ($i = 0, $c = strlen($preserve); $i < $c; $i++) {
-                $this->preserve[ord($preserve[$i])] = true;
-            }
-        }
-    }
-
-    /**
-     * Our replacement for urlencode, it encodes all non-reserved characters,
-     * as well as any extra characters that were instructed to be preserved.
-     * @note
-     *      Assumes that the string has already been normalized, making any
-     *      and all percent escape sequences valid. Percents will not be
-     *      re-escaped, regardless of their status in $preserve
-     * @param string $string String to be encoded
-     * @return string Encoded string.
-     */
-    public function encode($string)
-    {
-        $ret = '';
-        for ($i = 0, $c = strlen($string); $i < $c; $i++) {
-            if ($string[$i] !== '%' && !isset($this->preserve[$int = ord($string[$i])])) {
-                $ret .= '%' . sprintf('%02X', $int);
-            } else {
-                $ret .= $string[$i];
-            }
-        }
-        return $ret;
-    }
-
-    /**
-     * Fix up percent-encoding by decoding unreserved characters and normalizing.
-     * @warning This function is affected by $preserve, even though the
-     *          usual desired behavior is for this not to preserve those
-     *          characters. Be careful when reusing instances of PercentEncoder!
-     * @param string $string String to normalize
-     * @return string
-     */
-    public function normalize($string)
-    {
-        if ($string == '') {
-            return '';
-        }
-        $parts = explode('%', $string);
-        $ret = array_shift($parts);
-        foreach ($parts as $part) {
-            $length = strlen($part);
-            if ($length < 2) {
-                $ret .= '%25' . $part;
-                continue;
-            }
-            $encoding = substr($part, 0, 2);
-            $text     = substr($part, 2);
-            if (!ctype_xdigit($encoding)) {
-                $ret .= '%25' . $part;
-                continue;
-            }
-            $int = hexdec($encoding);
-            if (isset($this->preserve[$int])) {
-                $ret .= chr($int) . $text;
-                continue;
-            }
-            $encoding = strtoupper($encoding);
-            $ret .= '%' . $encoding . $text;
-        }
-        return $ret;
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

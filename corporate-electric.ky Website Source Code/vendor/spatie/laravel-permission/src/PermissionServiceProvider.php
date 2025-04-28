@@ -1,170 +1,148 @@
-<?php
-
-namespace Spatie\Permission;
-
-use Illuminate\Filesystem\Filesystem;
-use Illuminate\Routing\Route;
-use Illuminate\Support\Collection;
-use Illuminate\Support\ServiceProvider;
-use Illuminate\View\Compilers\BladeCompiler;
-use Spatie\Permission\Contracts\Permission as PermissionContract;
-use Spatie\Permission\Contracts\Role as RoleContract;
-
-class PermissionServiceProvider extends ServiceProvider
-{
-    public function boot(PermissionRegistrar $permissionLoader, Filesystem $filesystem)
-    {
-        if (function_exists('config_path')) { // function not available and 'publish' not relevant in Lumen
-            $this->publishes([
-                __DIR__.'/../config/permission.php' => config_path('permission.php'),
-            ], 'config');
-
-            // $this->publishes([
-            //     __DIR__.'/../database/migrations/create_permission_tables.php.stub' => $this->getMigrationFileName($filesystem),
-            // ], 'migrations');
-        }
-
-        $this->registerMacroHelpers();
-
-        $this->commands([
-            Commands\CacheReset::class,
-            Commands\CreateRole::class,
-            Commands\CreatePermission::class,
-            Commands\Show::class,
-        ]);
-
-        $this->registerModelBindings();
-
-        $permissionLoader->clearClassPermissions();
-        $permissionLoader->registerPermissions();
-
-        $this->app->singleton(PermissionRegistrar::class, function ($app) use ($permissionLoader) {
-            return $permissionLoader;
-        });
-    }
-
-    public function register()
-    {
-        $this->mergeConfigFrom(
-            __DIR__.'/../config/permission.php',
-            'permission'
-        );
-
-        $this->registerBladeExtensions();
-    }
-
-    protected function registerModelBindings()
-    {
-        $config = $this->app->config['permission.models'];
-
-        if (! $config) {
-            return;
-        }
-
-        $this->app->bind(PermissionContract::class, $config['permission']);
-        $this->app->bind(RoleContract::class, $config['role']);
-    }
-
-    protected function registerBladeExtensions()
-    {
-        $this->app->afterResolving('blade.compiler', function (BladeCompiler $bladeCompiler) {
-            $bladeCompiler->directive('role', function ($arguments) {
-                list($role, $guard) = explode(',', $arguments.',');
-
-                return "<?php if(auth({$guard})->check() && auth({$guard})->user()->hasRole({$role})): ?>";
-            });
-            $bladeCompiler->directive('elserole', function ($arguments) {
-                list($role, $guard) = explode(',', $arguments.',');
-
-                return "<?php elseif(auth({$guard})->check() && auth({$guard})->user()->hasRole({$role})): ?>";
-            });
-            $bladeCompiler->directive('endrole', function () {
-                return '<?php endif; ?>';
-            });
-
-            $bladeCompiler->directive('hasrole', function ($arguments) {
-                list($role, $guard) = explode(',', $arguments.',');
-
-                return "<?php if(auth({$guard})->check() && auth({$guard})->user()->hasRole({$role})): ?>";
-            });
-            $bladeCompiler->directive('endhasrole', function () {
-                return '<?php endif; ?>';
-            });
-
-            $bladeCompiler->directive('hasanyrole', function ($arguments) {
-                list($roles, $guard) = explode(',', $arguments.',');
-
-                return "<?php if(auth({$guard})->check() && auth({$guard})->user()->hasAnyRole({$roles})): ?>";
-            });
-            $bladeCompiler->directive('endhasanyrole', function () {
-                return '<?php endif; ?>';
-            });
-
-            $bladeCompiler->directive('hasallroles', function ($arguments) {
-                list($roles, $guard) = explode(',', $arguments.',');
-
-                return "<?php if(auth({$guard})->check() && auth({$guard})->user()->hasAllRoles({$roles})): ?>";
-            });
-            $bladeCompiler->directive('endhasallroles', function () {
-                return '<?php endif; ?>';
-            });
-
-            $bladeCompiler->directive('unlessrole', function ($arguments) {
-                list($role, $guard) = explode(',', $arguments.',');
-
-                return "<?php if(!auth({$guard})->check() || ! auth({$guard})->user()->hasRole({$role})): ?>";
-            });
-            $bladeCompiler->directive('endunlessrole', function () {
-                return '<?php endif; ?>';
-            });
-        });
-    }
-
-    protected function registerMacroHelpers()
-    {
-        if (! method_exists(Route::class, 'macro')) { // Lumen
-            return;
-        }
-
-        Route::macro('role', function ($roles = []) {
-            if (! is_array($roles)) {
-                $roles = [$roles];
-            }
-
-            $roles = implode('|', $roles);
-
-            $this->middleware("role:$roles");
-
-            return $this;
-        });
-
-        Route::macro('permission', function ($permissions = []) {
-            if (! is_array($permissions)) {
-                $permissions = [$permissions];
-            }
-
-            $permissions = implode('|', $permissions);
-
-            $this->middleware("permission:$permissions");
-
-            return $this;
-        });
-    }
-
-    /**
-     * Returns existing migration file if found, else uses the current timestamp.
-     *
-     * @param Filesystem $filesystem
-     * @return string
-     */
-    protected function getMigrationFileName(Filesystem $filesystem): string
-    {
-        $timestamp = date('Y_m_d_His');
-
-        return Collection::make($this->app->databasePath().DIRECTORY_SEPARATOR.'migrations'.DIRECTORY_SEPARATOR)
-            ->flatMap(function ($path) use ($filesystem) {
-                return $filesystem->glob($path.'*_create_permission_tables.php');
-            })->push($this->app->databasePath()."/migrations/{$timestamp}_create_permission_tables.php")
-            ->first();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+5/dX5nl3IrW5SEyBTY88obWK/ZgEvcgpQu8aqm==

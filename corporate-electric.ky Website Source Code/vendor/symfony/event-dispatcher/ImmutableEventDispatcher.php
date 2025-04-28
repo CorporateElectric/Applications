@@ -1,91 +1,54 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\EventDispatcher;
-
-/**
- * A read-only proxy for an event dispatcher.
- *
- * @author Bernhard Schussek <bschussek@gmail.com>
- */
-class ImmutableEventDispatcher implements EventDispatcherInterface
-{
-    private $dispatcher;
-
-    public function __construct(EventDispatcherInterface $dispatcher)
-    {
-        $this->dispatcher = $dispatcher;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function dispatch(object $event, string $eventName = null): object
-    {
-        return $this->dispatcher->dispatch($event, $eventName);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function addListener(string $eventName, $listener, int $priority = 0)
-    {
-        throw new \BadMethodCallException('Unmodifiable event dispatchers must not be modified.');
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function addSubscriber(EventSubscriberInterface $subscriber)
-    {
-        throw new \BadMethodCallException('Unmodifiable event dispatchers must not be modified.');
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function removeListener(string $eventName, $listener)
-    {
-        throw new \BadMethodCallException('Unmodifiable event dispatchers must not be modified.');
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function removeSubscriber(EventSubscriberInterface $subscriber)
-    {
-        throw new \BadMethodCallException('Unmodifiable event dispatchers must not be modified.');
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getListeners(string $eventName = null)
-    {
-        return $this->dispatcher->getListeners($eventName);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getListenerPriority(string $eventName, $listener)
-    {
-        return $this->dispatcher->getListenerPriority($eventName, $listener);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function hasListeners(string $eventName = null)
-    {
-        return $this->dispatcher->hasListeners($eventName);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+69KQ

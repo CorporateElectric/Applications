@@ -1,356 +1,112 @@
-<?php
-
-/**
- * Injector that auto paragraphs text in the root node based on
- * double-spacing.
- * @todo Ensure all states are unit tested, including variations as well.
- * @todo Make a graph of the flow control for this Injector.
- */
-class HTMLPurifier_Injector_AutoParagraph extends HTMLPurifier_Injector
-{
-    /**
-     * @type string
-     */
-    public $name = 'AutoParagraph';
-
-    /**
-     * @type array
-     */
-    public $needed = array('p');
-
-    /**
-     * @return HTMLPurifier_Token_Start
-     */
-    private function _pStart()
-    {
-        $par = new HTMLPurifier_Token_Start('p');
-        $par->armor['MakeWellFormed_TagClosedError'] = true;
-        return $par;
-    }
-
-    /**
-     * @param HTMLPurifier_Token_Text $token
-     */
-    public function handleText(&$token)
-    {
-        $text = $token->data;
-        // Does the current parent allow <p> tags?
-        if ($this->allowsElement('p')) {
-            if (empty($this->currentNesting) || strpos($text, "\n\n") !== false) {
-                // Note that we have differing behavior when dealing with text
-                // in the anonymous root node, or a node inside the document.
-                // If the text as a double-newline, the treatment is the same;
-                // if it doesn't, see the next if-block if you're in the document.
-
-                $i = $nesting = null;
-                if (!$this->forwardUntilEndToken($i, $current, $nesting) && $token->is_whitespace) {
-                    // State 1.1: ...    ^ (whitespace, then document end)
-                    //               ----
-                    // This is a degenerate case
-                } else {
-                    if (!$token->is_whitespace || $this->_isInline($current)) {
-                        // State 1.2: PAR1
-                        //            ----
-
-                        // State 1.3: PAR1\n\nPAR2
-                        //            ------------
-
-                        // State 1.4: <div>PAR1\n\nPAR2 (see State 2)
-                        //                 ------------
-                        $token = array($this->_pStart());
-                        $this->_splitText($text, $token);
-                    } else {
-                        // State 1.5: \n<hr />
-                        //            --
-                    }
-                }
-            } else {
-                // State 2:   <div>PAR1... (similar to 1.4)
-                //                 ----
-
-                // We're in an element that allows paragraph tags, but we're not
-                // sure if we're going to need them.
-                if ($this->_pLookAhead()) {
-                    // State 2.1: <div>PAR1<b>PAR1\n\nPAR2
-                    //                 ----
-                    // Note: This will always be the first child, since any
-                    // previous inline element would have triggered this very
-                    // same routine, and found the double newline. One possible
-                    // exception would be a comment.
-                    $token = array($this->_pStart(), $token);
-                } else {
-                    // State 2.2.1: <div>PAR1<div>
-                    //                   ----
-
-                    // State 2.2.2: <div>PAR1<b>PAR1</b></div>
-                    //                   ----
-                }
-            }
-            // Is the current parent a <p> tag?
-        } elseif (!empty($this->currentNesting) &&
-            $this->currentNesting[count($this->currentNesting) - 1]->name == 'p') {
-            // State 3.1: ...<p>PAR1
-            //                  ----
-
-            // State 3.2: ...<p>PAR1\n\nPAR2
-            //                  ------------
-            $token = array();
-            $this->_splitText($text, $token);
-            // Abort!
-        } else {
-            // State 4.1: ...<b>PAR1
-            //                  ----
-
-            // State 4.2: ...<b>PAR1\n\nPAR2
-            //                  ------------
-        }
-    }
-
-    /**
-     * @param HTMLPurifier_Token $token
-     */
-    public function handleElement(&$token)
-    {
-        // We don't have to check if we're already in a <p> tag for block
-        // tokens, because the tag would have been autoclosed by MakeWellFormed.
-        if ($this->allowsElement('p')) {
-            if (!empty($this->currentNesting)) {
-                if ($this->_isInline($token)) {
-                    // State 1: <div>...<b>
-                    //                  ---
-                    // Check if this token is adjacent to the parent token
-                    // (seek backwards until token isn't whitespace)
-                    $i = null;
-                    $this->backward($i, $prev);
-
-                    if (!$prev instanceof HTMLPurifier_Token_Start) {
-                        // Token wasn't adjacent
-                        if ($prev instanceof HTMLPurifier_Token_Text &&
-                            substr($prev->data, -2) === "\n\n"
-                        ) {
-                            // State 1.1.4: <div><p>PAR1</p>\n\n<b>
-                            //                                  ---
-                            // Quite frankly, this should be handled by splitText
-                            $token = array($this->_pStart(), $token);
-                        } else {
-                            // State 1.1.1: <div><p>PAR1</p><b>
-                            //                              ---
-                            // State 1.1.2: <div><br /><b>
-                            //                         ---
-                            // State 1.1.3: <div>PAR<b>
-                            //                      ---
-                        }
-                    } else {
-                        // State 1.2.1: <div><b>
-                        //                   ---
-                        // Lookahead to see if <p> is needed.
-                        if ($this->_pLookAhead()) {
-                            // State 1.3.1: <div><b>PAR1\n\nPAR2
-                            //                   ---
-                            $token = array($this->_pStart(), $token);
-                        } else {
-                            // State 1.3.2: <div><b>PAR1</b></div>
-                            //                   ---
-
-                            // State 1.3.3: <div><b>PAR1</b><div></div>\n\n</div>
-                            //                   ---
-                        }
-                    }
-                } else {
-                    // State 2.3: ...<div>
-                    //               -----
-                }
-            } else {
-                if ($this->_isInline($token)) {
-                    // State 3.1: <b>
-                    //            ---
-                    // This is where the {p} tag is inserted, not reflected in
-                    // inputTokens yet, however.
-                    $token = array($this->_pStart(), $token);
-                } else {
-                    // State 3.2: <div>
-                    //            -----
-                }
-
-                $i = null;
-                if ($this->backward($i, $prev)) {
-                    if (!$prev instanceof HTMLPurifier_Token_Text) {
-                        // State 3.1.1: ...</p>{p}<b>
-                        //                        ---
-                        // State 3.2.1: ...</p><div>
-                        //                     -----
-                        if (!is_array($token)) {
-                            $token = array($token);
-                        }
-                        array_unshift($token, new HTMLPurifier_Token_Text("\n\n"));
-                    } else {
-                        // State 3.1.2: ...</p>\n\n{p}<b>
-                        //                            ---
-                        // State 3.2.2: ...</p>\n\n<div>
-                        //                         -----
-                        // Note: PAR<ELEM> cannot occur because PAR would have been
-                        // wrapped in <p> tags.
-                    }
-                }
-            }
-        } else {
-            // State 2.2: <ul><li>
-            //                ----
-            // State 2.4: <p><b>
-            //               ---
-        }
-    }
-
-    /**
-     * Splits up a text in paragraph tokens and appends them
-     * to the result stream that will replace the original
-     * @param string $data String text data that will be processed
-     *    into paragraphs
-     * @param HTMLPurifier_Token[] $result Reference to array of tokens that the
-     *    tags will be appended onto
-     */
-    private function _splitText($data, &$result)
-    {
-        $raw_paragraphs = explode("\n\n", $data);
-        $paragraphs = array(); // without empty paragraphs
-        $needs_start = false;
-        $needs_end = false;
-
-        $c = count($raw_paragraphs);
-        if ($c == 1) {
-            // There were no double-newlines, abort quickly. In theory this
-            // should never happen.
-            $result[] = new HTMLPurifier_Token_Text($data);
-            return;
-        }
-        for ($i = 0; $i < $c; $i++) {
-            $par = $raw_paragraphs[$i];
-            if (trim($par) !== '') {
-                $paragraphs[] = $par;
-            } else {
-                if ($i == 0) {
-                    // Double newline at the front
-                    if (empty($result)) {
-                        // The empty result indicates that the AutoParagraph
-                        // injector did not add any start paragraph tokens.
-                        // This means that we have been in a paragraph for
-                        // a while, and the newline means we should start a new one.
-                        $result[] = new HTMLPurifier_Token_End('p');
-                        $result[] = new HTMLPurifier_Token_Text("\n\n");
-                        // However, the start token should only be added if
-                        // there is more processing to be done (i.e. there are
-                        // real paragraphs in here). If there are none, the
-                        // next start paragraph tag will be handled by the
-                        // next call to the injector
-                        $needs_start = true;
-                    } else {
-                        // We just started a new paragraph!
-                        // Reinstate a double-newline for presentation's sake, since
-                        // it was in the source code.
-                        array_unshift($result, new HTMLPurifier_Token_Text("\n\n"));
-                    }
-                } elseif ($i + 1 == $c) {
-                    // Double newline at the end
-                    // There should be a trailing </p> when we're finally done.
-                    $needs_end = true;
-                }
-            }
-        }
-
-        // Check if this was just a giant blob of whitespace. Move this earlier,
-        // perhaps?
-        if (empty($paragraphs)) {
-            return;
-        }
-
-        // Add the start tag indicated by \n\n at the beginning of $data
-        if ($needs_start) {
-            $result[] = $this->_pStart();
-        }
-
-        // Append the paragraphs onto the result
-        foreach ($paragraphs as $par) {
-            $result[] = new HTMLPurifier_Token_Text($par);
-            $result[] = new HTMLPurifier_Token_End('p');
-            $result[] = new HTMLPurifier_Token_Text("\n\n");
-            $result[] = $this->_pStart();
-        }
-
-        // Remove trailing start token; Injector will handle this later if
-        // it was indeed needed. This prevents from needing to do a lookahead,
-        // at the cost of a lookbehind later.
-        array_pop($result);
-
-        // If there is no need for an end tag, remove all of it and let
-        // MakeWellFormed close it later.
-        if (!$needs_end) {
-            array_pop($result); // removes \n\n
-            array_pop($result); // removes </p>
-        }
-    }
-
-    /**
-     * Returns true if passed token is inline (and, ergo, allowed in
-     * paragraph tags)
-     * @param HTMLPurifier_Token $token
-     * @return bool
-     */
-    private function _isInline($token)
-    {
-        return isset($this->htmlDefinition->info['p']->child->elements[$token->name]);
-    }
-
-    /**
-     * Looks ahead in the token list and determines whether or not we need
-     * to insert a <p> tag.
-     * @return bool
-     */
-    private function _pLookAhead()
-    {
-        if ($this->currentToken instanceof HTMLPurifier_Token_Start) {
-            $nesting = 1;
-        } else {
-            $nesting = 0;
-        }
-        $ok = false;
-        $i = null;
-        while ($this->forwardUntilEndToken($i, $current, $nesting)) {
-            $result = $this->_checkNeedsP($current);
-            if ($result !== null) {
-                $ok = $result;
-                break;
-            }
-        }
-        return $ok;
-    }
-
-    /**
-     * Determines if a particular token requires an earlier inline token
-     * to get a paragraph. This should be used with _forwardUntilEndToken
-     * @param HTMLPurifier_Token $current
-     * @return bool
-     */
-    private function _checkNeedsP($current)
-    {
-        if ($current instanceof HTMLPurifier_Token_Start) {
-            if (!$this->_isInline($current)) {
-                // <div>PAR1<div>
-                //      ----
-                // Terminate early, since we hit a block element
-                return false;
-            }
-        } elseif ($current instanceof HTMLPurifier_Token_Text) {
-            if (strpos($current->data, "\n\n") !== false) {
-                // <div>PAR1<b>PAR1\n\nPAR2
-                //      ----
-                return true;
-            } else {
-                // <div>PAR1<b>PAR1...
-                //      ----
-            }
-        }
-        return null;
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

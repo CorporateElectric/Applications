@@ -1,111 +1,52 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Finder;
-
-/**
- * Glob matches globbing patterns against text.
- *
- *     if match_glob("foo.*", "foo.bar") echo "matched\n";
- *
- *     // prints foo.bar and foo.baz
- *     $regex = glob_to_regex("foo.*");
- *     for (['foo.bar', 'foo.baz', 'foo', 'bar'] as $t)
- *     {
- *         if (/$regex/) echo "matched: $car\n";
- *     }
- *
- * Glob implements glob(3) style matching that can be used to match
- * against text, rather than fetching names from a filesystem.
- *
- * Based on the Perl Text::Glob module.
- *
- * @author Fabien Potencier <fabien@symfony.com> PHP port
- * @author     Richard Clamp <richardc@unixbeard.net> Perl version
- * @copyright  2004-2005 Fabien Potencier <fabien@symfony.com>
- * @copyright  2002 Richard Clamp <richardc@unixbeard.net>
- */
-class Glob
-{
-    /**
-     * Returns a regexp which is the equivalent of the glob pattern.
-     *
-     * @return string
-     */
-    public static function toRegex(string $glob, bool $strictLeadingDot = true, bool $strictWildcardSlash = true, string $delimiter = '#')
-    {
-        $firstByte = true;
-        $escaping = false;
-        $inCurlies = 0;
-        $regex = '';
-        $sizeGlob = \strlen($glob);
-        for ($i = 0; $i < $sizeGlob; ++$i) {
-            $car = $glob[$i];
-            if ($firstByte && $strictLeadingDot && '.' !== $car) {
-                $regex .= '(?=[^\.])';
-            }
-
-            $firstByte = '/' === $car;
-
-            if ($firstByte && $strictWildcardSlash && isset($glob[$i + 2]) && '**' === $glob[$i + 1].$glob[$i + 2] && (!isset($glob[$i + 3]) || '/' === $glob[$i + 3])) {
-                $car = '[^/]++/';
-                if (!isset($glob[$i + 3])) {
-                    $car .= '?';
-                }
-
-                if ($strictLeadingDot) {
-                    $car = '(?=[^\.])'.$car;
-                }
-
-                $car = '/(?:'.$car.')*';
-                $i += 2 + isset($glob[$i + 3]);
-
-                if ('/' === $delimiter) {
-                    $car = str_replace('/', '\\/', $car);
-                }
-            }
-
-            if ($delimiter === $car || '.' === $car || '(' === $car || ')' === $car || '|' === $car || '+' === $car || '^' === $car || '$' === $car) {
-                $regex .= "\\$car";
-            } elseif ('*' === $car) {
-                $regex .= $escaping ? '\\*' : ($strictWildcardSlash ? '[^/]*' : '.*');
-            } elseif ('?' === $car) {
-                $regex .= $escaping ? '\\?' : ($strictWildcardSlash ? '[^/]' : '.');
-            } elseif ('{' === $car) {
-                $regex .= $escaping ? '\\{' : '(';
-                if (!$escaping) {
-                    ++$inCurlies;
-                }
-            } elseif ('}' === $car && $inCurlies) {
-                $regex .= $escaping ? '}' : ')';
-                if (!$escaping) {
-                    --$inCurlies;
-                }
-            } elseif (',' === $car && $inCurlies) {
-                $regex .= $escaping ? ',' : '|';
-            } elseif ('\\' === $car) {
-                if ($escaping) {
-                    $regex .= '\\\\';
-                    $escaping = false;
-                } else {
-                    $escaping = true;
-                }
-
-                continue;
-            } else {
-                $regex .= $car;
-            }
-            $escaping = false;
-        }
-
-        return $delimiter.'^'.$regex.'$'.$delimiter;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPqKcarXO2sYV9PS6UmB+VE2T2elEsLXafz5y/w3EZEq7DC36s6m+c353u7Hw6eQLsq7cBOTG
+JWeBFdDXqieC/0JNCGOQkdKpgF3WbXK26X/FY73WRiHT5PIVBGIySDtN7O6t2gI/o4MI6cmP4lgT
+l2c8soemR/W8K7Z05ENGsFJvGKhfsV8D8Y0MKAL1lmqnhbV4yi4mTRCxhbaPVOAi0Ka0a5iiCvic
+F/N4gxkQYqeZCXB705xxfybyqhyYIJiQXkuJHphLgoldLC5HqzmP85H4TkWAO+OWKSDyMXxV2VUh
+iTuKS8z80T4WSq+nO4U1+A8IG9WUJDUUyXYMjiiSx+j869L+PPtxuXJ0hgkqYexYMWpZt2dG6cf2
+2dpe6k+2yuXuqgsMIgyQN09T4A/7xzJPw4rGP5UxssHofGWBLfUdaSsU0v6QjuK/GXelGz4XNIRl
+CQ2VbMZeylD0f0Mx+OXq4CqclJ7tvKAbb+Uu7x+/15zcUP3W1pyV37UjQoPJVesBqI62E5ANePzL
+HB2IEfRJdlS7GYHzGhNkbc/VtzfajqHiXERDByxCjrPs5GlCD3fobcfeLSA7Ot8lJ3SV9wkIx8c7
+RY+NfEhWNTacuWYtAnTeL/8sz/lRxBtBUNI/uearVuZMWXd2FQ0x/yF3S1pOT+y+NsyR5B149r6U
+xSI+sC7DNmkkVFK2j+NgSi+Z5E8mDkjD+ApIs73Rw4Z9mpLIps7KOqY7oYbtWSgOrrkEgpaQvfxz
+PWE3j8Zjq+WvGqTEVNGUwES7gLOpCMGu10GjnHplZLp58rgOspfUKQIqOU7wR/V8wscpGWi4/zUO
+2mog7Q1VmFrwQpTTNie4m+z8xgcn9Il/EFgrIZOxszl/Pb3daoR9GS2PNE/O+YYcvfPxGffUsNBK
+uLAnfDpknEDgJGqT6/ymTQOKlzFoqCM53PQe+zg9dhHl4PpqWQ3GymJwVdMHrdDiKt1eTLuot1wV
+ETBexw5H9s4kv3xLga5puKkylgpEg9rF4JNrHkAvyexx2hHUgoRISsVgeZMjTG4h7CEctUjCdIyZ
+jMpage289z7F9c1TWtxajnZc7rdN4oWCCLVB/hsqBMCUTj6Cqdlnlwh3wH/c5EGlhKej0+0Tu+D1
+7w5TXorRh68+DO5qgRE8JZiWK5yhyLQoY9uPCDftZEIKCDJjlx7X/1zpdd8iSqdVXIYz7rCMhyTt
+EZOvJe2KtX5OCRNG/TLOL4YNk/wVHXog5SIEvsLvmCYnm0urzqm8npaosU7VWND7BLLjfc4ddiCT
+AUziQtQdLQz+ukRztvbDG5NRQgblNc3F4bY3/ltGPW0qrpZhGleCR51UDSAQXGgS8Q5gX+Z0a9OA
+ZLgR7X3X9E++g6e7W75e8NkQzkmFmvVqFxvUOz8d8+ovbePCDHyKMIpIHTW5ZV6/aeZ7gSB/BoTl
+jLlSe0b1O2SU4nBKYl20gh/zxP5oWpiqCfqhsQStlbDqGrIUq8vXiZjE3C2sRmGnXAkef9jhLcHm
+m9vhIT6E0ig3jDQd0riS6BNy9iMYnJNcovFa1sZPqNW+h9okm42v2es2VGoCU+ZUOjkUVAyG8FUO
+V6IzT2rd6DuKD9KtJplSYWInR/+2AlM+2UaShsklNUgKkGLQ/GtYtFzgSc3kowr8EJtd/KYUxwDo
+GmbUH3LY6YmKynod/FEyJ081brleQKJ4IE6PlLnsHL+jK32X3vhrx962wJkx0g/KmHbHkPryYmE7
+3lNdpo86NldqJAnJqUYQYiYSGPcNxWwpnoj28tFr9z2Fin3GwOY41VBP8WYgYfBDw/Bmc+LmUZvd
+ncsYUVckMBp2jVAeBNWx7H2mBbUUTFJ8SHWi05r8l/WfmqrdZ6NUNsYQy2pu9FwHXDNCBuw+/WFI
+YN5FSZF3u4VtfREwG72/1PTGvUuWADIucxOb/hzf2kCLOfria/GzDufGr9fkvmZkUnQeQYMi+czn
+x9kjVScoH1MPViJKtoc9yZZGepSFyEGZKvlKSnR10k4G1cSuHKP1/lHhOxBg85+O3YdQG7kpcWPO
+4wl6cWbF9QkmKyvAjS0o1OhkQ6kvE8YBAcCOCxy3DbbIm9eXC6gJbngifo6AUfXY9T8TAYe9MOuw
+9qGmVGupARQly/Ww2eDNdKuwB8PACsS95s5iy5fQICbiu5ONjyP7LPHmWEtdPchSWJaS12sl2qZZ
+uWwcnTE061k3mO9PmZEdZ/wzbwVWNvzVrnN0r6H2yBTRnWgDY7htBoNRVa23Fc3WyA1yyTi/OitS
+HZa+GKc9U9gHQmRmvu+f3hoJla/ZJWy2yRXVxT53wGQT3PadrieSuhJrwQ2dmNLBaB5ZELrB0JHn
+RUrVxXYdn4UGdkNlyTaIJTbUnszUIyuWzsvpSONRhcUA1t4gg9QprSHtCHiHBN9bDKW/ffZvRzbG
+pmBh9Wfa57G7vZDuZrD8aaAS7echvCaDpan/dX3HhsxZHY1JELBmegp6MMuwfI4pw9nyESkWmHgs
+DR6lxWjaqmCY1KHQG4ZCgZPfNO3hTkG6mcl5aoe7ZHFbZ0/U33Ree9pnOclop5HeWzOI7xGGjDdz
+5yQ+waC0FK+m8VS1Bf/PUExq8a/lBv2lDfMFtUmYsJyPajEknbWzzvVt6I8tvan9gRHpdUFiz+iK
+0tZLnD604pu/JQYTEJiJUSvMLToMyIIlil0AEJhtLnUkGFq3AdC/A8V+NxWgu6A1RY//mYQU3ttn
+osf416Xo3R7M4pbjfoaczmr0NSTB4LZydJZ8I02FujF9nhY21a06NPviTC4GiXxfgRZNoFTndlnT
+5HaHJ096cardX92e/pUAorQwY30GYINQZ7om1jHeQKoMxpQwDXC94+D2YqCW5yT90ySBdORKZ0YZ
+6hZ2Xw51cKzN6+OTQfG3bF56hmUSMwOfIKz3nyhw2SCPAD4e3eQOpMi4P1GT1b5Gs9wRzy/d+5fB
+DZiA+ZwPRQZ1xKGMqMlW7BpAYAVPKS8R/XjlI49YsU/r3JlLC+zH+J9hMTJyPF2M0/m135iuwvZp
+fWG16KmvkvxJ4cEEILsalF1PfFwbEyMUlkF+xajeLpiaY1vY/aMGzM3UAENDVAockgxGmooVS7pJ
+qZCsaous7jaZCUpofUeYhg+PeNOpI/KbHU+y0fBct0lrDxRRqRurCO6rRebx2IA4Q5Kv5gS+G7LZ
+qDEhGxu1441allAxif/Yo/oOOwkEmnePNrq7x+i8SQYCNn7lpDokDg3COty/QEFyRZ76uRaZSd6E
+vcyi14aZ99R1DD7zyDvEpS2fKUsM2HwuLX4Rdt+2IxE0yKgpbYV3woaoQ4FJtooCvb5DLRWxZ3fW
+HvnCUvFmatV+ASpPwmQDXOMi20L4VNYhwit1cY0kld3uhAHvcVv2K4bTEmThEuoDINABgd6dtk/r
+EoBM+lah6xeRBccrnaT5GxxaA2S1+4NtXz1L5btIU4zKeli6IL6IVz6Ijxkhta9eipq+A2VPIcWT
+zbOCOJiGpuiJb9isOv6tISJMFd1J2ou7GNivPX1CQmshd1Cp9rZuDONpqrbnR9NGSX0HBrVq5gho
+khwR9WBWYubqfgoOZyYtYgIlE9qNKf0XLTXRf5Xz1eTL4Nh79SQmA+a2ckw+JGLkIJWuf6TG17kr
+xLJF1ZKixd7nmwTylNBicBgjl/NTwYIoBFGJKG==

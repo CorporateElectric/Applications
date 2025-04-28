@@ -1,263 +1,103 @@
-<?php
-
-namespace Illuminate\Support\Facades;
-
-use Closure;
-use Mockery;
-use Mockery\MockInterface;
-use RuntimeException;
-
-abstract class Facade
-{
-    /**
-     * The application instance being facaded.
-     *
-     * @var \Illuminate\Contracts\Foundation\Application
-     */
-    protected static $app;
-
-    /**
-     * The resolved object instances.
-     *
-     * @var array
-     */
-    protected static $resolvedInstance;
-
-    /**
-     * Run a Closure when the facade has been resolved.
-     *
-     * @param  \Closure  $callback
-     * @return void
-     */
-    public static function resolved(Closure $callback)
-    {
-        $accessor = static::getFacadeAccessor();
-
-        if (static::$app->resolved($accessor) === true) {
-            $callback(static::getFacadeRoot());
-        }
-
-        static::$app->afterResolving($accessor, function ($service) use ($callback) {
-            $callback($service);
-        });
-    }
-
-    /**
-     * Convert the facade into a Mockery spy.
-     *
-     * @return \Mockery\MockInterface
-     */
-    public static function spy()
-    {
-        if (! static::isMock()) {
-            $class = static::getMockableClass();
-
-            return tap($class ? Mockery::spy($class) : Mockery::spy(), function ($spy) {
-                static::swap($spy);
-            });
-        }
-    }
-
-    /**
-     * Initiate a partial mock on the facade.
-     *
-     * @return \Mockery\MockInterface
-     */
-    public static function partialMock()
-    {
-        $name = static::getFacadeAccessor();
-
-        $mock = static::isMock()
-            ? static::$resolvedInstance[$name]
-            : static::createFreshMockInstance();
-
-        return $mock->makePartial();
-    }
-
-    /**
-     * Initiate a mock expectation on the facade.
-     *
-     * @return \Mockery\Expectation
-     */
-    public static function shouldReceive()
-    {
-        $name = static::getFacadeAccessor();
-
-        $mock = static::isMock()
-                    ? static::$resolvedInstance[$name]
-                    : static::createFreshMockInstance();
-
-        return $mock->shouldReceive(...func_get_args());
-    }
-
-    /**
-     * Create a fresh mock instance for the given class.
-     *
-     * @return \Mockery\MockInterface
-     */
-    protected static function createFreshMockInstance()
-    {
-        return tap(static::createMock(), function ($mock) {
-            static::swap($mock);
-
-            $mock->shouldAllowMockingProtectedMethods();
-        });
-    }
-
-    /**
-     * Create a fresh mock instance for the given class.
-     *
-     * @return \Mockery\MockInterface
-     */
-    protected static function createMock()
-    {
-        $class = static::getMockableClass();
-
-        return $class ? Mockery::mock($class) : Mockery::mock();
-    }
-
-    /**
-     * Determines whether a mock is set as the instance of the facade.
-     *
-     * @return bool
-     */
-    protected static function isMock()
-    {
-        $name = static::getFacadeAccessor();
-
-        return isset(static::$resolvedInstance[$name]) &&
-               static::$resolvedInstance[$name] instanceof MockInterface;
-    }
-
-    /**
-     * Get the mockable class for the bound instance.
-     *
-     * @return string|null
-     */
-    protected static function getMockableClass()
-    {
-        if ($root = static::getFacadeRoot()) {
-            return get_class($root);
-        }
-    }
-
-    /**
-     * Hotswap the underlying instance behind the facade.
-     *
-     * @param  mixed  $instance
-     * @return void
-     */
-    public static function swap($instance)
-    {
-        static::$resolvedInstance[static::getFacadeAccessor()] = $instance;
-
-        if (isset(static::$app)) {
-            static::$app->instance(static::getFacadeAccessor(), $instance);
-        }
-    }
-
-    /**
-     * Get the root object behind the facade.
-     *
-     * @return mixed
-     */
-    public static function getFacadeRoot()
-    {
-        return static::resolveFacadeInstance(static::getFacadeAccessor());
-    }
-
-    /**
-     * Get the registered name of the component.
-     *
-     * @return string
-     *
-     * @throws \RuntimeException
-     */
-    protected static function getFacadeAccessor()
-    {
-        throw new RuntimeException('Facade does not implement getFacadeAccessor method.');
-    }
-
-    /**
-     * Resolve the facade root instance from the container.
-     *
-     * @param  object|string  $name
-     * @return mixed
-     */
-    protected static function resolveFacadeInstance($name)
-    {
-        if (is_object($name)) {
-            return $name;
-        }
-
-        if (isset(static::$resolvedInstance[$name])) {
-            return static::$resolvedInstance[$name];
-        }
-
-        if (static::$app) {
-            return static::$resolvedInstance[$name] = static::$app[$name];
-        }
-    }
-
-    /**
-     * Clear a resolved facade instance.
-     *
-     * @param  string  $name
-     * @return void
-     */
-    public static function clearResolvedInstance($name)
-    {
-        unset(static::$resolvedInstance[$name]);
-    }
-
-    /**
-     * Clear all of the resolved instances.
-     *
-     * @return void
-     */
-    public static function clearResolvedInstances()
-    {
-        static::$resolvedInstance = [];
-    }
-
-    /**
-     * Get the application instance behind the facade.
-     *
-     * @return \Illuminate\Contracts\Foundation\Application
-     */
-    public static function getFacadeApplication()
-    {
-        return static::$app;
-    }
-
-    /**
-     * Set the application instance.
-     *
-     * @param  \Illuminate\Contracts\Foundation\Application  $app
-     * @return void
-     */
-    public static function setFacadeApplication($app)
-    {
-        static::$app = $app;
-    }
-
-    /**
-     * Handle dynamic, static calls to the object.
-     *
-     * @param  string  $method
-     * @param  array  $args
-     * @return mixed
-     *
-     * @throws \RuntimeException
-     */
-    public static function __callStatic($method, $args)
-    {
-        $instance = static::getFacadeRoot();
-
-        if (! $instance) {
-            throw new RuntimeException('A facade root has not been set.');
-        }
-
-        return $instance->$method(...$args);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
++aZp/PcFUwkjVtfU

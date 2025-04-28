@@ -1,124 +1,54 @@
-<?php
-
-namespace Illuminate\Queue\Jobs;
-
-use Aws\Sqs\SqsClient;
-use Illuminate\Container\Container;
-use Illuminate\Contracts\Queue\Job as JobContract;
-
-class SqsJob extends Job implements JobContract
-{
-    /**
-     * The Amazon SQS client instance.
-     *
-     * @var \Aws\Sqs\SqsClient
-     */
-    protected $sqs;
-
-    /**
-     * The Amazon SQS job instance.
-     *
-     * @var array
-     */
-    protected $job;
-
-    /**
-     * Create a new job instance.
-     *
-     * @param  \Illuminate\Container\Container  $container
-     * @param  \Aws\Sqs\SqsClient  $sqs
-     * @param  array  $job
-     * @param  string  $connectionName
-     * @param  string  $queue
-     * @return void
-     */
-    public function __construct(Container $container, SqsClient $sqs, array $job, $connectionName, $queue)
-    {
-        $this->sqs = $sqs;
-        $this->job = $job;
-        $this->queue = $queue;
-        $this->container = $container;
-        $this->connectionName = $connectionName;
-    }
-
-    /**
-     * Release the job back into the queue.
-     *
-     * @param  int  $delay
-     * @return void
-     */
-    public function release($delay = 0)
-    {
-        parent::release($delay);
-
-        $this->sqs->changeMessageVisibility([
-            'QueueUrl' => $this->queue,
-            'ReceiptHandle' => $this->job['ReceiptHandle'],
-            'VisibilityTimeout' => $delay,
-        ]);
-    }
-
-    /**
-     * Delete the job from the queue.
-     *
-     * @return void
-     */
-    public function delete()
-    {
-        parent::delete();
-
-        $this->sqs->deleteMessage([
-            'QueueUrl' => $this->queue, 'ReceiptHandle' => $this->job['ReceiptHandle'],
-        ]);
-    }
-
-    /**
-     * Get the number of times the job has been attempted.
-     *
-     * @return int
-     */
-    public function attempts()
-    {
-        return (int) $this->job['Attributes']['ApproximateReceiveCount'];
-    }
-
-    /**
-     * Get the job identifier.
-     *
-     * @return string
-     */
-    public function getJobId()
-    {
-        return $this->job['MessageId'];
-    }
-
-    /**
-     * Get the raw body string for the job.
-     *
-     * @return string
-     */
-    public function getRawBody()
-    {
-        return $this->job['Body'];
-    }
-
-    /**
-     * Get the underlying SQS client instance.
-     *
-     * @return \Aws\Sqs\SqsClient
-     */
-    public function getSqs()
-    {
-        return $this->sqs;
-    }
-
-    /**
-     * Get the underlying raw SQS job.
-     *
-     * @return array
-     */
-    public function getSqsJob()
-    {
-        return $this->job;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+qW==

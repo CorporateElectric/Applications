@@ -1,869 +1,484 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Polyfill\Mbstring;
-
-/**
- * Partial mbstring implementation in PHP, iconv based, UTF-8 centric.
- *
- * Implemented:
- * - mb_chr                  - Returns a specific character from its Unicode code point
- * - mb_convert_encoding     - Convert character encoding
- * - mb_convert_variables    - Convert character code in variable(s)
- * - mb_decode_mimeheader    - Decode string in MIME header field
- * - mb_encode_mimeheader    - Encode string for MIME header XXX NATIVE IMPLEMENTATION IS REALLY BUGGED
- * - mb_decode_numericentity - Decode HTML numeric string reference to character
- * - mb_encode_numericentity - Encode character to HTML numeric string reference
- * - mb_convert_case         - Perform case folding on a string
- * - mb_detect_encoding      - Detect character encoding
- * - mb_get_info             - Get internal settings of mbstring
- * - mb_http_input           - Detect HTTP input character encoding
- * - mb_http_output          - Set/Get HTTP output character encoding
- * - mb_internal_encoding    - Set/Get internal character encoding
- * - mb_list_encodings       - Returns an array of all supported encodings
- * - mb_ord                  - Returns the Unicode code point of a character
- * - mb_output_handler       - Callback function converts character encoding in output buffer
- * - mb_scrub                - Replaces ill-formed byte sequences with substitute characters
- * - mb_strlen               - Get string length
- * - mb_strpos               - Find position of first occurrence of string in a string
- * - mb_strrpos              - Find position of last occurrence of a string in a string
- * - mb_str_split            - Convert a string to an array
- * - mb_strtolower           - Make a string lowercase
- * - mb_strtoupper           - Make a string uppercase
- * - mb_substitute_character - Set/Get substitution character
- * - mb_substr               - Get part of string
- * - mb_stripos              - Finds position of first occurrence of a string within another, case insensitive
- * - mb_stristr              - Finds first occurrence of a string within another, case insensitive
- * - mb_strrchr              - Finds the last occurrence of a character in a string within another
- * - mb_strrichr             - Finds the last occurrence of a character in a string within another, case insensitive
- * - mb_strripos             - Finds position of last occurrence of a string within another, case insensitive
- * - mb_strstr               - Finds first occurrence of a string within another
- * - mb_strwidth             - Return width of string
- * - mb_substr_count         - Count the number of substring occurrences
- *
- * Not implemented:
- * - mb_convert_kana         - Convert "kana" one from another ("zen-kaku", "han-kaku" and more)
- * - mb_ereg_*               - Regular expression with multibyte support
- * - mb_parse_str            - Parse GET/POST/COOKIE data and set global variable
- * - mb_preferred_mime_name  - Get MIME charset string
- * - mb_regex_encoding       - Returns current encoding for multibyte regex as string
- * - mb_regex_set_options    - Set/Get the default options for mbregex functions
- * - mb_send_mail            - Send encoded mail
- * - mb_split                - Split multibyte string using regular expression
- * - mb_strcut               - Get part of string
- * - mb_strimwidth           - Get truncated string with specified width
- *
- * @author Nicolas Grekas <p@tchwork.com>
- *
- * @internal
- */
-final class Mbstring
-{
-    public const MB_CASE_FOLD = \PHP_INT_MAX;
-
-    private static $encodingList = ['ASCII', 'UTF-8'];
-    private static $language = 'neutral';
-    private static $internalEncoding = 'UTF-8';
-    private static $caseFold = [
-        ['µ', 'ſ', "\xCD\x85", 'ς', "\xCF\x90", "\xCF\x91", "\xCF\x95", "\xCF\x96", "\xCF\xB0", "\xCF\xB1", "\xCF\xB5", "\xE1\xBA\x9B", "\xE1\xBE\xBE"],
-        ['μ', 's', 'ι',        'σ', 'β',        'θ',        'φ',        'π',        'κ',        'ρ',        'ε',        "\xE1\xB9\xA1", 'ι'],
-    ];
-
-    public static function mb_convert_encoding($s, $toEncoding, $fromEncoding = null)
-    {
-        if (\is_array($fromEncoding) || false !== strpos($fromEncoding, ',')) {
-            $fromEncoding = self::mb_detect_encoding($s, $fromEncoding);
-        } else {
-            $fromEncoding = self::getEncoding($fromEncoding);
-        }
-
-        $toEncoding = self::getEncoding($toEncoding);
-
-        if ('BASE64' === $fromEncoding) {
-            $s = base64_decode($s);
-            $fromEncoding = $toEncoding;
-        }
-
-        if ('BASE64' === $toEncoding) {
-            return base64_encode($s);
-        }
-
-        if ('HTML-ENTITIES' === $toEncoding || 'HTML' === $toEncoding) {
-            if ('HTML-ENTITIES' === $fromEncoding || 'HTML' === $fromEncoding) {
-                $fromEncoding = 'Windows-1252';
-            }
-            if ('UTF-8' !== $fromEncoding) {
-                $s = iconv($fromEncoding, 'UTF-8//IGNORE', $s);
-            }
-
-            return preg_replace_callback('/[\x80-\xFF]+/', [__CLASS__, 'html_encoding_callback'], $s);
-        }
-
-        if ('HTML-ENTITIES' === $fromEncoding) {
-            $s = html_entity_decode($s, \ENT_COMPAT, 'UTF-8');
-            $fromEncoding = 'UTF-8';
-        }
-
-        return iconv($fromEncoding, $toEncoding.'//IGNORE', $s);
-    }
-
-    public static function mb_convert_variables($toEncoding, $fromEncoding, &...$vars)
-    {
-        $ok = true;
-        array_walk_recursive($vars, function (&$v) use (&$ok, $toEncoding, $fromEncoding) {
-            if (false === $v = self::mb_convert_encoding($v, $toEncoding, $fromEncoding)) {
-                $ok = false;
-            }
-        });
-
-        return $ok ? $fromEncoding : false;
-    }
-
-    public static function mb_decode_mimeheader($s)
-    {
-        return iconv_mime_decode($s, 2, self::$internalEncoding);
-    }
-
-    public static function mb_encode_mimeheader($s, $charset = null, $transferEncoding = null, $linefeed = null, $indent = null)
-    {
-        trigger_error('mb_encode_mimeheader() is bugged. Please use iconv_mime_encode() instead', \E_USER_WARNING);
-    }
-
-    public static function mb_decode_numericentity($s, $convmap, $encoding = null)
-    {
-        if (null !== $s && !is_scalar($s) && !(\is_object($s) && method_exists($s, '__toString'))) {
-            trigger_error('mb_decode_numericentity() expects parameter 1 to be string, '.\gettype($s).' given', \E_USER_WARNING);
-
-            return null;
-        }
-
-        if (!\is_array($convmap) || (80000 > \PHP_VERSION_ID && !$convmap)) {
-            return false;
-        }
-
-        if (null !== $encoding && !is_scalar($encoding)) {
-            trigger_error('mb_decode_numericentity() expects parameter 3 to be string, '.\gettype($s).' given', \E_USER_WARNING);
-
-            return '';  // Instead of null (cf. mb_encode_numericentity).
-        }
-
-        $s = (string) $s;
-        if ('' === $s) {
-            return '';
-        }
-
-        $encoding = self::getEncoding($encoding);
-
-        if ('UTF-8' === $encoding) {
-            $encoding = null;
-            if (!preg_match('//u', $s)) {
-                $s = @iconv('UTF-8', 'UTF-8//IGNORE', $s);
-            }
-        } else {
-            $s = iconv($encoding, 'UTF-8//IGNORE', $s);
-        }
-
-        $cnt = floor(\count($convmap) / 4) * 4;
-
-        for ($i = 0; $i < $cnt; $i += 4) {
-            // collector_decode_htmlnumericentity ignores $convmap[$i + 3]
-            $convmap[$i] += $convmap[$i + 2];
-            $convmap[$i + 1] += $convmap[$i + 2];
-        }
-
-        $s = preg_replace_callback('/&#(?:0*([0-9]+)|x0*([0-9a-fA-F]+))(?!&);?/', function (array $m) use ($cnt, $convmap) {
-            $c = isset($m[2]) ? (int) hexdec($m[2]) : $m[1];
-            for ($i = 0; $i < $cnt; $i += 4) {
-                if ($c >= $convmap[$i] && $c <= $convmap[$i + 1]) {
-                    return self::mb_chr($c - $convmap[$i + 2]);
-                }
-            }
-
-            return $m[0];
-        }, $s);
-
-        if (null === $encoding) {
-            return $s;
-        }
-
-        return iconv('UTF-8', $encoding.'//IGNORE', $s);
-    }
-
-    public static function mb_encode_numericentity($s, $convmap, $encoding = null, $is_hex = false)
-    {
-        if (null !== $s && !is_scalar($s) && !(\is_object($s) && method_exists($s, '__toString'))) {
-            trigger_error('mb_encode_numericentity() expects parameter 1 to be string, '.\gettype($s).' given', \E_USER_WARNING);
-
-            return null;
-        }
-
-        if (!\is_array($convmap) || (80000 > \PHP_VERSION_ID && !$convmap)) {
-            return false;
-        }
-
-        if (null !== $encoding && !is_scalar($encoding)) {
-            trigger_error('mb_encode_numericentity() expects parameter 3 to be string, '.\gettype($s).' given', \E_USER_WARNING);
-
-            return null;  // Instead of '' (cf. mb_decode_numericentity).
-        }
-
-        if (null !== $is_hex && !is_scalar($is_hex)) {
-            trigger_error('mb_encode_numericentity() expects parameter 4 to be boolean, '.\gettype($s).' given', \E_USER_WARNING);
-
-            return null;
-        }
-
-        $s = (string) $s;
-        if ('' === $s) {
-            return '';
-        }
-
-        $encoding = self::getEncoding($encoding);
-
-        if ('UTF-8' === $encoding) {
-            $encoding = null;
-            if (!preg_match('//u', $s)) {
-                $s = @iconv('UTF-8', 'UTF-8//IGNORE', $s);
-            }
-        } else {
-            $s = iconv($encoding, 'UTF-8//IGNORE', $s);
-        }
-
-        static $ulenMask = ["\xC0" => 2, "\xD0" => 2, "\xE0" => 3, "\xF0" => 4];
-
-        $cnt = floor(\count($convmap) / 4) * 4;
-        $i = 0;
-        $len = \strlen($s);
-        $result = '';
-
-        while ($i < $len) {
-            $ulen = $s[$i] < "\x80" ? 1 : $ulenMask[$s[$i] & "\xF0"];
-            $uchr = substr($s, $i, $ulen);
-            $i += $ulen;
-            $c = self::mb_ord($uchr);
-
-            for ($j = 0; $j < $cnt; $j += 4) {
-                if ($c >= $convmap[$j] && $c <= $convmap[$j + 1]) {
-                    $cOffset = ($c + $convmap[$j + 2]) & $convmap[$j + 3];
-                    $result .= $is_hex ? sprintf('&#x%X;', $cOffset) : '&#'.$cOffset.';';
-                    continue 2;
-                }
-            }
-            $result .= $uchr;
-        }
-
-        if (null === $encoding) {
-            return $result;
-        }
-
-        return iconv('UTF-8', $encoding.'//IGNORE', $result);
-    }
-
-    public static function mb_convert_case($s, $mode, $encoding = null)
-    {
-        $s = (string) $s;
-        if ('' === $s) {
-            return '';
-        }
-
-        $encoding = self::getEncoding($encoding);
-
-        if ('UTF-8' === $encoding) {
-            $encoding = null;
-            if (!preg_match('//u', $s)) {
-                $s = @iconv('UTF-8', 'UTF-8//IGNORE', $s);
-            }
-        } else {
-            $s = iconv($encoding, 'UTF-8//IGNORE', $s);
-        }
-
-        if (\MB_CASE_TITLE == $mode) {
-            static $titleRegexp = null;
-            if (null === $titleRegexp) {
-                $titleRegexp = self::getData('titleCaseRegexp');
-            }
-            $s = preg_replace_callback($titleRegexp, [__CLASS__, 'title_case'], $s);
-        } else {
-            if (\MB_CASE_UPPER == $mode) {
-                static $upper = null;
-                if (null === $upper) {
-                    $upper = self::getData('upperCase');
-                }
-                $map = $upper;
-            } else {
-                if (self::MB_CASE_FOLD === $mode) {
-                    $s = str_replace(self::$caseFold[0], self::$caseFold[1], $s);
-                }
-
-                static $lower = null;
-                if (null === $lower) {
-                    $lower = self::getData('lowerCase');
-                }
-                $map = $lower;
-            }
-
-            static $ulenMask = ["\xC0" => 2, "\xD0" => 2, "\xE0" => 3, "\xF0" => 4];
-
-            $i = 0;
-            $len = \strlen($s);
-
-            while ($i < $len) {
-                $ulen = $s[$i] < "\x80" ? 1 : $ulenMask[$s[$i] & "\xF0"];
-                $uchr = substr($s, $i, $ulen);
-                $i += $ulen;
-
-                if (isset($map[$uchr])) {
-                    $uchr = $map[$uchr];
-                    $nlen = \strlen($uchr);
-
-                    if ($nlen == $ulen) {
-                        $nlen = $i;
-                        do {
-                            $s[--$nlen] = $uchr[--$ulen];
-                        } while ($ulen);
-                    } else {
-                        $s = substr_replace($s, $uchr, $i - $ulen, $ulen);
-                        $len += $nlen - $ulen;
-                        $i += $nlen - $ulen;
-                    }
-                }
-            }
-        }
-
-        if (null === $encoding) {
-            return $s;
-        }
-
-        return iconv('UTF-8', $encoding.'//IGNORE', $s);
-    }
-
-    public static function mb_internal_encoding($encoding = null)
-    {
-        if (null === $encoding) {
-            return self::$internalEncoding;
-        }
-
-        $normalizedEncoding = self::getEncoding($encoding);
-
-        if ('UTF-8' === $normalizedEncoding || false !== @iconv($normalizedEncoding, $normalizedEncoding, ' ')) {
-            self::$internalEncoding = $normalizedEncoding;
-
-            return true;
-        }
-
-        if (80000 > \PHP_VERSION_ID) {
-            return false;
-        }
-
-        throw new \ValueError(sprintf('Argument #1 ($encoding) must be a valid encoding, "%s" given', $encoding));
-    }
-
-    public static function mb_language($lang = null)
-    {
-        if (null === $lang) {
-            return self::$language;
-        }
-
-        switch ($normalizedLang = strtolower($lang)) {
-            case 'uni':
-            case 'neutral':
-                self::$language = $normalizedLang;
-
-                return true;
-        }
-
-        if (80000 > \PHP_VERSION_ID) {
-            return false;
-        }
-
-        throw new \ValueError(sprintf('Argument #1 ($language) must be a valid language, "%s" given', $lang));
-    }
-
-    public static function mb_list_encodings()
-    {
-        return ['UTF-8'];
-    }
-
-    public static function mb_encoding_aliases($encoding)
-    {
-        switch (strtoupper($encoding)) {
-            case 'UTF8':
-            case 'UTF-8':
-                return ['utf8'];
-        }
-
-        return false;
-    }
-
-    public static function mb_check_encoding($var = null, $encoding = null)
-    {
-        if (null === $encoding) {
-            if (null === $var) {
-                return false;
-            }
-            $encoding = self::$internalEncoding;
-        }
-
-        return self::mb_detect_encoding($var, [$encoding]) || false !== @iconv($encoding, $encoding, $var);
-    }
-
-    public static function mb_detect_encoding($str, $encodingList = null, $strict = false)
-    {
-        if (null === $encodingList) {
-            $encodingList = self::$encodingList;
-        } else {
-            if (!\is_array($encodingList)) {
-                $encodingList = array_map('trim', explode(',', $encodingList));
-            }
-            $encodingList = array_map('strtoupper', $encodingList);
-        }
-
-        foreach ($encodingList as $enc) {
-            switch ($enc) {
-                case 'ASCII':
-                    if (!preg_match('/[\x80-\xFF]/', $str)) {
-                        return $enc;
-                    }
-                    break;
-
-                case 'UTF8':
-                case 'UTF-8':
-                    if (preg_match('//u', $str)) {
-                        return 'UTF-8';
-                    }
-                    break;
-
-                default:
-                    if (0 === strncmp($enc, 'ISO-8859-', 9)) {
-                        return $enc;
-                    }
-            }
-        }
-
-        return false;
-    }
-
-    public static function mb_detect_order($encodingList = null)
-    {
-        if (null === $encodingList) {
-            return self::$encodingList;
-        }
-
-        if (!\is_array($encodingList)) {
-            $encodingList = array_map('trim', explode(',', $encodingList));
-        }
-        $encodingList = array_map('strtoupper', $encodingList);
-
-        foreach ($encodingList as $enc) {
-            switch ($enc) {
-                default:
-                    if (strncmp($enc, 'ISO-8859-', 9)) {
-                        return false;
-                    }
-                    // no break
-                case 'ASCII':
-                case 'UTF8':
-                case 'UTF-8':
-            }
-        }
-
-        self::$encodingList = $encodingList;
-
-        return true;
-    }
-
-    public static function mb_strlen($s, $encoding = null)
-    {
-        $encoding = self::getEncoding($encoding);
-        if ('CP850' === $encoding || 'ASCII' === $encoding) {
-            return \strlen($s);
-        }
-
-        return @iconv_strlen($s, $encoding);
-    }
-
-    public static function mb_strpos($haystack, $needle, $offset = 0, $encoding = null)
-    {
-        $encoding = self::getEncoding($encoding);
-        if ('CP850' === $encoding || 'ASCII' === $encoding) {
-            return strpos($haystack, $needle, $offset);
-        }
-
-        $needle = (string) $needle;
-        if ('' === $needle) {
-            if (80000 > \PHP_VERSION_ID) {
-                trigger_error(__METHOD__.': Empty delimiter', \E_USER_WARNING);
-
-                return false;
-            }
-
-            return 0;
-        }
-
-        return iconv_strpos($haystack, $needle, $offset, $encoding);
-    }
-
-    public static function mb_strrpos($haystack, $needle, $offset = 0, $encoding = null)
-    {
-        $encoding = self::getEncoding($encoding);
-        if ('CP850' === $encoding || 'ASCII' === $encoding) {
-            return strrpos($haystack, $needle, $offset);
-        }
-
-        if ($offset != (int) $offset) {
-            $offset = 0;
-        } elseif ($offset = (int) $offset) {
-            if ($offset < 0) {
-                if (0 > $offset += self::mb_strlen($needle)) {
-                    $haystack = self::mb_substr($haystack, 0, $offset, $encoding);
-                }
-                $offset = 0;
-            } else {
-                $haystack = self::mb_substr($haystack, $offset, 2147483647, $encoding);
-            }
-        }
-
-        $pos = '' !== $needle || 80000 > \PHP_VERSION_ID
-            ? iconv_strrpos($haystack, $needle, $encoding)
-            : self::mb_strlen($haystack, $encoding);
-
-        return false !== $pos ? $offset + $pos : false;
-    }
-
-    public static function mb_str_split($string, $split_length = 1, $encoding = null)
-    {
-        if (null !== $string && !is_scalar($string) && !(\is_object($string) && method_exists($string, '__toString'))) {
-            trigger_error('mb_str_split() expects parameter 1 to be string, '.\gettype($string).' given', \E_USER_WARNING);
-
-            return null;
-        }
-
-        if (1 > $split_length = (int) $split_length) {
-            if (80000 > \PHP_VERSION_ID) {
-                trigger_error('The length of each segment must be greater than zero', \E_USER_WARNING);
-                return false;
-            }
-
-            throw new \ValueError('Argument #2 ($length) must be greater than 0');
-        }
-
-        if (null === $encoding) {
-            $encoding = mb_internal_encoding();
-        }
-
-        if ('UTF-8' === $encoding = self::getEncoding($encoding)) {
-            $rx = '/(';
-            while (65535 < $split_length) {
-                $rx .= '.{65535}';
-                $split_length -= 65535;
-            }
-            $rx .= '.{'.$split_length.'})/us';
-
-            return preg_split($rx, $string, null, \PREG_SPLIT_DELIM_CAPTURE | \PREG_SPLIT_NO_EMPTY);
-        }
-
-        $result = [];
-        $length = mb_strlen($string, $encoding);
-
-        for ($i = 0; $i < $length; $i += $split_length) {
-            $result[] = mb_substr($string, $i, $split_length, $encoding);
-        }
-
-        return $result;
-    }
-
-    public static function mb_strtolower($s, $encoding = null)
-    {
-        return self::mb_convert_case($s, \MB_CASE_LOWER, $encoding);
-    }
-
-    public static function mb_strtoupper($s, $encoding = null)
-    {
-        return self::mb_convert_case($s, \MB_CASE_UPPER, $encoding);
-    }
-
-    public static function mb_substitute_character($c = null)
-    {
-        if (null === $c) {
-            return 'none';
-        }
-        if (0 === strcasecmp($c, 'none')) {
-            return true;
-        }
-        if (80000 > \PHP_VERSION_ID) {
-            return false;
-        }
-
-        throw new \ValueError('Argument #1 ($substitute_character) must be "none", "long", "entity" or a valid codepoint');
-    }
-
-    public static function mb_substr($s, $start, $length = null, $encoding = null)
-    {
-        $encoding = self::getEncoding($encoding);
-        if ('CP850' === $encoding || 'ASCII' === $encoding) {
-            return (string) substr($s, $start, null === $length ? 2147483647 : $length);
-        }
-
-        if ($start < 0) {
-            $start = iconv_strlen($s, $encoding) + $start;
-            if ($start < 0) {
-                $start = 0;
-            }
-        }
-
-        if (null === $length) {
-            $length = 2147483647;
-        } elseif ($length < 0) {
-            $length = iconv_strlen($s, $encoding) + $length - $start;
-            if ($length < 0) {
-                return '';
-            }
-        }
-
-        return (string) iconv_substr($s, $start, $length, $encoding);
-    }
-
-    public static function mb_stripos($haystack, $needle, $offset = 0, $encoding = null)
-    {
-        $haystack = self::mb_convert_case($haystack, self::MB_CASE_FOLD, $encoding);
-        $needle = self::mb_convert_case($needle, self::MB_CASE_FOLD, $encoding);
-
-        return self::mb_strpos($haystack, $needle, $offset, $encoding);
-    }
-
-    public static function mb_stristr($haystack, $needle, $part = false, $encoding = null)
-    {
-        $pos = self::mb_stripos($haystack, $needle, 0, $encoding);
-
-        return self::getSubpart($pos, $part, $haystack, $encoding);
-    }
-
-    public static function mb_strrchr($haystack, $needle, $part = false, $encoding = null)
-    {
-        $encoding = self::getEncoding($encoding);
-        if ('CP850' === $encoding || 'ASCII' === $encoding) {
-            $pos = strrpos($haystack, $needle);
-        } else {
-            $needle = self::mb_substr($needle, 0, 1, $encoding);
-            $pos = iconv_strrpos($haystack, $needle, $encoding);
-        }
-
-        return self::getSubpart($pos, $part, $haystack, $encoding);
-    }
-
-    public static function mb_strrichr($haystack, $needle, $part = false, $encoding = null)
-    {
-        $needle = self::mb_substr($needle, 0, 1, $encoding);
-        $pos = self::mb_strripos($haystack, $needle, $encoding);
-
-        return self::getSubpart($pos, $part, $haystack, $encoding);
-    }
-
-    public static function mb_strripos($haystack, $needle, $offset = 0, $encoding = null)
-    {
-        $haystack = self::mb_convert_case($haystack, self::MB_CASE_FOLD, $encoding);
-        $needle = self::mb_convert_case($needle, self::MB_CASE_FOLD, $encoding);
-
-        return self::mb_strrpos($haystack, $needle, $offset, $encoding);
-    }
-
-    public static function mb_strstr($haystack, $needle, $part = false, $encoding = null)
-    {
-        $pos = strpos($haystack, $needle);
-        if (false === $pos) {
-            return false;
-        }
-        if ($part) {
-            return substr($haystack, 0, $pos);
-        }
-
-        return substr($haystack, $pos);
-    }
-
-    public static function mb_get_info($type = 'all')
-    {
-        $info = [
-            'internal_encoding' => self::$internalEncoding,
-            'http_output' => 'pass',
-            'http_output_conv_mimetypes' => '^(text/|application/xhtml\+xml)',
-            'func_overload' => 0,
-            'func_overload_list' => 'no overload',
-            'mail_charset' => 'UTF-8',
-            'mail_header_encoding' => 'BASE64',
-            'mail_body_encoding' => 'BASE64',
-            'illegal_chars' => 0,
-            'encoding_translation' => 'Off',
-            'language' => self::$language,
-            'detect_order' => self::$encodingList,
-            'substitute_character' => 'none',
-            'strict_detection' => 'Off',
-        ];
-
-        if ('all' === $type) {
-            return $info;
-        }
-        if (isset($info[$type])) {
-            return $info[$type];
-        }
-
-        return false;
-    }
-
-    public static function mb_http_input($type = '')
-    {
-        return false;
-    }
-
-    public static function mb_http_output($encoding = null)
-    {
-        return null !== $encoding ? 'pass' === $encoding : 'pass';
-    }
-
-    public static function mb_strwidth($s, $encoding = null)
-    {
-        $encoding = self::getEncoding($encoding);
-
-        if ('UTF-8' !== $encoding) {
-            $s = iconv($encoding, 'UTF-8//IGNORE', $s);
-        }
-
-        $s = preg_replace('/[\x{1100}-\x{115F}\x{2329}\x{232A}\x{2E80}-\x{303E}\x{3040}-\x{A4CF}\x{AC00}-\x{D7A3}\x{F900}-\x{FAFF}\x{FE10}-\x{FE19}\x{FE30}-\x{FE6F}\x{FF00}-\x{FF60}\x{FFE0}-\x{FFE6}\x{20000}-\x{2FFFD}\x{30000}-\x{3FFFD}]/u', '', $s, -1, $wide);
-
-        return ($wide << 1) + iconv_strlen($s, 'UTF-8');
-    }
-
-    public static function mb_substr_count($haystack, $needle, $encoding = null)
-    {
-        return substr_count($haystack, $needle);
-    }
-
-    public static function mb_output_handler($contents, $status)
-    {
-        return $contents;
-    }
-
-    public static function mb_chr($code, $encoding = null)
-    {
-        if (0x80 > $code %= 0x200000) {
-            $s = \chr($code);
-        } elseif (0x800 > $code) {
-            $s = \chr(0xC0 | $code >> 6).\chr(0x80 | $code & 0x3F);
-        } elseif (0x10000 > $code) {
-            $s = \chr(0xE0 | $code >> 12).\chr(0x80 | $code >> 6 & 0x3F).\chr(0x80 | $code & 0x3F);
-        } else {
-            $s = \chr(0xF0 | $code >> 18).\chr(0x80 | $code >> 12 & 0x3F).\chr(0x80 | $code >> 6 & 0x3F).\chr(0x80 | $code & 0x3F);
-        }
-
-        if ('UTF-8' !== $encoding = self::getEncoding($encoding)) {
-            $s = mb_convert_encoding($s, $encoding, 'UTF-8');
-        }
-
-        return $s;
-    }
-
-    public static function mb_ord($s, $encoding = null)
-    {
-        if ('UTF-8' !== $encoding = self::getEncoding($encoding)) {
-            $s = mb_convert_encoding($s, 'UTF-8', $encoding);
-        }
-
-        if (1 === \strlen($s)) {
-            return \ord($s);
-        }
-
-        $code = ($s = unpack('C*', substr($s, 0, 4))) ? $s[1] : 0;
-        if (0xF0 <= $code) {
-            return (($code - 0xF0) << 18) + (($s[2] - 0x80) << 12) + (($s[3] - 0x80) << 6) + $s[4] - 0x80;
-        }
-        if (0xE0 <= $code) {
-            return (($code - 0xE0) << 12) + (($s[2] - 0x80) << 6) + $s[3] - 0x80;
-        }
-        if (0xC0 <= $code) {
-            return (($code - 0xC0) << 6) + $s[2] - 0x80;
-        }
-
-        return $code;
-    }
-
-    private static function getSubpart($pos, $part, $haystack, $encoding)
-    {
-        if (false === $pos) {
-            return false;
-        }
-        if ($part) {
-            return self::mb_substr($haystack, 0, $pos, $encoding);
-        }
-
-        return self::mb_substr($haystack, $pos, null, $encoding);
-    }
-
-    private static function html_encoding_callback(array $m)
-    {
-        $i = 1;
-        $entities = '';
-        $m = unpack('C*', htmlentities($m[0], \ENT_COMPAT, 'UTF-8'));
-
-        while (isset($m[$i])) {
-            if (0x80 > $m[$i]) {
-                $entities .= \chr($m[$i++]);
-                continue;
-            }
-            if (0xF0 <= $m[$i]) {
-                $c = (($m[$i++] - 0xF0) << 18) + (($m[$i++] - 0x80) << 12) + (($m[$i++] - 0x80) << 6) + $m[$i++] - 0x80;
-            } elseif (0xE0 <= $m[$i]) {
-                $c = (($m[$i++] - 0xE0) << 12) + (($m[$i++] - 0x80) << 6) + $m[$i++] - 0x80;
-            } else {
-                $c = (($m[$i++] - 0xC0) << 6) + $m[$i++] - 0x80;
-            }
-
-            $entities .= '&#'.$c.';';
-        }
-
-        return $entities;
-    }
-
-    private static function title_case(array $s)
-    {
-        return self::mb_convert_case($s[1], \MB_CASE_UPPER, 'UTF-8').self::mb_convert_case($s[2], \MB_CASE_LOWER, 'UTF-8');
-    }
-
-    private static function getData($file)
-    {
-        if (file_exists($file = __DIR__.'/Resources/unidata/'.$file.'.php')) {
-            return require $file;
-        }
-
-        return false;
-    }
-
-    private static function getEncoding($encoding)
-    {
-        if (null === $encoding) {
-            return self::$internalEncoding;
-        }
-
-        if ('UTF-8' === $encoding) {
-            return 'UTF-8';
-        }
-
-        $encoding = strtoupper($encoding);
-
-        if ('8BIT' === $encoding || 'BINARY' === $encoding) {
-            return 'CP850';
-        }
-
-        if ('UTF8' === $encoding) {
-            return 'UTF-8';
-        }
-
-        return $encoding;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

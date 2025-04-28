@@ -1,111 +1,58 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Predis\Command;
-
-/**
- * @link http://redis.io/commands/info
- *
- * @author Daniele Alessandri <suppakilla@gmail.com>
- */
-class ServerInfo extends Command
-{
-    /**
-     * {@inheritdoc}
-     */
-    public function getId()
-    {
-        return 'INFO';
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function parseResponse($data)
-    {
-        $info = array();
-        $infoLines = preg_split('/\r?\n/', $data);
-
-        foreach ($infoLines as $row) {
-            if (strpos($row, ':') === false) {
-                continue;
-            }
-
-            list($k, $v) = $this->parseRow($row);
-            $info[$k] = $v;
-        }
-
-        return $info;
-    }
-
-    /**
-     * Parses a single row of the response and returns the key-value pair.
-     *
-     * @param string $row Single row of the response.
-     *
-     * @return array
-     */
-    protected function parseRow($row)
-    {
-        list($k, $v) = explode(':', $row, 2);
-
-        if (preg_match('/^db\d+$/', $k)) {
-            $v = $this->parseDatabaseStats($v);
-        }
-
-        return array($k, $v);
-    }
-
-    /**
-     * Extracts the statistics of each logical DB from the string buffer.
-     *
-     * @param string $str Response buffer.
-     *
-     * @return array
-     */
-    protected function parseDatabaseStats($str)
-    {
-        $db = array();
-
-        foreach (explode(',', $str) as $dbvar) {
-            list($dbvk, $dbvv) = explode('=', $dbvar);
-            $db[trim($dbvk)] = $dbvv;
-        }
-
-        return $db;
-    }
-
-    /**
-     * Parses the response and extracts the allocation statistics.
-     *
-     * @param string $str Response buffer.
-     *
-     * @return array
-     */
-    protected function parseAllocationStats($str)
-    {
-        $stats = array();
-
-        foreach (explode(',', $str) as $kv) {
-            @list($size, $objects, $extra) = explode('=', $kv);
-
-            // hack to prevent incorrect values when parsing the >=256 key
-            if (isset($extra)) {
-                $size = ">=$objects";
-                $objects = $extra;
-            }
-
-            $stats[$size] = $objects;
-        }
-
-        return $stats;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+2ay=

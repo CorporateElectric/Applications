@@ -1,40 +1,54 @@
-<?php
-
-/**
- * This file is part of the Carbon package.
- *
- * (c) Brian Nesbitt <brian@nesbot.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-/*
- * Authors:
- * - Sugar Labs // OLPC sugarlabs.org libc-alpha@sourceware.org
- */
-return array_replace_recursive(require __DIR__.'/en.php', [
-    'formats' => [
-        'L' => 'YYYY/MM/DD',
-    ],
-    'months' => ['Sanda-Ɔpɛpɔn', 'Kwakwar-Ɔgyefuo', 'Ebɔw-Ɔbenem', 'Ebɔbira-Oforisuo', 'Esusow Aketseaba-Kɔtɔnimba', 'Obirade-Ayɛwohomumu', 'Ayɛwoho-Kitawonsa', 'Difuu-Ɔsandaa', 'Fankwa-Ɛbɔ', 'Ɔbɛsɛ-Ahinime', 'Ɔberɛfɛw-Obubuo', 'Mumu-Ɔpɛnimba'],
-    'months_short' => ['S-Ɔ', 'K-Ɔ', 'E-Ɔ', 'E-O', 'E-K', 'O-A', 'A-K', 'D-Ɔ', 'F-Ɛ', 'Ɔ-A', 'Ɔ-O', 'M-Ɔ'],
-    'weekdays' => ['Kwesida', 'Dwowda', 'Benada', 'Wukuda', 'Yawda', 'Fida', 'Memeneda'],
-    'weekdays_short' => ['Kwe', 'Dwo', 'Ben', 'Wuk', 'Yaw', 'Fia', 'Mem'],
-    'weekdays_min' => ['Kwe', 'Dwo', 'Ben', 'Wuk', 'Yaw', 'Fia', 'Mem'],
-    'first_day_of_week' => 1,
-    'day_of_first_week_of_year' => 1,
-    'meridiem' => ['AN', 'EW'],
-
-    'year' => ':count afe',
-    'y' => ':count afe',
-    'a_year' => ':count afe',
-
-    'month' => ':count bosume',
-    'm' => ':count bosume',
-    'a_month' => ':count bosume',
-
-    'day' => ':count ɛda',
-    'd' => ':count ɛda',
-    'a_day' => ':count ɛda',
-]);
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

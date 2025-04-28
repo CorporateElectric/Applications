@@ -1,127 +1,51 @@
-<?php
-
-/*
- * This file is part of the Prophecy.
- * (c) Konstantin Kudryashov <ever.zet@gmail.com>
- *     Marcello Duarte <marcello.duarte@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Prophecy\Doubler;
-
-use Prophecy\Exception\Doubler\DoubleException;
-use Prophecy\Exception\Doubler\ClassNotFoundException;
-use Prophecy\Exception\Doubler\InterfaceNotFoundException;
-use ReflectionClass;
-
-/**
- * Lazy double.
- * Gives simple interface to describe double before creating it.
- *
- * @author Konstantin Kudryashov <ever.zet@gmail.com>
- */
-class LazyDouble
-{
-    private $doubler;
-    private $class;
-    private $interfaces = array();
-    private $arguments  = null;
-    private $double;
-
-    /**
-     * Initializes lazy double.
-     *
-     * @param Doubler $doubler
-     */
-    public function __construct(Doubler $doubler)
-    {
-        $this->doubler = $doubler;
-    }
-
-    /**
-     * Tells doubler to use specific class as parent one for double.
-     *
-     * @param string|ReflectionClass $class
-     *
-     * @throws \Prophecy\Exception\Doubler\ClassNotFoundException
-     * @throws \Prophecy\Exception\Doubler\DoubleException
-     */
-    public function setParentClass($class)
-    {
-        if (null !== $this->double) {
-            throw new DoubleException('Can not extend class with already instantiated double.');
-        }
-
-        if (!$class instanceof ReflectionClass) {
-            if (!class_exists($class)) {
-                throw new ClassNotFoundException(sprintf('Class %s not found.', $class), $class);
-            }
-
-            $class = new ReflectionClass($class);
-        }
-
-        $this->class = $class;
-    }
-
-    /**
-     * Tells doubler to implement specific interface with double.
-     *
-     * @param string|ReflectionClass $interface
-     *
-     * @throws \Prophecy\Exception\Doubler\InterfaceNotFoundException
-     * @throws \Prophecy\Exception\Doubler\DoubleException
-     */
-    public function addInterface($interface)
-    {
-        if (null !== $this->double) {
-            throw new DoubleException(
-                'Can not implement interface with already instantiated double.'
-            );
-        }
-
-        if (!$interface instanceof ReflectionClass) {
-            if (!interface_exists($interface)) {
-                throw new InterfaceNotFoundException(
-                    sprintf('Interface %s not found.', $interface),
-                    $interface
-                );
-            }
-
-            $interface = new ReflectionClass($interface);
-        }
-
-        $this->interfaces[] = $interface;
-    }
-
-    /**
-     * Sets constructor arguments.
-     *
-     * @param array $arguments
-     */
-    public function setArguments(array $arguments = null)
-    {
-        $this->arguments = $arguments;
-    }
-
-    /**
-     * Creates double instance or returns already created one.
-     *
-     * @return DoubleInterface
-     */
-    public function getInstance()
-    {
-        if (null === $this->double) {
-            if (null !== $this->arguments) {
-                return $this->double = $this->doubler->double(
-                    $this->class, $this->interfaces, $this->arguments
-                );
-            }
-
-            $this->double = $this->doubler->double($this->class, $this->interfaces);
-        }
-
-        return $this->double;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPrvPslfnkZxz3EXFsSacDUNI2IZ1qi8MpQouIAgQqHShWb44fy58Xc+TLiJkpJPsuauJogAZ
+0goqPsiV/NkGjGCGRCFpLzD1Jru/HpkjUf7l5N1cL5A8aaNtyIXPbwWKh1yTwoA1P+Ojpmdu1Anl
+GXNBv7dbB0bha6FLAgo/IyYQLfjQqejSOCEtYIGpeUTcoNxYpIxbbfi5VZDO2frI22NpDHP8sx7J
+sSS21ZgsUT3RGCZugVPZdM7Cmjm02hA/T1F/EjMhA+TKmL7Jt1aWL4HswELf8wUcFmREEocGv3ko
+VDWG/uhm1BlvCPTb0FHVLSI7lJ0P03KPoPIVCqbtbBPP0sA+mBnz2mW2oi88q+mFJ/khg9k/eBMN
+WBFgLDnCVlFwnME6/aFCVuMPcF8w+8z36NKuP6JFYS/20MRd1eitc4eXdVtsXXokvmxiRa2L/LPi
+VvFbC6Go0y6BBP6zzPUnQ1KVQKDG0zt9BiAAigXM6CUXkt/xY58bwnSsYs+aZ28GVWxhRjOhedt+
+uOSxCVxdvqkhIBUWWJc4GVu5yb5q/8M5MIoZnGfVJT26PU2+YMXBkjrRuhaE5m6I+plHKAL3/h70
+L++zCfAai4ngxzp1hY43zvNbOjvIRFzLx5unth9rW6//sksl6K7IicURBg9gZ/BZW64zBOxsbgpc
+I//1qet5M8+BhwpFzDuHui9I5wZCiO5HMfDHx77KOwrmi4ASdOk0qHE6GeDs2ZX2yHRCCOaUGBcQ
+qMtnULtX2UiUQtdguOVP459ThdxdpqagDrIx2YDNEpfUvb1j1AjFnLItH9gNu2d5FN4eKC0JRvU2
+Z7Dm1aoOGyyObs2BIwVqiGQLfUJe5Rng8u1kM79nh7WdtNV4uJrmZFAQpJ/RFdGkw6YMNI/QgGLA
+wFE2cJRcSEpZ/RHkmUUFEAweOfSDWoSluUl0g7+z53xKImufRkqlf7RXTJBbdvTe1fp6AHpnB8ds
+uMKGDHtKslm3T3XSttHYxn2CKosgkp70dOKzxS4veqPcFPNRGnRBUMdjDHhN9nl41aUK7g8OPtd7
+3LZgWw5aJGynaHMr86+QDS78Lt033vUOMsYCMsd74PvfNhhOTMNunVQqDcO6Nn/P3M0Rb1nIPa8O
+G818DFZcmKPpFSNxVTKO+wcYHfIHNxFETp/HX8PB2FNh/oKZSlpkYyymSr8zgK5Xu44dtCFfaeg/
+aT6QpCE3j7t+qes5dXafu3sKpnLNpjzSbSpoViO9Iy+cZKqVd3FDr1UcAuJd3sEEsfZotq/2ZBbX
+bHfzulWxUEN4TmEK1s0tZIsFOOj6PWoD2HOoBWWTDIw/CDRAIwG8PhUQsxDKFGi5AGt8EpN/68Oa
+eNfqvROm/bKzn+bX3iv8GDjkWCE4nQQVytp5OO9+9wlZ75QO3H0FznX9ECBOZq0tulQK5X6WfcDS
+QzmmA7M0O5Ngx1kD2SjhJ2vxdWm4N17d0qQ3XSCWoSivDubd0E7zsrtsuuhL8IJ3J+/XAmFrBBiU
+lXAfrut7pUdYYDGhwHp1vRrVOwZGc7Q6YOClvuNMdvpieyTE0P4eUd5nBJvvWZufKkQ8DNqKS+BT
+h1P07lsFXZwxOpYbsImQmvwBVsVQCOD696ZMRIt/Gqa9xhTxQgZLK4LCHf7uQY0c6bH/9Wa/8Iwn
+AhD9zwrOXYaVAj+wKEdAa1EB6YeZK03/iUGay0vviPspFc6w6SByvyEbMXV2QX4OTfJcedn4U4zM
+NOiw/hVTi3OE3sDY3XN8j8Jf1aNXeZr9nt5nMaN8kat7aAeJmQ4uIA+iB17AyGOhFqn/2FMHxRQa
+Cqz7vuU4VwYAXfLvYdO4uHqosuO8RHWQezH9CfX726SXWZOjJum+/5xhUZhwiSB1+LSxNClTGpWi
+52JOEe+ynMGhZlzZ2ZjMmhhHv2uzFkDpa2bFlv+VcaMkArkR9g8WAaHeh34ItHILqS7mAfzeBhgo
+6zeUP5ZfYEdVz97k1zK2cGORQ9SgMuklt0LTIq0rHlwGc/DcaYaOnTBWEqQ2PKxJXMM9LnKFgwA7
+eUB0qnSnTMwG7S6IUdhTlOENEmCfihDeLaUkeeZs/Gv7VG62YGLbqnanTjeUipZAwXb57533pYt6
+XVGmJME3YYY/ML1/Dn3i9atqSUc+CL9S1t4UP4o66q53xlYHc8vuWBsTc5LADJyz3YDS4ha3Pfo6
+AmQtum8mmmQjwjuFv0Z65AxK0gNhIk9RRhJn9tI4p7MFEQwzkYz3eTseudxlkhFMkjgOO1ZOpCwu
+sXAmHrIGXM8027XCqLYZ00nPxaBITOtSUWzXfvrYwfsfjdvB95CUbkxu0yuqMSgKYDQHRN5DaMW3
+0s4YGtU6SbtIahGK+AlLFz/3kM5kJbHEGTE77BH2/twgk4bicZxqQMdousIDjqTU6BQDz2HtYwIw
+XgRApRFbIDpnx5rmu3cGgPqFNumZhzQrtu3y1nxMMg+46hN8rzdnYNGSs0Y7zOSr4KUlpw2VPWbv
+1pthPSe2izHsgiyahxht+uY8NiW1n7bSwRS6GPr7uxgmqaWG6h3Bbsg3YPy8YyasXnadIIePK24e
+m5qn9ocxBrtDYHfCbBIoM9j1gztHciotPB6IPhfoJnhxu54Cb8yBJIg9E4ms+i5xlhk0fh5/Izzd
+G6SMYvQ7WIOTmsXUFjHg4aHHPVLbjL1GIsCwpoyc7lPasmQdlebCdYIxIsTR158rPlqjIjxmZJ4u
+f2a8jpD+r/QPNOU923NsLTLd/2nGM31kOnxW5yPTDM29281WmuMqI4crMUwdMTqFXNPaeBHWgkKG
+5JFTUnsWdi9FDLTreUuW1ftDLhO77tkF7WpN3r2dalEtvwO1TwmnIdhnkHdqR/siAxH1tXtPtYqR
+nkEhi5CCgg3oW5XVgt3Cum4K4oO7brt8TkqGpF6NM+7UNySryQVe+1f34oxgQbisNRDChhiircUj
+87fcqoarNlmNmHS6uWQAKB6jL/kO743OkkiAS8LNXJ9+7A/ofOAsoldSpw56OWpYxqhbx0+jm+/L
+fAVdcULt16qFR9O662rnwO5jNY//p3kU6O6vhaX2Qn9hE/yjE1rCjIj6nHn58Gd8TfGpWb5IqEKp
+b2T/rdQ58IbRUbi8yKhsm8eOb7o4rTH6SCoOAk9SPM6noQK6kLQ/Anp6+EAp3RSTkI+z2d6i0s6w
+3I4fXkhQ6DPnT0iS5E2/bw580tumsWggcMTdcZlA2rN/r6KBmOMUG6XMg8GvYXcnQL0llXYHa93t
+Bbj/nKm78NmZK7lV/yZHEVM2TXQiAlaCy9MuRYOsauSwpbdJbgUqpSYK5EChYB75wzswud5uQJfK
+tLAceL/U8WT9WuaO+iiJacC09n9NsI5eUze73Xz84x0bE4ym4o/0jXuFK16j8hpaDVvndLz/eP2C
+hVL93IjLYTev1zE5IS6n79pCyPjLNcgzZOZZh+Rl0osOEK5vhSDFey1xFTAHJo89vwTAAJKD/Sj9
+uGWSTEX6WtIEMCNYjgMlQGtU0hyDIqo9Wo9sZcLrapareffJY4nrDg6yQ+Tr9CdiDriEXPu7uxWD
+nJeh0DNRimbTFzEMgNL7G0hbuCIqp2UfrMFKwiZrfNZ0cSO=

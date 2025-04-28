@@ -1,142 +1,70 @@
-<?php
-
-/*
- * This file is part of SwiftMailer.
- * (c) 2004-2009 Chris Corbyn
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-/**
- * The EventDispatcher which handles the event dispatching layer.
- *
- * @author Chris Corbyn
- */
-class Swift_Events_SimpleEventDispatcher implements Swift_Events_EventDispatcher
-{
-    /** A map of event types to their associated listener types */
-    private $eventMap = [];
-
-    /** Event listeners bound to this dispatcher */
-    private $listeners = [];
-
-    /**
-     * Create a new EventDispatcher.
-     */
-    public function __construct()
-    {
-        $this->eventMap = [
-            'Swift_Events_CommandEvent' => 'Swift_Events_CommandListener',
-            'Swift_Events_ResponseEvent' => 'Swift_Events_ResponseListener',
-            'Swift_Events_SendEvent' => 'Swift_Events_SendListener',
-            'Swift_Events_TransportChangeEvent' => 'Swift_Events_TransportChangeListener',
-            'Swift_Events_TransportExceptionEvent' => 'Swift_Events_TransportExceptionListener',
-            ];
-    }
-
-    /**
-     * Create a new SendEvent for $source and $message.
-     *
-     * @return Swift_Events_SendEvent
-     */
-    public function createSendEvent(Swift_Transport $source, Swift_Mime_SimpleMessage $message)
-    {
-        return new Swift_Events_SendEvent($source, $message);
-    }
-
-    /**
-     * Create a new CommandEvent for $source and $command.
-     *
-     * @param string $command      That will be executed
-     * @param array  $successCodes That are needed
-     *
-     * @return Swift_Events_CommandEvent
-     */
-    public function createCommandEvent(Swift_Transport $source, $command, $successCodes = [])
-    {
-        return new Swift_Events_CommandEvent($source, $command, $successCodes);
-    }
-
-    /**
-     * Create a new ResponseEvent for $source and $response.
-     *
-     * @param string $response
-     * @param bool   $valid    If the response is valid
-     *
-     * @return Swift_Events_ResponseEvent
-     */
-    public function createResponseEvent(Swift_Transport $source, $response, $valid)
-    {
-        return new Swift_Events_ResponseEvent($source, $response, $valid);
-    }
-
-    /**
-     * Create a new TransportChangeEvent for $source.
-     *
-     * @return Swift_Events_TransportChangeEvent
-     */
-    public function createTransportChangeEvent(Swift_Transport $source)
-    {
-        return new Swift_Events_TransportChangeEvent($source);
-    }
-
-    /**
-     * Create a new TransportExceptionEvent for $source.
-     *
-     * @return Swift_Events_TransportExceptionEvent
-     */
-    public function createTransportExceptionEvent(Swift_Transport $source, Swift_TransportException $ex)
-    {
-        return new Swift_Events_TransportExceptionEvent($source, $ex);
-    }
-
-    /**
-     * Bind an event listener to this dispatcher.
-     */
-    public function bindEventListener(Swift_Events_EventListener $listener)
-    {
-        foreach ($this->listeners as $l) {
-            // Already loaded
-            if ($l === $listener) {
-                return;
-            }
-        }
-        $this->listeners[] = $listener;
-    }
-
-    /**
-     * Dispatch the given Event to all suitable listeners.
-     *
-     * @param string $target method
-     */
-    public function dispatchEvent(Swift_Events_EventObject $evt, $target)
-    {
-        $bubbleQueue = $this->prepareBubbleQueue($evt);
-        $this->bubble($bubbleQueue, $evt, $target);
-    }
-
-    /** Queue listeners on a stack ready for $evt to be bubbled up it */
-    private function prepareBubbleQueue(Swift_Events_EventObject $evt)
-    {
-        $bubbleQueue = [];
-        $evtClass = \get_class($evt);
-        foreach ($this->listeners as $listener) {
-            if (\array_key_exists($evtClass, $this->eventMap)
-                && ($listener instanceof $this->eventMap[$evtClass])) {
-                $bubbleQueue[] = $listener;
-            }
-        }
-
-        return $bubbleQueue;
-    }
-
-    /** Bubble $evt up the stack calling $target() on each listener */
-    private function bubble(array &$bubbleQueue, Swift_Events_EventObject $evt, $target)
-    {
-        if (!$evt->bubbleCancelled() && $listener = array_shift($bubbleQueue)) {
-            $listener->$target($evt);
-            $this->bubble($bubbleQueue, $evt, $target);
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

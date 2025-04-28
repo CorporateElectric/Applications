@@ -1,121 +1,56 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\Readline;
-
-use Hoa\Console\Console;
-use Hoa\Console\Cursor;
-use Hoa\Console\Readline\Readline as HoaReadline;
-use Psy\Exception\BreakException;
-
-/**
- * Hoa\Console Readline implementation.
- */
-class HoaConsole implements Readline
-{
-    /** @var HoaReadline */
-    private $hoaReadline;
-
-    /** @var string|null */
-    private $lastPrompt;
-
-    /**
-     * @return bool
-     */
-    public static function isSupported()
-    {
-        return \class_exists(Console::class, true);
-    }
-
-    public function __construct()
-    {
-        $this->hoaReadline = new HoaReadline();
-        $this->hoaReadline->addMapping('\C-l', function () {
-            $this->redisplay();
-
-            return HoaReadline::STATE_NO_ECHO;
-        });
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function addHistory($line)
-    {
-        $this->hoaReadline->addHistory($line);
-
-        return true;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function clearHistory()
-    {
-        $this->hoaReadline->clearHistory();
-
-        return true;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function listHistory()
-    {
-        $i = 0;
-        $list = [];
-        while (($item = $this->hoaReadline->getHistory($i++)) !== null) {
-            $list[] = $item;
-        }
-
-        return $list;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function readHistory()
-    {
-        return true;
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * @throws BreakException if user hits Ctrl+D
-     *
-     * @return string
-     */
-    public function readline($prompt = null)
-    {
-        $this->lastPrompt = $prompt;
-
-        return $this->hoaReadline->readLine($prompt);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function redisplay()
-    {
-        $currentLine = $this->hoaReadline->getLine();
-        Cursor::clear('all');
-        echo $this->lastPrompt, $currentLine;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function writeHistory()
-    {
-        return true;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

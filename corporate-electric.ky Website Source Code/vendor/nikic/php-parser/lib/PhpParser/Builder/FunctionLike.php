@@ -1,74 +1,44 @@
-<?php declare(strict_types=1);
-
-namespace PhpParser\Builder;
-
-use PhpParser\BuilderHelpers;
-use PhpParser\Node;
-
-abstract class FunctionLike extends Declaration
-{
-    protected $returnByRef = false;
-    protected $params = [];
-
-    /** @var string|Node\Name|Node\NullableType|null */
-    protected $returnType = null;
-
-    /**
-     * Make the function return by reference.
-     *
-     * @return $this The builder instance (for fluid interface)
-     */
-    public function makeReturnByRef() {
-        $this->returnByRef = true;
-
-        return $this;
-    }
-
-    /**
-     * Adds a parameter.
-     *
-     * @param Node\Param|Param $param The parameter to add
-     *
-     * @return $this The builder instance (for fluid interface)
-     */
-    public function addParam($param) {
-        $param = BuilderHelpers::normalizeNode($param);
-
-        if (!$param instanceof Node\Param) {
-            throw new \LogicException(sprintf('Expected parameter node, got "%s"', $param->getType()));
-        }
-
-        $this->params[] = $param;
-
-        return $this;
-    }
-
-    /**
-     * Adds multiple parameters.
-     *
-     * @param array $params The parameters to add
-     *
-     * @return $this The builder instance (for fluid interface)
-     */
-    public function addParams(array $params) {
-        foreach ($params as $param) {
-            $this->addParam($param);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Sets the return type for PHP 7.
-     *
-     * @param string|Node\Name|Node\NullableType $type One of array, callable, string, int, float,
-     *                                                 bool, iterable, or a class/interface name.
-     *
-     * @return $this The builder instance (for fluid interface)
-     */
-    public function setReturnType($type) {
-        $this->returnType = BuilderHelpers::normalizeType($type);
-
-        return $this;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

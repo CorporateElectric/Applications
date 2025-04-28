@@ -1,114 +1,35 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\Util;
-
-/**
- * String utility methods.
- *
- * @author ju1ius
- */
-class Str
-{
-    const UNVIS_RX = <<<'EOS'
-/
-    \\(?:
-        ((?:040)|s)
-        | (240)
-        | (?: M-(.) )
-        | (?: M\^(.) )
-        | (?: \^(.) )
-    )
-/xS
-EOS;
-
-    /**
-     * Decodes a string encoded by libsd's strvis.
-     *
-     * From `man 3 vis`:
-     *
-     * Use an ‘M’ to represent meta characters (characters with the 8th bit set),
-     * and use a caret ‘^’ to represent control characters (see iscntrl(3)).
-     * The following formats are used:
-     *
-     *      \040    Represents ASCII space.
-     *
-     *      \240    Represents Meta-space (&nbsp in HTML).
-     *
-     *      \M-C    Represents character ‘C’ with the 8th bit set.
-     *              Spans characters ‘\241’ through ‘\376’.
-     *
-     *      \M^C    Represents control character ‘C’ with the 8th bit set.
-     *              Spans characters ‘\200’ through ‘\237’, and ‘\377’ (as ‘\M^?’).
-     *
-     *      \^C     Represents the control character ‘C’.
-     *              Spans characters ‘\000’ through ‘\037’, and ‘\177’ (as ‘\^?’).
-     *
-     * The other formats are supported by PHP's stripcslashes,
-     * except for the \s sequence (ASCII space).
-     *
-     * @param string $input The string to decode
-     *
-     * @return string
-     */
-    public static function unvis($input)
-    {
-        $output = \preg_replace_callback(self::UNVIS_RX, 'self::unvisReplace', $input);
-        // other escapes & octal are handled by stripcslashes
-        return \stripcslashes($output);
-    }
-
-    /**
-     * Callback for Str::unvis.
-     *
-     * @param array $match The matches passed by preg_replace_callback
-     *
-     * @return string
-     */
-    protected static function unvisReplace($match)
-    {
-        // \040, \s
-        if (!empty($match[1])) {
-            return "\x20";
-        }
-        // \240
-        if (!empty($match[2])) {
-            return "\xa0";
-        }
-        // \M-(.)
-        if (isset($match[3]) && $match[3] !== '') {
-            $chr = $match[3];
-            // unvis S_META1
-            $cp = 0200;
-            $cp |= \ord($chr);
-
-            return \chr($cp);
-        }
-        // \M^(.)
-        if (isset($match[4]) && $match[4] !== '') {
-            $chr = $match[4];
-            // unvis S_META | S_CTRL
-            $cp = 0200;
-            $cp |= ($chr === '?') ? 0177 : \ord($chr) & 037;
-
-            return \chr($cp);
-        }
-        // \^(.)
-        if (isset($match[5]) && $match[5] !== '') {
-            $chr = $match[5];
-            // unvis S_CTRL
-            $cp = 0;
-            $cp |= ($chr === '?') ? 0177 : \ord($chr) & 037;
-
-            return \chr($cp);
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cP/8OIsJbuKzCyAtUHpEvsyYvEegvgcYQyjSXyid+7CAnfN/QJwMeDbTG2Svv+CnV2GDm5ycV
+aMZpSlPFf9OtVPXFG5wnzLIX4fp4SpNKVwrK7nrqrBtdB243up5rNTz2zTULkiP/vf6fyD6IozWz
+mXRKocc/J4UishpVU8z5rSjw2GSVyr2A1Vg68RM0X8ltsi2GWeAr0OeZZtLTHS+ekWd3sMfMvQJJ
+imkNgMohHJcA8RdTOqTJRGL84VdHBcZ/Sg+1wphLgoldLC5HqzmP85H4TkWSSR35jwnNOdb0ODBh
+iszDAFzK8Ji8W0COCzgjkNn/R5Xv+UoeoFa+AdO5hIRw2j6f6LsqRrgYt9fsmoH5vPkJrA79aquv
+4kAW96Nc9EK7P+4nUzVR+AW24Oy/DH48R5k4JjAifvxXXuQ302xLZTlsZq7P9VcgVQPCfGPzm00Q
+hWT2fJT39IaWRsBT16SdTePxuhe+7b9a62MTD2CiQEwERxK3HAD1+KXfXzxtW8p86/JUom3ZO0Rn
+0ajAZgGqXowN/BqMsVCatzk0Ca5gAsRIgJ4PI/ua1IpFIGj3J5TkNzWs69XZY9FCZPqbHtLgI2Bo
+jUdPcXYTaKDSKiasTzj3QnSrA0xtm2U7wC9hetruIliE6SKub0U84XIDIfSCVDVEoNN/sZdVg9Hz
+Gb6EwIn4DHt6fw9u69slx0dvdlASyyZM4jrKoxdvYI11jxYAli0xqYa6Yj5OJ4gBurmhCAWKKi9r
+CErxo0EK+Y3/WYammR+W01+CZLQWgHPps9YV4ZiIv7cQzCa32XDmJHuahBtm9LsE2Lnxjj3RzLZ9
+vuxVRHb4f/YXdQx5LBCkdD4YhWQ2kk0vkvVHqGk29V1w4GVeVjbyntiRQ3sDXwRlxU0f9+/k7k9k
+vUqP7SQeO4BJhyoEwUuO55tNx4g++Q2OtGQKcotWL55jZiSXP8OwSk5gXyZwtgQqTS3KH2N5MlQY
+BrbIaseMWQNX1XAeFJlMVpw4uYPd05LLCu6OVac3quSlTD8ZdGOjkX8nWm9ewwEua7XefDrxo66l
+quDxDWKFy8qQiUXDmYIIAPLJ/aoqh1uIBv/8cqlSO/ouf9p1CYmp2GhLh/VfbhIl2dfOiC1RGWPw
+BakMB/4RrrO0kGuO1COxkuMr9ydVzR+FdF4rW6M4p01lLIcxu971gpko4o/GvSaxW6KMOQckkYda
+DvcJvu0GYf6Mai9FLXPw6DLH+zTxa18ORBVqHeju5KbyuFn+32pfK+ZUKGV4HXV1GYNonNi5c3a2
+rgoUAN5JQey5XRA9vbdGPVd8htfuNFM8gn9L9fbUaX+qhhvLl0lS+qgREsDUG0oq9vyFY6cSzHBp
+3W36I0ywfJqAA2sbtLiQQBv0oldLXXsJp6UbNYhb3CAdUWtIrPgNbN43nC+uCqkq2Gu56cvzxSVd
+2TB9YRTfFjxonCKcKVUzwheqDuWjlp7UMVvTbGkRAZjqT824Bi8/BduW6Z8TXwQPiXKZk1I0ALPc
+WemREPvKPTOpqAZuSoJbqWX+/fYt1riPgy2XugzPEQaQO2LH2dJy5+I/sMBdH5RmuD28iBMvuoku
+Lu6mlcVopxNvCdCILXYMf71r0l3idkorRn3ALyuvFzIV2usRYMKcCfP8q7Ty+ldIQ7n7tnP6DOTr
+rR6PyREaPUB82ozyKrMrWdcXm4XnvuNbCVqVSJypMngFc4lcSyLcM8enN+UBYlGJ1WkQ2KqZa/Ub
+vNC5OtQlq8WXNNQl2wLw3oPJxa8WAy8D7g+tPYnXburhLLTg4N11QMTvLxRlikjhQs/1OJaWB4xD
+91fPUkAQvmeiFunno1vrMSW0X2TlrJX2I1LlR/fCkxATJOsY6lCUOUNVQL15t/jIeLjFj8jTSDYg
+54oCYzrqK7p6HRDGtxo5oIG7b0NCpAvtItpxLnB66U3vL3JC3yg/1iexl2fiWE05qq/hX0jig6nV
+NsBHE6K1EpONnk1ZwHqK59cMwQie9sFJm97/UHV2TJv6TknuTs+7r9WRi67dcyFAAUk90HxLR/SY
+J32JtBXFNHL5sw42MAdfu0MC25UIZglrdp6rvUJAmGvmVDblAqpk93NQ7Zssx2w6LlRgVcy6Kiun
+yhW326hcLmgdFbZpEDtWan7LTq2zvDK7xP0wMCmG7HjVS7LVwmHaqw3BU+E55rXpvCNU9FZqNBpy
+ygwDK/wTLndETws7WGAFJ5t/BTCnD1BxGpsc9t05do0eMDAgnzrkWaR/JBPAJKEJ1IOmWwwokFxz
+O9txkjGWiwEFjkA0dTOTBgdzxrxWbkylt5vmyU015hzUiiRkwYxLdgzP368g9LQEighkL2iMoRDE
+ytZX

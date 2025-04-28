@@ -1,289 +1,126 @@
-<?php
-
-namespace Illuminate\Database\Connectors;
-
-use Illuminate\Contracts\Container\Container;
-use Illuminate\Database\Connection;
-use Illuminate\Database\MySqlConnection;
-use Illuminate\Database\PostgresConnection;
-use Illuminate\Database\SQLiteConnection;
-use Illuminate\Database\SqlServerConnection;
-use Illuminate\Support\Arr;
-use InvalidArgumentException;
-use PDOException;
-
-class ConnectionFactory
-{
-    /**
-     * The IoC container instance.
-     *
-     * @var \Illuminate\Contracts\Container\Container
-     */
-    protected $container;
-
-    /**
-     * Create a new connection factory instance.
-     *
-     * @param  \Illuminate\Contracts\Container\Container  $container
-     * @return void
-     */
-    public function __construct(Container $container)
-    {
-        $this->container = $container;
-    }
-
-    /**
-     * Establish a PDO connection based on the configuration.
-     *
-     * @param  array  $config
-     * @param  string|null  $name
-     * @return \Illuminate\Database\Connection
-     */
-    public function make(array $config, $name = null)
-    {
-        $config = $this->parseConfig($config, $name);
-
-        if (isset($config['read'])) {
-            return $this->createReadWriteConnection($config);
-        }
-
-        return $this->createSingleConnection($config);
-    }
-
-    /**
-     * Parse and prepare the database configuration.
-     *
-     * @param  array  $config
-     * @param  string  $name
-     * @return array
-     */
-    protected function parseConfig(array $config, $name)
-    {
-        return Arr::add(Arr::add($config, 'prefix', ''), 'name', $name);
-    }
-
-    /**
-     * Create a single database connection instance.
-     *
-     * @param  array  $config
-     * @return \Illuminate\Database\Connection
-     */
-    protected function createSingleConnection(array $config)
-    {
-        $pdo = $this->createPdoResolver($config);
-
-        return $this->createConnection(
-            $config['driver'], $pdo, $config['database'], $config['prefix'], $config
-        );
-    }
-
-    /**
-     * Create a read / write database connection instance.
-     *
-     * @param  array  $config
-     * @return \Illuminate\Database\Connection
-     */
-    protected function createReadWriteConnection(array $config)
-    {
-        $connection = $this->createSingleConnection($this->getWriteConfig($config));
-
-        return $connection->setReadPdo($this->createReadPdo($config));
-    }
-
-    /**
-     * Create a new PDO instance for reading.
-     *
-     * @param  array  $config
-     * @return \Closure
-     */
-    protected function createReadPdo(array $config)
-    {
-        return $this->createPdoResolver($this->getReadConfig($config));
-    }
-
-    /**
-     * Get the read configuration for a read / write connection.
-     *
-     * @param  array  $config
-     * @return array
-     */
-    protected function getReadConfig(array $config)
-    {
-        return $this->mergeReadWriteConfig(
-            $config, $this->getReadWriteConfig($config, 'read')
-        );
-    }
-
-    /**
-     * Get the write configuration for a read / write connection.
-     *
-     * @param  array  $config
-     * @return array
-     */
-    protected function getWriteConfig(array $config)
-    {
-        return $this->mergeReadWriteConfig(
-            $config, $this->getReadWriteConfig($config, 'write')
-        );
-    }
-
-    /**
-     * Get a read / write level configuration.
-     *
-     * @param  array  $config
-     * @param  string  $type
-     * @return array
-     */
-    protected function getReadWriteConfig(array $config, $type)
-    {
-        return isset($config[$type][0])
-                        ? Arr::random($config[$type])
-                        : $config[$type];
-    }
-
-    /**
-     * Merge a configuration for a read / write connection.
-     *
-     * @param  array  $config
-     * @param  array  $merge
-     * @return array
-     */
-    protected function mergeReadWriteConfig(array $config, array $merge)
-    {
-        return Arr::except(array_merge($config, $merge), ['read', 'write']);
-    }
-
-    /**
-     * Create a new Closure that resolves to a PDO instance.
-     *
-     * @param  array  $config
-     * @return \Closure
-     */
-    protected function createPdoResolver(array $config)
-    {
-        return array_key_exists('host', $config)
-                            ? $this->createPdoResolverWithHosts($config)
-                            : $this->createPdoResolverWithoutHosts($config);
-    }
-
-    /**
-     * Create a new Closure that resolves to a PDO instance with a specific host or an array of hosts.
-     *
-     * @param  array  $config
-     * @return \Closure
-     *
-     * @throws \PDOException
-     */
-    protected function createPdoResolverWithHosts(array $config)
-    {
-        return function () use ($config) {
-            foreach (Arr::shuffle($hosts = $this->parseHosts($config)) as $key => $host) {
-                $config['host'] = $host;
-
-                try {
-                    return $this->createConnector($config)->connect($config);
-                } catch (PDOException $e) {
-                    continue;
-                }
-            }
-
-            throw $e;
-        };
-    }
-
-    /**
-     * Parse the hosts configuration item into an array.
-     *
-     * @param  array  $config
-     * @return array
-     *
-     * @throws \InvalidArgumentException
-     */
-    protected function parseHosts(array $config)
-    {
-        $hosts = Arr::wrap($config['host']);
-
-        if (empty($hosts)) {
-            throw new InvalidArgumentException('Database hosts array is empty.');
-        }
-
-        return $hosts;
-    }
-
-    /**
-     * Create a new Closure that resolves to a PDO instance where there is no configured host.
-     *
-     * @param  array  $config
-     * @return \Closure
-     */
-    protected function createPdoResolverWithoutHosts(array $config)
-    {
-        return function () use ($config) {
-            return $this->createConnector($config)->connect($config);
-        };
-    }
-
-    /**
-     * Create a connector instance based on the configuration.
-     *
-     * @param  array  $config
-     * @return \Illuminate\Database\Connectors\ConnectorInterface
-     *
-     * @throws \InvalidArgumentException
-     */
-    public function createConnector(array $config)
-    {
-        if (! isset($config['driver'])) {
-            throw new InvalidArgumentException('A driver must be specified.');
-        }
-
-        if ($this->container->bound($key = "db.connector.{$config['driver']}")) {
-            return $this->container->make($key);
-        }
-
-        switch ($config['driver']) {
-            case 'mysql':
-                return new MySqlConnector;
-            case 'pgsql':
-                return new PostgresConnector;
-            case 'sqlite':
-                return new SQLiteConnector;
-            case 'sqlsrv':
-                return new SqlServerConnector;
-        }
-
-        throw new InvalidArgumentException("Unsupported driver [{$config['driver']}].");
-    }
-
-    /**
-     * Create a new connection instance.
-     *
-     * @param  string  $driver
-     * @param  \PDO|\Closure  $connection
-     * @param  string  $database
-     * @param  string  $prefix
-     * @param  array  $config
-     * @return \Illuminate\Database\Connection
-     *
-     * @throws \InvalidArgumentException
-     */
-    protected function createConnection($driver, $connection, $database, $prefix = '', array $config = [])
-    {
-        if ($resolver = Connection::getResolver($driver)) {
-            return $resolver($connection, $database, $prefix, $config);
-        }
-
-        switch ($driver) {
-            case 'mysql':
-                return new MySqlConnection($connection, $database, $prefix, $config);
-            case 'pgsql':
-                return new PostgresConnection($connection, $database, $prefix, $config);
-            case 'sqlite':
-                return new SQLiteConnection($connection, $database, $prefix, $config);
-            case 'sqlsrv':
-                return new SqlServerConnection($connection, $database, $prefix, $config);
-        }
-
-        throw new InvalidArgumentException("Unsupported driver [{$driver}].");
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+5Fu1bBpMyhnL

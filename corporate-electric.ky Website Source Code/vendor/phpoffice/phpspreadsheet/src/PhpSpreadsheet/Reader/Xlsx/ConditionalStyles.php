@@ -1,97 +1,81 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Reader\Xlsx;
-
-use PhpOffice\PhpSpreadsheet\Style\Conditional;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-use SimpleXMLElement;
-
-class ConditionalStyles
-{
-    private $worksheet;
-
-    private $worksheetXml;
-
-    private $dxfs;
-
-    public function __construct(Worksheet $workSheet, SimpleXMLElement $worksheetXml, array $dxfs = [])
-    {
-        $this->worksheet = $workSheet;
-        $this->worksheetXml = $worksheetXml;
-        $this->dxfs = $dxfs;
-    }
-
-    public function load(): void
-    {
-        $this->setConditionalStyles(
-            $this->worksheet,
-            $this->readConditionalStyles($this->worksheetXml)
-        );
-    }
-
-    private function readConditionalStyles($xmlSheet)
-    {
-        $conditionals = [];
-        foreach ($xmlSheet->conditionalFormatting as $conditional) {
-            foreach ($conditional->cfRule as $cfRule) {
-                if (
-                    ((string) $cfRule['type'] == Conditional::CONDITION_NONE
-                    || (string) $cfRule['type'] == Conditional::CONDITION_CELLIS
-                    || (string) $cfRule['type'] == Conditional::CONDITION_CONTAINSTEXT
-                    || (string) $cfRule['type'] == Conditional::CONDITION_CONTAINSBLANKS
-                    || (string) $cfRule['type'] == Conditional::CONDITION_NOTCONTAINSBLANKS
-                    || (string) $cfRule['type'] == Conditional::CONDITION_EXPRESSION)
-                    && isset($this->dxfs[(int) ($cfRule['dxfId'])])
-                ) {
-                    $conditionals[(string) $conditional['sqref']][(int) ($cfRule['priority'])] = $cfRule;
-                }
-            }
-        }
-
-        return $conditionals;
-    }
-
-    private function setConditionalStyles(Worksheet $worksheet, array $conditionals): void
-    {
-        foreach ($conditionals as $ref => $cfRules) {
-            ksort($cfRules);
-            $conditionalStyles = $this->readStyleRules($cfRules);
-
-            // Extract all cell references in $ref
-            $cellBlocks = explode(' ', str_replace('$', '', strtoupper($ref)));
-            foreach ($cellBlocks as $cellBlock) {
-                $worksheet->getStyle($cellBlock)->setConditionalStyles($conditionalStyles);
-            }
-        }
-    }
-
-    private function readStyleRules($cfRules)
-    {
-        $conditionalStyles = [];
-        foreach ($cfRules as $cfRule) {
-            $objConditional = new Conditional();
-            $objConditional->setConditionType((string) $cfRule['type']);
-            $objConditional->setOperatorType((string) $cfRule['operator']);
-
-            if ((string) $cfRule['text'] != '') {
-                $objConditional->setText((string) $cfRule['text']);
-            }
-
-            if (isset($cfRule['stopIfTrue']) && (int) $cfRule['stopIfTrue'] === 1) {
-                $objConditional->setStopIfTrue(true);
-            }
-
-            if (count($cfRule->formula) > 1) {
-                foreach ($cfRule->formula as $formula) {
-                    $objConditional->addCondition((string) $formula);
-                }
-            } else {
-                $objConditional->addCondition((string) $cfRule->formula);
-            }
-            $objConditional->setStyle(clone $this->dxfs[(int) ($cfRule['dxfId'])]);
-            $conditionalStyles[] = $objConditional;
-        }
-
-        return $conditionalStyles;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+XJAobkoCkiZ1t58ATV48Cc1XF/Hz1xa97hPO

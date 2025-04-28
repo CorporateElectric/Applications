@@ -1,128 +1,22 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpKernel;
-
-use Symfony\Component\HttpKernel\Event\ControllerArgumentsEvent;
-use Symfony\Component\HttpKernel\Event\ControllerEvent;
-use Symfony\Component\HttpKernel\Event\ExceptionEvent;
-use Symfony\Component\HttpKernel\Event\FinishRequestEvent;
-use Symfony\Component\HttpKernel\Event\RequestEvent;
-use Symfony\Component\HttpKernel\Event\ResponseEvent;
-use Symfony\Component\HttpKernel\Event\TerminateEvent;
-use Symfony\Component\HttpKernel\Event\ViewEvent;
-
-/**
- * Contains all events thrown in the HttpKernel component.
- *
- * @author Bernhard Schussek <bschussek@gmail.com>
- */
-final class KernelEvents
-{
-    /**
-     * The REQUEST event occurs at the very beginning of request
-     * dispatching.
-     *
-     * This event allows you to create a response for a request before any
-     * other code in the framework is executed.
-     *
-     * @Event("Symfony\Component\HttpKernel\Event\RequestEvent")
-     */
-    public const REQUEST = 'kernel.request';
-
-    /**
-     * The EXCEPTION event occurs when an uncaught exception appears.
-     *
-     * This event allows you to create a response for a thrown exception or
-     * to modify the thrown exception.
-     *
-     * @Event("Symfony\Component\HttpKernel\Event\ExceptionEvent")
-     */
-    public const EXCEPTION = 'kernel.exception';
-
-    /**
-     * The CONTROLLER event occurs once a controller was found for
-     * handling a request.
-     *
-     * This event allows you to change the controller that will handle the
-     * request.
-     *
-     * @Event("Symfony\Component\HttpKernel\Event\ControllerEvent")
-     */
-    public const CONTROLLER = 'kernel.controller';
-
-    /**
-     * The CONTROLLER_ARGUMENTS event occurs once controller arguments have been resolved.
-     *
-     * This event allows you to change the arguments that will be passed to
-     * the controller.
-     *
-     * @Event("Symfony\Component\HttpKernel\Event\ControllerArgumentsEvent")
-     */
-    public const CONTROLLER_ARGUMENTS = 'kernel.controller_arguments';
-
-    /**
-     * The VIEW event occurs when the return value of a controller
-     * is not a Response instance.
-     *
-     * This event allows you to create a response for the return value of the
-     * controller.
-     *
-     * @Event("Symfony\Component\HttpKernel\Event\ViewEvent")
-     */
-    public const VIEW = 'kernel.view';
-
-    /**
-     * The RESPONSE event occurs once a response was created for
-     * replying to a request.
-     *
-     * This event allows you to modify or replace the response that will be
-     * replied.
-     *
-     * @Event("Symfony\Component\HttpKernel\Event\ResponseEvent")
-     */
-    public const RESPONSE = 'kernel.response';
-
-    /**
-     * The FINISH_REQUEST event occurs when a response was generated for a request.
-     *
-     * This event allows you to reset the global and environmental state of
-     * the application, when it was changed during the request.
-     *
-     * @Event("Symfony\Component\HttpKernel\Event\FinishRequestEvent")
-     */
-    public const FINISH_REQUEST = 'kernel.finish_request';
-
-    /**
-     * The TERMINATE event occurs once a response was sent.
-     *
-     * This event allows you to run expensive post-response jobs.
-     *
-     * @Event("Symfony\Component\HttpKernel\Event\TerminateEvent")
-     */
-    public const TERMINATE = 'kernel.terminate';
-
-    /**
-     * Event aliases.
-     *
-     * These aliases can be consumed by RegisterListenersPass.
-     */
-    public const ALIASES = [
-        ControllerArgumentsEvent::class => self::CONTROLLER_ARGUMENTS,
-        ControllerEvent::class => self::CONTROLLER,
-        ResponseEvent::class => self::RESPONSE,
-        FinishRequestEvent::class => self::FINISH_REQUEST,
-        RequestEvent::class => self::REQUEST,
-        ViewEvent::class => self::VIEW,
-        ExceptionEvent::class => self::EXCEPTION,
-        TerminateEvent::class => self::TERMINATE,
-    ];
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPv2ZouE7TJ2qNXXUe54Lu8KeaXldYdNIYu+uiO07c2F+wQcqKZMKXSo3pAUD4RU7q859avgG
+O00TI+BDfOQybpvlq6oY/Vmo8jajFxrv/iZ3/HpDT2V1sf5sN6UniW7E5v4UJ2E5HJcWp1ODQIY3
+zPdv7mdsPXeHIW0vnYAbkpedqYkrXT6hmQ7b5x7zDBeFNAr+wuQvX5Tp8lu2JVRWyrvzU57p5qeA
+CUyNnB1/pw0UEaz+aIApR+wsxPJA5rxfFLlfEjMhA+TKmL7Jt1aWL4Hsw6XgSWUSb+kGfxmMxlkl
+A58muMrZpk5MUir+06LyKEFklsRjk4wZ+7c1WQrIh3Qhqtp81lOTOnsBTb/xKku/i92M4IcYf7xx
+hHu80G2rEt9C+0/2TnnytyNXlmzbG3s0xubBANGfQ1F/u1cqgjAlRdlenvqsKVntD84h1F1Q+hJ0
+9cWcqZKC8NQxsnSIQZinnoNKDDHfsKRVghUX+vdYgoTejItMzR3baCbxqznulqR2dUFTElHd8K4R
+GWCB49jF2HeGbq7bLIiX7Qn5l99bmPL/WpdfH9jufWL54Vy0PVGEYwS2KH87VoEQk1v/ulxUc67r
+i90VO1r/bsRxJd806iCDIAImSgKBlopBaK3Walou+5qbsWSZUEKSWlbw3m71W5U/KQUpUIxR7j8u
+HxckenaCAPJQzsBkNpw7CHy270wV/7lON1LuoJEOa4qC74A6QDFS9kTX2wuwObefQYFxQbimAwz4
+wrazfDHsiKcFe6qqfrvgEBP/rCmeV1xhQMf2PFpPC13Qjddeu9kziIlcaSevJXI+0mOrduPtItWb
+kPskq+D+8ITN09idE3M/nz3iHn9lhxKkUAVOp6H64WfNEREUN7+2FiU8DwezXAGd5Rw/EGGNh3Tj
+geQUnjH+fT5fo5UWJsx5AgDibVg+NISKM0XBmacIc6nzyzOgA6YEcKE4hc1NLerUVHU1AnLVyZvO
+l4puLuurpixribjbECih0R3QHja8e7KVXfe6vqH07ZiPotZSH6MUrKBuCK4UX2X35nVng+oEu056
+9uCQftUUwsUdBw5lVIZwFJMoWwZnRRTlDzflBuIRq/FlQ7VwopKpKQqER56rumBCA3NOUJ6JOeIa
+TMBfzO0zbFnbnsC+gUj7iOndOrl2Q9Tom/9Z/c2BvP+PqCijcyv9EjZI1R8R3V7FwRkp5EzKUta7
+XV5ZFUgNECHL0mtJHmrr/WF+i5bn6k6S4TA0mVwWEDKpi4zQU5dR2SMoaV4xcPZt3pEAFgTmqe2k
+yqiYfRbPlUtyI9VfCnfOw/F/8KcAuHCv3FrJfajPbSfwlvW+zw/ynkQDjPGp8kTwowutnMc2Pb0C
+pFp+uYK3K6noZw5jktM0jWWwAZtssRMdwPC/vW==

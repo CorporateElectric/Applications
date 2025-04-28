@@ -1,98 +1,53 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of sebastian/comparator.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\Comparator;
-
-use function is_object;
-use function is_scalar;
-use function is_string;
-use function method_exists;
-use function sprintf;
-use function strtolower;
-
-/**
- * Compares scalar or NULL values for equality.
- */
-class ScalarComparator extends Comparator
-{
-    /**
-     * Returns whether the comparator can compare two values.
-     *
-     * @param mixed $expected The first value to compare
-     * @param mixed $actual   The second value to compare
-     *
-     * @return bool
-     *
-     * @since  Method available since Release 3.6.0
-     */
-    public function accepts($expected, $actual)
-    {
-        return ((is_scalar($expected) xor null === $expected) &&
-               (is_scalar($actual) xor null === $actual))
-               // allow comparison between strings and objects featuring __toString()
-               || (is_string($expected) && is_object($actual) && method_exists($actual, '__toString'))
-               || (is_object($expected) && method_exists($expected, '__toString') && is_string($actual));
-    }
-
-    /**
-     * Asserts that two values are equal.
-     *
-     * @param mixed $expected     First value to compare
-     * @param mixed $actual       Second value to compare
-     * @param float $delta        Allowed numerical distance between two values to consider them equal
-     * @param bool  $canonicalize Arrays are sorted before comparison when set to true
-     * @param bool  $ignoreCase   Case is ignored when set to true
-     *
-     * @throws ComparisonFailure
-     */
-    public function assertEquals($expected, $actual, $delta = 0.0, $canonicalize = false, $ignoreCase = false)/*: void*/
-    {
-        $expectedToCompare = $expected;
-        $actualToCompare   = $actual;
-
-        // always compare as strings to avoid strange behaviour
-        // otherwise 0 == 'Foobar'
-        if (is_string($expected) || is_string($actual)) {
-            $expectedToCompare = (string) $expectedToCompare;
-            $actualToCompare   = (string) $actualToCompare;
-
-            if ($ignoreCase) {
-                $expectedToCompare = strtolower($expectedToCompare);
-                $actualToCompare   = strtolower($actualToCompare);
-            }
-        }
-
-        if ($expectedToCompare !== $actualToCompare && is_string($expected) && is_string($actual)) {
-            throw new ComparisonFailure(
-                $expected,
-                $actual,
-                $this->exporter->export($expected),
-                $this->exporter->export($actual),
-                false,
-                'Failed asserting that two strings are equal.'
-            );
-        }
-
-        if ($expectedToCompare != $actualToCompare) {
-            throw new ComparisonFailure(
-                $expected,
-                $actual,
-                // no diff is required
-                '',
-                '',
-                false,
-                sprintf(
-                    'Failed asserting that %s matches expected %s.',
-                    $this->exporter->export($actual),
-                    $this->exporter->export($expected)
-                )
-            );
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

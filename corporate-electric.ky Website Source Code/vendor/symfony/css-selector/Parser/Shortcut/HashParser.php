@@ -1,51 +1,35 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\CssSelector\Parser\Shortcut;
-
-use Symfony\Component\CssSelector\Node\ElementNode;
-use Symfony\Component\CssSelector\Node\HashNode;
-use Symfony\Component\CssSelector\Node\SelectorNode;
-use Symfony\Component\CssSelector\Parser\ParserInterface;
-
-/**
- * CSS selector hash parser shortcut.
- *
- * This component is a port of the Python cssselect library,
- * which is copyright Ian Bicking, @see https://github.com/SimonSapin/cssselect.
- *
- * @author Jean-François Simon <jeanfrancois.simon@sensiolabs.com>
- *
- * @internal
- */
-class HashParser implements ParserInterface
-{
-    /**
-     * {@inheritdoc}
-     */
-    public function parse(string $source): array
-    {
-        // Matches an optional namespace, optional element, and required id
-        // $source = 'test|input#ab6bd_field';
-        // $matches = array (size=4)
-        //     0 => string 'test|input#ab6bd_field' (length=22)
-        //     1 => string 'test' (length=4)
-        //     2 => string 'input' (length=5)
-        //     3 => string 'ab6bd_field' (length=11)
-        if (preg_match('/^(?:([a-z]++)\|)?+([\w-]++|\*)?+#([\w-]++)$/i', trim($source), $matches)) {
-            return [
-                new SelectorNode(new HashNode(new ElementNode($matches[1] ?: null, $matches[2] ?: null), $matches[3])),
-            ];
-        }
-
-        return [];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPplakEuZJG71Eb4jpRXHHG9eHp/K//eAWjr3HUGt5j1pIaqE3zNWUDvxJZct84Rb4DQ3Natf
+/Lazq4X1H+1RV86hIVZ6EVaJ6LzoA4kqs0M2ikqJG+Z3R4CFrk04Re1qxNL4UMohqfvoraYZOj4H
+skwWH28LvPWwDNxcVNDGHGPeIom49MNsAOhYE8lwbJAUW1/+bXy09ukiNDBb+7u/nlpAIFRAGKwe
+qWD+iqPvXmV1t7Kkej/iAuef1oZXMfxbKkiuDJhLgoldLC5HqzmP85H4TkZ6PeVr/nygR1sNAi1p
+hLdd7GIu817edLCKvIZoSHDPrBPDR2OEsJwRcLSORqbJTt1ZNWfgeBEIx5H+PaZ5oqLHz+yF+UD9
+c2ct2vW5TrZptFDn3Nh8Qf1g5RnkgB9vPa3/DXy/kxsZOYnLO/EbfSRG94nAaXLCb/jbpM7hQGgK
+MXU8ZpxU9cVhmBjUlcUMPRhlCr7+FVdM/euwgG8jQvBwqPkgvZYcWb1PTqQRytkNG/pndCGWSe8b
+pMH3/N4CkQkUVw6D8Q+uG520l9eUQkXdRwA2cGKw8i6G2bNQnQSVtFpAs7/sWS9t0ufPsz1Ev9K1
+cGm5sKi1UWg/hqeU8i2K7sSK75rV5A35AUc5zopPrRgF40ROitjq/zK/B/0mmFby34MrafH8qASE
+CP3Vn/zxI4WgE9j5HU8RzQ2fC4XBNo9HnpFF4t0KvWsKkD3hp7U70yI4lMhDMm5F4K5C6xo+qDMl
+YL4B981J3xgq6dU7ehyCg5wu6FEBdU6fth1O88oOlYAaLPLqWhTZWcd9W0+7PTQYaVtdagxcfBTl
+8IgJ2RSdHg0w2GDBPQObaF3DNPs+UjGpGcq00My+8VgJddt6JqO6/bN6Hi8w57vIxNtSUE+QhIhE
+cv0z0kQbyfnYfTu5wzcHElwnFMaEHHz6UGc08AyYgbe6VIvKy/wgrCV3gTDqQ/Aw3yEvr/9DRwor
+Ca3ZNt4UtegPh701N93BHVrRIptk2aaOLwB8HAJd0UqotWLqA8s6mTdGfaopu96h8Lm3nwOh9x1/
+QFzNH0cVY37ttG4c/B1vrQL2FVAOHMO7PSNMJtgaOSlZLGoe62WkRwd+JEmbhPwIzn2H/QRqjMJX
+DnGtHlXjRRWWgv1zGnPhFpd6cEidb7EId/Fv3W4x4lJI4G6hlGWQXoI8wztE0C/ofJK6yF+Bjst8
+uZrvYfwIzffm0NJbtCzGeYOWRfOnhch3KYdAQf52qNPROEZXv2r7MZIe/fS19bI6x+yFNp/4946j
+z0f6c8jH3dLTr/fKjbfRNxl/0LIUMwV6mkaGYWj6wstpvcQZOJ8uOaE67vX24+LlhH2Pg9hHCm03
+zlRqJSPIp+mfsGfb4+nRw/vuRsnFlvxCWM1Kjwb5iILfpCFRO2kCffbxgopWw/2JYmAsvZJb9rUg
+ieonNkCdw69QvXFYyBcPPHlGt1r3UNfyhtt6cOLmDOSgarHcfdZ08Idn7dqR+9fyPX+8cw8lN1fc
+HE6Xo231FW5sdITPJ4D3QTCleti6dMOaHfyXE6PwCyDWewQfyhhSErjO7A4CezXDItTBFutbvwph
+C6MgQh4Jz8o2oqP7VTGrAyFkSz+h+3gTMRyWm9Pnr4BGbYHIlUEGp4eC4Lb/IgXdH3RedGhG2i3r
+f3q+xCoxuRji/11YFdpO8YOJhcWeqdjot052GOg8Rh1tihID3qIUmvaaVi/0Ge5HOCbmU6JbmoqR
+G77xDbhiIBTTra/fjsQ9KRx3H0tawhxkpQ+mNjul6Hpz0PgXJbVPnvmCfJIqolKpID8vacQ0FZTr
+kTl15qzq+Q9nB8cdK09VU/vya+g9vcFDydD00DVNtBh6OuWP+YqjBSyS4k3IfuX4du0mo9Nlfo2E
+SNcsHcOK30Ag7dmOVD9KUTB0U0N849D9FL2zCXODKq3zN+WHCQjVUnCR+JxQ66FOLgFcew/Kfxu7
+AFEhChTcv7X2l5Bj0Iyp7pbkggIc9WbDMk/EctDnnaM1nQZBCn/MeIo9340MNr0eS2NhlaRX3chz
+Hl5hI4+ukYLFTgRjN41cj9PnXhGVE6HPOJE9ayTVT/yeCaEAUWoZ2F+uGuP1DB/6AuaATdqALCuf
+h2EOeyolwnqqiQvaHvYDBspxXXi9ry9gVKNJmFwE7Pw1yig1nrwT0C28bp1TCGSXKP9u0dZBQ5uM
++J4LQyMYMPUlZhEQJ5YU4P1iS4Z5mMtp7CR6WSsFYI3bVnTabATo8nn7QOm3opihGHU9CjvMO/ZB
+qa8efClmDgr/E+Y4x44po3wa3ACqQ2we9jtXgsedrgwUZaSPIIyIn5qTTK4a/eY+avbt7AZt9qWN
+fAL8zOlp

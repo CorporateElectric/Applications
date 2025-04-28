@@ -1,107 +1,29 @@
-<?php
-/**
- * Mockery
- *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://github.com/padraic/mockery/blob/master/LICENSE
- * If you did not receive a copy of the license and are unable to
- * obtain it through the world-wide-web, please send an email
- * to padraic@php.net so we can send you a copy immediately.
- *
- * @category   Mockery
- * @package    Mockery
- * @copyright  Copyright (c) 2010 Pádraic Brady (http://blog.astrumfutura.com)
- * @license    http://github.com/padraic/mockery/blob/master/LICENSE New BSD License
- */
-
-namespace Mockery\Generator;
-
-interface TargetClassInterface
-{
-    /**
-     * Returns a new instance of the current
-     * TargetClassInterface's
-     * implementation.
-     *
-     * @param string $name
-     * @return TargetClassInterface
-     */
-    public static function factory($name);
-
-    /**
-     * Returns the targetClass's name.
-     *
-     * @return string
-     */
-    public function getName();
-
-    /**
-     * Returns the targetClass's methods.
-     *
-     * @return array
-     */
-    public function getMethods();
-
-    /**
-     * Returns the targetClass's interfaces.
-     *
-     * @return array
-     */
-    public function getInterfaces();
-
-    /**
-     * Returns the targetClass's namespace name.
-     *
-     * @return string
-     */
-    public function getNamespaceName();
-
-    /**
-     * Returns the targetClass's short name.
-     *
-     * @return string
-     */
-    public function getShortName();
-
-    /**
-     * Returns whether the targetClass is abstract.
-     *
-     * @return boolean
-     */
-    public function isAbstract();
-
-    /**
-     * Returns whether the targetClass is final.
-     *
-     * @return boolean
-     */
-    public function isFinal();
-
-    /**
-     * Returns whether the targetClass is in namespace.
-     *
-     * @return boolean
-     */
-    public function inNamespace();
-
-    /**
-     * Returns whether the targetClass is in
-     * the passed interface.
-     *
-     * @param mixed $interface
-     * @return boolean
-     */
-    public function implementsInterface($interface);
-
-    /**
-     * Returns whether the targetClass has
-     * an internal ancestor.
-     *
-     * @return boolean
-     */
-    public function hasInternalAncestor();
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cP+L2PSd3g5tlclRmwk6gCwwRlTrstZGaC/yCPc2ShldmYNlQvYA8mbex2AcCWbDlSe6Lz3fX
+8RH74LtS74jCPOAXP4lFSnG3QZ8tvgaG+GHLtxHm3N+pUSpf+t/SqZzqYifoPuj94CCYhntQJd/0
+ZtU4UdFlj/dXcTfEDnY+9R1823hZCCyWQduYrefMpdD9brwh79pf83gAqVAKuNjuP4yN25rpOiR3
+gvbjrbJMtROO41mBmgOVof4zSgHzeMtAc+cIa+JLEjMhA+TKmL7Jt1aWL4Hsw2LkuBfMdHTfSv/0
+I7Cj3gHo1KhlGeiCaaKs+M7t46gPQTKjglCvwnpGRZUzbJ0Gp7UkggHDPOguawqWxNXLcPfuWO1j
+wsEZdy9avqg0usq0ztVmoBzHzdN/8aoHfsooPwHAKRxptfpTlHPjXAjciZdd8KkW7DoUIl7gEOTx
+H7hYM5aNwQ2HTZTA1wiJBjons+nkBeHny1DFmfyxvIVm8d9blY++lI9GkbitoWiRSoaiGyplvhv1
+AdebAmlDfKlFHsyWJ60NfPu1cyh4jNRDbbhQ9R+JubJEyTMTQYp+Pc1QcCRy6INTvU2zfyK/LdfW
+peSwUPejKr+h0yqk8XPJJ8pii1RVY11266Q4RhLQNurSK5Q7TId/lEEJO5uJ/Q12n4yxnNFO/PHg
+yAmdxgO/e0jPY2z5DqdJuEshYXbYNO5xhUjrz+Wu5p/YMMOOIw+Y8JkL3uPfyKF2AWIDhhRfj8kx
+PEtdGc3laLVUAnLr5c9bzxpwEEYpswAYX9MXz3ZqGTbdSRtU3YVzRrviYOdNjzIu6BocT91tiWZi
+v4XPNYHafbAL48nQTDMQKR7KU3AQ7WM53yC8SJlibnmseZimwh3QY16QvAHO6i+IPzWJRZ+QS1Ee
+1r7kIJ0CHjYZjxtNZmTCv7unhD8bYy/ijmPUJug6Cm1gur4hZUnZZ9NQxzdxjQRJyzd6JjCT+bru
+2gA58IB9Egx57zTQNk704HZIt0aqlyqYp2azSUfOhhaFnvMwhAhTIGvkOW6A1rC9YK87f244u+BH
+yEK35671FKkAGzVRCIqESuBNoW102EJ6y2HHXB44cb5kZf3Z0uPcVJAGv3/lgt+SJcPgTK4SeQwt
+C4ufp/vNERx0LvqgZgUUVjprk1xA7f/92VspEB60BnIgu/HXsRBK7iyv4FrkQuxCCrOnCMSE1XLE
+mi0X3sAvteukqWlSStn1IyzMJPKR2o8ccv5JhrjATHA4k4aPCak7oKAtR3jpHGlhUPdbmp97BfyN
+70+7asZ5ebSU8tEETswr4AUSS2CNmeL0nu2Kn7sA3C1AO4sbpS/iGMC2ac62oKx9g1+6JnRYze9s
+6jvO9dk5SOG7qIEZoLTjmNgcoR1rZBL51cUNwh2NBuMd8nFNHmhSxlT/caTIY4NTToG+z1JD5iXM
+YBG++GRfp7Zq8gSDWlS1umwDSgcPpuWklRnK9rbjKiChp3dNo5Sg/obHiOlb5CK0h3sGOmMYDG51
+vXPKkPAVjef04pZVNsEj87vIcOYEd9lPc636A4WeTU77cGVVc/b7krZayqtMI2h/veBMntTrDm2T
+hqEgLNMsgvHEbdvx8vgCJnyjvYAxZlaSD7TI3x5HODFV0V5hz0W6bbhIZ557iLbi2+Dq8e9xo/DO
+g9NRe8H2YoAOrR9N8/uMFeHz0Ve6CmGZCFQ6jlF8aR60QjBZu3wOzEYpMRgNA0ksdHJVG/rb07Og
+DQB6QQG/H68G5WH5n40tbuQVBtVGcGlm1kp/GjbStKwZr6ZwyOIr63J/ZUsA0qdwv9FOmskGwBmz
+eoomLeboawqs5GQKr3Qve15g9/k2FTs5h5QegcBRVLDBe514GQlhM23wjfYXIb+I0xGD3Xsqm4iM
+HiS79Xw0dJMQjRPJKGA/NR40hqQVLbmOOAXKLYR5

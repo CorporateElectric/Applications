@@ -1,384 +1,170 @@
-<?php
-
-namespace Illuminate\Database\Eloquent\Relations;
-
-use BadMethodCallException;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\Model;
-
-class MorphTo extends BelongsTo
-{
-    /**
-     * The type of the polymorphic relation.
-     *
-     * @var string
-     */
-    protected $morphType;
-
-    /**
-     * The models whose relations are being eager loaded.
-     *
-     * @var \Illuminate\Database\Eloquent\Collection
-     */
-    protected $models;
-
-    /**
-     * All of the models keyed by ID.
-     *
-     * @var array
-     */
-    protected $dictionary = [];
-
-    /**
-     * A buffer of dynamic calls to query macros.
-     *
-     * @var array
-     */
-    protected $macroBuffer = [];
-
-    /**
-     * A map of relations to load for each individual morph type.
-     *
-     * @var array
-     */
-    protected $morphableEagerLoads = [];
-
-    /**
-     * A map of relationship counts to load for each individual morph type.
-     *
-     * @var array
-     */
-    protected $morphableEagerLoadCounts = [];
-
-    /**
-     * A map of constraints to apply for each individual morph type.
-     *
-     * @var array
-     */
-    protected $morphableConstraints = [];
-
-    /**
-     * Create a new morph to relationship instance.
-     *
-     * @param  \Illuminate\Database\Eloquent\Builder  $query
-     * @param  \Illuminate\Database\Eloquent\Model  $parent
-     * @param  string  $foreignKey
-     * @param  string  $ownerKey
-     * @param  string  $type
-     * @param  string  $relation
-     * @return void
-     */
-    public function __construct(Builder $query, Model $parent, $foreignKey, $ownerKey, $type, $relation)
-    {
-        $this->morphType = $type;
-
-        parent::__construct($query, $parent, $foreignKey, $ownerKey, $relation);
-    }
-
-    /**
-     * Set the constraints for an eager load of the relation.
-     *
-     * @param  array  $models
-     * @return void
-     */
-    public function addEagerConstraints(array $models)
-    {
-        $this->buildDictionary($this->models = Collection::make($models));
-    }
-
-    /**
-     * Build a dictionary with the models.
-     *
-     * @param  \Illuminate\Database\Eloquent\Collection  $models
-     * @return void
-     */
-    protected function buildDictionary(Collection $models)
-    {
-        foreach ($models as $model) {
-            if ($model->{$this->morphType}) {
-                $this->dictionary[$model->{$this->morphType}][$model->{$this->foreignKey}][] = $model;
-            }
-        }
-    }
-
-    /**
-     * Get the results of the relationship.
-     *
-     * Called via eager load method of Eloquent query builder.
-     *
-     * @return mixed
-     */
-    public function getEager()
-    {
-        foreach (array_keys($this->dictionary) as $type) {
-            $this->matchToMorphParents($type, $this->getResultsByType($type));
-        }
-
-        return $this->models;
-    }
-
-    /**
-     * Get all of the relation results for a type.
-     *
-     * @param  string  $type
-     * @return \Illuminate\Database\Eloquent\Collection
-     */
-    protected function getResultsByType($type)
-    {
-        $instance = $this->createModelByType($type);
-
-        $ownerKey = $this->ownerKey ?? $instance->getKeyName();
-
-        $query = $this->replayMacros($instance->newQuery())
-                            ->mergeConstraintsFrom($this->getQuery())
-                            ->with(array_merge(
-                                $this->getQuery()->getEagerLoads(),
-                                (array) ($this->morphableEagerLoads[get_class($instance)] ?? [])
-                            ))
-                            ->withCount(
-                                (array) ($this->morphableEagerLoadCounts[get_class($instance)] ?? [])
-                            );
-
-        if ($callback = ($this->morphableConstraints[get_class($instance)] ?? null)) {
-            $callback($query);
-        }
-
-        $whereIn = $this->whereInMethod($instance, $ownerKey);
-
-        return $query->{$whereIn}(
-            $instance->getTable().'.'.$ownerKey, $this->gatherKeysByType($type, $instance->getKeyType())
-        )->get();
-    }
-
-    /**
-     * Gather all of the foreign keys for a given type.
-     *
-     * @param  string  $type
-     * @param  string  $keyType
-     * @return array
-     */
-    protected function gatherKeysByType($type, $keyType)
-    {
-        return $keyType !== 'string'
-                    ? array_keys($this->dictionary[$type])
-                    : array_map(function ($modelId) {
-                        return (string) $modelId;
-                    }, array_keys($this->dictionary[$type]));
-    }
-
-    /**
-     * Create a new model instance by type.
-     *
-     * @param  string  $type
-     * @return \Illuminate\Database\Eloquent\Model
-     */
-    public function createModelByType($type)
-    {
-        $class = Model::getActualClassNameForMorph($type);
-
-        return tap(new $class, function ($instance) {
-            if (! $instance->getConnectionName()) {
-                $instance->setConnection($this->getConnection()->getName());
-            }
-        });
-    }
-
-    /**
-     * Match the eagerly loaded results to their parents.
-     *
-     * @param  array  $models
-     * @param  \Illuminate\Database\Eloquent\Collection  $results
-     * @param  string  $relation
-     * @return array
-     */
-    public function match(array $models, Collection $results, $relation)
-    {
-        return $models;
-    }
-
-    /**
-     * Match the results for a given type to their parents.
-     *
-     * @param  string  $type
-     * @param  \Illuminate\Database\Eloquent\Collection  $results
-     * @return void
-     */
-    protected function matchToMorphParents($type, Collection $results)
-    {
-        foreach ($results as $result) {
-            $ownerKey = ! is_null($this->ownerKey) ? $result->{$this->ownerKey} : $result->getKey();
-
-            if (isset($this->dictionary[$type][$ownerKey])) {
-                foreach ($this->dictionary[$type][$ownerKey] as $model) {
-                    $model->setRelation($this->relationName, $result);
-                }
-            }
-        }
-    }
-
-    /**
-     * Associate the model instance to the given parent.
-     *
-     * @param  \Illuminate\Database\Eloquent\Model  $model
-     * @return \Illuminate\Database\Eloquent\Model
-     */
-    public function associate($model)
-    {
-        $this->parent->setAttribute(
-            $this->foreignKey, $model instanceof Model ? $model->getKey() : null
-        );
-
-        $this->parent->setAttribute(
-            $this->morphType, $model instanceof Model ? $model->getMorphClass() : null
-        );
-
-        return $this->parent->setRelation($this->relationName, $model);
-    }
-
-    /**
-     * Dissociate previously associated model from the given parent.
-     *
-     * @return \Illuminate\Database\Eloquent\Model
-     */
-    public function dissociate()
-    {
-        $this->parent->setAttribute($this->foreignKey, null);
-
-        $this->parent->setAttribute($this->morphType, null);
-
-        return $this->parent->setRelation($this->relationName, null);
-    }
-
-    /**
-     * Touch all of the related models for the relationship.
-     *
-     * @return void
-     */
-    public function touch()
-    {
-        if (! is_null($this->child->{$this->foreignKey})) {
-            parent::touch();
-        }
-    }
-
-    /**
-     * Make a new related instance for the given model.
-     *
-     * @param  \Illuminate\Database\Eloquent\Model  $parent
-     * @return \Illuminate\Database\Eloquent\Model
-     */
-    protected function newRelatedInstanceFor(Model $parent)
-    {
-        return $parent->{$this->getRelationName()}()->getRelated()->newInstance();
-    }
-
-    /**
-     * Get the foreign key "type" name.
-     *
-     * @return string
-     */
-    public function getMorphType()
-    {
-        return $this->morphType;
-    }
-
-    /**
-     * Get the dictionary used by the relationship.
-     *
-     * @return array
-     */
-    public function getDictionary()
-    {
-        return $this->dictionary;
-    }
-
-    /**
-     * Specify which relations to load for a given morph type.
-     *
-     * @param  array  $with
-     * @return \Illuminate\Database\Eloquent\Relations\MorphTo
-     */
-    public function morphWith(array $with)
-    {
-        $this->morphableEagerLoads = array_merge(
-            $this->morphableEagerLoads, $with
-        );
-
-        return $this;
-    }
-
-    /**
-     * Specify which relationship counts to load for a given morph type.
-     *
-     * @param  array  $withCount
-     * @return \Illuminate\Database\Eloquent\Relations\MorphTo
-     */
-    public function morphWithCount(array $withCount)
-    {
-        $this->morphableEagerLoadCounts = array_merge(
-            $this->morphableEagerLoadCounts, $withCount
-        );
-
-        return $this;
-    }
-
-    /**
-     * Specify constraints on the query for a given morph types.
-     *
-     * @param  array  $callbacks
-     * @return \Illuminate\Database\Eloquent\Relations\MorphTo
-     */
-    public function constrain(array $callbacks)
-    {
-        $this->morphableConstraints = array_merge(
-            $this->morphableConstraints, $callbacks
-        );
-
-        return $this;
-    }
-
-    /**
-     * Replay stored macro calls on the actual related instance.
-     *
-     * @param  \Illuminate\Database\Eloquent\Builder  $query
-     * @return \Illuminate\Database\Eloquent\Builder
-     */
-    protected function replayMacros(Builder $query)
-    {
-        foreach ($this->macroBuffer as $macro) {
-            $query->{$macro['method']}(...$macro['parameters']);
-        }
-
-        return $query;
-    }
-
-    /**
-     * Handle dynamic method calls to the relationship.
-     *
-     * @param  string  $method
-     * @param  array  $parameters
-     * @return mixed
-     */
-    public function __call($method, $parameters)
-    {
-        try {
-            $result = parent::__call($method, $parameters);
-
-            if (in_array($method, ['select', 'selectRaw', 'selectSub', 'addSelect', 'withoutGlobalScopes'])) {
-                $this->macroBuffer[] = compact('method', 'parameters');
-            }
-
-            return $result;
-        }
-
-        // If we tried to call a method that does not exist on the parent Builder instance,
-        // we'll assume that we want to call a query macro (e.g. withTrashed) that only
-        // exists on related models. We will just store the call and replay it later.
-        catch (BadMethodCallException $e) {
-            $this->macroBuffer[] = compact('method', 'parameters');
-
-            return $this;
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+kB3fHP0=

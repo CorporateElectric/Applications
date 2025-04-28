@@ -1,328 +1,121 @@
-<?php
-
-namespace Illuminate\Database\Concerns;
-
-use Closure;
-use RuntimeException;
-use Throwable;
-
-trait ManagesTransactions
-{
-    /**
-     * Execute a Closure within a transaction.
-     *
-     * @param  \Closure  $callback
-     * @param  int  $attempts
-     * @return mixed
-     *
-     * @throws \Throwable
-     */
-    public function transaction(Closure $callback, $attempts = 1)
-    {
-        for ($currentAttempt = 1; $currentAttempt <= $attempts; $currentAttempt++) {
-            $this->beginTransaction();
-
-            // We'll simply execute the given callback within a try / catch block and if we
-            // catch any exception we can rollback this transaction so that none of this
-            // gets actually persisted to a database or stored in a permanent fashion.
-            try {
-                $callbackResult = $callback($this);
-            }
-
-            // If we catch an exception we'll rollback this transaction and try again if we
-            // are not out of attempts. If we are out of attempts we will just throw the
-            // exception back out and let the developer handle an uncaught exceptions.
-            catch (Throwable $e) {
-                $this->handleTransactionException(
-                    $e, $currentAttempt, $attempts
-                );
-
-                continue;
-            }
-
-            try {
-                if ($this->transactions == 1) {
-                    $this->getPdo()->commit();
-
-                    optional($this->transactionsManager)->commit($this->getName());
-                }
-
-                $this->transactions = max(0, $this->transactions - 1);
-            } catch (Throwable $e) {
-                $this->handleCommitTransactionException(
-                    $e, $currentAttempt, $attempts
-                );
-
-                continue;
-            }
-
-            $this->fireConnectionEvent('committed');
-
-            return $callbackResult;
-        }
-    }
-
-    /**
-     * Handle an exception encountered when running a transacted statement.
-     *
-     * @param  \Throwable  $e
-     * @param  int  $currentAttempt
-     * @param  int  $maxAttempts
-     * @return void
-     *
-     * @throws \Throwable
-     */
-    protected function handleTransactionException(Throwable $e, $currentAttempt, $maxAttempts)
-    {
-        // On a deadlock, MySQL rolls back the entire transaction so we can't just
-        // retry the query. We have to throw this exception all the way out and
-        // let the developer handle it in another way. We will decrement too.
-        if ($this->causedByConcurrencyError($e) &&
-            $this->transactions > 1) {
-            $this->transactions--;
-
-            optional($this->transactionsManager)->rollback(
-                $this->getName(), $this->transactions
-            );
-
-            throw $e;
-        }
-
-        // If there was an exception we will rollback this transaction and then we
-        // can check if we have exceeded the maximum attempt count for this and
-        // if we haven't we will return and try this query again in our loop.
-        $this->rollBack();
-
-        if ($this->causedByConcurrencyError($e) &&
-            $currentAttempt < $maxAttempts) {
-            return;
-        }
-
-        throw $e;
-    }
-
-    /**
-     * Start a new database transaction.
-     *
-     * @return void
-     *
-     * @throws \Throwable
-     */
-    public function beginTransaction()
-    {
-        $this->createTransaction();
-
-        $this->transactions++;
-
-        optional($this->transactionsManager)->begin(
-            $this->getName(), $this->transactions
-        );
-
-        $this->fireConnectionEvent('beganTransaction');
-    }
-
-    /**
-     * Create a transaction within the database.
-     *
-     * @return void
-     *
-     * @throws \Throwable
-     */
-    protected function createTransaction()
-    {
-        if ($this->transactions == 0) {
-            $this->reconnectIfMissingConnection();
-
-            try {
-                $this->getPdo()->beginTransaction();
-            } catch (Throwable $e) {
-                $this->handleBeginTransactionException($e);
-            }
-        } elseif ($this->transactions >= 1 && $this->queryGrammar->supportsSavepoints()) {
-            $this->createSavepoint();
-        }
-    }
-
-    /**
-     * Create a save point within the database.
-     *
-     * @return void
-     *
-     * @throws \Throwable
-     */
-    protected function createSavepoint()
-    {
-        $this->getPdo()->exec(
-            $this->queryGrammar->compileSavepoint('trans'.($this->transactions + 1))
-        );
-    }
-
-    /**
-     * Handle an exception from a transaction beginning.
-     *
-     * @param  \Throwable  $e
-     * @return void
-     *
-     * @throws \Throwable
-     */
-    protected function handleBeginTransactionException(Throwable $e)
-    {
-        if ($this->causedByLostConnection($e)) {
-            $this->reconnect();
-
-            $this->getPdo()->beginTransaction();
-        } else {
-            throw $e;
-        }
-    }
-
-    /**
-     * Commit the active database transaction.
-     *
-     * @return void
-     *
-     * @throws \Throwable
-     */
-    public function commit()
-    {
-        if ($this->transactions == 1) {
-            $this->getPdo()->commit();
-
-            optional($this->transactionsManager)->commit($this->getName());
-        }
-
-        $this->transactions = max(0, $this->transactions - 1);
-
-        $this->fireConnectionEvent('committed');
-    }
-
-    /**
-     * Handle an exception encountered when committing a transaction.
-     *
-     * @param  \Throwable  $e
-     * @param  int  $currentAttempt
-     * @param  int  $maxAttempts
-     * @return void
-     *
-     * @throws \Throwable
-     */
-    protected function handleCommitTransactionException(Throwable $e, $currentAttempt, $maxAttempts)
-    {
-        $this->transactions = max(0, $this->transactions - 1);
-
-        if ($this->causedByConcurrencyError($e) &&
-            $currentAttempt < $maxAttempts) {
-            return;
-        }
-
-        if ($this->causedByLostConnection($e)) {
-            $this->transactions = 0;
-        }
-
-        throw $e;
-    }
-
-    /**
-     * Rollback the active database transaction.
-     *
-     * @param  int|null  $toLevel
-     * @return void
-     *
-     * @throws \Throwable
-     */
-    public function rollBack($toLevel = null)
-    {
-        // We allow developers to rollback to a certain transaction level. We will verify
-        // that this given transaction level is valid before attempting to rollback to
-        // that level. If it's not we will just return out and not attempt anything.
-        $toLevel = is_null($toLevel)
-                    ? $this->transactions - 1
-                    : $toLevel;
-
-        if ($toLevel < 0 || $toLevel >= $this->transactions) {
-            return;
-        }
-
-        // Next, we will actually perform this rollback within this database and fire the
-        // rollback event. We will also set the current transaction level to the given
-        // level that was passed into this method so it will be right from here out.
-        try {
-            $this->performRollBack($toLevel);
-        } catch (Throwable $e) {
-            $this->handleRollBackException($e);
-        }
-
-        $this->transactions = $toLevel;
-
-        optional($this->transactionsManager)->rollback(
-            $this->getName(), $this->transactions
-        );
-
-        $this->fireConnectionEvent('rollingBack');
-    }
-
-    /**
-     * Perform a rollback within the database.
-     *
-     * @param  int  $toLevel
-     * @return void
-     *
-     * @throws \Throwable
-     */
-    protected function performRollBack($toLevel)
-    {
-        if ($toLevel == 0) {
-            $this->getPdo()->rollBack();
-        } elseif ($this->queryGrammar->supportsSavepoints()) {
-            $this->getPdo()->exec(
-                $this->queryGrammar->compileSavepointRollBack('trans'.($toLevel + 1))
-            );
-        }
-    }
-
-    /**
-     * Handle an exception from a rollback.
-     *
-     * @param  \Throwable  $e
-     * @return void
-     *
-     * @throws \Throwable
-     */
-    protected function handleRollBackException(Throwable $e)
-    {
-        if ($this->causedByLostConnection($e)) {
-            $this->transactions = 0;
-
-            optional($this->transactionsManager)->rollback(
-                $this->getName(), $this->transactions
-            );
-        }
-
-        throw $e;
-    }
-
-    /**
-     * Get the number of active transactions.
-     *
-     * @return int
-     */
-    public function transactionLevel()
-    {
-        return $this->transactions;
-    }
-
-    /**
-     * Execute the callback after a transaction commits.
-     *
-     * @param  callable  $callback
-     * @return void
-     */
-    public function afterCommit($callback)
-    {
-        if ($this->transactionsManager) {
-            return $this->transactionsManager->addCallback($callback);
-        }
-
-        throw new RuntimeException('Transactions Manager has not been set.');
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+mW==

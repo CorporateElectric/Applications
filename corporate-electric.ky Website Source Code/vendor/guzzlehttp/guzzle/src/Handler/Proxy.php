@@ -1,51 +1,34 @@
-<?php
-
-namespace GuzzleHttp\Handler;
-
-use GuzzleHttp\Promise\PromiseInterface;
-use GuzzleHttp\RequestOptions;
-use Psr\Http\Message\RequestInterface;
-
-/**
- * Provides basic proxies for handlers.
- *
- * @final
- */
-class Proxy
-{
-    /**
-     * Sends synchronous requests to a specific handler while sending all other
-     * requests to another handler.
-     *
-     * @param callable(\Psr\Http\Message\RequestInterface, array): \GuzzleHttp\Promise\PromiseInterface $default Handler used for normal responses
-     * @param callable(\Psr\Http\Message\RequestInterface, array): \GuzzleHttp\Promise\PromiseInterface $sync    Handler used for synchronous responses.
-     *
-     * @return callable(\Psr\Http\Message\RequestInterface, array): \GuzzleHttp\Promise\PromiseInterface Returns the composed handler.
-     */
-    public static function wrapSync(callable $default, callable $sync): callable
-    {
-        return static function (RequestInterface $request, array $options) use ($default, $sync): PromiseInterface {
-            return empty($options[RequestOptions::SYNCHRONOUS]) ? $default($request, $options) : $sync($request, $options);
-        };
-    }
-
-    /**
-     * Sends streaming requests to a streaming compatible handler while sending
-     * all other requests to a default handler.
-     *
-     * This, for example, could be useful for taking advantage of the
-     * performance benefits of curl while still supporting true streaming
-     * through the StreamHandler.
-     *
-     * @param callable(\Psr\Http\Message\RequestInterface, array): \GuzzleHttp\Promise\PromiseInterface $default   Handler used for non-streaming responses
-     * @param callable(\Psr\Http\Message\RequestInterface, array): \GuzzleHttp\Promise\PromiseInterface $streaming Handler used for streaming responses
-     *
-     * @return callable(\Psr\Http\Message\RequestInterface, array): \GuzzleHttp\Promise\PromiseInterface Returns the composed handler.
-     */
-    public static function wrapStreaming(callable $default, callable $streaming): callable
-    {
-        return static function (RequestInterface $request, array $options) use ($default, $streaming): PromiseInterface {
-            return empty($options['stream']) ? $default($request, $options) : $streaming($request, $options);
-        };
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

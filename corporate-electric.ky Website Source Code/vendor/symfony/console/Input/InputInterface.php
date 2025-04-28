@@ -1,153 +1,40 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Console\Input;
-
-use Symfony\Component\Console\Exception\InvalidArgumentException;
-use Symfony\Component\Console\Exception\RuntimeException;
-
-/**
- * InputInterface is the interface implemented by all input classes.
- *
- * @author Fabien Potencier <fabien@symfony.com>
- */
-interface InputInterface
-{
-    /**
-     * Returns the first argument from the raw parameters (not parsed).
-     *
-     * @return string|null The value of the first argument or null otherwise
-     */
-    public function getFirstArgument();
-
-    /**
-     * Returns true if the raw parameters (not parsed) contain a value.
-     *
-     * This method is to be used to introspect the input parameters
-     * before they have been validated. It must be used carefully.
-     * Does not necessarily return the correct result for short options
-     * when multiple flags are combined in the same option.
-     *
-     * @param string|array $values     The values to look for in the raw parameters (can be an array)
-     * @param bool         $onlyParams Only check real parameters, skip those following an end of options (--) signal
-     *
-     * @return bool true if the value is contained in the raw parameters
-     */
-    public function hasParameterOption($values, bool $onlyParams = false);
-
-    /**
-     * Returns the value of a raw option (not parsed).
-     *
-     * This method is to be used to introspect the input parameters
-     * before they have been validated. It must be used carefully.
-     * Does not necessarily return the correct result for short options
-     * when multiple flags are combined in the same option.
-     *
-     * @param string|array $values     The value(s) to look for in the raw parameters (can be an array)
-     * @param mixed        $default    The default value to return if no result is found
-     * @param bool         $onlyParams Only check real parameters, skip those following an end of options (--) signal
-     *
-     * @return mixed The option value
-     */
-    public function getParameterOption($values, $default = false, bool $onlyParams = false);
-
-    /**
-     * Binds the current Input instance with the given arguments and options.
-     *
-     * @throws RuntimeException
-     */
-    public function bind(InputDefinition $definition);
-
-    /**
-     * Validates the input.
-     *
-     * @throws RuntimeException When not enough arguments are given
-     */
-    public function validate();
-
-    /**
-     * Returns all the given arguments merged with the default values.
-     *
-     * @return array
-     */
-    public function getArguments();
-
-    /**
-     * Returns the argument value for a given argument name.
-     *
-     * @return string|string[]|null The argument value
-     *
-     * @throws InvalidArgumentException When argument given doesn't exist
-     */
-    public function getArgument(string $name);
-
-    /**
-     * Sets an argument value by name.
-     *
-     * @param string|string[]|null $value The argument value
-     *
-     * @throws InvalidArgumentException When argument given doesn't exist
-     */
-    public function setArgument(string $name, $value);
-
-    /**
-     * Returns true if an InputArgument object exists by name or position.
-     *
-     * @param string|int $name The InputArgument name or position
-     *
-     * @return bool true if the InputArgument object exists, false otherwise
-     */
-    public function hasArgument($name);
-
-    /**
-     * Returns all the given options merged with the default values.
-     *
-     * @return array
-     */
-    public function getOptions();
-
-    /**
-     * Returns the option value for a given option name.
-     *
-     * @return string|string[]|bool|null The option value
-     *
-     * @throws InvalidArgumentException When option given doesn't exist
-     */
-    public function getOption(string $name);
-
-    /**
-     * Sets an option value by name.
-     *
-     * @param string|string[]|bool|null $value The option value
-     *
-     * @throws InvalidArgumentException When option given doesn't exist
-     */
-    public function setOption(string $name, $value);
-
-    /**
-     * Returns true if an InputOption object exists by name.
-     *
-     * @return bool true if the InputOption object exists, false otherwise
-     */
-    public function hasOption(string $name);
-
-    /**
-     * Is this input means interactive?
-     *
-     * @return bool
-     */
-    public function isInteractive();
-
-    /**
-     * Sets the input interactivity.
-     */
-    public function setInteractive(bool $interactive);
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+40==

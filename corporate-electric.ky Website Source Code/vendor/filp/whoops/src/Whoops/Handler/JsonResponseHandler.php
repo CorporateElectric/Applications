@@ -1,88 +1,51 @@
-<?php
-/**
- * Whoops - php errors for cool kids
- * @author Filipe Dobreira <http://github.com/filp>
- */
-
-namespace Whoops\Handler;
-
-use Whoops\Exception\Formatter;
-
-/**
- * Catches an exception and converts it to a JSON
- * response. Additionally can also return exception
- * frames for consumption by an API.
- */
-class JsonResponseHandler extends Handler
-{
-    /**
-     * @var bool
-     */
-    private $returnFrames = false;
-
-    /**
-     * @var bool
-     */
-    private $jsonApi = false;
-
-    /**
-     * Returns errors[[]] instead of error[] to be in compliance with the json:api spec
-     * @param bool $jsonApi Default is false
-     * @return $this
-     */
-    public function setJsonApi($jsonApi = false)
-    {
-        $this->jsonApi = (bool) $jsonApi;
-        return $this;
-    }
-
-    /**
-     * @param  bool|null  $returnFrames
-     * @return bool|$this
-     */
-    public function addTraceToOutput($returnFrames = null)
-    {
-        if (func_num_args() == 0) {
-            return $this->returnFrames;
-        }
-
-        $this->returnFrames = (bool) $returnFrames;
-        return $this;
-    }
-
-    /**
-     * @return int
-     */
-    public function handle()
-    {
-        if ($this->jsonApi === true) {
-            $response = [
-                'errors' => [
-                    Formatter::formatExceptionAsDataArray(
-                        $this->getInspector(),
-                        $this->addTraceToOutput()
-                    ),
-                ]
-            ];
-        } else {
-            $response = [
-                'error' => Formatter::formatExceptionAsDataArray(
-                    $this->getInspector(),
-                    $this->addTraceToOutput()
-                ),
-            ];
-        }
-
-        echo json_encode($response, defined('JSON_PARTIAL_OUTPUT_ON_ERROR') ? JSON_PARTIAL_OUTPUT_ON_ERROR : 0);
-
-        return Handler::QUIT;
-    }
-
-    /**
-     * @return string
-     */
-    public function contentType()
-    {
-        return 'application/json';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+eiF6EtS=

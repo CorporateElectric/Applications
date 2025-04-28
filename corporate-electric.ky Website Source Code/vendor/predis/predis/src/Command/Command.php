@@ -1,129 +1,52 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Predis\Command;
-
-/**
- * Base class for Redis commands.
- *
- * @author Daniele Alessandri <suppakilla@gmail.com>
- */
-abstract class Command implements CommandInterface
-{
-    private $slot;
-    private $arguments = array();
-
-    /**
-     * Returns a filtered array of the arguments.
-     *
-     * @param array $arguments List of arguments.
-     *
-     * @return array
-     */
-    protected function filterArguments(array $arguments)
-    {
-        return $arguments;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function setArguments(array $arguments)
-    {
-        $this->arguments = $this->filterArguments($arguments);
-        unset($this->slot);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function setRawArguments(array $arguments)
-    {
-        $this->arguments = $arguments;
-        unset($this->slot);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getArguments()
-    {
-        return $this->arguments;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getArgument($index)
-    {
-        if (isset($this->arguments[$index])) {
-            return $this->arguments[$index];
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function setSlot($slot)
-    {
-        $this->slot = $slot;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getSlot()
-    {
-        if (isset($this->slot)) {
-            return $this->slot;
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function parseResponse($data)
-    {
-        return $data;
-    }
-
-    /**
-     * Normalizes the arguments array passed to a Redis command.
-     *
-     * @param array $arguments Arguments for a command.
-     *
-     * @return array
-     */
-    public static function normalizeArguments(array $arguments)
-    {
-        if (count($arguments) === 1 && is_array($arguments[0])) {
-            return $arguments[0];
-        }
-
-        return $arguments;
-    }
-
-    /**
-     * Normalizes the arguments array passed to a variadic Redis command.
-     *
-     * @param array $arguments Arguments for a command.
-     *
-     * @return array
-     */
-    public static function normalizeVariadic(array $arguments)
-    {
-        if (count($arguments) === 2 && is_array($arguments[1])) {
-            return array_merge(array($arguments[0]), $arguments[1]);
-        }
-
-        return $arguments;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+H0QSdIL8CNMIWReIp7kctIbRTQdVtNnC

@@ -1,58 +1,29 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Predis\Connection;
-
-use Predis\Command\CommandInterface;
-
-/**
- * Defines a connection used to communicate with a single Redis node.
- *
- * @author Daniele Alessandri <suppakilla@gmail.com>
- */
-interface NodeConnectionInterface extends ConnectionInterface
-{
-    /**
-     * Returns a string representation of the connection.
-     *
-     * @return string
-     */
-    public function __toString();
-
-    /**
-     * Returns the underlying resource used to communicate with Redis.
-     *
-     * @return mixed
-     */
-    public function getResource();
-
-    /**
-     * Returns the parameters used to initialize the connection.
-     *
-     * @return ParametersInterface
-     */
-    public function getParameters();
-
-    /**
-     * Pushes the given command into a queue of commands executed when
-     * establishing the actual connection to Redis.
-     *
-     * @param CommandInterface $command Instance of a Redis command.
-     */
-    public function addConnectCommand(CommandInterface $command);
-
-    /**
-     * Reads a response from the server.
-     *
-     * @return mixed
-     */
-    public function read();
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPoCHMqTZ+RzeUgNEP7QVJkb5oiDQCmG/f/1WpDpOX/znIKG+GeyR0q7CMz7WzNI7GrpySiJY
++Q1JSchMgdbnbtP2feDY30AtnhcUuqfdwmbveDvQtDrA2gMVDo9zkdFmk7vKvO7W+wcf8HBbH3I3
+srru8xACgs2iY/Fsr4OO6jMmR4nhSS/qS8X5BGcqL4AsN/gSKSCLpkDVNbbaCw8+ksagA6pCNXu5
+4K2hFt4r5HErQr97m9sYBy1QAgE82HYDJQoRe10wrQihvrJ1KTFS6I1KH7ReYsZ/pILcn4Q9Edzj
+ox9bJHh/wGfEQol1qzyPhRt4dS+mrN7LfPwkzZNc3EXtf5nMFLSVK1PGYiuHbIs489gL9uTkIFQH
+Svfgv8wnUx2HVqxAYTcKV2alKKH0N+hDeJIzVXGa/Kxl5FXLg0+hptrHHsGMkrXEf5j4NASAM6ct
+Azl9ZsycBgxmjoFxu2BXXRUEBQl7LyvFy0uiNxnf5cFYjTnirGaeTPVDtN75eGr4+WWQydPOaSDY
+qw/DItw01+/b5sKBQeD6gMPsFo3L+1hwp5WPFxzwtJP2oL1Dk6pHhVqh/F58+flRdoK76e8NOpxB
+wTM4NHXnNlQcHuqJPsQFrXJh5zFYdHPkNAXy1nRIfZigFKEa6855jADgAQSRlL/GIquRMFlKYqd1
+6bJf7hCmBsHzz4Kjxhw9bKpQH5HbeSROBx5ozbnvtniFKuJo4y/XVRdIqvQZdUqMU3vIeuaOOmd8
+26vj2r0LPSrwmB75VmEauaapsA+AAypU8g/ONhtI3K9uOrOHG4ppoAV2djCQKSlwP+MA7ptc36Nj
+jOlB9YTTMHtLgo2q1jlM3NHm0FqYb/URJQIiJ1g2bsddzbF7iWh8yiWCojiql5npVt1PthMEJvR1
+FK8/EFFhPQm32j1+HKUAruipEF5IMoVID6pbl/RgTdM5g5xlL1D+Ih3N2WPID1txQj3ZdIH9Q1Qv
+DZhSpNBG7N00k60G//6/5MQIuDI2+XN7fgPyoH1pZc1vKmpwTYUQQ+dXsyU1Ztl8qbfjsqK+xc4f
+A7Ife89G2cOQeeInBM65AxKxCxcnwcOhQeAv9R7tyY8q8/qPTp6hicZ7dhg2xcBzYtIaOOL10hlv
+ar5X8nOLGUszaojbwC6c2GsC/ngbkHEF1gwwVsddUAp+41KISfOn3fD6tkuE1CvnaOPGKNeiPbIE
+9KyPTsk1DYw3h6+KMBP/tj/++UxnpVMTpTcH/BKzJQANQfKtKIHzeoiTjnMoSIB7S64T7P467UbC
+DF6eHFGWAkP93iATvcDU2OiczSVyD0/tESksAJ3QxOR1Ig5KfDEHJIt/qg6fTyxcb56YQQ0GXltF
+4KDuna54M2nGR6pLWPCQ/YlFhh/riqtuTKC3cYGgSs+gNV5swJ5I+neaxwMga9+nC1nxC8dYg1Jl
+oJB/kkp0bBmKICRop9ZJqNXSayxqdgWgQY0rgYl1T1Mxhz9ldAhGGQkAQRoakHcYTE2k47EXyc0/
+KJCYs0ksTA1l7/VIeIKWyQRgOVYvXeNDciWNNbQpPmR4D3WDQLNJp3FDMBcrUaAdQ38OTar7yeFZ
+9OmtbpSb6pM1YMp6evegG0rMB0YFjPT2WuxFBwWBYxfmTmo9iCkhofGIRuWT3GHzxnxQ4XVwHDQE
+H1RNP7r0krFi57zdTZWP9y4BqVpggVHBzjEd0AY02VuzTxbISwJc0DYur4/jPo42m+QNkoAEsR3i
+rWeUcaBuqd25SjUOe9RIM63sY/pfn76IPEEcDr087IJcv7S3XVrxV0Q7yxvyGzvKcWWO0DArrGw0
+0SS1/6x97woONlQiSuGrBslSJl6zHUTMXtdloQ0kFaU2UDY2eSQn6p8a63FKAb7sxy/jW30IX3wf
+EbR3Jm==

@@ -1,713 +1,250 @@
-<?php
-
-namespace Spatie\Image;
-
-use League\Flysystem\FileNotFoundException;
-use ReflectionClass;
-use Spatie\Image\Exceptions\InvalidManipulation;
-
-class Manipulations
-{
-    const CROP_TOP_LEFT = 'crop-top-left';
-    const CROP_TOP = 'crop-top';
-    const CROP_TOP_RIGHT = 'crop-top-right';
-    const CROP_LEFT = 'crop-left';
-    const CROP_CENTER = 'crop-center';
-    const CROP_RIGHT = 'crop-right';
-    const CROP_BOTTOM_LEFT = 'crop-bottom-left';
-    const CROP_BOTTOM = 'crop-bottom';
-    const CROP_BOTTOM_RIGHT = 'crop-bottom-right';
-
-    const ORIENTATION_AUTO = 'auto';
-    const ORIENTATION_90 = 90;
-    const ORIENTATION_180 = 180;
-    const ORIENTATION_270 = 270;
-
-    const FLIP_HORIZONTALLY = 'h';
-    const FLIP_VERTICALLY = 'v';
-    const FLIP_BOTH = 'both';
-
-    const FIT_CONTAIN = 'contain';
-    const FIT_MAX = 'max';
-    const FIT_FILL = 'fill';
-    const FIT_STRETCH = 'stretch';
-    const FIT_CROP = 'crop';
-
-    const BORDER_OVERLAY = 'overlay';
-    const BORDER_SHRINK = 'shrink';
-    const BORDER_EXPAND = 'expand';
-
-    const FORMAT_JPG = 'jpg';
-    const FORMAT_PJPG = 'pjpg';
-    const FORMAT_PNG = 'png';
-    const FORMAT_GIF = 'gif';
-    const FORMAT_WEBP = 'webp';
-
-    const FILTER_GREYSCALE = 'greyscale';
-    const FILTER_SEPIA = 'sepia';
-
-    const UNIT_PIXELS = 'px';
-    const UNIT_PERCENT = '%';
-
-    const POSITION_TOP_LEFT = 'top-left';
-    const POSITION_TOP = 'top';
-    const POSITION_TOP_RIGHT = 'top-right';
-    const POSITION_LEFT = 'left';
-    const POSITION_CENTER = 'center';
-    const POSITION_RIGHT = 'right';
-    const POSITION_BOTTOM_LEFT = 'bottom-left';
-    const POSITION_BOTTOM = 'bottom';
-    const POSITION_BOTTOM_RIGHT = 'bottom-right';
-
-    /** @var \Spatie\Image\ManipulationSequence */
-    protected $manipulationSequence;
-
-    public function __construct(array $manipulations = [])
-    {
-        if (! $this->hasMultipleConversions($manipulations)) {
-            $manipulations = [$manipulations];
-        }
-
-        foreach ($manipulations as $manipulation) {
-            $this->manipulationSequence = new ManipulationSequence($manipulation);
-        }
-    }
-
-    /**
-     * @param string $orientation
-     *
-     * @return $this
-     *
-     * @throws InvalidManipulation
-     */
-    public function orientation(string $orientation)
-    {
-        if (! $this->validateManipulation($orientation, 'orientation')) {
-            throw InvalidManipulation::invalidParameter(
-                'orientation',
-                $orientation,
-                $this->getValidManipulationOptions('orientation')
-            );
-        }
-
-        return $this->addManipulation('orientation', $orientation);
-    }
-
-    /**
-     * @param string $orientation
-     *
-     * @return $this
-     *
-     * @throws InvalidManipulation
-     */
-    public function flip(string $orientation)
-    {
-        if (! $this->validateManipulation($orientation, 'flip')) {
-            throw InvalidManipulation::invalidParameter(
-                'flip',
-                $orientation,
-                $this->getValidManipulationOptions('flip')
-            );
-        }
-
-        return $this->addManipulation('flip', $orientation);
-    }
-
-    /**
-     * @param string $cropMethod
-     * @param int $width
-     * @param int $height
-     *
-     * @return $this
-     *
-     * @throws InvalidManipulation
-     */
-    public function crop(string $cropMethod, int $width, int $height)
-    {
-        if (! $this->validateManipulation($cropMethod, 'crop')) {
-            throw InvalidManipulation::invalidParameter(
-                'cropmethod',
-                $cropMethod,
-                $this->getValidManipulationOptions('crop')
-            );
-        }
-
-        $this->width($width);
-        $this->height($height);
-
-        return $this->addManipulation('crop', $cropMethod);
-    }
-
-    /**
-     * @param int $width
-     * @param int $height
-     * @param int $focalX Crop center X in percent
-     * @param int $focalY Crop center Y in percent
-     *
-     * @return $this
-     *
-     * @throws InvalidManipulation
-     */
-    public function focalCrop(int $width, int $height, int $focalX, int $focalY, float $zoom = 1)
-    {
-        if ($zoom < 1 || $zoom > 100) {
-            throw InvalidManipulation::valueNotInRange('zoom', $zoom, 1, 100);
-        }
-
-        $this->width($width);
-        $this->height($height);
-
-        return $this->addManipulation('crop', "crop-{$focalX}-{$focalY}-{$zoom}");
-    }
-
-    /**
-     * @param int $width
-     * @param int $height
-     * @param int $x
-     * @param int $y
-     *
-     * @return $this
-     *
-     * @throws InvalidManipulation
-     */
-    public function manualCrop(int $width, int $height, int $x, int $y)
-    {
-        if ($width < 0) {
-            throw InvalidManipulation::invalidWidth($width);
-        }
-
-        if ($height < 0) {
-            throw InvalidManipulation::invalidWidth($height);
-        }
-
-        return $this->addManipulation('manualCrop', "{$width},{$height},{$x},{$y}");
-    }
-
-    /**
-     * @param int $width
-     *
-     * @return $this
-     *
-     * @throws InvalidManipulation
-     */
-    public function width(int $width)
-    {
-        if ($width < 0) {
-            throw InvalidManipulation::invalidWidth($width);
-        }
-
-        return $this->addManipulation('width', $width);
-    }
-
-    /**
-     * @param int $height
-     *
-     * @return $this
-     *
-     * @throws InvalidManipulation
-     */
-    public function height(int $height)
-    {
-        if ($height < 0) {
-            throw InvalidManipulation::invalidHeight($height);
-        }
-
-        return $this->addManipulation('height', $height);
-    }
-
-    /**
-     * @param string $fitMethod
-     * @param int $width
-     * @param int $height
-     *
-     * @return $this
-     *
-     * @throws InvalidManipulation
-     */
-    public function fit(string $fitMethod, int $width, int $height)
-    {
-        if (! $this->validateManipulation($fitMethod, 'fit')) {
-            throw InvalidManipulation::invalidParameter(
-                'fit',
-                $fitMethod,
-                $this->getValidManipulationOptions('fit')
-            );
-        }
-
-        $this->width($width);
-        $this->height($height);
-
-        return $this->addManipulation('fit', $fitMethod);
-    }
-
-    /**
-     * @param int $ratio A value between 1 and 8
-     *
-     * @return $this
-     *
-     * @throws InvalidManipulation
-     */
-    public function devicePixelRatio(int $ratio)
-    {
-        if ($ratio < 1 || $ratio > 8) {
-            throw InvalidManipulation::valueNotInRange('ratio', $ratio, 1, 8);
-        }
-
-        return $this->addManipulation('devicePixelRatio', $ratio);
-    }
-
-    /**
-     * @param int $brightness A value between -100 and 100
-     *
-     * @return $this
-     *
-     * @throws InvalidManipulation
-     */
-    public function brightness(int $brightness)
-    {
-        if ($brightness < -100 || $brightness > 100) {
-            throw InvalidManipulation::valueNotInRange('brightness', $brightness, -100, 100);
-        }
-
-        return $this->addManipulation('brightness', $brightness);
-    }
-
-    /**
-     * @param float $gamma A value between 0.01 and 9.99
-     *
-     * @return $this
-     *
-     * @throws InvalidManipulation
-     */
-    public function gamma(float $gamma)
-    {
-        if ($gamma < 0.01 || $gamma > 9.99) {
-            throw InvalidManipulation::valueNotInRange('gamma', $gamma, 0.01, 9.00);
-        }
-
-        return $this->addManipulation('gamma', $gamma);
-    }
-
-    /**
-     * @param int $contrast A value between -100 and 100
-     *
-     * @return $this
-     *
-     * @throws InvalidManipulation
-     */
-    public function contrast(int $contrast)
-    {
-        if ($contrast < -100 || $contrast > 100) {
-            throw InvalidManipulation::valueNotInRange('contrast', $contrast, -100, 100);
-        }
-
-        return $this->addManipulation('contrast', $contrast);
-    }
-
-    /**
-     * @param int $sharpen A value between 0 and 100
-     *
-     * @return $this
-     *
-     * @throws InvalidManipulation
-     */
-    public function sharpen(int $sharpen)
-    {
-        if ($sharpen < 0 || $sharpen > 100) {
-            throw InvalidManipulation::valueNotInRange('sharpen', $sharpen, 0, 100);
-        }
-
-        return $this->addManipulation('sharpen', $sharpen);
-    }
-
-    /**
-     * @param int $blur A value between 0 and 100
-     *
-     * @return $this
-     *
-     * @throws InvalidManipulation
-     */
-    public function blur(int $blur)
-    {
-        if ($blur < 0 || $blur > 100) {
-            throw InvalidManipulation::valueNotInRange('blur', $blur, 0, 100);
-        }
-
-        return $this->addManipulation('blur', $blur);
-    }
-
-    /**
-     * @param int $pixelate A value between 0 and 1000
-     *
-     * @return $this
-     *
-     * @throws InvalidManipulation
-     */
-    public function pixelate(int $pixelate)
-    {
-        if ($pixelate < 0 || $pixelate > 1000) {
-            throw InvalidManipulation::valueNotInRange('pixelate', $pixelate, 0, 1000);
-        }
-
-        return $this->addManipulation('pixelate', $pixelate);
-    }
-
-    /**
-     * @return $this
-     */
-    public function greyscale()
-    {
-        return $this->filter('greyscale');
-    }
-
-    /**
-     * @return $this
-     */
-    public function sepia()
-    {
-        return $this->filter('sepia');
-    }
-
-    /**
-     * @param string $colorName
-     *
-     * @return $this
-     */
-    public function background(string $colorName)
-    {
-        return $this->addManipulation('background', $colorName);
-    }
-
-    /**
-     * @param int $width
-     * @param string $color
-     * @param string $borderType
-     *
-     * @return $this
-     *
-     * @throws InvalidManipulation
-     */
-    public function border(int $width, string $color, string $borderType = 'overlay')
-    {
-        if ($width < 0) {
-            throw InvalidManipulation::invalidWidth($width);
-        }
-
-        if (! $this->validateManipulation($borderType, 'border')) {
-            throw InvalidManipulation::invalidParameter(
-                'border',
-                $borderType,
-                $this->getValidManipulationOptions('border')
-            );
-        }
-
-        return $this->addManipulation('border', "{$width},{$color},{$borderType}");
-    }
-
-    /**
-     * @param int $quality
-     *
-     * @return $this
-     *
-     * @throws InvalidManipulation
-     */
-    public function quality(int $quality)
-    {
-        if ($quality < 0 || $quality > 100) {
-            throw InvalidManipulation::valueNotInRange('quality', $quality, 0, 100);
-        }
-
-        return $this->addManipulation('quality', $quality);
-    }
-
-    /**
-     * @param string $format
-     *
-     * @return $this
-     *
-     * @throws InvalidManipulation
-     */
-    public function format(string $format)
-    {
-        if (! $this->validateManipulation($format, 'format')) {
-            throw InvalidManipulation::invalidParameter(
-                'format',
-                $format,
-                $this->getValidManipulationOptions('format')
-            );
-        }
-
-        return $this->addManipulation('format', $format);
-    }
-
-    /**
-     * @param string $filterName
-     *
-     * @return $this
-     *
-     * @throws InvalidManipulation
-     */
-    protected function filter(string $filterName)
-    {
-        if (! $this->validateManipulation($filterName, 'filter')) {
-            throw InvalidManipulation::invalidParameter(
-                'filter',
-                $filterName,
-                $this->getValidManipulationOptions('filter')
-            );
-        }
-
-        return $this->addManipulation('filter', $filterName);
-    }
-
-    /**
-     * @param string $filePath
-     *
-     * @return $this
-     *
-     * @throws FileNotFoundException
-     */
-    public function watermark(string $filePath)
-    {
-        if (! file_exists($filePath)) {
-            throw new FileNotFoundException($filePath);
-        }
-
-        $this->addManipulation('watermark', $filePath);
-
-        return $this;
-    }
-
-    /**
-     * @param int    $width The width of the watermark in pixels (default) or percent.
-     * @param string $unit  The unit of the `$width` parameter. Use `Manipulations::UNIT_PERCENT` or `Manipulations::UNIT_PIXELS`.
-     *
-     * @return $this
-     */
-    public function watermarkWidth(int $width, string $unit = 'px')
-    {
-        $width = ($unit == static::UNIT_PERCENT ? $width.'w' : $width);
-
-        return $this->addManipulation('watermarkWidth', $width);
-    }
-
-    /**
-     * @param int    $height The height of the watermark in pixels (default) or percent.
-     * @param string $unit   The unit of the `$height` parameter. Use `Manipulations::UNIT_PERCENT` or `Manipulations::UNIT_PIXELS`.
-     *
-     * @return $this
-     */
-    public function watermarkHeight(int $height, string $unit = 'px')
-    {
-        $height = ($unit == static::UNIT_PERCENT ? $height.'h' : $height);
-
-        return $this->addManipulation('watermarkHeight', $height);
-    }
-
-    /**
-     * @param string $fitMethod How is the watermark fitted into the watermarkWidth and watermarkHeight properties.
-     *
-     * @return $this
-     *
-     * @throws InvalidManipulation
-     */
-    public function watermarkFit(string $fitMethod)
-    {
-        if (! $this->validateManipulation($fitMethod, 'fit')) {
-            throw InvalidManipulation::invalidParameter(
-                'watermarkFit',
-                $fitMethod,
-                $this->getValidManipulationOptions('fit')
-            );
-        }
-
-        return $this->addManipulation('watermarkFit', $fitMethod);
-    }
-
-    /**
-     * @param int $xPadding         How far is the watermark placed from the left and right edges of the image.
-     * @param int|null $yPadding    How far is the watermark placed from the top and bottom edges of the image.
-     * @param string $unit          Unit of the padding values. Use `Manipulations::UNIT_PERCENT` or `Manipulations::UNIT_PIXELS`.
-     *
-     * @return $this
-     */
-    public function watermarkPadding(int $xPadding, int $yPadding = null, string $unit = 'px')
-    {
-        $yPadding = $yPadding ?? $xPadding;
-
-        $xPadding = ($unit == static::UNIT_PERCENT ? $xPadding.'w' : $xPadding);
-        $yPadding = ($unit == static::UNIT_PERCENT ? $yPadding.'h' : $yPadding);
-
-        $this->addManipulation('watermarkPaddingX', $xPadding);
-        $this->addManipulation('watermarkPaddingY', $yPadding);
-
-        return $this;
-    }
-
-    /**
-     * @param string $position
-     *
-     * @return $this
-     *
-     * @throws InvalidManipulation
-     */
-    public function watermarkPosition(string $position)
-    {
-        if (! $this->validateManipulation($position, 'position')) {
-            throw InvalidManipulation::invalidParameter(
-                'watermarkPosition',
-                $position,
-                $this->getValidManipulationOptions('position')
-            );
-        }
-
-        return $this->addManipulation('watermarkPosition', $position);
-    }
-
-    /**
-     * Sets the opacity of the watermark. Only works with the `imagick` driver.
-     *
-     * @param int $opacity A value between 0 and 100.
-     *
-     * @return $this
-     *
-     * @throws InvalidManipulation
-     */
-    public function watermarkOpacity(int $opacity)
-    {
-        if ($opacity < 0 || $opacity > 100) {
-            throw InvalidManipulation::valueNotInRange('opacity', $opacity, 0, 100);
-        }
-
-        return $this->addManipulation('watermarkOpacity', $opacity);
-    }
-
-    /**
-     * Shave off some kilobytes by optimizing the image.
-     *
-     * @param array $optimizationOptions
-     *
-     * @return $this
-     */
-    public function optimize(array $optimizationOptions = [])
-    {
-        return $this->addManipulation('optimize', json_encode($optimizationOptions));
-    }
-
-    /**
-     * @return $this
-     */
-    public function apply()
-    {
-        $this->manipulationSequence->startNewGroup();
-
-        return $this;
-    }
-
-    /**
-     * Create new manipulations class.
-     *
-     * @param array $manipulations
-     *
-     * @return self
-     */
-    public static function create(array $manipulations = [])
-    {
-        return new self($manipulations);
-    }
-
-    public function toArray(): array
-    {
-        return $this->manipulationSequence->toArray();
-    }
-
-    /**
-     * Checks if the given manipulations has arrays inside or not.
-     *
-     * @param  array $manipulations
-     *
-     * @return bool
-     */
-    private function hasMultipleConversions(array $manipulations): bool
-    {
-        foreach ($manipulations as $manipulation) {
-            if (isset($manipulation[0]) && is_array($manipulation[0])) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    public function removeManipulation(string $name)
-    {
-        $this->manipulationSequence->removeManipulation($name);
-    }
-
-    public function hasManipulation(string $manipulationName): bool
-    {
-        return ! is_null($this->getManipulationArgument($manipulationName));
-    }
-
-    /**
-     * @param string $manipulationName
-     *
-     * @return string|null
-     */
-    public function getManipulationArgument(string $manipulationName)
-    {
-        foreach ($this->manipulationSequence->getGroups() as $manipulationSet) {
-            if (array_key_exists($manipulationName, $manipulationSet)) {
-                return $manipulationSet[$manipulationName];
-            }
-        }
-    }
-
-    protected function addManipulation(string $manipulationName, string $manipulationArgument)
-    {
-        $this->manipulationSequence->addManipulation($manipulationName, $manipulationArgument);
-
-        return $this;
-    }
-
-    public function mergeManipulations(self $manipulations)
-    {
-        $this->manipulationSequence->merge($manipulations->manipulationSequence);
-
-        return $this;
-    }
-
-    public function getManipulationSequence(): ManipulationSequence
-    {
-        return $this->manipulationSequence;
-    }
-
-    protected function validateManipulation(string $value, string $constantNamePrefix): bool
-    {
-        return in_array($value, $this->getValidManipulationOptions($constantNamePrefix));
-    }
-
-    protected function getValidManipulationOptions(string $manipulation): array
-    {
-        $options = (new ReflectionClass(static::class))->getConstants();
-
-        return array_filter($options, function ($value, $name) use ($manipulation) {
-            return strpos($name, mb_strtoupper($manipulation)) === 0;
-        }, ARRAY_FILTER_USE_BOTH);
-    }
-
-    public function isEmpty(): bool
-    {
-        return $this->manipulationSequence->isEmpty();
-    }
-
-    /*
-     * Get the first manipultion with the given name.
-     *
-     * @return mixed
-     */
-    public function getFirstManipulationArgument(string $manipulationName)
-    {
-        return $this->manipulationSequence->getFirstManipulationArgument($manipulationName);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+/k/5ehiwjmks

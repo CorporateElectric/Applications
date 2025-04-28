@@ -1,142 +1,78 @@
-<?php
-
-/**
- * Validates a host according to the IPv4, IPv6 and DNS (future) specifications.
- */
-class HTMLPurifier_AttrDef_URI_Host extends HTMLPurifier_AttrDef
-{
-
-    /**
-     * IPv4 sub-validator.
-     * @type HTMLPurifier_AttrDef_URI_IPv4
-     */
-    protected $ipv4;
-
-    /**
-     * IPv6 sub-validator.
-     * @type HTMLPurifier_AttrDef_URI_IPv6
-     */
-    protected $ipv6;
-
-    public function __construct()
-    {
-        $this->ipv4 = new HTMLPurifier_AttrDef_URI_IPv4();
-        $this->ipv6 = new HTMLPurifier_AttrDef_URI_IPv6();
-    }
-
-    /**
-     * @param string $string
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return bool|string
-     */
-    public function validate($string, $config, $context)
-    {
-        $length = strlen($string);
-        // empty hostname is OK; it's usually semantically equivalent:
-        // the default host as defined by a URI scheme is used:
-        //
-        //      If the URI scheme defines a default for host, then that
-        //      default applies when the host subcomponent is undefined
-        //      or when the registered name is empty (zero length).
-        if ($string === '') {
-            return '';
-        }
-        if ($length > 1 && $string[0] === '[' && $string[$length - 1] === ']') {
-            //IPv6
-            $ip = substr($string, 1, $length - 2);
-            $valid = $this->ipv6->validate($ip, $config, $context);
-            if ($valid === false) {
-                return false;
-            }
-            return '[' . $valid . ']';
-        }
-
-        // need to do checks on unusual encodings too
-        $ipv4 = $this->ipv4->validate($string, $config, $context);
-        if ($ipv4 !== false) {
-            return $ipv4;
-        }
-
-        // A regular domain name.
-
-        // This doesn't match I18N domain names, but we don't have proper IRI support,
-        // so force users to insert Punycode.
-
-        // There is not a good sense in which underscores should be
-        // allowed, since it's technically not! (And if you go as
-        // far to allow everything as specified by the DNS spec...
-        // well, that's literally everything, modulo some space limits
-        // for the components and the overall name (which, by the way,
-        // we are NOT checking!).  So we (arbitrarily) decide this:
-        // let's allow underscores wherever we would have allowed
-        // hyphens, if they are enabled.  This is a pretty good match
-        // for browser behavior, for example, a large number of browsers
-        // cannot handle foo_.example.com, but foo_bar.example.com is
-        // fairly well supported.
-        $underscore = $config->get('Core.AllowHostnameUnderscore') ? '_' : '';
-
-        // Based off of RFC 1738, but amended so that
-        // as per RFC 3696, the top label need only not be all numeric.
-        // The productions describing this are:
-        $a   = '[a-z]';     // alpha
-        $an  = '[a-z0-9]';  // alphanum
-        $and = "[a-z0-9-$underscore]"; // alphanum | "-"
-        // domainlabel = alphanum | alphanum *( alphanum | "-" ) alphanum
-        $domainlabel = "$an(?:$and*$an)?";
-        // AMENDED as per RFC 3696
-        // toplabel    = alphanum | alphanum *( alphanum | "-" ) alphanum
-        //      side condition: not all numeric
-        $toplabel = "$an(?:$and*$an)?";
-        // hostname    = *( domainlabel "." ) toplabel [ "." ]
-        if (preg_match("/^(?:$domainlabel\.)*($toplabel)\.?$/i", $string, $matches)) {
-            if (!ctype_digit($matches[1])) {
-                return $string;
-            }
-        }
-
-        // PHP 5.3 and later support this functionality natively
-        if (function_exists('idn_to_ascii')) {
-            if (defined('IDNA_NONTRANSITIONAL_TO_ASCII') && defined('INTL_IDNA_VARIANT_UTS46')) {
-                $string = idn_to_ascii($string, IDNA_NONTRANSITIONAL_TO_ASCII, INTL_IDNA_VARIANT_UTS46);
-            } else {
-                $string = idn_to_ascii($string);
-            }
-
-        // If we have Net_IDNA2 support, we can support IRIs by
-        // punycoding them. (This is the most portable thing to do,
-        // since otherwise we have to assume browsers support
-        } elseif ($config->get('Core.EnableIDNA')) {
-            $idna = new Net_IDNA2(array('encoding' => 'utf8', 'overlong' => false, 'strict' => true));
-            // we need to encode each period separately
-            $parts = explode('.', $string);
-            try {
-                $new_parts = array();
-                foreach ($parts as $part) {
-                    $encodable = false;
-                    for ($i = 0, $c = strlen($part); $i < $c; $i++) {
-                        if (ord($part[$i]) > 0x7a) {
-                            $encodable = true;
-                            break;
-                        }
-                    }
-                    if (!$encodable) {
-                        $new_parts[] = $part;
-                    } else {
-                        $new_parts[] = $idna->encode($part);
-                    }
-                }
-                $string = implode('.', $new_parts);
-            } catch (Exception $e) {
-                // XXX error reporting
-            }
-        }
-        // Try again
-        if (preg_match("/^($domainlabel\.)*$toplabel\.?$/i", $string)) {
-            return $string;
-        }
-        return false;
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

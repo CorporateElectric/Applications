@@ -1,256 +1,157 @@
-<?php
-
-namespace Intervention\Image\Gd;
-
-use Intervention\Image\Exception\NotSupportedException;
-use Intervention\Image\Image;
-
-class Font extends \Intervention\Image\AbstractFont
-{
-    /**
-     * Get font size in points
-     *
-     * @return int
-     */
-    protected function getPointSize()
-    {
-        return intval(ceil($this->size * 0.75));
-    }
-
-    /**
-     * Filter function to access internal integer font values
-     *
-     * @return int
-     */
-    private function getInternalFont()
-    {
-        $internalfont = is_null($this->file) ? 1 : $this->file;
-        $internalfont = is_numeric($internalfont) ? $internalfont : false;
-
-        if ( ! in_array($internalfont, [1, 2, 3, 4, 5])) {
-            throw new NotSupportedException(
-                sprintf('Internal GD font (%s) not available. Use only 1-5.', $internalfont)
-            );
-        }
-
-        return intval($internalfont);
-    }
-
-    /**
-     * Get width of an internal font character
-     *
-     * @return int
-     */
-    private function getInternalFontWidth()
-    {
-        return $this->getInternalFont() + 4;
-    }
-
-    /**
-     * Get height of an internal font character
-     *
-     * @return int
-     */
-    private function getInternalFontHeight()
-    {
-        switch ($this->getInternalFont()) {
-            case 1:
-                return 8;
-
-            case 2:
-                return 14;
-
-            case 3:
-                return 14;
-
-            case 4:
-                return 16;
-
-            case 5:
-                return 16;
-        }
-    }
-
-    /**
-     * Calculates bounding box of current font setting
-     *
-     * @return Array
-     */
-    public function getBoxSize()
-    {
-        $box = [];
-
-        if ($this->hasApplicableFontFile()) {
-
-            // get bounding box with angle 0
-            $box = imagettfbbox($this->getPointSize(), 0, $this->file, $this->text);
-
-            // rotate points manually
-            if ($this->angle != 0) {
-
-                $angle = pi() * 2 - $this->angle * pi() * 2 / 360;
-
-                for ($i=0; $i<4; $i++) {
-                    $x = $box[$i * 2];
-                    $y = $box[$i * 2 + 1];
-                    $box[$i * 2] = cos($angle) * $x - sin($angle) * $y;
-                    $box[$i * 2 + 1] = sin($angle) * $x + cos($angle) * $y;
-                }
-            }
-
-            $box['width'] = intval(abs($box[4] - $box[0]));
-            $box['height'] = intval(abs($box[5] - $box[1]));
-
-        } else {
-
-            // get current internal font size
-            $width = $this->getInternalFontWidth();
-            $height = $this->getInternalFontHeight();
-
-            if (strlen($this->text) == 0) {
-                // no text -> no boxsize
-                $box['width'] = 0;
-                $box['height'] = 0;
-            } else {
-                // calculate boxsize
-                $box['width'] = strlen($this->text) * $width;
-                $box['height'] = $height;
-            }
-        }
-
-        return $box;
-    }
-
-    /**
-     * Draws font to given image at given position
-     *
-     * @param  Image   $image
-     * @param  int     $posx
-     * @param  int     $posy
-     * @return void
-     */
-    public function applyToImage(Image $image, $posx = 0, $posy = 0)
-    {
-        // parse text color
-        $color = new Color($this->color);
-
-        if ($this->hasApplicableFontFile()) {
-
-            if ($this->angle != 0 || is_string($this->align) || is_string($this->valign)) {
-
-                $box = $this->getBoxSize();
-
-                $align = is_null($this->align) ? 'left' : strtolower($this->align);
-                $valign = is_null($this->valign) ? 'bottom' : strtolower($this->valign);
-
-                // correction on position depending on v/h alignment
-                switch ($align.'-'.$valign) {
-
-                    case 'center-top':
-                        $posx = $posx - round(($box[6]+$box[4])/2);
-                        $posy = $posy - round(($box[7]+$box[5])/2);
-                        break;
-
-                    case 'right-top':
-                        $posx = $posx - $box[4];
-                        $posy = $posy - $box[5];
-                        break;
-
-                    case 'left-top':
-                        $posx = $posx - $box[6];
-                        $posy = $posy - $box[7];
-                        break;
-
-                    case 'center-center':
-                    case 'center-middle':
-                        $posx = $posx - round(($box[0]+$box[4])/2);
-                        $posy = $posy - round(($box[1]+$box[5])/2);
-                        break;
-
-                    case 'right-center':
-                    case 'right-middle':
-                        $posx = $posx - round(($box[2]+$box[4])/2);
-                        $posy = $posy - round(($box[3]+$box[5])/2);
-                        break;
-
-                    case 'left-center':
-                    case 'left-middle':
-                        $posx = $posx - round(($box[0]+$box[6])/2);
-                        $posy = $posy - round(($box[1]+$box[7])/2);
-                        break;
-
-                    case 'center-bottom':
-                        $posx = $posx - round(($box[0]+$box[2])/2);
-                        $posy = $posy - round(($box[1]+$box[3])/2);
-                        break;
-
-                    case 'right-bottom':
-                        $posx = $posx - $box[2];
-                        $posy = $posy - $box[3];
-                        break;
-
-                    case 'left-bottom':
-                        $posx = $posx - $box[0];
-                        $posy = $posy - $box[1];
-                        break;
-                }
-            }
-
-            // enable alphablending for imagettftext
-            imagealphablending($image->getCore(), true);
-
-            // draw ttf text
-            imagettftext($image->getCore(), $this->getPointSize(), $this->angle, $posx, $posy, $color->getInt(), $this->file, $this->text);
-
-        } else {
-
-            // get box size
-            $box = $this->getBoxSize();
-            $width = $box['width'];
-            $height = $box['height'];
-
-            // internal font specific position corrections
-            if ($this->getInternalFont() == 1) {
-                $top_correction = 1;
-                $bottom_correction = 2;
-            } elseif ($this->getInternalFont() == 3) {
-                $top_correction = 2;
-                $bottom_correction = 4;
-            } else {
-                $top_correction = 3;
-                $bottom_correction = 4;
-            }
-
-            // x-position corrections for horizontal alignment
-            switch (strtolower($this->align)) {
-                case 'center':
-                    $posx = ceil($posx - ($width / 2));
-                    break;
-
-                case 'right':
-                    $posx = ceil($posx - $width) + 1;
-                    break;
-            }
-
-            // y-position corrections for vertical alignment
-            switch (strtolower($this->valign)) {
-                case 'center':
-                case 'middle':
-                    $posy = ceil($posy - ($height / 2));
-                    break;
-
-                case 'top':
-                    $posy = ceil($posy - $top_correction);
-                    break;
-
-                default:
-                case 'bottom':
-                    $posy = round($posy - $height + $bottom_correction);
-                    break;
-            }
-
-            // draw text
-            imagestring($image->getCore(), $this->getInternalFont(), $posx, $posy, $this->text, $color->getInt());
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

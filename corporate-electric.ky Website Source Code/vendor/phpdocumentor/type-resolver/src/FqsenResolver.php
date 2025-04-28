@@ -1,79 +1,43 @@
-<?php
-
-declare(strict_types=1);
-
-/**
- * This file is part of phpDocumentor.
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @link      http://phpdoc.org
- */
-
-namespace phpDocumentor\Reflection;
-
-use InvalidArgumentException;
-use phpDocumentor\Reflection\Types\Context;
-use function explode;
-use function implode;
-use function strpos;
-
-/**
- * Resolver for Fqsen using Context information
- *
- * @psalm-immutable
- */
-class FqsenResolver
-{
-    /** @var string Definition of the NAMESPACE operator in PHP */
-    private const OPERATOR_NAMESPACE = '\\';
-
-    public function resolve(string $fqsen, ?Context $context = null) : Fqsen
-    {
-        if ($context === null) {
-            $context = new Context('');
-        }
-
-        if ($this->isFqsen($fqsen)) {
-            return new Fqsen($fqsen);
-        }
-
-        return $this->resolvePartialStructuralElementName($fqsen, $context);
-    }
-
-    /**
-     * Tests whether the given type is a Fully Qualified Structural Element Name.
-     */
-    private function isFqsen(string $type) : bool
-    {
-        return strpos($type, self::OPERATOR_NAMESPACE) === 0;
-    }
-
-    /**
-     * Resolves a partial Structural Element Name (i.e. `Reflection\DocBlock`) to its FQSEN representation
-     * (i.e. `\phpDocumentor\Reflection\DocBlock`) based on the Namespace and aliases mentioned in the Context.
-     *
-     * @throws InvalidArgumentException When type is not a valid FQSEN.
-     */
-    private function resolvePartialStructuralElementName(string $type, Context $context) : Fqsen
-    {
-        $typeParts = explode(self::OPERATOR_NAMESPACE, $type, 2);
-
-        $namespaceAliases = $context->getNamespaceAliases();
-
-        // if the first segment is not an alias; prepend namespace name and return
-        if (!isset($namespaceAliases[$typeParts[0]])) {
-            $namespace = $context->getNamespace();
-            if ($namespace !== '') {
-                $namespace .= self::OPERATOR_NAMESPACE;
-            }
-
-            return new Fqsen(self::OPERATOR_NAMESPACE . $namespace . $type);
-        }
-
-        $typeParts[0] = $namespaceAliases[$typeParts[0]];
-
-        return new Fqsen(self::OPERATOR_NAMESPACE . implode(self::OPERATOR_NAMESPACE, $typeParts));
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPtdvc7b8G65+5KuDMXflZnylRmJvHJXPA9+u3iURkbd34wa+TVQ2K94vymurZEt7zXd1Bgio
+BdszDrD7bM5tPGQ6G0eYc+ZJFs5L1ASfTKIGbhvG+nqkEA6umuj8U/p/e7fm0ucrm6kmTGyAyL8a
+P3a06RBBq/ekyK/E4L75PvW+SqAHwErAbNCk9CMsO49yY+igXjXuy9AvwYvO4xkAkMwAifHpiKBG
+pUEuhwy5Oh92hsaDe9fLl6ntUhJWmeyUswlFEjMhA+TKmL7Jt1aWL4Hsw0LcDi0/l6NyPoEAWRkj
+Fj8L3lM1JeJqH8DOCAW2h69GbLOpyCfpN67iEDBS/JyUNB1Oehla3DWtFW+G5FpoVMtFx2P/A27t
+EIqCnfk1A9SNeAgwxTf2xpPYa11R/SIpW1gMVDnXhcmq1pQgcA9/bOViml/KXinVVSqrHu0XbhmF
+tklp6CYJLB+vsuYExzFjvApRApsJ7AqzE/DMheRk/aaRkF7TpvteI+ohLehNW4ft4+f9wjW0QDc2
+nI7BXY3xoYEFTeoC2dyVtwJxD8gxiy4hlG3jFutwLhKP1SY1GL3TXNK+6a+BtsH/G+jY7HTPw324
+ECRELBRVTdj2GJuR3dhPhuLHOwxLi+bHJ2ppIUmBh88fbIzkwj/ksSkr/xJr4Awv2IKV/cQxhEin
+UGX+L0n8fAbIRFk7Z0jcT94zIVdmQHhVZG6iFOwaCCF2pwteutItXZ/C4ntn6yIOPmTxfyew2paN
+Y+7BMh1a3V/NVrAe/UwOumZS/UWif/+6jQuYOgc8YwAF4GgGTG/zf5wVg02fjMn6VRgzNedPbqPo
+ZtSLX3vR2TbU79NkiqD5J2Vd7FeC+8dmup7xV6460OVCVzbHZY56bBOIe144/FqV3cXU5dU7uM/g
+dr7UfysPew2L4LZsUFQXwBLztF1A6CKml6nM403UciSvJi042wPVggiutniNi3Iejo+LTdAyU92g
+vh1wLFG/hcbY2/yzpanUWKC+G2l9Q+NQtzaly7MzNBwN4NG/T746WWZWBljtRe1Og+zTBPdrYmdw
++P2UMqAs0jo06YkVgmM5o0bhrZiHd1DmATORPvHmGNdeipKHU9kg26lS034vtRsTSUmD2adoUB41
+2xZbMZOURq6djplnbq0oEJ6JAh6KgbDVYfhM9bfIAKpJkKTlu3aVw/TTBL/NPzhAkyGabqz1Muxw
+T7nt45nI7uRFHF8i2IXbUcKSecy+Gx2OcleraXx1Z80pknSRZnooamE0hd6K9WP997bL7vP8ZFNm
+Rckz+YLFvUY/Wra2tHDj6rDaICPmmKpi/cK+QD50MOxL0YJFFpLV/xRo1C22HcfMvu3GVye7EqyQ
+uB9u4pAE3YC4OCpLk8me0vSYD3DsNSZNQq3jfw3eiyODiwpsjfqlWeM48tUSiJVw09Fb4Pjn82st
+cC4pa2CTKJxqhrjhUZP/MdByqab0wwXhCRoj+WoJHvretSR0zTYH5LkAFJCLWqdPhcImHpYOtfM1
++sMj6+O+T8O5Z/7Z9whqW4sVDidwV0CR2EYyVI3O1t3DkP++iH62ug3U69Vvtx9hpfOxmwd1A1bV
+SHQY3y9IpZTM7gxnzz43hwIoU3zcWxOYJM+DGGNmoeWvTop+xHG8SiUnQlD19Q8SSij+oMN6g/4g
+jDHPEx2zVTNdzt+PTMBPXK4PWx4whbH4mO4/KkXzMUnH0vTlgXT4tPq2M0sVB6hWfm966DAOrpik
+ocJx0k52nkVWvn5TOO8AKQwfc9xTyOC++/Ol0QgCWq8zewmPPfxt+UVjk/YxgdbB/omYii+hVGer
+I0k26b0uNqVZHKixwjX7IUiN8pOsQ18EgjJMMh1hIs0BT8bGFm6VITz5OuVG0L6QZfcMdmXcKQgQ
+yaYcZr58B5otCEh7WpeYnZTzKAJ053xr6fu6ug2+IHDOKQM/fl/yCsNbiREzUpDYv3aI6JEEoCRC
+ilMYMBjHv5sgzXwyYR2nzYLb264uQeQv21CrPUMB2ypS9QFXtsoxMEDY//2+MR9DKyivcoxYUzg3
+yHtEv2pagAdtx/YL3IB/ULRWLVD5iw4Ns7NamS5BfByWG2KPCk9BBrhfpKO+eSA6JdHAzLodej1D
+m8TxMxMA5V9LE8PgX7kL85Ymj2dXYq+PKd4zhKvgpX53tFiHZdT+sKYHu6JWG/BMovkuan81TBDV
+WN+vm4MxUCrSQcO3x1yPbZ0kEt3UUFGvVADr05yJbxIVbIFUIuk5Sp2LSZfwNMaxJQpluWTjcTnA
+JBkMa4mdFjzN6YFm0etFtTmgGGf6Q0mrUL4o3tOdRSzF9q9OJLtqI95uXuiET3IDuLTr/acK/Fwg
+RAEOl+ob0sLCKvmDm4OQ/kodSLPp2Tq523V2g/biz9D8S5VcxPybY1jrvN2RAvz1rlAfucFj67fk
+2TjH9iW9MIWujQTIZIApO7qC0aIHfJl8nFpoSPBR5xNwn0OYTjjnA1Vs82zXYFy6X5Amr5VsfMBL
+QIBUqV7cRAEGyY1sysuA+oe2unWwQLabJhuTXWiC+HQyAE9T20K/R1aiy8ol8bB7gL0OvZFcmvjj
++wYADGqsZwqq8X7q1CMefV/5Vn1F+PmCB3EJEUSmJDRN4ln2eztJMoVnYy2ZD4yrflgElYG5wVS9
+FQnZ/D4xPZO8+oORn80bZO1QJYPVaVOHkWenuNkLYDweRR1PEmYH7ax7jyj4ij3jVGDyIKOB1VcY
+7XwqQdC9DTnanuxTMrZ0QgyAGjVF/CSnMOx60SYR35dukI7SUIQqf5hgwsABMqoXklQ3L5W2eA3D
+4XbYfrNN9H8a0ntvm0EfzcyLtsQjtWJpT1lqnh5DNZZe/sOSnau0jSJT7k/cIsOvVUQJaFq5L7El
+ELGX0EK6+SY80a1TV+/m/qRKm9n5ESa+c+OhpPE2OoNmfDRY8Xgo+mS6kD1PWgVHtc3GXLV551+E
+6r0chDr0vuJM4BXKiaNbarS=

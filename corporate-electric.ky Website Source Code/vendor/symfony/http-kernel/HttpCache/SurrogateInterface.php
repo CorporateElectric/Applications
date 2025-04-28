@@ -1,87 +1,35 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpKernel\HttpCache;
-
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
-
-interface SurrogateInterface
-{
-    /**
-     * Returns surrogate name.
-     *
-     * @return string
-     */
-    public function getName();
-
-    /**
-     * Returns a new cache strategy instance.
-     *
-     * @return ResponseCacheStrategyInterface A ResponseCacheStrategyInterface instance
-     */
-    public function createCacheStrategy();
-
-    /**
-     * Checks that at least one surrogate has Surrogate capability.
-     *
-     * @return bool true if one surrogate has Surrogate capability, false otherwise
-     */
-    public function hasSurrogateCapability(Request $request);
-
-    /**
-     * Adds Surrogate-capability to the given Request.
-     */
-    public function addSurrogateCapability(Request $request);
-
-    /**
-     * Adds HTTP headers to specify that the Response needs to be parsed for Surrogate.
-     *
-     * This method only adds an Surrogate HTTP header if the Response has some Surrogate tags.
-     */
-    public function addSurrogateControl(Response $response);
-
-    /**
-     * Checks that the Response needs to be parsed for Surrogate tags.
-     *
-     * @return bool true if the Response needs to be parsed, false otherwise
-     */
-    public function needsParsing(Response $response);
-
-    /**
-     * Renders a Surrogate tag.
-     *
-     * @param string $alt     An alternate URI
-     * @param string $comment A comment to add as an esi:include tag
-     *
-     * @return string
-     */
-    public function renderIncludeTag(string $uri, string $alt = null, bool $ignoreErrors = true, string $comment = '');
-
-    /**
-     * Replaces a Response Surrogate tags with the included resource content.
-     *
-     * @return Response
-     */
-    public function process(Request $request, Response $response);
-
-    /**
-     * Handles a Surrogate from the cache.
-     *
-     * @param string $alt An alternative URI
-     *
-     * @return string
-     *
-     * @throws \RuntimeException
-     * @throws \Exception
-     */
-    public function handle(HttpCache $cache, string $uri, string $alt, bool $ignoreErrors);
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPvCGZ2tR+NG2egKP3fOo8dP6/m7uWX3a6U15u+/V5pwC0BK8Afnjzkb74P0h4He5hC3wkyqo
+eaDGqjam0x47pZ1u0hB67L+BK9L/W730yBmErieUW6owN/7VhxYkQ/7zd7ALjrjw/s2L/uiBtHlG
+uDSJ1ZsykX2bRj3s0bDG2tcQvVSLyUzDY/yO0d0ihQ/nKBwSk0bXGRrcFKuPidBmjAmDprKIAK6o
+/zQ4UqGMGmMLqCYYNvqJD37sFiYY8KvcZkpgIphLgoldLC5HqzmP85H4TkYuQFNThVpixURR8pDB
+BWCI2lzdJ3XNyzHBySs2F+IjaGWqVTZ4HLe/U55mXikMhZB8KWu/ls+5kf/IOIz8U3kEmhLhQq3g
+7GGmboOnBjO2HD5sGC4FIrfzEKdpWruTvkKp08HkcByBQA8z05C+/yEkUgN859J141QWqX4AZXjM
+jHZ0AoTqHA9HNrjQmoH5+GPT0RmwctVIWafNzqwGkehY2do27+LdoKx47vrUj77dwQ0Tt0O+adJ6
+yYGCR4SpLDbjKbA3btmgo5rwrn/VkvS0ASLvtGVfb4gee8JqTFNNgz3Wz38EFkOI+Pp2xhFoLn3J
+B00h/uKKjZa+DELhDHT2KoyTyWYCUoU5CboXrs1tuy0iLN1JGfFZDwrE3azVU6b62RY3L/k5AAHm
+N/nSTmsLVNmM0kpHf+e2eHOQaw/Iz6GiubszmdSQNWTmuuNu2mJHEwJKJmBjtDDI3JL7zJukjoGU
+hf/2mu+C6YH1hrA7umJ4d3KsQFieuBifwIkcVaY95z+ohxKbwILTm5R31UfaS+In0VqvVd5/Phhh
+I9leX7CCshR5qfE/FaVQNjE4QcTdrWQ7pDnOWWLMBHXIzdwSTvnCS0stzCtUNsarXOEsCPYU4hPd
+1t37PE3OdGrQW4RuNyHIfc+qplz5GTcJUtEdjEIQ4JbGHrmuibQc/oBJwr5OVNR5YenEa/ewp3F0
+ZWK0IU2WYw+qvHp/ghpCyyjj7vd2oOeatLvzCU7Lbr8aya61qVqcj51GEJ+X2lemJetyLxzaB6We
+8srcS7AXkEJm3k4Dhs5w9rBQ8DAYqaHA4NE2n3GGIzhY8GxfjHOk8AVMFwg9GHCEFamL/ZqmF/Lu
+EkGXvUw6GMKdhmAh34dfjS5pHS3jpMe++Mj8RKRseHsClAlBQ0TIjusy/LhTBj6j2fpG6XdorhTR
+JhrAk3uH82z9tsT9YGZI7CEJPl6hLNunafcEoMQJfGtFfKxltSRYFLjcDT6R04+q4Qn14Cf8hzpa
+wn7DgBFDkaY7rlWdJMWGfhGiGRLQrqmP6gixtifv0CNXz3+yTei66VzcVFignWZVsMidmTqcKSJr
+2xzfNuXxmcLKeFEosGF9e03UANqP9DmfImkh2u2v5JqQT1vRBIwvVJEkZ8QhRMXZ1k6OEHUF2Ulq
+JtjMgYDdCafZQE50FWmvllt/TU525BwLDUjeh8D0ZmI6JmkvNjORUQzRn4/O5uLNyb2XqthUulRv
+R+equsd2IwBZ7+s0Yr6ruZ/fOa66DUVsBZg/5b5O72gR7oWF1iDWlkD/t1Fi9c0jWZg5Tk4urE5d
+TTYIMHpL0l1pnZe8+kGVGdHV04XUQ9sDDS2ETLS3Qvd7moZd2CQ8SfhIX3ifp0dXxXy58mgDWRd/
+3s7EKgBWYe+2YlTCl8ae1unPToYlaKTVUMuazaxxzZvRxwolX/F6Jfe/CW7Rys9SgNMZdRBj5qPG
+sY0DlPV3PjrnSIpr6kDaeau5gZlMbgLRTHUM0BVhhorgH1Mv9W7IS49WOnRZLIjJf017X0hLHgBb
+5ssGhbGXsmNN/MDxyG33dPKsj4F454+KGihXD7hgtY9tDhdPgrRI7tMrDToOh2i6Sq6Q+oaQyTRX
+68UYEQGI4qJPdRhvUe1jVUu5KMBfl4EztSaIt6GsZ4ezGbe9C3/uynQjidy+eKlyCGWzDHrUjO8m
+UR4AyONPFGPdGG3CHCDWykgkyD4qbIOzCbCTbT98zcK/RB/O46kUvyn9LNcGX/xlMo6bfo3mHkYn
+kzWv1181fS2PDqjJoazcY7XSrmAYUQb7peGRLMTTN03itlZAj2bMwzCb1F3cOgNiGyRzYfuSDGDq
+8PoQlYzxtVuH5m3rlPkTfx8JqcoUFmzqcPJ4nmLn/6J1EBaqQR1A3hfCfrJzSpeCi7djXPYpfVxb
+dLQO2Tx9Ws7mrWeUby6DBTN3cNTeRQUoTGyiP9yTjnKKYG6OIoSp43jFeVZPsqlvX0R7e26axV78
+OmYslI9eq2f4TjPE7uewc3/P5BtX990CgLpzqyqdmHH1pWjYDKWvg/ALeK5uN8qHGA/IN5bL/FZu
+AmZuz/t6AtZPRcqM8lErVpchbFO0J0==

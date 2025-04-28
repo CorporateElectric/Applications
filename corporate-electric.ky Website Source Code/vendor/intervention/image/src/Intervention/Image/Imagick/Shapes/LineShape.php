@@ -1,94 +1,51 @@
-<?php
-
-namespace Intervention\Image\Imagick\Shapes;
-
-use Intervention\Image\AbstractShape;
-use Intervention\Image\Image;
-use Intervention\Image\Imagick\Color;
-
-class LineShape extends AbstractShape
-{
-    /**
-     * Starting point x-coordinate of line
-     *
-     * @var int
-     */
-    public $x = 0;
-
-    /**
-     * Starting point y-coordinate of line
-     *
-     * @var int
-     */
-    public $y = 0;
-
-    /**
-     * Color of line
-     *
-     * @var string
-     */
-    public $color = '#000000';
-
-    /**
-     * Width of line in pixels
-     *
-     * @var int
-     */
-    public $width = 1;
-
-    /**
-     * Create new line shape instance
-     *
-     * @param int $x
-     * @param int $y
-     */
-    public function __construct($x = null, $y = null)
-    {
-        $this->x = is_numeric($x) ? intval($x) : $this->x;
-        $this->y = is_numeric($y) ? intval($y) : $this->y;
-    }
-
-    /**
-     * Set current line color
-     *
-     * @param  string $color
-     * @return void
-     */
-    public function color($color)
-    {
-        $this->color = $color;
-    }
-
-    /**
-     * Set current line width in pixels
-     *
-     * @param  int $width
-     * @return void
-     */
-    public function width($width)
-    {
-        $this->width = $width;
-    }
-
-    /**
-     * Draw current instance of line to given endpoint on given image
-     *
-     * @param  Image   $image
-     * @param  int     $x
-     * @param  int     $y
-     * @return boolean
-     */
-    public function applyToImage(Image $image, $x = 0, $y = 0)
-    {
-        $line = new \ImagickDraw;
-
-        $color = new Color($this->color);
-        $line->setStrokeColor($color->getPixel());
-        $line->setStrokeWidth($this->width);
-
-        $line->line($this->x, $this->y, $x, $y);
-        $image->getCore()->drawImage($line);
-
-        return true;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+w0iTMONp4Hr08f8jrRowfzVvUm==

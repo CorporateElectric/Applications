@@ -1,166 +1,88 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\Command;
-
-use PhpParser\Node\Arg;
-use PhpParser\Node\Expr\New_;
-use PhpParser\Node\Expr\StaticCall;
-use PhpParser\Node\Expr\Variable;
-use PhpParser\Node\Name\FullyQualified as FullyQualifiedName;
-use PhpParser\Node\Scalar\String_;
-use PhpParser\Node\Stmt\Throw_;
-use PhpParser\PrettyPrinter\Standard as Printer;
-use Psy\Context;
-use Psy\ContextAware;
-use Psy\Exception\ThrowUpException;
-use Psy\Input\CodeArgument;
-use Psy\ParserFactory;
-use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Output\OutputInterface;
-
-/**
- * Throw an exception or error out of the Psy Shell.
- */
-class ThrowUpCommand extends Command implements ContextAware
-{
-    private $parser;
-    private $printer;
-
-    /**
-     * {@inheritdoc}
-     */
-    public function __construct($name = null)
-    {
-        $parserFactory = new ParserFactory();
-
-        $this->parser = $parserFactory->createParser();
-        $this->printer = new Printer();
-
-        parent::__construct($name);
-    }
-
-    /**
-     * @deprecated throwUp no longer needs to be ContextAware
-     *
-     * @param Context $context
-     */
-    public function setContext(Context $context)
-    {
-        // Do nothing
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
-    {
-        $this
-            ->setName('throw-up')
-            ->setDefinition([
-                new CodeArgument('exception', CodeArgument::OPTIONAL, 'Exception or Error to throw.'),
-            ])
-            ->setDescription('Throw an exception or error out of the Psy Shell.')
-            ->setHelp(
-                <<<'HELP'
-Throws an exception or error out of the current the Psy Shell instance.
-
-By default it throws the most recent exception.
-
-e.g.
-<return>>>> throw-up</return>
-<return>>>> throw-up $e</return>
-<return>>>> throw-up new Exception('WHEEEEEE!')</return>
-<return>>>> throw-up "bye!"</return>
-HELP
-            );
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * @throws \InvalidArgumentException if there is no exception to throw
-     */
-    protected function execute(InputInterface $input, OutputInterface $output)
-    {
-        $args = $this->prepareArgs($input->getArgument('exception'));
-        $throwStmt = new Throw_(new StaticCall(new FullyQualifiedName(ThrowUpException::class), 'fromThrowable', $args));
-        $throwCode = $this->printer->prettyPrint([$throwStmt]);
-
-        $shell = $this->getApplication();
-        $shell->addCode($throwCode, !$shell->hasCode());
-
-        return 0;
-    }
-
-    /**
-     * Parse the supplied command argument.
-     *
-     * If no argument was given, this falls back to `$_e`
-     *
-     * @throws \InvalidArgumentException if there is no exception to throw
-     *
-     * @param string $code
-     *
-     * @return Arg[]
-     */
-    private function prepareArgs($code = null)
-    {
-        if (!$code) {
-            // Default to last exception if nothing else was supplied
-            return [new Arg(new Variable('_e'))];
-        }
-
-        if (\strpos($code, '<?') === false) {
-            $code = '<?php '.$code;
-        }
-
-        $nodes = $this->parse($code);
-        if (\count($nodes) !== 1) {
-            throw new \InvalidArgumentException('No idea how to throw this');
-        }
-
-        $node = $nodes[0];
-
-        // Make this work for PHP Parser v3.x
-        $expr = isset($node->expr) ? $node->expr : $node;
-
-        $args = [new Arg($expr, false, false, $node->getAttributes())];
-
-        // Allow throwing via a string, e.g. `throw-up "SUP"`
-        if ($expr instanceof String_) {
-            return [new New_(new FullyQualifiedName(\Exception::class), $args)];
-        }
-
-        return $args;
-    }
-
-    /**
-     * Lex and parse a string of code into statements.
-     *
-     * @param string $code
-     *
-     * @return array Statements
-     */
-    private function parse($code)
-    {
-        try {
-            return $this->parser->parse($code);
-        } catch (\PhpParser\Error $e) {
-            if (\strpos($e->getMessage(), 'unexpected EOF') === false) {
-                throw $e;
-            }
-
-            // If we got an unexpected EOF, let's try it again with a semicolon.
-            return $this->parser->parse($code.';');
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPy5i0uEg+VUqiwMMe4NEsecNltFLjHEsSFz0zouDbvg2B1QpjzHHtJL0yM1iXTRX4gBGovmC
+oMYmQF3vIzua39dzQdEwSHV8AO2MK4kpMogrrws4VfnhL/TVV9rtaqreqZgF7p+BjXEYuG7cAhui
+eQ/xglCC/i0qOM2SSzyrwnUt9MlfGL2I0Z5f25rbUQMueOfGOFq0X04GrR3YMYyWAf8dg9mJ9k6t
+zZRRQoMg9M3a93utBManTt/bfsf1aF4WfK0axZhLgoldLC5HqzmP85H4TkWqQciBIHaHujMr8qax
+icfD3//dHYtsfgn8cLdMWN1kQXKY5zu4ICH0QlzcQzjfcstegpyV/noeRYoSPlBVE/M4G2HH2tAi
+E2I+CXHumyAu0LemVjYQ5PWxIOQQ+bnqOnMgGBv29wl4jQ+wUgzHFHm3ddgRlDrn6HvIQxdjdzcL
+gPjtn8q+QEmAusGcgXqKg5EPnYJ7etoKIGlD6yh+iLjYKHvqzLgk34mw8b0uxyXJPMnigx2BUd3x
+zWZ+dwDSlM6b6Z759yPvsbw25Ns5kvK3ApOifZSmBAXqjiZa4xAo+pHTvGQWt+mGxPEZqczsVRXB
+6tW+BVadwFLrvV+DMAgBJJPJ2uDUSqQiRf1QJBIDI08dPblSz6JuehWZnGgO064Kh8x7DQYPmJGw
+QOKRAUoc8mziMIOJC6/TrjjuoMThbZapsaDioeTjQNIOjiae5SpVWQT0muDfsY9juoGn/a4bGtyY
+K3HJNIpKGaEpuqXhVLajfjY5xeN7BeTwIL+3TDITMHjFzVrFKYukCfilZvOAhxf3iAdcE2rElOwF
+d8rLzz9dVEcfMdhVGMEi6R2bC5J+jygAoXOO0DOkduT1zNO7uV503ZzurN8ixCJLYsBD8VCETTjx
+v2AjUVT578bREJWfzs5vOMsjaZKdYkYLFLm+7htv2Spj3WrwpEwWyDwqshBJEStVmtXRoe13Qguo
++0N0vsCPl4xWP3GaY0fCGYgl5EQWAo2uJxja+OjeSnOW3XkwcsHPLOze1Ojn6hkubDbnsXlu0sDZ
+a8n/hf/5AqiXa7EU40Rc+XoNebLmYYI8iCczbIFAv6k8yaPJjZA0SQfIMHLdxf0dflMnDP+S/MVA
+QYqaGdu6+CuseFcFWqAqLv5+iieKprSanhHXcqW8CVa/K+PwagnLj2R2/wKnjRXaoz8Cooe8TG42
+E97uMygMhX5ZkEISxBRHVn9bo8Jj7oBxkhOY18pM8whkzKnOqgK+zjRAmCzectKcva/FxdM9uUB9
+O+e7T6kkjUgymYw94Hnnpvmc/DWca1V85lPOie7FHkcaOCLG0ZxxQ7YTGZvQadntw89+zkBZiyFN
+iOBhRMLItXgAs06dre5YMftpLdDyOZu2mZu/VMEN9HY0TQ9Fxe/l98zIUlONW9JIfO8xL3kG3cUT
+QNimkxgu6Dj9Va2u60b4urEKWmMii58Rge9qkjGBzjpbc1IrC0T+EViqojr7gYj0X/2tLnxb+We1
+6uelOIb4gs/sGbfkDhyuQu0x8AaVlPGFGud3aO3jxH6do+dqP33+yLE6QbGEz878K4FNM9jnPBgR
+E0Q/op97oQtiONqjugQOL0gz+HkQvLfAtPJ/wXJGyjBODwTx6NPxkUvIIJhX45IfW6K2DDS4ZXho
+ZSJca0j65UZsCrRRkgR9eX6u054H2JIhKrOYwdTBsv8dl1CJ6Su0tC19OMoXe2rRPqMU5mkELo06
+WySfwpitIHGo2CQVjYP3Z2gOHbNrdRAg5UufnDiCQJ/FbjL2XSh8b5lfPgYxaXbmbpfS8Q05YbVd
+IffdvBFFDuVZHWHfwpbXoHdfnZhSTNgjGEIYxfpU1qVNQjx4SRWuIj7A3DnwEoFn0r1KAyli7ab+
+bgYnu4TFgzzT0V4cokeqw+WBnovGeLzimo4I3msZLlXBkzANmOTDblFZMyEJheSb8KcOvftEBFra
+W73RtitF8EM37UPlUgS5VDfZk6Q1sJ3Y4e/F+WqjJpghasNQSItVgwQ7QCmxkuNyLDttfGPOx0hk
+e4Mk1S2AlqnbCuR/tEzVENMRy6g3TQ0fG61/XZeteBoZ+jCc7D1zUq867YEcK0zj3pylOKLSxWhC
+w0XI4aBkkOBT7tr9pZj+nXEEIf2s45UesS4scg2LWGmUexarcZS6/9i8E8048774aiehhNNx2Huc
+hFT1hjrUmEC7bIsu39rVQ7albhdvOGMMxbhjPL8pnvE467ZtTZbWpIbdBxOYIR5Vhfh2TbkG7nXM
+voJ80Ixx0ria5DFFj+fekF67hZKA52IFycI3cAv0u7klOleZjFeDizNBwWhpdIico/6E+UpEK7Zh
+tVT2yjaV9BX+8axB9WuJuQCuJ+UBaE2X3USEv6L9IQaS7imJyyhSXXiTBCGN0t67TN/QY1nVe+dR
+2gs9B1bsOCpF1EvOPKSzUnKEizlQR1GkaJuhzXZfdMmDqcCpOOnxbjow99n4qn5ltYJLmv3cmJ7A
+Hp6a8bDvO5Mxz0rWnYH6Mhen9eXmcWO8qB0U9CVf/WY8/7Y3jjX5rgLFxsqTWUW6MIPUk3PLH2Cd
+v5V7WjvJJACp53inUprDgyFGFZrggOP7yzqQO9oiYfnBe0pobP5Zf1dfQ93JxIM3V7V82WvDb7xK
+eU9Efk2JvccxAhRiq0pCQK8UAOHydefEQAvI+MkxFHjyiDfibSBcLc+lZYlxV6xyJBhX6btbyED/
+tez+27NoJ1TYCRcqDplbLJbuopAs/NPZo+oJhjpbnZHYfh2ZTm4EfzIZX/vz9oxbjjllk6N+Zbh/
+/eQpR3tHAuFI+7FKs+aRHkzO2a6rAyT4vjjMmb3MycaoGpxXjNmLUKNWJcdbthv77dhcwAfpfhv8
+feEY+f9/BWYEgswdAw70h4DJFLHkae4tcPfhHmll2G4o1GQnDXFvKzR3DXNV3adYzeRFhv6ePMgE
+I/j9zCmVVgwPCb8twKFyXHPTnCDh7U2s8YanfYdQ0e1BEjw+cv+rHmLOYyzWFg2p3pxcKjzJGVDT
+mXSawNG1zdeLMaG4Zy54y1TdDITqxWES12gnlzaBLhgqauSFhHbUeyeNbMis32aQV4xl1IjLBW8r
+fsamR8bSTzPhCM3dMrGYRGr4Gh+pbYBf1b9vD3/87l4XAPpQDdPFXOiRqtMYkMQjRVe7Hcwb/M6b
+2hixoVXo0tX/3B4GAqYtvQP+A9WcC9gmzwawPlbBzCMld49lKkA5Wj7iAobZLCc4OkGKZ8m+FJKe
+aUIoRh3tuB+PGaDFpnZYViUMgLz6Ib2kTTdjj+Z0fT4diV3co3e43hkDp61CeEjpqo4/ca8fM0Mf
+BWW5QEQV2dPB0JwQSRWxxnTDVwTf25SrAF7GjRTH9670q6fSXFn3zJRJij6mwFNEaTxi5xIuLXJY
+4euSCpajqKJdiQ86i9APf9zRzkDHmYVTPqyhqAZAdG2Ue9peL3MKTQFRsSOj/cxXCR1FTWjkrzrP
+TmLmkcEZ0AiQvS0AMnoVazUEucyA+xDKYe3L8NOFgv+gALNzW/vfuOGWdiqF8N6kBxxQMAe5IMxI
+SURS7iKfg/2ZDg5MpRZhnGQg0eZxRHeqP++VYQMs/DCnUrHqvEBIswzOyO6s/UBpGlFgmzW+dDGZ
+GZLvT/gCV1J0wh6g0uSYriCAI2jAQW3pGZtNFe9pTl5SF+IphL/MGL5gWSncWbBJiC3d+VTiBqZ7
+M9EnVFJNO2gBuaySbtMUSlRy8yOgDqUE72dhGXsLMRb92APIaTGTBu+tTH7sN/FqIVhIf9F1Xg9H
+SO5gs1R/C6x8wWmo9l/+7xgQuMWiEBVlqgBVeTfTSLwimFa91sToJJwrGZdXgBlMDAV+lBwLhsSP
+996F3CfsAVRiHuYG9Ikh33UAtEHnU20inxy0z3egIcUraizBGkZHipQCPePGCJaCA/uHhUaWVa4r
+O9BIujYFrtkF49M/m+veGMtrUmJXneqXOc51dfUTvCDFUk9Za2ui9/mA2UGFIJN/LBqjWhk8eM2L
+gcXbBJj0lEJq5S5f7ilf3MG/NzKlMFfVM7BfYuSxLGCsCME7fJPdnTU+tMvO85RDcp81Sj1N3eOL
+3vtgSMmPmgwyIgjKx9q55qcjX3W5uzbqpvtdbkMg7T6V7mAW6f+U2gfNkkcf3XTr4O4pi5OjqZ4F
+ByaDW+H20zdJiuQSCINc6s85mTlGgGVoeboX0OFuq0q0y+QIqF3UBKzX5443GaLkAleYAzUUTzZX
+EXTauQNSfy1CWTPj3T68dKB/SL2u6QduCS247B9Ah5XwKBv1xBTgLGY3A3e5+wjTHNaDTuilCIwg
+bwJvsybCXcts1ZF7q761OuXS8Jb94csx62x8liwrc/Wo8A8ixHqbk8flMX3Zo6a+CZedx8rQReT+
+9tFKccPkG9XAEvLQknjzBGOvOxC4+OZz7ioiSiF9rbVX3K5+NMn0XdzoqHDdJTbVcUXzv1KLovT0
+Z1Dqokk5Dob9vqtQwCWkYuV/I3tg9ZQdIFnLPLaKZyvWmRKliEge76cY8ekLB+bv5A7tF/anhwHa
+FRnnpfT2qz9n1HctH14lK1PgyTiwwnM3bkMIL4FV/owr60qDRfN/pmWm2RkyIOYjvQqA3KxQ8o0F
+woc45AA1vnRPoIDviqYDy3RbDX2HuzeILQH+J7ftjweN7Ac+uvOvPnsElXLL+a7SYqwhNVhKeaWT
+rrkwTNzCOgkVVHbkjYrioT3pZyCRcd0k9nnueYG7dSOjKjeeaY3ND+wvwYsPVs/i87/9OS01iF2P
+P/s04smTAB6rBT2z5OrN5fL0RXqUZrIkqKhDGByKSEqBS1rhehFU7OfHj0ON6dV5OGJ/opPXbCe+
+UdNVgv1yH3+SW1bucsnz43vQr4pHh7Y8AKjh9gBImrDtmsSb4WwpObCVEAFJi0pdJ9dF4N7zehdo
+twdVlPbyxgKHc2A3U+tg+fW4V5XxsfyAgPDxdCg15qNgL2UpR8AfXUxbHp8/jUjLmO7JY609x/d3
+dXDzJmhbVSxupljvXuRJYsK9/XWRYRlXefba2yjzl0lPxmk+mQ6mwarVN2DJuQdwegH10SEEVJdO
+MJJiEoIrDPN+ZkvmjNwipMFza5ZjJ3ygjvu8dOvwcAQ3h0rGpUO0vy8wuWl8M69AFVnjfAR1h91a
+ea/9syFVYoWVKEMRWDWaO31hnVwdG//dn+MvEduCyxc48UxEbzzvXTI6JOAWfkiTnRzJ0ujPC4wi
+NR1b4drQ9lxFbOMvZIUeXDQbHEC+hFkKjUJlRI5BcvoAmVUQDu5Eb5M8hRQNewcZ7FoYUQANfaCd
+Qddw3ziPYzE5i/JLSKGYPeqx0r/N/NJKRb+wGSKRhy+z8TUdRgASCY+X01yax6NccaW7EEQqQoug
+D09+QXLrdS6JgYqYxbh/sUH2dZUiyUsURvDIFyI8LewNg5PzXMDl9R3Np5FRKOBBzyHQQdIbvLXV
+O1FQ7+Fvh1d50DQst6dHDk8QCSotlJ2DSgBBIi9mfGi21cnGGGa9BH6KCiq3k97ok14nne5N1UnJ
+gKuueP2srApSrM0+kC2yt1tudZdT7O/FWKo16muKmiOIgwiqjvI4ZBWU3QdsDI62GoNdRDstSxrp
+SWnLMaY5js9z4BOUlE8+ni5nMpcNFy2kEnX9NnmeCSkzEQRlYE/cyjK6EsMTaV1W8qCOSXnd4UWE
+mwSmGQW0A+yB/UPbYx3OsikGOfV5n5T9QbItCYKbbvnXUieTmtWFd3F39ofSX7AcZrV3R4FQ+yBJ
+RopohbYVGdYbRFD9eihBbL1sH9d6396h5Y99aycYQ7DQG+/bCXOm0JD8SFdzUZl6bxg0vsptu8ou
+xQ+/bZOw5KYQsER1CxzQV965N9s6U17JIO/TMaV/Y7btGGxxskweEzaURdgK6kNsyI+qwIE6XaFi
+XXbz93v67jCimi8ly1tCmBcF0f3qZijFaGn5C2bYC2sKdaOlvpAnq2bo80OQb/4GpNq6AV2ilG2r
+vQEXwlEkvE2FlN1laNf2r0WFYO/zWA/ifDRknFSAYjwjQu5cst2z8220dU+Rtr34uPkmJayBCiqZ
+2NeXApXSb5LhIZVIjgqbykGqnHc5HC8gt/dCDaNYfrqTQKemJS7lSBWn757trkWgWF3zNjZsMXvR
+HJIJkoi+6YX7rPSKQnwxo7k+BNEoTLw3WAqnuaODCRIYLqlcahSNqqQWigVtKrwKSqBFIBlblskU
+VN6kJVZnYtDBroCG+3QxkIdtFQ6/M9WeY1gOLF8K0yTiK015+sosrgE901WhZmYWROmlO1YrVGXJ
+GEB8rnNkrJMfdykbKBUpcBsx1u5WCDN+NdAo+d4uzaHkOWo7xPFUcqQGboy3VcXkJeqL8TZ8oNfc
+IR7FulGQ

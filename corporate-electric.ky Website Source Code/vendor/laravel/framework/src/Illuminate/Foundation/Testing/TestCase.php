@@ -1,245 +1,97 @@
-<?php
-
-namespace Illuminate\Foundation\Testing;
-
-use Carbon\Carbon;
-use Carbon\CarbonImmutable;
-use Illuminate\Console\Application as Artisan;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Facade;
-use Illuminate\Support\Str;
-use Mockery;
-use Mockery\Exception\InvalidCountException;
-use PHPUnit\Framework\TestCase as BaseTestCase;
-use Throwable;
-
-abstract class TestCase extends BaseTestCase
-{
-    use Concerns\InteractsWithContainer,
-        Concerns\MakesHttpRequests,
-        Concerns\InteractsWithAuthentication,
-        Concerns\InteractsWithConsole,
-        Concerns\InteractsWithDatabase,
-        Concerns\InteractsWithExceptionHandling,
-        Concerns\InteractsWithSession,
-        Concerns\InteractsWithTime,
-        Concerns\InteractsWithViews,
-        Concerns\MocksApplicationServices;
-
-    /**
-     * The Illuminate application instance.
-     *
-     * @var \Illuminate\Contracts\Foundation\Application
-     */
-    protected $app;
-
-    /**
-     * The callbacks that should be run after the application is created.
-     *
-     * @var array
-     */
-    protected $afterApplicationCreatedCallbacks = [];
-
-    /**
-     * The callbacks that should be run before the application is destroyed.
-     *
-     * @var array
-     */
-    protected $beforeApplicationDestroyedCallbacks = [];
-
-    /**
-     * The exception thrown while running an application destruction callback.
-     *
-     * @var \Throwable
-     */
-    protected $callbackException;
-
-    /**
-     * Indicates if we have made it through the base setUp function.
-     *
-     * @var bool
-     */
-    protected $setUpHasRun = false;
-
-    /**
-     * Creates the application.
-     *
-     * Needs to be implemented by subclasses.
-     *
-     * @return \Symfony\Component\HttpKernel\HttpKernelInterface
-     */
-    abstract public function createApplication();
-
-    /**
-     * Setup the test environment.
-     *
-     * @return void
-     */
-    protected function setUp(): void
-    {
-        Facade::clearResolvedInstances();
-
-        if (! $this->app) {
-            $this->refreshApplication();
-        }
-
-        $this->setUpTraits();
-
-        foreach ($this->afterApplicationCreatedCallbacks as $callback) {
-            $callback();
-        }
-
-        Model::setEventDispatcher($this->app['events']);
-
-        $this->setUpHasRun = true;
-    }
-
-    /**
-     * Refresh the application instance.
-     *
-     * @return void
-     */
-    protected function refreshApplication()
-    {
-        $this->app = $this->createApplication();
-    }
-
-    /**
-     * Boot the testing helper traits.
-     *
-     * @return array
-     */
-    protected function setUpTraits()
-    {
-        $uses = array_flip(class_uses_recursive(static::class));
-
-        if (isset($uses[RefreshDatabase::class])) {
-            $this->refreshDatabase();
-        }
-
-        if (isset($uses[DatabaseMigrations::class])) {
-            $this->runDatabaseMigrations();
-        }
-
-        if (isset($uses[DatabaseTransactions::class])) {
-            $this->beginDatabaseTransaction();
-        }
-
-        if (isset($uses[WithoutMiddleware::class])) {
-            $this->disableMiddlewareForAllTests();
-        }
-
-        if (isset($uses[WithoutEvents::class])) {
-            $this->disableEventsForAllTests();
-        }
-
-        if (isset($uses[WithFaker::class])) {
-            $this->setUpFaker();
-        }
-
-        return $uses;
-    }
-
-    /**
-     * Clean up the testing environment before the next test.
-     *
-     * @return void
-     *
-     * @throws \Mockery\Exception\InvalidCountException
-     */
-    protected function tearDown(): void
-    {
-        if ($this->app) {
-            $this->callBeforeApplicationDestroyedCallbacks();
-
-            $this->app->flush();
-
-            $this->app = null;
-        }
-
-        $this->setUpHasRun = false;
-
-        if (property_exists($this, 'serverVariables')) {
-            $this->serverVariables = [];
-        }
-
-        if (property_exists($this, 'defaultHeaders')) {
-            $this->defaultHeaders = [];
-        }
-
-        if (class_exists('Mockery')) {
-            if ($container = Mockery::getContainer()) {
-                $this->addToAssertionCount($container->mockery_getExpectationCount());
-            }
-
-            try {
-                Mockery::close();
-            } catch (InvalidCountException $e) {
-                if (! Str::contains($e->getMethodName(), ['doWrite', 'askQuestion'])) {
-                    throw $e;
-                }
-            }
-        }
-
-        if (class_exists(Carbon::class)) {
-            Carbon::setTestNow();
-        }
-
-        if (class_exists(CarbonImmutable::class)) {
-            CarbonImmutable::setTestNow();
-        }
-
-        $this->afterApplicationCreatedCallbacks = [];
-        $this->beforeApplicationDestroyedCallbacks = [];
-
-        Artisan::forgetBootstrappers();
-
-        if ($this->callbackException) {
-            throw $this->callbackException;
-        }
-    }
-
-    /**
-     * Register a callback to be run after the application is created.
-     *
-     * @param  callable  $callback
-     * @return void
-     */
-    public function afterApplicationCreated(callable $callback)
-    {
-        $this->afterApplicationCreatedCallbacks[] = $callback;
-
-        if ($this->setUpHasRun) {
-            $callback();
-        }
-    }
-
-    /**
-     * Register a callback to be run before the application is destroyed.
-     *
-     * @param  callable  $callback
-     * @return void
-     */
-    protected function beforeApplicationDestroyed(callable $callback)
-    {
-        $this->beforeApplicationDestroyedCallbacks[] = $callback;
-    }
-
-    /**
-     * Execute the application's pre-destruction callbacks.
-     *
-     * @return void
-     */
-    protected function callBeforeApplicationDestroyedCallbacks()
-    {
-        foreach ($this->beforeApplicationDestroyedCallbacks as $callback) {
-            try {
-                $callback();
-            } catch (Throwable $e) {
-                if (! $this->callbackException) {
-                    $this->callbackException = $e;
-                }
-            }
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,301 +1,184 @@
-<?php
-
-declare(strict_types=1);
-
-namespace NunoMaduro\Collision\Adapters\Laravel\Commands;
-
-use Dotenv\Exception\InvalidPathException;
-use Dotenv\Parser\Parser;
-use Dotenv\Store\StoreBuilder;
-use Illuminate\Console\Command;
-use Illuminate\Support\Env;
-use Illuminate\Support\Str;
-use NunoMaduro\Collision\Adapters\Laravel\Exceptions\RequirementsException;
-use RuntimeException;
-use Symfony\Component\Process\Exception\ProcessSignaledException;
-use Symfony\Component\Process\Process;
-
-/**
- * @internal
- *
- * @final
- */
-class TestCommand extends Command
-{
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
-    protected $signature = 'test
-        {--without-tty : Disable output to TTY}
-        {--parallel : Indicates if the tests should run in parallel}
-        {--recreate-databases : Indicates if the test databases should be re-created}
-    ';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Run the application tests';
-
-    /**
-     * Create a new command instance.
-     *
-     * @return void
-     */
-    public function __construct()
-    {
-        parent::__construct();
-
-        $this->ignoreValidationErrors();
-    }
-
-    /**
-     * Execute the console command.
-     *
-     * @return mixed
-     */
-    public function handle()
-    {
-        if ((int) \PHPUnit\Runner\Version::id()[0] < 9) {
-            throw new RequirementsException('Running Collision ^5.0 artisan test command requires at least PHPUnit ^9.0.');
-        }
-
-        // @phpstan-ignore-next-line
-        if ((int) \Illuminate\Foundation\Application::VERSION[0] < 8) {
-            throw new RequirementsException('Running Collision ^5.0 artisan test command requires at least Laravel ^8.0.');
-        }
-
-        if ($this->option('parallel')) {
-            // @phpstan-ignore-next-line
-            if ((int) \Illuminate\Foundation\Application::VERSION[0] < 9) {
-                throw new RequirementsException('Running tests in parallel requires at least Laravel ^9.0.');
-            }
-
-            if (!$this->isParallelDependenciesInstalled()) {
-                if (!$this->confirm('Running tests in parallel requires "brianium/paratest". Do you wish to install it as a dev dependency?')) {
-                    return 1;
-                }
-
-                $this->installParallelDependencies();
-            }
-        }
-
-        $options = array_slice($_SERVER['argv'], $this->option('without-tty') ? 3 : 2);
-
-        $this->clearEnv();
-
-        $parallel = $this->option('parallel');
-
-        $process = (new Process(array_merge(
-                // Binary ...
-                $this->binary(),
-                // Arguments ...
-                $parallel ? $this->paratestArguments($options) : $this->phpunitArguments($options)
-            ),
-            null,
-            // Envs ...
-            $parallel ? [
-                'LARAVEL_PARALLEL_TESTING'                    => 1,
-                'LARAVEL_PARALLEL_TESTING_RECREATE_DATABASES' => $this->option('recreate-databases'),
-            ] : [],
-        ))->setTimeout(null);
-
-        try {
-            $process->setTty(!$this->option('without-tty'));
-        } catch (RuntimeException $e) {
-            $this->output->writeln('Warning: ' . $e->getMessage());
-        }
-
-        try {
-            return $process->run(function ($type, $line) {
-                $this->output->write($line);
-            });
-        } catch (ProcessSignaledException $e) {
-            if (extension_loaded('pcntl') && $e->getSignal() !== SIGINT) {
-                throw $e;
-            }
-        }
-    }
-
-    /**
-     * Get the PHP binary to execute.
-     *
-     * @return array
-     */
-    protected function binary()
-    {
-        switch (true) {
-            case $this->option('parallel'):
-                $command = 'vendor/brianium/paratest/bin/paratest';
-                break;
-            case class_exists(\Pest\Laravel\PestServiceProvider::class):
-                $command = 'vendor/pestphp/pest/bin/pest';
-                break;
-            default:
-                $command = 'vendor/phpunit/phpunit/phpunit';
-                break;
-        }
-
-        if ('phpdbg' === PHP_SAPI) {
-            return [PHP_BINARY, '-qrr', $command];
-        }
-
-        return [PHP_BINARY, $command];
-    }
-
-    /**
-     * Get the array of arguments for running PHPUnit.
-     *
-     * @param array $options
-     *
-     * @return array
-     */
-    protected function phpunitArguments($options)
-    {
-        $options = array_merge(['--printer=NunoMaduro\\Collision\\Adapters\\Phpunit\\Printer'], $options);
-
-        $options = array_values(array_filter($options, function ($option) {
-            return !Str::startsWith($option, '--env=');
-        }));
-
-        if (!file_exists($file = base_path('phpunit.xml'))) {
-            $file = base_path('phpunit.xml.dist');
-        }
-
-        return array_merge(["--configuration=$file"], $options);
-    }
-
-    /**
-     * Get the array of arguments for running Paratest.
-     *
-     * @param array $options
-     *
-     * @return array
-     */
-    protected function paratestArguments($options)
-    {
-        $options = array_values(array_filter($options, function ($option) {
-            return !Str::startsWith($option, '--env=')
-                && !Str::startsWith($option, '--parallel')
-                && !Str::startsWith($option, '--recreate-databases');
-        }));
-
-        if (!file_exists($file = base_path('phpunit.xml'))) {
-            $file = base_path('phpunit.xml.dist');
-        }
-
-        return array_merge([
-            "--configuration=$file",
-            "--runner=\Illuminate\Testing\ParallelRunner",
-        ], $options);
-    }
-
-    /**
-     * Clears any set Environment variables set by Laravel if the --env option is empty.
-     *
-     * @return void
-     */
-    protected function clearEnv()
-    {
-        if (!$this->option('env')) {
-            $vars = self::getEnvironmentVariables(
-                // @phpstan-ignore-next-line
-                $this->laravel->environmentPath(),
-                // @phpstan-ignore-next-line
-                $this->laravel->environmentFile()
-            );
-
-            $repository = Env::getRepository();
-
-            foreach ($vars as $name) {
-                $repository->clear($name);
-            }
-        }
-    }
-
-    /**
-     * @param string $path
-     * @param string $file
-     *
-     * @return array
-     */
-    protected static function getEnvironmentVariables($path, $file)
-    {
-        try {
-            $content = StoreBuilder::createWithNoNames()
-                ->addPath($path)
-                ->addName($file)
-                ->make()
-                ->read();
-        } catch (InvalidPathException $e) {
-            return [];
-        }
-
-        $vars = [];
-
-        foreach ((new Parser())->parse($content) as $entry) {
-            $vars[] = $entry->getName();
-        }
-
-        return $vars;
-    }
-
-    /**
-     * Check if the parallel dependencies are installed.
-     *
-     * @return bool
-     */
-    protected function isParallelDependenciesInstalled()
-    {
-        return class_exists(\ParaTest\Console\Commands\ParaTestCommand::class);
-    }
-
-    /**
-     * Install parallel testing needed dependencies.
-     *
-     * @return void
-     */
-    protected function installParallelDependencies()
-    {
-        $command = $this->findComposer() . ' require brianium/paratest --dev';
-
-        $process = Process::fromShellCommandline($command, null, null, null, null);
-
-        if ('\\' !== DIRECTORY_SEPARATOR && file_exists('/dev/tty') && is_readable('/dev/tty')) {
-            try {
-                $process->setTty(true);
-            } catch (RuntimeException $e) {
-                $this->output->writeln('Warning: ' . $e->getMessage());
-            }
-        }
-
-        try {
-            $process->run(function ($type, $line) {
-                $this->output->write($line);
-            });
-        } catch (ProcessSignaledException $e) {
-            if (extension_loaded('pcntl') && $e->getSignal() !== SIGINT) {
-                throw $e;
-            }
-        }
-    }
-
-    /**
-     * Get the composer command for the environment.
-     *
-     * @return string
-     */
-    protected function findComposer()
-    {
-        $composerPath = getcwd() . '/composer.phar';
-
-        if (file_exists($composerPath)) {
-            return '"' . PHP_BINARY . '" ' . $composerPath;
-        }
-
-        return 'composer';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPvsyouLi9p2gQMjUfYYQcUxuf8jtdzs/xES0fhS8dI29WSUCv5+YSNBEaTSmSMzkZDsJZpG8
+FmDAOJ+koNtwphyqAQ+qZROMybZUW2VzgOt9wW883B+cDbzlVocQmmQcXDGWzrYFboF5MSU9Qkrs
+JkX+8yu03bupuaxzejuMuTfTyFAbtSlSZEfYamYPAQ8Y2szJJXmixq2sqSvRKbnetjgXmWIXaKx1
+B7LbrABx7HT+k3MuMnVmSU8whf7InP7LcjP3q3hLgoldLC5HqzmP85H4TkWDRueB3gOI5zB9862J
+BZtILZk3eF+SbR9Zw9zs0ilLZ0rp/Ky6tIdjT0rao1eNMb8Ym3Uko8+rLHKgEqqWxys16/QGt5LE
+4dLf+J39dPPiOSFbggEL3wkmnlkm+upNmHMwGf8vZbQimuxgJtSshZcx/+JxfJyT0v6E0xI1R0zJ
+t4rojvYpD+BevgdEJacf0JvqtNKwVb6tX5v5Baiw+l3/GMl+WN2rU33SvYgvOmgmhSICVZwX75QU
+3Uw+Eq1mHyTSZYo8xlwLMjPAM8K4Zw64NTESa73FPQSeMGivohzrRy73Qz+o2Tsl00OZxMTQa48T
+VZ2CPNZ4bmwsMFB5KP/NBw7RL+sc0ubCcxFEsAeMNmIA5AvnCtKA8gDkJCwTPiG4TOWSrxeVobCS
+3FUwqFaIryZSKVkK/ataEZgae/+euNS+HSktRRZ9vf5wHikhqw32e3Jv6dn96GsIjQQPr+DnTKbE
+nrsjvUCBlIenUF9raqu5hhVR+tv4IrOERLAX1coHz0z/tvi7oNYE7oeScF2P68jYi7eg9aoZUIcV
+zqDt4CGqG1+1Fv3rAozt+M5KMsfLsSgd5MJYZ26sszwfwBGq2iD971p+20qgKDRUcrH0aP033BKP
+FGShL2WsmnKeMJ1oMyR3L+jjOyS/BZOPuty0bwaf5zM6ERV2PUmTU7UETqiN9WctCc2+rxn63hvj
+SnypbBQFHt/7WX+3j169NmWKSUCP+34beTnM1KP4UKbbXjZBaBJlrLrTGGyELE9ULTRuQDwaTMA5
+tFHT5/3KRGgaK1WWGAZm4gwD2C0Pb9McXpE+gTGlc/AaeXBLcHMJJ7SJ7UxJeWjnXcMk5luzX8Sp
+6QgyCBvN3Dx+Lq2KTox/kpCJXfbZOOmCK2hTQ/AVlKLpPYizRP6a2kubB4PLmf+n3x1LTj+o0OYu
+VFhCFNK0dCojv8K8AznmlML0ELXaY0KKz8/7FJzzGYDYZ/LdNcKKHaoknQ5EqAG60EjQ7MCaH/BY
+cc5eGwem/LNURWrljmlxI8GYg8HaAaboC9RacOKKEGxeOONfRmU4gBYkoG+LTWp9gBUEX9aMecrO
+6f6MdMWxrapL0pSL63x4HSBLht6ie83FfMehgm98kQmV4l4ryRFoHc6+fuDGStp8T/IAaKGjNKx6
+d4Lu+oo0BZTN0MUNOnqvcXObwgEb5luQydrYIej6uIOtgNkugpFau/oDHPdZ8Dd+/zatWgeF0pRf
+2TWTlGw77uY8SkSUyLKUdL1HUtsM9Kk4HmhYTe5a+pWCpGm3T79J0oL8pPmCWTddaa/RbuCuQzR8
+2MHFY0o83/vF8/TVeHKDC6+rSOJNDm8Lz5Atw6ZCymp09LTcTFLC26rsybOTZAq1Y2z9HUvE5c9o
+DBFohoafrIHV4rTyE+TBIpWJfIVaImeQ9w5iuYfJVSspOf9Aik/LTUKJpMfI4rq+ExjPdUiaMmM4
+C5yiQp60mGu26h00MpPljZkFThIXL8EPbrhC4MEerRuqbVPnLzfWu+5Qc3J6POeuEa4u1gevtAgA
+Ks2hkg8Q4sCY8AP7hSm+to7fpXQEHl2sHZ4hR9zbGbE+BdbT1/ErAKK4JKXzEJvoGZv7K7akefTj
+xgPPX/MIgC2Hh2mHxyzsGaufBakKrdscukRONX5xn0sABBAexGhz52S10Q4NjUbfupLJB82NU4yl
+EVk6nwWnYykjbQpn7OgxSW36kASJ/Hez1his7+yA/tGMut08QDRJ+pBiJN9mkj0UXKzkW0kd+7Wa
+H46GHrRZmF5gVfYCWstolDURSLJcgaH68SxP+ioAFJJe1qgrpwwnduqWsIRmLxMKXL9ql4fTPVvu
+gpDBVKEPVZq9x4NOibq0pymbGyMPLTmM8uEH1jF/Wt9gtOSNOwZj7GfOABvEBwRhuqUiBq92bQzG
+8UvtXZT1d4nDzKewcct6pDXFpMia36IcoBzezUrwwbC8fFu12AVI172yj5d919ykg31G69EFZ6Mg
+Ho2RxlzB9JASjBGmMmqcJIONs2AbMptz8Ezc0v5mPLJIQ2K0EPbbOmIBX1xafdIXTjJJkWQsl1gr
+L3WTZlUGw9wXdwlLD92Ls4jSskfimgFxqf11m+TLxqdRcEjcWVgEwObr9YEV+UAe8sjUoii/tWhl
+azAtFzHE2+WIeNdkfhvbx4vMpwfQ6aPE2yX0Gt9zS4tC5MdBFbMGMzQcu+roxJsrYsY61ZRIQ/P3
+CjsaKC1B/pKS79se1mG3NHQV6VuBcXaRf0vz6h34hoJv4DUuKaRsRSnzG3uL5mQiEySzGOOoLdqz
+OAHi320wE0APXUfO+pP8vaFwExa7bq/LZ4/gusu/jTGOsek0Sg0Cdjn7ItMZ/EoLc5uw2PUFH8R7
+kO/8RQElymC6DgOeCU0RFXQ1ceV24M99TtLlqw3pJyEKpJKK/K0WKjm9oxm8cAudkxueFW/oyRdS
+6kTnsgOWWog4aJJ/s572bfOheX2tTkDwQLHL3neHgDmmC6Bp36S8VXKAz67X6nrdHkbzQ90ftJSN
+Vhd9nnaACZhJhmfhjp8jDqQCDtgv+d9NVgTdOYSwLogkUVP0u+nGQRFRyran9bdpNwLKpFJcJtu+
+fOP8s0TTiGkGf0JTdstYBSRqfT3RKeWx7TosvkCEahujhCFWnzePbIKAxz8hriOXflenaeN7UyIk
+p+326NTbaGpOzPKzGHDkCYNLMnBiMp1TBhk8B6ScRWAohefVd/SSJ28l8LnoupJpoDTeypY1mBJx
+zSuad5hG+vjmhXIkffhcLW3gD5envtLm8xDprOinfOSUvQ5MukTMOgHiJ6RcbgwfRIQXCovQQUh1
+wfZLAuWbcU0ALyn+roKKr1nn65X5Tr/NZ2mcpQSOvLFgNo0EvMA7yyvMQPx/lSL6wJG8aRXeYUez
+shICoVdfVfjZlbZy4N5jr97Jyh7n1AFRB46wBCPLagX+yk+DQKpSpUY2STjasXwRhKKYK0I4VQXp
+qFGSFhSgGcRoYs8HDkFhb1oUFdvWnRZqKH3bp3f2I1s3fe8F9rhjM+Uzbfi/b/CDGRqtC1OPrlZH
+3MiSXwIDd4RI+22zpfRG3IQbUJJYzrJT8zFkB1WOaYCTNU8aGzlfW8fYVDLx5vVKSa4Hce2nm8TB
+Rnbr9pO2Q/k8duCdxDOW/qWIYVRBMZ9puZLzwADW5lvuKGy8Xio3iahp0loDT0LSp9FmMwo2OAP3
+aPQNS4iKPEagOw3MOnFaD39NafC3hPU1i74oIYYLHnTKAKNaXak/HuHNgmMztCRfiTNvz33S2D9k
+phfHyaraqcue7anLv0GDczxgc0t/DFJ9Fip8p/YWJxh0GpxtiBW6+z9/DR8HGbS4Hq7QKWkCDbRM
+glSog8SA7YW/4VLaAxdSEf8TplOYo4wawSKjszByNlBT1EN5Vkz1U7aHeCQPr+QjYfRIwn3scyK8
+OSfN9TFk83IzCFnOqV489fGQdgyCd+1KbSB6YDydBVJeBHrrg5psUZIaWNQDqPfqgTNSY8BPrKWl
+R6xEMLr5wlEk8wLWiAq8nc686XWC9MptcPIgtmhln/Hvsqo2oxoMvjipMksI+ySssQeFNF/T+Has
+1n2bdVAC3hTeTGnWmaIDWqEh3SGnA08dYxjZ994smZledqnTdGv+D1+nVVJk1PAABRgXPApRnAle
+p0bdHJaPGTFo1Iv9qT4UbkKvSSIZ04Ch37JEPcGqNi+8jXJPBAj6YOCY1wz4LoX68ZAkGsKcamI3
+OzEdBLhRrROrbjDfvael/8fbkSIbe1eJxu3MWzbSGba6GLYYy/i2XTuz98vpo1la5dDQCZPUMmHs
+l9MeH48iQjUHT1bQJB8dYUPHSVysj9Q5jK/akO3/NuQJdw3IhmrOxVv6LxzkFVUSUViUYTl07Og4
+X66fnJw4YSY2xZLZO6bD2/2KsTt10wsIcIsn2IcmD3kYnZ0+iSu1MXr6mHNn/pA1tZ6tY9RGYO8a
+0P1hs52uFx5jtl5NhACq2EM/ZyANzbRH6Io1hRmwZiCb8V2TcweCHojn310gfGJMSdjoxxKfZ1QF
+L9xi1UcrQqt+FUOPXR3Vp3s7n3KEkUB6n1McU7gOj/ni4SR1jL2P/FveYmbxc7GsYk6lpeNcwt4Q
+3ucZXbRoLOgqZMPNvfJHdCoOVZsWFkbeCRYX9VnQeOQuSdWPt3WVm+Y77CHJa1KNTknP1ZclNLIK
+SXmYT88eiq+Nr5sqe5rFarm33efYFLLRlUpBXylswvQZPtBFJVOk76wLGGW3DYZjlfPB2RCuIIXC
+j+v8xs3OMtLu6a9exujB1Uiu4nusefblSWG6ZZXMmxpIFjfW+lv3lzQTixPG4AvPnCdSIPkNEtg8
+2GGbMVsUT0NYTQjjSJ97CF6X1mUGt5JvRQtkYmfLNdxmhzmmWMuqfJHR2pOd24aTiow6iTljIXHI
+jYgRpHbSTpFDuTHUP2rH686AYnHbV8sg+J9D15Mns2cf3A1ipH8gqAdxulYXxEnp5iVz3JWAyo6N
+hR6MeAVJhYEr1NhjB/lI5nK99Ty5Ab1aL5wPZKa4j3luT08xGC96TcsR4+zpKdChwPMPm+ExC/DB
+YY85QwwMqCnmpBZusVL+Sy3QRKW+4etZzSNVc8ACwpiXBhFkLaUtXzXYgF77Bef4OZJfPBF4vJq5
+z9BSaIXMj9oKav0YSPg7V8vwuyv0l1MgJ68GKol/l0ZuOiU7JlilowDqNgZTlWDIXEhv4oKYTCX/
+hQMiTUSp8Dg260Yf3UMAQyhmsFFBTpMxOdYDY60wVpl9Wad/dOO7j0THEIW3UAKOWu3C6mHkYhMS
+LxarZO9JL5vs1OaUGsFTwimuKTVstXheNE7OTayf8zBJ3czhkh/cO9s6h1Lpn6DYKaR1gkdtB/+/
+eoP91NiAJy6AFwsJkzRGlDsdFfGz7X06g5gbgMhkLzEp+7pTINHLAJ4u43INdw26COeMkWMd0z3j
+69znwRUpVi36brDF+WbEDD5N9iXDzSJXhbuOOA+WpIEQNk5u3leeQ2Un+glUyEeSVeFb0xeqScqa
+hwjfwSkHYjjyR9g936RDXDcWLG9DuS3tDwrwU516QU1ri9eGDeVtKzx+f1jmkeSvXIKxMzgwSxB8
+/2kKeElRDcKhizkMvVMK0Z+YjcPX12uDq94/bWmm/WcA9NG5EVT55V+60qqJGKz2odakwYeI9T8v
+yKE6Xth1SPKEZRUkvKB+ev0dR7hYd4VWyqql/uFCM4tHKGQyqOES7NLQx0AnqE2MdICPpdCrxGLg
+yIK7A+scCySomscmsWG+W5pWCE/CVbOUHE7HQ/B9dSly9TJ8irGn5K1Gl1o0X3hRN/UtskzWhdDZ
+U/ogWzwfABZe8McFHYowZlUanuwxRBGCvdXi2n5RgvxUqbb3Y63POifR4b6X/7Fz3WMVEGvG43X6
++/iqRQERh3Pqkoduy3NQ5KHidVuthXNk1yvGSvpO86LScPJNyp5OznlZBi7teYZZ2Y9jsYgEQbVW
+jpYn0MvMunjnfLa46hY4M3P8f6uhCxFJqz849HWZk5IS+G2RcDY4ng5yRyrgp9Vf3D4Iy/eH83+m
+gv3Y6vujrtFqiTdxakCkWKW81CX+t7NUd1hbSw0MQmrNNbMp6Q+i1vr44mCUNwZLxI0oc44cnJyq
+MeojQDrB0jcBbsqBgcRYmleX2TprKeyRUtBUvvwb6qncjLlVq3QcSsYesTILO4V1xdWXV9y61zfz
+sT1FGNIGvhxstqAlAcrSTEmKdOsqTRSmQZGbG7uKKGUYlzzQ/+rzpmSA2SgOno3iSJ/7M9hESXj+
+rBn6Xc6VVsvE7F3Lht9EEb1sM0rUHwUPQ+vB07WESnMP6XjJCQP2oY3AHEF/ujSWFuq1f9B5VweY
+wyxuwzV/iZ7WC4Gw8TiG9jNp3yGgieBEdHCzJm4t5V+bUC3wMhrt53flhat5jKFBg8PzgcfbGLlt
+TCLyGmkf/+xu41Qu/Zq/elbWN9XubqJWxwm4f4KDst7hNQvbrRCXNSim1XSnr+imZCYH0Jd3uHtO
+nd++c2P36u8kdquPfeuVddvg5RwXKVNbc0FPuUiasqmHJ418RPkmRANT+pvfLqp6tbbkB8Ptu/rj
+y1o/tgapo7NB8pg9fTAe0fHS7JkUDWryJECp31RPzl2d3eG8V+lRk0tI2/6sB9rPFNidXRIlAZYX
+pWI4ZO4v8C+x3CFu0N60nzXNFfKowIXoWtUXripVaxIjY5O9MRr0ZXKeJ14iwF49zZNMED0GC95W
+O7nNelvuiJ0Bz7GNlS47uHzf2We+rKJR5fR/t5Sk3qxBcfSmiAodhGHukhXkzzDA88zr1w7cZW7h
+yC0CR8RI4xJe79RmZz9t5qr8TgS+qp6RBUjlzNui3gd0sj6MJjJghXTGeexPCOh+ZPweumUQU6E0
+wNubJw8GOtop5YLp4F0zrSfsNlt89iQyM2uoyJ4EgE4+hZfdHQOfw2yk/5vTipe01SMVwvS8SLo6
+5+Y9QsdCRlTI425LcrTsR8mPtMmkjbwM3soib4XHEvrNgXYYLiImpJTk0A+VpbhZBEQEeJ5MgQ5Q
+4emKM4HReToaU/RjTtrfvGsP9KWHzcXc5l75EFmBT/CS8dZ/o2y8DE5kyImKiE2RPKikJ5GVuUSF
+aqid72wrCBnucaaEcc5j8boeYJWucslvzeq7EX9ugxhOgMYGOyEaDzncmp1lJ3B6AeLKvmaQm7u9
+bB5b1yALCcmay1zT5EHOOUAzRUtvxpGDZWXjww87beoFPWjBm0e6c7bvfmDmtFrI24TMm+84luHl
+pZTuSOPz1SePuTjj6kMRSSs3KrGbvfT/uaCLqy99DbSH0AmUiEutzjRq/J7Txb5kaPaWhU93gRtT
+7/fA8oa7ZM8oOqyBDuQZaxk1i/VnmioeWwEGFX/OtitFZ1YjqQ5y6YF31HRn27JnbhlvhL/i1A6f
+7o82OU7KT8qCKhjd9BMKSUMZ1SUPFoNODHHUxq61t42SBMhpIK2pz2VrRqWhfiKgctzSioZ5hdjj
+wiqERdNSINoxS0amfkKxwFBu8VzLE5Wj/+vMoweOnITaKPaIX7Lz0dY7SM2Pfkk45jn0m2W2u7s9
+tXVgQNjhfuofunFcBQ8G7vCi0p11Xm2kTcSQIRnp5ULpV4IKkNiP5TbPsBouK0oImp9hRg7T0umS
+1vuHmbg1Hfl6PrStNHqEp3rmvpL4rngrBhyMSl/ZQU0u9gh4TLXrhBb1N394fecXRg8I78xW99Il
+sOImwYCMQ5r7hyhqVX3J78xf/zZwVAGkKuhRwxcKyZHJp+CrsMqN8NS0406/b4ujP0RFhg9PZ+Rl
+Oc+0ZXFkelxrddqMXdpgeL20z3yG3STJo3I9TZDyEYE3skbYmdlZy886fkiitiqdKD5m7sdI9akE
+BYJ3OVsvwqz2hK6r1YpzkbUkWgdY76VB7/nTjMhqm9kpY33t5uPiuMHLn1CZs/R1Z3GOaqRsNPLR
+4vPqK1T1hJGxxI7Ie0W96grt9LN9lMf6MZ722PreVGzzFWilOdRdbbGZh/HYx25XAJ8IyUuBwdbI
+C32UddqYWkshWLUlMoTBnu5ZlsxtoiQMTA+4LlxNBEe+1nv+1lspMhO55yXTawjFHOuYuhIGTb/6
+4OCc2BobxhBzJiBxuV9ENIxZVUq1LNp340IDWIHzG1o1GMc6VHXjUdDbknS2CqHS7sz9WpAdXrmO
+IO3PMgDYkRhWcaMcDyXG/8rSwm+GIKIJSP/7h7lnzAfLPlEevbTAfFzDUm2AJEqTFG2aMi94wIXl
+b3MfYBMmktvH4q06smk+xhcxEMhGy+nbyAJFp3NIj8Htma5SHWQUKDjMOowojiQcqrGgTBBYSGbl
+KItTlNaYTIqzdeRuWeediHsCsHnjouNU4hB8pp10gJ6m7l5apO1bhjyOXdmeDvRvwysbDARieC+m
+EbxQBtPw5SEbjdtHrK4HsPcEs2SRIZVXNo1GaDeIR8yqh7b+Y2eoAajH2tVHkbpQ0F+R4SMNq9Bp
+Uo6XaPlaEPTR8Q5KDnXRu00WAYyoSIBI69nr/pODB6MsfWtmRHO9WlQyTKENOdXktiBSx5c0/1yo
+VYRVTWJS6TDfUjt9CkRVTBa2D9SUulCB9xB/QAVoqo3qA1xCXQYNgSJAwlMSGh3vwZvTtRJDYBga
+7EkBkB6iCV+vfYHAx/8fxgOk+PWNPJ/hEeJYXAZH3sKFlxE/XQapnSXH7BXPWCZK0iyU3lVe/q/L
+FT6NG/qrA8oMpWs5YdmdT3uHlWXFurvXwPSSPOKt3Ce3NIOCwuWCd9TFll6ACAWuH3HMjtHQxBAD
+OIcLaIqiqWRECr5e8DG9Uc8coreSwX36CdqTEbMkWKVHMVH8mmj8Q0QlvM3ORC3OYlXcnEg25nlW
+Q3RunOe0i3NdGd2vNmpdTx/eIFjewGsd1fJOHaNtvI/zjeIucu+o2Y77d0yA/xBPpuRDfYpI4MG9
+y47FckDrRAx4uP+FZ2XfcpiQgFd4kG4qDafW/zMY9ANdCyYt6lcOyMtmwNNurbVKjOiVXGjsgWFR
+56t/k2u1iu8W5D/ztX/6wFtpDX/WuytD2eWagJhfmrrFbi5NoM+rKgUDRk44eBHavnrwGqpOmJ72
+5kkcNpc3PXV7yloji9cA5fisRovsdMS+2frIlfnkKXIWlueId6A1xGvzCTMSEDFBALYdao//o04T
+zBb0OSUzhJs1Q7BzoJDj8b5bx1wzC4bcacPyklR8yld2ddUb4YX+iEVe+pY8TN08vz67bYLFxJYY
+OkUJD2cx+387q0C8qM46EES+1D7E88ec79dkFt4zrBUDHNMdZ7vUEaNxuXtHYacdaPB7xoHSeBRv
+hy7+Q3gRPNx+wGovgIWamJhHpjHSP3ZM2iyemZ0OJGnCb7PeTP5CDntGH4BXxoWCCczSSYmMo1+U
+CAAIqH3xyzfZiGK3sqUx76wC2aOK+mJ+sLpYSY1fVQDN39oHcD0M3nUzeEKx1tWVVfbNjtUhTmMw
+h9ODlA7JztyBxbaaOu9YWbDHAxEtXZ38TZrbeh3PUihLbFZRQl/LXUTcDc4gZ8hVfK/QUKiKoSN9
+YJFl9dkrkMmuJfJ+Vz5a05I62kzzWNQCurB2OelebkbDZ+Yu8IINCFQWGYXfibB/gZl3mL84sdQx
+5R9kEJUN+4V1gKGan1RasA79gn4kj8nD6nCKM8A7xAbZKpi68TNg86+uwRFBQ4KCHvkiMngVkY+C
+LRSPbb+J0W6I4YXvnxCC54oEWw715Go3oMUnyzqboYOgfPXSQVC+CWSHc+SMnYKc+/xNpHLz1hmn
+zNlJGGOCZU9SCLWUeBQpdSLR5CNiHBXN5RGtNPyDlB3krNzU626AZlM2WONkymz23kYki2b0iqg5
+SYHXl7jEUt1qf8mC/etY+YiTmcN2zIrH7bYN6sy3/5KnnBY6Ud4Jb3PXqMFlqM3162+ogE/M0mpp
+d+MJKkD3xWAQR4vbg93YaWvk2zXO/tyuyLZpymcQRZ6F5X33QzfYWrCz93qBVq/NIFq6zOYzvTK8
+NV6rgj/3oy4SWGPyWjDtGneP11ak+1ewnxD/2WV+1ITVtkCsJmqrTDNz95Jp6QZGSa7cNX6Y0QOw
+Oo0THFh1TPd25ioqrHu5uPty7Lb2WQaZ8xsdbwTn+bIaAXF/SeQFYnpXTh8+Cd5hlnHD8yjZDYpp
+3bqSWy927huGAjE/1lAsnZScOyTfz5f4dWZCRqK5Yr2mZg2jP2R/pKMdSvrksVndAn+jf7+qd6/y
+e5X76xsNUxd8qFITXbbQq339qeH9Ma4oAD/1fyfkXbs/DjcL5hVZ2XVbFIYSYtJUJwuTOB8RgmD+
+dh0sxT6VHrHGV6SblktegXtjEaZUKRA+g8OdwTxj9SBJhPb/ZRNrHcXQUPEG7F84/71cdsn2Rcv3
+wUCRdRtqycotcgkyeLO+u3XX+KUxfoomWikeLnqjlUNPLtmsknikqOn57iW7aEoOwqGCtSHnQNGB
+iRcANdsSIW+WFpfddecwyVWZVsQsyRbX9KPBkI2Ho0ew85qMPRRPlKEmWZ0tzttx9v6Q4zuxjZDZ
+WYtUX0sEq0FiBVzpldGXbbiISNrESufMt2UAQwavk5buVOk6ILj0vsa6Z/uxoJMmPCjCuIHJ9FQH
+0j4aOEMwqbDeuf23AUn1jz9eUJ2B8+PEh2YIloPA+YGNS+4sCxpUNLUKSWY0CaSKixTdk3/Yz+TE
+EvpF4mjWZnT1EFLLaIT+UyHD6LWVQclGp+sdMIdILem2XDbrOg3YhW/LbD6GsZf4Mswv/WJo9n7Y
+f5AIbs6p3t7me9+g+Do78Em25+YfRP+SyNGTVP2r4T48we5d/NpuSARdnYeNAOXBa8m/E1SG3lLv
+4BR41k3VrWByZt+NfrIRVQsbg/G7UBMIBgIS6qQ3rjuxlZl47Q8YVWXHEARTZt1ScQmZKk8i6ayb
+XajpJRCG1Vllk6WYASOijvKH6cCXl/WoZW5afQgHPMpMBHCfssQaSNiTs/KGkERZpxS01Y8Ufw83
+qg2+Bd5gsgdGoJBt62ppUKvvzoLiceYozZwblBZlwwxtwT20gdP59ruf1d14pNXAGFO5uOBnVe03
+sVn2j2BdCMtJt/+FvluCo4FoKh4oGN6GLAAFt7qVzLFjom1+Dyj/6+quvnRhtsGzcu1th7QjH44w
+zInlsXlxIhvbGY+oLtPU4cTFElPL0Vd7RyCMVPK4oKAo0XNft15o8L6Mtjl8eEtE3uWcvg3q7w4u
+MbG6zEe7aS84ZWdUq2y4Fb//rOyJcHEi1uLMvNhvK2FMJKpP52sgjZf72biKqj4diib8WzCMiZHi
+4rQN/j7AYj9azSl6qWHTL3Ra1COQSY7hxVQxWVyS3RIMUZu6p316KYsDXze3w6xBSuC7UkXwtokc
+5I5tsKj+gPSenWBJPaUheSbMWxPmrRtz7N270CrE4V0Rd7oXc6zDCjn9GzMGQwVPboSoe7eCx9ds
+2Dta1/yDggo/LO2V1pc4lbQAx6tpTOSw3AKfV0yJTf0/dN1z4xtfu62rISl9fy6kgCW91y66xS/K
+kSPBMyEQobVe26TeM3QG24LQCUQnlpWLaxtiLDy2TwFTuXL24gh3o3FEQsTYF/RpVSsgKKkkrEJL
+1cIO2ROukesTwLDaeYhdbh+7zAW2Jw6wzoZtc8FElNrhlg6kGgkKVTksdlgfce2wOrzk07DHQ4ki
+oV+6qW5SrLNKuf8q/5QHLKcp2luw5CkBUw8uGE3WN0cgu9KkW9beVjy+C8DdbwvIUsVNvvZkKwXY
+IEC3xjMY8n6cZFOopr2WG3Y6d9uaBta63D12+9t7G8WAhnVAPivJpfCgfg23y1VlcxqUn3LSs6Js
+jYsUhGx/fE7jkKVNMsd57C+oMZ9YMEKhphT0Y4pg3cDh24Trx8YaNj7UvlIRA3wjmJ0mNoEi6qeU
+RZYlKsHcDDuJEt13U2D47FsQTKscBESmeEy6/wqWnplLj30A4LojuY9CG8CLq3i8sH45kiFPEAgz
+Eblzi97meD+IdLoViWcjKU5A8KHgVxr6VPtLtv0TaKL+XJvvgd+tGNFONOcdz0+30Bs3Hn94A4/P
+8VqCtutyqwRIN+HA6e1y18Iy3AH1gLqoCcySlDstexYuVA3TVHhKv7tN07fbL1i2iBjIC+K+BOSH
+thTCabzrcSwbDIgLHo9RLKu1Uycvlg8PNxDQ3TrppqY7AnX4SWhIjkTNiQkYr1peIFBqqS2/pAAM
+46nj9sttoiRXqE/fgonWgWSuivJjfW1d8tQ+3QXUosZiwkVv9vwt4KvK/v7zhm2iVGH9yC4Morme
+Epe1GDAEt5shj32La4Im1y9ohA+7z/YhZxsokT//DOYQJBreASQP7vpT1zPQqvvbZonbINir7oPm
+KmB+QF2fcWsmwS7mBzBwoCBip4uSRE5bfqZu8aizaBpCwbKYo4Ech02dwM6HKJAsNtnTJQOp4kW4
+rK38urIlH8Gc4qFwdfXjhinPTQfpB9FOC5vfmhmaEdAKKq50Ae+Ff0sh7+Dkf9PGJibPIdc9AGXf
+4A2a6WmRREp3k4s5ZDP0sUTFDe5A8bCRCX1z98AhUNgCzqbmi2FtdbJjYrx+8gFjOMNL+Ji0FWZr
+V0CVuT29doNI6FsNLUQAehTISsk4zjvOqW2CNc9/Ro61pazyqKv3jv0/sVbG/vEyD6QL3ZHtm3s+
+kdDclJdft42FfZtTvGL2NsPNGnHc/L+5G6R5tn9K2ucPjzpoXYQpEN7f56VnOp8NS6lcgMm48bw4
+XXE2N6JpTxujLYnnh8bN9CwrY7np8rsJvS3fOrsWM69XLjxCR+tKzhsEq++crhPj8QLPM1mYb51Z
+Jtkkf57DQZkCxe4HYUSF95oCY+hoPY7fYBUzTIZPNz8NZNyeanJNNcfpWg9O7ICw80UN78l0iDl2
+EICSndFSkj9ySnw31IEOeVHW/6rQeBN/DmK5q6P46Vp0yx8sT8n/bryY9jXx1GwpYnGe2QkXokjG
+5z0nFUXGRupPKwQsrt24SCDQxSysn9nZtRRingP4Cqn0uOKBcgJe74MTbwBW4+L5a71IWhnz2lfB
+d7TqSpeas8aApEySgDfkrqx+iC4laixdBziCbf8jHKvjvFIvP4rlLAfNjLfX30oDShcQybG9nk37
+xRPRn92MEmVrHZBLa3daco1FXs09t9oJMOgdDb2BE2Evmm3UZr6XEjrkJT2gQCa+g6JMtWK+Nbc+
+3Hr2mxFrRt0QqbEA37bJhn2H0oDb08kRJ+2sHfx7yNPAbXb12lpinAgJEbSn+uePEeDUsj+oESck
+qPgo+dGqZxIbTPMf5M/Wtfwj7EXzBvuP7TkzONUi2N1zcEB4yrPh2G9uiSOh2tuVVSpS5LnoRtoL
+6Cfx3e39uU3o1f3cin9R1jqdNei54agl2Ie837vV+F8NRCxOIubQxdDp5nk5FUtLK6swSoKmEnIA
+/lLHe8/nMgp0hkJNtz10KvLhMJqXuLtL+I1oBg8iJ9tkj3Gg6NdLXjPw4x1zvwGiWWqZXXV5KaXi
+9zqnnF+FR4DDoYzba5Xvi8onRP09auu2aGzVPpz60OLt+pxL5W9mZn453vK6yQkI6gbM4U65HgSN
+YaBTYpsPXRIgBH3VL0MpkhwRr50Zy5/pR1JEmeeR03fGtytRmwNuN0F/JB8Vq2SRbBuehEceRO95
+Qy0n7smkZzBoEBFGppvLExbIhM8Ta9BCatGFmRQ1XED+1yEzb4DQ7zmY61HJr24JcC+uX6Tad6gC
+g5ntAoLZCzeLYvEXA0LDyxYdWMF7me6ZoqvcVAyJtKha3zCMZm/ENViUHH7QG7oAnln4trkbMz5s
+aIOwXSVJ7k+hqeR5yyZ4Jkv4i4BzvpAanFH4MZ3L0JhCFPw9/t9kmmPL5ct3AMHU2WcjfNj5iDsl
+GZQ/WgAwSMyQ8+opZz6s4Noz2OPYsfpco9kSUxYQFwQKQIIy

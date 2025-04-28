@@ -1,189 +1,87 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of sebastian/environment.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\Environment;
-
-use const DIRECTORY_SEPARATOR;
-use const STDIN;
-use const STDOUT;
-use function defined;
-use function fclose;
-use function fstat;
-use function function_exists;
-use function getenv;
-use function is_resource;
-use function is_string;
-use function posix_isatty;
-use function preg_match;
-use function proc_close;
-use function proc_open;
-use function sapi_windows_vt100_support;
-use function shell_exec;
-use function stream_get_contents;
-use function stream_isatty;
-use function trim;
-
-final class Console
-{
-    /**
-     * @var int
-     */
-    public const STDIN  = 0;
-
-    /**
-     * @var int
-     */
-    public const STDOUT = 1;
-
-    /**
-     * @var int
-     */
-    public const STDERR = 2;
-
-    /**
-     * Returns true if STDOUT supports colorization.
-     *
-     * This code has been copied and adapted from
-     * Symfony\Component\Console\Output\StreamOutput.
-     */
-    public function hasColorSupport(): bool
-    {
-        if ('Hyper' === getenv('TERM_PROGRAM')) {
-            return true;
-        }
-
-        if ($this->isWindows()) {
-            // @codeCoverageIgnoreStart
-            return (defined('STDOUT') && function_exists('sapi_windows_vt100_support') && @sapi_windows_vt100_support(STDOUT))
-                || false !== getenv('ANSICON')
-                || 'ON' === getenv('ConEmuANSI')
-                || 'xterm' === getenv('TERM');
-            // @codeCoverageIgnoreEnd
-        }
-
-        if (!defined('STDOUT')) {
-            // @codeCoverageIgnoreStart
-            return false;
-            // @codeCoverageIgnoreEnd
-        }
-
-        return $this->isInteractive(STDOUT);
-    }
-
-    /**
-     * Returns the number of columns of the terminal.
-     *
-     * @codeCoverageIgnore
-     */
-    public function getNumberOfColumns(): int
-    {
-        if (!$this->isInteractive(defined('STDIN') ? STDIN : self::STDIN)) {
-            return 80;
-        }
-
-        if ($this->isWindows()) {
-            return $this->getNumberOfColumnsWindows();
-        }
-
-        return $this->getNumberOfColumnsInteractive();
-    }
-
-    /**
-     * Returns if the file descriptor is an interactive terminal or not.
-     *
-     * Normally, we want to use a resource as a parameter, yet sadly it's not always awailable,
-     * eg when running code in interactive console (`php -a`), STDIN/STDOUT/STDERR constants are not defined.
-     *
-     * @param int|resource $fileDescriptor
-     */
-    public function isInteractive($fileDescriptor = self::STDOUT): bool
-    {
-        if (is_resource($fileDescriptor)) {
-            // These functions require a descriptor that is a real resource, not a numeric ID of it
-            if (function_exists('stream_isatty') && @stream_isatty($fileDescriptor)) {
-                return true;
-            }
-
-            // Check if formatted mode is S_IFCHR
-            if (function_exists('fstat') && @stream_isatty($fileDescriptor)) {
-                $stat = @fstat(STDOUT);
-
-                return $stat ? 0020000 === ($stat['mode'] & 0170000) : false;
-            }
-
-            return false;
-        }
-
-        return function_exists('posix_isatty') && @posix_isatty($fileDescriptor);
-    }
-
-    private function isWindows(): bool
-    {
-        return DIRECTORY_SEPARATOR === '\\';
-    }
-
-    /**
-     * @codeCoverageIgnore
-     */
-    private function getNumberOfColumnsInteractive(): int
-    {
-        if (function_exists('shell_exec') && preg_match('#\d+ (\d+)#', shell_exec('stty size') ?: '', $match) === 1) {
-            if ((int) $match[1] > 0) {
-                return (int) $match[1];
-            }
-        }
-
-        if (function_exists('shell_exec') && preg_match('#columns = (\d+);#', shell_exec('stty') ?: '', $match) === 1) {
-            if ((int) $match[1] > 0) {
-                return (int) $match[1];
-            }
-        }
-
-        return 80;
-    }
-
-    /**
-     * @codeCoverageIgnore
-     */
-    private function getNumberOfColumnsWindows(): int
-    {
-        $ansicon = getenv('ANSICON');
-        $columns = 80;
-
-        if (is_string($ansicon) && preg_match('/^(\d+)x\d+ \(\d+x(\d+)\)$/', trim($ansicon), $matches)) {
-            $columns = (int) $matches[1];
-        } elseif (function_exists('proc_open')) {
-            $process = proc_open(
-                'mode CON',
-                [
-                    1 => ['pipe', 'w'],
-                    2 => ['pipe', 'w'],
-                ],
-                $pipes,
-                null,
-                null,
-                ['suppress_errors' => true]
-            );
-
-            if (is_resource($process)) {
-                $info = stream_get_contents($pipes[1]);
-
-                fclose($pipes[1]);
-                fclose($pipes[2]);
-                proc_close($process);
-
-                if (preg_match('/--------+\r?\n.+?(\d+)\r?\n.+?(\d+)\r?\n/', $info, $matches)) {
-                    $columns = (int) $matches[2];
-                }
-            }
-        }
-
-        return $columns - 1;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+fEg8I3zjEi7YTnIZ3fIOj8l6GLq=

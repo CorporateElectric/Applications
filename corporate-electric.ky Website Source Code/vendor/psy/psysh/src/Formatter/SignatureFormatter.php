@@ -1,359 +1,173 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\Formatter;
-
-use Psy\Reflection\ReflectionClassConstant;
-use Psy\Reflection\ReflectionConstant_;
-use Psy\Reflection\ReflectionLanguageConstruct;
-use Psy\Util\Json;
-use Symfony\Component\Console\Formatter\OutputFormatter;
-
-/**
- * An abstract representation of a function, class or property signature.
- */
-class SignatureFormatter implements ReflectorFormatter
-{
-    /**
-     * Format a signature for the given reflector.
-     *
-     * Defers to subclasses to do the actual formatting.
-     *
-     * @param \Reflector $reflector
-     *
-     * @return string Formatted signature
-     */
-    public static function format(\Reflector $reflector)
-    {
-        switch (true) {
-            case $reflector instanceof \ReflectionFunction:
-            case $reflector instanceof ReflectionLanguageConstruct:
-                return self::formatFunction($reflector);
-
-            // this case also covers \ReflectionObject:
-            case $reflector instanceof \ReflectionClass:
-                return self::formatClass($reflector);
-
-            case $reflector instanceof ReflectionClassConstant:
-            case $reflector instanceof \ReflectionClassConstant:
-                return self::formatClassConstant($reflector);
-
-            case $reflector instanceof \ReflectionMethod:
-                return self::formatMethod($reflector);
-
-            case $reflector instanceof \ReflectionProperty:
-                return self::formatProperty($reflector);
-
-            case $reflector instanceof ReflectionConstant_:
-                return self::formatConstant($reflector);
-
-            default:
-                throw new \InvalidArgumentException('Unexpected Reflector class: '.\get_class($reflector));
-        }
-    }
-
-    /**
-     * Print the signature name.
-     *
-     * @param \Reflector $reflector
-     *
-     * @return string Formatted name
-     */
-    public static function formatName(\Reflector $reflector)
-    {
-        return $reflector->getName();
-    }
-
-    /**
-     * Print the method, property or class modifiers.
-     *
-     * @param \Reflector $reflector
-     *
-     * @return string Formatted modifiers
-     */
-    private static function formatModifiers(\Reflector $reflector)
-    {
-        if ($reflector instanceof \ReflectionClass && $reflector->isTrait()) {
-            // For some reason, PHP 5.x returns `abstract public` modifiers for
-            // traits. Let's just ignore that business entirely.
-            if (\version_compare(\PHP_VERSION, '7.0.0', '<')) {
-                return '';
-            }
-        }
-
-        return \implode(' ', \array_map(function ($modifier) {
-            return \sprintf('<keyword>%s</keyword>', $modifier);
-        }, \Reflection::getModifierNames($reflector->getModifiers())));
-    }
-
-    /**
-     * Format a class signature.
-     *
-     * @param \ReflectionClass $reflector
-     *
-     * @return string Formatted signature
-     */
-    private static function formatClass(\ReflectionClass $reflector)
-    {
-        $chunks = [];
-
-        if ($modifiers = self::formatModifiers($reflector)) {
-            $chunks[] = $modifiers;
-        }
-
-        if ($reflector->isTrait()) {
-            $chunks[] = 'trait';
-        } else {
-            $chunks[] = $reflector->isInterface() ? 'interface' : 'class';
-        }
-
-        $chunks[] = \sprintf('<class>%s</class>', self::formatName($reflector));
-
-        if ($parent = $reflector->getParentClass()) {
-            $chunks[] = 'extends';
-            $chunks[] = \sprintf('<class>%s</class>', $parent->getName());
-        }
-
-        $interfaces = $reflector->getInterfaceNames();
-        if (!empty($interfaces)) {
-            \sort($interfaces);
-
-            $chunks[] = $reflector->isInterface() ? 'extends' : 'implements';
-            $chunks[] = \implode(', ', \array_map(function ($name) {
-                return \sprintf('<class>%s</class>', $name);
-            }, $interfaces));
-        }
-
-        return \implode(' ', $chunks);
-    }
-
-    /**
-     * Format a constant signature.
-     *
-     * @param ReflectionClassConstant|\ReflectionClassConstant $reflector
-     *
-     * @return string Formatted signature
-     */
-    private static function formatClassConstant($reflector)
-    {
-        $value = $reflector->getValue();
-        $style = self::getTypeStyle($value);
-
-        return \sprintf(
-            '<keyword>const</keyword> <const>%s</const> = <%s>%s</%s>',
-            self::formatName($reflector),
-            $style,
-            OutputFormatter::escape(Json::encode($value)),
-            $style
-        );
-    }
-
-    /**
-     * Format a constant signature.
-     *
-     * @param ReflectionConstant_ $reflector
-     *
-     * @return string Formatted signature
-     */
-    private static function formatConstant($reflector)
-    {
-        $value = $reflector->getValue();
-        $style = self::getTypeStyle($value);
-
-        return \sprintf(
-            '<keyword>define</keyword>(<string>%s</string>, <%s>%s</%s>)',
-            OutputFormatter::escape(Json::encode($reflector->getName())),
-            $style,
-            OutputFormatter::escape(Json::encode($value)),
-            $style
-        );
-    }
-
-    /**
-     * Helper for getting output style for a given value's type.
-     *
-     * @param mixed $value
-     *
-     * @return string
-     */
-    private static function getTypeStyle($value)
-    {
-        if (\is_int($value) || \is_float($value)) {
-            return 'number';
-        } elseif (\is_string($value)) {
-            return 'string';
-        } elseif (\is_bool($value) || $value === null) {
-            return 'bool';
-        } else {
-            return 'strong'; // @codeCoverageIgnore
-        }
-    }
-
-    /**
-     * Format a property signature.
-     *
-     * @param \ReflectionProperty $reflector
-     *
-     * @return string Formatted signature
-     */
-    private static function formatProperty(\ReflectionProperty $reflector)
-    {
-        return \sprintf(
-            '%s <strong>$%s</strong>',
-            self::formatModifiers($reflector),
-            $reflector->getName()
-        );
-    }
-
-    /**
-     * Format a function signature.
-     *
-     * @param \ReflectionFunction $reflector
-     *
-     * @return string Formatted signature
-     */
-    private static function formatFunction(\ReflectionFunctionAbstract $reflector)
-    {
-        return \sprintf(
-            '<keyword>function</keyword> %s<function>%s</function>(%s)%s',
-            $reflector->returnsReference() ? '&' : '',
-            self::formatName($reflector),
-            \implode(', ', self::formatFunctionParams($reflector)),
-            self::formatFunctionReturnType($reflector)
-        );
-    }
-
-    /**
-     * Format a function signature's return type (if available).
-     *
-     * @param \ReflectionFunctionAbstract $reflector
-     *
-     * @return string Formatted return type
-     */
-    private static function formatFunctionReturnType(\ReflectionFunctionAbstract $reflector)
-    {
-        if (!\method_exists($reflector, 'hasReturnType') || !$reflector->hasReturnType()) {
-            return '';
-        }
-
-        return \sprintf(': %s', self::formatReflectionType($reflector->getReturnType()));
-    }
-
-    /**
-     * Format a method signature.
-     *
-     * @param \ReflectionMethod $reflector
-     *
-     * @return string Formatted signature
-     */
-    private static function formatMethod(\ReflectionMethod $reflector)
-    {
-        return \sprintf(
-            '%s %s',
-            self::formatModifiers($reflector),
-            self::formatFunction($reflector)
-        );
-    }
-
-    /**
-     * Print the function params.
-     *
-     * @param \ReflectionFunctionAbstract $reflector
-     *
-     * @return array
-     */
-    private static function formatFunctionParams(\ReflectionFunctionAbstract $reflector)
-    {
-        $params = [];
-        foreach ($reflector->getParameters() as $param) {
-            $hint = '';
-            try {
-                if (\method_exists($param, 'getType')) {
-                    $hint = self::formatReflectionType($param->getType());
-                } else {
-                    if ($param->isArray()) {
-                        $hint = '<keyword>array</keyword>';
-                    } elseif ($class = $param->getClass()) {
-                        $hint = \sprintf('<class>%s</class>', $class->getName());
-                    }
-                }
-            } catch (\Exception $e) {
-                // sometimes we just don't know...
-                // bad class names, or autoloaded classes that haven't been loaded yet, or whathaveyou.
-                // come to think of it, the only time I've seen this is with the intl extension.
-
-                // Hax: we'll try to extract it :P
-
-                // @codeCoverageIgnoreStart
-                $chunks = \explode('$'.$param->getName(), (string) $param);
-                $chunks = \explode(' ', \trim($chunks[0]));
-                $guess = \end($chunks);
-
-                $hint = \sprintf('<urgent>%s</urgent>', OutputFormatter::escape($guess));
-                // @codeCoverageIgnoreEnd
-            }
-
-            if ($param->isOptional()) {
-                if (!$param->isDefaultValueAvailable()) {
-                    $value = 'unknown';
-                    $typeStyle = 'urgent';
-                } else {
-                    $value = $param->getDefaultValue();
-                    $typeStyle = self::getTypeStyle($value);
-                    $value = \is_array($value) ? '[]' : ($value === null ? 'null' : \var_export($value, true));
-                }
-                $default = \sprintf(' = <%s>%s</%s>', $typeStyle, OutputFormatter::escape($value), $typeStyle);
-            } else {
-                $default = '';
-            }
-
-            $params[] = \sprintf(
-                '%s%s%s<strong>$%s</strong>%s',
-                $param->isPassedByReference() ? '&' : '',
-                $hint,
-                $hint !== '' ? ' ' : '',
-                $param->getName(),
-                $default
-            );
-        }
-
-        return $params;
-    }
-
-    /**
-     * Print function param or return type(s).
-     *
-     * @param \ReflectionType $type
-     *
-     * @return string
-     */
-    private static function formatReflectionType(\ReflectionType $type = null)
-    {
-        if ($type === null) {
-            return '';
-        }
-
-        $types = $type instanceof \ReflectionUnionType ? $type->getTypes() : [$type];
-        $formattedTypes = [];
-
-        foreach ($types as $type) {
-            $typeStyle = $type->isBuiltin() ? 'keyword' : 'class';
-
-            // PHP 7.0 didn't have `getName` on reflection types, so wheee!
-            $typeName = \method_exists($type, 'getName') ? $type->getName() : (string) $type;
-
-            // @todo Do we want to include the ? for nullable types? Maybe only sometimes?
-            $formattedTypes[] = \sprintf('<%s>%s</%s>', $typeStyle, OutputFormatter::escape($typeName), $typeStyle);
-        }
-
-        return \implode('|', $formattedTypes);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

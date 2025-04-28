@@ -1,96 +1,63 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of sebastian/type.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\Type;
-
-use function assert;
-use function sprintf;
-use ReflectionMethod;
-use ReflectionNamedType;
-use ReflectionUnionType;
-
-final class ReflectionMapper
-{
-    public function fromMethodReturnType(ReflectionMethod $method): Type
-    {
-        if (!$method->hasReturnType()) {
-            return new UnknownType;
-        }
-
-        $returnType = $method->getReturnType();
-
-        assert($returnType instanceof ReflectionNamedType || $returnType instanceof ReflectionUnionType);
-
-        if ($returnType instanceof ReflectionNamedType) {
-            if ($returnType->getName() === 'self') {
-                return ObjectType::fromName(
-                    $method->getDeclaringClass()->getName(),
-                    $returnType->allowsNull()
-                );
-            }
-
-            if ($returnType->getName() === 'static') {
-                return new StaticType(
-                    TypeName::fromReflection($method->getDeclaringClass()),
-                    $returnType->allowsNull()
-                );
-            }
-
-            if ($returnType->getName() === 'mixed') {
-                return new MixedType;
-            }
-
-            if ($returnType->getName() === 'parent') {
-                $parentClass = $method->getDeclaringClass()->getParentClass();
-
-                // @codeCoverageIgnoreStart
-                if ($parentClass === false) {
-                    throw new RuntimeException(
-                        sprintf(
-                            '%s::%s() has a "parent" return type declaration but %s does not have a parent class',
-                            $method->getDeclaringClass()->getName(),
-                            $method->getName(),
-                            $method->getDeclaringClass()->getName()
-                        )
-                    );
-                }
-                // @codeCoverageIgnoreEnd
-
-                return ObjectType::fromName(
-                    $parentClass->getName(),
-                    $returnType->allowsNull()
-                );
-            }
-
-            return Type::fromName(
-                $returnType->getName(),
-                $returnType->allowsNull()
-            );
-        }
-
-        assert($returnType instanceof ReflectionUnionType);
-
-        $types = [];
-
-        foreach ($returnType->getTypes() as $type) {
-            assert($type instanceof ReflectionNamedType);
-
-            if ($type->getName() === 'self') {
-                $types[] = ObjectType::fromName(
-                    $method->getDeclaringClass()->getName(),
-                    false
-                );
-            } else {
-                $types[] = Type::fromName($type->getName(), false);
-            }
-        }
-
-        return new UnionType(...$types);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

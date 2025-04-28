@@ -1,77 +1,50 @@
-<?php
-
-namespace Facade\Ignition\ErrorPage;
-
-use Facade\FlareClient\Flare;
-use Facade\FlareClient\Report;
-use Facade\Ignition\IgnitionConfig;
-use Facade\IgnitionContracts\SolutionProviderRepository;
-use Illuminate\Foundation\Application;
-use Throwable;
-
-class ErrorPageHandler
-{
-    /** @var \Facade\Ignition\IgnitionConfig */
-    protected $ignitionConfig;
-
-    /** @var \Facade\FlareClient\Flare */
-    protected $flareClient;
-
-    /** @var \Facade\Ignition\ErrorPage\Renderer */
-    protected $renderer;
-
-    /** @var \Facade\IgnitionContracts\SolutionProviderRepository */
-    protected $solutionProviderRepository;
-
-    public function __construct(
-        Application $app,
-        IgnitionConfig $ignitionConfig,
-        Renderer $renderer,
-        SolutionProviderRepository $solutionProviderRepository
-    ) {
-        $this->flareClient = $app->make(Flare::class);
-        $this->ignitionConfig = $ignitionConfig;
-        $this->renderer = $renderer;
-        $this->solutionProviderRepository = $solutionProviderRepository;
-    }
-
-    public function handle(Throwable $throwable, $defaultTab = null, $defaultTabProps = [])
-    {
-        $report = $this->flareClient->createReport($throwable);
-
-        $solutions = $this->solutionProviderRepository->getSolutionsForThrowable($throwable);
-
-        $viewModel = new ErrorPageViewModel(
-            $throwable,
-            $this->ignitionConfig,
-            $report,
-            $solutions
-        );
-
-        $viewModel->defaultTab($defaultTab, $defaultTabProps);
-
-        $this->renderException($viewModel);
-    }
-
-    public function handleReport(Report $report, $defaultTab = null, $defaultTabProps = [])
-    {
-        $viewModel = new ErrorPageViewModel(
-            $report->getThrowable(),
-            $this->ignitionConfig,
-            $report,
-            []
-        );
-
-        $viewModel->defaultTab($defaultTab, $defaultTabProps);
-
-        $this->renderException($viewModel);
-    }
-
-    protected function renderException(ErrorPageViewModel $exceptionViewModel)
-    {
-        echo $this->renderer->render(
-            'errorPage',
-            $exceptionViewModel->toArray()
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+l1kUVwi=

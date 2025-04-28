@@ -1,34 +1,36 @@
-<?php
-
-namespace League\Glide\Manipulators;
-
-use Intervention\Image\Image;
-use League\Glide\Manipulators\Helpers\Color;
-
-/**
- * @property string $bg
- */
-class Background extends BaseManipulator
-{
-    /**
-     * Perform background image manipulation.
-     * @param  Image $image The source image.
-     * @return Image The manipulated image.
-     */
-    public function run(Image $image)
-    {
-        if (is_null($this->bg)) {
-            return $image;
-        }
-
-        $color = (new Color($this->bg))->formatted();
-
-        if ($color) {
-            $new = $image->getDriver()->newImage($image->width(), $image->height(), $color);
-            $new->mime = $image->mime;
-            $image = $new->insert($image, 'top-left', 0, 0);
-        }
-
-        return $image;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

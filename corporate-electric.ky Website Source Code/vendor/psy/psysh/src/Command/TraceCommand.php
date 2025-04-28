@@ -1,97 +1,63 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\Command;
-
-use Psy\Formatter\TraceFormatter;
-use Psy\Input\FilterOptions;
-use Psy\Output\ShellOutput;
-use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Output\OutputInterface;
-
-/**
- * Show the current stack trace.
- */
-class TraceCommand extends Command
-{
-    protected $filter;
-
-    /**
-     * {@inheritdoc}
-     */
-    public function __construct($name = null)
-    {
-        $this->filter = new FilterOptions();
-
-        parent::__construct($name);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
-    {
-        list($grep, $insensitive, $invert) = FilterOptions::getOptions();
-
-        $this
-            ->setName('trace')
-            ->setDefinition([
-                new InputOption('include-psy', 'p', InputOption::VALUE_NONE, 'Include Psy in the call stack.'),
-                new InputOption('num', 'n', InputOption::VALUE_REQUIRED, 'Only include NUM lines.'),
-
-                $grep,
-                $insensitive,
-                $invert,
-            ])
-            ->setDescription('Show the current call stack.')
-            ->setHelp(
-                <<<'HELP'
-Show the current call stack.
-
-Optionally, include PsySH in the call stack by passing the <info>--include-psy</info> option.
-
-e.g.
-<return>> trace -n10</return>
-<return>> trace --include-psy</return>
-HELP
-            );
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function execute(InputInterface $input, OutputInterface $output)
-    {
-        $this->filter->bind($input);
-        $trace = $this->getBacktrace(new \Exception(), $input->getOption('num'), $input->getOption('include-psy'));
-        $output->page($trace, ShellOutput::NUMBER_LINES);
-
-        return 0;
-    }
-
-    /**
-     * Get a backtrace for an exception.
-     *
-     * Optionally limit the number of rows to include with $count, and exclude
-     * Psy from the trace.
-     *
-     * @param \Exception $e          The exception with a backtrace
-     * @param int        $count      (default: PHP_INT_MAX)
-     * @param bool       $includePsy (default: true)
-     *
-     * @return array Formatted stacktrace lines
-     */
-    protected function getBacktrace(\Exception $e, $count = null, $includePsy = true)
-    {
-        return TraceFormatter::formatTrace($e, $this->filter, $count, $includePsy);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+Ds/L1a5CBiyJXPI/1HqMQG==

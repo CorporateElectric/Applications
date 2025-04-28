@@ -1,67 +1,55 @@
-<?php
-
-/*
- * This file is part of the league/commonmark package.
- *
- * (c) Colin O'Dell <colinodell@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace League\CommonMark\Extension\TableOfContents\Normalizer;
-
-use League\CommonMark\Block\Element\ListBlock;
-use League\CommonMark\Block\Element\ListItem;
-use League\CommonMark\Extension\TableOfContents\Node\TableOfContents;
-
-final class RelativeNormalizerStrategy implements NormalizerStrategyInterface
-{
-    /** @var TableOfContents */
-    private $toc;
-
-    /** @var array<int, ListItem> */
-    private $listItemStack = [];
-
-    public function __construct(TableOfContents $toc)
-    {
-        $this->toc = $toc;
-    }
-
-    public function addItem(int $level, ListItem $listItemToAdd): void
-    {
-        \end($this->listItemStack);
-        $previousLevel = \key($this->listItemStack);
-
-        // Pop the stack if we're too deep
-        while ($previousLevel !== null && $level < $previousLevel) {
-            array_pop($this->listItemStack);
-            \end($this->listItemStack);
-            $previousLevel = \key($this->listItemStack);
-        }
-
-        /** @var ListItem|false $lastListItem */
-        $lastListItem = \current($this->listItemStack);
-
-        // Need to go one level deeper? Add that level
-        if ($lastListItem !== false && $level > $previousLevel) {
-            $targetListBlock = new ListBlock($lastListItem->getListData());
-            $targetListBlock->setStartLine($listItemToAdd->getStartLine());
-            $targetListBlock->setEndLine($listItemToAdd->getEndLine());
-            $lastListItem->appendChild($targetListBlock);
-        // Otherwise we're at the right level
-        // If there's no stack we're adding this item directly to the TOC element
-        } elseif ($lastListItem === false) {
-            $targetListBlock = $this->toc;
-        // Otherwise add it to the last list item
-        } else {
-            $targetListBlock = $lastListItem->parent();
-        }
-
-        $targetListBlock->appendChild($listItemToAdd);
-        $this->listItemStack[$level] = $listItemToAdd;
-    }
-}
-
-// Trigger autoload without causing a deprecated error
-\class_exists(TableOfContents::class);
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

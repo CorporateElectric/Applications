@@ -1,172 +1,79 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Worksheet;
-
-use Iterator;
-use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
-use PhpOffice\PhpSpreadsheet\Exception;
-use PhpOffice\PhpSpreadsheet\Exception as PhpSpreadsheetException;
-
-class ColumnIterator implements Iterator
-{
-    /**
-     * Worksheet to iterate.
-     *
-     * @var Worksheet
-     */
-    private $worksheet;
-
-    /**
-     * Current iterator position.
-     *
-     * @var int
-     */
-    private $currentColumnIndex = 1;
-
-    /**
-     * Start position.
-     *
-     * @var int
-     */
-    private $startColumnIndex = 1;
-
-    /**
-     * End position.
-     *
-     * @var int
-     */
-    private $endColumnIndex = 1;
-
-    /**
-     * Create a new column iterator.
-     *
-     * @param Worksheet $worksheet The worksheet to iterate over
-     * @param string $startColumn The column address at which to start iterating
-     * @param string $endColumn Optionally, the column address at which to stop iterating
-     */
-    public function __construct(Worksheet $worksheet, $startColumn = 'A', $endColumn = null)
-    {
-        // Set subject
-        $this->worksheet = $worksheet;
-        $this->resetEnd($endColumn);
-        $this->resetStart($startColumn);
-    }
-
-    /**
-     * Destructor.
-     */
-    public function __destruct()
-    {
-        $this->worksheet = null;
-    }
-
-    /**
-     * (Re)Set the start column and the current column pointer.
-     *
-     * @param string $startColumn The column address at which to start iterating
-     *
-     * @return $this
-     */
-    public function resetStart($startColumn = 'A')
-    {
-        $startColumnIndex = Coordinate::columnIndexFromString($startColumn);
-        if ($startColumnIndex > Coordinate::columnIndexFromString($this->worksheet->getHighestColumn())) {
-            throw new Exception("Start column ({$startColumn}) is beyond highest column ({$this->worksheet->getHighestColumn()})");
-        }
-
-        $this->startColumnIndex = $startColumnIndex;
-        if ($this->endColumnIndex < $this->startColumnIndex) {
-            $this->endColumnIndex = $this->startColumnIndex;
-        }
-        $this->seek($startColumn);
-
-        return $this;
-    }
-
-    /**
-     * (Re)Set the end column.
-     *
-     * @param string $endColumn The column address at which to stop iterating
-     *
-     * @return $this
-     */
-    public function resetEnd($endColumn = null)
-    {
-        $endColumn = $endColumn ? $endColumn : $this->worksheet->getHighestColumn();
-        $this->endColumnIndex = Coordinate::columnIndexFromString($endColumn);
-
-        return $this;
-    }
-
-    /**
-     * Set the column pointer to the selected column.
-     *
-     * @param string $column The column address to set the current pointer at
-     *
-     * @return $this
-     */
-    public function seek($column = 'A')
-    {
-        $column = Coordinate::columnIndexFromString($column);
-        if (($column < $this->startColumnIndex) || ($column > $this->endColumnIndex)) {
-            throw new PhpSpreadsheetException("Column $column is out of range ({$this->startColumnIndex} - {$this->endColumnIndex})");
-        }
-        $this->currentColumnIndex = $column;
-
-        return $this;
-    }
-
-    /**
-     * Rewind the iterator to the starting column.
-     */
-    public function rewind(): void
-    {
-        $this->currentColumnIndex = $this->startColumnIndex;
-    }
-
-    /**
-     * Return the current column in this worksheet.
-     *
-     * @return Column
-     */
-    public function current()
-    {
-        return new Column($this->worksheet, Coordinate::stringFromColumnIndex($this->currentColumnIndex));
-    }
-
-    /**
-     * Return the current iterator key.
-     *
-     * @return string
-     */
-    public function key()
-    {
-        return Coordinate::stringFromColumnIndex($this->currentColumnIndex);
-    }
-
-    /**
-     * Set the iterator to its next value.
-     */
-    public function next(): void
-    {
-        ++$this->currentColumnIndex;
-    }
-
-    /**
-     * Set the iterator to its previous value.
-     */
-    public function prev(): void
-    {
-        --$this->currentColumnIndex;
-    }
-
-    /**
-     * Indicate if more columns exist in the worksheet range of columns that we're iterating.
-     *
-     * @return bool
-     */
-    public function valid()
-    {
-        return $this->currentColumnIndex <= $this->endColumnIndex && $this->currentColumnIndex >= $this->startColumnIndex;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+82RnVhQhRgF5PSKka0B2V9dusw16xDkO

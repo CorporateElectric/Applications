@@ -1,264 +1,99 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of phpunit/php-code-coverage.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\CodeCoverage\Node;
-
-use const DIRECTORY_SEPARATOR;
-use function array_shift;
-use function basename;
-use function count;
-use function dirname;
-use function explode;
-use function implode;
-use function is_file;
-use function str_replace;
-use function strpos;
-use function substr;
-use SebastianBergmann\CodeCoverage\CodeCoverage;
-use SebastianBergmann\CodeCoverage\ProcessedCodeCoverageData;
-use SebastianBergmann\CodeCoverage\StaticAnalysis\CoveredFileAnalyser;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for phpunit/php-code-coverage
- */
-final class Builder
-{
-    /**
-     * @var CoveredFileAnalyser
-     */
-    private $coveredFileAnalyser;
-
-    public function __construct(CoveredFileAnalyser $coveredFileAnalyser)
-    {
-        $this->coveredFileAnalyser = $coveredFileAnalyser;
-    }
-
-    public function build(CodeCoverage $coverage): Directory
-    {
-        $data       = clone $coverage->getData(); // clone because path munging is destructive to the original data
-        $commonPath = $this->reducePaths($data);
-        $root       = new Directory(
-            $commonPath,
-            null
-        );
-
-        $this->addItems(
-            $root,
-            $this->buildDirectoryStructure($data),
-            $coverage->getTests()
-        );
-
-        return $root;
-    }
-
-    private function addItems(Directory $root, array $items, array $tests): void
-    {
-        foreach ($items as $key => $value) {
-            $key = (string) $key;
-
-            if (substr($key, -2) === '/f') {
-                $key      = substr($key, 0, -2);
-                $filename = $root->pathAsString() . DIRECTORY_SEPARATOR . $key;
-
-                if (is_file($filename)) {
-                    $root->addFile(
-                        new File(
-                            $key,
-                            $root,
-                            $value['lineCoverage'],
-                            $value['functionCoverage'],
-                            $tests,
-                            $this->coveredFileAnalyser->classesIn($filename),
-                            $this->coveredFileAnalyser->traitsIn($filename),
-                            $this->coveredFileAnalyser->functionsIn($filename),
-                            $this->coveredFileAnalyser->linesOfCodeFor($filename)
-                        )
-                    );
-                }
-            } else {
-                $child = $root->addDirectory($key);
-
-                $this->addItems($child, $value, $tests);
-            }
-        }
-    }
-
-    /**
-     * Builds an array representation of the directory structure.
-     *
-     * For instance,
-     *
-     * <code>
-     * Array
-     * (
-     *     [Money.php] => Array
-     *         (
-     *             ...
-     *         )
-     *
-     *     [MoneyBag.php] => Array
-     *         (
-     *             ...
-     *         )
-     * )
-     * </code>
-     *
-     * is transformed into
-     *
-     * <code>
-     * Array
-     * (
-     *     [.] => Array
-     *         (
-     *             [Money.php] => Array
-     *                 (
-     *                     ...
-     *                 )
-     *
-     *             [MoneyBag.php] => Array
-     *                 (
-     *                     ...
-     *                 )
-     *         )
-     * )
-     * </code>
-     */
-    private function buildDirectoryStructure(ProcessedCodeCoverageData $data): array
-    {
-        $result = [];
-
-        foreach ($data->coveredFiles() as $originalPath) {
-            $path    = explode(DIRECTORY_SEPARATOR, $originalPath);
-            $pointer = &$result;
-            $max     = count($path);
-
-            for ($i = 0; $i < $max; $i++) {
-                $type = '';
-
-                if ($i === ($max - 1)) {
-                    $type = '/f';
-                }
-
-                $pointer = &$pointer[$path[$i] . $type];
-            }
-
-            $pointer = [
-                'lineCoverage'     => $data->lineCoverage()[$originalPath] ?? [],
-                'functionCoverage' => $data->functionCoverage()[$originalPath] ?? [],
-            ];
-        }
-
-        return $result;
-    }
-
-    /**
-     * Reduces the paths by cutting the longest common start path.
-     *
-     * For instance,
-     *
-     * <code>
-     * Array
-     * (
-     *     [/home/sb/Money/Money.php] => Array
-     *         (
-     *             ...
-     *         )
-     *
-     *     [/home/sb/Money/MoneyBag.php] => Array
-     *         (
-     *             ...
-     *         )
-     * )
-     * </code>
-     *
-     * is reduced to
-     *
-     * <code>
-     * Array
-     * (
-     *     [Money.php] => Array
-     *         (
-     *             ...
-     *         )
-     *
-     *     [MoneyBag.php] => Array
-     *         (
-     *             ...
-     *         )
-     * )
-     * </code>
-     */
-    private function reducePaths(ProcessedCodeCoverageData $coverage): string
-    {
-        if (empty($coverage->coveredFiles())) {
-            return '.';
-        }
-
-        $commonPath = '';
-        $paths      = $coverage->coveredFiles();
-
-        if (count($paths) === 1) {
-            $commonPath = dirname($paths[0]) . DIRECTORY_SEPARATOR;
-            $coverage->renameFile($paths[0], basename($paths[0]));
-
-            return $commonPath;
-        }
-
-        $max = count($paths);
-
-        for ($i = 0; $i < $max; $i++) {
-            // strip phar:// prefixes
-            if (strpos($paths[$i], 'phar://') === 0) {
-                $paths[$i] = substr($paths[$i], 7);
-                $paths[$i] = str_replace('/', DIRECTORY_SEPARATOR, $paths[$i]);
-            }
-            $paths[$i] = explode(DIRECTORY_SEPARATOR, $paths[$i]);
-
-            if (empty($paths[$i][0])) {
-                $paths[$i][0] = DIRECTORY_SEPARATOR;
-            }
-        }
-
-        $done = false;
-        $max  = count($paths);
-
-        while (!$done) {
-            for ($i = 0; $i < $max - 1; $i++) {
-                if (!isset($paths[$i][0]) ||
-                    !isset($paths[$i + 1][0]) ||
-                    $paths[$i][0] !== $paths[$i + 1][0]) {
-                    $done = true;
-
-                    break;
-                }
-            }
-
-            if (!$done) {
-                $commonPath .= $paths[0][0];
-
-                if ($paths[0][0] !== DIRECTORY_SEPARATOR) {
-                    $commonPath .= DIRECTORY_SEPARATOR;
-                }
-
-                for ($i = 0; $i < $max; $i++) {
-                    array_shift($paths[$i]);
-                }
-            }
-        }
-
-        $original = $coverage->coveredFiles();
-        $max      = count($original);
-
-        for ($i = 0; $i < $max; $i++) {
-            $coverage->renameFile($original[$i], implode(DIRECTORY_SEPARATOR, $paths[$i]));
-        }
-
-        return substr($commonPath, 0, -1);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPtN5R8uOdLMYvG7vhQCtorOFX8j+D+8ZQEvtiQTiHFJOLpBI+yWtpQ25fPFw3BVFOpH4L4rR
+rPxh56gfAWV6h/Qz7EpTuE1MAG1dnYPx9FIrjPQZWVNx0yVXYwEWUzsHbI338C8UM1WJ7c2IxHXA
+UuaF3Dnb1+Fws0mDPBkqhBQq3ueiOWqs0/xBsKkxLVbbQR6lG9LdVIcd+jVIJcqH5NrVjjHuOIx1
+J2Bf9pzxa7Eg6m9rpjtTIi4QhFXgqROwFlje0JhLgoldLC5HqzmP85H4TkWQQtGpnnOmLaxqhodZ
+B2SGOl/ORv34887awFlAchJg59pCiex0j0swG5VLIb4cJFKQr8PTG+HWKSQLOFLzFduOi8ThAKnB
+t8imA51ct7LES9BgEg89y7YwpeUxR0+SrbtanuUa1hZ1gtni0kOdonACQRynSxWfTfGAnatlZG3/
+zjHfxU1JagfdWcPUN6TGs1UxGQ1H2fcYekPOV8TBM7sk8ivlkMLVPCzmDoeja/UFzTEfwrI1Jcc3
+JkUSVmkS7dqw+tSTVqmj0RjWCrE0cIygCLdJWDW5z3Fi7NRZfrAYHe8bYDnfVj8Ep8p+AyxjDlJd
+IyEvC2WfU5NrLGbgoe3+xuXr0fcQobHXkfkrVXwuMH9W+1UiOAFh7U/XaB8KRgeo5d6q+t7TSh4D
+7VJlq8i6ClOpxtjSErTnezVUJzT9pL7qYYNoAd5N83VwxzsdYJ8cyAHZTCHPEv5cYG/q7OYVd3W/
+xE9VfpfTRjNAgq1+EwG7Mudr3Kax4uYRdElL09IkMParDYlcaFPMqYSa3JEHwD7lW9c08VhpI8zg
+Jv/3ay6b24DDMHl+5TLdhcibKyB+FZ9/PU8Jv65cWV3UBiYMPkwWLgjKdTkr58Jpf9mWbkW5w0WK
+4SxXXrK+DU2VsGk7Kqhd77OZLvXkncmo07mjKTsbARpx+yf3quDafSP/IFoOUZsGuPYzQ31cW3jf
+1bg2BGj3CH3/qA5BV0zC4fCtUX/wXd0IXbknFOm2dHs1Qfp0941dmOLf3hM0M4ehcWztExnamDAR
+aak+rw2/s0neem1abJhI1ZFb5LaFZ8eMaN7yz3iavUqxT7UR0byW+DDOMJGnlMofSBVXpFv6jeT3
+qT252/bdB1Zy01rPQq7vkpjzer6QoQWHL/NMg6OelXTkeLIg2/n0iv6ybkLvVrwIJwO7tgl/zj3q
+0uaq3kJLFOlBKb+Fk9CvBNtIsQyj+qcjfVJVxV/5/3LQDBn/J5M9bzWDxjZ+0PXdYKn8Y79gbqmU
++49rWRck77xFEDjQd5qSega4Hl0X+bUAicFpN79bb0QPpECK5TLXWGW3Un3oAfYFg8htanmpFNJu
+WIBJ3mNVb3s9qjtYYdlyq6ITJJ413kpToDcpeSCoqRzamIbUhXmOhHHcOCFZcI7tuRn+XSgL1RHU
+Dc4EzZXxzUC37PHcYYP6UrHv2lN8/vbc2AfkxfkbFr09wdaxzDfJRsJi5sZj/cYq/aV6Z6+VreeA
+rntPMe2eLn2WZpaISyL3xVtJnm/6OSlcRboxX2mWIkzFoM8avYpto5uI2Lk/Gmmv/RA28e8h0xeQ
+CaY3HHIh0ITahMYRwlEud7y5CZ7wPRwLg2WWmbbxawcHwK28A5OikF5XNAZkLIdoKDUVv2pwtk+R
+XYI8yqm8jYFVkZcijy0tVuPh2rg/5+wgxV57EhCr25vDgKNlKpc2oK2MZqz6gfvsquURYit0ZebY
+gax/ub4vg9R5RJQt5UPoMqGWa0uxtDqhliCoDse4weQWLjS/+s3PwidW2T2mODRK0uAU/o3sWkLK
+q8/Uigan5erMGS3uwQp0DiQALR7dyGnYFeRhKcYNo0b/QXhFmkwdLMjvhVhV7Vw6AwXVk7T3IPsE
+ZI3COPWIOBEpVqp0AbpOCAn0OwC/Bj62To+HwPrX7nAumpVMn9RVUa1ZEYK+lnU66jeNpF6uHzBC
+IT3Zf73Jh4AG9cnQa/gJSiVcUodrR5ObMdMl7J1hB2CLUs1vCr5Eswe7WXGju6J/2MiM9xSu+ghz
+5u/lw1w/Ng2PULmBjBvM53uDZINn0PRoAH8sIGJiSEfqyAY1UHFrKowdzEUQEL9boZfwk5bG5jRQ
+um/KolDtfGPhLkGAKKCn7vvQXU0aAcu+UoqtPYs3H935woh74C75jWKdoUYHwNPSCOj9y8SkMOLa
+MJ170UgEoEmALsrvomj+LfseqAhMw0EdAyuOXFHuoRrWeAEgddVrxgqeo/0D9g6WkjX3rYo1NOQA
+Rch7uncYRdRVuFXef8MWenNlKpDLOW/EUyntvhoULP9uBp2k8AD3iHumER4BbOw7mSs6dZVTvIgF
+vF5LP29vjzmY/VBGmTuaESMTQUr9RmoMtV5pnhoK45l7+MsN6oRI/l3tZti/xhbLO3HaaBA4xbsd
+eGdu6wqrerHQIpsoWpF0cDKsxHwKeNB9Y9P7PELihioziHVQp2O3TS802fr/wsuIOfNLdvp/eghf
+vcz4llvMCjEKYzS7r8XxW6rKzwXw9L4+iBT9IM8ZCtYDRaVHe00xDz6RnOUhIiLq1PjX5dIx8+8P
+sePcAnrLEwXqYGDiOJ3l4fxS34h7YOslBMg+8QuwRaytpjXvRfRw1fJAYoTHr5jqsiUXi1uFP7sJ
+st0feyE8w0JsfXzSpKx8h/pPcCsqM4EU8OlwyYQ9GLSH+AtY50iV4NY+CMvT6ANB1saj5Ccb334r
+mU1MiQ0Bx5PQ554Zn9CEZJqnlnIA851B1z3yNJXz4XL8UAAaMrgbSC3axRuGjRtmcHBsduvBgO5C
+L/oeO/sszdJ7rTXxweRA/+63QPMV5LJ0Wx6SO8E0oPXB0Q0Ah3Nbf5R7FcOmswhc0dktGp6IFMXw
+3kQSNTtrPVd+E3fwaqp7Ih8zoTHB9LFl/GBqcc2qFqq9lSaQjQSDWrmFNNkoXBii7hRvhFrp9DYz
+HNsH3lOdsdsmCdb7w3gCJRUISIswHrIS/1TO8JyLfjXP/52wDS7taJGQAX36itgzYszzxUdoJQ6+
+lWRZTnQuxE2nRCuIsaQLYEsMmuE/8CXS/2sgs79N5iKDkI02itAPyG9iggNZdn5WA9aUSNqQLzIP
+vol7zsNjj6JlVByHraPOuIaaogLqqvU87FxnZRX0ITjpAkv7yVF76zuNpDF6PsJMJML/8AT06IF+
+W8vyaYXufq8c/P2McpV+6aVKiAhhFt4ubWhKZEn00vxtCo7TsxMns9dJGaApbYLqdb7lPAgjBkHA
+YivC27TXcQN7wk/4B1ylKC49g3sPc9an2ooeDozhCfYrRzsNJEpH4/wNnpAb/zheSWgB80QNaB8I
+DglblkVShYmtt4DLV6ky3wtL5xvxTJItIzrEJtKFtocaJWfMK4Se4ekf/t3EcJ8WaqQpkB+MWIGU
+9wz6VVz555JAywA5L8TrsxQJWlLM3EL/Vj/C1wZ3ZcsnciqQ6NaRDxVGQUE89mGjY8HbsPNPgxBN
+o1comXxYq3iaT0SUZcKqXYeKOkWU0sza2MEKL1/lMI76EE8sxBFUHg3F2ewyjiCGwNLAXtxtiZ3g
+m/r1m0pBjDZ6EAAr2NlaS8C5rSE8e4y5gF5ZYAfhsJE32iUaQlvanqppzweaNLuQwEzDsTl6FWpA
+c1A3P8z596Zkr+uVKASiIARH4r7TLKuv0mdDI6q4uFSx9r9aa1JFRIH0QDZdQcOMg+xS+qQe/CJO
+sz9G8LrusWAqXtt69JPliRAKVOJS9AKpc8uKxqKQ+cLt/u2f+pOxM2KshfcUd/C36u4rj9t4AEmY
+49xbPHHv3Im1RRnlMCKuQhOdbZBfJS3UKrl7ePz+7lp8UEr0IgxNGG/M04fK4a25fs37bYtJMUWG
+0PFaL+8gjSCijvUzYdbOtpDk+5cXSebkUkUe1IonXdnEKEmi6Em5LTqa4Ej/B643m/uM4uN5vwOi
+m+vGRF+Mo+NAT2DxT8FbftPTx1c50/4uGygddx1ZOkM1bd65DoqwvW0dp4ftISfmYzTF6L0b6n+m
+I8eahH2i6RIkvL4mmMnfLzwAm+ZM2uG4TIXVKOglakOosYHJFvrrBm5ZrN4wq3K2WHkrSBlUfSWA
+ivXWC32mH4vcJe1J+G7HvuheJMGacrP9yCXLREvC9UztLpNtsFEOjxlcY9TkoANDEIMraEfycPqD
+IA95pEf3ewuDne2dzrT4Oql3qZFmR99+XIzed7WUv4J39itKbUuuSnvZ9DkeTDEUoHqZ3308AwLG
+LPsJ7BXqtf34l5++vLhsANklNdrnHHqJmKP/+diWgx0QebkjTQ8HqP8nvgHNEPhOYfdcLfqETbtN
+Jm6yfTWuIMxLEkwGGKzEFznKEJyh3VedcN4kDNX7APiu90Su18m4VCCdtUv9AUDe1GjhWfxX/0iB
+q2EIIL/4VHyvSenCPAL77jmAlkCg2IQzo+6Cu16+MItHWi+HT1pfLcd2jO8fBRXKlluR088XYalH
+IFvdfsyGICa5bFXP3Rwu/wXJru2ezDjjxq2PGZsE058D9HUiuCNvjIpIL9qLCH+g/KoRw71LVshG
+wk5e/vjrLIax8WIAlm23h9qGgwiKwKQm+fPSk6bHNU9Jl/UEbqVDxjLRShYpfdxmibkWyfpe9zZk
+TQS5vEBgDvJhrUmLrh7fA3VS2o8Oog8nVMsRPesApyIDl8e1mG7tPSmmfTacEI4vHPitiKRIJvfk
+99rpCqNBfiyiTv+A/CBVtkCwtsHVjSElVyflNFoGjtKrdxXTxdEt6CD6zcHN6d05TD8LG5EH0tIp
+DsEYcAmFhD/06ZPRX3O8oIaa/ummXRuDHT5NRtDobsvD5HA78K2/AX61auc39L9nFnFatk/lLjDv
+VgAoagkvSS8IaAEtXVh52Rn4wUpURV5MfbdPvdHFXt430i72JmT2zU9FWIB44R2+L7CS3QkHzFoL
+bVHUi65EqRy2cBwiuMgnnnbsyekoYDeHO21S58uCMuLPbuO4wZx0sKpp4a+i75A80ojA9DSdVphO
+OY/u+4j5HyQ9uzF3zR8QMdcn6GJOuueAjwYYd5jLRf5Ma2Xw/vt/vWi++Fc0Jnkj7XnzNmZElsaD
+BWTi1Vz7yi01yW5wm3q5uqeO06e6DomNm0KzVeCeh+Krj2bZdenT+Slw0usopKVuqzHcJiDqCA2a
+KYsC129xfwhmYxW/cuePjA2uw6n7Zmbwh4C1RqWO7mSIVJTMwKYrtazwDEvgdmVs3hV9ZUAOUWeW
+DVmu9ZLyIk/rue3/2ql3xGck3naeMiBIbzJZNYRl9u5H//0rqR0jPkJFy+K2TowWixgRCf0zpDmA
+KeGdQ/+IT5rOHKRCf0sShql3p8MGZ9LrK/9iM12BpPmwJhFkvWgC2EyeCOuRgi3H4kz7YOO51K6T
+N08aEEv0MH3wBjALLTo4PcjHZggIWon2150Xc31PdIpmdP0v3ycLgvwNke1icanLwPE4iqtbmS+0
+TtR2U7iTdjYY13c7vpC6Y23aLDei9HO2tsJ4KR58y+218GPOtOShlCVIca1JXUWF4RzlemWoJfUf
++Z1cyMR0bQlhZrLd0gQ/Xvnuqo6SlZPRH2L5azYnER8mBAjNa02tCTI4QHo+VXwOHzrHSYw3AOTA
+B23ETxlwVl8AuaMMNQCP7C1tvhwIeIJ99OqKYl7bdxqDan0t/niP544xnjHHdyOd52xcbw7zaBnU
+K+m/iH0a2syDAoNc595KPCBJP92xcxHTEHhzxVE7gz5sikqWC7m4mMZ5i4pA1x44f6aF6JAfr33L
+gvZKTfO5u0tvzyYL3YPnP5vw5u4MgQmx9uLl/1uKsS6MY74dcZ6jOhbrCvIfBX4a/T1ohwdO9ar4
+9MOIUIJJYwXthlN06cahovWJbjBP5/wdKLwtzuRb65NdMwmiTiNDdHP/x9NU3Lw2uONismtn9VSG
+n8piiXR/MmaP6bviDmk9ctwRkBHaYDtbVZfKJHfijiv5eKCQTTt7QQvZQ0SxuQ6r6Z6i9eBpyv9k
+bBKrtvFs4CBU3lcIVn0V0lKcwf+f1yq0nlTUxXzfx7UK9E8qyNxwOq3HN2uILP1KR6Lg0oRWd0a6
+5WUNmVYegjfWslP8oyxlhkVmSPli2v6qq2bRwQJTkA/D7PcynapWZ8yx5tiSBAwIj7wtrSL3lpQl
+KUoLespfnp8llqLLCukLoCSI8/7u3Q93ub0rQGWz7ZLmSm1Xn4pVmufJYKL+aS54sZxUL/JNWAnK
+tT9VWmwDIikeOo3JTNqJqDWqOta+K2/e4k9NII81krpDF/5STao/v2jI5DLdSo+qiM1OR8t2pVFV
+v5Vz2zNz0Rcg5rbfQoZlQoPa94lbKmzteAH9TtYi5gLm0V0SkIRaxvmJJxrpKoBs75wh6Ah41yLS
+KwThUqXQSLX7G9DFeqznMEvvJlSsdMU8AQmVXuU05noCFwcMXks6AE2M3XmgXQtZ+qYxcIRvvf7m
+OQzRjJYnVqS7R8PFXDgi4nLH1NilRmKo4Ewxr65PtLL5w8p1DHzYXAhO6X3EVy5ujgGj2l6372Xb
+DuB7HyWgU8m3jvLS7F+AYR/Z3zITMSWISvWV5yCQSKMEjClEHI5eENv9WTjWwkZFfxmDAzbjPHrW
+sOjc1qrGHGLQjUBD5AgSYWnh6oJjhAywTie9QXZXu6RNEKZFSYRzTUYFxfPNUuGcxp7VRV5P7tAM
+0+qHt34a8VnqWLz3M4+21KTGpGjcjRyHKPoVY69sLscqf1hjsg1dMuE9x0qfjl2y/iw1QN/31W62
+/U8YGNqejjZs/xvsimGLPBGIzXIpTz95MUIpEwNcVauE9CYAetcOK4n32gKQIbBS3YVlUfcjH9QB
+0VNycA76YFVTrmemMbeBqs5dVVXW7/Q138NxbASpzwYgMg8m1DABWqzk/nGFtwgYPiWlGX74cLsT
+kyyaEpk9b2VkjrrlN8Tn2XR6XUnODsZ2cS01487GS3sWOnloYNU8fTEO1tjOLuD5wRbPKogJKIH4
+ZibIH3wh4hW3DNvJGeSB6ExA9UvB9YZ/R/G1Of05OJXMFs0Dh6BQ9zcRr3qz2Gh7fZMJSe1jeH3V
+nYI6Q01xirXMNlLykmH1ZMa5AYSdupSQvdyP1YdRSgAFfcQefZewC5Xk8bcmjRjI2W0Z9/9B/4tU
+MWOaXRsxx8CXnaOtXJ65PJt5RcmSnqj8YLr0GjfBwtM4LWzmzAzNR7X3c1rgBdFxOpggFHBNuU6B
+EaV+9XlGwplNYzNmFtSXJ68jcMvDCQG4YnKzIE60VJHIVnwtmP0omWZtWL8ZVGrfjyeTGju=

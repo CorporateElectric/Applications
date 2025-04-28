@@ -1,155 +1,81 @@
-<?php
-
-namespace GuzzleHttp\Psr7;
-
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\StreamInterface;
-
-/**
- * PSR-7 response implementation.
- */
-class Response implements ResponseInterface
-{
-    use MessageTrait;
-
-    /** @var array Map of standard HTTP status code/reason phrases */
-    private static $phrases = [
-        100 => 'Continue',
-        101 => 'Switching Protocols',
-        102 => 'Processing',
-        200 => 'OK',
-        201 => 'Created',
-        202 => 'Accepted',
-        203 => 'Non-Authoritative Information',
-        204 => 'No Content',
-        205 => 'Reset Content',
-        206 => 'Partial Content',
-        207 => 'Multi-status',
-        208 => 'Already Reported',
-        300 => 'Multiple Choices',
-        301 => 'Moved Permanently',
-        302 => 'Found',
-        303 => 'See Other',
-        304 => 'Not Modified',
-        305 => 'Use Proxy',
-        306 => 'Switch Proxy',
-        307 => 'Temporary Redirect',
-        400 => 'Bad Request',
-        401 => 'Unauthorized',
-        402 => 'Payment Required',
-        403 => 'Forbidden',
-        404 => 'Not Found',
-        405 => 'Method Not Allowed',
-        406 => 'Not Acceptable',
-        407 => 'Proxy Authentication Required',
-        408 => 'Request Time-out',
-        409 => 'Conflict',
-        410 => 'Gone',
-        411 => 'Length Required',
-        412 => 'Precondition Failed',
-        413 => 'Request Entity Too Large',
-        414 => 'Request-URI Too Large',
-        415 => 'Unsupported Media Type',
-        416 => 'Requested range not satisfiable',
-        417 => 'Expectation Failed',
-        418 => 'I\'m a teapot',
-        422 => 'Unprocessable Entity',
-        423 => 'Locked',
-        424 => 'Failed Dependency',
-        425 => 'Unordered Collection',
-        426 => 'Upgrade Required',
-        428 => 'Precondition Required',
-        429 => 'Too Many Requests',
-        431 => 'Request Header Fields Too Large',
-        451 => 'Unavailable For Legal Reasons',
-        500 => 'Internal Server Error',
-        501 => 'Not Implemented',
-        502 => 'Bad Gateway',
-        503 => 'Service Unavailable',
-        504 => 'Gateway Time-out',
-        505 => 'HTTP Version not supported',
-        506 => 'Variant Also Negotiates',
-        507 => 'Insufficient Storage',
-        508 => 'Loop Detected',
-        511 => 'Network Authentication Required',
-    ];
-
-    /** @var string */
-    private $reasonPhrase = '';
-
-    /** @var int */
-    private $statusCode = 200;
-
-    /**
-     * @param int                                  $status  Status code
-     * @param array                                $headers Response headers
-     * @param string|null|resource|StreamInterface $body    Response body
-     * @param string                               $version Protocol version
-     * @param string|null                          $reason  Reason phrase (when empty a default will be used based on the status code)
-     */
-    public function __construct(
-        $status = 200,
-        array $headers = [],
-        $body = null,
-        $version = '1.1',
-        $reason = null
-    ) {
-        $this->assertStatusCodeIsInteger($status);
-        $status = (int) $status;
-        $this->assertStatusCodeRange($status);
-
-        $this->statusCode = $status;
-
-        if ($body !== '' && $body !== null) {
-            $this->stream = Utils::streamFor($body);
-        }
-
-        $this->setHeaders($headers);
-        if ($reason == '' && isset(self::$phrases[$this->statusCode])) {
-            $this->reasonPhrase = self::$phrases[$this->statusCode];
-        } else {
-            $this->reasonPhrase = (string) $reason;
-        }
-
-        $this->protocol = $version;
-    }
-
-    public function getStatusCode()
-    {
-        return $this->statusCode;
-    }
-
-    public function getReasonPhrase()
-    {
-        return $this->reasonPhrase;
-    }
-
-    public function withStatus($code, $reasonPhrase = '')
-    {
-        $this->assertStatusCodeIsInteger($code);
-        $code = (int) $code;
-        $this->assertStatusCodeRange($code);
-
-        $new = clone $this;
-        $new->statusCode = $code;
-        if ($reasonPhrase == '' && isset(self::$phrases[$new->statusCode])) {
-            $reasonPhrase = self::$phrases[$new->statusCode];
-        }
-        $new->reasonPhrase = (string) $reasonPhrase;
-        return $new;
-    }
-
-    private function assertStatusCodeIsInteger($statusCode)
-    {
-        if (filter_var($statusCode, FILTER_VALIDATE_INT) === false) {
-            throw new \InvalidArgumentException('Status code must be an integer value.');
-        }
-    }
-
-    private function assertStatusCodeRange($statusCode)
-    {
-        if ($statusCode < 100 || $statusCode >= 600) {
-            throw new \InvalidArgumentException('Status code must be an integer value between 1xx and 5xx.');
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+0HwhS1MCT0==

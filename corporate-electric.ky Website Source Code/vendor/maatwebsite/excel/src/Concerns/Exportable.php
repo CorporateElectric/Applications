@@ -1,117 +1,52 @@
-<?php
-
-namespace Maatwebsite\Excel\Concerns;
-
-use Illuminate\Foundation\Bus\PendingDispatch;
-use Maatwebsite\Excel\Exceptions\NoFilenameGivenException;
-use Maatwebsite\Excel\Exceptions\NoFilePathGivenException;
-use Maatwebsite\Excel\Exporter;
-
-trait Exportable
-{
-    /**
-     * @param string      $fileName
-     * @param string|null $writerType
-     * @param array       $headers
-     *
-     * @throws NoFilenameGivenException
-     * @return \Illuminate\Http\Response|\Symfony\Component\HttpFoundation\BinaryFileResponse
-     */
-    public function download(string $fileName = null, string $writerType = null, array $headers = null)
-    {
-        $headers    = $headers ?? $this->headers ?? [];
-        $fileName   = $fileName ?? $this->fileName ?? null;
-        $writerType = $writerType ?? $this->writerType ?? null;
-
-        if (null === $fileName) {
-            throw new NoFilenameGivenException();
-        }
-
-        return $this->getExporter()->download($this, $fileName, $writerType, $headers);
-    }
-
-    /**
-     * @param string      $filePath
-     * @param string|null $disk
-     * @param string|null $writerType
-     * @param mixed       $diskOptions
-     *
-     * @throws NoFilePathGivenException
-     * @return bool|PendingDispatch
-     */
-    public function store(string $filePath = null, string $disk = null, string $writerType = null, $diskOptions = [])
-    {
-        $filePath = $filePath ?? $this->filePath ?? null;
-
-        if (null === $filePath) {
-            throw NoFilePathGivenException::export();
-        }
-
-        return $this->getExporter()->store(
-            $this,
-            $filePath,
-            $disk ?? $this->disk ?? null,
-            $writerType ?? $this->writerType ?? null,
-            $diskOptions ?? $this->diskOptions ?? []
-        );
-    }
-
-    /**
-     * @param string|null $filePath
-     * @param string|null $disk
-     * @param string|null $writerType
-     * @param mixed       $diskOptions
-     *
-     * @throws NoFilePathGivenException
-     * @return PendingDispatch
-     */
-    public function queue(string $filePath = null, string $disk = null, string $writerType = null, $diskOptions = [])
-    {
-        $filePath = $filePath ?? $this->filePath ?? null;
-
-        if (null === $filePath) {
-            throw NoFilePathGivenException::export();
-        }
-
-        return $this->getExporter()->queue(
-            $this,
-            $filePath,
-            $disk ?? $this->disk ?? null,
-            $writerType ?? $this->writerType ?? null,
-            $diskOptions ?? $this->diskOptions ?? []
-        );
-    }
-
-    /**
-     * @param string|null $writerType
-     *
-     * @return string
-     */
-    public function raw($writerType = null)
-    {
-        $writerType = $writerType ?? $this->writerType ?? null;
-
-        return $this->getExporter()->raw($this, $writerType);
-    }
-
-    /**
-     * Create an HTTP response that represents the object.
-     *
-     * @param  \Illuminate\Http\Request $request
-     *
-     * @throws NoFilenameGivenException
-     * @return \Illuminate\Http\Response
-     */
-    public function toResponse($request)
-    {
-        return $this->download();
-    }
-
-    /**
-     * @return Exporter
-     */
-    private function getExporter(): Exporter
-    {
-        return app(Exporter::class);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+h9uoGgPxCwbBR65oIphjhQAmeBUifa3e14G=

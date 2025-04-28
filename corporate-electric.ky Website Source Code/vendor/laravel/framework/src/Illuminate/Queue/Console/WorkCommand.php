@@ -1,242 +1,132 @@
-<?php
-
-namespace Illuminate\Queue\Console;
-
-use Illuminate\Console\Command;
-use Illuminate\Contracts\Cache\Repository as Cache;
-use Illuminate\Contracts\Queue\Job;
-use Illuminate\Queue\Events\JobFailed;
-use Illuminate\Queue\Events\JobProcessed;
-use Illuminate\Queue\Events\JobProcessing;
-use Illuminate\Queue\Worker;
-use Illuminate\Queue\WorkerOptions;
-use Illuminate\Support\Carbon;
-
-class WorkCommand extends Command
-{
-    /**
-     * The console command name.
-     *
-     * @var string
-     */
-    protected $signature = 'queue:work
-                            {connection? : The name of the queue connection to work}
-                            {--name=default : The name of the worker}
-                            {--queue= : The names of the queues to work}
-                            {--daemon : Run the worker in daemon mode (Deprecated)}
-                            {--once : Only process the next job on the queue}
-                            {--stop-when-empty : Stop when the queue is empty}
-                            {--delay=0 : The number of seconds to delay failed jobs (Deprecated)}
-                            {--backoff=0 : The number of seconds to wait before retrying a job that encountered an uncaught exception}
-                            {--max-jobs=0 : The number of jobs to process before stopping}
-                            {--max-time=0 : The maximum number of seconds the worker should run}
-                            {--force : Force the worker to run even in maintenance mode}
-                            {--memory=128 : The memory limit in megabytes}
-                            {--sleep=3 : Number of seconds to sleep when no job is available}
-                            {--timeout=60 : The number of seconds a child process can run}
-                            {--tries=1 : Number of times to attempt a job before logging it failed}';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Start processing jobs on the queue as a daemon';
-
-    /**
-     * The queue worker instance.
-     *
-     * @var \Illuminate\Queue\Worker
-     */
-    protected $worker;
-
-    /**
-     * The cache store implementation.
-     *
-     * @var \Illuminate\Contracts\Cache\Repository
-     */
-    protected $cache;
-
-    /**
-     * Create a new queue work command.
-     *
-     * @param  \Illuminate\Queue\Worker  $worker
-     * @param  \Illuminate\Contracts\Cache\Repository  $cache
-     * @return void
-     */
-    public function __construct(Worker $worker, Cache $cache)
-    {
-        parent::__construct();
-
-        $this->cache = $cache;
-        $this->worker = $worker;
-    }
-
-    /**
-     * Execute the console command.
-     *
-     * @return int|null
-     */
-    public function handle()
-    {
-        if ($this->downForMaintenance() && $this->option('once')) {
-            return $this->worker->sleep($this->option('sleep'));
-        }
-
-        // We'll listen to the processed and failed events so we can write information
-        // to the console as jobs are processed, which will let the developer watch
-        // which jobs are coming through a queue and be informed on its progress.
-        $this->listenForEvents();
-
-        $connection = $this->argument('connection')
-                        ?: $this->laravel['config']['queue.default'];
-
-        // We need to get the right queue for the connection which is set in the queue
-        // configuration file for the application. We will pull it based on the set
-        // connection being run for the queue operation currently being executed.
-        $queue = $this->getQueue($connection);
-
-        return $this->runWorker(
-            $connection, $queue
-        );
-    }
-
-    /**
-     * Run the worker instance.
-     *
-     * @param  string  $connection
-     * @param  string  $queue
-     * @return int|null
-     */
-    protected function runWorker($connection, $queue)
-    {
-        return $this->worker->setName($this->option('name'))
-                     ->setCache($this->cache)
-                     ->{$this->option('once') ? 'runNextJob' : 'daemon'}(
-            $connection, $queue, $this->gatherWorkerOptions()
-        );
-    }
-
-    /**
-     * Gather all of the queue worker options as a single object.
-     *
-     * @return \Illuminate\Queue\WorkerOptions
-     */
-    protected function gatherWorkerOptions()
-    {
-        $backoff = $this->hasOption('backoff')
-                    ? $this->option('backoff')
-                    : $this->option('delay');
-
-        return new WorkerOptions(
-            $this->option('name'),
-            $backoff,
-            $this->option('memory'),
-            $this->option('timeout'),
-            $this->option('sleep'),
-            $this->option('tries'),
-            $this->option('force'),
-            $this->option('stop-when-empty'),
-            $this->option('max-jobs'),
-            $this->option('max-time')
-        );
-    }
-
-    /**
-     * Listen for the queue events in order to update the console output.
-     *
-     * @return void
-     */
-    protected function listenForEvents()
-    {
-        $this->laravel['events']->listen(JobProcessing::class, function ($event) {
-            $this->writeOutput($event->job, 'starting');
-        });
-
-        $this->laravel['events']->listen(JobProcessed::class, function ($event) {
-            $this->writeOutput($event->job, 'success');
-        });
-
-        $this->laravel['events']->listen(JobFailed::class, function ($event) {
-            $this->writeOutput($event->job, 'failed');
-
-            $this->logFailedJob($event);
-        });
-    }
-
-    /**
-     * Write the status output for the queue worker.
-     *
-     * @param  \Illuminate\Contracts\Queue\Job  $job
-     * @param  string  $status
-     * @return void
-     */
-    protected function writeOutput(Job $job, $status)
-    {
-        switch ($status) {
-            case 'starting':
-                return $this->writeStatus($job, 'Processing', 'comment');
-            case 'success':
-                return $this->writeStatus($job, 'Processed', 'info');
-            case 'failed':
-                return $this->writeStatus($job, 'Failed', 'error');
-        }
-    }
-
-    /**
-     * Format the status output for the queue worker.
-     *
-     * @param  \Illuminate\Contracts\Queue\Job  $job
-     * @param  string  $status
-     * @param  string  $type
-     * @return void
-     */
-    protected function writeStatus(Job $job, $status, $type)
-    {
-        $this->output->writeln(sprintf(
-            "<{$type}>[%s][%s] %s</{$type}> %s",
-            Carbon::now()->format('Y-m-d H:i:s'),
-            $job->getJobId(),
-            str_pad("{$status}:", 11), $job->resolveName()
-        ));
-    }
-
-    /**
-     * Store a failed job event.
-     *
-     * @param  \Illuminate\Queue\Events\JobFailed  $event
-     * @return void
-     */
-    protected function logFailedJob(JobFailed $event)
-    {
-        $this->laravel['queue.failer']->log(
-            $event->connectionName,
-            $event->job->getQueue(),
-            $event->job->getRawBody(),
-            $event->exception
-        );
-    }
-
-    /**
-     * Get the queue name for the worker.
-     *
-     * @param  string  $connection
-     * @return string
-     */
-    protected function getQueue($connection)
-    {
-        return $this->option('queue') ?: $this->laravel['config']->get(
-            "queue.connections.{$connection}.queue", 'default'
-        );
-    }
-
-    /**
-     * Determine if the worker should run in maintenance mode.
-     *
-     * @return bool
-     */
-    protected function downForMaintenance()
-    {
-        return $this->option('force') ? false : $this->laravel->isDownForMaintenance();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+0M0BeC8NL0IrEXYySUUeeQwfiW==

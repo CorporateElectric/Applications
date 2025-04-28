@@ -1,292 +1,129 @@
-<?php
-
-declare(strict_types=1);
-
-namespace NunoMaduro\Collision;
-
-use NunoMaduro\Collision\Exceptions\InvalidStyleException;
-use NunoMaduro\Collision\Exceptions\ShouldNotHappen;
-
-/**
- * @internal
- */
-final class ConsoleColor
-{
-    const FOREGROUND = 38;
-    const BACKGROUND = 48;
-
-    const COLOR256_REGEXP = '~^(bg_)?color_(\d{1,3})$~';
-
-    const RESET_STYLE = 0;
-
-    /** @var bool */
-    private $isSupported;
-
-    /** @var bool */
-    private $forceStyle = false;
-
-    /** @var array */
-    private const STYLES = [
-        'none'      => null,
-        'bold'      => '1',
-        'dark'      => '2',
-        'italic'    => '3',
-        'underline' => '4',
-        'blink'     => '5',
-        'reverse'   => '7',
-        'concealed' => '8',
-
-        'default'    => '39',
-        'black'      => '30',
-        'red'        => '31',
-        'green'      => '32',
-        'yellow'     => '33',
-        'blue'       => '34',
-        'magenta'    => '35',
-        'cyan'       => '36',
-        'light_gray' => '37',
-
-        'dark_gray'     => '90',
-        'light_red'     => '91',
-        'light_green'   => '92',
-        'light_yellow'  => '93',
-        'light_blue'    => '94',
-        'light_magenta' => '95',
-        'light_cyan'    => '96',
-        'white'         => '97',
-
-        'bg_default'    => '49',
-        'bg_black'      => '40',
-        'bg_red'        => '41',
-        'bg_green'      => '42',
-        'bg_yellow'     => '43',
-        'bg_blue'       => '44',
-        'bg_magenta'    => '45',
-        'bg_cyan'       => '46',
-        'bg_light_gray' => '47',
-
-        'bg_dark_gray'     => '100',
-        'bg_light_red'     => '101',
-        'bg_light_green'   => '102',
-        'bg_light_yellow'  => '103',
-        'bg_light_blue'    => '104',
-        'bg_light_magenta' => '105',
-        'bg_light_cyan'    => '106',
-        'bg_white'         => '107',
-    ];
-
-    /** @var array */
-    private $themes = [];
-
-    public function __construct()
-    {
-        $this->isSupported = $this->isSupported();
-    }
-
-    /**
-     * @param string|array $style
-     * @param string       $text
-     *
-     * @return string
-     *
-     * @throws InvalidStyleException
-     * @throws \InvalidArgumentException
-     */
-    public function apply($style, $text)
-    {
-        if (!$this->isStyleForced() && !$this->isSupported()) {
-            return $text;
-        }
-
-        if (is_string($style)) {
-            $style = [$style];
-        }
-        if (!is_array($style)) {
-            throw new \InvalidArgumentException('Style must be string or array.');
-        }
-
-        $sequences = [];
-
-        foreach ($style as $s) {
-            if (isset($this->themes[$s])) {
-                $sequences = array_merge($sequences, $this->themeSequence($s));
-            } elseif ($this->isValidStyle($s)) {
-                $sequences[] = $this->styleSequence($s);
-            } else {
-                throw new ShouldNotHappen();
-            }
-        }
-
-        $sequences = array_filter($sequences, function ($val) {
-            return $val !== null;
-        });
-
-        if (empty($sequences)) {
-            return $text;
-        }
-
-        return $this->escSequence(implode(';', $sequences)) . $text . $this->escSequence(self::RESET_STYLE);
-    }
-
-    /**
-     * @param bool $forceStyle
-     */
-    public function setForceStyle($forceStyle)
-    {
-        $this->forceStyle = $forceStyle;
-    }
-
-    /**
-     * @return bool
-     */
-    public function isStyleForced()
-    {
-        return $this->forceStyle;
-    }
-
-    public function setThemes(array $themes)
-    {
-        $this->themes = [];
-        foreach ($themes as $name => $styles) {
-            $this->addTheme($name, $styles);
-        }
-    }
-
-    /**
-     * @param string       $name
-     * @param array|string $styles
-     */
-    public function addTheme($name, $styles)
-    {
-        if (is_string($styles)) {
-            $styles = [$styles];
-        }
-        if (!is_array($styles)) {
-            throw new \InvalidArgumentException('Style must be string or array.');
-        }
-
-        foreach ($styles as $style) {
-            if (!$this->isValidStyle($style)) {
-                throw new InvalidStyleException($style);
-            }
-        }
-
-        $this->themes[$name] = $styles;
-    }
-
-    /**
-     * @return array
-     */
-    public function getThemes()
-    {
-        return $this->themes;
-    }
-
-    /**
-     * @param string $name
-     *
-     * @return bool
-     */
-    public function hasTheme($name)
-    {
-        return isset($this->themes[$name]);
-    }
-
-    /**
-     * @param string $name
-     */
-    public function removeTheme($name)
-    {
-        unset($this->themes[$name]);
-    }
-
-    /**
-     * @return bool
-     */
-    public function isSupported()
-    {
-        if (DIRECTORY_SEPARATOR === '\\') {
-            return getenv('ANSICON') !== false || getenv('ConEmuANSI') === 'ON';
-        }
-
-        return function_exists('posix_isatty') && @posix_isatty(STDOUT);
-    }
-
-    /**
-     * @return bool
-     */
-    public function are256ColorsSupported()
-    {
-        if (DIRECTORY_SEPARATOR === '\\') {
-            return function_exists('sapi_windows_vt100_support') && @sapi_windows_vt100_support(STDOUT);
-        }
-
-        return strpos(getenv('TERM'), '256color') !== false;
-    }
-
-    /**
-     * @return array
-     */
-    public function getPossibleStyles()
-    {
-        return array_keys(self::STYLES);
-    }
-
-    /**
-     * @param string $name
-     *
-     * @return string[]
-     */
-    private function themeSequence($name)
-    {
-        $sequences = [];
-        foreach ($this->themes[$name] as $style) {
-            $sequences[] = $this->styleSequence($style);
-        }
-
-        return $sequences;
-    }
-
-    /**
-     * @param string $style
-     *
-     * @return string
-     */
-    private function styleSequence($style)
-    {
-        if (array_key_exists($style, self::STYLES)) {
-            return self::STYLES[$style];
-        }
-
-        if (!$this->are256ColorsSupported()) {
-            return null;
-        }
-
-        preg_match(self::COLOR256_REGEXP, $style, $matches);
-
-        $type  = $matches[1] === 'bg_' ? self::BACKGROUND : self::FOREGROUND;
-        $value = $matches[2];
-
-        return "$type;5;$value";
-    }
-
-    /**
-     * @param string $style
-     *
-     * @return bool
-     */
-    private function isValidStyle($style)
-    {
-        return array_key_exists($style, self::STYLES) || preg_match(self::COLOR256_REGEXP, $style);
-    }
-
-    /**
-     * @param string|int $value
-     *
-     * @return string
-     */
-    private function escSequence($value)
-    {
-        return "\033[{$value}m";
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

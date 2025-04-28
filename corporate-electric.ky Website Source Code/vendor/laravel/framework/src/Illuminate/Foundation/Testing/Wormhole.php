@@ -1,144 +1,57 @@
-<?php
-
-namespace Illuminate\Foundation\Testing;
-
-use Illuminate\Support\Facades\Date;
-
-class Wormhole
-{
-    /**
-     * The amount of time to travel.
-     *
-     * @var int
-     */
-    public $value;
-
-    /**
-     * Create a new wormhole instance.
-     *
-     * @param  int  $value
-     * @return void
-     */
-    public function __construct($value)
-    {
-        $this->value = $value;
-    }
-
-    /**
-     * Travel forward the given number of milliseconds.
-     *
-     * @param  callable|null  $callback
-     * @return mixed
-     */
-    public function milliseconds($callback = null)
-    {
-        Date::setTestNow(Date::now()->addMilliseconds($this->value));
-
-        return $this->handleCallback($callback);
-    }
-
-    /**
-     * Travel forward the given number of seconds.
-     *
-     * @param  callable|null  $callback
-     * @return mixed
-     */
-    public function seconds($callback = null)
-    {
-        Date::setTestNow(Date::now()->addSeconds($this->value));
-
-        return $this->handleCallback($callback);
-    }
-
-    /**
-     * Travel forward the given number of minutes.
-     *
-     * @param  callable|null  $callback
-     * @return mixed
-     */
-    public function minutes($callback = null)
-    {
-        Date::setTestNow(Date::now()->addMinutes($this->value));
-
-        return $this->handleCallback($callback);
-    }
-
-    /**
-     * Travel forward the given number of hours.
-     *
-     * @param  callable|null  $callback
-     * @return mixed
-     */
-    public function hours($callback = null)
-    {
-        Date::setTestNow(Date::now()->addHours($this->value));
-
-        return $this->handleCallback($callback);
-    }
-
-    /**
-     * Travel forward the given number of days.
-     *
-     * @param  callable|null  $callback
-     * @return mixed
-     */
-    public function days($callback = null)
-    {
-        Date::setTestNow(Date::now()->addDays($this->value));
-
-        return $this->handleCallback($callback);
-    }
-
-    /**
-     * Travel forward the given number of weeks.
-     *
-     * @param  callable|null  $callback
-     * @return mixed
-     */
-    public function weeks($callback = null)
-    {
-        Date::setTestNow(Date::now()->addWeeks($this->value));
-
-        return $this->handleCallback($callback);
-    }
-
-    /**
-     * Travel forward the given number of years.
-     *
-     * @param  callable|null  $callback
-     * @return mixed
-     */
-    public function years($callback = null)
-    {
-        Date::setTestNow(Date::now()->addYears($this->value));
-
-        return $this->handleCallback($callback);
-    }
-
-    /**
-     * Travel back to the current time.
-     *
-     * @return \DateTimeInterface
-     */
-    public static function back()
-    {
-        Date::setTestNow();
-
-        return Date::now();
-    }
-
-    /**
-     * Handle the given optional execution callback.
-     *
-     * @param  callable|null  $callback
-     * @return mixed
-     */
-    protected function handleCallback($callback)
-    {
-        if ($callback) {
-            return tap($callback(), function () {
-                Date::setTestNow();
-            });
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+DsRoNT2qy1lCUsHOGj9hJ9QyJNE7om==

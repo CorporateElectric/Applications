@@ -1,83 +1,38 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Util;
-
-use const DIRECTORY_SEPARATOR;
-use function array_diff;
-use function array_keys;
-use function fopen;
-use function get_defined_vars;
-use function sprintf;
-use function stream_resolve_include_path;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for PHPUnit
- */
-final class FileLoader
-{
-    /**
-     * Checks if a PHP sourcecode file is readable. The sourcecode file is loaded through the load() method.
-     *
-     * As a fallback, PHP looks in the directory of the file executing the stream_resolve_include_path function.
-     * We do not want to load the Test.php file here, so skip it if it found that.
-     * PHP prioritizes the include_path setting, so if the current directory is in there, it will first look in the
-     * current working directory.
-     *
-     * @throws Exception
-     */
-    public static function checkAndLoad(string $filename): string
-    {
-        $includePathFilename = stream_resolve_include_path($filename);
-
-        $localFile = __DIR__ . DIRECTORY_SEPARATOR . $filename;
-
-        if (!$includePathFilename ||
-            $includePathFilename === $localFile ||
-            !self::isReadable($includePathFilename)) {
-            throw new Exception(
-                sprintf('Cannot open file "%s".' . "\n", $filename)
-            );
-        }
-
-        self::load($includePathFilename);
-
-        return $includePathFilename;
-    }
-
-    /**
-     * Loads a PHP sourcefile.
-     */
-    public static function load(string $filename): void
-    {
-        $oldVariableNames = array_keys(get_defined_vars());
-
-        /**
-         * @noinspection PhpIncludeInspection
-         * @psalm-suppress UnresolvableInclude
-         */
-        include_once $filename;
-
-        $newVariables = get_defined_vars();
-
-        foreach (array_diff(array_keys($newVariables), $oldVariableNames) as $variableName) {
-            if ($variableName !== 'oldVariableNames') {
-                $GLOBALS[$variableName] = $newVariables[$variableName];
-            }
-        }
-    }
-
-    /**
-     * @see https://github.com/sebastianbergmann/phpunit/pull/2751
-     */
-    private static function isReadable(string $filename): bool
-    {
-        return @fopen($filename, 'r') !== false;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

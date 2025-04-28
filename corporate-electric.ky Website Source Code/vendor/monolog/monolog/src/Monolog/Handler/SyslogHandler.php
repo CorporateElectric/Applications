@@ -1,67 +1,46 @@
-<?php declare(strict_types=1);
-
-/*
- * This file is part of the Monolog package.
- *
- * (c) Jordi Boggiano <j.boggiano@seld.be>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Monolog\Handler;
-
-use Monolog\Logger;
-
-/**
- * Logs to syslog service.
- *
- * usage example:
- *
- *   $log = new Logger('application');
- *   $syslog = new SyslogHandler('myfacility', 'local6');
- *   $formatter = new LineFormatter("%channel%.%level_name%: %message% %extra%");
- *   $syslog->setFormatter($formatter);
- *   $log->pushHandler($syslog);
- *
- * @author Sven Paulus <sven@karlsruhe.org>
- */
-class SyslogHandler extends AbstractSyslogHandler
-{
-    protected $ident;
-    protected $logopts;
-
-    /**
-     * @param string     $ident
-     * @param string|int $facility Either one of the names of the keys in $this->facilities, or a LOG_* facility constant
-     * @param string|int $level    The minimum logging level at which this handler will be triggered
-     * @param bool       $bubble   Whether the messages that are handled can bubble up the stack or not
-     * @param int        $logopts  Option flags for the openlog() call, defaults to LOG_PID
-     */
-    public function __construct(string $ident, $facility = LOG_USER, $level = Logger::DEBUG, bool $bubble = true, int $logopts = LOG_PID)
-    {
-        parent::__construct($facility, $level, $bubble);
-
-        $this->ident = $ident;
-        $this->logopts = $logopts;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function close(): void
-    {
-        closelog();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function write(array $record): void
-    {
-        if (!openlog($this->ident, $this->logopts, $this->facility)) {
-            throw new \LogicException('Can\'t open syslog for ident "'.$this->ident.'" and facility "'.$this->facility.'"');
-        }
-        syslog($this->logLevels[$record['level']], (string) $record['formatted']);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

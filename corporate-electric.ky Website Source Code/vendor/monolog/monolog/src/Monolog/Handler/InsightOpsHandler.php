@@ -1,59 +1,43 @@
-<?php declare(strict_types=1);
-
-/*
- * This file is part of the Monolog package.
- *
- * (c) Jordi Boggiano <j.boggiano@seld.be>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Monolog\Handler;
-
-use Monolog\Logger;
-
-/**
- * Inspired on LogEntriesHandler.
- *
- * @author Robert Kaufmann III <rok3@rok3.me>
- * @author Gabriel Machado <gabriel.ms1@hotmail.com>
- */
-class InsightOpsHandler extends SocketHandler
-{
-    /**
-     * @var string
-     */
-    protected $logToken;
-
-    /**
-     * @param string     $token  Log token supplied by InsightOps
-     * @param string     $region Region where InsightOps account is hosted. Could be 'us' or 'eu'.
-     * @param bool       $useSSL Whether or not SSL encryption should be used
-     * @param string|int $level  The minimum logging level to trigger this handler
-     * @param bool       $bubble Whether or not messages that are handled should bubble up the stack.
-     *
-     * @throws MissingExtensionException If SSL encryption is set to true and OpenSSL is missing
-     */
-    public function __construct(string $token, string $region = 'us', bool $useSSL = true, $level = Logger::DEBUG, bool $bubble = true)
-    {
-        if ($useSSL && !extension_loaded('openssl')) {
-            throw new MissingExtensionException('The OpenSSL PHP plugin is required to use SSL encrypted connection for InsightOpsHandler');
-        }
-
-        $endpoint = $useSSL
-            ? 'ssl://' . $region . '.data.logs.insight.rapid7.com:443'
-            : $region . '.data.logs.insight.rapid7.com:80';
-
-        parent::__construct($endpoint, $level, $bubble);
-        $this->logToken = $token;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function generateDataStream(array $record): string
-    {
-        return $this->logToken . ' ' . $record['formatted'];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

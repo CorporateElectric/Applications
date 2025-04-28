@@ -1,70 +1,56 @@
-<?php declare(strict_types=1);
-
-/*
- * This file is part of the Monolog package.
- *
- * (c) Jordi Boggiano <j.boggiano@seld.be>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Monolog\Handler;
-
-use Monolog\Logger;
-use Monolog\Utils;
-
-/**
- * IFTTTHandler uses cURL to trigger IFTTT Maker actions
- *
- * Register a secret key and trigger/event name at https://ifttt.com/maker
- *
- * value1 will be the channel from monolog's Logger constructor,
- * value2 will be the level name (ERROR, WARNING, ..)
- * value3 will be the log record's message
- *
- * @author Nehal Patel <nehal@nehalpatel.me>
- */
-class IFTTTHandler extends AbstractProcessingHandler
-{
-    private $eventName;
-    private $secretKey;
-
-    /**
-     * @param string     $eventName The name of the IFTTT Maker event that should be triggered
-     * @param string     $secretKey A valid IFTTT secret key
-     * @param string|int $level     The minimum logging level at which this handler will be triggered
-     * @param bool       $bubble    Whether the messages that are handled can bubble up the stack or not
-     */
-    public function __construct(string $eventName, string $secretKey, $level = Logger::ERROR, bool $bubble = true)
-    {
-        $this->eventName = $eventName;
-        $this->secretKey = $secretKey;
-
-        parent::__construct($level, $bubble);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function write(array $record): void
-    {
-        $postData = [
-            "value1" => $record["channel"],
-            "value2" => $record["level_name"],
-            "value3" => $record["message"],
-        ];
-        $postString = Utils::jsonEncode($postData);
-
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, "https://maker.ifttt.com/trigger/" . $this->eventName . "/with/key/" . $this->secretKey);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $postString);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            "Content-Type: application/json",
-        ]);
-
-        Curl\Util::execute($ch);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

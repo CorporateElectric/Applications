@@ -1,54 +1,34 @@
-<?php
-
-/**
- * Concrete text token class.
- *
- * Text tokens comprise of regular parsed character data (PCDATA) and raw
- * character data (from the CDATA sections). Internally, their
- * data is parsed with all entities expanded. Surprisingly, the text token
- * does have a "tag name" called #PCDATA, which is how the DTD represents it
- * in permissible child nodes.
- */
-class HTMLPurifier_Node_Text extends HTMLPurifier_Node
-{
-
-    /**
-     * PCDATA tag name compatible with DTD, see
-     * HTMLPurifier_ChildDef_Custom for details.
-     * @type string
-     */
-    public $name = '#PCDATA';
-
-    /**
-     * @type string
-     */
-    public $data;
-    /**< Parsed character data of text. */
-
-    /**
-     * @type bool
-     */
-    public $is_whitespace;
-
-    /**< Bool indicating if node is whitespace. */
-
-    /**
-     * Constructor, accepts data and determines if it is whitespace.
-     * @param string $data String parsed character data.
-     * @param int $line
-     * @param int $col
-     */
-    public function __construct($data, $is_whitespace, $line = null, $col = null)
-    {
-        $this->data = $data;
-        $this->is_whitespace = $is_whitespace;
-        $this->line = $line;
-        $this->col = $col;
-    }
-
-    public function toTokenPair() {
-        return array(new HTMLPurifier_Token_Text($this->data, $this->line, $this->col), null);
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

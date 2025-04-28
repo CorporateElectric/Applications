@@ -1,370 +1,185 @@
-<?php
-
-namespace Illuminate\Testing;
-
-use Illuminate\Console\OutputStyle;
-use Illuminate\Contracts\Console\Kernel;
-use Illuminate\Contracts\Container\Container;
-use Illuminate\Contracts\Support\Arrayable;
-use Illuminate\Support\Arr;
-use Mockery;
-use Mockery\Exception\NoMatchingExpectationException;
-use PHPUnit\Framework\TestCase as PHPUnitTestCase;
-use Symfony\Component\Console\Helper\Table;
-use Symfony\Component\Console\Input\ArrayInput;
-use Symfony\Component\Console\Output\BufferedOutput;
-
-class PendingCommand
-{
-    /**
-     * The test being run.
-     *
-     * @var \Illuminate\Foundation\Testing\TestCase
-     */
-    public $test;
-
-    /**
-     * The application instance.
-     *
-     * @var \Illuminate\Contracts\Container\Container
-     */
-    protected $app;
-
-    /**
-     * The command to run.
-     *
-     * @var string
-     */
-    protected $command;
-
-    /**
-     * The parameters to pass to the command.
-     *
-     * @var array
-     */
-    protected $parameters;
-
-    /**
-     * The expected exit code.
-     *
-     * @var int
-     */
-    protected $expectedExitCode;
-
-    /**
-     * Determine if command has executed.
-     *
-     * @var bool
-     */
-    protected $hasExecuted = false;
-
-    /**
-     * Create a new pending console command run.
-     *
-     * @param  \PHPUnit\Framework\TestCase  $test
-     * @param  \Illuminate\Contracts\Container\Container  $app
-     * @param  string  $command
-     * @param  array  $parameters
-     * @return void
-     */
-    public function __construct(PHPUnitTestCase $test, Container $app, $command, $parameters)
-    {
-        $this->app = $app;
-        $this->test = $test;
-        $this->command = $command;
-        $this->parameters = $parameters;
-    }
-
-    /**
-     * Specify an expected question that will be asked when the command runs.
-     *
-     * @param  string  $question
-     * @param  string|bool  $answer
-     * @return $this
-     */
-    public function expectsQuestion($question, $answer)
-    {
-        $this->test->expectedQuestions[] = [$question, $answer];
-
-        return $this;
-    }
-
-    /**
-     * Specify an expected confirmation question that will be asked when the command runs.
-     *
-     * @param  string  $question
-     * @param  string  $answer
-     * @return $this
-     */
-    public function expectsConfirmation($question, $answer = 'no')
-    {
-        return $this->expectsQuestion($question, strtolower($answer) === 'yes');
-    }
-
-    /**
-     * Specify an expected choice question with expected answers that will be asked/shown when the command runs.
-     *
-     * @param  string  $question
-     * @param  string|array  $answer
-     * @param  array  $answers
-     * @param  bool  $strict
-     * @return $this
-     */
-    public function expectsChoice($question, $answer, $answers, $strict = false)
-    {
-        $this->test->expectedChoices[$question] = [
-            'expected' => $answers,
-            'strict' => $strict,
-        ];
-
-        return $this->expectsQuestion($question, $answer);
-    }
-
-    /**
-     * Specify output that should be printed when the command runs.
-     *
-     * @param  string  $output
-     * @return $this
-     */
-    public function expectsOutput($output)
-    {
-        $this->test->expectedOutput[] = $output;
-
-        return $this;
-    }
-
-    /**
-     * Specify output that should never be printed when the command runs.
-     *
-     * @param  string  $output
-     * @return $this
-     */
-    public function doesntExpectOutput($output)
-    {
-        $this->test->unexpectedOutput[$output] = false;
-
-        return $this;
-    }
-
-    /**
-     * Specify a table that should be printed when the command runs.
-     *
-     * @param  array  $headers
-     * @param  \Illuminate\Contracts\Support\Arrayable|array  $rows
-     * @param  string  $tableStyle
-     * @param  array  $columnStyles
-     * @return $this
-     */
-    public function expectsTable($headers, $rows, $tableStyle = 'default', array $columnStyles = [])
-    {
-        $table = (new Table($output = new BufferedOutput))
-            ->setHeaders((array) $headers)
-            ->setRows($rows instanceof Arrayable ? $rows->toArray() : $rows)
-            ->setStyle($tableStyle);
-
-        foreach ($columnStyles as $columnIndex => $columnStyle) {
-            $table->setColumnStyle($columnIndex, $columnStyle);
-        }
-
-        $table->render();
-
-        $lines = array_filter(
-            explode(PHP_EOL, $output->fetch())
-        );
-
-        foreach ($lines as $line) {
-            $this->expectsOutput($line);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Assert that the command has the given exit code.
-     *
-     * @param  int  $exitCode
-     * @return $this
-     */
-    public function assertExitCode($exitCode)
-    {
-        $this->expectedExitCode = $exitCode;
-
-        return $this;
-    }
-
-    /**
-     * Execute the command.
-     *
-     * @return int
-     */
-    public function execute()
-    {
-        return $this->run();
-    }
-
-    /**
-     * Execute the command.
-     *
-     * @return int
-     *
-     * @throws \Mockery\Exception\NoMatchingExpectationException
-     */
-    public function run()
-    {
-        $this->hasExecuted = true;
-
-        $mock = $this->mockConsoleOutput();
-
-        try {
-            $exitCode = $this->app->make(Kernel::class)->call($this->command, $this->parameters, $mock);
-        } catch (NoMatchingExpectationException $e) {
-            if ($e->getMethodName() === 'askQuestion') {
-                $this->test->fail('Unexpected question "'.$e->getActualArguments()[0]->getQuestion().'" was asked.');
-            }
-
-            throw $e;
-        }
-
-        if ($this->expectedExitCode !== null) {
-            $this->test->assertEquals(
-                $this->expectedExitCode, $exitCode,
-                "Expected status code {$this->expectedExitCode} but received {$exitCode}."
-            );
-        }
-
-        $this->verifyExpectations();
-        $this->flushExpectations();
-
-        return $exitCode;
-    }
-
-    /**
-     * Determine if expected questions / choices / outputs are fulfilled.
-     *
-     * @return void
-     */
-    protected function verifyExpectations()
-    {
-        if (count($this->test->expectedQuestions)) {
-            $this->test->fail('Question "'.Arr::first($this->test->expectedQuestions)[0].'" was not asked.');
-        }
-
-        if (count($this->test->expectedChoices) > 0) {
-            foreach ($this->test->expectedChoices as $question => $answers) {
-                $assertion = $answers['strict'] ? 'assertEquals' : 'assertEqualsCanonicalizing';
-
-                $this->test->{$assertion}(
-                    $answers['expected'],
-                    $answers['actual'],
-                    'Question "'.$question.'" has different options.'
-                );
-            }
-        }
-
-        if (count($this->test->expectedOutput)) {
-            $this->test->fail('Output "'.Arr::first($this->test->expectedOutput).'" was not printed.');
-        }
-
-        if ($output = array_search(true, $this->test->unexpectedOutput)) {
-            $this->test->fail('Output "'.$output.'" was printed.');
-        }
-    }
-
-    /**
-     * Mock the application's console output.
-     *
-     * @return \Mockery\MockInterface
-     */
-    protected function mockConsoleOutput()
-    {
-        $mock = Mockery::mock(OutputStyle::class.'[askQuestion]', [
-            (new ArrayInput($this->parameters)), $this->createABufferedOutputMock(),
-        ]);
-
-        foreach ($this->test->expectedQuestions as $i => $question) {
-            $mock->shouldReceive('askQuestion')
-                ->once()
-                ->ordered()
-                ->with(Mockery::on(function ($argument) use ($question) {
-                    if (isset($this->test->expectedChoices[$question[0]])) {
-                        $this->test->expectedChoices[$question[0]]['actual'] = $argument->getAutocompleterValues();
-                    }
-
-                    return $argument->getQuestion() == $question[0];
-                }))
-                ->andReturnUsing(function () use ($question, $i) {
-                    unset($this->test->expectedQuestions[$i]);
-
-                    return $question[1];
-                });
-        }
-
-        $this->app->bind(OutputStyle::class, function () use ($mock) {
-            return $mock;
-        });
-
-        return $mock;
-    }
-
-    /**
-     * Create a mock for the buffered output.
-     *
-     * @return \Mockery\MockInterface
-     */
-    private function createABufferedOutputMock()
-    {
-        $mock = Mockery::mock(BufferedOutput::class.'[doWrite]')
-                ->shouldAllowMockingProtectedMethods()
-                ->shouldIgnoreMissing();
-
-        foreach ($this->test->expectedOutput as $i => $output) {
-            $mock->shouldReceive('doWrite')
-                ->once()
-                ->ordered()
-                ->with($output, Mockery::any())
-                ->andReturnUsing(function () use ($i) {
-                    unset($this->test->expectedOutput[$i]);
-                });
-        }
-
-        foreach ($this->test->unexpectedOutput as $output => $displayed) {
-            $mock->shouldReceive('doWrite')
-                ->once()
-                ->ordered()
-                ->with($output, Mockery::any())
-                ->andReturnUsing(function () use ($output) {
-                    $this->test->unexpectedOutput[$output] = true;
-                });
-        }
-
-        return $mock;
-    }
-
-    /**
-     * Flush the expectations from the test case.
-     *
-     * @return void
-     */
-    protected function flushExpectations()
-    {
-        $this->test->expectedOutput = [];
-        $this->test->unexpectedOutput = [];
-        $this->test->expectedTables = [];
-        $this->test->expectedQuestions = [];
-        $this->test->expectedChoices = [];
-    }
-
-    /**
-     * Handle the object's destruction.
-     *
-     * @return void
-     */
-    public function __destruct()
-    {
-        if ($this->hasExecuted) {
-            return;
-        }
-
-        $this->run();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

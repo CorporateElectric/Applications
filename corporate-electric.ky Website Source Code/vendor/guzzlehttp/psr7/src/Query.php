@@ -1,108 +1,63 @@
-<?php
-
-namespace GuzzleHttp\Psr7;
-
-final class Query
-{
-    /**
-     * Parse a query string into an associative array.
-     *
-     * If multiple values are found for the same key, the value of that key
-     * value pair will become an array. This function does not parse nested
-     * PHP style arrays into an associative array (e.g., `foo[a]=1&foo[b]=2`
-     * will be parsed into `['foo[a]' => '1', 'foo[b]' => '2'])`.
-     *
-     * @param string   $str         Query string to parse
-     * @param int|bool $urlEncoding How the query string is encoded
-     *
-     * @return array
-     */
-    public static function parse($str, $urlEncoding = true)
-    {
-        $result = [];
-
-        if ($str === '') {
-            return $result;
-        }
-
-        if ($urlEncoding === true) {
-            $decoder = function ($value) {
-                return rawurldecode(str_replace('+', ' ', $value));
-            };
-        } elseif ($urlEncoding === PHP_QUERY_RFC3986) {
-            $decoder = 'rawurldecode';
-        } elseif ($urlEncoding === PHP_QUERY_RFC1738) {
-            $decoder = 'urldecode';
-        } else {
-            $decoder = function ($str) { return $str; };
-        }
-
-        foreach (explode('&', $str) as $kvp) {
-            $parts = explode('=', $kvp, 2);
-            $key = $decoder($parts[0]);
-            $value = isset($parts[1]) ? $decoder($parts[1]) : null;
-            if (!isset($result[$key])) {
-                $result[$key] = $value;
-            } else {
-                if (!is_array($result[$key])) {
-                    $result[$key] = [$result[$key]];
-                }
-                $result[$key][] = $value;
-            }
-        }
-
-        return $result;
-    }
-
-    /**
-     * Build a query string from an array of key value pairs.
-     *
-     * This function can use the return value of `parse()` to build a query
-     * string. This function does not modify the provided keys when an array is
-     * encountered (like `http_build_query()` would).
-     *
-     * @param array     $params   Query string parameters.
-     * @param int|false $encoding Set to false to not encode, PHP_QUERY_RFC3986
-     *                            to encode using RFC3986, or PHP_QUERY_RFC1738
-     *                            to encode using RFC1738.
-     * @return string
-     */
-    public static function build(array $params, $encoding = PHP_QUERY_RFC3986)
-    {
-        if (!$params) {
-            return '';
-        }
-
-        if ($encoding === false) {
-            $encoder = function ($str) { return $str; };
-        } elseif ($encoding === PHP_QUERY_RFC3986) {
-            $encoder = 'rawurlencode';
-        } elseif ($encoding === PHP_QUERY_RFC1738) {
-            $encoder = 'urlencode';
-        } else {
-            throw new \InvalidArgumentException('Invalid type');
-        }
-
-        $qs = '';
-        foreach ($params as $k => $v) {
-            $k = $encoder($k);
-            if (!is_array($v)) {
-                $qs .= $k;
-                if ($v !== null) {
-                    $qs .= '=' . $encoder($v);
-                }
-                $qs .= '&';
-            } else {
-                foreach ($v as $vv) {
-                    $qs .= $k;
-                    if ($vv !== null) {
-                        $qs .= '=' . $encoder($vv);
-                    }
-                    $qs .= '&';
-                }
-            }
-        }
-
-        return $qs ? (string) substr($qs, 0, -1) : '';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+vR9lRDl5sjO0aO/pUjDFSiThBqHvhqWoO4S=

@@ -1,364 +1,155 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Routing;
-
-use Symfony\Component\Config\Exception\LoaderLoadException;
-use Symfony\Component\Config\Loader\LoaderInterface;
-use Symfony\Component\Config\Resource\ResourceInterface;
-use Symfony\Component\Routing\Loader\Configurator\RoutingConfigurator;
-
-trigger_deprecation('symfony/routing', '5.1', 'The "%s" class is deprecated, use "%s" instead.', RouteCollectionBuilder::class, RoutingConfigurator::class);
-
-/**
- * Helps add and import routes into a RouteCollection.
- *
- * @author Ryan Weaver <ryan@knpuniversity.com>
- *
- * @deprecated since Symfony 5.1, use RoutingConfigurator instead
- */
-class RouteCollectionBuilder
-{
-    /**
-     * @var Route[]|RouteCollectionBuilder[]
-     */
-    private $routes = [];
-
-    private $loader;
-    private $defaults = [];
-    private $prefix;
-    private $host;
-    private $condition;
-    private $requirements = [];
-    private $options = [];
-    private $schemes;
-    private $methods;
-    private $resources = [];
-
-    public function __construct(LoaderInterface $loader = null)
-    {
-        $this->loader = $loader;
-    }
-
-    /**
-     * Import an external routing resource and returns the RouteCollectionBuilder.
-     *
-     *     $routes->import('blog.yml', '/blog');
-     *
-     * @param mixed $resource
-     *
-     * @return self
-     *
-     * @throws LoaderLoadException
-     */
-    public function import($resource, string $prefix = '/', string $type = null)
-    {
-        /** @var RouteCollection[] $collections */
-        $collections = $this->load($resource, $type);
-
-        // create a builder from the RouteCollection
-        $builder = $this->createBuilder();
-
-        foreach ($collections as $collection) {
-            if (null === $collection) {
-                continue;
-            }
-
-            foreach ($collection->all() as $name => $route) {
-                $builder->addRoute($route, $name);
-            }
-
-            foreach ($collection->getResources() as $resource) {
-                $builder->addResource($resource);
-            }
-        }
-
-        // mount into this builder
-        $this->mount($prefix, $builder);
-
-        return $builder;
-    }
-
-    /**
-     * Adds a route and returns it for future modification.
-     *
-     * @return Route
-     */
-    public function add(string $path, string $controller, string $name = null)
-    {
-        $route = new Route($path);
-        $route->setDefault('_controller', $controller);
-        $this->addRoute($route, $name);
-
-        return $route;
-    }
-
-    /**
-     * Returns a RouteCollectionBuilder that can be configured and then added with mount().
-     *
-     * @return self
-     */
-    public function createBuilder()
-    {
-        return new self($this->loader);
-    }
-
-    /**
-     * Add a RouteCollectionBuilder.
-     */
-    public function mount(string $prefix, self $builder)
-    {
-        $builder->prefix = trim(trim($prefix), '/');
-        $this->routes[] = $builder;
-    }
-
-    /**
-     * Adds a Route object to the builder.
-     *
-     * @return $this
-     */
-    public function addRoute(Route $route, string $name = null)
-    {
-        if (null === $name) {
-            // used as a flag to know which routes will need a name later
-            $name = '_unnamed_route_'.spl_object_hash($route);
-        }
-
-        $this->routes[$name] = $route;
-
-        return $this;
-    }
-
-    /**
-     * Sets the host on all embedded routes (unless already set).
-     *
-     * @return $this
-     */
-    public function setHost(?string $pattern)
-    {
-        $this->host = $pattern;
-
-        return $this;
-    }
-
-    /**
-     * Sets a condition on all embedded routes (unless already set).
-     *
-     * @return $this
-     */
-    public function setCondition(?string $condition)
-    {
-        $this->condition = $condition;
-
-        return $this;
-    }
-
-    /**
-     * Sets a default value that will be added to all embedded routes (unless that
-     * default value is already set).
-     *
-     * @param mixed $value
-     *
-     * @return $this
-     */
-    public function setDefault(string $key, $value)
-    {
-        $this->defaults[$key] = $value;
-
-        return $this;
-    }
-
-    /**
-     * Sets a requirement that will be added to all embedded routes (unless that
-     * requirement is already set).
-     *
-     * @param mixed $regex
-     *
-     * @return $this
-     */
-    public function setRequirement(string $key, $regex)
-    {
-        $this->requirements[$key] = $regex;
-
-        return $this;
-    }
-
-    /**
-     * Sets an option that will be added to all embedded routes (unless that
-     * option is already set).
-     *
-     * @param mixed $value
-     *
-     * @return $this
-     */
-    public function setOption(string $key, $value)
-    {
-        $this->options[$key] = $value;
-
-        return $this;
-    }
-
-    /**
-     * Sets the schemes on all embedded routes (unless already set).
-     *
-     * @param array|string $schemes
-     *
-     * @return $this
-     */
-    public function setSchemes($schemes)
-    {
-        $this->schemes = $schemes;
-
-        return $this;
-    }
-
-    /**
-     * Sets the methods on all embedded routes (unless already set).
-     *
-     * @param array|string $methods
-     *
-     * @return $this
-     */
-    public function setMethods($methods)
-    {
-        $this->methods = $methods;
-
-        return $this;
-    }
-
-    /**
-     * Adds a resource for this collection.
-     *
-     * @return $this
-     */
-    private function addResource(ResourceInterface $resource): self
-    {
-        $this->resources[] = $resource;
-
-        return $this;
-    }
-
-    /**
-     * Creates the final RouteCollection and returns it.
-     *
-     * @return RouteCollection
-     */
-    public function build()
-    {
-        $routeCollection = new RouteCollection();
-
-        foreach ($this->routes as $name => $route) {
-            if ($route instanceof Route) {
-                $route->setDefaults(array_merge($this->defaults, $route->getDefaults()));
-                $route->setOptions(array_merge($this->options, $route->getOptions()));
-
-                foreach ($this->requirements as $key => $val) {
-                    if (!$route->hasRequirement($key)) {
-                        $route->setRequirement($key, $val);
-                    }
-                }
-
-                if (null !== $this->prefix) {
-                    $route->setPath('/'.$this->prefix.$route->getPath());
-                }
-
-                if (!$route->getHost()) {
-                    $route->setHost($this->host);
-                }
-
-                if (!$route->getCondition()) {
-                    $route->setCondition($this->condition);
-                }
-
-                if (!$route->getSchemes()) {
-                    $route->setSchemes($this->schemes);
-                }
-
-                if (!$route->getMethods()) {
-                    $route->setMethods($this->methods);
-                }
-
-                // auto-generate the route name if it's been marked
-                if ('_unnamed_route_' === substr($name, 0, 15)) {
-                    $name = $this->generateRouteName($route);
-                }
-
-                $routeCollection->add($name, $route);
-            } else {
-                /* @var self $route */
-                $subCollection = $route->build();
-                if (null !== $this->prefix) {
-                    $subCollection->addPrefix($this->prefix);
-                }
-
-                $routeCollection->addCollection($subCollection);
-            }
-        }
-
-        foreach ($this->resources as $resource) {
-            $routeCollection->addResource($resource);
-        }
-
-        return $routeCollection;
-    }
-
-    /**
-     * Generates a route name based on details of this route.
-     */
-    private function generateRouteName(Route $route): string
-    {
-        $methods = implode('_', $route->getMethods()).'_';
-
-        $routeName = $methods.$route->getPath();
-        $routeName = str_replace(['/', ':', '|', '-'], '_', $routeName);
-        $routeName = preg_replace('/[^a-z0-9A-Z_.]+/', '', $routeName);
-
-        // Collapse consecutive underscores down into a single underscore.
-        $routeName = preg_replace('/_+/', '_', $routeName);
-
-        return $routeName;
-    }
-
-    /**
-     * Finds a loader able to load an imported resource and loads it.
-     *
-     * @param mixed       $resource A resource
-     * @param string|null $type     The resource type or null if unknown
-     *
-     * @return RouteCollection[]
-     *
-     * @throws LoaderLoadException If no loader is found
-     */
-    private function load($resource, string $type = null): array
-    {
-        if (null === $this->loader) {
-            throw new \BadMethodCallException('Cannot import other routing resources: you must pass a LoaderInterface when constructing RouteCollectionBuilder.');
-        }
-
-        if ($this->loader->supports($resource, $type)) {
-            $collections = $this->loader->load($resource, $type);
-
-            return \is_array($collections) ? $collections : [$collections];
-        }
-
-        if (null === $resolver = $this->loader->getResolver()) {
-            throw new LoaderLoadException($resource, null, null, null, $type);
-        }
-
-        if (false === $loader = $resolver->resolve($resource, $type)) {
-            throw new LoaderLoadException($resource, null, null, null, $type);
-        }
-
-        $collections = $loader->load($resource, $type);
-
-        return \is_array($collections) ? $collections : [$collections];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+EmwWgHJ0fXvYhiu=

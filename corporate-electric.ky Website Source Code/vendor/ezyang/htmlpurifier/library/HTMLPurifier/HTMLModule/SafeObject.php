@@ -1,62 +1,46 @@
-<?php
-
-/**
- * A "safe" object module. In theory, objects permitted by this module will
- * be safe, and untrusted users can be allowed to embed arbitrary flash objects
- * (maybe other types too, but only Flash is supported as of right now).
- * Highly experimental.
- */
-class HTMLPurifier_HTMLModule_SafeObject extends HTMLPurifier_HTMLModule
-{
-    /**
-     * @type string
-     */
-    public $name = 'SafeObject';
-
-    /**
-     * @param HTMLPurifier_Config $config
-     */
-    public function setup($config)
-    {
-        // These definitions are not intrinsically safe: the attribute transforms
-        // are a vital part of ensuring safety.
-
-        $max = $config->get('HTML.MaxImgLength');
-        $object = $this->addElement(
-            'object',
-            'Inline',
-            'Optional: param | Flow | #PCDATA',
-            'Common',
-            array(
-                // While technically not required by the spec, we're forcing
-                // it to this value.
-                'type' => 'Enum#application/x-shockwave-flash',
-                'width' => 'Pixels#' . $max,
-                'height' => 'Pixels#' . $max,
-                'data' => 'URI#embedded',
-                'codebase' => new HTMLPurifier_AttrDef_Enum(
-                    array(
-                        'http://download.macromedia.com/pub/shockwave/cabs/flash/swflash.cab#version=6,0,40,0'
-                    )
-                ),
-            )
-        );
-        $object->attr_transform_post[] = new HTMLPurifier_AttrTransform_SafeObject();
-
-        $param = $this->addElement(
-            'param',
-            false,
-            'Empty',
-            false,
-            array(
-                'id' => 'ID',
-                'name*' => 'Text',
-                'value' => 'Text'
-            )
-        );
-        $param->attr_transform_post[] = new HTMLPurifier_AttrTransform_SafeParam();
-        $this->info_injector[] = 'SafeObject';
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+CQ8/f8maquW=

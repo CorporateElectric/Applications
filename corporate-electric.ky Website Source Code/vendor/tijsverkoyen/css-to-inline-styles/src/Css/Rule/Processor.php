@@ -1,163 +1,86 @@
-<?php
-
-namespace TijsVerkoyen\CssToInlineStyles\Css\Rule;
-
-use Symfony\Component\CssSelector\Node\Specificity;
-use \TijsVerkoyen\CssToInlineStyles\Css\Property\Processor as PropertyProcessor;
-
-class Processor
-{
-    /**
-     * Splits a string into separate rules
-     *
-     * @param string $rulesString
-     *
-     * @return string[]
-     */
-    public function splitIntoSeparateRules($rulesString)
-    {
-        $rulesString = $this->cleanup($rulesString);
-
-        return (array) explode('}', $rulesString);
-    }
-
-    /**
-     * @param string $string
-     *
-     * @return string
-     */
-    private function cleanup($string)
-    {
-        $string = str_replace(array("\r", "\n"), '', $string);
-        $string = str_replace(array("\t"), ' ', $string);
-        $string = str_replace('"', '\'', $string);
-        $string = preg_replace('|/\*.*?\*/|', '', $string);
-        $string = preg_replace('/\s\s+/', ' ', $string);
-
-        $string = trim($string);
-        $string = rtrim($string, '}');
-
-        return $string;
-    }
-
-    /**
-     * Converts a rule-string into an object
-     *
-     * @param string $rule
-     * @param int    $originalOrder
-     *
-     * @return Rule[]
-     */
-    public function convertToObjects($rule, $originalOrder)
-    {
-        $rule = $this->cleanup($rule);
-
-        $chunks = explode('{', $rule);
-        if (!isset($chunks[1])) {
-            return array();
-        }
-        $propertiesProcessor = new PropertyProcessor();
-        $rules = array();
-        $selectors = (array) explode(',', trim($chunks[0]));
-        $properties = $propertiesProcessor->splitIntoSeparateProperties($chunks[1]);
-
-        foreach ($selectors as $selector) {
-            $selector = trim($selector);
-            $specificity = $this->calculateSpecificityBasedOnASelector($selector);
-
-            $rules[] = new Rule(
-                $selector,
-                $propertiesProcessor->convertArrayToObjects($properties, $specificity),
-                $specificity,
-                $originalOrder
-            );
-        }
-
-        return $rules;
-    }
-
-    /**
-     * Calculates the specificity based on a CSS Selector string,
-     * Based on the patterns from premailer/css_parser by Alex Dunae
-     *
-     * @see https://github.com/premailer/css_parser/blob/master/lib/css_parser/regexps.rb
-     *
-     * @param string $selector
-     *
-     * @return Specificity
-     */
-    public function calculateSpecificityBasedOnASelector($selector)
-    {
-        $idSelectorsPattern = "  \#";
-        $classAttributesPseudoClassesSelectorsPattern = "  (\.[\w]+)                     # classes
-                        |
-                        \[(\w+)                       # attributes
-                        |
-                        (\:(                          # pseudo classes
-                          link|visited|active
-                          |hover|focus
-                          |lang
-                          |target
-                          |enabled|disabled|checked|indeterminate
-                          |root
-                          |nth-child|nth-last-child|nth-of-type|nth-last-of-type
-                          |first-child|last-child|first-of-type|last-of-type
-                          |only-child|only-of-type
-                          |empty|contains
-                        ))";
-
-        $typePseudoElementsSelectorPattern = "  ((^|[\s\+\>\~]+)[\w]+       # elements
-                        |
-                        \:{1,2}(                    # pseudo-elements
-                          after|before
-                          |first-letter|first-line
-                          |selection
-                        )
-                      )";
-
-        return new Specificity(
-            preg_match_all("/{$idSelectorsPattern}/ix", $selector, $matches),
-            preg_match_all("/{$classAttributesPseudoClassesSelectorsPattern}/ix", $selector, $matches),
-            preg_match_all("/{$typePseudoElementsSelectorPattern}/ix", $selector, $matches)
-        );
-    }
-
-    /**
-     * @param string[] $rules
-     * @param Rule[]   $objects
-     *
-     * @return Rule[]
-     */
-    public function convertArrayToObjects(array $rules, array $objects = array())
-    {
-        $order = 1;
-        foreach ($rules as $rule) {
-            $objects = array_merge($objects, $this->convertToObjects($rule, $order));
-            $order++;
-        }
-
-        return $objects;
-    }
-
-    /**
-     * Sorts an array on the specificity element in an ascending way
-     * Lower specificity will be sorted to the beginning of the array
-     *
-     * @param Rule $e1 The first element.
-     * @param Rule $e2 The second element.
-     *
-     * @return int
-     */
-    public static function sortOnSpecificity(Rule $e1, Rule $e2)
-    {
-        $e1Specificity = $e1->getSpecificity();
-        $value = $e1Specificity->compareTo($e2->getSpecificity());
-
-        // if the specificity is the same, use the order in which the element appeared
-        if ($value === 0) {
-            $value = $e1->getOrder() - $e2->getOrder();
-        }
-
-        return $value;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,137 +1,83 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\VarDumper;
-
-use Symfony\Component\Console\Formatter\OutputFormatter;
-use Symfony\Component\VarDumper\Caster\Caster;
-use Symfony\Component\VarDumper\Cloner\Stub;
-
-/**
- * A Presenter service.
- */
-class Presenter
-{
-    const VERBOSE = 1;
-
-    private $cloner;
-    private $dumper;
-    private $exceptionsImportants = [
-        "\0*\0message",
-        "\0*\0code",
-        "\0*\0file",
-        "\0*\0line",
-        "\0Exception\0previous",
-    ];
-    private $styles = [
-        'num'       => 'number',
-        'const'     => 'const',
-        'str'       => 'string',
-        'cchr'      => 'default',
-        'note'      => 'class',
-        'ref'       => 'default',
-        'public'    => 'public',
-        'protected' => 'protected',
-        'private'   => 'private',
-        'meta'      => 'comment',
-        'key'       => 'comment',
-        'index'     => 'number',
-    ];
-
-    public function __construct(OutputFormatter $formatter, $forceArrayIndexes = false)
-    {
-        // Work around https://github.com/symfony/symfony/issues/23572
-        $oldLocale = \setlocale(\LC_NUMERIC, 0);
-        \setlocale(\LC_NUMERIC, 'C');
-
-        $this->dumper = new Dumper($formatter, $forceArrayIndexes);
-        $this->dumper->setStyles($this->styles);
-
-        // Now put the locale back
-        \setlocale(\LC_NUMERIC, $oldLocale);
-
-        $this->cloner = new Cloner();
-        $this->cloner->addCasters(['*' => function ($obj, array $a, Stub $stub, $isNested, $filter = 0) {
-            if ($filter || $isNested) {
-                if ($obj instanceof \Exception) {
-                    $a = Caster::filter($a, Caster::EXCLUDE_NOT_IMPORTANT | Caster::EXCLUDE_EMPTY, $this->exceptionsImportants);
-                } else {
-                    $a = Caster::filter($a, Caster::EXCLUDE_PROTECTED | Caster::EXCLUDE_PRIVATE);
-                }
-            }
-
-            return $a;
-        }]);
-    }
-
-    /**
-     * Register casters.
-     *
-     * @see http://symfony.com/doc/current/components/var_dumper/advanced.html#casters
-     *
-     * @param callable[] $casters A map of casters
-     */
-    public function addCasters(array $casters)
-    {
-        $this->cloner->addCasters($casters);
-    }
-
-    /**
-     * Present a reference to the value.
-     *
-     * @param mixed $value
-     *
-     * @return string
-     */
-    public function presentRef($value)
-    {
-        return $this->present($value, 0);
-    }
-
-    /**
-     * Present a full representation of the value.
-     *
-     * If $depth is 0, the value will be presented as a ref instead.
-     *
-     * @param mixed $value
-     * @param int   $depth   (default: null)
-     * @param int   $options One of Presenter constants
-     *
-     * @return string
-     */
-    public function present($value, $depth = null, $options = 0)
-    {
-        $data = $this->cloner->cloneVar($value, !($options & self::VERBOSE) ? Caster::EXCLUDE_VERBOSE : 0);
-
-        if (null !== $depth) {
-            $data = $data->withMaxDepth($depth);
-        }
-
-        // Work around https://github.com/symfony/symfony/issues/23572
-        $oldLocale = \setlocale(\LC_NUMERIC, 0);
-        \setlocale(\LC_NUMERIC, 'C');
-
-        $output = '';
-        $this->dumper->dump($data, function ($line, $depth) use (&$output) {
-            if ($depth >= 0) {
-                if ('' !== $output) {
-                    $output .= \PHP_EOL;
-                }
-                $output .= \str_repeat('  ', $depth).$line;
-            }
-        });
-
-        // Now put the locale back
-        \setlocale(\LC_NUMERIC, $oldLocale);
-
-        return OutputFormatter::escape($output);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,298 +1,118 @@
-<?php
-
-namespace DeepCopy;
-
-use ArrayObject;
-use DateInterval;
-use DateTimeInterface;
-use DateTimeZone;
-use DeepCopy\Exception\CloneException;
-use DeepCopy\Filter\Filter;
-use DeepCopy\Matcher\Matcher;
-use DeepCopy\Reflection\ReflectionHelper;
-use DeepCopy\TypeFilter\Date\DateIntervalFilter;
-use DeepCopy\TypeFilter\Spl\ArrayObjectFilter;
-use DeepCopy\TypeFilter\Spl\SplDoublyLinkedListFilter;
-use DeepCopy\TypeFilter\TypeFilter;
-use DeepCopy\TypeMatcher\TypeMatcher;
-use ReflectionObject;
-use ReflectionProperty;
-use SplDoublyLinkedList;
-
-/**
- * @final
- */
-class DeepCopy
-{
-    /**
-     * @var object[] List of objects copied.
-     */
-    private $hashMap = [];
-
-    /**
-     * Filters to apply.
-     *
-     * @var array Array of ['filter' => Filter, 'matcher' => Matcher] pairs.
-     */
-    private $filters = [];
-
-    /**
-     * Type Filters to apply.
-     *
-     * @var array Array of ['filter' => Filter, 'matcher' => Matcher] pairs.
-     */
-    private $typeFilters = [];
-
-    /**
-     * @var bool
-     */
-    private $skipUncloneable = false;
-
-    /**
-     * @var bool
-     */
-    private $useCloneMethod;
-
-    /**
-     * @param bool $useCloneMethod   If set to true, when an object implements the __clone() function, it will be used
-     *                               instead of the regular deep cloning.
-     */
-    public function __construct($useCloneMethod = false)
-    {
-        $this->useCloneMethod = $useCloneMethod;
-
-        $this->addTypeFilter(new ArrayObjectFilter($this), new TypeMatcher(ArrayObject::class));
-        $this->addTypeFilter(new DateIntervalFilter(), new TypeMatcher(DateInterval::class));
-        $this->addTypeFilter(new SplDoublyLinkedListFilter($this), new TypeMatcher(SplDoublyLinkedList::class));
-    }
-
-    /**
-     * If enabled, will not throw an exception when coming across an uncloneable property.
-     *
-     * @param $skipUncloneable
-     *
-     * @return $this
-     */
-    public function skipUncloneable($skipUncloneable = true)
-    {
-        $this->skipUncloneable = $skipUncloneable;
-
-        return $this;
-    }
-
-    /**
-     * Deep copies the given object.
-     *
-     * @param mixed $object
-     *
-     * @return mixed
-     */
-    public function copy($object)
-    {
-        $this->hashMap = [];
-
-        return $this->recursiveCopy($object);
-    }
-
-    public function addFilter(Filter $filter, Matcher $matcher)
-    {
-        $this->filters[] = [
-            'matcher' => $matcher,
-            'filter'  => $filter,
-        ];
-    }
-
-    public function prependFilter(Filter $filter, Matcher $matcher)
-    {
-        array_unshift($this->filters, [
-            'matcher' => $matcher,
-            'filter'  => $filter,
-        ]);
-    }
-
-    public function addTypeFilter(TypeFilter $filter, TypeMatcher $matcher)
-    {
-        $this->typeFilters[] = [
-            'matcher' => $matcher,
-            'filter'  => $filter,
-        ];
-    }
-
-    private function recursiveCopy($var)
-    {
-        // Matches Type Filter
-        if ($filter = $this->getFirstMatchedTypeFilter($this->typeFilters, $var)) {
-            return $filter->apply($var);
-        }
-
-        // Resource
-        if (is_resource($var)) {
-            return $var;
-        }
-
-        // Array
-        if (is_array($var)) {
-            return $this->copyArray($var);
-        }
-
-        // Scalar
-        if (! is_object($var)) {
-            return $var;
-        }
-
-        // Object
-        return $this->copyObject($var);
-    }
-
-    /**
-     * Copy an array
-     * @param array $array
-     * @return array
-     */
-    private function copyArray(array $array)
-    {
-        foreach ($array as $key => $value) {
-            $array[$key] = $this->recursiveCopy($value);
-        }
-
-        return $array;
-    }
-
-    /**
-     * Copies an object.
-     *
-     * @param object $object
-     *
-     * @throws CloneException
-     *
-     * @return object
-     */
-    private function copyObject($object)
-    {
-        $objectHash = spl_object_hash($object);
-
-        if (isset($this->hashMap[$objectHash])) {
-            return $this->hashMap[$objectHash];
-        }
-
-        $reflectedObject = new ReflectionObject($object);
-        $isCloneable = $reflectedObject->isCloneable();
-
-        if (false === $isCloneable) {
-            if ($this->skipUncloneable) {
-                $this->hashMap[$objectHash] = $object;
-
-                return $object;
-            }
-
-            throw new CloneException(
-                sprintf(
-                    'The class "%s" is not cloneable.',
-                    $reflectedObject->getName()
-                )
-            );
-        }
-
-        $newObject = clone $object;
-        $this->hashMap[$objectHash] = $newObject;
-
-        if ($this->useCloneMethod && $reflectedObject->hasMethod('__clone')) {
-            return $newObject;
-        }
-
-        if ($newObject instanceof DateTimeInterface || $newObject instanceof DateTimeZone) {
-            return $newObject;
-        }
-
-        foreach (ReflectionHelper::getProperties($reflectedObject) as $property) {
-            $this->copyObjectProperty($newObject, $property);
-        }
-
-        return $newObject;
-    }
-
-    private function copyObjectProperty($object, ReflectionProperty $property)
-    {
-        // Ignore static properties
-        if ($property->isStatic()) {
-            return;
-        }
-
-        // Apply the filters
-        foreach ($this->filters as $item) {
-            /** @var Matcher $matcher */
-            $matcher = $item['matcher'];
-            /** @var Filter $filter */
-            $filter = $item['filter'];
-
-            if ($matcher->matches($object, $property->getName())) {
-                $filter->apply(
-                    $object,
-                    $property->getName(),
-                    function ($object) {
-                        return $this->recursiveCopy($object);
-                    }
-                );
-
-                // If a filter matches, we stop processing this property
-                return;
-            }
-        }
-
-        $property->setAccessible(true);
-
-        // Ignore uninitialized properties (for PHP >7.4)
-        if (method_exists($property, 'isInitialized') && !$property->isInitialized($object)) {
-            return;
-        }
-
-        $propertyValue = $property->getValue($object);
-
-        // Copy the property
-        $property->setValue($object, $this->recursiveCopy($propertyValue));
-    }
-
-    /**
-     * Returns first filter that matches variable, `null` if no such filter found.
-     *
-     * @param array $filterRecords Associative array with 2 members: 'filter' with value of type {@see TypeFilter} and
-     *                             'matcher' with value of type {@see TypeMatcher}
-     * @param mixed $var
-     *
-     * @return TypeFilter|null
-     */
-    private function getFirstMatchedTypeFilter(array $filterRecords, $var)
-    {
-        $matched = $this->first(
-            $filterRecords,
-            function (array $record) use ($var) {
-                /* @var TypeMatcher $matcher */
-                $matcher = $record['matcher'];
-
-                return $matcher->matches($var);
-            }
-        );
-
-        return isset($matched) ? $matched['filter'] : null;
-    }
-
-    /**
-     * Returns first element that matches predicate, `null` if no such element found.
-     *
-     * @param array    $elements Array of ['filter' => Filter, 'matcher' => Matcher] pairs.
-     * @param callable $predicate Predicate arguments are: element.
-     *
-     * @return array|null Associative array with 2 members: 'filter' with value of type {@see TypeFilter} and 'matcher'
-     *                    with value of type {@see TypeMatcher} or `null`.
-     */
-    private function first(array $elements, callable $predicate)
-    {
-        foreach ($elements as $element) {
-            if (call_user_func($predicate, $element)) {
-                return $element;
-            }
-        }
-
-        return null;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+T2LAIX+yB9ssDV53Im==

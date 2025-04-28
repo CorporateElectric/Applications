@@ -1,448 +1,256 @@
-<?php
-
-namespace Mariuzzo\LaravelJsLocalization;
-
-use Config;
-use Exception;
-use Illuminate\Filesystem\Filesystem as File;
-use Illuminate\Support\Facades\File as FileFacade;
-use Mariuzzo\LaravelJsLocalization\Commands\LangJsCommand;
-use Mariuzzo\LaravelJsLocalization\Generators\LangJsGenerator;
-use Orchestra\Testbench\TestCase;
-use Symfony\Component\Console\Input\ArrayInput;
-use Symfony\Component\Console\Output\NullOutput;
-
-/**
- * The LangJsCommandTest class.
- *
- * @author Rubens Mariuzzo <rubens@mariuzzo.com>
- */
-class LangJsCommandTest extends TestCase
-{
-    /**
-     * The base path of tests.
-     *
-     * @var string
-     */
-    private $testPath;
-
-    /**
-     * The root path of the project.
-     *
-     * @var string
-     */
-    private $rootPath;
-
-    /**
-     * The file path of the expected output.
-     *
-     * @var string
-     */
-    private $outputFilePath;
-
-    /**
-     * The base path of language files.
-     *
-     * @var string
-     */
-    private $langPath;
-
-    /**
-     * LangJsCommandTest constructor.
-     */
-    public function __construct()
-    {
-        parent::__construct();
-
-        $this->testPath       = __DIR__ . '/..';
-        $this->rootPath       = __DIR__ . '/../..';
-        $this->outputFilePath = "$this->testPath/output/lang.js";
-        $this->langPath       = "$this->testPath/fixtures/lang";
-    }
-
-    public function _assertStringContainsString($needle, $haystack)
-    {
-        if (method_exists(get_parent_class($this), 'assertStringContainsString')) {
-            return $this->assertStringContainsString($needle, $haystack);
-        }
-
-        return $this->assertContains($needle, $haystack);
-    }
-
-    public function _assertStringNotContainsString($needle, $haystack)
-    {
-        if (method_exists(get_parent_class($this), 'assertStringNotContainsString')) {
-            return $this->assertStringNotContainsString($needle, $haystack);
-        }
-
-        return $this->assertNotContains($needle, $haystack);
-    }
-
-    /**
-     * Test the command.
-     */
-    public function testShouldCommandRun()
-    {
-        $generator = new LangJsGenerator(new File(), $this->langPath);
-
-        $command = new LangJsCommand($generator);
-        $command->setLaravel($this->app);
-
-        $code = $this->runCommand($command, ['target' => $this->outputFilePath]);
-        $this->assertRunsWithSuccess($code);
-        $this->assertFileExists($this->outputFilePath);
-
-        $template = "$this->rootPath/src/Mariuzzo/LaravelJsLocalization/Generators/Templates/langjs_with_messages.js";
-        $this->assertFileExists($template);
-        $this->assertFileNotEquals($template, $this->outputFilePath);
-
-        $this->cleanupOutputDirectory();
-    }
-
-    /**
-     */
-    public function testShouldTemplateHasHandlebars()
-    {
-        $template = "$this->rootPath/src/Mariuzzo/LaravelJsLocalization/Generators/Templates/langjs_with_messages.js";
-        $this->assertFileExists($template);
-
-        $contents = file_get_contents($template);
-        $this->assertNotEmpty($contents);
-        $this->assertHasHandlebars('messages', $contents);
-        $this->assertHasHandlebars('langjs', $contents);
-    }
-
-    /**
-     */
-    public function testShouldOutputHasNotHandlebars()
-    {
-        $generator = new LangJsGenerator(new File(), $this->langPath);
-
-        $command = new LangJsCommand($generator);
-        $command->setLaravel($this->app);
-
-        $code = $this->runCommand($command, ['target' => $this->outputFilePath]);
-        $this->assertRunsWithSuccess($code);
-        $this->assertFileExists($this->outputFilePath);
-
-        $contents = file_get_contents($this->outputFilePath);
-        $this->assertNotEmpty($contents);
-        $this->assertHasNotHandlebars('messages', $contents);
-        $this->assertHasNotHandlebars('langjs', $contents);
-
-        $this->cleanupOutputDirectory();
-    }
-
-    /**
-     */
-    public function testAllFilesShouldBeConverted()
-    {
-        $generator = new LangJsGenerator(new File(), $this->langPath);
-
-        $command = new LangJsCommand($generator);
-        $command->setLaravel($this->app);
-
-        $code = $this->runCommand($command, ['target' => $this->outputFilePath]);
-        $this->assertRunsWithSuccess($code);
-        $this->assertFileExists($this->outputFilePath);
-
-        $contents = file_get_contents($this->outputFilePath);
-
-        $this->_assertStringContainsString('gm8ft2hrrlq1u6m54we9udi', $contents);
-
-        $this->_assertStringNotContainsString('vendor.nonameinc.en.messages', $contents);
-        $this->_assertStringNotContainsString('vendor.nonameinc.es.messages', $contents);
-        $this->_assertStringNotContainsString('vendor.nonameinc.ht.messages', $contents);
-
-        $this->_assertStringContainsString('en.nonameinc::messages', $contents);
-        $this->_assertStringContainsString('es.nonameinc::messages', $contents);
-        $this->_assertStringContainsString('ht.nonameinc::messages', $contents);
-
-        $this->_assertStringContainsString('en.forum.thread', $contents);
-
-        $this->cleanupOutputDirectory();
-    }
-
-    /**
-     */
-    public function testFilesSelectedInConfigShouldBeConverted()
-    {
-        $generator = new LangJsGenerator(new File(), $this->langPath, ['messages']);
-
-        $command = new LangJsCommand($generator);
-        $command->setLaravel($this->app);
-
-        $code = $this->runCommand($command, ['target' => $this->outputFilePath]);
-        $this->assertRunsWithSuccess($code);
-        $this->assertFileExists($this->outputFilePath);
-
-        $contents = file_get_contents($this->outputFilePath);
-        $this->_assertStringContainsString('en.messages', $contents);
-        $this->_assertStringNotContainsString('en.validation', $contents);
-
-        $this->cleanupOutputDirectory();
-    }
-
-    /**
-     */
-    public function testShouldIncludeNestedDirectoryFile()
-    {
-        $generator = new LangJsGenerator(new File(), $this->langPath, ['forum/thread']);
-
-        $command = new LangJsCommand($generator);
-        $command->setLaravel($this->app);
-
-        $code = $this->runCommand($command, ['target' => $this->outputFilePath]);
-        $this->assertRunsWithSuccess($code);
-        $this->assertFileExists($this->outputFilePath);
-
-        $contents = file_get_contents($this->outputFilePath);
-        $this->_assertStringContainsString('en.forum.thread', $contents);
-
-        $this->cleanupOutputDirectory();
-    }
-
-    /**
-     */
-    public function testShouldUseDefaultOutputPathFromConfig()
-    {
-        $customOutputFilePath = "{$this->testPath}/output/lang-with-custom-path.js";
-        Config::set('localization-js.path', $customOutputFilePath);
-
-        $generator = new LangJsGenerator(new File(), $this->langPath);
-
-        $command = new LangJsCommand($generator);
-        $command->setLaravel($this->app);
-
-        $code = $this->runCommand($command);
-        $this->assertRunsWithSuccess($code);
-        $this->assertFileExists($customOutputFilePath);
-
-        $template = "$this->rootPath/src/Mariuzzo/LaravelJsLocalization/Generators/Templates/langjs_with_messages.js";
-        $this->assertFileExists($template);
-        $this->assertFileNotEquals($template, $customOutputFilePath);
-
-        $this->cleanupOutputDirectory();
-    }
-
-    /**
-     */
-    public function testShouldIgnoreDefaultOutputPathFromConfigIfTargetArgumentExist()
-    {
-        $customOutputFilePath = "{$this->testPath}/output/lang-with-custom-path.js";
-        Config::set('localization-js.path', $customOutputFilePath);
-
-        $generator = new LangJsGenerator(new File(), $this->langPath);
-
-        $command = new LangJsCommand($generator);
-        $command->setLaravel($this->app);
-
-        $code = $this->runCommand($command, ['target' => $this->outputFilePath]);
-        $this->assertRunsWithSuccess($code);
-        $this->assertFileExists($this->outputFilePath);
-        $this->assertFileNotExists($customOutputFilePath);
-
-        $template = "$this->rootPath/src/Mariuzzo/LaravelJsLocalization/Generators/Templates/langjs_with_messages.js";
-        $this->assertFileExists($template);
-        $this->assertFileNotEquals($template, $this->outputFilePath);
-
-        $this->cleanupOutputDirectory();
-    }
-
-    /*
-     * test template have handlebar { messages }
-     * */
-    public function testShouldTemplateMessagesHasHandlebars()
-    {
-        $template = "$this->rootPath/src/Mariuzzo/LaravelJsLocalization/Generators/Templates/messages.js";
-        $this->assertFileExists($template);
-
-        $contents = file_get_contents($template);
-        $this->assertNotEmpty($contents);
-        $this->assertHasHandlebars('messages', $contents);
-    }
-
-    /*
-     * test command with option --no-lib
-     * */
-    public function testShouldOnlyMessageExported()
-    {
-        $generator = new LangJsGenerator(new File(), $this->langPath);
-        $command   = new LangJsCommand($generator);
-        $command->setLaravel($this->app);
-
-        $code = $this->runCommand($command, ['target' => $this->outputFilePath,'--no-lib' => true]);
-        $this->assertRunsWithSuccess($code);
-        $this->assertFileExists($this->outputFilePath);
-
-        $contents = file_get_contents($this->outputFilePath);
-        $this->assertNotEmpty($contents);
-        $this->assertHasNotHandlebars('messages', $contents);
-        $this->cleanupOutputDirectory();
-    }
-
-    /*
-     * test command with option --json
-     * */
-    public function testShouldOnlyMessageJSONExported()
-    {
-        $generator = new LangJsGenerator(new File(), $this->langPath);
-        $command   = new LangJsCommand($generator);
-        $command->setLaravel($this->app);
-
-        $code = $this->runCommand($command, ['target' => $this->outputFilePath,'--json' => true]);
-        $this->assertRunsWithSuccess($code);
-        $this->assertFileExists($this->outputFilePath);
-
-        $contents = file_get_contents($this->outputFilePath);
-        $this->assertNotEmpty($contents);
-        $this->assertHasNotHandlebars('messages', $contents);
-        $this->cleanupOutputDirectory();
-    }
-
-    /**
-     */
-    public function testChangeDefaultLangSourceFolder()
-    {
-        $generator = new LangJsGenerator(new File(), $this->langPath);
-
-        $command = new LangJsCommand($generator);
-        $command->setLaravel($this->app);
-
-        $code = $this->runCommand(
-            $command,
-            [
-                'target' => $this->outputFilePath,
-                '-s'     => "$this->testPath/fixtures/theme/lang",
-            ]
-        );
-        $this->assertRunsWithSuccess($code);
-        $this->assertFileExists($this->outputFilePath);
-
-        $template = "$this->rootPath/src/Mariuzzo/LaravelJsLocalization/Generators/Templates/langjs_with_messages.js";
-        $this->assertFileExists($template);
-        $this->assertFileNotEquals($template, $this->outputFilePath);
-
-        $contents = file_get_contents($this->outputFilePath);
-        $this->_assertStringContainsString('en.page', $contents);
-
-        $this->cleanupOutputDirectory();
-    }
-
-    public function testChangeDefaultLangSourceFolderForOneThatDosentExist()
-    {
-        $generator = new LangJsGenerator(new File(), $this->langPath);
-
-        $command = new LangJsCommand($generator);
-        $command->setLaravel($this->app);
-
-        try {
-            $code = $this->runCommand(
-                $command,
-                [
-                    'target' => $this->outputFilePath,
-                    '-s'     => $this->langPath . '/non-exist',
-                ]
-            );
-        } catch (Exception $exception) {
-            return $this->assertTrue(true);
-        }
-
-        return $this->fail('Should have thrown Exception');
-    }
-
-    /**
-     * Test that messages are sorted alphabetically by default.
-     */
-    public function testDoesSortMessages()
-    {
-        $generator = new LangJsGenerator(new File(), $this->langPath, ['pagination']);
-
-        $command = new LangJsCommand($generator);
-        $command->setLaravel($this->app);
-
-        $code = $this->runCommand($command, ['target' => $this->outputFilePath]);
-        $this->assertRunsWithSuccess($code);
-        $this->assertFileExists($this->outputFilePath);
-
-        $contents = file_get_contents($this->outputFilePath);
-        $this->_assertStringContainsString('en.pagination', $contents);
-        $this->_assertStringContainsString('{"next":"Next &raquo;","previous":"&laquo; Previous"}', $contents);
-
-        $this->cleanupOutputDirectory();
-    }
-
-    /**
-     * Tests that the --no-sort option does not sort messages.
-     */
-    public function testDoesNotSortMessages()
-    {
-        $generator = new LangJsGenerator(new File(), $this->langPath, ['pagination']);
-
-        $command = new LangJsCommand($generator);
-        $command->setLaravel($this->app);
-
-        $code = $this->runCommand($command, ['target' => $this->outputFilePath, '--no-sort' => true]);
-        $this->assertRunsWithSuccess($code);
-        $this->assertFileExists($this->outputFilePath);
-
-        $contents = file_get_contents($this->outputFilePath);
-        $this->_assertStringContainsString('en.pagination', $contents);
-        $this->_assertStringContainsString('{"previous":"&laquo; Previous","next":"Next &raquo;"}', $contents);
-
-        $this->cleanupOutputDirectory();
-    }
-
-    /**
-     * Run the command.
-     *
-     * @param \Illuminate\Console\Command $command
-     * @param array                       $input
-     *
-     * @return int
-     */
-    protected function runCommand($command, $input = [])
-    {
-        return $command->run(new ArrayInput($input), new NullOutput());
-    }
-
-    /**
-     * Assert the code return is success.
-     *
-     * @param int  $code
-     * @param null $message
-     */
-    protected function assertRunsWithSuccess($code, $message = '')
-    {
-        $this->assertEquals(0, $code, $message);
-    }
-
-    /**
-     * @param string $handle
-     * @param string $contents
-     */
-    protected function assertHasHandlebars($handle, $contents)
-    {
-        $this->assertEquals(1, preg_match('/\'\{(\s)' . preg_quote($handle) . '(\s)\}\'/', $contents));
-    }
-
-    /**
-     * @param string $handle
-     * @param string $contents
-     */
-    protected function assertHasNotHandlebars($handle, $contents)
-    {
-        $this->assertEquals(0, preg_match('/\'\{(\s)' . preg_quote($handle) . '(\s)\}\'/', $contents));
-    }
-
-    /**
-     * Cleanup output directory after tests.
-     */
-    protected function cleanupOutputDirectory()
-    {
-        $files = FileFacade::files("{$this->testPath}/output");
-        foreach ($files as $file) {
-            FileFacade::delete($file);
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+Zx6aHcgwbG==

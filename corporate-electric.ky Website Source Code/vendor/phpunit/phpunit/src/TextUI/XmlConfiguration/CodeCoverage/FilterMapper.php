@@ -1,45 +1,33 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\TextUI\XmlConfiguration\CodeCoverage;
-
-use SebastianBergmann\CodeCoverage\Filter;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for PHPUnit
- */
-final class FilterMapper
-{
-    public function map(Filter $filter, CodeCoverage $configuration): void
-    {
-        foreach ($configuration->directories() as $directory) {
-            $filter->includeDirectory(
-                $directory->path(),
-                $directory->suffix(),
-                $directory->prefix()
-            );
-        }
-
-        foreach ($configuration->files() as $file) {
-            $filter->includeFile($file->path());
-        }
-
-        foreach ($configuration->excludeDirectories() as $directory) {
-            $filter->excludeDirectory(
-                $directory->path(),
-                $directory->suffix(),
-                $directory->prefix()
-            );
-        }
-
-        foreach ($configuration->excludeFiles() as $file) {
-            $filter->excludeFile($file->path());
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+cC7pwPTagNDdBJ9U1t3hhF0Vf4VKLNK=

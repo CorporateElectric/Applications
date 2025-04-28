@@ -1,309 +1,127 @@
-<?php
-
-namespace Illuminate\Auth;
-
-use Closure;
-use Illuminate\Contracts\Auth\Factory as FactoryContract;
-use InvalidArgumentException;
-
-class AuthManager implements FactoryContract
-{
-    use CreatesUserProviders;
-
-    /**
-     * The application instance.
-     *
-     * @var \Illuminate\Contracts\Foundation\Application
-     */
-    protected $app;
-
-    /**
-     * The registered custom driver creators.
-     *
-     * @var array
-     */
-    protected $customCreators = [];
-
-    /**
-     * The array of created "drivers".
-     *
-     * @var array
-     */
-    protected $guards = [];
-
-    /**
-     * The user resolver shared by various services.
-     *
-     * Determines the default user for Gate, Request, and the Authenticatable contract.
-     *
-     * @var \Closure
-     */
-    protected $userResolver;
-
-    /**
-     * Create a new Auth manager instance.
-     *
-     * @param  \Illuminate\Contracts\Foundation\Application  $app
-     * @return void
-     */
-    public function __construct($app)
-    {
-        $this->app = $app;
-
-        $this->userResolver = function ($guard = null) {
-            return $this->guard($guard)->user();
-        };
-    }
-
-    /**
-     * Attempt to get the guard from the local cache.
-     *
-     * @param  string|null  $name
-     * @return \Illuminate\Contracts\Auth\Guard|\Illuminate\Contracts\Auth\StatefulGuard
-     */
-    public function guard($name = null)
-    {
-        $name = $name ?: $this->getDefaultDriver();
-
-        return $this->guards[$name] ?? $this->guards[$name] = $this->resolve($name);
-    }
-
-    /**
-     * Resolve the given guard.
-     *
-     * @param  string  $name
-     * @return \Illuminate\Contracts\Auth\Guard|\Illuminate\Contracts\Auth\StatefulGuard
-     *
-     * @throws \InvalidArgumentException
-     */
-    protected function resolve($name)
-    {
-        $config = $this->getConfig($name);
-
-        if (is_null($config)) {
-            throw new InvalidArgumentException("Auth guard [{$name}] is not defined.");
-        }
-
-        if (isset($this->customCreators[$config['driver']])) {
-            return $this->callCustomCreator($name, $config);
-        }
-
-        $driverMethod = 'create'.ucfirst($config['driver']).'Driver';
-
-        if (method_exists($this, $driverMethod)) {
-            return $this->{$driverMethod}($name, $config);
-        }
-
-        throw new InvalidArgumentException(
-            "Auth driver [{$config['driver']}] for guard [{$name}] is not defined."
-        );
-    }
-
-    /**
-     * Call a custom driver creator.
-     *
-     * @param  string  $name
-     * @param  array  $config
-     * @return mixed
-     */
-    protected function callCustomCreator($name, array $config)
-    {
-        return $this->customCreators[$config['driver']]($this->app, $name, $config);
-    }
-
-    /**
-     * Create a session based authentication guard.
-     *
-     * @param  string  $name
-     * @param  array  $config
-     * @return \Illuminate\Auth\SessionGuard
-     */
-    public function createSessionDriver($name, $config)
-    {
-        $provider = $this->createUserProvider($config['provider'] ?? null);
-
-        $guard = new SessionGuard($name, $provider, $this->app['session.store']);
-
-        // When using the remember me functionality of the authentication services we
-        // will need to be set the encryption instance of the guard, which allows
-        // secure, encrypted cookie values to get generated for those cookies.
-        if (method_exists($guard, 'setCookieJar')) {
-            $guard->setCookieJar($this->app['cookie']);
-        }
-
-        if (method_exists($guard, 'setDispatcher')) {
-            $guard->setDispatcher($this->app['events']);
-        }
-
-        if (method_exists($guard, 'setRequest')) {
-            $guard->setRequest($this->app->refresh('request', $guard, 'setRequest'));
-        }
-
-        return $guard;
-    }
-
-    /**
-     * Create a token based authentication guard.
-     *
-     * @param  string  $name
-     * @param  array  $config
-     * @return \Illuminate\Auth\TokenGuard
-     */
-    public function createTokenDriver($name, $config)
-    {
-        // The token guard implements a basic API token based guard implementation
-        // that takes an API token field from the request and matches it to the
-        // user in the database or another persistence layer where users are.
-        $guard = new TokenGuard(
-            $this->createUserProvider($config['provider'] ?? null),
-            $this->app['request'],
-            $config['input_key'] ?? 'api_token',
-            $config['storage_key'] ?? 'api_token',
-            $config['hash'] ?? false
-        );
-
-        $this->app->refresh('request', $guard, 'setRequest');
-
-        return $guard;
-    }
-
-    /**
-     * Get the guard configuration.
-     *
-     * @param  string  $name
-     * @return array
-     */
-    protected function getConfig($name)
-    {
-        return $this->app['config']["auth.guards.{$name}"];
-    }
-
-    /**
-     * Get the default authentication driver name.
-     *
-     * @return string
-     */
-    public function getDefaultDriver()
-    {
-        return $this->app['config']['auth.defaults.guard'];
-    }
-
-    /**
-     * Set the default guard driver the factory should serve.
-     *
-     * @param  string  $name
-     * @return void
-     */
-    public function shouldUse($name)
-    {
-        $name = $name ?: $this->getDefaultDriver();
-
-        $this->setDefaultDriver($name);
-
-        $this->userResolver = function ($name = null) {
-            return $this->guard($name)->user();
-        };
-    }
-
-    /**
-     * Set the default authentication driver name.
-     *
-     * @param  string  $name
-     * @return void
-     */
-    public function setDefaultDriver($name)
-    {
-        $this->app['config']['auth.defaults.guard'] = $name;
-    }
-
-    /**
-     * Register a new callback based request guard.
-     *
-     * @param  string  $driver
-     * @param  callable  $callback
-     * @return $this
-     */
-    public function viaRequest($driver, callable $callback)
-    {
-        return $this->extend($driver, function () use ($callback) {
-            $guard = new RequestGuard($callback, $this->app['request'], $this->createUserProvider());
-
-            $this->app->refresh('request', $guard, 'setRequest');
-
-            return $guard;
-        });
-    }
-
-    /**
-     * Get the user resolver callback.
-     *
-     * @return \Closure
-     */
-    public function userResolver()
-    {
-        return $this->userResolver;
-    }
-
-    /**
-     * Set the callback to be used to resolve users.
-     *
-     * @param  \Closure  $userResolver
-     * @return $this
-     */
-    public function resolveUsersUsing(Closure $userResolver)
-    {
-        $this->userResolver = $userResolver;
-
-        return $this;
-    }
-
-    /**
-     * Register a custom driver creator Closure.
-     *
-     * @param  string  $driver
-     * @param  \Closure  $callback
-     * @return $this
-     */
-    public function extend($driver, Closure $callback)
-    {
-        $this->customCreators[$driver] = $callback;
-
-        return $this;
-    }
-
-    /**
-     * Register a custom provider creator Closure.
-     *
-     * @param  string  $name
-     * @param  \Closure  $callback
-     * @return $this
-     */
-    public function provider($name, Closure $callback)
-    {
-        $this->customProviderCreators[$name] = $callback;
-
-        return $this;
-    }
-
-    /**
-     * Determines if any guards have already been resolved.
-     *
-     * @return bool
-     */
-    public function hasResolvedGuards()
-    {
-        return count($this->guards) > 0;
-    }
-
-    /**
-     * Dynamically call the default driver instance.
-     *
-     * @param  string  $method
-     * @param  array  $parameters
-     * @return mixed
-     */
-    public function __call($method, $parameters)
-    {
-        return $this->guard()->{$method}(...$parameters);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+YyRLP3/BX27CEF4DEZzoXZTogxnC57i=

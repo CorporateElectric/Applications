@@ -1,316 +1,139 @@
-<?php
-
-namespace Illuminate\Console;
-
-use Closure;
-use Illuminate\Console\Events\ArtisanStarting;
-use Illuminate\Console\Events\CommandFinished;
-use Illuminate\Console\Events\CommandStarting;
-use Illuminate\Contracts\Console\Application as ApplicationContract;
-use Illuminate\Contracts\Container\Container;
-use Illuminate\Contracts\Events\Dispatcher;
-use Illuminate\Support\ProcessUtils;
-use Symfony\Component\Console\Application as SymfonyApplication;
-use Symfony\Component\Console\Command\Command as SymfonyCommand;
-use Symfony\Component\Console\Exception\CommandNotFoundException;
-use Symfony\Component\Console\Input\ArgvInput;
-use Symfony\Component\Console\Input\ArrayInput;
-use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Input\StringInput;
-use Symfony\Component\Console\Output\BufferedOutput;
-use Symfony\Component\Console\Output\ConsoleOutput;
-use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Process\PhpExecutableFinder;
-
-class Application extends SymfonyApplication implements ApplicationContract
-{
-    /**
-     * The Laravel application instance.
-     *
-     * @var \Illuminate\Contracts\Container\Container
-     */
-    protected $laravel;
-
-    /**
-     * The output from the previous command.
-     *
-     * @var \Symfony\Component\Console\Output\BufferedOutput
-     */
-    protected $lastOutput;
-
-    /**
-     * The console application bootstrappers.
-     *
-     * @var array
-     */
-    protected static $bootstrappers = [];
-
-    /**
-     * The Event Dispatcher.
-     *
-     * @var \Illuminate\Contracts\Events\Dispatcher
-     */
-    protected $events;
-
-    /**
-     * Create a new Artisan console application.
-     *
-     * @param  \Illuminate\Contracts\Container\Container  $laravel
-     * @param  \Illuminate\Contracts\Events\Dispatcher  $events
-     * @param  string  $version
-     * @return void
-     */
-    public function __construct(Container $laravel, Dispatcher $events, $version)
-    {
-        parent::__construct('Laravel Framework', $version);
-
-        $this->laravel = $laravel;
-        $this->events = $events;
-        $this->setAutoExit(false);
-        $this->setCatchExceptions(false);
-
-        $this->events->dispatch(new ArtisanStarting($this));
-
-        $this->bootstrap();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function run(InputInterface $input = null, OutputInterface $output = null)
-    {
-        $commandName = $this->getCommandName(
-            $input = $input ?: new ArgvInput
-        );
-
-        $this->events->dispatch(
-            new CommandStarting(
-                $commandName, $input, $output = $output ?: new ConsoleOutput
-            )
-        );
-
-        $exitCode = parent::run($input, $output);
-
-        $this->events->dispatch(
-            new CommandFinished($commandName, $input, $output, $exitCode)
-        );
-
-        return $exitCode;
-    }
-
-    /**
-     * Determine the proper PHP executable.
-     *
-     * @return string
-     */
-    public static function phpBinary()
-    {
-        return ProcessUtils::escapeArgument((new PhpExecutableFinder)->find(false));
-    }
-
-    /**
-     * Determine the proper Artisan executable.
-     *
-     * @return string
-     */
-    public static function artisanBinary()
-    {
-        return defined('ARTISAN_BINARY') ? ProcessUtils::escapeArgument(ARTISAN_BINARY) : 'artisan';
-    }
-
-    /**
-     * Format the given command as a fully-qualified executable command.
-     *
-     * @param  string  $string
-     * @return string
-     */
-    public static function formatCommandString($string)
-    {
-        return sprintf('%s %s %s', static::phpBinary(), static::artisanBinary(), $string);
-    }
-
-    /**
-     * Register a console "starting" bootstrapper.
-     *
-     * @param  \Closure  $callback
-     * @return void
-     */
-    public static function starting(Closure $callback)
-    {
-        static::$bootstrappers[] = $callback;
-    }
-
-    /**
-     * Bootstrap the console application.
-     *
-     * @return void
-     */
-    protected function bootstrap()
-    {
-        foreach (static::$bootstrappers as $bootstrapper) {
-            $bootstrapper($this);
-        }
-    }
-
-    /**
-     * Clear the console application bootstrappers.
-     *
-     * @return void
-     */
-    public static function forgetBootstrappers()
-    {
-        static::$bootstrappers = [];
-    }
-
-    /**
-     * Run an Artisan console command by name.
-     *
-     * @param  string  $command
-     * @param  array  $parameters
-     * @param  \Symfony\Component\Console\Output\OutputInterface|null  $outputBuffer
-     * @return int
-     *
-     * @throws \Symfony\Component\Console\Exception\CommandNotFoundException
-     */
-    public function call($command, array $parameters = [], $outputBuffer = null)
-    {
-        [$command, $input] = $this->parseCommand($command, $parameters);
-
-        if (! $this->has($command)) {
-            throw new CommandNotFoundException(sprintf('The command "%s" does not exist.', $command));
-        }
-
-        return $this->run(
-            $input, $this->lastOutput = $outputBuffer ?: new BufferedOutput
-        );
-    }
-
-    /**
-     * Parse the incoming Artisan command and its input.
-     *
-     * @param  string  $command
-     * @param  array  $parameters
-     * @return array
-     */
-    protected function parseCommand($command, $parameters)
-    {
-        if (is_subclass_of($command, SymfonyCommand::class)) {
-            $callingClass = true;
-
-            $command = $this->laravel->make($command)->getName();
-        }
-
-        if (! isset($callingClass) && empty($parameters)) {
-            $command = $this->getCommandName($input = new StringInput($command));
-        } else {
-            array_unshift($parameters, $command);
-
-            $input = new ArrayInput($parameters);
-        }
-
-        return [$command, $input ?? null];
-    }
-
-    /**
-     * Get the output for the last run command.
-     *
-     * @return string
-     */
-    public function output()
-    {
-        return $this->lastOutput && method_exists($this->lastOutput, 'fetch')
-                        ? $this->lastOutput->fetch()
-                        : '';
-    }
-
-    /**
-     * Add a command to the console.
-     *
-     * @param  \Symfony\Component\Console\Command\Command  $command
-     * @return \Symfony\Component\Console\Command\Command
-     */
-    public function add(SymfonyCommand $command)
-    {
-        if ($command instanceof Command) {
-            $command->setLaravel($this->laravel);
-        }
-
-        return $this->addToParent($command);
-    }
-
-    /**
-     * Add the command to the parent instance.
-     *
-     * @param  \Symfony\Component\Console\Command\Command  $command
-     * @return \Symfony\Component\Console\Command\Command
-     */
-    protected function addToParent(SymfonyCommand $command)
-    {
-        return parent::add($command);
-    }
-
-    /**
-     * Add a command, resolving through the application.
-     *
-     * @param  string  $command
-     * @return \Symfony\Component\Console\Command\Command
-     */
-    public function resolve($command)
-    {
-        return $this->add($this->laravel->make($command));
-    }
-
-    /**
-     * Resolve an array of commands through the application.
-     *
-     * @param  array|mixed  $commands
-     * @return $this
-     */
-    public function resolveCommands($commands)
-    {
-        $commands = is_array($commands) ? $commands : func_get_args();
-
-        foreach ($commands as $command) {
-            $this->resolve($command);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Get the default input definition for the application.
-     *
-     * This is used to add the --env option to every available command.
-     *
-     * @return \Symfony\Component\Console\Input\InputDefinition
-     */
-    protected function getDefaultInputDefinition()
-    {
-        return tap(parent::getDefaultInputDefinition(), function ($definition) {
-            $definition->addOption($this->getEnvironmentOption());
-        });
-    }
-
-    /**
-     * Get the global environment option for the definition.
-     *
-     * @return \Symfony\Component\Console\Input\InputOption
-     */
-    protected function getEnvironmentOption()
-    {
-        $message = 'The environment the command should run under';
-
-        return new InputOption('--env', null, InputOption::VALUE_OPTIONAL, $message);
-    }
-
-    /**
-     * Get the Laravel application instance.
-     *
-     * @return \Illuminate\Contracts\Foundation\Application
-     */
-    public function getLaravel()
-    {
-        return $this->laravel;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

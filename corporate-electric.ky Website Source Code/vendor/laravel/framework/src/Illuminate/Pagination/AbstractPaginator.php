@@ -1,750 +1,190 @@
-<?php
-
-namespace Illuminate\Pagination;
-
-use Closure;
-use Illuminate\Contracts\Support\Htmlable;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Collection;
-use Illuminate\Support\Str;
-use Illuminate\Support\Traits\ForwardsCalls;
-
-/**
- * @mixin \Illuminate\Support\Collection
- */
-abstract class AbstractPaginator implements Htmlable
-{
-    use ForwardsCalls;
-
-    /**
-     * All of the items being paginated.
-     *
-     * @var \Illuminate\Support\Collection
-     */
-    protected $items;
-
-    /**
-     * The number of items to be shown per page.
-     *
-     * @var int
-     */
-    protected $perPage;
-
-    /**
-     * The current page being "viewed".
-     *
-     * @var int
-     */
-    protected $currentPage;
-
-    /**
-     * The base path to assign to all URLs.
-     *
-     * @var string
-     */
-    protected $path = '/';
-
-    /**
-     * The query parameters to add to all URLs.
-     *
-     * @var array
-     */
-    protected $query = [];
-
-    /**
-     * The URL fragment to add to all URLs.
-     *
-     * @var string|null
-     */
-    protected $fragment;
-
-    /**
-     * The query string variable used to store the page.
-     *
-     * @var string
-     */
-    protected $pageName = 'page';
-
-    /**
-     * The number of links to display on each side of current page link.
-     *
-     * @var int
-     */
-    public $onEachSide = 3;
-
-    /**
-     * The paginator options.
-     *
-     * @var array
-     */
-    protected $options;
-
-    /**
-     * The current path resolver callback.
-     *
-     * @var \Closure
-     */
-    protected static $currentPathResolver;
-
-    /**
-     * The current page resolver callback.
-     *
-     * @var \Closure
-     */
-    protected static $currentPageResolver;
-
-    /**
-     * The query string resolver callback.
-     *
-     * @var \Closure
-     */
-    protected static $queryStringResolver;
-
-    /**
-     * The view factory resolver callback.
-     *
-     * @var \Closure
-     */
-    protected static $viewFactoryResolver;
-
-    /**
-     * The default pagination view.
-     *
-     * @var string
-     */
-    public static $defaultView = 'pagination::tailwind';
-
-    /**
-     * The default "simple" pagination view.
-     *
-     * @var string
-     */
-    public static $defaultSimpleView = 'pagination::simple-tailwind';
-
-    /**
-     * Determine if the given value is a valid page number.
-     *
-     * @param  int  $page
-     * @return bool
-     */
-    protected function isValidPageNumber($page)
-    {
-        return $page >= 1 && filter_var($page, FILTER_VALIDATE_INT) !== false;
-    }
-
-    /**
-     * Get the URL for the previous page.
-     *
-     * @return string|null
-     */
-    public function previousPageUrl()
-    {
-        if ($this->currentPage() > 1) {
-            return $this->url($this->currentPage() - 1);
-        }
-    }
-
-    /**
-     * Create a range of pagination URLs.
-     *
-     * @param  int  $start
-     * @param  int  $end
-     * @return array
-     */
-    public function getUrlRange($start, $end)
-    {
-        return collect(range($start, $end))->mapWithKeys(function ($page) {
-            return [$page => $this->url($page)];
-        })->all();
-    }
-
-    /**
-     * Get the URL for a given page number.
-     *
-     * @param  int  $page
-     * @return string
-     */
-    public function url($page)
-    {
-        if ($page <= 0) {
-            $page = 1;
-        }
-
-        // If we have any extra query string key / value pairs that need to be added
-        // onto the URL, we will put them in query string form and then attach it
-        // to the URL. This allows for extra information like sortings storage.
-        $parameters = [$this->pageName => $page];
-
-        if (count($this->query) > 0) {
-            $parameters = array_merge($this->query, $parameters);
-        }
-
-        return $this->path()
-                        .(Str::contains($this->path(), '?') ? '&' : '?')
-                        .Arr::query($parameters)
-                        .$this->buildFragment();
-    }
-
-    /**
-     * Get / set the URL fragment to be appended to URLs.
-     *
-     * @param  string|null  $fragment
-     * @return $this|string|null
-     */
-    public function fragment($fragment = null)
-    {
-        if (is_null($fragment)) {
-            return $this->fragment;
-        }
-
-        $this->fragment = $fragment;
-
-        return $this;
-    }
-
-    /**
-     * Add a set of query string values to the paginator.
-     *
-     * @param  array|string|null  $key
-     * @param  string|null  $value
-     * @return $this
-     */
-    public function appends($key, $value = null)
-    {
-        if (is_null($key)) {
-            return $this;
-        }
-
-        if (is_array($key)) {
-            return $this->appendArray($key);
-        }
-
-        return $this->addQuery($key, $value);
-    }
-
-    /**
-     * Add an array of query string values.
-     *
-     * @param  array  $keys
-     * @return $this
-     */
-    protected function appendArray(array $keys)
-    {
-        foreach ($keys as $key => $value) {
-            $this->addQuery($key, $value);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Add all current query string values to the paginator.
-     *
-     * @return $this
-     */
-    public function withQueryString()
-    {
-        if (isset(static::$queryStringResolver)) {
-            return $this->appends(call_user_func(static::$queryStringResolver));
-        }
-
-        return $this;
-    }
-
-    /**
-     * Add a query string value to the paginator.
-     *
-     * @param  string  $key
-     * @param  string  $value
-     * @return $this
-     */
-    protected function addQuery($key, $value)
-    {
-        if ($key !== $this->pageName) {
-            $this->query[$key] = $value;
-        }
-
-        return $this;
-    }
-
-    /**
-     * Build the full fragment portion of a URL.
-     *
-     * @return string
-     */
-    protected function buildFragment()
-    {
-        return $this->fragment ? '#'.$this->fragment : '';
-    }
-
-    /**
-     * Load a set of relationships onto the mixed relationship collection.
-     *
-     * @param  string  $relation
-     * @param  array  $relations
-     * @return $this
-     */
-    public function loadMorph($relation, $relations)
-    {
-        $this->getCollection()->loadMorph($relation, $relations);
-
-        return $this;
-    }
-
-    /**
-     * Load a set of relationship counts onto the mixed relationship collection.
-     *
-     * @param  string  $relation
-     * @param  array  $relations
-     * @return $this
-     */
-    public function loadMorphCount($relation, $relations)
-    {
-        $this->getCollection()->loadMorphCount($relation, $relations);
-
-        return $this;
-    }
-
-    /**
-     * Get the slice of items being paginated.
-     *
-     * @return array
-     */
-    public function items()
-    {
-        return $this->items->all();
-    }
-
-    /**
-     * Get the number of the first item in the slice.
-     *
-     * @return int
-     */
-    public function firstItem()
-    {
-        return count($this->items) > 0 ? ($this->currentPage - 1) * $this->perPage + 1 : null;
-    }
-
-    /**
-     * Get the number of the last item in the slice.
-     *
-     * @return int
-     */
-    public function lastItem()
-    {
-        return count($this->items) > 0 ? $this->firstItem() + $this->count() - 1 : null;
-    }
-
-    /**
-     * Transform each item in the slice of items using a callback.
-     *
-     * @param  callable  $callback
-     * @return $this
-     */
-    public function through(callable $callback)
-    {
-        $this->items->transform($callback);
-
-        return $this;
-    }
-
-    /**
-     * Get the number of items shown per page.
-     *
-     * @return int
-     */
-    public function perPage()
-    {
-        return $this->perPage;
-    }
-
-    /**
-     * Determine if there are enough items to split into multiple pages.
-     *
-     * @return bool
-     */
-    public function hasPages()
-    {
-        return $this->currentPage() != 1 || $this->hasMorePages();
-    }
-
-    /**
-     * Determine if the paginator is on the first page.
-     *
-     * @return bool
-     */
-    public function onFirstPage()
-    {
-        return $this->currentPage() <= 1;
-    }
-
-    /**
-     * Get the current page.
-     *
-     * @return int
-     */
-    public function currentPage()
-    {
-        return $this->currentPage;
-    }
-
-    /**
-     * Get the query string variable used to store the page.
-     *
-     * @return string
-     */
-    public function getPageName()
-    {
-        return $this->pageName;
-    }
-
-    /**
-     * Set the query string variable used to store the page.
-     *
-     * @param  string  $name
-     * @return $this
-     */
-    public function setPageName($name)
-    {
-        $this->pageName = $name;
-
-        return $this;
-    }
-
-    /**
-     * Set the base path to assign to all URLs.
-     *
-     * @param  string  $path
-     * @return $this
-     */
-    public function withPath($path)
-    {
-        return $this->setPath($path);
-    }
-
-    /**
-     * Set the base path to assign to all URLs.
-     *
-     * @param  string  $path
-     * @return $this
-     */
-    public function setPath($path)
-    {
-        $this->path = $path;
-
-        return $this;
-    }
-
-    /**
-     * Set the number of links to display on each side of current page link.
-     *
-     * @param  int  $count
-     * @return $this
-     */
-    public function onEachSide($count)
-    {
-        $this->onEachSide = $count;
-
-        return $this;
-    }
-
-    /**
-     * Get the base path for paginator generated URLs.
-     *
-     * @return string|null
-     */
-    public function path()
-    {
-        return $this->path;
-    }
-
-    /**
-     * Resolve the current request path or return the default value.
-     *
-     * @param  string  $default
-     * @return string
-     */
-    public static function resolveCurrentPath($default = '/')
-    {
-        if (isset(static::$currentPathResolver)) {
-            return call_user_func(static::$currentPathResolver);
-        }
-
-        return $default;
-    }
-
-    /**
-     * Set the current request path resolver callback.
-     *
-     * @param  \Closure  $resolver
-     * @return void
-     */
-    public static function currentPathResolver(Closure $resolver)
-    {
-        static::$currentPathResolver = $resolver;
-    }
-
-    /**
-     * Resolve the current page or return the default value.
-     *
-     * @param  string  $pageName
-     * @param  int  $default
-     * @return int
-     */
-    public static function resolveCurrentPage($pageName = 'page', $default = 1)
-    {
-        if (isset(static::$currentPageResolver)) {
-            return call_user_func(static::$currentPageResolver, $pageName);
-        }
-
-        return $default;
-    }
-
-    /**
-     * Set the current page resolver callback.
-     *
-     * @param  \Closure  $resolver
-     * @return void
-     */
-    public static function currentPageResolver(Closure $resolver)
-    {
-        static::$currentPageResolver = $resolver;
-    }
-
-    /**
-     * Set with query string resolver callback.
-     *
-     * @param  \Closure  $resolver
-     * @return void
-     */
-    public static function queryStringResolver(Closure $resolver)
-    {
-        static::$queryStringResolver = $resolver;
-    }
-
-    /**
-     * Get an instance of the view factory from the resolver.
-     *
-     * @return \Illuminate\Contracts\View\Factory
-     */
-    public static function viewFactory()
-    {
-        return call_user_func(static::$viewFactoryResolver);
-    }
-
-    /**
-     * Set the view factory resolver callback.
-     *
-     * @param  \Closure  $resolver
-     * @return void
-     */
-    public static function viewFactoryResolver(Closure $resolver)
-    {
-        static::$viewFactoryResolver = $resolver;
-    }
-
-    /**
-     * Set the default pagination view.
-     *
-     * @param  string  $view
-     * @return void
-     */
-    public static function defaultView($view)
-    {
-        static::$defaultView = $view;
-    }
-
-    /**
-     * Set the default "simple" pagination view.
-     *
-     * @param  string  $view
-     * @return void
-     */
-    public static function defaultSimpleView($view)
-    {
-        static::$defaultSimpleView = $view;
-    }
-
-    /**
-     * Indicate that Tailwind styling should be used for generated links.
-     *
-     * @return void
-     */
-    public static function useTailwind()
-    {
-        static::defaultView('pagination::tailwind');
-        static::defaultSimpleView('pagination::simple-tailwind');
-    }
-
-    /**
-     * Indicate that Bootstrap 4 styling should be used for generated links.
-     *
-     * @return void
-     */
-    public static function useBootstrap()
-    {
-        static::defaultView('pagination::bootstrap-4');
-        static::defaultSimpleView('pagination::simple-bootstrap-4');
-    }
-
-    /**
-     * Indicate that Bootstrap 3 styling should be used for generated links.
-     *
-     * @return void
-     */
-    public static function useBootstrapThree()
-    {
-        static::defaultView('pagination::default');
-        static::defaultSimpleView('pagination::simple-default');
-    }
-
-    /**
-     * Get an iterator for the items.
-     *
-     * @return \ArrayIterator
-     */
-    public function getIterator()
-    {
-        return $this->items->getIterator();
-    }
-
-    /**
-     * Determine if the list of items is empty.
-     *
-     * @return bool
-     */
-    public function isEmpty()
-    {
-        return $this->items->isEmpty();
-    }
-
-    /**
-     * Determine if the list of items is not empty.
-     *
-     * @return bool
-     */
-    public function isNotEmpty()
-    {
-        return $this->items->isNotEmpty();
-    }
-
-    /**
-     * Get the number of items for the current page.
-     *
-     * @return int
-     */
-    public function count()
-    {
-        return $this->items->count();
-    }
-
-    /**
-     * Get the paginator's underlying collection.
-     *
-     * @return \Illuminate\Support\Collection
-     */
-    public function getCollection()
-    {
-        return $this->items;
-    }
-
-    /**
-     * Set the paginator's underlying collection.
-     *
-     * @param  \Illuminate\Support\Collection  $collection
-     * @return $this
-     */
-    public function setCollection(Collection $collection)
-    {
-        $this->items = $collection;
-
-        return $this;
-    }
-
-    /**
-     * Get the paginator options.
-     *
-     * @return array
-     */
-    public function getOptions()
-    {
-        return $this->options;
-    }
-
-    /**
-     * Determine if the given item exists.
-     *
-     * @param  mixed  $key
-     * @return bool
-     */
-    public function offsetExists($key)
-    {
-        return $this->items->has($key);
-    }
-
-    /**
-     * Get the item at the given offset.
-     *
-     * @param  mixed  $key
-     * @return mixed
-     */
-    public function offsetGet($key)
-    {
-        return $this->items->get($key);
-    }
-
-    /**
-     * Set the item at the given offset.
-     *
-     * @param  mixed  $key
-     * @param  mixed  $value
-     * @return void
-     */
-    public function offsetSet($key, $value)
-    {
-        $this->items->put($key, $value);
-    }
-
-    /**
-     * Unset the item at the given key.
-     *
-     * @param  mixed  $key
-     * @return void
-     */
-    public function offsetUnset($key)
-    {
-        $this->items->forget($key);
-    }
-
-    /**
-     * Render the contents of the paginator to HTML.
-     *
-     * @return string
-     */
-    public function toHtml()
-    {
-        return (string) $this->render();
-    }
-
-    /**
-     * Make dynamic calls into the collection.
-     *
-     * @param  string  $method
-     * @param  array  $parameters
-     * @return mixed
-     */
-    public function __call($method, $parameters)
-    {
-        return $this->forwardCallTo($this->getCollection(), $method, $parameters);
-    }
-
-    /**
-     * Render the contents of the paginator when casting to string.
-     *
-     * @return string
-     */
-    public function __toString()
-    {
-        return (string) $this->render();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

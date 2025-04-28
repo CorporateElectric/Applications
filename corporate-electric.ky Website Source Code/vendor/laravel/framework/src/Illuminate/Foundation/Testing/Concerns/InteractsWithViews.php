@@ -1,79 +1,57 @@
-<?php
-
-namespace Illuminate\Foundation\Testing\Concerns;
-
-use Illuminate\Support\Facades\View as ViewFacade;
-use Illuminate\Support\MessageBag;
-use Illuminate\Support\Str;
-use Illuminate\Support\ViewErrorBag;
-use Illuminate\Testing\TestView;
-use Illuminate\View\View;
-
-trait InteractsWithViews
-{
-    /**
-     * Create a new TestView from the given view.
-     *
-     * @param  string  $view
-     * @param  \Illuminate\Contracts\Support\Arrayable|array  $data
-     * @return \Illuminate\Testing\TestView
-     */
-    protected function view(string $view, array $data = [])
-    {
-        return new TestView(view($view, $data));
-    }
-
-    /**
-     * Render the contents of the given Blade template string.
-     *
-     * @param  string  $template
-     * @param  \Illuminate\Contracts\Support\Arrayable|array  $data
-     * @return \Illuminate\Testing\TestView
-     */
-    protected function blade(string $template, array $data = [])
-    {
-        $tempDirectory = sys_get_temp_dir();
-
-        if (! in_array($tempDirectory, ViewFacade::getFinder()->getPaths())) {
-            ViewFacade::addLocation(sys_get_temp_dir());
-        }
-
-        $tempFile = tempnam($tempDirectory, 'laravel-blade').'.blade.php';
-
-        file_put_contents($tempFile, $template);
-
-        return new TestView(view(Str::before(basename($tempFile), '.blade.php'), $data));
-    }
-
-    /**
-     * Render the given view component.
-     *
-     * @param  string  $componentClass
-     * @param  \Illuminate\Contracts\Support\Arrayable|array  $data
-     * @return \Illuminate\Testing\TestView
-     */
-    protected function component(string $componentClass, array $data = [])
-    {
-        $component = $this->app->make($componentClass, $data);
-
-        $view = $component->resolveView();
-
-        return $view instanceof View
-                ? new TestView($view->with($component->data()))
-                : new TestView(view($view, $component->data()));
-    }
-
-    /**
-     * Populate the shared view error bag with the given errors.
-     *
-     * @param  array  $errors
-     * @param  string  $key
-     * @return $this
-     */
-    protected function withViewErrors(array $errors, $key = 'default')
-    {
-        ViewFacade::share('errors', (new ViewErrorBag)->put($key, new MessageBag($errors)));
-
-        return $this;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

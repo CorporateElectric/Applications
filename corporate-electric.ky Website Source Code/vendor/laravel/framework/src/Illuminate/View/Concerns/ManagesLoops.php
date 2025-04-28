@@ -1,94 +1,56 @@
-<?php
-
-namespace Illuminate\View\Concerns;
-
-use Countable;
-use Illuminate\Support\Arr;
-
-trait ManagesLoops
-{
-    /**
-     * The stack of in-progress loops.
-     *
-     * @var array
-     */
-    protected $loopsStack = [];
-
-    /**
-     * Add new loop to the stack.
-     *
-     * @param  \Countable|array  $data
-     * @return void
-     */
-    public function addLoop($data)
-    {
-        $length = is_array($data) || $data instanceof Countable ? count($data) : null;
-
-        $parent = Arr::last($this->loopsStack);
-
-        $this->loopsStack[] = [
-            'iteration' => 0,
-            'index' => 0,
-            'remaining' => $length ?? null,
-            'count' => $length,
-            'first' => true,
-            'last' => isset($length) ? $length == 1 : null,
-            'odd' => false,
-            'even' => true,
-            'depth' => count($this->loopsStack) + 1,
-            'parent' => $parent ? (object) $parent : null,
-        ];
-    }
-
-    /**
-     * Increment the top loop's indices.
-     *
-     * @return void
-     */
-    public function incrementLoopIndices()
-    {
-        $loop = $this->loopsStack[$index = count($this->loopsStack) - 1];
-
-        $this->loopsStack[$index] = array_merge($this->loopsStack[$index], [
-            'iteration' => $loop['iteration'] + 1,
-            'index' => $loop['iteration'],
-            'first' => $loop['iteration'] == 0,
-            'odd' => ! $loop['odd'],
-            'even' => ! $loop['even'],
-            'remaining' => isset($loop['count']) ? $loop['remaining'] - 1 : null,
-            'last' => isset($loop['count']) ? $loop['iteration'] == $loop['count'] - 1 : null,
-        ]);
-    }
-
-    /**
-     * Pop a loop from the top of the loop stack.
-     *
-     * @return void
-     */
-    public function popLoop()
-    {
-        array_pop($this->loopsStack);
-    }
-
-    /**
-     * Get an instance of the last loop in the stack.
-     *
-     * @return \stdClass|null
-     */
-    public function getLastLoop()
-    {
-        if ($last = Arr::last($this->loopsStack)) {
-            return (object) $last;
-        }
-    }
-
-    /**
-     * Get the entire loop stack.
-     *
-     * @return array
-     */
-    public function getLoopStack()
-    {
-        return $this->loopsStack;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

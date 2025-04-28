@@ -1,414 +1,195 @@
-<?php
-
-namespace Illuminate\Support\Testing\Fakes;
-
-use BadMethodCallException;
-use Closure;
-use Illuminate\Contracts\Queue\Queue;
-use Illuminate\Queue\QueueManager;
-use Illuminate\Support\Traits\ReflectsClosures;
-use PHPUnit\Framework\Assert as PHPUnit;
-
-class QueueFake extends QueueManager implements Queue
-{
-    use ReflectsClosures;
-
-    /**
-     * All of the jobs that have been pushed.
-     *
-     * @var array
-     */
-    protected $jobs = [];
-
-    /**
-     * Assert if a job was pushed based on a truth-test callback.
-     *
-     * @param  string|\Closure  $job
-     * @param  callable|int|null  $callback
-     * @return void
-     */
-    public function assertPushed($job, $callback = null)
-    {
-        if ($job instanceof Closure) {
-            [$job, $callback] = [$this->firstClosureParameterType($job), $job];
-        }
-
-        if (is_numeric($callback)) {
-            return $this->assertPushedTimes($job, $callback);
-        }
-
-        PHPUnit::assertTrue(
-            $this->pushed($job, $callback)->count() > 0,
-            "The expected [{$job}] job was not pushed."
-        );
-    }
-
-    /**
-     * Assert if a job was pushed a number of times.
-     *
-     * @param  string  $job
-     * @param  int  $times
-     * @return void
-     */
-    protected function assertPushedTimes($job, $times = 1)
-    {
-        $count = $this->pushed($job)->count();
-
-        PHPUnit::assertSame(
-            $times, $count,
-            "The expected [{$job}] job was pushed {$count} times instead of {$times} times."
-        );
-    }
-
-    /**
-     * Assert if a job was pushed based on a truth-test callback.
-     *
-     * @param  string  $queue
-     * @param  string|\Closure  $job
-     * @param  callable|null  $callback
-     * @return void
-     */
-    public function assertPushedOn($queue, $job, $callback = null)
-    {
-        if ($job instanceof Closure) {
-            [$job, $callback] = [$this->firstClosureParameterType($job), $job];
-        }
-
-        return $this->assertPushed($job, function ($job, $pushedQueue) use ($callback, $queue) {
-            if ($pushedQueue !== $queue) {
-                return false;
-            }
-
-            return $callback ? $callback(...func_get_args()) : true;
-        });
-    }
-
-    /**
-     * Assert if a job was pushed with chained jobs based on a truth-test callback.
-     *
-     * @param  string  $job
-     * @param  array  $expectedChain
-     * @param  callable|null  $callback
-     * @return void
-     */
-    public function assertPushedWithChain($job, $expectedChain = [], $callback = null)
-    {
-        PHPUnit::assertTrue(
-            $this->pushed($job, $callback)->isNotEmpty(),
-            "The expected [{$job}] job was not pushed."
-        );
-
-        PHPUnit::assertTrue(
-            collect($expectedChain)->isNotEmpty(),
-            'The expected chain can not be empty.'
-        );
-
-        $this->isChainOfObjects($expectedChain)
-                ? $this->assertPushedWithChainOfObjects($job, $expectedChain, $callback)
-                : $this->assertPushedWithChainOfClasses($job, $expectedChain, $callback);
-    }
-
-    /**
-     * Assert if a job was pushed with an empty chain based on a truth-test callback.
-     *
-     * @param  string  $job
-     * @param  callable|null  $callback
-     * @return void
-     */
-    public function assertPushedWithoutChain($job, $callback = null)
-    {
-        PHPUnit::assertTrue(
-            $this->pushed($job, $callback)->isNotEmpty(),
-            "The expected [{$job}] job was not pushed."
-        );
-
-        $this->assertPushedWithChainOfClasses($job, [], $callback);
-    }
-
-    /**
-     * Assert if a job was pushed with chained jobs based on a truth-test callback.
-     *
-     * @param  string  $job
-     * @param  array  $expectedChain
-     * @param  callable|null  $callback
-     * @return void
-     */
-    protected function assertPushedWithChainOfObjects($job, $expectedChain, $callback)
-    {
-        $chain = collect($expectedChain)->map(function ($job) {
-            return serialize($job);
-        })->all();
-
-        PHPUnit::assertTrue(
-            $this->pushed($job, $callback)->filter(function ($job) use ($chain) {
-                return $job->chained == $chain;
-            })->isNotEmpty(),
-            'The expected chain was not pushed.'
-        );
-    }
-
-    /**
-     * Assert if a job was pushed with chained jobs based on a truth-test callback.
-     *
-     * @param  string  $job
-     * @param  array  $expectedChain
-     * @param  callable|null  $callback
-     * @return void
-     */
-    protected function assertPushedWithChainOfClasses($job, $expectedChain, $callback)
-    {
-        $matching = $this->pushed($job, $callback)->map->chained->map(function ($chain) {
-            return collect($chain)->map(function ($job) {
-                return get_class(unserialize($job));
-            });
-        })->filter(function ($chain) use ($expectedChain) {
-            return $chain->all() === $expectedChain;
-        });
-
-        PHPUnit::assertTrue(
-            $matching->isNotEmpty(), 'The expected chain was not pushed.'
-        );
-    }
-
-    /**
-     * Determine if the given chain is entirely composed of objects.
-     *
-     * @param  array  $chain
-     * @return bool
-     */
-    protected function isChainOfObjects($chain)
-    {
-        return ! collect($chain)->contains(function ($job) {
-            return ! is_object($job);
-        });
-    }
-
-    /**
-     * Determine if a job was pushed based on a truth-test callback.
-     *
-     * @param  string|\Closure  $job
-     * @param  callable|null  $callback
-     * @return void
-     */
-    public function assertNotPushed($job, $callback = null)
-    {
-        if ($job instanceof Closure) {
-            [$job, $callback] = [$this->firstClosureParameterType($job), $job];
-        }
-
-        PHPUnit::assertCount(
-            0, $this->pushed($job, $callback),
-            "The unexpected [{$job}] job was pushed."
-        );
-    }
-
-    /**
-     * Assert that no jobs were pushed.
-     *
-     * @return void
-     */
-    public function assertNothingPushed()
-    {
-        PHPUnit::assertEmpty($this->jobs, 'Jobs were pushed unexpectedly.');
-    }
-
-    /**
-     * Get all of the jobs matching a truth-test callback.
-     *
-     * @param  string  $job
-     * @param  callable|null  $callback
-     * @return \Illuminate\Support\Collection
-     */
-    public function pushed($job, $callback = null)
-    {
-        if (! $this->hasPushed($job)) {
-            return collect();
-        }
-
-        $callback = $callback ?: function () {
-            return true;
-        };
-
-        return collect($this->jobs[$job])->filter(function ($data) use ($callback) {
-            return $callback($data['job'], $data['queue']);
-        })->pluck('job');
-    }
-
-    /**
-     * Determine if there are any stored jobs for a given class.
-     *
-     * @param  string  $job
-     * @return bool
-     */
-    public function hasPushed($job)
-    {
-        return isset($this->jobs[$job]) && ! empty($this->jobs[$job]);
-    }
-
-    /**
-     * Resolve a queue connection instance.
-     *
-     * @param  mixed  $value
-     * @return \Illuminate\Contracts\Queue\Queue
-     */
-    public function connection($value = null)
-    {
-        return $this;
-    }
-
-    /**
-     * Get the size of the queue.
-     *
-     * @param  string|null  $queue
-     * @return int
-     */
-    public function size($queue = null)
-    {
-        return collect($this->jobs)->flatten(1)->filter(function ($job) use ($queue) {
-            return $job['queue'] === $queue;
-        })->count();
-    }
-
-    /**
-     * Push a new job onto the queue.
-     *
-     * @param  string  $job
-     * @param  mixed  $data
-     * @param  string|null  $queue
-     * @return mixed
-     */
-    public function push($job, $data = '', $queue = null)
-    {
-        $this->jobs[is_object($job) ? get_class($job) : $job][] = [
-            'job' => $job,
-            'queue' => $queue,
-        ];
-    }
-
-    /**
-     * Push a raw payload onto the queue.
-     *
-     * @param  string  $payload
-     * @param  string|null  $queue
-     * @param  array  $options
-     * @return mixed
-     */
-    public function pushRaw($payload, $queue = null, array $options = [])
-    {
-        //
-    }
-
-    /**
-     * Push a new job onto the queue after a delay.
-     *
-     * @param  \DateTimeInterface|\DateInterval|int  $delay
-     * @param  string  $job
-     * @param  mixed  $data
-     * @param  string|null  $queue
-     * @return mixed
-     */
-    public function later($delay, $job, $data = '', $queue = null)
-    {
-        return $this->push($job, $data, $queue);
-    }
-
-    /**
-     * Push a new job onto the queue.
-     *
-     * @param  string  $queue
-     * @param  string  $job
-     * @param  mixed  $data
-     * @return mixed
-     */
-    public function pushOn($queue, $job, $data = '')
-    {
-        return $this->push($job, $data, $queue);
-    }
-
-    /**
-     * Push a new job onto the queue after a delay.
-     *
-     * @param  string  $queue
-     * @param  \DateTimeInterface|\DateInterval|int  $delay
-     * @param  string  $job
-     * @param  mixed  $data
-     * @return mixed
-     */
-    public function laterOn($queue, $delay, $job, $data = '')
-    {
-        return $this->push($job, $data, $queue);
-    }
-
-    /**
-     * Pop the next job off of the queue.
-     *
-     * @param  string|null  $queue
-     * @return \Illuminate\Contracts\Queue\Job|null
-     */
-    public function pop($queue = null)
-    {
-        //
-    }
-
-    /**
-     * Push an array of jobs onto the queue.
-     *
-     * @param  array  $jobs
-     * @param  mixed  $data
-     * @param  string|null  $queue
-     * @return mixed
-     */
-    public function bulk($jobs, $data = '', $queue = null)
-    {
-        foreach ($jobs as $job) {
-            $this->push($job, $data, $queue);
-        }
-    }
-
-    /**
-     * Get the jobs that have been pushed.
-     *
-     * @return array
-     */
-    public function pushedJobs()
-    {
-        return $this->jobs;
-    }
-
-    /**
-     * Get the connection name for the queue.
-     *
-     * @return string
-     */
-    public function getConnectionName()
-    {
-        //
-    }
-
-    /**
-     * Set the connection name for the queue.
-     *
-     * @param  string  $name
-     * @return $this
-     */
-    public function setConnectionName($name)
-    {
-        return $this;
-    }
-
-    /**
-     * Override the QueueManager to prevent circular dependency.
-     *
-     * @param  string  $method
-     * @param  array  $parameters
-     * @return mixed
-     *
-     * @throws \BadMethodCallException
-     */
-    public function __call($method, $parameters)
-    {
-        throw new BadMethodCallException(sprintf(
-            'Call to undefined method %s::%s()', static::class, $method
-        ));
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

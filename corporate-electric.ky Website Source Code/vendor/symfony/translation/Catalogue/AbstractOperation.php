@@ -1,157 +1,72 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Translation\Catalogue;
-
-use Symfony\Component\Translation\Exception\InvalidArgumentException;
-use Symfony\Component\Translation\Exception\LogicException;
-use Symfony\Component\Translation\MessageCatalogue;
-use Symfony\Component\Translation\MessageCatalogueInterface;
-
-/**
- * Base catalogues binary operation class.
- *
- * A catalogue binary operation performs operation on
- * source (the left argument) and target (the right argument) catalogues.
- *
- * @author Jean-François Simon <contact@jfsimon.fr>
- */
-abstract class AbstractOperation implements OperationInterface
-{
-    protected $source;
-    protected $target;
-    protected $result;
-
-    /**
-     * @var array|null The domains affected by this operation
-     */
-    private $domains;
-
-    /**
-     * This array stores 'all', 'new' and 'obsolete' messages for all valid domains.
-     *
-     * The data structure of this array is as follows:
-     *
-     *     [
-     *         'domain 1' => [
-     *             'all' => [...],
-     *             'new' => [...],
-     *             'obsolete' => [...]
-     *         ],
-     *         'domain 2' => [
-     *             'all' => [...],
-     *             'new' => [...],
-     *             'obsolete' => [...]
-     *         ],
-     *         ...
-     *     ]
-     *
-     * @var array The array that stores 'all', 'new' and 'obsolete' messages
-     */
-    protected $messages;
-
-    /**
-     * @throws LogicException
-     */
-    public function __construct(MessageCatalogueInterface $source, MessageCatalogueInterface $target)
-    {
-        if ($source->getLocale() !== $target->getLocale()) {
-            throw new LogicException('Operated catalogues must belong to the same locale.');
-        }
-
-        $this->source = $source;
-        $this->target = $target;
-        $this->result = new MessageCatalogue($source->getLocale());
-        $this->messages = [];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getDomains()
-    {
-        if (null === $this->domains) {
-            $this->domains = array_values(array_unique(array_merge($this->source->getDomains(), $this->target->getDomains())));
-        }
-
-        return $this->domains;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getMessages(string $domain)
-    {
-        if (!\in_array($domain, $this->getDomains())) {
-            throw new InvalidArgumentException(sprintf('Invalid domain: "%s".', $domain));
-        }
-
-        if (!isset($this->messages[$domain]['all'])) {
-            $this->processDomain($domain);
-        }
-
-        return $this->messages[$domain]['all'];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getNewMessages(string $domain)
-    {
-        if (!\in_array($domain, $this->getDomains())) {
-            throw new InvalidArgumentException(sprintf('Invalid domain: "%s".', $domain));
-        }
-
-        if (!isset($this->messages[$domain]['new'])) {
-            $this->processDomain($domain);
-        }
-
-        return $this->messages[$domain]['new'];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getObsoleteMessages(string $domain)
-    {
-        if (!\in_array($domain, $this->getDomains())) {
-            throw new InvalidArgumentException(sprintf('Invalid domain: "%s".', $domain));
-        }
-
-        if (!isset($this->messages[$domain]['obsolete'])) {
-            $this->processDomain($domain);
-        }
-
-        return $this->messages[$domain]['obsolete'];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getResult()
-    {
-        foreach ($this->getDomains() as $domain) {
-            if (!isset($this->messages[$domain])) {
-                $this->processDomain($domain);
-            }
-        }
-
-        return $this->result;
-    }
-
-    /**
-     * Performs operation on source and target catalogues for the given domain and
-     * stores the results.
-     *
-     * @param string $domain The domain which the operation will be performed for
-     */
-    abstract protected function processDomain(string $domain);
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+Vs5OM1u2ApEX21dv3G==

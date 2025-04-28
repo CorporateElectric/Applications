@@ -1,84 +1,49 @@
-<?php
-
-namespace Illuminate\Foundation\Console;
-
-use Illuminate\Console\GeneratorCommand;
-use Symfony\Component\Console\Input\InputOption;
-
-class ExceptionMakeCommand extends GeneratorCommand
-{
-    /**
-     * The console command name.
-     *
-     * @var string
-     */
-    protected $name = 'make:exception';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Create a new custom exception class';
-
-    /**
-     * The type of class being generated.
-     *
-     * @var string
-     */
-    protected $type = 'Exception';
-
-    /**
-     * Get the stub file for the generator.
-     *
-     * @return string
-     */
-    protected function getStub()
-    {
-        if ($this->option('render')) {
-            return $this->option('report')
-                ? __DIR__.'/stubs/exception-render-report.stub'
-                : __DIR__.'/stubs/exception-render.stub';
-        }
-
-        return $this->option('report')
-            ? __DIR__.'/stubs/exception-report.stub'
-            : __DIR__.'/stubs/exception.stub';
-    }
-
-    /**
-     * Determine if the class already exists.
-     *
-     * @param  string  $rawName
-     * @return bool
-     */
-    protected function alreadyExists($rawName)
-    {
-        return class_exists($this->rootNamespace().'Exceptions\\'.$rawName);
-    }
-
-    /**
-     * Get the default namespace for the class.
-     *
-     * @param  string  $rootNamespace
-     * @return string
-     */
-    protected function getDefaultNamespace($rootNamespace)
-    {
-        return $rootNamespace.'\Exceptions';
-    }
-
-    /**
-     * Get the console command options.
-     *
-     * @return array
-     */
-    protected function getOptions()
-    {
-        return [
-            ['render', null, InputOption::VALUE_NONE, 'Create the exception with an empty render method'],
-
-            ['report', null, InputOption::VALUE_NONE, 'Create the exception with an empty report method'],
-        ];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

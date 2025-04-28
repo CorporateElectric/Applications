@@ -1,110 +1,54 @@
-<?php
-
-declare(strict_types=1);
-
-namespace Dotenv\Util;
-
-use GrahamCampbell\ResultType\Error;
-use GrahamCampbell\ResultType\Success;
-
-/**
- * @internal
- */
-final class Regex
-{
-    /**
-     * This class is a singleton.
-     *
-     * @codeCoverageIgnore
-     *
-     * @return void
-     */
-    private function __construct()
-    {
-        //
-    }
-
-    /**
-     * Perform a preg match, wrapping up the result.
-     *
-     * @param string $pattern
-     * @param string $subject
-     *
-     * @return \GrahamCampbell\ResultType\Result<bool,string>
-     */
-    public static function matches(string $pattern, string $subject)
-    {
-        return self::pregAndWrap(static function (string $subject) use ($pattern) {
-            return @\preg_match($pattern, $subject) === 1;
-        }, $subject);
-    }
-
-    /**
-     * Perform a preg match all, wrapping up the result.
-     *
-     * @param string $pattern
-     * @param string $subject
-     *
-     * @return \GrahamCampbell\ResultType\Result<int,string>
-     */
-    public static function occurences(string $pattern, string $subject)
-    {
-        return self::pregAndWrap(static function (string $subject) use ($pattern) {
-            return (int) @\preg_match_all($pattern, $subject);
-        }, $subject);
-    }
-
-    /**
-     * Perform a preg replace callback, wrapping up the result.
-     *
-     * @param string   $pattern
-     * @param callable $callback
-     * @param string   $subject
-     * @param int|null $limit
-     *
-     * @return \GrahamCampbell\ResultType\Result<string,string>
-     */
-    public static function replaceCallback(string $pattern, callable $callback, string $subject, int $limit = null)
-    {
-        return self::pregAndWrap(static function (string $subject) use ($pattern, $callback, $limit) {
-            return (string) @\preg_replace_callback($pattern, $callback, $subject, $limit ?? -1);
-        }, $subject);
-    }
-
-    /**
-     * Perform a preg split, wrapping up the result.
-     *
-     * @param string $pattern
-     * @param string $subject
-     *
-     * @return \GrahamCampbell\ResultType\Result<string[],string>
-     */
-    public static function split(string $pattern, string $subject)
-    {
-        return self::pregAndWrap(static function (string $subject) use ($pattern) {
-            /** @var string[] */
-            return (array) @\preg_split($pattern, $subject);
-        }, $subject);
-    }
-
-    /**
-     * Perform a preg operation, wrapping up the result.
-     *
-     * @template V
-     *
-     * @param callable(string):V $operation
-     * @param string             $subject
-     *
-     * @return \GrahamCampbell\ResultType\Result<V,string>
-     */
-    private static function pregAndWrap(callable $operation, string $subject)
-    {
-        $result = $operation($subject);
-
-        if (\preg_last_error() !== \PREG_NO_ERROR) {
-            return Error::create(\preg_last_error_msg());
-        }
-
-        return Success::create($result);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+ElLzfgXdaKyMQ85oQ85lSUfC6m8/2VgrQImkeG==

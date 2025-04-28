@@ -1,84 +1,49 @@
-<?php
-
-namespace Illuminate\Routing;
-
-use Closure;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Support\Str;
-
-class RouteBinding
-{
-    /**
-     * Create a Route model binding for a given callback.
-     *
-     * @param  \Illuminate\Container\Container  $container
-     * @param  \Closure|string  $binder
-     * @return \Closure
-     */
-    public static function forCallback($container, $binder)
-    {
-        if (is_string($binder)) {
-            return static::createClassBinding($container, $binder);
-        }
-
-        return $binder;
-    }
-
-    /**
-     * Create a class based binding using the IoC container.
-     *
-     * @param  \Illuminate\Container\Container  $container
-     * @param  string  $binding
-     * @return \Closure
-     */
-    protected static function createClassBinding($container, $binding)
-    {
-        return function ($value, $route) use ($container, $binding) {
-            // If the binding has an @ sign, we will assume it's being used to delimit
-            // the class name from the bind method name. This allows for bindings
-            // to run multiple bind methods in a single class for convenience.
-            [$class, $method] = Str::parseCallback($binding, 'bind');
-
-            $callable = [$container->make($class), $method];
-
-            return $callable($value, $route);
-        };
-    }
-
-    /**
-     * Create a Route model binding for a model.
-     *
-     * @param  \Illuminate\Container\Container  $container
-     * @param  string  $class
-     * @param  \Closure|null  $callback
-     * @return \Closure
-     *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
-     */
-    public static function forModel($container, $class, $callback = null)
-    {
-        return function ($value) use ($container, $class, $callback) {
-            if (is_null($value)) {
-                return;
-            }
-
-            // For model binders, we will attempt to retrieve the models using the first
-            // method on the model instance. If we cannot retrieve the models we'll
-            // throw a not found exception otherwise we will return the instance.
-            $instance = $container->make($class);
-
-            if ($model = $instance->resolveRouteBinding($value)) {
-                return $model;
-            }
-
-            // If a callback was supplied to the method we will call that to determine
-            // what we should do when the model is not found. This just gives these
-            // developer a little greater flexibility to decide what will happen.
-            if ($callback instanceof Closure) {
-                return $callback($value);
-            }
-
-            throw (new ModelNotFoundException)->setModel($class);
-        };
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

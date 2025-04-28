@@ -1,125 +1,84 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpKernel\CacheWarmer;
-
-/**
- * Aggregates several cache warmers into a single one.
- *
- * @author Fabien Potencier <fabien@symfony.com>
- *
- * @final
- */
-class CacheWarmerAggregate implements CacheWarmerInterface
-{
-    private $warmers;
-    private $debug;
-    private $deprecationLogsFilepath;
-    private $optionalsEnabled = false;
-    private $onlyOptionalsEnabled = false;
-
-    public function __construct(iterable $warmers = [], bool $debug = false, string $deprecationLogsFilepath = null)
-    {
-        $this->warmers = $warmers;
-        $this->debug = $debug;
-        $this->deprecationLogsFilepath = $deprecationLogsFilepath;
-    }
-
-    public function enableOptionalWarmers()
-    {
-        $this->optionalsEnabled = true;
-    }
-
-    public function enableOnlyOptionalWarmers()
-    {
-        $this->onlyOptionalsEnabled = $this->optionalsEnabled = true;
-    }
-
-    /**
-     * Warms up the cache.
-     *
-     * @return string[] A list of classes or files to preload on PHP 7.4+
-     */
-    public function warmUp(string $cacheDir)
-    {
-        if ($collectDeprecations = $this->debug && !\defined('PHPUNIT_COMPOSER_INSTALL')) {
-            $collectedLogs = [];
-            $previousHandler = set_error_handler(function ($type, $message, $file, $line) use (&$collectedLogs, &$previousHandler) {
-                if (\E_USER_DEPRECATED !== $type && \E_DEPRECATED !== $type) {
-                    return $previousHandler ? $previousHandler($type, $message, $file, $line) : false;
-                }
-
-                if (isset($collectedLogs[$message])) {
-                    ++$collectedLogs[$message]['count'];
-
-                    return null;
-                }
-
-                $backtrace = debug_backtrace(\DEBUG_BACKTRACE_IGNORE_ARGS, 3);
-                // Clean the trace by removing first frames added by the error handler itself.
-                for ($i = 0; isset($backtrace[$i]); ++$i) {
-                    if (isset($backtrace[$i]['file'], $backtrace[$i]['line']) && $backtrace[$i]['line'] === $line && $backtrace[$i]['file'] === $file) {
-                        $backtrace = \array_slice($backtrace, 1 + $i);
-                        break;
-                    }
-                }
-
-                $collectedLogs[$message] = [
-                    'type' => $type,
-                    'message' => $message,
-                    'file' => $file,
-                    'line' => $line,
-                    'trace' => $backtrace,
-                    'count' => 1,
-                ];
-
-                return null;
-            });
-        }
-
-        $preload = [];
-        try {
-            foreach ($this->warmers as $warmer) {
-                if (!$this->optionalsEnabled && $warmer->isOptional()) {
-                    continue;
-                }
-                if ($this->onlyOptionalsEnabled && !$warmer->isOptional()) {
-                    continue;
-                }
-
-                $preload[] = array_values((array) $warmer->warmUp($cacheDir));
-            }
-        } finally {
-            if ($collectDeprecations) {
-                restore_error_handler();
-
-                if (is_file($this->deprecationLogsFilepath)) {
-                    $previousLogs = unserialize(file_get_contents($this->deprecationLogsFilepath));
-                    $collectedLogs = array_merge($previousLogs, $collectedLogs);
-                }
-
-                file_put_contents($this->deprecationLogsFilepath, serialize(array_values($collectedLogs)));
-            }
-        }
-
-        return array_values(array_unique(array_merge([], ...$preload)));
-    }
-
-    /**
-     * Checks whether this warmer is optional or not.
-     *
-     * @return bool always false
-     */
-    public function isOptional(): bool
-    {
-        return false;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

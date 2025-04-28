@@ -1,249 +1,141 @@
-<?php
-
-namespace Illuminate\Routing;
-
-use ArrayIterator;
-use Countable;
-use Illuminate\Http\Request;
-use Illuminate\Http\Response;
-use Illuminate\Support\Str;
-use IteratorAggregate;
-use LogicException;
-use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-use Symfony\Component\Routing\Matcher\Dumper\CompiledUrlMatcherDumper;
-use Symfony\Component\Routing\RouteCollection as SymfonyRouteCollection;
-
-abstract class AbstractRouteCollection implements Countable, IteratorAggregate, RouteCollectionInterface
-{
-    /**
-     * Handle the matched route.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Illuminate\Routing\Route|null  $route
-     * @return \Illuminate\Routing\Route
-     *
-     * @throws \Symfony\Component\HttpKernel\Exception\NotFoundHttpException
-     */
-    protected function handleMatchedRoute(Request $request, $route)
-    {
-        if (! is_null($route)) {
-            return $route->bind($request);
-        }
-
-        // If no route was found we will now check if a matching route is specified by
-        // another HTTP verb. If it is we will need to throw a MethodNotAllowed and
-        // inform the user agent of which HTTP verb it should use for this route.
-        $others = $this->checkForAlternateVerbs($request);
-
-        if (count($others) > 0) {
-            return $this->getRouteForMethods($request, $others);
-        }
-
-        throw new NotFoundHttpException;
-    }
-
-    /**
-     * Determine if any routes match on another HTTP verb.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return array
-     */
-    protected function checkForAlternateVerbs($request)
-    {
-        $methods = array_diff(Router::$verbs, [$request->getMethod()]);
-
-        // Here we will spin through all verbs except for the current request verb and
-        // check to see if any routes respond to them. If they do, we will return a
-        // proper error response with the correct headers on the response string.
-        return array_values(array_filter(
-            $methods,
-            function ($method) use ($request) {
-                return ! is_null($this->matchAgainstRoutes($this->get($method), $request, false));
-            }
-        ));
-    }
-
-    /**
-     * Determine if a route in the array matches the request.
-     *
-     * @param  \Illuminate\Routing\Route[]  $routes
-     * @param  \Illuminate\Http\Request  $request
-     * @param  bool  $includingMethod
-     * @return \Illuminate\Routing\Route|null
-     */
-    protected function matchAgainstRoutes(array $routes, $request, $includingMethod = true)
-    {
-        [$fallbacks, $routes] = collect($routes)->partition(function ($route) {
-            return $route->isFallback;
-        });
-
-        return $routes->merge($fallbacks)->first(function (Route $route) use ($request, $includingMethod) {
-            return $route->matches($request, $includingMethod);
-        });
-    }
-
-    /**
-     * Get a route (if necessary) that responds when other available methods are present.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  string[]  $methods
-     * @return \Illuminate\Routing\Route
-     *
-     * @throws \Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException
-     */
-    protected function getRouteForMethods($request, array $methods)
-    {
-        if ($request->method() === 'OPTIONS') {
-            return (new Route('OPTIONS', $request->path(), function () use ($methods) {
-                return new Response('', 200, ['Allow' => implode(',', $methods)]);
-            }))->bind($request);
-        }
-
-        $this->methodNotAllowed($methods, $request->method());
-    }
-
-    /**
-     * Throw a method not allowed HTTP exception.
-     *
-     * @param  array  $others
-     * @param  string  $method
-     * @return void
-     *
-     * @throws \Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException
-     */
-    protected function methodNotAllowed(array $others, $method)
-    {
-        throw new MethodNotAllowedHttpException(
-            $others,
-            sprintf(
-                'The %s method is not supported for this route. Supported methods: %s.',
-                $method,
-                implode(', ', $others)
-            )
-        );
-    }
-
-    /**
-     * Compile the routes for caching.
-     *
-     * @return array
-     */
-    public function compile()
-    {
-        $compiled = $this->dumper()->getCompiledRoutes();
-
-        $attributes = [];
-
-        foreach ($this->getRoutes() as $route) {
-            $attributes[$route->getName()] = [
-                'methods' => $route->methods(),
-                'uri' => $route->uri(),
-                'action' => $route->getAction(),
-                'fallback' => $route->isFallback,
-                'defaults' => $route->defaults,
-                'wheres' => $route->wheres,
-                'bindingFields' => $route->bindingFields(),
-                'lockSeconds' => $route->locksFor(),
-                'waitSeconds' => $route->waitsFor(),
-            ];
-        }
-
-        return compact('compiled', 'attributes');
-    }
-
-    /**
-     * Return the CompiledUrlMatcherDumper instance for the route collection.
-     *
-     * @return \Symfony\Component\Routing\Matcher\Dumper\CompiledUrlMatcherDumper
-     */
-    public function dumper()
-    {
-        return new CompiledUrlMatcherDumper($this->toSymfonyRouteCollection());
-    }
-
-    /**
-     * Convert the collection to a Symfony RouteCollection instance.
-     *
-     * @return \Symfony\Component\Routing\RouteCollection
-     */
-    public function toSymfonyRouteCollection()
-    {
-        $symfonyRoutes = new SymfonyRouteCollection;
-
-        $routes = $this->getRoutes();
-
-        foreach ($routes as $route) {
-            if (! $route->isFallback) {
-                $symfonyRoutes = $this->addToSymfonyRoutesCollection($symfonyRoutes, $route);
-            }
-        }
-
-        foreach ($routes as $route) {
-            if ($route->isFallback) {
-                $symfonyRoutes = $this->addToSymfonyRoutesCollection($symfonyRoutes, $route);
-            }
-        }
-
-        return $symfonyRoutes;
-    }
-
-    /**
-     * Add a route to the SymfonyRouteCollection instance.
-     *
-     * @param  \Symfony\Component\Routing\RouteCollection  $symfonyRoutes
-     * @param  \Illuminate\Routing\Route  $route
-     * @return \Symfony\Component\Routing\RouteCollection
-     */
-    protected function addToSymfonyRoutesCollection(SymfonyRouteCollection $symfonyRoutes, Route $route)
-    {
-        $name = $route->getName();
-
-        if (Str::endsWith($name, '.') &&
-            ! is_null($symfonyRoutes->get($name))) {
-            $name = null;
-        }
-
-        if (! $name) {
-            $route->name($name = $this->generateRouteName());
-
-            $this->add($route);
-        } elseif (! is_null($symfonyRoutes->get($name))) {
-            throw new LogicException("Unable to prepare route [{$route->uri}] for serialization. Another route has already been assigned name [{$name}].");
-        }
-
-        $symfonyRoutes->add($route->getName(), $route->toSymfonyRoute());
-
-        return $symfonyRoutes;
-    }
-
-    /**
-     * Get a randomly generated route name.
-     *
-     * @return string
-     */
-    protected function generateRouteName()
-    {
-        return 'generated::'.Str::random();
-    }
-
-    /**
-     * Get an iterator for the items.
-     *
-     * @return \ArrayIterator
-     */
-    public function getIterator()
-    {
-        return new ArrayIterator($this->getRoutes());
-    }
-
-    /**
-     * Count the number of items in the collection.
-     *
-     * @return int
-     */
-    public function count()
-    {
-        return count($this->getRoutes());
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

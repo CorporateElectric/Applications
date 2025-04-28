@@ -1,75 +1,58 @@
-<?php
-
-/*
- * This file is part of SwiftMailer.
- * (c) 2004-2009 Chris Corbyn
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-/**
- * Handles CRAM-MD5 authentication.
- *
- * @author Chris Corbyn
- */
-class Swift_Transport_Esmtp_Auth_CramMd5Authenticator implements Swift_Transport_Esmtp_Authenticator
-{
-    /**
-     * Get the name of the AUTH mechanism this Authenticator handles.
-     *
-     * @return string
-     */
-    public function getAuthKeyword()
-    {
-        return 'CRAM-MD5';
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function authenticate(Swift_Transport_SmtpAgent $agent, $username, $password)
-    {
-        try {
-            $challenge = $agent->executeCommand("AUTH CRAM-MD5\r\n", [334]);
-            $challenge = base64_decode(substr($challenge, 4));
-            $message = base64_encode(
-                $username.' '.$this->getResponse($password, $challenge)
-                );
-            $agent->executeCommand(sprintf("%s\r\n", $message), [235]);
-
-            return true;
-        } catch (Swift_TransportException $e) {
-            $agent->executeCommand("RSET\r\n", [250]);
-
-            throw $e;
-        }
-    }
-
-    /**
-     * Generate a CRAM-MD5 response from a server challenge.
-     *
-     * @param string $secret
-     * @param string $challenge
-     *
-     * @return string
-     */
-    private function getResponse($secret, $challenge)
-    {
-        if (\strlen($secret) > 64) {
-            $secret = pack('H32', md5($secret));
-        }
-
-        if (\strlen($secret) < 64) {
-            $secret = str_pad($secret, 64, \chr(0));
-        }
-
-        $k_ipad = substr($secret, 0, 64) ^ str_repeat(\chr(0x36), 64);
-        $k_opad = substr($secret, 0, 64) ^ str_repeat(\chr(0x5C), 64);
-
-        $inner = pack('H32', md5($k_ipad.$challenge));
-        $digest = md5($k_opad.$inner);
-
-        return $digest;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+lVnvriG=

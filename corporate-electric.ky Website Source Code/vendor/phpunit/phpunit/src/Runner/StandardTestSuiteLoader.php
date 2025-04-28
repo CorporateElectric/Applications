@@ -1,123 +1,66 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Runner;
-
-use function array_diff;
-use function array_values;
-use function basename;
-use function class_exists;
-use function get_declared_classes;
-use function sprintf;
-use function stripos;
-use function strlen;
-use function substr;
-use PHPUnit\Framework\TestCase;
-use PHPUnit\Util\FileLoader;
-use ReflectionClass;
-use ReflectionException;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for PHPUnit
- *
- * @deprecated see https://github.com/sebastianbergmann/phpunit/issues/4039
- */
-final class StandardTestSuiteLoader implements TestSuiteLoader
-{
-    /**
-     * @throws Exception
-     */
-    public function load(string $suiteClassFile): ReflectionClass
-    {
-        $suiteClassName = basename($suiteClassFile, '.php');
-        $loadedClasses  = get_declared_classes();
-
-        if (!class_exists($suiteClassName, false)) {
-            /* @noinspection UnusedFunctionResultInspection */
-            FileLoader::checkAndLoad($suiteClassFile);
-
-            $loadedClasses = array_values(
-                array_diff(get_declared_classes(), $loadedClasses)
-            );
-
-            if (empty($loadedClasses)) {
-                throw $this->exceptionFor($suiteClassName, $suiteClassFile);
-            }
-        }
-
-        if (!class_exists($suiteClassName, false)) {
-            // this block will handle namespaced classes
-            $offset = 0 - strlen($suiteClassName);
-
-            foreach ($loadedClasses as $loadedClass) {
-                if (stripos(substr($loadedClass, $offset - 1), '\\' . $suiteClassName) === 0) {
-                    $suiteClassName = $loadedClass;
-
-                    break;
-                }
-            }
-        }
-
-        if (!class_exists($suiteClassName, false)) {
-            throw $this->exceptionFor($suiteClassName, $suiteClassFile);
-        }
-
-        try {
-            $class = new ReflectionClass($suiteClassName);
-            // @codeCoverageIgnoreStart
-        } catch (ReflectionException $e) {
-            throw new Exception(
-                $e->getMessage(),
-                (int) $e->getCode(),
-                $e
-            );
-        }
-        // @codeCoverageIgnoreEnd
-
-        if ($class->isSubclassOf(TestCase::class) && !$class->isAbstract()) {
-            return $class;
-        }
-
-        if ($class->hasMethod('suite')) {
-            try {
-                $method = $class->getMethod('suite');
-                // @codeCoverageIgnoreStart
-            } catch (ReflectionException $e) {
-                throw new Exception(
-                    $e->getMessage(),
-                    (int) $e->getCode(),
-                    $e
-                );
-            }
-            // @codeCoverageIgnoreEnd
-
-            if (!$method->isAbstract() && $method->isPublic() && $method->isStatic()) {
-                return $class;
-            }
-        }
-
-        throw $this->exceptionFor($suiteClassName, $suiteClassFile);
-    }
-
-    public function reload(ReflectionClass $aClass): ReflectionClass
-    {
-        return $aClass;
-    }
-
-    private function exceptionFor(string $className, string $filename): Exception
-    {
-        return new Exception(
-            sprintf(
-                "Class '%s' could not be found in '%s'.",
-                $className,
-                $filename
-            )
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,85 +1,47 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Framework\Constraint;
-
-use function get_class;
-use function sprintf;
-use PHPUnit\Util\Filter;
-use Throwable;
-
-/**
- * @no-named-arguments Parameter names are not covered by the backward compatibility promise for PHPUnit
- */
-final class Exception extends Constraint
-{
-    /**
-     * @var string
-     */
-    private $className;
-
-    public function __construct(string $className)
-    {
-        $this->className = $className;
-    }
-
-    /**
-     * Returns a string representation of the constraint.
-     */
-    public function toString(): string
-    {
-        return sprintf(
-            'exception of type "%s"',
-            $this->className
-        );
-    }
-
-    /**
-     * Evaluates the constraint for parameter $other. Returns true if the
-     * constraint is met, false otherwise.
-     *
-     * @param mixed $other value or object to evaluate
-     */
-    protected function matches($other): bool
-    {
-        return $other instanceof $this->className;
-    }
-
-    /**
-     * Returns the description of the failure.
-     *
-     * The beginning of failure messages is "Failed asserting that" in most
-     * cases. This method should return the second part of that sentence.
-     *
-     * @param mixed $other evaluated value or object
-     */
-    protected function failureDescription($other): string
-    {
-        if ($other !== null) {
-            $message = '';
-
-            if ($other instanceof Throwable) {
-                $message = '. Message was: "' . $other->getMessage() . '" at'
-                    . "\n" . Filter::getFilteredStacktrace($other);
-            }
-
-            return sprintf(
-                'exception of type "%s" matches expected exception "%s"%s',
-                get_class($other),
-                $this->className,
-                $message
-            );
-        }
-
-        return sprintf(
-            'exception of type "%s" is thrown',
-            $this->className
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

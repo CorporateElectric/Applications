@@ -1,166 +1,91 @@
-<?php
-
-namespace Egulias\EmailValidator\Validation;
-
-use Egulias\EmailValidator\EmailLexer;
-use Egulias\EmailValidator\Exception\InvalidEmail;
-use Egulias\EmailValidator\Exception\LocalOrReservedDomain;
-use Egulias\EmailValidator\Exception\DomainAcceptsNoMail;
-use Egulias\EmailValidator\Warning\NoDNSMXRecord;
-use Egulias\EmailValidator\Exception\NoDNSRecord;
-
-class DNSCheckValidation implements EmailValidation
-{
-    /**
-     * @var array
-     */
-    private $warnings = [];
-
-    /**
-     * @var InvalidEmail|null
-     */
-    private $error;
-
-    /**
-     * @var array
-     */
-    private $mxRecords = [];
-
-
-    public function __construct()
-    {
-        if (!function_exists('idn_to_ascii')) {
-            throw new \LogicException(sprintf('The %s class requires the Intl extension.', __CLASS__));
-        }
-    }
-
-    public function isValid($email, EmailLexer $emailLexer)
-    {
-        // use the input to check DNS if we cannot extract something similar to a domain
-        $host = $email;
-
-        // Arguable pattern to extract the domain. Not aiming to validate the domain nor the email
-        if (false !== $lastAtPos = strrpos($email, '@')) {
-            $host = substr($email, $lastAtPos + 1);
-        }
-
-        // Get the domain parts
-        $hostParts = explode('.', $host);
-
-        // Reserved Top Level DNS Names (https://tools.ietf.org/html/rfc2606#section-2),
-        // mDNS and private DNS Namespaces (https://tools.ietf.org/html/rfc6762#appendix-G)
-        $reservedTopLevelDnsNames = [
-            // Reserved Top Level DNS Names
-            'test',
-            'example',
-            'invalid',
-            'localhost',
-
-            // mDNS
-            'local',
-
-            // Private DNS Namespaces
-            'intranet',
-            'internal',
-            'private',
-            'corp',
-            'home',
-            'lan',
-        ];
-
-        $isLocalDomain = count($hostParts) <= 1;
-        $isReservedTopLevel = in_array($hostParts[(count($hostParts) - 1)], $reservedTopLevelDnsNames, true);
-
-        // Exclude reserved top level DNS names
-        if ($isLocalDomain || $isReservedTopLevel) {
-            $this->error = new LocalOrReservedDomain();
-            return false;
-        }
-
-        return $this->checkDns($host);
-    }
-
-    public function getError()
-    {
-        return $this->error;
-    }
-
-    public function getWarnings()
-    {
-        return $this->warnings;
-    }
-
-    /**
-     * @param string $host
-     *
-     * @return bool
-     */
-    protected function checkDns($host)
-    {
-        $variant = INTL_IDNA_VARIANT_UTS46;
-
-        $host = rtrim(idn_to_ascii($host, IDNA_DEFAULT, $variant), '.') . '.';
-
-        return $this->validateDnsRecords($host);
-    }
-
-
-    /**
-     * Validate the DNS records for given host.
-     *
-     * @param string $host A set of DNS records in the format returned by dns_get_record.
-     *
-     * @return bool True on success.
-     */
-    private function validateDnsRecords($host)
-    {
-        // Get all MX, A and AAAA DNS records for host
-        // Using @ as workaround to fix https://bugs.php.net/bug.php?id=73149
-        $dnsRecords = @dns_get_record($host, DNS_MX + DNS_A + DNS_AAAA);
-
-
-        // No MX, A or AAAA DNS records
-        if (empty($dnsRecords)) {
-            $this->error = new NoDNSRecord();
-            return false;
-        }
-
-        // For each DNS record
-        foreach ($dnsRecords as $dnsRecord) {
-            if (!$this->validateMXRecord($dnsRecord)) {
-                return false;
-            }
-        }
-
-        // No MX records (fallback to A or AAAA records)
-        if (empty($this->mxRecords)) {
-            $this->warnings[NoDNSMXRecord::CODE] = new NoDNSMXRecord();
-        }
-
-        return true;
-    }
-
-    /**
-     * Validate an MX record
-     *
-     * @param array $dnsRecord Given DNS record.
-     *
-     * @return bool True if valid.
-     */
-    private function validateMxRecord($dnsRecord)
-    {
-        if ($dnsRecord['type'] !== 'MX') {
-            return true;
-        }
-
-        // "Null MX" record indicates the domain accepts no mail (https://tools.ietf.org/html/rfc7505)
-        if (empty($dnsRecord['target']) || $dnsRecord['target'] === '.') {
-            $this->error = new DomainAcceptsNoMail();
-            return false;
-        }
-
-        $this->mxRecords[] = $dnsRecord;
-
-        return true;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

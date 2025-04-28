@@ -1,102 +1,58 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\CssSelector\XPath;
-
-/**
- * XPath expression translator interface.
- *
- * This component is a port of the Python cssselect library,
- * which is copyright Ian Bicking, @see https://github.com/SimonSapin/cssselect.
- *
- * @author Jean-François Simon <jeanfrancois.simon@sensiolabs.com>
- *
- * @internal
- */
-class XPathExpr
-{
-    private $path;
-    private $element;
-    private $condition;
-
-    public function __construct(string $path = '', string $element = '*', string $condition = '', bool $starPrefix = false)
-    {
-        $this->path = $path;
-        $this->element = $element;
-        $this->condition = $condition;
-
-        if ($starPrefix) {
-            $this->addStarPrefix();
-        }
-    }
-
-    public function getElement(): string
-    {
-        return $this->element;
-    }
-
-    public function addCondition(string $condition): self
-    {
-        $this->condition = $this->condition ? sprintf('(%s) and (%s)', $this->condition, $condition) : $condition;
-
-        return $this;
-    }
-
-    public function getCondition(): string
-    {
-        return $this->condition;
-    }
-
-    public function addNameTest(): self
-    {
-        if ('*' !== $this->element) {
-            $this->addCondition('name() = '.Translator::getXpathLiteral($this->element));
-            $this->element = '*';
-        }
-
-        return $this;
-    }
-
-    public function addStarPrefix(): self
-    {
-        $this->path .= '*/';
-
-        return $this;
-    }
-
-    /**
-     * Joins another XPathExpr with a combiner.
-     *
-     * @return $this
-     */
-    public function join(string $combiner, self $expr): self
-    {
-        $path = $this->__toString().$combiner;
-
-        if ('*/' !== $expr->path) {
-            $path .= $expr->path;
-        }
-
-        $this->path = $path;
-        $this->element = $expr->element;
-        $this->condition = $expr->condition;
-
-        return $this;
-    }
-
-    public function __toString(): string
-    {
-        $path = $this->path.$this->element;
-        $condition = null === $this->condition || '' === $this->condition ? '' : '['.$this->condition.']';
-
-        return $path.$condition;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+sNGBGCvKJK9geDQPlKm=

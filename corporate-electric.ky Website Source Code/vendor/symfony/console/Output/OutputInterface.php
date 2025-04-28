@@ -1,110 +1,36 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Console\Output;
-
-use Symfony\Component\Console\Formatter\OutputFormatterInterface;
-
-/**
- * OutputInterface is the interface implemented by all Output classes.
- *
- * @author Fabien Potencier <fabien@symfony.com>
- */
-interface OutputInterface
-{
-    public const VERBOSITY_QUIET = 16;
-    public const VERBOSITY_NORMAL = 32;
-    public const VERBOSITY_VERBOSE = 64;
-    public const VERBOSITY_VERY_VERBOSE = 128;
-    public const VERBOSITY_DEBUG = 256;
-
-    public const OUTPUT_NORMAL = 1;
-    public const OUTPUT_RAW = 2;
-    public const OUTPUT_PLAIN = 4;
-
-    /**
-     * Writes a message to the output.
-     *
-     * @param string|iterable $messages The message as an iterable of strings or a single string
-     * @param bool            $newline  Whether to add a newline
-     * @param int             $options  A bitmask of options (one of the OUTPUT or VERBOSITY constants), 0 is considered the same as self::OUTPUT_NORMAL | self::VERBOSITY_NORMAL
-     */
-    public function write($messages, bool $newline = false, int $options = 0);
-
-    /**
-     * Writes a message to the output and adds a newline at the end.
-     *
-     * @param string|iterable $messages The message as an iterable of strings or a single string
-     * @param int             $options  A bitmask of options (one of the OUTPUT or VERBOSITY constants), 0 is considered the same as self::OUTPUT_NORMAL | self::VERBOSITY_NORMAL
-     */
-    public function writeln($messages, int $options = 0);
-
-    /**
-     * Sets the verbosity of the output.
-     */
-    public function setVerbosity(int $level);
-
-    /**
-     * Gets the current verbosity of the output.
-     *
-     * @return int The current level of verbosity (one of the VERBOSITY constants)
-     */
-    public function getVerbosity();
-
-    /**
-     * Returns whether verbosity is quiet (-q).
-     *
-     * @return bool true if verbosity is set to VERBOSITY_QUIET, false otherwise
-     */
-    public function isQuiet();
-
-    /**
-     * Returns whether verbosity is verbose (-v).
-     *
-     * @return bool true if verbosity is set to VERBOSITY_VERBOSE, false otherwise
-     */
-    public function isVerbose();
-
-    /**
-     * Returns whether verbosity is very verbose (-vv).
-     *
-     * @return bool true if verbosity is set to VERBOSITY_VERY_VERBOSE, false otherwise
-     */
-    public function isVeryVerbose();
-
-    /**
-     * Returns whether verbosity is debug (-vvv).
-     *
-     * @return bool true if verbosity is set to VERBOSITY_DEBUG, false otherwise
-     */
-    public function isDebug();
-
-    /**
-     * Sets the decorated flag.
-     */
-    public function setDecorated(bool $decorated);
-
-    /**
-     * Gets the decorated flag.
-     *
-     * @return bool true if the output will decorate messages, false otherwise
-     */
-    public function isDecorated();
-
-    public function setFormatter(OutputFormatterInterface $formatter);
-
-    /**
-     * Returns current output formatter instance.
-     *
-     * @return OutputFormatterInterface
-     */
-    public function getFormatter();
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,362 +1,103 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\TextUI\XmlConfiguration\CodeCoverage;
-
-use function count;
-use PHPUnit\TextUI\XmlConfiguration\CodeCoverage\Filter\DirectoryCollection;
-use PHPUnit\TextUI\XmlConfiguration\CodeCoverage\Report\Clover;
-use PHPUnit\TextUI\XmlConfiguration\CodeCoverage\Report\Cobertura;
-use PHPUnit\TextUI\XmlConfiguration\CodeCoverage\Report\Crap4j;
-use PHPUnit\TextUI\XmlConfiguration\CodeCoverage\Report\Html;
-use PHPUnit\TextUI\XmlConfiguration\CodeCoverage\Report\Php;
-use PHPUnit\TextUI\XmlConfiguration\CodeCoverage\Report\Text;
-use PHPUnit\TextUI\XmlConfiguration\CodeCoverage\Report\Xml;
-use PHPUnit\TextUI\XmlConfiguration\Directory;
-use PHPUnit\TextUI\XmlConfiguration\Exception;
-use PHPUnit\TextUI\XmlConfiguration\FileCollection;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for PHPUnit
- * @psalm-immutable
- */
-final class CodeCoverage
-{
-    /**
-     * @var ?Directory
-     */
-    private $cacheDirectory;
-
-    /**
-     * @var DirectoryCollection
-     */
-    private $directories;
-
-    /**
-     * @var FileCollection
-     */
-    private $files;
-
-    /**
-     * @var DirectoryCollection
-     */
-    private $excludeDirectories;
-
-    /**
-     * @var FileCollection
-     */
-    private $excludeFiles;
-
-    /**
-     * @var bool
-     */
-    private $pathCoverage;
-
-    /**
-     * @var bool
-     */
-    private $includeUncoveredFiles;
-
-    /**
-     * @var bool
-     */
-    private $processUncoveredFiles;
-
-    /**
-     * @var bool
-     */
-    private $ignoreDeprecatedCodeUnits;
-
-    /**
-     * @var bool
-     */
-    private $disableCodeCoverageIgnore;
-
-    /**
-     * @var ?Clover
-     */
-    private $clover;
-
-    /**
-     * @var ?Cobertura
-     */
-    private $cobertura;
-
-    /**
-     * @var ?Crap4j
-     */
-    private $crap4j;
-
-    /**
-     * @var ?Html
-     */
-    private $html;
-
-    /**
-     * @var ?Php
-     */
-    private $php;
-
-    /**
-     * @var ?Text
-     */
-    private $text;
-
-    /**
-     * @var ?Xml
-     */
-    private $xml;
-
-    public function __construct(?Directory $cacheDirectory, DirectoryCollection $directories, FileCollection $files, DirectoryCollection $excludeDirectories, FileCollection $excludeFiles, bool $pathCoverage, bool $includeUncoveredFiles, bool $processUncoveredFiles, bool $ignoreDeprecatedCodeUnits, bool $disableCodeCoverageIgnore, ?Clover $clover, ?Cobertura $cobertura, ?Crap4j $crap4j, ?Html $html, ?Php $php, ?Text $text, ?Xml $xml)
-    {
-        $this->cacheDirectory            = $cacheDirectory;
-        $this->directories               = $directories;
-        $this->files                     = $files;
-        $this->excludeDirectories        = $excludeDirectories;
-        $this->excludeFiles              = $excludeFiles;
-        $this->pathCoverage              = $pathCoverage;
-        $this->includeUncoveredFiles     = $includeUncoveredFiles;
-        $this->processUncoveredFiles     = $processUncoveredFiles;
-        $this->ignoreDeprecatedCodeUnits = $ignoreDeprecatedCodeUnits;
-        $this->disableCodeCoverageIgnore = $disableCodeCoverageIgnore;
-        $this->clover                    = $clover;
-        $this->cobertura                 = $cobertura;
-        $this->crap4j                    = $crap4j;
-        $this->html                      = $html;
-        $this->php                       = $php;
-        $this->text                      = $text;
-        $this->xml                       = $xml;
-    }
-
-    /**
-     * @psalm-assert-if-true !null $this->cacheDirectory
-     */
-    public function hasCacheDirectory(): bool
-    {
-        return $this->cacheDirectory !== null;
-    }
-
-    /**
-     * @throws Exception
-     */
-    public function cacheDirectory(): Directory
-    {
-        if (!$this->hasCacheDirectory()) {
-            throw new Exception(
-                'No cache directory has been configured'
-            );
-        }
-
-        return $this->cacheDirectory;
-    }
-
-    public function hasNonEmptyListOfFilesToBeIncludedInCodeCoverageReport(): bool
-    {
-        return count($this->directories) > 0 || count($this->files) > 0;
-    }
-
-    public function directories(): DirectoryCollection
-    {
-        return $this->directories;
-    }
-
-    public function files(): FileCollection
-    {
-        return $this->files;
-    }
-
-    public function excludeDirectories(): DirectoryCollection
-    {
-        return $this->excludeDirectories;
-    }
-
-    public function excludeFiles(): FileCollection
-    {
-        return $this->excludeFiles;
-    }
-
-    public function pathCoverage(): bool
-    {
-        return $this->pathCoverage;
-    }
-
-    public function includeUncoveredFiles(): bool
-    {
-        return $this->includeUncoveredFiles;
-    }
-
-    public function ignoreDeprecatedCodeUnits(): bool
-    {
-        return $this->ignoreDeprecatedCodeUnits;
-    }
-
-    public function disableCodeCoverageIgnore(): bool
-    {
-        return $this->disableCodeCoverageIgnore;
-    }
-
-    public function processUncoveredFiles(): bool
-    {
-        return $this->processUncoveredFiles;
-    }
-
-    /**
-     * @psalm-assert-if-true !null $this->clover
-     */
-    public function hasClover(): bool
-    {
-        return $this->clover !== null;
-    }
-
-    /**
-     * @throws Exception
-     */
-    public function clover(): Clover
-    {
-        if (!$this->hasClover()) {
-            throw new Exception(
-                'Code Coverage report "Clover XML" has not been configured'
-            );
-        }
-
-        return $this->clover;
-    }
-
-    /**
-     * @psalm-assert-if-true !null $this->cobertura
-     */
-    public function hasCobertura(): bool
-    {
-        return $this->cobertura !== null;
-    }
-
-    /**
-     * @throws Exception
-     */
-    public function cobertura(): Cobertura
-    {
-        if (!$this->hasCobertura()) {
-            throw new Exception(
-                'Code Coverage report "Cobertura XML" has not been configured'
-            );
-        }
-
-        return $this->cobertura;
-    }
-
-    /**
-     * @psalm-assert-if-true !null $this->crap4j
-     */
-    public function hasCrap4j(): bool
-    {
-        return $this->crap4j !== null;
-    }
-
-    /**
-     * @throws Exception
-     */
-    public function crap4j(): Crap4j
-    {
-        if (!$this->hasCrap4j()) {
-            throw new Exception(
-                'Code Coverage report "Crap4J" has not been configured'
-            );
-        }
-
-        return $this->crap4j;
-    }
-
-    /**
-     * @psalm-assert-if-true !null $this->html
-     */
-    public function hasHtml(): bool
-    {
-        return $this->html !== null;
-    }
-
-    /**
-     * @throws Exception
-     */
-    public function html(): Html
-    {
-        if (!$this->hasHtml()) {
-            throw new Exception(
-                'Code Coverage report "HTML" has not been configured'
-            );
-        }
-
-        return $this->html;
-    }
-
-    /**
-     * @psalm-assert-if-true !null $this->php
-     */
-    public function hasPhp(): bool
-    {
-        return $this->php !== null;
-    }
-
-    /**
-     * @throws Exception
-     */
-    public function php(): Php
-    {
-        if (!$this->hasPhp()) {
-            throw new Exception(
-                'Code Coverage report "PHP" has not been configured'
-            );
-        }
-
-        return $this->php;
-    }
-
-    /**
-     * @psalm-assert-if-true !null $this->text
-     */
-    public function hasText(): bool
-    {
-        return $this->text !== null;
-    }
-
-    /**
-     * @throws Exception
-     */
-    public function text(): Text
-    {
-        if (!$this->hasText()) {
-            throw new Exception(
-                'Code Coverage report "Text" has not been configured'
-            );
-        }
-
-        return $this->text;
-    }
-
-    /**
-     * @psalm-assert-if-true !null $this->xml
-     */
-    public function hasXml(): bool
-    {
-        return $this->xml !== null;
-    }
-
-    /**
-     * @throws Exception
-     */
-    public function xml(): Xml
-    {
-        if (!$this->hasXml()) {
-            throw new Exception(
-                'Code Coverage report "XML" has not been configured'
-            );
-        }
-
-        return $this->xml;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

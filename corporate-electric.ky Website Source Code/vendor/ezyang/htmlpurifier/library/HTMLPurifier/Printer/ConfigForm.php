@@ -1,451 +1,268 @@
-<?php
-
-/**
- * @todo Rewrite to use Interchange objects
- */
-class HTMLPurifier_Printer_ConfigForm extends HTMLPurifier_Printer
-{
-
-    /**
-     * Printers for specific fields.
-     * @type HTMLPurifier_Printer[]
-     */
-    protected $fields = array();
-
-    /**
-     * Documentation URL, can have fragment tagged on end.
-     * @type string
-     */
-    protected $docURL;
-
-    /**
-     * Name of form element to stuff config in.
-     * @type string
-     */
-    protected $name;
-
-    /**
-     * Whether or not to compress directive names, clipping them off
-     * after a certain amount of letters. False to disable or integer letters
-     * before clipping.
-     * @type bool
-     */
-    protected $compress = false;
-
-    /**
-     * @param string $name Form element name for directives to be stuffed into
-     * @param string $doc_url String documentation URL, will have fragment tagged on
-     * @param bool $compress Integer max length before compressing a directive name, set to false to turn off
-     */
-    public function __construct(
-        $name,
-        $doc_url = null,
-        $compress = false
-    ) {
-        parent::__construct();
-        $this->docURL = $doc_url;
-        $this->name = $name;
-        $this->compress = $compress;
-        // initialize sub-printers
-        $this->fields[0] = new HTMLPurifier_Printer_ConfigForm_default();
-        $this->fields[HTMLPurifier_VarParser::C_BOOL] = new HTMLPurifier_Printer_ConfigForm_bool();
-    }
-
-    /**
-     * Sets default column and row size for textareas in sub-printers
-     * @param $cols Integer columns of textarea, null to use default
-     * @param $rows Integer rows of textarea, null to use default
-     */
-    public function setTextareaDimensions($cols = null, $rows = null)
-    {
-        if ($cols) {
-            $this->fields['default']->cols = $cols;
-        }
-        if ($rows) {
-            $this->fields['default']->rows = $rows;
-        }
-    }
-
-    /**
-     * Retrieves styling, in case it is not accessible by webserver
-     */
-    public static function getCSS()
-    {
-        return file_get_contents(HTMLPURIFIER_PREFIX . '/HTMLPurifier/Printer/ConfigForm.css');
-    }
-
-    /**
-     * Retrieves JavaScript, in case it is not accessible by webserver
-     */
-    public static function getJavaScript()
-    {
-        return file_get_contents(HTMLPURIFIER_PREFIX . '/HTMLPurifier/Printer/ConfigForm.js');
-    }
-
-    /**
-     * Returns HTML output for a configuration form
-     * @param HTMLPurifier_Config|array $config Configuration object of current form state, or an array
-     *        where [0] has an HTML namespace and [1] is being rendered.
-     * @param array|bool $allowed Optional namespace(s) and directives to restrict form to.
-     * @param bool $render_controls
-     * @return string
-     */
-    public function render($config, $allowed = true, $render_controls = true)
-    {
-        if (is_array($config) && isset($config[0])) {
-            $gen_config = $config[0];
-            $config = $config[1];
-        } else {
-            $gen_config = $config;
-        }
-
-        $this->config = $config;
-        $this->genConfig = $gen_config;
-        $this->prepareGenerator($gen_config);
-
-        $allowed = HTMLPurifier_Config::getAllowedDirectivesForForm($allowed, $config->def);
-        $all = array();
-        foreach ($allowed as $key) {
-            list($ns, $directive) = $key;
-            $all[$ns][$directive] = $config->get($ns . '.' . $directive);
-        }
-
-        $ret = '';
-        $ret .= $this->start('table', array('class' => 'hp-config'));
-        $ret .= $this->start('thead');
-        $ret .= $this->start('tr');
-        $ret .= $this->element('th', 'Directive', array('class' => 'hp-directive'));
-        $ret .= $this->element('th', 'Value', array('class' => 'hp-value'));
-        $ret .= $this->end('tr');
-        $ret .= $this->end('thead');
-        foreach ($all as $ns => $directives) {
-            $ret .= $this->renderNamespace($ns, $directives);
-        }
-        if ($render_controls) {
-            $ret .= $this->start('tbody');
-            $ret .= $this->start('tr');
-            $ret .= $this->start('td', array('colspan' => 2, 'class' => 'controls'));
-            $ret .= $this->elementEmpty('input', array('type' => 'submit', 'value' => 'Submit'));
-            $ret .= '[<a href="?">Reset</a>]';
-            $ret .= $this->end('td');
-            $ret .= $this->end('tr');
-            $ret .= $this->end('tbody');
-        }
-        $ret .= $this->end('table');
-        return $ret;
-    }
-
-    /**
-     * Renders a single namespace
-     * @param $ns String namespace name
-     * @param array $directives array of directives to values
-     * @return string
-     */
-    protected function renderNamespace($ns, $directives)
-    {
-        $ret = '';
-        $ret .= $this->start('tbody', array('class' => 'namespace'));
-        $ret .= $this->start('tr');
-        $ret .= $this->element('th', $ns, array('colspan' => 2));
-        $ret .= $this->end('tr');
-        $ret .= $this->end('tbody');
-        $ret .= $this->start('tbody');
-        foreach ($directives as $directive => $value) {
-            $ret .= $this->start('tr');
-            $ret .= $this->start('th');
-            if ($this->docURL) {
-                $url = str_replace('%s', urlencode("$ns.$directive"), $this->docURL);
-                $ret .= $this->start('a', array('href' => $url));
-            }
-            $attr = array('for' => "{$this->name}:$ns.$directive");
-
-            // crop directive name if it's too long
-            if (!$this->compress || (strlen($directive) < $this->compress)) {
-                $directive_disp = $directive;
-            } else {
-                $directive_disp = substr($directive, 0, $this->compress - 2) . '...';
-                $attr['title'] = $directive;
-            }
-
-            $ret .= $this->element(
-                'label',
-                $directive_disp,
-                // component printers must create an element with this id
-                $attr
-            );
-            if ($this->docURL) {
-                $ret .= $this->end('a');
-            }
-            $ret .= $this->end('th');
-
-            $ret .= $this->start('td');
-            $def = $this->config->def->info["$ns.$directive"];
-            if (is_int($def)) {
-                $allow_null = $def < 0;
-                $type = abs($def);
-            } else {
-                $type = $def->type;
-                $allow_null = isset($def->allow_null);
-            }
-            if (!isset($this->fields[$type])) {
-                $type = 0;
-            } // default
-            $type_obj = $this->fields[$type];
-            if ($allow_null) {
-                $type_obj = new HTMLPurifier_Printer_ConfigForm_NullDecorator($type_obj);
-            }
-            $ret .= $type_obj->render($ns, $directive, $value, $this->name, array($this->genConfig, $this->config));
-            $ret .= $this->end('td');
-            $ret .= $this->end('tr');
-        }
-        $ret .= $this->end('tbody');
-        return $ret;
-    }
-
-}
-
-/**
- * Printer decorator for directives that accept null
- */
-class HTMLPurifier_Printer_ConfigForm_NullDecorator extends HTMLPurifier_Printer
-{
-    /**
-     * Printer being decorated
-     * @type HTMLPurifier_Printer
-     */
-    protected $obj;
-
-    /**
-     * @param HTMLPurifier_Printer $obj Printer to decorate
-     */
-    public function __construct($obj)
-    {
-        parent::__construct();
-        $this->obj = $obj;
-    }
-
-    /**
-     * @param string $ns
-     * @param string $directive
-     * @param string $value
-     * @param string $name
-     * @param HTMLPurifier_Config|array $config
-     * @return string
-     */
-    public function render($ns, $directive, $value, $name, $config)
-    {
-        if (is_array($config) && isset($config[0])) {
-            $gen_config = $config[0];
-            $config = $config[1];
-        } else {
-            $gen_config = $config;
-        }
-        $this->prepareGenerator($gen_config);
-
-        $ret = '';
-        $ret .= $this->start('label', array('for' => "$name:Null_$ns.$directive"));
-        $ret .= $this->element('span', "$ns.$directive:", array('class' => 'verbose'));
-        $ret .= $this->text(' Null/Disabled');
-        $ret .= $this->end('label');
-        $attr = array(
-            'type' => 'checkbox',
-            'value' => '1',
-            'class' => 'null-toggle',
-            'name' => "$name" . "[Null_$ns.$directive]",
-            'id' => "$name:Null_$ns.$directive",
-            'onclick' => "toggleWriteability('$name:$ns.$directive',checked)" // INLINE JAVASCRIPT!!!!
-        );
-        if ($this->obj instanceof HTMLPurifier_Printer_ConfigForm_bool) {
-            // modify inline javascript slightly
-            $attr['onclick'] =
-                "toggleWriteability('$name:Yes_$ns.$directive',checked);" .
-                "toggleWriteability('$name:No_$ns.$directive',checked)";
-        }
-        if ($value === null) {
-            $attr['checked'] = 'checked';
-        }
-        $ret .= $this->elementEmpty('input', $attr);
-        $ret .= $this->text(' or ');
-        $ret .= $this->elementEmpty('br');
-        $ret .= $this->obj->render($ns, $directive, $value, $name, array($gen_config, $config));
-        return $ret;
-    }
-}
-
-/**
- * Swiss-army knife configuration form field printer
- */
-class HTMLPurifier_Printer_ConfigForm_default extends HTMLPurifier_Printer
-{
-    /**
-     * @type int
-     */
-    public $cols = 18;
-
-    /**
-     * @type int
-     */
-    public $rows = 5;
-
-    /**
-     * @param string $ns
-     * @param string $directive
-     * @param string $value
-     * @param string $name
-     * @param HTMLPurifier_Config|array $config
-     * @return string
-     */
-    public function render($ns, $directive, $value, $name, $config)
-    {
-        if (is_array($config) && isset($config[0])) {
-            $gen_config = $config[0];
-            $config = $config[1];
-        } else {
-            $gen_config = $config;
-        }
-        $this->prepareGenerator($gen_config);
-        // this should probably be split up a little
-        $ret = '';
-        $def = $config->def->info["$ns.$directive"];
-        if (is_int($def)) {
-            $type = abs($def);
-        } else {
-            $type = $def->type;
-        }
-        if (is_array($value)) {
-            switch ($type) {
-                case HTMLPurifier_VarParser::LOOKUP:
-                    $array = $value;
-                    $value = array();
-                    foreach ($array as $val => $b) {
-                        $value[] = $val;
-                    }
-                    //TODO does this need a break?
-                case HTMLPurifier_VarParser::ALIST:
-                    $value = implode(PHP_EOL, $value);
-                    break;
-                case HTMLPurifier_VarParser::HASH:
-                    $nvalue = '';
-                    foreach ($value as $i => $v) {
-                        if (is_array($v)) {
-                            // HACK
-                            $v = implode(";", $v);
-                        }
-                        $nvalue .= "$i:$v" . PHP_EOL;
-                    }
-                    $value = $nvalue;
-                    break;
-                default:
-                    $value = '';
-            }
-        }
-        if ($type === HTMLPurifier_VarParser::C_MIXED) {
-            return 'Not supported';
-            $value = serialize($value);
-        }
-        $attr = array(
-            'name' => "$name" . "[$ns.$directive]",
-            'id' => "$name:$ns.$directive"
-        );
-        if ($value === null) {
-            $attr['disabled'] = 'disabled';
-        }
-        if (isset($def->allowed)) {
-            $ret .= $this->start('select', $attr);
-            foreach ($def->allowed as $val => $b) {
-                $attr = array();
-                if ($value == $val) {
-                    $attr['selected'] = 'selected';
-                }
-                $ret .= $this->element('option', $val, $attr);
-            }
-            $ret .= $this->end('select');
-        } elseif ($type === HTMLPurifier_VarParser::TEXT ||
-                $type === HTMLPurifier_VarParser::ITEXT ||
-                $type === HTMLPurifier_VarParser::ALIST ||
-                $type === HTMLPurifier_VarParser::HASH ||
-                $type === HTMLPurifier_VarParser::LOOKUP) {
-            $attr['cols'] = $this->cols;
-            $attr['rows'] = $this->rows;
-            $ret .= $this->start('textarea', $attr);
-            $ret .= $this->text($value);
-            $ret .= $this->end('textarea');
-        } else {
-            $attr['value'] = $value;
-            $attr['type'] = 'text';
-            $ret .= $this->elementEmpty('input', $attr);
-        }
-        return $ret;
-    }
-}
-
-/**
- * Bool form field printer
- */
-class HTMLPurifier_Printer_ConfigForm_bool extends HTMLPurifier_Printer
-{
-    /**
-     * @param string $ns
-     * @param string $directive
-     * @param string $value
-     * @param string $name
-     * @param HTMLPurifier_Config|array $config
-     * @return string
-     */
-    public function render($ns, $directive, $value, $name, $config)
-    {
-        if (is_array($config) && isset($config[0])) {
-            $gen_config = $config[0];
-            $config = $config[1];
-        } else {
-            $gen_config = $config;
-        }
-        $this->prepareGenerator($gen_config);
-        $ret = '';
-        $ret .= $this->start('div', array('id' => "$name:$ns.$directive"));
-
-        $ret .= $this->start('label', array('for' => "$name:Yes_$ns.$directive"));
-        $ret .= $this->element('span', "$ns.$directive:", array('class' => 'verbose'));
-        $ret .= $this->text(' Yes');
-        $ret .= $this->end('label');
-
-        $attr = array(
-            'type' => 'radio',
-            'name' => "$name" . "[$ns.$directive]",
-            'id' => "$name:Yes_$ns.$directive",
-            'value' => '1'
-        );
-        if ($value === true) {
-            $attr['checked'] = 'checked';
-        }
-        if ($value === null) {
-            $attr['disabled'] = 'disabled';
-        }
-        $ret .= $this->elementEmpty('input', $attr);
-
-        $ret .= $this->start('label', array('for' => "$name:No_$ns.$directive"));
-        $ret .= $this->element('span', "$ns.$directive:", array('class' => 'verbose'));
-        $ret .= $this->text(' No');
-        $ret .= $this->end('label');
-
-        $attr = array(
-            'type' => 'radio',
-            'name' => "$name" . "[$ns.$directive]",
-            'id' => "$name:No_$ns.$directive",
-            'value' => '0'
-        );
-        if ($value === false) {
-            $attr['checked'] = 'checked';
-        }
-        if ($value === null) {
-            $attr['disabled'] = 'disabled';
-        }
-        $ret .= $this->elementEmpty('input', $attr);
-
-        $ret .= $this->end('div');
-
-        return $ret;
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

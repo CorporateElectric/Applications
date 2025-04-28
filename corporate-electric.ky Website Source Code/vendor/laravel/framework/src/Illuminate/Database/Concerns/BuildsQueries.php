@@ -1,231 +1,89 @@
-<?php
-
-namespace Illuminate\Database\Concerns;
-
-use Illuminate\Container\Container;
-use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Pagination\Paginator;
-
-trait BuildsQueries
-{
-    /**
-     * Chunk the results of the query.
-     *
-     * @param  int  $count
-     * @param  callable  $callback
-     * @return bool
-     */
-    public function chunk($count, callable $callback)
-    {
-        $this->enforceOrderBy();
-
-        $page = 1;
-
-        do {
-            // We'll execute the query for the given page and get the results. If there are
-            // no results we can just break and return from here. When there are results
-            // we will call the callback with the current chunk of these results here.
-            $results = $this->forPage($page, $count)->get();
-
-            $countResults = $results->count();
-
-            if ($countResults == 0) {
-                break;
-            }
-
-            // On each chunk result set, we will pass them to the callback and then let the
-            // developer take care of everything within the callback, which allows us to
-            // keep the memory low for spinning through large result sets for working.
-            if ($callback($results, $page) === false) {
-                return false;
-            }
-
-            unset($results);
-
-            $page++;
-        } while ($countResults == $count);
-
-        return true;
-    }
-
-    /**
-     * Execute a callback over each item while chunking.
-     *
-     * @param  callable  $callback
-     * @param  int  $count
-     * @return bool
-     */
-    public function each(callable $callback, $count = 1000)
-    {
-        return $this->chunk($count, function ($results) use ($callback) {
-            foreach ($results as $key => $value) {
-                if ($callback($value, $key) === false) {
-                    return false;
-                }
-            }
-        });
-    }
-
-    /**
-     * Chunk the results of a query by comparing IDs.
-     *
-     * @param  int  $count
-     * @param  callable  $callback
-     * @param  string|null  $column
-     * @param  string|null  $alias
-     * @return bool
-     */
-    public function chunkById($count, callable $callback, $column = null, $alias = null)
-    {
-        $column = $column ?? $this->defaultKeyName();
-
-        $alias = $alias ?? $column;
-
-        $lastId = null;
-
-        $page = 1;
-
-        do {
-            $clone = clone $this;
-
-            // We'll execute the query for the given page and get the results. If there are
-            // no results we can just break and return from here. When there are results
-            // we will call the callback with the current chunk of these results here.
-            $results = $clone->forPageAfterId($count, $lastId, $column)->get();
-
-            $countResults = $results->count();
-
-            if ($countResults == 0) {
-                break;
-            }
-
-            // On each chunk result set, we will pass them to the callback and then let the
-            // developer take care of everything within the callback, which allows us to
-            // keep the memory low for spinning through large result sets for working.
-            if ($callback($results, $page) === false) {
-                return false;
-            }
-
-            $lastId = $results->last()->{$alias};
-
-            unset($results);
-
-            $page++;
-        } while ($countResults == $count);
-
-        return true;
-    }
-
-    /**
-     * Execute a callback over each item while chunking by ID.
-     *
-     * @param  callable  $callback
-     * @param  int  $count
-     * @param  string|null  $column
-     * @param  string|null  $alias
-     * @return bool
-     */
-    public function eachById(callable $callback, $count = 1000, $column = null, $alias = null)
-    {
-        return $this->chunkById($count, function ($results, $page) use ($callback, $count) {
-            foreach ($results as $key => $value) {
-                if ($callback($value, (($page - 1) * $count) + $key) === false) {
-                    return false;
-                }
-            }
-        }, $column, $alias);
-    }
-
-    /**
-     * Execute the query and get the first result.
-     *
-     * @param  array|string  $columns
-     * @return \Illuminate\Database\Eloquent\Model|object|static|null
-     */
-    public function first($columns = ['*'])
-    {
-        return $this->take(1)->get($columns)->first();
-    }
-
-    /**
-     * Apply the callback's query changes if the given "value" is true.
-     *
-     * @param  mixed  $value
-     * @param  callable  $callback
-     * @param  callable|null  $default
-     * @return mixed|$this
-     */
-    public function when($value, $callback, $default = null)
-    {
-        if ($value) {
-            return $callback($this, $value) ?: $this;
-        } elseif ($default) {
-            return $default($this, $value) ?: $this;
-        }
-
-        return $this;
-    }
-
-    /**
-     * Pass the query to a given callback.
-     *
-     * @param  callable  $callback
-     * @return $this
-     */
-    public function tap($callback)
-    {
-        return $this->when(true, $callback);
-    }
-
-    /**
-     * Apply the callback's query changes if the given "value" is false.
-     *
-     * @param  mixed  $value
-     * @param  callable  $callback
-     * @param  callable|null  $default
-     * @return mixed|$this
-     */
-    public function unless($value, $callback, $default = null)
-    {
-        if (! $value) {
-            return $callback($this, $value) ?: $this;
-        } elseif ($default) {
-            return $default($this, $value) ?: $this;
-        }
-
-        return $this;
-    }
-
-    /**
-     * Create a new length-aware paginator instance.
-     *
-     * @param  \Illuminate\Support\Collection  $items
-     * @param  int  $total
-     * @param  int  $perPage
-     * @param  int  $currentPage
-     * @param  array  $options
-     * @return \Illuminate\Pagination\LengthAwarePaginator
-     */
-    protected function paginator($items, $total, $perPage, $currentPage, $options)
-    {
-        return Container::getInstance()->makeWith(LengthAwarePaginator::class, compact(
-            'items', 'total', 'perPage', 'currentPage', 'options'
-        ));
-    }
-
-    /**
-     * Create a new simple paginator instance.
-     *
-     * @param  \Illuminate\Support\Collection  $items
-     * @param  int  $perPage
-     * @param  int  $currentPage
-     * @param  array  $options
-     * @return \Illuminate\Pagination\Paginator
-     */
-    protected function simplePaginator($items, $perPage, $currentPage, $options)
-    {
-        return Container::getInstance()->makeWith(Paginator::class, compact(
-            'items', 'perPage', 'currentPage', 'options'
-        ));
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

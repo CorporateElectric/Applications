@@ -1,91 +1,80 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpKernel\HttpCache;
-
-use Symfony\Component\HttpFoundation\IpUtils;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\HttpKernelInterface;
-
-/**
- * @author Nicolas Grekas <p@tchwork.com>
- *
- * @internal
- */
-class SubRequestHandler
-{
-    public static function handle(HttpKernelInterface $kernel, Request $request, int $type, bool $catch): Response
-    {
-        // save global state related to trusted headers and proxies
-        $trustedProxies = Request::getTrustedProxies();
-        $trustedHeaderSet = Request::getTrustedHeaderSet();
-
-        // remove untrusted values
-        $remoteAddr = $request->server->get('REMOTE_ADDR');
-        if (!IpUtils::checkIp($remoteAddr, $trustedProxies)) {
-            $trustedHeaders = [
-                'FORWARDED' => $trustedHeaderSet & Request::HEADER_FORWARDED,
-                'X_FORWARDED_FOR' => $trustedHeaderSet & Request::HEADER_X_FORWARDED_FOR,
-                'X_FORWARDED_HOST' => $trustedHeaderSet & Request::HEADER_X_FORWARDED_HOST,
-                'X_FORWARDED_PROTO' => $trustedHeaderSet & Request::HEADER_X_FORWARDED_PROTO,
-                'X_FORWARDED_PORT' => $trustedHeaderSet & Request::HEADER_X_FORWARDED_PORT,
-            ];
-            foreach (array_filter($trustedHeaders) as $name => $key) {
-                $request->headers->remove($name);
-                $request->server->remove('HTTP_'.$name);
-            }
-        }
-
-        // compute trusted values, taking any trusted proxies into account
-        $trustedIps = [];
-        $trustedValues = [];
-        foreach (array_reverse($request->getClientIps()) as $ip) {
-            $trustedIps[] = $ip;
-            $trustedValues[] = sprintf('for="%s"', $ip);
-        }
-        if ($ip !== $remoteAddr) {
-            $trustedIps[] = $remoteAddr;
-            $trustedValues[] = sprintf('for="%s"', $remoteAddr);
-        }
-
-        // set trusted values, reusing as much as possible the global trusted settings
-        if (Request::HEADER_FORWARDED & $trustedHeaderSet) {
-            $trustedValues[0] .= sprintf(';host="%s";proto=%s', $request->getHttpHost(), $request->getScheme());
-            $request->headers->set('Forwarded', $v = implode(', ', $trustedValues));
-            $request->server->set('HTTP_FORWARDED', $v);
-        }
-        if (Request::HEADER_X_FORWARDED_FOR & $trustedHeaderSet) {
-            $request->headers->set('X-Forwarded-For', $v = implode(', ', $trustedIps));
-            $request->server->set('HTTP_X_FORWARDED_FOR', $v);
-        } elseif (!(Request::HEADER_FORWARDED & $trustedHeaderSet)) {
-            Request::setTrustedProxies($trustedProxies, $trustedHeaderSet | Request::HEADER_X_FORWARDED_FOR);
-            $request->headers->set('X-Forwarded-For', $v = implode(', ', $trustedIps));
-            $request->server->set('HTTP_X_FORWARDED_FOR', $v);
-        }
-
-        // fix the client IP address by setting it to 127.0.0.1,
-        // which is the core responsibility of this method
-        $request->server->set('REMOTE_ADDR', '127.0.0.1');
-
-        // ensure 127.0.0.1 is set as trusted proxy
-        if (!IpUtils::checkIp('127.0.0.1', $trustedProxies)) {
-            Request::setTrustedProxies(array_merge($trustedProxies, ['127.0.0.1']), Request::getTrustedHeaderSet());
-        }
-
-        try {
-            return $kernel->handle($request, $type, $catch);
-        } finally {
-            // restore global state
-            Request::setTrustedProxies($trustedProxies, $trustedHeaderSet);
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

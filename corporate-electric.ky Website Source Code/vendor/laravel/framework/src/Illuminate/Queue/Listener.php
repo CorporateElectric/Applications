@@ -1,231 +1,87 @@
-<?php
-
-namespace Illuminate\Queue;
-
-use Closure;
-use Symfony\Component\Process\PhpExecutableFinder;
-use Symfony\Component\Process\Process;
-
-class Listener
-{
-    /**
-     * The command working path.
-     *
-     * @var string
-     */
-    protected $commandPath;
-
-    /**
-     * The environment the workers should run under.
-     *
-     * @var string
-     */
-    protected $environment;
-
-    /**
-     * The amount of seconds to wait before polling the queue.
-     *
-     * @var int
-     */
-    protected $sleep = 3;
-
-    /**
-     * The amount of times to try a job before logging it failed.
-     *
-     * @var int
-     */
-    protected $maxTries = 0;
-
-    /**
-     * The output handler callback.
-     *
-     * @var \Closure|null
-     */
-    protected $outputHandler;
-
-    /**
-     * Create a new queue listener.
-     *
-     * @param  string  $commandPath
-     * @return void
-     */
-    public function __construct($commandPath)
-    {
-        $this->commandPath = $commandPath;
-    }
-
-    /**
-     * Get the PHP binary.
-     *
-     * @return string
-     */
-    protected function phpBinary()
-    {
-        return (new PhpExecutableFinder)->find(false);
-    }
-
-    /**
-     * Get the Artisan binary.
-     *
-     * @return string
-     */
-    protected function artisanBinary()
-    {
-        return defined('ARTISAN_BINARY') ? ARTISAN_BINARY : 'artisan';
-    }
-
-    /**
-     * Listen to the given queue connection.
-     *
-     * @param  string  $connection
-     * @param  string  $queue
-     * @param  \Illuminate\Queue\ListenerOptions  $options
-     * @return void
-     */
-    public function listen($connection, $queue, ListenerOptions $options)
-    {
-        $process = $this->makeProcess($connection, $queue, $options);
-
-        while (true) {
-            $this->runProcess($process, $options->memory);
-        }
-    }
-
-    /**
-     * Create a new Symfony process for the worker.
-     *
-     * @param  string  $connection
-     * @param  string  $queue
-     * @param  \Illuminate\Queue\ListenerOptions  $options
-     * @return \Symfony\Component\Process\Process
-     */
-    public function makeProcess($connection, $queue, ListenerOptions $options)
-    {
-        $command = $this->createCommand(
-            $connection,
-            $queue,
-            $options
-        );
-
-        // If the environment is set, we will append it to the command array so the
-        // workers will run under the specified environment. Otherwise, they will
-        // just run under the production environment which is not always right.
-        if (isset($options->environment)) {
-            $command = $this->addEnvironment($command, $options);
-        }
-
-        return new Process(
-            $command,
-            $this->commandPath,
-            null,
-            null,
-            $options->timeout
-        );
-    }
-
-    /**
-     * Add the environment option to the given command.
-     *
-     * @param  array  $command
-     * @param  \Illuminate\Queue\ListenerOptions  $options
-     * @return array
-     */
-    protected function addEnvironment($command, ListenerOptions $options)
-    {
-        return array_merge($command, ["--env={$options->environment}"]);
-    }
-
-    /**
-     * Create the command with the listener options.
-     *
-     * @param  string  $connection
-     * @param  string  $queue
-     * @param  \Illuminate\Queue\ListenerOptions  $options
-     * @return array
-     */
-    protected function createCommand($connection, $queue, ListenerOptions $options)
-    {
-        return array_filter([
-            $this->phpBinary(),
-            $this->artisanBinary(),
-            'queue:work',
-            $connection,
-            '--once',
-            "--name={$options->name}",
-            "--queue={$queue}",
-            "--backoff={$options->backoff}",
-            "--memory={$options->memory}",
-            "--sleep={$options->sleep}",
-            "--tries={$options->maxTries}",
-        ], function ($value) {
-            return ! is_null($value);
-        });
-    }
-
-    /**
-     * Run the given process.
-     *
-     * @param  \Symfony\Component\Process\Process  $process
-     * @param  int  $memory
-     * @return void
-     */
-    public function runProcess(Process $process, $memory)
-    {
-        $process->run(function ($type, $line) {
-            $this->handleWorkerOutput($type, $line);
-        });
-
-        // Once we have run the job we'll go check if the memory limit has been exceeded
-        // for the script. If it has, we will kill this script so the process manager
-        // will restart this with a clean slate of memory automatically on exiting.
-        if ($this->memoryExceeded($memory)) {
-            $this->stop();
-        }
-    }
-
-    /**
-     * Handle output from the worker process.
-     *
-     * @param  int  $type
-     * @param  string  $line
-     * @return void
-     */
-    protected function handleWorkerOutput($type, $line)
-    {
-        if (isset($this->outputHandler)) {
-            call_user_func($this->outputHandler, $type, $line);
-        }
-    }
-
-    /**
-     * Determine if the memory limit has been exceeded.
-     *
-     * @param  int  $memoryLimit
-     * @return bool
-     */
-    public function memoryExceeded($memoryLimit)
-    {
-        return (memory_get_usage(true) / 1024 / 1024) >= $memoryLimit;
-    }
-
-    /**
-     * Stop listening and bail out of the script.
-     *
-     * @return void
-     */
-    public function stop()
-    {
-        exit;
-    }
-
-    /**
-     * Set the output handler callback.
-     *
-     * @param  \Closure  $outputHandler
-     * @return void
-     */
-    public function setOutputHandler(Closure $outputHandler)
-    {
-        $this->outputHandler = $outputHandler;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+eAl6N17ByjlL6/QKmMIkzDBTgHdpccG=

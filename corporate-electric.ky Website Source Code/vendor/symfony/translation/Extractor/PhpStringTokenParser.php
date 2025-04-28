@@ -1,142 +1,54 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Translation\Extractor;
-
-/*
- * The following is derived from code at http://github.com/nikic/PHP-Parser
- *
- * Copyright (c) 2011 by Nikita Popov
- *
- * Some rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are
- * met:
- *
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *
- *     * Redistributions in binary form must reproduce the above
- *       copyright notice, this list of conditions and the following
- *       disclaimer in the documentation and/or other materials provided
- *       with the distribution.
- *
- *     * The names of the contributors may not be used to endorse or
- *       promote products derived from this software without specific
- *       prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
-
-class PhpStringTokenParser
-{
-    protected static $replacements = [
-        '\\' => '\\',
-        '$' => '$',
-        'n' => "\n",
-        'r' => "\r",
-        't' => "\t",
-        'f' => "\f",
-        'v' => "\v",
-        'e' => "\x1B",
-    ];
-
-    /**
-     * Parses a string token.
-     *
-     * @param string $str String token content
-     *
-     * @return string The parsed string
-     */
-    public static function parse(string $str)
-    {
-        $bLength = 0;
-        if ('b' === $str[0]) {
-            $bLength = 1;
-        }
-
-        if ('\'' === $str[$bLength]) {
-            return str_replace(
-                ['\\\\', '\\\''],
-                ['\\', '\''],
-                substr($str, $bLength + 1, -1)
-            );
-        } else {
-            return self::parseEscapeSequences(substr($str, $bLength + 1, -1), '"');
-        }
-    }
-
-    /**
-     * Parses escape sequences in strings (all string types apart from single quoted).
-     *
-     * @param string      $str   String without quotes
-     * @param string|null $quote Quote type
-     *
-     * @return string String with escape sequences parsed
-     */
-    public static function parseEscapeSequences(string $str, string $quote = null)
-    {
-        if (null !== $quote) {
-            $str = str_replace('\\'.$quote, $quote, $str);
-        }
-
-        return preg_replace_callback(
-            '~\\\\([\\\\$nrtfve]|[xX][0-9a-fA-F]{1,2}|[0-7]{1,3})~',
-            [__CLASS__, 'parseCallback'],
-            $str
-        );
-    }
-
-    private static function parseCallback(array $matches): string
-    {
-        $str = $matches[1];
-
-        if (isset(self::$replacements[$str])) {
-            return self::$replacements[$str];
-        } elseif ('x' === $str[0] || 'X' === $str[0]) {
-            return \chr(hexdec($str));
-        } else {
-            return \chr(octdec($str));
-        }
-    }
-
-    /**
-     * Parses a constant doc string.
-     *
-     * @param string $startToken Doc string start token content (<<<SMTHG)
-     * @param string $str        String token content
-     *
-     * @return string Parsed string
-     */
-    public static function parseDocString(string $startToken, string $str)
-    {
-        // strip last newline (thanks tokenizer for sticking it into the string!)
-        $str = preg_replace('~(\r\n|\n|\r)$~', '', $str);
-
-        // nowdoc string
-        if (false !== strpos($startToken, '\'')) {
-            return $str;
-        }
-
-        return self::parseEscapeSequences($str, null);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+hrAHBiKCoY04p7s66+fEMWjPNCwqqj2lUYVZo0==

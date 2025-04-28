@@ -1,141 +1,80 @@
-<?php
-
-/*
- * This file is part of the league/commonmark package.
- *
- * (c) Colin O'Dell <colinodell@gmail.com>
- * (c) 2015 Martin Hasoň <martin.hason@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-declare(strict_types=1);
-
-namespace League\CommonMark\Extension\Attributes\Event;
-
-use League\CommonMark\Block\Element\AbstractBlock;
-use League\CommonMark\Block\Element\FencedCode;
-use League\CommonMark\Block\Element\ListBlock;
-use League\CommonMark\Block\Element\ListItem;
-use League\CommonMark\Event\DocumentParsedEvent;
-use League\CommonMark\Extension\Attributes\Node\Attributes;
-use League\CommonMark\Extension\Attributes\Node\AttributesInline;
-use League\CommonMark\Extension\Attributes\Util\AttributesHelper;
-use League\CommonMark\Inline\Element\AbstractInline;
-use League\CommonMark\Node\Node;
-
-final class AttributesListener
-{
-    private const DIRECTION_PREFIX = 'prefix';
-    private const DIRECTION_SUFFIX = 'suffix';
-
-    public function processDocument(DocumentParsedEvent $event): void
-    {
-        $walker = $event->getDocument()->walker();
-        while ($event = $walker->next()) {
-            $node = $event->getNode();
-            if (!$node instanceof AttributesInline && ($event->isEntering() || !$node instanceof Attributes)) {
-                continue;
-            }
-
-            [$target, $direction] = self::findTargetAndDirection($node);
-
-            if ($target instanceof AbstractBlock || $target instanceof AbstractInline) {
-                $parent = $target->parent();
-                if ($parent instanceof ListItem && $parent->parent() instanceof ListBlock && $parent->parent()->isTight()) {
-                    $target = $parent;
-                }
-
-                if ($direction === self::DIRECTION_SUFFIX) {
-                    $attributes = AttributesHelper::mergeAttributes($target, $node->getAttributes());
-                } else {
-                    $attributes = AttributesHelper::mergeAttributes($node->getAttributes(), $target);
-                }
-
-                $target->data['attributes'] = $attributes;
-            }
-
-            if ($node instanceof AbstractBlock && $node->endsWithBlankLine() && $node->next() && $node->previous()) {
-                $previous = $node->previous();
-                if ($previous instanceof AbstractBlock) {
-                    $previous->setLastLineBlank(true);
-                }
-            }
-
-            $node->detach();
-        }
-    }
-
-    /**
-     * @param Node $node
-     *
-     * @return array<Node|string|null>
-     */
-    private static function findTargetAndDirection(Node $node): array
-    {
-        $target = null;
-        $direction = null;
-        $previous = $next = $node;
-        while (true) {
-            $previous = self::getPrevious($previous);
-            $next = self::getNext($next);
-
-            if ($previous === null && $next === null) {
-                if (!$node->parent() instanceof FencedCode) {
-                    $target = $node->parent();
-                    $direction = self::DIRECTION_SUFFIX;
-                }
-
-                break;
-            }
-
-            if ($node instanceof AttributesInline && ($previous === null || ($previous instanceof AbstractInline && $node->isBlock()))) {
-                continue;
-            }
-
-            if ($previous !== null && !self::isAttributesNode($previous)) {
-                $target = $previous;
-                $direction = self::DIRECTION_SUFFIX;
-
-                break;
-            }
-
-            if ($next !== null && !self::isAttributesNode($next)) {
-                $target = $next;
-                $direction = self::DIRECTION_PREFIX;
-
-                break;
-            }
-        }
-
-        return [$target, $direction];
-    }
-
-    private static function getPrevious(?Node $node = null): ?Node
-    {
-        $previous = $node instanceof Node ? $node->previous() : null;
-
-        if ($previous instanceof AbstractBlock && $previous->endsWithBlankLine()) {
-            $previous = null;
-        }
-
-        return $previous;
-    }
-
-    private static function getNext(?Node $node = null): ?Node
-    {
-        $next = $node instanceof Node ? $node->next() : null;
-
-        if ($node instanceof AbstractBlock && $node->endsWithBlankLine()) {
-            $next = null;
-        }
-
-        return $next;
-    }
-
-    private static function isAttributesNode(Node $node): bool
-    {
-        return $node instanceof Attributes || $node instanceof AttributesInline;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

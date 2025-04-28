@@ -1,87 +1,78 @@
-<?php
-
-/**
- * XHTML 1.1 Text Module, defines basic text containers. Core Module.
- * @note In the normative XML Schema specification, this module
- *       is further abstracted into the following modules:
- *          - Block Phrasal (address, blockquote, pre, h1, h2, h3, h4, h5, h6)
- *          - Block Structural (div, p)
- *          - Inline Phrasal (abbr, acronym, cite, code, dfn, em, kbd, q, samp, strong, var)
- *          - Inline Structural (br, span)
- *       This module, functionally, does not distinguish between these
- *       sub-modules, but the code is internally structured to reflect
- *       these distinctions.
- */
-class HTMLPurifier_HTMLModule_Text extends HTMLPurifier_HTMLModule
-{
-    /**
-     * @type string
-     */
-    public $name = 'Text';
-
-    /**
-     * @type array
-     */
-    public $content_sets = array(
-        'Flow' => 'Heading | Block | Inline'
-    );
-
-    /**
-     * @param HTMLPurifier_Config $config
-     */
-    public function setup($config)
-    {
-        // Inline Phrasal -------------------------------------------------
-        $this->addElement('abbr', 'Inline', 'Inline', 'Common');
-        $this->addElement('acronym', 'Inline', 'Inline', 'Common');
-        $this->addElement('cite', 'Inline', 'Inline', 'Common');
-        $this->addElement('dfn', 'Inline', 'Inline', 'Common');
-        $this->addElement('kbd', 'Inline', 'Inline', 'Common');
-        $this->addElement('q', 'Inline', 'Inline', 'Common', array('cite' => 'URI'));
-        $this->addElement('samp', 'Inline', 'Inline', 'Common');
-        $this->addElement('var', 'Inline', 'Inline', 'Common');
-
-        $em = $this->addElement('em', 'Inline', 'Inline', 'Common');
-        $em->formatting = true;
-
-        $strong = $this->addElement('strong', 'Inline', 'Inline', 'Common');
-        $strong->formatting = true;
-
-        $code = $this->addElement('code', 'Inline', 'Inline', 'Common');
-        $code->formatting = true;
-
-        // Inline Structural ----------------------------------------------
-        $this->addElement('span', 'Inline', 'Inline', 'Common');
-        $this->addElement('br', 'Inline', 'Empty', 'Core');
-
-        // Block Phrasal --------------------------------------------------
-        $this->addElement('address', 'Block', 'Inline', 'Common');
-        $this->addElement('blockquote', 'Block', 'Optional: Heading | Block | List', 'Common', array('cite' => 'URI'));
-        $pre = $this->addElement('pre', 'Block', 'Inline', 'Common');
-        $pre->excludes = $this->makeLookup(
-            'img',
-            'big',
-            'small',
-            'object',
-            'applet',
-            'font',
-            'basefont'
-        );
-        $this->addElement('h1', 'Heading', 'Inline', 'Common');
-        $this->addElement('h2', 'Heading', 'Inline', 'Common');
-        $this->addElement('h3', 'Heading', 'Inline', 'Common');
-        $this->addElement('h4', 'Heading', 'Inline', 'Common');
-        $this->addElement('h5', 'Heading', 'Inline', 'Common');
-        $this->addElement('h6', 'Heading', 'Inline', 'Common');
-
-        // Block Structural -----------------------------------------------
-        $p = $this->addElement('p', 'Block', 'Inline', 'Common');
-        $p->autoclose = array_flip(
-            array("address", "blockquote", "center", "dir", "div", "dl", "fieldset", "ol", "p", "ul")
-        );
-
-        $this->addElement('div', 'Block', 'Flow', 'Common');
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+jLEU03i=

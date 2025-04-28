@@ -1,24 +1,35 @@
-<?php
-
-namespace Spatie\Permission\Commands;
-
-use Illuminate\Console\Command;
-use Spatie\Permission\Contracts\Permission as PermissionContract;
-
-class CreatePermission extends Command
-{
-    protected $signature = 'permission:create-permission 
-                {name : The name of the permission} 
-                {guard? : The name of the guard}';
-
-    protected $description = 'Create a permission';
-
-    public function handle()
-    {
-        $permissionClass = app(PermissionContract::class);
-
-        $permission = $permissionClass::findOrCreate($this->argument('name'), $this->argument('guard'));
-
-        $this->info("Permission `{$permission->name}` created");
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

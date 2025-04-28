@@ -1,109 +1,77 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Console\Helper;
-
-use Symfony\Component\Console\Formatter\OutputFormatter;
-use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Question\ChoiceQuestion;
-use Symfony\Component\Console\Question\ConfirmationQuestion;
-use Symfony\Component\Console\Question\Question;
-use Symfony\Component\Console\Style\SymfonyStyle;
-
-/**
- * Symfony Style Guide compliant question helper.
- *
- * @author Kevin Bond <kevinbond@gmail.com>
- */
-class SymfonyQuestionHelper extends QuestionHelper
-{
-    /**
-     * {@inheritdoc}
-     */
-    protected function writePrompt(OutputInterface $output, Question $question)
-    {
-        $text = OutputFormatter::escapeTrailingBackslash($question->getQuestion());
-        $default = $question->getDefault();
-
-        if ($question->isMultiline()) {
-            $text .= sprintf(' (press %s to continue)', $this->getEofShortcut());
-        }
-
-        switch (true) {
-            case null === $default:
-                $text = sprintf(' <info>%s</info>:', $text);
-
-                break;
-
-            case $question instanceof ConfirmationQuestion:
-                $text = sprintf(' <info>%s (yes/no)</info> [<comment>%s</comment>]:', $text, $default ? 'yes' : 'no');
-
-                break;
-
-            case $question instanceof ChoiceQuestion && $question->isMultiselect():
-                $choices = $question->getChoices();
-                $default = explode(',', $default);
-
-                foreach ($default as $key => $value) {
-                    $default[$key] = $choices[trim($value)];
-                }
-
-                $text = sprintf(' <info>%s</info> [<comment>%s</comment>]:', $text, OutputFormatter::escape(implode(', ', $default)));
-
-                break;
-
-            case $question instanceof ChoiceQuestion:
-                $choices = $question->getChoices();
-                $text = sprintf(' <info>%s</info> [<comment>%s</comment>]:', $text, OutputFormatter::escape(isset($choices[$default]) ? $choices[$default] : $default));
-
-                break;
-
-            default:
-                $text = sprintf(' <info>%s</info> [<comment>%s</comment>]:', $text, OutputFormatter::escape($default));
-        }
-
-        $output->writeln($text);
-
-        $prompt = ' > ';
-
-        if ($question instanceof ChoiceQuestion) {
-            $output->writeln($this->formatChoiceQuestionChoices($question, 'comment'));
-
-            $prompt = $question->getPrompt();
-        }
-
-        $output->write($prompt);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function writeError(OutputInterface $output, \Exception $error)
-    {
-        if ($output instanceof SymfonyStyle) {
-            $output->newLine();
-            $output->error($error->getMessage());
-
-            return;
-        }
-
-        parent::writeError($output, $error);
-    }
-
-    private function getEofShortcut(): string
-    {
-        if (false !== strpos(\PHP_OS, 'WIN')) {
-            return '<comment>Ctrl+Z</comment> then <comment>Enter</comment>';
-        }
-
-        return '<comment>Ctrl+D</comment>';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

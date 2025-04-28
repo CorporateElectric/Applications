@@ -1,125 +1,56 @@
-<?php
-
-namespace Illuminate\Cache;
-
-use Illuminate\Contracts\Cache\Store;
-
-class TaggedCache extends Repository
-{
-    use RetrievesMultipleKeys {
-        putMany as putManyAlias;
-    }
-
-    /**
-     * The tag set instance.
-     *
-     * @var \Illuminate\Cache\TagSet
-     */
-    protected $tags;
-
-    /**
-     * Create a new tagged cache instance.
-     *
-     * @param  \Illuminate\Contracts\Cache\Store  $store
-     * @param  \Illuminate\Cache\TagSet  $tags
-     * @return void
-     */
-    public function __construct(Store $store, TagSet $tags)
-    {
-        parent::__construct($store);
-
-        $this->tags = $tags;
-    }
-
-    /**
-     * Store multiple items in the cache for a given number of seconds.
-     *
-     * @param  array  $values
-     * @param  int|null  $ttl
-     * @return bool
-     */
-    public function putMany(array $values, $ttl = null)
-    {
-        if ($ttl === null) {
-            return $this->putManyForever($values);
-        }
-
-        return $this->putManyAlias($values, $ttl);
-    }
-
-    /**
-     * Increment the value of an item in the cache.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @return void
-     */
-    public function increment($key, $value = 1)
-    {
-        $this->store->increment($this->itemKey($key), $value);
-    }
-
-    /**
-     * Decrement the value of an item in the cache.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @return void
-     */
-    public function decrement($key, $value = 1)
-    {
-        $this->store->decrement($this->itemKey($key), $value);
-    }
-
-    /**
-     * Remove all items from the cache.
-     *
-     * @return bool
-     */
-    public function flush()
-    {
-        $this->tags->reset();
-
-        return true;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function itemKey($key)
-    {
-        return $this->taggedItemKey($key);
-    }
-
-    /**
-     * Get a fully qualified key for a tagged item.
-     *
-     * @param  string  $key
-     * @return string
-     */
-    public function taggedItemKey($key)
-    {
-        return sha1($this->tags->getNamespace()).':'.$key;
-    }
-
-    /**
-     * Fire an event for this cache instance.
-     *
-     * @param  string  $event
-     * @return void
-     */
-    protected function event($event)
-    {
-        parent::event($event->setTags($this->tags->getNames()));
-    }
-
-    /**
-     * Get the tag set instance.
-     *
-     * @return \Illuminate\Cache\TagSet
-     */
-    public function getTags()
-    {
-        return $this->tags;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+qewLN8UtdKxCIW==

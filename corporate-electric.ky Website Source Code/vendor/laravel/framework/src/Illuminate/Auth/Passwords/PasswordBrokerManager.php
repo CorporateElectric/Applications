@@ -1,146 +1,72 @@
-<?php
-
-namespace Illuminate\Auth\Passwords;
-
-use Illuminate\Contracts\Auth\PasswordBrokerFactory as FactoryContract;
-use Illuminate\Support\Str;
-use InvalidArgumentException;
-
-/**
- * @mixin \Illuminate\Contracts\Auth\PasswordBroker
- */
-class PasswordBrokerManager implements FactoryContract
-{
-    /**
-     * The application instance.
-     *
-     * @var \Illuminate\Contracts\Foundation\Application
-     */
-    protected $app;
-
-    /**
-     * The array of created "drivers".
-     *
-     * @var array
-     */
-    protected $brokers = [];
-
-    /**
-     * Create a new PasswordBroker manager instance.
-     *
-     * @param  \Illuminate\Contracts\Foundation\Application  $app
-     * @return void
-     */
-    public function __construct($app)
-    {
-        $this->app = $app;
-    }
-
-    /**
-     * Attempt to get the broker from the local cache.
-     *
-     * @param  string|null  $name
-     * @return \Illuminate\Contracts\Auth\PasswordBroker
-     */
-    public function broker($name = null)
-    {
-        $name = $name ?: $this->getDefaultDriver();
-
-        return $this->brokers[$name] ?? ($this->brokers[$name] = $this->resolve($name));
-    }
-
-    /**
-     * Resolve the given broker.
-     *
-     * @param  string  $name
-     * @return \Illuminate\Contracts\Auth\PasswordBroker
-     *
-     * @throws \InvalidArgumentException
-     */
-    protected function resolve($name)
-    {
-        $config = $this->getConfig($name);
-
-        if (is_null($config)) {
-            throw new InvalidArgumentException("Password resetter [{$name}] is not defined.");
-        }
-
-        // The password broker uses a token repository to validate tokens and send user
-        // password e-mails, as well as validating that password reset process as an
-        // aggregate service of sorts providing a convenient interface for resets.
-        return new PasswordBroker(
-            $this->createTokenRepository($config),
-            $this->app['auth']->createUserProvider($config['provider'] ?? null)
-        );
-    }
-
-    /**
-     * Create a token repository instance based on the given configuration.
-     *
-     * @param  array  $config
-     * @return \Illuminate\Auth\Passwords\TokenRepositoryInterface
-     */
-    protected function createTokenRepository(array $config)
-    {
-        $key = $this->app['config']['app.key'];
-
-        if (Str::startsWith($key, 'base64:')) {
-            $key = base64_decode(substr($key, 7));
-        }
-
-        $connection = $config['connection'] ?? null;
-
-        return new DatabaseTokenRepository(
-            $this->app['db']->connection($connection),
-            $this->app['hash'],
-            $config['table'],
-            $key,
-            $config['expire'],
-            $config['throttle'] ?? 0
-        );
-    }
-
-    /**
-     * Get the password broker configuration.
-     *
-     * @param  string  $name
-     * @return array
-     */
-    protected function getConfig($name)
-    {
-        return $this->app['config']["auth.passwords.{$name}"];
-    }
-
-    /**
-     * Get the default password broker name.
-     *
-     * @return string
-     */
-    public function getDefaultDriver()
-    {
-        return $this->app['config']['auth.defaults.passwords'];
-    }
-
-    /**
-     * Set the default password broker name.
-     *
-     * @param  string  $name
-     * @return void
-     */
-    public function setDefaultDriver($name)
-    {
-        $this->app['config']['auth.defaults.passwords'] = $name;
-    }
-
-    /**
-     * Dynamically call the default driver instance.
-     *
-     * @param  string  $method
-     * @param  array  $parameters
-     * @return mixed
-     */
-    public function __call($method, $parameters)
-    {
-        return $this->broker()->{$method}(...$parameters);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

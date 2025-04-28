@@ -1,248 +1,160 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\Command;
-
-use Psy\Input\FilterOptions;
-use Psy\Output\ShellOutput;
-use Psy\Readline\Readline;
-use Symfony\Component\Console\Formatter\OutputFormatter;
-use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Output\OutputInterface;
-
-/**
- * Psy Shell history command.
- *
- * Shows, searches and replays readline history. Not too shabby.
- */
-class HistoryCommand extends Command
-{
-    private $filter;
-    private $readline;
-
-    /**
-     * {@inheritdoc}
-     */
-    public function __construct($name = null)
-    {
-        $this->filter = new FilterOptions();
-
-        parent::__construct($name);
-    }
-
-    /**
-     * Set the Shell's Readline service.
-     *
-     * @param Readline $readline
-     */
-    public function setReadline(Readline $readline)
-    {
-        $this->readline = $readline;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
-    {
-        list($grep, $insensitive, $invert) = FilterOptions::getOptions();
-
-        $this
-            ->setName('history')
-            ->setAliases(['hist'])
-            ->setDefinition([
-                new InputOption('show', 's', InputOption::VALUE_REQUIRED, 'Show the given range of lines.'),
-                new InputOption('head', 'H', InputOption::VALUE_REQUIRED, 'Display the first N items.'),
-                new InputOption('tail', 'T', InputOption::VALUE_REQUIRED, 'Display the last N items.'),
-
-                $grep,
-                $insensitive,
-                $invert,
-
-                new InputOption('no-numbers', 'N', InputOption::VALUE_NONE, 'Omit line numbers.'),
-
-                new InputOption('save', '', InputOption::VALUE_REQUIRED, 'Save history to a file.'),
-                new InputOption('replay', '', InputOption::VALUE_NONE, 'Replay.'),
-                new InputOption('clear', '', InputOption::VALUE_NONE, 'Clear the history.'),
-            ])
-            ->setDescription('Show the Psy Shell history.')
-            ->setHelp(
-                <<<'HELP'
-Show, search, save or replay the Psy Shell history.
-
-e.g.
-<return>>>> history --grep /[bB]acon/</return>
-<return>>>> history --show 0..10 --replay</return>
-<return>>>> history --clear</return>
-<return>>>> history --tail 1000 --save somefile.txt</return>
-HELP
-            );
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function execute(InputInterface $input, OutputInterface $output)
-    {
-        $this->validateOnlyOne($input, ['show', 'head', 'tail']);
-        $this->validateOnlyOne($input, ['save', 'replay', 'clear']);
-
-        $history = $this->getHistorySlice(
-            $input->getOption('show'),
-            $input->getOption('head'),
-            $input->getOption('tail')
-        );
-        $highlighted = false;
-
-        $this->filter->bind($input);
-        if ($this->filter->hasFilter()) {
-            $matches = [];
-            $highlighted = [];
-            foreach ($history as $i => $line) {
-                if ($this->filter->match($line, $matches)) {
-                    if (isset($matches[0])) {
-                        $chunks = \explode($matches[0], $history[$i]);
-                        $chunks = \array_map([__CLASS__, 'escape'], $chunks);
-                        $glue = \sprintf('<urgent>%s</urgent>', self::escape($matches[0]));
-
-                        $highlighted[$i] = \implode($glue, $chunks);
-                    }
-                } else {
-                    unset($history[$i]);
-                }
-            }
-        }
-
-        if ($save = $input->getOption('save')) {
-            $output->writeln(\sprintf('Saving history in %s...', $save));
-            \file_put_contents($save, \implode(\PHP_EOL, $history).\PHP_EOL);
-            $output->writeln('<info>History saved.</info>');
-        } elseif ($input->getOption('replay')) {
-            if (!($input->getOption('show') || $input->getOption('head') || $input->getOption('tail'))) {
-                throw new \InvalidArgumentException('You must limit history via --head, --tail or --show before replaying');
-            }
-
-            $count = \count($history);
-            $output->writeln(\sprintf('Replaying %d line%s of history', $count, ($count !== 1) ? 's' : ''));
-            $this->getApplication()->addInput($history);
-        } elseif ($input->getOption('clear')) {
-            $this->clearHistory();
-            $output->writeln('<info>History cleared.</info>');
-        } else {
-            $type = $input->getOption('no-numbers') ? 0 : ShellOutput::NUMBER_LINES;
-            if (!$highlighted) {
-                $type = $type | OutputInterface::OUTPUT_RAW;
-            }
-
-            $output->page($highlighted ?: $history, $type);
-        }
-
-        return 0;
-    }
-
-    /**
-     * Extract a range from a string.
-     *
-     * @param string $range
-     *
-     * @return array [ start, end ]
-     */
-    private function extractRange($range)
-    {
-        if (\preg_match('/^\d+$/', $range)) {
-            return [$range, $range + 1];
-        }
-
-        $matches = [];
-        if ($range !== '..' && \preg_match('/^(\d*)\.\.(\d*)$/', $range, $matches)) {
-            $start = $matches[1] ? (int) $matches[1] : 0;
-            $end = $matches[2] ? (int) $matches[2] + 1 : \PHP_INT_MAX;
-
-            return [$start, $end];
-        }
-
-        throw new \InvalidArgumentException('Unexpected range: '.$range);
-    }
-
-    /**
-     * Retrieve a slice of the readline history.
-     *
-     * @param string $show
-     * @param string $head
-     * @param string $tail
-     *
-     * @return array A slilce of history
-     */
-    private function getHistorySlice($show, $head, $tail)
-    {
-        $history = $this->readline->listHistory();
-
-        // don't show the current `history` invocation
-        \array_pop($history);
-
-        if ($show) {
-            list($start, $end) = $this->extractRange($show);
-            $length = $end - $start;
-        } elseif ($head) {
-            if (!\preg_match('/^\d+$/', $head)) {
-                throw new \InvalidArgumentException('Please specify an integer argument for --head');
-            }
-
-            $start = 0;
-            $length = (int) $head;
-        } elseif ($tail) {
-            if (!\preg_match('/^\d+$/', $tail)) {
-                throw new \InvalidArgumentException('Please specify an integer argument for --tail');
-            }
-
-            $start = \count($history) - $tail;
-            $length = (int) $tail + 1;
-        } else {
-            return $history;
-        }
-
-        return \array_slice($history, $start, $length, true);
-    }
-
-    /**
-     * Validate that only one of the given $options is set.
-     *
-     * @param InputInterface $input
-     * @param array          $options
-     */
-    private function validateOnlyOne(InputInterface $input, array $options)
-    {
-        $count = 0;
-        foreach ($options as $opt) {
-            if ($input->getOption($opt)) {
-                $count++;
-            }
-        }
-
-        if ($count > 1) {
-            throw new \InvalidArgumentException('Please specify only one of --'.\implode(', --', $options));
-        }
-    }
-
-    /**
-     * Clear the readline history.
-     */
-    private function clearHistory()
-    {
-        $this->readline->clearHistory();
-    }
-
-    public static function escape($string)
-    {
-        return OutputFormatter::escape($string);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

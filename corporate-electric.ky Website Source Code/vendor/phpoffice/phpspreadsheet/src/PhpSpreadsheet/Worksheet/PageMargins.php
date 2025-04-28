@@ -1,244 +1,54 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Worksheet;
-
-class PageMargins
-{
-    /**
-     * Left.
-     *
-     * @var float
-     */
-    private $left = 0.7;
-
-    /**
-     * Right.
-     *
-     * @var float
-     */
-    private $right = 0.7;
-
-    /**
-     * Top.
-     *
-     * @var float
-     */
-    private $top = 0.75;
-
-    /**
-     * Bottom.
-     *
-     * @var float
-     */
-    private $bottom = 0.75;
-
-    /**
-     * Header.
-     *
-     * @var float
-     */
-    private $header = 0.3;
-
-    /**
-     * Footer.
-     *
-     * @var float
-     */
-    private $footer = 0.3;
-
-    /**
-     * Create a new PageMargins.
-     */
-    public function __construct()
-    {
-    }
-
-    /**
-     * Get Left.
-     *
-     * @return float
-     */
-    public function getLeft()
-    {
-        return $this->left;
-    }
-
-    /**
-     * Set Left.
-     *
-     * @param float $pValue
-     *
-     * @return $this
-     */
-    public function setLeft($pValue)
-    {
-        $this->left = $pValue;
-
-        return $this;
-    }
-
-    /**
-     * Get Right.
-     *
-     * @return float
-     */
-    public function getRight()
-    {
-        return $this->right;
-    }
-
-    /**
-     * Set Right.
-     *
-     * @param float $pValue
-     *
-     * @return $this
-     */
-    public function setRight($pValue)
-    {
-        $this->right = $pValue;
-
-        return $this;
-    }
-
-    /**
-     * Get Top.
-     *
-     * @return float
-     */
-    public function getTop()
-    {
-        return $this->top;
-    }
-
-    /**
-     * Set Top.
-     *
-     * @param float $pValue
-     *
-     * @return $this
-     */
-    public function setTop($pValue)
-    {
-        $this->top = $pValue;
-
-        return $this;
-    }
-
-    /**
-     * Get Bottom.
-     *
-     * @return float
-     */
-    public function getBottom()
-    {
-        return $this->bottom;
-    }
-
-    /**
-     * Set Bottom.
-     *
-     * @param float $pValue
-     *
-     * @return $this
-     */
-    public function setBottom($pValue)
-    {
-        $this->bottom = $pValue;
-
-        return $this;
-    }
-
-    /**
-     * Get Header.
-     *
-     * @return float
-     */
-    public function getHeader()
-    {
-        return $this->header;
-    }
-
-    /**
-     * Set Header.
-     *
-     * @param float $pValue
-     *
-     * @return $this
-     */
-    public function setHeader($pValue)
-    {
-        $this->header = $pValue;
-
-        return $this;
-    }
-
-    /**
-     * Get Footer.
-     *
-     * @return float
-     */
-    public function getFooter()
-    {
-        return $this->footer;
-    }
-
-    /**
-     * Set Footer.
-     *
-     * @param float $pValue
-     *
-     * @return $this
-     */
-    public function setFooter($pValue)
-    {
-        $this->footer = $pValue;
-
-        return $this;
-    }
-
-    /**
-     * Implement PHP __clone to create a deep clone, not just a shallow copy.
-     */
-    public function __clone()
-    {
-        $vars = get_object_vars($this);
-        foreach ($vars as $key => $value) {
-            if (is_object($value)) {
-                $this->$key = clone $value;
-            } else {
-                $this->$key = $value;
-            }
-        }
-    }
-
-    public static function fromCentimeters(float $value): float
-    {
-        return $value / 2.54;
-    }
-
-    public static function toCentimeters(float $value): float
-    {
-        return $value * 2.54;
-    }
-
-    public static function fromMillimeters(float $value): float
-    {
-        return $value / 25.4;
-    }
-
-    public static function toMillimeters(float $value): float
-    {
-        return $value * 25.4;
-    }
-
-    public static function fromPoints(float $value): float
-    {
-        return $value / 72;
-    }
-
-    public static function toPoints(float $value): float
-    {
-        return $value * 72;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+kd4Bnm+4UluiGAnlBRZE7zsE

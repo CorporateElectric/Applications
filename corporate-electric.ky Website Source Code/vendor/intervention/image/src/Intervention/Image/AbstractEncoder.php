@@ -1,244 +1,94 @@
-<?php
-
-namespace Intervention\Image;
-
-use Intervention\Image\Exception\InvalidArgumentException;
-use Intervention\Image\Exception\NotSupportedException;
-
-abstract class AbstractEncoder
-{
-    /**
-     * Buffer of encode result data
-     *
-     * @var string
-     */
-    public $result;
-
-    /**
-     * Image object to encode
-     *
-     * @var Image
-     */
-    public $image;
-
-    /**
-     * Output format of encoder instance
-     *
-     * @var string
-     */
-    public $format;
-
-    /**
-     * Output quality of encoder instance
-     *
-     * @var int
-     */
-    public $quality;
-    
-    /**
-     * Processes and returns encoded image as JPEG string
-     *
-     * @return string
-     */
-    abstract protected function processJpeg();
-
-    /**
-     * Processes and returns encoded image as PNG string
-     *
-     * @return string
-     */
-    abstract protected function processPng();
-
-    /**
-     * Processes and returns encoded image as GIF string
-     *
-     * @return string
-     */
-    abstract protected function processGif();
-
-    /**
-     * Processes and returns encoded image as TIFF string
-     *
-     * @return string
-     */
-    abstract protected function processTiff();
-
-    /**
-     * Processes and returns encoded image as BMP string
-     *
-     * @return string
-     */
-    abstract protected function processBmp();
-
-    /**
-     * Processes and returns encoded image as ICO string
-     *
-     * @return string
-     */
-    abstract protected function processIco();
-
-    /**
-     * Processes and returns image as WebP encoded string
-     *
-     * @return string
-     */
-    abstract protected function processWebp();
-
-    /**
-     * Process a given image
-     *
-     * @param  Image   $image
-     * @param  string  $format
-     * @param  int     $quality
-     * @return Image
-     */
-    public function process(Image $image, $format = null, $quality = null)
-    {
-        $this->setImage($image);
-        $this->setFormat($format);
-        $this->setQuality($quality);
-
-        switch (strtolower($this->format)) {
-
-            case 'data-url':
-                $this->result = $this->processDataUrl();
-                break;
-
-            case 'gif':
-            case 'image/gif':
-                $this->result = $this->processGif();
-                break;
-
-            case 'png':
-            case 'image/png':
-            case 'image/x-png':
-                $this->result = $this->processPng();
-                break;
-
-            case 'jpg':
-            case 'jpeg':
-            case 'image/jpg':
-            case 'image/jpeg':
-            case 'image/pjpeg':
-                $this->result = $this->processJpeg();
-                break;
-
-            case 'tif':
-            case 'tiff':
-            case 'image/tiff':
-            case 'image/tif':
-            case 'image/x-tif':
-            case 'image/x-tiff':
-                $this->result = $this->processTiff();
-                break;
-
-            case 'bmp':
-            case 'bmp':
-            case 'ms-bmp':
-            case 'x-bitmap':
-            case 'x-bmp':
-            case 'x-ms-bmp':
-            case 'x-win-bitmap':
-            case 'x-windows-bmp':
-            case 'x-xbitmap':
-            case 'image/ms-bmp':
-            case 'image/x-bitmap':
-            case 'image/x-bmp':
-            case 'image/x-ms-bmp':
-            case 'image/x-win-bitmap':
-            case 'image/x-windows-bmp':
-            case 'image/x-xbitmap':
-                $this->result = $this->processBmp();
-                break;
-
-            case 'ico':
-            case 'image/x-ico':
-            case 'image/x-icon':
-            case 'image/vnd.microsoft.icon':
-                $this->result = $this->processIco();
-                break;
-
-            case 'psd':
-            case 'image/vnd.adobe.photoshop':
-                $this->result = $this->processPsd();
-                break;
-
-            case 'webp':
-            case 'image/webp':
-            case 'image/x-webp':
-                $this->result = $this->processWebp();
-                break;
-                
-            default:
-                throw new NotSupportedException(
-                    "Encoding format ({$format}) is not supported."
-                );
-        }
-
-        $this->setImage(null);
-
-        return $image->setEncoded($this->result);
-    }
-
-    /**
-     * Processes and returns encoded image as data-url string
-     *
-     * @return string
-     */
-    protected function processDataUrl()
-    {
-        $mime = $this->image->mime ? $this->image->mime : 'image/png';
-
-        return sprintf('data:%s;base64,%s',
-            $mime,
-            base64_encode($this->process($this->image, $mime, $this->quality))
-        );
-    }
-
-    /**
-     * Sets image to process
-     *
-     * @param Image $image
-     */
-    protected function setImage($image)
-    {
-        $this->image = $image;
-    }
-
-    /**
-     * Determines output format
-     *
-     * @param string $format
-     */
-    protected function setFormat($format = null)
-    {
-        if ($format == '' && $this->image instanceof Image) {
-            $format = $this->image->mime;
-        }
-
-        $this->format = $format ? $format : 'jpg';
-
-        return $this;
-    }
-
-    /**
-     * Determines output quality
-     *
-     * @param int $quality
-     */
-    protected function setQuality($quality)
-    {
-        $quality = is_null($quality) ? 90 : $quality;
-        $quality = $quality === 0 ? 1 : $quality;
-
-        if ($quality < 0 || $quality > 100) {
-            throw new InvalidArgumentException(
-                'Quality must range from 0 to 100.'
-            );
-        }
-
-        $this->quality = intval($quality);
-
-        return $this;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

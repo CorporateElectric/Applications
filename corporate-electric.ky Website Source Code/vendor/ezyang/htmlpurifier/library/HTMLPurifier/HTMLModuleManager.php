@@ -1,467 +1,165 @@
-<?php
-
-class HTMLPurifier_HTMLModuleManager
-{
-
-    /**
-     * @type HTMLPurifier_DoctypeRegistry
-     */
-    public $doctypes;
-
-    /**
-     * Instance of current doctype.
-     * @type string
-     */
-    public $doctype;
-
-    /**
-     * @type HTMLPurifier_AttrTypes
-     */
-    public $attrTypes;
-
-    /**
-     * Active instances of modules for the specified doctype are
-     * indexed, by name, in this array.
-     * @type HTMLPurifier_HTMLModule[]
-     */
-    public $modules = array();
-
-    /**
-     * Array of recognized HTMLPurifier_HTMLModule instances,
-     * indexed by module's class name. This array is usually lazy loaded, but a
-     * user can overload a module by pre-emptively registering it.
-     * @type HTMLPurifier_HTMLModule[]
-     */
-    public $registeredModules = array();
-
-    /**
-     * List of extra modules that were added by the user
-     * using addModule(). These get unconditionally merged into the current doctype, whatever
-     * it may be.
-     * @type HTMLPurifier_HTMLModule[]
-     */
-    public $userModules = array();
-
-    /**
-     * Associative array of element name to list of modules that have
-     * definitions for the element; this array is dynamically filled.
-     * @type array
-     */
-    public $elementLookup = array();
-
-    /**
-     * List of prefixes we should use for registering small names.
-     * @type array
-     */
-    public $prefixes = array('HTMLPurifier_HTMLModule_');
-
-    /**
-     * @type HTMLPurifier_ContentSets
-     */
-    public $contentSets;
-
-    /**
-     * @type HTMLPurifier_AttrCollections
-     */
-    public $attrCollections;
-
-    /**
-     * If set to true, unsafe elements and attributes will be allowed.
-     * @type bool
-     */
-    public $trusted = false;
-
-    public function __construct()
-    {
-        // editable internal objects
-        $this->attrTypes = new HTMLPurifier_AttrTypes();
-        $this->doctypes  = new HTMLPurifier_DoctypeRegistry();
-
-        // setup basic modules
-        $common = array(
-            'CommonAttributes', 'Text', 'Hypertext', 'List',
-            'Presentation', 'Edit', 'Bdo', 'Tables', 'Image',
-            'StyleAttribute',
-            // Unsafe:
-            'Scripting', 'Object', 'Forms',
-            // Sorta legacy, but present in strict:
-            'Name',
-        );
-        $transitional = array('Legacy', 'Target', 'Iframe');
-        $xml = array('XMLCommonAttributes');
-        $non_xml = array('NonXMLCommonAttributes');
-
-        // setup basic doctypes
-        $this->doctypes->register(
-            'HTML 4.01 Transitional',
-            false,
-            array_merge($common, $transitional, $non_xml),
-            array('Tidy_Transitional', 'Tidy_Proprietary'),
-            array(),
-            '-//W3C//DTD HTML 4.01 Transitional//EN',
-            'http://www.w3.org/TR/html4/loose.dtd'
-        );
-
-        $this->doctypes->register(
-            'HTML 4.01 Strict',
-            false,
-            array_merge($common, $non_xml),
-            array('Tidy_Strict', 'Tidy_Proprietary', 'Tidy_Name'),
-            array(),
-            '-//W3C//DTD HTML 4.01//EN',
-            'http://www.w3.org/TR/html4/strict.dtd'
-        );
-
-        $this->doctypes->register(
-            'XHTML 1.0 Transitional',
-            true,
-            array_merge($common, $transitional, $xml, $non_xml),
-            array('Tidy_Transitional', 'Tidy_XHTML', 'Tidy_Proprietary', 'Tidy_Name'),
-            array(),
-            '-//W3C//DTD XHTML 1.0 Transitional//EN',
-            'http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd'
-        );
-
-        $this->doctypes->register(
-            'XHTML 1.0 Strict',
-            true,
-            array_merge($common, $xml, $non_xml),
-            array('Tidy_Strict', 'Tidy_XHTML', 'Tidy_Strict', 'Tidy_Proprietary', 'Tidy_Name'),
-            array(),
-            '-//W3C//DTD XHTML 1.0 Strict//EN',
-            'http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd'
-        );
-
-        $this->doctypes->register(
-            'XHTML 1.1',
-            true,
-            // Iframe is a real XHTML 1.1 module, despite being
-            // "transitional"!
-            array_merge($common, $xml, array('Ruby', 'Iframe')),
-            array('Tidy_Strict', 'Tidy_XHTML', 'Tidy_Proprietary', 'Tidy_Strict', 'Tidy_Name'), // Tidy_XHTML1_1
-            array(),
-            '-//W3C//DTD XHTML 1.1//EN',
-            'http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd'
-        );
-
-    }
-
-    /**
-     * Registers a module to the recognized module list, useful for
-     * overloading pre-existing modules.
-     * @param $module Mixed: string module name, with or without
-     *                HTMLPurifier_HTMLModule prefix, or instance of
-     *                subclass of HTMLPurifier_HTMLModule.
-     * @param $overload Boolean whether or not to overload previous modules.
-     *                  If this is not set, and you do overload a module,
-     *                  HTML Purifier will complain with a warning.
-     * @note This function will not call autoload, you must instantiate
-     *       (and thus invoke) autoload outside the method.
-     * @note If a string is passed as a module name, different variants
-     *       will be tested in this order:
-     *          - Check for HTMLPurifier_HTMLModule_$name
-     *          - Check all prefixes with $name in order they were added
-     *          - Check for literal object name
-     *          - Throw fatal error
-     *       If your object name collides with an internal class, specify
-     *       your module manually. All modules must have been included
-     *       externally: registerModule will not perform inclusions for you!
-     */
-    public function registerModule($module, $overload = false)
-    {
-        if (is_string($module)) {
-            // attempt to load the module
-            $original_module = $module;
-            $ok = false;
-            foreach ($this->prefixes as $prefix) {
-                $module = $prefix . $original_module;
-                if (class_exists($module)) {
-                    $ok = true;
-                    break;
-                }
-            }
-            if (!$ok) {
-                $module = $original_module;
-                if (!class_exists($module)) {
-                    trigger_error(
-                        $original_module . ' module does not exist',
-                        E_USER_ERROR
-                    );
-                    return;
-                }
-            }
-            $module = new $module();
-        }
-        if (empty($module->name)) {
-            trigger_error('Module instance of ' . get_class($module) . ' must have name');
-            return;
-        }
-        if (!$overload && isset($this->registeredModules[$module->name])) {
-            trigger_error('Overloading ' . $module->name . ' without explicit overload parameter', E_USER_WARNING);
-        }
-        $this->registeredModules[$module->name] = $module;
-    }
-
-    /**
-     * Adds a module to the current doctype by first registering it,
-     * and then tacking it on to the active doctype
-     */
-    public function addModule($module)
-    {
-        $this->registerModule($module);
-        if (is_object($module)) {
-            $module = $module->name;
-        }
-        $this->userModules[] = $module;
-    }
-
-    /**
-     * Adds a class prefix that registerModule() will use to resolve a
-     * string name to a concrete class
-     */
-    public function addPrefix($prefix)
-    {
-        $this->prefixes[] = $prefix;
-    }
-
-    /**
-     * Performs processing on modules, after being called you may
-     * use getElement() and getElements()
-     * @param HTMLPurifier_Config $config
-     */
-    public function setup($config)
-    {
-        $this->trusted = $config->get('HTML.Trusted');
-
-        // generate
-        $this->doctype = $this->doctypes->make($config);
-        $modules = $this->doctype->modules;
-
-        // take out the default modules that aren't allowed
-        $lookup = $config->get('HTML.AllowedModules');
-        $special_cases = $config->get('HTML.CoreModules');
-
-        if (is_array($lookup)) {
-            foreach ($modules as $k => $m) {
-                if (isset($special_cases[$m])) {
-                    continue;
-                }
-                if (!isset($lookup[$m])) {
-                    unset($modules[$k]);
-                }
-            }
-        }
-
-        // custom modules
-        if ($config->get('HTML.Proprietary')) {
-            $modules[] = 'Proprietary';
-        }
-        if ($config->get('HTML.SafeObject')) {
-            $modules[] = 'SafeObject';
-        }
-        if ($config->get('HTML.SafeEmbed')) {
-            $modules[] = 'SafeEmbed';
-        }
-        if ($config->get('HTML.SafeScripting') !== array()) {
-            $modules[] = 'SafeScripting';
-        }
-        if ($config->get('HTML.Nofollow')) {
-            $modules[] = 'Nofollow';
-        }
-        if ($config->get('HTML.TargetBlank')) {
-            $modules[] = 'TargetBlank';
-        }
-        // NB: HTML.TargetNoreferrer and HTML.TargetNoopener must be AFTER HTML.TargetBlank
-        // so that its post-attr-transform gets run afterwards.
-        if ($config->get('HTML.TargetNoreferrer')) {
-            $modules[] = 'TargetNoreferrer';
-        }
-        if ($config->get('HTML.TargetNoopener')) {
-            $modules[] = 'TargetNoopener';
-        }
-
-        // merge in custom modules
-        $modules = array_merge($modules, $this->userModules);
-
-        foreach ($modules as $module) {
-            $this->processModule($module);
-            $this->modules[$module]->setup($config);
-        }
-
-        foreach ($this->doctype->tidyModules as $module) {
-            $this->processModule($module);
-            $this->modules[$module]->setup($config);
-        }
-
-        // prepare any injectors
-        foreach ($this->modules as $module) {
-            $n = array();
-            foreach ($module->info_injector as $injector) {
-                if (!is_object($injector)) {
-                    $class = "HTMLPurifier_Injector_$injector";
-                    $injector = new $class;
-                }
-                $n[$injector->name] = $injector;
-            }
-            $module->info_injector = $n;
-        }
-
-        // setup lookup table based on all valid modules
-        foreach ($this->modules as $module) {
-            foreach ($module->info as $name => $def) {
-                if (!isset($this->elementLookup[$name])) {
-                    $this->elementLookup[$name] = array();
-                }
-                $this->elementLookup[$name][] = $module->name;
-            }
-        }
-
-        // note the different choice
-        $this->contentSets = new HTMLPurifier_ContentSets(
-            // content set assembly deals with all possible modules,
-            // not just ones deemed to be "safe"
-            $this->modules
-        );
-        $this->attrCollections = new HTMLPurifier_AttrCollections(
-            $this->attrTypes,
-            // there is no way to directly disable a global attribute,
-            // but using AllowedAttributes or simply not including
-            // the module in your custom doctype should be sufficient
-            $this->modules
-        );
-    }
-
-    /**
-     * Takes a module and adds it to the active module collection,
-     * registering it if necessary.
-     */
-    public function processModule($module)
-    {
-        if (!isset($this->registeredModules[$module]) || is_object($module)) {
-            $this->registerModule($module);
-        }
-        $this->modules[$module] = $this->registeredModules[$module];
-    }
-
-    /**
-     * Retrieves merged element definitions.
-     * @return Array of HTMLPurifier_ElementDef
-     */
-    public function getElements()
-    {
-        $elements = array();
-        foreach ($this->modules as $module) {
-            if (!$this->trusted && !$module->safe) {
-                continue;
-            }
-            foreach ($module->info as $name => $v) {
-                if (isset($elements[$name])) {
-                    continue;
-                }
-                $elements[$name] = $this->getElement($name);
-            }
-        }
-
-        // remove dud elements, this happens when an element that
-        // appeared to be safe actually wasn't
-        foreach ($elements as $n => $v) {
-            if ($v === false) {
-                unset($elements[$n]);
-            }
-        }
-
-        return $elements;
-
-    }
-
-    /**
-     * Retrieves a single merged element definition
-     * @param string $name Name of element
-     * @param bool $trusted Boolean trusted overriding parameter: set to true
-     *                 if you want the full version of an element
-     * @return HTMLPurifier_ElementDef Merged HTMLPurifier_ElementDef
-     * @note You may notice that modules are getting iterated over twice (once
-     *       in getElements() and once here). This
-     *       is because
-     */
-    public function getElement($name, $trusted = null)
-    {
-        if (!isset($this->elementLookup[$name])) {
-            return false;
-        }
-
-        // setup global state variables
-        $def = false;
-        if ($trusted === null) {
-            $trusted = $this->trusted;
-        }
-
-        // iterate through each module that has registered itself to this
-        // element
-        foreach ($this->elementLookup[$name] as $module_name) {
-            $module = $this->modules[$module_name];
-
-            // refuse to create/merge from a module that is deemed unsafe--
-            // pretend the module doesn't exist--when trusted mode is not on.
-            if (!$trusted && !$module->safe) {
-                continue;
-            }
-
-            // clone is used because, ideally speaking, the original
-            // definition should not be modified. Usually, this will
-            // make no difference, but for consistency's sake
-            $new_def = clone $module->info[$name];
-
-            if (!$def && $new_def->standalone) {
-                $def = $new_def;
-            } elseif ($def) {
-                // This will occur even if $new_def is standalone. In practice,
-                // this will usually result in a full replacement.
-                $def->mergeIn($new_def);
-            } else {
-                // :TODO:
-                // non-standalone definitions that don't have a standalone
-                // to merge into could be deferred to the end
-                // HOWEVER, it is perfectly valid for a non-standalone
-                // definition to lack a standalone definition, even
-                // after all processing: this allows us to safely
-                // specify extra attributes for elements that may not be
-                // enabled all in one place.  In particular, this might
-                // be the case for trusted elements.  WARNING: care must
-                // be taken that the /extra/ definitions are all safe.
-                continue;
-            }
-
-            // attribute value expansions
-            $this->attrCollections->performInclusions($def->attr);
-            $this->attrCollections->expandIdentifiers($def->attr, $this->attrTypes);
-
-            // descendants_are_inline, for ChildDef_Chameleon
-            if (is_string($def->content_model) &&
-                strpos($def->content_model, 'Inline') !== false) {
-                if ($name != 'del' && $name != 'ins') {
-                    // this is for you, ins/del
-                    $def->descendants_are_inline = true;
-                }
-            }
-
-            $this->contentSets->generateChildDef($def, $module);
-        }
-
-        // This can occur if there is a blank definition, but no base to
-        // mix it in with
-        if (!$def) {
-            return false;
-        }
-
-        // add information on required attributes
-        foreach ($def->attr as $attr_name => $attr_def) {
-            if ($attr_def->required) {
-                $def->required_attr[] = $attr_name;
-            }
-        }
-        return $def;
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

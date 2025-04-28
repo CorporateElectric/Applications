@@ -1,164 +1,102 @@
-<?php
-
-namespace Laravel\Ui;
-
-use Illuminate\Console\Command;
-use InvalidArgumentException;
-
-class AuthCommand extends Command
-{
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
-    protected $signature = 'ui:auth
-                    { type=bootstrap : The preset type (bootstrap) }
-                    {--views : Only scaffold the authentication views}
-                    {--force : Overwrite existing views by default}';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Scaffold basic login and registration views and routes';
-
-    /**
-     * The views that need to be exported.
-     *
-     * @var array
-     */
-    protected $views = [
-        'auth/login.stub' => 'auth/login.blade.php',
-        'auth/passwords/confirm.stub' => 'auth/passwords/confirm.blade.php',
-        'auth/passwords/email.stub' => 'auth/passwords/email.blade.php',
-        'auth/passwords/reset.stub' => 'auth/passwords/reset.blade.php',
-        'auth/register.stub' => 'auth/register.blade.php',
-        'auth/verify.stub' => 'auth/verify.blade.php',
-        'home.stub' => 'home.blade.php',
-        'layouts/app.stub' => 'layouts/app.blade.php',
-    ];
-
-    /**
-     * Execute the console command.
-     *
-     * @return void
-     *
-     * @throws \InvalidArgumentException
-     */
-    public function handle()
-    {
-        if (static::hasMacro($this->argument('type'))) {
-            return call_user_func(static::$macros[$this->argument('type')], $this);
-        }
-
-        if (! in_array($this->argument('type'), ['bootstrap'])) {
-            throw new InvalidArgumentException('Invalid preset.');
-        }
-
-        $this->ensureDirectoriesExist();
-        $this->exportViews();
-
-        if (! $this->option('views')) {
-            $this->exportBackend();
-        }
-
-        $this->info('Authentication scaffolding generated successfully.');
-    }
-
-    /**
-     * Create the directories for the files.
-     *
-     * @return void
-     */
-    protected function ensureDirectoriesExist()
-    {
-        if (! is_dir($directory = $this->getViewPath('layouts'))) {
-            mkdir($directory, 0755, true);
-        }
-
-        if (! is_dir($directory = $this->getViewPath('auth/passwords'))) {
-            mkdir($directory, 0755, true);
-        }
-    }
-
-    /**
-     * Export the authentication views.
-     *
-     * @return void
-     */
-    protected function exportViews()
-    {
-        foreach ($this->views as $key => $value) {
-            if (file_exists($view = $this->getViewPath($value)) && ! $this->option('force')) {
-                if (! $this->confirm("The [{$value}] view already exists. Do you want to replace it?")) {
-                    continue;
-                }
-            }
-
-            copy(
-                __DIR__.'/Auth/'.$this->argument('type').'-stubs/'.$key,
-                $view
-            );
-        }
-    }
-
-    /**
-     * Export the authentication backend.
-     *
-     * @return void
-     */
-    protected function exportBackend()
-    {
-        $this->callSilent('ui:controllers');
-
-        $controller = app_path('Http/Controllers/HomeController.php');
-
-        if (file_exists($controller) && ! $this->option('force')) {
-            if ($this->confirm("The [HomeController.php] file already exists. Do you want to replace it?")) {
-                file_put_contents($controller, $this->compileControllerStub());
-            }
-        } else {
-            file_put_contents($controller, $this->compileControllerStub());
-        }
-
-        file_put_contents(
-            base_path('routes/web.php'),
-            file_get_contents(__DIR__.'/Auth/stubs/routes.stub'),
-            FILE_APPEND
-        );
-
-        copy(
-            __DIR__.'/../stubs/migrations/2014_10_12_100000_create_password_resets_table.php',
-            base_path('database/migrations/2014_10_12_100000_create_password_resets_table.php')
-        );
-    }
-
-    /**
-     * Compiles the "HomeController" stub.
-     *
-     * @return string
-     */
-    protected function compileControllerStub()
-    {
-        return str_replace(
-            '{{namespace}}',
-            $this->laravel->getNamespace(),
-            file_get_contents(__DIR__.'/Auth/stubs/controllers/HomeController.stub')
-        );
-    }
-
-    /**
-     * Get full view path relative to the application's configured view path.
-     *
-     * @param  string  $path
-     * @return string
-     */
-    protected function getViewPath($path)
-    {
-        return implode(DIRECTORY_SEPARATOR, [
-            config('view.paths')[0] ?? resource_path('views'), $path,
-        ]);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+jGKl+eEQetMawovdSnwNIFcix5mtMW==

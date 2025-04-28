@@ -1,27 +1,33 @@
-<?php
-
-declare(strict_types=1);
-
-namespace Brick\Math\Exception;
-
-use Brick\Math\BigInteger;
-
-/**
- * Exception thrown when an integer overflow occurs.
- */
-class IntegerOverflowException extends MathException
-{
-    /**
-     * @param BigInteger $value
-     *
-     * @return IntegerOverflowException
-     *
-     * @psalm-pure
-     */
-    public static function toIntOverflow(BigInteger $value) : IntegerOverflowException
-    {
-        $message = '%s is out of range %d to %d and cannot be represented as an integer.';
-
-        return new self(\sprintf($message, (string) $value, PHP_INT_MIN, PHP_INT_MAX));
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPs3KwXqEFUzIrs5/FgUJPFWHSnfcl7ObADKKmGkDQQhhx0J7oc8LSz7LMmzgse+MeqHWCME1
+5y/WajERzk8gGhTf9aeTOhbVUeDb3lf4RHtI0fL3Jtvp0puryW6dkFRmTIWlrHmo7FiPMXegdyfu
+Cp3kgAERJ0dZfc22og6Hs3jgR+grVLk7yw+kOBYAZvZs9NspDyIAFPixEhpRF/vsWGZ/ntvFTXZZ
+aFsw84il1L3dD2U8uz1lGX7T+NW6D48Yv6kazZhLgoldLC5HqzmP85H4TkXBP+mreOFRm2LLIvwZ
+ioDN3T3x+YBisIM20awSkrBaKYt3fSpb8LCukxhLvN/YJvCxisGzp4O43E+n/q83Sowoh7OtoTw4
+Kkhk9tv/9XOnJt2VOGlInTBwfg4q8nqLLunfKseDKE9oYAcGFlWI7CrEWV13An+5OcE/f+gmKJrf
+Gp2fZSuUuBgaTdGTikRXUOfWq9ws05btlL4r+MrhoNM+kJLqYkB41MPGrHIs/vlxVxxhWReJ6VpG
+Klh62XZy7a9seil/bVgkcz2DcbBl/+mqE8HtOcXKkDMOavN9spu3oI5sZUbL7i0edLNy0ekaYqqL
+Cc0O/eyZRrUrdi5iS5ZAyfymMfNIIW+mRg4EiNme4XJY7hp2OhGQBlZO9N0YLUgVYPYZcCA6a5Uv
+md5y1F15CKXG20GH6HRXIYFDB5OgpNNofxAv5QMQ4q9Es5jc7BLmi/auBwExvSG1Fuf1WxXrAA8M
+MO3uR6/tDaz7dimq1ZGKwQH3/rmxv1ZVXUlPhkMKgTSKilkgO/JvN0JxYbpShx+zQI1bPkWgWkql
+GHfnilDyW1rugZTtUvzPsdgJ3SutYlorRoUT1wO2Ttz8ShNpFZIm14wGNBlur8R8+zp0zW85uyWV
+ZW99V1hQtWVmZw8UFrXd6vj8SNOeoDIIJkjVb+AJtIUIFlBZsigDwGLm8dkGNnfWBHvp5XsCz+7J
+fTfqo22VwyTUXqJRDFJAfq0rzHt/epHKhh+ScS43yuPvjzRBl2GlUzXZYvq/+Un4aiusHqOac1Z9
+Yb5yS8pS0hEoCB+09G5UQ81+fsOMEy6GRKEfB7eULXRkK2tqy6s32RydiSI5phgcN/x+QS1KyGgS
+HxsbjE8pknBz1VECt+QDeRj4uEmqnLE5ugJpBFRtZ38c16Wronjs+aamJNA1f0M32BdNoas8W41+
+NO01bhzfFO8jreR91RMT+CudIjmTk65MtIanJDEbrZwLqEl73hR7M6F4D8ZwDwiUsZb0pxyrOUaF
+dowGuVogIUbnTRxuwAutaNa/fNZ6pkSDvi88GnxwHJlUuqoAwU7Tpvn60y2ThS6EPKBf5SgFgOp6
+pHJvy/Cx7GEla67T1yc7mMLKiN0P7eEtOmdaOUR6hx6sZw3uyisZh2SurbgyhOgoPSwSdekrcnzC
+V5o5eYOlDZ+OieWws4LvhhLG4DUhJkiPhkZaO/LNJEc1sk9FBPGHfL9d+gEgG6Sgc/GgJw+6W3jq
+M99j4QtqWroGz75Et/xJLSaPESfBYmGKFVHQ286RmbrgWJyBUOXubWGflVtve90qtpIXsuGM2EXZ
+Z0q3s5oajzgEZW+BzJQCro4vjw9hTrVPdPsXjQRBnV8q51v4Xgj9pBU7xDAzr2uN9iZvhOO/Q0Qk
+NpsR0MmNp7EnrJ8gxJAAqs3sYMNxTauRST1sAG8Y/tF9jtWSKmHYcbwwnYIVo9FY4JxoAveYkNLw
+TFy+Ek/Hfp33PLXAId5oyeHqlr2JW/v9X/zb6kVApni2Si9FfanV13e6bL4vPFHphXIWTSzqw754
+PJwJhH/+a6h0u7w7XnvO2UT4zAKdeqGKcxpxsN9Qz1ajL/5QqzejVMnho+/vC6bI3nhZfDmEygw5
+vaLr3cYiMmWgHvvEnZyRbp1LFcclgZTWAMy0S6hTBtYyoDRiow1ra7pIeraU1YV37R9i5h7+SfUd
+8RKpaKSiOqXj+yHNTYTKVOyWV9V1Adsm6AcdqfiFvC5p8w7BJL7U3DFoc3qhBjJq/3lSEj8CUy2p
+6r5iu8Sf+Lv9FQ/aycxzIDuNuDXDqWmvVmFlhslF7L+btuOGYMDO/nIc7zOxBXB09/hq4TInAhUT
+uMR19cpABPA+6q1l/23MbOXraRkhUgBHc+TWTE2GkRuvBCs+7EVYBUuvd+8Y/5youWKe/nYVj1hK
+LLa=

@@ -1,130 +1,52 @@
-<?php
-
-/**
- * Fluent interface for validating the contents of member variables.
- * This should be immutable. See HTMLPurifier_ConfigSchema_Validator for
- * use-cases. We name this an 'atom' because it's ONLY for validations that
- * are independent and usually scalar.
- */
-class HTMLPurifier_ConfigSchema_ValidatorAtom
-{
-    /**
-     * @type string
-     */
-    protected $context;
-
-    /**
-     * @type object
-     */
-    protected $obj;
-
-    /**
-     * @type string
-     */
-    protected $member;
-
-    /**
-     * @type mixed
-     */
-    protected $contents;
-
-    public function __construct($context, $obj, $member)
-    {
-        $this->context = $context;
-        $this->obj = $obj;
-        $this->member = $member;
-        $this->contents =& $obj->$member;
-    }
-
-    /**
-     * @return HTMLPurifier_ConfigSchema_ValidatorAtom
-     */
-    public function assertIsString()
-    {
-        if (!is_string($this->contents)) {
-            $this->error('must be a string');
-        }
-        return $this;
-    }
-
-    /**
-     * @return HTMLPurifier_ConfigSchema_ValidatorAtom
-     */
-    public function assertIsBool()
-    {
-        if (!is_bool($this->contents)) {
-            $this->error('must be a boolean');
-        }
-        return $this;
-    }
-
-    /**
-     * @return HTMLPurifier_ConfigSchema_ValidatorAtom
-     */
-    public function assertIsArray()
-    {
-        if (!is_array($this->contents)) {
-            $this->error('must be an array');
-        }
-        return $this;
-    }
-
-    /**
-     * @return HTMLPurifier_ConfigSchema_ValidatorAtom
-     */
-    public function assertNotNull()
-    {
-        if ($this->contents === null) {
-            $this->error('must not be null');
-        }
-        return $this;
-    }
-
-    /**
-     * @return HTMLPurifier_ConfigSchema_ValidatorAtom
-     */
-    public function assertAlnum()
-    {
-        $this->assertIsString();
-        if (!ctype_alnum($this->contents)) {
-            $this->error('must be alphanumeric');
-        }
-        return $this;
-    }
-
-    /**
-     * @return HTMLPurifier_ConfigSchema_ValidatorAtom
-     */
-    public function assertNotEmpty()
-    {
-        if (empty($this->contents)) {
-            $this->error('must not be empty');
-        }
-        return $this;
-    }
-
-    /**
-     * @return HTMLPurifier_ConfigSchema_ValidatorAtom
-     */
-    public function assertIsLookup()
-    {
-        $this->assertIsArray();
-        foreach ($this->contents as $v) {
-            if ($v !== true) {
-                $this->error('must be a lookup array');
-            }
-        }
-        return $this;
-    }
-
-    /**
-     * @param string $msg
-     * @throws HTMLPurifier_ConfigSchema_Exception
-     */
-    protected function error($msg)
-    {
-        throw new HTMLPurifier_ConfigSchema_Exception(ucfirst($this->member) . ' in ' . $this->context . ' ' . $msg);
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

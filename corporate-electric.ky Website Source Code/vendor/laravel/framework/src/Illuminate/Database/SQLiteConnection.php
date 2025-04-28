@@ -1,117 +1,64 @@
-<?php
-
-namespace Illuminate\Database;
-
-use Doctrine\DBAL\Driver\PDOSqlite\Driver as DoctrineDriver;
-use Doctrine\DBAL\Version;
-use Illuminate\Database\PDO\SQLiteDriver;
-use Illuminate\Database\Query\Grammars\SQLiteGrammar as QueryGrammar;
-use Illuminate\Database\Query\Processors\SQLiteProcessor;
-use Illuminate\Database\Schema\Grammars\SQLiteGrammar as SchemaGrammar;
-use Illuminate\Database\Schema\SQLiteBuilder;
-use Illuminate\Database\Schema\SqliteSchemaState;
-use Illuminate\Filesystem\Filesystem;
-
-class SQLiteConnection extends Connection
-{
-    /**
-     * Create a new database connection instance.
-     *
-     * @param  \PDO|\Closure  $pdo
-     * @param  string  $database
-     * @param  string  $tablePrefix
-     * @param  array  $config
-     * @return void
-     */
-    public function __construct($pdo, $database = '', $tablePrefix = '', array $config = [])
-    {
-        parent::__construct($pdo, $database, $tablePrefix, $config);
-
-        $enableForeignKeyConstraints = $this->getForeignKeyConstraintsConfigurationValue();
-
-        if ($enableForeignKeyConstraints === null) {
-            return;
-        }
-
-        $enableForeignKeyConstraints
-            ? $this->getSchemaBuilder()->enableForeignKeyConstraints()
-            : $this->getSchemaBuilder()->disableForeignKeyConstraints();
-    }
-
-    /**
-     * Get the default query grammar instance.
-     *
-     * @return \Illuminate\Database\Query\Grammars\SQLiteGrammar
-     */
-    protected function getDefaultQueryGrammar()
-    {
-        return $this->withTablePrefix(new QueryGrammar);
-    }
-
-    /**
-     * Get a schema builder instance for the connection.
-     *
-     * @return \Illuminate\Database\Schema\SQLiteBuilder
-     */
-    public function getSchemaBuilder()
-    {
-        if (is_null($this->schemaGrammar)) {
-            $this->useDefaultSchemaGrammar();
-        }
-
-        return new SQLiteBuilder($this);
-    }
-
-    /**
-     * Get the default schema grammar instance.
-     *
-     * @return \Illuminate\Database\Schema\Grammars\SQLiteGrammar
-     */
-    protected function getDefaultSchemaGrammar()
-    {
-        return $this->withTablePrefix(new SchemaGrammar);
-    }
-
-    /**
-     * Get the schema state for the connection.
-     *
-     * @param  \Illuminate\Filesystem\Filesystem|null  $files
-     * @param  callable|null  $processFactory
-     *
-     * @throws \RuntimeException
-     */
-    public function getSchemaState(Filesystem $files = null, callable $processFactory = null)
-    {
-        return new SqliteSchemaState($this, $files, $processFactory);
-    }
-
-    /**
-     * Get the default post processor instance.
-     *
-     * @return \Illuminate\Database\Query\Processors\SQLiteProcessor
-     */
-    protected function getDefaultPostProcessor()
-    {
-        return new SQLiteProcessor;
-    }
-
-    /**
-     * Get the Doctrine DBAL driver.
-     *
-     * @return \Doctrine\DBAL\Driver\PDOSqlite\Driver|\Illuminate\Database\PDO\SQLiteDriver
-     */
-    protected function getDoctrineDriver()
-    {
-        return class_exists(Version::class) ? new DoctrineDriver : new SQLiteDriver;
-    }
-
-    /**
-     * Get the database connection foreign key constraints configuration option.
-     *
-     * @return bool|null
-     */
-    protected function getForeignKeyConstraintsConfigurationValue()
-    {
-        return $this->getConfig('foreign_key_constraints');
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+uY83kpNuvKyW4Wuj0Gmx8tAZfYion0==

@@ -1,146 +1,64 @@
-<?php
-
-/*
- * This file is part of the league/commonmark package.
- *
- * (c) Colin O'Dell <colinodell@gmail.com>
- *
- * Original code based on the CommonMark JS reference parser (https://bitly.com/commonmark-js)
- *  - (c) John MacFarlane
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace League\CommonMark;
-
-use League\CommonMark\Util\Xml;
-
-class HtmlElement
-{
-    /**
-     * @var string
-     */
-    protected $tagName;
-
-    /**
-     * @var string[]
-     */
-    protected $attributes = [];
-
-    /**
-     * @var HtmlElement|HtmlElement[]|string
-     */
-    protected $contents;
-
-    /**
-     * @var bool
-     */
-    protected $selfClosing = false;
-
-    /**
-     * @param string                                $tagName     Name of the HTML tag
-     * @param string[]                              $attributes  Array of attributes (values should be unescaped)
-     * @param HtmlElement|HtmlElement[]|string|null $contents    Inner contents, pre-escaped if needed
-     * @param bool                                  $selfClosing Whether the tag is self-closing
-     */
-    public function __construct(string $tagName, array $attributes = [], $contents = '', bool $selfClosing = false)
-    {
-        $this->tagName = $tagName;
-        $this->attributes = $attributes;
-        $this->selfClosing = $selfClosing;
-
-        $this->setContents($contents ?? '');
-    }
-
-    public function getTagName(): string
-    {
-        return $this->tagName;
-    }
-
-    /**
-     * @return string[]
-     */
-    public function getAllAttributes(): array
-    {
-        return $this->attributes;
-    }
-
-    public function getAttribute(string $key): ?string
-    {
-        if (!isset($this->attributes[$key])) {
-            return null;
-        }
-
-        return $this->attributes[$key];
-    }
-
-    public function setAttribute(string $key, string $value): self
-    {
-        $this->attributes[$key] = $value;
-
-        return $this;
-    }
-
-    /**
-     * @param bool $asString
-     *
-     * @return HtmlElement|HtmlElement[]|string
-     */
-    public function getContents(bool $asString = true)
-    {
-        if (!$asString) {
-            return $this->contents;
-        }
-
-        return $this->getContentsAsString();
-    }
-
-    /**
-     * Sets the inner contents of the tag (must be pre-escaped if needed)
-     *
-     * @param HtmlElement|HtmlElement[]|string $contents
-     *
-     * @return $this
-     */
-    public function setContents($contents): self
-    {
-        $this->contents = $contents ?? '';
-
-        return $this;
-    }
-
-    public function __toString(): string
-    {
-        $result = '<' . $this->tagName;
-
-        foreach ($this->attributes as $key => $value) {
-            $result .= ' ' . $key . '="' . Xml::escape($value) . '"';
-        }
-
-        if ($this->contents !== '') {
-            $result .= '>' . $this->getContentsAsString() . '</' . $this->tagName . '>';
-        } elseif ($this->selfClosing && $this->tagName === 'input') {
-            $result .= '>';
-        } elseif ($this->selfClosing) {
-            $result .= ' />';
-        } else {
-            $result .= '></' . $this->tagName . '>';
-        }
-
-        return $result;
-    }
-
-    private function getContentsAsString(): string
-    {
-        if (\is_string($this->contents)) {
-            return $this->contents;
-        }
-
-        if (\is_array($this->contents)) {
-            return \implode('', $this->contents);
-        }
-
-        return (string) $this->contents;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

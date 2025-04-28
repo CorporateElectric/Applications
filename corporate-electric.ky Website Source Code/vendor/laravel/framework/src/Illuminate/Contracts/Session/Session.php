@@ -1,204 +1,49 @@
-<?php
-
-namespace Illuminate\Contracts\Session;
-
-interface Session
-{
-    /**
-     * Get the name of the session.
-     *
-     * @return string
-     */
-    public function getName();
-
-    /**
-     * Set the name of the session.
-     *
-     * @param  string  $name
-     * @return void
-     */
-    public function setName($name);
-
-    /**
-     * Get the current session ID.
-     *
-     * @return string
-     */
-    public function getId();
-
-    /**
-     * Set the session ID.
-     *
-     * @param  string  $id
-     * @return void
-     */
-    public function setId($id);
-
-    /**
-     * Start the session, reading the data from a handler.
-     *
-     * @return bool
-     */
-    public function start();
-
-    /**
-     * Save the session data to storage.
-     *
-     * @return void
-     */
-    public function save();
-
-    /**
-     * Get all of the session data.
-     *
-     * @return array
-     */
-    public function all();
-
-    /**
-     * Checks if a key exists.
-     *
-     * @param  string|array  $key
-     * @return bool
-     */
-    public function exists($key);
-
-    /**
-     * Checks if a key is present and not null.
-     *
-     * @param  string|array  $key
-     * @return bool
-     */
-    public function has($key);
-
-    /**
-     * Get an item from the session.
-     *
-     * @param  string  $key
-     * @param  mixed  $default
-     * @return mixed
-     */
-    public function get($key, $default = null);
-
-    /**
-     * Get the value of a given key and then forget it.
-     *
-     * @param  string  $key
-     * @param  mixed  $default
-     * @return mixed
-     */
-    public function pull($key, $default = null);
-
-    /**
-     * Put a key / value pair or array of key / value pairs in the session.
-     *
-     * @param  string|array  $key
-     * @param  mixed  $value
-     * @return void
-     */
-    public function put($key, $value = null);
-
-    /**
-     * Get the CSRF token value.
-     *
-     * @return string
-     */
-    public function token();
-
-    /**
-     * Regenerate the CSRF token value.
-     *
-     * @return void
-     */
-    public function regenerateToken();
-
-    /**
-     * Remove an item from the session, returning its value.
-     *
-     * @param  string  $key
-     * @return mixed
-     */
-    public function remove($key);
-
-    /**
-     * Remove one or many items from the session.
-     *
-     * @param  string|array  $keys
-     * @return void
-     */
-    public function forget($keys);
-
-    /**
-     * Remove all of the items from the session.
-     *
-     * @return void
-     */
-    public function flush();
-
-    /**
-     * Flush the session data and regenerate the ID.
-     *
-     * @return bool
-     */
-    public function invalidate();
-
-    /**
-     * Generate a new session identifier.
-     *
-     * @param  bool  $destroy
-     * @return bool
-     */
-    public function regenerate($destroy = false);
-
-    /**
-     * Generate a new session ID for the session.
-     *
-     * @param  bool  $destroy
-     * @return bool
-     */
-    public function migrate($destroy = false);
-
-    /**
-     * Determine if the session has been started.
-     *
-     * @return bool
-     */
-    public function isStarted();
-
-    /**
-     * Get the previous URL from the session.
-     *
-     * @return string|null
-     */
-    public function previousUrl();
-
-    /**
-     * Set the "previous" URL in the session.
-     *
-     * @param  string  $url
-     * @return void
-     */
-    public function setPreviousUrl($url);
-
-    /**
-     * Get the session handler instance.
-     *
-     * @return \SessionHandlerInterface
-     */
-    public function getHandler();
-
-    /**
-     * Determine if the session handler needs a request.
-     *
-     * @return bool
-     */
-    public function handlerNeedsRequest();
-
-    /**
-     * Set the request on the handler instance.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return void
-     */
-    public function setRequestOnHandler($request);
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+rr0KY8C741hg+K81PYU60Hiavmh9xtEvPPzMqW==

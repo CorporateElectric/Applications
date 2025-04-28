@@ -1,231 +1,88 @@
-<?php
-
-namespace Illuminate\View\Concerns;
-
-use Illuminate\Contracts\View\View;
-use InvalidArgumentException;
-
-trait ManagesLayouts
-{
-    /**
-     * All of the finished, captured sections.
-     *
-     * @var array
-     */
-    protected $sections = [];
-
-    /**
-     * The stack of in-progress sections.
-     *
-     * @var array
-     */
-    protected $sectionStack = [];
-
-    /**
-     * The parent placeholder for the request.
-     *
-     * @var mixed
-     */
-    protected static $parentPlaceholder = [];
-
-    /**
-     * Start injecting content into a section.
-     *
-     * @param  string  $section
-     * @param  string|null  $content
-     * @return void
-     */
-    public function startSection($section, $content = null)
-    {
-        if ($content === null) {
-            if (ob_start()) {
-                $this->sectionStack[] = $section;
-            }
-        } else {
-            $this->extendSection($section, $content instanceof View ? $content : e($content));
-        }
-    }
-
-    /**
-     * Inject inline content into a section.
-     *
-     * @param  string  $section
-     * @param  string  $content
-     * @return void
-     */
-    public function inject($section, $content)
-    {
-        $this->startSection($section, $content);
-    }
-
-    /**
-     * Stop injecting content into a section and return its contents.
-     *
-     * @return string
-     */
-    public function yieldSection()
-    {
-        if (empty($this->sectionStack)) {
-            return '';
-        }
-
-        return $this->yieldContent($this->stopSection());
-    }
-
-    /**
-     * Stop injecting content into a section.
-     *
-     * @param  bool  $overwrite
-     * @return string
-     *
-     * @throws \InvalidArgumentException
-     */
-    public function stopSection($overwrite = false)
-    {
-        if (empty($this->sectionStack)) {
-            throw new InvalidArgumentException('Cannot end a section without first starting one.');
-        }
-
-        $last = array_pop($this->sectionStack);
-
-        if ($overwrite) {
-            $this->sections[$last] = ob_get_clean();
-        } else {
-            $this->extendSection($last, ob_get_clean());
-        }
-
-        return $last;
-    }
-
-    /**
-     * Stop injecting content into a section and append it.
-     *
-     * @return string
-     *
-     * @throws \InvalidArgumentException
-     */
-    public function appendSection()
-    {
-        if (empty($this->sectionStack)) {
-            throw new InvalidArgumentException('Cannot end a section without first starting one.');
-        }
-
-        $last = array_pop($this->sectionStack);
-
-        if (isset($this->sections[$last])) {
-            $this->sections[$last] .= ob_get_clean();
-        } else {
-            $this->sections[$last] = ob_get_clean();
-        }
-
-        return $last;
-    }
-
-    /**
-     * Append content to a given section.
-     *
-     * @param  string  $section
-     * @param  string  $content
-     * @return void
-     */
-    protected function extendSection($section, $content)
-    {
-        if (isset($this->sections[$section])) {
-            $content = str_replace(static::parentPlaceholder($section), $content, $this->sections[$section]);
-        }
-
-        $this->sections[$section] = $content;
-    }
-
-    /**
-     * Get the string contents of a section.
-     *
-     * @param  string  $section
-     * @param  string  $default
-     * @return string
-     */
-    public function yieldContent($section, $default = '')
-    {
-        $sectionContent = $default instanceof View ? $default : e($default);
-
-        if (isset($this->sections[$section])) {
-            $sectionContent = $this->sections[$section];
-        }
-
-        $sectionContent = str_replace('@@parent', '--parent--holder--', $sectionContent);
-
-        return str_replace(
-            '--parent--holder--', '@parent', str_replace(static::parentPlaceholder($section), '', $sectionContent)
-        );
-    }
-
-    /**
-     * Get the parent placeholder for the current request.
-     *
-     * @param  string  $section
-     * @return string
-     */
-    public static function parentPlaceholder($section = '')
-    {
-        if (! isset(static::$parentPlaceholder[$section])) {
-            static::$parentPlaceholder[$section] = '##parent-placeholder-'.sha1($section).'##';
-        }
-
-        return static::$parentPlaceholder[$section];
-    }
-
-    /**
-     * Check if section exists.
-     *
-     * @param  string  $name
-     * @return bool
-     */
-    public function hasSection($name)
-    {
-        return array_key_exists($name, $this->sections);
-    }
-
-    /**
-     * Check if section does not exist.
-     *
-     * @param  string  $name
-     * @return bool
-     */
-    public function sectionMissing($name)
-    {
-        return ! $this->hasSection($name);
-    }
-
-    /**
-     * Get the contents of a section.
-     *
-     * @param  string  $name
-     * @param  string|null  $default
-     * @return mixed
-     */
-    public function getSection($name, $default = null)
-    {
-        return $this->getSections()[$name] ?? $default;
-    }
-
-    /**
-     * Get the entire array of sections.
-     *
-     * @return array
-     */
-    public function getSections()
-    {
-        return $this->sections;
-    }
-
-    /**
-     * Flush all of the sections.
-     *
-     * @return void
-     */
-    public function flushSections()
-    {
-        $this->sections = [];
-        $this->sectionStack = [];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

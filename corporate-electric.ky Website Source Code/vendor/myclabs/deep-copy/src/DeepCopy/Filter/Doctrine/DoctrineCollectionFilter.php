@@ -1,33 +1,37 @@
-<?php
-
-namespace DeepCopy\Filter\Doctrine;
-
-use DeepCopy\Filter\Filter;
-use DeepCopy\Reflection\ReflectionHelper;
-
-/**
- * @final
- */
-class DoctrineCollectionFilter implements Filter
-{
-    /**
-     * Copies the object property doctrine collection.
-     *
-     * {@inheritdoc}
-     */
-    public function apply($object, $property, $objectCopier)
-    {
-        $reflectionProperty = ReflectionHelper::getProperty($object, $property);
-
-        $reflectionProperty->setAccessible(true);
-        $oldCollection = $reflectionProperty->getValue($object);
-
-        $newCollection = $oldCollection->map(
-            function ($item) use ($objectCopier) {
-                return $objectCopier($item);
-            }
-        );
-
-        $reflectionProperty->setValue($object, $newCollection);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

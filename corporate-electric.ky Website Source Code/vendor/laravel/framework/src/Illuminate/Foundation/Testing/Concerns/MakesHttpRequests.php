@@ -1,645 +1,220 @@
-<?php
-
-namespace Illuminate\Foundation\Testing\Concerns;
-
-use Illuminate\Contracts\Http\Kernel as HttpKernel;
-use Illuminate\Cookie\CookieValuePrefix;
-use Illuminate\Http\Request;
-use Illuminate\Support\Str;
-use Illuminate\Testing\TestResponse;
-use Symfony\Component\HttpFoundation\File\UploadedFile as SymfonyUploadedFile;
-use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
-
-trait MakesHttpRequests
-{
-    /**
-     * Additional headers for the request.
-     *
-     * @var array
-     */
-    protected $defaultHeaders = [];
-
-    /**
-     * Additional cookies for the request.
-     *
-     * @var array
-     */
-    protected $defaultCookies = [];
-
-    /**
-     * Additional cookies will not be encrypted for the request.
-     *
-     * @var array
-     */
-    protected $unencryptedCookies = [];
-
-    /**
-     * Additional server variables for the request.
-     *
-     * @var array
-     */
-    protected $serverVariables = [];
-
-    /**
-     * Indicates whether redirects should be followed.
-     *
-     * @var bool
-     */
-    protected $followRedirects = false;
-
-    /**
-     * Indicates whether cookies should be encrypted.
-     *
-     * @var bool
-     */
-    protected $encryptCookies = true;
-
-    /**
-     * Indicated whether JSON requests should be performed "with credentials" (cookies).
-     *
-     * @see https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/withCredentials
-     *
-     * @var bool
-     */
-    protected $withCredentials = false;
-
-    /**
-     * Define additional headers to be sent with the request.
-     *
-     * @param  array  $headers
-     * @return $this
-     */
-    public function withHeaders(array $headers)
-    {
-        $this->defaultHeaders = array_merge($this->defaultHeaders, $headers);
-
-        return $this;
-    }
-
-    /**
-     * Add a header to be sent with the request.
-     *
-     * @param  string  $name
-     * @param  string  $value
-     * @return $this
-     */
-    public function withHeader(string $name, string $value)
-    {
-        $this->defaultHeaders[$name] = $value;
-
-        return $this;
-    }
-
-    /**
-     * Add an authorization token for the request.
-     *
-     * @param  string  $token
-     * @param  string  $type
-     * @return $this
-     */
-    public function withToken(string $token, string $type = 'Bearer')
-    {
-        return $this->withHeader('Authorization', $type.' '.$token);
-    }
-
-    /**
-     * Flush all the configured headers.
-     *
-     * @return $this
-     */
-    public function flushHeaders()
-    {
-        $this->defaultHeaders = [];
-
-        return $this;
-    }
-
-    /**
-     * Define a set of server variables to be sent with the requests.
-     *
-     * @param  array  $server
-     * @return $this
-     */
-    public function withServerVariables(array $server)
-    {
-        $this->serverVariables = $server;
-
-        return $this;
-    }
-
-    /**
-     * Disable middleware for the test.
-     *
-     * @param  string|array|null  $middleware
-     * @return $this
-     */
-    public function withoutMiddleware($middleware = null)
-    {
-        if (is_null($middleware)) {
-            $this->app->instance('middleware.disable', true);
-
-            return $this;
-        }
-
-        foreach ((array) $middleware as $abstract) {
-            $this->app->instance($abstract, new class {
-                public function handle($request, $next)
-                {
-                    return $next($request);
-                }
-            });
-        }
-
-        return $this;
-    }
-
-    /**
-     * Enable the given middleware for the test.
-     *
-     * @param  string|array|null  $middleware
-     * @return $this
-     */
-    public function withMiddleware($middleware = null)
-    {
-        if (is_null($middleware)) {
-            unset($this->app['middleware.disable']);
-
-            return $this;
-        }
-
-        foreach ((array) $middleware as $abstract) {
-            unset($this->app[$abstract]);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Define additional cookies to be sent with the request.
-     *
-     * @param  array  $cookies
-     * @return $this
-     */
-    public function withCookies(array $cookies)
-    {
-        $this->defaultCookies = array_merge($this->defaultCookies, $cookies);
-
-        return $this;
-    }
-
-    /**
-     * Add a cookie to be sent with the request.
-     *
-     * @param  string  $name
-     * @param  string  $value
-     * @return $this
-     */
-    public function withCookie(string $name, string $value)
-    {
-        $this->defaultCookies[$name] = $value;
-
-        return $this;
-    }
-
-    /**
-     * Define additional cookies will not be encrypted before sending with the request.
-     *
-     * @param  array  $cookies
-     * @return $this
-     */
-    public function withUnencryptedCookies(array $cookies)
-    {
-        $this->unencryptedCookies = array_merge($this->unencryptedCookies, $cookies);
-
-        return $this;
-    }
-
-    /**
-     * Add a cookie will not be encrypted before sending with the request.
-     *
-     * @param  string  $name
-     * @param  string  $value
-     * @return $this
-     */
-    public function withUnencryptedCookie(string $name, string $value)
-    {
-        $this->unencryptedCookies[$name] = $value;
-
-        return $this;
-    }
-
-    /**
-     * Automatically follow any redirects returned from the response.
-     *
-     * @return $this
-     */
-    public function followingRedirects()
-    {
-        $this->followRedirects = true;
-
-        return $this;
-    }
-
-    /**
-     * Include cookies and authorization headers for JSON requests.
-     *
-     * @return $this
-     */
-    public function withCredentials()
-    {
-        $this->withCredentials = true;
-
-        return $this;
-    }
-
-    /**
-     * Disable automatic encryption of cookie values.
-     *
-     * @return $this
-     */
-    public function disableCookieEncryption()
-    {
-        $this->encryptCookies = false;
-
-        return $this;
-    }
-
-    /**
-     * Set the referer header and previous URL session value in order to simulate a previous request.
-     *
-     * @param  string  $url
-     * @return $this
-     */
-    public function from(string $url)
-    {
-        $this->app['session']->setPreviousUrl($url);
-
-        return $this->withHeader('referer', $url);
-    }
-
-    /**
-     * Visit the given URI with a GET request.
-     *
-     * @param  string  $uri
-     * @param  array  $headers
-     * @return \Illuminate\Testing\TestResponse
-     */
-    public function get($uri, array $headers = [])
-    {
-        $server = $this->transformHeadersToServerVars($headers);
-        $cookies = $this->prepareCookiesForRequest();
-
-        return $this->call('GET', $uri, [], $cookies, [], $server);
-    }
-
-    /**
-     * Visit the given URI with a GET request, expecting a JSON response.
-     *
-     * @param  string  $uri
-     * @param  array  $headers
-     * @return \Illuminate\Testing\TestResponse
-     */
-    public function getJson($uri, array $headers = [])
-    {
-        return $this->json('GET', $uri, [], $headers);
-    }
-
-    /**
-     * Visit the given URI with a POST request.
-     *
-     * @param  string  $uri
-     * @param  array  $data
-     * @param  array  $headers
-     * @return \Illuminate\Testing\TestResponse
-     */
-    public function post($uri, array $data = [], array $headers = [])
-    {
-        $server = $this->transformHeadersToServerVars($headers);
-        $cookies = $this->prepareCookiesForRequest();
-
-        return $this->call('POST', $uri, $data, $cookies, [], $server);
-    }
-
-    /**
-     * Visit the given URI with a POST request, expecting a JSON response.
-     *
-     * @param  string  $uri
-     * @param  array  $data
-     * @param  array  $headers
-     * @return \Illuminate\Testing\TestResponse
-     */
-    public function postJson($uri, array $data = [], array $headers = [])
-    {
-        return $this->json('POST', $uri, $data, $headers);
-    }
-
-    /**
-     * Visit the given URI with a PUT request.
-     *
-     * @param  string  $uri
-     * @param  array  $data
-     * @param  array  $headers
-     * @return \Illuminate\Testing\TestResponse
-     */
-    public function put($uri, array $data = [], array $headers = [])
-    {
-        $server = $this->transformHeadersToServerVars($headers);
-        $cookies = $this->prepareCookiesForRequest();
-
-        return $this->call('PUT', $uri, $data, $cookies, [], $server);
-    }
-
-    /**
-     * Visit the given URI with a PUT request, expecting a JSON response.
-     *
-     * @param  string  $uri
-     * @param  array  $data
-     * @param  array  $headers
-     * @return \Illuminate\Testing\TestResponse
-     */
-    public function putJson($uri, array $data = [], array $headers = [])
-    {
-        return $this->json('PUT', $uri, $data, $headers);
-    }
-
-    /**
-     * Visit the given URI with a PATCH request.
-     *
-     * @param  string  $uri
-     * @param  array  $data
-     * @param  array  $headers
-     * @return \Illuminate\Testing\TestResponse
-     */
-    public function patch($uri, array $data = [], array $headers = [])
-    {
-        $server = $this->transformHeadersToServerVars($headers);
-        $cookies = $this->prepareCookiesForRequest();
-
-        return $this->call('PATCH', $uri, $data, $cookies, [], $server);
-    }
-
-    /**
-     * Visit the given URI with a PATCH request, expecting a JSON response.
-     *
-     * @param  string  $uri
-     * @param  array  $data
-     * @param  array  $headers
-     * @return \Illuminate\Testing\TestResponse
-     */
-    public function patchJson($uri, array $data = [], array $headers = [])
-    {
-        return $this->json('PATCH', $uri, $data, $headers);
-    }
-
-    /**
-     * Visit the given URI with a DELETE request.
-     *
-     * @param  string  $uri
-     * @param  array  $data
-     * @param  array  $headers
-     * @return \Illuminate\Testing\TestResponse
-     */
-    public function delete($uri, array $data = [], array $headers = [])
-    {
-        $server = $this->transformHeadersToServerVars($headers);
-        $cookies = $this->prepareCookiesForRequest();
-
-        return $this->call('DELETE', $uri, $data, $cookies, [], $server);
-    }
-
-    /**
-     * Visit the given URI with a DELETE request, expecting a JSON response.
-     *
-     * @param  string  $uri
-     * @param  array  $data
-     * @param  array  $headers
-     * @return \Illuminate\Testing\TestResponse
-     */
-    public function deleteJson($uri, array $data = [], array $headers = [])
-    {
-        return $this->json('DELETE', $uri, $data, $headers);
-    }
-
-    /**
-     * Visit the given URI with an OPTIONS request.
-     *
-     * @param  string  $uri
-     * @param  array  $data
-     * @param  array  $headers
-     * @return \Illuminate\Testing\TestResponse
-     */
-    public function options($uri, array $data = [], array $headers = [])
-    {
-        $server = $this->transformHeadersToServerVars($headers);
-        $cookies = $this->prepareCookiesForRequest();
-
-        return $this->call('OPTIONS', $uri, $data, $cookies, [], $server);
-    }
-
-    /**
-     * Visit the given URI with an OPTIONS request, expecting a JSON response.
-     *
-     * @param  string  $uri
-     * @param  array  $data
-     * @param  array  $headers
-     * @return \Illuminate\Testing\TestResponse
-     */
-    public function optionsJson($uri, array $data = [], array $headers = [])
-    {
-        return $this->json('OPTIONS', $uri, $data, $headers);
-    }
-
-    /**
-     * Call the given URI with a JSON request.
-     *
-     * @param  string  $method
-     * @param  string  $uri
-     * @param  array  $data
-     * @param  array  $headers
-     * @return \Illuminate\Testing\TestResponse
-     */
-    public function json($method, $uri, array $data = [], array $headers = [])
-    {
-        $files = $this->extractFilesFromDataArray($data);
-
-        $content = json_encode($data);
-
-        $headers = array_merge([
-            'CONTENT_LENGTH' => mb_strlen($content, '8bit'),
-            'CONTENT_TYPE' => 'application/json',
-            'Accept' => 'application/json',
-        ], $headers);
-
-        return $this->call(
-            $method,
-            $uri,
-            [],
-            $this->prepareCookiesForJsonRequest(),
-            $files,
-            $this->transformHeadersToServerVars($headers),
-            $content
-        );
-    }
-
-    /**
-     * Call the given URI and return the Response.
-     *
-     * @param  string  $method
-     * @param  string  $uri
-     * @param  array  $parameters
-     * @param  array  $cookies
-     * @param  array  $files
-     * @param  array  $server
-     * @param  string|null  $content
-     * @return \Illuminate\Testing\TestResponse
-     */
-    public function call($method, $uri, $parameters = [], $cookies = [], $files = [], $server = [], $content = null)
-    {
-        $kernel = $this->app->make(HttpKernel::class);
-
-        $files = array_merge($files, $this->extractFilesFromDataArray($parameters));
-
-        $symfonyRequest = SymfonyRequest::create(
-            $this->prepareUrlForRequest($uri), $method, $parameters,
-            $cookies, $files, array_replace($this->serverVariables, $server), $content
-        );
-
-        $response = $kernel->handle(
-            $request = Request::createFromBase($symfonyRequest)
-        );
-
-        $kernel->terminate($request, $response);
-
-        if ($this->followRedirects) {
-            $response = $this->followRedirects($response);
-        }
-
-        return $this->createTestResponse($response);
-    }
-
-    /**
-     * Turn the given URI into a fully qualified URL.
-     *
-     * @param  string  $uri
-     * @return string
-     */
-    protected function prepareUrlForRequest($uri)
-    {
-        if (Str::startsWith($uri, '/')) {
-            $uri = substr($uri, 1);
-        }
-
-        return trim(url($uri), '/');
-    }
-
-    /**
-     * Transform headers array to array of $_SERVER vars with HTTP_* format.
-     *
-     * @param  array  $headers
-     * @return array
-     */
-    protected function transformHeadersToServerVars(array $headers)
-    {
-        return collect(array_merge($this->defaultHeaders, $headers))->mapWithKeys(function ($value, $name) {
-            $name = strtr(strtoupper($name), '-', '_');
-
-            return [$this->formatServerHeaderKey($name) => $value];
-        })->all();
-    }
-
-    /**
-     * Format the header name for the server array.
-     *
-     * @param  string  $name
-     * @return string
-     */
-    protected function formatServerHeaderKey($name)
-    {
-        if (! Str::startsWith($name, 'HTTP_') && $name !== 'CONTENT_TYPE' && $name !== 'REMOTE_ADDR') {
-            return 'HTTP_'.$name;
-        }
-
-        return $name;
-    }
-
-    /**
-     * Extract the file uploads from the given data array.
-     *
-     * @param  array  $data
-     * @return array
-     */
-    protected function extractFilesFromDataArray(&$data)
-    {
-        $files = [];
-
-        foreach ($data as $key => $value) {
-            if ($value instanceof SymfonyUploadedFile) {
-                $files[$key] = $value;
-
-                unset($data[$key]);
-            }
-
-            if (is_array($value)) {
-                $files[$key] = $this->extractFilesFromDataArray($value);
-
-                $data[$key] = $value;
-            }
-        }
-
-        return $files;
-    }
-
-    /**
-     * If enabled, encrypt cookie values for request.
-     *
-     * @return array
-     */
-    protected function prepareCookiesForRequest()
-    {
-        if (! $this->encryptCookies) {
-            return array_merge($this->defaultCookies, $this->unencryptedCookies);
-        }
-
-        return collect($this->defaultCookies)->map(function ($value, $key) {
-            return encrypt(CookieValuePrefix::create($key, app('encrypter')->getKey()).$value, false);
-        })->merge($this->unencryptedCookies)->all();
-    }
-
-    /**
-     * If enabled, add cookies for JSON requests.
-     *
-     * @return array
-     */
-    protected function prepareCookiesForJsonRequest()
-    {
-        return $this->withCredentials ? $this->prepareCookiesForRequest() : [];
-    }
-
-    /**
-     * Follow a redirect chain until a non-redirect is received.
-     *
-     * @param  \Illuminate\Http\Response  $response
-     * @return \Illuminate\Http\Response|\Illuminate\Testing\TestResponse
-     */
-    protected function followRedirects($response)
-    {
-        $this->followRedirects = false;
-
-        while ($response->isRedirect()) {
-            $response = $this->get($response->headers->get('Location'));
-        }
-
-        return $response;
-    }
-
-    /**
-     * Create the test response instance from the given response.
-     *
-     * @param  \Illuminate\Http\Response  $response
-     * @return \Illuminate\Testing\TestResponse
-     */
-    protected function createTestResponse($response)
-    {
-        return TestResponse::fromBaseResponse($response);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+uelI9m==

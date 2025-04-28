@@ -1,148 +1,65 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpFoundation\Session\Attribute;
-
-/**
- * This class relates to session attribute storage.
- */
-class AttributeBag implements AttributeBagInterface, \IteratorAggregate, \Countable
-{
-    private $name = 'attributes';
-    private $storageKey;
-
-    protected $attributes = [];
-
-    /**
-     * @param string $storageKey The key used to store attributes in the session
-     */
-    public function __construct(string $storageKey = '_sf2_attributes')
-    {
-        $this->storageKey = $storageKey;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getName()
-    {
-        return $this->name;
-    }
-
-    public function setName(string $name)
-    {
-        $this->name = $name;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function initialize(array &$attributes)
-    {
-        $this->attributes = &$attributes;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getStorageKey()
-    {
-        return $this->storageKey;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function has(string $name)
-    {
-        return \array_key_exists($name, $this->attributes);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function get(string $name, $default = null)
-    {
-        return \array_key_exists($name, $this->attributes) ? $this->attributes[$name] : $default;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function set(string $name, $value)
-    {
-        $this->attributes[$name] = $value;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function all()
-    {
-        return $this->attributes;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function replace(array $attributes)
-    {
-        $this->attributes = [];
-        foreach ($attributes as $key => $value) {
-            $this->set($key, $value);
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function remove(string $name)
-    {
-        $retval = null;
-        if (\array_key_exists($name, $this->attributes)) {
-            $retval = $this->attributes[$name];
-            unset($this->attributes[$name]);
-        }
-
-        return $retval;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function clear()
-    {
-        $return = $this->attributes;
-        $this->attributes = [];
-
-        return $return;
-    }
-
-    /**
-     * Returns an iterator for attributes.
-     *
-     * @return \ArrayIterator An \ArrayIterator instance
-     */
-    public function getIterator()
-    {
-        return new \ArrayIterator($this->attributes);
-    }
-
-    /**
-     * Returns the number of attributes.
-     *
-     * @return int The number of attributes
-     */
-    public function count()
-    {
-        return \count($this->attributes);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+9l2t3L1v10==

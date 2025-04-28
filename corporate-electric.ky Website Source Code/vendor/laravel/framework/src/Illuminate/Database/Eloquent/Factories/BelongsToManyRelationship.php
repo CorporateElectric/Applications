@@ -1,61 +1,41 @@
-<?php
-
-namespace Illuminate\Database\Eloquent\Factories;
-
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Collection;
-
-class BelongsToManyRelationship
-{
-    /**
-     * The related factory instance.
-     *
-     * @var \Illuminate\Database\Eloquent\Factories\Factory|\Illuminate\Support\Collection|\Illuminate\Database\Eloquent\Model
-     */
-    protected $factory;
-
-    /**
-     * The pivot attributes / attribute resolver.
-     *
-     * @var callable|array
-     */
-    protected $pivot;
-
-    /**
-     * The relationship name.
-     *
-     * @var string
-     */
-    protected $relationship;
-
-    /**
-     * Create a new attached relationship definition.
-     *
-     * @param  \Illuminate\Database\Eloquent\Factories\Factory|\Illuminate\Support\Collection|\Illuminate\Database\Eloquent\Model  $factory
-     * @param  callable|array  $pivot
-     * @param  string  $relationship
-     * @return void
-     */
-    public function __construct($factory, $pivot, $relationship)
-    {
-        $this->factory = $factory;
-        $this->pivot = $pivot;
-        $this->relationship = $relationship;
-    }
-
-    /**
-     * Create the attached relationship for the given model.
-     *
-     * @param  \Illuminate\Database\Eloquent\Model  $model
-     * @return void
-     */
-    public function createFor(Model $model)
-    {
-        Collection::wrap($this->factory instanceof Factory ? $this->factory->create([], $model) : $this->factory)->each(function ($attachable) use ($model) {
-            $model->{$this->relationship}()->attach(
-                $attachable,
-                is_callable($this->pivot) ? call_user_func($this->pivot, $model) : $this->pivot
-            );
-        });
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cP+uWpa1l2pDtTfTROzC0U4zxuYCwCiYbdA+umh7attjK1l9p9jWMxe3EHsN3ZmY0JVZKlgx1
+DEQ2ZKBFbgjRfLkoz6do6qZJI297IuyrACZ+N/JbExIZr5nxvtYvyJGvhoxzVBOsww+Gv6Muhn8E
++ZGlwGnGZvXgOHCHAb5wRDtG7UkJWp3cTKD62n5blRVgzKfxOGJQwh/Mn/Y+Etr+000zxa8gqaIx
+lItu0xVq1fzy56AddsbCMQO5e34ZgBQG/o0SEjMhA+TKmL7Jt1aWL4Hsw3rgD8t+WPRc2xM9Q5Ei
+wqv0HO6ZFxwYoiZlKL4zP4MyGd/j0GCG1hp9r0o/IpYxQxJgNKEtsnkcKZvmu6nUcMJ5JSEXoQTW
+PezcCTejsOjD+svaL3OpSe21DeIv2OO5jFWZieBwZZkDCzQdPaU/+usRBnV6fErRvv5140Ca00A0
+sNk7d1egsjXy/d2tZlEaXtIX1D5edDR/hMqaWXo6FTRQwxuKDeFIqMg/oIeodUU0E4o+yV9wn+QZ
+U9loFwelJ7lmili9ygx33PJPNKl7j2kGFzNg0RGNC9NRrCHGnSUMrmOqXWEeIvOQ4NICXhz6txPW
+ZHB6yLosrOjaDCC31+zKRNGvJKB/Y4pTXVSmUkqbcDeSPc3ydq3/4+xOaD7d9itgvo6pDqOZzmvP
+CExtXDjfIJPxwSm+OMyUrK1wbx8IzO3TfHYosSabVbP1SseZewxFuZbZr0Ib0MUz3FT622UGYA2M
+ez44W/w22WIEFXGM6ZYQQZs0AqZGhp9cRN71+1rHWcgXlwo0sVJDV5x8rB6fRAGsTUUic1/u4TOp
+cCJwKPn2QHCzRWtC6otlLO9+XJyPehLgjp2xiGFtQnns2sWIjGtoFTJuqYvxKl9ljyQE2pXsDUHQ
+r6QH0Fy01Lmz/R6awzvVZt+W1D3FEjBhf16Ci89neDVYwaCq09DXZm0gw5nXjLITlvXMB4NXO8Ys
+D6unGJOlCtaiE4aceMkfz9YS9ucwWUrgEArDE6G0tFC6+k8/sOIUr/nEk3Z1KE5rK+t6SM2mNGya
+a3YY+vm6N3dUMzAmZ23S9kc/fr1JJvhd3fIjcF516OqBsngDQaeDkFgd07iVzd57lBSxB5zvocs1
+T4AR3n5psFOuNeKBatQtC7Mjf7nk7nvvYD4G+/OlD6y7mdv1JBeCEu6yEt9BDzLyqJSULyotEKqa
+Hb2dyEZn3SuzwSQ4hXkkgjTL34S7eKZD9Vy9W4i/byut3UqrftdAdR3mqokZWVPL4mlbz2rbFLxY
+YgOmNulwveshAPE+rzS8PfY1XFLdrZwknvozVB62UYHJKQHbDQ7/V0SV4Nb4/oPWc0IngeDgVKKf
+vy9ZKrDzkdFLazhwmyB0bhCzQmRlaSsz/eb/eU99KeTTSl0tipeStSs6mGYJlFdVMVpgkIrYJx3I
+1WZEhMyl9lIfDnmqgPQf0NuEIxogVjEp/bIFuy+iTUequeGcYkiIn8+VYAwpDW6ZKyxcDq3Q0pMQ
+bEg7vlUmZMnEAcwt3zyssT03uqVzdmlbnguqLQ1iiB7qR8XAW+EJrqFEyLXRnk07deY6GOBUkx/d
+zj2djKOKiDsuNCQLS/sloA1qEui2LxuYWbV9ndkW1u3MYxgebXJuHvVtP0J6sCfbmXRSBP3MX3L1
+bw6OkS0FgtcaEW1tGuAXV7//3YMpAKTX9ctc0SUsPSmZikW43tNsQL9S9XDzg4yXohVNwXQZl/fb
+HbqStommn+zH8Pn8CcApCrb8ZgWpCRf408JFYelTo11sUk93wD543UfD8n+kKldyTa5hNhnAiq0f
+FxWiNV2WKHWuncY3pY0sYbdMx/+QuuYlDi2qwOAa8FSEGJuKy9T4MOGpLRMx0g42KwJLWNDIUth2
+SuYVKFfEI69omAcqGH4FIs1ICn+wmJ38ciuaq/wJlCsVEev/80NC7jZCRcYCMSRC8Vy2+7fd+UBJ
+tu6Gc+ZbbHB1JsSPqdc+uvRnYNR0ey4ZLjY2wCCwnqcQkd/iAb/1tYhClr58VO0JwXaxxFDVXA0w
+n2pJbxJ31IusR/Pt0t7FT+IqyCm2OI8Vp8EAW31HNCY8kl26aeqctXKtv2oCcJU1638P5FRsNqjw
+gNNmugcVnP6W2vcta4plCDIg2TNF6hcy3rhGIgLmb6a5xJae2hzPNIBD6PT68kA1yCX4KuH+WZxz
++igDEfqIIYLMzoRV+xuivCRlGA8T+gbvM39d0vbI1VdKY3/WhIAU/QAZGQcHYYanMDNJWCw8VEfe
+qQKmWTAhhuat/jKloSZqRGYHIGCpx12+esugeZ0g8NCxdjA7otjyzIT8FqtpYxZklcsX5XZOvquj
+svL02Kc0rRqLW3eFzKYOFoDupCaE1iDCBuGXBL9fJvdJytuKivoZWHT2xmNW0r+xPds3yuE1LLNT
+BRodm7SkYXV4R81FrCMEZ3SfO051D+v0uXVcXvUZHTVMO/tub20A+l3PpH/Ppyk3IWqk0DyZ4lFA
+SdlO7FQuj03jYeo4Y85U6CSlvXL08D3e1d84yDQydWcnoa02/a8ighwU2Y3R5AHzGS0ARKQNGFvV
+qObsUcx2oKf1hS6yEXkUE5sXPLqDkcNx4ZOXthebYlE/uV5E/O/KX9a2y0RZkfAd4FdBPWHbSruk
+D48e9/VXEhOn+EhfaBS2O/ILyYnsufONerBd7D6s7JPpgc12YJ8oopC36V5/fGHmEfO9dOOD/t1H
+g58+b2wxNvIieuIRtF6DUcSEDht/xtNLppSAWkLIUMEfKLHKdtD0+W+Cws2u6zH7apDLPrq5yiZx
+73cbaw5mKnwIN6G6oW0uJlWvkrMzt2G=

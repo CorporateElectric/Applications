@@ -1,663 +1,276 @@
-<?php
-
-namespace Illuminate\Events;
-
-use Closure;
-use Exception;
-use Illuminate\Container\Container;
-use Illuminate\Contracts\Broadcasting\Factory as BroadcastFactory;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
-use Illuminate\Contracts\Container\Container as ContainerContract;
-use Illuminate\Contracts\Events\Dispatcher as DispatcherContract;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
-use Illuminate\Support\Traits\Macroable;
-use Illuminate\Support\Traits\ReflectsClosures;
-use ReflectionClass;
-
-class Dispatcher implements DispatcherContract
-{
-    use Macroable, ReflectsClosures;
-
-    /**
-     * The IoC container instance.
-     *
-     * @var \Illuminate\Contracts\Container\Container
-     */
-    protected $container;
-
-    /**
-     * The registered event listeners.
-     *
-     * @var array
-     */
-    protected $listeners = [];
-
-    /**
-     * The wildcard listeners.
-     *
-     * @var array
-     */
-    protected $wildcards = [];
-
-    /**
-     * The cached wildcard listeners.
-     *
-     * @var array
-     */
-    protected $wildcardsCache = [];
-
-    /**
-     * The queue resolver instance.
-     *
-     * @var callable
-     */
-    protected $queueResolver;
-
-    /**
-     * Create a new event dispatcher instance.
-     *
-     * @param  \Illuminate\Contracts\Container\Container|null  $container
-     * @return void
-     */
-    public function __construct(ContainerContract $container = null)
-    {
-        $this->container = $container ?: new Container;
-    }
-
-    /**
-     * Register an event listener with the dispatcher.
-     *
-     * @param  \Closure|string|array  $events
-     * @param  \Closure|string|null  $listener
-     * @return void
-     */
-    public function listen($events, $listener = null)
-    {
-        if ($events instanceof Closure) {
-            return $this->listen($this->firstClosureParameterType($events), $events);
-        } elseif ($events instanceof QueuedClosure) {
-            return $this->listen($this->firstClosureParameterType($events->closure), $events->resolve());
-        } elseif ($listener instanceof QueuedClosure) {
-            $listener = $listener->resolve();
-        }
-
-        foreach ((array) $events as $event) {
-            if (Str::contains($event, '*')) {
-                $this->setupWildcardListen($event, $listener);
-            } else {
-                $this->listeners[$event][] = $this->makeListener($listener);
-            }
-        }
-    }
-
-    /**
-     * Setup a wildcard listener callback.
-     *
-     * @param  string  $event
-     * @param  \Closure|string  $listener
-     * @return void
-     */
-    protected function setupWildcardListen($event, $listener)
-    {
-        $this->wildcards[$event][] = $this->makeListener($listener, true);
-
-        $this->wildcardsCache = [];
-    }
-
-    /**
-     * Determine if a given event has listeners.
-     *
-     * @param  string  $eventName
-     * @return bool
-     */
-    public function hasListeners($eventName)
-    {
-        return isset($this->listeners[$eventName]) ||
-               isset($this->wildcards[$eventName]) ||
-               $this->hasWildcardListeners($eventName);
-    }
-
-    /**
-     * Determine if the given event has any wildcard listeners.
-     *
-     * @param  string  $eventName
-     * @return bool
-     */
-    public function hasWildcardListeners($eventName)
-    {
-        foreach ($this->wildcards as $key => $listeners) {
-            if (Str::is($key, $eventName)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Register an event and payload to be fired later.
-     *
-     * @param  string  $event
-     * @param  array  $payload
-     * @return void
-     */
-    public function push($event, $payload = [])
-    {
-        $this->listen($event.'_pushed', function () use ($event, $payload) {
-            $this->dispatch($event, $payload);
-        });
-    }
-
-    /**
-     * Flush a set of pushed events.
-     *
-     * @param  string  $event
-     * @return void
-     */
-    public function flush($event)
-    {
-        $this->dispatch($event.'_pushed');
-    }
-
-    /**
-     * Register an event subscriber with the dispatcher.
-     *
-     * @param  object|string  $subscriber
-     * @return void
-     */
-    public function subscribe($subscriber)
-    {
-        $subscriber = $this->resolveSubscriber($subscriber);
-
-        $events = $subscriber->subscribe($this);
-
-        if (is_array($events)) {
-            foreach ($events as $event => $listeners) {
-                foreach ($listeners as $listener) {
-                    $this->listen($event, $listener);
-                }
-            }
-        }
-    }
-
-    /**
-     * Resolve the subscriber instance.
-     *
-     * @param  object|string  $subscriber
-     * @return mixed
-     */
-    protected function resolveSubscriber($subscriber)
-    {
-        if (is_string($subscriber)) {
-            return $this->container->make($subscriber);
-        }
-
-        return $subscriber;
-    }
-
-    /**
-     * Fire an event until the first non-null response is returned.
-     *
-     * @param  string|object  $event
-     * @param  mixed  $payload
-     * @return array|null
-     */
-    public function until($event, $payload = [])
-    {
-        return $this->dispatch($event, $payload, true);
-    }
-
-    /**
-     * Fire an event and call the listeners.
-     *
-     * @param  string|object  $event
-     * @param  mixed  $payload
-     * @param  bool  $halt
-     * @return array|null
-     */
-    public function dispatch($event, $payload = [], $halt = false)
-    {
-        // When the given "event" is actually an object we will assume it is an event
-        // object and use the class as the event name and this event itself as the
-        // payload to the handler, which makes object based events quite simple.
-        [$event, $payload] = $this->parseEventAndPayload(
-            $event, $payload
-        );
-
-        if ($this->shouldBroadcast($payload)) {
-            $this->broadcastEvent($payload[0]);
-        }
-
-        $responses = [];
-
-        foreach ($this->getListeners($event) as $listener) {
-            $response = $listener($event, $payload);
-
-            // If a response is returned from the listener and event halting is enabled
-            // we will just return this response, and not call the rest of the event
-            // listeners. Otherwise we will add the response on the response list.
-            if ($halt && ! is_null($response)) {
-                return $response;
-            }
-
-            // If a boolean false is returned from a listener, we will stop propagating
-            // the event to any further listeners down in the chain, else we keep on
-            // looping through the listeners and firing every one in our sequence.
-            if ($response === false) {
-                break;
-            }
-
-            $responses[] = $response;
-        }
-
-        return $halt ? null : $responses;
-    }
-
-    /**
-     * Parse the given event and payload and prepare them for dispatching.
-     *
-     * @param  mixed  $event
-     * @param  mixed  $payload
-     * @return array
-     */
-    protected function parseEventAndPayload($event, $payload)
-    {
-        if (is_object($event)) {
-            [$payload, $event] = [[$event], get_class($event)];
-        }
-
-        return [$event, Arr::wrap($payload)];
-    }
-
-    /**
-     * Determine if the payload has a broadcastable event.
-     *
-     * @param  array  $payload
-     * @return bool
-     */
-    protected function shouldBroadcast(array $payload)
-    {
-        return isset($payload[0]) &&
-               $payload[0] instanceof ShouldBroadcast &&
-               $this->broadcastWhen($payload[0]);
-    }
-
-    /**
-     * Check if event should be broadcasted by condition.
-     *
-     * @param  mixed  $event
-     * @return bool
-     */
-    protected function broadcastWhen($event)
-    {
-        return method_exists($event, 'broadcastWhen')
-                ? $event->broadcastWhen() : true;
-    }
-
-    /**
-     * Broadcast the given event class.
-     *
-     * @param  \Illuminate\Contracts\Broadcasting\ShouldBroadcast  $event
-     * @return void
-     */
-    protected function broadcastEvent($event)
-    {
-        $this->container->make(BroadcastFactory::class)->queue($event);
-    }
-
-    /**
-     * Get all of the listeners for a given event name.
-     *
-     * @param  string  $eventName
-     * @return array
-     */
-    public function getListeners($eventName)
-    {
-        $listeners = $this->listeners[$eventName] ?? [];
-
-        $listeners = array_merge(
-            $listeners,
-            $this->wildcardsCache[$eventName] ?? $this->getWildcardListeners($eventName)
-        );
-
-        return class_exists($eventName, false)
-                    ? $this->addInterfaceListeners($eventName, $listeners)
-                    : $listeners;
-    }
-
-    /**
-     * Get the wildcard listeners for the event.
-     *
-     * @param  string  $eventName
-     * @return array
-     */
-    protected function getWildcardListeners($eventName)
-    {
-        $wildcards = [];
-
-        foreach ($this->wildcards as $key => $listeners) {
-            if (Str::is($key, $eventName)) {
-                $wildcards = array_merge($wildcards, $listeners);
-            }
-        }
-
-        return $this->wildcardsCache[$eventName] = $wildcards;
-    }
-
-    /**
-     * Add the listeners for the event's interfaces to the given array.
-     *
-     * @param  string  $eventName
-     * @param  array  $listeners
-     * @return array
-     */
-    protected function addInterfaceListeners($eventName, array $listeners = [])
-    {
-        foreach (class_implements($eventName) as $interface) {
-            if (isset($this->listeners[$interface])) {
-                foreach ($this->listeners[$interface] as $names) {
-                    $listeners = array_merge($listeners, (array) $names);
-                }
-            }
-        }
-
-        return $listeners;
-    }
-
-    /**
-     * Register an event listener with the dispatcher.
-     *
-     * @param  \Closure|string  $listener
-     * @param  bool  $wildcard
-     * @return \Closure
-     */
-    public function makeListener($listener, $wildcard = false)
-    {
-        if (is_string($listener)) {
-            return $this->createClassListener($listener, $wildcard);
-        }
-
-        if (is_array($listener) && isset($listener[0]) && is_string($listener[0])) {
-            return $this->createClassListener($listener, $wildcard);
-        }
-
-        return function ($event, $payload) use ($listener, $wildcard) {
-            if ($wildcard) {
-                return $listener($event, $payload);
-            }
-
-            return $listener(...array_values($payload));
-        };
-    }
-
-    /**
-     * Create a class based listener using the IoC container.
-     *
-     * @param  string  $listener
-     * @param  bool  $wildcard
-     * @return \Closure
-     */
-    public function createClassListener($listener, $wildcard = false)
-    {
-        return function ($event, $payload) use ($listener, $wildcard) {
-            if ($wildcard) {
-                return call_user_func($this->createClassCallable($listener), $event, $payload);
-            }
-
-            $callable = $this->createClassCallable($listener);
-
-            return $callable(...array_values($payload));
-        };
-    }
-
-    /**
-     * Create the class based event callable.
-     *
-     * @param  array|string  $listener
-     * @return callable
-     */
-    protected function createClassCallable($listener)
-    {
-        [$class, $method] = is_array($listener)
-                            ? $listener
-                            : $this->parseClassCallable($listener);
-
-        if (! method_exists($class, $method)) {
-            $method = '__invoke';
-        }
-
-        if ($this->handlerShouldBeQueued($class)) {
-            return $this->createQueuedHandlerCallable($class, $method);
-        }
-
-        $listener = $this->container->make($class);
-
-        return $this->handlerShouldBeDispatchedAfterDatabaseTransactions($listener)
-                    ? $this->createCallbackForListenerRunningAfterCommits($listener, $method)
-                    : [$listener, $method];
-    }
-
-    /**
-     * Parse the class listener into class and method.
-     *
-     * @param  string  $listener
-     * @return array
-     */
-    protected function parseClassCallable($listener)
-    {
-        return Str::parseCallback($listener, 'handle');
-    }
-
-    /**
-     * Determine if the event handler class should be queued.
-     *
-     * @param  string  $class
-     * @return bool
-     */
-    protected function handlerShouldBeQueued($class)
-    {
-        try {
-            return (new ReflectionClass($class))->implementsInterface(
-                ShouldQueue::class
-            );
-        } catch (Exception $e) {
-            return false;
-        }
-    }
-
-    /**
-     * Create a callable for putting an event handler on the queue.
-     *
-     * @param  string  $class
-     * @param  string  $method
-     * @return \Closure
-     */
-    protected function createQueuedHandlerCallable($class, $method)
-    {
-        return function () use ($class, $method) {
-            $arguments = array_map(function ($a) {
-                return is_object($a) ? clone $a : $a;
-            }, func_get_args());
-
-            if ($this->handlerWantsToBeQueued($class, $arguments)) {
-                $this->queueHandler($class, $method, $arguments);
-            }
-        };
-    }
-
-    /**
-     * Determine if the given event handler should be dispatched after all database transactions have committed.
-     *
-     * @param  object|mixed  $listener
-     * @return bool
-     */
-    protected function handlerShouldBeDispatchedAfterDatabaseTransactions($listener)
-    {
-        return ($listener->afterCommit ?? null) && $this->container->bound('db.transactions');
-    }
-
-    /**
-     * Create a callable for dispatching a listener after database transactions.
-     *
-     * @param  mixed  $listener
-     * @param  string  $method
-     * @return \Closure
-     */
-    protected function createCallbackForListenerRunningAfterCommits($listener, $method)
-    {
-        return function () use ($method, $listener) {
-            $payload = func_get_args();
-
-            $this->container->make('db.transactions')->addCallback(
-                function () use ($listener, $method, $payload) {
-                    $listener->$method(...$payload);
-                }
-            );
-        };
-    }
-
-    /**
-     * Determine if the event handler wants to be queued.
-     *
-     * @param  string  $class
-     * @param  array  $arguments
-     * @return bool
-     */
-    protected function handlerWantsToBeQueued($class, $arguments)
-    {
-        $instance = $this->container->make($class);
-
-        if (method_exists($instance, 'shouldQueue')) {
-            return $instance->shouldQueue($arguments[0]);
-        }
-
-        return true;
-    }
-
-    /**
-     * Queue the handler class.
-     *
-     * @param  string  $class
-     * @param  string  $method
-     * @param  array  $arguments
-     * @return void
-     */
-    protected function queueHandler($class, $method, $arguments)
-    {
-        [$listener, $job] = $this->createListenerAndJob($class, $method, $arguments);
-
-        $connection = $this->resolveQueue()->connection(
-            $listener->connection ?? null
-        );
-
-        $queue = method_exists($listener, 'viaQueue')
-                    ? $listener->viaQueue()
-                    : $listener->queue ?? null;
-
-        isset($listener->delay)
-                    ? $connection->laterOn($queue, $listener->delay, $job)
-                    : $connection->pushOn($queue, $job);
-    }
-
-    /**
-     * Create the listener and job for a queued listener.
-     *
-     * @param  string  $class
-     * @param  string  $method
-     * @param  array  $arguments
-     * @return array
-     */
-    protected function createListenerAndJob($class, $method, $arguments)
-    {
-        $listener = (new ReflectionClass($class))->newInstanceWithoutConstructor();
-
-        return [$listener, $this->propagateListenerOptions(
-            $listener, new CallQueuedListener($class, $method, $arguments)
-        )];
-    }
-
-    /**
-     * Propagate listener options to the job.
-     *
-     * @param  mixed  $listener
-     * @param  mixed  $job
-     * @return mixed
-     */
-    protected function propagateListenerOptions($listener, $job)
-    {
-        return tap($job, function ($job) use ($listener) {
-            $job->tries = $listener->tries ?? null;
-
-            $job->backoff = method_exists($listener, 'backoff')
-                                ? $listener->backoff() : ($listener->backoff ?? null);
-
-            $job->timeout = $listener->timeout ?? null;
-
-            $job->afterCommit = property_exists($listener, 'afterCommit')
-                                ? $listener->afterCommit : null;
-
-            $job->retryUntil = method_exists($listener, 'retryUntil')
-                                ? $listener->retryUntil() : null;
-        });
-    }
-
-    /**
-     * Remove a set of listeners from the dispatcher.
-     *
-     * @param  string  $event
-     * @return void
-     */
-    public function forget($event)
-    {
-        if (Str::contains($event, '*')) {
-            unset($this->wildcards[$event]);
-        } else {
-            unset($this->listeners[$event]);
-        }
-
-        foreach ($this->wildcardsCache as $key => $listeners) {
-            if (Str::is($event, $key)) {
-                unset($this->wildcardsCache[$key]);
-            }
-        }
-    }
-
-    /**
-     * Forget all of the pushed listeners.
-     *
-     * @return void
-     */
-    public function forgetPushed()
-    {
-        foreach ($this->listeners as $key => $value) {
-            if (Str::endsWith($key, '_pushed')) {
-                $this->forget($key);
-            }
-        }
-    }
-
-    /**
-     * Get the queue implementation from the resolver.
-     *
-     * @return \Illuminate\Contracts\Queue\Queue
-     */
-    protected function resolveQueue()
-    {
-        return call_user_func($this->queueResolver);
-    }
-
-    /**
-     * Set the queue resolver implementation.
-     *
-     * @param  callable  $resolver
-     * @return $this
-     */
-    public function setQueueResolver(callable $resolver)
-    {
-        $this->queueResolver = $resolver;
-
-        return $this;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPnxFFjUEOOCOLoohz06BcMeF0wXGjToNOO2uB0GZoi+IquWl7hvOkLNUo336meYBdZYv1uHr
+CYBHsIKGrkNu2rj3eiYevxxZe8vIe2PFfpGnrTITJ/R0xE4ROp1ID4ymSuZGNdt0Ujn6rhqNgwoj
+YvT/NZ42I1XJqDNQO1VtHZqXk41tJaP3AtyoJpkTOyyxk6IuDGtSwBPHBzIr/eCz4V0f+BhzR93g
+6x3OJcvHuCoixlex6+FbtTK0zEr6BIiQ6puEEjMhA+TKmL7Jt1aWL4HswBfeoxj+LBzAQk4jcTEm
+PLr//nb+LcCgwsEzvL3INceIHUStbMFdZFir+dOqF/6gWm4ex/Y5gu16oJe0XEcihb2uifHmmJiQ
+I9rw4hDX4UiWY3+iN5d45rac7VcYApLhA/XdvmAJkoZaUMME7KNxaO+9uvbgUyYo1OLOxNEkLUUU
+vR81C37c04wMK057rJhX/IP461GnwbXlhcW9wORwdtTs/DUjydMtApAUlFmVaCk9vavnAC1zgCq4
+RMqivMpD7mKvYfI/WDVJLaU9EjicPmXqRSD+mG4V4wV9JY1L0Ryo4wRNed3/BC5uSut18L5AtlMV
+YeOCWGkU1bCvtkKmeifAHT8gzyQCBs56TemEM/K+bmbhSv9CC+dyXtFEDnqZjWE4i14n0Z1Q8fGc
+gG3rtJLXCEeHmJN7S998MH2MCsZhEJCi0Xxy3Vz9e218xagJAVEP1MprX0DH7Ne2RTaYyzrya7p+
+CD8dMQ6y1Mxup/i+/JWTD4gF/PkMBmpb0Po9i5EJOvLznkRmZbxnrKQgxkU7GE3CkhTMCKAqBKuH
+NOMQSJzgFrujWzR+XTaWCU+FMD8qRWdxKUeftNO9VAmr4aWUnaVPE2FkKVm+Az5WTcAo3wvXCxFl
+ulS0EOWix1zpUA3pr+TZhlvxY//rbc5RIXlXwbUJa+n4Pinfy2x/d5CzYQWsEZh004/wAWfJqdU9
+1ezPcAZQEdkUV39ThMKUV+WlVuP8D09FXNbmij9PLdPWCMZR8UPPsR7TKA9lavoHEA1VE3l9BVI5
+Z1zeY3cly17wJb6dmgdywEfBm8uIe4yOlTw1/VkWZFFRpSbInPcTc0zjmN365Mcj6GblxeZErWrr
+H8TVPSAOiS07nok8AXjgOZ2Q65I3NV+jTnQkSnfoRK/YrFpIbxLB5UxiSW/gkxfznn2DoybXO6Ck
+RIZdewbFcup5BCzRT7WOiVkPZ/FJFxy48JWi55/6FgoW+2Mhx+BbUKWGwJ8HtGjzioaYTqCFSgVe
+nxrkJzRDHTB9C22VX4BSY822rXJ/BlkV0EvisUEA7pNcq+7/bmmV/+9VZHmkvzy8RPn/kd+hgsXy
+5EdKgZbqYZRhYx5ml5yVx/Ghc2BZ8islTjyTiBELslZSE8vR7GyEIBZ/uinm1gRIqq2+Dzkb0N2u
+mYSmcq4WBkM5hKcmAHz8LeeJwxE6zGCdoHrj0jEylAhYSAwYPfcm2PdBL7XWsk7Tw2qwkvEHTIYi
+9Dr7Lkl4cKMGPSUScV6P7g2rZ84OFe42bCqTsLXWD9BWQDPraaAK7gT9T5tf1kkWQOuS/MSegmCL
+v9CnfotaW4p4AyKA63rG3i/tLneILP8k9PsyEpITu7M1LKakXmCmtSe2n4GKvAvSgps7N2XIn56l
+b0Xqyi2A12rs47pJEKSewjX8SO1THvFE/W9c3B1t2z3enXGkyMeurxSehvF9z0i2qj3/fO4/HcIh
+jgyFXeubLmNlnP55cRBKyMafRXegs2j0+0DP1WjYwEGMEhbPvfEj2EF2mDR78aL1CoN7TGpQzyZi
+xjPJnR5oO6gYOzMuwN09Ce8TyZCzg4aBYdGQf0pWpC0PEe1+RsS/luE13tZI48+w+IqxK8bFW8HZ
+Pypp+sDmtUpaePKNiESa5UmDFbjBMxic/pYTDfWrGp7o8xLZDMMUDVxfTXsvJiRsp3QLkfo9AYld
+cC4DAmRvRsI+rrCI/XyMiHwly4FSLn8GqksQxbJj7blI3IEjXcIrplIUA//MOqiX9wNp6Zr7q0kL
+UNFmCOyIKStBFV4SftMxLfNA0zrDx7gMcAv40zCsfnG5iM9rUj6syiGoNZ3E9PBIN+aCXQBE91s2
+I3K9zTTCcR7lecPCnx4G6HojpVWxOyoafikGISPFBMZy+gFOg6wq8tYxQzLfrKXYAj4TmTKF3ZiN
+PfetsAAt7xtK37MgjCg7+7GhDTkYVDbatIuRKT7BiLUiIkdntBQ9vbpIYnog4AzPRSfX/tEYVDkl
+QUyZSwmixEZOXnR455uSLSURdGCh1Mqdz7+Tf0rQSiPNn5hDuWJlq45YClDvJuxqHhVj08dv89gk
+WIrvpcblWGaJhmpSEzrk1sHqheaUspAE5ZZF0Gi3eAGELzYEbUSE4EJ9UEG+Fgf9YD1lPzo1Xjjq
+lsdszKS9/OWu0bAn9R3lRqYeNcCYx0ZmiXG1qRWSsFhjuRdK1M8c1A//IH+ng/2wcaSp3owe0DOH
+D+kTIGORLe5g7ASwhNzX+qyww2l5AdGrARNyETEH55EHnn8E3cyNoZuA2QoQ1f7JXkxZpOzRdWhj
+DjfZ8J1Cq49XMZs1R1uD7OvetOgszValaFyZwOZ63r4GJ3rRaPW7e5bolzfivHBjnAs7TTSuj7XF
+YDKEZ5NmcCCs9xCauNZL7kmYCvtFQ2j65f3ywSD7e1pW57X4MNSLYoLC8eL5ztrnQs3qrz479j0U
+x7TIg82417PSziQb8w/D4d2h0/VxqixMVoMYPB3Hc7zfLZLM4ciNnubjbffUQBWEyIPKBTPVg8ku
+se/QpLuHJUmOWcG8fXwP1etvWyR+K6ISbUEt/a0g3cMUYLxLUVE7uBrO/zJYsIbD3l4Yrup4W8hJ
+uRB7379hsF13BnaQaSjQPPjEuw4fG0ZQNb8h9Zdgufv90a7Q747Tau7nPlxXiMpg6WsdE570ytZV
+749N5I6UAKt6e9wtxqtwxfZtqPX4AtkcS6a/oBSbMIYQ54FOzwLElZB3ChtRy5g58miAFzF0K300
+G+Q6N/o02FL5yO3B60g9OzScOgxARQsKTV/uZA/I6PYGCBIK9wEt5MDReZ2FoDpxzwnMavWfINNq
+iUAN3MnuGSB+3wgBoNmRPVp0vzd+qOndzbD3T6ZKvyocqLmts23DR09ZPKex1tLQLzxerU4IYgj1
+5WAkm3rV2KwzZl3WwNkxoFu1/cH7ffALRcP8KNg26uZfNIJKLWJ+sTI/9YX2ttuZMXgQScRWn2iA
+W1tC1GKhDaIgy+G/at/wVGIOgREb4ekNidqL9tPlYY+Szs1o195BeleKAlbyTGBsaPgC0TwMWyZ6
+xKphSor3qem5TpdxnJwQZFOBcWxtEiEHxf1YtW/5XWF7kPeIs/7vI+sne+VAW9Qz+VoNKn5P/u5j
+NXDiLIeAPQtbwp8oD59+vf35H/4q2jxnY36jhc+3RMCbSbJnU+iUrG9suJXwIqO49QsuqaqM00fA
+G3sqbOJxEYtHIqem6eUMSB/lnK8B0BF3OsPPmxcA/OseQuKLK6rf0yuefOh8/2UUvS9JDyqp1AnU
+FTBv3Z4iHmxS7Q2/IL1Ib7gokDlblnLMn6JOn/GGAfhML31uB+25HWSt/cldbKLkUuefBsVcxS+A
+N03qiyVcyAy5w5APbiYcb0+ai5Y8OEsNiJgwTrxs1PnJSrArVCIrIdI2HLdThdkeNp4V9yqH8p2z
+XKiUqhmADU0TYvvLyXyxVZq2YO1xk4lRus//Yhk73KcDibRsf/Au294+Wqi7RfiUzfvwm2x4kzIF
+26PCUX+hSjUTkqYH2kdzNe31JaUoTlKHEVcECoxWgdPZ/JeuiWFg5ruMjtBR2cBZzCz1xer/eaT1
+SKtXZnzsyYv+DK4kekdmM7MM7+rbc4z0nmdgU2w9efcYeBoMW5CGgl/JFqkqAOhDwc/UtZtJdPGk
+4HcmGUn3Qpql5OKPeIRcwj7+kyVJEJTehMP1NroutCvxfi4ePauFxcJmkPPMFYd5zS66Y+/PlRtc
+y+2MFTB0LzZ+1UFdo5VgkY6FfiN6nMRwEKtQhik3/34PYqfPjjjNtUIC8x4FK0vLu7xnIhZH9rYu
+39IbvG6Zam1tIRC1dHluA0cp6stbhPDQ5adoYwfxgOJ8qkSA/jzJ/ViaSI914rUaR8fEzJCO+aLU
+F/7lWubw50XbhqmtGN/nki8majRhuGgthimRyQQPXse0fXUXw0ikksL+VwKhNfnb1xu7j2DEXf17
+9B4uiDXKWHp/dwZEiEYSKejH3TH0PTXhJB7RpwnYkQCYjqDQxgMAvG0pi8pCKTlalb40IZyXmEtp
+O+LUJAyrDqPNPOIaJnCR+XZRPEhjT98VnzYlfnmcBl5+yXAynAZNQf7MF+cEla/HDxTNerLKO4cJ
+ttOrP5vHbSxQUFmSUZhuwriYetOrYulc9BkTLdqsoJTg3xwaZSuB8OlE1w+OVgrYu/jGXHGZ6af4
+mmtGwkflrxfMJ4tDzzKrlBQQcdGvds1r/rfz2GmA10DRhIEkrLRWFnAgm+AuMO+o9zd/wQ9qhlHq
+Rq/9PgmZk0CVaeTyQvJQtN+aiLHzXorCUodJA9VaBlSsIKuU6hMJDxCg5JfA1t57Wl6BADtFc8BJ
+PONw5zEdKT4q23sqhTREa3IroLoKw2Jpn01YEkc0GBtxYxrcG5RP/EftEFTMXaUnGgVifc7OT22b
+RVxVpPO3PpKSYVe5wOoKzPgLn+MpMhyzQHNZ3kqzp07/RcDC+nZJ9J6qYB730k+yuRCjIT+zYcwX
++DhKYbB/qc5JgWeJCT8HbiWXELESE+i45vjw7B972L/vxttBWmJiWuXUrS7mxs4oQVlwP8p44g1E
+1EbT+X2ZVMFQPynN3TpbdgbwIJ6yWts9esopW9+WAQEgQ7mO5n52YxhW6a7w9iLkzEgHtiF3dJKs
+ePZmVDv7JAKV7hgUdQzGog+OsUnG0mxZE0+o0W3JOH2e+Q0jb5TEYgiZ5Dty8+zWJBKd8Tqahrpa
+kTMySMFKeJeEuF35e1XiBv+wL/zmbUROnFjTLBlUsx9uZjSM7NXZ7z8U+IwI5GCM41nQA3RzJKAm
+SlIUbI1/XdCvmjKxE32W0XMri9x1Ki3N71FSVQtIJYH3So/bpEcK5GoXiqs92b1CTIVuI3EgvuWY
+CI2zudfLr+Gq7UWWFSo1ctGA/oIY+u7Dm9ETVphso5IVfv/QyZzTVPp68TIYEONnm5tEnoKccjdN
+nKu3dWNaCgQuVXWS1SZaNdw79st9X7/KJpSTo2/ud+OrbEuLuy9iAZVU9GgGZor8Z9A6nmTQ9E0T
+2HRAapCjGkim2v60xJLckSZdRNlxuY4ryKaGynoFsBMfaZ3uUDtdpoCD+ixjB69IZ3wt08N8K1b9
+gaX5K7HA8Epy9TJAICNDvxJFtis+U1J6AYB7xAYa1kyteIw8qdMFuv984gLDU/fTcJwvSs2gfSgV
+0+8f4/MgtGpesqQ9d2Dd1lSAhdmsRNLhzOhJTvSpKgUK/BrOdu+rGmNJ3o+qoMoloPJKyg6WqByw
+dZOnXspkLetUleYKhA1iNQoYOw+iaM/uzNfvS6OiZ6b28OrVoZ3fiIsnhGs7+NYyOK2rBsbQkuEK
+CtZrteCrCfRBdq3KN1ZDrUJKOAzr2LKwH70PJ2KIJutq1KOmZh6Aktwg+K3ifmz8uzzqkP4X09qi
+qaO4dzwGgIS4A2/S6O7gnRrv/Lg4mQv6q4NAWlK+lW9HxxhGl57JR3FzdSHXAvf2MDnk6dwrZOWH
+Z3E8OwwPFibdkbXjA5Uch/fNrzm8dXr5cvnHuV3WGB2akEetsua7xC/MCQS6Wv4cQgRXNBu4pub6
+iqJV6lhyYbOOAUwmj9TVMmXqAepV8ATY1j7x2W6LKLGe1v/XvdiWufO6wiT43fI5ipOpEyTTZvUD
+fBG7tohMmgrbj/bwB+w6OTysIJaXCeBIn+ZTbpNP5Z+v4tpTZsYy45K+SaOt+h//tQLwp/NofUjD
+IG7eSqhnXlOPUtoNE48M5F+XOGBzwxuiOH2GVQoZ0bpekjiJD2zx4hg6nwduc/17R3QX9AinkORU
+axDRJHHIrwdQ8q2rzrVhxDx3BUfRlf1PctkLb4g+tYiW6OZ15HArTf+PZ6ZUklGbIL4o+inoiXfa
+w9ojmCx7/0Maq0db6hQ5tccGw2Quou9pkMpLebMtDHyGf2QeeDCmRThWKshT/AWh0oibs2ABni9p
+L0MunGh4KqEXQMO94VTcAe8g7HCH9SxAMY0rANLl2V5PMA3zDXC+gvjnFLvzdGxrGFEtYGRKlCdK
+TD3L3gcWVp7tVGbhWb9DQ5OcMRt+VSnbaUUS+PKbcMI0a5vvegA+meWjArr5k8EfJ46d5PBaJjhQ
+o5eJtPv7nofIohnwN87lIiRi5Vz2fo3WFL3NWkkkqUYhEuQ4A4RhcVY0coe57q/PQhPpHfj6YWs0
+Ipru2tjWs00LFwRc79XLnY3I23culFA6q3gDC1A02T1pMxEiel44QBB5BSpno0pf0diASjBDL6JZ
+EIF3srl64WcHAUEV6bRLyIFMCgeSPXIY9hLw4eGK7qUGw7Zoum170B4mcpWoExTv5brFPALiYmR+
+Sj0fx2ZTnXyriFMSURJ4OLVLzW9wpoPRb7Qmi6HhaWV3Vv9G7pbSrjPsxhnvfnlIyqoel5JAfnT/
+AdroAdBAPSnmkkxLitY29SCVSp1ZK7RJV2P/yi6JZR9GYjJSLGqOuGyaPkhyEpDXCtKFExsByHAi
+W22JmHqtztRFVJ6s1s3IsLAXcxek1mKidMLHnzeqsAGikNcIq2GibpH8FegfV8Dbgw8pe0QWJNzh
+GafdpCG34eMEE8mMsJhhE5KV4adiMAGz6xLt/z0/bo3bMZ+VeGij/Ntz2VESeqqUCEiYA2DUeSNh
+vIwV4UjrUx5RXzj3CzdlmEplXjcxl0GSPgXk+byiGcvQupNGGte+BvJt9QrKM+r94sKZHtSJiLQx
+fTsn0xkNlPN17jEn1tUAN4z8g12vmYpG/cS+JDok7tgXqFIPd24RMnImno7UAu3Injj4VAWDzan7
+ArbCXLjaVUan5gZB4etpNy9GrF5SPD33kheYnBPZ3yLIgCUmXN3z8O6qBKXmpfM4y4qhE/KM0xcc
+Z1g1e9Za0dR4VBbcVDc2MvPQ0e1p+Zj0aI6PTCkh3hmUv0yMiVuLP7v828p0jCYk6+SqIkZM30l/
+zPegP86Xg6shSx10JulYdWestUKqqjBXv0yL0FK/RR5yibqNiGV35VCRAE0wsZfoPVySp1xPZHN3
+R6Vs+KxYh3UbSzAopBaX4dVrSJNvSEm1w099hf/pl40O6e1ygJOmsedckLackhhJ4omn/5gQU0t+
+23guHhYssTS1UCbSJ+P3PmbPSErgRMN8f2lY5I9lAtD2LqPLSLocggvLLSQ4gBN/82dB2HzLYZJ8
+GnoCmGIKQpsDfH+yTFHw9iGGhziu8qD+bjpqzRqp01tpWzJVHuW6/lrhPFQTW2TrqtsUw9WVfqh5
+3X4zDhrm4FsNKsv62SCCxmR4Jq+eOAuBLNsJNcH+R4ku1VES4f34pgKZI9hcwAS7MQnNrxiS47Wb
+E9TTMWZoy6ikDTNtkIsW9lH7mgewRJklEtvEZe4oKaApEeDbUubFzMUdKi99UaUAlW2e5I7UroRL
+Rld3RYeO42LlM0+BZ5mGdXnVcgsE1el2gWv2m0MkDU/A6LkPgHUuQBw2vjqGe+Q+eSGkEBjrAWBR
+qZ/gVejuvZ3+ABZFABnFbXEJvEPYxLCs5TWJXuxYUEqkRXaPcPIDQkcYFm2n6J2KnXQe8gOvI5Yl
+RVCEU6c7lKXjV4NhenvB5MsJ3yHaHD/JWinCiVHdmiAmWPaNZbpHVOFfVZV4sp6jJMo2JLp34R0K
+aoC9/ovtoFoB86Np7+GKgRCq/45pB7jI85k2784jApsjcvvBNbiknVO/yx5qI9qT7ziplOzojJTj
+dxENANS0lu7HgdK6jZxUZ6emTZy9bcjclouUwJwHayBHTDwasLvP/OBSRb7ptDgMuGiNVkeA36g0
+o1U6z8qVsd99p3LVlk5PRA2JKmkEfLGbrH5D6/rYJqicgPrTxgNjKpu9KBhKY+95ZkwpY+VE3YmL
+uWEz6RCWKuxDGwD31qya0y0fpqz5wC9PNtDngzrugdL7uoSbFR+2uUsashvs8MsjpIkrw8xJ8wj7
+SqAgfBwY5drWianymnym7C8OG4D5tQw7Gz8vgTqJd4B/bGhTbtHFlI2VFooSlylEFTLaj5rZSqsE
+IqHI4q8XmyyMudGCFsam6rOOl21RWr149glmSkmlNGPiIqECWGidMLBzimiSSNhBlVVpBHJp1eP6
+9yK+FLAcqNoeA/ZkZEsFgsA5T1JHiofLpTt74Mi1bziWl8FGpfyX16yTBcvGjrQR26q99FBNS3/p
+/sHNfi82HdFpSD2YMw8WW6g/ESW7SedDeRsUNEN2cYxKuj+6VUBaqVhLcN/L6hurVolCcfOYktoo
+2XnS+ViNFOTI/4KbfLEiWtnugih1HhnYTSvDVhE2kD7/Ti6M09352xDlMqIEcSK4JqL510b8xpKe
+uAnUBpdE5dyYxB3dGV2YHns9/DJNVrC6ufWN9FIL0MtypCxmK6ctjJsZXlJRGfLZOa1QkvGpxuI5
+2lOEmYUF7GJ5knipdUbs2TKl+BWbIbEf9n3vfPXaRxo+24QY5jiqqgv1H1lvTNHvjZsbzujvWYPO
+hRpxtC6Vsc2UDWua8Ju9HoiN7NPRaWZok4RilQZP7wQMN2OLekmhefF+xVzxmS5EEPagoJRdcijP
+tGKd0QbMjVbkwZwDzQXioJimwG8RMx0GAn5BlrlcH4RuXcejhfOTzqWuCF0QRu+7/NJJ9hvXB/Ti
+K+Lqv3w05ajNZ4x7VLBQbK3imLvNMKxL+UcO03AFgltQVufpbVEE+EWZZCZa+Lp4VvU/ajQffw53
+8SXnDKRqbMs8mRtq057MniQI5RRHQ1BXS8cWJJ9v7T88GW+A223xdEsOeHv9ZH9TVXlZmwziOF3d
+OwN1LMxGSajimjfqHRL29OufeMrzeWAn4Uz0Cx69eHxHCdWpQDfQiI/OuQdGzAsn0aDSTUTixKku
+bLUzbIq3Ii3HeUZVBa9qav1oPTP7hWtRIWuzm4O4AwLBd4DEtP+5PLapGhTp6tQSAll5xnxuEfsv
+PnDQnPjgPqnVxKANd/ETfZa3hLTtv7E/uoS/5nUU0K91kHZd3d6Eg5pRnViAOtGjBJdB/EackpVq
+mY7/Ypk9alik0nXJXrF/2P4N3kdTFQjmzdwvkCEfL4c2gCRSWzed/wRhesKCDYvSKELyeOFG47fo
+r+HjpX1tuQRb0lpI72Fd79RH+B5/q4fULj+UfAn/7v5eSMg8Zt4q7c6/JBBvnogV/1E5eJw8t8cd
+XBW6cJMXhAr8knyPpx0jbUkqNhfb93K97MskmVqF6pQvqW3Qnll7YR5iMIK5ademUOvTJI7Xh1a7
+okrvkMPMcnpDGnTwmShjqJC8Jlx0M+NDYPL0F/8kIaNdX8f26GycPemz7LDBsG8OnqCBfWtCcr1x
+QTtsY/7CQQ0MNoNZYAg+FSYb3c9HY3STOrhBboZTgvhdETtEDz6BneTg2sUwOlq2/410CXPVLBA6
+feo0Fa7CKs7sil8FOOb2M5Z/uGzKle1BfI43IGRuzw0K0X1M/y87j7V0OycdY9vUT7GBylnhXMmN
+qLB+yL0xeoBuclN7SZEwpODjOPKI9J8zL5R1+AfKW8I3Ysa8Eo63xRg14e1sviXOa0H3FVwRXSUl
+8/TBB0Gt/QmOYC8pMUdQTKW2gx2zzeVu92sn9B3AHWUpZYXbAJCTYAOLMr5TVXWgYrxK9Z3d2AX7
+Sgz/v1MlE5302L8FlXDuItqk6J1HEY49jYFfMLvufcwr3ARCpxqCLC3I+HQAA2/uQsr/y8bWiAs0
+InhdpUxDenqiO2zy2VkoNtLyBpSemaErEWZbS/LIVwajy+5PAEZGjzINuI4Yt1UGK10lE2vNc0xQ
+iSIa+H/8VIrDHvetgX7TrZ8EdY+WFWKt2YmsOB582oW2cMFqv90wgVwozddHzGY2ocFTu8N+5PHk
+GkfqS884TtmUhxTi5xl+SDYy7tEb+1OO3jrPAU1H7zRNdkjl2mRjn4gB+xHpZSTrbjpkdstVA2p9
+7ZCCy9iIMPBrDTOVWRQcTf+5h8I3jnoarR3JavbHRiJUY3exgzVZF+lbH7rnY6HTEzJOfkmoGXxl
+8NrpBO2dLs2s4HuDxQfmLGwE3QP8+5XI0BqjfwFg/KWprug0LFC/JEoaBNMnG9LdwgOK6G7B8nci
+BHnTh7wmc6QVX5FiRY2oLS0eQujQhvt9WvOAvTt0tzt7pzuMhbED/YIPcIU3ZoHS1uvZm3Rtwy43
+4PkC397egaTOP7IEEYeKn96caKi9RfsahOT/KpD5F/+vSOK0ROK9C+7jILXngAtEmhFdfHCBb6JS
+HCiWAU2AWI8PbeAL+SxF1TziRhEQex/JBwH4Hs+Ajo9EzZ0HZuEOSNef8U4EiAwAUEgly1Cug06l
+x3MVbV/4IVwts4yKtpFLMXs2G97xpcla05C7lze0jcoIeQzUn8iRIWBilDaeLKYh9yKVOT0jjApW
+setPCfVA8RKwOef9eTkHYtMQQZuwpYU0A1l6pBLIBZBb7C4sWS5af+sFB6cARXuLNz2zgKsML7nZ
+4pSsZSiK0ElqHw0ktBxlhAHSq4QIWmCv7cpLHWE5OWWJEzsOTS/XEknG1wkk+hsATgHOfnTmUwxv
+f/Rg9v47BnilIiPVIDQ4YSf0QDYuO+vwWsvuNk26aQOlWjV+Cj/UF+SpDC30n6lAFTGi4X9bj0E3
+P/MNli+IhByJcbT0fm/eqcekr1ZdZlb8p92OUaUhww9VP0DDr62p8o29Wb5HxedtvapuOA85vGDD
+mQQz+nA28pgOh584Tw8oJvBoU39tlKAl4PMJpA0h1ObVXYF6sTh7Es4UyRGk/R+E04dgwPrbRuW0
+4bYpctHeVJZgKnJROh5whSsL8FzCToB6r632xbqDBL177kqd/bUMJXACVqZXUMcFi9plWv7oEuse
+m4DdluyWpkAkeo4zym3VWwdLg2Q7GFLndfv8V/1WnnxvIEKKBJwrKk7S2utPz9aXpLKl4YQdHeZU
+R3s+6eSmFvm1zClFRmcEBOwzIQ/eohu5lzSKd19gruxkxEn2D2K8/yqVXqbqbJu8xjawJjCg4SyM
+egBqVvosPk/9wffs4SHmlEalv07+Ygc1WozpCiz8+JfjwjcXN7ucVx1UzjUX1uyh8FE5/uEgC1Vn
+oJTOOfaDIUjpPP8gSF9Q4YXkbYz2wJCcOkz1Mjf6wcD46vzPeT9gLWs9iP61KSiu++qHOqgOVo6t
+S1UXtDiaNxjnzcIeGokFCWXxQN4BNx4A08OtqrONpfVgVX9MyieC9/6YRtQ7XazcuCy9YCljMlSc
+SdscxruN81q+U7kdiosFcKRxkutehcpTSBTd63We5SaGJW2pCqrg/svLq7uXIJheOHjKqZl/wmKg
+aR5Vtr7JPfkX3GYJjLKXr1WOeLYbZuWcSZKrwxJKIPGLIKU5bSo7Nu/DOZbng6GR1LPMOqjHHAGh
+r8aIOeRhQdEQbXinS9Acs00vEK8qUP5st9b92wjq7DuG9a59DRGZpvzgkzVOR/dLM5Tu/gCE5HhJ
+H59J/aX5WcCAI6YMDvhLc7Of0sZi260wZjtDHlCS2mELnzckmLf2CzQ9ZfekZBjl2Ob4Xqn/PdVl
+N7b9VKPvEbrEdFQZsfWwsMzB2jL/nMbk+O3hPHK605N1ew0P7MWreJ1tfrbhwF+Kd4o5H6f5ODvq
+l5NT3adlD0o9GQrIu22RWczTUln53QTW00KgWn9UzsznBcgWZcG8yuhIL//kpCK1XOu+gzoBsZzr
+vXSjUuWgW2dEYlvjQ8ueyBiSf+Lf7cNgFn0+ybDXH/642gmrUjaqyX0smIT0mkpxdtVGr2pOOyTo
+5VNod2rWB8kxfuvfk9vMg4jppKd8/QXJKfDBo9WmO3YZqqfM2yd0XRsNK2SnvdP4lfiUfVy++JtL
+O07HUFyJbvx2WNibymMqTytsJdACTZRRiVB2IDQug2fFlCfrzLis/ZdtDeclY09dqEfjXrXs5mh4
+u7dhTeQez5gDOY5QSg2Nu1l8W1bkBsTXDS4nYCgpfcrlEdnoD10cmYK9X9+cHtbyh/lxxOaF60Bz
+SB11BrhbCEFGv+nu2EeTjHVUoOyL3e4BgxkTEgzAklx5cKl+LvG+9tGT//R1edmifsQlsG4R/F5C
+ce+s5jJ8q+KsjTcwLXOGGFTQPtVrUxFkKMB1wsX3mLuz6loplRO9jvWNdZydpoBsLdV3YoUmKE/F
+cpRJ3l+zl1i0qAPS+5ZazfZ5Wvir3oieFdemxNxU/avh/rQUFJLff1xIoNZNhC3bVk4UZWsZQlMi
+q+TfQrXgYRn59vZb/VGtte9DlnBlHgcpKsVUrA72CYqKrytXCpsdML6leyjsPoabhrMal34M4/jC
+JKJ5Oz5orp0zcrAl+7nC/w8E0jvrLtG8IzJNKk64DwZgrQi2HP1vT0TfxkrlRPkas2OYDAG9Fre5
+YEyXQw6SVlNi/o2saLlb3vjHJEsDq3FtmOg4u+EEMcuqcfE8BnSKek4OOos4hiQZqOUdOC95DIiV
+bWgR6nJUxrmfq1P8Yloe+BLMC+lV1WvUvSN4VF1A8cS5aYVe09HkDoyoNSYN6gJne3g43eqK4RZD
+vJbwS7FSy9XaePEO0NLnLzr3wydzu59XKQqGiZH5iZed4rGRH+v7C5YmwWO2WHUyKBNx8sjAsjSY
+CRmot2oHSwRNeSmWrdoBaqodV0ujxujDGFk6PxwaEveMN/JLoeUkjOid4E8q4z/5KnnzjKQpgfL+
+pB1FBj06Y5J8g0vklhy8fU+dzji3sZWe1m7Tn2vDof4ObdQ13AnElYAJiYPoFhaJuIeYrrOwY2rv
+DSi8xjnU7ELHnhHGOFn5XYfArUjNuvBiC7B73uztBtG8ME0HDdrTCI2U7m6Ir+itRXcyVYRV8vFY
+HY8pKU6BI6LSbSdTxNYT579Jp6GVo9X7GG38eraK2G3aV8mdP6QE+tPhRVPiz0kwr9wNEZiMZXFY
+AV2AR3J4oL4J+dvVNrPhAw6Z0vnXRRezelsQrgS5/7YzY5cLs04l1RNCSvOgrQFH1ulM7j5VFPsZ
+UHhRRZW3DOSJUxXVuE9/FLbo+A5jezamEiE4ccvmjhVLdE9Hx8dQpGW7EXZbREAzIyNPXCmFqTU7
+BaJoUjxu5adTOElU46J+dzLSihceL1L9dknjBwWRWJQyVCo9sYNaZpAkiMpLmvpCDtbZgP+K6WIE
+lafypLAF5O0UOBYGrRHeL5pa1mDEWaUr8HzAh8uu32SIE87Pt/nacnKwE9+eiWrVAEqubWU4fr5G
+Xn6vfoI6RSmDfoR7dnLe/uPkIR0dYZaAqj4vAPmW26Zv828XEgkFJmWqbnCmhmhygL+uz81wTIvM
+IpMI3SnXmu0CmkGD7OMEUu6RvpbwADyHaBMG1N1bsr4tyNMgf4pgLfZK8ktxPu9sOPf0J9e3A5Tj
+R/ITzXiVUl3kDGHGZpupcjQeZ8yDgmwhIEl7dQx8DE/EpghrB2CxMz7+LeX4GK0u3R7wZNiV6dUe
+ER/kILOOh/IB/1Cxk4f9hkCxaSsi8pq35y8wML8s/yL+q2VHzJ3k8Y31IkM/BODAAB3WVkdhaiX6
+HghsXcW1+SajQ4Mv++0VFzmS6+upMPHhNnZewhJbts3Tr0cDq3RSsB6h3ofzSTeKjnVqKwLKaTRo
+aiKIfnvMRgY04meU9PK+g9lNo2jF+IPewux7Z9IUCndqZEnIVk3e1lZZ3F8zZMvb0AH5IsjahrC0
+10TzT7DOSEctGwMbQGGehO/pHARBJ6P/LHxCHM+Ot54vkoHebodcw3C0sSOVsoKCCRt5SmPspBYA
+eog1YkxEyPyV9qyzBr/hwTFK7bWEr+j8DHocEgHuxb9cS0EVEdxsWB1xwisqu2DOQbVMOhZf128v
+YOIzJTheoInrMnRZGbWHj223hSANQkRq2POUHiGx3Dg/08CXCdl9LUk+zxCYLVBECPK8IFPhKFA3
+Ei22q3eP6bRKswqzGKrhdLC54F+vzAJHAM0tdXTXrxXv3BnM/9CbPDqI/dAczNUoZfV8sCbpG3eO
+MiS2e7Jp96s6nEgTyoxY1608G040JmONc3z7eghwcvm1xAnXnsxLTwIxg5XrNoTJV4fY+TlrpUqV
+g0cFgJxmCIJTwIxV1N7Ev9DQu43afyVy6Cb1fZJyMoZqKvKC6KaOaoJo3Dsr8dUxM/MCfrhtg3T/
+b/0fzDdmBV6s0Qj6hUtDZex510x3wbEkFnRh0qPhXrryxp6kWETxC1AkFK3ePu/njH6DVh31e0eF
++Za6l2lgH7zdptU9gjgCmGYHKtG0/NpuLWhNnW7TlZMFbAKhP3VhhOGAKReoqa4t/ApXchlliy6u
+XJkTmvsnn9NSAaTHxueZL4tTFlmTikR9PHnluZGsb61115GJg1tkv/4J+vKdws8+0MXl9xLxk54T
++gXvQGyN/NONQYMEKXl0DL1j8472iuakUlmPIdcEG/AetPtRMFsP3fNhvHjSUkzNBmnoB9Nt0jNo
+xCe5B/zsYOElEbF0ssqnQZKo9h+P0NDOo6PTfKbPb37Aq4jP57PKx7O04jHq4dUcIUpiIEXIaoLP
+X18plFF/0wjLE+r6G4V+fC5EfJgxPVOQ+l13L9dLamuLhiB9JJE7tlW+5qUdpsGV5QjZsH5yDWR8
+g4QizeVCS8CKlBoHfu1dLfUfAGBOX3zOngl3pK5odxp6qt7exKH1cTrMTmNJ0UgvyMQDmYg1Ecm+
+vwUFkHZnxQcoIcjg9R/VSRrgt3f3GoZUg8oPnJ9FuwrI92KWf1KWdvI3M48+d/uENh0osra8Q9yY
+0gPELV1KlQFp9AFrChDCpWwAv7Mnxv4Y3umuZIgew+gpFoRe+5krJBgT2MtL34ttYpZTNHnVd133
+uefC7V+A5jhbq2Hj4+7FbFRbau9P/86XGyiwCP6OCz9kfJkcQTVNkezacR98U6+g/ro+hE3uL4Kl
+5uDqEh9vRP3DWJcw9DNzpDoylY+CAT6qre5YfPXcK1pGYnXdYKBAzmPs25U6tUxDRESu57KfGXR/
+EGbcbgjVAM6pK4AfYbzKXlZGOAF0Wa8+w2shMZuji6OtNZeias2vWicDWjdAG539mVgdUJ7vhPlg
+K/ffiVp8R1QhdwYkP8qzNOH7oNs46Rtl5qK84BrXDurhrq2QmukFVvHawur7dbNNJhHHr5hEaxaz
+kXTaYMpWYWSklhBwiARfDAYeQNFsVcPI0sMuXlMYmFb1MvUYLlKAVC+x7mUaxXkRgp3U9xy+JNhy
+jnUB+LtYNBKV27yA33KpYUOLLPxxamMhmrAFNaw2led4HiickTvaNz/rrCynDG7G99oVKWdEU4u1
+hjXPrfvQjjIM0sdTW+pUY0MyEGM5hDogi1dn+nilEkQH9tMCJCDnSl2i5FkA/xYzDeqevhysx/Wt
+q1uIpwycJJK+SlZWbpjjFY805JWS/nZZHzq3Ccf0IHAFyaikl+pUBet4MBLllinbtNO4EP560lNe
+MyrhKW8OcybdgR/rJ29BydN1yNFh7V1AUOklKPKSyZHgmH00X6WwhrezZ76w41/8NorpKqR6MSQK
+EhFtTrdX294D0BMbMjxXBaQG6Wxj+TEEX3yg0v2uTWzq/qz0UkzlvBohf32URPEv/LcU7Ibe0VCd
+6/12SoUvKVQtHjzlZnaQRhJPx3YEc0naC0lXAXfWJZ+ZgDN/OAiE64ABRaP1L+67ba5fWY5/POgm
+K1YfJIWGCKZ/Q76ccjdIEZ+hQqG0zBxyyXbfFtXL9pfssOXGZlFCa/ZPafLYcw0lVhesqlw1ZtqI
+ncyhH8+Rw1b9m1haWLstRTz2IDzRoa5NI6u6LdrXHPO9L8Cx11cnYTMRX4ySZT7b9kV3qXRQfECu
++7nm7mIqeyASZKKJbJBWs1NoPUSZuElZ8IUtXMJ5tMX+9r3oHLf0THCOsf5OIjsAXRMtV//bJonu
+Mxn0D2f97XI/nIFxtoHQzcefWV9bABEUYTrLanCrlPR8jVXZlY+8o+YxRLFnXwv5gg0ZfTPclV79
+TWnTHOKD+qh8oh3fKQi0/m6Ww2xCnGNbA91HWg9Q9rioLm+o4OVTTQ4rg+UdL2HOxZHrHgNKQpLR
+41Y0r4zWpSjNic4dM7n9nDiTiDyPNgYNmIx4/BG+asy9QCpxST18/Jj1Sokj7Ef1bTA09lpKKcpu
+CaUf2RLHAcY7dAtl4+EQiRO3AMKDnCPRvOqLQXxDjPnPncGCv+TLjO9qoeWJIPgRjKDur4th0rc8
+ZgcHknX0fAU2vkv7KAqo1ZCJzAOHs1jWsyHSsE/Y3ei6yxIXu+112jQPcyQTr+r40Va5/W1k5qkO
+6VvEf0lzRb3rNjnTifYJT3RSkOaW5oC2nEHhSp2/qLssz64mB+SUAzdd1s6hYKOgFV7/y2i7BQEL
+bNjSijc6gVI7MFTfzB4+/vVoUCGBQQl8wH1qJIdAZsiU0k6pPOMyMnNcdoy4+AelabTHJWpbzp7Y
+A18lE49TlqpzlTQx7TMLttS/9EdXZqZdDtWVSvzHd6lEFfHSlRUjuWUJyCuLbo6xT5O5YLpsjCGU
+I667dIVStGxjhRhrdCn2zNRg1FKzaSkRMkl2yE54kOgOSr0s/Fsf7TXggTz7TRRqHPw0V9hqtJxn
+pVHxOA4wYqf8iQRjEZxhtMge0DEQBwBL1iNAbQq4wKO6468/cx1HPEHbFGgINAMR8mVDqfOcy2bi
+PDungMdx4o8PS3PErGo0JiEDJ2p0hM6dJlW6ySHmns/LB5YOtlccHk3C5KmIeHYRQjln/+qsqyQN
+OO7Sjxu7Z6n1Iwg+EmfSLdKbcSZVFYOltkjHa+x2nMZ7jAksJIGbaNUIpzEwmKP/3VC7MD62TFIz
+wBqux9mPbtKxrYP58HEc1R7BeBh+kXIogzZKAu5UOg0F6ihq2jAAG9J981v1rd4QdLylO5i6UNnD
+JKj/0sfkpuXs2l3CJF/7GzOB1M9Y5h0xBzYJZD4QjPMSs2jutJEI1QPuL3MdoVOWYwMepNZ8iVql
+bA8kcq2Y+l7BSFKv1d/ttYVXxjK44vfNSjVIKdfsUwxnYzr4uu4B4yTpu97/ViWYe5LZfV8M9RCh
+wNXaIPQ31FOwaFVFfpabawGdA2D2PF/DOtQth6QfYf97VmJ4cuqELSUqFP+Pd+osITqshkaAKBBZ
+vbuxx/hvLNqpWlqGGftMi+fEFs+X3T0NBOJqcUliDcKnAcKee0A+BD2z3ySskKhg8oQsArTSOt94
+gErO41eIOF4AzOS2efMEw8RwN2Zclqdzm7noqDXfKBrpFLoSysXyLYnxBaAkWJ+6gyj0/iGKg80W
++jnWvTeSNfg+cwG07XtdNr0dfBJFRnZDc+0VbJ1TPF1jK0VASSwC+xGxQc6VNFbyyCygFpgZleRP
+mclLtvld0/QDwMT9abTeeVDrYkjNagJ+YoFU0tpMcJaYCGmqGb6OJlGo2z+t9J8B/aaH/xXXBT4Y
+zoXaPVQxCH4jh76LII7iNE+bAdUrKuvc4B42f1sspZNoWqkFdnVC4IwcMfYkrQQSIrccbyF8Rxyd
+P6PY5g0rEwx7bXkcWlg5sIk7nX/7ZZaFUbAPlkcyjzOWT5588772skC3hPA5GoXXweioW+d6gMJG
+YIMwv//8iJYvvCrqQI/+6Mi11M4tYBOljK/TOCWizyRn5kj0hWENA6Zxrt0Iv0FwCyVk/bn52zbo
+M6xQg7yoBml/qlA+jHCZ+iSheYUOAIys7Q5DB+oc+CZiROpjv1PQsWeiAHxiZUZaDNlmA8wUhzYk
+It4dWwY46OJa8C7wNMh3nJJDS/J5/7gE2vY/RG5lvwoJ3xwiEKXapbTpDB0FZuc+4vDWAGM3RCw9
+vRnrxeewq4hrmFsORozhZT2LntyczU28qnt9SP90oWEMfzQf11ySzJOC7JG2MkGLXX9IjxWR/4YD
+00JinCTVePqV9bxUi2cSXs2Zosj7X1i/5kKAgCM8jmsooCs2Wu/QB09wdnQ6g8Gt70ind9fgPd0I
+6m5FvO3PEHnBjY63nM8f6dhMBk2pQ1mkJk+19CUiAluKEcyhOcmvp9rWOMjTC915qvOKMVVkatUZ
+U0vAGxr9zC8J2hyLycneQyHr2Pv4bQSBO1Z9C6IX0V7D15/fufkDtgC+iW1X0iJoSFHsNzfU55hf
+nJ80gIQI8TxgPZ4qzgRQGOaorQ3QhA+lfO+/WpZoVCoIe6qEnlcbfP2M1w5Oh6exPjNHSmNMbPVS
+1GpJGgVn48kiIMLAuRMesmL2AWh1ENg6jvt/5OR7VpEKmpMGQLifX/7b0IvPY5rgokr2VGPfajN7
+izTKoU25kDYLPpyaMZuXLhRpf3V5XgpvS3eRnFAUyAyfvV+nw/5hWh0gk7qZMJOezDo7qGREnsYG
+9xWTKKq2GWdwHMKnyIsUrSbdTcwihJCSPvQNlgGGdCQ8yHTMSXlHmvYVAYhMC5qK5hwwFIP6Md06
+qMFJeIPYpnFgbSLE4thuvGBjjF7T8w4AXFAHLfpLSxCNQ24V5NvcW/6jedFbtoaiut/M5zrM/Itn
+IxFRW47EHzSaN7xBW9twkeUU9Vktp5Nde+dvEbSc2Ju+EtKFpzrDkJMQDYMahJybFkIprvhIzV1w
+BC6/JHncS1nJqQ++LXLrLwSq3MazeBbnbs5IbfmFS10zYelx8GEv6A47s3SxHA8EtzTqgkqatTr2
+jEv8GjY8UkM1giKJncoEo4N+mmDTDRiSiNc0Fkvu69LQJ3rmWq9F1jlZs091Ehu8qTjj//QT8wvQ
+vS4AyLJicS+iGWa3ZVBelCj7qfBQGGszEeO5ZyK2I67Z4qEkkuHjCqEYvi05d1oDb2DBdF2VKnGQ
+kXP4Nno3Zbp454RQUgtL8CheJ5FTxI2sIvwox7JB6U/zaRKJqfkKos19ysUPfDlSJU7on3OrDgYO
+LloMrD3Sq5DGZwmqYMKzNzzDk83+XmSn4LwHGu+r1L61Wdv99bJ/qOBCyImP7WKzOy6uDizUUBss
+wB0aJX9DPXxnLvGpMI/3+WW788qBSLfZwQ6Uu2ZaOaB2CpdP1B+VWvcPs4Ncldsa1yWWUvQQ84+T
+LySxqqAPxhHnzIf8wnaw4ZMGBstb3PXC6wUUE/MS8+YYsfpA53eQk3+AMgbbHI0+CY8pOTIejywi
+LCKdO+0c8QGbpcWO5+jQvq2UMmWu6LTp1CX83Bcc10b0V9Otm9bqMWtXcAg7KDLG0QoZWHEecfeI
+yLoklehA4az4G4+KwTbBHC7cpQpConQigI6m9YL5AMRa1a7K6wFIM0Hbi12zosACNX7EX7arrO9o
+59oxHMQZWS5r6w71fFJf5p6f/T4n+7x31LfX2AomAFx9KqTcea+8aFcInnkzhY+It/mio83SfugG
+EEbM8GK85P5zrgsrWC/Xh30pynX6lBsFuUEbLv/aHAu17qW79rak28TaNhqIh8NXz+EkgwXTtDvy
+/OLZ8sTzL0am0iArQSbd1SwYS3tRewf3lBDXk3R6xEYHe7/dB/ykVcwvvNmgV1lcFSZMvH2bO+xL
+e1KZefkbhIdrZaMWB0w7N4J+8DI1SbW8W6aaULeNMF43fkgzBJLtQ4n9rywfRrnPBBf9rFoxqviY
+0UlNhaQwc1FjS2yfnb3GVEO+pC22SNB5u7nIXV+aLkzsIlg5j2RiYQce/4+PWkyuMmB4mX7wKbM1
+umRpCzh3VEGV+L4BZ+WDEnVwl5Lmvo1AWNYXbKL6Bd+KTa3M6VS9E3fFSEBKck2/Q4loIEsA2g/c
+wZgwO5tRtTzXW5wGi7ogkAq8basJCDQOl66YZFkSzvr3LYazDv8eq3cOhWKmlRsMc37zlSXT4EKI
+fY8oylqSxEhcVy13YDQZDYpuLio4526L4q5NzieIUmO812lLGBKzdpX9JjG2/qnQAoEjEKQOOZOW
+9MgIpO8cJ7LDCbTppcAxrODMp2nQbFc/WwbteG30ym+db8sSsbmoEFl3zzR8KmOuDyTtvzv68zJl
+I4oiY0Pe8D2AeJXBEfxCt0XIHLgor/YwP0P6UxH8OO+ZhljN1XRZjK3PqdgUPTPPmn6yhGtCSSqQ
+T8OKgkh0NYRVr7emcaF96X/t14Z7M5AzASW8mc6h8hmzB7bNHeEk2N99yt6VACis6NMtpG924G7s
+6tLEhG4991gqbZI6NHJo6ZtJoZqZUaEirBHR/F6WCD1PNCj+TFuqFVpjvUUahzcidPLf5SyW98bv
+kulZFPI7tm3gvYYY+6+3z1VYOeTU6AIUr1XcPpWu1IEt7C+hzEQBg+NuBaOmwccyuI+o7simeH8S
+vSgHL8vqXn+amP3H5ytbtrTu6VSs298p1n1qZOIhBc3zDSYh7Q39OAmw7bk9g64E7D/I98vtHODc
+rb2j+drUz4d8ZEbZTxlS48fMUtNZ3LmtMMKJhLl7ZMxfDbQ8jP+FZAJsmUWErzogokbUx6RhyAWZ
+9+N0ILIWUDgkJlitEMjb9t2CBdkRhYNHA1DgWrxcAHXpcWtl0PPK35Q2RA/2VC698VvE996aeUMs
+jAT+vIxVOXNT77PJ9teFhxN4oR7r

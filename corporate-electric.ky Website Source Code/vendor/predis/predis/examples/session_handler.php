@@ -1,52 +1,61 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-require __DIR__.'/shared.php';
-
-// This example demonstrates how to use Predis to save PHP sessions on Redis.
-//
-// The value of `session.gc_maxlifetime` in `php.ini` will be used by default as
-// the TTL for keys holding session data but this value can be overridden when
-// creating the session handler instance using the `gc_maxlifetime` option.
-//
-// NOTE: this class requires PHP >= 5.4 but can be used on PHP 5.3 if a polyfill
-// for SessionHandlerInterface is provided either by you or an external package
-// like `symfony/http-foundation`.
-//
-// See http://www.php.net/class.sessionhandlerinterface.php for more details.
-//
-
-if (!interface_exists('SessionHandlerInterface')) {
-    die('ATTENTION: the session handler implemented by Predis requires PHP >= 5.4.0 '.
-        "or a polyfill for SessionHandlerInterface provided by an external package.\n");
-}
-
-// Instantiate a new client just like you would normally do. Using a prefix for
-// keys will effectively prefix all session keys with the specified string.
-$client = new Predis\Client($single_server, array('prefix' => 'sessions:'));
-
-// Set `gc_maxlifetime` to specify a time-to-live of 5 seconds for session keys.
-$handler = new Predis\Session\Handler($client, array('gc_maxlifetime' => 5));
-
-// Register the session handler.
-$handler->register();
-
-// We just set a fixed session ID only for the sake of our example.
-session_id('example_session_id');
-
-session_start();
-
-if (isset($_SESSION['foo'])) {
-    echo "Session has `foo` set to {$_SESSION['foo']}", PHP_EOL;
-} else {
-    $_SESSION['foo'] = $value = mt_rand();
-    echo "Empty session, `foo` has been set with $value", PHP_EOL;
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

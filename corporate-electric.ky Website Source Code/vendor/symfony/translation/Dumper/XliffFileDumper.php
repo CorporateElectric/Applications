@@ -1,203 +1,186 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Translation\Dumper;
-
-use Symfony\Component\Translation\Exception\InvalidArgumentException;
-use Symfony\Component\Translation\MessageCatalogue;
-
-/**
- * XliffFileDumper generates xliff files from a message catalogue.
- *
- * @author Michel Salib <michelsalib@hotmail.com>
- */
-class XliffFileDumper extends FileDumper
-{
-    /**
-     * {@inheritdoc}
-     */
-    public function formatCatalogue(MessageCatalogue $messages, string $domain, array $options = [])
-    {
-        $xliffVersion = '1.2';
-        if (\array_key_exists('xliff_version', $options)) {
-            $xliffVersion = $options['xliff_version'];
-        }
-
-        if (\array_key_exists('default_locale', $options)) {
-            $defaultLocale = $options['default_locale'];
-        } else {
-            $defaultLocale = \Locale::getDefault();
-        }
-
-        if ('1.2' === $xliffVersion) {
-            return $this->dumpXliff1($defaultLocale, $messages, $domain, $options);
-        }
-        if ('2.0' === $xliffVersion) {
-            return $this->dumpXliff2($defaultLocale, $messages, $domain);
-        }
-
-        throw new InvalidArgumentException(sprintf('No support implemented for dumping XLIFF version "%s".', $xliffVersion));
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function getExtension()
-    {
-        return 'xlf';
-    }
-
-    private function dumpXliff1(string $defaultLocale, MessageCatalogue $messages, ?string $domain, array $options = [])
-    {
-        $toolInfo = ['tool-id' => 'symfony', 'tool-name' => 'Symfony'];
-        if (\array_key_exists('tool_info', $options)) {
-            $toolInfo = array_merge($toolInfo, $options['tool_info']);
-        }
-
-        $dom = new \DOMDocument('1.0', 'utf-8');
-        $dom->formatOutput = true;
-
-        $xliff = $dom->appendChild($dom->createElement('xliff'));
-        $xliff->setAttribute('version', '1.2');
-        $xliff->setAttribute('xmlns', 'urn:oasis:names:tc:xliff:document:1.2');
-
-        $xliffFile = $xliff->appendChild($dom->createElement('file'));
-        $xliffFile->setAttribute('source-language', str_replace('_', '-', $defaultLocale));
-        $xliffFile->setAttribute('target-language', str_replace('_', '-', $messages->getLocale()));
-        $xliffFile->setAttribute('datatype', 'plaintext');
-        $xliffFile->setAttribute('original', 'file.ext');
-
-        $xliffHead = $xliffFile->appendChild($dom->createElement('header'));
-        $xliffTool = $xliffHead->appendChild($dom->createElement('tool'));
-        foreach ($toolInfo as $id => $value) {
-            $xliffTool->setAttribute($id, $value);
-        }
-
-        $xliffBody = $xliffFile->appendChild($dom->createElement('body'));
-        foreach ($messages->all($domain) as $source => $target) {
-            $translation = $dom->createElement('trans-unit');
-
-            $translation->setAttribute('id', strtr(substr(base64_encode(hash('sha256', $source, true)), 0, 7), '/+', '._'));
-            $translation->setAttribute('resname', $source);
-
-            $s = $translation->appendChild($dom->createElement('source'));
-            $s->appendChild($dom->createTextNode($source));
-
-            // Does the target contain characters requiring a CDATA section?
-            $text = 1 === preg_match('/[&<>]/', $target) ? $dom->createCDATASection($target) : $dom->createTextNode($target);
-
-            $targetElement = $dom->createElement('target');
-            $metadata = $messages->getMetadata($source, $domain);
-            if ($this->hasMetadataArrayInfo('target-attributes', $metadata)) {
-                foreach ($metadata['target-attributes'] as $name => $value) {
-                    $targetElement->setAttribute($name, $value);
-                }
-            }
-            $t = $translation->appendChild($targetElement);
-            $t->appendChild($text);
-
-            if ($this->hasMetadataArrayInfo('notes', $metadata)) {
-                foreach ($metadata['notes'] as $note) {
-                    if (!isset($note['content'])) {
-                        continue;
-                    }
-
-                    $n = $translation->appendChild($dom->createElement('note'));
-                    $n->appendChild($dom->createTextNode($note['content']));
-
-                    if (isset($note['priority'])) {
-                        $n->setAttribute('priority', $note['priority']);
-                    }
-
-                    if (isset($note['from'])) {
-                        $n->setAttribute('from', $note['from']);
-                    }
-                }
-            }
-
-            $xliffBody->appendChild($translation);
-        }
-
-        return $dom->saveXML();
-    }
-
-    private function dumpXliff2(string $defaultLocale, MessageCatalogue $messages, ?string $domain)
-    {
-        $dom = new \DOMDocument('1.0', 'utf-8');
-        $dom->formatOutput = true;
-
-        $xliff = $dom->appendChild($dom->createElement('xliff'));
-        $xliff->setAttribute('xmlns', 'urn:oasis:names:tc:xliff:document:2.0');
-        $xliff->setAttribute('version', '2.0');
-        $xliff->setAttribute('srcLang', str_replace('_', '-', $defaultLocale));
-        $xliff->setAttribute('trgLang', str_replace('_', '-', $messages->getLocale()));
-
-        $xliffFile = $xliff->appendChild($dom->createElement('file'));
-        if (MessageCatalogue::INTL_DOMAIN_SUFFIX === substr($domain, -($suffixLength = \strlen(MessageCatalogue::INTL_DOMAIN_SUFFIX)))) {
-            $xliffFile->setAttribute('id', substr($domain, 0, -$suffixLength).'.'.$messages->getLocale());
-        } else {
-            $xliffFile->setAttribute('id', $domain.'.'.$messages->getLocale());
-        }
-
-        foreach ($messages->all($domain) as $source => $target) {
-            $translation = $dom->createElement('unit');
-            $translation->setAttribute('id', strtr(substr(base64_encode(hash('sha256', $source, true)), 0, 7), '/+', '._'));
-            $name = $source;
-            if (\strlen($source) > 80) {
-                $name = substr(md5($source), -7);
-            }
-            $translation->setAttribute('name', $name);
-            $metadata = $messages->getMetadata($source, $domain);
-
-            // Add notes section
-            if ($this->hasMetadataArrayInfo('notes', $metadata)) {
-                $notesElement = $dom->createElement('notes');
-                foreach ($metadata['notes'] as $note) {
-                    $n = $dom->createElement('note');
-                    $n->appendChild($dom->createTextNode(isset($note['content']) ? $note['content'] : ''));
-                    unset($note['content']);
-
-                    foreach ($note as $name => $value) {
-                        $n->setAttribute($name, $value);
-                    }
-                    $notesElement->appendChild($n);
-                }
-                $translation->appendChild($notesElement);
-            }
-
-            $segment = $translation->appendChild($dom->createElement('segment'));
-
-            $s = $segment->appendChild($dom->createElement('source'));
-            $s->appendChild($dom->createTextNode($source));
-
-            // Does the target contain characters requiring a CDATA section?
-            $text = 1 === preg_match('/[&<>]/', $target) ? $dom->createCDATASection($target) : $dom->createTextNode($target);
-
-            $targetElement = $dom->createElement('target');
-            if ($this->hasMetadataArrayInfo('target-attributes', $metadata)) {
-                foreach ($metadata['target-attributes'] as $name => $value) {
-                    $targetElement->setAttribute($name, $value);
-                }
-            }
-            $t = $segment->appendChild($targetElement);
-            $t->appendChild($text);
-
-            $xliffFile->appendChild($translation);
-        }
-
-        return $dom->saveXML();
-    }
-
-    private function hasMetadataArrayInfo(string $key, array $metadata = null): bool
-    {
-        return null !== $metadata && \array_key_exists($key, $metadata) && ($metadata[$key] instanceof \Traversable || \is_array($metadata[$key]));
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+gT9c7w9UKcg/EMaLMxQnsZcN

@@ -1,114 +1,66 @@
-<?php
-
-namespace Illuminate\Database\Schema;
-
-class MySqlBuilder extends Builder
-{
-    /**
-     * Determine if the given table exists.
-     *
-     * @param  string  $table
-     * @return bool
-     */
-    public function hasTable($table)
-    {
-        $table = $this->connection->getTablePrefix().$table;
-
-        return count($this->connection->select(
-            $this->grammar->compileTableExists(), [$this->connection->getDatabaseName(), $table]
-        )) > 0;
-    }
-
-    /**
-     * Get the column listing for a given table.
-     *
-     * @param  string  $table
-     * @return array
-     */
-    public function getColumnListing($table)
-    {
-        $table = $this->connection->getTablePrefix().$table;
-
-        $results = $this->connection->select(
-            $this->grammar->compileColumnListing(), [$this->connection->getDatabaseName(), $table]
-        );
-
-        return $this->connection->getPostProcessor()->processColumnListing($results);
-    }
-
-    /**
-     * Drop all tables from the database.
-     *
-     * @return void
-     */
-    public function dropAllTables()
-    {
-        $tables = [];
-
-        foreach ($this->getAllTables() as $row) {
-            $row = (array) $row;
-
-            $tables[] = reset($row);
-        }
-
-        if (empty($tables)) {
-            return;
-        }
-
-        $this->disableForeignKeyConstraints();
-
-        $this->connection->statement(
-            $this->grammar->compileDropAllTables($tables)
-        );
-
-        $this->enableForeignKeyConstraints();
-    }
-
-    /**
-     * Drop all views from the database.
-     *
-     * @return void
-     */
-    public function dropAllViews()
-    {
-        $views = [];
-
-        foreach ($this->getAllViews() as $row) {
-            $row = (array) $row;
-
-            $views[] = reset($row);
-        }
-
-        if (empty($views)) {
-            return;
-        }
-
-        $this->connection->statement(
-            $this->grammar->compileDropAllViews($views)
-        );
-    }
-
-    /**
-     * Get all of the table names for the database.
-     *
-     * @return array
-     */
-    public function getAllTables()
-    {
-        return $this->connection->select(
-            $this->grammar->compileGetAllTables()
-        );
-    }
-
-    /**
-     * Get all of the view names for the database.
-     *
-     * @return array
-     */
-    public function getAllViews()
-    {
-        return $this->connection->select(
-            $this->grammar->compileGetAllViews()
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

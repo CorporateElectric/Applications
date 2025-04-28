@@ -1,138 +1,95 @@
-<?php
-/*
- * This file is part of the DebugBar package.
- *
- * (c) 2013 Maxime Bouroumeau-Fuseau
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace DebugBar\Bridge\Twig;
-
-use Twig_Template;
-use Twig_TemplateInterface;
-
-/**
- * Wraps a Twig_Template to add profiling features
- * 
- * @deprecated
- */
-class TraceableTwigTemplate extends Twig_Template implements Twig_TemplateInterface
-{
-    protected $template;
-
-    /**
-     * @param TraceableTwigEnvironment $env
-     * @param Twig_Template $template
-     */
-    public function __construct(TraceableTwigEnvironment $env, Twig_Template $template)
-    {
-        $this->env = $env;
-        $this->template = $template;
-    }
-
-    public function __call($name, $arguments)
-    {
-        return call_user_func_array(array($this->template, $name), $arguments);
-    }
-
-    public function doDisplay(array $context, array $blocks = array())
-    {
-        return $this->template->doDisplay($context, $blocks);
-    }
-
-    public function getTemplateName()
-    {
-        return $this->template->getTemplateName();
-    }
-
-    public function getEnvironment()
-    {
-        return $this->template->getEnvironment();
-    }
-
-    public function getParent(array $context)
-    {
-        return $this->template->getParent($context);
-    }
-
-    public function isTraitable()
-    {
-        return $this->template->isTraitable();
-    }
-
-    public function displayParentBlock($name, array $context, array $blocks = array())
-    {
-        $this->template->displayParentBlock($name, $context, $blocks);
-    }
-
-    public function displayBlock($name, array $context, array $blocks = array(), $useBlocks = true)
-    {
-        $this->template->displayBlock($name, $context, $blocks, $useBlocks);
-    }
-
-    public function renderParentBlock($name, array $context, array $blocks = array())
-    {
-        return $this->template->renderParentBlock($name, $context, $blocks);
-    }
-
-    public function renderBlock($name, array $context, array $blocks = array(), $useBlocks = true)
-    {
-        return $this->template->renderBlock($name, $context, $blocks, $useBlocks);
-    }
-
-    public function hasBlock($name)
-    {
-        return $this->template->hasBlock($name);
-    }
-
-    public function getBlockNames()
-    {
-        return $this->template->getBlockNames();
-    }
-
-    public function getBlocks()
-    {
-        return $this->template->getBlocks();
-    }
-
-    public function display(array $context, array $blocks = array())
-    {
-        $start = microtime(true);
-        $this->template->display($context, $blocks);
-        $end = microtime(true);
-
-        if ($timeDataCollector = $this->env->getTimeDataCollector()) {
-            $name = sprintf("twig.render(%s)", $this->template->getTemplateName());
-            $timeDataCollector->addMeasure($name, $start, $end);
-        }
-
-        $this->env->addRenderedTemplate(array(
-            'name' => $this->template->getTemplateName(),
-            'render_time' => $end - $start
-        ));
-    }
-
-    public function render(array $context)
-    {
-        $level = ob_get_level();
-        ob_start();
-        try {
-            $this->display($context);
-        } catch (Exception $e) {
-            while (ob_get_level() > $level) {
-                ob_end_clean();
-            }
-
-            throw $e;
-        }
-
-        return ob_get_clean();
-    }
-
-    public static function clearCache()
-    {
-        Twig_Template::clearCache();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

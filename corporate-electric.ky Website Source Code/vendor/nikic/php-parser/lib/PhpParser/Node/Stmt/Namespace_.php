@@ -1,38 +1,34 @@
-<?php declare(strict_types=1);
-
-namespace PhpParser\Node\Stmt;
-
-use PhpParser\Node;
-
-class Namespace_ extends Node\Stmt
-{
-    /* For use in the "kind" attribute */
-    const KIND_SEMICOLON = 1;
-    const KIND_BRACED = 2;
-
-    /** @var null|Node\Name Name */
-    public $name;
-    /** @var Node\Stmt[] Statements */
-    public $stmts;
-
-    /**
-     * Constructs a namespace node.
-     *
-     * @param null|Node\Name   $name       Name
-     * @param null|Node\Stmt[] $stmts      Statements
-     * @param array            $attributes Additional attributes
-     */
-    public function __construct(Node\Name $name = null, $stmts = [], array $attributes = []) {
-        $this->attributes = $attributes;
-        $this->name = $name;
-        $this->stmts = $stmts;
-    }
-
-    public function getSubNodeNames() : array {
-        return ['name', 'stmts'];
-    }
-    
-    public function getType() : string {
-        return 'Stmt_Namespace';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

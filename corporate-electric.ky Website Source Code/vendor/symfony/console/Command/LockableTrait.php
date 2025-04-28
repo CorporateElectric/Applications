@@ -1,69 +1,39 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Console\Command;
-
-use Symfony\Component\Console\Exception\LogicException;
-use Symfony\Component\Lock\Lock;
-use Symfony\Component\Lock\LockFactory;
-use Symfony\Component\Lock\Store\FlockStore;
-use Symfony\Component\Lock\Store\SemaphoreStore;
-
-/**
- * Basic lock feature for commands.
- *
- * @author Geoffrey Brier <geoffrey.brier@gmail.com>
- */
-trait LockableTrait
-{
-    /** @var Lock */
-    private $lock;
-
-    /**
-     * Locks a command.
-     */
-    private function lock(string $name = null, bool $blocking = false): bool
-    {
-        if (!class_exists(SemaphoreStore::class)) {
-            throw new LogicException('To enable the locking feature you must install the symfony/lock component.');
-        }
-
-        if (null !== $this->lock) {
-            throw new LogicException('A lock is already in place.');
-        }
-
-        if (SemaphoreStore::isSupported()) {
-            $store = new SemaphoreStore();
-        } else {
-            $store = new FlockStore();
-        }
-
-        $this->lock = (new LockFactory($store))->createLock($name ?: $this->getName());
-        if (!$this->lock->acquire($blocking)) {
-            $this->lock = null;
-
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * Releases the command lock if there is one.
-     */
-    private function release()
-    {
-        if ($this->lock) {
-            $this->lock->release();
-            $this->lock = null;
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+kkbYCmq=

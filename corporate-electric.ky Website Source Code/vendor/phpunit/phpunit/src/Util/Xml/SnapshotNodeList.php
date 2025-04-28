@@ -1,48 +1,34 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Util\Xml;
-
-use ArrayIterator;
-use Countable;
-use DOMNode;
-use DOMNodeList;
-use IteratorAggregate;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for PHPUnit
- */
-final class SnapshotNodeList implements Countable, IteratorAggregate
-{
-    /**
-     * @var DOMNode[]
-     */
-    private $nodes = [];
-
-    public static function fromNodeList(DOMNodeList $list): self
-    {
-        $snapshot = new self;
-
-        foreach ($list as $node) {
-            $snapshot->nodes[] = $node;
-        }
-
-        return $snapshot;
-    }
-
-    public function count(): int
-    {
-        return count($this->nodes);
-    }
-
-    public function getIterator(): ArrayIterator
-    {
-        return new ArrayIterator($this->nodes);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

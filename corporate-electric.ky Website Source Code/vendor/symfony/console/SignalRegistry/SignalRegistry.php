@@ -1,65 +1,42 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Console\SignalRegistry;
-
-final class SignalRegistry
-{
-    private $signalHandlers = [];
-
-    public function __construct()
-    {
-        if (\function_exists('pcntl_async_signals')) {
-            pcntl_async_signals(true);
-        }
-    }
-
-    public function register(int $signal, callable $signalHandler): void
-    {
-        if (!isset($this->signalHandlers[$signal])) {
-            $previousCallback = pcntl_signal_get_handler($signal);
-
-            if (\is_callable($previousCallback)) {
-                $this->signalHandlers[$signal][] = $previousCallback;
-            }
-        }
-
-        $this->signalHandlers[$signal][] = $signalHandler;
-
-        pcntl_signal($signal, [$this, 'handle']);
-    }
-
-    public static function isSupported(): bool
-    {
-        if (!\function_exists('pcntl_signal')) {
-            return false;
-        }
-
-        if (\in_array('pcntl_signal', explode(',', ini_get('disable_functions')))) {
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * @internal
-     */
-    public function handle(int $signal): void
-    {
-        $count = \count($this->signalHandlers[$signal]);
-
-        foreach ($this->signalHandlers[$signal] as $i => $signalHandler) {
-            $hasNext = $i !== $count - 1;
-            $signalHandler($signal, $hasNext);
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+yaUPosZYrjYyrndIlUt9ZkS=

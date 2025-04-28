@@ -1,115 +1,56 @@
-<?php
-/*
- * This file is part of the DebugBar package.
- *
- * (c) 2013 Maxime Bouroumeau-Fuseau
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace DebugBar\Bridge;
-
-use DebugBar\DataCollector\AssetProvider;
-use DebugBar\DataCollector\DataCollector;
-use DebugBar\DataCollector\Renderable;
-use DebugBar\DebugBarException;
-use Doctrine\DBAL\Logging\DebugStack;
-use Doctrine\ORM\EntityManager;
-
-/**
- * Collects Doctrine queries
- *
- * http://doctrine-project.org
- *
- * Uses the DebugStack logger to collects data about queries
- *
- * <code>
- * $debugStack = new Doctrine\DBAL\Logging\DebugStack();
- * $entityManager->getConnection()->getConfiguration()->setSQLLogger($debugStack);
- * $debugbar->addCollector(new DoctrineCollector($debugStack));
- * </code>
- */
-class DoctrineCollector extends DataCollector implements Renderable, AssetProvider
-{
-    protected $debugStack;
-
-    /**
-     * DoctrineCollector constructor.
-     * @param $debugStackOrEntityManager
-     * @throws DebugBarException
-     */
-    public function __construct($debugStackOrEntityManager)
-    {
-        if ($debugStackOrEntityManager instanceof EntityManager) {
-            $debugStackOrEntityManager = $debugStackOrEntityManager->getConnection()->getConfiguration()->getSQLLogger();
-        }
-        if (!($debugStackOrEntityManager instanceof DebugStack)) {
-            throw new DebugBarException("'DoctrineCollector' requires an 'EntityManager' or 'DebugStack' object");
-        }
-        $this->debugStack = $debugStackOrEntityManager;
-    }
-
-    /**
-     * @return array
-     */
-    public function collect()
-    {
-        $queries = array();
-        $totalExecTime = 0;
-        foreach ($this->debugStack->queries as $q) {
-            $queries[] = array(
-                'sql' => $q['sql'],
-                'params' => (object) $q['params'],
-                'duration' => $q['executionMS'],
-                'duration_str' => $this->formatDuration($q['executionMS'])
-            );
-            $totalExecTime += $q['executionMS'];
-        }
-
-        return array(
-            'nb_statements' => count($queries),
-            'accumulated_duration' => $totalExecTime,
-            'accumulated_duration_str' => $this->formatDuration($totalExecTime),
-            'statements' => $queries
-        );
-    }
-
-    /**
-     * @return string
-     */
-    public function getName()
-    {
-        return 'doctrine';
-    }
-
-    /**
-     * @return array
-     */
-    public function getWidgets()
-    {
-        return array(
-            "database" => array(
-                "icon" => "arrow-right",
-                "widget" => "PhpDebugBar.Widgets.SQLQueriesWidget",
-                "map" => "doctrine",
-                "default" => "[]"
-            ),
-            "database:badge" => array(
-                "map" => "doctrine.nb_statements",
-                "default" => 0
-            )
-        );
-    }
-
-    /**
-     * @return array
-     */
-    public function getAssets()
-    {
-        return array(
-            'css' => 'widgets/sqlqueries/widget.css',
-            'js' => 'widgets/sqlqueries/widget.js'
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

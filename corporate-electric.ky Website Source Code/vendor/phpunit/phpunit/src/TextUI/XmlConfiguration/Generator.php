@@ -1,72 +1,32 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\TextUI\XmlConfiguration;
-
-use function str_replace;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for PHPUnit
- */
-final class Generator
-{
-    /**
-     * @var string
-     */
-    private const TEMPLATE = <<<'EOT'
-<?xml version="1.0" encoding="UTF-8"?>
-<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/{phpunit_version}/phpunit.xsd"
-         bootstrap="{bootstrap_script}"
-         cacheResultFile="{cache_directory}/test-results"
-         executionOrder="depends,defects"
-         forceCoversAnnotation="true"
-         beStrictAboutCoversAnnotation="true"
-         beStrictAboutOutputDuringTests="true"
-         beStrictAboutTodoAnnotatedTests="true"
-         failOnRisky="true"
-         failOnWarning="true"
-         verbose="true">
-    <testsuites>
-        <testsuite name="default">
-            <directory suffix="Test.php">{tests_directory}</directory>
-        </testsuite>
-    </testsuites>
-
-    <coverage cacheDirectory="{cache_directory}/code-coverage"
-              processUncoveredFiles="true">
-        <include>
-            <directory suffix=".php">{src_directory}</directory>
-        </include>
-    </coverage>
-</phpunit>
-
-EOT;
-
-    public function generateDefaultConfiguration(string $phpunitVersion, string $bootstrapScript, string $testsDirectory, string $srcDirectory, string $cacheDirectory): string
-    {
-        return str_replace(
-            [
-                '{phpunit_version}',
-                '{bootstrap_script}',
-                '{tests_directory}',
-                '{src_directory}',
-                '{cache_directory}',
-            ],
-            [
-                $phpunitVersion,
-                $bootstrapScript,
-                $testsDirectory,
-                $srcDirectory,
-                $cacheDirectory,
-            ],
-            self::TEMPLATE
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+F/iW7RsYipOnnspscqg/lBual4gu/pbU

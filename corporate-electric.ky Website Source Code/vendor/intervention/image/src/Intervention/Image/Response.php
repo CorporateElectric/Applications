@@ -1,78 +1,50 @@
-<?php
-
-namespace Intervention\Image;
-
-use Illuminate\Support\Facades\Response as IlluminateResponse;
-use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
-
-class Response
-{
-    /**
-     * Image that should be displayed by response
-     *
-     * @var Image
-     */
-    public $image;
-
-    /**
-     * Format of displayed image
-     *
-     * @var string
-     */
-    public $format;
-
-    /**
-     * Quality of displayed image
-     *
-     * @var int
-     */
-    public $quality;
-
-    /**
-     * Creates a new instance of response
-     *
-     * @param Image   $image
-     * @param string  $format
-     * @param int     $quality
-     */
-    public function __construct(Image $image, $format = null, $quality = null)
-    {
-        $this->image = $image;
-        $this->format = $format ? $format : $image->mime;
-        $this->quality = $quality ? $quality : 90;
-    }
-
-    /**
-     * Builds response according to settings
-     *
-     * @return mixed
-     */
-    public function make()
-    {
-        $this->image->encode($this->format, $this->quality);
-        $data = $this->image->getEncoded();
-        $mime = finfo_buffer(finfo_open(FILEINFO_MIME_TYPE), $data);
-        $length = strlen($data);
-
-        if (function_exists('app') && is_a($app = app(), 'Illuminate\Foundation\Application')) {
-
-            $response = IlluminateResponse::make($data);
-            $response->header('Content-Type', $mime);
-            $response->header('Content-Length', $length);
-
-        } elseif (class_exists('\Symfony\Component\HttpFoundation\Response')) {
-
-            $response = SymfonyResponse::create($data);
-            $response->headers->set('Content-Type', $mime);
-            $response->headers->set('Content-Length', $length);
-
-        } else {
-
-            header('Content-Type: ' . $mime);
-            header('Content-Length: ' . $length);
-            $response = $data;
-        }
-
-        return $response;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

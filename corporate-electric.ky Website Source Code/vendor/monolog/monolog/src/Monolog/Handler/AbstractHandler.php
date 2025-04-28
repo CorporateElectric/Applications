@@ -1,96 +1,46 @@
-<?php declare(strict_types=1);
-
-/*
- * This file is part of the Monolog package.
- *
- * (c) Jordi Boggiano <j.boggiano@seld.be>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Monolog\Handler;
-
-use Monolog\Logger;
-use Monolog\ResettableInterface;
-
-/**
- * Base Handler class providing basic level/bubble support
- *
- * @author Jordi Boggiano <j.boggiano@seld.be>
- */
-abstract class AbstractHandler extends Handler implements ResettableInterface
-{
-    protected $level = Logger::DEBUG;
-    protected $bubble = true;
-
-    /**
-     * @param int|string $level  The minimum logging level at which this handler will be triggered
-     * @param bool       $bubble Whether the messages that are handled can bubble up the stack or not
-     */
-    public function __construct($level = Logger::DEBUG, bool $bubble = true)
-    {
-        $this->setLevel($level);
-        $this->bubble = $bubble;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function isHandling(array $record): bool
-    {
-        return $record['level'] >= $this->level;
-    }
-
-    /**
-     * Sets minimum logging level at which this handler will be triggered.
-     *
-     * @param  int|string $level Level or level name
-     * @return self
-     */
-    public function setLevel($level): self
-    {
-        $this->level = Logger::toMonologLevel($level);
-
-        return $this;
-    }
-
-    /**
-     * Gets minimum logging level at which this handler will be triggered.
-     *
-     * @return int
-     */
-    public function getLevel(): int
-    {
-        return $this->level;
-    }
-
-    /**
-     * Sets the bubbling behavior.
-     *
-     * @param  bool $bubble true means that this handler allows bubbling.
-     *                      false means that bubbling is not permitted.
-     * @return self
-     */
-    public function setBubble(bool $bubble): self
-    {
-        $this->bubble = $bubble;
-
-        return $this;
-    }
-
-    /**
-     * Gets the bubbling behavior.
-     *
-     * @return bool true means that this handler allows bubbling.
-     *              false means that bubbling is not permitted.
-     */
-    public function getBubble(): bool
-    {
-        return $this->bubble;
-    }
-
-    public function reset()
-    {
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+wLPYHXXHYlT90QIX0qe1Im==

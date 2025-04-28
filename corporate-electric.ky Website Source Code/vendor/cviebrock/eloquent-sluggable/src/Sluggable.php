@@ -1,83 +1,47 @@
-<?php namespace Cviebrock\EloquentSluggable;
-
-use Cviebrock\EloquentSluggable\Services\SlugService;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
-
-/**
- * Class Sluggable
- *
- * @package Cviebrock\EloquentSluggable
- */
-trait Sluggable
-{
-
-    /**
-     * Hook into the Eloquent model events to create or
-     * update the slug as required.
-     */
-    public static function bootSluggable()
-    {
-        static::observe(app(SluggableObserver::class));
-    }
-
-    /**
-     * Register a slugging model event with the dispatcher.
-     *
-     * @param \Closure|string $callback
-     */
-    public static function slugging($callback)
-    {
-        static::registerModelEvent('slugging', $callback);
-    }
-
-    /**
-     * Register a slugged model event with the dispatcher.
-     *
-     * @param \Closure|string $callback
-     */
-    public static function slugged($callback)
-    {
-        static::registerModelEvent('slugged', $callback);
-    }
-
-    /**
-     * Clone the model into a new, non-existing instance.
-     *
-     * @param  array|null $except
-     * @return \Illuminate\Database\Eloquent\Model
-     */
-    public function replicate(array $except = null)
-    {
-        $instance = parent::replicate($except);
-        (new SlugService())->slug($instance, true);
-
-        return $instance;
-    }
-
-    /**
-     * Query scope for finding "similar" slugs, used to determine uniqueness.
-     *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $attribute
-     * @param array $config
-     * @param string $slug
-     * @return \Illuminate\Database\Eloquent\Builder
-     */
-    public function scopeFindSimilarSlugs(Builder $query, string $attribute, array $config, string $slug): Builder
-    {
-        $separator = $config['separator'];
-
-        return $query->where(function(Builder $q) use ($attribute, $slug, $separator) {
-            $q->where($attribute, '=', $slug)
-                ->orWhere($attribute, 'LIKE', $slug . $separator . '%');
-        });
-    }
-
-    /**
-     * Return the sluggable configuration array for this model.
-     *
-     * @return array
-     */
-    abstract public function sluggable(): array;
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

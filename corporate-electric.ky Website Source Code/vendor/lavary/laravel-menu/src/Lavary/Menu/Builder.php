@@ -1,863 +1,350 @@
-<?php
-
-namespace Lavary\Menu;
-
-use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\URL;
-
-class Builder
-{
-    /**
-     * The items container.
-     *
-     * @var Collection
-     */
-    protected $items;
-
-    /**
-     * The Menu name.
-     *
-     * @var string
-     */
-    protected $name;
-
-    /**
-     * The Menu configuration data.
-     *
-     * @var array
-     */
-    protected $conf;
-
-    /**
-     * The route group attribute stack.
-     *
-     * @var array
-     */
-    protected $groupStack = [];
-
-    /**
-     * The reserved attributes.
-     *
-     * @var array
-     */
-    protected $reserved = ['route', 'action', 'url', 'prefix', 'parent', 'secure', 'raw'];
-
-    /**
-     * Initializing the menu manager.
-     */
-    public function __construct($name, $conf)
-    {
-        $this->name = $name;
-
-        // creating a laravel collection for storing menu items
-        $this->items = new Collection();
-
-        $this->conf = $conf;
-    }
-
-    /**
-     * Adds an item to the menu.
-     *
-     * @param string       $title
-     * @param string|array $options
-     *
-     * @return Item $item
-     */
-    public function add($title, $options = '')
-    {
-        $id = isset($options['id']) ? $options['id'] : $this->id();
-
-        $item = new Item($this, $id, $title, $options);
-
-        $this->items->push($item);
-
-        return $item;
-    }
-
-    /**
-     * Generate an integer identifier for each new item.
-     *
-     * @return string
-     */
-    protected function id()
-    {
-        // Issue #170: Use more_entropy otherwise usleep(1) is called.
-        // Issue #197: The ID was not a viable document element ID value due to the period.
-        return str_replace('.', '', uniqid('id-', true));
-    }
-
-    /**
-     * Add raw content.
-     *
-     * @param $title
-     * @param array $options
-     *
-     * @return Item
-     */
-    public function raw($title, array $options = [])
-    {
-        $options['raw'] = true;
-
-        return $this->add($title, $options);
-    }
-
-    /**
-     * Returns menu item by name.
-     *
-     * @return Item|null
-     */
-    public function get($title)
-    {
-        return $this->whereNickname($title)->first();
-    }
-
-    /**
-     * Returns menu item by Id.
-     *
-     * @return Item|null
-     */
-    public function find($id)
-    {
-        return $this->whereId($id)->first();
-    }
-
-    /**
-     * Return all items in the collection.
-     *
-     * @return array
-     */
-    public function all()
-    {
-        return $this->items;
-    }
-
-    /**
-     * Return the first item in the collection.
-     *
-     * @return Item|null
-     */
-    public function first()
-    {
-        return $this->items->first();
-    }
-
-    /**
-     * Return the last item in the collection.
-     *
-     * @return Item|null
-     */
-    public function last()
-    {
-        return $this->items->last();
-    }
-
-    /**
-     * Returns menu item by name.
-     *
-     * @param string $title
-     *
-     * @return Item|null
-     */
-    public function item($title)
-    {
-        return $this->whereNickname($title)->first();
-    }
-
-    /**
-     * Returns the first item marked as active.
-     *
-     * @return Item|null
-     */
-    public function active()
-    {
-        return $this->whereActive(true)->first();
-    }
-
-    /**
-     * Insert a separator after the item.
-     *
-     * @param array $attributes
-     */
-    public function divide(array $attributes = [])
-    {
-        $attributes['class'] = self::formatGroupClass(array('class' => 'divider'), $attributes);
-
-        $this->items->last()->divider = $attributes;
-    }
-
-    /**
-     * Create a menu group with shared attributes.
-     *
-     * @param array    $attributes
-     * @param callable $closure
-     */
-    public function group($attributes, $closure)
-    {
-        $this->updateGroupStack($attributes);
-
-        // Once we have updated the group stack, we will execute the user Closure and
-        // merge in the groups attributes when the item is created. After we have
-        // run the callback, we will pop the attributes off of this group stack.
-        call_user_func($closure, $this);
-
-        array_pop($this->groupStack);
-    }
-
-    /**
-     * Update the group stack with the given attributes.
-     *
-     * @param array $attributes
-     */
-    protected function updateGroupStack(array $attributes = [])
-    {
-        if (count($this->groupStack) > 0) {
-            $attributes = $this->mergeWithLastGroup($attributes);
-        }
-
-        $this->groupStack[] = $attributes;
-    }
-
-    /**
-     * Merge the given array with the last group stack.
-     *
-     * @param array $new
-     *
-     * @return array
-     */
-    protected function mergeWithLastGroup($new)
-    {
-        return self::mergeGroup($new, last($this->groupStack));
-    }
-
-    /**
-     * Merge the given group attributes.
-     *
-     * @param array $new
-     * @param array $old
-     *
-     * @return array
-     */
-    protected static function mergeGroup($new, $old)
-    {
-        $new['prefix'] = self::formatGroupPrefix($new, $old);
-
-        $new['class'] = self::formatGroupClass($new, $old);
-
-        return array_merge(Arr::except($old, array('prefix', 'class')), $new);
-    }
-
-    /**
-     * Format the prefix for the new group attributes.
-     *
-     * @param array $new
-     * @param array $old
-     *
-     * @return string
-     */
-    public static function formatGroupPrefix($new, $old)
-    {
-        if (isset($new['prefix'])) {
-            return trim(Arr::get($old, 'prefix'), '/').'/'.trim($new['prefix'], '/');
-        }
-
-        return Arr::get($old, 'prefix');
-    }
-
-    /**
-     * Get the prefix from the last group on the stack.
-     *
-     * @return string
-     */
-    public function getLastGroupPrefix()
-    {
-        if (count($this->groupStack) > 0) {
-            return Arr::get(last($this->groupStack), 'prefix', '');
-        }
-
-        return null;
-    }
-
-    /**
-     * Prefix the given URI with the last prefix.
-     *
-     * @param string $uri
-     *
-     * @return string
-     */
-    protected function prefix($uri)
-    {
-        return trim(trim($this->getLastGroupPrefix(), '/').'/'.trim($uri, '/'), '/') ?: '/';
-    }
-
-    /**
-     * Get the valid attributes from the options.
-     *
-     * @param array $new
-     * @param array $old
-     *
-     * @return string
-     */
-    public static function formatGroupClass($new, $old)
-    {
-        if (isset($new['class']) and $new['class'] !== null) {
-            $classes = trim(trim(Arr::get($old, 'class')).' '.trim(Arr::get($new, 'class')));
-
-            return implode(' ', array_unique(explode(' ', $classes)));
-        }
-
-        return Arr::get($old, 'class');
-    }
-
-    /**
-     * Get the valid attributes from the options.
-     *
-     * @param array $options
-     *
-     * @return array
-     */
-    public function extractAttributes($options = [])
-    {
-        if (!is_array($options)) {
-            $options = [];
-        }
-
-        if (count($this->groupStack) > 0) {
-            $options = $this->mergeWithLastGroup($options);
-        }
-
-        return Arr::except($options, $this->reserved);
-    }
-
-    /**
-     * Get the form action from the options.
-     *
-     * @return string
-     */
-    public function dispatch($options)
-    {
-        // We will also check for a "route" or "action" parameter on the array so that
-        // developers can easily specify a route or controller action when creating the
-        // menus.
-        if (isset($options['url'])) {
-            return $this->getUrl($options);
-        } elseif (isset($options['route'])) {
-            return $this->getRoute($options['route']);
-        }
-
-        // If an action is available, we are attempting to point the link to controller
-        // action route. So, we will use the URL generator to get the path to these
-        // actions and return them from the method. Otherwise, we'll use current.
-        elseif (isset($options['action'])) {
-            return $this->getControllerAction($options['action']);
-        }
-
-        return null;
-    }
-
-    /**
-     * Get the action for a "url" option.
-     *
-     * @param array|string $options
-     *
-     * @return string
-     */
-    protected function getUrl($options)
-    {
-        foreach ($options as $key => $value) {
-            $$key = $value;
-        }
-
-        $secure = null;
-        if (isset($options['secure'])) {
-            $secure = true === $options['secure'] ? true : false;
-        }
-
-        if (is_array($url)) {
-            if (self::isAbs($url[0])) {
-                return $url[0];
-            }
-
-            return URL::to($prefix.'/'.$url[0], array_slice($url, 1), $secure);
-        }
-
-        if (self::isAbs($url)) {
-            return $url;
-        }
-
-        return URL::to($prefix.'/'.$url, [], $secure);
-    }
-
-    /**
-     * Check if the given url is an absolute url.
-     *
-     * @param string $url
-     *
-     * @return bool
-     */
-    public static function isAbs($url)
-    {
-        return parse_url($url, PHP_URL_SCHEME) or false;
-    }
-
-    /**
-     * Get the action for a "route" option.
-     *
-     * @param array|string $options
-     *
-     * @return string
-     */
-    protected function getRoute($options)
-    {
-        if (is_array($options)) {
-            return URL::route($options[0], array_slice($options, 1));
-        }
-
-        return URL::route($options);
-    }
-
-    /**
-     * Get the action for an "action" option.
-     *
-     * @param array|string $options
-     *
-     * @return string
-     */
-    protected function getControllerAction($options)
-    {
-        if (is_array($options)) {
-            return URL::action($options[0], array_slice($options, 1));
-        }
-
-        return URL::action($options);
-    }
-
-    /**
-     * Returns items with no parent.
-     *
-     * @return \Illuminate\Support\Collection
-     */
-    public function roots()
-    {
-        return $this->whereParent();
-    }
-
-    /**
-     * Filter menu items by user callbacks.
-     *
-     * @param callable $callback
-     *
-     * @return Builder
-     */
-    public function filter($callback)
-    {
-        if (is_callable($callback)) {
-            $this->items = $this->items->filter($callback);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Sorts the menu based on user's callable.
-     *
-     * @param string|callable $sort_type
-     *
-     * @return Builder
-     */
-    public function sortBy($sort_by, $sort_type = 'asc')
-    {
-        if (is_callable($sort_by)) {
-            $rslt = call_user_func($sort_by, $this->items->toArray());
-
-            if (!is_array($rslt)) {
-                $rslt = array($rslt);
-            }
-
-            $this->items = new Collection($rslt);
-            return $this;
-        }
-
-        // running the sort proccess on the sortable items
-        $this->items = $this->items->sort(function ($f, $s) use ($sort_by, $sort_type) {
-            $f = $f->$sort_by;
-            $s = $s->$sort_by;
-
-            if ($f == $s) {
-                return 0;
-            }
-
-            if ('asc' == $sort_type) {
-                return $f > $s ? 1 : -1;
-            }
-
-            return $f < $s ? 1 : -1;
-        });
-
-        return $this;
-    }
-
-    /**
-     * Creates a new Builder instance with the given name and collection.
-     *
-     * @param $name
-     * @param Collection $collection
-     *
-     * @return Builder
-     */
-    public function spawn($name, Collection $collection)
-    {
-        $nb = new self($name, $this->conf);
-        $nb->takeCollection($collection);
-
-        return $nb;
-    }
-
-    /**
-     * Takes an entire collection and stores it as the items.
-     *
-     * @param Collection $collection
-     */
-    public function takeCollection(Collection $collection)
-    {
-        $this->items = $collection;
-    }
-
-    /**
-     * Returns a new builder of just the top level menu items.
-     *
-     * @return Builder
-     */
-    public function topMenu()
-    {
-        return $this->spawn('topLevel', $this->roots());
-    }
-
-    /**
-     * Returns a new builder with the active items children.
-     *
-     * @return Builder
-     */
-    public function subMenu()
-    {
-        $nb = $this->spawn('subMenu', new Collection());
-
-        $subs = $this->active()->children();
-        foreach ($subs as $s) {
-            $nb->add($s->title, $s->url());
-        }
-
-        return $nb;
-    }
-
-    /**
-     * Returns a new builder with siblings of the active item.
-     *
-     * @return Builder
-     */
-    public function siblingMenu()
-    {
-        $nb = $this->spawn('siblingMenu', new Collection());
-
-        $parent = $this->active()->parent();
-        if ($parent) {
-            $siblings = $parent->children();
-        } else {
-            $siblings = $this->roots();
-        }
-
-        if ($siblings->count() > 1) {
-            foreach ($siblings as $s) {
-                $nb->add($s->title, $s->url());
-            }
-        }
-
-        return $nb;
-    }
-
-    /**
-     * Returns a new builder with all of the parents of the active item.
-     *
-     * @return Builder
-     */
-    public function crumbMenu()
-    {
-        $nb = $this->spawn('crumbMenu', new Collection());
-
-        $item = $this->active();
-        $items = [$item];
-        while ($item->hasParent()) {
-            $item = $item->parent();
-            array_unshift($items, $item);
-        }
-
-        foreach ($items as $item) {
-            $nb->add($item->title, $item->url());
-        }
-
-        return $nb;
-    }
-
-    /**
-     * Generate the menu items as list items using a recursive function.
-     *
-     * @param string   $type
-     * @param int      $parent
-     * @param array    $children_attributes
-     * @param array    $item_attributes
-     * @param callable $item_after_calback
-     * @param array    $item_after_calback_params
-     *
-     * @return string
-     */
-    public function render($type = 'ul', $parent = null, $children_attributes = [], $item_attributes = [], $item_after_calback = null, $item_after_calback_params = [])
-    {
-        $items = '';
-
-        $item_tag = in_array($type, array('ul', 'ol')) ? 'li' : $type;
-
-        foreach ($this->whereParent($parent) as $item) {
-            if ($item->link) {
-                $link_attr = $item->link->attr();
-                if (is_callable($item_after_calback)) {
-                    call_user_func_array($item_after_calback, [
-                        $item,
-                        &$children_attributes,
-                        &$item_attributes,
-                        &$link_attr,
-                        &$item_after_calback_params,
-                    ]);
-                }
-            }
-            $all_attributes = array_merge($item_attributes, $item->attr()) ;
-            if (isset($item_attributes['class'])) {
-                $all_attributes['class'] = $all_attributes['class'].' '.$item_attributes['class'] ;
-            }
-            $items .= '<'.$item_tag.self::attributes($all_attributes).'>';
-
-            if ($item->link) {
-                $items .= $item->beforeHTML.'<a'.self::attributes($link_attr).(!empty($item->url()) ? ' href="'.$item->url().'"' : '').'>'.$item->title.'</a>'.$item->afterHTML;
-            } else {
-                $items .= $item->title;
-            }
-
-            if ($item->hasChildren()) {
-                $items .= '<'.$type.self::attributes($children_attributes).'>';
-                // Recursive call to children.
-                $items .= $this->render($type, $item->id, $children_attributes, $item_attributes, $item_after_calback, $item_after_calback_params);
-                $items .= "</{$type}>";
-            }
-
-            $items .= "</{$item_tag}>";
-
-            if ($item->divider) {
-                $items .= '<'.$item_tag.self::attributes($item->divider).'></'.$item_tag.'>';
-            }
-        }
-
-        return $items;
-    }
-
-    /**
-     * Returns the menu as an unordered list.
-     *
-     * @param array    $attributes
-     * @param array    $children_attributes
-     * @param array    $item_attributes
-     * @param callable $item_after_calback
-     * @param array    $item_after_calback_params
-     *
-     * @return string
-     */
-    public function asUl($attributes = [], $children_attributes = [], $item_attributes = [], $item_after_calback = null, $item_after_calback_params = [])
-    {
-        return '<ul'.self::attributes($attributes).'>'.$this->render('ul', null, $children_attributes, $item_attributes, $item_after_calback, $item_after_calback_params).'</ul>';
-    }
-
-    /**
-     * Returns the menu as an ordered list.
-     *
-     * @param array    $attributes
-     * @param array    $children_attributes
-     * @param array    $item_attributes
-     * @param callable $item_after_calback
-     * @param array    $item_after_calback_params
-     *
-     * @return string
-     */
-    public function asOl($attributes = [], $children_attributes = [], $item_attributes = [], $item_after_calback = null, $item_after_calback_params = [])
-    {
-        return '<ol'.self::attributes($attributes).'>'.$this->render('ol', null, $children_attributes, $item_attributes, $item_after_calback, $item_after_calback_params).'</ol>';
-    }
-
-    /**
-     * Returns the menu as div containers.
-     *
-     * @param array    $attributes
-     * @param array    $children_attributes
-     * @param array    $item_attributes
-     * @param callable $item_after_calback
-     * @param array    $item_after_calback_params
-     *
-     * @return string
-     */
-    public function asDiv($attributes = [], $children_attributes = [], $item_attributes = [], $item_after_calback = null, $item_after_calback_params = [])
-    {
-        return '<div'.self::attributes($attributes).'>'.$this->render('div', null, $children_attributes, $item_attributes, $item_after_calback, $item_after_calback_params).'</div>';
-    }
-
-    /**
-     * Build an HTML attribute string from an array.
-     *
-     * @param array $attributes
-     *
-     * @return string
-     */
-    public static function attributes($attributes)
-    {
-        $html = [];
-
-        foreach ((array) $attributes as $key => $value) {
-            $element = self::attributeElement($key, $value);
-            if (!is_null($element)) {
-                $html[] = $element;
-            }
-        }
-
-        return count($html) > 0 ? ' '.implode(' ', $html) : '';
-    }
-
-    /**
-     * Build a single attribute element.
-     *
-     * @param string $key
-     * @param string $value
-     *
-     * @return string
-     */
-    protected static function attributeElement($key, $value)
-    {
-        if (is_numeric($key)) {
-            $key = $value;
-        }
-        if (!is_null($value)) {
-            return $key.'="'.e($value).'"';
-        }
-
-        return null;
-    }
-
-    /**
-     * Return configuration value by key.
-     *
-     * @param string $key
-     *
-     * @return string
-     */
-    public function conf($key)
-    {
-        return $this->conf[$key];
-    }
-
-    /**
-     * Merge item's attributes with a static string of attributes.
-     *
-     * @param null  $new
-     * @param array $old
-     *
-     * @return string
-     */
-    public static function mergeStatic($new = null, array $old = [])
-    {
-        // Parses the string into an associative array
-        parse_str(preg_replace('/\s*([\w-]+)\s*=\s*"([^"]+)"/', '$1=$2&', $new), $attrs);
-
-        // Merge classes
-        $attrs['class'] = self::formatGroupClass($attrs, $old);
-
-        // Merging new and old array and parse it as a string
-        return self::attributes(array_merge(Arr::except($old, array('class')), $attrs));
-    }
-
-    /**
-     * Filter items recursively.
-     *
-     * @param string $attribute
-     * @param mixed  $value
-     *
-     * @return Collection
-     */
-    public function filterRecursive($attribute, $value)
-    {
-        $collection = new Collection();
-
-        // Iterate over all the items in the main collection
-        $this->items->each(function ($item) use ($attribute, $value, &$collection) {
-            if (!$this->hasProperty($attribute)) {
-                return false;
-            }
-
-            if ($item->$attribute == $value) {
-                $collection->push($item);
-
-                // Check if item has any children
-                if ($item->hasChildren()) {
-                    $collection = $collection->merge($this->filterRecursive($attribute, $item->id));
-                }
-            }
-        });
-
-        return $collection;
-    }
-
-    /**
-     * Search the menu based on an attribute.
-     *
-     * @param string $method
-     * @param array  $args
-     *
-     * @return bool|Builder|Collection
-     */
-    public function __call($method, $args)
-    {
-        preg_match('/^[W|w]here([a-zA-Z0-9_]+)$/', $method, $matches);
-
-        if ($matches) {
-            $attribute = strtolower($matches[1]);
-        } else {
-            return false;
-        }
-
-        $value = $args ? $args[0] : null;
-        $recursive = isset($args[1]) ? $args[1] : false;
-
-        if ($recursive) {
-            return $this->filterRecursive($attribute, $value);
-        }
-
-        return $this->items->filter(function ($item) use ($attribute, $value) {
-            if (!$item->hasProperty($attribute)) {
-                return false;
-            }
-
-            if ($item->$attribute == $value) {
-                return true;
-            }
-
-            return false;
-        })->values();
-    }
-
-    /**
-     * Returns menu item by name.
-     *
-     * @return Item
-     */
-    public function __get($prop)
-    {
-        if (property_exists($this, $prop)) {
-            return $this->$prop;
-        }
-
-        return $this->whereNickname($prop)->first();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+oB8j0HHz

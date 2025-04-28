@@ -1,144 +1,61 @@
-<?php
-
-namespace League\Flysystem\Adapter;
-
-use League\Flysystem\Adapter\Polyfill\StreamedCopyTrait;
-use League\Flysystem\Adapter\Polyfill\StreamedTrait;
-use League\Flysystem\Config;
-
-class NullAdapter extends AbstractAdapter
-{
-    use StreamedTrait;
-    use StreamedCopyTrait;
-
-    /**
-     * Check whether a file is present.
-     *
-     * @param string $path
-     *
-     * @return bool
-     */
-    public function has($path)
-    {
-        return false;
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function write($path, $contents, Config $config)
-    {
-        $type = 'file';
-        $result = compact('contents', 'type', 'path');
-
-        if ($visibility = $config->get('visibility')) {
-            $result['visibility'] = $visibility;
-        }
-
-        return $result;
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function update($path, $contents, Config $config)
-    {
-        return false;
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function read($path)
-    {
-        return false;
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function rename($path, $newpath)
-    {
-        return false;
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function delete($path)
-    {
-        return false;
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function listContents($directory = '', $recursive = false)
-    {
-        return [];
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function getMetadata($path)
-    {
-        return false;
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function getSize($path)
-    {
-        return false;
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function getMimetype($path)
-    {
-        return false;
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function getTimestamp($path)
-    {
-        return false;
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function getVisibility($path)
-    {
-        return false;
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function setVisibility($path, $visibility)
-    {
-        return compact('visibility');
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function createDir($dirname, Config $config)
-    {
-        return ['path' => $dirname, 'type' => 'dir'];
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function deleteDir($dirname)
-    {
-        return false;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

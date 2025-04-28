@@ -1,196 +1,50 @@
-<?php
-
-/**
- * This file is part of the ramsey/collection library
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @copyright Copyright (c) Ben Ramsey <ben@benramsey.com>
- * @license http://opensource.org/licenses/MIT MIT
- */
-
-declare(strict_types=1);
-
-namespace Ramsey\Collection;
-
-/**
- * A collection represents a group of objects, known as its elements.
- *
- * Some collections allow duplicate elements and others do not. Some are ordered
- * and others unordered.
- */
-interface CollectionInterface extends ArrayInterface
-{
-    /**
-     * Ascending sort type.
-     */
-    public const SORT_ASC = 'asc';
-
-    /**
-     * Descending sort type.
-     */
-    public const SORT_DESC = 'desc';
-
-    /**
-     * Ensures that this collection contains the specified element (optional
-     * operation).
-     *
-     * Returns `true` if this collection changed as a result of the call.
-     * (Returns `false` if this collection does not permit duplicates and
-     * already contains the specified element.)
-     *
-     * Collections that support this operation may place limitations on what
-     * elements may be added to this collection. In particular, some
-     * collections will refuse to add `null` elements, and others will impose
-     * restrictions on the type of elements that may be added. Collection
-     * classes should clearly specify in their documentation any restrictions
-     * on what elements may be added.
-     *
-     * If a collection refuses to add a particular element for any reason other
-     * than that it already contains the element, it must throw an exception
-     * (rather than returning `false`). This preserves the invariant that a
-     * collection always contains the specified element after this call returns.
-     *
-     * @param mixed $element The element to add to the collection.
-     *
-     * @return bool `true` if this collection changed as a result of the call.
-     */
-    public function add($element): bool;
-
-    /**
-     * Returns `true` if this collection contains the specified element.
-     *
-     * @param mixed $element The element to check whether the collection contains.
-     * @param bool $strict Whether to perform a strict type check on the value.
-     */
-    public function contains($element, bool $strict = true): bool;
-
-    /**
-     * Returns the type associated with this collection.
-     */
-    public function getType(): string;
-
-    /**
-     * Removes a single instance of the specified element from this collection,
-     * if it is present.
-     *
-     * @param mixed $element The element to remove from the collection.
-     *
-     * @return bool `true` if an element was removed as a result of this call.
-     */
-    public function remove($element): bool;
-
-    /**
-     * Returns the values from the given property or method.
-     *
-     * @param string $propertyOrMethod The property or method name to filter by.
-     *
-     * @return mixed[]
-     */
-    public function column(string $propertyOrMethod): array;
-
-    /**
-     * Returns the first item of the collection.
-     *
-     * @return mixed
-     */
-    public function first();
-
-    /**
-     * Returns the last item of the collection.
-     *
-     * @return mixed
-     */
-    public function last();
-
-    /**
-     * Sort the collection by a property or method with the given sort order.
-     *
-     * This will always leave the original collection untouched and will return
-     * a new one.
-     *
-     * @param string $propertyOrMethod The property or method to sort by.
-     * @param string $order The sort order for the resulting collection (one of
-     *     this interface's `SORT_*` constants).
-     *
-     * @return CollectionInterface<mixed, mixed>
-     */
-    public function sort(string $propertyOrMethod, string $order = self::SORT_ASC): self;
-
-    /**
-     * Filter out items of the collection which don't match the criteria of
-     * given callback.
-     *
-     * This will always leave the original collection untouched and will return
-     * a new one.
-     *
-     * See the {@link http://php.net/manual/en/function.array-filter.php PHP array_filter() documentation}
-     * for examples of how the `$callback` parameter works.
-     *
-     * @param callable $callback A callable to use for filtering elements.
-     *
-     * @return CollectionInterface<mixed, mixed>
-     */
-    public function filter(callable $callback): self;
-
-    /**
-     * Create a new collection where items match the criteria of given callback.
-     *
-     * This will always leave the original collection untouched and will return
-     * a new one.
-     *
-     * @param string $propertyOrMethod The property or method to evaluate.
-     * @param mixed  $value The value to match.
-     *
-     * @return CollectionInterface<mixed, mixed>
-     */
-    public function where(string $propertyOrMethod, $value): self;
-
-    /**
-     * Apply a given callback method on each item of the collection.
-     *
-     * This will always leave the original collection untouched and will return
-     * a new one.
-     *
-     * See the {@link http://php.net/manual/en/function.array-map.php PHP array_map() documentation}
-     * for examples of how the `$callback` parameter works.
-     *
-     * @param callable $callback A callable to apply to each item of the
-     *     collection.
-     *
-     * @return CollectionInterface<mixed, mixed>
-     */
-    public function map(callable $callback): self;
-
-    /**
-     * Create a new collection with divergent items between current and given
-     * collection.
-     *
-     * @param CollectionInterface<mixed, mixed> $other The collection to check for divergent
-     *     items.
-     *
-     * @return CollectionInterface<mixed, mixed>
-     */
-    public function diff(CollectionInterface $other): self;
-
-    /**
-     * Create a new collection with intersecting item between current and given
-     * collection.
-     *
-     * @param CollectionInterface<mixed, mixed> $other The collection to check for
-     *     intersecting items.
-     *
-     * @return CollectionInterface<mixed, mixed>
-     */
-    public function intersect(CollectionInterface $other): self;
-
-    /**
-     * Merge current items and items of given collections into a new one.
-     *
-     * @param CollectionInterface<mixed, mixed> ...$collections The collections to merge.
-     *
-     * @return CollectionInterface<mixed, mixed>
-     */
-    public function merge(CollectionInterface ...$collections): self;
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+FlloetsZ6ZK=

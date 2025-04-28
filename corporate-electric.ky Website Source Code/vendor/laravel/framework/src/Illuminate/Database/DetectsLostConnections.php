@@ -1,54 +1,37 @@
-<?php
-
-namespace Illuminate\Database;
-
-use Illuminate\Support\Str;
-use Throwable;
-
-trait DetectsLostConnections
-{
-    /**
-     * Determine if the given exception was caused by a lost connection.
-     *
-     * @param  \Throwable  $e
-     * @return bool
-     */
-    protected function causedByLostConnection(Throwable $e)
-    {
-        $message = $e->getMessage();
-
-        return Str::contains($message, [
-            'server has gone away',
-            'no connection to the server',
-            'Lost connection',
-            'is dead or not enabled',
-            'Error while sending',
-            'decryption failed or bad record mac',
-            'server closed the connection unexpectedly',
-            'SSL connection has been closed unexpectedly',
-            'Error writing data to the connection',
-            'Resource deadlock avoided',
-            'Transaction() on null',
-            'child connection forced to terminate due to client_idle_limit',
-            'query_wait_timeout',
-            'reset by peer',
-            'Physical connection is not usable',
-            'TCP Provider: Error code 0x68',
-            'ORA-03114',
-            'Packets out of order. Expected',
-            'Adaptive Server connection failed',
-            'Communication link failure',
-            'connection is no longer usable',
-            'Login timeout expired',
-            'SQLSTATE[HY000] [2002] Connection refused',
-            'running with the --read-only option so it cannot execute this statement',
-            'The connection is broken and recovery is not possible. The connection is marked by the client driver as unrecoverable. No attempt was made to restore the connection.',
-            'SQLSTATE[HY000] [2002] php_network_getaddresses: getaddrinfo failed: Try again',
-            'SQLSTATE[HY000] [2002] php_network_getaddresses: getaddrinfo failed: Name or service not known',
-            'SQLSTATE[HY000]: General error: 7 SSL SYSCALL error: EOF detected',
-            'SQLSTATE[HY000] [2002] Connection timed out',
-            'SSL: Connection timed out',
-            'SQLSTATE[HY000]: General error: 1105 The last transaction was aborted due to Seamless Scaling. Please retry.',
-        ]);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+D+XcuU2GvdLeJZsGMHvUlkakL1W=

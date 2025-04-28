@@ -1,88 +1,51 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Framework\Constraint;
-
-use function get_class;
-use function is_object;
-use function sprintf;
-use PHPUnit\Framework\Exception;
-use ReflectionClass;
-use ReflectionException;
-
-/**
- * @no-named-arguments Parameter names are not covered by the backward compatibility promise for PHPUnit
- */
-class ClassHasAttribute extends Constraint
-{
-    /**
-     * @var string
-     */
-    private $attributeName;
-
-    public function __construct(string $attributeName)
-    {
-        $this->attributeName = $attributeName;
-    }
-
-    /**
-     * Returns a string representation of the constraint.
-     */
-    public function toString(): string
-    {
-        return sprintf(
-            'has attribute "%s"',
-            $this->attributeName
-        );
-    }
-
-    /**
-     * Evaluates the constraint for parameter $other. Returns true if the
-     * constraint is met, false otherwise.
-     *
-     * @param mixed $other value or object to evaluate
-     */
-    protected function matches($other): bool
-    {
-        try {
-            return (new ReflectionClass($other))->hasProperty($this->attributeName);
-            // @codeCoverageIgnoreStart
-        } catch (ReflectionException $e) {
-            throw new Exception(
-                $e->getMessage(),
-                (int) $e->getCode(),
-                $e
-            );
-        }
-        // @codeCoverageIgnoreEnd
-    }
-
-    /**
-     * Returns the description of the failure.
-     *
-     * The beginning of failure messages is "Failed asserting that" in most
-     * cases. This method should return the second part of that sentence.
-     *
-     * @param mixed $other evaluated value or object
-     */
-    protected function failureDescription($other): string
-    {
-        return sprintf(
-            '%sclass "%s" %s',
-            is_object($other) ? 'object of ' : '',
-            is_object($other) ? get_class($other) : $other,
-            $this->toString()
-        );
-    }
-
-    protected function attributeName(): string
-    {
-        return $this->attributeName;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+eB9kgN6/f4a=

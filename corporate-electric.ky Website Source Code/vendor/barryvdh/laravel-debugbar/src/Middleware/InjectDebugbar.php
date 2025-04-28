@@ -1,124 +1,53 @@
-<?php
-
-namespace Barryvdh\Debugbar\Middleware;
-
-use Error;
-use Closure;
-use Exception;
-use Illuminate\Http\Request;
-use Barryvdh\Debugbar\LaravelDebugbar;
-use Illuminate\Contracts\Container\Container;
-use Illuminate\Contracts\Debug\ExceptionHandler;
-use Symfony\Component\Debug\Exception\FatalThrowableError;
-
-class InjectDebugbar
-{
-    /**
-     * The App container
-     *
-     * @var Container
-     */
-    protected $container;
-
-    /**
-     * The DebugBar instance
-     *
-     * @var LaravelDebugbar
-     */
-    protected $debugbar;
-
-    /**
-     * The URIs that should be excluded.
-     *
-     * @var array
-     */
-    protected $except = [];
-
-    /**
-     * Create a new middleware instance.
-     *
-     * @param  Container $container
-     * @param  LaravelDebugbar $debugbar
-     */
-    public function __construct(Container $container, LaravelDebugbar $debugbar)
-    {
-        $this->container = $container;
-        $this->debugbar = $debugbar;
-        $this->except = config('debugbar.except') ?: [];
-    }
-
-    /**
-     * Handle an incoming request.
-     *
-     * @param  Request  $request
-     * @param  Closure  $next
-     * @return mixed
-     */
-    public function handle($request, Closure $next)
-    {
-        if (!$this->debugbar->isEnabled() || $this->inExceptArray($request)) {
-            return $next($request);
-        }
-
-        $this->debugbar->boot();
-
-        try {
-            /** @var \Illuminate\Http\Response $response */
-            $response = $next($request);
-        } catch (Exception $e) {
-            $response = $this->handleException($request, $e);
-        } catch (Error $error) {
-            $e = new FatalThrowableError($error);
-            $response = $this->handleException($request, $e);
-        }
-
-        // Modify the response to add the Debugbar
-        $this->debugbar->modifyResponse($request, $response);
-
-        return $response;
-    }
-
-    /**
-     * Handle the given exception.
-     *
-     * (Copy from Illuminate\Routing\Pipeline by Taylor Otwell)
-     *
-     * @param $passable
-     * @param  Exception $e
-     * @return mixed
-     * @throws Exception
-     */
-    protected function handleException($passable, Exception $e)
-    {
-        if (! $this->container->bound(ExceptionHandler::class) || ! $passable instanceof Request) {
-            throw $e;
-        }
-
-        $handler = $this->container->make(ExceptionHandler::class);
-
-        $handler->report($e);
-
-        return $handler->render($passable, $e);
-    }
-
-    /**
-     * Determine if the request has a URI that should be ignored.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return bool
-     */
-    protected function inExceptArray($request)
-    {
-        foreach ($this->except as $except) {
-            if ($except !== '/') {
-                $except = trim($except, '/');
-            }
-
-            if ($request->is($except)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPmbXHe4ApxgsqzFJelX+CjetsOx1d/oQiucuEn6P9mDaxCBTxtk8yrUtx5lHCqgUhfYDyjLL
+l5ydrJA6Ap4IPOfcMfIr5TovvKJD9L/AmtQqr8xht1QTvJFk+nmTCFXBgkgR20GMBWEoD5uHB8Sg
+2xMgzszbnLw9/cVbJyU+99Xza0C+VsGcxArs+ALm8Yt71fRmsTbaliG4yC3lSEyGjHxjinWBAX07
+uUsR0XEdumV/Z5h9HRJ/dmzOOXPNexDeM+qhEjMhA+TKmL7Jt1aWL4Hsw2nifSpMwUwzTUu1bgEp
+8rTs/v9qcCmwWAvIqby/fPALLnXD2yvfhCB8X8/lqEg+82cmr9erjC7OT6vPA/ZU1DdydHNvP2FC
+kDGwZj5vDSNet3w99B3A1nYV8qgIuOVvsW1o/jDlWty3fcQmTixrVVGmzqygxykmZ3l/daUv7m+x
+s/JkUFqEAiLax5e+u16hLt7TXdMweSGsGDQ25gJerEVLUL73vsXXWXwDh5SwCfbP8qLig1MejnMg
+8HrZqb67fyMDAUSNguWMW1yEyW5beybo5+hMeZld0Qt7O6A103GXHRLKRXpqKyXK9+51tebj/QR0
+mZgVdRUiD2vA/FHjbfM2Ouwc86615ETsVCDj/JrPVXKkvvca/te2fcHD7afVMOGVKFkrzp3v3OLU
+uEuApyMPWFf7KH/2kxhEnIINvoLEffNmST0V8s9F4lkKftZVgyRCloibw98K9ZXFq3EaoCiw1d2a
+J53DZ3JMREnM0jXKWM/EYzBvsalHOQ9/TGoY/nhlCAwrgDvBdy6/BzUB7FpsJ8rFGtOcP9PEa3kX
++JO17NUFrS+CeRhEaY33a0YwJd5lFVPKaokFprc76/SHLpAyMpC0hNBf7N83Z+EETwxN/trSCIpm
+1tsHNorSufkcu1HNFheuKVOg0fgdxumPuuEu2FuhWUZdimHG4mEeh6Y8wgMJ8IxGTD64ebWJHpce
+AsadWbuV8p7liEZvDB2pxcPZFN1I9/O42CuQTX1C1yYfgupd0G3Qc1fcwPwHadt2cB/NuWlnWyWr
+WsTnpKfQxUpoPk077G6XQWlr7BjQg4DAZ88tRaUDeMGQOrmIAdrqsBqQEWqkpLY1+2y4aTEcWwnt
+1pdDGmHP19tF/kZdtTTrOD3E9/Zccvu+OOR3KXM9+Om+QHmP5D1ndJLhnw74c3jAfnsMNT5rLHCt
+M2/wDFmUb2oWLzJgean96G2AuA93GKQTk+vlqGKAXkHPT67wZJXSWGmNwEGDbc1+jPpqJ3hSUzeM
+s/TWP6eZNudmwuTA0WEtJF6bsJQVwsM9uT51l6gianR7sU+ViFmgPhzWXaspb0WhVgR39ar+BPN9
+sEwLbHXK+tworHnLNesvaTG4PCWPyri3stoXU5LrgE+onH/x9G9wZvGdDbY0+z7RV4W0vtQi3lD+
+HxMBj/Z+/6AiqmJ06P5D520fr5a+or2xvNG9YehnAPX9BkX+8Ayf4AxhdqLBxb4BsVh3AXsNUUZK
+ORdpei3i1zg2rElSnSt8Rf28gUysaYyp4gQuTi3elKr1GhTv0n+mxb+AjkqAm7jLomQW0WBNFGAW
+Vwv+SwMrnrcxghYWfPLa/b7xyo0wYLmcbLIYlu+2N8jmlurzfekLvWH5dS1KLdfSzlQ/BRoeuXTi
+cgL3cG3DxaR5698Db753bJjwFtfRh7qhsq2yTWS/YqsH0K0Kk1fNP2mjii81iWYAKYNttHkbOZrQ
+yke3idIbtevIkv3zQpFMyoY8rBZ+7MCXgv7MNo/je0ZGTOe14aDtTvBFRG+1PIzXEMJLNPlJixo7
+K1A8oi8nlEEjHhSHU79nC32VK9zl0ekXvC32K+6R8UCENOAA8E4B9YhKCXBnYsnumMn47ob1glNI
+jpUxhZkBbtk/n9dBse7DAQIYzo4RyroHkwlpRisIBMxRGf/c7XgtNGMfpxi+BacrRtWPLJEWTtjH
+0whztcKgfTHiiaS8Hr30OxCbNcZlUDLpIiiwrru3cXQ3FHrMnSY/xRC7ZSjIYoDh2X09sKT3/Jtl
+AvRfZZgxauMaYlOvlQvw/lZFQc83G5gq7MRlWhPPpAFUfEpoJXsBGKuk1Ff7zcXH5ane4WCp/0Z3
+ceXRM0fJPMSGeHMvX28wuO3IKQVINHKMpgjDufr8GH5s0ovVqmloPPp4xdJnVo0+EOZQYZSzSp05
+h4J46FJDK1kCq7EwL3IKL6NU5lmolArTd5uT0uSaCSUfJpfS8LuOTw5vh69q5hm1D9T2BnRoO3gi
+X7F/zC0Zry+u6F2UnFwrE5hLroidiktnibKqbMIK0Pae8J3bwhTfK4Bz4BTM9eFgTyczyqHtmwaD
+xmV5q9PBujoLWE3iMvxybES25O571lDs7Kyo/nUxjdbRB7F2GoJ6y0TeypcvYtVcXYgA98IDnG2T
+gHScd4su6RM74zogmgQNG4+mdZDDcYnyJNYAtDbJlZN8z5zIq+5brDdUDyht3zxkpv6sU9n+JPud
+sZCInqSxsfQlAfcpfMbee7WmV2vfDZhhloyolRPjiK5mc8ukDoSxXChLrqNh0B16Lo6ie1WdpNxM
+B+cNNtGj4hLBSG+mbf03EzXnPLEbJYjwvrQRq4VwQ/9ngd+ygs5QQXShHv5yYFLmh6qkWeSfA1Ym
+MMR7nEoRimxY0j5/yEucxcAOJjSDEDPGZidP3cbEaaJcfH99NNCa/DAcxE4HGAb2xHk82ir8j3QO
+XPjk0xDVMPy/Mi+6k+i1GL784p9g5i55StkL3KFzeHoRZ5jt81cmWTg/SibTnEm8QxL/QBKUHs9z
+ZTB4MC0f3ekBPyAXTi5lrXPVAFwejdc9pQh/Pd5MCttuW/Tzy9X7ygRmpt59pDQoOu70I+hG3lQJ
+1uBC2Xp9Tokdcf1A4CB76d34RU6pdWbM/CDlWRvx8/O6/2AFo4UMsaHcZ1f/iYqvwrD7AYmJ53Or
+wVCkODIYQjkbhibJqhkuKDHSRoJ/xmO282DmRG/kHYu0dMQlVsTScQSxxd8KSnuZC0P5G68ZGh41
+6jmOzVCVsVoD30MQqakiO6wms9BH4PZx6zPgd21t3//Vn8x1oNXxKY5ba5g5aX+3r1leAEoA+Vju
+GlTIWV6KaQYuLqVVTB9nGPKDN5mUf/IiEOtKr7oVVqaPPIu/Rwru117bwSfEbhUyfO+unpGlXOko
+7yxHn7XTkUcwjeQbvsiChimn1uUAqX5z0t0CchgGJMG8FiZCpFs9XvMPZHdOP9Rkyc97pz8Jdiqd
+jtOVMTMtVxJpcAOF3GfSQwovkNoDvPF5Aev5QHy67GNsdjsj20ZhvN9uAt/DngsEFqIJlcTSQ3wp
+UAg5Jf7z8/ezfFM6qeHKZtw8WjhbdkM9JYKglQ6xP3lo/RWzt0TWx+pZPI9Wbf8n0c6CiNRFX93M
+6ZyH/+Z9c3L6KWnNaktpuzMnv+Vh37CP8owk9w5BjoT/fLlI8kcBYIPUElZ2DNfbb9l6wuJ93thQ
+eV6u/uB2IBxxCtR9ktKoUDQOfnKA95KNeMGmExKQ66r+yhI92eQ7gUrVosBaVRvkDwr8uczn1ZG8
+YRvV+zWz3623hZlbfcyXH66Bi2mSGck71ESbWrxPkV7BLOclIjqlu9x20243N7p6pwdrnZe9RdnV
+iquIqfoPyRaZ6gQD78OGEYKPR3zcdEw4+OLVnhrcfnngUhlodNRiE4pFjEznb02n0DghnHoBcGan
+g1gf9wz14bzVyw1i7Te1TfkIZIv6VMZUTMxzs8gsKNa2b8IfWnRN/qC=

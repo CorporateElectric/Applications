@@ -1,85 +1,48 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Predis\Command;
-
-/**
- * @link http://redis.io/commands/hscan
- *
- * @author Daniele Alessandri <suppakilla@gmail.com>
- */
-class HashScan extends Command
-{
-    /**
-     * {@inheritdoc}
-     */
-    public function getId()
-    {
-        return 'HSCAN';
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function filterArguments(array $arguments)
-    {
-        if (count($arguments) === 3 && is_array($arguments[2])) {
-            $options = $this->prepareOptions(array_pop($arguments));
-            $arguments = array_merge($arguments, $options);
-        }
-
-        return $arguments;
-    }
-
-    /**
-     * Returns a list of options and modifiers compatible with Redis.
-     *
-     * @param array $options List of options.
-     *
-     * @return array
-     */
-    protected function prepareOptions($options)
-    {
-        $options = array_change_key_case($options, CASE_UPPER);
-        $normalized = array();
-
-        if (!empty($options['MATCH'])) {
-            $normalized[] = 'MATCH';
-            $normalized[] = $options['MATCH'];
-        }
-
-        if (!empty($options['COUNT'])) {
-            $normalized[] = 'COUNT';
-            $normalized[] = $options['COUNT'];
-        }
-
-        return $normalized;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function parseResponse($data)
-    {
-        if (is_array($data)) {
-            $fields = $data[1];
-            $result = array();
-
-            for ($i = 0; $i < count($fields); ++$i) {
-                $result[$fields[$i]] = $fields[++$i];
-            }
-
-            $data[1] = $result;
-        }
-
-        return $data;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

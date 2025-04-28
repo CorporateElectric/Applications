@@ -1,76 +1,37 @@
-<?php
-namespace Hamcrest;
-
-/*
- Copyright (c) 2012 hamcrest.org
- */
-
-/**
- * Contains utility methods for handling Hamcrest matchers.
- *
- * @see Hamcrest\Matcher
- */
-class Util
-{
-    public static function registerGlobalFunctions()
-    {
-        require_once __DIR__.'/../Hamcrest.php';
-    }
-
-    /**
-     * Wraps the item with an IsEqual matcher if it isn't a matcher already.
-     *
-     * @param mixed $item matcher or any value
-     * @return \Hamcrest\Matcher
-     */
-    public static function wrapValueWithIsEqual($item)
-    {
-        return ($item instanceof Matcher)
-            ? $item
-            : Core\IsEqual::equalTo($item)
-            ;
-    }
-
-    /**
-     * Throws an exception if any item in $matchers is not a Hamcrest\Matcher.
-     *
-     * @param array $matchers expected to contain only matchers
-     * @throws \InvalidArgumentException if any item is not a matcher
-     */
-    public static function checkAllAreMatchers(array $matchers)
-    {
-        foreach ($matchers as $m) {
-            if (!($m instanceof Matcher)) {
-                throw new \InvalidArgumentException(
-                    'Each argument or element must be a Hamcrest matcher'
-                );
-            }
-        }
-    }
-
-    /**
-     * Returns a copy of $items where each non-Matcher item is replaced by
-     * a Hamcrest\Core\IsEqual matcher for the item. If the first and only item
-     * is an array, it is used as the $items array to support the old style
-     * of passing an array as the sole argument to a matcher.
-     *
-     * @param array $items contains items and matchers
-     * @return array<Matchers> all items are
-     */
-    public static function createMatcherArray(array $items)
-    {
-        //Extract single array item
-        if (count($items) == 1 && is_array($items[0])) {
-            $items = $items[0];
-        }
-
-        //Replace non-matchers
-        foreach ($items as &$item) {
-            if (!($item instanceof Matcher)) {
-                $item = Core\IsEqual::equalTo($item);
-            }
-        }
-
-        return $items;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+aJMkYG==

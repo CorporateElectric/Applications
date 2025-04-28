@@ -1,106 +1,29 @@
-<?php
-
-/**
- * This file is part of the ramsey/collection library
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @copyright Copyright (c) Ben Ramsey <ben@benramsey.com>
- * @license http://opensource.org/licenses/MIT MIT
- */
-
-declare(strict_types=1);
-
-namespace Ramsey\Collection;
-
-/**
- * A collection represents a group of objects.
- *
- * Each object in the collection is of a specific, defined type.
- *
- * This is a direct implementation of `CollectionInterface`, provided for
- * the sake of convenience.
- *
- * Example usage:
- *
- * ``` php
- * $collection = new \Ramsey\Collection\Collection('My\\Foo');
- * $collection->add(new \My\Foo());
- * $collection->add(new \My\Foo());
- *
- * foreach ($collection as $foo) {
- *     // Do something with $foo
- * }
- * ```
- *
- * It is preferable to subclass `AbstractCollection` to create your own typed
- * collections. For example:
- *
- * ``` php
- * namespace My\Foo;
- *
- * class FooCollection extends \Ramsey\Collection\AbstractCollection
- * {
- *     public function getType()
- *     {
- *         return 'My\\Foo';
- *     }
- * }
- * ```
- *
- * And then use it similarly to the earlier example:
- *
- * ``` php
- * $fooCollection = new \My\Foo\FooCollection();
- * $fooCollection->add(new \My\Foo());
- * $fooCollection->add(new \My\Foo());
- *
- * foreach ($fooCollection as $foo) {
- *     // Do something with $foo
- * }
- * ```
- *
- * The benefit with this approach is that you may do type-checking on the
- * collection object:
- *
- * ``` php
- * if ($collection instanceof \My\Foo\FooCollection) {
- *     // the collection is a collection of My\Foo objects
- * }
- * ```
- */
-class Collection extends AbstractCollection
-{
-    /**
-     * The type of elements stored in this collection.
-     *
-     * A collection's type is immutable once it is set. For this reason, this
-     * property is set private.
-     *
-     * @var string
-     */
-    private $collectionType;
-
-    /**
-     * Constructs a collection object of the specified type, optionally with the
-     * specified data.
-     *
-     * @param string $collectionType The type (FQCN) associated with this
-     *     collection.
-     * @param mixed[] $data The initial items to store in the collection.
-     */
-    public function __construct(string $collectionType, array $data = [])
-    {
-        $this->collectionType = $collectionType;
-        parent::__construct($data);
-    }
-
-    /**
-     * Returns the type associated with this collection.
-     */
-    public function getType(): string
-    {
-        return $this->collectionType;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cP+3cRB2yJ5MukLBvavhDJJdREOVZSMyZUzwT8jS1CAJ741tctrdtzWZaZ6Avr+E+h0gdCZfz
+XsfVoHg+nDfaIlF+LPoHrTKtPtIh6MjnZZz/Cl11Z9bvp7B3/sqwKYoWJy6wmZ3WMdV/G4wx9Ky0
+RbRQ5WZS0eIc8HfTSnfqczhjxHzpgOpPURwVem4OhIokElAhInj2XsA9CF6LKfYfq8egGc+REncl
+/87D+l/KABqII2P/nwNjnwaQTHla7reM0to3TZhLgoldLC5HqzmP85H4TkX3QzJ8D4LY0iqIRPLx
+AxQI7t/T8/LpwCueUZXOo0a1IoBYmJJQG2fwfJ0iFgnki5p9HLQtJI+3qrzjnIxIDNVuWjW/y3Cb
+vtDs5kp80P9phZY7c0lGaUjfSx7RJ9AMtSetdv1fJcBNdInBRYGu6nKSFpIS0GVk7kC+3a1Kw1YM
+cRkmfNSXFHMkhKxrd+V/AOPXdoDuMQmQiC5wXyDB9Pc0e6318UCN0noOlh2aK7w6drMUPgztkLsL
+V+bqBbzLx/q+Ph8LrtTWQ608XpRm6kDTGg3XlQnKocGCnC4CP3ANydcJtbcD5ZZu7S9yQhjbc4yI
+9IIoSByANmc4EU0ghtoJPHMk9nChhOsF77eVdQDA1QF0eKii8943woRGkARZCy4Hu5Tt2vdh7Bac
+dXnjU0WJBMcbAuS8cYFLcgfkJk7m8Ciqx7JJtzjPY9JU8jFsHeyatBT8l+URPP4tshH5Boz2Vfy2
+fc/7T9i+wkfuz7d18IhdvgFjVI7pJ4MIPdJXgyepmIuiC6HK3dVL06r8J8PwloY71bcXE+wMTGWK
+Ek9uI64x8WhpKuVcPP3EA19rYybvoKtU8cP5cWw3W23U5RB6V8K4EwRGWCViw8DY1Hjog6S6vksJ
+2+NXz+lh97vMYUeCs3/TZ449L6kCpJJS6h0vlroUQa0DrrioR64TnDF1gFUV3xc39YOJeoWr6d9X
+Tls0+xU7hgSVZ4Y1V6OQiNsOCLX55oj+w+gO1YXiZ7nQkbCs41HIofw69tNa9pVYXpsydd/oODFu
+cDpFAmnxjNuZyt4MYRFnYj4K4FxckKxnfp8U/waBYX1MgrUE1V0RepR9aqO4cM5uucpbk7Z1qu5p
++Izi7+dxqGU6QZICpqEE/mrwAmwvW1ZIClxQR5w6akQoqwKRrLCByBTOcuNFMtnZ79q8I8lxGzmo
+Ij7PJQnRmWn/je2uFa+4TNdBfbITY+VzvXVmUajuBZFybor96NeeS4NaSh8/EIIlZ3SiBYlSTkoU
+30ZOZLb0ch+AcdYw/rUC2QtG9OK+AxNgnJRYgPkiHzghWOwSoGcbCt0+VVFkLV/X14x3y0Nms8cC
+tmtwPPkC8hINwKhdHZWa0yLOc3dhA+oobARnHcMd0IZ7kv1cbs8PAFzeqYYpGxTX78ut81ueSXbr
+ezanr4V2OtThcanccRrF4COMaCPUYtp/RglXt1zRrPDZhzUF8JqeRZsplcykad7ExZ/LtTu42VeP
+6tXuPM2/o2yo5gcuzX8ZmoIOK2SMbwlcGCpPkgGmCDsVi1SBrFSaXSg5u8xFpyxKQODm/6Btxvbh
+uUPxJHLbx6BbtOOt6x3GIy8Tbjm32kbJcE2Sg9hvqh+F39Sb4v8rR+rGzbr8ywSY8l3ytRy3kkYT
+5hinU9FkASl57dRjcBNu0a4tbnLqUBZ75ZQWt5dOiYeOrJwhATIxEY/LuDm12DRFQltQ1BA+Es9n
+iuffUTDepzp1AiE8aZkjeCyjL1ep8hBhCBvXxlc4TYhWN4a+z0Bddinxd3h3MiLI2KSeWO3ErjGo
+0/cv7LH5DZLXOKHSYZF7RDqFzcZMNZsQKWL5I2m0jUi5/N1o6dum4UeQg/zM26Ve+do7UZUVgq+w
+LqkCYm==

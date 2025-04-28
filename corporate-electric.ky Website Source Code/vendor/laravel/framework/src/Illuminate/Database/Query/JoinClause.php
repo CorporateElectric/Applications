@@ -1,146 +1,60 @@
-<?php
-
-namespace Illuminate\Database\Query;
-
-use Closure;
-
-class JoinClause extends Builder
-{
-    /**
-     * The type of join being performed.
-     *
-     * @var string
-     */
-    public $type;
-
-    /**
-     * The table the join clause is joining to.
-     *
-     * @var string
-     */
-    public $table;
-
-    /**
-     * The connection of the parent query builder.
-     *
-     * @var \Illuminate\Database\ConnectionInterface
-     */
-    protected $parentConnection;
-
-    /**
-     * The grammar of the parent query builder.
-     *
-     * @var \Illuminate\Database\Query\Grammars\Grammar
-     */
-    protected $parentGrammar;
-
-    /**
-     * The processor of the parent query builder.
-     *
-     * @var \Illuminate\Database\Query\Processors\Processor
-     */
-    protected $parentProcessor;
-
-    /**
-     * The class name of the parent query builder.
-     *
-     * @var string
-     */
-    protected $parentClass;
-
-    /**
-     * Create a new join clause instance.
-     *
-     * @param  \Illuminate\Database\Query\Builder  $parentQuery
-     * @param  string  $type
-     * @param  string  $table
-     * @return void
-     */
-    public function __construct(Builder $parentQuery, $type, $table)
-    {
-        $this->type = $type;
-        $this->table = $table;
-        $this->parentClass = get_class($parentQuery);
-        $this->parentGrammar = $parentQuery->getGrammar();
-        $this->parentProcessor = $parentQuery->getProcessor();
-        $this->parentConnection = $parentQuery->getConnection();
-
-        parent::__construct(
-            $this->parentConnection, $this->parentGrammar, $this->parentProcessor
-        );
-    }
-
-    /**
-     * Add an "on" clause to the join.
-     *
-     * On clauses can be chained, e.g.
-     *
-     *  $join->on('contacts.user_id', '=', 'users.id')
-     *       ->on('contacts.info_id', '=', 'info.id')
-     *
-     * will produce the following SQL:
-     *
-     * on `contacts`.`user_id` = `users`.`id` and `contacts`.`info_id` = `info`.`id`
-     *
-     * @param  \Closure|string  $first
-     * @param  string|null  $operator
-     * @param  \Illuminate\Database\Query\Expression|string|null  $second
-     * @param  string  $boolean
-     * @return $this
-     *
-     * @throws \InvalidArgumentException
-     */
-    public function on($first, $operator = null, $second = null, $boolean = 'and')
-    {
-        if ($first instanceof Closure) {
-            return $this->whereNested($first, $boolean);
-        }
-
-        return $this->whereColumn($first, $operator, $second, $boolean);
-    }
-
-    /**
-     * Add an "or on" clause to the join.
-     *
-     * @param  \Closure|string  $first
-     * @param  string|null  $operator
-     * @param  string|null  $second
-     * @return \Illuminate\Database\Query\JoinClause
-     */
-    public function orOn($first, $operator = null, $second = null)
-    {
-        return $this->on($first, $operator, $second, 'or');
-    }
-
-    /**
-     * Get a new instance of the join clause builder.
-     *
-     * @return \Illuminate\Database\Query\JoinClause
-     */
-    public function newQuery()
-    {
-        return new static($this->newParentQuery(), $this->type, $this->table);
-    }
-
-    /**
-     * Create a new query instance for sub-query.
-     *
-     * @return \Illuminate\Database\Query\Builder
-     */
-    protected function forSubQuery()
-    {
-        return $this->newParentQuery()->newQuery();
-    }
-
-    /**
-     * Create a new parent query instance.
-     *
-     * @return \Illuminate\Database\Query\Builder
-     */
-    protected function newParentQuery()
-    {
-        $class = $this->parentClass;
-
-        return new $class($this->parentConnection, $this->parentGrammar, $this->parentProcessor);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+V72blsMcbBzFk0==

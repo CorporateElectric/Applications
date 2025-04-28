@@ -1,31 +1,37 @@
-<?php
-
-use Facade\FlareClient\Flare;
-
-if (! function_exists('ddd')) {
-    function ddd()
-    {
-        $args = func_get_args();
-
-        if (count($args) === 0) {
-            throw new Exception('You should pass at least 1 argument to `ddd`');
-        }
-
-        call_user_func_array('dump', $args);
-
-        $handler = app(\Facade\Ignition\ErrorPage\ErrorPageHandler::class);
-
-        $client = app()->make(Flare::class);
-
-        $report = $client->createReportFromMessage('Dump, Die, Debug', 'info');
-
-        $handler->handleReport($report, 'DebugTab', [
-            'dump' => true,
-            'glow' => false,
-            'log' => false,
-            'query' => false,
-        ]);
-
-        die();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

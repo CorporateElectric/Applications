@@ -1,230 +1,212 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Console\Descriptor;
-
-use Symfony\Component\Console\Application;
-use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Input\InputArgument;
-use Symfony\Component\Console\Input\InputDefinition;
-use Symfony\Component\Console\Input\InputOption;
-
-/**
- * XML descriptor.
- *
- * @author Jean-François Simon <contact@jfsimon.fr>
- *
- * @internal
- */
-class XmlDescriptor extends Descriptor
-{
-    public function getInputDefinitionDocument(InputDefinition $definition): \DOMDocument
-    {
-        $dom = new \DOMDocument('1.0', 'UTF-8');
-        $dom->appendChild($definitionXML = $dom->createElement('definition'));
-
-        $definitionXML->appendChild($argumentsXML = $dom->createElement('arguments'));
-        foreach ($definition->getArguments() as $argument) {
-            $this->appendDocument($argumentsXML, $this->getInputArgumentDocument($argument));
-        }
-
-        $definitionXML->appendChild($optionsXML = $dom->createElement('options'));
-        foreach ($definition->getOptions() as $option) {
-            $this->appendDocument($optionsXML, $this->getInputOptionDocument($option));
-        }
-
-        return $dom;
-    }
-
-    public function getCommandDocument(Command $command): \DOMDocument
-    {
-        $dom = new \DOMDocument('1.0', 'UTF-8');
-        $dom->appendChild($commandXML = $dom->createElement('command'));
-
-        $command->mergeApplicationDefinition(false);
-
-        $commandXML->setAttribute('id', $command->getName());
-        $commandXML->setAttribute('name', $command->getName());
-        $commandXML->setAttribute('hidden', $command->isHidden() ? 1 : 0);
-
-        $commandXML->appendChild($usagesXML = $dom->createElement('usages'));
-
-        foreach (array_merge([$command->getSynopsis()], $command->getAliases(), $command->getUsages()) as $usage) {
-            $usagesXML->appendChild($dom->createElement('usage', $usage));
-        }
-
-        $commandXML->appendChild($descriptionXML = $dom->createElement('description'));
-        $descriptionXML->appendChild($dom->createTextNode(str_replace("\n", "\n ", $command->getDescription())));
-
-        $commandXML->appendChild($helpXML = $dom->createElement('help'));
-        $helpXML->appendChild($dom->createTextNode(str_replace("\n", "\n ", $command->getProcessedHelp())));
-
-        $definitionXML = $this->getInputDefinitionDocument($command->getDefinition());
-        $this->appendDocument($commandXML, $definitionXML->getElementsByTagName('definition')->item(0));
-
-        return $dom;
-    }
-
-    public function getApplicationDocument(Application $application, string $namespace = null): \DOMDocument
-    {
-        $dom = new \DOMDocument('1.0', 'UTF-8');
-        $dom->appendChild($rootXml = $dom->createElement('symfony'));
-
-        if ('UNKNOWN' !== $application->getName()) {
-            $rootXml->setAttribute('name', $application->getName());
-            if ('UNKNOWN' !== $application->getVersion()) {
-                $rootXml->setAttribute('version', $application->getVersion());
-            }
-        }
-
-        $rootXml->appendChild($commandsXML = $dom->createElement('commands'));
-
-        $description = new ApplicationDescription($application, $namespace, true);
-
-        if ($namespace) {
-            $commandsXML->setAttribute('namespace', $namespace);
-        }
-
-        foreach ($description->getCommands() as $command) {
-            $this->appendDocument($commandsXML, $this->getCommandDocument($command));
-        }
-
-        if (!$namespace) {
-            $rootXml->appendChild($namespacesXML = $dom->createElement('namespaces'));
-
-            foreach ($description->getNamespaces() as $namespaceDescription) {
-                $namespacesXML->appendChild($namespaceArrayXML = $dom->createElement('namespace'));
-                $namespaceArrayXML->setAttribute('id', $namespaceDescription['id']);
-
-                foreach ($namespaceDescription['commands'] as $name) {
-                    $namespaceArrayXML->appendChild($commandXML = $dom->createElement('command'));
-                    $commandXML->appendChild($dom->createTextNode($name));
-                }
-            }
-        }
-
-        return $dom;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function describeInputArgument(InputArgument $argument, array $options = [])
-    {
-        $this->writeDocument($this->getInputArgumentDocument($argument));
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function describeInputOption(InputOption $option, array $options = [])
-    {
-        $this->writeDocument($this->getInputOptionDocument($option));
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function describeInputDefinition(InputDefinition $definition, array $options = [])
-    {
-        $this->writeDocument($this->getInputDefinitionDocument($definition));
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function describeCommand(Command $command, array $options = [])
-    {
-        $this->writeDocument($this->getCommandDocument($command));
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function describeApplication(Application $application, array $options = [])
-    {
-        $this->writeDocument($this->getApplicationDocument($application, isset($options['namespace']) ? $options['namespace'] : null));
-    }
-
-    /**
-     * Appends document children to parent node.
-     */
-    private function appendDocument(\DOMNode $parentNode, \DOMNode $importedParent)
-    {
-        foreach ($importedParent->childNodes as $childNode) {
-            $parentNode->appendChild($parentNode->ownerDocument->importNode($childNode, true));
-        }
-    }
-
-    /**
-     * Writes DOM document.
-     */
-    private function writeDocument(\DOMDocument $dom)
-    {
-        $dom->formatOutput = true;
-        $this->write($dom->saveXML());
-    }
-
-    private function getInputArgumentDocument(InputArgument $argument): \DOMDocument
-    {
-        $dom = new \DOMDocument('1.0', 'UTF-8');
-
-        $dom->appendChild($objectXML = $dom->createElement('argument'));
-        $objectXML->setAttribute('name', $argument->getName());
-        $objectXML->setAttribute('is_required', $argument->isRequired() ? 1 : 0);
-        $objectXML->setAttribute('is_array', $argument->isArray() ? 1 : 0);
-        $objectXML->appendChild($descriptionXML = $dom->createElement('description'));
-        $descriptionXML->appendChild($dom->createTextNode($argument->getDescription()));
-
-        $objectXML->appendChild($defaultsXML = $dom->createElement('defaults'));
-        $defaults = \is_array($argument->getDefault()) ? $argument->getDefault() : (\is_bool($argument->getDefault()) ? [var_export($argument->getDefault(), true)] : ($argument->getDefault() ? [$argument->getDefault()] : []));
-        foreach ($defaults as $default) {
-            $defaultsXML->appendChild($defaultXML = $dom->createElement('default'));
-            $defaultXML->appendChild($dom->createTextNode($default));
-        }
-
-        return $dom;
-    }
-
-    private function getInputOptionDocument(InputOption $option): \DOMDocument
-    {
-        $dom = new \DOMDocument('1.0', 'UTF-8');
-
-        $dom->appendChild($objectXML = $dom->createElement('option'));
-        $objectXML->setAttribute('name', '--'.$option->getName());
-        $pos = strpos($option->getShortcut(), '|');
-        if (false !== $pos) {
-            $objectXML->setAttribute('shortcut', '-'.substr($option->getShortcut(), 0, $pos));
-            $objectXML->setAttribute('shortcuts', '-'.str_replace('|', '|-', $option->getShortcut()));
-        } else {
-            $objectXML->setAttribute('shortcut', $option->getShortcut() ? '-'.$option->getShortcut() : '');
-        }
-        $objectXML->setAttribute('accept_value', $option->acceptValue() ? 1 : 0);
-        $objectXML->setAttribute('is_value_required', $option->isValueRequired() ? 1 : 0);
-        $objectXML->setAttribute('is_multiple', $option->isArray() ? 1 : 0);
-        $objectXML->appendChild($descriptionXML = $dom->createElement('description'));
-        $descriptionXML->appendChild($dom->createTextNode($option->getDescription()));
-
-        if ($option->acceptValue()) {
-            $defaults = \is_array($option->getDefault()) ? $option->getDefault() : (\is_bool($option->getDefault()) ? [var_export($option->getDefault(), true)] : ($option->getDefault() ? [$option->getDefault()] : []));
-            $objectXML->appendChild($defaultsXML = $dom->createElement('defaults'));
-
-            if (!empty($defaults)) {
-                foreach ($defaults as $default) {
-                    $defaultsXML->appendChild($defaultXML = $dom->createElement('default'));
-                    $defaultXML->appendChild($dom->createTextNode($default));
-                }
-            }
-        }
-
-        return $dom;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

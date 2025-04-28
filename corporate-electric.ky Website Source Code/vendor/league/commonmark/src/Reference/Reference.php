@@ -1,76 +1,43 @@
-<?php
-
-/*
- * This file is part of the league/commonmark package.
- *
- * (c) Colin O'Dell <colinodell@gmail.com>
- *
- * Original code based on the CommonMark JS reference parser (https://bitly.com/commonmark-js)
- *  - (c) John MacFarlane
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace League\CommonMark\Reference;
-
-use League\CommonMark\Normalizer\TextNormalizer;
-
-final class Reference implements ReferenceInterface
-{
-    /**
-     * @var string
-     */
-    protected $label;
-
-    /**
-     * @var string
-     */
-    protected $destination;
-
-    /**
-     * @var string
-     */
-    protected $title;
-
-    public function __construct(string $label, string $destination, string $title)
-    {
-        $this->label = $label;
-        $this->destination = $destination;
-        $this->title = $title;
-    }
-
-    public function getLabel(): string
-    {
-        return $this->label;
-    }
-
-    public function getDestination(): string
-    {
-        return $this->destination;
-    }
-
-    public function getTitle(): string
-    {
-        return $this->title;
-    }
-
-    /**
-     * Normalize reference label
-     *
-     * This enables case-insensitive label matching
-     *
-     * @param string $string
-     *
-     * @return string
-     *
-     * @deprecated Use TextNormalizer::normalize() instead
-     * @group legacy
-     */
-    public static function normalizeReference(string $string): string
-    {
-        @trigger_error(sprintf('%s::normlizeReference() is deprecated; use %s::normalize() instead', self::class, TextNormalizer::class), E_USER_DEPRECATED);
-
-        return (new TextNormalizer())->normalize($string);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPmpdL/j0Ggpy7L32s30D97QAlar1tSJG7yzZv3Ffospmo1atkhuEWZWqCQo5WZ3OkiAqce5f
+lFsO2zufsnIDbiJKxxxBLJv9RBYRxC50x+y7VVZyRPDWSmOu4BiiFWWx/fK1Tw43WsqHjJ+rBClx
+93EiI/6RbSlOW5A4P0kcYrJQYPi8Q2izgzoHHB17xDF6XWJva1LxeBbpMH7SMPJ5o46P2fcZ5t1a
+DHRAuU8Taw+5k8nnRq5khbNScr/J7tsaP21f6ZhLgoldLC5HqzmP85H4TkXMQitB9n7rEHfNuxpR
+hgrf8Vyo8aexwfQurFLNn5Crl35rOQxlzrltoAcsCO9BOT1usmlKlIZRwkTviPh3vMnr7znoj6vk
+9g2HKxnXgEuJaU3WzX8CWqsqV2rj7t6rxF5qnkwrGPPrmDXHfWjgCy8O89H8FzJiY9hbYNXaa2Ji
+EB+WYa/ZumRn/BbYrYxJyt/naGf/4c76EofQ1hv+/eDtX1vARFtHDDev5VR7ePFineXfrJZW6Ak3
+51Gwb0XNrq6QM+OmLwpMLPmqzoWpM8kgCtflhRsJgpR33dDXUOXfbU+qj6u9fyY8gtKwwzwbWhrb
+zlgvoc4j4yvsN98pmRj2HE1xxs5IcLSPUbwbec8p+ajT/o1/UY9AQAEGIzwNSirwEdFywC+zzFGi
+tSwwIWCGJK6TPwa9TvRUl+3dSMvg3yUwujWba+j5rqfkt0uIzivlTNRCzCNWBGrztfbBga0kFnTa
+WwA2xySGAMn0yw8pB+vxRcfN9ZhxI3JNXICrKXRU2aMT0+aYkiGb+s0ftHd2GHCMmc/+i6Rej/O7
+61asRWEbubS1k7lXeGQHsvPXxBC2ttwI/lHOTR9/bz87/sZ5rSRcUkKCir4GW1lXGe66okpMnYip
+f0J9Nwqzsw2UOkCzig/AgH1FJlav4O0bZip2X8rN/QbVXxHvDUXFsNkr6yXhTsuI/E5UBAhu6t9O
+yUDmHpt/8QYlqXCw3WTimWwU3OS44MsVgT9r2vgpHTfp7PAlgmcniCXAzkNvCC9ITOHOoj1v7Yl8
+3ZzVXnwROnGY1vr8qMVSHsLECPamGHzz4ZrYOESHV11JgLG8oXP/k3asrYnZXWWaQLm+NdoE1Qxh
+pVkBRXsxvKVIOgBsOlJPgRhLzPzMoi6nBTxHMF4schxpgB0q/fgiYfFQp+rFw2B/ejB0fRGDswFJ
+0UGSUbxQbUICUt1CPE3s6WKs9mXtHf1fgO+RytymtV4ssfMfdLTC1OTIYKoHdoxFYk3rhBocbByK
+d62dwaqhLLH16e+tGBfOCq2Yez/CYbUBL1ndumJsX2UWG/zRxGOTiCBcV91120Xh00XbaJgi8VfP
+LUEftrUmNRpXhA7g9ltq4eqbx01bkaaAaziLdVv/4Bhz6F54ZEciJZ8d7MLm/nageHenjWtQCAXM
+0A/k3XqwdCLsYJQU6qkeezJ1FPvcgOW0Z8EVaAu8rumPXJvg3hSmmC7hJAa5w1uWTv51X7ho3x97
+rnOEAfXVU8RwsMlHPLHZKjDpPTgxk48bQMHp5Eb/pIgUfgtLPdbrfgtwGAWqIw2P7q3F9biFqUJL
+WITscmPOyP9VsKvpUnzvI7gJP5jo8hxBrcGESbzmPXphjYjKk0mhTp4GEiMtAF4vrxRb7yalEsG+
+Od2Tbj5Aqpf9xNjOAIM+SiYV/YnIjGGnMiUAGd7HYnY5Z4AD3SUbCOCL4VN1YmewUUof/N0KKOTA
+pEpcZXYJFmmkHVyAT7Yzu72pXK+xjcikgwtZWFwErjYztbi2cfVAto2uRGB+GfN9Zw3ygW2joIv4
+wff8wE99SOwXqRx7PasdGUcSuiCUxdnsE6y3wGUJOvRiwL6VMtVzMdKEV9fzeNv9c5lqD0qj/ZMi
+KQX8WII28M+38dYbGIBiwUApUCtDwagnlydpeE7ygS8bkbqQfwRVSY4exzC8hQQAm3KhUMRa85gK
+K8G4K7ntdbIZHDBVlPIy1HNYC3TXZq9GKDzrEHnCFmeJtsoRrcEIDUqVSOuq5fiA7+OzN31BSV9s
+rJwPbUH2rG0W+bsM+8pHUFR6vjE/LAu48HAdP1sN7zXh4WFYeG9uBNv2LcmjMpSl3UJY0tCEUH7W
+XcH5Q0tGgHstu2zWJvpA4U9MUTzOu+MLSYHeA8GdLg5MsFsVEHcIlk3ASQeF+IaLMTJXU+ETvuMU
+YUCmCrWM5HxjMy87i6A39GvalRga8KMLmMzulZRrT0LI6kwR25hf+o/nQZdo8rFxzkWpLq+QnPn9
+KJ86TATNDvgZYVzY9bYxQq0Oy0PsY8QPfTaz7Q646xn1+QXEVY577Mr4SQaqh67w2r5GjtrtTBAs
+Fkd61uxU0WVJHoUnCOFb43GHRUn/3iY90FCpY9P7BuT/+4R8yq33pXsRrZdMa3H/y7DBlv9K/m1D
+ewGfaypzm33JarU+a04h4MRqJK0fR2u6FsAu/m3sQtQRYsal5zP8z9Hh0KvJLZTWU1TWadOq3DVG
+l+T/Zze+M8UdjTTLgwohzRi/VMpil2NsltocJudIzD3t2Oa8Y2BcIzfxTmnZ+HspgYqCDHhKpAtP
+rxhkXB5rdbsIqBPy8X0Yhuat3Wookxc665oDXXxWnFijKRCCtfoUdar7kAYhuhZx1TYNNRRbp163
+7hHWfO1eKeSU4YVHpRpGKCQ5KErVawQ9Na5ckEKi1OTQkHZYFmWD+cOs0qFg9s7OICP+J5V0B/Sj
+qqwLRQjDoMiR5VsqikK5alDizm7Ho6LFwOGvBA257+WHpTthwwD5wI5xWpOEaP1zPaExnoLt6TUk
+9KyBpeTFSzJXL0j+TO9SBJbQw7FNUvuX29W10/xnzKxqHSAi6NgFUFYtvvaUy2RXLPMnBlwPWyQF
+FlF5DrwAevKBP5AAE++W8p+qxtM+8qUOZM1Lpm7Q0vNgvgR1pMWFV9QHaxbW7DVuyhPNxusGlKYo
+Nm+wX5q/5AlXKfiT7jlza2t8TocF474ofAn4s0zjIEefYvQc+SDeskcueFj/0m==

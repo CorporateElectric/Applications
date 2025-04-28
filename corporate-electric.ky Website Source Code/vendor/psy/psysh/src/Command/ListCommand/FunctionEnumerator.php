@@ -1,116 +1,62 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\Command\ListCommand;
-
-use Psy\Reflection\ReflectionNamespace;
-use Symfony\Component\Console\Input\InputInterface;
-
-/**
- * Function Enumerator class.
- */
-class FunctionEnumerator extends Enumerator
-{
-    /**
-     * {@inheritdoc}
-     */
-    protected function listItems(InputInterface $input, \Reflector $reflector = null, $target = null)
-    {
-        // if we have a reflector, ensure that it's a namespace reflector
-        if (($target !== null || $reflector !== null) && !$reflector instanceof ReflectionNamespace) {
-            return [];
-        }
-
-        // only list functions if we are specifically asked
-        if (!$input->getOption('functions')) {
-            return [];
-        }
-
-        if ($input->getOption('user')) {
-            $label = 'User Functions';
-            $functions = $this->getFunctions('user');
-        } elseif ($input->getOption('internal')) {
-            $label = 'Internal Functions';
-            $functions = $this->getFunctions('internal');
-        } else {
-            $label = 'Functions';
-            $functions = $this->getFunctions();
-        }
-
-        $prefix = $reflector === null ? null : \strtolower($reflector->getName()).'\\';
-        $functions = $this->prepareFunctions($functions, $prefix);
-
-        if (empty($functions)) {
-            return [];
-        }
-
-        $ret = [];
-        $ret[$label] = $functions;
-
-        return $ret;
-    }
-
-    /**
-     * Get defined functions.
-     *
-     * Optionally limit functions to "user" or "internal" functions.
-     *
-     * @param string|null $type "user" or "internal" (default: both)
-     *
-     * @return array
-     */
-    protected function getFunctions($type = null)
-    {
-        $funcs = \get_defined_functions();
-
-        if ($type) {
-            return $funcs[$type];
-        } else {
-            return \array_merge($funcs['internal'], $funcs['user']);
-        }
-    }
-
-    /**
-     * Prepare formatted function array.
-     *
-     * @param array  $functions
-     * @param string $prefix
-     *
-     * @return array
-     */
-    protected function prepareFunctions(array $functions, $prefix = null)
-    {
-        \natcasesort($functions);
-
-        // My kingdom for a generator.
-        $ret = [];
-
-        foreach ($functions as $name) {
-            if ($prefix !== null && \strpos(\strtolower($name), $prefix) !== 0) {
-                continue;
-            }
-
-            if ($this->showItem($name)) {
-                try {
-                    $ret[$name] = [
-                        'name'  => $name,
-                        'style' => self::IS_FUNCTION,
-                        'value' => $this->presentSignature($name),
-                    ];
-                } catch (\Exception $e) {
-                    // Ignore failures. HHVM does this sometimes for internal functions.
-                }
-            }
-        }
-
-        return $ret;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+fgpkvtACYAZxRpBgoh+V2whh

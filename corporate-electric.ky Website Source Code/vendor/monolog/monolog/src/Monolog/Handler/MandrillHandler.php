@@ -1,85 +1,66 @@
-<?php declare(strict_types=1);
-
-/*
- * This file is part of the Monolog package.
- *
- * (c) Jordi Boggiano <j.boggiano@seld.be>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Monolog\Handler;
-
-use Monolog\Logger;
-use Swift;
-use Swift_Message;
-
-/**
- * MandrillHandler uses cURL to send the emails to the Mandrill API
- *
- * @author Adam Nicholson <adamnicholson10@gmail.com>
- */
-class MandrillHandler extends MailHandler
-{
-    /** @var Swift_Message */
-    protected $message;
-    /** @var string */
-    protected $apiKey;
-
-    /**
-     * @psalm-param Swift_Message|callable(): Swift_Message $message
-     *
-     * @param string                 $apiKey  A valid Mandrill API key
-     * @param callable|Swift_Message $message An example message for real messages, only the body will be replaced
-     * @param string|int             $level   The minimum logging level at which this handler will be triggered
-     * @param bool                   $bubble  Whether the messages that are handled can bubble up the stack or not
-     */
-    public function __construct(string $apiKey, $message, $level = Logger::ERROR, bool $bubble = true)
-    {
-        parent::__construct($level, $bubble);
-
-        if (!$message instanceof Swift_Message && is_callable($message)) {
-            $message = $message();
-        }
-        if (!$message instanceof Swift_Message) {
-            throw new \InvalidArgumentException('You must provide either a Swift_Message instance or a callable returning it');
-        }
-        $this->message = $message;
-        $this->apiKey = $apiKey;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function send(string $content, array $records): void
-    {
-        $mime = 'text/plain';
-        if ($this->isHtmlBody($content)) {
-            $mime = 'text/html';
-        }
-
-        $message = clone $this->message;
-        $message->setBody($content, $mime);
-        /** @phpstan-ignore-next-line */
-        if (version_compare(Swift::VERSION, '6.0.0', '>=')) {
-            $message->setDate(new \DateTimeImmutable());
-        } else {
-            /** @phpstan-ignore-next-line */
-            $message->setDate(time());
-        }
-
-        $ch = curl_init();
-
-        curl_setopt($ch, CURLOPT_URL, 'https://mandrillapp.com/api/1.0/messages/send-raw.json');
-        curl_setopt($ch, CURLOPT_POST, 1);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query([
-            'key' => $this->apiKey,
-            'raw_message' => (string) $message,
-            'async' => false,
-        ]));
-
-        Curl\Util::execute($ch);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

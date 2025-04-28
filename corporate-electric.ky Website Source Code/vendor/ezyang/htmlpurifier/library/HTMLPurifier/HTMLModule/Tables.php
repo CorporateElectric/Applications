@@ -1,75 +1,53 @@
-<?php
-
-/**
- * XHTML 1.1 Tables Module, fully defines accessible table elements.
- */
-class HTMLPurifier_HTMLModule_Tables extends HTMLPurifier_HTMLModule
-{
-    /**
-     * @type string
-     */
-    public $name = 'Tables';
-
-    /**
-     * @param HTMLPurifier_Config $config
-     */
-    public function setup($config)
-    {
-        $this->addElement('caption', false, 'Inline', 'Common');
-
-        $this->addElement(
-            'table',
-            'Block',
-            new HTMLPurifier_ChildDef_Table(),
-            'Common',
-            array(
-                'border' => 'Pixels',
-                'cellpadding' => 'Length',
-                'cellspacing' => 'Length',
-                'frame' => 'Enum#void,above,below,hsides,lhs,rhs,vsides,box,border',
-                'rules' => 'Enum#none,groups,rows,cols,all',
-                'summary' => 'Text',
-                'width' => 'Length'
-            )
-        );
-
-        // common attributes
-        $cell_align = array(
-            'align' => 'Enum#left,center,right,justify,char',
-            'charoff' => 'Length',
-            'valign' => 'Enum#top,middle,bottom,baseline',
-        );
-
-        $cell_t = array_merge(
-            array(
-                'abbr' => 'Text',
-                'colspan' => 'Number',
-                'rowspan' => 'Number',
-                // Apparently, as of HTML5 this attribute only applies
-                // to 'th' elements.
-                'scope' => 'Enum#row,col,rowgroup,colgroup',
-            ),
-            $cell_align
-        );
-        $this->addElement('td', false, 'Flow', 'Common', $cell_t);
-        $this->addElement('th', false, 'Flow', 'Common', $cell_t);
-
-        $this->addElement('tr', false, 'Required: td | th', 'Common', $cell_align);
-
-        $cell_col = array_merge(
-            array(
-                'span' => 'Number',
-                'width' => 'MultiLength',
-            ),
-            $cell_align
-        );
-        $this->addElement('col', false, 'Empty', 'Common', $cell_col);
-        $this->addElement('colgroup', false, 'Optional: col', 'Common', $cell_col);
-
-        $this->addElement('tbody', false, 'Required: tr', 'Common', $cell_align);
-        $this->addElement('thead', false, 'Required: tr', 'Common', $cell_align);
-        $this->addElement('tfoot', false, 'Required: tr', 'Common', $cell_align);
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

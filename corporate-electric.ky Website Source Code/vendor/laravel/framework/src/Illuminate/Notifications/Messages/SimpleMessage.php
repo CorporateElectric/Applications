@@ -1,245 +1,69 @@
-<?php
-
-namespace Illuminate\Notifications\Messages;
-
-use Illuminate\Contracts\Support\Htmlable;
-use Illuminate\Notifications\Action;
-
-class SimpleMessage
-{
-    /**
-     * The "level" of the notification (info, success, error).
-     *
-     * @var string
-     */
-    public $level = 'info';
-
-    /**
-     * The subject of the notification.
-     *
-     * @var string
-     */
-    public $subject;
-
-    /**
-     * The notification's greeting.
-     *
-     * @var string
-     */
-    public $greeting;
-
-    /**
-     * The notification's salutation.
-     *
-     * @var string
-     */
-    public $salutation;
-
-    /**
-     * The "intro" lines of the notification.
-     *
-     * @var array
-     */
-    public $introLines = [];
-
-    /**
-     * The "outro" lines of the notification.
-     *
-     * @var array
-     */
-    public $outroLines = [];
-
-    /**
-     * The text / label for the action.
-     *
-     * @var string
-     */
-    public $actionText;
-
-    /**
-     * The action URL.
-     *
-     * @var string
-     */
-    public $actionUrl;
-
-    /**
-     * The name of the mailer that should send the notification.
-     *
-     * @var string
-     */
-    public $mailer;
-
-    /**
-     * Indicate that the notification gives information about a successful operation.
-     *
-     * @return $this
-     */
-    public function success()
-    {
-        $this->level = 'success';
-
-        return $this;
-    }
-
-    /**
-     * Indicate that the notification gives information about an error.
-     *
-     * @return $this
-     */
-    public function error()
-    {
-        $this->level = 'error';
-
-        return $this;
-    }
-
-    /**
-     * Set the "level" of the notification (success, error, etc.).
-     *
-     * @param  string  $level
-     * @return $this
-     */
-    public function level($level)
-    {
-        $this->level = $level;
-
-        return $this;
-    }
-
-    /**
-     * Set the subject of the notification.
-     *
-     * @param  string  $subject
-     * @return $this
-     */
-    public function subject($subject)
-    {
-        $this->subject = $subject;
-
-        return $this;
-    }
-
-    /**
-     * Set the greeting of the notification.
-     *
-     * @param  string  $greeting
-     * @return $this
-     */
-    public function greeting($greeting)
-    {
-        $this->greeting = $greeting;
-
-        return $this;
-    }
-
-    /**
-     * Set the salutation of the notification.
-     *
-     * @param  string  $salutation
-     * @return $this
-     */
-    public function salutation($salutation)
-    {
-        $this->salutation = $salutation;
-
-        return $this;
-    }
-
-    /**
-     * Add a line of text to the notification.
-     *
-     * @param  mixed  $line
-     * @return $this
-     */
-    public function line($line)
-    {
-        return $this->with($line);
-    }
-
-    /**
-     * Add a line of text to the notification.
-     *
-     * @param  mixed  $line
-     * @return $this
-     */
-    public function with($line)
-    {
-        if ($line instanceof Action) {
-            $this->action($line->text, $line->url);
-        } elseif (! $this->actionText) {
-            $this->introLines[] = $this->formatLine($line);
-        } else {
-            $this->outroLines[] = $this->formatLine($line);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Format the given line of text.
-     *
-     * @param  \Illuminate\Contracts\Support\Htmlable|string|array  $line
-     * @return \Illuminate\Contracts\Support\Htmlable|string
-     */
-    protected function formatLine($line)
-    {
-        if ($line instanceof Htmlable) {
-            return $line;
-        }
-
-        if (is_array($line)) {
-            return implode(' ', array_map('trim', $line));
-        }
-
-        return trim(implode(' ', array_map('trim', preg_split('/\\r\\n|\\r|\\n/', $line))));
-    }
-
-    /**
-     * Configure the "call to action" button.
-     *
-     * @param  string  $text
-     * @param  string  $url
-     * @return $this
-     */
-    public function action($text, $url)
-    {
-        $this->actionText = $text;
-        $this->actionUrl = $url;
-
-        return $this;
-    }
-
-    /**
-     * Set the name of the mailer that should send the notification.
-     *
-     * @param  string  $mailer
-     * @return $this
-     */
-    public function mailer($mailer)
-    {
-        $this->mailer = $mailer;
-
-        return $this;
-    }
-
-    /**
-     * Get an array representation of the message.
-     *
-     * @return array
-     */
-    public function toArray()
-    {
-        return [
-            'level' => $this->level,
-            'subject' => $this->subject,
-            'greeting' => $this->greeting,
-            'salutation' => $this->salutation,
-            'introLines' => $this->introLines,
-            'outroLines' => $this->outroLines,
-            'actionText' => $this->actionText,
-            'actionUrl' => $this->actionUrl,
-            'displayableActionUrl' => str_replace(['mailto:', 'tel:'], '', $this->actionUrl),
-        ];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPwxoPTntKruK3Z/m/rFxm9VrX8dFaB1MqQAueBJn++KcqFvydV6wr5jaDAjBT6kHfgxBvHtB
+iptrzQQ8UwFXTeGC8Zgy7A6y3RuNsrv6PoCYYlgcJoVIWLZT4L/9kNvEE83UY8UZQRoVMdKTfJWn
+WKUrdqTP4C3N5p44/j7sjJOaVaDxUeZfaLjuiaF5TQSshohM5iyAfH9B0xHU2L5QKyvVLaYtm0q3
+1aUkk0sapKiPudhk5BBMWD6UIQQ30XEG10c2EjMhA+TKmL7Jt1aWL4Hsw7PfAsOa8THlJKLOz9ii
+Sbr49QDqXdNs0RGs8GC9oLx75i299vq208Fe9nOGbifbMOXcraYSZ/64balP6WJjfcu/o3ZHyYEi
+JdffKV9vojzqzw6jIw177uVvJJevwChWr8MeOH2Rqg+LOLYafXrGtHY1ziYz+EBJvvs8biO58p/G
+14qTodYFVqNDUbgLaoK4Yr1uFygDu0UwhtbqprsnGgcVbzYf265kCYiNOeR3MIVzuic0kBh+KXDL
+hM5qUuYRDxzJwO73abORmdVtVyJX5AWl4XtJXbtEpQ9nRe/W04Cp2nMCrqVL/b8S1WfLOlb3+x+v
+ieKiuAAPzU1Tvub/ZDRBESwfGt2MNgBx0ueZLNSe6R6U70F5ZzmNzOg6ojmG6LKcUsnXMIM8ZIhV
+MSZKFlqhGfmdxRTAnb30Sbez6wyCPGbmkn01vl0NkdixOU8w9SPSacVuS7Azan3wl4yQyaztNzP5
+Cb8Pasax0PllCGNVKBevUr68DBEIqkZDSkMxDE82xgmgBshCGR6fpsyzAjmZcZBBB8tJgQn3RrtD
+P8Tcjp2D3y9w22q3691bQ+Omi2b4Dr+jhman56Z45L6paa3JnsCAW72B/Plr+j5TG+YDzQL4gamj
+ci7eQHQ3lM4vrw4w6VT7AzreLlOC3/G/v28V6eUlij+cuL6QQ4PzH/bvxbW2Fk2AKe0xtMwbGtmG
+x5G7ds20cnzyJk7ao2U4/bF5m3sHvz/0xBdNE0ePl+PTXKUVslFIcEgpJihiK579DrrPUFdY2uJw
+N9DLJPT9tgGJITTgJKjrtx2NJnhQtkEeLzOq9gpWgiOTfgzio6Lk4kHvU8Klax41Qd6+eMVBKdVu
+khBDgQgYCqPzrdNUrKCdPG5AnZRLm6jj2IH1Psapt6uc/Bxdt8ylWXl+yAnsCDSxRV0aTVEAh/sc
+MjY4WdTMe2P946aseUK/ymWwCmhPC66/CHVMGxDyjTPvcrUwa75WMHhQ8o2kkLUKyhWO5EwBvByG
+OOdznORoy4cE6GmTwN2urHHxTU7hjVp0sDsiQt/wCPZjZ5yhiOfCFxrE/vQnglCbbzfM1NBg7oVI
+nBdKsZtSNFqu8SCEl4tO5SP3FqjghCwoxPG4Qe4x4xukejpDCBRN5hT/V1IKor9yfNXj9dSTMCjV
+KOG4gH6YXmhqi23r0xwL9rn7G2yfMajj2s7PiFpi1V0bjlCTiMpqN/dW7mtZLSTSol4QZn/hqfMv
+DfLWXgus7DpZkr7iL7nQ9Dyuy3chujMrQwGHJadxC78Y4hrUOWgGv+ygg3i1xWaFo6zW4LLnkoqF
+KOiXHiMI+HQdWosRC/dcsoBN0nDZZAbQOW4c1o+Q8wbCYtA343fKGwyx5uAuawwa9Zspupcq3Luq
+96wcCpyf4ZrjahmtqKN/AeIzBSf2ZCdBnKf4Psib9OV3EihhqPMyGyS/K3QUnfVHJQLkCKCpv96f
+CaW1C2AROKpBmCRvzDSu1lpI5T3Owl0GpIGDhHMuU/nNOy/4DKvWknyFdrR8rac4bnjWurYBPivH
+wA6weLXjMMyYD8W9RXAmE19156MtZeluySwiHVr+0WyfoBrkq2ClUhep0i9ZOkR47hrzwTfLkrKi
+vCT6AOS8dLyB8tCX8lzRgS3ips2UFUrvVCMrd0UqqCg6A0pWtWuYYTwujTKxjblJIQONmLR69bDB
+wDAYLOK+DRNlUq9OqWJRrVTFosfPh7dVwpWfolg+JyIURwSSvT4c9kHQAMdr8Hiviv3lGfLG/8oq
+KIaYZ6HBYUG5wjTtjbXkSINZT345bR/JiMJUu35jWfKLWFthaAPHmSwo4Dnheho9uF22I6CBL/P3
+l1MCLy/ASq+WrxwCKuPgRVPimxTxB59Kf/JNJ69Hd8yem6E9BZgLYxvKqfUdGhmgupJGd4J2uCI0
+rM+e6J0b9yBGTIwpYmvp3Kgh91EjVvlKxszsYRq/JbbOYo2gAbDv4k0acNEyR4SH6nL9oH6o9BZO
+4leQ2yv+2PEA+dxmUkVLdgGfYhUEdCxrLSVllVIIVt8o526G3Yo0Os31xUhCPau4eb2ZXgVYSOPU
+1qE/kTI5T9Th3T53iGY5GRuzt0Zw7TbJ6xZSc6CjxS1N5sk9Up18YsTBq0RGPNRfv3ivgr8mqRsM
+YTBoDmb/bBm9I6ZG1iDT4dkDEBnseGU7V8hH/91BVy3l6Uafa/oxgfegOZw0Gm9JcQ579/gj+FNv
+byhnNerFJDUqsVQkzt+Gg+7mJI5+TZgOCf25qOTWssll655XcByxej6QjW5yj8mrDirR8j6dxpPq
+V5b08rDuENApVPQrtVy1zVDWNr3cODCqC7TGMn1kXRcxqgD9rbaGI6YN1a1LkSSZKVKK4jnCCPSn
+c6KBGsyJ+Qi9dtcTa3aYqRF3Xdw1HBWtxC7434REexpgWBuCRdlaw+3npw8fVomeS13/SXBOJIZg
+EgL69jya0CJW0xhTskbuqQ1IMSiETz+89vpgWrbm0kslGbgcwVg32BjRl6GTXl/atvIBKlr4j5Bo
+qY9wGxuwGNbD9UGBGXYpP8PFk3jflO+I/iFtGQX2/bAKAFRqbkWzD9ySwzTRjZU4jqedjyZNhKHz
+/OOEOrYnuV7TuKo/0XmUq0A7BvVlQdsdGFFy9bG3mKjx21tuBw4foyODf6QY/vbYhsmoKVQgkPUD
+tFw/wtkMGa0o5wkxR6ta1MJliYW/ajUqnFJQY/ZU6QkzPzp0M9Zas283N/tlYWVCinNGuCqNBiXX
+QzB5Sv1Vhfcz1qF4Ah6yZ88HOnR2Sl+za/IHPwmUwGhh4EfkSwdQ1aYSPF2Lb0kVOY+Mc+M+UoLA
+RHXfU73SxLH42mhw08slQQC0IhVPxj2Ad3rDzb52jXnjVFKt3RPa68vOnHEBwLxGE5HAv5DR5lyj
+ssRHuEBlJ7rKclpN84lX3ccJHjkPXH2tXbQCWGAI0BEsZkGodvTbSXp0nBQXHogKfwsg+QUM9N4/
+2ACqSmsiAbuRJMyhRWEsHX4/a99aMCcCjiHVxws8rD+oNyA8n+ydKOoy0GcP44KW4jtooYDfEkq5
+AqgoDs/ksDYBGalg6+flYULFQd4ijuZJM5+LasanqUslLw8H1jbZVLNXuagnuypTlVn/Sq4B9MC3
+i2CnFrjXpDaPUwK1QI924BtyZviLZFXSDcPWc7/JlYQjTvXu7nBZZ+sdb/4bktFsruY0mkTLW+pY
+6q+cBF8vKEsTDvXFj9UTTlDH8asYP48P7bM6Yl3T7BS5nk+P9WbC6jN82PhWTrq91ZG5aGgV116B
+oh98MvqJkZS9Jl5D3OIU0uG0ExdzI4SaMgznoMxBnSty4Z2qsGNxHYU1Avj7S/u5GeT0GJKrPqzp
+unYVNUCH3SO8Yu/2+IVAnaXYgAYfMqrxR/pVJuR/fugyIS6lema/JUUKdyO2kZ0XMLwYR0Scsyzq
+2+BcWtpt3usu4OILjZj+uNdF9QzGi5IAvMlERKHkClVKVPuL459fdaJZCSWsq73Qk38ctr30eAa3
+MtFQrYNBsqVSOwVoipaCD7sIuQdrRgAed81hfT/t2UA48udJzhjjfQibEkHSMUkH5gbtnAyOurwG
+owm3OnQFtPeCMvGVaM0LP2cQRTp9Ar3Nt0AfnuAZ3PNSDFFbUqB2xqO3Q+ETX+PlHDj5X/e7p4Q2
+iaon9ZCNb996zkeZOOSay23JCgBUNhoLhIVAjy4jWNF8JGj85E9dBMLEwbKgZf/ibPyW3s2p5+Ck
+N7OWgBNBUrimzvAOa5A4u+mFvEf+UAVjkMfKT+MjSPa4ZOlTm6l4fkqMBOGZ8K/pn4NE2aDbUNVD
+UjefK1E5jBteJlbxqcwejYcOJyf5WAstSR/6xNzKCam/UyeOar2RzZLs+9zaYW4TpuBjSUvvx+wt
+dUdpWifFbS++GwaHwX+282ed41mIvvMyEIv3cViHuM0HLudIhv+GwpVvciC7odK+Txk1j6O5AFJ3
+br75IaDu6EPIAtOZlw3w25uAXlDAP2G348KW9HA8Uuqm4YnTuAsUAEh1Cnw6N9X89b5jZuYF2PxG
+ff5oKhqfBYEMJCYD4x7O81sRKiuq9Sw2uqfUwlhC7kHovz7rOl6HnFJFFXDU+sr+Y9eFOYI1ywZ/
+Sw7cc3DMiQECidtZx5s9WgxYda43LmNrJQNHERBm+H93D27X2N0cvTI27PMKaJ9sc1LZ6zVnVIHQ
+Yu/yyAd7ZjEGtg0gPFTfJ6QDBXaQb1JeTzc4cOw3WNDrZoDSuK3ELx5s72jDu3F0LrH9PPC0/Eqj
+0QNJcLpP3sehJuAMVW2PI07TggGTpYmu4VKjb+Qnso75Mm2Bt85x/47cNWhg9EjzrsDW08loCm1l
+P7jkevXZkivU2UWeS9YNRYBWar8KOiwAHx8okDziUquR42mUanWpDMxhcW0T4fXhpPVCTKNvUu1q
+SVB7lxZRbI5GInBxe+voVE4u0cD8SgHPmowFGIdYUxBnOPJ9ap0t7gR8LcOamSExfqB/ccZqULrl
+KOBu7Ua3dp8KUL363ZPnLpWricFzihhVC2koSIhpsakzErQ2rhhh8fJfuxhmwVco2oXKonXV10o/
+IYqvRilcjAxFemWbCqeBsg8fJTvRNpLdLI8hIhLOVu8qoFHocM58e9AN0F5YuKDlQQ8Va4MPzbuX
+KnBErv+9HU6j7e29i6knej7arG==

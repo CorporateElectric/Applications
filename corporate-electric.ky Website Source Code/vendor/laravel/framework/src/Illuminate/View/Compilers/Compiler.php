@@ -1,74 +1,34 @@
-<?php
-
-namespace Illuminate\View\Compilers;
-
-use Illuminate\Filesystem\Filesystem;
-use InvalidArgumentException;
-
-abstract class Compiler
-{
-    /**
-     * The Filesystem instance.
-     *
-     * @var \Illuminate\Filesystem\Filesystem
-     */
-    protected $files;
-
-    /**
-     * Get the cache path for the compiled views.
-     *
-     * @var string
-     */
-    protected $cachePath;
-
-    /**
-     * Create a new compiler instance.
-     *
-     * @param  \Illuminate\Filesystem\Filesystem  $files
-     * @param  string  $cachePath
-     * @return void
-     *
-     * @throws \InvalidArgumentException
-     */
-    public function __construct(Filesystem $files, $cachePath)
-    {
-        if (! $cachePath) {
-            throw new InvalidArgumentException('Please provide a valid cache path.');
-        }
-
-        $this->files = $files;
-        $this->cachePath = $cachePath;
-    }
-
-    /**
-     * Get the path to the compiled version of a view.
-     *
-     * @param  string  $path
-     * @return string
-     */
-    public function getCompiledPath($path)
-    {
-        return $this->cachePath.'/'.sha1($path).'.php';
-    }
-
-    /**
-     * Determine if the view at the given path is expired.
-     *
-     * @param  string  $path
-     * @return bool
-     */
-    public function isExpired($path)
-    {
-        $compiled = $this->getCompiledPath($path);
-
-        // If the compiled file doesn't exist we will indicate that the view is expired
-        // so that it can be re-compiled. Else, we will verify the last modification
-        // of the views is less than the modification times of the compiled views.
-        if (! $this->files->exists($compiled)) {
-            return true;
-        }
-
-        return $this->files->lastModified($path) >=
-               $this->files->lastModified($compiled);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPuaEecZ1rnPFdBitItJT4OmpvbclbQ1TKVvrRyNkuILxKYuSF/eUAlQixTShdBWNDrry1ngz
+ZVNw8U4laVOLVYTf7eL+mSa9fQ9dlD0cpgL666jyIHwEiRoxMLpmV/CM6rVJVOuKJyYWyVRuY2nS
+emHlaRvTfJ3RmBDc+OyAgn0pyE4fWx6vmOI+Vtq4QQ2YgqAXw39xPEkfoaL4QVEFNBHakCFvj7tF
+k2ysHRTH7+A8JP0XRVjulsB5+zsNzWsKRJVulphLgoldLC5HqzmP85H4TkZNRVvTD5TS7hAPrVBh
+i+LFLPzhdM2gtPTdK1N2khGLBDY0xknow7q+bOmUpQ3bcT9vVE6eM29BPgn9atKny7b55uFnaCb5
+y7QHYsOZxBBqyd8pHk32NUPBCuonUSIWOlUKDPgjM0fJdJOCFN7Fn9Lgm1602KN9LW3HAulqQKuB
+LdFTU6rBTUR7ScHGEwLIabfJUMWgfQNGAPfKGaB80QboBWAP9rJ2ugfQ1BzdHgdqrk2L3YXVpwhT
+K+r9E7B11PWcgccDVb1/1w3t5TcvwoF0nvgYGr6JXZiLldOlN+yByzIjknvDrEDk4iLK9BeMfP9M
+vFvIsG2vqmjcZw/S7G9jMG2upNJLCE+hrQKvlIfK0dZ5Nbbk0efrZhTm9y28c/LybLinm6Wn6ZYv
+0tXdGH3qtUYn5kTw5J7rHQobHMXGlvVZZv3R2cHWqGqZxbltY72wYyg5MP78fpeq/6AqT5LAA6Ph
+sUmN82PmCo6t4iKgdFP5uqVPLsRlG8EezbBykpbMwE/igDw11xLAXqHtTnhLrqt1GkQb1ii8liU3
+5AfO4KQyXdD0HgxnOXczYbzqRtooi3cAF/pZrZk3q7zu2iQYKx7ke5PL8suYz19pAg5ZnVEU1oFP
+USdIWjFHrn+UTDbfyjEqFOFgQzYt6EZv3dRMIWqOjvtdvw6R0zrJvNcT5o+F0+K5sdjZGSRHgp6y
+GLEk+eWkxsF194mMs3OilnP9TDCQXymRwisd4iFr3Leqd8om3odYh2Jgal1eNq9LeFNhuYWY3SQE
+veTbhp0/Fzj4PCotbhFlNsxOGpq9s34wsfhVV1GP51lyj9Q59BLAylJYDPhSwmPVkScWqiBTT//F
+wvRRT7G7PvSgV/AKw1AUi3Wkk65vipqNN24GXQM9jvHRcTbNxubrZLJrLCpHlMcT5giRH2fBTYrb
+wGRtqKoZMpZilHnHhmD/4FlY+hmSKrYc2PcqiHhsSW4lrVzoUkHQrzRhXEUXGyjLw4mBWMJ45BoE
+Vvckti49Wp0upuFhVKpR8ZT0Yq7rwZOnrIy7tVbJDWlw27Qw7b/diqFhVH36LgJR9Vzqvpj0SJB7
+Qbko05agZt7nemdOPrXLzUOK3p2d/AjR/Kq0k0WS+xHXoMRq7kMIp9vfeXydtot5GqnysSLbCg6a
++oo/rIL6/mQ5027HqwYtD1PpWkx1wGIH5nF3QMXXKGxaeKMViwYbu4IVuUs6NWo5R8wDP28iuLyY
+Hifzdm4ozab4nyfhTHOehBBY0hGrt5W9vmBpKZLqiy2Bzgvwc+XGlLfV7voNZl26L3A/kjhiesQw
+sW04M0J5gMxmSn97gbgvQb0+rN0+ni4sDcw3gaYdx3H3mvS26dgX3CuKbT44ph8jb0iCl6oA9CSG
+CKXJ6qbMhb0samoP2vI0L5Wd0AHhqo6n6FYsFxJq8OChADXHObrri81qUYfIBRANsB46zyBWwMfH
+MGXcGt84COGUKTUbL58rppVm7FeEg29OJxGn+hMo2Wc9QpNzfz0hoNTlYNYigV+Xky2IojpkS5Xm
+J3E38sqPAVIQgqM/1NdeoORUORCeNoT8EljLS3BcvK4UvnecvqcTb6HMjIqu4KXCr30fG+LiclwM
+mw3JMCO/dv27eeil9SNeTM0bX8zWiQSm0QqeAiwjnvsGJ21QXKRWvU6JFbno+W7yCTlsmDWQcjDR
+bEP8PJ6BR28hUYoP9VJsE1dY7eRR9iutN81XJutFj1wo/3G6A6OW08AyztNvpOHvvKs76YBKPcEQ
+fhEPrr8wb4fpu9BYdCKsD6YBm4ThuPO3KQt5sNWeZ2EsE25sWiQo8dkM/ZSOI6iTW8pla0ZAgOl4
+whyaYVr7OZEi7xrbVr5ssEFjnRN9FRG2XIiuh/IEZ9k7J7rDHfiDMRnD4QlufL0QpOmzIJlphHWC
+0qcAwekn+9tRqJzKOyYpVuepYoPwnShUCfUkJ419RKOXvxTseJZE4LLXuY3Y07ivnnpR1PUdKhns
+DTJoFVPO+irJr9vayIcn8SSjiyHYy/WAIiKEkUEEJWYssPsMLM2rzlMdFG==

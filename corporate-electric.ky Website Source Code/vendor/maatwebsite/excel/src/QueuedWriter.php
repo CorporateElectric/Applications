@@ -1,214 +1,104 @@
-<?php
-
-namespace Maatwebsite\Excel;
-
-use Illuminate\Foundation\Bus\PendingDispatch;
-use Illuminate\Support\Collection;
-use Maatwebsite\Excel\Concerns\FromCollection;
-use Maatwebsite\Excel\Concerns\FromQuery;
-use Maatwebsite\Excel\Concerns\FromView;
-use Maatwebsite\Excel\Concerns\WithCustomChunkSize;
-use Maatwebsite\Excel\Concerns\WithCustomQuerySize;
-use Maatwebsite\Excel\Concerns\WithMultipleSheets;
-use Maatwebsite\Excel\Files\TemporaryFile;
-use Maatwebsite\Excel\Files\TemporaryFileFactory;
-use Maatwebsite\Excel\Jobs\AppendDataToSheet;
-use Maatwebsite\Excel\Jobs\AppendQueryToSheet;
-use Maatwebsite\Excel\Jobs\AppendViewToSheet;
-use Maatwebsite\Excel\Jobs\CloseSheet;
-use Maatwebsite\Excel\Jobs\QueueExport;
-use Maatwebsite\Excel\Jobs\StoreQueuedExport;
-use Traversable;
-
-class QueuedWriter
-{
-    /**
-     * @var Writer
-     */
-    protected $writer;
-
-    /**
-     * @var int
-     */
-    protected $chunkSize;
-
-    /**
-     * @var TemporaryFileFactory
-     */
-    protected $temporaryFileFactory;
-
-    /**
-     * @param Writer               $writer
-     * @param TemporaryFileFactory $temporaryFileFactory
-     */
-    public function __construct(Writer $writer, TemporaryFileFactory $temporaryFileFactory)
-    {
-        $this->writer               = $writer;
-        $this->chunkSize            = config('excel.exports.chunk_size', 1000);
-        $this->temporaryFileFactory = $temporaryFileFactory;
-    }
-
-    /**
-     * @param object       $export
-     * @param string       $filePath
-     * @param string       $disk
-     * @param string|null  $writerType
-     * @param array|string $diskOptions
-     *
-     * @return \Illuminate\Foundation\Bus\PendingDispatch
-     */
-    public function store($export, string $filePath, string $disk = null, string $writerType = null, $diskOptions = [])
-    {
-        $extension     = pathinfo($filePath, PATHINFO_EXTENSION);
-        $temporaryFile = $this->temporaryFileFactory->make($extension);
-
-        $jobs = $this->buildExportJobs($export, $temporaryFile, $writerType);
-
-        $jobs->push(new StoreQueuedExport(
-            $temporaryFile,
-            $filePath,
-            $disk,
-            $diskOptions
-        ));
-
-        return new PendingDispatch(
-            (new QueueExport($export, $temporaryFile, $writerType))->chain($jobs->toArray())
-        );
-    }
-
-    /**
-     * @param object        $export
-     * @param TemporaryFile $temporaryFile
-     * @param string        $writerType
-     *
-     * @return Collection
-     */
-    private function buildExportJobs($export, TemporaryFile $temporaryFile, string $writerType): Collection
-    {
-        $sheetExports = [$export];
-        if ($export instanceof WithMultipleSheets) {
-            $sheetExports = $export->sheets();
-        }
-
-        $jobs = new Collection;
-        foreach ($sheetExports as $sheetIndex => $sheetExport) {
-            if ($sheetExport instanceof FromCollection) {
-                $jobs = $jobs->merge($this->exportCollection($sheetExport, $temporaryFile, $writerType, $sheetIndex));
-            } elseif ($sheetExport instanceof FromQuery) {
-                $jobs = $jobs->merge($this->exportQuery($sheetExport, $temporaryFile, $writerType, $sheetIndex));
-            } elseif ($sheetExport instanceof FromView) {
-                $jobs = $jobs->merge($this->exportView($sheetExport, $temporaryFile, $writerType, $sheetIndex));
-            }
-
-            $jobs->push(new CloseSheet($sheetExport, $temporaryFile, $writerType, $sheetIndex));
-        }
-
-        return $jobs;
-    }
-
-    /**
-     * @param FromCollection $export
-     * @param TemporaryFile  $temporaryFile
-     * @param string         $writerType
-     * @param int            $sheetIndex
-     *
-     * @return Collection
-     */
-    private function exportCollection(
-        FromCollection $export,
-        TemporaryFile $temporaryFile,
-        string $writerType,
-        int $sheetIndex
-    ): Collection {
-        return $export
-            ->collection()
-            ->chunk($this->getChunkSize($export))
-            ->map(function ($rows) use ($writerType, $temporaryFile, $sheetIndex, $export) {
-                if ($rows instanceof Traversable) {
-                    $rows = iterator_to_array($rows);
-                }
-
-                return new AppendDataToSheet(
-                    $export,
-                    $temporaryFile,
-                    $writerType,
-                    $sheetIndex,
-                    $rows
-                );
-            });
-    }
-
-    /**
-     * @param FromQuery     $export
-     * @param TemporaryFile $temporaryFile
-     * @param string        $writerType
-     * @param int           $sheetIndex
-     *
-     * @return Collection
-     */
-    private function exportQuery(
-        FromQuery $export,
-        TemporaryFile $temporaryFile,
-        string $writerType,
-        int $sheetIndex
-    ): Collection {
-        $query = $export->query();
-
-        $count = $export instanceof WithCustomQuerySize ? $export->querySize() : $query->count();
-        $spins = ceil($count / $this->getChunkSize($export));
-
-        $jobs = new Collection();
-
-        for ($page = 1; $page <= $spins; $page++) {
-            $jobs->push(new AppendQueryToSheet(
-                $export,
-                $temporaryFile,
-                $writerType,
-                $sheetIndex,
-                $page,
-                $this->getChunkSize($export)
-            ));
-        }
-
-        return $jobs;
-    }
-
-    /**
-     * @param FromView      $export
-     * @param TemporaryFile $temporaryFile
-     * @param string        $writerType
-     * @param int           $sheetIndex
-     *
-     * @return Collection
-     */
-    private function exportView(
-        FromView $export,
-        TemporaryFile $temporaryFile,
-        string $writerType,
-        int $sheetIndex
-    ): Collection {
-        $jobs = new Collection();
-        $jobs->push(new AppendViewToSheet(
-            $export,
-            $temporaryFile,
-            $writerType,
-            $sheetIndex
-        ));
-
-        return $jobs;
-    }
-
-    /**
-     * @param object|WithCustomChunkSize $export
-     *
-     * @return int
-     */
-    private function getChunkSize($export): int
-    {
-        if ($export instanceof WithCustomChunkSize) {
-            return $export->chunkSize();
-        }
-
-        return $this->chunkSize;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+PQ0CcRDp

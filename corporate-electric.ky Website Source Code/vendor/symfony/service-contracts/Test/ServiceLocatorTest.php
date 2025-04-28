@@ -1,92 +1,89 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Contracts\Service\Test;
-
-use PHPUnit\Framework\TestCase;
-use Psr\Container\ContainerInterface;
-use Symfony\Contracts\Service\ServiceLocatorTrait;
-
-abstract class ServiceLocatorTest extends TestCase
-{
-    protected function getServiceLocator(array $factories)
-    {
-        return new class($factories) implements ContainerInterface {
-            use ServiceLocatorTrait;
-        };
-    }
-
-    public function testHas()
-    {
-        $locator = $this->getServiceLocator([
-            'foo' => function () { return 'bar'; },
-            'bar' => function () { return 'baz'; },
-            function () { return 'dummy'; },
-        ]);
-
-        $this->assertTrue($locator->has('foo'));
-        $this->assertTrue($locator->has('bar'));
-        $this->assertFalse($locator->has('dummy'));
-    }
-
-    public function testGet()
-    {
-        $locator = $this->getServiceLocator([
-            'foo' => function () { return 'bar'; },
-            'bar' => function () { return 'baz'; },
-        ]);
-
-        $this->assertSame('bar', $locator->get('foo'));
-        $this->assertSame('baz', $locator->get('bar'));
-    }
-
-    public function testGetDoesNotMemoize()
-    {
-        $i = 0;
-        $locator = $this->getServiceLocator([
-            'foo' => function () use (&$i) {
-                ++$i;
-
-                return 'bar';
-            },
-        ]);
-
-        $this->assertSame('bar', $locator->get('foo'));
-        $this->assertSame('bar', $locator->get('foo'));
-        $this->assertSame(2, $i);
-    }
-
-    public function testThrowsOnUndefinedInternalService()
-    {
-        if (!$this->getExpectedException()) {
-            $this->expectException('Psr\Container\NotFoundExceptionInterface');
-            $this->expectExceptionMessage('The service "foo" has a dependency on a non-existent service "bar". This locator only knows about the "foo" service.');
-        }
-        $locator = $this->getServiceLocator([
-            'foo' => function () use (&$locator) { return $locator->get('bar'); },
-        ]);
-
-        $locator->get('foo');
-    }
-
-    public function testThrowsOnCircularReference()
-    {
-        $this->expectException('Psr\Container\ContainerExceptionInterface');
-        $this->expectExceptionMessage('Circular reference detected for service "bar", path: "bar -> baz -> bar".');
-        $locator = $this->getServiceLocator([
-            'foo' => function () use (&$locator) { return $locator->get('bar'); },
-            'bar' => function () use (&$locator) { return $locator->get('baz'); },
-            'baz' => function () use (&$locator) { return $locator->get('bar'); },
-        ]);
-
-        $locator->get('foo');
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

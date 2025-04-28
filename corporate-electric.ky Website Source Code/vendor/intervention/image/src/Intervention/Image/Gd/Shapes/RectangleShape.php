@@ -1,76 +1,59 @@
-<?php
-
-namespace Intervention\Image\Gd\Shapes;
-
-use Intervention\Image\AbstractShape;
-use Intervention\Image\Gd\Color;
-use Intervention\Image\Image;
-
-class RectangleShape extends AbstractShape
-{
-    /**
-     * X-Coordinate of top-left point
-     *
-     * @var int
-     */
-    public $x1 = 0;
-
-    /**
-     * Y-Coordinate of top-left point
-     *
-     * @var int
-     */
-    public $y1 = 0;
-
-    /**
-     * X-Coordinate of bottom-right point
-     *
-     * @var int
-     */
-    public $x2 = 0;
-
-    /**
-     * Y-Coordinate of bottom-right point
-     *
-     * @var int
-     */
-    public $y2 = 0;
-
-    /**
-     * Create new rectangle shape instance
-     *
-     * @param int $x1
-     * @param int $y1
-     * @param int $x2
-     * @param int $y2
-     */
-    public function __construct($x1 = null, $y1 = null, $x2 = null, $y2 = null)
-    {
-        $this->x1 = is_numeric($x1) ? intval($x1) : $this->x1;
-        $this->y1 = is_numeric($y1) ? intval($y1) : $this->y1;
-        $this->x2 = is_numeric($x2) ? intval($x2) : $this->x2;
-        $this->y2 = is_numeric($y2) ? intval($y2) : $this->y2;
-    }
-
-    /**
-     * Draw rectangle to given image at certain position
-     *
-     * @param  Image   $image
-     * @param  int     $x
-     * @param  int     $y
-     * @return boolean
-     */
-    public function applyToImage(Image $image, $x = 0, $y = 0)
-    {
-        $background = new Color($this->background);
-        imagefilledrectangle($image->getCore(), $this->x1, $this->y1, $this->x2, $this->y2, $background->getInt());
-
-        if ($this->hasBorder()) {
-            $border_color = new Color($this->border_color);
-            imagesetthickness($image->getCore(), $this->border_width);
-            imagerectangle($image->getCore(), $this->x1, $this->y1, $this->x2, $this->y2, $border_color->getInt());
-        }
-
-        return true;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

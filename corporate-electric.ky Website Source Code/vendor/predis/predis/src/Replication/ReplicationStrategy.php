@@ -1,278 +1,101 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Predis\Replication;
-
-use Predis\Command\CommandInterface;
-use Predis\NotSupportedException;
-
-/**
- * Defines a strategy for master/slave replication.
- *
- * @author Daniele Alessandri <suppakilla@gmail.com>
- */
-class ReplicationStrategy
-{
-    protected $disallowed;
-    protected $readonly;
-    protected $readonlySHA1;
-
-    /**
-     *
-     */
-    public function __construct()
-    {
-        $this->disallowed = $this->getDisallowedOperations();
-        $this->readonly = $this->getReadOnlyOperations();
-        $this->readonlySHA1 = array();
-    }
-
-    /**
-     * Returns if the specified command will perform a read-only operation
-     * on Redis or not.
-     *
-     * @param CommandInterface $command Command instance.
-     *
-     * @throws NotSupportedException
-     *
-     * @return bool
-     */
-    public function isReadOperation(CommandInterface $command)
-    {
-        if (isset($this->disallowed[$id = $command->getId()])) {
-            throw new NotSupportedException(
-                "The command '$id' is not allowed in replication mode."
-            );
-        }
-
-        if (isset($this->readonly[$id])) {
-            if (true === $readonly = $this->readonly[$id]) {
-                return true;
-            }
-
-            return call_user_func($readonly, $command);
-        }
-
-        if (($eval = $id === 'EVAL') || $id === 'EVALSHA') {
-            $sha1 = $eval ? sha1($command->getArgument(0)) : $command->getArgument(0);
-
-            if (isset($this->readonlySHA1[$sha1])) {
-                if (true === $readonly = $this->readonlySHA1[$sha1]) {
-                    return true;
-                }
-
-                return call_user_func($readonly, $command);
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Returns if the specified command is not allowed for execution in a master
-     * / slave replication context.
-     *
-     * @param CommandInterface $command Command instance.
-     *
-     * @return bool
-     */
-    public function isDisallowedOperation(CommandInterface $command)
-    {
-        return isset($this->disallowed[$command->getId()]);
-    }
-
-    /**
-     * Checks if BITFIELD performs a read-only operation by looking for certain
-     * SET and INCRYBY modifiers in the arguments array of the command.
-     *
-     * @param CommandInterface $command Command instance.
-     *
-     * @return bool
-     */
-    protected function isBitfieldReadOnly(CommandInterface $command)
-    {
-        $arguments = $command->getArguments();
-        $argc = count($arguments);
-
-        if ($argc >= 2) {
-            for ($i = 1; $i < $argc; ++$i) {
-                $argument = strtoupper($arguments[$i]);
-                if ($argument === 'SET' || $argument === 'INCRBY') {
-                    return false;
-                }
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Checks if a GEORADIUS command is a readable operation by parsing the
-     * arguments array of the specified commad instance.
-     *
-     * @param CommandInterface $command Command instance.
-     *
-     * @return bool
-     */
-    protected function isGeoradiusReadOnly(CommandInterface $command)
-    {
-        $arguments = $command->getArguments();
-        $argc = count($arguments);
-        $startIndex = $command->getId() === 'GEORADIUS' ? 5 : 4;
-
-        if ($argc > $startIndex) {
-            for ($i = $startIndex; $i < $argc; ++$i) {
-                $argument = strtoupper($arguments[$i]);
-                if ($argument === 'STORE' || $argument === 'STOREDIST') {
-                    return false;
-                }
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Marks a command as a read-only operation.
-     *
-     * When the behavior of a command can be decided only at runtime depending
-     * on its arguments, a callable object can be provided to dynamically check
-     * if the specified command performs a read or a write operation.
-     *
-     * @param string $commandID Command ID.
-     * @param mixed  $readonly  A boolean value or a callable object.
-     */
-    public function setCommandReadOnly($commandID, $readonly = true)
-    {
-        $commandID = strtoupper($commandID);
-
-        if ($readonly) {
-            $this->readonly[$commandID] = $readonly;
-        } else {
-            unset($this->readonly[$commandID]);
-        }
-    }
-
-    /**
-     * Marks a Lua script for EVAL and EVALSHA as a read-only operation. When
-     * the behaviour of a script can be decided only at runtime depending on
-     * its arguments, a callable object can be provided to dynamically check
-     * if the passed instance of EVAL or EVALSHA performs write operations or
-     * not.
-     *
-     * @param string $script   Body of the Lua script.
-     * @param mixed  $readonly A boolean value or a callable object.
-     */
-    public function setScriptReadOnly($script, $readonly = true)
-    {
-        $sha1 = sha1($script);
-
-        if ($readonly) {
-            $this->readonlySHA1[$sha1] = $readonly;
-        } else {
-            unset($this->readonlySHA1[$sha1]);
-        }
-    }
-
-    /**
-     * Returns the default list of disallowed commands.
-     *
-     * @return array
-     */
-    protected function getDisallowedOperations()
-    {
-        return array(
-            'SHUTDOWN' => true,
-            'INFO' => true,
-            'DBSIZE' => true,
-            'LASTSAVE' => true,
-            'CONFIG' => true,
-            'MONITOR' => true,
-            'SLAVEOF' => true,
-            'SAVE' => true,
-            'BGSAVE' => true,
-            'BGREWRITEAOF' => true,
-            'SLOWLOG' => true,
-        );
-    }
-
-    /**
-     * Returns the default list of commands performing read-only operations.
-     *
-     * @return array
-     */
-    protected function getReadOnlyOperations()
-    {
-        return array(
-            'EXISTS' => true,
-            'TYPE' => true,
-            'KEYS' => true,
-            'SCAN' => true,
-            'RANDOMKEY' => true,
-            'TTL' => true,
-            'GET' => true,
-            'MGET' => true,
-            'SUBSTR' => true,
-            'STRLEN' => true,
-            'GETRANGE' => true,
-            'GETBIT' => true,
-            'LLEN' => true,
-            'LRANGE' => true,
-            'LINDEX' => true,
-            'SCARD' => true,
-            'SISMEMBER' => true,
-            'SINTER' => true,
-            'SUNION' => true,
-            'SDIFF' => true,
-            'SMEMBERS' => true,
-            'SSCAN' => true,
-            'SRANDMEMBER' => true,
-            'ZRANGE' => true,
-            'ZREVRANGE' => true,
-            'ZRANGEBYSCORE' => true,
-            'ZREVRANGEBYSCORE' => true,
-            'ZCARD' => true,
-            'ZSCORE' => true,
-            'ZCOUNT' => true,
-            'ZRANK' => true,
-            'ZREVRANK' => true,
-            'ZSCAN' => true,
-            'ZLEXCOUNT' => true,
-            'ZRANGEBYLEX' => true,
-            'ZREVRANGEBYLEX' => true,
-            'HGET' => true,
-            'HMGET' => true,
-            'HEXISTS' => true,
-            'HLEN' => true,
-            'HKEYS' => true,
-            'HVALS' => true,
-            'HGETALL' => true,
-            'HSCAN' => true,
-            'HSTRLEN' => true,
-            'PING' => true,
-            'AUTH' => true,
-            'SELECT' => true,
-            'ECHO' => true,
-            'QUIT' => true,
-            'OBJECT' => true,
-            'BITCOUNT' => true,
-            'BITPOS' => true,
-            'TIME' => true,
-            'PFCOUNT' => true,
-            'BITFIELD' => array($this, 'isBitfieldReadOnly'),
-            'GEOHASH' => true,
-            'GEOPOS' => true,
-            'GEODIST' => true,
-            'GEORADIUS' => array($this, 'isGeoradiusReadOnly'),
-            'GEORADIUSBYMEMBER' => array($this, 'isGeoradiusReadOnly'),
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+n/rGGBIR72uoSc5vPNrIZRkIL5Vl

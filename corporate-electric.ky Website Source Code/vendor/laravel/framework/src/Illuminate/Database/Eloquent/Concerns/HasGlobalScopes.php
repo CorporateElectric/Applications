@@ -1,71 +1,47 @@
-<?php
-
-namespace Illuminate\Database\Eloquent\Concerns;
-
-use Closure;
-use Illuminate\Database\Eloquent\Scope;
-use Illuminate\Support\Arr;
-use InvalidArgumentException;
-
-trait HasGlobalScopes
-{
-    /**
-     * Register a new global scope on the model.
-     *
-     * @param  \Illuminate\Database\Eloquent\Scope|\Closure|string  $scope
-     * @param  \Closure|null  $implementation
-     * @return mixed
-     *
-     * @throws \InvalidArgumentException
-     */
-    public static function addGlobalScope($scope, Closure $implementation = null)
-    {
-        if (is_string($scope) && ! is_null($implementation)) {
-            return static::$globalScopes[static::class][$scope] = $implementation;
-        } elseif ($scope instanceof Closure) {
-            return static::$globalScopes[static::class][spl_object_hash($scope)] = $scope;
-        } elseif ($scope instanceof Scope) {
-            return static::$globalScopes[static::class][get_class($scope)] = $scope;
-        }
-
-        throw new InvalidArgumentException('Global scope must be an instance of Closure or Scope.');
-    }
-
-    /**
-     * Determine if a model has a global scope.
-     *
-     * @param  \Illuminate\Database\Eloquent\Scope|string  $scope
-     * @return bool
-     */
-    public static function hasGlobalScope($scope)
-    {
-        return ! is_null(static::getGlobalScope($scope));
-    }
-
-    /**
-     * Get a global scope registered with the model.
-     *
-     * @param  \Illuminate\Database\Eloquent\Scope|string  $scope
-     * @return \Illuminate\Database\Eloquent\Scope|\Closure|null
-     */
-    public static function getGlobalScope($scope)
-    {
-        if (is_string($scope)) {
-            return Arr::get(static::$globalScopes, static::class.'.'.$scope);
-        }
-
-        return Arr::get(
-            static::$globalScopes, static::class.'.'.get_class($scope)
-        );
-    }
-
-    /**
-     * Get the global scopes for this class instance.
-     *
-     * @return array
-     */
-    public function getGlobalScopes()
-    {
-        return Arr::get(static::$globalScopes, static::class, []);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

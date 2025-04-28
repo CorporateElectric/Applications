@@ -1,115 +1,69 @@
-<?php
-
-namespace Illuminate\Auth\Notifications;
-
-use Illuminate\Notifications\Messages\MailMessage;
-use Illuminate\Notifications\Notification;
-use Illuminate\Support\Facades\Lang;
-
-class ResetPassword extends Notification
-{
-    /**
-     * The password reset token.
-     *
-     * @var string
-     */
-    public $token;
-
-    /**
-     * The callback that should be used to create the reset password URL.
-     *
-     * @var \Closure|null
-     */
-    public static $createUrlCallback;
-
-    /**
-     * The callback that should be used to build the mail message.
-     *
-     * @var \Closure|null
-     */
-    public static $toMailCallback;
-
-    /**
-     * Create a notification instance.
-     *
-     * @param  string  $token
-     * @return void
-     */
-    public function __construct($token)
-    {
-        $this->token = $token;
-    }
-
-    /**
-     * Get the notification's channels.
-     *
-     * @param  mixed  $notifiable
-     * @return array|string
-     */
-    public function via($notifiable)
-    {
-        return ['mail'];
-    }
-
-    /**
-     * Build the mail representation of the notification.
-     *
-     * @param  mixed  $notifiable
-     * @return \Illuminate\Notifications\Messages\MailMessage
-     */
-    public function toMail($notifiable)
-    {
-        if (static::$toMailCallback) {
-            return call_user_func(static::$toMailCallback, $notifiable, $this->token);
-        }
-
-        if (static::$createUrlCallback) {
-            $url = call_user_func(static::$createUrlCallback, $notifiable, $this->token);
-        } else {
-            $url = url(route('password.reset', [
-                'token' => $this->token,
-                'email' => $notifiable->getEmailForPasswordReset(),
-            ], false));
-        }
-
-        return $this->buildMailMessage($url);
-    }
-
-    /**
-     * Get the reset password notification mail message for the given URL.
-     *
-     * @param  string  $url
-     * @return \Illuminate\Notifications\Messages\MailMessage
-     */
-    protected function buildMailMessage($url)
-    {
-        return (new MailMessage)
-            ->subject(Lang::get('Reset Password Notification'))
-            ->line(Lang::get('You are receiving this email because we received a password reset request for your account.'))
-            ->action(Lang::get('Reset Password'), $url)
-            ->line(Lang::get('This password reset link will expire in :count minutes.', ['count' => config('auth.passwords.'.config('auth.defaults.passwords').'.expire')]))
-            ->line(Lang::get('If you did not request a password reset, no further action is required.'));
-    }
-
-    /**
-     * Set a callback that should be used when creating the reset password button URL.
-     *
-     * @param  \Closure  $callback
-     * @return void
-     */
-    public static function createUrlUsing($callback)
-    {
-        static::$createUrlCallback = $callback;
-    }
-
-    /**
-     * Set a callback that should be used when building the notification mail message.
-     *
-     * @param  \Closure  $callback
-     * @return void
-     */
-    public static function toMailUsing($callback)
-    {
-        static::$toMailCallback = $callback;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

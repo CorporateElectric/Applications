@@ -1,99 +1,65 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of phpunit/php-code-coverage.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\CodeCoverage\StaticAnalysis;
-
-use SebastianBergmann\LinesOfCode\LinesOfCode;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for phpunit/php-code-coverage
- */
-final class CachingCoveredFileAnalyser extends Cache implements CoveredFileAnalyser
-{
-    /**
-     * @var CoveredFileAnalyser
-     */
-    private $coveredFileAnalyser;
-
-    /**
-     * @var array
-     */
-    private $cache = [];
-
-    public function __construct(string $directory, CoveredFileAnalyser $coveredFileAnalyser)
-    {
-        parent::__construct($directory);
-
-        $this->coveredFileAnalyser = $coveredFileAnalyser;
-    }
-
-    public function classesIn(string $filename): array
-    {
-        if (!isset($this->cache[$filename])) {
-            $this->process($filename);
-        }
-
-        return $this->cache[$filename]['classesIn'];
-    }
-
-    public function traitsIn(string $filename): array
-    {
-        if (!isset($this->cache[$filename])) {
-            $this->process($filename);
-        }
-
-        return $this->cache[$filename]['traitsIn'];
-    }
-
-    public function functionsIn(string $filename): array
-    {
-        if (!isset($this->cache[$filename])) {
-            $this->process($filename);
-        }
-
-        return $this->cache[$filename]['functionsIn'];
-    }
-
-    public function linesOfCodeFor(string $filename): LinesOfCode
-    {
-        if (!isset($this->cache[$filename])) {
-            $this->process($filename);
-        }
-
-        return $this->cache[$filename]['linesOfCodeFor'];
-    }
-
-    public function ignoredLinesFor(string $filename): array
-    {
-        if (!isset($this->cache[$filename])) {
-            $this->process($filename);
-        }
-
-        return $this->cache[$filename]['ignoredLinesFor'];
-    }
-
-    public function process(string $filename): void
-    {
-        if ($this->has($filename, __CLASS__)) {
-            $this->cache[$filename] = $this->read($filename, __CLASS__, [LinesOfCode::class]);
-
-            return;
-        }
-
-        $this->cache[$filename] = [
-            'classesIn'       => $this->coveredFileAnalyser->classesIn($filename),
-            'traitsIn'        => $this->coveredFileAnalyser->traitsIn($filename),
-            'functionsIn'     => $this->coveredFileAnalyser->functionsIn($filename),
-            'linesOfCodeFor'  => $this->coveredFileAnalyser->linesOfCodeFor($filename),
-            'ignoredLinesFor' => $this->coveredFileAnalyser->ignoredLinesFor($filename),
-        ];
-
-        $this->write($filename, __CLASS__, $this->cache[$filename]);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

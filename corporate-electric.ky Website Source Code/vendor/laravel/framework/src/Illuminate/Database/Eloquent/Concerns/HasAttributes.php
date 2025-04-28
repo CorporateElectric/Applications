@@ -1,1698 +1,617 @@
-<?php
-
-namespace Illuminate\Database\Eloquent\Concerns;
-
-use Carbon\CarbonInterface;
-use DateTimeInterface;
-use Illuminate\Contracts\Database\Eloquent\Castable;
-use Illuminate\Contracts\Database\Eloquent\CastsInboundAttributes;
-use Illuminate\Contracts\Support\Arrayable;
-use Illuminate\Database\Eloquent\InvalidCastException;
-use Illuminate\Database\Eloquent\JsonEncodingException;
-use Illuminate\Database\Eloquent\Relations\Relation;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Collection as BaseCollection;
-use Illuminate\Support\Facades\Crypt;
-use Illuminate\Support\Facades\Date;
-use Illuminate\Support\Str;
-use InvalidArgumentException;
-use LogicException;
-
-trait HasAttributes
-{
-    /**
-     * The model's attributes.
-     *
-     * @var array
-     */
-    protected $attributes = [];
-
-    /**
-     * The model attribute's original state.
-     *
-     * @var array
-     */
-    protected $original = [];
-
-    /**
-     * The changed model attributes.
-     *
-     * @var array
-     */
-    protected $changes = [];
-
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array
-     */
-    protected $casts = [];
-
-    /**
-     * The attributes that have been cast using custom classes.
-     *
-     * @var array
-     */
-    protected $classCastCache = [];
-
-    /**
-     * The built-in, primitive cast types supported by Eloquent.
-     *
-     * @var string[]
-     */
-    protected static $primitiveCastTypes = [
-        'array',
-        'bool',
-        'boolean',
-        'collection',
-        'custom_datetime',
-        'date',
-        'datetime',
-        'decimal',
-        'double',
-        'encrypted',
-        'encrypted:array',
-        'encrypted:collection',
-        'encrypted:json',
-        'encrypted:object',
-        'float',
-        'int',
-        'integer',
-        'json',
-        'object',
-        'real',
-        'string',
-        'timestamp',
-    ];
-
-    /**
-     * The attributes that should be mutated to dates.
-     *
-     * @deprecated Use the "casts" property
-     *
-     * @var array
-     */
-    protected $dates = [];
-
-    /**
-     * The storage format of the model's date columns.
-     *
-     * @var string
-     */
-    protected $dateFormat;
-
-    /**
-     * The accessors to append to the model's array form.
-     *
-     * @var array
-     */
-    protected $appends = [];
-
-    /**
-     * Indicates whether attributes are snake cased on arrays.
-     *
-     * @var bool
-     */
-    public static $snakeAttributes = true;
-
-    /**
-     * The cache of the mutated attributes for each class.
-     *
-     * @var array
-     */
-    protected static $mutatorCache = [];
-
-    /**
-     * The encrypter instance that is used to encrypt attributes.
-     *
-     * @var \Illuminate\Contracts\Encryption\Encrypter
-     */
-    public static $encrypter;
-
-    /**
-     * Convert the model's attributes to an array.
-     *
-     * @return array
-     */
-    public function attributesToArray()
-    {
-        // If an attribute is a date, we will cast it to a string after converting it
-        // to a DateTime / Carbon instance. This is so we will get some consistent
-        // formatting while accessing attributes vs. arraying / JSONing a model.
-        $attributes = $this->addDateAttributesToArray(
-            $attributes = $this->getArrayableAttributes()
-        );
-
-        $attributes = $this->addMutatedAttributesToArray(
-            $attributes, $mutatedAttributes = $this->getMutatedAttributes()
-        );
-
-        // Next we will handle any casts that have been setup for this model and cast
-        // the values to their appropriate type. If the attribute has a mutator we
-        // will not perform the cast on those attributes to avoid any confusion.
-        $attributes = $this->addCastAttributesToArray(
-            $attributes, $mutatedAttributes
-        );
-
-        // Here we will grab all of the appended, calculated attributes to this model
-        // as these attributes are not really in the attributes array, but are run
-        // when we need to array or JSON the model for convenience to the coder.
-        foreach ($this->getArrayableAppends() as $key) {
-            $attributes[$key] = $this->mutateAttributeForArray($key, null);
-        }
-
-        return $attributes;
-    }
-
-    /**
-     * Add the date attributes to the attributes array.
-     *
-     * @param  array  $attributes
-     * @return array
-     */
-    protected function addDateAttributesToArray(array $attributes)
-    {
-        foreach ($this->getDates() as $key) {
-            if (! isset($attributes[$key])) {
-                continue;
-            }
-
-            $attributes[$key] = $this->serializeDate(
-                $this->asDateTime($attributes[$key])
-            );
-        }
-
-        return $attributes;
-    }
-
-    /**
-     * Add the mutated attributes to the attributes array.
-     *
-     * @param  array  $attributes
-     * @param  array  $mutatedAttributes
-     * @return array
-     */
-    protected function addMutatedAttributesToArray(array $attributes, array $mutatedAttributes)
-    {
-        foreach ($mutatedAttributes as $key) {
-            // We want to spin through all the mutated attributes for this model and call
-            // the mutator for the attribute. We cache off every mutated attributes so
-            // we don't have to constantly check on attributes that actually change.
-            if (! array_key_exists($key, $attributes)) {
-                continue;
-            }
-
-            // Next, we will call the mutator for this attribute so that we can get these
-            // mutated attribute's actual values. After we finish mutating each of the
-            // attributes we will return this final array of the mutated attributes.
-            $attributes[$key] = $this->mutateAttributeForArray(
-                $key, $attributes[$key]
-            );
-        }
-
-        return $attributes;
-    }
-
-    /**
-     * Add the casted attributes to the attributes array.
-     *
-     * @param  array  $attributes
-     * @param  array  $mutatedAttributes
-     * @return array
-     */
-    protected function addCastAttributesToArray(array $attributes, array $mutatedAttributes)
-    {
-        foreach ($this->getCasts() as $key => $value) {
-            if (! array_key_exists($key, $attributes) ||
-                in_array($key, $mutatedAttributes)) {
-                continue;
-            }
-
-            // Here we will cast the attribute. Then, if the cast is a date or datetime cast
-            // then we will serialize the date for the array. This will convert the dates
-            // to strings based on the date format specified for these Eloquent models.
-            $attributes[$key] = $this->castAttribute(
-                $key, $attributes[$key]
-            );
-
-            // If the attribute cast was a date or a datetime, we will serialize the date as
-            // a string. This allows the developers to customize how dates are serialized
-            // into an array without affecting how they are persisted into the storage.
-            if ($attributes[$key] &&
-                ($value === 'date' || $value === 'datetime')) {
-                $attributes[$key] = $this->serializeDate($attributes[$key]);
-            }
-
-            if ($attributes[$key] && $this->isCustomDateTimeCast($value)) {
-                $attributes[$key] = $attributes[$key]->format(explode(':', $value, 2)[1]);
-            }
-
-            if ($attributes[$key] && $attributes[$key] instanceof DateTimeInterface &&
-                $this->isClassCastable($key)) {
-                $attributes[$key] = $this->serializeDate($attributes[$key]);
-            }
-
-            if ($attributes[$key] && $this->isClassSerializable($key)) {
-                $attributes[$key] = $this->serializeClassCastableAttribute($key, $attributes[$key]);
-            }
-
-            if ($attributes[$key] instanceof Arrayable) {
-                $attributes[$key] = $attributes[$key]->toArray();
-            }
-        }
-
-        return $attributes;
-    }
-
-    /**
-     * Get an attribute array of all arrayable attributes.
-     *
-     * @return array
-     */
-    protected function getArrayableAttributes()
-    {
-        return $this->getArrayableItems($this->getAttributes());
-    }
-
-    /**
-     * Get all of the appendable values that are arrayable.
-     *
-     * @return array
-     */
-    protected function getArrayableAppends()
-    {
-        if (! count($this->appends)) {
-            return [];
-        }
-
-        return $this->getArrayableItems(
-            array_combine($this->appends, $this->appends)
-        );
-    }
-
-    /**
-     * Get the model's relationships in array form.
-     *
-     * @return array
-     */
-    public function relationsToArray()
-    {
-        $attributes = [];
-
-        foreach ($this->getArrayableRelations() as $key => $value) {
-            // If the values implements the Arrayable interface we can just call this
-            // toArray method on the instances which will convert both models and
-            // collections to their proper array form and we'll set the values.
-            if ($value instanceof Arrayable) {
-                $relation = $value->toArray();
-            }
-
-            // If the value is null, we'll still go ahead and set it in this list of
-            // attributes since null is used to represent empty relationships if
-            // if it a has one or belongs to type relationships on the models.
-            elseif (is_null($value)) {
-                $relation = $value;
-            }
-
-            // If the relationships snake-casing is enabled, we will snake case this
-            // key so that the relation attribute is snake cased in this returned
-            // array to the developers, making this consistent with attributes.
-            if (static::$snakeAttributes) {
-                $key = Str::snake($key);
-            }
-
-            // If the relation value has been set, we will set it on this attributes
-            // list for returning. If it was not arrayable or null, we'll not set
-            // the value on the array because it is some type of invalid value.
-            if (isset($relation) || is_null($value)) {
-                $attributes[$key] = $relation;
-            }
-
-            unset($relation);
-        }
-
-        return $attributes;
-    }
-
-    /**
-     * Get an attribute array of all arrayable relations.
-     *
-     * @return array
-     */
-    protected function getArrayableRelations()
-    {
-        return $this->getArrayableItems($this->relations);
-    }
-
-    /**
-     * Get an attribute array of all arrayable values.
-     *
-     * @param  array  $values
-     * @return array
-     */
-    protected function getArrayableItems(array $values)
-    {
-        if (count($this->getVisible()) > 0) {
-            $values = array_intersect_key($values, array_flip($this->getVisible()));
-        }
-
-        if (count($this->getHidden()) > 0) {
-            $values = array_diff_key($values, array_flip($this->getHidden()));
-        }
-
-        return $values;
-    }
-
-    /**
-     * Get an attribute from the model.
-     *
-     * @param  string  $key
-     * @return mixed
-     */
-    public function getAttribute($key)
-    {
-        if (! $key) {
-            return;
-        }
-
-        // If the attribute exists in the attribute array or has a "get" mutator we will
-        // get the attribute's value. Otherwise, we will proceed as if the developers
-        // are asking for a relationship's value. This covers both types of values.
-        if (array_key_exists($key, $this->attributes) ||
-            array_key_exists($key, $this->casts) ||
-            $this->hasGetMutator($key) ||
-            $this->isClassCastable($key)) {
-            return $this->getAttributeValue($key);
-        }
-
-        // Here we will determine if the model base class itself contains this given key
-        // since we don't want to treat any of those methods as relationships because
-        // they are all intended as helper methods and none of these are relations.
-        if (method_exists(self::class, $key)) {
-            return;
-        }
-
-        return $this->getRelationValue($key);
-    }
-
-    /**
-     * Get a plain attribute (not a relationship).
-     *
-     * @param  string  $key
-     * @return mixed
-     */
-    public function getAttributeValue($key)
-    {
-        return $this->transformModelValue($key, $this->getAttributeFromArray($key));
-    }
-
-    /**
-     * Get an attribute from the $attributes array.
-     *
-     * @param  string  $key
-     * @return mixed
-     */
-    protected function getAttributeFromArray($key)
-    {
-        return $this->getAttributes()[$key] ?? null;
-    }
-
-    /**
-     * Get a relationship.
-     *
-     * @param  string  $key
-     * @return mixed
-     */
-    public function getRelationValue($key)
-    {
-        // If the key already exists in the relationships array, it just means the
-        // relationship has already been loaded, so we'll just return it out of
-        // here because there is no need to query within the relations twice.
-        if ($this->relationLoaded($key)) {
-            return $this->relations[$key];
-        }
-
-        // If the "attribute" exists as a method on the model, we will just assume
-        // it is a relationship and will load and return results from the query
-        // and hydrate the relationship's value on the "relationships" array.
-        if (method_exists($this, $key) ||
-            (static::$relationResolvers[get_class($this)][$key] ?? null)) {
-            return $this->getRelationshipFromMethod($key);
-        }
-    }
-
-    /**
-     * Get a relationship value from a method.
-     *
-     * @param  string  $method
-     * @return mixed
-     *
-     * @throws \LogicException
-     */
-    protected function getRelationshipFromMethod($method)
-    {
-        $relation = $this->$method();
-
-        if (! $relation instanceof Relation) {
-            if (is_null($relation)) {
-                throw new LogicException(sprintf(
-                    '%s::%s must return a relationship instance, but "null" was returned. Was the "return" keyword used?', static::class, $method
-                ));
-            }
-
-            throw new LogicException(sprintf(
-                '%s::%s must return a relationship instance.', static::class, $method
-            ));
-        }
-
-        return tap($relation->getResults(), function ($results) use ($method) {
-            $this->setRelation($method, $results);
-        });
-    }
-
-    /**
-     * Determine if a get mutator exists for an attribute.
-     *
-     * @param  string  $key
-     * @return bool
-     */
-    public function hasGetMutator($key)
-    {
-        return method_exists($this, 'get'.Str::studly($key).'Attribute');
-    }
-
-    /**
-     * Get the value of an attribute using its mutator.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @return mixed
-     */
-    protected function mutateAttribute($key, $value)
-    {
-        return $this->{'get'.Str::studly($key).'Attribute'}($value);
-    }
-
-    /**
-     * Get the value of an attribute using its mutator for array conversion.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @return mixed
-     */
-    protected function mutateAttributeForArray($key, $value)
-    {
-        $value = $this->isClassCastable($key)
-                    ? $this->getClassCastableAttributeValue($key, $value)
-                    : $this->mutateAttribute($key, $value);
-
-        return $value instanceof Arrayable ? $value->toArray() : $value;
-    }
-
-    /**
-     * Merge new casts with existing casts on the model.
-     *
-     * @param  array  $casts
-     * @return $this
-     */
-    public function mergeCasts($casts)
-    {
-        $this->casts = array_merge($this->casts, $casts);
-
-        return $this;
-    }
-
-    /**
-     * Cast an attribute to a native PHP type.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @return mixed
-     */
-    protected function castAttribute($key, $value)
-    {
-        $castType = $this->getCastType($key);
-
-        if (is_null($value) && in_array($castType, static::$primitiveCastTypes)) {
-            return $value;
-        }
-
-        // If the key is one of the encrypted castable types, we'll first decrypt
-        // the value and update the cast type so we may leverage the following
-        // logic for casting this value to any additionally specified types.
-        if ($this->isEncryptedCastable($key)) {
-            $value = $this->fromEncryptedString($value);
-
-            $castType = Str::after($castType, 'encrypted:');
-        }
-
-        switch ($castType) {
-            case 'int':
-            case 'integer':
-                return (int) $value;
-            case 'real':
-            case 'float':
-            case 'double':
-                return $this->fromFloat($value);
-            case 'decimal':
-                return $this->asDecimal($value, explode(':', $this->getCasts()[$key], 2)[1]);
-            case 'string':
-                return (string) $value;
-            case 'bool':
-            case 'boolean':
-                return (bool) $value;
-            case 'object':
-                return $this->fromJson($value, true);
-            case 'array':
-            case 'json':
-                return $this->fromJson($value);
-            case 'collection':
-                return new BaseCollection($this->fromJson($value));
-            case 'date':
-                return $this->asDate($value);
-            case 'datetime':
-            case 'custom_datetime':
-                return $this->asDateTime($value);
-            case 'timestamp':
-                return $this->asTimestamp($value);
-        }
-
-        if ($this->isClassCastable($key)) {
-            return $this->getClassCastableAttributeValue($key, $value);
-        }
-
-        return $value;
-    }
-
-    /**
-     * Cast the given attribute using a custom cast class.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @return mixed
-     */
-    protected function getClassCastableAttributeValue($key, $value)
-    {
-        if (isset($this->classCastCache[$key])) {
-            return $this->classCastCache[$key];
-        } else {
-            $caster = $this->resolveCasterClass($key);
-
-            $value = $caster instanceof CastsInboundAttributes
-                        ? $value
-                        : $caster->get($this, $key, $value, $this->attributes);
-
-            if ($caster instanceof CastsInboundAttributes || ! is_object($value)) {
-                unset($this->classCastCache[$key]);
-            } else {
-                $this->classCastCache[$key] = $value;
-            }
-
-            return $value;
-        }
-    }
-
-    /**
-     * Get the type of cast for a model attribute.
-     *
-     * @param  string  $key
-     * @return string
-     */
-    protected function getCastType($key)
-    {
-        if ($this->isCustomDateTimeCast($this->getCasts()[$key])) {
-            return 'custom_datetime';
-        }
-
-        if ($this->isDecimalCast($this->getCasts()[$key])) {
-            return 'decimal';
-        }
-
-        return trim(strtolower($this->getCasts()[$key]));
-    }
-
-    /**
-     * Increment or decrement the given attribute using the custom cast class.
-     *
-     * @param  string  $method
-     * @param  string  $key
-     * @param  mixed  $value
-     * @return mixed
-     */
-    protected function deviateClassCastableAttribute($method, $key, $value)
-    {
-        return $this->resolveCasterClass($key)->{$method}(
-            $this, $key, $value, $this->attributes
-        );
-    }
-
-    /**
-     * Serialize the given attribute using the custom cast class.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @return mixed
-     */
-    protected function serializeClassCastableAttribute($key, $value)
-    {
-        return $this->resolveCasterClass($key)->serialize(
-            $this, $key, $value, $this->attributes
-        );
-    }
-
-    /**
-     * Determine if the cast type is a custom date time cast.
-     *
-     * @param  string  $cast
-     * @return bool
-     */
-    protected function isCustomDateTimeCast($cast)
-    {
-        return strncmp($cast, 'date:', 5) === 0 ||
-               strncmp($cast, 'datetime:', 9) === 0;
-    }
-
-    /**
-     * Determine if the cast type is a decimal cast.
-     *
-     * @param  string  $cast
-     * @return bool
-     */
-    protected function isDecimalCast($cast)
-    {
-        return strncmp($cast, 'decimal:', 8) === 0;
-    }
-
-    /**
-     * Set a given attribute on the model.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @return mixed
-     */
-    public function setAttribute($key, $value)
-    {
-        // First we will check for the presence of a mutator for the set operation
-        // which simply lets the developers tweak the attribute as it is set on
-        // the model, such as "json_encoding" an listing of data for storage.
-        if ($this->hasSetMutator($key)) {
-            return $this->setMutatedAttributeValue($key, $value);
-        }
-
-        // If an attribute is listed as a "date", we'll convert it from a DateTime
-        // instance into a form proper for storage on the database tables using
-        // the connection grammar's date format. We will auto set the values.
-        elseif ($value && $this->isDateAttribute($key)) {
-            $value = $this->fromDateTime($value);
-        }
-
-        if ($this->isClassCastable($key)) {
-            $this->setClassCastableAttribute($key, $value);
-
-            return $this;
-        }
-
-        if (! is_null($value) && $this->isJsonCastable($key)) {
-            $value = $this->castAttributeAsJson($key, $value);
-        }
-
-        // If this attribute contains a JSON ->, we'll set the proper value in the
-        // attribute's underlying array. This takes care of properly nesting an
-        // attribute in the array's value in the case of deeply nested items.
-        if (Str::contains($key, '->')) {
-            return $this->fillJsonAttribute($key, $value);
-        }
-
-        if (! is_null($value) && $this->isEncryptedCastable($key)) {
-            $value = $this->castAttributeAsEncryptedString($key, $value);
-        }
-
-        $this->attributes[$key] = $value;
-
-        return $this;
-    }
-
-    /**
-     * Determine if a set mutator exists for an attribute.
-     *
-     * @param  string  $key
-     * @return bool
-     */
-    public function hasSetMutator($key)
-    {
-        return method_exists($this, 'set'.Str::studly($key).'Attribute');
-    }
-
-    /**
-     * Set the value of an attribute using its mutator.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @return mixed
-     */
-    protected function setMutatedAttributeValue($key, $value)
-    {
-        return $this->{'set'.Str::studly($key).'Attribute'}($value);
-    }
-
-    /**
-     * Determine if the given attribute is a date or date castable.
-     *
-     * @param  string  $key
-     * @return bool
-     */
-    protected function isDateAttribute($key)
-    {
-        return in_array($key, $this->getDates(), true) ||
-               $this->isDateCastable($key);
-    }
-
-    /**
-     * Set a given JSON attribute on the model.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @return $this
-     */
-    public function fillJsonAttribute($key, $value)
-    {
-        [$key, $path] = explode('->', $key, 2);
-
-        $this->attributes[$key] = $this->asJson($this->getArrayAttributeWithValue(
-            $path, $key, $value
-        ));
-
-        return $this;
-    }
-
-    /**
-     * Set the value of a class castable attribute.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @return void
-     */
-    protected function setClassCastableAttribute($key, $value)
-    {
-        $caster = $this->resolveCasterClass($key);
-
-        if (is_null($value)) {
-            $this->attributes = array_merge($this->attributes, array_map(
-                function () {
-                },
-                $this->normalizeCastClassResponse($key, $caster->set(
-                    $this, $key, $this->{$key}, $this->attributes
-                ))
-            ));
-        } else {
-            $this->attributes = array_merge(
-                $this->attributes,
-                $this->normalizeCastClassResponse($key, $caster->set(
-                    $this, $key, $value, $this->attributes
-                ))
-            );
-        }
-
-        if ($caster instanceof CastsInboundAttributes || ! is_object($value)) {
-            unset($this->classCastCache[$key]);
-        } else {
-            $this->classCastCache[$key] = $value;
-        }
-    }
-
-    /**
-     * Get an array attribute with the given key and value set.
-     *
-     * @param  string  $path
-     * @param  string  $key
-     * @param  mixed  $value
-     * @return $this
-     */
-    protected function getArrayAttributeWithValue($path, $key, $value)
-    {
-        return tap($this->getArrayAttributeByKey($key), function (&$array) use ($path, $value) {
-            Arr::set($array, str_replace('->', '.', $path), $value);
-        });
-    }
-
-    /**
-     * Get an array attribute or return an empty array if it is not set.
-     *
-     * @param  string  $key
-     * @return array
-     */
-    protected function getArrayAttributeByKey($key)
-    {
-        return isset($this->attributes[$key]) ?
-                    $this->fromJson($this->attributes[$key]) : [];
-    }
-
-    /**
-     * Cast the given attribute to JSON.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @return string
-     */
-    protected function castAttributeAsJson($key, $value)
-    {
-        $value = $this->asJson($value);
-
-        if ($value === false) {
-            throw JsonEncodingException::forAttribute(
-                $this, $key, json_last_error_msg()
-            );
-        }
-
-        return $value;
-    }
-
-    /**
-     * Encode the given value as JSON.
-     *
-     * @param  mixed  $value
-     * @return string
-     */
-    protected function asJson($value)
-    {
-        return json_encode($value);
-    }
-
-    /**
-     * Decode the given JSON back into an array or object.
-     *
-     * @param  string  $value
-     * @param  bool  $asObject
-     * @return mixed
-     */
-    public function fromJson($value, $asObject = false)
-    {
-        return json_decode($value, ! $asObject);
-    }
-
-    /**
-     * Decrypt the given encrypted string.
-     *
-     * @param  string  $value
-     * @return mixed
-     */
-    public function fromEncryptedString($value)
-    {
-        return (static::$encrypter ?? Crypt::getFacadeRoot())->decrypt($value, false);
-    }
-
-    /**
-     * Cast the given attribute to an encrypted string.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @return string
-     */
-    protected function castAttributeAsEncryptedString($key, $value)
-    {
-        return (static::$encrypter ?? Crypt::getFacadeRoot())->encrypt($value, false);
-    }
-
-    /**
-     * Set the encrypter instance that will be used to encrypt attributes.
-     *
-     * @param  \Illuminate\Contracts\Encryption\Encrypter  $encrypter
-     * @return void
-     */
-    public static function encryptUsing($encrypter)
-    {
-        static::$encrypter = $encrypter;
-    }
-
-    /**
-     * Decode the given float.
-     *
-     * @param  mixed  $value
-     * @return mixed
-     */
-    public function fromFloat($value)
-    {
-        switch ((string) $value) {
-            case 'Infinity':
-                return INF;
-            case '-Infinity':
-                return -INF;
-            case 'NaN':
-                return NAN;
-            default:
-                return (float) $value;
-        }
-    }
-
-    /**
-     * Return a decimal as string.
-     *
-     * @param  float  $value
-     * @param  int  $decimals
-     * @return string
-     */
-    protected function asDecimal($value, $decimals)
-    {
-        return number_format($value, $decimals, '.', '');
-    }
-
-    /**
-     * Return a timestamp as DateTime object with time set to 00:00:00.
-     *
-     * @param  mixed  $value
-     * @return \Illuminate\Support\Carbon
-     */
-    protected function asDate($value)
-    {
-        return $this->asDateTime($value)->startOfDay();
-    }
-
-    /**
-     * Return a timestamp as DateTime object.
-     *
-     * @param  mixed  $value
-     * @return \Illuminate\Support\Carbon
-     */
-    protected function asDateTime($value)
-    {
-        // If this value is already a Carbon instance, we shall just return it as is.
-        // This prevents us having to re-instantiate a Carbon instance when we know
-        // it already is one, which wouldn't be fulfilled by the DateTime check.
-        if ($value instanceof CarbonInterface) {
-            return Date::instance($value);
-        }
-
-        // If the value is already a DateTime instance, we will just skip the rest of
-        // these checks since they will be a waste of time, and hinder performance
-        // when checking the field. We will just return the DateTime right away.
-        if ($value instanceof DateTimeInterface) {
-            return Date::parse(
-                $value->format('Y-m-d H:i:s.u'), $value->getTimezone()
-            );
-        }
-
-        // If this value is an integer, we will assume it is a UNIX timestamp's value
-        // and format a Carbon object from this timestamp. This allows flexibility
-        // when defining your date fields as they might be UNIX timestamps here.
-        if (is_numeric($value)) {
-            return Date::createFromTimestamp($value);
-        }
-
-        // If the value is in simply year, month, day format, we will instantiate the
-        // Carbon instances from that format. Again, this provides for simple date
-        // fields on the database, while still supporting Carbonized conversion.
-        if ($this->isStandardDateFormat($value)) {
-            return Date::instance(Carbon::createFromFormat('Y-m-d', $value)->startOfDay());
-        }
-
-        $format = $this->getDateFormat();
-
-        // Finally, we will just assume this date is in the format used by default on
-        // the database connection and use that format to create the Carbon object
-        // that is returned back out to the developers after we convert it here.
-        try {
-            $date = Date::createFromFormat($format, $value);
-        } catch (InvalidArgumentException $e) {
-            $date = false;
-        }
-
-        return $date ?: Date::parse($value);
-    }
-
-    /**
-     * Determine if the given value is a standard date format.
-     *
-     * @param  string  $value
-     * @return bool
-     */
-    protected function isStandardDateFormat($value)
-    {
-        return preg_match('/^(\d{4})-(\d{1,2})-(\d{1,2})$/', $value);
-    }
-
-    /**
-     * Convert a DateTime to a storable string.
-     *
-     * @param  mixed  $value
-     * @return string|null
-     */
-    public function fromDateTime($value)
-    {
-        return empty($value) ? $value : $this->asDateTime($value)->format(
-            $this->getDateFormat()
-        );
-    }
-
-    /**
-     * Return a timestamp as unix timestamp.
-     *
-     * @param  mixed  $value
-     * @return int
-     */
-    protected function asTimestamp($value)
-    {
-        return $this->asDateTime($value)->getTimestamp();
-    }
-
-    /**
-     * Prepare a date for array / JSON serialization.
-     *
-     * @param  \DateTimeInterface  $date
-     * @return string
-     */
-    protected function serializeDate(DateTimeInterface $date)
-    {
-        return Carbon::instance($date)->toJSON();
-    }
-
-    /**
-     * Get the attributes that should be converted to dates.
-     *
-     * @return array
-     */
-    public function getDates()
-    {
-        if (! $this->usesTimestamps()) {
-            return $this->dates;
-        }
-
-        $defaults = [
-            $this->getCreatedAtColumn(),
-            $this->getUpdatedAtColumn(),
-        ];
-
-        return array_unique(array_merge($this->dates, $defaults));
-    }
-
-    /**
-     * Get the format for database stored dates.
-     *
-     * @return string
-     */
-    public function getDateFormat()
-    {
-        return $this->dateFormat ?: $this->getConnection()->getQueryGrammar()->getDateFormat();
-    }
-
-    /**
-     * Set the date format used by the model.
-     *
-     * @param  string  $format
-     * @return $this
-     */
-    public function setDateFormat($format)
-    {
-        $this->dateFormat = $format;
-
-        return $this;
-    }
-
-    /**
-     * Determine whether an attribute should be cast to a native type.
-     *
-     * @param  string  $key
-     * @param  array|string|null  $types
-     * @return bool
-     */
-    public function hasCast($key, $types = null)
-    {
-        if (array_key_exists($key, $this->getCasts())) {
-            return $types ? in_array($this->getCastType($key), (array) $types, true) : true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Get the casts array.
-     *
-     * @return array
-     */
-    public function getCasts()
-    {
-        if ($this->getIncrementing()) {
-            return array_merge([$this->getKeyName() => $this->getKeyType()], $this->casts);
-        }
-
-        return $this->casts;
-    }
-
-    /**
-     * Determine whether a value is Date / DateTime castable for inbound manipulation.
-     *
-     * @param  string  $key
-     * @return bool
-     */
-    protected function isDateCastable($key)
-    {
-        return $this->hasCast($key, ['date', 'datetime']);
-    }
-
-    /**
-     * Determine whether a value is JSON castable for inbound manipulation.
-     *
-     * @param  string  $key
-     * @return bool
-     */
-    protected function isJsonCastable($key)
-    {
-        return $this->hasCast($key, ['array', 'json', 'object', 'collection', 'encrypted:array', 'encrypted:collection', 'encrypted:json', 'encrypted:object']);
-    }
-
-    /**
-     * Determine whether a value is an encrypted castable for inbound manipulation.
-     *
-     * @param  string  $key
-     * @return bool
-     */
-    protected function isEncryptedCastable($key)
-    {
-        return $this->hasCast($key, ['encrypted', 'encrypted:array', 'encrypted:collection', 'encrypted:json', 'encrypted:object']);
-    }
-
-    /**
-     * Determine if the given key is cast using a custom class.
-     *
-     * @param  string  $key
-     * @return bool
-     */
-    protected function isClassCastable($key)
-    {
-        if (! array_key_exists($key, $this->getCasts())) {
-            return false;
-        }
-
-        $castType = $this->parseCasterClass($this->getCasts()[$key]);
-
-        if (in_array($castType, static::$primitiveCastTypes)) {
-            return false;
-        }
-
-        if (class_exists($castType)) {
-            return true;
-        }
-
-        throw new InvalidCastException($this->getModel(), $key, $castType);
-    }
-
-    /**
-     * Determine if the key is deviable using a custom class.
-     *
-     * @param  string  $key
-     * @return bool
-     *
-     * @throws \Illuminate\Database\Eloquent\InvalidCastException
-     */
-    protected function isClassDeviable($key)
-    {
-        return $this->isClassCastable($key) &&
-            method_exists($castType = $this->parseCasterClass($this->getCasts()[$key]), 'increment') &&
-            method_exists($castType, 'decrement');
-    }
-
-    /**
-     * Determine if the key is serializable using a custom class.
-     *
-     * @param  string  $key
-     * @return bool
-     *
-     * @throws \Illuminate\Database\Eloquent\InvalidCastException
-     */
-    protected function isClassSerializable($key)
-    {
-        return $this->isClassCastable($key) &&
-               method_exists($this->parseCasterClass($this->getCasts()[$key]), 'serialize');
-    }
-
-    /**
-     * Resolve the custom caster class for a given key.
-     *
-     * @param  string  $key
-     * @return mixed
-     */
-    protected function resolveCasterClass($key)
-    {
-        $castType = $this->getCasts()[$key];
-
-        $arguments = [];
-
-        if (is_string($castType) && strpos($castType, ':') !== false) {
-            $segments = explode(':', $castType, 2);
-
-            $castType = $segments[0];
-            $arguments = explode(',', $segments[1]);
-        }
-
-        if (is_subclass_of($castType, Castable::class)) {
-            $castType = $castType::castUsing($arguments);
-        }
-
-        if (is_object($castType)) {
-            return $castType;
-        }
-
-        return new $castType(...$arguments);
-    }
-
-    /**
-     * Parse the given caster class, removing any arguments.
-     *
-     * @param  string  $class
-     * @return string
-     */
-    protected function parseCasterClass($class)
-    {
-        return strpos($class, ':') === false
-                        ? $class
-                        : explode(':', $class, 2)[0];
-    }
-
-    /**
-     * Merge the cast class attributes back into the model.
-     *
-     * @return void
-     */
-    protected function mergeAttributesFromClassCasts()
-    {
-        foreach ($this->classCastCache as $key => $value) {
-            $caster = $this->resolveCasterClass($key);
-
-            $this->attributes = array_merge(
-                $this->attributes,
-                $caster instanceof CastsInboundAttributes
-                       ? [$key => $value]
-                       : $this->normalizeCastClassResponse($key, $caster->set($this, $key, $value, $this->attributes))
-            );
-        }
-    }
-
-    /**
-     * Normalize the response from a custom class caster.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @return array
-     */
-    protected function normalizeCastClassResponse($key, $value)
-    {
-        return is_array($value) ? $value : [$key => $value];
-    }
-
-    /**
-     * Get all of the current attributes on the model.
-     *
-     * @return array
-     */
-    public function getAttributes()
-    {
-        $this->mergeAttributesFromClassCasts();
-
-        return $this->attributes;
-    }
-
-    /**
-     * Set the array of model attributes. No checking is done.
-     *
-     * @param  array  $attributes
-     * @param  bool  $sync
-     * @return $this
-     */
-    public function setRawAttributes(array $attributes, $sync = false)
-    {
-        $this->attributes = $attributes;
-
-        if ($sync) {
-            $this->syncOriginal();
-        }
-
-        $this->classCastCache = [];
-
-        return $this;
-    }
-
-    /**
-     * Get the model's original attribute values.
-     *
-     * @param  string|null  $key
-     * @param  mixed  $default
-     * @return mixed|array
-     */
-    public function getOriginal($key = null, $default = null)
-    {
-        return (new static)->setRawAttributes(
-            $this->original, $sync = true
-        )->getOriginalWithoutRewindingModel($key, $default);
-    }
-
-    /**
-     * Get the model's original attribute values.
-     *
-     * @param  string|null  $key
-     * @param  mixed  $default
-     * @return mixed|array
-     */
-    protected function getOriginalWithoutRewindingModel($key = null, $default = null)
-    {
-        if ($key) {
-            return $this->transformModelValue(
-                $key, Arr::get($this->original, $key, $default)
-            );
-        }
-
-        return collect($this->original)->mapWithKeys(function ($value, $key) {
-            return [$key => $this->transformModelValue($key, $value)];
-        })->all();
-    }
-
-    /**
-     * Get the model's raw original attribute values.
-     *
-     * @param  string|null  $key
-     * @param  mixed  $default
-     * @return mixed|array
-     */
-    public function getRawOriginal($key = null, $default = null)
-    {
-        return Arr::get($this->original, $key, $default);
-    }
-
-    /**
-     * Get a subset of the model's attributes.
-     *
-     * @param  array|mixed  $attributes
-     * @return array
-     */
-    public function only($attributes)
-    {
-        $results = [];
-
-        foreach (is_array($attributes) ? $attributes : func_get_args() as $attribute) {
-            $results[$attribute] = $this->getAttribute($attribute);
-        }
-
-        return $results;
-    }
-
-    /**
-     * Sync the original attributes with the current.
-     *
-     * @return $this
-     */
-    public function syncOriginal()
-    {
-        $this->original = $this->getAttributes();
-
-        return $this;
-    }
-
-    /**
-     * Sync a single original attribute with its current value.
-     *
-     * @param  string  $attribute
-     * @return $this
-     */
-    public function syncOriginalAttribute($attribute)
-    {
-        return $this->syncOriginalAttributes($attribute);
-    }
-
-    /**
-     * Sync multiple original attribute with their current values.
-     *
-     * @param  array|string  $attributes
-     * @return $this
-     */
-    public function syncOriginalAttributes($attributes)
-    {
-        $attributes = is_array($attributes) ? $attributes : func_get_args();
-
-        $modelAttributes = $this->getAttributes();
-
-        foreach ($attributes as $attribute) {
-            $this->original[$attribute] = $modelAttributes[$attribute];
-        }
-
-        return $this;
-    }
-
-    /**
-     * Sync the changed attributes.
-     *
-     * @return $this
-     */
-    public function syncChanges()
-    {
-        $this->changes = $this->getDirty();
-
-        return $this;
-    }
-
-    /**
-     * Determine if the model or any of the given attribute(s) have been modified.
-     *
-     * @param  array|string|null  $attributes
-     * @return bool
-     */
-    public function isDirty($attributes = null)
-    {
-        return $this->hasChanges(
-            $this->getDirty(), is_array($attributes) ? $attributes : func_get_args()
-        );
-    }
-
-    /**
-     * Determine if the model and all the given attribute(s) have remained the same.
-     *
-     * @param  array|string|null  $attributes
-     * @return bool
-     */
-    public function isClean($attributes = null)
-    {
-        return ! $this->isDirty(...func_get_args());
-    }
-
-    /**
-     * Determine if the model or any of the given attribute(s) have been modified.
-     *
-     * @param  array|string|null  $attributes
-     * @return bool
-     */
-    public function wasChanged($attributes = null)
-    {
-        return $this->hasChanges(
-            $this->getChanges(), is_array($attributes) ? $attributes : func_get_args()
-        );
-    }
-
-    /**
-     * Determine if any of the given attributes were changed.
-     *
-     * @param  array  $changes
-     * @param  array|string|null  $attributes
-     * @return bool
-     */
-    protected function hasChanges($changes, $attributes = null)
-    {
-        // If no specific attributes were provided, we will just see if the dirty array
-        // already contains any attributes. If it does we will just return that this
-        // count is greater than zero. Else, we need to check specific attributes.
-        if (empty($attributes)) {
-            return count($changes) > 0;
-        }
-
-        // Here we will spin through every attribute and see if this is in the array of
-        // dirty attributes. If it is, we will return true and if we make it through
-        // all of the attributes for the entire array we will return false at end.
-        foreach (Arr::wrap($attributes) as $attribute) {
-            if (array_key_exists($attribute, $changes)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Get the attributes that have been changed since last sync.
-     *
-     * @return array
-     */
-    public function getDirty()
-    {
-        $dirty = [];
-
-        foreach ($this->getAttributes() as $key => $value) {
-            if (! $this->originalIsEquivalent($key)) {
-                $dirty[$key] = $value;
-            }
-        }
-
-        return $dirty;
-    }
-
-    /**
-     * Get the attributes that were changed.
-     *
-     * @return array
-     */
-    public function getChanges()
-    {
-        return $this->changes;
-    }
-
-    /**
-     * Determine if the new and old values for a given key are equivalent.
-     *
-     * @param  string  $key
-     * @return bool
-     */
-    public function originalIsEquivalent($key)
-    {
-        if (! array_key_exists($key, $this->original)) {
-            return false;
-        }
-
-        $attribute = Arr::get($this->attributes, $key);
-        $original = Arr::get($this->original, $key);
-
-        if ($attribute === $original) {
-            return true;
-        } elseif (is_null($attribute)) {
-            return false;
-        } elseif ($this->isDateAttribute($key)) {
-            return $this->fromDateTime($attribute) ===
-                   $this->fromDateTime($original);
-        } elseif ($this->hasCast($key, ['object', 'collection'])) {
-            return $this->castAttribute($key, $attribute) ==
-                $this->castAttribute($key, $original);
-        } elseif ($this->hasCast($key, ['real', 'float', 'double'])) {
-            if (($attribute === null && $original !== null) || ($attribute !== null && $original === null)) {
-                return false;
-            }
-
-            return abs($this->castAttribute($key, $attribute) - $this->castAttribute($key, $original)) < PHP_FLOAT_EPSILON * 4;
-        } elseif ($this->hasCast($key, static::$primitiveCastTypes)) {
-            return $this->castAttribute($key, $attribute) ===
-                   $this->castAttribute($key, $original);
-        }
-
-        return is_numeric($attribute) && is_numeric($original)
-               && strcmp((string) $attribute, (string) $original) === 0;
-    }
-
-    /**
-     * Transform a raw model value using mutators, casts, etc.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @return mixed
-     */
-    protected function transformModelValue($key, $value)
-    {
-        // If the attribute has a get mutator, we will call that then return what
-        // it returns as the value, which is useful for transforming values on
-        // retrieval from the model to a form that is more useful for usage.
-        if ($this->hasGetMutator($key)) {
-            return $this->mutateAttribute($key, $value);
-        }
-
-        // If the attribute exists within the cast array, we will convert it to
-        // an appropriate native PHP type dependent upon the associated value
-        // given with the key in the pair. Dayle made this comment line up.
-        if ($this->hasCast($key)) {
-            return $this->castAttribute($key, $value);
-        }
-
-        // If the attribute is listed as a date, we will convert it to a DateTime
-        // instance on retrieval, which makes it quite convenient to work with
-        // date fields without having to create a mutator for each property.
-        if ($value !== null
-            && \in_array($key, $this->getDates(), false)) {
-            return $this->asDateTime($value);
-        }
-
-        return $value;
-    }
-
-    /**
-     * Append attributes to query when building a query.
-     *
-     * @param  array|string  $attributes
-     * @return $this
-     */
-    public function append($attributes)
-    {
-        $this->appends = array_unique(
-            array_merge($this->appends, is_string($attributes) ? func_get_args() : $attributes)
-        );
-
-        return $this;
-    }
-
-    /**
-     * Set the accessors to append to model arrays.
-     *
-     * @param  array  $appends
-     * @return $this
-     */
-    public function setAppends(array $appends)
-    {
-        $this->appends = $appends;
-
-        return $this;
-    }
-
-    /**
-     * Return whether the accessor attribute has been appended.
-     *
-     * @param  string  $attribute
-     * @return bool
-     */
-    public function hasAppended($attribute)
-    {
-        return in_array($attribute, $this->appends);
-    }
-
-    /**
-     * Get the mutated attributes for a given instance.
-     *
-     * @return array
-     */
-    public function getMutatedAttributes()
-    {
-        $class = static::class;
-
-        if (! isset(static::$mutatorCache[$class])) {
-            static::cacheMutatedAttributes($class);
-        }
-
-        return static::$mutatorCache[$class];
-    }
-
-    /**
-     * Extract and cache all the mutated attributes of a class.
-     *
-     * @param  string  $class
-     * @return void
-     */
-    public static function cacheMutatedAttributes($class)
-    {
-        static::$mutatorCache[$class] = collect(static::getMutatorMethods($class))->map(function ($match) {
-            return lcfirst(static::$snakeAttributes ? Str::snake($match) : $match);
-        })->all();
-    }
-
-    /**
-     * Get all of the attribute mutator methods.
-     *
-     * @param  mixed  $class
-     * @return array
-     */
-    protected static function getMutatorMethods($class)
-    {
-        preg_match_all('/(?<=^|;)get([^;]+?)Attribute(;|$)/', implode(';', get_class_methods($class)), $matches);
-
-        return $matches[1];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

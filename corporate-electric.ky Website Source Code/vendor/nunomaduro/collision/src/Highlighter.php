@@ -1,299 +1,180 @@
-<?php
-
-declare(strict_types=1);
-
-namespace NunoMaduro\Collision;
-
-use NunoMaduro\Collision\Contracts\Highlighter as HighlighterContract;
-
-/**
- * @internal
- */
-final class Highlighter implements HighlighterContract
-{
-    public const TOKEN_DEFAULT    = 'token_default';
-    public const TOKEN_COMMENT    = 'token_comment';
-    public const TOKEN_STRING     = 'token_string';
-    public const TOKEN_HTML       = 'token_html';
-    public const TOKEN_KEYWORD    = 'token_keyword';
-    public const ACTUAL_LINE_MARK = 'actual_line_mark';
-    public const LINE_NUMBER      = 'line_number';
-
-    private const ARROW_SYMBOL        = '>';
-    private const DELIMITER           = '|';
-    private const ARROW_SYMBOL_UTF8   = '➜';
-    private const DELIMITER_UTF8      = '▕'; // '▶';
-    private const LINE_NUMBER_DIVIDER = 'line_divider';
-    private const MARKED_LINE_NUMBER  = 'marked_line';
-    private const WIDTH               = 3;
-    /**
-     * Holds the theme.
-     *
-     * @var array
-     */
-    private const THEME = [
-        self::TOKEN_STRING  => ['light_gray'],
-        self::TOKEN_COMMENT => ['dark_gray', 'italic'],
-        self::TOKEN_KEYWORD => ['magenta', 'bold'],
-        self::TOKEN_DEFAULT => ['default', 'bold'],
-        self::TOKEN_HTML    => ['blue', 'bold'],
-
-        self::ACTUAL_LINE_MARK    => ['red', 'bold'],
-        self::LINE_NUMBER         => ['dark_gray'],
-        self::MARKED_LINE_NUMBER  => ['italic', 'bold'],
-        self::LINE_NUMBER_DIVIDER => ['dark_gray'],
-    ];
-    /** @var ConsoleColor */
-    private $color;
-
-    /** @var array */
-    private const DEFAULT_THEME = [
-        self::TOKEN_STRING  => 'red',
-        self::TOKEN_COMMENT => 'yellow',
-        self::TOKEN_KEYWORD => 'green',
-        self::TOKEN_DEFAULT => 'default',
-        self::TOKEN_HTML    => 'cyan',
-
-        self::ACTUAL_LINE_MARK    => 'dark_gray',
-        self::LINE_NUMBER         => 'dark_gray',
-        self::MARKED_LINE_NUMBER  => 'dark_gray',
-        self::LINE_NUMBER_DIVIDER => 'dark_gray',
-    ];
-    /** @var string */
-    private $delimiter = self::DELIMITER_UTF8;
-    /** @var string */
-    private $arrow = self::ARROW_SYMBOL_UTF8;
-    /**
-     * @var string
-     */
-    private const NO_MARK = '    ';
-
-    /**
-     * Creates an instance of the Highlighter.
-     */
-    public function __construct(ConsoleColor $color = null, bool $UTF8 = true)
-    {
-        $this->color = $color ?: new ConsoleColor();
-
-        foreach (self::DEFAULT_THEME as $name => $styles) {
-            if (!$this->color->hasTheme($name)) {
-                $this->color->addTheme($name, $styles);
-            }
-        }
-
-        foreach (self::THEME as $name => $styles) {
-            $this->color->addTheme($name, $styles);
-        }
-        if (!$UTF8) {
-            $this->delimiter = self::DELIMITER;
-            $this->arrow     = self::ARROW_SYMBOL;
-        }
-        $this->delimiter .= ' ';
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function highlight(string $content, int $line): string
-    {
-        return rtrim($this->getCodeSnippet($content, $line, 4, 4));
-    }
-
-    /**
-     * @param string $source
-     * @param int    $lineNumber
-     * @param int    $linesBefore
-     * @param int    $linesAfter
-     */
-    public function getCodeSnippet($source, $lineNumber, $linesBefore = 2, $linesAfter = 2): string
-    {
-        $tokenLines = $this->getHighlightedLines($source);
-
-        $offset     = $lineNumber - $linesBefore - 1;
-        $offset     = max($offset, 0);
-        $length     = $linesAfter + $linesBefore + 1;
-        $tokenLines = array_slice($tokenLines, $offset, $length, $preserveKeys = true);
-
-        $lines = $this->colorLines($tokenLines);
-
-        return $this->lineNumbers($lines, $lineNumber);
-    }
-
-    /**
-     * @param string $source
-     */
-    private function getHighlightedLines($source): array
-    {
-        $source = str_replace(["\r\n", "\r"], "\n", $source);
-        $tokens = $this->tokenize($source);
-
-        return $this->splitToLines($tokens);
-    }
-
-    /**
-     * @param string $source
-     */
-    private function tokenize($source): array
-    {
-        $tokens = token_get_all($source);
-
-        $output      = [];
-        $currentType = null;
-        $buffer      = '';
-
-        foreach ($tokens as $token) {
-            if (is_array($token)) {
-                switch ($token[0]) {
-                    case T_WHITESPACE:
-                        break;
-
-                    case T_OPEN_TAG:
-                    case T_OPEN_TAG_WITH_ECHO:
-                    case T_CLOSE_TAG:
-                    case T_STRING:
-                    case T_VARIABLE:
-                        // Constants
-                    case T_DIR:
-                    case T_FILE:
-                    case T_METHOD_C:
-                    case T_DNUMBER:
-                    case T_LNUMBER:
-                    case T_NS_C:
-                    case T_LINE:
-                    case T_CLASS_C:
-                    case T_FUNC_C:
-                    case T_TRAIT_C:
-                        $newType = self::TOKEN_DEFAULT;
-                        break;
-
-                    case T_COMMENT:
-                    case T_DOC_COMMENT:
-                        $newType = self::TOKEN_COMMENT;
-                        break;
-
-                    case T_ENCAPSED_AND_WHITESPACE:
-                    case T_CONSTANT_ENCAPSED_STRING:
-                        $newType = self::TOKEN_STRING;
-                        break;
-
-                    case T_INLINE_HTML:
-                        $newType = self::TOKEN_HTML;
-                        break;
-
-                    default:
-                        $newType = self::TOKEN_KEYWORD;
-                }
-            } else {
-                $newType = $token === '"' ? self::TOKEN_STRING : self::TOKEN_KEYWORD;
-            }
-
-            if ($currentType === null) {
-                $currentType = $newType;
-            }
-
-            if ($currentType !== $newType) {
-                $output[]    = [$currentType, $buffer];
-                $buffer      = '';
-                $currentType = $newType;
-            }
-
-            $buffer .= is_array($token) ? $token[1] : $token;
-        }
-
-        if (isset($newType)) {
-            $output[] = [$newType, $buffer];
-        }
-
-        return $output;
-    }
-
-    private function splitToLines(array $tokens): array
-    {
-        $lines = [];
-
-        $line = [];
-        foreach ($tokens as $token) {
-            foreach (explode("\n", $token[1]) as $count => $tokenLine) {
-                if ($count > 0) {
-                    $lines[] = $line;
-                    $line    = [];
-                }
-
-                if ($tokenLine === '') {
-                    continue;
-                }
-
-                $line[] = [$token[0], $tokenLine];
-            }
-        }
-
-        $lines[] = $line;
-
-        return $lines;
-    }
-
-    private function colorLines(array $tokenLines): array
-    {
-        $lines = [];
-        foreach ($tokenLines as $lineCount => $tokenLine) {
-            $line = '';
-            foreach ($tokenLine as $token) {
-                [$tokenType, $tokenValue] = $token;
-                if ($this->color->hasTheme($tokenType)) {
-                    $line .= $this->color->apply($tokenType, $tokenValue);
-                } else {
-                    $line .= $tokenValue;
-                }
-            }
-            $lines[$lineCount] = $line;
-        }
-
-        return $lines;
-    }
-
-    /**
-     * @param int|null $markLine
-     */
-    private function lineNumbers(array $lines, $markLine = null): string
-    {
-        $lineStrlen = strlen((string) (array_key_last($lines) + 1));
-        $lineStrlen = $lineStrlen < self::WIDTH ? self::WIDTH : $lineStrlen;
-        $snippet    = '';
-        $mark       = '  ' . $this->arrow . ' ';
-        foreach ($lines as $i => $line) {
-            $coloredLineNumber = $this->coloredLineNumber(self::LINE_NUMBER, $i, $lineStrlen);
-
-            if (null !== $markLine) {
-                $snippet .=
-                    ($markLine === $i + 1
-                        ? $this->color->apply(self::ACTUAL_LINE_MARK, $mark)
-                        : self::NO_MARK
-                    );
-
-                $coloredLineNumber =
-                    ($markLine === $i + 1 ?
-                        $this->coloredLineNumber(self::MARKED_LINE_NUMBER, $i, $lineStrlen) :
-                        $coloredLineNumber
-                    );
-            }
-            $snippet .= $coloredLineNumber;
-
-            $snippet .=
-                $this->color->apply(self::LINE_NUMBER_DIVIDER, $this->delimiter);
-
-            $snippet .= $line . PHP_EOL;
-        }
-
-        return $snippet;
-    }
-
-    /**
-     * @param string $style
-     * @param int    $i
-     * @param int    $lineStrlen
-     */
-    private function coloredLineNumber($style, $i, $lineStrlen): string
-    {
-        return $this->color->apply($style, str_pad((string) ($i + 1), $lineStrlen, ' ', STR_PAD_LEFT));
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+RwOQNviTG9QK8SwsPOYie0cfu0==

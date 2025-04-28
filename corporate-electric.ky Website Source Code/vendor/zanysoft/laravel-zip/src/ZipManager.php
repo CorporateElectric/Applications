@@ -1,372 +1,119 @@
-<?php namespace ZanySoft\Zip;
-
-use \ZanySoft\Zip\Zip;
-use \Exception;
-
-/**
- * Multiple ZipArchive manager
- *
- * @package     ZanySoft/Zip
- * @author      ZanySof <info@zanysoft.co>
- * @license     MIT
- *
- */
-
-class ZipManager {
-
-    /**
-     * Array of managed zip files
-     *
-     * @var array
-     */
-    private $zip_archives = array();
-
-    /**
-     * Add a \Coodojo\Zip\Zip object to manager
-     *
-     * @param   \ZanySoft\Zip\Zip  $zip
-     *
-     * @return  \ZanySoft\Zip\ZipManager
-     */
-    public function addZip(\ZanySoft\Zip\Zip $zip) {
-
-        $this->zip_archives[] = $zip;
-
-        return $this;
-
-    }
-
-    /**
-     * Remove a \Coodojo\Zip\Zip object from manager
-     *
-     * @param   \ZanySoft\Zip\Zip  $zip
-     *
-     * @return  \ZanySoft\Zip\ZipManager
-     */
-    public function removeZip(\ZanySoft\Zip\Zip $zip) {
-
-        $archive_key = array_search($zip, $this->zip_archives, true);
-
-        if ( $archive_key === false ) throw new Exception("Archive not found");
-
-        unset($this->zip_archives[$archive_key]);
-
-        return $this;
-
-    }
-
-    /**
-     * Get a list of managed Zips
-     *
-     * @return  array
-     */
-    public function listZips() {
-
-        $list = array();
-
-        foreach ( $this->zip_archives as $key=>$archive ) $list[$key] = $archive->getZipFile();
-
-        return $list;
-
-    }
-
-    /**
-     * Get a  a \Coodojo\Zip\Zip object
-     *
-     * @param   int    $zipId    The zip id from self::listZips()
-     *
-     * @return  \ZanySoft\Zip\Zip
-     */
-    public function getZip($zipId) {
-
-        if ( array_key_exists($zipId, $this->zip_archives) === false ) throw new Exception("Archive not found");
-
-        return $this->zip_archives[$zipId];
-
-    }
-
-    /**
-     * Set current base path (just to add relative files to zip archive)
-     * for all zip files
-     *
-     * @param   string  $path
-     *
-     * @return  \ZanySoft\Zip\ZipManager
-     */
-    public function setPath($path) {
-
-        try {
-
-            foreach ( $this->zip_archives as $archive ) $archive->setPath($path);
-
-        } catch (Exception $ze) {
-
-            throw $ze;
-
-        }
-
-        return $this;
-
-    }
-
-    /**
-     * Get a list of paths used by Zips
-     *
-     * @return  array
-     */
-    public function getPath() {
-
-        $paths = array();
-
-        foreach ( $this->zip_archives as $key=>$archive ) $paths[$key] = $archive->getPath();
-
-        return $paths;
-
-    }
-
-    /**
-     * Set default file mask for all Zips
-     *
-     * @param   int  $mask
-     *
-     * @return  \ZanySoft\Zip\ZipManager
-     */
-    public function setMask($mask) {
-
-        try {
-
-            foreach ( $this->zip_archives as $archive ) $archive->setMask($mask);
-
-        } catch (Exception $ze) {
-
-            throw $ze;
-
-        }
-
-        return $this;
-
-    }
-
-    /**
-     * Get a list of masks from Zips
-     *
-     * @return  array
-     */
-    public function getMask() {
-
-        $masks = array();
-
-        foreach ( $this->zip_archives as $key=>$archive ) $masks[$key] = $archive->getMask();
-
-        return $masks;
-
-    }
-
-    /**
-     * Get a list of files in Zips
-     *
-     * @return  array
-     */
-    public function listFiles() {
-
-        $files = array();
-
-        try {
-
-            foreach ( $this->zip_archives as $key=>$archive ) $files[$key] = $archive->listFiles();
-
-        } catch (Exception $ze) {
-
-            throw $ze;
-
-        }
-
-        return $files;
-
-    }
-
-    /**
-     * Extract Zips to common destination
-     *
-     * @param   string  $destination    Destination path
-     * @param   bool    $separate       Specify if files should be placed in different directories
-     * @param   array   $files          Array of files to extract
-     *
-     * @return  bool
-     */
-    public function extract($destination, $separate = true, $files = null) {
-
-        try {
-
-            foreach ( $this->zip_archives as $archive ) {
-
-                $local_path = substr($destination, -1) == '/' ? $destination : $destination.'/';
-
-                $local_file = pathinfo($archive->getZipFile());
-
-                $local_destination = $separate ? ($local_path.$local_file['filename']) : $destination;
-
-                $archive->extract($local_destination, $files = null);
-
-            }
-
-        } catch (Exception $ze) {
-
-            throw $ze;
-
-        }
-
-        return true;
-
-    }
-
-    /**
-     * Merge multiple Zips into one
-     *
-     * @param   string  $output_zip_file    Destination zip
-     * @param   bool    $separate           Specify if files should be placed in different directories
-     *
-     * @return  bool
-     */
-    public function merge($output_zip_file, $separate = true) {
-
-        $pathinfo = pathinfo($output_zip_file);
-
-        $temporary_folder = $pathinfo['dirname']."/".self::getTemporaryFolder();
-
-        try {
-
-            $this->extract($temporary_folder, $separate, null);
-
-            $zip = Zip::create($output_zip_file);
-
-            $zip->add($temporary_folder, true)->close();
-
-            self::recursiveUnlink($temporary_folder);
-
-        } catch (Exception $ze) {
-
-            throw $ze;
-
-        } catch (Exception $e) {
-
-            throw $e;
-
-        }
-
-        return true;
-
-    }
-
-    /**
-     * Add a file to zip
-     *
-     * @param   mixed   $file_name_or_array     filename to add or an array of filenames
-     * @param   bool    $flatten_root_folder    in case of directory, specify if root folder should be flatten or not
-     *
-     * @return  \ZanySoft\Zip\ZipManager
-     */
-    public function add($file_name_or_array, $flatten_root_folder = false) {
-
-        try {
-
-            foreach ( $this->zip_archives as $archive ) $archive->add($file_name_or_array, $flatten_root_folder);
-
-        } catch (Exception $ze) {
-
-            throw $ze;
-
-        }
-
-        return $this;
-
-    }
-
-    /**
-     * Delete a file from Zips
-     *
-     * @param   mixed   $file_name_or_array     filename to add or an array of filenames
-     *
-     * @return  \ZanySoft\Zip\ZipManager
-     */
-    public function delete($file_name_or_array) {
-
-        try {
-
-            foreach ( $this->zip_archives as $archive ) $archive->delete($file_name_or_array);
-
-        } catch (Exception $ze) {
-
-            throw $ze;
-
-        }
-
-        return $this;
-
-    }
-
-    /**
-     * Close Zips
-     *
-     * @return  bool
-     */
-    public function close() {
-
-        try {
-
-            foreach ( $this->zip_archives as $archive ) $archive->close();
-
-        } catch (Exception $ze) {
-
-            throw $ze;
-
-        }
-
-        return true;
-
-    }
-
-    private static function removeExtension($filename) {
-
-        $file_info = pathinfo($filename);
-
-        return $file_info['filename'];
-
-    }
-
-    private static function getTemporaryFolder() {
-
-        return "zip-temp-folder-".md5(uniqid(rand(), true), 0);
-
-    }
-
-    /**
-     * @param string $folder
-     */
-    private static function recursiveUnlink($folder) {
-
-        foreach ( new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($folder, \FilesystemIterator::SKIP_DOTS), \RecursiveIteratorIterator::CHILD_FIRST) as $path ) {
-
-            $pathname = $path->getPathname();
-
-            if ( $path->isDir() ) {
-
-                $action = rmdir($pathname);
-
-            } else {
-
-                $action = unlink($pathname);
-
-            }
-
-            if ( $action === false ) throw new Exception("Error deleting ".$pathname." during recursive unlink of folder ".$folder);
-
-        }
-
-        $action = rmdir($folder);
-
-        if ( $action === false ) throw new Exception("Error deleting folder ".$folder);
-
-    }
-
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

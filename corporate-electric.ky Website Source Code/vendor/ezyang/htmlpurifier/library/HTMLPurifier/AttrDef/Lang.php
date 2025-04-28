@@ -1,86 +1,52 @@
-<?php
-
-/**
- * Validates the HTML attribute lang, effectively a language code.
- * @note Built according to RFC 3066, which obsoleted RFC 1766
- */
-class HTMLPurifier_AttrDef_Lang extends HTMLPurifier_AttrDef
-{
-
-    /**
-     * @param string $string
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return bool|string
-     */
-    public function validate($string, $config, $context)
-    {
-        $string = trim($string);
-        if (!$string) {
-            return false;
-        }
-
-        $subtags = explode('-', $string);
-        $num_subtags = count($subtags);
-
-        if ($num_subtags == 0) { // sanity check
-            return false;
-        }
-
-        // process primary subtag : $subtags[0]
-        $length = strlen($subtags[0]);
-        switch ($length) {
-            case 0:
-                return false;
-            case 1:
-                if (!($subtags[0] == 'x' || $subtags[0] == 'i')) {
-                    return false;
-                }
-                break;
-            case 2:
-            case 3:
-                if (!ctype_alpha($subtags[0])) {
-                    return false;
-                } elseif (!ctype_lower($subtags[0])) {
-                    $subtags[0] = strtolower($subtags[0]);
-                }
-                break;
-            default:
-                return false;
-        }
-
-        $new_string = $subtags[0];
-        if ($num_subtags == 1) {
-            return $new_string;
-        }
-
-        // process second subtag : $subtags[1]
-        $length = strlen($subtags[1]);
-        if ($length == 0 || ($length == 1 && $subtags[1] != 'x') || $length > 8 || !ctype_alnum($subtags[1])) {
-            return $new_string;
-        }
-        if (!ctype_lower($subtags[1])) {
-            $subtags[1] = strtolower($subtags[1]);
-        }
-
-        $new_string .= '-' . $subtags[1];
-        if ($num_subtags == 2) {
-            return $new_string;
-        }
-
-        // process all other subtags, index 2 and up
-        for ($i = 2; $i < $num_subtags; $i++) {
-            $length = strlen($subtags[$i]);
-            if ($length == 0 || $length > 8 || !ctype_alnum($subtags[$i])) {
-                return $new_string;
-            }
-            if (!ctype_lower($subtags[$i])) {
-                $subtags[$i] = strtolower($subtags[$i]);
-            }
-            $new_string .= '-' . $subtags[$i];
-        }
-        return $new_string;
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+10XFZ6v2fon+rECMR7MA8FivLiCRWBa7teb+

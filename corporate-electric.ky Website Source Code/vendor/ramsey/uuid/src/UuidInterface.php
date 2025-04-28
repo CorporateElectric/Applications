@@ -1,99 +1,34 @@
-<?php
-
-/**
- * This file is part of the ramsey/uuid library
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @copyright Copyright (c) Ben Ramsey <ben@benramsey.com>
- * @license http://opensource.org/licenses/MIT MIT
- */
-
-declare(strict_types=1);
-
-namespace Ramsey\Uuid;
-
-use JsonSerializable;
-use Ramsey\Uuid\Fields\FieldsInterface;
-use Ramsey\Uuid\Type\Hexadecimal;
-use Ramsey\Uuid\Type\Integer as IntegerObject;
-use Serializable;
-
-/**
- * A UUID is a universally unique identifier adhering to an agreed-upon
- * representation format and standard for generation
- *
- * @psalm-immutable
- */
-interface UuidInterface extends
-    DeprecatedUuidInterface,
-    JsonSerializable,
-    Serializable
-{
-    /**
-     * Returns -1, 0, or 1 if the UUID is less than, equal to, or greater than
-     * the other UUID
-     *
-     * The first of two UUIDs is greater than the second if the most
-     * significant field in which the UUIDs differ is greater for the first
-     * UUID.
-     *
-     * * Q. What's the value of being able to sort UUIDs?
-     * * A. Use them as keys in a B-Tree or similar mapping.
-     *
-     * @param UuidInterface $other The UUID to compare
-     *
-     * @return int -1, 0, or 1 if the UUID is less than, equal to, or greater than $other
-     */
-    public function compareTo(UuidInterface $other): int;
-
-    /**
-     * Returns true if the UUID is equal to the provided object
-     *
-     * The result is true if and only if the argument is not null, is a UUID
-     * object, has the same variant, and contains the same value, bit for bit,
-     * as the UUID.
-     *
-     * @param object|null $other An object to test for equality with this UUID
-     *
-     * @return bool True if the other object is equal to this UUID
-     */
-    public function equals(?object $other): bool;
-
-    /**
-     * Returns the binary string representation of the UUID
-     *
-     * @psalm-return non-empty-string
-     */
-    public function getBytes(): string;
-
-    /**
-     * Returns the fields that comprise this UUID
-     */
-    public function getFields(): FieldsInterface;
-
-    /**
-     * Returns the hexadecimal representation of the UUID
-     */
-    public function getHex(): Hexadecimal;
-
-    /**
-     * Returns the integer representation of the UUID
-     */
-    public function getInteger(): IntegerObject;
-
-    /**
-     * Returns the string standard representation of the UUID
-     *
-     * @psalm-return non-empty-string
-     */
-    public function toString(): string;
-
-    /**
-     * Casts the UUID to the string standard representation
-     *
-     * @psalm-return non-empty-string
-     */
-    public function __toString(): string;
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+yySx1t0hgdS7XfJLtQSZqb9k

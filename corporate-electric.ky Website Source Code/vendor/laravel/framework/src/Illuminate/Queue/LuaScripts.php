@@ -1,148 +1,36 @@
-<?php
-
-namespace Illuminate\Queue;
-
-class LuaScripts
-{
-    /**
-     * Get the Lua script for computing the size of queue.
-     *
-     * KEYS[1] - The name of the primary queue
-     * KEYS[2] - The name of the "delayed" queue
-     * KEYS[3] - The name of the "reserved" queue
-     *
-     * @return string
-     */
-    public static function size()
-    {
-        return <<<'LUA'
-return redis.call('llen', KEYS[1]) + redis.call('zcard', KEYS[2]) + redis.call('zcard', KEYS[3])
-LUA;
-    }
-
-    /**
-     * Get the Lua script for pushing jobs onto the queue.
-     *
-     * KEYS[1] - The queue to push the job onto, for example: queues:foo
-     * KEYS[2] - The notification list for the queue we are pushing jobs onto, for example: queues:foo:notify
-     * ARGV[1] - The job payload
-     *
-     * @return string
-     */
-    public static function push()
-    {
-        return <<<'LUA'
--- Push the job onto the queue...
-redis.call('rpush', KEYS[1], ARGV[1])
--- Push a notification onto the "notify" queue...
-redis.call('rpush', KEYS[2], 1)
-LUA;
-    }
-
-    /**
-     * Get the Lua script for popping the next job off of the queue.
-     *
-     * KEYS[1] - The queue to pop jobs from, for example: queues:foo
-     * KEYS[2] - The queue to place reserved jobs on, for example: queues:foo:reserved
-     * KEYS[3] - The notify queue
-     * ARGV[1] - The time at which the reserved job will expire
-     *
-     * @return string
-     */
-    public static function pop()
-    {
-        return <<<'LUA'
--- Pop the first job off of the queue...
-local job = redis.call('lpop', KEYS[1])
-local reserved = false
-
-if(job ~= false) then
-    -- Increment the attempt count and place job on the reserved queue...
-    reserved = cjson.decode(job)
-    reserved['attempts'] = reserved['attempts'] + 1
-    reserved = cjson.encode(reserved)
-    redis.call('zadd', KEYS[2], ARGV[1], reserved)
-    redis.call('lpop', KEYS[3])
-end
-
-return {job, reserved}
-LUA;
-    }
-
-    /**
-     * Get the Lua script for releasing reserved jobs.
-     *
-     * KEYS[1] - The "delayed" queue we release jobs onto, for example: queues:foo:delayed
-     * KEYS[2] - The queue the jobs are currently on, for example: queues:foo:reserved
-     * ARGV[1] - The raw payload of the job to add to the "delayed" queue
-     * ARGV[2] - The UNIX timestamp at which the job should become available
-     *
-     * @return string
-     */
-    public static function release()
-    {
-        return <<<'LUA'
--- Remove the job from the current queue...
-redis.call('zrem', KEYS[2], ARGV[1])
-
--- Add the job onto the "delayed" queue...
-redis.call('zadd', KEYS[1], ARGV[2], ARGV[1])
-
-return true
-LUA;
-    }
-
-    /**
-     * Get the Lua script to migrate expired jobs back onto the queue.
-     *
-     * KEYS[1] - The queue we are removing jobs from, for example: queues:foo:reserved
-     * KEYS[2] - The queue we are moving jobs to, for example: queues:foo
-     * KEYS[3] - The notification list for the queue we are moving jobs to, for example queues:foo:notify
-     * ARGV[1] - The current UNIX timestamp
-     *
-     * @return string
-     */
-    public static function migrateExpiredJobs()
-    {
-        return <<<'LUA'
--- Get all of the jobs with an expired "score"...
-local val = redis.call('zrangebyscore', KEYS[1], '-inf', ARGV[1])
-
--- If we have values in the array, we will remove them from the first queue
--- and add them onto the destination queue in chunks of 100, which moves
--- all of the appropriate jobs onto the destination queue very safely.
-if(next(val) ~= nil) then
-    redis.call('zremrangebyrank', KEYS[1], 0, #val - 1)
-
-    for i = 1, #val, 100 do
-        redis.call('rpush', KEYS[2], unpack(val, i, math.min(i+99, #val)))
-        -- Push a notification for every job that was migrated...
-        for j = i, math.min(i+99, #val) do
-            redis.call('rpush', KEYS[3], 1)
-        end
-    end
-end
-
-return val
-LUA;
-    }
-
-    /**
-     * Get the Lua script for removing all jobs from the queue.
-     *
-     * KEYS[1] - The name of the primary queue
-     * KEYS[2] - The name of the "delayed" queue
-     * KEYS[3] - The name of the "reserved" queue
-     * KEYS[4] - The name of the "notify" queue
-     *
-     * @return string
-     */
-    public static function clear()
-    {
-        return <<<'LUA'
-local size = redis.call('llen', KEYS[1]) + redis.call('zcard', KEYS[2]) + redis.call('zcard', KEYS[3])
-redis.call('del', KEYS[1], KEYS[2], KEYS[3], KEYS[4])
-return size
-LUA;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+kw0nBa1n

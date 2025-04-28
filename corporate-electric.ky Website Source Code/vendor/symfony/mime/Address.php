@@ -1,138 +1,93 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Mime;
-
-use Egulias\EmailValidator\EmailValidator;
-use Egulias\EmailValidator\Validation\RFCValidation;
-use Symfony\Component\Mime\Encoder\IdnAddressEncoder;
-use Symfony\Component\Mime\Exception\InvalidArgumentException;
-use Symfony\Component\Mime\Exception\LogicException;
-use Symfony\Component\Mime\Exception\RfcComplianceException;
-
-/**
- * @author Fabien Potencier <fabien@symfony.com>
- */
-final class Address
-{
-    /**
-     * A regex that matches a structure like 'Name <email@address.com>'.
-     * It matches anything between the first < and last > as email address.
-     * This allows to use a single string to construct an Address, which can be convenient to use in
-     * config, and allows to have more readable config.
-     * This does not try to cover all edge cases for address.
-     */
-    private const FROM_STRING_PATTERN = '~(?<displayName>[^<]*)<(?<addrSpec>.*)>[^>]*~';
-
-    private static $validator;
-    private static $encoder;
-
-    private $address;
-    private $name;
-
-    public function __construct(string $address, string $name = '')
-    {
-        if (!class_exists(EmailValidator::class)) {
-            throw new LogicException(sprintf('The "%s" class cannot be used as it needs "%s"; try running "composer require egulias/email-validator".', __CLASS__, EmailValidator::class));
-        }
-
-        if (null === self::$validator) {
-            self::$validator = new EmailValidator();
-        }
-
-        $this->address = trim($address);
-        $this->name = trim(str_replace(["\n", "\r"], '', $name));
-
-        if (!self::$validator->isValid($this->address, new RFCValidation())) {
-            throw new RfcComplianceException(sprintf('Email "%s" does not comply with addr-spec of RFC 2822.', $address));
-        }
-    }
-
-    public function getAddress(): string
-    {
-        return $this->address;
-    }
-
-    public function getName(): string
-    {
-        return $this->name;
-    }
-
-    public function getEncodedAddress(): string
-    {
-        if (null === self::$encoder) {
-            self::$encoder = new IdnAddressEncoder();
-        }
-
-        return self::$encoder->encodeString($this->address);
-    }
-
-    public function toString(): string
-    {
-        return ($n = $this->getName()) ? $n.' <'.$this->getEncodedAddress().'>' : $this->getEncodedAddress();
-    }
-
-    /**
-     * @param Address|string $address
-     */
-    public static function create($address): self
-    {
-        if ($address instanceof self) {
-            return $address;
-        }
-        if (\is_string($address)) {
-            if (false === strpos($address, '<')) {
-                return new self($address);
-            }
-
-            if (!preg_match(self::FROM_STRING_PATTERN, $address, $matches)) {
-                throw new InvalidArgumentException(sprintf('Could not parse "%s" to a "%s" instance.', $address, self::class));
-            }
-
-            return new self($matches['addrSpec'], trim($matches['displayName'], ' \'"'));
-        }
-
-        throw new InvalidArgumentException(sprintf('An address can be an instance of Address or a string ("%s" given).', get_debug_type($address)));
-    }
-
-    /**
-     * @param (Address|string)[] $addresses
-     *
-     * @return Address[]
-     */
-    public static function createArray(array $addresses): array
-    {
-        $addrs = [];
-        foreach ($addresses as $address) {
-            $addrs[] = self::create($address);
-        }
-
-        return $addrs;
-    }
-
-    /**
-     * @deprecated since Symfony 5.2, use "create()" instead.
-     */
-    public static function fromString(string $string): self
-    {
-        trigger_deprecation('symfony/mime', '5.2', '"%s()" is deprecated, use "%s::create()" instead.', __METHOD__, __CLASS__);
-
-        if (false === strpos($string, '<')) {
-            return new self($string, '');
-        }
-
-        if (!preg_match(self::FROM_STRING_PATTERN, $string, $matches)) {
-            throw new InvalidArgumentException(sprintf('Could not parse "%s" to a "%s" instance.', $string, self::class));
-        }
-
-        return new self($matches['addrSpec'], trim($matches['displayName'], ' \'"'));
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

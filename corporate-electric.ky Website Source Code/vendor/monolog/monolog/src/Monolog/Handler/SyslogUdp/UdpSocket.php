@@ -1,69 +1,62 @@
-<?php declare(strict_types=1);
-
-/*
- * This file is part of the Monolog package.
- *
- * (c) Jordi Boggiano <j.boggiano@seld.be>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Monolog\Handler\SyslogUdp;
-
-use Monolog\Utils;
-use Socket;
-
-class UdpSocket
-{
-    protected const DATAGRAM_MAX_LENGTH = 65023;
-
-    /** @var string */
-    protected $ip;
-    /** @var int */
-    protected $port;
-    /** @var resource|Socket|null */
-    protected $socket;
-
-    public function __construct(string $ip, int $port = 514)
-    {
-        $this->ip = $ip;
-        $this->port = $port;
-        $domain = AF_INET;
-        $protocol = SOL_UDP;
-        // Check if we are using unix sockets.
-        if ($port === 0) {
-            $domain = AF_UNIX;
-            $protocol = IPPROTO_IP;
-        }
-        $this->socket = socket_create($domain, SOCK_DGRAM, $protocol) ?: null;
-    }
-
-    public function write($line, $header = "")
-    {
-        $this->send($this->assembleMessage($line, $header));
-    }
-
-    public function close(): void
-    {
-        if (is_resource($this->socket) || $this->socket instanceof Socket) {
-            socket_close($this->socket);
-            $this->socket = null;
-        }
-    }
-
-    protected function send(string $chunk): void
-    {
-        if (!is_resource($this->socket) && !$this->socket instanceof Socket) {
-            throw new \RuntimeException('The UdpSocket to '.$this->ip.':'.$this->port.' has been closed and can not be written to anymore');
-        }
-        socket_sendto($this->socket, $chunk, strlen($chunk), $flags = 0, $this->ip, $this->port);
-    }
-
-    protected function assembleMessage(string $line, string $header): string
-    {
-        $chunkSize = static::DATAGRAM_MAX_LENGTH - strlen($header);
-
-        return $header . Utils::substr($line, 0, $chunkSize);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+XugZoRJpLu/wB6gyr0h3xW==

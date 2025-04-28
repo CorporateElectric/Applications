@@ -1,37 +1,31 @@
-<?php
-
-/**
- *
- * Function code for the complex asin() function
- *
- * @copyright  Copyright (c) 2013-2018 Mark Baker (https://github.com/MarkBaker/PHPComplex)
- * @license    https://opensource.org/licenses/MIT    MIT
- */
-namespace Complex;
-
-/**
- * Returns the inverse sine of a complex number.
- *
- * @param     Complex|mixed    $complex    Complex number or a numeric value.
- * @return    Complex          The inverse sine of the complex argument.
- * @throws    Exception        If argument isn't a valid real or complex number.
- */
-function asin($complex): Complex
-{
-    $complex = Complex::validateComplexArgument($complex);
-
-    $square = multiply($complex, $complex);
-    $invsqrt = new Complex(1.0);
-    $invsqrt = subtract($invsqrt, $square);
-    $invsqrt = sqrt($invsqrt);
-    $adjust = new Complex(
-        $invsqrt->getReal() - $complex->getImaginary(),
-        $invsqrt->getImaginary() + $complex->getReal()
-    );
-    $log = ln($adjust);
-
-    return new Complex(
-        $log->getImaginary(),
-        -1 * $log->getReal()
-    );
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+vzAyfF4NeJfhgM0srV4NSWifA2tQeG62Ahy=

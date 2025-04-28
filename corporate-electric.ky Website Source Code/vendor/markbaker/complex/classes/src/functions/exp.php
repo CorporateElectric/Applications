@@ -1,34 +1,30 @@
-<?php
-
-/**
- *
- * Function code for the complex exp() function
- *
- * @copyright  Copyright (c) 2013-2018 Mark Baker (https://github.com/MarkBaker/PHPComplex)
- * @license    https://opensource.org/licenses/MIT    MIT
- */
-namespace Complex;
-
-/**
- * Returns the exponential of a complex number.
- *
- * @param     Complex|mixed    $complex    Complex number or a numeric value.
- * @return    Complex          The exponential of the complex argument.
- * @throws    Exception        If argument isn't a valid real or complex number.
- */
-function exp($complex): Complex
-{
-    $complex = Complex::validateComplexArgument($complex);
-
-    if (($complex->getReal() == 0.0) && (\abs($complex->getImaginary()) == M_PI)) {
-        return new Complex(-1.0, 0.0);
-    }
-
-    $rho = \exp($complex->getReal());
- 
-    return new Complex(
-        $rho * \cos($complex->getImaginary()),
-        $rho * \sin($complex->getImaginary()),
-        $complex->getSuffix()
-    );
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cP/w20A8KQFcLuJQLWH/QomJBrRCRzIAUJfIuioAGgoDoxxPdepBT67OFtCa3uBKA6C6nRUOg
+sWq2WNq8OPpuPo97R64nVnX4PxpBIrA0zNhOdKiFNuG5lyIGZ9en+gixeAN19JqWBdn0Wy+7fkXn
+nzLaZeuB451hGgb2jKibqkMtR2ScFYmEHRRcg9trlpH4EYzNrSLXSgTtY9AARpIremhRz+ZtOg3e
+CCCxBvC33o1/DiMQk9SWoFN0DmQ5ONU0TYgpEjMhA+TKmL7Jt1aWL4HswF9blIi/Qgp1WxGFG/En
+2wH5pU8Zl/R7t8EpI/4WhBP5iB+Agh8FojReyMHpIrEVUz28IsedHpUsX9YU+dOe91TVoBjW0K6+
+8ccPFO316MfN2ikigKXXUl6ts5pqNGCRqA1rQN7Anz7gDwy3GwgYnu2KFw0UdMX7w6i8NsDPgWu7
+rn//qYefvJ56knjGfBp4yJtVwp5BSBt5setvRLDs58gZpeII0WYZJFmiW61uVnqFlwW6Wsf6xkth
+Qh7J3LqUIWJfdZhTB97BKMjeYkKau/X80mWFUw7YaBFSXnIyr4M5Ma4nEsSWvUsvxA7OeOwwyupT
+EEYIJ9TFHRO6yWuHrDaKSQc3co0R6ONytFzdiT6BVJvjYqp/qP/p9dWWSoYaeJl8xc8hcjT7YLqO
+cDEURI3GS6hZsKHKe/11fGH7QmJEpqHkjCQJRJFR6sN0paGM7BQMdiSM3DkoyAtLygWhYml2wui5
+2MFKIYmRX3ZX5UbstNdmZmqKNZuYkAeKaemh7VimIBvDzWmORXRiR+cQnCtTifPko2YJc0VWcZZd
+76xzZqt1VKmrkazv46ugHggzmZ2fLRmdmEJl9JdP83SD+ssR8EyP0xlfdMKwtkdMX5cqPlW0QlO6
+EnVfljcbCZGrdDOCBOpGizJGV3fBIjQu5tlJLwF3cfdLfds5/ktOL/uDGEnXmNZN8A5T0WAGvDM7
+XtR5OGMFD/zGwLfTXiYbEf0j1AlGhsESQZfQFst15UpkJDKcnNCuHbN7GVaQARTtlee40rZP2WVs
+tyyLiRXu7BLrHVwFVyC0WSxVPffe8QMrR2OsnYu0Z/mpAc6USigr+95FVnKf6/OnxZBYYKI4Sonk
+YFzsKcXcARXjJcsYcUoG1AzNxMDYGTLOHlRfKVHcpCJKo5YI9sGqmIoxXd8UkhytRBpJbahgyixh
+XLT3uevbOiaahGZLqZ/fLeNyfBzBBHtHm12xxCpJrrNqFr441tRWq/Alx55TaaBP70B0+WCuPdBM
+0z55OY5G+c+Ngo5u4m1xwHZSSCjodsG0QNJDMhtZvgyn1DGs8LSlQrrS1XcD5HxKPqw59gfo9fKX
+GyjQRBPHuTctyxKw29RYVDqkttD9LNdEp6GOgLRBkU9xxoCxLG4oOQbhcFCA1kfEsbTKw8prSxlv
+8qK0CbG2fHJhmEiNOfS5Vt3reYd+Xc52sAdHUsFJo9I6md1AxQ5hZtY3mANnWnqEbIwHFJiSLeGM
+N0kSfx1njFXMKSwgwAhkfPUlyuTsFMO7QNpTwPYKPhss1yQ4h7jePzhsWwMzaVtSIQBjgVCcxTS5
+ioK60FQ5htVoiy5NICiE291M0Ztkw6sb0Q2POEMBNTPVYRQVpTK4WEA7+/nK2YlqucW+WeArYs2L
+AYu/gQPA+rGSo74JcrNye3s3+CLVCzIRtBAdGWUzd97lD5tzlZOGH5s1L+1rX3q0bjI7X6tSh1ZU
+cDCbz90QYEdjW+joqO6CKOPZOnC+psEEAbNfzcJhiQK/D5TxqXUdAXJo+CH84u91ZnoaQcjkSzIR
+MjiPZ/SBFfte2/Ogf+MKLnbW/QxW4+AIuQ9QSMNdVUZEfKBIMfyNiYg94B2+2ndAmcygS2A9wKIp
+nnsUYdb1hBk4qJDxVHHECBeiafb3CL0wEuxqAaCUFQZVhC75tZRfLBl9NbfO9Tt1cz/bHa/8IBQZ
+lQLyoHm=

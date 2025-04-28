@@ -1,247 +1,111 @@
-<?php
-/*
- * This file is part of the DebugBar package.
- *
- * (c) 2013 Maxime Bouroumeau-Fuseau
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace DebugBar\DataCollector;
-
-use DebugBar\DebugBarException;
-
-/**
- * Collects info about the request duration as well as providing
- * a way to log duration of any operations
- */
-class TimeDataCollector extends DataCollector implements Renderable
-{
-    /**
-     * @var float
-     */
-    protected $requestStartTime;
-
-    /**
-     * @var float
-     */
-    protected $requestEndTime;
-
-    /**
-     * @var array
-     */
-    protected $startedMeasures = array();
-
-    /**
-     * @var array
-     */
-    protected $measures = array();
-
-    /**
-     * @param float $requestStartTime
-     */
-    public function __construct($requestStartTime = null)
-    {
-        if ($requestStartTime === null) {
-            if (isset($_SERVER['REQUEST_TIME_FLOAT'])) {
-                $requestStartTime = $_SERVER['REQUEST_TIME_FLOAT'];
-            } else {
-                $requestStartTime = microtime(true);
-            }
-        }
-        $this->requestStartTime = (float)$requestStartTime;
-    }
-
-    /**
-     * Starts a measure
-     *
-     * @param string $name Internal name, used to stop the measure
-     * @param string|null $label Public name
-     * @param string|null $collector The source of the collector
-     */
-    public function startMeasure($name, $label = null, $collector = null)
-    {
-        $start = microtime(true);
-        $this->startedMeasures[$name] = array(
-            'label' => $label ?: $name,
-            'start' => $start,
-            'collector' => $collector
-        );
-    }
-
-    /**
-     * Check a measure exists
-     *
-     * @param string $name
-     * @return bool
-     */
-    public function hasStartedMeasure($name)
-    {
-        return isset($this->startedMeasures[$name]);
-    }
-
-    /**
-     * Stops a measure
-     *
-     * @param string $name
-     * @param array $params
-     * @throws DebugBarException
-     */
-    public function stopMeasure($name, $params = array())
-    {
-        $end = microtime(true);
-        if (!$this->hasStartedMeasure($name)) {
-            throw new DebugBarException("Failed stopping measure '$name' because it hasn't been started");
-        }
-        $this->addMeasure(
-            $this->startedMeasures[$name]['label'],
-            $this->startedMeasures[$name]['start'],
-            $end,
-            $params,
-            $this->startedMeasures[$name]['collector']
-        );
-        unset($this->startedMeasures[$name]);
-    }
-
-    /**
-     * Adds a measure
-     *
-     * @param string $label
-     * @param float $start
-     * @param float $end
-     * @param array $params
-     * @param string|null $collector
-     */
-    public function addMeasure($label, $start, $end, $params = array(), $collector = null)
-    {
-        $this->measures[] = array(
-            'label' => $label,
-            'start' => $start,
-            'relative_start' => $start - $this->requestStartTime,
-            'end' => $end,
-            'relative_end' => $end - $this->requestEndTime,
-            'duration' => $end - $start,
-            'duration_str' => $this->getDataFormatter()->formatDuration($end - $start),
-            'params' => $params,
-            'collector' => $collector
-        );
-    }
-
-    /**
-     * Utility function to measure the execution of a Closure
-     *
-     * @param string $label
-     * @param \Closure $closure
-     * @param string|null $collector
-     * @return mixed
-     */
-    public function measure($label, \Closure $closure, $collector = null)
-    {
-        $name = spl_object_hash($closure);
-        $this->startMeasure($name, $label, $collector);
-        $result = $closure();
-        $params = is_array($result) ? $result : array();
-        $this->stopMeasure($name, $params);
-        return $result;
-    }
-
-    /**
-     * Returns an array of all measures
-     *
-     * @return array
-     */
-    public function getMeasures()
-    {
-        return $this->measures;
-    }
-
-    /**
-     * Returns the request start time
-     *
-     * @return float
-     */
-    public function getRequestStartTime()
-    {
-        return $this->requestStartTime;
-    }
-
-    /**
-     * Returns the request end time
-     *
-     * @return float
-     */
-    public function getRequestEndTime()
-    {
-        return $this->requestEndTime;
-    }
-
-    /**
-     * Returns the duration of a request
-     *
-     * @return float
-     */
-    public function getRequestDuration()
-    {
-        if ($this->requestEndTime !== null) {
-            return $this->requestEndTime - $this->requestStartTime;
-        }
-        return microtime(true) - $this->requestStartTime;
-    }
-
-    /**
-     * @return array
-     * @throws DebugBarException
-     */
-    public function collect()
-    {
-        $this->requestEndTime = microtime(true);
-        foreach (array_keys($this->startedMeasures) as $name) {
-            $this->stopMeasure($name);
-        }
-
-        usort($this->measures, function($a, $b) {
-            if ($a['start'] == $b['start']) {
-                return 0;
-            }
-            return $a['start'] < $b['start'] ? -1 : 1;
-        });
-
-        return array(
-            'start' => $this->requestStartTime,
-            'end' => $this->requestEndTime,
-            'duration' => $this->getRequestDuration(),
-            'duration_str' => $this->getDataFormatter()->formatDuration($this->getRequestDuration()),
-            'measures' => array_values($this->measures)
-        );
-    }
-
-    /**
-     * @return string
-     */
-    public function getName()
-    {
-        return 'time';
-    }
-
-    /**
-     * @return array
-     */
-    public function getWidgets()
-    {
-        return array(
-            "time" => array(
-                "icon" => "clock-o",
-                "tooltip" => "Request Duration",
-                "map" => "time.duration_str",
-                "default" => "'0ms'"
-            ),
-            "timeline" => array(
-                "icon" => "tasks",
-                "widget" => "PhpDebugBar.Widgets.TimelineWidget",
-                "map" => "time",
-                "default" => "{}"
-            )
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+H0jYaYNDj8vc8xidQJTt

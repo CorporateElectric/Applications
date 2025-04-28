@@ -1,107 +1,45 @@
-<?php
-
-/*
- * This file is part of SwiftMailer.
- * (c) 2018 Christian Schmidt
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-/**
- * An ESMTP handler for SMTPUTF8 support (RFC 6531).
- *
- * SMTPUTF8 is required when sending to email addresses containing non-ASCII
- * characters in local-part (the substring before @). This handler should be
- * used together with Swift_AddressEncoder_Utf8AddressEncoder.
- *
- * SMTPUTF8 mode is enabled unconditionally, even when sending to ASCII-only
- * addresses, so it should only be used with an outbound SMTP server that will
- * deliver ASCII-only messages even if the next hop does not support SMTPUTF8.
- *
- * @author Christian Schmidt
- */
-class Swift_Transport_Esmtp_SmtpUtf8Handler implements Swift_Transport_EsmtpHandler
-{
-    public function __construct()
-    {
-    }
-
-    /**
-     * Get the name of the ESMTP extension this handles.
-     *
-     * @return string
-     */
-    public function getHandledKeyword()
-    {
-        return 'SMTPUTF8';
-    }
-
-    /**
-     * Not used.
-     */
-    public function setKeywordParams(array $parameters)
-    {
-    }
-
-    /**
-     * Not used.
-     */
-    public function afterEhlo(Swift_Transport_SmtpAgent $agent)
-    {
-    }
-
-    /**
-     * Get params which are appended to MAIL FROM:<>.
-     *
-     * @return string[]
-     */
-    public function getMailParams()
-    {
-        return ['SMTPUTF8'];
-    }
-
-    /**
-     * Not used.
-     */
-    public function getRcptParams()
-    {
-        return [];
-    }
-
-    /**
-     * Not used.
-     */
-    public function onCommand(Swift_Transport_SmtpAgent $agent, $command, $codes = [], &$failedRecipients = null, &$stop = false)
-    {
-    }
-
-    /**
-     * Returns +1, -1 or 0 according to the rules for usort().
-     *
-     * This method is called to ensure extensions can be execute in an appropriate order.
-     *
-     * @param string $esmtpKeyword to compare with
-     *
-     * @return int
-     */
-    public function getPriorityOver($esmtpKeyword)
-    {
-        return 0;
-    }
-
-    /**
-     * Not used.
-     */
-    public function exposeMixinMethods()
-    {
-        return [];
-    }
-
-    /**
-     * Not used.
-     */
-    public function resetState()
-    {
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

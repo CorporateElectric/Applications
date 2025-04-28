@@ -1,509 +1,201 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Predis\Connection\Aggregate;
-
-use Predis\ClientException;
-use Predis\Command\CommandInterface;
-use Predis\Command\RawCommand;
-use Predis\Connection\ConnectionException;
-use Predis\Connection\FactoryInterface;
-use Predis\Connection\NodeConnectionInterface;
-use Predis\Replication\MissingMasterException;
-use Predis\Replication\ReplicationStrategy;
-use Predis\Response\ErrorInterface as ResponseErrorInterface;
-
-/**
- * Aggregate connection handling replication of Redis nodes configured in a
- * single master / multiple slaves setup.
- *
- * @author Daniele Alessandri <suppakilla@gmail.com>
- */
-class MasterSlaveReplication implements ReplicationInterface
-{
-    /**
-     * @var ReplicationStrategy
-     */
-    protected $strategy;
-
-    /**
-     * @var NodeConnectionInterface
-     */
-    protected $master;
-
-    /**
-     * @var NodeConnectionInterface[]
-     */
-    protected $slaves = array();
-
-    /**
-     * @var NodeConnectionInterface
-     */
-    protected $current;
-
-    /**
-     * @var bool
-     */
-    protected $autoDiscovery = false;
-
-    /**
-     * @var FactoryInterface
-     */
-    protected $connectionFactory;
-
-    /**
-     * {@inheritdoc}
-     */
-    public function __construct(ReplicationStrategy $strategy = null)
-    {
-        $this->strategy = $strategy ?: new ReplicationStrategy();
-    }
-
-    /**
-     * Configures the automatic discovery of the replication configuration on failure.
-     *
-     * @param bool $value Enable or disable auto discovery.
-     */
-    public function setAutoDiscovery($value)
-    {
-        if (!$this->connectionFactory) {
-            throw new ClientException('Automatic discovery requires a connection factory');
-        }
-
-        $this->autoDiscovery = (bool) $value;
-    }
-
-    /**
-     * Sets the connection factory used to create the connections by the auto
-     * discovery procedure.
-     *
-     * @param FactoryInterface $connectionFactory Connection factory instance.
-     */
-    public function setConnectionFactory(FactoryInterface $connectionFactory)
-    {
-        $this->connectionFactory = $connectionFactory;
-    }
-
-    /**
-     * Resets the connection state.
-     */
-    protected function reset()
-    {
-        $this->current = null;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function add(NodeConnectionInterface $connection)
-    {
-        $alias = $connection->getParameters()->alias;
-
-        if ($alias === 'master') {
-            $this->master = $connection;
-        } else {
-            $this->slaves[$alias ?: "slave-$connection"] = $connection;
-        }
-
-        $this->reset();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function remove(NodeConnectionInterface $connection)
-    {
-        if ($connection->getParameters()->alias === 'master') {
-            $this->master = null;
-            $this->reset();
-
-            return true;
-        } else {
-            if (($id = array_search($connection, $this->slaves, true)) !== false) {
-                unset($this->slaves[$id]);
-                $this->reset();
-
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getConnection(CommandInterface $command)
-    {
-        if (!$this->current) {
-            if ($this->strategy->isReadOperation($command) && $slave = $this->pickSlave()) {
-                $this->current = $slave;
-            } else {
-                $this->current = $this->getMasterOrDie();
-            }
-
-            return $this->current;
-        }
-
-        if ($this->current === $master = $this->getMasterOrDie()) {
-            return $master;
-        }
-
-        if (!$this->strategy->isReadOperation($command) || !$this->slaves) {
-            $this->current = $master;
-        }
-
-        return $this->current;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getConnectionById($connectionId)
-    {
-        if ($connectionId === 'master') {
-            return $this->master;
-        }
-
-        if (isset($this->slaves[$connectionId])) {
-            return $this->slaves[$connectionId];
-        }
-
-        return;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function switchTo($connection)
-    {
-        if (!$connection instanceof NodeConnectionInterface) {
-            $connection = $this->getConnectionById($connection);
-        }
-
-        if (!$connection) {
-            throw new \InvalidArgumentException('Invalid connection or connection not found.');
-        }
-
-        if ($connection !== $this->master && !in_array($connection, $this->slaves, true)) {
-            throw new \InvalidArgumentException('Invalid connection or connection not found.');
-        }
-
-        $this->current = $connection;
-    }
-
-    /**
-     * Switches to the master server.
-     */
-    public function switchToMaster()
-    {
-        $this->switchTo('master');
-    }
-
-    /**
-     * Switches to a random slave server.
-     */
-    public function switchToSlave()
-    {
-        $connection = $this->pickSlave();
-        $this->switchTo($connection);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getCurrent()
-    {
-        return $this->current;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getMaster()
-    {
-        return $this->master;
-    }
-
-    /**
-     * Returns the connection associated to the master server.
-     *
-     * @return NodeConnectionInterface
-     */
-    private function getMasterOrDie()
-    {
-        if (!$connection = $this->getMaster()) {
-            throw new MissingMasterException('No master server available for replication');
-        }
-
-        return $connection;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getSlaves()
-    {
-        return array_values($this->slaves);
-    }
-
-    /**
-     * Returns the underlying replication strategy.
-     *
-     * @return ReplicationStrategy
-     */
-    public function getReplicationStrategy()
-    {
-        return $this->strategy;
-    }
-
-    /**
-     * Returns a random slave.
-     *
-     * @return NodeConnectionInterface
-     */
-    protected function pickSlave()
-    {
-        if ($this->slaves) {
-            return $this->slaves[array_rand($this->slaves)];
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function isConnected()
-    {
-        return $this->current ? $this->current->isConnected() : false;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function connect()
-    {
-        if (!$this->current) {
-            if (!$this->current = $this->pickSlave()) {
-                if (!$this->current = $this->getMaster()) {
-                    throw new ClientException('No available connection for replication');
-                }
-            }
-        }
-
-        $this->current->connect();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function disconnect()
-    {
-        if ($this->master) {
-            $this->master->disconnect();
-        }
-
-        foreach ($this->slaves as $connection) {
-            $connection->disconnect();
-        }
-    }
-
-    /**
-     * Handles response from INFO.
-     *
-     * @param string $response
-     *
-     * @return array
-     */
-    private function handleInfoResponse($response)
-    {
-        $info = array();
-
-        foreach (preg_split('/\r?\n/', $response) as $row) {
-            if (strpos($row, ':') === false) {
-                continue;
-            }
-
-            list($k, $v) = explode(':', $row, 2);
-            $info[$k] = $v;
-        }
-
-        return $info;
-    }
-
-    /**
-     * Fetches the replication configuration from one of the servers.
-     */
-    public function discover()
-    {
-        if (!$this->connectionFactory) {
-            throw new ClientException('Discovery requires a connection factory');
-        }
-
-        RETRY_FETCH: {
-            try {
-                if ($connection = $this->getMaster()) {
-                    $this->discoverFromMaster($connection, $this->connectionFactory);
-                } elseif ($connection = $this->pickSlave()) {
-                    $this->discoverFromSlave($connection, $this->connectionFactory);
-                } else {
-                    throw new ClientException('No connection available for discovery');
-                }
-            } catch (ConnectionException $exception) {
-                $this->remove($connection);
-                goto RETRY_FETCH;
-            }
-        }
-    }
-
-    /**
-     * Discovers the replication configuration by contacting the master node.
-     *
-     * @param NodeConnectionInterface $connection        Connection to the master node.
-     * @param FactoryInterface        $connectionFactory Connection factory instance.
-     */
-    protected function discoverFromMaster(NodeConnectionInterface $connection, FactoryInterface $connectionFactory)
-    {
-        $response = $connection->executeCommand(RawCommand::create('INFO', 'REPLICATION'));
-        $replication = $this->handleInfoResponse($response);
-
-        if ($replication['role'] !== 'master') {
-            throw new ClientException("Role mismatch (expected master, got slave) [$connection]");
-        }
-
-        $this->slaves = array();
-
-        foreach ($replication as $k => $v) {
-            $parameters = null;
-
-            if (strpos($k, 'slave') === 0 && preg_match('/ip=(?P<host>.*),port=(?P<port>\d+)/', $v, $parameters)) {
-                $slaveConnection = $connectionFactory->create(array(
-                    'host' => $parameters['host'],
-                    'port' => $parameters['port'],
-                ));
-
-                $this->add($slaveConnection);
-            }
-        }
-    }
-
-    /**
-     * Discovers the replication configuration by contacting one of the slaves.
-     *
-     * @param NodeConnectionInterface $connection        Connection to one of the slaves.
-     * @param FactoryInterface        $connectionFactory Connection factory instance.
-     */
-    protected function discoverFromSlave(NodeConnectionInterface $connection, FactoryInterface $connectionFactory)
-    {
-        $response = $connection->executeCommand(RawCommand::create('INFO', 'REPLICATION'));
-        $replication = $this->handleInfoResponse($response);
-
-        if ($replication['role'] !== 'slave') {
-            throw new ClientException("Role mismatch (expected slave, got master) [$connection]");
-        }
-
-        $masterConnection = $connectionFactory->create(array(
-            'host' => $replication['master_host'],
-            'port' => $replication['master_port'],
-            'alias' => 'master',
-        ));
-
-        $this->add($masterConnection);
-
-        $this->discoverFromMaster($masterConnection, $connectionFactory);
-    }
-
-    /**
-     * Retries the execution of a command upon slave failure.
-     *
-     * @param CommandInterface $command Command instance.
-     * @param string           $method  Actual method.
-     *
-     * @return mixed
-     */
-    private function retryCommandOnFailure(CommandInterface $command, $method)
-    {
-        RETRY_COMMAND: {
-            try {
-                $connection = $this->getConnection($command);
-                $response = $connection->$method($command);
-
-                if ($response instanceof ResponseErrorInterface && $response->getErrorType() === 'LOADING') {
-                    throw new ConnectionException($connection, "Redis is loading the dataset in memory [$connection]");
-                }
-            } catch (ConnectionException $exception) {
-                $connection = $exception->getConnection();
-                $connection->disconnect();
-
-                if ($connection === $this->master && !$this->autoDiscovery) {
-                    // Throw immediately when master connection is failing, even
-                    // when the command represents a read-only operation, unless
-                    // automatic discovery has been enabled.
-                    throw $exception;
-                } else {
-                    // Otherwise remove the failing slave and attempt to execute
-                    // the command again on one of the remaining slaves...
-                    $this->remove($connection);
-                }
-
-                // ... that is, unless we have no more connections to use.
-                if (!$this->slaves && !$this->master) {
-                    throw $exception;
-                } elseif ($this->autoDiscovery) {
-                    $this->discover();
-                }
-
-                goto RETRY_COMMAND;
-            } catch (MissingMasterException $exception) {
-                if ($this->autoDiscovery) {
-                    $this->discover();
-                } else {
-                    throw $exception;
-                }
-
-                goto RETRY_COMMAND;
-            }
-        }
-
-        return $response;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function writeRequest(CommandInterface $command)
-    {
-        $this->retryCommandOnFailure($command, __FUNCTION__);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function readResponse(CommandInterface $command)
-    {
-        return $this->retryCommandOnFailure($command, __FUNCTION__);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function executeCommand(CommandInterface $command)
-    {
-        return $this->retryCommandOnFailure($command, __FUNCTION__);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function __sleep()
-    {
-        return array('master', 'slaves', 'strategy');
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+hj5paxv9LyuFmonudaLRXK0zaBDugLLfsK4=

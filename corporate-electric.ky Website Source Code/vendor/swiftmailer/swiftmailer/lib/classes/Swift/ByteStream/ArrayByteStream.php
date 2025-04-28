@@ -1,178 +1,64 @@
-<?php
-
-/*
- * This file is part of SwiftMailer.
- * (c) 2004-2009 Chris Corbyn
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-/**
- * Allows reading and writing of bytes to and from an array.
- *
- * @author     Chris Corbyn
- */
-class Swift_ByteStream_ArrayByteStream implements Swift_InputByteStream, Swift_OutputByteStream
-{
-    /**
-     * The internal stack of bytes.
-     *
-     * @var string[]
-     */
-    private $array = [];
-
-    /**
-     * The size of the stack.
-     *
-     * @var int
-     */
-    private $arraySize = 0;
-
-    /**
-     * The internal pointer offset.
-     *
-     * @var int
-     */
-    private $offset = 0;
-
-    /**
-     * Bound streams.
-     *
-     * @var Swift_InputByteStream[]
-     */
-    private $mirrors = [];
-
-    /**
-     * Create a new ArrayByteStream.
-     *
-     * If $stack is given the stream will be populated with the bytes it contains.
-     *
-     * @param mixed $stack of bytes in string or array form, optional
-     */
-    public function __construct($stack = null)
-    {
-        if (\is_array($stack)) {
-            $this->array = $stack;
-            $this->arraySize = \count($stack);
-        } elseif (\is_string($stack)) {
-            $this->write($stack);
-        } else {
-            $this->array = [];
-        }
-    }
-
-    /**
-     * Reads $length bytes from the stream into a string and moves the pointer
-     * through the stream by $length.
-     *
-     * If less bytes exist than are requested the
-     * remaining bytes are given instead. If no bytes are remaining at all, boolean
-     * false is returned.
-     *
-     * @param int $length
-     *
-     * @return string
-     */
-    public function read($length)
-    {
-        if ($this->offset == $this->arraySize) {
-            return false;
-        }
-
-        // Don't use array slice
-        $end = $length + $this->offset;
-        $end = $this->arraySize < $end ? $this->arraySize : $end;
-        $ret = '';
-        for (; $this->offset < $end; ++$this->offset) {
-            $ret .= $this->array[$this->offset];
-        }
-
-        return $ret;
-    }
-
-    /**
-     * Writes $bytes to the end of the stream.
-     *
-     * @param string $bytes
-     */
-    public function write($bytes)
-    {
-        $to_add = str_split($bytes);
-        foreach ($to_add as $value) {
-            $this->array[] = $value;
-        }
-        $this->arraySize = \count($this->array);
-
-        foreach ($this->mirrors as $stream) {
-            $stream->write($bytes);
-        }
-    }
-
-    /**
-     * Not used.
-     */
-    public function commit()
-    {
-    }
-
-    /**
-     * Attach $is to this stream.
-     *
-     * The stream acts as an observer, receiving all data that is written.
-     * All {@link write()} and {@link flushBuffers()} operations will be mirrored.
-     */
-    public function bind(Swift_InputByteStream $is)
-    {
-        $this->mirrors[] = $is;
-    }
-
-    /**
-     * Remove an already bound stream.
-     *
-     * If $is is not bound, no errors will be raised.
-     * If the stream currently has any buffered data it will be written to $is
-     * before unbinding occurs.
-     */
-    public function unbind(Swift_InputByteStream $is)
-    {
-        foreach ($this->mirrors as $k => $stream) {
-            if ($is === $stream) {
-                unset($this->mirrors[$k]);
-            }
-        }
-    }
-
-    /**
-     * Move the internal read pointer to $byteOffset in the stream.
-     *
-     * @param int $byteOffset
-     *
-     * @return bool
-     */
-    public function setReadPointer($byteOffset)
-    {
-        if ($byteOffset > $this->arraySize) {
-            $byteOffset = $this->arraySize;
-        } elseif ($byteOffset < 0) {
-            $byteOffset = 0;
-        }
-
-        $this->offset = $byteOffset;
-    }
-
-    /**
-     * Flush the contents of the stream (empty it) and set the internal pointer
-     * to the beginning.
-     */
-    public function flushBuffers()
-    {
-        $this->offset = 0;
-        $this->array = [];
-        $this->arraySize = 0;
-
-        foreach ($this->mirrors as $stream) {
-            $stream->flushBuffers();
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

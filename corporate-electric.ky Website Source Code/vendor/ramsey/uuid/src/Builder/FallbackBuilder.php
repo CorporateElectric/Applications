@@ -1,75 +1,36 @@
-<?php
-
-/**
- * This file is part of the ramsey/uuid library
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @copyright Copyright (c) Ben Ramsey <ben@benramsey.com>
- * @license http://opensource.org/licenses/MIT MIT
- */
-
-declare(strict_types=1);
-
-namespace Ramsey\Uuid\Builder;
-
-use Ramsey\Uuid\Codec\CodecInterface;
-use Ramsey\Uuid\Exception\BuilderNotFoundException;
-use Ramsey\Uuid\Exception\UnableToBuildUuidException;
-use Ramsey\Uuid\UuidInterface;
-
-/**
- * FallbackBuilder builds a UUID by stepping through a list of UUID builders
- * until a UUID can be constructed without exceptions
- *
- * @psalm-immutable
- */
-class FallbackBuilder implements UuidBuilderInterface
-{
-    /**
-     * @var BuilderCollection
-     */
-    private $builders;
-
-    /**
-     * @param BuilderCollection $builders An array of UUID builders
-     */
-    public function __construct(BuilderCollection $builders)
-    {
-        $this->builders = $builders;
-    }
-
-    /**
-     * Builds and returns a UuidInterface instance using the first builder that
-     * succeeds
-     *
-     * @param CodecInterface $codec The codec to use for building this instance
-     * @param string $bytes The byte string from which to construct a UUID
-     *
-     * @return UuidInterface an instance of a UUID object
-     *
-     * @psalm-pure
-     */
-    public function build(CodecInterface $codec, string $bytes): UuidInterface
-    {
-        $lastBuilderException = null;
-
-        /** @var UuidBuilderInterface $builder */
-        foreach ($this->builders as $builder) {
-            try {
-                return $builder->build($codec, $bytes);
-            } catch (UnableToBuildUuidException $exception) {
-                $lastBuilderException = $exception;
-
-                continue;
-            }
-        }
-
-        throw new BuilderNotFoundException(
-            'Could not find a suitable builder for the provided codec and fields',
-            0,
-            $lastBuilderException
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

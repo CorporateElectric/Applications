@@ -1,210 +1,104 @@
-<?php
-
-namespace Illuminate\Foundation\Http\Middleware;
-
-use Closure;
-use Illuminate\Contracts\Encryption\DecryptException;
-use Illuminate\Contracts\Encryption\Encrypter;
-use Illuminate\Contracts\Foundation\Application;
-use Illuminate\Contracts\Support\Responsable;
-use Illuminate\Cookie\CookieValuePrefix;
-use Illuminate\Cookie\Middleware\EncryptCookies;
-use Illuminate\Session\TokenMismatchException;
-use Illuminate\Support\InteractsWithTime;
-use Symfony\Component\HttpFoundation\Cookie;
-
-class VerifyCsrfToken
-{
-    use InteractsWithTime;
-
-    /**
-     * The application instance.
-     *
-     * @var \Illuminate\Contracts\Foundation\Application
-     */
-    protected $app;
-
-    /**
-     * The encrypter implementation.
-     *
-     * @var \Illuminate\Contracts\Encryption\Encrypter
-     */
-    protected $encrypter;
-
-    /**
-     * The URIs that should be excluded from CSRF verification.
-     *
-     * @var array
-     */
-    protected $except = [];
-
-    /**
-     * Indicates whether the XSRF-TOKEN cookie should be set on the response.
-     *
-     * @var bool
-     */
-    protected $addHttpCookie = true;
-
-    /**
-     * Create a new middleware instance.
-     *
-     * @param  \Illuminate\Contracts\Foundation\Application  $app
-     * @param  \Illuminate\Contracts\Encryption\Encrypter  $encrypter
-     * @return void
-     */
-    public function __construct(Application $app, Encrypter $encrypter)
-    {
-        $this->app = $app;
-        $this->encrypter = $encrypter;
-    }
-
-    /**
-     * Handle an incoming request.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure  $next
-     * @return mixed
-     *
-     * @throws \Illuminate\Session\TokenMismatchException
-     */
-    public function handle($request, Closure $next)
-    {
-        if (
-            $this->isReading($request) ||
-            $this->runningUnitTests() ||
-            $this->inExceptArray($request) ||
-            $this->tokensMatch($request)
-        ) {
-            return tap($next($request), function ($response) use ($request) {
-                if ($this->shouldAddXsrfTokenCookie()) {
-                    $this->addCookieToResponse($request, $response);
-                }
-            });
-        }
-
-        throw new TokenMismatchException('CSRF token mismatch.');
-    }
-
-    /**
-     * Determine if the HTTP request uses a ‘read’ verb.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return bool
-     */
-    protected function isReading($request)
-    {
-        return in_array($request->method(), ['HEAD', 'GET', 'OPTIONS']);
-    }
-
-    /**
-     * Determine if the application is running unit tests.
-     *
-     * @return bool
-     */
-    protected function runningUnitTests()
-    {
-        return $this->app->runningInConsole() && $this->app->runningUnitTests();
-    }
-
-    /**
-     * Determine if the request has a URI that should pass through CSRF verification.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return bool
-     */
-    protected function inExceptArray($request)
-    {
-        foreach ($this->except as $except) {
-            if ($except !== '/') {
-                $except = trim($except, '/');
-            }
-
-            if ($request->fullUrlIs($except) || $request->is($except)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Determine if the session and input CSRF tokens match.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return bool
-     */
-    protected function tokensMatch($request)
-    {
-        $token = $this->getTokenFromRequest($request);
-
-        return is_string($request->session()->token()) &&
-               is_string($token) &&
-               hash_equals($request->session()->token(), $token);
-    }
-
-    /**
-     * Get the CSRF token from the request.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return string
-     */
-    protected function getTokenFromRequest($request)
-    {
-        $token = $request->input('_token') ?: $request->header('X-CSRF-TOKEN');
-
-        if (! $token && $header = $request->header('X-XSRF-TOKEN')) {
-            try {
-                $token = CookieValuePrefix::remove($this->encrypter->decrypt($header, static::serialized()));
-            } catch (DecryptException $e) {
-                $token = '';
-            }
-        }
-
-        return $token;
-    }
-
-    /**
-     * Determine if the cookie should be added to the response.
-     *
-     * @return bool
-     */
-    public function shouldAddXsrfTokenCookie()
-    {
-        return $this->addHttpCookie;
-    }
-
-    /**
-     * Add the CSRF token to the response cookies.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Symfony\Component\HttpFoundation\Response  $response
-     * @return \Symfony\Component\HttpFoundation\Response
-     */
-    protected function addCookieToResponse($request, $response)
-    {
-        $config = config('session');
-
-        if ($response instanceof Responsable) {
-            $response = $response->toResponse($request);
-        }
-
-        $response->headers->setCookie(
-            new Cookie(
-                'XSRF-TOKEN', $request->session()->token(), $this->availableAt(60 * $config['lifetime']),
-                $config['path'], $config['domain'], $config['secure'], false, false, $config['same_site'] ?? null
-            )
-        );
-
-        return $response;
-    }
-
-    /**
-     * Determine if the cookie contents should be serialized.
-     *
-     * @return bool
-     */
-    public static function serialized()
-    {
-        return EncryptCookies::serialized('XSRF-TOKEN');
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

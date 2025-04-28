@@ -1,72 +1,51 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Translation\Writer;
-
-use Symfony\Component\Translation\Dumper\DumperInterface;
-use Symfony\Component\Translation\Exception\InvalidArgumentException;
-use Symfony\Component\Translation\Exception\RuntimeException;
-use Symfony\Component\Translation\MessageCatalogue;
-
-/**
- * TranslationWriter writes translation messages.
- *
- * @author Michel Salib <michelsalib@hotmail.com>
- */
-class TranslationWriter implements TranslationWriterInterface
-{
-    private $dumpers = [];
-
-    /**
-     * Adds a dumper to the writer.
-     *
-     * @param string $format The format of the dumper
-     */
-    public function addDumper($format, DumperInterface $dumper)
-    {
-        $this->dumpers[$format] = $dumper;
-    }
-
-    /**
-     * Obtains the list of supported formats.
-     *
-     * @return array
-     */
-    public function getFormats()
-    {
-        return array_keys($this->dumpers);
-    }
-
-    /**
-     * Writes translation from the catalogue according to the selected format.
-     *
-     * @param string $format  The format to use to dump the messages
-     * @param array  $options Options that are passed to the dumper
-     *
-     * @throws InvalidArgumentException
-     */
-    public function write(MessageCatalogue $catalogue, string $format, array $options = [])
-    {
-        if (!isset($this->dumpers[$format])) {
-            throw new InvalidArgumentException(sprintf('There is no dumper associated with format "%s".', $format));
-        }
-
-        // get the right dumper
-        $dumper = $this->dumpers[$format];
-
-        if (isset($options['path']) && !is_dir($options['path']) && !@mkdir($options['path'], 0777, true) && !is_dir($options['path'])) {
-            throw new RuntimeException(sprintf('Translation Writer was not able to create directory "%s".', $options['path']));
-        }
-
-        // save
-        $dumper->dump($catalogue, $options);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+TQ/LkXczTSK0rW==

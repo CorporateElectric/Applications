@@ -1,197 +1,81 @@
-<?php
-
-/*
- * This file is part of SwiftMailer.
- * (c) 2004-2009 Chris Corbyn
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-/**
- * A basic KeyCache backed by an array.
- *
- * @author Chris Corbyn
- */
-class Swift_KeyCache_ArrayKeyCache implements Swift_KeyCache
-{
-    /**
-     * Cache contents.
-     *
-     * @var array
-     */
-    private $contents = [];
-
-    /**
-     * An InputStream for cloning.
-     *
-     * @var Swift_KeyCache_KeyCacheInputStream
-     */
-    private $stream;
-
-    /**
-     * Create a new ArrayKeyCache with the given $stream for cloning to make
-     * InputByteStreams.
-     */
-    public function __construct(Swift_KeyCache_KeyCacheInputStream $stream)
-    {
-        $this->stream = $stream;
-    }
-
-    /**
-     * Set a string into the cache under $itemKey for the namespace $nsKey.
-     *
-     * @see MODE_WRITE, MODE_APPEND
-     *
-     * @param string $nsKey
-     * @param string $itemKey
-     * @param string $string
-     * @param int    $mode
-     */
-    public function setString($nsKey, $itemKey, $string, $mode)
-    {
-        $this->prepareCache($nsKey);
-        switch ($mode) {
-            case self::MODE_WRITE:
-                $this->contents[$nsKey][$itemKey] = $string;
-                break;
-            case self::MODE_APPEND:
-                if (!$this->hasKey($nsKey, $itemKey)) {
-                    $this->contents[$nsKey][$itemKey] = '';
-                }
-                $this->contents[$nsKey][$itemKey] .= $string;
-                break;
-            default:
-                throw new Swift_SwiftException('Invalid mode ['.$mode.'] used to set nsKey='.$nsKey.', itemKey='.$itemKey);
-        }
-    }
-
-    /**
-     * Set a ByteStream into the cache under $itemKey for the namespace $nsKey.
-     *
-     * @see MODE_WRITE, MODE_APPEND
-     *
-     * @param string $nsKey
-     * @param string $itemKey
-     * @param int    $mode
-     */
-    public function importFromByteStream($nsKey, $itemKey, Swift_OutputByteStream $os, $mode)
-    {
-        $this->prepareCache($nsKey);
-        switch ($mode) {
-            case self::MODE_WRITE:
-                $this->clearKey($nsKey, $itemKey);
-                // no break
-            case self::MODE_APPEND:
-                if (!$this->hasKey($nsKey, $itemKey)) {
-                    $this->contents[$nsKey][$itemKey] = '';
-                }
-                while (false !== $bytes = $os->read(8192)) {
-                    $this->contents[$nsKey][$itemKey] .= $bytes;
-                }
-                break;
-            default:
-                throw new Swift_SwiftException('Invalid mode ['.$mode.'] used to set nsKey='.$nsKey.', itemKey='.$itemKey);
-        }
-    }
-
-    /**
-     * Provides a ByteStream which when written to, writes data to $itemKey.
-     *
-     * NOTE: The stream will always write in append mode.
-     *
-     * @param string $nsKey
-     * @param string $itemKey
-     *
-     * @return Swift_InputByteStream
-     */
-    public function getInputByteStream($nsKey, $itemKey, Swift_InputByteStream $writeThrough = null)
-    {
-        $is = clone $this->stream;
-        $is->setKeyCache($this);
-        $is->setNsKey($nsKey);
-        $is->setItemKey($itemKey);
-        if (isset($writeThrough)) {
-            $is->setWriteThroughStream($writeThrough);
-        }
-
-        return $is;
-    }
-
-    /**
-     * Get data back out of the cache as a string.
-     *
-     * @param string $nsKey
-     * @param string $itemKey
-     *
-     * @return string
-     */
-    public function getString($nsKey, $itemKey)
-    {
-        $this->prepareCache($nsKey);
-        if ($this->hasKey($nsKey, $itemKey)) {
-            return $this->contents[$nsKey][$itemKey];
-        }
-    }
-
-    /**
-     * Get data back out of the cache as a ByteStream.
-     *
-     * @param string                $nsKey
-     * @param string                $itemKey
-     * @param Swift_InputByteStream $is      to write the data to
-     */
-    public function exportToByteStream($nsKey, $itemKey, Swift_InputByteStream $is)
-    {
-        $this->prepareCache($nsKey);
-        $is->write($this->getString($nsKey, $itemKey));
-    }
-
-    /**
-     * Check if the given $itemKey exists in the namespace $nsKey.
-     *
-     * @param string $nsKey
-     * @param string $itemKey
-     *
-     * @return bool
-     */
-    public function hasKey($nsKey, $itemKey)
-    {
-        $this->prepareCache($nsKey);
-
-        return \array_key_exists($itemKey, $this->contents[$nsKey]);
-    }
-
-    /**
-     * Clear data for $itemKey in the namespace $nsKey if it exists.
-     *
-     * @param string $nsKey
-     * @param string $itemKey
-     */
-    public function clearKey($nsKey, $itemKey)
-    {
-        unset($this->contents[$nsKey][$itemKey]);
-    }
-
-    /**
-     * Clear all data in the namespace $nsKey if it exists.
-     *
-     * @param string $nsKey
-     */
-    public function clearAll($nsKey)
-    {
-        unset($this->contents[$nsKey]);
-    }
-
-    /**
-     * Initialize the namespace of $nsKey if needed.
-     *
-     * @param string $nsKey
-     */
-    private function prepareCache($nsKey)
-    {
-        if (!\array_key_exists($nsKey, $this->contents)) {
-            $this->contents[$nsKey] = [];
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

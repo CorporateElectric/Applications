@@ -1,107 +1,40 @@
-<?php
-
-namespace League\Flysystem;
-
-class Config
-{
-    /**
-     * @var array
-     */
-    protected $settings = [];
-
-    /**
-     * @var Config|null
-     */
-    protected $fallback;
-
-    /**
-     * Constructor.
-     *
-     * @param array $settings
-     */
-    public function __construct(array $settings = [])
-    {
-        $this->settings = $settings;
-    }
-
-    /**
-     * Get a setting.
-     *
-     * @param string $key
-     * @param mixed  $default
-     *
-     * @return mixed config setting or default when not found
-     */
-    public function get($key, $default = null)
-    {
-        if ( ! array_key_exists($key, $this->settings)) {
-            return $this->getDefault($key, $default);
-        }
-
-        return $this->settings[$key];
-    }
-
-    /**
-     * Check if an item exists by key.
-     *
-     * @param string $key
-     *
-     * @return bool
-     */
-    public function has($key)
-    {
-        if (array_key_exists($key, $this->settings)) {
-            return true;
-        }
-
-        return $this->fallback instanceof Config
-            ? $this->fallback->has($key)
-            : false;
-    }
-
-    /**
-     * Try to retrieve a default setting from a config fallback.
-     *
-     * @param string $key
-     * @param mixed  $default
-     *
-     * @return mixed config setting or default when not found
-     */
-    protected function getDefault($key, $default)
-    {
-        if ( ! $this->fallback) {
-            return $default;
-        }
-
-        return $this->fallback->get($key, $default);
-    }
-
-    /**
-     * Set a setting.
-     *
-     * @param string $key
-     * @param mixed  $value
-     *
-     * @return $this
-     */
-    public function set($key, $value)
-    {
-        $this->settings[$key] = $value;
-
-        return $this;
-    }
-
-    /**
-     * Set the fallback.
-     *
-     * @param Config $fallback
-     *
-     * @return $this
-     */
-    public function setFallback(Config $fallback)
-    {
-        $this->fallback = $fallback;
-
-        return $this;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

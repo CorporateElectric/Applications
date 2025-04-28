@@ -1,101 +1,51 @@
-<?php
-
-/*
- * This file is part of SwiftMailer.
- * (c) 2004-2009 Chris Corbyn
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-/**
- * Handles Base 64 Transfer Encoding in Swift Mailer.
- *
- * @author Chris Corbyn
- */
-class Swift_Mime_ContentEncoder_Base64ContentEncoder extends Swift_Encoder_Base64Encoder implements Swift_Mime_ContentEncoder
-{
-    /**
-     * Encode stream $in to stream $out.
-     *
-     * @param int $firstLineOffset
-     */
-    public function encodeByteStream(Swift_OutputByteStream $os, Swift_InputByteStream $is, $firstLineOffset = 0, $maxLineLength = 0)
-    {
-        if (0 >= $maxLineLength || 76 < $maxLineLength) {
-            $maxLineLength = 76;
-        }
-
-        $remainder = 0;
-        $base64ReadBufferRemainderBytes = null;
-
-        // To reduce memory usage, the output buffer is streamed to the input buffer like so:
-        //   Output Stream => base64encode => wrap line length => Input Stream
-        // HOWEVER it's important to note that base64_encode() should only be passed whole triplets of data (except for the final chunk of data)
-        // otherwise it will assume the input data has *ended* and it will incorrectly pad/terminate the base64 data mid-stream.
-        // We use $base64ReadBufferRemainderBytes to carry over 1-2 "remainder" bytes from the each chunk from OutputStream and pre-pend those onto the
-        // chunk of bytes read in the next iteration.
-        // When the OutputStream is empty, we must flush any remainder bytes.
-        while (true) {
-            $readBytes = $os->read(8192);
-            $atEOF = (false === $readBytes);
-
-            if ($atEOF) {
-                $streamTheseBytes = $base64ReadBufferRemainderBytes;
-            } else {
-                $streamTheseBytes = $base64ReadBufferRemainderBytes.$readBytes;
-            }
-            $base64ReadBufferRemainderBytes = null;
-            $bytesLength = \strlen($streamTheseBytes);
-
-            if (0 === $bytesLength) { // no data left to encode
-                break;
-            }
-
-            // if we're not on the last block of the ouput stream, make sure $streamTheseBytes ends with a complete triplet of data
-            // and carry over remainder 1-2 bytes to the next loop iteration
-            if (!$atEOF) {
-                $excessBytes = $bytesLength % 3;
-                if (0 !== $excessBytes) {
-                    $base64ReadBufferRemainderBytes = substr($streamTheseBytes, -$excessBytes);
-                    $streamTheseBytes = substr($streamTheseBytes, 0, $bytesLength - $excessBytes);
-                }
-            }
-
-            $encoded = base64_encode($streamTheseBytes);
-            $encodedTransformed = '';
-            $thisMaxLineLength = $maxLineLength - $remainder - $firstLineOffset;
-
-            while ($thisMaxLineLength < \strlen($encoded)) {
-                $encodedTransformed .= substr($encoded, 0, $thisMaxLineLength)."\r\n";
-                $firstLineOffset = 0;
-                $encoded = substr($encoded, $thisMaxLineLength);
-                $thisMaxLineLength = $maxLineLength;
-                $remainder = 0;
-            }
-
-            if (0 < $remainingLength = \strlen($encoded)) {
-                $remainder += $remainingLength;
-                $encodedTransformed .= $encoded;
-                $encoded = null;
-            }
-
-            $is->write($encodedTransformed);
-
-            if ($atEOF) {
-                break;
-            }
-        }
-    }
-
-    /**
-     * Get the name of this encoding scheme.
-     * Returns the string 'base64'.
-     *
-     * @return string
-     */
-    public function getName()
-    {
-        return 'base64';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+q9fowvZokPjUbCkjluz8cg8Hra9k

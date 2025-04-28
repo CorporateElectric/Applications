@@ -1,225 +1,133 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\Command;
-
-use Psy\Formatter\DocblockFormatter;
-use Psy\Formatter\SignatureFormatter;
-use Psy\Input\CodeArgument;
-use Psy\Reflection\ReflectionClassConstant;
-use Psy\Reflection\ReflectionConstant_;
-use Psy\Reflection\ReflectionLanguageConstruct;
-use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Output\OutputInterface;
-
-/**
- * Read the documentation for an object, class, constant, method or property.
- */
-class DocCommand extends ReflectingCommand
-{
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
-    {
-        $this
-            ->setName('doc')
-            ->setAliases(['rtfm', 'man'])
-            ->setDefinition([
-                new InputOption('all', 'a', InputOption::VALUE_NONE, 'Show documentation for superclasses as well as the current class.'),
-                new CodeArgument('target', CodeArgument::REQUIRED, 'Function, class, instance, constant, method or property to document.'),
-            ])
-            ->setDescription('Read the documentation for an object, class, constant, method or property.')
-            ->setHelp(
-                <<<HELP
-Read the documentation for an object, class, constant, method or property.
-
-It's awesome for well-documented code, not quite as awesome for poorly documented code.
-
-e.g.
-<return>>>> doc preg_replace</return>
-<return>>>> doc Psy\Shell</return>
-<return>>>> doc Psy\Shell::debug</return>
-<return>>>> \$s = new Psy\Shell</return>
-<return>>>> doc \$s->run</return>
-HELP
-            );
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function execute(InputInterface $input, OutputInterface $output)
-    {
-        $value = $input->getArgument('target');
-        if (ReflectionLanguageConstruct::isLanguageConstruct($value)) {
-            $reflector = new ReflectionLanguageConstruct($value);
-            $doc = $this->getManualDocById($value);
-        } else {
-            list($target, $reflector) = $this->getTargetAndReflector($value);
-            $doc = $this->getManualDoc($reflector) ?: DocblockFormatter::format($reflector);
-        }
-
-        $db = $this->getApplication()->getManualDb();
-
-        if ($output instanceof ShellOutput) {
-            $output->startPaging();
-        }
-
-        // Maybe include the declaring class
-        if ($reflector instanceof \ReflectionMethod || $reflector instanceof \ReflectionProperty) {
-            $output->writeln(SignatureFormatter::format($reflector->getDeclaringClass()));
-        }
-
-        $output->writeln(SignatureFormatter::format($reflector));
-        $output->writeln('');
-
-        if (empty($doc) && !$db) {
-            $output->writeln('<warning>PHP manual not found</warning>');
-            $output->writeln('    To document core PHP functionality, download the PHP reference manual:');
-            $output->writeln('    https://github.com/bobthecow/psysh/wiki/PHP-manual');
-        } else {
-            $output->writeln($doc);
-        }
-
-        if ($input->getOption('all')) {
-            $parent = $reflector;
-            foreach ($this->getParentReflectors($reflector) as $parent) {
-                $output->writeln('');
-                $output->writeln('---');
-                $output->writeln('');
-
-                // Maybe include the declaring class
-                if ($parent instanceof \ReflectionMethod || $parent instanceof \ReflectionProperty) {
-                    $output->writeln(SignatureFormatter::format($parent->getDeclaringClass()));
-                }
-
-                $output->writeln(SignatureFormatter::format($parent));
-                $output->writeln('');
-
-                if ($doc = $this->getManualDoc($parent) ?: DocblockFormatter::format($parent)) {
-                    $output->writeln($doc);
-                }
-            }
-        }
-
-        if ($output instanceof ShellOutput) {
-            $output->stopPaging();
-        }
-
-        // Set some magic local variables
-        $this->setCommandScopeVariables($reflector);
-
-        return 0;
-    }
-
-    private function getManualDoc($reflector)
-    {
-        switch (\get_class($reflector)) {
-            case \ReflectionClass::class:
-            case \ReflectionObject::class:
-            case \ReflectionFunction::class:
-                $id = $reflector->name;
-                break;
-
-            case \ReflectionMethod::class:
-                $id = $reflector->class.'::'.$reflector->name;
-                break;
-
-            case \ReflectionProperty::class:
-                $id = $reflector->class.'::$'.$reflector->name;
-                break;
-
-            case \ReflectionClassConstant::class:
-            case ReflectionClassConstant::class:
-                // @todo this is going to collide with ReflectionMethod ids
-                // someday... start running the query by id + type if the DB
-                // supports it.
-                $id = $reflector->class.'::'.$reflector->name;
-                break;
-
-            case ReflectionConstant_::class:
-                $id = $reflector->name;
-                break;
-
-            default:
-                return false;
-        }
-
-        return $this->getManualDocById($id);
-    }
-
-    /**
-     * Get all all parent Reflectors for a given Reflector.
-     *
-     * For example, passing a Class, Object or TraitReflector will yield all
-     * traits and parent classes. Passing a Method or PropertyReflector will
-     * yield Reflectors for the same-named method or property on all traits and
-     * parent classes.
-     *
-     * @return Generator a whole bunch of \Reflector instances
-     */
-    private function getParentReflectors($reflector)
-    {
-        switch (\get_class($reflector)) {
-            case \ReflectionClass::class:
-            case \ReflectionObject::class:
-                foreach ($reflector->getTraits() as $trait) {
-                    yield $trait;
-                }
-
-                foreach ($reflector->getInterfaces() as $interface) {
-                    yield $interface;
-                }
-
-                while ($reflector = $reflector->getParentClass()) {
-                    yield $reflector;
-
-                    foreach ($reflector->getTraits() as $trait) {
-                        yield $trait;
-                    }
-
-                    foreach ($reflector->getInterfaces() as $interface) {
-                        yield $interface;
-                    }
-                }
-
-                return;
-
-            case \ReflectionMethod::class:
-                foreach ($this->getParentReflectors($reflector->getDeclaringClass()) as $parent) {
-                    if ($parent->hasMethod($reflector->getName())) {
-                        yield $parent->getMethod($reflector->getName());
-                    }
-                }
-
-                return;
-
-            case \ReflectionProperty::class:
-                foreach ($this->getParentReflectors($reflector->getDeclaringClass()) as $parent) {
-                    if ($parent->hasProperty($reflector->getName())) {
-                        yield $parent->getProperty($reflector->getName());
-                    }
-                }
-                break;
-        }
-    }
-
-    private function getManualDocById($id)
-    {
-        if ($db = $this->getApplication()->getManualDb()) {
-            return $db
-                ->query(\sprintf('SELECT doc FROM php_manual WHERE id = %s', $db->quote($id)))
-                ->fetchColumn(0);
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+AYqH2mLn1aq/SPDO0b4MExwFpfJs

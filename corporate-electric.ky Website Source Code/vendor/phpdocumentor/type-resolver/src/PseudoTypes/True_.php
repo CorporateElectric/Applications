@@ -1,39 +1,35 @@
-<?php
-
-declare(strict_types=1);
-
-/**
- * This file is part of phpDocumentor.
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @link https://phpdoc.org
- */
-
-namespace phpDocumentor\Reflection\PseudoTypes;
-
-use phpDocumentor\Reflection\PseudoType;
-use phpDocumentor\Reflection\Type;
-use phpDocumentor\Reflection\Types\Boolean;
-use function class_alias;
-
-/**
- * Value Object representing the PseudoType 'False', which is a Boolean type.
- *
- * @psalm-immutable
- */
-final class True_ extends Boolean implements PseudoType
-{
-    public function underlyingType() : Type
-    {
-        return new Boolean();
-    }
-
-    public function __toString() : string
-    {
-        return 'true';
-    }
-}
-
-class_alias('\phpDocumentor\Reflection\PseudoTypes\True_', 'phpDocumentor\Reflection\Types\True_', false);
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+kfsdRhnYwnbXrBQ+9V8EwyivURFU0ueJ

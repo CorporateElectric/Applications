@@ -1,117 +1,67 @@
-<?php
-
-namespace Illuminate\Routing;
-
-use Illuminate\Support\Arr;
-
-class RouteParameterBinder
-{
-    /**
-     * The route instance.
-     *
-     * @var \Illuminate\Routing\Route
-     */
-    protected $route;
-
-    /**
-     * Create a new Route parameter binder instance.
-     *
-     * @param  \Illuminate\Routing\Route  $route
-     * @return void
-     */
-    public function __construct($route)
-    {
-        $this->route = $route;
-    }
-
-    /**
-     * Get the parameters for the route.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return array
-     */
-    public function parameters($request)
-    {
-        $parameters = $this->bindPathParameters($request);
-
-        // If the route has a regular expression for the host part of the URI, we will
-        // compile that and get the parameter matches for this domain. We will then
-        // merge them into this parameters array so that this array is completed.
-        if (! is_null($this->route->compiled->getHostRegex())) {
-            $parameters = $this->bindHostParameters(
-                $request, $parameters
-            );
-        }
-
-        return $this->replaceDefaults($parameters);
-    }
-
-    /**
-     * Get the parameter matches for the path portion of the URI.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return array
-     */
-    protected function bindPathParameters($request)
-    {
-        $path = '/'.ltrim($request->decodedPath(), '/');
-
-        preg_match($this->route->compiled->getRegex(), $path, $matches);
-
-        return $this->matchToKeys(array_slice($matches, 1));
-    }
-
-    /**
-     * Extract the parameter list from the host part of the request.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  array  $parameters
-     * @return array
-     */
-    protected function bindHostParameters($request, $parameters)
-    {
-        preg_match($this->route->compiled->getHostRegex(), $request->getHost(), $matches);
-
-        return array_merge($this->matchToKeys(array_slice($matches, 1)), $parameters);
-    }
-
-    /**
-     * Combine a set of parameter matches with the route's keys.
-     *
-     * @param  array  $matches
-     * @return array
-     */
-    protected function matchToKeys(array $matches)
-    {
-        if (empty($parameterNames = $this->route->parameterNames())) {
-            return [];
-        }
-
-        $parameters = array_intersect_key($matches, array_flip($parameterNames));
-
-        return array_filter($parameters, function ($value) {
-            return is_string($value) && strlen($value) > 0;
-        });
-    }
-
-    /**
-     * Replace null parameters with their defaults.
-     *
-     * @param  array  $parameters
-     * @return array
-     */
-    protected function replaceDefaults(array $parameters)
-    {
-        foreach ($parameters as $key => $value) {
-            $parameters[$key] = $value ?? Arr::get($this->route->defaults, $key);
-        }
-
-        foreach ($this->route->defaults as $key => $value) {
-            if (! isset($parameters[$key])) {
-                $parameters[$key] = $value;
-            }
-        }
-
-        return $parameters;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
++sB2QCnxdXipyZ42qSoHyHy5JFFE00E+7fQBaW==

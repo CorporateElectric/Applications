@@ -1,135 +1,64 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Framework\Constraint;
-
-use function array_map;
-use function count;
-use function preg_match;
-use function preg_quote;
-use function preg_replace;
-
-/**
- * @no-named-arguments Parameter names are not covered by the backward compatibility promise for PHPUnit
- */
-final class LogicalNot extends UnaryOperator
-{
-    public static function negate(string $string): string
-    {
-        $positives = [
-            'contains ',
-            'exists',
-            'has ',
-            'is ',
-            'are ',
-            'matches ',
-            'starts with ',
-            'ends with ',
-            'reference ',
-            'not not ',
-        ];
-
-        $negatives = [
-            'does not contain ',
-            'does not exist',
-            'does not have ',
-            'is not ',
-            'are not ',
-            'does not match ',
-            'starts not with ',
-            'ends not with ',
-            'don\'t reference ',
-            'not ',
-        ];
-
-        preg_match('/(\'[\w\W]*\')([\w\W]*)("[\w\W]*")/i', $string, $matches);
-
-        $positives = array_map(static function (string $s) {
-            return '/\\b' . preg_quote($s, '/') . '/';
-        }, $positives);
-
-        if (count($matches) > 0) {
-            $nonInput = $matches[2];
-
-            $negatedString = preg_replace(
-                '/' . preg_quote($nonInput, '/') . '/',
-                preg_replace(
-                    $positives,
-                    $negatives,
-                    $nonInput
-                ),
-                $string
-            );
-        } else {
-            $negatedString = preg_replace(
-                $positives,
-                $negatives,
-                $string
-            );
-        }
-
-        return $negatedString;
-    }
-
-    /**
-     * Returns the name of this operator.
-     */
-    public function operator(): string
-    {
-        return 'not';
-    }
-
-    /**
-     * Returns this operator's precedence.
-     *
-     * @see https://www.php.net/manual/en/language.operators.precedence.php
-     */
-    public function precedence(): int
-    {
-        return 5;
-    }
-
-    /**
-     * Evaluates the constraint for parameter $other. Returns true if the
-     * constraint is met, false otherwise.
-     *
-     * @param mixed $other value or object to evaluate
-     */
-    protected function matches($other): bool
-    {
-        return !$this->constraint()->evaluate($other, '', true);
-    }
-
-    /**
-     * Applies additional transformation to strings returned by toString() or
-     * failureDescription().
-     */
-    protected function transformString(string $string): string
-    {
-        return self::negate($string);
-    }
-
-    /**
-     * Reduces the sub-expression starting at $this by skipping degenerate
-     * sub-expression and returns first descendant constraint that starts
-     * a non-reducible sub-expression.
-     *
-     * See Constraint::reduce() for more.
-     */
-    protected function reduce(): Constraint
-    {
-        $constraint = $this->constraint();
-
-        if ($constraint instanceof self) {
-            return $constraint->constraint()->reduce();
-        }
-
-        return parent::reduce();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+VM9UCgUdHXIn2m==

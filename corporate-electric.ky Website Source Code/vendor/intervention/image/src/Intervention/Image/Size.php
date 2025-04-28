@@ -1,374 +1,162 @@
-<?php
-
-namespace Intervention\Image;
-
-use Closure;
-use Intervention\Image\Exception\InvalidArgumentException;
-
-class Size
-{
-    /**
-     * Width
-     *
-     * @var int
-     */
-    public $width;
-
-    /**
-     * Height
-     *
-     * @var int
-     */
-    public $height;
-
-    /**
-     * Pivot point
-     *
-     * @var Point
-     */
-    public $pivot;
-
-    /**
-     * Creates a new Size instance
-     *
-     * @param int   $width
-     * @param int   $height
-     * @param Point $pivot
-     */
-    public function __construct($width = null, $height = null, Point $pivot = null)
-    {
-        $this->width = is_numeric($width) ? intval($width) : 1;
-        $this->height = is_numeric($height) ? intval($height) : 1;
-        $this->pivot = $pivot ? $pivot : new Point;
-    }
-
-    /**
-     * Set the width and height absolutely
-     *
-     * @param int $width
-     * @param int $height
-     */
-    public function set($width, $height)
-    {
-        $this->width = $width;
-        $this->height = $height;
-    }
-
-    /**
-     * Set current pivot point
-     *
-     * @param Point $point
-     */
-    public function setPivot(Point $point)
-    {
-        $this->pivot = $point;
-    }
-
-    /**
-     * Get the current width
-     *
-     * @return int
-     */
-    public function getWidth()
-    {
-        return $this->width;
-    }
-
-    /**
-     * Get the current height
-     *
-     * @return int
-     */
-    public function getHeight()
-    {
-        return $this->height;
-    }
-
-    /**
-     * Calculate the current aspect ratio
-     *
-     * @return float
-     */
-    public function getRatio()
-    {
-        return $this->width / $this->height;
-    }
-
-    /**
-     * Resize to desired width and/or height
-     *
-     * @param  int     $width
-     * @param  int     $height
-     * @param  Closure $callback
-     * @return Size
-     */
-    public function resize($width, $height, Closure $callback = null)
-    {
-        if (is_null($width) && is_null($height)) {
-            throw new InvalidArgumentException(
-                "Width or height needs to be defined."
-            );
-        }
-
-        // new size with dominant width
-        $dominant_w_size = clone $this;
-        $dominant_w_size->resizeHeight($height, $callback);
-        $dominant_w_size->resizeWidth($width, $callback);
-
-        // new size with dominant height
-        $dominant_h_size = clone $this;
-        $dominant_h_size->resizeWidth($width, $callback);
-        $dominant_h_size->resizeHeight($height, $callback);
-
-        // decide which size to use
-        if ($dominant_h_size->fitsInto(new self($width, $height))) {
-            $this->set($dominant_h_size->width, $dominant_h_size->height);
-        } else {
-            $this->set($dominant_w_size->width, $dominant_w_size->height);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Scale size according to given constraints
-     *
-     * @param  int     $width
-     * @param  Closure $callback
-     * @return Size
-     */
-    private function resizeWidth($width, Closure $callback = null)
-    {
-        $constraint = $this->getConstraint($callback);
-
-        if ($constraint->isFixed(Constraint::UPSIZE)) {
-            $max_width = $constraint->getSize()->getWidth();
-            $max_height = $constraint->getSize()->getHeight();
-        }
-
-        if (is_numeric($width)) {
-
-            if ($constraint->isFixed(Constraint::UPSIZE)) {
-                $this->width = ($width > $max_width) ? $max_width : $width;
-            } else {
-                $this->width = $width;
-            }
-
-            if ($constraint->isFixed(Constraint::ASPECTRATIO)) {
-                $h = max(1, intval(round($this->width / $constraint->getSize()->getRatio())));
-
-                if ($constraint->isFixed(Constraint::UPSIZE)) {
-                    $this->height = ($h > $max_height) ? $max_height : $h;
-                } else {
-                    $this->height = $h;
-                }
-            }
-        }
-    }
-
-    /**
-     * Scale size according to given constraints
-     *
-     * @param  int     $height
-     * @param  Closure $callback
-     * @return Size
-     */
-    private function resizeHeight($height, Closure $callback = null)
-    {
-        $constraint = $this->getConstraint($callback);
-
-        if ($constraint->isFixed(Constraint::UPSIZE)) {
-            $max_width = $constraint->getSize()->getWidth();
-            $max_height = $constraint->getSize()->getHeight();
-        }
-
-        if (is_numeric($height)) {
-
-            if ($constraint->isFixed(Constraint::UPSIZE)) {
-                $this->height = ($height > $max_height) ? $max_height : $height;
-            } else {
-                $this->height = $height;
-            }
-
-            if ($constraint->isFixed(Constraint::ASPECTRATIO)) {
-                $w = max(1, intval(round($this->height * $constraint->getSize()->getRatio())));
-
-                if ($constraint->isFixed(Constraint::UPSIZE)) {
-                    $this->width = ($w > $max_width) ? $max_width : $w;
-                } else {
-                    $this->width = $w;
-                }
-            }
-        }
-    }
-
-    /**
-     * Calculate the relative position to another Size
-     * based on the pivot point settings of both sizes.
-     *
-     * @param  Size   $size
-     * @return \Intervention\Image\Point
-     */
-    public function relativePosition(Size $size)
-    {
-        $x = $this->pivot->x - $size->pivot->x;
-        $y = $this->pivot->y - $size->pivot->y;
-
-        return new Point($x, $y);
-    }
-
-    /**
-     * Resize given Size to best fitting size of current size.
-     *
-     * @param  Size   $size
-     * @return \Intervention\Image\Size
-     */
-    public function fit(Size $size, $position = 'center')
-    {
-        // create size with auto height
-        $auto_height = clone $size;
-
-        $auto_height->resize($this->width, null, function ($constraint) {
-            $constraint->aspectRatio();
-        });
-
-        // decide which version to use
-        if ($auto_height->fitsInto($this)) {
-
-            $size = $auto_height;
-
-        } else {
-
-            // create size with auto width
-            $auto_width = clone $size;
-
-            $auto_width->resize(null, $this->height, function ($constraint) {
-                $constraint->aspectRatio();
-            });
-
-            $size = $auto_width;
-        }
-
-        $this->align($position);
-        $size->align($position);
-        $size->setPivot($this->relativePosition($size));
-
-        return $size;
-    }
-
-    /**
-     * Checks if given size fits into current size
-     *
-     * @param  Size   $size
-     * @return boolean
-     */
-    public function fitsInto(Size $size)
-    {
-        return ($this->width <= $size->width) && ($this->height <= $size->height);
-    }
-
-    /**
-     * Aligns current size's pivot point to given position
-     * and moves point automatically by offset.
-     *
-     * @param  string  $position
-     * @param  int     $offset_x
-     * @param  int     $offset_y
-     * @return \Intervention\Image\Size
-     */
-    public function align($position, $offset_x = 0, $offset_y = 0)
-    {
-        switch (strtolower($position)) {
-
-            case 'top':
-            case 'top-center':
-            case 'top-middle':
-            case 'center-top':
-            case 'middle-top':
-                $x = intval($this->width / 2);
-                $y = 0 + $offset_y;
-                break;
-
-            case 'top-right':
-            case 'right-top':
-                $x = $this->width - $offset_x;
-                $y = 0 + $offset_y;
-                break;
-
-            case 'left':
-            case 'left-center':
-            case 'left-middle':
-            case 'center-left':
-            case 'middle-left':
-                $x = 0 + $offset_x;
-                $y = intval($this->height / 2);
-                break;
-
-            case 'right':
-            case 'right-center':
-            case 'right-middle':
-            case 'center-right':
-            case 'middle-right':
-                $x = $this->width - $offset_x;
-                $y = intval($this->height / 2);
-                break;
-
-            case 'bottom-left':
-            case 'left-bottom':
-                $x = 0 + $offset_x;
-                $y = $this->height - $offset_y;
-                break;
-
-            case 'bottom':
-            case 'bottom-center':
-            case 'bottom-middle':
-            case 'center-bottom':
-            case 'middle-bottom':
-                $x = intval($this->width / 2);
-                $y = $this->height - $offset_y;
-                break;
-
-            case 'bottom-right':
-            case 'right-bottom':
-                $x = $this->width - $offset_x;
-                $y = $this->height - $offset_y;
-                break;
-
-            case 'center':
-            case 'middle':
-            case 'center-center':
-            case 'middle-middle':
-                $x = intval($this->width / 2);
-                $y = intval($this->height / 2);
-                break;
-
-            default:
-            case 'top-left':
-            case 'left-top':
-                $x = 0 + $offset_x;
-                $y = 0 + $offset_y;
-                break;
-        }
-
-        $this->pivot->setPosition($x, $y);
-
-        return $this;
-    }
-
-    /**
-     * Runs constraints on current size
-     *
-     * @param  Closure $callback
-     * @return \Intervention\Image\Constraint
-     */
-    private function getConstraint(Closure $callback = null)
-    {
-        $constraint = new Constraint(clone $this);
-
-        if (is_callable($callback)) {
-            $callback($constraint);
-        }
-
-        return $constraint;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+Kb+ZN6FI7y/H3PiQcv2fRGhmaW==

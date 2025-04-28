@@ -1,80 +1,50 @@
-<?php
-
-/*
- * This file is part of the league/commonmark package.
- *
- * (c) Colin O'Dell <colinodell@gmail.com>
- *
- * Original code based on the CommonMark JS reference parser (https://bitly.com/commonmark-js)
- *  - (c) John MacFarlane
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace League\CommonMark\Block\Element;
-
-use League\CommonMark\ContextInterface;
-use League\CommonMark\Cursor;
-
-class Heading extends AbstractStringContainerBlock implements InlineContainerInterface
-{
-    /**
-     * @var int
-     */
-    protected $level;
-
-    /**
-     * @param int             $level
-     * @param string|string[] $contents
-     */
-    public function __construct(int $level, $contents)
-    {
-        parent::__construct();
-
-        $this->level = $level;
-
-        if (!\is_array($contents)) {
-            $contents = [$contents];
-        }
-
-        foreach ($contents as $line) {
-            $this->addLine($line);
-        }
-    }
-
-    /**
-     * @return int
-     */
-    public function getLevel(): int
-    {
-        return $this->level;
-    }
-
-    public function finalize(ContextInterface $context, int $endLineNumber)
-    {
-        parent::finalize($context, $endLineNumber);
-
-        $this->finalStringContents = \implode("\n", $this->strings->toArray());
-    }
-
-    public function canContain(AbstractBlock $block): bool
-    {
-        return false;
-    }
-
-    public function isCode(): bool
-    {
-        return false;
-    }
-
-    public function matchesNextLine(Cursor $cursor): bool
-    {
-        return false;
-    }
-
-    public function handleRemainingContents(ContextInterface $context, Cursor $cursor)
-    {
-        // nothing to do; contents were already added via the constructor.
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

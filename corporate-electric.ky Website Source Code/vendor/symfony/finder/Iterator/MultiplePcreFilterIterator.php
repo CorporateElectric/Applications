@@ -1,106 +1,58 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Finder\Iterator;
-
-/**
- * MultiplePcreFilterIterator filters files using patterns (regexps, globs or strings).
- *
- * @author Fabien Potencier <fabien@symfony.com>
- */
-abstract class MultiplePcreFilterIterator extends \FilterIterator
-{
-    protected $matchRegexps = [];
-    protected $noMatchRegexps = [];
-
-    /**
-     * @param \Iterator $iterator        The Iterator to filter
-     * @param string[]  $matchPatterns   An array of patterns that need to match
-     * @param string[]  $noMatchPatterns An array of patterns that need to not match
-     */
-    public function __construct(\Iterator $iterator, array $matchPatterns, array $noMatchPatterns)
-    {
-        foreach ($matchPatterns as $pattern) {
-            $this->matchRegexps[] = $this->toRegex($pattern);
-        }
-
-        foreach ($noMatchPatterns as $pattern) {
-            $this->noMatchRegexps[] = $this->toRegex($pattern);
-        }
-
-        parent::__construct($iterator);
-    }
-
-    /**
-     * Checks whether the string is accepted by the regex filters.
-     *
-     * If there is no regexps defined in the class, this method will accept the string.
-     * Such case can be handled by child classes before calling the method if they want to
-     * apply a different behavior.
-     *
-     * @return bool
-     */
-    protected function isAccepted(string $string)
-    {
-        // should at least not match one rule to exclude
-        foreach ($this->noMatchRegexps as $regex) {
-            if (preg_match($regex, $string)) {
-                return false;
-            }
-        }
-
-        // should at least match one rule
-        if ($this->matchRegexps) {
-            foreach ($this->matchRegexps as $regex) {
-                if (preg_match($regex, $string)) {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        // If there is no match rules, the file is accepted
-        return true;
-    }
-
-    /**
-     * Checks whether the string is a regex.
-     *
-     * @return bool
-     */
-    protected function isRegex(string $str)
-    {
-        if (preg_match('/^(.{3,}?)[imsxuADU]*$/', $str, $m)) {
-            $start = substr($m[1], 0, 1);
-            $end = substr($m[1], -1);
-
-            if ($start === $end) {
-                return !preg_match('/[*?[:alnum:] \\\\]/', $start);
-            }
-
-            foreach ([['{', '}'], ['(', ')'], ['[', ']'], ['<', '>']] as $delimiters) {
-                if ($start === $delimiters[0] && $end === $delimiters[1]) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Converts string into regexp.
-     *
-     * @return string
-     */
-    abstract protected function toRegex(string $str);
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+IROrZG1I

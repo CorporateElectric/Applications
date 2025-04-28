@@ -1,808 +1,364 @@
-<?php
-
-/**
- * This file is part of the Carbon package.
- *
- * (c) Brian Nesbitt <brian@nesbot.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace Carbon\Traits;
-
-use Carbon\CarbonInterface;
-use Carbon\Exceptions\InvalidTypeException;
-use Carbon\Exceptions\NotLocaleAwareException;
-use Carbon\Language;
-use Carbon\Translator;
-use Closure;
-use Symfony\Component\Translation\TranslatorBagInterface;
-use Symfony\Component\Translation\TranslatorInterface;
-use Symfony\Contracts\Translation\LocaleAwareInterface;
-use Symfony\Contracts\Translation\TranslatorInterface as ContractsTranslatorInterface;
-
-if (!interface_exists('Symfony\\Component\\Translation\\TranslatorInterface')) {
-    class_alias(
-        'Symfony\\Contracts\\Translation\\TranslatorInterface',
-        'Symfony\\Component\\Translation\\TranslatorInterface'
-    );
-}
-
-/**
- * Trait Localization.
- *
- * Embed default and locale translators and translation base methods.
- */
-trait Localization
-{
-    /**
-     * Default translator.
-     *
-     * @var \Symfony\Component\Translation\TranslatorInterface
-     */
-    protected static $translator;
-
-    /**
-     * Specific translator of the current instance.
-     *
-     * @var \Symfony\Component\Translation\TranslatorInterface
-     */
-    protected $localTranslator;
-
-    /**
-     * Options for diffForHumans().
-     *
-     * @var int
-     */
-    protected static $humanDiffOptions = CarbonInterface::NO_ZERO_DIFF;
-
-    /**
-     * @deprecated To avoid conflict between different third-party libraries, static setters should not be used.
-     *             You should rather use the ->settings() method.
-     * @see settings
-     *
-     * @param int $humanDiffOptions
-     */
-    public static function setHumanDiffOptions($humanDiffOptions)
-    {
-        static::$humanDiffOptions = $humanDiffOptions;
-    }
-
-    /**
-     * @deprecated To avoid conflict between different third-party libraries, static setters should not be used.
-     *             You should rather use the ->settings() method.
-     * @see settings
-     *
-     * @param int $humanDiffOption
-     */
-    public static function enableHumanDiffOption($humanDiffOption)
-    {
-        static::$humanDiffOptions = static::getHumanDiffOptions() | $humanDiffOption;
-    }
-
-    /**
-     * @deprecated To avoid conflict between different third-party libraries, static setters should not be used.
-     *             You should rather use the ->settings() method.
-     * @see settings
-     *
-     * @param int $humanDiffOption
-     */
-    public static function disableHumanDiffOption($humanDiffOption)
-    {
-        static::$humanDiffOptions = static::getHumanDiffOptions() & ~$humanDiffOption;
-    }
-
-    /**
-     * Return default humanDiff() options (merged flags as integer).
-     *
-     * @return int
-     */
-    public static function getHumanDiffOptions()
-    {
-        return static::$humanDiffOptions;
-    }
-
-    /**
-     * Get the default translator instance in use.
-     *
-     * @return \Symfony\Component\Translation\TranslatorInterface
-     */
-    public static function getTranslator()
-    {
-        return static::translator();
-    }
-
-    /**
-     * Set the default translator instance to use.
-     *
-     * @param \Symfony\Component\Translation\TranslatorInterface $translator
-     *
-     * @return void
-     */
-    public static function setTranslator(TranslatorInterface $translator)
-    {
-        static::$translator = $translator;
-    }
-
-    /**
-     * Return true if the current instance has its own translator.
-     *
-     * @return bool
-     */
-    public function hasLocalTranslator()
-    {
-        return isset($this->localTranslator);
-    }
-
-    /**
-     * Get the translator of the current instance or the default if none set.
-     *
-     * @return \Symfony\Component\Translation\TranslatorInterface
-     */
-    public function getLocalTranslator()
-    {
-        return $this->localTranslator ?: static::translator();
-    }
-
-    /**
-     * Set the translator for the current instance.
-     *
-     * @param \Symfony\Component\Translation\TranslatorInterface $translator
-     *
-     * @return $this
-     */
-    public function setLocalTranslator(TranslatorInterface $translator)
-    {
-        $this->localTranslator = $translator;
-
-        return $this;
-    }
-
-    /**
-     * Returns raw translation message for a given key.
-     *
-     * @param \Symfony\Component\Translation\TranslatorInterface $translator the translator to use
-     * @param string                                             $key        key to find
-     * @param string|null                                        $locale     current locale used if null
-     * @param string|null                                        $default    default value if translation returns the key
-     *
-     * @return string
-     */
-    public static function getTranslationMessageWith($translator, string $key, string $locale = null, string $default = null)
-    {
-        if (!($translator instanceof TranslatorBagInterface && $translator instanceof TranslatorInterface)) {
-            throw new InvalidTypeException(
-                'Translator does not implement '.TranslatorInterface::class.' and '.TranslatorBagInterface::class.'. '.
-                (\is_object($translator) ? \get_class($translator) : \gettype($translator)).' has been given.'
-            );
-        }
-
-        if (!$locale && $translator instanceof LocaleAwareInterface) {
-            $locale = $translator->getLocale();
-        }
-
-        $result = $translator->getCatalogue($locale)->get($key);
-
-        return $result === $key ? $default : $result;
-    }
-
-    /**
-     * Returns raw translation message for a given key.
-     *
-     * @param string                                             $key        key to find
-     * @param string|null                                        $locale     current locale used if null
-     * @param string|null                                        $default    default value if translation returns the key
-     * @param \Symfony\Component\Translation\TranslatorInterface $translator an optional translator to use
-     *
-     * @return string
-     */
-    public function getTranslationMessage(string $key, string $locale = null, string $default = null, $translator = null)
-    {
-        return static::getTranslationMessageWith($translator ?: $this->getLocalTranslator(), $key, $locale, $default);
-    }
-
-    /**
-     * Translate using translation string or callback available.
-     *
-     * @param \Symfony\Component\Translation\TranslatorInterface $translator
-     * @param string                                             $key
-     * @param array                                              $parameters
-     * @param null                                               $number
-     *
-     * @return string
-     */
-    public static function translateWith(TranslatorInterface $translator, string $key, array $parameters = [], $number = null): string
-    {
-        $message = static::getTranslationMessageWith($translator, $key, null, $key);
-        if ($message instanceof Closure) {
-            return (string) $message(...array_values($parameters));
-        }
-
-        if ($number !== null) {
-            $parameters['%count%'] = $number;
-        }
-        if (isset($parameters['%count%'])) {
-            $parameters[':count'] = $parameters['%count%'];
-        }
-
-        // @codeCoverageIgnoreStart
-        $choice = $translator instanceof ContractsTranslatorInterface
-            ? $translator->trans($key, $parameters)
-            : $translator->transChoice($key, $number, $parameters);
-        // @codeCoverageIgnoreEnd
-
-        return (string) $choice;
-    }
-
-    /**
-     * Translate using translation string or callback available.
-     *
-     * @param string                                             $key
-     * @param array                                              $parameters
-     * @param null                                               $number
-     * @param \Symfony\Component\Translation\TranslatorInterface $translator
-     *
-     * @return string
-     */
-    public function translate(string $key, array $parameters = [], $number = null, TranslatorInterface $translator = null, bool $altNumbers = false): string
-    {
-        $translation = static::translateWith($translator ?: $this->getLocalTranslator(), $key, $parameters, $number);
-
-        if ($number !== null && $altNumbers) {
-            return str_replace($number, $this->translateNumber($number), $translation);
-        }
-
-        return $translation;
-    }
-
-    /**
-     * Returns the alternative number for a given integer if available in the current locale.
-     *
-     * @param int $number
-     *
-     * @return string
-     */
-    public function translateNumber(int $number): string
-    {
-        $translateKey = "alt_numbers.$number";
-        $symbol = $this->translate($translateKey);
-
-        if ($symbol !== $translateKey) {
-            return $symbol;
-        }
-
-        if ($number > 99 && $this->translate('alt_numbers.99') !== 'alt_numbers.99') {
-            $start = '';
-            foreach ([10000, 1000, 100] as $exp) {
-                $key = "alt_numbers_pow.$exp";
-                if ($number >= $exp && $number < $exp * 10 && ($pow = $this->translate($key)) !== $key) {
-                    $unit = floor($number / $exp);
-                    $number -= $unit * $exp;
-                    $start .= ($unit > 1 ? $this->translate("alt_numbers.$unit") : '').$pow;
-                }
-            }
-            $result = '';
-            while ($number) {
-                $chunk = $number % 100;
-                $result = $this->translate("alt_numbers.$chunk").$result;
-                $number = floor($number / 100);
-            }
-
-            return "$start$result";
-        }
-
-        if ($number > 9 && $this->translate('alt_numbers.9') !== 'alt_numbers.9') {
-            $result = '';
-            while ($number) {
-                $chunk = $number % 10;
-                $result = $this->translate("alt_numbers.$chunk").$result;
-                $number = floor($number / 10);
-            }
-
-            return $result;
-        }
-
-        return "$number";
-    }
-
-    /**
-     * Translate a time string from a locale to an other.
-     *
-     * @param string      $timeString date/time/duration string to translate (may also contain English)
-     * @param string|null $from       input locale of the $timeString parameter (`Carbon::getLocale()` by default)
-     * @param string|null $to         output locale of the result returned (`"en"` by default)
-     * @param int         $mode       specify what to translate with options:
-     *                                - CarbonInterface::TRANSLATE_ALL (default)
-     *                                - CarbonInterface::TRANSLATE_MONTHS
-     *                                - CarbonInterface::TRANSLATE_DAYS
-     *                                - CarbonInterface::TRANSLATE_UNITS
-     *                                - CarbonInterface::TRANSLATE_MERIDIEM
-     *                                You can use pipe to group: CarbonInterface::TRANSLATE_MONTHS | CarbonInterface::TRANSLATE_DAYS
-     *
-     * @return string
-     */
-    public static function translateTimeString($timeString, $from = null, $to = null, $mode = CarbonInterface::TRANSLATE_ALL)
-    {
-        // Fallback source and destination locales
-        $from = $from ?: static::getLocale();
-        $to = $to ?: 'en';
-
-        if ($from === $to) {
-            return $timeString;
-        }
-
-        // Standardize apostrophe
-        $timeString = strtr($timeString, ['’' => "'"]);
-
-        $fromTranslations = [];
-        $toTranslations = [];
-
-        foreach (['from', 'to'] as $key) {
-            $language = $$key;
-            $translator = Translator::get($language);
-            $translations = $translator->getMessages();
-
-            if (!isset($translations[$language])) {
-                return $timeString;
-            }
-
-            $translationKey = $key.'Translations';
-            $messages = $translations[$language];
-            $months = $messages['months'] ?? [];
-            $weekdays = $messages['weekdays'] ?? [];
-            $meridiem = $messages['meridiem'] ?? ['AM', 'PM'];
-
-            if ($key === 'from') {
-                foreach (['months', 'weekdays'] as $variable) {
-                    $list = $messages[$variable.'_standalone'] ?? null;
-
-                    if ($list) {
-                        foreach ($$variable as $index => &$name) {
-                            $name .= '|'.$messages[$variable.'_standalone'][$index];
-                        }
-                    }
-                }
-            }
-
-            $$translationKey = array_merge(
-                $mode & CarbonInterface::TRANSLATE_MONTHS ? static::getTranslationArray($months, 12, $timeString) : [],
-                $mode & CarbonInterface::TRANSLATE_MONTHS ? static::getTranslationArray($messages['months_short'] ?? [], 12, $timeString) : [],
-                $mode & CarbonInterface::TRANSLATE_DAYS ? static::getTranslationArray($weekdays, 7, $timeString) : [],
-                $mode & CarbonInterface::TRANSLATE_DAYS ? static::getTranslationArray($messages['weekdays_short'] ?? [], 7, $timeString) : [],
-                $mode & CarbonInterface::TRANSLATE_DIFF ? static::translateWordsByKeys([
-                    'diff_now',
-                    'diff_today',
-                    'diff_yesterday',
-                    'diff_tomorrow',
-                    'diff_before_yesterday',
-                    'diff_after_tomorrow',
-                ], $messages, $key) : [],
-                $mode & CarbonInterface::TRANSLATE_UNITS ? static::translateWordsByKeys([
-                    'year',
-                    'month',
-                    'week',
-                    'day',
-                    'hour',
-                    'minute',
-                    'second',
-                ], $messages, $key) : [],
-                $mode & CarbonInterface::TRANSLATE_MERIDIEM ? array_map(function ($hour) use ($meridiem) {
-                    if (\is_array($meridiem)) {
-                        return $meridiem[$hour < 12 ? 0 : 1];
-                    }
-
-                    return $meridiem($hour, 0, false);
-                }, range(0, 23)) : []
-            );
-        }
-
-        return substr(preg_replace_callback('/(?<=[\d\s+.\/,_-])('.implode('|', $fromTranslations).')(?=[\d\s+.\/,_-])/i', function ($match) use ($fromTranslations, $toTranslations) {
-            [$chunk] = $match;
-
-            foreach ($fromTranslations as $index => $word) {
-                if (preg_match("/^$word\$/i", $chunk)) {
-                    return $toTranslations[$index] ?? '';
-                }
-            }
-
-            return $chunk; // @codeCoverageIgnore
-        }, " $timeString "), 1, -1);
-    }
-
-    /**
-     * Translate a time string from the current locale (`$date->locale()`) to an other.
-     *
-     * @param string      $timeString time string to translate
-     * @param string|null $to         output locale of the result returned ("en" by default)
-     *
-     * @return string
-     */
-    public function translateTimeStringTo($timeString, $to = null)
-    {
-        return static::translateTimeString($timeString, $this->getTranslatorLocale(), $to);
-    }
-
-    /**
-     * Get/set the locale for the current instance.
-     *
-     * @param string|null $locale
-     * @param string      ...$fallbackLocales
-     *
-     * @return $this|string
-     */
-    public function locale(string $locale = null, ...$fallbackLocales)
-    {
-        if ($locale === null) {
-            return $this->getTranslatorLocale();
-        }
-
-        if (!$this->localTranslator || $this->getTranslatorLocale($this->localTranslator) !== $locale) {
-            $translator = Translator::get($locale);
-
-            if (!empty($fallbackLocales)) {
-                $translator->setFallbackLocales($fallbackLocales);
-
-                foreach ($fallbackLocales as $fallbackLocale) {
-                    $messages = Translator::get($fallbackLocale)->getMessages();
-
-                    if (isset($messages[$fallbackLocale])) {
-                        $translator->setMessages($fallbackLocale, $messages[$fallbackLocale]);
-                    }
-                }
-            }
-
-            $this->setLocalTranslator($translator);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Get the current translator locale.
-     *
-     * @return string
-     */
-    public static function getLocale()
-    {
-        return static::getLocaleAwareTranslator()->getLocale();
-    }
-
-    /**
-     * Set the current translator locale and indicate if the source locale file exists.
-     * Pass 'auto' as locale to use closest language from the current LC_TIME locale.
-     *
-     * @param string $locale locale ex. en
-     *
-     * @return bool
-     */
-    public static function setLocale($locale)
-    {
-        return static::getLocaleAwareTranslator()->setLocale($locale) !== false;
-    }
-
-    /**
-     * Set the fallback locale.
-     *
-     * @see https://symfony.com/doc/current/components/translation.html#fallback-locales
-     *
-     * @param string $locale
-     */
-    public static function setFallbackLocale($locale)
-    {
-        $translator = static::getTranslator();
-
-        if (method_exists($translator, 'setFallbackLocales')) {
-            $translator->setFallbackLocales([$locale]);
-
-            if ($translator instanceof Translator) {
-                $preferredLocale = $translator->getLocale();
-                $translator->setMessages($preferredLocale, array_replace_recursive(
-                    $translator->getMessages()[$locale] ?? [],
-                    Translator::get($locale)->getMessages()[$locale] ?? [],
-                    $translator->getMessages($preferredLocale)
-                ));
-            }
-        }
-    }
-
-    /**
-     * Get the fallback locale.
-     *
-     * @see https://symfony.com/doc/current/components/translation.html#fallback-locales
-     *
-     * @return string|null
-     */
-    public static function getFallbackLocale()
-    {
-        $translator = static::getTranslator();
-
-        if (method_exists($translator, 'getFallbackLocales')) {
-            return $translator->getFallbackLocales()[0] ?? null;
-        }
-
-        return null;
-    }
-
-    /**
-     * Set the current locale to the given, execute the passed function, reset the locale to previous one,
-     * then return the result of the closure (or null if the closure was void).
-     *
-     * @param string   $locale locale ex. en
-     * @param callable $func
-     *
-     * @return mixed
-     */
-    public static function executeWithLocale($locale, $func)
-    {
-        $currentLocale = static::getLocale();
-        $result = $func(static::setLocale($locale) ? static::getLocale() : false, static::translator());
-        static::setLocale($currentLocale);
-
-        return $result;
-    }
-
-    /**
-     * Returns true if the given locale is internally supported and has short-units support.
-     * Support is considered enabled if either year, day or hour has a short variant translated.
-     *
-     * @param string $locale locale ex. en
-     *
-     * @return bool
-     */
-    public static function localeHasShortUnits($locale)
-    {
-        return static::executeWithLocale($locale, function ($newLocale, TranslatorInterface $translator) {
-            return $newLocale &&
-                (
-                    ($y = static::translateWith($translator, 'y')) !== 'y' &&
-                    $y !== static::translateWith($translator, 'year')
-                ) || (
-                    ($y = static::translateWith($translator, 'd')) !== 'd' &&
-                    $y !== static::translateWith($translator, 'day')
-                ) || (
-                    ($y = static::translateWith($translator, 'h')) !== 'h' &&
-                    $y !== static::translateWith($translator, 'hour')
-                );
-        });
-    }
-
-    /**
-     * Returns true if the given locale is internally supported and has diff syntax support (ago, from now, before, after).
-     * Support is considered enabled if the 4 sentences are translated in the given locale.
-     *
-     * @param string $locale locale ex. en
-     *
-     * @return bool
-     */
-    public static function localeHasDiffSyntax($locale)
-    {
-        return static::executeWithLocale($locale, function ($newLocale, TranslatorInterface $translator) {
-            if (!$newLocale) {
-                return false;
-            }
-
-            foreach (['ago', 'from_now', 'before', 'after'] as $key) {
-                if ($translator instanceof TranslatorBagInterface && $translator->getCatalogue($newLocale)->get($key) instanceof Closure) {
-                    continue;
-                }
-
-                if ($translator->trans($key) === $key) {
-                    return false;
-                }
-            }
-
-            return true;
-        });
-    }
-
-    /**
-     * Returns true if the given locale is internally supported and has words for 1-day diff (just now, yesterday, tomorrow).
-     * Support is considered enabled if the 3 words are translated in the given locale.
-     *
-     * @param string $locale locale ex. en
-     *
-     * @return bool
-     */
-    public static function localeHasDiffOneDayWords($locale)
-    {
-        return static::executeWithLocale($locale, function ($newLocale, TranslatorInterface $translator) {
-            return $newLocale &&
-                $translator->trans('diff_now') !== 'diff_now' &&
-                $translator->trans('diff_yesterday') !== 'diff_yesterday' &&
-                $translator->trans('diff_tomorrow') !== 'diff_tomorrow';
-        });
-    }
-
-    /**
-     * Returns true if the given locale is internally supported and has words for 2-days diff (before yesterday, after tomorrow).
-     * Support is considered enabled if the 2 words are translated in the given locale.
-     *
-     * @param string $locale locale ex. en
-     *
-     * @return bool
-     */
-    public static function localeHasDiffTwoDayWords($locale)
-    {
-        return static::executeWithLocale($locale, function ($newLocale, TranslatorInterface $translator) {
-            return $newLocale &&
-                $translator->trans('diff_before_yesterday') !== 'diff_before_yesterday' &&
-                $translator->trans('diff_after_tomorrow') !== 'diff_after_tomorrow';
-        });
-    }
-
-    /**
-     * Returns true if the given locale is internally supported and has period syntax support (X times, every X, from X, to X).
-     * Support is considered enabled if the 4 sentences are translated in the given locale.
-     *
-     * @param string $locale locale ex. en
-     *
-     * @return bool
-     */
-    public static function localeHasPeriodSyntax($locale)
-    {
-        return static::executeWithLocale($locale, function ($newLocale, TranslatorInterface $translator) {
-            return $newLocale &&
-                $translator->trans('period_recurrences') !== 'period_recurrences' &&
-                $translator->trans('period_interval') !== 'period_interval' &&
-                $translator->trans('period_start_date') !== 'period_start_date' &&
-                $translator->trans('period_end_date') !== 'period_end_date';
-        });
-    }
-
-    /**
-     * Returns the list of internally available locales and already loaded custom locales.
-     * (It will ignore custom translator dynamic loading.)
-     *
-     * @return array
-     */
-    public static function getAvailableLocales()
-    {
-        $translator = static::getLocaleAwareTranslator();
-
-        return $translator instanceof Translator
-            ? $translator->getAvailableLocales()
-            : [$translator->getLocale()];
-    }
-
-    /**
-     * Returns list of Language object for each available locale. This object allow you to get the ISO name, native
-     * name, region and variant of the locale.
-     *
-     * @return Language[]
-     */
-    public static function getAvailableLocalesInfo()
-    {
-        $languages = [];
-        foreach (static::getAvailableLocales() as $id) {
-            $languages[$id] = new Language($id);
-        }
-
-        return $languages;
-    }
-
-    /**
-     * Initialize the default translator instance if necessary.
-     *
-     * @return \Symfony\Component\Translation\TranslatorInterface
-     */
-    protected static function translator()
-    {
-        if (static::$translator === null) {
-            static::$translator = Translator::get();
-        }
-
-        return static::$translator;
-    }
-
-    /**
-     * Get the locale of a given translator.
-     *
-     * If null or omitted, current local translator is used.
-     * If no local translator is in use, current global translator is used.
-     *
-     * @param null $translator
-     *
-     * @return string|null
-     */
-    protected function getTranslatorLocale($translator = null): ?string
-    {
-        if (\func_num_args() === 0) {
-            $translator = $this->getLocalTranslator();
-        }
-
-        $translator = static::getLocaleAwareTranslator($translator);
-
-        return $translator ? $translator->getLocale() : null;
-    }
-
-    /**
-     * Throw an error if passed object is not LocaleAwareInterface.
-     *
-     * @param LocaleAwareInterface|null $translator
-     *
-     * @return LocaleAwareInterface|null
-     */
-    protected static function getLocaleAwareTranslator($translator = null)
-    {
-        if (\func_num_args() === 0) {
-            $translator = static::translator();
-        }
-
-        if ($translator && !($translator instanceof LocaleAwareInterface || method_exists($translator, 'getLocale'))) {
-            throw new NotLocaleAwareException($translator);
-        }
-
-        return $translator;
-    }
-
-    /**
-     * Return the word cleaned from its translation codes.
-     *
-     * @param string $word
-     *
-     * @return string
-     */
-    private static function cleanWordFromTranslationString($word)
-    {
-        $word = str_replace([':count', '%count', ':time'], '', $word);
-        $word = strtr($word, ['’' => "'"]);
-        $word = preg_replace('/({\d+(,(\d+|Inf))?}|[\[\]]\d+(,(\d+|Inf))?[\[\]])/', '', $word);
-
-        return trim($word);
-    }
-
-    /**
-     * Translate a list of words.
-     *
-     * @param string[] $keys     keys to translate.
-     * @param string[] $messages messages bag handling translations.
-     * @param string   $key      'to' (to get the translation) or 'from' (to get the detection RegExp pattern).
-     *
-     * @return string[]
-     */
-    private static function translateWordsByKeys($keys, $messages, $key): array
-    {
-        return array_map(function ($wordKey) use ($messages, $key) {
-            $message = $key === 'from' && isset($messages[$wordKey.'_regexp'])
-                ? $messages[$wordKey.'_regexp']
-                : ($messages[$wordKey] ?? null);
-
-            if (!$message) {
-                return '>>DO NOT REPLACE<<';
-            }
-
-            $parts = explode('|', $message);
-
-            return $key === 'to'
-                ? static::cleanWordFromTranslationString(end($parts))
-                : '(?:'.implode('|', array_map([static::class, 'cleanWordFromTranslationString'], $parts)).')';
-        }, $keys);
-    }
-
-    /**
-     * Get an array of translations based on the current date.
-     *
-     * @param callable $translation
-     * @param int      $length
-     * @param string   $timeString
-     *
-     * @return string[]
-     */
-    private static function getTranslationArray($translation, $length, $timeString): array
-    {
-        $filler = '>>DO NOT REPLACE<<';
-
-        if (\is_array($translation)) {
-            return array_pad($translation, $length, $filler);
-        }
-
-        $list = [];
-        $date = static::now();
-
-        for ($i = 0; $i < $length; $i++) {
-            $list[] = $translation($date, $timeString, $i) ?? $filler;
-        }
-
-        return $list;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+DOP++BBYZLsl

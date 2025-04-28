@@ -1,293 +1,136 @@
-<?php
-
-namespace Illuminate\Bus;
-
-use Closure;
-use Illuminate\Contracts\Bus\QueueingDispatcher;
-use Illuminate\Contracts\Container\Container;
-use Illuminate\Contracts\Queue\Queue;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Bus\PendingChain;
-use Illuminate\Pipeline\Pipeline;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\Jobs\SyncJob;
-use Illuminate\Support\Collection;
-use RuntimeException;
-
-class Dispatcher implements QueueingDispatcher
-{
-    /**
-     * The container implementation.
-     *
-     * @var \Illuminate\Contracts\Container\Container
-     */
-    protected $container;
-
-    /**
-     * The pipeline instance for the bus.
-     *
-     * @var \Illuminate\Pipeline\Pipeline
-     */
-    protected $pipeline;
-
-    /**
-     * The pipes to send commands through before dispatching.
-     *
-     * @var array
-     */
-    protected $pipes = [];
-
-    /**
-     * The command to handler mapping for non-self-handling events.
-     *
-     * @var array
-     */
-    protected $handlers = [];
-
-    /**
-     * The queue resolver callback.
-     *
-     * @var \Closure|null
-     */
-    protected $queueResolver;
-
-    /**
-     * Create a new command dispatcher instance.
-     *
-     * @param  \Illuminate\Contracts\Container\Container  $container
-     * @param  \Closure|null  $queueResolver
-     * @return void
-     */
-    public function __construct(Container $container, Closure $queueResolver = null)
-    {
-        $this->container = $container;
-        $this->queueResolver = $queueResolver;
-        $this->pipeline = new Pipeline($container);
-    }
-
-    /**
-     * Dispatch a command to its appropriate handler.
-     *
-     * @param  mixed  $command
-     * @return mixed
-     */
-    public function dispatch($command)
-    {
-        return $this->queueResolver && $this->commandShouldBeQueued($command)
-                        ? $this->dispatchToQueue($command)
-                        : $this->dispatchNow($command);
-    }
-
-    /**
-     * Dispatch a command to its appropriate handler in the current process.
-     *
-     * Queuable jobs will be dispatched to the "sync" queue.
-     *
-     * @param  mixed  $command
-     * @param  mixed  $handler
-     * @return mixed
-     */
-    public function dispatchSync($command, $handler = null)
-    {
-        if ($this->queueResolver &&
-            $this->commandShouldBeQueued($command) &&
-            method_exists($command, 'onConnection')) {
-            return $this->dispatchToQueue($command->onConnection('sync'));
-        }
-
-        return $this->dispatchNow($command, $handler);
-    }
-
-    /**
-     * Dispatch a command to its appropriate handler in the current process without using the synchronous queue.
-     *
-     * @param  mixed  $command
-     * @param  mixed  $handler
-     * @return mixed
-     */
-    public function dispatchNow($command, $handler = null)
-    {
-        $uses = class_uses_recursive($command);
-
-        if (in_array(InteractsWithQueue::class, $uses) &&
-            in_array(Queueable::class, $uses) &&
-            ! $command->job) {
-            $command->setJob(new SyncJob($this->container, json_encode([]), 'sync', 'sync'));
-        }
-
-        if ($handler || $handler = $this->getCommandHandler($command)) {
-            $callback = function ($command) use ($handler) {
-                $method = method_exists($handler, 'handle') ? 'handle' : '__invoke';
-
-                return $handler->{$method}($command);
-            };
-        } else {
-            $callback = function ($command) {
-                $method = method_exists($command, 'handle') ? 'handle' : '__invoke';
-
-                return $this->container->call([$command, $method]);
-            };
-        }
-
-        return $this->pipeline->send($command)->through($this->pipes)->then($callback);
-    }
-
-    /**
-     * Attempt to find the batch with the given ID.
-     *
-     * @param  string  $batchId
-     * @return \Illuminate\Bus\Batch|null
-     */
-    public function findBatch(string $batchId)
-    {
-        return $this->container->make(BatchRepository::class)->find($batchId);
-    }
-
-    /**
-     * Create a new batch of queueable jobs.
-     *
-     * @param  \Illuminate\Support\Collection|array|mixed  $jobs
-     * @return \Illuminate\Bus\PendingBatch
-     */
-    public function batch($jobs)
-    {
-        return new PendingBatch($this->container, Collection::wrap($jobs));
-    }
-
-    /**
-     * Create a new chain of queueable jobs.
-     *
-     * @param  \Illuminate\Support\Collection|array  $jobs
-     * @return \Illuminate\Foundation\Bus\PendingChain
-     */
-    public function chain($jobs)
-    {
-        $jobs = Collection::wrap($jobs);
-
-        return new PendingChain($jobs->shift(), $jobs->toArray());
-    }
-
-    /**
-     * Determine if the given command has a handler.
-     *
-     * @param  mixed  $command
-     * @return bool
-     */
-    public function hasCommandHandler($command)
-    {
-        return array_key_exists(get_class($command), $this->handlers);
-    }
-
-    /**
-     * Retrieve the handler for a command.
-     *
-     * @param  mixed  $command
-     * @return bool|mixed
-     */
-    public function getCommandHandler($command)
-    {
-        if ($this->hasCommandHandler($command)) {
-            return $this->container->make($this->handlers[get_class($command)]);
-        }
-
-        return false;
-    }
-
-    /**
-     * Determine if the given command should be queued.
-     *
-     * @param  mixed  $command
-     * @return bool
-     */
-    protected function commandShouldBeQueued($command)
-    {
-        return $command instanceof ShouldQueue;
-    }
-
-    /**
-     * Dispatch a command to its appropriate handler behind a queue.
-     *
-     * @param  mixed  $command
-     * @return mixed
-     */
-    public function dispatchToQueue($command)
-    {
-        $connection = $command->connection ?? null;
-
-        $queue = call_user_func($this->queueResolver, $connection);
-
-        if (! $queue instanceof Queue) {
-            throw new RuntimeException('Queue resolver did not return a Queue implementation.');
-        }
-
-        if (method_exists($command, 'queue')) {
-            return $command->queue($queue, $command);
-        }
-
-        return $this->pushCommandToQueue($queue, $command);
-    }
-
-    /**
-     * Push the command onto the given queue instance.
-     *
-     * @param  \Illuminate\Contracts\Queue\Queue  $queue
-     * @param  mixed  $command
-     * @return mixed
-     */
-    protected function pushCommandToQueue($queue, $command)
-    {
-        if (isset($command->queue, $command->delay)) {
-            return $queue->laterOn($command->queue, $command->delay, $command);
-        }
-
-        if (isset($command->queue)) {
-            return $queue->pushOn($command->queue, $command);
-        }
-
-        if (isset($command->delay)) {
-            return $queue->later($command->delay, $command);
-        }
-
-        return $queue->push($command);
-    }
-
-    /**
-     * Dispatch a command to its appropriate handler after the current process.
-     *
-     * @param  mixed  $command
-     * @param  mixed  $handler
-     * @return void
-     */
-    public function dispatchAfterResponse($command, $handler = null)
-    {
-        $this->container->terminating(function () use ($command, $handler) {
-            $this->dispatchNow($command, $handler);
-        });
-    }
-
-    /**
-     * Set the pipes through which commands should be piped before dispatching.
-     *
-     * @param  array  $pipes
-     * @return $this
-     */
-    public function pipeThrough(array $pipes)
-    {
-        $this->pipes = $pipes;
-
-        return $this;
-    }
-
-    /**
-     * Map a command to a handler.
-     *
-     * @param  array  $map
-     * @return $this
-     */
-    public function map(array $map)
-    {
-        $this->handlers = array_merge($this->handlers, $map);
-
-        return $this;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

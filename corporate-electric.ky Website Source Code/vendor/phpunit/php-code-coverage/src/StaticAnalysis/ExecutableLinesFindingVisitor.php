@@ -1,91 +1,55 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of phpunit/php-code-coverage.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\CodeCoverage\StaticAnalysis;
-
-use function array_unique;
-use function sort;
-use PhpParser\Node;
-use PhpParser\Node\Stmt\Break_;
-use PhpParser\Node\Stmt\Case_;
-use PhpParser\Node\Stmt\Catch_;
-use PhpParser\Node\Stmt\Continue_;
-use PhpParser\Node\Stmt\Do_;
-use PhpParser\Node\Stmt\Echo_;
-use PhpParser\Node\Stmt\Else_;
-use PhpParser\Node\Stmt\ElseIf_;
-use PhpParser\Node\Stmt\Expression;
-use PhpParser\Node\Stmt\Finally_;
-use PhpParser\Node\Stmt\For_;
-use PhpParser\Node\Stmt\Foreach_;
-use PhpParser\Node\Stmt\Goto_;
-use PhpParser\Node\Stmt\If_;
-use PhpParser\Node\Stmt\Return_;
-use PhpParser\Node\Stmt\Switch_;
-use PhpParser\Node\Stmt\Throw_;
-use PhpParser\Node\Stmt\TryCatch;
-use PhpParser\Node\Stmt\Unset_;
-use PhpParser\Node\Stmt\While_;
-use PhpParser\NodeVisitorAbstract;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for phpunit/php-code-coverage
- */
-final class ExecutableLinesFindingVisitor extends NodeVisitorAbstract
-{
-    /**
-     * @psalm-var list<int>
-     */
-    private $executableLines = [];
-
-    public function enterNode(Node $node): void
-    {
-        if (!$this->isExecutable($node)) {
-            return;
-        }
-
-        $this->executableLines[] = $node->getStartLine();
-    }
-
-    /**
-     * @psalm-return list<int>
-     */
-    public function executableLines(): array
-    {
-        $executableLines = array_unique($this->executableLines);
-
-        sort($executableLines);
-
-        return $executableLines;
-    }
-
-    private function isExecutable(Node $node): bool
-    {
-        return $node instanceof Break_ ||
-               $node instanceof Case_ ||
-               $node instanceof Catch_ ||
-               $node instanceof Continue_ ||
-               $node instanceof Do_ ||
-               $node instanceof Echo_ ||
-               $node instanceof ElseIf_ ||
-               $node instanceof Else_ ||
-               $node instanceof Expression ||
-               $node instanceof Finally_ ||
-               $node instanceof Foreach_ ||
-               $node instanceof For_ ||
-               $node instanceof Goto_ ||
-               $node instanceof If_ ||
-               $node instanceof Return_ ||
-               $node instanceof Switch_ ||
-               $node instanceof Throw_ ||
-               $node instanceof TryCatch ||
-               $node instanceof Unset_ ||
-               $node instanceof While_;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

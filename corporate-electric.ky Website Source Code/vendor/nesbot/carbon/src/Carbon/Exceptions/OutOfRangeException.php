@@ -1,100 +1,40 @@
-<?php
-
-/**
- * This file is part of the Carbon package.
- *
- * (c) Brian Nesbitt <brian@nesbot.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace Carbon\Exceptions;
-
-use Exception;
-use InvalidArgumentException as BaseInvalidArgumentException;
-
-// This will extends OutOfRangeException instead of InvalidArgumentException since 3.0.0
-// use OutOfRangeException as BaseOutOfRangeException;
-
-class OutOfRangeException extends BaseInvalidArgumentException implements InvalidArgumentException
-{
-    /**
-     * The unit or name of the value.
-     *
-     * @var string
-     */
-    private $unit;
-
-    /**
-     * The range minimum.
-     *
-     * @var mixed
-     */
-    private $min;
-
-    /**
-     * The range maximum.
-     *
-     * @var mixed
-     */
-    private $max;
-
-    /**
-     * The invalid value.
-     *
-     * @var mixed
-     */
-    private $value;
-
-    /**
-     * Constructor.
-     *
-     * @param string         $unit
-     * @param mixed          $min
-     * @param mixed          $max
-     * @param mixed          $value
-     * @param int            $code
-     * @param Exception|null $previous
-     */
-    public function __construct($unit, $min, $max, $value, $code = 0, Exception $previous = null)
-    {
-        $this->unit = $unit;
-        $this->min = $min;
-        $this->max = $max;
-        $this->value = $value;
-
-        parent::__construct("$unit must be between $min and $max, $value given", $code, $previous);
-    }
-
-    /**
-     * @return mixed
-     */
-    public function getMax()
-    {
-        return $this->max;
-    }
-
-    /**
-     * @return mixed
-     */
-    public function getMin()
-    {
-        return $this->min;
-    }
-
-    /**
-     * @return mixed
-     */
-    public function getUnit()
-    {
-        return $this->unit;
-    }
-
-    /**
-     * @return mixed
-     */
-    public function getValue()
-    {
-        return $this->value;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

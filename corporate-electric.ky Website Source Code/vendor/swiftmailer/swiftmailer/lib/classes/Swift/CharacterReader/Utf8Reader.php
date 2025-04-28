@@ -1,176 +1,96 @@
-<?php
-
-/*
- * This file is part of SwiftMailer.
- * (c) 2004-2009 Chris Corbyn
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-/**
- * Analyzes UTF-8 characters.
- *
- * @author Chris Corbyn
- * @author Xavier De Cock <xdecock@gmail.com>
- */
-class Swift_CharacterReader_Utf8Reader implements Swift_CharacterReader
-{
-    /** Pre-computed for optimization */
-    private static $length_map = [
-        // N=0,1,2,3,4,5,6,7,8,9,A,B,C,D,E,F
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 0x0N
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 0x1N
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 0x2N
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 0x3N
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 0x4N
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 0x5N
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 0x6N
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 0x7N
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x8N
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x9N
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xAN
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0xBN
-        2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, // 0xCN
-        2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, // 0xDN
-        3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // 0xEN
-        4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 0, 0, // 0xFN
-    ];
-
-    private static $s_length_map = [
-        "\x00" => 1, "\x01" => 1, "\x02" => 1, "\x03" => 1, "\x04" => 1, "\x05" => 1, "\x06" => 1, "\x07" => 1,
-        "\x08" => 1, "\x09" => 1, "\x0a" => 1, "\x0b" => 1, "\x0c" => 1, "\x0d" => 1, "\x0e" => 1, "\x0f" => 1,
-        "\x10" => 1, "\x11" => 1, "\x12" => 1, "\x13" => 1, "\x14" => 1, "\x15" => 1, "\x16" => 1, "\x17" => 1,
-        "\x18" => 1, "\x19" => 1, "\x1a" => 1, "\x1b" => 1, "\x1c" => 1, "\x1d" => 1, "\x1e" => 1, "\x1f" => 1,
-        "\x20" => 1, "\x21" => 1, "\x22" => 1, "\x23" => 1, "\x24" => 1, "\x25" => 1, "\x26" => 1, "\x27" => 1,
-        "\x28" => 1, "\x29" => 1, "\x2a" => 1, "\x2b" => 1, "\x2c" => 1, "\x2d" => 1, "\x2e" => 1, "\x2f" => 1,
-        "\x30" => 1, "\x31" => 1, "\x32" => 1, "\x33" => 1, "\x34" => 1, "\x35" => 1, "\x36" => 1, "\x37" => 1,
-        "\x38" => 1, "\x39" => 1, "\x3a" => 1, "\x3b" => 1, "\x3c" => 1, "\x3d" => 1, "\x3e" => 1, "\x3f" => 1,
-        "\x40" => 1, "\x41" => 1, "\x42" => 1, "\x43" => 1, "\x44" => 1, "\x45" => 1, "\x46" => 1, "\x47" => 1,
-        "\x48" => 1, "\x49" => 1, "\x4a" => 1, "\x4b" => 1, "\x4c" => 1, "\x4d" => 1, "\x4e" => 1, "\x4f" => 1,
-        "\x50" => 1, "\x51" => 1, "\x52" => 1, "\x53" => 1, "\x54" => 1, "\x55" => 1, "\x56" => 1, "\x57" => 1,
-        "\x58" => 1, "\x59" => 1, "\x5a" => 1, "\x5b" => 1, "\x5c" => 1, "\x5d" => 1, "\x5e" => 1, "\x5f" => 1,
-        "\x60" => 1, "\x61" => 1, "\x62" => 1, "\x63" => 1, "\x64" => 1, "\x65" => 1, "\x66" => 1, "\x67" => 1,
-        "\x68" => 1, "\x69" => 1, "\x6a" => 1, "\x6b" => 1, "\x6c" => 1, "\x6d" => 1, "\x6e" => 1, "\x6f" => 1,
-        "\x70" => 1, "\x71" => 1, "\x72" => 1, "\x73" => 1, "\x74" => 1, "\x75" => 1, "\x76" => 1, "\x77" => 1,
-        "\x78" => 1, "\x79" => 1, "\x7a" => 1, "\x7b" => 1, "\x7c" => 1, "\x7d" => 1, "\x7e" => 1, "\x7f" => 1,
-        "\x80" => 0, "\x81" => 0, "\x82" => 0, "\x83" => 0, "\x84" => 0, "\x85" => 0, "\x86" => 0, "\x87" => 0,
-        "\x88" => 0, "\x89" => 0, "\x8a" => 0, "\x8b" => 0, "\x8c" => 0, "\x8d" => 0, "\x8e" => 0, "\x8f" => 0,
-        "\x90" => 0, "\x91" => 0, "\x92" => 0, "\x93" => 0, "\x94" => 0, "\x95" => 0, "\x96" => 0, "\x97" => 0,
-        "\x98" => 0, "\x99" => 0, "\x9a" => 0, "\x9b" => 0, "\x9c" => 0, "\x9d" => 0, "\x9e" => 0, "\x9f" => 0,
-        "\xa0" => 0, "\xa1" => 0, "\xa2" => 0, "\xa3" => 0, "\xa4" => 0, "\xa5" => 0, "\xa6" => 0, "\xa7" => 0,
-        "\xa8" => 0, "\xa9" => 0, "\xaa" => 0, "\xab" => 0, "\xac" => 0, "\xad" => 0, "\xae" => 0, "\xaf" => 0,
-        "\xb0" => 0, "\xb1" => 0, "\xb2" => 0, "\xb3" => 0, "\xb4" => 0, "\xb5" => 0, "\xb6" => 0, "\xb7" => 0,
-        "\xb8" => 0, "\xb9" => 0, "\xba" => 0, "\xbb" => 0, "\xbc" => 0, "\xbd" => 0, "\xbe" => 0, "\xbf" => 0,
-        "\xc0" => 2, "\xc1" => 2, "\xc2" => 2, "\xc3" => 2, "\xc4" => 2, "\xc5" => 2, "\xc6" => 2, "\xc7" => 2,
-        "\xc8" => 2, "\xc9" => 2, "\xca" => 2, "\xcb" => 2, "\xcc" => 2, "\xcd" => 2, "\xce" => 2, "\xcf" => 2,
-        "\xd0" => 2, "\xd1" => 2, "\xd2" => 2, "\xd3" => 2, "\xd4" => 2, "\xd5" => 2, "\xd6" => 2, "\xd7" => 2,
-        "\xd8" => 2, "\xd9" => 2, "\xda" => 2, "\xdb" => 2, "\xdc" => 2, "\xdd" => 2, "\xde" => 2, "\xdf" => 2,
-        "\xe0" => 3, "\xe1" => 3, "\xe2" => 3, "\xe3" => 3, "\xe4" => 3, "\xe5" => 3, "\xe6" => 3, "\xe7" => 3,
-        "\xe8" => 3, "\xe9" => 3, "\xea" => 3, "\xeb" => 3, "\xec" => 3, "\xed" => 3, "\xee" => 3, "\xef" => 3,
-        "\xf0" => 4, "\xf1" => 4, "\xf2" => 4, "\xf3" => 4, "\xf4" => 4, "\xf5" => 4, "\xf6" => 4, "\xf7" => 4,
-        "\xf8" => 5, "\xf9" => 5, "\xfa" => 5, "\xfb" => 5, "\xfc" => 6, "\xfd" => 6, "\xfe" => 0, "\xff" => 0,
-     ];
-
-    /**
-     * Returns the complete character map.
-     *
-     * @param string $string
-     * @param int    $startOffset
-     * @param array  $currentMap
-     * @param mixed  $ignoredChars
-     *
-     * @return int
-     */
-    public function getCharPositions($string, $startOffset, &$currentMap, &$ignoredChars)
-    {
-        if (!isset($currentMap['i']) || !isset($currentMap['p'])) {
-            $currentMap['p'] = $currentMap['i'] = [];
-        }
-
-        $strlen = \strlen($string);
-        $charPos = \count($currentMap['p']);
-        $foundChars = 0;
-        $invalid = false;
-        for ($i = 0; $i < $strlen; ++$i) {
-            $char = $string[$i];
-            $size = self::$s_length_map[$char];
-            if (0 == $size) {
-                /* char is invalid, we must wait for a resync */
-                $invalid = true;
-                continue;
-            } else {
-                if (true === $invalid) {
-                    /* We mark the chars as invalid and start a new char */
-                    $currentMap['p'][$charPos + $foundChars] = $startOffset + $i;
-                    $currentMap['i'][$charPos + $foundChars] = true;
-                    ++$foundChars;
-                    $invalid = false;
-                }
-                if (($i + $size) > $strlen) {
-                    $ignoredChars = substr($string, $i);
-                    break;
-                }
-                for ($j = 1; $j < $size; ++$j) {
-                    $char = $string[$i + $j];
-                    if ($char > "\x7F" && $char < "\xC0") {
-                        // Valid - continue parsing
-                    } else {
-                        /* char is invalid, we must wait for a resync */
-                        $invalid = true;
-                        continue 2;
-                    }
-                }
-                /* Ok we got a complete char here */
-                $currentMap['p'][$charPos + $foundChars] = $startOffset + $i + $size;
-                $i += $j - 1;
-                ++$foundChars;
-            }
-        }
-
-        return $foundChars;
-    }
-
-    /**
-     * Returns mapType.
-     *
-     * @return int mapType
-     */
-    public function getMapType()
-    {
-        return self::MAP_TYPE_POSITIONS;
-    }
-
-    /**
-     * Returns an integer which specifies how many more bytes to read.
-     *
-     * A positive integer indicates the number of more bytes to fetch before invoking
-     * this method again.
-     * A value of zero means this is already a valid character.
-     * A value of -1 means this cannot possibly be a valid character.
-     *
-     * @param string $bytes
-     * @param int    $size
-     *
-     * @return int
-     */
-    public function validateByteSequence($bytes, $size)
-    {
-        if ($size < 1) {
-            return -1;
-        }
-        $needed = self::$length_map[$bytes[0]] - $size;
-
-        return $needed > -1 ? $needed : -1;
-    }
-
-    /**
-     * Returns the number of bytes which should be read to start each character.
-     *
-     * @return int
-     */
-    public function getInitialByteSize()
-    {
-        return 1;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

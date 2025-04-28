@@ -1,174 +1,83 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Console\Output;
-
-use Symfony\Component\Console\Formatter\OutputFormatter;
-use Symfony\Component\Console\Formatter\OutputFormatterInterface;
-
-/**
- * Base class for output classes.
- *
- * There are five levels of verbosity:
- *
- *  * normal: no option passed (normal output)
- *  * verbose: -v (more output)
- *  * very verbose: -vv (highly extended output)
- *  * debug: -vvv (all debug output)
- *  * quiet: -q (no output)
- *
- * @author Fabien Potencier <fabien@symfony.com>
- */
-abstract class Output implements OutputInterface
-{
-    private $verbosity;
-    private $formatter;
-
-    /**
-     * @param int                           $verbosity The verbosity level (one of the VERBOSITY constants in OutputInterface)
-     * @param bool                          $decorated Whether to decorate messages
-     * @param OutputFormatterInterface|null $formatter Output formatter instance (null to use default OutputFormatter)
-     */
-    public function __construct(?int $verbosity = self::VERBOSITY_NORMAL, bool $decorated = false, OutputFormatterInterface $formatter = null)
-    {
-        $this->verbosity = null === $verbosity ? self::VERBOSITY_NORMAL : $verbosity;
-        $this->formatter = $formatter ?: new OutputFormatter();
-        $this->formatter->setDecorated($decorated);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function setFormatter(OutputFormatterInterface $formatter)
-    {
-        $this->formatter = $formatter;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getFormatter()
-    {
-        return $this->formatter;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function setDecorated(bool $decorated)
-    {
-        $this->formatter->setDecorated($decorated);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function isDecorated()
-    {
-        return $this->formatter->isDecorated();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function setVerbosity(int $level)
-    {
-        $this->verbosity = $level;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getVerbosity()
-    {
-        return $this->verbosity;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function isQuiet()
-    {
-        return self::VERBOSITY_QUIET === $this->verbosity;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function isVerbose()
-    {
-        return self::VERBOSITY_VERBOSE <= $this->verbosity;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function isVeryVerbose()
-    {
-        return self::VERBOSITY_VERY_VERBOSE <= $this->verbosity;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function isDebug()
-    {
-        return self::VERBOSITY_DEBUG <= $this->verbosity;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function writeln($messages, int $options = self::OUTPUT_NORMAL)
-    {
-        $this->write($messages, true, $options);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function write($messages, bool $newline = false, int $options = self::OUTPUT_NORMAL)
-    {
-        if (!is_iterable($messages)) {
-            $messages = [$messages];
-        }
-
-        $types = self::OUTPUT_NORMAL | self::OUTPUT_RAW | self::OUTPUT_PLAIN;
-        $type = $types & $options ?: self::OUTPUT_NORMAL;
-
-        $verbosities = self::VERBOSITY_QUIET | self::VERBOSITY_NORMAL | self::VERBOSITY_VERBOSE | self::VERBOSITY_VERY_VERBOSE | self::VERBOSITY_DEBUG;
-        $verbosity = $verbosities & $options ?: self::VERBOSITY_NORMAL;
-
-        if ($verbosity > $this->getVerbosity()) {
-            return;
-        }
-
-        foreach ($messages as $message) {
-            switch ($type) {
-                case OutputInterface::OUTPUT_NORMAL:
-                    $message = $this->formatter->format($message);
-                    break;
-                case OutputInterface::OUTPUT_RAW:
-                    break;
-                case OutputInterface::OUTPUT_PLAIN:
-                    $message = strip_tags($this->formatter->format($message));
-                    break;
-            }
-
-            $this->doWrite($message, $newline);
-        }
-    }
-
-    /**
-     * Writes a message to the output.
-     */
-    abstract protected function doWrite(string $message, bool $newline);
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

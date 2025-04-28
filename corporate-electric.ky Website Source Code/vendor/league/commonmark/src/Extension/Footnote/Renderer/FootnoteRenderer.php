@@ -1,64 +1,53 @@
-<?php
-
-/*
- * This file is part of the league/commonmark package.
- *
- * (c) Colin O'Dell <colinodell@gmail.com>
- * (c) Rezo Zero / Ambroise Maupate
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-declare(strict_types=1);
-
-namespace League\CommonMark\Extension\Footnote\Renderer;
-
-use League\CommonMark\Block\Element\AbstractBlock;
-use League\CommonMark\Block\Renderer\BlockRendererInterface;
-use League\CommonMark\ElementRendererInterface;
-use League\CommonMark\Extension\Footnote\Node\Footnote;
-use League\CommonMark\HtmlElement;
-use League\CommonMark\Util\ConfigurationAwareInterface;
-use League\CommonMark\Util\ConfigurationInterface;
-
-final class FootnoteRenderer implements BlockRendererInterface, ConfigurationAwareInterface
-{
-    /** @var ConfigurationInterface */
-    private $config;
-
-    /**
-     * @param Footnote                 $block
-     * @param ElementRendererInterface $htmlRenderer
-     * @param bool                     $inTightList
-     *
-     * @return HtmlElement
-     */
-    public function render(AbstractBlock $block, ElementRendererInterface $htmlRenderer, bool $inTightList = false)
-    {
-        if (!($block instanceof Footnote)) {
-            throw new \InvalidArgumentException('Incompatible block type: ' . \get_class($block));
-        }
-
-        $attrs = $block->getData('attributes', []);
-        $attrs['class'] = $attrs['class'] ?? $this->config->get('footnote/footnote_class', 'footnote');
-        $attrs['id'] = $this->config->get('footnote/footnote_id_prefix', 'fn:') . \mb_strtolower($block->getReference()->getLabel());
-        $attrs['role'] = 'doc-endnote';
-
-        foreach ($block->getBackrefs() as $backref) {
-            $block->lastChild()->appendChild($backref);
-        }
-
-        return new HtmlElement(
-            'li',
-            $attrs,
-            $htmlRenderer->renderBlocks($block->children()),
-            true
-        );
-    }
-
-    public function setConfiguration(ConfigurationInterface $configuration)
-    {
-        $this->config = $configuration;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

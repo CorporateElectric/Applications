@@ -1,373 +1,148 @@
-<?php
-
-namespace Illuminate\Database;
-
-use Illuminate\Database\Connectors\ConnectionFactory;
-use Illuminate\Support\Arr;
-use Illuminate\Support\ConfigurationUrlParser;
-use Illuminate\Support\Str;
-use InvalidArgumentException;
-use PDO;
-
-/**
- * @mixin \Illuminate\Database\Connection
- */
-class DatabaseManager implements ConnectionResolverInterface
-{
-    /**
-     * The application instance.
-     *
-     * @var \Illuminate\Contracts\Foundation\Application
-     */
-    protected $app;
-
-    /**
-     * The database connection factory instance.
-     *
-     * @var \Illuminate\Database\Connectors\ConnectionFactory
-     */
-    protected $factory;
-
-    /**
-     * The active connection instances.
-     *
-     * @var array
-     */
-    protected $connections = [];
-
-    /**
-     * The custom connection resolvers.
-     *
-     * @var array
-     */
-    protected $extensions = [];
-
-    /**
-     * The callback to be executed to reconnect to a database.
-     *
-     * @var callable
-     */
-    protected $reconnector;
-
-    /**
-     * Create a new database manager instance.
-     *
-     * @param  \Illuminate\Contracts\Foundation\Application  $app
-     * @param  \Illuminate\Database\Connectors\ConnectionFactory  $factory
-     * @return void
-     */
-    public function __construct($app, ConnectionFactory $factory)
-    {
-        $this->app = $app;
-        $this->factory = $factory;
-
-        $this->reconnector = function ($connection) {
-            $this->reconnect($connection->getName());
-        };
-    }
-
-    /**
-     * Get a database connection instance.
-     *
-     * @param  string|null  $name
-     * @return \Illuminate\Database\Connection
-     */
-    public function connection($name = null)
-    {
-        [$database, $type] = $this->parseConnectionName($name);
-
-        $name = $name ?: $database;
-
-        // If we haven't created this connection, we'll create it based on the config
-        // provided in the application. Once we've created the connections we will
-        // set the "fetch mode" for PDO which determines the query return types.
-        if (! isset($this->connections[$name])) {
-            $this->connections[$name] = $this->configure(
-                $this->makeConnection($database), $type
-            );
-        }
-
-        return $this->connections[$name];
-    }
-
-    /**
-     * Parse the connection into an array of the name and read / write type.
-     *
-     * @param  string  $name
-     * @return array
-     */
-    protected function parseConnectionName($name)
-    {
-        $name = $name ?: $this->getDefaultConnection();
-
-        return Str::endsWith($name, ['::read', '::write'])
-                            ? explode('::', $name, 2) : [$name, null];
-    }
-
-    /**
-     * Make the database connection instance.
-     *
-     * @param  string  $name
-     * @return \Illuminate\Database\Connection
-     */
-    protected function makeConnection($name)
-    {
-        $config = $this->configuration($name);
-
-        // First we will check by the connection name to see if an extension has been
-        // registered specifically for that connection. If it has we will call the
-        // Closure and pass it the config allowing it to resolve the connection.
-        if (isset($this->extensions[$name])) {
-            return call_user_func($this->extensions[$name], $config, $name);
-        }
-
-        // Next we will check to see if an extension has been registered for a driver
-        // and will call the Closure if so, which allows us to have a more generic
-        // resolver for the drivers themselves which applies to all connections.
-        if (isset($this->extensions[$driver = $config['driver']])) {
-            return call_user_func($this->extensions[$driver], $config, $name);
-        }
-
-        return $this->factory->make($config, $name);
-    }
-
-    /**
-     * Get the configuration for a connection.
-     *
-     * @param  string  $name
-     * @return array
-     *
-     * @throws \InvalidArgumentException
-     */
-    protected function configuration($name)
-    {
-        $name = $name ?: $this->getDefaultConnection();
-
-        // To get the database connection configuration, we will just pull each of the
-        // connection configurations and get the configurations for the given name.
-        // If the configuration doesn't exist, we'll throw an exception and bail.
-        $connections = $this->app['config']['database.connections'];
-
-        if (is_null($config = Arr::get($connections, $name))) {
-            throw new InvalidArgumentException("Database connection [{$name}] not configured.");
-        }
-
-        return (new ConfigurationUrlParser)
-                    ->parseConfiguration($config);
-    }
-
-    /**
-     * Prepare the database connection instance.
-     *
-     * @param  \Illuminate\Database\Connection  $connection
-     * @param  string  $type
-     * @return \Illuminate\Database\Connection
-     */
-    protected function configure(Connection $connection, $type)
-    {
-        $connection = $this->setPdoForType($connection, $type);
-
-        // First we'll set the fetch mode and a few other dependencies of the database
-        // connection. This method basically just configures and prepares it to get
-        // used by the application. Once we're finished we'll return it back out.
-        if ($this->app->bound('events')) {
-            $connection->setEventDispatcher($this->app['events']);
-        }
-
-        if ($this->app->bound('db.transactions')) {
-            $connection->setTransactionManager($this->app['db.transactions']);
-        }
-
-        // Here we'll set a reconnector callback. This reconnector can be any callable
-        // so we will set a Closure to reconnect from this manager with the name of
-        // the connection, which will allow us to reconnect from the connections.
-        $connection->setReconnector($this->reconnector);
-
-        return $connection;
-    }
-
-    /**
-     * Prepare the read / write mode for database connection instance.
-     *
-     * @param  \Illuminate\Database\Connection  $connection
-     * @param  string|null  $type
-     * @return \Illuminate\Database\Connection
-     */
-    protected function setPdoForType(Connection $connection, $type = null)
-    {
-        if ($type === 'read') {
-            $connection->setPdo($connection->getReadPdo());
-        } elseif ($type === 'write') {
-            $connection->setReadPdo($connection->getPdo());
-        }
-
-        return $connection;
-    }
-
-    /**
-     * Disconnect from the given database and remove from local cache.
-     *
-     * @param  string|null  $name
-     * @return void
-     */
-    public function purge($name = null)
-    {
-        $name = $name ?: $this->getDefaultConnection();
-
-        $this->disconnect($name);
-
-        unset($this->connections[$name]);
-    }
-
-    /**
-     * Disconnect from the given database.
-     *
-     * @param  string|null  $name
-     * @return void
-     */
-    public function disconnect($name = null)
-    {
-        if (isset($this->connections[$name = $name ?: $this->getDefaultConnection()])) {
-            $this->connections[$name]->disconnect();
-        }
-    }
-
-    /**
-     * Reconnect to the given database.
-     *
-     * @param  string|null  $name
-     * @return \Illuminate\Database\Connection
-     */
-    public function reconnect($name = null)
-    {
-        $this->disconnect($name = $name ?: $this->getDefaultConnection());
-
-        if (! isset($this->connections[$name])) {
-            return $this->connection($name);
-        }
-
-        return $this->refreshPdoConnections($name);
-    }
-
-    /**
-     * Set the default database connection for the callback execution.
-     *
-     * @param  string  $name
-     * @param  callable  $callback
-     * @return mixed
-     */
-    public function usingConnection($name, callable $callback)
-    {
-        $previousName = $this->getDefaultConnection();
-
-        $this->setDefaultConnection($name);
-
-        return tap($callback(), function () use ($previousName) {
-            $this->setDefaultConnection($previousName);
-        });
-    }
-
-    /**
-     * Refresh the PDO connections on a given connection.
-     *
-     * @param  string  $name
-     * @return \Illuminate\Database\Connection
-     */
-    protected function refreshPdoConnections($name)
-    {
-        $fresh = $this->makeConnection($name);
-
-        return $this->connections[$name]
-                                ->setPdo($fresh->getRawPdo())
-                                ->setReadPdo($fresh->getRawReadPdo());
-    }
-
-    /**
-     * Get the default connection name.
-     *
-     * @return string
-     */
-    public function getDefaultConnection()
-    {
-        return $this->app['config']['database.default'];
-    }
-
-    /**
-     * Set the default connection name.
-     *
-     * @param  string  $name
-     * @return void
-     */
-    public function setDefaultConnection($name)
-    {
-        $this->app['config']['database.default'] = $name;
-    }
-
-    /**
-     * Get all of the support drivers.
-     *
-     * @return array
-     */
-    public function supportedDrivers()
-    {
-        return ['mysql', 'pgsql', 'sqlite', 'sqlsrv'];
-    }
-
-    /**
-     * Get all of the drivers that are actually available.
-     *
-     * @return array
-     */
-    public function availableDrivers()
-    {
-        return array_intersect(
-            $this->supportedDrivers(),
-            str_replace('dblib', 'sqlsrv', PDO::getAvailableDrivers())
-        );
-    }
-
-    /**
-     * Register an extension connection resolver.
-     *
-     * @param  string  $name
-     * @param  callable  $resolver
-     * @return void
-     */
-    public function extend($name, callable $resolver)
-    {
-        $this->extensions[$name] = $resolver;
-    }
-
-    /**
-     * Return all of the created connections.
-     *
-     * @return array
-     */
-    public function getConnections()
-    {
-        return $this->connections;
-    }
-
-    /**
-     * Set the database reconnector callback.
-     *
-     * @param  callable  $reconnector
-     * @return void
-     */
-    public function setReconnector(callable $reconnector)
-    {
-        $this->reconnector = $reconnector;
-    }
-
-    /**
-     * Dynamically pass methods to the default connection.
-     *
-     * @param  string  $method
-     * @param  array  $parameters
-     * @return mixed
-     */
-    public function __call($method, $parameters)
-    {
-        return $this->connection()->$method(...$parameters);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+5iJXmSFvVBKbC3WR7ymKLHtLKBK1jQA56nq=

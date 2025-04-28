@@ -1,685 +1,259 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of phpunit/php-code-coverage.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\CodeCoverage;
-
-use function array_diff;
-use function array_diff_key;
-use function array_flip;
-use function array_keys;
-use function array_merge;
-use function array_unique;
-use function array_values;
-use function count;
-use function explode;
-use function get_class;
-use function is_array;
-use function is_file;
-use function sort;
-use PHPUnit\Framework\TestCase;
-use PHPUnit\Runner\PhptTestCase;
-use PHPUnit\Util\Test;
-use ReflectionClass;
-use SebastianBergmann\CodeCoverage\Driver\Driver;
-use SebastianBergmann\CodeCoverage\Node\Builder;
-use SebastianBergmann\CodeCoverage\Node\Directory;
-use SebastianBergmann\CodeCoverage\StaticAnalysis\CachingCoveredFileAnalyser;
-use SebastianBergmann\CodeCoverage\StaticAnalysis\CachingUncoveredFileAnalyser;
-use SebastianBergmann\CodeCoverage\StaticAnalysis\CoveredFileAnalyser;
-use SebastianBergmann\CodeCoverage\StaticAnalysis\ParsingCoveredFileAnalyser;
-use SebastianBergmann\CodeCoverage\StaticAnalysis\ParsingUncoveredFileAnalyser;
-use SebastianBergmann\CodeCoverage\StaticAnalysis\UncoveredFileAnalyser;
-use SebastianBergmann\CodeUnitReverseLookup\Wizard;
-
-/**
- * Provides collection functionality for PHP code coverage information.
- */
-final class CodeCoverage
-{
-    private const UNCOVERED_FILES = 'UNCOVERED_FILES';
-
-    /**
-     * @var Driver
-     */
-    private $driver;
-
-    /**
-     * @var Filter
-     */
-    private $filter;
-
-    /**
-     * @var Wizard
-     */
-    private $wizard;
-
-    /**
-     * @var bool
-     */
-    private $checkForUnintentionallyCoveredCode = false;
-
-    /**
-     * @var bool
-     */
-    private $includeUncoveredFiles = true;
-
-    /**
-     * @var bool
-     */
-    private $processUncoveredFiles = false;
-
-    /**
-     * @var bool
-     */
-    private $ignoreDeprecatedCode = false;
-
-    /**
-     * @var PhptTestCase|string|TestCase
-     */
-    private $currentId;
-
-    /**
-     * Code coverage data.
-     *
-     * @var ProcessedCodeCoverageData
-     */
-    private $data;
-
-    /**
-     * @var bool
-     */
-    private $useAnnotationsForIgnoringCode = true;
-
-    /**
-     * Test data.
-     *
-     * @var array
-     */
-    private $tests = [];
-
-    /**
-     * @psalm-var list<class-string>
-     */
-    private $parentClassesExcludedFromUnintentionallyCoveredCodeCheck = [];
-
-    /**
-     * @var ?CoveredFileAnalyser
-     */
-    private $coveredFileAnalyser;
-
-    /**
-     * @var ?UncoveredFileAnalyser
-     */
-    private $uncoveredFileAnalyser;
-
-    /**
-     * @var ?string
-     */
-    private $cacheDirectory;
-
-    public function __construct(Driver $driver, Filter $filter)
-    {
-        $this->driver = $driver;
-        $this->filter = $filter;
-        $this->data   = new ProcessedCodeCoverageData;
-        $this->wizard = new Wizard;
-    }
-
-    /**
-     * Returns the code coverage information as a graph of node objects.
-     */
-    public function getReport(): Directory
-    {
-        return (new Builder($this->coveredFileAnalyser()))->build($this);
-    }
-
-    /**
-     * Clears collected code coverage data.
-     */
-    public function clear(): void
-    {
-        $this->currentId = null;
-        $this->data      = new ProcessedCodeCoverageData;
-        $this->tests     = [];
-    }
-
-    /**
-     * Returns the filter object used.
-     */
-    public function filter(): Filter
-    {
-        return $this->filter;
-    }
-
-    /**
-     * Returns the collected code coverage data.
-     */
-    public function getData(bool $raw = false): ProcessedCodeCoverageData
-    {
-        if (!$raw) {
-            if ($this->processUncoveredFiles) {
-                $this->processUncoveredFilesFromFilter();
-            } elseif ($this->includeUncoveredFiles) {
-                $this->addUncoveredFilesFromFilter();
-            }
-        }
-
-        return $this->data;
-    }
-
-    /**
-     * Sets the coverage data.
-     */
-    public function setData(ProcessedCodeCoverageData $data): void
-    {
-        $this->data = $data;
-    }
-
-    /**
-     * Returns the test data.
-     */
-    public function getTests(): array
-    {
-        return $this->tests;
-    }
-
-    /**
-     * Sets the test data.
-     */
-    public function setTests(array $tests): void
-    {
-        $this->tests = $tests;
-    }
-
-    /**
-     * Start collection of code coverage information.
-     *
-     * @param PhptTestCase|string|TestCase $id
-     */
-    public function start($id, bool $clear = false): void
-    {
-        if ($clear) {
-            $this->clear();
-        }
-
-        $this->currentId = $id;
-
-        $this->driver->start();
-    }
-
-    /**
-     * Stop collection of code coverage information.
-     *
-     * @param array|false $linesToBeCovered
-     */
-    public function stop(bool $append = true, $linesToBeCovered = [], array $linesToBeUsed = []): RawCodeCoverageData
-    {
-        if (!is_array($linesToBeCovered) && $linesToBeCovered !== false) {
-            throw new InvalidArgumentException(
-                '$linesToBeCovered must be an array or false'
-            );
-        }
-
-        $data = $this->driver->stop();
-        $this->append($data, null, $append, $linesToBeCovered, $linesToBeUsed);
-
-        $this->currentId = null;
-
-        return $data;
-    }
-
-    /**
-     * Appends code coverage data.
-     *
-     * @param PhptTestCase|string|TestCase $id
-     * @param array|false                  $linesToBeCovered
-     *
-     * @throws UnintentionallyCoveredCodeException
-     * @throws TestIdMissingException
-     * @throws ReflectionException
-     */
-    public function append(RawCodeCoverageData $rawData, $id = null, bool $append = true, $linesToBeCovered = [], array $linesToBeUsed = []): void
-    {
-        if ($id === null) {
-            $id = $this->currentId;
-        }
-
-        if ($id === null) {
-            throw new TestIdMissingException;
-        }
-
-        $this->applyFilter($rawData);
-
-        if ($this->useAnnotationsForIgnoringCode) {
-            $this->applyIgnoredLinesFilter($rawData);
-        }
-
-        $this->data->initializeUnseenData($rawData);
-
-        if (!$append) {
-            return;
-        }
-
-        if ($id !== self::UNCOVERED_FILES) {
-            $this->applyCoversAnnotationFilter(
-                $rawData,
-                $linesToBeCovered,
-                $linesToBeUsed
-            );
-
-            if (empty($rawData->lineCoverage())) {
-                return;
-            }
-
-            $size         = 'unknown';
-            $status       = -1;
-            $fromTestcase = false;
-
-            if ($id instanceof TestCase) {
-                $fromTestcase = true;
-                $_size        = $id->getSize();
-
-                if ($_size === Test::SMALL) {
-                    $size = 'small';
-                } elseif ($_size === Test::MEDIUM) {
-                    $size = 'medium';
-                } elseif ($_size === Test::LARGE) {
-                    $size = 'large';
-                }
-
-                $status = $id->getStatus();
-                $id     = get_class($id) . '::' . $id->getName();
-            } elseif ($id instanceof PhptTestCase) {
-                $fromTestcase = true;
-                $size         = 'large';
-                $id           = $id->getName();
-            }
-
-            $this->tests[$id] = ['size' => $size, 'status' => $status, 'fromTestcase' => $fromTestcase];
-
-            $this->data->markCodeAsExecutedByTestCase($id, $rawData);
-        }
-    }
-
-    /**
-     * Merges the data from another instance.
-     */
-    public function merge(self $that): void
-    {
-        $this->filter->includeFiles(
-            $that->filter()->files()
-        );
-
-        $this->data->merge($that->data);
-
-        $this->tests = array_merge($this->tests, $that->getTests());
-    }
-
-    public function enableCheckForUnintentionallyCoveredCode(): void
-    {
-        $this->checkForUnintentionallyCoveredCode = true;
-    }
-
-    public function disableCheckForUnintentionallyCoveredCode(): void
-    {
-        $this->checkForUnintentionallyCoveredCode = false;
-    }
-
-    public function includeUncoveredFiles(): void
-    {
-        $this->includeUncoveredFiles = true;
-    }
-
-    public function excludeUncoveredFiles(): void
-    {
-        $this->includeUncoveredFiles = false;
-    }
-
-    public function processUncoveredFiles(): void
-    {
-        $this->processUncoveredFiles = true;
-    }
-
-    public function doNotProcessUncoveredFiles(): void
-    {
-        $this->processUncoveredFiles = false;
-    }
-
-    public function enableAnnotationsForIgnoringCode(): void
-    {
-        $this->useAnnotationsForIgnoringCode = true;
-    }
-
-    public function disableAnnotationsForIgnoringCode(): void
-    {
-        $this->useAnnotationsForIgnoringCode = false;
-    }
-
-    public function ignoreDeprecatedCode(): void
-    {
-        $this->ignoreDeprecatedCode = true;
-    }
-
-    public function doNotIgnoreDeprecatedCode(): void
-    {
-        $this->ignoreDeprecatedCode = false;
-    }
-
-    /**
-     * @psalm-assert-if-true !null $this->cacheDirectory
-     */
-    public function cachesStaticAnalysis(): bool
-    {
-        return $this->cacheDirectory !== null;
-    }
-
-    public function cacheStaticAnalysis(string $directory): void
-    {
-        $this->cacheDirectory = $directory;
-    }
-
-    public function doNotCacheStaticAnalysis(): void
-    {
-        $this->cacheDirectory = null;
-    }
-
-    /**
-     * @throws StaticAnalysisCacheNotConfiguredException
-     */
-    public function cacheDirectory(): string
-    {
-        if (!$this->cachesStaticAnalysis()) {
-            throw new StaticAnalysisCacheNotConfiguredException(
-                'The static analysis cache is not configured'
-            );
-        }
-
-        return $this->cacheDirectory;
-    }
-
-    /**
-     * @psalm-param class-string $className
-     */
-    public function excludeSubclassesOfThisClassFromUnintentionallyCoveredCodeCheck(string $className): void
-    {
-        $this->parentClassesExcludedFromUnintentionallyCoveredCodeCheck[] = $className;
-    }
-
-    public function enableBranchAndPathCoverage(): void
-    {
-        $this->driver->enableBranchAndPathCoverage();
-    }
-
-    public function disableBranchAndPathCoverage(): void
-    {
-        $this->driver->disableBranchAndPathCoverage();
-    }
-
-    public function collectsBranchAndPathCoverage(): bool
-    {
-        return $this->driver->collectsBranchAndPathCoverage();
-    }
-
-    public function detectsDeadCode(): bool
-    {
-        return $this->driver->detectsDeadCode();
-    }
-
-    /**
-     * Applies the @covers annotation filtering.
-     *
-     * @param array|false $linesToBeCovered
-     *
-     * @throws UnintentionallyCoveredCodeException
-     * @throws ReflectionException
-     */
-    private function applyCoversAnnotationFilter(RawCodeCoverageData $rawData, $linesToBeCovered, array $linesToBeUsed): void
-    {
-        if ($linesToBeCovered === false) {
-            $rawData->clear();
-
-            return;
-        }
-
-        if (empty($linesToBeCovered)) {
-            return;
-        }
-
-        if ($this->checkForUnintentionallyCoveredCode &&
-            (!$this->currentId instanceof TestCase ||
-            (!$this->currentId->isMedium() && !$this->currentId->isLarge()))) {
-            $this->performUnintentionallyCoveredCodeCheck($rawData, $linesToBeCovered, $linesToBeUsed);
-        }
-
-        $rawLineData         = $rawData->lineCoverage();
-        $filesWithNoCoverage = array_diff_key($rawLineData, $linesToBeCovered);
-
-        foreach (array_keys($filesWithNoCoverage) as $fileWithNoCoverage) {
-            $rawData->removeCoverageDataForFile($fileWithNoCoverage);
-        }
-
-        if (is_array($linesToBeCovered)) {
-            foreach ($linesToBeCovered as $fileToBeCovered => $includedLines) {
-                $rawData->keepCoverageDataOnlyForLines($fileToBeCovered, $includedLines);
-            }
-        }
-    }
-
-    private function applyFilter(RawCodeCoverageData $data): void
-    {
-        if ($this->filter->isEmpty()) {
-            return;
-        }
-
-        foreach (array_keys($data->lineCoverage()) as $filename) {
-            if ($this->filter->isExcluded($filename)) {
-                $data->removeCoverageDataForFile($filename);
-            }
-        }
-    }
-
-    private function applyIgnoredLinesFilter(RawCodeCoverageData $data): void
-    {
-        foreach (array_keys($data->lineCoverage()) as $filename) {
-            if (!$this->filter->isFile($filename)) {
-                continue;
-            }
-
-            $data->removeCoverageDataForLines(
-                $filename,
-                $this->coveredFileAnalyser()->ignoredLinesFor($filename)
-            );
-        }
-    }
-
-    /**
-     * @throws UnintentionallyCoveredCodeException
-     */
-    private function addUncoveredFilesFromFilter(): void
-    {
-        $uncoveredFiles = array_diff(
-            $this->filter->files(),
-            $this->data->coveredFiles()
-        );
-
-        foreach ($uncoveredFiles as $uncoveredFile) {
-            if (is_file($uncoveredFile)) {
-                $this->append(
-                    RawCodeCoverageData::fromUncoveredFile(
-                        $uncoveredFile,
-                        $this->uncoveredFileAnalyser()
-                    ),
-                    self::UNCOVERED_FILES
-                );
-            }
-        }
-    }
-
-    /**
-     * @throws UnintentionallyCoveredCodeException
-     */
-    private function processUncoveredFilesFromFilter(): void
-    {
-        $uncoveredFiles = array_diff(
-            $this->filter->files(),
-            $this->data->coveredFiles()
-        );
-
-        $this->driver->start();
-
-        foreach ($uncoveredFiles as $uncoveredFile) {
-            if (is_file($uncoveredFile)) {
-                include_once $uncoveredFile;
-            }
-        }
-
-        $this->append($this->driver->stop(), self::UNCOVERED_FILES);
-    }
-
-    /**
-     * @throws UnintentionallyCoveredCodeException
-     * @throws ReflectionException
-     */
-    private function performUnintentionallyCoveredCodeCheck(RawCodeCoverageData $data, array $linesToBeCovered, array $linesToBeUsed): void
-    {
-        $allowedLines = $this->getAllowedLines(
-            $linesToBeCovered,
-            $linesToBeUsed
-        );
-
-        $unintentionallyCoveredUnits = [];
-
-        foreach ($data->lineCoverage() as $file => $_data) {
-            foreach ($_data as $line => $flag) {
-                if ($flag === 1 && !isset($allowedLines[$file][$line])) {
-                    $unintentionallyCoveredUnits[] = $this->wizard->lookup($file, $line);
-                }
-            }
-        }
-
-        $unintentionallyCoveredUnits = $this->processUnintentionallyCoveredUnits($unintentionallyCoveredUnits);
-
-        if (!empty($unintentionallyCoveredUnits)) {
-            throw new UnintentionallyCoveredCodeException(
-                $unintentionallyCoveredUnits
-            );
-        }
-    }
-
-    private function getAllowedLines(array $linesToBeCovered, array $linesToBeUsed): array
-    {
-        $allowedLines = [];
-
-        foreach (array_keys($linesToBeCovered) as $file) {
-            if (!isset($allowedLines[$file])) {
-                $allowedLines[$file] = [];
-            }
-
-            $allowedLines[$file] = array_merge(
-                $allowedLines[$file],
-                $linesToBeCovered[$file]
-            );
-        }
-
-        foreach (array_keys($linesToBeUsed) as $file) {
-            if (!isset($allowedLines[$file])) {
-                $allowedLines[$file] = [];
-            }
-
-            $allowedLines[$file] = array_merge(
-                $allowedLines[$file],
-                $linesToBeUsed[$file]
-            );
-        }
-
-        foreach (array_keys($allowedLines) as $file) {
-            $allowedLines[$file] = array_flip(
-                array_unique($allowedLines[$file])
-            );
-        }
-
-        return $allowedLines;
-    }
-
-    /**
-     * @throws ReflectionException
-     */
-    private function processUnintentionallyCoveredUnits(array $unintentionallyCoveredUnits): array
-    {
-        $unintentionallyCoveredUnits = array_unique($unintentionallyCoveredUnits);
-        sort($unintentionallyCoveredUnits);
-
-        foreach (array_keys($unintentionallyCoveredUnits) as $k => $v) {
-            $unit = explode('::', $unintentionallyCoveredUnits[$k]);
-
-            if (count($unit) !== 2) {
-                continue;
-            }
-
-            try {
-                $class = new ReflectionClass($unit[0]);
-
-                foreach ($this->parentClassesExcludedFromUnintentionallyCoveredCodeCheck as $parentClass) {
-                    if ($class->isSubclassOf($parentClass)) {
-                        unset($unintentionallyCoveredUnits[$k]);
-
-                        break;
-                    }
-                }
-            } catch (\ReflectionException $e) {
-                throw new ReflectionException(
-                    $e->getMessage(),
-                    (int) $e->getCode(),
-                    $e
-                );
-            }
-        }
-
-        return array_values($unintentionallyCoveredUnits);
-    }
-
-    private function coveredFileAnalyser(): CoveredFileAnalyser
-    {
-        if ($this->coveredFileAnalyser !== null) {
-            return $this->coveredFileAnalyser;
-        }
-
-        $this->coveredFileAnalyser = new ParsingCoveredFileAnalyser(
-            $this->useAnnotationsForIgnoringCode,
-            $this->ignoreDeprecatedCode
-        );
-
-        if ($this->cachesStaticAnalysis()) {
-            $this->coveredFileAnalyser = new CachingCoveredFileAnalyser(
-                $this->cacheDirectory,
-                $this->coveredFileAnalyser
-            );
-        }
-
-        return $this->coveredFileAnalyser;
-    }
-
-    private function uncoveredFileAnalyser(): UncoveredFileAnalyser
-    {
-        if ($this->uncoveredFileAnalyser !== null) {
-            return $this->uncoveredFileAnalyser;
-        }
-
-        $this->uncoveredFileAnalyser = new ParsingUncoveredFileAnalyser;
-
-        if ($this->cachesStaticAnalysis()) {
-            $this->uncoveredFileAnalyser = new CachingUncoveredFileAnalyser(
-                $this->cacheDirectory,
-                $this->uncoveredFileAnalyser
-            );
-        }
-
-        return $this->uncoveredFileAnalyser;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

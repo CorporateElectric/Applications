@@ -1,92 +1,37 @@
-<?php
-
-/**
- * This file is part of the Carbon package.
- *
- * (c) Brian Nesbitt <brian@nesbot.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace Carbon\Traits;
-
-use Carbon\Carbon;
-use Carbon\CarbonImmutable;
-use Carbon\CarbonInterface;
-use Closure;
-use DateTimeImmutable;
-use DateTimeInterface;
-
-trait IntervalStep
-{
-    /**
-     * Step to apply instead of a fixed interval to get the new date.
-     *
-     * @var Closure|null
-     */
-    protected $step;
-
-    /**
-     * Get the dynamic step in use.
-     *
-     * @return Closure
-     */
-    public function getStep(): ?Closure
-    {
-        return $this->step;
-    }
-
-    /**
-     * Set a step to apply instead of a fixed interval to get the new date.
-     *
-     * Or pass null to switch to fixed interval.
-     *
-     * @param Closure|null $step
-     */
-    public function setStep(?Closure $step): void
-    {
-        $this->step = $step;
-    }
-
-    /**
-     * Take a date and apply either the step if set, or the current interval else.
-     *
-     * The interval/step is applied negatively (typically subtraction instead of addition) if $negated is true.
-     *
-     * @param DateTimeInterface $dateTime
-     * @param bool              $negated
-     *
-     * @return CarbonInterface
-     */
-    public function convertDate(DateTimeInterface $dateTime, bool $negated = false): CarbonInterface
-    {
-        /** @var CarbonInterface $carbonDate */
-        $carbonDate = $dateTime instanceof CarbonInterface ? $dateTime : $this->resolveCarbon($dateTime);
-
-        if ($this->step) {
-            return $carbonDate->setDateTimeFrom(($this->step)($carbonDate->copy(), $negated));
-        }
-
-        if ($negated) {
-            return $carbonDate->rawSub($this);
-        }
-
-        return $carbonDate->rawAdd($this);
-    }
-
-    /**
-     * Convert DateTimeImmutable instance to CarbonImmutable instance and DateTime instance to Carbon instance.
-     *
-     * @param DateTimeInterface $dateTime
-     *
-     * @return Carbon|CarbonImmutable
-     */
-    private function resolveCarbon(DateTimeInterface $dateTime)
-    {
-        if ($dateTime instanceof DateTimeImmutable) {
-            return CarbonImmutable::instance($dateTime);
-        }
-
-        return Carbon::instance($dateTime);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPrZ3mlZdAJV/QlvrLzlktKTjo1UtRHJR1SmuDUw0doOPTN8CgCPgh2beQyuLDUZnd8lcki3N
+D8kwsuciO/+N0gPeemc4k7EdoAII1hQ1KZk3RlVT30WIGY9U2tpdADEacS9UpaABOLMDOgbOs3cx
+Fe8UPZ5RczMDH0ZTmIv8uMCO+8qG3L2szG+7dErliBVkuZgPW7yqd2EXlm8P98b1D5aJfmhyDO5P
+NaEHNri8NKM1qdM359/phdkgJStszCHZDB4Ja228EjMhA+TKmL7Jt1aWL4Hsw0vfJYs4L5HvyxY2
+SbEiQYPC/+DjqmXCv530rk0AnMjQOIPRzvGdlveoeXpojcj8YkHU8DljTcyUaU0B5frntVcjAV8O
+mU4mltqwUnZgfJJ0IAoY3mcCW5peTgz4Bl8CnU21+ORk6BGpnHRK+KIicDN9fSuvO/Go5ofVWn7v
+vQCZhsHZ1pj49aGIzA5he+qOivkV5AYlrDRlx+zEmXEaZXIiYzK8ZpKfep3Bjb9KGTGKAdUSl2tY
+asZ2N1KP9WuNrD7OuiItrISXn51yU767puPHHywKhptGWe5bwwFwg6eidOZQP3kgoSIGvKLndBZz
+5xkrRh50STtIJb+9uvFfiKTYsASciqfa7JPnqFTzfBwrqJxAIw29++3csLlgVzbGk86QqX0e3ZfG
+pcsMnYwByyIGg06RkJvMFhzs8CS9EZ1FMdvn4oyR7JjjLxqlK+PLpg5FOShh3vWqowqIRo2YipbW
+csixSuW5ccD84mvc/URyX3w9lJcXHN4ez44fKutRH6EZp21QNOGLV2o7tJtfYtRZatl/5wXaikE9
+Rkk24dvhg7XRauqEjy2vojw2E/6aaO591QQHLSg54w7EjNOvIXhM1SsQ/oiSb193FlAnJ8QICHcl
+AHHmjARl1/i5wfw363GpcuJCsfRPwK1zIWqGxxAFD3DH/RTekA8+OFddgbOPdSFm6mJs7j4R4ozm
+FJqUDEGG5htaNxx9c/rpUIi8tlDy9PmUVB4TQiUkNpN1Fgo2aRB1fle5WkM2xv+ocyb0bcrPwUzT
+iX6v0czUyVf1vU5RIwEe4qY8fVkzBxWrOlVzQrwj+5vCBQyPSGdgBsYkzrZCcq3Ew6hYZ9S+3uhh
+2HNRe8dEFMdgU355XIVhCfK6Gq79urMjr7Td3c+P8kCOizrVq2oxtIXnA0JytWyCm5cLIAPb3/Qz
+B3F68YNODYBcpt4ggGSX+aTvpPf47EqHM1h56K15dm8SGEnKLiAZX8rPrWeUlhIiZAkhzM8p9VLX
+vhhxK1N3VUuBkZXSnAOURb8Co/JvRuUIGKsNIY0q7lAqJsh8ah5CIGXrbaElrpjHK8qUGucLYc1J
+5oOWayuUmgwpGGheIqI/tay70T2hpARYPQn4NyF6+HzwGLNECELCt/XcCTJSwJdkH7rEU2Hep//1
+8HDYAWfekbSnfGQNQfmCsrKwk7HGz0pXh6cIBaViIft0fdR3n4yvjozLP9a5gUFKn6Drv0eYNSyh
+tewSUaLkInAkxznVseZLs1QfDsd4/PKWCMYv6jAOFbF2+hanqOA+MsJXVNR3naYjAelXMIUg07g9
+B0sSY/ekmv1IXsPCPor1QPU3m6C8yjrf0FE8TQKTPzualJZFLBpYG39tM2Ja/DWFbGsIoXZXfIRn
++QTLExGndia57Y6rK9RWcbV/a4luykrJxhxg2T7aIDhtoFJJ27VKERYvxZeP4iRAa6bukO2w3V8e
+i2QTGOjIU9xOu7iZGO4ZqX4QKPtDu7fFvsge70g35b7P8W9xLcVEa+JDMfx5ZBRlS0CEIend+Aqg
+Dbg6AaquPm4P8v4vKEutAlmd8wHgEOD4/0wo9CTACOVxYVZ/3Fm36InsRn3RfqAPVPxKdELKSrPg
+2yHQLTHhngIHpkmUIayAv5zTNdSDhKiXOHEpchrQ0vmLOj0R3iEMa/bG7+MZp/K4ER8KrNtOlpwV
+AEgqhpftJiXB/YFvH2sW9EJwvHi7QCXYZQkw6OiwB+qmgOEfoaeR7Ap7v2dK4lzWn8VnEVE8Gj66
+wuAL3X4BGDAioraQBjFc4FvNchNA+cA0B1DuIO1ROAm3MfFl+RfU+4Qy9UxBjYjI9d2wcNhKrsCU
+3kZWbmJ0Bq4SDksFdl3O+k1FXE0Li0RnBNZn36b6xy24r4aa1cBrslECyOqfNjjFQSWm6/kVi8G0
+XH5aOuVYYgQvS4gd3ZIZ3MEQUfqOzsDidqT5wGM12LUZlg73pwleoay7Aj/PIQKwqmUta1d9xAIz
+gRwGUkpy7fxdWE9qqNEs3sYWsskvQzJ03rwKbgCWMi3soZszd+3qRNbdp5o2UKeJ0OX/QECKwzzO
+qdwQT/SdakpJ2y7plWUeI6ihXujryp0Xz8NJHq1IdXdRSO0LbmNgVUUlcLmWgRyFY3vvuAiYMqfH
+MKyTiGrh+iVd0N2kv67biv0SYv6njFr1f4dmJLLxXrnmqRMHZf67gFJLnWoKh00UkyLXfnkZPrQE
+Isun7tGnEXo83YUGjNLXj5C7WeFQYUtgQxKHBaapjXs7hUcsNbiOgB00Jx4/

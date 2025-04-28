@@ -1,71 +1,52 @@
-<?php
-
-/**
- * Converts a stream of HTMLPurifier_Token into an HTMLPurifier_Node,
- * and back again.
- *
- * @note This transformation is not an equivalence.  We mutate the input
- * token stream to make it so; see all [MUT] markers in code.
- */
-class HTMLPurifier_Arborize
-{
-    public static function arborize($tokens, $config, $context) {
-        $definition = $config->getHTMLDefinition();
-        $parent = new HTMLPurifier_Token_Start($definition->info_parent);
-        $stack = array($parent->toNode());
-        foreach ($tokens as $token) {
-            $token->skip = null; // [MUT]
-            $token->carryover = null; // [MUT]
-            if ($token instanceof HTMLPurifier_Token_End) {
-                $token->start = null; // [MUT]
-                $r = array_pop($stack);
-                //assert($r->name === $token->name);
-                //assert(empty($token->attr));
-                $r->endCol = $token->col;
-                $r->endLine = $token->line;
-                $r->endArmor = $token->armor;
-                continue;
-            }
-            $node = $token->toNode();
-            $stack[count($stack)-1]->children[] = $node;
-            if ($token instanceof HTMLPurifier_Token_Start) {
-                $stack[] = $node;
-            }
-        }
-        //assert(count($stack) == 1);
-        return $stack[0];
-    }
-
-    public static function flatten($node, $config, $context) {
-        $level = 0;
-        $nodes = array($level => new HTMLPurifier_Queue(array($node)));
-        $closingTokens = array();
-        $tokens = array();
-        do {
-            while (!$nodes[$level]->isEmpty()) {
-                $node = $nodes[$level]->shift(); // FIFO
-                list($start, $end) = $node->toTokenPair();
-                if ($level > 0) {
-                    $tokens[] = $start;
-                }
-                if ($end !== NULL) {
-                    $closingTokens[$level][] = $end;
-                }
-                if ($node instanceof HTMLPurifier_Node_Element) {
-                    $level++;
-                    $nodes[$level] = new HTMLPurifier_Queue();
-                    foreach ($node->children as $childNode) {
-                        $nodes[$level]->push($childNode);
-                    }
-                }
-            }
-            $level--;
-            if ($level && isset($closingTokens[$level])) {
-                while ($token = array_pop($closingTokens[$level])) {
-                    $tokens[] = $token;
-                }
-            }
-        } while ($level > 0);
-        return $tokens;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+eDnOI61w5UG5Q4xMjxqPyiZ9

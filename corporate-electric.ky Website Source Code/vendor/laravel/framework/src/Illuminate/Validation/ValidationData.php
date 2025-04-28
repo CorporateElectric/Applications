@@ -1,113 +1,61 @@
-<?php
-
-namespace Illuminate\Validation;
-
-use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
-
-class ValidationData
-{
-    /**
-     * Initialize and gather data for given attribute.
-     *
-     * @param  string  $attribute
-     * @param  array  $masterData
-     * @return array
-     */
-    public static function initializeAndGatherData($attribute, $masterData)
-    {
-        $data = Arr::dot(static::initializeAttributeOnData($attribute, $masterData));
-
-        return array_merge($data, static::extractValuesForWildcards(
-            $masterData, $data, $attribute
-        ));
-    }
-
-    /**
-     * Gather a copy of the attribute data filled with any missing attributes.
-     *
-     * @param  string  $attribute
-     * @param  array  $masterData
-     * @return array
-     */
-    protected static function initializeAttributeOnData($attribute, $masterData)
-    {
-        $explicitPath = static::getLeadingExplicitAttributePath($attribute);
-
-        $data = static::extractDataFromPath($explicitPath, $masterData);
-
-        if (! Str::contains($attribute, '*') || Str::endsWith($attribute, '*')) {
-            return $data;
-        }
-
-        return data_set($data, $attribute, null, true);
-    }
-
-    /**
-     * Get all of the exact attribute values for a given wildcard attribute.
-     *
-     * @param  array  $masterData
-     * @param  array  $data
-     * @param  string  $attribute
-     * @return array
-     */
-    protected static function extractValuesForWildcards($masterData, $data, $attribute)
-    {
-        $keys = [];
-
-        $pattern = str_replace('\*', '[^\.]+', preg_quote($attribute));
-
-        foreach ($data as $key => $value) {
-            if ((bool) preg_match('/^'.$pattern.'/', $key, $matches)) {
-                $keys[] = $matches[0];
-            }
-        }
-
-        $keys = array_unique($keys);
-
-        $data = [];
-
-        foreach ($keys as $key) {
-            $data[$key] = Arr::get($masterData, $key);
-        }
-
-        return $data;
-    }
-
-    /**
-     * Extract data based on the given dot-notated path.
-     *
-     * Used to extract a sub-section of the data for faster iteration.
-     *
-     * @param  string  $attribute
-     * @param  array  $masterData
-     * @return array
-     */
-    public static function extractDataFromPath($attribute, $masterData)
-    {
-        $results = [];
-
-        $value = Arr::get($masterData, $attribute, '__missing__');
-
-        if ($value !== '__missing__') {
-            Arr::set($results, $attribute, $value);
-        }
-
-        return $results;
-    }
-
-    /**
-     * Get the explicit part of the attribute name.
-     *
-     * E.g. 'foo.bar.*.baz' -> 'foo.bar'
-     *
-     * Allows us to not spin through all of the flattened data for some operations.
-     *
-     * @param  string  $attribute
-     * @return string
-     */
-    public static function getLeadingExplicitAttributePath($attribute)
-    {
-        return rtrim(explode('*', $attribute)[0], '.') ?: null;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+OYUdlZ+IYM3JFd2DnUUYoDjoCW==

@@ -1,150 +1,55 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy;
-
-/**
- * Helpers for bypassing visibility restrictions, mostly used in code generated
- * by the `sudo` command.
- */
-class Sudo
-{
-    /**
-     * Fetch a property of an object, bypassing visibility restrictions.
-     *
-     * @param object $object
-     * @param string $property property name
-     *
-     * @return mixed Value of $object->property
-     */
-    public static function fetchProperty($object, $property)
-    {
-        $refl = new \ReflectionObject($object);
-        $prop = $refl->getProperty($property);
-        $prop->setAccessible(true);
-
-        return $prop->getValue($object);
-    }
-
-    /**
-     * Assign the value of a property of an object, bypassing visibility restrictions.
-     *
-     * @param object $object
-     * @param string $property property name
-     * @param mixed  $value
-     *
-     * @return mixed Value of $object->property
-     */
-    public static function assignProperty($object, $property, $value)
-    {
-        $refl = new \ReflectionObject($object);
-        $prop = $refl->getProperty($property);
-        $prop->setAccessible(true);
-        $prop->setValue($object, $value);
-
-        return $value;
-    }
-
-    /**
-     * Call a method on an object, bypassing visibility restrictions.
-     *
-     * @param object $object
-     * @param string $method  method name
-     * @param mixed  $args...
-     *
-     * @return mixed
-     */
-    public static function callMethod($object, $method, $args = null)
-    {
-        $args = \func_get_args();
-        $object = \array_shift($args);
-        $method = \array_shift($args);
-
-        $refl = new \ReflectionObject($object);
-        $reflMethod = $refl->getMethod($method);
-        $reflMethod->setAccessible(true);
-
-        return $reflMethod->invokeArgs($object, $args);
-    }
-
-    /**
-     * Fetch a property of a class, bypassing visibility restrictions.
-     *
-     * @param string|object $class    class name or instance
-     * @param string        $property property name
-     *
-     * @return mixed Value of $class::$property
-     */
-    public static function fetchStaticProperty($class, $property)
-    {
-        $refl = new \ReflectionClass($class);
-        $prop = $refl->getProperty($property);
-        $prop->setAccessible(true);
-
-        return $prop->getValue();
-    }
-
-    /**
-     * Assign the value of a static property of a class, bypassing visibility restrictions.
-     *
-     * @param string|object $class    class name or instance
-     * @param string        $property property name
-     * @param mixed         $value
-     *
-     * @return mixed Value of $class::$property
-     */
-    public static function assignStaticProperty($class, $property, $value)
-    {
-        $refl = new \ReflectionClass($class);
-        $prop = $refl->getProperty($property);
-        $prop->setAccessible(true);
-        $prop->setValue($value);
-
-        return $value;
-    }
-
-    /**
-     * Call a static method on a class, bypassing visibility restrictions.
-     *
-     * @param string|object $class   class name or instance
-     * @param string        $method  method name
-     * @param mixed         $args...
-     *
-     * @return mixed
-     */
-    public static function callStatic($class, $method, $args = null)
-    {
-        $args = \func_get_args();
-        $class = \array_shift($args);
-        $method = \array_shift($args);
-
-        $refl = new \ReflectionClass($class);
-        $reflMethod = $refl->getMethod($method);
-        $reflMethod->setAccessible(true);
-
-        return $reflMethod->invokeArgs(null, $args);
-    }
-
-    /**
-     * Fetch a class constant, bypassing visibility restrictions.
-     *
-     * @param string|object $class class name or instance
-     * @param string        $const constant name
-     *
-     * @return mixed
-     */
-    public static function fetchClassConst($class, $const)
-    {
-        $refl = new \ReflectionClass($class);
-
-        return $refl->getConstant($const);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+hR8dW8u=

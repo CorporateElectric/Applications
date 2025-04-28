@@ -1,119 +1,71 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of phpunit/php-code-coverage.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\CodeCoverage\Driver;
-
-use const XDEBUG_CC_BRANCH_CHECK;
-use const XDEBUG_CC_DEAD_CODE;
-use const XDEBUG_CC_UNUSED;
-use const XDEBUG_FILTER_CODE_COVERAGE;
-use const XDEBUG_PATH_INCLUDE;
-use function explode;
-use function extension_loaded;
-use function getenv;
-use function in_array;
-use function ini_get;
-use function phpversion;
-use function sprintf;
-use function version_compare;
-use function xdebug_get_code_coverage;
-use function xdebug_set_filter;
-use function xdebug_start_code_coverage;
-use function xdebug_stop_code_coverage;
-use SebastianBergmann\CodeCoverage\Filter;
-use SebastianBergmann\CodeCoverage\RawCodeCoverageData;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for phpunit/php-code-coverage
- */
-final class Xdebug3Driver extends Driver
-{
-    /**
-     * @throws XdebugNotAvailableException
-     * @throws WrongXdebugVersionException
-     * @throws Xdebug3NotEnabledException
-     */
-    public function __construct(Filter $filter)
-    {
-        if (!extension_loaded('xdebug')) {
-            throw new XdebugNotAvailableException;
-        }
-
-        if (version_compare(phpversion('xdebug'), '3', '<')) {
-            throw new WrongXdebugVersionException(
-                sprintf(
-                    'This driver requires Xdebug 3 but version %s is loaded',
-                    phpversion('xdebug')
-                )
-            );
-        }
-
-        $mode = getenv('XDEBUG_MODE');
-
-        if ($mode === false) {
-            $mode = ini_get('xdebug.mode');
-        }
-
-        if ($mode === false ||
-            !in_array('coverage', explode(',', $mode), true)) {
-            throw new Xdebug3NotEnabledException;
-        }
-
-        if (!$filter->isEmpty()) {
-            xdebug_set_filter(
-                XDEBUG_FILTER_CODE_COVERAGE,
-                XDEBUG_PATH_INCLUDE,
-                $filter->files()
-            );
-        }
-    }
-
-    public function canCollectBranchAndPathCoverage(): bool
-    {
-        return true;
-    }
-
-    public function canDetectDeadCode(): bool
-    {
-        return true;
-    }
-
-    public function start(): void
-    {
-        $flags = XDEBUG_CC_UNUSED;
-
-        if ($this->detectsDeadCode() || $this->collectsBranchAndPathCoverage()) {
-            $flags |= XDEBUG_CC_DEAD_CODE;
-        }
-
-        if ($this->collectsBranchAndPathCoverage()) {
-            $flags |= XDEBUG_CC_BRANCH_CHECK;
-        }
-
-        xdebug_start_code_coverage($flags);
-    }
-
-    public function stop(): RawCodeCoverageData
-    {
-        $data = xdebug_get_code_coverage();
-
-        xdebug_stop_code_coverage();
-
-        if ($this->collectsBranchAndPathCoverage()) {
-            return RawCodeCoverageData::fromXdebugWithPathCoverage($data);
-        }
-
-        return RawCodeCoverageData::fromXdebugWithoutPathCoverage($data);
-    }
-
-    public function nameAndVersion(): string
-    {
-        return 'Xdebug ' . phpversion('xdebug');
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+f4HdFstfVWhE2gJ6ju0ViwdiEMS=

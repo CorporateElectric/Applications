@@ -1,118 +1,40 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpFoundation\Session\Storage\Proxy;
-
-/**
- * @author Drak <drak@zikula.org>
- */
-abstract class AbstractProxy
-{
-    /**
-     * Flag if handler wraps an internal PHP session handler (using \SessionHandler).
-     *
-     * @var bool
-     */
-    protected $wrapper = false;
-
-    /**
-     * @var string
-     */
-    protected $saveHandlerName;
-
-    /**
-     * Gets the session.save_handler name.
-     *
-     * @return string|null
-     */
-    public function getSaveHandlerName()
-    {
-        return $this->saveHandlerName;
-    }
-
-    /**
-     * Is this proxy handler and instance of \SessionHandlerInterface.
-     *
-     * @return bool
-     */
-    public function isSessionHandlerInterface()
-    {
-        return $this instanceof \SessionHandlerInterface;
-    }
-
-    /**
-     * Returns true if this handler wraps an internal PHP session save handler using \SessionHandler.
-     *
-     * @return bool
-     */
-    public function isWrapper()
-    {
-        return $this->wrapper;
-    }
-
-    /**
-     * Has a session started?
-     *
-     * @return bool
-     */
-    public function isActive()
-    {
-        return \PHP_SESSION_ACTIVE === session_status();
-    }
-
-    /**
-     * Gets the session ID.
-     *
-     * @return string
-     */
-    public function getId()
-    {
-        return session_id();
-    }
-
-    /**
-     * Sets the session ID.
-     *
-     * @throws \LogicException
-     */
-    public function setId(string $id)
-    {
-        if ($this->isActive()) {
-            throw new \LogicException('Cannot change the ID of an active session.');
-        }
-
-        session_id($id);
-    }
-
-    /**
-     * Gets the session name.
-     *
-     * @return string
-     */
-    public function getName()
-    {
-        return session_name();
-    }
-
-    /**
-     * Sets the session name.
-     *
-     * @throws \LogicException
-     */
-    public function setName(string $name)
-    {
-        if ($this->isActive()) {
-            throw new \LogicException('Cannot change the name of an active session.');
-        }
-
-        session_name($name);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

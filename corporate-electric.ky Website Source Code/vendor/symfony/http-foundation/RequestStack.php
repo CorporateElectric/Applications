@@ -1,103 +1,33 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpFoundation;
-
-/**
- * Request stack that controls the lifecycle of requests.
- *
- * @author Benjamin Eberlei <kontakt@beberlei.de>
- */
-class RequestStack
-{
-    /**
-     * @var Request[]
-     */
-    private $requests = [];
-
-    /**
-     * Pushes a Request on the stack.
-     *
-     * This method should generally not be called directly as the stack
-     * management should be taken care of by the application itself.
-     */
-    public function push(Request $request)
-    {
-        $this->requests[] = $request;
-    }
-
-    /**
-     * Pops the current request from the stack.
-     *
-     * This operation lets the current request go out of scope.
-     *
-     * This method should generally not be called directly as the stack
-     * management should be taken care of by the application itself.
-     *
-     * @return Request|null
-     */
-    public function pop()
-    {
-        if (!$this->requests) {
-            return null;
-        }
-
-        return array_pop($this->requests);
-    }
-
-    /**
-     * @return Request|null
-     */
-    public function getCurrentRequest()
-    {
-        return end($this->requests) ?: null;
-    }
-
-    /**
-     * Gets the master Request.
-     *
-     * Be warned that making your code aware of the master request
-     * might make it un-compatible with other features of your framework
-     * like ESI support.
-     *
-     * @return Request|null
-     */
-    public function getMasterRequest()
-    {
-        if (!$this->requests) {
-            return null;
-        }
-
-        return $this->requests[0];
-    }
-
-    /**
-     * Returns the parent request of the current.
-     *
-     * Be warned that making your code aware of the parent request
-     * might make it un-compatible with other features of your framework
-     * like ESI support.
-     *
-     * If current Request is the master request, it returns null.
-     *
-     * @return Request|null
-     */
-    public function getParentRequest()
-    {
-        $pos = \count($this->requests) - 2;
-
-        if (!isset($this->requests[$pos])) {
-            return null;
-        }
-
-        return $this->requests[$pos];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

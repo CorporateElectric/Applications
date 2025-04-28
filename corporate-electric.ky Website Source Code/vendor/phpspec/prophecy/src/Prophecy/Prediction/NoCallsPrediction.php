@@ -1,68 +1,45 @@
-<?php
-
-/*
- * This file is part of the Prophecy.
- * (c) Konstantin Kudryashov <ever.zet@gmail.com>
- *     Marcello Duarte <marcello.duarte@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Prophecy\Prediction;
-
-use Prophecy\Call\Call;
-use Prophecy\Prophecy\ObjectProphecy;
-use Prophecy\Prophecy\MethodProphecy;
-use Prophecy\Util\StringUtil;
-use Prophecy\Exception\Prediction\UnexpectedCallsException;
-
-/**
- * No calls prediction.
- *
- * @author Konstantin Kudryashov <ever.zet@gmail.com>
- */
-class NoCallsPrediction implements PredictionInterface
-{
-    private $util;
-
-    /**
-     * Initializes prediction.
-     *
-     * @param null|StringUtil $util
-     */
-    public function __construct(StringUtil $util = null)
-    {
-        $this->util = $util ?: new StringUtil;
-    }
-
-    /**
-     * Tests that there were no calls made.
-     *
-     * @param Call[]         $calls
-     * @param ObjectProphecy $object
-     * @param MethodProphecy $method
-     *
-     * @throws \Prophecy\Exception\Prediction\UnexpectedCallsException
-     */
-    public function check(array $calls, ObjectProphecy $object, MethodProphecy $method)
-    {
-        if (!count($calls)) {
-            return;
-        }
-
-        $verb = count($calls) === 1 ? 'was' : 'were';
-
-        throw new UnexpectedCallsException(sprintf(
-            "No calls expected that match:\n".
-            "  %s->%s(%s)\n".
-            "but %d %s made:\n%s",
-            get_class($object->reveal()),
-            $method->getMethodName(),
-            $method->getArgumentsWildcard(),
-            count($calls),
-            $verb,
-            $this->util->stringifyCalls($calls)
-        ), $method, $calls);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+vQiZAOErn/+LS46reZ8Zj0==

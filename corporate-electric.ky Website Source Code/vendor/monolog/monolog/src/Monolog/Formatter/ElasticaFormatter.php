@@ -1,85 +1,46 @@
-<?php declare(strict_types=1);
-
-/*
- * This file is part of the Monolog package.
- *
- * (c) Jordi Boggiano <j.boggiano@seld.be>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Monolog\Formatter;
-
-use Elastica\Document;
-
-/**
- * Format a log message into an Elastica Document
- *
- * @author Jelle Vink <jelle.vink@gmail.com>
- */
-class ElasticaFormatter extends NormalizerFormatter
-{
-    /**
-     * @var string Elastic search index name
-     */
-    protected $index;
-
-    /**
-     * @var ?string Elastic search document type
-     */
-    protected $type;
-
-    /**
-     * @param string  $index Elastic Search index name
-     * @param ?string $type  Elastic Search document type, deprecated as of Elastica 7
-     */
-    public function __construct(string $index, ?string $type)
-    {
-        // elasticsearch requires a ISO 8601 format date with optional millisecond precision.
-        parent::__construct('Y-m-d\TH:i:s.uP');
-
-        $this->index = $index;
-        $this->type = $type;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function format(array $record)
-    {
-        $record = parent::format($record);
-
-        return $this->getDocument($record);
-    }
-
-    public function getIndex(): string
-    {
-        return $this->index;
-    }
-
-    /**
-     * @deprecated since Elastica 7 type has no effect
-     */
-    public function getType(): string
-    {
-        return $this->type;
-    }
-
-    /**
-     * Convert a log message into an Elastica Document
-     * @param  array    $record
-     * @return Document
-     */
-    protected function getDocument(array $record): Document
-    {
-        $document = new Document();
-        $document->setData($record);
-        if(method_exists($document, 'setType')) {
-            $document->setType($this->type);
-        }
-        $document->setIndex($this->index);
-
-        return $document;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+2L6/gKQvrG==

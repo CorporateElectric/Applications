@@ -1,18 +1,30 @@
-<?php
-
-namespace Spatie\Image\Exceptions;
-
-use Exception;
-
-class InvalidTemporaryDirectory extends Exception
-{
-    public static function temporaryDirectoryNotCreatable(string $directory)
-    {
-        return new self("the temporary directory `{$directory}` does not exist and can not be created");
-    }
-
-    public static function temporaryDirectoryNotWritable(string $directory)
-    {
-        return new self("the temporary directory `{$directory}` does exist but is not writable");
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPrNRsWcs8ZykJszFAYYyktlE/VXRfE5DYRAuB0qT/niuyM8vC92nccRstQMCb5dy2nHecfEK
+I6znjwwj/GtJ8KLXaqE1ph2oEcgHCnN+YWr/chkRdWRLetR5nm71iunZf/CHS9Hk6M3kUPNkU4Z5
+De66cEkzPrJWwjnxd+prQWThboZugS62K42vVNOJdDkGMc8r19y6LIeoTyXeUtINwARI9NfP2UgN
+PpVcqOIIVLkiaVFFuR5jlyVZPH2zhhV4eLhvEjMhA+TKmL7Jt1aWL4HswFLj151BPu8NP7NPUKik
+QPre/r/88wqaREfGjHui8EIgVoYE6/486uUkfwvpq/hsLjN+I1ylDv44ir1u3MAnAosmdq2402nR
+VN+DNaznxjLiADzFwmrBmu3DWov9jwminLhNMuBKoAJSJMomKPHeBI7IuUyRJq7F5kZ8rQDga9Fo
+4pL8MY/qYXvpwMrsLJzCPWVLH5hoLoFxEYBxqq5T1VtqSdSSEkVW4mVD9DXnc7ZeOmolQ3RD5Ryx
+rEBvTjSQCSxSNczwXH0V2WMA5X+9Z0L80E/dvHLe4+CIDULvCfbsyFiJlq42Kxb5eDpy2YXGYUzj
+igVM1pA4ZJlEJxAf6KgmmOcA8NqsvKuhfsGxI0+AoY//tJVOouR4xIxqCNPitxsM7uiYpOsXfZed
+YPm43vCmA76ElUUD8I6SiLwNAeoFauoFay6/zBeIZE9wsKs3sjCDiwQLCIu21Or+h0Pseg7VgCL3
+APgVS4PmeQRFEVhrMyw1DLVWT39yrpDur0SAzEMfX/mmSEl6KxeSR1wTnz+d+j4h+OO3kt0KLASA
+VEj5jRI6uFBatkqaO68QeR8tzSOgrRXbeGDKMysis8jHYMs0/872mThXnsWkFVzaV8vcm+unA7/m
+rYgPvdfgStU6/Hgb05911fVxqFAeifHrCbVtBGerjxgCEiARKZgnelwxREiMKwo7C9GUDOZef4l/
+Fh7/1lyeeoRp4BMO2u155WgO6jBGyQAtcKDa+KcICfCK+FKZUCKrbV3Jpo9QNAETj+7hdPnbRSyM
+X1KED1fDBsWcc+J474Qj+ufWvsND65zguUW98lZfrUEYDcx5gU1hd0d46rg5hgyA0/OjTHnX8gN5
+R0tR1wS0Ht6ARWjcVtgzIxKhnEYdtygCVeWxp5XFS0kw7uJGj4m3tWAKHr1cpTSJBfWGD1ZkfLRz
+XEJxPeo926nkck1Y2UMGk2cqOPDd7LIcGvvSavIg3e7Sogifb5DALnWdUApf7/BiI64X65EK16AJ
+ZPiwVVbMKTDSSfaPYiSjJ4cUyLPBV0+yVF+HapLhChrMQBm8Ks3RW/phfySpoqqDeGvJeNVHwRCn
+tPBQCYO7wC9ToVPtT/Ywae5YyYXOAS9bwc20zD13utAkoLJu/zcCRxDk57/3dnbcQSbQza31Rwqs
+0yWsjEF3KIdcLDR6+jrep/FauTtI59aNbeexFeFYFqrP5sOlWKZAjg7tWBZX04xP21QNCY9m/GVq
+SgkOTlBQdsY0GKI6XVkZjbrvqe+pCA11esgGZBc8jsV7ct8bLmBa5MRqP+rny7Dg4mbDxAbqUGpv
+5ggMp9pPaX6S2/qVlgIZgozhG+seoy6L7Z8WHs7utYd5j68UFU5wwHJtq3bCbgST6UY8jMFhTpxA
+mC8hDJ3CnSG3b2rx1DcyT1WwQ0Kk3uw6OhEdH69ubphVSX+Rd2Fv4ifOOCo145kN07R56Vud38gw
+kDBefJMMaocfRsIH/FW85IllaZy5zVI11fhjVCTq0fanYlqdERLWwdsvbHL+39NRKXcnh58EylP3
+NvM0vsCa5UtsQfzMx+gsG7rvQZIXZHvMN506zNrSIqguhyphyZQWH51B1YHlsRgJUSZQZSf8oaRR
+rgZIs07gs42yfV+lNrW3uu+k22dfhni+N97NYe4c72kZEvDH2tVoJbyOQpJPbqr533/qBZeCMcli
+Mbd6f7br84C=

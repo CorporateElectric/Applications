@@ -1,103 +1,49 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\Reflection;
-
-/**
- * A fake ReflectionParameter but for language construct parameters.
- *
- * It stubs out all the important bits and returns whatever was passed in $opts.
- */
-class ReflectionLanguageConstructParameter extends \ReflectionParameter
-{
-    private $function;
-    private $parameter;
-    private $opts;
-
-    public function __construct($function, $parameter, array $opts)
-    {
-        $this->function = $function;
-        $this->parameter = $parameter;
-        $this->opts = $opts;
-    }
-
-    /**
-     * No class here.
-     */
-    public function getClass()
-    {
-        return;
-    }
-
-    /**
-     * Is the param an array?
-     *
-     * @return bool
-     */
-    public function isArray()
-    {
-        return \array_key_exists('isArray', $this->opts) && $this->opts['isArray'];
-    }
-
-    /**
-     * Get param default value.
-     *
-     * @return mixed
-     */
-    public function getDefaultValue()
-    {
-        if ($this->isDefaultValueAvailable()) {
-            return $this->opts['defaultValue'];
-        }
-    }
-
-    /**
-     * Get param name.
-     *
-     * @return string
-     */
-    public function getName()
-    {
-        return $this->parameter;
-    }
-
-    /**
-     * Is the param optional?
-     *
-     * @return bool
-     */
-    public function isOptional()
-    {
-        return \array_key_exists('isOptional', $this->opts) && $this->opts['isOptional'];
-    }
-
-    /**
-     * Does the param have a default value?
-     *
-     * @return bool
-     */
-    public function isDefaultValueAvailable()
-    {
-        return \array_key_exists('defaultValue', $this->opts);
-    }
-
-    /**
-     * Is the param passed by reference?
-     *
-     * (I don't think this is true for anything we need to fake a param for)
-     *
-     * @return bool
-     */
-    public function isPassedByReference()
-    {
-        return \array_key_exists('isPassedByReference', $this->opts) && $this->opts['isPassedByReference'];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,142 +1,71 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Shared;
-
-use InvalidArgumentException;
-use ZipArchive;
-
-class File
-{
-    /**
-     * Use Temp or File Upload Temp for temporary files.
-     *
-     * @var bool
-     */
-    protected static $useUploadTempDirectory = false;
-
-    /**
-     * Set the flag indicating whether the File Upload Temp directory should be used for temporary files.
-     *
-     * @param bool $useUploadTempDir Use File Upload Temporary directory (true or false)
-     */
-    public static function setUseUploadTempDirectory($useUploadTempDir): void
-    {
-        self::$useUploadTempDirectory = (bool) $useUploadTempDir;
-    }
-
-    /**
-     * Get the flag indicating whether the File Upload Temp directory should be used for temporary files.
-     *
-     * @return bool Use File Upload Temporary directory (true or false)
-     */
-    public static function getUseUploadTempDirectory()
-    {
-        return self::$useUploadTempDirectory;
-    }
-
-    /**
-     * Verify if a file exists.
-     *
-     * @param string $pFilename Filename
-     *
-     * @return bool
-     */
-    public static function fileExists($pFilename)
-    {
-        // Sick construction, but it seems that
-        // file_exists returns strange values when
-        // doing the original file_exists on ZIP archives...
-        if (strtolower(substr($pFilename, 0, 3)) == 'zip') {
-            // Open ZIP file and verify if the file exists
-            $zipFile = substr($pFilename, 6, strpos($pFilename, '#') - 6);
-            $archiveFile = substr($pFilename, strpos($pFilename, '#') + 1);
-
-            $zip = new ZipArchive();
-            if ($zip->open($zipFile) === true) {
-                $returnValue = ($zip->getFromName($archiveFile) !== false);
-                $zip->close();
-
-                return $returnValue;
-            }
-
-            return false;
-        }
-
-        return file_exists($pFilename);
-    }
-
-    /**
-     * Returns canonicalized absolute pathname, also for ZIP archives.
-     *
-     * @param string $pFilename
-     *
-     * @return string
-     */
-    public static function realpath($pFilename)
-    {
-        // Returnvalue
-        $returnValue = '';
-
-        // Try using realpath()
-        if (file_exists($pFilename)) {
-            $returnValue = realpath($pFilename);
-        }
-
-        // Found something?
-        if ($returnValue == '' || ($returnValue === null)) {
-            $pathArray = explode('/', $pFilename);
-            while (in_array('..', $pathArray) && $pathArray[0] != '..') {
-                $iMax = count($pathArray);
-                for ($i = 0; $i < $iMax; ++$i) {
-                    if ($pathArray[$i] == '..' && $i > 0) {
-                        unset($pathArray[$i], $pathArray[$i - 1]);
-
-                        break;
-                    }
-                }
-            }
-            $returnValue = implode('/', $pathArray);
-        }
-
-        // Return
-        return $returnValue;
-    }
-
-    /**
-     * Get the systems temporary directory.
-     *
-     * @return string
-     */
-    public static function sysGetTempDir()
-    {
-        if (self::$useUploadTempDirectory) {
-            //  use upload-directory when defined to allow running on environments having very restricted
-            //      open_basedir configs
-            if (ini_get('upload_tmp_dir') !== false) {
-                if ($temp = ini_get('upload_tmp_dir')) {
-                    if (file_exists($temp)) {
-                        return realpath($temp);
-                    }
-                }
-            }
-        }
-
-        return realpath(sys_get_temp_dir());
-    }
-
-    /**
-     * Assert that given path is an existing file and is readable, otherwise throw exception.
-     *
-     * @param string $filename
-     */
-    public static function assertFile($filename): void
-    {
-        if (!is_file($filename)) {
-            throw new InvalidArgumentException('File "' . $filename . '" does not exist.');
-        }
-
-        if (!is_readable($filename)) {
-            throw new InvalidArgumentException('Could not open "' . $filename . '" for reading.');
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+Ouy=

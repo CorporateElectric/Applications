@@ -1,76 +1,89 @@
-<?php
-
-namespace Illuminate\Foundation\Console;
-
-use Illuminate\Console\Command;
-use Illuminate\Filesystem\Filesystem;
-
-class StubPublishCommand extends Command
-{
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
-    protected $signature = 'stub:publish {--force : Overwrite any existing files}';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Publish all stubs that are available for customization';
-
-    /**
-     * Execute the console command.
-     *
-     * @return void
-     */
-    public function handle()
-    {
-        if (! is_dir($stubsPath = $this->laravel->basePath('stubs'))) {
-            (new Filesystem)->makeDirectory($stubsPath);
-        }
-
-        $files = [
-            __DIR__.'/stubs/cast.stub' => $stubsPath.'/cast.stub',
-            __DIR__.'/stubs/job.queued.stub' => $stubsPath.'/job.queued.stub',
-            __DIR__.'/stubs/job.stub' => $stubsPath.'/job.stub',
-            __DIR__.'/stubs/model.pivot.stub' => $stubsPath.'/model.pivot.stub',
-            __DIR__.'/stubs/model.stub' => $stubsPath.'/model.stub',
-            __DIR__.'/stubs/observer.stub' => $stubsPath.'/observer.stub',
-            __DIR__.'/stubs/observer.plain.stub' => $stubsPath.'/observer.plain.stub',
-            __DIR__.'/stubs/request.stub' => $stubsPath.'/request.stub',
-            __DIR__.'/stubs/resource.stub' => $stubsPath.'/resource.stub',
-            __DIR__.'/stubs/resource-collection.stub' => $stubsPath.'/resource-collection.stub',
-            __DIR__.'/stubs/test.stub' => $stubsPath.'/test.stub',
-            __DIR__.'/stubs/test.unit.stub' => $stubsPath.'/test.unit.stub',
-            realpath(__DIR__.'/../../Database/Console/Factories/stubs/factory.stub') => $stubsPath.'/factory.stub',
-            realpath(__DIR__.'/../../Database/Console/Seeds/stubs/seeder.stub') => $stubsPath.'/seeder.stub',
-            realpath(__DIR__.'/../../Database/Migrations/stubs/migration.create.stub') => $stubsPath.'/migration.create.stub',
-            realpath(__DIR__.'/../../Database/Migrations/stubs/migration.stub') => $stubsPath.'/migration.stub',
-            realpath(__DIR__.'/../../Database/Migrations/stubs/migration.update.stub') => $stubsPath.'/migration.update.stub',
-            realpath(__DIR__.'/../../Foundation/Console/stubs/console.stub') => $stubsPath.'/console.stub',
-            realpath(__DIR__.'/../../Foundation/Console/stubs/policy.plain.stub') => $stubsPath.'/policy.plain.stub',
-            realpath(__DIR__.'/../../Foundation/Console/stubs/policy.stub') => $stubsPath.'/policy.stub',
-            realpath(__DIR__.'/../../Foundation/Console/stubs/rule.stub') => $stubsPath.'/rule.stub',
-            realpath(__DIR__.'/../../Routing/Console/stubs/controller.api.stub') => $stubsPath.'/controller.api.stub',
-            realpath(__DIR__.'/../../Routing/Console/stubs/controller.invokable.stub') => $stubsPath.'/controller.invokable.stub',
-            realpath(__DIR__.'/../../Routing/Console/stubs/controller.model.api.stub') => $stubsPath.'/controller.model.api.stub',
-            realpath(__DIR__.'/../../Routing/Console/stubs/controller.model.stub') => $stubsPath.'/controller.model.stub',
-            realpath(__DIR__.'/../../Routing/Console/stubs/controller.nested.api.stub') => $stubsPath.'/controller.nested.api.stub',
-            realpath(__DIR__.'/../../Routing/Console/stubs/controller.nested.stub') => $stubsPath.'/controller.nested.stub',
-            realpath(__DIR__.'/../../Routing/Console/stubs/controller.plain.stub') => $stubsPath.'/controller.plain.stub',
-            realpath(__DIR__.'/../../Routing/Console/stubs/controller.stub') => $stubsPath.'/controller.stub',
-            realpath(__DIR__.'/../../Routing/Console/stubs/middleware.stub') => $stubsPath.'/middleware.stub',
-        ];
-
-        foreach ($files as $from => $to) {
-            if (! file_exists($to) || $this->option('force')) {
-                file_put_contents($to, file_get_contents($from));
-            }
-        }
-
-        $this->info('Stubs published successfully.');
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

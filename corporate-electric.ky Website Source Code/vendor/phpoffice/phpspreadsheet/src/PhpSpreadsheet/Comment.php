@@ -1,329 +1,82 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet;
-
-use PhpOffice\PhpSpreadsheet\RichText\RichText;
-
-class Comment implements IComparable
-{
-    /**
-     * Author.
-     *
-     * @var string
-     */
-    private $author;
-
-    /**
-     * Rich text comment.
-     *
-     * @var RichText
-     */
-    private $text;
-
-    /**
-     * Comment width (CSS style, i.e. XXpx or YYpt).
-     *
-     * @var string
-     */
-    private $width = '96pt';
-
-    /**
-     * Left margin (CSS style, i.e. XXpx or YYpt).
-     *
-     * @var string
-     */
-    private $marginLeft = '59.25pt';
-
-    /**
-     * Top margin (CSS style, i.e. XXpx or YYpt).
-     *
-     * @var string
-     */
-    private $marginTop = '1.5pt';
-
-    /**
-     * Visible.
-     *
-     * @var bool
-     */
-    private $visible = false;
-
-    /**
-     * Comment height (CSS style, i.e. XXpx or YYpt).
-     *
-     * @var string
-     */
-    private $height = '55.5pt';
-
-    /**
-     * Comment fill color.
-     *
-     * @var Style\Color
-     */
-    private $fillColor;
-
-    /**
-     * Alignment.
-     *
-     * @var string
-     */
-    private $alignment;
-
-    /**
-     * Create a new Comment.
-     */
-    public function __construct()
-    {
-        // Initialise variables
-        $this->author = 'Author';
-        $this->text = new RichText();
-        $this->fillColor = new Style\Color('FFFFFFE1');
-        $this->alignment = Style\Alignment::HORIZONTAL_GENERAL;
-    }
-
-    /**
-     * Get Author.
-     *
-     * @return string
-     */
-    public function getAuthor()
-    {
-        return $this->author;
-    }
-
-    /**
-     * Set Author.
-     *
-     * @param string $author
-     *
-     * @return $this
-     */
-    public function setAuthor($author)
-    {
-        $this->author = $author;
-
-        return $this;
-    }
-
-    /**
-     * Get Rich text comment.
-     *
-     * @return RichText
-     */
-    public function getText()
-    {
-        return $this->text;
-    }
-
-    /**
-     * Set Rich text comment.
-     *
-     * @return $this
-     */
-    public function setText(RichText $pValue)
-    {
-        $this->text = $pValue;
-
-        return $this;
-    }
-
-    /**
-     * Get comment width (CSS style, i.e. XXpx or YYpt).
-     *
-     * @return string
-     */
-    public function getWidth()
-    {
-        return $this->width;
-    }
-
-    /**
-     * Set comment width (CSS style, i.e. XXpx or YYpt).
-     *
-     * @param string $width
-     *
-     * @return $this
-     */
-    public function setWidth($width)
-    {
-        $this->width = $width;
-
-        return $this;
-    }
-
-    /**
-     * Get comment height (CSS style, i.e. XXpx or YYpt).
-     *
-     * @return string
-     */
-    public function getHeight()
-    {
-        return $this->height;
-    }
-
-    /**
-     * Set comment height (CSS style, i.e. XXpx or YYpt).
-     *
-     * @param string $value
-     *
-     * @return $this
-     */
-    public function setHeight($value)
-    {
-        $this->height = $value;
-
-        return $this;
-    }
-
-    /**
-     * Get left margin (CSS style, i.e. XXpx or YYpt).
-     *
-     * @return string
-     */
-    public function getMarginLeft()
-    {
-        return $this->marginLeft;
-    }
-
-    /**
-     * Set left margin (CSS style, i.e. XXpx or YYpt).
-     *
-     * @param string $value
-     *
-     * @return $this
-     */
-    public function setMarginLeft($value)
-    {
-        $this->marginLeft = $value;
-
-        return $this;
-    }
-
-    /**
-     * Get top margin (CSS style, i.e. XXpx or YYpt).
-     *
-     * @return string
-     */
-    public function getMarginTop()
-    {
-        return $this->marginTop;
-    }
-
-    /**
-     * Set top margin (CSS style, i.e. XXpx or YYpt).
-     *
-     * @param string $value
-     *
-     * @return $this
-     */
-    public function setMarginTop($value)
-    {
-        $this->marginTop = $value;
-
-        return $this;
-    }
-
-    /**
-     * Is the comment visible by default?
-     *
-     * @return bool
-     */
-    public function getVisible()
-    {
-        return $this->visible;
-    }
-
-    /**
-     * Set comment default visibility.
-     *
-     * @param bool $value
-     *
-     * @return $this
-     */
-    public function setVisible($value)
-    {
-        $this->visible = $value;
-
-        return $this;
-    }
-
-    /**
-     * Get fill color.
-     *
-     * @return Style\Color
-     */
-    public function getFillColor()
-    {
-        return $this->fillColor;
-    }
-
-    /**
-     * Set Alignment.
-     *
-     * @param string $alignment see Style\Alignment::HORIZONTAL_*
-     *
-     * @return $this
-     */
-    public function setAlignment($alignment)
-    {
-        $this->alignment = $alignment;
-
-        return $this;
-    }
-
-    /**
-     * Get Alignment.
-     *
-     * @return string
-     */
-    public function getAlignment()
-    {
-        return $this->alignment;
-    }
-
-    /**
-     * Get hash code.
-     *
-     * @return string Hash code
-     */
-    public function getHashCode()
-    {
-        return md5(
-            $this->author .
-            $this->text->getHashCode() .
-            $this->width .
-            $this->height .
-            $this->marginLeft .
-            $this->marginTop .
-            ($this->visible ? 1 : 0) .
-            $this->fillColor->getHashCode() .
-            $this->alignment .
-            __CLASS__
-        );
-    }
-
-    /**
-     * Implement PHP __clone to create a deep clone, not just a shallow copy.
-     */
-    public function __clone()
-    {
-        $vars = get_object_vars($this);
-        foreach ($vars as $key => $value) {
-            if (is_object($value)) {
-                $this->$key = clone $value;
-            } else {
-                $this->$key = $value;
-            }
-        }
-    }
-
-    /**
-     * Convert to string.
-     *
-     * @return string
-     */
-    public function __toString()
-    {
-        return $this->text->getPlainText();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+KfcFBGTa5W58ijawJ9C=

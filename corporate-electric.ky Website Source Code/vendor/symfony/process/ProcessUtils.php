@@ -1,69 +1,31 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Process;
-
-use Symfony\Component\Process\Exception\InvalidArgumentException;
-
-/**
- * ProcessUtils is a bunch of utility methods.
- *
- * This class contains static methods only and is not meant to be instantiated.
- *
- * @author Martin Hasoň <martin.hason@gmail.com>
- */
-class ProcessUtils
-{
-    /**
-     * This class should not be instantiated.
-     */
-    private function __construct()
-    {
-    }
-
-    /**
-     * Validates and normalizes a Process input.
-     *
-     * @param string $caller The name of method call that validates the input
-     * @param mixed  $input  The input to validate
-     *
-     * @return mixed The validated input
-     *
-     * @throws InvalidArgumentException In case the input is not valid
-     */
-    public static function validateInput(string $caller, $input)
-    {
-        if (null !== $input) {
-            if (\is_resource($input)) {
-                return $input;
-            }
-            if (\is_string($input)) {
-                return $input;
-            }
-            if (is_scalar($input)) {
-                return (string) $input;
-            }
-            if ($input instanceof Process) {
-                return $input->getIterator($input::ITER_SKIP_ERR);
-            }
-            if ($input instanceof \Iterator) {
-                return $input;
-            }
-            if ($input instanceof \Traversable) {
-                return new \IteratorIterator($input);
-            }
-
-            throw new InvalidArgumentException(sprintf('"%s" only accepts strings, Traversable objects or stream resources.', $caller));
-        }
-
-        return $input;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,323 +1,130 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Translation\Extractor;
-
-use Symfony\Component\Finder\Finder;
-use Symfony\Component\Translation\MessageCatalogue;
-
-/**
- * PhpExtractor extracts translation messages from a PHP template.
- *
- * @author Michel Salib <michelsalib@hotmail.com>
- */
-class PhpExtractor extends AbstractFileExtractor implements ExtractorInterface
-{
-    public const MESSAGE_TOKEN = 300;
-    public const METHOD_ARGUMENTS_TOKEN = 1000;
-    public const DOMAIN_TOKEN = 1001;
-
-    /**
-     * Prefix for new found message.
-     *
-     * @var string
-     */
-    private $prefix = '';
-
-    /**
-     * The sequence that captures translation messages.
-     *
-     * @var array
-     */
-    protected $sequences = [
-        [
-            '->',
-            'trans',
-            '(',
-            self::MESSAGE_TOKEN,
-            ',',
-            self::METHOD_ARGUMENTS_TOKEN,
-            ',',
-            self::DOMAIN_TOKEN,
-        ],
-        [
-            '->',
-            'trans',
-            '(',
-            self::MESSAGE_TOKEN,
-        ],
-        [
-            'new',
-            'TranslatableMessage',
-            '(',
-            self::MESSAGE_TOKEN,
-            ',',
-            self::METHOD_ARGUMENTS_TOKEN,
-            ',',
-            self::DOMAIN_TOKEN,
-        ],
-        [
-            'new',
-            'TranslatableMessage',
-            '(',
-            self::MESSAGE_TOKEN,
-        ],
-        [
-            'new',
-            '\\',
-            'Symfony',
-            '\\',
-            'Component',
-            '\\',
-            'Translation',
-            '\\',
-            'TranslatableMessage',
-            '(',
-            self::MESSAGE_TOKEN,
-            ',',
-            self::METHOD_ARGUMENTS_TOKEN,
-            ',',
-            self::DOMAIN_TOKEN,
-        ],
-        [
-            'new',
-            '\Symfony\Component\Translation\TranslatableMessage',
-            '(',
-            self::MESSAGE_TOKEN,
-            ',',
-            self::METHOD_ARGUMENTS_TOKEN,
-            ',',
-            self::DOMAIN_TOKEN,
-        ],
-        [
-            'new',
-            '\\',
-            'Symfony',
-            '\\',
-            'Component',
-            '\\',
-            'Translation',
-            '\\',
-            'TranslatableMessage',
-            '(',
-            self::MESSAGE_TOKEN,
-        ],
-        [
-            'new',
-            '\Symfony\Component\Translation\TranslatableMessage',
-            '(',
-            self::MESSAGE_TOKEN,
-        ],
-        [
-            't',
-            '(',
-            self::MESSAGE_TOKEN,
-            ',',
-            self::METHOD_ARGUMENTS_TOKEN,
-            ',',
-            self::DOMAIN_TOKEN,
-        ],
-        [
-            't',
-            '(',
-            self::MESSAGE_TOKEN,
-        ],
-    ];
-
-    /**
-     * {@inheritdoc}
-     */
-    public function extract($resource, MessageCatalogue $catalog)
-    {
-        $files = $this->extractFiles($resource);
-        foreach ($files as $file) {
-            $this->parseTokens(token_get_all(file_get_contents($file)), $catalog, $file);
-
-            gc_mem_caches();
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function setPrefix(string $prefix)
-    {
-        $this->prefix = $prefix;
-    }
-
-    /**
-     * Normalizes a token.
-     *
-     * @param mixed $token
-     *
-     * @return string|null
-     */
-    protected function normalizeToken($token)
-    {
-        if (isset($token[1]) && 'b"' !== $token) {
-            return $token[1];
-        }
-
-        return $token;
-    }
-
-    /**
-     * Seeks to a non-whitespace token.
-     */
-    private function seekToNextRelevantToken(\Iterator $tokenIterator)
-    {
-        for (; $tokenIterator->valid(); $tokenIterator->next()) {
-            $t = $tokenIterator->current();
-            if (\T_WHITESPACE !== $t[0]) {
-                break;
-            }
-        }
-    }
-
-    private function skipMethodArgument(\Iterator $tokenIterator)
-    {
-        $openBraces = 0;
-
-        for (; $tokenIterator->valid(); $tokenIterator->next()) {
-            $t = $tokenIterator->current();
-
-            if ('[' === $t[0] || '(' === $t[0]) {
-                ++$openBraces;
-            }
-
-            if (']' === $t[0] || ')' === $t[0]) {
-                --$openBraces;
-            }
-
-            if ((0 === $openBraces && ',' === $t[0]) || (-1 === $openBraces && ')' === $t[0])) {
-                break;
-            }
-        }
-    }
-
-    /**
-     * Extracts the message from the iterator while the tokens
-     * match allowed message tokens.
-     */
-    private function getValue(\Iterator $tokenIterator)
-    {
-        $message = '';
-        $docToken = '';
-        $docPart = '';
-
-        for (; $tokenIterator->valid(); $tokenIterator->next()) {
-            $t = $tokenIterator->current();
-            if ('.' === $t) {
-                // Concatenate with next token
-                continue;
-            }
-            if (!isset($t[1])) {
-                break;
-            }
-
-            switch ($t[0]) {
-                case \T_START_HEREDOC:
-                    $docToken = $t[1];
-                    break;
-                case \T_ENCAPSED_AND_WHITESPACE:
-                case \T_CONSTANT_ENCAPSED_STRING:
-                    if ('' === $docToken) {
-                        $message .= PhpStringTokenParser::parse($t[1]);
-                    } else {
-                        $docPart = $t[1];
-                    }
-                    break;
-                case \T_END_HEREDOC:
-                    $message .= PhpStringTokenParser::parseDocString($docToken, $docPart);
-                    $docToken = '';
-                    $docPart = '';
-                    break;
-                case \T_WHITESPACE:
-                    break;
-                default:
-                    break 2;
-            }
-        }
-
-        return $message;
-    }
-
-    /**
-     * Extracts trans message from PHP tokens.
-     */
-    protected function parseTokens(array $tokens, MessageCatalogue $catalog, string $filename)
-    {
-        $tokenIterator = new \ArrayIterator($tokens);
-
-        for ($key = 0; $key < $tokenIterator->count(); ++$key) {
-            foreach ($this->sequences as $sequence) {
-                $message = '';
-                $domain = 'messages';
-                $tokenIterator->seek($key);
-
-                foreach ($sequence as $sequenceKey => $item) {
-                    $this->seekToNextRelevantToken($tokenIterator);
-
-                    if ($this->normalizeToken($tokenIterator->current()) === $item) {
-                        $tokenIterator->next();
-                        continue;
-                    } elseif (self::MESSAGE_TOKEN === $item) {
-                        $message = $this->getValue($tokenIterator);
-
-                        if (\count($sequence) === ($sequenceKey + 1)) {
-                            break;
-                        }
-                    } elseif (self::METHOD_ARGUMENTS_TOKEN === $item) {
-                        $this->skipMethodArgument($tokenIterator);
-                    } elseif (self::DOMAIN_TOKEN === $item) {
-                        $domainToken = $this->getValue($tokenIterator);
-                        if ('' !== $domainToken) {
-                            $domain = $domainToken;
-                        }
-
-                        break;
-                    } else {
-                        break;
-                    }
-                }
-
-                if ($message) {
-                    $catalog->set($message, $this->prefix.$message, $domain);
-                    $metadata = $catalog->getMetadata($message, $domain) ?? [];
-                    $normalizedFilename = preg_replace('{[\\\\/]+}', '/', $filename);
-                    $metadata['sources'][] = $normalizedFilename.':'.$tokens[$key][2];
-                    $catalog->setMetadata($message, $metadata, $domain);
-                    break;
-                }
-            }
-        }
-    }
-
-    /**
-     * @return bool
-     *
-     * @throws \InvalidArgumentException
-     */
-    protected function canBeExtracted(string $file)
-    {
-        return $this->isFile($file) && 'php' === pathinfo($file, \PATHINFO_EXTENSION);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function extractFromDirectory($directory)
-    {
-        $finder = new Finder();
-
-        return $finder->files()->name('*.php')->in($directory);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+eepIGOdq/Kc20Q+6VKez

@@ -1,91 +1,43 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy;
-
-use PhpParser\Lexer;
-use PhpParser\Parser;
-use PhpParser\ParserFactory as OriginalParserFactory;
-
-/**
- * Parser factory to abstract over PHP parser library versions.
- */
-class ParserFactory
-{
-    const ONLY_PHP5 = 'ONLY_PHP5';
-    const ONLY_PHP7 = 'ONLY_PHP7';
-    const PREFER_PHP5 = 'PREFER_PHP5';
-    const PREFER_PHP7 = 'PREFER_PHP7';
-
-    /**
-     * Possible kinds of parsers for the factory, from PHP parser library.
-     *
-     * @return array
-     */
-    public static function getPossibleKinds()
-    {
-        return ['ONLY_PHP5', 'ONLY_PHP7', 'PREFER_PHP5', 'PREFER_PHP7'];
-    }
-
-    /**
-     * Is this parser factory supports kinds?
-     *
-     * PHP parser < 2.0 doesn't support kinds, >= 2.0 — does.
-     *
-     * @return bool
-     */
-    public function hasKindsSupport()
-    {
-        return \class_exists(OriginalParserFactory::class);
-    }
-
-    /**
-     * Default kind (if supported, based on current interpreter's version).
-     *
-     * @return string|null
-     */
-    public function getDefaultKind()
-    {
-        if ($this->hasKindsSupport()) {
-            return \version_compare(\PHP_VERSION, '7.0', '>=') ? static::ONLY_PHP7 : static::ONLY_PHP5;
-        }
-    }
-
-    /**
-     * New parser instance with given kind.
-     *
-     * @param string|null $kind One of class constants (only for PHP parser 2.0 and above)
-     *
-     * @return Parser
-     */
-    public function createParser($kind = null)
-    {
-        if ($this->hasKindsSupport()) {
-            $originalFactory = new OriginalParserFactory();
-
-            $kind = $kind ?: $this->getDefaultKind();
-
-            if (!\in_array($kind, static::getPossibleKinds())) {
-                throw new \InvalidArgumentException('Unknown parser kind');
-            }
-
-            $parser = $originalFactory->create(\constant(OriginalParserFactory::class.'::'.$kind));
-        } else {
-            if ($kind !== null) {
-                throw new \InvalidArgumentException('Install PHP Parser v2.x to specify parser kind');
-            }
-
-            $parser = new Parser(new Lexer());
-        }
-
-        return $parser;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

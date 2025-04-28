@@ -1,136 +1,104 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpKernel\HttpCache;
-
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\HttpKernelInterface;
-
-/**
- * Abstract class implementing Surrogate capabilities to Request and Response instances.
- *
- * @author Fabien Potencier <fabien@symfony.com>
- * @author Robin Chalas <robin.chalas@gmail.com>
- */
-abstract class AbstractSurrogate implements SurrogateInterface
-{
-    protected $contentTypes;
-    protected $phpEscapeMap = [
-        ['<?', '<%', '<s', '<S'],
-        ['<?php echo "<?"; ?>', '<?php echo "<%"; ?>', '<?php echo "<s"; ?>', '<?php echo "<S"; ?>'],
-    ];
-
-    /**
-     * @param array $contentTypes An array of content-type that should be parsed for Surrogate information
-     *                            (default: text/html, text/xml, application/xhtml+xml, and application/xml)
-     */
-    public function __construct(array $contentTypes = ['text/html', 'text/xml', 'application/xhtml+xml', 'application/xml'])
-    {
-        $this->contentTypes = $contentTypes;
-    }
-
-    /**
-     * Returns a new cache strategy instance.
-     *
-     * @return ResponseCacheStrategyInterface A ResponseCacheStrategyInterface instance
-     */
-    public function createCacheStrategy()
-    {
-        return new ResponseCacheStrategy();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function hasSurrogateCapability(Request $request)
-    {
-        if (null === $value = $request->headers->get('Surrogate-Capability')) {
-            return false;
-        }
-
-        return false !== strpos($value, sprintf('%s/1.0', strtoupper($this->getName())));
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function addSurrogateCapability(Request $request)
-    {
-        $current = $request->headers->get('Surrogate-Capability');
-        $new = sprintf('symfony="%s/1.0"', strtoupper($this->getName()));
-
-        $request->headers->set('Surrogate-Capability', $current ? $current.', '.$new : $new);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function needsParsing(Response $response)
-    {
-        if (!$control = $response->headers->get('Surrogate-Control')) {
-            return false;
-        }
-
-        $pattern = sprintf('#content="[^"]*%s/1.0[^"]*"#', strtoupper($this->getName()));
-
-        return (bool) preg_match($pattern, $control);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function handle(HttpCache $cache, string $uri, string $alt, bool $ignoreErrors)
-    {
-        $subRequest = Request::create($uri, Request::METHOD_GET, [], $cache->getRequest()->cookies->all(), [], $cache->getRequest()->server->all());
-
-        try {
-            $response = $cache->handle($subRequest, HttpKernelInterface::SUB_REQUEST, true);
-
-            if (!$response->isSuccessful()) {
-                throw new \RuntimeException(sprintf('Error when rendering "%s" (Status code is %d).', $subRequest->getUri(), $response->getStatusCode()));
-            }
-
-            return $response->getContent();
-        } catch (\Exception $e) {
-            if ($alt) {
-                return $this->handle($cache, $alt, '', $ignoreErrors);
-            }
-
-            if (!$ignoreErrors) {
-                throw $e;
-            }
-        }
-
-        return '';
-    }
-
-    /**
-     * Remove the Surrogate from the Surrogate-Control header.
-     */
-    protected function removeFromControl(Response $response)
-    {
-        if (!$response->headers->has('Surrogate-Control')) {
-            return;
-        }
-
-        $value = $response->headers->get('Surrogate-Control');
-        $upperName = strtoupper($this->getName());
-
-        if (sprintf('content="%s/1.0"', $upperName) == $value) {
-            $response->headers->remove('Surrogate-Control');
-        } elseif (preg_match(sprintf('#,\s*content="%s/1.0"#', $upperName), $value)) {
-            $response->headers->set('Surrogate-Control', preg_replace(sprintf('#,\s*content="%s/1.0"#', $upperName), '', $value));
-        } elseif (preg_match(sprintf('#content="%s/1.0",\s*#', $upperName), $value)) {
-            $response->headers->set('Surrogate-Control', preg_replace(sprintf('#content="%s/1.0",\s*#', $upperName), '', $value));
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

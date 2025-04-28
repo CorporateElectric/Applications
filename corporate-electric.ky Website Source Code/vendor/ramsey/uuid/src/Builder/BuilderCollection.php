@@ -1,73 +1,37 @@
-<?php
-
-/**
- * This file is part of the ramsey/uuid library
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @copyright Copyright (c) Ben Ramsey <ben@benramsey.com>
- * @license http://opensource.org/licenses/MIT MIT
- */
-
-declare(strict_types=1);
-
-namespace Ramsey\Uuid\Builder;
-
-use Ramsey\Collection\AbstractCollection;
-use Ramsey\Collection\CollectionInterface;
-use Ramsey\Uuid\Converter\Number\GenericNumberConverter;
-use Ramsey\Uuid\Converter\Time\GenericTimeConverter;
-use Ramsey\Uuid\Converter\Time\PhpTimeConverter;
-use Ramsey\Uuid\Guid\GuidBuilder;
-use Ramsey\Uuid\Math\BrickMathCalculator;
-use Ramsey\Uuid\Nonstandard\UuidBuilder as NonstandardUuidBuilder;
-use Ramsey\Uuid\Rfc4122\UuidBuilder as Rfc4122UuidBuilder;
-use Traversable;
-
-/**
- * A collection of UuidBuilderInterface objects
- */
-class BuilderCollection extends AbstractCollection implements CollectionInterface
-{
-    public function getType(): string
-    {
-        return UuidBuilderInterface::class;
-    }
-
-    /**
-     * @psalm-mutation-free
-     * @psalm-suppress ImpureMethodCall
-     * @psalm-suppress InvalidTemplateParam
-     */
-    public function getIterator(): Traversable
-    {
-        return parent::getIterator();
-    }
-
-    /**
-     * Re-constructs the object from its serialized form
-     *
-     * @param string $serialized The serialized PHP string to unserialize into
-     *     a UuidInterface instance
-     *
-     * @phpcsSuppress SlevomatCodingStandard.TypeHints.ParameterTypeHint.MissingNativeTypeHint
-     */
-    public function unserialize($serialized): void
-    {
-        /** @var mixed[] $data */
-        $data = unserialize($serialized, [
-            'allowed_classes' => [
-                BrickMathCalculator::class,
-                GenericNumberConverter::class,
-                GenericTimeConverter::class,
-                GuidBuilder::class,
-                NonstandardUuidBuilder::class,
-                PhpTimeConverter::class,
-                Rfc4122UuidBuilder::class,
-            ],
-        ]);
-
-        $this->data = $data;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

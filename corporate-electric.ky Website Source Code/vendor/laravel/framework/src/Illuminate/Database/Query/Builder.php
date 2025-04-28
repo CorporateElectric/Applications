@@ -1,3330 +1,1145 @@
-<?php
-
-namespace Illuminate\Database\Query;
-
-use Closure;
-use DateTimeInterface;
-use Illuminate\Contracts\Support\Arrayable;
-use Illuminate\Database\Concerns\BuildsQueries;
-use Illuminate\Database\Concerns\ExplainsQueries;
-use Illuminate\Database\ConnectionInterface;
-use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
-use Illuminate\Database\Eloquent\Relations\Relation;
-use Illuminate\Database\Query\Grammars\Grammar;
-use Illuminate\Database\Query\Processors\Processor;
-use Illuminate\Pagination\Paginator;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Collection;
-use Illuminate\Support\LazyCollection;
-use Illuminate\Support\Str;
-use Illuminate\Support\Traits\ForwardsCalls;
-use Illuminate\Support\Traits\Macroable;
-use InvalidArgumentException;
-use RuntimeException;
-
-class Builder
-{
-    use BuildsQueries, ExplainsQueries, ForwardsCalls, Macroable {
-        __call as macroCall;
-    }
-
-    /**
-     * The database connection instance.
-     *
-     * @var \Illuminate\Database\ConnectionInterface
-     */
-    public $connection;
-
-    /**
-     * The database query grammar instance.
-     *
-     * @var \Illuminate\Database\Query\Grammars\Grammar
-     */
-    public $grammar;
-
-    /**
-     * The database query post processor instance.
-     *
-     * @var \Illuminate\Database\Query\Processors\Processor
-     */
-    public $processor;
-
-    /**
-     * The current query value bindings.
-     *
-     * @var array
-     */
-    public $bindings = [
-        'select' => [],
-        'from' => [],
-        'join' => [],
-        'where' => [],
-        'groupBy' => [],
-        'having' => [],
-        'order' => [],
-        'union' => [],
-        'unionOrder' => [],
-    ];
-
-    /**
-     * An aggregate function and column to be run.
-     *
-     * @var array
-     */
-    public $aggregate;
-
-    /**
-     * The columns that should be returned.
-     *
-     * @var array
-     */
-    public $columns;
-
-    /**
-     * Indicates if the query returns distinct results.
-     *
-     * Occasionally contains the columns that should be distinct.
-     *
-     * @var bool|array
-     */
-    public $distinct = false;
-
-    /**
-     * The table which the query is targeting.
-     *
-     * @var string
-     */
-    public $from;
-
-    /**
-     * The table joins for the query.
-     *
-     * @var array
-     */
-    public $joins;
-
-    /**
-     * The where constraints for the query.
-     *
-     * @var array
-     */
-    public $wheres = [];
-
-    /**
-     * The groupings for the query.
-     *
-     * @var array
-     */
-    public $groups;
-
-    /**
-     * The having constraints for the query.
-     *
-     * @var array
-     */
-    public $havings;
-
-    /**
-     * The orderings for the query.
-     *
-     * @var array
-     */
-    public $orders;
-
-    /**
-     * The maximum number of records to return.
-     *
-     * @var int
-     */
-    public $limit;
-
-    /**
-     * The number of records to skip.
-     *
-     * @var int
-     */
-    public $offset;
-
-    /**
-     * The query union statements.
-     *
-     * @var array
-     */
-    public $unions;
-
-    /**
-     * The maximum number of union records to return.
-     *
-     * @var int
-     */
-    public $unionLimit;
-
-    /**
-     * The number of union records to skip.
-     *
-     * @var int
-     */
-    public $unionOffset;
-
-    /**
-     * The orderings for the union query.
-     *
-     * @var array
-     */
-    public $unionOrders;
-
-    /**
-     * Indicates whether row locking is being used.
-     *
-     * @var string|bool
-     */
-    public $lock;
-
-    /**
-     * All of the available clause operators.
-     *
-     * @var string[]
-     */
-    public $operators = [
-        '=', '<', '>', '<=', '>=', '<>', '!=', '<=>',
-        'like', 'like binary', 'not like', 'ilike',
-        '&', '|', '^', '<<', '>>',
-        'rlike', 'not rlike', 'regexp', 'not regexp',
-        '~', '~*', '!~', '!~*', 'similar to',
-        'not similar to', 'not ilike', '~~*', '!~~*',
-    ];
-
-    /**
-     * Whether use write pdo for select.
-     *
-     * @var bool
-     */
-    public $useWritePdo = false;
-
-    /**
-     * Create a new query builder instance.
-     *
-     * @param  \Illuminate\Database\ConnectionInterface  $connection
-     * @param  \Illuminate\Database\Query\Grammars\Grammar|null  $grammar
-     * @param  \Illuminate\Database\Query\Processors\Processor|null  $processor
-     * @return void
-     */
-    public function __construct(ConnectionInterface $connection,
-                                Grammar $grammar = null,
-                                Processor $processor = null)
-    {
-        $this->connection = $connection;
-        $this->grammar = $grammar ?: $connection->getQueryGrammar();
-        $this->processor = $processor ?: $connection->getPostProcessor();
-    }
-
-    /**
-     * Set the columns to be selected.
-     *
-     * @param  array|mixed  $columns
-     * @return $this
-     */
-    public function select($columns = ['*'])
-    {
-        $this->columns = [];
-        $this->bindings['select'] = [];
-        $columns = is_array($columns) ? $columns : func_get_args();
-
-        foreach ($columns as $as => $column) {
-            if (is_string($as) && $this->isQueryable($column)) {
-                $this->selectSub($column, $as);
-            } else {
-                $this->columns[] = $column;
-            }
-        }
-
-        return $this;
-    }
-
-    /**
-     * Add a subselect expression to the query.
-     *
-     * @param  \Closure|\Illuminate\Database\Query\Builder|string  $query
-     * @param  string  $as
-     * @return $this
-     *
-     * @throws \InvalidArgumentException
-     */
-    public function selectSub($query, $as)
-    {
-        [$query, $bindings] = $this->createSub($query);
-
-        return $this->selectRaw(
-            '('.$query.') as '.$this->grammar->wrap($as), $bindings
-        );
-    }
-
-    /**
-     * Add a new "raw" select expression to the query.
-     *
-     * @param  string  $expression
-     * @param  array  $bindings
-     * @return $this
-     */
-    public function selectRaw($expression, array $bindings = [])
-    {
-        $this->addSelect(new Expression($expression));
-
-        if ($bindings) {
-            $this->addBinding($bindings, 'select');
-        }
-
-        return $this;
-    }
-
-    /**
-     * Makes "from" fetch from a subquery.
-     *
-     * @param  \Closure|\Illuminate\Database\Query\Builder|string  $query
-     * @param  string  $as
-     * @return $this
-     *
-     * @throws \InvalidArgumentException
-     */
-    public function fromSub($query, $as)
-    {
-        [$query, $bindings] = $this->createSub($query);
-
-        return $this->fromRaw('('.$query.') as '.$this->grammar->wrapTable($as), $bindings);
-    }
-
-    /**
-     * Add a raw from clause to the query.
-     *
-     * @param  string  $expression
-     * @param  mixed  $bindings
-     * @return $this
-     */
-    public function fromRaw($expression, $bindings = [])
-    {
-        $this->from = new Expression($expression);
-
-        $this->addBinding($bindings, 'from');
-
-        return $this;
-    }
-
-    /**
-     * Creates a subquery and parse it.
-     *
-     * @param  \Closure|\Illuminate\Database\Query\Builder|string  $query
-     * @return array
-     */
-    protected function createSub($query)
-    {
-        // If the given query is a Closure, we will execute it while passing in a new
-        // query instance to the Closure. This will give the developer a chance to
-        // format and work with the query before we cast it to a raw SQL string.
-        if ($query instanceof Closure) {
-            $callback = $query;
-
-            $callback($query = $this->forSubQuery());
-        }
-
-        return $this->parseSub($query);
-    }
-
-    /**
-     * Parse the subquery into SQL and bindings.
-     *
-     * @param  mixed  $query
-     * @return array
-     *
-     * @throws \InvalidArgumentException
-     */
-    protected function parseSub($query)
-    {
-        if ($query instanceof self || $query instanceof EloquentBuilder || $query instanceof Relation) {
-            $query = $this->prependDatabaseNameIfCrossDatabaseQuery($query);
-
-            return [$query->toSql(), $query->getBindings()];
-        } elseif (is_string($query)) {
-            return [$query, []];
-        } else {
-            throw new InvalidArgumentException(
-                'A subquery must be a query builder instance, a Closure, or a string.'
-            );
-        }
-    }
-
-    /**
-     * Prepend the database name if the given query is on another database.
-     *
-     * @param  mixed  $query
-     * @return mixed
-     */
-    protected function prependDatabaseNameIfCrossDatabaseQuery($query)
-    {
-        if ($query->getConnection()->getDatabaseName() !==
-            $this->getConnection()->getDatabaseName()) {
-            $databaseName = $query->getConnection()->getDatabaseName();
-
-            if (strpos($query->from, $databaseName) !== 0 && strpos($query->from, '.') === false) {
-                $query->from($databaseName.'.'.$query->from);
-            }
-        }
-
-        return $query;
-    }
-
-    /**
-     * Add a new select column to the query.
-     *
-     * @param  array|mixed  $column
-     * @return $this
-     */
-    public function addSelect($column)
-    {
-        $columns = is_array($column) ? $column : func_get_args();
-
-        foreach ($columns as $as => $column) {
-            if (is_string($as) && $this->isQueryable($column)) {
-                if (is_null($this->columns)) {
-                    $this->select($this->from.'.*');
-                }
-
-                $this->selectSub($column, $as);
-            } else {
-                $this->columns[] = $column;
-            }
-        }
-
-        return $this;
-    }
-
-    /**
-     * Force the query to only return distinct results.
-     *
-     * @return $this
-     */
-    public function distinct()
-    {
-        $columns = func_get_args();
-
-        if (count($columns) > 0) {
-            $this->distinct = is_array($columns[0]) || is_bool($columns[0]) ? $columns[0] : $columns;
-        } else {
-            $this->distinct = true;
-        }
-
-        return $this;
-    }
-
-    /**
-     * Set the table which the query is targeting.
-     *
-     * @param  \Closure|\Illuminate\Database\Query\Builder|string  $table
-     * @param  string|null  $as
-     * @return $this
-     */
-    public function from($table, $as = null)
-    {
-        if ($this->isQueryable($table)) {
-            return $this->fromSub($table, $as);
-        }
-
-        $this->from = $as ? "{$table} as {$as}" : $table;
-
-        return $this;
-    }
-
-    /**
-     * Add a join clause to the query.
-     *
-     * @param  string  $table
-     * @param  \Closure|string  $first
-     * @param  string|null  $operator
-     * @param  string|null  $second
-     * @param  string  $type
-     * @param  bool  $where
-     * @return $this
-     */
-    public function join($table, $first, $operator = null, $second = null, $type = 'inner', $where = false)
-    {
-        $join = $this->newJoinClause($this, $type, $table);
-
-        // If the first "column" of the join is really a Closure instance the developer
-        // is trying to build a join with a complex "on" clause containing more than
-        // one condition, so we'll add the join and call a Closure with the query.
-        if ($first instanceof Closure) {
-            $first($join);
-
-            $this->joins[] = $join;
-
-            $this->addBinding($join->getBindings(), 'join');
-        }
-
-        // If the column is simply a string, we can assume the join simply has a basic
-        // "on" clause with a single condition. So we will just build the join with
-        // this simple join clauses attached to it. There is not a join callback.
-        else {
-            $method = $where ? 'where' : 'on';
-
-            $this->joins[] = $join->$method($first, $operator, $second);
-
-            $this->addBinding($join->getBindings(), 'join');
-        }
-
-        return $this;
-    }
-
-    /**
-     * Add a "join where" clause to the query.
-     *
-     * @param  string  $table
-     * @param  \Closure|string  $first
-     * @param  string  $operator
-     * @param  string  $second
-     * @param  string  $type
-     * @return $this
-     */
-    public function joinWhere($table, $first, $operator, $second, $type = 'inner')
-    {
-        return $this->join($table, $first, $operator, $second, $type, true);
-    }
-
-    /**
-     * Add a subquery join clause to the query.
-     *
-     * @param  \Closure|\Illuminate\Database\Query\Builder|string  $query
-     * @param  string  $as
-     * @param  \Closure|string  $first
-     * @param  string|null  $operator
-     * @param  string|null  $second
-     * @param  string  $type
-     * @param  bool  $where
-     * @return $this
-     *
-     * @throws \InvalidArgumentException
-     */
-    public function joinSub($query, $as, $first, $operator = null, $second = null, $type = 'inner', $where = false)
-    {
-        [$query, $bindings] = $this->createSub($query);
-
-        $expression = '('.$query.') as '.$this->grammar->wrapTable($as);
-
-        $this->addBinding($bindings, 'join');
-
-        return $this->join(new Expression($expression), $first, $operator, $second, $type, $where);
-    }
-
-    /**
-     * Add a left join to the query.
-     *
-     * @param  string  $table
-     * @param  \Closure|string  $first
-     * @param  string|null  $operator
-     * @param  string|null  $second
-     * @return $this
-     */
-    public function leftJoin($table, $first, $operator = null, $second = null)
-    {
-        return $this->join($table, $first, $operator, $second, 'left');
-    }
-
-    /**
-     * Add a "join where" clause to the query.
-     *
-     * @param  string  $table
-     * @param  \Closure|string  $first
-     * @param  string  $operator
-     * @param  string  $second
-     * @return $this
-     */
-    public function leftJoinWhere($table, $first, $operator, $second)
-    {
-        return $this->joinWhere($table, $first, $operator, $second, 'left');
-    }
-
-    /**
-     * Add a subquery left join to the query.
-     *
-     * @param  \Closure|\Illuminate\Database\Query\Builder|string  $query
-     * @param  string  $as
-     * @param  \Closure|string  $first
-     * @param  string|null  $operator
-     * @param  string|null  $second
-     * @return $this
-     */
-    public function leftJoinSub($query, $as, $first, $operator = null, $second = null)
-    {
-        return $this->joinSub($query, $as, $first, $operator, $second, 'left');
-    }
-
-    /**
-     * Add a right join to the query.
-     *
-     * @param  string  $table
-     * @param  \Closure|string  $first
-     * @param  string|null  $operator
-     * @param  string|null  $second
-     * @return $this
-     */
-    public function rightJoin($table, $first, $operator = null, $second = null)
-    {
-        return $this->join($table, $first, $operator, $second, 'right');
-    }
-
-    /**
-     * Add a "right join where" clause to the query.
-     *
-     * @param  string  $table
-     * @param  \Closure|string  $first
-     * @param  string  $operator
-     * @param  string  $second
-     * @return $this
-     */
-    public function rightJoinWhere($table, $first, $operator, $second)
-    {
-        return $this->joinWhere($table, $first, $operator, $second, 'right');
-    }
-
-    /**
-     * Add a subquery right join to the query.
-     *
-     * @param  \Closure|\Illuminate\Database\Query\Builder|string  $query
-     * @param  string  $as
-     * @param  \Closure|string  $first
-     * @param  string|null  $operator
-     * @param  string|null  $second
-     * @return $this
-     */
-    public function rightJoinSub($query, $as, $first, $operator = null, $second = null)
-    {
-        return $this->joinSub($query, $as, $first, $operator, $second, 'right');
-    }
-
-    /**
-     * Add a "cross join" clause to the query.
-     *
-     * @param  string  $table
-     * @param  \Closure|string|null  $first
-     * @param  string|null  $operator
-     * @param  string|null  $second
-     * @return $this
-     */
-    public function crossJoin($table, $first = null, $operator = null, $second = null)
-    {
-        if ($first) {
-            return $this->join($table, $first, $operator, $second, 'cross');
-        }
-
-        $this->joins[] = $this->newJoinClause($this, 'cross', $table);
-
-        return $this;
-    }
-
-    /**
-     * Add a subquery cross join to the query.
-     *
-     * @param  \Closure|\Illuminate\Database\Query\Builder|string  $query
-     * @param  string  $as
-     * @return $this
-     */
-    public function crossJoinSub($query, $as)
-    {
-        [$query, $bindings] = $this->createSub($query);
-
-        $expression = '('.$query.') as '.$this->grammar->wrapTable($as);
-
-        $this->addBinding($bindings, 'join');
-
-        $this->joins[] = $this->newJoinClause($this, 'cross', new Expression($expression));
-
-        return $this;
-    }
-
-    /**
-     * Get a new join clause.
-     *
-     * @param  \Illuminate\Database\Query\Builder  $parentQuery
-     * @param  string  $type
-     * @param  string  $table
-     * @return \Illuminate\Database\Query\JoinClause
-     */
-    protected function newJoinClause(self $parentQuery, $type, $table)
-    {
-        return new JoinClause($parentQuery, $type, $table);
-    }
-
-    /**
-     * Merge an array of where clauses and bindings.
-     *
-     * @param  array  $wheres
-     * @param  array  $bindings
-     * @return void
-     */
-    public function mergeWheres($wheres, $bindings)
-    {
-        $this->wheres = array_merge($this->wheres, (array) $wheres);
-
-        $this->bindings['where'] = array_values(
-            array_merge($this->bindings['where'], (array) $bindings)
-        );
-    }
-
-    /**
-     * Add a basic where clause to the query.
-     *
-     * @param  \Closure|string|array  $column
-     * @param  mixed  $operator
-     * @param  mixed  $value
-     * @param  string  $boolean
-     * @return $this
-     */
-    public function where($column, $operator = null, $value = null, $boolean = 'and')
-    {
-        // If the column is an array, we will assume it is an array of key-value pairs
-        // and can add them each as a where clause. We will maintain the boolean we
-        // received when the method was called and pass it into the nested where.
-        if (is_array($column)) {
-            return $this->addArrayOfWheres($column, $boolean);
-        }
-
-        // Here we will make some assumptions about the operator. If only 2 values are
-        // passed to the method, we will assume that the operator is an equals sign
-        // and keep going. Otherwise, we'll require the operator to be passed in.
-        [$value, $operator] = $this->prepareValueAndOperator(
-            $value, $operator, func_num_args() === 2
-        );
-
-        // If the columns is actually a Closure instance, we will assume the developer
-        // wants to begin a nested where statement which is wrapped in parenthesis.
-        // We'll add that Closure to the query then return back out immediately.
-        if ($column instanceof Closure && is_null($operator)) {
-            return $this->whereNested($column, $boolean);
-        }
-
-        // If the column is a Closure instance and there is an operator value, we will
-        // assume the developer wants to run a subquery and then compare the result
-        // of that subquery with the given value that was provided to the method.
-        if ($this->isQueryable($column) && ! is_null($operator)) {
-            [$sub, $bindings] = $this->createSub($column);
-
-            return $this->addBinding($bindings, 'where')
-                ->where(new Expression('('.$sub.')'), $operator, $value, $boolean);
-        }
-
-        // If the given operator is not found in the list of valid operators we will
-        // assume that the developer is just short-cutting the '=' operators and
-        // we will set the operators to '=' and set the values appropriately.
-        if ($this->invalidOperator($operator)) {
-            [$value, $operator] = [$operator, '='];
-        }
-
-        // If the value is a Closure, it means the developer is performing an entire
-        // sub-select within the query and we will need to compile the sub-select
-        // within the where clause to get the appropriate query record results.
-        if ($value instanceof Closure) {
-            return $this->whereSub($column, $operator, $value, $boolean);
-        }
-
-        // If the value is "null", we will just assume the developer wants to add a
-        // where null clause to the query. So, we will allow a short-cut here to
-        // that method for convenience so the developer doesn't have to check.
-        if (is_null($value)) {
-            return $this->whereNull($column, $boolean, $operator !== '=');
-        }
-
-        $type = 'Basic';
-
-        // If the column is making a JSON reference we'll check to see if the value
-        // is a boolean. If it is, we'll add the raw boolean string as an actual
-        // value to the query to ensure this is properly handled by the query.
-        if (Str::contains($column, '->') && is_bool($value)) {
-            $value = new Expression($value ? 'true' : 'false');
-
-            if (is_string($column)) {
-                $type = 'JsonBoolean';
-            }
-        }
-
-        // Now that we are working with just a simple query we can put the elements
-        // in our array and add the query binding to our array of bindings that
-        // will be bound to each SQL statements when it is finally executed.
-        $this->wheres[] = compact(
-            'type', 'column', 'operator', 'value', 'boolean'
-        );
-
-        if (! $value instanceof Expression) {
-            $this->addBinding(is_array($value) ? head($value) : $value, 'where');
-        }
-
-        return $this;
-    }
-
-    /**
-     * Add an array of where clauses to the query.
-     *
-     * @param  array  $column
-     * @param  string  $boolean
-     * @param  string  $method
-     * @return $this
-     */
-    protected function addArrayOfWheres($column, $boolean, $method = 'where')
-    {
-        return $this->whereNested(function ($query) use ($column, $method, $boolean) {
-            foreach ($column as $key => $value) {
-                if (is_numeric($key) && is_array($value)) {
-                    $query->{$method}(...array_values($value));
-                } else {
-                    $query->$method($key, '=', $value, $boolean);
-                }
-            }
-        }, $boolean);
-    }
-
-    /**
-     * Prepare the value and operator for a where clause.
-     *
-     * @param  string  $value
-     * @param  string  $operator
-     * @param  bool  $useDefault
-     * @return array
-     *
-     * @throws \InvalidArgumentException
-     */
-    public function prepareValueAndOperator($value, $operator, $useDefault = false)
-    {
-        if ($useDefault) {
-            return [$operator, '='];
-        } elseif ($this->invalidOperatorAndValue($operator, $value)) {
-            throw new InvalidArgumentException('Illegal operator and value combination.');
-        }
-
-        return [$value, $operator];
-    }
-
-    /**
-     * Determine if the given operator and value combination is legal.
-     *
-     * Prevents using Null values with invalid operators.
-     *
-     * @param  string  $operator
-     * @param  mixed  $value
-     * @return bool
-     */
-    protected function invalidOperatorAndValue($operator, $value)
-    {
-        return is_null($value) && in_array($operator, $this->operators) &&
-             ! in_array($operator, ['=', '<>', '!=']);
-    }
-
-    /**
-     * Determine if the given operator is supported.
-     *
-     * @param  string  $operator
-     * @return bool
-     */
-    protected function invalidOperator($operator)
-    {
-        return ! in_array(strtolower($operator), $this->operators, true) &&
-               ! in_array(strtolower($operator), $this->grammar->getOperators(), true);
-    }
-
-    /**
-     * Add an "or where" clause to the query.
-     *
-     * @param  \Closure|string|array  $column
-     * @param  mixed  $operator
-     * @param  mixed  $value
-     * @return $this
-     */
-    public function orWhere($column, $operator = null, $value = null)
-    {
-        [$value, $operator] = $this->prepareValueAndOperator(
-            $value, $operator, func_num_args() === 2
-        );
-
-        return $this->where($column, $operator, $value, 'or');
-    }
-
-    /**
-     * Add a "where" clause comparing two columns to the query.
-     *
-     * @param  string|array  $first
-     * @param  string|null  $operator
-     * @param  string|null  $second
-     * @param  string|null  $boolean
-     * @return $this
-     */
-    public function whereColumn($first, $operator = null, $second = null, $boolean = 'and')
-    {
-        // If the column is an array, we will assume it is an array of key-value pairs
-        // and can add them each as a where clause. We will maintain the boolean we
-        // received when the method was called and pass it into the nested where.
-        if (is_array($first)) {
-            return $this->addArrayOfWheres($first, $boolean, 'whereColumn');
-        }
-
-        // If the given operator is not found in the list of valid operators we will
-        // assume that the developer is just short-cutting the '=' operators and
-        // we will set the operators to '=' and set the values appropriately.
-        if ($this->invalidOperator($operator)) {
-            [$second, $operator] = [$operator, '='];
-        }
-
-        // Finally, we will add this where clause into this array of clauses that we
-        // are building for the query. All of them will be compiled via a grammar
-        // once the query is about to be executed and run against the database.
-        $type = 'Column';
-
-        $this->wheres[] = compact(
-            'type', 'first', 'operator', 'second', 'boolean'
-        );
-
-        return $this;
-    }
-
-    /**
-     * Add an "or where" clause comparing two columns to the query.
-     *
-     * @param  string|array  $first
-     * @param  string|null  $operator
-     * @param  string|null  $second
-     * @return $this
-     */
-    public function orWhereColumn($first, $operator = null, $second = null)
-    {
-        return $this->whereColumn($first, $operator, $second, 'or');
-    }
-
-    /**
-     * Add a raw where clause to the query.
-     *
-     * @param  string  $sql
-     * @param  mixed  $bindings
-     * @param  string  $boolean
-     * @return $this
-     */
-    public function whereRaw($sql, $bindings = [], $boolean = 'and')
-    {
-        $this->wheres[] = ['type' => 'raw', 'sql' => $sql, 'boolean' => $boolean];
-
-        $this->addBinding((array) $bindings, 'where');
-
-        return $this;
-    }
-
-    /**
-     * Add a raw or where clause to the query.
-     *
-     * @param  string  $sql
-     * @param  mixed  $bindings
-     * @return $this
-     */
-    public function orWhereRaw($sql, $bindings = [])
-    {
-        return $this->whereRaw($sql, $bindings, 'or');
-    }
-
-    /**
-     * Add a "where in" clause to the query.
-     *
-     * @param  string  $column
-     * @param  mixed  $values
-     * @param  string  $boolean
-     * @param  bool  $not
-     * @return $this
-     */
-    public function whereIn($column, $values, $boolean = 'and', $not = false)
-    {
-        $type = $not ? 'NotIn' : 'In';
-
-        // If the value is a query builder instance we will assume the developer wants to
-        // look for any values that exists within this given query. So we will add the
-        // query accordingly so that this query is properly executed when it is run.
-        if ($this->isQueryable($values)) {
-            [$query, $bindings] = $this->createSub($values);
-
-            $values = [new Expression($query)];
-
-            $this->addBinding($bindings, 'where');
-        }
-
-        // Next, if the value is Arrayable we need to cast it to its raw array form so we
-        // have the underlying array value instead of an Arrayable object which is not
-        // able to be added as a binding, etc. We will then add to the wheres array.
-        if ($values instanceof Arrayable) {
-            $values = $values->toArray();
-        }
-
-        $this->wheres[] = compact('type', 'column', 'values', 'boolean');
-
-        // Finally we'll add a binding for each values unless that value is an expression
-        // in which case we will just skip over it since it will be the query as a raw
-        // string and not as a parameterized place-holder to be replaced by the PDO.
-        $this->addBinding($this->cleanBindings($values), 'where');
-
-        return $this;
-    }
-
-    /**
-     * Add an "or where in" clause to the query.
-     *
-     * @param  string  $column
-     * @param  mixed  $values
-     * @return $this
-     */
-    public function orWhereIn($column, $values)
-    {
-        return $this->whereIn($column, $values, 'or');
-    }
-
-    /**
-     * Add a "where not in" clause to the query.
-     *
-     * @param  string  $column
-     * @param  mixed  $values
-     * @param  string  $boolean
-     * @return $this
-     */
-    public function whereNotIn($column, $values, $boolean = 'and')
-    {
-        return $this->whereIn($column, $values, $boolean, true);
-    }
-
-    /**
-     * Add an "or where not in" clause to the query.
-     *
-     * @param  string  $column
-     * @param  mixed  $values
-     * @return $this
-     */
-    public function orWhereNotIn($column, $values)
-    {
-        return $this->whereNotIn($column, $values, 'or');
-    }
-
-    /**
-     * Add a "where in raw" clause for integer values to the query.
-     *
-     * @param  string  $column
-     * @param  \Illuminate\Contracts\Support\Arrayable|array  $values
-     * @param  string  $boolean
-     * @param  bool  $not
-     * @return $this
-     */
-    public function whereIntegerInRaw($column, $values, $boolean = 'and', $not = false)
-    {
-        $type = $not ? 'NotInRaw' : 'InRaw';
-
-        if ($values instanceof Arrayable) {
-            $values = $values->toArray();
-        }
-
-        foreach ($values as &$value) {
-            $value = (int) $value;
-        }
-
-        $this->wheres[] = compact('type', 'column', 'values', 'boolean');
-
-        return $this;
-    }
-
-    /**
-     * Add an "or where in raw" clause for integer values to the query.
-     *
-     * @param  string  $column
-     * @param  \Illuminate\Contracts\Support\Arrayable|array  $values
-     * @return $this
-     */
-    public function orWhereIntegerInRaw($column, $values)
-    {
-        return $this->whereIntegerInRaw($column, $values, 'or');
-    }
-
-    /**
-     * Add a "where not in raw" clause for integer values to the query.
-     *
-     * @param  string  $column
-     * @param  \Illuminate\Contracts\Support\Arrayable|array  $values
-     * @param  string  $boolean
-     * @return $this
-     */
-    public function whereIntegerNotInRaw($column, $values, $boolean = 'and')
-    {
-        return $this->whereIntegerInRaw($column, $values, $boolean, true);
-    }
-
-    /**
-     * Add an "or where not in raw" clause for integer values to the query.
-     *
-     * @param  string  $column
-     * @param  \Illuminate\Contracts\Support\Arrayable|array  $values
-     * @return $this
-     */
-    public function orWhereIntegerNotInRaw($column, $values)
-    {
-        return $this->whereIntegerNotInRaw($column, $values, 'or');
-    }
-
-    /**
-     * Add a "where null" clause to the query.
-     *
-     * @param  string|array  $columns
-     * @param  string  $boolean
-     * @param  bool  $not
-     * @return $this
-     */
-    public function whereNull($columns, $boolean = 'and', $not = false)
-    {
-        $type = $not ? 'NotNull' : 'Null';
-
-        foreach (Arr::wrap($columns) as $column) {
-            $this->wheres[] = compact('type', 'column', 'boolean');
-        }
-
-        return $this;
-    }
-
-    /**
-     * Add an "or where null" clause to the query.
-     *
-     * @param  string  $column
-     * @return $this
-     */
-    public function orWhereNull($column)
-    {
-        return $this->whereNull($column, 'or');
-    }
-
-    /**
-     * Add a "where not null" clause to the query.
-     *
-     * @param  string|array  $columns
-     * @param  string  $boolean
-     * @return $this
-     */
-    public function whereNotNull($columns, $boolean = 'and')
-    {
-        return $this->whereNull($columns, $boolean, true);
-    }
-
-    /**
-     * Add a where between statement to the query.
-     *
-     * @param  string|\Illuminate\Database\Query\Expression  $column
-     * @param  array  $values
-     * @param  string  $boolean
-     * @param  bool  $not
-     * @return $this
-     */
-    public function whereBetween($column, array $values, $boolean = 'and', $not = false)
-    {
-        $type = 'between';
-
-        $this->wheres[] = compact('type', 'column', 'values', 'boolean', 'not');
-
-        $this->addBinding(array_slice($this->cleanBindings($values), 0, 2), 'where');
-
-        return $this;
-    }
-
-    /**
-     * Add a where between statement using columns to the query.
-     *
-     * @param  string  $column
-     * @param  array  $values
-     * @param  string  $boolean
-     * @param  bool  $not
-     * @return $this
-     */
-    public function whereBetweenColumns($column, array $values, $boolean = 'and', $not = false)
-    {
-        $type = 'betweenColumns';
-
-        $this->wheres[] = compact('type', 'column', 'values', 'boolean', 'not');
-
-        return $this;
-    }
-
-    /**
-     * Add an or where between statement to the query.
-     *
-     * @param  string  $column
-     * @param  array  $values
-     * @return $this
-     */
-    public function orWhereBetween($column, array $values)
-    {
-        return $this->whereBetween($column, $values, 'or');
-    }
-
-    /**
-     * Add an or where between statement using columns to the query.
-     *
-     * @param  string  $column
-     * @param  array  $values
-     * @return $this
-     */
-    public function orWhereBetweenColumns($column, array $values)
-    {
-        return $this->whereBetweenColumns($column, $values, 'or');
-    }
-
-    /**
-     * Add a where not between statement to the query.
-     *
-     * @param  string  $column
-     * @param  array  $values
-     * @param  string  $boolean
-     * @return $this
-     */
-    public function whereNotBetween($column, array $values, $boolean = 'and')
-    {
-        return $this->whereBetween($column, $values, $boolean, true);
-    }
-
-    /**
-     * Add a where not between statement using columns to the query.
-     *
-     * @param  string  $column
-     * @param  array  $values
-     * @param  string  $boolean
-     * @return $this
-     */
-    public function whereNotBetweenColumns($column, array $values, $boolean = 'and')
-    {
-        return $this->whereBetweenColumns($column, $values, $boolean, true);
-    }
-
-    /**
-     * Add an or where not between statement to the query.
-     *
-     * @param  string  $column
-     * @param  array  $values
-     * @return $this
-     */
-    public function orWhereNotBetween($column, array $values)
-    {
-        return $this->whereNotBetween($column, $values, 'or');
-    }
-
-    /**
-     * Add an or where not between statement using columns to the query.
-     *
-     * @param  string  $column
-     * @param  array  $values
-     * @return $this
-     */
-    public function orWhereNotBetweenColumns($column, array $values)
-    {
-        return $this->whereNotBetweenColumns($column, $values, 'or');
-    }
-
-    /**
-     * Add an "or where not null" clause to the query.
-     *
-     * @param  string  $column
-     * @return $this
-     */
-    public function orWhereNotNull($column)
-    {
-        return $this->whereNotNull($column, 'or');
-    }
-
-    /**
-     * Add a "where date" statement to the query.
-     *
-     * @param  string  $column
-     * @param  string  $operator
-     * @param  \DateTimeInterface|string|null  $value
-     * @param  string  $boolean
-     * @return $this
-     */
-    public function whereDate($column, $operator, $value = null, $boolean = 'and')
-    {
-        [$value, $operator] = $this->prepareValueAndOperator(
-            $value, $operator, func_num_args() === 2
-        );
-
-        $value = is_array($value) ? head($value) : $value;
-
-        if ($value instanceof DateTimeInterface) {
-            $value = $value->format('Y-m-d');
-        }
-
-        return $this->addDateBasedWhere('Date', $column, $operator, $value, $boolean);
-    }
-
-    /**
-     * Add an "or where date" statement to the query.
-     *
-     * @param  string  $column
-     * @param  string  $operator
-     * @param  \DateTimeInterface|string|null  $value
-     * @return $this
-     */
-    public function orWhereDate($column, $operator, $value = null)
-    {
-        [$value, $operator] = $this->prepareValueAndOperator(
-            $value, $operator, func_num_args() === 2
-        );
-
-        return $this->whereDate($column, $operator, $value, 'or');
-    }
-
-    /**
-     * Add a "where time" statement to the query.
-     *
-     * @param  string  $column
-     * @param  string  $operator
-     * @param  \DateTimeInterface|string|null  $value
-     * @param  string  $boolean
-     * @return $this
-     */
-    public function whereTime($column, $operator, $value = null, $boolean = 'and')
-    {
-        [$value, $operator] = $this->prepareValueAndOperator(
-            $value, $operator, func_num_args() === 2
-        );
-
-        $value = is_array($value) ? head($value) : $value;
-
-        if ($value instanceof DateTimeInterface) {
-            $value = $value->format('H:i:s');
-        }
-
-        return $this->addDateBasedWhere('Time', $column, $operator, $value, $boolean);
-    }
-
-    /**
-     * Add an "or where time" statement to the query.
-     *
-     * @param  string  $column
-     * @param  string  $operator
-     * @param  \DateTimeInterface|string|null  $value
-     * @return $this
-     */
-    public function orWhereTime($column, $operator, $value = null)
-    {
-        [$value, $operator] = $this->prepareValueAndOperator(
-            $value, $operator, func_num_args() === 2
-        );
-
-        return $this->whereTime($column, $operator, $value, 'or');
-    }
-
-    /**
-     * Add a "where day" statement to the query.
-     *
-     * @param  string  $column
-     * @param  string  $operator
-     * @param  \DateTimeInterface|string|null  $value
-     * @param  string  $boolean
-     * @return $this
-     */
-    public function whereDay($column, $operator, $value = null, $boolean = 'and')
-    {
-        [$value, $operator] = $this->prepareValueAndOperator(
-            $value, $operator, func_num_args() === 2
-        );
-
-        $value = is_array($value) ? head($value) : $value;
-
-        if ($value instanceof DateTimeInterface) {
-            $value = $value->format('d');
-        }
-
-        if (! $value instanceof Expression) {
-            $value = str_pad($value, 2, '0', STR_PAD_LEFT);
-        }
-
-        return $this->addDateBasedWhere('Day', $column, $operator, $value, $boolean);
-    }
-
-    /**
-     * Add an "or where day" statement to the query.
-     *
-     * @param  string  $column
-     * @param  string  $operator
-     * @param  \DateTimeInterface|string|null  $value
-     * @return $this
-     */
-    public function orWhereDay($column, $operator, $value = null)
-    {
-        [$value, $operator] = $this->prepareValueAndOperator(
-            $value, $operator, func_num_args() === 2
-        );
-
-        return $this->whereDay($column, $operator, $value, 'or');
-    }
-
-    /**
-     * Add a "where month" statement to the query.
-     *
-     * @param  string  $column
-     * @param  string  $operator
-     * @param  \DateTimeInterface|string|null  $value
-     * @param  string  $boolean
-     * @return $this
-     */
-    public function whereMonth($column, $operator, $value = null, $boolean = 'and')
-    {
-        [$value, $operator] = $this->prepareValueAndOperator(
-            $value, $operator, func_num_args() === 2
-        );
-
-        $value = is_array($value) ? head($value) : $value;
-
-        if ($value instanceof DateTimeInterface) {
-            $value = $value->format('m');
-        }
-
-        if (! $value instanceof Expression) {
-            $value = str_pad($value, 2, '0', STR_PAD_LEFT);
-        }
-
-        return $this->addDateBasedWhere('Month', $column, $operator, $value, $boolean);
-    }
-
-    /**
-     * Add an "or where month" statement to the query.
-     *
-     * @param  string  $column
-     * @param  string  $operator
-     * @param  \DateTimeInterface|string|null  $value
-     * @return $this
-     */
-    public function orWhereMonth($column, $operator, $value = null)
-    {
-        [$value, $operator] = $this->prepareValueAndOperator(
-            $value, $operator, func_num_args() === 2
-        );
-
-        return $this->whereMonth($column, $operator, $value, 'or');
-    }
-
-    /**
-     * Add a "where year" statement to the query.
-     *
-     * @param  string  $column
-     * @param  string  $operator
-     * @param  \DateTimeInterface|string|int|null  $value
-     * @param  string  $boolean
-     * @return $this
-     */
-    public function whereYear($column, $operator, $value = null, $boolean = 'and')
-    {
-        [$value, $operator] = $this->prepareValueAndOperator(
-            $value, $operator, func_num_args() === 2
-        );
-
-        $value = is_array($value) ? head($value) : $value;
-
-        if ($value instanceof DateTimeInterface) {
-            $value = $value->format('Y');
-        }
-
-        return $this->addDateBasedWhere('Year', $column, $operator, $value, $boolean);
-    }
-
-    /**
-     * Add an "or where year" statement to the query.
-     *
-     * @param  string  $column
-     * @param  string  $operator
-     * @param  \DateTimeInterface|string|int|null  $value
-     * @return $this
-     */
-    public function orWhereYear($column, $operator, $value = null)
-    {
-        [$value, $operator] = $this->prepareValueAndOperator(
-            $value, $operator, func_num_args() === 2
-        );
-
-        return $this->whereYear($column, $operator, $value, 'or');
-    }
-
-    /**
-     * Add a date based (year, month, day, time) statement to the query.
-     *
-     * @param  string  $type
-     * @param  string  $column
-     * @param  string  $operator
-     * @param  mixed  $value
-     * @param  string  $boolean
-     * @return $this
-     */
-    protected function addDateBasedWhere($type, $column, $operator, $value, $boolean = 'and')
-    {
-        $this->wheres[] = compact('column', 'type', 'boolean', 'operator', 'value');
-
-        if (! $value instanceof Expression) {
-            $this->addBinding($value, 'where');
-        }
-
-        return $this;
-    }
-
-    /**
-     * Add a nested where statement to the query.
-     *
-     * @param  \Closure  $callback
-     * @param  string  $boolean
-     * @return $this
-     */
-    public function whereNested(Closure $callback, $boolean = 'and')
-    {
-        call_user_func($callback, $query = $this->forNestedWhere());
-
-        return $this->addNestedWhereQuery($query, $boolean);
-    }
-
-    /**
-     * Create a new query instance for nested where condition.
-     *
-     * @return \Illuminate\Database\Query\Builder
-     */
-    public function forNestedWhere()
-    {
-        return $this->newQuery()->from($this->from);
-    }
-
-    /**
-     * Add another query builder as a nested where to the query builder.
-     *
-     * @param  \Illuminate\Database\Query\Builder  $query
-     * @param  string  $boolean
-     * @return $this
-     */
-    public function addNestedWhereQuery($query, $boolean = 'and')
-    {
-        if (count($query->wheres)) {
-            $type = 'Nested';
-
-            $this->wheres[] = compact('type', 'query', 'boolean');
-
-            $this->addBinding($query->getRawBindings()['where'], 'where');
-        }
-
-        return $this;
-    }
-
-    /**
-     * Add a full sub-select to the query.
-     *
-     * @param  string  $column
-     * @param  string  $operator
-     * @param  \Closure  $callback
-     * @param  string  $boolean
-     * @return $this
-     */
-    protected function whereSub($column, $operator, Closure $callback, $boolean)
-    {
-        $type = 'Sub';
-
-        // Once we have the query instance we can simply execute it so it can add all
-        // of the sub-select's conditions to itself, and then we can cache it off
-        // in the array of where clauses for the "main" parent query instance.
-        call_user_func($callback, $query = $this->forSubQuery());
-
-        $this->wheres[] = compact(
-            'type', 'column', 'operator', 'query', 'boolean'
-        );
-
-        $this->addBinding($query->getBindings(), 'where');
-
-        return $this;
-    }
-
-    /**
-     * Add an exists clause to the query.
-     *
-     * @param  \Closure  $callback
-     * @param  string  $boolean
-     * @param  bool  $not
-     * @return $this
-     */
-    public function whereExists(Closure $callback, $boolean = 'and', $not = false)
-    {
-        $query = $this->forSubQuery();
-
-        // Similar to the sub-select clause, we will create a new query instance so
-        // the developer may cleanly specify the entire exists query and we will
-        // compile the whole thing in the grammar and insert it into the SQL.
-        call_user_func($callback, $query);
-
-        return $this->addWhereExistsQuery($query, $boolean, $not);
-    }
-
-    /**
-     * Add an or exists clause to the query.
-     *
-     * @param  \Closure  $callback
-     * @param  bool  $not
-     * @return $this
-     */
-    public function orWhereExists(Closure $callback, $not = false)
-    {
-        return $this->whereExists($callback, 'or', $not);
-    }
-
-    /**
-     * Add a where not exists clause to the query.
-     *
-     * @param  \Closure  $callback
-     * @param  string  $boolean
-     * @return $this
-     */
-    public function whereNotExists(Closure $callback, $boolean = 'and')
-    {
-        return $this->whereExists($callback, $boolean, true);
-    }
-
-    /**
-     * Add a where not exists clause to the query.
-     *
-     * @param  \Closure  $callback
-     * @return $this
-     */
-    public function orWhereNotExists(Closure $callback)
-    {
-        return $this->orWhereExists($callback, true);
-    }
-
-    /**
-     * Add an exists clause to the query.
-     *
-     * @param  \Illuminate\Database\Query\Builder  $query
-     * @param  string  $boolean
-     * @param  bool  $not
-     * @return $this
-     */
-    public function addWhereExistsQuery(self $query, $boolean = 'and', $not = false)
-    {
-        $type = $not ? 'NotExists' : 'Exists';
-
-        $this->wheres[] = compact('type', 'query', 'boolean');
-
-        $this->addBinding($query->getBindings(), 'where');
-
-        return $this;
-    }
-
-    /**
-     * Adds a where condition using row values.
-     *
-     * @param  array  $columns
-     * @param  string  $operator
-     * @param  array  $values
-     * @param  string  $boolean
-     * @return $this
-     *
-     * @throws \InvalidArgumentException
-     */
-    public function whereRowValues($columns, $operator, $values, $boolean = 'and')
-    {
-        if (count($columns) !== count($values)) {
-            throw new InvalidArgumentException('The number of columns must match the number of values');
-        }
-
-        $type = 'RowValues';
-
-        $this->wheres[] = compact('type', 'columns', 'operator', 'values', 'boolean');
-
-        $this->addBinding($this->cleanBindings($values));
-
-        return $this;
-    }
-
-    /**
-     * Adds an or where condition using row values.
-     *
-     * @param  array  $columns
-     * @param  string  $operator
-     * @param  array  $values
-     * @return $this
-     */
-    public function orWhereRowValues($columns, $operator, $values)
-    {
-        return $this->whereRowValues($columns, $operator, $values, 'or');
-    }
-
-    /**
-     * Add a "where JSON contains" clause to the query.
-     *
-     * @param  string  $column
-     * @param  mixed  $value
-     * @param  string  $boolean
-     * @param  bool  $not
-     * @return $this
-     */
-    public function whereJsonContains($column, $value, $boolean = 'and', $not = false)
-    {
-        $type = 'JsonContains';
-
-        $this->wheres[] = compact('type', 'column', 'value', 'boolean', 'not');
-
-        if (! $value instanceof Expression) {
-            $this->addBinding($this->grammar->prepareBindingForJsonContains($value));
-        }
-
-        return $this;
-    }
-
-    /**
-     * Add an "or where JSON contains" clause to the query.
-     *
-     * @param  string  $column
-     * @param  mixed  $value
-     * @return $this
-     */
-    public function orWhereJsonContains($column, $value)
-    {
-        return $this->whereJsonContains($column, $value, 'or');
-    }
-
-    /**
-     * Add a "where JSON not contains" clause to the query.
-     *
-     * @param  string  $column
-     * @param  mixed  $value
-     * @param  string  $boolean
-     * @return $this
-     */
-    public function whereJsonDoesntContain($column, $value, $boolean = 'and')
-    {
-        return $this->whereJsonContains($column, $value, $boolean, true);
-    }
-
-    /**
-     * Add an "or where JSON not contains" clause to the query.
-     *
-     * @param  string  $column
-     * @param  mixed  $value
-     * @return $this
-     */
-    public function orWhereJsonDoesntContain($column, $value)
-    {
-        return $this->whereJsonDoesntContain($column, $value, 'or');
-    }
-
-    /**
-     * Add a "where JSON length" clause to the query.
-     *
-     * @param  string  $column
-     * @param  mixed  $operator
-     * @param  mixed  $value
-     * @param  string  $boolean
-     * @return $this
-     */
-    public function whereJsonLength($column, $operator, $value = null, $boolean = 'and')
-    {
-        $type = 'JsonLength';
-
-        [$value, $operator] = $this->prepareValueAndOperator(
-            $value, $operator, func_num_args() === 2
-        );
-
-        $this->wheres[] = compact('type', 'column', 'operator', 'value', 'boolean');
-
-        if (! $value instanceof Expression) {
-            $this->addBinding((int) $value);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Add an "or where JSON length" clause to the query.
-     *
-     * @param  string  $column
-     * @param  mixed  $operator
-     * @param  mixed  $value
-     * @return $this
-     */
-    public function orWhereJsonLength($column, $operator, $value = null)
-    {
-        [$value, $operator] = $this->prepareValueAndOperator(
-            $value, $operator, func_num_args() === 2
-        );
-
-        return $this->whereJsonLength($column, $operator, $value, 'or');
-    }
-
-    /**
-     * Handles dynamic "where" clauses to the query.
-     *
-     * @param  string  $method
-     * @param  array  $parameters
-     * @return $this
-     */
-    public function dynamicWhere($method, $parameters)
-    {
-        $finder = substr($method, 5);
-
-        $segments = preg_split(
-            '/(And|Or)(?=[A-Z])/', $finder, -1, PREG_SPLIT_DELIM_CAPTURE
-        );
-
-        // The connector variable will determine which connector will be used for the
-        // query condition. We will change it as we come across new boolean values
-        // in the dynamic method strings, which could contain a number of these.
-        $connector = 'and';
-
-        $index = 0;
-
-        foreach ($segments as $segment) {
-            // If the segment is not a boolean connector, we can assume it is a column's name
-            // and we will add it to the query as a new constraint as a where clause, then
-            // we can keep iterating through the dynamic method string's segments again.
-            if ($segment !== 'And' && $segment !== 'Or') {
-                $this->addDynamic($segment, $connector, $parameters, $index);
-
-                $index++;
-            }
-
-            // Otherwise, we will store the connector so we know how the next where clause we
-            // find in the query should be connected to the previous ones, meaning we will
-            // have the proper boolean connector to connect the next where clause found.
-            else {
-                $connector = $segment;
-            }
-        }
-
-        return $this;
-    }
-
-    /**
-     * Add a single dynamic where clause statement to the query.
-     *
-     * @param  string  $segment
-     * @param  string  $connector
-     * @param  array  $parameters
-     * @param  int  $index
-     * @return void
-     */
-    protected function addDynamic($segment, $connector, $parameters, $index)
-    {
-        // Once we have parsed out the columns and formatted the boolean operators we
-        // are ready to add it to this query as a where clause just like any other
-        // clause on the query. Then we'll increment the parameter index values.
-        $bool = strtolower($connector);
-
-        $this->where(Str::snake($segment), '=', $parameters[$index], $bool);
-    }
-
-    /**
-     * Add a "group by" clause to the query.
-     *
-     * @param  array|string  ...$groups
-     * @return $this
-     */
-    public function groupBy(...$groups)
-    {
-        foreach ($groups as $group) {
-            $this->groups = array_merge(
-                (array) $this->groups,
-                Arr::wrap($group)
-            );
-        }
-
-        return $this;
-    }
-
-    /**
-     * Add a raw groupBy clause to the query.
-     *
-     * @param  string  $sql
-     * @param  array  $bindings
-     * @return $this
-     */
-    public function groupByRaw($sql, array $bindings = [])
-    {
-        $this->groups[] = new Expression($sql);
-
-        $this->addBinding($bindings, 'groupBy');
-
-        return $this;
-    }
-
-    /**
-     * Add a "having" clause to the query.
-     *
-     * @param  string  $column
-     * @param  string|null  $operator
-     * @param  string|null  $value
-     * @param  string  $boolean
-     * @return $this
-     */
-    public function having($column, $operator = null, $value = null, $boolean = 'and')
-    {
-        $type = 'Basic';
-
-        // Here we will make some assumptions about the operator. If only 2 values are
-        // passed to the method, we will assume that the operator is an equals sign
-        // and keep going. Otherwise, we'll require the operator to be passed in.
-        [$value, $operator] = $this->prepareValueAndOperator(
-            $value, $operator, func_num_args() === 2
-        );
-
-        // If the given operator is not found in the list of valid operators we will
-        // assume that the developer is just short-cutting the '=' operators and
-        // we will set the operators to '=' and set the values appropriately.
-        if ($this->invalidOperator($operator)) {
-            [$value, $operator] = [$operator, '='];
-        }
-
-        $this->havings[] = compact('type', 'column', 'operator', 'value', 'boolean');
-
-        if (! $value instanceof Expression) {
-            $this->addBinding(is_array($value) ? head($value) : $value, 'having');
-        }
-
-        return $this;
-    }
-
-    /**
-     * Add an "or having" clause to the query.
-     *
-     * @param  string  $column
-     * @param  string|null  $operator
-     * @param  string|null  $value
-     * @return $this
-     */
-    public function orHaving($column, $operator = null, $value = null)
-    {
-        [$value, $operator] = $this->prepareValueAndOperator(
-            $value, $operator, func_num_args() === 2
-        );
-
-        return $this->having($column, $operator, $value, 'or');
-    }
-
-    /**
-     * Add a "having between " clause to the query.
-     *
-     * @param  string  $column
-     * @param  array  $values
-     * @param  string  $boolean
-     * @param  bool  $not
-     * @return $this
-     */
-    public function havingBetween($column, array $values, $boolean = 'and', $not = false)
-    {
-        $type = 'between';
-
-        $this->havings[] = compact('type', 'column', 'values', 'boolean', 'not');
-
-        $this->addBinding($this->cleanBindings($values), 'having');
-
-        return $this;
-    }
-
-    /**
-     * Add a raw having clause to the query.
-     *
-     * @param  string  $sql
-     * @param  array  $bindings
-     * @param  string  $boolean
-     * @return $this
-     */
-    public function havingRaw($sql, array $bindings = [], $boolean = 'and')
-    {
-        $type = 'Raw';
-
-        $this->havings[] = compact('type', 'sql', 'boolean');
-
-        $this->addBinding($bindings, 'having');
-
-        return $this;
-    }
-
-    /**
-     * Add a raw or having clause to the query.
-     *
-     * @param  string  $sql
-     * @param  array  $bindings
-     * @return $this
-     */
-    public function orHavingRaw($sql, array $bindings = [])
-    {
-        return $this->havingRaw($sql, $bindings, 'or');
-    }
-
-    /**
-     * Add an "order by" clause to the query.
-     *
-     * @param  \Closure|\Illuminate\Database\Query\Builder|\Illuminate\Database\Query\Expression|string  $column
-     * @param  string  $direction
-     * @return $this
-     *
-     * @throws \InvalidArgumentException
-     */
-    public function orderBy($column, $direction = 'asc')
-    {
-        if ($this->isQueryable($column)) {
-            [$query, $bindings] = $this->createSub($column);
-
-            $column = new Expression('('.$query.')');
-
-            $this->addBinding($bindings, $this->unions ? 'unionOrder' : 'order');
-        }
-
-        $direction = strtolower($direction);
-
-        if (! in_array($direction, ['asc', 'desc'], true)) {
-            throw new InvalidArgumentException('Order direction must be "asc" or "desc".');
-        }
-
-        $this->{$this->unions ? 'unionOrders' : 'orders'}[] = [
-            'column' => $column,
-            'direction' => $direction,
-        ];
-
-        return $this;
-    }
-
-    /**
-     * Add a descending "order by" clause to the query.
-     *
-     * @param  string  $column
-     * @return $this
-     */
-    public function orderByDesc($column)
-    {
-        return $this->orderBy($column, 'desc');
-    }
-
-    /**
-     * Add an "order by" clause for a timestamp to the query.
-     *
-     * @param  string  $column
-     * @return $this
-     */
-    public function latest($column = 'created_at')
-    {
-        return $this->orderBy($column, 'desc');
-    }
-
-    /**
-     * Add an "order by" clause for a timestamp to the query.
-     *
-     * @param  string  $column
-     * @return $this
-     */
-    public function oldest($column = 'created_at')
-    {
-        return $this->orderBy($column, 'asc');
-    }
-
-    /**
-     * Put the query's results in random order.
-     *
-     * @param  string  $seed
-     * @return $this
-     */
-    public function inRandomOrder($seed = '')
-    {
-        return $this->orderByRaw($this->grammar->compileRandom($seed));
-    }
-
-    /**
-     * Add a raw "order by" clause to the query.
-     *
-     * @param  string  $sql
-     * @param  array  $bindings
-     * @return $this
-     */
-    public function orderByRaw($sql, $bindings = [])
-    {
-        $type = 'Raw';
-
-        $this->{$this->unions ? 'unionOrders' : 'orders'}[] = compact('type', 'sql');
-
-        $this->addBinding($bindings, $this->unions ? 'unionOrder' : 'order');
-
-        return $this;
-    }
-
-    /**
-     * Alias to set the "offset" value of the query.
-     *
-     * @param  int  $value
-     * @return $this
-     */
-    public function skip($value)
-    {
-        return $this->offset($value);
-    }
-
-    /**
-     * Set the "offset" value of the query.
-     *
-     * @param  int  $value
-     * @return $this
-     */
-    public function offset($value)
-    {
-        $property = $this->unions ? 'unionOffset' : 'offset';
-
-        $this->$property = max(0, $value);
-
-        return $this;
-    }
-
-    /**
-     * Alias to set the "limit" value of the query.
-     *
-     * @param  int  $value
-     * @return $this
-     */
-    public function take($value)
-    {
-        return $this->limit($value);
-    }
-
-    /**
-     * Set the "limit" value of the query.
-     *
-     * @param  int  $value
-     * @return $this
-     */
-    public function limit($value)
-    {
-        $property = $this->unions ? 'unionLimit' : 'limit';
-
-        if ($value >= 0) {
-            $this->$property = $value;
-        }
-
-        return $this;
-    }
-
-    /**
-     * Set the limit and offset for a given page.
-     *
-     * @param  int  $page
-     * @param  int  $perPage
-     * @return $this
-     */
-    public function forPage($page, $perPage = 15)
-    {
-        return $this->offset(($page - 1) * $perPage)->limit($perPage);
-    }
-
-    /**
-     * Constrain the query to the previous "page" of results before a given ID.
-     *
-     * @param  int  $perPage
-     * @param  int|null  $lastId
-     * @param  string  $column
-     * @return $this
-     */
-    public function forPageBeforeId($perPage = 15, $lastId = 0, $column = 'id')
-    {
-        $this->orders = $this->removeExistingOrdersFor($column);
-
-        if (! is_null($lastId)) {
-            $this->where($column, '<', $lastId);
-        }
-
-        return $this->orderBy($column, 'desc')
-                    ->limit($perPage);
-    }
-
-    /**
-     * Constrain the query to the next "page" of results after a given ID.
-     *
-     * @param  int  $perPage
-     * @param  int|null  $lastId
-     * @param  string  $column
-     * @return $this
-     */
-    public function forPageAfterId($perPage = 15, $lastId = 0, $column = 'id')
-    {
-        $this->orders = $this->removeExistingOrdersFor($column);
-
-        if (! is_null($lastId)) {
-            $this->where($column, '>', $lastId);
-        }
-
-        return $this->orderBy($column, 'asc')
-                    ->limit($perPage);
-    }
-
-    /**
-     * Remove all existing orders and optionally add a new order.
-     *
-     * @param  string|null  $column
-     * @param  string  $direction
-     * @return $this
-     */
-    public function reorder($column = null, $direction = 'asc')
-    {
-        $this->orders = null;
-        $this->unionOrders = null;
-        $this->bindings['order'] = [];
-        $this->bindings['unionOrder'] = [];
-
-        if ($column) {
-            return $this->orderBy($column, $direction);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Get an array with all orders with a given column removed.
-     *
-     * @param  string  $column
-     * @return array
-     */
-    protected function removeExistingOrdersFor($column)
-    {
-        return Collection::make($this->orders)
-                    ->reject(function ($order) use ($column) {
-                        return isset($order['column'])
-                               ? $order['column'] === $column : false;
-                    })->values()->all();
-    }
-
-    /**
-     * Add a union statement to the query.
-     *
-     * @param  \Illuminate\Database\Query\Builder|\Closure  $query
-     * @param  bool  $all
-     * @return $this
-     */
-    public function union($query, $all = false)
-    {
-        if ($query instanceof Closure) {
-            call_user_func($query, $query = $this->newQuery());
-        }
-
-        $this->unions[] = compact('query', 'all');
-
-        $this->addBinding($query->getBindings(), 'union');
-
-        return $this;
-    }
-
-    /**
-     * Add a union all statement to the query.
-     *
-     * @param  \Illuminate\Database\Query\Builder|\Closure  $query
-     * @return $this
-     */
-    public function unionAll($query)
-    {
-        return $this->union($query, true);
-    }
-
-    /**
-     * Lock the selected rows in the table.
-     *
-     * @param  string|bool  $value
-     * @return $this
-     */
-    public function lock($value = true)
-    {
-        $this->lock = $value;
-
-        if (! is_null($this->lock)) {
-            $this->useWritePdo();
-        }
-
-        return $this;
-    }
-
-    /**
-     * Lock the selected rows in the table for updating.
-     *
-     * @return \Illuminate\Database\Query\Builder
-     */
-    public function lockForUpdate()
-    {
-        return $this->lock(true);
-    }
-
-    /**
-     * Share lock the selected rows in the table.
-     *
-     * @return \Illuminate\Database\Query\Builder
-     */
-    public function sharedLock()
-    {
-        return $this->lock(false);
-    }
-
-    /**
-     * Get the SQL representation of the query.
-     *
-     * @return string
-     */
-    public function toSql()
-    {
-        return $this->grammar->compileSelect($this);
-    }
-
-    /**
-     * Execute a query for a single record by ID.
-     *
-     * @param  int|string  $id
-     * @param  array  $columns
-     * @return mixed|static
-     */
-    public function find($id, $columns = ['*'])
-    {
-        return $this->where('id', '=', $id)->first($columns);
-    }
-
-    /**
-     * Get a single column's value from the first result of a query.
-     *
-     * @param  string  $column
-     * @return mixed
-     */
-    public function value($column)
-    {
-        $result = (array) $this->first([$column]);
-
-        return count($result) > 0 ? reset($result) : null;
-    }
-
-    /**
-     * Execute the query as a "select" statement.
-     *
-     * @param  array|string  $columns
-     * @return \Illuminate\Support\Collection
-     */
-    public function get($columns = ['*'])
-    {
-        return collect($this->onceWithColumns(Arr::wrap($columns), function () {
-            return $this->processor->processSelect($this, $this->runSelect());
-        }));
-    }
-
-    /**
-     * Run the query as a "select" statement against the connection.
-     *
-     * @return array
-     */
-    protected function runSelect()
-    {
-        return $this->connection->select(
-            $this->toSql(), $this->getBindings(), ! $this->useWritePdo
-        );
-    }
-
-    /**
-     * Paginate the given query into a simple paginator.
-     *
-     * @param  int  $perPage
-     * @param  array  $columns
-     * @param  string  $pageName
-     * @param  int|null  $page
-     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
-     */
-    public function paginate($perPage = 15, $columns = ['*'], $pageName = 'page', $page = null)
-    {
-        $page = $page ?: Paginator::resolveCurrentPage($pageName);
-
-        $total = $this->getCountForPagination();
-
-        $results = $total ? $this->forPage($page, $perPage)->get($columns) : collect();
-
-        return $this->paginator($results, $total, $perPage, $page, [
-            'path' => Paginator::resolveCurrentPath(),
-            'pageName' => $pageName,
-        ]);
-    }
-
-    /**
-     * Get a paginator only supporting simple next and previous links.
-     *
-     * This is more efficient on larger data-sets, etc.
-     *
-     * @param  int  $perPage
-     * @param  array  $columns
-     * @param  string  $pageName
-     * @param  int|null  $page
-     * @return \Illuminate\Contracts\Pagination\Paginator
-     */
-    public function simplePaginate($perPage = 15, $columns = ['*'], $pageName = 'page', $page = null)
-    {
-        $page = $page ?: Paginator::resolveCurrentPage($pageName);
-
-        $this->offset(($page - 1) * $perPage)->limit($perPage + 1);
-
-        return $this->simplePaginator($this->get($columns), $perPage, $page, [
-            'path' => Paginator::resolveCurrentPath(),
-            'pageName' => $pageName,
-        ]);
-    }
-
-    /**
-     * Get the count of the total records for the paginator.
-     *
-     * @param  array  $columns
-     * @return int
-     */
-    public function getCountForPagination($columns = ['*'])
-    {
-        $results = $this->runPaginationCountQuery($columns);
-
-        // Once we have run the pagination count query, we will get the resulting count and
-        // take into account what type of query it was. When there is a group by we will
-        // just return the count of the entire results set since that will be correct.
-        if (! isset($results[0])) {
-            return 0;
-        } elseif (is_object($results[0])) {
-            return (int) $results[0]->aggregate;
-        }
-
-        return (int) array_change_key_case((array) $results[0])['aggregate'];
-    }
-
-    /**
-     * Run a pagination count query.
-     *
-     * @param  array  $columns
-     * @return array
-     */
-    protected function runPaginationCountQuery($columns = ['*'])
-    {
-        if ($this->groups || $this->havings) {
-            $clone = $this->cloneForPaginationCount();
-
-            if (is_null($clone->columns) && ! empty($this->joins)) {
-                $clone->select($this->from.'.*');
-            }
-
-            return $this->newQuery()
-                ->from(new Expression('('.$clone->toSql().') as '.$this->grammar->wrap('aggregate_table')))
-                ->mergeBindings($clone)
-                ->setAggregate('count', $this->withoutSelectAliases($columns))
-                ->get()->all();
-        }
-
-        $without = $this->unions ? ['orders', 'limit', 'offset'] : ['columns', 'orders', 'limit', 'offset'];
-
-        return $this->cloneWithout($without)
-                    ->cloneWithoutBindings($this->unions ? ['order'] : ['select', 'order'])
-                    ->setAggregate('count', $this->withoutSelectAliases($columns))
-                    ->get()->all();
-    }
-
-    /**
-     * Clone the existing query instance for usage in a pagination subquery.
-     *
-     * @return self
-     */
-    protected function cloneForPaginationCount()
-    {
-        return $this->cloneWithout(['orders', 'limit', 'offset'])
-                    ->cloneWithoutBindings(['order']);
-    }
-
-    /**
-     * Remove the column aliases since they will break count queries.
-     *
-     * @param  array  $columns
-     * @return array
-     */
-    protected function withoutSelectAliases(array $columns)
-    {
-        return array_map(function ($column) {
-            return is_string($column) && ($aliasPosition = stripos($column, ' as ')) !== false
-                    ? substr($column, 0, $aliasPosition) : $column;
-        }, $columns);
-    }
-
-    /**
-     * Get a lazy collection for the given query.
-     *
-     * @return \Illuminate\Support\LazyCollection
-     */
-    public function cursor()
-    {
-        if (is_null($this->columns)) {
-            $this->columns = ['*'];
-        }
-
-        return new LazyCollection(function () {
-            yield from $this->connection->cursor(
-                $this->toSql(), $this->getBindings(), ! $this->useWritePdo
-            );
-        });
-    }
-
-    /**
-     * Throw an exception if the query doesn't have an orderBy clause.
-     *
-     * @return void
-     *
-     * @throws \RuntimeException
-     */
-    protected function enforceOrderBy()
-    {
-        if (empty($this->orders) && empty($this->unionOrders)) {
-            throw new RuntimeException('You must specify an orderBy clause when using this function.');
-        }
-    }
-
-    /**
-     * Get an array with the values of a given column.
-     *
-     * @param  string  $column
-     * @param  string|null  $key
-     * @return \Illuminate\Support\Collection
-     */
-    public function pluck($column, $key = null)
-    {
-        // First, we will need to select the results of the query accounting for the
-        // given columns / key. Once we have the results, we will be able to take
-        // the results and get the exact data that was requested for the query.
-        $queryResult = $this->onceWithColumns(
-            is_null($key) ? [$column] : [$column, $key],
-            function () {
-                return $this->processor->processSelect(
-                    $this, $this->runSelect()
-                );
-            }
-        );
-
-        if (empty($queryResult)) {
-            return collect();
-        }
-
-        // If the columns are qualified with a table or have an alias, we cannot use
-        // those directly in the "pluck" operations since the results from the DB
-        // are only keyed by the column itself. We'll strip the table out here.
-        $column = $this->stripTableForPluck($column);
-
-        $key = $this->stripTableForPluck($key);
-
-        return is_array($queryResult[0])
-                    ? $this->pluckFromArrayColumn($queryResult, $column, $key)
-                    : $this->pluckFromObjectColumn($queryResult, $column, $key);
-    }
-
-    /**
-     * Strip off the table name or alias from a column identifier.
-     *
-     * @param  string  $column
-     * @return string|null
-     */
-    protected function stripTableForPluck($column)
-    {
-        if (is_null($column)) {
-            return $column;
-        }
-
-        $separator = strpos(strtolower($column), ' as ') !== false ? ' as ' : '\.';
-
-        return last(preg_split('~'.$separator.'~i', $column));
-    }
-
-    /**
-     * Retrieve column values from rows represented as objects.
-     *
-     * @param  array  $queryResult
-     * @param  string  $column
-     * @param  string  $key
-     * @return \Illuminate\Support\Collection
-     */
-    protected function pluckFromObjectColumn($queryResult, $column, $key)
-    {
-        $results = [];
-
-        if (is_null($key)) {
-            foreach ($queryResult as $row) {
-                $results[] = $row->$column;
-            }
-        } else {
-            foreach ($queryResult as $row) {
-                $results[$row->$key] = $row->$column;
-            }
-        }
-
-        return collect($results);
-    }
-
-    /**
-     * Retrieve column values from rows represented as arrays.
-     *
-     * @param  array  $queryResult
-     * @param  string  $column
-     * @param  string  $key
-     * @return \Illuminate\Support\Collection
-     */
-    protected function pluckFromArrayColumn($queryResult, $column, $key)
-    {
-        $results = [];
-
-        if (is_null($key)) {
-            foreach ($queryResult as $row) {
-                $results[] = $row[$column];
-            }
-        } else {
-            foreach ($queryResult as $row) {
-                $results[$row[$key]] = $row[$column];
-            }
-        }
-
-        return collect($results);
-    }
-
-    /**
-     * Concatenate values of a given column as a string.
-     *
-     * @param  string  $column
-     * @param  string  $glue
-     * @return string
-     */
-    public function implode($column, $glue = '')
-    {
-        return $this->pluck($column)->implode($glue);
-    }
-
-    /**
-     * Determine if any rows exist for the current query.
-     *
-     * @return bool
-     */
-    public function exists()
-    {
-        $results = $this->connection->select(
-            $this->grammar->compileExists($this), $this->getBindings(), ! $this->useWritePdo
-        );
-
-        // If the results has rows, we will get the row and see if the exists column is a
-        // boolean true. If there is no results for this query we will return false as
-        // there are no rows for this query at all and we can return that info here.
-        if (isset($results[0])) {
-            $results = (array) $results[0];
-
-            return (bool) $results['exists'];
-        }
-
-        return false;
-    }
-
-    /**
-     * Determine if no rows exist for the current query.
-     *
-     * @return bool
-     */
-    public function doesntExist()
-    {
-        return ! $this->exists();
-    }
-
-    /**
-     * Execute the given callback if no rows exist for the current query.
-     *
-     * @param  \Closure  $callback
-     * @return mixed
-     */
-    public function existsOr(Closure $callback)
-    {
-        return $this->exists() ? true : $callback();
-    }
-
-    /**
-     * Execute the given callback if rows exist for the current query.
-     *
-     * @param  \Closure  $callback
-     * @return mixed
-     */
-    public function doesntExistOr(Closure $callback)
-    {
-        return $this->doesntExist() ? true : $callback();
-    }
-
-    /**
-     * Retrieve the "count" result of the query.
-     *
-     * @param  string  $columns
-     * @return int
-     */
-    public function count($columns = '*')
-    {
-        return (int) $this->aggregate(__FUNCTION__, Arr::wrap($columns));
-    }
-
-    /**
-     * Retrieve the minimum value of a given column.
-     *
-     * @param  string  $column
-     * @return mixed
-     */
-    public function min($column)
-    {
-        return $this->aggregate(__FUNCTION__, [$column]);
-    }
-
-    /**
-     * Retrieve the maximum value of a given column.
-     *
-     * @param  string  $column
-     * @return mixed
-     */
-    public function max($column)
-    {
-        return $this->aggregate(__FUNCTION__, [$column]);
-    }
-
-    /**
-     * Retrieve the sum of the values of a given column.
-     *
-     * @param  string  $column
-     * @return mixed
-     */
-    public function sum($column)
-    {
-        $result = $this->aggregate(__FUNCTION__, [$column]);
-
-        return $result ?: 0;
-    }
-
-    /**
-     * Retrieve the average of the values of a given column.
-     *
-     * @param  string  $column
-     * @return mixed
-     */
-    public function avg($column)
-    {
-        return $this->aggregate(__FUNCTION__, [$column]);
-    }
-
-    /**
-     * Alias for the "avg" method.
-     *
-     * @param  string  $column
-     * @return mixed
-     */
-    public function average($column)
-    {
-        return $this->avg($column);
-    }
-
-    /**
-     * Execute an aggregate function on the database.
-     *
-     * @param  string  $function
-     * @param  array  $columns
-     * @return mixed
-     */
-    public function aggregate($function, $columns = ['*'])
-    {
-        $results = $this->cloneWithout($this->unions ? [] : ['columns'])
-                        ->cloneWithoutBindings($this->unions ? [] : ['select'])
-                        ->setAggregate($function, $columns)
-                        ->get($columns);
-
-        if (! $results->isEmpty()) {
-            return array_change_key_case((array) $results[0])['aggregate'];
-        }
-    }
-
-    /**
-     * Execute a numeric aggregate function on the database.
-     *
-     * @param  string  $function
-     * @param  array  $columns
-     * @return float|int
-     */
-    public function numericAggregate($function, $columns = ['*'])
-    {
-        $result = $this->aggregate($function, $columns);
-
-        // If there is no result, we can obviously just return 0 here. Next, we will check
-        // if the result is an integer or float. If it is already one of these two data
-        // types we can just return the result as-is, otherwise we will convert this.
-        if (! $result) {
-            return 0;
-        }
-
-        if (is_int($result) || is_float($result)) {
-            return $result;
-        }
-
-        // If the result doesn't contain a decimal place, we will assume it is an int then
-        // cast it to one. When it does we will cast it to a float since it needs to be
-        // cast to the expected data type for the developers out of pure convenience.
-        return strpos((string) $result, '.') === false
-                ? (int) $result : (float) $result;
-    }
-
-    /**
-     * Set the aggregate property without running the query.
-     *
-     * @param  string  $function
-     * @param  array  $columns
-     * @return $this
-     */
-    protected function setAggregate($function, $columns)
-    {
-        $this->aggregate = compact('function', 'columns');
-
-        if (empty($this->groups)) {
-            $this->orders = null;
-
-            $this->bindings['order'] = [];
-        }
-
-        return $this;
-    }
-
-    /**
-     * Execute the given callback while selecting the given columns.
-     *
-     * After running the callback, the columns are reset to the original value.
-     *
-     * @param  array  $columns
-     * @param  callable  $callback
-     * @return mixed
-     */
-    protected function onceWithColumns($columns, $callback)
-    {
-        $original = $this->columns;
-
-        if (is_null($original)) {
-            $this->columns = $columns;
-        }
-
-        $result = $callback();
-
-        $this->columns = $original;
-
-        return $result;
-    }
-
-    /**
-     * Insert new records into the database.
-     *
-     * @param  array  $values
-     * @return bool
-     */
-    public function insert(array $values)
-    {
-        // Since every insert gets treated like a batch insert, we will make sure the
-        // bindings are structured in a way that is convenient when building these
-        // inserts statements by verifying these elements are actually an array.
-        if (empty($values)) {
-            return true;
-        }
-
-        if (! is_array(reset($values))) {
-            $values = [$values];
-        }
-
-        // Here, we will sort the insert keys for every record so that each insert is
-        // in the same order for the record. We need to make sure this is the case
-        // so there are not any errors or problems when inserting these records.
-        else {
-            foreach ($values as $key => $value) {
-                ksort($value);
-
-                $values[$key] = $value;
-            }
-        }
-
-        // Finally, we will run this query against the database connection and return
-        // the results. We will need to also flatten these bindings before running
-        // the query so they are all in one huge, flattened array for execution.
-        return $this->connection->insert(
-            $this->grammar->compileInsert($this, $values),
-            $this->cleanBindings(Arr::flatten($values, 1))
-        );
-    }
-
-    /**
-     * Insert new records into the database while ignoring errors.
-     *
-     * @param  array  $values
-     * @return int
-     */
-    public function insertOrIgnore(array $values)
-    {
-        if (empty($values)) {
-            return 0;
-        }
-
-        if (! is_array(reset($values))) {
-            $values = [$values];
-        } else {
-            foreach ($values as $key => $value) {
-                ksort($value);
-                $values[$key] = $value;
-            }
-        }
-
-        return $this->connection->affectingStatement(
-            $this->grammar->compileInsertOrIgnore($this, $values),
-            $this->cleanBindings(Arr::flatten($values, 1))
-        );
-    }
-
-    /**
-     * Insert a new record and get the value of the primary key.
-     *
-     * @param  array  $values
-     * @param  string|null  $sequence
-     * @return int
-     */
-    public function insertGetId(array $values, $sequence = null)
-    {
-        $sql = $this->grammar->compileInsertGetId($this, $values, $sequence);
-
-        $values = $this->cleanBindings($values);
-
-        return $this->processor->processInsertGetId($this, $sql, $values, $sequence);
-    }
-
-    /**
-     * Insert new records into the table using a subquery.
-     *
-     * @param  array  $columns
-     * @param  \Closure|\Illuminate\Database\Query\Builder|string  $query
-     * @return int
-     */
-    public function insertUsing(array $columns, $query)
-    {
-        [$sql, $bindings] = $this->createSub($query);
-
-        return $this->connection->affectingStatement(
-            $this->grammar->compileInsertUsing($this, $columns, $sql),
-            $this->cleanBindings($bindings)
-        );
-    }
-
-    /**
-     * Update records in the database.
-     *
-     * @param  array  $values
-     * @return int
-     */
-    public function update(array $values)
-    {
-        $sql = $this->grammar->compileUpdate($this, $values);
-
-        return $this->connection->update($sql, $this->cleanBindings(
-            $this->grammar->prepareBindingsForUpdate($this->bindings, $values)
-        ));
-    }
-
-    /**
-     * Insert or update a record matching the attributes, and fill it with values.
-     *
-     * @param  array  $attributes
-     * @param  array  $values
-     * @return bool
-     */
-    public function updateOrInsert(array $attributes, array $values = [])
-    {
-        if (! $this->where($attributes)->exists()) {
-            return $this->insert(array_merge($attributes, $values));
-        }
-
-        if (empty($values)) {
-            return true;
-        }
-
-        return (bool) $this->limit(1)->update($values);
-    }
-
-    /**
-     * Insert new records or update the existing ones.
-     *
-     * @param  array  $values
-     * @param  array|string  $uniqueBy
-     * @param  array|null  $update
-     * @return int
-     */
-    public function upsert(array $values, $uniqueBy, $update = null)
-    {
-        if (empty($values)) {
-            return 0;
-        } elseif ($update === []) {
-            return (int) $this->insert($values);
-        }
-
-        if (! is_array(reset($values))) {
-            $values = [$values];
-        } else {
-            foreach ($values as $key => $value) {
-                ksort($value);
-
-                $values[$key] = $value;
-            }
-        }
-
-        if (is_null($update)) {
-            $update = array_keys(reset($values));
-        }
-
-        $bindings = $this->cleanBindings(array_merge(
-            Arr::flatten($values, 1),
-            collect($update)->reject(function ($value, $key) {
-                return is_int($key);
-            })->all()
-        ));
-
-        return $this->connection->affectingStatement(
-            $this->grammar->compileUpsert($this, $values, (array) $uniqueBy, $update),
-            $bindings
-        );
-    }
-
-    /**
-     * Increment a column's value by a given amount.
-     *
-     * @param  string  $column
-     * @param  float|int  $amount
-     * @param  array  $extra
-     * @return int
-     *
-     * @throws \InvalidArgumentException
-     */
-    public function increment($column, $amount = 1, array $extra = [])
-    {
-        if (! is_numeric($amount)) {
-            throw new InvalidArgumentException('Non-numeric value passed to increment method.');
-        }
-
-        $wrapped = $this->grammar->wrap($column);
-
-        $columns = array_merge([$column => $this->raw("$wrapped + $amount")], $extra);
-
-        return $this->update($columns);
-    }
-
-    /**
-     * Decrement a column's value by a given amount.
-     *
-     * @param  string  $column
-     * @param  float|int  $amount
-     * @param  array  $extra
-     * @return int
-     *
-     * @throws \InvalidArgumentException
-     */
-    public function decrement($column, $amount = 1, array $extra = [])
-    {
-        if (! is_numeric($amount)) {
-            throw new InvalidArgumentException('Non-numeric value passed to decrement method.');
-        }
-
-        $wrapped = $this->grammar->wrap($column);
-
-        $columns = array_merge([$column => $this->raw("$wrapped - $amount")], $extra);
-
-        return $this->update($columns);
-    }
-
-    /**
-     * Delete records from the database.
-     *
-     * @param  mixed  $id
-     * @return int
-     */
-    public function delete($id = null)
-    {
-        // If an ID is passed to the method, we will set the where clause to check the
-        // ID to let developers to simply and quickly remove a single row from this
-        // database without manually specifying the "where" clauses on the query.
-        if (! is_null($id)) {
-            $this->where($this->from.'.id', '=', $id);
-        }
-
-        return $this->connection->delete(
-            $this->grammar->compileDelete($this), $this->cleanBindings(
-                $this->grammar->prepareBindingsForDelete($this->bindings)
-            )
-        );
-    }
-
-    /**
-     * Run a truncate statement on the table.
-     *
-     * @return void
-     */
-    public function truncate()
-    {
-        foreach ($this->grammar->compileTruncate($this) as $sql => $bindings) {
-            $this->connection->statement($sql, $bindings);
-        }
-    }
-
-    /**
-     * Get a new instance of the query builder.
-     *
-     * @return \Illuminate\Database\Query\Builder
-     */
-    public function newQuery()
-    {
-        return new static($this->connection, $this->grammar, $this->processor);
-    }
-
-    /**
-     * Create a new query instance for a sub-query.
-     *
-     * @return \Illuminate\Database\Query\Builder
-     */
-    protected function forSubQuery()
-    {
-        return $this->newQuery();
-    }
-
-    /**
-     * Create a raw database expression.
-     *
-     * @param  mixed  $value
-     * @return \Illuminate\Database\Query\Expression
-     */
-    public function raw($value)
-    {
-        return $this->connection->raw($value);
-    }
-
-    /**
-     * Get the current query value bindings in a flattened array.
-     *
-     * @return array
-     */
-    public function getBindings()
-    {
-        return Arr::flatten($this->bindings);
-    }
-
-    /**
-     * Get the raw array of bindings.
-     *
-     * @return array
-     */
-    public function getRawBindings()
-    {
-        return $this->bindings;
-    }
-
-    /**
-     * Set the bindings on the query builder.
-     *
-     * @param  array  $bindings
-     * @param  string  $type
-     * @return $this
-     *
-     * @throws \InvalidArgumentException
-     */
-    public function setBindings(array $bindings, $type = 'where')
-    {
-        if (! array_key_exists($type, $this->bindings)) {
-            throw new InvalidArgumentException("Invalid binding type: {$type}.");
-        }
-
-        $this->bindings[$type] = $bindings;
-
-        return $this;
-    }
-
-    /**
-     * Add a binding to the query.
-     *
-     * @param  mixed  $value
-     * @param  string  $type
-     * @return $this
-     *
-     * @throws \InvalidArgumentException
-     */
-    public function addBinding($value, $type = 'where')
-    {
-        if (! array_key_exists($type, $this->bindings)) {
-            throw new InvalidArgumentException("Invalid binding type: {$type}.");
-        }
-
-        if (is_array($value)) {
-            $this->bindings[$type] = array_values(array_merge($this->bindings[$type], $value));
-        } else {
-            $this->bindings[$type][] = $value;
-        }
-
-        return $this;
-    }
-
-    /**
-     * Merge an array of bindings into our bindings.
-     *
-     * @param  \Illuminate\Database\Query\Builder  $query
-     * @return $this
-     */
-    public function mergeBindings(self $query)
-    {
-        $this->bindings = array_merge_recursive($this->bindings, $query->bindings);
-
-        return $this;
-    }
-
-    /**
-     * Remove all of the expressions from a list of bindings.
-     *
-     * @param  array  $bindings
-     * @return array
-     */
-    public function cleanBindings(array $bindings)
-    {
-        return array_values(array_filter($bindings, function ($binding) {
-            return ! $binding instanceof Expression;
-        }));
-    }
-
-    /**
-     * Get the default key name of the table.
-     *
-     * @return string
-     */
-    protected function defaultKeyName()
-    {
-        return 'id';
-    }
-
-    /**
-     * Get the database connection instance.
-     *
-     * @return \Illuminate\Database\ConnectionInterface
-     */
-    public function getConnection()
-    {
-        return $this->connection;
-    }
-
-    /**
-     * Get the database query processor instance.
-     *
-     * @return \Illuminate\Database\Query\Processors\Processor
-     */
-    public function getProcessor()
-    {
-        return $this->processor;
-    }
-
-    /**
-     * Get the query grammar instance.
-     *
-     * @return \Illuminate\Database\Query\Grammars\Grammar
-     */
-    public function getGrammar()
-    {
-        return $this->grammar;
-    }
-
-    /**
-     * Use the write pdo for query.
-     *
-     * @return $this
-     */
-    public function useWritePdo()
-    {
-        $this->useWritePdo = true;
-
-        return $this;
-    }
-
-    /**
-     * Determine if the value is a query builder instance or a Closure.
-     *
-     * @param  mixed  $value
-     * @return bool
-     */
-    protected function isQueryable($value)
-    {
-        return $value instanceof self ||
-               $value instanceof EloquentBuilder ||
-               $value instanceof Relation ||
-               $value instanceof Closure;
-    }
-
-    /**
-     * Clone the query.
-     *
-     * @return static
-     */
-    public function clone()
-    {
-        return clone $this;
-    }
-
-    /**
-     * Clone the query without the given properties.
-     *
-     * @param  array  $properties
-     * @return static
-     */
-    public function cloneWithout(array $properties)
-    {
-        return tap($this->clone(), function ($clone) use ($properties) {
-            foreach ($properties as $property) {
-                $clone->{$property} = null;
-            }
-        });
-    }
-
-    /**
-     * Clone the query without the given bindings.
-     *
-     * @param  array  $except
-     * @return static
-     */
-    public function cloneWithoutBindings(array $except)
-    {
-        return tap($this->clone(), function ($clone) use ($except) {
-            foreach ($except as $type) {
-                $clone->bindings[$type] = [];
-            }
-        });
-    }
-
-    /**
-     * Dump the current SQL and bindings.
-     *
-     * @return $this
-     */
-    public function dump()
-    {
-        dump($this->toSql(), $this->getBindings());
-
-        return $this;
-    }
-
-    /**
-     * Die and dump the current SQL and bindings.
-     *
-     * @return void
-     */
-    public function dd()
-    {
-        dd($this->toSql(), $this->getBindings());
-    }
-
-    /**
-     * Handle dynamic method calls into the method.
-     *
-     * @param  string  $method
-     * @param  array  $parameters
-     * @return mixed
-     *
-     * @throws \BadMethodCallException
-     */
-    public function __call($method, $parameters)
-    {
-        if (static::hasMacro($method)) {
-            return $this->macroCall($method, $parameters);
-        }
-
-        if (Str::startsWith($method, 'where')) {
-            return $this->dynamicWhere($method, $parameters);
-        }
-
-        static::throwBadMethodCallException($method);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+G7qIVwBdZY/nqNviyKf/Oypbo0aehOrmnby=

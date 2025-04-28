@@ -1,159 +1,87 @@
-<?php
-
-declare(strict_types=1);
-
-namespace Cron;
-
-use DateTime;
-use DateTimeInterface;
-
-/**
- * Day of month field.  Allows: * , / - ? L W.
- *
- * 'L' stands for "last" and specifies the last day of the month.
- *
- * The 'W' character is used to specify the weekday (Monday-Friday) nearest the
- * given day. As an example, if you were to specify "15W" as the value for the
- * day-of-month field, the meaning is: "the nearest weekday to the 15th of the
- * month". So if the 15th is a Saturday, the trigger will fire on Friday the
- * 14th. If the 15th is a Sunday, the trigger will fire on Monday the 16th. If
- * the 15th is a Tuesday, then it will fire on Tuesday the 15th. However if you
- * specify "1W" as the value for day-of-month, and the 1st is a Saturday, the
- * trigger will fire on Monday the 3rd, as it will not 'jump' over the boundary
- * of a month's days. The 'W' character can only be specified when the
- * day-of-month is a single day, not a range or list of days.
- *
- * @author Michael Dowling <mtdowling@gmail.com>
- */
-class DayOfMonthField extends AbstractField
-{
-    /**
-     * {@inheritdoc}
-     */
-    protected $rangeStart = 1;
-
-    /**
-     * {@inheritdoc}
-     */
-    protected $rangeEnd = 31;
-
-    /**
-     * Get the nearest day of the week for a given day in a month.
-     *
-     * @param int $currentYear Current year
-     * @param int $currentMonth Current month
-     * @param int $targetDay Target day of the month
-     *
-     * @return \DateTime|null Returns the nearest date
-     */
-    private static function getNearestWeekday(int $currentYear, int $currentMonth, int $targetDay): ?DateTime
-    {
-        $tday = str_pad((string) $targetDay, 2, '0', STR_PAD_LEFT);
-        $target = DateTime::createFromFormat('Y-m-d', "${currentYear}-${currentMonth}-${tday}");
-
-        if ($target === false) {
-            return null;
-        }
-
-        $currentWeekday = (int) $target->format('N');
-
-        if ($currentWeekday < 6) {
-            return $target;
-        }
-
-        $lastDayOfMonth = $target->format('t');
-        foreach ([-1, 1, -2, 2] as $i) {
-            $adjusted = $targetDay + $i;
-            if ($adjusted > 0 && $adjusted <= $lastDayOfMonth) {
-                $target->setDate($currentYear, $currentMonth, $adjusted);
-
-                if ((int) $target->format('N') < 6 && (int) $target->format('m') === $currentMonth) {
-                    return $target;
-                }
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function isSatisfiedBy(DateTimeInterface $date, $value): bool
-    {
-        // ? states that the field value is to be skipped
-        if ('?' === $value) {
-            return true;
-        }
-
-        $fieldValue = $date->format('d');
-
-        // Check to see if this is the last day of the month
-        if ('L' === $value) {
-            return $fieldValue === $date->format('t');
-        }
-
-        // Check to see if this is the nearest weekday to a particular value
-        if (strpos($value, 'W')) {
-            // Parse the target day
-            /** @phpstan-ignore-next-line */
-            $targetDay = (int) substr($value, 0, strpos($value, 'W'));
-            // Find out if the current day is the nearest day of the week
-            /** @phpstan-ignore-next-line */
-            return $date->format('j') === self::getNearestWeekday(
-                (int) $date->format('Y'),
-                (int) $date->format('m'),
-                $targetDay
-            )->format('j');
-        }
-
-        return $this->isSatisfied((int) $date->format('d'), $value);
-    }
-
-    /**
-     * @inheritDoc
-     *
-     * @param \DateTime|\DateTimeImmutable $date
-     */
-    public function increment(DateTimeInterface &$date, $invert = false, $parts = null): FieldInterface
-    {
-        if ($invert) {
-            $date = $date->modify('previous day')->setTime(23, 59);
-        } else {
-            $date = $date->modify('next day')->setTime(0, 0);
-        }
-
-        return $this;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function validate(string $value): bool
-    {
-        $basicChecks = parent::validate($value);
-
-        // Validate that a list don't have W or L
-        if (false !== strpos($value, ',') && (false !== strpos($value, 'W') || false !== strpos($value, 'L'))) {
-            return false;
-        }
-
-        if (!$basicChecks) {
-            if ('?' === $value) {
-                return true;
-            }
-
-            if ('L' === $value) {
-                return true;
-            }
-
-            if (preg_match('/^(.*)W$/', $value, $matches)) {
-                return $this->validate($matches[1]);
-            }
-
-            return false;
-        }
-
-        return $basicChecks;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

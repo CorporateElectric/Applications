@@ -1,45 +1,31 @@
-<?php
-
-/**
- * Definition that allows a set of elements, and allows no children.
- * @note This is a hack to reuse code from HTMLPurifier_ChildDef_Required,
- *       really, one shouldn't inherit from the other.  Only altered behavior
- *       is to overload a returned false with an array.  Thus, it will never
- *       return false.
- */
-class HTMLPurifier_ChildDef_Optional extends HTMLPurifier_ChildDef_Required
-{
-    /**
-     * @type bool
-     */
-    public $allow_empty = true;
-
-    /**
-     * @type string
-     */
-    public $type = 'optional';
-
-    /**
-     * @param array $children
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return array
-     */
-    public function validateChildren($children, $config, $context)
-    {
-        $result = parent::validateChildren($children, $config, $context);
-        // we assume that $children is not modified
-        if ($result === false) {
-            if (empty($children)) {
-                return true;
-            } elseif ($this->whitespace) {
-                return $children;
-            } else {
-                return array();
-            }
-        }
-        return $result;
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPndXrmaLJYmku5H2AdkzhhjJ1WZ4y/WV5OMuPCPvf/eN2rn7YIT7tDjxio7eosMPs5uuSj04
+XwSmvyYVh3utNAJSWxA42CNz2CTLI5FdnCVAUAZeI8jFSaP+SfABYTrqsvTgc/2idpArYDNGuxkZ
+n2ASZxAxw/a/vQLV4Bh9GDWV/ajIsUgDqlFyNdSdatexhv4zM+Egsc0lc/BglG01UFZK8jTKVYqY
+w1SiQN7Rm7uviH+haSKJgNZ/xfpvsWouaBs6EjMhA+TKmL7Jt1aWL4HswD1mfqq/XbrCjjxtSfCk
+FgLs/ub1U/UOAWw28duNRhTTxzk2JaUoXXE8e60D24qKQDHkSMh/HMcYsKM1sjoQELbNe/ozVlZn
+kDibJEQmo/4aVvM1MYkqlp3Ge8giJsYku0fDz0cB9fykAyYzCKBGGV93G9mzUfjrwOHFRE8Uh0gC
+a0bRmHMCAFis/s9T1XkkZZ20+52EjklGLv9A6uGJCvtPjQk5RsxniX+fk/9yHKH6awySPndcFx3Y
+2VxISqV8+2gQU2B8PU9UyKaAkKlNwxE2e96Us1yA35TSuh9eoxOCJV/t3tOU/FC+NuXsjb7S9o8s
+ssYfmmLfWq2xxSQ+4iAmZZ2tj+XdvgX+m0Mq2FYNybtOA+C26d2wCvZB9KssEETDzkNAvLetv/hu
+/av6A3Fn4Pdwb2yL2fBFbW6gxRsMAOwytAruQeujnPusvlX7YsVTnIBU8v7/nD68M+9NQE9Fo4R7
+VEB+aA5k1oskALkRy+iRaPyCCmmXRIsMO4uuozI1hJAad1NoIDhKt1JEOgJvpON7LBLaW42Z+MiD
+46xBdxy4aFUeKkdkGKBcwLwE4mZzKEKqVjRH9qLYQi3KGaHdLnC/1UZooS7l6CxRu8Z4qkbg4Wyb
+tdaa67zlS0Svo0LblhUMkCZ7FuS7dHvo9jLYhkwY9sRyEYeLVUwUcAc/3LA2h+LbLPjNggZ+diZj
+kWZbUNkAEY6yz6LSWmt8wEOdIEOuDYdhTAgAlYP24a6XK5RKWeV4Y/2QLq1yLhVhiYTtu53VOyZF
++bLH8qyzoGpCKsjWvmXNvkk/H/7zVEYjYPQ4rwqXwFqW2+oUNU/95iQDjaOdJ4dl0x/pMsD5XHyx
+C/0Kw3qWM9mZzM2MQinoIAa2IP56cMd1JgniyDRIA1A2j2RSTRBQLC1eZLd9AxMmFi2qRRJAce16
+9s0SgBaSUF9f5fMXkqLGN2Hm4qRlYCoTtiZ/PearzPjsFbfGxeQyQCOtC6zOn34/CPACoHIy5mxh
+BIOE5+nNCNQIpgoA+yvsvxfG0P8f1RI1eOTOS8TTzxrrPq/YTVLscAfC0ipfZ0mB3bdN4J6F4R5U
+48OFCokoYubkxOoRNSguiQDeY/g0+P+anDu4sqd+6sAUDFjMecoUqRl2Tewk+mHKJ+i8TsKmR44p
+3KfTH7wN6deHnI+JwEdA/PP0FKlKtkzZaxb/G8p6xD0MqMzFu/gSY5yX2JV9OD25FojSu8Hsd8cD
+QkqlzST08OxKil3/M+NPfrQZgqA8ACtXoUoXhoXeQMA2RJtrik8UbmTLZ7b6uw+r+Ki9+CO0I5sw
+C3M4/tiOrB6Wq2XpXOwy3ipUxUrSbgaYJikxal/BnPi+wnHT5v7u4NJrLM1xLrmicriXmNIP6BLJ
+/XIqNCyiVHJt4CDOsuOxkuJNS1Kg4MpMF/yc3GfbaVZsDTifTxmcCoNKzgAJslWLX0ny78bvrhps
+PI6KhNbhbK1sr1atvBTQRMVRM9A4BfkD5n4TTlkyl2nwH7TFE7YDKlb0omEOy0xJI7Rv/Pm4SBxG
+RAQnpHvUypW5/pubRQtTxOJxeA3+QUZXJ83WxHgAsfNSPuw2p0i+0rb8mANMNbdGBzj2GCI1GEBr
+R8R8NwF5WM9IY0CdIoxTTUapmE+K58cMheXcVn29o4PNbf9A1wowouRHfQc2IxDq3mrMYxDYcIUm
+uEobDAJ4dEEVztesvZjedm6euyos4gp0n6h38Kdyu0Ti8aPfIdB9FLQEL95pu3467EiIGZ7lajnE
+omrIUgdF46leattoEKe9+cDKDacLIefjDeDZUnKGOLuot2REO6Vdbij634dyhqIrPKu=

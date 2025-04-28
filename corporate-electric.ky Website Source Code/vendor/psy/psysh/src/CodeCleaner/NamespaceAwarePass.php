@@ -1,71 +1,42 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\CodeCleaner;
-
-use PhpParser\Node;
-use PhpParser\Node\Name;
-use PhpParser\Node\Name\FullyQualified as FullyQualifiedName;
-use PhpParser\Node\Stmt\Namespace_;
-
-/**
- * Abstract namespace-aware code cleaner pass.
- */
-abstract class NamespaceAwarePass extends CodeCleanerPass
-{
-    protected $namespace;
-    protected $currentScope;
-
-    /**
-     * @todo should this be final? Extending classes should be sure to either
-     * use afterTraverse or call parent::beforeTraverse() when overloading.
-     *
-     * Reset the namespace and the current scope before beginning analysis
-     */
-    public function beforeTraverse(array $nodes)
-    {
-        $this->namespace = [];
-        $this->currentScope = [];
-    }
-
-    /**
-     * @todo should this be final? Extending classes should be sure to either use
-     * leaveNode or call parent::enterNode() when overloading
-     *
-     * @param Node $node
-     */
-    public function enterNode(Node $node)
-    {
-        if ($node instanceof Namespace_) {
-            $this->namespace = isset($node->name) ? $node->name->parts : [];
-        }
-    }
-
-    /**
-     * Get a fully-qualified name (class, function, interface, etc).
-     *
-     * @param mixed $name
-     *
-     * @return string
-     */
-    protected function getFullyQualifiedName($name)
-    {
-        if ($name instanceof FullyQualifiedName) {
-            return \implode('\\', $name->parts);
-        } elseif ($name instanceof Name) {
-            $name = $name->parts;
-        } elseif (!\is_array($name)) {
-            $name = [$name];
-        }
-
-        return \implode('\\', \array_merge($this->namespace, $name));
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

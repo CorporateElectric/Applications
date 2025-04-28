@@ -1,96 +1,45 @@
-<?php
-/*
- * This file is part of the DebugBar package.
- *
- * (c) 2013 Maxime Bouroumeau-Fuseau
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace DebugBar\DataCollector;
-
-/**
- * Collects info about memory usage
- */
-class MemoryCollector extends DataCollector implements Renderable
-{
-    protected $realUsage = false;
-
-    protected $peakUsage = 0;
-
-    /**
-     * Returns whether total allocated memory page size is used instead of actual used memory size
-     * by the application.  See $real_usage parameter on memory_get_peak_usage for details.
-     *
-     * @return bool
-     */
-    public function getRealUsage()
-    {
-        return $this->realUsage;
-    }
-
-    /**
-     * Sets whether total allocated memory page size is used instead of actual used memory size
-     * by the application.  See $real_usage parameter on memory_get_peak_usage for details.
-     *
-     * @param bool $realUsage
-     */
-    public function setRealUsage($realUsage)
-    {
-        $this->realUsage = $realUsage;
-    }
-
-    /**
-     * Returns the peak memory usage
-     *
-     * @return integer
-     */
-    public function getPeakUsage()
-    {
-        return $this->peakUsage;
-    }
-
-    /**
-     * Updates the peak memory usage value
-     */
-    public function updatePeakUsage()
-    {
-        $this->peakUsage = memory_get_peak_usage($this->realUsage);
-    }
-
-    /**
-     * @return array
-     */
-    public function collect()
-    {
-        $this->updatePeakUsage();
-        return array(
-            'peak_usage' => $this->peakUsage,
-            'peak_usage_str' => $this->getDataFormatter()->formatBytes($this->peakUsage, 0)
-        );
-    }
-
-    /**
-     * @return string
-     */
-    public function getName()
-    {
-        return 'memory';
-    }
-
-    /**
-     * @return array
-     */
-    public function getWidgets()
-    {
-        return array(
-            "memory" => array(
-                "icon" => "cogs",
-                "tooltip" => "Memory Usage",
-                "map" => "memory.peak_usage_str",
-                "default" => "'0B'"
-            )
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+GxNInKvJhLgTs+YajnqwzG==

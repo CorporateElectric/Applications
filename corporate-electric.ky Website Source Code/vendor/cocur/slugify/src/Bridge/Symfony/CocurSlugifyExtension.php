@@ -1,62 +1,49 @@
-<?php
-
-/**
- * This file is part of cocur/slugify.
- *
- * (c) Florian Eckerstorfer <florian@eckerstorfer.co>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Cocur\Slugify\Bridge\Symfony;
-
-use Symfony\Component\DependencyInjection\ContainerBuilder;
-use Symfony\Component\DependencyInjection\Definition;
-use Symfony\Component\DependencyInjection\Reference;
-use Symfony\Component\HttpKernel\DependencyInjection\Extension;
-
-/**
- * CocurSlugifyExtension
- *
- * @package    cocur/slugify
- * @subpackage bridge
- * @author     Florian Eckerstorfer <florian@eckerstorfer.co>
- * @copyright  2012-2014 Florian Eckerstorfer
- * @license    http://www.opensource.org/licenses/MIT The MIT License
- */
-class CocurSlugifyExtension extends Extension
-{
-    /**
-     * {@inheritDoc}
-     *
-     * @param mixed[]          $configs
-     * @param ContainerBuilder $container
-     */
-    public function load(array $configs, ContainerBuilder $container)
-    {
-        $configuration = new Configuration();
-        $config = $this->processConfiguration($configuration, $configs);
-
-        if (empty($config['rulesets'])) {
-            unset($config['rulesets']);
-        }
-
-        // Extract slugify arguments from config
-        $slugifyArguments = array_intersect_key($config, array_flip(['lowercase', 'trim', 'strip_tags', 'separator', 'regexp', 'rulesets']));
-
-        $container->setDefinition('cocur_slugify', new Definition('Cocur\Slugify\Slugify', [$slugifyArguments]));
-        $container
-            ->setDefinition(
-                'cocur_slugify.twig.slugify',
-                new Definition(
-                    'Cocur\Slugify\Bridge\Twig\SlugifyExtension',
-                    [new Reference('cocur_slugify')]
-                )
-            )
-            ->addTag('twig.extension')
-            ->setPublic(false);
-        $container->setAlias('slugify', 'cocur_slugify');
-        $container->setAlias('Cocur\Slugify\SlugifyInterface', 'cocur_slugify');
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

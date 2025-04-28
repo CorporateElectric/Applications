@@ -1,73 +1,57 @@
-<?php declare(strict_types=1);
-
-namespace PhpParser\Node\Scalar;
-
-use PhpParser\Error;
-use PhpParser\Node\Scalar;
-
-class LNumber extends Scalar
-{
-    /* For use in "kind" attribute */
-    const KIND_BIN = 2;
-    const KIND_OCT = 8;
-    const KIND_DEC = 10;
-    const KIND_HEX = 16;
-
-    /** @var int Number value */
-    public $value;
-
-    /**
-     * Constructs an integer number scalar node.
-     *
-     * @param int   $value      Value of the number
-     * @param array $attributes Additional attributes
-     */
-    public function __construct(int $value, array $attributes = []) {
-        $this->attributes = $attributes;
-        $this->value = $value;
-    }
-
-    public function getSubNodeNames() : array {
-        return ['value'];
-    }
-
-    /**
-     * Constructs an LNumber node from a string number literal.
-     *
-     * @param string $str               String number literal (decimal, octal, hex or binary)
-     * @param array  $attributes        Additional attributes
-     * @param bool   $allowInvalidOctal Whether to allow invalid octal numbers (PHP 5)
-     *
-     * @return LNumber The constructed LNumber, including kind attribute
-     */
-    public static function fromString(string $str, array $attributes = [], bool $allowInvalidOctal = false) : LNumber {
-        $str = str_replace('_', '', $str);
-
-        if ('0' !== $str[0] || '0' === $str) {
-            $attributes['kind'] = LNumber::KIND_DEC;
-            return new LNumber((int) $str, $attributes);
-        }
-
-        if ('x' === $str[1] || 'X' === $str[1]) {
-            $attributes['kind'] = LNumber::KIND_HEX;
-            return new LNumber(hexdec($str), $attributes);
-        }
-
-        if ('b' === $str[1] || 'B' === $str[1]) {
-            $attributes['kind'] = LNumber::KIND_BIN;
-            return new LNumber(bindec($str), $attributes);
-        }
-
-        if (!$allowInvalidOctal && strpbrk($str, '89')) {
-            throw new Error('Invalid numeric literal', $attributes);
-        }
-
-        // use intval instead of octdec to get proper cutting behavior with malformed numbers
-        $attributes['kind'] = LNumber::KIND_OCT;
-        return new LNumber(intval($str, 8), $attributes);
-    }
-    
-    public function getType() : string {
-        return 'Scalar_LNumber';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

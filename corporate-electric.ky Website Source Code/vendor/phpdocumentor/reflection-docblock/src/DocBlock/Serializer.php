@@ -1,151 +1,73 @@
-<?php
-
-declare(strict_types=1);
-
-/**
- * This file is part of phpDocumentor.
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @link http://phpdoc.org
- */
-
-namespace phpDocumentor\Reflection\DocBlock;
-
-use phpDocumentor\Reflection\DocBlock;
-use phpDocumentor\Reflection\DocBlock\Tags\Formatter;
-use phpDocumentor\Reflection\DocBlock\Tags\Formatter\PassthroughFormatter;
-use function sprintf;
-use function str_repeat;
-use function str_replace;
-use function strlen;
-use function wordwrap;
-
-/**
- * Converts a DocBlock back from an object to a complete DocComment including Asterisks.
- */
-class Serializer
-{
-    /** @var string The string to indent the comment with. */
-    protected $indentString = ' ';
-
-    /** @var int The number of times the indent string is repeated. */
-    protected $indent = 0;
-
-    /** @var bool Whether to indent the first line with the given indent amount and string. */
-    protected $isFirstLineIndented = true;
-
-    /** @var int|null The max length of a line. */
-    protected $lineLength;
-
-    /** @var Formatter A custom tag formatter. */
-    protected $tagFormatter;
-
-    /**
-     * Create a Serializer instance.
-     *
-     * @param int       $indent          The number of times the indent string is repeated.
-     * @param string    $indentString    The string to indent the comment with.
-     * @param bool      $indentFirstLine Whether to indent the first line.
-     * @param int|null  $lineLength      The max length of a line or NULL to disable line wrapping.
-     * @param Formatter $tagFormatter    A custom tag formatter, defaults to PassthroughFormatter.
-     */
-    public function __construct(
-        int $indent = 0,
-        string $indentString = ' ',
-        bool $indentFirstLine = true,
-        ?int $lineLength = null,
-        ?Formatter $tagFormatter = null
-    ) {
-        $this->indent              = $indent;
-        $this->indentString        = $indentString;
-        $this->isFirstLineIndented = $indentFirstLine;
-        $this->lineLength          = $lineLength;
-        $this->tagFormatter        = $tagFormatter ?: new PassthroughFormatter();
-    }
-
-    /**
-     * Generate a DocBlock comment.
-     *
-     * @param DocBlock $docblock The DocBlock to serialize.
-     *
-     * @return string The serialized doc block.
-     */
-    public function getDocComment(DocBlock $docblock) : string
-    {
-        $indent      = str_repeat($this->indentString, $this->indent);
-        $firstIndent = $this->isFirstLineIndented ? $indent : '';
-        // 3 === strlen(' * ')
-        $wrapLength = $this->lineLength ? $this->lineLength - strlen($indent) - 3 : null;
-
-        $text = $this->removeTrailingSpaces(
-            $indent,
-            $this->addAsterisksForEachLine(
-                $indent,
-                $this->getSummaryAndDescriptionTextBlock($docblock, $wrapLength)
-            )
-        );
-
-        $comment = $firstIndent . "/**\n";
-        if ($text) {
-            $comment .= $indent . ' * ' . $text . "\n";
-            $comment .= $indent . " *\n";
-        }
-
-        $comment = $this->addTagBlock($docblock, $wrapLength, $indent, $comment);
-
-        return $comment . $indent . ' */';
-    }
-
-    private function removeTrailingSpaces(string $indent, string $text) : string
-    {
-        return str_replace(
-            sprintf("\n%s * \n", $indent),
-            sprintf("\n%s *\n", $indent),
-            $text
-        );
-    }
-
-    private function addAsterisksForEachLine(string $indent, string $text) : string
-    {
-        return str_replace(
-            "\n",
-            sprintf("\n%s * ", $indent),
-            $text
-        );
-    }
-
-    private function getSummaryAndDescriptionTextBlock(DocBlock $docblock, ?int $wrapLength) : string
-    {
-        $text = $docblock->getSummary() . ((string) $docblock->getDescription() ? "\n\n" . $docblock->getDescription()
-                : '');
-        if ($wrapLength !== null) {
-            $text = wordwrap($text, $wrapLength);
-
-            return $text;
-        }
-
-        return $text;
-    }
-
-    private function addTagBlock(DocBlock $docblock, ?int $wrapLength, string $indent, string $comment) : string
-    {
-        foreach ($docblock->getTags() as $tag) {
-            $tagText = $this->tagFormatter->format($tag);
-            if ($wrapLength !== null) {
-                $tagText = wordwrap($tagText, $wrapLength);
-            }
-
-            $tagText = str_replace(
-                "\n",
-                sprintf("\n%s * ", $indent),
-                $tagText
-            );
-
-            $comment .= sprintf("%s * %s\n", $indent, $tagText);
-        }
-
-        return $comment;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,67 +1,39 @@
-<?php
-
-namespace Illuminate\Support\Facades;
-
-use Illuminate\Contracts\Bus\Dispatcher as BusDispatcherContract;
-use Illuminate\Foundation\Bus\PendingChain;
-use Illuminate\Support\Testing\Fakes\BusFake;
-
-/**
- * @method static \Illuminate\Bus\Batch|null findBatch(string $batchId)
- * @method static \Illuminate\Bus\PendingBatch batch(array|mixed $jobs)
- * @method static \Illuminate\Contracts\Bus\Dispatcher map(array $map)
- * @method static \Illuminate\Contracts\Bus\Dispatcher pipeThrough(array $pipes)
- * @method static \Illuminate\Foundation\Bus\PendingChain chain(array $jobs)
- * @method static bool hasCommandHandler($command)
- * @method static bool|mixed getCommandHandler($command)
- * @method static mixed dispatch($command)
- * @method static mixed dispatchNow($command, $handler = null)
- * @method static void assertDispatched(string $command, callable|int $callback = null)
- * @method static void assertDispatchedTimes(string $command, int $times = 1)
- * @method static void assertNotDispatched(string $command, callable $callback = null)
- * @method static void assertDispatchedAfterResponse(string $command, callable|int $callback = null)
- * @method static void assertDispatchedAfterResponseTimes(string $command, int $times = 1)
- * @method static void assertNotDispatchedAfterResponse(string $command, callable $callback = null)
- * @method static void assertBatched(callable $callback)
- *
- * @see \Illuminate\Contracts\Bus\Dispatcher
- */
-class Bus extends Facade
-{
-    /**
-     * Replace the bound instance with a fake.
-     *
-     * @param  array|string  $jobsToFake
-     * @return \Illuminate\Support\Testing\Fakes\BusFake
-     */
-    public static function fake($jobsToFake = [])
-    {
-        static::swap($fake = new BusFake(static::getFacadeRoot(), $jobsToFake));
-
-        return $fake;
-    }
-
-    /**
-     * Dispatch the given chain of jobs.
-     *
-     * @param  array|mixed  $jobs
-     * @return \Illuminate\Foundation\Bus\PendingDispatch
-     */
-    public static function dispatchChain($jobs)
-    {
-        $jobs = is_array($jobs) ? $jobs : func_get_args();
-
-        return (new PendingChain(array_shift($jobs), $jobs))
-                    ->dispatch();
-    }
-
-    /**
-     * Get the registered name of the component.
-     *
-     * @return string
-     */
-    protected static function getFacadeAccessor()
-    {
-        return BusDispatcherContract::class;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

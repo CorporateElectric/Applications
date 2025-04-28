@@ -1,99 +1,36 @@
-<?php
-
-/*
- * This file is part of the league/commonmark package.
- *
- * (c) Colin O'Dell <colinodell@gmail.com>
- *
- * Original code based on the CommonMark JS reference parser (https://bitly.com/commonmark-js)
- *  - (c) John MacFarlane
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace League\CommonMark;
-
-use League\CommonMark\Block\Element\AbstractBlock;
-use League\CommonMark\Block\Element\Document;
-use League\CommonMark\Reference\ReferenceParser;
-
-interface ContextInterface
-{
-    /**
-     * @return Document
-     */
-    public function getDocument(): Document;
-
-    /**
-     * @return AbstractBlock|null
-     */
-    public function getTip(): ?AbstractBlock;
-
-    /**
-     * @param AbstractBlock|null $block
-     *
-     * @return void
-     */
-    public function setTip(?AbstractBlock $block);
-
-    /**
-     * @return int
-     */
-    public function getLineNumber(): int;
-
-    /**
-     * @return string
-     */
-    public function getLine(): string;
-
-    /**
-     * Finalize and close any unmatched blocks
-     *
-     * @return UnmatchedBlockCloser
-     */
-    public function getBlockCloser(): UnmatchedBlockCloser;
-
-    /**
-     * @return AbstractBlock
-     */
-    public function getContainer(): AbstractBlock;
-
-    /**
-     * @param AbstractBlock $container
-     *
-     * @return void
-     */
-    public function setContainer(AbstractBlock $container);
-
-    /**
-     * @param AbstractBlock $block
-     *
-     * @return void
-     */
-    public function addBlock(AbstractBlock $block);
-
-    /**
-     * @param AbstractBlock $replacement
-     *
-     * @return void
-     */
-    public function replaceContainerBlock(AbstractBlock $replacement);
-
-    /**
-     * @return bool
-     */
-    public function getBlocksParsed(): bool;
-
-    /**
-     * @param bool $bool
-     *
-     * @return $this
-     */
-    public function setBlocksParsed(bool $bool);
-
-    /**
-     * @return ReferenceParser
-     */
-    public function getReferenceParser(): ReferenceParser;
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+JEtMPesZBY+PhtOYrvW=

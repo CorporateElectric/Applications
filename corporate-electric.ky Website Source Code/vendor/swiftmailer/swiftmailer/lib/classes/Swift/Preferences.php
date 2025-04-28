@@ -1,100 +1,44 @@
-<?php
-
-/*
- * This file is part of SwiftMailer.
- * (c) 2004-2009 Chris Corbyn
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-/**
- * Changes some global preference settings in Swift Mailer.
- *
- * @author Chris Corbyn
- */
-class Swift_Preferences
-{
-    /** Singleton instance */
-    private static $instance = null;
-
-    /** Constructor not to be used */
-    private function __construct()
-    {
-    }
-
-    /**
-     * Gets the instance of Preferences.
-     *
-     * @return self
-     */
-    public static function getInstance()
-    {
-        if (!isset(self::$instance)) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
-    }
-
-    /**
-     * Set the default charset used.
-     *
-     * @param string $charset
-     *
-     * @return $this
-     */
-    public function setCharset($charset)
-    {
-        Swift_DependencyContainer::getInstance()->register('properties.charset')->asValue($charset);
-
-        return $this;
-    }
-
-    /**
-     * Set the directory where temporary files can be saved.
-     *
-     * @param string $dir
-     *
-     * @return $this
-     */
-    public function setTempDir($dir)
-    {
-        Swift_DependencyContainer::getInstance()->register('tempdir')->asValue($dir);
-
-        return $this;
-    }
-
-    /**
-     * Set the type of cache to use (i.e. "disk" or "array").
-     *
-     * @param string $type
-     *
-     * @return $this
-     */
-    public function setCacheType($type)
-    {
-        Swift_DependencyContainer::getInstance()->register('cache')->asAliasOf(sprintf('cache.%s', $type));
-
-        return $this;
-    }
-
-    /**
-     * Set the QuotedPrintable dot escaper preference.
-     *
-     * @param bool $dotEscape
-     *
-     * @return $this
-     */
-    public function setQPDotEscape($dotEscape)
-    {
-        $dotEscape = !empty($dotEscape);
-        Swift_DependencyContainer::getInstance()
-            ->register('mime.qpcontentencoder')
-            ->asNewInstanceOf('Swift_Mime_ContentEncoder_QpContentEncoder')
-            ->withDependencies(['mime.charstream', 'mime.bytecanonicalizer'])
-            ->addConstructorValue($dotEscape);
-
-        return $this;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+h2AMJhpA2pBO

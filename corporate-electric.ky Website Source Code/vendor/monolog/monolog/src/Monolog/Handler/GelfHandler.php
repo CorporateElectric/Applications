@@ -1,59 +1,37 @@
-<?php declare(strict_types=1);
-
-/*
- * This file is part of the Monolog package.
- *
- * (c) Jordi Boggiano <j.boggiano@seld.be>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Monolog\Handler;
-
-use Gelf\PublisherInterface;
-use Monolog\Logger;
-use Monolog\Formatter\GelfMessageFormatter;
-use Monolog\Formatter\FormatterInterface;
-
-/**
- * Handler to send messages to a Graylog2 (http://www.graylog2.org) server
- *
- * @author Matt Lehner <mlehner@gmail.com>
- * @author Benjamin Zikarsky <benjamin@zikarsky.de>
- */
-class GelfHandler extends AbstractProcessingHandler
-{
-    /**
-     * @var PublisherInterface|null the publisher object that sends the message to the server
-     */
-    protected $publisher;
-
-    /**
-     * @param PublisherInterface $publisher a publisher object
-     * @param string|int         $level     The minimum logging level at which this handler will be triggered
-     * @param bool               $bubble    Whether the messages that are handled can bubble up the stack or not
-     */
-    public function __construct(PublisherInterface $publisher, $level = Logger::DEBUG, bool $bubble = true)
-    {
-        parent::__construct($level, $bubble);
-
-        $this->publisher = $publisher;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function write(array $record): void
-    {
-        $this->publisher->publish($record['formatted']);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    protected function getDefaultFormatter(): FormatterInterface
-    {
-        return new GelfMessageFormatter();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+nv5AAK2NuISfY5s00w2iGPpE

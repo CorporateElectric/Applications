@@ -1,92 +1,65 @@
-<?php
-
-namespace Maatwebsite\Excel\Factories;
-
-use Maatwebsite\Excel\Cache\CacheManager;
-use Maatwebsite\Excel\Concerns\MapsCsvSettings;
-use Maatwebsite\Excel\Concerns\WithCharts;
-use Maatwebsite\Excel\Concerns\WithCustomCsvSettings;
-use Maatwebsite\Excel\Concerns\WithMultipleSheets;
-use Maatwebsite\Excel\Concerns\WithPreCalculateFormulas;
-use PhpOffice\PhpSpreadsheet\IOFactory;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Writer\Csv;
-use PhpOffice\PhpSpreadsheet\Writer\Html;
-use PhpOffice\PhpSpreadsheet\Writer\IWriter;
-
-class WriterFactory
-{
-    use MapsCsvSettings;
-
-    /**
-     * @param string      $writerType
-     * @param Spreadsheet $spreadsheet
-     * @param object      $export
-     *
-     * @throws \PhpOffice\PhpSpreadsheet\Writer\Exception
-     * @return IWriter
-     */
-    public static function make(string $writerType, Spreadsheet $spreadsheet, $export): IWriter
-    {
-        $writer = IOFactory::createWriter($spreadsheet, $writerType);
-
-        $writer->setUseDiskCaching(
-            config('excel.cache.driver', CacheManager::DRIVER_MEMORY) !== CacheManager::DRIVER_MEMORY
-        );
-
-        if (static::includesCharts($export)) {
-            $writer->setIncludeCharts(true);
-        }
-
-        if ($writer instanceof Html && $export instanceof WithMultipleSheets) {
-            $writer->writeAllSheets();
-        }
-
-        if ($writer instanceof Csv) {
-            static::applyCsvSettings(config('excel.exports.csv', []));
-
-            if ($export instanceof WithCustomCsvSettings) {
-                static::applyCsvSettings($export->getCsvSettings());
-            }
-
-            $writer->setDelimiter(static::$delimiter);
-            $writer->setEnclosure(static::$enclosure);
-            $writer->setEnclosureRequired((bool) static::$enclosure);
-            $writer->setLineEnding(static::$lineEnding);
-            $writer->setUseBOM(static::$useBom);
-            $writer->setIncludeSeparatorLine(static::$includeSeparatorLine);
-            $writer->setExcelCompatibility(static::$excelCompatibility);
-        }
-
-        // Calculation settings
-        $writer->setPreCalculateFormulas(
-            $export instanceof WithPreCalculateFormulas
-                ? true
-                : config('excel.exports.pre_calculate_formulas', false)
-        );
-
-        return $writer;
-    }
-
-    /**
-     * @param $export
-     *
-     * @return bool
-     */
-    private static function includesCharts($export): bool
-    {
-        if ($export instanceof WithCharts) {
-            return true;
-        }
-
-        if ($export instanceof WithMultipleSheets) {
-            foreach ($export->sheets() as $sheet) {
-                if ($sheet instanceof WithCharts) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,114 +1,60 @@
-<?php
-
-namespace Illuminate\Hashing;
-
-use Illuminate\Contracts\Hashing\Hasher as HasherContract;
-use RuntimeException;
-
-class BcryptHasher extends AbstractHasher implements HasherContract
-{
-    /**
-     * The default cost factor.
-     *
-     * @var int
-     */
-    protected $rounds = 10;
-
-    /**
-     * Indicates whether to perform an algorithm check.
-     *
-     * @var bool
-     */
-    protected $verifyAlgorithm = false;
-
-    /**
-     * Create a new hasher instance.
-     *
-     * @param  array  $options
-     * @return void
-     */
-    public function __construct(array $options = [])
-    {
-        $this->rounds = $options['rounds'] ?? $this->rounds;
-        $this->verifyAlgorithm = $options['verify'] ?? $this->verifyAlgorithm;
-    }
-
-    /**
-     * Hash the given value.
-     *
-     * @param  string  $value
-     * @param  array  $options
-     * @return string
-     *
-     * @throws \RuntimeException
-     */
-    public function make($value, array $options = [])
-    {
-        $hash = password_hash($value, PASSWORD_BCRYPT, [
-            'cost' => $this->cost($options),
-        ]);
-
-        if ($hash === false) {
-            throw new RuntimeException('Bcrypt hashing not supported.');
-        }
-
-        return $hash;
-    }
-
-    /**
-     * Check the given plain value against a hash.
-     *
-     * @param  string  $value
-     * @param  string  $hashedValue
-     * @param  array  $options
-     * @return bool
-     *
-     * @throws \RuntimeException
-     */
-    public function check($value, $hashedValue, array $options = [])
-    {
-        if ($this->verifyAlgorithm && $this->info($hashedValue)['algoName'] !== 'bcrypt') {
-            throw new RuntimeException('This password does not use the Bcrypt algorithm.');
-        }
-
-        return parent::check($value, $hashedValue, $options);
-    }
-
-    /**
-     * Check if the given hash has been hashed using the given options.
-     *
-     * @param  string  $hashedValue
-     * @param  array  $options
-     * @return bool
-     */
-    public function needsRehash($hashedValue, array $options = [])
-    {
-        return password_needs_rehash($hashedValue, PASSWORD_BCRYPT, [
-            'cost' => $this->cost($options),
-        ]);
-    }
-
-    /**
-     * Set the default password work factor.
-     *
-     * @param  int  $rounds
-     * @return $this
-     */
-    public function setRounds($rounds)
-    {
-        $this->rounds = (int) $rounds;
-
-        return $this;
-    }
-
-    /**
-     * Extract the cost value from the options array.
-     *
-     * @param  array  $options
-     * @return int
-     */
-    protected function cost(array $options = [])
-    {
-        return $options['rounds'] ?? $this->rounds;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+ZopAlnkwVR4=

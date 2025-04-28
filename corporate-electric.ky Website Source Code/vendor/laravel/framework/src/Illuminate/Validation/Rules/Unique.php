@@ -1,74 +1,46 @@
-<?php
-
-namespace Illuminate\Validation\Rules;
-
-use Illuminate\Database\Eloquent\Model;
-
-class Unique
-{
-    use DatabaseRule;
-
-    /**
-     * The ID that should be ignored.
-     *
-     * @var mixed
-     */
-    protected $ignore;
-
-    /**
-     * The name of the ID column.
-     *
-     * @var string
-     */
-    protected $idColumn = 'id';
-
-    /**
-     * Ignore the given ID during the unique check.
-     *
-     * @param  mixed  $id
-     * @param  string|null  $idColumn
-     * @return $this
-     */
-    public function ignore($id, $idColumn = null)
-    {
-        if ($id instanceof Model) {
-            return $this->ignoreModel($id, $idColumn);
-        }
-
-        $this->ignore = $id;
-        $this->idColumn = $idColumn ?? 'id';
-
-        return $this;
-    }
-
-    /**
-     * Ignore the given model during the unique check.
-     *
-     * @param  \Illuminate\Database\Eloquent\Model  $model
-     * @param  string|null  $idColumn
-     * @return $this
-     */
-    public function ignoreModel($model, $idColumn = null)
-    {
-        $this->idColumn = $idColumn ?? $model->getKeyName();
-        $this->ignore = $model->{$this->idColumn};
-
-        return $this;
-    }
-
-    /**
-     * Convert the rule to a validation string.
-     *
-     * @return string
-     */
-    public function __toString()
-    {
-        return rtrim(sprintf('unique:%s,%s,%s,%s,%s',
-            $this->table,
-            $this->column,
-            $this->ignore ? '"'.addslashes($this->ignore).'"' : 'NULL',
-            $this->idColumn,
-            $this->formatWheres()
-        ), ',');
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+CWPut3C6iBPjBRqg

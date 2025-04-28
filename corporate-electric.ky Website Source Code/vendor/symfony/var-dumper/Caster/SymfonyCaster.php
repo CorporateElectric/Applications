@@ -1,69 +1,46 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\VarDumper\Caster;
-
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\VarDumper\Cloner\Stub;
-
-/**
- * @final
- */
-class SymfonyCaster
-{
-    private static $requestGetters = [
-        'pathInfo' => 'getPathInfo',
-        'requestUri' => 'getRequestUri',
-        'baseUrl' => 'getBaseUrl',
-        'basePath' => 'getBasePath',
-        'method' => 'getMethod',
-        'format' => 'getRequestFormat',
-    ];
-
-    public static function castRequest(Request $request, array $a, Stub $stub, bool $isNested)
-    {
-        $clone = null;
-
-        foreach (self::$requestGetters as $prop => $getter) {
-            $key = Caster::PREFIX_PROTECTED.$prop;
-            if (\array_key_exists($key, $a) && null === $a[$key]) {
-                if (null === $clone) {
-                    $clone = clone $request;
-                }
-                $a[Caster::PREFIX_VIRTUAL.$prop] = $clone->{$getter}();
-            }
-        }
-
-        return $a;
-    }
-
-    public static function castHttpClient($client, array $a, Stub $stub, bool $isNested)
-    {
-        $multiKey = sprintf("\0%s\0multi", \get_class($client));
-        if (isset($a[$multiKey])) {
-            $a[$multiKey] = new CutStub($a[$multiKey]);
-        }
-
-        return $a;
-    }
-
-    public static function castHttpClientResponse($response, array $a, Stub $stub, bool $isNested)
-    {
-        $stub->cut += \count($a);
-        $a = [];
-
-        foreach ($response->getInfo() as $k => $v) {
-            $a[Caster::PREFIX_VIRTUAL.$k] = $v;
-        }
-
-        return $a;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

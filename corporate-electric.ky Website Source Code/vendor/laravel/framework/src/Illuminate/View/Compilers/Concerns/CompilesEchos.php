@@ -1,94 +1,62 @@
-<?php
-
-namespace Illuminate\View\Compilers\Concerns;
-
-trait CompilesEchos
-{
-    /**
-     * Compile Blade echos into valid PHP.
-     *
-     * @param  string  $value
-     * @return string
-     */
-    public function compileEchos($value)
-    {
-        foreach ($this->getEchoMethods() as $method) {
-            $value = $this->$method($value);
-        }
-
-        return $value;
-    }
-
-    /**
-     * Get the echo methods in the proper order for compilation.
-     *
-     * @return array
-     */
-    protected function getEchoMethods()
-    {
-        return [
-            'compileRawEchos',
-            'compileEscapedEchos',
-            'compileRegularEchos',
-        ];
-    }
-
-    /**
-     * Compile the "raw" echo statements.
-     *
-     * @param  string  $value
-     * @return string
-     */
-    protected function compileRawEchos($value)
-    {
-        $pattern = sprintf('/(@)?%s\s*(.+?)\s*%s(\r?\n)?/s', $this->rawTags[0], $this->rawTags[1]);
-
-        $callback = function ($matches) {
-            $whitespace = empty($matches[3]) ? '' : $matches[3].$matches[3];
-
-            return $matches[1] ? substr($matches[0], 1) : "<?php echo {$matches[2]}; ?>{$whitespace}";
-        };
-
-        return preg_replace_callback($pattern, $callback, $value);
-    }
-
-    /**
-     * Compile the "regular" echo statements.
-     *
-     * @param  string  $value
-     * @return string
-     */
-    protected function compileRegularEchos($value)
-    {
-        $pattern = sprintf('/(@)?%s\s*(.+?)\s*%s(\r?\n)?/s', $this->contentTags[0], $this->contentTags[1]);
-
-        $callback = function ($matches) {
-            $whitespace = empty($matches[3]) ? '' : $matches[3].$matches[3];
-
-            $wrapped = sprintf($this->echoFormat, $matches[2]);
-
-            return $matches[1] ? substr($matches[0], 1) : "<?php echo {$wrapped}; ?>{$whitespace}";
-        };
-
-        return preg_replace_callback($pattern, $callback, $value);
-    }
-
-    /**
-     * Compile the escaped echo statements.
-     *
-     * @param  string  $value
-     * @return string
-     */
-    protected function compileEscapedEchos($value)
-    {
-        $pattern = sprintf('/(@)?%s\s*(.+?)\s*%s(\r?\n)?/s', $this->escapedTags[0], $this->escapedTags[1]);
-
-        $callback = function ($matches) {
-            $whitespace = empty($matches[3]) ? '' : $matches[3].$matches[3];
-
-            return $matches[1] ? $matches[0] : "<?php echo e({$matches[2]}); ?>{$whitespace}";
-        };
-
-        return preg_replace_callback($pattern, $callback, $value);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+ArW=

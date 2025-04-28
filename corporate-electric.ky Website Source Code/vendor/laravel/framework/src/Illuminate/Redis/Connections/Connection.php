@@ -1,222 +1,76 @@
-<?php
-
-namespace Illuminate\Redis\Connections;
-
-use Closure;
-use Illuminate\Contracts\Events\Dispatcher;
-use Illuminate\Redis\Events\CommandExecuted;
-use Illuminate\Redis\Limiters\ConcurrencyLimiterBuilder;
-use Illuminate\Redis\Limiters\DurationLimiterBuilder;
-use Illuminate\Support\Traits\Macroable;
-
-abstract class Connection
-{
-    use Macroable {
-        __call as macroCall;
-    }
-
-    /**
-     * The Redis client.
-     *
-     * @var \Redis
-     */
-    protected $client;
-
-    /**
-     * The Redis connection name.
-     *
-     * @var string|null
-     */
-    protected $name;
-
-    /**
-     * The event dispatcher instance.
-     *
-     * @var \Illuminate\Contracts\Events\Dispatcher
-     */
-    protected $events;
-
-    /**
-     * Subscribe to a set of given channels for messages.
-     *
-     * @param  array|string  $channels
-     * @param  \Closure  $callback
-     * @param  string  $method
-     * @return void
-     */
-    abstract public function createSubscription($channels, Closure $callback, $method = 'subscribe');
-
-    /**
-     * Funnel a callback for a maximum number of simultaneous executions.
-     *
-     * @param  string  $name
-     * @return \Illuminate\Redis\Limiters\ConcurrencyLimiterBuilder
-     */
-    public function funnel($name)
-    {
-        return new ConcurrencyLimiterBuilder($this, $name);
-    }
-
-    /**
-     * Throttle a callback for a maximum number of executions over a given duration.
-     *
-     * @param  string  $name
-     * @return \Illuminate\Redis\Limiters\DurationLimiterBuilder
-     */
-    public function throttle($name)
-    {
-        return new DurationLimiterBuilder($this, $name);
-    }
-
-    /**
-     * Get the underlying Redis client.
-     *
-     * @return mixed
-     */
-    public function client()
-    {
-        return $this->client;
-    }
-
-    /**
-     * Subscribe to a set of given channels for messages.
-     *
-     * @param  array|string  $channels
-     * @param  \Closure  $callback
-     * @return void
-     */
-    public function subscribe($channels, Closure $callback)
-    {
-        return $this->createSubscription($channels, $callback, __FUNCTION__);
-    }
-
-    /**
-     * Subscribe to a set of given channels with wildcards.
-     *
-     * @param  array|string  $channels
-     * @param  \Closure  $callback
-     * @return void
-     */
-    public function psubscribe($channels, Closure $callback)
-    {
-        return $this->createSubscription($channels, $callback, __FUNCTION__);
-    }
-
-    /**
-     * Run a command against the Redis database.
-     *
-     * @param  string  $method
-     * @param  array  $parameters
-     * @return mixed
-     */
-    public function command($method, array $parameters = [])
-    {
-        $start = microtime(true);
-
-        $result = $this->client->{$method}(...$parameters);
-
-        $time = round((microtime(true) - $start) * 1000, 2);
-
-        if (isset($this->events)) {
-            $this->event(new CommandExecuted($method, $parameters, $time, $this));
-        }
-
-        return $result;
-    }
-
-    /**
-     * Fire the given event if possible.
-     *
-     * @param  mixed  $event
-     * @return void
-     */
-    protected function event($event)
-    {
-        if (isset($this->events)) {
-            $this->events->dispatch($event);
-        }
-    }
-
-    /**
-     * Register a Redis command listener with the connection.
-     *
-     * @param  \Closure  $callback
-     * @return void
-     */
-    public function listen(Closure $callback)
-    {
-        if (isset($this->events)) {
-            $this->events->listen(CommandExecuted::class, $callback);
-        }
-    }
-
-    /**
-     * Get the connection name.
-     *
-     * @return string|null
-     */
-    public function getName()
-    {
-        return $this->name;
-    }
-
-    /**
-     * Set the connections name.
-     *
-     * @param  string  $name
-     * @return $this
-     */
-    public function setName($name)
-    {
-        $this->name = $name;
-
-        return $this;
-    }
-
-    /**
-     * Get the event dispatcher used by the connection.
-     *
-     * @return \Illuminate\Contracts\Events\Dispatcher
-     */
-    public function getEventDispatcher()
-    {
-        return $this->events;
-    }
-
-    /**
-     * Set the event dispatcher instance on the connection.
-     *
-     * @param  \Illuminate\Contracts\Events\Dispatcher  $events
-     * @return void
-     */
-    public function setEventDispatcher(Dispatcher $events)
-    {
-        $this->events = $events;
-    }
-
-    /**
-     * Unset the event dispatcher instance on the connection.
-     *
-     * @return void
-     */
-    public function unsetEventDispatcher()
-    {
-        $this->events = null;
-    }
-
-    /**
-     * Pass other method calls down to the underlying client.
-     *
-     * @param  string  $method
-     * @param  array  $parameters
-     * @return mixed
-     */
-    public function __call($method, $parameters)
-    {
-        if (static::hasMacro($method)) {
-            return $this->macroCall($method, $parameters);
-        }
-
-        return $this->command($method, $parameters);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

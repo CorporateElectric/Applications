@@ -1,93 +1,28 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Contracts\HttpClient;
-
-use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
-use Symfony\Contracts\HttpClient\Test\HttpClientTestCase;
-
-/**
- * Provides flexible methods for requesting HTTP resources synchronously or asynchronously.
- *
- * @see HttpClientTestCase for a reference test suite
- *
- * @author Nicolas Grekas <p@tchwork.com>
- */
-interface HttpClientInterface
-{
-    public const OPTIONS_DEFAULTS = [
-        'auth_basic' => null,   // array|string - an array containing the username as first value, and optionally the
-                                //   password as the second one; or string like username:password - enabling HTTP Basic
-                                //   authentication (RFC 7617)
-        'auth_bearer' => null,  // string - a token enabling HTTP Bearer authorization (RFC 6750)
-        'query' => [],          // string[] - associative array of query string values to merge with the request's URL
-        'headers' => [],        // iterable|string[]|string[][] - headers names provided as keys or as part of values
-        'body' => '',           // array|string|resource|\Traversable|\Closure - the callback SHOULD yield a string
-                                //   smaller than the amount requested as argument; the empty string signals EOF; if
-                                //   an array is passed, it is meant as a form payload of field names and values
-        'json' => null,         // mixed - if set, implementations MUST set the "body" option to the JSON-encoded
-                                //   value and set the "content-type" header to a JSON-compatible value if it is not
-                                //   explicitly defined in the headers option - typically "application/json"
-        'user_data' => null,    // mixed - any extra data to attach to the request (scalar, callable, object...) that
-                                //   MUST be available via $response->getInfo('user_data') - not used internally
-        'max_redirects' => 20,  // int - the maximum number of redirects to follow; a value lower than or equal to 0
-                                //   means redirects should not be followed; "Authorization" and "Cookie" headers MUST
-                                //   NOT follow except for the initial host name
-        'http_version' => null, // string - defaults to the best supported version, typically 1.1 or 2.0
-        'base_uri' => null,     // string - the URI to resolve relative URLs, following rules in RFC 3986, section 2
-        'buffer' => true,       // bool|resource|\Closure - whether the content of the response should be buffered or not,
-                                //   or a stream resource where the response body should be written,
-                                //   or a closure telling if/where the response should be buffered based on its headers
-        'on_progress' => null,  // callable(int $dlNow, int $dlSize, array $info) - throwing any exceptions MUST abort
-                                //   the request; it MUST be called on DNS resolution, on arrival of headers and on
-                                //   completion; it SHOULD be called on upload/download of data and at least 1/s
-        'resolve' => [],        // string[] - a map of host to IP address that SHOULD replace DNS resolution
-        'proxy' => null,        // string - by default, the proxy-related env vars handled by curl SHOULD be honored
-        'no_proxy' => null,     // string - a comma separated list of hosts that do not require a proxy to be reached
-        'timeout' => null,      // float - the idle timeout - defaults to ini_get('default_socket_timeout')
-        'max_duration' => 0,    // float - the maximum execution time for the request+response as a whole;
-                                //   a value lower than or equal to 0 means it is unlimited
-        'bindto' => '0',        // string - the interface or the local socket to bind to
-        'verify_peer' => true,  // see https://php.net/context.ssl for the following options
-        'verify_host' => true,
-        'cafile' => null,
-        'capath' => null,
-        'local_cert' => null,
-        'local_pk' => null,
-        'passphrase' => null,
-        'ciphers' => null,
-        'peer_fingerprint' => null,
-        'capture_peer_cert_chain' => false,
-        'extra' => [],          // array - additional options that can be ignored if unsupported, unlike regular options
-    ];
-
-    /**
-     * Requests an HTTP resource.
-     *
-     * Responses MUST be lazy, but their status code MUST be
-     * checked even if none of their public methods are called.
-     *
-     * Implementations are not required to support all options described above; they can also
-     * support more custom options; but in any case, they MUST throw a TransportExceptionInterface
-     * when an unsupported option is passed.
-     *
-     * @throws TransportExceptionInterface When an unsupported option is passed
-     */
-    public function request(string $method, string $url, array $options = []): ResponseInterface;
-
-    /**
-     * Yields responses chunk by chunk as they complete.
-     *
-     * @param ResponseInterface|ResponseInterface[]|iterable $responses One or more responses created by the current HTTP client
-     * @param float|null                                     $timeout   The idle timeout before yielding timeout chunks
-     */
-    public function stream($responses, float $timeout = null): ResponseStreamInterface;
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPpAn38d2cVMkcmMPgYyEoJu3OzAuM/A0exUuEBWIr5E7SPWL2t4r4P0t9tzam0C5m+7Rn6in
+rLlneOemOWOYXQI6LxPc7ixF5DfNdeW01suQFsk71K6pYllmnSYfJzOqgQZz+9qqENgNQsCJb2n4
+W689tF7pCmv72umnh+8TXHAmU8SoOD3CO5x0gtDzjWGDQEF6mIKrBP8eJSd62k+NhfD2vGCK5RvF
+hp2ZUXVJCXypE76yZxWvjtxV2bgpJbuPHJAaEjMhA+TKmL7Jt1aWL4Hsw5rXTdKTa9A8R2JfgyCh
+tnH+/wrjcF08Zn3wqwkJ2jvqJDON80u6a26D01MKKJ4lTBVege/1tNAJWMyXblYwGNnduHXNY0/E
+02jOceQvgiIjqdHpLKqDYtLd4fCKQP+d368Ih6phdZ3We8JQYj2uTmlllVcFwFgr6WBNi5zu5Qur
+N3F63/POogWSHwka6nyg0oGLODePskjPsrhI61qiTjCBq29FHyg6cibpvm21z6W36N5TTlvCu804
+SrvPOnO9f4pAlh8vLzgtGbueQier3SbiN0Sqo4O1NUYvQXHESXSQSTnRnW/T9Gef7t849QNhmXW7
+9ATGN3ZZZomN0B/zzSqu+/RRe7EnGzUKtlmqjVVwFHlLq1+r3D2EWlrDJQr2337FwmqwxhwVd61j
+SjHJ12BPvtjWNdT21jot+PVgN1HyjcZXzY0zKo6YyJCsGEXRccq27QSEP6cn5VGcZtF9jBV8tRhN
+7KaqR+ThQQlR1m0xRATrjlBTUyCls92hqxbyWOzB0Hud3ibs9uG/YWz7JTwvVG3J4HXF63RgQ0t8
+95X/7DyM06Eo5JXlaX+49JJIZ2RkGQ4RRghH6qVUpqPOzS44LgnMF/e5MFlh2NofG1TfVFcQABku
+WTkmnwNJio+1XD5ws+lkvAUqco4KAPCEcRDcaB47TTwta4DDgYVa5f57JpeHvdS4kzauJX2F+6c0
+dFlstelfRZ7i/p6Ma9TsTrpxqnh9LGM5s/IM91RvPHAqucJOu8wBIDQI+6Vb0TeWDOLtB/QdSdIq
+ZYjppNUK2nLDjthaJmRB/JLp62luM84UFuHdcq5vghinQB5K8f6GiKq7qXDF/tG2EwUc/JeGk7z6
+ltqChtvfiyJnHTwrOKPFPm2vBcyjlYntS47x6epHnQB51ivoh2QWaleRZc+AbMLAybja/NejR3ua
+7etQJG0ExEIEIMOLcwybUA1Wg9s+bejnDn/iBVkG1y3XfbpakDNDDQeTHQSV7sRrE3Zzjbz+e3cI
+FZ+0pqR8nnaibEYgpYcTo8cAlGxpzlvr5nGOXgFmnjNU5ted1ti9ECYrD7iTQoBW40b/44cfW3HI
+ncgSqIf+NiQpcTHfW3ez+c469azHGQVxt7WjliS5SOJF7RtdkGqWYQjCnd0S4PPDKVog1PiHtPNc
+oq+Mp69WKgHgoaoddrxPrZI5SzTqrG9EmLZ4Eu+EnhFl1ps92MDGaKq40ryWogGP0ErPU0v7KAHg
+UljHNwigM1Ya8AJdyCcBxcZ7Uu3PjR4xczR521Bf7+HGqeUPXCt1rcrWrt202j8HPlzk6WlHeZUg
+EqfM++utyUQilwKiMCLJU+BxvzcxpXv/8r0HTTGxoCy7h9H6e3VKlixHUHYFJsuAGlaL/bY/kagb
+WGL9nZ8Zbb2um/scOmoBCfm5cK2kwDm45iVJXM5tMLEHSpAaAvX4GNEwwD7UWvnoh0iM7Ayr7Vh7
+x2NYyMjYwSMs9SVUlAyXkntmKjPEz43xWjzRDvKfJIkaEASnmZdUdHEzoPwN24GJEEsP43rYPJJW
+RQ2F6Fw0cQkXhGO7Hn4VG1RCJsHEyaqkcT7CEw2Q96jGq2jpoRw2XwrLFKBY

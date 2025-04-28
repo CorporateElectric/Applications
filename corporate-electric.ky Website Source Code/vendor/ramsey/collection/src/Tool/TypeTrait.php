@@ -1,73 +1,36 @@
-<?php
-
-/**
- * This file is part of the ramsey/collection library
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @copyright Copyright (c) Ben Ramsey <ben@benramsey.com>
- * @license http://opensource.org/licenses/MIT MIT
- */
-
-declare(strict_types=1);
-
-namespace Ramsey\Collection\Tool;
-
-use function is_array;
-use function is_bool;
-use function is_callable;
-use function is_float;
-use function is_int;
-use function is_numeric;
-use function is_object;
-use function is_resource;
-use function is_scalar;
-use function is_string;
-
-/**
- * Provides functionality to check values for specific types.
- */
-trait TypeTrait
-{
-    /**
-     * Returns `true` if value is of the specified type.
-     *
-     * @param string $type The type to check the value against.
-     * @param mixed $value The value to check.
-     */
-    protected function checkType(string $type, $value): bool
-    {
-        switch ($type) {
-            case 'array':
-                return is_array($value);
-            case 'bool':
-            case 'boolean':
-                return is_bool($value);
-            case 'callable':
-                return is_callable($value);
-            case 'float':
-            case 'double':
-                return is_float($value);
-            case 'int':
-            case 'integer':
-                return is_int($value);
-            case 'null':
-                return $value === null;
-            case 'numeric':
-                return is_numeric($value);
-            case 'object':
-                return is_object($value);
-            case 'resource':
-                return is_resource($value);
-            case 'scalar':
-                return is_scalar($value);
-            case 'string':
-                return is_string($value);
-            case 'mixed':
-                return true;
-            default:
-                return $value instanceof $type;
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+4B69pUKU0g41O7AlL2siyLQ6lVOb6/G=

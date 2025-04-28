@@ -1,957 +1,380 @@
-<?php
-/**
- * Mockery
- *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://github.com/padraic/mockery/blob/master/LICENSE
- * If you did not receive a copy of the license and are unable to
- * obtain it through the world-wide-web, please send an email
- * to padraic@php.net so we can send you a copy immediately.
- *
- * @category   Mockery
- * @package    Mockery
- * @copyright  Copyright (c) 2010 Pádraic Brady (http://blog.astrumfutura.com)
- * @license    http://github.com/padraic/mockery/blob/master/LICENSE New BSD License
- */
-
-namespace Mockery;
-
-use Mockery\Exception\BadMethodCallException;
-use Mockery\ExpectsHigherOrderMessage;
-use Mockery\HigherOrderMessage;
-use Mockery\LegacyMockInterface;
-use Mockery\MockInterface;
-use Mockery\Reflector;
-
-class Mock implements MockInterface
-{
-    /**
-     * Stores an array of all expectation directors for this mock
-     *
-     * @var array
-     */
-    protected $_mockery_expectations = array();
-
-    /**
-     * Stores an initial number of expectations that can be manipulated
-     * while using the getter method.
-     *
-     * @var int
-     */
-    protected $_mockery_expectations_count = 0;
-
-    /**
-     * Flag to indicate whether we can ignore method calls missing from our
-     * expectations
-     *
-     * @var bool
-     */
-    protected $_mockery_ignoreMissing = false;
-
-    /**
-     * Flag to indicate whether we can defer method calls missing from our
-     * expectations
-     *
-     * @var bool
-     */
-    protected $_mockery_deferMissing = false;
-
-    /**
-     * Flag to indicate whether this mock was verified
-     *
-     * @var bool
-     */
-    protected $_mockery_verified = false;
-
-    /**
-     * Given name of the mock
-     *
-     * @var string
-     */
-    protected $_mockery_name = null;
-
-    /**
-     * Order number of allocation
-     *
-     * @var int
-     */
-    protected $_mockery_allocatedOrder = 0;
-
-    /**
-     * Current ordered number
-     *
-     * @var int
-     */
-    protected $_mockery_currentOrder = 0;
-
-    /**
-     * Ordered groups
-     *
-     * @var array
-     */
-    protected $_mockery_groups = array();
-
-    /**
-     * Mock container containing this mock object
-     *
-     * @var \Mockery\Container
-     */
-    protected $_mockery_container = null;
-
-    /**
-     * Instance of a core object on which methods are called in the event
-     * it has been set, and an expectation for one of the object's methods
-     * does not exist. This implements a simple partial mock proxy system.
-     *
-     * @var object
-     */
-    protected $_mockery_partial = null;
-
-    /**
-     * Flag to indicate we should ignore all expectations temporarily. Used
-     * mainly to prevent expectation matching when in the middle of a mock
-     * object recording session.
-     *
-     * @var bool
-     */
-    protected $_mockery_disableExpectationMatching = false;
-
-    /**
-     * Stores all stubbed public methods separate from any on-object public
-     * properties that may exist.
-     *
-     * @var array
-     */
-    protected $_mockery_mockableProperties = array();
-
-    /**
-     * @var array
-     */
-    protected $_mockery_mockableMethods = array();
-
-    /**
-     * Just a local cache for this mock's target's methods
-     *
-     * @var \ReflectionMethod[]
-     */
-    protected static $_mockery_methods;
-
-    protected $_mockery_allowMockingProtectedMethods = false;
-
-    protected $_mockery_receivedMethodCalls;
-
-    /**
-     * If shouldIgnoreMissing is called, this value will be returned on all calls to missing methods
-     * @var mixed
-     */
-    protected $_mockery_defaultReturnValue = null;
-
-    /**
-     * Tracks internally all the bad method call exceptions that happened during runtime
-     *
-     * @var array
-     */
-    protected $_mockery_thrownExceptions = [];
-
-    protected $_mockery_instanceMock = true;
-
-    /**
-     * We want to avoid constructors since class is copied to Generator.php
-     * for inclusion on extending class definitions.
-     *
-     * @param \Mockery\Container $container
-     * @param object $partialObject
-     * @param bool $instanceMock
-     * @return void
-     */
-    public function mockery_init(\Mockery\Container $container = null, $partialObject = null, $instanceMock = true)
-    {
-        if (is_null($container)) {
-            $container = new \Mockery\Container();
-        }
-        $this->_mockery_container = $container;
-        if (!is_null($partialObject)) {
-            $this->_mockery_partial = $partialObject;
-        }
-
-        if (!\Mockery::getConfiguration()->mockingNonExistentMethodsAllowed()) {
-            foreach ($this->mockery_getMethods() as $method) {
-                if ($method->isPublic()) {
-                    $this->_mockery_mockableMethods[] = $method->getName();
-                }
-            }
-        }
-
-        $this->_mockery_instanceMock = $instanceMock;
-    }
-
-    /**
-     * Set expected method calls
-     *
-     * @param string ...$methodNames one or many methods that are expected to be called in this mock
-     *
-     * @return \Mockery\ExpectationInterface|\Mockery\Expectation|\Mockery\HigherOrderMessage
-     */
-    public function shouldReceive(...$methodNames)
-    {
-        if (count($methodNames) === 0) {
-            return new HigherOrderMessage($this, "shouldReceive");
-        }
-
-        foreach ($methodNames as $method) {
-            if ("" == $method) {
-                throw new \InvalidArgumentException("Received empty method name");
-            }
-        }
-
-        $self = $this;
-        $allowMockingProtectedMethods = $this->_mockery_allowMockingProtectedMethods;
-
-        $lastExpectation = \Mockery::parseShouldReturnArgs(
-            $this,
-            $methodNames,
-            function ($method) use ($self, $allowMockingProtectedMethods) {
-                $rm = $self->mockery_getMethod($method);
-                if ($rm) {
-                    if ($rm->isPrivate()) {
-                        throw new \InvalidArgumentException("$method() cannot be mocked as it is a private method");
-                    }
-                    if (!$allowMockingProtectedMethods && $rm->isProtected()) {
-                        throw new \InvalidArgumentException("$method() cannot be mocked as it is a protected method and mocking protected methods is not enabled for the currently used mock object. Use shouldAllowMockingProtectedMethods() to enable mocking of protected methods.");
-                    }
-                }
-
-                $director = $self->mockery_getExpectationsFor($method);
-                if (!$director) {
-                    $director = new \Mockery\ExpectationDirector($method, $self);
-                    $self->mockery_setExpectationsFor($method, $director);
-                }
-                $expectation = new \Mockery\Expectation($self, $method);
-                $director->addExpectation($expectation);
-                return $expectation;
-            }
-        );
-        return $lastExpectation;
-    }
-
-    // start method allows
-    /**
-     * @param mixed $something  String method name or map of method => return
-     * @return self|\Mockery\ExpectationInterface|\Mockery\Expectation|\Mockery\HigherOrderMessage
-     */
-    public function allows($something = [])
-    {
-        if (is_string($something)) {
-            return $this->shouldReceive($something);
-        }
-
-        if (empty($something)) {
-            return $this->shouldReceive();
-        }
-
-        foreach ($something as $method => $returnValue) {
-            $this->shouldReceive($method)->andReturn($returnValue);
-        }
-
-        return $this;
-    }
-    // end method allows
-
-    // start method expects
-    /**
-    /**
-     * @param mixed $something  String method name (optional)
-     * @return \Mockery\ExpectationInterface|\Mockery\Expectation|ExpectsHigherOrderMessage
-     */
-    public function expects($something = null)
-    {
-        if (is_string($something)) {
-            return $this->shouldReceive($something)->once();
-        }
-
-        return new ExpectsHigherOrderMessage($this);
-    }
-    // end method expects
-
-    /**
-     * Shortcut method for setting an expectation that a method should not be called.
-     *
-     * @param string ...$methodNames one or many methods that are expected not to be called in this mock
-     * @return \Mockery\ExpectationInterface|\Mockery\Expectation|\Mockery\HigherOrderMessage
-     */
-    public function shouldNotReceive(...$methodNames)
-    {
-        if (count($methodNames) === 0) {
-            return new HigherOrderMessage($this, "shouldNotReceive");
-        }
-
-        $expectation = call_user_func_array(array($this, 'shouldReceive'), $methodNames);
-        $expectation->never();
-        return $expectation;
-    }
-
-    /**
-     * Allows additional methods to be mocked that do not explicitly exist on mocked class
-     * @param String $method name of the method to be mocked
-     * @return Mock
-     */
-    public function shouldAllowMockingMethod($method)
-    {
-        $this->_mockery_mockableMethods[] = $method;
-        return $this;
-    }
-
-    /**
-     * Set mock to ignore unexpected methods and return Undefined class
-     * @param mixed $returnValue the default return value for calls to missing functions on this mock
-     * @return Mock
-     */
-    public function shouldIgnoreMissing($returnValue = null)
-    {
-        $this->_mockery_ignoreMissing = true;
-        $this->_mockery_defaultReturnValue = $returnValue;
-        return $this;
-    }
-
-    public function asUndefined()
-    {
-        $this->_mockery_ignoreMissing = true;
-        $this->_mockery_defaultReturnValue = new \Mockery\Undefined();
-        return $this;
-    }
-
-    /**
-     * @return Mock
-     */
-    public function shouldAllowMockingProtectedMethods()
-    {
-        if (!\Mockery::getConfiguration()->mockingNonExistentMethodsAllowed()) {
-            foreach ($this->mockery_getMethods() as $method) {
-                if ($method->isProtected()) {
-                    $this->_mockery_mockableMethods[] = $method->getName();
-                }
-            }
-        }
-
-        $this->_mockery_allowMockingProtectedMethods = true;
-        return $this;
-    }
-
-
-    /**
-     * Set mock to defer unexpected methods to it's parent
-     *
-     * This is particularly useless for this class, as it doesn't have a parent,
-     * but included for completeness
-     *
-     * @deprecated 2.0.0 Please use makePartial() instead
-     *
-     * @return Mock
-     */
-    public function shouldDeferMissing()
-    {
-        return $this->makePartial();
-    }
-
-    /**
-     * Set mock to defer unexpected methods to it's parent
-     *
-     * It was an alias for shouldDeferMissing(), which will be removed
-     * in 2.0.0.
-     *
-     * @return Mock
-     */
-    public function makePartial()
-    {
-        $this->_mockery_deferMissing = true;
-        return $this;
-    }
-
-    /**
-     * In the event shouldReceive() accepting one or more methods/returns,
-     * this method will switch them from normal expectations to default
-     * expectations
-     *
-     * @return self
-     */
-    public function byDefault()
-    {
-        foreach ($this->_mockery_expectations as $director) {
-            $exps = $director->getExpectations();
-            foreach ($exps as $exp) {
-                $exp->byDefault();
-            }
-        }
-        return $this;
-    }
-
-    /**
-     * Capture calls to this mock
-     */
-    public function __call($method, array $args)
-    {
-        return $this->_mockery_handleMethodCall($method, $args);
-    }
-
-    public static function __callStatic($method, array $args)
-    {
-        return self::_mockery_handleStaticMethodCall($method, $args);
-    }
-
-    /**
-     * Forward calls to this magic method to the __call method
-     */
-    public function __toString()
-    {
-        return $this->__call('__toString', array());
-    }
-
-    /**
-     * Iterate across all expectation directors and validate each
-     *
-     * @throws \Mockery\CountValidator\Exception
-     * @return void
-     */
-    public function mockery_verify()
-    {
-        if ($this->_mockery_verified) {
-            return;
-        }
-        if (isset($this->_mockery_ignoreVerification)
-            && $this->_mockery_ignoreVerification == true) {
-            return;
-        }
-        $this->_mockery_verified = true;
-        foreach ($this->_mockery_expectations as $director) {
-            $director->verify();
-        }
-    }
-
-    /**
-     * Gets a list of exceptions thrown by this mock
-     *
-     * @return array
-     */
-    public function mockery_thrownExceptions()
-    {
-        return $this->_mockery_thrownExceptions;
-    }
-
-    /**
-     * Tear down tasks for this mock
-     *
-     * @return void
-     */
-    public function mockery_teardown()
-    {
-    }
-
-    /**
-     * Fetch the next available allocation order number
-     *
-     * @return int
-     */
-    public function mockery_allocateOrder()
-    {
-        $this->_mockery_allocatedOrder += 1;
-        return $this->_mockery_allocatedOrder;
-    }
-
-    /**
-     * Set ordering for a group
-     *
-     * @param mixed $group
-     * @param int $order
-     */
-    public function mockery_setGroup($group, $order)
-    {
-        $this->_mockery_groups[$group] = $order;
-    }
-
-    /**
-     * Fetch array of ordered groups
-     *
-     * @return array
-     */
-    public function mockery_getGroups()
-    {
-        return $this->_mockery_groups;
-    }
-
-    /**
-     * Set current ordered number
-     *
-     * @param int $order
-     */
-    public function mockery_setCurrentOrder($order)
-    {
-        $this->_mockery_currentOrder = $order;
-        return $this->_mockery_currentOrder;
-    }
-
-    /**
-     * Get current ordered number
-     *
-     * @return int
-     */
-    public function mockery_getCurrentOrder()
-    {
-        return $this->_mockery_currentOrder;
-    }
-
-    /**
-     * Validate the current mock's ordering
-     *
-     * @param string $method
-     * @param int $order
-     * @throws \Mockery\Exception
-     * @return void
-     */
-    public function mockery_validateOrder($method, $order)
-    {
-        if ($order < $this->_mockery_currentOrder) {
-            $exception = new \Mockery\Exception\InvalidOrderException(
-                'Method ' . __CLASS__ . '::' . $method . '()'
-                . ' called out of order: expected order '
-                . $order . ', was ' . $this->_mockery_currentOrder
-            );
-            $exception->setMock($this)
-                ->setMethodName($method)
-                ->setExpectedOrder($order)
-                ->setActualOrder($this->_mockery_currentOrder);
-            throw $exception;
-        }
-        $this->mockery_setCurrentOrder($order);
-    }
-
-    /**
-     * Gets the count of expectations for this mock
-     *
-     * @return int
-     */
-    public function mockery_getExpectationCount()
-    {
-        $count = $this->_mockery_expectations_count;
-        foreach ($this->_mockery_expectations as $director) {
-            $count += $director->getExpectationCount();
-        }
-        return $count;
-    }
-
-    /**
-     * Return the expectations director for the given method
-     *
-     * @var string $method
-     * @return \Mockery\ExpectationDirector|null
-     */
-    public function mockery_setExpectationsFor($method, \Mockery\ExpectationDirector $director)
-    {
-        $this->_mockery_expectations[$method] = $director;
-    }
-
-    /**
-     * Return the expectations director for the given method
-     *
-     * @var string $method
-     * @return \Mockery\ExpectationDirector|null
-     */
-    public function mockery_getExpectationsFor($method)
-    {
-        if (isset($this->_mockery_expectations[$method])) {
-            return $this->_mockery_expectations[$method];
-        }
-    }
-
-    /**
-     * Find an expectation matching the given method and arguments
-     *
-     * @var string $method
-     * @var array $args
-     * @return \Mockery\Expectation|null
-     */
-    public function mockery_findExpectation($method, array $args)
-    {
-        if (!isset($this->_mockery_expectations[$method])) {
-            return null;
-        }
-        $director = $this->_mockery_expectations[$method];
-
-        return $director->findExpectation($args);
-    }
-
-    /**
-     * Return the container for this mock
-     *
-     * @return \Mockery\Container
-     */
-    public function mockery_getContainer()
-    {
-        return $this->_mockery_container;
-    }
-
-    /**
-     * Return the name for this mock
-     *
-     * @return string
-     */
-    public function mockery_getName()
-    {
-        return __CLASS__;
-    }
-
-    /**
-     * @return array
-     */
-    public function mockery_getMockableProperties()
-    {
-        return $this->_mockery_mockableProperties;
-    }
-
-    public function __isset($name)
-    {
-        if (false === stripos($name, '_mockery_') && get_parent_class($this) && method_exists(get_parent_class($this), '__isset')) {
-            return call_user_func('parent::__isset', $name);
-        }
-
-        return false;
-    }
-
-    public function mockery_getExpectations()
-    {
-        return $this->_mockery_expectations;
-    }
-
-    /**
-     * Calls a parent class method and returns the result. Used in a passthru
-     * expectation where a real return value is required while still taking
-     * advantage of expectation matching and call count verification.
-     *
-     * @param string $name
-     * @param array $args
-     * @return mixed
-     */
-    public function mockery_callSubjectMethod($name, array $args)
-    {
-        if (!method_exists($this, $name) && get_parent_class($this) && method_exists(get_parent_class($this), '__call')) {
-            return call_user_func('parent::__call', $name, $args);
-        }
-        return call_user_func_array('parent::' . $name, $args);
-    }
-
-    /**
-     * @return string[]
-     */
-    public function mockery_getMockableMethods()
-    {
-        return $this->_mockery_mockableMethods;
-    }
-
-    /**
-     * @return bool
-     */
-    public function mockery_isAnonymous()
-    {
-        $rfc = new \ReflectionClass($this);
-
-        // PHP 8 has Stringable interface
-        $interfaces = array_filter($rfc->getInterfaces(), function ($i) {
-            return $i->getName() !== 'Stringable';
-        });
-
-        return false === $rfc->getParentClass() && 2 === count($interfaces);
-    }
-
-    public function mockery_isInstance()
-    {
-        return $this->_mockery_instanceMock;
-    }
-
-    public function __wakeup()
-    {
-        /**
-         * This does not add __wakeup method support. It's a blind method and any
-         * expected __wakeup work will NOT be performed. It merely cuts off
-         * annoying errors where a __wakeup exists but is not essential when
-         * mocking
-         */
-    }
-
-    public function __destruct()
-    {
-        /**
-         * Overrides real class destructor in case if class was created without original constructor
-         */
-    }
-
-    public function mockery_getMethod($name)
-    {
-        foreach ($this->mockery_getMethods() as $method) {
-            if ($method->getName() == $name) {
-                return $method;
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * @param string $name Method name.
-     *
-     * @return mixed Generated return value based on the declared return value of the named method.
-     */
-    public function mockery_returnValueForMethod($name)
-    {
-        $rm = $this->mockery_getMethod($name);
-
-        // Default return value for methods with nullable type is null
-        if ($rm === null || $rm->getReturnType() === null || $rm->getReturnType()->allowsNull()) {
-            return null;
-        }
-
-        $returnType = Reflector::getReturnType($rm, true);
-
-        switch ($returnType) {
-            case null:     return null;
-            case 'string': return '';
-            case 'int':    return 0;
-            case 'float':  return 0.0;
-            case 'bool':   return false;
-
-            case 'array':
-            case 'iterable':
-                return [];
-
-            case 'callable':
-            case '\Closure':
-                return function () {
-                };
-
-            case '\Traversable':
-            case '\Generator':
-                $generator = function () { yield; };
-                return $generator();
-
-            case 'void':
-                return null;
-
-            case 'object':
-                return \Mockery::mock();
-
-            default:
-                return \Mockery::mock($returnType);
-        }
-    }
-
-    public function shouldHaveReceived($method = null, $args = null)
-    {
-        if ($method === null) {
-            return new HigherOrderMessage($this, "shouldHaveReceived");
-        }
-
-        $expectation = new \Mockery\VerificationExpectation($this, $method);
-        if (null !== $args) {
-            $expectation->withArgs($args);
-        }
-        $expectation->atLeast()->once();
-        $director = new \Mockery\VerificationDirector($this->_mockery_getReceivedMethodCalls(), $expectation);
-        $this->_mockery_expectations_count++;
-        $director->verify();
-        return $director;
-    }
-
-    public function shouldHaveBeenCalled()
-    {
-        return $this->shouldHaveReceived("__invoke");
-    }
-
-    public function shouldNotHaveReceived($method = null, $args = null)
-    {
-        if ($method === null) {
-            return new HigherOrderMessage($this, "shouldNotHaveReceived");
-        }
-
-        $expectation = new \Mockery\VerificationExpectation($this, $method);
-        if (null !== $args) {
-            $expectation->withArgs($args);
-        }
-        $expectation->never();
-        $director = new \Mockery\VerificationDirector($this->_mockery_getReceivedMethodCalls(), $expectation);
-        $this->_mockery_expectations_count++;
-        $director->verify();
-        return null;
-    }
-
-    public function shouldNotHaveBeenCalled(array $args = null)
-    {
-        return $this->shouldNotHaveReceived("__invoke", $args);
-    }
-
-    protected static function _mockery_handleStaticMethodCall($method, array $args)
-    {
-        $associatedRealObject = \Mockery::fetchMock(__CLASS__);
-        try {
-            return $associatedRealObject->__call($method, $args);
-        } catch (BadMethodCallException $e) {
-            throw new BadMethodCallException(
-                'Static method ' . $associatedRealObject->mockery_getName() . '::' . $method
-                . '() does not exist on this mock object',
-                null,
-                $e
-            );
-        }
-    }
-
-    protected function _mockery_getReceivedMethodCalls()
-    {
-        return $this->_mockery_receivedMethodCalls ?: $this->_mockery_receivedMethodCalls = new \Mockery\ReceivedMethodCalls();
-    }
-
-    /**
-     * Called when an instance Mock was created and its constructor is getting called
-     *
-     * @see \Mockery\Generator\StringManipulation\Pass\InstanceMockPass
-     * @param array $args
-     */
-    protected function _mockery_constructorCalled(array $args)
-    {
-        if (!isset($this->_mockery_expectations['__construct']) /* _mockery_handleMethodCall runs the other checks */) {
-            return;
-        }
-        $this->_mockery_handleMethodCall('__construct', $args);
-    }
-
-    protected function _mockery_findExpectedMethodHandler($method)
-    {
-        if (isset($this->_mockery_expectations[$method])) {
-            return $this->_mockery_expectations[$method];
-        }
-
-        $lowerCasedMockeryExpectations = array_change_key_case($this->_mockery_expectations, CASE_LOWER);
-        $lowerCasedMethod = strtolower($method);
-
-        if (isset($lowerCasedMockeryExpectations[$lowerCasedMethod])) {
-            return $lowerCasedMockeryExpectations[$lowerCasedMethod];
-        }
-
-        return null;
-    }
-
-    protected function _mockery_handleMethodCall($method, array $args)
-    {
-        $this->_mockery_getReceivedMethodCalls()->push(new \Mockery\MethodCall($method, $args));
-
-        $rm = $this->mockery_getMethod($method);
-        if ($rm && $rm->isProtected() && !$this->_mockery_allowMockingProtectedMethods) {
-            if ($rm->isAbstract()) {
-                return;
-            }
-
-            try {
-                $prototype = $rm->getPrototype();
-                if ($prototype->isAbstract()) {
-                    return;
-                }
-            } catch (\ReflectionException $re) {
-                // noop - there is no hasPrototype method
-            }
-
-            return call_user_func_array("parent::$method", $args);
-        }
-
-        $handler = $this->_mockery_findExpectedMethodHandler($method);
-
-        if ($handler !== null && !$this->_mockery_disableExpectationMatching) {
-            try {
-                return $handler->call($args);
-            } catch (\Mockery\Exception\NoMatchingExpectationException $e) {
-                if (!$this->_mockery_ignoreMissing && !$this->_mockery_deferMissing) {
-                    throw $e;
-                }
-            }
-        }
-
-        if (!is_null($this->_mockery_partial) &&
-            (method_exists($this->_mockery_partial, $method) || method_exists($this->_mockery_partial, '__call'))
-        ) {
-            return call_user_func_array(array($this->_mockery_partial, $method), $args);
-        } elseif ($this->_mockery_deferMissing && is_callable("parent::$method")
-            && (!$this->hasMethodOverloadingInParentClass() || (get_parent_class($this) && method_exists(get_parent_class($this), $method)))) {
-            return call_user_func_array("parent::$method", $args);
-        } elseif ($this->_mockery_deferMissing && get_parent_class($this) && method_exists(get_parent_class($this), '__call')) {
-            return call_user_func('parent::__call', $method, $args);
-        } elseif ($method == '__toString') {
-            // __toString is special because we force its addition to the class API regardless of the
-            // original implementation.  Thus, we should always return a string rather than honor
-            // _mockery_ignoreMissing and break the API with an error.
-            return sprintf("%s#%s", __CLASS__, spl_object_hash($this));
-        } elseif ($this->_mockery_ignoreMissing) {
-            if (\Mockery::getConfiguration()->mockingNonExistentMethodsAllowed() || (!is_null($this->_mockery_partial) && method_exists($this->_mockery_partial, $method)) || is_callable("parent::$method")) {
-                if ($this->_mockery_defaultReturnValue instanceof \Mockery\Undefined) {
-                    return call_user_func_array(array($this->_mockery_defaultReturnValue, $method), $args);
-                } elseif (null === $this->_mockery_defaultReturnValue) {
-                    return $this->mockery_returnValueForMethod($method);
-                }
-
-                return $this->_mockery_defaultReturnValue;
-            }
-        }
-
-        $message = 'Method ' . __CLASS__ . '::' . $method .
-            '() does not exist on this mock object';
-
-        if (!is_null($rm)) {
-            $message = 'Received ' . __CLASS__ .
-                '::' . $method . '(), but no expectations were specified';
-        }
-
-        $bmce = new BadMethodCallException($message);
-        $this->_mockery_thrownExceptions[] = $bmce;
-        throw $bmce;
-    }
-
-    /**
-     * Uses reflection to get the list of all
-     * methods within the current mock object
-     *
-     * @return array
-     */
-    protected function mockery_getMethods()
-    {
-        if (static::$_mockery_methods && \Mockery::getConfiguration()->reflectionCacheEnabled()) {
-            return static::$_mockery_methods;
-        }
-
-        if (isset($this->_mockery_partial)) {
-            $reflected = new \ReflectionObject($this->_mockery_partial);
-        } else {
-            $reflected = new \ReflectionClass($this);
-        }
-
-        return static::$_mockery_methods = $reflected->getMethods();
-    }
-
-    private function hasMethodOverloadingInParentClass()
-    {
-        // if there's __call any name would be callable
-        return is_callable('parent::aFunctionNameThatNoOneWouldEverUseInRealLife12345');
-    }
-
-    /**
-     * @return array
-     */
-    private function getNonPublicMethods()
-    {
-        return array_map(
-            function ($method) {
-                return $method->getName();
-            },
-            array_filter($this->mockery_getMethods(), function ($method) {
-                return !$method->isPublic();
-            })
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

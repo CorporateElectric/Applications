@@ -1,110 +1,56 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Mime\Header;
-
-use Symfony\Component\Mime\Address;
-use Symfony\Component\Mime\Exception\RfcComplianceException;
-
-/**
- * An ID MIME Header for something like Message-ID or Content-ID (one or more addresses).
- *
- * @author Chris Corbyn
- */
-final class IdentificationHeader extends AbstractHeader
-{
-    private $ids = [];
-    private $idsAsAddresses = [];
-
-    /**
-     * @param string|array $ids
-     */
-    public function __construct(string $name, $ids)
-    {
-        parent::__construct($name);
-
-        $this->setId($ids);
-    }
-
-    /**
-     * @param string|array $body a string ID or an array of IDs
-     *
-     * @throws RfcComplianceException
-     */
-    public function setBody($body)
-    {
-        $this->setId($body);
-    }
-
-    public function getBody(): array
-    {
-        return $this->getIds();
-    }
-
-    /**
-     * Set the ID used in the value of this header.
-     *
-     * @param string|array $id
-     *
-     * @throws RfcComplianceException
-     */
-    public function setId($id)
-    {
-        $this->setIds(\is_array($id) ? $id : [$id]);
-    }
-
-    /**
-     * Get the ID used in the value of this Header.
-     *
-     * If multiple IDs are set only the first is returned.
-     */
-    public function getId(): ?string
-    {
-        return $this->ids[0] ?? null;
-    }
-
-    /**
-     * Set a collection of IDs to use in the value of this Header.
-     *
-     * @param string[] $ids
-     *
-     * @throws RfcComplianceException
-     */
-    public function setIds(array $ids)
-    {
-        $this->ids = [];
-        $this->idsAsAddresses = [];
-        foreach ($ids as $id) {
-            $this->idsAsAddresses[] = new Address($id);
-            $this->ids[] = $id;
-        }
-    }
-
-    /**
-     * Get the list of IDs used in this Header.
-     *
-     * @return string[]
-     */
-    public function getIds(): array
-    {
-        return $this->ids;
-    }
-
-    public function getBodyAsString(): string
-    {
-        $addrs = [];
-        foreach ($this->idsAsAddresses as $address) {
-            $addrs[] = '<'.$address->toString().'>';
-        }
-
-        return implode(' ', $addrs);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cP+K1uJVvxzauXBDq530a14WzQ8fpMrLNcyLwffsdQrkSvia8uCje92nQFjEFbReXFWO1gC4J
+D6X2IfODszSUB9kFbvgwYdwVJDe7gi3J6vMDZxBx3aR3Ug+fck++hgj/x4DtOb7ZUJw4MT892Iws
+RMbNfqkW5bQvLxzoXtt27STQEahFKkJY9KsL0DuSLEnIJ/fuvOsfFU8wRaGzkpcWlAuVB4mDufOl
+//3O5b3AE4c6bshz+PBJc+BUEKDj2zRkUYSVSphLgoldLC5HqzmP85H4TkWCQBfgUePrbhIK2xqZ
+hoHIDXauzWeLpbDYm5OpJXK2E82KNGtJhM7t/4AkbXHWNGhv4Ck1Uh9h+q0xOUX5UmJqVF43YTkF
+gH7zbzrSH7ftO7xzSkdhLqpeKB0fVTBuYd9wch5qu5lY4WjcEZ/KN0ISAO/olvualYlBZmvk14QS
+8JLOHd8ssjwmlSGLVu0GBeUsDauS6K4UQ4vBJla6ct85mMs1ZGr1ZzMrFnXfkV7lT0TSFlo6PZb4
+XCOQEhYPhFLq3kHXWnJDqRp8kWplrEyMlq17gXtJBHzpq9ZQEnI8f7tdGtPTfk/7eRyb/SH5D81K
+9694j6SLvWUGkRcUGNO8Ih1frPMpparyB4PWMFm31b8nIEXG3wjBcPhMwzXfdG3YtWNRfusb9JIs
+GZOhIuN/q4APES5+5c0s1KuqNVzC+QdWya4zA1EgSl0eBJ10hbqopf3+XSQpZ9RV13eSG6w2TtqY
+P5E2cfZCV6fMpGwnuA3gwOfh6nlMETWABOFwwyXkA2rjs1WPg7HPjiVT92dJr0NtgKbKQdfogThC
+Oybp+PY7u8zt7ShEFhsG425rNQBkZuipO3Ogz4XnkAhep92AKG1v7qQQ6E861hC4vOLcgly+ac1P
+5Z9XvHOHbQzrVim8yctTh34H1YMbzJs0lZqktqWa31iJog2fYL0HXIAXhVw2od6enHwa54dIrisk
+xrhdMYjm/nXS61ikOjisgX2EtSW6sIiu43O7uKE0muVqiBGxvt6Yuf6JVb4UhSk9Nj1tsz8bDYUK
+sdzSHJguEk7Px36vWeE9xJgB5JZdZX4zr8ATdL5AsMMJFpCM4V4L82AjiVBs7A3vSZOFXOJrQkqM
+Bdyb7SzTBpyUrTAn4Hp3YFx8R6BRhE09+PHZg8XillsiJ5GUoVinT5Wf08dGkv3zPt0jrzmIQ2eX
+YE4hR3MoqPQMj+EkGECt8SWI8H+rAFJrlWMJkVqELFSqIXnQyY8KBY+ijscFNgKzURtTXc+Vjc83
+Dbq2oh1oPIEDiROCHzOLBpXc9opTf61zUXORVjEA2CN+bxmIUoSqHsPpz8SpS3RS2/+6L+DynDMn
+gCcOzBx9eO7QYRrXjjgvLf4W1euaCgDnQd7qBAu3ddCiBr1i1ozTOZKqP3F7Hc3LsUNLl7DIiV2t
+7HXAcXNBhOty+jQTnBlviMdyOcHl4tSO8ei3IrPwXmW3eeZuW/At7Qv2lKJsPV4ZtcBlxHTk5Xb7
+JwfCIK05/kxZKTyMxQl2YZh4W6Q0p+1z4tka7Qm5eDhku03/kTw4lMlPiYiSnaR06K6hOHZQMGam
+gpM3hbzMjFtyK8QKMoKGJ0NWQi3aWonaEseW2GdzK0uVgGKO8GT67OvLD/ogRxjq0kmgQWJymnRO
+Dm0ghIZFMaVhlGlRTUX+pmd7cU8BCtALmx96ETeNeQBfvjjPIQK74cUK0EkjfBZV7y1zkLBOglTe
+Lc15R/P3RbIl36dUA3A5lejCT2J/tz36QVdF02C+Cf4lo0IKGmqAetAsac3Sxwak+NNPJlN4j42K
+BZaekJK7OJlm0ErFbBCXXDGGWSfrJXdGljIuiRLiWQKe7M3/0w66XufqP9de1Ns2OtZAcB+xcvZx
+4Dzf8WjzV1irdTKK/CyPqWHF6DMLJtN0nmtpyc/jYCVpzrig1BJe9lsHf8Dnvjox3ZNdtz4abwuH
+am6WIA3Emk7ASiVICR9Ov1B3aSrb6OJrT6jfo2x3LLsrfBAXcC766PsO9kAfqdYYLrq8nk774Sgi
+cMF5Xlsg3JcCm1QUet/+OkoeqZi0N6iiDMprJGHg6tl9ekkvfrBrNbuMfYexs1xhVbvXTBNpe1NT
+faA7QOUVGzIy3XE2kJDbr8N13C7p/S92TG8JZEmpYnvExdrEqagv6ejVujWXgo0U5Gn3KL/nHQuU
+fW4J7z7swS80fcKOgOOk8hwRkqPrhFMlj5hVcAc3jceYYsGDaCw17V8lMaF3gwspjJYxfwj+I00A
+vTs+rqPjhz7IwodOXSQVAEvWUBwO3rymthWAWd23LrOK3saEmsMDCio/wR7JqLlLHQrBne+MtW8a
+do83I8xxErlm7YAsozaT7L5BW+8xfdXzdWHE/9Q01sVmYhAJE/+zgpEWOAk0YdfqSVgdgwQYnN06
+YjVLg5SLxYXdvyJG5HBauFdvMn+zOlg3lHymAN2H6U37wKpBJYjspS+IALPWCoezvMqcRVv1itII
++5+pc5F7GQEqN+avDwxDSdcOdagCuDvTqgLibZuso8FVXzmcM2+V71LGPmxJlPeWrlU88mI8IdmF
+ns87rOZQC1tCu1/cLyS64oVzoBMpR3hf4lUM0NtBWYOaL776CUC068BQO/7yIbHpUkfa25FWeBal
+Yd3qzxnTzTFhjWJYe2JQewEbE3Pp5rJnvp/B8R5Zst0FNbSVAEx8HqP9hwar8KRrL9nuiUWPRRCb
+LdSl9187lO9l6ChLIjKY2qaRwI7nwxjqA8Lv7tkDeQB3g8/2U+QWqoAuJLnNR+Zk2rmeUMFdwxtX
+Nh6TTOgGrDksFQ1c7Fud66MdAxI4pJZMSPsJurPme7fsODCwzRdqYV8ikSEJpP4eIBYimL35myge
+ggouM7J3oSRW1YUiECRZBmu21Z8BrhjEMK/w9TaK9ghnMzq18zHr6eyHx+gjq2vFslgQMtw1KiYD
+h8vNiw34QQKjb3unhGH5//OuQ5mbdmakzI3taFC4tgpQeUG+dtFWevtuhFbaUKbo9s6rtJDWB9jR
+otdEW1Eoic3JOv5Jx/Br8igxWI5Y7huSH6m/OwWlz9xX3JLGRs+Sf2Z/D5NjyqKlTMrCjgJdI2kr
+TXAy6ZxkJ5CnHyM5qECYv6B20rePTI21ltm4iFDBwa6ihx1C6oYhaC6Z4XKXF/9J0mOJljRscVd1
+TcUCNxbD9JC9Gx0IP5yWbmqIqva3Cwknpd+EdXbv4Pbm/OQ8roQOc6+MjkQipdOjOIg8Ryo9HGIj
+EvByJx9LECOga2ZCVhVBcSnvyeRUuReokJDPrNBeL9nFas7A52/qHI78v1ePbXZ+oJ9aWilXg6If
+inCMOpUrmQ1PQjoT175Z+kQjaVcHDtdECMM7voXTJeRVqNTo63B99etQqKKhwedj6CvfHykpYzcD
+pVEXbJEmxsVMoJY0RnX3OXbUYN8OcQ1f7mMxwGqab+RrjGF7FlIFLqEdjgP+GEUtooB76q4w7V30
+tSV+27Xc/piMsyxlwYLZonSa74I8iApp7kzgpGZ2gplkc7dMeqkOCVPddxJu62LvDxxpxlBo7aTB
+pSuqqYMWuk1s3NmzFoWrnnfeZOzgbO7LS12OBSYuvGA4RvCXKWXKgmK69K7mpyz7E0vx4k9Hleb2
+48wKRwAnFxSTKmqu+vdkySN+LJfeBcYMshQvYVqaIb7zcMOR4+s3y1C+SCdj+vAUakaug7E6xWtJ
+wbTeLlfVjXrbc8JWleeJcxHvAwjyQ02DOgBRcHV1H1rQbF+oRMu1rNx2U6Rylirfhe9kFQzXKv2p
+b/2MqXV5ltMbJlbrYzn+jUAHw8Sbw1QKHRj8riWlBc90TEGIiN0xN/bClpVs8/tbbNNBNTf65da+
+nFCxFqyumrLMkaEgb6kd7uZ6brT1SS21XncbHW3TVQBVCaZet9ZBiPVpXp3bsjPORmOIfN3C0iRg
+DKjBZjZXl0y+L1wKHcuJmbuYxc6q7C0gXoD6UE9J3nr0wmwUH4H7O7EugogqBd6J6vlapxQtR4Gc

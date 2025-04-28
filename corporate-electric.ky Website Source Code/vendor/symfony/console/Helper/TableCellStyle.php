@@ -1,86 +1,63 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Console\Helper;
-
-use Symfony\Component\Console\Exception\InvalidArgumentException;
-
-/**
- * @author Yewhen Khoptynskyi <khoptynskyi@gmail.com>
- */
-class TableCellStyle
-{
-    public const DEFAULT_ALIGN = 'left';
-
-    private $options = [
-        'fg' => 'default',
-        'bg' => 'default',
-        'options' => null,
-        'align' => self::DEFAULT_ALIGN,
-        'cellFormat' => null,
-    ];
-
-    private $tagOptions = [
-        'fg',
-        'bg',
-        'options',
-    ];
-
-    private $alignMap = [
-        'left' => \STR_PAD_RIGHT,
-        'center' => \STR_PAD_BOTH,
-        'right' => \STR_PAD_LEFT,
-    ];
-
-    public function __construct(array $options = [])
-    {
-        if ($diff = array_diff(array_keys($options), array_keys($this->options))) {
-            throw new InvalidArgumentException(sprintf('The TableCellStyle does not support the following options: \'%s\'.', implode('\', \'', $diff)));
-        }
-
-        if (isset($options['align']) && !\array_key_exists($options['align'], $this->alignMap)) {
-            throw new InvalidArgumentException(sprintf('Wrong align value. Value must be following: \'%s\'.', implode('\', \'', array_keys($this->alignMap))));
-        }
-
-        $this->options = array_merge($this->options, $options);
-    }
-
-    public function getOptions(): array
-    {
-        return $this->options;
-    }
-
-    /**
-     * Gets options we need for tag for example fg, bg.
-     *
-     * @return string[]
-     */
-    public function getTagOptions()
-    {
-        return array_filter(
-            $this->getOptions(),
-            function ($key) {
-                return \in_array($key, $this->tagOptions) && isset($this->options[$key]);
-            },
-            \ARRAY_FILTER_USE_KEY
-        );
-    }
-
-    public function getPadByAlign()
-    {
-        return $this->alignMap[$this->getOptions()['align']];
-    }
-
-    public function getCellFormat(): ?string
-    {
-        return $this->getOptions()['cellFormat'];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+mE/2QeInhy5qo3ippf7rfZEr8A8uHUn8

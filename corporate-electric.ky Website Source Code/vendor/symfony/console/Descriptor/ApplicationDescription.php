@@ -1,143 +1,71 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Console\Descriptor;
-
-use Symfony\Component\Console\Application;
-use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Exception\CommandNotFoundException;
-
-/**
- * @author Jean-François Simon <jeanfrancois.simon@sensiolabs.com>
- *
- * @internal
- */
-class ApplicationDescription
-{
-    public const GLOBAL_NAMESPACE = '_global';
-
-    private $application;
-    private $namespace;
-    private $showHidden;
-
-    /**
-     * @var array
-     */
-    private $namespaces;
-
-    /**
-     * @var Command[]
-     */
-    private $commands;
-
-    /**
-     * @var Command[]
-     */
-    private $aliases;
-
-    public function __construct(Application $application, string $namespace = null, bool $showHidden = false)
-    {
-        $this->application = $application;
-        $this->namespace = $namespace;
-        $this->showHidden = $showHidden;
-    }
-
-    public function getNamespaces(): array
-    {
-        if (null === $this->namespaces) {
-            $this->inspectApplication();
-        }
-
-        return $this->namespaces;
-    }
-
-    /**
-     * @return Command[]
-     */
-    public function getCommands(): array
-    {
-        if (null === $this->commands) {
-            $this->inspectApplication();
-        }
-
-        return $this->commands;
-    }
-
-    /**
-     * @throws CommandNotFoundException
-     */
-    public function getCommand(string $name): Command
-    {
-        if (!isset($this->commands[$name]) && !isset($this->aliases[$name])) {
-            throw new CommandNotFoundException(sprintf('Command "%s" does not exist.', $name));
-        }
-
-        return isset($this->commands[$name]) ? $this->commands[$name] : $this->aliases[$name];
-    }
-
-    private function inspectApplication()
-    {
-        $this->commands = [];
-        $this->namespaces = [];
-
-        $all = $this->application->all($this->namespace ? $this->application->findNamespace($this->namespace) : null);
-        foreach ($this->sortCommands($all) as $namespace => $commands) {
-            $names = [];
-
-            /** @var Command $command */
-            foreach ($commands as $name => $command) {
-                if (!$command->getName() || (!$this->showHidden && $command->isHidden())) {
-                    continue;
-                }
-
-                if ($command->getName() === $name) {
-                    $this->commands[$name] = $command;
-                } else {
-                    $this->aliases[$name] = $command;
-                }
-
-                $names[] = $name;
-            }
-
-            $this->namespaces[$namespace] = ['id' => $namespace, 'commands' => $names];
-        }
-    }
-
-    private function sortCommands(array $commands): array
-    {
-        $namespacedCommands = [];
-        $globalCommands = [];
-        $sortedCommands = [];
-        foreach ($commands as $name => $command) {
-            $key = $this->application->extractNamespace($name, 1);
-            if (\in_array($key, ['', self::GLOBAL_NAMESPACE], true)) {
-                $globalCommands[$name] = $command;
-            } else {
-                $namespacedCommands[$key][$name] = $command;
-            }
-        }
-
-        if ($globalCommands) {
-            ksort($globalCommands);
-            $sortedCommands[self::GLOBAL_NAMESPACE] = $globalCommands;
-        }
-
-        if ($namespacedCommands) {
-            ksort($namespacedCommands);
-            foreach ($namespacedCommands as $key => $commandsSet) {
-                ksort($commandsSet);
-                $sortedCommands[$key] = $commandsSet;
-            }
-        }
-
-        return $sortedCommands;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+ZIb4B/rPJS2g9kG9sG==

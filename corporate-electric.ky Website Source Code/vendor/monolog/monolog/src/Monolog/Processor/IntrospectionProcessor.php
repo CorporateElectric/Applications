@@ -1,108 +1,68 @@
-<?php declare(strict_types=1);
-
-/*
- * This file is part of the Monolog package.
- *
- * (c) Jordi Boggiano <j.boggiano@seld.be>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Monolog\Processor;
-
-use Monolog\Logger;
-
-/**
- * Injects line/file:class/function where the log message came from
- *
- * Warning: This only works if the handler processes the logs directly.
- * If you put the processor on a handler that is behind a FingersCrossedHandler
- * for example, the processor will only be called once the trigger level is reached,
- * and all the log records will have the same file/line/.. data from the call that
- * triggered the FingersCrossedHandler.
- *
- * @author Jordi Boggiano <j.boggiano@seld.be>
- */
-class IntrospectionProcessor implements ProcessorInterface
-{
-    private $level;
-
-    private $skipClassesPartials;
-
-    private $skipStackFramesCount;
-
-    private $skipFunctions = [
-        'call_user_func',
-        'call_user_func_array',
-    ];
-
-    /**
-     * @param string|int $level The minimum logging level at which this Processor will be triggered
-     */
-    public function __construct($level = Logger::DEBUG, array $skipClassesPartials = [], int $skipStackFramesCount = 0)
-    {
-        $this->level = Logger::toMonologLevel($level);
-        $this->skipClassesPartials = array_merge(['Monolog\\'], $skipClassesPartials);
-        $this->skipStackFramesCount = $skipStackFramesCount;
-    }
-
-    public function __invoke(array $record): array
-    {
-        // return if the level is not high enough
-        if ($record['level'] < $this->level) {
-            return $record;
-        }
-
-        $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
-
-        // skip first since it's always the current method
-        array_shift($trace);
-        // the call_user_func call is also skipped
-        array_shift($trace);
-
-        $i = 0;
-
-        while ($this->isTraceClassOrSkippedFunction($trace, $i)) {
-            if (isset($trace[$i]['class'])) {
-                foreach ($this->skipClassesPartials as $part) {
-                    if (strpos($trace[$i]['class'], $part) !== false) {
-                        $i++;
-
-                        continue 2;
-                    }
-                }
-            } elseif (in_array($trace[$i]['function'], $this->skipFunctions)) {
-                $i++;
-
-                continue;
-            }
-
-            break;
-        }
-
-        $i += $this->skipStackFramesCount;
-
-        // we should have the call source now
-        $record['extra'] = array_merge(
-            $record['extra'],
-            [
-                'file'      => isset($trace[$i - 1]['file']) ? $trace[$i - 1]['file'] : null,
-                'line'      => isset($trace[$i - 1]['line']) ? $trace[$i - 1]['line'] : null,
-                'class'     => isset($trace[$i]['class']) ? $trace[$i]['class'] : null,
-                'function'  => isset($trace[$i]['function']) ? $trace[$i]['function'] : null,
-            ]
-        );
-
-        return $record;
-    }
-
-    private function isTraceClassOrSkippedFunction(array $trace, int $index)
-    {
-        if (!isset($trace[$index])) {
-            return false;
-        }
-
-        return isset($trace[$index]['class']) || in_array($trace[$index]['function'], $this->skipFunctions);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+LHpZrZIyafiC58QPbLQlfomfPYIljArRDm==

@@ -1,66 +1,41 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Predis\Command;
-
-/**
- * @link http://redis.io/commands/sscan
- *
- * @author Daniele Alessandri <suppakilla@gmail.com>
- */
-class SetScan extends Command
-{
-    /**
-     * {@inheritdoc}
-     */
-    public function getId()
-    {
-        return 'SSCAN';
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function filterArguments(array $arguments)
-    {
-        if (count($arguments) === 3 && is_array($arguments[2])) {
-            $options = $this->prepareOptions(array_pop($arguments));
-            $arguments = array_merge($arguments, $options);
-        }
-
-        return $arguments;
-    }
-
-    /**
-     * Returns a list of options and modifiers compatible with Redis.
-     *
-     * @param array $options List of options.
-     *
-     * @return array
-     */
-    protected function prepareOptions($options)
-    {
-        $options = array_change_key_case($options, CASE_UPPER);
-        $normalized = array();
-
-        if (!empty($options['MATCH'])) {
-            $normalized[] = 'MATCH';
-            $normalized[] = $options['MATCH'];
-        }
-
-        if (!empty($options['COUNT'])) {
-            $normalized[] = 'COUNT';
-            $normalized[] = $options['COUNT'];
-        }
-
-        return $normalized;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+eSlPuOWRziT0aCHY44dje+Mz72a=

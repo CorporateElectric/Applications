@@ -1,119 +1,74 @@
-<?php
-
-declare(strict_types=1);
-
-/**
- * This file is part of phpDocumentor.
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @link      http://phpdoc.org
- */
-
-namespace phpDocumentor\Reflection\DocBlock\Tags;
-
-use phpDocumentor\Reflection\DocBlock\Description;
-use phpDocumentor\Reflection\DocBlock\DescriptionFactory;
-use phpDocumentor\Reflection\Type;
-use phpDocumentor\Reflection\TypeResolver;
-use phpDocumentor\Reflection\Types\Context as TypeContext;
-use phpDocumentor\Reflection\Utils;
-use Webmozart\Assert\Assert;
-use function array_shift;
-use function array_unshift;
-use function implode;
-use function strpos;
-use function substr;
-use const PREG_SPLIT_DELIM_CAPTURE;
-
-/**
- * Reflection class for a {@}property-write tag in a Docblock.
- */
-final class PropertyWrite extends TagWithType implements Factory\StaticMethod
-{
-    /** @var string */
-    protected $variableName;
-
-    public function __construct(?string $variableName, ?Type $type = null, ?Description $description = null)
-    {
-        Assert::string($variableName);
-
-        $this->name         = 'property-write';
-        $this->variableName = $variableName;
-        $this->type         = $type;
-        $this->description  = $description;
-    }
-
-    public static function create(
-        string $body,
-        ?TypeResolver $typeResolver = null,
-        ?DescriptionFactory $descriptionFactory = null,
-        ?TypeContext $context = null
-    ) : self {
-        Assert::stringNotEmpty($body);
-        Assert::notNull($typeResolver);
-        Assert::notNull($descriptionFactory);
-
-        [$firstPart, $body] = self::extractTypeFromBody($body);
-        $type               = null;
-        $parts              = Utils::pregSplit('/(\s+)/Su', $body, 2, PREG_SPLIT_DELIM_CAPTURE);
-        $variableName = '';
-
-        // if the first item that is encountered is not a variable; it is a type
-        if ($firstPart && $firstPart[0] !== '$') {
-            $type = $typeResolver->resolve($firstPart, $context);
-        } else {
-            // first part is not a type; we should prepend it to the parts array for further processing
-            array_unshift($parts, $firstPart);
-        }
-
-        // if the next item starts with a $ it must be the variable name
-        if (isset($parts[0]) && strpos($parts[0], '$') === 0) {
-            $variableName = array_shift($parts);
-            if ($type) {
-                array_shift($parts);
-            }
-
-            Assert::notNull($variableName);
-
-            $variableName = substr($variableName, 1);
-        }
-
-        $description = $descriptionFactory->create(implode('', $parts), $context);
-
-        return new static($variableName, $type, $description);
-    }
-
-    /**
-     * Returns the variable's name.
-     */
-    public function getVariableName() : ?string
-    {
-        return $this->variableName;
-    }
-
-    /**
-     * Returns a string representation for this tag.
-     */
-    public function __toString() : string
-    {
-        if ($this->description) {
-            $description = $this->description->render();
-        } else {
-            $description = '';
-        }
-
-        if ($this->variableName) {
-            $variableName = '$' . $this->variableName;
-        } else {
-            $variableName = '';
-        }
-
-        $type = (string) $this->type;
-
-        return $type
-            . ($variableName !== '' ? ($type !== '' ? ' ' : '') . $variableName : '')
-            . ($description !== '' ? ($type !== '' || $variableName !== '' ? ' ' : '') . $description : '');
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

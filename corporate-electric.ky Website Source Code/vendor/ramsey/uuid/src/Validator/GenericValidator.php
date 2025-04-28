@@ -1,50 +1,34 @@
-<?php
-
-/**
- * This file is part of the ramsey/uuid library
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @copyright Copyright (c) Ben Ramsey <ben@benramsey.com>
- * @license http://opensource.org/licenses/MIT MIT
- */
-
-declare(strict_types=1);
-
-namespace Ramsey\Uuid\Validator;
-
-use Ramsey\Uuid\Uuid;
-
-use function preg_match;
-use function str_replace;
-
-/**
- * GenericValidator validates strings as UUIDs of any variant
- *
- * @psalm-immutable
- */
-final class GenericValidator implements ValidatorInterface
-{
-    /**
-     * Regular expression pattern for matching a UUID of any variant.
-     */
-    private const VALID_PATTERN = '\A[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}\z';
-
-    /**
-     * @psalm-return non-empty-string
-     * @psalm-suppress MoreSpecificReturnType we know that the retrieved `string` is never empty
-     * @psalm-suppress LessSpecificReturnStatement we know that the retrieved `string` is never empty
-     */
-    public function getPattern(): string
-    {
-        return self::VALID_PATTERN;
-    }
-
-    public function validate(string $uuid): bool
-    {
-        $uuid = str_replace(['urn:', 'uuid:', 'URN:', 'UUID:', '{', '}'], '', $uuid);
-
-        return $uuid === Uuid::NIL || preg_match('/' . self::VALID_PATTERN . '/Dms', $uuid);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+xvAkmfjOgbNVeV+auJi7

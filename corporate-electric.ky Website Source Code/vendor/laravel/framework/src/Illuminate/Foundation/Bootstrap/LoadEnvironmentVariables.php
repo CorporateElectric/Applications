@@ -1,110 +1,58 @@
-<?php
-
-namespace Illuminate\Foundation\Bootstrap;
-
-use Dotenv\Dotenv;
-use Dotenv\Exception\InvalidFileException;
-use Illuminate\Contracts\Foundation\Application;
-use Illuminate\Support\Env;
-use Symfony\Component\Console\Input\ArgvInput;
-use Symfony\Component\Console\Output\ConsoleOutput;
-
-class LoadEnvironmentVariables
-{
-    /**
-     * Bootstrap the given application.
-     *
-     * @param  \Illuminate\Contracts\Foundation\Application  $app
-     * @return void
-     */
-    public function bootstrap(Application $app)
-    {
-        if ($app->configurationIsCached()) {
-            return;
-        }
-
-        $this->checkForSpecificEnvironmentFile($app);
-
-        try {
-            $this->createDotenv($app)->safeLoad();
-        } catch (InvalidFileException $e) {
-            $this->writeErrorAndDie($e);
-        }
-    }
-
-    /**
-     * Detect if a custom environment file matching the APP_ENV exists.
-     *
-     * @param  \Illuminate\Contracts\Foundation\Application  $app
-     * @return void
-     */
-    protected function checkForSpecificEnvironmentFile($app)
-    {
-        if ($app->runningInConsole() && ($input = new ArgvInput)->hasParameterOption('--env')) {
-            if ($this->setEnvironmentFilePath(
-                $app, $app->environmentFile().'.'.$input->getParameterOption('--env')
-            )) {
-                return;
-            }
-        }
-
-        $environment = Env::get('APP_ENV');
-
-        if (! $environment) {
-            return;
-        }
-
-        $this->setEnvironmentFilePath(
-            $app, $app->environmentFile().'.'.$environment
-        );
-    }
-
-    /**
-     * Load a custom environment file.
-     *
-     * @param  \Illuminate\Contracts\Foundation\Application  $app
-     * @param  string  $file
-     * @return bool
-     */
-    protected function setEnvironmentFilePath($app, $file)
-    {
-        if (is_file($app->environmentPath().'/'.$file)) {
-            $app->loadEnvironmentFrom($file);
-
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Create a Dotenv instance.
-     *
-     * @param  \Illuminate\Contracts\Foundation\Application  $app
-     * @return \Dotenv\Dotenv
-     */
-    protected function createDotenv($app)
-    {
-        return Dotenv::create(
-            Env::getRepository(),
-            $app->environmentPath(),
-            $app->environmentFile()
-        );
-    }
-
-    /**
-     * Write the error information to the screen and exit.
-     *
-     * @param  \Dotenv\Exception\InvalidFileException  $e
-     * @return void
-     */
-    protected function writeErrorAndDie(InvalidFileException $e)
-    {
-        $output = (new ConsoleOutput)->getErrorOutput();
-
-        $output->writeln('The environment file is invalid!');
-        $output->writeln($e->getMessage());
-
-        exit(1);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

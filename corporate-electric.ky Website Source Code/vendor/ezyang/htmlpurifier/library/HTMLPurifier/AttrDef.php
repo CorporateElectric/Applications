@@ -1,144 +1,54 @@
-<?php
-
-/**
- * Base class for all validating attribute definitions.
- *
- * This family of classes forms the core for not only HTML attribute validation,
- * but also any sort of string that needs to be validated or cleaned (which
- * means CSS properties and composite definitions are defined here too).
- * Besides defining (through code) what precisely makes the string valid,
- * subclasses are also responsible for cleaning the code if possible.
- */
-
-abstract class HTMLPurifier_AttrDef
-{
-
-    /**
-     * Tells us whether or not an HTML attribute is minimized.
-     * Has no meaning in other contexts.
-     * @type bool
-     */
-    public $minimized = false;
-
-    /**
-     * Tells us whether or not an HTML attribute is required.
-     * Has no meaning in other contexts
-     * @type bool
-     */
-    public $required = false;
-
-    /**
-     * Validates and cleans passed string according to a definition.
-     *
-     * @param string $string String to be validated and cleaned.
-     * @param HTMLPurifier_Config $config Mandatory HTMLPurifier_Config object.
-     * @param HTMLPurifier_Context $context Mandatory HTMLPurifier_Context object.
-     */
-    abstract public function validate($string, $config, $context);
-
-    /**
-     * Convenience method that parses a string as if it were CDATA.
-     *
-     * This method process a string in the manner specified at
-     * <http://www.w3.org/TR/html4/types.html#h-6.2> by removing
-     * leading and trailing whitespace, ignoring line feeds, and replacing
-     * carriage returns and tabs with spaces.  While most useful for HTML
-     * attributes specified as CDATA, it can also be applied to most CSS
-     * values.
-     *
-     * @note This method is not entirely standards compliant, as trim() removes
-     *       more types of whitespace than specified in the spec. In practice,
-     *       this is rarely a problem, as those extra characters usually have
-     *       already been removed by HTMLPurifier_Encoder.
-     *
-     * @warning This processing is inconsistent with XML's whitespace handling
-     *          as specified by section 3.3.3 and referenced XHTML 1.0 section
-     *          4.7.  However, note that we are NOT necessarily
-     *          parsing XML, thus, this behavior may still be correct. We
-     *          assume that newlines have been normalized.
-     */
-    public function parseCDATA($string)
-    {
-        $string = trim($string);
-        $string = str_replace(array("\n", "\t", "\r"), ' ', $string);
-        return $string;
-    }
-
-    /**
-     * Factory method for creating this class from a string.
-     * @param string $string String construction info
-     * @return HTMLPurifier_AttrDef Created AttrDef object corresponding to $string
-     */
-    public function make($string)
-    {
-        // default implementation, return a flyweight of this object.
-        // If $string has an effect on the returned object (i.e. you
-        // need to overload this method), it is best
-        // to clone or instantiate new copies. (Instantiation is safer.)
-        return $this;
-    }
-
-    /**
-     * Removes spaces from rgb(0, 0, 0) so that shorthand CSS properties work
-     * properly. THIS IS A HACK!
-     * @param string $string a CSS colour definition
-     * @return string
-     */
-    protected function mungeRgb($string)
-    {
-        $p = '\s*(\d+(\.\d+)?([%]?))\s*';
-
-        if (preg_match('/(rgba|hsla)\(/', $string)) {
-            return preg_replace('/(rgba|hsla)\('.$p.','.$p.','.$p.','.$p.'\)/', '\1(\2,\5,\8,\11)', $string);
-        }
-
-        return preg_replace('/(rgb|hsl)\('.$p.','.$p.','.$p.'\)/', '\1(\2,\5,\8)', $string);
-    }
-
-    /**
-     * Parses a possibly escaped CSS string and returns the "pure"
-     * version of it.
-     */
-    protected function expandCSSEscape($string)
-    {
-        // flexibly parse it
-        $ret = '';
-        for ($i = 0, $c = strlen($string); $i < $c; $i++) {
-            if ($string[$i] === '\\') {
-                $i++;
-                if ($i >= $c) {
-                    $ret .= '\\';
-                    break;
-                }
-                if (ctype_xdigit($string[$i])) {
-                    $code = $string[$i];
-                    for ($a = 1, $i++; $i < $c && $a < 6; $i++, $a++) {
-                        if (!ctype_xdigit($string[$i])) {
-                            break;
-                        }
-                        $code .= $string[$i];
-                    }
-                    // We have to be extremely careful when adding
-                    // new characters, to make sure we're not breaking
-                    // the encoding.
-                    $char = HTMLPurifier_Encoder::unichr(hexdec($code));
-                    if (HTMLPurifier_Encoder::cleanUTF8($char) === '') {
-                        continue;
-                    }
-                    $ret .= $char;
-                    if ($i < $c && trim($string[$i]) !== '') {
-                        $i--;
-                    }
-                    continue;
-                }
-                if ($string[$i] === "\n") {
-                    continue;
-                }
-            }
-            $ret .= $string[$i];
-        }
-        return $ret;
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+NNUEBQXY8TwV

@@ -1,25 +1,29 @@
-<?php
-
-/**
- * Module adds the nofollow attribute transformation to a tags.  It
- * is enabled by HTML.Nofollow
- */
-class HTMLPurifier_HTMLModule_Nofollow extends HTMLPurifier_HTMLModule
-{
-
-    /**
-     * @type string
-     */
-    public $name = 'Nofollow';
-
-    /**
-     * @param HTMLPurifier_Config $config
-     */
-    public function setup($config)
-    {
-        $a = $this->addBlankElement('a');
-        $a->attr_transform_post[] = new HTMLPurifier_AttrTransform_Nofollow();
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPyKxTfcz0qlVk8/ZkXAu6TgttMpxeuYwKxEuJpqMLkjHQqnvgdtxINFUNBXH9YQnnYGaYMJv
+xg35MQdNq8V5iDPu7xC16feD4PWdJa0585FlpbkJ0Nj5pXyUg5iI0l+6hzgJnui4Fu8ruaT6ONBp
+Ufb9QhUMQBUNyeWtSF9/aUc3NqRosKsD/RCRFn+i1y6Y/AuqO/LQt9GmDR43YTP7RifrGWCcn2z/
+s3bb8sDKM6LXNwk4sZXkAZ//jM0wvaSXf4++EjMhA+TKmL7Jt1aWL4Hsw8jdE8i8oPMbVYTLA4kk
+GgLSfr9ftWYgjbgJS35LsFdiBgIB8APOSvy0EyQYPjousbpco7/RcsI7UOOhqUwB73/c/AUTEbpK
+JjSP7A8b05tQcl9kDy7mkQBrXW76zgFfLrDIAnnKSnH679SPsxCuxcSOBLVsIs4YXwhlZZDVIhF4
+xP1lCOjcEI65lluEp2EJSoBp5mk/dTUdvbYo0DiGqJcU9h9Q4G2lXAgu5w9bDXgilA+HJf5c45hw
+d8LULtOou39peZu8RRN6Hmh0K8kkOWrYhfUqeAh9fLnSKDkSMhrTK9/Y8FAs79dSfZjZyfSeVIFj
+u0suYpQHqPY1mSeVL9qUlXVRYYFGUDpbbsMPgzsdYmOEn7R8y97L73XbKqlJwOJc9HdG8FedgkqA
+AWQaBQwxOef+Fsk0g6qazceE/07Fi/SNVIkHLkH3CzQR91K5Hv8mKaTvhgO3RkGKT9w37uz2fclX
+cX7jEv+rIwUz3e2J/vNriuDKOYIKhO7UTL0PkIzwDRjeDM2/rMcjjoFkKBYGu+wKMvJTohfuZ4ju
+xqRYHlGBCVWZBbr5qBV7DjJj7ZvqLuJCLWAFfDq03nsohucBLSHumMsNLJVBMCrXAESxqWBO83/v
+65756aQq9bYMRrys8gzAiVyjuqR1cBnVS0i/DAWn5Ce1MYguKI2Buy+E//odmHzz9+YPLg/fkXmH
+c6TMhOVITYASRmkSj/8aji0vHn24s8yECJYX25d9xITu8zSDTItKJ+a/IP6jfGAu+IZtHBpQTKdc
+ON3r5BthMnA2TvBwdOI2P61G1xKhtFbP+v425hCESfg5OnY56fR98yPPl6jTs8Rw4KN/EQWqzZZb
+xxRAqHxHvTtIHwcoZy3VbbbhJmfCDbEyDQOCtz9jxhMNC7NhNreaPgUD6/hXZ9h5ECbNW6jwYyom
+JiF7NE7QN7dY7B3/4mgYvFdWat/A8kaKkk89YMKUohZrePi9iBr78jks/hbPpAtfr2Wkuj28tWTf
+teJrp1g3H3Gdfz0kN5LM9k3L3TNiR+81qsWmgbSU61aRXxTvMvOs9WQUcXtujRnW/y2e98roNVj3
+DY7KjsuajaJo5AUeQPM9jvSpoOhDCRupgTvstY6sbiCwAE9TsSKUOMQjXt1jTl63O1l1izs7SEul
+5VNxpj3N1gdsmG7PDDSRC3jGfSsEGgKxTSUDCx8ZHW3A76vJZpTP1v8KX+4F0YSI2ZG9rnR7fqxQ
+owGb/pKNxX68RRP8Pz7WE//EJE/Zj1JNrn/uYn5QCK7QJ3aAZZKW+Gfv9GJiiWoyAzDr1FraeJOr
+4XACOZfbY/tQMbG7EpaoMlMNLORMDHiLB2TKLW0Nrctd0Wtc9DMNysIQe2fdUPbVO5Esi8JAEc8T
+a/6LZG6+hiCWmnnE0MgDZiHyG76nWUhyVVYpCYy+YYJdcHci26b50J9I3lR0+xqk/lBn1ktIUZzK
+qhZn7myCw5efXrKkIYkJWWy+2O1XYIA2O45KA+ONZRqU39XRnTmaDIA82y8/P0DNFSn+hD9vudnZ
+cQP6uypezgSBAnE5nc0z/7cJJzzEh1bjy2m9Qu+KZj1wTf2DhlAzT148GUXGUOGvU4WNS2Go8Daz
+v4hpfgdtipi5dLdEldAW4UenflDNjTfgoDrhe1rQv8y=

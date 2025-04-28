@@ -1,462 +1,193 @@
-<?php
-
-declare(strict_types=1);
-
-namespace Cron;
-
-use DateTime;
-use DateTimeImmutable;
-use DateTimeInterface;
-use DateTimeZone;
-use Exception;
-use InvalidArgumentException;
-use RuntimeException;
-use Webmozart\Assert\Assert;
-
-/**
- * CRON expression parser that can determine whether or not a CRON expression is
- * due to run, the next run date and previous run date of a CRON expression.
- * The determinations made by this class are accurate if checked run once per
- * minute (seconds are dropped from date time comparisons).
- *
- * Schedule parts must map to:
- * minute [0-59], hour [0-23], day of month, month [1-12|JAN-DEC], day of week
- * [1-7|MON-SUN], and an optional year.
- *
- * @see http://en.wikipedia.org/wiki/Cron
- */
-class CronExpression
-{
-    public const MINUTE = 0;
-    public const HOUR = 1;
-    public const DAY = 2;
-    public const MONTH = 3;
-    public const WEEKDAY = 4;
-    
-    /** @deprecated */
-    public const YEAR = 5;
-
-    public const MAPPINGS = [
-        '@yearly' => '0 0 1 1 *',
-        '@annually' => '0 0 1 1 *',
-        '@monthly' => '0 0 1 * *',
-        '@weekly' => '0 0 * * 0',
-        '@daily' => '0 0 * * *',
-        '@hourly' => '0 * * * *',
-    ];
-
-    /**
-     * @var array CRON expression parts
-     */
-    private $cronParts;
-
-    /**
-     * @var FieldFactoryInterface CRON field factory
-     */
-    private $fieldFactory;
-
-    /**
-     * @var int Max iteration count when searching for next run date
-     */
-    private $maxIterationCount = 1000;
-
-    /**
-     * @var array Order in which to test of cron parts
-     */
-    private static $order = [
-        self::YEAR,
-        self::MONTH,
-        self::DAY,
-        self::WEEKDAY,
-        self::HOUR,
-        self::MINUTE,
-    ];
-
-    /**
-     * @deprecated since version 3.0.2, use __construct instead.
-     */
-    public static function factory(string $expression, FieldFactoryInterface $fieldFactory = null): CronExpression
-    {
-        /** @phpstan-ignore-next-line */
-        return new static($expression, $fieldFactory);
-    }
-
-    /**
-     * Validate a CronExpression.
-     *
-     * @param string $expression the CRON expression to validate
-     *
-     * @return bool True if a valid CRON expression was passed. False if not.
-     */
-    public static function isValidExpression(string $expression): bool
-    {
-        try {
-            new CronExpression($expression);
-        } catch (InvalidArgumentException $e) {
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * Parse a CRON expression.
-     *
-     * @param string $expression CRON expression (e.g. '8 * * * *')
-     * @param null|FieldFactoryInterface $fieldFactory Factory to create cron fields
-     */
-    public function __construct(string $expression, FieldFactoryInterface $fieldFactory = null)
-    {
-        $shortcut = strtolower($expression);
-        $expression = self::MAPPINGS[$shortcut] ?? $expression;
-
-        $this->fieldFactory = $fieldFactory ?: new FieldFactory();
-        $this->setExpression($expression);
-    }
-
-    /**
-     * Set or change the CRON expression.
-     *
-     * @param string $value CRON expression (e.g. 8 * * * *)
-     *
-     * @throws \InvalidArgumentException if not a valid CRON expression
-     *
-     * @return CronExpression
-     */
-    public function setExpression(string $value): CronExpression
-    {
-        $split = preg_split('/\s/', $value, -1, PREG_SPLIT_NO_EMPTY);
-        Assert::isArray($split);
-
-        $this->cronParts = $split;
-        if (\count($this->cronParts) < 5) {
-            throw new InvalidArgumentException(
-                $value . ' is not a valid CRON expression'
-            );
-        }
-
-        foreach ($this->cronParts as $position => $part) {
-            $this->setPart($position, $part);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Set part of the CRON expression.
-     *
-     * @param int $position The position of the CRON expression to set
-     * @param string $value The value to set
-     *
-     * @throws \InvalidArgumentException if the value is not valid for the part
-     *
-     * @return CronExpression
-     */
-    public function setPart(int $position, string $value): CronExpression
-    {
-        if (!$this->fieldFactory->getField($position)->validate($value)) {
-            throw new InvalidArgumentException(
-                'Invalid CRON field value ' . $value . ' at position ' . $position
-            );
-        }
-
-        $this->cronParts[$position] = $value;
-
-        return $this;
-    }
-
-    /**
-     * Set max iteration count for searching next run dates.
-     *
-     * @param int $maxIterationCount Max iteration count when searching for next run date
-     *
-     * @return CronExpression
-     */
-    public function setMaxIterationCount(int $maxIterationCount): CronExpression
-    {
-        $this->maxIterationCount = $maxIterationCount;
-
-        return $this;
-    }
-
-    /**
-     * Get a next run date relative to the current date or a specific date
-     *
-     * @param string|\DateTimeInterface $currentTime      Relative calculation date
-     * @param int                       $nth              Number of matches to skip before returning a
-     *                                                    matching next run date.  0, the default, will return the
-     *                                                    current date and time if the next run date falls on the
-     *                                                    current date and time.  Setting this value to 1 will
-     *                                                    skip the first match and go to the second match.
-     *                                                    Setting this value to 2 will skip the first 2
-     *                                                    matches and so on.
-     * @param bool                      $allowCurrentDate Set to TRUE to return the current date if
-     *                                                    it matches the cron expression.
-     * @param null|string               $timeZone         TimeZone to use instead of the system default
-     *
-     * @throws \RuntimeException on too many iterations
-     * @throws \Exception
-     *
-     * @return \DateTime
-     */
-    public function getNextRunDate($currentTime = 'now', int $nth = 0, bool $allowCurrentDate = false, $timeZone = null): DateTime
-    {
-        return $this->getRunDate($currentTime, $nth, false, $allowCurrentDate, $timeZone);
-    }
-
-    /**
-     * Get a previous run date relative to the current date or a specific date.
-     *
-     * @param string|\DateTimeInterface $currentTime      Relative calculation date
-     * @param int                       $nth              Number of matches to skip before returning
-     * @param bool                      $allowCurrentDate Set to TRUE to return the
-     *                                                    current date if it matches the cron expression
-     * @param null|string               $timeZone         TimeZone to use instead of the system default
-     *
-     * @throws \RuntimeException on too many iterations
-     * @throws \Exception
-     *
-     * @return \DateTime
-     *
-     * @see \Cron\CronExpression::getNextRunDate
-     */
-    public function getPreviousRunDate($currentTime = 'now', int $nth = 0, bool $allowCurrentDate = false, $timeZone = null): DateTime
-    {
-        return $this->getRunDate($currentTime, $nth, true, $allowCurrentDate, $timeZone);
-    }
-
-    /**
-     * Get multiple run dates starting at the current date or a specific date.
-     *
-     * @param int $total Set the total number of dates to calculate
-     * @param string|\DateTimeInterface|null $currentTime Relative calculation date
-     * @param bool $invert Set to TRUE to retrieve previous dates
-     * @param bool $allowCurrentDate Set to TRUE to return the
-     *                               current date if it matches the cron expression
-     * @param null|string $timeZone TimeZone to use instead of the system default
-     *
-     * @return \DateTime[] Returns an array of run dates
-     */
-    public function getMultipleRunDates(int $total, $currentTime = 'now', bool $invert = false, bool $allowCurrentDate = false, $timeZone = null): array
-    {
-        $matches = [];
-        $max = max(0, $total);
-        for ($i = 0; $i < $max; ++$i) {
-            try {
-                $matches[] = $this->getRunDate($currentTime, $i, $invert, $allowCurrentDate, $timeZone);
-            } catch (RuntimeException $e) {
-                break;
-            }
-        }
-
-        return $matches;
-    }
-
-    /**
-     * Get all or part of the CRON expression.
-     *
-     * @param int|string|null $part specify the part to retrieve or NULL to get the full
-     *                     cron schedule string
-     *
-     * @return null|string Returns the CRON expression, a part of the
-     *                     CRON expression, or NULL if the part was specified but not found
-     */
-    public function getExpression($part = null): ?string
-    {
-        if (null === $part) {
-            return implode(' ', $this->cronParts);
-        }
-
-        if (array_key_exists($part, $this->cronParts)) {
-            return $this->cronParts[$part];
-        }
-
-        return null;
-    }
-
-    /**
-     * Gets the parts of the cron expression as an array.
-     *
-     * @return string[]
-     *   The array of parts that make up this expression.
-     */
-    public function getParts()
-    {
-        return $this->cronParts;
-    }
-
-    /**
-     * Helper method to output the full expression.
-     *
-     * @return string Full CRON expression
-     */
-    public function __toString(): string
-    {
-        return (string) $this->getExpression();
-    }
-
-    /**
-     * Determine if the cron is due to run based on the current date or a
-     * specific date.  This method assumes that the current number of
-     * seconds are irrelevant, and should be called once per minute.
-     *
-     * @param string|\DateTimeInterface $currentTime Relative calculation date
-     * @param null|string               $timeZone    TimeZone to use instead of the system default
-     *
-     * @return bool Returns TRUE if the cron is due to run or FALSE if not
-     */
-    public function isDue($currentTime = 'now', $timeZone = null): bool
-    {
-        $timeZone = $this->determineTimeZone($currentTime, $timeZone);
-
-        if ('now' === $currentTime) {
-            $currentTime = new DateTime();
-        } elseif ($currentTime instanceof DateTime) {
-            $currentTime = clone $currentTime;
-        } elseif ($currentTime instanceof DateTimeImmutable) {
-            $currentTime = DateTime::createFromFormat('U', $currentTime->format('U'));
-        } elseif (\is_string($currentTime)) {
-            $currentTime = new DateTime($currentTime);
-        }
-
-        Assert::isInstanceOf($currentTime, DateTime::class);
-        $currentTime->setTimezone(new DateTimeZone($timeZone));
-
-        // drop the seconds to 0
-        $currentTime->setTime((int) $currentTime->format('H'), (int) $currentTime->format('i'), 0);
-
-        try {
-            return $this->getNextRunDate($currentTime, 0, true)->getTimestamp() === $currentTime->getTimestamp();
-        } catch (Exception $e) {
-            return false;
-        }
-    }
-
-    /**
-     * Get the next or previous run date of the expression relative to a date.
-     *
-     * @param string|\DateTimeInterface|null $currentTime Relative calculation date
-     * @param int $nth Number of matches to skip before returning
-     * @param bool $invert Set to TRUE to go backwards in time
-     * @param bool $allowCurrentDate Set to TRUE to return the
-     *                               current date if it matches the cron expression
-     * @param string|null $timeZone  TimeZone to use instead of the system default
-     *
-     * @throws \RuntimeException on too many iterations
-     * @throws Exception
-     *
-     * @return \DateTime
-     */
-    protected function getRunDate($currentTime = null, int $nth = 0, bool $invert = false, bool $allowCurrentDate = false, $timeZone = null): DateTime
-    {
-        $timeZone = $this->determineTimeZone($currentTime, $timeZone);
-
-        if ($currentTime instanceof DateTime) {
-            $currentDate = clone $currentTime;
-        } elseif ($currentTime instanceof DateTimeImmutable) {
-            $currentDate = DateTime::createFromFormat('U', $currentTime->format('U'));
-        } elseif (\is_string($currentTime)) {
-            $currentDate = new DateTime($currentTime);
-        } else {
-            $currentDate = new DateTime('now');
-        }
-
-        Assert::isInstanceOf($currentDate, DateTime::class);
-        $currentDate->setTimezone(new DateTimeZone($timeZone));
-        $currentDate->setTime((int) $currentDate->format('H'), (int) $currentDate->format('i'), 0);
-
-        $nextRun = clone $currentDate;
-
-        // We don't have to satisfy * or null fields
-        $parts = [];
-        $fields = [];
-        foreach (self::$order as $position) {
-            $part = $this->getExpression($position);
-            if (null === $part || '*' === $part) {
-                continue;
-            }
-            $parts[$position] = $part;
-            $fields[$position] = $this->fieldFactory->getField($position);
-        }
-
-        if (isset($parts[2]) && isset($parts[4])) {
-            $domExpression = sprintf('%s %s %s %s *', $this->getExpression(0), $this->getExpression(1), $this->getExpression(2), $this->getExpression(3));
-            $dowExpression = sprintf('%s %s * %s %s', $this->getExpression(0), $this->getExpression(1), $this->getExpression(3), $this->getExpression(4));
-
-            $domExpression = new self($domExpression);
-            $dowExpression = new self($dowExpression);
-
-            $domRunDates = $domExpression->getMultipleRunDates($nth + 1, $currentTime, $invert, $allowCurrentDate, $timeZone);
-            $dowRunDates = $dowExpression->getMultipleRunDates($nth + 1, $currentTime, $invert, $allowCurrentDate, $timeZone);
-
-            $combined = array_merge($domRunDates, $dowRunDates);
-            usort($combined, function ($a, $b) {
-                return $a->format('Y-m-d H:i:s') <=> $b->format('Y-m-d H:i:s');
-            });
-
-            return $combined[$nth];
-        }
-
-        // Set a hard limit to bail on an impossible date
-        for ($i = 0; $i < $this->maxIterationCount; ++$i) {
-            foreach ($parts as $position => $part) {
-                $satisfied = false;
-                // Get the field object used to validate this part
-                $field = $fields[$position];
-                // Check if this is singular or a list
-                if (false === strpos($part, ',')) {
-                    $satisfied = $field->isSatisfiedBy($nextRun, $part);
-                } else {
-                    foreach (array_map('trim', explode(',', $part)) as $listPart) {
-                        if ($field->isSatisfiedBy($nextRun, $listPart)) {
-                            $satisfied = true;
-
-                            break;
-                        }
-                    }
-                }
-
-                // If the field is not satisfied, then start over
-                if (!$satisfied) {
-                    $field->increment($nextRun, $invert, $part);
-
-                    continue 2;
-                }
-            }
-
-            // Skip this match if needed
-            if ((!$allowCurrentDate && $nextRun == $currentDate) || --$nth > -1) {
-                $this->fieldFactory->getField(0)->increment($nextRun, $invert, $parts[0] ?? null);
-
-                continue;
-            }
-
-            return $nextRun;
-        }
-
-        // @codeCoverageIgnoreStart
-        throw new RuntimeException('Impossible CRON expression');
-        // @codeCoverageIgnoreEnd
-    }
-
-    /**
-     * Workout what timeZone should be used.
-     *
-     * @param string|\DateTimeInterface|null $currentTime Relative calculation date
-     * @param string|null $timeZone TimeZone to use instead of the system default
-     *
-     * @return string
-     */
-    protected function determineTimeZone($currentTime, ?string $timeZone): string
-    {
-        if (null !== $timeZone) {
-            return $timeZone;
-        }
-
-        if ($currentTime instanceof DateTimeInterface) {
-            return $currentTime->getTimeZone()->getName();
-        }
-
-        return date_default_timezone_get();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+JOK+hYOh2mp3PKLLVWIy1ujZRW6Elgnmlti=

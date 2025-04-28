@@ -1,136 +1,72 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\DomCrawler;
-
-/**
- * The UriResolver class takes an URI (relative, absolute, fragment, etc.)
- * and turns it into an absolute URI against another given base URI.
- *
- * @author Fabien Potencier <fabien@symfony.com>
- * @author Grégoire Pineau <lyrixx@lyrixx.info>
- */
-class UriResolver
-{
-    /**
-     * Resolves a URI according to a base URI.
-     *
-     * For example if $uri=/foo/bar and $baseUri=https://symfony.com it will
-     * return https://symfony.com/foo/bar
-     *
-     * If the $uri is not absolute you must pass an absolute $baseUri
-     */
-    public static function resolve(string $uri, ?string $baseUri): string
-    {
-        $uri = trim($uri);
-
-        // absolute URL?
-        if (null !== parse_url($uri, \PHP_URL_SCHEME)) {
-            return $uri;
-        }
-
-        if (null === $baseUri) {
-            throw new \InvalidArgumentException('The URI is relative, so you must define its base URI passing an absolute URL.');
-        }
-
-        // empty URI
-        if (!$uri) {
-            return $baseUri;
-        }
-
-        // an anchor
-        if ('#' === $uri[0]) {
-            return self::cleanupAnchor($baseUri).$uri;
-        }
-
-        $baseUriCleaned = self::cleanupUri($baseUri);
-
-        if ('?' === $uri[0]) {
-            return $baseUriCleaned.$uri;
-        }
-
-        // absolute URL with relative schema
-        if (0 === strpos($uri, '//')) {
-            return preg_replace('#^([^/]*)//.*$#', '$1', $baseUriCleaned).$uri;
-        }
-
-        $baseUriCleaned = preg_replace('#^(.*?//[^/]*)(?:\/.*)?$#', '$1', $baseUriCleaned);
-
-        // absolute path
-        if ('/' === $uri[0]) {
-            return $baseUriCleaned.$uri;
-        }
-
-        // relative path
-        $path = parse_url(substr($baseUri, \strlen($baseUriCleaned)), \PHP_URL_PATH);
-        $path = self::canonicalizePath(substr($path, 0, strrpos($path, '/')).'/'.$uri);
-
-        return $baseUriCleaned.('' === $path || '/' !== $path[0] ? '/' : '').$path;
-    }
-
-    /**
-     * Returns the canonicalized URI path (see RFC 3986, section 5.2.4).
-     */
-    private static function canonicalizePath(string $path): string
-    {
-        if ('' === $path || '/' === $path) {
-            return $path;
-        }
-
-        if ('.' === substr($path, -1)) {
-            $path .= '/';
-        }
-
-        $output = [];
-
-        foreach (explode('/', $path) as $segment) {
-            if ('..' === $segment) {
-                array_pop($output);
-            } elseif ('.' !== $segment) {
-                $output[] = $segment;
-            }
-        }
-
-        return implode('/', $output);
-    }
-
-    /**
-     * Removes the query string and the anchor from the given uri.
-     */
-    private static function cleanupUri(string $uri): string
-    {
-        return self::cleanupQuery(self::cleanupAnchor($uri));
-    }
-
-    /**
-     * Removes the query string from the uri.
-     */
-    private static function cleanupQuery(string $uri): string
-    {
-        if (false !== $pos = strpos($uri, '?')) {
-            return substr($uri, 0, $pos);
-        }
-
-        return $uri;
-    }
-
-    /**
-     * Removes the anchor from the uri.
-     */
-    private static function cleanupAnchor(string $uri): string
-    {
-        if (false !== $pos = strpos($uri, '#')) {
-            return substr($uri, 0, $pos);
-        }
-
-        return $uri;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

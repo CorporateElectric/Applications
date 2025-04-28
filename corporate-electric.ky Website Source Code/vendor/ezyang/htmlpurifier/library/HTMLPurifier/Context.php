@@ -1,95 +1,41 @@
-<?php
-
-/**
- * Registry object that contains information about the current context.
- * @warning Is a bit buggy when variables are set to null: it thinks
- *          they don't exist! So use false instead, please.
- * @note Since the variables Context deals with may not be objects,
- *       references are very important here! Do not remove!
- */
-class HTMLPurifier_Context
-{
-
-    /**
-     * Private array that stores the references.
-     * @type array
-     */
-    private $_storage = array();
-
-    /**
-     * Registers a variable into the context.
-     * @param string $name String name
-     * @param mixed $ref Reference to variable to be registered
-     */
-    public function register($name, &$ref)
-    {
-        if (array_key_exists($name, $this->_storage)) {
-            trigger_error(
-                "Name $name produces collision, cannot re-register",
-                E_USER_ERROR
-            );
-            return;
-        }
-        $this->_storage[$name] =& $ref;
-    }
-
-    /**
-     * Retrieves a variable reference from the context.
-     * @param string $name String name
-     * @param bool $ignore_error Boolean whether or not to ignore error
-     * @return mixed
-     */
-    public function &get($name, $ignore_error = false)
-    {
-        if (!array_key_exists($name, $this->_storage)) {
-            if (!$ignore_error) {
-                trigger_error(
-                    "Attempted to retrieve non-existent variable $name",
-                    E_USER_ERROR
-                );
-            }
-            $var = null; // so we can return by reference
-            return $var;
-        }
-        return $this->_storage[$name];
-    }
-
-    /**
-     * Destroys a variable in the context.
-     * @param string $name String name
-     */
-    public function destroy($name)
-    {
-        if (!array_key_exists($name, $this->_storage)) {
-            trigger_error(
-                "Attempted to destroy non-existent variable $name",
-                E_USER_ERROR
-            );
-            return;
-        }
-        unset($this->_storage[$name]);
-    }
-
-    /**
-     * Checks whether or not the variable exists.
-     * @param string $name String name
-     * @return bool
-     */
-    public function exists($name)
-    {
-        return array_key_exists($name, $this->_storage);
-    }
-
-    /**
-     * Loads a series of variables from an associative array
-     * @param array $context_array Assoc array of variables to load
-     */
-    public function loadArray($context_array)
-    {
-        foreach ($context_array as $key => $discard) {
-            $this->register($key, $context_array[$key]);
-        }
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+73GYK5oJeeQrU6e=

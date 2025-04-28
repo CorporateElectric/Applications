@@ -1,84 +1,65 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpKernel\Exception;
-
-/**
- * @author Grégoire Pineau <lyrixx@lyrixx.info>
- */
-class ControllerDoesNotReturnResponseException extends \LogicException
-{
-    public function __construct(string $message, callable $controller, string $file, int $line)
-    {
-        parent::__construct($message);
-
-        if (!$controllerDefinition = $this->parseControllerDefinition($controller)) {
-            return;
-        }
-
-        $this->file = $controllerDefinition['file'];
-        $this->line = $controllerDefinition['line'];
-        $r = new \ReflectionProperty(\Exception::class, 'trace');
-        $r->setAccessible(true);
-        $r->setValue($this, array_merge([
-            [
-                'line' => $line,
-                'file' => $file,
-            ],
-        ], $this->getTrace()));
-    }
-
-    private function parseControllerDefinition(callable $controller): ?array
-    {
-        if (\is_string($controller) && false !== strpos($controller, '::')) {
-            $controller = explode('::', $controller);
-        }
-
-        if (\is_array($controller)) {
-            try {
-                $r = new \ReflectionMethod($controller[0], $controller[1]);
-
-                return [
-                    'file' => $r->getFileName(),
-                    'line' => $r->getEndLine(),
-                ];
-            } catch (\ReflectionException $e) {
-                return null;
-            }
-        }
-
-        if ($controller instanceof \Closure) {
-            $r = new \ReflectionFunction($controller);
-
-            return [
-                'file' => $r->getFileName(),
-                'line' => $r->getEndLine(),
-            ];
-        }
-
-        if (\is_object($controller)) {
-            $r = new \ReflectionClass($controller);
-
-            try {
-                $line = $r->getMethod('__invoke')->getEndLine();
-            } catch (\ReflectionException $e) {
-                $line = $r->getEndLine();
-            }
-
-            return [
-                'file' => $r->getFileName(),
-                'line' => $line,
-            ];
-        }
-
-        return null;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+Dj19

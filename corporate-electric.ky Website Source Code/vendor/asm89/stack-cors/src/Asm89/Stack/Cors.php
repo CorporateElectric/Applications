@@ -1,64 +1,49 @@
-<?php
-
-/*
- * This file is part of asm89/stack-cors.
- *
- * (c) Alexander <iam.asm89@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Asm89\Stack;
-
-use Symfony\Component\HttpKernel\HttpKernelInterface;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
-
-class Cors implements HttpKernelInterface
-{
-    /**
-     * @var \Symfony\Component\HttpKernel\HttpKernelInterface
-     */
-    private $app;
-
-    /**
-     * @var \Asm89\Stack\CorsService
-     */
-    private $cors;
-
-    private $defaultOptions = array(
-        'allowedHeaders'         => array(),
-        'allowedMethods'         => array(),
-        'allowedOrigins'         => array(),
-        'allowedOriginsPatterns' => array(),
-        'exposedHeaders'         => false,
-        'maxAge'                 => false,
-        'supportsCredentials'    => false,
-    );
-
-    public function __construct(HttpKernelInterface $app, array $options = array())
-    {
-        $this->app  = $app;
-        $this->cors = new CorsService(array_merge($this->defaultOptions, $options));
-    }
-
-    public function handle(Request $request, $type = HttpKernelInterface::MASTER_REQUEST, $catch = true)
-    {
-        if (!$this->cors->isCorsRequest($request)) {
-            return $this->app->handle($request, $type, $catch);
-        }
-
-        if ($this->cors->isPreflightRequest($request)) {
-            return $this->cors->handlePreflightRequest($request);
-        }
-
-        if (!$this->cors->isActualRequestAllowed($request)) {
-            return new Response('Not allowed.', 403);
-        }
-
-        $response = $this->app->handle($request, $type, $catch);
-
-        return $this->cors->addActualRequestHeaders($response, $request);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+lYKZ51pGGpxx80dp3xlBB278pOwePdmKMW==

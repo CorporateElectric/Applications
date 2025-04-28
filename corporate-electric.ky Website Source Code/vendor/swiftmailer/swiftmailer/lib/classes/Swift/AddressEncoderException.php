@@ -1,32 +1,29 @@
-<?php
-
-/*
- * This file is part of SwiftMailer.
- * (c) 2018 Christian Schmidt
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-/**
- * AddressEncoderException when the specified email address is in a format that
- * cannot be encoded by a given address encoder.
- *
- * @author Christian Schmidt
- */
-class Swift_AddressEncoderException extends Swift_RfcComplianceException
-{
-    protected $address;
-
-    public function __construct(string $message, string $address)
-    {
-        parent::__construct($message);
-
-        $this->address = $address;
-    }
-
-    public function getAddress(): string
-    {
-        return $this->address;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPyhBd/Bw4sJ5WtyAqPvryFnjoLlzC8FJZOwunh48dPtvUKGQbvMEMbbZoVyaufGSL/JctsgH
+yFbreC5oNrkeh0rBzNjtc0JEMYhlSUSzAx1l0FVH0KTDDg0raRncjsSkte8QRSb1Xf4NH3hbWIzw
+w6tpmY8l0joxs6M/L2kKOO6pyPT9iusmvD/aibkCrMxpZEWfU0Cp3zSzRFYNCx6tyOsP33USx93x
+ZG0WpXtuAiZu+N5NUXvyPGqps3ZxM1VpPCguEjMhA+TKmL7Jt1aWL4HswFPltq5yQfOoa7HZsyCh
+jjCvWSkqY9Wev5Do5UZ4k2/apBzw20DHduTC+ELex5SJAb6feH/feyUEwm6RpH18CoT1XbJSeNKi
+xGMez6am9fqtGPWTbZsQQO0q/fD+90pwmmgWYyQ2BliLwH5GO6lGbl7S9FZf+cdb6Q0v+EXwlahF
+7iLfPzeQQysTyOhPuOInysmrVPaBQdrXJrZuJYijEv3Gi0J2KuL81v/fP24q3I+I5mxYDWKGSUMn
+hoAVaezdLo8CDTktX0pgKJPnYD9eFTcR2iGx4Gy7VBTnvBN4vW8VJcrd/wGKCS27RsUYLrAt2m8D
+IvN2l8+PQ7lGxdqgkcvzQpl5eHDgktuZszj3MJMa0rA9caN/DjDptYVd3jYTnFRLIiiQ78b+AoRv
+4jvEsB+DmPHWlInvQ8VezVyMIaFi6XnB1qUp3BqKXqFiDTtVMIthyr/fMvjgBT+58Ei/Of3wDAjn
+KBonECfOp6rrYpjQxg+k+/9oyLvQjR/1SnMb5pUXrXsWJG9RVMB7r7EkBmU3ubg4hmBTZ1xWEThp
+VZLjHBrinvIPQYfMTHgZbXoHRttcvXAKuuKz/MCi0IFQ42f89TCNDTn/FsvT8nj9Bz8b/DU96Obn
+49yrJE8e33Wk4YOsUHRcq8TatMzI9h1PFat816mUuroSJ0OubRjOFNR8aEhlfr8MXVxx2tdnih5k
+v27nAh0LNZ2y0s5x8kcLjLzrghWj+FNqYRtU+xas2gBMQYDRs7G+KwW+8tpq1D0WovG2oWbvyZcU
+9Hd2LCnO7ycv5K6/tQYF6cARalKXNHB2w9NJzBAiiNN4uqAvqx7u0U4ZmeMhYACkdGb6zgRS+AR3
+qAIZ1tr+cJJNbQsUC/gIeyxJi549uZqDAD/UID9X35W3eyTNJtZ0InHHc3eOPLCg16PLhsUTAkMf
+0PvbDaAoPuvxD73nbsN3RW8HKOnUruIsmYPvjGDlMNTrDH86hyMaw4GNwDVl5+LsILkbAG7kdysw
+bivKELWn3PHyKzOcb8tsEDs+gP81/TZpM0YPo30BtAv6iohiV00FvE5m7A3Shq6ZstRNk0kIivsa
+kNjtklIiDpbWv5KwCQUG00ijN/wa7Zjc6mNagvtWPH2TV9BgESjIsWNq9zBNkMW2c3Fba+Zewox6
+mHZlGOWHYpT5jDENNS+063QJXhZwoN2pFOHy+oQA8YCqmbz+vKOg08sVqGC3Irmuy16GkVwo1Egb
+qQ7TuyPZ4bD5NhXexsEqwRaz5F6w0OMd849FJOfXC6/qK9QPTiEBnC9DnAHjN3QQNARscOy45wdW
++lIcCQL5umC2QndIbi5cmZMNQqU2TDDKaRPeiwffJ3U5ya2SOM9VjRA+s+32vUE/k/gQiBQt9Cny
+Vg5YNaTj/rSK1O2urR5AdKHL85wbUAYf2n5tmGV0eexzW+LCsy9LqYbJZ858VTgomlNU56jve8JK
+m/ntNipPwMmaHM6SdhLPhsWZQd+mqYEpz1rH1pXlYyPF2nOMcBRUaTALO4OfbbpU+O9y2xSrffcr
+8sCgwNUu3HNWJ31dCfnqZJzzavf2ze2RpAZg3WLF1Uj/TmGuHyGjBCXL3iWjLyQckNsIgwab+Q4t
+vNhs5BKwYrNrQj+H2YDRlsvO06u=

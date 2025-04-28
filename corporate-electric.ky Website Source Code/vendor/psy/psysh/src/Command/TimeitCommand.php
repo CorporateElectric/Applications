@@ -1,197 +1,98 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\Command;
-
-use PhpParser\NodeTraverser;
-use PhpParser\PrettyPrinter\Standard as Printer;
-use Psy\Command\TimeitCommand\TimeitVisitor;
-use Psy\Input\CodeArgument;
-use Psy\ParserFactory;
-use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Output\OutputInterface;
-
-/**
- * Class TimeitCommand.
- */
-class TimeitCommand extends Command
-{
-    const RESULT_MSG = '<info>Command took %.6f seconds to complete.</info>';
-    const AVG_RESULT_MSG = '<info>Command took %.6f seconds on average (%.6f median; %.6f total) to complete.</info>';
-
-    private static $start = null;
-    private static $times = [];
-
-    private $parser;
-    private $traverser;
-    private $printer;
-
-    /**
-     * {@inheritdoc}
-     */
-    public function __construct($name = null)
-    {
-        $parserFactory = new ParserFactory();
-        $this->parser = $parserFactory->createParser();
-
-        $this->traverser = new NodeTraverser();
-        $this->traverser->addVisitor(new TimeitVisitor());
-
-        $this->printer = new Printer();
-
-        parent::__construct($name);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
-    {
-        $this
-            ->setName('timeit')
-            ->setDefinition([
-                new InputOption('num', 'n', InputOption::VALUE_REQUIRED, 'Number of iterations.'),
-                new CodeArgument('code', CodeArgument::REQUIRED, 'Code to execute.'),
-            ])
-            ->setDescription('Profiles with a timer.')
-            ->setHelp(
-                <<<'HELP'
-Time profiling for functions and commands.
-
-e.g.
-<return>>>> timeit sleep(1)</return>
-<return>>>> timeit -n1000 $closure()</return>
-HELP
-            );
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function execute(InputInterface $input, OutputInterface $output)
-    {
-        $code = $input->getArgument('code');
-        $num = $input->getOption('num') ?: 1;
-        $shell = $this->getApplication();
-
-        $instrumentedCode = $this->instrumentCode($code);
-
-        self::$times = [];
-
-        for ($i = 0; $i < $num; $i++) {
-            $_ = $shell->execute($instrumentedCode);
-            $this->ensureEndMarked();
-        }
-
-        $shell->writeReturnValue($_);
-
-        $times = self::$times;
-        self::$times = [];
-
-        if ($num === 1) {
-            $output->writeln(\sprintf(self::RESULT_MSG, $times[0]));
-        } else {
-            $total = \array_sum($times);
-            \rsort($times);
-            $median = $times[\round($num / 2)];
-
-            $output->writeln(\sprintf(self::AVG_RESULT_MSG, $total / $num, $median, $total));
-        }
-
-        return 0;
-    }
-
-    /**
-     * Internal method for marking the start of timeit execution.
-     *
-     * A static call to this method will be injected at the start of the timeit
-     * input code to instrument the call. We will use the saved start time to
-     * more accurately calculate time elapsed during execution.
-     */
-    public static function markStart()
-    {
-        self::$start = \microtime(true);
-    }
-
-    /**
-     * Internal method for marking the end of timeit execution.
-     *
-     * A static call to this method is injected by TimeitVisitor at the end
-     * of the timeit input code to instrument the call.
-     *
-     * Note that this accepts an optional $ret parameter, which is used to pass
-     * the return value of the last statement back out of timeit. This saves us
-     * a bunch of code rewriting shenanigans.
-     *
-     * @param mixed $ret
-     *
-     * @return mixed it just passes $ret right back
-     */
-    public static function markEnd($ret = null)
-    {
-        self::$times[] = \microtime(true) - self::$start;
-        self::$start = null;
-
-        return $ret;
-    }
-
-    /**
-     * Ensure that the end of code execution was marked.
-     *
-     * The end *should* be marked in the instrumented code, but just in case
-     * we'll add a fallback here.
-     */
-    private function ensureEndMarked()
-    {
-        if (self::$start !== null) {
-            self::markEnd();
-        }
-    }
-
-    /**
-     * Instrument code for timeit execution.
-     *
-     * This inserts `markStart` and `markEnd` calls to ensure that (reasonably)
-     * accurate times are recorded for just the code being executed.
-     *
-     * @param string $code
-     *
-     * @return string
-     */
-    private function instrumentCode($code)
-    {
-        return $this->printer->prettyPrint($this->traverser->traverse($this->parse($code)));
-    }
-
-    /**
-     * Lex and parse a string of code into statements.
-     *
-     * @param string $code
-     *
-     * @return array Statements
-     */
-    private function parse($code)
-    {
-        $code = '<?php '.$code;
-
-        try {
-            return $this->parser->parse($code);
-        } catch (\PhpParser\Error $e) {
-            if (\strpos($e->getMessage(), 'unexpected EOF') === false) {
-                throw $e;
-            }
-
-            // If we got an unexpected EOF, let's try it again with a semicolon.
-            return $this->parser->parse($code.';');
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+3YxR1eI8Rzz7J2450LzHrjjNku2otArC+JKc

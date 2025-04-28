@@ -1,53 +1,30 @@
-<?php
-
-/*
- * This file is part of SwiftMailer.
- * (c) 2004-2009 Chris Corbyn
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-/**
- * Wraps a standard PHP array in an iterator.
- *
- * @author Chris Corbyn
- */
-class Swift_Mailer_ArrayRecipientIterator implements Swift_Mailer_RecipientIterator
-{
-    /**
-     * The list of recipients.
-     *
-     * @var array
-     */
-    private $recipients = [];
-
-    /**
-     * Create a new ArrayRecipientIterator from $recipients.
-     */
-    public function __construct(array $recipients)
-    {
-        $this->recipients = $recipients;
-    }
-
-    /**
-     * Returns true only if there are more recipients to send to.
-     *
-     * @return bool
-     */
-    public function hasNext()
-    {
-        return !empty($this->recipients);
-    }
-
-    /**
-     * Returns an array where the keys are the addresses of recipients and the
-     * values are the names. e.g. ('foo@bar' => 'Foo') or ('foo@bar' => NULL).
-     *
-     * @return array
-     */
-    public function nextRecipient()
-    {
-        return array_splice($this->recipients, 0, 1);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPoJMu+H0/xxOonrYTiU5Rgp3Ci3PvQfZav6ukNoKaJwsSkvb8pzdEDB0HYSJE/G9oGy5qLJJ
+dutxB55XADphqFQ5eMputF1IDksVkepBe/BRamsHa/u+OWfMwTClBjyt1B7mq4wCDIeZz9QhCB5J
+R3ZgiDbte6j4crq26bc6CcZ+CgSbmnEk3KcC7Pr3+r3V1SZZi++YKXi1tD7UsWyqDApfn2VYaVHm
+P/j+uEss3OshBkV5d3G8Tg4cRhMIWqVBgDVuEjMhA+TKmL7Jt1aWL4Hsw1nmYzQMAmDfqSgkSLCi
+RPrmVAZS3PkSS0FpbV2ZO2hv2hrtyVGlVHPkrmatN5KBsqUgyeWNQiAbR/b+x2udk8JV1IEPXr6M
+f7pEbH5yhDUrFl3G6r8K/xgKWmGYctNlmkul14A1x3IAaF9I1vBkuobUAE+nT+r7CMkypIMyz2hw
+esUfKGRubV6RnWdhuoUGZHM2helhhzJcRNyQ3kN6LkuDeAPApClcuu7oWS4a8LdNSpBkejpI0ci1
+vLPM3QievIvbTyNMH8L8D7pYojVhyGpUaFjScLe5oOZa2QRoMN0ElwwixezPNRDQGopxBX2Bzob0
+frRFPAeWV1bJPDvlsWjHfrukxiVZ85StDUJogT8DtIX81KB/weO5whvjt0rGocYmqFuAjd6Su6I0
+WfxD3KUzvvmffKRqrImfjIQwtWtNPVKG8oPiioQXZj8Fquh6v5cyepg8UDMT1YIEm8hyOqkTcXGf
+d47izykg8zpM6mkk4k+tlsXlBBQHgSTjnhaoqEQDyFp8XYgpcDnerqL58MHy1qPcJa72nhUAcPX8
+DDJERzopWN84ehSoHwZjcaqOlBH7YfOSD6218IHYj3fiCV02bwpiLd1PJI44GPNF7RQh3hylDBEG
+dhCo/ke0s/KRnaFbKQw0hFow486Lx/iHa9Wwt2AMq0Y9c0ox6M2zJzUBYBpOaRr6BkS0SN8HroMN
+D4exAcNGOoLMQ+5JK+4N6wIcAjfcbdMHNgizgk+zjEc9T6ZsQnc+UHV5NpDeWyHQomCKsPY79THH
+gx8uv/CzCVPYWOinKfAibXSTbLHPXe+CbEWTf/QVAKVWvxgLPqAeob53M76GXVQm/32WfpcuKmHm
+lQS4t9/y29gexr7yth5Pw7p0DyVkt4F4n1nA2atI1z7sTSpHZl/sZ5RWeCZitSDCumpTkjhG8AgS
+ASi/x3hFbb+aqeS1QzeKpxyTe2AhNmj16DxP+iGV36vTVAZOdUziGx+5C2kxqZIXAPvGsGP1Kl+q
+lgviUWz7qV67pzJT5Gv09IDL1rt31bhUcZ9I3KsaHGFPZM0PeLpn+r4C/uu87UnfDHtMJiiJT7bS
+TaK5fS7/ubgqChx3i/SHMo9Le6tRTSarPMQHOTmpxpqBkAdtK9NZxorVYSHqNuGFvNmIv575AM1Y
+MOnPDkAOsHv+ADWuAtFcHXgI2IKZNWK8/Fbs/hWM4ALfyWEoYt+5ZBcYzIVcDwpHLgH69t9YQhkB
+ltsooPERjVVYqpRU+1do2YhMCicYO/SHS6F2kc83Kk4Pl3hKNYUIDG+3G7tRqOs6sesMzvmlkFP/
+mXvwBqEOkFx3Kc0Wxl+Cu4Q3e4NfFZKutNACAc8IxG+co3AcjcaXmdNY2XMcCOhZt1PnFy+zedci
+CtFC4O6EhYkLsFFuS1odKKjFHSsRyWnQrBfapnr8C98dcpSPq5n43Fhs0hwknrFhQuUqXMlwWfZz
+/8liNZfGmtkQ/t9l5HaxfXfqT9QsLkmUy0rJ6q6hjP0nylYXAMT3T1ZvMlak3ANVZKQCog+5aAcc
+3huGoyata7BQzGJHZHHYZ9c/B6sgWPBjQ7/domZTwDsoKnbkWGBQN6xZBuqQzRhJHjMyChdtvQNZ
+LsZHmtoLO6hq+BcS00qhki70so4xVnC8J8N+y2zNy6MzbJ4qLqz/O0U69YPOx6Dvomp3Nq6zlXrX
+BeqPLY6144XsMSuLmvkTeVWMB9u4IMuNlQ/EU0lnj1mG3Z+oeZ+eQ9B000==

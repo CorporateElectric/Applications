@@ -1,76 +1,44 @@
-<?php
-
-/**
- * Validates an integer representation of pixels according to the HTML spec.
- */
-class HTMLPurifier_AttrDef_HTML_Pixels extends HTMLPurifier_AttrDef
-{
-
-    /**
-     * @type int
-     */
-    protected $max;
-
-    /**
-     * @param int $max
-     */
-    public function __construct($max = null)
-    {
-        $this->max = $max;
-    }
-
-    /**
-     * @param string $string
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return bool|string
-     */
-    public function validate($string, $config, $context)
-    {
-        $string = trim($string);
-        if ($string === '0') {
-            return $string;
-        }
-        if ($string === '') {
-            return false;
-        }
-        $length = strlen($string);
-        if (substr($string, $length - 2) == 'px') {
-            $string = substr($string, 0, $length - 2);
-        }
-        if (!is_numeric($string)) {
-            return false;
-        }
-        $int = (int)$string;
-
-        if ($int < 0) {
-            return '0';
-        }
-
-        // upper-bound value, extremely high values can
-        // crash operating systems, see <http://ha.ckers.org/imagecrash.html>
-        // WARNING, above link WILL crash you if you're using Windows
-
-        if ($this->max !== null && $int > $this->max) {
-            return (string)$this->max;
-        }
-        return (string)$int;
-    }
-
-    /**
-     * @param string $string
-     * @return HTMLPurifier_AttrDef
-     */
-    public function make($string)
-    {
-        if ($string === '') {
-            $max = null;
-        } else {
-            $max = (int)$string;
-        }
-        $class = get_class($this);
-        return new $class($max);
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

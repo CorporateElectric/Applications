@@ -1,249 +1,160 @@
-<?php
-
-namespace Egulias\EmailValidator\Parser;
-
-use Egulias\EmailValidator\EmailLexer;
-use Egulias\EmailValidator\Exception\AtextAfterCFWS;
-use Egulias\EmailValidator\Exception\ConsecutiveDot;
-use Egulias\EmailValidator\Exception\CRLFAtTheEnd;
-use Egulias\EmailValidator\Exception\CRLFX2;
-use Egulias\EmailValidator\Exception\CRNoLF;
-use Egulias\EmailValidator\Exception\ExpectingQPair;
-use Egulias\EmailValidator\Exception\ExpectingATEXT;
-use Egulias\EmailValidator\Exception\ExpectingCTEXT;
-use Egulias\EmailValidator\Exception\UnclosedComment;
-use Egulias\EmailValidator\Exception\UnclosedQuotedString;
-use Egulias\EmailValidator\Warning\CFWSNearAt;
-use Egulias\EmailValidator\Warning\CFWSWithFWS;
-use Egulias\EmailValidator\Warning\Comment;
-use Egulias\EmailValidator\Warning\QuotedPart;
-use Egulias\EmailValidator\Warning\QuotedString;
-
-abstract class Parser
-{
-    /**
-     * @var array
-     */
-    protected $warnings = [];
-
-    /**
-     * @var EmailLexer
-     */
-    protected $lexer;
-
-    /**
-     * @var int
-     */
-    protected $openedParenthesis = 0;
-
-    public function __construct(EmailLexer $lexer)
-    {
-        $this->lexer = $lexer;
-    }
-
-    /**
-     * @return \Egulias\EmailValidator\Warning\Warning[]
-     */
-    public function getWarnings()
-    {
-        return $this->warnings;
-    }
-
-    /**
-     * @param string $str
-     */
-    abstract public function parse($str);
-
-    /** @return int */
-    public function getOpenedParenthesis()
-    {
-        return $this->openedParenthesis;
-    }
-
-    /**
-     * validateQuotedPair
-     */
-    protected function validateQuotedPair()
-    {
-        if (!($this->lexer->token['type'] === EmailLexer::INVALID
-            || $this->lexer->token['type'] === EmailLexer::C_DEL)) {
-            throw new ExpectingQPair();
-        }
-
-        $this->warnings[QuotedPart::CODE] =
-            new QuotedPart($this->lexer->getPrevious()['type'], $this->lexer->token['type']);
-    }
-
-    protected function parseComments()
-    {
-        $this->openedParenthesis = 1;
-        $this->isUnclosedComment();
-        $this->warnings[Comment::CODE] = new Comment();
-        while (!$this->lexer->isNextToken(EmailLexer::S_CLOSEPARENTHESIS)) {
-            if ($this->lexer->isNextToken(EmailLexer::S_OPENPARENTHESIS)) {
-                $this->openedParenthesis++;
-            }
-            $this->warnEscaping();
-            $this->lexer->moveNext();
-        }
-
-        $this->lexer->moveNext();
-        if ($this->lexer->isNextTokenAny(array(EmailLexer::GENERIC, EmailLexer::S_EMPTY))) {
-            throw new ExpectingATEXT();
-        }
-
-        if ($this->lexer->isNextToken(EmailLexer::S_AT)) {
-            $this->warnings[CFWSNearAt::CODE] = new CFWSNearAt();
-        }
-    }
-
-    /**
-     * @return bool
-     */
-    protected function isUnclosedComment()
-    {
-        try {
-            $this->lexer->find(EmailLexer::S_CLOSEPARENTHESIS);
-            return true;
-        } catch (\RuntimeException $e) {
-            throw new UnclosedComment();
-        }
-    }
-
-    protected function parseFWS()
-    {
-        $previous = $this->lexer->getPrevious();
-
-        $this->checkCRLFInFWS();
-
-        if ($this->lexer->token['type'] === EmailLexer::S_CR) {
-            throw new CRNoLF();
-        }
-
-        if ($this->lexer->isNextToken(EmailLexer::GENERIC) && $previous['type']  !== EmailLexer::S_AT) {
-            throw new AtextAfterCFWS();
-        }
-
-        if ($this->lexer->token['type'] === EmailLexer::S_LF || $this->lexer->token['type'] === EmailLexer::C_NUL) {
-            throw new ExpectingCTEXT();
-        }
-
-        if ($this->lexer->isNextToken(EmailLexer::S_AT) || $previous['type']  === EmailLexer::S_AT) {
-            $this->warnings[CFWSNearAt::CODE] = new CFWSNearAt();
-        } else {
-            $this->warnings[CFWSWithFWS::CODE] = new CFWSWithFWS();
-        }
-    }
-
-    protected function checkConsecutiveDots()
-    {
-        if ($this->lexer->token['type'] === EmailLexer::S_DOT && $this->lexer->isNextToken(EmailLexer::S_DOT)) {
-            throw new ConsecutiveDot();
-        }
-    }
-
-    /**
-     * @return bool
-     */
-    protected function isFWS()
-    {
-        if ($this->escaped()) {
-            return false;
-        }
-
-        if ($this->lexer->token['type'] === EmailLexer::S_SP ||
-            $this->lexer->token['type'] === EmailLexer::S_HTAB ||
-            $this->lexer->token['type'] === EmailLexer::S_CR ||
-            $this->lexer->token['type'] === EmailLexer::S_LF ||
-            $this->lexer->token['type'] === EmailLexer::CRLF
-        ) {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * @return bool
-     */
-    protected function escaped()
-    {
-        $previous = $this->lexer->getPrevious();
-
-        if ($previous && $previous['type'] === EmailLexer::S_BACKSLASH
-            &&
-            $this->lexer->token['type'] !== EmailLexer::GENERIC
-        ) {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * @return bool
-     */
-    protected function warnEscaping()
-    {
-        if ($this->lexer->token['type'] !== EmailLexer::S_BACKSLASH) {
-            return false;
-        }
-
-        if ($this->lexer->isNextToken(EmailLexer::GENERIC)) {
-            throw new ExpectingATEXT();
-        }
-
-        if (!$this->lexer->isNextTokenAny(array(EmailLexer::S_SP, EmailLexer::S_HTAB, EmailLexer::C_DEL))) {
-            return false;
-        }
-
-        $this->warnings[QuotedPart::CODE] =
-            new QuotedPart($this->lexer->getPrevious()['type'], $this->lexer->token['type']);
-        return true;
-
-    }
-
-    /**
-     * @param bool $hasClosingQuote
-     *
-     * @return bool
-     */
-    protected function checkDQUOTE($hasClosingQuote)
-    {
-        if ($this->lexer->token['type'] !== EmailLexer::S_DQUOTE) {
-            return $hasClosingQuote;
-        }
-        if ($hasClosingQuote) {
-            return $hasClosingQuote;
-        }
-        $previous = $this->lexer->getPrevious();
-        if ($this->lexer->isNextToken(EmailLexer::GENERIC) && $previous['type'] === EmailLexer::GENERIC) {
-            throw new ExpectingATEXT();
-        }
-
-        try {
-            $this->lexer->find(EmailLexer::S_DQUOTE);
-            $hasClosingQuote = true;
-        } catch (\Exception $e) {
-            throw new UnclosedQuotedString();
-        }
-        $this->warnings[QuotedString::CODE] = new QuotedString($previous['value'], $this->lexer->token['value']);
-
-        return $hasClosingQuote;
-    }
-
-    protected function checkCRLFInFWS()
-    {
-        if ($this->lexer->token['type'] !== EmailLexer::CRLF) {
-            return;
-        }
-
-        if (!$this->lexer->isNextTokenAny(array(EmailLexer::S_SP, EmailLexer::S_HTAB))) {
-            throw new CRLFX2();
-        }
-
-        if (!$this->lexer->isNextTokenAny(array(EmailLexer::S_SP, EmailLexer::S_HTAB))) {
-            throw new CRLFAtTheEnd();
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

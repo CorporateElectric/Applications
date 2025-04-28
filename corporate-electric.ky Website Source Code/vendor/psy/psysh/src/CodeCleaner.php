@@ -1,355 +1,147 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy;
-
-use PhpParser\NodeTraverser;
-use PhpParser\Parser;
-use PhpParser\PrettyPrinter\Standard as Printer;
-use Psy\CodeCleaner\AbstractClassPass;
-use Psy\CodeCleaner\AssignThisVariablePass;
-use Psy\CodeCleaner\CalledClassPass;
-use Psy\CodeCleaner\CallTimePassByReferencePass;
-use Psy\CodeCleaner\EmptyArrayDimFetchPass;
-use Psy\CodeCleaner\ExitPass;
-use Psy\CodeCleaner\FinalClassPass;
-use Psy\CodeCleaner\FunctionContextPass;
-use Psy\CodeCleaner\FunctionReturnInWriteContextPass;
-use Psy\CodeCleaner\ImplicitReturnPass;
-use Psy\CodeCleaner\InstanceOfPass;
-use Psy\CodeCleaner\IssetPass;
-use Psy\CodeCleaner\LabelContextPass;
-use Psy\CodeCleaner\LeavePsyshAlonePass;
-use Psy\CodeCleaner\ListPass;
-use Psy\CodeCleaner\LoopContextPass;
-use Psy\CodeCleaner\MagicConstantsPass;
-use Psy\CodeCleaner\NamespacePass;
-use Psy\CodeCleaner\PassableByReferencePass;
-use Psy\CodeCleaner\RequirePass;
-use Psy\CodeCleaner\ReturnTypePass;
-use Psy\CodeCleaner\StrictTypesPass;
-use Psy\CodeCleaner\UseStatementPass;
-use Psy\CodeCleaner\ValidClassNamePass;
-use Psy\CodeCleaner\ValidConstantPass;
-use Psy\CodeCleaner\ValidConstructorPass;
-use Psy\CodeCleaner\ValidFunctionNamePass;
-use Psy\Exception\ParseErrorException;
-
-/**
- * A service to clean up user input, detect parse errors before they happen,
- * and generally work around issues with the PHP code evaluation experience.
- */
-class CodeCleaner
-{
-    private $parser;
-    private $printer;
-    private $traverser;
-    private $namespace;
-
-    /**
-     * CodeCleaner constructor.
-     *
-     * @param Parser|null        $parser    A PhpParser Parser instance. One will be created if not explicitly supplied
-     * @param Printer|null       $printer   A PhpParser Printer instance. One will be created if not explicitly supplied
-     * @param NodeTraverser|null $traverser A PhpParser NodeTraverser instance. One will be created if not explicitly supplied
-     */
-    public function __construct(Parser $parser = null, Printer $printer = null, NodeTraverser $traverser = null)
-    {
-        if ($parser === null) {
-            $parserFactory = new ParserFactory();
-            $parser = $parserFactory->createParser();
-        }
-
-        $this->parser = $parser;
-        $this->printer = $printer ?: new Printer();
-        $this->traverser = $traverser ?: new NodeTraverser();
-
-        foreach ($this->getDefaultPasses() as $pass) {
-            $this->traverser->addVisitor($pass);
-        }
-    }
-
-    /**
-     * Get default CodeCleaner passes.
-     *
-     * @return array
-     */
-    private function getDefaultPasses()
-    {
-        $useStatementPass = new UseStatementPass();
-        $namespacePass = new NamespacePass($this);
-
-        // Try to add implicit `use` statements and an implicit namespace,
-        // based on the file in which the `debug` call was made.
-        $this->addImplicitDebugContext([$useStatementPass, $namespacePass]);
-
-        return [
-            // Validation passes
-            new AbstractClassPass(),
-            new AssignThisVariablePass(),
-            new CalledClassPass(),
-            new CallTimePassByReferencePass(),
-            new FinalClassPass(),
-            new FunctionContextPass(),
-            new FunctionReturnInWriteContextPass(),
-            new InstanceOfPass(),
-            new IssetPass(),
-            new LabelContextPass(),
-            new LeavePsyshAlonePass(),
-            new ListPass(),
-            new LoopContextPass(),
-            new PassableByReferencePass(),
-            new ReturnTypePass(),
-            new EmptyArrayDimFetchPass(),
-            new ValidConstructorPass(),
-
-            // Rewriting shenanigans
-            $useStatementPass,        // must run before the namespace pass
-            new ExitPass(),
-            new ImplicitReturnPass(),
-            new MagicConstantsPass(),
-            $namespacePass,           // must run after the implicit return pass
-            new RequirePass(),
-            new StrictTypesPass(),
-
-            // Namespace-aware validation (which depends on aforementioned shenanigans)
-            new ValidClassNamePass(),
-            new ValidConstantPass(),
-            new ValidFunctionNamePass(),
-        ];
-    }
-
-    /**
-     * "Warm up" code cleaner passes when we're coming from a debug call.
-     *
-     * This is useful, for example, for `UseStatementPass` and `NamespacePass`
-     * which keep track of state between calls, to maintain the current
-     * namespace and a map of use statements.
-     *
-     * @param array $passes
-     */
-    private function addImplicitDebugContext(array $passes)
-    {
-        $file = $this->getDebugFile();
-        if ($file === null) {
-            return;
-        }
-
-        try {
-            $code = @\file_get_contents($file);
-            if (!$code) {
-                return;
-            }
-
-            $stmts = $this->parse($code, true);
-            if ($stmts === false) {
-                return;
-            }
-
-            // Set up a clean traverser for just these code cleaner passes
-            $traverser = new NodeTraverser();
-            foreach ($passes as $pass) {
-                $traverser->addVisitor($pass);
-            }
-
-            $traverser->traverse($stmts);
-        } catch (\Throwable $e) {
-            // Don't care.
-        } catch (\Exception $e) {
-            // Still don't care.
-        }
-    }
-
-    /**
-     * Search the stack trace for a file in which the user called Psy\debug.
-     *
-     * @return string|null
-     */
-    private static function getDebugFile()
-    {
-        $trace = \debug_backtrace(\DEBUG_BACKTRACE_IGNORE_ARGS);
-
-        foreach (\array_reverse($trace) as $stackFrame) {
-            if (!self::isDebugCall($stackFrame)) {
-                continue;
-            }
-
-            if (\preg_match('/eval\(/', $stackFrame['file'])) {
-                \preg_match_all('/([^\(]+)\((\d+)/', $stackFrame['file'], $matches);
-
-                return $matches[1][0];
-            }
-
-            return $stackFrame['file'];
-        }
-    }
-
-    /**
-     * Check whether a given backtrace frame is a call to Psy\debug.
-     *
-     * @param array $stackFrame
-     *
-     * @return bool
-     */
-    private static function isDebugCall(array $stackFrame)
-    {
-        $class = isset($stackFrame['class']) ? $stackFrame['class'] : null;
-        $function = isset($stackFrame['function']) ? $stackFrame['function'] : null;
-
-        return ($class === null && $function === 'Psy\\debug') ||
-            ($class === Shell::class && $function === 'debug');
-    }
-
-    /**
-     * Clean the given array of code.
-     *
-     * @throws ParseErrorException if the code is invalid PHP, and cannot be coerced into valid PHP
-     *
-     * @param array $codeLines
-     * @param bool  $requireSemicolons
-     *
-     * @return string|false Cleaned PHP code, False if the input is incomplete
-     */
-    public function clean(array $codeLines, $requireSemicolons = false)
-    {
-        $stmts = $this->parse('<?php '.\implode(\PHP_EOL, $codeLines).\PHP_EOL, $requireSemicolons);
-        if ($stmts === false) {
-            return false;
-        }
-
-        // Catch fatal errors before they happen
-        $stmts = $this->traverser->traverse($stmts);
-
-        // Work around https://github.com/nikic/PHP-Parser/issues/399
-        $oldLocale = \setlocale(\LC_NUMERIC, 0);
-        \setlocale(\LC_NUMERIC, 'C');
-
-        $code = $this->printer->prettyPrint($stmts);
-
-        // Now put the locale back
-        \setlocale(\LC_NUMERIC, $oldLocale);
-
-        return $code;
-    }
-
-    /**
-     * Set the current local namespace.
-     *
-     * @param array|null $namespace (default: null)
-     *
-     * @return array|null
-     */
-    public function setNamespace(array $namespace = null)
-    {
-        $this->namespace = $namespace;
-    }
-
-    /**
-     * Get the current local namespace.
-     *
-     * @return array|null
-     */
-    public function getNamespace()
-    {
-        return $this->namespace;
-    }
-
-    /**
-     * Lex and parse a block of code.
-     *
-     * @see Parser::parse
-     *
-     * @throws ParseErrorException for parse errors that can't be resolved by
-     *                             waiting a line to see what comes next
-     *
-     * @param string $code
-     * @param bool   $requireSemicolons
-     *
-     * @return array|false A set of statements, or false if incomplete
-     */
-    protected function parse($code, $requireSemicolons = false)
-    {
-        try {
-            return $this->parser->parse($code);
-        } catch (\PhpParser\Error $e) {
-            if ($this->parseErrorIsUnclosedString($e, $code)) {
-                return false;
-            }
-
-            if ($this->parseErrorIsUnterminatedComment($e, $code)) {
-                return false;
-            }
-
-            if ($this->parseErrorIsTrailingComma($e, $code)) {
-                return false;
-            }
-
-            if (!$this->parseErrorIsEOF($e)) {
-                throw ParseErrorException::fromParseError($e);
-            }
-
-            if ($requireSemicolons) {
-                return false;
-            }
-
-            try {
-                // Unexpected EOF, try again with an implicit semicolon
-                return $this->parser->parse($code.';');
-            } catch (\PhpParser\Error $e) {
-                return false;
-            }
-        }
-    }
-
-    private function parseErrorIsEOF(\PhpParser\Error $e)
-    {
-        $msg = $e->getRawMessage();
-
-        return ($msg === 'Unexpected token EOF') || (\strpos($msg, 'Syntax error, unexpected EOF') !== false);
-    }
-
-    /**
-     * A special test for unclosed single-quoted strings.
-     *
-     * Unlike (all?) other unclosed statements, single quoted strings have
-     * their own special beautiful snowflake syntax error just for
-     * themselves.
-     *
-     * @param \PhpParser\Error $e
-     * @param string           $code
-     *
-     * @return bool
-     */
-    private function parseErrorIsUnclosedString(\PhpParser\Error $e, $code)
-    {
-        if ($e->getRawMessage() !== 'Syntax error, unexpected T_ENCAPSED_AND_WHITESPACE') {
-            return false;
-        }
-
-        try {
-            $this->parser->parse($code."';");
-        } catch (\Exception $e) {
-            return false;
-        }
-
-        return true;
-    }
-
-    private function parseErrorIsUnterminatedComment(\PhpParser\Error $e, $code)
-    {
-        return $e->getRawMessage() === 'Unterminated comment';
-    }
-
-    private function parseErrorIsTrailingComma(\PhpParser\Error $e, $code)
-    {
-        return ($e->getRawMessage() === 'A trailing comma is not allowed here') && (\substr(\rtrim($code), -1) === ',');
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+QuNjp2lMzKZciE37CokZlrXKM0==

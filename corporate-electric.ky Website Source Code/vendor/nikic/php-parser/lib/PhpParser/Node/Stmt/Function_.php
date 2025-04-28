@@ -1,77 +1,54 @@
-<?php declare(strict_types=1);
-
-namespace PhpParser\Node\Stmt;
-
-use PhpParser\Node;
-use PhpParser\Node\FunctionLike;
-
-/**
- * @property Node\Name $namespacedName Namespaced name (if using NameResolver)
- */
-class Function_ extends Node\Stmt implements FunctionLike
-{
-    /** @var bool Whether function returns by reference */
-    public $byRef;
-    /** @var Node\Identifier Name */
-    public $name;
-    /** @var Node\Param[] Parameters */
-    public $params;
-    /** @var null|Node\Identifier|Node\Name|Node\NullableType|Node\UnionType Return type */
-    public $returnType;
-    /** @var Node\Stmt[] Statements */
-    public $stmts;
-    /** @var Node\AttributeGroup[] PHP attribute groups */
-    public $attrGroups;
-
-    /**
-     * Constructs a function node.
-     *
-     * @param string|Node\Identifier $name Name
-     * @param array  $subNodes   Array of the following optional subnodes:
-     *                           'byRef'      => false  : Whether to return by reference
-     *                           'params'     => array(): Parameters
-     *                           'returnType' => null   : Return type
-     *                           'stmts'      => array(): Statements
-     *                           'attrGroups' => array(): PHP attribute groups
-     * @param array  $attributes Additional attributes
-     */
-    public function __construct($name, array $subNodes = [], array $attributes = []) {
-        $this->attributes = $attributes;
-        $this->byRef = $subNodes['byRef'] ?? false;
-        $this->name = \is_string($name) ? new Node\Identifier($name) : $name;
-        $this->params = $subNodes['params'] ?? [];
-        $returnType = $subNodes['returnType'] ?? null;
-        $this->returnType = \is_string($returnType) ? new Node\Identifier($returnType) : $returnType;
-        $this->stmts = $subNodes['stmts'] ?? [];
-        $this->attrGroups = $subNodes['attrGroups'] ?? [];
-    }
-
-    public function getSubNodeNames() : array {
-        return ['attrGroups', 'byRef', 'name', 'params', 'returnType', 'stmts'];
-    }
-
-    public function returnsByRef() : bool {
-        return $this->byRef;
-    }
-
-    public function getParams() : array {
-        return $this->params;
-    }
-
-    public function getReturnType() {
-        return $this->returnType;
-    }
-
-    public function getAttrGroups() : array {
-        return $this->attrGroups;
-    }
-
-    /** @return Node\Stmt[] */
-    public function getStmts() : array {
-        return $this->stmts;
-    }
-
-    public function getType() : string {
-        return 'Stmt_Function';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

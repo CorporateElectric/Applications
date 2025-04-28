@@ -1,286 +1,121 @@
-<?php
-
-/*
- * This file is part of the Prophecy.
- * (c) Konstantin Kudryashov <ever.zet@gmail.com>
- *     Marcello Duarte <marcello.duarte@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Prophecy\Prophecy;
-
-use SebastianBergmann\Comparator\ComparisonFailure;
-use Prophecy\Comparator\Factory as ComparatorFactory;
-use Prophecy\Call\Call;
-use Prophecy\Doubler\LazyDouble;
-use Prophecy\Argument\ArgumentsWildcard;
-use Prophecy\Call\CallCenter;
-use Prophecy\Exception\Prophecy\ObjectProphecyException;
-use Prophecy\Exception\Prophecy\MethodProphecyException;
-use Prophecy\Exception\Prediction\AggregateException;
-use Prophecy\Exception\Prediction\PredictionException;
-
-/**
- * Object prophecy.
- *
- * @author Konstantin Kudryashov <ever.zet@gmail.com>
- */
-class ObjectProphecy implements ProphecyInterface
-{
-    private $lazyDouble;
-    private $callCenter;
-    private $revealer;
-    private $comparatorFactory;
-
-    /**
-     * @var MethodProphecy[][]
-     */
-    private $methodProphecies = array();
-
-    /**
-     * Initializes object prophecy.
-     *
-     * @param LazyDouble        $lazyDouble
-     * @param CallCenter        $callCenter
-     * @param RevealerInterface $revealer
-     * @param ComparatorFactory $comparatorFactory
-     */
-    public function __construct(
-        LazyDouble $lazyDouble,
-        CallCenter $callCenter = null,
-        RevealerInterface $revealer = null,
-        ComparatorFactory $comparatorFactory = null
-    ) {
-        $this->lazyDouble = $lazyDouble;
-        $this->callCenter = $callCenter ?: new CallCenter;
-        $this->revealer   = $revealer ?: new Revealer;
-
-        $this->comparatorFactory = $comparatorFactory ?: ComparatorFactory::getInstance();
-    }
-
-    /**
-     * Forces double to extend specific class.
-     *
-     * @param string $class
-     *
-     * @return $this
-     */
-    public function willExtend($class)
-    {
-        $this->lazyDouble->setParentClass($class);
-
-        return $this;
-    }
-
-    /**
-     * Forces double to implement specific interface.
-     *
-     * @param string $interface
-     *
-     * @return $this
-     */
-    public function willImplement($interface)
-    {
-        $this->lazyDouble->addInterface($interface);
-
-        return $this;
-    }
-
-    /**
-     * Sets constructor arguments.
-     *
-     * @param array $arguments
-     *
-     * @return $this
-     */
-    public function willBeConstructedWith(array $arguments = null)
-    {
-        $this->lazyDouble->setArguments($arguments);
-
-        return $this;
-    }
-
-    /**
-     * Reveals double.
-     *
-     * @return object
-     *
-     * @throws \Prophecy\Exception\Prophecy\ObjectProphecyException If double doesn't implement needed interface
-     */
-    public function reveal()
-    {
-        $double = $this->lazyDouble->getInstance();
-
-        if (null === $double || !$double instanceof ProphecySubjectInterface) {
-            throw new ObjectProphecyException(
-                "Generated double must implement ProphecySubjectInterface, but it does not.\n".
-                'It seems you have wrongly configured doubler without required ClassPatch.',
-                $this
-            );
-        }
-
-        $double->setProphecy($this);
-
-        return $double;
-    }
-
-    /**
-     * Adds method prophecy to object prophecy.
-     *
-     * @param MethodProphecy $methodProphecy
-     *
-     * @throws \Prophecy\Exception\Prophecy\MethodProphecyException If method prophecy doesn't
-     *                                                              have arguments wildcard
-     */
-    public function addMethodProphecy(MethodProphecy $methodProphecy)
-    {
-        $argumentsWildcard = $methodProphecy->getArgumentsWildcard();
-        if (null === $argumentsWildcard) {
-            throw new MethodProphecyException(sprintf(
-                "Can not add prophecy for a method `%s::%s()`\n".
-                "as you did not specify arguments wildcard for it.",
-                get_class($this->reveal()),
-                $methodProphecy->getMethodName()
-            ), $methodProphecy);
-        }
-
-        $methodName = strtolower($methodProphecy->getMethodName());
-
-        if (!isset($this->methodProphecies[$methodName])) {
-            $this->methodProphecies[$methodName] = array();
-        }
-
-        $this->methodProphecies[$methodName][] = $methodProphecy;
-    }
-
-    /**
-     * Returns either all or related to single method prophecies.
-     *
-     * @param null|string $methodName
-     *
-     * @return MethodProphecy[]
-     */
-    public function getMethodProphecies($methodName = null)
-    {
-        if (null === $methodName) {
-            return $this->methodProphecies;
-        }
-
-        $methodName = strtolower($methodName);
-
-        if (!isset($this->methodProphecies[$methodName])) {
-            return array();
-        }
-
-        return $this->methodProphecies[$methodName];
-    }
-
-    /**
-     * Makes specific method call.
-     *
-     * @param string $methodName
-     * @param array  $arguments
-     *
-     * @return mixed
-     */
-    public function makeProphecyMethodCall($methodName, array $arguments)
-    {
-        $arguments = $this->revealer->reveal($arguments);
-        $return    = $this->callCenter->makeCall($this, $methodName, $arguments);
-
-        return $this->revealer->reveal($return);
-    }
-
-    /**
-     * Finds calls by method name & arguments wildcard.
-     *
-     * @param string            $methodName
-     * @param ArgumentsWildcard $wildcard
-     *
-     * @return Call[]
-     */
-    public function findProphecyMethodCalls($methodName, ArgumentsWildcard $wildcard)
-    {
-        return $this->callCenter->findCalls($methodName, $wildcard);
-    }
-
-    /**
-     * Checks that registered method predictions do not fail.
-     *
-     * @throws \Prophecy\Exception\Prediction\AggregateException If any of registered predictions fail
-     * @throws \Prophecy\Exception\Call\UnexpectedCallException
-     */
-    public function checkProphecyMethodsPredictions()
-    {
-        $exception = new AggregateException(sprintf("%s:\n", get_class($this->reveal())));
-        $exception->setObjectProphecy($this);
-
-        $this->callCenter->checkUnexpectedCalls();
-
-        foreach ($this->methodProphecies as $prophecies) {
-            foreach ($prophecies as $prophecy) {
-                try {
-                    $prophecy->checkPrediction();
-                } catch (PredictionException $e) {
-                    $exception->append($e);
-                }
-            }
-        }
-
-        if (count($exception->getExceptions())) {
-            throw $exception;
-        }
-    }
-
-    /**
-     * Creates new method prophecy using specified method name and arguments.
-     *
-     * @param string $methodName
-     * @param array  $arguments
-     *
-     * @return MethodProphecy
-     */
-    public function __call($methodName, array $arguments)
-    {
-        $arguments = new ArgumentsWildcard($this->revealer->reveal($arguments));
-
-        foreach ($this->getMethodProphecies($methodName) as $prophecy) {
-            $argumentsWildcard = $prophecy->getArgumentsWildcard();
-            $comparator = $this->comparatorFactory->getComparatorFor(
-                $argumentsWildcard, $arguments
-            );
-
-            try {
-                $comparator->assertEquals($argumentsWildcard, $arguments);
-                return $prophecy;
-            } catch (ComparisonFailure $failure) {}
-        }
-
-        return new MethodProphecy($this, $methodName, $arguments);
-    }
-
-    /**
-     * Tries to get property value from double.
-     *
-     * @param string $name
-     *
-     * @return mixed
-     */
-    public function __get($name)
-    {
-        return $this->reveal()->$name;
-    }
-
-    /**
-     * Tries to set property value to double.
-     *
-     * @param string $name
-     * @param mixed  $value
-     */
-    public function __set($name, $value)
-    {
-        $this->reveal()->$name = $this->revealer->reveal($value);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+0N3Gve10EUqXmw2mAX8QQgl6lB9/gOu=

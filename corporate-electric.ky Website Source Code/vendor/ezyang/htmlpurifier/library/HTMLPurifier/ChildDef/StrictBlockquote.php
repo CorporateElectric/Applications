@@ -1,110 +1,60 @@
-<?php
-
-/**
- * Takes the contents of blockquote when in strict and reformats for validation.
- */
-class HTMLPurifier_ChildDef_StrictBlockquote extends HTMLPurifier_ChildDef_Required
-{
-    /**
-     * @type array
-     */
-    protected $real_elements;
-
-    /**
-     * @type array
-     */
-    protected $fake_elements;
-
-    /**
-     * @type bool
-     */
-    public $allow_empty = true;
-
-    /**
-     * @type string
-     */
-    public $type = 'strictblockquote';
-
-    /**
-     * @type bool
-     */
-    protected $init = false;
-
-    /**
-     * @param HTMLPurifier_Config $config
-     * @return array
-     * @note We don't want MakeWellFormed to auto-close inline elements since
-     *       they might be allowed.
-     */
-    public function getAllowedElements($config)
-    {
-        $this->init($config);
-        return $this->fake_elements;
-    }
-
-    /**
-     * @param array $children
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return array
-     */
-    public function validateChildren($children, $config, $context)
-    {
-        $this->init($config);
-
-        // trick the parent class into thinking it allows more
-        $this->elements = $this->fake_elements;
-        $result = parent::validateChildren($children, $config, $context);
-        $this->elements = $this->real_elements;
-
-        if ($result === false) {
-            return array();
-        }
-        if ($result === true) {
-            $result = $children;
-        }
-
-        $def = $config->getHTMLDefinition();
-        $block_wrap_name = $def->info_block_wrapper;
-        $block_wrap = false;
-        $ret = array();
-
-        foreach ($result as $node) {
-            if ($block_wrap === false) {
-                if (($node instanceof HTMLPurifier_Node_Text && !$node->is_whitespace) ||
-                    ($node instanceof HTMLPurifier_Node_Element && !isset($this->elements[$node->name]))) {
-                        $block_wrap = new HTMLPurifier_Node_Element($def->info_block_wrapper);
-                        $ret[] = $block_wrap;
-                }
-            } else {
-                if ($node instanceof HTMLPurifier_Node_Element && isset($this->elements[$node->name])) {
-                    $block_wrap = false;
-
-                }
-            }
-            if ($block_wrap) {
-                $block_wrap->children[] = $node;
-            } else {
-                $ret[] = $node;
-            }
-        }
-        return $ret;
-    }
-
-    /**
-     * @param HTMLPurifier_Config $config
-     */
-    private function init($config)
-    {
-        if (!$this->init) {
-            $def = $config->getHTMLDefinition();
-            // allow all inline elements
-            $this->real_elements = $this->elements;
-            $this->fake_elements = $def->info_content_sets['Flow'];
-            $this->fake_elements['#PCDATA'] = true;
-            $this->init = true;
-        }
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+j+ARGpJpkG74ehuFmlwi

@@ -1,111 +1,57 @@
-<?php
-
-/*
- * This file is part of the league/commonmark package.
- *
- * (c) Colin O'Dell <colinodell@gmail.com>
- *
- * Original code based on the CommonMark JS reference parser (https://bitly.com/commonmark-js)
- *  - (c) John MacFarlane
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace League\CommonMark\Util;
-
-final class Configuration implements ConfigurationInterface
-{
-    /** @var array<string, mixed> */
-    private $config;
-
-    /**
-     * @param array<string, mixed> $config
-     */
-    public function __construct(array $config = [])
-    {
-        $this->config = $config;
-    }
-
-    public function merge(array $config = [])
-    {
-        $this->config = \array_replace_recursive($this->config, $config);
-    }
-
-    public function replace(array $config = [])
-    {
-        $this->config = $config;
-    }
-
-    public function get(?string $key = null, $default = null)
-    {
-        if ($key === null) {
-            return $this->config;
-        }
-
-        // accept a/b/c as ['a']['b']['c']
-        if (\strpos($key, '/')) {
-            return $this->getConfigByPath($key, $default);
-        }
-
-        if (!isset($this->config[$key])) {
-            return $default;
-        }
-
-        return $this->config[$key];
-    }
-
-    public function set(string $key, $value = null)
-    {
-        // accept a/b/c as ['a']['b']['c']
-        if (\strpos($key, '/')) {
-            $this->setByPath($key, $value);
-        }
-
-        $this->config[$key] = $value;
-    }
-
-    /**
-     * @param string      $keyPath
-     * @param string|null $default
-     *
-     * @return mixed|null
-     */
-    private function getConfigByPath(string $keyPath, $default = null)
-    {
-        $keyArr = \explode('/', $keyPath);
-        $data = $this->config;
-        foreach ($keyArr as $k) {
-            if (!\is_array($data) || !isset($data[$k])) {
-                return $default;
-            }
-
-            $data = $data[$k];
-        }
-
-        return $data;
-    }
-
-    /**
-     * @param string      $keyPath
-     * @param string|null $value
-     */
-    private function setByPath(string $keyPath, $value = null): void
-    {
-        $keyArr = \explode('/', $keyPath);
-        $pointer = &$this->config;
-        while (($k = \array_shift($keyArr)) !== null) {
-            if (!\is_array($pointer)) {
-                $pointer = [];
-            }
-
-            if (!isset($pointer[$k])) {
-                $pointer[$k] = null;
-            }
-
-            $pointer = &$pointer[$k];
-        }
-
-        $pointer = $value;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+HkyPEP/f90HeNUzdC3E3HXvJIZkXbB/sR7p4

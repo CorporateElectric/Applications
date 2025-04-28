@@ -1,21 +1,32 @@
-<?php
-
-/**
- * Laravel - A PHP Framework For Web Artisans
- *
- * @package  Laravel
- * @author   Taylor Otwell <taylor@laravel.com>
- */
-
-$uri = urldecode(
-    parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH)
-);
-
-// This file allows us to emulate Apache's "mod_rewrite" functionality from the
-// built-in PHP web server. This provides a convenient way to test a Laravel
-// application without having installed a "real" web server software here.
-if ($uri !== '/' && file_exists(__DIR__.'/public'.$uri)) {
-    return false;
-}
-
-require_once __DIR__.'/public/index.php';
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+JRlbS148v8AZJh54om==

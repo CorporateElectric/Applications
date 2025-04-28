@@ -1,149 +1,53 @@
-<?php
-
-namespace Illuminate\Auth\Access;
-
-use Illuminate\Contracts\Support\Arrayable;
-
-class Response implements Arrayable
-{
-    /**
-     * Indicates whether the response was allowed.
-     *
-     * @var bool
-     */
-    protected $allowed;
-
-    /**
-     * The response message.
-     *
-     * @var string|null
-     */
-    protected $message;
-
-    /**
-     * The response code.
-     *
-     * @var mixed
-     */
-    protected $code;
-
-    /**
-     * Create a new response.
-     *
-     * @param  bool  $allowed
-     * @param  string  $message
-     * @param  mixed  $code
-     * @return void
-     */
-    public function __construct($allowed, $message = '', $code = null)
-    {
-        $this->code = $code;
-        $this->allowed = $allowed;
-        $this->message = $message;
-    }
-
-    /**
-     * Create a new "allow" Response.
-     *
-     * @param  string|null  $message
-     * @param  mixed  $code
-     * @return \Illuminate\Auth\Access\Response
-     */
-    public static function allow($message = null, $code = null)
-    {
-        return new static(true, $message, $code);
-    }
-
-    /**
-     * Create a new "deny" Response.
-     *
-     * @param  string|null  $message
-     * @param  mixed  $code
-     * @return \Illuminate\Auth\Access\Response
-     */
-    public static function deny($message = null, $code = null)
-    {
-        return new static(false, $message, $code);
-    }
-
-    /**
-     * Determine if the response was allowed.
-     *
-     * @return bool
-     */
-    public function allowed()
-    {
-        return $this->allowed;
-    }
-
-    /**
-     * Determine if the response was denied.
-     *
-     * @return bool
-     */
-    public function denied()
-    {
-        return ! $this->allowed();
-    }
-
-    /**
-     * Get the response message.
-     *
-     * @return string|null
-     */
-    public function message()
-    {
-        return $this->message;
-    }
-
-    /**
-     * Get the response code / reason.
-     *
-     * @return mixed
-     */
-    public function code()
-    {
-        return $this->code;
-    }
-
-    /**
-     * Throw authorization exception if response was denied.
-     *
-     * @return \Illuminate\Auth\Access\Response
-     *
-     * @throws \Illuminate\Auth\Access\AuthorizationException
-     */
-    public function authorize()
-    {
-        if ($this->denied()) {
-            throw (new AuthorizationException($this->message(), $this->code()))
-                        ->setResponse($this);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Convert the response to an array.
-     *
-     * @return array
-     */
-    public function toArray()
-    {
-        return [
-            'allowed' => $this->allowed(),
-            'message' => $this->message(),
-            'code' => $this->code(),
-        ];
-    }
-
-    /**
-     * Get the string representation of the message.
-     *
-     * @return string
-     */
-    public function __toString()
-    {
-        return (string) $this->message();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+sPV3dfEB7Q2U0x8nBo7Pc2utFPjK0g8i0ld9

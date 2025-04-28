@@ -1,549 +1,189 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Predis;
-
-use Predis\Command\CommandInterface;
-use Predis\Command\RawCommand;
-use Predis\Command\ScriptCommand;
-use Predis\Configuration\Options;
-use Predis\Configuration\OptionsInterface;
-use Predis\Connection\AggregateConnectionInterface;
-use Predis\Connection\ConnectionInterface;
-use Predis\Connection\ParametersInterface;
-use Predis\Monitor\Consumer as MonitorConsumer;
-use Predis\Pipeline\Pipeline;
-use Predis\PubSub\Consumer as PubSubConsumer;
-use Predis\Response\ErrorInterface as ErrorResponseInterface;
-use Predis\Response\ResponseInterface;
-use Predis\Response\ServerException;
-use Predis\Transaction\MultiExec as MultiExecTransaction;
-
-/**
- * Client class used for connecting and executing commands on Redis.
- *
- * This is the main high-level abstraction of Predis upon which various other
- * abstractions are built. Internally it aggregates various other classes each
- * one with its own responsibility and scope.
- *
- * {@inheritdoc}
- *
- * @author Daniele Alessandri <suppakilla@gmail.com>
- */
-class Client implements ClientInterface, \IteratorAggregate
-{
-    const VERSION = '1.1.6';
-
-    protected $connection;
-    protected $options;
-    private $profile;
-
-    /**
-     * @param mixed $parameters Connection parameters for one or more servers.
-     * @param mixed $options    Options to configure some behaviours of the client.
-     */
-    public function __construct($parameters = null, $options = null)
-    {
-        $this->options = $this->createOptions($options ?: array());
-        $this->connection = $this->createConnection($parameters ?: array());
-        $this->profile = $this->options->profile;
-    }
-
-    /**
-     * Creates a new instance of Predis\Configuration\Options from different
-     * types of arguments or simply returns the passed argument if it is an
-     * instance of Predis\Configuration\OptionsInterface.
-     *
-     * @param mixed $options Client options.
-     *
-     * @throws \InvalidArgumentException
-     *
-     * @return OptionsInterface
-     */
-    protected function createOptions($options)
-    {
-        if (is_array($options)) {
-            return new Options($options);
-        }
-
-        if ($options instanceof OptionsInterface) {
-            return $options;
-        }
-
-        throw new \InvalidArgumentException('Invalid type for client options.');
-    }
-
-    /**
-     * Creates single or aggregate connections from different types of arguments
-     * (string, array) or returns the passed argument if it is an instance of a
-     * class implementing Predis\Connection\ConnectionInterface.
-     *
-     * Accepted types for connection parameters are:
-     *
-     *  - Instance of Predis\Connection\ConnectionInterface.
-     *  - Instance of Predis\Connection\ParametersInterface.
-     *  - Array
-     *  - String
-     *  - Callable
-     *
-     * @param mixed $parameters Connection parameters or connection instance.
-     *
-     * @throws \InvalidArgumentException
-     *
-     * @return ConnectionInterface
-     */
-    protected function createConnection($parameters)
-    {
-        if ($parameters instanceof ConnectionInterface) {
-            return $parameters;
-        }
-
-        if ($parameters instanceof ParametersInterface || is_string($parameters)) {
-            return $this->options->connections->create($parameters);
-        }
-
-        if (is_array($parameters)) {
-            if (!isset($parameters[0])) {
-                return $this->options->connections->create($parameters);
-            }
-
-            $options = $this->options;
-
-            if ($options->defined('aggregate')) {
-                $initializer = $this->getConnectionInitializerWrapper($options->aggregate);
-                $connection = $initializer($parameters, $options);
-            } elseif ($options->defined('replication')) {
-                $replication = $options->replication;
-
-                if ($replication instanceof AggregateConnectionInterface) {
-                    $connection = $replication;
-                    $options->connections->aggregate($connection, $parameters);
-                } else {
-                    $initializer = $this->getConnectionInitializerWrapper($replication);
-                    $connection = $initializer($parameters, $options);
-                }
-            } else {
-                $connection = $options->cluster;
-                $options->connections->aggregate($connection, $parameters);
-            }
-
-            return $connection;
-        }
-
-        if (is_callable($parameters)) {
-            $initializer = $this->getConnectionInitializerWrapper($parameters);
-            $connection = $initializer($this->options);
-
-            return $connection;
-        }
-
-        throw new \InvalidArgumentException('Invalid type for connection parameters.');
-    }
-
-    /**
-     * Wraps a callable to make sure that its returned value represents a valid
-     * connection type.
-     *
-     * @param mixed $callable
-     *
-     * @return \Closure
-     */
-    protected function getConnectionInitializerWrapper($callable)
-    {
-        return function () use ($callable) {
-            $connection = call_user_func_array($callable, func_get_args());
-
-            if (!$connection instanceof ConnectionInterface) {
-                throw new \UnexpectedValueException(
-                    'The callable connection initializer returned an invalid type.'
-                );
-            }
-
-            return $connection;
-        };
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getProfile()
-    {
-        return $this->profile;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getOptions()
-    {
-        return $this->options;
-    }
-
-    /**
-     * Creates a new client instance for the specified connection ID or alias,
-     * only when working with an aggregate connection (cluster, replication).
-     * The new client instances uses the same options of the original one.
-     *
-     * @param string $connectionID Identifier of a connection.
-     *
-     * @throws \InvalidArgumentException
-     *
-     * @return Client
-     */
-    public function getClientFor($connectionID)
-    {
-        if (!$connection = $this->getConnectionById($connectionID)) {
-            throw new \InvalidArgumentException("Invalid connection ID: $connectionID.");
-        }
-
-        return new static($connection, $this->options);
-    }
-
-    /**
-     * Opens the underlying connection and connects to the server.
-     */
-    public function connect()
-    {
-        $this->connection->connect();
-    }
-
-    /**
-     * Closes the underlying connection and disconnects from the server.
-     */
-    public function disconnect()
-    {
-        $this->connection->disconnect();
-    }
-
-    /**
-     * Closes the underlying connection and disconnects from the server.
-     *
-     * This is the same as `Client::disconnect()` as it does not actually send
-     * the `QUIT` command to Redis, but simply closes the connection.
-     */
-    public function quit()
-    {
-        $this->disconnect();
-    }
-
-    /**
-     * Returns the current state of the underlying connection.
-     *
-     * @return bool
-     */
-    public function isConnected()
-    {
-        return $this->connection->isConnected();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getConnection()
-    {
-        return $this->connection;
-    }
-
-    /**
-     * Retrieves the specified connection from the aggregate connection when the
-     * client is in cluster or replication mode.
-     *
-     * @param string $connectionID Index or alias of the single connection.
-     *
-     * @throws NotSupportedException
-     *
-     * @return Connection\NodeConnectionInterface
-     */
-    public function getConnectionById($connectionID)
-    {
-        if (!$this->connection instanceof AggregateConnectionInterface) {
-            throw new NotSupportedException(
-                'Retrieving connections by ID is supported only by aggregate connections.'
-            );
-        }
-
-        return $this->connection->getConnectionById($connectionID);
-    }
-
-    /**
-     * Executes a command without filtering its arguments, parsing the response,
-     * applying any prefix to keys or throwing exceptions on Redis errors even
-     * regardless of client options.
-     *
-     * It is possible to identify Redis error responses from normal responses
-     * using the second optional argument which is populated by reference.
-     *
-     * @param array $arguments Command arguments as defined by the command signature.
-     * @param bool  $error     Set to TRUE when Redis returned an error response.
-     *
-     * @return mixed
-     */
-    public function executeRaw(array $arguments, &$error = null)
-    {
-        $error = false;
-
-        $response = $this->connection->executeCommand(
-            new RawCommand($arguments)
-        );
-
-        if ($response instanceof ResponseInterface) {
-            if ($response instanceof ErrorResponseInterface) {
-                $error = true;
-            }
-
-            return (string) $response;
-        }
-
-        return $response;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function __call($commandID, $arguments)
-    {
-        return $this->executeCommand(
-            $this->createCommand($commandID, $arguments)
-        );
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function createCommand($commandID, $arguments = array())
-    {
-        return $this->profile->createCommand($commandID, $arguments);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function executeCommand(CommandInterface $command)
-    {
-        $response = $this->connection->executeCommand($command);
-
-        if ($response instanceof ResponseInterface) {
-            if ($response instanceof ErrorResponseInterface) {
-                $response = $this->onErrorResponse($command, $response);
-            }
-
-            return $response;
-        }
-
-        return $command->parseResponse($response);
-    }
-
-    /**
-     * Handles -ERR responses returned by Redis.
-     *
-     * @param CommandInterface       $command  Redis command that generated the error.
-     * @param ErrorResponseInterface $response Instance of the error response.
-     *
-     * @throws ServerException
-     *
-     * @return mixed
-     */
-    protected function onErrorResponse(CommandInterface $command, ErrorResponseInterface $response)
-    {
-        if ($command instanceof ScriptCommand && $response->getErrorType() === 'NOSCRIPT') {
-            $eval = $this->createCommand('EVAL');
-            $eval->setRawArguments($command->getEvalArguments());
-
-            $response = $this->executeCommand($eval);
-
-            if (!$response instanceof ResponseInterface) {
-                $response = $command->parseResponse($response);
-            }
-
-            return $response;
-        }
-
-        if ($this->options->exceptions) {
-            throw new ServerException($response->getMessage());
-        }
-
-        return $response;
-    }
-
-    /**
-     * Executes the specified initializer method on `$this` by adjusting the
-     * actual invokation depending on the arity (0, 1 or 2 arguments). This is
-     * simply an utility method to create Redis contexts instances since they
-     * follow a common initialization path.
-     *
-     * @param string $initializer Method name.
-     * @param array  $argv        Arguments for the method.
-     *
-     * @return mixed
-     */
-    private function sharedContextFactory($initializer, $argv = null)
-    {
-        switch (count($argv)) {
-            case 0:
-                return $this->$initializer();
-
-            case 1:
-                return is_array($argv[0])
-                    ? $this->$initializer($argv[0])
-                    : $this->$initializer(null, $argv[0]);
-
-            case 2:
-                list($arg0, $arg1) = $argv;
-
-                return $this->$initializer($arg0, $arg1);
-
-            default:
-                return $this->$initializer($this, $argv);
-        }
-    }
-
-    /**
-     * Creates a new pipeline context and returns it, or returns the results of
-     * a pipeline executed inside the optionally provided callable object.
-     *
-     * @param mixed ... Array of options, a callable for execution, or both.
-     *
-     * @return Pipeline|array
-     */
-    public function pipeline(/* arguments */)
-    {
-        return $this->sharedContextFactory('createPipeline', func_get_args());
-    }
-
-    /**
-     * Actual pipeline context initializer method.
-     *
-     * @param array $options  Options for the context.
-     * @param mixed $callable Optional callable used to execute the context.
-     *
-     * @return Pipeline|array
-     */
-    protected function createPipeline(array $options = null, $callable = null)
-    {
-        if (isset($options['atomic']) && $options['atomic']) {
-            $class = 'Predis\Pipeline\Atomic';
-        } elseif (isset($options['fire-and-forget']) && $options['fire-and-forget']) {
-            $class = 'Predis\Pipeline\FireAndForget';
-        } else {
-            $class = 'Predis\Pipeline\Pipeline';
-        }
-
-        /*
-         * @var ClientContextInterface
-         */
-        $pipeline = new $class($this);
-
-        if (isset($callable)) {
-            return $pipeline->execute($callable);
-        }
-
-        return $pipeline;
-    }
-
-    /**
-     * Creates a new transaction context and returns it, or returns the results
-     * of a transaction executed inside the optionally provided callable object.
-     *
-     * @param mixed ... Array of options, a callable for execution, or both.
-     *
-     * @return MultiExecTransaction|array
-     */
-    public function transaction(/* arguments */)
-    {
-        return $this->sharedContextFactory('createTransaction', func_get_args());
-    }
-
-    /**
-     * Actual transaction context initializer method.
-     *
-     * @param array $options  Options for the context.
-     * @param mixed $callable Optional callable used to execute the context.
-     *
-     * @return MultiExecTransaction|array
-     */
-    protected function createTransaction(array $options = null, $callable = null)
-    {
-        $transaction = new MultiExecTransaction($this, $options);
-
-        if (isset($callable)) {
-            return $transaction->execute($callable);
-        }
-
-        return $transaction;
-    }
-
-    /**
-     * Creates a new publish/subscribe context and returns it, or starts its loop
-     * inside the optionally provided callable object.
-     *
-     * @param mixed ... Array of options, a callable for execution, or both.
-     *
-     * @return PubSubConsumer|null
-     */
-    public function pubSubLoop(/* arguments */)
-    {
-        return $this->sharedContextFactory('createPubSub', func_get_args());
-    }
-
-    /**
-     * Actual publish/subscribe context initializer method.
-     *
-     * @param array $options  Options for the context.
-     * @param mixed $callable Optional callable used to execute the context.
-     *
-     * @return PubSubConsumer|null
-     */
-    protected function createPubSub(array $options = null, $callable = null)
-    {
-        $pubsub = new PubSubConsumer($this, $options);
-
-        if (!isset($callable)) {
-            return $pubsub;
-        }
-
-        foreach ($pubsub as $message) {
-            if (call_user_func($callable, $pubsub, $message) === false) {
-                $pubsub->stop();
-            }
-        }
-    }
-
-    /**
-     * Creates a new monitor consumer and returns it.
-     *
-     * @return MonitorConsumer
-     */
-    public function monitor()
-    {
-        return new MonitorConsumer($this);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getIterator()
-    {
-        $clients = array();
-        $connection = $this->getConnection();
-
-        if (!$connection instanceof \Traversable) {
-            return new \ArrayIterator(array(
-                (string) $connection => new static($connection, $this->getOptions())
-            ));
-        }
-
-        foreach ($connection as $node) {
-            $clients[(string) $node] = new static($node, $this->getOptions());
-        }
-
-        return new \ArrayIterator($clients);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+WHVq6iO/tXjMqCEmH9fzjRedUQwZCW3s

@@ -1,56 +1,31 @@
-<?php
-
-namespace Illuminate\Foundation\Auth\Access;
-
-use Illuminate\Contracts\Auth\Access\Gate;
-
-trait Authorizable
-{
-    /**
-     * Determine if the entity has the given abilities.
-     *
-     * @param  iterable|string  $abilities
-     * @param  array|mixed  $arguments
-     * @return bool
-     */
-    public function can($abilities, $arguments = [])
-    {
-        return app(Gate::class)->forUser($this)->check($abilities, $arguments);
-    }
-
-    /**
-     * Determine if the entity has any of the given abilities.
-     *
-     * @param  iterable|string  $abilities
-     * @param  array|mixed  $arguments
-     * @return bool
-     */
-    public function canAny($abilities, $arguments = [])
-    {
-        return app(Gate::class)->forUser($this)->any($abilities, $arguments);
-    }
-
-    /**
-     * Determine if the entity does not have the given abilities.
-     *
-     * @param  iterable|string  $abilities
-     * @param  array|mixed  $arguments
-     * @return bool
-     */
-    public function cant($abilities, $arguments = [])
-    {
-        return ! $this->can($abilities, $arguments);
-    }
-
-    /**
-     * Determine if the entity does not have the given abilities.
-     *
-     * @param  iterable|string  $abilities
-     * @param  array|mixed  $arguments
-     * @return bool
-     */
-    public function cannot($abilities, $arguments = [])
-    {
-        return $this->cant($abilities, $arguments);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
++hq5VMf8

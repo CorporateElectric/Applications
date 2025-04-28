@@ -1,76 +1,43 @@
-<?php
-
-namespace Maatwebsite\Excel\Jobs;
-
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Maatwebsite\Excel\Concerns\WithEvents;
-use Maatwebsite\Excel\Files\TemporaryFile;
-use Maatwebsite\Excel\Writer;
-
-class CloseSheet implements ShouldQueue
-{
-    use Queueable, ProxyFailures;
-
-    /**
-     * @var object
-     */
-    private $sheetExport;
-
-    /**
-     * @var string
-     */
-    private $temporaryFile;
-
-    /**
-     * @var string
-     */
-    private $writerType;
-
-    /**
-     * @var int
-     */
-    private $sheetIndex;
-
-    /**
-     * @param object        $sheetExport
-     * @param TemporaryFile $temporaryFile
-     * @param string        $writerType
-     * @param int           $sheetIndex
-     */
-    public function __construct($sheetExport, TemporaryFile $temporaryFile, string $writerType, int $sheetIndex)
-    {
-        $this->sheetExport   = $sheetExport;
-        $this->temporaryFile = $temporaryFile;
-        $this->writerType    = $writerType;
-        $this->sheetIndex    = $sheetIndex;
-    }
-
-    /**
-     * @param Writer $writer
-     *
-     * @throws \PhpOffice\PhpSpreadsheet\Exception
-     * @throws \PhpOffice\PhpSpreadsheet\Reader\Exception
-     */
-    public function handle(Writer $writer)
-    {
-        $writer = $writer->reopen(
-            $this->temporaryFile,
-            $this->writerType
-        );
-
-        $sheet = $writer->getSheetByIndex($this->sheetIndex);
-
-        if ($this->sheetExport instanceof WithEvents) {
-            $sheet->registerListeners($this->sheetExport->registerEvents());
-        }
-
-        $sheet->close($this->sheetExport);
-
-        $writer->write(
-            $this->sheetExport,
-            $this->temporaryFile,
-            $this->writerType
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+xZ3sqUCKZwiFwzI5

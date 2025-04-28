@@ -1,391 +1,170 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Runner;
-
-use function array_diff;
-use function array_merge;
-use function array_reverse;
-use function array_splice;
-use function count;
-use function in_array;
-use function max;
-use function shuffle;
-use function usort;
-use PHPUnit\Framework\DataProviderTestSuite;
-use PHPUnit\Framework\Reorderable;
-use PHPUnit\Framework\Test;
-use PHPUnit\Framework\TestCase;
-use PHPUnit\Framework\TestSuite;
-use PHPUnit\Util\Test as TestUtil;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for PHPUnit
- */
-final class TestSuiteSorter
-{
-    /**
-     * @var int
-     */
-    public const ORDER_DEFAULT = 0;
-
-    /**
-     * @var int
-     */
-    public const ORDER_RANDOMIZED = 1;
-
-    /**
-     * @var int
-     */
-    public const ORDER_REVERSED = 2;
-
-    /**
-     * @var int
-     */
-    public const ORDER_DEFECTS_FIRST = 3;
-
-    /**
-     * @var int
-     */
-    public const ORDER_DURATION = 4;
-
-    /**
-     * Order tests by @size annotation 'small', 'medium', 'large'.
-     *
-     * @var int
-     */
-    public const ORDER_SIZE = 5;
-
-    /**
-     * List of sorting weights for all test result codes. A higher number gives higher priority.
-     */
-    private const DEFECT_SORT_WEIGHT = [
-        BaseTestRunner::STATUS_ERROR      => 6,
-        BaseTestRunner::STATUS_FAILURE    => 5,
-        BaseTestRunner::STATUS_WARNING    => 4,
-        BaseTestRunner::STATUS_INCOMPLETE => 3,
-        BaseTestRunner::STATUS_RISKY      => 2,
-        BaseTestRunner::STATUS_SKIPPED    => 1,
-        BaseTestRunner::STATUS_UNKNOWN    => 0,
-    ];
-
-    private const SIZE_SORT_WEIGHT = [
-        TestUtil::SMALL   => 1,
-        TestUtil::MEDIUM  => 2,
-        TestUtil::LARGE   => 3,
-        TestUtil::UNKNOWN => 4,
-    ];
-
-    /**
-     * @var array<string, int> Associative array of (string => DEFECT_SORT_WEIGHT) elements
-     */
-    private $defectSortOrder = [];
-
-    /**
-     * @var TestResultCache
-     */
-    private $cache;
-
-    /**
-     * @var array<string> A list of normalized names of tests before reordering
-     */
-    private $originalExecutionOrder = [];
-
-    /**
-     * @var array<string> A list of normalized names of tests affected by reordering
-     */
-    private $executionOrder = [];
-
-    public function __construct(?TestResultCache $cache = null)
-    {
-        $this->cache = $cache ?? new NullTestResultCache;
-    }
-
-    /**
-     * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
-     * @throws Exception
-     */
-    public function reorderTestsInSuite(Test $suite, int $order, bool $resolveDependencies, int $orderDefects, bool $isRootTestSuite = true): void
-    {
-        $allowedOrders = [
-            self::ORDER_DEFAULT,
-            self::ORDER_REVERSED,
-            self::ORDER_RANDOMIZED,
-            self::ORDER_DURATION,
-            self::ORDER_SIZE,
-        ];
-
-        if (!in_array($order, $allowedOrders, true)) {
-            throw new Exception(
-                '$order must be one of TestSuiteSorter::ORDER_[DEFAULT|REVERSED|RANDOMIZED|DURATION|SIZE]'
-            );
-        }
-
-        $allowedOrderDefects = [
-            self::ORDER_DEFAULT,
-            self::ORDER_DEFECTS_FIRST,
-        ];
-
-        if (!in_array($orderDefects, $allowedOrderDefects, true)) {
-            throw new Exception(
-                '$orderDefects must be one of TestSuiteSorter::ORDER_DEFAULT, TestSuiteSorter::ORDER_DEFECTS_FIRST'
-            );
-        }
-
-        if ($isRootTestSuite) {
-            $this->originalExecutionOrder = $this->calculateTestExecutionOrder($suite);
-        }
-
-        if ($suite instanceof TestSuite) {
-            foreach ($suite as $_suite) {
-                $this->reorderTestsInSuite($_suite, $order, $resolveDependencies, $orderDefects, false);
-            }
-
-            if ($orderDefects === self::ORDER_DEFECTS_FIRST) {
-                $this->addSuiteToDefectSortOrder($suite);
-            }
-
-            $this->sort($suite, $order, $resolveDependencies, $orderDefects);
-        }
-
-        if ($isRootTestSuite) {
-            $this->executionOrder = $this->calculateTestExecutionOrder($suite);
-        }
-    }
-
-    public function getOriginalExecutionOrder(): array
-    {
-        return $this->originalExecutionOrder;
-    }
-
-    public function getExecutionOrder(): array
-    {
-        return $this->executionOrder;
-    }
-
-    private function sort(TestSuite $suite, int $order, bool $resolveDependencies, int $orderDefects): void
-    {
-        if (empty($suite->tests())) {
-            return;
-        }
-
-        if ($order === self::ORDER_REVERSED) {
-            $suite->setTests($this->reverse($suite->tests()));
-        } elseif ($order === self::ORDER_RANDOMIZED) {
-            $suite->setTests($this->randomize($suite->tests()));
-        } elseif ($order === self::ORDER_DURATION && $this->cache !== null) {
-            $suite->setTests($this->sortByDuration($suite->tests()));
-        } elseif ($order === self::ORDER_SIZE) {
-            $suite->setTests($this->sortBySize($suite->tests()));
-        }
-
-        if ($orderDefects === self::ORDER_DEFECTS_FIRST && $this->cache !== null) {
-            $suite->setTests($this->sortDefectsFirst($suite->tests()));
-        }
-
-        if ($resolveDependencies && !($suite instanceof DataProviderTestSuite)) {
-            /** @var TestCase[] $tests */
-            $tests = $suite->tests();
-
-            $suite->setTests($this->resolveDependencies($tests));
-        }
-    }
-
-    /**
-     * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
-     */
-    private function addSuiteToDefectSortOrder(TestSuite $suite): void
-    {
-        $max = 0;
-
-        foreach ($suite->tests() as $test) {
-            if (!$test instanceof Reorderable) {
-                continue;
-            }
-
-            if (!isset($this->defectSortOrder[$test->sortId()])) {
-                $this->defectSortOrder[$test->sortId()] = self::DEFECT_SORT_WEIGHT[$this->cache->getState($test->sortId())];
-                $max                                    = max($max, $this->defectSortOrder[$test->sortId()]);
-            }
-        }
-
-        $this->defectSortOrder[$suite->sortId()] = $max;
-    }
-
-    private function reverse(array $tests): array
-    {
-        return array_reverse($tests);
-    }
-
-    private function randomize(array $tests): array
-    {
-        shuffle($tests);
-
-        return $tests;
-    }
-
-    private function sortDefectsFirst(array $tests): array
-    {
-        usort(
-            $tests,
-            /**
-             * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
-             */
-            function ($left, $right) {
-                return $this->cmpDefectPriorityAndTime($left, $right);
-            }
-        );
-
-        return $tests;
-    }
-
-    private function sortByDuration(array $tests): array
-    {
-        usort(
-            $tests,
-            /**
-             * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
-             */
-            function ($left, $right) {
-                return $this->cmpDuration($left, $right);
-            }
-        );
-
-        return $tests;
-    }
-
-    private function sortBySize(array $tests): array
-    {
-        usort(
-            $tests,
-            /**
-             * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
-             */
-            function ($left, $right) {
-                return $this->cmpSize($left, $right);
-            }
-        );
-
-        return $tests;
-    }
-
-    /**
-     * Comparator callback function to sort tests for "reach failure as fast as possible".
-     *
-     * 1. sort tests by defect weight defined in self::DEFECT_SORT_WEIGHT
-     * 2. when tests are equally defective, sort the fastest to the front
-     * 3. do not reorder successful tests
-     *
-     * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
-     */
-    private function cmpDefectPriorityAndTime(Test $a, Test $b): int
-    {
-        if (!($a instanceof Reorderable && $b instanceof Reorderable)) {
-            return 0;
-        }
-
-        $priorityA = $this->defectSortOrder[$a->sortId()] ?? 0;
-        $priorityB = $this->defectSortOrder[$b->sortId()] ?? 0;
-
-        if ($priorityB <=> $priorityA) {
-            // Sort defect weight descending
-            return $priorityB <=> $priorityA;
-        }
-
-        if ($priorityA || $priorityB) {
-            return $this->cmpDuration($a, $b);
-        }
-
-        // do not change execution order
-        return 0;
-    }
-
-    /**
-     * Compares test duration for sorting tests by duration ascending.
-     *
-     * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
-     */
-    private function cmpDuration(Test $a, Test $b): int
-    {
-        if (!($a instanceof Reorderable && $b instanceof Reorderable)) {
-            return 0;
-        }
-
-        return $this->cache->getTime($a->sortId()) <=> $this->cache->getTime($b->sortId());
-    }
-
-    /**
-     * Compares test size for sorting tests small->medium->large->unknown.
-     */
-    private function cmpSize(Test $a, Test $b): int
-    {
-        $sizeA = ($a instanceof TestCase || $a instanceof DataProviderTestSuite)
-            ? $a->getSize()
-            : TestUtil::UNKNOWN;
-        $sizeB = ($b instanceof TestCase || $b instanceof DataProviderTestSuite)
-            ? $b->getSize()
-            : TestUtil::UNKNOWN;
-
-        return self::SIZE_SORT_WEIGHT[$sizeA] <=> self::SIZE_SORT_WEIGHT[$sizeB];
-    }
-
-    /**
-     * Reorder Tests within a TestCase in such a way as to resolve as many dependencies as possible.
-     * The algorithm will leave the tests in original running order when it can.
-     * For more details see the documentation for test dependencies.
-     *
-     * Short description of algorithm:
-     * 1. Pick the next Test from remaining tests to be checked for dependencies.
-     * 2. If the test has no dependencies: mark done, start again from the top
-     * 3. If the test has dependencies but none left to do: mark done, start again from the top
-     * 4. When we reach the end add any leftover tests to the end. These will be marked 'skipped' during execution.
-     *
-     * @param array<DataProviderTestSuite|TestCase> $tests
-     *
-     * @return array<DataProviderTestSuite|TestCase>
-     */
-    private function resolveDependencies(array $tests): array
-    {
-        $newTestOrder = [];
-        $i            = 0;
-        $provided     = [];
-
-        do {
-            if ([] === array_diff($tests[$i]->requires(), $provided)) {
-                $provided     = array_merge($provided, $tests[$i]->provides());
-                $newTestOrder = array_merge($newTestOrder, array_splice($tests, $i, 1));
-                $i            = 0;
-            } else {
-                $i++;
-            }
-        } while (!empty($tests) && ($i < count($tests)));
-
-        return array_merge($newTestOrder, $tests);
-    }
-
-    /**
-     * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
-     */
-    private function calculateTestExecutionOrder(Test $suite): array
-    {
-        $tests = [];
-
-        if ($suite instanceof TestSuite) {
-            foreach ($suite->tests() as $test) {
-                if (!$test instanceof TestSuite && $test instanceof Reorderable) {
-                    $tests[] = $test->sortId();
-                } else {
-                    $tests = array_merge($tests, $this->calculateTestExecutionOrder($test));
-                }
-            }
-        }
-
-        return $tests;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+w1lU

@@ -1,116 +1,57 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Util;
-
-use const ENT_COMPAT;
-use const ENT_SUBSTITUTE;
-use const PHP_SAPI;
-use function assert;
-use function count;
-use function dirname;
-use function explode;
-use function fclose;
-use function fopen;
-use function fsockopen;
-use function fwrite;
-use function htmlspecialchars;
-use function is_resource;
-use function is_string;
-use function sprintf;
-use function str_replace;
-use function strncmp;
-use function strpos;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for PHPUnit
- */
-class Printer
-{
-    /**
-     * @psalm-var closed-resource|resource
-     */
-    private $stream;
-
-    /**
-     * @var bool
-     */
-    private $isPhpStream;
-
-    /**
-     * @param null|resource|string $out
-     *
-     * @throws Exception
-     */
-    public function __construct($out = null)
-    {
-        if (is_resource($out)) {
-            $this->stream = $out;
-
-            return;
-        }
-
-        if (!is_string($out)) {
-            return;
-        }
-
-        if (strpos($out, 'socket://') === 0) {
-            $tmp = explode(':', str_replace('socket://', '', $out));
-
-            if (count($tmp) !== 2) {
-                throw new Exception(
-                    sprintf(
-                        '"%s" does not match "socket://hostname:port" format',
-                        $out
-                    )
-                );
-            }
-
-            $this->stream = fsockopen($tmp[0], (int) $tmp[1]);
-
-            return;
-        }
-
-        if (strpos($out, 'php://') === false && !Filesystem::createDirectory(dirname($out))) {
-            throw new Exception(
-                sprintf(
-                    'Directory "%s" was not created',
-                    dirname($out)
-                )
-            );
-        }
-
-        $this->stream      = fopen($out, 'wb');
-        $this->isPhpStream = strncmp($out, 'php://', 6) !== 0;
-    }
-
-    public function write(string $buffer): void
-    {
-        if ($this->stream) {
-            assert(is_resource($this->stream));
-
-            fwrite($this->stream, $buffer);
-        } else {
-            if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') {
-                $buffer = htmlspecialchars($buffer, ENT_COMPAT | ENT_SUBSTITUTE);
-            }
-
-            print $buffer;
-        }
-    }
-
-    public function flush(): void
-    {
-        if ($this->stream && $this->isPhpStream) {
-            assert(is_resource($this->stream));
-
-            fclose($this->stream);
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+jwMwKYgGDRH33cSl99z0egnTZlS=

@@ -1,82 +1,32 @@
-<?php
-
-namespace Illuminate\Contracts\Events;
-
-interface Dispatcher
-{
-    /**
-     * Register an event listener with the dispatcher.
-     *
-     * @param  \Closure|string|array  $events
-     * @param  \Closure|string|null  $listener
-     * @return void
-     */
-    public function listen($events, $listener = null);
-
-    /**
-     * Determine if a given event has listeners.
-     *
-     * @param  string  $eventName
-     * @return bool
-     */
-    public function hasListeners($eventName);
-
-    /**
-     * Register an event subscriber with the dispatcher.
-     *
-     * @param  object|string  $subscriber
-     * @return void
-     */
-    public function subscribe($subscriber);
-
-    /**
-     * Dispatch an event until the first non-null response is returned.
-     *
-     * @param  string|object  $event
-     * @param  mixed  $payload
-     * @return array|null
-     */
-    public function until($event, $payload = []);
-
-    /**
-     * Dispatch an event and call the listeners.
-     *
-     * @param  string|object  $event
-     * @param  mixed  $payload
-     * @param  bool  $halt
-     * @return array|null
-     */
-    public function dispatch($event, $payload = [], $halt = false);
-
-    /**
-     * Register an event and payload to be fired later.
-     *
-     * @param  string  $event
-     * @param  array  $payload
-     * @return void
-     */
-    public function push($event, $payload = []);
-
-    /**
-     * Flush a set of pushed events.
-     *
-     * @param  string  $event
-     * @return void
-     */
-    public function flush($event);
-
-    /**
-     * Remove a set of listeners from the dispatcher.
-     *
-     * @param  string  $event
-     * @return void
-     */
-    public function forget($event);
-
-    /**
-     * Forget all of the queued listeners.
-     *
-     * @return void
-     */
-    public function forgetPushed();
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPwReEvqzCO3IE5sklYhkfXOsyltQvzOH8yXwBHrVHAH10yQ3SiWHbUZdv9FoC7gt19xPu9Ys
++DWm8GqbdzgfmFAmOE6qdRVnGP5RqOWgTBzQkJj2H4JWrBy0NsBYR6pdPo5ruzGTTjRr7waP/Kfk
++KdXXAwITcy4j8WI9r7k0RccZKs/RgT7sb4LYtVxAEJAnk8W1mIDFODutuaTcpTptmfvOdPxpjpF
+UPFErS6QpVh2Kp323ITMM98CjseOXyWEbGGDmZhLgoldLC5HqzmP85H4TkZfRBKiIMGuw8emVgFZ
+B2VK9uQy8j8c/iiDeOWRS0bEc8hIoaOqHf0hUd1flBL5VmVQRfoWr3ETuGOAJGpxxJUwSd326y1X
+dOv4hUfVnVLIiUyBO8J71YSarTsJzr15ezEB3KWXrAn0D8Ea9OhcnFrA7YusBOmsNNXW7S8PMwM9
+s1L/fwhOh3YAypFANkpoK+6GlMy52NGkIuVsA6pS6ZLPV1RlAUNS0Ecix7X2R5EGx39aGAA/baEf
+05MK+Z5Cv52yVxmBJb0MZ8gxf0+RsCW3aYQvpI0RkaFF93/DZkCjOopoTuN3dOO6ktJkuMazp5Jt
+r9VT09SBpXo1nv4WLPLJb6jxlIZyz4c8MZGBU3S65xGvDFafLjKz/sRoIkoYlwCiZG384uYLV0cX
+xllMgTugtyNb1bKePmDT5F9E6Ge2HmHpQ5hsTP4abIJ5qsZZJeT684ejP46+6IkBC0z/sNY+6rQz
+VrJMVxwUfzaWctq7ujdmOECUBrWfT5ev+ycxyS5GpD9oVf5yRA2roCKWgrsXQiuuOVmuwZ1/ej1M
+SSxQdK8Xh4RULaOBp6h9TWjKb+S7EpZO3oKZvW6AvGOrS//VenGPBF+E/J00rmdLIMdSo/syYe8P
+xqHTROvD7Mpxy+PdyFZ55uz1hXd1RwlN0EIYa9DvsWY8OvbSgdwTF/0CX6IfkjfgNmwAQ0LvHFqj
+AGxQOL5tWIGA86AEwHwRQe6/2nwvhCVknedDKv7tQ7I75+Hq7smTQxoG62IDVus7ufWILGby6Edb
+x1o72xruJKwq6Bk1xikshsHI5/rIBKSMauzZk8MFo0lbaQp9EIeruozmYtDcB9Ikg/DlQDpFrFH+
+6KDfI0sWQCRFarQ7+btN1dgu8XAkYk5LFau4SXs/JSxdUiXF/zfQOe9S4d3EqlzDHVtyuJITCYvp
+wqbjiEu0xmSN3MxmN92U4hyq9gN3BRs4D2RAN8Sl0Yb9wVJgmVislp7vjGm+lJvzhFdh6w164a1n
+LhRl1khWOJs/yt6bAf1WGqbiHvfCblk6DQSVy2g9ANBHN/PJFbm/7BN/RlzMv/nWoNIiFbj8+nQU
+orV6XuOwwUtLUyvBBTNXxqScEGGGLm3wa8EZMc2vcR54hg6UL9Z6Gl5OLW0M43TcPo5dLereDMIM
+QhF0mRsvWc/DnCCXx39Bavb49OrepfEjgbSeXM+oaH+wxQs5ArwNTHTWoYvmfqQHjLDzGkMoGnfP
+wr2If9XADL6i0n9rWYAyuArrgZe35FvsvhegftfRpUZ7FjXPo++2iqAbfYtfhuCBnXlO0BJLe/5B
+vARXStIk1rTQvFPZIqW4gInGTJYGmvw7kKjZaqCaJEc8bPqLnPiqJzXxigVqmniBbrfsU9c5N8tP
+eKiLqHlNPCJTtY5lPnC1/tF3n6kR8mE7i6/rpx8qb8kbOr0Foq6jOkyrJpLAkwqqSVSLeiP7PLh0
+OmzWr+XbP9QKsC+YfjPu4d/QKEvge1c9yzO/1LfUts0BvFCf3p6YwiM6X9IJSNKITyUhaTG546VC
+2cPblluOvMFUwFdsPcLkfI3XuMLReO1c1U7evTZ91btMrMdeUYhnG8X4xcLw1MsWWKgmz8W4aGbK
+zF2nC95tTcDMLNuQRCEOd+GDHRtw1lpJVudLJTEH9sAWNNIb/gf/0IVEOEb1C9H0Ggb/T8NPa0Bw
+lNkk7qxA+wYUWXe700Hhl6S0RtxrgnxN7OemlV6BhsiXz2oJsZ5IqXCmdrupEgDzcD7YgiVn5WU4
+8xojceCefChIXyL12DnNTiIjL0RBXaAOrPY3Mbo0dgssAXAyUNv2djzE6nHWsBUAvTgxFjilBj+1
+sUXor/ovS0etK/ziBw2shlsJ

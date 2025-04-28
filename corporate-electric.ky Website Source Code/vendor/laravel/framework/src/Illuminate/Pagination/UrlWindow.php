@@ -1,220 +1,78 @@
-<?php
-
-namespace Illuminate\Pagination;
-
-use Illuminate\Contracts\Pagination\LengthAwarePaginator as PaginatorContract;
-
-class UrlWindow
-{
-    /**
-     * The paginator implementation.
-     *
-     * @var \Illuminate\Contracts\Pagination\LengthAwarePaginator
-     */
-    protected $paginator;
-
-    /**
-     * Create a new URL window instance.
-     *
-     * @param  \Illuminate\Contracts\Pagination\LengthAwarePaginator  $paginator
-     * @return void
-     */
-    public function __construct(PaginatorContract $paginator)
-    {
-        $this->paginator = $paginator;
-    }
-
-    /**
-     * Create a new URL window instance.
-     *
-     * @param  \Illuminate\Contracts\Pagination\LengthAwarePaginator  $paginator
-     * @return array
-     */
-    public static function make(PaginatorContract $paginator)
-    {
-        return (new static($paginator))->get();
-    }
-
-    /**
-     * Get the window of URLs to be shown.
-     *
-     * @return array
-     */
-    public function get()
-    {
-        $onEachSide = $this->paginator->onEachSide;
-
-        if ($this->paginator->lastPage() < ($onEachSide * 2) + 8) {
-            return $this->getSmallSlider();
-        }
-
-        return $this->getUrlSlider($onEachSide);
-    }
-
-    /**
-     * Get the slider of URLs there are not enough pages to slide.
-     *
-     * @return array
-     */
-    protected function getSmallSlider()
-    {
-        return [
-            'first'  => $this->paginator->getUrlRange(1, $this->lastPage()),
-            'slider' => null,
-            'last'   => null,
-        ];
-    }
-
-    /**
-     * Create a URL slider links.
-     *
-     * @param  int  $onEachSide
-     * @return array
-     */
-    protected function getUrlSlider($onEachSide)
-    {
-        $window = $onEachSide + 4;
-
-        if (! $this->hasPages()) {
-            return ['first' => null, 'slider' => null, 'last' => null];
-        }
-
-        // If the current page is very close to the beginning of the page range, we will
-        // just render the beginning of the page range, followed by the last 2 of the
-        // links in this list, since we will not have room to create a full slider.
-        if ($this->currentPage() <= $window) {
-            return $this->getSliderTooCloseToBeginning($window, $onEachSide);
-        }
-
-        // If the current page is close to the ending of the page range we will just get
-        // this first couple pages, followed by a larger window of these ending pages
-        // since we're too close to the end of the list to create a full on slider.
-        elseif ($this->currentPage() > ($this->lastPage() - $window)) {
-            return $this->getSliderTooCloseToEnding($window, $onEachSide);
-        }
-
-        // If we have enough room on both sides of the current page to build a slider we
-        // will surround it with both the beginning and ending caps, with this window
-        // of pages in the middle providing a Google style sliding paginator setup.
-        return $this->getFullSlider($onEachSide);
-    }
-
-    /**
-     * Get the slider of URLs when too close to beginning of window.
-     *
-     * @param  int  $window
-     * @param  int  $onEachSide
-     * @return array
-     */
-    protected function getSliderTooCloseToBeginning($window, $onEachSide)
-    {
-        return [
-            'first' => $this->paginator->getUrlRange(1, $window + $onEachSide),
-            'slider' => null,
-            'last' => $this->getFinish(),
-        ];
-    }
-
-    /**
-     * Get the slider of URLs when too close to ending of window.
-     *
-     * @param  int  $window
-     * @param  int  $onEachSide
-     * @return array
-     */
-    protected function getSliderTooCloseToEnding($window, $onEachSide)
-    {
-        $last = $this->paginator->getUrlRange(
-            $this->lastPage() - ($window + ($onEachSide - 1)),
-            $this->lastPage()
-        );
-
-        return [
-            'first' => $this->getStart(),
-            'slider' => null,
-            'last' => $last,
-        ];
-    }
-
-    /**
-     * Get the slider of URLs when a full slider can be made.
-     *
-     * @param  int  $onEachSide
-     * @return array
-     */
-    protected function getFullSlider($onEachSide)
-    {
-        return [
-            'first'  => $this->getStart(),
-            'slider' => $this->getAdjacentUrlRange($onEachSide),
-            'last'   => $this->getFinish(),
-        ];
-    }
-
-    /**
-     * Get the page range for the current page window.
-     *
-     * @param  int  $onEachSide
-     * @return array
-     */
-    public function getAdjacentUrlRange($onEachSide)
-    {
-        return $this->paginator->getUrlRange(
-            $this->currentPage() - $onEachSide,
-            $this->currentPage() + $onEachSide
-        );
-    }
-
-    /**
-     * Get the starting URLs of a pagination slider.
-     *
-     * @return array
-     */
-    public function getStart()
-    {
-        return $this->paginator->getUrlRange(1, 2);
-    }
-
-    /**
-     * Get the ending URLs of a pagination slider.
-     *
-     * @return array
-     */
-    public function getFinish()
-    {
-        return $this->paginator->getUrlRange(
-            $this->lastPage() - 1,
-            $this->lastPage()
-        );
-    }
-
-    /**
-     * Determine if the underlying paginator being presented has pages to show.
-     *
-     * @return bool
-     */
-    public function hasPages()
-    {
-        return $this->paginator->lastPage() > 1;
-    }
-
-    /**
-     * Get the current page from the paginator.
-     *
-     * @return int
-     */
-    protected function currentPage()
-    {
-        return $this->paginator->currentPage();
-    }
-
-    /**
-     * Get the last page from the paginator.
-     *
-     * @return int
-     */
-    protected function lastPage()
-    {
-        return $this->paginator->lastPage();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+rMGv0EVbzi65UScA8fx+fBLrl1wn

@@ -1,84 +1,45 @@
-<?php
-
-namespace GuzzleHttp\Promise;
-
-final class Create
-{
-    /**
-     * Creates a promise for a value if the value is not a promise.
-     *
-     * @param mixed $value Promise or value.
-     *
-     * @return PromiseInterface
-     */
-    public static function promiseFor($value)
-    {
-        if ($value instanceof PromiseInterface) {
-            return $value;
-        }
-
-        // Return a Guzzle promise that shadows the given promise.
-        if (is_object($value) && method_exists($value, 'then')) {
-            $wfn = method_exists($value, 'wait') ? [$value, 'wait'] : null;
-            $cfn = method_exists($value, 'cancel') ? [$value, 'cancel'] : null;
-            $promise = new Promise($wfn, $cfn);
-            $value->then([$promise, 'resolve'], [$promise, 'reject']);
-            return $promise;
-        }
-
-        return new FulfilledPromise($value);
-    }
-
-    /**
-     * Creates a rejected promise for a reason if the reason is not a promise.
-     * If the provided reason is a promise, then it is returned as-is.
-     *
-     * @param mixed $reason Promise or reason.
-     *
-     * @return PromiseInterface
-     */
-    public static function rejectionFor($reason)
-    {
-        if ($reason instanceof PromiseInterface) {
-            return $reason;
-        }
-
-        return new RejectedPromise($reason);
-    }
-
-    /**
-     * Create an exception for a rejected promise value.
-     *
-     * @param mixed $reason
-     *
-     * @return \Exception|\Throwable
-     */
-    public static function exceptionFor($reason)
-    {
-        if ($reason instanceof \Exception || $reason instanceof \Throwable) {
-            return $reason;
-        }
-
-        return new RejectionException($reason);
-    }
-
-    /**
-     * Returns an iterator for the given value.
-     *
-     * @param mixed $value
-     *
-     * @return \Iterator
-     */
-    public static function iterFor($value)
-    {
-        if ($value instanceof \Iterator) {
-            return $value;
-        }
-
-        if (is_array($value)) {
-            return new \ArrayIterator($value);
-        }
-
-        return new \ArrayIterator([$value]);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,578 +1,269 @@
-<?php
-
-namespace Illuminate\Database\Eloquent\Concerns;
-
-use Closure;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Database\Eloquent\Relations\Relation;
-use Illuminate\Database\Query\Builder as QueryBuilder;
-use Illuminate\Database\Query\Expression;
-use Illuminate\Support\Str;
-
-trait QueriesRelationships
-{
-    /**
-     * Add a relationship count / exists condition to the query.
-     *
-     * @param  \Illuminate\Database\Eloquent\Relations\Relation|string  $relation
-     * @param  string  $operator
-     * @param  int  $count
-     * @param  string  $boolean
-     * @param  \Closure|null  $callback
-     * @return \Illuminate\Database\Eloquent\Builder|static
-     *
-     * @throws \RuntimeException
-     */
-    public function has($relation, $operator = '>=', $count = 1, $boolean = 'and', Closure $callback = null)
-    {
-        if (is_string($relation)) {
-            if (strpos($relation, '.') !== false) {
-                return $this->hasNested($relation, $operator, $count, $boolean, $callback);
-            }
-
-            $relation = $this->getRelationWithoutConstraints($relation);
-        }
-
-        if ($relation instanceof MorphTo) {
-            return $this->hasMorph($relation, ['*'], $operator, $count, $boolean, $callback);
-        }
-
-        // If we only need to check for the existence of the relation, then we can optimize
-        // the subquery to only run a "where exists" clause instead of this full "count"
-        // clause. This will make these queries run much faster compared with a count.
-        $method = $this->canUseExistsForExistenceCheck($operator, $count)
-                        ? 'getRelationExistenceQuery'
-                        : 'getRelationExistenceCountQuery';
-
-        $hasQuery = $relation->{$method}(
-            $relation->getRelated()->newQueryWithoutRelationships(), $this
-        );
-
-        // Next we will call any given callback as an "anonymous" scope so they can get the
-        // proper logical grouping of the where clauses if needed by this Eloquent query
-        // builder. Then, we will be ready to finalize and return this query instance.
-        if ($callback) {
-            $hasQuery->callScope($callback);
-        }
-
-        return $this->addHasWhere(
-            $hasQuery, $relation, $operator, $count, $boolean
-        );
-    }
-
-    /**
-     * Add nested relationship count / exists conditions to the query.
-     *
-     * Sets up recursive call to whereHas until we finish the nested relation.
-     *
-     * @param  string  $relations
-     * @param  string  $operator
-     * @param  int  $count
-     * @param  string  $boolean
-     * @param  \Closure|null  $callback
-     * @return \Illuminate\Database\Eloquent\Builder|static
-     */
-    protected function hasNested($relations, $operator = '>=', $count = 1, $boolean = 'and', $callback = null)
-    {
-        $relations = explode('.', $relations);
-
-        $doesntHave = $operator === '<' && $count === 1;
-
-        if ($doesntHave) {
-            $operator = '>=';
-            $count = 1;
-        }
-
-        $closure = function ($q) use (&$closure, &$relations, $operator, $count, $callback) {
-            // In order to nest "has", we need to add count relation constraints on the
-            // callback Closure. We'll do this by simply passing the Closure its own
-            // reference to itself so it calls itself recursively on each segment.
-            count($relations) > 1
-                ? $q->whereHas(array_shift($relations), $closure)
-                : $q->has(array_shift($relations), $operator, $count, 'and', $callback);
-        };
-
-        return $this->has(array_shift($relations), $doesntHave ? '<' : '>=', 1, $boolean, $closure);
-    }
-
-    /**
-     * Add a relationship count / exists condition to the query with an "or".
-     *
-     * @param  string  $relation
-     * @param  string  $operator
-     * @param  int  $count
-     * @return \Illuminate\Database\Eloquent\Builder|static
-     */
-    public function orHas($relation, $operator = '>=', $count = 1)
-    {
-        return $this->has($relation, $operator, $count, 'or');
-    }
-
-    /**
-     * Add a relationship count / exists condition to the query.
-     *
-     * @param  string  $relation
-     * @param  string  $boolean
-     * @param  \Closure|null  $callback
-     * @return \Illuminate\Database\Eloquent\Builder|static
-     */
-    public function doesntHave($relation, $boolean = 'and', Closure $callback = null)
-    {
-        return $this->has($relation, '<', 1, $boolean, $callback);
-    }
-
-    /**
-     * Add a relationship count / exists condition to the query with an "or".
-     *
-     * @param  string  $relation
-     * @return \Illuminate\Database\Eloquent\Builder|static
-     */
-    public function orDoesntHave($relation)
-    {
-        return $this->doesntHave($relation, 'or');
-    }
-
-    /**
-     * Add a relationship count / exists condition to the query with where clauses.
-     *
-     * @param  string  $relation
-     * @param  \Closure|null  $callback
-     * @param  string  $operator
-     * @param  int  $count
-     * @return \Illuminate\Database\Eloquent\Builder|static
-     */
-    public function whereHas($relation, Closure $callback = null, $operator = '>=', $count = 1)
-    {
-        return $this->has($relation, $operator, $count, 'and', $callback);
-    }
-
-    /**
-     * Add a relationship count / exists condition to the query with where clauses and an "or".
-     *
-     * @param  string  $relation
-     * @param  \Closure|null  $callback
-     * @param  string  $operator
-     * @param  int  $count
-     * @return \Illuminate\Database\Eloquent\Builder|static
-     */
-    public function orWhereHas($relation, Closure $callback = null, $operator = '>=', $count = 1)
-    {
-        return $this->has($relation, $operator, $count, 'or', $callback);
-    }
-
-    /**
-     * Add a relationship count / exists condition to the query with where clauses.
-     *
-     * @param  string  $relation
-     * @param  \Closure|null  $callback
-     * @return \Illuminate\Database\Eloquent\Builder|static
-     */
-    public function whereDoesntHave($relation, Closure $callback = null)
-    {
-        return $this->doesntHave($relation, 'and', $callback);
-    }
-
-    /**
-     * Add a relationship count / exists condition to the query with where clauses and an "or".
-     *
-     * @param  string  $relation
-     * @param  \Closure|null  $callback
-     * @return \Illuminate\Database\Eloquent\Builder|static
-     */
-    public function orWhereDoesntHave($relation, Closure $callback = null)
-    {
-        return $this->doesntHave($relation, 'or', $callback);
-    }
-
-    /**
-     * Add a polymorphic relationship count / exists condition to the query.
-     *
-     * @param  \Illuminate\Database\Eloquent\Relations\MorphTo|string  $relation
-     * @param  string|array  $types
-     * @param  string  $operator
-     * @param  int  $count
-     * @param  string  $boolean
-     * @param  \Closure|null  $callback
-     * @return \Illuminate\Database\Eloquent\Builder|static
-     */
-    public function hasMorph($relation, $types, $operator = '>=', $count = 1, $boolean = 'and', Closure $callback = null)
-    {
-        if (is_string($relation)) {
-            $relation = $this->getRelationWithoutConstraints($relation);
-        }
-
-        $types = (array) $types;
-
-        if ($types === ['*']) {
-            $types = $this->model->newModelQuery()->distinct()->pluck($relation->getMorphType())->filter()->all();
-        }
-
-        foreach ($types as &$type) {
-            $type = Relation::getMorphedModel($type) ?? $type;
-        }
-
-        return $this->where(function ($query) use ($relation, $callback, $operator, $count, $types) {
-            foreach ($types as $type) {
-                $query->orWhere(function ($query) use ($relation, $callback, $operator, $count, $type) {
-                    $belongsTo = $this->getBelongsToRelation($relation, $type);
-
-                    if ($callback) {
-                        $callback = function ($query) use ($callback, $type) {
-                            return $callback($query, $type);
-                        };
-                    }
-
-                    $query->where($this->query->from.'.'.$relation->getMorphType(), '=', (new $type)->getMorphClass())
-                                ->whereHas($belongsTo, $callback, $operator, $count);
-                });
-            }
-        }, null, null, $boolean);
-    }
-
-    /**
-     * Get the BelongsTo relationship for a single polymorphic type.
-     *
-     * @param  \Illuminate\Database\Eloquent\Relations\MorphTo  $relation
-     * @param  string  $type
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-     */
-    protected function getBelongsToRelation(MorphTo $relation, $type)
-    {
-        $belongsTo = Relation::noConstraints(function () use ($relation, $type) {
-            return $this->model->belongsTo(
-                $type,
-                $relation->getForeignKeyName(),
-                $relation->getOwnerKeyName()
-            );
-        });
-
-        $belongsTo->getQuery()->mergeConstraintsFrom($relation->getQuery());
-
-        return $belongsTo;
-    }
-
-    /**
-     * Add a polymorphic relationship count / exists condition to the query with an "or".
-     *
-     * @param  \Illuminate\Database\Eloquent\Relations\MorphTo|string  $relation
-     * @param  string|array  $types
-     * @param  string  $operator
-     * @param  int  $count
-     * @return \Illuminate\Database\Eloquent\Builder|static
-     */
-    public function orHasMorph($relation, $types, $operator = '>=', $count = 1)
-    {
-        return $this->hasMorph($relation, $types, $operator, $count, 'or');
-    }
-
-    /**
-     * Add a polymorphic relationship count / exists condition to the query.
-     *
-     * @param  \Illuminate\Database\Eloquent\Relations\MorphTo|string  $relation
-     * @param  string|array  $types
-     * @param  string  $boolean
-     * @param  \Closure|null  $callback
-     * @return \Illuminate\Database\Eloquent\Builder|static
-     */
-    public function doesntHaveMorph($relation, $types, $boolean = 'and', Closure $callback = null)
-    {
-        return $this->hasMorph($relation, $types, '<', 1, $boolean, $callback);
-    }
-
-    /**
-     * Add a polymorphic relationship count / exists condition to the query with an "or".
-     *
-     * @param  \Illuminate\Database\Eloquent\Relations\MorphTo|string  $relation
-     * @param  string|array  $types
-     * @return \Illuminate\Database\Eloquent\Builder|static
-     */
-    public function orDoesntHaveMorph($relation, $types)
-    {
-        return $this->doesntHaveMorph($relation, $types, 'or');
-    }
-
-    /**
-     * Add a polymorphic relationship count / exists condition to the query with where clauses.
-     *
-     * @param  \Illuminate\Database\Eloquent\Relations\MorphTo|string  $relation
-     * @param  string|array  $types
-     * @param  \Closure|null  $callback
-     * @param  string  $operator
-     * @param  int  $count
-     * @return \Illuminate\Database\Eloquent\Builder|static
-     */
-    public function whereHasMorph($relation, $types, Closure $callback = null, $operator = '>=', $count = 1)
-    {
-        return $this->hasMorph($relation, $types, $operator, $count, 'and', $callback);
-    }
-
-    /**
-     * Add a polymorphic relationship count / exists condition to the query with where clauses and an "or".
-     *
-     * @param  \Illuminate\Database\Eloquent\Relations\MorphTo|string  $relation
-     * @param  string|array  $types
-     * @param  \Closure|null  $callback
-     * @param  string  $operator
-     * @param  int  $count
-     * @return \Illuminate\Database\Eloquent\Builder|static
-     */
-    public function orWhereHasMorph($relation, $types, Closure $callback = null, $operator = '>=', $count = 1)
-    {
-        return $this->hasMorph($relation, $types, $operator, $count, 'or', $callback);
-    }
-
-    /**
-     * Add a polymorphic relationship count / exists condition to the query with where clauses.
-     *
-     * @param  \Illuminate\Database\Eloquent\Relations\MorphTo|string  $relation
-     * @param  string|array  $types
-     * @param  \Closure|null  $callback
-     * @return \Illuminate\Database\Eloquent\Builder|static
-     */
-    public function whereDoesntHaveMorph($relation, $types, Closure $callback = null)
-    {
-        return $this->doesntHaveMorph($relation, $types, 'and', $callback);
-    }
-
-    /**
-     * Add a polymorphic relationship count / exists condition to the query with where clauses and an "or".
-     *
-     * @param  \Illuminate\Database\Eloquent\Relations\MorphTo|string  $relation
-     * @param  string|array  $types
-     * @param  \Closure|null  $callback
-     * @return \Illuminate\Database\Eloquent\Builder|static
-     */
-    public function orWhereDoesntHaveMorph($relation, $types, Closure $callback = null)
-    {
-        return $this->doesntHaveMorph($relation, $types, 'or', $callback);
-    }
-
-    /**
-     * Add subselect queries to include an aggregate value for a relationship.
-     *
-     * @param  mixed  $relations
-     * @param  string  $column
-     * @param  string  $function
-     * @return $this
-     */
-    public function withAggregate($relations, $column, $function = null)
-    {
-        if (empty($relations)) {
-            return $this;
-        }
-
-        if (is_null($this->query->columns)) {
-            $this->query->select([$this->query->from.'.*']);
-        }
-
-        $relations = is_array($relations) ? $relations : [$relations];
-
-        foreach ($this->parseWithRelations($relations) as $name => $constraints) {
-            // First we will determine if the name has been aliased using an "as" clause on the name
-            // and if it has we will extract the actual relationship name and the desired name of
-            // the resulting column. This allows multiple aggregates on the same relationships.
-            $segments = explode(' ', $name);
-
-            unset($alias);
-
-            if (count($segments) === 3 && Str::lower($segments[1]) === 'as') {
-                [$name, $alias] = [$segments[0], $segments[2]];
-            }
-
-            $relation = $this->getRelationWithoutConstraints($name);
-
-            if ($function) {
-                $hashedColumn = $this->getQuery()->from === $relation->getQuery()->getQuery()->from
-                                            ? "{$relation->getRelationCountHash(false)}.$column"
-                                            : $column;
-
-                $expression = sprintf('%s(%s)', $function, $this->getQuery()->getGrammar()->wrap(
-                    $column === '*' ? $column : $relation->getRelated()->qualifyColumn($hashedColumn)
-                ));
-            } else {
-                $expression = $column;
-            }
-
-            // Here, we will grab the relationship sub-query and prepare to add it to the main query
-            // as a sub-select. First, we'll get the "has" query and use that to get the relation
-            // sub-query. We'll format this relationship name and append this column if needed.
-            $query = $relation->getRelationExistenceQuery(
-                $relation->getRelated()->newQuery(), $this, new Expression($expression)
-            )->setBindings([], 'select');
-
-            $query->callScope($constraints);
-
-            $query = $query->mergeConstraintsFrom($relation->getQuery())->toBase();
-
-            // If the query contains certain elements like orderings / more than one column selected
-            // then we will remove those elements from the query so that it will execute properly
-            // when given to the database. Otherwise, we may receive SQL errors or poor syntax.
-            $query->orders = null;
-            $query->setBindings([], 'order');
-
-            if (count($query->columns) > 1) {
-                $query->columns = [$query->columns[0]];
-                $query->bindings['select'] = [];
-            }
-
-            // Finally, we will make the proper column alias to the query and run this sub-select on
-            // the query builder. Then, we will return the builder instance back to the developer
-            // for further constraint chaining that needs to take place on the query as needed.
-            $alias = $alias ?? Str::snake(
-                preg_replace('/[^[:alnum:][:space:]_]/u', '', "$name $function $column")
-            );
-
-            $this->selectSub(
-                $function ? $query : $query->limit(1),
-                $alias
-            );
-        }
-
-        return $this;
-    }
-
-    /**
-     * Add subselect queries to count the relations.
-     *
-     * @param  mixed  $relations
-     * @return $this
-     */
-    public function withCount($relations)
-    {
-        return $this->withAggregate(is_array($relations) ? $relations : func_get_args(), '*', 'count');
-    }
-
-    /**
-     * Add subselect queries to include the max of the relation's column.
-     *
-     * @param  string|array  $relation
-     * @param  string  $column
-     * @return $this
-     */
-    public function withMax($relation, $column)
-    {
-        return $this->withAggregate($relation, $column, 'max');
-    }
-
-    /**
-     * Add subselect queries to include the min of the relation's column.
-     *
-     * @param  string|array  $relation
-     * @param  string  $column
-     * @return $this
-     */
-    public function withMin($relation, $column)
-    {
-        return $this->withAggregate($relation, $column, 'min');
-    }
-
-    /**
-     * Add subselect queries to include the sum of the relation's column.
-     *
-     * @param  string|array  $relation
-     * @param  string  $column
-     * @return $this
-     */
-    public function withSum($relation, $column)
-    {
-        return $this->withAggregate($relation, $column, 'sum');
-    }
-
-    /**
-     * Add subselect queries to include the average of the relation's column.
-     *
-     * @param  string|array  $relation
-     * @param  string  $column
-     * @return $this
-     */
-    public function withAvg($relation, $column)
-    {
-        return $this->withAggregate($relation, $column, 'avg');
-    }
-
-    /**
-     * Add the "has" condition where clause to the query.
-     *
-     * @param  \Illuminate\Database\Eloquent\Builder  $hasQuery
-     * @param  \Illuminate\Database\Eloquent\Relations\Relation  $relation
-     * @param  string  $operator
-     * @param  int  $count
-     * @param  string  $boolean
-     * @return \Illuminate\Database\Eloquent\Builder|static
-     */
-    protected function addHasWhere(Builder $hasQuery, Relation $relation, $operator, $count, $boolean)
-    {
-        $hasQuery->mergeConstraintsFrom($relation->getQuery());
-
-        return $this->canUseExistsForExistenceCheck($operator, $count)
-                ? $this->addWhereExistsQuery($hasQuery->toBase(), $boolean, $operator === '<' && $count === 1)
-                : $this->addWhereCountQuery($hasQuery->toBase(), $operator, $count, $boolean);
-    }
-
-    /**
-     * Merge the where constraints from another query to the current query.
-     *
-     * @param  \Illuminate\Database\Eloquent\Builder  $from
-     * @return \Illuminate\Database\Eloquent\Builder|static
-     */
-    public function mergeConstraintsFrom(Builder $from)
-    {
-        $whereBindings = $from->getQuery()->getRawBindings()['where'] ?? [];
-
-        // Here we have some other query that we want to merge the where constraints from. We will
-        // copy over any where constraints on the query as well as remove any global scopes the
-        // query might have removed. Then we will return ourselves with the finished merging.
-        return $this->withoutGlobalScopes(
-            $from->removedScopes()
-        )->mergeWheres(
-            $from->getQuery()->wheres, $whereBindings
-        );
-    }
-
-    /**
-     * Add a sub-query count clause to this query.
-     *
-     * @param  \Illuminate\Database\Query\Builder  $query
-     * @param  string  $operator
-     * @param  int  $count
-     * @param  string  $boolean
-     * @return $this
-     */
-    protected function addWhereCountQuery(QueryBuilder $query, $operator = '>=', $count = 1, $boolean = 'and')
-    {
-        $this->query->addBinding($query->getBindings(), 'where');
-
-        return $this->where(
-            new Expression('('.$query->toSql().')'),
-            $operator,
-            is_numeric($count) ? new Expression($count) : $count,
-            $boolean
-        );
-    }
-
-    /**
-     * Get the "has relation" base query instance.
-     *
-     * @param  string  $relation
-     * @return \Illuminate\Database\Eloquent\Relations\Relation
-     */
-    protected function getRelationWithoutConstraints($relation)
-    {
-        return Relation::noConstraints(function () use ($relation) {
-            return $this->getModel()->{$relation}();
-        });
-    }
-
-    /**
-     * Check if we can run an "exists" query to optimize performance.
-     *
-     * @param  string  $operator
-     * @param  int  $count
-     * @return bool
-     */
-    protected function canUseExistsForExistenceCheck($operator, $count)
-    {
-        return ($operator === '>=' || $operator === '<') && $count === 1;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

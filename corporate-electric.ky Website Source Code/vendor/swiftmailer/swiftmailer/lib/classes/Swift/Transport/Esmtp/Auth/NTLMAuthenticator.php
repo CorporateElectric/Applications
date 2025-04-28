@@ -1,681 +1,384 @@
-<?php
-
-/*
- * This file is part of SwiftMailer.
- * (c) 2004-2009 Chris Corbyn
- *
- * This authentication is for Exchange servers. We support version 1 & 2.
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-/**
- * Handles NTLM authentication.
- *
- * @author     Ward Peeters <ward@coding-tech.com>
- */
-class Swift_Transport_Esmtp_Auth_NTLMAuthenticator implements Swift_Transport_Esmtp_Authenticator
-{
-    const NTLMSIG = "NTLMSSP\x00";
-    const DESCONST = 'KGS!@#$%';
-
-    /**
-     * Get the name of the AUTH mechanism this Authenticator handles.
-     *
-     * @return string
-     */
-    public function getAuthKeyword()
-    {
-        return 'NTLM';
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * @throws \LogicException
-     */
-    public function authenticate(Swift_Transport_SmtpAgent $agent, $username, $password)
-    {
-        if (!\function_exists('openssl_encrypt')) {
-            throw new LogicException('The OpenSSL extension must be enabled to use the NTLM authenticator.');
-        }
-
-        if (!\function_exists('bcmul')) {
-            throw new LogicException('The BCMath functions must be enabled to use the NTLM authenticator.');
-        }
-
-        try {
-            // execute AUTH command and filter out the code at the beginning
-            // AUTH NTLM xxxx
-            $response = base64_decode(substr(trim($this->sendMessage1($agent)), 4));
-
-            // extra parameters for our unit cases
-            $timestamp = \func_num_args() > 3 ? func_get_arg(3) : $this->getCorrectTimestamp(bcmul(microtime(true), '1000'));
-            $client = \func_num_args() > 4 ? func_get_arg(4) : random_bytes(8);
-
-            // Message 3 response
-            $this->sendMessage3($response, $username, $password, $timestamp, $client, $agent);
-
-            return true;
-        } catch (Swift_TransportException $e) {
-            $agent->executeCommand("RSET\r\n", [250]);
-
-            throw $e;
-        }
-    }
-
-    protected function si2bin($si, $bits = 32)
-    {
-        $bin = null;
-        if ($si >= -2 ** ($bits - 1) && ($si <= 2 ** ($bits - 1))) {
-            // positive or zero
-            if ($si >= 0) {
-                $bin = base_convert($si, 10, 2);
-                // pad to $bits bit
-                $bin_length = \strlen($bin);
-                if ($bin_length < $bits) {
-                    $bin = str_repeat('0', $bits - $bin_length).$bin;
-                }
-            } else {
-                // negative
-                $si = -$si - 2 ** $bits;
-                $bin = base_convert($si, 10, 2);
-                $bin_length = \strlen($bin);
-                if ($bin_length > $bits) {
-                    $bin = str_repeat('1', $bits - $bin_length).$bin;
-                }
-            }
-        }
-
-        return $bin;
-    }
-
-    /**
-     * Send our auth message and returns the response.
-     *
-     * @return string SMTP Response
-     */
-    protected function sendMessage1(Swift_Transport_SmtpAgent $agent)
-    {
-        $message = $this->createMessage1();
-
-        return $agent->executeCommand(sprintf("AUTH %s %s\r\n", $this->getAuthKeyword(), base64_encode($message)), [334]);
-    }
-
-    /**
-     * Fetch all details of our response (message 2).
-     *
-     * @param string $response
-     *
-     * @return array our response parsed
-     */
-    protected function parseMessage2($response)
-    {
-        $responseHex = bin2hex($response);
-        $length = floor(hexdec(substr($responseHex, 28, 4)) / 256) * 2;
-        $offset = floor(hexdec(substr($responseHex, 32, 4)) / 256) * 2;
-        $challenge = hex2bin(substr($responseHex, 48, 16));
-        $context = hex2bin(substr($responseHex, 64, 16));
-        $targetInfoH = hex2bin(substr($responseHex, 80, 16));
-        $targetName = hex2bin(substr($responseHex, $offset, $length));
-        $offset = floor(hexdec(substr($responseHex, 88, 4)) / 256) * 2;
-        $targetInfoBlock = substr($responseHex, $offset);
-        list($domainName, $serverName, $DNSDomainName, $DNSServerName, $terminatorByte) = $this->readSubBlock($targetInfoBlock);
-
-        return [
-            $challenge,
-            $context,
-            $targetInfoH,
-            $targetName,
-            $domainName,
-            $serverName,
-            $DNSDomainName,
-            $DNSServerName,
-            hex2bin($targetInfoBlock),
-            $terminatorByte,
-        ];
-    }
-
-    /**
-     * Read the blob information in from message2.
-     *
-     * @return array
-     */
-    protected function readSubBlock($block)
-    {
-        // remove terminatorByte cause it's always the same
-        $block = substr($block, 0, -8);
-
-        $length = \strlen($block);
-        $offset = 0;
-        $data = [];
-        while ($offset < $length) {
-            $blockLength = hexdec(substr(substr($block, $offset, 8), -4)) / 256;
-            $offset += 8;
-            $data[] = hex2bin(substr($block, $offset, $blockLength * 2));
-            $offset += $blockLength * 2;
-        }
-
-        if (3 == \count($data)) {
-            $data[] = $data[2];
-            $data[2] = '';
-        }
-
-        $data[] = $this->createByte('00');
-
-        return $data;
-    }
-
-    /**
-     * Send our final message with all our data.
-     *
-     * @param string $response  Message 1 response (message 2)
-     * @param string $username
-     * @param string $password
-     * @param string $timestamp
-     * @param string $client
-     * @param bool   $v2        Use version2 of the protocol
-     *
-     * @return string
-     */
-    protected function sendMessage3($response, $username, $password, $timestamp, $client, Swift_Transport_SmtpAgent $agent, $v2 = true)
-    {
-        list($domain, $username) = $this->getDomainAndUsername($username);
-        //$challenge, $context, $targetInfoH, $targetName, $domainName, $workstation, $DNSDomainName, $DNSServerName, $blob, $ter
-        list($challenge, , , , , $workstation, , , $blob) = $this->parseMessage2($response);
-
-        if (!$v2) {
-            // LMv1
-            $lmResponse = $this->createLMPassword($password, $challenge);
-            // NTLMv1
-            $ntlmResponse = $this->createNTLMPassword($password, $challenge);
-        } else {
-            // LMv2
-            $lmResponse = $this->createLMv2Password($password, $username, $domain, $challenge, $client);
-            // NTLMv2
-            $ntlmResponse = $this->createNTLMv2Hash($password, $username, $domain, $challenge, $blob, $timestamp, $client);
-        }
-
-        $message = $this->createMessage3($domain, $username, $workstation, $lmResponse, $ntlmResponse);
-
-        return $agent->executeCommand(sprintf("%s\r\n", base64_encode($message)), [235]);
-    }
-
-    /**
-     * Create our message 1.
-     *
-     * @return string
-     */
-    protected function createMessage1()
-    {
-        return self::NTLMSIG
-        .$this->createByte('01') // Message 1
-.$this->createByte('0702'); // Flags
-    }
-
-    /**
-     * Create our message 3.
-     *
-     * @param string $domain
-     * @param string $username
-     * @param string $workstation
-     * @param string $lmResponse
-     * @param string $ntlmResponse
-     *
-     * @return string
-     */
-    protected function createMessage3($domain, $username, $workstation, $lmResponse, $ntlmResponse)
-    {
-        // Create security buffers
-        $domainSec = $this->createSecurityBuffer($domain, 64);
-        $domainInfo = $this->readSecurityBuffer(bin2hex($domainSec));
-        $userSec = $this->createSecurityBuffer($username, ($domainInfo[0] + $domainInfo[1]) / 2);
-        $userInfo = $this->readSecurityBuffer(bin2hex($userSec));
-        $workSec = $this->createSecurityBuffer($workstation, ($userInfo[0] + $userInfo[1]) / 2);
-        $workInfo = $this->readSecurityBuffer(bin2hex($workSec));
-        $lmSec = $this->createSecurityBuffer($lmResponse, ($workInfo[0] + $workInfo[1]) / 2, true);
-        $lmInfo = $this->readSecurityBuffer(bin2hex($lmSec));
-        $ntlmSec = $this->createSecurityBuffer($ntlmResponse, ($lmInfo[0] + $lmInfo[1]) / 2, true);
-
-        return self::NTLMSIG
-        .$this->createByte('03') // TYPE 3 message
-.$lmSec // LM response header
-.$ntlmSec // NTLM response header
-.$domainSec // Domain header
-.$userSec // User header
-.$workSec // Workstation header
-.$this->createByte('000000009a', 8) // session key header (empty)
-.$this->createByte('01020000') // FLAGS
-.$this->convertTo16bit($domain) // domain name
-.$this->convertTo16bit($username) // username
-.$this->convertTo16bit($workstation) // workstation
-.$lmResponse
-        .$ntlmResponse;
-    }
-
-    /**
-     * @param string $timestamp  Epoch timestamp in microseconds
-     * @param string $client     Random bytes
-     * @param string $targetInfo
-     *
-     * @return string
-     */
-    protected function createBlob($timestamp, $client, $targetInfo)
-    {
-        return $this->createByte('0101')
-        .$this->createByte('00')
-        .$timestamp
-        .$client
-        .$this->createByte('00')
-        .$targetInfo
-        .$this->createByte('00');
-    }
-
-    /**
-     * Get domain and username from our username.
-     *
-     * @example DOMAIN\username
-     *
-     * @param string $name
-     *
-     * @return array
-     */
-    protected function getDomainAndUsername($name)
-    {
-        if (false !== strpos($name, '\\')) {
-            return explode('\\', $name);
-        }
-
-        if (false !== strpos($name, '@')) {
-            list($user, $domain) = explode('@', $name);
-
-            return [$domain, $user];
-        }
-
-        // no domain passed
-        return ['', $name];
-    }
-
-    /**
-     * Create LMv1 response.
-     *
-     * @param string $password
-     * @param string $challenge
-     *
-     * @return string
-     */
-    protected function createLMPassword($password, $challenge)
-    {
-        // FIRST PART
-        $password = $this->createByte(strtoupper($password), 14, false);
-        list($key1, $key2) = str_split($password, 7);
-
-        $desKey1 = $this->createDesKey($key1);
-        $desKey2 = $this->createDesKey($key2);
-
-        $constantDecrypt = $this->createByte($this->desEncrypt(self::DESCONST, $desKey1).$this->desEncrypt(self::DESCONST, $desKey2), 21, false);
-
-        // SECOND PART
-        list($key1, $key2, $key3) = str_split($constantDecrypt, 7);
-
-        $desKey1 = $this->createDesKey($key1);
-        $desKey2 = $this->createDesKey($key2);
-        $desKey3 = $this->createDesKey($key3);
-
-        return $this->desEncrypt($challenge, $desKey1).$this->desEncrypt($challenge, $desKey2).$this->desEncrypt($challenge, $desKey3);
-    }
-
-    /**
-     * Create NTLMv1 response.
-     *
-     * @param string $password
-     * @param string $challenge
-     *
-     * @return string
-     */
-    protected function createNTLMPassword($password, $challenge)
-    {
-        // FIRST PART
-        $ntlmHash = $this->createByte($this->md4Encrypt($password), 21, false);
-        list($key1, $key2, $key3) = str_split($ntlmHash, 7);
-
-        $desKey1 = $this->createDesKey($key1);
-        $desKey2 = $this->createDesKey($key2);
-        $desKey3 = $this->createDesKey($key3);
-
-        return $this->desEncrypt($challenge, $desKey1).$this->desEncrypt($challenge, $desKey2).$this->desEncrypt($challenge, $desKey3);
-    }
-
-    /**
-     * Convert a normal timestamp to a tenth of a microtime epoch time.
-     *
-     * @param string $time
-     *
-     * @return string
-     */
-    protected function getCorrectTimestamp($time)
-    {
-        // Get our timestamp (tricky!)
-        $time = number_format($time, 0, '.', ''); // save microtime to string
-        $time = bcadd($time, '11644473600000', 0); // add epoch time
-        $time = bcmul($time, 10000, 0); // tenths of a microsecond.
-
-        $binary = $this->si2bin($time, 64); // create 64 bit binary string
-        $timestamp = '';
-        for ($i = 0; $i < 8; ++$i) {
-            $timestamp .= \chr(bindec(substr($binary, -(($i + 1) * 8), 8)));
-        }
-
-        return $timestamp;
-    }
-
-    /**
-     * Create LMv2 response.
-     *
-     * @param string $password
-     * @param string $username
-     * @param string $domain
-     * @param string $challenge NTLM Challenge
-     * @param string $client    Random string
-     *
-     * @return string
-     */
-    protected function createLMv2Password($password, $username, $domain, $challenge, $client)
-    {
-        $lmPass = '00'; // by default 00
-        // if $password > 15 than we can't use this method
-        if (\strlen($password) <= 15) {
-            $ntlmHash = $this->md4Encrypt($password);
-            $ntml2Hash = $this->md5Encrypt($ntlmHash, $this->convertTo16bit(strtoupper($username).$domain));
-
-            $lmPass = bin2hex($this->md5Encrypt($ntml2Hash, $challenge.$client).$client);
-        }
-
-        return $this->createByte($lmPass, 24);
-    }
-
-    /**
-     * Create NTLMv2 response.
-     *
-     * @param string $password
-     * @param string $username
-     * @param string $domain
-     * @param string $challenge  Hex values
-     * @param string $targetInfo Hex values
-     * @param string $timestamp
-     * @param string $client     Random bytes
-     *
-     * @return string
-     *
-     * @see http://davenport.sourceforge.net/ntlm.html#theNtlmResponse
-     */
-    protected function createNTLMv2Hash($password, $username, $domain, $challenge, $targetInfo, $timestamp, $client)
-    {
-        $ntlmHash = $this->md4Encrypt($password);
-        $ntml2Hash = $this->md5Encrypt($ntlmHash, $this->convertTo16bit(strtoupper($username).$domain));
-
-        // create blob
-        $blob = $this->createBlob($timestamp, $client, $targetInfo);
-
-        $ntlmv2Response = $this->md5Encrypt($ntml2Hash, $challenge.$blob);
-
-        return $ntlmv2Response.$blob;
-    }
-
-    protected function createDesKey($key)
-    {
-        $material = [bin2hex($key[0])];
-        $len = \strlen($key);
-        for ($i = 1; $i < $len; ++$i) {
-            list($high, $low) = str_split(bin2hex($key[$i]));
-            $v = $this->castToByte(\ord($key[$i - 1]) << (7 + 1 - $i) | $this->uRShift(hexdec(dechex(hexdec($high) & 0xf).dechex(hexdec($low) & 0xf)), $i));
-            $material[] = str_pad(substr(dechex($v), -2), 2, '0', STR_PAD_LEFT); // cast to byte
-        }
-        $material[] = str_pad(substr(dechex($this->castToByte(\ord($key[6]) << 1)), -2), 2, '0');
-
-        // odd parity
-        foreach ($material as $k => $v) {
-            $b = $this->castToByte(hexdec($v));
-            $needsParity = 0 == (($this->uRShift($b, 7) ^ $this->uRShift($b, 6) ^ $this->uRShift($b, 5)
-                        ^ $this->uRShift($b, 4) ^ $this->uRShift($b, 3) ^ $this->uRShift($b, 2)
-                        ^ $this->uRShift($b, 1)) & 0x01);
-
-            list($high, $low) = str_split($v);
-            if ($needsParity) {
-                $material[$k] = dechex(hexdec($high) | 0x0).dechex(hexdec($low) | 0x1);
-            } else {
-                $material[$k] = dechex(hexdec($high) & 0xf).dechex(hexdec($low) & 0xe);
-            }
-        }
-
-        return hex2bin(implode('', $material));
-    }
-
-    /** HELPER FUNCTIONS */
-
-    /**
-     * Create our security buffer depending on length and offset.
-     *
-     * @param string $value  Value we want to put in
-     * @param int    $offset start of value
-     * @param bool   $is16   Do we 16bit string or not?
-     *
-     * @return string
-     */
-    protected function createSecurityBuffer($value, $offset, $is16 = false)
-    {
-        $length = \strlen(bin2hex($value));
-        $length = $is16 ? $length / 2 : $length;
-        $length = $this->createByte(str_pad(dechex($length), 2, '0', STR_PAD_LEFT), 2);
-
-        return $length.$length.$this->createByte(dechex($offset), 4);
-    }
-
-    /**
-     * Read our security buffer to fetch length and offset of our value.
-     *
-     * @param string $value Securitybuffer in hex
-     *
-     * @return array array with length and offset
-     */
-    protected function readSecurityBuffer($value)
-    {
-        $length = floor(hexdec(substr($value, 0, 4)) / 256) * 2;
-        $offset = floor(hexdec(substr($value, 8, 4)) / 256) * 2;
-
-        return [$length, $offset];
-    }
-
-    /**
-     * Cast to byte java equivalent to (byte).
-     *
-     * @param int $v
-     *
-     * @return int
-     */
-    protected function castToByte($v)
-    {
-        return (($v + 128) % 256) - 128;
-    }
-
-    /**
-     * Java unsigned right bitwise
-     * $a >>> $b.
-     *
-     * @param int $a
-     * @param int $b
-     *
-     * @return int
-     */
-    protected function uRShift($a, $b)
-    {
-        if (0 == $b) {
-            return $a;
-        }
-
-        return ($a >> $b) & ~(1 << (8 * PHP_INT_SIZE - 1) >> ($b - 1));
-    }
-
-    /**
-     * Right padding with 0 to certain length.
-     *
-     * @param string $input
-     * @param int    $bytes Length of bytes
-     * @param bool   $isHex Did we provided hex value
-     *
-     * @return string
-     */
-    protected function createByte($input, $bytes = 4, $isHex = true)
-    {
-        if ($isHex) {
-            $byte = hex2bin(str_pad($input, $bytes * 2, '00'));
-        } else {
-            $byte = str_pad($input, $bytes, "\x00");
-        }
-
-        return $byte;
-    }
-
-    /** ENCRYPTION ALGORITHMS */
-
-    /**
-     * DES Encryption.
-     *
-     * @param string $value An 8-byte string
-     * @param string $key
-     *
-     * @return string
-     */
-    protected function desEncrypt($value, $key)
-    {
-        return substr(openssl_encrypt($value, 'DES-ECB', $key, \OPENSSL_RAW_DATA), 0, 8);
-    }
-
-    /**
-     * MD5 Encryption.
-     *
-     * @param string $key Encryption key
-     * @param string $msg Message to encrypt
-     *
-     * @return string
-     */
-    protected function md5Encrypt($key, $msg)
-    {
-        $blocksize = 64;
-        if (\strlen($key) > $blocksize) {
-            $key = pack('H*', md5($key));
-        }
-
-        $key = str_pad($key, $blocksize, "\0");
-        $ipadk = $key ^ str_repeat("\x36", $blocksize);
-        $opadk = $key ^ str_repeat("\x5c", $blocksize);
-
-        return pack('H*', md5($opadk.pack('H*', md5($ipadk.$msg))));
-    }
-
-    /**
-     * MD4 Encryption.
-     *
-     * @param string $input
-     *
-     * @return string
-     *
-     * @see https://secure.php.net/manual/en/ref.hash.php
-     */
-    protected function md4Encrypt($input)
-    {
-        $input = $this->convertTo16bit($input);
-
-        return \function_exists('hash') ? hex2bin(hash('md4', $input)) : mhash(MHASH_MD4, $input);
-    }
-
-    /**
-     * Convert UTF-8 to UTF-16.
-     *
-     * @param string $input
-     *
-     * @return string
-     */
-    protected function convertTo16bit($input)
-    {
-        return iconv('UTF-8', 'UTF-16LE', $input);
-    }
-
-    /**
-     * @param string $message
-     */
-    protected function debug($message)
-    {
-        $message = bin2hex($message);
-        $messageId = substr($message, 16, 8);
-        echo substr($message, 0, 16)." NTLMSSP Signature<br />\n";
-        echo $messageId." Type Indicator<br />\n";
-
-        if ('02000000' == $messageId) {
-            $map = [
-                'Challenge',
-                'Context',
-                'Target Information Security Buffer',
-                'Target Name Data',
-                'NetBIOS Domain Name',
-                'NetBIOS Server Name',
-                'DNS Domain Name',
-                'DNS Server Name',
-                'BLOB',
-                'Target Information Terminator',
-            ];
-
-            $data = $this->parseMessage2(hex2bin($message));
-
-            foreach ($map as $key => $value) {
-                echo bin2hex($data[$key]).' - '.$data[$key].' ||| '.$value."<br />\n";
-            }
-        } elseif ('03000000' == $messageId) {
-            $i = 0;
-            $data[$i++] = substr($message, 24, 16);
-            list($lmLength, $lmOffset) = $this->readSecurityBuffer($data[$i - 1]);
-
-            $data[$i++] = substr($message, 40, 16);
-            list($ntmlLength, $ntmlOffset) = $this->readSecurityBuffer($data[$i - 1]);
-
-            $data[$i++] = substr($message, 56, 16);
-            list($targetLength, $targetOffset) = $this->readSecurityBuffer($data[$i - 1]);
-
-            $data[$i++] = substr($message, 72, 16);
-            list($userLength, $userOffset) = $this->readSecurityBuffer($data[$i - 1]);
-
-            $data[$i++] = substr($message, 88, 16);
-            list($workLength, $workOffset) = $this->readSecurityBuffer($data[$i - 1]);
-
-            $data[$i++] = substr($message, 104, 16);
-            $data[$i++] = substr($message, 120, 8);
-            $data[$i++] = substr($message, $targetOffset, $targetLength);
-            $data[$i++] = substr($message, $userOffset, $userLength);
-            $data[$i++] = substr($message, $workOffset, $workLength);
-            $data[$i++] = substr($message, $lmOffset, $lmLength);
-            $data[$i] = substr($message, $ntmlOffset, $ntmlLength);
-
-            $map = [
-                'LM Response Security Buffer',
-                'NTLM Response Security Buffer',
-                'Target Name Security Buffer',
-                'User Name Security Buffer',
-                'Workstation Name Security Buffer',
-                'Session Key Security Buffer',
-                'Flags',
-                'Target Name Data',
-                'User Name Data',
-                'Workstation Name Data',
-                'LM Response Data',
-                'NTLM Response Data',
-            ];
-
-            foreach ($map as $key => $value) {
-                echo $data[$key].' - '.hex2bin($data[$key]).' ||| '.$value."<br />\n";
-            }
-        }
-
-        echo '<br /><br />';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+8SbAilyokYZ1

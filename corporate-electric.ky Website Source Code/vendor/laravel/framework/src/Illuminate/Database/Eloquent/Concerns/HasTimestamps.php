@@ -1,149 +1,52 @@
-<?php
-
-namespace Illuminate\Database\Eloquent\Concerns;
-
-use Illuminate\Support\Facades\Date;
-
-trait HasTimestamps
-{
-    /**
-     * Indicates if the model should be timestamped.
-     *
-     * @var bool
-     */
-    public $timestamps = true;
-
-    /**
-     * Update the model's update timestamp.
-     *
-     * @return bool
-     */
-    public function touch()
-    {
-        if (! $this->usesTimestamps()) {
-            return false;
-        }
-
-        $this->updateTimestamps();
-
-        return $this->save();
-    }
-
-    /**
-     * Update the creation and update timestamps.
-     *
-     * @return void
-     */
-    public function updateTimestamps()
-    {
-        $time = $this->freshTimestamp();
-
-        $updatedAtColumn = $this->getUpdatedAtColumn();
-
-        if (! is_null($updatedAtColumn) && ! $this->isDirty($updatedAtColumn)) {
-            $this->setUpdatedAt($time);
-        }
-
-        $createdAtColumn = $this->getCreatedAtColumn();
-
-        if (! $this->exists && ! is_null($createdAtColumn) && ! $this->isDirty($createdAtColumn)) {
-            $this->setCreatedAt($time);
-        }
-    }
-
-    /**
-     * Set the value of the "created at" attribute.
-     *
-     * @param  mixed  $value
-     * @return $this
-     */
-    public function setCreatedAt($value)
-    {
-        $this->{$this->getCreatedAtColumn()} = $value;
-
-        return $this;
-    }
-
-    /**
-     * Set the value of the "updated at" attribute.
-     *
-     * @param  mixed  $value
-     * @return $this
-     */
-    public function setUpdatedAt($value)
-    {
-        $this->{$this->getUpdatedAtColumn()} = $value;
-
-        return $this;
-    }
-
-    /**
-     * Get a fresh timestamp for the model.
-     *
-     * @return \Illuminate\Support\Carbon
-     */
-    public function freshTimestamp()
-    {
-        return Date::now();
-    }
-
-    /**
-     * Get a fresh timestamp for the model.
-     *
-     * @return string
-     */
-    public function freshTimestampString()
-    {
-        return $this->fromDateTime($this->freshTimestamp());
-    }
-
-    /**
-     * Determine if the model uses timestamps.
-     *
-     * @return bool
-     */
-    public function usesTimestamps()
-    {
-        return $this->timestamps;
-    }
-
-    /**
-     * Get the name of the "created at" column.
-     *
-     * @return string|null
-     */
-    public function getCreatedAtColumn()
-    {
-        return static::CREATED_AT;
-    }
-
-    /**
-     * Get the name of the "updated at" column.
-     *
-     * @return string|null
-     */
-    public function getUpdatedAtColumn()
-    {
-        return static::UPDATED_AT;
-    }
-
-    /**
-     * Get the fully qualified "created at" column.
-     *
-     * @return string|null
-     */
-    public function getQualifiedCreatedAtColumn()
-    {
-        return $this->qualifyColumn($this->getCreatedAtColumn());
-    }
-
-    /**
-     * Get the fully qualified "updated at" column.
-     *
-     * @return string|null
-     */
-    public function getQualifiedUpdatedAtColumn()
-    {
-        return $this->qualifyColumn($this->getUpdatedAtColumn());
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

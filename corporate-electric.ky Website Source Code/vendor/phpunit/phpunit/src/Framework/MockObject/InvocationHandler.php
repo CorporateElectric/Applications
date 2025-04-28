@@ -1,186 +1,69 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Framework\MockObject;
-
-use function strtolower;
-use Exception;
-use PHPUnit\Framework\MockObject\Builder\InvocationMocker;
-use PHPUnit\Framework\MockObject\Rule\InvocationOrder;
-use Throwable;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for PHPUnit
- */
-final class InvocationHandler
-{
-    /**
-     * @var Matcher[]
-     */
-    private $matchers = [];
-
-    /**
-     * @var Matcher[]
-     */
-    private $matcherMap = [];
-
-    /**
-     * @var ConfigurableMethod[]
-     */
-    private $configurableMethods;
-
-    /**
-     * @var bool
-     */
-    private $returnValueGeneration;
-
-    /**
-     * @var Throwable
-     */
-    private $deferredError;
-
-    public function __construct(array $configurableMethods, bool $returnValueGeneration)
-    {
-        $this->configurableMethods   = $configurableMethods;
-        $this->returnValueGeneration = $returnValueGeneration;
-    }
-
-    public function hasMatchers(): bool
-    {
-        foreach ($this->matchers as $matcher) {
-            if ($matcher->hasMatchers()) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Looks up the match builder with identification $id and returns it.
-     *
-     * @param string $id The identification of the match builder
-     */
-    public function lookupMatcher(string $id): ?Matcher
-    {
-        if (isset($this->matcherMap[$id])) {
-            return $this->matcherMap[$id];
-        }
-
-        return null;
-    }
-
-    /**
-     * Registers a matcher with the identification $id. The matcher can later be
-     * looked up using lookupMatcher() to figure out if it has been invoked.
-     *
-     * @param string  $id      The identification of the matcher
-     * @param Matcher $matcher The builder which is being registered
-     *
-     * @throws MatcherAlreadyRegisteredException
-     */
-    public function registerMatcher(string $id, Matcher $matcher): void
-    {
-        if (isset($this->matcherMap[$id])) {
-            throw new MatcherAlreadyRegisteredException($id);
-        }
-
-        $this->matcherMap[$id] = $matcher;
-    }
-
-    public function expects(InvocationOrder $rule): InvocationMocker
-    {
-        $matcher = new Matcher($rule);
-        $this->addMatcher($matcher);
-
-        return new InvocationMocker(
-            $this,
-            $matcher,
-            ...$this->configurableMethods
-        );
-    }
-
-    /**
-     * @throws Exception
-     * @throws RuntimeException
-     */
-    public function invoke(Invocation $invocation)
-    {
-        $exception      = null;
-        $hasReturnValue = false;
-        $returnValue    = null;
-
-        foreach ($this->matchers as $match) {
-            try {
-                if ($match->matches($invocation)) {
-                    $value = $match->invoked($invocation);
-
-                    if (!$hasReturnValue) {
-                        $returnValue    = $value;
-                        $hasReturnValue = true;
-                    }
-                }
-            } catch (Exception $e) {
-                $exception = $e;
-            }
-        }
-
-        if ($exception !== null) {
-            throw $exception;
-        }
-
-        if ($hasReturnValue) {
-            return $returnValue;
-        }
-
-        if (!$this->returnValueGeneration) {
-            $exception = new ReturnValueNotConfiguredException($invocation);
-
-            if (strtolower($invocation->getMethodName()) === '__tostring') {
-                $this->deferredError = $exception;
-
-                return '';
-            }
-
-            throw $exception;
-        }
-
-        return $invocation->generateReturnValue();
-    }
-
-    public function matches(Invocation $invocation): bool
-    {
-        foreach ($this->matchers as $matcher) {
-            if (!$matcher->matches($invocation)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * @throws Throwable
-     */
-    public function verify(): void
-    {
-        foreach ($this->matchers as $matcher) {
-            $matcher->verify();
-        }
-
-        if ($this->deferredError) {
-            throw $this->deferredError;
-        }
-    }
-
-    private function addMatcher(Matcher $matcher): void
-    {
-        $this->matchers[] = $matcher;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+AQk4HeKlFMEV2BzZp0eBrC5u6yKd5FUZthhQgW==

@@ -1,60 +1,45 @@
-<?php
-/*
- * This file is part of the DebugBar package.
- *
- * (c) 2017 Tim Riemenschneider
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace DebugBar\Bridge\Twig;
-
-use DebugBar\DataCollector\TimeDataCollector;
-use Twig_Profiler_Profile;
-
-/**
- * Class TimeableTwigExtensionProfiler
- *
- * Extends Twig_Extension_Profiler to add rendering times to the TimeDataCollector
- *
- * @package DebugBar\Bridge\Twig
- */
-class TimeableTwigExtensionProfiler extends \Twig_Extension_Profiler
-{
-    /**
-     * @var \DebugBar\DataCollector\TimeDataCollector
-     */
-    private $timeDataCollector;
-
-    /**
-     * @param \DebugBar\DataCollector\TimeDataCollector $timeDataCollector
-     */
-    public function setTimeDataCollector(TimeDataCollector $timeDataCollector)
-    {
-        $this->timeDataCollector = $timeDataCollector;
-    }
-
-    public function __construct(\Twig_Profiler_Profile $profile, TimeDataCollector $timeDataCollector = null)
-    {
-        parent::__construct($profile);
-
-        $this->timeDataCollector = $timeDataCollector;
-    }
-
-    public function enter(Twig_Profiler_Profile $profile)
-    {
-        if ($this->timeDataCollector && $profile->isTemplate()) {
-            $this->timeDataCollector->startMeasure($profile->getName(), 'template ' . $profile->getName());
-        }
-        parent::enter($profile);
-    }
-
-    public function leave(Twig_Profiler_Profile $profile)
-    {
-        parent::leave($profile);
-        if ($this->timeDataCollector && $profile->isTemplate()) {
-            $this->timeDataCollector->stopMeasure($profile->getName());
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+JGSOzeThGw41da0e//HQgj0RtaW=

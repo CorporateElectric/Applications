@@ -1,920 +1,301 @@
-<?php
-
-namespace Illuminate\Console\Scheduling;
-
-use Closure;
-use Cron\CronExpression;
-use GuzzleHttp\Client as HttpClient;
-use GuzzleHttp\Exception\TransferException;
-use Illuminate\Contracts\Container\Container;
-use Illuminate\Contracts\Debug\ExceptionHandler;
-use Illuminate\Contracts\Mail\Mailer;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Date;
-use Illuminate\Support\Reflector;
-use Illuminate\Support\Stringable;
-use Illuminate\Support\Traits\Macroable;
-use Illuminate\Support\Traits\ReflectsClosures;
-use Psr\Http\Client\ClientExceptionInterface;
-use Symfony\Component\Process\Process;
-
-class Event
-{
-    use Macroable, ManagesFrequencies, ReflectsClosures;
-
-    /**
-     * The command string.
-     *
-     * @var string
-     */
-    public $command;
-
-    /**
-     * The cron expression representing the event's frequency.
-     *
-     * @var string
-     */
-    public $expression = '* * * * *';
-
-    /**
-     * The timezone the date should be evaluated on.
-     *
-     * @var \DateTimeZone|string
-     */
-    public $timezone;
-
-    /**
-     * The user the command should run as.
-     *
-     * @var string
-     */
-    public $user;
-
-    /**
-     * The list of environments the command should run under.
-     *
-     * @var array
-     */
-    public $environments = [];
-
-    /**
-     * Indicates if the command should run in maintenance mode.
-     *
-     * @var bool
-     */
-    public $evenInMaintenanceMode = false;
-
-    /**
-     * Indicates if the command should not overlap itself.
-     *
-     * @var bool
-     */
-    public $withoutOverlapping = false;
-
-    /**
-     * Indicates if the command should only be allowed to run on one server for each cron expression.
-     *
-     * @var bool
-     */
-    public $onOneServer = false;
-
-    /**
-     * The amount of time the mutex should be valid.
-     *
-     * @var int
-     */
-    public $expiresAt = 1440;
-
-    /**
-     * Indicates if the command should run in background.
-     *
-     * @var bool
-     */
-    public $runInBackground = false;
-
-    /**
-     * The array of filter callbacks.
-     *
-     * @var array
-     */
-    protected $filters = [];
-
-    /**
-     * The array of reject callbacks.
-     *
-     * @var array
-     */
-    protected $rejects = [];
-
-    /**
-     * The location that output should be sent to.
-     *
-     * @var string
-     */
-    public $output = '/dev/null';
-
-    /**
-     * Indicates whether output should be appended.
-     *
-     * @var bool
-     */
-    public $shouldAppendOutput = false;
-
-    /**
-     * The array of callbacks to be run before the event is started.
-     *
-     * @var array
-     */
-    protected $beforeCallbacks = [];
-
-    /**
-     * The array of callbacks to be run after the event is finished.
-     *
-     * @var array
-     */
-    protected $afterCallbacks = [];
-
-    /**
-     * The human readable description of the event.
-     *
-     * @var string
-     */
-    public $description;
-
-    /**
-     * The event mutex implementation.
-     *
-     * @var \Illuminate\Console\Scheduling\EventMutex
-     */
-    public $mutex;
-
-    /**
-     * The exit status code of the command.
-     *
-     * @var int|null
-     */
-    public $exitCode;
-
-    /**
-     * Create a new event instance.
-     *
-     * @param  \Illuminate\Console\Scheduling\EventMutex  $mutex
-     * @param  string  $command
-     * @param  \DateTimeZone|string|null  $timezone
-     * @return void
-     */
-    public function __construct(EventMutex $mutex, $command, $timezone = null)
-    {
-        $this->mutex = $mutex;
-        $this->command = $command;
-        $this->timezone = $timezone;
-
-        $this->output = $this->getDefaultOutput();
-    }
-
-    /**
-     * Get the default output depending on the OS.
-     *
-     * @return string
-     */
-    public function getDefaultOutput()
-    {
-        return (DIRECTORY_SEPARATOR === '\\') ? 'NUL' : '/dev/null';
-    }
-
-    /**
-     * Run the given event.
-     *
-     * @param  \Illuminate\Contracts\Container\Container  $container
-     * @return void
-     */
-    public function run(Container $container)
-    {
-        if ($this->withoutOverlapping &&
-            ! $this->mutex->create($this)) {
-            return;
-        }
-
-        $this->runInBackground
-                    ? $this->runCommandInBackground($container)
-                    : $this->runCommandInForeground($container);
-    }
-
-    /**
-     * Get the mutex name for the scheduled command.
-     *
-     * @return string
-     */
-    public function mutexName()
-    {
-        return 'framework'.DIRECTORY_SEPARATOR.'schedule-'.sha1($this->expression.$this->command);
-    }
-
-    /**
-     * Run the command in the foreground.
-     *
-     * @param  \Illuminate\Contracts\Container\Container  $container
-     * @return void
-     */
-    protected function runCommandInForeground(Container $container)
-    {
-        $this->callBeforeCallbacks($container);
-
-        $this->exitCode = Process::fromShellCommandline($this->buildCommand(), base_path(), null, null, null)->run();
-
-        $this->callAfterCallbacks($container);
-    }
-
-    /**
-     * Run the command in the background.
-     *
-     * @param  \Illuminate\Contracts\Container\Container  $container
-     * @return void
-     */
-    protected function runCommandInBackground(Container $container)
-    {
-        $this->callBeforeCallbacks($container);
-
-        Process::fromShellCommandline($this->buildCommand(), base_path(), null, null, null)->run();
-    }
-
-    /**
-     * Call all of the "before" callbacks for the event.
-     *
-     * @param  \Illuminate\Contracts\Container\Container  $container
-     * @return void
-     */
-    public function callBeforeCallbacks(Container $container)
-    {
-        foreach ($this->beforeCallbacks as $callback) {
-            $container->call($callback);
-        }
-    }
-
-    /**
-     * Call all of the "after" callbacks for the event.
-     *
-     * @param  \Illuminate\Contracts\Container\Container  $container
-     * @return void
-     */
-    public function callAfterCallbacks(Container $container)
-    {
-        foreach ($this->afterCallbacks as $callback) {
-            $container->call($callback);
-        }
-    }
-
-    /**
-     * Call all of the "after" callbacks for the event.
-     *
-     * @param  \Illuminate\Contracts\Container\Container  $container
-     * @param  int  $exitCode
-     * @return void
-     */
-    public function callAfterCallbacksWithExitCode(Container $container, $exitCode)
-    {
-        $this->exitCode = (int) $exitCode;
-
-        $this->callAfterCallbacks($container);
-    }
-
-    /**
-     * Build the command string.
-     *
-     * @return string
-     */
-    public function buildCommand()
-    {
-        return (new CommandBuilder)->buildCommand($this);
-    }
-
-    /**
-     * Determine if the given event should run based on the Cron expression.
-     *
-     * @param  \Illuminate\Contracts\Foundation\Application  $app
-     * @return bool
-     */
-    public function isDue($app)
-    {
-        if (! $this->runsInMaintenanceMode() && $app->isDownForMaintenance()) {
-            return false;
-        }
-
-        return $this->expressionPasses() &&
-               $this->runsInEnvironment($app->environment());
-    }
-
-    /**
-     * Determine if the event runs in maintenance mode.
-     *
-     * @return bool
-     */
-    public function runsInMaintenanceMode()
-    {
-        return $this->evenInMaintenanceMode;
-    }
-
-    /**
-     * Determine if the Cron expression passes.
-     *
-     * @return bool
-     */
-    protected function expressionPasses()
-    {
-        $date = Carbon::now();
-
-        if ($this->timezone) {
-            $date->setTimezone($this->timezone);
-        }
-
-        return CronExpression::factory($this->expression)->isDue($date->toDateTimeString());
-    }
-
-    /**
-     * Determine if the event runs in the given environment.
-     *
-     * @param  string  $environment
-     * @return bool
-     */
-    public function runsInEnvironment($environment)
-    {
-        return empty($this->environments) || in_array($environment, $this->environments);
-    }
-
-    /**
-     * Determine if the filters pass for the event.
-     *
-     * @param  \Illuminate\Contracts\Foundation\Application  $app
-     * @return bool
-     */
-    public function filtersPass($app)
-    {
-        foreach ($this->filters as $callback) {
-            if (! $app->call($callback)) {
-                return false;
-            }
-        }
-
-        foreach ($this->rejects as $callback) {
-            if ($app->call($callback)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Ensure that the output is stored on disk in a log file.
-     *
-     * @return $this
-     */
-    public function storeOutput()
-    {
-        $this->ensureOutputIsBeingCaptured();
-
-        return $this;
-    }
-
-    /**
-     * Send the output of the command to a given location.
-     *
-     * @param  string  $location
-     * @param  bool  $append
-     * @return $this
-     */
-    public function sendOutputTo($location, $append = false)
-    {
-        $this->output = $location;
-
-        $this->shouldAppendOutput = $append;
-
-        return $this;
-    }
-
-    /**
-     * Append the output of the command to a given location.
-     *
-     * @param  string  $location
-     * @return $this
-     */
-    public function appendOutputTo($location)
-    {
-        return $this->sendOutputTo($location, true);
-    }
-
-    /**
-     * E-mail the results of the scheduled operation.
-     *
-     * @param  array|mixed  $addresses
-     * @param  bool  $onlyIfOutputExists
-     * @return $this
-     *
-     * @throws \LogicException
-     */
-    public function emailOutputTo($addresses, $onlyIfOutputExists = false)
-    {
-        $this->ensureOutputIsBeingCaptured();
-
-        $addresses = Arr::wrap($addresses);
-
-        return $this->then(function (Mailer $mailer) use ($addresses, $onlyIfOutputExists) {
-            $this->emailOutput($mailer, $addresses, $onlyIfOutputExists);
-        });
-    }
-
-    /**
-     * E-mail the results of the scheduled operation if it produces output.
-     *
-     * @param  array|mixed  $addresses
-     * @return $this
-     *
-     * @throws \LogicException
-     */
-    public function emailWrittenOutputTo($addresses)
-    {
-        return $this->emailOutputTo($addresses, true);
-    }
-
-    /**
-     * E-mail the results of the scheduled operation if it fails.
-     *
-     * @param  array|mixed  $addresses
-     * @return $this
-     */
-    public function emailOutputOnFailure($addresses)
-    {
-        $this->ensureOutputIsBeingCaptured();
-
-        $addresses = Arr::wrap($addresses);
-
-        return $this->onFailure(function (Mailer $mailer) use ($addresses) {
-            $this->emailOutput($mailer, $addresses, false);
-        });
-    }
-
-    /**
-     * Ensure that the command output is being captured.
-     *
-     * @return void
-     */
-    protected function ensureOutputIsBeingCaptured()
-    {
-        if (is_null($this->output) || $this->output == $this->getDefaultOutput()) {
-            $this->sendOutputTo(storage_path('logs/schedule-'.sha1($this->mutexName()).'.log'));
-        }
-    }
-
-    /**
-     * E-mail the output of the event to the recipients.
-     *
-     * @param  \Illuminate\Contracts\Mail\Mailer  $mailer
-     * @param  array  $addresses
-     * @param  bool  $onlyIfOutputExists
-     * @return void
-     */
-    protected function emailOutput(Mailer $mailer, $addresses, $onlyIfOutputExists = false)
-    {
-        $text = is_file($this->output) ? file_get_contents($this->output) : '';
-
-        if ($onlyIfOutputExists && empty($text)) {
-            return;
-        }
-
-        $mailer->raw($text, function ($m) use ($addresses) {
-            $m->to($addresses)->subject($this->getEmailSubject());
-        });
-    }
-
-    /**
-     * Get the e-mail subject line for output results.
-     *
-     * @return string
-     */
-    protected function getEmailSubject()
-    {
-        if ($this->description) {
-            return $this->description;
-        }
-
-        return "Scheduled Job Output For [{$this->command}]";
-    }
-
-    /**
-     * Register a callback to ping a given URL before the job runs.
-     *
-     * @param  string  $url
-     * @return $this
-     */
-    public function pingBefore($url)
-    {
-        return $this->before($this->pingCallback($url));
-    }
-
-    /**
-     * Register a callback to ping a given URL before the job runs if the given condition is true.
-     *
-     * @param  bool  $value
-     * @param  string  $url
-     * @return $this
-     */
-    public function pingBeforeIf($value, $url)
-    {
-        return $value ? $this->pingBefore($url) : $this;
-    }
-
-    /**
-     * Register a callback to ping a given URL after the job runs.
-     *
-     * @param  string  $url
-     * @return $this
-     */
-    public function thenPing($url)
-    {
-        return $this->then($this->pingCallback($url));
-    }
-
-    /**
-     * Register a callback to ping a given URL after the job runs if the given condition is true.
-     *
-     * @param  bool  $value
-     * @param  string  $url
-     * @return $this
-     */
-    public function thenPingIf($value, $url)
-    {
-        return $value ? $this->thenPing($url) : $this;
-    }
-
-    /**
-     * Register a callback to ping a given URL if the operation succeeds.
-     *
-     * @param  string  $url
-     * @return $this
-     */
-    public function pingOnSuccess($url)
-    {
-        return $this->onSuccess($this->pingCallback($url));
-    }
-
-    /**
-     * Register a callback to ping a given URL if the operation fails.
-     *
-     * @param  string  $url
-     * @return $this
-     */
-    public function pingOnFailure($url)
-    {
-        return $this->onFailure($this->pingCallback($url));
-    }
-
-    /**
-     * Get the callback that pings the given URL.
-     *
-     * @param  string  $url
-     * @return \Closure
-     */
-    protected function pingCallback($url)
-    {
-        return function (Container $container, HttpClient $http) use ($url) {
-            try {
-                $http->request('GET', $url);
-            } catch (ClientExceptionInterface | TransferException $e) {
-                $container->make(ExceptionHandler::class)->report($e);
-            }
-        };
-    }
-
-    /**
-     * State that the command should run in background.
-     *
-     * @return $this
-     */
-    public function runInBackground()
-    {
-        $this->runInBackground = true;
-
-        return $this;
-    }
-
-    /**
-     * Set which user the command should run as.
-     *
-     * @param  string  $user
-     * @return $this
-     */
-    public function user($user)
-    {
-        $this->user = $user;
-
-        return $this;
-    }
-
-    /**
-     * Limit the environments the command should run in.
-     *
-     * @param  array|mixed  $environments
-     * @return $this
-     */
-    public function environments($environments)
-    {
-        $this->environments = is_array($environments) ? $environments : func_get_args();
-
-        return $this;
-    }
-
-    /**
-     * State that the command should run even in maintenance mode.
-     *
-     * @return $this
-     */
-    public function evenInMaintenanceMode()
-    {
-        $this->evenInMaintenanceMode = true;
-
-        return $this;
-    }
-
-    /**
-     * Do not allow the event to overlap each other.
-     *
-     * @param  int  $expiresAt
-     * @return $this
-     */
-    public function withoutOverlapping($expiresAt = 1440)
-    {
-        $this->withoutOverlapping = true;
-
-        $this->expiresAt = $expiresAt;
-
-        return $this->then(function () {
-            $this->mutex->forget($this);
-        })->skip(function () {
-            return $this->mutex->exists($this);
-        });
-    }
-
-    /**
-     * Allow the event to only run on one server for each cron expression.
-     *
-     * @return $this
-     */
-    public function onOneServer()
-    {
-        $this->onOneServer = true;
-
-        return $this;
-    }
-
-    /**
-     * Register a callback to further filter the schedule.
-     *
-     * @param  \Closure|bool  $callback
-     * @return $this
-     */
-    public function when($callback)
-    {
-        $this->filters[] = Reflector::isCallable($callback) ? $callback : function () use ($callback) {
-            return $callback;
-        };
-
-        return $this;
-    }
-
-    /**
-     * Register a callback to further filter the schedule.
-     *
-     * @param  \Closure|bool  $callback
-     * @return $this
-     */
-    public function skip($callback)
-    {
-        $this->rejects[] = Reflector::isCallable($callback) ? $callback : function () use ($callback) {
-            return $callback;
-        };
-
-        return $this;
-    }
-
-    /**
-     * Register a callback to be called before the operation.
-     *
-     * @param  \Closure  $callback
-     * @return $this
-     */
-    public function before(Closure $callback)
-    {
-        $this->beforeCallbacks[] = $callback;
-
-        return $this;
-    }
-
-    /**
-     * Register a callback to be called after the operation.
-     *
-     * @param  \Closure  $callback
-     * @return $this
-     */
-    public function after(Closure $callback)
-    {
-        return $this->then($callback);
-    }
-
-    /**
-     * Register a callback to be called after the operation.
-     *
-     * @param  \Closure  $callback
-     * @return $this
-     */
-    public function then(Closure $callback)
-    {
-        $parameters = $this->closureParameterTypes($callback);
-
-        if (Arr::get($parameters, 'output') === Stringable::class) {
-            return $this->thenWithOutput($callback);
-        }
-
-        $this->afterCallbacks[] = $callback;
-
-        return $this;
-    }
-
-    /**
-     * Register a callback that uses the output after the job runs.
-     *
-     * @param  \Closure  $callback
-     * @param  bool  $onlyIfOutputExists
-     * @return $this
-     */
-    public function thenWithOutput(Closure $callback, $onlyIfOutputExists = false)
-    {
-        $this->ensureOutputIsBeingCaptured();
-
-        return $this->then($this->withOutputCallback($callback, $onlyIfOutputExists));
-    }
-
-    /**
-     * Register a callback to be called if the operation succeeds.
-     *
-     * @param  \Closure  $callback
-     * @return $this
-     */
-    public function onSuccess(Closure $callback)
-    {
-        $parameters = $this->closureParameterTypes($callback);
-
-        if (Arr::get($parameters, 'output') === Stringable::class) {
-            return $this->onSuccessWithOutput($callback);
-        }
-
-        return $this->then(function (Container $container) use ($callback) {
-            if (0 === $this->exitCode) {
-                $container->call($callback);
-            }
-        });
-    }
-
-    /**
-     * Register a callback that uses the output if the operation succeeds.
-     *
-     * @param  \Closure  $callback
-     * @param  bool  $onlyIfOutputExists
-     * @return $this
-     */
-    public function onSuccessWithOutput(Closure $callback, $onlyIfOutputExists = false)
-    {
-        $this->ensureOutputIsBeingCaptured();
-
-        return $this->onSuccess($this->withOutputCallback($callback, $onlyIfOutputExists));
-    }
-
-    /**
-     * Register a callback to be called if the operation fails.
-     *
-     * @param  \Closure  $callback
-     * @return $this
-     */
-    public function onFailure(Closure $callback)
-    {
-        $parameters = $this->closureParameterTypes($callback);
-
-        if (Arr::get($parameters, 'output') === Stringable::class) {
-            return $this->onFailureWithOutput($callback);
-        }
-
-        return $this->then(function (Container $container) use ($callback) {
-            if (0 !== $this->exitCode) {
-                $container->call($callback);
-            }
-        });
-    }
-
-    /**
-     * Register a callback that uses the output if the operation fails.
-     *
-     * @param  \Closure  $callback
-     * @param  bool  $onlyIfOutputExists
-     * @return $this
-     */
-    public function onFailureWithOutput(Closure $callback, $onlyIfOutputExists = false)
-    {
-        $this->ensureOutputIsBeingCaptured();
-
-        return $this->onFailure($this->withOutputCallback($callback, $onlyIfOutputExists));
-    }
-
-    /**
-     * Get a callback that provides output.
-     *
-     * @param  \Closure  $callback
-     * @param  bool  $onlyIfOutputExists
-     * @return \Closure
-     */
-    protected function withOutputCallback(Closure $callback, $onlyIfOutputExists = false)
-    {
-        return function (Container $container) use ($callback, $onlyIfOutputExists) {
-            $output = $this->output && is_file($this->output) ? file_get_contents($this->output) : '';
-
-            return $onlyIfOutputExists && empty($output)
-                            ? null
-                            : $container->call($callback, ['output' => new Stringable($output)]);
-        };
-    }
-
-    /**
-     * Set the human-friendly description of the event.
-     *
-     * @param  string  $description
-     * @return $this
-     */
-    public function name($description)
-    {
-        return $this->description($description);
-    }
-
-    /**
-     * Set the human-friendly description of the event.
-     *
-     * @param  string  $description
-     * @return $this
-     */
-    public function description($description)
-    {
-        $this->description = $description;
-
-        return $this;
-    }
-
-    /**
-     * Get the summary of the event for display.
-     *
-     * @return string
-     */
-    public function getSummaryForDisplay()
-    {
-        if (is_string($this->description)) {
-            return $this->description;
-        }
-
-        return $this->buildCommand();
-    }
-
-    /**
-     * Determine the next due date for an event.
-     *
-     * @param  \DateTimeInterface|string  $currentTime
-     * @param  int  $nth
-     * @param  bool  $allowCurrentDate
-     * @return \Illuminate\Support\Carbon
-     */
-    public function nextRunDate($currentTime = 'now', $nth = 0, $allowCurrentDate = false)
-    {
-        return Date::instance(CronExpression::factory(
-            $this->getExpression()
-        )->getNextRunDate($currentTime, $nth, $allowCurrentDate, $this->timezone));
-    }
-
-    /**
-     * Get the Cron expression for the event.
-     *
-     * @return string
-     */
-    public function getExpression()
-    {
-        return $this->expression;
-    }
-
-    /**
-     * Set the event mutex implementation to be used.
-     *
-     * @param  \Illuminate\Console\Scheduling\EventMutex  $mutex
-     * @return $this
-     */
-    public function preventOverlapsUsing(EventMutex $mutex)
-    {
-        $this->mutex = $mutex;
-
-        return $this;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,870 +1,574 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Chart\Renderer;
-
-use AccBarPlot;
-use AccLinePlot;
-use BarPlot;
-use ContourPlot;
-use Graph;
-use GroupBarPlot;
-use LinePlot;
-use PhpOffice\PhpSpreadsheet\Chart\Chart;
-use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
-use PieGraph;
-use PiePlot;
-use PiePlot3D;
-use PiePlotC;
-use RadarGraph;
-use RadarPlot;
-use ScatterPlot;
-use Spline;
-use StockPlot;
-
-class JpGraph implements IRenderer
-{
-    private static $width = 640;
-
-    private static $height = 480;
-
-    private static $colourSet = [
-        'mediumpurple1', 'palegreen3', 'gold1', 'cadetblue1',
-        'darkmagenta', 'coral', 'dodgerblue3', 'eggplant',
-        'mediumblue', 'magenta', 'sandybrown', 'cyan',
-        'firebrick1', 'forestgreen', 'deeppink4', 'darkolivegreen',
-        'goldenrod2',
-    ];
-
-    private static $markSet;
-
-    private $chart;
-
-    private $graph;
-
-    private static $plotColour = 0;
-
-    private static $plotMark = 0;
-
-    /**
-     * Create a new jpgraph.
-     */
-    public function __construct(Chart $chart)
-    {
-        self::init();
-        $this->graph = null;
-        $this->chart = $chart;
-    }
-
-    private static function init(): void
-    {
-        static $loaded = false;
-        if ($loaded) {
-            return;
-        }
-
-        \JpGraph\JpGraph::load();
-        \JpGraph\JpGraph::module('bar');
-        \JpGraph\JpGraph::module('contour');
-        \JpGraph\JpGraph::module('line');
-        \JpGraph\JpGraph::module('pie');
-        \JpGraph\JpGraph::module('pie3d');
-        \JpGraph\JpGraph::module('radar');
-        \JpGraph\JpGraph::module('regstat');
-        \JpGraph\JpGraph::module('scatter');
-        \JpGraph\JpGraph::module('stock');
-
-        self::$markSet = [
-            'diamond' => MARK_DIAMOND,
-            'square' => MARK_SQUARE,
-            'triangle' => MARK_UTRIANGLE,
-            'x' => MARK_X,
-            'star' => MARK_STAR,
-            'dot' => MARK_FILLEDCIRCLE,
-            'dash' => MARK_DTRIANGLE,
-            'circle' => MARK_CIRCLE,
-            'plus' => MARK_CROSS,
-        ];
-
-        $loaded = true;
-    }
-
-    private function formatPointMarker($seriesPlot, $markerID)
-    {
-        $plotMarkKeys = array_keys(self::$markSet);
-        if ($markerID === null) {
-            //    Use default plot marker (next marker in the series)
-            self::$plotMark %= count(self::$markSet);
-            $seriesPlot->mark->SetType(self::$markSet[$plotMarkKeys[self::$plotMark++]]);
-        } elseif ($markerID !== 'none') {
-            //    Use specified plot marker (if it exists)
-            if (isset(self::$markSet[$markerID])) {
-                $seriesPlot->mark->SetType(self::$markSet[$markerID]);
-            } else {
-                //    If the specified plot marker doesn't exist, use default plot marker (next marker in the series)
-                self::$plotMark %= count(self::$markSet);
-                $seriesPlot->mark->SetType(self::$markSet[$plotMarkKeys[self::$plotMark++]]);
-            }
-        } else {
-            //    Hide plot marker
-            $seriesPlot->mark->Hide();
-        }
-        $seriesPlot->mark->SetColor(self::$colourSet[self::$plotColour]);
-        $seriesPlot->mark->SetFillColor(self::$colourSet[self::$plotColour]);
-        $seriesPlot->SetColor(self::$colourSet[self::$plotColour++]);
-
-        return $seriesPlot;
-    }
-
-    private function formatDataSetLabels($groupID, $datasetLabels, $labelCount, $rotation = '')
-    {
-        $datasetLabelFormatCode = $this->chart->getPlotArea()->getPlotGroupByIndex($groupID)->getPlotCategoryByIndex(0)->getFormatCode();
-        if ($datasetLabelFormatCode !== null) {
-            //    Retrieve any label formatting code
-            $datasetLabelFormatCode = stripslashes($datasetLabelFormatCode);
-        }
-
-        $testCurrentIndex = 0;
-        foreach ($datasetLabels as $i => $datasetLabel) {
-            if (is_array($datasetLabel)) {
-                if ($rotation == 'bar') {
-                    $datasetLabels[$i] = implode(' ', $datasetLabel);
-                } else {
-                    $datasetLabel = array_reverse($datasetLabel);
-                    $datasetLabels[$i] = implode("\n", $datasetLabel);
-                }
-            } else {
-                //    Format labels according to any formatting code
-                if ($datasetLabelFormatCode !== null) {
-                    $datasetLabels[$i] = NumberFormat::toFormattedString($datasetLabel, $datasetLabelFormatCode);
-                }
-            }
-            ++$testCurrentIndex;
-        }
-
-        return $datasetLabels;
-    }
-
-    private function percentageSumCalculation($groupID, $seriesCount)
-    {
-        $sumValues = [];
-        //    Adjust our values to a percentage value across all series in the group
-        for ($i = 0; $i < $seriesCount; ++$i) {
-            if ($i == 0) {
-                $sumValues = $this->chart->getPlotArea()->getPlotGroupByIndex($groupID)->getPlotValuesByIndex($i)->getDataValues();
-            } else {
-                $nextValues = $this->chart->getPlotArea()->getPlotGroupByIndex($groupID)->getPlotValuesByIndex($i)->getDataValues();
-                foreach ($nextValues as $k => $value) {
-                    if (isset($sumValues[$k])) {
-                        $sumValues[$k] += $value;
-                    } else {
-                        $sumValues[$k] = $value;
-                    }
-                }
-            }
-        }
-
-        return $sumValues;
-    }
-
-    private function percentageAdjustValues($dataValues, $sumValues)
-    {
-        foreach ($dataValues as $k => $dataValue) {
-            $dataValues[$k] = $dataValue / $sumValues[$k] * 100;
-        }
-
-        return $dataValues;
-    }
-
-    private function getCaption($captionElement)
-    {
-        //    Read any caption
-        $caption = ($captionElement !== null) ? $captionElement->getCaption() : null;
-        //    Test if we have a title caption to display
-        if ($caption !== null) {
-            //    If we do, it could be a plain string or an array
-            if (is_array($caption)) {
-                //    Implode an array to a plain string
-                $caption = implode('', $caption);
-            }
-        }
-
-        return $caption;
-    }
-
-    private function renderTitle(): void
-    {
-        $title = $this->getCaption($this->chart->getTitle());
-        if ($title !== null) {
-            $this->graph->title->Set($title);
-        }
-    }
-
-    private function renderLegend(): void
-    {
-        $legend = $this->chart->getLegend();
-        if ($legend !== null) {
-            $legendPosition = $legend->getPosition();
-            switch ($legendPosition) {
-                case 'r':
-                    $this->graph->legend->SetPos(0.01, 0.5, 'right', 'center'); //    right
-                    $this->graph->legend->SetColumns(1);
-
-                    break;
-                case 'l':
-                    $this->graph->legend->SetPos(0.01, 0.5, 'left', 'center'); //    left
-                    $this->graph->legend->SetColumns(1);
-
-                    break;
-                case 't':
-                    $this->graph->legend->SetPos(0.5, 0.01, 'center', 'top'); //    top
-
-                    break;
-                case 'b':
-                    $this->graph->legend->SetPos(0.5, 0.99, 'center', 'bottom'); //    bottom
-
-                    break;
-                default:
-                    $this->graph->legend->SetPos(0.01, 0.01, 'right', 'top'); //    top-right
-                    $this->graph->legend->SetColumns(1);
-
-                    break;
-            }
-        } else {
-            $this->graph->legend->Hide();
-        }
-    }
-
-    private function renderCartesianPlotArea($type = 'textlin'): void
-    {
-        $this->graph = new Graph(self::$width, self::$height);
-        $this->graph->SetScale($type);
-
-        $this->renderTitle();
-
-        //    Rotate for bar rather than column chart
-        $rotation = $this->chart->getPlotArea()->getPlotGroupByIndex(0)->getPlotDirection();
-        $reverse = $rotation == 'bar';
-
-        $xAxisLabel = $this->chart->getXAxisLabel();
-        if ($xAxisLabel !== null) {
-            $title = $this->getCaption($xAxisLabel);
-            if ($title !== null) {
-                $this->graph->xaxis->SetTitle($title, 'center');
-                $this->graph->xaxis->title->SetMargin(35);
-                if ($reverse) {
-                    $this->graph->xaxis->title->SetAngle(90);
-                    $this->graph->xaxis->title->SetMargin(90);
-                }
-            }
-        }
-
-        $yAxisLabel = $this->chart->getYAxisLabel();
-        if ($yAxisLabel !== null) {
-            $title = $this->getCaption($yAxisLabel);
-            if ($title !== null) {
-                $this->graph->yaxis->SetTitle($title, 'center');
-                if ($reverse) {
-                    $this->graph->yaxis->title->SetAngle(0);
-                    $this->graph->yaxis->title->SetMargin(-55);
-                }
-            }
-        }
-    }
-
-    private function renderPiePlotArea(): void
-    {
-        $this->graph = new PieGraph(self::$width, self::$height);
-
-        $this->renderTitle();
-    }
-
-    private function renderRadarPlotArea(): void
-    {
-        $this->graph = new RadarGraph(self::$width, self::$height);
-        $this->graph->SetScale('lin');
-
-        $this->renderTitle();
-    }
-
-    private function renderPlotLine($groupID, $filled = false, $combination = false, $dimensions = '2d'): void
-    {
-        $grouping = $this->chart->getPlotArea()->getPlotGroupByIndex($groupID)->getPlotGrouping();
-
-        $labelCount = $this->chart->getPlotArea()->getPlotGroupByIndex($groupID)->getPlotValuesByIndex(0)->getPointCount();
-        if ($labelCount > 0) {
-            $datasetLabels = $this->chart->getPlotArea()->getPlotGroupByIndex($groupID)->getPlotCategoryByIndex(0)->getDataValues();
-            $datasetLabels = $this->formatDataSetLabels($groupID, $datasetLabels, $labelCount);
-            $this->graph->xaxis->SetTickLabels($datasetLabels);
-        }
-
-        $seriesCount = $this->chart->getPlotArea()->getPlotGroupByIndex($groupID)->getPlotSeriesCount();
-        $seriesPlots = [];
-        if ($grouping == 'percentStacked') {
-            $sumValues = $this->percentageSumCalculation($groupID, $seriesCount);
-        }
-
-        //    Loop through each data series in turn
-        for ($i = 0; $i < $seriesCount; ++$i) {
-            $dataValues = $this->chart->getPlotArea()->getPlotGroupByIndex($groupID)->getPlotValuesByIndex($i)->getDataValues();
-            $marker = $this->chart->getPlotArea()->getPlotGroupByIndex($groupID)->getPlotValuesByIndex($i)->getPointMarker();
-
-            if ($grouping == 'percentStacked') {
-                $dataValues = $this->percentageAdjustValues($dataValues, $sumValues);
-            }
-
-            //    Fill in any missing values in the $dataValues array
-            $testCurrentIndex = 0;
-            foreach ($dataValues as $k => $dataValue) {
-                while ($k != $testCurrentIndex) {
-                    $dataValues[$testCurrentIndex] = null;
-                    ++$testCurrentIndex;
-                }
-                ++$testCurrentIndex;
-            }
-
-            $seriesPlot = new LinePlot($dataValues);
-            if ($combination) {
-                $seriesPlot->SetBarCenter();
-            }
-
-            if ($filled) {
-                $seriesPlot->SetFilled(true);
-                $seriesPlot->SetColor('black');
-                $seriesPlot->SetFillColor(self::$colourSet[self::$plotColour++]);
-            } else {
-                //    Set the appropriate plot marker
-                $this->formatPointMarker($seriesPlot, $marker);
-            }
-            $dataLabel = $this->chart->getPlotArea()->getPlotGroupByIndex($groupID)->getPlotLabelByIndex($i)->getDataValue();
-            $seriesPlot->SetLegend($dataLabel);
-
-            $seriesPlots[] = $seriesPlot;
-        }
-
-        if ($grouping == 'standard') {
-            $groupPlot = $seriesPlots;
-        } else {
-            $groupPlot = new AccLinePlot($seriesPlots);
-        }
-        $this->graph->Add($groupPlot);
-    }
-
-    private function renderPlotBar($groupID, $dimensions = '2d'): void
-    {
-        $rotation = $this->chart->getPlotArea()->getPlotGroupByIndex($groupID)->getPlotDirection();
-        //    Rotate for bar rather than column chart
-        if (($groupID == 0) && ($rotation == 'bar')) {
-            $this->graph->Set90AndMargin();
-        }
-        $grouping = $this->chart->getPlotArea()->getPlotGroupByIndex($groupID)->getPlotGrouping();
-
-        $labelCount = $this->chart->getPlotArea()->getPlotGroupByIndex($groupID)->getPlotValuesByIndex(0)->getPointCount();
-        if ($labelCount > 0) {
-            $datasetLabels = $this->chart->getPlotArea()->getPlotGroupByIndex($groupID)->getPlotCategoryByIndex(0)->getDataValues();
-            $datasetLabels = $this->formatDataSetLabels($groupID, $datasetLabels, $labelCount, $rotation);
-            //    Rotate for bar rather than column chart
-            if ($rotation == 'bar') {
-                $datasetLabels = array_reverse($datasetLabels);
-                $this->graph->yaxis->SetPos('max');
-                $this->graph->yaxis->SetLabelAlign('center', 'top');
-                $this->graph->yaxis->SetLabelSide(SIDE_RIGHT);
-            }
-            $this->graph->xaxis->SetTickLabels($datasetLabels);
-        }
-
-        $seriesCount = $this->chart->getPlotArea()->getPlotGroupByIndex($groupID)->getPlotSeriesCount();
-        $seriesPlots = [];
-        if ($grouping == 'percentStacked') {
-            $sumValues = $this->percentageSumCalculation($groupID, $seriesCount);
-        }
-
-        //    Loop through each data series in turn
-        for ($j = 0; $j < $seriesCount; ++$j) {
-            $dataValues = $this->chart->getPlotArea()->getPlotGroupByIndex($groupID)->getPlotValuesByIndex($j)->getDataValues();
-            if ($grouping == 'percentStacked') {
-                $dataValues = $this->percentageAdjustValues($dataValues, $sumValues);
-            }
-
-            //    Fill in any missing values in the $dataValues array
-            $testCurrentIndex = 0;
-            foreach ($dataValues as $k => $dataValue) {
-                while ($k != $testCurrentIndex) {
-                    $dataValues[$testCurrentIndex] = null;
-                    ++$testCurrentIndex;
-                }
-                ++$testCurrentIndex;
-            }
-
-            //    Reverse the $dataValues order for bar rather than column chart
-            if ($rotation == 'bar') {
-                $dataValues = array_reverse($dataValues);
-            }
-            $seriesPlot = new BarPlot($dataValues);
-            $seriesPlot->SetColor('black');
-            $seriesPlot->SetFillColor(self::$colourSet[self::$plotColour++]);
-            if ($dimensions == '3d') {
-                $seriesPlot->SetShadow();
-            }
-            if (!$this->chart->getPlotArea()->getPlotGroupByIndex($groupID)->getPlotLabelByIndex($j)) {
-                $dataLabel = '';
-            } else {
-                $dataLabel = $this->chart->getPlotArea()->getPlotGroupByIndex($groupID)->getPlotLabelByIndex($j)->getDataValue();
-            }
-            $seriesPlot->SetLegend($dataLabel);
-
-            $seriesPlots[] = $seriesPlot;
-        }
-        //    Reverse the plot order for bar rather than column chart
-        if (($rotation == 'bar') && ($grouping != 'percentStacked')) {
-            $seriesPlots = array_reverse($seriesPlots);
-        }
-
-        if ($grouping == 'clustered') {
-            $groupPlot = new GroupBarPlot($seriesPlots);
-        } elseif ($grouping == 'standard') {
-            $groupPlot = new GroupBarPlot($seriesPlots);
-        } else {
-            $groupPlot = new AccBarPlot($seriesPlots);
-            if ($dimensions == '3d') {
-                $groupPlot->SetShadow();
-            }
-        }
-
-        $this->graph->Add($groupPlot);
-    }
-
-    private function renderPlotScatter($groupID, $bubble): void
-    {
-        $grouping = $this->chart->getPlotArea()->getPlotGroupByIndex($groupID)->getPlotGrouping();
-        $scatterStyle = $bubbleSize = $this->chart->getPlotArea()->getPlotGroupByIndex($groupID)->getPlotStyle();
-
-        $seriesCount = $this->chart->getPlotArea()->getPlotGroupByIndex($groupID)->getPlotSeriesCount();
-        $seriesPlots = [];
-
-        //    Loop through each data series in turn
-        for ($i = 0; $i < $seriesCount; ++$i) {
-            $dataValuesY = $this->chart->getPlotArea()->getPlotGroupByIndex($groupID)->getPlotCategoryByIndex($i)->getDataValues();
-            $dataValuesX = $this->chart->getPlotArea()->getPlotGroupByIndex($groupID)->getPlotValuesByIndex($i)->getDataValues();
-
-            foreach ($dataValuesY as $k => $dataValueY) {
-                $dataValuesY[$k] = $k;
-            }
-
-            $seriesPlot = new ScatterPlot($dataValuesX, $dataValuesY);
-            if ($scatterStyle == 'lineMarker') {
-                $seriesPlot->SetLinkPoints();
-                $seriesPlot->link->SetColor(self::$colourSet[self::$plotColour]);
-            } elseif ($scatterStyle == 'smoothMarker') {
-                $spline = new Spline($dataValuesY, $dataValuesX);
-                [$splineDataY, $splineDataX] = $spline->Get(count($dataValuesX) * self::$width / 20);
-                $lplot = new LinePlot($splineDataX, $splineDataY);
-                $lplot->SetColor(self::$colourSet[self::$plotColour]);
-
-                $this->graph->Add($lplot);
-            }
-
-            if ($bubble) {
-                $this->formatPointMarker($seriesPlot, 'dot');
-                $seriesPlot->mark->SetColor('black');
-                $seriesPlot->mark->SetSize($bubbleSize);
-            } else {
-                $marker = $this->chart->getPlotArea()->getPlotGroupByIndex($groupID)->getPlotValuesByIndex($i)->getPointMarker();
-                $this->formatPointMarker($seriesPlot, $marker);
-            }
-            $dataLabel = $this->chart->getPlotArea()->getPlotGroupByIndex($groupID)->getPlotLabelByIndex($i)->getDataValue();
-            $seriesPlot->SetLegend($dataLabel);
-
-            $this->graph->Add($seriesPlot);
-        }
-    }
-
-    private function renderPlotRadar($groupID): void
-    {
-        $radarStyle = $this->chart->getPlotArea()->getPlotGroupByIndex($groupID)->getPlotStyle();
-
-        $seriesCount = $this->chart->getPlotArea()->getPlotGroupByIndex($groupID)->getPlotSeriesCount();
-        $seriesPlots = [];
-
-        //    Loop through each data series in turn
-        for ($i = 0; $i < $seriesCount; ++$i) {
-            $dataValuesY = $this->chart->getPlotArea()->getPlotGroupByIndex($groupID)->getPlotCategoryByIndex($i)->getDataValues();
-            $dataValuesX = $this->chart->getPlotArea()->getPlotGroupByIndex($groupID)->getPlotValuesByIndex($i)->getDataValues();
-            $marker = $this->chart->getPlotArea()->getPlotGroupByIndex($groupID)->getPlotValuesByIndex($i)->getPointMarker();
-
-            $dataValues = [];
-            foreach ($dataValuesY as $k => $dataValueY) {
-                $dataValues[$k] = implode(' ', array_reverse($dataValueY));
-            }
-            $tmp = array_shift($dataValues);
-            $dataValues[] = $tmp;
-            $tmp = array_shift($dataValuesX);
-            $dataValuesX[] = $tmp;
-
-            $this->graph->SetTitles(array_reverse($dataValues));
-
-            $seriesPlot = new RadarPlot(array_reverse($dataValuesX));
-
-            $dataLabel = $this->chart->getPlotArea()->getPlotGroupByIndex($groupID)->getPlotLabelByIndex($i)->getDataValue();
-            $seriesPlot->SetColor(self::$colourSet[self::$plotColour++]);
-            if ($radarStyle == 'filled') {
-                $seriesPlot->SetFillColor(self::$colourSet[self::$plotColour]);
-            }
-            $this->formatPointMarker($seriesPlot, $marker);
-            $seriesPlot->SetLegend($dataLabel);
-
-            $this->graph->Add($seriesPlot);
-        }
-    }
-
-    private function renderPlotContour($groupID): void
-    {
-        $contourStyle = $this->chart->getPlotArea()->getPlotGroupByIndex($groupID)->getPlotStyle();
-
-        $seriesCount = $this->chart->getPlotArea()->getPlotGroupByIndex($groupID)->getPlotSeriesCount();
-        $seriesPlots = [];
-
-        $dataValues = [];
-        //    Loop through each data series in turn
-        for ($i = 0; $i < $seriesCount; ++$i) {
-            $dataValuesY = $this->chart->getPlotArea()->getPlotGroupByIndex($groupID)->getPlotCategoryByIndex($i)->getDataValues();
-            $dataValuesX = $this->chart->getPlotArea()->getPlotGroupByIndex($groupID)->getPlotValuesByIndex($i)->getDataValues();
-
-            $dataValues[$i] = $dataValuesX;
-        }
-        $seriesPlot = new ContourPlot($dataValues);
-
-        $this->graph->Add($seriesPlot);
-    }
-
-    private function renderPlotStock($groupID): void
-    {
-        $seriesCount = $this->chart->getPlotArea()->getPlotGroupByIndex($groupID)->getPlotSeriesCount();
-        $plotOrder = $this->chart->getPlotArea()->getPlotGroupByIndex($groupID)->getPlotOrder();
-
-        $dataValues = [];
-        //    Loop through each data series in turn and build the plot arrays
-        foreach ($plotOrder as $i => $v) {
-            $dataValuesX = $this->chart->getPlotArea()->getPlotGroupByIndex($groupID)->getPlotValuesByIndex($v)->getDataValues();
-            foreach ($dataValuesX as $j => $dataValueX) {
-                $dataValues[$plotOrder[$i]][$j] = $dataValueX;
-            }
-        }
-        if (empty($dataValues)) {
-            return;
-        }
-
-        $dataValuesPlot = [];
-        // Flatten the plot arrays to a single dimensional array to work with jpgraph
-        $jMax = count($dataValues[0]);
-        for ($j = 0; $j < $jMax; ++$j) {
-            for ($i = 0; $i < $seriesCount; ++$i) {
-                $dataValuesPlot[] = $dataValues[$i][$j];
-            }
-        }
-
-        // Set the x-axis labels
-        $labelCount = $this->chart->getPlotArea()->getPlotGroupByIndex($groupID)->getPlotValuesByIndex(0)->getPointCount();
-        if ($labelCount > 0) {
-            $datasetLabels = $this->chart->getPlotArea()->getPlotGroupByIndex($groupID)->getPlotCategoryByIndex(0)->getDataValues();
-            $datasetLabels = $this->formatDataSetLabels($groupID, $datasetLabels, $labelCount);
-            $this->graph->xaxis->SetTickLabels($datasetLabels);
-        }
-
-        $seriesPlot = new StockPlot($dataValuesPlot);
-        $seriesPlot->SetWidth(20);
-
-        $this->graph->Add($seriesPlot);
-    }
-
-    private function renderAreaChart($groupCount, $dimensions = '2d'): void
-    {
-        $this->renderCartesianPlotArea();
-
-        for ($i = 0; $i < $groupCount; ++$i) {
-            $this->renderPlotLine($i, true, false, $dimensions);
-        }
-    }
-
-    private function renderLineChart($groupCount, $dimensions = '2d'): void
-    {
-        $this->renderCartesianPlotArea();
-
-        for ($i = 0; $i < $groupCount; ++$i) {
-            $this->renderPlotLine($i, false, false, $dimensions);
-        }
-    }
-
-    private function renderBarChart($groupCount, $dimensions = '2d'): void
-    {
-        $this->renderCartesianPlotArea();
-
-        for ($i = 0; $i < $groupCount; ++$i) {
-            $this->renderPlotBar($i, $dimensions);
-        }
-    }
-
-    private function renderScatterChart($groupCount): void
-    {
-        $this->renderCartesianPlotArea('linlin');
-
-        for ($i = 0; $i < $groupCount; ++$i) {
-            $this->renderPlotScatter($i, false);
-        }
-    }
-
-    private function renderBubbleChart($groupCount): void
-    {
-        $this->renderCartesianPlotArea('linlin');
-
-        for ($i = 0; $i < $groupCount; ++$i) {
-            $this->renderPlotScatter($i, true);
-        }
-    }
-
-    private function renderPieChart($groupCount, $dimensions = '2d', $doughnut = false, $multiplePlots = false): void
-    {
-        $this->renderPiePlotArea();
-
-        $iLimit = ($multiplePlots) ? $groupCount : 1;
-        for ($groupID = 0; $groupID < $iLimit; ++$groupID) {
-            $grouping = $this->chart->getPlotArea()->getPlotGroupByIndex($groupID)->getPlotGrouping();
-            $exploded = $this->chart->getPlotArea()->getPlotGroupByIndex($groupID)->getPlotStyle();
-            $datasetLabels = [];
-            if ($groupID == 0) {
-                $labelCount = $this->chart->getPlotArea()->getPlotGroupByIndex($groupID)->getPlotValuesByIndex(0)->getPointCount();
-                if ($labelCount > 0) {
-                    $datasetLabels = $this->chart->getPlotArea()->getPlotGroupByIndex($groupID)->getPlotCategoryByIndex(0)->getDataValues();
-                    $datasetLabels = $this->formatDataSetLabels($groupID, $datasetLabels, $labelCount);
-                }
-            }
-
-            $seriesCount = $this->chart->getPlotArea()->getPlotGroupByIndex($groupID)->getPlotSeriesCount();
-            $seriesPlots = [];
-            //    For pie charts, we only display the first series: doughnut charts generally display all series
-            $jLimit = ($multiplePlots) ? $seriesCount : 1;
-            //    Loop through each data series in turn
-            for ($j = 0; $j < $jLimit; ++$j) {
-                $dataValues = $this->chart->getPlotArea()->getPlotGroupByIndex($groupID)->getPlotValuesByIndex($j)->getDataValues();
-
-                //    Fill in any missing values in the $dataValues array
-                $testCurrentIndex = 0;
-                foreach ($dataValues as $k => $dataValue) {
-                    while ($k != $testCurrentIndex) {
-                        $dataValues[$testCurrentIndex] = null;
-                        ++$testCurrentIndex;
-                    }
-                    ++$testCurrentIndex;
-                }
-
-                if ($dimensions == '3d') {
-                    $seriesPlot = new PiePlot3D($dataValues);
-                } else {
-                    if ($doughnut) {
-                        $seriesPlot = new PiePlotC($dataValues);
-                    } else {
-                        $seriesPlot = new PiePlot($dataValues);
-                    }
-                }
-
-                if ($multiplePlots) {
-                    $seriesPlot->SetSize(($jLimit - $j) / ($jLimit * 4));
-                }
-
-                if ($doughnut) {
-                    $seriesPlot->SetMidColor('white');
-                }
-
-                $seriesPlot->SetColor(self::$colourSet[self::$plotColour++]);
-                if (count($datasetLabels) > 0) {
-                    $seriesPlot->SetLabels(array_fill(0, count($datasetLabels), ''));
-                }
-                if ($dimensions != '3d') {
-                    $seriesPlot->SetGuideLines(false);
-                }
-                if ($j == 0) {
-                    if ($exploded) {
-                        $seriesPlot->ExplodeAll();
-                    }
-                    $seriesPlot->SetLegends($datasetLabels);
-                }
-
-                $this->graph->Add($seriesPlot);
-            }
-        }
-    }
-
-    private function renderRadarChart($groupCount): void
-    {
-        $this->renderRadarPlotArea();
-
-        for ($groupID = 0; $groupID < $groupCount; ++$groupID) {
-            $this->renderPlotRadar($groupID);
-        }
-    }
-
-    private function renderStockChart($groupCount): void
-    {
-        $this->renderCartesianPlotArea('intint');
-
-        for ($groupID = 0; $groupID < $groupCount; ++$groupID) {
-            $this->renderPlotStock($groupID);
-        }
-    }
-
-    private function renderContourChart($groupCount, $dimensions): void
-    {
-        $this->renderCartesianPlotArea('intint');
-
-        for ($i = 0; $i < $groupCount; ++$i) {
-            $this->renderPlotContour($i);
-        }
-    }
-
-    private function renderCombinationChart($groupCount, $dimensions, $outputDestination)
-    {
-        $this->renderCartesianPlotArea();
-
-        for ($i = 0; $i < $groupCount; ++$i) {
-            $dimensions = null;
-            $chartType = $this->chart->getPlotArea()->getPlotGroupByIndex($i)->getPlotType();
-            switch ($chartType) {
-                case 'area3DChart':
-                    $dimensions = '3d';
-                // no break
-                case 'areaChart':
-                    $this->renderPlotLine($i, true, true, $dimensions);
-
-                    break;
-                case 'bar3DChart':
-                    $dimensions = '3d';
-                // no break
-                case 'barChart':
-                    $this->renderPlotBar($i, $dimensions);
-
-                    break;
-                case 'line3DChart':
-                    $dimensions = '3d';
-                // no break
-                case 'lineChart':
-                    $this->renderPlotLine($i, false, true, $dimensions);
-
-                    break;
-                case 'scatterChart':
-                    $this->renderPlotScatter($i, false);
-
-                    break;
-                case 'bubbleChart':
-                    $this->renderPlotScatter($i, true);
-
-                    break;
-                default:
-                    $this->graph = null;
-
-                    return false;
-            }
-        }
-
-        $this->renderLegend();
-
-        $this->graph->Stroke($outputDestination);
-
-        return true;
-    }
-
-    public function render($outputDestination)
-    {
-        self::$plotColour = 0;
-
-        $groupCount = $this->chart->getPlotArea()->getPlotGroupCount();
-
-        $dimensions = null;
-        if ($groupCount == 1) {
-            $chartType = $this->chart->getPlotArea()->getPlotGroupByIndex(0)->getPlotType();
-        } else {
-            $chartTypes = [];
-            for ($i = 0; $i < $groupCount; ++$i) {
-                $chartTypes[] = $this->chart->getPlotArea()->getPlotGroupByIndex($i)->getPlotType();
-            }
-            $chartTypes = array_unique($chartTypes);
-            if (count($chartTypes) == 1) {
-                $chartType = array_pop($chartTypes);
-            } elseif (count($chartTypes) == 0) {
-                echo 'Chart is not yet implemented<br />';
-
-                return false;
-            } else {
-                return $this->renderCombinationChart($groupCount, $dimensions, $outputDestination);
-            }
-        }
-
-        switch ($chartType) {
-            case 'area3DChart':
-                $dimensions = '3d';
-            // no break
-            case 'areaChart':
-                $this->renderAreaChart($groupCount, $dimensions);
-
-                break;
-            case 'bar3DChart':
-                $dimensions = '3d';
-            // no break
-            case 'barChart':
-                $this->renderBarChart($groupCount, $dimensions);
-
-                break;
-            case 'line3DChart':
-                $dimensions = '3d';
-            // no break
-            case 'lineChart':
-                $this->renderLineChart($groupCount, $dimensions);
-
-                break;
-            case 'pie3DChart':
-                $dimensions = '3d';
-            // no break
-            case 'pieChart':
-                $this->renderPieChart($groupCount, $dimensions, false, false);
-
-                break;
-            case 'doughnut3DChart':
-                $dimensions = '3d';
-            // no break
-            case 'doughnutChart':
-                $this->renderPieChart($groupCount, $dimensions, true, true);
-
-                break;
-            case 'scatterChart':
-                $this->renderScatterChart($groupCount);
-
-                break;
-            case 'bubbleChart':
-                $this->renderBubbleChart($groupCount);
-
-                break;
-            case 'radarChart':
-                $this->renderRadarChart($groupCount);
-
-                break;
-            case 'surface3DChart':
-                $dimensions = '3d';
-            // no break
-            case 'surfaceChart':
-                $this->renderContourChart($groupCount, $dimensions);
-
-                break;
-            case 'stockChart':
-                $this->renderStockChart($groupCount);
-
-                break;
-            default:
-                echo $chartType . ' is not yet implemented<br />';
-
-                return false;
-        }
-        $this->renderLegend();
-
-        $this->graph->Stroke($outputDestination);
-
-        return true;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+oyf00/ExbXwrVW+d4BDXbm==

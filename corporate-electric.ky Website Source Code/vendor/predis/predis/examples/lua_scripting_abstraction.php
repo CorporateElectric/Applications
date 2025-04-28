@@ -1,71 +1,61 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-require __DIR__.'/shared.php';
-
-// This example will not work with versions of Redis < 2.6.
-//
-// Additionally to the EVAL command defined in the current development profile,
-// the Predis\Command\ScriptCommand class can be used to build an higher level
-// abstraction for "scriptable" commands so that they will appear just like any
-// other command on the client-side. This is a quick example used to implement
-// INCREX.
-
-use Predis\Command\ScriptCommand;
-
-class IncrementExistingKeysBy extends ScriptCommand
-{
-    public function getKeysCount()
-    {
-        // Tell Predis to use all the arguments but the last one as arguments
-        // for KEYS. The last one will be used to populate ARGV.
-        return -1;
-    }
-
-    public function getScript()
-    {
-        return <<<LUA
-local cmd, insert = redis.call, table.insert
-local increment, results = ARGV[1], { }
-
-for idx, key in ipairs(KEYS) do
-  if cmd('exists', key) == 1 then
-    insert(results, idx, cmd('incrby', key, increment))
-  else
-    insert(results, idx, false)
-  end
-end
-
-return results
-LUA;
-    }
-}
-
-$client = new Predis\Client($single_server, array(
-    'profile' => function ($options) {
-        $profile = $options->getDefault('profile');
-        $profile->defineCommand('increxby', 'IncrementExistingKeysBy');
-
-        return $profile;
-    },
-));
-
-$client->mset('foo', 10, 'foobar', 100);
-
-var_export($client->increxby('foo', 'foofoo', 'foobar', 50));
-
-/*
-array (
-  0 => 60,
-  1 => NULL,
-  2 => 150,
-)
-*/
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+21tPq3lT2BDjpnJ7

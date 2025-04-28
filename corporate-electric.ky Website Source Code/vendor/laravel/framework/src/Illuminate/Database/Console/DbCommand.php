@@ -1,196 +1,111 @@
-<?php
-
-namespace Illuminate\Database\Console;
-
-use Illuminate\Console\Command;
-use Symfony\Component\Process\Process;
-use UnexpectedValueException;
-
-class DbCommand extends Command
-{
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
-    protected $signature = 'db {connection? : The database connection that should be used}';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Start a new database CLI session';
-
-    /**
-     * Execute the console command.
-     *
-     * @return int
-     */
-    public function handle()
-    {
-        $connection = $this->getConnection();
-
-        (new Process(
-            array_merge([$this->getCommand($connection)], $this->commandArguments($connection)),
-            null,
-            $this->commandEnvironment($connection)
-        ))->setTimeout(null)->setTty(true)->mustRun(function ($type, $buffer) {
-            $this->output->write($buffer);
-        });
-
-        return 0;
-    }
-
-    /**
-     * Get the database connection configuration.
-     *
-     * @return array
-     */
-    public function getConnection()
-    {
-        $connection = $this->laravel['config']['database.connections.'.
-            (($db = $this->argument('connection')) ?? $this->laravel['config']['database.default'])
-        ];
-
-        if (empty($connection)) {
-            throw new UnexpectedValueException("Invalid database connection [{$db}].");
-        }
-
-        return $connection;
-    }
-
-    /**
-     * Get the arguments for the database client command.
-     *
-     * @param  array  $connection
-     * @return array
-     */
-    public function commandArguments(array $connection)
-    {
-        $driver = ucfirst($connection['driver']);
-
-        return $this->{"get{$driver}Arguments"}($connection);
-    }
-
-    /**
-     * Get the environment variables for the database client command.
-     *
-     * @param  array  $connection
-     * @return array|null
-     */
-    public function commandEnvironment(array $connection)
-    {
-        $driver = ucfirst($connection['driver']);
-
-        if (method_exists($this, "get{$driver}Environment")) {
-            return $this->{"get{$driver}Environment"}($connection);
-        }
-
-        return null;
-    }
-
-    /**
-     * Get the database client command to run.
-     *
-     * @param  array  $connection
-     * @return string
-     */
-    public function getCommand(array $connection)
-    {
-        return [
-            'mysql' => 'mysql',
-            'pgsql' => 'psql',
-            'sqlite' => 'sqlite3',
-            'sqlsrv' => 'sqlcmd',
-        ][$connection['driver']];
-    }
-
-    /**
-     * Get the arguments for the MySQL CLI.
-     *
-     * @param  array  $connection
-     * @return array
-     */
-    protected function getMysqlArguments(array $connection)
-    {
-        return array_merge([
-            '--host='.$connection['host'],
-            '--port='.$connection['port'],
-            '--user='.$connection['username'],
-        ], $this->getOptionalArguments([
-            'password' => '--password='.$connection['password'],
-            'unix_socket' => '--socket='.$connection['unix_socket'],
-            'charset' => '--default-character-set='.$connection['charset'],
-        ], $connection), [$connection['database']]);
-    }
-
-    /**
-     * Get the arguments for the Postgres CLI.
-     *
-     * @param  array  $connection
-     * @return array
-     */
-    protected function getPgsqlArguments(array $connection)
-    {
-        return [$connection['database']];
-    }
-
-    /**
-     * Get the arguments for the SQLite CLI.
-     *
-     * @param  array  $connection
-     * @return array
-     */
-    protected function getSqliteArguments(array $connection)
-    {
-        return [$connection['database']];
-    }
-
-    /**
-     * Get the arguments for the SQL Server CLI.
-     *
-     * @param  array  $connection
-     * @return array
-     */
-    protected function getSqlsrvArguments(array $connection)
-    {
-        return array_merge(...$this->getOptionalArguments([
-            'database' => ['-d', $connection['database']],
-            'username' => ['-U', $connection['username']],
-            'password' => ['-P', $connection['password']],
-            'host' => ['-S', 'tcp:'.$connection['host']
-                        .($connection['port'] ? ','.$connection['port'] : ''), ],
-        ], $connection));
-    }
-
-    /**
-     * Get the environment variables for the Postgres CLI.
-     *
-     * @param  array  $connection
-     * @return array|null
-     */
-    protected function getPgsqlEnvironment(array $connection)
-    {
-        return array_merge(...$this->getOptionalArguments([
-            'username' => ['PGUSER' => $connection['username']],
-            'host' => ['PGHOST' => $connection['host']],
-            'port' => ['PGPORT' => $connection['port']],
-            'password' => ['PGPASSWORD' => $connection['password']],
-        ], $connection));
-    }
-
-    /**
-     * Get the optional arguments based on the connection configuration.
-     *
-     * @param  array  $args
-     * @param  array  $connection
-     * @return array
-     */
-    protected function getOptionalArguments(array $args, array $connection)
-    {
-        return array_values(array_filter($args, function ($key) use ($connection) {
-            return ! empty($connection[$key]);
-        }, ARRAY_FILTER_USE_KEY));
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

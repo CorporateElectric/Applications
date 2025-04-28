@@ -1,112 +1,56 @@
-<?php
-
-/**
- * Validates shorthand CSS property list-style.
- * @warning Does not support url tokens that have internal spaces.
- */
-class HTMLPurifier_AttrDef_CSS_ListStyle extends HTMLPurifier_AttrDef
-{
-
-    /**
-     * Local copy of validators.
-     * @type HTMLPurifier_AttrDef[]
-     * @note See HTMLPurifier_AttrDef_CSS_Font::$info for a similar impl.
-     */
-    protected $info;
-
-    /**
-     * @param HTMLPurifier_Config $config
-     */
-    public function __construct($config)
-    {
-        $def = $config->getCSSDefinition();
-        $this->info['list-style-type'] = $def->info['list-style-type'];
-        $this->info['list-style-position'] = $def->info['list-style-position'];
-        $this->info['list-style-image'] = $def->info['list-style-image'];
-    }
-
-    /**
-     * @param string $string
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return bool|string
-     */
-    public function validate($string, $config, $context)
-    {
-        // regular pre-processing
-        $string = $this->parseCDATA($string);
-        if ($string === '') {
-            return false;
-        }
-
-        // assumes URI doesn't have spaces in it
-        $bits = explode(' ', strtolower($string)); // bits to process
-
-        $caught = array();
-        $caught['type'] = false;
-        $caught['position'] = false;
-        $caught['image'] = false;
-
-        $i = 0; // number of catches
-        $none = false;
-
-        foreach ($bits as $bit) {
-            if ($i >= 3) {
-                return;
-            } // optimization bit
-            if ($bit === '') {
-                continue;
-            }
-            foreach ($caught as $key => $status) {
-                if ($status !== false) {
-                    continue;
-                }
-                $r = $this->info['list-style-' . $key]->validate($bit, $config, $context);
-                if ($r === false) {
-                    continue;
-                }
-                if ($r === 'none') {
-                    if ($none) {
-                        continue;
-                    } else {
-                        $none = true;
-                    }
-                    if ($key == 'image') {
-                        continue;
-                    }
-                }
-                $caught[$key] = $r;
-                $i++;
-                break;
-            }
-        }
-
-        if (!$i) {
-            return false;
-        }
-
-        $ret = array();
-
-        // construct type
-        if ($caught['type']) {
-            $ret[] = $caught['type'];
-        }
-
-        // construct image
-        if ($caught['image']) {
-            $ret[] = $caught['image'];
-        }
-
-        // construct position
-        if ($caught['position']) {
-            $ret[] = $caught['position'];
-        }
-
-        if (empty($ret)) {
-            return false;
-        }
-        return implode(' ', $ret);
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

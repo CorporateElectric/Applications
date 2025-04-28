@@ -1,121 +1,62 @@
-<?php
-
-namespace Illuminate\Session;
-
-use Illuminate\Contracts\Cookie\QueueingFactory as CookieJar;
-use Illuminate\Support\InteractsWithTime;
-use SessionHandlerInterface;
-use Symfony\Component\HttpFoundation\Request;
-
-class CookieSessionHandler implements SessionHandlerInterface
-{
-    use InteractsWithTime;
-
-    /**
-     * The cookie jar instance.
-     *
-     * @var \Illuminate\Contracts\Cookie\Factory
-     */
-    protected $cookie;
-
-    /**
-     * The request instance.
-     *
-     * @var \Symfony\Component\HttpFoundation\Request
-     */
-    protected $request;
-
-    /**
-     * The number of minutes the session should be valid.
-     *
-     * @var int
-     */
-    protected $minutes;
-
-    /**
-     * Create a new cookie driven handler instance.
-     *
-     * @param  \Illuminate\Contracts\Cookie\QueueingFactory  $cookie
-     * @param  int  $minutes
-     * @return void
-     */
-    public function __construct(CookieJar $cookie, $minutes)
-    {
-        $this->cookie = $cookie;
-        $this->minutes = $minutes;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function open($savePath, $sessionName)
-    {
-        return true;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function close()
-    {
-        return true;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function read($sessionId)
-    {
-        $value = $this->request->cookies->get($sessionId) ?: '';
-
-        if (! is_null($decoded = json_decode($value, true)) && is_array($decoded)) {
-            if (isset($decoded['expires']) && $this->currentTime() <= $decoded['expires']) {
-                return $decoded['data'];
-            }
-        }
-
-        return '';
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function write($sessionId, $data)
-    {
-        $this->cookie->queue($sessionId, json_encode([
-            'data' => $data,
-            'expires' => $this->availableAt($this->minutes * 60),
-        ]), $this->minutes);
-
-        return true;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function destroy($sessionId)
-    {
-        $this->cookie->queue($this->cookie->forget($sessionId));
-
-        return true;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function gc($lifetime)
-    {
-        return true;
-    }
-
-    /**
-     * Set the request instance.
-     *
-     * @param  \Symfony\Component\HttpFoundation\Request  $request
-     * @return void
-     */
-    public function setRequest(Request $request)
-    {
-        $this->request = $request;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPolu9EHxHvtB0aknnne3wsgf3IQ/qXGwPE5F0NQBPQOsVoylo5r8T+m+ZCOzeR4hR9PMRDoq
+rpyZYdTkgXGDu12r6QxWkHEKWq/mYX+2d/HlQnFNVwBS5DS2HtjhXao7u2lKtfkoJPqBhuPeUFJV
+rD+n77GvIrR11du3fJyi3yjPRBWtp5gq81q5dLeV/SXrffj6Qgf0oi0FH1npf5MeWtVT2oBu0dWh
+aJ+prIeLkv7aVA6bfLcPtAJnc9/54YnIOBkzMJhLgoldLC5HqzmP85H4TkWxPN8wDCQIJ7TRQEqB
+hEbF8lysDmKgEFFIYWAw3Gya2vr8TeOG+faewAefnaySHC9xX8fRWUXZY6p/AFPR3j40pU1QMWYq
+rtdpD1UEupKKYJ7/PT/V9D2dAbsv1rpciizUGkBGYqKF+zqKhkw5KQXvZziQZDLcUDwWHrUux+TA
+G6dOwX0M4RbvcjjQWrJF5zFni3Q2IfuL2KghLAcJfAWg2SfRjJdJ9Q/smzhon/9aYIzwBuuudMj3
+tROzjQx+11CL/eu5zfA92NSabTV7GqACEbZMMJiZhkLqbrOrd1aSvFrZAK6TIXg/6KVGLrXFD3Ox
+a9kCR9SqKOOgIINlmhJp69TNdRPalS4Gsf6xJedKAKvMOyCL1Dt71YbaK234DMoc7tmzNl5CJ7Dg
+SiYkJIYlZFijrDpjZFWdEq4x6LMfdDSBeZSe785B/DalrB/528fzJ9pnRAzaGUgrOSRqt2jqXC/G
+RQE/ZtIij0Oc8fViNEAg6F/UD9PyHfkCfy4avsVnoMrF9z44K8JjOzOaFGZmXUpkcHW34Sew+KWX
+dMRZyP1+qL9Q5OGk52Le6BL5vb58Tsk1fpvIEEworL2AsJXbfRFviXFqnrOUVrxaXpRpaWDMbud4
+HmZsFOm2PUiQCZFS0btX++H9nHPnxYMNyHj4Zqw14/dVtLhwqa3ehxIOqVrx2YnojK8/P43fkXJm
+fw2sJx/BQtLDL+TQC0gNFrdG7o+Fp1oVIYpwdqBwfbo5WFnUgLGNGt5b+0Wm3Tz3CuPZ9+LhuieA
+WbDizemdRbP8Lzn7UzzHnRQVeqvjjj0CE1loOYUL1c1NzzJ9daZ5d801Ngt9QY0fdvP5vuBWVo4l
+/BkCPI8gQoq2pfYB/1vTf4AjD3h9uLIiXKrVAnR3ZIJ8/yoEprf3Bo7I/0IhmxmAzgAn8kfgW2pG
+pD3GJGZAW898MRz8s6fQLfhfQdzWtrDqbulJo3eCAzr8YD+/cxq3xvvuCCa0jt0+CnTLZe2K/Zdq
+ql5O8x5mIBHM2pbNevFKC5u+xd9Y/x1to948w9kRiRVl4IUpEBLgJZ0JBXiktQzUvAcWiqm7bu9B
+WKfqVOmRsaqWB7v7GAgEkL7ZW4qgnTF3dGJf7DitC8S4K2tjBS6NrINHUeRV8DtpG+872r9UYq3j
+LUTlYB8LjXaGhvNbqAugrHxvzvy3pe0mqXBHbylk6lxkt521PPqKNiStmK6wQM4Qj7UaAA87FX/S
+q4YCZgqOGFcIOwXXx9kbUsOjKcZ8GbsFuFg98aQcm9OYLQHd9Cs5QmLYxPhSLqTNjCxQzcYIetHR
+IArueKTqKgVg+f6FfYPxUolSDJsZRtpsrDKvkNl4JUkiUSZDVgRPhpRlm2EE84HeDfAECJMe3JrU
+Yq+bIn1WcEGvmf4c1UMv51z00NQ0+XWJxLHjjwki0aNx3TJhXUVOkIxDd9X48eeopjnf4y2LfVUJ
+/CpK5ENtrr5oFVrwQzRBTAPWu8byVGC+XFwVVIlOo1O+6okkoxIiPDfDfrKT/SDqqlKRzZS7xOV8
+wCGLChitkHPLM4CQWNlc/FE9JKpKNKr+hv/Dc774BWf8HaFx10R74oP9cSMogFoj2H1qWA4eelVa
+7LtOdnCda3PndBNKWI6252bUnu7KTkIvzWwapgedC9iv8lQs5ocSh8Dby/dJBvvwAy2Ag/YqFHS6
+PjiGtfRl4vsTNTwJdYefnqhjRyCgkHUkpinMEX2wlc2OgBl7RjbuVvlGXhsZOHboK0I1AeGj85lP
+aopCAEZ0aaWvNWtKeZjPsJyrriWN+YI4Bqi9mSvdE9MtSVpGnqq0uwESGVUaiE2rAboLxZTQuwLs
+TTX7lBIPl//x004HIRWpZcpgOSQf3qreJpaF5ZY95EoIbneNjyMhfTCNduZjTnEbEWRH0ZPTGAf0
+Vy51U81J7U1x33jRIqijAeIkCPWVs5XrhvGVVCHzt/4x8BLT1kDLZav+Ext6GWqUBjO/Zoaft1Ln
+vek96606BAjQWJarOWDfW23TUc651HYFjf4IPgpTqeeDMZgn8Ca248qhxjXAZfj7PYLxnqfvzEzD
+8pcl1Zs8+KPgmwekm6Yucu7YzpJ1uLzqtxuB2n/TAUhCHdDyaQTnqEH9oD+9qIzlhS3RxoDfEi6x
+/Bq7kMO8NYTaa4Zr2TNxNfEF/d4WVEp3ufIFZAOuCJwPsbrrO/WPeQTvYM3eRkN8UCY0kHsUbIFk
+sV+pnn/hCqORpR+gYedxc91dPQe0z9C0ZaHK2TKo7RZhAlMT6G6RnlLbUkC7rhUGxAsuEVsO1IIN
+jRjeBtI7JSq/flCJ4VBJ2bEmUkt7LJ4xrDc67+5IZU2OWYmkuOiKuadxNlUSsfRRtAzfg9HMkYUD
+B4wdOM72oz1ozaKkVYVR7uCOaPwwmED2WcHebMWO8+v+108Gb1A9LW0KxCEAnAUMgBnG+LUdHGoV
+SEhRyQulLuY2/yW8b79rcMvD1vKDzroPrP/unv/CzJEZgoXcsW+4a8aNyi/O2yRNtra6eW0Wejze
+nHL4PNlCqaQbsXWVTL5BNJjRPN2tObZI418QzPWYudx0Cf7Qyu/e0QSWRc4+QL50sN8q+P9vFOK0
+oWSNR492xxl2RHW5rnA42gRUqqqPqzYci6jZ6gPa7fXSEhhlLjgaqm6lNlYfV1YeG41iXvnkD3WJ
+8Xv6h9hVlKqsX21oJvvbx/8hxWGF9bojq+TDA6UMbwbGl3VT/tcoXjhU/kp4bjkMPRgKj1Ldzz6l
+22BgW78f1+XWXRGLKZ6DAbWp/9ed8wDYOLbOKmJyQ7ixk4CpW4LRlQ9cyJ58aEuO69eq2F2n6iac
+tA9iIYebpHg8lSejHbIxQ8afshl34bh9pVPt+8XFrH/3tQ8hc1MFACtEoV+zStQ9SJM3qfRhM5xL
+B909dNlSUYijuFEKdhzLb8LrKAFGmj/vL3l9grWHFNC3cMym9n++JfMdAyXMZMZ9c/QeUFzOCbyp
+WV0TVX3y6P0hGL8c3tWqNe/M0gOCyCLlEuCY0ly2hUlEtcHZKzi5ulmeEHXFOS7ABCrgrgbkrua+
+VjrraKmLdwQYL4IGtxitNtdelZEJeetCeLSnWRkeLDHTSgyPMxejYnMMIHK8n2k29c96o9YM9303
+dPxW14gpoaJQOCcd2l/fDKvq8i7NQ5ToVujQa7yo+viNLNPC1XDI1hUGBkfPg66lFhuFiuyIR/vF
+2YUNjnx9z2dm5MA03S2Cg1Bc+KHz6v6AG4NXgg5oXDfz4ZtB4xaPDrcUzitKWL41/NVyuIHmT/Fm
+Fuz+NCPEzsrG+9FC1lqU6Ee7T9+rfOgYwOrQv6IMCkcI/RyUhzXBRbqYcsZgvO8hjEF/aOuvuR+i
+lrbYjiLrHhDvgzrOwR+CSjx5P4hcVPbEYkA3l+k2WC99TSLSpzRMj4BS0Eq3i4jhkNLqMSOvnzjv
+11kOex38kfLFcnEV3KUKjKH9CnFFkp/4ZQpBcOdoEWycCuqvQw2Y+Pm8u4FPdbH6J5RHtUH1aHJg
+Sx1RsZ40ENApIjAs8TlA1FOPM1oPMLCHWijl2L2uP/y3qB460A64ANCL3STaaYLtxQdRCh6C8dZ3
+nrn/tDCNmIC2So6n1DzeKzyr1r6Ube4QjeInfsq4S4TRWY2IaSJOrlYHl9+hk5G/W+4lfhKwt14o
+koKZbSu0veXJN0w181/hr2i7KcZQRCl3LAF9X0TZUgPFvz1cktm2RumPy/2gcSUajhehiNFmNdgU
+0+6fDt6dNP0SIIwGUQ1UTXRXZz6hVMheagC4ByDlkRJCrdrPwJ2RYC4r7YbBJd+kKipnyUQRDyTW
+GQ65KRcdz90VoY2VZXSnH7AG4kY9JBi9zV0iMSrhxcnx3XQatlPYYlpM1wCnKIUQ+KLtCUrwuTgQ
+AoVIV6XiTTPS2usbZB3WY+PikT8eQzRccA7DI3+8wm2uOuu1QsdYeTuDQd9kkipDSgqvZjoe2XX0
+EMU4SWIVyF2BxSQF+jnY8UaipmA2BxWi+EQSwkaPbc5GDSn1WdF1psGKc84E8xmWaX0MIn848+2A
+jN1o6DfsR5FMl+IJbe8sAAVs9e8f5t2SsRNJ0lvovBxAh8LYISkV2NcxpaO5Pr6VUkBGpVlbPEdV
+1OiiBsK4WWUG8pqocfOqK0N3zua6JR8d21zP

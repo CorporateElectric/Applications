@@ -1,92 +1,33 @@
-<?php
-
-namespace Illuminate\Bus;
-
-use Closure;
-
-interface BatchRepository
-{
-    /**
-     * Retrieve a list of batches.
-     *
-     * @param  int  $limit
-     * @param  mixed  $before
-     * @return \Illuminate\Bus\Batch[]
-     */
-    public function get($limit, $before);
-
-    /**
-     * Retrieve information about an existing batch.
-     *
-     * @param  string  $batchId
-     * @return \Illuminate\Bus\Batch|null
-     */
-    public function find(string $batchId);
-
-    /**
-     * Store a new pending batch.
-     *
-     * @param  \Illuminate\Bus\PendingBatch  $batch
-     * @return \Illuminate\Bus\Batch
-     */
-    public function store(PendingBatch $batch);
-
-    /**
-     * Increment the total number of jobs within the batch.
-     *
-     * @param  string  $batchId
-     * @param  int  $amount
-     * @return void
-     */
-    public function incrementTotalJobs(string $batchId, int $amount);
-
-    /**
-     * Decrement the total number of pending jobs for the batch.
-     *
-     * @param  string  $batchId
-     * @param  string  $jobId
-     * @return \Illuminate\Bus\UpdatedBatchJobCounts
-     */
-    public function decrementPendingJobs(string $batchId, string $jobId);
-
-    /**
-     * Increment the total number of failed jobs for the batch.
-     *
-     * @param  string  $batchId
-     * @param  string  $jobId
-     * @return \Illuminate\Bus\UpdatedBatchJobCounts
-     */
-    public function incrementFailedJobs(string $batchId, string $jobId);
-
-    /**
-     * Mark the batch that has the given ID as finished.
-     *
-     * @param  string  $batchId
-     * @return void
-     */
-    public function markAsFinished(string $batchId);
-
-    /**
-     * Cancel the batch that has the given ID.
-     *
-     * @param  string  $batchId
-     * @return void
-     */
-    public function cancel(string $batchId);
-
-    /**
-     * Delete the batch that has the given ID.
-     *
-     * @param  string  $batchId
-     * @return void
-     */
-    public function delete(string $batchId);
-
-    /**
-     * Execute the given Closure within a storage specific transaction.
-     *
-     * @param  \Closure  $callback
-     * @return mixed
-     */
-    public function transaction(Closure $callback);
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+nHm=

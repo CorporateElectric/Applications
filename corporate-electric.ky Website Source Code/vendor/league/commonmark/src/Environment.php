@@ -1,429 +1,192 @@
-<?php
-
-/*
- * This file is part of the league/commonmark package.
- *
- * (c) Colin O'Dell <colinodell@gmail.com>
- *
- * Original code based on the CommonMark JS reference parser (https://bitly.com/commonmark-js)
- *  - (c) John MacFarlane
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace League\CommonMark;
-
-use League\CommonMark\Block\Parser\BlockParserInterface;
-use League\CommonMark\Block\Renderer\BlockRendererInterface;
-use League\CommonMark\Delimiter\Processor\DelimiterProcessorCollection;
-use League\CommonMark\Delimiter\Processor\DelimiterProcessorInterface;
-use League\CommonMark\Event\AbstractEvent;
-use League\CommonMark\Extension\CommonMarkCoreExtension;
-use League\CommonMark\Extension\ExtensionInterface;
-use League\CommonMark\Extension\GithubFlavoredMarkdownExtension;
-use League\CommonMark\Inline\Parser\InlineParserInterface;
-use League\CommonMark\Inline\Renderer\InlineRendererInterface;
-use League\CommonMark\Util\Configuration;
-use League\CommonMark\Util\ConfigurationAwareInterface;
-use League\CommonMark\Util\PrioritizedList;
-
-final class Environment implements ConfigurableEnvironmentInterface
-{
-    /**
-     * @var ExtensionInterface[]
-     */
-    private $extensions = [];
-
-    /**
-     * @var ExtensionInterface[]
-     */
-    private $uninitializedExtensions = [];
-
-    /**
-     * @var bool
-     */
-    private $extensionsInitialized = false;
-
-    /**
-     * @var PrioritizedList<BlockParserInterface>
-     */
-    private $blockParsers;
-
-    /**
-     * @var PrioritizedList<InlineParserInterface>
-     */
-    private $inlineParsers;
-
-    /**
-     * @var array<string, PrioritizedList<InlineParserInterface>>
-     */
-    private $inlineParsersByCharacter = [];
-
-    /**
-     * @var DelimiterProcessorCollection
-     */
-    private $delimiterProcessors;
-
-    /**
-     * @var array<string, PrioritizedList<BlockRendererInterface>>
-     */
-    private $blockRenderersByClass = [];
-
-    /**
-     * @var array<string, PrioritizedList<InlineRendererInterface>>
-     */
-    private $inlineRenderersByClass = [];
-
-    /**
-     * @var array<string, PrioritizedList<callable>>
-     */
-    private $listeners = [];
-
-    /**
-     * @var Configuration
-     */
-    private $config;
-
-    /**
-     * @var string
-     */
-    private $inlineParserCharacterRegex;
-
-    /**
-     * @param array<string, mixed> $config
-     */
-    public function __construct(array $config = [])
-    {
-        $this->config = new Configuration($config);
-
-        $this->blockParsers = new PrioritizedList();
-        $this->inlineParsers = new PrioritizedList();
-        $this->delimiterProcessors = new DelimiterProcessorCollection();
-    }
-
-    public function mergeConfig(array $config = [])
-    {
-        $this->assertUninitialized('Failed to modify configuration.');
-
-        $this->config->merge($config);
-    }
-
-    public function setConfig(array $config = [])
-    {
-        $this->assertUninitialized('Failed to modify configuration.');
-
-        $this->config->replace($config);
-    }
-
-    public function getConfig($key = null, $default = null)
-    {
-        return $this->config->get($key, $default);
-    }
-
-    public function addBlockParser(BlockParserInterface $parser, int $priority = 0): ConfigurableEnvironmentInterface
-    {
-        $this->assertUninitialized('Failed to add block parser.');
-
-        $this->blockParsers->add($parser, $priority);
-        $this->injectEnvironmentAndConfigurationIfNeeded($parser);
-
-        return $this;
-    }
-
-    public function addInlineParser(InlineParserInterface $parser, int $priority = 0): ConfigurableEnvironmentInterface
-    {
-        $this->assertUninitialized('Failed to add inline parser.');
-
-        $this->inlineParsers->add($parser, $priority);
-        $this->injectEnvironmentAndConfigurationIfNeeded($parser);
-
-        foreach ($parser->getCharacters() as $character) {
-            if (!isset($this->inlineParsersByCharacter[$character])) {
-                $this->inlineParsersByCharacter[$character] = new PrioritizedList();
-            }
-
-            $this->inlineParsersByCharacter[$character]->add($parser, $priority);
-        }
-
-        return $this;
-    }
-
-    public function addDelimiterProcessor(DelimiterProcessorInterface $processor): ConfigurableEnvironmentInterface
-    {
-        $this->assertUninitialized('Failed to add delimiter processor.');
-        $this->delimiterProcessors->add($processor);
-        $this->injectEnvironmentAndConfigurationIfNeeded($processor);
-
-        return $this;
-    }
-
-    public function addBlockRenderer($blockClass, BlockRendererInterface $blockRenderer, int $priority = 0): ConfigurableEnvironmentInterface
-    {
-        $this->assertUninitialized('Failed to add block renderer.');
-
-        if (!isset($this->blockRenderersByClass[$blockClass])) {
-            $this->blockRenderersByClass[$blockClass] = new PrioritizedList();
-        }
-
-        $this->blockRenderersByClass[$blockClass]->add($blockRenderer, $priority);
-        $this->injectEnvironmentAndConfigurationIfNeeded($blockRenderer);
-
-        return $this;
-    }
-
-    public function addInlineRenderer(string $inlineClass, InlineRendererInterface $renderer, int $priority = 0): ConfigurableEnvironmentInterface
-    {
-        $this->assertUninitialized('Failed to add inline renderer.');
-
-        if (!isset($this->inlineRenderersByClass[$inlineClass])) {
-            $this->inlineRenderersByClass[$inlineClass] = new PrioritizedList();
-        }
-
-        $this->inlineRenderersByClass[$inlineClass]->add($renderer, $priority);
-        $this->injectEnvironmentAndConfigurationIfNeeded($renderer);
-
-        return $this;
-    }
-
-    public function getBlockParsers(): iterable
-    {
-        if (!$this->extensionsInitialized) {
-            $this->initializeExtensions();
-        }
-
-        return $this->blockParsers->getIterator();
-    }
-
-    public function getInlineParsersForCharacter(string $character): iterable
-    {
-        if (!$this->extensionsInitialized) {
-            $this->initializeExtensions();
-        }
-
-        if (!isset($this->inlineParsersByCharacter[$character])) {
-            return [];
-        }
-
-        return $this->inlineParsersByCharacter[$character]->getIterator();
-    }
-
-    public function getDelimiterProcessors(): DelimiterProcessorCollection
-    {
-        if (!$this->extensionsInitialized) {
-            $this->initializeExtensions();
-        }
-
-        return $this->delimiterProcessors;
-    }
-
-    public function getBlockRenderersForClass(string $blockClass): iterable
-    {
-        if (!$this->extensionsInitialized) {
-            $this->initializeExtensions();
-        }
-
-        return $this->getRenderersByClass($this->blockRenderersByClass, $blockClass, BlockRendererInterface::class);
-    }
-
-    public function getInlineRenderersForClass(string $inlineClass): iterable
-    {
-        if (!$this->extensionsInitialized) {
-            $this->initializeExtensions();
-        }
-
-        return $this->getRenderersByClass($this->inlineRenderersByClass, $inlineClass, InlineRendererInterface::class);
-    }
-
-    /**
-     * Get all registered extensions
-     *
-     * @return ExtensionInterface[]
-     */
-    public function getExtensions(): iterable
-    {
-        return $this->extensions;
-    }
-
-    /**
-     * Add a single extension
-     *
-     * @param ExtensionInterface $extension
-     *
-     * @return $this
-     */
-    public function addExtension(ExtensionInterface $extension): ConfigurableEnvironmentInterface
-    {
-        $this->assertUninitialized('Failed to add extension.');
-
-        $this->extensions[] = $extension;
-        $this->uninitializedExtensions[] = $extension;
-
-        return $this;
-    }
-
-    private function initializeExtensions(): void
-    {
-        // Ask all extensions to register their components
-        while (!empty($this->uninitializedExtensions)) {
-            foreach ($this->uninitializedExtensions as $i => $extension) {
-                $extension->register($this);
-                unset($this->uninitializedExtensions[$i]);
-            }
-        }
-
-        $this->extensionsInitialized = true;
-
-        // Lastly, let's build a regex which matches non-inline characters
-        // This will enable a huge performance boost with inline parsing
-        $this->buildInlineParserCharacterRegex();
-    }
-
-    /**
-     * @param object $object
-     */
-    private function injectEnvironmentAndConfigurationIfNeeded($object): void
-    {
-        if ($object instanceof EnvironmentAwareInterface) {
-            $object->setEnvironment($this);
-        }
-
-        if ($object instanceof ConfigurationAwareInterface) {
-            $object->setConfiguration($this->config);
-        }
-    }
-
-    public static function createCommonMarkEnvironment(): ConfigurableEnvironmentInterface
-    {
-        $environment = new static();
-        $environment->addExtension(new CommonMarkCoreExtension());
-        $environment->mergeConfig([
-            'renderer' => [
-                'block_separator' => "\n",
-                'inner_separator' => "\n",
-                'soft_break'      => "\n",
-            ],
-            'html_input'         => self::HTML_INPUT_ALLOW,
-            'allow_unsafe_links' => true,
-            'max_nesting_level'  => \INF,
-        ]);
-
-        return $environment;
-    }
-
-    public static function createGFMEnvironment(): ConfigurableEnvironmentInterface
-    {
-        $environment = self::createCommonMarkEnvironment();
-        $environment->addExtension(new GithubFlavoredMarkdownExtension());
-
-        return $environment;
-    }
-
-    public function getInlineParserCharacterRegex(): string
-    {
-        return $this->inlineParserCharacterRegex;
-    }
-
-    public function addEventListener(string $eventClass, callable $listener, int $priority = 0): ConfigurableEnvironmentInterface
-    {
-        $this->assertUninitialized('Failed to add event listener.');
-
-        if (!isset($this->listeners[$eventClass])) {
-            $this->listeners[$eventClass] = new PrioritizedList();
-        }
-
-        $this->listeners[$eventClass]->add($listener, $priority);
-
-        if (\is_object($listener)) {
-            $this->injectEnvironmentAndConfigurationIfNeeded($listener);
-        } elseif (\is_array($listener) && \is_object($listener[0])) {
-            $this->injectEnvironmentAndConfigurationIfNeeded($listener[0]);
-        }
-
-        return $this;
-    }
-
-    public function dispatch(AbstractEvent $event): void
-    {
-        if (!$this->extensionsInitialized) {
-            $this->initializeExtensions();
-        }
-
-        $type = \get_class($event);
-
-        foreach ($this->listeners[$type] ?? [] as $listener) {
-            if ($event->isPropagationStopped()) {
-                return;
-            }
-
-            $listener($event);
-        }
-    }
-
-    private function buildInlineParserCharacterRegex(): void
-    {
-        $chars = \array_unique(\array_merge(
-            \array_keys($this->inlineParsersByCharacter),
-            $this->delimiterProcessors->getDelimiterCharacters()
-        ));
-
-        if (empty($chars)) {
-            // If no special inline characters exist then parse the whole line
-            $this->inlineParserCharacterRegex = '/^.+$/';
-        } else {
-            // Match any character which inline parsers are not interested in
-            $this->inlineParserCharacterRegex = '/^[^' . \preg_quote(\implode('', $chars), '/') . ']+/';
-
-            // Only add the u modifier (which slows down performance) if we have a multi-byte UTF-8 character in our regex
-            if (\strlen($this->inlineParserCharacterRegex) > \mb_strlen($this->inlineParserCharacterRegex)) {
-                $this->inlineParserCharacterRegex .= 'u';
-            }
-        }
-    }
-
-    /**
-     * @param string $message
-     *
-     * @throws \RuntimeException
-     */
-    private function assertUninitialized(string $message): void
-    {
-        if ($this->extensionsInitialized) {
-            throw new \RuntimeException($message . ' Extensions have already been initialized.');
-        }
-    }
-
-    /**
-     * @param array<string, PrioritizedList> $list
-     * @param string                         $class
-     * @param string                         $type
-     *
-     * @return iterable
-     *
-     * @phpstan-template T
-     *
-     * @phpstan-param array<string, PrioritizedList<T>> $list
-     * @phpstan-param string                            $class
-     * @phpstan-param class-string<T>                   $type
-     *
-     * @phpstan-return iterable<T>
-     */
-    private function getRenderersByClass(array &$list, string $class, string $type): iterable
-    {
-        // If renderers are defined for this specific class, return them immediately
-        if (isset($list[$class])) {
-            return $list[$class];
-        }
-
-        while (\class_exists($parent = $parent ?? $class) && $parent = \get_parent_class($parent)) {
-            if (!isset($list[$parent])) {
-                continue;
-            }
-
-            // "Cache" this result to avoid future loops
-            return $list[$class] = $list[$parent];
-        }
-
-        return [];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

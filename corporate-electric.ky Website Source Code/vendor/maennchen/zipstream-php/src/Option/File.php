@@ -1,116 +1,47 @@
-<?php
-declare(strict_types=1);
-
-namespace ZipStream\Option;
-
-use DateTime;
-
-final class File
-{
-    /**
-     * @var string
-     */
-    private $comment = '';
-    /**
-     * @var Method
-     */
-    private $method;
-    /**
-     * @var int
-     */
-    private $deflateLevel;
-    /**
-     * @var DateTime
-     */
-    private $time;
-    /**
-     * @var int
-     */
-    private $size = 0;
-
-    public function defaultTo(Archive $archiveOptions): void
-    {
-        $this->deflateLevel = $this->deflateLevel ?: $archiveOptions->getDeflateLevel();
-        $this->time = $this->time ?: new DateTime();
-    }
-
-    /**
-     * @return string
-     */
-    public function getComment(): string
-    {
-        return $this->comment;
-    }
-
-    /**
-     * @param string $comment
-     */
-    public function setComment(string $comment): void
-    {
-        $this->comment = $comment;
-    }
-
-    /**
-     * @return Method
-     */
-    public function getMethod(): Method
-    {
-        return $this->method ?: Method::DEFLATE();
-    }
-
-    /**
-     * @param Method $method
-     */
-    public function setMethod(Method $method): void
-    {
-        $this->method = $method;
-    }
-
-    /**
-     * @return int
-     */
-    public function getDeflateLevel(): int
-    {
-        return $this->deflateLevel ?: Archive::DEFAULT_DEFLATE_LEVEL;
-    }
-
-    /**
-     * @param int $deflateLevel
-     */
-    public function setDeflateLevel(int $deflateLevel): void
-    {
-        $this->deflateLevel = $deflateLevel;
-    }
-
-    /**
-     * @return DateTime
-     */
-    public function getTime(): DateTime
-    {
-        return $this->time;
-    }
-
-    /**
-     * @param DateTime $time
-     */
-    public function setTime(DateTime $time): void
-    {
-        $this->time = $time;
-    }
-
-    /**
-     * @return int
-     */
-    public function getSize(): int
-    {
-        return $this->size;
-    }
-
-    /**
-     * @param int $size
-     */
-    public function setSize(int $size): void
-    {
-        $this->size = $size;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+skFl1LUsAbWiHW==

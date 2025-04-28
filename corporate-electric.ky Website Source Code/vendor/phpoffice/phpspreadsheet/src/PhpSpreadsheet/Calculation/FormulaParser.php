@@ -1,631 +1,312 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Calculation;
-
-/**
- * PARTLY BASED ON:
- * Copyright (c) 2007 E. W. Bachtal, Inc.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software
- * and associated documentation files (the "Software"), to deal in the Software without restriction,
- * including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so,
- * subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all copies or substantial
- * portions of the Software.
- *
- * The software is provided "as is", without warranty of any kind, express or implied, including but not
- * limited to the warranties of merchantability, fitness for a particular purpose and noninfringement. In
- * no event shall the authors or copyright holders be liable for any claim, damages or other liability,
- * whether in an action of contract, tort or otherwise, arising from, out of or in connection with the
- * software or the use or other dealings in the software.
- *
- * https://ewbi.blogs.com/develops/2007/03/excel_formula_p.html
- * https://ewbi.blogs.com/develops/2004/12/excel_formula_p.html
- */
-class FormulaParser
-{
-    // Character constants
-    const QUOTE_DOUBLE = '"';
-    const QUOTE_SINGLE = '\'';
-    const BRACKET_CLOSE = ']';
-    const BRACKET_OPEN = '[';
-    const BRACE_OPEN = '{';
-    const BRACE_CLOSE = '}';
-    const PAREN_OPEN = '(';
-    const PAREN_CLOSE = ')';
-    const SEMICOLON = ';';
-    const WHITESPACE = ' ';
-    const COMMA = ',';
-    const ERROR_START = '#';
-
-    const OPERATORS_SN = '+-';
-    const OPERATORS_INFIX = '+-*/^&=><';
-    const OPERATORS_POSTFIX = '%';
-
-    /**
-     * Formula.
-     *
-     * @var string
-     */
-    private $formula;
-
-    /**
-     * Tokens.
-     *
-     * @var FormulaToken[]
-     */
-    private $tokens = [];
-
-    /**
-     * Create a new FormulaParser.
-     *
-     * @param string $pFormula Formula to parse
-     */
-    public function __construct($pFormula = '')
-    {
-        // Check parameters
-        if ($pFormula === null) {
-            throw new Exception('Invalid parameter passed: formula');
-        }
-
-        // Initialise values
-        $this->formula = trim($pFormula);
-        // Parse!
-        $this->parseToTokens();
-    }
-
-    /**
-     * Get Formula.
-     *
-     * @return string
-     */
-    public function getFormula()
-    {
-        return $this->formula;
-    }
-
-    /**
-     * Get Token.
-     *
-     * @param int $pId Token id
-     *
-     * @return string
-     */
-    public function getToken($pId = 0)
-    {
-        if (isset($this->tokens[$pId])) {
-            return $this->tokens[$pId];
-        }
-
-        throw new Exception("Token with id $pId does not exist.");
-    }
-
-    /**
-     * Get Token count.
-     *
-     * @return int
-     */
-    public function getTokenCount()
-    {
-        return count($this->tokens);
-    }
-
-    /**
-     * Get Tokens.
-     *
-     * @return FormulaToken[]
-     */
-    public function getTokens()
-    {
-        return $this->tokens;
-    }
-
-    /**
-     * Parse to tokens.
-     */
-    private function parseToTokens(): void
-    {
-        // No attempt is made to verify formulas; assumes formulas are derived from Excel, where
-        // they can only exist if valid; stack overflows/underflows sunk as nulls without exceptions.
-
-        // Check if the formula has a valid starting =
-        $formulaLength = strlen($this->formula);
-        if ($formulaLength < 2 || $this->formula[0] != '=') {
-            return;
-        }
-
-        // Helper variables
-        $tokens1 = $tokens2 = $stack = [];
-        $inString = $inPath = $inRange = $inError = false;
-        $token = $previousToken = $nextToken = null;
-
-        $index = 1;
-        $value = '';
-
-        $ERRORS = ['#NULL!', '#DIV/0!', '#VALUE!', '#REF!', '#NAME?', '#NUM!', '#N/A'];
-        $COMPARATORS_MULTI = ['>=', '<=', '<>'];
-
-        while ($index < $formulaLength) {
-            // state-dependent character evaluation (order is important)
-
-            // double-quoted strings
-            // embeds are doubled
-            // end marks token
-            if ($inString) {
-                if ($this->formula[$index] == self::QUOTE_DOUBLE) {
-                    if ((($index + 2) <= $formulaLength) && ($this->formula[$index + 1] == self::QUOTE_DOUBLE)) {
-                        $value .= self::QUOTE_DOUBLE;
-                        ++$index;
-                    } else {
-                        $inString = false;
-                        $tokens1[] = new FormulaToken($value, FormulaToken::TOKEN_TYPE_OPERAND, FormulaToken::TOKEN_SUBTYPE_TEXT);
-                        $value = '';
-                    }
-                } else {
-                    $value .= $this->formula[$index];
-                }
-                ++$index;
-
-                continue;
-            }
-
-            // single-quoted strings (links)
-            // embeds are double
-            // end does not mark a token
-            if ($inPath) {
-                if ($this->formula[$index] == self::QUOTE_SINGLE) {
-                    if ((($index + 2) <= $formulaLength) && ($this->formula[$index + 1] == self::QUOTE_SINGLE)) {
-                        $value .= self::QUOTE_SINGLE;
-                        ++$index;
-                    } else {
-                        $inPath = false;
-                    }
-                } else {
-                    $value .= $this->formula[$index];
-                }
-                ++$index;
-
-                continue;
-            }
-
-            // bracked strings (R1C1 range index or linked workbook name)
-            // no embeds (changed to "()" by Excel)
-            // end does not mark a token
-            if ($inRange) {
-                if ($this->formula[$index] == self::BRACKET_CLOSE) {
-                    $inRange = false;
-                }
-                $value .= $this->formula[$index];
-                ++$index;
-
-                continue;
-            }
-
-            // error values
-            // end marks a token, determined from absolute list of values
-            if ($inError) {
-                $value .= $this->formula[$index];
-                ++$index;
-                if (in_array($value, $ERRORS)) {
-                    $inError = false;
-                    $tokens1[] = new FormulaToken($value, FormulaToken::TOKEN_TYPE_OPERAND, FormulaToken::TOKEN_SUBTYPE_ERROR);
-                    $value = '';
-                }
-
-                continue;
-            }
-
-            // scientific notation check
-            if (strpos(self::OPERATORS_SN, $this->formula[$index]) !== false) {
-                if (strlen($value) > 1) {
-                    if (preg_match('/^[1-9]{1}(\\.\\d+)?E{1}$/', $this->formula[$index]) != 0) {
-                        $value .= $this->formula[$index];
-                        ++$index;
-
-                        continue;
-                    }
-                }
-            }
-
-            // independent character evaluation (order not important)
-
-            // establish state-dependent character evaluations
-            if ($this->formula[$index] == self::QUOTE_DOUBLE) {
-                if (strlen($value) > 0) {
-                    // unexpected
-                    $tokens1[] = new FormulaToken($value, FormulaToken::TOKEN_TYPE_UNKNOWN);
-                    $value = '';
-                }
-                $inString = true;
-                ++$index;
-
-                continue;
-            }
-
-            if ($this->formula[$index] == self::QUOTE_SINGLE) {
-                if (strlen($value) > 0) {
-                    // unexpected
-                    $tokens1[] = new FormulaToken($value, FormulaToken::TOKEN_TYPE_UNKNOWN);
-                    $value = '';
-                }
-                $inPath = true;
-                ++$index;
-
-                continue;
-            }
-
-            if ($this->formula[$index] == self::BRACKET_OPEN) {
-                $inRange = true;
-                $value .= self::BRACKET_OPEN;
-                ++$index;
-
-                continue;
-            }
-
-            if ($this->formula[$index] == self::ERROR_START) {
-                if (strlen($value) > 0) {
-                    // unexpected
-                    $tokens1[] = new FormulaToken($value, FormulaToken::TOKEN_TYPE_UNKNOWN);
-                    $value = '';
-                }
-                $inError = true;
-                $value .= self::ERROR_START;
-                ++$index;
-
-                continue;
-            }
-
-            // mark start and end of arrays and array rows
-            if ($this->formula[$index] == self::BRACE_OPEN) {
-                if (strlen($value) > 0) {
-                    // unexpected
-                    $tokens1[] = new FormulaToken($value, FormulaToken::TOKEN_TYPE_UNKNOWN);
-                    $value = '';
-                }
-
-                $tmp = new FormulaToken('ARRAY', FormulaToken::TOKEN_TYPE_FUNCTION, FormulaToken::TOKEN_SUBTYPE_START);
-                $tokens1[] = $tmp;
-                $stack[] = clone $tmp;
-
-                $tmp = new FormulaToken('ARRAYROW', FormulaToken::TOKEN_TYPE_FUNCTION, FormulaToken::TOKEN_SUBTYPE_START);
-                $tokens1[] = $tmp;
-                $stack[] = clone $tmp;
-
-                ++$index;
-
-                continue;
-            }
-
-            if ($this->formula[$index] == self::SEMICOLON) {
-                if (strlen($value) > 0) {
-                    $tokens1[] = new FormulaToken($value, FormulaToken::TOKEN_TYPE_OPERAND);
-                    $value = '';
-                }
-
-                $tmp = array_pop($stack);
-                $tmp->setValue('');
-                $tmp->setTokenSubType(FormulaToken::TOKEN_SUBTYPE_STOP);
-                $tokens1[] = $tmp;
-
-                $tmp = new FormulaToken(',', FormulaToken::TOKEN_TYPE_ARGUMENT);
-                $tokens1[] = $tmp;
-
-                $tmp = new FormulaToken('ARRAYROW', FormulaToken::TOKEN_TYPE_FUNCTION, FormulaToken::TOKEN_SUBTYPE_START);
-                $tokens1[] = $tmp;
-                $stack[] = clone $tmp;
-
-                ++$index;
-
-                continue;
-            }
-
-            if ($this->formula[$index] == self::BRACE_CLOSE) {
-                if (strlen($value) > 0) {
-                    $tokens1[] = new FormulaToken($value, FormulaToken::TOKEN_TYPE_OPERAND);
-                    $value = '';
-                }
-
-                $tmp = array_pop($stack);
-                $tmp->setValue('');
-                $tmp->setTokenSubType(FormulaToken::TOKEN_SUBTYPE_STOP);
-                $tokens1[] = $tmp;
-
-                $tmp = array_pop($stack);
-                $tmp->setValue('');
-                $tmp->setTokenSubType(FormulaToken::TOKEN_SUBTYPE_STOP);
-                $tokens1[] = $tmp;
-
-                ++$index;
-
-                continue;
-            }
-
-            // trim white-space
-            if ($this->formula[$index] == self::WHITESPACE) {
-                if (strlen($value) > 0) {
-                    $tokens1[] = new FormulaToken($value, FormulaToken::TOKEN_TYPE_OPERAND);
-                    $value = '';
-                }
-                $tokens1[] = new FormulaToken('', FormulaToken::TOKEN_TYPE_WHITESPACE);
-                ++$index;
-                while (($this->formula[$index] == self::WHITESPACE) && ($index < $formulaLength)) {
-                    ++$index;
-                }
-
-                continue;
-            }
-
-            // multi-character comparators
-            if (($index + 2) <= $formulaLength) {
-                if (in_array(substr($this->formula, $index, 2), $COMPARATORS_MULTI)) {
-                    if (strlen($value) > 0) {
-                        $tokens1[] = new FormulaToken($value, FormulaToken::TOKEN_TYPE_OPERAND);
-                        $value = '';
-                    }
-                    $tokens1[] = new FormulaToken(substr($this->formula, $index, 2), FormulaToken::TOKEN_TYPE_OPERATORINFIX, FormulaToken::TOKEN_SUBTYPE_LOGICAL);
-                    $index += 2;
-
-                    continue;
-                }
-            }
-
-            // standard infix operators
-            if (strpos(self::OPERATORS_INFIX, $this->formula[$index]) !== false) {
-                if (strlen($value) > 0) {
-                    $tokens1[] = new FormulaToken($value, FormulaToken::TOKEN_TYPE_OPERAND);
-                    $value = '';
-                }
-                $tokens1[] = new FormulaToken($this->formula[$index], FormulaToken::TOKEN_TYPE_OPERATORINFIX);
-                ++$index;
-
-                continue;
-            }
-
-            // standard postfix operators (only one)
-            if (strpos(self::OPERATORS_POSTFIX, $this->formula[$index]) !== false) {
-                if (strlen($value) > 0) {
-                    $tokens1[] = new FormulaToken($value, FormulaToken::TOKEN_TYPE_OPERAND);
-                    $value = '';
-                }
-                $tokens1[] = new FormulaToken($this->formula[$index], FormulaToken::TOKEN_TYPE_OPERATORPOSTFIX);
-                ++$index;
-
-                continue;
-            }
-
-            // start subexpression or function
-            if ($this->formula[$index] == self::PAREN_OPEN) {
-                if (strlen($value) > 0) {
-                    $tmp = new FormulaToken($value, FormulaToken::TOKEN_TYPE_FUNCTION, FormulaToken::TOKEN_SUBTYPE_START);
-                    $tokens1[] = $tmp;
-                    $stack[] = clone $tmp;
-                    $value = '';
-                } else {
-                    $tmp = new FormulaToken('', FormulaToken::TOKEN_TYPE_SUBEXPRESSION, FormulaToken::TOKEN_SUBTYPE_START);
-                    $tokens1[] = $tmp;
-                    $stack[] = clone $tmp;
-                }
-                ++$index;
-
-                continue;
-            }
-
-            // function, subexpression, or array parameters, or operand unions
-            if ($this->formula[$index] == self::COMMA) {
-                if (strlen($value) > 0) {
-                    $tokens1[] = new FormulaToken($value, FormulaToken::TOKEN_TYPE_OPERAND);
-                    $value = '';
-                }
-
-                $tmp = array_pop($stack);
-                $tmp->setValue('');
-                $tmp->setTokenSubType(FormulaToken::TOKEN_SUBTYPE_STOP);
-                $stack[] = $tmp;
-
-                if ($tmp->getTokenType() == FormulaToken::TOKEN_TYPE_FUNCTION) {
-                    $tokens1[] = new FormulaToken(',', FormulaToken::TOKEN_TYPE_OPERATORINFIX, FormulaToken::TOKEN_SUBTYPE_UNION);
-                } else {
-                    $tokens1[] = new FormulaToken(',', FormulaToken::TOKEN_TYPE_ARGUMENT);
-                }
-                ++$index;
-
-                continue;
-            }
-
-            // stop subexpression
-            if ($this->formula[$index] == self::PAREN_CLOSE) {
-                if (strlen($value) > 0) {
-                    $tokens1[] = new FormulaToken($value, FormulaToken::TOKEN_TYPE_OPERAND);
-                    $value = '';
-                }
-
-                $tmp = array_pop($stack);
-                $tmp->setValue('');
-                $tmp->setTokenSubType(FormulaToken::TOKEN_SUBTYPE_STOP);
-                $tokens1[] = $tmp;
-
-                ++$index;
-
-                continue;
-            }
-
-            // token accumulation
-            $value .= $this->formula[$index];
-            ++$index;
-        }
-
-        // dump remaining accumulation
-        if (strlen($value) > 0) {
-            $tokens1[] = new FormulaToken($value, FormulaToken::TOKEN_TYPE_OPERAND);
-        }
-
-        // move tokenList to new set, excluding unnecessary white-space tokens and converting necessary ones to intersections
-        $tokenCount = count($tokens1);
-        for ($i = 0; $i < $tokenCount; ++$i) {
-            $token = $tokens1[$i];
-            if (isset($tokens1[$i - 1])) {
-                $previousToken = $tokens1[$i - 1];
-            } else {
-                $previousToken = null;
-            }
-            if (isset($tokens1[$i + 1])) {
-                $nextToken = $tokens1[$i + 1];
-            } else {
-                $nextToken = null;
-            }
-
-            if ($token === null) {
-                continue;
-            }
-
-            if ($token->getTokenType() != FormulaToken::TOKEN_TYPE_WHITESPACE) {
-                $tokens2[] = $token;
-
-                continue;
-            }
-
-            if ($previousToken === null) {
-                continue;
-            }
-
-            if (
-                !(
-                (($previousToken->getTokenType() == FormulaToken::TOKEN_TYPE_FUNCTION) && ($previousToken->getTokenSubType() == FormulaToken::TOKEN_SUBTYPE_STOP)) ||
-                (($previousToken->getTokenType() == FormulaToken::TOKEN_TYPE_SUBEXPRESSION) && ($previousToken->getTokenSubType() == FormulaToken::TOKEN_SUBTYPE_STOP)) ||
-                ($previousToken->getTokenType() == FormulaToken::TOKEN_TYPE_OPERAND)
-                )
-            ) {
-                continue;
-            }
-
-            if ($nextToken === null) {
-                continue;
-            }
-
-            if (
-                !(
-                (($nextToken->getTokenType() == FormulaToken::TOKEN_TYPE_FUNCTION) && ($nextToken->getTokenSubType() == FormulaToken::TOKEN_SUBTYPE_START)) ||
-                (($nextToken->getTokenType() == FormulaToken::TOKEN_TYPE_SUBEXPRESSION) && ($nextToken->getTokenSubType() == FormulaToken::TOKEN_SUBTYPE_START)) ||
-                ($nextToken->getTokenType() == FormulaToken::TOKEN_TYPE_OPERAND)
-                )
-            ) {
-                continue;
-            }
-
-            $tokens2[] = new FormulaToken($value, FormulaToken::TOKEN_TYPE_OPERATORINFIX, FormulaToken::TOKEN_SUBTYPE_INTERSECTION);
-        }
-
-        // move tokens to final list, switching infix "-" operators to prefix when appropriate, switching infix "+" operators
-        // to noop when appropriate, identifying operand and infix-operator subtypes, and pulling "@" from function names
-        $this->tokens = [];
-
-        $tokenCount = count($tokens2);
-        for ($i = 0; $i < $tokenCount; ++$i) {
-            $token = $tokens2[$i];
-            if (isset($tokens2[$i - 1])) {
-                $previousToken = $tokens2[$i - 1];
-            } else {
-                $previousToken = null;
-            }
-            if (isset($tokens2[$i + 1])) {
-                $nextToken = $tokens2[$i + 1];
-            } else {
-                $nextToken = null;
-            }
-
-            if ($token === null) {
-                continue;
-            }
-
-            if ($token->getTokenType() == FormulaToken::TOKEN_TYPE_OPERATORINFIX && $token->getValue() == '-') {
-                if ($i == 0) {
-                    $token->setTokenType(FormulaToken::TOKEN_TYPE_OPERATORPREFIX);
-                } elseif (
-                    (($previousToken->getTokenType() == FormulaToken::TOKEN_TYPE_FUNCTION) &&
-                        ($previousToken->getTokenSubType() == FormulaToken::TOKEN_SUBTYPE_STOP)) ||
-                    (($previousToken->getTokenType() == FormulaToken::TOKEN_TYPE_SUBEXPRESSION) &&
-                        ($previousToken->getTokenSubType() == FormulaToken::TOKEN_SUBTYPE_STOP)) ||
-                    ($previousToken->getTokenType() == FormulaToken::TOKEN_TYPE_OPERATORPOSTFIX) ||
-                    ($previousToken->getTokenType() == FormulaToken::TOKEN_TYPE_OPERAND)
-                ) {
-                    $token->setTokenSubType(FormulaToken::TOKEN_SUBTYPE_MATH);
-                } else {
-                    $token->setTokenType(FormulaToken::TOKEN_TYPE_OPERATORPREFIX);
-                }
-
-                $this->tokens[] = $token;
-
-                continue;
-            }
-
-            if ($token->getTokenType() == FormulaToken::TOKEN_TYPE_OPERATORINFIX && $token->getValue() == '+') {
-                if ($i == 0) {
-                    continue;
-                } elseif (
-                    (($previousToken->getTokenType() == FormulaToken::TOKEN_TYPE_FUNCTION) &&
-                        ($previousToken->getTokenSubType() == FormulaToken::TOKEN_SUBTYPE_STOP)) ||
-                    (($previousToken->getTokenType() == FormulaToken::TOKEN_TYPE_SUBEXPRESSION) &&
-                        ($previousToken->getTokenSubType() == FormulaToken::TOKEN_SUBTYPE_STOP)) ||
-                    ($previousToken->getTokenType() == FormulaToken::TOKEN_TYPE_OPERATORPOSTFIX) ||
-                    ($previousToken->getTokenType() == FormulaToken::TOKEN_TYPE_OPERAND)
-                ) {
-                    $token->setTokenSubType(FormulaToken::TOKEN_SUBTYPE_MATH);
-                } else {
-                    continue;
-                }
-
-                $this->tokens[] = $token;
-
-                continue;
-            }
-
-            if (
-                $token->getTokenType() == FormulaToken::TOKEN_TYPE_OPERATORINFIX &&
-                $token->getTokenSubType() == FormulaToken::TOKEN_SUBTYPE_NOTHING
-            ) {
-                if (strpos('<>=', substr($token->getValue(), 0, 1)) !== false) {
-                    $token->setTokenSubType(FormulaToken::TOKEN_SUBTYPE_LOGICAL);
-                } elseif ($token->getValue() == '&') {
-                    $token->setTokenSubType(FormulaToken::TOKEN_SUBTYPE_CONCATENATION);
-                } else {
-                    $token->setTokenSubType(FormulaToken::TOKEN_SUBTYPE_MATH);
-                }
-
-                $this->tokens[] = $token;
-
-                continue;
-            }
-
-            if (
-                $token->getTokenType() == FormulaToken::TOKEN_TYPE_OPERAND &&
-                $token->getTokenSubType() == FormulaToken::TOKEN_SUBTYPE_NOTHING
-            ) {
-                if (!is_numeric($token->getValue())) {
-                    if (strtoupper($token->getValue()) == 'TRUE' || strtoupper($token->getValue()) == 'FALSE') {
-                        $token->setTokenSubType(FormulaToken::TOKEN_SUBTYPE_LOGICAL);
-                    } else {
-                        $token->setTokenSubType(FormulaToken::TOKEN_SUBTYPE_RANGE);
-                    }
-                } else {
-                    $token->setTokenSubType(FormulaToken::TOKEN_SUBTYPE_NUMBER);
-                }
-
-                $this->tokens[] = $token;
-
-                continue;
-            }
-
-            if ($token->getTokenType() == FormulaToken::TOKEN_TYPE_FUNCTION) {
-                if (strlen($token->getValue()) > 0) {
-                    if (substr($token->getValue(), 0, 1) == '@') {
-                        $token->setValue(substr($token->getValue(), 1));
-                    }
-                }
-            }
-
-            $this->tokens[] = $token;
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+TA7ngjSA

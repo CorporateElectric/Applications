@@ -1,78 +1,41 @@
-<?php
-
-/**
- * Definition cache decorator class that cleans up the cache
- * whenever there is a cache miss.
- */
-class HTMLPurifier_DefinitionCache_Decorator_Cleanup extends HTMLPurifier_DefinitionCache_Decorator
-{
-    /**
-     * @type string
-     */
-    public $name = 'Cleanup';
-
-    /**
-     * @return HTMLPurifier_DefinitionCache_Decorator_Cleanup
-     */
-    public function copy()
-    {
-        return new HTMLPurifier_DefinitionCache_Decorator_Cleanup();
-    }
-
-    /**
-     * @param HTMLPurifier_Definition $def
-     * @param HTMLPurifier_Config $config
-     * @return mixed
-     */
-    public function add($def, $config)
-    {
-        $status = parent::add($def, $config);
-        if (!$status) {
-            parent::cleanup($config);
-        }
-        return $status;
-    }
-
-    /**
-     * @param HTMLPurifier_Definition $def
-     * @param HTMLPurifier_Config $config
-     * @return mixed
-     */
-    public function set($def, $config)
-    {
-        $status = parent::set($def, $config);
-        if (!$status) {
-            parent::cleanup($config);
-        }
-        return $status;
-    }
-
-    /**
-     * @param HTMLPurifier_Definition $def
-     * @param HTMLPurifier_Config $config
-     * @return mixed
-     */
-    public function replace($def, $config)
-    {
-        $status = parent::replace($def, $config);
-        if (!$status) {
-            parent::cleanup($config);
-        }
-        return $status;
-    }
-
-    /**
-     * @param HTMLPurifier_Config $config
-     * @return mixed
-     */
-    public function get($config)
-    {
-        $ret = parent::get($config);
-        if (!$ret) {
-            parent::cleanup($config);
-        }
-        return $ret;
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+FxWzr2W1aI2jio8BG92H63IuiucmjVm=

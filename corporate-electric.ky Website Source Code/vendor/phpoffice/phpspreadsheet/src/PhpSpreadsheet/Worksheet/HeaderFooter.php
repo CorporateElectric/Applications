@@ -1,490 +1,89 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Worksheet;
-
-/**
- * <code>
- * Header/Footer Formatting Syntax taken from Office Open XML Part 4 - Markup Language Reference, page 1970:.
- *
- * There are a number of formatting codes that can be written inline with the actual header / footer text, which
- * affect the formatting in the header or footer.
- *
- * Example: This example shows the text "Center Bold Header" on the first line (center section), and the date on
- * the second line (center section).
- *         &CCenter &"-,Bold"Bold&"-,Regular"Header_x000A_&D
- *
- * General Rules:
- * There is no required order in which these codes must appear.
- *
- * The first occurrence of the following codes turns the formatting ON, the second occurrence turns it OFF again:
- * - strikethrough
- * - superscript
- * - subscript
- * Superscript and subscript cannot both be ON at same time. Whichever comes first wins and the other is ignored,
- * while the first is ON.
- * &L - code for "left section" (there are three header / footer locations, "left", "center", and "right"). When
- * two or more occurrences of this section marker exist, the contents from all markers are concatenated, in the
- * order of appearance, and placed into the left section.
- * &P - code for "current page #"
- * &N - code for "total pages"
- * &font size - code for "text font size", where font size is a font size in points.
- * &K - code for "text font color"
- * RGB Color is specified as RRGGBB
- * Theme Color is specifed as TTSNN where TT is the theme color Id, S is either "+" or "-" of the tint/shade
- * value, NN is the tint/shade value.
- * &S - code for "text strikethrough" on / off
- * &X - code for "text super script" on / off
- * &Y - code for "text subscript" on / off
- * &C - code for "center section". When two or more occurrences of this section marker exist, the contents
- * from all markers are concatenated, in the order of appearance, and placed into the center section.
- *
- * &D - code for "date"
- * &T - code for "time"
- * &G - code for "picture as background"
- * &U - code for "text single underline"
- * &E - code for "double underline"
- * &R - code for "right section". When two or more occurrences of this section marker exist, the contents
- * from all markers are concatenated, in the order of appearance, and placed into the right section.
- * &Z - code for "this workbook's file path"
- * &F - code for "this workbook's file name"
- * &A - code for "sheet tab name"
- * &+ - code for add to page #.
- * &- - code for subtract from page #.
- * &"font name,font type" - code for "text font name" and "text font type", where font name and font type
- * are strings specifying the name and type of the font, separated by a comma. When a hyphen appears in font
- * name, it means "none specified". Both of font name and font type can be localized values.
- * &"-,Bold" - code for "bold font style"
- * &B - also means "bold font style".
- * &"-,Regular" - code for "regular font style"
- * &"-,Italic" - code for "italic font style"
- * &I - also means "italic font style"
- * &"-,Bold Italic" code for "bold italic font style"
- * &O - code for "outline style"
- * &H - code for "shadow style"
- * </code>
- */
-class HeaderFooter
-{
-    // Header/footer image location
-    const IMAGE_HEADER_LEFT = 'LH';
-    const IMAGE_HEADER_CENTER = 'CH';
-    const IMAGE_HEADER_RIGHT = 'RH';
-    const IMAGE_FOOTER_LEFT = 'LF';
-    const IMAGE_FOOTER_CENTER = 'CF';
-    const IMAGE_FOOTER_RIGHT = 'RF';
-
-    /**
-     * OddHeader.
-     *
-     * @var string
-     */
-    private $oddHeader = '';
-
-    /**
-     * OddFooter.
-     *
-     * @var string
-     */
-    private $oddFooter = '';
-
-    /**
-     * EvenHeader.
-     *
-     * @var string
-     */
-    private $evenHeader = '';
-
-    /**
-     * EvenFooter.
-     *
-     * @var string
-     */
-    private $evenFooter = '';
-
-    /**
-     * FirstHeader.
-     *
-     * @var string
-     */
-    private $firstHeader = '';
-
-    /**
-     * FirstFooter.
-     *
-     * @var string
-     */
-    private $firstFooter = '';
-
-    /**
-     * Different header for Odd/Even, defaults to false.
-     *
-     * @var bool
-     */
-    private $differentOddEven = false;
-
-    /**
-     * Different header for first page, defaults to false.
-     *
-     * @var bool
-     */
-    private $differentFirst = false;
-
-    /**
-     * Scale with document, defaults to true.
-     *
-     * @var bool
-     */
-    private $scaleWithDocument = true;
-
-    /**
-     * Align with margins, defaults to true.
-     *
-     * @var bool
-     */
-    private $alignWithMargins = true;
-
-    /**
-     * Header/footer images.
-     *
-     * @var HeaderFooterDrawing[]
-     */
-    private $headerFooterImages = [];
-
-    /**
-     * Create a new HeaderFooter.
-     */
-    public function __construct()
-    {
-    }
-
-    /**
-     * Get OddHeader.
-     *
-     * @return string
-     */
-    public function getOddHeader()
-    {
-        return $this->oddHeader;
-    }
-
-    /**
-     * Set OddHeader.
-     *
-     * @param string $pValue
-     *
-     * @return $this
-     */
-    public function setOddHeader($pValue)
-    {
-        $this->oddHeader = $pValue;
-
-        return $this;
-    }
-
-    /**
-     * Get OddFooter.
-     *
-     * @return string
-     */
-    public function getOddFooter()
-    {
-        return $this->oddFooter;
-    }
-
-    /**
-     * Set OddFooter.
-     *
-     * @param string $pValue
-     *
-     * @return $this
-     */
-    public function setOddFooter($pValue)
-    {
-        $this->oddFooter = $pValue;
-
-        return $this;
-    }
-
-    /**
-     * Get EvenHeader.
-     *
-     * @return string
-     */
-    public function getEvenHeader()
-    {
-        return $this->evenHeader;
-    }
-
-    /**
-     * Set EvenHeader.
-     *
-     * @param string $pValue
-     *
-     * @return $this
-     */
-    public function setEvenHeader($pValue)
-    {
-        $this->evenHeader = $pValue;
-
-        return $this;
-    }
-
-    /**
-     * Get EvenFooter.
-     *
-     * @return string
-     */
-    public function getEvenFooter()
-    {
-        return $this->evenFooter;
-    }
-
-    /**
-     * Set EvenFooter.
-     *
-     * @param string $pValue
-     *
-     * @return $this
-     */
-    public function setEvenFooter($pValue)
-    {
-        $this->evenFooter = $pValue;
-
-        return $this;
-    }
-
-    /**
-     * Get FirstHeader.
-     *
-     * @return string
-     */
-    public function getFirstHeader()
-    {
-        return $this->firstHeader;
-    }
-
-    /**
-     * Set FirstHeader.
-     *
-     * @param string $pValue
-     *
-     * @return $this
-     */
-    public function setFirstHeader($pValue)
-    {
-        $this->firstHeader = $pValue;
-
-        return $this;
-    }
-
-    /**
-     * Get FirstFooter.
-     *
-     * @return string
-     */
-    public function getFirstFooter()
-    {
-        return $this->firstFooter;
-    }
-
-    /**
-     * Set FirstFooter.
-     *
-     * @param string $pValue
-     *
-     * @return $this
-     */
-    public function setFirstFooter($pValue)
-    {
-        $this->firstFooter = $pValue;
-
-        return $this;
-    }
-
-    /**
-     * Get DifferentOddEven.
-     *
-     * @return bool
-     */
-    public function getDifferentOddEven()
-    {
-        return $this->differentOddEven;
-    }
-
-    /**
-     * Set DifferentOddEven.
-     *
-     * @param bool $pValue
-     *
-     * @return $this
-     */
-    public function setDifferentOddEven($pValue)
-    {
-        $this->differentOddEven = $pValue;
-
-        return $this;
-    }
-
-    /**
-     * Get DifferentFirst.
-     *
-     * @return bool
-     */
-    public function getDifferentFirst()
-    {
-        return $this->differentFirst;
-    }
-
-    /**
-     * Set DifferentFirst.
-     *
-     * @param bool $pValue
-     *
-     * @return $this
-     */
-    public function setDifferentFirst($pValue)
-    {
-        $this->differentFirst = $pValue;
-
-        return $this;
-    }
-
-    /**
-     * Get ScaleWithDocument.
-     *
-     * @return bool
-     */
-    public function getScaleWithDocument()
-    {
-        return $this->scaleWithDocument;
-    }
-
-    /**
-     * Set ScaleWithDocument.
-     *
-     * @param bool $pValue
-     *
-     * @return $this
-     */
-    public function setScaleWithDocument($pValue)
-    {
-        $this->scaleWithDocument = $pValue;
-
-        return $this;
-    }
-
-    /**
-     * Get AlignWithMargins.
-     *
-     * @return bool
-     */
-    public function getAlignWithMargins()
-    {
-        return $this->alignWithMargins;
-    }
-
-    /**
-     * Set AlignWithMargins.
-     *
-     * @param bool $pValue
-     *
-     * @return $this
-     */
-    public function setAlignWithMargins($pValue)
-    {
-        $this->alignWithMargins = $pValue;
-
-        return $this;
-    }
-
-    /**
-     * Add header/footer image.
-     *
-     * @param string $location
-     *
-     * @return $this
-     */
-    public function addImage(HeaderFooterDrawing $image, $location = self::IMAGE_HEADER_LEFT)
-    {
-        $this->headerFooterImages[$location] = $image;
-
-        return $this;
-    }
-
-    /**
-     * Remove header/footer image.
-     *
-     * @param string $location
-     *
-     * @return $this
-     */
-    public function removeImage($location = self::IMAGE_HEADER_LEFT)
-    {
-        if (isset($this->headerFooterImages[$location])) {
-            unset($this->headerFooterImages[$location]);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Set header/footer images.
-     *
-     * @param HeaderFooterDrawing[] $images
-     *
-     * @return $this
-     */
-    public function setImages(array $images)
-    {
-        $this->headerFooterImages = $images;
-
-        return $this;
-    }
-
-    /**
-     * Get header/footer images.
-     *
-     * @return HeaderFooterDrawing[]
-     */
-    public function getImages()
-    {
-        // Sort array
-        $images = [];
-        if (isset($this->headerFooterImages[self::IMAGE_HEADER_LEFT])) {
-            $images[self::IMAGE_HEADER_LEFT] = $this->headerFooterImages[self::IMAGE_HEADER_LEFT];
-        }
-        if (isset($this->headerFooterImages[self::IMAGE_HEADER_CENTER])) {
-            $images[self::IMAGE_HEADER_CENTER] = $this->headerFooterImages[self::IMAGE_HEADER_CENTER];
-        }
-        if (isset($this->headerFooterImages[self::IMAGE_HEADER_RIGHT])) {
-            $images[self::IMAGE_HEADER_RIGHT] = $this->headerFooterImages[self::IMAGE_HEADER_RIGHT];
-        }
-        if (isset($this->headerFooterImages[self::IMAGE_FOOTER_LEFT])) {
-            $images[self::IMAGE_FOOTER_LEFT] = $this->headerFooterImages[self::IMAGE_FOOTER_LEFT];
-        }
-        if (isset($this->headerFooterImages[self::IMAGE_FOOTER_CENTER])) {
-            $images[self::IMAGE_FOOTER_CENTER] = $this->headerFooterImages[self::IMAGE_FOOTER_CENTER];
-        }
-        if (isset($this->headerFooterImages[self::IMAGE_FOOTER_RIGHT])) {
-            $images[self::IMAGE_FOOTER_RIGHT] = $this->headerFooterImages[self::IMAGE_FOOTER_RIGHT];
-        }
-        $this->headerFooterImages = $images;
-
-        return $this->headerFooterImages;
-    }
-
-    /**
-     * Implement PHP __clone to create a deep clone, not just a shallow copy.
-     */
-    public function __clone()
-    {
-        $vars = get_object_vars($this);
-        foreach ($vars as $key => $value) {
-            if (is_object($value)) {
-                $this->$key = clone $value;
-            } else {
-                $this->$key = $value;
-            }
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

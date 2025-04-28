@@ -1,282 +1,235 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Reader\Xlsx;
-
-use PhpOffice\PhpSpreadsheet\Style\Alignment;
-use PhpOffice\PhpSpreadsheet\Style\Border;
-use PhpOffice\PhpSpreadsheet\Style\Borders;
-use PhpOffice\PhpSpreadsheet\Style\Color;
-use PhpOffice\PhpSpreadsheet\Style\Fill;
-use PhpOffice\PhpSpreadsheet\Style\Font;
-use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
-use PhpOffice\PhpSpreadsheet\Style\Protection;
-use PhpOffice\PhpSpreadsheet\Style\Style;
-use SimpleXMLElement;
-
-class Styles extends BaseParserClass
-{
-    /**
-     * Theme instance.
-     *
-     * @var Theme
-     */
-    private static $theme = null;
-
-    private $styles = [];
-
-    private $cellStyles = [];
-
-    private $styleXml;
-
-    public function __construct(SimpleXMLElement $styleXml)
-    {
-        $this->styleXml = $styleXml;
-    }
-
-    public function setStyleBaseData(?Theme $theme = null, $styles = [], $cellStyles = []): void
-    {
-        self::$theme = $theme;
-        $this->styles = $styles;
-        $this->cellStyles = $cellStyles;
-    }
-
-    private static function readFontStyle(Font $fontStyle, SimpleXMLElement $fontStyleXml): void
-    {
-        $fontStyle->setName((string) $fontStyleXml->name['val']);
-        $fontStyle->setSize((float) $fontStyleXml->sz['val']);
-
-        if (isset($fontStyleXml->b)) {
-            $fontStyle->setBold(!isset($fontStyleXml->b['val']) || self::boolean((string) $fontStyleXml->b['val']));
-        }
-        if (isset($fontStyleXml->i)) {
-            $fontStyle->setItalic(!isset($fontStyleXml->i['val']) || self::boolean((string) $fontStyleXml->i['val']));
-        }
-        if (isset($fontStyleXml->strike)) {
-            $fontStyle->setStrikethrough(!isset($fontStyleXml->strike['val']) || self::boolean((string) $fontStyleXml->strike['val']));
-        }
-        $fontStyle->getColor()->setARGB(self::readColor($fontStyleXml->color));
-
-        if (isset($fontStyleXml->u) && !isset($fontStyleXml->u['val'])) {
-            $fontStyle->setUnderline(Font::UNDERLINE_SINGLE);
-        } elseif (isset($fontStyleXml->u, $fontStyleXml->u['val'])) {
-            $fontStyle->setUnderline((string) $fontStyleXml->u['val']);
-        }
-
-        if (isset($fontStyleXml->vertAlign, $fontStyleXml->vertAlign['val'])) {
-            $verticalAlign = strtolower((string) $fontStyleXml->vertAlign['val']);
-            if ($verticalAlign === 'superscript') {
-                $fontStyle->setSuperscript(true);
-            }
-            if ($verticalAlign === 'subscript') {
-                $fontStyle->setSubscript(true);
-            }
-        }
-    }
-
-    private static function readNumberFormat(NumberFormat $numfmtStyle, SimpleXMLElement $numfmtStyleXml): void
-    {
-        if ($numfmtStyleXml->count() === 0) {
-            return;
-        }
-        $numfmt = $numfmtStyleXml->attributes();
-        if ($numfmt->count() > 0 && isset($numfmt['formatCode'])) {
-            $numfmtStyle->setFormatCode((string) $numfmt['formatCode']);
-        }
-    }
-
-    private static function readFillStyle(Fill $fillStyle, SimpleXMLElement $fillStyleXml): void
-    {
-        if ($fillStyleXml->gradientFill) {
-            /** @var SimpleXMLElement $gradientFill */
-            $gradientFill = $fillStyleXml->gradientFill[0];
-            if (!empty($gradientFill['type'])) {
-                $fillStyle->setFillType((string) $gradientFill['type']);
-            }
-            $fillStyle->setRotation((float) ($gradientFill['degree']));
-            $gradientFill->registerXPathNamespace('sml', 'http://schemas.openxmlformats.org/spreadsheetml/2006/main');
-            $fillStyle->getStartColor()->setARGB(self::readColor(self::getArrayItem($gradientFill->xpath('sml:stop[@position=0]'))->color));
-            $fillStyle->getEndColor()->setARGB(self::readColor(self::getArrayItem($gradientFill->xpath('sml:stop[@position=1]'))->color));
-        } elseif ($fillStyleXml->patternFill) {
-            $patternType = (string) $fillStyleXml->patternFill['patternType'] != '' ? (string) $fillStyleXml->patternFill['patternType'] : 'solid';
-            $fillStyle->setFillType($patternType);
-            if ($fillStyleXml->patternFill->fgColor) {
-                $fillStyle->getStartColor()->setARGB(self::readColor($fillStyleXml->patternFill->fgColor, true));
-            } else {
-                $fillStyle->getStartColor()->setARGB('FF000000');
-            }
-            if ($fillStyleXml->patternFill->bgColor) {
-                $fillStyle->getEndColor()->setARGB(self::readColor($fillStyleXml->patternFill->bgColor, true));
-            }
-        }
-    }
-
-    private static function readBorderStyle(Borders $borderStyle, SimpleXMLElement $borderStyleXml): void
-    {
-        $diagonalUp = self::boolean((string) $borderStyleXml['diagonalUp']);
-        $diagonalDown = self::boolean((string) $borderStyleXml['diagonalDown']);
-        if (!$diagonalUp && !$diagonalDown) {
-            $borderStyle->setDiagonalDirection(Borders::DIAGONAL_NONE);
-        } elseif ($diagonalUp && !$diagonalDown) {
-            $borderStyle->setDiagonalDirection(Borders::DIAGONAL_UP);
-        } elseif (!$diagonalUp && $diagonalDown) {
-            $borderStyle->setDiagonalDirection(Borders::DIAGONAL_DOWN);
-        } else {
-            $borderStyle->setDiagonalDirection(Borders::DIAGONAL_BOTH);
-        }
-
-        self::readBorder($borderStyle->getLeft(), $borderStyleXml->left);
-        self::readBorder($borderStyle->getRight(), $borderStyleXml->right);
-        self::readBorder($borderStyle->getTop(), $borderStyleXml->top);
-        self::readBorder($borderStyle->getBottom(), $borderStyleXml->bottom);
-        self::readBorder($borderStyle->getDiagonal(), $borderStyleXml->diagonal);
-    }
-
-    private static function readBorder(Border $border, SimpleXMLElement $borderXml): void
-    {
-        if (isset($borderXml['style'])) {
-            $border->setBorderStyle((string) $borderXml['style']);
-        }
-        if (isset($borderXml->color)) {
-            $border->getColor()->setARGB(self::readColor($borderXml->color));
-        }
-    }
-
-    private static function readAlignmentStyle(Alignment $alignment, SimpleXMLElement $alignmentXml): void
-    {
-        $alignment->setHorizontal((string) $alignmentXml->alignment['horizontal']);
-        $alignment->setVertical((string) $alignmentXml->alignment['vertical']);
-
-        $textRotation = 0;
-        if ((int) $alignmentXml->alignment['textRotation'] <= 90) {
-            $textRotation = (int) $alignmentXml->alignment['textRotation'];
-        } elseif ((int) $alignmentXml->alignment['textRotation'] > 90) {
-            $textRotation = 90 - (int) $alignmentXml->alignment['textRotation'];
-        }
-
-        $alignment->setTextRotation((int) $textRotation);
-        $alignment->setWrapText(self::boolean((string) $alignmentXml->alignment['wrapText']));
-        $alignment->setShrinkToFit(self::boolean((string) $alignmentXml->alignment['shrinkToFit']));
-        $alignment->setIndent((int) ((string) $alignmentXml->alignment['indent']) > 0 ? (int) ((string) $alignmentXml->alignment['indent']) : 0);
-        $alignment->setReadOrder((int) ((string) $alignmentXml->alignment['readingOrder']) > 0 ? (int) ((string) $alignmentXml->alignment['readingOrder']) : 0);
-    }
-
-    private function readStyle(Style $docStyle, $style): void
-    {
-        if ($style->numFmt instanceof SimpleXMLElement) {
-            self::readNumberFormat($docStyle->getNumberFormat(), $style->numFmt);
-        } else {
-            $docStyle->getNumberFormat()->setFormatCode($style->numFmt);
-        }
-
-        if (isset($style->font)) {
-            self::readFontStyle($docStyle->getFont(), $style->font);
-        }
-
-        if (isset($style->fill)) {
-            self::readFillStyle($docStyle->getFill(), $style->fill);
-        }
-
-        if (isset($style->border)) {
-            self::readBorderStyle($docStyle->getBorders(), $style->border);
-        }
-
-        if (isset($style->alignment->alignment)) {
-            self::readAlignmentStyle($docStyle->getAlignment(), $style->alignment);
-        }
-
-        // protection
-        if (isset($style->protection)) {
-            $this->readProtectionLocked($docStyle, $style);
-            $this->readProtectionHidden($docStyle, $style);
-        }
-
-        // top-level style settings
-        if (isset($style->quotePrefix)) {
-            $docStyle->setQuotePrefix(true);
-        }
-    }
-
-    private function readProtectionLocked(Style $docStyle, $style): void
-    {
-        if (isset($style->protection['locked'])) {
-            if (self::boolean((string) $style->protection['locked'])) {
-                $docStyle->getProtection()->setLocked(Protection::PROTECTION_PROTECTED);
-            } else {
-                $docStyle->getProtection()->setLocked(Protection::PROTECTION_UNPROTECTED);
-            }
-        }
-    }
-
-    private function readProtectionHidden(Style $docStyle, $style): void
-    {
-        if (isset($style->protection['hidden'])) {
-            if (self::boolean((string) $style->protection['hidden'])) {
-                $docStyle->getProtection()->setHidden(Protection::PROTECTION_PROTECTED);
-            } else {
-                $docStyle->getProtection()->setHidden(Protection::PROTECTION_UNPROTECTED);
-            }
-        }
-    }
-
-    private static function readColor($color, $background = false)
-    {
-        if (isset($color['rgb'])) {
-            return (string) $color['rgb'];
-        } elseif (isset($color['indexed'])) {
-            return Color::indexedColor($color['indexed'] - 7, $background)->getARGB();
-        } elseif (isset($color['theme'])) {
-            if (self::$theme !== null) {
-                $returnColour = self::$theme->getColourByIndex((int) $color['theme']);
-                if (isset($color['tint'])) {
-                    $tintAdjust = (float) $color['tint'];
-                    $returnColour = Color::changeBrightness($returnColour, $tintAdjust);
-                }
-
-                return 'FF' . $returnColour;
-            }
-        }
-
-        return ($background) ? 'FFFFFFFF' : 'FF000000';
-    }
-
-    public function dxfs($readDataOnly = false)
-    {
-        $dxfs = [];
-        if (!$readDataOnly && $this->styleXml) {
-            //    Conditional Styles
-            if ($this->styleXml->dxfs) {
-                foreach ($this->styleXml->dxfs->dxf as $dxf) {
-                    $style = new Style(false, true);
-                    $this->readStyle($style, $dxf);
-                    $dxfs[] = $style;
-                }
-            }
-            //    Cell Styles
-            if ($this->styleXml->cellStyles) {
-                foreach ($this->styleXml->cellStyles->cellStyle as $cellStyle) {
-                    if ((int) ($cellStyle['builtinId']) == 0) {
-                        if (isset($this->cellStyles[(int) ($cellStyle['xfId'])])) {
-                            // Set default style
-                            $style = new Style();
-                            $this->readStyle($style, $this->cellStyles[(int) ($cellStyle['xfId'])]);
-
-                            // normal style, currently not using it for anything
-                        }
-                    }
-                }
-            }
-        }
-
-        return $dxfs;
-    }
-
-    public function styles()
-    {
-        return $this->styles;
-    }
-
-    private static function getArrayItem($array, $key = 0)
-    {
-        return $array[$key] ?? null;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+sFE+9Ic+i9uZIAm=

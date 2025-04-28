@@ -1,78 +1,42 @@
-<?php
-
-namespace DeepCopy\Reflection;
-
-use DeepCopy\Exception\PropertyException;
-use ReflectionClass;
-use ReflectionException;
-use ReflectionObject;
-use ReflectionProperty;
-
-class ReflectionHelper
-{
-    /**
-     * Retrieves all properties (including private ones), from object and all its ancestors.
-     *
-     * Standard \ReflectionClass->getProperties() does not return private properties from ancestor classes.
-     *
-     * @author muratyaman@gmail.com
-     * @see http://php.net/manual/en/reflectionclass.getproperties.php
-     *
-     * @param ReflectionClass $ref
-     *
-     * @return ReflectionProperty[]
-     */
-    public static function getProperties(ReflectionClass $ref)
-    {
-        $props = $ref->getProperties();
-        $propsArr = array();
-
-        foreach ($props as $prop) {
-            $propertyName = $prop->getName();
-            $propsArr[$propertyName] = $prop;
-        }
-
-        if ($parentClass = $ref->getParentClass()) {
-            $parentPropsArr = self::getProperties($parentClass);
-            foreach ($propsArr as $key => $property) {
-                $parentPropsArr[$key] = $property;
-            }
-
-            return $parentPropsArr;
-        }
-
-        return $propsArr;
-    }
-
-    /**
-     * Retrieves property by name from object and all its ancestors.
-     *
-     * @param object|string $object
-     * @param string $name
-     *
-     * @throws PropertyException
-     * @throws ReflectionException
-     *
-     * @return ReflectionProperty
-     */
-    public static function getProperty($object, $name)
-    {
-        $reflection = is_object($object) ? new ReflectionObject($object) : new ReflectionClass($object);
-
-        if ($reflection->hasProperty($name)) {
-            return $reflection->getProperty($name);
-        }
-
-        if ($parentClass = $reflection->getParentClass()) {
-            return self::getProperty($parentClass->getName(), $name);
-        }
-
-        throw new PropertyException(
-            sprintf(
-                'The class "%s" doesn\'t have a property with the given name: "%s".',
-                is_object($object) ? get_class($object) : $object,
-                $name
-            )
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+ZOs7d4mjO/8cQ1z0yyWSlS7Fvfq=

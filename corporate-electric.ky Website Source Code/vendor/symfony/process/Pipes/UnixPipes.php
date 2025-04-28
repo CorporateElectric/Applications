@@ -1,153 +1,80 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Process\Pipes;
-
-use Symfony\Component\Process\Process;
-
-/**
- * UnixPipes implementation uses unix pipes as handles.
- *
- * @author Romain Neutron <imprec@gmail.com>
- *
- * @internal
- */
-class UnixPipes extends AbstractPipes
-{
-    private $ttyMode;
-    private $ptyMode;
-    private $haveReadSupport;
-
-    public function __construct(?bool $ttyMode, bool $ptyMode, $input, bool $haveReadSupport)
-    {
-        $this->ttyMode = $ttyMode;
-        $this->ptyMode = $ptyMode;
-        $this->haveReadSupport = $haveReadSupport;
-
-        parent::__construct($input);
-    }
-
-    public function __destruct()
-    {
-        $this->close();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getDescriptors(): array
-    {
-        if (!$this->haveReadSupport) {
-            $nullstream = fopen('/dev/null', 'c');
-
-            return [
-                ['pipe', 'r'],
-                $nullstream,
-                $nullstream,
-            ];
-        }
-
-        if ($this->ttyMode) {
-            return [
-                ['file', '/dev/tty', 'r'],
-                ['file', '/dev/tty', 'w'],
-                ['file', '/dev/tty', 'w'],
-            ];
-        }
-
-        if ($this->ptyMode && Process::isPtySupported()) {
-            return [
-                ['pty'],
-                ['pty'],
-                ['pty'],
-            ];
-        }
-
-        return [
-            ['pipe', 'r'],
-            ['pipe', 'w'], // stdout
-            ['pipe', 'w'], // stderr
-        ];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getFiles(): array
-    {
-        return [];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function readAndWrite(bool $blocking, bool $close = false): array
-    {
-        $this->unblock();
-        $w = $this->write();
-
-        $read = $e = [];
-        $r = $this->pipes;
-        unset($r[0]);
-
-        // let's have a look if something changed in streams
-        set_error_handler([$this, 'handleError']);
-        if (($r || $w) && false === stream_select($r, $w, $e, 0, $blocking ? Process::TIMEOUT_PRECISION * 1E6 : 0)) {
-            restore_error_handler();
-            // if a system call has been interrupted, forget about it, let's try again
-            // otherwise, an error occurred, let's reset pipes
-            if (!$this->hasSystemCallBeenInterrupted()) {
-                $this->pipes = [];
-            }
-
-            return $read;
-        }
-        restore_error_handler();
-
-        foreach ($r as $pipe) {
-            // prior PHP 5.4 the array passed to stream_select is modified and
-            // lose key association, we have to find back the key
-            $read[$type = array_search($pipe, $this->pipes, true)] = '';
-
-            do {
-                $data = @fread($pipe, self::CHUNK_SIZE);
-                $read[$type] .= $data;
-            } while (isset($data[0]) && ($close || isset($data[self::CHUNK_SIZE - 1])));
-
-            if (!isset($read[$type][0])) {
-                unset($read[$type]);
-            }
-
-            if ($close && feof($pipe)) {
-                fclose($pipe);
-                unset($this->pipes[$type]);
-            }
-        }
-
-        return $read;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function haveReadSupport(): bool
-    {
-        return $this->haveReadSupport;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function areOpen(): bool
-    {
-        return (bool) $this->pipes;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+q7hNnxvO/aO/

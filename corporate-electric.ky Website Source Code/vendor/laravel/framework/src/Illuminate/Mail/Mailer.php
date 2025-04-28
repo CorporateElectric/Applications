@@ -1,626 +1,201 @@
-<?php
-
-namespace Illuminate\Mail;
-
-use Illuminate\Contracts\Events\Dispatcher;
-use Illuminate\Contracts\Mail\Mailable as MailableContract;
-use Illuminate\Contracts\Mail\Mailer as MailerContract;
-use Illuminate\Contracts\Mail\MailQueue as MailQueueContract;
-use Illuminate\Contracts\Queue\Factory as QueueContract;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Contracts\Support\Htmlable;
-use Illuminate\Contracts\View\Factory;
-use Illuminate\Mail\Events\MessageSending;
-use Illuminate\Mail\Events\MessageSent;
-use Illuminate\Support\HtmlString;
-use Illuminate\Support\Traits\Macroable;
-use InvalidArgumentException;
-use Swift_Mailer;
-
-class Mailer implements MailerContract, MailQueueContract
-{
-    use Macroable;
-
-    /**
-     * The name that is configured for the mailer.
-     *
-     * @var string
-     */
-    protected $name;
-
-    /**
-     * The view factory instance.
-     *
-     * @var \Illuminate\Contracts\View\Factory
-     */
-    protected $views;
-
-    /**
-     * The Swift Mailer instance.
-     *
-     * @var \Swift_Mailer
-     */
-    protected $swift;
-
-    /**
-     * The event dispatcher instance.
-     *
-     * @var \Illuminate\Contracts\Events\Dispatcher|null
-     */
-    protected $events;
-
-    /**
-     * The global from address and name.
-     *
-     * @var array
-     */
-    protected $from;
-
-    /**
-     * The global reply-to address and name.
-     *
-     * @var array
-     */
-    protected $replyTo;
-
-    /**
-     * The global return path address.
-     *
-     * @var array
-     */
-    protected $returnPath;
-
-    /**
-     * The global to address and name.
-     *
-     * @var array
-     */
-    protected $to;
-
-    /**
-     * The queue factory implementation.
-     *
-     * @var \Illuminate\Contracts\Queue\Factory
-     */
-    protected $queue;
-
-    /**
-     * Array of failed recipients.
-     *
-     * @var array
-     */
-    protected $failedRecipients = [];
-
-    /**
-     * Create a new Mailer instance.
-     *
-     * @param  string  $name
-     * @param  \Illuminate\Contracts\View\Factory  $views
-     * @param  \Swift_Mailer  $swift
-     * @param  \Illuminate\Contracts\Events\Dispatcher|null  $events
-     * @return void
-     */
-    public function __construct(string $name, Factory $views, Swift_Mailer $swift, Dispatcher $events = null)
-    {
-        $this->name = $name;
-        $this->views = $views;
-        $this->swift = $swift;
-        $this->events = $events;
-    }
-
-    /**
-     * Set the global from address and name.
-     *
-     * @param  string  $address
-     * @param  string|null  $name
-     * @return void
-     */
-    public function alwaysFrom($address, $name = null)
-    {
-        $this->from = compact('address', 'name');
-    }
-
-    /**
-     * Set the global reply-to address and name.
-     *
-     * @param  string  $address
-     * @param  string|null  $name
-     * @return void
-     */
-    public function alwaysReplyTo($address, $name = null)
-    {
-        $this->replyTo = compact('address', 'name');
-    }
-
-    /**
-     * Set the global return path address.
-     *
-     * @param  string  $address
-     * @return void
-     */
-    public function alwaysReturnPath($address)
-    {
-        $this->returnPath = compact('address');
-    }
-
-    /**
-     * Set the global to address and name.
-     *
-     * @param  string  $address
-     * @param  string|null  $name
-     * @return void
-     */
-    public function alwaysTo($address, $name = null)
-    {
-        $this->to = compact('address', 'name');
-    }
-
-    /**
-     * Begin the process of mailing a mailable class instance.
-     *
-     * @param  mixed  $users
-     * @return \Illuminate\Mail\PendingMail
-     */
-    public function to($users)
-    {
-        return (new PendingMail($this))->to($users);
-    }
-
-    /**
-     * Begin the process of mailing a mailable class instance.
-     *
-     * @param  mixed  $users
-     * @return \Illuminate\Mail\PendingMail
-     */
-    public function cc($users)
-    {
-        return (new PendingMail($this))->cc($users);
-    }
-
-    /**
-     * Begin the process of mailing a mailable class instance.
-     *
-     * @param  mixed  $users
-     * @return \Illuminate\Mail\PendingMail
-     */
-    public function bcc($users)
-    {
-        return (new PendingMail($this))->bcc($users);
-    }
-
-    /**
-     * Send a new message with only an HTML part.
-     *
-     * @param  string  $html
-     * @param  mixed  $callback
-     * @return void
-     */
-    public function html($html, $callback)
-    {
-        return $this->send(['html' => new HtmlString($html)], [], $callback);
-    }
-
-    /**
-     * Send a new message with only a raw text part.
-     *
-     * @param  string  $text
-     * @param  mixed  $callback
-     * @return void
-     */
-    public function raw($text, $callback)
-    {
-        return $this->send(['raw' => $text], [], $callback);
-    }
-
-    /**
-     * Send a new message with only a plain part.
-     *
-     * @param  string  $view
-     * @param  array  $data
-     * @param  mixed  $callback
-     * @return void
-     */
-    public function plain($view, array $data, $callback)
-    {
-        return $this->send(['text' => $view], $data, $callback);
-    }
-
-    /**
-     * Render the given message as a view.
-     *
-     * @param  string|array  $view
-     * @param  array  $data
-     * @return string
-     */
-    public function render($view, array $data = [])
-    {
-        // First we need to parse the view, which could either be a string or an array
-        // containing both an HTML and plain text versions of the view which should
-        // be used when sending an e-mail. We will extract both of them out here.
-        [$view, $plain, $raw] = $this->parseView($view);
-
-        $data['message'] = $this->createMessage();
-
-        return $this->renderView($view ?: $plain, $data);
-    }
-
-    /**
-     * Send a new message using a view.
-     *
-     * @param  \Illuminate\Contracts\Mail\Mailable|string|array  $view
-     * @param  array  $data
-     * @param  \Closure|string|null  $callback
-     * @return void
-     */
-    public function send($view, array $data = [], $callback = null)
-    {
-        if ($view instanceof MailableContract) {
-            return $this->sendMailable($view);
-        }
-
-        // First we need to parse the view, which could either be a string or an array
-        // containing both an HTML and plain text versions of the view which should
-        // be used when sending an e-mail. We will extract both of them out here.
-        [$view, $plain, $raw] = $this->parseView($view);
-
-        $data['message'] = $message = $this->createMessage();
-
-        // Once we have retrieved the view content for the e-mail we will set the body
-        // of this message using the HTML type, which will provide a simple wrapper
-        // to creating view based emails that are able to receive arrays of data.
-        $callback($message);
-
-        $this->addContent($message, $view, $plain, $raw, $data);
-
-        // If a global "to" address has been set, we will set that address on the mail
-        // message. This is primarily useful during local development in which each
-        // message should be delivered into a single mail address for inspection.
-        if (isset($this->to['address'])) {
-            $this->setGlobalToAndRemoveCcAndBcc($message);
-        }
-
-        // Next we will determine if the message should be sent. We give the developer
-        // one final chance to stop this message and then we will send it to all of
-        // its recipients. We will then fire the sent event for the sent message.
-        $swiftMessage = $message->getSwiftMessage();
-
-        if ($this->shouldSendMessage($swiftMessage, $data)) {
-            $this->sendSwiftMessage($swiftMessage);
-
-            $this->dispatchSentEvent($message, $data);
-        }
-    }
-
-    /**
-     * Send the given mailable.
-     *
-     * @param  \Illuminate\Contracts\Mail\Mailable  $mailable
-     * @return mixed
-     */
-    protected function sendMailable(MailableContract $mailable)
-    {
-        return $mailable instanceof ShouldQueue
-                        ? $mailable->mailer($this->name)->queue($this->queue)
-                        : $mailable->mailer($this->name)->send($this);
-    }
-
-    /**
-     * Parse the given view name or array.
-     *
-     * @param  string|array  $view
-     * @return array
-     *
-     * @throws \InvalidArgumentException
-     */
-    protected function parseView($view)
-    {
-        if (is_string($view)) {
-            return [$view, null, null];
-        }
-
-        // If the given view is an array with numeric keys, we will just assume that
-        // both a "pretty" and "plain" view were provided, so we will return this
-        // array as is, since it should contain both views with numerical keys.
-        if (is_array($view) && isset($view[0])) {
-            return [$view[0], $view[1], null];
-        }
-
-        // If this view is an array but doesn't contain numeric keys, we will assume
-        // the views are being explicitly specified and will extract them via the
-        // named keys instead, allowing the developers to use one or the other.
-        if (is_array($view)) {
-            return [
-                $view['html'] ?? null,
-                $view['text'] ?? null,
-                $view['raw'] ?? null,
-            ];
-        }
-
-        throw new InvalidArgumentException('Invalid view.');
-    }
-
-    /**
-     * Add the content to a given message.
-     *
-     * @param  \Illuminate\Mail\Message  $message
-     * @param  string  $view
-     * @param  string  $plain
-     * @param  string  $raw
-     * @param  array  $data
-     * @return void
-     */
-    protected function addContent($message, $view, $plain, $raw, $data)
-    {
-        if (isset($view)) {
-            $message->setBody($this->renderView($view, $data), 'text/html');
-        }
-
-        if (isset($plain)) {
-            $method = isset($view) ? 'addPart' : 'setBody';
-
-            $message->$method($this->renderView($plain, $data) ?: ' ', 'text/plain');
-        }
-
-        if (isset($raw)) {
-            $method = (isset($view) || isset($plain)) ? 'addPart' : 'setBody';
-
-            $message->$method($raw, 'text/plain');
-        }
-    }
-
-    /**
-     * Render the given view.
-     *
-     * @param  string  $view
-     * @param  array  $data
-     * @return string
-     */
-    protected function renderView($view, $data)
-    {
-        return $view instanceof Htmlable
-                        ? $view->toHtml()
-                        : $this->views->make($view, $data)->render();
-    }
-
-    /**
-     * Set the global "to" address on the given message.
-     *
-     * @param  \Illuminate\Mail\Message  $message
-     * @return void
-     */
-    protected function setGlobalToAndRemoveCcAndBcc($message)
-    {
-        $message->to($this->to['address'], $this->to['name'], true);
-        $message->cc(null, null, true);
-        $message->bcc(null, null, true);
-    }
-
-    /**
-     * Queue a new e-mail message for sending.
-     *
-     * @param  \Illuminate\Contracts\Mail\Mailable|string|array  $view
-     * @param  string|null  $queue
-     * @return mixed
-     *
-     * @throws \InvalidArgumentException
-     */
-    public function queue($view, $queue = null)
-    {
-        if (! $view instanceof MailableContract) {
-            throw new InvalidArgumentException('Only mailables may be queued.');
-        }
-
-        if (is_string($queue)) {
-            $view->onQueue($queue);
-        }
-
-        return $view->mailer($this->name)->queue($this->queue);
-    }
-
-    /**
-     * Queue a new e-mail message for sending on the given queue.
-     *
-     * @param  string  $queue
-     * @param  \Illuminate\Contracts\Mail\Mailable  $view
-     * @return mixed
-     */
-    public function onQueue($queue, $view)
-    {
-        return $this->queue($view, $queue);
-    }
-
-    /**
-     * Queue a new e-mail message for sending on the given queue.
-     *
-     * This method didn't match rest of framework's "onQueue" phrasing. Added "onQueue".
-     *
-     * @param  string  $queue
-     * @param  \Illuminate\Contracts\Mail\Mailable  $view
-     * @return mixed
-     */
-    public function queueOn($queue, $view)
-    {
-        return $this->onQueue($queue, $view);
-    }
-
-    /**
-     * Queue a new e-mail message for sending after (n) seconds.
-     *
-     * @param  \DateTimeInterface|\DateInterval|int  $delay
-     * @param  \Illuminate\Contracts\Mail\Mailable  $view
-     * @param  string|null  $queue
-     * @return mixed
-     *
-     * @throws \InvalidArgumentException
-     */
-    public function later($delay, $view, $queue = null)
-    {
-        if (! $view instanceof MailableContract) {
-            throw new InvalidArgumentException('Only mailables may be queued.');
-        }
-
-        return $view->mailer($this->name)->later(
-            $delay, is_null($queue) ? $this->queue : $queue
-        );
-    }
-
-    /**
-     * Queue a new e-mail message for sending after (n) seconds on the given queue.
-     *
-     * @param  string  $queue
-     * @param  \DateTimeInterface|\DateInterval|int  $delay
-     * @param  \Illuminate\Contracts\Mail\Mailable  $view
-     * @return mixed
-     */
-    public function laterOn($queue, $delay, $view)
-    {
-        return $this->later($delay, $view, $queue);
-    }
-
-    /**
-     * Create a new message instance.
-     *
-     * @return \Illuminate\Mail\Message
-     */
-    protected function createMessage()
-    {
-        $message = new Message($this->swift->createMessage('message'));
-
-        // If a global from address has been specified we will set it on every message
-        // instance so the developer does not have to repeat themselves every time
-        // they create a new message. We'll just go ahead and push this address.
-        if (! empty($this->from['address'])) {
-            $message->from($this->from['address'], $this->from['name']);
-        }
-
-        // When a global reply address was specified we will set this on every message
-        // instance so the developer does not have to repeat themselves every time
-        // they create a new message. We will just go ahead and push this address.
-        if (! empty($this->replyTo['address'])) {
-            $message->replyTo($this->replyTo['address'], $this->replyTo['name']);
-        }
-
-        if (! empty($this->returnPath['address'])) {
-            $message->returnPath($this->returnPath['address']);
-        }
-
-        return $message;
-    }
-
-    /**
-     * Send a Swift Message instance.
-     *
-     * @param  \Swift_Message  $message
-     * @return int|null
-     */
-    protected function sendSwiftMessage($message)
-    {
-        $this->failedRecipients = [];
-
-        try {
-            return $this->swift->send($message, $this->failedRecipients);
-        } finally {
-            $this->forceReconnection();
-        }
-    }
-
-    /**
-     * Determines if the message can be sent.
-     *
-     * @param  \Swift_Message  $message
-     * @param  array  $data
-     * @return bool
-     */
-    protected function shouldSendMessage($message, $data = [])
-    {
-        if (! $this->events) {
-            return true;
-        }
-
-        return $this->events->until(
-            new MessageSending($message, $data)
-        ) !== false;
-    }
-
-    /**
-     * Dispatch the message sent event.
-     *
-     * @param  \Illuminate\Mail\Message  $message
-     * @param  array  $data
-     * @return void
-     */
-    protected function dispatchSentEvent($message, $data = [])
-    {
-        if ($this->events) {
-            $this->events->dispatch(
-                new MessageSent($message->getSwiftMessage(), $data)
-            );
-        }
-    }
-
-    /**
-     * Force the transport to re-connect.
-     *
-     * This will prevent errors in daemon queue situations.
-     *
-     * @return void
-     */
-    protected function forceReconnection()
-    {
-        $this->getSwiftMailer()->getTransport()->stop();
-    }
-
-    /**
-     * Get the array of failed recipients.
-     *
-     * @return array
-     */
-    public function failures()
-    {
-        return $this->failedRecipients;
-    }
-
-    /**
-     * Get the Swift Mailer instance.
-     *
-     * @return \Swift_Mailer
-     */
-    public function getSwiftMailer()
-    {
-        return $this->swift;
-    }
-
-    /**
-     * Get the view factory instance.
-     *
-     * @return \Illuminate\Contracts\View\Factory
-     */
-    public function getViewFactory()
-    {
-        return $this->views;
-    }
-
-    /**
-     * Set the Swift Mailer instance.
-     *
-     * @param  \Swift_Mailer  $swift
-     * @return void
-     */
-    public function setSwiftMailer($swift)
-    {
-        $this->swift = $swift;
-    }
-
-    /**
-     * Set the queue manager instance.
-     *
-     * @param  \Illuminate\Contracts\Queue\Factory  $queue
-     * @return $this
-     */
-    public function setQueue(QueueContract $queue)
-    {
-        $this->queue = $queue;
-
-        return $this;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

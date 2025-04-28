@@ -1,104 +1,62 @@
-<?php
-
-namespace Illuminate\Console\Concerns;
-
-use Symfony\Component\Console\Input\ArrayInput;
-use Symfony\Component\Console\Output\NullOutput;
-use Symfony\Component\Console\Output\OutputInterface;
-
-trait CallsCommands
-{
-    /**
-     * Resolve the console command instance for the given command.
-     *
-     * @param  \Symfony\Component\Console\Command\Command|string  $command
-     * @return \Symfony\Component\Console\Command\Command
-     */
-    abstract protected function resolveCommand($command);
-
-    /**
-     * Call another console command.
-     *
-     * @param  \Symfony\Component\Console\Command\Command|string  $command
-     * @param  array  $arguments
-     * @return int
-     */
-    public function call($command, array $arguments = [])
-    {
-        return $this->runCommand($command, $arguments, $this->output);
-    }
-
-    /**
-     * Call another console command without output.
-     *
-     * @param  \Symfony\Component\Console\Command\Command|string  $command
-     * @param  array  $arguments
-     * @return int
-     */
-    public function callSilent($command, array $arguments = [])
-    {
-        return $this->runCommand($command, $arguments, new NullOutput);
-    }
-
-    /**
-     * Call another console command without output.
-     *
-     * @param  \Symfony\Component\Console\Command\Command|string  $command
-     * @param  array  $arguments
-     * @return int
-     */
-    public function callSilently($command, array $arguments = [])
-    {
-        return $this->callSilent($command, $arguments);
-    }
-
-    /**
-     * Run the given the console command.
-     *
-     * @param  \Symfony\Component\Console\Command\Command|string  $command
-     * @param  array  $arguments
-     * @param  \Symfony\Component\Console\Output\OutputInterface  $output
-     * @return int
-     */
-    protected function runCommand($command, array $arguments, OutputInterface $output)
-    {
-        $arguments['command'] = $command;
-
-        return $this->resolveCommand($command)->run(
-            $this->createInputFromArguments($arguments), $output
-        );
-    }
-
-    /**
-     * Create an input instance from the given arguments.
-     *
-     * @param  array  $arguments
-     * @return \Symfony\Component\Console\Input\ArrayInput
-     */
-    protected function createInputFromArguments(array $arguments)
-    {
-        return tap(new ArrayInput(array_merge($this->context(), $arguments)), function ($input) {
-            if ($input->getParameterOption('--no-interaction')) {
-                $input->setInteractive(false);
-            }
-        });
-    }
-
-    /**
-     * Get all of the context passed to the command.
-     *
-     * @return array
-     */
-    protected function context()
-    {
-        return collect($this->option())->only([
-            'ansi',
-            'no-ansi',
-            'no-interaction',
-            'quiet',
-            'verbose',
-        ])->filter()->mapWithKeys(function ($value, $key) {
-            return ["--{$key}" => $value];
-        })->all();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+Su01eIFo30O=

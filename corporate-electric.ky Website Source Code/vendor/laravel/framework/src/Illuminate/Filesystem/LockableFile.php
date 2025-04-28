@@ -1,183 +1,77 @@
-<?php
-
-namespace Illuminate\Filesystem;
-
-use Illuminate\Contracts\Filesystem\LockTimeoutException;
-
-class LockableFile
-{
-    /**
-     * The file resource.
-     *
-     * @var resource
-     */
-    protected $handle;
-
-    /**
-     * The file path.
-     *
-     * @var string
-     */
-    protected $path;
-
-    /**
-     * Indicates if the file is locked.
-     *
-     * @var bool
-     */
-    protected $isLocked = false;
-
-    /**
-     * Create a new File instance.
-     *
-     * @param  string  $path
-     * @param  string  $mode
-     * @return void
-     */
-    public function __construct($path, $mode)
-    {
-        $this->path = $path;
-
-        $this->ensureDirectoryExists($path);
-        $this->createResource($path, $mode);
-    }
-
-    /**
-     * Create the file's directory if necessary.
-     *
-     * @param  string  $path
-     * @return void
-     */
-    protected function ensureDirectoryExists($path)
-    {
-        if (! file_exists(dirname($path))) {
-            @mkdir(dirname($path), 0777, true);
-        }
-    }
-
-    /**
-     * Create the file resource.
-     *
-     * @param  string  $path
-     * @param  string  $mode
-     * @return void
-     */
-    protected function createResource($path, $mode)
-    {
-        $this->handle = @fopen($path, $mode);
-    }
-
-    /**
-     * Read the file contents.
-     *
-     * @param  int|null  $length
-     * @return string
-     */
-    public function read($length = null)
-    {
-        clearstatcache(true, $this->path);
-
-        return fread($this->handle, $length ?? ($this->size() ?: 1));
-    }
-
-    /**
-     * Get the file size.
-     *
-     * @return int
-     */
-    public function size()
-    {
-        return filesize($this->path);
-    }
-
-    /**
-     * Write to the file.
-     *
-     * @param  string  $contents
-     * @return string
-     */
-    public function write($contents)
-    {
-        fwrite($this->handle, $contents);
-
-        fflush($this->handle);
-
-        return $this;
-    }
-
-    /**
-     * Truncate the file.
-     *
-     * @return $this
-     */
-    public function truncate()
-    {
-        rewind($this->handle);
-
-        ftruncate($this->handle, 0);
-
-        return $this;
-    }
-
-    /**
-     * Get a shared lock on the file.
-     *
-     * @param  bool  $block
-     * @return $this
-     */
-    public function getSharedLock($block = false)
-    {
-        if (! flock($this->handle, LOCK_SH | ($block ? 0 : LOCK_NB))) {
-            throw new LockTimeoutException("Unable to acquire file lock at path [{$this->path}].");
-        }
-
-        $this->isLocked = true;
-
-        return $this;
-    }
-
-    /**
-     * Get an exclusive lock on the file.
-     *
-     * @param  bool  $block
-     * @return bool
-     */
-    public function getExclusiveLock($block = false)
-    {
-        if (! flock($this->handle, LOCK_EX | ($block ? 0 : LOCK_NB))) {
-            throw new LockTimeoutException("Unable to acquire file lock at path [{$this->path}].");
-        }
-
-        $this->isLocked = true;
-
-        return $this;
-    }
-
-    /**
-     * Release the lock on the file.
-     *
-     * @return $this
-     */
-    public function releaseLock()
-    {
-        flock($this->handle, LOCK_UN);
-
-        $this->isLocked = false;
-
-        return $this;
-    }
-
-    /**
-     * Close the file.
-     *
-     * @return bool
-     */
-    public function close()
-    {
-        if ($this->isLocked) {
-            $this->releaseLock();
-        }
-
-        return fclose($this->handle);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

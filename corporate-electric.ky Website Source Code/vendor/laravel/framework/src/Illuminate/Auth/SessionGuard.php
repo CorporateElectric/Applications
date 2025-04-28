@@ -1,858 +1,272 @@
-<?php
-
-namespace Illuminate\Auth;
-
-use Illuminate\Auth\Events\Attempting;
-use Illuminate\Auth\Events\Authenticated;
-use Illuminate\Auth\Events\CurrentDeviceLogout;
-use Illuminate\Auth\Events\Failed;
-use Illuminate\Auth\Events\Login;
-use Illuminate\Auth\Events\Logout;
-use Illuminate\Auth\Events\OtherDeviceLogout;
-use Illuminate\Auth\Events\Validated;
-use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
-use Illuminate\Contracts\Auth\StatefulGuard;
-use Illuminate\Contracts\Auth\SupportsBasicAuth;
-use Illuminate\Contracts\Auth\UserProvider;
-use Illuminate\Contracts\Cookie\QueueingFactory as CookieJar;
-use Illuminate\Contracts\Events\Dispatcher;
-use Illuminate\Contracts\Session\Session;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
-use Illuminate\Support\Traits\Macroable;
-use RuntimeException;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
-
-class SessionGuard implements StatefulGuard, SupportsBasicAuth
-{
-    use GuardHelpers, Macroable;
-
-    /**
-     * The name of the guard. Typically "web".
-     *
-     * Corresponds to guard name in authentication configuration.
-     *
-     * @var string
-     */
-    protected $name;
-
-    /**
-     * The user we last attempted to retrieve.
-     *
-     * @var \Illuminate\Contracts\Auth\Authenticatable
-     */
-    protected $lastAttempted;
-
-    /**
-     * Indicates if the user was authenticated via a recaller cookie.
-     *
-     * @var bool
-     */
-    protected $viaRemember = false;
-
-    /**
-     * The session used by the guard.
-     *
-     * @var \Illuminate\Contracts\Session\Session
-     */
-    protected $session;
-
-    /**
-     * The Illuminate cookie creator service.
-     *
-     * @var \Illuminate\Contracts\Cookie\QueueingFactory
-     */
-    protected $cookie;
-
-    /**
-     * The request instance.
-     *
-     * @var \Symfony\Component\HttpFoundation\Request
-     */
-    protected $request;
-
-    /**
-     * The event dispatcher instance.
-     *
-     * @var \Illuminate\Contracts\Events\Dispatcher
-     */
-    protected $events;
-
-    /**
-     * Indicates if the logout method has been called.
-     *
-     * @var bool
-     */
-    protected $loggedOut = false;
-
-    /**
-     * Indicates if a token user retrieval has been attempted.
-     *
-     * @var bool
-     */
-    protected $recallAttempted = false;
-
-    /**
-     * Create a new authentication guard.
-     *
-     * @param  string  $name
-     * @param  \Illuminate\Contracts\Auth\UserProvider  $provider
-     * @param  \Illuminate\Contracts\Session\Session  $session
-     * @param  \Symfony\Component\HttpFoundation\Request|null  $request
-     * @return void
-     */
-    public function __construct($name,
-                                UserProvider $provider,
-                                Session $session,
-                                Request $request = null)
-    {
-        $this->name = $name;
-        $this->session = $session;
-        $this->request = $request;
-        $this->provider = $provider;
-    }
-
-    /**
-     * Get the currently authenticated user.
-     *
-     * @return \Illuminate\Contracts\Auth\Authenticatable|null
-     */
-    public function user()
-    {
-        if ($this->loggedOut) {
-            return;
-        }
-
-        // If we've already retrieved the user for the current request we can just
-        // return it back immediately. We do not want to fetch the user data on
-        // every call to this method because that would be tremendously slow.
-        if (! is_null($this->user)) {
-            return $this->user;
-        }
-
-        $id = $this->session->get($this->getName());
-
-        // First we will try to load the user using the identifier in the session if
-        // one exists. Otherwise we will check for a "remember me" cookie in this
-        // request, and if one exists, attempt to retrieve the user using that.
-        if (! is_null($id) && $this->user = $this->provider->retrieveById($id)) {
-            $this->fireAuthenticatedEvent($this->user);
-        }
-
-        // If the user is null, but we decrypt a "recaller" cookie we can attempt to
-        // pull the user data on that cookie which serves as a remember cookie on
-        // the application. Once we have a user we can return it to the caller.
-        if (is_null($this->user) && ! is_null($recaller = $this->recaller())) {
-            $this->user = $this->userFromRecaller($recaller);
-
-            if ($this->user) {
-                $this->updateSession($this->user->getAuthIdentifier());
-
-                $this->fireLoginEvent($this->user, true);
-            }
-        }
-
-        return $this->user;
-    }
-
-    /**
-     * Pull a user from the repository by its "remember me" cookie token.
-     *
-     * @param  \Illuminate\Auth\Recaller  $recaller
-     * @return mixed
-     */
-    protected function userFromRecaller($recaller)
-    {
-        if (! $recaller->valid() || $this->recallAttempted) {
-            return;
-        }
-
-        // If the user is null, but we decrypt a "recaller" cookie we can attempt to
-        // pull the user data on that cookie which serves as a remember cookie on
-        // the application. Once we have a user we can return it to the caller.
-        $this->recallAttempted = true;
-
-        $this->viaRemember = ! is_null($user = $this->provider->retrieveByToken(
-            $recaller->id(), $recaller->token()
-        ));
-
-        return $user;
-    }
-
-    /**
-     * Get the decrypted recaller cookie for the request.
-     *
-     * @return \Illuminate\Auth\Recaller|null
-     */
-    protected function recaller()
-    {
-        if (is_null($this->request)) {
-            return;
-        }
-
-        if ($recaller = $this->request->cookies->get($this->getRecallerName())) {
-            return new Recaller($recaller);
-        }
-    }
-
-    /**
-     * Get the ID for the currently authenticated user.
-     *
-     * @return int|string|null
-     */
-    public function id()
-    {
-        if ($this->loggedOut) {
-            return;
-        }
-
-        return $this->user()
-                    ? $this->user()->getAuthIdentifier()
-                    : $this->session->get($this->getName());
-    }
-
-    /**
-     * Log a user into the application without sessions or cookies.
-     *
-     * @param  array  $credentials
-     * @return bool
-     */
-    public function once(array $credentials = [])
-    {
-        $this->fireAttemptEvent($credentials);
-
-        if ($this->validate($credentials)) {
-            $this->setUser($this->lastAttempted);
-
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Log the given user ID into the application without sessions or cookies.
-     *
-     * @param  mixed  $id
-     * @return \Illuminate\Contracts\Auth\Authenticatable|false
-     */
-    public function onceUsingId($id)
-    {
-        if (! is_null($user = $this->provider->retrieveById($id))) {
-            $this->setUser($user);
-
-            return $user;
-        }
-
-        return false;
-    }
-
-    /**
-     * Validate a user's credentials.
-     *
-     * @param  array  $credentials
-     * @return bool
-     */
-    public function validate(array $credentials = [])
-    {
-        $this->lastAttempted = $user = $this->provider->retrieveByCredentials($credentials);
-
-        return $this->hasValidCredentials($user, $credentials);
-    }
-
-    /**
-     * Attempt to authenticate using HTTP Basic Auth.
-     *
-     * @param  string  $field
-     * @param  array  $extraConditions
-     * @return \Symfony\Component\HttpFoundation\Response|null
-     */
-    public function basic($field = 'email', $extraConditions = [])
-    {
-        if ($this->check()) {
-            return;
-        }
-
-        // If a username is set on the HTTP basic request, we will return out without
-        // interrupting the request lifecycle. Otherwise, we'll need to generate a
-        // request indicating that the given credentials were invalid for login.
-        if ($this->attemptBasic($this->getRequest(), $field, $extraConditions)) {
-            return;
-        }
-
-        return $this->failedBasicResponse();
-    }
-
-    /**
-     * Perform a stateless HTTP Basic login attempt.
-     *
-     * @param  string  $field
-     * @param  array  $extraConditions
-     * @return \Symfony\Component\HttpFoundation\Response|null
-     */
-    public function onceBasic($field = 'email', $extraConditions = [])
-    {
-        $credentials = $this->basicCredentials($this->getRequest(), $field);
-
-        if (! $this->once(array_merge($credentials, $extraConditions))) {
-            return $this->failedBasicResponse();
-        }
-    }
-
-    /**
-     * Attempt to authenticate using basic authentication.
-     *
-     * @param  \Symfony\Component\HttpFoundation\Request  $request
-     * @param  string  $field
-     * @param  array  $extraConditions
-     * @return bool
-     */
-    protected function attemptBasic(Request $request, $field, $extraConditions = [])
-    {
-        if (! $request->getUser()) {
-            return false;
-        }
-
-        return $this->attempt(array_merge(
-            $this->basicCredentials($request, $field), $extraConditions
-        ));
-    }
-
-    /**
-     * Get the credential array for a HTTP Basic request.
-     *
-     * @param  \Symfony\Component\HttpFoundation\Request  $request
-     * @param  string  $field
-     * @return array
-     */
-    protected function basicCredentials(Request $request, $field)
-    {
-        return [$field => $request->getUser(), 'password' => $request->getPassword()];
-    }
-
-    /**
-     * Get the response for basic authentication.
-     *
-     * @return void
-     *
-     * @throws \Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException
-     */
-    protected function failedBasicResponse()
-    {
-        throw new UnauthorizedHttpException('Basic', 'Invalid credentials.');
-    }
-
-    /**
-     * Attempt to authenticate a user using the given credentials.
-     *
-     * @param  array  $credentials
-     * @param  bool  $remember
-     * @return bool
-     */
-    public function attempt(array $credentials = [], $remember = false)
-    {
-        $this->fireAttemptEvent($credentials, $remember);
-
-        $this->lastAttempted = $user = $this->provider->retrieveByCredentials($credentials);
-
-        // If an implementation of UserInterface was returned, we'll ask the provider
-        // to validate the user against the given credentials, and if they are in
-        // fact valid we'll log the users into the application and return true.
-        if ($this->hasValidCredentials($user, $credentials)) {
-            $this->login($user, $remember);
-
-            return true;
-        }
-
-        // If the authentication attempt fails we will fire an event so that the user
-        // may be notified of any suspicious attempts to access their account from
-        // an unrecognized user. A developer may listen to this event as needed.
-        $this->fireFailedEvent($user, $credentials);
-
-        return false;
-    }
-
-    /**
-     * Determine if the user matches the credentials.
-     *
-     * @param  mixed  $user
-     * @param  array  $credentials
-     * @return bool
-     */
-    protected function hasValidCredentials($user, $credentials)
-    {
-        $validated = ! is_null($user) && $this->provider->validateCredentials($user, $credentials);
-
-        if ($validated) {
-            $this->fireValidatedEvent($user);
-        }
-
-        return $validated;
-    }
-
-    /**
-     * Log the given user ID into the application.
-     *
-     * @param  mixed  $id
-     * @param  bool  $remember
-     * @return \Illuminate\Contracts\Auth\Authenticatable|false
-     */
-    public function loginUsingId($id, $remember = false)
-    {
-        if (! is_null($user = $this->provider->retrieveById($id))) {
-            $this->login($user, $remember);
-
-            return $user;
-        }
-
-        return false;
-    }
-
-    /**
-     * Log a user into the application.
-     *
-     * @param  \Illuminate\Contracts\Auth\Authenticatable  $user
-     * @param  bool  $remember
-     * @return void
-     */
-    public function login(AuthenticatableContract $user, $remember = false)
-    {
-        $this->updateSession($user->getAuthIdentifier());
-
-        // If the user should be permanently "remembered" by the application we will
-        // queue a permanent cookie that contains the encrypted copy of the user
-        // identifier. We will then decrypt this later to retrieve the users.
-        if ($remember) {
-            $this->ensureRememberTokenIsSet($user);
-
-            $this->queueRecallerCookie($user);
-        }
-
-        // If we have an event dispatcher instance set we will fire an event so that
-        // any listeners will hook into the authentication events and run actions
-        // based on the login and logout events fired from the guard instances.
-        $this->fireLoginEvent($user, $remember);
-
-        $this->setUser($user);
-    }
-
-    /**
-     * Update the session with the given ID.
-     *
-     * @param  string  $id
-     * @return void
-     */
-    protected function updateSession($id)
-    {
-        $this->session->put($this->getName(), $id);
-
-        $this->session->migrate(true);
-    }
-
-    /**
-     * Create a new "remember me" token for the user if one doesn't already exist.
-     *
-     * @param  \Illuminate\Contracts\Auth\Authenticatable  $user
-     * @return void
-     */
-    protected function ensureRememberTokenIsSet(AuthenticatableContract $user)
-    {
-        if (empty($user->getRememberToken())) {
-            $this->cycleRememberToken($user);
-        }
-    }
-
-    /**
-     * Queue the recaller cookie into the cookie jar.
-     *
-     * @param  \Illuminate\Contracts\Auth\Authenticatable  $user
-     * @return void
-     */
-    protected function queueRecallerCookie(AuthenticatableContract $user)
-    {
-        $this->getCookieJar()->queue($this->createRecaller(
-            $user->getAuthIdentifier().'|'.$user->getRememberToken().'|'.$user->getAuthPassword()
-        ));
-    }
-
-    /**
-     * Create a "remember me" cookie for a given ID.
-     *
-     * @param  string  $value
-     * @return \Symfony\Component\HttpFoundation\Cookie
-     */
-    protected function createRecaller($value)
-    {
-        return $this->getCookieJar()->forever($this->getRecallerName(), $value);
-    }
-
-    /**
-     * Log the user out of the application.
-     *
-     * @return void
-     */
-    public function logout()
-    {
-        $user = $this->user();
-
-        $this->clearUserDataFromStorage();
-
-        if (! is_null($this->user) && ! empty($user->getRememberToken())) {
-            $this->cycleRememberToken($user);
-        }
-
-        // If we have an event dispatcher instance, we can fire off the logout event
-        // so any further processing can be done. This allows the developer to be
-        // listening for anytime a user signs out of this application manually.
-        if (isset($this->events)) {
-            $this->events->dispatch(new Logout($this->name, $user));
-        }
-
-        // Once we have fired the logout event we will clear the users out of memory
-        // so they are no longer available as the user is no longer considered as
-        // being signed into this application and should not be available here.
-        $this->user = null;
-
-        $this->loggedOut = true;
-    }
-
-    /**
-     * Log the user out of the application on their current device only.
-     *
-     * This method does not cycle the "remember" token.
-     *
-     * @return void
-     */
-    public function logoutCurrentDevice()
-    {
-        $user = $this->user();
-
-        $this->clearUserDataFromStorage();
-
-        // If we have an event dispatcher instance, we can fire off the logout event
-        // so any further processing can be done. This allows the developer to be
-        // listening for anytime a user signs out of this application manually.
-        if (isset($this->events)) {
-            $this->events->dispatch(new CurrentDeviceLogout($this->name, $user));
-        }
-
-        // Once we have fired the logout event we will clear the users out of memory
-        // so they are no longer available as the user is no longer considered as
-        // being signed into this application and should not be available here.
-        $this->user = null;
-
-        $this->loggedOut = true;
-    }
-
-    /**
-     * Remove the user data from the session and cookies.
-     *
-     * @return void
-     */
-    protected function clearUserDataFromStorage()
-    {
-        $this->session->remove($this->getName());
-
-        if (! is_null($this->recaller())) {
-            $this->getCookieJar()->queue($this->getCookieJar()
-                    ->forget($this->getRecallerName()));
-        }
-    }
-
-    /**
-     * Refresh the "remember me" token for the user.
-     *
-     * @param  \Illuminate\Contracts\Auth\Authenticatable  $user
-     * @return void
-     */
-    protected function cycleRememberToken(AuthenticatableContract $user)
-    {
-        $user->setRememberToken($token = Str::random(60));
-
-        $this->provider->updateRememberToken($user, $token);
-    }
-
-    /**
-     * Invalidate other sessions for the current user.
-     *
-     * The application must be using the AuthenticateSession middleware.
-     *
-     * @param  string  $password
-     * @param  string  $attribute
-     * @return bool|null
-     */
-    public function logoutOtherDevices($password, $attribute = 'password')
-    {
-        if (! $this->user()) {
-            return;
-        }
-
-        $result = tap($this->user()->forceFill([
-            $attribute => Hash::make($password),
-        ]))->save();
-
-        if ($this->recaller() ||
-            $this->getCookieJar()->hasQueued($this->getRecallerName())) {
-            $this->queueRecallerCookie($this->user());
-        }
-
-        $this->fireOtherDeviceLogoutEvent($this->user());
-
-        return $result;
-    }
-
-    /**
-     * Register an authentication attempt event listener.
-     *
-     * @param  mixed  $callback
-     * @return void
-     */
-    public function attempting($callback)
-    {
-        if (isset($this->events)) {
-            $this->events->listen(Events\Attempting::class, $callback);
-        }
-    }
-
-    /**
-     * Fire the attempt event with the arguments.
-     *
-     * @param  array  $credentials
-     * @param  bool  $remember
-     * @return void
-     */
-    protected function fireAttemptEvent(array $credentials, $remember = false)
-    {
-        if (isset($this->events)) {
-            $this->events->dispatch(new Attempting(
-                $this->name, $credentials, $remember
-            ));
-        }
-    }
-
-    /**
-     * Fires the validated event if the dispatcher is set.
-     *
-     * @param  \Illuminate\Contracts\Auth\Authenticatable  $user
-     * @return void
-     */
-    protected function fireValidatedEvent($user)
-    {
-        if (isset($this->events)) {
-            $this->events->dispatch(new Validated(
-                $this->name, $user
-            ));
-        }
-    }
-
-    /**
-     * Fire the login event if the dispatcher is set.
-     *
-     * @param  \Illuminate\Contracts\Auth\Authenticatable  $user
-     * @param  bool  $remember
-     * @return void
-     */
-    protected function fireLoginEvent($user, $remember = false)
-    {
-        if (isset($this->events)) {
-            $this->events->dispatch(new Login(
-                $this->name, $user, $remember
-            ));
-        }
-    }
-
-    /**
-     * Fire the authenticated event if the dispatcher is set.
-     *
-     * @param  \Illuminate\Contracts\Auth\Authenticatable  $user
-     * @return void
-     */
-    protected function fireAuthenticatedEvent($user)
-    {
-        if (isset($this->events)) {
-            $this->events->dispatch(new Authenticated(
-                $this->name, $user
-            ));
-        }
-    }
-
-    /**
-     * Fire the other device logout event if the dispatcher is set.
-     *
-     * @param  \Illuminate\Contracts\Auth\Authenticatable  $user
-     * @return void
-     */
-    protected function fireOtherDeviceLogoutEvent($user)
-    {
-        if (isset($this->events)) {
-            $this->events->dispatch(new OtherDeviceLogout(
-                $this->name, $user
-            ));
-        }
-    }
-
-    /**
-     * Fire the failed authentication attempt event with the given arguments.
-     *
-     * @param  \Illuminate\Contracts\Auth\Authenticatable|null  $user
-     * @param  array  $credentials
-     * @return void
-     */
-    protected function fireFailedEvent($user, array $credentials)
-    {
-        if (isset($this->events)) {
-            $this->events->dispatch(new Failed(
-                $this->name, $user, $credentials
-            ));
-        }
-    }
-
-    /**
-     * Get the last user we attempted to authenticate.
-     *
-     * @return \Illuminate\Contracts\Auth\Authenticatable
-     */
-    public function getLastAttempted()
-    {
-        return $this->lastAttempted;
-    }
-
-    /**
-     * Get a unique identifier for the auth session value.
-     *
-     * @return string
-     */
-    public function getName()
-    {
-        return 'login_'.$this->name.'_'.sha1(static::class);
-    }
-
-    /**
-     * Get the name of the cookie used to store the "recaller".
-     *
-     * @return string
-     */
-    public function getRecallerName()
-    {
-        return 'remember_'.$this->name.'_'.sha1(static::class);
-    }
-
-    /**
-     * Determine if the user was authenticated via "remember me" cookie.
-     *
-     * @return bool
-     */
-    public function viaRemember()
-    {
-        return $this->viaRemember;
-    }
-
-    /**
-     * Get the cookie creator instance used by the guard.
-     *
-     * @return \Illuminate\Contracts\Cookie\QueueingFactory
-     *
-     * @throws \RuntimeException
-     */
-    public function getCookieJar()
-    {
-        if (! isset($this->cookie)) {
-            throw new RuntimeException('Cookie jar has not been set.');
-        }
-
-        return $this->cookie;
-    }
-
-    /**
-     * Set the cookie creator instance used by the guard.
-     *
-     * @param  \Illuminate\Contracts\Cookie\QueueingFactory  $cookie
-     * @return void
-     */
-    public function setCookieJar(CookieJar $cookie)
-    {
-        $this->cookie = $cookie;
-    }
-
-    /**
-     * Get the event dispatcher instance.
-     *
-     * @return \Illuminate\Contracts\Events\Dispatcher
-     */
-    public function getDispatcher()
-    {
-        return $this->events;
-    }
-
-    /**
-     * Set the event dispatcher instance.
-     *
-     * @param  \Illuminate\Contracts\Events\Dispatcher  $events
-     * @return void
-     */
-    public function setDispatcher(Dispatcher $events)
-    {
-        $this->events = $events;
-    }
-
-    /**
-     * Get the session store used by the guard.
-     *
-     * @return \Illuminate\Contracts\Session\Session
-     */
-    public function getSession()
-    {
-        return $this->session;
-    }
-
-    /**
-     * Return the currently cached user.
-     *
-     * @return \Illuminate\Contracts\Auth\Authenticatable|null
-     */
-    public function getUser()
-    {
-        return $this->user;
-    }
-
-    /**
-     * Set the current user.
-     *
-     * @param  \Illuminate\Contracts\Auth\Authenticatable  $user
-     * @return $this
-     */
-    public function setUser(AuthenticatableContract $user)
-    {
-        $this->user = $user;
-
-        $this->loggedOut = false;
-
-        $this->fireAuthenticatedEvent($user);
-
-        return $this;
-    }
-
-    /**
-     * Get the current request instance.
-     *
-     * @return \Symfony\Component\HttpFoundation\Request
-     */
-    public function getRequest()
-    {
-        return $this->request ?: Request::createFromGlobals();
-    }
-
-    /**
-     * Set the current request instance.
-     *
-     * @param  \Symfony\Component\HttpFoundation\Request  $request
-     * @return $this
-     */
-    public function setRequest(Request $request)
-    {
-        $this->request = $request;
-
-        return $this;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

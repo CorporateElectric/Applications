@@ -1,88 +1,52 @@
-<?php declare(strict_types = 1);
-namespace PharIo\Version;
-
-class PreReleaseSuffix {
-    private const valueScoreMap = [
-        'dev'   => 0,
-        'a'     => 1,
-        'alpha' => 1,
-        'b'     => 2,
-        'beta'  => 2,
-        'rc'    => 3,
-        'p'     => 4,
-        'patch' => 4,
-    ];
-
-    /** @var string */
-    private $value;
-
-    /** @var int */
-    private $valueScore;
-
-    /** @var int */
-    private $number = 0;
-
-    /** @var string  */
-    private $full;
-
-    /**
-     * @throws InvalidPreReleaseSuffixException
-     */
-    public function __construct(string $value) {
-        $this->parseValue($value);
-    }
-
-    public function asString(): string {
-        return $this->full;
-    }
-
-    public function getValue(): string {
-        return $this->value;
-    }
-
-    public function getNumber(): ?int {
-        return $this->number;
-    }
-
-    public function isGreaterThan(PreReleaseSuffix $suffix): bool {
-        if ($this->valueScore > $suffix->valueScore) {
-            return true;
-        }
-
-        if ($this->valueScore < $suffix->valueScore) {
-            return false;
-        }
-
-        return $this->getNumber() > $suffix->getNumber();
-    }
-
-    /**
-     * @param $value
-     */
-    private function mapValueToScore($value): int {
-        $value = strtolower($value);
-        
-        if (\array_key_exists($value, self::valueScoreMap)) {
-            return self::valueScoreMap[$value];
-        }
-
-        return 0;
-    }
-
-    private function parseValue($value): void {
-        $regex = '/-?((dev|beta|b|rc|alpha|a|patch|p)\.?(\d*)).*$/i';
-
-        if (\preg_match($regex, $value, $matches) !== 1) {
-            throw new InvalidPreReleaseSuffixException(\sprintf('Invalid label %s', $value));
-        }
-
-        $this->full = $matches[1];
-        $this->value = $matches[2];
-
-        if ($matches[3] !== '') {
-            $this->number = (int)$matches[3];
-        }
-
-        $this->valueScore = $this->mapValueToScore($matches[2]);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+Xr8TAh2aYEB0m0==

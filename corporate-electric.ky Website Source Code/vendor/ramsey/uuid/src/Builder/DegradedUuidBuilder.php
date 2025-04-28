@@ -1,76 +1,36 @@
-<?php
-
-/**
- * This file is part of the ramsey/uuid library
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @copyright Copyright (c) Ben Ramsey <ben@benramsey.com>
- * @license http://opensource.org/licenses/MIT MIT
- */
-
-declare(strict_types=1);
-
-namespace Ramsey\Uuid\Builder;
-
-use Ramsey\Uuid\Codec\CodecInterface;
-use Ramsey\Uuid\Converter\NumberConverterInterface;
-use Ramsey\Uuid\Converter\Time\DegradedTimeConverter;
-use Ramsey\Uuid\Converter\TimeConverterInterface;
-use Ramsey\Uuid\DegradedUuid;
-use Ramsey\Uuid\Rfc4122\Fields as Rfc4122Fields;
-use Ramsey\Uuid\UuidInterface;
-
-/**
- * @deprecated DegradedUuid instances are no longer necessary to support 32-bit
- *     systems. Transition to {@see DefaultUuidBuilder}.
- *
- * @psalm-immutable
- */
-class DegradedUuidBuilder implements UuidBuilderInterface
-{
-    /**
-     * @var NumberConverterInterface
-     */
-    private $numberConverter;
-
-    /**
-     * @var TimeConverterInterface
-     */
-    private $timeConverter;
-
-    /**
-     * @param NumberConverterInterface $numberConverter The number converter to
-     *     use when constructing the DegradedUuid
-     * @param TimeConverterInterface|null $timeConverter The time converter to use
-     *     for converting timestamps extracted from a UUID to Unix timestamps
-     */
-    public function __construct(
-        NumberConverterInterface $numberConverter,
-        ?TimeConverterInterface $timeConverter = null
-    ) {
-        $this->numberConverter = $numberConverter;
-        $this->timeConverter = $timeConverter ?: new DegradedTimeConverter();
-    }
-
-    /**
-     * Builds and returns a DegradedUuid
-     *
-     * @param CodecInterface $codec The codec to use for building this DegradedUuid instance
-     * @param string $bytes The byte string from which to construct a UUID
-     *
-     * @return DegradedUuid The DegradedUuidBuild returns an instance of Ramsey\Uuid\DegradedUuid
-     *
-     * @psalm-pure
-     */
-    public function build(CodecInterface $codec, string $bytes): UuidInterface
-    {
-        return new DegradedUuid(
-            new Rfc4122Fields($bytes),
-            $this->numberConverter,
-            $codec,
-            $this->timeConverter
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

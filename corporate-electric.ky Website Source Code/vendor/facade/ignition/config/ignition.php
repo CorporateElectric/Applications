@@ -1,125 +1,55 @@
-<?php
-
-return [
-
-    /*
-    |--------------------------------------------------------------------------
-    | Editor
-    |--------------------------------------------------------------------------
-    |
-    | Choose your preferred editor to use when clicking any edit button.
-    |
-    | Supported: "phpstorm", "vscode", "vscode-insiders",
-    |            "sublime", "atom", "nova"
-    |
-    */
-
-    'editor' => env('IGNITION_EDITOR', 'phpstorm'),
-
-    /*
-    |--------------------------------------------------------------------------
-    | Theme
-    |--------------------------------------------------------------------------
-    |
-    | Here you may specify which theme Ignition should use.
-    |
-    | Supported: "light", "dark", "auto"
-    |
-    */
-
-    'theme' => env('IGNITION_THEME', 'light'),
-
-    /*
-    |--------------------------------------------------------------------------
-    | Sharing
-    |--------------------------------------------------------------------------
-    |
-    | You can share local errors with colleagues or others around the world.
-    | Sharing is completely free and doesn't require an account on Flare.
-    |
-    | If necessary, you can completely disable sharing below.
-    |
-    */
-
-    'enable_share_button' => env('IGNITION_SHARING_ENABLED', true),
-
-    /*
-    |--------------------------------------------------------------------------
-    | Register Ignition commands
-    |--------------------------------------------------------------------------
-    |
-    | Ignition comes with an additional make command that lets you create
-    | new solution classes more easily. To keep your default Laravel
-    | installation clean, this command is not registered by default.
-    |
-    | You can enable the command registration below.
-    |
-    */
-    'register_commands' => env('REGISTER_IGNITION_COMMANDS', false),
-
-    /*
-    |--------------------------------------------------------------------------
-    | Ignored Solution Providers
-    |--------------------------------------------------------------------------
-    |
-    | You may specify a list of solution providers (as fully qualified class
-    | names) that shouldn't be loaded. Ignition will ignore these classes
-    | and possible solutions provided by them will never be displayed.
-    |
-    */
-
-    'ignored_solution_providers' => [
-        \Facade\Ignition\SolutionProviders\MissingPackageSolutionProvider::class,
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Runnable Solutions
-    |--------------------------------------------------------------------------
-    |
-    | Some solutions that Ignition displays are runnable and can perform
-    | various tasks. Runnable solutions are enabled when your app has
-    | debug mode enabled. You may also fully disable this feature.
-    |
-    */
-
-    'enable_runnable_solutions' => env('IGNITION_ENABLE_RUNNABLE_SOLUTIONS', null),
-
-    /*
-    |--------------------------------------------------------------------------
-    | Remote Path Mapping
-    |--------------------------------------------------------------------------
-    |
-    | If you are using a remote dev server, like Laravel Homestead, Docker, or
-    | even a remote VPS, it will be necessary to specify your path mapping.
-    |
-    | Leaving one, or both of these, empty or null will not trigger the remote
-    | URL changes and Ignition will treat your editor links as local files.
-    |
-    | "remote_sites_path" is an absolute base path for your sites or projects
-    | in Homestead, Vagrant, Docker, or another remote development server.
-    |
-    | Example value: "/home/vagrant/Code"
-    |
-    | "local_sites_path" is an absolute base path for your sites or projects
-    | on your local computer where your IDE or code editor is running on.
-    |
-    | Example values: "/Users/<name>/Code", "C:\Users\<name>\Documents\Code"
-    |
-    */
-
-    'remote_sites_path' => env('IGNITION_REMOTE_SITES_PATH', ''),
-    'local_sites_path' => env('IGNITION_LOCAL_SITES_PATH', ''),
-
-    /*
-    |--------------------------------------------------------------------------
-    | Housekeeping Endpoint Prefix
-    |--------------------------------------------------------------------------
-    |
-    | Ignition registers a couple of routes when it is enabled. Below you may
-    | specify a route prefix that will be used to host all internal links.
-    |
-    */
-    'housekeeping_endpoint_prefix' => '_ignition',
-
-];
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,899 +1,481 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Reader;
-
-use PhpOffice\PhpSpreadsheet\Cell\AddressHelper;
-use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
-use PhpOffice\PhpSpreadsheet\Cell\DataType;
-use PhpOffice\PhpSpreadsheet\DefinedName;
-use PhpOffice\PhpSpreadsheet\Document\Properties;
-use PhpOffice\PhpSpreadsheet\Reader\Security\XmlScanner;
-use PhpOffice\PhpSpreadsheet\Reader\Xml\PageSettings;
-use PhpOffice\PhpSpreadsheet\RichText\RichText;
-use PhpOffice\PhpSpreadsheet\Settings;
-use PhpOffice\PhpSpreadsheet\Shared\Date;
-use PhpOffice\PhpSpreadsheet\Shared\File;
-use PhpOffice\PhpSpreadsheet\Shared\StringHelper;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Style\Alignment;
-use PhpOffice\PhpSpreadsheet\Style\Border;
-use PhpOffice\PhpSpreadsheet\Style\Borders;
-use PhpOffice\PhpSpreadsheet\Style\Fill;
-use PhpOffice\PhpSpreadsheet\Style\Font;
-use SimpleXMLElement;
-
-/**
- * Reader for SpreadsheetML, the XML schema for Microsoft Office Excel 2003.
- */
-class Xml extends BaseReader
-{
-    /**
-     * Formats.
-     *
-     * @var array
-     */
-    protected $styles = [];
-
-    /**
-     * Create a new Excel2003XML Reader instance.
-     */
-    public function __construct()
-    {
-        parent::__construct();
-        $this->securityScanner = XmlScanner::getInstance($this);
-    }
-
-    private $fileContents = '';
-
-    private static $mappings = [
-        'borderStyle' => [
-            '1continuous' => Border::BORDER_THIN,
-            '1dash' => Border::BORDER_DASHED,
-            '1dashdot' => Border::BORDER_DASHDOT,
-            '1dashdotdot' => Border::BORDER_DASHDOTDOT,
-            '1dot' => Border::BORDER_DOTTED,
-            '1double' => Border::BORDER_DOUBLE,
-            '2continuous' => Border::BORDER_MEDIUM,
-            '2dash' => Border::BORDER_MEDIUMDASHED,
-            '2dashdot' => Border::BORDER_MEDIUMDASHDOT,
-            '2dashdotdot' => Border::BORDER_MEDIUMDASHDOTDOT,
-            '2dot' => Border::BORDER_DOTTED,
-            '2double' => Border::BORDER_DOUBLE,
-            '3continuous' => Border::BORDER_THICK,
-            '3dash' => Border::BORDER_MEDIUMDASHED,
-            '3dashdot' => Border::BORDER_MEDIUMDASHDOT,
-            '3dashdotdot' => Border::BORDER_MEDIUMDASHDOTDOT,
-            '3dot' => Border::BORDER_DOTTED,
-            '3double' => Border::BORDER_DOUBLE,
-        ],
-        'fillType' => [
-            'solid' => Fill::FILL_SOLID,
-            'gray75' => Fill::FILL_PATTERN_DARKGRAY,
-            'gray50' => Fill::FILL_PATTERN_MEDIUMGRAY,
-            'gray25' => Fill::FILL_PATTERN_LIGHTGRAY,
-            'gray125' => Fill::FILL_PATTERN_GRAY125,
-            'gray0625' => Fill::FILL_PATTERN_GRAY0625,
-            'horzstripe' => Fill::FILL_PATTERN_DARKHORIZONTAL, // horizontal stripe
-            'vertstripe' => Fill::FILL_PATTERN_DARKVERTICAL, // vertical stripe
-            'reversediagstripe' => Fill::FILL_PATTERN_DARKUP, // reverse diagonal stripe
-            'diagstripe' => Fill::FILL_PATTERN_DARKDOWN, // diagonal stripe
-            'diagcross' => Fill::FILL_PATTERN_DARKGRID, // diagoanl crosshatch
-            'thickdiagcross' => Fill::FILL_PATTERN_DARKTRELLIS, // thick diagonal crosshatch
-            'thinhorzstripe' => Fill::FILL_PATTERN_LIGHTHORIZONTAL,
-            'thinvertstripe' => Fill::FILL_PATTERN_LIGHTVERTICAL,
-            'thinreversediagstripe' => Fill::FILL_PATTERN_LIGHTUP,
-            'thindiagstripe' => Fill::FILL_PATTERN_LIGHTDOWN,
-            'thinhorzcross' => Fill::FILL_PATTERN_LIGHTGRID, // thin horizontal crosshatch
-            'thindiagcross' => Fill::FILL_PATTERN_LIGHTTRELLIS, // thin diagonal crosshatch
-        ],
-    ];
-
-    public static function xmlMappings(): array
-    {
-        return self::$mappings;
-    }
-
-    /**
-     * Can the current IReader read the file?
-     *
-     * @param string $pFilename
-     *
-     * @return bool
-     */
-    public function canRead($pFilename)
-    {
-        //    Office                    xmlns:o="urn:schemas-microsoft-com:office:office"
-        //    Excel                    xmlns:x="urn:schemas-microsoft-com:office:excel"
-        //    XML Spreadsheet            xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
-        //    Spreadsheet component    xmlns:c="urn:schemas-microsoft-com:office:component:spreadsheet"
-        //    XML schema                 xmlns:s="uuid:BDC6E3F0-6DA3-11d1-A2A3-00AA00C14882"
-        //    XML data type            xmlns:dt="uuid:C2F41010-65B3-11d1-A29F-00AA00C14882"
-        //    MS-persist recordset    xmlns:rs="urn:schemas-microsoft-com:rowset"
-        //    Rowset                    xmlns:z="#RowsetSchema"
-        //
-
-        $signature = [
-            '<?xml version="1.0"',
-            '<?mso-application progid="Excel.Sheet"?>',
-        ];
-
-        // Open file
-        $data = file_get_contents($pFilename);
-
-        // Why?
-        //$data = str_replace("'", '"', $data); // fix headers with single quote
-
-        $valid = true;
-        foreach ($signature as $match) {
-            // every part of the signature must be present
-            if (strpos($data, $match) === false) {
-                $valid = false;
-
-                break;
-            }
-        }
-
-        //    Retrieve charset encoding
-        if (preg_match('/<?xml.*encoding=[\'"](.*?)[\'"].*?>/m', $data, $matches)) {
-            $charSet = strtoupper($matches[1]);
-            if (1 == preg_match('/^ISO-8859-\d[\dL]?$/i', $charSet)) {
-                $data = StringHelper::convertEncoding($data, 'UTF-8', $charSet);
-                $data = preg_replace('/(<?xml.*encoding=[\'"]).*?([\'"].*?>)/um', '$1' . 'UTF-8' . '$2', $data, 1);
-            }
-        }
-        $this->fileContents = $data;
-
-        return $valid;
-    }
-
-    /**
-     * Check if the file is a valid SimpleXML.
-     *
-     * @param string $pFilename
-     *
-     * @return false|SimpleXMLElement
-     */
-    public function trySimpleXMLLoadString($pFilename)
-    {
-        try {
-            $xml = simplexml_load_string(
-                $this->securityScanner->scan($this->fileContents ?: file_get_contents($pFilename)),
-                'SimpleXMLElement',
-                Settings::getLibXmlLoaderOptions()
-            );
-        } catch (\Exception $e) {
-            throw new Exception('Cannot load invalid XML file: ' . $pFilename, 0, $e);
-        }
-        $this->fileContents = '';
-
-        return $xml;
-    }
-
-    /**
-     * Reads names of the worksheets from a file, without parsing the whole file to a Spreadsheet object.
-     *
-     * @param string $pFilename
-     *
-     * @return array
-     */
-    public function listWorksheetNames($pFilename)
-    {
-        File::assertFile($pFilename);
-        if (!$this->canRead($pFilename)) {
-            throw new Exception($pFilename . ' is an Invalid Spreadsheet file.');
-        }
-
-        $worksheetNames = [];
-
-        $xml = $this->trySimpleXMLLoadString($pFilename);
-
-        $namespaces = $xml->getNamespaces(true);
-
-        $xml_ss = $xml->children($namespaces['ss']);
-        foreach ($xml_ss->Worksheet as $worksheet) {
-            $worksheet_ss = $worksheet->attributes($namespaces['ss']);
-            $worksheetNames[] = (string) $worksheet_ss['Name'];
-        }
-
-        return $worksheetNames;
-    }
-
-    /**
-     * Return worksheet info (Name, Last Column Letter, Last Column Index, Total Rows, Total Columns).
-     *
-     * @param string $pFilename
-     *
-     * @return array
-     */
-    public function listWorksheetInfo($pFilename)
-    {
-        File::assertFile($pFilename);
-        if (!$this->canRead($pFilename)) {
-            throw new Exception($pFilename . ' is an Invalid Spreadsheet file.');
-        }
-
-        $worksheetInfo = [];
-
-        $xml = $this->trySimpleXMLLoadString($pFilename);
-
-        $namespaces = $xml->getNamespaces(true);
-
-        $worksheetID = 1;
-        $xml_ss = $xml->children($namespaces['ss']);
-        foreach ($xml_ss->Worksheet as $worksheet) {
-            $worksheet_ss = $worksheet->attributes($namespaces['ss']);
-
-            $tmpInfo = [];
-            $tmpInfo['worksheetName'] = '';
-            $tmpInfo['lastColumnLetter'] = 'A';
-            $tmpInfo['lastColumnIndex'] = 0;
-            $tmpInfo['totalRows'] = 0;
-            $tmpInfo['totalColumns'] = 0;
-
-            $tmpInfo['worksheetName'] = "Worksheet_{$worksheetID}";
-            if (isset($worksheet_ss['Name'])) {
-                $tmpInfo['worksheetName'] = (string) $worksheet_ss['Name'];
-            }
-
-            if (isset($worksheet->Table->Row)) {
-                $rowIndex = 0;
-
-                foreach ($worksheet->Table->Row as $rowData) {
-                    $columnIndex = 0;
-                    $rowHasData = false;
-
-                    foreach ($rowData->Cell as $cell) {
-                        if (isset($cell->Data)) {
-                            $tmpInfo['lastColumnIndex'] = max($tmpInfo['lastColumnIndex'], $columnIndex);
-                            $rowHasData = true;
-                        }
-
-                        ++$columnIndex;
-                    }
-
-                    ++$rowIndex;
-
-                    if ($rowHasData) {
-                        $tmpInfo['totalRows'] = max($tmpInfo['totalRows'], $rowIndex);
-                    }
-                }
-            }
-
-            $tmpInfo['lastColumnLetter'] = Coordinate::stringFromColumnIndex($tmpInfo['lastColumnIndex'] + 1);
-            $tmpInfo['totalColumns'] = $tmpInfo['lastColumnIndex'] + 1;
-
-            $worksheetInfo[] = $tmpInfo;
-            ++$worksheetID;
-        }
-
-        return $worksheetInfo;
-    }
-
-    /**
-     * Loads Spreadsheet from file.
-     *
-     * @param string $pFilename
-     *
-     * @return Spreadsheet
-     */
-    public function load($pFilename)
-    {
-        // Create new Spreadsheet
-        $spreadsheet = new Spreadsheet();
-        $spreadsheet->removeSheetByIndex(0);
-
-        // Load into this instance
-        return $this->loadIntoExisting($pFilename, $spreadsheet);
-    }
-
-    private static function identifyFixedStyleValue($styleList, &$styleAttributeValue)
-    {
-        $returnValue = false;
-        $styleAttributeValue = strtolower($styleAttributeValue);
-        foreach ($styleList as $style) {
-            if ($styleAttributeValue == strtolower($style)) {
-                $styleAttributeValue = $style;
-                $returnValue = true;
-
-                break;
-            }
-        }
-
-        return $returnValue;
-    }
-
-    protected static function hex2str($hex)
-    {
-        return mb_chr((int) hexdec($hex[1]), 'UTF-8');
-    }
-
-    /**
-     * Loads from file into Spreadsheet instance.
-     *
-     * @param string $pFilename
-     *
-     * @return Spreadsheet
-     */
-    public function loadIntoExisting($pFilename, Spreadsheet $spreadsheet)
-    {
-        File::assertFile($pFilename);
-        if (!$this->canRead($pFilename)) {
-            throw new Exception($pFilename . ' is an Invalid Spreadsheet file.');
-        }
-
-        $xml = $this->trySimpleXMLLoadString($pFilename);
-
-        $namespaces = $xml->getNamespaces(true);
-
-        $docProps = $spreadsheet->getProperties();
-        if (isset($xml->DocumentProperties[0])) {
-            foreach ($xml->DocumentProperties[0] as $propertyName => $propertyValue) {
-                $stringValue = (string) $propertyValue;
-                switch ($propertyName) {
-                    case 'Title':
-                        $docProps->setTitle($stringValue);
-
-                        break;
-                    case 'Subject':
-                        $docProps->setSubject($stringValue);
-
-                        break;
-                    case 'Author':
-                        $docProps->setCreator($stringValue);
-
-                        break;
-                    case 'Created':
-                        $creationDate = strtotime($stringValue);
-                        $docProps->setCreated($creationDate);
-
-                        break;
-                    case 'LastAuthor':
-                        $docProps->setLastModifiedBy($stringValue);
-
-                        break;
-                    case 'LastSaved':
-                        $lastSaveDate = strtotime($stringValue);
-                        $docProps->setModified($lastSaveDate);
-
-                        break;
-                    case 'Company':
-                        $docProps->setCompany($stringValue);
-
-                        break;
-                    case 'Category':
-                        $docProps->setCategory($stringValue);
-
-                        break;
-                    case 'Manager':
-                        $docProps->setManager($stringValue);
-
-                        break;
-                    case 'Keywords':
-                        $docProps->setKeywords($stringValue);
-
-                        break;
-                    case 'Description':
-                        $docProps->setDescription($stringValue);
-
-                        break;
-                }
-            }
-        }
-        if (isset($xml->CustomDocumentProperties)) {
-            foreach ($xml->CustomDocumentProperties[0] as $propertyName => $propertyValue) {
-                $propertyAttributes = $propertyValue->attributes($namespaces['dt']);
-                $propertyName = preg_replace_callback('/_x([0-9a-f]{4})_/i', ['self', 'hex2str'], $propertyName);
-                $propertyType = Properties::PROPERTY_TYPE_UNKNOWN;
-                switch ((string) $propertyAttributes) {
-                    case 'string':
-                        $propertyType = Properties::PROPERTY_TYPE_STRING;
-                        $propertyValue = trim($propertyValue);
-
-                        break;
-                    case 'boolean':
-                        $propertyType = Properties::PROPERTY_TYPE_BOOLEAN;
-                        $propertyValue = (bool) $propertyValue;
-
-                        break;
-                    case 'integer':
-                        $propertyType = Properties::PROPERTY_TYPE_INTEGER;
-                        $propertyValue = (int) $propertyValue;
-
-                        break;
-                    case 'float':
-                        $propertyType = Properties::PROPERTY_TYPE_FLOAT;
-                        $propertyValue = (float) $propertyValue;
-
-                        break;
-                    case 'dateTime.tz':
-                        $propertyType = Properties::PROPERTY_TYPE_DATE;
-                        $propertyValue = strtotime(trim($propertyValue));
-
-                        break;
-                }
-                $docProps->setCustomProperty($propertyName, $propertyValue, $propertyType);
-            }
-        }
-
-        $this->parseStyles($xml, $namespaces);
-
-        $worksheetID = 0;
-        $xml_ss = $xml->children($namespaces['ss']);
-
-        foreach ($xml_ss->Worksheet as $worksheet) {
-            $worksheet_ss = $worksheet->attributes($namespaces['ss']);
-
-            if (
-                (isset($this->loadSheetsOnly)) && (isset($worksheet_ss['Name'])) &&
-                (!in_array($worksheet_ss['Name'], $this->loadSheetsOnly))
-            ) {
-                continue;
-            }
-
-            // Create new Worksheet
-            $spreadsheet->createSheet();
-            $spreadsheet->setActiveSheetIndex($worksheetID);
-            if (isset($worksheet_ss['Name'])) {
-                $worksheetName = (string) $worksheet_ss['Name'];
-                //    Use false for $updateFormulaCellReferences to prevent adjustment of worksheet references in
-                //        formula cells... during the load, all formulae should be correct, and we're simply bringing
-                //        the worksheet name in line with the formula, not the reverse
-                $spreadsheet->getActiveSheet()->setTitle($worksheetName, false, false);
-            }
-
-            // locally scoped defined names
-            if (isset($worksheet->Names[0])) {
-                foreach ($worksheet->Names[0] as $definedName) {
-                    $definedName_ss = $definedName->attributes($namespaces['ss']);
-                    $name = (string) $definedName_ss['Name'];
-                    $definedValue = (string) $definedName_ss['RefersTo'];
-                    $convertedValue = AddressHelper::convertFormulaToA1($definedValue);
-                    if ($convertedValue[0] === '=') {
-                        $convertedValue = substr($convertedValue, 1);
-                    }
-                    $spreadsheet->addDefinedName(DefinedName::createInstance($name, $spreadsheet->getActiveSheet(), $convertedValue, true));
-                }
-            }
-
-            $columnID = 'A';
-            if (isset($worksheet->Table->Column)) {
-                foreach ($worksheet->Table->Column as $columnData) {
-                    $columnData_ss = $columnData->attributes($namespaces['ss']);
-                    if (isset($columnData_ss['Index'])) {
-                        $columnID = Coordinate::stringFromColumnIndex((int) $columnData_ss['Index']);
-                    }
-                    if (isset($columnData_ss['Width'])) {
-                        $columnWidth = $columnData_ss['Width'];
-                        $spreadsheet->getActiveSheet()->getColumnDimension($columnID)->setWidth($columnWidth / 5.4);
-                    }
-                    ++$columnID;
-                }
-            }
-
-            $rowID = 1;
-            if (isset($worksheet->Table->Row)) {
-                $additionalMergedCells = 0;
-                foreach ($worksheet->Table->Row as $rowData) {
-                    $rowHasData = false;
-                    $row_ss = $rowData->attributes($namespaces['ss']);
-                    if (isset($row_ss['Index'])) {
-                        $rowID = (int) $row_ss['Index'];
-                    }
-
-                    $columnID = 'A';
-                    foreach ($rowData->Cell as $cell) {
-                        $cell_ss = $cell->attributes($namespaces['ss']);
-                        if (isset($cell_ss['Index'])) {
-                            $columnID = Coordinate::stringFromColumnIndex((int) $cell_ss['Index']);
-                        }
-                        $cellRange = $columnID . $rowID;
-
-                        if ($this->getReadFilter() !== null) {
-                            if (!$this->getReadFilter()->readCell($columnID, $rowID, $worksheetName)) {
-                                ++$columnID;
-
-                                continue;
-                            }
-                        }
-
-                        if (isset($cell_ss['HRef'])) {
-                            $spreadsheet->getActiveSheet()->getCell($cellRange)->getHyperlink()->setUrl((string) $cell_ss['HRef']);
-                        }
-
-                        if ((isset($cell_ss['MergeAcross'])) || (isset($cell_ss['MergeDown']))) {
-                            $columnTo = $columnID;
-                            if (isset($cell_ss['MergeAcross'])) {
-                                $additionalMergedCells += (int) $cell_ss['MergeAcross'];
-                                $columnTo = Coordinate::stringFromColumnIndex(Coordinate::columnIndexFromString($columnID) + $cell_ss['MergeAcross']);
-                            }
-                            $rowTo = $rowID;
-                            if (isset($cell_ss['MergeDown'])) {
-                                $rowTo = $rowTo + $cell_ss['MergeDown'];
-                            }
-                            $cellRange .= ':' . $columnTo . $rowTo;
-                            $spreadsheet->getActiveSheet()->mergeCells($cellRange);
-                        }
-
-                        $hasCalculatedValue = false;
-                        $cellDataFormula = '';
-                        if (isset($cell_ss['Formula'])) {
-                            $cellDataFormula = $cell_ss['Formula'];
-                            $hasCalculatedValue = true;
-                        }
-                        if (isset($cell->Data)) {
-                            $cellData = $cell->Data;
-                            $cellValue = (string) $cellData;
-                            $type = DataType::TYPE_NULL;
-                            $cellData_ss = $cellData->attributes($namespaces['ss']);
-                            if (isset($cellData_ss['Type'])) {
-                                $cellDataType = $cellData_ss['Type'];
-                                switch ($cellDataType) {
-                                    /*
-                                    const TYPE_STRING        = 's';
-                                    const TYPE_FORMULA        = 'f';
-                                    const TYPE_NUMERIC        = 'n';
-                                    const TYPE_BOOL            = 'b';
-                                    const TYPE_NULL            = 'null';
-                                    const TYPE_INLINE        = 'inlineStr';
-                                    const TYPE_ERROR        = 'e';
-                                    */
-                                    case 'String':
-                                        $type = DataType::TYPE_STRING;
-
-                                        break;
-                                    case 'Number':
-                                        $type = DataType::TYPE_NUMERIC;
-                                        $cellValue = (float) $cellValue;
-                                        if (floor($cellValue) == $cellValue) {
-                                            $cellValue = (int) $cellValue;
-                                        }
-
-                                        break;
-                                    case 'Boolean':
-                                        $type = DataType::TYPE_BOOL;
-                                        $cellValue = ($cellValue != 0);
-
-                                        break;
-                                    case 'DateTime':
-                                        $type = DataType::TYPE_NUMERIC;
-                                        $cellValue = Date::PHPToExcel(strtotime($cellValue . ' UTC'));
-
-                                        break;
-                                    case 'Error':
-                                        $type = DataType::TYPE_ERROR;
-                                        $hasCalculatedValue = false;
-
-                                        break;
-                                }
-                            }
-
-                            if ($hasCalculatedValue) {
-                                $type = DataType::TYPE_FORMULA;
-                                $columnNumber = Coordinate::columnIndexFromString($columnID);
-                                $cellDataFormula = AddressHelper::convertFormulaToA1($cellDataFormula, $rowID, $columnNumber);
-                            }
-
-                            $spreadsheet->getActiveSheet()->getCell($columnID . $rowID)->setValueExplicit((($hasCalculatedValue) ? $cellDataFormula : $cellValue), $type);
-                            if ($hasCalculatedValue) {
-                                $spreadsheet->getActiveSheet()->getCell($columnID . $rowID)->setCalculatedValue($cellValue);
-                            }
-                            $rowHasData = true;
-                        }
-
-                        if (isset($cell->Comment)) {
-                            $commentAttributes = $cell->Comment->attributes($namespaces['ss']);
-                            $author = 'unknown';
-                            if (isset($commentAttributes->Author)) {
-                                $author = (string) $commentAttributes->Author;
-                            }
-                            $node = $cell->Comment->Data->asXML();
-                            $annotation = strip_tags($node);
-                            $spreadsheet->getActiveSheet()->getComment($columnID . $rowID)->setAuthor($author)->setText($this->parseRichText($annotation));
-                        }
-
-                        if (isset($cell_ss['StyleID'])) {
-                            $style = (string) $cell_ss['StyleID'];
-                            if ((isset($this->styles[$style])) && (!empty($this->styles[$style]))) {
-                                //if (!$spreadsheet->getActiveSheet()->cellExists($columnID . $rowID)) {
-                                //    $spreadsheet->getActiveSheet()->getCell($columnID . $rowID)->setValue(null);
-                                //}
-                                $spreadsheet->getActiveSheet()->getStyle($cellRange)->applyFromArray($this->styles[$style]);
-                            }
-                        }
-                        ++$columnID;
-                        while ($additionalMergedCells > 0) {
-                            ++$columnID;
-                            --$additionalMergedCells;
-                        }
-                    }
-
-                    if ($rowHasData) {
-                        if (isset($row_ss['Height'])) {
-                            $rowHeight = $row_ss['Height'];
-                            $spreadsheet->getActiveSheet()->getRowDimension($rowID)->setRowHeight($rowHeight);
-                        }
-                    }
-
-                    ++$rowID;
-                }
-
-                if (isset($namespaces['x'])) {
-                    $xmlX = $worksheet->children($namespaces['x']);
-                    if (isset($xmlX->WorksheetOptions)) {
-                        (new PageSettings($xmlX, $namespaces))->loadPageSettings($spreadsheet);
-                    }
-                }
-            }
-            ++$worksheetID;
-        }
-
-        // Globally scoped defined names
-        $activeWorksheet = $spreadsheet->setActiveSheetIndex(0);
-        if (isset($xml->Names[0])) {
-            foreach ($xml->Names[0] as $definedName) {
-                $definedName_ss = $definedName->attributes($namespaces['ss']);
-                $name = (string) $definedName_ss['Name'];
-                $definedValue = (string) $definedName_ss['RefersTo'];
-                $convertedValue = AddressHelper::convertFormulaToA1($definedValue);
-                if ($convertedValue[0] === '=') {
-                    $convertedValue = substr($convertedValue, 1);
-                }
-                $spreadsheet->addDefinedName(DefinedName::createInstance($name, $activeWorksheet, $convertedValue));
-            }
-        }
-
-        // Return
-        return $spreadsheet;
-    }
-
-    protected function parseRichText($is)
-    {
-        $value = new RichText();
-
-        $value->createText($is);
-
-        return $value;
-    }
-
-    private function parseStyles(SimpleXMLElement $xml, array $namespaces): void
-    {
-        if (!isset($xml->Styles)) {
-            return;
-        }
-
-        foreach ($xml->Styles[0] as $style) {
-            $style_ss = $style->attributes($namespaces['ss']);
-            $styleID = (string) $style_ss['ID'];
-            $this->styles[$styleID] = (isset($this->styles['Default'])) ? $this->styles['Default'] : [];
-            foreach ($style as $styleType => $styleData) {
-                $styleAttributes = $styleData->attributes($namespaces['ss']);
-                switch ($styleType) {
-                    case 'Alignment':
-                        $this->parseStyleAlignment($styleID, $styleAttributes);
-
-                        break;
-                    case 'Borders':
-                        $this->parseStyleBorders($styleID, $styleData, $namespaces);
-
-                        break;
-                    case 'Font':
-                        $this->parseStyleFont($styleID, $styleAttributes);
-
-                        break;
-                    case 'Interior':
-                        $this->parseStyleInterior($styleID, $styleAttributes);
-
-                        break;
-                    case 'NumberFormat':
-                        $this->parseStyleNumberFormat($styleID, $styleAttributes);
-
-                        break;
-                }
-            }
-        }
-    }
-
-    /**
-     * @param string $styleID
-     */
-    private function parseStyleAlignment($styleID, SimpleXMLElement $styleAttributes): void
-    {
-        $verticalAlignmentStyles = [
-            Alignment::VERTICAL_BOTTOM,
-            Alignment::VERTICAL_TOP,
-            Alignment::VERTICAL_CENTER,
-            Alignment::VERTICAL_JUSTIFY,
-        ];
-        $horizontalAlignmentStyles = [
-            Alignment::HORIZONTAL_GENERAL,
-            Alignment::HORIZONTAL_LEFT,
-            Alignment::HORIZONTAL_RIGHT,
-            Alignment::HORIZONTAL_CENTER,
-            Alignment::HORIZONTAL_CENTER_CONTINUOUS,
-            Alignment::HORIZONTAL_JUSTIFY,
-        ];
-
-        foreach ($styleAttributes as $styleAttributeKey => $styleAttributeValue) {
-            $styleAttributeValue = (string) $styleAttributeValue;
-            switch ($styleAttributeKey) {
-                case 'Vertical':
-                    if (self::identifyFixedStyleValue($verticalAlignmentStyles, $styleAttributeValue)) {
-                        $this->styles[$styleID]['alignment']['vertical'] = $styleAttributeValue;
-                    }
-
-                    break;
-                case 'Horizontal':
-                    if (self::identifyFixedStyleValue($horizontalAlignmentStyles, $styleAttributeValue)) {
-                        $this->styles[$styleID]['alignment']['horizontal'] = $styleAttributeValue;
-                    }
-
-                    break;
-                case 'WrapText':
-                    $this->styles[$styleID]['alignment']['wrapText'] = true;
-
-                    break;
-                case 'Rotate':
-                    $this->styles[$styleID]['alignment']['textRotation'] = $styleAttributeValue;
-
-                    break;
-            }
-        }
-    }
-
-    private static $borderPositions = ['top', 'left', 'bottom', 'right'];
-
-    /**
-     * @param $styleID
-     */
-    private function parseStyleBorders($styleID, SimpleXMLElement $styleData, array $namespaces): void
-    {
-        $diagonalDirection = '';
-        $borderPosition = '';
-        foreach ($styleData->Border as $borderStyle) {
-            $borderAttributes = $borderStyle->attributes($namespaces['ss']);
-            $thisBorder = [];
-            $style = (string) $borderAttributes->Weight;
-            $style .= strtolower((string) $borderAttributes->LineStyle);
-            $thisBorder['borderStyle'] = self::$mappings['borderStyle'][$style] ?? Border::BORDER_NONE;
-            foreach ($borderAttributes as $borderStyleKey => $borderStyleValue) {
-                switch ($borderStyleKey) {
-                    case 'Position':
-                        $borderStyleValue = strtolower((string) $borderStyleValue);
-                        if (in_array($borderStyleValue, self::$borderPositions)) {
-                            $borderPosition = $borderStyleValue;
-                        } elseif ($borderStyleValue == 'diagonalleft') {
-                            $diagonalDirection = $diagonalDirection ? Borders::DIAGONAL_BOTH : Borders::DIAGONAL_DOWN;
-                        } elseif ($borderStyleValue == 'diagonalright') {
-                            $diagonalDirection = $diagonalDirection ? Borders::DIAGONAL_BOTH : Borders::DIAGONAL_UP;
-                        }
-
-                        break;
-                    case 'Color':
-                        $borderColour = substr($borderStyleValue, 1);
-                        $thisBorder['color']['rgb'] = $borderColour;
-
-                        break;
-                }
-            }
-            if ($borderPosition) {
-                $this->styles[$styleID]['borders'][$borderPosition] = $thisBorder;
-            } elseif ($diagonalDirection) {
-                $this->styles[$styleID]['borders']['diagonalDirection'] = $diagonalDirection;
-                $this->styles[$styleID]['borders']['diagonal'] = $thisBorder;
-            }
-        }
-    }
-
-    private static $underlineStyles = [
-        Font::UNDERLINE_NONE,
-        Font::UNDERLINE_DOUBLE,
-        Font::UNDERLINE_DOUBLEACCOUNTING,
-        Font::UNDERLINE_SINGLE,
-        Font::UNDERLINE_SINGLEACCOUNTING,
-    ];
-
-    private function parseStyleFontUnderline(string $styleID, string $styleAttributeValue): void
-    {
-        if (self::identifyFixedStyleValue(self::$underlineStyles, $styleAttributeValue)) {
-            $this->styles[$styleID]['font']['underline'] = $styleAttributeValue;
-        }
-    }
-
-    private function parseStyleFontVerticalAlign(string $styleID, string $styleAttributeValue): void
-    {
-        if ($styleAttributeValue == 'Superscript') {
-            $this->styles[$styleID]['font']['superscript'] = true;
-        }
-        if ($styleAttributeValue == 'Subscript') {
-            $this->styles[$styleID]['font']['subscript'] = true;
-        }
-    }
-
-    /**
-     * @param $styleID
-     */
-    private function parseStyleFont(string $styleID, SimpleXMLElement $styleAttributes): void
-    {
-        foreach ($styleAttributes as $styleAttributeKey => $styleAttributeValue) {
-            $styleAttributeValue = (string) $styleAttributeValue;
-            switch ($styleAttributeKey) {
-                case 'FontName':
-                    $this->styles[$styleID]['font']['name'] = $styleAttributeValue;
-
-                    break;
-                case 'Size':
-                    $this->styles[$styleID]['font']['size'] = $styleAttributeValue;
-
-                    break;
-                case 'Color':
-                    $this->styles[$styleID]['font']['color']['rgb'] = substr($styleAttributeValue, 1);
-
-                    break;
-                case 'Bold':
-                    $this->styles[$styleID]['font']['bold'] = true;
-
-                    break;
-                case 'Italic':
-                    $this->styles[$styleID]['font']['italic'] = true;
-
-                    break;
-                case 'Underline':
-                    $this->parseStyleFontUnderline($styleID, $styleAttributeValue);
-
-                    break;
-                case 'VerticalAlign':
-                    $this->parseStyleFontVerticalAlign($styleID, $styleAttributeValue);
-
-                    break;
-            }
-        }
-    }
-
-    /**
-     * @param $styleID
-     */
-    private function parseStyleInterior($styleID, SimpleXMLElement $styleAttributes): void
-    {
-        foreach ($styleAttributes as $styleAttributeKey => $styleAttributeValue) {
-            switch ($styleAttributeKey) {
-                case 'Color':
-                    $this->styles[$styleID]['fill']['endColor']['rgb'] = substr($styleAttributeValue, 1);
-                    $this->styles[$styleID]['fill']['startColor']['rgb'] = substr($styleAttributeValue, 1);
-
-                    break;
-                case 'PatternColor':
-                    $this->styles[$styleID]['fill']['startColor']['rgb'] = substr($styleAttributeValue, 1);
-
-                    break;
-                case 'Pattern':
-                    $lcStyleAttributeValue = strtolower((string) $styleAttributeValue);
-                    $this->styles[$styleID]['fill']['fillType'] = self::$mappings['fillType'][$lcStyleAttributeValue] ?? Fill::FILL_NONE;
-
-                    break;
-            }
-        }
-    }
-
-    /**
-     * @param $styleID
-     */
-    private function parseStyleNumberFormat($styleID, SimpleXMLElement $styleAttributes): void
-    {
-        $fromFormats = ['\-', '\ '];
-        $toFormats = ['-', ' '];
-
-        foreach ($styleAttributes as $styleAttributeKey => $styleAttributeValue) {
-            $styleAttributeValue = str_replace($fromFormats, $toFormats, $styleAttributeValue);
-            switch ($styleAttributeValue) {
-                case 'Short Date':
-                    $styleAttributeValue = 'dd/mm/yyyy';
-
-                    break;
-            }
-
-            if ($styleAttributeValue > '') {
-                $this->styles[$styleID]['numberFormat']['formatCode'] = $styleAttributeValue;
-            }
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+r1bxjtfX8Fe=

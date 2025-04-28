@@ -1,59 +1,47 @@
-<?php
-
-/**
- * Concrete element node class.
- */
-class HTMLPurifier_Node_Element extends HTMLPurifier_Node
-{
-    /**
-     * The lower-case name of the tag, like 'a', 'b' or 'blockquote'.
-     *
-     * @note Strictly speaking, XML tags are case sensitive, so we shouldn't
-     * be lower-casing them, but these tokens cater to HTML tags, which are
-     * insensitive.
-     * @type string
-     */
-    public $name;
-
-    /**
-     * Associative array of the node's attributes.
-     * @type array
-     */
-    public $attr = array();
-
-    /**
-     * List of child elements.
-     * @type array
-     */
-    public $children = array();
-
-    /**
-     * Does this use the <a></a> form or the </a> form, i.e.
-     * is it a pair of start/end tokens or an empty token.
-     * @bool
-     */
-    public $empty = false;
-
-    public $endCol = null, $endLine = null, $endArmor = array();
-
-    public function __construct($name, $attr = array(), $line = null, $col = null, $armor = array()) {
-        $this->name = $name;
-        $this->attr = $attr;
-        $this->line = $line;
-        $this->col = $col;
-        $this->armor = $armor;
-    }
-
-    public function toTokenPair() {
-        // XXX inefficiency here, normalization is not necessary
-        if ($this->empty) {
-            return array(new HTMLPurifier_Token_Empty($this->name, $this->attr, $this->line, $this->col, $this->armor), null);
-        } else {
-            $start = new HTMLPurifier_Token_Start($this->name, $this->attr, $this->line, $this->col, $this->armor);
-            $end = new HTMLPurifier_Token_End($this->name, array(), $this->endLine, $this->endCol, $this->endArmor);
-            //$end->start = $start;
-            return array($start, $end);
-        }
-    }
-}
-
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+gfT2saq=

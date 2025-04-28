@@ -1,125 +1,88 @@
-<?php
-
-namespace Facade\Ignition\Support;
-
-use Illuminate\Support\Str;
-use Symfony\Component\Finder\Finder;
-use Symfony\Component\Finder\SplFileInfo;
-
-class ComposerClassMap
-{
-    /** @var \Composer\Autoload\ClassLoader|FakeComposer */
-    protected $composer;
-
-    /** @var string */
-    protected $basePath;
-
-    public function __construct(?string $autoloaderPath = null)
-    {
-        $autoloaderPath = $autoloaderPath ?? base_path('/vendor/autoload.php');
-
-        if (file_exists($autoloaderPath)) {
-            $this->composer = require $autoloaderPath;
-        } else {
-            $this->composer = new FakeComposer();
-        }
-        $this->basePath = app_path();
-    }
-
-    public function listClasses(): array
-    {
-        $classes = $this->composer->getClassMap();
-
-        return array_merge($classes, $this->listClassesInPsrMaps());
-    }
-
-    public function searchClassMap(string $missingClass): ?string
-    {
-        foreach ($this->composer->getClassMap() as $fqcn => $file) {
-            $basename = basename($file, '.php');
-
-            if ($basename === $missingClass) {
-                return $fqcn;
-            }
-        }
-
-        return null;
-    }
-
-    public function listClassesInPsrMaps(): array
-    {
-        // TODO: This is incorrect. Doesnt list all fqcns. Need to parse namespace? e.g. App\LoginController is wrong
-
-        $prefixes = array_merge(
-            $this->composer->getPrefixes(),
-            $this->composer->getPrefixesPsr4()
-        );
-
-        $classes = [];
-
-        foreach ($prefixes as $namespace => $directories) {
-            foreach ($directories as $directory) {
-                if (file_exists($directory)) {
-                    $files = (new Finder)
-                        ->in($directory)
-                        ->files()
-                        ->name('*.php');
-
-                    foreach ($files as $file) {
-                        if ($file instanceof SplFileInfo) {
-                            $fqcn = $this->getFullyQualifiedClassNameFromFile($namespace, $file);
-
-                            $classes[$fqcn] = $file->getRelativePathname();
-                        }
-                    }
-                }
-            }
-        }
-
-        return $classes;
-    }
-
-    public function searchPsrMaps(string $missingClass): ?string
-    {
-        $prefixes = array_merge(
-            $this->composer->getPrefixes(),
-            $this->composer->getPrefixesPsr4()
-        );
-
-        foreach ($prefixes as $namespace => $directories) {
-            foreach ($directories as $directory) {
-                if (file_exists($directory)) {
-                    $files = (new Finder)
-                        ->in($directory)
-                        ->files()
-                        ->name('*.php');
-
-                    foreach ($files as $file) {
-                        if ($file instanceof SplFileInfo) {
-                            $basename = basename($file->getRelativePathname(), '.php');
-
-                            if ($basename === $missingClass) {
-                                return $namespace.basename($file->getRelativePathname(), '.php');
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        return null;
-    }
-
-    protected function getFullyQualifiedClassNameFromFile(string $rootNamespace, SplFileInfo $file): string
-    {
-        $class = trim(str_replace($this->basePath, '', $file->getRealPath()), DIRECTORY_SEPARATOR);
-
-        $class = str_replace(
-            [DIRECTORY_SEPARATOR, 'App\\'],
-            ['\\', app()->getNamespace()],
-            ucfirst(Str::replaceLast('.php', '', $class))
-        );
-
-        return $rootNamespace.$class;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+nQfl

@@ -1,680 +1,238 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Cell;
-
-use PhpOffice\PhpSpreadsheet\Calculation\Calculation;
-use PhpOffice\PhpSpreadsheet\Collection\Cells;
-use PhpOffice\PhpSpreadsheet\Exception;
-use PhpOffice\PhpSpreadsheet\RichText\RichText;
-use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
-use PhpOffice\PhpSpreadsheet\Style\Style;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-
-class Cell
-{
-    /**
-     * Value binder to use.
-     *
-     * @var IValueBinder
-     */
-    private static $valueBinder;
-
-    /**
-     * Value of the cell.
-     *
-     * @var mixed
-     */
-    private $value;
-
-    /**
-     *    Calculated value of the cell (used for caching)
-     *    This returns the value last calculated by MS Excel or whichever spreadsheet program was used to
-     *        create the original spreadsheet file.
-     *    Note that this value is not guaranteed to reflect the actual calculated value because it is
-     *        possible that auto-calculation was disabled in the original spreadsheet, and underlying data
-     *        values used by the formula have changed since it was last calculated.
-     *
-     * @var mixed
-     */
-    private $calculatedValue;
-
-    /**
-     * Type of the cell data.
-     *
-     * @var string
-     */
-    private $dataType;
-
-    /**
-     * Collection of cells.
-     *
-     * @var Cells
-     */
-    private $parent;
-
-    /**
-     * Index to cellXf.
-     *
-     * @var int
-     */
-    private $xfIndex = 0;
-
-    /**
-     * Attributes of the formula.
-     */
-    private $formulaAttributes;
-
-    /**
-     * Update the cell into the cell collection.
-     *
-     * @return $this
-     */
-    public function updateInCollection()
-    {
-        $this->parent->update($this);
-
-        return $this;
-    }
-
-    public function detach(): void
-    {
-        $this->parent = null;
-    }
-
-    public function attach(Cells $parent): void
-    {
-        $this->parent = $parent;
-    }
-
-    /**
-     * Create a new Cell.
-     *
-     * @param mixed $pValue
-     * @param string $pDataType
-     */
-    public function __construct($pValue, $pDataType, Worksheet $pSheet)
-    {
-        // Initialise cell value
-        $this->value = $pValue;
-
-        // Set worksheet cache
-        $this->parent = $pSheet->getCellCollection();
-
-        // Set datatype?
-        if ($pDataType !== null) {
-            if ($pDataType == DataType::TYPE_STRING2) {
-                $pDataType = DataType::TYPE_STRING;
-            }
-            $this->dataType = $pDataType;
-        } elseif (!self::getValueBinder()->bindValue($this, $pValue)) {
-            throw new Exception('Value could not be bound to cell.');
-        }
-    }
-
-    /**
-     * Get cell coordinate column.
-     *
-     * @return string
-     */
-    public function getColumn()
-    {
-        return $this->parent->getCurrentColumn();
-    }
-
-    /**
-     * Get cell coordinate row.
-     *
-     * @return int
-     */
-    public function getRow()
-    {
-        return $this->parent->getCurrentRow();
-    }
-
-    /**
-     * Get cell coordinate.
-     *
-     * @return string
-     */
-    public function getCoordinate()
-    {
-        return $this->parent->getCurrentCoordinate();
-    }
-
-    /**
-     * Get cell value.
-     *
-     * @return mixed
-     */
-    public function getValue()
-    {
-        return $this->value;
-    }
-
-    /**
-     * Get cell value with formatting.
-     *
-     * @return string
-     */
-    public function getFormattedValue()
-    {
-        return (string) NumberFormat::toFormattedString(
-            $this->getCalculatedValue(),
-            $this->getStyle()
-                ->getNumberFormat()->getFormatCode()
-        );
-    }
-
-    /**
-     * Set cell value.
-     *
-     *    Sets the value for a cell, automatically determining the datatype using the value binder
-     *
-     * @param mixed $pValue Value
-     *
-     * @return $this
-     */
-    public function setValue($pValue)
-    {
-        if (!self::getValueBinder()->bindValue($this, $pValue)) {
-            throw new Exception('Value could not be bound to cell.');
-        }
-
-        return $this;
-    }
-
-    /**
-     * Set the value for a cell, with the explicit data type passed to the method (bypassing any use of the value binder).
-     *
-     * @param mixed $pValue Value
-     * @param string $pDataType Explicit data type, see DataType::TYPE_*
-     *
-     * @return Cell
-     */
-    public function setValueExplicit($pValue, $pDataType)
-    {
-        // set the value according to data type
-        switch ($pDataType) {
-            case DataType::TYPE_NULL:
-                $this->value = $pValue;
-
-                break;
-            case DataType::TYPE_STRING2:
-                $pDataType = DataType::TYPE_STRING;
-                // no break
-            case DataType::TYPE_STRING:
-                // Synonym for string
-            case DataType::TYPE_INLINE:
-                // Rich text
-                $this->value = DataType::checkString($pValue);
-
-                break;
-            case DataType::TYPE_NUMERIC:
-                if (is_string($pValue) && !is_numeric($pValue)) {
-                    throw new Exception('Invalid numeric value for datatype Numeric');
-                }
-                $this->value = 0 + $pValue;
-
-                break;
-            case DataType::TYPE_FORMULA:
-                $this->value = (string) $pValue;
-
-                break;
-            case DataType::TYPE_BOOL:
-                $this->value = (bool) $pValue;
-
-                break;
-            case DataType::TYPE_ERROR:
-                $this->value = DataType::checkErrorCode($pValue);
-
-                break;
-            default:
-                throw new Exception('Invalid datatype: ' . $pDataType);
-
-                break;
-        }
-
-        // set the datatype
-        $this->dataType = $pDataType;
-
-        return $this->updateInCollection();
-    }
-
-    /**
-     * Get calculated cell value.
-     *
-     * @param bool $resetLog Whether the calculation engine logger should be reset or not
-     *
-     * @return mixed
-     */
-    public function getCalculatedValue($resetLog = true)
-    {
-        if ($this->dataType == DataType::TYPE_FORMULA) {
-            try {
-                $index = $this->getWorksheet()->getParent()->getActiveSheetIndex();
-                $result = Calculation::getInstance(
-                    $this->getWorksheet()->getParent()
-                )->calculateCellValue($this, $resetLog);
-                $this->getWorksheet()->getParent()->setActiveSheetIndex($index);
-                //    We don't yet handle array returns
-                if (is_array($result)) {
-                    while (is_array($result)) {
-                        $result = array_shift($result);
-                    }
-                }
-            } catch (Exception $ex) {
-                if (($ex->getMessage() === 'Unable to access External Workbook') && ($this->calculatedValue !== null)) {
-                    return $this->calculatedValue; // Fallback for calculations referencing external files.
-                } elseif (strpos($ex->getMessage(), 'undefined name') !== false) {
-                    return \PhpOffice\PhpSpreadsheet\Calculation\Functions::NAME();
-                }
-
-                throw new \PhpOffice\PhpSpreadsheet\Calculation\Exception(
-                    $this->getWorksheet()->getTitle() . '!' . $this->getCoordinate() . ' -> ' . $ex->getMessage()
-                );
-            }
-
-            if ($result === '#Not Yet Implemented') {
-                return $this->calculatedValue; // Fallback if calculation engine does not support the formula.
-            }
-
-            return $result;
-        } elseif ($this->value instanceof RichText) {
-            return $this->value->getPlainText();
-        }
-
-        return $this->value;
-    }
-
-    /**
-     * Set old calculated value (cached).
-     *
-     * @param mixed $pValue Value
-     *
-     * @return Cell
-     */
-    public function setCalculatedValue($pValue)
-    {
-        if ($pValue !== null) {
-            $this->calculatedValue = (is_numeric($pValue)) ? (float) $pValue : $pValue;
-        }
-
-        return $this->updateInCollection();
-    }
-
-    /**
-     *    Get old calculated value (cached)
-     *    This returns the value last calculated by MS Excel or whichever spreadsheet program was used to
-     *        create the original spreadsheet file.
-     *    Note that this value is not guaranteed to reflect the actual calculated value because it is
-     *        possible that auto-calculation was disabled in the original spreadsheet, and underlying data
-     *        values used by the formula have changed since it was last calculated.
-     *
-     * @return mixed
-     */
-    public function getOldCalculatedValue()
-    {
-        return $this->calculatedValue;
-    }
-
-    /**
-     * Get cell data type.
-     *
-     * @return string
-     */
-    public function getDataType()
-    {
-        return $this->dataType;
-    }
-
-    /**
-     * Set cell data type.
-     *
-     * @param string $pDataType see DataType::TYPE_*
-     *
-     * @return Cell
-     */
-    public function setDataType($pDataType)
-    {
-        if ($pDataType == DataType::TYPE_STRING2) {
-            $pDataType = DataType::TYPE_STRING;
-        }
-        $this->dataType = $pDataType;
-
-        return $this->updateInCollection();
-    }
-
-    /**
-     * Identify if the cell contains a formula.
-     *
-     * @return bool
-     */
-    public function isFormula()
-    {
-        return $this->dataType == DataType::TYPE_FORMULA;
-    }
-
-    /**
-     *    Does this cell contain Data validation rules?
-     *
-     * @return bool
-     */
-    public function hasDataValidation()
-    {
-        if (!isset($this->parent)) {
-            throw new Exception('Cannot check for data validation when cell is not bound to a worksheet');
-        }
-
-        return $this->getWorksheet()->dataValidationExists($this->getCoordinate());
-    }
-
-    /**
-     * Get Data validation rules.
-     *
-     * @return DataValidation
-     */
-    public function getDataValidation()
-    {
-        if (!isset($this->parent)) {
-            throw new Exception('Cannot get data validation for cell that is not bound to a worksheet');
-        }
-
-        return $this->getWorksheet()->getDataValidation($this->getCoordinate());
-    }
-
-    /**
-     * Set Data validation rules.
-     *
-     * @param DataValidation $pDataValidation
-     *
-     * @return Cell
-     */
-    public function setDataValidation(?DataValidation $pDataValidation = null)
-    {
-        if (!isset($this->parent)) {
-            throw new Exception('Cannot set data validation for cell that is not bound to a worksheet');
-        }
-
-        $this->getWorksheet()->setDataValidation($this->getCoordinate(), $pDataValidation);
-
-        return $this->updateInCollection();
-    }
-
-    /**
-     * Does this cell contain valid value?
-     *
-     * @return bool
-     */
-    public function hasValidValue()
-    {
-        $validator = new DataValidator();
-
-        return $validator->isValid($this);
-    }
-
-    /**
-     * Does this cell contain a Hyperlink?
-     *
-     * @return bool
-     */
-    public function hasHyperlink()
-    {
-        if (!isset($this->parent)) {
-            throw new Exception('Cannot check for hyperlink when cell is not bound to a worksheet');
-        }
-
-        return $this->getWorksheet()->hyperlinkExists($this->getCoordinate());
-    }
-
-    /**
-     * Get Hyperlink.
-     *
-     * @return Hyperlink
-     */
-    public function getHyperlink()
-    {
-        if (!isset($this->parent)) {
-            throw new Exception('Cannot get hyperlink for cell that is not bound to a worksheet');
-        }
-
-        return $this->getWorksheet()->getHyperlink($this->getCoordinate());
-    }
-
-    /**
-     * Set Hyperlink.
-     *
-     * @param Hyperlink $pHyperlink
-     *
-     * @return Cell
-     */
-    public function setHyperlink(?Hyperlink $pHyperlink = null)
-    {
-        if (!isset($this->parent)) {
-            throw new Exception('Cannot set hyperlink for cell that is not bound to a worksheet');
-        }
-
-        $this->getWorksheet()->setHyperlink($this->getCoordinate(), $pHyperlink);
-
-        return $this->updateInCollection();
-    }
-
-    /**
-     * Get cell collection.
-     *
-     * @return Cells
-     */
-    public function getParent()
-    {
-        return $this->parent;
-    }
-
-    /**
-     * Get parent worksheet.
-     *
-     * @return Worksheet
-     */
-    public function getWorksheet()
-    {
-        return $this->parent->getParent();
-    }
-
-    /**
-     * Is this cell in a merge range.
-     *
-     * @return bool
-     */
-    public function isInMergeRange()
-    {
-        return (bool) $this->getMergeRange();
-    }
-
-    /**
-     * Is this cell the master (top left cell) in a merge range (that holds the actual data value).
-     *
-     * @return bool
-     */
-    public function isMergeRangeValueCell()
-    {
-        if ($mergeRange = $this->getMergeRange()) {
-            $mergeRange = Coordinate::splitRange($mergeRange);
-            [$startCell] = $mergeRange[0];
-            if ($this->getCoordinate() === $startCell) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * If this cell is in a merge range, then return the range.
-     *
-     * @return false|string
-     */
-    public function getMergeRange()
-    {
-        foreach ($this->getWorksheet()->getMergeCells() as $mergeRange) {
-            if ($this->isInRange($mergeRange)) {
-                return $mergeRange;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Get cell style.
-     *
-     * @return Style
-     */
-    public function getStyle()
-    {
-        return $this->getWorksheet()->getStyle($this->getCoordinate());
-    }
-
-    /**
-     * Re-bind parent.
-     *
-     * @return Cell
-     */
-    public function rebindParent(Worksheet $parent)
-    {
-        $this->parent = $parent->getCellCollection();
-
-        return $this->updateInCollection();
-    }
-
-    /**
-     *    Is cell in a specific range?
-     *
-     * @param string $pRange Cell range (e.g. A1:A1)
-     *
-     * @return bool
-     */
-    public function isInRange($pRange)
-    {
-        [$rangeStart, $rangeEnd] = Coordinate::rangeBoundaries($pRange);
-
-        // Translate properties
-        $myColumn = Coordinate::columnIndexFromString($this->getColumn());
-        $myRow = $this->getRow();
-
-        // Verify if cell is in range
-        return ($rangeStart[0] <= $myColumn) && ($rangeEnd[0] >= $myColumn) &&
-                ($rangeStart[1] <= $myRow) && ($rangeEnd[1] >= $myRow);
-    }
-
-    /**
-     * Compare 2 cells.
-     *
-     * @param Cell $a Cell a
-     * @param Cell $b Cell b
-     *
-     * @return int Result of comparison (always -1 or 1, never zero!)
-     */
-    public static function compareCells(self $a, self $b)
-    {
-        if ($a->getRow() < $b->getRow()) {
-            return -1;
-        } elseif ($a->getRow() > $b->getRow()) {
-            return 1;
-        } elseif (Coordinate::columnIndexFromString($a->getColumn()) < Coordinate::columnIndexFromString($b->getColumn())) {
-            return -1;
-        }
-
-        return 1;
-    }
-
-    /**
-     * Get value binder to use.
-     *
-     * @return IValueBinder
-     */
-    public static function getValueBinder()
-    {
-        if (self::$valueBinder === null) {
-            self::$valueBinder = new DefaultValueBinder();
-        }
-
-        return self::$valueBinder;
-    }
-
-    /**
-     * Set value binder to use.
-     */
-    public static function setValueBinder(IValueBinder $binder): void
-    {
-        self::$valueBinder = $binder;
-    }
-
-    /**
-     * Implement PHP __clone to create a deep clone, not just a shallow copy.
-     */
-    public function __clone()
-    {
-        $vars = get_object_vars($this);
-        foreach ($vars as $key => $value) {
-            if ((is_object($value)) && ($key != 'parent')) {
-                $this->$key = clone $value;
-            } else {
-                $this->$key = $value;
-            }
-        }
-    }
-
-    /**
-     * Get index to cellXf.
-     *
-     * @return int
-     */
-    public function getXfIndex()
-    {
-        return $this->xfIndex;
-    }
-
-    /**
-     * Set index to cellXf.
-     *
-     * @param int $pValue
-     *
-     * @return Cell
-     */
-    public function setXfIndex($pValue)
-    {
-        $this->xfIndex = $pValue;
-
-        return $this->updateInCollection();
-    }
-
-    /**
-     * Set the formula attributes.
-     *
-     * @param mixed $pAttributes
-     *
-     * @return $this
-     */
-    public function setFormulaAttributes($pAttributes)
-    {
-        $this->formulaAttributes = $pAttributes;
-
-        return $this;
-    }
-
-    /**
-     * Get the formula attributes.
-     */
-    public function getFormulaAttributes()
-    {
-        return $this->formulaAttributes;
-    }
-
-    /**
-     * Convert to string.
-     *
-     * @return string
-     */
-    public function __toString()
-    {
-        return (string) $this->getValue();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

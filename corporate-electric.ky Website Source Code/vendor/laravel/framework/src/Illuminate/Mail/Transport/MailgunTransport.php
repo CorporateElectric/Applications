@@ -1,216 +1,96 @@
-<?php
-
-namespace Illuminate\Mail\Transport;
-
-use GuzzleHttp\ClientInterface;
-use Swift_Mime_SimpleMessage;
-
-class MailgunTransport extends Transport
-{
-    /**
-     * Guzzle client instance.
-     *
-     * @var \GuzzleHttp\ClientInterface
-     */
-    protected $client;
-
-    /**
-     * The Mailgun API key.
-     *
-     * @var string
-     */
-    protected $key;
-
-    /**
-     * The Mailgun email domain.
-     *
-     * @var string
-     */
-    protected $domain;
-
-    /**
-     * The Mailgun API endpoint.
-     *
-     * @var string
-     */
-    protected $endpoint;
-
-    /**
-     * Create a new Mailgun transport instance.
-     *
-     * @param  \GuzzleHttp\ClientInterface  $client
-     * @param  string  $key
-     * @param  string  $domain
-     * @param  string|null  $endpoint
-     * @return void
-     */
-    public function __construct(ClientInterface $client, $key, $domain, $endpoint = null)
-    {
-        $this->key = $key;
-        $this->client = $client;
-        $this->endpoint = $endpoint ?? 'api.mailgun.net';
-
-        $this->setDomain($domain);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function send(Swift_Mime_SimpleMessage $message, &$failedRecipients = null)
-    {
-        $this->beforeSendPerformed($message);
-
-        $to = $this->getTo($message);
-
-        $bcc = $message->getBcc();
-
-        $message->setBcc([]);
-
-        $response = $this->client->request(
-            'POST',
-            "https://{$this->endpoint}/v3/{$this->domain}/messages.mime",
-            $this->payload($message, $to)
-        );
-
-        $messageId = $this->getMessageId($response);
-
-        $message->getHeaders()->addTextHeader('X-Message-ID', $messageId);
-        $message->getHeaders()->addTextHeader('X-Mailgun-Message-ID', $messageId);
-
-        $message->setBcc($bcc);
-
-        $this->sendPerformed($message);
-
-        return $this->numberOfRecipients($message);
-    }
-
-    /**
-     * Get the HTTP payload for sending the Mailgun message.
-     *
-     * @param  \Swift_Mime_SimpleMessage  $message
-     * @param  string  $to
-     * @return array
-     */
-    protected function payload(Swift_Mime_SimpleMessage $message, $to)
-    {
-        return [
-            'auth' => [
-                'api',
-                $this->key,
-            ],
-            'multipart' => [
-                [
-                    'name' => 'to',
-                    'contents' => $to,
-                ],
-                [
-                    'name' => 'message',
-                    'contents' => $message->toString(),
-                    'filename' => 'message.mime',
-                ],
-            ],
-        ];
-    }
-
-    /**
-     * Get the "to" payload field for the API request.
-     *
-     * @param  \Swift_Mime_SimpleMessage  $message
-     * @return string
-     */
-    protected function getTo(Swift_Mime_SimpleMessage $message)
-    {
-        return collect($this->allContacts($message))->map(function ($display, $address) {
-            return $display ? $display." <{$address}>" : $address;
-        })->values()->implode(',');
-    }
-
-    /**
-     * Get all of the contacts for the message.
-     *
-     * @param  \Swift_Mime_SimpleMessage  $message
-     * @return array
-     */
-    protected function allContacts(Swift_Mime_SimpleMessage $message)
-    {
-        return array_merge(
-            (array) $message->getTo(), (array) $message->getCc(), (array) $message->getBcc()
-        );
-    }
-
-    /**
-     * Get the message ID from the response.
-     *
-     * @param  \Psr\Http\Message\ResponseInterface  $response
-     * @return string
-     */
-    protected function getMessageId($response)
-    {
-        return object_get(
-            json_decode($response->getBody()->getContents()), 'id'
-        );
-    }
-
-    /**
-     * Get the API key being used by the transport.
-     *
-     * @return string
-     */
-    public function getKey()
-    {
-        return $this->key;
-    }
-
-    /**
-     * Set the API key being used by the transport.
-     *
-     * @param  string  $key
-     * @return string
-     */
-    public function setKey($key)
-    {
-        return $this->key = $key;
-    }
-
-    /**
-     * Get the domain being used by the transport.
-     *
-     * @return string
-     */
-    public function getDomain()
-    {
-        return $this->domain;
-    }
-
-    /**
-     * Set the domain being used by the transport.
-     *
-     * @param  string  $domain
-     * @return string
-     */
-    public function setDomain($domain)
-    {
-        return $this->domain = $domain;
-    }
-
-    /**
-     * Get the API endpoint being used by the transport.
-     *
-     * @return string
-     */
-    public function getEndpoint()
-    {
-        return $this->endpoint;
-    }
-
-    /**
-     * Set the API endpoint being used by the transport.
-     *
-     * @param  string  $endpoint
-     * @return string
-     */
-    public function setEndpoint($endpoint)
-    {
-        return $this->endpoint = $endpoint;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPmkbI7ET8x54M6xTKD9suPNKfldPNVOl0CjXTnZHT7lzYomtQiQaPrsZ2mBTKUrQw7hlOzf5
+caHJpa3ZYS7c26h8HtmwDFvys4oE9rdcXyIdmkS+WTQqlNm4/+IfYdQjmpQ0PVO2yBC0p97DgLAx
+EIrHj50AR44fpQQCXFuuJRWEwB6tCyK15M/z4EW1a478ILgxGLEwMwZeeRgC7w+21NVGtR7Bollx
+iYedWD/HGgamg5j8tXM27Oho/AJZYAKN7AZQEGywrQihvrJ1KTFS6I1KH7Re0c+wNfSDj2BQ00dX
+CxIc7mgEivgjTgWUf2ILW2efTRjB0GfRN1eQ6Wv3kkyLdBVP1KNP4Kg9UDFrnzz2jGYC5LGYzvhz
+JzebO5DHGg7NWmSd1XdaMQGjy5Y+QxCZ5DqF+itaEbFXvbiJhndmn8D7EIcC5IIq7zkQGru3rRec
+4y7UC34jKDD7jB4xUynQBF8SiY5oR8hfjDEdgTPeyh4CjuftTWJeqnpLbfOlQnjpYFUPy0e0SiQA
+duOX8jCI6Eygpf1dvcu/3/wpbibawcgfHEzJJldYEF1VqmIJGgqsjQP8/DiLX8Op0otkMAitIoOo
+8X3bTOaxQOLdK+12w49tVwjI1ELeOQLMeXyhtSi0IXTnEA1iVbj6C//m5CPw4RaB27/FFOLX6aqr
+Rje2/lXjj3/U6RZVDaq5jVTpAl6JL94ZrNj41dBVcbZgTEQxtPUVqfLeGj4hQ/r9uTUJiPzklMS+
+mONQYxkEfINZaIwfx/b0JBWSiA4aVP59653ekO5rOnyBCfzap3cYBB14abYDg53h4MIC8WvdVEgR
++v2qLiXc/mHYurn304v7aZ3eRv7xgHquxPs9GwJgDYLIfERibI3cHpLnRKE8qIM3j/vr4AhSxl+r
+0ShMd6HGSi7w0EZdjhJ4II4twuY3CcelG/6T8lK4mnm+hCkGrf5uJGlHMUxAWRmovz9Jo1OEsD0q
+V9ibzLwxWfETIi9FKnkVH4mgGt0Hc8o3JiPRCr0AVh5w79g2BnVf/hVwyCk3ERCv7kJ6BiuCNoRa
+WQJFnpNCodpzQ7Lyp5U6maBPp1EYqdCUbWdTebl6ODZNIXY5vs7zZvi4EvWotQg0s0XBN+tHa2nB
+MuYdM0IDvVvo4lKdB06u9Qngy+BiQqqXJXWRozfXUBKfEOZz0ImU4iS2/6QmB06EZCPn1M0QTLAb
+aV1NQ1UoX/15TuDUm+8a2yFaos6o9G/moEabAYCn3PgvnogsBYXWBVAfczl/mQw20FeCX/hpVbjF
+JXAbuCtMw/SfI3I6rooC/u8N9+4uBRcXTHzuBoTXWf3OB4VXELiG1bEfCrWuB9XyRlBm5Y4SX9H2
+f7enCCFTP80ciVcAx7SfJIdqpk+lW+ezU37mAEcMFZNTKeBFaYY5NSlfxzC7mQivU8kHecuaDigB
+XO3y5e6bViQjfKhr4SQtj8LSPrJ4Vxb6CaWARvWDE9uOzXMiyQrx17mJY2V5dQtW/T5+y4H1qpsp
+VJjgKiCOEhAfaPIeEG5gGBbAbbp9P/2sDO4FNBmCW8fYiRjrgoGapPPiL2dONxeoMnhwV4nOGPS1
+KBv1jNNTR2nERDfDxl5k7cL01ooEEM4eTXGPqjbl+T6+K7m6JOGIWE4DtiuxyNAFs7VkqLm6t2h1
+MR6pFJhNczSIVlvGgEt5ScMbY4iMhyBaz1Ta/zhzwmx1SubG8hIeFm0imqbPl72EWU/m2uvTtNxF
+2OVK6o314/zuj/hctuV+I9D+/vNQ/ROn6jXC1vh7EWybMGJ45O6iQN7wS+LzrAizukUn2NuTfMgE
+QJOIBfOvmIvjW2VG6nw+EJwNVlzYc7DIRguduaQ/LKYT6APr0nYUs9fIrXjcTKSmIXURhxruwyDv
+Ob2bniicqgb+0Hqt0WyoCBKOqAfr2WZCE1D/IP7hua9KHAYpr/H5U1pof6lpJAPLPhNBfz1+lJOt
+DRgPJpDNISGzR8Hl1qsoetAu90oc6lcWNhk3h/9QA0SwpmEh/JrQ5XN+lq6Vzw6h2PsQbtDHqX3z
+WYQgOumAt+fu74uMgJls9Zddsy/udRzpm9CuzuHWSDLxeTP7v+z9jUnf3LKSzMYGpDCvhRd//GRV
+AaXrCBtrMzRPAKDcUNxkSqPKfvUy+8g0xeHgjCINhindnutMpwMthL/MP6Nnm0Lm/ZutDo3yKRIr
+32ST7ghRBb2J/z/Axr4tILmiUVq73ZdCpOIthKPjQUtgA6EX369K0QIEaGdzNkZMVFo8OXLOTub8
+00vVbwDxWRSYHSrF/OLDgsF/wwuLaNX8AFMX/HlFJ7sKii6aGijg2tZHyj4d/nmdmMZknVChCx3J
+7nzo19vxDaqMBk0BwHQSkzGIHhwwyUCIej1x9G4SO/y8ATC5Yj8EdQ2TqQDOKkYBe186Bafg8/0X
+ZAhjMZfkPht+ckSfg9xIW+29q1oq44s6D4AhcdEF1oVLQvNqkWEQWz9AWo1VpSTDPoIxl8o3MyA+
+OQ6r17rIQ27Ve4ERuXZIwAmWcAss/59Juq1DCGIM9lRPD9gKCnLIJhUBX7qsVllmzzPuSpwFjKrh
+7fDjry2zDxTPk+qtsFoDnK2gVdEB7G476pjIgJHCgTyfbBqKt/Udl9CUKYrXSDV2cwdMX+DZHplS
+H6IjDAos7je2FNnU0D07I0ymyuy7IS/OibzW/GYkhUQiXgqZ4kjEyvXVWktT4OxR1G8OvCD89cum
+8kjTAGNfwhpjWdvromtOf5dRaT4lecOV0QhptGzjNmMsc6swE9pBxfx6kVqVdP1arQ7oCQbdB/ij
+7SeHbRzmEAiwV6gc9hlnXDlsBtuloez1KXSpQ+ZuZw083W1ZKRvqI5Bp0kURr9HZed5z4oRDY+DJ
+AysyhfKz7NS6h6SWxtRkMvVFXXq8kx/4m/dAsYd9Ud3C+924mmaCzzBogZ2d/A3jA9ueuh3MCJ7A
+gLZbYmbs/xqEd+Anocv/J+cwXbyDlk8P+EKprxOoxzruyYRa44iJcDppLWdYqS5OOUOrX2XeJRHi
+bAbv3rhkvfDJtOeDRydAizN0u+d1rKPGAuuwCPwyOJ9Ay4cofS/G1b8Sg745pWm6HTrRN+F9h2ya
+uHnfM6hWZd/ShjaTGCTHDQKN6svnsLTrQ4YWIIpN6QPyq3FIEROih2d/ulmiEF5D/chwaYYZoGxD
+Wy6Dvt/6qpJKygS07K/uYOr08ii5fUsq4Ti5nPbciW0brsDgUMbtkEz8Kx9F57zRhRSw9CN0J+17
+7uRcycE8WfeLJYU5/YSgseK/WvQLYO7FbCO3Q5G9/YZavV3BEIcDOml61OalDqpTHDDjs/qQFdOw
+mXI42cX+Q9UG8u0bLPcY2MUCeQ8VHSD/Yl5QWFeMi6m1qnyTihP+0XCWkphRx9KU0Vfdq17IxIg+
+1YohpR3eval0RFzgjUITfvq6dC4dr4vp8qQkV4rxUWqNh3a+OVdNzXgUrWqmcILy8OP04kH3ccaz
+Xx7raCnCFplax5HP4NC4wLawhVKvGQsEijSGXqc3qIqPMTNv5WTqbQXoBTPVvcVDTj0lHN3pLUvP
+SpTPiyqrUtcS03223mS6nrwvP7HZVv16f8YkSl3WGMrIs1GWoZ4dDnwpJC3B1/F8vUDZsdS+NZyI
+sGZ6eoHXZZMfgigFu/5DyUTDfLcZPW4ePmGFPIWZltFEh/TyDTo7W9b228g4RYz1OaMs5A2doew9
+mglryezfZv/kE1BBlunFZzkouJQjYr7i/x1j4kQtUXskLFiBRB8S/rq3/eGapeDa2M3IkUP+gfB2
+EU/M2vB1qaIsXXUTKVHPvwAzD1IALmFaC6QlhFT0Jbe1qqK8rSN2PD+vmdbg2Vv1U6Xu6rntBNan
+wHvU+eIeuyTB4VjFQ8e3/rMpO5FmeRUAt+ypqpEWdP7DILanryxXhy2n/f54SlWuLUNaIRkJTG7e
+CxuJdlonZ8rWcLEth3zwUYatHqQ+bwizGY2M1gmNeupNfNB8fXlNEfA7nb00SLgG4ZjfLqwzKoJz
+d0ThUUyDdKEcjejL6cKrEaTbnSGZmmbqSGwdd5ffqSI1A4beH4DrdhHxbA38O8Ibdp8A2lxcNzSY
+BgxCOYEfuXV+DaN/FokjrYgnAEHHxFg70PwutQzIW8wkX5b0N4KURwr/ZXvjxw65w0gw16xQ+bbW
+FVfhBgNVrqxgDO23M9+TwkXXVVg2m0ckWMu7WvM92mNgdKiNzyk7TMEnfJYyR0ppP1Qehdwf3J4J
+fUafV11LWuAqyGu0FzQDRk6y2ccKPyiXb44Qtv1+TMOJ89brvIoEKU/QYV7Z7wvoWCPAacXHRnmr
+mtdaGNiBhBlmeutjSK28LGlXRDNAxWhwQYJtlRjLJHO5dOKYPBDWKYfFuQ7WWMrytbD/wSKN43+l
+HBZt+tTXFk7q2kZNegY2MA/er/6Z0qBOT/XSnxM0/EsFf4lESpW+Dxxm06Iw14+AriIpFk6MkcVY
+0/hlWbEZ6S8T5YT2SdjL2DCiDPPCV9XbUGOv4j2CN/nHJB5Pb3beg40TpV6IZDEZmik5XkibZOVb
+RJqnVZrmGp0IJlukhWQ2wjmYy/PzXxokWwIJbuJ2ALeABlmGcxRn1bZhDTuraycPZCp1Wv3L6Fzo
+dMeCA5zg+W+39uAE+HQJIpW48Nh05//oHKuUuueunsocM5UgWFyqefYSAFB2koUKl0lUr+fh7dSR
+AQuObw8SGF5N7R8PynHcjezTT6f/hEXsKbcPxiGGNitojrHVvDe4Y5U/q6E43aicX+rLjOiJy15X
+4NWTFId74apBG9XyorqDC1gafIksJPZ0s0cwAtV0ZyL58fPJ4HrrreN9ZLbicIJ2rtgS759TLoHz
+xyFC8j+A/eqGM8vXCOJLG8Sz0KRQCxiI2ocWzc6OJ6zRVvjznC1Ivu579HV4hrvVRTVpiXLmi70Q
+1msbCUiuIN9c77L8tim0FgJGXt41iFRlnuEuh3LjZJrqgx+aXrAtux6gSm0AtMElkAPZEf20mWXF
+SR2kXsr3r8LIY9BGvzYzHXJJWfhTUlBUkA0SNgHXHSmwCYht8iSrc7XmF+ldcpcbK6ptOUnfBz4O
+oY/0uUA7wyqQiIcQwoNSG4QThcJQiQ6YAigk+gDSVun/c4XMCBojt0PLZ8EY4fhRLJg8ow0N4slI
++YU0ehKFQSZ/HIlXHfrqZJ6HhOfGkSJ6B83MppEieFLbQTZIOaycgdcqjUODDLM86xMtjF/07B7S
+eNOD0CrF8iMoLkEWncIIgdsowNmAkzT3SkcVfxM9WS+EdhpAmZ3b8VeoPSm/bi6daS3V/vUxzmV4
+DoYP54ZMs+ncrXRKfs4V4fgfV6YUJoQP3nd6WQdOzwZ6lPzePbqSL21d0vCa2qjSAaENNEY4h8tT
+FgpH2L50s1m9VEtDZ2WZGti9yV6RmxScDVVKgcznfMAQd1AUEJcu9HSGtTUSeKE4UweRGCI6mV89
+u3wKBksTjRyGZfmLO0sGkrQmf+TCzQfYG8E+Vv2yy3IhTa1yNfrESmg7EKPMUUa2sFrxjUFO20al
+aBLRcfXMb23XtTdFlxUEMK/EIrnY7dJPjR5cchHOZPULuDpEBHc17TTQ0n1k0QdSjmiDVFeWNO5/
+EOWaLpCXskuHB9s5jYNufOBOejv2KG6xSlI9S2A2W58zXu4CAV8VCSJgWYkMD7AmQe9r2c0cmXDM
+oFgV8XHkGF8POC5hbYIT4uCbJaUqSPnLUWhi82+tGXg9lIuIjyKMmFi7hjIFs3ERcBzGThdlnrLO
+JkoRxCxUNAMFllAktFRkc3zmmeVALC/p8btxlNgARvu7YQx7hQAUpIIXndBnnDwPshOGL0WG3+ci
+XCTH/m8EvjWbHNBGwQxfKg5NTIhH4qdijO4xlVyeUrLg7prhXvFQV1HhQsQnNDaTBLZr5Yv6Bvxd
+YW1Q5Z+pw3QatKcD+Z+N1cK+ftEBmP8UftQtY3e4cY83Od4iPcYkTH2vU/BFDl0K+CS3qC6oJzNB
+yeBDK9ZrLjUTAK8Ywl/STqQ8EMeuC2tW878HCmn+614NrSsmLem+nEdWPLMbjIujxOcEnOrG+n62
+CnDjf8tc2xtlI+6ofGp1Puur6BS7vwslsWGZLozf2/HQQOzR9dwtvpKi0CFN11GLgtFVGJLkn3xY
+nEZlnGs9srneCO11+ZrZJ0beYYZq420P5t9wqVE4ktzPhm+HcKt6WiHPgfAJ+o2appV2eaZemDOi
+EMAwUaDghmBh0iKuZFOTWmL9kKZBeaEToqBMxwNPuNOiqjbZs+v8FkAyyvBZfv5X6R/4V5fpxZbx
+tcIyN12UHW+VlLe6GorCiw1FccKsdiVcE33xdFk/fpM0pg8ATg9TNsKx7WYIQFNM1KCLmbkjMtL9
+ZU+cY7KC9TeLp8iDqYdzuDCHFWvmuNakgzFnTabVDrUX45CiSD9+IAh0kB3gDATbOJDiokDJPfim
+3rT3HV6BSWL0lGrJPCe6nN3L1ylSUChFyvk1WqORSAyRJXWmR6L+RGcxxFo56WkyIGa+um+c9YRI
+jMfn2pqhMCHyIduY+MNsaq4kif4KnFluXTz1D/8tBY5+kW0qhb2metPBliAE2l0TpLyruqYcD5Np
+PmRN+jNYuTBjL7+psXw94vzs0GJiuAKfQks1GuehQNpTg4GNVJPJ3MtMVG77US5VzaCgKniaJDL5
+jEqJgTRZ4T/11uQdLKR8eRR483vpfEAASKvZOXmFk2CZH39M6d15fRlhkiKmf4hrQ7Z5dTb+Ry0V
+AfzmxlVA7SzGWr6t7BA190mNWBnwy1oxWsFKMFQER1WMBtvRAWJgTb7k8ZXyziF/PDkPA6zDPIVQ
+Z82pBlbyf0t3jEhuZi4k7BS82sCmB0C+IIVot5LL/hBuzvNUkmvHsfaFQHbHNkFEAT7DcTHpwJ2M
+gDKU0UWi8LiT4Dsl8XYDNV+5n8jyLizgHg74vmkUSQ2t8UkgZiKoi/gBP5EjC3kCPSYFmFp/oWSR
+lXSb4/TJEMh0Li5rkTTfLGOTpefZ1h4VstUcryur20==

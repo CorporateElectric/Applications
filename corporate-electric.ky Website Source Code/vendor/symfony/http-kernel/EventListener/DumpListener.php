@@ -1,63 +1,50 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpKernel\EventListener;
-
-use Symfony\Component\Console\ConsoleEvents;
-use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-use Symfony\Component\VarDumper\Cloner\ClonerInterface;
-use Symfony\Component\VarDumper\Dumper\DataDumperInterface;
-use Symfony\Component\VarDumper\Server\Connection;
-use Symfony\Component\VarDumper\VarDumper;
-
-/**
- * Configures dump() handler.
- *
- * @author Nicolas Grekas <p@tchwork.com>
- */
-class DumpListener implements EventSubscriberInterface
-{
-    private $cloner;
-    private $dumper;
-    private $connection;
-
-    public function __construct(ClonerInterface $cloner, DataDumperInterface $dumper, Connection $connection = null)
-    {
-        $this->cloner = $cloner;
-        $this->dumper = $dumper;
-        $this->connection = $connection;
-    }
-
-    public function configure()
-    {
-        $cloner = $this->cloner;
-        $dumper = $this->dumper;
-        $connection = $this->connection;
-
-        VarDumper::setHandler(static function ($var) use ($cloner, $dumper, $connection) {
-            $data = $cloner->cloneVar($var);
-
-            if (!$connection || !$connection->write($data)) {
-                $dumper->dump($data);
-            }
-        });
-    }
-
-    public static function getSubscribedEvents()
-    {
-        if (!class_exists(ConsoleEvents::class)) {
-            return [];
-        }
-
-        // Register early to have a working dump() as early as possible
-        return [ConsoleEvents::COMMAND => ['configure', 1024]];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

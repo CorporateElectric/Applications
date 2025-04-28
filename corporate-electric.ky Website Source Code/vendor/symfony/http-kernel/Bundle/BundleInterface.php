@@ -1,71 +1,32 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpKernel\Bundle;
-
-use Symfony\Component\DependencyInjection\ContainerAwareInterface;
-use Symfony\Component\DependencyInjection\ContainerBuilder;
-use Symfony\Component\DependencyInjection\Extension\ExtensionInterface;
-
-/**
- * BundleInterface.
- *
- * @author Fabien Potencier <fabien@symfony.com>
- */
-interface BundleInterface extends ContainerAwareInterface
-{
-    /**
-     * Boots the Bundle.
-     */
-    public function boot();
-
-    /**
-     * Shutdowns the Bundle.
-     */
-    public function shutdown();
-
-    /**
-     * Builds the bundle.
-     *
-     * It is only ever called once when the cache is empty.
-     */
-    public function build(ContainerBuilder $container);
-
-    /**
-     * Returns the container extension that should be implicitly loaded.
-     *
-     * @return ExtensionInterface|null The default extension or null if there is none
-     */
-    public function getContainerExtension();
-
-    /**
-     * Returns the bundle name (the class short name).
-     *
-     * @return string The Bundle name
-     */
-    public function getName();
-
-    /**
-     * Gets the Bundle namespace.
-     *
-     * @return string The Bundle namespace
-     */
-    public function getNamespace();
-
-    /**
-     * Gets the Bundle directory path.
-     *
-     * The path should always be returned as a Unix path (with /).
-     *
-     * @return string The Bundle absolute path
-     */
-    public function getPath();
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+CqS8670fFzpgR1cXyhFPXbVri4uYTQhJm7Kx

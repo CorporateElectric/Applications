@@ -1,119 +1,44 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpKernel\ControllerMetadata;
-
-use Symfony\Component\HttpKernel\Attribute\ArgumentInterface;
-
-/**
- * Responsible for storing metadata of an argument.
- *
- * @author Iltar van der Berg <kjarli@gmail.com>
- */
-class ArgumentMetadata
-{
-    private $name;
-    private $type;
-    private $isVariadic;
-    private $hasDefaultValue;
-    private $defaultValue;
-    private $isNullable;
-    private $attribute;
-
-    public function __construct(string $name, ?string $type, bool $isVariadic, bool $hasDefaultValue, $defaultValue, bool $isNullable = false, ?ArgumentInterface $attribute = null)
-    {
-        $this->name = $name;
-        $this->type = $type;
-        $this->isVariadic = $isVariadic;
-        $this->hasDefaultValue = $hasDefaultValue;
-        $this->defaultValue = $defaultValue;
-        $this->isNullable = $isNullable || null === $type || ($hasDefaultValue && null === $defaultValue);
-        $this->attribute = $attribute;
-    }
-
-    /**
-     * Returns the name as given in PHP, $foo would yield "foo".
-     *
-     * @return string
-     */
-    public function getName()
-    {
-        return $this->name;
-    }
-
-    /**
-     * Returns the type of the argument.
-     *
-     * The type is the PHP class in 5.5+ and additionally the basic type in PHP 7.0+.
-     *
-     * @return string|null
-     */
-    public function getType()
-    {
-        return $this->type;
-    }
-
-    /**
-     * Returns whether the argument is defined as "...$variadic".
-     *
-     * @return bool
-     */
-    public function isVariadic()
-    {
-        return $this->isVariadic;
-    }
-
-    /**
-     * Returns whether the argument has a default value.
-     *
-     * Implies whether an argument is optional.
-     *
-     * @return bool
-     */
-    public function hasDefaultValue()
-    {
-        return $this->hasDefaultValue;
-    }
-
-    /**
-     * Returns whether the argument accepts null values.
-     *
-     * @return bool
-     */
-    public function isNullable()
-    {
-        return $this->isNullable;
-    }
-
-    /**
-     * Returns the default value of the argument.
-     *
-     * @throws \LogicException if no default value is present; {@see self::hasDefaultValue()}
-     *
-     * @return mixed
-     */
-    public function getDefaultValue()
-    {
-        if (!$this->hasDefaultValue) {
-            throw new \LogicException(sprintf('Argument $%s does not have a default value. Use "%s::hasDefaultValue()" to avoid this exception.', $this->name, __CLASS__));
-        }
-
-        return $this->defaultValue;
-    }
-
-    /**
-     * Returns the attribute (if any) that was set on the argument.
-     */
-    public function getAttribute(): ?ArgumentInterface
-    {
-        return $this->attribute;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

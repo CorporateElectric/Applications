@@ -1,172 +1,116 @@
-<?php
-
-namespace Spatie\TemporaryDirectory;
-
-use Exception;
-use FilesystemIterator;
-use InvalidArgumentException;
-
-class TemporaryDirectory
-{
-    /** @var string */
-    protected $location;
-
-    /** @var string */
-    protected $name;
-
-    /** @var bool */
-    protected $forceCreate = false;
-
-    public function __construct(string $location = '')
-    {
-        $this->location = $this->sanitizePath($location);
-    }
-
-    public function create(): self
-    {
-        if (empty($this->location)) {
-            $this->location = $this->getSystemTemporaryDirectory();
-        }
-
-        if (empty($this->name)) {
-            $this->name = mt_rand().'-'.str_replace([' ', '.'], '', microtime());
-        }
-
-        if ($this->forceCreate && file_exists($this->getFullPath())) {
-            $this->deleteDirectory($this->getFullPath());
-        }
-
-        if (file_exists($this->getFullPath())) {
-            throw new InvalidArgumentException("Path `{$this->getFullPath()}` already exists.");
-        }
-
-        mkdir($this->getFullPath(), 0777, true);
-
-        return $this;
-    }
-
-    public function force(): self
-    {
-        $this->forceCreate = true;
-
-        return $this;
-    }
-
-    public function name(string $name): self
-    {
-        $this->name = $this->sanitizeName($name);
-
-        return $this;
-    }
-
-    public function location(string $location): self
-    {
-        $this->location = $this->sanitizePath($location);
-
-        return $this;
-    }
-
-    public function path(string $pathOrFilename = ''): string
-    {
-        if (empty($pathOrFilename)) {
-            return $this->getFullPath();
-        }
-
-        $path = $this->getFullPath().DIRECTORY_SEPARATOR.trim($pathOrFilename, '/');
-
-        $directoryPath = $this->removeFilenameFromPath($path);
-
-        if (! file_exists($directoryPath)) {
-            mkdir($directoryPath, 0777, true);
-        }
-
-        return $path;
-    }
-
-    public function empty(): self
-    {
-        $this->deleteDirectory($this->getFullPath());
-        mkdir($this->getFullPath(), 0777, true);
-
-        return $this;
-    }
-
-    public function delete(): bool
-    {
-        return $this->deleteDirectory($this->getFullPath());
-    }
-
-    protected function getFullPath(): string
-    {
-        return $this->location.($this->name ? DIRECTORY_SEPARATOR.$this->name : '');
-    }
-
-    protected function isValidDirectoryName(string $directoryName): bool
-    {
-        return strpbrk($directoryName, '\\/?%*:|"<>') === false;
-    }
-
-    protected function getSystemTemporaryDirectory(): string
-    {
-        return rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR);
-    }
-
-    protected function sanitizePath(string $path): string
-    {
-        $path = rtrim($path);
-
-        return rtrim($path, DIRECTORY_SEPARATOR);
-    }
-
-    protected function sanitizeName(string $name): string
-    {
-        if (! $this->isValidDirectoryName($name)) {
-            throw new Exception("The directory name `$name` contains invalid characters.");
-        }
-
-        return trim($name);
-    }
-
-    protected function removeFilenameFromPath(string $path): string
-    {
-        if (! $this->isFilePath($path)) {
-            return $path;
-        }
-
-        return substr($path, 0, strrpos($path, DIRECTORY_SEPARATOR));
-    }
-
-    protected function isFilePath(string $path): bool
-    {
-        return strpos($path, '.') !== false;
-    }
-
-    protected function deleteDirectory(string $path): bool
-    {
-        if (is_link($path)) {
-            return unlink($path);
-        }
-
-        if (! file_exists($path)) {
-            return true;
-        }
-
-        if (! is_dir($path)) {
-            return unlink($path);
-        }
-
-        foreach (new FilesystemIterator($path) as $item) {
-            if (! $this->deleteDirectory($item)) {
-                return false;
-            }
-        }
-
-        /*
-         * By forcing a php garbage collection cycle using gc_collect_cycles() we can ensure
-         * that the rmdir does not fail due to files still being reserved in memory.
-         */
-        gc_collect_cycles();
-
-        return rmdir($path);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

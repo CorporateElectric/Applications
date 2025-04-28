@@ -1,148 +1,84 @@
-<?php declare(strict_types=1);
-
-namespace PhpParser\Builder;
-
-use PhpParser\Builder;
-use PhpParser\BuilderHelpers;
-use PhpParser\Node;
-use PhpParser\Node\Stmt;
-
-class TraitUseAdaptation implements Builder
-{
-    const TYPE_UNDEFINED  = 0;
-    const TYPE_ALIAS      = 1;
-    const TYPE_PRECEDENCE = 2;
-
-    /** @var int Type of building adaptation */
-    protected $type;
-
-    protected $trait;
-    protected $method;
-
-    protected $modifier = null;
-    protected $alias = null;
-
-    protected $insteadof = [];
-
-    /**
-     * Creates a trait use adaptation builder.
-     *
-     * @param Node\Name|string|null  $trait  Name of adaptated trait
-     * @param Node\Identifier|string $method Name of adaptated method
-     */
-    public function __construct($trait, $method) {
-        $this->type = self::TYPE_UNDEFINED;
-
-        $this->trait = is_null($trait)? null: BuilderHelpers::normalizeName($trait);
-        $this->method = BuilderHelpers::normalizeIdentifier($method);
-    }
-
-    /**
-     * Sets alias of method.
-     *
-     * @param Node\Identifier|string $alias Alias for adaptated method
-     *
-     * @return $this The builder instance (for fluid interface)
-     */
-    public function as($alias) {
-        if ($this->type === self::TYPE_UNDEFINED) {
-            $this->type = self::TYPE_ALIAS;
-        }
-
-        if ($this->type !== self::TYPE_ALIAS) {
-            throw new \LogicException('Cannot set alias for not alias adaptation buider');
-        }
-
-        $this->alias = $alias;
-        return $this;
-    }
-
-    /**
-     * Sets adaptated method public.
-     *
-     * @return $this The builder instance (for fluid interface)
-     */
-    public function makePublic() {
-        $this->setModifier(Stmt\Class_::MODIFIER_PUBLIC);
-        return $this;
-    }
-
-    /**
-     * Sets adaptated method protected.
-     *
-     * @return $this The builder instance (for fluid interface)
-     */
-    public function makeProtected() {
-        $this->setModifier(Stmt\Class_::MODIFIER_PROTECTED);
-        return $this;
-    }
-
-    /**
-     * Sets adaptated method private.
-     *
-     * @return $this The builder instance (for fluid interface)
-     */
-    public function makePrivate() {
-        $this->setModifier(Stmt\Class_::MODIFIER_PRIVATE);
-        return $this;
-    }
-
-    /**
-     * Adds overwritten traits.
-     *
-     * @param Node\Name|string ...$traits Traits for overwrite
-     *
-     * @return $this The builder instance (for fluid interface)
-     */
-    public function insteadof(...$traits) {
-        if ($this->type === self::TYPE_UNDEFINED) {
-            if (is_null($this->trait)) {
-                throw new \LogicException('Precedence adaptation must have trait');
-            }
-
-            $this->type = self::TYPE_PRECEDENCE;
-        }
-
-        if ($this->type !== self::TYPE_PRECEDENCE) {
-            throw new \LogicException('Cannot add overwritten traits for not precedence adaptation buider');
-        }
-
-        foreach ($traits as $trait) {
-            $this->insteadof[] = BuilderHelpers::normalizeName($trait);
-        }
-
-        return $this;
-    }
-
-    protected function setModifier(int $modifier) {
-        if ($this->type === self::TYPE_UNDEFINED) {
-            $this->type = self::TYPE_ALIAS;
-        }
-
-        if ($this->type !== self::TYPE_ALIAS) {
-            throw new \LogicException('Cannot set access modifier for not alias adaptation buider');
-        }
-
-        if (is_null($this->modifier)) {
-            $this->modifier = $modifier;
-        } else {
-            throw new \LogicException('Multiple access type modifiers are not allowed');
-        }
-    }
-
-    /**
-     * Returns the built node.
-     *
-     * @return Node The built node
-     */
-    public function getNode() : Node {
-        switch ($this->type) {
-            case self::TYPE_ALIAS:
-                return new Stmt\TraitUseAdaptation\Alias($this->trait, $this->method, $this->modifier, $this->alias);
-            case self::TYPE_PRECEDENCE:
-                return new Stmt\TraitUseAdaptation\Precedence($this->trait, $this->method, $this->insteadof);
-            default:
-                throw new \LogicException('Type of adaptation is not defined');
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+os4dhgctMdTQD1wgsdwlp6yrfgxMaEWg

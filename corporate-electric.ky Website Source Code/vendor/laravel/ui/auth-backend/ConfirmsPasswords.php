@@ -1,71 +1,46 @@
-<?php
-
-namespace Illuminate\Foundation\Auth;
-
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-
-trait ConfirmsPasswords
-{
-    use RedirectsUsers;
-
-    /**
-     * Display the password confirmation view.
-     *
-     * @return \Illuminate\View\View
-     */
-    public function showConfirmForm()
-    {
-        return view('auth.passwords.confirm');
-    }
-
-    /**
-     * Confirm the given user's password.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
-     */
-    public function confirm(Request $request)
-    {
-        $request->validate($this->rules(), $this->validationErrorMessages());
-
-        $this->resetPasswordConfirmationTimeout($request);
-
-        return $request->wantsJson()
-                    ? new JsonResponse([], 204)
-                    : redirect()->intended($this->redirectPath());
-    }
-
-    /**
-     * Reset the password confirmation timeout.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return void
-     */
-    protected function resetPasswordConfirmationTimeout(Request $request)
-    {
-        $request->session()->put('auth.password_confirmed_at', time());
-    }
-
-    /**
-     * Get the password confirmation validation rules.
-     *
-     * @return array
-     */
-    protected function rules()
-    {
-        return [
-            'password' => 'required|password',
-        ];
-    }
-
-    /**
-     * Get the password confirmation validation error messages.
-     *
-     * @return array
-     */
-    protected function validationErrorMessages()
-    {
-        return [];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,1082 +1,722 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\ErrorHandler;
-
-use Doctrine\Common\Persistence\Proxy as LegacyProxy;
-use Doctrine\Persistence\Proxy;
-use Mockery\MockInterface;
-use PHPUnit\Framework\MockObject\Matcher\StatelessInvocation;
-use PHPUnit\Framework\MockObject\MockObject;
-use Prophecy\Prophecy\ProphecySubjectInterface;
-use ProxyManager\Proxy\ProxyInterface;
-
-/**
- * Autoloader checking if the class is really defined in the file found.
- *
- * The ClassLoader will wrap all registered autoloaders
- * and will throw an exception if a file is found but does
- * not declare the class.
- *
- * It can also patch classes to turn docblocks into actual return types.
- * This behavior is controlled by the SYMFONY_PATCH_TYPE_DECLARATIONS env var,
- * which is a url-encoded array with the follow parameters:
- *  - "force": any value enables deprecation notices - can be any of:
- *      - "docblock" to patch only docblock annotations
- *      - "object" to turn union types to the "object" type when possible (not recommended)
- *      - "1" to add all possible return types including magic methods
- *      - "0" to add possible return types excluding magic methods
- *  - "php": the target version of PHP - e.g. "7.1" doesn't generate "object" types
- *  - "deprecations": "1" to trigger a deprecation notice when a child class misses a
- *                    return type while the parent declares an "@return" annotation
- *
- * Note that patching doesn't care about any coding style so you'd better to run
- * php-cs-fixer after, with rules "phpdoc_trim_consecutive_blank_line_separation"
- * and "no_superfluous_phpdoc_tags" enabled typically.
- *
- * @author Fabien Potencier <fabien@symfony.com>
- * @author Christophe Coevoet <stof@notk.org>
- * @author Nicolas Grekas <p@tchwork.com>
- * @author Guilhem Niot <guilhem.niot@gmail.com>
- */
-class DebugClassLoader
-{
-    private const SPECIAL_RETURN_TYPES = [
-        'void' => 'void',
-        'null' => 'null',
-        'resource' => 'resource',
-        'boolean' => 'bool',
-        'true' => 'bool',
-        'false' => 'bool',
-        'integer' => 'int',
-        'array' => 'array',
-        'bool' => 'bool',
-        'callable' => 'callable',
-        'float' => 'float',
-        'int' => 'int',
-        'iterable' => 'iterable',
-        'object' => 'object',
-        'string' => 'string',
-        'self' => 'self',
-        'parent' => 'parent',
-    ] + (\PHP_VERSION_ID >= 80000 ? [
-        '$this' => 'static',
-    ] : [
-        'mixed' => 'mixed',
-        'static' => 'object',
-        '$this' => 'object',
-    ]);
-
-    private const BUILTIN_RETURN_TYPES = [
-        'void' => true,
-        'array' => true,
-        'bool' => true,
-        'callable' => true,
-        'float' => true,
-        'int' => true,
-        'iterable' => true,
-        'object' => true,
-        'string' => true,
-        'self' => true,
-        'parent' => true,
-    ] + (\PHP_VERSION_ID >= 80000 ? [
-        'mixed' => true,
-        'static' => true,
-    ] : []);
-
-    private const MAGIC_METHODS = [
-        '__set' => 'void',
-        '__isset' => 'bool',
-        '__unset' => 'void',
-        '__sleep' => 'array',
-        '__wakeup' => 'void',
-        '__toString' => 'string',
-        '__clone' => 'void',
-        '__debugInfo' => 'array',
-        '__serialize' => 'array',
-        '__unserialize' => 'void',
-    ];
-
-    private const INTERNAL_TYPES = [
-        'ArrayAccess' => [
-            'offsetExists' => 'bool',
-            'offsetSet' => 'void',
-            'offsetUnset' => 'void',
-        ],
-        'Countable' => [
-            'count' => 'int',
-        ],
-        'Iterator' => [
-            'next' => 'void',
-            'valid' => 'bool',
-            'rewind' => 'void',
-        ],
-        'IteratorAggregate' => [
-            'getIterator' => '\Traversable',
-        ],
-        'OuterIterator' => [
-            'getInnerIterator' => '\Iterator',
-        ],
-        'RecursiveIterator' => [
-            'hasChildren' => 'bool',
-        ],
-        'SeekableIterator' => [
-            'seek' => 'void',
-        ],
-        'Serializable' => [
-            'serialize' => 'string',
-            'unserialize' => 'void',
-        ],
-        'SessionHandlerInterface' => [
-            'open' => 'bool',
-            'close' => 'bool',
-            'read' => 'string',
-            'write' => 'bool',
-            'destroy' => 'bool',
-            'gc' => 'bool',
-        ],
-        'SessionIdInterface' => [
-            'create_sid' => 'string',
-        ],
-        'SessionUpdateTimestampHandlerInterface' => [
-            'validateId' => 'bool',
-            'updateTimestamp' => 'bool',
-        ],
-        'Throwable' => [
-            'getMessage' => 'string',
-            'getCode' => 'int',
-            'getFile' => 'string',
-            'getLine' => 'int',
-            'getTrace' => 'array',
-            'getPrevious' => '?\Throwable',
-            'getTraceAsString' => 'string',
-        ],
-    ];
-
-    private $classLoader;
-    private $isFinder;
-    private $loaded = [];
-    private $patchTypes;
-
-    private static $caseCheck;
-    private static $checkedClasses = [];
-    private static $final = [];
-    private static $finalMethods = [];
-    private static $deprecated = [];
-    private static $internal = [];
-    private static $internalMethods = [];
-    private static $annotatedParameters = [];
-    private static $darwinCache = ['/' => ['/', []]];
-    private static $method = [];
-    private static $returnTypes = [];
-    private static $methodTraits = [];
-    private static $fileOffsets = [];
-
-    public function __construct(callable $classLoader)
-    {
-        $this->classLoader = $classLoader;
-        $this->isFinder = \is_array($classLoader) && method_exists($classLoader[0], 'findFile');
-        parse_str(getenv('SYMFONY_PATCH_TYPE_DECLARATIONS') ?: '', $this->patchTypes);
-        $this->patchTypes += [
-            'force' => null,
-            'php' => null,
-            'deprecations' => false,
-        ];
-
-        if (!isset(self::$caseCheck)) {
-            $file = is_file(__FILE__) ? __FILE__ : rtrim(realpath('.'), \DIRECTORY_SEPARATOR);
-            $i = strrpos($file, \DIRECTORY_SEPARATOR);
-            $dir = substr($file, 0, 1 + $i);
-            $file = substr($file, 1 + $i);
-            $test = strtoupper($file) === $file ? strtolower($file) : strtoupper($file);
-            $test = realpath($dir.$test);
-
-            if (false === $test || false === $i) {
-                // filesystem is case sensitive
-                self::$caseCheck = 0;
-            } elseif (substr($test, -\strlen($file)) === $file) {
-                // filesystem is case insensitive and realpath() normalizes the case of characters
-                self::$caseCheck = 1;
-            } elseif (false !== stripos(\PHP_OS, 'darwin')) {
-                // on MacOSX, HFS+ is case insensitive but realpath() doesn't normalize the case of characters
-                self::$caseCheck = 2;
-            } else {
-                // filesystem case checks failed, fallback to disabling them
-                self::$caseCheck = 0;
-            }
-        }
-    }
-
-    /**
-     * Gets the wrapped class loader.
-     *
-     * @return callable The wrapped class loader
-     */
-    public function getClassLoader(): callable
-    {
-        return $this->classLoader;
-    }
-
-    /**
-     * Wraps all autoloaders.
-     */
-    public static function enable(): void
-    {
-        // Ensures we don't hit https://bugs.php.net/42098
-        class_exists('Symfony\Component\ErrorHandler\ErrorHandler');
-        class_exists('Psr\Log\LogLevel');
-
-        if (!\is_array($functions = spl_autoload_functions())) {
-            return;
-        }
-
-        foreach ($functions as $function) {
-            spl_autoload_unregister($function);
-        }
-
-        foreach ($functions as $function) {
-            if (!\is_array($function) || !$function[0] instanceof self) {
-                $function = [new static($function), 'loadClass'];
-            }
-
-            spl_autoload_register($function);
-        }
-    }
-
-    /**
-     * Disables the wrapping.
-     */
-    public static function disable(): void
-    {
-        if (!\is_array($functions = spl_autoload_functions())) {
-            return;
-        }
-
-        foreach ($functions as $function) {
-            spl_autoload_unregister($function);
-        }
-
-        foreach ($functions as $function) {
-            if (\is_array($function) && $function[0] instanceof self) {
-                $function = $function[0]->getClassLoader();
-            }
-
-            spl_autoload_register($function);
-        }
-    }
-
-    public static function checkClasses(): bool
-    {
-        if (!\is_array($functions = spl_autoload_functions())) {
-            return false;
-        }
-
-        $loader = null;
-
-        foreach ($functions as $function) {
-            if (\is_array($function) && $function[0] instanceof self) {
-                $loader = $function[0];
-                break;
-            }
-        }
-
-        if (null === $loader) {
-            return false;
-        }
-
-        static $offsets = [
-            'get_declared_interfaces' => 0,
-            'get_declared_traits' => 0,
-            'get_declared_classes' => 0,
-        ];
-
-        foreach ($offsets as $getSymbols => $i) {
-            $symbols = $getSymbols();
-
-            for (; $i < \count($symbols); ++$i) {
-                if (!is_subclass_of($symbols[$i], MockObject::class)
-                    && !is_subclass_of($symbols[$i], ProphecySubjectInterface::class)
-                    && !is_subclass_of($symbols[$i], Proxy::class)
-                    && !is_subclass_of($symbols[$i], ProxyInterface::class)
-                    && !is_subclass_of($symbols[$i], LegacyProxy::class)
-                    && !is_subclass_of($symbols[$i], MockInterface::class)
-                ) {
-                    $loader->checkClass($symbols[$i]);
-                }
-            }
-
-            $offsets[$getSymbols] = $i;
-        }
-
-        return true;
-    }
-
-    public function findFile(string $class): ?string
-    {
-        return $this->isFinder ? ($this->classLoader[0]->findFile($class) ?: null) : null;
-    }
-
-    /**
-     * Loads the given class or interface.
-     *
-     * @throws \RuntimeException
-     */
-    public function loadClass(string $class): void
-    {
-        $e = error_reporting(error_reporting() | \E_PARSE | \E_ERROR | \E_CORE_ERROR | \E_COMPILE_ERROR);
-
-        try {
-            if ($this->isFinder && !isset($this->loaded[$class])) {
-                $this->loaded[$class] = true;
-                if (!$file = $this->classLoader[0]->findFile($class) ?: '') {
-                    // no-op
-                } elseif (\function_exists('opcache_is_script_cached') && @opcache_is_script_cached($file)) {
-                    include $file;
-
-                    return;
-                } elseif (false === include $file) {
-                    return;
-                }
-            } else {
-                ($this->classLoader)($class);
-                $file = '';
-            }
-        } finally {
-            error_reporting($e);
-        }
-
-        $this->checkClass($class, $file);
-    }
-
-    private function checkClass(string $class, string $file = null): void
-    {
-        $exists = null === $file || class_exists($class, false) || interface_exists($class, false) || trait_exists($class, false);
-
-        if (null !== $file && $class && '\\' === $class[0]) {
-            $class = substr($class, 1);
-        }
-
-        if ($exists) {
-            if (isset(self::$checkedClasses[$class])) {
-                return;
-            }
-            self::$checkedClasses[$class] = true;
-
-            $refl = new \ReflectionClass($class);
-            if (null === $file && $refl->isInternal()) {
-                return;
-            }
-            $name = $refl->getName();
-
-            if ($name !== $class && 0 === strcasecmp($name, $class)) {
-                throw new \RuntimeException(sprintf('Case mismatch between loaded and declared class names: "%s" vs "%s".', $class, $name));
-            }
-
-            $deprecations = $this->checkAnnotations($refl, $name);
-
-            foreach ($deprecations as $message) {
-                @trigger_error($message, \E_USER_DEPRECATED);
-            }
-        }
-
-        if (!$file) {
-            return;
-        }
-
-        if (!$exists) {
-            if (false !== strpos($class, '/')) {
-                throw new \RuntimeException(sprintf('Trying to autoload a class with an invalid name "%s". Be careful that the namespace separator is "\" in PHP, not "/".', $class));
-            }
-
-            throw new \RuntimeException(sprintf('The autoloader expected class "%s" to be defined in file "%s". The file was found but the class was not in it, the class name or namespace probably has a typo.', $class, $file));
-        }
-
-        if (self::$caseCheck && $message = $this->checkCase($refl, $file, $class)) {
-            throw new \RuntimeException(sprintf('Case mismatch between class and real file names: "%s" vs "%s" in "%s".', $message[0], $message[1], $message[2]));
-        }
-    }
-
-    public function checkAnnotations(\ReflectionClass $refl, string $class): array
-    {
-        if (
-            'Symfony\Bridge\PhpUnit\Legacy\SymfonyTestsListenerForV7' === $class
-            || 'Symfony\Bridge\PhpUnit\Legacy\SymfonyTestsListenerForV6' === $class
-        ) {
-            return [];
-        }
-        $deprecations = [];
-
-        $className = false !== strpos($class, "@anonymous\0") ? (get_parent_class($class) ?: key(class_implements($class)) ?: 'class').'@anonymous' : $class;
-
-        // Don't trigger deprecations for classes in the same vendor
-        if ($class !== $className) {
-            $vendor = preg_match('/^namespace ([^;\\\\\s]++)[;\\\\]/m', @file_get_contents($refl->getFileName()), $vendor) ? $vendor[1].'\\' : '';
-            $vendorLen = \strlen($vendor);
-        } elseif (2 > $vendorLen = 1 + (strpos($class, '\\') ?: strpos($class, '_'))) {
-            $vendorLen = 0;
-            $vendor = '';
-        } else {
-            $vendor = str_replace('_', '\\', substr($class, 0, $vendorLen));
-        }
-
-        // Detect annotations on the class
-        if (false !== $doc = $refl->getDocComment()) {
-            foreach (['final', 'deprecated', 'internal'] as $annotation) {
-                if (false !== strpos($doc, $annotation) && preg_match('#\n\s+\* @'.$annotation.'(?:( .+?)\.?)?\r?\n\s+\*(?: @|/$|\r?\n)#s', $doc, $notice)) {
-                    self::${$annotation}[$class] = isset($notice[1]) ? preg_replace('#\.?\r?\n( \*)? *(?= |\r?\n|$)#', '', $notice[1]) : '';
-                }
-            }
-
-            if ($refl->isInterface() && false !== strpos($doc, 'method') && preg_match_all('#\n \* @method\s+(static\s+)?+([\w\|&\[\]\\\]+\s+)?(\w+(?:\s*\([^\)]*\))?)+(.+?([[:punct:]]\s*)?)?(?=\r?\n \*(?: @|/$|\r?\n))#', $doc, $notice, \PREG_SET_ORDER)) {
-                foreach ($notice as $method) {
-                    $static = '' !== $method[1] && !empty($method[2]);
-                    $name = $method[3];
-                    $description = $method[4] ?? null;
-                    if (false === strpos($name, '(')) {
-                        $name .= '()';
-                    }
-                    if (null !== $description) {
-                        $description = trim($description);
-                        if (!isset($method[5])) {
-                            $description .= '.';
-                        }
-                    }
-                    self::$method[$class][] = [$class, $name, $static, $description];
-                }
-            }
-        }
-
-        $parent = get_parent_class($class) ?: null;
-        $parentAndOwnInterfaces = $this->getOwnInterfaces($class, $parent);
-        if ($parent) {
-            $parentAndOwnInterfaces[$parent] = $parent;
-
-            if (!isset(self::$checkedClasses[$parent])) {
-                $this->checkClass($parent);
-            }
-
-            if (isset(self::$final[$parent])) {
-                $deprecations[] = sprintf('The "%s" class is considered final%s. It may change without further notice as of its next major version. You should not extend it from "%s".', $parent, self::$final[$parent], $className);
-            }
-        }
-
-        // Detect if the parent is annotated
-        foreach ($parentAndOwnInterfaces + class_uses($class, false) as $use) {
-            if (!isset(self::$checkedClasses[$use])) {
-                $this->checkClass($use);
-            }
-            if (isset(self::$deprecated[$use]) && strncmp($vendor, str_replace('_', '\\', $use), $vendorLen) && !isset(self::$deprecated[$class])) {
-                $type = class_exists($class, false) ? 'class' : (interface_exists($class, false) ? 'interface' : 'trait');
-                $verb = class_exists($use, false) || interface_exists($class, false) ? 'extends' : (interface_exists($use, false) ? 'implements' : 'uses');
-
-                $deprecations[] = sprintf('The "%s" %s %s "%s" that is deprecated%s.', $className, $type, $verb, $use, self::$deprecated[$use]);
-            }
-            if (isset(self::$internal[$use]) && strncmp($vendor, str_replace('_', '\\', $use), $vendorLen)) {
-                $deprecations[] = sprintf('The "%s" %s is considered internal%s. It may change without further notice. You should not use it from "%s".', $use, class_exists($use, false) ? 'class' : (interface_exists($use, false) ? 'interface' : 'trait'), self::$internal[$use], $className);
-            }
-            if (isset(self::$method[$use])) {
-                if ($refl->isAbstract()) {
-                    if (isset(self::$method[$class])) {
-                        self::$method[$class] = array_merge(self::$method[$class], self::$method[$use]);
-                    } else {
-                        self::$method[$class] = self::$method[$use];
-                    }
-                } elseif (!$refl->isInterface()) {
-                    $hasCall = $refl->hasMethod('__call');
-                    $hasStaticCall = $refl->hasMethod('__callStatic');
-                    foreach (self::$method[$use] as $method) {
-                        [$interface, $name, $static, $description] = $method;
-                        if ($static ? $hasStaticCall : $hasCall) {
-                            continue;
-                        }
-                        $realName = substr($name, 0, strpos($name, '('));
-                        if (!$refl->hasMethod($realName) || !($methodRefl = $refl->getMethod($realName))->isPublic() || ($static && !$methodRefl->isStatic()) || (!$static && $methodRefl->isStatic())) {
-                            $deprecations[] = sprintf('Class "%s" should implement method "%s::%s"%s', $className, ($static ? 'static ' : '').$interface, $name, null == $description ? '.' : ': '.$description);
-                        }
-                    }
-                }
-            }
-        }
-
-        if (trait_exists($class)) {
-            $file = $refl->getFileName();
-
-            foreach ($refl->getMethods() as $method) {
-                if ($method->getFileName() === $file) {
-                    self::$methodTraits[$file][$method->getStartLine()] = $class;
-                }
-            }
-
-            return $deprecations;
-        }
-
-        // Inherit @final, @internal, @param and @return annotations for methods
-        self::$finalMethods[$class] = [];
-        self::$internalMethods[$class] = [];
-        self::$annotatedParameters[$class] = [];
-        self::$returnTypes[$class] = [];
-        foreach ($parentAndOwnInterfaces as $use) {
-            foreach (['finalMethods', 'internalMethods', 'annotatedParameters', 'returnTypes'] as $property) {
-                if (isset(self::${$property}[$use])) {
-                    self::${$property}[$class] = self::${$property}[$class] ? self::${$property}[$use] + self::${$property}[$class] : self::${$property}[$use];
-                }
-            }
-
-            if (null !== (self::INTERNAL_TYPES[$use] ?? null)) {
-                foreach (self::INTERNAL_TYPES[$use] as $method => $returnType) {
-                    if ('void' !== $returnType) {
-                        self::$returnTypes[$class] += [$method => [$returnType, $returnType, $class, '']];
-                    }
-                }
-            }
-        }
-
-        foreach ($refl->getMethods() as $method) {
-            if ($method->class !== $class) {
-                continue;
-            }
-
-            if (null === $ns = self::$methodTraits[$method->getFileName()][$method->getStartLine()] ?? null) {
-                $ns = $vendor;
-                $len = $vendorLen;
-            } elseif (2 > $len = 1 + (strpos($ns, '\\') ?: strpos($ns, '_'))) {
-                $len = 0;
-                $ns = '';
-            } else {
-                $ns = str_replace('_', '\\', substr($ns, 0, $len));
-            }
-
-            if ($parent && isset(self::$finalMethods[$parent][$method->name])) {
-                [$declaringClass, $message] = self::$finalMethods[$parent][$method->name];
-                $deprecations[] = sprintf('The "%s::%s()" method is considered final%s. It may change without further notice as of its next major version. You should not extend it from "%s".', $declaringClass, $method->name, $message, $className);
-            }
-
-            if (isset(self::$internalMethods[$class][$method->name])) {
-                [$declaringClass, $message] = self::$internalMethods[$class][$method->name];
-                if (strncmp($ns, $declaringClass, $len)) {
-                    $deprecations[] = sprintf('The "%s::%s()" method is considered internal%s. It may change without further notice. You should not extend it from "%s".', $declaringClass, $method->name, $message, $className);
-                }
-            }
-
-            // To read method annotations
-            $doc = $method->getDocComment();
-
-            if (isset(self::$annotatedParameters[$class][$method->name])) {
-                $definedParameters = [];
-                foreach ($method->getParameters() as $parameter) {
-                    $definedParameters[$parameter->name] = true;
-                }
-
-                foreach (self::$annotatedParameters[$class][$method->name] as $parameterName => $deprecation) {
-                    if (!isset($definedParameters[$parameterName]) && !($doc && preg_match("/\\n\\s+\\* @param +((?(?!callable *\().*?|callable *\(.*\).*?))(?<= )\\\${$parameterName}\\b/", $doc))) {
-                        $deprecations[] = sprintf($deprecation, $className);
-                    }
-                }
-            }
-
-            $forcePatchTypes = $this->patchTypes['force'];
-
-            if ($canAddReturnType = null !== $forcePatchTypes && false === strpos($method->getFileName(), \DIRECTORY_SEPARATOR.'vendor'.\DIRECTORY_SEPARATOR)) {
-                if ('void' !== (self::MAGIC_METHODS[$method->name] ?? 'void')) {
-                    $this->patchTypes['force'] = $forcePatchTypes ?: 'docblock';
-                }
-
-                $canAddReturnType = false !== strpos($refl->getFileName(), \DIRECTORY_SEPARATOR.'Tests'.\DIRECTORY_SEPARATOR)
-                    || $refl->isFinal()
-                    || $method->isFinal()
-                    || $method->isPrivate()
-                    || ('' === (self::$internal[$class] ?? null) && !$refl->isAbstract())
-                    || '' === (self::$final[$class] ?? null)
-                    || preg_match('/@(final|internal)$/m', $doc)
-                ;
-            }
-
-            if (null !== ($returnType = self::$returnTypes[$class][$method->name] ?? self::MAGIC_METHODS[$method->name] ?? null) && !$method->hasReturnType() && !($doc && preg_match('/\n\s+\* @return +(\S+)/', $doc))) {
-                [$normalizedType, $returnType, $declaringClass, $declaringFile] = \is_string($returnType) ? [$returnType, $returnType, '', ''] : $returnType;
-
-                if ('void' === $normalizedType) {
-                    $canAddReturnType = false;
-                }
-
-                if ($canAddReturnType && 'docblock' !== $this->patchTypes['force']) {
-                    $this->patchMethod($method, $returnType, $declaringFile, $normalizedType);
-                }
-
-                if (strncmp($ns, $declaringClass, $len)) {
-                    if ($canAddReturnType && 'docblock' === $this->patchTypes['force'] && false === strpos($method->getFileName(), \DIRECTORY_SEPARATOR.'vendor'.\DIRECTORY_SEPARATOR)) {
-                        $this->patchMethod($method, $returnType, $declaringFile, $normalizedType);
-                    } elseif ('' !== $declaringClass && $this->patchTypes['deprecations']) {
-                        $deprecations[] = sprintf('Method "%s::%s()" will return "%s" as of its next major version. Doing the same in %s "%s" will be required when upgrading.', $declaringClass, $method->name, $normalizedType, interface_exists($declaringClass) ? 'implementation' : 'child class', $className);
-                    }
-                }
-            }
-
-            if (!$doc) {
-                $this->patchTypes['force'] = $forcePatchTypes;
-
-                continue;
-            }
-
-            $matches = [];
-
-            if (!$method->hasReturnType() && ((false !== strpos($doc, '@return') && preg_match('/\n\s+\* @return +(\S+)/', $doc, $matches)) || 'void' !== (self::MAGIC_METHODS[$method->name] ?? 'void'))) {
-                $matches = $matches ?: [1 => self::MAGIC_METHODS[$method->name]];
-                $this->setReturnType($matches[1], $method, $parent);
-
-                if (isset(self::$returnTypes[$class][$method->name][0]) && $canAddReturnType) {
-                    $this->fixReturnStatements($method, self::$returnTypes[$class][$method->name][0]);
-                }
-
-                if ($method->isPrivate()) {
-                    unset(self::$returnTypes[$class][$method->name]);
-                }
-            }
-
-            $this->patchTypes['force'] = $forcePatchTypes;
-
-            if ($method->isPrivate()) {
-                continue;
-            }
-
-            $finalOrInternal = false;
-
-            foreach (['final', 'internal'] as $annotation) {
-                if (false !== strpos($doc, $annotation) && preg_match('#\n\s+\* @'.$annotation.'(?:( .+?)\.?)?\r?\n\s+\*(?: @|/$|\r?\n)#s', $doc, $notice)) {
-                    $message = isset($notice[1]) ? preg_replace('#\.?\r?\n( \*)? *(?= |\r?\n|$)#', '', $notice[1]) : '';
-                    self::${$annotation.'Methods'}[$class][$method->name] = [$class, $message];
-                    $finalOrInternal = true;
-                }
-            }
-
-            if ($finalOrInternal || $method->isConstructor() || false === strpos($doc, '@param') || StatelessInvocation::class === $class) {
-                continue;
-            }
-            if (!preg_match_all('#\n\s+\* @param +((?(?!callable *\().*?|callable *\(.*\).*?))(?<= )\$([a-zA-Z0-9_\x7f-\xff]++)#', $doc, $matches, \PREG_SET_ORDER)) {
-                continue;
-            }
-            if (!isset(self::$annotatedParameters[$class][$method->name])) {
-                $definedParameters = [];
-                foreach ($method->getParameters() as $parameter) {
-                    $definedParameters[$parameter->name] = true;
-                }
-            }
-            foreach ($matches as [, $parameterType, $parameterName]) {
-                if (!isset($definedParameters[$parameterName])) {
-                    $parameterType = trim($parameterType);
-                    self::$annotatedParameters[$class][$method->name][$parameterName] = sprintf('The "%%s::%s()" method will require a new "%s$%s" argument in the next major version of its %s "%s", not defining it is deprecated.', $method->name, $parameterType ? $parameterType.' ' : '', $parameterName, interface_exists($className) ? 'interface' : 'parent class', $className);
-                }
-            }
-        }
-
-        return $deprecations;
-    }
-
-    public function checkCase(\ReflectionClass $refl, string $file, string $class): ?array
-    {
-        $real = explode('\\', $class.strrchr($file, '.'));
-        $tail = explode(\DIRECTORY_SEPARATOR, str_replace('/', \DIRECTORY_SEPARATOR, $file));
-
-        $i = \count($tail) - 1;
-        $j = \count($real) - 1;
-
-        while (isset($tail[$i], $real[$j]) && $tail[$i] === $real[$j]) {
-            --$i;
-            --$j;
-        }
-
-        array_splice($tail, 0, $i + 1);
-
-        if (!$tail) {
-            return null;
-        }
-
-        $tail = \DIRECTORY_SEPARATOR.implode(\DIRECTORY_SEPARATOR, $tail);
-        $tailLen = \strlen($tail);
-        $real = $refl->getFileName();
-
-        if (2 === self::$caseCheck) {
-            $real = $this->darwinRealpath($real);
-        }
-
-        if (0 === substr_compare($real, $tail, -$tailLen, $tailLen, true)
-            && 0 !== substr_compare($real, $tail, -$tailLen, $tailLen, false)
-        ) {
-            return [substr($tail, -$tailLen + 1), substr($real, -$tailLen + 1), substr($real, 0, -$tailLen + 1)];
-        }
-
-        return null;
-    }
-
-    /**
-     * `realpath` on MacOSX doesn't normalize the case of characters.
-     */
-    private function darwinRealpath(string $real): string
-    {
-        $i = 1 + strrpos($real, '/');
-        $file = substr($real, $i);
-        $real = substr($real, 0, $i);
-
-        if (isset(self::$darwinCache[$real])) {
-            $kDir = $real;
-        } else {
-            $kDir = strtolower($real);
-
-            if (isset(self::$darwinCache[$kDir])) {
-                $real = self::$darwinCache[$kDir][0];
-            } else {
-                $dir = getcwd();
-
-                if (!@chdir($real)) {
-                    return $real.$file;
-                }
-
-                $real = getcwd().'/';
-                chdir($dir);
-
-                $dir = $real;
-                $k = $kDir;
-                $i = \strlen($dir) - 1;
-                while (!isset(self::$darwinCache[$k])) {
-                    self::$darwinCache[$k] = [$dir, []];
-                    self::$darwinCache[$dir] = &self::$darwinCache[$k];
-
-                    while ('/' !== $dir[--$i]) {
-                    }
-                    $k = substr($k, 0, ++$i);
-                    $dir = substr($dir, 0, $i--);
-                }
-            }
-        }
-
-        $dirFiles = self::$darwinCache[$kDir][1];
-
-        if (!isset($dirFiles[$file]) && ') : eval()\'d code' === substr($file, -17)) {
-            // Get the file name from "file_name.php(123) : eval()'d code"
-            $file = substr($file, 0, strrpos($file, '(', -17));
-        }
-
-        if (isset($dirFiles[$file])) {
-            return $real.$dirFiles[$file];
-        }
-
-        $kFile = strtolower($file);
-
-        if (!isset($dirFiles[$kFile])) {
-            foreach (scandir($real, 2) as $f) {
-                if ('.' !== $f[0]) {
-                    $dirFiles[$f] = $f;
-                    if ($f === $file) {
-                        $kFile = $k = $file;
-                    } elseif ($f !== $k = strtolower($f)) {
-                        $dirFiles[$k] = $f;
-                    }
-                }
-            }
-            self::$darwinCache[$kDir][1] = $dirFiles;
-        }
-
-        return $real.$dirFiles[$kFile];
-    }
-
-    /**
-     * `class_implements` includes interfaces from the parents so we have to manually exclude them.
-     *
-     * @return string[]
-     */
-    private function getOwnInterfaces(string $class, ?string $parent): array
-    {
-        $ownInterfaces = class_implements($class, false);
-
-        if ($parent) {
-            foreach (class_implements($parent, false) as $interface) {
-                unset($ownInterfaces[$interface]);
-            }
-        }
-
-        foreach ($ownInterfaces as $interface) {
-            foreach (class_implements($interface) as $interface) {
-                unset($ownInterfaces[$interface]);
-            }
-        }
-
-        return $ownInterfaces;
-    }
-
-    private function setReturnType(string $types, \ReflectionMethod $method, ?string $parent): void
-    {
-        $nullable = false;
-        $typesMap = [];
-        foreach (explode('|', $types) as $t) {
-            $typesMap[$this->normalizeType($t, $method->class, $parent)] = $t;
-        }
-
-        if (isset($typesMap['array'])) {
-            if (isset($typesMap['Traversable']) || isset($typesMap['\Traversable'])) {
-                $typesMap['iterable'] = 'array' !== $typesMap['array'] ? $typesMap['array'] : 'iterable';
-                unset($typesMap['array'], $typesMap['Traversable'], $typesMap['\Traversable']);
-            } elseif ('array' !== $typesMap['array'] && isset(self::$returnTypes[$method->class][$method->name])) {
-                return;
-            }
-        }
-
-        if (isset($typesMap['array']) && isset($typesMap['iterable'])) {
-            if ('[]' === substr($typesMap['array'], -2)) {
-                $typesMap['iterable'] = $typesMap['array'];
-            }
-            unset($typesMap['array']);
-        }
-
-        $iterable = $object = true;
-        foreach ($typesMap as $n => $t) {
-            if ('null' !== $n) {
-                $iterable = $iterable && (\in_array($n, ['array', 'iterable']) || false !== strpos($n, 'Iterator'));
-                $object = $object && (\in_array($n, ['callable', 'object', '$this', 'static']) || !isset(self::SPECIAL_RETURN_TYPES[$n]));
-            }
-        }
-
-        $normalizedType = key($typesMap);
-        $returnType = current($typesMap);
-
-        foreach ($typesMap as $n => $t) {
-            if ('null' === $n) {
-                $nullable = true;
-            } elseif ('null' === $normalizedType) {
-                $normalizedType = $t;
-                $returnType = $t;
-            } elseif ($n !== $normalizedType || !preg_match('/^\\\\?[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*+(?:\\\\[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*+)*+$/', $n)) {
-                if ($iterable) {
-                    $normalizedType = $returnType = 'iterable';
-                } elseif ($object && 'object' === $this->patchTypes['force']) {
-                    $normalizedType = $returnType = 'object';
-                } else {
-                    // ignore multi-types return declarations
-                    return;
-                }
-            }
-        }
-
-        if ('void' === $normalizedType || (\PHP_VERSION_ID >= 80000 && 'mixed' === $normalizedType)) {
-            $nullable = false;
-        } elseif (!isset(self::BUILTIN_RETURN_TYPES[$normalizedType]) && isset(self::SPECIAL_RETURN_TYPES[$normalizedType])) {
-            // ignore other special return types
-            return;
-        }
-
-        if ($nullable) {
-            $normalizedType = '?'.$normalizedType;
-            $returnType .= '|null';
-        }
-
-        self::$returnTypes[$method->class][$method->name] = [$normalizedType, $returnType, $method->class, $method->getFileName()];
-    }
-
-    private function normalizeType(string $type, string $class, ?string $parent): string
-    {
-        if (isset(self::SPECIAL_RETURN_TYPES[$lcType = strtolower($type)])) {
-            if ('parent' === $lcType = self::SPECIAL_RETURN_TYPES[$lcType]) {
-                $lcType = null !== $parent ? '\\'.$parent : 'parent';
-            } elseif ('self' === $lcType) {
-                $lcType = '\\'.$class;
-            }
-
-            return $lcType;
-        }
-
-        if ('[]' === substr($type, -2)) {
-            return 'array';
-        }
-
-        if (preg_match('/^(array|iterable|callable) *[<(]/', $lcType, $m)) {
-            return $m[1];
-        }
-
-        // We could resolve "use" statements to return the FQDN
-        // but this would be too expensive for a runtime checker
-
-        return $type;
-    }
-
-    /**
-     * Utility method to add @return annotations to the Symfony code-base where it triggers a self-deprecations.
-     */
-    private function patchMethod(\ReflectionMethod $method, string $returnType, string $declaringFile, string $normalizedType)
-    {
-        static $patchedMethods = [];
-        static $useStatements = [];
-
-        if (!is_file($file = $method->getFileName()) || isset($patchedMethods[$file][$startLine = $method->getStartLine()])) {
-            return;
-        }
-
-        $patchedMethods[$file][$startLine] = true;
-        $fileOffset = self::$fileOffsets[$file] ?? 0;
-        $startLine += $fileOffset - 2;
-        $nullable = '?' === $normalizedType[0] ? '?' : '';
-        $normalizedType = ltrim($normalizedType, '?');
-        $returnType = explode('|', $returnType);
-        $code = file($file);
-
-        foreach ($returnType as $i => $type) {
-            if (preg_match('/((?:\[\])+)$/', $type, $m)) {
-                $type = substr($type, 0, -\strlen($m[1]));
-                $format = '%s'.$m[1];
-            } elseif (preg_match('/^(array|iterable)<([^,>]++)>$/', $type, $m)) {
-                $type = $m[2];
-                $format = $m[1].'<%s>';
-            } else {
-                $format = null;
-            }
-
-            if (isset(self::SPECIAL_RETURN_TYPES[$type]) || ('\\' === $type[0] && !$p = strrpos($type, '\\', 1))) {
-                continue;
-            }
-
-            [$namespace, $useOffset, $useMap] = $useStatements[$file] ?? $useStatements[$file] = self::getUseStatements($file);
-
-            if ('\\' !== $type[0]) {
-                [$declaringNamespace, , $declaringUseMap] = $useStatements[$declaringFile] ?? $useStatements[$declaringFile] = self::getUseStatements($declaringFile);
-
-                $p = strpos($type, '\\', 1);
-                $alias = $p ? substr($type, 0, $p) : $type;
-
-                if (isset($declaringUseMap[$alias])) {
-                    $type = '\\'.$declaringUseMap[$alias].($p ? substr($type, $p) : '');
-                } else {
-                    $type = '\\'.$declaringNamespace.$type;
-                }
-
-                $p = strrpos($type, '\\', 1);
-            }
-
-            $alias = substr($type, 1 + $p);
-            $type = substr($type, 1);
-
-            if (!isset($useMap[$alias]) && (class_exists($c = $namespace.$alias) || interface_exists($c) || trait_exists($c))) {
-                $useMap[$alias] = $c;
-            }
-
-            if (!isset($useMap[$alias])) {
-                $useStatements[$file][2][$alias] = $type;
-                $code[$useOffset] = "use $type;\n".$code[$useOffset];
-                ++$fileOffset;
-            } elseif ($useMap[$alias] !== $type) {
-                $alias .= 'FIXME';
-                $useStatements[$file][2][$alias] = $type;
-                $code[$useOffset] = "use $type as $alias;\n".$code[$useOffset];
-                ++$fileOffset;
-            }
-
-            $returnType[$i] = null !== $format ? sprintf($format, $alias) : $alias;
-
-            if (!isset(self::SPECIAL_RETURN_TYPES[$normalizedType]) && !isset(self::SPECIAL_RETURN_TYPES[$returnType[$i]])) {
-                $normalizedType = $returnType[$i];
-            }
-        }
-
-        if ('docblock' === $this->patchTypes['force'] || ('object' === $normalizedType && '7.1' === $this->patchTypes['php'])) {
-            $returnType = implode('|', $returnType);
-
-            if ($method->getDocComment()) {
-                $code[$startLine] = "     * @return $returnType\n".$code[$startLine];
-            } else {
-                $code[$startLine] .= <<<EOTXT
-    /**
-     * @return $returnType
-     */
-
-EOTXT;
-            }
-
-            $fileOffset += substr_count($code[$startLine], "\n") - 1;
-        }
-
-        self::$fileOffsets[$file] = $fileOffset;
-        file_put_contents($file, $code);
-
-        $this->fixReturnStatements($method, $nullable.$normalizedType);
-    }
-
-    private static function getUseStatements(string $file): array
-    {
-        $namespace = '';
-        $useMap = [];
-        $useOffset = 0;
-
-        if (!is_file($file)) {
-            return [$namespace, $useOffset, $useMap];
-        }
-
-        $file = file($file);
-
-        for ($i = 0; $i < \count($file); ++$i) {
-            if (preg_match('/^(class|interface|trait|abstract) /', $file[$i])) {
-                break;
-            }
-
-            if (0 === strpos($file[$i], 'namespace ')) {
-                $namespace = substr($file[$i], \strlen('namespace '), -2).'\\';
-                $useOffset = $i + 2;
-            }
-
-            if (0 === strpos($file[$i], 'use ')) {
-                $useOffset = $i;
-
-                for (; 0 === strpos($file[$i], 'use '); ++$i) {
-                    $u = explode(' as ', substr($file[$i], 4, -2), 2);
-
-                    if (1 === \count($u)) {
-                        $p = strrpos($u[0], '\\');
-                        $useMap[substr($u[0], false !== $p ? 1 + $p : 0)] = $u[0];
-                    } else {
-                        $useMap[$u[1]] = $u[0];
-                    }
-                }
-
-                break;
-            }
-        }
-
-        return [$namespace, $useOffset, $useMap];
-    }
-
-    private function fixReturnStatements(\ReflectionMethod $method, string $returnType)
-    {
-        if ('7.1' === $this->patchTypes['php'] && 'object' === ltrim($returnType, '?') && 'docblock' !== $this->patchTypes['force']) {
-            return;
-        }
-
-        if (!is_file($file = $method->getFileName())) {
-            return;
-        }
-
-        $fixedCode = $code = file($file);
-        $i = (self::$fileOffsets[$file] ?? 0) + $method->getStartLine();
-
-        if ('?' !== $returnType && 'docblock' !== $this->patchTypes['force']) {
-            $fixedCode[$i - 1] = preg_replace('/\)(;?\n)/', "): $returnType\\1", $code[$i - 1]);
-        }
-
-        $end = $method->isGenerator() ? $i : $method->getEndLine();
-        for (; $i < $end; ++$i) {
-            if ('void' === $returnType) {
-                $fixedCode[$i] = str_replace('    return null;', '    return;', $code[$i]);
-            } elseif ('mixed' === $returnType || '?' === $returnType[0]) {
-                $fixedCode[$i] = str_replace('    return;', '    return null;', $code[$i]);
-            } else {
-                $fixedCode[$i] = str_replace('    return;', "    return $returnType!?;", $code[$i]);
-            }
-        }
-
-        if ($fixedCode !== $code) {
-            file_put_contents($file, $fixedCode);
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

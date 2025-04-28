@@ -1,150 +1,41 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Calculation;
-
-/**
- * PARTLY BASED ON:
- * Copyright (c) 2007 E. W. Bachtal, Inc.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software
- * and associated documentation files (the "Software"), to deal in the Software without restriction,
- * including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so,
- * subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all copies or substantial
- * portions of the Software.
- *
- * The software is provided "as is", without warranty of any kind, express or implied, including but not
- * limited to the warranties of merchantability, fitness for a particular purpose and noninfringement. In
- * no event shall the authors or copyright holders be liable for any claim, damages or other liability,
- * whether in an action of contract, tort or otherwise, arising from, out of or in connection with the
- * software or the use or other dealings in the software.
- *
- * https://ewbi.blogs.com/develops/2007/03/excel_formula_p.html
- * https://ewbi.blogs.com/develops/2004/12/excel_formula_p.html
- */
-class FormulaToken
-{
-    // Token types
-    const TOKEN_TYPE_NOOP = 'Noop';
-    const TOKEN_TYPE_OPERAND = 'Operand';
-    const TOKEN_TYPE_FUNCTION = 'Function';
-    const TOKEN_TYPE_SUBEXPRESSION = 'Subexpression';
-    const TOKEN_TYPE_ARGUMENT = 'Argument';
-    const TOKEN_TYPE_OPERATORPREFIX = 'OperatorPrefix';
-    const TOKEN_TYPE_OPERATORINFIX = 'OperatorInfix';
-    const TOKEN_TYPE_OPERATORPOSTFIX = 'OperatorPostfix';
-    const TOKEN_TYPE_WHITESPACE = 'Whitespace';
-    const TOKEN_TYPE_UNKNOWN = 'Unknown';
-
-    // Token subtypes
-    const TOKEN_SUBTYPE_NOTHING = 'Nothing';
-    const TOKEN_SUBTYPE_START = 'Start';
-    const TOKEN_SUBTYPE_STOP = 'Stop';
-    const TOKEN_SUBTYPE_TEXT = 'Text';
-    const TOKEN_SUBTYPE_NUMBER = 'Number';
-    const TOKEN_SUBTYPE_LOGICAL = 'Logical';
-    const TOKEN_SUBTYPE_ERROR = 'Error';
-    const TOKEN_SUBTYPE_RANGE = 'Range';
-    const TOKEN_SUBTYPE_MATH = 'Math';
-    const TOKEN_SUBTYPE_CONCATENATION = 'Concatenation';
-    const TOKEN_SUBTYPE_INTERSECTION = 'Intersection';
-    const TOKEN_SUBTYPE_UNION = 'Union';
-
-    /**
-     * Value.
-     *
-     * @var string
-     */
-    private $value;
-
-    /**
-     * Token Type (represented by TOKEN_TYPE_*).
-     *
-     * @var string
-     */
-    private $tokenType;
-
-    /**
-     * Token SubType (represented by TOKEN_SUBTYPE_*).
-     *
-     * @var string
-     */
-    private $tokenSubType;
-
-    /**
-     * Create a new FormulaToken.
-     *
-     * @param string $pValue
-     * @param string $pTokenType Token type (represented by TOKEN_TYPE_*)
-     * @param string $pTokenSubType Token Subtype (represented by TOKEN_SUBTYPE_*)
-     */
-    public function __construct($pValue, $pTokenType = self::TOKEN_TYPE_UNKNOWN, $pTokenSubType = self::TOKEN_SUBTYPE_NOTHING)
-    {
-        // Initialise values
-        $this->value = $pValue;
-        $this->tokenType = $pTokenType;
-        $this->tokenSubType = $pTokenSubType;
-    }
-
-    /**
-     * Get Value.
-     *
-     * @return string
-     */
-    public function getValue()
-    {
-        return $this->value;
-    }
-
-    /**
-     * Set Value.
-     *
-     * @param string $value
-     */
-    public function setValue($value): void
-    {
-        $this->value = $value;
-    }
-
-    /**
-     * Get Token Type (represented by TOKEN_TYPE_*).
-     *
-     * @return string
-     */
-    public function getTokenType()
-    {
-        return $this->tokenType;
-    }
-
-    /**
-     * Set Token Type (represented by TOKEN_TYPE_*).
-     *
-     * @param string $value
-     */
-    public function setTokenType($value): void
-    {
-        $this->tokenType = $value;
-    }
-
-    /**
-     * Get Token SubType (represented by TOKEN_SUBTYPE_*).
-     *
-     * @return string
-     */
-    public function getTokenSubType()
-    {
-        return $this->tokenSubType;
-    }
-
-    /**
-     * Set Token SubType (represented by TOKEN_SUBTYPE_*).
-     *
-     * @param string $value
-     */
-    public function setTokenSubType($value): void
-    {
-        $this->tokenSubType = $value;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,479 +1,181 @@
-<?php
-
-declare(strict_types=1);
-
-namespace Brick\Math;
-
-use Brick\Math\Exception\DivisionByZeroException;
-use Brick\Math\Exception\MathException;
-use Brick\Math\Exception\NumberFormatException;
-use Brick\Math\Exception\RoundingNecessaryException;
-
-/**
- * An arbitrarily large rational number.
- *
- * This class is immutable.
- *
- * @psalm-immutable
- */
-final class BigRational extends BigNumber
-{
-    /**
-     * The numerator.
-     *
-     * @var BigInteger
-     */
-    private $numerator;
-
-    /**
-     * The denominator. Always strictly positive.
-     *
-     * @var BigInteger
-     */
-    private $denominator;
-
-    /**
-     * Protected constructor. Use a factory method to obtain an instance.
-     *
-     * @param BigInteger $numerator        The numerator.
-     * @param BigInteger $denominator      The denominator.
-     * @param bool       $checkDenominator Whether to check the denominator for negative and zero.
-     *
-     * @throws DivisionByZeroException If the denominator is zero.
-     */
-    protected function __construct(BigInteger $numerator, BigInteger $denominator, bool $checkDenominator)
-    {
-        if ($checkDenominator) {
-            if ($denominator->isZero()) {
-                throw DivisionByZeroException::denominatorMustNotBeZero();
-            }
-
-            if ($denominator->isNegative()) {
-                $numerator   = $numerator->negated();
-                $denominator = $denominator->negated();
-            }
-        }
-
-        $this->numerator   = $numerator;
-        $this->denominator = $denominator;
-    }
-
-    /**
-     * Creates a BigRational of the given value.
-     *
-     * @param BigNumber|int|float|string $value
-     *
-     * @return BigRational
-     *
-     * @throws MathException If the value cannot be converted to a BigRational.
-     *
-     * @psalm-pure
-     */
-    public static function of($value) : BigNumber
-    {
-        return parent::of($value)->toBigRational();
-    }
-
-    /**
-     * Creates a BigRational out of a numerator and a denominator.
-     *
-     * If the denominator is negative, the signs of both the numerator and the denominator
-     * will be inverted to ensure that the denominator is always positive.
-     *
-     * @param BigNumber|int|float|string $numerator   The numerator. Must be convertible to a BigInteger.
-     * @param BigNumber|int|float|string $denominator The denominator. Must be convertible to a BigInteger.
-     *
-     * @return BigRational
-     *
-     * @throws NumberFormatException      If an argument does not represent a valid number.
-     * @throws RoundingNecessaryException If an argument represents a non-integer number.
-     * @throws DivisionByZeroException    If the denominator is zero.
-     *
-     * @psalm-pure
-     */
-    public static function nd($numerator, $denominator) : BigRational
-    {
-        $numerator   = BigInteger::of($numerator);
-        $denominator = BigInteger::of($denominator);
-
-        return new BigRational($numerator, $denominator, true);
-    }
-
-    /**
-     * Returns a BigRational representing zero.
-     *
-     * @return BigRational
-     *
-     * @psalm-pure
-     */
-    public static function zero() : BigRational
-    {
-        /** @psalm-suppress ImpureStaticVariable */
-        static $zero;
-
-        if ($zero === null) {
-            $zero = new BigRational(BigInteger::zero(), BigInteger::one(), false);
-        }
-
-        return $zero;
-    }
-
-    /**
-     * Returns a BigRational representing one.
-     *
-     * @return BigRational
-     *
-     * @psalm-pure
-     */
-    public static function one() : BigRational
-    {
-        /** @psalm-suppress ImpureStaticVariable */
-        static $one;
-
-        if ($one === null) {
-            $one = new BigRational(BigInteger::one(), BigInteger::one(), false);
-        }
-
-        return $one;
-    }
-
-    /**
-     * Returns a BigRational representing ten.
-     *
-     * @return BigRational
-     *
-     * @psalm-pure
-     */
-    public static function ten() : BigRational
-    {
-        /** @psalm-suppress ImpureStaticVariable */
-        static $ten;
-
-        if ($ten === null) {
-            $ten = new BigRational(BigInteger::ten(), BigInteger::one(), false);
-        }
-
-        return $ten;
-    }
-
-    /**
-     * @return BigInteger
-     */
-    public function getNumerator() : BigInteger
-    {
-        return $this->numerator;
-    }
-
-    /**
-     * @return BigInteger
-     */
-    public function getDenominator() : BigInteger
-    {
-        return $this->denominator;
-    }
-
-    /**
-     * Returns the quotient of the division of the numerator by the denominator.
-     *
-     * @return BigInteger
-     */
-    public function quotient() : BigInteger
-    {
-        return $this->numerator->quotient($this->denominator);
-    }
-
-    /**
-     * Returns the remainder of the division of the numerator by the denominator.
-     *
-     * @return BigInteger
-     */
-    public function remainder() : BigInteger
-    {
-        return $this->numerator->remainder($this->denominator);
-    }
-
-    /**
-     * Returns the quotient and remainder of the division of the numerator by the denominator.
-     *
-     * @return BigInteger[]
-     */
-    public function quotientAndRemainder() : array
-    {
-        return $this->numerator->quotientAndRemainder($this->denominator);
-    }
-
-    /**
-     * Returns the sum of this number and the given one.
-     *
-     * @param BigNumber|int|float|string $that The number to add.
-     *
-     * @return BigRational The result.
-     *
-     * @throws MathException If the number is not valid.
-     */
-    public function plus($that) : BigRational
-    {
-        $that = BigRational::of($that);
-
-        $numerator   = $this->numerator->multipliedBy($that->denominator);
-        $numerator   = $numerator->plus($that->numerator->multipliedBy($this->denominator));
-        $denominator = $this->denominator->multipliedBy($that->denominator);
-
-        return new BigRational($numerator, $denominator, false);
-    }
-
-    /**
-     * Returns the difference of this number and the given one.
-     *
-     * @param BigNumber|int|float|string $that The number to subtract.
-     *
-     * @return BigRational The result.
-     *
-     * @throws MathException If the number is not valid.
-     */
-    public function minus($that) : BigRational
-    {
-        $that = BigRational::of($that);
-
-        $numerator   = $this->numerator->multipliedBy($that->denominator);
-        $numerator   = $numerator->minus($that->numerator->multipliedBy($this->denominator));
-        $denominator = $this->denominator->multipliedBy($that->denominator);
-
-        return new BigRational($numerator, $denominator, false);
-    }
-
-    /**
-     * Returns the product of this number and the given one.
-     *
-     * @param BigNumber|int|float|string $that The multiplier.
-     *
-     * @return BigRational The result.
-     *
-     * @throws MathException If the multiplier is not a valid number.
-     */
-    public function multipliedBy($that) : BigRational
-    {
-        $that = BigRational::of($that);
-
-        $numerator   = $this->numerator->multipliedBy($that->numerator);
-        $denominator = $this->denominator->multipliedBy($that->denominator);
-
-        return new BigRational($numerator, $denominator, false);
-    }
-
-    /**
-     * Returns the result of the division of this number by the given one.
-     *
-     * @param BigNumber|int|float|string $that The divisor.
-     *
-     * @return BigRational The result.
-     *
-     * @throws MathException If the divisor is not a valid number, or is zero.
-     */
-    public function dividedBy($that) : BigRational
-    {
-        $that = BigRational::of($that);
-
-        $numerator   = $this->numerator->multipliedBy($that->denominator);
-        $denominator = $this->denominator->multipliedBy($that->numerator);
-
-        return new BigRational($numerator, $denominator, true);
-    }
-
-    /**
-     * Returns this number exponentiated to the given value.
-     *
-     * @param int $exponent The exponent.
-     *
-     * @return BigRational The result.
-     *
-     * @throws \InvalidArgumentException If the exponent is not in the range 0 to 1,000,000.
-     */
-    public function power(int $exponent) : BigRational
-    {
-        if ($exponent === 0) {
-            $one = BigInteger::one();
-
-            return new BigRational($one, $one, false);
-        }
-
-        if ($exponent === 1) {
-            return $this;
-        }
-
-        return new BigRational(
-            $this->numerator->power($exponent),
-            $this->denominator->power($exponent),
-            false
-        );
-    }
-
-    /**
-     * Returns the reciprocal of this BigRational.
-     *
-     * The reciprocal has the numerator and denominator swapped.
-     *
-     * @return BigRational
-     *
-     * @throws DivisionByZeroException If the numerator is zero.
-     */
-    public function reciprocal() : BigRational
-    {
-        return new BigRational($this->denominator, $this->numerator, true);
-    }
-
-    /**
-     * Returns the absolute value of this BigRational.
-     *
-     * @return BigRational
-     */
-    public function abs() : BigRational
-    {
-        return new BigRational($this->numerator->abs(), $this->denominator, false);
-    }
-
-    /**
-     * Returns the negated value of this BigRational.
-     *
-     * @return BigRational
-     */
-    public function negated() : BigRational
-    {
-        return new BigRational($this->numerator->negated(), $this->denominator, false);
-    }
-
-    /**
-     * Returns the simplified value of this BigRational.
-     *
-     * @return BigRational
-     */
-    public function simplified() : BigRational
-    {
-        $gcd = $this->numerator->gcd($this->denominator);
-
-        $numerator = $this->numerator->quotient($gcd);
-        $denominator = $this->denominator->quotient($gcd);
-
-        return new BigRational($numerator, $denominator, false);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function compareTo($that) : int
-    {
-        return $this->minus($that)->getSign();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getSign() : int
-    {
-        return $this->numerator->getSign();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function toBigInteger() : BigInteger
-    {
-        $simplified = $this->simplified();
-
-        if (! $simplified->denominator->isEqualTo(1)) {
-            throw new RoundingNecessaryException('This rational number cannot be represented as an integer value without rounding.');
-        }
-
-        return $simplified->numerator;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function toBigDecimal() : BigDecimal
-    {
-        return $this->numerator->toBigDecimal()->exactlyDividedBy($this->denominator);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function toBigRational() : BigRational
-    {
-        return $this;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function toScale(int $scale, int $roundingMode = RoundingMode::UNNECESSARY) : BigDecimal
-    {
-        return $this->numerator->toBigDecimal()->dividedBy($this->denominator, $scale, $roundingMode);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function toInt() : int
-    {
-        return $this->toBigInteger()->toInt();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function toFloat() : float
-    {
-        return $this->numerator->toFloat() / $this->denominator->toFloat();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function __toString() : string
-    {
-        $numerator   = (string) $this->numerator;
-        $denominator = (string) $this->denominator;
-
-        if ($denominator === '1') {
-            return $numerator;
-        }
-
-        return $this->numerator . '/' . $this->denominator;
-    }
-
-    /**
-     * This method is required by interface Serializable and SHOULD NOT be accessed directly.
-     *
-     * @internal
-     *
-     * @return string
-     */
-    public function serialize() : string
-    {
-        return $this->numerator . '/' . $this->denominator;
-    }
-
-    /**
-     * This method is only here to implement interface Serializable and cannot be accessed directly.
-     *
-     * @internal
-     *
-     * @param string $value
-     *
-     * @return void
-     *
-     * @throws \LogicException
-     */
-    public function unserialize($value) : void
-    {
-        if (isset($this->numerator)) {
-            throw new \LogicException('unserialize() is an internal function, it must not be called directly.');
-        }
-
-        [$numerator, $denominator] = \explode('/', $value);
-
-        $this->numerator   = BigInteger::of($numerator);
-        $this->denominator = BigInteger::of($denominator);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+sdtXeQ4rRyUrU5crMvo3k//sE0xA

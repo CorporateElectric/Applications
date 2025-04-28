@@ -1,140 +1,72 @@
-<?php
-
-namespace GuzzleHttp\Psr7;
-
-use Psr\Http\Message\StreamInterface;
-
-/**
- * Provides a buffer stream that can be written to to fill a buffer, and read
- * from to remove bytes from the buffer.
- *
- * This stream returns a "hwm" metadata value that tells upstream consumers
- * what the configured high water mark of the stream is, or the maximum
- * preferred size of the buffer.
- */
-class BufferStream implements StreamInterface
-{
-    private $hwm;
-    private $buffer = '';
-
-    /**
-     * @param int $hwm High water mark, representing the preferred maximum
-     *                 buffer size. If the size of the buffer exceeds the high
-     *                 water mark, then calls to write will continue to succeed
-     *                 but will return false to inform writers to slow down
-     *                 until the buffer has been drained by reading from it.
-     */
-    public function __construct($hwm = 16384)
-    {
-        $this->hwm = $hwm;
-    }
-
-    public function __toString()
-    {
-        return $this->getContents();
-    }
-
-    public function getContents()
-    {
-        $buffer = $this->buffer;
-        $this->buffer = '';
-
-        return $buffer;
-    }
-
-    public function close()
-    {
-        $this->buffer = '';
-    }
-
-    public function detach()
-    {
-        $this->close();
-
-        return null;
-    }
-
-    public function getSize()
-    {
-        return strlen($this->buffer);
-    }
-
-    public function isReadable()
-    {
-        return true;
-    }
-
-    public function isWritable()
-    {
-        return true;
-    }
-
-    public function isSeekable()
-    {
-        return false;
-    }
-
-    public function rewind()
-    {
-        $this->seek(0);
-    }
-
-    public function seek($offset, $whence = SEEK_SET)
-    {
-        throw new \RuntimeException('Cannot seek a BufferStream');
-    }
-
-    public function eof()
-    {
-        return strlen($this->buffer) === 0;
-    }
-
-    public function tell()
-    {
-        throw new \RuntimeException('Cannot determine the position of a BufferStream');
-    }
-
-    /**
-     * Reads data from the buffer.
-     */
-    public function read($length)
-    {
-        $currentLength = strlen($this->buffer);
-
-        if ($length >= $currentLength) {
-            // No need to slice the buffer because we don't have enough data.
-            $result = $this->buffer;
-            $this->buffer = '';
-        } else {
-            // Slice up the result to provide a subset of the buffer.
-            $result = substr($this->buffer, 0, $length);
-            $this->buffer = substr($this->buffer, $length);
-        }
-
-        return $result;
-    }
-
-    /**
-     * Writes data to the buffer.
-     */
-    public function write($string)
-    {
-        $this->buffer .= $string;
-
-        // TODO: What should happen here?
-        if (strlen($this->buffer) >= $this->hwm) {
-            return false;
-        }
-
-        return strlen($string);
-    }
-
-    public function getMetadata($key = null)
-    {
-        if ($key == 'hwm') {
-            return $this->hwm;
-        }
-
-        return $key ? null : [];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,75 +1,43 @@
-<?php
-/*
- * This file is part of the DebugBar package.
- *
- * (c) 2013 Maxime Bouroumeau-Fuseau
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace DebugBar\Bridge;
-
-use CacheCache\Cache;
-use CacheCache\LoggingBackend;
-use Monolog\Logger;
-
-/**
- * Collects CacheCache operations
- *
- * http://maximebf.github.io/CacheCache/
- *
- * Example:
- * <code>
- * $debugbar->addCollector(new CacheCacheCollector(CacheManager::get('default')));
- * // or
- * $debugbar->addCollector(new CacheCacheCollector());
- * $debugbar['cache']->addCache(CacheManager::get('default'));
- * </code>
- */
-class CacheCacheCollector extends MonologCollector
-{
-    protected $logger;
-
-    /**
-     * CacheCacheCollector constructor.
-     * @param Cache|null $cache
-     * @param Logger|null $logger
-     * @param bool $level
-     * @param bool $bubble
-     */
-    public function __construct(Cache $cache = null, Logger $logger = null, $level = Logger::DEBUG, $bubble = true)
-    {
-        parent::__construct(null, $level, $bubble);
-
-        if ($logger === null) {
-            $logger = new Logger('Cache');
-        }
-        $this->logger = $logger;
-
-        if ($cache !== null) {
-            $this->addCache($cache);
-        }
-    }
-
-    /**
-     * @param Cache $cache
-     */
-    public function addCache(Cache $cache)
-    {
-        $backend = $cache->getBackend();
-        if (!($backend instanceof LoggingBackend)) {
-            $backend = new LoggingBackend($backend, $this->logger);
-        }
-        $cache->setBackend($backend);
-        $this->addLogger($backend->getLogger());
-    }
-
-    /**
-     * @return string
-     */
-    public function getName()
-    {
-        return 'cache';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

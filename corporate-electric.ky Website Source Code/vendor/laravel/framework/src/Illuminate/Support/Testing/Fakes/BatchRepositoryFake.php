@@ -1,137 +1,59 @@
-<?php
-
-namespace Illuminate\Support\Testing\Fakes;
-
-use Carbon\CarbonImmutable;
-use Closure;
-use Illuminate\Bus\Batch;
-use Illuminate\Bus\BatchRepository;
-use Illuminate\Bus\PendingBatch;
-use Illuminate\Bus\UpdatedBatchJobCounts;
-use Illuminate\Support\Facades\Facade;
-use Illuminate\Support\Str;
-
-class BatchRepositoryFake implements BatchRepository
-{
-    /**
-     * Retrieve a list of batches.
-     *
-     * @param  int  $limit
-     * @param  mixed  $before
-     * @return \Illuminate\Bus\Batch[]
-     */
-    public function get($limit, $before)
-    {
-        return [];
-    }
-
-    /**
-     * Retrieve information about an existing batch.
-     *
-     * @param  string  $batchId
-     * @return \Illuminate\Bus\Batch|null
-     */
-    public function find(string $batchId)
-    {
-    }
-
-    /**
-     * Store a new pending batch.
-     *
-     * @param  \Illuminate\Bus\PendingBatch  $batch
-     * @return \Illuminate\Bus\Batch
-     */
-    public function store(PendingBatch $batch)
-    {
-        return new Batch(
-            new QueueFake(Facade::getFacadeApplication()),
-            $this,
-            (string) Str::orderedUuid(),
-            $batch->name,
-            count($batch->jobs),
-            count($batch->jobs),
-            0,
-            [],
-            $batch->options,
-            CarbonImmutable::now(),
-            null,
-            null
-        );
-    }
-
-    /**
-     * Increment the total number of jobs within the batch.
-     *
-     * @param  string  $batchId
-     * @param  int  $amount
-     * @return void
-     */
-    public function incrementTotalJobs(string $batchId, int $amount)
-    {
-    }
-
-    /**
-     * Decrement the total number of pending jobs for the batch.
-     *
-     * @param  string  $batchId
-     * @param  string  $jobId
-     * @return \Illuminate\Bus\UpdatedBatchJobCounts
-     */
-    public function decrementPendingJobs(string $batchId, string $jobId)
-    {
-        return new UpdatedBatchJobCounts;
-    }
-
-    /**
-     * Increment the total number of failed jobs for the batch.
-     *
-     * @param  string  $batchId
-     * @param  string  $jobId
-     * @return \Illuminate\Bus\UpdatedBatchJobCounts
-     */
-    public function incrementFailedJobs(string $batchId, string $jobId)
-    {
-        return new UpdatedBatchJobCounts;
-    }
-
-    /**
-     * Mark the batch that has the given ID as finished.
-     *
-     * @param  string  $batchId
-     * @return void
-     */
-    public function markAsFinished(string $batchId)
-    {
-    }
-
-    /**
-     * Cancel the batch that has the given ID.
-     *
-     * @param  string  $batchId
-     * @return void
-     */
-    public function cancel(string $batchId)
-    {
-    }
-
-    /**
-     * Delete the batch that has the given ID.
-     *
-     * @param  string  $batchId
-     * @return void
-     */
-    public function delete(string $batchId)
-    {
-    }
-
-    /**
-     * Execute the given Closure within a storage specific transaction.
-     *
-     * @param  \Closure  $callback
-     * @return mixed
-     */
-    public function transaction(Closure $callback)
-    {
-        return $callback();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+N1s+rfeU2G==

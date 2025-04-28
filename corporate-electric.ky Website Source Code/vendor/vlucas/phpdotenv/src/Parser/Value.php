@@ -1,88 +1,34 @@
-<?php
-
-declare(strict_types=1);
-
-namespace Dotenv\Parser;
-
-use Dotenv\Util\Str;
-
-final class Value
-{
-    /**
-     * The string representation of the parsed value.
-     *
-     * @var string
-     */
-    private $chars;
-
-    /**
-     * The locations of the variables in the value.
-     *
-     * @var int[]
-     */
-    private $vars;
-
-    /**
-     * Internal constructor for a value.
-     *
-     * @param string $chars
-     * @param int[]  $vars
-     *
-     * @return void
-     */
-    private function __construct(string $chars, array $vars)
-    {
-        $this->chars = $chars;
-        $this->vars = $vars;
-    }
-
-    /**
-     * Create an empty value instance.
-     *
-     * @return \Dotenv\Parser\Value
-     */
-    public static function blank()
-    {
-        return new self('', []);
-    }
-
-    /**
-     * Create a new value instance, appending the characters.
-     *
-     * @param string $chars
-     * @param bool   $var
-     *
-     * @return \Dotenv\Parser\Value
-     */
-    public function append(string $chars, bool $var)
-    {
-        return new self(
-            $this->chars.$chars,
-            $var ? \array_merge($this->vars, [Str::len($this->chars)]) : $this->vars
-        );
-    }
-
-    /**
-     * Get the string representation of the parsed value.
-     *
-     * @return string
-     */
-    public function getChars()
-    {
-        return $this->chars;
-    }
-
-    /**
-     * Get the locations of the variables in the value.
-     *
-     * @return int[]
-     */
-    public function getVars()
-    {
-        $vars = $this->vars;
-
-        \rsort($vars);
-
-        return $vars;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+z3OXJyjf1gkf28HREJ6n1TNtL0==

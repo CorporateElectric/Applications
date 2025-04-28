@@ -1,51 +1,37 @@
-<?php
-
-/**
- * This file is part of the ramsey/uuid library
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @copyright Copyright (c) Ben Ramsey <ben@benramsey.com>
- * @license http://opensource.org/licenses/MIT MIT
- */
-
-declare(strict_types=1);
-
-namespace Ramsey\Uuid\Converter\Time;
-
-use Ramsey\Uuid\Converter\TimeConverterInterface;
-use Ramsey\Uuid\Math\BrickMathCalculator;
-use Ramsey\Uuid\Type\Hexadecimal;
-use Ramsey\Uuid\Type\Time;
-
-/**
- * Previously used to integrate moontoast/math as a bignum arithmetic library,
- * BigNumberTimeConverter is deprecated in favor of GenericTimeConverter
- *
- * @deprecated Transition to {@see GenericTimeConverter}.
- *
- * @psalm-immutable
- */
-class BigNumberTimeConverter implements TimeConverterInterface
-{
-    /**
-     * @var TimeConverterInterface
-     */
-    private $converter;
-
-    public function __construct()
-    {
-        $this->converter = new GenericTimeConverter(new BrickMathCalculator());
-    }
-
-    public function calculateTime(string $seconds, string $microseconds): Hexadecimal
-    {
-        return $this->converter->calculateTime($seconds, $microseconds);
-    }
-
-    public function convertTime(Hexadecimal $uuidTimestamp): Time
-    {
-        return $this->converter->convertTime($uuidTimestamp);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+c8ipjQiOnl0=

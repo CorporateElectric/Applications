@@ -1,483 +1,247 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Translation;
-
-use Symfony\Component\Config\ConfigCacheFactory;
-use Symfony\Component\Config\ConfigCacheFactoryInterface;
-use Symfony\Component\Config\ConfigCacheInterface;
-use Symfony\Component\Translation\Exception\InvalidArgumentException;
-use Symfony\Component\Translation\Exception\NotFoundResourceException;
-use Symfony\Component\Translation\Exception\RuntimeException;
-use Symfony\Component\Translation\Formatter\IntlFormatterInterface;
-use Symfony\Component\Translation\Formatter\MessageFormatter;
-use Symfony\Component\Translation\Formatter\MessageFormatterInterface;
-use Symfony\Component\Translation\Loader\LoaderInterface;
-use Symfony\Contracts\Translation\LocaleAwareInterface;
-use Symfony\Contracts\Translation\TranslatorInterface;
-
-// Help opcache.preload discover always-needed symbols
-class_exists(MessageCatalogue::class);
-
-/**
- * @author Fabien Potencier <fabien@symfony.com>
- */
-class Translator implements TranslatorInterface, TranslatorBagInterface, LocaleAwareInterface
-{
-    /**
-     * @var MessageCatalogueInterface[]
-     */
-    protected $catalogues = [];
-
-    /**
-     * @var string
-     */
-    private $locale;
-
-    /**
-     * @var array
-     */
-    private $fallbackLocales = [];
-
-    /**
-     * @var LoaderInterface[]
-     */
-    private $loaders = [];
-
-    /**
-     * @var array
-     */
-    private $resources = [];
-
-    /**
-     * @var MessageFormatterInterface
-     */
-    private $formatter;
-
-    /**
-     * @var string
-     */
-    private $cacheDir;
-
-    /**
-     * @var bool
-     */
-    private $debug;
-
-    private $cacheVary;
-
-    /**
-     * @var ConfigCacheFactoryInterface|null
-     */
-    private $configCacheFactory;
-
-    /**
-     * @var array|null
-     */
-    private $parentLocales;
-
-    private $hasIntlFormatter;
-
-    /**
-     * @throws InvalidArgumentException If a locale contains invalid characters
-     */
-    public function __construct(string $locale, MessageFormatterInterface $formatter = null, string $cacheDir = null, bool $debug = false, array $cacheVary = [])
-    {
-        $this->setLocale($locale);
-
-        if (null === $formatter) {
-            $formatter = new MessageFormatter();
-        }
-
-        $this->formatter = $formatter;
-        $this->cacheDir = $cacheDir;
-        $this->debug = $debug;
-        $this->cacheVary = $cacheVary;
-        $this->hasIntlFormatter = $formatter instanceof IntlFormatterInterface;
-    }
-
-    public function setConfigCacheFactory(ConfigCacheFactoryInterface $configCacheFactory)
-    {
-        $this->configCacheFactory = $configCacheFactory;
-    }
-
-    /**
-     * Adds a Loader.
-     *
-     * @param string $format The name of the loader (@see addResource())
-     */
-    public function addLoader(string $format, LoaderInterface $loader)
-    {
-        $this->loaders[$format] = $loader;
-    }
-
-    /**
-     * Adds a Resource.
-     *
-     * @param string $format   The name of the loader (@see addLoader())
-     * @param mixed  $resource The resource name
-     *
-     * @throws InvalidArgumentException If the locale contains invalid characters
-     */
-    public function addResource(string $format, $resource, string $locale, string $domain = null)
-    {
-        if (null === $domain) {
-            $domain = 'messages';
-        }
-
-        $this->assertValidLocale($locale);
-
-        $this->resources[$locale][] = [$format, $resource, $domain];
-
-        if (\in_array($locale, $this->fallbackLocales)) {
-            $this->catalogues = [];
-        } else {
-            unset($this->catalogues[$locale]);
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function setLocale(string $locale)
-    {
-        $this->assertValidLocale($locale);
-        $this->locale = $locale ?? (class_exists(\Locale::class) ? \Locale::getDefault() : 'en');
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getLocale()
-    {
-        return $this->locale;
-    }
-
-    /**
-     * Sets the fallback locales.
-     *
-     * @param array $locales The fallback locales
-     *
-     * @throws InvalidArgumentException If a locale contains invalid characters
-     */
-    public function setFallbackLocales(array $locales)
-    {
-        // needed as the fallback locales are linked to the already loaded catalogues
-        $this->catalogues = [];
-
-        foreach ($locales as $locale) {
-            $this->assertValidLocale($locale);
-        }
-
-        $this->fallbackLocales = $this->cacheVary['fallback_locales'] = $locales;
-    }
-
-    /**
-     * Gets the fallback locales.
-     *
-     * @internal
-     */
-    public function getFallbackLocales(): array
-    {
-        return $this->fallbackLocales;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function trans(?string $id, array $parameters = [], string $domain = null, string $locale = null)
-    {
-        if (null === $id || '' === $id) {
-            return '';
-        }
-
-        if (null === $domain) {
-            $domain = 'messages';
-        }
-
-        $catalogue = $this->getCatalogue($locale);
-        $locale = $catalogue->getLocale();
-        while (!$catalogue->defines($id, $domain)) {
-            if ($cat = $catalogue->getFallbackCatalogue()) {
-                $catalogue = $cat;
-                $locale = $catalogue->getLocale();
-            } else {
-                break;
-            }
-        }
-
-        $len = \strlen(MessageCatalogue::INTL_DOMAIN_SUFFIX);
-        if ($this->hasIntlFormatter
-            && ($catalogue->defines($id, $domain.MessageCatalogue::INTL_DOMAIN_SUFFIX)
-            || (\strlen($domain) > $len && 0 === substr_compare($domain, MessageCatalogue::INTL_DOMAIN_SUFFIX, -$len, $len)))
-        ) {
-            return $this->formatter->formatIntl($catalogue->get($id, $domain), $locale, $parameters);
-        }
-
-        return $this->formatter->format($catalogue->get($id, $domain), $locale, $parameters);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getCatalogue(string $locale = null)
-    {
-        if (null === $locale) {
-            $locale = $this->getLocale();
-        } else {
-            $this->assertValidLocale($locale);
-        }
-
-        if (!isset($this->catalogues[$locale])) {
-            $this->loadCatalogue($locale);
-        }
-
-        return $this->catalogues[$locale];
-    }
-
-    /**
-     * Gets the loaders.
-     *
-     * @return array LoaderInterface[]
-     */
-    protected function getLoaders()
-    {
-        return $this->loaders;
-    }
-
-    protected function loadCatalogue(string $locale)
-    {
-        if (null === $this->cacheDir) {
-            $this->initializeCatalogue($locale);
-        } else {
-            $this->initializeCacheCatalogue($locale);
-        }
-    }
-
-    protected function initializeCatalogue(string $locale)
-    {
-        $this->assertValidLocale($locale);
-
-        try {
-            $this->doLoadCatalogue($locale);
-        } catch (NotFoundResourceException $e) {
-            if (!$this->computeFallbackLocales($locale)) {
-                throw $e;
-            }
-        }
-        $this->loadFallbackCatalogues($locale);
-    }
-
-    private function initializeCacheCatalogue(string $locale): void
-    {
-        if (isset($this->catalogues[$locale])) {
-            /* Catalogue already initialized. */
-            return;
-        }
-
-        $this->assertValidLocale($locale);
-        $cache = $this->getConfigCacheFactory()->cache($this->getCatalogueCachePath($locale),
-            function (ConfigCacheInterface $cache) use ($locale) {
-                $this->dumpCatalogue($locale, $cache);
-            }
-        );
-
-        if (isset($this->catalogues[$locale])) {
-            /* Catalogue has been initialized as it was written out to cache. */
-            return;
-        }
-
-        /* Read catalogue from cache. */
-        $this->catalogues[$locale] = include $cache->getPath();
-    }
-
-    private function dumpCatalogue(string $locale, ConfigCacheInterface $cache): void
-    {
-        $this->initializeCatalogue($locale);
-        $fallbackContent = $this->getFallbackContent($this->catalogues[$locale]);
-
-        $content = sprintf(<<<EOF
-<?php
-
-use Symfony\Component\Translation\MessageCatalogue;
-
-\$catalogue = new MessageCatalogue('%s', %s);
-
-%s
-return \$catalogue;
-
-EOF
-            ,
-            $locale,
-            var_export($this->getAllMessages($this->catalogues[$locale]), true),
-            $fallbackContent
-        );
-
-        $cache->write($content, $this->catalogues[$locale]->getResources());
-    }
-
-    private function getFallbackContent(MessageCatalogue $catalogue): string
-    {
-        $fallbackContent = '';
-        $current = '';
-        $replacementPattern = '/[^a-z0-9_]/i';
-        $fallbackCatalogue = $catalogue->getFallbackCatalogue();
-        while ($fallbackCatalogue) {
-            $fallback = $fallbackCatalogue->getLocale();
-            $fallbackSuffix = ucfirst(preg_replace($replacementPattern, '_', $fallback));
-            $currentSuffix = ucfirst(preg_replace($replacementPattern, '_', $current));
-
-            $fallbackContent .= sprintf(<<<'EOF'
-$catalogue%s = new MessageCatalogue('%s', %s);
-$catalogue%s->addFallbackCatalogue($catalogue%s);
-
-EOF
-                ,
-                $fallbackSuffix,
-                $fallback,
-                var_export($this->getAllMessages($fallbackCatalogue), true),
-                $currentSuffix,
-                $fallbackSuffix
-            );
-            $current = $fallbackCatalogue->getLocale();
-            $fallbackCatalogue = $fallbackCatalogue->getFallbackCatalogue();
-        }
-
-        return $fallbackContent;
-    }
-
-    private function getCatalogueCachePath(string $locale): string
-    {
-        return $this->cacheDir.'/catalogue.'.$locale.'.'.strtr(substr(base64_encode(hash('sha256', serialize($this->cacheVary), true)), 0, 7), '/', '_').'.php';
-    }
-
-    /**
-     * @internal
-     */
-    protected function doLoadCatalogue(string $locale): void
-    {
-        $this->catalogues[$locale] = new MessageCatalogue($locale);
-
-        if (isset($this->resources[$locale])) {
-            foreach ($this->resources[$locale] as $resource) {
-                if (!isset($this->loaders[$resource[0]])) {
-                    if (\is_string($resource[1])) {
-                        throw new RuntimeException(sprintf('No loader is registered for the "%s" format when loading the "%s" resource.', $resource[0], $resource[1]));
-                    }
-
-                    throw new RuntimeException(sprintf('No loader is registered for the "%s" format.', $resource[0]));
-                }
-                $this->catalogues[$locale]->addCatalogue($this->loaders[$resource[0]]->load($resource[1], $locale, $resource[2]));
-            }
-        }
-    }
-
-    private function loadFallbackCatalogues(string $locale): void
-    {
-        $current = $this->catalogues[$locale];
-
-        foreach ($this->computeFallbackLocales($locale) as $fallback) {
-            if (!isset($this->catalogues[$fallback])) {
-                $this->initializeCatalogue($fallback);
-            }
-
-            $fallbackCatalogue = new MessageCatalogue($fallback, $this->getAllMessages($this->catalogues[$fallback]));
-            foreach ($this->catalogues[$fallback]->getResources() as $resource) {
-                $fallbackCatalogue->addResource($resource);
-            }
-            $current->addFallbackCatalogue($fallbackCatalogue);
-            $current = $fallbackCatalogue;
-        }
-    }
-
-    protected function computeFallbackLocales(string $locale)
-    {
-        if (null === $this->parentLocales) {
-            $this->parentLocales = json_decode(file_get_contents(__DIR__.'/Resources/data/parents.json'), true);
-        }
-
-        $locales = [];
-        foreach ($this->fallbackLocales as $fallback) {
-            if ($fallback === $locale) {
-                continue;
-            }
-
-            $locales[] = $fallback;
-        }
-
-        while ($locale) {
-            $parent = $this->parentLocales[$locale] ?? null;
-
-            if ($parent) {
-                $locale = 'root' !== $parent ? $parent : null;
-            } elseif (\function_exists('locale_parse')) {
-                $localeSubTags = locale_parse($locale);
-                $locale = null;
-                if (1 < \count($localeSubTags)) {
-                    array_pop($localeSubTags);
-                    $locale = locale_compose($localeSubTags) ?: null;
-                }
-            } elseif ($i = strrpos($locale, '_') ?: strrpos($locale, '-')) {
-                $locale = substr($locale, 0, $i);
-            } else {
-                $locale = null;
-            }
-
-            if (null !== $locale) {
-                array_unshift($locales, $locale);
-            }
-        }
-
-        return array_unique($locales);
-    }
-
-    /**
-     * Asserts that the locale is valid, throws an Exception if not.
-     *
-     * @throws InvalidArgumentException If the locale contains invalid characters
-     */
-    protected function assertValidLocale(string $locale)
-    {
-        if (1 !== preg_match('/^[a-z0-9@_\\.\\-]*$/i', $locale)) {
-            throw new InvalidArgumentException(sprintf('Invalid "%s" locale.', $locale));
-        }
-    }
-
-    /**
-     * Provides the ConfigCache factory implementation, falling back to a
-     * default implementation if necessary.
-     */
-    private function getConfigCacheFactory(): ConfigCacheFactoryInterface
-    {
-        if (!$this->configCacheFactory) {
-            $this->configCacheFactory = new ConfigCacheFactory($this->debug);
-        }
-
-        return $this->configCacheFactory;
-    }
-
-    private function getAllMessages(MessageCatalogueInterface $catalogue): array
-    {
-        $allMessages = [];
-
-        foreach ($catalogue->all() as $domain => $messages) {
-            if ($intlMessages = $catalogue->all($domain.MessageCatalogue::INTL_DOMAIN_SUFFIX)) {
-                $allMessages[$domain.MessageCatalogue::INTL_DOMAIN_SUFFIX] = $intlMessages;
-                $messages = array_diff_key($messages, $intlMessages);
-            }
-            if ($messages) {
-                $allMessages[$domain] = $messages;
-            }
-        }
-
-        return $allMessages;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+gVwKEbJRCPUWZfQ5C7NWbyp4argd0hQxxm==

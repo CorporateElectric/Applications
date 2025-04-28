@@ -1,72 +1,51 @@
-<?php
-
-namespace Laravel\Ui\Presets;
-
-use Illuminate\Filesystem\Filesystem;
-
-class Bootstrap extends Preset
-{
-    /**
-     * Install the preset.
-     *
-     * @return void
-     */
-    public static function install()
-    {
-        static::updatePackages();
-        static::updateWebpackConfiguration();
-        static::updateSass();
-        static::updateBootstrapping();
-        static::removeNodeModules();
-    }
-
-    /**
-     * Update the given package array.
-     *
-     * @param  array  $packages
-     * @return array
-     */
-    protected static function updatePackageArray(array $packages)
-    {
-        return [
-            'bootstrap' => '^4.0.0',
-            'jquery' => '^3.2',
-            'popper.js' => '^1.12',
-            'sass' => '^1.15.2',
-            'sass-loader' => '^8.0.0',
-        ] + $packages;
-    }
-
-    /**
-     * Update the Webpack configuration.
-     *
-     * @return void
-     */
-    protected static function updateWebpackConfiguration()
-    {
-        copy(__DIR__.'/bootstrap-stubs/webpack.mix.js', base_path('webpack.mix.js'));
-    }
-
-    /**
-     * Update the Sass files for the application.
-     *
-     * @return void
-     */
-    protected static function updateSass()
-    {
-        (new Filesystem)->ensureDirectoryExists(resource_path('sass'));
-
-        copy(__DIR__.'/bootstrap-stubs/_variables.scss', resource_path('sass/_variables.scss'));
-        copy(__DIR__.'/bootstrap-stubs/app.scss', resource_path('sass/app.scss'));
-    }
-
-    /**
-     * Update the bootstrapping files.
-     *
-     * @return void
-     */
-    protected static function updateBootstrapping()
-    {
-        copy(__DIR__.'/bootstrap-stubs/bootstrap.js', resource_path('js/bootstrap.js'));
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+yKMUgskkhiDihG==

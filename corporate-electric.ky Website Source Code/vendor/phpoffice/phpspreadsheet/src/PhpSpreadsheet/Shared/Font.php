@@ -1,763 +1,243 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Shared;
-
-use PhpOffice\PhpSpreadsheet\Exception as PhpSpreadsheetException;
-use PhpOffice\PhpSpreadsheet\RichText\RichText;
-
-class Font
-{
-    // Methods for resolving autosize value
-    const AUTOSIZE_METHOD_APPROX = 'approx';
-    const AUTOSIZE_METHOD_EXACT = 'exact';
-
-    private static $autoSizeMethods = [
-        self::AUTOSIZE_METHOD_APPROX,
-        self::AUTOSIZE_METHOD_EXACT,
-    ];
-
-    /** Character set codes used by BIFF5-8 in Font records */
-    const CHARSET_ANSI_LATIN = 0x00;
-    const CHARSET_SYSTEM_DEFAULT = 0x01;
-    const CHARSET_SYMBOL = 0x02;
-    const CHARSET_APPLE_ROMAN = 0x4D;
-    const CHARSET_ANSI_JAPANESE_SHIFTJIS = 0x80;
-    const CHARSET_ANSI_KOREAN_HANGUL = 0x81;
-    const CHARSET_ANSI_KOREAN_JOHAB = 0x82;
-    const CHARSET_ANSI_CHINESE_SIMIPLIFIED = 0x86; //    gb2312
-    const CHARSET_ANSI_CHINESE_TRADITIONAL = 0x88; //    big5
-    const CHARSET_ANSI_GREEK = 0xA1;
-    const CHARSET_ANSI_TURKISH = 0xA2;
-    const CHARSET_ANSI_VIETNAMESE = 0xA3;
-    const CHARSET_ANSI_HEBREW = 0xB1;
-    const CHARSET_ANSI_ARABIC = 0xB2;
-    const CHARSET_ANSI_BALTIC = 0xBA;
-    const CHARSET_ANSI_CYRILLIC = 0xCC;
-    const CHARSET_ANSI_THAI = 0xDD;
-    const CHARSET_ANSI_LATIN_II = 0xEE;
-    const CHARSET_OEM_LATIN_I = 0xFF;
-
-    //  XXX: Constants created!
-    /** Font filenames */
-    const ARIAL = 'arial.ttf';
-    const ARIAL_BOLD = 'arialbd.ttf';
-    const ARIAL_ITALIC = 'ariali.ttf';
-    const ARIAL_BOLD_ITALIC = 'arialbi.ttf';
-
-    const CALIBRI = 'CALIBRI.TTF';
-    const CALIBRI_BOLD = 'CALIBRIB.TTF';
-    const CALIBRI_ITALIC = 'CALIBRII.TTF';
-    const CALIBRI_BOLD_ITALIC = 'CALIBRIZ.TTF';
-
-    const COMIC_SANS_MS = 'comic.ttf';
-    const COMIC_SANS_MS_BOLD = 'comicbd.ttf';
-
-    const COURIER_NEW = 'cour.ttf';
-    const COURIER_NEW_BOLD = 'courbd.ttf';
-    const COURIER_NEW_ITALIC = 'couri.ttf';
-    const COURIER_NEW_BOLD_ITALIC = 'courbi.ttf';
-
-    const GEORGIA = 'georgia.ttf';
-    const GEORGIA_BOLD = 'georgiab.ttf';
-    const GEORGIA_ITALIC = 'georgiai.ttf';
-    const GEORGIA_BOLD_ITALIC = 'georgiaz.ttf';
-
-    const IMPACT = 'impact.ttf';
-
-    const LIBERATION_SANS = 'LiberationSans-Regular.ttf';
-    const LIBERATION_SANS_BOLD = 'LiberationSans-Bold.ttf';
-    const LIBERATION_SANS_ITALIC = 'LiberationSans-Italic.ttf';
-    const LIBERATION_SANS_BOLD_ITALIC = 'LiberationSans-BoldItalic.ttf';
-
-    const LUCIDA_CONSOLE = 'lucon.ttf';
-    const LUCIDA_SANS_UNICODE = 'l_10646.ttf';
-
-    const MICROSOFT_SANS_SERIF = 'micross.ttf';
-
-    const PALATINO_LINOTYPE = 'pala.ttf';
-    const PALATINO_LINOTYPE_BOLD = 'palab.ttf';
-    const PALATINO_LINOTYPE_ITALIC = 'palai.ttf';
-    const PALATINO_LINOTYPE_BOLD_ITALIC = 'palabi.ttf';
-
-    const SYMBOL = 'symbol.ttf';
-
-    const TAHOMA = 'tahoma.ttf';
-    const TAHOMA_BOLD = 'tahomabd.ttf';
-
-    const TIMES_NEW_ROMAN = 'times.ttf';
-    const TIMES_NEW_ROMAN_BOLD = 'timesbd.ttf';
-    const TIMES_NEW_ROMAN_ITALIC = 'timesi.ttf';
-    const TIMES_NEW_ROMAN_BOLD_ITALIC = 'timesbi.ttf';
-
-    const TREBUCHET_MS = 'trebuc.ttf';
-    const TREBUCHET_MS_BOLD = 'trebucbd.ttf';
-    const TREBUCHET_MS_ITALIC = 'trebucit.ttf';
-    const TREBUCHET_MS_BOLD_ITALIC = 'trebucbi.ttf';
-
-    const VERDANA = 'verdana.ttf';
-    const VERDANA_BOLD = 'verdanab.ttf';
-    const VERDANA_ITALIC = 'verdanai.ttf';
-    const VERDANA_BOLD_ITALIC = 'verdanaz.ttf';
-
-    /**
-     * AutoSize method.
-     *
-     * @var string
-     */
-    private static $autoSizeMethod = self::AUTOSIZE_METHOD_APPROX;
-
-    /**
-     * Path to folder containing TrueType font .ttf files.
-     *
-     * @var string
-     */
-    private static $trueTypeFontPath = null;
-
-    /**
-     * How wide is a default column for a given default font and size?
-     * Empirical data found by inspecting real Excel files and reading off the pixel width
-     * in Microsoft Office Excel 2007.
-     *
-     * @var array
-     */
-    public static $defaultColumnWidths = [
-        'Arial' => [
-            1 => ['px' => 24, 'width' => 12.00000000],
-            2 => ['px' => 24, 'width' => 12.00000000],
-            3 => ['px' => 32, 'width' => 10.66406250],
-            4 => ['px' => 32, 'width' => 10.66406250],
-            5 => ['px' => 40, 'width' => 10.00000000],
-            6 => ['px' => 48, 'width' => 9.59765625],
-            7 => ['px' => 48, 'width' => 9.59765625],
-            8 => ['px' => 56, 'width' => 9.33203125],
-            9 => ['px' => 64, 'width' => 9.14062500],
-            10 => ['px' => 64, 'width' => 9.14062500],
-        ],
-        'Calibri' => [
-            1 => ['px' => 24, 'width' => 12.00000000],
-            2 => ['px' => 24, 'width' => 12.00000000],
-            3 => ['px' => 32, 'width' => 10.66406250],
-            4 => ['px' => 32, 'width' => 10.66406250],
-            5 => ['px' => 40, 'width' => 10.00000000],
-            6 => ['px' => 48, 'width' => 9.59765625],
-            7 => ['px' => 48, 'width' => 9.59765625],
-            8 => ['px' => 56, 'width' => 9.33203125],
-            9 => ['px' => 56, 'width' => 9.33203125],
-            10 => ['px' => 64, 'width' => 9.14062500],
-            11 => ['px' => 64, 'width' => 9.14062500],
-        ],
-        'Verdana' => [
-            1 => ['px' => 24, 'width' => 12.00000000],
-            2 => ['px' => 24, 'width' => 12.00000000],
-            3 => ['px' => 32, 'width' => 10.66406250],
-            4 => ['px' => 32, 'width' => 10.66406250],
-            5 => ['px' => 40, 'width' => 10.00000000],
-            6 => ['px' => 48, 'width' => 9.59765625],
-            7 => ['px' => 48, 'width' => 9.59765625],
-            8 => ['px' => 64, 'width' => 9.14062500],
-            9 => ['px' => 72, 'width' => 9.00000000],
-            10 => ['px' => 72, 'width' => 9.00000000],
-        ],
-    ];
-
-    /**
-     * Set autoSize method.
-     *
-     * @param string $pValue see self::AUTOSIZE_METHOD_*
-     *
-     * @return bool Success or failure
-     */
-    public static function setAutoSizeMethod($pValue)
-    {
-        if (!in_array($pValue, self::$autoSizeMethods)) {
-            return false;
-        }
-        self::$autoSizeMethod = $pValue;
-
-        return true;
-    }
-
-    /**
-     * Get autoSize method.
-     *
-     * @return string
-     */
-    public static function getAutoSizeMethod()
-    {
-        return self::$autoSizeMethod;
-    }
-
-    /**
-     * Set the path to the folder containing .ttf files. There should be a trailing slash.
-     * Typical locations on variout some platforms:
-     *    <ul>
-     *        <li>C:/Windows/Fonts/</li>
-     *        <li>/usr/share/fonts/truetype/</li>
-     *        <li>~/.fonts/</li>
-     * </ul>.
-     *
-     * @param string $pValue
-     */
-    public static function setTrueTypeFontPath($pValue): void
-    {
-        self::$trueTypeFontPath = $pValue;
-    }
-
-    /**
-     * Get the path to the folder containing .ttf files.
-     *
-     * @return string
-     */
-    public static function getTrueTypeFontPath()
-    {
-        return self::$trueTypeFontPath;
-    }
-
-    /**
-     * Calculate an (approximate) OpenXML column width, based on font size and text contained.
-     *
-     * @param \PhpOffice\PhpSpreadsheet\Style\Font $font Font object
-     * @param RichText|string $cellText Text to calculate width
-     * @param int $rotation Rotation angle
-     * @param null|\PhpOffice\PhpSpreadsheet\Style\Font $defaultFont Font object
-     *
-     * @return int Column width
-     */
-    public static function calculateColumnWidth(\PhpOffice\PhpSpreadsheet\Style\Font $font, $cellText = '', $rotation = 0, ?\PhpOffice\PhpSpreadsheet\Style\Font $defaultFont = null)
-    {
-        // If it is rich text, use plain text
-        if ($cellText instanceof RichText) {
-            $cellText = $cellText->getPlainText();
-        }
-
-        // Special case if there are one or more newline characters ("\n")
-        if (strpos($cellText, "\n") !== false) {
-            $lineTexts = explode("\n", $cellText);
-            $lineWidths = [];
-            foreach ($lineTexts as $lineText) {
-                $lineWidths[] = self::calculateColumnWidth($font, $lineText, $rotation = 0, $defaultFont);
-            }
-
-            return max($lineWidths); // width of longest line in cell
-        }
-
-        // Try to get the exact text width in pixels
-        $approximate = self::$autoSizeMethod == self::AUTOSIZE_METHOD_APPROX;
-        if (!$approximate) {
-            $columnWidthAdjust = ceil(self::getTextWidthPixelsExact('n', $font, 0) * 1.07);
-
-            try {
-                // Width of text in pixels excl. padding
-                // and addition because Excel adds some padding, just use approx width of 'n' glyph
-                $columnWidth = self::getTextWidthPixelsExact($cellText, $font, $rotation) + $columnWidthAdjust;
-            } catch (PhpSpreadsheetException $e) {
-                $approximate = true;
-            }
-        }
-
-        if ($approximate) {
-            $columnWidthAdjust = self::getTextWidthPixelsApprox('n', $font, 0);
-            // Width of text in pixels excl. padding, approximation
-            // and addition because Excel adds some padding, just use approx width of 'n' glyph
-            $columnWidth = self::getTextWidthPixelsApprox($cellText, $font, $rotation) + $columnWidthAdjust;
-        }
-
-        // Convert from pixel width to column width
-        $columnWidth = Drawing::pixelsToCellDimension($columnWidth, $defaultFont);
-
-        // Return
-        return round($columnWidth, 6);
-    }
-
-    /**
-     * Get GD text width in pixels for a string of text in a certain font at a certain rotation angle.
-     *
-     * @param string $text
-     * @param \PhpOffice\PhpSpreadsheet\Style\Font
-     * @param int $rotation
-     *
-     * @return int
-     */
-    public static function getTextWidthPixelsExact($text, \PhpOffice\PhpSpreadsheet\Style\Font $font, $rotation = 0)
-    {
-        if (!function_exists('imagettfbbox')) {
-            throw new PhpSpreadsheetException('GD library needs to be enabled');
-        }
-
-        // font size should really be supplied in pixels in GD2,
-        // but since GD2 seems to assume 72dpi, pixels and points are the same
-        $fontFile = self::getTrueTypeFontFileFromFont($font);
-        $textBox = imagettfbbox($font->getSize(), $rotation, $fontFile, $text);
-
-        // Get corners positions
-        $lowerLeftCornerX = $textBox[0];
-        $lowerRightCornerX = $textBox[2];
-        $upperRightCornerX = $textBox[4];
-        $upperLeftCornerX = $textBox[6];
-
-        // Consider the rotation when calculating the width
-        return max($lowerRightCornerX - $upperLeftCornerX, $upperRightCornerX - $lowerLeftCornerX);
-    }
-
-    /**
-     * Get approximate width in pixels for a string of text in a certain font at a certain rotation angle.
-     *
-     * @param string $columnText
-     * @param int $rotation
-     *
-     * @return int Text width in pixels (no padding added)
-     */
-    public static function getTextWidthPixelsApprox($columnText, \PhpOffice\PhpSpreadsheet\Style\Font $font, $rotation = 0)
-    {
-        $fontName = $font->getName();
-        $fontSize = $font->getSize();
-
-        // Calculate column width in pixels. We assume fixed glyph width. Result varies with font name and size.
-        switch ($fontName) {
-            case 'Calibri':
-                // value 8.26 was found via interpolation by inspecting real Excel files with Calibri 11 font.
-                $columnWidth = (int) (8.26 * StringHelper::countCharacters($columnText));
-                $columnWidth = $columnWidth * $fontSize / 11; // extrapolate from font size
-
-                break;
-            case 'Arial':
-                // value 8 was set because of experience in different exports at Arial 10 font.
-                $columnWidth = (int) (8 * StringHelper::countCharacters($columnText));
-                $columnWidth = $columnWidth * $fontSize / 10; // extrapolate from font size
-
-                break;
-            case 'Verdana':
-                // value 8 was found via interpolation by inspecting real Excel files with Verdana 10 font.
-                $columnWidth = (int) (8 * StringHelper::countCharacters($columnText));
-                $columnWidth = $columnWidth * $fontSize / 10; // extrapolate from font size
-
-                break;
-            default:
-                // just assume Calibri
-                $columnWidth = (int) (8.26 * StringHelper::countCharacters($columnText));
-                $columnWidth = $columnWidth * $fontSize / 11; // extrapolate from font size
-
-                break;
-        }
-
-        // Calculate approximate rotated column width
-        if ($rotation !== 0) {
-            if ($rotation == -165) {
-                // stacked text
-                $columnWidth = 4; // approximation
-            } else {
-                // rotated text
-                $columnWidth = $columnWidth * cos(deg2rad($rotation))
-                                + $fontSize * abs(sin(deg2rad($rotation))) / 5; // approximation
-            }
-        }
-
-        // pixel width is an integer
-        return (int) $columnWidth;
-    }
-
-    /**
-     * Calculate an (approximate) pixel size, based on a font points size.
-     *
-     * @param int $fontSizeInPoints Font size (in points)
-     *
-     * @return int Font size (in pixels)
-     */
-    public static function fontSizeToPixels($fontSizeInPoints)
-    {
-        return (int) ((4 / 3) * $fontSizeInPoints);
-    }
-
-    /**
-     * Calculate an (approximate) pixel size, based on inch size.
-     *
-     * @param int $sizeInInch Font size (in inch)
-     *
-     * @return int Size (in pixels)
-     */
-    public static function inchSizeToPixels($sizeInInch)
-    {
-        return $sizeInInch * 96;
-    }
-
-    /**
-     * Calculate an (approximate) pixel size, based on centimeter size.
-     *
-     * @param int $sizeInCm Font size (in centimeters)
-     *
-     * @return float Size (in pixels)
-     */
-    public static function centimeterSizeToPixels($sizeInCm)
-    {
-        return $sizeInCm * 37.795275591;
-    }
-
-    /**
-     * Returns the font path given the font.
-     *
-     * @param \PhpOffice\PhpSpreadsheet\Style\Font $font
-     *
-     * @return string Path to TrueType font file
-     */
-    public static function getTrueTypeFontFileFromFont($font)
-    {
-        if (!file_exists(self::$trueTypeFontPath) || !is_dir(self::$trueTypeFontPath)) {
-            throw new PhpSpreadsheetException('Valid directory to TrueType Font files not specified');
-        }
-
-        $name = $font->getName();
-        $bold = $font->getBold();
-        $italic = $font->getItalic();
-
-        // Check if we can map font to true type font file
-        switch ($name) {
-            case 'Arial':
-                $fontFile = (
-                    $bold ? ($italic ? self::ARIAL_BOLD_ITALIC : self::ARIAL_BOLD)
-                          : ($italic ? self::ARIAL_ITALIC : self::ARIAL)
-                );
-
-                break;
-            case 'Calibri':
-                $fontFile = (
-                    $bold ? ($italic ? self::CALIBRI_BOLD_ITALIC : self::CALIBRI_BOLD)
-                          : ($italic ? self::CALIBRI_ITALIC : self::CALIBRI)
-                );
-
-                break;
-            case 'Courier New':
-                $fontFile = (
-                    $bold ? ($italic ? self::COURIER_NEW_BOLD_ITALIC : self::COURIER_NEW_BOLD)
-                          : ($italic ? self::COURIER_NEW_ITALIC : self::COURIER_NEW)
-                );
-
-                break;
-            case 'Comic Sans MS':
-                $fontFile = (
-                    $bold ? self::COMIC_SANS_MS_BOLD : self::COMIC_SANS_MS
-                );
-
-                break;
-            case 'Georgia':
-                $fontFile = (
-                    $bold ? ($italic ? self::GEORGIA_BOLD_ITALIC : self::GEORGIA_BOLD)
-                          : ($italic ? self::GEORGIA_ITALIC : self::GEORGIA)
-                );
-
-                break;
-            case 'Impact':
-                $fontFile = self::IMPACT;
-
-                break;
-            case 'Liberation Sans':
-                $fontFile = (
-                    $bold ? ($italic ? self::LIBERATION_SANS_BOLD_ITALIC : self::LIBERATION_SANS_BOLD)
-                          : ($italic ? self::LIBERATION_SANS_ITALIC : self::LIBERATION_SANS)
-                );
-
-                break;
-            case 'Lucida Console':
-                $fontFile = self::LUCIDA_CONSOLE;
-
-                break;
-            case 'Lucida Sans Unicode':
-                $fontFile = self::LUCIDA_SANS_UNICODE;
-
-                break;
-            case 'Microsoft Sans Serif':
-                $fontFile = self::MICROSOFT_SANS_SERIF;
-
-                break;
-            case 'Palatino Linotype':
-                $fontFile = (
-                    $bold ? ($italic ? self::PALATINO_LINOTYPE_BOLD_ITALIC : self::PALATINO_LINOTYPE_BOLD)
-                          : ($italic ? self::PALATINO_LINOTYPE_ITALIC : self::PALATINO_LINOTYPE)
-                );
-
-                break;
-            case 'Symbol':
-                $fontFile = self::SYMBOL;
-
-                break;
-            case 'Tahoma':
-                $fontFile = (
-                    $bold ? self::TAHOMA_BOLD : self::TAHOMA
-                );
-
-                break;
-            case 'Times New Roman':
-                $fontFile = (
-                    $bold ? ($italic ? self::TIMES_NEW_ROMAN_BOLD_ITALIC : self::TIMES_NEW_ROMAN_BOLD)
-                          : ($italic ? self::TIMES_NEW_ROMAN_ITALIC : self::TIMES_NEW_ROMAN)
-                );
-
-                break;
-            case 'Trebuchet MS':
-                $fontFile = (
-                    $bold ? ($italic ? self::TREBUCHET_MS_BOLD_ITALIC : self::TREBUCHET_MS_BOLD)
-                          : ($italic ? self::TREBUCHET_MS_ITALIC : self::TREBUCHET_MS)
-                );
-
-                break;
-            case 'Verdana':
-                $fontFile = (
-                    $bold ? ($italic ? self::VERDANA_BOLD_ITALIC : self::VERDANA_BOLD)
-                          : ($italic ? self::VERDANA_ITALIC : self::VERDANA)
-                );
-
-                break;
-            default:
-                throw new PhpSpreadsheetException('Unknown font name "' . $name . '". Cannot map to TrueType font file');
-
-                break;
-        }
-
-        $fontFile = self::$trueTypeFontPath . $fontFile;
-
-        // Check if file actually exists
-        if (!file_exists($fontFile)) {
-            throw new PhpSpreadsheetException('TrueType Font file not found');
-        }
-
-        return $fontFile;
-    }
-
-    /**
-     * Returns the associated charset for the font name.
-     *
-     * @param string $name Font name
-     *
-     * @return int Character set code
-     */
-    public static function getCharsetFromFontName($name)
-    {
-        switch ($name) {
-            // Add more cases. Check FONT records in real Excel files.
-            case 'EucrosiaUPC':
-                return self::CHARSET_ANSI_THAI;
-            case 'Wingdings':
-                return self::CHARSET_SYMBOL;
-            case 'Wingdings 2':
-                return self::CHARSET_SYMBOL;
-            case 'Wingdings 3':
-                return self::CHARSET_SYMBOL;
-            default:
-                return self::CHARSET_ANSI_LATIN;
-        }
-    }
-
-    /**
-     * Get the effective column width for columns without a column dimension or column with width -1
-     * For example, for Calibri 11 this is 9.140625 (64 px).
-     *
-     * @param \PhpOffice\PhpSpreadsheet\Style\Font $font The workbooks default font
-     * @param bool $pPixels true = return column width in pixels, false = return in OOXML units
-     *
-     * @return mixed Column width
-     */
-    public static function getDefaultColumnWidthByFont(\PhpOffice\PhpSpreadsheet\Style\Font $font, $pPixels = false)
-    {
-        if (isset(self::$defaultColumnWidths[$font->getName()][$font->getSize()])) {
-            // Exact width can be determined
-            $columnWidth = $pPixels ?
-                self::$defaultColumnWidths[$font->getName()][$font->getSize()]['px']
-                    : self::$defaultColumnWidths[$font->getName()][$font->getSize()]['width'];
-        } else {
-            // We don't have data for this particular font and size, use approximation by
-            // extrapolating from Calibri 11
-            $columnWidth = $pPixels ?
-                self::$defaultColumnWidths['Calibri'][11]['px']
-                    : self::$defaultColumnWidths['Calibri'][11]['width'];
-            $columnWidth = $columnWidth * $font->getSize() / 11;
-
-            // Round pixels to closest integer
-            if ($pPixels) {
-                $columnWidth = (int) round($columnWidth);
-            }
-        }
-
-        return $columnWidth;
-    }
-
-    /**
-     * Get the effective row height for rows without a row dimension or rows with height -1
-     * For example, for Calibri 11 this is 15 points.
-     *
-     * @param \PhpOffice\PhpSpreadsheet\Style\Font $font The workbooks default font
-     *
-     * @return float Row height in points
-     */
-    public static function getDefaultRowHeightByFont(\PhpOffice\PhpSpreadsheet\Style\Font $font)
-    {
-        switch ($font->getName()) {
-            case 'Arial':
-                switch ($font->getSize()) {
-                    case 10:
-                        // inspection of Arial 10 workbook says 12.75pt ~17px
-                        $rowHeight = 12.75;
-
-                        break;
-                    case 9:
-                        // inspection of Arial 9 workbook says 12.00pt ~16px
-                        $rowHeight = 12;
-
-                        break;
-                    case 8:
-                        // inspection of Arial 8 workbook says 11.25pt ~15px
-                        $rowHeight = 11.25;
-
-                        break;
-                    case 7:
-                        // inspection of Arial 7 workbook says 9.00pt ~12px
-                        $rowHeight = 9;
-
-                        break;
-                    case 6:
-                    case 5:
-                        // inspection of Arial 5,6 workbook says 8.25pt ~11px
-                        $rowHeight = 8.25;
-
-                        break;
-                    case 4:
-                        // inspection of Arial 4 workbook says 6.75pt ~9px
-                        $rowHeight = 6.75;
-
-                        break;
-                    case 3:
-                        // inspection of Arial 3 workbook says 6.00pt ~8px
-                        $rowHeight = 6;
-
-                        break;
-                    case 2:
-                    case 1:
-                        // inspection of Arial 1,2 workbook says 5.25pt ~7px
-                        $rowHeight = 5.25;
-
-                        break;
-                    default:
-                        // use Arial 10 workbook as an approximation, extrapolation
-                        $rowHeight = 12.75 * $font->getSize() / 10;
-
-                        break;
-                }
-
-                break;
-            case 'Calibri':
-                switch ($font->getSize()) {
-                    case 11:
-                        // inspection of Calibri 11 workbook says 15.00pt ~20px
-                        $rowHeight = 15;
-
-                        break;
-                    case 10:
-                        // inspection of Calibri 10 workbook says 12.75pt ~17px
-                        $rowHeight = 12.75;
-
-                        break;
-                    case 9:
-                        // inspection of Calibri 9 workbook says 12.00pt ~16px
-                        $rowHeight = 12;
-
-                        break;
-                    case 8:
-                        // inspection of Calibri 8 workbook says 11.25pt ~15px
-                        $rowHeight = 11.25;
-
-                        break;
-                    case 7:
-                        // inspection of Calibri 7 workbook says 9.00pt ~12px
-                        $rowHeight = 9;
-
-                        break;
-                    case 6:
-                    case 5:
-                        // inspection of Calibri 5,6 workbook says 8.25pt ~11px
-                        $rowHeight = 8.25;
-
-                        break;
-                    case 4:
-                        // inspection of Calibri 4 workbook says 6.75pt ~9px
-                        $rowHeight = 6.75;
-
-                        break;
-                    case 3:
-                        // inspection of Calibri 3 workbook says 6.00pt ~8px
-                        $rowHeight = 6.00;
-
-                        break;
-                    case 2:
-                    case 1:
-                        // inspection of Calibri 1,2 workbook says 5.25pt ~7px
-                        $rowHeight = 5.25;
-
-                        break;
-                    default:
-                        // use Calibri 11 workbook as an approximation, extrapolation
-                        $rowHeight = 15 * $font->getSize() / 11;
-
-                        break;
-                }
-
-                break;
-            case 'Verdana':
-                switch ($font->getSize()) {
-                    case 10:
-                        // inspection of Verdana 10 workbook says 12.75pt ~17px
-                        $rowHeight = 12.75;
-
-                        break;
-                    case 9:
-                        // inspection of Verdana 9 workbook says 11.25pt ~15px
-                        $rowHeight = 11.25;
-
-                        break;
-                    case 8:
-                        // inspection of Verdana 8 workbook says 10.50pt ~14px
-                        $rowHeight = 10.50;
-
-                        break;
-                    case 7:
-                        // inspection of Verdana 7 workbook says 9.00pt ~12px
-                        $rowHeight = 9.00;
-
-                        break;
-                    case 6:
-                    case 5:
-                        // inspection of Verdana 5,6 workbook says 8.25pt ~11px
-                        $rowHeight = 8.25;
-
-                        break;
-                    case 4:
-                        // inspection of Verdana 4 workbook says 6.75pt ~9px
-                        $rowHeight = 6.75;
-
-                        break;
-                    case 3:
-                        // inspection of Verdana 3 workbook says 6.00pt ~8px
-                        $rowHeight = 6;
-
-                        break;
-                    case 2:
-                    case 1:
-                        // inspection of Verdana 1,2 workbook says 5.25pt ~7px
-                        $rowHeight = 5.25;
-
-                        break;
-                    default:
-                        // use Verdana 10 workbook as an approximation, extrapolation
-                        $rowHeight = 12.75 * $font->getSize() / 10;
-
-                        break;
-                }
-
-                break;
-            default:
-                // just use Calibri as an approximation
-                $rowHeight = 15 * $font->getSize() / 11;
-
-                break;
-        }
-
-        return $rowHeight;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

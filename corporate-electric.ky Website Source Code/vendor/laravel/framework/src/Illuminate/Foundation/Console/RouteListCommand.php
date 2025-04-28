@@ -1,264 +1,158 @@
-<?php
-
-namespace Illuminate\Foundation\Console;
-
-use Closure;
-use Illuminate\Console\Command;
-use Illuminate\Routing\Route;
-use Illuminate\Routing\Router;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
-use Symfony\Component\Console\Input\InputOption;
-
-class RouteListCommand extends Command
-{
-    /**
-     * The console command name.
-     *
-     * @var string
-     */
-    protected $name = 'route:list';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'List all registered routes';
-
-    /**
-     * The router instance.
-     *
-     * @var \Illuminate\Routing\Router
-     */
-    protected $router;
-
-    /**
-     * The table headers for the command.
-     *
-     * @var string[]
-     */
-    protected $headers = ['Domain', 'Method', 'URI', 'Name', 'Action', 'Middleware'];
-
-    /**
-     * The columns to display when using the "compact" flag.
-     *
-     * @var string[]
-     */
-    protected $compactColumns = ['method', 'uri', 'action'];
-
-    /**
-     * Create a new route command instance.
-     *
-     * @param  \Illuminate\Routing\Router  $router
-     * @return void
-     */
-    public function __construct(Router $router)
-    {
-        parent::__construct();
-
-        $this->router = $router;
-    }
-
-    /**
-     * Execute the console command.
-     *
-     * @return void
-     */
-    public function handle()
-    {
-        if (empty($this->router->getRoutes())) {
-            return $this->error("Your application doesn't have any routes.");
-        }
-
-        if (empty($routes = $this->getRoutes())) {
-            return $this->error("Your application doesn't have any routes matching the given criteria.");
-        }
-
-        $this->displayRoutes($routes);
-    }
-
-    /**
-     * Compile the routes into a displayable format.
-     *
-     * @return array
-     */
-    protected function getRoutes()
-    {
-        $routes = collect($this->router->getRoutes())->map(function ($route) {
-            return $this->getRouteInformation($route);
-        })->filter()->all();
-
-        if ($sort = $this->option('sort')) {
-            $routes = $this->sortRoutes($sort, $routes);
-        }
-
-        if ($this->option('reverse')) {
-            $routes = array_reverse($routes);
-        }
-
-        return $this->pluckColumns($routes);
-    }
-
-    /**
-     * Get the route information for a given route.
-     *
-     * @param  \Illuminate\Routing\Route  $route
-     * @return array
-     */
-    protected function getRouteInformation(Route $route)
-    {
-        return $this->filterRoute([
-            'domain' => $route->domain(),
-            'method' => implode('|', $route->methods()),
-            'uri'    => $route->uri(),
-            'name'   => $route->getName(),
-            'action' => ltrim($route->getActionName(), '\\'),
-            'middleware' => $this->getMiddleware($route),
-        ]);
-    }
-
-    /**
-     * Sort the routes by a given element.
-     *
-     * @param  string  $sort
-     * @param  array  $routes
-     * @return array
-     */
-    protected function sortRoutes($sort, array $routes)
-    {
-        return Arr::sort($routes, function ($route) use ($sort) {
-            return $route[$sort];
-        });
-    }
-
-    /**
-     * Remove unnecessary columns from the routes.
-     *
-     * @param  array  $routes
-     * @return array
-     */
-    protected function pluckColumns(array $routes)
-    {
-        return array_map(function ($route) {
-            return Arr::only($route, $this->getColumns());
-        }, $routes);
-    }
-
-    /**
-     * Display the route information on the console.
-     *
-     * @param  array  $routes
-     * @return void
-     */
-    protected function displayRoutes(array $routes)
-    {
-        if ($this->option('json')) {
-            $this->line(json_encode(array_values($routes)));
-
-            return;
-        }
-
-        $this->table($this->getHeaders(), $routes);
-    }
-
-    /**
-     * Get before filters.
-     *
-     * @param  \Illuminate\Routing\Route  $route
-     * @return string
-     */
-    protected function getMiddleware($route)
-    {
-        return collect($this->router->gatherRouteMiddleware($route))->map(function ($middleware) {
-            return $middleware instanceof Closure ? 'Closure' : $middleware;
-        })->implode("\n");
-    }
-
-    /**
-     * Filter the route by URI and / or name.
-     *
-     * @param  array  $route
-     * @return array|null
-     */
-    protected function filterRoute(array $route)
-    {
-        if (($this->option('name') && ! Str::contains($route['name'], $this->option('name'))) ||
-             $this->option('path') && ! Str::contains($route['uri'], $this->option('path')) ||
-             $this->option('method') && ! Str::contains($route['method'], strtoupper($this->option('method')))) {
-            return;
-        }
-
-        return $route;
-    }
-
-    /**
-     * Get the table headers for the visible columns.
-     *
-     * @return array
-     */
-    protected function getHeaders()
-    {
-        return Arr::only($this->headers, array_keys($this->getColumns()));
-    }
-
-    /**
-     * Get the column names to show (lowercase table headers).
-     *
-     * @return array
-     */
-    protected function getColumns()
-    {
-        $availableColumns = array_map('strtolower', $this->headers);
-
-        if ($this->option('compact')) {
-            return array_intersect($availableColumns, $this->compactColumns);
-        }
-
-        if ($columns = $this->option('columns')) {
-            return array_intersect($availableColumns, $this->parseColumns($columns));
-        }
-
-        return $availableColumns;
-    }
-
-    /**
-     * Parse the column list.
-     *
-     * @param  array  $columns
-     * @return array
-     */
-    protected function parseColumns(array $columns)
-    {
-        $results = [];
-
-        foreach ($columns as $i => $column) {
-            if (Str::contains($column, ',')) {
-                $results = array_merge($results, explode(',', $column));
-            } else {
-                $results[] = $column;
-            }
-        }
-
-        return array_map('strtolower', $results);
-    }
-
-    /**
-     * Get the console command options.
-     *
-     * @return array
-     */
-    protected function getOptions()
-    {
-        return [
-            ['columns', null, InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY, 'Columns to include in the route table'],
-            ['compact', 'c', InputOption::VALUE_NONE, 'Only show method, URI and action columns'],
-            ['json', null, InputOption::VALUE_NONE, 'Output the route list as JSON'],
-            ['method', null, InputOption::VALUE_OPTIONAL, 'Filter the routes by method'],
-            ['name', null, InputOption::VALUE_OPTIONAL, 'Filter the routes by name'],
-            ['path', null, InputOption::VALUE_OPTIONAL, 'Filter the routes by path'],
-            ['reverse', 'r', InputOption::VALUE_NONE, 'Reverse the ordering of the routes'],
-            ['sort', null, InputOption::VALUE_OPTIONAL, 'The column (domain, method, uri, name, action, middleware) to sort by', 'uri'],
-        ];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+82mtaMiCVQzmbfDU

@@ -1,55 +1,38 @@
-<?php
-
-/*
- * This file is part of SwiftMailer.
- * (c) 2004-2009 Chris Corbyn
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-/**
- * Handles Base64 (B) Header Encoding in Swift Mailer.
- *
- * @author Chris Corbyn
- */
-class Swift_Mime_HeaderEncoder_Base64HeaderEncoder extends Swift_Encoder_Base64Encoder implements Swift_Mime_HeaderEncoder
-{
-    /**
-     * Get the name of this encoding scheme.
-     * Returns the string 'B'.
-     *
-     * @return string
-     */
-    public function getName()
-    {
-        return 'B';
-    }
-
-    /**
-     * Takes an unencoded string and produces a Base64 encoded string from it.
-     *
-     * If the charset is iso-2022-jp, it uses mb_encode_mimeheader instead of
-     * default encodeString, otherwise pass to the parent method.
-     *
-     * @param string $string          string to encode
-     * @param int    $firstLineOffset
-     * @param int    $maxLineLength   optional, 0 indicates the default of 76 bytes
-     * @param string $charset
-     *
-     * @return string
-     */
-    public function encodeString($string, $firstLineOffset = 0, $maxLineLength = 0, $charset = 'utf-8')
-    {
-        if ('iso-2022-jp' === strtolower($charset)) {
-            $old = mb_internal_encoding();
-            mb_internal_encoding('utf-8');
-            $newstring = mb_encode_mimeheader($string, $charset, $this->getName(), "\r\n");
-            mb_internal_encoding($old);
-
-            return $newstring;
-        }
-
-        return parent::encodeString($string, $firstLineOffset, $maxLineLength);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

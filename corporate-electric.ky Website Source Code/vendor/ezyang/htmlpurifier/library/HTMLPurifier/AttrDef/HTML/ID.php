@@ -1,113 +1,54 @@
-<?php
-
-/**
- * Validates the HTML attribute ID.
- * @warning Even though this is the id processor, it
- *          will ignore the directive Attr:IDBlacklist, since it will only
- *          go according to the ID accumulator. Since the accumulator is
- *          automatically generated, it will have already absorbed the
- *          blacklist. If you're hacking around, make sure you use load()!
- */
-
-class HTMLPurifier_AttrDef_HTML_ID extends HTMLPurifier_AttrDef
-{
-
-    // selector is NOT a valid thing to use for IDREFs, because IDREFs
-    // *must* target IDs that exist, whereas selector #ids do not.
-
-    /**
-     * Determines whether or not we're validating an ID in a CSS
-     * selector context.
-     * @type bool
-     */
-    protected $selector;
-
-    /**
-     * @param bool $selector
-     */
-    public function __construct($selector = false)
-    {
-        $this->selector = $selector;
-    }
-
-    /**
-     * @param string $id
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return bool|string
-     */
-    public function validate($id, $config, $context)
-    {
-        if (!$this->selector && !$config->get('Attr.EnableID')) {
-            return false;
-        }
-
-        $id = trim($id); // trim it first
-
-        if ($id === '') {
-            return false;
-        }
-
-        $prefix = $config->get('Attr.IDPrefix');
-        if ($prefix !== '') {
-            $prefix .= $config->get('Attr.IDPrefixLocal');
-            // prevent re-appending the prefix
-            if (strpos($id, $prefix) !== 0) {
-                $id = $prefix . $id;
-            }
-        } elseif ($config->get('Attr.IDPrefixLocal') !== '') {
-            trigger_error(
-                '%Attr.IDPrefixLocal cannot be used unless ' .
-                '%Attr.IDPrefix is set',
-                E_USER_WARNING
-            );
-        }
-
-        if (!$this->selector) {
-            $id_accumulator =& $context->get('IDAccumulator');
-            if (isset($id_accumulator->ids[$id])) {
-                return false;
-            }
-        }
-
-        // we purposely avoid using regex, hopefully this is faster
-
-        if ($config->get('Attr.ID.HTML5') === true) {
-            if (preg_match('/[\t\n\x0b\x0c ]/', $id)) {
-                return false;
-            }
-        } else {
-            if (ctype_alpha($id)) {
-                // OK
-            } else {
-                if (!ctype_alpha(@$id[0])) {
-                    return false;
-                }
-                // primitive style of regexps, I suppose
-                $trim = trim(
-                    $id,
-                    'A..Za..z0..9:-._'
-                );
-                if ($trim !== '') {
-                    return false;
-                }
-            }
-        }
-
-        $regexp = $config->get('Attr.IDBlacklistRegexp');
-        if ($regexp && preg_match($regexp, $id)) {
-            return false;
-        }
-
-        if (!$this->selector) {
-            $id_accumulator->add($id);
-        }
-
-        // if no change was made to the ID, return the result
-        // else, return the new id if stripping whitespace made it
-        //     valid, or return false.
-        return $id;
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+hc5cYScdWEFCvLNrr8cXE6pqOzoH1hRaBRax

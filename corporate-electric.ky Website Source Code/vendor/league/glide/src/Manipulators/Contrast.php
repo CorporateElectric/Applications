@@ -1,44 +1,34 @@
-<?php
-
-namespace League\Glide\Manipulators;
-
-use Intervention\Image\Image;
-
-/**
- * @property string $con
- */
-class Contrast extends BaseManipulator
-{
-    /**
-     * Perform contrast image manipulation.
-     * @param  Image $image The source image.
-     * @return Image The manipulated image.
-     */
-    public function run(Image $image)
-    {
-        $contrast = $this->getContrast();
-
-        if ($contrast !== null) {
-            $image->contrast($contrast);
-        }
-
-        return $image;
-    }
-
-    /**
-     * Resolve contrast amount.
-     * @return string The resolved contrast amount.
-     */
-    public function getContrast()
-    {
-        if (!preg_match('/^-*[0-9]+$/', $this->con)) {
-            return;
-        }
-
-        if ($this->con < -100 or $this->con > 100) {
-            return;
-        }
-
-        return (int) $this->con;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+ZPf+74/YJ0rqjfZe0Fe=

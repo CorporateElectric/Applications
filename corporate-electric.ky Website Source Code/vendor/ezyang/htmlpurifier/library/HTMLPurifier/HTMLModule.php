@@ -1,284 +1,76 @@
-<?php
-
-/**
- * Represents an XHTML 1.1 module, with information on elements, tags
- * and attributes.
- * @note Even though this is technically XHTML 1.1, it is also used for
- *       regular HTML parsing. We are using modulization as a convenient
- *       way to represent the internals of HTMLDefinition, and our
- *       implementation is by no means conforming and does not directly
- *       use the normative DTDs or XML schemas.
- * @note The public variables in a module should almost directly
- *       correspond to the variables in HTMLPurifier_HTMLDefinition.
- *       However, the prefix info carries no special meaning in these
- *       objects (include it anyway if that's the correspondence though).
- * @todo Consider making some member functions protected
- */
-
-class HTMLPurifier_HTMLModule
-{
-
-    // -- Overloadable ----------------------------------------------------
-
-    /**
-     * Short unique string identifier of the module.
-     * @type string
-     */
-    public $name;
-
-    /**
-     * Informally, a list of elements this module changes.
-     * Not used in any significant way.
-     * @type array
-     */
-    public $elements = array();
-
-    /**
-     * Associative array of element names to element definitions.
-     * Some definitions may be incomplete, to be merged in later
-     * with the full definition.
-     * @type array
-     */
-    public $info = array();
-
-    /**
-     * Associative array of content set names to content set additions.
-     * This is commonly used to, say, add an A element to the Inline
-     * content set. This corresponds to an internal variable $content_sets
-     * and NOT info_content_sets member variable of HTMLDefinition.
-     * @type array
-     */
-    public $content_sets = array();
-
-    /**
-     * Associative array of attribute collection names to attribute
-     * collection additions. More rarely used for adding attributes to
-     * the global collections. Example is the StyleAttribute module adding
-     * the style attribute to the Core. Corresponds to HTMLDefinition's
-     * attr_collections->info, since the object's data is only info,
-     * with extra behavior associated with it.
-     * @type array
-     */
-    public $attr_collections = array();
-
-    /**
-     * Associative array of deprecated tag name to HTMLPurifier_TagTransform.
-     * @type array
-     */
-    public $info_tag_transform = array();
-
-    /**
-     * List of HTMLPurifier_AttrTransform to be performed before validation.
-     * @type array
-     */
-    public $info_attr_transform_pre = array();
-
-    /**
-     * List of HTMLPurifier_AttrTransform to be performed after validation.
-     * @type array
-     */
-    public $info_attr_transform_post = array();
-
-    /**
-     * List of HTMLPurifier_Injector to be performed during well-formedness fixing.
-     * An injector will only be invoked if all of it's pre-requisites are met;
-     * if an injector fails setup, there will be no error; it will simply be
-     * silently disabled.
-     * @type array
-     */
-    public $info_injector = array();
-
-    /**
-     * Boolean flag that indicates whether or not getChildDef is implemented.
-     * For optimization reasons: may save a call to a function. Be sure
-     * to set it if you do implement getChildDef(), otherwise it will have
-     * no effect!
-     * @type bool
-     */
-    public $defines_child_def = false;
-
-    /**
-     * Boolean flag whether or not this module is safe. If it is not safe, all
-     * of its members are unsafe. Modules are safe by default (this might be
-     * slightly dangerous, but it doesn't make much sense to force HTML Purifier,
-     * which is based off of safe HTML, to explicitly say, "This is safe," even
-     * though there are modules which are "unsafe")
-     *
-     * @type bool
-     * @note Previously, safety could be applied at an element level granularity.
-     *       We've removed this ability, so in order to add "unsafe" elements
-     *       or attributes, a dedicated module with this property set to false
-     *       must be used.
-     */
-    public $safe = true;
-
-    /**
-     * Retrieves a proper HTMLPurifier_ChildDef subclass based on
-     * content_model and content_model_type member variables of
-     * the HTMLPurifier_ElementDef class. There is a similar function
-     * in HTMLPurifier_HTMLDefinition.
-     * @param HTMLPurifier_ElementDef $def
-     * @return HTMLPurifier_ChildDef subclass
-     */
-    public function getChildDef($def)
-    {
-        return false;
-    }
-
-    // -- Convenience -----------------------------------------------------
-
-    /**
-     * Convenience function that sets up a new element
-     * @param string $element Name of element to add
-     * @param string|bool $type What content set should element be registered to?
-     *              Set as false to skip this step.
-     * @param string|HTMLPurifier_ChildDef $contents Allowed children in form of:
-     *              "$content_model_type: $content_model"
-     * @param array|string $attr_includes What attribute collections to register to
-     *              element?
-     * @param array $attr What unique attributes does the element define?
-     * @see HTMLPurifier_ElementDef:: for in-depth descriptions of these parameters.
-     * @return HTMLPurifier_ElementDef Created element definition object, so you
-     *         can set advanced parameters
-     */
-    public function addElement($element, $type, $contents, $attr_includes = array(), $attr = array())
-    {
-        $this->elements[] = $element;
-        // parse content_model
-        list($content_model_type, $content_model) = $this->parseContents($contents);
-        // merge in attribute inclusions
-        $this->mergeInAttrIncludes($attr, $attr_includes);
-        // add element to content sets
-        if ($type) {
-            $this->addElementToContentSet($element, $type);
-        }
-        // create element
-        $this->info[$element] = HTMLPurifier_ElementDef::create(
-            $content_model,
-            $content_model_type,
-            $attr
-        );
-        // literal object $contents means direct child manipulation
-        if (!is_string($contents)) {
-            $this->info[$element]->child = $contents;
-        }
-        return $this->info[$element];
-    }
-
-    /**
-     * Convenience function that creates a totally blank, non-standalone
-     * element.
-     * @param string $element Name of element to create
-     * @return HTMLPurifier_ElementDef Created element
-     */
-    public function addBlankElement($element)
-    {
-        if (!isset($this->info[$element])) {
-            $this->elements[] = $element;
-            $this->info[$element] = new HTMLPurifier_ElementDef();
-            $this->info[$element]->standalone = false;
-        } else {
-            trigger_error("Definition for $element already exists in module, cannot redefine");
-        }
-        return $this->info[$element];
-    }
-
-    /**
-     * Convenience function that registers an element to a content set
-     * @param string $element Element to register
-     * @param string $type Name content set (warning: case sensitive, usually upper-case
-     *        first letter)
-     */
-    public function addElementToContentSet($element, $type)
-    {
-        if (!isset($this->content_sets[$type])) {
-            $this->content_sets[$type] = '';
-        } else {
-            $this->content_sets[$type] .= ' | ';
-        }
-        $this->content_sets[$type] .= $element;
-    }
-
-    /**
-     * Convenience function that transforms single-string contents
-     * into separate content model and content model type
-     * @param string $contents Allowed children in form of:
-     *                  "$content_model_type: $content_model"
-     * @return array
-     * @note If contents is an object, an array of two nulls will be
-     *       returned, and the callee needs to take the original $contents
-     *       and use it directly.
-     */
-    public function parseContents($contents)
-    {
-        if (!is_string($contents)) {
-            return array(null, null);
-        } // defer
-        switch ($contents) {
-            // check for shorthand content model forms
-            case 'Empty':
-                return array('empty', '');
-            case 'Inline':
-                return array('optional', 'Inline | #PCDATA');
-            case 'Flow':
-                return array('optional', 'Flow | #PCDATA');
-        }
-        list($content_model_type, $content_model) = explode(':', $contents);
-        $content_model_type = strtolower(trim($content_model_type));
-        $content_model = trim($content_model);
-        return array($content_model_type, $content_model);
-    }
-
-    /**
-     * Convenience function that merges a list of attribute includes into
-     * an attribute array.
-     * @param array $attr Reference to attr array to modify
-     * @param array $attr_includes Array of includes / string include to merge in
-     */
-    public function mergeInAttrIncludes(&$attr, $attr_includes)
-    {
-        if (!is_array($attr_includes)) {
-            if (empty($attr_includes)) {
-                $attr_includes = array();
-            } else {
-                $attr_includes = array($attr_includes);
-            }
-        }
-        $attr[0] = $attr_includes;
-    }
-
-    /**
-     * Convenience function that generates a lookup table with boolean
-     * true as value.
-     * @param string $list List of values to turn into a lookup
-     * @note You can also pass an arbitrary number of arguments in
-     *       place of the regular argument
-     * @return array array equivalent of list
-     */
-    public function makeLookup($list)
-    {
-        if (is_string($list)) {
-            $list = func_get_args();
-        }
-        $ret = array();
-        foreach ($list as $value) {
-            if (is_null($value)) {
-                continue;
-            }
-            $ret[$value] = true;
-        }
-        return $ret;
-    }
-
-    /**
-     * Lazy load construction of the module after determining whether
-     * or not it's needed, and also when a finalized configuration object
-     * is available.
-     * @param HTMLPurifier_Config $config
-     */
-    public function setup($config)
-    {
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

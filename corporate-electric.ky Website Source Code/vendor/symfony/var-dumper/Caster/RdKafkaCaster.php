@@ -1,186 +1,95 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\VarDumper\Caster;
-
-use RdKafka\Conf;
-use RdKafka\Exception as RdKafkaException;
-use RdKafka\KafkaConsumer;
-use RdKafka\Message;
-use RdKafka\Metadata\Broker as BrokerMetadata;
-use RdKafka\Metadata\Collection as CollectionMetadata;
-use RdKafka\Metadata\Partition as PartitionMetadata;
-use RdKafka\Metadata\Topic as TopicMetadata;
-use RdKafka\Topic;
-use RdKafka\TopicConf;
-use RdKafka\TopicPartition;
-use Symfony\Component\VarDumper\Cloner\Stub;
-
-/**
- * Casts RdKafka related classes to array representation.
- *
- * @author Romain Neutron <imprec@gmail.com>
- */
-class RdKafkaCaster
-{
-    public static function castKafkaConsumer(KafkaConsumer $c, array $a, Stub $stub, $isNested)
-    {
-        $prefix = Caster::PREFIX_VIRTUAL;
-
-        try {
-            $assignment = $c->getAssignment();
-        } catch (RdKafkaException $e) {
-            $assignment = [];
-        }
-
-        $a += [
-            $prefix.'subscription' => $c->getSubscription(),
-            $prefix.'assignment' => $assignment,
-        ];
-
-        $a += self::extractMetadata($c);
-
-        return $a;
-    }
-
-    public static function castTopic(Topic $c, array $a, Stub $stub, $isNested)
-    {
-        $prefix = Caster::PREFIX_VIRTUAL;
-
-        $a += [
-            $prefix.'name' => $c->getName(),
-        ];
-
-        return $a;
-    }
-
-    public static function castTopicPartition(TopicPartition $c, array $a)
-    {
-        $prefix = Caster::PREFIX_VIRTUAL;
-
-        $a += [
-            $prefix.'offset' => $c->getOffset(),
-            $prefix.'partition' => $c->getPartition(),
-            $prefix.'topic' => $c->getTopic(),
-        ];
-
-        return $a;
-    }
-
-    public static function castMessage(Message $c, array $a, Stub $stub, $isNested)
-    {
-        $prefix = Caster::PREFIX_VIRTUAL;
-
-        $a += [
-            $prefix.'errstr' => $c->errstr(),
-        ];
-
-        return $a;
-    }
-
-    public static function castConf(Conf $c, array $a, Stub $stub, $isNested)
-    {
-        $prefix = Caster::PREFIX_VIRTUAL;
-
-        foreach ($c->dump() as $key => $value) {
-            $a[$prefix.$key] = $value;
-        }
-
-        return $a;
-    }
-
-    public static function castTopicConf(TopicConf $c, array $a, Stub $stub, $isNested)
-    {
-        $prefix = Caster::PREFIX_VIRTUAL;
-
-        foreach ($c->dump() as $key => $value) {
-            $a[$prefix.$key] = $value;
-        }
-
-        return $a;
-    }
-
-    public static function castRdKafka(\RdKafka $c, array $a, Stub $stub, $isNested)
-    {
-        $prefix = Caster::PREFIX_VIRTUAL;
-
-        $a += [
-            $prefix.'out_q_len' => $c->getOutQLen(),
-        ];
-
-        $a += self::extractMetadata($c);
-
-        return $a;
-    }
-
-    public static function castCollectionMetadata(CollectionMetadata $c, array $a, Stub $stub, $isNested)
-    {
-        $a += iterator_to_array($c);
-
-        return $a;
-    }
-
-    public static function castTopicMetadata(TopicMetadata $c, array $a, Stub $stub, $isNested)
-    {
-        $prefix = Caster::PREFIX_VIRTUAL;
-
-        $a += [
-            $prefix.'name' => $c->getTopic(),
-            $prefix.'partitions' => $c->getPartitions(),
-        ];
-
-        return $a;
-    }
-
-    public static function castPartitionMetadata(PartitionMetadata $c, array $a, Stub $stub, $isNested)
-    {
-        $prefix = Caster::PREFIX_VIRTUAL;
-
-        $a += [
-            $prefix.'id' => $c->getId(),
-            $prefix.'err' => $c->getErr(),
-            $prefix.'leader' => $c->getLeader(),
-        ];
-
-        return $a;
-    }
-
-    public static function castBrokerMetadata(BrokerMetadata $c, array $a, Stub $stub, $isNested)
-    {
-        $prefix = Caster::PREFIX_VIRTUAL;
-
-        $a += [
-            $prefix.'id' => $c->getId(),
-            $prefix.'host' => $c->getHost(),
-            $prefix.'port' => $c->getPort(),
-        ];
-
-        return $a;
-    }
-
-    private static function extractMetadata($c)
-    {
-        $prefix = Caster::PREFIX_VIRTUAL;
-
-        try {
-            $m = $c->getMetadata(true, null, 500);
-        } catch (RdKafkaException $e) {
-            return [];
-        }
-
-        return [
-            $prefix.'orig_broker_id' => $m->getOrigBrokerId(),
-            $prefix.'orig_broker_name' => $m->getOrigBrokerName(),
-            $prefix.'brokers' => $m->getBrokers(),
-            $prefix.'topics' => $m->getTopics(),
-        ];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPnS/yp7BhiS6alHc4cBkUAtrRTHtHLGsOeguEeiQAO5swlJG3cyRzQE2XvYu4Qv/X8Bhn5wR
+DEwGqS1lS81Md8Y0e6ERVglbNnPo17LATO2UCHuZdPHxVgWAJ2JZ6pkgbxLiqc5xBf4gjVf1ubM6
+yHBqPuHcO1bxslPbJq5mESX2UC6LyBmemAFzb3u3V/0JxQCjlf0hzLWuOUb8nQKEe4hvE2Q17LFd
+nZyc0M8W4FMbRD0HG70vVgTVDMmWIB5ojRehEjMhA+TKmL7Jt1aWL4Hsw7jcM2gqZlcL3bKUDWir
+J9isOGwfqZ+9iebdiv9eX5jCesUd8+5M/RC3YDYPRRa1UsQZBny1riBglLMrDfOhcKM8oSm1mQ8+
+kfP1vvdHOb3iyvNk5Y5oNsiA59MNevS0G+bBJqdz707wLMUpklJKQSdEXREMpWOZTa9SeEn6rVA+
+3tMtOFfqVaT6IAGVU4Pfaoxj3ZetN1+TV1U6kGbvIsgZt0vghLy/PQAvCsSqE3RVaFZLLgkmlk88
+m4V7AlpSHRqk1CdMvcTk8GdClgR3R+3esuGVFmWz0bZg7nkv8Do+670zua+DNjiMYGtRScRIM0gF
+ehOjctGG7uZdy6hGhoS6gVyldi6cJXHiiYtY+jzuuMM/2cjAl6JhpBdHvHmox/wR6JjqMer6AC/B
+K8DRexm5QIOt/y78x/DJHlVoMhD1KoAVdoI9cSNsNZWe0s04MNwTFx3dy4oR8wVXlDeC8363+xvv
+C6mPDtwKA+EzIlSmtXKSCxufs33YRrL5kNcR0Oc/17TuXIIjqpEKPwT6n1YG4COBLE6CZzkFwGhi
+v6Gl6gESy4GO7KZ3E0Qp39/e7CakEB1cSanJz/xsca1vCTKcKWt0zN6zCHdO5d26KVJX0auvYcem
+0+GavWxObk+WnX3LbH9iMr/Jt/0oDUIDnVmbwSPy5azpDoQUtN/Bh29m0Ls568GeNmEnVxAVTH0F
+znJM07AKs89fKIZR1ACM4IT8OKzaUJCsg006GVBl/PnuAE3tM42CFUN1RDDWnwQrjNNk0Li9OGkH
+ZqGNP5mn3CHvq2S0sBtcqlPZWJ0+a7+AVBI41Ic/rgWMxF2cwzbM67sucuYllH4R2op0pj9FkxvQ
+w+4VL/QZKmI4Jq1urQTQ4m+HJI6FlOETHF4vCwbEjMW8+M/lYF2w7i+mRFiWvSNjyVYHZ7Ryn+O2
+m0vF6CnseTxpcGHrUcaci/7ue3+eV7OWkeXElFzQKm5vsC24rdD+0NI4uf03me5r6wYGKN3oBspg
+xy8YmCaqSFjFpMCjgfRBCNZw4s5OgNyNHmOfq/mc8bS40TIb4vVXJsZoNciXneg29L0d3P8U2VIa
+KT6VvsV5Hp675589QwFmvj9iThjzagC0QoMfwUdpII36dJAnHGRIORJlgBfkdTLyJ0JWJja0CmCG
+Kssu9BU/6390n8mJSMXGfiv9P28wNGC28mvZITIKdMybZtiXk1olNibd+jFa4J7/8SL7ftW/rMDG
+hE1SSAAcqevNjcOhJk4ZO15MWE5GDeCUMUJy7YVyYdYEHHn4oixSK2FNBDrE5r6PUmdIKJOVcgaA
+2lkgEruwDEzs8emVxj6j/MJYwP06AaJ1hou6tNItRihXvZ6quMhFmIMlXmaCpKHepX7qbtuSnWMl
+iTNyxo8RZK6tavuNK2cnRMDhPA2+sKPljxpCgXNVd6xTWoUGchabQ8gQt5ilUrrfos4mZ69ybfUh
+j6y+mK5CICDWCkTl97qxMebJ6nkWnP2lxTfKM6MH2mk/vMXi+FhLCx7SVCHSX/LrBzhD4x59wM1X
+sdUnqmnAPABT9dPC4tY/yV/CCzwDtNgYai/G0jioc5/fRi1+qj6mwV4sC1SEtjZlEZ4F1JakOgMg
+yteXn2/sNzfqXwzVRXoGzRPx+UNNfmm3Zp0c2KqRTcir2kgUUFqsxtujTzPpXRaX7M2v98DEPheK
+kq/nGgWwICgiuEjjc5N+n6hm4i7ma/akPEwqb66Uf8H99nuf7zUpQ3EO2uEvOU5kVtKPs+4JjRV0
+S8nSzubppu8cLV/rU8e7eNzk4So8A9BcuY3C+S36qdFCP82V9F23jWefKfMC1jsYN5crTTiD1dmL
+DwZpENbYfCLwxqjAeI7nsWkU0TLxIhuhGkSe19AJWbbGPNcG9KnAOBtOpbK7j5afnDDBdh2QjGW3
+IAaH/RoQC7OeEb5AxSONRbswiSoqqEkSC3SMvXvNlzXVyCpnye1acOES33q2UlghgNqEm8wkMqAv
+SCkuxjFV3wLx5hCACWu1jlUXqQPkoSB+BsGAu4Hz4PbM5FQgOIAONlVvolX5KUw9SjAyXCV6OQ9x
+d9Y1UR2eNJ5CdmPa/2HZSuSH3xDlpCb/ag0Y/OAPRCa3P5820DTX/m/CxJTn8wIsg8cbIYuGRKRI
+uxMkem0DYe29dou1+OSwkItrbVzhXzKPoEg1DfXrGmnuWSPWJ0Gp7+6Ft+B5nBux7w0e92M3kOQY
+t+TLV6MVQGuW2ZqaTvilo5SjUI+6yN9DLR6hRoksHFvxA90PDjCJHolKlNPZEoapH2fEESpCyRh5
+m6/+XctyR0ES8xahKWmjnvg6sEu+NJl7Hm6gAsgkiiiY/uL2sQ5PFjt4KN9unNxVO4K4vAr91IHE
+1jn/RaO/bXoKopEz/X0KItI8v+qkucSCz2EobdpOhbE4l30GLIxu2XBwy8iYnqEtrpOlBWa9YRvj
+XVqSiE1wITu5cY81Ze9rMlqdNpeYYRp0vh+QOMcy+vZiRZUCegyIBrSIpgkyrAfxLVdOsjr7kQmM
+AO7hfbGtt0FGeIV+XBdf6GiEGOlBP8NrRf6gEbP8Gf4sJXz5ViZ5utJDIrLeIiFGmA/rOPVU9n5+
+3RK2/9GGRQXHyu0sQjREuOcBVR/kaY3caiLqy8KkT48gfqNn0t/3vq1qgthIychxc+LX3MmApZYs
+jq6POJQRhxvoZOShHOOSJmXndtOoAty6zLG9TQ/JJM+GQexN3CLO7dQYbvJydZLVgTZJ7kh773l/
+xNDAArKq1+uFHKo9aGgTQ54kT2sVWYAcY/Z/QGcGVC5/qsIpxFEYhyRX6F/D+KQIhQnLnPE2llwV
+h3k+HiI8XU1BrRDC2j9/TE0SEUshXh3PxtShKz8RfD5gY8jnsqoQQHxow1lBxPdE/coOGRzLrvFk
+4mVJob/GTb+HutFRWYpKldRqYnqWW8xLrEYxajgMIdPerukgofBHdo9p0JL6ukviK2bmFY4okFPJ
+3CU3qrGjdSR5HUCrhFkPXmGbmNIdJcH/ciDV37WTXCzx9EJvvHoHqNq1Nqr6RML7wMylnZw0MlHW
+ABxwl+pCuHJL02QyrbCe/YiL5aj/XTV7VYYTXBhlJqO4xMMGEBdwHWwQVDrEnFWqfFhoN0/yQiwg
+6a99UYpZtTMRfdgPtWTVBaUaTve4N4A+BYC/mAOS1OPEcmfCjB8caDPrLdNAVA4tpFfi5UH1ASP3
+HviebjAVq73G9RxgrVmKgCEi57CCl1Cl5nOuagr9rAMksnmShh4Cu2YMqnitVdddllIfOa4ZFi0p
+a7RW+EaNethp01dW0PXmIvZx+a48f5c59X2/5i73Qgh9VvrTmCn2sKjcOoMrq+qBwW8dH+6q/3ct
+jtK68epgLl4Lv8lGvOOroG2Av/CadKkypvKg9pdF4ApyME5jFXL5XicGcBNo8xrTL6IaFop5D7q+
+VyoLVWsr+u6XUFqv3Y+NNidZLWadC4DItWIttxDhzSU7EVGcMZK+VhFHkS/ek07/aNHvAK0knmz9
+BqrFZVsgyeZMi21d0cXNdWtTaOYsir+d46NhrMCA8E4s9ArCcZPBZ4FjPOSvWa0INL49Xpb2v2oS
+CyttKmtd/S7kQgL3fhENBz/+RDnTAZvPrMjydNIgmjtGQy+0QmXPX4DKlIjHqlU6pDNjusauINVy
+PMefPf6zTPmXusxjCjkHkpAQvFl2OsK938DromeoC2smTYmONYKAN/Rj/8Lrb88wNoUVHHPZ4r2y
+zo+e4UwW75bg70GKzVu72M0NSIGtH6sRuAgYatBQXODSwpVu6UMhr2rYP4/KLCIw0aRt2hzYcO4R
+D1wPTFfKiUkDLRTruoki2aULN3iRqXdxTjN4OdOo04SOmNMPPkMmRnx+p0YDuELucbNUkfkZwVGT
+zzYj6Ra443lR2tnefcjoQmfGYoavw9nk5iDFZjGJX25iLKTwHZRu/rVRMwoTzETbPnACj0DsOPcg
+2mp5nMFh2/k8TSBCIMdtgnBFGkwduoh1GbJv1BvLDwCMjumxgBdMcA/V0gaqJ4b/8rjVj8aHzsBi
+Iqb4REjl/CUvqc7syfXbdu54H7M+87SIi5YOaP/oPTKJ9lGc9IFEesfM4oHlcl3K+xT4IGQpJwbu
+dF38CQdLptQYVB0Ic3yLWetuHxuidsx8CyU0wtpa3yEpIYmdTatfLREQiFCHhRafDsLL/rYw4W/I
+kGzLq5lL6d2FPMp6pNq+sBXwSuXLSEMMWodmAD05MtJeU5j1CwKZ48n7uACpSszA9Sh3IfQXNLzi
+b02wh0wTvEFLlb9AfAtVuonRP4sPBtVfWDwohXElCGMgc3VCFr4tOZPjyQb5kwJm8iG35K/0wO0a
+gGBk506+364/IQQDwgNrCjrxkpTDAg9zfO942hp0AHDMuDd5Lq4Nl7f5SgTIt6Bhwr/nhXTuWzpK
+o8p5+6CT9l83cNrXqkma0MwagcN9uLZzTKkjZY2992Ye2Vh66xnoBvCrz79fupJPsxtHc3GbQQvT
+/s4aRStLhHrPIwLXXoMTKVeHJsf5g0d/f2/akfOSTeagIJzr/wGirnAgCY/iVWCd7uUf5gT7J1UG
+Kue1VhuXgXOhDUYK9b81cK0itJs0U/8WycKtlDgeXDHxEaN7k44d/Fpv74UMtrFITIQeBL9bCG5F
+Oj0hg2zKnQ1O9JLG1CRGiEyhoKCPcTlIaTydk+LV9ru0B/1QEWac18RuEHum4Unt9xOTs1NjpFRr
+DkHwfynSsCp5VAbIeTXFqYDhVs8ntX8gu/yu0fgmDmBm8GpS7sfb2mO6V8Rd3jcSxlaxB3qjAdkT
+dWV2PWyNO3CUXI0Tt38x0fVtC30oNBBD1srfOrtWdaOimxUxXRg50eApNFyzRJADGQGe5mlScYpm
+9+DqB0iLBfUa3Y0uGJ6Z9Q/v3N2NMYbIs2Yc44vXNSSVoeVIKIt4cpSVT8woCj87Vtj6P0ZM5WhG
+9OzNiGsABEIAXIFb8EyKh/qJQfFk+C66lHzNPhZjtb9lXXogiAlMAXH8tooSCll0k0qubvLkjJX/
+5cATpX0VB8rlwoXTQLVlJpUL0CRvVZsr+B0NTwWgsAukWVjBaliFpgVbM28ZbieYVzEgroLPjfjo
+UzWj3LpCf2xYedzoCrtrm0eT4jhArTwQrwHYgFeZdZ9uWpcqZ1cYBbqaoouaXfbDcBb3gIO1D8VI
+k1S1bxBuX6ms2ba56zIjp7Amv5g0MTDbgirD1957SSOJt9tfLmStJwDIIVidrz+Wmqaj1eH5vOQz
+ir4T5Guglr3yeBDP9gWAx4Bpw1yFerZ+2HbsWQj6D+YDY7J3aiHuqcedglaf1oKMvs/dKAAhqQAp
+Fg+6RpUd9Kg69AjUtP2LkcBEuTGGy4+qDe9EgSnfXnLICscJp4hdaCH2GnH/6hwp7FZxCcFHk7sh
+7HMZO9IcoLi3iUTvZjAK7wV1BIW31EGJLodXjPBJAraDBxMmb+HQI7zZkQYPiuul1ZgncS1wbZKt
+X32CK9n6bLVL+r3lJGnBoe7ZB/C8fidKCnh8fh0lMwN8cLLuMhAYc2YhtGVgjWoJ4qt1OllEZmis
+2/fQOcqoondpPC9RL+It1I92kuxH4HRUM0Xz6olLDikRBL4Hur0OM3YYd7aj0wlj/6fOHeox0Yex
+UDRnudORGxC4ASVbuaDrpsryz51lUK248IX4O+pM42g1yzdZvHd2P1z3bNN1WIJRXIpdI1wi27p2
+IJkmJn2U/4jnCwmqpRo3R1zLajEB3csax1CxVy5DtJugkw/VVNTnD2rR2LK32z01uoUgRV5+0MbK
+25fTIAhlNA+Zy3VJqZ9qGPu81giE998mC55f9qPbGcb7q3xI1w4YEwOOn7gZ1UpSQ8TyCw6pmo9l
+qjYm9yx0qELXuERRXxUhay6REokUeraacRPb2o3FR3gwNrG3C6kzVyFfClanoRAqM84NE4waH2X2
+PpxS8AXNck9Zw5PtGix0xT0laUsxngHO92t/cWnxJ/H7Ah+/qNF67VBU6o5Bk+YuT0yFja5I0SxF
+gJKx3uzUKm1U6Yd0IwogY4vRV0Lt94MPjw0CzFCQ71bZCaJz3iuawD+tijZWBNDor+wIMjlB2GeJ
+5lmWBpV3xw9N3GvJuObmnJya7dc/iWS955FZAuOkywBeJFl2vbOl5s/fbTqZLc38aAqfyp4M4lSI
+ILuLCVHOrjoVxHOxUZyNbjyFaapanLLfr52X/vL/8dJGnJJiLUM72QzFhD1myP3asSzWyRQiRRls
+Iu/gE8nYknfiD5Ll2yfQ/o1XqYCfRJ+B0N0qG9F3zTlbuWelrP5PcAAaCToJCAKpkVLiRm2GYPVW
+dyNRIerMndTT0StPxdgKte5p8GxmNSvNbesnm3OCmUQTnmrvgnz4w2Br/cCmKqTXEf5RpouwV0SD
+C2Tx7wOi+tJb2IAdy2xQalycxVMLlDr+yfCTqB5VmyD/e5c8Zef4mOzMWgo6nDWvwIllA2fMgfzP
+5whZhGcXRONzaXRvMdI7JfTeaZfNpWx+GDrwKAbzKtgPbATerdV9tezEbjqnjHlCQ+cqZQCtcd7y
+4jWw/E8wia0XGNJyLgDIDpkUtkwxI+8G06fezEsJR1uirbBeQfQMU1NgK7uj/Mrp9IIn6vvI68Up
+rMC7e6NWczHwgGQGOv1Uy7sBbIKccK6YpBEIuVdVX9veizsQIjG=

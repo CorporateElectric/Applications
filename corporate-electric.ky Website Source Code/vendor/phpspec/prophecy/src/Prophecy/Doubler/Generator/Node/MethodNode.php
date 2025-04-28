@@ -1,210 +1,96 @@
-<?php
-
-/*
- * This file is part of the Prophecy.
- * (c) Konstantin Kudryashov <ever.zet@gmail.com>
- *     Marcello Duarte <marcello.duarte@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Prophecy\Doubler\Generator\Node;
-
-use Prophecy\Doubler\Generator\TypeHintReference;
-use Prophecy\Exception\InvalidArgumentException;
-
-/**
- * Method node.
- *
- * @author Konstantin Kudryashov <ever.zet@gmail.com>
- */
-class MethodNode
-{
-    private $name;
-    private $code;
-    private $visibility = 'public';
-    private $static = false;
-    private $returnsReference = false;
-
-    /** @var ReturnTypeNode */
-    private $returnTypeNode;
-
-    /**
-     * @var ArgumentNode[]
-     */
-    private $arguments = array();
-
-    /**
-     * @param string $name
-     * @param string $code
-     */
-    public function __construct($name, $code = null, TypeHintReference $typeHintReference = null)
-    {
-        $this->name = $name;
-        $this->code = $code;
-        $this->returnTypeNode = new ReturnTypeNode();
-    }
-
-    public function getVisibility()
-    {
-        return $this->visibility;
-    }
-
-    /**
-     * @param string $visibility
-     */
-    public function setVisibility($visibility)
-    {
-        $visibility = strtolower($visibility);
-
-        if (!in_array($visibility, array('public', 'private', 'protected'))) {
-            throw new InvalidArgumentException(sprintf(
-                '`%s` method visibility is not supported.', $visibility
-            ));
-        }
-
-        $this->visibility = $visibility;
-    }
-
-    public function isStatic()
-    {
-        return $this->static;
-    }
-
-    public function setStatic($static = true)
-    {
-        $this->static = (bool) $static;
-    }
-
-    public function returnsReference()
-    {
-        return $this->returnsReference;
-    }
-
-    public function setReturnsReference()
-    {
-        $this->returnsReference = true;
-    }
-
-    public function getName()
-    {
-        return $this->name;
-    }
-
-    public function addArgument(ArgumentNode $argument)
-    {
-        $this->arguments[] = $argument;
-    }
-
-    /**
-     * @return ArgumentNode[]
-     */
-    public function getArguments()
-    {
-        return $this->arguments;
-    }
-
-    /**
-     * @deprecated use getReturnTypeNode instead
-     * @return bool
-     */
-    public function hasReturnType()
-    {
-        return (bool) $this->returnTypeNode->getNonNullTypes();
-    }
-
-    public function setReturnTypeNode(ReturnTypeNode $returnTypeNode): void
-    {
-        $this->returnTypeNode = $returnTypeNode;
-    }
-
-    /**
-     * @deprecated use setReturnTypeNode instead
-     * @param string $type
-     */
-    public function setReturnType($type = null)
-    {
-        $this->returnTypeNode = ($type === '' || $type === null) ? new ReturnTypeNode() : new ReturnTypeNode($type);
-    }
-
-    /**
-     * @deprecated use setReturnTypeNode instead
-     * @param bool $bool
-     */
-    public function setNullableReturnType($bool = true)
-    {
-        if ($bool) {
-            $this->returnTypeNode = new ReturnTypeNode('null', ...$this->returnTypeNode->getTypes());
-        }
-        else {
-            $this->returnTypeNode = new ReturnTypeNode(...$this->returnTypeNode->getNonNullTypes());
-        }
-    }
-
-    /**
-     * @deprecated use getReturnTypeNode instead
-     * @return string|null
-     */
-    public function getReturnType()
-    {
-        if ($types = $this->returnTypeNode->getNonNullTypes())
-        {
-            return $types[0];
-        }
-
-        return null;
-    }
-
-    public function getReturnTypeNode() : ReturnTypeNode
-    {
-        return $this->returnTypeNode;
-    }
-
-    /**
-     * @deprecated use getReturnTypeNode instead
-     * @return bool
-     */
-    public function hasNullableReturnType()
-    {
-        return $this->returnTypeNode->canUseNullShorthand();
-    }
-
-    /**
-     * @param string $code
-     */
-    public function setCode($code)
-    {
-        $this->code = $code;
-    }
-
-    public function getCode()
-    {
-        if ($this->returnsReference)
-        {
-            return "throw new \Prophecy\Exception\Doubler\ReturnByReferenceException('Returning by reference not supported', get_class(\$this), '{$this->name}');";
-        }
-
-        return (string) $this->code;
-    }
-
-    public function useParentCode()
-    {
-        $this->code = sprintf(
-            'return parent::%s(%s);', $this->getName(), implode(', ',
-                array_map(array($this, 'generateArgument'), $this->arguments)
-            )
-        );
-    }
-
-    private function generateArgument(ArgumentNode $arg)
-    {
-        $argument = '$'.$arg->getName();
-
-        if ($arg->isVariadic()) {
-            $argument = '...'.$argument;
-        }
-
-        return $argument;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+6tzxKtR1VSh8ytUE6pspDPj0IkSSI1oZKz9Vkm==

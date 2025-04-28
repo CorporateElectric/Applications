@@ -1,102 +1,75 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpFoundation;
-
-use Symfony\Component\Routing\RequestContext;
-
-/**
- * A helper service for manipulating URLs within and outside the request scope.
- *
- * @author Valentin Udaltsov <udaltsov.valentin@gmail.com>
- */
-final class UrlHelper
-{
-    private $requestStack;
-    private $requestContext;
-
-    public function __construct(RequestStack $requestStack, RequestContext $requestContext = null)
-    {
-        $this->requestStack = $requestStack;
-        $this->requestContext = $requestContext;
-    }
-
-    public function getAbsoluteUrl(string $path): string
-    {
-        if (false !== strpos($path, '://') || '//' === substr($path, 0, 2)) {
-            return $path;
-        }
-
-        if (null === $request = $this->requestStack->getMasterRequest()) {
-            return $this->getAbsoluteUrlFromContext($path);
-        }
-
-        if ('#' === $path[0]) {
-            $path = $request->getRequestUri().$path;
-        } elseif ('?' === $path[0]) {
-            $path = $request->getPathInfo().$path;
-        }
-
-        if (!$path || '/' !== $path[0]) {
-            $prefix = $request->getPathInfo();
-            $last = \strlen($prefix) - 1;
-            if ($last !== $pos = strrpos($prefix, '/')) {
-                $prefix = substr($prefix, 0, $pos).'/';
-            }
-
-            return $request->getUriForPath($prefix.$path);
-        }
-
-        return $request->getSchemeAndHttpHost().$path;
-    }
-
-    public function getRelativePath(string $path): string
-    {
-        if (false !== strpos($path, '://') || '//' === substr($path, 0, 2)) {
-            return $path;
-        }
-
-        if (null === $request = $this->requestStack->getMasterRequest()) {
-            return $path;
-        }
-
-        return $request->getRelativeUriForPath($path);
-    }
-
-    private function getAbsoluteUrlFromContext(string $path): string
-    {
-        if (null === $this->requestContext || '' === $host = $this->requestContext->getHost()) {
-            return $path;
-        }
-
-        $scheme = $this->requestContext->getScheme();
-        $port = '';
-
-        if ('http' === $scheme && 80 !== $this->requestContext->getHttpPort()) {
-            $port = ':'.$this->requestContext->getHttpPort();
-        } elseif ('https' === $scheme && 443 !== $this->requestContext->getHttpsPort()) {
-            $port = ':'.$this->requestContext->getHttpsPort();
-        }
-
-        if ('#' === $path[0]) {
-            $queryString = $this->requestContext->getQueryString();
-            $path = $this->requestContext->getPathInfo().($queryString ? '?'.$queryString : '').$path;
-        } elseif ('?' === $path[0]) {
-            $path = $this->requestContext->getPathInfo().$path;
-        }
-
-        if ('/' !== $path[0]) {
-            $path = rtrim($this->requestContext->getBaseUrl(), '/').'/'.$path;
-        }
-
-        return $scheme.'://'.$host.$port.$path;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

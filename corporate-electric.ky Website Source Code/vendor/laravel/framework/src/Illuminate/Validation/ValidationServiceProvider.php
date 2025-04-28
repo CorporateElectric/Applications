@@ -1,66 +1,47 @@
-<?php
-
-namespace Illuminate\Validation;
-
-use Illuminate\Contracts\Support\DeferrableProvider;
-use Illuminate\Support\ServiceProvider;
-
-class ValidationServiceProvider extends ServiceProvider implements DeferrableProvider
-{
-    /**
-     * Register the service provider.
-     *
-     * @return void
-     */
-    public function register()
-    {
-        $this->registerPresenceVerifier();
-
-        $this->registerValidationFactory();
-    }
-
-    /**
-     * Register the validation factory.
-     *
-     * @return void
-     */
-    protected function registerValidationFactory()
-    {
-        $this->app->singleton('validator', function ($app) {
-            $validator = new Factory($app['translator'], $app);
-
-            // The validation presence verifier is responsible for determining the existence of
-            // values in a given data collection which is typically a relational database or
-            // other persistent data stores. It is used to check for "uniqueness" as well.
-            if (isset($app['db'], $app['validation.presence'])) {
-                $validator->setPresenceVerifier($app['validation.presence']);
-            }
-
-            return $validator;
-        });
-    }
-
-    /**
-     * Register the database presence verifier.
-     *
-     * @return void
-     */
-    protected function registerPresenceVerifier()
-    {
-        $this->app->singleton('validation.presence', function ($app) {
-            return new DatabasePresenceVerifier($app['db']);
-        });
-    }
-
-    /**
-     * Get the services provided by the provider.
-     *
-     * @return array
-     */
-    public function provides()
-    {
-        return [
-            'validator', 'validation.presence',
-        ];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

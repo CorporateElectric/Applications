@@ -1,240 +1,133 @@
-<?php
-
-/*
- * This file is part of the Prophecy.
- * (c) Konstantin Kudryashov <ever.zet@gmail.com>
- *     Marcello Duarte <marcello.duarte@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Prophecy\Call;
-
-use Prophecy\Exception\Prophecy\MethodProphecyException;
-use Prophecy\Prophecy\ObjectProphecy;
-use Prophecy\Argument\ArgumentsWildcard;
-use Prophecy\Util\StringUtil;
-use Prophecy\Exception\Call\UnexpectedCallException;
-use SplObjectStorage;
-
-/**
- * Calls receiver & manager.
- *
- * @author Konstantin Kudryashov <ever.zet@gmail.com>
- */
-class CallCenter
-{
-    private $util;
-
-    /**
-     * @var Call[]
-     */
-    private $recordedCalls = array();
-
-    /**
-     * @var SplObjectStorage
-     */
-    private $unexpectedCalls;
-
-    /**
-     * Initializes call center.
-     *
-     * @param StringUtil $util
-     */
-    public function __construct(StringUtil $util = null)
-    {
-        $this->util = $util ?: new StringUtil;
-        $this->unexpectedCalls = new SplObjectStorage();
-    }
-
-    /**
-     * Makes and records specific method call for object prophecy.
-     *
-     * @param ObjectProphecy $prophecy
-     * @param string         $methodName
-     * @param array          $arguments
-     *
-     * @return mixed Returns null if no promise for prophecy found or promise return value.
-     *
-     * @throws \Prophecy\Exception\Call\UnexpectedCallException If no appropriate method prophecy found
-     */
-    public function makeCall(ObjectProphecy $prophecy, $methodName, array $arguments)
-    {
-        // For efficiency exclude 'args' from the generated backtrace
-        // Limit backtrace to last 3 calls as we don't use the rest
-        $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 3);
-
-        $file = $line = null;
-        if (isset($backtrace[2]) && isset($backtrace[2]['file'])) {
-            $file = $backtrace[2]['file'];
-            $line = $backtrace[2]['line'];
-        }
-
-        // If no method prophecies defined, then it's a dummy, so we'll just return null
-        if ('__destruct' === strtolower($methodName) || 0 == count($prophecy->getMethodProphecies())) {
-            $this->recordedCalls[] = new Call($methodName, $arguments, null, null, $file, $line);
-
-            return null;
-        }
-
-        // There are method prophecies, so it's a fake/stub. Searching prophecy for this call
-        $matches = $this->findMethodProphecies($prophecy, $methodName, $arguments);
-
-        // If fake/stub doesn't have method prophecy for this call - throw exception
-        if (!count($matches)) {
-            $this->unexpectedCalls->attach(new Call($methodName, $arguments, null, null, $file, $line), $prophecy);
-            $this->recordedCalls[] = new Call($methodName, $arguments, null, null, $file, $line);
-
-            return null;
-        }
-
-        // Sort matches by their score value
-        @usort($matches, function ($match1, $match2) { return $match2[0] - $match1[0]; });
-
-        $score = $matches[0][0];
-        // If Highest rated method prophecy has a promise - execute it or return null instead
-        $methodProphecy = $matches[0][1];
-        $returnValue = null;
-        $exception   = null;
-        if ($promise = $methodProphecy->getPromise()) {
-            try {
-                $returnValue = $promise->execute($arguments, $prophecy, $methodProphecy);
-            } catch (\Exception $e) {
-                $exception = $e;
-            }
-        }
-
-        if ($methodProphecy->hasReturnVoid() && $returnValue !== null) {
-            throw new MethodProphecyException(
-                "The method \"$methodName\" has a void return type, but the promise returned a value",
-                $methodProphecy
-            );
-        }
-
-        $this->recordedCalls[] = $call = new Call(
-            $methodName, $arguments, $returnValue, $exception, $file, $line
-        );
-        $call->addScore($methodProphecy->getArgumentsWildcard(), $score);
-
-        if (null !== $exception) {
-            throw $exception;
-        }
-
-        return $returnValue;
-    }
-
-    /**
-     * Searches for calls by method name & arguments wildcard.
-     *
-     * @param string            $methodName
-     * @param ArgumentsWildcard $wildcard
-     *
-     * @return Call[]
-     */
-    public function findCalls($methodName, ArgumentsWildcard $wildcard)
-    {
-        $methodName = strtolower($methodName);
-
-        return array_values(
-            array_filter($this->recordedCalls, function (Call $call) use ($methodName, $wildcard) {
-                return $methodName === strtolower($call->getMethodName())
-                    && 0 < $call->getScore($wildcard)
-                ;
-            })
-        );
-    }
-
-    /**
-     * @throws UnexpectedCallException
-     */
-    public function checkUnexpectedCalls()
-    {
-        /** @var Call $call */
-        foreach ($this->unexpectedCalls as $call) {
-            $prophecy = $this->unexpectedCalls[$call];
-
-            // If fake/stub doesn't have method prophecy for this call - throw exception
-            if (!count($this->findMethodProphecies($prophecy, $call->getMethodName(), $call->getArguments()))) {
-                throw $this->createUnexpectedCallException($prophecy, $call->getMethodName(), $call->getArguments());
-            }
-        }
-    }
-
-    private function createUnexpectedCallException(ObjectProphecy $prophecy, $methodName,
-                                                   array $arguments)
-    {
-        $classname = get_class($prophecy->reveal());
-        $indentationLength = 8; // looks good
-        $argstring = implode(
-            ",\n",
-            $this->indentArguments(
-                array_map(array($this->util, 'stringify'), $arguments),
-                $indentationLength
-            )
-        );
-
-        $expected = array();
-
-        foreach (array_merge(...array_values($prophecy->getMethodProphecies())) as $methodProphecy) {
-            $expected[] = sprintf(
-                "  - %s(\n" .
-                "%s\n" .
-                "    )",
-                $methodProphecy->getMethodName(),
-                implode(
-                    ",\n",
-                    $this->indentArguments(
-                        array_map('strval', $methodProphecy->getArgumentsWildcard()->getTokens()),
-                        $indentationLength
-                    )
-                )
-            );
-        }
-
-        return new UnexpectedCallException(
-            sprintf(
-                "Unexpected method call on %s:\n".
-                "  - %s(\n".
-                "%s\n".
-                "    )\n".
-                "expected calls were:\n".
-                "%s",
-
-                $classname, $methodName, $argstring, implode("\n", $expected)
-            ),
-            $prophecy, $methodName, $arguments
-
-        );
-    }
-
-    private function indentArguments(array $arguments, $indentationLength)
-    {
-        return preg_replace_callback(
-            '/^/m',
-            function () use ($indentationLength) {
-                return str_repeat(' ', $indentationLength);
-            },
-            $arguments
-        );
-    }
-
-    /**
-     * @param ObjectProphecy $prophecy
-     * @param string $methodName
-     * @param array $arguments
-     *
-     * @return array
-     */
-    private function findMethodProphecies(ObjectProphecy $prophecy, $methodName, array $arguments)
-    {
-        $matches = array();
-        foreach ($prophecy->getMethodProphecies($methodName) as $methodProphecy) {
-            if (0 < $score = $methodProphecy->getArgumentsWildcard()->scoreArguments($arguments)) {
-                $matches[] = array($score, $methodProphecy);
-            }
-        }
-
-        return $matches;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

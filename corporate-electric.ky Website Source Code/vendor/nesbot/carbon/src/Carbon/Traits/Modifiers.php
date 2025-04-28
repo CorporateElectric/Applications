@@ -1,467 +1,160 @@
-<?php
-
-/**
- * This file is part of the Carbon package.
- *
- * (c) Brian Nesbitt <brian@nesbot.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace Carbon\Traits;
-
-use Carbon\CarbonInterface;
-
-/**
- * Trait Modifiers.
- *
- * Returns dates relative to current date using modifier short-hand.
- */
-trait Modifiers
-{
-    /**
-     * Midday/noon hour.
-     *
-     * @var int
-     */
-    protected static $midDayAt = 12;
-
-    /**
-     * get midday/noon hour
-     *
-     * @return int
-     */
-    public static function getMidDayAt()
-    {
-        return static::$midDayAt;
-    }
-
-    /**
-     * @deprecated To avoid conflict between different third-party libraries, static setters should not be used.
-     *             You should rather consider mid-day is always 12pm, then if you need to test if it's an other
-     *             hour, test it explicitly:
-     *                 $date->format('G') == 13
-     *             or to set explicitly to a given hour:
-     *                 $date->setTime(13, 0, 0, 0)
-     *
-     * Set midday/noon hour
-     *
-     * @param int $hour midday hour
-     *
-     * @return void
-     */
-    public static function setMidDayAt($hour)
-    {
-        static::$midDayAt = $hour;
-    }
-
-    /**
-     * Modify to midday, default to self::$midDayAt
-     *
-     * @return static
-     */
-    public function midDay()
-    {
-        return $this->setTime(static::$midDayAt, 0, 0, 0);
-    }
-
-    /**
-     * Modify to the next occurrence of a given modifier such as a day of
-     * the week. If no modifier is provided, modify to the next occurrence
-     * of the current day of the week. Use the supplied constants
-     * to indicate the desired dayOfWeek, ex. static::MONDAY.
-     *
-     * @param string|int|null $modifier
-     *
-     * @return static
-     */
-    public function next($modifier = null)
-    {
-        if ($modifier === null) {
-            $modifier = $this->dayOfWeek;
-        }
-
-        return $this->change(
-            'next '.(\is_string($modifier) ? $modifier : static::$days[$modifier])
-        );
-    }
-
-    /**
-     * Go forward or backward to the next week- or weekend-day.
-     *
-     * @param bool $weekday
-     * @param bool $forward
-     *
-     * @return static
-     */
-    private function nextOrPreviousDay($weekday = true, $forward = true)
-    {
-        /** @var CarbonInterface $date */
-        $date = $this;
-        $step = $forward ? 1 : -1;
-
-        do {
-            $date = $date->addDays($step);
-        } while ($weekday ? $date->isWeekend() : $date->isWeekday());
-
-        return $date;
-    }
-
-    /**
-     * Go forward to the next weekday.
-     *
-     * @return static
-     */
-    public function nextWeekday()
-    {
-        return $this->nextOrPreviousDay();
-    }
-
-    /**
-     * Go backward to the previous weekday.
-     *
-     * @return static
-     */
-    public function previousWeekday()
-    {
-        return $this->nextOrPreviousDay(true, false);
-    }
-
-    /**
-     * Go forward to the next weekend day.
-     *
-     * @return static
-     */
-    public function nextWeekendDay()
-    {
-        return $this->nextOrPreviousDay(false);
-    }
-
-    /**
-     * Go backward to the previous weekend day.
-     *
-     * @return static
-     */
-    public function previousWeekendDay()
-    {
-        return $this->nextOrPreviousDay(false, false);
-    }
-
-    /**
-     * Modify to the previous occurrence of a given modifier such as a day of
-     * the week. If no dayOfWeek is provided, modify to the previous occurrence
-     * of the current day of the week. Use the supplied constants
-     * to indicate the desired dayOfWeek, ex. static::MONDAY.
-     *
-     * @param string|int|null $modifier
-     *
-     * @return static
-     */
-    public function previous($modifier = null)
-    {
-        if ($modifier === null) {
-            $modifier = $this->dayOfWeek;
-        }
-
-        return $this->change(
-            'last '.(\is_string($modifier) ? $modifier : static::$days[$modifier])
-        );
-    }
-
-    /**
-     * Modify to the first occurrence of a given day of the week
-     * in the current month. If no dayOfWeek is provided, modify to the
-     * first day of the current month.  Use the supplied constants
-     * to indicate the desired dayOfWeek, ex. static::MONDAY.
-     *
-     * @param int|null $dayOfWeek
-     *
-     * @return static
-     */
-    public function firstOfMonth($dayOfWeek = null)
-    {
-        $date = $this->startOfDay();
-
-        if ($dayOfWeek === null) {
-            return $date->day(1);
-        }
-
-        return $date->modify('first '.static::$days[$dayOfWeek].' of '.$date->rawFormat('F').' '.$date->year);
-    }
-
-    /**
-     * Modify to the last occurrence of a given day of the week
-     * in the current month. If no dayOfWeek is provided, modify to the
-     * last day of the current month.  Use the supplied constants
-     * to indicate the desired dayOfWeek, ex. static::MONDAY.
-     *
-     * @param int|null $dayOfWeek
-     *
-     * @return static
-     */
-    public function lastOfMonth($dayOfWeek = null)
-    {
-        $date = $this->startOfDay();
-
-        if ($dayOfWeek === null) {
-            return $date->day($date->daysInMonth);
-        }
-
-        return $date->modify('last '.static::$days[$dayOfWeek].' of '.$date->rawFormat('F').' '.$date->year);
-    }
-
-    /**
-     * Modify to the given occurrence of a given day of the week
-     * in the current month. If the calculated occurrence is outside the scope
-     * of the current month, then return false and no modifications are made.
-     * Use the supplied constants to indicate the desired dayOfWeek, ex. static::MONDAY.
-     *
-     * @param int $nth
-     * @param int $dayOfWeek
-     *
-     * @return mixed
-     */
-    public function nthOfMonth($nth, $dayOfWeek)
-    {
-        $date = $this->copy()->firstOfMonth();
-        $check = $date->rawFormat('Y-m');
-        $date = $date->modify('+'.$nth.' '.static::$days[$dayOfWeek]);
-
-        return $date->rawFormat('Y-m') === $check ? $this->modify("$date") : false;
-    }
-
-    /**
-     * Modify to the first occurrence of a given day of the week
-     * in the current quarter. If no dayOfWeek is provided, modify to the
-     * first day of the current quarter.  Use the supplied constants
-     * to indicate the desired dayOfWeek, ex. static::MONDAY.
-     *
-     * @param int|null $dayOfWeek day of the week default null
-     *
-     * @return static
-     */
-    public function firstOfQuarter($dayOfWeek = null)
-    {
-        return $this->setDate($this->year, $this->quarter * static::MONTHS_PER_QUARTER - 2, 1)->firstOfMonth($dayOfWeek);
-    }
-
-    /**
-     * Modify to the last occurrence of a given day of the week
-     * in the current quarter. If no dayOfWeek is provided, modify to the
-     * last day of the current quarter.  Use the supplied constants
-     * to indicate the desired dayOfWeek, ex. static::MONDAY.
-     *
-     * @param int|null $dayOfWeek day of the week default null
-     *
-     * @return static
-     */
-    public function lastOfQuarter($dayOfWeek = null)
-    {
-        return $this->setDate($this->year, $this->quarter * static::MONTHS_PER_QUARTER, 1)->lastOfMonth($dayOfWeek);
-    }
-
-    /**
-     * Modify to the given occurrence of a given day of the week
-     * in the current quarter. If the calculated occurrence is outside the scope
-     * of the current quarter, then return false and no modifications are made.
-     * Use the supplied constants to indicate the desired dayOfWeek, ex. static::MONDAY.
-     *
-     * @param int $nth
-     * @param int $dayOfWeek
-     *
-     * @return mixed
-     */
-    public function nthOfQuarter($nth, $dayOfWeek)
-    {
-        $date = $this->copy()->day(1)->month($this->quarter * static::MONTHS_PER_QUARTER);
-        $lastMonth = $date->month;
-        $year = $date->year;
-        $date = $date->firstOfQuarter()->modify('+'.$nth.' '.static::$days[$dayOfWeek]);
-
-        return ($lastMonth < $date->month || $year !== $date->year) ? false : $this->modify("$date");
-    }
-
-    /**
-     * Modify to the first occurrence of a given day of the week
-     * in the current year. If no dayOfWeek is provided, modify to the
-     * first day of the current year.  Use the supplied constants
-     * to indicate the desired dayOfWeek, ex. static::MONDAY.
-     *
-     * @param int|null $dayOfWeek day of the week default null
-     *
-     * @return static
-     */
-    public function firstOfYear($dayOfWeek = null)
-    {
-        return $this->month(1)->firstOfMonth($dayOfWeek);
-    }
-
-    /**
-     * Modify to the last occurrence of a given day of the week
-     * in the current year. If no dayOfWeek is provided, modify to the
-     * last day of the current year.  Use the supplied constants
-     * to indicate the desired dayOfWeek, ex. static::MONDAY.
-     *
-     * @param int|null $dayOfWeek day of the week default null
-     *
-     * @return static
-     */
-    public function lastOfYear($dayOfWeek = null)
-    {
-        return $this->month(static::MONTHS_PER_YEAR)->lastOfMonth($dayOfWeek);
-    }
-
-    /**
-     * Modify to the given occurrence of a given day of the week
-     * in the current year. If the calculated occurrence is outside the scope
-     * of the current year, then return false and no modifications are made.
-     * Use the supplied constants to indicate the desired dayOfWeek, ex. static::MONDAY.
-     *
-     * @param int $nth
-     * @param int $dayOfWeek
-     *
-     * @return mixed
-     */
-    public function nthOfYear($nth, $dayOfWeek)
-    {
-        $date = $this->copy()->firstOfYear()->modify('+'.$nth.' '.static::$days[$dayOfWeek]);
-
-        return $this->year === $date->year ? $this->modify("$date") : false;
-    }
-
-    /**
-     * Modify the current instance to the average of a given instance (default now) and the current instance
-     * (second-precision).
-     *
-     * @param \Carbon\Carbon|\DateTimeInterface|null $date
-     *
-     * @return static
-     */
-    public function average($date = null)
-    {
-        return $this->addRealMicroseconds((int) ($this->diffInRealMicroseconds($this->resolveCarbon($date), false) / 2));
-    }
-
-    /**
-     * Get the closest date from the instance (second-precision).
-     *
-     * @param \Carbon\Carbon|\DateTimeInterface|mixed $date1
-     * @param \Carbon\Carbon|\DateTimeInterface|mixed $date2
-     *
-     * @return static
-     */
-    public function closest($date1, $date2)
-    {
-        return $this->diffInRealMicroseconds($date1) < $this->diffInRealMicroseconds($date2) ? $date1 : $date2;
-    }
-
-    /**
-     * Get the farthest date from the instance (second-precision).
-     *
-     * @param \Carbon\Carbon|\DateTimeInterface|mixed $date1
-     * @param \Carbon\Carbon|\DateTimeInterface|mixed $date2
-     *
-     * @return static
-     */
-    public function farthest($date1, $date2)
-    {
-        return $this->diffInRealMicroseconds($date1) > $this->diffInRealMicroseconds($date2) ? $date1 : $date2;
-    }
-
-    /**
-     * Get the minimum instance between a given instance (default now) and the current instance.
-     *
-     * @param \Carbon\Carbon|\DateTimeInterface|mixed $date
-     *
-     * @return static
-     */
-    public function min($date = null)
-    {
-        $date = $this->resolveCarbon($date);
-
-        return $this->lt($date) ? $this : $date;
-    }
-
-    /**
-     * Get the minimum instance between a given instance (default now) and the current instance.
-     *
-     * @param \Carbon\Carbon|\DateTimeInterface|mixed $date
-     *
-     * @see min()
-     *
-     * @return static
-     */
-    public function minimum($date = null)
-    {
-        return $this->min($date);
-    }
-
-    /**
-     * Get the maximum instance between a given instance (default now) and the current instance.
-     *
-     * @param \Carbon\Carbon|\DateTimeInterface|mixed $date
-     *
-     * @return static
-     */
-    public function max($date = null)
-    {
-        $date = $this->resolveCarbon($date);
-
-        return $this->gt($date) ? $this : $date;
-    }
-
-    /**
-     * Get the maximum instance between a given instance (default now) and the current instance.
-     *
-     * @param \Carbon\Carbon|\DateTimeInterface|mixed $date
-     *
-     * @see max()
-     *
-     * @return static
-     */
-    public function maximum($date = null)
-    {
-        return $this->max($date);
-    }
-
-    /**
-     * Calls \DateTime::modify if mutable or \DateTimeImmutable::modify else.
-     *
-     * @see https://php.net/manual/en/datetime.modify.php
-     */
-    public function modify($modify)
-    {
-        return parent::modify((string) $modify);
-    }
-
-    /**
-     * Similar to native modify() method of DateTime but can handle more grammars.
-     *
-     * @example
-     * ```
-     * echo Carbon::now()->change('next 2pm');
-     * ```
-     *
-     * @link https://php.net/manual/en/datetime.modify.php
-     *
-     * @param string $modifier
-     *
-     * @return static
-     */
-    public function change($modifier)
-    {
-        return $this->modify(preg_replace_callback('/^(next|previous|last)\s+(\d{1,2}(h|am|pm|:\d{1,2}(:\d{1,2})?))$/i', function ($match) {
-            $match[2] = str_replace('h', ':00', $match[2]);
-            $test = $this->copy()->modify($match[2]);
-            $method = $match[1] === 'next' ? 'lt' : 'gt';
-            $match[1] = $test->$method($this) ? $match[1].' day' : 'today';
-
-            return $match[1].' '.$match[2];
-        }, strtr(trim($modifier), [
-            ' at ' => ' ',
-            'just now' => 'now',
-            'after tomorrow' => 'tomorrow +1 day',
-            'before yesterday' => 'yesterday -1 day',
-        ])));
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

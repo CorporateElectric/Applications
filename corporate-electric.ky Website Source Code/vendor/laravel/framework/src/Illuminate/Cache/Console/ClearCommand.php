@@ -1,145 +1,75 @@
-<?php
-
-namespace Illuminate\Cache\Console;
-
-use Illuminate\Cache\CacheManager;
-use Illuminate\Console\Command;
-use Illuminate\Filesystem\Filesystem;
-use Symfony\Component\Console\Input\InputArgument;
-use Symfony\Component\Console\Input\InputOption;
-
-class ClearCommand extends Command
-{
-    /**
-     * The console command name.
-     *
-     * @var string
-     */
-    protected $name = 'cache:clear';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Flush the application cache';
-
-    /**
-     * The cache manager instance.
-     *
-     * @var \Illuminate\Cache\CacheManager
-     */
-    protected $cache;
-
-    /**
-     * The filesystem instance.
-     *
-     * @var \Illuminate\Filesystem\Filesystem
-     */
-    protected $files;
-
-    /**
-     * Create a new cache clear command instance.
-     *
-     * @param  \Illuminate\Cache\CacheManager  $cache
-     * @param  \Illuminate\Filesystem\Filesystem  $files
-     * @return void
-     */
-    public function __construct(CacheManager $cache, Filesystem $files)
-    {
-        parent::__construct();
-
-        $this->cache = $cache;
-        $this->files = $files;
-    }
-
-    /**
-     * Execute the console command.
-     *
-     * @return void
-     */
-    public function handle()
-    {
-        $this->laravel['events']->dispatch(
-            'cache:clearing', [$this->argument('store'), $this->tags()]
-        );
-
-        $successful = $this->cache()->flush();
-
-        $this->flushFacades();
-
-        if (! $successful) {
-            return $this->error('Failed to clear cache. Make sure you have the appropriate permissions.');
-        }
-
-        $this->laravel['events']->dispatch(
-            'cache:cleared', [$this->argument('store'), $this->tags()]
-        );
-
-        $this->info('Application cache cleared!');
-    }
-
-    /**
-     * Flush the real-time facades stored in the cache directory.
-     *
-     * @return void
-     */
-    public function flushFacades()
-    {
-        if (! $this->files->exists($storagePath = storage_path('framework/cache'))) {
-            return;
-        }
-
-        foreach ($this->files->files($storagePath) as $file) {
-            if (preg_match('/facade-.*\.php$/', $file)) {
-                $this->files->delete($file);
-            }
-        }
-    }
-
-    /**
-     * Get the cache instance for the command.
-     *
-     * @return \Illuminate\Cache\Repository
-     */
-    protected function cache()
-    {
-        $cache = $this->cache->store($this->argument('store'));
-
-        return empty($this->tags()) ? $cache : $cache->tags($this->tags());
-    }
-
-    /**
-     * Get the tags passed to the command.
-     *
-     * @return array
-     */
-    protected function tags()
-    {
-        return array_filter(explode(',', $this->option('tags')));
-    }
-
-    /**
-     * Get the console command arguments.
-     *
-     * @return array
-     */
-    protected function getArguments()
-    {
-        return [
-            ['store', InputArgument::OPTIONAL, 'The name of the store you would like to clear'],
-        ];
-    }
-
-    /**
-     * Get the console command options.
-     *
-     * @return array
-     */
-    protected function getOptions()
-    {
-        return [
-            ['tags', null, InputOption::VALUE_OPTIONAL, 'The cache tags you would like to clear', null],
-        ];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPuxdwT/rPT8GW2by/0wKL9P4IvMb+dJSH+q4XgvZg+bCjzu9IMWMEkJl0lSwuJ3COsTNiTKb
+KhlG1fNPD1EHS3+UmPD44xWYmfHqH6CnlQzn6ZN3BwNVloqNxVD/n4rsvhAa3bvr3170Uu5sPlC3
+ECxBzHT+BeRVEyufDoxUQLmF8CtzThp+x2+j7AHAdgsppL71075uZJZEJMyAd9fUKzJpfDM5FdAp
+iGDRA6WOIrQyc0h2AWCh/JRcklgZfP2iUeh+XcrSmJhLgoldLC5HqzmP85H4TkZBQx6OND7fN3sR
+0iyJiodKP/+zsHxcMq7R9smhrBzx28CO6hx471fUp6boqOGfqkWG0nT6AyIHHGaiZ2wRb01lBbWO
+QkcS9L38mN6zttNpQPoANkLLbx9nCH2ghfO/G1ogtjGlWwXPwpr37KtjPdL7mr3LdCd4mvQcM3IR
+YrpE6fBE6x62rG+/bE4zHupqagwUySHr5EmAK7xYgOW1Qvum7gYZuhX93W6L1fTinMGiSDX341BV
+JX1DJ/iPSs6TtlFWowllnbnifW1IQq8kZsFt07y4O+nRrLFl1cDjeTT40s6TzOva0VlDAoSKy8Ch
+3p3tRVh2cP9OKkRTaOVLt+ec8LmVSK76GP5T9KpDOFt5ORHD/zcO+fabBQL336nJei8px7Km3dMS
+H/RMpK95f5sOi0rm2DCN/x6ZA070QvpThZWBTh8vnRyt5OczX0OBS0HzYzv8jWX9KJjWS+XAk5WD
+U028+Pr0BPtrMDZLrEd+S2Mzb86X2mb6vatMowb0isrlA/5ujQCoMdF9OrrC5p9FeWVVN0vGTItU
+5YcSgasaCxHW+FCdvGbGzkzIpvC/BCChjTLRJ7UsWpbe5zFyM68bTbhK/REZcqKnUgrNVlYjzY8c
+xaxX6zyL+Gu9vSPH0Jz045I0yyCJ5rzfbrZTeJ0NZg8BUloNRRAQIDSiBWLRy0sZAY/00+0TMB66
+R6KvgFFkUs6Q5zyfpmZeYhCTlsk4LHBFi0sdTULfYtAQHTOWq0/4k56lLhVN6CRCse9kx17/SczX
+G7Jk/BjwrV/f9rbB8V+36/367LhmEtV2e3lTigkyOZCX9P+H1o3BXOq/x3IUNrDde25UB9FUSw9Z
+xrEonOLnyIpTuqugCjnal97A/kflCje39Ad3CWYFUa63u8jdDb5vbwNq7p/KYSojO873C6GUC2N0
+ygwK4fLA6dD6C1UpZN09K0YGE1/vmDFEQM3nTQ2MEIuY+5K7rs5avjVwXrKQkeMh6cHoHyg8BKqp
+Y32gQmrLodMBaTGAFgFokyK5QmT5Dz/rIeSYMpsO2aaxJNThzmhy2hiWzdw2pwwgUO1xkKBPlxvv
+feZ+C8bxQ+XdMSNpAkDy68KeTsVqW9XpSiXyolzozbIe/wDkwKK/7D9I4buhbc5FobfhI8bPZ8pU
+ByIlCeCfz6KAmPRTnZAaaxh4bbLBlc56vG33+eFo18gQQnGal4Ycah9a9luhyJC39rtHz/XVgRb3
+ZlHKeGRu5Pzay7OLQha9CaikY4XkFiJdc2wqpj5UzqfTcBfev50NK4PCgZbbBnl8ca/GsM1m1Ibr
+YYz9GxbOcPMV9ZCJzjb8RoqbXH6FBSFxFzX0zsYDPDeYB967Bj1pJFP+6tPY5zm6gCV+XcoGwF0T
+xPVygGr15vFjnwnYOVfy4TwAGtJhVLaouI51T7cE+22Dd14kJuliph26DLLP9gEcWBcTSn4atyc2
+QXBaO+s5eHYcerKPZIzHK3ktUtLomvuT2q2ELfJ8REaWT9vPRytxg+NkRD9AnjTozX9gYt4dtmK8
+PwAElsgTOMiM54L1r0pnKhob6HeGEtSC8f/PjGPM7tFqVHYWgXMTDI/xn9nQniqZz4EeIjvWfbLQ
+rxTPRV9rnFUtFwZVPam/8ZZZO5HzGbB7lqnPwEoYNfrcIZg9x+0955i/kFPtGdW5qMHir88EvWsu
+bS2HSr9MqDK0aBUwIWfpFmVP+/TkuI7UfGdPZX/qSHcVffRJjKB1a1xeYgFsVt4tjKx2SSH0IxkC
+Y3skdV9KbmAHKuxHpb53oMKYkfrgIBBRYBNM3P3WZ5U11/adId9RESuw4Zh5Gn7CdLvNQbngUMjx
+zi+OHMEeZszOiDkiBVezK0Piz4byyiPkv9Xr6NZd+oT5inERyYxlT5cirXr5QA2EyHcsjguTgCXx
+FywlsRO9NvIS435gi4DoDvxPE+8eX7uQ5U8MN3wp5D82K0k6kqo59mLMFM8zwsI0+mlfrQSoz/2Q
+Y5Wv2V3ITjll5RxKZUPjvkgEacaxpzF/MobL30hFEAczsZUetPdETqsxpuFwpTRDwejgHPiO5Wz2
+dwBiiya3PEmTYAiKYaFlt0jLEFpTySmt0O4lW3L8cwasFSs1LrHWmsPVFKzxDzOaoXt9hF8Bg0em
+WQMOllYqd5ZnO5nb8ZudpLYIWeM7mypNKXCWU9ehsck20/lCCOVU8HHBUo3xUL4XGYuEdLhOXp8n
+K71eRNebnBttIVM+oI6dMrwlDJWemLM6ZfxFeexHNbUJ2r9NNabVrtSKZtq5VWspPzHSYOX12s3m
+JZEJlP6RINUFmsBliOvUoN9fmYrMlRPKlg7Y7S4FS+m0mRIgfujqFkX0pk0UP0NwGbztq0L9O7wg
+333YsDRCo4EYXVbMtX4D+djXal+evOB0+tPMXH/vo450ff++9n1LIs2QnCTSPqkPcUUsex07YI67
+QY+uEG40AyekjqFQSZv25fasMx5SUvFJOf/EVpHuJ7G12eCMjdxymqeVARpEm4l3tICYmAzjdlHa
+R4YF2PdVPBgYqo+Qv34uRYLRCc9TXYMCBPjrMbnsD7poNgC+CSxprrFRuR2CYNv5JBbaWgibbvJ8
+1uhPhjGzKzeCinKENvMtBwZe2eN5gxLh7/XVUA83nouTvH3rDXqWLKlJKaEs2oHLxzbGIPWNi1Ng
+rsQAVv5Z3cafzZ5hRpus08y+JKQABWnjEO/7q78IqktYmC92QLNHtixtWNHQEejgAxx0fyg8+U3E
+51389zvWTcCbiNYBN+RjT21xuXvUqYZAc+wzRhIn2EvARtHkHr+vElf2yrJgkitiUdfXjE1bfifB
+dPlWNjQ2/bUg+O+fDwdYnZxj4gUQ1X3Tg1siTNCL88szsbxyOEooFdwxIjGeqBKam0dD/XqaetJn
+Fq7C28gskHLeZlmIlFKvt6mavKW3u7gcz8ngdksoEANcTF1M+O+bPue+99TR5zRY2ilXPzMSL7us
+rKRyGafM65Fk8LxIpsZHLMUYi8PqCu/g4wP9UnVMBvnMuVCzyjLF/VkAY2zERT3Aw047DqWkGE0x
+G6TL0M4lCpKftBU+YPuc+eRVBH11RRWwOpONYCTmdlw/g/CLjM0mU4cBG/H2Pu4ansl5RPeOYYdC
+ADSWio8SKtCjAaz2Po2CRnkQlL657gf3ojXRtYTNWGjBo+h2B+6gSe9cjumQM8NrzYTlt8q8BrPF
+Ff7SuSNTwfF+2A/vHymav95CyFiK70GK4YZP86jUyNq3YX3gJjAxux7nEoCohS74xvWhIDN6RlRf
+W4lw8T4azQ11TXe9+w68h9v2odLM+i/KPwOXBOySMNq/eivuF+tsEFyCELv0DPT+gzHuOW7OuTaw
+7qAcxRMndlligs5IDKExN7jYLCjPDIR1+/wGfoMCMlIp1IPD7ZSqHviWW60mPIGrKj2LgLxNj/O0
+qBODBJkYHaynRNLRWe0CJ4Dcpk4/JsH7A1jGGyM0EUlHqs7qbMw9Xz1T05OjGX2aEPK5xA1WXUn1
+EzJ4LJbhfs7HPBgC8y/YxLRkJpuLLwWH897+RGyIClvcbl1TpAiLn3jLXZtd7Mi4Wqrrn2svo4U0
+PFAjA7/A82c5D7Wmgdtkx1f8P75BvrEtWH6vc15qYdBBM8Xm1SkCrbufZDcyKkSLK3Q0mZ9mpmA5
+eSM5JavkBA7bGae6MRBmU9VJ1LlJqxL6bR+Ej6FbwCRud25xIPXLMDpOQ/8oMGRlL3bGA/FWsEjc
+Er7QqJM9OPcsNsJkpI7PnnNnaN4FUrsyz53sY7kn2O/YbMPVNA4VtcerO31N2klWYdgfEYjvHtNM
+xG4RsF0OmNYWnBJu+9qG2GHdGR74Tpsso1KWmb/cq7Qj021hpRY8ToXIcA3dtWWdwejD9wyGdmY8
+X1XldlVW6y7gFstOQZtoLBADsk078sMyoNBbbnut0j/Ub+i5Qhv8oFvIh30QbGQVYIpo7rSW1Gzk
+8Ceg2aOHiuHcjtVQVTGjPMBjh+728r09ftk6c1ACgZJeYYWN+fl/Aj4qMh0f+cOkjkxfdEWu3M+H
+lHRXQn0cl/3bzi9jhW+vKORXDzhALyZW6AFiBYI5u7nJ5l9N4o968sx3V1hxC2kHmuBMYxOici5u
+T8YPeEXoUqA0TmPNDYm0Pg0VlmZ40HoCzSMQjNOh57kPCmChvqPNtpRNAcFf0tY/FgJvNHmAkoWw
+Fue6Q8qJXVDpzB886mSCTmXPY8XuYEhZo4fmXcWqwZizqMX4C9N9doDHgrOTg28LqO2eJBfKMxgl
+Pdb/lk+SFv4G3TOWuyR/kZD1IDXGTo1Sdozlax98vaU5ytOjafzWUm9/pupzHkROfP6BXaSObjQO
+XINFsRjLXFtnsLrmACrwndwIOG8qBDIr9+tlY1UmAd3qJc/NfVx5eXKb3pMwsRNFwM5c7qzm5QP9
+NFtwbmRdn7/wAarZaLu8phdjQtcBc89Fh1wwaX/jj2eJUMF6XYLkSmH8oLNXe43Seia1r6j+03Kv
+2JqckDzMVq40SiZmaUvLfbHBZA6IsuAwXA1C2CJuwQzSw6MmvXJ1tYGUGFUqnVOUa2AyP8Xmq1DP
+8sCvQkb0xC9LMlqpEqs1av2+AyJBoUxaNktDqQGvuac2OZDvHR0AMdxe9+obFTPn+toSjhENHRl+
+gvx8u8vFSYvKQJ7OnoCFvFQwkKw3MOBm1epmDalPT/btB/2RCeLZC8opa5LTRLoJ+JXso2Zgenlh
+hFB9qAA93Gj1fb0wzFvFXN7NnIQhI2Vn1TA5GIFklC2dUfRAwS26f3Q5SYXEY9PkTqCCJOV5AlG5
+lgJ1HKjgONvHIVUp5gNVuetjQbTpTytHt+KM6OefBJ/+2AfpzlnnnNZCkgQB+KA8+rf7/n31heHb
+6gwwiTYgy9M21gez8Umhs3AvYkFax44M0e4Ro9MLCjyZZc9oAV7M3sbrT4wK3pHGB3tzbsM6wbQN
+sacQzamgoQX2a6Rfbfd1RaJLiVkz6MNnxu5hcKaAG+0VgyyXKNbZjGqspl41c3gqpYxxG1rfLEqz
+bNhtupxc4pM5aZYpXmIUViyMzV6cZv4/1s9sH0uBGfP6auGntyYrOeOqLyqCve3NK0cRwCh9p0UU
+AmkFB8H+KdVYCAgJQ23H

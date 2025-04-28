@@ -1,382 +1,136 @@
-<?php
-
-/**
- * Forgivingly lexes HTML (SGML-style) markup into tokens.
- *
- * A lexer parses a string of SGML-style markup and converts them into
- * corresponding tokens.  It doesn't check for well-formedness, although its
- * internal mechanism may make this automatic (such as the case of
- * HTMLPurifier_Lexer_DOMLex).  There are several implementations to choose
- * from.
- *
- * A lexer is HTML-oriented: it might work with XML, but it's not
- * recommended, as we adhere to a subset of the specification for optimization
- * reasons. This might change in the future. Also, most tokenizers are not
- * expected to handle DTDs or PIs.
- *
- * This class should not be directly instantiated, but you may use create() to
- * retrieve a default copy of the lexer.  Being a supertype, this class
- * does not actually define any implementation, but offers commonly used
- * convenience functions for subclasses.
- *
- * @note The unit tests will instantiate this class for testing purposes, as
- *       many of the utility functions require a class to be instantiated.
- *       This means that, even though this class is not runnable, it will
- *       not be declared abstract.
- *
- * @par
- *
- * @note
- * We use tokens rather than create a DOM representation because DOM would:
- *
- * @par
- *  -# Require more processing and memory to create,
- *  -# Is not streamable, and
- *  -# Has the entire document structure (html and body not needed).
- *
- * @par
- * However, DOM is helpful in that it makes it easy to move around nodes
- * without a lot of lookaheads to see when a tag is closed. This is a
- * limitation of the token system and some workarounds would be nice.
- */
-class HTMLPurifier_Lexer
-{
-
-    /**
-     * Whether or not this lexer implements line-number/column-number tracking.
-     * If it does, set to true.
-     */
-    public $tracksLineNumbers = false;
-
-    // -- STATIC ----------------------------------------------------------
-
-    /**
-     * Retrieves or sets the default Lexer as a Prototype Factory.
-     *
-     * By default HTMLPurifier_Lexer_DOMLex will be returned. There are
-     * a few exceptions involving special features that only DirectLex
-     * implements.
-     *
-     * @note The behavior of this class has changed, rather than accepting
-     *       a prototype object, it now accepts a configuration object.
-     *       To specify your own prototype, set %Core.LexerImpl to it.
-     *       This change in behavior de-singletonizes the lexer object.
-     *
-     * @param HTMLPurifier_Config $config
-     * @return HTMLPurifier_Lexer
-     * @throws HTMLPurifier_Exception
-     */
-    public static function create($config)
-    {
-        if (!($config instanceof HTMLPurifier_Config)) {
-            $lexer = $config;
-            trigger_error(
-                "Passing a prototype to
-                HTMLPurifier_Lexer::create() is deprecated, please instead
-                use %Core.LexerImpl",
-                E_USER_WARNING
-            );
-        } else {
-            $lexer = $config->get('Core.LexerImpl');
-        }
-
-        $needs_tracking =
-            $config->get('Core.MaintainLineNumbers') ||
-            $config->get('Core.CollectErrors');
-
-        $inst = null;
-        if (is_object($lexer)) {
-            $inst = $lexer;
-        } else {
-            if (is_null($lexer)) {
-                do {
-                    // auto-detection algorithm
-                    if ($needs_tracking) {
-                        $lexer = 'DirectLex';
-                        break;
-                    }
-
-                    if (class_exists('DOMDocument', false) &&
-                        method_exists('DOMDocument', 'loadHTML') &&
-                        !extension_loaded('domxml')
-                    ) {
-                        // check for DOM support, because while it's part of the
-                        // core, it can be disabled compile time. Also, the PECL
-                        // domxml extension overrides the default DOM, and is evil
-                        // and nasty and we shan't bother to support it
-                        $lexer = 'DOMLex';
-                    } else {
-                        $lexer = 'DirectLex';
-                    }
-                } while (0);
-            } // do..while so we can break
-
-            // instantiate recognized string names
-            switch ($lexer) {
-                case 'DOMLex':
-                    $inst = new HTMLPurifier_Lexer_DOMLex();
-                    break;
-                case 'DirectLex':
-                    $inst = new HTMLPurifier_Lexer_DirectLex();
-                    break;
-                case 'PH5P':
-                    $inst = new HTMLPurifier_Lexer_PH5P();
-                    break;
-                default:
-                    throw new HTMLPurifier_Exception(
-                        "Cannot instantiate unrecognized Lexer type " .
-                        htmlspecialchars($lexer)
-                    );
-            }
-        }
-
-        if (!$inst) {
-            throw new HTMLPurifier_Exception('No lexer was instantiated');
-        }
-
-        // once PHP DOM implements native line numbers, or we
-        // hack out something using XSLT, remove this stipulation
-        if ($needs_tracking && !$inst->tracksLineNumbers) {
-            throw new HTMLPurifier_Exception(
-                'Cannot use lexer that does not support line numbers with ' .
-                'Core.MaintainLineNumbers or Core.CollectErrors (use DirectLex instead)'
-            );
-        }
-
-        return $inst;
-
-    }
-
-    // -- CONVENIENCE MEMBERS ---------------------------------------------
-
-    public function __construct()
-    {
-        $this->_entity_parser = new HTMLPurifier_EntityParser();
-    }
-
-    /**
-     * Most common entity to raw value conversion table for special entities.
-     * @type array
-     */
-    protected $_special_entity2str =
-        array(
-            '&quot;' => '"',
-            '&amp;' => '&',
-            '&lt;' => '<',
-            '&gt;' => '>',
-            '&#39;' => "'",
-            '&#039;' => "'",
-            '&#x27;' => "'"
-        );
-
-    public function parseText($string, $config) {
-        return $this->parseData($string, false, $config);
-    }
-
-    public function parseAttr($string, $config) {
-        return $this->parseData($string, true, $config);
-    }
-
-    /**
-     * Parses special entities into the proper characters.
-     *
-     * This string will translate escaped versions of the special characters
-     * into the correct ones.
-     *
-     * @param string $string String character data to be parsed.
-     * @return string Parsed character data.
-     */
-    public function parseData($string, $is_attr, $config)
-    {
-        // following functions require at least one character
-        if ($string === '') {
-            return '';
-        }
-
-        // subtracts amps that cannot possibly be escaped
-        $num_amp = substr_count($string, '&') - substr_count($string, '& ') -
-            ($string[strlen($string) - 1] === '&' ? 1 : 0);
-
-        if (!$num_amp) {
-            return $string;
-        } // abort if no entities
-        $num_esc_amp = substr_count($string, '&amp;');
-        $string = strtr($string, $this->_special_entity2str);
-
-        // code duplication for sake of optimization, see above
-        $num_amp_2 = substr_count($string, '&') - substr_count($string, '& ') -
-            ($string[strlen($string) - 1] === '&' ? 1 : 0);
-
-        if ($num_amp_2 <= $num_esc_amp) {
-            return $string;
-        }
-
-        // hmm... now we have some uncommon entities. Use the callback.
-        if ($config->get('Core.LegacyEntityDecoder')) {
-            $string = $this->_entity_parser->substituteSpecialEntities($string);
-        } else {
-            if ($is_attr) {
-                $string = $this->_entity_parser->substituteAttrEntities($string);
-            } else {
-                $string = $this->_entity_parser->substituteTextEntities($string);
-            }
-        }
-        return $string;
-    }
-
-    /**
-     * Lexes an HTML string into tokens.
-     * @param $string String HTML.
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return HTMLPurifier_Token[] array representation of HTML.
-     */
-    public function tokenizeHTML($string, $config, $context)
-    {
-        trigger_error('Call to abstract class', E_USER_ERROR);
-    }
-
-    /**
-     * Translates CDATA sections into regular sections (through escaping).
-     * @param string $string HTML string to process.
-     * @return string HTML with CDATA sections escaped.
-     */
-    protected static function escapeCDATA($string)
-    {
-        return preg_replace_callback(
-            '/<!\[CDATA\[(.+?)\]\]>/s',
-            array('HTMLPurifier_Lexer', 'CDATACallback'),
-            $string
-        );
-    }
-
-    /**
-     * Special CDATA case that is especially convoluted for <script>
-     * @param string $string HTML string to process.
-     * @return string HTML with CDATA sections escaped.
-     */
-    protected static function escapeCommentedCDATA($string)
-    {
-        return preg_replace_callback(
-            '#<!--//--><!\[CDATA\[//><!--(.+?)//--><!\]\]>#s',
-            array('HTMLPurifier_Lexer', 'CDATACallback'),
-            $string
-        );
-    }
-
-    /**
-     * Special Internet Explorer conditional comments should be removed.
-     * @param string $string HTML string to process.
-     * @return string HTML with conditional comments removed.
-     */
-    protected static function removeIEConditional($string)
-    {
-        return preg_replace(
-            '#<!--\[if [^>]+\]>.*?<!\[endif\]-->#si', // probably should generalize for all strings
-            '',
-            $string
-        );
-    }
-
-    /**
-     * Callback function for escapeCDATA() that does the work.
-     *
-     * @warning Though this is public in order to let the callback happen,
-     *          calling it directly is not recommended.
-     * @param array $matches PCRE matches array, with index 0 the entire match
-     *                  and 1 the inside of the CDATA section.
-     * @return string Escaped internals of the CDATA section.
-     */
-    protected static function CDATACallback($matches)
-    {
-        // not exactly sure why the character set is needed, but whatever
-        return htmlspecialchars($matches[1], ENT_COMPAT, 'UTF-8');
-    }
-
-    /**
-     * Takes a piece of HTML and normalizes it by converting entities, fixing
-     * encoding, extracting bits, and other good stuff.
-     * @param string $html HTML.
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return string
-     * @todo Consider making protected
-     */
-    public function normalize($html, $config, $context)
-    {
-        // normalize newlines to \n
-        if ($config->get('Core.NormalizeNewlines')) {
-            $html = str_replace("\r\n", "\n", $html);
-            $html = str_replace("\r", "\n", $html);
-        }
-
-        if ($config->get('HTML.Trusted')) {
-            // escape convoluted CDATA
-            $html = $this->escapeCommentedCDATA($html);
-        }
-
-        // escape CDATA
-        $html = $this->escapeCDATA($html);
-
-        $html = $this->removeIEConditional($html);
-
-        // extract body from document if applicable
-        if ($config->get('Core.ConvertDocumentToFragment')) {
-            $e = false;
-            if ($config->get('Core.CollectErrors')) {
-                $e =& $context->get('ErrorCollector');
-            }
-            $new_html = $this->extractBody($html);
-            if ($e && $new_html != $html) {
-                $e->send(E_WARNING, 'Lexer: Extracted body');
-            }
-            $html = $new_html;
-        }
-
-        // expand entities that aren't the big five
-        if ($config->get('Core.LegacyEntityDecoder')) {
-            $html = $this->_entity_parser->substituteNonSpecialEntities($html);
-        }
-
-        // clean into wellformed UTF-8 string for an SGML context: this has
-        // to be done after entity expansion because the entities sometimes
-        // represent non-SGML characters (horror, horror!)
-        $html = HTMLPurifier_Encoder::cleanUTF8($html);
-
-        // if processing instructions are to removed, remove them now
-        if ($config->get('Core.RemoveProcessingInstructions')) {
-            $html = preg_replace('#<\?.+?\?>#s', '', $html);
-        }
-
-        $hidden_elements = $config->get('Core.HiddenElements');
-        if ($config->get('Core.AggressivelyRemoveScript') &&
-            !($config->get('HTML.Trusted') || !$config->get('Core.RemoveScriptContents')
-            || empty($hidden_elements["script"]))) {
-            $html = preg_replace('#<script[^>]*>.*?</script>#i', '', $html);
-        }
-
-        return $html;
-    }
-
-    /**
-     * Takes a string of HTML (fragment or document) and returns the content
-     * @todo Consider making protected
-     */
-    public function extractBody($html)
-    {
-        $matches = array();
-        $result = preg_match('|(.*?)<body[^>]*>(.*)</body>|is', $html, $matches);
-        if ($result) {
-            // Make sure it's not in a comment
-            $comment_start = strrpos($matches[1], '<!--');
-            $comment_end   = strrpos($matches[1], '-->');
-            if ($comment_start === false ||
-                ($comment_end !== false && $comment_end > $comment_start)) {
-                return $matches[2];
-            }
-        }
-        return $html;
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

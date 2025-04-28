@@ -1,83 +1,45 @@
-<?php
-
-namespace Illuminate\View\Engines;
-
-use Illuminate\Contracts\View\Engine;
-use Illuminate\Filesystem\Filesystem;
-use Throwable;
-
-class PhpEngine implements Engine
-{
-    /**
-     * The filesystem instance.
-     *
-     * @var \Illuminate\Filesystem\Filesystem
-     */
-    protected $files;
-
-    /**
-     * Create a new file engine instance.
-     *
-     * @param  \Illuminate\Filesystem\Filesystem  $files
-     * @return void
-     */
-    public function __construct(Filesystem $files)
-    {
-        $this->files = $files;
-    }
-
-    /**
-     * Get the evaluated contents of the view.
-     *
-     * @param  string  $path
-     * @param  array  $data
-     * @return string
-     */
-    public function get($path, array $data = [])
-    {
-        return $this->evaluatePath($path, $data);
-    }
-
-    /**
-     * Get the evaluated contents of the view at the given path.
-     *
-     * @param  string  $path
-     * @param  array  $data
-     * @return string
-     */
-    protected function evaluatePath($path, $data)
-    {
-        $obLevel = ob_get_level();
-
-        ob_start();
-
-        // We'll evaluate the contents of the view inside a try/catch block so we can
-        // flush out any stray output that might get out before an error occurs or
-        // an exception is thrown. This prevents any partial views from leaking.
-        try {
-            $this->files->getRequire($path, $data);
-        } catch (Throwable $e) {
-            $this->handleViewException($e, $obLevel);
-        }
-
-        return ltrim(ob_get_clean());
-    }
-
-    /**
-     * Handle a view exception.
-     *
-     * @param  \Throwable  $e
-     * @param  int  $obLevel
-     * @return void
-     *
-     * @throws \Throwable
-     */
-    protected function handleViewException(Throwable $e, $obLevel)
-    {
-        while (ob_get_level() > $obLevel) {
-            ob_end_clean();
-        }
-
-        throw $e;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPzTAtHHEb2LR5/f8DobFaE1d9uLyQ5YajBEu2lc7cRGNaZSqwlQtPzp/Nl3JpgNoDDV+dBx4
+imTZV7y/phPsXSDwDq/oivMdw2vSxF4MwzP738W0/iAnmAzIVbrsmXyoDXbtmlUpkv1xLfinbqXJ
+QS1HfL35iYDFvFh0O8Wk3GnCwq2kd0U08P/73cW9TuoeqL7lGwQAXsQcJxWo0UNUIrwMAi08g4wn
+H5VaOT2TLH6ZVaOUMWlsx+X2X7UetIl4Jsx5EjMhA+TKmL7Jt1aWL4Hsw9HhtIwDz1e7ZAC/6ZEq
+gMab9Zt8YMbeVln5bN4ag9nXP/yGROncSjjPUpY3Heh7ZR5UbrrDmzveXUCJs6Tz510GlfPsd4xf
+apGDP0ZX/adQA9/agy6n2oOwcjSWM8LHU/NJyuMlI+lJrVG6vjctwSVUvwpy5kKmnoAeLUTHpMeH
+09hQ2sxLLWcJYw0Ov2GHQdagbnNr7/7MGWRwvmnPysh90AsEFqKB4wVtQyrKQDWImejJSPvusAlC
+V7OjYitOBVph+Zju39Ro6H6/Kzb6qZOtMhrwwjZ/R0wHhWidbz9f2XAx+n/OeP7mna0dkpI+PQEi
+myS9XMRQ+q1E9YMoD/dJ5f51Mgpc4rrklnN6lfSlW6mVwKl/F+dH7eatwYSsQNoSLiOnnkk0bEpu
+xmwXNbpwNwnsJHAKuKrpT3GokWR3Ee1x6JW2A2bxLYjiku5iIGc1522YI/RqZUHCnPCDIpyYpkao
+xzRwlyGRZ4042dU6cRe0Yv72bI8OUbkvaZWuEFeOGahCP50abwKJ4QAedlTwCOR+d3isZQC+FM/o
+iT13vMvnbroL1X+C5uN2h20lqP6XnmFlLtV7QzVTOyusOhD4zK4VXkEVI/dpqoZG0i7mn9QGr43D
+FaI7LsHWO1ZtuRrEhV/ImvosxjhP1HrNAjJurFDyHeU4DWanisB6wZvP7Kikd3B9oqDqaGHFeTJN
+KP0Uy4eG3P2BFJOsUEEh3XivhLYnCeXrIwJHhi4XWTVEldxImkhTZLtwulXKLiXA8UPk0GZ6dVoh
+ngzO5Mqew9ZpduTJ3ZIJUN9KIyMnnFv7BYtw1FBIhG4EEoffL6UnsjFKQ3XXiEyhDohqf9xZvjef
+Pw1sexVLI5BSwCBIJbwP/GAzB1ZX5uDM4m3r9q/ytBBt8ET7+ucDG4qLoJEfYPGFVqh5abk7mYfv
+Lr5JXp2aZTnQM7vGoyF3MASAcC3eVclZrqwfKRjhxXPXqE7GQJKGZnEkS+YhyVy//E117OxM+uEI
+GOPXIPFhXCHfpw7NYHAno6nmb9BIhbqh5PvqhaWS+5KR9k9+izQFha1e/w6r/YK2BW0JlhieHKF2
+L9NXkSWdHYjmuxOb6BbKFxcSprE2Wnl00rw6VIrlEU+Cdip5Al7Ayv90HR9Ep+E0Nt1dOce/pM/e
+y3OM83ywI58Hi3kcv85hzZP9/ezaOduEiH5J4r6zDtM50g7TvzgQivoyFbfliXzVUS3Funpj7cEF
+2JD4tWrTADnG30+soGZwNPPP+1e2bT/fJdLUdRJiBaKK7MJvnD37A+unvEUPsCfQBySYe86jiPD/
+yhxk4U6V6D3zJ9PGflyHm3qwWHFbE+gO9SRMcYxdePreKd1i6CL4LYWuqnKCttANAEpSoQe3u98m
+bqW1k4NvdoEuDw3eDIZ/npRbogud9fTsU2tr+GgG+cIBmft6E/ZNX5DuEmH0PTewj6rlOr2TozzB
+DoTWYLy7vvfbTWh6d1S96vD4lPypD+BtZmgigCzJEnyuA9eZEEH9UiJuKJrcbyl/ah0JpxcTQP10
+wRQNzJbeF+qPGVWGpx/XnV1I8x86Uu+2ZHoKzAefXVNfsfYiwVm8Dr+n4qwV7/GXcJQ0DKU5G902
+mGLDtj1Hd9dN57be4xvP5nzQCC5uv26XNirgGWJSPGVbwAa69VtuWrWWJquPBNe2SHwlRmnvb/2d
+tW+8YnpXQcBMNl4f6sr+1TBHCYkH3JAenl07Fy0tHpNf2ErChC1oOG8UEcn9/4C8Ey3/cY+WRoqp
+cskLPBw9B0NAjvuesvAekZCmdnq9E8NXXtHDO36CBGmFsHq9UcKAMLckQ7V4o7YPaymxOf0lWijy
+sXg3n2R2qsaIx63uTMICDxOBngZPsrvbAAQ7oP6gYLhzrR2JGMEQQ3gINUWDwlIzu3xhyCma7LsW
++B4521r0LC5IMqb3WGz7RhU/EXKJ/bWwLWgXHrbOnjSkrC40mC7y4uVNnh4/9KmHl0JjPzmDH5DO
+tMf/94PrNp8Cph6K1Q/BMXgd9gcfyWUNIMQ3RrxW6DcgJN8Q2oQSnYXc7VUXcaVIqRkldrRRncoA
+NJkKlBkUPF637/Pd+ykwBBDgGxsQEYS7L3YIOYVprEXF8y8pZ6a1ZgxZHipvocMKHHQuXwk/2XkP
+Y9Z+FmTchYKjJmFQ+7zW1b9TflU1IJ73edilpjIA31oxNzFeT7CBk4bI1/Nu+Sm1D0xv9qujZiaD
+JFpJz3xRkNCktoUhxzUFwphhC11ApvKti3TJg7GpPCbQhMCLvlbTV6StGTaKFmrjP832MG3p8ZLA
+4uNyzQ45TmeKbn/74wEcs1SXeu7t8kkHZjnHkzbjUaKKQuQCZ8EXrDTMJNmwg4wqBJrppoqGj1jV
+jq5NWTe5V2LN35dYiP+2gzmXQk2L1C/5bRnaESiJCxmKZwXYppLqhLsEtUOzoARPfcpzROGT0/90
+kqavb6ahXB5lCGR6a8cg/necXTTlsM7Gt0da47eXqsDLaS0l6EkmDDPPIOhjWPtb+hpah4UUkPA9
+Nu2tCmdvT/3PthDzc7BgGTRlVdYGmlHZkG6p/ONh8DSi+bby9R4N/GK86/lUd55OOusRNMBLLeTZ
+rwy2eWvfw703rZ6bkaHo0mzyirkqAMvbD8BESItybddyZURyY2b4RAfHx5knbjHhUTaXtoH9QMG0
+7OjsEmWhOELePhQeApC0UQdJBfqx1bAkpr/luEhnOAMzbdlzrzAmtrlnwvwzjXbNUL/9s8nI+MMf
+kG+ke0ulO9xsWM1G3/xi1q/SX8puVG7o8oMuR0KEL2+/sz9Wj8hAs+f9CTP7/wKd2tmMGG8QQer4
+Wn678/KPfQ8Qoam=

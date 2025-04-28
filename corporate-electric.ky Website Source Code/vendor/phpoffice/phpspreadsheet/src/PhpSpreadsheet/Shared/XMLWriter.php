@@ -1,92 +1,56 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Shared;
-
-class XMLWriter extends \XMLWriter
-{
-    public static $debugEnabled = false;
-
-    /** Temporary storage method */
-    const STORAGE_MEMORY = 1;
-    const STORAGE_DISK = 2;
-
-    /**
-     * Temporary filename.
-     *
-     * @var string
-     */
-    private $tempFileName = '';
-
-    /**
-     * Create a new XMLWriter instance.
-     *
-     * @param int $pTemporaryStorage Temporary storage location
-     * @param string $pTemporaryStorageFolder Temporary storage folder
-     */
-    public function __construct($pTemporaryStorage = self::STORAGE_MEMORY, $pTemporaryStorageFolder = null)
-    {
-        // Open temporary storage
-        if ($pTemporaryStorage == self::STORAGE_MEMORY) {
-            $this->openMemory();
-        } else {
-            // Create temporary filename
-            if ($pTemporaryStorageFolder === null) {
-                $pTemporaryStorageFolder = File::sysGetTempDir();
-            }
-            $this->tempFileName = @tempnam($pTemporaryStorageFolder, 'xml');
-
-            // Open storage
-            if ($this->openUri($this->tempFileName) === false) {
-                // Fallback to memory...
-                $this->openMemory();
-            }
-        }
-
-        // Set default values
-        if (self::$debugEnabled) {
-            $this->setIndent(true);
-        }
-    }
-
-    /**
-     * Destructor.
-     */
-    public function __destruct()
-    {
-        // Unlink temporary files
-        if ($this->tempFileName != '') {
-            @unlink($this->tempFileName);
-        }
-    }
-
-    /**
-     * Get written data.
-     *
-     * @return string
-     */
-    public function getData()
-    {
-        if ($this->tempFileName == '') {
-            return $this->outputMemory(true);
-        }
-        $this->flush();
-
-        return file_get_contents($this->tempFileName);
-    }
-
-    /**
-     * Wrapper method for writeRaw.
-     *
-     * @param string|string[] $text
-     *
-     * @return bool
-     */
-    public function writeRawData($text)
-    {
-        if (is_array($text)) {
-            $text = implode("\n", $text);
-        }
-
-        return $this->writeRaw(htmlspecialchars($text));
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+DG==

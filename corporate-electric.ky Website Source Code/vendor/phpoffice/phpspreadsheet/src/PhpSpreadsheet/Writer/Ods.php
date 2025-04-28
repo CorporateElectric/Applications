@@ -1,156 +1,88 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Writer;
-
-use PhpOffice\PhpSpreadsheet\Shared\File;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Writer\Exception as WriterException;
-use PhpOffice\PhpSpreadsheet\Writer\Ods\Content;
-use PhpOffice\PhpSpreadsheet\Writer\Ods\Meta;
-use PhpOffice\PhpSpreadsheet\Writer\Ods\MetaInf;
-use PhpOffice\PhpSpreadsheet\Writer\Ods\Mimetype;
-use PhpOffice\PhpSpreadsheet\Writer\Ods\Settings;
-use PhpOffice\PhpSpreadsheet\Writer\Ods\Styles;
-use PhpOffice\PhpSpreadsheet\Writer\Ods\Thumbnails;
-use ZipStream\Exception\OverflowException;
-use ZipStream\Option\Archive;
-use ZipStream\ZipStream;
-
-class Ods extends BaseWriter
-{
-    /**
-     * Private writer parts.
-     *
-     * @var Ods\WriterPart[]
-     */
-    private $writerParts = [];
-
-    /**
-     * Private PhpSpreadsheet.
-     *
-     * @var Spreadsheet
-     */
-    private $spreadSheet;
-
-    /**
-     * Create a new Ods.
-     */
-    public function __construct(Spreadsheet $spreadsheet)
-    {
-        $this->setSpreadsheet($spreadsheet);
-
-        $writerPartsArray = [
-            'content' => Content::class,
-            'meta' => Meta::class,
-            'meta_inf' => MetaInf::class,
-            'mimetype' => Mimetype::class,
-            'settings' => Settings::class,
-            'styles' => Styles::class,
-            'thumbnails' => Thumbnails::class,
-        ];
-
-        foreach ($writerPartsArray as $writer => $class) {
-            $this->writerParts[$writer] = new $class($this);
-        }
-    }
-
-    /**
-     * Get writer part.
-     *
-     * @param string $pPartName Writer part name
-     *
-     * @return null|Ods\WriterPart
-     */
-    public function getWriterPart($pPartName)
-    {
-        if ($pPartName != '' && isset($this->writerParts[strtolower($pPartName)])) {
-            return $this->writerParts[strtolower($pPartName)];
-        }
-
-        return null;
-    }
-
-    /**
-     * Save PhpSpreadsheet to file.
-     *
-     * @param resource|string $pFilename
-     */
-    public function save($pFilename): void
-    {
-        if (!$this->spreadSheet) {
-            throw new WriterException('PhpSpreadsheet object unassigned.');
-        }
-
-        // garbage collect
-        $this->spreadSheet->garbageCollect();
-
-        $this->openFileHandle($pFilename);
-
-        $zip = $this->createZip();
-
-        $zip->addFile('META-INF/manifest.xml', $this->getWriterPart('meta_inf')->writeManifest());
-        $zip->addFile('Thumbnails/thumbnail.png', $this->getWriterPart('thumbnails')->writeThumbnail());
-        $zip->addFile('content.xml', $this->getWriterPart('content')->write());
-        $zip->addFile('meta.xml', $this->getWriterPart('meta')->write());
-        $zip->addFile('mimetype', $this->getWriterPart('mimetype')->write());
-        $zip->addFile('settings.xml', $this->getWriterPart('settings')->write());
-        $zip->addFile('styles.xml', $this->getWriterPart('styles')->write());
-
-        // Close file
-        try {
-            $zip->finish();
-        } catch (OverflowException $e) {
-            throw new WriterException('Could not close resource.');
-        }
-
-        $this->maybeCloseFileHandle();
-    }
-
-    /**
-     * Create zip object.
-     *
-     * @return ZipStream
-     */
-    private function createZip()
-    {
-        // Try opening the ZIP file
-        if (!is_resource($this->fileHandle)) {
-            throw new WriterException('Could not open resource for writing.');
-        }
-
-        // Create new ZIP stream
-        $options = new Archive();
-        $options->setEnableZip64(false);
-        $options->setOutputStream($this->fileHandle);
-
-        return new ZipStream(null, $options);
-    }
-
-    /**
-     * Get Spreadsheet object.
-     *
-     * @return Spreadsheet
-     */
-    public function getSpreadsheet()
-    {
-        if ($this->spreadSheet !== null) {
-            return $this->spreadSheet;
-        }
-
-        throw new WriterException('No PhpSpreadsheet assigned.');
-    }
-
-    /**
-     * Set Spreadsheet object.
-     *
-     * @param Spreadsheet $spreadsheet PhpSpreadsheet object
-     *
-     * @return $this
-     */
-    public function setSpreadsheet(Spreadsheet $spreadsheet)
-    {
-        $this->spreadSheet = $spreadsheet;
-
-        return $this;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+BbjhutBT7LrkmL9mXvfMiElpATm=

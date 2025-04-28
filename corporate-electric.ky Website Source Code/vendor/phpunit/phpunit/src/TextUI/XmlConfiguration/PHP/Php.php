@@ -1,142 +1,50 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\TextUI\XmlConfiguration;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for PHPUnit
- * @psalm-immutable
- */
-final class Php
-{
-    /**
-     * @var DirectoryCollection
-     */
-    private $includePaths;
-
-    /**
-     * @var IniSettingCollection
-     */
-    private $iniSettings;
-
-    /**
-     * @var ConstantCollection
-     */
-    private $constants;
-
-    /**
-     * @var VariableCollection
-     */
-    private $globalVariables;
-
-    /**
-     * @var VariableCollection
-     */
-    private $envVariables;
-
-    /**
-     * @var VariableCollection
-     */
-    private $postVariables;
-
-    /**
-     * @var VariableCollection
-     */
-    private $getVariables;
-
-    /**
-     * @var VariableCollection
-     */
-    private $cookieVariables;
-
-    /**
-     * @var VariableCollection
-     */
-    private $serverVariables;
-
-    /**
-     * @var VariableCollection
-     */
-    private $filesVariables;
-
-    /**
-     * @var VariableCollection
-     */
-    private $requestVariables;
-
-    public function __construct(DirectoryCollection $includePaths, IniSettingCollection $iniSettings, ConstantCollection $constants, VariableCollection $globalVariables, VariableCollection $envVariables, VariableCollection $postVariables, VariableCollection $getVariables, VariableCollection $cookieVariables, VariableCollection $serverVariables, VariableCollection $filesVariables, VariableCollection $requestVariables)
-    {
-        $this->includePaths     = $includePaths;
-        $this->iniSettings      = $iniSettings;
-        $this->constants        = $constants;
-        $this->globalVariables  = $globalVariables;
-        $this->envVariables     = $envVariables;
-        $this->postVariables    = $postVariables;
-        $this->getVariables     = $getVariables;
-        $this->cookieVariables  = $cookieVariables;
-        $this->serverVariables  = $serverVariables;
-        $this->filesVariables   = $filesVariables;
-        $this->requestVariables = $requestVariables;
-    }
-
-    public function includePaths(): DirectoryCollection
-    {
-        return $this->includePaths;
-    }
-
-    public function iniSettings(): IniSettingCollection
-    {
-        return $this->iniSettings;
-    }
-
-    public function constants(): ConstantCollection
-    {
-        return $this->constants;
-    }
-
-    public function globalVariables(): VariableCollection
-    {
-        return $this->globalVariables;
-    }
-
-    public function envVariables(): VariableCollection
-    {
-        return $this->envVariables;
-    }
-
-    public function postVariables(): VariableCollection
-    {
-        return $this->postVariables;
-    }
-
-    public function getVariables(): VariableCollection
-    {
-        return $this->getVariables;
-    }
-
-    public function cookieVariables(): VariableCollection
-    {
-        return $this->cookieVariables;
-    }
-
-    public function serverVariables(): VariableCollection
-    {
-        return $this->serverVariables;
-    }
-
-    public function filesVariables(): VariableCollection
-    {
-        return $this->filesVariables;
-    }
-
-    public function requestVariables(): VariableCollection
-    {
-        return $this->requestVariables;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

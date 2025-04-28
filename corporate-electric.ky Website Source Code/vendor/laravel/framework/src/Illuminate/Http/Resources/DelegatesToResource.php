@@ -1,150 +1,55 @@
-<?php
-
-namespace Illuminate\Http\Resources;
-
-use Exception;
-use Illuminate\Support\Traits\ForwardsCalls;
-
-trait DelegatesToResource
-{
-    use ForwardsCalls;
-
-    /**
-     * Get the value of the resource's route key.
-     *
-     * @return mixed
-     */
-    public function getRouteKey()
-    {
-        return $this->resource->getRouteKey();
-    }
-
-    /**
-     * Get the route key for the resource.
-     *
-     * @return string
-     */
-    public function getRouteKeyName()
-    {
-        return $this->resource->getRouteKeyName();
-    }
-
-    /**
-     * Retrieve the model for a bound value.
-     *
-     * @param  mixed  $value
-     * @param  string|null  $field
-     * @return void
-     *
-     * @throws \Exception
-     */
-    public function resolveRouteBinding($value, $field = null)
-    {
-        throw new Exception('Resources may not be implicitly resolved from route bindings.');
-    }
-
-    /**
-     * Retrieve the model for a bound value.
-     *
-     * @param  string  $childType
-     * @param  mixed  $value
-     * @param  string|null  $field
-     * @return void
-     *
-     * @throws \Exception
-     */
-    public function resolveChildRouteBinding($childType, $value, $field = null)
-    {
-        throw new Exception('Resources may not be implicitly resolved from route bindings.');
-    }
-
-    /**
-     * Determine if the given attribute exists.
-     *
-     * @param  mixed  $offset
-     * @return bool
-     */
-    public function offsetExists($offset)
-    {
-        return isset($this->resource[$offset]);
-    }
-
-    /**
-     * Get the value for a given offset.
-     *
-     * @param  mixed  $offset
-     * @return mixed
-     */
-    public function offsetGet($offset)
-    {
-        return $this->resource[$offset];
-    }
-
-    /**
-     * Set the value for a given offset.
-     *
-     * @param  mixed  $offset
-     * @param  mixed  $value
-     * @return void
-     */
-    public function offsetSet($offset, $value)
-    {
-        $this->resource[$offset] = $value;
-    }
-
-    /**
-     * Unset the value for a given offset.
-     *
-     * @param  mixed  $offset
-     * @return void
-     */
-    public function offsetUnset($offset)
-    {
-        unset($this->resource[$offset]);
-    }
-
-    /**
-     * Determine if an attribute exists on the resource.
-     *
-     * @param  string  $key
-     * @return bool
-     */
-    public function __isset($key)
-    {
-        return isset($this->resource->{$key});
-    }
-
-    /**
-     * Unset an attribute on the resource.
-     *
-     * @param  string  $key
-     * @return void
-     */
-    public function __unset($key)
-    {
-        unset($this->resource->{$key});
-    }
-
-    /**
-     * Dynamically get properties from the underlying resource.
-     *
-     * @param  string  $key
-     * @return mixed
-     */
-    public function __get($key)
-    {
-        return $this->resource->{$key};
-    }
-
-    /**
-     * Dynamically pass method calls to the underlying resource.
-     *
-     * @param  string  $method
-     * @param  array  $parameters
-     * @return mixed
-     */
-    public function __call($method, $parameters)
-    {
-        return $this->forwardCallTo($this->resource, $method, $parameters);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
++zSHJijldsweGEvFtmsFl7rQHQlMEwwm

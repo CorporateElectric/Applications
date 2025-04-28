@@ -1,271 +1,140 @@
-<?php
-
-namespace Illuminate\Support\Testing\Fakes;
-
-use Closure;
-use Exception;
-use Illuminate\Contracts\Notifications\Dispatcher as NotificationDispatcher;
-use Illuminate\Contracts\Notifications\Factory as NotificationFactory;
-use Illuminate\Contracts\Translation\HasLocalePreference;
-use Illuminate\Support\Collection;
-use Illuminate\Support\Str;
-use Illuminate\Support\Traits\Macroable;
-use Illuminate\Support\Traits\ReflectsClosures;
-use PHPUnit\Framework\Assert as PHPUnit;
-
-class NotificationFake implements NotificationDispatcher, NotificationFactory
-{
-    use Macroable, ReflectsClosures;
-
-    /**
-     * All of the notifications that have been sent.
-     *
-     * @var array
-     */
-    protected $notifications = [];
-
-    /**
-     * Locale used when sending notifications.
-     *
-     * @var string|null
-     */
-    public $locale;
-
-    /**
-     * Assert if a notification was sent based on a truth-test callback.
-     *
-     * @param  mixed  $notifiable
-     * @param  string|\Closure  $notification
-     * @param  callable|null  $callback
-     * @return void
-     *
-     * @throws \Exception
-     */
-    public function assertSentTo($notifiable, $notification, $callback = null)
-    {
-        if (is_array($notifiable) || $notifiable instanceof Collection) {
-            if (count($notifiable) === 0) {
-                throw new Exception('No notifiable given.');
-            }
-
-            foreach ($notifiable as $singleNotifiable) {
-                $this->assertSentTo($singleNotifiable, $notification, $callback);
-            }
-
-            return;
-        }
-
-        if ($notification instanceof Closure) {
-            [$notification, $callback] = [$this->firstClosureParameterType($notification), $notification];
-        }
-
-        if (is_numeric($callback)) {
-            return $this->assertSentToTimes($notifiable, $notification, $callback);
-        }
-
-        PHPUnit::assertTrue(
-            $this->sent($notifiable, $notification, $callback)->count() > 0,
-            "The expected [{$notification}] notification was not sent."
-        );
-    }
-
-    /**
-     * Assert if a notification was sent a number of times.
-     *
-     * @param  mixed  $notifiable
-     * @param  string  $notification
-     * @param  int  $times
-     * @return void
-     */
-    public function assertSentToTimes($notifiable, $notification, $times = 1)
-    {
-        $count = $this->sent($notifiable, $notification)->count();
-
-        PHPUnit::assertSame(
-            $times, $count,
-            "Expected [{$notification}] to be sent {$times} times, but was sent {$count} times."
-        );
-    }
-
-    /**
-     * Determine if a notification was sent based on a truth-test callback.
-     *
-     * @param  mixed  $notifiable
-     * @param  string|\Closure  $notification
-     * @param  callable|null  $callback
-     * @return void
-     *
-     * @throws \Exception
-     */
-    public function assertNotSentTo($notifiable, $notification, $callback = null)
-    {
-        if (is_array($notifiable) || $notifiable instanceof Collection) {
-            if (count($notifiable) === 0) {
-                throw new Exception('No notifiable given.');
-            }
-
-            foreach ($notifiable as $singleNotifiable) {
-                $this->assertNotSentTo($singleNotifiable, $notification, $callback);
-            }
-
-            return;
-        }
-
-        if ($notification instanceof Closure) {
-            [$notification, $callback] = [$this->firstClosureParameterType($notification), $notification];
-        }
-
-        PHPUnit::assertCount(
-            0, $this->sent($notifiable, $notification, $callback),
-            "The unexpected [{$notification}] notification was sent."
-        );
-    }
-
-    /**
-     * Assert that no notifications were sent.
-     *
-     * @return void
-     */
-    public function assertNothingSent()
-    {
-        PHPUnit::assertEmpty($this->notifications, 'Notifications were sent unexpectedly.');
-    }
-
-    /**
-     * Assert the total amount of times a notification was sent.
-     *
-     * @param  int  $expectedCount
-     * @param  string  $notification
-     * @return void
-     */
-    public function assertTimesSent($expectedCount, $notification)
-    {
-        $actualCount = collect($this->notifications)
-            ->flatten(1)
-            ->reduce(function ($count, $sent) use ($notification) {
-                return $count + count($sent[$notification] ?? []);
-            }, 0);
-
-        PHPUnit::assertSame(
-            $expectedCount, $actualCount,
-            "Expected [{$notification}] to be sent {$expectedCount} times, but was sent {$actualCount} times."
-        );
-    }
-
-    /**
-     * Get all of the notifications matching a truth-test callback.
-     *
-     * @param  mixed  $notifiable
-     * @param  string  $notification
-     * @param  callable|null  $callback
-     * @return \Illuminate\Support\Collection
-     */
-    public function sent($notifiable, $notification, $callback = null)
-    {
-        if (! $this->hasSent($notifiable, $notification)) {
-            return collect();
-        }
-
-        $callback = $callback ?: function () {
-            return true;
-        };
-
-        $notifications = collect($this->notificationsFor($notifiable, $notification));
-
-        return $notifications->filter(function ($arguments) use ($callback) {
-            return $callback(...array_values($arguments));
-        })->pluck('notification');
-    }
-
-    /**
-     * Determine if there are more notifications left to inspect.
-     *
-     * @param  mixed  $notifiable
-     * @param  string  $notification
-     * @return bool
-     */
-    public function hasSent($notifiable, $notification)
-    {
-        return ! empty($this->notificationsFor($notifiable, $notification));
-    }
-
-    /**
-     * Get all of the notifications for a notifiable entity by type.
-     *
-     * @param  mixed  $notifiable
-     * @param  string  $notification
-     * @return array
-     */
-    protected function notificationsFor($notifiable, $notification)
-    {
-        return $this->notifications[get_class($notifiable)][$notifiable->getKey()][$notification] ?? [];
-    }
-
-    /**
-     * Send the given notification to the given notifiable entities.
-     *
-     * @param  \Illuminate\Support\Collection|array|mixed  $notifiables
-     * @param  mixed  $notification
-     * @return void
-     */
-    public function send($notifiables, $notification)
-    {
-        return $this->sendNow($notifiables, $notification);
-    }
-
-    /**
-     * Send the given notification immediately.
-     *
-     * @param  \Illuminate\Support\Collection|array|mixed  $notifiables
-     * @param  mixed  $notification
-     * @param  array|null  $channels
-     * @return void
-     */
-    public function sendNow($notifiables, $notification, array $channels = null)
-    {
-        if (! $notifiables instanceof Collection && ! is_array($notifiables)) {
-            $notifiables = [$notifiables];
-        }
-
-        foreach ($notifiables as $notifiable) {
-            if (! $notification->id) {
-                $notification->id = Str::uuid()->toString();
-            }
-
-            $this->notifications[get_class($notifiable)][$notifiable->getKey()][get_class($notification)][] = [
-                'notification' => $notification,
-                'channels' => $channels ?: $notification->via($notifiable),
-                'notifiable' => $notifiable,
-                'locale' => $notification->locale ?? $this->locale ?? value(function () use ($notifiable) {
-                    if ($notifiable instanceof HasLocalePreference) {
-                        return $notifiable->preferredLocale();
-                    }
-                }),
-            ];
-        }
-    }
-
-    /**
-     * Get a channel instance by name.
-     *
-     * @param  string|null  $name
-     * @return mixed
-     */
-    public function channel($name = null)
-    {
-        //
-    }
-
-    /**
-     * Set the locale of notifications.
-     *
-     * @param  string  $locale
-     * @return $this
-     */
-    public function locale($locale)
-    {
-        $this->locale = $locale;
-
-        return $this;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+u0==

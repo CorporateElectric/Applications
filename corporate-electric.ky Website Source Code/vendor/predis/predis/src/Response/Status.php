@@ -1,79 +1,33 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Predis\Response;
-
-/**
- * Represents a status response returned by Redis.
- *
- * @author Daniele Alessandri <suppakilla@gmail.com>
- */
-class Status implements ResponseInterface
-{
-    private static $OK;
-    private static $QUEUED;
-
-    private $payload;
-
-    /**
-     * @param string $payload Payload of the status response as returned by Redis.
-     */
-    public function __construct($payload)
-    {
-        $this->payload = $payload;
-    }
-
-    /**
-     * Converts the response object to its string representation.
-     *
-     * @return string
-     */
-    public function __toString()
-    {
-        return $this->payload;
-    }
-
-    /**
-     * Returns the payload of status response.
-     *
-     * @return string
-     */
-    public function getPayload()
-    {
-        return $this->payload;
-    }
-
-    /**
-     * Returns an instance of a status response object.
-     *
-     * Common status responses such as OK or QUEUED are cached in order to lower
-     * the global memory usage especially when using pipelines.
-     *
-     * @param string $payload Status response payload.
-     *
-     * @return string
-     */
-    public static function get($payload)
-    {
-        switch ($payload) {
-            case 'OK':
-            case 'QUEUED':
-                if (isset(self::$$payload)) {
-                    return self::$$payload;
-                }
-
-                return self::$$payload = new self($payload);
-
-            default:
-                return new self($payload);
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+kTtgjXUF/LHST1a1PagyaimlG7MhCg9lq2X/

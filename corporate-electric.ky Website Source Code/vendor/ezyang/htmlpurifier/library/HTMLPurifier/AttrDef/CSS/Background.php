@@ -1,111 +1,63 @@
-<?php
-
-/**
- * Validates shorthand CSS property background.
- * @warning Does not support url tokens that have internal spaces.
- */
-class HTMLPurifier_AttrDef_CSS_Background extends HTMLPurifier_AttrDef
-{
-
-    /**
-     * Local copy of component validators.
-     * @type HTMLPurifier_AttrDef[]
-     * @note See HTMLPurifier_AttrDef_Font::$info for a similar impl.
-     */
-    protected $info;
-
-    /**
-     * @param HTMLPurifier_Config $config
-     */
-    public function __construct($config)
-    {
-        $def = $config->getCSSDefinition();
-        $this->info['background-color'] = $def->info['background-color'];
-        $this->info['background-image'] = $def->info['background-image'];
-        $this->info['background-repeat'] = $def->info['background-repeat'];
-        $this->info['background-attachment'] = $def->info['background-attachment'];
-        $this->info['background-position'] = $def->info['background-position'];
-    }
-
-    /**
-     * @param string $string
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return bool|string
-     */
-    public function validate($string, $config, $context)
-    {
-        // regular pre-processing
-        $string = $this->parseCDATA($string);
-        if ($string === '') {
-            return false;
-        }
-
-        // munge rgb() decl if necessary
-        $string = $this->mungeRgb($string);
-
-        // assumes URI doesn't have spaces in it
-        $bits = explode(' ', $string); // bits to process
-
-        $caught = array();
-        $caught['color'] = false;
-        $caught['image'] = false;
-        $caught['repeat'] = false;
-        $caught['attachment'] = false;
-        $caught['position'] = false;
-
-        $i = 0; // number of catches
-
-        foreach ($bits as $bit) {
-            if ($bit === '') {
-                continue;
-            }
-            foreach ($caught as $key => $status) {
-                if ($key != 'position') {
-                    if ($status !== false) {
-                        continue;
-                    }
-                    $r = $this->info['background-' . $key]->validate($bit, $config, $context);
-                } else {
-                    $r = $bit;
-                }
-                if ($r === false) {
-                    continue;
-                }
-                if ($key == 'position') {
-                    if ($caught[$key] === false) {
-                        $caught[$key] = '';
-                    }
-                    $caught[$key] .= $r . ' ';
-                } else {
-                    $caught[$key] = $r;
-                }
-                $i++;
-                break;
-            }
-        }
-
-        if (!$i) {
-            return false;
-        }
-        if ($caught['position'] !== false) {
-            $caught['position'] = $this->info['background-position']->
-                validate($caught['position'], $config, $context);
-        }
-
-        $ret = array();
-        foreach ($caught as $value) {
-            if ($value === false) {
-                continue;
-            }
-            $ret[] = $value;
-        }
-
-        if (empty($ret)) {
-            return false;
-        }
-        return implode(' ', $ret);
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+9eb1

@@ -1,83 +1,53 @@
-<?php declare(strict_types=1);
-
-namespace PhpParser\Node\Stmt;
-
-use PhpParser\Node;
-use PhpParser\Node\Identifier;
-use PhpParser\Node\Name;
-use PhpParser\Node\NullableType;
-use PhpParser\Node\UnionType;
-
-class Property extends Node\Stmt
-{
-    /** @var int Modifiers */
-    public $flags;
-    /** @var PropertyProperty[] Properties */
-    public $props;
-    /** @var null|Identifier|Name|NullableType|UnionType Type declaration */
-    public $type;
-    /** @var Node\AttributeGroup[] PHP attribute groups */
-    public $attrGroups;
-
-    /**
-     * Constructs a class property list node.
-     *
-     * @param int                                                $flags      Modifiers
-     * @param PropertyProperty[]                                 $props      Properties
-     * @param array                                              $attributes Additional attributes
-     * @param null|string|Identifier|Name|NullableType|UnionType $type       Type declaration
-     * @param Node\AttributeGroup[]                              $attrGroups PHP attribute groups
-     */
-    public function __construct(int $flags, array $props, array $attributes = [], $type = null, array $attrGroups = []) {
-        $this->attributes = $attributes;
-        $this->flags = $flags;
-        $this->props = $props;
-        $this->type = \is_string($type) ? new Identifier($type) : $type;
-        $this->attrGroups = $attrGroups;
-    }
-
-    public function getSubNodeNames() : array {
-        return ['attrGroups', 'flags', 'type', 'props'];
-    }
-
-    /**
-     * Whether the property is explicitly or implicitly public.
-     *
-     * @return bool
-     */
-    public function isPublic() : bool {
-        return ($this->flags & Class_::MODIFIER_PUBLIC) !== 0
-            || ($this->flags & Class_::VISIBILITY_MODIFIER_MASK) === 0;
-    }
-
-    /**
-     * Whether the property is protected.
-     *
-     * @return bool
-     */
-    public function isProtected() : bool {
-        return (bool) ($this->flags & Class_::MODIFIER_PROTECTED);
-    }
-
-    /**
-     * Whether the property is private.
-     *
-     * @return bool
-     */
-    public function isPrivate() : bool {
-        return (bool) ($this->flags & Class_::MODIFIER_PRIVATE);
-    }
-
-    /**
-     * Whether the property is static.
-     *
-     * @return bool
-     */
-    public function isStatic() : bool {
-        return (bool) ($this->flags & Class_::MODIFIER_STATIC);
-    }
-
-    public function getType() : string {
-        return 'Stmt_Property';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,341 +1,131 @@
-<?php
-
-// why is this a top level function? Because PHP 5.2.0 doesn't seem to
-// understand how to interpret this filter if it's a static method.
-// It's all really silly, but if we go this route it might be reasonable
-// to coalesce all of these methods into one.
-function htmlpurifier_filter_extractstyleblocks_muteerrorhandler()
-{
-}
-
-/**
- * This filter extracts <style> blocks from input HTML, cleans them up
- * using CSSTidy, and then places them in $purifier->context->get('StyleBlocks')
- * so they can be used elsewhere in the document.
- *
- * @note
- *      See tests/HTMLPurifier/Filter/ExtractStyleBlocksTest.php for
- *      sample usage.
- *
- * @note
- *      This filter can also be used on stylesheets not included in the
- *      document--something purists would probably prefer. Just directly
- *      call HTMLPurifier_Filter_ExtractStyleBlocks->cleanCSS()
- */
-class HTMLPurifier_Filter_ExtractStyleBlocks extends HTMLPurifier_Filter
-{
-    /**
-     * @type string
-     */
-    public $name = 'ExtractStyleBlocks';
-
-    /**
-     * @type array
-     */
-    private $_styleMatches = array();
-
-    /**
-     * @type csstidy
-     */
-    private $_tidy;
-
-    /**
-     * @type HTMLPurifier_AttrDef_HTML_ID
-     */
-    private $_id_attrdef;
-
-    /**
-     * @type HTMLPurifier_AttrDef_CSS_Ident
-     */
-    private $_class_attrdef;
-
-    /**
-     * @type HTMLPurifier_AttrDef_Enum
-     */
-    private $_enum_attrdef;
-
-    public function __construct()
-    {
-        $this->_tidy = new csstidy();
-        $this->_tidy->set_cfg('lowercase_s', false);
-        $this->_id_attrdef = new HTMLPurifier_AttrDef_HTML_ID(true);
-        $this->_class_attrdef = new HTMLPurifier_AttrDef_CSS_Ident();
-        $this->_enum_attrdef = new HTMLPurifier_AttrDef_Enum(
-            array(
-                'first-child',
-                'link',
-                'visited',
-                'active',
-                'hover',
-                'focus'
-            )
-        );
-    }
-
-    /**
-     * Save the contents of CSS blocks to style matches
-     * @param array $matches preg_replace style $matches array
-     */
-    protected function styleCallback($matches)
-    {
-        $this->_styleMatches[] = $matches[1];
-    }
-
-    /**
-     * Removes inline <style> tags from HTML, saves them for later use
-     * @param string $html
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return string
-     * @todo Extend to indicate non-text/css style blocks
-     */
-    public function preFilter($html, $config, $context)
-    {
-        $tidy = $config->get('Filter.ExtractStyleBlocks.TidyImpl');
-        if ($tidy !== null) {
-            $this->_tidy = $tidy;
-        }
-        // NB: this must be NON-greedy because if we have
-        // <style>foo</style>  <style>bar</style>
-        // we must not grab foo</style>  <style>bar
-        $html = preg_replace_callback('#<style(?:\s.*)?>(.*)<\/style>#isU', array($this, 'styleCallback'), $html);
-        $style_blocks = $this->_styleMatches;
-        $this->_styleMatches = array(); // reset
-        $context->register('StyleBlocks', $style_blocks); // $context must not be reused
-        if ($this->_tidy) {
-            foreach ($style_blocks as &$style) {
-                $style = $this->cleanCSS($style, $config, $context);
-            }
-        }
-        return $html;
-    }
-
-    /**
-     * Takes CSS (the stuff found in <style>) and cleans it.
-     * @warning Requires CSSTidy <http://csstidy.sourceforge.net/>
-     * @param string $css CSS styling to clean
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @throws HTMLPurifier_Exception
-     * @return string Cleaned CSS
-     */
-    public function cleanCSS($css, $config, $context)
-    {
-        // prepare scope
-        $scope = $config->get('Filter.ExtractStyleBlocks.Scope');
-        if ($scope !== null) {
-            $scopes = array_map('trim', explode(',', $scope));
-        } else {
-            $scopes = array();
-        }
-        // remove comments from CSS
-        $css = trim($css);
-        if (strncmp('<!--', $css, 4) === 0) {
-            $css = substr($css, 4);
-        }
-        if (strlen($css) > 3 && substr($css, -3) == '-->') {
-            $css = substr($css, 0, -3);
-        }
-        $css = trim($css);
-        set_error_handler('htmlpurifier_filter_extractstyleblocks_muteerrorhandler');
-        $this->_tidy->parse($css);
-        restore_error_handler();
-        $css_definition = $config->getDefinition('CSS');
-        $html_definition = $config->getDefinition('HTML');
-        $new_css = array();
-        foreach ($this->_tidy->css as $k => $decls) {
-            // $decls are all CSS declarations inside an @ selector
-            $new_decls = array();
-            foreach ($decls as $selector => $style) {
-                $selector = trim($selector);
-                if ($selector === '') {
-                    continue;
-                } // should not happen
-                // Parse the selector
-                // Here is the relevant part of the CSS grammar:
-                //
-                // ruleset
-                //   : selector [ ',' S* selector ]* '{' ...
-                // selector
-                //   : simple_selector [ combinator selector | S+ [ combinator? selector ]? ]?
-                // combinator
-                //   : '+' S*
-                //   : '>' S*
-                // simple_selector
-                //   : element_name [ HASH | class | attrib | pseudo ]*
-                //   | [ HASH | class | attrib | pseudo ]+
-                // element_name
-                //   : IDENT | '*'
-                //   ;
-                // class
-                //   : '.' IDENT
-                //   ;
-                // attrib
-                //   : '[' S* IDENT S* [ [ '=' | INCLUDES | DASHMATCH ] S*
-                //     [ IDENT | STRING ] S* ]? ']'
-                //   ;
-                // pseudo
-                //   : ':' [ IDENT | FUNCTION S* [IDENT S*]? ')' ]
-                //   ;
-                //
-                // For reference, here are the relevant tokens:
-                //
-                // HASH         #{name}
-                // IDENT        {ident}
-                // INCLUDES     ==
-                // DASHMATCH    |=
-                // STRING       {string}
-                // FUNCTION     {ident}\(
-                //
-                // And the lexical scanner tokens
-                //
-                // name         {nmchar}+
-                // nmchar       [_a-z0-9-]|{nonascii}|{escape}
-                // nonascii     [\240-\377]
-                // escape       {unicode}|\\[^\r\n\f0-9a-f]
-                // unicode      \\{h}}{1,6}(\r\n|[ \t\r\n\f])?
-                // ident        -?{nmstart}{nmchar*}
-                // nmstart      [_a-z]|{nonascii}|{escape}
-                // string       {string1}|{string2}
-                // string1      \"([^\n\r\f\\"]|\\{nl}|{escape})*\"
-                // string2      \'([^\n\r\f\\"]|\\{nl}|{escape})*\'
-                //
-                // We'll implement a subset (in order to reduce attack
-                // surface); in particular:
-                //
-                //      - No Unicode support
-                //      - No escapes support
-                //      - No string support (by proxy no attrib support)
-                //      - element_name is matched against allowed
-                //        elements (some people might find this
-                //        annoying...)
-                //      - Pseudo-elements one of :first-child, :link,
-                //        :visited, :active, :hover, :focus
-
-                // handle ruleset
-                $selectors = array_map('trim', explode(',', $selector));
-                $new_selectors = array();
-                foreach ($selectors as $sel) {
-                    // split on +, > and spaces
-                    $basic_selectors = preg_split('/\s*([+> ])\s*/', $sel, -1, PREG_SPLIT_DELIM_CAPTURE);
-                    // even indices are chunks, odd indices are
-                    // delimiters
-                    $nsel = null;
-                    $delim = null; // guaranteed to be non-null after
-                    // two loop iterations
-                    for ($i = 0, $c = count($basic_selectors); $i < $c; $i++) {
-                        $x = $basic_selectors[$i];
-                        if ($i % 2) {
-                            // delimiter
-                            if ($x === ' ') {
-                                $delim = ' ';
-                            } else {
-                                $delim = ' ' . $x . ' ';
-                            }
-                        } else {
-                            // simple selector
-                            $components = preg_split('/([#.:])/', $x, -1, PREG_SPLIT_DELIM_CAPTURE);
-                            $sdelim = null;
-                            $nx = null;
-                            for ($j = 0, $cc = count($components); $j < $cc; $j++) {
-                                $y = $components[$j];
-                                if ($j === 0) {
-                                    if ($y === '*' || isset($html_definition->info[$y = strtolower($y)])) {
-                                        $nx = $y;
-                                    } else {
-                                        // $nx stays null; this matters
-                                        // if we don't manage to find
-                                        // any valid selector content,
-                                        // in which case we ignore the
-                                        // outer $delim
-                                    }
-                                } elseif ($j % 2) {
-                                    // set delimiter
-                                    $sdelim = $y;
-                                } else {
-                                    $attrdef = null;
-                                    if ($sdelim === '#') {
-                                        $attrdef = $this->_id_attrdef;
-                                    } elseif ($sdelim === '.') {
-                                        $attrdef = $this->_class_attrdef;
-                                    } elseif ($sdelim === ':') {
-                                        $attrdef = $this->_enum_attrdef;
-                                    } else {
-                                        throw new HTMLPurifier_Exception('broken invariant sdelim and preg_split');
-                                    }
-                                    $r = $attrdef->validate($y, $config, $context);
-                                    if ($r !== false) {
-                                        if ($r !== true) {
-                                            $y = $r;
-                                        }
-                                        if ($nx === null) {
-                                            $nx = '';
-                                        }
-                                        $nx .= $sdelim . $y;
-                                    }
-                                }
-                            }
-                            if ($nx !== null) {
-                                if ($nsel === null) {
-                                    $nsel = $nx;
-                                } else {
-                                    $nsel .= $delim . $nx;
-                                }
-                            } else {
-                                // delimiters to the left of invalid
-                                // basic selector ignored
-                            }
-                        }
-                    }
-                    if ($nsel !== null) {
-                        if (!empty($scopes)) {
-                            foreach ($scopes as $s) {
-                                $new_selectors[] = "$s $nsel";
-                            }
-                        } else {
-                            $new_selectors[] = $nsel;
-                        }
-                    }
-                }
-                if (empty($new_selectors)) {
-                    continue;
-                }
-                $selector = implode(', ', $new_selectors);
-                foreach ($style as $name => $value) {
-                    if (!isset($css_definition->info[$name])) {
-                        unset($style[$name]);
-                        continue;
-                    }
-                    $def = $css_definition->info[$name];
-                    $ret = $def->validate($value, $config, $context);
-                    if ($ret === false) {
-                        unset($style[$name]);
-                    } else {
-                        $style[$name] = $ret;
-                    }
-                }
-                $new_decls[$selector] = $style;
-            }
-            $new_css[$k] = $new_decls;
-        }
-        // remove stuff that shouldn't be used, could be reenabled
-        // after security risks are analyzed
-        $this->_tidy->css = $new_css;
-        $this->_tidy->import = array();
-        $this->_tidy->charset = null;
-        $this->_tidy->namespace = null;
-        $css = $this->_tidy->print->plain();
-        // we are going to escape any special characters <>& to ensure
-        // that no funny business occurs (i.e. </style> in a font-family prop).
-        if ($config->get('Filter.ExtractStyleBlocks.Escaping')) {
-            $css = str_replace(
-                array('<', '>', '&'),
-                array('\3C ', '\3E ', '\26 '),
-                $css
-            );
-        }
-        return $css;
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

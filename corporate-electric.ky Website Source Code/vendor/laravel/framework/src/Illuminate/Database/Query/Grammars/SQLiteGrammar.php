@@ -1,342 +1,193 @@
-<?php
-
-namespace Illuminate\Database\Query\Grammars;
-
-use Illuminate\Database\Query\Builder;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
-
-class SQLiteGrammar extends Grammar
-{
-    /**
-     * All of the available clause operators.
-     *
-     * @var string[]
-     */
-    protected $operators = [
-        '=', '<', '>', '<=', '>=', '<>', '!=',
-        'like', 'not like', 'ilike',
-        '&', '|', '<<', '>>',
-    ];
-
-    /**
-     * Compile the lock into SQL.
-     *
-     * @param  \Illuminate\Database\Query\Builder  $query
-     * @param  bool|string  $value
-     * @return string
-     */
-    protected function compileLock(Builder $query, $value)
-    {
-        return '';
-    }
-
-    /**
-     * Wrap a union subquery in parentheses.
-     *
-     * @param  string  $sql
-     * @return string
-     */
-    protected function wrapUnion($sql)
-    {
-        return 'select * from ('.$sql.')';
-    }
-
-    /**
-     * Compile a "where date" clause.
-     *
-     * @param  \Illuminate\Database\Query\Builder  $query
-     * @param  array  $where
-     * @return string
-     */
-    protected function whereDate(Builder $query, $where)
-    {
-        return $this->dateBasedWhere('%Y-%m-%d', $query, $where);
-    }
-
-    /**
-     * Compile a "where day" clause.
-     *
-     * @param  \Illuminate\Database\Query\Builder  $query
-     * @param  array  $where
-     * @return string
-     */
-    protected function whereDay(Builder $query, $where)
-    {
-        return $this->dateBasedWhere('%d', $query, $where);
-    }
-
-    /**
-     * Compile a "where month" clause.
-     *
-     * @param  \Illuminate\Database\Query\Builder  $query
-     * @param  array  $where
-     * @return string
-     */
-    protected function whereMonth(Builder $query, $where)
-    {
-        return $this->dateBasedWhere('%m', $query, $where);
-    }
-
-    /**
-     * Compile a "where year" clause.
-     *
-     * @param  \Illuminate\Database\Query\Builder  $query
-     * @param  array  $where
-     * @return string
-     */
-    protected function whereYear(Builder $query, $where)
-    {
-        return $this->dateBasedWhere('%Y', $query, $where);
-    }
-
-    /**
-     * Compile a "where time" clause.
-     *
-     * @param  \Illuminate\Database\Query\Builder  $query
-     * @param  array  $where
-     * @return string
-     */
-    protected function whereTime(Builder $query, $where)
-    {
-        return $this->dateBasedWhere('%H:%M:%S', $query, $where);
-    }
-
-    /**
-     * Compile a date based where clause.
-     *
-     * @param  string  $type
-     * @param  \Illuminate\Database\Query\Builder  $query
-     * @param  array  $where
-     * @return string
-     */
-    protected function dateBasedWhere($type, Builder $query, $where)
-    {
-        $value = $this->parameter($where['value']);
-
-        return "strftime('{$type}', {$this->wrap($where['column'])}) {$where['operator']} cast({$value} as text)";
-    }
-
-    /**
-     * Compile a "JSON length" statement into SQL.
-     *
-     * @param  string  $column
-     * @param  string  $operator
-     * @param  string  $value
-     * @return string
-     */
-    protected function compileJsonLength($column, $operator, $value)
-    {
-        [$field, $path] = $this->wrapJsonFieldAndPath($column);
-
-        return 'json_array_length('.$field.$path.') '.$operator.' '.$value;
-    }
-
-    /**
-     * Compile an update statement into SQL.
-     *
-     * @param  \Illuminate\Database\Query\Builder  $query
-     * @param  array  $values
-     * @return string
-     */
-    public function compileUpdate(Builder $query, array $values)
-    {
-        if (isset($query->joins) || isset($query->limit)) {
-            return $this->compileUpdateWithJoinsOrLimit($query, $values);
-        }
-
-        return parent::compileUpdate($query, $values);
-    }
-
-    /**
-     * Compile an insert ignore statement into SQL.
-     *
-     * @param  \Illuminate\Database\Query\Builder  $query
-     * @param  array  $values
-     * @return string
-     */
-    public function compileInsertOrIgnore(Builder $query, array $values)
-    {
-        return Str::replaceFirst('insert', 'insert or ignore', $this->compileInsert($query, $values));
-    }
-
-    /**
-     * Compile the columns for an update statement.
-     *
-     * @param  \Illuminate\Database\Query\Builder  $query
-     * @param  array  $values
-     * @return string
-     */
-    protected function compileUpdateColumns(Builder $query, array $values)
-    {
-        $jsonGroups = $this->groupJsonColumnsForUpdate($values);
-
-        return collect($values)->reject(function ($value, $key) {
-            return $this->isJsonSelector($key);
-        })->merge($jsonGroups)->map(function ($value, $key) use ($jsonGroups) {
-            $column = last(explode('.', $key));
-
-            $value = isset($jsonGroups[$key]) ? $this->compileJsonPatch($column, $value) : $this->parameter($value);
-
-            return $this->wrap($column).' = '.$value;
-        })->implode(', ');
-    }
-
-    /**
-     * Compile an "upsert" statement into SQL.
-     *
-     * @param  \Illuminate\Database\Query\Builder  $query
-     * @param  array  $values
-     * @param  array  $uniqueBy
-     * @param  array  $update
-     * @return string
-     */
-    public function compileUpsert(Builder $query, array $values, array $uniqueBy, array $update)
-    {
-        $sql = $this->compileInsert($query, $values);
-
-        $sql .= ' on conflict ('.$this->columnize($uniqueBy).') do update set ';
-
-        $columns = collect($update)->map(function ($value, $key) {
-            return is_numeric($key)
-                ? $this->wrap($value).' = '.$this->wrapValue('excluded').'.'.$this->wrap($value)
-                : $this->wrap($key).' = '.$this->parameter($value);
-        })->implode(', ');
-
-        return $sql.$columns;
-    }
-
-    /**
-     * Group the nested JSON columns.
-     *
-     * @param  array  $values
-     * @return array
-     */
-    protected function groupJsonColumnsForUpdate(array $values)
-    {
-        $groups = [];
-
-        foreach ($values as $key => $value) {
-            if ($this->isJsonSelector($key)) {
-                Arr::set($groups, str_replace('->', '.', Str::after($key, '.')), $value);
-            }
-        }
-
-        return $groups;
-    }
-
-    /**
-     * Compile a "JSON" patch statement into SQL.
-     *
-     * @param  string  $column
-     * @param  mixed  $value
-     * @return string
-     */
-    protected function compileJsonPatch($column, $value)
-    {
-        return "json_patch(ifnull({$this->wrap($column)}, json('{}')), json({$this->parameter($value)}))";
-    }
-
-    /**
-     * Compile an update statement with joins or limit into SQL.
-     *
-     * @param  \Illuminate\Database\Query\Builder  $query
-     * @param  array  $values
-     * @return string
-     */
-    protected function compileUpdateWithJoinsOrLimit(Builder $query, array $values)
-    {
-        $table = $this->wrapTable($query->from);
-
-        $columns = $this->compileUpdateColumns($query, $values);
-
-        $alias = last(preg_split('/\s+as\s+/i', $query->from));
-
-        $selectSql = $this->compileSelect($query->select($alias.'.rowid'));
-
-        return "update {$table} set {$columns} where {$this->wrap('rowid')} in ({$selectSql})";
-    }
-
-    /**
-     * Prepare the bindings for an update statement.
-     *
-     * @param  array  $bindings
-     * @param  array  $values
-     * @return array
-     */
-    public function prepareBindingsForUpdate(array $bindings, array $values)
-    {
-        $groups = $this->groupJsonColumnsForUpdate($values);
-
-        $values = collect($values)->reject(function ($value, $key) {
-            return $this->isJsonSelector($key);
-        })->merge($groups)->map(function ($value) {
-            return is_array($value) ? json_encode($value) : $value;
-        })->all();
-
-        $cleanBindings = Arr::except($bindings, 'select');
-
-        return array_values(
-            array_merge($values, Arr::flatten($cleanBindings))
-        );
-    }
-
-    /**
-     * Compile a delete statement into SQL.
-     *
-     * @param  \Illuminate\Database\Query\Builder  $query
-     * @return string
-     */
-    public function compileDelete(Builder $query)
-    {
-        if (isset($query->joins) || isset($query->limit)) {
-            return $this->compileDeleteWithJoinsOrLimit($query);
-        }
-
-        return parent::compileDelete($query);
-    }
-
-    /**
-     * Compile a delete statement with joins or limit into SQL.
-     *
-     * @param  \Illuminate\Database\Query\Builder  $query
-     * @return string
-     */
-    protected function compileDeleteWithJoinsOrLimit(Builder $query)
-    {
-        $table = $this->wrapTable($query->from);
-
-        $alias = last(preg_split('/\s+as\s+/i', $query->from));
-
-        $selectSql = $this->compileSelect($query->select($alias.'.rowid'));
-
-        return "delete from {$table} where {$this->wrap('rowid')} in ({$selectSql})";
-    }
-
-    /**
-     * Compile a truncate table statement into SQL.
-     *
-     * @param  \Illuminate\Database\Query\Builder  $query
-     * @return array
-     */
-    public function compileTruncate(Builder $query)
-    {
-        return [
-            'delete from sqlite_sequence where name = ?' => [$query->from],
-            'delete from '.$this->wrapTable($query->from) => [],
-        ];
-    }
-
-    /**
-     * Wrap the given JSON selector.
-     *
-     * @param  string  $value
-     * @return string
-     */
-    protected function wrapJsonSelector($value)
-    {
-        [$field, $path] = $this->wrapJsonFieldAndPath($value);
-
-        return 'json_extract('.$field.$path.')';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+5islh/oB2acszNGteG==

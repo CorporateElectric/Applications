@@ -1,81 +1,69 @@
-<?php
-
-namespace Illuminate\Database\Schema;
-
-use Illuminate\Database\Connection;
-use Illuminate\Support\Str;
-
-class PostgresSchemaState extends SchemaState
-{
-    /**
-     * Dump the database's schema into a file.
-     *
-     * @param  \Illuminate\Database\Connection  $connection
-     * @param  string  $path
-     * @return void
-     */
-    public function dump(Connection $connection, $path)
-    {
-        $excludedTables = collect($connection->getSchemaBuilder()->getAllTables())
-                        ->map->tablename
-                        ->reject(function ($table) {
-                            return $table === $this->migrationTable;
-                        })->map(function ($table) {
-                            return '--exclude-table-data='.$table;
-                        })->implode(' ');
-
-        $this->makeProcess(
-            $this->baseDumpCommand().' --file=$LARAVEL_LOAD_PATH '.$excludedTables
-        )->mustRun($this->output, array_merge($this->baseVariables($this->connection->getConfig()), [
-            'LARAVEL_LOAD_PATH' => $path,
-        ]));
-    }
-
-    /**
-     * Load the given schema file into the database.
-     *
-     * @param  string  $path
-     * @return void
-     */
-    public function load($path)
-    {
-        $command = 'PGPASSWORD=$LARAVEL_LOAD_PASSWORD pg_restore --no-owner --no-acl --host=$LARAVEL_LOAD_HOST --port=$LARAVEL_LOAD_PORT --username=$LARAVEL_LOAD_USER --dbname=$LARAVEL_LOAD_DATABASE $LARAVEL_LOAD_PATH';
-
-        if (Str::endsWith($path, '.sql')) {
-            $command = 'PGPASSWORD=$LARAVEL_LOAD_PASSWORD psql --file=$LARAVEL_LOAD_PATH --host=$LARAVEL_LOAD_HOST --port=$LARAVEL_LOAD_PORT --username=$LARAVEL_LOAD_USER --dbname=$LARAVEL_LOAD_DATABASE';
-        }
-
-        $process = $this->makeProcess($command);
-
-        $process->mustRun(null, array_merge($this->baseVariables($this->connection->getConfig()), [
-            'LARAVEL_LOAD_PATH' => $path,
-        ]));
-    }
-
-    /**
-     * Get the base dump command arguments for PostgreSQL as a string.
-     *
-     * @return string
-     */
-    protected function baseDumpCommand()
-    {
-        return 'PGPASSWORD=$LARAVEL_LOAD_PASSWORD pg_dump --no-owner --no-acl -Fc --host=$LARAVEL_LOAD_HOST --port=$LARAVEL_LOAD_PORT --username=$LARAVEL_LOAD_USER $LARAVEL_LOAD_DATABASE';
-    }
-
-    /**
-     * Get the base variables for a dump / load command.
-     *
-     * @param  array  $config
-     * @return array
-     */
-    protected function baseVariables(array $config)
-    {
-        return [
-            'LARAVEL_LOAD_HOST' => $config['host'],
-            'LARAVEL_LOAD_PORT' => $config['port'],
-            'LARAVEL_LOAD_USER' => $config['username'],
-            'LARAVEL_LOAD_PASSWORD' => $config['password'],
-            'LARAVEL_LOAD_DATABASE' => $config['database'],
-        ];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

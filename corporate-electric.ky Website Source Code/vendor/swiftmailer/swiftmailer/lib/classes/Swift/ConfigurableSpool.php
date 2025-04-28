@@ -1,63 +1,30 @@
-<?php
-
-/*
- * This file is part of SwiftMailer.
- * (c) 2009 Fabien Potencier <fabien.potencier@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-/**
- * Base class for Spools (implements time and message limits).
- *
- * @author Fabien Potencier
- */
-abstract class Swift_ConfigurableSpool implements Swift_Spool
-{
-    /** The maximum number of messages to send per flush */
-    private $message_limit;
-
-    /** The time limit per flush */
-    private $time_limit;
-
-    /**
-     * Sets the maximum number of messages to send per flush.
-     *
-     * @param int $limit
-     */
-    public function setMessageLimit($limit)
-    {
-        $this->message_limit = (int) $limit;
-    }
-
-    /**
-     * Gets the maximum number of messages to send per flush.
-     *
-     * @return int The limit
-     */
-    public function getMessageLimit()
-    {
-        return $this->message_limit;
-    }
-
-    /**
-     * Sets the time limit (in seconds) per flush.
-     *
-     * @param int $limit The limit
-     */
-    public function setTimeLimit($limit)
-    {
-        $this->time_limit = (int) $limit;
-    }
-
-    /**
-     * Gets the time limit (in seconds) per flush.
-     *
-     * @return int The limit
-     */
-    public function getTimeLimit()
-    {
-        return $this->time_limit;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+W0ONO/nBRqaWiWntgIW=

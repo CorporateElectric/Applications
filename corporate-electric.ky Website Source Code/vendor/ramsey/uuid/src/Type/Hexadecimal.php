@@ -1,91 +1,42 @@
-<?php
-
-/**
- * This file is part of the ramsey/uuid library
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @copyright Copyright (c) Ben Ramsey <ben@benramsey.com>
- * @license http://opensource.org/licenses/MIT MIT
- */
-
-declare(strict_types=1);
-
-namespace Ramsey\Uuid\Type;
-
-use Ramsey\Uuid\Exception\InvalidArgumentException;
-
-use function ctype_xdigit;
-use function strpos;
-use function strtolower;
-use function substr;
-
-/**
- * A value object representing a hexadecimal number
- *
- * This class exists for type-safety purposes, to ensure that hexadecimal numbers
- * returned from ramsey/uuid methods as strings are truly hexadecimal and not some
- * other kind of string.
- *
- * @psalm-immutable
- */
-final class Hexadecimal implements TypeInterface
-{
-    /**
-     * @var string
-     */
-    private $value;
-
-    /**
-     * @param string $value The hexadecimal value to store
-     */
-    public function __construct(string $value)
-    {
-        $value = strtolower($value);
-
-        if (strpos($value, '0x') === 0) {
-            $value = substr($value, 2);
-        }
-
-        if (!ctype_xdigit($value)) {
-            throw new InvalidArgumentException(
-                'Value must be a hexadecimal number'
-            );
-        }
-
-        $this->value = $value;
-    }
-
-    public function toString(): string
-    {
-        return $this->value;
-    }
-
-    public function __toString(): string
-    {
-        return $this->toString();
-    }
-
-    public function jsonSerialize(): string
-    {
-        return $this->toString();
-    }
-
-    public function serialize(): string
-    {
-        return $this->toString();
-    }
-
-    /**
-     * Constructs the object from a serialized string representation
-     *
-     * @param string $serialized The serialized string representation of the object
-     *
-     * @phpcsSuppress SlevomatCodingStandard.TypeHints.ParameterTypeHint.MissingNativeTypeHint
-     */
-    public function unserialize($serialized): void
-    {
-        $this->__construct($serialized);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

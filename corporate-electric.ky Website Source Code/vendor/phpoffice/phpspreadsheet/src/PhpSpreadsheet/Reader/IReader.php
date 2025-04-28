@@ -1,133 +1,34 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Reader;
-
-interface IReader
-{
-    /**
-     * IReader constructor.
-     */
-    public function __construct();
-
-    /**
-     * Can the current IReader read the file?
-     *
-     * @param string $pFilename
-     *
-     * @return bool
-     */
-    public function canRead($pFilename);
-
-    /**
-     * Read data only?
-     *        If this is true, then the Reader will only read data values for cells, it will not read any formatting information.
-     *        If false (the default) it will read data and formatting.
-     *
-     * @return bool
-     */
-    public function getReadDataOnly();
-
-    /**
-     * Set read data only
-     *        Set to true, to advise the Reader only to read data values for cells, and to ignore any formatting information.
-     *        Set to false (the default) to advise the Reader to read both data and formatting for cells.
-     *
-     * @param bool $pValue
-     *
-     * @return IReader
-     */
-    public function setReadDataOnly($pValue);
-
-    /**
-     * Read empty cells?
-     *        If this is true (the default), then the Reader will read data values for all cells, irrespective of value.
-     *        If false it will not read data for cells containing a null value or an empty string.
-     *
-     * @return bool
-     */
-    public function getReadEmptyCells();
-
-    /**
-     * Set read empty cells
-     *        Set to true (the default) to advise the Reader read data values for all cells, irrespective of value.
-     *        Set to false to advise the Reader to ignore cells containing a null value or an empty string.
-     *
-     * @param bool $pValue
-     *
-     * @return IReader
-     */
-    public function setReadEmptyCells($pValue);
-
-    /**
-     * Read charts in workbook?
-     *        If this is true, then the Reader will include any charts that exist in the workbook.
-     *      Note that a ReadDataOnly value of false overrides, and charts won't be read regardless of the IncludeCharts value.
-     *        If false (the default) it will ignore any charts defined in the workbook file.
-     *
-     * @return bool
-     */
-    public function getIncludeCharts();
-
-    /**
-     * Set read charts in workbook
-     *        Set to true, to advise the Reader to include any charts that exist in the workbook.
-     *      Note that a ReadDataOnly value of false overrides, and charts won't be read regardless of the IncludeCharts value.
-     *        Set to false (the default) to discard charts.
-     *
-     * @param bool $pValue
-     *
-     * @return IReader
-     */
-    public function setIncludeCharts($pValue);
-
-    /**
-     * Get which sheets to load
-     * Returns either an array of worksheet names (the list of worksheets that should be loaded), or a null
-     *        indicating that all worksheets in the workbook should be loaded.
-     *
-     * @return mixed
-     */
-    public function getLoadSheetsOnly();
-
-    /**
-     * Set which sheets to load.
-     *
-     * @param mixed $value
-     *        This should be either an array of worksheet names to be loaded, or a string containing a single worksheet name.
-     *        If NULL, then it tells the Reader to read all worksheets in the workbook
-     *
-     * @return IReader
-     */
-    public function setLoadSheetsOnly($value);
-
-    /**
-     * Set all sheets to load
-     *        Tells the Reader to load all worksheets from the workbook.
-     *
-     * @return IReader
-     */
-    public function setLoadAllSheets();
-
-    /**
-     * Read filter.
-     *
-     * @return IReadFilter
-     */
-    public function getReadFilter();
-
-    /**
-     * Set read filter.
-     *
-     * @return IReader
-     */
-    public function setReadFilter(IReadFilter $pValue);
-
-    /**
-     * Loads PhpSpreadsheet from file.
-     *
-     * @param string $pFilename
-     *
-     * @return \PhpOffice\PhpSpreadsheet\Spreadsheet
-     */
-    public function load($pFilename);
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

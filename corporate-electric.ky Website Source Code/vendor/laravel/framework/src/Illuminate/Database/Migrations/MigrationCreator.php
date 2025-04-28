@@ -1,236 +1,92 @@
-<?php
-
-namespace Illuminate\Database\Migrations;
-
-use Closure;
-use Illuminate\Filesystem\Filesystem;
-use Illuminate\Support\Str;
-use InvalidArgumentException;
-
-class MigrationCreator
-{
-    /**
-     * The filesystem instance.
-     *
-     * @var \Illuminate\Filesystem\Filesystem
-     */
-    protected $files;
-
-    /**
-     * The custom app stubs directory.
-     *
-     * @var string
-     */
-    protected $customStubPath;
-
-    /**
-     * The registered post create hooks.
-     *
-     * @var array
-     */
-    protected $postCreate = [];
-
-    /**
-     * Create a new migration creator instance.
-     *
-     * @param  \Illuminate\Filesystem\Filesystem  $files
-     * @param  string  $customStubPath
-     * @return void
-     */
-    public function __construct(Filesystem $files, $customStubPath)
-    {
-        $this->files = $files;
-        $this->customStubPath = $customStubPath;
-    }
-
-    /**
-     * Create a new migration at the given path.
-     *
-     * @param  string  $name
-     * @param  string  $path
-     * @param  string|null  $table
-     * @param  bool  $create
-     * @return string
-     *
-     * @throws \Exception
-     */
-    public function create($name, $path, $table = null, $create = false)
-    {
-        $this->ensureMigrationDoesntAlreadyExist($name, $path);
-
-        // First we will get the stub file for the migration, which serves as a type
-        // of template for the migration. Once we have those we will populate the
-        // various place-holders, save the file, and run the post create event.
-        $stub = $this->getStub($table, $create);
-
-        $path = $this->getPath($name, $path);
-
-        $this->files->ensureDirectoryExists(dirname($path));
-
-        $this->files->put(
-            $path, $this->populateStub($name, $stub, $table)
-        );
-
-        // Next, we will fire any hooks that are supposed to fire after a migration is
-        // created. Once that is done we'll be ready to return the full path to the
-        // migration file so it can be used however it's needed by the developer.
-        $this->firePostCreateHooks($table);
-
-        return $path;
-    }
-
-    /**
-     * Ensure that a migration with the given name doesn't already exist.
-     *
-     * @param  string  $name
-     * @param  string  $migrationPath
-     * @return void
-     *
-     * @throws \InvalidArgumentException
-     */
-    protected function ensureMigrationDoesntAlreadyExist($name, $migrationPath = null)
-    {
-        if (! empty($migrationPath)) {
-            $migrationFiles = $this->files->glob($migrationPath.'/*.php');
-
-            foreach ($migrationFiles as $migrationFile) {
-                $this->files->requireOnce($migrationFile);
-            }
-        }
-
-        if (class_exists($className = $this->getClassName($name))) {
-            throw new InvalidArgumentException("A {$className} class already exists.");
-        }
-    }
-
-    /**
-     * Get the migration stub file.
-     *
-     * @param  string|null  $table
-     * @param  bool  $create
-     * @return string
-     */
-    protected function getStub($table, $create)
-    {
-        if (is_null($table)) {
-            $stub = $this->files->exists($customPath = $this->customStubPath.'/migration.stub')
-                            ? $customPath
-                            : $this->stubPath().'/migration.stub';
-        } elseif ($create) {
-            $stub = $this->files->exists($customPath = $this->customStubPath.'/migration.create.stub')
-                            ? $customPath
-                            : $this->stubPath().'/migration.create.stub';
-        } else {
-            $stub = $this->files->exists($customPath = $this->customStubPath.'/migration.update.stub')
-                            ? $customPath
-                            : $this->stubPath().'/migration.update.stub';
-        }
-
-        return $this->files->get($stub);
-    }
-
-    /**
-     * Populate the place-holders in the migration stub.
-     *
-     * @param  string  $name
-     * @param  string  $stub
-     * @param  string|null  $table
-     * @return string
-     */
-    protected function populateStub($name, $stub, $table)
-    {
-        $stub = str_replace(
-            ['DummyClass', '{{ class }}', '{{class}}'],
-            $this->getClassName($name), $stub
-        );
-
-        // Here we will replace the table place-holders with the table specified by
-        // the developer, which is useful for quickly creating a tables creation
-        // or update migration from the console instead of typing it manually.
-        if (! is_null($table)) {
-            $stub = str_replace(
-                ['DummyTable', '{{ table }}', '{{table}}'],
-                $table, $stub
-            );
-        }
-
-        return $stub;
-    }
-
-    /**
-     * Get the class name of a migration name.
-     *
-     * @param  string  $name
-     * @return string
-     */
-    protected function getClassName($name)
-    {
-        return Str::studly($name);
-    }
-
-    /**
-     * Get the full path to the migration.
-     *
-     * @param  string  $name
-     * @param  string  $path
-     * @return string
-     */
-    protected function getPath($name, $path)
-    {
-        return $path.'/'.$this->getDatePrefix().'_'.$name.'.php';
-    }
-
-    /**
-     * Fire the registered post create hooks.
-     *
-     * @param  string|null  $table
-     * @return void
-     */
-    protected function firePostCreateHooks($table)
-    {
-        foreach ($this->postCreate as $callback) {
-            $callback($table);
-        }
-    }
-
-    /**
-     * Register a post migration create hook.
-     *
-     * @param  \Closure  $callback
-     * @return void
-     */
-    public function afterCreate(Closure $callback)
-    {
-        $this->postCreate[] = $callback;
-    }
-
-    /**
-     * Get the date prefix for the migration.
-     *
-     * @return string
-     */
-    protected function getDatePrefix()
-    {
-        return date('Y_m_d_His');
-    }
-
-    /**
-     * Get the path to the stubs.
-     *
-     * @return string
-     */
-    public function stubPath()
-    {
-        return __DIR__.'/stubs';
-    }
-
-    /**
-     * Get the filesystem instance.
-     *
-     * @return \Illuminate\Filesystem\Filesystem
-     */
-    public function getFilesystem()
-    {
-        return $this->files;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+JWJZ6mvfOO0TRR+YFweK

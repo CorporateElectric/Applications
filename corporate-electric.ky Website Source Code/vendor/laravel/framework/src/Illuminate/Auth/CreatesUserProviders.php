@@ -1,94 +1,52 @@
-<?php
-
-namespace Illuminate\Auth;
-
-use InvalidArgumentException;
-
-trait CreatesUserProviders
-{
-    /**
-     * The registered custom provider creators.
-     *
-     * @var array
-     */
-    protected $customProviderCreators = [];
-
-    /**
-     * Create the user provider implementation for the driver.
-     *
-     * @param  string|null  $provider
-     * @return \Illuminate\Contracts\Auth\UserProvider|null
-     *
-     * @throws \InvalidArgumentException
-     */
-    public function createUserProvider($provider = null)
-    {
-        if (is_null($config = $this->getProviderConfiguration($provider))) {
-            return;
-        }
-
-        if (isset($this->customProviderCreators[$driver = ($config['driver'] ?? null)])) {
-            return call_user_func(
-                $this->customProviderCreators[$driver], $this->app, $config
-            );
-        }
-
-        switch ($driver) {
-            case 'database':
-                return $this->createDatabaseProvider($config);
-            case 'eloquent':
-                return $this->createEloquentProvider($config);
-            default:
-                throw new InvalidArgumentException(
-                    "Authentication user provider [{$driver}] is not defined."
-                );
-        }
-    }
-
-    /**
-     * Get the user provider configuration.
-     *
-     * @param  string|null  $provider
-     * @return array|null
-     */
-    protected function getProviderConfiguration($provider)
-    {
-        if ($provider = $provider ?: $this->getDefaultUserProvider()) {
-            return $this->app['config']['auth.providers.'.$provider];
-        }
-    }
-
-    /**
-     * Create an instance of the database user provider.
-     *
-     * @param  array  $config
-     * @return \Illuminate\Auth\DatabaseUserProvider
-     */
-    protected function createDatabaseProvider($config)
-    {
-        $connection = $this->app['db']->connection($config['connection'] ?? null);
-
-        return new DatabaseUserProvider($connection, $this->app['hash'], $config['table']);
-    }
-
-    /**
-     * Create an instance of the Eloquent user provider.
-     *
-     * @param  array  $config
-     * @return \Illuminate\Auth\EloquentUserProvider
-     */
-    protected function createEloquentProvider($config)
-    {
-        return new EloquentUserProvider($this->app['hash'], $config['model']);
-    }
-
-    /**
-     * Get the default user provider name.
-     *
-     * @return string
-     */
-    public function getDefaultUserProvider()
-    {
-        return $this->app['config']['auth.defaults.provider'];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+XTqdba5qnTcTuDksSE42gm==

@@ -1,202 +1,83 @@
-<?php
-
-namespace Illuminate\Database\Capsule;
-
-use Illuminate\Container\Container;
-use Illuminate\Contracts\Events\Dispatcher;
-use Illuminate\Database\Connectors\ConnectionFactory;
-use Illuminate\Database\DatabaseManager;
-use Illuminate\Database\Eloquent\Model as Eloquent;
-use Illuminate\Support\Traits\CapsuleManagerTrait;
-use PDO;
-
-class Manager
-{
-    use CapsuleManagerTrait;
-
-    /**
-     * The database manager instance.
-     *
-     * @var \Illuminate\Database\DatabaseManager
-     */
-    protected $manager;
-
-    /**
-     * Create a new database capsule manager.
-     *
-     * @param  \Illuminate\Container\Container|null  $container
-     * @return void
-     */
-    public function __construct(Container $container = null)
-    {
-        $this->setupContainer($container ?: new Container);
-
-        // Once we have the container setup, we will setup the default configuration
-        // options in the container "config" binding. This will make the database
-        // manager work correctly out of the box without extreme configuration.
-        $this->setupDefaultConfiguration();
-
-        $this->setupManager();
-    }
-
-    /**
-     * Setup the default database configuration options.
-     *
-     * @return void
-     */
-    protected function setupDefaultConfiguration()
-    {
-        $this->container['config']['database.fetch'] = PDO::FETCH_OBJ;
-
-        $this->container['config']['database.default'] = 'default';
-    }
-
-    /**
-     * Build the database manager instance.
-     *
-     * @return void
-     */
-    protected function setupManager()
-    {
-        $factory = new ConnectionFactory($this->container);
-
-        $this->manager = new DatabaseManager($this->container, $factory);
-    }
-
-    /**
-     * Get a connection instance from the global manager.
-     *
-     * @param  string|null  $connection
-     * @return \Illuminate\Database\Connection
-     */
-    public static function connection($connection = null)
-    {
-        return static::$instance->getConnection($connection);
-    }
-
-    /**
-     * Get a fluent query builder instance.
-     *
-     * @param  \Closure|\Illuminate\Database\Query\Builder|string  $table
-     * @param  string|null  $as
-     * @param  string|null  $connection
-     * @return \Illuminate\Database\Query\Builder
-     */
-    public static function table($table, $as = null, $connection = null)
-    {
-        return static::$instance->connection($connection)->table($table, $as);
-    }
-
-    /**
-     * Get a schema builder instance.
-     *
-     * @param  string|null  $connection
-     * @return \Illuminate\Database\Schema\Builder
-     */
-    public static function schema($connection = null)
-    {
-        return static::$instance->connection($connection)->getSchemaBuilder();
-    }
-
-    /**
-     * Get a registered connection instance.
-     *
-     * @param  string|null  $name
-     * @return \Illuminate\Database\Connection
-     */
-    public function getConnection($name = null)
-    {
-        return $this->manager->connection($name);
-    }
-
-    /**
-     * Register a connection with the manager.
-     *
-     * @param  array  $config
-     * @param  string  $name
-     * @return void
-     */
-    public function addConnection(array $config, $name = 'default')
-    {
-        $connections = $this->container['config']['database.connections'];
-
-        $connections[$name] = $config;
-
-        $this->container['config']['database.connections'] = $connections;
-    }
-
-    /**
-     * Bootstrap Eloquent so it is ready for usage.
-     *
-     * @return void
-     */
-    public function bootEloquent()
-    {
-        Eloquent::setConnectionResolver($this->manager);
-
-        // If we have an event dispatcher instance, we will go ahead and register it
-        // with the Eloquent ORM, allowing for model callbacks while creating and
-        // updating "model" instances; however, it is not necessary to operate.
-        if ($dispatcher = $this->getEventDispatcher()) {
-            Eloquent::setEventDispatcher($dispatcher);
-        }
-    }
-
-    /**
-     * Set the fetch mode for the database connections.
-     *
-     * @param  int  $fetchMode
-     * @return $this
-     */
-    public function setFetchMode($fetchMode)
-    {
-        $this->container['config']['database.fetch'] = $fetchMode;
-
-        return $this;
-    }
-
-    /**
-     * Get the database manager instance.
-     *
-     * @return \Illuminate\Database\DatabaseManager
-     */
-    public function getDatabaseManager()
-    {
-        return $this->manager;
-    }
-
-    /**
-     * Get the current event dispatcher instance.
-     *
-     * @return \Illuminate\Contracts\Events\Dispatcher|null
-     */
-    public function getEventDispatcher()
-    {
-        if ($this->container->bound('events')) {
-            return $this->container['events'];
-        }
-    }
-
-    /**
-     * Set the event dispatcher instance to be used by connections.
-     *
-     * @param  \Illuminate\Contracts\Events\Dispatcher  $dispatcher
-     * @return void
-     */
-    public function setEventDispatcher(Dispatcher $dispatcher)
-    {
-        $this->container->instance('events', $dispatcher);
-    }
-
-    /**
-     * Dynamically pass methods to the default connection.
-     *
-     * @param  string  $method
-     * @param  array  $parameters
-     * @return mixed
-     */
-    public static function __callStatic($method, $parameters)
-    {
-        return static::connection()->$method(...$parameters);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+Wj5A3/GU6y2L3B1vNZCg

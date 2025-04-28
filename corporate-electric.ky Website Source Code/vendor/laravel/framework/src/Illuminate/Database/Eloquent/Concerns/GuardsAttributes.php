@@ -1,252 +1,87 @@
-<?php
-
-namespace Illuminate\Database\Eloquent\Concerns;
-
-use Illuminate\Support\Str;
-
-trait GuardsAttributes
-{
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var string[]
-     */
-    protected $fillable = [];
-
-    /**
-     * The attributes that aren't mass assignable.
-     *
-     * @var string[]|bool
-     */
-    protected $guarded = ['*'];
-
-    /**
-     * Indicates if all mass assignment is enabled.
-     *
-     * @var bool
-     */
-    protected static $unguarded = false;
-
-    /**
-     * The actual columns that exist on the database and can be guarded.
-     *
-     * @var array
-     */
-    protected static $guardableColumns = [];
-
-    /**
-     * Get the fillable attributes for the model.
-     *
-     * @return array
-     */
-    public function getFillable()
-    {
-        return $this->fillable;
-    }
-
-    /**
-     * Set the fillable attributes for the model.
-     *
-     * @param  array  $fillable
-     * @return $this
-     */
-    public function fillable(array $fillable)
-    {
-        $this->fillable = $fillable;
-
-        return $this;
-    }
-
-    /**
-     * Merge new fillable attributes with existing fillable attributes on the model.
-     *
-     * @param  array  $fillable
-     * @return $this
-     */
-    public function mergeFillable(array $fillable)
-    {
-        $this->fillable = array_merge($this->fillable, $fillable);
-
-        return $this;
-    }
-
-    /**
-     * Get the guarded attributes for the model.
-     *
-     * @return array
-     */
-    public function getGuarded()
-    {
-        return $this->guarded === false
-                    ? []
-                    : $this->guarded;
-    }
-
-    /**
-     * Set the guarded attributes for the model.
-     *
-     * @param  array  $guarded
-     * @return $this
-     */
-    public function guard(array $guarded)
-    {
-        $this->guarded = $guarded;
-
-        return $this;
-    }
-
-    /**
-     * Merge new guarded attributes with existing guarded attributes on the model.
-     *
-     * @param  array  $guarded
-     * @return $this
-     */
-    public function mergeGuarded(array $guarded)
-    {
-        $this->guarded = array_merge($this->guarded, $guarded);
-
-        return $this;
-    }
-
-    /**
-     * Disable all mass assignable restrictions.
-     *
-     * @param  bool  $state
-     * @return void
-     */
-    public static function unguard($state = true)
-    {
-        static::$unguarded = $state;
-    }
-
-    /**
-     * Enable the mass assignment restrictions.
-     *
-     * @return void
-     */
-    public static function reguard()
-    {
-        static::$unguarded = false;
-    }
-
-    /**
-     * Determine if current state is "unguarded".
-     *
-     * @return bool
-     */
-    public static function isUnguarded()
-    {
-        return static::$unguarded;
-    }
-
-    /**
-     * Run the given callable while being unguarded.
-     *
-     * @param  callable  $callback
-     * @return mixed
-     */
-    public static function unguarded(callable $callback)
-    {
-        if (static::$unguarded) {
-            return $callback();
-        }
-
-        static::unguard();
-
-        try {
-            return $callback();
-        } finally {
-            static::reguard();
-        }
-    }
-
-    /**
-     * Determine if the given attribute may be mass assigned.
-     *
-     * @param  string  $key
-     * @return bool
-     */
-    public function isFillable($key)
-    {
-        if (static::$unguarded) {
-            return true;
-        }
-
-        // If the key is in the "fillable" array, we can of course assume that it's
-        // a fillable attribute. Otherwise, we will check the guarded array when
-        // we need to determine if the attribute is black-listed on the model.
-        if (in_array($key, $this->getFillable())) {
-            return true;
-        }
-
-        // If the attribute is explicitly listed in the "guarded" array then we can
-        // return false immediately. This means this attribute is definitely not
-        // fillable and there is no point in going any further in this method.
-        if ($this->isGuarded($key)) {
-            return false;
-        }
-
-        return empty($this->getFillable()) &&
-            strpos($key, '.') === false &&
-            ! Str::startsWith($key, '_');
-    }
-
-    /**
-     * Determine if the given key is guarded.
-     *
-     * @param  string  $key
-     * @return bool
-     */
-    public function isGuarded($key)
-    {
-        if (empty($this->getGuarded())) {
-            return false;
-        }
-
-        return $this->getGuarded() == ['*'] ||
-               ! empty(preg_grep('/^'.preg_quote($key).'$/i', $this->getGuarded())) ||
-               ! $this->isGuardableColumn($key);
-    }
-
-    /**
-     * Determine if the given column is a valid, guardable column.
-     *
-     * @param  string  $key
-     * @return bool
-     */
-    protected function isGuardableColumn($key)
-    {
-        if (! isset(static::$guardableColumns[get_class($this)])) {
-            static::$guardableColumns[get_class($this)] = $this->getConnection()
-                        ->getSchemaBuilder()
-                        ->getColumnListing($this->getTable());
-        }
-
-        return in_array($key, static::$guardableColumns[get_class($this)]);
-    }
-
-    /**
-     * Determine if the model is totally guarded.
-     *
-     * @return bool
-     */
-    public function totallyGuarded()
-    {
-        return count($this->getFillable()) === 0 && $this->getGuarded() == ['*'];
-    }
-
-    /**
-     * Get the fillable attributes of a given array.
-     *
-     * @param  array  $attributes
-     * @return array
-     */
-    protected function fillableFromArray(array $attributes)
-    {
-        if (count($this->getFillable()) > 0 && ! static::$unguarded) {
-            return array_intersect_key($attributes, array_flip($this->getFillable()));
-        }
-
-        return $attributes;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+3G==

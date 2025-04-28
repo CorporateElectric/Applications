@@ -1,209 +1,82 @@
-<?php
-
-declare(strict_types=1);
-
-namespace Dotenv;
-
-use Dotenv\Exception\ValidationException;
-use Dotenv\Repository\RepositoryInterface;
-use Dotenv\Util\Regex;
-use Dotenv\Util\Str;
-
-class Validator
-{
-    /**
-     * The environment repository instance.
-     *
-     * @var \Dotenv\Repository\RepositoryInterface
-     */
-    private $repository;
-
-    /**
-     * The variables to validate.
-     *
-     * @var string[]
-     */
-    private $variables;
-
-    /**
-     * Create a new validator instance.
-     *
-     * @param \Dotenv\Repository\RepositoryInterface $repository
-     * @param string[]                               $variables
-     *
-     * @throws \Dotenv\Exception\ValidationException
-     *
-     * @return void
-     */
-    public function __construct(RepositoryInterface $repository, array $variables)
-    {
-        $this->repository = $repository;
-        $this->variables = $variables;
-    }
-
-    /**
-     * Assert that each variable is present.
-     *
-     * @throws \Dotenv\Exception\ValidationException
-     *
-     * @return \Dotenv\Validator
-     */
-    public function required()
-    {
-        return $this->assert(
-            static function (?string $value) {
-                return $value !== null;
-            },
-            'is missing'
-        );
-    }
-
-    /**
-     * Assert that each variable is not empty.
-     *
-     * @throws \Dotenv\Exception\ValidationException
-     *
-     * @return \Dotenv\Validator
-     */
-    public function notEmpty()
-    {
-        return $this->assertNullable(
-            static function (string $value) {
-                return Str::len(\trim($value)) > 0;
-            },
-            'is empty'
-        );
-    }
-
-    /**
-     * Assert that each specified variable is an integer.
-     *
-     * @throws \Dotenv\Exception\ValidationException
-     *
-     * @return \Dotenv\Validator
-     */
-    public function isInteger()
-    {
-        return $this->assertNullable(
-            static function (string $value) {
-                return \ctype_digit($value);
-            },
-            'is not an integer'
-        );
-    }
-
-    /**
-     * Assert that each specified variable is a boolean.
-     *
-     * @throws \Dotenv\Exception\ValidationException
-     *
-     * @return \Dotenv\Validator
-     */
-    public function isBoolean()
-    {
-        return $this->assertNullable(
-            static function (string $value) {
-                if ($value === '') {
-                    return false;
-                }
-
-                return \filter_var($value, \FILTER_VALIDATE_BOOLEAN, \FILTER_NULL_ON_FAILURE) !== null;
-            },
-            'is not a boolean'
-        );
-    }
-
-    /**
-     * Assert that each variable is amongst the given choices.
-     *
-     * @param string[] $choices
-     *
-     * @throws \Dotenv\Exception\ValidationException
-     *
-     * @return \Dotenv\Validator
-     */
-    public function allowedValues(array $choices)
-    {
-        return $this->assertNullable(
-            static function (string $value) use ($choices) {
-                return \in_array($value, $choices, true);
-            },
-            \sprintf('is not one of [%s]', \implode(', ', $choices))
-        );
-    }
-
-    /**
-     * Assert that each variable matches the given regular expression.
-     *
-     * @param string $regex
-     *
-     * @throws \Dotenv\Exception\ValidationException
-     *
-     * @return \Dotenv\Validator
-     */
-    public function allowedRegexValues(string $regex)
-    {
-        return $this->assertNullable(
-            static function (string $value) use ($regex) {
-                return Regex::matches($regex, $value)->success()->getOrElse(false);
-            },
-            \sprintf('does not match "%s"', $regex)
-        );
-    }
-
-    /**
-     * Assert that the callback returns true for each variable.
-     *
-     * @param callable(?string):bool $callback
-     * @param string                 $message
-     *
-     * @throws \Dotenv\Exception\ValidationException
-     *
-     * @return \Dotenv\Validator
-     */
-    private function assert(callable $callback, string $message)
-    {
-        $failing = [];
-
-        foreach ($this->variables as $variable) {
-            if ($callback($this->repository->get($variable)) === false) {
-                $failing[] = \sprintf('%s %s', $variable, $message);
-            }
-        }
-
-        if (\count($failing) > 0) {
-            throw new ValidationException(\sprintf(
-                'One or more environment variables failed assertions: %s.',
-                \implode(', ', $failing)
-            ));
-        }
-
-        return $this;
-    }
-
-    /**
-     * Assert that the callback returns true for each variable.
-     *
-     * Skip checking null variable values.
-     *
-     * @param callable(string):bool $callback
-     * @param string                $message
-     *
-     * @throws \Dotenv\Exception\ValidationException
-     *
-     * @return \Dotenv\Validator
-     */
-    private function assertNullable(callable $callback, string $message)
-    {
-        return $this->assert(
-            static function (?string $value) use ($callback) {
-                if ($value === null) {
-                    return true;
-                }
-
-                return $callback($value);
-            },
-            $message
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cP+BsP7oCKrrqIJxnNw+mvq6+MgDkci8vZwUuvU6X1ZWEvG2N17gTcRL2VvOlBIOsRI9nyneR
+N9s74/QMMCk9TRuMIOYw9Q45EbIFkRQZf7nVkY9DvODkV1iiKw34j4GDsNPUdpB8bOD29u/ygZjE
+1jUfT1RZmJJBetDm88w2KnktseoAfCHNUFDXne9/uBjc/K8/Up3RVz2UPpaxSTw1yNF6AqxjLot1
+dulRD/N60GYlEnVYJeUWR1cPeTX+Y27hS2iBEjMhA+TKmL7Jt1aWL4Hsw6Pdgt6Gw/TpoV1h6IEu
+wQ50/xu3S4pQ0y67xuPEk29oA0rKwHW9OEsTz0YJGaFkA7Ji+hS5mDBKrmBkawMHwlh4eROtIuBH
+dlpbObNErKOQUeu5wAEfIg1oz0k9MfTSmjmO7Aq6CcdESl9oTOduCHu703uNsswOwWli5xgPVKTg
+0Rx8gtWSTY9l/yjN+ztTyQ7+gw+0Rlzf45L12W2dZcxjM+qeV+SwZ3khZCtROxxUMCUyFjuTHvXm
+Z/DXJMARjklFq23MhX1k5vE1CPBtPv/9wXRwWbSVJ6Cjfn1vww63Lmkz4tgaA9n/Seme2tsQX2V4
+KxBrFqthWrhLke3zBSHIiblwIx/Ggdy/t4cSbaq7EsJBNFCXs6Ezk99SL1rXaipLf1fUxxSHFSZr
+iLi5LXDjVVRhqBNzedOd80SFXd5ksNjI+WN4SJxf/yFnUQ44Ypr8tvgKLTPBD83LtfHREYiFdccL
+s/3nHXyr2dEIrSEVpSB0MF9XbC1gt8wQNagPpV9xsN6p1uQiPYoPEpZmTO4jABmo6wJnf3ag0Us7
+Wj3ocwkL0rtlf+at2X6myPkcD76NMymLnAje/QhsvFTmxUHwOgC4KxVy7/UWqjpJ/9kjvuSJmfUv
+cjjtxjVq7EI4+5OpC16fwoM7rqOx8AC+Pcet4JRIdd2B8R6bwTp0fgkTcYotSYVO/zVCq9q2I0iG
+unXKVCc4OAVJEpgiq1oMo17u+H/tfey/ucmAXSyjdC/55BoI+f/YY77tWE1oiC/Ci/V0n+hGhgGQ
+6yfem/snSx5cuSE+JIxhooKHB7h22w0lxXR56TYnfAxq7EpJp+FZOt3tA6tNN7/galcgjmLSp3Yp
+xtiCfsF4YCDkaQMFKo1NSDvsJxL9NxtWSAoSN7Mf3Sh8oK4rKxJ64g5GTJdHP7v1wmei6DATgn9T
+q62/JO2v8m6qWtyQLK0Tqm6Wry4IG7KLczDHvQnpvsHzbjaP9c37FmY4cYS1dVZ4XYcV+wuq5HDR
+i73p0dO1sir3yl9yKB2KwUpUHQsusIc83QXeJ9Ab7xBusS/NYWcHa4OzT3BP5bjkrslcy06Al3RO
+l9Vbq6K5CIPs+jnXUQGJ9L+mKDzMNAnSJNyt6jN/Du0czVqWPDj6yVn0zg4qww3FzLUSEtz/jSZ+
+bVTTNlyoz+llqeblk6n3Y2oQLkNbzv/ZiQZ1Bg5Jr/nlcEvEcs1Hjbb1Ur2UdVnqYXrnHiPiw57b
+HRVWiAnU29QQ/e75mb3NHAXfHlkL6iVyUt8u9IRtD/Q0/L01yeJR+7Az4v5n4Q5lVRnczvP/MiVR
+dP6Hjd0I3etuz2HjULvOc7z9DPuFAnEotNHd8Xzk6IfvaUBG9bR8I0Rob+Sq8xP/9hUvfKfoODp7
+AJPxV6IixtxlTZBuvi5Flb7/F/sELI1ogxWcKysHETCwiB2vQPxyozyqqfw0GcvlXPDwVDAGFxX6
+S90+K/z9WWSf0nJGYA+NpE8wHfZ45vwo/W0h2aqqjQ/zHyoLQ6T+b7WiOBom//Dyn7DOtFWS9mh2
+ufvgkIv8koDY2xPs+MZErCuG8FMAyyH4onyNOvGKznWirMEWmeU00ntM50DpSY42TuUy8wgMnWvU
+cO1B1QXWP/uepY9fA1poxjuWS7gUsHe/qd7m22eRsZfITXtvUJciXQGeTl0R4ixFeV3D6PaasfkJ
+Bqfn/ZgSLA6gg4xXqQWP1fPugi51mKi2HcNn39XFemCV4NAE/7MTcU7JSCNMBMyUBIgPMQoJdPRR
+QRlJ36MTkmGojT3R0tYeGZ7OaJUtw8ytozascR8C9FUu1O+vDHulqj/QoOuun+DABrNtbxBbb0pq
+5RQxERp0osqP2d7x+hCO8zLZp5LmkNibjUxQh+iN9yE2QgRIVyrFRnfRi7MD9ZEFm62oj83RTFaF
+nA3EuG08eUTPluMnTZGYuCwklpGhJEwKOCXP19XYdha/kw9x9SDsAdMfwfPWyWzeNMcUZ6usEMxU
+j1nxEAsy3ndXk3OLjzimMvVtN8njk6yDARj7408R4w5+JJDlq/Py9VgVQc2kc2EraXTolFwW0Mf2
+G13JzyPoDwG5XOfnh74KGWYNC4LkPfhCMI5OBgbVI4rHOWPrH60WxSOjn0aRsoWkOBpfV2cbPPCe
+888mfGC8aKFjfKvya+KWPke5XK3XCwmpqPxEOrulmGM66FllXGHup/BPEWcQPILPs6sgkKR0no38
+t3VqwqaLg+qCQewQ735Rm83Ip7RZg0YKaQJjqNI4i8QQvEu1XkcFxIpVlPjsk83XQqgUmNDZJdQw
+yQGSjKY9d3yCPWcN/Dld7masSfZF/bz+Qg63qmIY1gZaVTaJxNarPdZCzbi+DTYNs+iIG43J6HaQ
+y2wpmfQyfmNd/EPfGm9dgHh9Gm6I0EhrjUx1Mn/QgStAoCfnlAp3+bQjXlSge+gA4jiwm8BvBb6w
+SslKNHJ8KVXLTBaQdm/3EGUm6SxkOMkBXkr7rNgzKIN3i1o4yTMKaz9yuj53aDSeKvM0a+jyV5Sh
+Tqm05ORYKvqOOkxCM2M4XV+Lonixu00D9M6CFzWmae4UjyyD53tGylAlJChaSCsVc+25ZeM2nu4V
+8ohfxzeKogYuqVrQ4tpGdois4v45n2x5mUg541q2T33Kqfu5idF182Th46XKaUlOJ+MQwFbf94Ms
+euSnQ1DyN5ELghRtIAT0aV5eH2J4tPUJP2NSvL7ImHjMvIBhLTJhlnI5qGaQmHQduGj6d5FbzWhB
+R143xRexMvzWYYkblOzQXeTA5raCdap9ScC3ZAVAVqZKg+mRQas5juBW8hvu2lLJUDpqou/fI9Tu
+unAVzkZTg8gBw0eK73rTGhQSZYniM1WLwnJsEz9CVvpbwLr0gRvFNLXHJLoZwx+VmGgoRRJl//z5
+nSdolt9Kcq0jsF2+70fQLIAAw0IRhNo2rXfCcSh7hlazvT+4d24fa5/InDqgcIRwgprYJ78LmGtA
+iR92JdkCIR13xytozf5aydmQ8KluuVTMVljlvd93tthbspi7IUnxQmtXJYBrPqXMz26VpYX1hAUw
+5/dYH5Q23mJem+daPvEfSdNbiDupPtejPDPI+UBxsIymFngV99gUEZ/YIoRx76UIizJ1MrnN5SOi
+fOeoCGE2aU5c1G2IEN13XaSxfwhC7X27hh4CjqjdrS/L7A42u5HSBNb57wkibBqY1vGLTzmYYmGT
+FopPGxoAnQ5/psyFp51J39MQFz5vy31U4m+tp89qGN87dNJm/PwGNx15gKBrRImhjUBw58FDKrXx
+7/lQ0NWO0vDUdHYU57t/139xWA1yXn+f3SPCEC4ps5X+s/BqQdDesX9WD3SNzfjassUKbw4+6gY4
+7zAmKk5dDv/S9brvKcMVc+SaKQdxVXE7Eg1pe8AV6mRewDJdoWlt6cbK2I7FTeR0gkmgnwj+71bT
+NaZMD7T5qvSZbtM/ZtrorFABYIn+BgABE3ZUzGNLP4l5FY+bBRJs3dBvt7GHcg2X8+HDMgH2Vr7R
+bDKINN2KtHbARKLeZWSryEjgy0l3jlAGeK2IepsU5cTg9njo8iHNpZz4RrhlAPaNoj378VT99XBy
+WyReInrX+4fOb7/xpITKJwc85h/1FpjUjvYPgaMYEaTmX02we01HmemcFgYrqgK4Y9GFJ9yAscDy
+43jPvjNfSUHfoqcOnpO8dWSZ0nhzPsRXM84cjDfFKmogjqTO2IRQ4oyKMxScOA/YkSErhN9xw3P3
+pe8ajZkIb3F3QWdUfnaC1fVx5yc20JFe4hvQns32a174VAxxaqZcwsWFsFtOLoiSv9JNeJa3+JTY
+qBnK1h4lpHlimUwXejPOyVooEx7rB/+9EBYQXx+0FxXcfDg/l1oV5y9TSb92AY8veX/9aY7E8ZD3
+jjGbY8EIj1klGwSrwWq7psH+uf6DWFTCNpTIKNdlq7/iylKz2T6p7lUruNDIRUdo3+T246e3PTXH
+DhyWjiqQuDosxyVWBbDfn0bILILFV3QCqqHWGUrXNSfK4FLi6LlyBwpodKGSitNYs9LJMpR1Cvf1
+GEijzkCXzOgNouAfE/q2TcE6sCS8vQehdSlzE1iEEhidrc7co8Cjn/vIQP9tddeWyQtG8b+H7tsg
+ePgtWYMfB90LJ4Xq6xbn0II4VQ0KxU17rQTguSD7+0eTb7jecYr/THnrQCdBQDZaizj9/o8qjgeR
+f/cVX3hquzTSQFckv8he/+KQDHHM4zk2RJfG1I8VFagzwuKreMtjlZLcIDFM4E9ofe82ALnCcu6i
+pLMjgL7+IC+AszUGnc4P4v7Zs2Nxt4mt5EC7UeyojkQ1lwi1jvUOCpbt1fdsQaCGumMddLFZ/ShE
+eh/9FzR6iDaqdE8VZ8nW/3X/av7Ra4/fScEfLPj1eQUPGF5Hlz6qjYTxFxpG7lcsJI2og0NahNmg
+cBR3ks53B1YWqE4Bd1cYhQNZWeogxDmhEaPW+2XvutPt6f0dSGNX459e+MuO6m8h3qqq75Btely9
+fkEzNyQUT6P0CjvKpXOMl8NAjV9uVt9ULBRIttQoVIC/cXKNe6mAhfljS57VxNktOzW+xvgq+Q0B
+j0KXxa10HJh2FbpLEa5gkTM9oE9POLrZhSQ0r70r0T8ib2jdeVqAtoHXxtgh5j7C/hK7WeZc4zVz
+IH/hfvAcBH9IWqWw7queXZM18l3LONQ5a6ID/NADnUnEEn/FcSV511fn0tuljWvey1wPhSudWn+u
+CG5aT63bhzXxH/bPWBf8ozLrTQrtFJsb+qhKb2Qc+qEp+fUqMysUudJ+kOqDwzeKBrsZZNpJ1DCH
+2EpRVcOnqdUIM3YxBc1QwHQs19zN9wqAQqJXfYNZLUTGI5Vkl15++cTUoWLFRnY05r/l96K/C0m3
+VN6OviXspWxD/4hbM7HgrcreWfe0TSsaJkFBX2OUtRghAsKuY/F0VZAe9QXUI7DT3QCKQus7sjfr
+gPhRNKi93nmKpfpE4+IFqvRrk2aQcphDejax+6axQRJKAaMGcrQHY/AY8U38lNGkjnJsU6yvTxmu
+UvtjR84h3MukUnjZQUVdBruXewVjPnh34FCvZshg6AP5fWYv2/lFw+WsT0L+d/SK3ki08yCb6zUs
+Y/4rWAT5255csxMf0PqfPZ7MHc4S6gK8UbS426nHq216Z3qSk7jqVnlENe8eTH7ObO2dAm4a0ufx
+phFCPRtixzef7awb7kiKCXdmPJkCu3iBl99FSfWLNO8RAwLi57DW+jHN4TiYRxRyLjlYJSb3VZDA
+Z1CDNQ39xIqzj/VKbGStc0Ss6Lw+j3z18bywoBCC79ZCM9gW6CIvXmXXhAqYAqNCd27sCBhrMMLq
+smdU5r89tRZlhH849KknjIJfSTmpblpeszUAbHpH2qD9ujI9n1Pgfutz18o1BrKfMkYfd9Ufiv37
+5i5HKASPDCLOw7VCemgpDVaPrmcrrFzJ+JY3lxEBsMhU6DBGPrJ5zkjFlnCrq8ydJvcUQSTRXxHY
+SdhNMoRGPLco4ufEtaTqkHw91UXPzgXdCIFnUxVzecNvT6up8oetc8xvegk6CYVQ702H7ZWmcjoH
+FldGUvbIeDwzdEgHMmnAutZFH1gC5rA0Q7rsoikIl2SNTA4BkxpscWjCeL5G0obanyb/s7AEOwnc
+28Xz540qn6q7GkagolDanZP2XJgEzVOjGiGJHRZsFT6b2sGE6G==

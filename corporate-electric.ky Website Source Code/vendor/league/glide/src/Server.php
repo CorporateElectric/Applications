@@ -1,546 +1,192 @@
-<?php
-
-namespace League\Glide;
-
-use InvalidArgumentException;
-use League\Flysystem\FileExistsException;
-use League\Flysystem\FilesystemInterface;
-use League\Glide\Api\ApiInterface;
-use League\Glide\Filesystem\FileNotFoundException;
-use League\Glide\Filesystem\FilesystemException;
-use League\Glide\Responses\ResponseFactoryInterface;
-
-class Server
-{
-    /**
-     * Source file system.
-     * @var FilesystemInterface
-     */
-    protected $source;
-
-    /**
-     * Source path prefix.
-     * @var string
-     */
-    protected $sourcePathPrefix;
-
-    /**
-     * Cache file system.
-     * @var FilesystemInterface
-     */
-    protected $cache;
-
-    /**
-     * Cache path prefix.
-     * @var string
-     */
-    protected $cachePathPrefix;
-
-    /**
-     * Whether to group cache in folders.
-     * @var bool
-     */
-    protected $groupCacheInFolders = true;
-
-    /**
-     * Whether to cache with file extensions.
-     * @var bool
-     */
-    protected $cacheWithFileExtensions = false;
-
-    /**
-     * Image manipulation API.
-     * @var ApiInterface
-     */
-    protected $api;
-
-    /**
-     * Response factory.
-     * @var ResponseFactoryInterface|null
-     */
-    protected $responseFactory;
-
-    /**
-     * Base URL.
-     * @var string
-     */
-    protected $baseUrl;
-
-    /**
-     * Default image manipulations.
-     * @var array
-     */
-    protected $defaults = [];
-
-    /**
-     * Preset image manipulations.
-     * @var array
-     */
-    protected $presets = [];
-
-    /**
-     * Create Server instance.
-     * @param FilesystemInterface $source Source file system.
-     * @param FilesystemInterface $cache  Cache file system.
-     * @param ApiInterface        $api    Image manipulation API.
-     */
-    public function __construct(FilesystemInterface $source, FilesystemInterface $cache, ApiInterface $api)
-    {
-        $this->setSource($source);
-        $this->setCache($cache);
-        $this->setApi($api);
-    }
-
-    /**
-     * Set source file system.
-     * @param FilesystemInterface $source Source file system.
-     */
-    public function setSource(FilesystemInterface $source)
-    {
-        $this->source = $source;
-    }
-
-    /**
-     * Get source file system.
-     * @return FilesystemInterface Source file system.
-     */
-    public function getSource()
-    {
-        return $this->source;
-    }
-
-    /**
-     * Set source path prefix.
-     * @param string $sourcePathPrefix Source path prefix.
-     */
-    public function setSourcePathPrefix($sourcePathPrefix)
-    {
-        $this->sourcePathPrefix = trim($sourcePathPrefix, '/');
-    }
-
-    /**
-     * Get source path prefix.
-     * @return string Source path prefix.
-     */
-    public function getSourcePathPrefix()
-    {
-        return $this->sourcePathPrefix;
-    }
-
-    /**
-     * Get source path.
-     * @param  string                $path Image path.
-     * @return string                The source path.
-     * @throws FileNotFoundException
-     */
-    public function getSourcePath($path)
-    {
-        $path = trim($path, '/');
-        
-        $baseUrl = $this->baseUrl.'/';
-
-        if (substr($path, 0, strlen($baseUrl)) === $baseUrl) {
-            $path = trim(substr($path, strlen($baseUrl)), '/');
-        }
-
-        if ($path === '') {
-            throw new FileNotFoundException('Image path missing.');
-        }
-
-        if ($this->sourcePathPrefix) {
-            $path = $this->sourcePathPrefix.'/'.$path;
-        }
-
-        return rawurldecode($path);
-    }
-
-    /**
-     * Check if a source file exists.
-     * @param  string $path Image path.
-     * @return bool   Whether the source file exists.
-     */
-    public function sourceFileExists($path)
-    {
-        return $this->source->has($this->getSourcePath($path));
-    }
-
-    /**
-     * Set base URL.
-     * @param string $baseUrl Base URL.
-     */
-    public function setBaseUrl($baseUrl)
-    {
-        $this->baseUrl = trim($baseUrl, '/');
-    }
-
-    /**
-     * Get base URL.
-     * @return string Base URL.
-     */
-    public function getBaseUrl()
-    {
-        return $this->baseUrl;
-    }
-
-    /**
-     * Set cache file system.
-     * @param FilesystemInterface $cache Cache file system.
-     */
-    public function setCache(FilesystemInterface $cache)
-    {
-        $this->cache = $cache;
-    }
-
-    /**
-     * Get cache file system.
-     * @return FilesystemInterface Cache file system.
-     */
-    public function getCache()
-    {
-        return $this->cache;
-    }
-
-    /**
-     * Set cache path prefix.
-     * @param string $cachePathPrefix Cache path prefix.
-     */
-    public function setCachePathPrefix($cachePathPrefix)
-    {
-        $this->cachePathPrefix = trim($cachePathPrefix, '/');
-    }
-
-    /**
-     * Get cache path prefix.
-     * @return string Cache path prefix.
-     */
-    public function getCachePathPrefix()
-    {
-        return $this->cachePathPrefix;
-    }
-
-    /**
-     * Set the group cache in folders setting.
-     * @param bool $groupCacheInFolders Whether to group cache in folders.
-     */
-    public function setGroupCacheInFolders($groupCacheInFolders)
-    {
-        $this->groupCacheInFolders = $groupCacheInFolders;
-    }
-
-    /**
-     * Get the group cache in folders setting.
-     * @return bool Whether to group cache in folders.
-     */
-    public function getGroupCacheInFolders()
-    {
-        return $this->groupCacheInFolders;
-    }
-
-    /**
-     * Set the cache with file extensions setting.
-     * @param bool $cacheWithFileExtensions Whether to cache with file extensions.
-     */
-    public function setCacheWithFileExtensions($cacheWithFileExtensions)
-    {
-        $this->cacheWithFileExtensions = $cacheWithFileExtensions;
-    }
-
-    /**
-     * Get the cache with file extensions setting.
-     * @return bool Whether to cache with file extensions.
-     */
-    public function getCacheWithFileExtensions()
-    {
-        return $this->cacheWithFileExtensions;
-    }
-
-    /**
-     * Get cache path.
-     * @param  string $path   Image path.
-     * @param  array  $params Image manipulation params.
-     * @return string Cache path.
-     */
-    public function getCachePath($path, array $params = [])
-    {
-        $sourcePath = $this->getSourcePath($path);
-
-        if ($this->sourcePathPrefix) {
-            $sourcePath = substr($sourcePath, strlen($this->sourcePathPrefix) + 1);
-        }
-
-        $params = $this->getAllParams($params);
-        unset($params['s'], $params['p']);
-        ksort($params);
-
-        $md5 = md5($sourcePath.'?'.http_build_query($params));
-
-        $cachedPath = $this->groupCacheInFolders ? $sourcePath.'/'.$md5 : $md5;
-
-        if ($this->cachePathPrefix) {
-            $cachedPath = $this->cachePathPrefix.'/'.$cachedPath;
-        }
-        
-        if ($this->cacheWithFileExtensions) {
-            $ext = (isset($params['fm']) ? $params['fm'] : pathinfo($path)['extension']);
-            $ext = ($ext === 'pjpg') ? 'jpg' : $ext;
-            $cachedPath .= '.'.$ext;
-        }
-
-        return $cachedPath;
-    }
-
-    /**
-     * Check if a cache file exists.
-     * @param  string $path   Image path.
-     * @param  array  $params Image manipulation params.
-     * @return bool   Whether the cache file exists.
-     */
-    public function cacheFileExists($path, array $params)
-    {
-        return $this->cache->has(
-            $this->getCachePath($path, $params)
-        );
-    }
-
-    /**
-     * Delete cached manipulations for an image.
-     * @param  string $path Image path.
-     * @return bool   Whether the delete succeeded.
-     */
-    public function deleteCache($path)
-    {
-        if (!$this->groupCacheInFolders) {
-            throw new InvalidArgumentException(
-                'Deleting cached image manipulations is not possible when grouping cache into folders is disabled.'
-            );
-        }
-
-        return $this->cache->deleteDir(
-            dirname($this->getCachePath($path))
-        );
-    }
-
-    /**
-     * Set image manipulation API.
-     * @param ApiInterface $api Image manipulation API.
-     */
-    public function setApi(ApiInterface $api)
-    {
-        $this->api = $api;
-    }
-
-    /**
-     * Get image manipulation API.
-     * @return ApiInterface Image manipulation API.
-     */
-    public function getApi()
-    {
-        return $this->api;
-    }
-
-    /**
-     * Set default image manipulations.
-     * @param array $defaults Default image manipulations.
-     */
-    public function setDefaults(array $defaults)
-    {
-        $this->defaults = $defaults;
-    }
-
-    /**
-     * Get default image manipulations.
-     * @return array Default image manipulations.
-     */
-    public function getDefaults()
-    {
-        return $this->defaults;
-    }
-
-    /**
-     * Set preset image manipulations.
-     * @param array $presets Preset image manipulations.
-     */
-    public function setPresets(array $presets)
-    {
-        $this->presets = $presets;
-    }
-
-    /**
-     * Get preset image manipulations.
-     * @return array Preset image manipulations.
-     */
-    public function getPresets()
-    {
-        return $this->presets;
-    }
-
-    /**
-     * Get all image manipulations params, including defaults and presets.
-     * @param  array $params Image manipulation params.
-     * @return array All image manipulation params.
-     */
-    public function getAllParams(array $params)
-    {
-        $all = $this->defaults;
-
-        if (isset($params['p'])) {
-            foreach (explode(',', $params['p']) as $preset) {
-                if (isset($this->presets[$preset])) {
-                    $all = array_merge($all, $this->presets[$preset]);
-                }
-            }
-        }
-
-        return array_merge($all, $params);
-    }
-
-    /**
-     * Set response factory.
-     * @param ResponseFactoryInterface|null $responseFactory Response factory.
-     */
-    public function setResponseFactory(ResponseFactoryInterface $responseFactory = null)
-    {
-        $this->responseFactory = $responseFactory;
-    }
-
-    /**
-     * Get response factory.
-     * @return ResponseFactoryInterface Response factory.
-     */
-    public function getResponseFactory()
-    {
-        return $this->responseFactory;
-    }
-
-    /**
-     * Generate and return image response.
-     * @param  string                   $path   Image path.
-     * @param  array                    $params Image manipulation params.
-     * @return mixed                    Image response.
-     * @throws InvalidArgumentException
-     */
-    public function getImageResponse($path, array $params)
-    {
-        if (is_null($this->responseFactory)) {
-            throw new InvalidArgumentException(
-                'Unable to get image response, no response factory defined.'
-            );
-        }
-
-        $path = $this->makeImage($path, $params);
-
-        return $this->responseFactory->create($this->cache, $path);
-    }
-
-    /**
-     * Generate and return Base64 encoded image.
-     * @param  string              $path   Image path.
-     * @param  array               $params Image manipulation params.
-     * @return string              Base64 encoded image.
-     * @throws FilesystemException
-     */
-    public function getImageAsBase64($path, array $params)
-    {
-        $path = $this->makeImage($path, $params);
-
-        $source = $this->cache->read($path);
-
-        if ($source === false) {
-            throw new FilesystemException(
-                'Could not read the image `'.$path.'`.'
-            );
-        }
-
-        return 'data:'.$this->cache->getMimetype($path).';base64,'.base64_encode($source);
-    }
-
-    /**
-     * Generate and output image.
-     * @param  string                   $path   Image path.
-     * @param  array                    $params Image manipulation params.
-     * @throws InvalidArgumentException
-     */
-    public function outputImage($path, array $params)
-    {
-        $path = $this->makeImage($path, $params);
-
-        header('Content-Type:'.$this->cache->getMimetype($path));
-        header('Content-Length:'.$this->cache->getSize($path));
-        header('Cache-Control:'.'max-age=31536000, public');
-        header('Expires:'.date_create('+1 years')->format('D, d M Y H:i:s').' GMT');
-
-        $stream = $this->cache->readStream($path);
-
-        if (ftell($stream) !== 0) {
-            rewind($stream);
-        }
-        fpassthru($stream);
-        fclose($stream);
-    }
-
-    /**
-     * Generate manipulated image.
-     * @param  string                $path   Image path.
-     * @param  array                 $params Image manipulation params.
-     * @return string                Cache path.
-     * @throws FileNotFoundException
-     * @throws FilesystemException
-     */
-    public function makeImage($path, array $params)
-    {
-        $sourcePath = $this->getSourcePath($path);
-        $cachedPath = $this->getCachePath($path, $params);
-
-        if ($this->cacheFileExists($path, $params) === true) {
-            return $cachedPath;
-        }
-
-        if ($this->sourceFileExists($path) === false) {
-            throw new FileNotFoundException(
-                'Could not find the image `'.$sourcePath.'`.'
-            );
-        }
-
-        $source = $this->source->read(
-            $sourcePath
-        );
-
-        if ($source === false) {
-            throw new FilesystemException(
-                'Could not read the image `'.$sourcePath.'`.'
-            );
-        }
-
-        // We need to write the image to the local disk before
-        // doing any manipulations. This is because EXIF data
-        // can only be read from an actual file.
-        $tmp = tempnam(sys_get_temp_dir(), 'Glide');
-
-        if (file_put_contents($tmp, $source) === false) {
-            throw new FilesystemException(
-                'Unable to write temp file for `'.$sourcePath.'`.'
-            );
-        }
-
-        try {
-            $write = $this->cache->write(
-                $cachedPath,
-                $this->api->run($tmp, $this->getAllParams($params))
-            );
-
-            if ($write === false) {
-                throw new FilesystemException(
-                    'Could not write the image `'.$cachedPath.'`.'
-                );
-            }
-        } catch (FileExistsException $exception) {
-            // This edge case occurs when the target already exists
-            // because it's currently be written to disk in another
-            // request. It's best to just fail silently.
-        } finally {
-            unlink($tmp);
-        }
-
-        return $cachedPath;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+ET823SVFibTn8Wa=

@@ -1,218 +1,78 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet;
-
-use PhpOffice\PhpSpreadsheet\Calculation\Calculation;
-use PhpOffice\PhpSpreadsheet\Chart\Renderer\IRenderer;
-use PhpOffice\PhpSpreadsheet\Collection\Memory;
-use Psr\Http\Client\ClientInterface;
-use Psr\Http\Message\RequestFactoryInterface;
-use Psr\SimpleCache\CacheInterface;
-
-class Settings
-{
-    /**
-     * Class name of the chart renderer used for rendering charts
-     * eg: PhpOffice\PhpSpreadsheet\Chart\Renderer\JpGraph.
-     *
-     * @var string
-     */
-    private static $chartRenderer;
-
-    /**
-     * Default options for libxml loader.
-     *
-     * @var int
-     */
-    private static $libXmlLoaderOptions = null;
-
-    /**
-     * Allow/disallow libxml_disable_entity_loader() call when not thread safe.
-     * Default behaviour is to do the check, but if you're running PHP versions
-     *      7.2 < 7.2.1
-     * then you may need to disable this check to prevent unwanted behaviour in other threads
-     * SECURITY WARNING: Changing this flag is not recommended.
-     *
-     * @var bool
-     */
-    private static $libXmlDisableEntityLoader = true;
-
-    /**
-     * The cache implementation to be used for cell collection.
-     *
-     * @var CacheInterface
-     */
-    private static $cache;
-
-    /**
-     * The HTTP client implementation to be used for network request.
-     *
-     * @var null|ClientInterface
-     */
-    private static $httpClient;
-
-    /**
-     * @var null|RequestFactoryInterface
-     */
-    private static $requestFactory;
-
-    /**
-     * Set the locale code to use for formula translations and any special formatting.
-     *
-     * @param string $locale The locale code to use (e.g. "fr" or "pt_br" or "en_uk")
-     *
-     * @return bool Success or failure
-     */
-    public static function setLocale($locale)
-    {
-        return Calculation::getInstance()->setLocale($locale);
-    }
-
-    /**
-     * Identify to PhpSpreadsheet the external library to use for rendering charts.
-     *
-     * @param string $rendererClass Class name of the chart renderer
-     *    eg: PhpOffice\PhpSpreadsheet\Chart\Renderer\JpGraph
-     */
-    public static function setChartRenderer($rendererClass): void
-    {
-        if (!is_a($rendererClass, IRenderer::class, true)) {
-            throw new Exception('Chart renderer must implement ' . IRenderer::class);
-        }
-
-        self::$chartRenderer = $rendererClass;
-    }
-
-    /**
-     * Return the Chart Rendering Library that PhpSpreadsheet is currently configured to use.
-     *
-     * @return null|string Class name of the chart renderer
-     *    eg: PhpOffice\PhpSpreadsheet\Chart\Renderer\JpGraph
-     */
-    public static function getChartRenderer()
-    {
-        return self::$chartRenderer;
-    }
-
-    /**
-     * Set default options for libxml loader.
-     *
-     * @param int $options Default options for libxml loader
-     */
-    public static function setLibXmlLoaderOptions($options): void
-    {
-        if ($options === null && defined('LIBXML_DTDLOAD')) {
-            $options = LIBXML_DTDLOAD | LIBXML_DTDATTR;
-        }
-        self::$libXmlLoaderOptions = $options;
-    }
-
-    /**
-     * Get default options for libxml loader.
-     * Defaults to LIBXML_DTDLOAD | LIBXML_DTDATTR when not set explicitly.
-     *
-     * @return int Default options for libxml loader
-     */
-    public static function getLibXmlLoaderOptions()
-    {
-        if (self::$libXmlLoaderOptions === null && defined('LIBXML_DTDLOAD')) {
-            self::setLibXmlLoaderOptions(LIBXML_DTDLOAD | LIBXML_DTDATTR);
-        } elseif (self::$libXmlLoaderOptions === null) {
-            self::$libXmlLoaderOptions = true;
-        }
-
-        return self::$libXmlLoaderOptions;
-    }
-
-    /**
-     * Enable/Disable the entity loader for libxml loader.
-     * Allow/disallow libxml_disable_entity_loader() call when not thread safe.
-     * Default behaviour is to do the check, but if you're running PHP versions
-     *      7.2 < 7.2.1
-     * then you may need to disable this check to prevent unwanted behaviour in other threads
-     * SECURITY WARNING: Changing this flag to false is not recommended.
-     *
-     * @param bool $state
-     */
-    public static function setLibXmlDisableEntityLoader($state): void
-    {
-        self::$libXmlDisableEntityLoader = (bool) $state;
-    }
-
-    /**
-     * Return the state of the entity loader (disabled/enabled) for libxml loader.
-     *
-     * @return bool $state
-     */
-    public static function getLibXmlDisableEntityLoader()
-    {
-        return self::$libXmlDisableEntityLoader;
-    }
-
-    /**
-     * Sets the implementation of cache that should be used for cell collection.
-     */
-    public static function setCache(CacheInterface $cache): void
-    {
-        self::$cache = $cache;
-    }
-
-    /**
-     * Gets the implementation of cache that should be used for cell collection.
-     *
-     * @return CacheInterface
-     */
-    public static function getCache()
-    {
-        if (!self::$cache) {
-            self::$cache = new Memory();
-        }
-
-        return self::$cache;
-    }
-
-    /**
-     * Set the HTTP client implementation to be used for network request.
-     */
-    public static function setHttpClient(ClientInterface $httpClient, RequestFactoryInterface $requestFactory): void
-    {
-        self::$httpClient = $httpClient;
-        self::$requestFactory = $requestFactory;
-    }
-
-    /**
-     * Unset the HTTP client configuration.
-     */
-    public static function unsetHttpClient(): void
-    {
-        self::$httpClient = null;
-        self::$requestFactory = null;
-    }
-
-    /**
-     * Get the HTTP client implementation to be used for network request.
-     */
-    public static function getHttpClient(): ClientInterface
-    {
-        self::assertHttpClient();
-
-        return self::$httpClient;
-    }
-
-    /**
-     * Get the HTTP request factory.
-     */
-    public static function getRequestFactory(): RequestFactoryInterface
-    {
-        self::assertHttpClient();
-
-        return self::$requestFactory;
-    }
-
-    private static function assertHttpClient(): void
-    {
-        if (!self::$httpClient || !self::$requestFactory) {
-            throw new Exception('HTTP client must be configured via Settings::setHttpClient() to be able to use WEBSERVICE function.');
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

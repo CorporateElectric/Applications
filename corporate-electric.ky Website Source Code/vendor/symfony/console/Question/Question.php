@@ -1,306 +1,96 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Console\Question;
-
-use Symfony\Component\Console\Exception\InvalidArgumentException;
-use Symfony\Component\Console\Exception\LogicException;
-
-/**
- * Represents a Question.
- *
- * @author Fabien Potencier <fabien@symfony.com>
- */
-class Question
-{
-    private $question;
-    private $attempts;
-    private $hidden = false;
-    private $hiddenFallback = true;
-    private $autocompleterCallback;
-    private $validator;
-    private $default;
-    private $normalizer;
-    private $trimmable = true;
-    private $multiline = false;
-
-    /**
-     * @param string $question The question to ask to the user
-     * @param mixed  $default  The default answer to return if the user enters nothing
-     */
-    public function __construct(string $question, $default = null)
-    {
-        $this->question = $question;
-        $this->default = $default;
-    }
-
-    /**
-     * Returns the question.
-     *
-     * @return string
-     */
-    public function getQuestion()
-    {
-        return $this->question;
-    }
-
-    /**
-     * Returns the default answer.
-     *
-     * @return mixed
-     */
-    public function getDefault()
-    {
-        return $this->default;
-    }
-
-    /**
-     * Returns whether the user response accepts newline characters.
-     */
-    public function isMultiline(): bool
-    {
-        return $this->multiline;
-    }
-
-    /**
-     * Sets whether the user response should accept newline characters.
-     *
-     * @return $this
-     */
-    public function setMultiline(bool $multiline): self
-    {
-        $this->multiline = $multiline;
-
-        return $this;
-    }
-
-    /**
-     * Returns whether the user response must be hidden.
-     *
-     * @return bool
-     */
-    public function isHidden()
-    {
-        return $this->hidden;
-    }
-
-    /**
-     * Sets whether the user response must be hidden or not.
-     *
-     * @param bool $hidden
-     *
-     * @return $this
-     *
-     * @throws LogicException In case the autocompleter is also used
-     */
-    public function setHidden($hidden)
-    {
-        if ($this->autocompleterCallback) {
-            throw new LogicException('A hidden question cannot use the autocompleter.');
-        }
-
-        $this->hidden = (bool) $hidden;
-
-        return $this;
-    }
-
-    /**
-     * In case the response can not be hidden, whether to fallback on non-hidden question or not.
-     *
-     * @return bool
-     */
-    public function isHiddenFallback()
-    {
-        return $this->hiddenFallback;
-    }
-
-    /**
-     * Sets whether to fallback on non-hidden question if the response can not be hidden.
-     *
-     * @param bool $fallback
-     *
-     * @return $this
-     */
-    public function setHiddenFallback($fallback)
-    {
-        $this->hiddenFallback = (bool) $fallback;
-
-        return $this;
-    }
-
-    /**
-     * Gets values for the autocompleter.
-     *
-     * @return iterable|null
-     */
-    public function getAutocompleterValues()
-    {
-        $callback = $this->getAutocompleterCallback();
-
-        return $callback ? $callback('') : null;
-    }
-
-    /**
-     * Sets values for the autocompleter.
-     *
-     * @return $this
-     *
-     * @throws LogicException
-     */
-    public function setAutocompleterValues(?iterable $values)
-    {
-        if (\is_array($values)) {
-            $values = $this->isAssoc($values) ? array_merge(array_keys($values), array_values($values)) : array_values($values);
-
-            $callback = static function () use ($values) {
-                return $values;
-            };
-        } elseif ($values instanceof \Traversable) {
-            $valueCache = null;
-            $callback = static function () use ($values, &$valueCache) {
-                return $valueCache ?? $valueCache = iterator_to_array($values, false);
-            };
-        } else {
-            $callback = null;
-        }
-
-        return $this->setAutocompleterCallback($callback);
-    }
-
-    /**
-     * Gets the callback function used for the autocompleter.
-     */
-    public function getAutocompleterCallback(): ?callable
-    {
-        return $this->autocompleterCallback;
-    }
-
-    /**
-     * Sets the callback function used for the autocompleter.
-     *
-     * The callback is passed the user input as argument and should return an iterable of corresponding suggestions.
-     *
-     * @return $this
-     */
-    public function setAutocompleterCallback(callable $callback = null): self
-    {
-        if ($this->hidden && null !== $callback) {
-            throw new LogicException('A hidden question cannot use the autocompleter.');
-        }
-
-        $this->autocompleterCallback = $callback;
-
-        return $this;
-    }
-
-    /**
-     * Sets a validator for the question.
-     *
-     * @return $this
-     */
-    public function setValidator(callable $validator = null)
-    {
-        $this->validator = $validator;
-
-        return $this;
-    }
-
-    /**
-     * Gets the validator for the question.
-     *
-     * @return callable|null
-     */
-    public function getValidator()
-    {
-        return $this->validator;
-    }
-
-    /**
-     * Sets the maximum number of attempts.
-     *
-     * Null means an unlimited number of attempts.
-     *
-     * @return $this
-     *
-     * @throws InvalidArgumentException in case the number of attempts is invalid
-     */
-    public function setMaxAttempts(?int $attempts)
-    {
-        if (null !== $attempts) {
-            $attempts = (int) $attempts;
-            if ($attempts < 1) {
-                throw new InvalidArgumentException('Maximum number of attempts must be a positive value.');
-            }
-        }
-
-        $this->attempts = $attempts;
-
-        return $this;
-    }
-
-    /**
-     * Gets the maximum number of attempts.
-     *
-     * Null means an unlimited number of attempts.
-     *
-     * @return int|null
-     */
-    public function getMaxAttempts()
-    {
-        return $this->attempts;
-    }
-
-    /**
-     * Sets a normalizer for the response.
-     *
-     * The normalizer can be a callable (a string), a closure or a class implementing __invoke.
-     *
-     * @return $this
-     */
-    public function setNormalizer(callable $normalizer)
-    {
-        $this->normalizer = $normalizer;
-
-        return $this;
-    }
-
-    /**
-     * Gets the normalizer for the response.
-     *
-     * The normalizer can ba a callable (a string), a closure or a class implementing __invoke.
-     *
-     * @return callable|null
-     */
-    public function getNormalizer()
-    {
-        return $this->normalizer;
-    }
-
-    protected function isAssoc(array $array)
-    {
-        return (bool) \count(array_filter(array_keys($array), 'is_string'));
-    }
-
-    public function isTrimmable(): bool
-    {
-        return $this->trimmable;
-    }
-
-    /**
-     * @return $this
-     */
-    public function setTrimmable(bool $trimmable): self
-    {
-        $this->trimmable = $trimmable;
-
-        return $this;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

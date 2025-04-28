@@ -1,1041 +1,679 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Contracts\HttpClient\Test;
-
-use PHPUnit\Framework\TestCase;
-use Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface;
-use Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface;
-use Symfony\Contracts\HttpClient\Exception\TimeoutExceptionInterface;
-use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
-use Symfony\Contracts\HttpClient\HttpClientInterface;
-
-/**
- * A reference test suite for HttpClientInterface implementations.
- */
-abstract class HttpClientTestCase extends TestCase
-{
-    public static function setUpBeforeClass(): void
-    {
-        TestHttpServer::start();
-    }
-
-    abstract protected function getHttpClient(string $testCase): HttpClientInterface;
-
-    public function testGetRequest()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-        $response = $client->request('GET', 'http://localhost:8057', [
-            'headers' => ['Foo' => 'baR'],
-            'user_data' => $data = new \stdClass(),
-        ]);
-
-        $this->assertSame([], $response->getInfo('response_headers'));
-        $this->assertSame($data, $response->getInfo()['user_data']);
-        $this->assertSame(200, $response->getStatusCode());
-
-        $info = $response->getInfo();
-        $this->assertNull($info['error']);
-        $this->assertSame(0, $info['redirect_count']);
-        $this->assertSame('HTTP/1.1 200 OK', $info['response_headers'][0]);
-        $this->assertSame('Host: localhost:8057', $info['response_headers'][1]);
-        $this->assertSame('http://localhost:8057/', $info['url']);
-
-        $headers = $response->getHeaders();
-
-        $this->assertSame('localhost:8057', $headers['host'][0]);
-        $this->assertSame(['application/json'], $headers['content-type']);
-
-        $body = json_decode($response->getContent(), true);
-        $this->assertSame($body, $response->toArray());
-
-        $this->assertSame('HTTP/1.1', $body['SERVER_PROTOCOL']);
-        $this->assertSame('/', $body['REQUEST_URI']);
-        $this->assertSame('GET', $body['REQUEST_METHOD']);
-        $this->assertSame('localhost:8057', $body['HTTP_HOST']);
-        $this->assertSame('baR', $body['HTTP_FOO']);
-
-        $response = $client->request('GET', 'http://localhost:8057/length-broken');
-
-        $this->expectException(TransportExceptionInterface::class);
-        $response->getContent();
-    }
-
-    public function testHeadRequest()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-        $response = $client->request('HEAD', 'http://localhost:8057/head', [
-            'headers' => ['Foo' => 'baR'],
-            'user_data' => $data = new \stdClass(),
-            'buffer' => false,
-        ]);
-
-        $this->assertSame([], $response->getInfo('response_headers'));
-        $this->assertSame(200, $response->getStatusCode());
-
-        $info = $response->getInfo();
-        $this->assertSame('HTTP/1.1 200 OK', $info['response_headers'][0]);
-        $this->assertSame('Host: localhost:8057', $info['response_headers'][1]);
-
-        $headers = $response->getHeaders();
-
-        $this->assertSame('localhost:8057', $headers['host'][0]);
-        $this->assertSame(['application/json'], $headers['content-type']);
-        $this->assertTrue(0 < $headers['content-length'][0]);
-
-        $this->assertSame('', $response->getContent());
-    }
-
-    public function testNonBufferedGetRequest()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-        $response = $client->request('GET', 'http://localhost:8057', [
-            'buffer' => false,
-            'headers' => ['Foo' => 'baR'],
-        ]);
-
-        $body = $response->toArray();
-        $this->assertSame('baR', $body['HTTP_FOO']);
-
-        $this->expectException(TransportExceptionInterface::class);
-        $response->getContent();
-    }
-
-    public function testBufferSink()
-    {
-        $sink = fopen('php://temp', 'w+');
-        $client = $this->getHttpClient(__FUNCTION__);
-        $response = $client->request('GET', 'http://localhost:8057', [
-            'buffer' => $sink,
-            'headers' => ['Foo' => 'baR'],
-        ]);
-
-        $body = $response->toArray();
-        $this->assertSame('baR', $body['HTTP_FOO']);
-
-        rewind($sink);
-        $sink = stream_get_contents($sink);
-        $this->assertSame($sink, $response->getContent());
-    }
-
-    public function testConditionalBuffering()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-        $response = $client->request('GET', 'http://localhost:8057');
-        $firstContent = $response->getContent();
-        $secondContent = $response->getContent();
-
-        $this->assertSame($firstContent, $secondContent);
-
-        $response = $client->request('GET', 'http://localhost:8057', ['buffer' => function () { return false; }]);
-        $response->getContent();
-
-        $this->expectException(TransportExceptionInterface::class);
-        $response->getContent();
-    }
-
-    public function testReentrantBufferCallback()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-
-        $response = $client->request('GET', 'http://localhost:8057', ['buffer' => function () use (&$response) {
-            $response->cancel();
-
-            return true;
-        }]);
-
-        $this->assertSame(200, $response->getStatusCode());
-
-        $this->expectException(TransportExceptionInterface::class);
-        $response->getContent();
-    }
-
-    public function testThrowingBufferCallback()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-
-        $response = $client->request('GET', 'http://localhost:8057', ['buffer' => function () {
-            throw new \Exception('Boo.');
-        }]);
-
-        $this->assertSame(200, $response->getStatusCode());
-
-        $this->expectException(TransportExceptionInterface::class);
-        $this->expectExceptionMessage('Boo');
-        $response->getContent();
-    }
-
-    public function testUnsupportedOption()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-
-        $this->expectException(\InvalidArgumentException::class);
-        $client->request('GET', 'http://localhost:8057', [
-            'capture_peer_cert' => 1.0,
-        ]);
-    }
-
-    public function testHttpVersion()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-        $response = $client->request('GET', 'http://localhost:8057', [
-            'http_version' => 1.0,
-        ]);
-
-        $this->assertSame(200, $response->getStatusCode());
-        $this->assertSame('HTTP/1.0 200 OK', $response->getInfo('response_headers')[0]);
-
-        $body = $response->toArray();
-
-        $this->assertSame('HTTP/1.0', $body['SERVER_PROTOCOL']);
-        $this->assertSame('GET', $body['REQUEST_METHOD']);
-        $this->assertSame('/', $body['REQUEST_URI']);
-    }
-
-    public function testChunkedEncoding()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-        $response = $client->request('GET', 'http://localhost:8057/chunked');
-
-        $this->assertSame(['chunked'], $response->getHeaders()['transfer-encoding']);
-        $this->assertSame('Symfony is awesome!', $response->getContent());
-
-        $response = $client->request('GET', 'http://localhost:8057/chunked-broken');
-
-        $this->expectException(TransportExceptionInterface::class);
-        $response->getContent();
-    }
-
-    public function testClientError()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-        $response = $client->request('GET', 'http://localhost:8057/404');
-
-        $client->stream($response)->valid();
-
-        $this->assertSame(404, $response->getInfo('http_code'));
-
-        try {
-            $response->getHeaders();
-            $this->fail(ClientExceptionInterface::class.' expected');
-        } catch (ClientExceptionInterface $e) {
-        }
-
-        try {
-            $response->getContent();
-            $this->fail(ClientExceptionInterface::class.' expected');
-        } catch (ClientExceptionInterface $e) {
-        }
-
-        $this->assertSame(404, $response->getStatusCode());
-        $this->assertSame(['application/json'], $response->getHeaders(false)['content-type']);
-        $this->assertNotEmpty($response->getContent(false));
-
-        $response = $client->request('GET', 'http://localhost:8057/404');
-
-        try {
-            foreach ($client->stream($response) as $chunk) {
-                $this->assertTrue($chunk->isFirst());
-            }
-            $this->fail(ClientExceptionInterface::class.' expected');
-        } catch (ClientExceptionInterface $e) {
-        }
-    }
-
-    public function testIgnoreErrors()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-        $response = $client->request('GET', 'http://localhost:8057/404');
-
-        $this->assertSame(404, $response->getStatusCode());
-    }
-
-    public function testDnsError()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-        $response = $client->request('GET', 'http://localhost:8057/301/bad-tld');
-
-        try {
-            $response->getStatusCode();
-            $this->fail(TransportExceptionInterface::class.' expected');
-        } catch (TransportExceptionInterface $e) {
-            $this->addToAssertionCount(1);
-        }
-
-        try {
-            $response->getStatusCode();
-            $this->fail(TransportExceptionInterface::class.' still expected');
-        } catch (TransportExceptionInterface $e) {
-            $this->addToAssertionCount(1);
-        }
-
-        $response = $client->request('GET', 'http://localhost:8057/301/bad-tld');
-
-        try {
-            foreach ($client->stream($response) as $r => $chunk) {
-            }
-            $this->fail(TransportExceptionInterface::class.' expected');
-        } catch (TransportExceptionInterface $e) {
-            $this->addToAssertionCount(1);
-        }
-
-        $this->assertSame($response, $r);
-        $this->assertNotNull($chunk->getError());
-
-        $this->expectException(TransportExceptionInterface::class);
-        foreach ($client->stream($response) as $chunk) {
-        }
-    }
-
-    public function testInlineAuth()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-        $response = $client->request('GET', 'http://foo:bar%3Dbar@localhost:8057');
-
-        $body = $response->toArray();
-
-        $this->assertSame('foo', $body['PHP_AUTH_USER']);
-        $this->assertSame('bar=bar', $body['PHP_AUTH_PW']);
-    }
-
-    public function testBadRequestBody()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-
-        $this->expectException(TransportExceptionInterface::class);
-
-        $response = $client->request('POST', 'http://localhost:8057/', [
-            'body' => function () { yield []; },
-        ]);
-
-        $response->getStatusCode();
-    }
-
-    public function test304()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-        $response = $client->request('GET', 'http://localhost:8057/304', [
-            'headers' => ['If-Match' => '"abc"'],
-            'buffer' => false,
-        ]);
-
-        $this->assertSame(304, $response->getStatusCode());
-        $this->assertSame('', $response->getContent(false));
-    }
-
-    public function testRedirects()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-        $response = $client->request('POST', 'http://localhost:8057/301', [
-            'auth_basic' => 'foo:bar',
-            'body' => function () {
-                yield 'foo=bar';
-            },
-        ]);
-
-        $body = $response->toArray();
-        $this->assertSame('GET', $body['REQUEST_METHOD']);
-        $this->assertSame('Basic Zm9vOmJhcg==', $body['HTTP_AUTHORIZATION']);
-        $this->assertSame('http://localhost:8057/', $response->getInfo('url'));
-
-        $this->assertSame(2, $response->getInfo('redirect_count'));
-        $this->assertNull($response->getInfo('redirect_url'));
-
-        $expected = [
-            'HTTP/1.1 301 Moved Permanently',
-            'Location: http://127.0.0.1:8057/302',
-            'Content-Type: application/json',
-            'HTTP/1.1 302 Found',
-            'Location: http://localhost:8057/',
-            'Content-Type: application/json',
-            'HTTP/1.1 200 OK',
-            'Content-Type: application/json',
-        ];
-
-        $filteredHeaders = array_values(array_filter($response->getInfo('response_headers'), function ($h) {
-            return \in_array(substr($h, 0, 4), ['HTTP', 'Loca', 'Cont'], true) && 'Content-Encoding: gzip' !== $h;
-        }));
-
-        $this->assertSame($expected, $filteredHeaders);
-    }
-
-    public function testInvalidRedirect()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-        $response = $client->request('GET', 'http://localhost:8057/301/invalid');
-
-        $this->assertSame(301, $response->getStatusCode());
-        $this->assertSame(['//?foo=bar'], $response->getHeaders(false)['location']);
-        $this->assertSame(0, $response->getInfo('redirect_count'));
-        $this->assertNull($response->getInfo('redirect_url'));
-
-        $this->expectException(RedirectionExceptionInterface::class);
-        $response->getHeaders();
-    }
-
-    public function testRelativeRedirects()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-        $response = $client->request('GET', 'http://localhost:8057/302/relative');
-
-        $body = $response->toArray();
-
-        $this->assertSame('/', $body['REQUEST_URI']);
-        $this->assertNull($response->getInfo('redirect_url'));
-
-        $response = $client->request('GET', 'http://localhost:8057/302/relative', [
-            'max_redirects' => 0,
-        ]);
-
-        $this->assertSame(302, $response->getStatusCode());
-        $this->assertSame('http://localhost:8057/', $response->getInfo('redirect_url'));
-    }
-
-    public function testRedirect307()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-
-        $response = $client->request('POST', 'http://localhost:8057/307', [
-            'body' => function () {
-                yield 'foo=bar';
-            },
-            'max_redirects' => 0,
-        ]);
-
-        $this->assertSame(307, $response->getStatusCode());
-
-        $response = $client->request('POST', 'http://localhost:8057/307', [
-            'body' => 'foo=bar',
-        ]);
-
-        $body = $response->toArray();
-
-        $this->assertSame(['foo' => 'bar', 'REQUEST_METHOD' => 'POST'], $body);
-    }
-
-    public function testMaxRedirects()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-        $response = $client->request('GET', 'http://localhost:8057/301', [
-            'max_redirects' => 1,
-            'auth_basic' => 'foo:bar',
-        ]);
-
-        try {
-            $response->getHeaders();
-            $this->fail(RedirectionExceptionInterface::class.' expected');
-        } catch (RedirectionExceptionInterface $e) {
-        }
-
-        $this->assertSame(302, $response->getStatusCode());
-        $this->assertSame(1, $response->getInfo('redirect_count'));
-        $this->assertSame('http://localhost:8057/', $response->getInfo('redirect_url'));
-
-        $expected = [
-            'HTTP/1.1 301 Moved Permanently',
-            'Location: http://127.0.0.1:8057/302',
-            'Content-Type: application/json',
-            'HTTP/1.1 302 Found',
-            'Location: http://localhost:8057/',
-            'Content-Type: application/json',
-        ];
-
-        $filteredHeaders = array_values(array_filter($response->getInfo('response_headers'), function ($h) {
-            return \in_array(substr($h, 0, 4), ['HTTP', 'Loca', 'Cont'], true);
-        }));
-
-        $this->assertSame($expected, $filteredHeaders);
-    }
-
-    public function testStream()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-
-        $response = $client->request('GET', 'http://localhost:8057');
-        $chunks = $client->stream($response);
-        $result = [];
-
-        foreach ($chunks as $r => $chunk) {
-            if ($chunk->isTimeout()) {
-                $result[] = 't';
-            } elseif ($chunk->isLast()) {
-                $result[] = 'l';
-            } elseif ($chunk->isFirst()) {
-                $result[] = 'f';
-            }
-        }
-
-        $this->assertSame($response, $r);
-        $this->assertSame(['f', 'l'], $result);
-
-        $chunk = null;
-        $i = 0;
-
-        foreach ($client->stream($response) as $chunk) {
-            ++$i;
-        }
-
-        $this->assertSame(1, $i);
-        $this->assertTrue($chunk->isLast());
-    }
-
-    public function testAddToStream()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-
-        $r1 = $client->request('GET', 'http://localhost:8057');
-
-        $completed = [];
-
-        $pool = [$r1];
-
-        while ($pool) {
-            $chunks = $client->stream($pool);
-            $pool = [];
-
-            foreach ($chunks as $r => $chunk) {
-                if (!$chunk->isLast()) {
-                    continue;
-                }
-
-                if ($r1 === $r) {
-                    $r2 = $client->request('GET', 'http://localhost:8057');
-                    $pool[] = $r2;
-                }
-
-                $completed[] = $r;
-            }
-        }
-
-        $this->assertSame([$r1, $r2], $completed);
-    }
-
-    public function testCompleteTypeError()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-
-        $this->expectException(\TypeError::class);
-        $client->stream(123);
-    }
-
-    public function testOnProgress()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-        $response = $client->request('POST', 'http://localhost:8057/post', [
-            'headers' => ['Content-Length' => 14],
-            'body' => 'foo=0123456789',
-            'on_progress' => function (...$state) use (&$steps) { $steps[] = $state; },
-        ]);
-
-        $body = $response->toArray();
-
-        $this->assertSame(['foo' => '0123456789', 'REQUEST_METHOD' => 'POST'], $body);
-        $this->assertSame([0, 0], \array_slice($steps[0], 0, 2));
-        $lastStep = \array_slice($steps, -1)[0];
-        $this->assertSame([57, 57], \array_slice($lastStep, 0, 2));
-        $this->assertSame('http://localhost:8057/post', $steps[0][2]['url']);
-    }
-
-    public function testPostJson()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-
-        $response = $client->request('POST', 'http://localhost:8057/post', [
-            'json' => ['foo' => 'bar'],
-        ]);
-
-        $body = $response->toArray();
-
-        $this->assertStringContainsString('json', $body['content-type']);
-        unset($body['content-type']);
-        $this->assertSame(['foo' => 'bar', 'REQUEST_METHOD' => 'POST'], $body);
-    }
-
-    public function testPostArray()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-
-        $response = $client->request('POST', 'http://localhost:8057/post', [
-            'body' => ['foo' => 'bar'],
-        ]);
-
-        $this->assertSame(['foo' => 'bar', 'REQUEST_METHOD' => 'POST'], $response->toArray());
-    }
-
-    public function testPostResource()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-
-        $h = fopen('php://temp', 'w+');
-        fwrite($h, 'foo=0123456789');
-        rewind($h);
-
-        $response = $client->request('POST', 'http://localhost:8057/post', [
-            'body' => $h,
-        ]);
-
-        $body = $response->toArray();
-
-        $this->assertSame(['foo' => '0123456789', 'REQUEST_METHOD' => 'POST'], $body);
-    }
-
-    public function testPostCallback()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-
-        $response = $client->request('POST', 'http://localhost:8057/post', [
-            'body' => function () {
-                yield 'foo';
-                yield '';
-                yield '=';
-                yield '0123456789';
-            },
-        ]);
-
-        $this->assertSame(['foo' => '0123456789', 'REQUEST_METHOD' => 'POST'], $response->toArray());
-    }
-
-    public function testCancel()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-        $response = $client->request('GET', 'http://localhost:8057/timeout-header');
-
-        $response->cancel();
-        $this->expectException(TransportExceptionInterface::class);
-        $response->getHeaders();
-    }
-
-    public function testInfoOnCanceledResponse()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-
-        $response = $client->request('GET', 'http://localhost:8057/timeout-header');
-
-        $this->assertFalse($response->getInfo('canceled'));
-        $response->cancel();
-        $this->assertTrue($response->getInfo('canceled'));
-    }
-
-    public function testCancelInStream()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-        $response = $client->request('GET', 'http://localhost:8057/404');
-
-        foreach ($client->stream($response) as $chunk) {
-            $response->cancel();
-        }
-
-        $this->expectException(TransportExceptionInterface::class);
-
-        foreach ($client->stream($response) as $chunk) {
-        }
-    }
-
-    public function testOnProgressCancel()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-        $response = $client->request('GET', 'http://localhost:8057/timeout-body', [
-            'on_progress' => function ($dlNow) {
-                if (0 < $dlNow) {
-                    throw new \Exception('Aborting the request.');
-                }
-            },
-        ]);
-
-        try {
-            foreach ($client->stream([$response]) as $chunk) {
-            }
-            $this->fail(ClientExceptionInterface::class.' expected');
-        } catch (TransportExceptionInterface $e) {
-            $this->assertSame('Aborting the request.', $e->getPrevious()->getMessage());
-        }
-
-        $this->assertNotNull($response->getInfo('error'));
-        $this->expectException(TransportExceptionInterface::class);
-        $response->getContent();
-    }
-
-    public function testOnProgressError()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-        $response = $client->request('GET', 'http://localhost:8057/timeout-body', [
-            'on_progress' => function ($dlNow) {
-                if (0 < $dlNow) {
-                    throw new \Error('BUG.');
-                }
-            },
-        ]);
-
-        try {
-            foreach ($client->stream([$response]) as $chunk) {
-            }
-            $this->fail('Error expected');
-        } catch (\Error $e) {
-            $this->assertSame('BUG.', $e->getMessage());
-        }
-
-        $this->assertNotNull($response->getInfo('error'));
-        $this->expectException(TransportExceptionInterface::class);
-        $response->getContent();
-    }
-
-    public function testResolve()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-        $response = $client->request('GET', 'http://symfony.com:8057/', [
-            'resolve' => ['symfony.com' => '127.0.0.1'],
-        ]);
-
-        $this->assertSame(200, $response->getStatusCode());
-        $this->assertSame(200, $client->request('GET', 'http://symfony.com:8057/')->getStatusCode());
-
-        $response = null;
-        $this->expectException(TransportExceptionInterface::class);
-        $client->request('GET', 'http://symfony.com:8057/', ['timeout' => 1]);
-    }
-
-    public function testIdnResolve()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-
-        $response = $client->request('GET', 'http://0-------------------------------------------------------------0.com:8057/', [
-            'resolve' => ['0-------------------------------------------------------------0.com' => '127.0.0.1'],
-        ]);
-
-        $this->assertSame(200, $response->getStatusCode());
-
-        $response = $client->request('GET', 'http://Bücher.example:8057/', [
-            'resolve' => ['xn--bcher-kva.example' => '127.0.0.1'],
-        ]);
-
-        $this->assertSame(200, $response->getStatusCode());
-    }
-
-    public function testNotATimeout()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-        $response = $client->request('GET', 'http://localhost:8057/timeout-header', [
-            'timeout' => 0.9,
-        ]);
-        sleep(1);
-        $this->assertSame(200, $response->getStatusCode());
-    }
-
-    public function testTimeoutOnAccess()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-        $response = $client->request('GET', 'http://localhost:8057/timeout-header', [
-            'timeout' => 0.1,
-        ]);
-
-        $this->expectException(TransportExceptionInterface::class);
-        $response->getHeaders();
-    }
-
-    public function testTimeoutIsNotAFatalError()
-    {
-        usleep(300000); // wait for the previous test to release the server
-        $client = $this->getHttpClient(__FUNCTION__);
-        $response = $client->request('GET', 'http://localhost:8057/timeout-body', [
-            'timeout' => 0.25,
-        ]);
-
-        try {
-            $response->getContent();
-            $this->fail(TimeoutExceptionInterface::class.' expected');
-        } catch (TimeoutExceptionInterface $e) {
-        }
-
-        for ($i = 0; $i < 10; ++$i) {
-            try {
-                $this->assertSame('<1><2>', $response->getContent());
-                break;
-            } catch (TimeoutExceptionInterface $e) {
-            }
-        }
-
-        if (10 === $i) {
-            throw $e;
-        }
-    }
-
-    public function testTimeoutOnStream()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-        $response = $client->request('GET', 'http://localhost:8057/timeout-body');
-
-        $this->assertSame(200, $response->getStatusCode());
-        $chunks = $client->stream([$response], 0.2);
-
-        $result = [];
-
-        foreach ($chunks as $r => $chunk) {
-            if ($chunk->isTimeout()) {
-                $result[] = 't';
-            } else {
-                $result[] = $chunk->getContent();
-            }
-        }
-
-        $this->assertSame(['<1>', 't'], $result);
-
-        $chunks = $client->stream([$response]);
-
-        foreach ($chunks as $r => $chunk) {
-            $this->assertSame('<2>', $chunk->getContent());
-            $this->assertSame('<1><2>', $r->getContent());
-
-            return;
-        }
-
-        $this->fail('The response should have completed');
-    }
-
-    public function testUncheckedTimeoutThrows()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-        $response = $client->request('GET', 'http://localhost:8057/timeout-body');
-        $chunks = $client->stream([$response], 0.1);
-
-        $this->expectException(TransportExceptionInterface::class);
-
-        foreach ($chunks as $r => $chunk) {
-        }
-    }
-
-    public function testTimeoutWithActiveConcurrentStream()
-    {
-        $p1 = TestHttpServer::start(8067);
-        $p2 = TestHttpServer::start(8077);
-
-        $client = $this->getHttpClient(__FUNCTION__);
-        $streamingResponse = $client->request('GET', 'http://localhost:8067/max-duration');
-        $blockingResponse = $client->request('GET', 'http://localhost:8077/timeout-body', [
-            'timeout' => 0.25,
-        ]);
-
-        $this->assertSame(200, $streamingResponse->getStatusCode());
-        $this->assertSame(200, $blockingResponse->getStatusCode());
-
-        $this->expectException(TransportExceptionInterface::class);
-
-        try {
-            $blockingResponse->getContent();
-        } finally {
-            $p1->stop();
-            $p2->stop();
-        }
-    }
-
-    public function testDestruct()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-
-        $start = microtime(true);
-        $client->request('GET', 'http://localhost:8057/timeout-long');
-        $client = null;
-        $duration = microtime(true) - $start;
-
-        $this->assertGreaterThan(1, $duration);
-        $this->assertLessThan(4, $duration);
-    }
-
-    public function testGetContentAfterDestruct()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-
-        try {
-            $client->request('GET', 'http://localhost:8057/404');
-            $this->fail(ClientExceptionInterface::class.' expected');
-        } catch (ClientExceptionInterface $e) {
-            $this->assertSame('GET', $e->getResponse()->toArray(false)['REQUEST_METHOD']);
-        }
-    }
-
-    public function testGetEncodedContentAfterDestruct()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-
-        try {
-            $client->request('GET', 'http://localhost:8057/404-gzipped');
-            $this->fail(ClientExceptionInterface::class.' expected');
-        } catch (ClientExceptionInterface $e) {
-            $this->assertSame('some text', $e->getResponse()->getContent(false));
-        }
-    }
-
-    public function testProxy()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-        $response = $client->request('GET', 'http://localhost:8057/', [
-            'proxy' => 'http://localhost:8057',
-        ]);
-
-        $body = $response->toArray();
-        $this->assertSame('localhost:8057', $body['HTTP_HOST']);
-        $this->assertMatchesRegularExpression('#^http://(localhost|127\.0\.0\.1):8057/$#', $body['REQUEST_URI']);
-
-        $response = $client->request('GET', 'http://localhost:8057/', [
-            'proxy' => 'http://foo:b%3Dar@localhost:8057',
-        ]);
-
-        $body = $response->toArray();
-        $this->assertSame('Basic Zm9vOmI9YXI=', $body['HTTP_PROXY_AUTHORIZATION']);
-    }
-
-    public function testNoProxy()
-    {
-        putenv('no_proxy='.$_SERVER['no_proxy'] = 'example.com, localhost');
-
-        try {
-            $client = $this->getHttpClient(__FUNCTION__);
-            $response = $client->request('GET', 'http://localhost:8057/', [
-                'proxy' => 'http://localhost:8057',
-            ]);
-
-            $body = $response->toArray();
-
-            $this->assertSame('HTTP/1.1', $body['SERVER_PROTOCOL']);
-            $this->assertSame('/', $body['REQUEST_URI']);
-            $this->assertSame('GET', $body['REQUEST_METHOD']);
-        } finally {
-            putenv('no_proxy');
-            unset($_SERVER['no_proxy']);
-        }
-    }
-
-    /**
-     * @requires extension zlib
-     */
-    public function testAutoEncodingRequest()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-        $response = $client->request('GET', 'http://localhost:8057');
-
-        $this->assertSame(200, $response->getStatusCode());
-
-        $headers = $response->getHeaders();
-
-        $this->assertSame(['Accept-Encoding'], $headers['vary']);
-        $this->assertStringContainsString('gzip', $headers['content-encoding'][0]);
-
-        $body = $response->toArray();
-
-        $this->assertStringContainsString('gzip', $body['HTTP_ACCEPT_ENCODING']);
-    }
-
-    public function testBaseUri()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-        $response = $client->request('GET', '../404', [
-            'base_uri' => 'http://localhost:8057/abc/',
-        ]);
-
-        $this->assertSame(404, $response->getStatusCode());
-        $this->assertSame(['application/json'], $response->getHeaders(false)['content-type']);
-    }
-
-    public function testQuery()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-        $response = $client->request('GET', 'http://localhost:8057/?a=a', [
-            'query' => ['b' => 'b'],
-        ]);
-
-        $body = $response->toArray();
-        $this->assertSame('GET', $body['REQUEST_METHOD']);
-        $this->assertSame('/?a=a&b=b', $body['REQUEST_URI']);
-    }
-
-    public function testInformationalResponse()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-        $response = $client->request('GET', 'http://localhost:8057/103');
-
-        $this->assertSame('Here the body', $response->getContent());
-        $this->assertSame(200, $response->getStatusCode());
-    }
-
-    public function testInformationalResponseStream()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-        $response = $client->request('GET', 'http://localhost:8057/103');
-
-        $chunks = [];
-        foreach ($client->stream($response) as $chunk) {
-            $chunks[] = $chunk;
-        }
-
-        $this->assertSame(103, $chunks[0]->getInformationalStatus()[0]);
-        $this->assertSame(['</style.css>; rel=preload; as=style', '</script.js>; rel=preload; as=script'], $chunks[0]->getInformationalStatus()[1]['link']);
-        $this->assertTrue($chunks[1]->isFirst());
-        $this->assertSame('Here the body', $chunks[2]->getContent());
-        $this->assertTrue($chunks[3]->isLast());
-        $this->assertNull($chunks[3]->getInformationalStatus());
-
-        $this->assertSame(['date', 'content-length'], array_keys($response->getHeaders()));
-        $this->assertContains('Link: </style.css>; rel=preload; as=style', $response->getInfo('response_headers'));
-    }
-
-    /**
-     * @requires extension zlib
-     */
-    public function testUserlandEncodingRequest()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-        $response = $client->request('GET', 'http://localhost:8057', [
-            'headers' => ['Accept-Encoding' => 'gzip'],
-        ]);
-
-        $headers = $response->getHeaders();
-
-        $this->assertSame(['Accept-Encoding'], $headers['vary']);
-        $this->assertStringContainsString('gzip', $headers['content-encoding'][0]);
-
-        $body = $response->getContent();
-        $this->assertSame("\x1F", $body[0]);
-
-        $body = json_decode(gzdecode($body), true);
-        $this->assertSame('gzip', $body['HTTP_ACCEPT_ENCODING']);
-    }
-
-    /**
-     * @requires extension zlib
-     */
-    public function testGzipBroken()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-        $response = $client->request('GET', 'http://localhost:8057/gzip-broken');
-
-        $this->expectException(TransportExceptionInterface::class);
-        $response->getContent();
-    }
-
-    public function testMaxDuration()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-        $response = $client->request('GET', 'http://localhost:8057/max-duration', [
-            'max_duration' => 0.1,
-        ]);
-
-        $start = microtime(true);
-
-        try {
-            $response->getContent();
-        } catch (TransportExceptionInterface $e) {
-            $this->addToAssertionCount(1);
-        }
-
-        $duration = microtime(true) - $start;
-
-        $this->assertLessThan(10, $duration);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+UujQVAB0oNP6

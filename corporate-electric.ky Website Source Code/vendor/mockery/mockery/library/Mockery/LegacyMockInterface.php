@@ -1,240 +1,62 @@
-<?php
-/**
- * Mockery
- *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://github.com/padraic/mockery/blob/master/LICENSE
- * If you did not receive a copy of the license and are unable to
- * obtain it through the world-wide-web, please send an email
- * to padraic@php.net so we can send you a copy immediately.
- *
- * @category   Mockery
- * @package    Mockery
- * @copyright  Copyright (c) 2010 Pádraic Brady (http://blog.astrumfutura.com)
- * @license    http://github.com/padraic/mockery/blob/master/LICENSE New BSD License
- */
-
-namespace Mockery;
-
-interface LegacyMockInterface
-{
-    /**
-     * Alternative setup method to constructor
-     *
-     * @param \Mockery\Container $container
-     * @param object $partialObject
-     * @return void
-     */
-    public function mockery_init(\Mockery\Container $container = null, $partialObject = null);
-
-    /**
-     * Set expected method calls
-     *
-     * @param string|array ...$methodNames one or many methods that are expected to be called in this mock
-     *
-     * @return \Mockery\ExpectationInterface|\Mockery\Expectation|\Mockery\HigherOrderMessage
-     */
-    public function shouldReceive(...$methodNames);
-
-    /**
-     * Shortcut method for setting an expectation that a method should not be called.
-     *
-     * @param string|array ...$methodNames one or many methods that are expected not to be called in this mock
-     * @return \Mockery\ExpectationInterface|\Mockery\Expectation|\Mockery\HigherOrderMessage
-     */
-    public function shouldNotReceive(...$methodNames);
-
-    /**
-     * Allows additional methods to be mocked that do not explicitly exist on mocked class
-     * @param String $method name of the method to be mocked
-     */
-    public function shouldAllowMockingMethod($method);
-
-    /**
-     * Set mock to ignore unexpected methods and return Undefined class
-     * @param mixed $returnValue the default return value for calls to missing functions on this mock
-     * @return Mock
-     */
-    public function shouldIgnoreMissing($returnValue = null);
-
-    /**
-     * @return Mock
-     */
-    public function shouldAllowMockingProtectedMethods();
-
-    /**
-     * Set mock to defer unexpected methods to its parent if possible
-     *
-     * @deprecated since 1.4.0. Please use makePartial() instead.
-     *
-     * @return Mock
-     */
-    public function shouldDeferMissing();
-
-    /**
-     * Set mock to defer unexpected methods to its parent if possible
-     *
-     * @return Mock
-     */
-    public function makePartial();
-
-    /**
-     * @param null|string $method
-     * @param null $args
-     * @return mixed
-     */
-    public function shouldHaveReceived($method, $args = null);
-
-    /**
-     * @return mixed
-     */
-    public function shouldHaveBeenCalled();
-
-    /**
-     * @param null|string $method
-     * @param null $args
-     * @return mixed
-     */
-    public function shouldNotHaveReceived($method, $args = null);
-
-    /**
-     * @param array $args (optional)
-     * @return mixed
-     */
-    public function shouldNotHaveBeenCalled(array $args = null);
-
-    /**
-     * In the event shouldReceive() accepting an array of methods/returns
-     * this method will switch them from normal expectations to default
-     * expectations
-     *
-     * @return self
-     */
-    public function byDefault();
-
-    /**
-     * Iterate across all expectation directors and validate each
-     *
-     * @throws \Mockery\CountValidator\Exception
-     * @return void
-     */
-    public function mockery_verify();
-
-    /**
-     * Tear down tasks for this mock
-     *
-     * @return void
-     */
-    public function mockery_teardown();
-
-    /**
-     * Fetch the next available allocation order number
-     *
-     * @return int
-     */
-    public function mockery_allocateOrder();
-
-    /**
-     * Set ordering for a group
-     *
-     * @param mixed $group
-     * @param int $order
-     */
-    public function mockery_setGroup($group, $order);
-
-    /**
-     * Fetch array of ordered groups
-     *
-     * @return array
-     */
-    public function mockery_getGroups();
-
-    /**
-     * Set current ordered number
-     *
-     * @param int $order
-     */
-    public function mockery_setCurrentOrder($order);
-
-    /**
-     * Get current ordered number
-     *
-     * @return int
-     */
-    public function mockery_getCurrentOrder();
-
-    /**
-     * Validate the current mock's ordering
-     *
-     * @param string $method
-     * @param int $order
-     * @throws \Mockery\Exception
-     * @return void
-     */
-    public function mockery_validateOrder($method, $order);
-
-    /**
-     * Gets the count of expectations for this mock
-     *
-     * @return int
-     */
-    public function mockery_getExpectationCount();
-
-    /**
-     * Return the expectations director for the given method
-     *
-     * @var string $method
-     * @return \Mockery\ExpectationDirector|null
-     */
-    public function mockery_setExpectationsFor($method, \Mockery\ExpectationDirector $director);
-
-    /**
-     * Return the expectations director for the given method
-     *
-     * @var string $method
-     * @return \Mockery\ExpectationDirector|null
-     */
-    public function mockery_getExpectationsFor($method);
-
-    /**
-     * Find an expectation matching the given method and arguments
-     *
-     * @var string $method
-     * @var array $args
-     * @return \Mockery\Expectation|null
-     */
-    public function mockery_findExpectation($method, array $args);
-
-    /**
-     * Return the container for this mock
-     *
-     * @return \Mockery\Container
-     */
-    public function mockery_getContainer();
-
-    /**
-     * Return the name for this mock
-     *
-     * @return string
-     */
-    public function mockery_getName();
-
-    /**
-     * @return array
-     */
-    public function mockery_getMockableProperties();
-
-    /**
-     * @return string[]
-     */
-    public function mockery_getMockableMethods();
-
-    /**
-     * @return bool
-     */
-    public function mockery_isAnonymous();
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

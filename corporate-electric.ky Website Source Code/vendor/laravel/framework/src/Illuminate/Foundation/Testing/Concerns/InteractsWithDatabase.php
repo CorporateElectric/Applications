@@ -1,169 +1,83 @@
-<?php
-
-namespace Illuminate\Foundation\Testing\Concerns;
-
-use Illuminate\Contracts\Support\Jsonable;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Testing\Constraints\CountInDatabase;
-use Illuminate\Testing\Constraints\HasInDatabase;
-use Illuminate\Testing\Constraints\SoftDeletedInDatabase;
-use PHPUnit\Framework\Constraint\LogicalNot as ReverseConstraint;
-
-trait InteractsWithDatabase
-{
-    /**
-     * Assert that a given where condition exists in the database.
-     *
-     * @param  string  $table
-     * @param  array  $data
-     * @param  string|null  $connection
-     * @return $this
-     */
-    protected function assertDatabaseHas($table, array $data, $connection = null)
-    {
-        $this->assertThat(
-            $table, new HasInDatabase($this->getConnection($connection), $data)
-        );
-
-        return $this;
-    }
-
-    /**
-     * Assert that a given where condition does not exist in the database.
-     *
-     * @param  string  $table
-     * @param  array  $data
-     * @param  string|null  $connection
-     * @return $this
-     */
-    protected function assertDatabaseMissing($table, array $data, $connection = null)
-    {
-        $constraint = new ReverseConstraint(
-            new HasInDatabase($this->getConnection($connection), $data)
-        );
-
-        $this->assertThat($table, $constraint);
-
-        return $this;
-    }
-
-    /**
-     * Assert the count of table entries.
-     *
-     * @param  string  $table
-     * @param  int  $count
-     * @param  string|null  $connection
-     * @return $this
-     */
-    protected function assertDatabaseCount($table, int $count, $connection = null)
-    {
-        $this->assertThat(
-            $table, new CountInDatabase($this->getConnection($connection), $count)
-        );
-
-        return $this;
-    }
-
-    /**
-     * Assert the given record has been deleted.
-     *
-     * @param  \Illuminate\Database\Eloquent\Model|string  $table
-     * @param  array  $data
-     * @param  string|null  $connection
-     * @return $this
-     */
-    protected function assertDeleted($table, array $data = [], $connection = null)
-    {
-        if ($table instanceof Model) {
-            return $this->assertDatabaseMissing($table->getTable(), [$table->getKeyName() => $table->getKey()], $table->getConnectionName());
-        }
-
-        $this->assertDatabaseMissing($table, $data, $connection);
-
-        return $this;
-    }
-
-    /**
-     * Assert the given record has been "soft deleted".
-     *
-     * @param  \Illuminate\Database\Eloquent\Model|string  $table
-     * @param  array  $data
-     * @param  string|null  $connection
-     * @param  string|null  $deletedAtColumn
-     * @return $this
-     */
-    protected function assertSoftDeleted($table, array $data = [], $connection = null, $deletedAtColumn = 'deleted_at')
-    {
-        if ($this->isSoftDeletableModel($table)) {
-            return $this->assertSoftDeleted($table->getTable(), [$table->getKeyName() => $table->getKey()], $table->getConnectionName(), $table->getDeletedAtColumn());
-        }
-
-        $this->assertThat(
-            $table, new SoftDeletedInDatabase($this->getConnection($connection), $data, $deletedAtColumn)
-        );
-
-        return $this;
-    }
-
-    /**
-     * Determine if the argument is a soft deletable model.
-     *
-     * @param  mixed  $model
-     * @return bool
-     */
-    protected function isSoftDeletableModel($model)
-    {
-        return $model instanceof Model
-            && in_array(SoftDeletes::class, class_uses_recursive($model));
-    }
-
-    /**
-     * Cast a JSON string to a database compatible type.
-     *
-     * @param  array|string  $value
-     * @return \Illuminate\Database\Query\Expression
-     */
-    public function castAsJson($value)
-    {
-        if ($value instanceof Jsonable) {
-            $value = $value->toJson();
-        } elseif (is_array($value)) {
-            $value = json_encode($value);
-        }
-
-        return DB::raw("CAST('$value' AS JSON)");
-    }
-
-    /**
-     * Get the database connection.
-     *
-     * @param  string|null  $connection
-     * @return \Illuminate\Database\Connection
-     */
-    protected function getConnection($connection = null)
-    {
-        $database = $this->app->make('db');
-
-        $connection = $connection ?: $database->getDefaultConnection();
-
-        return $database->connection($connection);
-    }
-
-    /**
-     * Seed a given database connection.
-     *
-     * @param  array|string  $class
-     * @return $this
-     */
-    public function seed($class = 'Database\\Seeders\\DatabaseSeeder')
-    {
-        foreach (Arr::wrap($class) as $class) {
-            $this->artisan('db:seed', ['--class' => $class, '--no-interaction' => true]);
-        }
-
-        return $this;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+LvsxSJOFDG==

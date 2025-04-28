@@ -1,84 +1,57 @@
-<?php
-
-namespace League\Glide\Manipulators;
-
-use Intervention\Image\Image;
-
-/**
- * @property string $crop
- */
-class Crop extends BaseManipulator
-{
-    /**
-     * Perform crop image manipulation.
-     * @param  Image $image The source image.
-     * @return Image The manipulated image.
-     */
-    public function run(Image $image)
-    {
-        $coordinates = $this->getCoordinates($image);
-
-        if ($coordinates) {
-            $coordinates = $this->limitToImageBoundaries($image, $coordinates);
-
-            $image->crop(
-                $coordinates[0],
-                $coordinates[1],
-                $coordinates[2],
-                $coordinates[3]
-            );
-        }
-
-        return $image;
-    }
-
-    /**
-     * Resolve coordinates.
-     * @param  Image $image The source image.
-     * @return int[] The resolved coordinates.
-     */
-    public function getCoordinates(Image $image)
-    {
-        $coordinates = explode(',', $this->crop);
-
-        if (count($coordinates) !== 4 or
-            (!is_numeric($coordinates[0])) or
-            (!is_numeric($coordinates[1])) or
-            (!is_numeric($coordinates[2])) or
-            (!is_numeric($coordinates[3])) or
-            ($coordinates[0] <= 0) or
-            ($coordinates[1] <= 0) or
-            ($coordinates[2] < 0) or
-            ($coordinates[3] < 0) or
-            ($coordinates[2] >= $image->width()) or
-            ($coordinates[3] >= $image->height())) {
-            return;
-        }
-
-        return [
-            (int) $coordinates[0],
-            (int) $coordinates[1],
-            (int) $coordinates[2],
-            (int) $coordinates[3],
-        ];
-    }
-
-    /**
-     * Limit coordinates to image boundaries.
-     * @param  Image $image       The source image.
-     * @param  int[] $coordinates The coordinates.
-     * @return int[] The limited coordinates.
-     */
-    public function limitToImageBoundaries(Image $image, array $coordinates)
-    {
-        if ($coordinates[0] > ($image->width() - $coordinates[2])) {
-            $coordinates[0] = $image->width() - $coordinates[2];
-        }
-
-        if ($coordinates[1] > ($image->height() - $coordinates[3])) {
-            $coordinates[1] = $image->height() - $coordinates[3];
-        }
-
-        return $coordinates;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+oe6WWM1tm0==

@@ -1,197 +1,96 @@
-<?php
-/*
- * This file is part of the DebugBar package.
- *
- * (c) 2017 Tim Riemenschneider
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace DebugBar\Bridge;
-
-use DebugBar\DataCollector\AssetProvider;
-use DebugBar\DataCollector\DataCollector;
-use DebugBar\DataCollector\Renderable;
-
-/**
- * Collects data about rendered templates
- *
- * http://twig.sensiolabs.org/
- *
- * A Twig_Extension_Profiler should be added to your Twig_Environment
- * The root-Twig_Profiler_Profile-object should then be injected into this collector
- *
- * you can optionally provide the Twig_Environment or the Twig_Loader to also create
- * debug-links.
- *
- * @see \Twig_Extension_Profiler, \Twig_Profiler_Profile
- *
- * <code>
- * $env = new Twig_Environment($loader); // Or from a PSR11-container
- * $profile = new Twig_Profiler_Profile();
- * $env->addExtension(new Twig_Extension_Profile($profile));
- * $debugbar->addCollector(new TwigProfileCollector($profile, $env));
- * // or: $debugbar->addCollector(new TwigProfileCollector($profile, $loader));
- * </code>
- */
-class TwigProfileCollector extends DataCollector implements Renderable, AssetProvider
-{
-    /**
-     * @var \Twig_Profiler_Profile
-     */
-    private $profile;
-    /**
-     * @var \Twig_LoaderInterface
-     */
-    private $loader;
-    /** @var int */
-    private $templateCount;
-    /** @var int */
-    private $blockCount;
-    /** @var int */
-    private $macroCount;
-    /**
-     * @var array[] {
-     * @var string $name
-     * @var int    $render_time
-     * @var string $render_time_str
-     * @var string $memory_str
-     * @var string $xdebug_link
-     * }
-     */
-    private $templates;
-
-    /**
-     * TwigProfileCollector constructor.
-     *
-     * @param \Twig_Profiler_Profile $profile
-     * @param \Twig_LoaderInterface|\Twig_Environment $loaderOrEnv
-     */
-    public function __construct(\Twig_Profiler_Profile $profile, $loaderOrEnv = null)
-    {
-        $this->profile     = $profile;
-        if ($loaderOrEnv instanceof \Twig_Environment) {
-            $loaderOrEnv = $loaderOrEnv->getLoader();
-        }
-        $this->loader = $loaderOrEnv;
-    }
-
-    /**
-     * Returns a hash where keys are control names and their values
-     * an array of options as defined in {@see DebugBar\JavascriptRenderer::addControl()}
-     *
-     * @return array
-     */
-    public function getWidgets()
-    {
-        return array(
-            'twig'       => array(
-                'icon'    => 'leaf',
-                'widget'  => 'PhpDebugBar.Widgets.TemplatesWidget',
-                'map'     => 'twig',
-                'default' => json_encode(array('templates' => array())),
-            ),
-            'twig:badge' => array(
-                'map'     => 'twig.badge',
-                'default' => 0,
-            ),
-        );
-    }
-
-    /**
-     * @return array
-     */
-    public function getAssets()
-    {
-        return array(
-            'css' => 'widgets/templates/widget.css',
-            'js'  => 'widgets/templates/widget.js',
-        );
-    }
-
-    /**
-     * Called by the DebugBar when data needs to be collected
-     *
-     * @return array Collected data
-     */
-    public function collect()
-    {
-        $this->templateCount = $this->blockCount = $this->macroCount = 0;
-        $this->templates     = array();
-        $this->computeData($this->profile);
-
-        return array(
-            'nb_templates'                => $this->templateCount,
-            'nb_blocks'                   => $this->blockCount,
-            'nb_macros'                   => $this->macroCount,
-            'templates'                   => $this->templates,
-            'accumulated_render_time'     => $this->profile->getDuration(),
-            'accumulated_render_time_str' => $this->getDataFormatter()->formatDuration($this->profile->getDuration()),
-            'memory_usage_str'            => $this->getDataFormatter()->formatBytes($this->profile->getMemoryUsage()),
-            'callgraph'                   => $this->getHtmlCallGraph(),
-            'badge'                       => implode(
-                '/',
-                array(
-                    $this->templateCount,
-                    $this->blockCount,
-                    $this->macroCount,
-                )
-            ),
-        );
-    }
-
-    /**
-     * Returns the unique name of the collector
-     *
-     * @return string
-     */
-    public function getName()
-    {
-        return 'twig';
-    }
-
-    public function getHtmlCallGraph()
-    {
-        $dumper = new \Twig_Profiler_Dumper_Html();
-
-        return $dumper->dump($this->profile);
-    }
-
-    /**
-     * Get an Xdebug Link to a file
-     *
-     * @return array {
-     *  @var string url
-     *  @var bool ajax
-     * }
-     */
-    public function getXdebugLink($template, $line = 1)
-    {
-        if (is_null($this->loader)) {
-            return null;
-        }
-        $file = $this->loader->getSourceContext($template)->getPath();
-
-        return parent::getXdebugLink($file, $line);
-    }
-
-    private function computeData(\Twig_Profiler_Profile $profile)
-    {
-        $this->templateCount += ($profile->isTemplate() ? 1 : 0);
-        $this->blockCount    += ($profile->isBlock() ? 1 : 0);
-        $this->macroCount    += ($profile->isMacro() ? 1 : 0);
-        if ($profile->isTemplate()) {
-            $this->templates[] = array(
-                'name'            => $profile->getName(),
-                'render_time'     => $profile->getDuration(),
-                'render_time_str' => $this->getDataFormatter()->formatDuration($profile->getDuration()),
-                'memory_str'      => $this->getDataFormatter()->formatBytes($profile->getMemoryUsage()),
-                'xdebug_link'     => $this->getXdebugLink($profile->getTemplate()),
-            );
-        }
-        foreach ($profile as $p) {
-            $this->computeData($p);
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,72 +1,39 @@
-<?php
-
-/*
- * This file is part of Crawler Detect - the web crawler detection library.
- *
- * (c) Mark Beech <m@rkbee.ch>
- *
- * This source file is subject to the MIT license that is bundled
- * with this source code in the file LICENSE.
- */
-
-namespace Jaybizzle\CrawlerDetect\Fixtures;
-
-class Exclusions extends AbstractProvider
-{
-    /**
-     * List of strings to remove from the user agent before running the crawler regex
-     * Over a large list of user agents, this gives us about a 55% speed increase!
-     *
-     * @var array
-     */
-    protected $data = array(
-        'Safari.[\d\.]*',
-        'Firefox.[\d\.]*',
-        ' Chrome.[\d\.]*',
-        'Chromium.[\d\.]*',
-        'MSIE.[\d\.]',
-        'Opera\/[\d\.]*',
-        'Mozilla.[\d\.]*',
-        'AppleWebKit.[\d\.]*',
-        'Trident.[\d\.]*',
-        'Windows NT.[\d\.]*',
-        'Android [\d\.]*',
-        'Macintosh.',
-        'Ubuntu',
-        'Linux',
-        '[ ]Intel',
-        'Mac OS X [\d_]*',
-        '(like )?Gecko(.[\d\.]*)?',
-        'KHTML,',
-        'CriOS.[\d\.]*',
-        'CPU iPhone OS ([0-9_])* like Mac OS X',
-        'CPU OS ([0-9_])* like Mac OS X',
-        'iPod',
-        'compatible',
-        'x86_..',
-        'i686',
-        'x64',
-        'X11',
-        'rv:[\d\.]*',
-        'Version.[\d\.]*',
-        'WOW64',
-        'Win64',
-        'Dalvik.[\d\.]*',
-        ' \.NET CLR [\d\.]*',
-        'Presto.[\d\.]*',
-        'Media Center PC',
-        'BlackBerry',
-        'Build',
-        'Opera Mini\/\d{1,2}\.\d{1,2}\.[\d\.]*\/\d{1,2}\.',
-        'Opera',
-        ' \.NET[\d\.]*',
-        'cubot',
-        '; M bot',
-        '; CRONO',
-        '; B bot',
-        '; IDbot',
-        '; ID bot',
-        '; POWER BOT',
-        'OCTOPUS-CORE',
-    );
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+Q1TdepZTPeVngmrl63i=

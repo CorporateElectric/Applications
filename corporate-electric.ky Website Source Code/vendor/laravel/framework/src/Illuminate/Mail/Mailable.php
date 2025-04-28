@@ -1,1029 +1,360 @@
-<?php
-
-namespace Illuminate\Mail;
-
-use Illuminate\Container\Container;
-use Illuminate\Contracts\Filesystem\Factory as FilesystemFactory;
-use Illuminate\Contracts\Mail\Factory as MailFactory;
-use Illuminate\Contracts\Mail\Mailable as MailableContract;
-use Illuminate\Contracts\Queue\Factory as Queue;
-use Illuminate\Contracts\Support\Htmlable;
-use Illuminate\Contracts\Support\Renderable;
-use Illuminate\Support\Collection;
-use Illuminate\Support\HtmlString;
-use Illuminate\Support\Str;
-use Illuminate\Support\Traits\ForwardsCalls;
-use Illuminate\Support\Traits\Localizable;
-use PHPUnit\Framework\Assert as PHPUnit;
-use ReflectionClass;
-use ReflectionProperty;
-
-class Mailable implements MailableContract, Renderable
-{
-    use ForwardsCalls, Localizable;
-
-    /**
-     * The locale of the message.
-     *
-     * @var string
-     */
-    public $locale;
-
-    /**
-     * The person the message is from.
-     *
-     * @var array
-     */
-    public $from = [];
-
-    /**
-     * The "to" recipients of the message.
-     *
-     * @var array
-     */
-    public $to = [];
-
-    /**
-     * The "cc" recipients of the message.
-     *
-     * @var array
-     */
-    public $cc = [];
-
-    /**
-     * The "bcc" recipients of the message.
-     *
-     * @var array
-     */
-    public $bcc = [];
-
-    /**
-     * The "reply to" recipients of the message.
-     *
-     * @var array
-     */
-    public $replyTo = [];
-
-    /**
-     * The subject of the message.
-     *
-     * @var string
-     */
-    public $subject;
-
-    /**
-     * The Markdown template for the message (if applicable).
-     *
-     * @var string
-     */
-    protected $markdown;
-
-    /**
-     * The HTML to use for the message.
-     *
-     * @var string
-     */
-    protected $html;
-
-    /**
-     * The view to use for the message.
-     *
-     * @var string
-     */
-    public $view;
-
-    /**
-     * The plain text view to use for the message.
-     *
-     * @var string
-     */
-    public $textView;
-
-    /**
-     * The view data for the message.
-     *
-     * @var array
-     */
-    public $viewData = [];
-
-    /**
-     * The attachments for the message.
-     *
-     * @var array
-     */
-    public $attachments = [];
-
-    /**
-     * The raw attachments for the message.
-     *
-     * @var array
-     */
-    public $rawAttachments = [];
-
-    /**
-     * The attachments from a storage disk.
-     *
-     * @var array
-     */
-    public $diskAttachments = [];
-
-    /**
-     * The callbacks for the message.
-     *
-     * @var array
-     */
-    public $callbacks = [];
-
-    /**
-     * The name of the theme that should be used when formatting the message.
-     *
-     * @var string|null
-     */
-    public $theme;
-
-    /**
-     * The name of the mailer that should send the message.
-     *
-     * @var string
-     */
-    public $mailer;
-
-    /**
-     * The rendered mailable views for testing / assertions.
-     *
-     * @var array
-     */
-    protected $assertionableRenderStrings;
-
-    /**
-     * The callback that should be invoked while building the view data.
-     *
-     * @var callable
-     */
-    public static $viewDataCallback;
-
-    /**
-     * Send the message using the given mailer.
-     *
-     * @param  \Illuminate\Contracts\Mail\Factory|\Illuminate\Contracts\Mail\Mailer  $mailer
-     * @return void
-     */
-    public function send($mailer)
-    {
-        return $this->withLocale($this->locale, function () use ($mailer) {
-            Container::getInstance()->call([$this, 'build']);
-
-            $mailer = $mailer instanceof MailFactory
-                            ? $mailer->mailer($this->mailer)
-                            : $mailer;
-
-            return $mailer->send($this->buildView(), $this->buildViewData(), function ($message) {
-                $this->buildFrom($message)
-                     ->buildRecipients($message)
-                     ->buildSubject($message)
-                     ->runCallbacks($message)
-                     ->buildAttachments($message);
-            });
-        });
-    }
-
-    /**
-     * Queue the message for sending.
-     *
-     * @param  \Illuminate\Contracts\Queue\Factory  $queue
-     * @return mixed
-     */
-    public function queue(Queue $queue)
-    {
-        if (isset($this->delay)) {
-            return $this->later($this->delay, $queue);
-        }
-
-        $connection = property_exists($this, 'connection') ? $this->connection : null;
-
-        $queueName = property_exists($this, 'queue') ? $this->queue : null;
-
-        return $queue->connection($connection)->pushOn(
-            $queueName ?: null, $this->newQueuedJob()
-        );
-    }
-
-    /**
-     * Deliver the queued message after the given delay.
-     *
-     * @param  \DateTimeInterface|\DateInterval|int  $delay
-     * @param  \Illuminate\Contracts\Queue\Factory  $queue
-     * @return mixed
-     */
-    public function later($delay, Queue $queue)
-    {
-        $connection = property_exists($this, 'connection') ? $this->connection : null;
-
-        $queueName = property_exists($this, 'queue') ? $this->queue : null;
-
-        return $queue->connection($connection)->laterOn(
-            $queueName ?: null, $delay, $this->newQueuedJob()
-        );
-    }
-
-    /**
-     * Make the queued mailable job instance.
-     *
-     * @return mixed
-     */
-    protected function newQueuedJob()
-    {
-        return new SendQueuedMailable($this);
-    }
-
-    /**
-     * Render the mailable into a view.
-     *
-     * @return string
-     *
-     * @throws \ReflectionException
-     */
-    public function render()
-    {
-        return $this->withLocale($this->locale, function () {
-            Container::getInstance()->call([$this, 'build']);
-
-            return Container::getInstance()->make('mailer')->render(
-                $this->buildView(), $this->buildViewData()
-            );
-        });
-    }
-
-    /**
-     * Build the view for the message.
-     *
-     * @return array|string
-     *
-     * @throws \ReflectionException
-     */
-    protected function buildView()
-    {
-        if (isset($this->html)) {
-            return array_filter([
-                'html' => new HtmlString($this->html),
-                'text' => $this->textView ?? null,
-            ]);
-        }
-
-        if (isset($this->markdown)) {
-            return $this->buildMarkdownView();
-        }
-
-        if (isset($this->view, $this->textView)) {
-            return [$this->view, $this->textView];
-        } elseif (isset($this->textView)) {
-            return ['text' => $this->textView];
-        }
-
-        return $this->view;
-    }
-
-    /**
-     * Build the Markdown view for the message.
-     *
-     * @return array
-     *
-     * @throws \ReflectionException
-     */
-    protected function buildMarkdownView()
-    {
-        $markdown = Container::getInstance()->make(Markdown::class);
-
-        if (isset($this->theme)) {
-            $markdown->theme($this->theme);
-        }
-
-        $data = $this->buildViewData();
-
-        return [
-            'html' => $markdown->render($this->markdown, $data),
-            'text' => $this->buildMarkdownText($markdown, $data),
-        ];
-    }
-
-    /**
-     * Build the view data for the message.
-     *
-     * @return array
-     *
-     * @throws \ReflectionException
-     */
-    public function buildViewData()
-    {
-        $data = $this->viewData;
-
-        if (static::$viewDataCallback) {
-            $data = array_merge($data, call_user_func(static::$viewDataCallback, $this));
-        }
-
-        foreach ((new ReflectionClass($this))->getProperties(ReflectionProperty::IS_PUBLIC) as $property) {
-            if ($property->getDeclaringClass()->getName() !== self::class) {
-                $data[$property->getName()] = $property->getValue($this);
-            }
-        }
-
-        return $data;
-    }
-
-    /**
-     * Build the text view for a Markdown message.
-     *
-     * @param  \Illuminate\Mail\Markdown  $markdown
-     * @param  array  $data
-     * @return string
-     */
-    protected function buildMarkdownText($markdown, $data)
-    {
-        return $this->textView
-                ?? $markdown->renderText($this->markdown, $data);
-    }
-
-    /**
-     * Add the sender to the message.
-     *
-     * @param  \Illuminate\Mail\Message  $message
-     * @return $this
-     */
-    protected function buildFrom($message)
-    {
-        if (! empty($this->from)) {
-            $message->from($this->from[0]['address'], $this->from[0]['name']);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Add all of the recipients to the message.
-     *
-     * @param  \Illuminate\Mail\Message  $message
-     * @return $this
-     */
-    protected function buildRecipients($message)
-    {
-        foreach (['to', 'cc', 'bcc', 'replyTo'] as $type) {
-            foreach ($this->{$type} as $recipient) {
-                $message->{$type}($recipient['address'], $recipient['name']);
-            }
-        }
-
-        return $this;
-    }
-
-    /**
-     * Set the subject for the message.
-     *
-     * @param  \Illuminate\Mail\Message  $message
-     * @return $this
-     */
-    protected function buildSubject($message)
-    {
-        if ($this->subject) {
-            $message->subject($this->subject);
-        } else {
-            $message->subject(Str::title(Str::snake(class_basename($this), ' ')));
-        }
-
-        return $this;
-    }
-
-    /**
-     * Add all of the attachments to the message.
-     *
-     * @param  \Illuminate\Mail\Message  $message
-     * @return $this
-     */
-    protected function buildAttachments($message)
-    {
-        foreach ($this->attachments as $attachment) {
-            $message->attach($attachment['file'], $attachment['options']);
-        }
-
-        foreach ($this->rawAttachments as $attachment) {
-            $message->attachData(
-                $attachment['data'], $attachment['name'], $attachment['options']
-            );
-        }
-
-        $this->buildDiskAttachments($message);
-
-        return $this;
-    }
-
-    /**
-     * Add all of the disk attachments to the message.
-     *
-     * @param  \Illuminate\Mail\Message  $message
-     * @return void
-     */
-    protected function buildDiskAttachments($message)
-    {
-        foreach ($this->diskAttachments as $attachment) {
-            $storage = Container::getInstance()->make(
-                FilesystemFactory::class
-            )->disk($attachment['disk']);
-
-            $message->attachData(
-                $storage->get($attachment['path']),
-                $attachment['name'] ?? basename($attachment['path']),
-                array_merge(['mime' => $storage->mimeType($attachment['path'])], $attachment['options'])
-            );
-        }
-    }
-
-    /**
-     * Run the callbacks for the message.
-     *
-     * @param  \Illuminate\Mail\Message  $message
-     * @return $this
-     */
-    protected function runCallbacks($message)
-    {
-        foreach ($this->callbacks as $callback) {
-            $callback($message->getSwiftMessage());
-        }
-
-        return $this;
-    }
-
-    /**
-     * Set the locale of the message.
-     *
-     * @param  string  $locale
-     * @return $this
-     */
-    public function locale($locale)
-    {
-        $this->locale = $locale;
-
-        return $this;
-    }
-
-    /**
-     * Set the priority of this message.
-     *
-     * The value is an integer where 1 is the highest priority and 5 is the lowest.
-     *
-     * @param  int  $level
-     * @return $this
-     */
-    public function priority($level = 3)
-    {
-        $this->callbacks[] = function ($message) use ($level) {
-            $message->setPriority($level);
-        };
-
-        return $this;
-    }
-
-    /**
-     * Set the sender of the message.
-     *
-     * @param  object|array|string  $address
-     * @param  string|null  $name
-     * @return $this
-     */
-    public function from($address, $name = null)
-    {
-        return $this->setAddress($address, $name, 'from');
-    }
-
-    /**
-     * Determine if the given recipient is set on the mailable.
-     *
-     * @param  object|array|string  $address
-     * @param  string|null  $name
-     * @return bool
-     */
-    public function hasFrom($address, $name = null)
-    {
-        return $this->hasRecipient($address, $name, 'from');
-    }
-
-    /**
-     * Set the recipients of the message.
-     *
-     * @param  object|array|string  $address
-     * @param  string|null  $name
-     * @return $this
-     */
-    public function to($address, $name = null)
-    {
-        return $this->setAddress($address, $name, 'to');
-    }
-
-    /**
-     * Determine if the given recipient is set on the mailable.
-     *
-     * @param  object|array|string  $address
-     * @param  string|null  $name
-     * @return bool
-     */
-    public function hasTo($address, $name = null)
-    {
-        return $this->hasRecipient($address, $name, 'to');
-    }
-
-    /**
-     * Set the recipients of the message.
-     *
-     * @param  object|array|string  $address
-     * @param  string|null  $name
-     * @return $this
-     */
-    public function cc($address, $name = null)
-    {
-        return $this->setAddress($address, $name, 'cc');
-    }
-
-    /**
-     * Determine if the given recipient is set on the mailable.
-     *
-     * @param  object|array|string  $address
-     * @param  string|null  $name
-     * @return bool
-     */
-    public function hasCc($address, $name = null)
-    {
-        return $this->hasRecipient($address, $name, 'cc');
-    }
-
-    /**
-     * Set the recipients of the message.
-     *
-     * @param  object|array|string  $address
-     * @param  string|null  $name
-     * @return $this
-     */
-    public function bcc($address, $name = null)
-    {
-        return $this->setAddress($address, $name, 'bcc');
-    }
-
-    /**
-     * Determine if the given recipient is set on the mailable.
-     *
-     * @param  object|array|string  $address
-     * @param  string|null  $name
-     * @return bool
-     */
-    public function hasBcc($address, $name = null)
-    {
-        return $this->hasRecipient($address, $name, 'bcc');
-    }
-
-    /**
-     * Set the "reply to" address of the message.
-     *
-     * @param  object|array|string  $address
-     * @param  string|null  $name
-     * @return $this
-     */
-    public function replyTo($address, $name = null)
-    {
-        return $this->setAddress($address, $name, 'replyTo');
-    }
-
-    /**
-     * Determine if the given replyTo is set on the mailable.
-     *
-     * @param  object|array|string  $address
-     * @param  string|null  $name
-     * @return bool
-     */
-    public function hasReplyTo($address, $name = null)
-    {
-        return $this->hasRecipient($address, $name, 'replyTo');
-    }
-
-    /**
-     * Set the recipients of the message.
-     *
-     * All recipients are stored internally as [['name' => ?, 'address' => ?]]
-     *
-     * @param  object|array|string  $address
-     * @param  string|null  $name
-     * @param  string  $property
-     * @return $this
-     */
-    protected function setAddress($address, $name = null, $property = 'to')
-    {
-        foreach ($this->addressesToArray($address, $name) as $recipient) {
-            $recipient = $this->normalizeRecipient($recipient);
-
-            $this->{$property}[] = [
-                'name' => $recipient->name ?? null,
-                'address' => $recipient->email,
-            ];
-        }
-
-        return $this;
-    }
-
-    /**
-     * Convert the given recipient arguments to an array.
-     *
-     * @param  object|array|string  $address
-     * @param  string|null  $name
-     * @return array
-     */
-    protected function addressesToArray($address, $name)
-    {
-        if (! is_array($address) && ! $address instanceof Collection) {
-            $address = is_string($name) ? [['name' => $name, 'email' => $address]] : [$address];
-        }
-
-        return $address;
-    }
-
-    /**
-     * Convert the given recipient into an object.
-     *
-     * @param  mixed  $recipient
-     * @return object
-     */
-    protected function normalizeRecipient($recipient)
-    {
-        if (is_array($recipient)) {
-            if (array_values($recipient) === $recipient) {
-                return (object) array_map(function ($email) {
-                    return compact('email');
-                }, $recipient);
-            }
-
-            return (object) $recipient;
-        } elseif (is_string($recipient)) {
-            return (object) ['email' => $recipient];
-        }
-
-        return $recipient;
-    }
-
-    /**
-     * Determine if the given recipient is set on the mailable.
-     *
-     * @param  object|array|string  $address
-     * @param  string|null  $name
-     * @param  string  $property
-     * @return bool
-     */
-    protected function hasRecipient($address, $name = null, $property = 'to')
-    {
-        $expected = $this->normalizeRecipient(
-            $this->addressesToArray($address, $name)[0]
-        );
-
-        $expected = [
-            'name' => $expected->name ?? null,
-            'address' => $expected->email,
-        ];
-
-        return collect($this->{$property})->contains(function ($actual) use ($expected) {
-            if (! isset($expected['name'])) {
-                return $actual['address'] == $expected['address'];
-            }
-
-            return $actual == $expected;
-        });
-    }
-
-    /**
-     * Set the subject of the message.
-     *
-     * @param  string  $subject
-     * @return $this
-     */
-    public function subject($subject)
-    {
-        $this->subject = $subject;
-
-        return $this;
-    }
-
-    /**
-     * Set the Markdown template for the message.
-     *
-     * @param  string  $view
-     * @param  array  $data
-     * @return $this
-     */
-    public function markdown($view, array $data = [])
-    {
-        $this->markdown = $view;
-        $this->viewData = array_merge($this->viewData, $data);
-
-        return $this;
-    }
-
-    /**
-     * Set the view and view data for the message.
-     *
-     * @param  string  $view
-     * @param  array  $data
-     * @return $this
-     */
-    public function view($view, array $data = [])
-    {
-        $this->view = $view;
-        $this->viewData = array_merge($this->viewData, $data);
-
-        return $this;
-    }
-
-    /**
-     * Set the rendered HTML content for the message.
-     *
-     * @param  string  $html
-     * @return $this
-     */
-    public function html($html)
-    {
-        $this->html = $html;
-
-        return $this;
-    }
-
-    /**
-     * Set the plain text view for the message.
-     *
-     * @param  string  $textView
-     * @param  array  $data
-     * @return $this
-     */
-    public function text($textView, array $data = [])
-    {
-        $this->textView = $textView;
-        $this->viewData = array_merge($this->viewData, $data);
-
-        return $this;
-    }
-
-    /**
-     * Set the view data for the message.
-     *
-     * @param  string|array  $key
-     * @param  mixed  $value
-     * @return $this
-     */
-    public function with($key, $value = null)
-    {
-        if (is_array($key)) {
-            $this->viewData = array_merge($this->viewData, $key);
-        } else {
-            $this->viewData[$key] = $value;
-        }
-
-        return $this;
-    }
-
-    /**
-     * Attach a file to the message.
-     *
-     * @param  string  $file
-     * @param  array  $options
-     * @return $this
-     */
-    public function attach($file, array $options = [])
-    {
-        $this->attachments = collect($this->attachments)
-                    ->push(compact('file', 'options'))
-                    ->unique('file')
-                    ->all();
-
-        return $this;
-    }
-
-    /**
-     * Attach a file to the message from storage.
-     *
-     * @param  string  $path
-     * @param  string|null  $name
-     * @param  array  $options
-     * @return $this
-     */
-    public function attachFromStorage($path, $name = null, array $options = [])
-    {
-        return $this->attachFromStorageDisk(null, $path, $name, $options);
-    }
-
-    /**
-     * Attach a file to the message from storage.
-     *
-     * @param  string  $disk
-     * @param  string  $path
-     * @param  string|null  $name
-     * @param  array  $options
-     * @return $this
-     */
-    public function attachFromStorageDisk($disk, $path, $name = null, array $options = [])
-    {
-        $this->diskAttachments = collect($this->diskAttachments)->push([
-            'disk' => $disk,
-            'path' => $path,
-            'name' => $name ?? basename($path),
-            'options' => $options,
-        ])->unique(function ($file) {
-            return $file['name'].$file['disk'].$file['path'];
-        })->all();
-
-        return $this;
-    }
-
-    /**
-     * Attach in-memory data as an attachment.
-     *
-     * @param  string  $data
-     * @param  string  $name
-     * @param  array  $options
-     * @return $this
-     */
-    public function attachData($data, $name, array $options = [])
-    {
-        $this->rawAttachments = collect($this->rawAttachments)
-                ->push(compact('data', 'name', 'options'))
-                ->unique(function ($file) {
-                    return $file['name'].$file['data'];
-                })->all();
-
-        return $this;
-    }
-
-    /**
-     * Assert that the given text is present in the HTML email body.
-     *
-     * @param  string  $string
-     * @return void
-     */
-    public function assertSeeInHtml($string)
-    {
-        [$html, $text] = $this->renderForAssertions();
-
-        PHPUnit::assertTrue(
-            Str::contains($html, $string),
-            "Did not see expected text [{$string}] within email body."
-        );
-    }
-
-    /**
-     * Assert that the given text is not present in the HTML email body.
-     *
-     * @param  string  $string
-     * @return void
-     */
-    public function assertDontSeeInHtml($string)
-    {
-        [$html, $text] = $this->renderForAssertions();
-
-        PHPUnit::assertFalse(
-            Str::contains($html, $string),
-            "Saw unexpected text [{$string}] within email body."
-        );
-    }
-
-    /**
-     * Assert that the given text is present in the plain-text email body.
-     *
-     * @param  string  $string
-     * @return void
-     */
-    public function assertSeeInText($string)
-    {
-        [$html, $text] = $this->renderForAssertions();
-
-        PHPUnit::assertTrue(
-            Str::contains($text, $string),
-            "Did not see expected text [{$string}] within text email body."
-        );
-    }
-
-    /**
-     * Assert that the given text is not present in the plain-text email body.
-     *
-     * @param  string  $string
-     * @return void
-     */
-    public function assertDontSeeInText($string)
-    {
-        [$html, $text] = $this->renderForAssertions();
-
-        PHPUnit::assertFalse(
-            Str::contains($text, $string),
-            "Saw unexpected text [{$string}] within text email body."
-        );
-    }
-
-    /**
-     * Render the HTML and plain-text version of the mailable into views for assertions.
-     *
-     * @return array
-     *
-     * @throws \ReflectionException
-     */
-    protected function renderForAssertions()
-    {
-        if ($this->assertionableRenderStrings) {
-            return $this->assertionableRenderStrings;
-        }
-
-        return $this->assertionableRenderStrings = $this->withLocale($this->locale, function () {
-            Container::getInstance()->call([$this, 'build']);
-
-            $html = Container::getInstance()->make('mailer')->render(
-                $view = $this->buildView(), $this->buildViewData()
-            );
-
-            if (is_array($view) && isset($view[1])) {
-                $text = $view[1];
-            }
-
-            $text = $text ?? $view['text'] ?? '';
-
-            if (! empty($text) && ! $text instanceof Htmlable) {
-                $text = Container::getInstance()->make('mailer')->render(
-                    $text, $this->buildViewData()
-                );
-            }
-
-            return [(string) $html, (string) $text];
-        });
-    }
-
-    /**
-     * Set the name of the mailer that should send the message.
-     *
-     * @param  string  $mailer
-     * @return $this
-     */
-    public function mailer($mailer)
-    {
-        $this->mailer = $mailer;
-
-        return $this;
-    }
-
-    /**
-     * Register a callback to be called with the Swift message instance.
-     *
-     * @param  callable  $callback
-     * @return $this
-     */
-    public function withSwiftMessage($callback)
-    {
-        $this->callbacks[] = $callback;
-
-        return $this;
-    }
-
-    /**
-     * Register a callback to be called while building the view data.
-     *
-     * @param  callable  $callback
-     * @return void
-     */
-    public static function buildViewDataUsing(callable $callback)
-    {
-        static::$viewDataCallback = $callback;
-    }
-
-    /**
-     * Apply the callback's message changes if the given "value" is true.
-     *
-     * @param  mixed  $value
-     * @param  callable  $callback
-     * @param  mixed  $default
-     * @return mixed|$this
-     */
-    public function when($value, $callback, $default = null)
-    {
-        if ($value) {
-            return $callback($this, $value) ?: $this;
-        } elseif ($default) {
-            return $default($this, $value) ?: $this;
-        }
-
-        return $this;
-    }
-
-    /**
-     * Dynamically bind parameters to the message.
-     *
-     * @param  string  $method
-     * @param  array  $parameters
-     * @return $this
-     *
-     * @throws \BadMethodCallException
-     */
-    public function __call($method, $parameters)
-    {
-        if (Str::startsWith($method, 'with')) {
-            return $this->with(Str::camel(substr($method, 4)), $parameters[0]);
-        }
-
-        static::throwBadMethodCallException($method);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPqbjZOmEFtQZrsCOhq8ManJ7IlSz0yNLnfkurPUbmx4vZRYTHC5qNmmzOziII4GIM+4f91rX
+fvr6m/Gh4MILjfrAbOXSxNVzoJuQR4aabfDN3nFVdJl0lEtko0G+Bye+ALbiDWYNsGTIAxzahKaT
+5ZDdGtSiKy8YXFGnWIJHZMvMG/k9DXcN1z/dq2FTcsj6qbOFPEOdrVHS+kSfa1CQHWOGAz/KpsJe
+L084/E2+582fhyGQ4ykDdgxVi92iThVuTdvJEjMhA+TKmL7Jt1aWL4Hsw9rZM0SM/3Rh4n3M/GCk
+Rbre/sv3ILLGOn+YFp1ovML6Diy4kqPIKhQbQBP8eOKYtEYNfggjTNxl17NLlvaPN6MXvFwxKe3m
+Y9IVJVtNsGo2xEWvoTF6E6joum44rsyeLLLiT5fJbI6E+Usy/BmtoFPTCjcvXRc+snEFYkMswJhK
+omDAMpu4RzskypMNFgZfjd4TndVuIZi/OINjLWsO5xeSemZT/Nxoxc/h05Vaoy9yoYn4DP5Nwy7d
+JVl3yaMZJ9tza+/oVQEYgu5uADZg7erJu1fmHiM+W3u16I0tKDOFDU7es+GIDa5NyHQQadUSVYMm
+Y2Iph/LVQREFw+EL8tIks+Q6LkJ0qQjpexLfJtlBkKmqNQ9YzMOadWqzHj7wdexgTMilo5fPWTO+
+3mya66SdAFvfs+mXSbG2B4mDNl9djF9v6RLcG8nX9Cg5n3FlAL5h/7Yo0s+TDRDaBj5YG6gKaUkP
+/j7d4Tbc8PoAHDJj59Fch2UHXnqkGdtvcybWS/9ICnzGT9Qs3CBGTuP55vXUgGDgX30Qshh1Rsn2
+0qoH0S160bLK+NMxah+mu1BsOnqPvic6B1NIEkT5dSCSMgBL5Jbphk8sK2R/I2rM7YrSm0JO6Kxv
+ikx9wV0mV//Tcwclajr+P56pKCJWJkftxeS/Pf1SsbO8JTcyPXfL2xqsGVtY9xHcotmIMqUKFoX0
+plzFOwmRJVyK8Q19ghYHkY4Q20jB+NZQ1WNf3NJ6awcAxeVtbu5O4FLhnOsGgzWFN+44YHpu3Wka
+9vcPIp4SeXSPYQlqwjcN5KEDd4PXGoQ+de4/sUGxS+JH6dUDu5T6vDLM7hpzlV1bdoNTDuTmP/mS
+ULy3g9l8wiKKDhj25+e4bfs/hVbPRDyxLe6qGAjYDjLdHK8vrPsCK5bSZ0qR4DntXlQN5BwooHxu
+A4Lk3fP8xy8f3wS076/KPVZq7J/nB6xhTNmNGXQBMYZLf9gBaI9TMHY8A4Y/69EJJcWSRQFkOQmt
+/5/ZThzOQE02+yWPTpt3mA24vg2EoZRTwivzjElucttRSfa1/+W84KeCn6x5Hej81r2REul0m4sk
+Ulsxr1+Pb8+syZTrTUtYMHMWSLN7qZH7VLSt9rTMMA1xVi6KgsiRAAJIsRn3oupBlXM18v0v/+gv
+y4ZWaYcISnSKlLZnQar17PG4bNmTMm/7ecIOhNO5p79yNRzjntUx8sWby+RuxvoXEFEDW9tqKxGE
+jtCid8c1JMn6mONJ0/LFWC24zugGObyJdxKNda4gXJNm3qySfKsbVcctoXQ2FvJH6/sDjB8MCkAs
+0KlOpKr5uzdDwbUyFvi7mXx+/GOsjCKRzTGzRi32b8DPpxwQfHG/UvQNUy1JG4PWXOdH2gMRBt9G
+NgL7aX3V2oF/wMxehcYWqckynUZ+D0aiLysOzYELkvAGE8BETjde8tlIzWj5zkgFHCE7ZBrOpiix
+qzGp9SAB08nd7/ECFUltI6lvlwKrA9w3d4lMmB+AGalaaZiuVNzfPHMCUW07WvZGnO0wwrJDgiw4
+rzvm8x5y/e1KO/go9WQsGfj01SxdX3NKaJdRHtsXK74VbsYoPYa/ta0N035N5VZUfLV/wbgN+nNw
+3KJ+oaz/BNhrcDuJac20pZDS/f5SS/RSKZZYMBnlgCxFrngIWuHwrIZK302gbPkpdQyX+caZcDvk
+qq1F8ZfbQcrjZeGE1/KqJZcbwI1/pu/pAMf46EUdB90njLHqOF+2bRgVJYcr/laL1PstrwBheUcJ
+7H7pt43vOfvM8u0RC6iUGolZD+iUlF3qpoHZOyyKVuvo9OV5TJiz/MZNI08+VUZi3qR1RAtW8z2O
+NQqVZPrD2kmbSU3EE20eMnlAx0aOMoryQGAOzwX3yvVeAWj+kWTlhOyrYv0SCmBbyLc6U9Y6UpgD
+f7EArEs/s14YmaeH6rQO3Lm78vBT6VR8vDY8/rz3PkR807Mn5FbgCUqS9U15Si2Iabg71feZlp96
+gda0plf8t8verNfw4qALYsJkiquW+mcezSEgvZ3l3GBrt0ry/aOpFIr6tRmjlR2acCxrp8ck3fkP
+jLbn+YXWILuf/vxxRckBlFV00FcwDYX4FWZ8+0t+jNv1t4gECeNX8q9gYl5W5qOtDaMAb9DVZa0T
+uB/8VgOUY64ExlEHwYCOFQdhY6qsPYe9Uh7W81YaoCm7whLloFYv3FIRNW93VjfV/rYv2YUrPPCI
+62+NEbFAp7BOFtbmB+/ju+0PNlfhq52ZQa2DEpHTfI+E5ynZ09teSnreL5AeNJdqVJlywS58o5T2
+MUBJxY6RFYpvusKRzDLXvs6OVXM7UkRp4Vkg9HgWMJ6arkb2aX9uvuKmmgOSvJ0mYN0iTmszp0yZ
+zg3lJsHtmLtVItpNOvx1afHfUWeFhnw83Pk5yWAtBw0QdxHo9IcJGl+867WlWyiKxmkfp/sjn5sw
+wIcCgQGBVM7nMWFyY+M+OqseUY5kfUzEHfgzeR9jobSZUTzYk9ENifFryWucfziXYhy/z8WzNOpn
+3qgWDOp0yVF6gS391xP/VM5mRsxUhWUi6rLNNQXXAxDnqDENGlQmPIlry7pd3oSUJeoMWq4u5Rax
+dsX+L6tBlaB/zJbwOOHUYRujQtTq/yp1xO+HKl1fXa5UIgGuFrJq47SpdaI3yn9HfBOcIaHLAwyx
+Gtvbs+DVRLC7IgiXFhdN8gjvjcTLuOU9AV4+JE2lT8eMr8z7EdY8uvVfP01BUomH2ExvzKgYzdLu
+kQqD4psPp8Iqid0dOXPvU9s+ppI2YOq6AcQG6Lbm4NsTeEcYWaGGw4Tm2D/9gHEn0oe6szeg22U2
+uYUvBIyPK2Az3aMm5ejPb1uBwwLNo49oN3yA2nAJUpxAWYjcXJ+sCoB0DaV9U0TIslhE9b5bx1dP
+tSIz+KrjpiDmBAmCXR3+uaybnyuFv2nomD7BoNuVViNHP8bTry1sm6P0ELZ0CMy23ua+JSOa1moY
+vW5ZEPNry3Rxou9t7scYOx1xDH88ehO+zLnNudJzzL0Nwa3Zzewq5A+KXmQw6xZo05r7OGkznO8V
+xg384n7U2A2NK68OLwGllEKgcjbEfvVsAfVhtJutFbyTg5s4M/uoFgqPGreuZRqcL2yECwykO4dB
+Gbus52zCjMB28uSrwojY4JPZAut4J9Jg91UiILvD/RUbbx7XBvtFqHpRo653GGjdDXJ8br6B5CfO
+UtNSgeP0OuiRPJa+4OJyzsDBostF2RXrbCpRkzR/Oi+WWEeUqs+H0t4elgzB+MYZbC8K8eg2KAGF
+B3UxEEKqAX5B8c6xOm3ZLvYrI77X/QyDRpgtds/5NsUIZ8+oXyHpMhQFUxe4q3HDf36vuYfPe42a
+zUh9ANS2pIVtuK1LOixV1mepI9AwX7EPiAxTkaEGjUxsqFunRbTakTl51vnubxoEdHVLz8f+iAUj
+UqlI5qYxvVhuRYkqaoAHKefgm3rw+byxIBjj0fiJqdjVztkzV1EVASXGkxeUyMUA013CZ2JMTZqe
+gP/hSrPH6sZfrVx+WIcDr9REQUN98KKV5jTXX+Nq59UJZRhuatsKXF+IRls+6JXr0wGhgi1WOACF
+gxDpknWaUTaDYKckkY8tQfjVIPm2wypaTCKT47oTVLw4RDwYVxktaMXx4rN6aXYw2kW5Hi4zKsFG
+CC09GYba5I2ypoPvVH3riteFPCf5t646QFCOSeNncoHzdRbRAEeHy4aSKVjizqSGACuvLo/2Jxz9
+52dvw7iNWyyR0r3x46Gp2dspr1z9iFmgvTjkubHJMuNyC6Z9cI0fE7zcjIaNgcVVuPEB0FzEDtRL
+ufxHnj7Q/6FuEi5NJ2VY4YXXBZUhGWOUFU5m497JPCosBtWC+yhwJsL17uSuqHW6WdyUfmz6qHjE
+pDA72LSFqlO8iWwzxcApYmI98Lro9x7L9U6sZ/G5fJxhYQo5StP44hQQZ6BXRPhl/iYFjsmLkEE/
+1+LaCqR7nVZVP2B/9NHwySrPB15YUw1tyHThTUnR6fEldqmSWPDn7+PVxu56N14p74jLpuDcllXN
+DpuiqspKYnFreQgEfTprabvbxw/W905LBjfKFGiCxPvH5il1JuiKMqw91I2VIbnVhn6bD1Hrsm8w
+7JG6IaKh8tj41sVmYCUYDzfzFyfXasTNWn6r2cXezQ+M4/GPv01v3YGHtnZPXV8aAeZntMe/Op0p
+nCsTXOna9EZ+AcnUVQi4OAmMYdI1wga8Q3FMhEu8b03nf1+HocjRcp/VGMstpzjXTbvBgtTC7SvP
+Fg2wDeys/O3gc7wZgTwMvRFPhy3OglTLqUrfJa5XGIMbHzTE/FntUfjXbxyXKnPNlkR9/Yb4TwFL
+PdvoLk7qsjHOtCsXvEgnn4PMxGw2ABYwvxBKmYCOzQAdskeptWFlpyOcSXbfNlBc/2aOgtiBLtdP
+LUwCYz6ZsNPPQbLODDx8WVjz9yHkwK66RwcmgXNKGYwT9Ag3dM8h6JM5m6crJsun1jfkYECtO1+Z
+o4/uLSVHiLSwcica7fwfZ70MYjI5h7B6nQ7fWHNS/Wpy9XsMOzjcj9eDygivhfOUiGq2OPwl0OSK
+0ioynqLA0xFeAT+oUmF3nSTg0aNW5OEsp7MS3K1Nz/qNGlmfIDwRl3wjfzGXHwElIMS6cu4vzD7V
+s6ETgnBAw8CHKirbwAMZRvQUoN9zLwDzAnx71vlbHjEhQrAy9mkttyqoxfU2JFsR+Oi/dm71JB9t
+mW9Md6CvKPprfD7wGf+9P6rACwVEHn56+xQeHCGUZUZA0AbFsySIR0WjAdfS7qatxd7bt3xRHAya
+bGmjY+bqdcvdJSMVmkXMjMKS+rvJ/jsFg6C6h59D9F3n1ir35Ojv9KFrI37ffeKIFMBWvqCnJJ6V
+2fLvkdmex2VDXGuqig178AEZFGqQzQalYesPOrDjPV04nwlNQqd87E0xZOf5bAAdoafbN+pV9LHI
+eDNkHgx3GLoLAedc2hmING4z7jKKoNjBTa0aDewAnHkVCE4XjToM5yflVFaTVpgJjm6pcVkUJfu2
+M20WROBiwTKJMLD7Xy7/oJKkGCeASpFBlGgJFz0FsxhHib4SzwlPVsddzh9/916bu0ZlJDIsDRJe
+qMsoUVK8nVwpKNEqndjYCUJHRsCjqGzRpMxjAzu13iktiFQhakTRjSw6cRnyZMqvmtTKzq9okzfi
+oeJgW0OGYCj/EwNmh47BWVANGsnO8SGVSGXMos3UETzUvfMT1YnQkZ08IxmZTcbGul2GYjPN6Htt
+jFusCs02dPPjlMmRdtSXE13oaE7b5u18UCyL/JhaFf5WzFEy/U5dXwlXrW83mEGNrucJoDYgNw6s
+41zM/HuD1W4KYafJgrWiWS9sYaLd7W33ayt+9ggRpAi6R+1zGxccP2VLKS3Rfq2u+Lh+nzEr/pqS
+DY2TPf7Mm01+eAKro+cwYZy3z5KZ2hWJKjQeTbp3rDaXcJ2/msKjgyejOcMRcfwIK8y1e2gDNSAO
+o5ZHjY2cMEx1Ll4Qf6+e/tLj26D0ucj7QTAsYqXXi6Gi6b/9x++KWF2/Im3/0+hTZ2JPc/f9D8sj
+Seuto+7WzRvnRyXyCuXfP7oTIf4K0bTANoIylkQcpMQPxSSCCMYZyTiU1eZRgk4WzE+iLOigbHu1
+Kyrt+1NRt7566KPC4OnxxogFW7p7kOWhMOyNlqGOEXJ4eOjrdbii2dd77tH9z+qfFc18s0HsdQrP
+xoVI3iW1eOe7noOgACpuzb8z3U6hXBh1/8WSz44bB7v/T04knCa07OMfPePsTZIDCvUzym4d+vqu
+ABn9MXc+TItovL2+dYPQDfxqzOVop4iwetbYueFw2W5titANuM9UKc7VERvoESFA17cunW6MTdj1
+6YdwBCWNT58+KzMb779lPV+eExlx3ghdLWAKG4UqyJXc4n3yNf8j+TVIYtDrwwtxBDYjtKLeX7Dw
+fBuVzRiryWYIlz3wkGtCXu82nom81yYMlnXKGxYwylIyo9M5QPqq2T3LjpHtFPfuxyseic8KrLQc
+SGoDTMqUjg/tYatBc8KCS/KQ4HlLVmCbCYEiwKv9rHKBjorNS/03ZJ0Elvos119O1n/rqTuzHU+d
+Dsb+r0uRDAPRtN9BXV+4v8tDlXlRH4Xt6XpSixbuMGIk3DtYoHDLWQdYmCuPlkKVbMPltzUzMxfh
+B5PrrZXM1Q0SonHnEi9jos88pEHVFe82wRIDIHapnB2BQ/DmRhgZPXscjqGz5YKjOLg9V3zkH9Pz
+eSH/bxD/DmnLwiwTX4+BIQEPqEfIedL/qHuLMjPTVFLhHcRWnq3VKCu5CTznaIYfPBmhOgv+JYy6
+i6k+TSFyYYkbm5LiRWfGukkFPKl0W+IPyzkEjNakqtb9NiibHKTwI4zNzDE4rk7cVgn/YF9XQHp4
+/zSSoxzqYBR4OOPF7Zt7TZvg+6wy1LF0Uy++/R2lH4BQ6AuEhJ2m0u/A5LpNNAmmMhAw0qoLMoee
+u+rxR3c0SLeYGlMacF6QosuS30nXi9fqvph4kNKKtMoBz3Q/8NpcRgwL5+kzWOWUQAgi1lCS6E0n
+hPBRBQg8CRqpOstEaqnKATjgNq/cBMvKHN9b7WEotnI2rKdVnnyf9TAMkXlPvEWbdW3VZ5VxBG3a
+KbXXRjGfV+V4sh8Vr6AJIhUusVNcxPG0gDcKLncBh39Q7ECExyl5JTUdATniiD3HiWwHZdPRgj6c
+oxiCCBw32oodKjDt0ZIl2noTz/0YATmlGbPS/RW26yfKVWBs5pK7Y7Rvd3MZMqqQH3lEL9w+8u5z
+gSazLl0MPAxlke8pb1EkVGdM/xNA0/57x4yiR94GO05gbaxz8brr7A3t7QtcNi3Qi03yAAjfVexc
+SaJAQ4scgjgz38i80HN2n7VOgeoZWf60KZ/qM9aJG36aiOHRIPquFIb+ckoVQdYquOyWAnplA8YP
+li/dtuYrtafChxq01+pmHkw6bNr0JkNRrsGIj1hiTUy/HnFZv7By6178whKInffItTk3B2rsrpks
+KIlWLE8KtThHif9cRHNdsJByruaFfvGSiN5F9dc/Glh7ED2vD7N+6Xq9SHqbeQmPhilo3Suv3vCp
+BLICeoaTLaly1SWSHoCjPt0vTSqTYAf+CRTNIqpa+tlaJBOUhAeupHcYoGgFGXPLoG/vI7CiAeO+
+8ghN8vE0kTwZ0LxU1T6O7QgUaMH4RtUOwmcI+xh/9e7PCc3FPVdslhkSR4ox/XEkKODG6z4jymJ0
+XraeN2TTFntBIsvUWQtmXvUp8rFiTXIj3q/TYe/f2WDV8wLODn3bq/SHOCfMhs2deLaU+of3jowi
+8EEdfohKWZiNyQzhdzPumXFLK4kRZskeuy1wU+Br2S5lA1TbSFwcCCLqIFEj4sOzHKV1c8hf4JEb
+h/f79BLK8xxazrtptc9nOxRZyYnErWhb8KX0t+623E46bbrRg6nLK2bRo2SlbablWHSOkNp524Qa
+2H8B5XA73TGZJUwwpud9vhCca6N5RLJOd4PNnmBQ+7n4NyVauMYgTA1usZLBVOeh41lo33gPlGrX
+ps1zSvsxtpz+2R3R7gq3GuBn4tg5SSUl5TQY7iJLT8wHwKFSwxbGc9jR65SFf9S+oz82QmUqjjkb
+LxNBuq33YiEfp2StFfvxRpEwSsi6moTHkcQu0hirsydo26f4khIhQlvhnk2iutxyQ/zZlUESY9sK
+zHby7VtK+1CspuTHFiSCmk8o0IddXhoXtgM+VdXH6DVxsGqD/0tGKG/93x7RPmNQtbP8WT+5TI3C
+NFvr8OspU9AJhCjh4usrgLzAzfZkTo7q+NwCVwul37f4BRNa/5tqxv0CdZKvG+J0vvWbbzbaPaEW
+zjnV+w8uA+jdE4/rFwDBcWHXy25hfr6QvYMS0d2fbElc8cBodM0d1TIhQRjZitdmv42njpZU2008
+ztlcQSN8j084DOqs1iIwqyoE7+2c3w2mP9GxLhy9CXdiHq0rmcb0xmzBS1/jwP3RIrzClCnZiAgP
+neS5rNOSQqZoXx2O2eGt/VD8a65m9O4I7cACDg+Rhvm8uYQ3THideOVKZJthdc+/kB1sQO8tXH4r
+58cGl5EvjOe4i1CrcLBdnUg5q2TIuUwc73EzN1r/Yj7cN7QJ//Rw1uRveqzEwNDO4qLGytThGY10
+28uXNe1D4bnOo0az+SDOOfmPjxfiIjpjIj3zoDxfJbAHaywPbLaFhdti2P01rdzbAge5+zcdVBNI
+eb/cavplsLhbcnrtHsanUwZZqpwLi1XTC0w+atESupWgom18A6/DFih8TC/HWmchwRUA2/vWMsE7
+aRNys49g78NEyBR9gs2Zo3IxX3bH8N7YMKiTTqkSs8a2pCgx7Rc69/BiYiTSZdffCGC1gnDLQf7g
+PpKpnUIY7cf6jUPgQHBshojAfQznwUStw0yYimJjrmStnFL9hqEYhHQr0aOkbLPU1ugy2GdXPeSE
+UOX02+rTLtofB229W6o+iNqh/bnDkfYPPQsB66xDyGBpPQj5X3+HpXr5xQH+MwKo5HjVxb5CGTgK
+C7uzyE90EzT1yKW6R6i6uNhoOZLBDIcF1c0UT9E/WW5IUnVvhGFbK3rojj90HiWP8pyaJOdiV2/r
+j48QYj99CQiQpxQ9edW+ZCxWwI5pruhecTvx7fNtl0LsuhZ3VP7yOwRf6GQJsWl59gn/3GI8CEvH
+TtdJFc0npcTVYmEdEOooCAuG/Ix8CgY0r8dn24kqs1F1ZaOfkB/xOML0PnOWoltOouEb9Hk/DxGg
+54dtSX1SY9Tn2ZbMr9A9O26iBWgSeuVMTE2RAivHZGkbiV1bEZ2nPDQQvFVdNNsTLgUug3XdssxE
+OUqkaTPE+78o0VGfTY1yr0Ecr/OJy65RPMmz7Vbv1fDgESQGVXJqVHJBB/Mb9SpJws/dvxxDYtUY
++s+iLMWzXYgk0dfjINmKBjQ+VCHjbK+QRbXFv21g/9L24cfIavgPQ1I6u9cpOolukNudBU8hFmB5
+HWw5xNYfcq0vE//V0i8f6BtcLX1f3pMnMYS45PdV8Afe1F+RgLi7sMhZlKGEKjuRQiQA+hq4T5Vn
+AywpntqveGWmwKvHqKRKFcN7POHukcm/PYpqpnzSUKBAu7n07UfO/FWNL/FeM3Xgnxht8lasQGyJ
+kw6sISHCCSxUaIsmoQTU7qdT2PG6gTekH2d6kfYv0Ae4dL1XSaJk4C18ucrZEJzQLIlVUfZ9YpjJ
+MvVHICYsXNuMEonuPM8SliDXUpJDj1PLVvIVyGd939dxK5DLbAf7AbYXR0nCWPkOCtBwOzqImtA0
+QD2EUY6bBgSmC6/z65ns+ARbEjb/2mG/hLkAREXjnQBl2axZjxMkATwhPDyFi018E+REkWdqHsgb
+wTo1akLiuscltn25j/pI65J6Zg9z3rE/6kOe4vfBOi0r3wyBZ33RzAyz+MZ6ttECOGjnKxbRSut3
+m63kMwzCWVEOJwLunCkQGDVNt0UOLYFqzWkXIV2UrsEnBbQMowXahde2lotmbfR+GcGJklvjxvHx
+eW6DUwZJ85JrL0agLfY/oszpzFBOMS5qxvzKL9mqxOJWIoEDfHj6YJ7GWvCCVxy5Y8mt6uYnVB9K
+ALbO6BwrprZ46m2OMLdX+XsjGZyuOulFjQQ+p97ojU0/Y/hnbLU9ON/Whf30SG5LsnZQCrZVs1rb
+9k6sX5J1ZELr6ykFFUmq+icmG4JhiLta97xyILLHpsBkD3I/amvq3sLtFwMZ49x2bUEeCOi/CVHV
+Wc1PMQp3E0Fi/stcR6CfeWAlvhSTVBmboXhtJsaUKJaFbCi9MBIjrioxD++McwoHcof+gI5plqI/
+4yWztI6IPMe6OKIqKhYLLqMOtc3AJmzzjN4jHvwZ2Qf+ijcEyHY0Jm+E6osAu6BCbDOmcp9eH//E
+aoyl7ii0uQNJU9bd6Fx9Aj4kOP9oZeNEE48Bmr7gSjaC/TRtKHUyMlvpXQRfd22w/+H0BxOcTKY6
+vB72KVRBcr1KBddAEMeLUUDO+Rr6WNqxxVqel4gvH2SdHeFw+aah34r6Hv5j7fNizrN1j0/hRq9B
+Jnd3Hd+3M22WklOh3tgJsITeNqrsvju1OAVjiyMuKU4wAVkFQ009CHWctSkOX+2Nz5z9bHXvAUbv
+QDgB0w5psPjZKS3xcqzZHWZRUjg/wrx4nsfRE640ufjI9pvI/YskXTFDLyu1XwSAt55DM/sMi2NE
+ygaKXvh/QLNAlhgvOsXIjYrM0Moqbu/t0uG4uMFaPHHK0oi8QxTZLtjzFX8rtgGNsOP6QNe7qifo
+qBbC8US9kdCCbNUWypZJRZrfOaGXcFdAoRYQjB8Ih06e4OffRLufcT0/AR6AN+06dkIUxpKmT2v7
+lUwbWskH3lUI+vyYRitSP8RGtM8MOEKoZC0tXVBnA+PUWb7nUxmXe+dGzGHW/pzoDXZapvEKKd1d
+WdKctXICKQFUq6EFkrfueERbLjKg4Nk36bOGZmQe0gPcaR4e2KcKKVvHOOy1Boge/1MUaS/wzvjF
+/lFF9O4uUTgdgcT8XvFdjOTPZVcSXgPy1B4DRDiV0HB+upPPx70Wril2VMyOB4xZQkelMPvclLl2
+5EGDKPtdH8/+eCyBQbPB1E0AsL3G9A+qfFpTS6vRiVc1B4xyNmu3TeumsWitN4duH6n6Yn5FiRNh
+Z40CqEHCvDW9haDYTeX+Y0Fbpm0lmdSARwj0MW447tR+htqEy1Kdu2r1UAtJ9RSFFwiTcXhM4y4k
+jDaEBlaceR4Nvue/O3tGwx+Mh0GvUlzx94IDsK1lZv8Lm6fd3R+3j4AxfrqNCt/cTbOTlW7ECFmL
+fcnTKWC1uWwFXoTjCJ/ZAPINlO4Jj2OK4ojd+TvhFS8QhowpG+T5pw1wo33/Eslz0YAmPZy9Afj2
+cHroa5raW9grWsaFJImneN9fNEj3xlKPqElCQwC11XZadVeFqScgkjfidvkhOF6l6UoyVO3vE1Sp
+/RZuLvVzR6KLcaK1JQjeIsAHK99Huqu/gViKzhavIUsfbqBKUjk3yxfxVZ2NtehoMza5E6hTJ/VS
+chzNQMI9zxL23b3RZkqiRcxTnAN4wbjwdH7PJmZ4bttshMmAdwqDwGgaU96ZxGDiIuaw5psMW43E
+m0sFRXLP9cj6qtdyqWAZvhW8ccSv73eN8m4Rzjo0x/eLTzzVviPuKK6qf/ddWBa1+rMPupBAcaPE
+OAmi/d6SjLhUrP8CbPjGlKKpFXs9YbhoMBBy0IYASXurgenR/+nmJEQ9u19sKTDYCZssxnlrtiam
+U+Zdjisgb7oF/WsBBr9Ofk2wf3RBbfR+B2zYe+H3fYfGW/HuYoc7tNZwPt3XvfhjMyyqtE722lq6
+o6UoEuylIdOoK6YK2kE+sIpSct9SNtIKy4Sm73vQmkjmczbeCsdXzUWtvjEPRNu8Eov1fpuWeNtY
+eYfA9PP8bhVEziX+R6cYvlPr06/MlrizhHqtQ2NTNtJOmyaGWZ88m+w8ExRFVgxoDdLRLNv0ZfKY
+SNmp/AAMGyACifXF0aDohMvX+5JHekAgwXU1inv4mHybbK0ZCXlWCQQaNEe5uO/I1VJLnhgyFsXB
+QgP7t14OX+VD9AkYWiPnDhoDP02vQkdLW9ds4m1a+ZSWcTs6siWi2zsPI9mpf6NSwiPE0Ko/gtwv
+ayI3kh858Ny6x4cpM6m9zhNJqvZcLZrNDFBxoXJ5C2mffb7Gzckq7Ble/DQuaFsinFYdUZsP3Ihx
+uAYYwMYOr0eedW0+42UpCqbCHy/grf65wda6pc97vra4cH4N6ikF3xfRq8aWbhF0XNdmiuQsKdsk
+JVICVJyj9V+OXdKCv1oVqc86e9NDRPSc7HaqGTEkR4sxvGQa0Ivx4vK+4ZV6autszBTv/fOkOS/E
+mJcUL727egX4dzJJgk46nPx92owAOwU4iDFciFnpSQ0dSKJxQkGIJD4F10iEEfK8tuS5iSQIFyJo
+7PdimxOH8bn0Ebb0ggq7Ac6IaA9gG590ji+CAIrq4KULfF96Jpax7TT4NmE0yg2F6XJW7bsIE43K
+2N/17Y2OSgKPFUQOXRD48OUAs2BVxEmYDix+zr7mQv29378dtxglp82Lgsv4lta1m6C7JQrIo2Cd
+1HRXXWm/kMvmQYEWoemCLyoKicBJf07edovxxySVQG0Rij1b/oFxE+9zeP2fC1jfLBtTJP+RJihU
+Goz7C4bW/JyhUFZvwKu3Z2pbFi+S0L5YmR5UW4HNcu74LLfvQqC7PBDTJe139XgkpyZcNgwf31qZ
++fp2xhizN5PLPfPRnmuEA/WbaS/xnYzTOQk0MmYih/ObdyzdBgrIWJgCp7Urpcu6pKfURs7OMcvd
+xtCRZx/RvCmmFO2j3Xl67u37SvUDWyV9zkgYq5vSi6pSPCvOO2mlXVYMvEURtNTyMBkoOd1mm6Wp
+6fKbyc7/G3/x0GTYT/6OsbNahSci6CPSge/1EM1r0lkevavm5JMfj3OwqAPssidySZMKjgKmlgvi
+ti2pdidBXGB/6JMTMV8DNPrm5szw19cFm0e30Ph+N4epJY4vJcfiEa5fLVZXa0mGuw/etAAKQblP
+lC/3TF9YgBQslzy4bcU6OFvlLCLs4bYtWbgn4KflDyPLbcgpOWGQrQ1B39XUfgKY1kJHHUdSmtpp
+RjUqpyGgVXVQD2lmYCTP25DUgpYnqq+kVOuGqSizoTTELJcfnyya1arBSePE9TlR2ca123lnzo1S
+zRQOdR/4tOXMSbnsECr0Nkv8BOmtcSkAxTZMqbxLabrq3sQdEV7+A4HJ0frgqhvALYPwNLK5lSsb
+zsOE7Mf8l0F1qEC7X0X2C7StJrQQHRxoCfNM37wmZk3+XYWIJl+vTMe9AC/zj5TRVd9sWtmW99m/
+FoJaj15EqrDS6xZIGhoxCdVZ0gW68vL2pwNt+FK6UFHfltbKCeT6AbZHzNNwlCMQLHDeYEiM1BLG
+c67RdaMYIk/BAZezc+fGSsjvlnrWAWlMel7/lfSlkn9ngEdZXlKJAtMTIYv3tL3DSw2DkrELiXNn
+w0forGS7NBvVtO8FcRg10o5G2+E907HxEFYqtdK8oE6J3MZ0f8+bi/w8mB3Uaky85zmRdHHx6m8g
+koK0zVvg9ipUUqOzrtjX9n1e4MPl+Yrns8aN7eFrXpwurlryG49BoCtBY5MfxMC0C+nRTUdtXUOR
+7kEyyGuP8cbU9JWuu8p+djxLmaw73G3/v+Ac7PzXJ7BNOiXFWH9RUagGIV6NcTAU/GTbxaHOXV7p
+9J/RJNp2q9O7pF4gUpCLjSJOygfozBSl7VvQmearxMk3pHn5oDwZpOVqsvr8Wbcqu8cf8+CL5Xvc
+9rgVCcS7Jr91YkRHgoNWFrHqGFaK9xAaap2JkBRk9RpLzHGYpr27AN5p9FfezcDauQZGRq/CsGKG
+usDjSNJZdTYzOWQVlsn+x4sLCzZzlyCw7ffbQ/XlNxejon9QB59R0sfXzvkE5FPHJImL43uEc7wR
+nwcj07cB8+owidIrHrJ5s8qVTNoxVGKWbLihTh+hz2/tcBLeV5dIFw5ns3BR/npdKta5Bcbm2qoh
+3reaFv43NmOi5wJNJLZoEz6tyonaOi6IXHIy5Llhd3N0/PlyDPXVAIbGoryMKXJ+p0lCp7JcWlZ7
+NBOwc1fZsIs+jkH19TCvr9jXah7ZprFR6yaNyogMDBGznJQUrP1eLgtMs8EpJgcy8pictCj4DbQl
+rDUUUgVA92OMfrOV60eYnxACdvrzTBgFRBRfj7Gdd8pLYBTzYFQ8H2UZEG6O8UMiKb7vQccBIS1K
+GADdQm/bXpqOy9EwBv/SW2mMhu7q9v2vbGaj8/89FQgQHs24aeq68mNad38v9SLONkX2gmYZPtFj
+ESB77CZA8fOM8XGXdee8vIV56fepfptZ3KkdKdtVb3MiQUYhIZu7AAZi0Jwybp6y4FIKtBFySez6
+hezRDxixsO3rIFRQMMGdd24L3LRkXJ7bYV0HZM5H9/GiZClSVR8v6UMTL30MNkR7YT34EV5kRb3N
+hZEpO41JfWWWs0PIQFhzU5ICzl0KbM90ETD7X4u9zu+hEv5BkRt6ksRJ4M3GSTN+KsgvvbW9I1jK
+ky8Ncb0XPFag+YLogtGfcCg1UMnrHmQYyWbg4A+HwCOXdyaEFd7Zjr8wG9sH+wiBEhRNrvpdjtwv
+xgTq+A83YLfe6hFmx6WrGMiCNtO4xvsbnQC7mX0TN+W8LYD9+EDzt6ZCfWa0OiHKLT93/xoSXrL1
+y95caGpH8yaRrf1FdD7QTinZo1aQFi7aaoKb/JarNWmqJRGpBdKBCzI8Ou4qeWxb50DpgwbqiXhx
+rW45+OUbNR35gycEfLDCduDzVw4cTc/b5o/HGt9UJEqJyFIrmokjYt4UvsEA+mNSTwAXwOP/b/sl
+jvGPHSlwNn9JHV/mp6JeCcLROkC1nduKxsBHMG9T5LtebWGDtMuvzxbaLptJ3OlKhOlRXJVjMA8D
+bWSMnWLftOFTamt4k/BvHw8SqOZ+cNq6H0emZeOjNQZLPVGWp40ptqgMqJYBC9SWO181REfy0LKa
+xigeZODZDZz76V2N6aCTwwAOXgNNhI728uphyBOOKVd2qO+UArnfhhauI6JC5s3wcfVxw1fqHbPo
+PAoaP9+BDko8A8eG7Kmp7KvhvA3IGa1usk92dOWGYOKtydyDKiiMLmBanH0xquSSpgvyozVFXqXB
+OFXFdATgr2tqX/roQOapgGzIyk8TgEcLZvvjpkQfp5XA2hwi7Zdv9CNT+vCjkRLVa0a24+bb9x4m
+6NyqEF00UNNV86aNujnX+9ntKZEwlOaeOv/64Dd74YpIQ63g1nRBhhbQijdgVFo1GdSx/Kp7PDY0
+8dGgu2hzZx2FP+qjBHC04l56x0FPcaZhoSsDRpW8lvQyeRNBj7sYNv8QPPLQiUsAQ1JnfDLG0OHU
+//M93VQqbQWrxUTHqgLkojAh9+Ef+kjMYyG8SsiGmZj1gAuXm9PpYHVa3BuKXdQQbsjqWfWmrNX6
++v6A/9uwBZVD8GzMN/lephbgx9IA0phMQjVHhj9/jXkPDYcynDvnWGDAMKdWqpSov4HWsWlpAoOW
+EI+73L9SLw+5h+zXMd7Gm0ouIa0NMznUdqeDlA1LgsWVmOPybLrPrkBkqfqixoaWZuUOtXVPczrf
+Q2e9lMDeWnCa0Q36NMyKTlJPNJXfBYVa9Y4/rB17qTPPE0IKlWJBUNvS3IClkcqCv7tiB76KjcSd
+b0GGB/qZe5F7MuChtPQoW2OJgV31Rr8Q59S/1I3/jm/pYq/0/Shi+chALxO/az9l8EAbs9ffapNq
+GHM4BhIX1OXq/8oS+aP9uOlzvKHYfbEY3X18+YGaCSHhfm1dj88T+7WozjI2Q0TI2xSl77SpEd6s
+CWjL9gjPrUrL70g1mDuorDjYaZv/Y8qIASZZ2WHdYLquDSVi9/+xpi/WRfMTg4NFxjx+lQo9aXxC
+QpjARmIGrmUO+7kLnxI1ztCaS8Mk2o9UhVoCekUu8HI4bRXmnT6UX2w6NSjEoVzl/i7R181V3C7C
+ZusBCoT1DJeb7xcxaeyG0eS82Tk4xnL0Jwtzrp6rPlh2qaVb5I9HnvhxvTkQLSBssh119XeVTJ8Q
+MHHJZVHmSOX911QbHPdLmNr77RiwfvaDOkfOuWJ0WU1EpfzsXNVv2TxmLL/Lj9mHxG1+A+1bQbLH
+vLvnOKjS4X6LiyUGJkNOLl7hsywnB/1cXTp1n7TbDOigAdgzTt5RGHWamr71Kh5SBsmFIQZellPA
+emuwyX5gCXCOjFEL1ZgpbrbitMk4UQoe0H9H62ufrw/C/qqJxj73aF2uwLSas7L7kBKmMZs6EN54
+242zekcsxLhhzVvoyO957zEVhJ+/xGP23kRN5ABjmSipel2tYn3BzTodroNz8CVIeZwub5JLFSDc
+U7mR5Mrjc5moiV44B8aRz3Qd01Z1hrj9yNXTgfBk+9qutVD/H5JvQmiUQze6V6Uy03AWTZworopX
+m6ODYb3vi6VfKOb4e0R/THZtOxl/ILI8WzGTpP8cAm4kdN/lej1++HyPJVpWcbJsbn/oz/ZEYksv
+zXg2CrpU0b1J7YG9byetwRvB1nkxk7gTnGuHZLyHpEljlveCPMDIbXG0LaRDPIurS8T2YMsqGJaV
+QbHwIdPg9d1KeKA/noM8r9jegMwm7wL619RpALp9Vsngn+/57a4fNyLxtGFoD6sPST2dn0bRps/w
+tfA0xFIvJaoU4skDbfQcj6BJl4mRpDTyBDMwc0Dw8JjOOcgbjqrKdDE3XLsw/c4+Hff1qMHm9Saz
+yhUGn/U69JxDLSetBY/SLPYVlc2Il2VSVz2pZFHbLOKroT2MvCLxHdbiPnxPA7+RG/fz+vmfM2on
+tlCHo8VOADHGrrtsV5NPdyyMr07/fg2LjznR78m/im/LkiVx/jUGSZHwmosa/DbmSG//RbhjLddK
+VT9aGaf7gCqZtiurSioZ/wTCpa4IdHVQRV04VkBJ9lZaNT9bVaSpBnf9aHTDoZikwVe+/Fi8xk8e
+cVq9kFFsJavcTa4G7KJOZqmHdPfiiR57c2v6ZFwGeEqQY+aR5JrVb4vHT9w+JJ56qm296jmbTHm+
+PjdO3DAkk7zKVSnVaeyGDUFIA8ENYX24WEqL9LiX8umanxFnP/sBKFz2k3ddPMpvjoaEwOe9b2Y4
+doxqUlJly5F9/yqaqOt1txDiPJepIcW/AcePuAqB6Sb4hG7vPu3fqE4YuN+V20UVleD7SELuBnsG
+WfcJXKGjx0+4iDp6YxZkycWqalcuWeLHwbxkAROAWcgLGyf0CyboloF179Pwt7ILrBjsSX+bhZbT
+EjOxuU2HLgMhNFqp5lMvUZuYwU8N5f0N+R+snuzidt8Rm8Ou/kobM93Gz80UyGNujSi9cZ9Vs7mM
+oaP6BcTHaWvwOZtgklUWbe7Aqj+QCQ2zb/pAZKondo8na83cB9PeMfE+rtVRJ4bJKChuOcVOHeQO
+9H2bARlNa8ugjJ5EQ0bJSaNL1/wkhR9kan2whuJc7rFIyQyPMvhGSjnPbRmNj0tpCJNKf/JSh9pK
+KsFSMDwULwxqhivmpbSu7WfAvHP6E0g0h64wPwWRG5/y709CxDCd8tjI11A95v9RqCIhYuR9PPjN
+Ey10ZYn2bfSPTwEpZiZwTaiqpdgSaNfw6Vct9L6NGl2lejTNAFPgSZNAh8pFA9/lqq2n+bAf8JNk
+q7QUT11/O41w+aBlXr8fp901ovV/tP/j5vXaDJqFDPSdjIUtrFHLCnpU6B96kpzQclBExSQWV3lg
+EXQY5b8cFzpIbeRzxNS0PImfQNpWfipCX+UnodObWWxi/midwMUQi2aqw58DDMIiqN/ufg+ozIS3
+398uLsxX4ibVJSRAXsHBLF7jGpHJGWKGW/Vx9qJMCRbhjMP8VfFxHRFEv5cFVgF/MNCZW2dTAt7Z
+JtRkaq/bS5v54RQhFyNgJqlZoLdG/2wzGGsEmRtFDJiGqNaQMUP9gO4h4Cro7tOuJIyrEelwjFwl
+dfU848B84yvzFxJq+hUDB2kmmg7H2F8++p4u9frul05Mmul64QRwgsagl7SgKSf0o4EyVA0Ivpko
+VX4RtnDSCP0rOXZ1I7CmQMS9ArP3O3r2aHZT2tK8LNpBVPGsWmLUo63nZ0qlcBHlwS6HA/oiIGIB
+GdoasqPPSo35zuG7GjWmQkg83s1XN6BYFHMQOgwS2loSTwGs/eE2QpDk78hvh2zA7QLa1rt4oSpR
+mn8t9sABd9qL8wA9oO3Rko6euZ4wjx5ramUG7oYAdlrwJ3QyTTpo4BZY7/0tLRkEgpzIkCPZKsyc
+jwstUqArCPoxT9p+a43kOfax3dTJUjys7SyG5IOTkhxaDPX0UTUnuIxQh8SorTCE7Q5SxqmjzNZ0
+6/3KgUkJ4/2xkSJ4z7I75qq4WCecqFQuVg1Krq8QQ4M3q9bb8YrsIAXck5HdJNS0ftF/ZVIExG8m
+gyS5Q07u35dms1s54dwg95UZco6jciMqizxdfB0m/WirMviNsRpDnigaKh20cTn1tD002GGeYA98
+xRZsUk3IEBE7Ws6B8laN0G/Cxp8M2g9wKqL6+WVrbkeCOmR9wj1dU12F9WvtlQ7AeeUQNeziKAmD
+eHsQ/ljIexzqC0hPZuwV0dI9FMlFsdk2vbHeuhZgGy4ma4nfPyl5BT3KHyGZLxK/J45HpDU9C+FL
+erlt3TzwvZ6niujIMjGGLYuiNfU8NZDsmSTNWNe09zK2kGjU9/SLJvVRXWeWOOZya0Y3er+PYCKV
+aSMCWVOs1aWuX+sKc+LEHfidum4O3feKmf99crE0RaWC/KnfAb474BNytALjUIgP4DiNCu83Ci4U
+OXirXNtKeI5tXzpniD9qXx6Ov4VVJjER6v4LCn2xQ22hA/akmmsP/o7rRqGKIUOA7fE4p+g94LHP
+iBKsSzPFAldtpkch/QRCx0EuGOGY1VTnhiq7XUo441pUuXtImitwnYoCf+Khe5GW8pKDR/Fjxc54
+k9dNNaA428MZSaT/I484Eyo3ThJ6lqRNzTGZKuzrn5AgOFtMcCL3sCj3GEJRCOsAK9oy2NBw/Xpp
+S0t/+XZ/vv28niEQr4dyRG/gIJE8LkYOWlgTgt8ZzS9ckn0f5tSs2Ayz3pBMov3l7aDBXzCXJwL6
+nKJLcVbPIX7csqQDUX6csIXxMzMSiGo7sRkuSgOu3q5ycG4qUKJ9ZvEPJduglkLrcu6mcmChUpvi
+FQL644jRQLP35EAk1096dg9Y3COIrVKPgItN6KzgNusaFOMr3bHlDPtK6udmeZxnMPPlgrqk/0JC
+HdpQ0dMPIpyqcIYw3eYFYhZMl+iZ7ugGcI1DLZbnykNpV+bZ7fW1M/edJ88oMYGXodMHn17vZcHF
+JAMrd/klq225YPUJCZgOoRwqY+VG02V3N/aZ6IzaTB5lipFDwtXt6n2JlZFbZsg0MGPb9nwh0Ez2
+AAE1v8cAOQWJz6usCpBfp4EGURhqktJbqXX/UpSGHYuJmIAYvpEQnvs5uweJAkTwMpq3weLI1yeZ
+czMQPqVDFm7EBIej1/mjPIbZVqLqfcuHEZdoI29E9Rqeew7AIeOk0oPlIOuMJCzF/LTTBMeWPJ63
++PWFzkGedxNMTOwvcsCYvcIwu0BWaj3NyVtdQAYMdGK9n+aqRXQ+07wsIX/yDgUcO++l6GNjkUII
+Eg7g8gLjWEcOpRCtd/hT7pKNSQEDX+L+xSoHhhEDp2jqLJfQlqtksS4lN7zSED3njqmkQDvsjEi/
+rpRNIZ5Rw5PNxEYQAIRj4lkMtSAPv3+WmJDJIN0bEVM7upjuE2ZOOHY0PdEQkGla/XTziPau2+77
+BQiG4RkHWwmgtvaJTDnfyYW3bOi2d9PmCi2CZ7Kd8Wk6na1CdhfLnz4bgaxIj5Srf5/ZiCQEOm6z
+YeSEjDZMA6KImP2/bLrK0vX1/18d28vfsAllRWfWIuSd3YCBuW/vZt+eESbrM2e6rRLF1zT6ExOo
+c/Txaab+KP5GiRvYX7Yv7CcCAC9G9WxeAZGUJWMPT2X3pxNNyRmJRsvhmN62OT82imYoLR7d9HgZ
+1ihKiTws0PwXVckonaSBgBbrFTjaA3Tlu/V4qy/NyPvUI8NZMN80v5+xETHYkaEvpJVRk/i5Zz9x
+wal38+OYxwA8Iq2gEg+kz4OdyTDugFOpss4PQC8vh+j4IvUUnqoP04QCBn6x1YSp0r5e0ibZCuDJ
+p/Ch/EcOCo6l5fqCP+kJpMuTJqS+4l5MbzrFFcUI+mX+KCA0B6TjJV/GFOe20Nz4e8zfKQs6J2r5
+eFhq9sAvAuh0CvxyqmzAJXNLYZ1iKTiktgrX4GSJ1Qi3mB9n2DE1j0lZxRUCgnfwfLOVK8ByJ33F
+Zrgq8ayiYn/PHhodPb4JhCNjn27D3j3nM05tf6U0fInAtEvLd4lNc4xOalCmGhfXwPZDl+uBy78r
+HV79Y0osrJQq+AU1JULLp01E+x3GR5dHIlgSucVrDQBphxtm6T/jgLTmYbGbPRG+IExGY1NnrC2Q
+9NHMQgVX7VRWKlpmXEVjtGQxIL5rCbYw38I6dzKIM1xgYeya+NGgLW2DQ1Ef41SQXTWoKBGwr7a5
+GCajjrARaxWEwprOlC6w3VYeicW17RpkVUb5B0MUW+vuaoW/O8DnYtLoUbebkgdnxrLZD4p3reXs
+inLEW8HrTRCW9dEF7vQagzCeZDHS60wK3mpsyjjfggVMKiKjs4HbARrP7uvOj64YpT0aAww1+bH7
+qAM+8EDSkC8Cw8lfVPhSdntJwGVtIiOxnPrS5B7zmpHktGOJy5xvMemnHHh+8ljkjSZ43j7/93Qh
+5FUbf79b6a1SRvYPJcGzItxPXy4zpK8RRVhA8i2Wvt0cuWt6XS0f+9Gi1AKuK7exyc2CcIBBz+6L
+ZHsO0MC+1o1uLWif3cpwBRGpndP7iMm6R0ml+u8tiVzn/YKkNNI16Yp5tUKOA4iScc94Z6Fy5vKG
+ZgWR1cr0yZ+FIIuwM/2zVleZslR69lrYfwQA2Wf/JnMooxWkQtKeNarWCYbag2BE0Fj/EO4gk/nt
+U6nVKDZO4zLh8aIncOwA9nwh1Q8QVOGhm9t+pFTR5J4tIbgcsJ6vKbI32wT+mLo7s0AbRE6PodNI
+YqdRCtSGe33jYZNqO+uOoj/ZRfLS2FJBKdiEAWj99qry+wJ2/0M0fNnATSamSSrvhbMBvNvGiSmP
+R4OUmhEMBOIPh3FRBjpJ6pJq0h16i1mX9QG12y2SNzJn1MXE1h73mohy3MkQttQurlhiImEJOPoj
+Sd22wsZKaDz7+KtlQTTzKRJxBJxJW0U66iGqQnW4kyfaEWBti76FEcq/40pQErJHAmyeA5N7aLFx
+vahvqwzJZxbL+XyHL3TGBDtkKi0elOPl7o8kiauuYh76Ai9So9JqFuQhugC4Q/oQXKpcdxelGYcW
+yxKNitjxvxbWRTzjAnnhmxYRYJcgPUPVCiGG5HdeIyOH4W4ZPiyQjiCksuCoX1tlJDg1GY45fUCF
+eLEnDZzARrfGiRExlnmGBPHYJZqdPxVriVeI+ycyJSJFPVXoo2VkFixqD1pzouj/Bqrf3A9qhVu1
+CR8/NDj8HLm8Agknd5SNIzUqyZTxJpZTPVBwvCLFiVfmcw51M22iqGoB7ZMzpi373gAfYUTl4qhI
+PXKaJiaotgooo0ggMnMOgopJ/ufl1iBHcCkpRuz3Ancdk7n572f3aCR82aPmjftF8BUbTUj5o4kd
+YtHIthzbXvyXKzbnv5hb/YBrq3HHJ0xtgkL/JtCCCE56VYDVJjB2MKc+vwi6fwfq3iwYi/XaGXbN
+hkdXzSFRYnqszGI2XEVLUjAMBykHYrenuCFur7tO6foiRetO1SAYaQ33xokCPsXwx72lPrL2c6Ji
+aQjNYXBroe2AB0XCCU/aC3l8Vk6qAHXqGcvqdYtURzQidsuCJLi1rAVZYCQ34cKryvbammmYMVyz
+IELUwxZnoM2PXNsKk7f5dT5Cf6Kgkk0QHiSB10Hul/AVEfenMv6JB2tug5rjIMLPeoleB0QscJqj
+sYI8ElaK1Mpu+UX+KO8WCIfv912cPFV+SDqkmFu0jlEUTKedyq0D7j6kFdRPdK1/8IEe4YqQe4wz
+mLVXnzWpQvZwN5YfMBfmqcrcFtvJMkL03fzFhOo8eZzUhi8i9FrSFNgyyeQ2en1xmMvUAWxXtjeZ
+mTOuWf/iwkHAJdCKb8bxUXaZfr54wsGVzOdtc1OJBHOrSZIk4SsjoBxYjBHhPG8S+emeJBcbTOFh
+8ybLlVr3HnaxlOdzlYpWwNUI1RdJtB7uv4OTEXSmE97pthUBzDiMty+A49MLqnc2prChxEP5sidw
+mLGfAYYBqsZHErsad4NuW9E7rVtwnGjsNVbG91Kv9WAlAIzwlvwA5F/Z4r4ts6DwHrvUVmXoNFMs
+9qTvo7rFt0kZ89k/scqqSc5K14kFs3lNdrsejOi/XjlkNcuAYudxdOoRINHi/RafZGg4+j7lvSEF
+bfCLtRh7uo5Mbg4Z/tFnnG4M2qp0wtncMSI5Dm+6GCGYaKiXMNdVx2S1eUr+Cq3TOC1DO8ztqV6+
+YqHjsF1AqrIEII8IJlGIF/y5CiKF9Ow9nAT0JKhLAUMCox0r4ovjoQoTI5ii4GM9ISfQpAsGP5KQ
+QFZeghSuW26MA/5nLFJy2KvWJXEyEpGeNcHI8IoNQ5N7rXkseYo6zX76V4mnybCIQJsnKwAo9oBY
+8s1p03ZYGcvcHjyzfaI9qtL3szfWNZz6Mv1+3NX48lu+ZlnM0xrO3f04PDHI0487ntu2TIuvAwen
+oflMuQ6OM7a2QF/E4TMbqtMGjYmWfYK2HMiIg3Z/xpaSgjK64W2nCpzE5qTc4e/lNBm10zbTRHkG
+Iq8LWuPriWB5BvAu+rqWgZwX05HrSZPd7Z+w4huI+1mmIQJqAB1T/ZlFmEoaYX5N8ND68E8aDYnR
+VFFUvGm7xx6Tb0zO9lXRbmEC5ZPWeayge2yIAStALCle1jD86nIfxB/M4qExcOjwM4+/YTi/shQA
+8BYZsYchP54rBsRHyr9IT067LnwrouDsExwye9blMpejYMH3qNgbqUlsIr//xr0hUHxGUWACPhBf
+MbFwYQIyvX8uzjtzDHQ4/2ngoPPeFsY4qtvXhyv0MW7fTxA4N71ZZM3L+3zSIGIcM0mYwBN+ccQZ
+vA3RSKe/lWRECHmkoBZmIEcuZLMDMrfxUQUm65+nkqhraS2GlI92DzpXg4YSv5wnXoY3190qhdt7
+6kvv1ePRUJ8vwk5FJwksXR/+LediMsARXcwQrTLxzu7Qz6Mxc2iAolaMz5XrnnhQkVtQD0uZcwYy
+X2UXcySdAeURTZOnMXLTphr5EQXmimBvMFHFB2rZnRCFuww78RVgIMPzgU2OxeRgqgzEt/mDdQGn
+RHKDdj88m9oBjUjuZocN7FytSYvGdmw2nqSplCii/OXELMs7E11bfJgB5Vie6HNZ6komL//TOYHz
+0mz6eXMcbo5tm1RfqNZnQcoPYyc7/K+74YK4nuDPH/xtOO10dDHoqygdu6wGmnhAE68VWwAmQHOx
+XbfwL14lc9nQlrU2JIAx4K98Ui6lUiclZyW/xystgvFjWockKq9e0kZl6j6mB1zl+ZDCbnM7aQU2
+hx/FQeSNvHBz8gR7b7CtlXUbrh/fs428CsG8sxh9HY/shPM/CapyrMiLXQcdSLY4bZGredVaM9ct
+FTURjYgXlRzI5pioC7MRZLkh82y8J0JtHRrH2SBowNpBKWuqYlJiazE8ow88/osEwkDQr+pmMH0M
+pOexL33EO5sRCDLARwl4VQ9Czb8SIr/wy/6WM9vtp7OMnMXkypaMRHQnf+qhmKHGL299wozaELVZ
+C3LzkAbluk3PDGmT09wfeWGi500WG16kJrpW9/NcMmZoitgl6qiptGKKup6nuYeOey0pdRkh4NQl
+3mxesUsSBd5fpd+Ks6mNkzUg996ZvcEkCoHcYT64bbNNhOFcHfZjAT9ip3QwrSWxFNnX5qczhVZy
+qB45UidHJvdBUB4U1x7iJI/Hol9XP+nJu9cymAcbDbTWs/1vdtnV9jr1/VSZiqF3RlAYf1ZYGaci
+E4CrWDBb9NCV8Addntj1wKCHsptmkFkqQhs9mw/IaxO4vOs32HdGLRntw6/rwe/+K9tV1V4Nk8N9
+GGLKVpYR5YBz3n8bcqwJXOxe1ZS1p5Kl1uuFbb/J/T397ItbyZ2eYD1JQzpYcp2BQ+8MKyUbAfI+
+szUGbsg3HQ4VUcMIh2xdivPfzx1sWSaQJhz7cTi3fXTa67agS+fqxO9X922vlaus8rL9Z4lEjo0i
+G1ctFXAkeQdT8LgNsQM6NRQ1CTP37HTxt2urp5UWT82on6dAAHoLDSmQQVhZQtKbiOoqgnpV+Xty
+u2+Fp1eH3CpFa3vgDDO4AeM1fva691pLcgBcIQiTI0YREtEPvQLYU/4dZJ/tP7CmMD6v4q0e5zq1
+P0+eAs1/PVZeOtdQEbF6agzBrOV6Q6WPc9f/k998GkqnYg5B1KGspeHZRuOgEDj9Ux+WiHQQAlnG
+dvQ/a/uFlkNgnPbroPo2fwfYM4e+cuXJiieSefliNqJaA34dTnTH8jYX0ETPmv7JaNXlrP2T8bJv
+zXIlhk0hq6BwXXxS/A+1pPvQj9CeNwBw+9WdgOF8iSoXvB988wRJ+T0jW6NRXVCtZnciKIrozaFu
+TvqU+GKUjWw34hyImQnUfJzezujzwWm4lpJwLQATrDvhHhOjSTUyPGh3nsgzsl1Y3wFg7DiJXjU6
+n4ruiRtOBxpA/qu6hF5YXLx1T2VfW8EuyPXz/nz1Mv2fsb7grikDlKMuFjwbkch7OZ6elCD01j9f
+pZD+EHy0Rx0zHDb4BEyvrkqUcn/gLKE7vGrXkptrH3gRCWf5cb4CZO6DlDijEKIuCjB9GDTDm2Wa
+thorVgkYm8k5ICssXG9D0DtZgprAdYFj1W0rT39KrSh3sU6PSvjwC2NBhePjpFi0Ei9FYFWkeAZn
+0UVhtbzCIaccsJ4gHIgahy6qNxMzqDgFpLK4kCyFBN/vO+iHIqOovVgtTNY9YvbDLa0QNdSfoypb
+koWKrVrKlC7Puv+XVFImha5HnFQy2+8BkBrC/AozAEbaGTzBZPcHY7KzXj2oLlX2BhrGHXk1gKF/
+H77QGpN/UPeXnYl5phq4qs3q0V1c7PMIDKHn74O6U1+GWShczMGV3iRXjgTgd5wmIPvBimEG8mVs
+/sjzCuTfFSARWg0543KwjLSRNIpIVKQe6VUqt7Dya+NDRhaxGUzRoB0FK1k85jAp69IhP4LmVqHf
+GJkveezooQbszba5uQw8PNFssCpDsFF2PWQOCtCok6wt2hKTmniMZefdyZ6uMjFmYCo9mkSInx+h
+U0BbTYA2ZuntvVaiX14mfNscQKk3kx63pddWkVN5IIzcFw7WvVu5r8178G1/3Z/mOvWq+NQEwijU
+41T7p/peU5qOxzhamSwpbpb3ftw+KMhHvzXtE/+jUb64/jepHQi9Oz+TwEE0Fa6fP81xPabS6/d3
+g5pgTBSl/CcQAlNeduHCTBZvrLsKyo7ryQmPIaLyPoeJY5C48qQzFm3Y36YaKlbr8x5CEao6cOov
+oXSpwWgXDir3sqbcCCQtR1aG3Il7X/vTyfv5/ESJHiFeDz1L5lte4WYfYtsnZJJTvQNsVDnp07Tt
+UqhCazUS7I5o6RH+EsVy4gC7lHZO14DRBtabnlUQVId4zTW9OWEYntpvRiQbq62WaH/56HJvP7ec
+jWa26dpCDm8XQuWELnG11LTXfctEE8ObKsmsMOrVsWrmdAVGW5ypmeuqcmv+iHEzqkMzAft6M3vW
+/m29B6t4SbmN4XgbAwyCHCBdHmGlE4zBiJPng0/xgWBaB+EJA5F7DgDnnw7A18TSkc4Rb0i41n1B
+DfoXiyb7miqsfJemNwQCsiMzIxg8m4iJvtzYHrrM9x8hAvsFtmLZz+CgIIYi3hqSVbpNMffOurzA
+sXuBQAIzSUpINA87Iytl94VOpFNi9oPmkQpHqr7e9KTPD1kClgbe7M1izpOYy8cmsly4BRmadxdd
+gVcB30aajvse8LedkU1tymdEak02P8N0JNFIFO3FtHjeqSiqD6UViS3W+o5EQw32kn1ULSpwYYUe
+az/dzCLFYAdaVXjRYhqXvjryD6/NWc905NeChK3/XBaxp4OQtgsvJ+etJrDxojchJZMU3MRGnlpF
+aeiUS8PyzA3ymtKqBW08Z8L5UKkwnVCa7EH85cuv0yT0zpDqOnCTca7PUb203BEx9O2D+MwePJEg
++TpXaxbvG3BreG3/3GB+dNIwoCq2z5BuUWn9oAVWvb75+Y3LHh1p2DAgGhzZGEyAAOqga9iecTbv
+z9u5vCvqiD1txmdaFYtLPO7jNQZeRpvHeD8N23RLukqT/LOaPOWaMrMWT0DiqYYz3dS82flTcpqj
+I2UHMHg1yruMJrEP04lddLGGwoa4R2dEURFo6higCkchzKzp8ajYsHdNDYGrq+eCGSvqVruplPWC
+MCB9spKJPGUgrxP+6d3TaTURtjanmNBmwkgRj8+rt8+kxQQ6U7i8561tuZiAzedYPYfXNOlxa0Y5
+FHQL6bi9w+p9ioZhvIQ6B6hzsX2EJJkJuZh8EnhTuiWHo9ipxrhMt3Nxkk6FLLVSAo4f7bu9t7Tc
+mQ8MMsI9RNN8mwyYrgvpSSc28SQkGtbkpZMKeyxRML+4wjPn4teaAHjM4Szn+OFFLsICf2zs48D+
+hKT6ANyR6LxKfS5lEivwDJX9yUV07/wVzvZx2plkUvHvqdOWzemUoN1PRQt2MwbFJBmoN4ttyDIz
+gD2XH2dPBt0X6LKPg0gpIZNJa1eU8oHO+aCmEB/9AM81G0ipFzJXlAEIj62vkT+RWcqxobGiWOqL
+NRCZ4Kydkcp3V+nmwb22E8OKr3zljx8vCcAYVTxiYrGWlqJveBVvnfSmPJ8s93zlZyKwNvfqURfl
+q8Br4qpL8UxXYlntElxTgKMA0wZdhW8hcNU4HnONCbgiyCZTrKed5jFIpTgB5Bg8ZWjMoy0Sm13a
+N+KwKdPwWYjtuYvMA8qR41Ejw5+oDW3kkoQ5VDsweT8clqLMuTl6Bn+UZC2GwoeXq90DyNWJeVUU
+jI7a8DjDveK73uSlNBjbtdMrjAUu9pt0aqfpGoifY03qP5waubQ5BcmfTdEqPga/F+qiLTLaW8ic
+2s5P3aQrtIwdcn3OL2yws/TZ/axLcJ996/OBlbmG88bKiWqZ4tzaCLSGi7kfEurDJqQTstEWQ6+c
+0ZBktQLt/m4rPW==

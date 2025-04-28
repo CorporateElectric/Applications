@@ -1,1240 +1,504 @@
-<?php
-
-namespace Illuminate\Testing;
-
-use ArrayAccess;
-use Closure;
-use Illuminate\Contracts\View\View;
-use Illuminate\Cookie\CookieValuePrefix;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Str;
-use Illuminate\Support\Traits\Macroable;
-use Illuminate\Support\Traits\Tappable;
-use Illuminate\Testing\Assert as PHPUnit;
-use Illuminate\Testing\Constraints\SeeInOrder;
-use LogicException;
-use Symfony\Component\HttpFoundation\StreamedResponse;
-
-/**
- * @mixin \Illuminate\Http\Response
- */
-class TestResponse implements ArrayAccess
-{
-    use Tappable, Macroable {
-        __call as macroCall;
-    }
-
-    /**
-     * The response to delegate to.
-     *
-     * @var \Illuminate\Http\Response
-     */
-    public $baseResponse;
-
-    /**
-     * The streamed content of the response.
-     *
-     * @var string
-     */
-    protected $streamedContent;
-
-    /**
-     * Create a new test response instance.
-     *
-     * @param  \Illuminate\Http\Response  $response
-     * @return void
-     */
-    public function __construct($response)
-    {
-        $this->baseResponse = $response;
-    }
-
-    /**
-     * Create a new TestResponse from another response.
-     *
-     * @param  \Illuminate\Http\Response  $response
-     * @return static
-     */
-    public static function fromBaseResponse($response)
-    {
-        return new static($response);
-    }
-
-    /**
-     * Assert that the response has a successful status code.
-     *
-     * @return $this
-     */
-    public function assertSuccessful()
-    {
-        PHPUnit::assertTrue(
-            $this->isSuccessful(),
-            'Response status code ['.$this->getStatusCode().'] is not a successful status code.'
-        );
-
-        return $this;
-    }
-
-    /**
-     * Assert that the response has a 200 status code.
-     *
-     * @return $this
-     */
-    public function assertOk()
-    {
-        PHPUnit::assertTrue(
-            $this->isOk(),
-            'Response status code ['.$this->getStatusCode().'] does not match expected 200 status code.'
-        );
-
-        return $this;
-    }
-
-    /**
-     * Assert that the response has a 201 status code.
-     *
-     * @return $this
-     */
-    public function assertCreated()
-    {
-        $actual = $this->getStatusCode();
-
-        PHPUnit::assertSame(
-            201, $actual,
-            "Response status code [{$actual}] does not match expected 201 status code."
-        );
-
-        return $this;
-    }
-
-    /**
-     * Assert that the response has the given status code and no content.
-     *
-     * @param  int  $status
-     * @return $this
-     */
-    public function assertNoContent($status = 204)
-    {
-        $this->assertStatus($status);
-
-        PHPUnit::assertEmpty($this->getContent(), 'Response content is not empty.');
-
-        return $this;
-    }
-
-    /**
-     * Assert that the response has a not found status code.
-     *
-     * @return $this
-     */
-    public function assertNotFound()
-    {
-        PHPUnit::assertTrue(
-            $this->isNotFound(),
-            'Response status code ['.$this->getStatusCode().'] is not a not found status code.'
-        );
-
-        return $this;
-    }
-
-    /**
-     * Assert that the response has a forbidden status code.
-     *
-     * @return $this
-     */
-    public function assertForbidden()
-    {
-        PHPUnit::assertTrue(
-            $this->isForbidden(),
-            'Response status code ['.$this->getStatusCode().'] is not a forbidden status code.'
-        );
-
-        return $this;
-    }
-
-    /**
-     * Assert that the response has an unauthorized status code.
-     *
-     * @return $this
-     */
-    public function assertUnauthorized()
-    {
-        $actual = $this->getStatusCode();
-
-        PHPUnit::assertSame(
-            401, $actual,
-            "Response status code [{$actual}] is not an unauthorized status code."
-        );
-
-        return $this;
-    }
-
-    /**
-     * Assert that the response has the given status code.
-     *
-     * @param  int  $status
-     * @return $this
-     */
-    public function assertStatus($status)
-    {
-        $actual = $this->getStatusCode();
-
-        PHPUnit::assertSame(
-            $actual, $status,
-            "Expected status code {$status} but received {$actual}."
-        );
-
-        return $this;
-    }
-
-    /**
-     * Assert whether the response is redirecting to a given URI.
-     *
-     * @param  string|null  $uri
-     * @return $this
-     */
-    public function assertRedirect($uri = null)
-    {
-        PHPUnit::assertTrue(
-            $this->isRedirect(), 'Response status code ['.$this->getStatusCode().'] is not a redirect status code.'
-        );
-
-        if (! is_null($uri)) {
-            $this->assertLocation($uri);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Asserts that the response contains the given header and equals the optional value.
-     *
-     * @param  string  $headerName
-     * @param  mixed  $value
-     * @return $this
-     */
-    public function assertHeader($headerName, $value = null)
-    {
-        PHPUnit::assertTrue(
-            $this->headers->has($headerName), "Header [{$headerName}] not present on response."
-        );
-
-        $actual = $this->headers->get($headerName);
-
-        if (! is_null($value)) {
-            PHPUnit::assertEquals(
-                $value, $this->headers->get($headerName),
-                "Header [{$headerName}] was found, but value [{$actual}] does not match [{$value}]."
-            );
-        }
-
-        return $this;
-    }
-
-    /**
-     * Asserts that the response does not contains the given header.
-     *
-     * @param  string  $headerName
-     * @return $this
-     */
-    public function assertHeaderMissing($headerName)
-    {
-        PHPUnit::assertFalse(
-            $this->headers->has($headerName), "Unexpected header [{$headerName}] is present on response."
-        );
-
-        return $this;
-    }
-
-    /**
-     * Assert that the current location header matches the given URI.
-     *
-     * @param  string  $uri
-     * @return $this
-     */
-    public function assertLocation($uri)
-    {
-        PHPUnit::assertEquals(
-            app('url')->to($uri), app('url')->to($this->headers->get('Location'))
-        );
-
-        return $this;
-    }
-
-    /**
-     * Asserts that the response contains the given cookie and equals the optional value.
-     *
-     * @param  string  $cookieName
-     * @param  mixed  $value
-     * @return $this
-     */
-    public function assertPlainCookie($cookieName, $value = null)
-    {
-        $this->assertCookie($cookieName, $value, false);
-
-        return $this;
-    }
-
-    /**
-     * Asserts that the response contains the given cookie and equals the optional value.
-     *
-     * @param  string  $cookieName
-     * @param  mixed  $value
-     * @param  bool  $encrypted
-     * @param  bool  $unserialize
-     * @return $this
-     */
-    public function assertCookie($cookieName, $value = null, $encrypted = true, $unserialize = false)
-    {
-        PHPUnit::assertNotNull(
-            $cookie = $this->getCookie($cookieName),
-            "Cookie [{$cookieName}] not present on response."
-        );
-
-        if (! $cookie || is_null($value)) {
-            return $this;
-        }
-
-        $cookieValue = $cookie->getValue();
-
-        $actual = $encrypted
-            ? CookieValuePrefix::remove(app('encrypter')->decrypt($cookieValue, $unserialize))
-            : $cookieValue;
-
-        PHPUnit::assertEquals(
-            $value, $actual,
-            "Cookie [{$cookieName}] was found, but value [{$actual}] does not match [{$value}]."
-        );
-
-        return $this;
-    }
-
-    /**
-     * Asserts that the response contains the given cookie and is expired.
-     *
-     * @param  string  $cookieName
-     * @return $this
-     */
-    public function assertCookieExpired($cookieName)
-    {
-        PHPUnit::assertNotNull(
-            $cookie = $this->getCookie($cookieName),
-            "Cookie [{$cookieName}] not present on response."
-        );
-
-        $expiresAt = Carbon::createFromTimestamp($cookie->getExpiresTime());
-
-        PHPUnit::assertTrue(
-            0 !== $cookie->getExpiresTime() && $expiresAt->lessThan(Carbon::now()),
-            "Cookie [{$cookieName}] is not expired, it expires at [{$expiresAt}]."
-        );
-
-        return $this;
-    }
-
-    /**
-     * Asserts that the response contains the given cookie and is not expired.
-     *
-     * @param  string  $cookieName
-     * @return $this
-     */
-    public function assertCookieNotExpired($cookieName)
-    {
-        PHPUnit::assertNotNull(
-            $cookie = $this->getCookie($cookieName),
-            "Cookie [{$cookieName}] not present on response."
-        );
-
-        $expiresAt = Carbon::createFromTimestamp($cookie->getExpiresTime());
-
-        PHPUnit::assertTrue(
-            0 === $cookie->getExpiresTime() || $expiresAt->greaterThan(Carbon::now()),
-            "Cookie [{$cookieName}] is expired, it expired at [{$expiresAt}]."
-        );
-
-        return $this;
-    }
-
-    /**
-     * Asserts that the response does not contains the given cookie.
-     *
-     * @param  string  $cookieName
-     * @return $this
-     */
-    public function assertCookieMissing($cookieName)
-    {
-        PHPUnit::assertNull(
-            $this->getCookie($cookieName),
-            "Cookie [{$cookieName}] is present on response."
-        );
-
-        return $this;
-    }
-
-    /**
-     * Get the given cookie from the response.
-     *
-     * @param  string  $cookieName
-     * @return \Symfony\Component\HttpFoundation\Cookie|null
-     */
-    protected function getCookie($cookieName)
-    {
-        foreach ($this->headers->getCookies() as $cookie) {
-            if ($cookie->getName() === $cookieName) {
-                return $cookie;
-            }
-        }
-    }
-
-    /**
-     * Assert that the given string or array of strings are contained within the response.
-     *
-     * @param  string|array  $value
-     * @param  bool  $escape
-     * @return $this
-     */
-    public function assertSee($value, $escape = true)
-    {
-        $value = Arr::wrap($value);
-
-        $values = $escape ? array_map('e', ($value)) : $value;
-
-        foreach ($values as $value) {
-            PHPUnit::assertStringContainsString((string) $value, $this->getContent());
-        }
-
-        return $this;
-    }
-
-    /**
-     * Assert that the given strings are contained in order within the response.
-     *
-     * @param  array  $values
-     * @param  bool  $escape
-     * @return $this
-     */
-    public function assertSeeInOrder(array $values, $escape = true)
-    {
-        $values = $escape ? array_map('e', ($values)) : $values;
-
-        PHPUnit::assertThat($values, new SeeInOrder($this->getContent()));
-
-        return $this;
-    }
-
-    /**
-     * Assert that the given string or array of strings are contained within the response text.
-     *
-     * @param  string|array  $value
-     * @param  bool  $escape
-     * @return $this
-     */
-    public function assertSeeText($value, $escape = true)
-    {
-        $value = Arr::wrap($value);
-
-        $values = $escape ? array_map('e', ($value)) : $value;
-
-        tap(strip_tags($this->getContent()), function ($content) use ($values) {
-            foreach ($values as $value) {
-                PHPUnit::assertStringContainsString((string) $value, $content);
-            }
-        });
-
-        return $this;
-    }
-
-    /**
-     * Assert that the given strings are contained in order within the response text.
-     *
-     * @param  array  $values
-     * @param  bool  $escape
-     * @return $this
-     */
-    public function assertSeeTextInOrder(array $values, $escape = true)
-    {
-        $values = $escape ? array_map('e', ($values)) : $values;
-
-        PHPUnit::assertThat($values, new SeeInOrder(strip_tags($this->getContent())));
-
-        return $this;
-    }
-
-    /**
-     * Assert that the given string or array of strings are not contained within the response.
-     *
-     * @param  string|array  $value
-     * @param  bool  $escape
-     * @return $this
-     */
-    public function assertDontSee($value, $escape = true)
-    {
-        $value = Arr::wrap($value);
-
-        $values = $escape ? array_map('e', ($value)) : $value;
-
-        foreach ($values as $value) {
-            PHPUnit::assertStringNotContainsString((string) $value, $this->getContent());
-        }
-
-        return $this;
-    }
-
-    /**
-     * Assert that the given string or array of strings are not contained within the response text.
-     *
-     * @param  string|array  $value
-     * @param  bool  $escape
-     * @return $this
-     */
-    public function assertDontSeeText($value, $escape = true)
-    {
-        $value = Arr::wrap($value);
-
-        $values = $escape ? array_map('e', ($value)) : $value;
-
-        tap(strip_tags($this->getContent()), function ($content) use ($values) {
-            foreach ($values as $value) {
-                PHPUnit::assertStringNotContainsString((string) $value, $content);
-            }
-        });
-
-        return $this;
-    }
-
-    /**
-     * Assert that the response is a superset of the given JSON.
-     *
-     * @param  array  $data
-     * @param  bool  $strict
-     * @return $this
-     */
-    public function assertJson(array $data, $strict = false)
-    {
-        $this->decodeResponseJson()->assertSubset($data, $strict);
-
-        return $this;
-    }
-
-    /**
-     * Assert that the expected value and type exists at the given path in the response.
-     *
-     * @param  string  $path
-     * @param  mixed  $expect
-     * @return $this
-     */
-    public function assertJsonPath($path, $expect)
-    {
-        $this->decodeResponseJson()->assertPath($path, $expect);
-
-        return $this;
-    }
-
-    /**
-     * Assert that the response has the exact given JSON.
-     *
-     * @param  array  $data
-     * @return $this
-     */
-    public function assertExactJson(array $data)
-    {
-        $this->decodeResponseJson()->assertExact($data);
-
-        return $this;
-    }
-
-    /**
-     * Assert that the response has the similar JSON as given.
-     *
-     * @param  array  $data
-     * @return $this
-     */
-    public function assertSimilarJson(array $data)
-    {
-        $this->decodeResponseJson()->assertSimilar($data);
-
-        return $this;
-    }
-
-    /**
-     * Assert that the response contains the given JSON fragment.
-     *
-     * @param  array  $data
-     * @return $this
-     */
-    public function assertJsonFragment(array $data)
-    {
-        $this->decodeResponseJson()->assertFragment($data);
-
-        return $this;
-    }
-
-    /**
-     * Assert that the response does not contain the given JSON fragment.
-     *
-     * @param  array  $data
-     * @param  bool  $exact
-     * @return $this
-     */
-    public function assertJsonMissing(array $data, $exact = false)
-    {
-        $this->decodeResponseJson()->assertMissing($data, $exact);
-
-        return $this;
-    }
-
-    /**
-     * Assert that the response does not contain the exact JSON fragment.
-     *
-     * @param  array  $data
-     * @return $this
-     */
-    public function assertJsonMissingExact(array $data)
-    {
-        $this->decodeResponseJson()->assertMissingExact($data);
-
-        return $this;
-    }
-
-    /**
-     * Assert that the response has a given JSON structure.
-     *
-     * @param  array|null  $structure
-     * @param  array|null  $responseData
-     * @return $this
-     */
-    public function assertJsonStructure(array $structure = null, $responseData = null)
-    {
-        $this->decodeResponseJson()->assertStructure($structure, $responseData);
-
-        return $this;
-    }
-
-    /**
-     * Assert that the response JSON has the expected count of items at the given key.
-     *
-     * @param  int  $count
-     * @param  string|null  $key
-     * @return $this
-     */
-    public function assertJsonCount(int $count, $key = null)
-    {
-        $this->decodeResponseJson()->assertCount($count, $key);
-
-        return $this;
-    }
-
-    /**
-     * Assert that the response has the given JSON validation errors.
-     *
-     * @param  string|array  $errors
-     * @param  string  $responseKey
-     * @return $this
-     */
-    public function assertJsonValidationErrors($errors, $responseKey = 'errors')
-    {
-        $errors = Arr::wrap($errors);
-
-        PHPUnit::assertNotEmpty($errors, 'No validation errors were provided.');
-
-        $jsonErrors = Arr::get($this->json(), $responseKey) ?? [];
-
-        $errorMessage = $jsonErrors
-                ? 'Response has the following JSON validation errors:'.
-                        PHP_EOL.PHP_EOL.json_encode($jsonErrors, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE).PHP_EOL
-                : 'Response does not have JSON validation errors.';
-
-        foreach ($errors as $key => $value) {
-            PHPUnit::assertArrayHasKey(
-                (is_int($key)) ? $value : $key,
-                $jsonErrors,
-                "Failed to find a validation error in the response for key: '{$value}'".PHP_EOL.PHP_EOL.$errorMessage
-            );
-
-            if (! is_int($key)) {
-                $hasError = false;
-
-                foreach (Arr::wrap($jsonErrors[$key]) as $jsonErrorMessage) {
-                    if (Str::contains($jsonErrorMessage, $value)) {
-                        $hasError = true;
-
-                        break;
-                    }
-                }
-
-                if (! $hasError) {
-                    PHPUnit::fail(
-                        "Failed to find a validation error in the response for key and message: '$key' => '$value'".PHP_EOL.PHP_EOL.$errorMessage
-                    );
-                }
-            }
-        }
-
-        return $this;
-    }
-
-    /**
-     * Assert that the response has no JSON validation errors for the given keys.
-     *
-     * @param  string|array|null  $keys
-     * @param  string  $responseKey
-     * @return $this
-     */
-    public function assertJsonMissingValidationErrors($keys = null, $responseKey = 'errors')
-    {
-        if ($this->getContent() === '') {
-            PHPUnit::assertTrue(true);
-
-            return $this;
-        }
-
-        $json = $this->json();
-
-        if (! array_key_exists($responseKey, $json)) {
-            PHPUnit::assertArrayNotHasKey($responseKey, $json);
-
-            return $this;
-        }
-
-        $errors = $json[$responseKey];
-
-        if (is_null($keys) && count($errors) > 0) {
-            PHPUnit::fail(
-                'Response has unexpected validation errors: '.PHP_EOL.PHP_EOL.
-                json_encode($errors, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
-            );
-        }
-
-        foreach (Arr::wrap($keys) as $key) {
-            PHPUnit::assertFalse(
-                isset($errors[$key]),
-                "Found unexpected validation error for key: '{$key}'"
-            );
-        }
-
-        return $this;
-    }
-
-    /**
-     * Validate and return the decoded response JSON.
-     *
-     * @return \Illuminate\Testing\AssertableJsonString
-     *
-     * @throws \Throwable
-     */
-    public function decodeResponseJson()
-    {
-        $testJson = new AssertableJsonString($this->getContent());
-
-        $decodedResponse = $testJson->json();
-
-        if (is_null($decodedResponse) || $decodedResponse === false) {
-            if ($this->exception) {
-                throw $this->exception;
-            } else {
-                PHPUnit::fail('Invalid JSON was returned from the route.');
-            }
-        }
-
-        return $testJson;
-    }
-
-    /**
-     * Validate and return the decoded response JSON.
-     *
-     * @param  string|null  $key
-     * @return mixed
-     */
-    public function json($key = null)
-    {
-        return $this->decodeResponseJson()->json($key);
-    }
-
-    /**
-     * Assert that the response view equals the given value.
-     *
-     * @param  string  $value
-     * @return $this
-     */
-    public function assertViewIs($value)
-    {
-        $this->ensureResponseHasView();
-
-        PHPUnit::assertEquals($value, $this->original->name());
-
-        return $this;
-    }
-
-    /**
-     * Assert that the response view has a given piece of bound data.
-     *
-     * @param  string|array  $key
-     * @param  mixed  $value
-     * @return $this
-     */
-    public function assertViewHas($key, $value = null)
-    {
-        if (is_array($key)) {
-            return $this->assertViewHasAll($key);
-        }
-
-        $this->ensureResponseHasView();
-
-        if (is_null($value)) {
-            PHPUnit::assertTrue(Arr::has($this->original->gatherData(), $key));
-        } elseif ($value instanceof Closure) {
-            PHPUnit::assertTrue($value(Arr::get($this->original->gatherData(), $key)));
-        } elseif ($value instanceof Model) {
-            PHPUnit::assertTrue($value->is(Arr::get($this->original->gatherData(), $key)));
-        } else {
-            PHPUnit::assertEquals($value, Arr::get($this->original->gatherData(), $key));
-        }
-
-        return $this;
-    }
-
-    /**
-     * Assert that the response view has a given list of bound data.
-     *
-     * @param  array  $bindings
-     * @return $this
-     */
-    public function assertViewHasAll(array $bindings)
-    {
-        foreach ($bindings as $key => $value) {
-            if (is_int($key)) {
-                $this->assertViewHas($value);
-            } else {
-                $this->assertViewHas($key, $value);
-            }
-        }
-
-        return $this;
-    }
-
-    /**
-     * Get a piece of data from the original view.
-     *
-     * @param  string  $key
-     * @return mixed
-     */
-    public function viewData($key)
-    {
-        $this->ensureResponseHasView();
-
-        return $this->original->gatherData()[$key];
-    }
-
-    /**
-     * Assert that the response view is missing a piece of bound data.
-     *
-     * @param  string  $key
-     * @return $this
-     */
-    public function assertViewMissing($key)
-    {
-        $this->ensureResponseHasView();
-
-        PHPUnit::assertFalse(Arr::has($this->original->gatherData(), $key));
-
-        return $this;
-    }
-
-    /**
-     * Ensure that the response has a view as its original content.
-     *
-     * @return $this
-     */
-    protected function ensureResponseHasView()
-    {
-        if (! $this->responseHasView()) {
-            return PHPUnit::fail('The response is not a view.');
-        }
-
-        return $this;
-    }
-
-    /**
-     * Determine if the original response is a view.
-     *
-     * @return bool
-     */
-    protected function responseHasView()
-    {
-        return isset($this->original) && $this->original instanceof View;
-    }
-
-    /**
-     * Assert that the session has a given value.
-     *
-     * @param  string|array  $key
-     * @param  mixed  $value
-     * @return $this
-     */
-    public function assertSessionHas($key, $value = null)
-    {
-        if (is_array($key)) {
-            return $this->assertSessionHasAll($key);
-        }
-
-        if (is_null($value)) {
-            PHPUnit::assertTrue(
-                $this->session()->has($key),
-                "Session is missing expected key [{$key}]."
-            );
-        } elseif ($value instanceof Closure) {
-            PHPUnit::assertTrue($value($this->session()->get($key)));
-        } else {
-            PHPUnit::assertEquals($value, $this->session()->get($key));
-        }
-
-        return $this;
-    }
-
-    /**
-     * Assert that the session has a given list of values.
-     *
-     * @param  array  $bindings
-     * @return $this
-     */
-    public function assertSessionHasAll(array $bindings)
-    {
-        foreach ($bindings as $key => $value) {
-            if (is_int($key)) {
-                $this->assertSessionHas($value);
-            } else {
-                $this->assertSessionHas($key, $value);
-            }
-        }
-
-        return $this;
-    }
-
-    /**
-     * Assert that the session has a given value in the flashed input array.
-     *
-     * @param  string|array  $key
-     * @param  mixed  $value
-     * @return $this
-     */
-    public function assertSessionHasInput($key, $value = null)
-    {
-        if (is_array($key)) {
-            foreach ($key as $k => $v) {
-                if (is_int($k)) {
-                    $this->assertSessionHasInput($v);
-                } else {
-                    $this->assertSessionHasInput($k, $v);
-                }
-            }
-
-            return $this;
-        }
-
-        if (is_null($value)) {
-            PHPUnit::assertTrue(
-                $this->session()->hasOldInput($key),
-                "Session is missing expected key [{$key}]."
-            );
-        } elseif ($value instanceof Closure) {
-            PHPUnit::assertTrue($value($this->session()->getOldInput($key)));
-        } else {
-            PHPUnit::assertEquals($value, $this->session()->getOldInput($key));
-        }
-
-        return $this;
-    }
-
-    /**
-     * Assert that the session has the given errors.
-     *
-     * @param  string|array  $keys
-     * @param  mixed  $format
-     * @param  string  $errorBag
-     * @return $this
-     */
-    public function assertSessionHasErrors($keys = [], $format = null, $errorBag = 'default')
-    {
-        $this->assertSessionHas('errors');
-
-        $keys = (array) $keys;
-
-        $errors = $this->session()->get('errors')->getBag($errorBag);
-
-        foreach ($keys as $key => $value) {
-            if (is_int($key)) {
-                PHPUnit::assertTrue($errors->has($value), "Session missing error: $value");
-            } else {
-                PHPUnit::assertContains(is_bool($value) ? (string) $value : $value, $errors->get($key, $format));
-            }
-        }
-
-        return $this;
-    }
-
-    /**
-     * Assert that the session is missing the given errors.
-     *
-     * @param  string|array  $keys
-     * @param  string|null  $format
-     * @param  string  $errorBag
-     * @return $this
-     */
-    public function assertSessionDoesntHaveErrors($keys = [], $format = null, $errorBag = 'default')
-    {
-        $keys = (array) $keys;
-
-        if (empty($keys)) {
-            return $this->assertSessionHasNoErrors();
-        }
-
-        if (is_null($this->session()->get('errors'))) {
-            PHPUnit::assertTrue(true);
-
-            return $this;
-        }
-
-        $errors = $this->session()->get('errors')->getBag($errorBag);
-
-        foreach ($keys as $key => $value) {
-            if (is_int($key)) {
-                PHPUnit::assertFalse($errors->has($value), "Session has unexpected error: $value");
-            } else {
-                PHPUnit::assertNotContains($value, $errors->get($key, $format));
-            }
-        }
-
-        return $this;
-    }
-
-    /**
-     * Assert that the session has no errors.
-     *
-     * @return $this
-     */
-    public function assertSessionHasNoErrors()
-    {
-        $hasErrors = $this->session()->has('errors');
-
-        $errors = $hasErrors ? $this->session()->get('errors')->all() : [];
-
-        PHPUnit::assertFalse(
-            $hasErrors,
-            'Session has unexpected errors: '.PHP_EOL.PHP_EOL.
-            json_encode($errors, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
-        );
-
-        return $this;
-    }
-
-    /**
-     * Assert that the session has the given errors.
-     *
-     * @param  string  $errorBag
-     * @param  string|array  $keys
-     * @param  mixed  $format
-     * @return $this
-     */
-    public function assertSessionHasErrorsIn($errorBag, $keys = [], $format = null)
-    {
-        return $this->assertSessionHasErrors($keys, $format, $errorBag);
-    }
-
-    /**
-     * Assert that the session does not have a given key.
-     *
-     * @param  string|array  $key
-     * @return $this
-     */
-    public function assertSessionMissing($key)
-    {
-        if (is_array($key)) {
-            foreach ($key as $value) {
-                $this->assertSessionMissing($value);
-            }
-        } else {
-            PHPUnit::assertFalse(
-                $this->session()->has($key),
-                "Session has unexpected key [{$key}]."
-            );
-        }
-
-        return $this;
-    }
-
-    /**
-     * Get the current session store.
-     *
-     * @return \Illuminate\Session\Store
-     */
-    protected function session()
-    {
-        return app('session.store');
-    }
-
-    /**
-     * Dump the content from the response.
-     *
-     * @return $this
-     */
-    public function dump()
-    {
-        $content = $this->getContent();
-
-        $json = json_decode($content);
-
-        if (json_last_error() === JSON_ERROR_NONE) {
-            $content = $json;
-        }
-
-        dump($content);
-
-        return $this;
-    }
-
-    /**
-     * Dump the headers from the response.
-     *
-     * @return $this
-     */
-    public function dumpHeaders()
-    {
-        dump($this->headers->all());
-
-        return $this;
-    }
-
-    /**
-     * Dump the session from the response.
-     *
-     * @param  string|array  $keys
-     * @return $this
-     */
-    public function dumpSession($keys = [])
-    {
-        $keys = (array) $keys;
-
-        if (empty($keys)) {
-            dump($this->session()->all());
-        } else {
-            dump($this->session()->only($keys));
-        }
-
-        return $this;
-    }
-
-    /**
-     * Get the streamed content from the response.
-     *
-     * @return string
-     */
-    public function streamedContent()
-    {
-        if (! is_null($this->streamedContent)) {
-            return $this->streamedContent;
-        }
-
-        if (! $this->baseResponse instanceof StreamedResponse) {
-            PHPUnit::fail('The response is not a streamed response.');
-        }
-
-        ob_start();
-
-        $this->sendContent();
-
-        return $this->streamedContent = ob_get_clean();
-    }
-
-    /**
-     * Dynamically access base response parameters.
-     *
-     * @param  string  $key
-     * @return mixed
-     */
-    public function __get($key)
-    {
-        return $this->baseResponse->{$key};
-    }
-
-    /**
-     * Proxy isset() checks to the underlying base response.
-     *
-     * @param  string  $key
-     * @return mixed
-     */
-    public function __isset($key)
-    {
-        return isset($this->baseResponse->{$key});
-    }
-
-    /**
-     * Determine if the given offset exists.
-     *
-     * @param  string  $offset
-     * @return bool
-     */
-    public function offsetExists($offset)
-    {
-        return $this->responseHasView()
-                    ? isset($this->original->gatherData()[$offset])
-                    : isset($this->json()[$offset]);
-    }
-
-    /**
-     * Get the value for a given offset.
-     *
-     * @param  string  $offset
-     * @return mixed
-     */
-    public function offsetGet($offset)
-    {
-        return $this->responseHasView()
-                    ? $this->viewData($offset)
-                    : $this->json()[$offset];
-    }
-
-    /**
-     * Set the value at the given offset.
-     *
-     * @param  string  $offset
-     * @param  mixed  $value
-     * @return void
-     *
-     * @throws \LogicException
-     */
-    public function offsetSet($offset, $value)
-    {
-        throw new LogicException('Response data may not be mutated using array access.');
-    }
-
-    /**
-     * Unset the value at the given offset.
-     *
-     * @param  string  $offset
-     * @return void
-     *
-     * @throws \LogicException
-     */
-    public function offsetUnset($offset)
-    {
-        throw new LogicException('Response data may not be mutated using array access.');
-    }
-
-    /**
-     * Handle dynamic calls into macros or pass missing methods to the base response.
-     *
-     * @param  string  $method
-     * @param  array  $args
-     * @return mixed
-     */
-    public function __call($method, $args)
-    {
-        if (static::hasMacro($method)) {
-            return $this->macroCall($method, $args);
-        }
-
-        return $this->baseResponse->{$method}(...$args);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+iSGKX1m=

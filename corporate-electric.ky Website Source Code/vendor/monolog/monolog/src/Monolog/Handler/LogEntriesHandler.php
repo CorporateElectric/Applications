@@ -1,53 +1,43 @@
-<?php declare(strict_types=1);
-
-/*
- * This file is part of the Monolog package.
- *
- * (c) Jordi Boggiano <j.boggiano@seld.be>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Monolog\Handler;
-
-use Monolog\Logger;
-
-/**
- * @author Robert Kaufmann III <rok3@rok3.me>
- */
-class LogEntriesHandler extends SocketHandler
-{
-    /**
-     * @var string
-     */
-    protected $logToken;
-
-    /**
-     * @param string     $token  Log token supplied by LogEntries
-     * @param bool       $useSSL Whether or not SSL encryption should be used.
-     * @param string|int $level  The minimum logging level to trigger this handler
-     * @param bool       $bubble Whether or not messages that are handled should bubble up the stack.
-     * @param string     $host   Custom hostname to send the data to if needed
-     *
-     * @throws MissingExtensionException If SSL encryption is set to true and OpenSSL is missing
-     */
-    public function __construct(string $token, bool $useSSL = true, $level = Logger::DEBUG, bool $bubble = true, string $host = 'data.logentries.com')
-    {
-        if ($useSSL && !extension_loaded('openssl')) {
-            throw new MissingExtensionException('The OpenSSL PHP plugin is required to use SSL encrypted connection for LogEntriesHandler');
-        }
-
-        $endpoint = $useSSL ? 'ssl://' . $host . ':443' : $host . ':80';
-        parent::__construct($endpoint, $level, $bubble);
-        $this->logToken = $token;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function generateDataStream(array $record): string
-    {
-        return $this->logToken . ' ' . $record['formatted'];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+MvO=

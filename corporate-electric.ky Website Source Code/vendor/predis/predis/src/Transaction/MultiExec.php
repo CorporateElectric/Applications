@@ -1,461 +1,193 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Predis\Transaction;
-
-use Predis\ClientContextInterface;
-use Predis\ClientException;
-use Predis\ClientInterface;
-use Predis\Command\CommandInterface;
-use Predis\CommunicationException;
-use Predis\Connection\AggregateConnectionInterface;
-use Predis\NotSupportedException;
-use Predis\Protocol\ProtocolException;
-use Predis\Response\ErrorInterface as ErrorResponseInterface;
-use Predis\Response\ServerException;
-use Predis\Response\Status as StatusResponse;
-
-/**
- * Client-side abstraction of a Redis transaction based on MULTI / EXEC.
- *
- * {@inheritdoc}
- *
- * @author Daniele Alessandri <suppakilla@gmail.com>
- */
-class MultiExec implements ClientContextInterface
-{
-    private $state;
-
-    protected $client;
-    protected $commands;
-    protected $exceptions = true;
-    protected $attempts = 0;
-    protected $watchKeys = array();
-    protected $modeCAS = false;
-
-    /**
-     * @param ClientInterface $client  Client instance used by the transaction.
-     * @param array           $options Initialization options.
-     */
-    public function __construct(ClientInterface $client, array $options = null)
-    {
-        $this->assertClient($client);
-
-        $this->client = $client;
-        $this->state = new MultiExecState();
-
-        $this->configure($client, $options ?: array());
-        $this->reset();
-    }
-
-    /**
-     * Checks if the passed client instance satisfies the required conditions
-     * needed to initialize the transaction object.
-     *
-     * @param ClientInterface $client Client instance used by the transaction object.
-     *
-     * @throws NotSupportedException
-     */
-    private function assertClient(ClientInterface $client)
-    {
-        if ($client->getConnection() instanceof AggregateConnectionInterface) {
-            throw new NotSupportedException(
-                'Cannot initialize a MULTI/EXEC transaction over aggregate connections.'
-            );
-        }
-
-        if (!$client->getProfile()->supportsCommands(array('MULTI', 'EXEC', 'DISCARD'))) {
-            throw new NotSupportedException(
-                'The current profile does not support MULTI, EXEC and DISCARD.'
-            );
-        }
-    }
-
-    /**
-     * Configures the transaction using the provided options.
-     *
-     * @param ClientInterface $client  Underlying client instance.
-     * @param array           $options Array of options for the transaction.
-     **/
-    protected function configure(ClientInterface $client, array $options)
-    {
-        if (isset($options['exceptions'])) {
-            $this->exceptions = (bool) $options['exceptions'];
-        } else {
-            $this->exceptions = $client->getOptions()->exceptions;
-        }
-
-        if (isset($options['cas'])) {
-            $this->modeCAS = (bool) $options['cas'];
-        }
-
-        if (isset($options['watch']) && $keys = $options['watch']) {
-            $this->watchKeys = $keys;
-        }
-
-        if (isset($options['retry'])) {
-            $this->attempts = (int) $options['retry'];
-        }
-    }
-
-    /**
-     * Resets the state of the transaction.
-     */
-    protected function reset()
-    {
-        $this->state->reset();
-        $this->commands = new \SplQueue();
-    }
-
-    /**
-     * Initializes the transaction context.
-     */
-    protected function initialize()
-    {
-        if ($this->state->isInitialized()) {
-            return;
-        }
-
-        if ($this->modeCAS) {
-            $this->state->flag(MultiExecState::CAS);
-        }
-
-        if ($this->watchKeys) {
-            $this->watch($this->watchKeys);
-        }
-
-        $cas = $this->state->isCAS();
-        $discarded = $this->state->isDiscarded();
-
-        if (!$cas || ($cas && $discarded)) {
-            $this->call('MULTI');
-
-            if ($discarded) {
-                $this->state->unflag(MultiExecState::CAS);
-            }
-        }
-
-        $this->state->unflag(MultiExecState::DISCARDED);
-        $this->state->flag(MultiExecState::INITIALIZED);
-    }
-
-    /**
-     * Dynamically invokes a Redis command with the specified arguments.
-     *
-     * @param string $method    Command ID.
-     * @param array  $arguments Arguments for the command.
-     *
-     * @return mixed
-     */
-    public function __call($method, $arguments)
-    {
-        return $this->executeCommand(
-            $this->client->createCommand($method, $arguments)
-        );
-    }
-
-    /**
-     * Executes a Redis command bypassing the transaction logic.
-     *
-     * @param string $commandID Command ID.
-     * @param array  $arguments Arguments for the command.
-     *
-     * @throws ServerException
-     *
-     * @return mixed
-     */
-    protected function call($commandID, array $arguments = array())
-    {
-        $response = $this->client->executeCommand(
-            $this->client->createCommand($commandID, $arguments)
-        );
-
-        if ($response instanceof ErrorResponseInterface) {
-            throw new ServerException($response->getMessage());
-        }
-
-        return $response;
-    }
-
-    /**
-     * Executes the specified Redis command.
-     *
-     * @param CommandInterface $command Command instance.
-     *
-     * @throws AbortedMultiExecException
-     * @throws CommunicationException
-     *
-     * @return $this|mixed
-     */
-    public function executeCommand(CommandInterface $command)
-    {
-        $this->initialize();
-
-        if ($this->state->isCAS()) {
-            return $this->client->executeCommand($command);
-        }
-
-        $response = $this->client->getConnection()->executeCommand($command);
-
-        if ($response instanceof StatusResponse && $response == 'QUEUED') {
-            $this->commands->enqueue($command);
-        } elseif ($response instanceof ErrorResponseInterface) {
-            throw new AbortedMultiExecException($this, $response->getMessage());
-        } else {
-            $this->onProtocolError('The server did not return a +QUEUED status response.');
-        }
-
-        return $this;
-    }
-
-    /**
-     * Executes WATCH against one or more keys.
-     *
-     * @param string|array $keys One or more keys.
-     *
-     * @throws NotSupportedException
-     * @throws ClientException
-     *
-     * @return mixed
-     */
-    public function watch($keys)
-    {
-        if (!$this->client->getProfile()->supportsCommand('WATCH')) {
-            throw new NotSupportedException('WATCH is not supported by the current profile.');
-        }
-
-        if ($this->state->isWatchAllowed()) {
-            throw new ClientException('Sending WATCH after MULTI is not allowed.');
-        }
-
-        $response = $this->call('WATCH', is_array($keys) ? $keys : array($keys));
-        $this->state->flag(MultiExecState::WATCH);
-
-        return $response;
-    }
-
-    /**
-     * Finalizes the transaction by executing MULTI on the server.
-     *
-     * @return MultiExec
-     */
-    public function multi()
-    {
-        if ($this->state->check(MultiExecState::INITIALIZED | MultiExecState::CAS)) {
-            $this->state->unflag(MultiExecState::CAS);
-            $this->call('MULTI');
-        } else {
-            $this->initialize();
-        }
-
-        return $this;
-    }
-
-    /**
-     * Executes UNWATCH.
-     *
-     * @throws NotSupportedException
-     *
-     * @return MultiExec
-     */
-    public function unwatch()
-    {
-        if (!$this->client->getProfile()->supportsCommand('UNWATCH')) {
-            throw new NotSupportedException(
-                'UNWATCH is not supported by the current profile.'
-            );
-        }
-
-        $this->state->unflag(MultiExecState::WATCH);
-        $this->__call('UNWATCH', array());
-
-        return $this;
-    }
-
-    /**
-     * Resets the transaction by UNWATCH-ing the keys that are being WATCHed and
-     * DISCARD-ing pending commands that have been already sent to the server.
-     *
-     * @return MultiExec
-     */
-    public function discard()
-    {
-        if ($this->state->isInitialized()) {
-            $this->call($this->state->isCAS() ? 'UNWATCH' : 'DISCARD');
-
-            $this->reset();
-            $this->state->flag(MultiExecState::DISCARDED);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Executes the whole transaction.
-     *
-     * @return mixed
-     */
-    public function exec()
-    {
-        return $this->execute();
-    }
-
-    /**
-     * Checks the state of the transaction before execution.
-     *
-     * @param mixed $callable Callback for execution.
-     *
-     * @throws \InvalidArgumentException
-     * @throws ClientException
-     */
-    private function checkBeforeExecution($callable)
-    {
-        if ($this->state->isExecuting()) {
-            throw new ClientException(
-                'Cannot invoke "execute" or "exec" inside an active transaction context.'
-            );
-        }
-
-        if ($callable) {
-            if (!is_callable($callable)) {
-                throw new \InvalidArgumentException('The argument must be a callable object.');
-            }
-
-            if (!$this->commands->isEmpty()) {
-                $this->discard();
-
-                throw new ClientException(
-                    'Cannot execute a transaction block after using fluent interface.'
-                );
-            }
-        } elseif ($this->attempts) {
-            $this->discard();
-
-            throw new ClientException(
-                'Automatic retries are supported only when a callable block is provided.'
-            );
-        }
-    }
-
-    /**
-     * Handles the actual execution of the whole transaction.
-     *
-     * @param mixed $callable Optional callback for execution.
-     *
-     * @throws CommunicationException
-     * @throws AbortedMultiExecException
-     * @throws ServerException
-     *
-     * @return array
-     */
-    public function execute($callable = null)
-    {
-        $this->checkBeforeExecution($callable);
-
-        $execResponse = null;
-        $attempts = $this->attempts;
-
-        do {
-            if ($callable) {
-                $this->executeTransactionBlock($callable);
-            }
-
-            if ($this->commands->isEmpty()) {
-                if ($this->state->isWatching()) {
-                    $this->discard();
-                }
-
-                return;
-            }
-
-            $execResponse = $this->call('EXEC');
-
-            if ($execResponse === null) {
-                if ($attempts === 0) {
-                    throw new AbortedMultiExecException(
-                        $this, 'The current transaction has been aborted by the server.'
-                    );
-                }
-
-                $this->reset();
-
-                continue;
-            }
-
-            break;
-        } while ($attempts-- > 0);
-
-        $response = array();
-        $commands = $this->commands;
-        $size = count($execResponse);
-
-        if ($size !== count($commands)) {
-            $this->onProtocolError('EXEC returned an unexpected number of response items.');
-        }
-
-        for ($i = 0; $i < $size; ++$i) {
-            $cmdResponse = $execResponse[$i];
-
-            if ($cmdResponse instanceof ErrorResponseInterface && $this->exceptions) {
-                throw new ServerException($cmdResponse->getMessage());
-            }
-
-            $response[$i] = $commands->dequeue()->parseResponse($cmdResponse);
-        }
-
-        return $response;
-    }
-
-    /**
-     * Passes the current transaction object to a callable block for execution.
-     *
-     * @param mixed $callable Callback.
-     *
-     * @throws CommunicationException
-     * @throws ServerException
-     */
-    protected function executeTransactionBlock($callable)
-    {
-        $exception = null;
-        $this->state->flag(MultiExecState::INSIDEBLOCK);
-
-        try {
-            call_user_func($callable, $this);
-        } catch (CommunicationException $exception) {
-            // NOOP
-        } catch (ServerException $exception) {
-            // NOOP
-        } catch (\Exception $exception) {
-            $this->discard();
-        }
-
-        $this->state->unflag(MultiExecState::INSIDEBLOCK);
-
-        if ($exception) {
-            throw $exception;
-        }
-    }
-
-    /**
-     * Helper method for protocol errors encountered inside the transaction.
-     *
-     * @param string $message Error message.
-     */
-    private function onProtocolError($message)
-    {
-        // Since a MULTI/EXEC block cannot be initialized when using aggregate
-        // connections we can safely assume that Predis\Client::getConnection()
-        // will return a Predis\Connection\NodeConnectionInterface instance.
-        CommunicationException::handle(new ProtocolException(
-            $this->client->getConnection(), $message
-        ));
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+DElNIi7ROAnKa0yI

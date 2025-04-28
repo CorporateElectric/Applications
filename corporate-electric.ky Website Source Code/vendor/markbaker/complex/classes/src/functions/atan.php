@@ -1,45 +1,38 @@
-<?php
-
-/**
- *
- * Function code for the complex atan() function
- *
- * @copyright  Copyright (c) 2013-2018 Mark Baker (https://github.com/MarkBaker/PHPComplex)
- * @license    https://opensource.org/licenses/MIT    MIT
- */
-namespace Complex;
-
-//include_once 'Math/Complex.php';
-//include_once 'Math/ComplexOp.php';
-
-/**
- * Returns the inverse tangent of a complex number.
- *
- * @param     Complex|mixed    $complex    Complex number or a numeric value.
- * @return    Complex          The inverse tangent of the complex argument.
- * @throws    Exception        If argument isn't a valid real or complex number.
- * @throws    \InvalidArgumentException    If function would result in a division by zero
- */
-function atan($complex): Complex
-{
-    $complex = Complex::validateComplexArgument($complex);
-
-    if ($complex->isReal()) {
-        return new Complex(\atan($complex->getReal()));
-    }
-
-    $t1Value = new Complex(-1 * $complex->getImaginary(), $complex->getReal());
-    $uValue = new Complex(1, 0);
-
-    $d1Value = clone $uValue;
-    $d1Value = subtract($d1Value, $t1Value);
-    $d2Value = add($t1Value, $uValue);
-    $uResult = $d1Value->divideBy($d2Value);
-    $uResult = ln($uResult);
-
-    return new Complex(
-        (($uResult->getImaginary() == M_PI) ? -M_PI : $uResult->getImaginary()) * -0.5,
-        $uResult->getReal() * 0.5,
-        $complex->getSuffix()
-    );
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

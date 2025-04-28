@@ -1,112 +1,49 @@
-<?php
-
-class HTMLPurifier_DefinitionCache_Decorator extends HTMLPurifier_DefinitionCache
-{
-
-    /**
-     * Cache object we are decorating
-     * @type HTMLPurifier_DefinitionCache
-     */
-    public $cache;
-
-    /**
-     * The name of the decorator
-     * @var string
-     */
-    public $name;
-
-    public function __construct()
-    {
-    }
-
-    /**
-     * Lazy decorator function
-     * @param HTMLPurifier_DefinitionCache $cache Reference to cache object to decorate
-     * @return HTMLPurifier_DefinitionCache_Decorator
-     */
-    public function decorate(&$cache)
-    {
-        $decorator = $this->copy();
-        // reference is necessary for mocks in PHP 4
-        $decorator->cache =& $cache;
-        $decorator->type = $cache->type;
-        return $decorator;
-    }
-
-    /**
-     * Cross-compatible clone substitute
-     * @return HTMLPurifier_DefinitionCache_Decorator
-     */
-    public function copy()
-    {
-        return new HTMLPurifier_DefinitionCache_Decorator();
-    }
-
-    /**
-     * @param HTMLPurifier_Definition $def
-     * @param HTMLPurifier_Config $config
-     * @return mixed
-     */
-    public function add($def, $config)
-    {
-        return $this->cache->add($def, $config);
-    }
-
-    /**
-     * @param HTMLPurifier_Definition $def
-     * @param HTMLPurifier_Config $config
-     * @return mixed
-     */
-    public function set($def, $config)
-    {
-        return $this->cache->set($def, $config);
-    }
-
-    /**
-     * @param HTMLPurifier_Definition $def
-     * @param HTMLPurifier_Config $config
-     * @return mixed
-     */
-    public function replace($def, $config)
-    {
-        return $this->cache->replace($def, $config);
-    }
-
-    /**
-     * @param HTMLPurifier_Config $config
-     * @return mixed
-     */
-    public function get($config)
-    {
-        return $this->cache->get($config);
-    }
-
-    /**
-     * @param HTMLPurifier_Config $config
-     * @return mixed
-     */
-    public function remove($config)
-    {
-        return $this->cache->remove($config);
-    }
-
-    /**
-     * @param HTMLPurifier_Config $config
-     * @return mixed
-     */
-    public function flush($config)
-    {
-        return $this->cache->flush($config);
-    }
-
-    /**
-     * @param HTMLPurifier_Config $config
-     * @return mixed
-     */
-    public function cleanup($config)
-    {
-        return $this->cache->cleanup($config);
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

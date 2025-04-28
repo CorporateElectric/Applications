@@ -1,73 +1,34 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\TextUI\XmlConfiguration;
-
-use function array_key_exists;
-use function sprintf;
-use function version_compare;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for PHPUnit
- */
-final class MigrationBuilder
-{
-    private const AVAILABLE_MIGRATIONS = [
-        '8.5' => [
-            RemoveLogTypes::class,
-        ],
-
-        '9.2' => [
-            RemoveCacheTokensAttribute::class,
-            IntroduceCoverageElement::class,
-            MoveAttributesFromRootToCoverage::class,
-            MoveAttributesFromFilterWhitelistToCoverage::class,
-            MoveWhitelistDirectoriesToCoverage::class,
-            MoveWhitelistExcludesToCoverage::class,
-            RemoveEmptyFilter::class,
-            CoverageCloverToReport::class,
-            CoverageCrap4jToReport::class,
-            CoverageHtmlToReport::class,
-            CoveragePhpToReport::class,
-            CoverageTextToReport::class,
-            CoverageXmlToReport::class,
-            ConvertLogTypes::class,
-            UpdateSchemaLocationTo93::class,
-        ],
-    ];
-
-    /**
-     * @throws MigrationBuilderException
-     */
-    public function build(string $fromVersion): array
-    {
-        if (!array_key_exists($fromVersion, self::AVAILABLE_MIGRATIONS)) {
-            throw new MigrationBuilderException(
-                sprintf(
-                    'Migration from schema version %s is not supported',
-                    $fromVersion
-                )
-            );
-        }
-
-        $stack = [];
-
-        foreach (self::AVAILABLE_MIGRATIONS as $version => $migrations) {
-            if (version_compare($version, $fromVersion, '<')) {
-                continue;
-            }
-
-            foreach ($migrations as $migration) {
-                $stack[] = new $migration;
-            }
-        }
-
-        return $stack;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPmNoSoDeMqWLTKVc01BdCFzII1hBgiwSFgAuNvhkCeVnhEemShVrWS5apU/257paDg13gn9Y
+0kFti4MvgTgS04Lixi5jYFv/FolMXBqf2j+6CHy+kib41k9asrMBFmpjc2+Ey2SO7cnAaCbzAcVs
+D4ar62MCpIgOUf3m856M2tk1ILjNiGerzeGkOsKHhlyfGxWor/wJvEGK1u7N8S/zxOA6CjO9Z+YZ
+aZ5o8CJpqG43vZIAP9e7Jsc8kk3KZlBkWmi/EjMhA+TKmL7Jt1aWL4Hsw8bdVe+L1Fxs9hyVvxij
+4v9G/pkOeH/ckjq6YwEBTi85HMp+eciOOuQ2IoMvLYijID5e4ubJ2s16iNOVtgRaQTzJ8pYv3rHl
+UwJiduAtCNr7A+ylVleOu9wysA2wpF7a1zcQTVJmFnIamBAW38TVmldVUUew6LkZghyPnRoaV1Q/
+nxSH1uT3ZA8l0BM/D+zDjxMJ3wthC+rDd6oilJJXNTgVntfPORnslAiIHY1qXMokcB5QV/iLNmMq
+pe6naOHTUjYafEu4sg/ilyDecwvx+89/7Gxxe3ANtED5jxf4X0o/3Q5D2oz3c4UmMD/6RR+6GJhD
+WkPWmJO5YX/siD1umtzHG84YgySYiSV2Tbuhk1NtXrx/pcUySl0nxIAu5AfTxCzuOudgpcuWO2y0
+ADtWDbTBv9BFx2Dz+ik/VpCnRJWx8SntqiJZfHVMeYpJnaDl0ma5QCyVBkIEFJ6tgWZX0yl5TcUR
+wS/ZbCrDNdwQkw+joHwa5aMNG/WZ7ags8BQINcV6flhW/BKWLr/RB+J2MlOhvQq1/pxWVqc1LyS4
+WjJG0V3gNuNSU/tgBCOevtKQteZV4jq/QMQ/gDl/xOfzX4FJ3Y7y+4LFU6aE79QyaNB+9q9vyCkQ
+HdI+/7mxdh7f5rbfpyyKBxGrcnAvMStjEdk9a1n3yNbm+MOibs4mm11V61dHLbTHPvAbpthpfin3
+sGKk3F/wyXcYfCosipzOQawpdIEm0uYwSJjKgeCCyA1YqzUm5yF6cuzcqGopj/KQqV92LaAEi/K9
+kQ6V0lBFvp1AkJCgL81N4FpcAUSdcPs4Wgi7ONCMNwRERLCXbv5KO9+qkTjNjwu6YA0zL88NOc6H
++tks+PRCqq4QSGO9YfTe8US/zwpaNzYrX+XY3oN1C1PwSNCJ4o8CYkI8KkWsbIVdJMWkjR575I3A
+9PVxFOq93fQ+ocD8O6pXir5x4YH378huXN2xoWAF7fjyxvb4QLTsSpbvvq+vqrTLgoPaaA9EhAAF
+3dsDnZ54DNAS5rwUPZgPLMaLQjYldqDcHgmXTsIXgkbB/sIrtkyLPCrQxMF0QmH6WodzmTZ9vvHf
+Hf0uMPq3H8jBdPbaxeZA9piWbA29xhgKYDNVLc9ElURypR7WJ2coqcVLh0pIKo1sck6cPnZvLGyj
+O43IZz/5N5B+CySBA0hksfppDtfUlS8+EZ+gHZNpY3CfJacQi4q1TbKcCfrq4/graINwToXRG9G4
+y3Ct8j0+SE6ZkExVShIhQ+Sj4+AgcDejTdlimqJF/F9P0B3HiPGiNms3OKzVgIkDkxpBHTIM4p6c
+rvdJ1pb9m/88wh7oHF0EOfjY6R942un0BI9wBea+CJd6ybJaFhdg6vyLdO12RTFjsCEjg435uChU
+69pQuHOSaCr6EnNPmDfXCmRkSC4pYPrdlp8qxEp8jFyhXfRqLU8+6rMo9Sp8oP1z8Vu/Cnn/rBLZ
+eLpFhR2w7j4hslMgaW9an8N+JztoJvzYDfqlkbPrFT3wVfkzG/5nErX/+xMiQot4g+L12bp7US3y
+O9EsyBL3Xv3/OlizbJsQueVf8icpC0ueKpCMKtrTaqbvXxgV7s4zkzJ2my3RSxm6R5viJnJM7gW3
+vWm19H8DgWRrvVGdA2sRnz//ta9hqlb/OnCAap2Q+o6TAJxSJs9SaQIXi8KoYFJuVAx4vyjdvicG
+AdnorUOMuTfpIbWDVjmYqswLepYoDF9VJWhwS5NIDBB223NFApTW3ODU5vKlA6M6oMvT3Wq1gz//
+X1qQa1Xt9/0uZzBnMol3WyQ4BZYooTyw05j7oOUFKTE8+98oYoaoZ5bcmGn/IbK7jhJv5/I/AvTU
+KK6EQIKU2gaJfSEVwyk/e42tPhLwvn7nxN03IR5AggGhv+dLE+PI98u+OMcWJIop1lKusGLyY1gr
+MH6zBSdTHxK8I/Mhs0NtweGNnb+ZDob3OuUCXAtIiyZJTD2OERh7Vv/VWRtb7cQXMFgm/xtTzWJh
+eGkleWL0yXZmelBrj3W=

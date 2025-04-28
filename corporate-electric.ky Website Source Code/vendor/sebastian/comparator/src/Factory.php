@@ -1,142 +1,67 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of sebastian/comparator.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\Comparator;
-
-use function array_unshift;
-
-/**
- * Factory for comparators which compare values for equality.
- */
-class Factory
-{
-    /**
-     * @var Factory
-     */
-    private static $instance;
-
-    /**
-     * @var Comparator[]
-     */
-    private $customComparators = [];
-
-    /**
-     * @var Comparator[]
-     */
-    private $defaultComparators = [];
-
-    /**
-     * @return Factory
-     */
-    public static function getInstance()
-    {
-        if (self::$instance === null) {
-            self::$instance = new self; // @codeCoverageIgnore
-        }
-
-        return self::$instance;
-    }
-
-    /**
-     * Constructs a new factory.
-     */
-    public function __construct()
-    {
-        $this->registerDefaultComparators();
-    }
-
-    /**
-     * Returns the correct comparator for comparing two values.
-     *
-     * @param mixed $expected The first value to compare
-     * @param mixed $actual   The second value to compare
-     *
-     * @return Comparator
-     */
-    public function getComparatorFor($expected, $actual)
-    {
-        foreach ($this->customComparators as $comparator) {
-            if ($comparator->accepts($expected, $actual)) {
-                return $comparator;
-            }
-        }
-
-        foreach ($this->defaultComparators as $comparator) {
-            if ($comparator->accepts($expected, $actual)) {
-                return $comparator;
-            }
-        }
-
-        throw new RuntimeException('No suitable Comparator implementation found');
-    }
-
-    /**
-     * Registers a new comparator.
-     *
-     * This comparator will be returned by getComparatorFor() if its accept() method
-     * returns TRUE for the compared values. It has higher priority than the
-     * existing comparators, meaning that its accept() method will be invoked
-     * before those of the other comparators.
-     *
-     * @param Comparator $comparator The comparator to be registered
-     */
-    public function register(Comparator $comparator)/*: void*/
-    {
-        array_unshift($this->customComparators, $comparator);
-
-        $comparator->setFactory($this);
-    }
-
-    /**
-     * Unregisters a comparator.
-     *
-     * This comparator will no longer be considered by getComparatorFor().
-     *
-     * @param Comparator $comparator The comparator to be unregistered
-     */
-    public function unregister(Comparator $comparator)/*: void*/
-    {
-        foreach ($this->customComparators as $key => $_comparator) {
-            if ($comparator === $_comparator) {
-                unset($this->customComparators[$key]);
-            }
-        }
-    }
-
-    /**
-     * Unregisters all non-default comparators.
-     */
-    public function reset()/*: void*/
-    {
-        $this->customComparators = [];
-    }
-
-    private function registerDefaultComparators(): void
-    {
-        $this->registerDefaultComparator(new MockObjectComparator);
-        $this->registerDefaultComparator(new DateTimeComparator);
-        $this->registerDefaultComparator(new DOMNodeComparator);
-        $this->registerDefaultComparator(new SplObjectStorageComparator);
-        $this->registerDefaultComparator(new ExceptionComparator);
-        $this->registerDefaultComparator(new ObjectComparator);
-        $this->registerDefaultComparator(new ResourceComparator);
-        $this->registerDefaultComparator(new ArrayComparator);
-        $this->registerDefaultComparator(new DoubleComparator);
-        $this->registerDefaultComparator(new NumericComparator);
-        $this->registerDefaultComparator(new ScalarComparator);
-        $this->registerDefaultComparator(new TypeComparator);
-    }
-
-    private function registerDefaultComparator(Comparator $comparator): void
-    {
-        $this->defaultComparators[] = $comparator;
-
-        $comparator->setFactory($this);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPvyMlWE9jW8qLDih87cFYo9Q1CQuLr4KA9guCXkpnV1mfY9PiDQr/L2YxRgJXR4gupBa9xYP
+//z1xKAtJkrPz5gkSUK+uVzQUTA3VWoA31z/B8a07Vu3rAp3/udROOdKkLAzQcL78hbdyhwqFMaE
+wZIjA3SRpE9LLNU8kb+OnP/66hlloDJlQ818v4NFBmcAfVnIMCKBYGhfOzmjQGCCZp2atttwWzf+
+T6yg9PZzjgcJo3yKaOdRejUb3cDCU6blf779EjMhA+TKmL7Jt1aWL4HswDTh/0SPm7ZNmmHi3gin
+m99kEIA60txkhqTgh76YAqCZ6SkLqn7jw4x9eWV/gWh8taD3kNiLeqS4n4oomuJJVbjf4oPpQg1I
+Zw7cYewB8LqjqUePa0DemSIaoDgGg35xOXwGNcw6AniwIYPe0QPv9/N0KiXKiNWiioc37vwj4gY9
+WLjMfmmGqb17G8gOfn+KmMLqqSONEVP1FmKV36Icy7biIk8LpZ1lTUvFiWc1DHT9XdSxCNLyhp4k
+y5R+Ry61UAJgKUAdLUAbA0Kcyh4OOZ91z+78mFHIV/jslx+Ouh76xPtnExr2jGern0B8oUTtVd+2
+msArjX9l0fSs61t6EFuTlfoyN1/XrDM4Qc+E3LOSlQQewz9+lho4Q48g2ZDYpXTh7uh2hu7ZTULj
+wOWI9KuRYEZx0gUAcIU/Q8G7GPtVx0dlvRheWdz3HeuJIkRpK/8ezIgpnVgjO9iG7uWNbb1Qc/4z
+bJdkpI1O4W8BT4Bu8TL3mqR1UmdJ9BNAIxeQBdvCDmEYSFPv20KvIWBHy+k3w4E2EDzG6wQgreRy
+b6T/PKHCsBZMgDf4lotoa6ZpiOJt/xDRbPe8XykteU7u2o993cYNVAm6C8zAJ5qCp3chDw3n01lI
+/hBEK9Kw0rYOTUOFyru4nXSEzv3x5qW81LdUfdSPPriGVeGlqW0QbInwzwIGCusYM8OTEtkQtqBw
+3W9qSV0znOC4FGe7iBW/RS1BK9JGGRa/PG849wcOgh5nx/qBaxz4aZXwqPXY3nVW1osxZk+jzy5w
+xc6gBQCvhclPdXYXrXUaxNajx1CeA8dw4gQ/7c8AL3H5e6hZ+GTJ046jl2+LjxkPSMk0zQ62fyyA
+yRuW8XMB5upRuaS36W9onsRzy3xm6u7vpFxyfttCwTPj+e39ylxX3dIjw4DlIhQTbiWUqVDYRCqJ
+WTeIMK6MMFix2hbxnF/lzeJhsQZZ0llIm1AfXrnaQA+IWZboDe6cDaMn9khIWuZ8Z9Msq3M3QafB
+WFv9s+dKCXotyHv24lnei6NNOY4sJ8vClnnfgJe3b/pZbDtjyL+5mo+95VcQCC4sl1VpDCbL/tmW
+jDaL/5ctD7ETErjiy5QKYVmuf3En9XUIBTwqkUpInaa4EDRrYB2Oh6tn6U6XTsDM43MadM8CEC2q
+LkjKAQE5+U3biT+miGDIauw23cQbxCzls/DzYBohKCwdWjNYdh3XlPJLqjNwMtqkL7mVPf5ht+9U
+m7BIt4GcO38j2/ZHODI+XH4iloU1ZuvL5bVkHDTD6htmnPP257ap68NwipkY3/4ilNJ+Yv7H6dfm
+k6TTOe8Zt7tXlFrNfvusmUB31uxiCxufFcuFKZUVS8IBpQTB94nmrSlsT3XW+f38jzWJoE2byzOt
+IhcXxzvLkdi2h5kConxpn4+dc5UvPb2H6Nt/K/QA6L/+fNv2lxVCbtFhz9rfSyvvg5wHH1TjGmi0
+jexk8cKZ0ran+m2keAAIdP94e1P5kcQrIx6XUMYqvCVEPGD895TVdIcw6hDUEpSY+TA3fFl+14al
+JRb6XjuOS2Rfiwbk5G8tKH9qZjMl6KSbQgNSiWlWjqVTKwZNlADv8yLPe4PVON0gLgBcr2alttEK
+Q/MKfxDdEznWcD+8Jo7MQVRzZ/dSyC/2qNgOf8wiM8L3cV0mWF1QLx9eSkOQ2hf43Vj+aUxb0MRP
+AV+6oj8TxF4ZMS9z1nk9+Jj+HRfTsu1PNCAvAoYcEYSHUwYG+4ODwA612LSubzXrmNTNesdoMIYh
+bVTR1tklD9utob6zga+JqObrYR+WfRRdQ46il7pMP1LBkdO+sDawcPijMp1JW9KvnfDFYMQmoOjg
+by8acbKqIoaER9+Km006omRBI02F4xaV1A9flMX73wrgr7RXQ2UvYj5i86rKBV/j2+TCjvCBpGym
+0v4RoHOxvOZG8ID5ghIwDzWwsQADiYTwFPoYG5KUkh0q5RzXWmz7AHAXNvFDGqbbHy2y+73QvhX/
+iOJGnM6bbVkqyqWz4pSGZViZopCnTHPexx6f+ukmarRYACf+PU179N/5kLHlwJIfJqi3ugA4Wtar
+gkkfIaWN//7KIVacg52qS4ULvwB85N9dG9LMQd7lL+GEKkf9UZun0+ucheja0wS6MYin0tv+qapZ
+6tWMFRRho4+Cj/mEvGwQixedhWfyQoVOgxONSzVaI3w+Ay58CYncpJWjxFid5Zicu6GzXAwdLs4G
+c3cEErGFawkMHUzA9QW2P72ZvsWbbD4idCdNeAHr3wsRg23UvxdaSZ5cjD1VbkDZMB58NX6ZwG4g
+n8i43mfX/oKzLobZC65rYSKSHKX1fre0Jr+XwK9j/lS1OTtRzcTxBxu9r1Zn+YNEwToIO582sY+D
+3OvCrXgRSWKnoNZaLQ5AGIDV8u+pyQgGogYT8O2VnvJl7w2WA0Tjd9+P9UKu7g19UNqeM8cogoNX
+H9Rddh1glG6T6JNlEDZW0G7RHh5mfH44ph7KZEmaPnsWczcbfVXZQ1pSXJ/JWRZDWX/W9uy/CEYj
+8/X1CZwFeHpcG73WxlG2qxsJmeEq7Gym3niqLUXrR/k0E7VCIPaMiCHbJgyFdbxbOaBzHx345dRr
+l7VtgyWRtBgh1okPwBgS3/U26Y/PNpjlo0H0iMukMxHzZKXtSHQCLpuLr6shU/NAzbFDqOgkSX4E
+sLu93dFwfJCcvP3DuTyOpAVdEo0gACysXvQpqp1DDan6gyp59fK8vMfusuAjj4Us9VpD/iVMpHlz
+lXBeOdb7hRHFDV/zODc8Gy9fvwZyWYELo1qFTvE/SmO5UplLdkgFCnLFJl+Wztkb1AhbZMlXjGOP
+8CoTBwcYWqOVsEAwkuTESSnSpFwTsC9+TI31ajK06P1qC7nEtuRBVgW+GDx6xnven0QDZE4U/tbx
+oNNP1KFGxvz9h832+oc7ER5+hssV589yC0kA0YaTdDwG06j/0i90s/6HsqFp4qYUCAOXTaFD/NyB
+aVMkjGQHb+sLD0HY+S9/448ENI2/4Hoqgwg3J/UWmw4Uw/S3UvYhHVEax40Ed05Nwhee5yI3fL73
+FM3uLGEUdP0TTrrETBxWlnFO5QzCP0C4ikjGtkL98u4puX2ns6mOnGladjVHKRSWOb7Q7EgioNpg
+zV0Ntder+sG6o0pNrCWi/n6elnuOd4UCgsPna0DruHXN866lNMK657bYDtZXpQhdjvu6+3Ck8FF+
+//DG8w2XL7jiE7cqDqlAefRMWeev5xMfIWRFisz5kDnBO0DrkSsYcS4+8QAx38N9MGJLRrKmEntf
+nCHAwDP2DQH1GtqNbDgtNpY7tvnkjIOswWHbqOkOtebwCdB756k1t8kXiTefjYotPKyYSSJkoyp6
+ZRQV48FU+jGc5RBWZBxWvOMpEIHdTLH0PSWS61NeD6vwGgI1484LRwyBh6A4BCIH/YGd+o9BzsZf
+9M+Pe7kAgaAV+Sfdvl/dzQZIBlVX3LxLti+zGGOEImQgwHcgvVfK9/fRSLL/yzvwNqnAOzFBawPJ
++9az0RUJn/O5fisz7x/wPnHo6Up4sKUn3cPYc8NOWr7pBTJ2b3FF3Y+Yt/1cHHOKPLJTt3L+bALD
+bkusCec+YO3Y3CFYdm96qh/ojLvtoI3coq04Q17K9rhW2AC73GYaEkzyo/dhruEhv0yTUJvSb9gO
+wfLiKN/pT4970IdDE2iF/ds6/kkIc9KbgcEnjg+s87H2SY4QwmNhvnW5C5UQ3nQKLErzmC7/DA60
+VgBWvhDPw1WHk6uZWNrimou5y3+nbp5u5Nl7l1WuRfkJxfimZa+RsDcmg0/w5afS5QIslKQbgQLG
+c8dHX2ghHvK7YoLKxEv6Ijc7LZC770oW9I2etKmbpdaTPcC0pTic9Sv6PnZTV4JOsbwjILJiOawR
+bMS821keI5gOxunFP12MZtY1hQ9yUzP4Pq6sZlpEwG15Z9bkuwmpzSSX1Sd1bo3MjGS/DoTOh2YA
+BIu4wJJ/w0PzqxNBciEdUzMbV+I2qGEIdS9T9A/Dk72LPQ4qcjTBB6WrzQOVdnpvSacWx2N/XIlQ
+yJCk8TZwv0HQnmsE+GmRaTuBn0UAWKRAZ4DgYRp3jp+mcDKCAGdo9uZVCdTTqQvDxpgJ/4VLb4ru
+cTwzX/xwRV1DyIl9cVXRTejomorlZ81031w5lJiCkrL45TrAVO3tJXA++5vkkm3vFR5wik8WHjwN
+VMbI5E7x2f94/FSU1zxujugReYOF/vi8acvGHbPsP3LMwhRl0cGuVIL0zwTPwDeBR8+zEoFoc0hP
+/jIXH9Iabcxtru8JMMnJ5s3msN1rgA9cPFfJ5jMDkdFaIUKnnxyRDZcGg68ZngSZ68ODcqV//IlL
+5D4Q9epU81DNcGK/ntQI2cSaQ5xhdgs22Wunsk6KCWiHJvhC05zdxdqWpySI0k5sh5AkyHvPwOBe
+O8yX/fXTiam0EhjF2gCwcKWwR8vt1JbZOLYijgZyV0iNw//j7YJKl59gaSEjTqPKh52oR6ZBmR0c
+4A9A/0YtZQm79nZkY0Gfv/vhONTlkYAy5fojzW==

@@ -1,51 +1,41 @@
-<?php
-
-/**
- * XHTML 1.1 List Module, defines list-oriented elements. Core Module.
- */
-class HTMLPurifier_HTMLModule_List extends HTMLPurifier_HTMLModule
-{
-    /**
-     * @type string
-     */
-    public $name = 'List';
-
-    // According to the abstract schema, the List content set is a fully formed
-    // one or more expr, but it invariably occurs in an optional declaration
-    // so we're not going to do that subtlety. It might cause trouble
-    // if a user defines "List" and expects that multiple lists are
-    // allowed to be specified, but then again, that's not very intuitive.
-    // Furthermore, the actual XML Schema may disagree. Regardless,
-    // we don't have support for such nested expressions without using
-    // the incredibly inefficient and draconic Custom ChildDef.
-
-    /**
-     * @type array
-     */
-    public $content_sets = array('Flow' => 'List');
-
-    /**
-     * @param HTMLPurifier_Config $config
-     */
-    public function setup($config)
-    {
-        $ol = $this->addElement('ol', 'List', new HTMLPurifier_ChildDef_List(), 'Common');
-        $ul = $this->addElement('ul', 'List', new HTMLPurifier_ChildDef_List(), 'Common');
-        // XXX The wrap attribute is handled by MakeWellFormed.  This is all
-        // quite unsatisfactory, because we generated this
-        // *specifically* for lists, and now a big chunk of the handling
-        // is done properly by the List ChildDef.  So actually, we just
-        // want enough information to make autoclosing work properly,
-        // and then hand off the tricky stuff to the ChildDef.
-        $ol->wrap = 'li';
-        $ul->wrap = 'li';
-        $this->addElement('dl', 'List', 'Required: dt | dd', 'Common');
-
-        $this->addElement('li', false, 'Flow', 'Common');
-
-        $this->addElement('dd', false, 'Flow', 'Common');
-        $this->addElement('dt', false, 'Inline', 'Common');
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPqmzngtV13k2fefJZaB94CR+6v/xLZITR+jnmVvgz9JyCJw0rCQjtV7DE0XtZOQP0Pp588Wk
+f/2H1gajCzn0/rUJ0enLPSgOVg3Q9U6bRhOJW5yJiWagEBHGAtZIfy8PcujtBpgM7fJCzI0op6Wt
+0g/cbcFd+B2VmN5zvGUZmuY/MVm/jCTHCrtDg/2DHcEhiL0jCGbld81+gYwADj/0t6WKCzF5a75d
+nLNfsq44VeYTh64HwAYGSVv1EgiZ+sWqRSFsV3hLgoldLC5HqzmP85H4TkXgR4m2hFcpCDJofz9x
+ApwbKLp1w+ZpbXzeqzn6sDSMAc6tSYCo+2/ZG7LWXmSAGaMOLg4qZO1tAONiTsrzieOgJVCf3AwG
+VvZbE0R371/0Qj22kciK6Nb+9cvUhyi/LLyOKr/3m8oAnrPadRMib94xMJcu9sAP6G20Qm6hYj7L
+JmkZYwUf/Vd45D22k4xmM/7eyUckk+I9UgJu7H1I7sqCQucIfUQWfodnwLkPd1jeC/piCGtKXzUv
+mwYQKpAF0Fne2k8zR7zsC7i4zay4vV6BTslinPAp6VPakuvZ7j0exE/GCpAvP3yKDdB0om6cV6SF
+J2+wMBfRDQVqJMB1xhaj70qV/1jcYuAfhAXV8r/I4YejbfulIWK//sYnNraXFd057oEY8ej8UF2M
+5MIyZNJfh3bc3kMSEKyHsAkeOLOjgyn92R4Rn2Qf8aJtpm5ZceRTMXBwkSR2pPsDx7k0TIKDB6wZ
+U2kHKAlrX1ci7QIH9/zTTlNpumrJK6UNyuxjv0CD/1B3HbmfabhAUG5IAdg2HbodmVngRcZhWmBp
+Lkp1CzFH9O7xOiv99iT+SFYeND/M1Njz3u2Y49R30AsoAG5wjtiH4CP6KIaMdMEkLQV6INlrS3b/
+Dh+8nWJVIg4OneDyOavLal86PiqlxABsFwx9++yAwdvl9nWx5ZdO5qpHlw9g5oIW8rCV7ZiUcwA2
+vJUaxzo803gfkojOurRDwoIEqdchTA2iIxp8y7cW74TmBgSQbVM4Drl/vJiREG4L7LXl+obKcCHN
+oVZMPsZl+gSSWjQramNu3bJRmabP9nCjGyj95B/D63ZnKsl08vIJJoMUzekA2H7/fbgRa0gJko2Y
+T5kpMWMsduc/K8/WiyZUjNBCaeIxNCLIAH4duURF7pAAmmwuwJ8FqWFdfZ0Y6c+5LpitMtpXt495
+08AykvRriFXdyk0GKjHC0ktPXtcptUGL25Gx4CfhQy/x0cNRkMgc91ppTngSSmKEA0iKHv6YkZCD
+G0WKXojZnD0HapX9TWWqd8DPY8WDT3x6LWjqiA/3WSue7B8gGN+kE91EEGJTPePiTFyznaqCj5Ou
+KtTvU7cj4T12ylrt6+1dBfaFEDBdUiCOvf2I7qJlE4cZQprj7cv1X4/JGsAUXmIA+zALTsbVfBz7
+mR8usaIlRSCt/MA8/uMlCASVUQ3xW+azZq3HzDlQyRZ8bIZHIQUAcw5VeOkUogp6cwCuPFKiGsry
+rCwtTUJFyTlO8My8YFxaRzsoOkqZvjJZKxoivbIUqKqdgsV+cU3yuSBw7FolIPg9EwlXxsiqJ82K
+g1ui1NYVvPU5tR3brv5amZLLrfySr096tDb54wdqPd3m1Ywx9l1Tp7IHgj9dWgTg8dkzv7dNuafL
+zRBSCJfVez2dqHOd9GEVuO2MC/GJ/pDyVWE0VZ+jZnbDN39k9Y6PEeWsGe8YowCxN1DC4MtfTIAC
+XKDGldQbuGensl2+LGd+8Z/CXldaHI2cNetljTyk3VS8+c7VE4Ek9Z9zdNjd7InexISCe/KWB7tV
+eBkw/j80YxO2b4fN0YYypqziR7Z9Ju7v9yLgVl7YkYLR8b2PFWlGlUf2jL3r8mE6d8+SEZTPTAMy
+JHfgNt9gbyeqBuoYj5hY18J+UOebSHj++cy0ChBZvYtlQK22YLcGLQcuV5QnYp7YMLNPZ9KCEMuq
+kyocSpiNjfpOhaaEgmOC8yqhbc/+T5YQhCPetvTh971TMTq7LMOInNvQoDAtq5YITJF/Jn5kcNdk
+AFHpgJJV+f66VBxYkFpYCRJEfywr3vY4ubf7cdSwTalW+fxCa+tkufj1kWa5KaDc40hr96dEUtZ9
+HlxKZm5isPgr3i9TccFFYihicC5bydnpXZIpY76a9EPPScWtJlBeUO7LqooRQMyz1hWUxvcD4kH2
+ma0XtFNlGsJyfjjhfHGUCkeFPDTprTRHRCmaSlZvX2zmiEzwsY4RDjV5XaRLg7QZ5t0H4KTiGxFA
+QMpV3kkY3sLoqAjGGvtqTYLD4YUTfpWbKsR7pauXnuduEHEi3593u5rRn4hpD27mcaV0XAktOQrH
+l+JD5TS8hs48EGtjnKdSIpT1IyofBbb1A3uj3lJnrjdIuF8LUK/G/TujnkQXeDB5kXBkocainb32
+tqBY0qEH13fdHUSXXkoamkWG/jtNO2583ac3iUC5ty0qfAbU2w56sxTnnhGLkN2sMs00iqXUguxu
+MZGMDD+DxPmNM4gpGKSEHon3/7fyQ1ELwHtksvhlINKPeYqc6qxhKTJ8rPfadeHUKnGx/o1AcZS3
+S0eK7RyDLumGREqddiAi4V8NwH1vfmbwvOasdfezNRz22et3mY5bxDThR+bWA2+muC2/5l/I94xz
+zN9Wxf6Cj17aSbJaXBZGaEPnSvc6GmywtlqzCql2LyUV5nTL/EvppSoLHxkmppKCErsOopw7wT0B
+E0UKlFhMS6O2wK9yND3Q/dR5c9/c5H4UTbxqxMRfBD3PEfmmjEe/e+Q9lbzCw3D8r/eVDuwXgStq
+jMwfZWW=

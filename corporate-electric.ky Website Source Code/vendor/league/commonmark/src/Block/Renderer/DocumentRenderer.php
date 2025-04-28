@@ -1,40 +1,34 @@
-<?php
-
-/*
- * This file is part of the league/commonmark package.
- *
- * (c) Colin O'Dell <colinodell@gmail.com>
- *
- * Original code based on the CommonMark JS reference parser (https://bitly.com/commonmark-js)
- *  - (c) John MacFarlane
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace League\CommonMark\Block\Renderer;
-
-use League\CommonMark\Block\Element\AbstractBlock;
-use League\CommonMark\Block\Element\Document;
-use League\CommonMark\ElementRendererInterface;
-
-final class DocumentRenderer implements BlockRendererInterface
-{
-    /**
-     * @param Document                 $block
-     * @param ElementRendererInterface $htmlRenderer
-     * @param bool                     $inTightList
-     *
-     * @return string
-     */
-    public function render(AbstractBlock $block, ElementRendererInterface $htmlRenderer, bool $inTightList = false)
-    {
-        if (!($block instanceof Document)) {
-            throw new \InvalidArgumentException('Incompatible block type: ' . \get_class($block));
-        }
-
-        $wholeDoc = $htmlRenderer->renderBlocks($block->children());
-
-        return $wholeDoc === '' ? '' : $wholeDoc . "\n";
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+4hoFVyv9bEzMok71nfHtEtTK63ic5BM8zGpu

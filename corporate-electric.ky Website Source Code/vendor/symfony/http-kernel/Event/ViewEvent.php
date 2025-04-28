@@ -1,61 +1,34 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpKernel\Event;
-
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpKernel\HttpKernelInterface;
-
-/**
- * Allows to create a response for the return value of a controller.
- *
- * Call setResponse() to set the response that will be returned for the
- * current request. The propagation of this event is stopped as soon as a
- * response is set.
- *
- * @author Bernhard Schussek <bschussek@gmail.com>
- */
-final class ViewEvent extends RequestEvent
-{
-    /**
-     * The return value of the controller.
-     *
-     * @var mixed
-     */
-    private $controllerResult;
-
-    public function __construct(HttpKernelInterface $kernel, Request $request, int $requestType, $controllerResult)
-    {
-        parent::__construct($kernel, $request, $requestType);
-
-        $this->controllerResult = $controllerResult;
-    }
-
-    /**
-     * Returns the return value of the controller.
-     *
-     * @return mixed The controller return value
-     */
-    public function getControllerResult()
-    {
-        return $this->controllerResult;
-    }
-
-    /**
-     * Assigns the return value of the controller.
-     *
-     * @param mixed $controllerResult The controller return value
-     */
-    public function setControllerResult($controllerResult): void
-    {
-        $this->controllerResult = $controllerResult;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

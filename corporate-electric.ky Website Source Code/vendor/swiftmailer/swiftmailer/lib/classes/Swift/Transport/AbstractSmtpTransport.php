@@ -1,556 +1,269 @@
-<?php
-
-/*
- * This file is part of SwiftMailer.
- * (c) 2004-2009 Chris Corbyn
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-/**
- * Sends Messages over SMTP.
- *
- * @author Chris Corbyn
- */
-abstract class Swift_Transport_AbstractSmtpTransport implements Swift_Transport
-{
-    /** Input-Output buffer for sending/receiving SMTP commands and responses */
-    protected $buffer;
-
-    /** Connection status */
-    protected $started = false;
-
-    /** The domain name to use in HELO command */
-    protected $domain = '[127.0.0.1]';
-
-    /** The event dispatching layer */
-    protected $eventDispatcher;
-
-    protected $addressEncoder;
-
-    /** Whether the PIPELINING SMTP extension is enabled (RFC 2920) */
-    protected $pipelining = null;
-
-    /** The pipelined commands waiting for response */
-    protected $pipeline = [];
-
-    /** Source Ip */
-    protected $sourceIp;
-
-    /** Return an array of params for the Buffer */
-    abstract protected function getBufferParams();
-
-    /**
-     * Creates a new EsmtpTransport using the given I/O buffer.
-     *
-     * @param string $localDomain
-     */
-    public function __construct(Swift_Transport_IoBuffer $buf, Swift_Events_EventDispatcher $dispatcher, $localDomain = '127.0.0.1', Swift_AddressEncoder $addressEncoder = null)
-    {
-        $this->buffer = $buf;
-        $this->eventDispatcher = $dispatcher;
-        $this->addressEncoder = $addressEncoder ?? new Swift_AddressEncoder_IdnAddressEncoder();
-        $this->setLocalDomain($localDomain);
-    }
-
-    /**
-     * Set the name of the local domain which Swift will identify itself as.
-     *
-     * This should be a fully-qualified domain name and should be truly the domain
-     * you're using.
-     *
-     * If your server does not have a domain name, use the IP address. This will
-     * automatically be wrapped in square brackets as described in RFC 5321,
-     * section 4.1.3.
-     *
-     * @param string $domain
-     *
-     * @return $this
-     */
-    public function setLocalDomain($domain)
-    {
-        if ('[' !== substr($domain, 0, 1)) {
-            if (filter_var($domain, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
-                $domain = '['.$domain.']';
-            } elseif (filter_var($domain, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
-                $domain = '[IPv6:'.$domain.']';
-            }
-        }
-
-        $this->domain = $domain;
-
-        return $this;
-    }
-
-    /**
-     * Get the name of the domain Swift will identify as.
-     *
-     * If an IP address was specified, this will be returned wrapped in square
-     * brackets as described in RFC 5321, section 4.1.3.
-     *
-     * @return string
-     */
-    public function getLocalDomain()
-    {
-        return $this->domain;
-    }
-
-    /**
-     * Sets the source IP.
-     *
-     * @param string $source
-     */
-    public function setSourceIp($source)
-    {
-        $this->sourceIp = $source;
-    }
-
-    /**
-     * Returns the IP used to connect to the destination.
-     *
-     * @return string
-     */
-    public function getSourceIp()
-    {
-        return $this->sourceIp;
-    }
-
-    public function setAddressEncoder(Swift_AddressEncoder $addressEncoder)
-    {
-        $this->addressEncoder = $addressEncoder;
-    }
-
-    public function getAddressEncoder()
-    {
-        return $this->addressEncoder;
-    }
-
-    /**
-     * Start the SMTP connection.
-     */
-    public function start()
-    {
-        if (!$this->started) {
-            if ($evt = $this->eventDispatcher->createTransportChangeEvent($this)) {
-                $this->eventDispatcher->dispatchEvent($evt, 'beforeTransportStarted');
-                if ($evt->bubbleCancelled()) {
-                    return;
-                }
-            }
-
-            try {
-                $this->buffer->initialize($this->getBufferParams());
-            } catch (Swift_TransportException $e) {
-                $this->throwException($e);
-            }
-            $this->readGreeting();
-            $this->doHeloCommand();
-
-            if ($evt) {
-                $this->eventDispatcher->dispatchEvent($evt, 'transportStarted');
-            }
-
-            $this->started = true;
-        }
-    }
-
-    /**
-     * Test if an SMTP connection has been established.
-     *
-     * @return bool
-     */
-    public function isStarted()
-    {
-        return $this->started;
-    }
-
-    /**
-     * Send the given Message.
-     *
-     * Recipient/sender data will be retrieved from the Message API.
-     * The return value is the number of recipients who were accepted for delivery.
-     *
-     * @param string[] $failedRecipients An array of failures by-reference
-     *
-     * @return int
-     */
-    public function send(Swift_Mime_SimpleMessage $message, &$failedRecipients = null)
-    {
-        if (!$this->isStarted()) {
-            $this->start();
-        }
-
-        $sent = 0;
-        $failedRecipients = (array) $failedRecipients;
-
-        if ($evt = $this->eventDispatcher->createSendEvent($this, $message)) {
-            $this->eventDispatcher->dispatchEvent($evt, 'beforeSendPerformed');
-            if ($evt->bubbleCancelled()) {
-                return 0;
-            }
-        }
-
-        if (!$reversePath = $this->getReversePath($message)) {
-            $this->throwException(new Swift_TransportException('Cannot send message without a sender address'));
-        }
-
-        $to = (array) $message->getTo();
-        $cc = (array) $message->getCc();
-        $tos = array_merge($to, $cc);
-        $bcc = (array) $message->getBcc();
-
-        $message->setBcc([]);
-
-        try {
-            $sent += $this->sendTo($message, $reversePath, $tos, $failedRecipients);
-            $sent += $this->sendBcc($message, $reversePath, $bcc, $failedRecipients);
-        } finally {
-            $message->setBcc($bcc);
-        }
-
-        if ($evt) {
-            if ($sent == \count($to) + \count($cc) + \count($bcc)) {
-                $evt->setResult(Swift_Events_SendEvent::RESULT_SUCCESS);
-            } elseif ($sent > 0) {
-                $evt->setResult(Swift_Events_SendEvent::RESULT_TENTATIVE);
-            } else {
-                $evt->setResult(Swift_Events_SendEvent::RESULT_FAILED);
-            }
-            $evt->setFailedRecipients($failedRecipients);
-            $this->eventDispatcher->dispatchEvent($evt, 'sendPerformed');
-        }
-
-        $message->generateId(); //Make sure a new Message ID is used
-
-        return $sent;
-    }
-
-    /**
-     * Stop the SMTP connection.
-     */
-    public function stop()
-    {
-        if ($this->started) {
-            if ($evt = $this->eventDispatcher->createTransportChangeEvent($this)) {
-                $this->eventDispatcher->dispatchEvent($evt, 'beforeTransportStopped');
-                if ($evt->bubbleCancelled()) {
-                    return;
-                }
-            }
-
-            try {
-                $this->executeCommand("QUIT\r\n", [221]);
-            } catch (Swift_TransportException $e) {
-            }
-
-            try {
-                $this->buffer->terminate();
-
-                if ($evt) {
-                    $this->eventDispatcher->dispatchEvent($evt, 'transportStopped');
-                }
-            } catch (Swift_TransportException $e) {
-                $this->throwException($e);
-            }
-        }
-        $this->started = false;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function ping()
-    {
-        try {
-            if (!$this->isStarted()) {
-                $this->start();
-            }
-
-            $this->executeCommand("NOOP\r\n", [250]);
-        } catch (Swift_TransportException $e) {
-            try {
-                $this->stop();
-            } catch (Swift_TransportException $e) {
-            }
-
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * Register a plugin.
-     */
-    public function registerPlugin(Swift_Events_EventListener $plugin)
-    {
-        $this->eventDispatcher->bindEventListener($plugin);
-    }
-
-    /**
-     * Reset the current mail transaction.
-     */
-    public function reset()
-    {
-        $this->executeCommand("RSET\r\n", [250], $failures, true);
-    }
-
-    /**
-     * Get the IoBuffer where read/writes are occurring.
-     *
-     * @return Swift_Transport_IoBuffer
-     */
-    public function getBuffer()
-    {
-        return $this->buffer;
-    }
-
-    /**
-     * Run a command against the buffer, expecting the given response codes.
-     *
-     * If no response codes are given, the response will not be validated.
-     * If codes are given, an exception will be thrown on an invalid response.
-     * If the command is RCPT TO, and the pipeline is non-empty, no exception
-     * will be thrown; instead the failing address is added to $failures.
-     *
-     * @param string   $command
-     * @param int[]    $codes
-     * @param string[] $failures An array of failures by-reference
-     * @param bool     $pipeline Do not wait for response
-     * @param string   $address  the address, if command is RCPT TO
-     *
-     * @return string|null The server response, or null if pipelining is enabled
-     */
-    public function executeCommand($command, $codes = [], &$failures = null, $pipeline = false, $address = null)
-    {
-        $failures = (array) $failures;
-        $seq = $this->buffer->write($command);
-        if ($evt = $this->eventDispatcher->createCommandEvent($this, $command, $codes)) {
-            $this->eventDispatcher->dispatchEvent($evt, 'commandSent');
-        }
-
-        $this->pipeline[] = [$command, $seq, $codes, $address];
-
-        if ($pipeline && $this->pipelining) {
-            return null;
-        }
-
-        $response = null;
-
-        while ($this->pipeline) {
-            list($command, $seq, $codes, $address) = array_shift($this->pipeline);
-            $response = $this->getFullResponse($seq);
-            try {
-                $this->assertResponseCode($response, $codes);
-            } catch (Swift_TransportException $e) {
-                if ($this->pipeline && $address) {
-                    $failures[] = $address;
-                } else {
-                    $this->throwException($e);
-                }
-            }
-        }
-
-        return $response;
-    }
-
-    /** Read the opening SMTP greeting */
-    protected function readGreeting()
-    {
-        $this->assertResponseCode($this->getFullResponse(0), [220]);
-    }
-
-    /** Send the HELO welcome */
-    protected function doHeloCommand()
-    {
-        $this->executeCommand(
-            sprintf("HELO %s\r\n", $this->domain), [250]
-            );
-    }
-
-    /** Send the MAIL FROM command */
-    protected function doMailFromCommand($address)
-    {
-        $address = $this->addressEncoder->encodeString($address);
-        $this->executeCommand(
-            sprintf("MAIL FROM:<%s>\r\n", $address), [250], $failures, true
-            );
-    }
-
-    /** Send the RCPT TO command */
-    protected function doRcptToCommand($address)
-    {
-        $address = $this->addressEncoder->encodeString($address);
-        $this->executeCommand(
-            sprintf("RCPT TO:<%s>\r\n", $address), [250, 251, 252], $failures, true, $address
-            );
-    }
-
-    /** Send the DATA command */
-    protected function doDataCommand(&$failedRecipients)
-    {
-        $this->executeCommand("DATA\r\n", [354], $failedRecipients);
-    }
-
-    /** Stream the contents of the message over the buffer */
-    protected function streamMessage(Swift_Mime_SimpleMessage $message)
-    {
-        $this->buffer->setWriteTranslations(["\r\n." => "\r\n.."]);
-        try {
-            $message->toByteStream($this->buffer);
-            $this->buffer->flushBuffers();
-        } catch (Swift_TransportException $e) {
-            $this->throwException($e);
-        }
-        $this->buffer->setWriteTranslations([]);
-        $this->executeCommand("\r\n.\r\n", [250]);
-    }
-
-    /** Determine the best-use reverse path for this message */
-    protected function getReversePath(Swift_Mime_SimpleMessage $message)
-    {
-        $return = $message->getReturnPath();
-        $sender = $message->getSender();
-        $from = $message->getFrom();
-        $path = null;
-        if (!empty($return)) {
-            $path = $return;
-        } elseif (!empty($sender)) {
-            // Don't use array_keys
-            reset($sender); // Reset Pointer to first pos
-            $path = key($sender); // Get key
-        } elseif (!empty($from)) {
-            reset($from); // Reset Pointer to first pos
-            $path = key($from); // Get key
-        }
-
-        return $path;
-    }
-
-    /** Throw a TransportException, first sending it to any listeners */
-    protected function throwException(Swift_TransportException $e)
-    {
-        if ($evt = $this->eventDispatcher->createTransportExceptionEvent($this, $e)) {
-            $this->eventDispatcher->dispatchEvent($evt, 'exceptionThrown');
-            if (!$evt->bubbleCancelled()) {
-                throw $e;
-            }
-        } else {
-            throw $e;
-        }
-    }
-
-    /** Throws an Exception if a response code is incorrect */
-    protected function assertResponseCode($response, $wanted)
-    {
-        if (!$response) {
-            $this->throwException(new Swift_TransportException('Expected response code '.implode('/', $wanted).' but got an empty response'));
-        }
-
-        list($code) = sscanf($response, '%3d');
-        $valid = (empty($wanted) || \in_array($code, $wanted));
-
-        if ($evt = $this->eventDispatcher->createResponseEvent($this, $response,
-            $valid)) {
-            $this->eventDispatcher->dispatchEvent($evt, 'responseReceived');
-        }
-
-        if (!$valid) {
-            $this->throwException(new Swift_TransportException('Expected response code '.implode('/', $wanted).' but got code "'.$code.'", with message "'.$response.'"', $code));
-        }
-    }
-
-    /** Get an entire multi-line response using its sequence number */
-    protected function getFullResponse($seq)
-    {
-        $response = '';
-        try {
-            do {
-                $line = $this->buffer->readLine($seq);
-                $response .= $line;
-            } while (null !== $line && false !== $line && ' ' != $line[3]);
-        } catch (Swift_TransportException $e) {
-            $this->throwException($e);
-        } catch (Swift_IoException $e) {
-            $this->throwException(new Swift_TransportException($e->getMessage(), 0, $e));
-        }
-
-        return $response;
-    }
-
-    /** Send an email to the given recipients from the given reverse path */
-    private function doMailTransaction($message, $reversePath, array $recipients, array &$failedRecipients)
-    {
-        $sent = 0;
-        $this->doMailFromCommand($reversePath);
-        foreach ($recipients as $forwardPath) {
-            try {
-                $this->doRcptToCommand($forwardPath);
-                ++$sent;
-            } catch (Swift_TransportException $e) {
-                $failedRecipients[] = $forwardPath;
-            } catch (Swift_AddressEncoderException $e) {
-                $failedRecipients[] = $forwardPath;
-            }
-        }
-
-        if (0 != $sent) {
-            $sent += \count($failedRecipients);
-            $this->doDataCommand($failedRecipients);
-            $sent -= \count($failedRecipients);
-
-            $this->streamMessage($message);
-        } else {
-            $this->reset();
-        }
-
-        return $sent;
-    }
-
-    /** Send a message to the given To: recipients */
-    private function sendTo(Swift_Mime_SimpleMessage $message, $reversePath, array $to, array &$failedRecipients)
-    {
-        if (empty($to)) {
-            return 0;
-        }
-
-        return $this->doMailTransaction($message, $reversePath, array_keys($to),
-            $failedRecipients);
-    }
-
-    /** Send a message to all Bcc: recipients */
-    private function sendBcc(Swift_Mime_SimpleMessage $message, $reversePath, array $bcc, array &$failedRecipients)
-    {
-        $sent = 0;
-        foreach ($bcc as $forwardPath => $name) {
-            $message->setBcc([$forwardPath => $name]);
-            $sent += $this->doMailTransaction(
-                $message, $reversePath, [$forwardPath], $failedRecipients
-                );
-        }
-
-        return $sent;
-    }
-
-    /**
-     * Destructor.
-     */
-    public function __destruct()
-    {
-        try {
-            $this->stop();
-        } catch (Exception $e) {
-        }
-    }
-
-    public function __sleep()
-    {
-        throw new \BadMethodCallException('Cannot serialize '.__CLASS__);
-    }
-
-    public function __wakeup()
-    {
-        throw new \BadMethodCallException('Cannot unserialize '.__CLASS__);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

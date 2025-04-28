@@ -1,145 +1,73 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\Input;
-
-use Psy\Exception\ErrorException;
-use Psy\Exception\RuntimeException;
-use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
-
-/**
- * Parse, validate and match --grep, --insensitive and --invert command options.
- */
-class FilterOptions
-{
-    private $filter = false;
-    private $pattern;
-    private $insensitive;
-    private $invert;
-
-    /**
-     * Get input option definitions for filtering.
-     *
-     * @return InputOption[]
-     */
-    public static function getOptions()
-    {
-        return [
-            new InputOption('grep', 'G', InputOption::VALUE_REQUIRED, 'Limit to items matching the given pattern (string or regex).'),
-            new InputOption('insensitive', 'i', InputOption::VALUE_NONE, 'Case-insensitive search (requires --grep).'),
-            new InputOption('invert', 'v', InputOption::VALUE_NONE, 'Inverted search (requires --grep).'),
-        ];
-    }
-
-    /**
-     * Bind input and prepare filter.
-     *
-     * @param InputInterface $input
-     */
-    public function bind(InputInterface $input)
-    {
-        $this->validateInput($input);
-
-        if (!$pattern = $input->getOption('grep')) {
-            $this->filter = false;
-
-            return;
-        }
-
-        if (!$this->stringIsRegex($pattern)) {
-            $pattern = '/'.\preg_quote($pattern, '/').'/';
-        }
-
-        if ($insensitive = $input->getOption('insensitive')) {
-            $pattern .= 'i';
-        }
-
-        $this->validateRegex($pattern);
-
-        $this->filter = true;
-        $this->pattern = $pattern;
-        $this->insensitive = $insensitive;
-        $this->invert = $input->getOption('invert');
-    }
-
-    /**
-     * Check whether the bound input has filter options.
-     *
-     * @return bool
-     */
-    public function hasFilter()
-    {
-        return $this->filter;
-    }
-
-    /**
-     * Check whether a string matches the current filter options.
-     *
-     * @param string $string
-     * @param array  $matches
-     *
-     * @return bool
-     */
-    public function match($string, array &$matches = null)
-    {
-        return $this->filter === false || (\preg_match($this->pattern, $string, $matches) xor $this->invert);
-    }
-
-    /**
-     * Validate that grep, invert and insensitive input options are consistent.
-     *
-     * @throws RuntimeException if input is invalid
-     *
-     * @param InputInterface $input
-     */
-    private function validateInput(InputInterface $input)
-    {
-        if (!$input->getOption('grep')) {
-            foreach (['invert', 'insensitive'] as $option) {
-                if ($input->getOption($option)) {
-                    throw new RuntimeException('--'.$option.' does not make sense without --grep');
-                }
-            }
-        }
-    }
-
-    /**
-     * Check whether a string appears to be a regular expression.
-     *
-     * @param string $string
-     *
-     * @return bool
-     */
-    private function stringIsRegex($string)
-    {
-        return \substr($string, 0, 1) === '/' && \substr($string, -1) === '/' && \strlen($string) >= 3;
-    }
-
-    /**
-     * Validate that $pattern is a valid regular expression.
-     *
-     * @throws RuntimeException if pattern is invalid
-     *
-     * @param string $pattern
-     */
-    private function validateRegex($pattern)
-    {
-        \set_error_handler([ErrorException::class, 'throwException']);
-        try {
-            \preg_match($pattern, '');
-        } catch (ErrorException $e) {
-            throw new RuntimeException(\str_replace('preg_match(): ', 'Invalid regular expression: ', $e->getRawMessage()));
-        } finally {
-            \restore_error_handler();
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

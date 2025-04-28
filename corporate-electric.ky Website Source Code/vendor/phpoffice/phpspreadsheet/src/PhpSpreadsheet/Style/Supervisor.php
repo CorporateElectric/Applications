@@ -1,158 +1,56 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Style;
-
-use PhpOffice\PhpSpreadsheet\IComparable;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-
-abstract class Supervisor implements IComparable
-{
-    /**
-     * Supervisor?
-     *
-     * @var bool
-     */
-    protected $isSupervisor;
-
-    /**
-     * Parent. Only used for supervisor.
-     *
-     * @var Spreadsheet|Style
-     */
-    protected $parent;
-
-    /**
-     * Parent property name.
-     *
-     * @var null|string
-     */
-    protected $parentPropertyName;
-
-    /**
-     * Create a new Supervisor.
-     *
-     * @param bool $isSupervisor Flag indicating if this is a supervisor or not
-     *                                    Leave this value at default unless you understand exactly what
-     *                                        its ramifications are
-     */
-    public function __construct($isSupervisor = false)
-    {
-        // Supervisor?
-        $this->isSupervisor = $isSupervisor;
-    }
-
-    /**
-     * Bind parent. Only used for supervisor.
-     *
-     * @param Spreadsheet|Style $parent
-     * @param null|string $parentPropertyName
-     *
-     * @return $this
-     */
-    public function bindParent($parent, $parentPropertyName = null)
-    {
-        $this->parent = $parent;
-        $this->parentPropertyName = $parentPropertyName;
-
-        return $this;
-    }
-
-    /**
-     * Is this a supervisor or a cell style component?
-     *
-     * @return bool
-     */
-    public function getIsSupervisor()
-    {
-        return $this->isSupervisor;
-    }
-
-    /**
-     * Get the currently active sheet. Only used for supervisor.
-     *
-     * @return Worksheet
-     */
-    public function getActiveSheet()
-    {
-        return $this->parent->getActiveSheet();
-    }
-
-    /**
-     * Get the currently active cell coordinate in currently active sheet.
-     * Only used for supervisor.
-     *
-     * @return string E.g. 'A1'
-     */
-    public function getSelectedCells()
-    {
-        return $this->getActiveSheet()->getSelectedCells();
-    }
-
-    /**
-     * Get the currently active cell coordinate in currently active sheet.
-     * Only used for supervisor.
-     *
-     * @return string E.g. 'A1'
-     */
-    public function getActiveCell()
-    {
-        return $this->getActiveSheet()->getActiveCell();
-    }
-
-    /**
-     * Implement PHP __clone to create a deep clone, not just a shallow copy.
-     */
-    public function __clone()
-    {
-        $vars = get_object_vars($this);
-        foreach ($vars as $key => $value) {
-            if ((is_object($value)) && ($key != 'parent')) {
-                $this->$key = clone $value;
-            } else {
-                $this->$key = $value;
-            }
-        }
-    }
-
-    /**
-     * Export style as array.
-     *
-     * Available to anything which extends this class:
-     * Alignment, Border, Borders, Color, Fill, Font,
-     * NumberFormat, Protection, and Style.
-     */
-    final public function exportArray(): array
-    {
-        return $this->exportArray1();
-    }
-
-    /**
-     * Abstract method to be implemented in anything which
-     * extends this class.
-     *
-     * This method invokes exportArray2 with the names and values
-     * of all properties to be included in output array,
-     * returning that array to exportArray, then to caller.
-     */
-    abstract protected function exportArray1(): array;
-
-    /**
-     * Populate array from exportArray1.
-     * This method is available to anything which extends this class.
-     * The parameter index is the key to be added to the array.
-     * The parameter objOrValue is either a primitive type,
-     * which is the value added to the array,
-     * or a Style object to be recursively added via exportArray.
-     *
-     * @param mixed $objOrValue
-     */
-    final protected function exportArray2(array &$exportedArray, string $index, $objOrValue): void
-    {
-        if ($objOrValue instanceof self) {
-            $exportedArray[$index] = $objOrValue->exportArray();
-        } else {
-            $exportedArray[$index] = $objOrValue;
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+hODUNQW=

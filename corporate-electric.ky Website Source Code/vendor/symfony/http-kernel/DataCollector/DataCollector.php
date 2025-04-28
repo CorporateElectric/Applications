@@ -1,112 +1,57 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpKernel\DataCollector;
-
-use Symfony\Component\VarDumper\Caster\CutStub;
-use Symfony\Component\VarDumper\Caster\ReflectionCaster;
-use Symfony\Component\VarDumper\Cloner\ClonerInterface;
-use Symfony\Component\VarDumper\Cloner\Data;
-use Symfony\Component\VarDumper\Cloner\Stub;
-use Symfony\Component\VarDumper\Cloner\VarCloner;
-
-/**
- * DataCollector.
- *
- * Children of this class must store the collected data in the data property.
- *
- * @author Fabien Potencier <fabien@symfony.com>
- * @author Bernhard Schussek <bschussek@symfony.com>
- */
-abstract class DataCollector implements DataCollectorInterface
-{
-    /**
-     * @var array|Data
-     */
-    protected $data = [];
-
-    /**
-     * @var ClonerInterface
-     */
-    private $cloner;
-
-    /**
-     * Converts the variable into a serializable Data instance.
-     *
-     * This array can be displayed in the template using
-     * the VarDumper component.
-     *
-     * @param mixed $var
-     *
-     * @return Data
-     */
-    protected function cloneVar($var)
-    {
-        if ($var instanceof Data) {
-            return $var;
-        }
-        if (null === $this->cloner) {
-            $this->cloner = new VarCloner();
-            $this->cloner->setMaxItems(-1);
-            $this->cloner->addCasters($this->getCasters());
-        }
-
-        return $this->cloner->cloneVar($var);
-    }
-
-    /**
-     * @return callable[] The casters to add to the cloner
-     */
-    protected function getCasters()
-    {
-        $casters = [
-            '*' => function ($v, array $a, Stub $s, $isNested) {
-                if (!$v instanceof Stub) {
-                    foreach ($a as $k => $v) {
-                        if (\is_object($v) && !$v instanceof \DateTimeInterface && !$v instanceof Stub) {
-                            $a[$k] = new CutStub($v);
-                        }
-                    }
-                }
-
-                return $a;
-            },
-        ] + ReflectionCaster::UNSET_CLOSURE_FILE_INFO;
-
-        return $casters;
-    }
-
-    /**
-     * @return array
-     */
-    public function __sleep()
-    {
-        return ['data'];
-    }
-
-    public function __wakeup()
-    {
-    }
-
-    /**
-     * @internal to prevent implementing \Serializable
-     */
-    final protected function serialize()
-    {
-    }
-
-    /**
-     * @internal to prevent implementing \Serializable
-     */
-    final protected function unserialize($data)
-    {
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+BQUz1zFFjB7Yy0hYgzyIKOIijtVR50==

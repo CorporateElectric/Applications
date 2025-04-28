@@ -1,153 +1,86 @@
-<?php
-
-/*
- * This file is part of the league/commonmark package.
- *
- * (c) Colin O'Dell <colinodell@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace League\CommonMark\Extension\Autolink;
-
-use League\CommonMark\Event\DocumentParsedEvent;
-use League\CommonMark\Inline\Element\Link;
-use League\CommonMark\Inline\Element\Text;
-
-final class UrlAutolinkProcessor
-{
-    // RegEx adapted from https://github.com/symfony/symfony/blob/4.2/src/Symfony/Component/Validator/Constraints/UrlValidator.php
-    const REGEX = '~
-        (?<=^|[ \\t\\n\\x0b\\x0c\\x0d*_\\~\\(])  # Can only come at the beginning of a line, after whitespace, or certain delimiting characters
-        (
-            # Must start with a supported scheme + auth, or "www"
-            (?:
-                (?:%s)://                                 # protocol
-                (?:([\.\pL\pN-]+:)?([\.\pL\pN-]+)@)?      # basic auth
-            |www\.)
-            (?:
-                (?:[\pL\pN\pS\-\.])+(?:\.?(?:[\pL\pN]|xn\-\-[\pL\pN-]+)+\.?) # a domain name
-                    |                                                 # or
-                \d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}                    # an IP address
-                    |                                                 # or
-                \[
-                    (?:(?:(?:(?:(?:(?:(?:[0-9a-f]{1,4})):){6})(?:(?:(?:(?:(?:[0-9a-f]{1,4})):(?:(?:[0-9a-f]{1,4})))|(?:(?:(?:(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9]))\.){3}(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9])))))))|(?:(?:::(?:(?:(?:[0-9a-f]{1,4})):){5})(?:(?:(?:(?:(?:[0-9a-f]{1,4})):(?:(?:[0-9a-f]{1,4})))|(?:(?:(?:(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9]))\.){3}(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9])))))))|(?:(?:(?:(?:(?:[0-9a-f]{1,4})))?::(?:(?:(?:[0-9a-f]{1,4})):){4})(?:(?:(?:(?:(?:[0-9a-f]{1,4})):(?:(?:[0-9a-f]{1,4})))|(?:(?:(?:(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9]))\.){3}(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9])))))))|(?:(?:(?:(?:(?:(?:[0-9a-f]{1,4})):){0,1}(?:(?:[0-9a-f]{1,4})))?::(?:(?:(?:[0-9a-f]{1,4})):){3})(?:(?:(?:(?:(?:[0-9a-f]{1,4})):(?:(?:[0-9a-f]{1,4})))|(?:(?:(?:(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9]))\.){3}(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9])))))))|(?:(?:(?:(?:(?:(?:[0-9a-f]{1,4})):){0,2}(?:(?:[0-9a-f]{1,4})))?::(?:(?:(?:[0-9a-f]{1,4})):){2})(?:(?:(?:(?:(?:[0-9a-f]{1,4})):(?:(?:[0-9a-f]{1,4})))|(?:(?:(?:(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9]))\.){3}(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9])))))))|(?:(?:(?:(?:(?:(?:[0-9a-f]{1,4})):){0,3}(?:(?:[0-9a-f]{1,4})))?::(?:(?:[0-9a-f]{1,4})):)(?:(?:(?:(?:(?:[0-9a-f]{1,4})):(?:(?:[0-9a-f]{1,4})))|(?:(?:(?:(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9]))\.){3}(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9])))))))|(?:(?:(?:(?:(?:(?:[0-9a-f]{1,4})):){0,4}(?:(?:[0-9a-f]{1,4})))?::)(?:(?:(?:(?:(?:[0-9a-f]{1,4})):(?:(?:[0-9a-f]{1,4})))|(?:(?:(?:(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9]))\.){3}(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9])))))))|(?:(?:(?:(?:(?:(?:[0-9a-f]{1,4})):){0,5}(?:(?:[0-9a-f]{1,4})))?::)(?:(?:[0-9a-f]{1,4})))|(?:(?:(?:(?:(?:(?:[0-9a-f]{1,4})):){0,6}(?:(?:[0-9a-f]{1,4})))?::))))
-                \]  # an IPv6 address
-            )
-            (?::[0-9]+)?                              # a port (optional)
-            (?:/ (?:[\pL\pN\-._\~!$&\'()*+,;=:@]|%%[0-9A-Fa-f]{2})* )*      # a path
-            (?:\? (?:[\pL\pN\-._\~!$&\'()*+,;=:@/?]|%%[0-9A-Fa-f]{2})* )?   # a query (optional)
-            (?:\# (?:[\pL\pN\-._\~!$&\'()*+,;=:@/?]|%%[0-9A-Fa-f]{2})* )?   # a fragment (optional)
-        )~ixu';
-
-    /** @var string */
-    private $finalRegex;
-
-    /**
-     * @param array<int, string> $allowedProtocols
-     */
-    public function __construct(array $allowedProtocols = ['http', 'https', 'ftp'])
-    {
-        $this->finalRegex = \sprintf(self::REGEX, \implode('|', $allowedProtocols));
-    }
-
-    /**
-     * @param DocumentParsedEvent $e
-     *
-     * @return void
-     */
-    public function __invoke(DocumentParsedEvent $e)
-    {
-        $walker = $e->getDocument()->walker();
-
-        while ($event = $walker->next()) {
-            $node = $event->getNode();
-            if ($node instanceof Text && !($node->parent() instanceof Link)) {
-                self::processAutolinks($node, $this->finalRegex);
-            }
-        }
-    }
-
-    private static function processAutolinks(Text $node, string $regex): void
-    {
-        $contents = \preg_split($regex, $node->getContent(), -1, PREG_SPLIT_DELIM_CAPTURE);
-
-        if ($contents === false || \count($contents) === 1) {
-            return;
-        }
-
-        $leftovers = '';
-        foreach ($contents as $i => $content) {
-            // Even-indexed elements are things before/after the URLs
-            if ($i % 2 === 0) {
-                // Insert any left-over characters here as well
-                $text = $leftovers . $content;
-                if ($text !== '') {
-                    $node->insertBefore(new Text($leftovers . $content));
-                }
-
-                $leftovers = '';
-                continue;
-            }
-
-            $leftovers = '';
-
-            // Does the URL end with punctuation that should be stripped?
-            if (\preg_match('/(.+)([?!.,:*_~]+)$/', $content, $matches)) {
-                // Add the punctuation later
-                $content = $matches[1];
-                $leftovers = $matches[2];
-            }
-
-            // Does the URL end with something that looks like an entity reference?
-            if (\preg_match('/(.+)(&[A-Za-z0-9]+;)$/', $content, $matches)) {
-                $content = $matches[1];
-                $leftovers = $matches[2] . $leftovers;
-            }
-
-            // Does the URL need its closing paren chopped off?
-            if (\substr($content, -1) === ')' && ($diff = self::diffParens($content)) > 0) {
-                $content = \substr($content, 0, -$diff);
-                $leftovers = str_repeat(')', $diff) . $leftovers;
-            }
-
-            self::addLink($node, $content);
-        }
-
-        $node->detach();
-    }
-
-    private static function addLink(Text $node, string $url): void
-    {
-        // Auto-prefix 'http://' onto 'www' URLs
-        if (\substr($url, 0, 4) === 'www.') {
-            $node->insertBefore(new Link('http://' . $url, $url));
-
-            return;
-        }
-
-        $node->insertBefore(new Link($url, $url));
-    }
-
-    /**
-     * @param string $content
-     *
-     * @return int
-     */
-    private static function diffParens(string $content): int
-    {
-        // Scan the entire autolink for the total number of parentheses.
-        // If there is a greater number of closing parentheses than opening ones,
-        // we don’t consider ANY of the last characters as part of the autolink,
-        // in order to facilitate including an autolink inside a parenthesis.
-        \preg_match_all('/[()]/', $content, $matches);
-
-        $charCount = ['(' => 0, ')' => 0];
-        foreach ($matches[0] as $char) {
-            $charCount[$char]++;
-        }
-
-        return $charCount[')'] - $charCount['('];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+zlOdZZj89oox4KAi1RYUK0==

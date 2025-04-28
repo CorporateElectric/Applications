@@ -1,63 +1,44 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Contracts\Service;
-
-use Psr\Container\ContainerInterface;
-
-/**
- * Implementation of ServiceSubscriberInterface that determines subscribed services from
- * private method return types. Service ids are available as "ClassName::methodName".
- *
- * @author Kevin Bond <kevinbond@gmail.com>
- */
-trait ServiceSubscriberTrait
-{
-    /** @var ContainerInterface */
-    protected $container;
-
-    public static function getSubscribedServices(): array
-    {
-        static $services;
-
-        if (null !== $services) {
-            return $services;
-        }
-
-        $services = \is_callable(['parent', __FUNCTION__]) ? parent::getSubscribedServices() : [];
-
-        foreach ((new \ReflectionClass(self::class))->getMethods() as $method) {
-            if ($method->isStatic() || $method->isAbstract() || $method->isGenerator() || $method->isInternal() || $method->getNumberOfRequiredParameters()) {
-                continue;
-            }
-
-            if (self::class === $method->getDeclaringClass()->name && ($returnType = $method->getReturnType()) && !$returnType->isBuiltin()) {
-                $services[self::class.'::'.$method->name] = '?'.($returnType instanceof \ReflectionNamedType ? $returnType->getName() : $type);
-            }
-        }
-
-        return $services;
-    }
-
-    /**
-     * @required
-     */
-    public function setContainer(ContainerInterface $container)
-    {
-        $this->container = $container;
-
-        if (\is_callable(['parent', __FUNCTION__])) {
-            return parent::setContainer($container);
-        }
-
-        return null;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+FmxE8kbqgT3EhS80K4W=

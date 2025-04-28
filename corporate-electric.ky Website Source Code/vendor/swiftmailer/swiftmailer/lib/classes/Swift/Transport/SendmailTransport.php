@@ -1,158 +1,88 @@
-<?php
-
-/*
- * This file is part of SwiftMailer.
- * (c) 2004-2009 Chris Corbyn
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-/**
- * SendmailTransport for sending mail through a Sendmail/Postfix (etc..) binary.
- *
- * Supported modes are -bs and -t, with any additional flags desired.
- * It is advised to use -bs mode since error reporting with -t mode is not
- * possible.
- *
- * @author Chris Corbyn
- */
-class Swift_Transport_SendmailTransport extends Swift_Transport_AbstractSmtpTransport
-{
-    /**
-     * Connection buffer parameters.
-     *
-     * @var array
-     */
-    private $params = [
-        'timeout' => 30,
-        'blocking' => 1,
-        'command' => '/usr/sbin/sendmail -bs',
-        'type' => Swift_Transport_IoBuffer::TYPE_PROCESS,
-        ];
-
-    /**
-     * Create a new SendmailTransport with $buf for I/O.
-     *
-     * @param string $localDomain
-     */
-    public function __construct(Swift_Transport_IoBuffer $buf, Swift_Events_EventDispatcher $dispatcher, $localDomain = '127.0.0.1', Swift_AddressEncoder $addressEncoder = null)
-    {
-        parent::__construct($buf, $dispatcher, $localDomain, $addressEncoder);
-    }
-
-    /**
-     * Start the standalone SMTP session if running in -bs mode.
-     */
-    public function start()
-    {
-        if (false !== strpos($this->getCommand(), ' -bs')) {
-            parent::start();
-        }
-    }
-
-    /**
-     * Set the command to invoke.
-     *
-     * If using -t mode you are strongly advised to include -oi or -i in the flags.
-     * For example: /usr/sbin/sendmail -oi -t
-     * Swift will append a -f<sender> flag if one is not present.
-     *
-     * The recommended mode is "-bs" since it is interactive and failure notifications
-     * are hence possible.
-     *
-     * @param string $command
-     *
-     * @return $this
-     */
-    public function setCommand($command)
-    {
-        $this->params['command'] = $command;
-
-        return $this;
-    }
-
-    /**
-     * Get the sendmail command which will be invoked.
-     *
-     * @return string
-     */
-    public function getCommand()
-    {
-        return $this->params['command'];
-    }
-
-    /**
-     * Send the given Message.
-     *
-     * Recipient/sender data will be retrieved from the Message API.
-     *
-     * The return value is the number of recipients who were accepted for delivery.
-     * NOTE: If using 'sendmail -t' you will not be aware of any failures until
-     * they bounce (i.e. send() will always return 100% success).
-     *
-     * @param string[] $failedRecipients An array of failures by-reference
-     *
-     * @return int
-     */
-    public function send(Swift_Mime_SimpleMessage $message, &$failedRecipients = null)
-    {
-        $failedRecipients = (array) $failedRecipients;
-        $command = $this->getCommand();
-        $buffer = $this->getBuffer();
-        $count = 0;
-
-        if (false !== strpos($command, ' -t')) {
-            if ($evt = $this->eventDispatcher->createSendEvent($this, $message)) {
-                $this->eventDispatcher->dispatchEvent($evt, 'beforeSendPerformed');
-                if ($evt->bubbleCancelled()) {
-                    return 0;
-                }
-            }
-
-            if (false === strpos($command, ' -f')) {
-                $command .= ' -f'.escapeshellarg($this->getReversePath($message));
-            }
-
-            $buffer->initialize(array_merge($this->params, ['command' => $command]));
-
-            if (false === strpos($command, ' -i') && false === strpos($command, ' -oi')) {
-                $buffer->setWriteTranslations(["\r\n" => "\n", "\n." => "\n.."]);
-            } else {
-                $buffer->setWriteTranslations(["\r\n" => "\n"]);
-            }
-
-            $count = \count((array) $message->getTo())
-                + \count((array) $message->getCc())
-                + \count((array) $message->getBcc())
-                ;
-            $message->toByteStream($buffer);
-            $buffer->flushBuffers();
-            $buffer->setWriteTranslations([]);
-            $buffer->terminate();
-
-            if ($evt) {
-                $evt->setResult(Swift_Events_SendEvent::RESULT_SUCCESS);
-                $evt->setFailedRecipients($failedRecipients);
-                $this->eventDispatcher->dispatchEvent($evt, 'sendPerformed');
-            }
-
-            $message->generateId();
-        } elseif (false !== strpos($command, ' -bs')) {
-            $count = parent::send($message, $failedRecipients);
-        } else {
-            $this->throwException(new Swift_TransportException(
-                'Unsupported sendmail command flags ['.$command.']. '.
-                'Must be one of "-bs" or "-t" but can include additional flags.'
-                ));
-        }
-
-        return $count;
-    }
-
-    /** Get the params to initialize the buffer */
-    protected function getBufferParams()
-    {
-        return $this->params;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPtnCk9j56G7S48Kjk0n+NsydvqQAILy5XPcu2G1sCy5mYqXVdp0JWhGPCtHVyk7V+PHmN6E+
+kyBry9pu68G2YdWh/nXZKuojK7SgcIDxmv561SQKPxA+3afcYdb3qC6womE+fso1QSDut/cXXHeB
+25O4k4d+LDUwpYwfEH7jquT5emaOuaA46pP/nDA2w+8fd0bIq+1qMrjW3kfhkucPZwJ0mgldbWOP
+6tXfLTUjPCvwbVa4uUgQfj4Sdho+1UONP8VDEjMhA+TKmL7Jt1aWL4Hsw6zdhUy4pHzzRIqIMUkp
+jzDyczSPIBAdwKJQ8wIm0egFt5MlvvQ2vg4VbFhtS7QWn/v92XiC6Th6S/Nh0VpzCkzruwLb2LFU
+MYmpHMDV3dHWGEk9Kk22Am2JW5fH8kjONq1GTUV/7QW8HFqulwzXlzpojBLZg4X+jrpGMca+llpX
+t93SBqbrtqiNO+Dvw/GetemweKh72n3yfC+7iBQhcZuNGK5flqIdAFYi18R9dFuIOxOj/fwYl3RO
+BQRg7DOl1nFqUE/Sz/TdHmDaptzSGC1OLE1zlKxV6M0Q7e2kTad6H86ZLV8cMr6+lTco6j4xSi4K
+lDt4NgKLgCBja5BzgXHaeMACT5ZGjfhg5ftCZXyf9exQiqSnsLXpGlrtpRgRTk7vLDC88rRzRadd
+xRZyFujFrjNU0Cwl4cl5g7IW5CMo3xaz3XtQIOUrBireE7kJCn0rqHGvS4RCZEflBJ67qN39kWzr
+19YzrXxTsVOWCswNXHpJB6dYcz50Rgz2P55SBATWC0FoEdllZ3b8a5qUZfe/PQAQgdgTUzg66h+s
+GhSGv39SS5E03MlmLBQnj7CdKNHH4OUy9XAFiNPwPxATkUAdTfYqXa8Km0hkqoiR5NL3BDwXAnyt
+c1d8tAow+I572lINMSWAOIYVjX7a+09+QqlX3eBO1VvzpJy7xta3jy0gpyJfWiJAcOuVNkPO/o+Q
+aPI84rMzsvjIOK1JgM1XHa+H13xCrEnXCmUXc2AExAZ1hBzGofqYA0S6CUeWV/YxBj58+hGC82M6
++v6t2r2fQo1AK8RMtyYAaFcVWNPDlgEZ8WDj91WjTpudllrgb4RpvsXdbaPAxu4FFNWSd+wse7Cl
+qKdXvaJodkj7WIuuQ1qRfHeRllVxVk+HuQ0Yf4GSBm9Av125Pk6qgXwMtj3WIXx3YxQ8X1QH0+mv
+5XKGOntRmQiE3Xz63ieEz1fjAyboBSra9dsaA5itVex1/w+VKBjtAIMP0iWpwvir1ALGwCNEikt/
+wLhpGHbaqW47PRvqZewXScJRWFbdeESZ5Ap2h14v6urRxqwn8PnGTbPr/svxvZ7eO35eK4eTv6xJ
+VcslhXFreEyR9GmEZp4ubdZZRqRXmPUKhMCoySg8cqmo3ePoe80OIcYv1XiXMcdAWISeiK+h5gUs
+kRdXjlq5GJ+zriFmZztaYUQ0u/+m9QGqQGdeDb8FYpiPIG51hMWVqrSQsdu7+dx0MrYszl3a+7NN
+HH49x9nIUt6q+ai+xzP0LhZRXEURCGkKuXwv8svEeDyVQPr1DA3P5ckTE6b9aA/k2IX9z0vMnlGA
+ld0ZCRxi2x3Rb7DiQOUKMXdI1psss4jebC1QQv/YC+ovRVqkYwJQym7WemsmwacjwvZBoRx/NLNm
+Y0mlzYMciJt6Dy1v3X3/qE+rGOF3qx6ykkQzWviNEyPz/MSc/LK2AH5vKct0+QWOpicKAW0nMV/n
+vOxzpVAJzkRZttfIbV+wBahqM0TaE4Yf+RjJgkxDAVPrLIbgIzdQkfeM9AsM2FIQw2Q3We5bwB7m
+lveFbIhqmS3/HcM4Yk8cIIf52c2rgnn8pkEui8zY4P3DTFnIbEGlBl4mEoVVQXpifnSWT2Iqj5fE
+eYNSppT70CFROcJ1CPvXIHyPkfSkm3b7JcDQr3I+dkwHr9CzEU8n6zl3+BcekOpxvv56vo2OgdTk
+W/sBOwh07R2EREWOTTT1yhKZmLgvOZ81p+APDTRbfGHRyp5njIi9Sw7NCB/MoWHTLv65ZSDnmpao
+32sAiGEtoFsvNNBmSGfSTUQ45xnMocfsTpUqDoFmwXUafqcq79RqhhyCJ6dTgMWVYKbdNMLleOx6
+WsOu81hyRM80qqwX6QPUle/Dv4fPUrqvc16CEcwbSoVAQvi++zxzkXkAqG7LLYj6FMz4fkmoHKre
+gXQXnwWBWY06ZNeprEEhi07d6ioG3iW/5zf2hyew39fYSVMeAN8r9zfF7y5ZAlwV/Qsz8qB8rS1t
+c0UcRS9Qv93d73zEC8nhkuowwag6kGB2vLiUQiV7mmQzWb8ZEzHVwZazNRbK8rMpu5Rng4PzflLV
+NgR+HfdE9DQnOHniZa0nCFaxYqdBYJI5JxEQMA4NnAv1CTcPEBOws03x1iSE4YokfV5h6LUHwPO0
+p9jfnPo36DokwZHDKaG6MvsVEyMenYQUD7WBjZDAXoNJs7uS2skSSx84jSB4fzrCmeikXEKf9YEs
+bWSuP1bCsPdI83gshTaLkSkuCbeh2ng3JBFrovgVtGX+0RkOa0vCsfN2IwoRPqPpduPyb23EQtSi
+vu0m6qsUKOEYMsJ8cZgObgYhAG8Fdbw05z3Kjao/i5aI7YKvH4TAg3OAQfz3+WL1/VwmJlVAM6xf
+uZHsjygEBm5BEl9FCU4DQ9s5iNgTlwfVralcEL91+ajx9gFTIOxGXLzT13UoFS8HpbscyaYngVp4
+NcPgEeeJr4gc8FMTthjBer/QVtQ3JJi1WUS+WD7+9nYLsmHql8KlBGnCWlvB5QJNvqjzciCXsmuh
+uSrxgtZVmkRFSA+TCAEPhCQwlL/VdcJQ5pE+iq+LxP6wAHyFU7FNBajEq/BWD20jfQYJW4G8L3lF
+36p5+Pe4TUpyIOxC2l5XNl2rjfktvNkKJ6eC9gmE75mQInuUrT+2rH+rh7aD39rRMrY+x4KnYCed
+PlQjlHmt7+JTsDqs2a1YjyJQf2Tnk4/bhmtMEP+wVmFJqQKLQSu+ww7CKBav0VvN4A+0qCFqCASb
+2daFgOvZDpH0EdT8VI9Anp+NUYawX7Gl2WCFptUAbGgOeWkbGGW9ldU0H3awLZReP0ObUleFWUkV
+Ln2qxDi/uzoTjmxKfgx4y64QrE2m8ZSzurRmNg4+pBhwjZZm+9DHytZlaOafKDPqBZSGoZjGsP0s
+VETPSRKjLUP1zZwrR4+6CS8JNvZzpuDu9oiaUqSoRooKmtj846E4kAqq97QilQQ4lPDplc12Mil6
+CLNeWJDwBzgM0c3zbkQAzm1YZ3sTLl9rSba/fB9JBGSh1LZXBrS5TuyPYEraptIMfe0F+HcRsu3Z
+Jut8cwdSlhDgAfT2WnP6A9n9GE/eJpV4d6V0mqTQDbFJDibaE67SBATgGU19h+sOjyoKhEGSRS9D
+7afF/sEg95mgWkSezRxcEBv62kv96Uz0row2hRHldVhTexRVvKXxd6G1xyV8wLKpG4nbo961NIqB
+7iLejBxXqsxpbcvUB/LWzs4P4FOdv3NpK6YHLYhZAPaktBic/Xl/lKGbDFz73lMxMUOKqISBjmMP
+UW6u/eqB6YbfZIs270+sfEn85ah95Yftego8yx9ZG6kceFWqC/1EePafiM3REAAB1FO+V1/QPoIS
+IICoMssIR3tEMbM1v6p6B/pEBjuqHQ50pbB1Cxy/fh2j8/joOWMhVk/33ZlsxA+B+pkvx/fKmY9p
+HNTdbqsFrR9psy4Ecbv0vemz9fstJ2Xlckhhtl6+8WV/fTTRuyTaaD9O1ChtGV8kOysHU1/QmghO
+6fOTjc0zWiA9f8D1Rbky4UJ5XXK0QUk2f1e079b1xsvlaj5EymEENl6rOiW5hIEt6kNKFucw1L15
+yCWkPk20qNAC0R33UofhAgo9TARHQzoHchicAEcPUqq2hK3Adz+4Yt18tBc0kn4EHE+sM/hhWFkl
+foizhpKgOfy0KLnqTq5mq/fHo7KCrLtU4vCIufkTYN34Okcb3dIDUHowszWq1uJ1Eg+Dh5irsCCv
+zwbnz6etC6BjHEp/x9xFTAPOh22CWSrgHZumYVOfxLQnhN47SfzYP6jYD9FTaOSuQo8fV137TJF9
+eDQdORcZrBFAhfAlnRhflRjo+dWiCH5UlY/AtZS3NOgkgcA0mO9cXzbmaNt8qjBCg0c5FyhgBw7H
+S9+dAKK20Ibzh2lpK/JdYPdaPQC66WTgZ3SVvb4I7JZ5vVQPn9dJU/IhWnXLHxj4Nq9ZxDVYxgYQ
+W82nNJ2E0Y872S/I1vM4MdfYHLspV0UmC5n1+qzZAZBrzzhGf0xec1BY3Pv7lkfq1vUHu2hKfszH
+SvrKsbPIgJYOaWSWJklVkl83cO7M8WpncL1W/ef0Il6UfMg2I10uxhVmyi1/3smGYF9ZrChUYslz
+ZXKfyev/5jkygk+PPcZbLpQnqdlkqSfP7RUsQACUB9WrK8bMsEjC/oMxZSBl9v+6AnwonGSvkUhL
+ZWGTkos+cweeKq8PW4DgCs+Vtkp7p8NPJmsxagEhi5DTrYjDuJc9qReeofykobeH/KcDi8p8pNJn
+YqLWh9eL95TgEw5awZRJ5UliCNrrHbAp9rnlk3Pd6LjmawxcJY6L6TJQTIAD0cmuXzUkr3OnH+HR
+Jt6Ylp9taOI5VMC/yBIafE1uDvf0OQLi08Ds++FLURc8VT4+gDUiImbo/Hm/xhb8WxKDz1vBbaUT
+Etc5Ab1YpZV86sZerh0KUbHq/Ya4xMv8k61Q7UDlews1cTyvts+5+lSzOdnelJwS+fIMuHEmQYIp
+x+c8DxXg3UXKXYHV5cGC2MuP4JJx287FyPl+a7/PW6THFctOcwl4agVpaq3kzJetJuwy8LVPBr1w
+rZ0N2F/FkOzkYrZcYAYoQJrRaMFYM4lD2vL3Z6xARxlJDIKMLJ/4ydJ+9/WFJuRwCQ+4htoVEgcl
+FybpcUXjBu6TICDnhDjBq6REJMYURYjrG+BpQ+YK93wHL2R5z0G1kNjdo7k8zEnRDer2krkoDPhY
+N/i3Usjtq+C+pG3aK+NdCO2IS/RXGt42QiLsHNaAag/v+XlHEn42m9UcUsAdEsPl1Fj2oUgNb5hX
+Ch4X6OtEGRzrFtu3u9FRkgUYhHZV3fZhubPJz3lDIKyuuKNND1MfZ0DOOdUtCAcvCLb/axXnwF7M
+OlhXnZWlhGM6z9VITFD0y7TBx8CaEBpKToDpC6uTvpLv3A4cotO9BleFM+Xq7MNBfPum2NjJ7qjP
+BKFyqcEoevuneND+TLt+GnUAlApF93wtxfmwxw2YNS9NGPPX3Z6FK5xVv3QwqRvdDOAxK8To4Ent
+qVpHKO6i5sCaKmCpOWk7YJDKS4KBu6LGKvBhA5ZtEBbe4pZ5jLuM0FlIohLKmy4bPiTkEelGgMKC
+NxAqQqz/a1//rYBm3MzxWuoileiOVhmaHRCgr8rdprQS/jiNU17kE5qPSPKD4j+7/W6zEf5jPdlP
+LwZcmvD2fMgGjUpFI58uqE5USL1sMvdS6YVSn+1I4/mR/0FrvsxzFypAseJ3fm3eKRquaoRb6FEy
+19OeSvTzw2h2/O9HzWhH1AcZGXaZdeQHtQQ+J1PV9PDMSaP2O1KtD6PeobVGGNxJ0LUaIKKnHOsR
+FP4CoR++Q9p5fOU39x1jsQSMdk4zZKaGQEMZ41hy2TvtjTdXgVxenb5jTRiiEtDQd/lQWKXMIr4d
+TpyY/SdsuGtTNE50fwtEZhVXZkiPGtTL6aJ9ksIpOhSp21892fdYR7toab/jTiY12iOuk1q+IM/W
+Xd3OsD9uLKr9Vo5MwBE7dfCozywOcqGh/K0d65k/VVX+M3eEUPE4Ln4q1ubZj8XOFL0s0fVHlmHB
+0cKVJFwEcpj5W0HYg32cQJhV5sBR9fN4QWJ6Br2fe+vpDexnp13NSDMtvnis3sRfa7Hwo59aWF4Z
+k9WUKsYPp/M4lUGMrbjLpZsckrtGGZ4BW0fjIl3d+Eup0Pvncmp9L8cDyZHQQuEfo9N571QGjzhs
+buWDcoyQcRb9OQNE7iH6zK+Ixlz4x7Eez0FldISom7+NYc5lZMV/cU9wmBgF1KWsCJEe/0RdxDXS
+Zs2Nrian2PtXdOg/BjHnNf/w1I8Ug97K5jpz5r1wMoGDIOr0W5kerl58Uq+GMaPBingFv5SlbKpK
+gKhLJnv+PdERNqnYTE0dA6CFBsmuMWnDK9ZxXjw2L+DWxAXoC/D31hDJ2D4L5w/G7pwJKFJ1GAPT
+NGZD3PxN75y+iFve6mRmM0YjIhAlHX2xnRcf7bxiYNXXRX0oef6i2MJ/u/m4LBjR6c62mBI13iEc
+VylBh8uOjG/Xgr/WcKwh8Dpv1Uu7VG+Ue9/A8/ON5R3PXyWTwytFgcicD+g+vsUOQ3QkJ5DEUV8M
+sj3Zn851KxlAwuk9

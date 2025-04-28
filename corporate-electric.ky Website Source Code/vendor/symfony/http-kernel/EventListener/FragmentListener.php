@@ -1,99 +1,63 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpKernel\EventListener;
-
-use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpKernel\Event\RequestEvent;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
-use Symfony\Component\HttpKernel\KernelEvents;
-use Symfony\Component\HttpKernel\UriSigner;
-
-/**
- * Handles content fragments represented by special URIs.
- *
- * All URL paths starting with /_fragment are handled as
- * content fragments by this listener.
- *
- * Throws an AccessDeniedHttpException exception if the request
- * is not signed or if it is not an internal sub-request.
- *
- * @author Fabien Potencier <fabien@symfony.com>
- *
- * @final
- */
-class FragmentListener implements EventSubscriberInterface
-{
-    private $signer;
-    private $fragmentPath;
-
-    /**
-     * @param string $fragmentPath The path that triggers this listener
-     */
-    public function __construct(UriSigner $signer, string $fragmentPath = '/_fragment')
-    {
-        $this->signer = $signer;
-        $this->fragmentPath = $fragmentPath;
-    }
-
-    /**
-     * Fixes request attributes when the path is '/_fragment'.
-     *
-     * @throws AccessDeniedHttpException if the request does not come from a trusted IP
-     */
-    public function onKernelRequest(RequestEvent $event)
-    {
-        $request = $event->getRequest();
-
-        if ($this->fragmentPath !== rawurldecode($request->getPathInfo())) {
-            return;
-        }
-
-        if ($request->attributes->has('_controller')) {
-            // Is a sub-request: no need to parse _path but it should still be removed from query parameters as below.
-            $request->query->remove('_path');
-
-            return;
-        }
-
-        if ($event->isMasterRequest()) {
-            $this->validateRequest($request);
-        }
-
-        parse_str($request->query->get('_path', ''), $attributes);
-        $request->attributes->add($attributes);
-        $request->attributes->set('_route_params', array_replace($request->attributes->get('_route_params', []), $attributes));
-        $request->query->remove('_path');
-    }
-
-    protected function validateRequest(Request $request)
-    {
-        // is the Request safe?
-        if (!$request->isMethodSafe()) {
-            throw new AccessDeniedHttpException();
-        }
-
-        // is the Request signed?
-        if ($this->signer->checkRequest($request)) {
-            return;
-        }
-
-        throw new AccessDeniedHttpException();
-    }
-
-    public static function getSubscribedEvents(): array
-    {
-        return [
-            KernelEvents::REQUEST => [['onKernelRequest', 48]],
-        ];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

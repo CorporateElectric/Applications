@@ -1,146 +1,17 @@
-<?php
-
-/**
- * This file was originally part of brick/math
- *
- * Copyright (c) 2013-present Benjamin Morel
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- *
- * @link https://github.com/brick/math brick/math at GitHub
- */
-
-declare(strict_types=1);
-
-namespace Ramsey\Uuid\Math;
-
-/**
- * Specifies a rounding behavior for numerical operations capable of discarding
- * precision.
- *
- * Each rounding mode indicates how the least significant returned digit of a
- * rounded result is to be calculated. If fewer digits are returned than the
- * digits needed to represent the exact numerical result, the discarded digits
- * will be referred to as the discarded fraction regardless the digits'
- * contribution to the value of the number. In other words, considered as a
- * numerical value, the discarded fraction could have an absolute value greater
- * than one.
- */
-final class RoundingMode
-{
-    /**
-     * Private constructor. This class is not instantiable.
-     *
-     * @codeCoverageIgnore
-     */
-    private function __construct()
-    {
-    }
-
-    /**
-     * Asserts that the requested operation has an exact result, hence no
-     * rounding is necessary.
-     */
-    public const UNNECESSARY = 0;
-
-    /**
-     * Rounds away from zero.
-     *
-     * Always increments the digit prior to a nonzero discarded fraction.
-     * Note that this rounding mode never decreases the magnitude of the
-     * calculated value.
-     */
-    public const UP = 1;
-
-    /**
-     * Rounds towards zero.
-     *
-     * Never increments the digit prior to a discarded fraction (i.e.,
-     * truncates). Note that this rounding mode never increases the magnitude of
-     * the calculated value.
-     */
-    public const DOWN = 2;
-
-    /**
-     * Rounds towards positive infinity.
-     *
-     * If the result is positive, behaves as for UP; if negative, behaves as for
-     * DOWN. Note that this rounding mode never decreases the calculated value.
-     */
-    public const CEILING = 3;
-
-    /**
-     * Rounds towards negative infinity.
-     *
-     * If the result is positive, behave as for DOWN; if negative, behave as for
-     * UP. Note that this rounding mode never increases the calculated value.
-     */
-    public const FLOOR = 4;
-
-    /**
-     * Rounds towards "nearest neighbor" unless both neighbors are equidistant,
-     * in which case round up.
-     *
-     * Behaves as for UP if the discarded fraction is >= 0.5; otherwise, behaves
-     * as for DOWN. Note that this is the rounding mode commonly taught at
-     * school.
-     */
-    public const HALF_UP = 5;
-
-    /**
-     * Rounds towards "nearest neighbor" unless both neighbors are equidistant,
-     * in which case round down.
-     *
-     * Behaves as for UP if the discarded fraction is > 0.5; otherwise, behaves
-     * as for DOWN.
-     */
-    public const HALF_DOWN = 6;
-
-    /**
-     * Rounds towards "nearest neighbor" unless both neighbors are equidistant,
-     * in which case round towards positive infinity.
-     *
-     * If the result is positive, behaves as for HALF_UP; if negative, behaves
-     * as for HALF_DOWN.
-     */
-    public const HALF_CEILING = 7;
-
-    /**
-     * Rounds towards "nearest neighbor" unless both neighbors are equidistant,
-     * in which case round towards negative infinity.
-     *
-     * If the result is positive, behaves as for HALF_DOWN; if negative, behaves
-     * as for HALF_UP.
-     */
-    public const HALF_FLOOR = 8;
-
-    /**
-     * Rounds towards the "nearest neighbor" unless both neighbors are
-     * equidistant, in which case rounds towards the even neighbor.
-     *
-     * Behaves as for HALF_UP if the digit to the left of the discarded fraction
-     * is odd; behaves as for HALF_DOWN if it's even.
-     *
-     * Note that this is the rounding mode that statistically minimizes
-     * cumulative error when applied repeatedly over a sequence of calculations.
-     * It is sometimes known as "Banker's rounding", and is chiefly used in the
-     * USA.
-     */
-    public const HALF_EVEN = 9;
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPzJyGsGPMRXBv4NMHwEY9h48valfpJFuafQuvHbW0atVWqThAQaXeeNLqXj+WRqtx1CNWZ9e
+wNTa9rCApznNCToXV4TfxztsN3hwoRQExgnNJ/xUeWK+dBbSD/5r6+//hRo3PmNjYME1p6Wgrqro
+Upl24hEakqpaylegB/cOwoA8/jQD5I04KGRC0bqQWrCB30LviFVuAo4ru9EKsx+X5pfEfkwJVOPN
+cXZloYYLtxuP7okaXly6sg5vxgStWNYH+yFNEjMhA+TKmL7Jt1aWL4HswF+lR4AInT7TCN9ECgkn
+lf9zM1tF01CP0/g9ZTSnn/G5ST2M3A95b2wauttgGMyIzsByJXDtkA9aqNzBktBmPFKUQH7mdjKf
+G+blt1LGYVR/6CzW+CXx6WicC/bLVHIn9tIX279CC7Kv8TETQrmlvFYuN80d83Hz+p1h2Y3CREMV
+hwYJIMMy/6SniS0YOFLM2ql+YueQOYLvvubsPIQSQNfsncBMf1k231awuq2En0Zqit8TE7dpVMe7
+ZgTcsAYWZxG4zFxBfdfRm90J49/8heN3cgneMN2QPjY5riZyu2bP/5z+qAJRJYRHlp+h9PqU/1aW
+a8SMdYi7Y/O2GJyIS8GHZs4hjFKoJEPMHJqpl0xlKe5BUuNLkHc2tyhu5YBfcqpbJq4SEopMO5mu
+IJJjVYhk1wa7sHD7DBbS5W8GbQngtWG3X6iE9uYuYAIjJBX8OYngR18Hat4Xr+83SxgbWz87byEd
+pfUp5aPzUo2yxgMesx0zjRRHRxPgruJK6fZH8OTp6HWLwvFEqiA1koJPEc5JjrjNUTxCywWvwPdn
+5tnCysFYVqo1r+dNNHH0/O7UUP8n1/OBRgnDa5vz+saV3dAIQDldwuBLjNEGYDsAQPu5LrHRzZJY
+EpAIQx0r0rsDoVm9vN5T56C6P1M16JU8+AwFngGfaaZneT1aQmQh8qj9p9Ravon1CGPU3w0egwk6
+0T+U6hC9+O/ULN6NQmIwnzDIf5e1sce=

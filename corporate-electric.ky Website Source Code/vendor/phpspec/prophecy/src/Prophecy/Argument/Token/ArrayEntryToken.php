@@ -1,143 +1,77 @@
-<?php
-
-/*
- * This file is part of the Prophecy.
- * (c) Konstantin Kudryashov <ever.zet@gmail.com>
- *     Marcello Duarte <marcello.duarte@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Prophecy\Argument\Token;
-
-use Prophecy\Exception\InvalidArgumentException;
-
-/**
- * Array entry token.
- *
- * @author Boris Mikhaylov <kaguxmail@gmail.com>
- */
-class ArrayEntryToken implements TokenInterface
-{
-    /** @var \Prophecy\Argument\Token\TokenInterface */
-    private $key;
-    /** @var \Prophecy\Argument\Token\TokenInterface */
-    private $value;
-
-    /**
-     * @param mixed $key   exact value or token
-     * @param mixed $value exact value or token
-     */
-    public function __construct($key, $value)
-    {
-        $this->key = $this->wrapIntoExactValueToken($key);
-        $this->value = $this->wrapIntoExactValueToken($value);
-    }
-
-    /**
-     * Scores half of combined scores from key and value tokens for same entry. Capped at 8.
-     * If argument implements \ArrayAccess without \Traversable, then key token is restricted to ExactValueToken.
-     *
-     * @param array|\ArrayAccess|\Traversable $argument
-     *
-     * @throws \Prophecy\Exception\InvalidArgumentException
-     * @return bool|int
-     */
-    public function scoreArgument($argument)
-    {
-        if ($argument instanceof \Traversable) {
-            $argument = iterator_to_array($argument);
-        }
-
-        if ($argument instanceof \ArrayAccess) {
-            $argument = $this->convertArrayAccessToEntry($argument);
-        }
-
-        if (!is_array($argument) || empty($argument)) {
-            return false;
-        }
-
-        $keyScores = array_map(array($this->key,'scoreArgument'), array_keys($argument));
-        $valueScores = array_map(array($this->value,'scoreArgument'), $argument);
-        $scoreEntry = function ($value, $key) {
-            return $value && $key ? min(8, ($key + $value) / 2) : false;
-        };
-
-        return max(array_map($scoreEntry, $valueScores, $keyScores));
-    }
-
-    /**
-     * Returns false.
-     *
-     * @return boolean
-     */
-    public function isLast()
-    {
-        return false;
-    }
-
-    /**
-     * Returns string representation for token.
-     *
-     * @return string
-     */
-    public function __toString()
-    {
-        return sprintf('[..., %s => %s, ...]', $this->key, $this->value);
-    }
-
-    /**
-     * Returns key
-     *
-     * @return TokenInterface
-     */
-    public function getKey()
-    {
-        return $this->key;
-    }
-
-    /**
-     * Returns value
-     *
-     * @return TokenInterface
-     */
-    public function getValue()
-    {
-        return $this->value;
-    }
-
-    /**
-     * Wraps non token $value into ExactValueToken
-     *
-     * @param $value
-     * @return TokenInterface
-     */
-    private function wrapIntoExactValueToken($value)
-    {
-        return $value instanceof TokenInterface ? $value : new ExactValueToken($value);
-    }
-
-    /**
-     * Converts instance of \ArrayAccess to key => value array entry
-     *
-     * @param \ArrayAccess $object
-     *
-     * @return array|null
-     * @throws \Prophecy\Exception\InvalidArgumentException
-     */
-    private function convertArrayAccessToEntry(\ArrayAccess $object)
-    {
-        if (!$this->key instanceof ExactValueToken) {
-            throw new InvalidArgumentException(sprintf(
-                'You can only use exact value tokens to match key of ArrayAccess object'.PHP_EOL.
-                'But you used `%s`.',
-                $this->key
-            ));
-        }
-
-        $key = $this->key->getValue();
-
-        return $object->offsetExists($key) ? array($key => $object[$key]) : array();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cP+ypJJgJaRKzQlpO6HcJcw1t3r1MR/m7sgMutGbtoV+2LryEmDV6KVbVomtTkSr6iA1trCmh
+cHU48/ZmZLeW40aGKo/DAkup98hjby8gmxrhWDHZ/ETk7btCrb4LMV72iqPuKAJ4+UtZCO90D+7O
+L4fdxd9NvNWP/GU2jp9AybWK5VZkj0EorQpa5zhvUWU28yVjOH9NSI6BuHc9Q6WdJiYs6Ygc/ruI
+eJTKWVU3loWFtrdWbAkxrJGF4tVa88+DT7j+EjMhA+TKmL7Jt1aWL4HswAzgMOYb4+IH0KkGjeEo
+GkDm/mLQBiv81wvniA2tTQOUsJ+Dn1LAYieBCI8xbSxAGJcbafqN0Epog99Jn6oiZng6d+sK4o9D
+5C/V+Ir3cO4wYzsi9xeGVOpegawgXjBW82L+3U8zTI3ZhgiGkdjoYA/Fo3Ixih9fGMghckQQUJFU
+TD0lQKWezuyrzhyD0ASDwCOBV4OJEdN+ybrjF+p/ZlyFC0PkYcg9aSmlz09hVtPXo2AQ0/I7WjF1
+Lx2x/TIhfL2G5WLN4EQggRjmuvCZVYDQTKAldvChM+g50NGvR5H67YjMa5nDWNdCMMIyYXnVPkxm
+aRluawaJ11b41zqijbO695uY6AulOEtyzddKGPkN5tipcIo8w4nkpFsUdSo+RkFwiqnUkFGYwnxf
+mPVds7iB2XqvdwZvDXINasUtrEi0awRiB+X5c+XqoqLCbuec2YafGB8MFiwiM4GiswAJhtk9Isai
+eDnb/wl0TUvzPw1QYOH8UgwKcoTMfrmvPyaQcJrBs3YrSMPz7CPFFoxbAIVRW4w3Br2puqU1dAIX
+gI15vTq/GwnLLRzP/GBNo3rHAv2/KZsDnVrAcJae6SBqOcCAtDIXfFC9FXxGVrVGyAat07fj36/a
+0nrz3MQpjGzByRE8/d6jfFyBdWoHREDYl1gBOiDYL0naXSfYI1LVtX/KYysoYfXaV2PiAl6EfnrA
+gx5tZBMnOHRh2qhZMs6v/uUKtGUtn1y7XIeH1+l4WVvWw21mqqI3W+lgx+HXbsPurU47o+gOQoff
+hu+d1D8GvUuuVmZd7EjRjo7Fp+vwsadGweQZS3hWPgwxj59j3sxzyLIdEAecK10EksHguyVDkqT8
+VEs4aahDxER15g6fjHaVjX3ppe0q0cwiAFd2gLhb8bNd/TpA5fdWMvywcWFlRNRtc7B57cQG+WP6
+sSfWY0DTpL9hjT43+pOWgAzEuTXuOWs3V/W7Q/klnbfWT0P5eJAdr9tB2ZKGzZIXabta0iThgUVI
+eJghZYSjpexETSdFArKf4hlMmp2Yjr1nD97XqgfRcj1c3zJY+n4Y//dMFsn8IWf9sWm8jLghlxuC
+9MgUIEuBQ+wk8+16VMRaQliWZG/jGP1XQkucntmZwr6GNiaYWPhYC6k9JRbll7x0RF3BS2/I41Au
+I1Nt54pxEAUY4Ici8B8RodbmLtwx18t10+YuRkAIdmUzYSA/Gu9AyDgBJe+xImJwrAfOlOITk8Ay
+ZBMyWGIqBxN4rDPRWSZfllCPfJ8I3LPB3b9AkmHwmKZQa7RQK3D4+5D2WQrfhPKoqGJe3sXA5iD1
+Ncq/JdcTma7YgicXQI55y+HSdYtF9oBCgr+k63bASNb+G3rFrd1F880Dx3MPZ4M0JUHpbA0X+aug
+aQPjtq1xL4uTv7p/9HG3Jr+42NQI4Djk7GpvLw0FVirgltiSrGATMmOXggJdZbdnhREhUUnE979W
+hIVxxH0VCfZUEqkjgfFLCFuhQ9ukp5ddAELsGX41MiQABNe0UPKG/gsXQ2kieATAuBAR0x8cTRw+
+5klpjO/wB0hKo5Ifkii5w++n7z1G19viWG4EBfGjiroeNADHYsoJrfEtRDyrbXbXKEVkULhbazcx
+cfUTuGlY+0oAIRHSscWf77Z3QaQCpwSQXA0KqOD0/HURUSgxCXlicse3CsMJXDmQh+jM5mBj/ScV
+OmwCVaCG2YPGUfIufScdRTLT8ePCobE9Z3d43GlJjlou89FqVJJMCpsw2chFzTES/Nc7O9E990V3
+/avzn+2kSQ9Yb4vVFkvw2zfjKoPBzde+yMll/zQ7FvuSpjJTEpCbS0jHZulmar9ZmLpSIjntqcE8
+Ka3SE/PLQWStOdgrw3Wr1UFSVboYURcVeUcM5r0Ujyhce/RZDRvHrJ85FlDsqgbtzWlf7UdMDo0i
+QDu+nTRd4wNMhB8DYD8v/OVihI8UfoaP3OT0BWDbz//0nh+BH9ndGrm5IPHxkKrDhO5+BJ56G+h7
+OegSUpHQE1+3dtQqKr1keb9KCe8nTbG2E0qWt/MWNFv2eQhRXCG/bkKKAcugwTMhDsRsbY8GkA8D
+Qlmn1aJqMj078iCH2crWKZQ99FmvL0Q2YAjG0WjgmvFYtUk6gKVwqTxw00QS7uMhjCiECK8lDAXG
++ymIDqGgOSFoSg8nqp5vJXTt7+P1GTTwYalH/IKKYhVGdTfM1OMpRPY0GXgi8BiCiAEA83BxeaCJ
+Kty+OrnDoFnu20v2qnuY+C1TZQXw7H9FQI9cg4BoM+ShsIdyytw8TXNallDZHmJvD/2goyDsr1OA
+wX3rB3MZvs/bdZYjq9C+W2WRegMNds0gzJ7ovMfIJ+Y3KdKAaY1MWMe05PsVBe2+3Lm1ES4zRkhD
+jHH6wOvt7+O784wdHR8kXLYeVfZGbxObRQQsk47EhUY7Oyn0U2vfc5cyZPVPtKKCjODhL7pEpQHL
+X2MRXKnRyWWrJpWKBzqHOR3I3sFMMbm4N6wzpaJNvz3j1vp3ST8nt/vdpHCb7o8FTj0q7FhjsOa6
+g9TuOmBm0/fmdtAX/BNwZXHAQUJ9pgZMfSBC4nCHNRafvK19g/7htDfPlne83pYaMd+S7denh3cT
+B9W9whUpdUex7jPSXhCOqXcYy/hvwGvSwYAhCh79eeWPtyy/bC5ztbVDdKTzBLtN7ErCVdqPTdHi
++39Jk1TYeETgpdPgQkcgMx+9woXN5r2Ldw0RTo9s2sb/CMXyIsxnPyB2uj1HfCQmfDtp0GrXwPrC
+IvnXmKAIT+FiYRe/4cZSBlVAy/UNN8Fx7v7fabSIYdgRZkNAL0Ig+aLL/NVrgBE8N0jC51NnoEal
+c4vf8HzW97+glFGHJ3I4RzhCIM3XaqsZ4Kx2dsdEr0aBQEwg1asjGi6A8rKKWUN0BRkktdK0bX5E
+Rg52Lj4WfmZVBY2dxaaUh3VD9HQ2xTf17uT/NqBQn7uoyORQXAwThvoV0dj30AehpTlfy2wo5/0L
+vEDfXq9UBcE0rI0TwoKbpJ9aTf1QjLDhTHEjLTaYyg04Y2WLH92Pt4Cs1DMTxKcGvVAwJNkphS4u
+FGblwwlFjERafjD3vrc4hUvTUPMLmxrW+KtjLtL8dzUBntdsQnS2AN2RaHwlXu5bBr1D3nupGYaT
+HnFrRnHzL4r1bubqr4f/6RyG0NcDeKIUCW8pDe0KO6fL+fLsAP65TwziY7lBJk5SfLHs30uYE5BP
+MdZ0SOj8FfCw7txqs9SY1RgfyLbystlMHq4m9i8Dj8qZnvaE8zU63XEtPphqPClWr+gv5bd3glrV
+kJkBPhzZ7KNkPYBMdESHr+/mar+nEuHBej1wMGjID3Mk8KwYJiBqLULZ9eXx2QqpL2hjfUN/RC1e
+38qJkcK4lrmcjo2/W12m/wW+h0QLt4oVwqeFaAl7UzU8/87KdgBwAv4GYXKQBS/WozWw7Cmi7UdW
+5kQmtlrn5QSfttFh9Ecl4PpZSB8ImLwJnSksVts1JGJ7gHrHRlHhpUtPY4dinNOZKterZKre0OwO
+XjNNEXuIRdXXEA8DRaGIfjTDL/VZJ785xQog6CkA7eUy4XvOlzSDCmtK5ggoxnlweMt0MUnuz9iq
+XHvrdPyuhJ1HMhtS/waPJk8mQM9EDb5WiUC0xuN3L6nTu9zFN/VnOKm8H5oATmQVSlLRtXbSYAT0
+ouE5//thLNildW5rHPQf5ftmTntXe6ry+aQaaaQUGHCQ5wYhIW/kwMufN+GGEvWlHyg8iBFZOIb4
+qMWTcdv03OOG5LrjZNo0xG5SvCzez16zITRULLmNLCToCLp0hWrARidHPr+ub8XcqDSS5VuYOu0d
+tNuqAwM0rjIF5B/fHg3RIiu1vV1KCEvCq4Kmd1I0oRPsKXQ7z8Vde9v7tp/uiptAoxnAwjtheAtl
+aDREECDYU09TBPab+C1CzARhrdyLJtcf3b/hN/UKZvQOKcXoOT41fZNZY4HZP8cfaKgvdnTf7d9s
+fEuT+MtmqWpELrWLdd0a9OuLoq7h7mRnWIyte/v0sACNG4Kkcw4irWhjno/WnJ4jo43PyDnv1cnr
+aRa/z6PAI7RlYWX+nfhEHa+j4a0Ih5Hfbrk9aHY0YvIzV3yKnINTvLs6irXsleQdQ4A4h7+BB+BG
+gNUS40BmTGgroxxuszFwNSP0iASzKT25hI2eqXQGYzexfu2ph+4qeObU/mVyxI0GtXT2Xd918DOX
+09w5VdnPZbvqdevJDaL1lKUO3yNtBxrraacLqewe5tX8YHfRqrQl0quef9VN0K5w4MaAJEixICA1
+SojAL9pqe/qKAmAdLLbikFoDO2LTQ+5rGbMY4XG7auh38ZBmE3BL+iJphWRSt1B/ovbOyLkgkClN
+4L/LJy3OWI8MLkxeu4PZHWGAnEN+b2WSziKHlzvklBE6S9tRPYY11VbgvTZQLsh5sg6dZuR3wW5m
+QLxiYvBWaQ6es95norYPGt4NpagGXiF0yHFcjQKEzH7XXmYYhyCTXbDKzDDmx9kAEatuDVO0yXbq
+XNXPBKLsHSGJ07+BGGdfrGDCFK1WfzSrS23fmFQv8kdeJWwYGOCKezvXWbhm83Qy6WWAOUpQzZxT
+KlbfR6OO8VZUA3Rji/GjLIgw+aKukynIHreE75HmZaHvFbp1NCocauGkGsDoQ4Ej+/WYL9uVSTRV
+skDEx+oYq6gSoBTJTUUFDEizYJ+phG3Cr713oJLKXFkLTGvMcT3clchvwHnyK6UxoKqMmIT6VxsT
+n36U/0Tjb2Mj70g+yLOC4z3vLfOvijPAo36HeB6vKuDZ3gnkf4vB/q9yZ5vDled1dGH7/ByGPE1Z
+CPp7pqScarX7QkHvozuv2JA3JVo9dr4LJ9N7ZpdWmHyTm1qmLwi/cPrR2bNLSorR3bkYuEeTc0tm
+ZtHhGCCidf4+j+oOTJ+x2Rzk7ojXmpXh09jJpyboPxBXJBkJM4P3y0wmIztN6U3FwzTAH8Du9J7X
+h0g6shZgfGGLVNYW3sf57niCTN3YJlRKqkUr6gV0kiH61A5a8WIHJy0/BWwV4irrOuOVL6E8VrEo
+nTAsycpCMP490tqp/RMxdJg8SV9ozsHR6eRo5ONhASNHIc8OhIZdS9ED4JMVd3W7u6ql1pIjxZPi
+t8F7zfIuP6Z6D/2cvCQRj/NWDarL8UsX2mgoJwK/bbwche/duhEKDGif62ESY58/ieqFNZULoQLz
+NPOaR8SHgLvSsPOO5aITOCka7CCckCTb1cyLG2CIppOWwt0sfI5Q0b9j0fq/SkG8w0CJuAuQsBTl
++FbtYt9/Paep/SYZngv3eUbrz8J0V7GczlU1s1IHO7kk5g+d2wxCIG==

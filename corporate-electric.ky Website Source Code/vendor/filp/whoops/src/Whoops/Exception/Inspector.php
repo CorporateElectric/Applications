@@ -1,323 +1,139 @@
-<?php
-/**
- * Whoops - php errors for cool kids
- * @author Filipe Dobreira <http://github.com/filp>
- */
-
-namespace Whoops\Exception;
-
-use Whoops\Util\Misc;
-
-class Inspector
-{
-    /**
-     * @var \Throwable
-     */
-    private $exception;
-
-    /**
-     * @var \Whoops\Exception\FrameCollection
-     */
-    private $frames;
-
-    /**
-     * @var \Whoops\Exception\Inspector
-     */
-    private $previousExceptionInspector;
-
-    /**
-     * @var \Throwable[]
-     */
-    private $previousExceptions;
-
-    /**
-     * @param \Throwable $exception The exception to inspect
-     */
-    public function __construct($exception)
-    {
-        $this->exception = $exception;
-    }
-
-    /**
-     * @return \Throwable
-     */
-    public function getException()
-    {
-        return $this->exception;
-    }
-
-    /**
-     * @return string
-     */
-    public function getExceptionName()
-    {
-        return get_class($this->exception);
-    }
-
-    /**
-     * @return string
-     */
-    public function getExceptionMessage()
-    {
-        return $this->extractDocrefUrl($this->exception->getMessage())['message'];
-    }
-
-    /**
-     * @return string[]
-     */
-    public function getPreviousExceptionMessages()
-    {
-        return array_map(function ($prev) {
-            /** @var \Throwable $prev */
-            return $this->extractDocrefUrl($prev->getMessage())['message'];
-        }, $this->getPreviousExceptions());
-    }
-
-    /**
-     * @return int[]
-     */
-    public function getPreviousExceptionCodes()
-    {
-        return array_map(function ($prev) {
-            /** @var \Throwable $prev */
-            return $prev->getCode();
-        }, $this->getPreviousExceptions());
-    }
-
-    /**
-     * Returns a url to the php-manual related to the underlying error - when available.
-     *
-     * @return string|null
-     */
-    public function getExceptionDocrefUrl()
-    {
-        return $this->extractDocrefUrl($this->exception->getMessage())['url'];
-    }
-
-    private function extractDocrefUrl($message)
-    {
-        $docref = [
-            'message' => $message,
-            'url' => null,
-        ];
-
-        // php embbeds urls to the manual into the Exception message with the following ini-settings defined
-        // http://php.net/manual/en/errorfunc.configuration.php#ini.docref-root
-        if (!ini_get('html_errors') || !ini_get('docref_root')) {
-            return $docref;
-        }
-
-        $pattern = "/\[<a href='([^']+)'>(?:[^<]+)<\/a>\]/";
-        if (preg_match($pattern, $message, $matches)) {
-            // -> strip those automatically generated links from the exception message
-            $docref['message'] = preg_replace($pattern, '', $message, 1);
-            $docref['url'] = $matches[1];
-        }
-
-        return $docref;
-    }
-
-    /**
-     * Does the wrapped Exception has a previous Exception?
-     * @return bool
-     */
-    public function hasPreviousException()
-    {
-        return $this->previousExceptionInspector || $this->exception->getPrevious();
-    }
-
-    /**
-     * Returns an Inspector for a previous Exception, if any.
-     * @todo   Clean this up a bit, cache stuff a bit better.
-     * @return Inspector
-     */
-    public function getPreviousExceptionInspector()
-    {
-        if ($this->previousExceptionInspector === null) {
-            $previousException = $this->exception->getPrevious();
-
-            if ($previousException) {
-                $this->previousExceptionInspector = new Inspector($previousException);
-            }
-        }
-
-        return $this->previousExceptionInspector;
-    }
-
-
-    /**
-     * Returns an array of all previous exceptions for this inspector's exception
-     * @return \Throwable[]
-     */
-    public function getPreviousExceptions()
-    {
-        if ($this->previousExceptions === null) {
-            $this->previousExceptions = [];
-
-            $prev = $this->exception->getPrevious();
-            while ($prev !== null) {
-                $this->previousExceptions[] = $prev;
-                $prev = $prev->getPrevious();
-            }
-        }
-
-        return $this->previousExceptions;
-    }
-
-    /**
-     * Returns an iterator for the inspected exception's
-     * frames.
-     * @return \Whoops\Exception\FrameCollection
-     */
-    public function getFrames()
-    {
-        if ($this->frames === null) {
-            $frames = $this->getTrace($this->exception);
-
-            // Fill empty line/file info for call_user_func_array usages (PHP Bug #44428)
-            foreach ($frames as $k => $frame) {
-                if (empty($frame['file'])) {
-                    // Default values when file and line are missing
-                    $file = '[internal]';
-                    $line = 0;
-
-                    $next_frame = !empty($frames[$k + 1]) ? $frames[$k + 1] : [];
-
-                    if ($this->isValidNextFrame($next_frame)) {
-                        $file = $next_frame['file'];
-                        $line = $next_frame['line'];
-                    }
-
-                    $frames[$k]['file'] = $file;
-                    $frames[$k]['line'] = $line;
-                }
-            }
-
-            // Find latest non-error handling frame index ($i) used to remove error handling frames
-            $i = 0;
-            foreach ($frames as $k => $frame) {
-                if ($frame['file'] == $this->exception->getFile() && $frame['line'] == $this->exception->getLine()) {
-                    $i = $k;
-                }
-            }
-
-            // Remove error handling frames
-            if ($i > 0) {
-                array_splice($frames, 0, $i);
-            }
-
-            $firstFrame = $this->getFrameFromException($this->exception);
-            array_unshift($frames, $firstFrame);
-
-            $this->frames = new FrameCollection($frames);
-
-            if ($previousInspector = $this->getPreviousExceptionInspector()) {
-                // Keep outer frame on top of the inner one
-                $outerFrames = $this->frames;
-                $newFrames = clone $previousInspector->getFrames();
-                // I assume it will always be set, but let's be safe
-                if (isset($newFrames[0])) {
-                    $newFrames[0]->addComment(
-                        $previousInspector->getExceptionMessage(),
-                        'Exception message:'
-                    );
-                }
-                $newFrames->prependFrames($outerFrames->topDiff($newFrames));
-                $this->frames = $newFrames;
-            }
-        }
-
-        return $this->frames;
-    }
-
-    /**
-     * Gets the backtrace from an exception.
-     *
-     * If xdebug is installed
-     *
-     * @param \Throwable $e
-     * @return array
-     */
-    protected function getTrace($e)
-    {
-        $traces = $e->getTrace();
-
-        // Get trace from xdebug if enabled, failure exceptions only trace to the shutdown handler by default
-        if (!$e instanceof \ErrorException) {
-            return $traces;
-        }
-
-        if (!Misc::isLevelFatal($e->getSeverity())) {
-            return $traces;
-        }
-
-        if (!extension_loaded('xdebug') || !function_exists('xdebug_is_enabled') || !xdebug_is_enabled()) {
-            return $traces;
-        }
-
-        // Use xdebug to get the full stack trace and remove the shutdown handler stack trace
-        $stack = array_reverse(xdebug_get_function_stack());
-        $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
-        $traces = array_diff_key($stack, $trace);
-
-        return $traces;
-    }
-
-    /**
-     * Given an exception, generates an array in the format
-     * generated by Exception::getTrace()
-     * @param  \Throwable $exception
-     * @return array
-     */
-    protected function getFrameFromException($exception)
-    {
-        return [
-            'file'  => $exception->getFile(),
-            'line'  => $exception->getLine(),
-            'class' => get_class($exception),
-            'args'  => [
-                $exception->getMessage(),
-            ],
-        ];
-    }
-
-    /**
-     * Given an error, generates an array in the format
-     * generated by ErrorException
-     * @param  ErrorException $exception
-     * @return array
-     */
-    protected function getFrameFromError(ErrorException $exception)
-    {
-        return [
-            'file'  => $exception->getFile(),
-            'line'  => $exception->getLine(),
-            'class' => null,
-            'args'  => [],
-        ];
-    }
-
-    /**
-     * Determine if the frame can be used to fill in previous frame's missing info
-     * happens for call_user_func and call_user_func_array usages (PHP Bug #44428)
-     *
-     * @param array $frame
-     * @return bool
-     */
-    protected function isValidNextFrame(array $frame)
-    {
-        if (empty($frame['file'])) {
-            return false;
-        }
-
-        if (empty($frame['line'])) {
-            return false;
-        }
-
-        if (empty($frame['function']) || !stristr($frame['function'], 'call_user_func')) {
-            return false;
-        }
-
-        return true;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

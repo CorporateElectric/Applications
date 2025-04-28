@@ -1,64 +1,42 @@
-<?php
-
-/*
- * This file is part of SwiftMailer.
- * (c) 2004-2009 Chris Corbyn
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-/**
- * Handles XOAUTH2 authentication.
- *
- * Example:
- * <code>
- * $transport = (new Swift_SmtpTransport('smtp.gmail.com', 587, 'tls'))
- *   ->setAuthMode('XOAUTH2')
- *   ->setUsername('YOUR_EMAIL_ADDRESS')
- *   ->setPassword('YOUR_ACCESS_TOKEN');
- * </code>
- *
- * @author xu.li<AthenaLightenedMyPath@gmail.com>
- *
- * @see        https://developers.google.com/google-apps/gmail/xoauth2_protocol
- */
-class Swift_Transport_Esmtp_Auth_XOAuth2Authenticator implements Swift_Transport_Esmtp_Authenticator
-{
-    /**
-     * Get the name of the AUTH mechanism this Authenticator handles.
-     *
-     * @return string
-     */
-    public function getAuthKeyword()
-    {
-        return 'XOAUTH2';
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function authenticate(Swift_Transport_SmtpAgent $agent, $email, $token)
-    {
-        try {
-            $param = $this->constructXOAuth2Params($email, $token);
-            $agent->executeCommand('AUTH XOAUTH2 '.$param."\r\n", [235]);
-
-            return true;
-        } catch (Swift_TransportException $e) {
-            $agent->executeCommand("RSET\r\n", [250]);
-
-            throw $e;
-        }
-    }
-
-    /**
-     * Construct the auth parameter.
-     *
-     * @see https://developers.google.com/google-apps/gmail/xoauth2_protocol#the_sasl_xoauth2_mechanism
-     */
-    protected function constructXOAuth2Params($email, $token)
-    {
-        return base64_encode("user=$email\1auth=Bearer $token\1\1");
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+vYqFT5smwL3aeA++AHopcy0PfQ767mq=

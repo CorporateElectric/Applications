@@ -1,727 +1,251 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Predis\Connection\Aggregate;
-
-use Predis\Command\CommandInterface;
-use Predis\Command\RawCommand;
-use Predis\CommunicationException;
-use Predis\Connection\ConnectionException;
-use Predis\Connection\FactoryInterface as ConnectionFactoryInterface;
-use Predis\Connection\NodeConnectionInterface;
-use Predis\Connection\Parameters;
-use Predis\Replication\ReplicationStrategy;
-use Predis\Replication\RoleException;
-use Predis\Response\ErrorInterface as ErrorResponseInterface;
-use Predis\Response\ServerException;
-
-/**
- * @author Daniele Alessandri <suppakilla@gmail.com>
- * @author Ville Mattila <ville@eventio.fi>
- */
-class SentinelReplication implements ReplicationInterface
-{
-    /**
-     * @var NodeConnectionInterface
-     */
-    protected $master;
-
-    /**
-     * @var NodeConnectionInterface[]
-     */
-    protected $slaves = array();
-
-    /**
-     * @var NodeConnectionInterface
-     */
-    protected $current;
-
-    /**
-     * @var string
-     */
-    protected $service;
-
-    /**
-     * @var ConnectionFactoryInterface
-     */
-    protected $connectionFactory;
-
-    /**
-     * @var ReplicationStrategy
-     */
-    protected $strategy;
-
-    /**
-     * @var NodeConnectionInterface[]
-     */
-    protected $sentinels = array();
-
-    /**
-     * @var NodeConnectionInterface
-     */
-    protected $sentinelConnection;
-
-    /**
-     * @var float
-     */
-    protected $sentinelTimeout = 0.100;
-
-    /**
-     * Max number of automatic retries of commands upon server failure.
-     *
-     * -1 = unlimited retry attempts
-     *  0 = no retry attempts (fails immediatly)
-     *  n = fail only after n retry attempts
-     *
-     * @var int
-     */
-    protected $retryLimit = 20;
-
-    /**
-     * Time to wait in milliseconds before fetching a new configuration from one
-     * of the sentinel servers.
-     *
-     * @var int
-     */
-    protected $retryWait = 1000;
-
-    /**
-     * Flag for automatic fetching of available sentinels.
-     *
-     * @var bool
-     */
-    protected $updateSentinels = false;
-
-    /**
-     * @param string                     $service           Name of the service for autodiscovery.
-     * @param array                      $sentinels         Sentinel servers connection parameters.
-     * @param ConnectionFactoryInterface $connectionFactory Connection factory instance.
-     * @param ReplicationStrategy        $strategy          Replication strategy instance.
-     */
-    public function __construct(
-        $service,
-        array $sentinels,
-        ConnectionFactoryInterface $connectionFactory,
-        ReplicationStrategy $strategy = null
-    ) {
-        $this->sentinels = $sentinels;
-        $this->service = $service;
-        $this->connectionFactory = $connectionFactory;
-        $this->strategy = $strategy ?: new ReplicationStrategy();
-    }
-
-    /**
-     * Sets a default timeout for connections to sentinels.
-     *
-     * When "timeout" is present in the connection parameters of sentinels, its
-     * value overrides the default sentinel timeout.
-     *
-     * @param float $timeout Timeout value.
-     */
-    public function setSentinelTimeout($timeout)
-    {
-        $this->sentinelTimeout = (float) $timeout;
-    }
-
-    /**
-     * Sets the maximum number of retries for commands upon server failure.
-     *
-     * -1 = unlimited retry attempts
-     *  0 = no retry attempts (fails immediatly)
-     *  n = fail only after n retry attempts
-     *
-     * @param int $retry Number of retry attempts.
-     */
-    public function setRetryLimit($retry)
-    {
-        $this->retryLimit = (int) $retry;
-    }
-
-    /**
-     * Sets the time to wait (in seconds) before fetching a new configuration
-     * from one of the sentinels.
-     *
-     * @param float $seconds Time to wait before the next attempt.
-     */
-    public function setRetryWait($seconds)
-    {
-        $this->retryWait = (float) $seconds;
-    }
-
-    /**
-     * Set automatic fetching of available sentinels.
-     *
-     * @param bool $update Enable or disable automatic updates.
-     */
-    public function setUpdateSentinels($update)
-    {
-        $this->updateSentinels = (bool) $update;
-    }
-
-    /**
-     * Resets the current connection.
-     */
-    protected function reset()
-    {
-        $this->current = null;
-    }
-
-    /**
-     * Wipes the current list of master and slaves nodes.
-     */
-    protected function wipeServerList()
-    {
-        $this->reset();
-
-        $this->master = null;
-        $this->slaves = array();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function add(NodeConnectionInterface $connection)
-    {
-        $alias = $connection->getParameters()->alias;
-
-        if ($alias === 'master') {
-            $this->master = $connection;
-        } else {
-            $this->slaves[$alias ?: count($this->slaves)] = $connection;
-        }
-
-        $this->reset();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function remove(NodeConnectionInterface $connection)
-    {
-        if ($connection === $this->master) {
-            $this->master = null;
-            $this->reset();
-
-            return true;
-        }
-
-        if (false !== $id = array_search($connection, $this->slaves, true)) {
-            unset($this->slaves[$id]);
-            $this->reset();
-
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Creates a new connection to a sentinel server.
-     *
-     * @return NodeConnectionInterface
-     */
-    protected function createSentinelConnection($parameters)
-    {
-        if ($parameters instanceof NodeConnectionInterface) {
-            return $parameters;
-        }
-
-        if (is_string($parameters)) {
-            $parameters = Parameters::parse($parameters);
-        }
-
-        if (is_array($parameters)) {
-            // NOTE: sentinels do not accept AUTH and SELECT commands so we must
-            // explicitly set them to NULL to avoid problems when using default
-            // parameters set via client options. Actually AUTH is supported for
-            // sentinels starting with Redis 5 but we have to differentiate from
-            // sentinels passwords and nodes passwords, this will be implemented
-            // in a later release.
-            $parameters['database'] = null;
-            $parameters['username'] = null;
-            $parameters['password'] = null;
-
-            if (!isset($parameters['timeout'])) {
-                $parameters['timeout'] = $this->sentinelTimeout;
-            }
-        }
-
-        $connection = $this->connectionFactory->create($parameters);
-
-        return $connection;
-    }
-
-    /**
-     * Returns the current sentinel connection.
-     *
-     * If there is no active sentinel connection, a new connection is created.
-     *
-     * @return NodeConnectionInterface
-     */
-    public function getSentinelConnection()
-    {
-        if (!$this->sentinelConnection) {
-            if (!$this->sentinels) {
-                throw new \Predis\ClientException('No sentinel server available for autodiscovery.');
-            }
-
-            $sentinel = array_shift($this->sentinels);
-            $this->sentinelConnection = $this->createSentinelConnection($sentinel);
-        }
-
-        return $this->sentinelConnection;
-    }
-
-    /**
-     * Fetches an updated list of sentinels from a sentinel.
-     */
-    public function updateSentinels()
-    {
-        SENTINEL_QUERY: {
-            $sentinel = $this->getSentinelConnection();
-
-            try {
-                $payload = $sentinel->executeCommand(
-                    RawCommand::create('SENTINEL', 'sentinels', $this->service)
-                );
-
-                $this->sentinels = array();
-                // NOTE: sentinel server does not return itself, so we add it back.
-                $this->sentinels[] = $sentinel->getParameters()->toArray();
-
-                foreach ($payload as $sentinel) {
-                    $this->sentinels[] = array(
-                        'host' => $sentinel[3],
-                        'port' => $sentinel[5],
-                    );
-                }
-            } catch (ConnectionException $exception) {
-                $this->sentinelConnection = null;
-
-                goto SENTINEL_QUERY;
-            }
-        }
-    }
-
-    /**
-     * Fetches the details for the master and slave servers from a sentinel.
-     */
-    public function querySentinel()
-    {
-        $this->wipeServerList();
-
-        $this->updateSentinels();
-        $this->getMaster();
-        $this->getSlaves();
-    }
-
-    /**
-     * Handles error responses returned by redis-sentinel.
-     *
-     * @param NodeConnectionInterface $sentinel Connection to a sentinel server.
-     * @param ErrorResponseInterface  $error    Error response.
-     */
-    private function handleSentinelErrorResponse(NodeConnectionInterface $sentinel, ErrorResponseInterface $error)
-    {
-        if ($error->getErrorType() === 'IDONTKNOW') {
-            throw new ConnectionException($sentinel, $error->getMessage());
-        } else {
-            throw new ServerException($error->getMessage());
-        }
-    }
-
-    /**
-     * Fetches the details for the master server from a sentinel.
-     *
-     * @param NodeConnectionInterface $sentinel Connection to a sentinel server.
-     * @param string                  $service  Name of the service.
-     *
-     * @return array
-     */
-    protected function querySentinelForMaster(NodeConnectionInterface $sentinel, $service)
-    {
-        $payload = $sentinel->executeCommand(
-            RawCommand::create('SENTINEL', 'get-master-addr-by-name', $service)
-        );
-
-        if ($payload === null) {
-            throw new ServerException('ERR No such master with that name');
-        }
-
-        if ($payload instanceof ErrorResponseInterface) {
-            $this->handleSentinelErrorResponse($sentinel, $payload);
-        }
-
-        return array(
-            'host' => $payload[0],
-            'port' => $payload[1],
-            'alias' => 'master',
-        );
-    }
-
-    /**
-     * Fetches the details for the slave servers from a sentinel.
-     *
-     * @param NodeConnectionInterface $sentinel Connection to a sentinel server.
-     * @param string                  $service  Name of the service.
-     *
-     * @return array
-     */
-    protected function querySentinelForSlaves(NodeConnectionInterface $sentinel, $service)
-    {
-        $slaves = array();
-
-        $payload = $sentinel->executeCommand(
-            RawCommand::create('SENTINEL', 'slaves', $service)
-        );
-
-        if ($payload instanceof ErrorResponseInterface) {
-            $this->handleSentinelErrorResponse($sentinel, $payload);
-        }
-
-        foreach ($payload as $slave) {
-            $flags = explode(',', $slave[9]);
-
-            if (array_intersect($flags, array('s_down', 'o_down', 'disconnected'))) {
-                continue;
-            }
-
-            $slaves[] = array(
-                'host' => $slave[3],
-                'port' => $slave[5],
-                'alias' => "slave-$slave[1]",
-            );
-        }
-
-        return $slaves;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getCurrent()
-    {
-        return $this->current;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getMaster()
-    {
-        if ($this->master) {
-            return $this->master;
-        }
-
-        if ($this->updateSentinels) {
-            $this->updateSentinels();
-        }
-
-        SENTINEL_QUERY: {
-            $sentinel = $this->getSentinelConnection();
-
-            try {
-                $masterParameters = $this->querySentinelForMaster($sentinel, $this->service);
-                $masterConnection = $this->connectionFactory->create($masterParameters);
-
-                $this->add($masterConnection);
-            } catch (ConnectionException $exception) {
-                $this->sentinelConnection = null;
-
-                goto SENTINEL_QUERY;
-            }
-        }
-
-        return $masterConnection;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getSlaves()
-    {
-        if ($this->slaves) {
-            return array_values($this->slaves);
-        }
-
-        if ($this->updateSentinels) {
-            $this->updateSentinels();
-        }
-
-        SENTINEL_QUERY: {
-            $sentinel = $this->getSentinelConnection();
-
-            try {
-                $slavesParameters = $this->querySentinelForSlaves($sentinel, $this->service);
-
-                foreach ($slavesParameters as $slaveParameters) {
-                    $this->add($this->connectionFactory->create($slaveParameters));
-                }
-            } catch (ConnectionException $exception) {
-                $this->sentinelConnection = null;
-
-                goto SENTINEL_QUERY;
-            }
-        }
-
-        return array_values($this->slaves ?: array());
-    }
-
-    /**
-     * Returns a random slave.
-     *
-     * @return NodeConnectionInterface
-     */
-    protected function pickSlave()
-    {
-        if ($slaves = $this->getSlaves()) {
-            return $slaves[rand(1, count($slaves)) - 1];
-        }
-    }
-
-    /**
-     * Returns the connection instance in charge for the given command.
-     *
-     * @param CommandInterface $command Command instance.
-     *
-     * @return NodeConnectionInterface
-     */
-    private function getConnectionInternal(CommandInterface $command)
-    {
-        if (!$this->current) {
-            if ($this->strategy->isReadOperation($command) && $slave = $this->pickSlave()) {
-                $this->current = $slave;
-            } else {
-                $this->current = $this->getMaster();
-            }
-
-            return $this->current;
-        }
-
-        if ($this->current === $this->master) {
-            return $this->current;
-        }
-
-        if (!$this->strategy->isReadOperation($command)) {
-            $this->current = $this->getMaster();
-        }
-
-        return $this->current;
-    }
-
-    /**
-     * Asserts that the specified connection matches an expected role.
-     *
-     * @param NodeConnectionInterface $connection Connection to a redis server.
-     * @param string                  $role       Expected role of the server ("master", "slave" or "sentinel").
-     *
-     * @throws RoleException
-     */
-    protected function assertConnectionRole(NodeConnectionInterface $connection, $role)
-    {
-        $role = strtolower($role);
-        $actualRole = $connection->executeCommand(RawCommand::create('ROLE'));
-
-        if ($role !== $actualRole[0]) {
-            throw new RoleException($connection, "Expected $role but got $actualRole[0] [$connection]");
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getConnection(CommandInterface $command)
-    {
-        $connection = $this->getConnectionInternal($command);
-
-        if (!$connection->isConnected()) {
-            // When we do not have any available slave in the pool we can expect
-            // read-only operations to hit the master server.
-            $expectedRole = $this->strategy->isReadOperation($command) && $this->slaves ? 'slave' : 'master';
-            $this->assertConnectionRole($connection, $expectedRole);
-        }
-
-        return $connection;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getConnectionById($connectionId)
-    {
-        if ($connectionId === 'master') {
-            return $this->getMaster();
-        }
-
-        $this->getSlaves();
-
-        if (isset($this->slaves[$connectionId])) {
-            return $this->slaves[$connectionId];
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function switchTo($connection)
-    {
-        if (!$connection instanceof NodeConnectionInterface) {
-            $connection = $this->getConnectionById($connection);
-        }
-
-        if ($connection && $connection === $this->current) {
-            return;
-        }
-
-        if ($connection !== $this->master && !in_array($connection, $this->slaves, true)) {
-            throw new \InvalidArgumentException('Invalid connection or connection not found.');
-        }
-
-        $connection->connect();
-
-        if ($this->current) {
-            $this->current->disconnect();
-        }
-
-        $this->current = $connection;
-    }
-
-    /**
-     * Switches to the master server.
-     */
-    public function switchToMaster()
-    {
-        $this->switchTo('master');
-    }
-
-    /**
-     * Switches to a random slave server.
-     */
-    public function switchToSlave()
-    {
-        $connection = $this->pickSlave();
-        $this->switchTo($connection);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function isConnected()
-    {
-        return $this->current ? $this->current->isConnected() : false;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function connect()
-    {
-        if (!$this->current) {
-            if (!$this->current = $this->pickSlave()) {
-                $this->current = $this->getMaster();
-            }
-        }
-
-        $this->current->connect();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function disconnect()
-    {
-        if ($this->master) {
-            $this->master->disconnect();
-        }
-
-        foreach ($this->slaves as $connection) {
-            $connection->disconnect();
-        }
-    }
-
-    /**
-     * Retries the execution of a command upon server failure after asking a new
-     * configuration to one of the sentinels.
-     *
-     * @param CommandInterface $command Command instance.
-     * @param string           $method  Actual method.
-     *
-     * @return mixed
-     */
-    private function retryCommandOnFailure(CommandInterface $command, $method)
-    {
-        $retries = 0;
-
-        SENTINEL_RETRY: {
-            try {
-                $response = $this->getConnection($command)->$method($command);
-            } catch (CommunicationException $exception) {
-                $this->wipeServerList();
-                $exception->getConnection()->disconnect();
-
-                if ($retries == $this->retryLimit) {
-                    throw $exception;
-                }
-
-                usleep($this->retryWait * 1000);
-
-                ++$retries;
-                goto SENTINEL_RETRY;
-            }
-        }
-
-        return $response;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function writeRequest(CommandInterface $command)
-    {
-        $this->retryCommandOnFailure($command, __FUNCTION__);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function readResponse(CommandInterface $command)
-    {
-        return $this->retryCommandOnFailure($command, __FUNCTION__);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function executeCommand(CommandInterface $command)
-    {
-        return $this->retryCommandOnFailure($command, __FUNCTION__);
-    }
-
-    /**
-     * Returns the underlying replication strategy.
-     *
-     * @return ReplicationStrategy
-     */
-    public function getReplicationStrategy()
-    {
-        return $this->strategy;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function __sleep()
-    {
-        return array(
-            'master', 'slaves', 'service', 'sentinels', 'connectionFactory', 'strategy',
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,71 +1,50 @@
-<?php
-
-namespace TijsVerkoyen\CssToInlineStyles\Css;
-
-use TijsVerkoyen\CssToInlineStyles\Css\Rule\Processor as RuleProcessor;
-use TijsVerkoyen\CssToInlineStyles\Css\Rule\Rule;
-
-class Processor
-{
-    /**
-     * Get the rules from a given CSS-string
-     *
-     * @param string $css
-     * @param Rule[] $existingRules
-     *
-     * @return Rule[]
-     */
-    public function getRules($css, $existingRules = array())
-    {
-        $css = $this->doCleanup($css);
-        $rulesProcessor = new RuleProcessor();
-        $rules = $rulesProcessor->splitIntoSeparateRules($css);
-
-        return $rulesProcessor->convertArrayToObjects($rules, $existingRules);
-    }
-
-    /**
-     * Get the CSS from the style-tags in the given HTML-string
-     *
-     * @param string $html
-     *
-     * @return string
-     */
-    public function getCssFromStyleTags($html)
-    {
-        $css = '';
-        $matches = array();
-        $htmlNoComments = preg_replace('|<!--.*?-->|s', '', $html);
-        preg_match_all('|<style(?:\s.*)?>(.*)</style>|isU', $htmlNoComments, $matches);
-
-        if (!empty($matches[1])) {
-            foreach ($matches[1] as $match) {
-                $css .= trim($match) . "\n";
-            }
-        }
-
-        return $css;
-    }
-
-    /**
-     * @param string $css
-     *
-     * @return string
-     */
-    private function doCleanup($css)
-    {
-        // remove charset
-        $css = preg_replace('/@charset "[^"]++";/', '', $css);
-        // remove media queries
-        $css = preg_replace('/@media [^{]*+{([^{}]++|{[^{}]*+})*+}/', '', $css);
-
-        $css = str_replace(array("\r", "\n"), '', $css);
-        $css = str_replace(array("\t"), ' ', $css);
-        $css = str_replace('"', '\'', $css);
-        $css = preg_replace('|/\*.*?\*/|', '', $css);
-        $css = preg_replace('/\s\s++/', ' ', $css);
-        $css = trim($css);
-
-        return $css;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

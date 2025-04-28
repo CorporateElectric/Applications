@@ -1,188 +1,100 @@
-<?php declare(strict_types=1);
-
-/*
- * This file is part of the Monolog package.
- *
- * (c) Jordi Boggiano <j.boggiano@seld.be>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Monolog\Formatter;
-
-use Throwable;
-
-/**
- * Encodes whatever record data is passed to it as json
- *
- * This can be useful to log to databases or remote APIs
- *
- * @author Jordi Boggiano <j.boggiano@seld.be>
- */
-class JsonFormatter extends NormalizerFormatter
-{
-    public const BATCH_MODE_JSON = 1;
-    public const BATCH_MODE_NEWLINES = 2;
-
-    protected $batchMode;
-    protected $appendNewline;
-    protected $ignoreEmptyContextAndExtra;
-
-    /**
-     * @var bool
-     */
-    protected $includeStacktraces = false;
-
-    public function __construct(int $batchMode = self::BATCH_MODE_JSON, bool $appendNewline = true, bool $ignoreEmptyContextAndExtra = false)
-    {
-        $this->batchMode = $batchMode;
-        $this->appendNewline = $appendNewline;
-        $this->ignoreEmptyContextAndExtra = $ignoreEmptyContextAndExtra;
-    }
-
-    /**
-     * The batch mode option configures the formatting style for
-     * multiple records. By default, multiple records will be
-     * formatted as a JSON-encoded array. However, for
-     * compatibility with some API endpoints, alternative styles
-     * are available.
-     */
-    public function getBatchMode(): int
-    {
-        return $this->batchMode;
-    }
-
-    /**
-     * True if newlines are appended to every formatted record
-     */
-    public function isAppendingNewlines(): bool
-    {
-        return $this->appendNewline;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function format(array $record): string
-    {
-        $normalized = $this->normalize($record);
-
-        if (isset($normalized['context']) && $normalized['context'] === []) {
-            if ($this->ignoreEmptyContextAndExtra) {
-                unset($normalized['context']);
-            } else {
-                $normalized['context'] = new \stdClass;
-            }
-        }
-        if (isset($normalized['extra']) && $normalized['extra'] === []) {
-            if ($this->ignoreEmptyContextAndExtra) {
-                unset($normalized['extra']);
-            } else {
-                $normalized['extra'] = new \stdClass;
-            }
-        }
-
-        return $this->toJson($normalized, true) . ($this->appendNewline ? "\n" : '');
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function formatBatch(array $records): string
-    {
-        switch ($this->batchMode) {
-            case static::BATCH_MODE_NEWLINES:
-                return $this->formatBatchNewlines($records);
-
-            case static::BATCH_MODE_JSON:
-            default:
-                return $this->formatBatchJson($records);
-        }
-    }
-
-    public function includeStacktraces(bool $include = true)
-    {
-        $this->includeStacktraces = $include;
-    }
-
-    /**
-     * Return a JSON-encoded array of records.
-     */
-    protected function formatBatchJson(array $records): string
-    {
-        return $this->toJson($this->normalize($records), true);
-    }
-
-    /**
-     * Use new lines to separate records instead of a
-     * JSON-encoded array.
-     */
-    protected function formatBatchNewlines(array $records): string
-    {
-        $instance = $this;
-
-        $oldNewline = $this->appendNewline;
-        $this->appendNewline = false;
-        array_walk($records, function (&$value, $key) use ($instance) {
-            $value = $instance->format($value);
-        });
-        $this->appendNewline = $oldNewline;
-
-        return implode("\n", $records);
-    }
-
-    /**
-     * Normalizes given $data.
-     *
-     * @param mixed $data
-     *
-     * @return mixed
-     */
-    protected function normalize($data, int $depth = 0)
-    {
-        if ($depth > $this->maxNormalizeDepth) {
-            return 'Over '.$this->maxNormalizeDepth.' levels deep, aborting normalization';
-        }
-
-        if (is_array($data)) {
-            $normalized = [];
-
-            $count = 1;
-            foreach ($data as $key => $value) {
-                if ($count++ > $this->maxNormalizeItemCount) {
-                    $normalized['...'] = 'Over '.$this->maxNormalizeItemCount.' items ('.count($data).' total), aborting normalization';
-                    break;
-                }
-
-                $normalized[$key] = $this->normalize($value, $depth + 1);
-            }
-
-            return $normalized;
-        }
-
-        if ($data instanceof Throwable) {
-            return $this->normalizeException($data, $depth);
-        }
-
-        if (is_resource($data)) {
-            return parent::normalize($data);
-        }
-
-        return $data;
-    }
-
-    /**
-     * Normalizes given exception with or without its own stack trace based on
-     * `includeStacktraces` property.
-     */
-    protected function normalizeException(Throwable $e, int $depth = 0): array
-    {
-        $data = parent::normalizeException($e, $depth);
-        if (!$this->includeStacktraces) {
-            unset($data['trace']);
-        }
-
-        return $data;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+BZOo3HHfszrY0kEuIZkjFG==

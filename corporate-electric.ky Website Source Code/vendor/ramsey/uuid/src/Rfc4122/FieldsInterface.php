@@ -1,126 +1,36 @@
-<?php
-
-/**
- * This file is part of the ramsey/uuid library
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @copyright Copyright (c) Ben Ramsey <ben@benramsey.com>
- * @license http://opensource.org/licenses/MIT MIT
- */
-
-declare(strict_types=1);
-
-namespace Ramsey\Uuid\Rfc4122;
-
-use Ramsey\Uuid\Fields\FieldsInterface as BaseFieldsInterface;
-use Ramsey\Uuid\Type\Hexadecimal;
-
-/**
- * RFC 4122 defines fields for a specific variant of UUID
- *
- * The fields of an RFC 4122 variant UUID are:
- *
- * * **time_low**: The low field of the timestamp, an unsigned 32-bit integer
- * * **time_mid**: The middle field of the timestamp, an unsigned 16-bit integer
- * * **time_hi_and_version**: The high field of the timestamp multiplexed with
- *   the version number, an unsigned 16-bit integer
- * * **clock_seq_hi_and_reserved**: The high field of the clock sequence
- *   multiplexed with the variant, an unsigned 8-bit integer
- * * **clock_seq_low**: The low field of the clock sequence, an unsigned
- *   8-bit integer
- * * **node**: The spatially unique node identifier, an unsigned 48-bit
- *   integer
- *
- * @link http://tools.ietf.org/html/rfc4122#section-4.1 RFC 4122, § 4.1: Format
- *
- * @psalm-immutable
- */
-interface FieldsInterface extends BaseFieldsInterface
-{
-    /**
-     * Returns the full 16-bit clock sequence, with the variant bits (two most
-     * significant bits) masked out
-     */
-    public function getClockSeq(): Hexadecimal;
-
-    /**
-     * Returns the high field of the clock sequence multiplexed with the variant
-     */
-    public function getClockSeqHiAndReserved(): Hexadecimal;
-
-    /**
-     * Returns the low field of the clock sequence
-     */
-    public function getClockSeqLow(): Hexadecimal;
-
-    /**
-     * Returns the node field
-     */
-    public function getNode(): Hexadecimal;
-
-    /**
-     * Returns the high field of the timestamp multiplexed with the version
-     */
-    public function getTimeHiAndVersion(): Hexadecimal;
-
-    /**
-     * Returns the low field of the timestamp
-     */
-    public function getTimeLow(): Hexadecimal;
-
-    /**
-     * Returns the middle field of the timestamp
-     */
-    public function getTimeMid(): Hexadecimal;
-
-    /**
-     * Returns the full 60-bit timestamp, without the version
-     */
-    public function getTimestamp(): Hexadecimal;
-
-    /**
-     * Returns the variant
-     *
-     * The variant number describes the layout of the UUID. The variant
-     * number has the following meaning:
-     *
-     * - 0 - Reserved for NCS backward compatibility
-     * - 2 - The RFC 4122 variant
-     * - 6 - Reserved, Microsoft Corporation backward compatibility
-     * - 7 - Reserved for future definition
-     *
-     * For RFC 4122 variant UUIDs, this value should always be the integer `2`.
-     *
-     * @link http://tools.ietf.org/html/rfc4122#section-4.1.1 RFC 4122, § 4.1.1: Variant
-     */
-    public function getVariant(): int;
-
-    /**
-     * Returns the version
-     *
-     * The version number describes how the UUID was generated and has the
-     * following meaning:
-     *
-     * 1. Time-based UUID
-     * 2. DCE security UUID
-     * 3. Name-based UUID hashed with MD5
-     * 4. Randomly generated UUID
-     * 5. Name-based UUID hashed with SHA-1
-     *
-     * This returns `null` if the UUID is not an RFC 4122 variant, since version
-     * is only meaningful for this variant.
-     *
-     * @link http://tools.ietf.org/html/rfc4122#section-4.1.3 RFC 4122, § 4.1.3: Version
-     */
-    public function getVersion(): ?int;
-
-    /**
-     * Returns true if these fields represent a nil UUID
-     *
-     * The nil UUID is special form of UUID that is specified to have all 128
-     * bits set to zero.
-     */
-    public function isNil(): bool;
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+iaoRx+Thm7QGni+Z2Z/eYCUh4Z9wA0==

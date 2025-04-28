@@ -1,92 +1,46 @@
-<?php
-/**
- * Mockery
- *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://github.com/padraic/mockery/blob/master/LICENSE
- * If you did not receive a copy of the license and are unable to
- * obtain it through the world-wide-web, please send an email
- * to padraic@php.net so we can send you a copy immediately.
- *
- * @category   Mockery
- * @package    Mockery
- * @copyright  Copyright (c) 2010 Pádraic Brady (http://blog.astrumfutura.com)
- * @license    http://github.com/padraic/mockery/blob/master/LICENSE New BSD License
- */
-
-namespace Mockery\Matcher;
-
-class Subset extends MatcherAbstract
-{
-    private $expected;
-    private $strict = true;
-
-    /**
-     * @param array $expected Expected subset of data
-     * @param bool $strict Whether to run a strict or loose comparison
-     */
-    public function __construct(array $expected, $strict = true)
-    {
-        $this->expected = $expected;
-        $this->strict = $strict;
-    }
-
-    /**
-     * @param array $expected Expected subset of data
-     *
-     * @return Subset
-     */
-    public static function strict(array $expected)
-    {
-        return new static($expected, true);
-    }
-
-    /**
-     * @param array $expected Expected subset of data
-     *
-     * @return Subset
-     */
-    public static function loose(array $expected)
-    {
-        return new static($expected, false);
-    }
-
-    /**
-     * Check if the actual value matches the expected.
-     *
-     * @param mixed $actual
-     * @return bool
-     */
-    public function match(&$actual)
-    {
-        if (!is_array($actual)) {
-            return false;
-        }
-
-        if ($this->strict) {
-            return $actual === array_replace_recursive($actual, $this->expected);
-        }
-
-        return $actual == array_replace_recursive($actual, $this->expected);
-    }
-
-    /**
-     * Return a string representation of this Matcher
-     *
-     * @return string
-     */
-    public function __toString()
-    {
-        $return = '<Subset[';
-        $elements = array();
-        foreach ($this->expected as $k=>$v) {
-            $elements[] = $k . '=' . (string) $v;
-        }
-        $return .= implode(', ', $elements) . ']>';
-        return $return;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

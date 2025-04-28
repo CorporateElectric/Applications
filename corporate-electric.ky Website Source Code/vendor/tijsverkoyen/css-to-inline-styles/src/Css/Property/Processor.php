@@ -1,127 +1,72 @@
-<?php
-
-namespace TijsVerkoyen\CssToInlineStyles\Css\Property;
-
-use Symfony\Component\CssSelector\Node\Specificity;
-
-class Processor
-{
-    /**
-     * Split a string into separate properties
-     *
-     * @param string $propertiesString
-     *
-     * @return string[]
-     */
-    public function splitIntoSeparateProperties($propertiesString)
-    {
-        $propertiesString = $this->cleanup($propertiesString);
-
-        $properties = (array) explode(';', $propertiesString);
-        $keysToRemove = array();
-        $numberOfProperties = count($properties);
-
-        for ($i = 0; $i < $numberOfProperties; $i++) {
-            $properties[$i] = trim($properties[$i]);
-
-            // if the new property begins with base64 it is part of the current property
-            if (isset($properties[$i + 1]) && strpos(trim($properties[$i + 1]), 'base64,') === 0) {
-                $properties[$i] .= ';' . trim($properties[$i + 1]);
-                $keysToRemove[] = $i + 1;
-            }
-        }
-
-        if (!empty($keysToRemove)) {
-            foreach ($keysToRemove as $key) {
-                unset($properties[$key]);
-            }
-        }
-
-        return array_values($properties);
-    }
-
-    /**
-     * @param string $string
-     *
-     * @return string
-     */
-    private function cleanup($string)
-    {
-        $string = str_replace(array("\r", "\n"), '', $string);
-        $string = str_replace(array("\t"), ' ', $string);
-        $string = str_replace('"', '\'', $string);
-        $string = preg_replace('|/\*.*?\*/|', '', $string);
-        $string = preg_replace('/\s\s+/', ' ', $string);
-
-        $string = trim($string);
-        $string = rtrim($string, ';');
-
-        return $string;
-    }
-
-    /**
-     * Converts a property-string into an object
-     *
-     * @param string $property
-     *
-     * @return Property|null
-     */
-    public function convertToObject($property, Specificity $specificity = null)
-    {
-        if (strpos($property, ':') === false) {
-            return null;
-        }
-
-        list($name, $value) = explode(':', $property, 2);
-
-        $name = trim($name);
-        $value = trim($value);
-
-        if ($value === '') {
-            return null;
-        }
-
-        return new Property($name, $value, $specificity);
-    }
-
-    /**
-     * Converts an array of property-strings into objects
-     *
-     * @param string[] $properties
-     *
-     * @return Property[]
-     */
-    public function convertArrayToObjects(array $properties, Specificity $specificity = null)
-    {
-        $objects = array();
-
-        foreach ($properties as $property) {
-            $object = $this->convertToObject($property, $specificity);
-            if ($object === null) {
-                continue;
-            }
-
-            $objects[] = $object;
-        }
-
-        return $objects;
-    }
-
-    /**
-     * Build the property-string for multiple properties
-     *
-     * @param Property[] $properties
-     *
-     * @return string
-     */
-    public function buildPropertiesString(array $properties)
-    {
-        $chunks = array();
-
-        foreach ($properties as $property) {
-            $chunks[] = $property->toString();
-        }
-
-        return implode(' ', $chunks);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+hg0fu4dYiFuNk2u=

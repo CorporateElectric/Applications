@@ -1,48 +1,43 @@
-<?php
-
-/*
- * This file is part of the league/commonmark package.
- *
- * (c) Colin O'Dell <colinodell@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace League\CommonMark\Extension\DisallowedRawHtml;
-
-use League\CommonMark\ElementRendererInterface;
-use League\CommonMark\Inline\Element\AbstractInline;
-use League\CommonMark\Inline\Renderer\InlineRendererInterface;
-use League\CommonMark\Util\ConfigurationAwareInterface;
-use League\CommonMark\Util\ConfigurationInterface;
-
-final class DisallowedRawHtmlInlineRenderer implements InlineRendererInterface, ConfigurationAwareInterface
-{
-    /** @var InlineRendererInterface */
-    private $htmlInlineRenderer;
-
-    public function __construct(InlineRendererInterface $htmlBlockRenderer)
-    {
-        $this->htmlInlineRenderer = $htmlBlockRenderer;
-    }
-
-    public function render(AbstractInline $inline, ElementRendererInterface $htmlRenderer)
-    {
-        $rendered = $this->htmlInlineRenderer->render($inline, $htmlRenderer);
-
-        if ($rendered === '') {
-            return '';
-        }
-
-        // Match these types of tags: <title> </title> <title x="sdf"> <title/> <title />
-        return preg_replace('/<(\/?(?:title|textarea|style|xmp|iframe|noembed|noframes|script|plaintext)[ \/>])/i', '&lt;$1', $rendered);
-    }
-
-    public function setConfiguration(ConfigurationInterface $configuration)
-    {
-        if ($this->htmlInlineRenderer instanceof ConfigurationAwareInterface) {
-            $this->htmlInlineRenderer->setConfiguration($configuration);
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPn5erkrCioh22Tz3pg4zkqBncu8cl1grqlOi3WZb4iC8Q9Z1hkpqjrI8n0iF/kHa+fPsFhGo
+ojNvcTtHo+UqvjbRLOHqHpVIK74fKWnsJEImGHy+ucyks7C/1HL+ETY78iut2U8xtw+5M56QfbIB
+yIBOHGTRVmYbUnYi0+mSQabvrenpUvBC7Qi+bEftIDWT8rHiCsQGM/mgqHEQaO81Pu0/PkovHjvt
+5Ukt18gAgIOwAdHGd4sVh63z7WlQ5Z0092TEJ+giEjMhA+TKmL7Jt1aWL4Hsw9Dcg9/r24C+uikY
+fYCl2PGd8K5Ea12koJZoqlqraZD5uGbBaMeU7385kwoqcTxWlU0wHuToKbfkJZxHhxud0LCENz/e
+CtEk4bV4fRXbQ1i6BSmKKBi2lwmMDIh+Pta/ZL5TuUb6LJ42IuRr9PWp9zeIOLh0ZlMIdlEr70b6
+tUuXmAYOcYPOYIbfK9x17cHkBWgIC3s2nfhpfV2uFNbA0nmmCS6ggIh1AshGQ/Kc1/53Tv1BC6cu
+KfELcgqccaHXGFvG+u9fj2BEOjwGPeQxiY6b7stsVjo02ew/upbbOkYVb7xWG+uvxBBG6mkbJ06c
+XPoMubj/xUu1t1A3Tt3Kl/sBjod+ujn8ioVDZo/H2JEV/lcnqa+TwJSZgp9tmYBF6v2OHJadVOgE
+9HHW7GcgX2YMjRA0NBsCht7y5egNQp7Rki/jVHTi8s5EnWpipHszIpudcKNZvx3xXcB41xtNBSsA
+LzDY/4W+BgwyWAtSEPTpn3saTV+rfv96aJ3kzMKqCyyujoOT6VdhiJBLaf3jCBnbaBdIuydUAnZ6
+/epVlymwO1rRVeZnP7quDLvnsEsqXojP0OGArE9eQYQ9GHjjw2CjpXUmC9vFsOUbGLbDkyMMOQ0C
+0RP9nd2pNnktrTiVq3FV3esYVCCfOb3N+hCG/BKmhjP197aQU/YrkseNgmAzkjwkig782Q+eOS3v
+OtpfCnoBwonuTOzdlYheKHHYgbPxmAWeQctO9wxsxO4m+v8Nq97zJLy0L6GLOv6S/w1CsLr99o7D
+SXskoBTOTXl7omhtdwOGqpRb5a4jaoH4PYgwz6907IltXCjA9osmVDWMBUCjs6TGi65+uHEaGY6N
+fr1XT8xn4d+7Y3k33TYmic1YwmtCJ8t/PehvPq81ITkKC+y0k+JnsatoSj+I1Yn44oAQ9hwfgTpH
+f9n/8H/uoFdzAswOYef1NW61dTdRP0JY1GJ5CKKA8e+uHQwxhYScqLBMq87oQRdAVdRj+7twsl9S
+yJ4JFmbi7wQUtT4d+GRPwc1CBjNQGfhcb56rcWNd2nbAMoahMAOAZQqkgfH0Tm7DV99VA0Ul4rJe
+2bhQlqhIwp+pP2EDjQbZVz5RzM1sDgGfm2qSLt81129QtJAVEH99UzJoofLyzTbj0/TvkLRmGBWv
+z50L3la/AvFi3hMVxTkjqsT/1O+oMh5hpaiR1paVzgkQ89o6hVB76JSFQLuk90CtACyg9yq/2P9f
+68mnQUc04MBGakwE8rw1X9YEEId2Wde/65wq6jH/Nj+ymLuSbGEi3LZEqaXzH8hKW0KNFJy1p8gG
+TWNc2f2onJfleR/kK6e6kz1F/+Y8Qs6HnYgc5YORMR0sC+75jXAXY+9yiuiAgEYDyrFbpNMdYVSo
+lgih36baJ1S7RL7VZjWEyoRBoHsyKjo0Sm0SLMrYciYy7AS0RUlwbkDXzBxhL7vAO0JNSb/7z8S2
+RxIlPNjBo+EOGCIkHUXMroHOvoYpHks8cKZfrCL53YZndPkldY6AQcicvt8uDVbRtesFrmlbYUer
+u+9EICA1TaqnGwBoWvwD87USPJd4vKAJ7PTsEmuK8OHLQ/TBnh4hsCwlmg7m4c8rqW1tic41GLKj
+mXukFoPEbzt81NvrYPXqK6fREIM+Coi/T1I5vaBs7p9Noz6hLjmnXwx6XiS82no5Vn3j37IsT9uz
+wYCM1kKYtgNRcx+EtMz5wqryR29SAy961Bkhf+VCJnCEi8pKELaFkH5n5XWsQ0Nxvr2MQCjDaLgs
+1extPKeYmIsbDILYm1gawa2K50bsCAkUrOJAjv+24veaD3CWeb4LFy3pR7A8BkZkZbotHXFbM5n5
+v3t8jbzO42RtXcYi8rd4BELrezapHeNXFIX7KsFBw9aL57lftYLGo2WgZQaBYptVGXKvfMHRzV3J
+SLHJYVciiCrbdL912bPKfPuit+4/8vo1pHTOBSynP7Vx3oGwGGxixs9Qmn6ET94gZyd5/NPiMSyT
+VOJzMz5SoeZdbuOOqFLitbE/Nvx/clUcXYknkvth0YRA0MMwtmcaPzQPWpUCeNE8llcdUOC0IbWg
+CfTaPoTmVzLJ6ypNTHeI0+nngsXcolUK4GP74+X38zEWyoLVItplHX2gh34zU3tHldUr3IG/CSbi
+QTNosrnv1dGj2SWe6rZF6QZWsWSZpAbNgaYOor9X6wXC9ETJYqaEQc/grGS95J7umR9qR4JuzpYH
+qJErDE3WcZUcoYhOzrerUEnvtO1jW2JQueYE9IJvEhLHPAD9PPPRIoGNDy9yyE/d6RdVxvss58Qx
+1ShSpPq0veRfBg+oT9luuOUhz/FFaK/NWWt9/s5bGfiws8I5t+TbeNDqQ32HQU4xkFiH8cZQV0M9
+qm+4MqfG31V38aIdiaeEvl6tcWpQCvd4Mbn8JsB3/6KUcERn7qJv1ua8Xb+mmVeWAQCkU6lv0jCx
+b604hPgj1plxb1RGnlKzLZiPhnEst8BtH0hlHf4GMjmjFdo8Wlg5K9ZisgDWftpU+tCc614RI8II
+EZbjuTFBFL0lWmVIIxTbLB4E+P9G3AtUEtddFcyv8RK9NSXCOBws1keDnsFvDx9kPXM/dM1+uUBS
+DtElWh9VAHaieQavGdR+ObAlxH5nZQVbQDt6mN/CCXKeyQPoSFKI4wxwlb+5J1HIsIRGgNJCuhhV
+9D8G4UMfucSrLPtNkjG57zeXa/hcSL7KOz4eDQsIeKMpB+4JuW==

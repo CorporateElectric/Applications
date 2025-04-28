@@ -1,616 +1,209 @@
-<?php
-
-declare(strict_types=1);
-
-namespace Brick\Math\Internal\Calculator;
-
-use Brick\Math\Internal\Calculator;
-
-/**
- * Calculator implementation using only native PHP code.
- *
- * @internal
- *
- * @psalm-immutable
- */
-class NativeCalculator extends Calculator
-{
-    /**
-     * The max number of digits the platform can natively add, subtract, multiply or divide without overflow.
-     * For multiplication, this represents the max sum of the lengths of both operands.
-     *
-     * For addition, it is assumed that an extra digit can hold a carry (1) without overflowing.
-     * Example: 32-bit: max number 1,999,999,999 (9 digits + carry)
-     *          64-bit: max number 1,999,999,999,999,999,999 (18 digits + carry)
-     *
-     * @var int
-     */
-    private $maxDigits;
-
-    /**
-     * Class constructor.
-     *
-     * @codeCoverageIgnore
-     */
-    public function __construct()
-    {
-        switch (PHP_INT_SIZE) {
-            case 4:
-                $this->maxDigits = 9;
-                break;
-
-            case 8:
-                $this->maxDigits = 18;
-                break;
-
-            default:
-                throw new \RuntimeException('The platform is not 32-bit or 64-bit as expected.');
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function add(string $a, string $b) : string
-    {
-        $result = $a + $b;
-
-        if (is_int($result)) {
-            return (string) $result;
-        }
-
-        if ($a === '0') {
-            return $b;
-        }
-
-        if ($b === '0') {
-            return $a;
-        }
-
-        [$aNeg, $bNeg, $aDig, $bDig] = $this->init($a, $b);
-
-        if ($aNeg === $bNeg) {
-            $result = $this->doAdd($aDig, $bDig);
-        } else {
-            $result = $this->doSub($aDig, $bDig);
-        }
-
-        if ($aNeg) {
-            $result = $this->neg($result);
-        }
-
-        return $result;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function sub(string $a, string $b) : string
-    {
-        return $this->add($a, $this->neg($b));
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function mul(string $a, string $b) : string
-    {
-        $result = $a * $b;
-
-        if (is_int($result)) {
-            return (string) $result;
-        }
-
-        if ($a === '0' || $b === '0') {
-            return '0';
-        }
-
-        if ($a === '1') {
-            return $b;
-        }
-
-        if ($b === '1') {
-            return $a;
-        }
-
-        if ($a === '-1') {
-            return $this->neg($b);
-        }
-
-        if ($b === '-1') {
-            return $this->neg($a);
-        }
-
-        [$aNeg, $bNeg, $aDig, $bDig] = $this->init($a, $b);
-
-        $result = $this->doMul($aDig, $bDig);
-
-        if ($aNeg !== $bNeg) {
-            $result = $this->neg($result);
-        }
-
-        return $result;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function divQ(string $a, string $b) : string
-    {
-        return $this->divQR($a, $b)[0];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function divR(string $a, string $b): string
-    {
-        return $this->divQR($a, $b)[1];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function divQR(string $a, string $b) : array
-    {
-        if ($a === '0') {
-            return ['0', '0'];
-        }
-
-        if ($a === $b) {
-            return ['1', '0'];
-        }
-
-        if ($b === '1') {
-            return [$a, '0'];
-        }
-
-        if ($b === '-1') {
-            return [$this->neg($a), '0'];
-        }
-
-        $na = $a * 1; // cast to number
-
-        if (is_int($na)) {
-            $nb = $b * 1;
-
-            if (is_int($nb)) {
-                // the only division that may overflow is PHP_INT_MIN / -1,
-                // which cannot happen here as we've already handled a divisor of -1 above.
-                $r = $na % $nb;
-                $q = ($na - $r) / $nb;
-
-                assert(is_int($q));
-
-                return [
-                    (string) $q,
-                    (string) $r
-                ];
-            }
-        }
-
-        [$aNeg, $bNeg, $aDig, $bDig] = $this->init($a, $b);
-
-        [$q, $r] = $this->doDiv($aDig, $bDig);
-
-        if ($aNeg !== $bNeg) {
-            $q = $this->neg($q);
-        }
-
-        if ($aNeg) {
-            $r = $this->neg($r);
-        }
-
-        return [$q, $r];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function pow(string $a, int $e) : string
-    {
-        if ($e === 0) {
-            return '1';
-        }
-
-        if ($e === 1) {
-            return $a;
-        }
-
-        $odd = $e % 2;
-        $e -= $odd;
-
-        $aa = $this->mul($a, $a);
-        $result = $this->pow($aa, $e / 2);
-
-        if ($odd === 1) {
-            $result = $this->mul($result, $a);
-        }
-
-        return $result;
-    }
-
-    /**
-     * Algorithm from: https://www.geeksforgeeks.org/modular-exponentiation-power-in-modular-arithmetic/
-     *
-     * {@inheritdoc}
-     */
-    public function modPow(string $base, string $exp, string $mod) : string
-    {
-        // special case: the algorithm below fails with 0 power 0 mod 1 (returns 1 instead of 0)
-        if ($base === '0' && $exp === '0' && $mod === '1') {
-            return '0';
-        }
-
-        // special case: the algorithm below fails with power 0 mod 1 (returns 1 instead of 0)
-        if ($exp === '0' && $mod === '1') {
-            return '0';
-        }
-
-        $x = $base;
-
-        $res = '1';
-
-        // numbers are positive, so we can use remainder instead of modulo
-        $x = $this->divR($x, $mod);
-
-        while ($exp !== '0') {
-            if (in_array($exp[-1], ['1', '3', '5', '7', '9'])) { // odd
-                $res = $this->divR($this->mul($res, $x), $mod);
-            }
-
-            $exp = $this->divQ($exp, '2');
-            $x = $this->divR($this->mul($x, $x), $mod);
-        }
-
-        return $res;
-    }
-
-    /**
-     * Adapted from https://cp-algorithms.com/num_methods/roots_newton.html
-     *
-     * {@inheritDoc}
-     */
-    public function sqrt(string $n) : string
-    {
-        if ($n === '0') {
-            return '0';
-        }
-
-        // initial approximation
-        $x = \str_repeat('9', \intdiv(\strlen($n), 2) ?: 1);
-
-        $decreased = false;
-
-        for (;;) {
-            $nx = $this->divQ($this->add($x, $this->divQ($n, $x)), '2');
-
-            if ($x === $nx || $this->cmp($nx, $x) > 0 && $decreased) {
-                break;
-            }
-
-            $decreased = $this->cmp($nx, $x) < 0;
-            $x = $nx;
-        }
-
-        return $x;
-    }
-
-    /**
-     * Performs the addition of two non-signed large integers.
-     *
-     * @param string $a The first operand.
-     * @param string $b The second operand.
-     *
-     * @return string
-     */
-    private function doAdd(string $a, string $b) : string
-    {
-        [$a, $b, $length] = $this->pad($a, $b);
-
-        $carry = 0;
-        $result = '';
-
-        for ($i = $length - $this->maxDigits;; $i -= $this->maxDigits) {
-            $blockLength = $this->maxDigits;
-
-            if ($i < 0) {
-                $blockLength += $i;
-                $i = 0;
-            }
-
-            $blockA = \substr($a, $i, $blockLength);
-            $blockB = \substr($b, $i, $blockLength);
-
-            $sum = (string) ($blockA + $blockB + $carry);
-            $sumLength = \strlen($sum);
-
-            if ($sumLength > $blockLength) {
-                $sum = \substr($sum, 1);
-                $carry = 1;
-            } else {
-                if ($sumLength < $blockLength) {
-                    $sum = \str_repeat('0', $blockLength - $sumLength) . $sum;
-                }
-                $carry = 0;
-            }
-
-            $result = $sum . $result;
-
-            if ($i === 0) {
-                break;
-            }
-        }
-
-        if ($carry === 1) {
-            $result = '1' . $result;
-        }
-
-        return $result;
-    }
-
-    /**
-     * Performs the subtraction of two non-signed large integers.
-     *
-     * @param string $a The first operand.
-     * @param string $b The second operand.
-     *
-     * @return string
-     */
-    private function doSub(string $a, string $b) : string
-    {
-        if ($a === $b) {
-            return '0';
-        }
-
-        // Ensure that we always subtract to a positive result: biggest minus smallest.
-        $cmp = $this->doCmp($a, $b);
-
-        $invert = ($cmp === -1);
-
-        if ($invert) {
-            $c = $a;
-            $a = $b;
-            $b = $c;
-        }
-
-        [$a, $b, $length] = $this->pad($a, $b);
-
-        $carry = 0;
-        $result = '';
-
-        $complement = 10 ** $this->maxDigits;
-
-        for ($i = $length - $this->maxDigits;; $i -= $this->maxDigits) {
-            $blockLength = $this->maxDigits;
-
-            if ($i < 0) {
-                $blockLength += $i;
-                $i = 0;
-            }
-
-            $blockA = \substr($a, $i, $blockLength);
-            $blockB = \substr($b, $i, $blockLength);
-
-            $sum = $blockA - $blockB - $carry;
-
-            if ($sum < 0) {
-                $sum += $complement;
-                $carry = 1;
-            } else {
-                $carry = 0;
-            }
-
-            $sum = (string) $sum;
-            $sumLength = \strlen($sum);
-
-            if ($sumLength < $blockLength) {
-                $sum = \str_repeat('0', $blockLength - $sumLength) . $sum;
-            }
-
-            $result = $sum . $result;
-
-            if ($i === 0) {
-                break;
-            }
-        }
-
-        // Carry cannot be 1 when the loop ends, as a > b
-        assert($carry === 0);
-
-        $result = \ltrim($result, '0');
-
-        if ($invert) {
-            $result = $this->neg($result);
-        }
-
-        return $result;
-    }
-
-    /**
-     * Performs the multiplication of two non-signed large integers.
-     *
-     * @param string $a The first operand.
-     * @param string $b The second operand.
-     *
-     * @return string
-     */
-    private function doMul(string $a, string $b) : string
-    {
-        $x = \strlen($a);
-        $y = \strlen($b);
-
-        $maxDigits = \intdiv($this->maxDigits, 2);
-        $complement = 10 ** $maxDigits;
-
-        $result = '0';
-
-        for ($i = $x - $maxDigits;; $i -= $maxDigits) {
-            $blockALength = $maxDigits;
-
-            if ($i < 0) {
-                $blockALength += $i;
-                $i = 0;
-            }
-
-            $blockA = (int) \substr($a, $i, $blockALength);
-
-            $line = '';
-            $carry = 0;
-
-            for ($j = $y - $maxDigits;; $j -= $maxDigits) {
-                $blockBLength = $maxDigits;
-
-                if ($j < 0) {
-                    $blockBLength += $j;
-                    $j = 0;
-                }
-
-                $blockB = (int) \substr($b, $j, $blockBLength);
-
-                $mul = $blockA * $blockB + $carry;
-                $value = $mul % $complement;
-                $carry = ($mul - $value) / $complement;
-
-                $value = (string) $value;
-                $value = \str_pad($value, $maxDigits, '0', STR_PAD_LEFT);
-
-                $line = $value . $line;
-
-                if ($j === 0) {
-                    break;
-                }
-            }
-
-            if ($carry !== 0) {
-                $line = $carry . $line;
-            }
-
-            $line = \ltrim($line, '0');
-
-            if ($line !== '') {
-                $line .= \str_repeat('0', $x - $blockALength - $i);
-                $result = $this->add($result, $line);
-            }
-
-            if ($i === 0) {
-                break;
-            }
-        }
-
-        return $result;
-    }
-
-    /**
-     * Performs the division of two non-signed large integers.
-     *
-     * @param string $a The first operand.
-     * @param string $b The second operand.
-     *
-     * @return string[] The quotient and remainder.
-     */
-    private function doDiv(string $a, string $b) : array
-    {
-        $cmp = $this->doCmp($a, $b);
-
-        if ($cmp === -1) {
-            return ['0', $a];
-        }
-
-        $x = \strlen($a);
-        $y = \strlen($b);
-
-        // we now know that a >= b && x >= y
-
-        $q = '0'; // quotient
-        $r = $a; // remainder
-        $z = $y; // focus length, always $y or $y+1
-
-        for (;;) {
-            $focus = \substr($a, 0, $z);
-
-            $cmp = $this->doCmp($focus, $b);
-
-            if ($cmp === -1) {
-                if ($z === $x) { // remainder < dividend
-                    break;
-                }
-
-                $z++;
-            }
-
-            $zeros = \str_repeat('0', $x - $z);
-
-            $q = $this->add($q, '1' . $zeros);
-            $a = $this->sub($a, $b . $zeros);
-
-            $r = $a;
-
-            if ($r === '0') { // remainder == 0
-                break;
-            }
-
-            $x = \strlen($a);
-
-            if ($x < $y) { // remainder < dividend
-                break;
-            }
-
-            $z = $y;
-        }
-
-        return [$q, $r];
-    }
-
-    /**
-     * Compares two non-signed large numbers.
-     *
-     * @param string $a The first operand.
-     * @param string $b The second operand.
-     *
-     * @return int [-1, 0, 1]
-     */
-    private function doCmp(string $a, string $b) : int
-    {
-        $x = \strlen($a);
-        $y = \strlen($b);
-
-        $cmp = $x <=> $y;
-
-        if ($cmp !== 0) {
-            return $cmp;
-        }
-
-        return \strcmp($a, $b) <=> 0; // enforce [-1, 0, 1]
-    }
-
-    /**
-     * Pads the left of one of the given numbers with zeros if necessary to make both numbers the same length.
-     *
-     * The numbers must only consist of digits, without leading minus sign.
-     *
-     * @param string $a The first operand.
-     * @param string $b The second operand.
-     *
-     * @return array{0: string, 1: string, 2: int}
-     */
-    private function pad(string $a, string $b) : array
-    {
-        $x = \strlen($a);
-        $y = \strlen($b);
-
-        if ($x > $y) {
-            $b = \str_repeat('0', $x - $y) . $b;
-
-            return [$a, $b, $x];
-        }
-
-        if ($x < $y) {
-            $a = \str_repeat('0', $y - $x) . $a;
-
-            return [$a, $b, $y];
-        }
-
-        return [$a, $b, $x];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+icC=

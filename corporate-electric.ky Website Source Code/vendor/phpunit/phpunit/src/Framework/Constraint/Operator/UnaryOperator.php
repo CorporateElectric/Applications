@@ -1,140 +1,67 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Framework\Constraint;
-
-use function count;
-
-/**
- * @no-named-arguments Parameter names are not covered by the backward compatibility promise for PHPUnit
- */
-abstract class UnaryOperator extends Operator
-{
-    /**
-     * @var Constraint
-     */
-    private $constraint;
-
-    /**
-     * @param Constraint|mixed $constraint
-     */
-    public function __construct($constraint)
-    {
-        $this->constraint = $this->checkConstraint($constraint);
-    }
-
-    /**
-     * Returns the number of operands (constraints).
-     */
-    public function arity(): int
-    {
-        return 1;
-    }
-
-    /**
-     * Returns a string representation of the constraint.
-     */
-    public function toString(): string
-    {
-        $reduced = $this->reduce();
-
-        if ($reduced !== $this) {
-            return $reduced->toString();
-        }
-
-        $constraint = $this->constraint->reduce();
-
-        if ($this->constraintNeedsParentheses($constraint)) {
-            return $this->operator() . '( ' . $constraint->toString() . ' )';
-        }
-
-        $string = $constraint->toStringInContext($this, 0);
-
-        if ($string === '') {
-            return $this->transformString($constraint->toString());
-        }
-
-        return $string;
-    }
-
-    /**
-     * Counts the number of constraint elements.
-     */
-    public function count(): int
-    {
-        return count($this->constraint);
-    }
-
-    /**
-     * Returns the description of the failure.
-     *
-     * The beginning of failure messages is "Failed asserting that" in most
-     * cases. This method should return the second part of that sentence.
-     *
-     * @param mixed $other evaluated value or object
-     *
-     * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
-     */
-    protected function failureDescription($other): string
-    {
-        $reduced = $this->reduce();
-
-        if ($reduced !== $this) {
-            return $reduced->failureDescription($other);
-        }
-
-        $constraint = $this->constraint->reduce();
-
-        if ($this->constraintNeedsParentheses($constraint)) {
-            return $this->operator() . '( ' . $constraint->failureDescription($other) . ' )';
-        }
-
-        $string = $constraint->failureDescriptionInContext($this, 0, $other);
-
-        if ($string === '') {
-            return $this->transformString($constraint->failureDescription($other));
-        }
-
-        return $string;
-    }
-
-    /**
-     * Transforms string returned by the memeber constraint's toString() or
-     * failureDescription() such that it reflects constraint's participation in
-     * this expression.
-     *
-     * The method may be overwritten in a subclass to apply default
-     * transformation in case the operand constraint does not provide its own
-     * custom strings via toStringInContext() or failureDescriptionInContext().
-     *
-     * @param string $string the string to be transformed
-     */
-    protected function transformString(string $string): string
-    {
-        return $string;
-    }
-
-    /**
-     * Provides access to $this->constraint for subclasses.
-     */
-    final protected function constraint(): Constraint
-    {
-        return $this->constraint;
-    }
-
-    /**
-     * Returns true if the $constraint needs to be wrapped with parentheses.
-     */
-    protected function constraintNeedsParentheses(Constraint $constraint): bool
-    {
-        $constraint = $constraint->reduce();
-
-        return $constraint instanceof self || parent::constraintNeedsParentheses($constraint);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

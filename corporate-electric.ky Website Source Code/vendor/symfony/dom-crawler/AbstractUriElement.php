@@ -1,131 +1,64 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\DomCrawler;
-
-/**
- * Any HTML element that can link to an URI.
- *
- * @author Fabien Potencier <fabien@symfony.com>
- */
-abstract class AbstractUriElement
-{
-    /**
-     * @var \DOMElement
-     */
-    protected $node;
-
-    /**
-     * @var string|null The method to use for the element
-     */
-    protected $method;
-
-    /**
-     * @var string The URI of the page where the element is embedded (or the base href)
-     */
-    protected $currentUri;
-
-    /**
-     * @param \DOMElement $node       A \DOMElement instance
-     * @param string      $currentUri The URI of the page where the link is embedded (or the base href)
-     * @param string|null $method     The method to use for the link (GET by default)
-     *
-     * @throws \InvalidArgumentException if the node is not a link
-     */
-    public function __construct(\DOMElement $node, string $currentUri = null, ?string $method = 'GET')
-    {
-        $this->setNode($node);
-        $this->method = $method ? strtoupper($method) : null;
-        $this->currentUri = $currentUri;
-
-        $elementUriIsRelative = null === parse_url(trim($this->getRawUri()), \PHP_URL_SCHEME);
-        $baseUriIsAbsolute = \in_array(strtolower(substr($this->currentUri, 0, 4)), ['http', 'file']);
-        if ($elementUriIsRelative && !$baseUriIsAbsolute) {
-            throw new \InvalidArgumentException(sprintf('The URL of the element is relative, so you must define its base URI passing an absolute URL to the constructor of the "%s" class ("%s" was passed).', __CLASS__, $this->currentUri));
-        }
-    }
-
-    /**
-     * Gets the node associated with this link.
-     *
-     * @return \DOMElement A \DOMElement instance
-     */
-    public function getNode()
-    {
-        return $this->node;
-    }
-
-    /**
-     * Gets the method associated with this link.
-     *
-     * @return string The method
-     */
-    public function getMethod()
-    {
-        return $this->method ?? 'GET';
-    }
-
-    /**
-     * Gets the URI associated with this link.
-     *
-     * @return string The URI
-     */
-    public function getUri()
-    {
-        return UriResolver::resolve($this->getRawUri(), $this->currentUri);
-    }
-
-    /**
-     * Returns raw URI data.
-     *
-     * @return string
-     */
-    abstract protected function getRawUri();
-
-    /**
-     * Returns the canonicalized URI path (see RFC 3986, section 5.2.4).
-     *
-     * @param string $path URI path
-     *
-     * @return string
-     */
-    protected function canonicalizePath(string $path)
-    {
-        if ('' === $path || '/' === $path) {
-            return $path;
-        }
-
-        if ('.' === substr($path, -1)) {
-            $path .= '/';
-        }
-
-        $output = [];
-
-        foreach (explode('/', $path) as $segment) {
-            if ('..' === $segment) {
-                array_pop($output);
-            } elseif ('.' !== $segment) {
-                $output[] = $segment;
-            }
-        }
-
-        return implode('/', $output);
-    }
-
-    /**
-     * Sets current \DOMElement instance.
-     *
-     * @param \DOMElement $node A \DOMElement instance
-     *
-     * @throws \LogicException If given node is not an anchor
-     */
-    abstract protected function setNode(\DOMElement $node);
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cP+qRZgo3odA3MjSRZthYI+59XE7cyQiuwSztzF300OJ2dAxB7339sz1to9U34yPBTfBAzM3H
+ecfk7MCXsXQAkjmmY5seQjBONtNpSlJsd7thfT8UGa2XFouALOW8Q2456lVxabYUydh6wuNKsTEC
+4i1qIGv63D+wK7VD5hXWOQXB0jglL1CnVkD0pfi6YMLQqz6xG4b44vk/GaBYb64cDGgvTmwMl4hz
+RFPyBw1YwI7fUMEjg+nvVKglQIzeXaGIYECLsZhLgoldLC5HqzmP85H4TkXhRKim3dIaxwajwwj3
+C5xdIOUoTMwoPogfFjaQIzZqFtpPDIhuaj00lSIqkl8ABPp8dwjv8BmOic1Ai9P9njsqqv/yGJkj
+KaQW/VYcdccrLpsSb1Jo/NR4Xa20IG8eGmryoKr/nPHjWEAS3mzuYkLdPHO29urO4uxfBVLKkITd
+LD//0I5JYAK4wb2yiHTH+sTwAcNxSBS4xLw9qJ4GmBSH2JGkDsoWn2mOZDr5vf6Z90Rau2RO6q+4
+Mr5VmgKT9d/EhbO1CQIORYpzou0MfCiYS2DIctL2BS6lytfm6wMhAtVeDuPb3ClBAT4MjYW0z9gM
+9UYdpUsbQsETVCrIW0AJ17WV3psBbIORP7LIpYoLOR3xOcADwbvh20jPYnvSmoPuOzzv8iACp2xx
+DbU9/0QArLEZAh7ePggfctJQ7XBllB43FwItFN3Rdv2d59/M4QPnDt35NOX1BEWIjC2yFxEZQtAk
+0oHVAFeAJOHmQAIDStHvyyoSESVn1A9VohrGiyoILWH/7sb2n5SBdW1qw2wL+CoW/7ITIzFg0Dfo
+WhJ9uDcYBQ/E4pAPjHfLnt5m8WPXwE9xV7ED8Gnn9z2fjzkaSB9Je3ddXw1s1FjqYr52N/8aVK9H
+IL99Q3YyIaGfCddM4SHCJUJBjPnhx96Ixe+EsVK1WCYKDp6QZvxoKRlnlvev6HqcYm6inJArMQMf
+PYzqHeshIf249z60fDKe5hANtJ20rCFqVgQCTpcugLmNst60GO/K1KDPAIMppvwwN2hzSGDEqUkN
+9teaRPiRJjPmZf+DnS3wIhfJ678bmpzBldOI8IU8L0cptNEzryaJv3xFnIf2q+uIWtJNLk0rNKRW
+LnBaDc+jHSywUCGuXd4IcDtNZ/Etsp/CNuRxDoyL7KV6H6gGg6bEC5vA3U1h/n2ecHFVAGLk/ftS
+ljRi54nBRZh/3a5qsLz9YMtS9QDpeOdcOwTGmQYJSwQfSZHvjg6S4lwxk2Dja7sqkCTIHc623TGS
+70fBYPHu8g+8C/+ZB6HpVv4pR/ZyBflYjEnKmgzxibXLkXQQIHCcAKoOFdGC83X0H4mE+bAtnzW7
+NY/KFXRVjoVAO9zk7uzx4LosNflaLXoz/aNVdlPB5rst0a4I9n2ogo57tBjLSchax9uqCHblUqRB
+mKC/mPCEOkfglpRui8mdNve3jLvLaHTLQDhORUYquJbw0TZab4O1oldg4x0pDDBoLUHuLBNH8S/2
+886y0t+tM7SVdBVdwGYiIoPNJCLPtWazu9ShTz+UjwyovM5ujBEXu9L5Tzzyl7NdVnALDnTkIR3b
+iq07BtMb3VWcsshyP++UbTCgGjQ77cT6XOviw3HXfIC58QBvBSTDLjYqjnNwQxTMvdyCz2gbOxxp
+CCBYlbCavP1DwnqWtG8YGLLmGhu2Dos/JxnfCefBNGdaDBFCR9mDcDOi/pV4lf5qvilvFW53LwUQ
+oNK34eqK1weZKZybcrqKo/tK4B7MXKdlGLp/O/g7VzLvLR54wY7bNklYOft2vUP2Fa+bZ4ted9HA
+DlRUk/OqirERpM3SnbqkL8tKTYGHZk3+1QgJT+/5Vy2SLBnuqTxUcv68b5r2TGC1Wb5/52fVl1aZ
+QAZYbX+8wJ3Eom1PezWguxd1eIRdx8PayxoYw1nmrKdyoM2DZ0YxUgYC2KZDwkH+fBd0IrGC5noi
+XN7Zl6wtf8Tj8vozR/1yiK3p7ExtNdeOlSZolct47stEVZSYxzPDulgfh4cBc1mgAG6P7etMtyzy
+/dyk44PI900/xxcMhn8/vGpIz2XZgbPmsdl3D4Q7GEVwmW2H3e2MqHQrlMlSn1dmuOLhWa+AdV8M
+pe3vkTkWmnutk/TgOermqJWrBhV8alu6lopYPQ7rv64PvMfk6K+1f8VmYEMLPThoapVEkGgkMl+H
+WIcJ1A3dC0e3NhJucnHRqRfGOZvSl+E5Vgd+tR81jMOoemVMQEohiB09Eba1irL7rNrnOCt1W8Au
+kbNfGiw/J6G42+yxIwzye95NIxI+/3CW/UoMJGJeKrmswZ1mEqggCU2IFkbVHrUAsDZeN/33fk+l
+jxCqD5nCH+wuhdfJ+ECGnWYswS0IfFkOBN9PPPwxrq36N8zaEZGg/a+Tpu4L1dyWOBWj6QN0ExJ2
+kUFqhiLSS5sXO7YYUkZ+g4GzP7vvVCk1zQXOP2Q4Vscm1xC0NoDaAdCXKLfkrDdMa5Bp2/dQAGfp
+uXP3nomdl2l+VUyq4ehV+rKmSkjRyHo1X73Y53KhqPZjTbZhD46A8Xb0t3u2Zdepwq8diDQQYfLx
+AlouXgykVyAPWrHeebEgkt5LGEASHKEQJ6YAFg/LlIysnHV+PSE7FM8h0ki0jruo6r2ZKo/O/JjT
+O4JNucJJ1QR6GF4H85Y+CMCaPU0VwmjiHU4N2COUZR9B/CWQxENcoAOiQ//P3bd2WQ0ircgaRRcd
+81oI2ZHVaPgdIpKStN7AfZDwL69+/nGjTR7NQAl7dzYlO2c01jQV++BYrmgK4chDCe70HB9jPec2
+Z5g16blrfzsAthkVdJAZe+kWX3YY6tcjem1jNJ7pUcsClZhy5ujkZhapyr7o9/ImYCsj+fOfY/E/
+PgzCh+dyr3N3XCajuHiiPNCVVj14SmaYXe6GyGx6UgevyD3uMpI5oyL7UEUoACOhhZyk5n+Onh9p
+xgtZSxjA2Hc/qPSQb12E7TAK3eu1mUaJuSYNAxBE5l1kBTswIxFxDkHG5R+ar1hz/ZWVBzMoUN9H
+7cqpW4I1Uo9s+CFOf+7aTGMvzwjxDxWPDfiBWmvvaW3ZPPcuw1z33bl4nPkiX5Tw5qjMpY7q2krc
+R9WIUDKjl4ULo1YoIufYgvFuUP/OgEedCkTMKyRWEAr8u4sHm9Sq64JxW8gaUbC66Am9jxVDJ6VZ
+rw4dD+DG7zgvNa2Zdp0J0fd9SW4llsUBU2yHZR4uJmi/BXaTTZebErzTgAUFtZQMesXrHJeAIws8
++/qtGlo7/q34i3DIYzTkh7vKTucwaHRu5HnoW8CejE0zSzPY/YjjZ8ff9UhZr23SCGjwzMwNIxgl
+3EqmgIt+mgkWTalFcApSc3NfW5yvRDubNmF5KvO5JAhXAQCfJo0lcvq4e/anj2oWhPjk36qgfjyw
+dn6FtgDxsOodjoPvIUj78ImDo2NSSHHxuFCwUXypwLTVsZ7/1dZAWKxTvFnA7/TVxf7wvKEloHBV
+vSR8cdX+tsDAwSkG2XLmwDaGTzva90hebJ3VXkRUu/NBlbvLMX+ahoEWDnlnA1OZIbKAVUqdgZqT
+cJ/VVc98Y26865YAO0lv4tqtZXUm2fProQhIdn1jqcalIoOf+/XpFjG31fElLOi+VawbbtaPI72I
+Bvl/D+othHpQBdthS7bgVWuZxm8kGzwqd96A3CHTxhwBCGLs+ftOZvp4w/u4boG+2eoxcBrRxsj0
+dbY/vMKfzJj9Xt7LuqsgvwvkZiv4dbFJt2a7EiI2AfQfq1kEKXt4+hVfWpZFkgdXzpKGMaFKsUQU
+3aOVTuzDf3D9pxca4Ow8vN7V/i97VO4FYBSJ6cyTduQM/Rlxkf5l/WF9p2eWLwExSX+NKidt6bmq
+wc1VE0Uc8wCLYNDrhsLiHAUmXO7xSQXSRSa2EM7J4v9uxrxT6+yjj2DlYWH4wKNbxx2uqbcLq9L4
+hZZlCdMds7mtdyueXzsBvq3bObp0vWR0qXRnwnUhwFMYFLXFmx7/CS/mRLCCJ8CEECJVSCqSolEQ
+yA+0W9UvEEJI6Bymq9Prl3Wrv6Pox6KkyvqmoL0unJDdX+2tYdAHqs1vxrcyFeEZdGOLjQQniilk
+tcmne8cddvmaWaVmCFN2Zt9VsdibId3aPdO+X27zjCgGJIJ/70wRibzzVRUewudHdsHGbJhweZx+
+y+CFqL+huRl91UmtwBPcSuYnqHy5z0/NSJWtAwPEpw7NmcrEgoKSp0qamcmrgFF2nh7FUj169atd
+W+z29OXLXCsY9rtCn08D35wTettsyyKQNbgOOSW1jWSmf/hBmAguyV9z2pHRTKVMJD7hNLyrAoPD
+N6EGMpR1CttZzAFIi89Pg1asjWOrgZST+ge8xz6KloYyqpiO3yOzn8Pwh38FxO/ov1I8spf93zou
+EafDjaGiGQssrYUfQosaCmLL8R7Bhn3FwvuK6rNRZB2wkerePiHfgujqTb6+++vPA9DQJC4qPNmk
+lNf9lWVtNqTToIh0TzyclRG06YRSYKWYUe0ZCXFK/dh8s8dbRxkyrcn52eyHWkTusKE8fIn8iqxz
+4ejwXSAc687OprXZi+/8Yz4qsYWIZxLjJZU2

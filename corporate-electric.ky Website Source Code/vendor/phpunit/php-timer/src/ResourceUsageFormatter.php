@@ -1,73 +1,46 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of phpunit/php-timer.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\Timer;
-
-use function is_float;
-use function memory_get_peak_usage;
-use function microtime;
-use function sprintf;
-
-final class ResourceUsageFormatter
-{
-    /**
-     * @psalm-var array<string,int>
-     */
-    private const SIZES = [
-        'GB' => 1073741824,
-        'MB' => 1048576,
-        'KB' => 1024,
-    ];
-
-    public function resourceUsage(Duration $duration): string
-    {
-        return sprintf(
-            'Time: %s, Memory: %s',
-            $duration->asString(),
-            $this->bytesToString(memory_get_peak_usage(true))
-        );
-    }
-
-    /**
-     * @throws TimeSinceStartOfRequestNotAvailableException
-     */
-    public function resourceUsageSinceStartOfRequest(): string
-    {
-        if (!isset($_SERVER['REQUEST_TIME_FLOAT'])) {
-            throw new TimeSinceStartOfRequestNotAvailableException(
-                'Cannot determine time at which the request started because $_SERVER[\'REQUEST_TIME_FLOAT\'] is not available'
-            );
-        }
-
-        if (!is_float($_SERVER['REQUEST_TIME_FLOAT'])) {
-            throw new TimeSinceStartOfRequestNotAvailableException(
-                'Cannot determine time at which the request started because $_SERVER[\'REQUEST_TIME_FLOAT\'] is not of type float'
-            );
-        }
-
-        return $this->resourceUsage(
-            Duration::fromMicroseconds(
-                (1000000 * (microtime(true) - $_SERVER['REQUEST_TIME_FLOAT']))
-            )
-        );
-    }
-
-    private function bytesToString(int $bytes): string
-    {
-        foreach (self::SIZES as $unit => $value) {
-            if ($bytes >= $value) {
-                return sprintf('%.2f %s', $bytes >= 1024 ? $bytes / $value : $bytes, $unit);
-            }
-        }
-
-        // @codeCoverageIgnoreStart
-        return $bytes . ' byte' . ($bytes !== 1 ? 's' : '');
-        // @codeCoverageIgnoreEnd
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

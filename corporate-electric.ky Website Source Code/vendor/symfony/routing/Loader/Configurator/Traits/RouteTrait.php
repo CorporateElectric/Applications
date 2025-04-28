@@ -1,175 +1,52 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Routing\Loader\Configurator\Traits;
-
-use Symfony\Component\Routing\Route;
-use Symfony\Component\Routing\RouteCollection;
-
-trait RouteTrait
-{
-    /**
-     * @var RouteCollection|Route
-     */
-    protected $route;
-
-    /**
-     * Adds defaults.
-     *
-     * @return $this
-     */
-    final public function defaults(array $defaults): self
-    {
-        $this->route->addDefaults($defaults);
-
-        return $this;
-    }
-
-    /**
-     * Adds requirements.
-     *
-     * @return $this
-     */
-    final public function requirements(array $requirements): self
-    {
-        $this->route->addRequirements($requirements);
-
-        return $this;
-    }
-
-    /**
-     * Adds options.
-     *
-     * @return $this
-     */
-    final public function options(array $options): self
-    {
-        $this->route->addOptions($options);
-
-        return $this;
-    }
-
-    /**
-     * Whether paths should accept utf8 encoding.
-     *
-     * @return $this
-     */
-    final public function utf8(bool $utf8 = true): self
-    {
-        $this->route->addOptions(['utf8' => $utf8]);
-
-        return $this;
-    }
-
-    /**
-     * Sets the condition.
-     *
-     * @return $this
-     */
-    final public function condition(string $condition): self
-    {
-        $this->route->setCondition($condition);
-
-        return $this;
-    }
-
-    /**
-     * Sets the pattern for the host.
-     *
-     * @return $this
-     */
-    final public function host(string $pattern): self
-    {
-        $this->route->setHost($pattern);
-
-        return $this;
-    }
-
-    /**
-     * Sets the schemes (e.g. 'https') this route is restricted to.
-     * So an empty array means that any scheme is allowed.
-     *
-     * @param string[] $schemes
-     *
-     * @return $this
-     */
-    final public function schemes(array $schemes): self
-    {
-        $this->route->setSchemes($schemes);
-
-        return $this;
-    }
-
-    /**
-     * Sets the HTTP methods (e.g. 'POST') this route is restricted to.
-     * So an empty array means that any method is allowed.
-     *
-     * @param string[] $methods
-     *
-     * @return $this
-     */
-    final public function methods(array $methods): self
-    {
-        $this->route->setMethods($methods);
-
-        return $this;
-    }
-
-    /**
-     * Adds the "_controller" entry to defaults.
-     *
-     * @param callable|string $controller a callable or parseable pseudo-callable
-     *
-     * @return $this
-     */
-    final public function controller($controller): self
-    {
-        $this->route->addDefaults(['_controller' => $controller]);
-
-        return $this;
-    }
-
-    /**
-     * Adds the "_locale" entry to defaults.
-     *
-     * @return $this
-     */
-    final public function locale(string $locale): self
-    {
-        $this->route->addDefaults(['_locale' => $locale]);
-
-        return $this;
-    }
-
-    /**
-     * Adds the "_format" entry to defaults.
-     *
-     * @return $this
-     */
-    final public function format(string $format): self
-    {
-        $this->route->addDefaults(['_format' => $format]);
-
-        return $this;
-    }
-
-    /**
-     * Adds the "_stateless" entry to defaults.
-     *
-     * @return $this
-     */
-    final public function stateless(bool $stateless = true): self
-    {
-        $this->route->addDefaults(['_stateless' => $stateless]);
-
-        return $this;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+5Rb9zITp

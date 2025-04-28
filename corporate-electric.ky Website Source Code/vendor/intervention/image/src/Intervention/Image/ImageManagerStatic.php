@@ -1,88 +1,40 @@
-<?php
-
-namespace Intervention\Image;
-
-use Closure;
-
-class ImageManagerStatic
-{
-    /**
-     * Instance of Intervention\Image\ImageManager
-     *
-     * @var ImageManager
-     */
-    public static $manager;
-
-    /**
-     * Creates a new instance
-     *
-     * @param ImageManager $manager
-     */
-    public function __construct(ImageManager $manager = null)
-    {
-        self::$manager = $manager ? $manager : new ImageManager;
-    }
-
-    /**
-     * Get or create new ImageManager instance
-     *
-     * @return ImageManager
-     */
-    public static function getManager()
-    {
-        return self::$manager ? self::$manager : new ImageManager;
-    }
-
-    /**
-     * Statically create new custom configured image manager
-     *
-     * @param  array $config
-     *
-     * @return ImageManager
-     */
-    public static function configure(array $config = [])
-    {
-        return self::$manager = self::getManager()->configure($config);
-    }
-
-    /**
-     * Statically initiates an Image instance from different input types
-     *
-     * @param  mixed $data
-     *
-     * @return \Intervention\Image\Image
-     * @throws \Intervention\Image\Exception\NotReadableException
-     */
-    public static function make($data)
-    {
-        return self::getManager()->make($data);
-    }
-
-    /**
-     * Statically creates an empty image canvas
-     *
-     * @param  int   $width
-     * @param  int   $height
-     * @param  mixed $background
-     *
-     * @return \Intervention\Image\Image
-     */
-    public static function canvas($width, $height, $background = null)
-    {
-        return self::getManager()->canvas($width, $height, $background);
-    }
-
-    /**
-     * Create new cached image and run callback statically
-     *
-     * @param  Closure  $callback
-     * @param  int      $lifetime
-     * @param  boolean  $returnObj
-     *
-     * @return mixed
-     */
-    public static function cache(Closure $callback, $lifetime = null, $returnObj = false)
-    {
-        return self::getManager()->cache($callback, $lifetime, $returnObj);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

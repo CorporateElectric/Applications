@@ -1,89 +1,41 @@
-<?php
-
-/**
- * This file is part of the ramsey/uuid library
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @copyright Copyright (c) Ben Ramsey <ben@benramsey.com>
- * @license http://opensource.org/licenses/MIT MIT
- */
-
-declare(strict_types=1);
-
-namespace Ramsey\Uuid\Guid;
-
-use Ramsey\Uuid\Builder\UuidBuilderInterface;
-use Ramsey\Uuid\Codec\CodecInterface;
-use Ramsey\Uuid\Converter\NumberConverterInterface;
-use Ramsey\Uuid\Converter\TimeConverterInterface;
-use Ramsey\Uuid\Exception\UnableToBuildUuidException;
-use Ramsey\Uuid\UuidInterface;
-use Throwable;
-
-/**
- * GuidBuilder builds instances of Guid
- *
- * @see Guid
- *
- * @psalm-immutable
- */
-class GuidBuilder implements UuidBuilderInterface
-{
-    /**
-     * @var NumberConverterInterface
-     */
-    private $numberConverter;
-
-    /**
-     * @var TimeConverterInterface
-     */
-    private $timeConverter;
-
-    /**
-     * @param NumberConverterInterface $numberConverter The number converter to
-     *     use when constructing the Guid
-     * @param TimeConverterInterface $timeConverter The time converter to use
-     *     for converting timestamps extracted from a UUID to Unix timestamps
-     */
-    public function __construct(
-        NumberConverterInterface $numberConverter,
-        TimeConverterInterface $timeConverter
-    ) {
-        $this->numberConverter = $numberConverter;
-        $this->timeConverter = $timeConverter;
-    }
-
-    /**
-     * Builds and returns a Guid
-     *
-     * @param CodecInterface $codec The codec to use for building this Guid instance
-     * @param string $bytes The byte string from which to construct a UUID
-     *
-     * @return Guid The GuidBuilder returns an instance of Ramsey\Uuid\Guid\Guid
-     *
-     * @psalm-pure
-     */
-    public function build(CodecInterface $codec, string $bytes): UuidInterface
-    {
-        try {
-            return new Guid(
-                $this->buildFields($bytes),
-                $this->numberConverter,
-                $codec,
-                $this->timeConverter
-            );
-        } catch (Throwable $e) {
-            throw new UnableToBuildUuidException($e->getMessage(), (int) $e->getCode(), $e);
-        }
-    }
-
-    /**
-     * Proxy method to allow injecting a mock, for testing
-     */
-    protected function buildFields(string $bytes): Fields
-    {
-        return new Fields($bytes);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

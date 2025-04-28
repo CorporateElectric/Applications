@@ -1,218 +1,87 @@
-<?php
-
-/**
- * This file is part of the Carbon package.
- *
- * (c) Brian Nesbitt <brian@nesbot.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace Carbon\Traits;
-
-/**
- * Trait Week.
- *
- * week and ISO week number, year and count in year.
- *
- * Depends on the following properties:
- *
- * @property int $daysInYear
- * @property int $dayOfWeek
- * @property int $dayOfYear
- * @property int $year
- *
- * Depends on the following methods:
- *
- * @method static addWeeks(int $weeks = 1)
- * @method static copy()
- * @method static dayOfYear(int $dayOfYear)
- * @method string getTranslationMessage(string $key, string $locale = null, string $default = null, $translator = null)
- * @method static next(int|string $day = null)
- * @method static startOfWeek(int $day = 1)
- * @method static subWeeks(int $weeks = 1)
- * @method static year(int $year = null)
- */
-trait Week
-{
-    /**
-     * Set/get the week number of year using given first day of week and first
-     * day of year included in the first week. Or use ISO format if no settings
-     * given.
-     *
-     * @param int|null $year      if null, act as a getter, if not null, set the year and return current instance.
-     * @param int|null $dayOfWeek first date of week from 0 (Sunday) to 6 (Saturday)
-     * @param int|null $dayOfYear first day of year included in the week #1
-     *
-     * @return int|static
-     */
-    public function isoWeekYear($year = null, $dayOfWeek = null, $dayOfYear = null)
-    {
-        return $this->weekYear(
-            $year,
-            $dayOfWeek ?? 1,
-            $dayOfYear ?? 4
-        );
-    }
-
-    /**
-     * Set/get the week number of year using given first day of week and first
-     * day of year included in the first week. Or use US format if no settings
-     * given (Sunday / Jan 6).
-     *
-     * @param int|null $year      if null, act as a getter, if not null, set the year and return current instance.
-     * @param int|null $dayOfWeek first date of week from 0 (Sunday) to 6 (Saturday)
-     * @param int|null $dayOfYear first day of year included in the week #1
-     *
-     * @return int|static
-     */
-    public function weekYear($year = null, $dayOfWeek = null, $dayOfYear = null)
-    {
-        $dayOfWeek = $dayOfWeek ?? $this->getTranslationMessage('first_day_of_week') ?? 0;
-        $dayOfYear = $dayOfYear ?? $this->getTranslationMessage('day_of_first_week_of_year') ?? 1;
-
-        if ($year !== null) {
-            $year = (int) round($year);
-
-            if ($this->weekYear(null, $dayOfWeek, $dayOfYear) === $year) {
-                return $this->copy();
-            }
-
-            $week = $this->week(null, $dayOfWeek, $dayOfYear);
-            $day = $this->dayOfWeek;
-            $date = $this->year($year);
-            switch ($date->weekYear(null, $dayOfWeek, $dayOfYear) - $year) {
-                case 1:
-                    $date = $date->subWeeks(26);
-
-                    break;
-                case -1:
-                    $date = $date->addWeeks(26);
-
-                    break;
-            }
-
-            $date = $date->addWeeks($week - $date->week(null, $dayOfWeek, $dayOfYear))->startOfWeek($dayOfWeek);
-
-            if ($date->dayOfWeek === $day) {
-                return $date;
-            }
-
-            return $date->next($day);
-        }
-
-        $year = $this->year;
-        $day = $this->dayOfYear;
-        $date = $this->copy()->dayOfYear($dayOfYear)->startOfWeek($dayOfWeek);
-
-        if ($date->year === $year && $day < $date->dayOfYear) {
-            return $year - 1;
-        }
-
-        $date = $this->copy()->addYear()->dayOfYear($dayOfYear)->startOfWeek($dayOfWeek);
-
-        if ($date->year === $year && $day >= $date->dayOfYear) {
-            return $year + 1;
-        }
-
-        return $year;
-    }
-
-    /**
-     * Get the number of weeks of the current week-year using given first day of week and first
-     * day of year included in the first week. Or use ISO format if no settings
-     * given.
-     *
-     * @param int|null $dayOfWeek first date of week from 0 (Sunday) to 6 (Saturday)
-     * @param int|null $dayOfYear first day of year included in the week #1
-     *
-     * @return int
-     */
-    public function isoWeeksInYear($dayOfWeek = null, $dayOfYear = null)
-    {
-        return $this->weeksInYear(
-            $dayOfWeek ?? 1,
-            $dayOfYear ?? 4
-        );
-    }
-
-    /**
-     * Get the number of weeks of the current week-year using given first day of week and first
-     * day of year included in the first week. Or use US format if no settings
-     * given (Sunday / Jan 6).
-     *
-     * @param int|null $dayOfWeek first date of week from 0 (Sunday) to 6 (Saturday)
-     * @param int|null $dayOfYear first day of year included in the week #1
-     *
-     * @return int
-     */
-    public function weeksInYear($dayOfWeek = null, $dayOfYear = null)
-    {
-        $dayOfWeek = $dayOfWeek ?? $this->getTranslationMessage('first_day_of_week') ?? 0;
-        $dayOfYear = $dayOfYear ?? $this->getTranslationMessage('day_of_first_week_of_year') ?? 1;
-        $year = $this->year;
-        $start = $this->copy()->dayOfYear($dayOfYear)->startOfWeek($dayOfWeek);
-        $startDay = $start->dayOfYear;
-        if ($start->year !== $year) {
-            $startDay -= $start->daysInYear;
-        }
-        $end = $this->copy()->addYear()->dayOfYear($dayOfYear)->startOfWeek($dayOfWeek);
-        $endDay = $end->dayOfYear;
-        if ($end->year !== $year) {
-            $endDay += $this->daysInYear;
-        }
-
-        return (int) round(($endDay - $startDay) / 7);
-    }
-
-    /**
-     * Get/set the week number using given first day of week and first
-     * day of year included in the first week. Or use US format if no settings
-     * given (Sunday / Jan 6).
-     *
-     * @param int|null $week
-     * @param int|null $dayOfWeek
-     * @param int|null $dayOfYear
-     *
-     * @return int|static
-     */
-    public function week($week = null, $dayOfWeek = null, $dayOfYear = null)
-    {
-        $date = $this;
-        $dayOfWeek = $dayOfWeek ?? $this->getTranslationMessage('first_day_of_week') ?? 0;
-        $dayOfYear = $dayOfYear ?? $this->getTranslationMessage('day_of_first_week_of_year') ?? 1;
-
-        if ($week !== null) {
-            return $date->addWeeks(round($week) - $this->week(null, $dayOfWeek, $dayOfYear));
-        }
-
-        $start = $date->copy()->dayOfYear($dayOfYear)->startOfWeek($dayOfWeek);
-        $end = $date->copy()->startOfWeek($dayOfWeek);
-        if ($start > $end) {
-            $start = $start->subWeeks(26)->dayOfYear($dayOfYear)->startOfWeek($dayOfWeek);
-        }
-        $week = (int) ($start->diffInDays($end) / 7 + 1);
-
-        return $week > $end->weeksInYear($dayOfWeek, $dayOfYear) ? 1 : $week;
-    }
-
-    /**
-     * Get/set the week number using given first day of week and first
-     * day of year included in the first week. Or use ISO format if no settings
-     * given.
-     *
-     * @param int|null $week
-     * @param int|null $dayOfWeek
-     * @param int|null $dayOfYear
-     *
-     * @return int|static
-     */
-    public function isoWeek($week = null, $dayOfWeek = null, $dayOfYear = null)
-    {
-        return $this->week(
-            $week,
-            $dayOfWeek ?? 1,
-            $dayOfYear ?? 4
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

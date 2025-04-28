@@ -1,171 +1,80 @@
-<?php
-
-namespace Illuminate\Http\Concerns;
-
-use Illuminate\Support\Str;
-
-trait InteractsWithContentTypes
-{
-    /**
-     * Determine if the request is sending JSON.
-     *
-     * @return bool
-     */
-    public function isJson()
-    {
-        return Str::contains($this->header('CONTENT_TYPE'), ['/json', '+json']);
-    }
-
-    /**
-     * Determine if the current request probably expects a JSON response.
-     *
-     * @return bool
-     */
-    public function expectsJson()
-    {
-        return ($this->ajax() && ! $this->pjax() && $this->acceptsAnyContentType()) || $this->wantsJson();
-    }
-
-    /**
-     * Determine if the current request is asking for JSON.
-     *
-     * @return bool
-     */
-    public function wantsJson()
-    {
-        $acceptable = $this->getAcceptableContentTypes();
-
-        return isset($acceptable[0]) && Str::contains($acceptable[0], ['/json', '+json']);
-    }
-
-    /**
-     * Determines whether the current requests accepts a given content type.
-     *
-     * @param  string|array  $contentTypes
-     * @return bool
-     */
-    public function accepts($contentTypes)
-    {
-        $accepts = $this->getAcceptableContentTypes();
-
-        if (count($accepts) === 0) {
-            return true;
-        }
-
-        $types = (array) $contentTypes;
-
-        foreach ($accepts as $accept) {
-            if ($accept === '*/*' || $accept === '*') {
-                return true;
-            }
-
-            foreach ($types as $type) {
-                if ($this->matchesType($accept, $type) || $accept === strtok($type, '/').'/*') {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Return the most suitable content type from the given array based on content negotiation.
-     *
-     * @param  string|array  $contentTypes
-     * @return string|null
-     */
-    public function prefers($contentTypes)
-    {
-        $accepts = $this->getAcceptableContentTypes();
-
-        $contentTypes = (array) $contentTypes;
-
-        foreach ($accepts as $accept) {
-            if (in_array($accept, ['*/*', '*'])) {
-                return $contentTypes[0];
-            }
-
-            foreach ($contentTypes as $contentType) {
-                $type = $contentType;
-
-                if (! is_null($mimeType = $this->getMimeType($contentType))) {
-                    $type = $mimeType;
-                }
-
-                if ($this->matchesType($type, $accept) || $accept === strtok($type, '/').'/*') {
-                    return $contentType;
-                }
-            }
-        }
-    }
-
-    /**
-     * Determine if the current request accepts any content type.
-     *
-     * @return bool
-     */
-    public function acceptsAnyContentType()
-    {
-        $acceptable = $this->getAcceptableContentTypes();
-
-        return count($acceptable) === 0 || (
-            isset($acceptable[0]) && ($acceptable[0] === '*/*' || $acceptable[0] === '*')
-        );
-    }
-
-    /**
-     * Determines whether a request accepts JSON.
-     *
-     * @return bool
-     */
-    public function acceptsJson()
-    {
-        return $this->accepts('application/json');
-    }
-
-    /**
-     * Determines whether a request accepts HTML.
-     *
-     * @return bool
-     */
-    public function acceptsHtml()
-    {
-        return $this->accepts('text/html');
-    }
-
-    /**
-     * Determine if the given content types match.
-     *
-     * @param  string  $actual
-     * @param  string  $type
-     * @return bool
-     */
-    public static function matchesType($actual, $type)
-    {
-        if ($actual === $type) {
-            return true;
-        }
-
-        $split = explode('/', $actual);
-
-        return isset($split[1]) && preg_match('#'.preg_quote($split[0], '#').'/.+\+'.preg_quote($split[1], '#').'#', $type);
-    }
-
-    /**
-     * Get the data format expected in the response.
-     *
-     * @param  string  $default
-     * @return string
-     */
-    public function format($default = 'html')
-    {
-        foreach ($this->getAcceptableContentTypes() as $type) {
-            if ($format = $this->getFormat($type)) {
-                return $format;
-            }
-        }
-
-        return $default;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

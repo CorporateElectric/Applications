@@ -1,143 +1,73 @@
-<?php
-/*
- * This file is part of the DebugBar package.
- *
- * (c) 2013 Maxime Bouroumeau-Fuseau
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace DebugBar\DataCollector;
-
-use Exception;
-use Symfony\Component\Debug\Exception\FatalThrowableError;
-
-/**
- * Collects info about exceptions
- */
-class ExceptionsCollector extends DataCollector implements Renderable
-{
-    protected $exceptions = array();
-    protected $chainExceptions = false;
-
-    /**
-     * Adds an exception to be profiled in the debug bar
-     *
-     * @param Exception $e
-     * @deprecated in favor on addThrowable
-     */
-    public function addException(Exception $e)
-    {
-        $this->addThrowable($e);
-    }
-
-    /**
-     * Adds a Throwable to be profiled in the debug bar
-     *
-     * @param \Throwable $e
-     */
-    public function addThrowable($e)
-    {
-        $this->exceptions[] = $e;
-        if ($this->chainExceptions && $previous = $e->getPrevious()) {
-            $this->addThrowable($previous);
-        }
-    }
-
-    /**
-     * Configure whether or not all chained exceptions should be shown.
-     *
-     * @param bool $chainExceptions
-     */
-    public function setChainExceptions($chainExceptions = true)
-    {
-        $this->chainExceptions = $chainExceptions;
-    }
-
-    /**
-     * Returns the list of exceptions being profiled
-     *
-     * @return array[\Throwable]
-     */
-    public function getExceptions()
-    {
-        return $this->exceptions;
-    }
-
-    public function collect()
-    {
-        return array(
-            'count' => count($this->exceptions),
-            'exceptions' => array_map(array($this, 'formatThrowableData'), $this->exceptions)
-        );
-    }
-
-    /**
-     * Returns exception data as an array
-     *
-     * @param Exception $e
-     * @return array
-     * @deprecated in favor on formatThrowableData
-     */
-    public function formatExceptionData(Exception $e)
-    {
-        return $this->formatThrowableData($e);
-    }
-
-    /**
-     * Returns Throwable data as an array
-     *
-     * @param \Throwable $e
-     * @return array
-     */
-    public function formatThrowableData($e)
-    {
-        $filePath = $e->getFile();
-        if ($filePath && file_exists($filePath)) {
-            $lines = file($filePath);
-            $start = $e->getLine() - 4;
-            $lines = array_slice($lines, $start < 0 ? 0 : $start, 7);
-        } else {
-            $lines = array("Cannot open the file ($filePath) in which the exception occurred ");
-        }
-
-        return array(
-            'type' => get_class($e),
-            'message' => $e->getMessage(),
-            'code' => $e->getCode(),
-            'file' => $filePath,
-            'line' => $e->getLine(),
-            'stack_trace' => $e->getTraceAsString(),
-            'surrounding_lines' => $lines,
-            'xdebug_link' => $this->getXdebugLink($filePath, $e->getLine())
-        );
-    }
-
-    /**
-     * @return string
-     */
-    public function getName()
-    {
-        return 'exceptions';
-    }
-
-    /**
-     * @return array
-     */
-    public function getWidgets()
-    {
-        return array(
-            'exceptions' => array(
-                'icon' => 'bug',
-                'widget' => 'PhpDebugBar.Widgets.ExceptionsWidget',
-                'map' => 'exceptions.exceptions',
-                'default' => '[]'
-            ),
-            'exceptions:badge' => array(
-                'map' => 'exceptions.count',
-                'default' => 'null'
-            )
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

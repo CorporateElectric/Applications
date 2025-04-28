@@ -1,80 +1,53 @@
-<?php
-
-namespace Illuminate\Database\Eloquent\Relations;
-
-use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\Concerns\ComparesRelatedModels;
-use Illuminate\Database\Eloquent\Relations\Concerns\SupportsDefaultModels;
-
-class HasOne extends HasOneOrMany
-{
-    use ComparesRelatedModels, SupportsDefaultModels;
-
-    /**
-     * Get the results of the relationship.
-     *
-     * @return mixed
-     */
-    public function getResults()
-    {
-        if (is_null($this->getParentKey())) {
-            return $this->getDefaultFor($this->parent);
-        }
-
-        return $this->query->first() ?: $this->getDefaultFor($this->parent);
-    }
-
-    /**
-     * Initialize the relation on a set of models.
-     *
-     * @param  array  $models
-     * @param  string  $relation
-     * @return array
-     */
-    public function initRelation(array $models, $relation)
-    {
-        foreach ($models as $model) {
-            $model->setRelation($relation, $this->getDefaultFor($model));
-        }
-
-        return $models;
-    }
-
-    /**
-     * Match the eagerly loaded results to their parents.
-     *
-     * @param  array  $models
-     * @param  \Illuminate\Database\Eloquent\Collection  $results
-     * @param  string  $relation
-     * @return array
-     */
-    public function match(array $models, Collection $results, $relation)
-    {
-        return $this->matchOne($models, $results, $relation);
-    }
-
-    /**
-     * Make a new related instance for the given model.
-     *
-     * @param  \Illuminate\Database\Eloquent\Model  $parent
-     * @return \Illuminate\Database\Eloquent\Model
-     */
-    public function newRelatedInstanceFor(Model $parent)
-    {
-        return $this->related->newInstance()->setAttribute(
-            $this->getForeignKeyName(), $parent->{$this->localKey}
-        );
-    }
-
-    /**
-     * Get the value of the model's foreign key.
-     *
-     * @param  \Illuminate\Database\Eloquent\Model  $model
-     * @return mixed
-     */
-    protected function getRelatedKeyFrom(Model $model)
-    {
-        return $model->getAttribute($this->getForeignKeyName());
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

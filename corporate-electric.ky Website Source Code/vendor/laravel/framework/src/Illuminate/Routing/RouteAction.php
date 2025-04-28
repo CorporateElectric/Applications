@@ -1,109 +1,66 @@
-<?php
-
-namespace Illuminate\Routing;
-
-use Illuminate\Support\Arr;
-use Illuminate\Support\Reflector;
-use Illuminate\Support\Str;
-use LogicException;
-use UnexpectedValueException;
-
-class RouteAction
-{
-    /**
-     * Parse the given action into an array.
-     *
-     * @param  string  $uri
-     * @param  mixed  $action
-     * @return array
-     */
-    public static function parse($uri, $action)
-    {
-        // If no action is passed in right away, we assume the user will make use of
-        // fluent routing. In that case, we set a default closure, to be executed
-        // if the user never explicitly sets an action to handle the given uri.
-        if (is_null($action)) {
-            return static::missingAction($uri);
-        }
-
-        // If the action is already a Closure instance, we will just set that instance
-        // as the "uses" property, because there is nothing else we need to do when
-        // it is available. Otherwise we will need to find it in the action list.
-        if (Reflector::isCallable($action, true)) {
-            return ! is_array($action) ? ['uses' => $action] : [
-                'uses' => $action[0].'@'.$action[1],
-                'controller' => $action[0].'@'.$action[1],
-            ];
-        }
-
-        // If no "uses" property has been set, we will dig through the array to find a
-        // Closure instance within this list. We will set the first Closure we come
-        // across into the "uses" property that will get fired off by this route.
-        elseif (! isset($action['uses'])) {
-            $action['uses'] = static::findCallable($action);
-        }
-
-        if (is_string($action['uses']) && ! Str::contains($action['uses'], '@')) {
-            $action['uses'] = static::makeInvokable($action['uses']);
-        }
-
-        return $action;
-    }
-
-    /**
-     * Get an action for a route that has no action.
-     *
-     * @param  string  $uri
-     * @return array
-     *
-     * @throws \LogicException
-     */
-    protected static function missingAction($uri)
-    {
-        return ['uses' => function () use ($uri) {
-            throw new LogicException("Route for [{$uri}] has no action.");
-        }];
-    }
-
-    /**
-     * Find the callable in an action array.
-     *
-     * @param  array  $action
-     * @return callable
-     */
-    protected static function findCallable(array $action)
-    {
-        return Arr::first($action, function ($value, $key) {
-            return Reflector::isCallable($value) && is_numeric($key);
-        });
-    }
-
-    /**
-     * Make an action for an invokable controller.
-     *
-     * @param  string  $action
-     * @return string
-     *
-     * @throws \UnexpectedValueException
-     */
-    protected static function makeInvokable($action)
-    {
-        if (! method_exists($action, '__invoke')) {
-            throw new UnexpectedValueException("Invalid route action: [{$action}].");
-        }
-
-        return $action.'@__invoke';
-    }
-
-    /**
-     * Determine if the given array actions contains a serialized Closure.
-     *
-     * @param  array  $action
-     * @return bool
-     */
-    public static function containsSerializedClosure(array $action)
-    {
-        return is_string($action['uses']) &&
-               Str::startsWith($action['uses'], 'C:32:"Opis\\Closure\\SerializableClosure') !== false;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+ndiih81mAkW=

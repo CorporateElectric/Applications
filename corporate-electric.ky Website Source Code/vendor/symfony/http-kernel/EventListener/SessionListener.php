@@ -1,52 +1,44 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpKernel\EventListener;
-
-use Psr\Container\ContainerInterface;
-use Symfony\Component\HttpFoundation\Session\SessionInterface;
-use Symfony\Component\HttpFoundation\Session\Storage\NativeSessionStorage;
-
-/**
- * Sets the session in the request.
- *
- * When the passed container contains a "session_storage" entry which
- * holds a NativeSessionStorage instance, the "cookie_secure" option
- * will be set to true whenever the current master request is secure.
- *
- * @author Fabien Potencier <fabien@symfony.com>
- *
- * @final
- */
-class SessionListener extends AbstractSessionListener
-{
-    public function __construct(ContainerInterface $container, bool $debug = false)
-    {
-        parent::__construct($container, $debug);
-    }
-
-    protected function getSession(): ?SessionInterface
-    {
-        if (!$this->container->has('session')) {
-            return null;
-        }
-
-        if ($this->container->has('session_storage')
-            && ($storage = $this->container->get('session_storage')) instanceof NativeSessionStorage
-            && ($masterRequest = $this->container->get('request_stack')->getMasterRequest())
-            && $masterRequest->isSecure()
-        ) {
-            $storage->setOptions(['cookie_secure' => true]);
-        }
-
-        return $this->container->get('session');
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

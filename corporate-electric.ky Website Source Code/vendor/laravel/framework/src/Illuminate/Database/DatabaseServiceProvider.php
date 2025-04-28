@@ -1,131 +1,87 @@
-<?php
-
-namespace Illuminate\Database;
-
-use Doctrine\DBAL\Types\Type;
-use Faker\Factory as FakerFactory;
-use Faker\Generator as FakerGenerator;
-use Illuminate\Contracts\Queue\EntityResolver;
-use Illuminate\Database\Connectors\ConnectionFactory;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\QueueEntityResolver;
-use Illuminate\Support\ServiceProvider;
-
-class DatabaseServiceProvider extends ServiceProvider
-{
-    /**
-     * The array of resolved Faker instances.
-     *
-     * @var array
-     */
-    protected static $fakers = [];
-
-    /**
-     * Bootstrap the application events.
-     *
-     * @return void
-     */
-    public function boot()
-    {
-        Model::setConnectionResolver($this->app['db']);
-
-        Model::setEventDispatcher($this->app['events']);
-    }
-
-    /**
-     * Register the service provider.
-     *
-     * @return void
-     */
-    public function register()
-    {
-        Model::clearBootedModels();
-
-        $this->registerConnectionServices();
-        $this->registerEloquentFactory();
-        $this->registerQueueableEntityResolver();
-        $this->registerDoctrineTypes();
-    }
-
-    /**
-     * Register the primary database bindings.
-     *
-     * @return void
-     */
-    protected function registerConnectionServices()
-    {
-        // The connection factory is used to create the actual connection instances on
-        // the database. We will inject the factory into the manager so that it may
-        // make the connections while they are actually needed and not of before.
-        $this->app->singleton('db.factory', function ($app) {
-            return new ConnectionFactory($app);
-        });
-
-        // The database manager is used to resolve various connections, since multiple
-        // connections might be managed. It also implements the connection resolver
-        // interface which may be used by other components requiring connections.
-        $this->app->singleton('db', function ($app) {
-            return new DatabaseManager($app, $app['db.factory']);
-        });
-
-        $this->app->bind('db.connection', function ($app) {
-            return $app['db']->connection();
-        });
-
-        $this->app->singleton('db.transactions', function ($app) {
-            return new DatabaseTransactionsManager;
-        });
-    }
-
-    /**
-     * Register the Eloquent factory instance in the container.
-     *
-     * @return void
-     */
-    protected function registerEloquentFactory()
-    {
-        $this->app->singleton(FakerGenerator::class, function ($app, $parameters) {
-            $locale = $parameters['locale'] ?? $app['config']->get('app.faker_locale', 'en_US');
-
-            if (! isset(static::$fakers[$locale])) {
-                static::$fakers[$locale] = FakerFactory::create($locale);
-            }
-
-            static::$fakers[$locale]->unique(true);
-
-            return static::$fakers[$locale];
-        });
-    }
-
-    /**
-     * Register the queueable entity resolver implementation.
-     *
-     * @return void
-     */
-    protected function registerQueueableEntityResolver()
-    {
-        $this->app->singleton(EntityResolver::class, function () {
-            return new QueueEntityResolver;
-        });
-    }
-
-    /**
-     * Register custom types with the Doctrine DBAL library.
-     *
-     * @return void
-     */
-    protected function registerDoctrineTypes()
-    {
-        if (! class_exists(Type::class)) {
-            return;
-        }
-
-        $types = $this->app['config']->get('database.dbal.types', []);
-
-        foreach ($types as $name => $class) {
-            if (! Type::hasType($name)) {
-                Type::addType($name, $class);
-            }
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,124 +1,65 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\Command\ListCommand;
-
-use Psy\Reflection\ReflectionClassConstant;
-use Symfony\Component\Console\Input\InputInterface;
-
-/**
- * Class Constant Enumerator class.
- */
-class ClassConstantEnumerator extends Enumerator
-{
-    /**
-     * {@inheritdoc}
-     */
-    protected function listItems(InputInterface $input, \Reflector $reflector = null, $target = null)
-    {
-        // only list constants when a Reflector is present.
-        if ($reflector === null) {
-            return [];
-        }
-
-        // We can only list constants on actual class (or object) reflectors.
-        if (!$reflector instanceof \ReflectionClass) {
-            // @todo handle ReflectionExtension as well
-            return [];
-        }
-
-        // only list constants if we are specifically asked
-        if (!$input->getOption('constants')) {
-            return [];
-        }
-
-        $noInherit = $input->getOption('no-inherit');
-        $constants = $this->prepareConstants($this->getConstants($reflector, $noInherit));
-
-        if (empty($constants)) {
-            return [];
-        }
-
-        $ret = [];
-        $ret[$this->getKindLabel($reflector)] = $constants;
-
-        return $ret;
-    }
-
-    /**
-     * Get defined constants for the given class or object Reflector.
-     *
-     * @param \Reflector $reflector
-     * @param bool       $noInherit Exclude inherited constants
-     *
-     * @return array
-     */
-    protected function getConstants(\Reflector $reflector, $noInherit = false)
-    {
-        $className = $reflector->getName();
-
-        $constants = [];
-        foreach ($reflector->getConstants() as $name => $constant) {
-            $constReflector = ReflectionClassConstant::create($reflector->name, $name);
-
-            if ($noInherit && $constReflector->getDeclaringClass()->getName() !== $className) {
-                continue;
-            }
-
-            $constants[$name] = $constReflector;
-        }
-
-        \ksort($constants, \SORT_NATURAL | \SORT_FLAG_CASE);
-
-        return $constants;
-    }
-
-    /**
-     * Prepare formatted constant array.
-     *
-     * @param array $constants
-     *
-     * @return array
-     */
-    protected function prepareConstants(array $constants)
-    {
-        // My kingdom for a generator.
-        $ret = [];
-
-        foreach ($constants as $name => $constant) {
-            if ($this->showItem($name)) {
-                $ret[$name] = [
-                    'name'  => $name,
-                    'style' => self::IS_CONSTANT,
-                    'value' => $this->presentRef($constant->getValue()),
-                ];
-            }
-        }
-
-        return $ret;
-    }
-
-    /**
-     * Get a label for the particular kind of "class" represented.
-     *
-     * @param \ReflectionClass $reflector
-     *
-     * @return string
-     */
-    protected function getKindLabel(\ReflectionClass $reflector)
-    {
-        if ($reflector->isInterface()) {
-            return 'Interface Constants';
-        } else {
-            return 'Class Constants';
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+4hPCPhnXi35Hjp8=

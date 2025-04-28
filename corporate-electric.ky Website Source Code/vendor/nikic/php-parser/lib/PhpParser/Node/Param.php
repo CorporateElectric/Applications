@@ -1,60 +1,44 @@
-<?php declare(strict_types=1);
-
-namespace PhpParser\Node;
-
-use PhpParser\NodeAbstract;
-
-class Param extends NodeAbstract
-{
-    /** @var null|Identifier|Name|NullableType|UnionType Type declaration */
-    public $type;
-    /** @var bool Whether parameter is passed by reference */
-    public $byRef;
-    /** @var bool Whether this is a variadic argument */
-    public $variadic;
-    /** @var Expr\Variable|Expr\Error Parameter variable */
-    public $var;
-    /** @var null|Expr Default value */
-    public $default;
-    /** @var int */
-    public $flags;
-    /** @var AttributeGroup[] PHP attribute groups */
-    public $attrGroups;
-
-    /**
-     * Constructs a parameter node.
-     *
-     * @param Expr\Variable|Expr\Error                           $var        Parameter variable
-     * @param null|Expr                                          $default    Default value
-     * @param null|string|Identifier|Name|NullableType|UnionType $type       Type declaration
-     * @param bool                                               $byRef      Whether is passed by reference
-     * @param bool                                               $variadic   Whether this is a variadic argument
-     * @param array                                              $attributes Additional attributes
-     * @param int                                                $flags      Optional visibility flags
-     * @param AttributeGroup[]                                   $attrGroups PHP attribute groups
-     */
-    public function __construct(
-        $var, Expr $default = null, $type = null,
-        bool $byRef = false, bool $variadic = false,
-        array $attributes = [],
-        int $flags = 0,
-        array $attrGroups = []
-    ) {
-        $this->attributes = $attributes;
-        $this->type = \is_string($type) ? new Identifier($type) : $type;
-        $this->byRef = $byRef;
-        $this->variadic = $variadic;
-        $this->var = $var;
-        $this->default = $default;
-        $this->flags = $flags;
-        $this->attrGroups = $attrGroups;
-    }
-
-    public function getSubNodeNames() : array {
-        return ['attrGroups', 'flags', 'type', 'byRef', 'variadic', 'var', 'default'];
-    }
-
-    public function getType() : string {
-        return 'Param';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+0VIUWSjEeaIkVQWQVxK331ia

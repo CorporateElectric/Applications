@@ -1,216 +1,55 @@
-<?php
-
-/**
- * Structure that stores an HTML element definition. Used by
- * HTMLPurifier_HTMLDefinition and HTMLPurifier_HTMLModule.
- * @note This class is inspected by HTMLPurifier_Printer_HTMLDefinition.
- *       Please update that class too.
- * @warning If you add new properties to this class, you MUST update
- *          the mergeIn() method.
- */
-class HTMLPurifier_ElementDef
-{
-    /**
-     * Does the definition work by itself, or is it created solely
-     * for the purpose of merging into another definition?
-     * @type bool
-     */
-    public $standalone = true;
-
-    /**
-     * Associative array of attribute name to HTMLPurifier_AttrDef.
-     * @type array
-     * @note Before being processed by HTMLPurifier_AttrCollections
-     *       when modules are finalized during
-     *       HTMLPurifier_HTMLDefinition->setup(), this array may also
-     *       contain an array at index 0 that indicates which attribute
-     *       collections to load into the full array. It may also
-     *       contain string indentifiers in lieu of HTMLPurifier_AttrDef,
-     *       see HTMLPurifier_AttrTypes on how they are expanded during
-     *       HTMLPurifier_HTMLDefinition->setup() processing.
-     */
-    public $attr = array();
-
-    // XXX: Design note: currently, it's not possible to override
-    // previously defined AttrTransforms without messing around with
-    // the final generated config. This is by design; a previous version
-    // used an associated list of attr_transform, but it was extremely
-    // easy to accidentally override other attribute transforms by
-    // forgetting to specify an index (and just using 0.)  While we
-    // could check this by checking the index number and complaining,
-    // there is a second problem which is that it is not at all easy to
-    // tell when something is getting overridden. Combine this with a
-    // codebase where this isn't really being used, and it's perfect for
-    // nuking.
-
-    /**
-     * List of tags HTMLPurifier_AttrTransform to be done before validation.
-     * @type array
-     */
-    public $attr_transform_pre = array();
-
-    /**
-     * List of tags HTMLPurifier_AttrTransform to be done after validation.
-     * @type array
-     */
-    public $attr_transform_post = array();
-
-    /**
-     * HTMLPurifier_ChildDef of this tag.
-     * @type HTMLPurifier_ChildDef
-     */
-    public $child;
-
-    /**
-     * Abstract string representation of internal ChildDef rules.
-     * @see HTMLPurifier_ContentSets for how this is parsed and then transformed
-     * into an HTMLPurifier_ChildDef.
-     * @warning This is a temporary variable that is not available after
-     *      being processed by HTMLDefinition
-     * @type string
-     */
-    public $content_model;
-
-    /**
-     * Value of $child->type, used to determine which ChildDef to use,
-     * used in combination with $content_model.
-     * @warning This must be lowercase
-     * @warning This is a temporary variable that is not available after
-     *      being processed by HTMLDefinition
-     * @type string
-     */
-    public $content_model_type;
-
-    /**
-     * Does the element have a content model (#PCDATA | Inline)*? This
-     * is important for chameleon ins and del processing in
-     * HTMLPurifier_ChildDef_Chameleon. Dynamically set: modules don't
-     * have to worry about this one.
-     * @type bool
-     */
-    public $descendants_are_inline = false;
-
-    /**
-     * List of the names of required attributes this element has.
-     * Dynamically populated by HTMLPurifier_HTMLDefinition::getElement()
-     * @type array
-     */
-    public $required_attr = array();
-
-    /**
-     * Lookup table of tags excluded from all descendants of this tag.
-     * @type array
-     * @note SGML permits exclusions for all descendants, but this is
-     *       not possible with DTDs or XML Schemas. W3C has elected to
-     *       use complicated compositions of content_models to simulate
-     *       exclusion for children, but we go the simpler, SGML-style
-     *       route of flat-out exclusions, which correctly apply to
-     *       all descendants and not just children. Note that the XHTML
-     *       Modularization Abstract Modules are blithely unaware of such
-     *       distinctions.
-     */
-    public $excludes = array();
-
-    /**
-     * This tag is explicitly auto-closed by the following tags.
-     * @type array
-     */
-    public $autoclose = array();
-
-    /**
-     * If a foreign element is found in this element, test if it is
-     * allowed by this sub-element; if it is, instead of closing the
-     * current element, place it inside this element.
-     * @type string
-     */
-    public $wrap;
-
-    /**
-     * Whether or not this is a formatting element affected by the
-     * "Active Formatting Elements" algorithm.
-     * @type bool
-     */
-    public $formatting;
-
-    /**
-     * Low-level factory constructor for creating new standalone element defs
-     */
-    public static function create($content_model, $content_model_type, $attr)
-    {
-        $def = new HTMLPurifier_ElementDef();
-        $def->content_model = $content_model;
-        $def->content_model_type = $content_model_type;
-        $def->attr = $attr;
-        return $def;
-    }
-
-    /**
-     * Merges the values of another element definition into this one.
-     * Values from the new element def take precedence if a value is
-     * not mergeable.
-     * @param HTMLPurifier_ElementDef $def
-     */
-    public function mergeIn($def)
-    {
-        // later keys takes precedence
-        foreach ($def->attr as $k => $v) {
-            if ($k === 0) {
-                // merge in the includes
-                // sorry, no way to override an include
-                foreach ($v as $v2) {
-                    $this->attr[0][] = $v2;
-                }
-                continue;
-            }
-            if ($v === false) {
-                if (isset($this->attr[$k])) {
-                    unset($this->attr[$k]);
-                }
-                continue;
-            }
-            $this->attr[$k] = $v;
-        }
-        $this->_mergeAssocArray($this->excludes, $def->excludes);
-        $this->attr_transform_pre = array_merge($this->attr_transform_pre, $def->attr_transform_pre);
-        $this->attr_transform_post = array_merge($this->attr_transform_post, $def->attr_transform_post);
-
-        if (!empty($def->content_model)) {
-            $this->content_model =
-                str_replace("#SUPER", $this->content_model, $def->content_model);
-            $this->child = false;
-        }
-        if (!empty($def->content_model_type)) {
-            $this->content_model_type = $def->content_model_type;
-            $this->child = false;
-        }
-        if (!is_null($def->child)) {
-            $this->child = $def->child;
-        }
-        if (!is_null($def->formatting)) {
-            $this->formatting = $def->formatting;
-        }
-        if ($def->descendants_are_inline) {
-            $this->descendants_are_inline = $def->descendants_are_inline;
-        }
-    }
-
-    /**
-     * Merges one array into another, removes values which equal false
-     * @param $a1 Array by reference that is merged into
-     * @param $a2 Array that merges into $a1
-     */
-    private function _mergeAssocArray(&$a1, $a2)
-    {
-        foreach ($a2 as $k => $v) {
-            if ($v === false) {
-                if (isset($a1[$k])) {
-                    unset($a1[$k]);
-                }
-                continue;
-            }
-            $a1[$k] = $v;
-        }
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cP+WEB9s1qPJINBovlkYCjcp9/m+8B4w7BxQusZSoMcuPdxmxihHKmFwkj4Tc0ZR4oUngwkY+
+mCF+XjG2EeugZ4di94I1ZPjdMtQMw6RL1zNegJ59MrJZ7Hy/G+ud1F6TPM8E1ZULnOnrgnbiddaZ
+ep1fsDZUQstRq84k+69sFcENBzf4NOCRbqFFvjI9D2ix6ifjP0T36/DYZaUg7z/Nrdrp0o/cCjRF
+wmANAV+7vk13fXk9Vb0TGHurSt36l8Ae+9+iEjMhA+TKmL7Jt1aWL4Hsw0vgK96XeagwOg5LRtkh
+rn5P/ocMx41jl2EZ7OpN71FsZ7sm+qg1MvikV8b2HTsx9U2ZXzG3euWAJhxlqYNNELfclhAPv1BY
+492lkYqVJx4DXsI79Ug2sUWedz84fqNeifgODy27k6cWk2S6wLUgQcDB9qxce5UtbpMm0xutYBt6
+dNdopZbDx5h7CKqQZrGnpyqVBXIMwwwYw8nBW8lG/St4VGWXAshlOW6LVSEsuNLYlslwf9QjEEDm
+ySD+7cnBbYJAs+pzXlzWZpXuGZ3d2K/eiQJdq6R8NEgrGD+Q0ItiFhY5QNboM2Ej4sobkGPqFQ14
+zYpsxzn3zA1j2pqQlIhGkUbDI5nEaSH6ZP8hueLVGal/4LOVE4VT+7SOcxWp6PdYuSkF+CWakpML
+mxvz7+dFx7afavYa6yjzS/U99nc/Ck/wn1iRAXxbmpWaxedSuOoMGHZ4EatMkFzHLOwdOdFPI24I
+qWNWmNrbWEUSfI5pDHdBze7OCR96g1EEaK3jIvzxlgqB4+gEscnKgOw1gLJc2A6+C/WQdHSvV77c
+3FoQITMG3bFMH561CTq/qJjiwg4W2QbUP/IjPtekrJDOzum6p3AQnityR4TBS4/JBZEhhKiDFUFg
+P5kPC7Xg0IZrZME1beM8vNGLLxTv714b4U6e8CIsT9DqEi6O3U+tAWS5TZGDD5Ov0sWXNeZgwA5V
+ZJtzOKTdqhA+TqXMmomCiBjgxPM6mAF97rOJ8SHGWAjtpDWT0R0NLVDqAgMkE4R6KMK2m1cf/+JP
++PdvmzLBhquRMpDo6LOgQNIhmO5F01nszsG/H9O0E76e4kxTAJS6mn5QegDMO7/sj/+YW4q9cb00
+0H5xu5As89pdxvnn3tVWHtaSDsITE8Ert0rPm9H5kAgVY5xNuNNHgVrY21cjLYUe+4g989pbQ8hy
+AXUCbTLp7plmpHbQZD0XcVNojI/nBCMorScAt2eQp7R5Ji548twGejFcNpuvPILALa27/b8A44Ub
+kxENezV3l0qn3y46tHBoprwokyYmYjqh0tVq9YnRVFO3rWxMDtT3/PRAr/HL/LToesK5VwA4usIl
+1srjs5voKEFQH1zP0P2yxMOFjVmv7hOLIGtwBQGzKkMxkrE2m8Rdbcx9/8oM1m4//Qv9guYZwuy6
+dDcWMaBZbQpx3Fbq65UakrWNw1hapq13bd3dUVkHYkm6kkGP4Ig2e/lIIBhtpnVGfhrQEmWov3IV
+PpzkSvmrwtsv8DmwHsl9rHGDdw1Ldv6XwsKJL0qrRNe48/ouQNwQVDUkI76hq8jB2xehDayaQkAC
+a6j87l26f78ZRzdATobuGfkIWTT22FNFOQK6Ttzur7v0CsjdGvFDe0CC8uMRDjP/BoeXGpXI+L91
+mjESxsBOICI3/d81m12N5ihz8LydKco1S1/9p3CFxKSK5vL5Pek/5dTuuGVYo35WlmPgpZ75pMov
+mvF4zuZ7jf1Uq0NjFWRZbYcj571Y8XLBB4KZldJYX1Nx6VkUzS1i0dE/1AaPheGW1guOPS/Dy39n
+CMPy+7TwX0kPcfUwISK9wipjsaWOE8YSYArIKfhyWrQ1zchqFhnEOHcsrQ97coMMjTIrIv1+EKkz
+iPHJ/K0wibwx4FZFBx4CJR6HnVJ9FLou55QUJ0Fn1OvERcn8dzM/89pXwx03GJdgCSsJUZPgm/cY
+/PrBfkHJOrfF6dBz+gLR11MPfdKRLnC2ylQMEFZ9UMk3l1LV4yOFCn47U/roIuW0QF//GMe3UovV
+iU81Nm277qLIVGf3Hpx8XeZm2HMHlMsbNiIh/LOwjkymzBJW/0eOsr2yv2S5OgeMu6qYy53HtUCa
+g+n5UvFiEqGEhEcFH657U6oLPJjZptdHqdT7ouUZc4AdjgEKLyRXytMBNotyzX8t0yoKlBZWGijS
+AAluowH5//f3BNjPqASqkO9ofWKKoeARR1JeR65YN3h5HDlKavDNly9LuYzFdp7BLfuN9Dlseq+Y
++hZiVsVNolcnr4IsrKL6uYl6axZsN+Q0/0Kjk++vSDiNOrpZ5z5+b+CMO51dObZF8/bTb2XYt/5d
+S56Jid/D0lb3XMFbBaD4osGaFKf4/rYGX7dE8qL7J8FEpN6ni7BR+fUmF+0DrsKwmbE7MraUUoo1
+fPLq6mlk87P+AwibkDgXOkSIUrTJ25Xv5xBo2OC4N0mibjNkOdAsTHgYTrZicvZF4JvadO75GJDS
+pB0coIU/e74riAWnkOpS3b15guV1U/BbzkZIH8XId6ARQ/gqg7DUxn/EDpGuXYXZHSxsvyAFuJzF
+u6H7rmQpfGJFlX+JZD5B73aTWRyWjxk3y2jaQqLJ2XRh6X42TqTS+sZj4aARuI9oS+sG1b3AKKdf
+G1rjZAZvMBpXRQ/8S3tqIqxwn6V33VScywhs3XCwfC+MGnOOaqptCZZlM7/tkV/2hKJ/4JftdR7G
+eqsuAx2XWNj0THFKwjL3jw+fr4asYvNo4vH2E9TCU9P6Gsadz90OKV8f9mrUQLkHOCf4ScDXTrgr
+dkbn2q1X0+HjoUhC+FnrZ9IofSzS5TOOuVwB13t9xXEEHKv/XeL18EDsFqlx95nQ/d6FPA4gnlJX
+wJ6TaDinejRh0RF8DCnaFnDqERqvvaA43PDvT9ZiA1VrpyL+hovCcFoxc4DO4H/ZTOWsUwPUO3dI
+TZ8/venN0ckTwn9wzfjszRoMrTPnEftqoK2dSSgMbDVK3g+pEpyrRfSfRcdyRavKC+ZjVbNiZMrj
+KpTTGks3XNLXqCFAr/ENm8ou1sGEJmxdP0UX4vmss5RShxXvFe/XB/2AufYPR+0CHUr8qWhFSxr0
+OI3CGlG+kdRAg0QtXs+4quMmE+JIddnh+3xUXBaIptfVx/8B0owatfiFkyYeQbVuxHllw2ttBTsa
+QxAk24eV6VjB6B8jysY5RVdxjWt7EZuirFo2RMT+abGbb6ptLajM/N/Yb7cDB5tRJV4Djpa5noHP
+K0CNR3I/Jr0Rvo1zFI1/tgOIGCr6dVv+6yjtyu6j/QNwUcrVp8E6v1mY4w4H1wmauohAO1QZttB5
+apfB89uDmqMr2/VlcwCUQDCgJAxKKTSCVqiLjxH47KTf0rfzI4kEMvUx4xH6bgMkwBIfHT0P3reX
+SmJLZmry09E8CnkxjPcoFPFYYcfuZOu/gCFwrclQiiidCKELXxFDdlJNeUWlXitEnw7LfUTA94O2
+Els1AK65pr9zlb1IHc1/ZfvWbsOmkhE8QSzahjKGuP/e3Y6lw4CtlNheQhLfybSEbunhxjLtOvwi
+ZtvmKcuret/Xb7l7k9qAtxehGNZBC7nR/d4X3DZE1z6W3irpQRfA7wN11egbaYt//moTD6rRd69o
+R5h60kAe4ZSSAmlCs5doLuBfWGxnfkNo1c6SkfLplxT2LABRgNtqn5Jat6fAuBbHWMtZiPi9GiIj
+QDn5DD+NgjU4GhC+fjGVOpasXnqtWbixfe3904CvoYLftnOkn6AlAEJvqJJhmFnGdC4CG3trB52q
+hrXaaxdQK697hzO8XKz9b63mD7Ef3LdtY8I3cl+fLpZaW59V05xO1NGjcJ6FBtEhZzK+bMUKAA1Y
+1trdBO6ielLBQu+bGA4c39jE0IYID2FMhLv8qJq=

@@ -1,76 +1,41 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Translation\Extractor;
-
-use Symfony\Component\Translation\Exception\InvalidArgumentException;
-
-/**
- * Base class used by classes that extract translation messages from files.
- *
- * @author Marcos D. Sánchez <marcosdsanchez@gmail.com>
- */
-abstract class AbstractFileExtractor
-{
-    /**
-     * @param string|iterable $resource Files, a file or a directory
-     *
-     * @return iterable
-     */
-    protected function extractFiles($resource)
-    {
-        if (is_iterable($resource)) {
-            $files = [];
-            foreach ($resource as $file) {
-                if ($this->canBeExtracted($file)) {
-                    $files[] = $this->toSplFileInfo($file);
-                }
-            }
-        } elseif (is_file($resource)) {
-            $files = $this->canBeExtracted($resource) ? [$this->toSplFileInfo($resource)] : [];
-        } else {
-            $files = $this->extractFromDirectory($resource);
-        }
-
-        return $files;
-    }
-
-    private function toSplFileInfo(string $file): \SplFileInfo
-    {
-        return new \SplFileInfo($file);
-    }
-
-    /**
-     * @return bool
-     *
-     * @throws InvalidArgumentException
-     */
-    protected function isFile(string $file)
-    {
-        if (!is_file($file)) {
-            throw new InvalidArgumentException(sprintf('The "%s" file does not exist.', $file));
-        }
-
-        return true;
-    }
-
-    /**
-     * @return bool
-     */
-    abstract protected function canBeExtracted(string $file);
-
-    /**
-     * @param string|array $resource Files, a file or a directory
-     *
-     * @return iterable files to be extracted
-     */
-    abstract protected function extractFromDirectory($resource);
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+d+XJ

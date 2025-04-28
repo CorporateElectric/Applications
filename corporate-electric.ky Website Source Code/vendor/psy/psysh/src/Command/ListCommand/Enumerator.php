@@ -1,106 +1,43 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\Command\ListCommand;
-
-use Psy\Formatter\SignatureFormatter;
-use Psy\Input\FilterOptions;
-use Psy\Util\Mirror;
-use Psy\VarDumper\Presenter;
-use Symfony\Component\Console\Input\InputInterface;
-
-/**
- * Abstract Enumerator class.
- */
-abstract class Enumerator
-{
-    // Output styles
-    const IS_PUBLIC = 'public';
-    const IS_PROTECTED = 'protected';
-    const IS_PRIVATE = 'private';
-    const IS_GLOBAL = 'global';
-    const IS_CONSTANT = 'const';
-    const IS_CLASS = 'class';
-    const IS_FUNCTION = 'function';
-
-    private $filter;
-    private $presenter;
-
-    /**
-     * Enumerator constructor.
-     *
-     * @param Presenter $presenter
-     */
-    public function __construct(Presenter $presenter)
-    {
-        $this->filter = new FilterOptions();
-        $this->presenter = $presenter;
-    }
-
-    /**
-     * Return a list of categorized things with the given input options and target.
-     *
-     * @param InputInterface  $input
-     * @param \Reflector|null $reflector
-     * @param mixed           $target
-     *
-     * @return array
-     */
-    public function enumerate(InputInterface $input, \Reflector $reflector = null, $target = null)
-    {
-        $this->filter->bind($input);
-
-        return $this->listItems($input, $reflector, $target);
-    }
-
-    /**
-     * Enumerate specific items with the given input options and target.
-     *
-     * Implementing classes should return an array of arrays:
-     *
-     *     [
-     *         'Constants' => [
-     *             'FOO' => [
-     *                 'name'  => 'FOO',
-     *                 'style' => 'public',
-     *                 'value' => '123',
-     *             ],
-     *         ],
-     *     ]
-     *
-     * @param InputInterface  $input
-     * @param \Reflector|null $reflector
-     * @param mixed           $target
-     *
-     * @return array
-     */
-    abstract protected function listItems(InputInterface $input, \Reflector $reflector = null, $target = null);
-
-    protected function showItem($name)
-    {
-        return $this->filter->match($name);
-    }
-
-    protected function presentRef($value)
-    {
-        return $this->presenter->presentRef($value);
-    }
-
-    protected function presentSignature($target)
-    {
-        // This might get weird if the signature is actually for a reflector. Hrm.
-        if (!$target instanceof \Reflector) {
-            $target = Mirror::get($target);
-        }
-
-        return SignatureFormatter::format($target);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+9/C4b8CegbvwRY+Y8nAjNdxjJokR8Bg3x/4L

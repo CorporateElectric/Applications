@@ -1,131 +1,33 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpFoundation\Session\Storage;
-
-use Symfony\Component\HttpFoundation\Session\SessionBagInterface;
-
-/**
- * StorageInterface.
- *
- * @author Fabien Potencier <fabien@symfony.com>
- * @author Drak <drak@zikula.org>
- */
-interface SessionStorageInterface
-{
-    /**
-     * Starts the session.
-     *
-     * @return bool True if started
-     *
-     * @throws \RuntimeException if something goes wrong starting the session
-     */
-    public function start();
-
-    /**
-     * Checks if the session is started.
-     *
-     * @return bool True if started, false otherwise
-     */
-    public function isStarted();
-
-    /**
-     * Returns the session ID.
-     *
-     * @return string The session ID or empty
-     */
-    public function getId();
-
-    /**
-     * Sets the session ID.
-     */
-    public function setId(string $id);
-
-    /**
-     * Returns the session name.
-     *
-     * @return string The session name
-     */
-    public function getName();
-
-    /**
-     * Sets the session name.
-     */
-    public function setName(string $name);
-
-    /**
-     * Regenerates id that represents this storage.
-     *
-     * This method must invoke session_regenerate_id($destroy) unless
-     * this interface is used for a storage object designed for unit
-     * or functional testing where a real PHP session would interfere
-     * with testing.
-     *
-     * Note regenerate+destroy should not clear the session data in memory
-     * only delete the session data from persistent storage.
-     *
-     * Care: When regenerating the session ID no locking is involved in PHP's
-     * session design. See https://bugs.php.net/61470 for a discussion.
-     * So you must make sure the regenerated session is saved BEFORE sending the
-     * headers with the new ID. Symfony's HttpKernel offers a listener for this.
-     * See Symfony\Component\HttpKernel\EventListener\SaveSessionListener.
-     * Otherwise session data could get lost again for concurrent requests with the
-     * new ID. One result could be that you get logged out after just logging in.
-     *
-     * @param bool $destroy  Destroy session when regenerating?
-     * @param int  $lifetime Sets the cookie lifetime for the session cookie. A null value
-     *                       will leave the system settings unchanged, 0 sets the cookie
-     *                       to expire with browser session. Time is in seconds, and is
-     *                       not a Unix timestamp.
-     *
-     * @return bool True if session regenerated, false if error
-     *
-     * @throws \RuntimeException If an error occurs while regenerating this storage
-     */
-    public function regenerate(bool $destroy = false, int $lifetime = null);
-
-    /**
-     * Force the session to be saved and closed.
-     *
-     * This method must invoke session_write_close() unless this interface is
-     * used for a storage object design for unit or functional testing where
-     * a real PHP session would interfere with testing, in which case
-     * it should actually persist the session data if required.
-     *
-     * @throws \RuntimeException if the session is saved without being started, or if the session
-     *                           is already closed
-     */
-    public function save();
-
-    /**
-     * Clear all session data in memory.
-     */
-    public function clear();
-
-    /**
-     * Gets a SessionBagInterface by name.
-     *
-     * @return SessionBagInterface
-     *
-     * @throws \InvalidArgumentException If the bag does not exist
-     */
-    public function getBag(string $name);
-
-    /**
-     * Registers a SessionBagInterface for use.
-     */
-    public function registerBag(SessionBagInterface $bag);
-
-    /**
-     * @return MetadataBag
-     */
-    public function getMetadataBag();
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+Q/x91eVizpi8oX2a+zSdFOtzKG7Ak/JG0V8=

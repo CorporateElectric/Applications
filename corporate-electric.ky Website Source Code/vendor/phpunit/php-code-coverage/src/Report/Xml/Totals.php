@@ -1,146 +1,82 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of phpunit/php-code-coverage.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\CodeCoverage\Report\Xml;
-
-use function sprintf;
-use DOMElement;
-use DOMNode;
-use SebastianBergmann\CodeCoverage\Percentage;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for phpunit/php-code-coverage
- */
-final class Totals
-{
-    /**
-     * @var DOMNode
-     */
-    private $container;
-
-    /**
-     * @var DOMElement
-     */
-    private $linesNode;
-
-    /**
-     * @var DOMElement
-     */
-    private $methodsNode;
-
-    /**
-     * @var DOMElement
-     */
-    private $functionsNode;
-
-    /**
-     * @var DOMElement
-     */
-    private $classesNode;
-
-    /**
-     * @var DOMElement
-     */
-    private $traitsNode;
-
-    public function __construct(DOMElement $container)
-    {
-        $this->container = $container;
-        $dom             = $container->ownerDocument;
-
-        $this->linesNode = $dom->createElementNS(
-            'https://schema.phpunit.de/coverage/1.0',
-            'lines'
-        );
-
-        $this->methodsNode = $dom->createElementNS(
-            'https://schema.phpunit.de/coverage/1.0',
-            'methods'
-        );
-
-        $this->functionsNode = $dom->createElementNS(
-            'https://schema.phpunit.de/coverage/1.0',
-            'functions'
-        );
-
-        $this->classesNode = $dom->createElementNS(
-            'https://schema.phpunit.de/coverage/1.0',
-            'classes'
-        );
-
-        $this->traitsNode = $dom->createElementNS(
-            'https://schema.phpunit.de/coverage/1.0',
-            'traits'
-        );
-
-        $container->appendChild($this->linesNode);
-        $container->appendChild($this->methodsNode);
-        $container->appendChild($this->functionsNode);
-        $container->appendChild($this->classesNode);
-        $container->appendChild($this->traitsNode);
-    }
-
-    public function container(): DOMNode
-    {
-        return $this->container;
-    }
-
-    public function setNumLines(int $loc, int $cloc, int $ncloc, int $executable, int $executed): void
-    {
-        $this->linesNode->setAttribute('total', (string) $loc);
-        $this->linesNode->setAttribute('comments', (string) $cloc);
-        $this->linesNode->setAttribute('code', (string) $ncloc);
-        $this->linesNode->setAttribute('executable', (string) $executable);
-        $this->linesNode->setAttribute('executed', (string) $executed);
-        $this->linesNode->setAttribute(
-            'percent',
-            $executable === 0 ? '0' : sprintf('%01.2F', Percentage::fromFractionAndTotal($executed, $executable)->asFloat())
-        );
-    }
-
-    public function setNumClasses(int $count, int $tested): void
-    {
-        $this->classesNode->setAttribute('count', (string) $count);
-        $this->classesNode->setAttribute('tested', (string) $tested);
-        $this->classesNode->setAttribute(
-            'percent',
-            $count === 0 ? '0' : sprintf('%01.2F', Percentage::fromFractionAndTotal($tested, $count)->asFloat())
-        );
-    }
-
-    public function setNumTraits(int $count, int $tested): void
-    {
-        $this->traitsNode->setAttribute('count', (string) $count);
-        $this->traitsNode->setAttribute('tested', (string) $tested);
-        $this->traitsNode->setAttribute(
-            'percent',
-            $count === 0 ? '0' : sprintf('%01.2F', Percentage::fromFractionAndTotal($tested, $count)->asFloat())
-        );
-    }
-
-    public function setNumMethods(int $count, int $tested): void
-    {
-        $this->methodsNode->setAttribute('count', (string) $count);
-        $this->methodsNode->setAttribute('tested', (string) $tested);
-        $this->methodsNode->setAttribute(
-            'percent',
-            $count === 0 ? '0' : sprintf('%01.2F', Percentage::fromFractionAndTotal($tested, $count)->asFloat())
-        );
-    }
-
-    public function setNumFunctions(int $count, int $tested): void
-    {
-        $this->functionsNode->setAttribute('count', (string) $count);
-        $this->functionsNode->setAttribute('tested', (string) $tested);
-        $this->functionsNode->setAttribute(
-            'percent',
-            $count === 0 ? '0' : sprintf('%01.2F', Percentage::fromFractionAndTotal($tested, $count)->asFloat())
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+G83ROj1WOgUjZuUj8JzVXW==

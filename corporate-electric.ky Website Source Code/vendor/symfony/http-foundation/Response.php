@@ -1,1273 +1,464 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpFoundation;
-
-// Help opcache.preload discover always-needed symbols
-class_exists(ResponseHeaderBag::class);
-
-/**
- * Response represents an HTTP response.
- *
- * @author Fabien Potencier <fabien@symfony.com>
- */
-class Response
-{
-    public const HTTP_CONTINUE = 100;
-    public const HTTP_SWITCHING_PROTOCOLS = 101;
-    public const HTTP_PROCESSING = 102;            // RFC2518
-    public const HTTP_EARLY_HINTS = 103;           // RFC8297
-    public const HTTP_OK = 200;
-    public const HTTP_CREATED = 201;
-    public const HTTP_ACCEPTED = 202;
-    public const HTTP_NON_AUTHORITATIVE_INFORMATION = 203;
-    public const HTTP_NO_CONTENT = 204;
-    public const HTTP_RESET_CONTENT = 205;
-    public const HTTP_PARTIAL_CONTENT = 206;
-    public const HTTP_MULTI_STATUS = 207;          // RFC4918
-    public const HTTP_ALREADY_REPORTED = 208;      // RFC5842
-    public const HTTP_IM_USED = 226;               // RFC3229
-    public const HTTP_MULTIPLE_CHOICES = 300;
-    public const HTTP_MOVED_PERMANENTLY = 301;
-    public const HTTP_FOUND = 302;
-    public const HTTP_SEE_OTHER = 303;
-    public const HTTP_NOT_MODIFIED = 304;
-    public const HTTP_USE_PROXY = 305;
-    public const HTTP_RESERVED = 306;
-    public const HTTP_TEMPORARY_REDIRECT = 307;
-    public const HTTP_PERMANENTLY_REDIRECT = 308;  // RFC7238
-    public const HTTP_BAD_REQUEST = 400;
-    public const HTTP_UNAUTHORIZED = 401;
-    public const HTTP_PAYMENT_REQUIRED = 402;
-    public const HTTP_FORBIDDEN = 403;
-    public const HTTP_NOT_FOUND = 404;
-    public const HTTP_METHOD_NOT_ALLOWED = 405;
-    public const HTTP_NOT_ACCEPTABLE = 406;
-    public const HTTP_PROXY_AUTHENTICATION_REQUIRED = 407;
-    public const HTTP_REQUEST_TIMEOUT = 408;
-    public const HTTP_CONFLICT = 409;
-    public const HTTP_GONE = 410;
-    public const HTTP_LENGTH_REQUIRED = 411;
-    public const HTTP_PRECONDITION_FAILED = 412;
-    public const HTTP_REQUEST_ENTITY_TOO_LARGE = 413;
-    public const HTTP_REQUEST_URI_TOO_LONG = 414;
-    public const HTTP_UNSUPPORTED_MEDIA_TYPE = 415;
-    public const HTTP_REQUESTED_RANGE_NOT_SATISFIABLE = 416;
-    public const HTTP_EXPECTATION_FAILED = 417;
-    public const HTTP_I_AM_A_TEAPOT = 418;                                               // RFC2324
-    public const HTTP_MISDIRECTED_REQUEST = 421;                                         // RFC7540
-    public const HTTP_UNPROCESSABLE_ENTITY = 422;                                        // RFC4918
-    public const HTTP_LOCKED = 423;                                                      // RFC4918
-    public const HTTP_FAILED_DEPENDENCY = 424;                                           // RFC4918
-    public const HTTP_TOO_EARLY = 425;                                                   // RFC-ietf-httpbis-replay-04
-    public const HTTP_UPGRADE_REQUIRED = 426;                                            // RFC2817
-    public const HTTP_PRECONDITION_REQUIRED = 428;                                       // RFC6585
-    public const HTTP_TOO_MANY_REQUESTS = 429;                                           // RFC6585
-    public const HTTP_REQUEST_HEADER_FIELDS_TOO_LARGE = 431;                             // RFC6585
-    public const HTTP_UNAVAILABLE_FOR_LEGAL_REASONS = 451;
-    public const HTTP_INTERNAL_SERVER_ERROR = 500;
-    public const HTTP_NOT_IMPLEMENTED = 501;
-    public const HTTP_BAD_GATEWAY = 502;
-    public const HTTP_SERVICE_UNAVAILABLE = 503;
-    public const HTTP_GATEWAY_TIMEOUT = 504;
-    public const HTTP_VERSION_NOT_SUPPORTED = 505;
-    public const HTTP_VARIANT_ALSO_NEGOTIATES_EXPERIMENTAL = 506;                        // RFC2295
-    public const HTTP_INSUFFICIENT_STORAGE = 507;                                        // RFC4918
-    public const HTTP_LOOP_DETECTED = 508;                                               // RFC5842
-    public const HTTP_NOT_EXTENDED = 510;                                                // RFC2774
-    public const HTTP_NETWORK_AUTHENTICATION_REQUIRED = 511;                             // RFC6585
-
-    /**
-     * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control
-     */
-    private const HTTP_RESPONSE_CACHE_CONTROL_DIRECTIVES = [
-        'must_revalidate' => false,
-        'no_cache' => false,
-        'no_store' => false,
-        'no_transform' => false,
-        'public' => false,
-        'private' => false,
-        'proxy_revalidate' => false,
-        'max_age' => true,
-        's_maxage' => true,
-        'immutable' => false,
-        'last_modified' => true,
-        'etag' => true,
-    ];
-
-    /**
-     * @var ResponseHeaderBag
-     */
-    public $headers;
-
-    /**
-     * @var string
-     */
-    protected $content;
-
-    /**
-     * @var string
-     */
-    protected $version;
-
-    /**
-     * @var int
-     */
-    protected $statusCode;
-
-    /**
-     * @var string
-     */
-    protected $statusText;
-
-    /**
-     * @var string
-     */
-    protected $charset;
-
-    /**
-     * Status codes translation table.
-     *
-     * The list of codes is complete according to the
-     * {@link https://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml Hypertext Transfer Protocol (HTTP) Status Code Registry}
-     * (last updated 2016-03-01).
-     *
-     * Unless otherwise noted, the status code is defined in RFC2616.
-     *
-     * @var array
-     */
-    public static $statusTexts = [
-        100 => 'Continue',
-        101 => 'Switching Protocols',
-        102 => 'Processing',            // RFC2518
-        103 => 'Early Hints',
-        200 => 'OK',
-        201 => 'Created',
-        202 => 'Accepted',
-        203 => 'Non-Authoritative Information',
-        204 => 'No Content',
-        205 => 'Reset Content',
-        206 => 'Partial Content',
-        207 => 'Multi-Status',          // RFC4918
-        208 => 'Already Reported',      // RFC5842
-        226 => 'IM Used',               // RFC3229
-        300 => 'Multiple Choices',
-        301 => 'Moved Permanently',
-        302 => 'Found',
-        303 => 'See Other',
-        304 => 'Not Modified',
-        305 => 'Use Proxy',
-        307 => 'Temporary Redirect',
-        308 => 'Permanent Redirect',    // RFC7238
-        400 => 'Bad Request',
-        401 => 'Unauthorized',
-        402 => 'Payment Required',
-        403 => 'Forbidden',
-        404 => 'Not Found',
-        405 => 'Method Not Allowed',
-        406 => 'Not Acceptable',
-        407 => 'Proxy Authentication Required',
-        408 => 'Request Timeout',
-        409 => 'Conflict',
-        410 => 'Gone',
-        411 => 'Length Required',
-        412 => 'Precondition Failed',
-        413 => 'Payload Too Large',
-        414 => 'URI Too Long',
-        415 => 'Unsupported Media Type',
-        416 => 'Range Not Satisfiable',
-        417 => 'Expectation Failed',
-        418 => 'I\'m a teapot',                                               // RFC2324
-        421 => 'Misdirected Request',                                         // RFC7540
-        422 => 'Unprocessable Entity',                                        // RFC4918
-        423 => 'Locked',                                                      // RFC4918
-        424 => 'Failed Dependency',                                           // RFC4918
-        425 => 'Too Early',                                                   // RFC-ietf-httpbis-replay-04
-        426 => 'Upgrade Required',                                            // RFC2817
-        428 => 'Precondition Required',                                       // RFC6585
-        429 => 'Too Many Requests',                                           // RFC6585
-        431 => 'Request Header Fields Too Large',                             // RFC6585
-        451 => 'Unavailable For Legal Reasons',                               // RFC7725
-        500 => 'Internal Server Error',
-        501 => 'Not Implemented',
-        502 => 'Bad Gateway',
-        503 => 'Service Unavailable',
-        504 => 'Gateway Timeout',
-        505 => 'HTTP Version Not Supported',
-        506 => 'Variant Also Negotiates',                                     // RFC2295
-        507 => 'Insufficient Storage',                                        // RFC4918
-        508 => 'Loop Detected',                                               // RFC5842
-        510 => 'Not Extended',                                                // RFC2774
-        511 => 'Network Authentication Required',                             // RFC6585
-    ];
-
-    /**
-     * @throws \InvalidArgumentException When the HTTP status code is not valid
-     */
-    public function __construct(?string $content = '', int $status = 200, array $headers = [])
-    {
-        $this->headers = new ResponseHeaderBag($headers);
-        $this->setContent($content);
-        $this->setStatusCode($status);
-        $this->setProtocolVersion('1.0');
-    }
-
-    /**
-     * Factory method for chainability.
-     *
-     * Example:
-     *
-     *     return Response::create($body, 200)
-     *         ->setSharedMaxAge(300);
-     *
-     * @return static
-     *
-     * @deprecated since Symfony 5.1, use __construct() instead.
-     */
-    public static function create(?string $content = '', int $status = 200, array $headers = [])
-    {
-        trigger_deprecation('symfony/http-foundation', '5.1', 'The "%s()" method is deprecated, use "new %s()" instead.', __METHOD__, \get_called_class());
-
-        return new static($content, $status, $headers);
-    }
-
-    /**
-     * Returns the Response as an HTTP string.
-     *
-     * The string representation of the Response is the same as the
-     * one that will be sent to the client only if the prepare() method
-     * has been called before.
-     *
-     * @return string The Response as an HTTP string
-     *
-     * @see prepare()
-     */
-    public function __toString()
-    {
-        return
-            sprintf('HTTP/%s %s %s', $this->version, $this->statusCode, $this->statusText)."\r\n".
-            $this->headers."\r\n".
-            $this->getContent();
-    }
-
-    /**
-     * Clones the current Response instance.
-     */
-    public function __clone()
-    {
-        $this->headers = clone $this->headers;
-    }
-
-    /**
-     * Prepares the Response before it is sent to the client.
-     *
-     * This method tweaks the Response to ensure that it is
-     * compliant with RFC 2616. Most of the changes are based on
-     * the Request that is "associated" with this Response.
-     *
-     * @return $this
-     */
-    public function prepare(Request $request)
-    {
-        $headers = $this->headers;
-
-        if ($this->isInformational() || $this->isEmpty()) {
-            $this->setContent(null);
-            $headers->remove('Content-Type');
-            $headers->remove('Content-Length');
-            // prevent PHP from sending the Content-Type header based on default_mimetype
-            ini_set('default_mimetype', '');
-        } else {
-            // Content-type based on the Request
-            if (!$headers->has('Content-Type')) {
-                $format = $request->getRequestFormat(null);
-                if (null !== $format && $mimeType = $request->getMimeType($format)) {
-                    $headers->set('Content-Type', $mimeType);
-                }
-            }
-
-            // Fix Content-Type
-            $charset = $this->charset ?: 'UTF-8';
-            if (!$headers->has('Content-Type')) {
-                $headers->set('Content-Type', 'text/html; charset='.$charset);
-            } elseif (0 === stripos($headers->get('Content-Type'), 'text/') && false === stripos($headers->get('Content-Type'), 'charset')) {
-                // add the charset
-                $headers->set('Content-Type', $headers->get('Content-Type').'; charset='.$charset);
-            }
-
-            // Fix Content-Length
-            if ($headers->has('Transfer-Encoding')) {
-                $headers->remove('Content-Length');
-            }
-
-            if ($request->isMethod('HEAD')) {
-                // cf. RFC2616 14.13
-                $length = $headers->get('Content-Length');
-                $this->setContent(null);
-                if ($length) {
-                    $headers->set('Content-Length', $length);
-                }
-            }
-        }
-
-        // Fix protocol
-        if ('HTTP/1.0' != $request->server->get('SERVER_PROTOCOL')) {
-            $this->setProtocolVersion('1.1');
-        }
-
-        // Check if we need to send extra expire info headers
-        if ('1.0' == $this->getProtocolVersion() && false !== strpos($headers->get('Cache-Control'), 'no-cache')) {
-            $headers->set('pragma', 'no-cache');
-            $headers->set('expires', -1);
-        }
-
-        $this->ensureIEOverSSLCompatibility($request);
-
-        if ($request->isSecure()) {
-            foreach ($headers->getCookies() as $cookie) {
-                $cookie->setSecureDefault(true);
-            }
-        }
-
-        return $this;
-    }
-
-    /**
-     * Sends HTTP headers.
-     *
-     * @return $this
-     */
-    public function sendHeaders()
-    {
-        // headers have already been sent by the developer
-        if (headers_sent()) {
-            return $this;
-        }
-
-        // headers
-        foreach ($this->headers->allPreserveCaseWithoutCookies() as $name => $values) {
-            $replace = 0 === strcasecmp($name, 'Content-Type');
-            foreach ($values as $value) {
-                header($name.': '.$value, $replace, $this->statusCode);
-            }
-        }
-
-        // cookies
-        foreach ($this->headers->getCookies() as $cookie) {
-            header('Set-Cookie: '.$cookie, false, $this->statusCode);
-        }
-
-        // status
-        header(sprintf('HTTP/%s %s %s', $this->version, $this->statusCode, $this->statusText), true, $this->statusCode);
-
-        return $this;
-    }
-
-    /**
-     * Sends content for the current web response.
-     *
-     * @return $this
-     */
-    public function sendContent()
-    {
-        echo $this->content;
-
-        return $this;
-    }
-
-    /**
-     * Sends HTTP headers and content.
-     *
-     * @return $this
-     */
-    public function send()
-    {
-        $this->sendHeaders();
-        $this->sendContent();
-
-        if (\function_exists('fastcgi_finish_request')) {
-            fastcgi_finish_request();
-        } elseif (!\in_array(\PHP_SAPI, ['cli', 'phpdbg'], true)) {
-            static::closeOutputBuffers(0, true);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Sets the response content.
-     *
-     * @return $this
-     *
-     * @throws \UnexpectedValueException
-     */
-    public function setContent(?string $content)
-    {
-        $this->content = $content ?? '';
-
-        return $this;
-    }
-
-    /**
-     * Gets the current response content.
-     *
-     * @return string|false
-     */
-    public function getContent()
-    {
-        return $this->content;
-    }
-
-    /**
-     * Sets the HTTP protocol version (1.0 or 1.1).
-     *
-     * @return $this
-     *
-     * @final
-     */
-    public function setProtocolVersion(string $version): object
-    {
-        $this->version = $version;
-
-        return $this;
-    }
-
-    /**
-     * Gets the HTTP protocol version.
-     *
-     * @final
-     */
-    public function getProtocolVersion(): string
-    {
-        return $this->version;
-    }
-
-    /**
-     * Sets the response status code.
-     *
-     * If the status text is null it will be automatically populated for the known
-     * status codes and left empty otherwise.
-     *
-     * @return $this
-     *
-     * @throws \InvalidArgumentException When the HTTP status code is not valid
-     *
-     * @final
-     */
-    public function setStatusCode(int $code, $text = null): object
-    {
-        $this->statusCode = $code;
-        if ($this->isInvalid()) {
-            throw new \InvalidArgumentException(sprintf('The HTTP status code "%s" is not valid.', $code));
-        }
-
-        if (null === $text) {
-            $this->statusText = isset(self::$statusTexts[$code]) ? self::$statusTexts[$code] : 'unknown status';
-
-            return $this;
-        }
-
-        if (false === $text) {
-            $this->statusText = '';
-
-            return $this;
-        }
-
-        $this->statusText = $text;
-
-        return $this;
-    }
-
-    /**
-     * Retrieves the status code for the current web response.
-     *
-     * @final
-     */
-    public function getStatusCode(): int
-    {
-        return $this->statusCode;
-    }
-
-    /**
-     * Sets the response charset.
-     *
-     * @return $this
-     *
-     * @final
-     */
-    public function setCharset(string $charset): object
-    {
-        $this->charset = $charset;
-
-        return $this;
-    }
-
-    /**
-     * Retrieves the response charset.
-     *
-     * @final
-     */
-    public function getCharset(): ?string
-    {
-        return $this->charset;
-    }
-
-    /**
-     * Returns true if the response may safely be kept in a shared (surrogate) cache.
-     *
-     * Responses marked "private" with an explicit Cache-Control directive are
-     * considered uncacheable.
-     *
-     * Responses with neither a freshness lifetime (Expires, max-age) nor cache
-     * validator (Last-Modified, ETag) are considered uncacheable because there is
-     * no way to tell when or how to remove them from the cache.
-     *
-     * Note that RFC 7231 and RFC 7234 possibly allow for a more permissive implementation,
-     * for example "status codes that are defined as cacheable by default [...]
-     * can be reused by a cache with heuristic expiration unless otherwise indicated"
-     * (https://tools.ietf.org/html/rfc7231#section-6.1)
-     *
-     * @final
-     */
-    public function isCacheable(): bool
-    {
-        if (!\in_array($this->statusCode, [200, 203, 300, 301, 302, 404, 410])) {
-            return false;
-        }
-
-        if ($this->headers->hasCacheControlDirective('no-store') || $this->headers->getCacheControlDirective('private')) {
-            return false;
-        }
-
-        return $this->isValidateable() || $this->isFresh();
-    }
-
-    /**
-     * Returns true if the response is "fresh".
-     *
-     * Fresh responses may be served from cache without any interaction with the
-     * origin. A response is considered fresh when it includes a Cache-Control/max-age
-     * indicator or Expires header and the calculated age is less than the freshness lifetime.
-     *
-     * @final
-     */
-    public function isFresh(): bool
-    {
-        return $this->getTtl() > 0;
-    }
-
-    /**
-     * Returns true if the response includes headers that can be used to validate
-     * the response with the origin server using a conditional GET request.
-     *
-     * @final
-     */
-    public function isValidateable(): bool
-    {
-        return $this->headers->has('Last-Modified') || $this->headers->has('ETag');
-    }
-
-    /**
-     * Marks the response as "private".
-     *
-     * It makes the response ineligible for serving other clients.
-     *
-     * @return $this
-     *
-     * @final
-     */
-    public function setPrivate(): object
-    {
-        $this->headers->removeCacheControlDirective('public');
-        $this->headers->addCacheControlDirective('private');
-
-        return $this;
-    }
-
-    /**
-     * Marks the response as "public".
-     *
-     * It makes the response eligible for serving other clients.
-     *
-     * @return $this
-     *
-     * @final
-     */
-    public function setPublic(): object
-    {
-        $this->headers->addCacheControlDirective('public');
-        $this->headers->removeCacheControlDirective('private');
-
-        return $this;
-    }
-
-    /**
-     * Marks the response as "immutable".
-     *
-     * @return $this
-     *
-     * @final
-     */
-    public function setImmutable(bool $immutable = true): object
-    {
-        if ($immutable) {
-            $this->headers->addCacheControlDirective('immutable');
-        } else {
-            $this->headers->removeCacheControlDirective('immutable');
-        }
-
-        return $this;
-    }
-
-    /**
-     * Returns true if the response is marked as "immutable".
-     *
-     * @final
-     */
-    public function isImmutable(): bool
-    {
-        return $this->headers->hasCacheControlDirective('immutable');
-    }
-
-    /**
-     * Returns true if the response must be revalidated by shared caches once it has become stale.
-     *
-     * This method indicates that the response must not be served stale by a
-     * cache in any circumstance without first revalidating with the origin.
-     * When present, the TTL of the response should not be overridden to be
-     * greater than the value provided by the origin.
-     *
-     * @final
-     */
-    public function mustRevalidate(): bool
-    {
-        return $this->headers->hasCacheControlDirective('must-revalidate') || $this->headers->hasCacheControlDirective('proxy-revalidate');
-    }
-
-    /**
-     * Returns the Date header as a DateTime instance.
-     *
-     * @throws \RuntimeException When the header is not parseable
-     *
-     * @final
-     */
-    public function getDate(): ?\DateTimeInterface
-    {
-        return $this->headers->getDate('Date');
-    }
-
-    /**
-     * Sets the Date header.
-     *
-     * @return $this
-     *
-     * @final
-     */
-    public function setDate(\DateTimeInterface $date): object
-    {
-        if ($date instanceof \DateTime) {
-            $date = \DateTimeImmutable::createFromMutable($date);
-        }
-
-        $date = $date->setTimezone(new \DateTimeZone('UTC'));
-        $this->headers->set('Date', $date->format('D, d M Y H:i:s').' GMT');
-
-        return $this;
-    }
-
-    /**
-     * Returns the age of the response in seconds.
-     *
-     * @final
-     */
-    public function getAge(): int
-    {
-        if (null !== $age = $this->headers->get('Age')) {
-            return (int) $age;
-        }
-
-        return max(time() - (int) $this->getDate()->format('U'), 0);
-    }
-
-    /**
-     * Marks the response stale by setting the Age header to be equal to the maximum age of the response.
-     *
-     * @return $this
-     */
-    public function expire()
-    {
-        if ($this->isFresh()) {
-            $this->headers->set('Age', $this->getMaxAge());
-            $this->headers->remove('Expires');
-        }
-
-        return $this;
-    }
-
-    /**
-     * Returns the value of the Expires header as a DateTime instance.
-     *
-     * @final
-     */
-    public function getExpires(): ?\DateTimeInterface
-    {
-        try {
-            return $this->headers->getDate('Expires');
-        } catch (\RuntimeException $e) {
-            // according to RFC 2616 invalid date formats (e.g. "0" and "-1") must be treated as in the past
-            return \DateTime::createFromFormat('U', time() - 172800);
-        }
-    }
-
-    /**
-     * Sets the Expires HTTP header with a DateTime instance.
-     *
-     * Passing null as value will remove the header.
-     *
-     * @return $this
-     *
-     * @final
-     */
-    public function setExpires(\DateTimeInterface $date = null): object
-    {
-        if (null === $date) {
-            $this->headers->remove('Expires');
-
-            return $this;
-        }
-
-        if ($date instanceof \DateTime) {
-            $date = \DateTimeImmutable::createFromMutable($date);
-        }
-
-        $date = $date->setTimezone(new \DateTimeZone('UTC'));
-        $this->headers->set('Expires', $date->format('D, d M Y H:i:s').' GMT');
-
-        return $this;
-    }
-
-    /**
-     * Returns the number of seconds after the time specified in the response's Date
-     * header when the response should no longer be considered fresh.
-     *
-     * First, it checks for a s-maxage directive, then a max-age directive, and then it falls
-     * back on an expires header. It returns null when no maximum age can be established.
-     *
-     * @final
-     */
-    public function getMaxAge(): ?int
-    {
-        if ($this->headers->hasCacheControlDirective('s-maxage')) {
-            return (int) $this->headers->getCacheControlDirective('s-maxage');
-        }
-
-        if ($this->headers->hasCacheControlDirective('max-age')) {
-            return (int) $this->headers->getCacheControlDirective('max-age');
-        }
-
-        if (null !== $this->getExpires()) {
-            return (int) $this->getExpires()->format('U') - (int) $this->getDate()->format('U');
-        }
-
-        return null;
-    }
-
-    /**
-     * Sets the number of seconds after which the response should no longer be considered fresh.
-     *
-     * This methods sets the Cache-Control max-age directive.
-     *
-     * @return $this
-     *
-     * @final
-     */
-    public function setMaxAge(int $value): object
-    {
-        $this->headers->addCacheControlDirective('max-age', $value);
-
-        return $this;
-    }
-
-    /**
-     * Sets the number of seconds after which the response should no longer be considered fresh by shared caches.
-     *
-     * This methods sets the Cache-Control s-maxage directive.
-     *
-     * @return $this
-     *
-     * @final
-     */
-    public function setSharedMaxAge(int $value): object
-    {
-        $this->setPublic();
-        $this->headers->addCacheControlDirective('s-maxage', $value);
-
-        return $this;
-    }
-
-    /**
-     * Returns the response's time-to-live in seconds.
-     *
-     * It returns null when no freshness information is present in the response.
-     *
-     * When the responses TTL is <= 0, the response may not be served from cache without first
-     * revalidating with the origin.
-     *
-     * @final
-     */
-    public function getTtl(): ?int
-    {
-        $maxAge = $this->getMaxAge();
-
-        return null !== $maxAge ? $maxAge - $this->getAge() : null;
-    }
-
-    /**
-     * Sets the response's time-to-live for shared caches in seconds.
-     *
-     * This method adjusts the Cache-Control/s-maxage directive.
-     *
-     * @return $this
-     *
-     * @final
-     */
-    public function setTtl(int $seconds): object
-    {
-        $this->setSharedMaxAge($this->getAge() + $seconds);
-
-        return $this;
-    }
-
-    /**
-     * Sets the response's time-to-live for private/client caches in seconds.
-     *
-     * This method adjusts the Cache-Control/max-age directive.
-     *
-     * @return $this
-     *
-     * @final
-     */
-    public function setClientTtl(int $seconds): object
-    {
-        $this->setMaxAge($this->getAge() + $seconds);
-
-        return $this;
-    }
-
-    /**
-     * Returns the Last-Modified HTTP header as a DateTime instance.
-     *
-     * @throws \RuntimeException When the HTTP header is not parseable
-     *
-     * @final
-     */
-    public function getLastModified(): ?\DateTimeInterface
-    {
-        return $this->headers->getDate('Last-Modified');
-    }
-
-    /**
-     * Sets the Last-Modified HTTP header with a DateTime instance.
-     *
-     * Passing null as value will remove the header.
-     *
-     * @return $this
-     *
-     * @final
-     */
-    public function setLastModified(\DateTimeInterface $date = null): object
-    {
-        if (null === $date) {
-            $this->headers->remove('Last-Modified');
-
-            return $this;
-        }
-
-        if ($date instanceof \DateTime) {
-            $date = \DateTimeImmutable::createFromMutable($date);
-        }
-
-        $date = $date->setTimezone(new \DateTimeZone('UTC'));
-        $this->headers->set('Last-Modified', $date->format('D, d M Y H:i:s').' GMT');
-
-        return $this;
-    }
-
-    /**
-     * Returns the literal value of the ETag HTTP header.
-     *
-     * @final
-     */
-    public function getEtag(): ?string
-    {
-        return $this->headers->get('ETag');
-    }
-
-    /**
-     * Sets the ETag value.
-     *
-     * @param string|null $etag The ETag unique identifier or null to remove the header
-     * @param bool        $weak Whether you want a weak ETag or not
-     *
-     * @return $this
-     *
-     * @final
-     */
-    public function setEtag(string $etag = null, bool $weak = false): object
-    {
-        if (null === $etag) {
-            $this->headers->remove('Etag');
-        } else {
-            if (0 !== strpos($etag, '"')) {
-                $etag = '"'.$etag.'"';
-            }
-
-            $this->headers->set('ETag', (true === $weak ? 'W/' : '').$etag);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Sets the response's cache headers (validation and/or expiration).
-     *
-     * Available options are: must_revalidate, no_cache, no_store, no_transform, public, private, proxy_revalidate, max_age, s_maxage, immutable, last_modified and etag.
-     *
-     * @return $this
-     *
-     * @throws \InvalidArgumentException
-     *
-     * @final
-     */
-    public function setCache(array $options): object
-    {
-        if ($diff = array_diff(array_keys($options), array_keys(self::HTTP_RESPONSE_CACHE_CONTROL_DIRECTIVES))) {
-            throw new \InvalidArgumentException(sprintf('Response does not support the following options: "%s".', implode('", "', $diff)));
-        }
-
-        if (isset($options['etag'])) {
-            $this->setEtag($options['etag']);
-        }
-
-        if (isset($options['last_modified'])) {
-            $this->setLastModified($options['last_modified']);
-        }
-
-        if (isset($options['max_age'])) {
-            $this->setMaxAge($options['max_age']);
-        }
-
-        if (isset($options['s_maxage'])) {
-            $this->setSharedMaxAge($options['s_maxage']);
-        }
-
-        foreach (self::HTTP_RESPONSE_CACHE_CONTROL_DIRECTIVES as $directive => $hasValue) {
-            if (!$hasValue && isset($options[$directive])) {
-                if ($options[$directive]) {
-                    $this->headers->addCacheControlDirective(str_replace('_', '-', $directive));
-                } else {
-                    $this->headers->removeCacheControlDirective(str_replace('_', '-', $directive));
-                }
-            }
-        }
-
-        if (isset($options['public'])) {
-            if ($options['public']) {
-                $this->setPublic();
-            } else {
-                $this->setPrivate();
-            }
-        }
-
-        if (isset($options['private'])) {
-            if ($options['private']) {
-                $this->setPrivate();
-            } else {
-                $this->setPublic();
-            }
-        }
-
-        return $this;
-    }
-
-    /**
-     * Modifies the response so that it conforms to the rules defined for a 304 status code.
-     *
-     * This sets the status, removes the body, and discards any headers
-     * that MUST NOT be included in 304 responses.
-     *
-     * @return $this
-     *
-     * @see https://tools.ietf.org/html/rfc2616#section-10.3.5
-     *
-     * @final
-     */
-    public function setNotModified(): object
-    {
-        $this->setStatusCode(304);
-        $this->setContent(null);
-
-        // remove headers that MUST NOT be included with 304 Not Modified responses
-        foreach (['Allow', 'Content-Encoding', 'Content-Language', 'Content-Length', 'Content-MD5', 'Content-Type', 'Last-Modified'] as $header) {
-            $this->headers->remove($header);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Returns true if the response includes a Vary header.
-     *
-     * @final
-     */
-    public function hasVary(): bool
-    {
-        return null !== $this->headers->get('Vary');
-    }
-
-    /**
-     * Returns an array of header names given in the Vary header.
-     *
-     * @final
-     */
-    public function getVary(): array
-    {
-        if (!$vary = $this->headers->all('Vary')) {
-            return [];
-        }
-
-        $ret = [];
-        foreach ($vary as $item) {
-            $ret = array_merge($ret, preg_split('/[\s,]+/', $item));
-        }
-
-        return $ret;
-    }
-
-    /**
-     * Sets the Vary header.
-     *
-     * @param string|array $headers
-     * @param bool         $replace Whether to replace the actual value or not (true by default)
-     *
-     * @return $this
-     *
-     * @final
-     */
-    public function setVary($headers, bool $replace = true): object
-    {
-        $this->headers->set('Vary', $headers, $replace);
-
-        return $this;
-    }
-
-    /**
-     * Determines if the Response validators (ETag, Last-Modified) match
-     * a conditional value specified in the Request.
-     *
-     * If the Response is not modified, it sets the status code to 304 and
-     * removes the actual content by calling the setNotModified() method.
-     *
-     * @return bool true if the Response validators match the Request, false otherwise
-     *
-     * @final
-     */
-    public function isNotModified(Request $request): bool
-    {
-        if (!$request->isMethodCacheable()) {
-            return false;
-        }
-
-        $notModified = false;
-        $lastModified = $this->headers->get('Last-Modified');
-        $modifiedSince = $request->headers->get('If-Modified-Since');
-
-        if ($etags = $request->getETags()) {
-            $notModified = \in_array($this->getEtag(), $etags) || \in_array('*', $etags);
-        }
-
-        if ($modifiedSince && $lastModified) {
-            $notModified = strtotime($modifiedSince) >= strtotime($lastModified) && (!$etags || $notModified);
-        }
-
-        if ($notModified) {
-            $this->setNotModified();
-        }
-
-        return $notModified;
-    }
-
-    /**
-     * Is response invalid?
-     *
-     * @see https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
-     *
-     * @final
-     */
-    public function isInvalid(): bool
-    {
-        return $this->statusCode < 100 || $this->statusCode >= 600;
-    }
-
-    /**
-     * Is response informative?
-     *
-     * @final
-     */
-    public function isInformational(): bool
-    {
-        return $this->statusCode >= 100 && $this->statusCode < 200;
-    }
-
-    /**
-     * Is response successful?
-     *
-     * @final
-     */
-    public function isSuccessful(): bool
-    {
-        return $this->statusCode >= 200 && $this->statusCode < 300;
-    }
-
-    /**
-     * Is the response a redirect?
-     *
-     * @final
-     */
-    public function isRedirection(): bool
-    {
-        return $this->statusCode >= 300 && $this->statusCode < 400;
-    }
-
-    /**
-     * Is there a client error?
-     *
-     * @final
-     */
-    public function isClientError(): bool
-    {
-        return $this->statusCode >= 400 && $this->statusCode < 500;
-    }
-
-    /**
-     * Was there a server side error?
-     *
-     * @final
-     */
-    public function isServerError(): bool
-    {
-        return $this->statusCode >= 500 && $this->statusCode < 600;
-    }
-
-    /**
-     * Is the response OK?
-     *
-     * @final
-     */
-    public function isOk(): bool
-    {
-        return 200 === $this->statusCode;
-    }
-
-    /**
-     * Is the response forbidden?
-     *
-     * @final
-     */
-    public function isForbidden(): bool
-    {
-        return 403 === $this->statusCode;
-    }
-
-    /**
-     * Is the response a not found error?
-     *
-     * @final
-     */
-    public function isNotFound(): bool
-    {
-        return 404 === $this->statusCode;
-    }
-
-    /**
-     * Is the response a redirect of some form?
-     *
-     * @final
-     */
-    public function isRedirect(string $location = null): bool
-    {
-        return \in_array($this->statusCode, [201, 301, 302, 303, 307, 308]) && (null === $location ?: $location == $this->headers->get('Location'));
-    }
-
-    /**
-     * Is the response empty?
-     *
-     * @final
-     */
-    public function isEmpty(): bool
-    {
-        return \in_array($this->statusCode, [204, 304]);
-    }
-
-    /**
-     * Cleans or flushes output buffers up to target level.
-     *
-     * Resulting level can be greater than target level if a non-removable buffer has been encountered.
-     *
-     * @final
-     */
-    public static function closeOutputBuffers(int $targetLevel, bool $flush): void
-    {
-        $status = ob_get_status(true);
-        $level = \count($status);
-        $flags = \PHP_OUTPUT_HANDLER_REMOVABLE | ($flush ? \PHP_OUTPUT_HANDLER_FLUSHABLE : \PHP_OUTPUT_HANDLER_CLEANABLE);
-
-        while ($level-- > $targetLevel && ($s = $status[$level]) && (!isset($s['del']) ? !isset($s['flags']) || ($s['flags'] & $flags) === $flags : $s['del'])) {
-            if ($flush) {
-                ob_end_flush();
-            } else {
-                ob_end_clean();
-            }
-        }
-    }
-
-    /**
-     * Marks a response as safe according to RFC8674.
-     *
-     * @see https://tools.ietf.org/html/rfc8674
-     */
-    public function setContentSafe(bool $safe = true): void
-    {
-        if ($safe) {
-            $this->headers->set('Preference-Applied', 'safe');
-        } elseif ('safe' === $this->headers->get('Preference-Applied')) {
-            $this->headers->remove('Preference-Applied');
-        }
-
-        $this->setVary('Prefer', false);
-    }
-
-    /**
-     * Checks if we need to remove Cache-Control for SSL encrypted downloads when using IE < 9.
-     *
-     * @see http://support.microsoft.com/kb/323308
-     *
-     * @final
-     */
-    protected function ensureIEOverSSLCompatibility(Request $request): void
-    {
-        if (false !== stripos($this->headers->get('Content-Disposition'), 'attachment') && 1 == preg_match('/MSIE (.*?);/i', $request->server->get('HTTP_USER_AGENT'), $match) && true === $request->isSecure()) {
-            if ((int) preg_replace('/(MSIE )(.*?);/', '$2', $match[0]) < 9) {
-                $this->headers->remove('Cache-Control');
-            }
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+CLEOEm==

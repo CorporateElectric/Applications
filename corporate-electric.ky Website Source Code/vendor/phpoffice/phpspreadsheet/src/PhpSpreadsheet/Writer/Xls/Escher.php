@@ -1,510 +1,216 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Writer\Xls;
-
-use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
-use PhpOffice\PhpSpreadsheet\Shared\Escher\DgContainer;
-use PhpOffice\PhpSpreadsheet\Shared\Escher\DgContainer\SpgrContainer;
-use PhpOffice\PhpSpreadsheet\Shared\Escher\DgContainer\SpgrContainer\SpContainer;
-use PhpOffice\PhpSpreadsheet\Shared\Escher\DggContainer;
-use PhpOffice\PhpSpreadsheet\Shared\Escher\DggContainer\BstoreContainer;
-use PhpOffice\PhpSpreadsheet\Shared\Escher\DggContainer\BstoreContainer\BSE;
-use PhpOffice\PhpSpreadsheet\Shared\Escher\DggContainer\BstoreContainer\BSE\Blip;
-
-class Escher
-{
-    /**
-     * The object we are writing.
-     */
-    private $object;
-
-    /**
-     * The written binary data.
-     */
-    private $data;
-
-    /**
-     * Shape offsets. Positions in binary stream where a new shape record begins.
-     *
-     * @var array
-     */
-    private $spOffsets;
-
-    /**
-     * Shape types.
-     *
-     * @var array
-     */
-    private $spTypes;
-
-    /**
-     * Constructor.
-     *
-     * @param mixed $object
-     */
-    public function __construct($object)
-    {
-        $this->object = $object;
-    }
-
-    /**
-     * Process the object to be written.
-     *
-     * @return string
-     */
-    public function close()
-    {
-        // initialize
-        $this->data = '';
-
-        switch (get_class($this->object)) {
-            case \PhpOffice\PhpSpreadsheet\Shared\Escher::class:
-                if ($dggContainer = $this->object->getDggContainer()) {
-                    $writer = new self($dggContainer);
-                    $this->data = $writer->close();
-                } elseif ($dgContainer = $this->object->getDgContainer()) {
-                    $writer = new self($dgContainer);
-                    $this->data = $writer->close();
-                    $this->spOffsets = $writer->getSpOffsets();
-                    $this->spTypes = $writer->getSpTypes();
-                }
-
-                break;
-            case DggContainer::class:
-                // this is a container record
-
-                // initialize
-                $innerData = '';
-
-                // write the dgg
-                $recVer = 0x0;
-                $recInstance = 0x0000;
-                $recType = 0xF006;
-
-                $recVerInstance = $recVer;
-                $recVerInstance |= $recInstance << 4;
-
-                // dgg data
-                $dggData =
-                    pack(
-                        'VVVV',
-                        $this->object->getSpIdMax(), // maximum shape identifier increased by one
-                        $this->object->getCDgSaved() + 1, // number of file identifier clusters increased by one
-                        $this->object->getCSpSaved(),
-                        $this->object->getCDgSaved() // count total number of drawings saved
-                    );
-
-                // add file identifier clusters (one per drawing)
-                $IDCLs = $this->object->getIDCLs();
-
-                foreach ($IDCLs as $dgId => $maxReducedSpId) {
-                    $dggData .= pack('VV', $dgId, $maxReducedSpId + 1);
-                }
-
-                $header = pack('vvV', $recVerInstance, $recType, strlen($dggData));
-                $innerData .= $header . $dggData;
-
-                // write the bstoreContainer
-                if ($bstoreContainer = $this->object->getBstoreContainer()) {
-                    $writer = new self($bstoreContainer);
-                    $innerData .= $writer->close();
-                }
-
-                // write the record
-                $recVer = 0xF;
-                $recInstance = 0x0000;
-                $recType = 0xF000;
-                $length = strlen($innerData);
-
-                $recVerInstance = $recVer;
-                $recVerInstance |= $recInstance << 4;
-
-                $header = pack('vvV', $recVerInstance, $recType, $length);
-
-                $this->data = $header . $innerData;
-
-                break;
-            case BstoreContainer::class:
-                // this is a container record
-
-                // initialize
-                $innerData = '';
-
-                // treat the inner data
-                if ($BSECollection = $this->object->getBSECollection()) {
-                    foreach ($BSECollection as $BSE) {
-                        $writer = new self($BSE);
-                        $innerData .= $writer->close();
-                    }
-                }
-
-                // write the record
-                $recVer = 0xF;
-                $recInstance = count($this->object->getBSECollection());
-                $recType = 0xF001;
-                $length = strlen($innerData);
-
-                $recVerInstance = $recVer;
-                $recVerInstance |= $recInstance << 4;
-
-                $header = pack('vvV', $recVerInstance, $recType, $length);
-
-                $this->data = $header . $innerData;
-
-                break;
-            case BSE::class:
-                // this is a semi-container record
-
-                // initialize
-                $innerData = '';
-
-                // here we treat the inner data
-                if ($blip = $this->object->getBlip()) {
-                    $writer = new self($blip);
-                    $innerData .= $writer->close();
-                }
-
-                // initialize
-                $data = '';
-
-                $btWin32 = $this->object->getBlipType();
-                $btMacOS = $this->object->getBlipType();
-                $data .= pack('CC', $btWin32, $btMacOS);
-
-                $rgbUid = pack('VVVV', 0, 0, 0, 0); // todo
-                $data .= $rgbUid;
-
-                $tag = 0;
-                $size = strlen($innerData);
-                $cRef = 1;
-                $foDelay = 0; //todo
-                $unused1 = 0x0;
-                $cbName = 0x0;
-                $unused2 = 0x0;
-                $unused3 = 0x0;
-                $data .= pack('vVVVCCCC', $tag, $size, $cRef, $foDelay, $unused1, $cbName, $unused2, $unused3);
-
-                $data .= $innerData;
-
-                // write the record
-                $recVer = 0x2;
-                $recInstance = $this->object->getBlipType();
-                $recType = 0xF007;
-                $length = strlen($data);
-
-                $recVerInstance = $recVer;
-                $recVerInstance |= $recInstance << 4;
-
-                $header = pack('vvV', $recVerInstance, $recType, $length);
-
-                $this->data = $header;
-
-                $this->data .= $data;
-
-                break;
-            case Blip::class:
-                // this is an atom record
-
-                // write the record
-                switch ($this->object->getParent()->getBlipType()) {
-                    case BSE::BLIPTYPE_JPEG:
-                        // initialize
-                        $innerData = '';
-
-                        $rgbUid1 = pack('VVVV', 0, 0, 0, 0); // todo
-                        $innerData .= $rgbUid1;
-
-                        $tag = 0xFF; // todo
-                        $innerData .= pack('C', $tag);
-
-                        $innerData .= $this->object->getData();
-
-                        $recVer = 0x0;
-                        $recInstance = 0x46A;
-                        $recType = 0xF01D;
-                        $length = strlen($innerData);
-
-                        $recVerInstance = $recVer;
-                        $recVerInstance |= $recInstance << 4;
-
-                        $header = pack('vvV', $recVerInstance, $recType, $length);
-
-                        $this->data = $header;
-
-                        $this->data .= $innerData;
-
-                        break;
-                    case BSE::BLIPTYPE_PNG:
-                        // initialize
-                        $innerData = '';
-
-                        $rgbUid1 = pack('VVVV', 0, 0, 0, 0); // todo
-                        $innerData .= $rgbUid1;
-
-                        $tag = 0xFF; // todo
-                        $innerData .= pack('C', $tag);
-
-                        $innerData .= $this->object->getData();
-
-                        $recVer = 0x0;
-                        $recInstance = 0x6E0;
-                        $recType = 0xF01E;
-                        $length = strlen($innerData);
-
-                        $recVerInstance = $recVer;
-                        $recVerInstance |= $recInstance << 4;
-
-                        $header = pack('vvV', $recVerInstance, $recType, $length);
-
-                        $this->data = $header;
-
-                        $this->data .= $innerData;
-
-                        break;
-                }
-
-                break;
-            case DgContainer::class:
-                // this is a container record
-
-                // initialize
-                $innerData = '';
-
-                // write the dg
-                $recVer = 0x0;
-                $recInstance = $this->object->getDgId();
-                $recType = 0xF008;
-                $length = 8;
-
-                $recVerInstance = $recVer;
-                $recVerInstance |= $recInstance << 4;
-
-                $header = pack('vvV', $recVerInstance, $recType, $length);
-
-                // number of shapes in this drawing (including group shape)
-                $countShapes = count($this->object->getSpgrContainer()->getChildren());
-                $innerData .= $header . pack('VV', $countShapes, $this->object->getLastSpId());
-
-                // write the spgrContainer
-                if ($spgrContainer = $this->object->getSpgrContainer()) {
-                    $writer = new self($spgrContainer);
-                    $innerData .= $writer->close();
-
-                    // get the shape offsets relative to the spgrContainer record
-                    $spOffsets = $writer->getSpOffsets();
-                    $spTypes = $writer->getSpTypes();
-
-                    // save the shape offsets relative to dgContainer
-                    foreach ($spOffsets as &$spOffset) {
-                        $spOffset += 24; // add length of dgContainer header data (8 bytes) plus dg data (16 bytes)
-                    }
-
-                    $this->spOffsets = $spOffsets;
-                    $this->spTypes = $spTypes;
-                }
-
-                // write the record
-                $recVer = 0xF;
-                $recInstance = 0x0000;
-                $recType = 0xF002;
-                $length = strlen($innerData);
-
-                $recVerInstance = $recVer;
-                $recVerInstance |= $recInstance << 4;
-
-                $header = pack('vvV', $recVerInstance, $recType, $length);
-
-                $this->data = $header . $innerData;
-
-                break;
-            case SpgrContainer::class:
-                // this is a container record
-
-                // initialize
-                $innerData = '';
-
-                // initialize spape offsets
-                $totalSize = 8;
-                $spOffsets = [];
-                $spTypes = [];
-
-                // treat the inner data
-                foreach ($this->object->getChildren() as $spContainer) {
-                    $writer = new self($spContainer);
-                    $spData = $writer->close();
-                    $innerData .= $spData;
-
-                    // save the shape offsets (where new shape records begin)
-                    $totalSize += strlen($spData);
-                    $spOffsets[] = $totalSize;
-
-                    $spTypes = array_merge($spTypes, $writer->getSpTypes());
-                }
-
-                // write the record
-                $recVer = 0xF;
-                $recInstance = 0x0000;
-                $recType = 0xF003;
-                $length = strlen($innerData);
-
-                $recVerInstance = $recVer;
-                $recVerInstance |= $recInstance << 4;
-
-                $header = pack('vvV', $recVerInstance, $recType, $length);
-
-                $this->data = $header . $innerData;
-                $this->spOffsets = $spOffsets;
-                $this->spTypes = $spTypes;
-
-                break;
-            case SpContainer::class:
-                // initialize
-                $data = '';
-
-                // build the data
-
-                // write group shape record, if necessary?
-                if ($this->object->getSpgr()) {
-                    $recVer = 0x1;
-                    $recInstance = 0x0000;
-                    $recType = 0xF009;
-                    $length = 0x00000010;
-
-                    $recVerInstance = $recVer;
-                    $recVerInstance |= $recInstance << 4;
-
-                    $header = pack('vvV', $recVerInstance, $recType, $length);
-
-                    $data .= $header . pack('VVVV', 0, 0, 0, 0);
-                }
-                $this->spTypes[] = ($this->object->getSpType());
-
-                // write the shape record
-                $recVer = 0x2;
-                $recInstance = $this->object->getSpType(); // shape type
-                $recType = 0xF00A;
-                $length = 0x00000008;
-
-                $recVerInstance = $recVer;
-                $recVerInstance |= $recInstance << 4;
-
-                $header = pack('vvV', $recVerInstance, $recType, $length);
-
-                $data .= $header . pack('VV', $this->object->getSpId(), $this->object->getSpgr() ? 0x0005 : 0x0A00);
-
-                // the options
-                if ($this->object->getOPTCollection()) {
-                    $optData = '';
-
-                    $recVer = 0x3;
-                    $recInstance = count($this->object->getOPTCollection());
-                    $recType = 0xF00B;
-                    foreach ($this->object->getOPTCollection() as $property => $value) {
-                        $optData .= pack('vV', $property, $value);
-                    }
-                    $length = strlen($optData);
-
-                    $recVerInstance = $recVer;
-                    $recVerInstance |= $recInstance << 4;
-
-                    $header = pack('vvV', $recVerInstance, $recType, $length);
-                    $data .= $header . $optData;
-                }
-
-                // the client anchor
-                if ($this->object->getStartCoordinates()) {
-                    $clientAnchorData = '';
-
-                    $recVer = 0x0;
-                    $recInstance = 0x0;
-                    $recType = 0xF010;
-
-                    // start coordinates
-                    [$column, $row] = Coordinate::coordinateFromString($this->object->getStartCoordinates());
-                    $c1 = Coordinate::columnIndexFromString($column) - 1;
-                    $r1 = $row - 1;
-
-                    // start offsetX
-                    $startOffsetX = $this->object->getStartOffsetX();
-
-                    // start offsetY
-                    $startOffsetY = $this->object->getStartOffsetY();
-
-                    // end coordinates
-                    [$column, $row] = Coordinate::coordinateFromString($this->object->getEndCoordinates());
-                    $c2 = Coordinate::columnIndexFromString($column) - 1;
-                    $r2 = $row - 1;
-
-                    // end offsetX
-                    $endOffsetX = $this->object->getEndOffsetX();
-
-                    // end offsetY
-                    $endOffsetY = $this->object->getEndOffsetY();
-
-                    $clientAnchorData = pack('vvvvvvvvv', $this->object->getSpFlag(), $c1, $startOffsetX, $r1, $startOffsetY, $c2, $endOffsetX, $r2, $endOffsetY);
-
-                    $length = strlen($clientAnchorData);
-
-                    $recVerInstance = $recVer;
-                    $recVerInstance |= $recInstance << 4;
-
-                    $header = pack('vvV', $recVerInstance, $recType, $length);
-                    $data .= $header . $clientAnchorData;
-                }
-
-                // the client data, just empty for now
-                if (!$this->object->getSpgr()) {
-                    $clientDataData = '';
-
-                    $recVer = 0x0;
-                    $recInstance = 0x0;
-                    $recType = 0xF011;
-
-                    $length = strlen($clientDataData);
-
-                    $recVerInstance = $recVer;
-                    $recVerInstance |= $recInstance << 4;
-
-                    $header = pack('vvV', $recVerInstance, $recType, $length);
-                    $data .= $header . $clientDataData;
-                }
-
-                // write the record
-                $recVer = 0xF;
-                $recInstance = 0x0000;
-                $recType = 0xF004;
-                $length = strlen($data);
-
-                $recVerInstance = $recVer;
-                $recVerInstance |= $recInstance << 4;
-
-                $header = pack('vvV', $recVerInstance, $recType, $length);
-
-                $this->data = $header . $data;
-
-                break;
-        }
-
-        return $this->data;
-    }
-
-    /**
-     * Gets the shape offsets.
-     *
-     * @return array
-     */
-    public function getSpOffsets()
-    {
-        return $this->spOffsets;
-    }
-
-    /**
-     * Gets the shape types.
-     *
-     * @return array
-     */
-    public function getSpTypes()
-    {
-        return $this->spTypes;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

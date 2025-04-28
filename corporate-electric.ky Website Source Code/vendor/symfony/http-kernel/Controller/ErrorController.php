@@ -1,62 +1,42 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpKernel\Controller;
-
-use Symfony\Component\ErrorHandler\ErrorRenderer\ErrorRendererInterface;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Exception\HttpException;
-use Symfony\Component\HttpKernel\HttpKernelInterface;
-
-/**
- * Renders error or exception pages from a given FlattenException.
- *
- * @author Yonel Ceruto <yonelceruto@gmail.com>
- * @author Matthias Pigulla <mp@webfactory.de>
- */
-class ErrorController
-{
-    private $kernel;
-    private $controller;
-    private $errorRenderer;
-
-    public function __construct(HttpKernelInterface $kernel, $controller, ErrorRendererInterface $errorRenderer)
-    {
-        $this->kernel = $kernel;
-        $this->controller = $controller;
-        $this->errorRenderer = $errorRenderer;
-    }
-
-    public function __invoke(\Throwable $exception): Response
-    {
-        $exception = $this->errorRenderer->render($exception);
-
-        return new Response($exception->getAsString(), $exception->getStatusCode(), $exception->getHeaders());
-    }
-
-    public function preview(Request $request, int $code): Response
-    {
-        /*
-         * This Request mimics the parameters set by
-         * \Symfony\Component\HttpKernel\EventListener\ErrorListener::duplicateRequest, with
-         * the additional "showException" flag.
-         */
-        $subRequest = $request->duplicate(null, null, [
-            '_controller' => $this->controller,
-            'exception' => new HttpException($code, 'This is a sample exception.'),
-            'logger' => null,
-            'showException' => false,
-        ]);
-
-        return $this->kernel->handle($subRequest, HttpKernelInterface::SUB_REQUEST);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+Oe2bx17+mUJBa9Ye4Ux0OUwPAqLwfWZc/yie

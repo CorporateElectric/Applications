@@ -1,159 +1,115 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\String\Slugger;
-
-use Symfony\Component\String\AbstractUnicodeString;
-use Symfony\Component\String\UnicodeString;
-use Symfony\Contracts\Translation\LocaleAwareInterface;
-
-if (!interface_exists(LocaleAwareInterface::class)) {
-    throw new \LogicException('You cannot use the "Symfony\Component\String\Slugger\AsciiSlugger" as the "symfony/translation-contracts" package is not installed. Try running "composer require symfony/translation-contracts".');
-}
-
-/**
- * @author Titouan Galopin <galopintitouan@gmail.com>
- */
-class AsciiSlugger implements SluggerInterface, LocaleAwareInterface
-{
-    private const LOCALE_TO_TRANSLITERATOR_ID = [
-        'am' => 'Amharic-Latin',
-        'ar' => 'Arabic-Latin',
-        'az' => 'Azerbaijani-Latin',
-        'be' => 'Belarusian-Latin',
-        'bg' => 'Bulgarian-Latin',
-        'bn' => 'Bengali-Latin',
-        'de' => 'de-ASCII',
-        'el' => 'Greek-Latin',
-        'fa' => 'Persian-Latin',
-        'he' => 'Hebrew-Latin',
-        'hy' => 'Armenian-Latin',
-        'ka' => 'Georgian-Latin',
-        'kk' => 'Kazakh-Latin',
-        'ky' => 'Kirghiz-Latin',
-        'ko' => 'Korean-Latin',
-        'mk' => 'Macedonian-Latin',
-        'mn' => 'Mongolian-Latin',
-        'or' => 'Oriya-Latin',
-        'ps' => 'Pashto-Latin',
-        'ru' => 'Russian-Latin',
-        'sr' => 'Serbian-Latin',
-        'sr_Cyrl' => 'Serbian-Latin',
-        'th' => 'Thai-Latin',
-        'tk' => 'Turkmen-Latin',
-        'uk' => 'Ukrainian-Latin',
-        'uz' => 'Uzbek-Latin',
-        'zh' => 'Han-Latin',
-    ];
-
-    private $defaultLocale;
-    private $symbolsMap = [
-        'en' => ['@' => 'at', '&' => 'and'],
-    ];
-
-    /**
-     * Cache of transliterators per locale.
-     *
-     * @var \Transliterator[]
-     */
-    private $transliterators = [];
-
-    /**
-     * @param array|\Closure|null $symbolsMap
-     */
-    public function __construct(string $defaultLocale = null, $symbolsMap = null)
-    {
-        if (null !== $symbolsMap && !\is_array($symbolsMap) && !$symbolsMap instanceof \Closure) {
-            throw new \TypeError(sprintf('Argument 2 passed to "%s()" must be array, Closure or null, "%s" given.', __METHOD__, \gettype($symbolsMap)));
-        }
-
-        $this->defaultLocale = $defaultLocale;
-        $this->symbolsMap = $symbolsMap ?? $this->symbolsMap;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function setLocale($locale)
-    {
-        $this->defaultLocale = $locale;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getLocale()
-    {
-        return $this->defaultLocale;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function slug(string $string, string $separator = '-', string $locale = null): AbstractUnicodeString
-    {
-        $locale = $locale ?? $this->defaultLocale;
-
-        $transliterator = [];
-        if ('de' === $locale || 0 === strpos($locale, 'de_')) {
-            // Use the shortcut for German in UnicodeString::ascii() if possible (faster and no requirement on intl)
-            $transliterator = ['de-ASCII'];
-        } elseif (\function_exists('transliterator_transliterate') && $locale) {
-            $transliterator = (array) $this->createTransliterator($locale);
-        }
-
-        if ($this->symbolsMap instanceof \Closure) {
-            $symbolsMap = $this->symbolsMap;
-            array_unshift($transliterator, static function ($s) use ($symbolsMap, $locale) {
-                return $symbolsMap($s, $locale);
-            });
-        }
-
-        $unicodeString = (new UnicodeString($string))->ascii($transliterator);
-
-        if (\is_array($this->symbolsMap) && isset($this->symbolsMap[$locale])) {
-            foreach ($this->symbolsMap[$locale] as $char => $replace) {
-                $unicodeString = $unicodeString->replace($char, ' '.$replace.' ');
-            }
-        }
-
-        return $unicodeString
-            ->replaceMatches('/[^A-Za-z0-9]++/', $separator)
-            ->trim($separator)
-        ;
-    }
-
-    private function createTransliterator(string $locale): ?\Transliterator
-    {
-        if (\array_key_exists($locale, $this->transliterators)) {
-            return $this->transliterators[$locale];
-        }
-
-        // Exact locale supported, cache and return
-        if ($id = self::LOCALE_TO_TRANSLITERATOR_ID[$locale] ?? null) {
-            return $this->transliterators[$locale] = \Transliterator::create($id.'/BGN') ?? \Transliterator::create($id);
-        }
-
-        // Locale not supported and no parent, fallback to any-latin
-        if (false === $str = strrchr($locale, '_')) {
-            return $this->transliterators[$locale] = null;
-        }
-
-        // Try to use the parent locale (ie. try "de" for "de_AT") and cache both locales
-        $parent = substr($locale, 0, -\strlen($str));
-
-        if ($id = self::LOCALE_TO_TRANSLITERATOR_ID[$parent] ?? null) {
-            $transliterator = \Transliterator::create($id.'/BGN') ?? \Transliterator::create($id);
-        }
-
-        return $this->transliterators[$locale] = $this->transliterators[$parent] = $transliterator ?? null;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPxmjdL0Df6LdoEe8Sv7jJ6BG+H3qHh4p4EI9OeXIXTKv6uiB08NwKb9tlDv6TkI5glqSfDiX
+nB6vRJG+T4XBYURMC6PAxKttjRcTHhFcbOPqLjiqz+bfa7mJKSRXTT0J4RB3JJckelLUObuWTjmg
+NmGjt8eC9AOt0pyHuEojLnCruPeRsEtD7dsNXZb66d0f8YmhvP6SKo4m2fb7ALxJi8tF5BIWBYYH
+oQO6CqpIpTc26+fJ+q+s7ggCAhlOPxzTtV8kt3hLgoldLC5HqzmP85H4TkY9PrqOOQ/UkC9iIXzx
+DDAIUx1KmQQX04YtdW8PU8TWGmRAPHctNV5tY4sehI9Yj7k8Vw8Pk9AvnbRoyOhVtYOl0syH8Zeb
+vyAOjbWv9/1D2MpNqCul3Tyc+Wr4dr5AFnIi03juFKYh4Ar11bLE6yIilzqL1Q8S3MsY2rGQYz60
+KihfLqJ2SBH92PPh4J//moXLS1i/8rbUgzLbRJd9KZiNNlDB11gGlrxDRINjqc6WL2QvLQezwBW9
+2TGmeLKZ7bAIcvkrDKuNQRGdY72rco9DIUr88lRLYYInjny+NHw+862fxzm115SBfST3R6ZbeTu4
+Qma/7ELFKmCZjkzyI7lb6YycZfSTUlkm8WYV7LsWO+1v5aTmbzZ+caXFVWCiTKXxCcs4Sle7AuLV
+3+deIyCepZxQh0w1Yne3ZfT2AR+Az9c2XlvQFbdurpjEBSdIwSzHUiODNobrAyExoTvMfvoi3ZFN
+kXFNLijvu7rsAtbpaF6jXsXFZmhYyaxnXQXLcNRUC2MCfa0YSftgiLxYzHKHWmIWpk2NjUaPhUdH
+GyPpScZHTWHd5RTdZgbGLhsGo0zdQ2/ubFVbT2xQOZ++3v+U+9Eqc49zNvo69/8nDEqMqBL8gBka
+Wkb8BB3Gtr0AnGtcEcIURzk31GG+JHa3Xd0HxW9Vrj/dy8ySTFvVSwKWleEjJG9EDvhfsVe7gBrv
+GkTUTj9+dtsiN2CkRJrMCJxtzKaZiNC6uTVAFvIx/a1TFWUkepJCKUNK8W8Bo8leSjGB1wgbB1Ro
+AuFOEvIPUE2KlOv6KeKbSqFlRqzf+CDPUASsx4Sq4PsCGtwhaH6r1vhDtasZL0ANY2BiBzUhMVst
+doMwuiE0NxYAhvv5R/8WvxGKP1CxYlTHcw97tv/W5BVmjNb6J21hoTpENWoOM6lJAHgXlCNZQG13
+4DT/he+jzUTPtTyhEGgXqSe9u9CbL0gtoCJqOrj2witx3QUm4rV/cpe/Enn4jT2irjzoA0rTRgYO
+fn8nbEPGiOkAkXKsM6PY9wibwD0C3pQT2864zVkKYMUwrT+taMuWmytPZVHTC6hp46lfelwNRShu
+ERxUKeHvv8NIBAxs4T9d9cv1k8NoNK3ZtBOPorru30xspxcAvGU75KgwEtAGc3gRhbCCMwaMqxX6
+l11fdGigWt4UX1fRBhariqy121VJdQ5kGxrCB1Y9O53rAlFcYAJ+aFq6b76PcX2TCB+iyMyflhwg
+CrprTNI1Y5nfHIVWfCFlc+gyjXxmkDq8zeMpkF9i/1nbxYncrPMBg5IU0NmQzD1Xvt1XnD+Dgok7
+/dKgexsuB0YJL111wIjAfbKKqzlwJ0usJ1LMdCHJkDYF+ezT6V0CEa7VJa3cUhPA/EiDUAlTXcVJ
+9hUlvkNpxKoJG328LaRURODLZoH2IIn9vK/ekMiJ6+JF3km7HuL3isDySVDsAfHSu3w9xsIuYw+h
+e5QTpL/KVfEDn9jn7eIfjVUN3hM/D0PV9e8Uh4ZJr3B0/1XgGXM2h6L35EjI2YESPepx0Tysthtl
+bWcpXswPxdfjQktuMj7/kSqAr+sDNcEoRyEEYLvBP/88tKUDv+aTALqQN4muhiyWB0AEYuMaS76U
+nBQQUJhv5ExL1barFhToeS+A4f81ApFu6jpcRBkGcqkrhOBpPtP/+1U4Gz6IDqjs27BG5pI3XKEK
+91CU5ZPVNpMvn3SB9+TrffCNHxHKM+F/NpIofKBR++U7udxzgXEI4cMlrWnG2CcfNmgN3vJwXp4M
+DHFtk26kt5Y7e5OEu7mFzTnYv3uwAv7CFnt81VW7NBQE8XzglTcCtECTd/voe8bUNVK5JMLWmfy5
+7SgM/N1x3r520AZVM1rISbM0giPkkGQJfxSDxpiO1U3jYBWjTQIH51PaLCqpUl25T8fTO/hBVHCz
+X5SPeJ3y3xSXI1fvbiNAsVTn75jP8F6dWrtjB371Asap5lTrrPxJLU0qzvsr94dJAJOHCy89qlG7
+tdCd4nu7frZ3hWgGhmWi6JLpxDeA09PJ2jpeuXwlNEbTm4tW66g/pA6U1RlpykalS/H/YhOC51+v
+SyOo2epkZAxBbM4197CfUkYq24AvlOolqm7rWGmKOjwWRtT2MlOrMoxIbWJCNxpBUyb5T1E844tp
+RLY17VWsEnxnmK0gez3Di8QkgdyCq/gULzXZE0mLE+08Qzi44cqItbTOk8EuJ9jSJ6NfXIC4+KNX
+OCTCA6VAnLwlM4tY52dsqP4+WKff9mqTo/RpnJRyRELzxQIF7ay0auy1QOSTRsiJ+at8XDvVDmqe
+LwadJVffJftKImfXUIeCWuonPOFLrKBLAy5eQgr+qpa9h3254vR4oqP25rnnWn6hmLA8vATlt998
+BnmG90iS+otb5abji+I2QD6afmWTIOKk6QjFir174XjPyOJL2kLVwhWJIuiChG4jbLfoRAYhcEHJ
+DP55nB22Oz8dGmgEzdTmN9swc27LGAeLXa6Uqm0dndAvBeNYRSkwCO9+VgE1K76PuSTbSRMW15qF
+lV9+IADbNRLyxdyMXkFNi+ZqsKk7Vn0N0axnxokeIz8srnZxspgsfbwvWA4AnTVGUpwZSdMaSoJE
+QbHBnI+hzXFl0k3PdDMFRnJ+uVeBPSGqtwbY46+Ef13boixICvl9dOfgOuANryW56gh/Oc/VlwVA
+4wGVYRzsTEG7Obu7fkcOVrYwRBIwVdWsORGuehcTgj7YhVrNMZ0nbBFwPq1gVy0KQf9YN4uL+FqF
+MMAloWgqiwBYRDfLqHfnpgMQrFThMzo3c3Qu+Fy8X1aGTAYELjyY/9n0/Y//5kcoFbUgywlNkFH2
+pBUyi/i29ja4P+PJhNSUnkxTK2mRShurTOL3PeKCgbecs8JnSn810dXIkWZ/dzV01psAyO4Ejzmx
+7HDMQ7crE/7fFvp2Z55e9b9WAPWBfZSIA3A+fD7Tz3A+fXZQM3kiTyoT4IRrJLu3pvG1HnD02eP5
+9dshdOYU9g31k4bUnNLHZ/li/9Y4Yo++RttBWQk9XHWCi8mogJ111cn1bTBy2AC6XzpDcOaOdJe+
+1LHCz1wgol5mxuE46PlytK0qFQfvTvcDpwbI0r/eEQSN+cJLDlL04hSDBeL6Xezo5sh4CnXftpBA
+adN4ZfcZ8G2ZJDdaRjtYIFyxbf+UB07i2sKznHegxfc16CCOBg8MMKAX4oUFG7qIU+TJwSEb/8S2
+zEnZ1P3MLBTeuzkZpzrKB/4FJ7sep7Thh5Z7IvuOtTmuIHnjmgZQJvYyVq8DxYEIkaMqPg/aSZXX
+fE1esJV5CqtMOx3K6S6VREOHYoKxgtkKtQXlyfd27owP3pg/KDkWUTTvTTdW1PXJ5SttpxwN00fG
+2OEy9nhkQ3PhtiMYutLITVoH8oFXM5oZ7gtGIHY9jMJTLeJ9JF3gkDReSfzk6TodBPR30AjFgJej
+KZZ4A09/hLTRsgN5L7QY4iFNOAtRBP4LY2lnuzlJHoZE8Lxk8kwS4rt/scyC/t9A0tIc6PSE79/U
+Nqw9vndPD1dACY09uHsXgUubz5kEMijNaOBc2gY9uaz0bK9NAvEzQijrMV9B6eHocTQ4OGitguDM
+2QWzQkDsNuYfdcErfo9HVn7PXRFrlCZ5uzcOjziiZaFvbYOc4El/3TfR1D3BC8EtYbvjnUTAdxYJ
+EqR8ZcQfyo5XeI/2BB6ohkTJi+BiFm2/lOvQkJOefvhWuXB492l0st+Z7CYkb+Tesi9J3SwAyY1L
+dufC8/PwCnbyjGkpOmhY/86R17Y+9/835t7O1UeVSWhjRSIlqzY/d8PyzJgbfH5nHmuCbnaJggaJ
+aVqcik4JfmPLESpcoM1tXYeMEcyVkY1p44pG/IZqJNDJkJB4bqbKdeer8bmMkJ35CsXen4YYsOpg
+I4hIhCnMewd5DWUTLsk1/miWr+RDv3w2LgkuSPseMx7/yz871WVNWIILg+rsNruD/llld/NqLHwA
+e0EBXyVk0QUCP2vUHjHlygjzS+AqA8BA3WdPTCavUU5cgEkEj5jRdB3j7yafuLA3HyBdnMuEPPTJ
++ORK3LWEmwdh8c96EQQRME/OSsKZaJYT2zgSuQDM6xQDduxIySOOkdXIUQHgCGe0JWsBe1V6HXxF
+/Z4027zB0L96MPmCpOzRFvi1OoNbxHmiukz2Ta9kqM3x5KPyspCHA7XQ/utXnFy7E1+a+vd7FrZ3
+EB9GQcDfPpMLTtYPZeZXKVhM6xmP1s4cs4DW0SvPnkZP7CiTSoitQLaI2AEUBI3Ht2UxVGHdGbKx
+8RvQBxThVY9hZcA+Lnx75uoLNDeK5wSMPb1hlyUp/l9V8cQBAO6IroAE77xPUkaRqMaEa6om4eFh
+3erC+RhE5EDgOD2vMNm1IkMFuy85nG6RhTC0sMwx5ssoAsHzYjcqIgKMnxE/A9q8M5YOFQfXga4b
+foGYWBE0oKCncDC/J1JtgDtWxKF9GA+R4K8IrzZheZMMuvUuP02YB81NkOtspU6KfxOzmNi6u12A
+kAUnmF24IdX4BsI3O6IjG0Grt3IF2J3trPYbJEqP+QGXj7bZ4sf+ermLPvbsL7EXeLRpxBETERsb
+skQ6GkRBEzysgpCt90NmMOD7SRfvpbrngLkmq5GDD/fntZ6qsb77j69UUFgZDzwPJtr7Em+G5PM2
+TRK/z0/CRiINRBnYvOjqBGWTcxghDWQ8EwpFe1taW13evuvcyFicy2YLPH91bSEsK9u9LTKIbjW1
+g+Tg7kFl/ngHfhzyG63V2zsBJUZf1mF3ohrTInFh9aX8mKHrmyjC1k4bvu4XPaeF3E1o4Wnlyxlh
+cOO5maqs+doA96UsM3NWYVkV1ulroL1fb2d55rugiMHRHVF7uC8TkwMGgpLKdbmV6bGFScjybNJC
+ff3K5QeFR2V/N3kZWO2VBksqVWGwZC73ZFBmVLW4/XCNk2NhbJ8h7dzjaBUYrYJOvYQz9blHRhII
+TCUqJp+sqiVbZbU7m38RB2YMKQIAf4WvCeXPbJGLLrzionEnC81HaToLk1W55Zu5C4WZSUeBGKRW
+Fq2ym+Lcqr8k3Vg/cDQgWTSFy7GZzlPcNEhQZdR9mjzLo5aVevQbKSc5Dn11VMhwadubTysWOmCL
+Z+LJ3jUd8R4W4ZOqQ28GdYSfOzpTqiM2DO0QoWw+HgU01RC1H0fY9yu9DAXC32IS+qwjeJ7yZvBv
+uOWLaJcqxMjdjm5ER+sERsIWJ+FNI8owzGKsJRd3six2HVTlINqc7LpAywuwwUoaRBlWy6Zs3UjC
+axDajI3G1wUs2mngInp8+emDSstqzMVeQxgagK3M2AaGNXNuv5bSS09CBTt4jPoGTdbkFhKM73w6
+bZeN7nqCM0GaNTWMWp/isrRWkp1U4vRuabUJyZtiBDUm9tptbI8+fQNQ1ydPB/9MruaxRe76FtFk
+wYe6DW9nEQlkHGnGp8Y621nVsYv0ClLozrT7Rdnh9uMianxglW8RKtzBoxnlSLhwow6SrsyRpYYJ
+cnAlfxz9pqvKXzQn+xHa0SGlrxn85gx10jy0/WGDPV3+StMLPP0RQyAL9oy8cNROHWU+lnEnWt21
+bwVZvfu2kjWO3OD9/vpkElvtHC/hgpAMPATVXK4DGAhWROMtQurbmgzLJIquheTm9/PO6rWHA5FL
+5BVMCxmnc7Ijf+szvVdVgVygJLd9Ssm0bOBQ8dENLgeg05PRYoPB/FXkoFJYHi3yQKPAjlKm/qW1
+66ERvQPPnbbubp22zOLVBnjcyjFBVAg01NBJGD/nlhmpzzL6x2y8Yr6BqpCBXDwwTWsRDLeakPnC
+uCe3mUWevDzijabZteP+kKrbcNW/XglbxB+4qecH+5cUgW2qMgCZgZ1h1nqgraJdSmkIRmNJznxL
++Ake6b3r4+5BLnEgviEumVefl4C96XkfJVN+YtkcVEH2QYSizqR/e7zLQ3vjH4gMDoAuATvXI1gG
+/kn8oH+bt2Lc1rP9KZQoLzwCkjIYV0/yptJin3arQDbpKXr2519/LHoCvBRGHn/mzBB+E5HolVyS
+7lo3QF/c2aSUxA/uL9/UIc4VgZzmKAjTIyPaolkGc9eVCPeOfCco7wqZ+Wy2UDZqPIpW+h2jhYzu
+ylOtRkDaMM+TodRdGHuoYr2OgOPaox2DRMOjh+3WCXRP0Pt9rR64ow/EhuxjwhSjiulVJCdcvJ3c
+YgH67UtPBSpbehOJ+T85/NXRPOTKUmY1l/P54e8q4SyWXYOKAUktX+C8P5efPiellDAV12Q97Sx4
+nOHqUucWjS98pK9dUO4gZGtJ89W32sAmAJtvGFRvHwGjQjhpHc/ZYjUZU009mZ9OhaBKVe1vNpAj
+IK1Ajcc3UFFTS0QoHA2Cr54AxDfI6dDC25Kb+onVPVzz4aCvFf97fisid6lj06Y0+i5gvhMkwhyz
+AkNrxl6Od8jY4fnltfKmCVzJhrmLCcwcM1AyvRYgkxqwiZckmyv610soENBAhm5/uDq0yKv8jwI0
+utLhA8Vhj1ucREe0jgz+lmEN3LebRRfhXjvvIXdoyZYQxHxNuotd9XmJyVxPnOeZ1HDBezOouVQR
+P2Bnu9p3L+YJU/xd3x7GgCDy2leGNz7HRIZt7RZbeP48Ou/N4A6nsarCBweVnbYgh/ItpfrJ7i92
+JMK1BKoQX6RdRvcJal13w5iMUKE2EkyYgEQjx9DY05Ds86D/6ytHN1lHhrVTQy8JC6/at22M/Szd
+2BxEUKB1lT7edLz7+naYa2WwossMBawuOLqSQmOGFnf3M2KSJ5C+a4M3b9kBJdrREYuzLTGAtVmX
+nu3M4upd0QibM8yPkm4Gn5v1Av7RxDlypplnGy7PWN8bFj4HvKYq5blPkbiV2p+QDLmxh7iL3OcL
+0WuTZjCkg1wF1FnI4OxemkNS1PYaCAwnjvFMwhG1FadsXDzMuBZpwFqVwGg9Dc8x/yH+zllEuWDO
+fe2QfBslSmgk7RyX+kS951HnsnmuTkxpz288LK3cdao4rrLjoZZNh9GfoB08bCuc+7c9ClODRDNN
+GuCnEiHTgPbiRm+MZAPR8Ajs9b7bnfR8VPu37ZCskhexR41y10gyb/PbbHQjExfrV0h/pZi8o6lH
+LTr6UZiDimPLJc33Nzep5g4JM37/wgvQMFZxOUY3BtAGNLZ/qrqIf+i7pUiLzTouNS65Z9mMUe2x
+we0bfyXIM1ot9BLUPr+1+UTEN+WBu8L/rn4lA5Vxa4k5GQDTiEMwi9Yp/Ob6lcCl/luwrjcEBn2N
+jEpSx+I3iE0PIuhDIXHjWa6wZR/UM+QUcaYiYsOdEQ7pGUdfPXdB25M3EfiGTunkCLiM+KY14PS0
+0wBrhKMRUF/BejlVNO3Kz0a1qHWc/EvXEqHIJUzvFPsJnAMlMNwQb3JShuCFVsQFxS7vhX7tyXLQ
+I+cKdEMp+Ya6qtE2Rlbc8hri7aTZsp2+VWl9xsi0rq5Ffl5bbvwaRyJTRCceNLh2sH4cjzAgjVJD
+ThqZG9LWyZDbKL4GXb7zwTMi3jImzmcedfjZsz2nyTr/HAIc6OUns0XB3Xo8uJFLHfwYDhoOIx9q
+o95q0eiJR7+jXGoYA7RCLW24YOfVlfWOobROmee8JL13FbG500yxlUOWwoFE89nrJxvctRF95vZA
+jTYZmf7pY3hxLooQLK1JkcdmW5nAOR0V5/G8CR7w6ku2kyOEpb0BOzXV/Mo+mLb0P+0X80Z4Fj0w
+qrxOxzuaH7Rq58Qnj4LYkJh5FgeG+nxRjnH60zqMaKQt4h6NuY+weJevFTsUnFol7SiYzVkHEVyk
+6IdogEM/UnAU2XtK0GuYlOumBzyOXPDx4DbTk2ZiN2PCevrenUh1XzNQLoEswZAz1iZGxxDLinav
+hZlrYnCZqm/58V38493PQLGuCtK9+iTiA+1SipaMinC6KK3fTSsY821iiMBvCnHbY/Uz+KwfNvGm
+xcPAq5M1Uj4m4+W9eLuJZgWxC4CzTU9DwMLPfdXbDp4WXl8syly+B8xnE5qoXzGrdU6XQ4LyqfNw
+4sdQbn1kn5B3ILqrDXuNetzpXcqqTmLDkuQkzyfzw+g5I8Hr2T2eJeOrA4R1n4Q5V2L/1xsw5Nmi
+Ke/Oj35yKXMTBK8f+LfUjuHSI7g8p3C1ygbQQ9+wmGF3cci5rUD0uPi8lFrwaE/Jcl19786nnSXa
+xm==

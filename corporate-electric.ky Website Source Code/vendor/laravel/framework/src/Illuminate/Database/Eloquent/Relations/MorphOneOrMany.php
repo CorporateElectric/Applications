@@ -1,127 +1,67 @@
-<?php
-
-namespace Illuminate\Database\Eloquent\Relations;
-
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
-
-abstract class MorphOneOrMany extends HasOneOrMany
-{
-    /**
-     * The foreign key type for the relationship.
-     *
-     * @var string
-     */
-    protected $morphType;
-
-    /**
-     * The class name of the parent model.
-     *
-     * @var string
-     */
-    protected $morphClass;
-
-    /**
-     * Create a new morph one or many relationship instance.
-     *
-     * @param  \Illuminate\Database\Eloquent\Builder  $query
-     * @param  \Illuminate\Database\Eloquent\Model  $parent
-     * @param  string  $type
-     * @param  string  $id
-     * @param  string  $localKey
-     * @return void
-     */
-    public function __construct(Builder $query, Model $parent, $type, $id, $localKey)
-    {
-        $this->morphType = $type;
-
-        $this->morphClass = $parent->getMorphClass();
-
-        parent::__construct($query, $parent, $id, $localKey);
-    }
-
-    /**
-     * Set the base constraints on the relation query.
-     *
-     * @return void
-     */
-    public function addConstraints()
-    {
-        if (static::$constraints) {
-            parent::addConstraints();
-
-            $this->query->where($this->morphType, $this->morphClass);
-        }
-    }
-
-    /**
-     * Set the constraints for an eager load of the relation.
-     *
-     * @param  array  $models
-     * @return void
-     */
-    public function addEagerConstraints(array $models)
-    {
-        parent::addEagerConstraints($models);
-
-        $this->query->where($this->morphType, $this->morphClass);
-    }
-
-    /**
-     * Set the foreign ID and type for creating a related model.
-     *
-     * @param  \Illuminate\Database\Eloquent\Model  $model
-     * @return void
-     */
-    protected function setForeignAttributesForCreate(Model $model)
-    {
-        $model->{$this->getForeignKeyName()} = $this->getParentKey();
-
-        $model->{$this->getMorphType()} = $this->morphClass;
-    }
-
-    /**
-     * Get the relationship query.
-     *
-     * @param  \Illuminate\Database\Eloquent\Builder  $query
-     * @param  \Illuminate\Database\Eloquent\Builder  $parentQuery
-     * @param  array|mixed  $columns
-     * @return \Illuminate\Database\Eloquent\Builder
-     */
-    public function getRelationExistenceQuery(Builder $query, Builder $parentQuery, $columns = ['*'])
-    {
-        return parent::getRelationExistenceQuery($query, $parentQuery, $columns)->where(
-            $query->qualifyColumn($this->getMorphType()), $this->morphClass
-        );
-    }
-
-    /**
-     * Get the foreign key "type" name.
-     *
-     * @return string
-     */
-    public function getQualifiedMorphType()
-    {
-        return $this->morphType;
-    }
-
-    /**
-     * Get the plain morph type name without the table.
-     *
-     * @return string
-     */
-    public function getMorphType()
-    {
-        return last(explode('.', $this->morphType));
-    }
-
-    /**
-     * Get the class name of the parent model.
-     *
-     * @return string
-     */
-    public function getMorphClass()
-    {
-        return $this->morphClass;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPtMIM5UECw6OLrxDT1Mh8A/rwulzY8CQNBguNjeDKtDdlZUnARuLzLFS+z4dnjoMrj5qxAQ1
+8Pc5mX21v3hlz3HmGldzRGv2c+OXu75P204LRJYoYNh/OSv6a3LO5PxW369rQ1zZRkx3SepDotic
++Wtrf7lQ3ZPCXEJFrbtxy6ZXxAhUI+VOs7INZOnNlCJHfOFaURZ4K6BV3+pfMhKYi72D+DC9rkaC
++Ct36zuSVJhFtjGN3JXfHxpGuqnelojSB0QIEjMhA+TKmL7Jt1aWL4HswBzmVc4CmEkwWtzINIij
+yKu5/zepKHXFYZ6gRRSwpX02QC3RILPykWBVFQXhFfej72ZKp9Ndzg71q5zswkIpdvFkQN8CETaA
+9FwTIbqxbYcut8zkYRYBXlV+Ip8pzz0cKMzi+5nZ3X6ZutATazfuuKa5sJ1+aGldcu5U2CF/cUk2
+vz8dPC5Hv/2WJsjX1VsgR36YFyd+PrSr1ZO3x/gzghvVLbc+QLJeWH29jyAezwWNYbvHXOXfYpXj
+g7IOLmM6hxRF7LoLSx4xFmvOPZgU9xm63IRVEliuyQ8AihsIvDzggnGuS7vsLI/GezOrsoBvfBJy
+3UGckE9w+JrLfZK1OyHcztJSCrB1QJ1+GfRQRfzuhMmOhi4bVjow6UmXymJy3ID7cTp+J1IRRgCX
+Z3vovcXO1sRKvoN1X/l3lJhl6gmm8MGNrO44WOED2fzNwoqk4COoC+yTG4DfWzjlo2eYow34eDo/
+omUaRFYIZBky0LtukoQUV/PfUrwVYGWXtgHzl1sZhl6plQBwQ+/G5CGl83x3xg7G6bQwswDU2UpI
+HYc1vXOrdKUi8Qqs4dkoIhBja6ySlPHEI8AAyLSJ0xn54oQkVBaN+H8C9oMDUOqAFnRJZzs01BQR
+FrFajJlDMc3zO9cqtqQm8vJgB/RHRUwtoIhBKlIOC7SnU3lCDbrcxJ0u9FFbXr57WEKLObjE0zSt
+nQY950IX1YH8IVF72tdcPKcK89R3/f2raeIH+DJOUswjWaiCznxonTfiBFM6ttdQ2konLosPsfbk
+zexc3am3M3C4KV42tKnwurH6GI9xmX+O2DB0tPK3tI2rzFCIkVmlsRSp+DxLwzGBPZk8tkzfKfy2
+FVr1ScdmDaCfnO2b/32mv/QmZAfDUvres3J/uhCmXxKPr+FZDH4CT8n5Krx1XKKEokDL7xW0f/8T
+qrQTSBIObeULkNk6RkHw9Wcb3XrVO/sV8uICGi0TiE0FaKhuauziTS/6M1fRcUXiOP0V3yVEojQ8
+jm5MSZI7oBFxdHE3/Yom4R19RICwMdf/zAMQ0LxSgUViNGPqtmzo/noduUGJ5SulRJEW9UFexi+Y
+LWIHluvgFUUrI3aH5tWKMnGtX1/WTVycqs/pjKLnYsyoAHfRYCpxQUfjqDx70ET0i+qxIhQszIGu
+v6q1Zuo4xWEAMz+iTDJcRj+h/Cuk6QFmwEZo50jgi+z+ZA35wsObmiltcBlrgFglYO9P4TQxew3W
+G6o2yElFMFqhdKX82xKK84Ua3draTQrOdFpX/qB4eX1dFheWE3QX4V91d1ZofzrMkDsiBTxX6pl+
+Yw467lNuNrRWbbitQOYma0+RhdDW8IrXtfCxts0X/12j22G9vL1scwwRSHctALy3gVOO8sDRGOYq
+x3IKoG8NEKrl9d9BAIK8UfJSGNdyuH6gaeref+PUiY9lmdrW0fSM2nuvj89Kc5cFwr8D7QwF0Xwj
+fz/ZwTpgPRtJdvBaJ7qnjdO8KHC+QoQlQnxGpxL5aZvdiq2+QPFzy+Q1GUz3JH6kdQjeIRO2R72w
+Kg0qh4NGopkb3QSG6oQTR3yBN9DlBwEZ0H0DDUmXS0uv28Yvo4G/bOSDL/7ctA5jt1pl6Om/gZev
+Gl+aNJDBPsksJW7AcGDripitBXBxKNVb6oQvHjnTylJpkz2yK8RklHu00FXH+inmNG5sPx28MesE
+t9sseRQXP3TxoQMOoQW4SAhUxm894/UrpiFaJRWREPHx9o5daOctVSPL3V+CyGh5cF/QB2eR3Lte
+x52F60fRBEZscL/44kPv9xIg6TW+DNhqNobOJUYmsl+wLYjz8HWY7atU59Sk77+Ajjg7RIYhh/cQ
+L0rbn2Fct63TpxVy/9Hmms1hQD/bSuHSInEBjijtUkNUJnEhnw2nQpESzszmk9mltQh4a8k98aBG
+dYtzhtN6jsEGRk8w20QufagcL1//HuZq0n5G9Nf1RjUPo5QEL5Or/DYTq0F+qk1m3KuEfANd62lQ
+LYdYlKuSYA4oGjadf08bpGNE7hOJYJFvN4ELC9oQqXUsQcUmAPjFxiSvuUhWPWD5HHUT3pP29NqM
+lXS2suM5S8lUp02pV20CVyOfBupny0j6CWqu51m1jz3EuZ1OqbMR3Fx9SpJ4sHPjZt9f+mnjP31z
+syewVdu9PFG6mEpTfYn4GNNhqXgcBBcCWWVtqmaY+8l3txrUuRWzEHUmUbq2qD9I8lc0eoA4zajr
+8Qe/nbbmmQJbPfpkVgHE3fPkPenXj4KsejX9GuYCX2bhjsFYnFhR4CpKk6xhpRdo2jwFK4yuPWvY
+rCxj7yctparQIuLxLP+MfIY54JMEHxL3jo4nGKpk9gzAkCWhuAXCt+KWZL0NG+hicIf1lPoOsGyQ
+99n2tgj4qfrqgM/o8Y++d8Gp7nmSrEVa/nk94HyJARwx2PoK4L9IYyqpkMOHg3fvUXitTjDXQ1dE
+Wm1ke184l/KMW1TEmi+Lkwusy0EGAqm0w4Yorwjb46y7MZS4ku2rw/Xjvc5CTO3lQ9lH6CSpiAjw
+bWVSxQXj3Ij4JxgCOk934KSLpU9mGOKJNDQDnhTw6TDspy/rWVn9ep/uOGYJ2HiUqV5rQwAHFi7R
+0so4oBwmZqb3vUNsxYKCzrUo57wwi6wHA949n+n+bEXsD6WA/mx86IPpyChmGgogEAT4boEVQQP3
+pNv8SxbT8n7qjSrhZ1o1Yq+Kss7FiSVMNFbbmgJondLgIiuatQqnn8o/Im117GS4Q1+FlqlPeB50
+2Ki3T6+3BApE4z7ExQjhNyBrCyG7Wo5RQ7JDnKqmuRwOc+f+YT/HNkJr3dEklflQ7X718x8zp6lU
+kimQbsaM+Qck9rwr/pRktkSz8lQA1i9C9h1KsJ7fNUPxRLTaAxhAz94dYD/vKpBZWUC+NlMKWEry
+AyrRkq+gdOGxE5jQtYPfSd7JfSEh2+FxgmOm28YuSugR47fVbQXcePCTJgYfv2vCokrgOWu7Wmz4
+MkMyjhp2RKKGsMQzSOuVrZxMYelDMt9Gj0EZWNiaDa5k0xH3zDk3qRJ90CG+dNFZ/IfMve0Xfoz/
+oLRGxGpGagYTT/wXa1iV8sOrd0YYMfHmPPhItBxb9vkFlM5OvH8OZ7nsuGYgm3/dIxQVE424BcOI
+IaIeGeoWRasXbXXg1k0p9irn4SnrO/P7gzCDyERJ0Gf5DI9lQqZm9Cu5jEA2+PVQ4y4Fw9JoQn2U
+4SAGEvpc/LfEhF2x6ynCe9rkaiSjSG9y+hqo+zEpuKgfgHAzTJhZ40PYOKUpG8XXKHxSfws+DdI/
+uxp3b7MzWf7MV+qE5BMqqD3mn4xzZ+eOzaF4sNWG9l26eoyrxF7KiE6omtLBZNO6ABuNVYaAC1bO
+z882rqrUmWZwqzpGNGKbzn1COJL4ZGSBGi9arop8VOkiiNE3qQhkHPKeRHtaZoInf4TOkJC/nO1q
+KQ2Z57+BUY7irnThW3BepDgqz//Tr9NuydALSeEcL9tjrMlJIaL1EQ9Npduz1rgOQryEdnJbf6I8
+oNRvT+D/DeQYFUg+kKYZaCdyEdn6w73gipjV5sz5ZQJ/ox+Ydga208TZ9vjR1b6zmBhAjkKDIKb0
+IFVAvnhbbqRvGGarmvB4MLiStugSk/vxpxkjq9UkI4NM21Jm2V+ROV//kFuKThc9XbJsosvzQHKk
+KXaH8u+eFvzZ6FSJ1lApSMd3CnTN+4HpPT/CC+MM7qJQ3iIMdRvmfW15SUY6MdiKabGKnk47sxRL
+z8lzx2R6tvd97N+VD5g0QQr4hOk242jUh5qaL3745kZPxk12t7m8w+GIwMGk2IalB8lmQoo401Nh
+xSj8XTPuuGSJMlzwjGOmMzHTMbwNW33lKRidJZEJTi2ohbr6SvwNiUnaqPk+MVFWdTRoJrHa9hSq
+eYWiKCzNZggaDrj5Hag5IidI7YBCVO5w/VI7layLkdN7IsrDvTlwODjt+CJzr73Xvy79cBH1FhL9
+IVJAsjjRN2Pv53uTkWNJfY2ch6fDw1KODlHxQSfSSXwbyPZ2DmBvyrTfqCLu1hVZUSB65MsYZ7TT
+JAOh74pqIvLyE4+MKWtaLJ5zBNNvWtASGz1BCVJVMqNL+PMhRIYUxn00Lk/oVK6S0HENPvhadmRj
+0T5lnqnMTytoCa4kInMtacmtHp+0oXgInSdikE4Uq4u5fZM3SlmpSULEf/RVoBsGUSIjcTGGhiGt
+E/ucBeOWwAfXQ94ifuNRd0NE/c7Vaa+cr9++j8slaf2tvrbAsvVUi+ZNANHqG+U46rih9DN49egi
+YPEyKCpEUrij3/6AWDWRzYdyH+ITwOMUxMdAwtKEGsb/NaeMwnuoavWrVaxZIp1OvigKBFOIqXkO
+N76YQDQneIi/bSFmNmT4blxosQE2a65tStJRuqAoAVEzJnKiXhrzXk6oKPC+3nDZALvIfNNsZ1oL
+lD+R/Y8aieh3anC6HKgMqLKPUtoTAfF5OT2cbpf4JY6WDwQJc4ygHr/Zams5XieZ/1Yaq+JZXRId
+dPjH

@@ -1,62 +1,31 @@
-<?php
-
-namespace Illuminate\Log;
-
-use InvalidArgumentException;
-use Monolog\Logger as Monolog;
-
-trait ParsesLogConfiguration
-{
-    /**
-     * The Log levels.
-     *
-     * @var array
-     */
-    protected $levels = [
-        'debug' => Monolog::DEBUG,
-        'info' => Monolog::INFO,
-        'notice' => Monolog::NOTICE,
-        'warning' => Monolog::WARNING,
-        'error' => Monolog::ERROR,
-        'critical' => Monolog::CRITICAL,
-        'alert' => Monolog::ALERT,
-        'emergency' => Monolog::EMERGENCY,
-    ];
-
-    /**
-     * Get fallback log channel name.
-     *
-     * @return string
-     */
-    abstract protected function getFallbackChannelName();
-
-    /**
-     * Parse the string level into a Monolog constant.
-     *
-     * @param  array  $config
-     * @return int
-     *
-     * @throws \InvalidArgumentException
-     */
-    protected function level(array $config)
-    {
-        $level = $config['level'] ?? 'debug';
-
-        if (isset($this->levels[$level])) {
-            return $this->levels[$level];
-        }
-
-        throw new InvalidArgumentException('Invalid log level.');
-    }
-
-    /**
-     * Extract the log channel from the given configuration.
-     *
-     * @param  array  $config
-     * @return string
-     */
-    protected function parseChannel(array $config)
-    {
-        return $config['name'] ?? $this->getFallbackChannelName();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,116 +1,95 @@
-<?php
-namespace Hamcrest\Core;
-
-class SetTest extends \Hamcrest\AbstractMatcherTest
-{
-
-    public static $_classProperty;
-    public $_instanceProperty;
-
-    protected function setUp()
-    {
-        self::$_classProperty = null;
-        unset($this->_instanceProperty);
-    }
-
-    protected function createMatcher()
-    {
-        return \Hamcrest\Core\Set::set('property_name');
-    }
-
-    public function testEvaluatesToTrueIfArrayPropertyIsSet()
-    {
-        assertThat(array('foo' => 'bar'), set('foo'));
-    }
-
-    public function testNegatedEvaluatesToFalseIfArrayPropertyIsSet()
-    {
-        assertThat(array('foo' => 'bar'), not(notSet('foo')));
-    }
-
-    public function testEvaluatesToTrueIfClassPropertyIsSet()
-    {
-        self::$_classProperty = 'bar';
-        assertThat('Hamcrest\Core\SetTest', set('_classProperty'));
-    }
-
-    public function testNegatedEvaluatesToFalseIfClassPropertyIsSet()
-    {
-        self::$_classProperty = 'bar';
-        assertThat('Hamcrest\Core\SetTest', not(notSet('_classProperty')));
-    }
-
-    public function testEvaluatesToTrueIfObjectPropertyIsSet()
-    {
-        $this->_instanceProperty = 'bar';
-        assertThat($this, set('_instanceProperty'));
-    }
-
-    public function testNegatedEvaluatesToFalseIfObjectPropertyIsSet()
-    {
-        $this->_instanceProperty = 'bar';
-        assertThat($this, not(notSet('_instanceProperty')));
-    }
-
-    public function testEvaluatesToFalseIfArrayPropertyIsNotSet()
-    {
-        assertThat(array('foo' => 'bar'), not(set('baz')));
-    }
-
-    public function testNegatedEvaluatesToTrueIfArrayPropertyIsNotSet()
-    {
-        assertThat(array('foo' => 'bar'), notSet('baz'));
-    }
-
-    public function testEvaluatesToFalseIfClassPropertyIsNotSet()
-    {
-        assertThat('Hamcrest\Core\SetTest', not(set('_classProperty')));
-    }
-
-    public function testNegatedEvaluatesToTrueIfClassPropertyIsNotSet()
-    {
-        assertThat('Hamcrest\Core\SetTest', notSet('_classProperty'));
-    }
-
-    public function testEvaluatesToFalseIfObjectPropertyIsNotSet()
-    {
-        assertThat($this, not(set('_instanceProperty')));
-    }
-
-    public function testNegatedEvaluatesToTrueIfObjectPropertyIsNotSet()
-    {
-        assertThat($this, notSet('_instanceProperty'));
-    }
-
-    public function testHasAReadableDescription()
-    {
-        $this->assertDescription('set property foo', set('foo'));
-        $this->assertDescription('unset property bar', notSet('bar'));
-    }
-
-    public function testDecribesPropertySettingInMismatchMessage()
-    {
-        $this->assertMismatchDescription(
-            'was not set',
-            set('bar'),
-            array('foo' => 'bar')
-        );
-        $this->assertMismatchDescription(
-            'was "bar"',
-            notSet('foo'),
-            array('foo' => 'bar')
-        );
-        self::$_classProperty = 'bar';
-        $this->assertMismatchDescription(
-            'was "bar"',
-            notSet('_classProperty'),
-            'Hamcrest\Core\SetTest'
-        );
-        $this->_instanceProperty = 'bar';
-        $this->assertMismatchDescription(
-            'was "bar"',
-            notSet('_instanceProperty'),
-            $this
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

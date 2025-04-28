@@ -1,110 +1,62 @@
-<?php
-
-/**
- * Copyright (c) 2013-2020 Nicolò Martini
- *
- * For the full copyright and license information, please view
- * the LICENSE.md file that was distributed with this source code.
- *
- * @see https://github.com/nicmart/Tree
- */
-
-namespace Tree\Builder;
-
-use Tree\Node\Node;
-use Tree\Node\NodeInterface;
-
-/**
- * Main implementation of the NodeBuilderInterface.
- */
-class NodeBuilder implements NodeBuilderInterface
-{
-    /**
-     * @var NodeInterface[]
-     */
-    private $nodeStack = [];
-
-    public function __construct(?NodeInterface $node = null)
-    {
-        $this->setNode($node ?: $this->nodeInstanceByValue());
-    }
-
-    public function setNode(NodeInterface $node)
-    {
-        $this
-            ->emptyStack()
-            ->pushNode($node);
-
-        return $this;
-    }
-
-    public function getNode()
-    {
-        return $this->nodeStack[\count($this->nodeStack) - 1];
-    }
-
-    public function leaf($value = null)
-    {
-        $this->getNode()->addChild(
-            $this->nodeInstanceByValue($value)
-        );
-
-        return $this;
-    }
-
-    public function leafs($value1 /*,  $value2, ... */)
-    {
-        foreach (\func_get_args() as $value) {
-            $this->leaf($value);
-        }
-
-        return $this;
-    }
-
-    public function tree($value = null)
-    {
-        $node = $this->nodeInstanceByValue($value);
-        $this->getNode()->addChild($node);
-        $this->pushNode($node);
-
-        return $this;
-    }
-
-    public function end()
-    {
-        $this->popNode();
-
-        return $this;
-    }
-
-    public function nodeInstanceByValue($value = null)
-    {
-        return new Node($value);
-    }
-
-    public function value($value)
-    {
-        $this->getNode()->setValue($value);
-
-        return $this;
-    }
-
-    private function emptyStack()
-    {
-        $this->nodeStack = [];
-
-        return $this;
-    }
-
-    private function pushNode(NodeInterface $node)
-    {
-        \array_push($this->nodeStack, $node);
-
-        return $this;
-    }
-
-    private function popNode()
-    {
-        return \array_pop($this->nodeStack);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPsjlAUwe/qAHmRMZlCt/xL9YiyKiKZgSV+EVg/MTJDHVAVpi2XmkBOXszcDdRGe66urcZGsG
+cIK8Q27K7Bj2sVgl36squ90rU9OTXwIyeTCsBKrK2DVv+qdIKjcYugZRA6+QTFzr8ms03LqksYmv
+o92z95BPdzHu6NXcrnpY/yIbOzygVVZRhDjb1E50CY1g3vkDWGL/7Ybb9GEWnZ3g8K1ZrYS71pKl
+/drmvtuX2CI6+MI2hJ991AiRa1YutiLp+2ZxT3hLgoldLC5HqzmP85H4TkYUPqS4ncaIvt4XsEih
+hMecKYO5yCrvM4n16tn75Z5239wVxZ3Qdi9+zewdY+LvM+1JHOLvAD0B2P8p4Xs3gQ5oHEOtLxB3
+KnjyXxXxSSPFZ4t2prXIu01BDv9PHHIQ+wncI+0jf+CT9jS/yedL06afbONlUQMcJxkCtHlLim7z
+sY66aAMCFun+TxEL9IT7o7yYYKUm425TGInGhj2fvjW1yjmf3Z/0gM0+i94YHHQqjJLb1xFDmOwA
+pXL4Ty3jym8ZYZYyzEwS4zGNmzE8IvQRSC01QBpK7wV+GRE38LevChBF3vVx1FcivqHSUDAGJ5rQ
+QgRX8cmHul+4KXrrBeIL7GA3ukMC5PapY2d8VUtvEetQciXF7xd+GMe6/oetiZIrnYm2ZmVTAoKu
+NM8L/GJHCufpNA9XlwezroqJagmSh7QGiAJCNLwF1QtxYKMqdpyWND3SUUvUG6KxPDHOvVUMQxEB
+MBMkbEFco8eGI23gJu/aW425ObC+9QHs2bQdyIjJUnjRZa85vhRBESAwm5npa+BkvWT0fHXWH8oY
+mb9AVjOufgepCnX8WFNAsYdaAqwQnzQMdzj6nZ81fi9au21zbGk5+7JBCI+d/Lpy8/lt/65K+BD0
+KlqJVbXfdrY0UGypRqoIy5Hn8L+OwuKE2c2luif3kFibm0ovJn1XefIKccvoa2BsLCbAk4EoOXSa
+4gFOFoW7UuyNPwJGJYx/QYTAd+1aTqL+FSglUO6ZZKvFZpttt+0cC3C8by543SGafUZ6Kfw4/YCe
+qsMl/9AFRSTZFN59ieMqnMQgxnPOQCdHTuYJAUdq4O1Fli1pmoSX1+3kJokAQCnEmewL3LjiGUh9
+8ZZ8tgitgk98vibHQpEXO9RJpIQsIQEvYIuAYfdF8D05V6IgXplRy8vVgVQmNTr+e2qFc+rXD3AM
+g0nGV1DwXAu0a1opoLMCaBXJyOxci57C0iy5brbr0o9dq786X3F2ICu4ou4FECC6KHjELktzOHSz
+ow3K6c5dbhiM3rK6gWIf8y60bdfldQMpSp6mmw/v1LyDW2w46t6WcLYT5l+oZCQ9EdDAQKLZvXH2
+Idmw4I4OlANiIVf/voEyEAwo76P+PZ//kDWE0JLytaW1zfpYsDFVweqgPksp5A2bEZbc3mAZWLwu
+QvzhYOC87t9z634vuc+Q9xMUjb5Zv+c4y5WT0/bTFODRrIAhISwApBzfOoCvWAhNazXphSjsoHAY
+TQOa6aI9SVlPUOXu6ldjIsVch1e3SfWZcJwtSHo5DevTeSw+vqWERwM7VWCnSiT4NiY+BpBN8jbe
+9BoTkT8NyXM1i3BidbmBar7mMf6xxjFpL4mmN2NZ4A0qsku8WT2ziMRnZgaSAbQs3UtHHjuzXDKJ
+aCw2nXNrSRaCYLkM8aGU7TI692PTTec36hl3j0vCNzBxqv//ULQDscxzZ2smdb1fuPo1elq5/UAX
+gpNRS7f2OtWwa4yAzL8gGBsqTe4LJepv1wuCSC/jH9cc3gAdCcy1M5EB6/z3yef7AyKcHnzfNF2b
+OtgzuEgJ/C0QsAenYeqlPwXGrUzRP+DLMXP0wUrGt9K+v+l/saywQA0kaGne8D7EnKTUBI/nnsRL
+0l6OrWfXE0ixjyh+ObyTr2kCnVY/gofyJUvWPIEnJnwXNKNnFlr5cbwAJezrl2L3gL9wI7zwEsgZ
+PB9RWPNO/WV4eeabHUSAL4d2ijtMYl2kjHFNUMG5/WRGEECnv8UwgEfMphEDVY3/7hhfhf3hTuJq
+l9oNuB3Gypiwt9e3cIXPWAgZW7MFyRwf+ZgOc7j/LdTwwittJa3plXG7fLMRiLqBJBBLTnEUQqLI
+1znvrXf91EZGhuXT61IKAM0pdkCdjPTmXo1xaFiqtGteq+AppXl9bxCIfHXLILMuQuv0yMXs4Ejz
+zYvMx57sCxaIrxZU/D1zjfKxqatNBpiTv6L+rho+Bj8NkUfnxjUhEmzxSUi4VebJX3/eGvoPMcAD
+F/nbLfhh8Nw6b7kEB36uoYoAR3uHQdQOsDbQxZ4eozS5Pn4ABqLAdEFuMBPMOzOdPEJ0l/qrodyx
+L8YqAsp9vBa3L/uK9+Tnr1Bh9tYbnDQQGXtZdmX8frBGHQ5MSwKXGfLOIo25SHyextdcNWF30xla
+JN3obnnZKgbZ7sKVAq8wm6hR9bIPYICRhDQe84TEqwDY8kDxKIyZ6/AIND76wZQGm6877AKDRsvz
+6tCwvy7J589DM1rVX2KzxxRzB/hXzWX6fSI7mpY6O5g5lKLL6yk04rjCX9af6TFNLUNLgMdn9aJv
+Qs7c5MmzhO5H70G9y8KMnfdfLzeGp5O3KFc4ASXYn2+0QT35g0a+zDBySMnLH2BECapHGPumA23b
+2UIoRPjwN3OlzzatqzKCsLwOl2VGmIP1WL3jKoPVf/XKLzreAa9P3bz01rVF1nUfx5qsl8qhlfhi
+6nGRvH7rnViqv+TGDLw8enfkDPbcovebEvGieuNZbDusnI3B58NoDSki7xPrc3yXxHaOjpip2c50
+5cJ2mv4gt69+c9DkPtYjsqedCkg3dkbH25i03xZbLhJnty8UCPpYYTr29ZQGHrl1EsN6NnThOS9W
+LFi4UOefHCqTMhV24WHQVVgk1aInjAnEneHks+2J3IQV3qiSusF40nb365/Gb2jzkkYQVgWHQjbw
+2CEQvOJTLbTCC++0bkWJ4SQywI4jjnDgM6edlA3WeEIEatumCCq1MYBmpd1aZcic1WnYjmVs7fZm
+gWcNqR3FWj1mTjYaP0z2TnOECnBkiezSLoVC7cR/qthNFnpO9xuom7hZY0dgV3s7HnbtTJV+ProG
+C/4wl26/fRH/w//4AWxxcuTudx1Lak13NVso50twtlfUsSEoNLRUVJzZ10GfE+qlnd3n7Y8diRSo
+6iswndWOraKWtFk5uiaHU1667Jk+ExLryJExC4TUtZc3Ib2AUFpMHw2crCIkDDdp7Kk+7FgX+0y7
+gtgoIpN93jD+X6PVtzpeV/RkhWIs0/RSrtVtN7QDlKDu/+CdTR0Ix7L72b+QcY5VEHU+lOcTCX6f
+lYIzt+3Lgt4LJp1ykvK4PkKjS+Yt9/B/yPLMEeWzi9hI+JL30j/wElI0H9VHpSSdl40updU0WxKe
+72StRyP0XhfPe9Ma16gJ/bSIlA5BLWkaSB+hBxpfXSiROigMWho6WlUSpKtNvmGX5GAUfnKZSb6m
+6QGaVViN7ySGMyGAvyYzAbho3IBLCb/ttNi4BTEXpJYksDf4+IJzzmxYVvQ1frTLP1zTk8wrhPit
+KTa1bUzoWHOIUpOWmjldBGfAzK9fAPg96bF8MXtVjYXw8sb9VVNImueqgLX4gvqWJS6xy81HJVI3
+WAfqvnJfgZc+6k41TYBpk6wlbLaTkxK01KI/VdHCn04wCnSgN7Tnwa6HFwgQzxoia+16n/C71O5r
+t07InoxW5aUKZfyWCk8/2m7Z6pY1P4TQ7xetGuy/euXl/v7pxfIHHrmCnjFv0QeGmq9uIQA+PvmN
+WvHBWdzRUs5jf3x/QVnk5O/eQKEbTKhjCG6cRX0Vb2O6p4AXf2PO6WNjvM4fkkQEG02ZVuHYtz+v
+6qMgWDWdbzQvV9rTFl7juFHo84sBWHBf9mhrwtZ/zSGEk05YRzexRuCcJO/6iCpAtVNPoUAff3Oh
+aHH3z3ORqxRKV65m2CIjepFO0EGua8Tw4tIwkYN0syt2YPx/jxwrxNHQOKPyBfj2sqS6QIsHPc/p
+zK48ZTSYGJXI3Ypnht640vtaLYJb+sGQjktyV43Kk4ypI3AVbUsGBTUo8cvm1JsKJHacwlzvU8UK
+Mxn81GZQcfNWwJPx4rvy3DX5Gcrtau00EDHGl9gkfv3ndzBOOFZkckEp1oUKXbUJAAXXoMslEOEY
+tXEbfvkzXK/1JXoXhSdI1qii9f3GBUjSHM2cfqROQqOVcwGlJSWiJltK5LHWD7B3vtkTprnBCLO2
+wr2P74rEen0h9/H5I/mHs4GW5J+y7d1QL1qS3WzkvDOdiSpwTPRplFFcn/f1jolYrHcCOPVO12rD
+ukNbAERWSP+75NnIEfXYgSk2mLYCZSV6GjB27jpqz+zieLiwki10zQdHW3B5Qc+OIG/U9JM8FXiV
+J10QOrJrk98dO08j+Os7OrTT3dYXekDqbB5hTfhMUAe8/3Rj

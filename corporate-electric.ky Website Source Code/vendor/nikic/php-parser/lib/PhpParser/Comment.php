@@ -1,239 +1,96 @@
-<?php declare(strict_types=1);
-
-namespace PhpParser;
-
-class Comment implements \JsonSerializable
-{
-    protected $text;
-    protected $startLine;
-    protected $startFilePos;
-    protected $startTokenPos;
-    protected $endLine;
-    protected $endFilePos;
-    protected $endTokenPos;
-
-    /**
-     * Constructs a comment node.
-     *
-     * @param string $text          Comment text (including comment delimiters like /*)
-     * @param int    $startLine     Line number the comment started on
-     * @param int    $startFilePos  File offset the comment started on
-     * @param int    $startTokenPos Token offset the comment started on
-     */
-    public function __construct(
-        string $text,
-        int $startLine = -1, int $startFilePos = -1, int $startTokenPos = -1,
-        int $endLine = -1, int $endFilePos = -1, int $endTokenPos = -1
-    ) {
-        $this->text = $text;
-        $this->startLine = $startLine;
-        $this->startFilePos = $startFilePos;
-        $this->startTokenPos = $startTokenPos;
-        $this->endLine = $endLine;
-        $this->endFilePos = $endFilePos;
-        $this->endTokenPos = $endTokenPos;
-    }
-
-    /**
-     * Gets the comment text.
-     *
-     * @return string The comment text (including comment delimiters like /*)
-     */
-    public function getText() : string {
-        return $this->text;
-    }
-
-    /**
-     * Gets the line number the comment started on.
-     *
-     * @return int Line number (or -1 if not available)
-     */
-    public function getStartLine() : int {
-        return $this->startLine;
-    }
-
-    /**
-     * Gets the file offset the comment started on.
-     *
-     * @return int File offset (or -1 if not available)
-     */
-    public function getStartFilePos() : int {
-        return $this->startFilePos;
-    }
-
-    /**
-     * Gets the token offset the comment started on.
-     *
-     * @return int Token offset (or -1 if not available)
-     */
-    public function getStartTokenPos() : int {
-        return $this->startTokenPos;
-    }
-
-    /**
-     * Gets the line number the comment ends on.
-     *
-     * @return int Line number (or -1 if not available)
-     */
-    public function getEndLine() : int {
-        return $this->endLine;
-    }
-
-    /**
-     * Gets the file offset the comment ends on.
-     *
-     * @return int File offset (or -1 if not available)
-     */
-    public function getEndFilePos() : int {
-        return $this->endFilePos;
-    }
-
-    /**
-     * Gets the token offset the comment ends on.
-     *
-     * @return int Token offset (or -1 if not available)
-     */
-    public function getEndTokenPos() : int {
-        return $this->endTokenPos;
-    }
-
-    /**
-     * Gets the line number the comment started on.
-     *
-     * @deprecated Use getStartLine() instead
-     *
-     * @return int Line number
-     */
-    public function getLine() : int {
-        return $this->startLine;
-    }
-
-    /**
-     * Gets the file offset the comment started on.
-     *
-     * @deprecated Use getStartFilePos() instead
-     *
-     * @return int File offset
-     */
-    public function getFilePos() : int {
-        return $this->startFilePos;
-    }
-
-    /**
-     * Gets the token offset the comment started on.
-     *
-     * @deprecated Use getStartTokenPos() instead
-     *
-     * @return int Token offset
-     */
-    public function getTokenPos() : int {
-        return $this->startTokenPos;
-    }
-
-    /**
-     * Gets the comment text.
-     *
-     * @return string The comment text (including comment delimiters like /*)
-     */
-    public function __toString() : string {
-        return $this->text;
-    }
-
-    /**
-     * Gets the reformatted comment text.
-     *
-     * "Reformatted" here means that we try to clean up the whitespace at the
-     * starts of the lines. This is necessary because we receive the comments
-     * without trailing whitespace on the first line, but with trailing whitespace
-     * on all subsequent lines.
-     *
-     * @return mixed|string
-     */
-    public function getReformattedText() {
-        $text = trim($this->text);
-        $newlinePos = strpos($text, "\n");
-        if (false === $newlinePos) {
-            // Single line comments don't need further processing
-            return $text;
-        } elseif (preg_match('((*BSR_ANYCRLF)(*ANYCRLF)^.*(?:\R\s+\*.*)+$)', $text)) {
-            // Multi line comment of the type
-            //
-            //     /*
-            //      * Some text.
-            //      * Some more text.
-            //      */
-            //
-            // is handled by replacing the whitespace sequences before the * by a single space
-            return preg_replace('(^\s+\*)m', ' *', $this->text);
-        } elseif (preg_match('(^/\*\*?\s*[\r\n])', $text) && preg_match('(\n(\s*)\*/$)', $text, $matches)) {
-            // Multi line comment of the type
-            //
-            //    /*
-            //        Some text.
-            //        Some more text.
-            //    */
-            //
-            // is handled by removing the whitespace sequence on the line before the closing
-            // */ on all lines. So if the last line is "    */", then "    " is removed at the
-            // start of all lines.
-            return preg_replace('(^' . preg_quote($matches[1]) . ')m', '', $text);
-        } elseif (preg_match('(^/\*\*?\s*(?!\s))', $text, $matches)) {
-            // Multi line comment of the type
-            //
-            //     /* Some text.
-            //        Some more text.
-            //          Indented text.
-            //        Even more text. */
-            //
-            // is handled by removing the difference between the shortest whitespace prefix on all
-            // lines and the length of the "/* " opening sequence.
-            $prefixLen = $this->getShortestWhitespacePrefixLen(substr($text, $newlinePos + 1));
-            $removeLen = $prefixLen - strlen($matches[0]);
-            return preg_replace('(^\s{' . $removeLen . '})m', '', $text);
-        }
-
-        // No idea how to format this comment, so simply return as is
-        return $text;
-    }
-
-    /**
-     * Get length of shortest whitespace prefix (at the start of a line).
-     *
-     * If there is a line with no prefix whitespace, 0 is a valid return value.
-     *
-     * @param string $str String to check
-     * @return int Length in characters. Tabs count as single characters.
-     */
-    private function getShortestWhitespacePrefixLen(string $str) : int {
-        $lines = explode("\n", $str);
-        $shortestPrefixLen = \INF;
-        foreach ($lines as $line) {
-            preg_match('(^\s*)', $line, $matches);
-            $prefixLen = strlen($matches[0]);
-            if ($prefixLen < $shortestPrefixLen) {
-                $shortestPrefixLen = $prefixLen;
-            }
-        }
-        return $shortestPrefixLen;
-    }
-
-    /**
-     * @return       array
-     * @psalm-return array{nodeType:string, text:mixed, line:mixed, filePos:mixed}
-     */
-    public function jsonSerialize() : array {
-        // Technically not a node, but we make it look like one anyway
-        $type = $this instanceof Comment\Doc ? 'Comment_Doc' : 'Comment';
-        return [
-            'nodeType' => $type,
-            'text' => $this->text,
-            // TODO: Rename these to include "start".
-            'line' => $this->startLine,
-            'filePos' => $this->startFilePos,
-            'tokenPos' => $this->startTokenPos,
-            'endLine' => $this->endLine,
-            'endFilePos' => $this->endFilePos,
-            'endTokenPos' => $this->endTokenPos,
-        ];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,80 +1,42 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Util;
-
-use const DIRECTORY_SEPARATOR;
-use function addslashes;
-use function array_map;
-use function implode;
-use function is_string;
-use function realpath;
-use function sprintf;
-use PHPUnit\TextUI\XmlConfiguration\CodeCoverage\CodeCoverage as FilterConfiguration;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for PHPUnit
- *
- * @deprecated
- */
-final class XdebugFilterScriptGenerator
-{
-    public function generate(FilterConfiguration $filter): string
-    {
-        $files = array_map(
-            static function ($item) {
-                return sprintf(
-                    "        '%s'",
-                    $item
-                );
-            },
-            $this->getItems($filter)
-        );
-
-        $files = implode(",\n", $files);
-
-        return <<<EOF
-<?php declare(strict_types=1);
-if (!\\function_exists('xdebug_set_filter')) {
-    return;
-}
-
-\\xdebug_set_filter(
-    \\XDEBUG_FILTER_CODE_COVERAGE,
-    \\XDEBUG_PATH_WHITELIST,
-    [
-{$files}
-    ]
-);
-
-EOF;
-    }
-
-    private function getItems(FilterConfiguration $filter): array
-    {
-        $files = [];
-
-        foreach ($filter->directories() as $directory) {
-            $path = realpath($directory->path());
-
-            if (is_string($path)) {
-                $files[] = sprintf(
-                    addslashes('%s' . DIRECTORY_SEPARATOR),
-                    $path
-                );
-            }
-        }
-
-        foreach ($filter->files() as $file) {
-            $files[] = $file->path();
-        }
-
-        return $files;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

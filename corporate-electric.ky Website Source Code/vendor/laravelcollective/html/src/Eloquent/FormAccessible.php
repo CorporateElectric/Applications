@@ -1,115 +1,67 @@
-<?php
-
-namespace Collective\Html\Eloquent;
-
-use ReflectionClass;
-use ReflectionMethod;
-use Illuminate\Support\Str;
-
-trait FormAccessible
-{
-
-    /**
-     * A cached ReflectionClass instance for $this
-     *
-     * @var ReflectionClass
-     */
-    protected $reflection;
-
-    /**
-     * @param string $key
-     *
-     * @return mixed
-     */
-    public function getFormValue($key)
-    {
-        $value = $this->getAttributeFromArray($key);
-
-        // If the attribute is listed as a date, we will convert it to a DateTime
-        // instance on retrieval, which makes it quite convenient to work with
-        // date fields without having to create a mutator for each property.
-        if (in_array($key, $this->getDates())) {
-            if (! is_null($value)) {
-                $value = $this->asDateTime($value);
-            }
-        }
-
-        // If the attribute has a get mutator, we will call that then return what
-        // it returns as the value, which is useful for transforming values on
-        // retrieval from the model to a form that is more useful for usage.
-        if ($this->hasFormMutator($key)) {
-            return $this->mutateFormAttribute($key, $value);
-        }
-
-        $keys = explode('.', $key);
-
-        if ($this->isNestedModel($keys[0])) {
-            $relatedModel = $this->getRelation($keys[0]);
-
-            unset($keys[0]);
-            $key = implode('.', $keys);
-
-            if (method_exists($relatedModel, 'hasFormMutator') && $key !== '' && $relatedModel->hasFormMutator($key)) {
-                return $relatedModel->getFormValue($key);
-            }
-
-            return data_get($relatedModel, empty($key)? null: $key);
-        }
-
-        // No form mutator, let the model resolve this
-        return data_get($this, $key);
-    }
-
-    /**
-     * Check for a nested model.
-     *
-     * @param  string  $key
-     *
-     * @return bool
-     */
-    public function isNestedModel($key)
-    {
-        return in_array($key, array_keys($this->getRelations()));
-    }
-
-    /**
-     * @param $key
-     *
-     * @return bool
-     */
-    public function hasFormMutator($key)
-    {
-        $methods = $this->getReflection()->getMethods(ReflectionMethod::IS_PUBLIC);
-
-        $mutator = collect($methods)
-          ->first(function (ReflectionMethod $method) use ($key) {
-              return $method->getName() === 'form' . Str::studly($key) . 'Attribute';
-          });
-
-        return (bool) $mutator;
-    }
-
-    /**
-     * @param $key
-     * @param $value
-     *
-     * @return mixed
-     */
-    private function mutateFormAttribute($key, $value)
-    {
-        return $this->{'form' . Str::studly($key) . 'Attribute'}($value);
-    }
-
-    /**
-     * Get a ReflectionClass Instance
-     * @return ReflectionClass
-     */
-    protected function getReflection()
-    {
-        if (! $this->reflection) {
-            $this->reflection = new ReflectionClass($this);
-        }
-
-        return $this->reflection;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+9mlYZlW1TTpDEgGk0dWAid2PJGS=

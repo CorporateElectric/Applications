@@ -1,81 +1,37 @@
-<?php
-
-/**
- * Registry for retrieving specific URI scheme validator objects.
- */
-class HTMLPurifier_URISchemeRegistry
-{
-
-    /**
-     * Retrieve sole instance of the registry.
-     * @param HTMLPurifier_URISchemeRegistry $prototype Optional prototype to overload sole instance with,
-     *                   or bool true to reset to default registry.
-     * @return HTMLPurifier_URISchemeRegistry
-     * @note Pass a registry object $prototype with a compatible interface and
-     *       the function will copy it and return it all further times.
-     */
-    public static function instance($prototype = null)
-    {
-        static $instance = null;
-        if ($prototype !== null) {
-            $instance = $prototype;
-        } elseif ($instance === null || $prototype == true) {
-            $instance = new HTMLPurifier_URISchemeRegistry();
-        }
-        return $instance;
-    }
-
-    /**
-     * Cache of retrieved schemes.
-     * @type HTMLPurifier_URIScheme[]
-     */
-    protected $schemes = array();
-
-    /**
-     * Retrieves a scheme validator object
-     * @param string $scheme String scheme name like http or mailto
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return HTMLPurifier_URIScheme
-     */
-    public function getScheme($scheme, $config, $context)
-    {
-        if (!$config) {
-            $config = HTMLPurifier_Config::createDefault();
-        }
-
-        // important, otherwise attacker could include arbitrary file
-        $allowed_schemes = $config->get('URI.AllowedSchemes');
-        if (!$config->get('URI.OverrideAllowedSchemes') &&
-            !isset($allowed_schemes[$scheme])
-        ) {
-            return;
-        }
-
-        if (isset($this->schemes[$scheme])) {
-            return $this->schemes[$scheme];
-        }
-        if (!isset($allowed_schemes[$scheme])) {
-            return;
-        }
-
-        $class = 'HTMLPurifier_URIScheme_' . $scheme;
-        if (!class_exists($class)) {
-            return;
-        }
-        $this->schemes[$scheme] = new $class();
-        return $this->schemes[$scheme];
-    }
-
-    /**
-     * Registers a custom scheme to the cache, bypassing reflection.
-     * @param string $scheme Scheme name
-     * @param HTMLPurifier_URIScheme $scheme_obj
-     */
-    public function register($scheme, $scheme_obj)
-    {
-        $this->schemes[$scheme] = $scheme_obj;
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

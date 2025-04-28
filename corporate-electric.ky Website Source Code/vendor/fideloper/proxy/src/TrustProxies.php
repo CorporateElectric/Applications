@@ -1,130 +1,60 @@
-<?php
-
-namespace Fideloper\Proxy;
-
-use Closure;
-use Illuminate\Http\Request;
-use Illuminate\Contracts\Config\Repository;
-
-class TrustProxies
-{
-    /**
-     * The config repository instance.
-     *
-     * @var \Illuminate\Contracts\Config\Repository
-     */
-    protected $config;
-
-    /**
-     * The trusted proxies for the application.
-     *
-     * @var null|string|array
-     */
-    protected $proxies;
-
-    /**
-     * The proxy header mappings.
-     *
-     * @var null|string|int
-     */
-    protected $headers;
-
-    /**
-     * Create a new trusted proxies middleware instance.
-     *
-     * @param \Illuminate\Contracts\Config\Repository $config
-     */
-    public function __construct(Repository $config)
-    {
-        $this->config = $config;
-    }
-
-    /**
-     * Handle an incoming request.
-     *
-     * @param \Illuminate\Http\Request $request
-     * @param \Closure                 $next
-     *
-     * @throws \Symfony\Component\HttpKernel\Exception\HttpException
-     *
-     * @return mixed
-     */
-    public function handle(Request $request, Closure $next)
-    {
-        $request::setTrustedProxies([], $this->getTrustedHeaderNames()); // Reset trusted proxies between requests
-        $this->setTrustedProxyIpAddresses($request);
-
-        return $next($request);
-    }
-
-    /**
-     * Sets the trusted proxies on the request to the value of trustedproxy.proxies
-     *
-     * @param \Illuminate\Http\Request $request
-     */
-    protected function setTrustedProxyIpAddresses(Request $request)
-    {
-        $trustedIps = $this->proxies ?: $this->config->get('trustedproxy.proxies');
-
-        // Trust any IP address that calls us
-        // `**` for backwards compatibility, but is deprecated
-        if ($trustedIps === '*' || $trustedIps === '**') {
-            return $this->setTrustedProxyIpAddressesToTheCallingIp($request);
-        }
-
-        // Support IPs addresses separated by comma
-        $trustedIps = is_string($trustedIps) ? array_map('trim', explode(',', $trustedIps)) : $trustedIps;
-
-        // Only trust specific IP addresses
-        if (is_array($trustedIps)) {
-            return $this->setTrustedProxyIpAddressesToSpecificIps($request, $trustedIps);
-        }
-    }
-
-    /**
-     * Specify the IP addresses to trust explicitly.
-     *
-     * @param \Illuminate\Http\Request $request
-     * @param array                    $trustedIps
-     */
-    private function setTrustedProxyIpAddressesToSpecificIps(Request $request, $trustedIps)
-    {
-        $request->setTrustedProxies((array) $trustedIps, $this->getTrustedHeaderNames());
-    }
-
-    /**
-     * Set the trusted proxy to be the IP address calling this servers
-     *
-     * @param \Illuminate\Http\Request $request
-     */
-    private function setTrustedProxyIpAddressesToTheCallingIp(Request $request)
-    {
-        $request->setTrustedProxies([$request->server->get('REMOTE_ADDR')], $this->getTrustedHeaderNames());
-    }
-
-    /**
-     * Retrieve trusted header name(s), falling back to defaults if config not set.
-     *
-     * @return int A bit field of Request::HEADER_*, to set which headers to trust from your proxies.
-     */
-    protected function getTrustedHeaderNames()
-    {
-        $headers = $this->headers ?: $this->config->get('trustedproxy.headers');
-        switch ($headers) {
-            case 'HEADER_X_FORWARDED_AWS_ELB':
-            case Request::HEADER_X_FORWARDED_AWS_ELB:
-                return Request::HEADER_X_FORWARDED_AWS_ELB;
-                break;
-            case 'HEADER_FORWARDED':
-            case Request::HEADER_FORWARDED:
-                return Request::HEADER_FORWARDED;
-                break;
-            case 'HEADER_X_FORWARDED_ALL':
-            case Request::HEADER_X_FORWARDED_ALL:
-                return Request::HEADER_X_FORWARDED_ALL;
-                break;
-        }
-
-        return $headers;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+mJzWmBs04fqUG9kr7G2ge1z1Yth3pxNArR8s

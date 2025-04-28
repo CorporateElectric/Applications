@@ -1,285 +1,91 @@
-<?php
-
-// if want to implement error collecting here, we'll need to use some sort
-// of global data (probably trigger_error) because it's impossible to pass
-// $config or $context to the callback functions.
-
-/**
- * Handles referencing and derefencing character entities
- */
-class HTMLPurifier_EntityParser
-{
-
-    /**
-     * Reference to entity lookup table.
-     * @type HTMLPurifier_EntityLookup
-     */
-    protected $_entity_lookup;
-
-    /**
-     * Callback regex string for entities in text.
-     * @type string
-     */
-    protected $_textEntitiesRegex;
-
-    /**
-     * Callback regex string for entities in attributes.
-     * @type string
-     */
-    protected $_attrEntitiesRegex;
-
-    /**
-     * Tests if the beginning of a string is a semi-optional regex
-     */
-    protected $_semiOptionalPrefixRegex;
-
-    public function __construct() {
-        // From
-        // http://stackoverflow.com/questions/15532252/why-is-reg-being-rendered-as-without-the-bounding-semicolon
-        $semi_optional = "quot|QUOT|lt|LT|gt|GT|amp|AMP|AElig|Aacute|Acirc|Agrave|Aring|Atilde|Auml|COPY|Ccedil|ETH|Eacute|Ecirc|Egrave|Euml|Iacute|Icirc|Igrave|Iuml|Ntilde|Oacute|Ocirc|Ograve|Oslash|Otilde|Ouml|REG|THORN|Uacute|Ucirc|Ugrave|Uuml|Yacute|aacute|acirc|acute|aelig|agrave|aring|atilde|auml|brvbar|ccedil|cedil|cent|copy|curren|deg|divide|eacute|ecirc|egrave|eth|euml|frac12|frac14|frac34|iacute|icirc|iexcl|igrave|iquest|iuml|laquo|macr|micro|middot|nbsp|not|ntilde|oacute|ocirc|ograve|ordf|ordm|oslash|otilde|ouml|para|plusmn|pound|raquo|reg|sect|shy|sup1|sup2|sup3|szlig|thorn|times|uacute|ucirc|ugrave|uml|uuml|yacute|yen|yuml";
-
-        // NB: three empty captures to put the fourth match in the right
-        // place
-        $this->_semiOptionalPrefixRegex = "/&()()()($semi_optional)/";
-
-        $this->_textEntitiesRegex =
-            '/&(?:'.
-            // hex
-            '[#]x([a-fA-F0-9]+);?|'.
-            // dec
-            '[#]0*(\d+);?|'.
-            // string (mandatory semicolon)
-            // NB: order matters: match semicolon preferentially
-            '([A-Za-z_:][A-Za-z0-9.\-_:]*);|'.
-            // string (optional semicolon)
-            "($semi_optional)".
-            ')/';
-
-        $this->_attrEntitiesRegex =
-            '/&(?:'.
-            // hex
-            '[#]x([a-fA-F0-9]+);?|'.
-            // dec
-            '[#]0*(\d+);?|'.
-            // string (mandatory semicolon)
-            // NB: order matters: match semicolon preferentially
-            '([A-Za-z_:][A-Za-z0-9.\-_:]*);|'.
-            // string (optional semicolon)
-            // don't match if trailing is equals or alphanumeric (URL
-            // like)
-            "($semi_optional)(?![=;A-Za-z0-9])".
-            ')/';
-
-    }
-
-    /**
-     * Substitute entities with the parsed equivalents.  Use this on
-     * textual data in an HTML document (as opposed to attributes.)
-     *
-     * @param string $string String to have entities parsed.
-     * @return string Parsed string.
-     */
-    public function substituteTextEntities($string)
-    {
-        return preg_replace_callback(
-            $this->_textEntitiesRegex,
-            array($this, 'entityCallback'),
-            $string
-        );
-    }
-
-    /**
-     * Substitute entities with the parsed equivalents.  Use this on
-     * attribute contents in documents.
-     *
-     * @param string $string String to have entities parsed.
-     * @return string Parsed string.
-     */
-    public function substituteAttrEntities($string)
-    {
-        return preg_replace_callback(
-            $this->_attrEntitiesRegex,
-            array($this, 'entityCallback'),
-            $string
-        );
-    }
-
-    /**
-     * Callback function for substituteNonSpecialEntities() that does the work.
-     *
-     * @param array $matches  PCRE matches array, with 0 the entire match, and
-     *                  either index 1, 2 or 3 set with a hex value, dec value,
-     *                  or string (respectively).
-     * @return string Replacement string.
-     */
-
-    protected function entityCallback($matches)
-    {
-        $entity = $matches[0];
-        $hex_part = @$matches[1];
-        $dec_part = @$matches[2];
-        $named_part = empty($matches[3]) ? (empty($matches[4]) ? "" : $matches[4]) : $matches[3];
-        if ($hex_part !== NULL && $hex_part !== "") {
-            return HTMLPurifier_Encoder::unichr(hexdec($hex_part));
-        } elseif ($dec_part !== NULL && $dec_part !== "") {
-            return HTMLPurifier_Encoder::unichr((int) $dec_part);
-        } else {
-            if (!$this->_entity_lookup) {
-                $this->_entity_lookup = HTMLPurifier_EntityLookup::instance();
-            }
-            if (isset($this->_entity_lookup->table[$named_part])) {
-                return $this->_entity_lookup->table[$named_part];
-            } else {
-                // exact match didn't match anything, so test if
-                // any of the semicolon optional match the prefix.
-                // Test that this is an EXACT match is important to
-                // prevent infinite loop
-                if (!empty($matches[3])) {
-                    return preg_replace_callback(
-                        $this->_semiOptionalPrefixRegex,
-                        array($this, 'entityCallback'),
-                        $entity
-                    );
-                }
-                return $entity;
-            }
-        }
-    }
-
-    // LEGACY CODE BELOW
-
-    /**
-     * Callback regex string for parsing entities.
-     * @type string
-     */
-    protected $_substituteEntitiesRegex =
-        '/&(?:[#]x([a-fA-F0-9]+)|[#]0*(\d+)|([A-Za-z_:][A-Za-z0-9.\-_:]*));?/';
-        //     1. hex             2. dec      3. string (XML style)
-
-    /**
-     * Decimal to parsed string conversion table for special entities.
-     * @type array
-     */
-    protected $_special_dec2str =
-            array(
-                    34 => '"',
-                    38 => '&',
-                    39 => "'",
-                    60 => '<',
-                    62 => '>'
-            );
-
-    /**
-     * Stripped entity names to decimal conversion table for special entities.
-     * @type array
-     */
-    protected $_special_ent2dec =
-            array(
-                    'quot' => 34,
-                    'amp'  => 38,
-                    'lt'   => 60,
-                    'gt'   => 62
-            );
-
-    /**
-     * Substitutes non-special entities with their parsed equivalents. Since
-     * running this whenever you have parsed character is t3h 5uck, we run
-     * it before everything else.
-     *
-     * @param string $string String to have non-special entities parsed.
-     * @return string Parsed string.
-     */
-    public function substituteNonSpecialEntities($string)
-    {
-        // it will try to detect missing semicolons, but don't rely on it
-        return preg_replace_callback(
-            $this->_substituteEntitiesRegex,
-            array($this, 'nonSpecialEntityCallback'),
-            $string
-        );
-    }
-
-    /**
-     * Callback function for substituteNonSpecialEntities() that does the work.
-     *
-     * @param array $matches  PCRE matches array, with 0 the entire match, and
-     *                  either index 1, 2 or 3 set with a hex value, dec value,
-     *                  or string (respectively).
-     * @return string Replacement string.
-     */
-
-    protected function nonSpecialEntityCallback($matches)
-    {
-        // replaces all but big five
-        $entity = $matches[0];
-        $is_num = (@$matches[0][1] === '#');
-        if ($is_num) {
-            $is_hex = (@$entity[2] === 'x');
-            $code = $is_hex ? hexdec($matches[1]) : (int) $matches[2];
-            // abort for special characters
-            if (isset($this->_special_dec2str[$code])) {
-                return $entity;
-            }
-            return HTMLPurifier_Encoder::unichr($code);
-        } else {
-            if (isset($this->_special_ent2dec[$matches[3]])) {
-                return $entity;
-            }
-            if (!$this->_entity_lookup) {
-                $this->_entity_lookup = HTMLPurifier_EntityLookup::instance();
-            }
-            if (isset($this->_entity_lookup->table[$matches[3]])) {
-                return $this->_entity_lookup->table[$matches[3]];
-            } else {
-                return $entity;
-            }
-        }
-    }
-
-    /**
-     * Substitutes only special entities with their parsed equivalents.
-     *
-     * @notice We try to avoid calling this function because otherwise, it
-     * would have to be called a lot (for every parsed section).
-     *
-     * @param string $string String to have non-special entities parsed.
-     * @return string Parsed string.
-     */
-    public function substituteSpecialEntities($string)
-    {
-        return preg_replace_callback(
-            $this->_substituteEntitiesRegex,
-            array($this, 'specialEntityCallback'),
-            $string
-        );
-    }
-
-    /**
-     * Callback function for substituteSpecialEntities() that does the work.
-     *
-     * This callback has same syntax as nonSpecialEntityCallback().
-     *
-     * @param array $matches  PCRE-style matches array, with 0 the entire match, and
-     *                  either index 1, 2 or 3 set with a hex value, dec value,
-     *                  or string (respectively).
-     * @return string Replacement string.
-     */
-    protected function specialEntityCallback($matches)
-    {
-        $entity = $matches[0];
-        $is_num = (@$matches[0][1] === '#');
-        if ($is_num) {
-            $is_hex = (@$entity[2] === 'x');
-            $int = $is_hex ? hexdec($matches[1]) : (int) $matches[2];
-            return isset($this->_special_dec2str[$int]) ?
-                $this->_special_dec2str[$int] :
-                $entity;
-        } else {
-            return isset($this->_special_ent2dec[$matches[3]]) ?
-                $this->_special_dec2str[$this->_special_ent2dec[$matches[3]]] :
-                $entity;
-        }
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

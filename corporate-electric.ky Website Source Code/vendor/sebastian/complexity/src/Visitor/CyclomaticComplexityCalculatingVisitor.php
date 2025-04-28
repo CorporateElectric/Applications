@@ -1,59 +1,40 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of sebastian/complexity.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\Complexity;
-
-use function get_class;
-use PhpParser\Node;
-use PhpParser\Node\Expr\BinaryOp\BooleanAnd;
-use PhpParser\Node\Expr\BinaryOp\BooleanOr;
-use PhpParser\Node\Expr\BinaryOp\LogicalAnd;
-use PhpParser\Node\Expr\BinaryOp\LogicalOr;
-use PhpParser\Node\Expr\Ternary;
-use PhpParser\Node\Stmt\Case_;
-use PhpParser\Node\Stmt\Catch_;
-use PhpParser\Node\Stmt\ElseIf_;
-use PhpParser\Node\Stmt\For_;
-use PhpParser\Node\Stmt\Foreach_;
-use PhpParser\Node\Stmt\If_;
-use PhpParser\Node\Stmt\While_;
-use PhpParser\NodeVisitorAbstract;
-
-final class CyclomaticComplexityCalculatingVisitor extends NodeVisitorAbstract
-{
-    /**
-     * @var int
-     */
-    private $cyclomaticComplexity = 1;
-
-    public function enterNode(Node $node): void
-    {
-        /* @noinspection GetClassMissUseInspection */
-        switch (get_class($node)) {
-            case BooleanAnd::class:
-            case BooleanOr::class:
-            case Case_::class:
-            case Catch_::class:
-            case ElseIf_::class:
-            case For_::class:
-            case Foreach_::class:
-            case If_::class:
-            case LogicalAnd::class:
-            case LogicalOr::class:
-            case Ternary::class:
-            case While_::class:
-                $this->cyclomaticComplexity++;
-        }
-    }
-
-    public function cyclomaticComplexity(): int
-    {
-        return $this->cyclomaticComplexity;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

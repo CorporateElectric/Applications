@@ -1,167 +1,88 @@
-<?php
-
-namespace Illuminate\View\Concerns;
-
-use Closure;
-use Illuminate\Contracts\Support\Htmlable;
-use Illuminate\Support\Arr;
-use Illuminate\Support\HtmlString;
-use Illuminate\View\View;
-use InvalidArgumentException;
-
-trait ManagesComponents
-{
-    /**
-     * The components being rendered.
-     *
-     * @var array
-     */
-    protected $componentStack = [];
-
-    /**
-     * The original data passed to the component.
-     *
-     * @var array
-     */
-    protected $componentData = [];
-
-    /**
-     * The slot contents for the component.
-     *
-     * @var array
-     */
-    protected $slots = [];
-
-    /**
-     * The names of the slots being rendered.
-     *
-     * @var array
-     */
-    protected $slotStack = [];
-
-    /**
-     * Start a component rendering process.
-     *
-     * @param  \Illuminate\Contracts\View\View|\Illuminate\Contracts\Support\Htmlable|\Closure|string  $view
-     * @param  array  $data
-     * @return void
-     */
-    public function startComponent($view, array $data = [])
-    {
-        if (ob_start()) {
-            $this->componentStack[] = $view;
-
-            $this->componentData[$this->currentComponent()] = $data;
-
-            $this->slots[$this->currentComponent()] = [];
-        }
-    }
-
-    /**
-     * Get the first view that actually exists from the given list, and start a component.
-     *
-     * @param  array  $names
-     * @param  array  $data
-     * @return void
-     */
-    public function startComponentFirst(array $names, array $data = [])
-    {
-        $name = Arr::first($names, function ($item) {
-            return $this->exists($item);
-        });
-
-        $this->startComponent($name, $data);
-    }
-
-    /**
-     * Render the current component.
-     *
-     * @return string
-     */
-    public function renderComponent()
-    {
-        $view = array_pop($this->componentStack);
-
-        $data = $this->componentData();
-
-        if ($view instanceof Closure) {
-            $view = $view($data);
-        }
-
-        if ($view instanceof View) {
-            return $view->with($data)->render();
-        } elseif ($view instanceof Htmlable) {
-            return $view->toHtml();
-        } else {
-            return $this->make($view, $data)->render();
-        }
-    }
-
-    /**
-     * Get the data for the given component.
-     *
-     * @return array
-     */
-    protected function componentData()
-    {
-        $defaultSlot = new HtmlString(trim(ob_get_clean()));
-
-        $slots = array_merge([
-            '__default' => $defaultSlot,
-        ], $this->slots[count($this->componentStack)]);
-
-        return array_merge(
-            $this->componentData[count($this->componentStack)],
-            ['slot' => $defaultSlot],
-            $this->slots[count($this->componentStack)],
-            ['__laravel_slots' => $slots]
-        );
-    }
-
-    /**
-     * Start the slot rendering process.
-     *
-     * @param  string  $name
-     * @param  string|null  $content
-     * @return void
-     */
-    public function slot($name, $content = null)
-    {
-        if (func_num_args() > 2) {
-            throw new InvalidArgumentException('You passed too many arguments to the ['.$name.'] slot.');
-        } elseif (func_num_args() === 2) {
-            $this->slots[$this->currentComponent()][$name] = $content;
-        } elseif (ob_start()) {
-            $this->slots[$this->currentComponent()][$name] = '';
-
-            $this->slotStack[$this->currentComponent()][] = $name;
-        }
-    }
-
-    /**
-     * Save the slot content for rendering.
-     *
-     * @return void
-     */
-    public function endSlot()
-    {
-        last($this->componentStack);
-
-        $currentSlot = array_pop(
-            $this->slotStack[$this->currentComponent()]
-        );
-
-        $this->slots[$this->currentComponent()]
-                    [$currentSlot] = new HtmlString(trim(ob_get_clean()));
-    }
-
-    /**
-     * Get the index for the current component.
-     *
-     * @return int
-     */
-    protected function currentComponent()
-    {
-        return count($this->componentStack) - 1;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

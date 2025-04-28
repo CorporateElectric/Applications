@@ -1,61 +1,34 @@
-<?php
-
-namespace Illuminate\Support\Facades;
-
-use Laravel\Ui\UiServiceProvider;
-use RuntimeException;
-
-/**
- * @method static \Illuminate\Auth\AuthManager extend(string $driver, \Closure $callback)
- * @method static \Illuminate\Auth\AuthManager provider(string $name, \Closure $callback)
- * @method static \Illuminate\Contracts\Auth\Authenticatable loginUsingId(mixed $id, bool $remember = false)
- * @method static \Illuminate\Contracts\Auth\Authenticatable|null user()
- * @method static \Illuminate\Contracts\Auth\Guard|\Illuminate\Contracts\Auth\StatefulGuard guard(string|null $name = null)
- * @method static \Illuminate\Contracts\Auth\UserProvider|null createUserProvider(string $provider = null)
- * @method static \Symfony\Component\HttpFoundation\Response|null onceBasic(string $field = 'email',array $extraConditions = [])
- * @method static bool attempt(array $credentials = [], bool $remember = false)
- * @method static bool check()
- * @method static bool guest()
- * @method static bool once(array $credentials = [])
- * @method static bool onceUsingId(mixed $id)
- * @method static bool validate(array $credentials = [])
- * @method static bool viaRemember()
- * @method static bool|null logoutOtherDevices(string $password, string $attribute = 'password')
- * @method static int|string|null id()
- * @method static void login(\Illuminate\Contracts\Auth\Authenticatable $user, bool $remember = false)
- * @method static void logout()
- * @method static void setUser(\Illuminate\Contracts\Auth\Authenticatable $user)
- * @method static void shouldUse(string $name);
- *
- * @see \Illuminate\Auth\AuthManager
- * @see \Illuminate\Contracts\Auth\Factory
- * @see \Illuminate\Contracts\Auth\Guard
- * @see \Illuminate\Contracts\Auth\StatefulGuard
- */
-class Auth extends Facade
-{
-    /**
-     * Get the registered name of the component.
-     *
-     * @return string
-     */
-    protected static function getFacadeAccessor()
-    {
-        return 'auth';
-    }
-
-    /**
-     * Register the typical authentication routes for an application.
-     *
-     * @param  array  $options
-     * @return void
-     */
-    public static function routes(array $options = [])
-    {
-        if (! static::$app->providerIsLoaded(UiServiceProvider::class)) {
-            throw new RuntimeException('In order to use the Auth::routes() method, please install the laravel/ui package.');
-        }
-
-        static::$app->make('router')->auth($options);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

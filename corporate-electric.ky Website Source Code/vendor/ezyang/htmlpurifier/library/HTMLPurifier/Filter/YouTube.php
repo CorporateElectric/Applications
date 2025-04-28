@@ -1,65 +1,50 @@
-<?php
-
-class HTMLPurifier_Filter_YouTube extends HTMLPurifier_Filter
-{
-
-    /**
-     * @type string
-     */
-    public $name = 'YouTube';
-
-    /**
-     * @param string $html
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return string
-     */
-    public function preFilter($html, $config, $context)
-    {
-        $pre_regex = '#<object[^>]+>.+?' .
-            '(?:http:)?//www.youtube.com/((?:v|cp)/[A-Za-z0-9\-_=]+).+?</object>#s';
-        $pre_replace = '<span class="youtube-embed">\1</span>';
-        return preg_replace($pre_regex, $pre_replace, $html);
-    }
-
-    /**
-     * @param string $html
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return string
-     */
-    public function postFilter($html, $config, $context)
-    {
-        $post_regex = '#<span class="youtube-embed">((?:v|cp)/[A-Za-z0-9\-_=]+)</span>#';
-        return preg_replace_callback($post_regex, array($this, 'postFilterCallback'), $html);
-    }
-
-    /**
-     * @param $url
-     * @return string
-     */
-    protected function armorUrl($url)
-    {
-        return str_replace('--', '-&#45;', $url);
-    }
-
-    /**
-     * @param array $matches
-     * @return string
-     */
-    protected function postFilterCallback($matches)
-    {
-        $url = $this->armorUrl($matches[1]);
-        return '<object width="425" height="350" type="application/x-shockwave-flash" ' .
-        'data="//www.youtube.com/' . $url . '">' .
-        '<param name="movie" value="//www.youtube.com/' . $url . '"></param>' .
-        '<!--[if IE]>' .
-        '<embed src="//www.youtube.com/' . $url . '"' .
-        'type="application/x-shockwave-flash"' .
-        'wmode="transparent" width="425" height="350" />' .
-        '<![endif]-->' .
-        '</object>';
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+Cm==

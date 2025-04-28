@@ -1,143 +1,74 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of sebastian/global-state.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\GlobalState;
-
-use function array_diff;
-use function array_key_exists;
-use function array_keys;
-use function array_merge;
-use function function_exists;
-use function get_defined_functions;
-use function in_array;
-use function is_array;
-use ReflectionClass;
-use ReflectionProperty;
-
-/**
- * Restorer of snapshots of global state.
- */
-class Restorer
-{
-    /**
-     * Deletes function definitions that are not defined in a snapshot.
-     *
-     * @throws RuntimeException when the uopz_delete() function is not available
-     *
-     * @see https://github.com/krakjoe/uopz
-     */
-    public function restoreFunctions(Snapshot $snapshot): void
-    {
-        if (!function_exists('uopz_delete')) {
-            throw new RuntimeException('The uopz_delete() function is required for this operation');
-        }
-
-        $functions = get_defined_functions();
-
-        foreach (array_diff($functions['user'], $snapshot->functions()) as $function) {
-            uopz_delete($function);
-        }
-    }
-
-    /**
-     * Restores all global and super-global variables from a snapshot.
-     */
-    public function restoreGlobalVariables(Snapshot $snapshot): void
-    {
-        $superGlobalArrays = $snapshot->superGlobalArrays();
-
-        foreach ($superGlobalArrays as $superGlobalArray) {
-            $this->restoreSuperGlobalArray($snapshot, $superGlobalArray);
-        }
-
-        $globalVariables = $snapshot->globalVariables();
-
-        foreach (array_keys($GLOBALS) as $key) {
-            if ($key !== 'GLOBALS' &&
-                !in_array($key, $superGlobalArrays) &&
-                !$snapshot->excludeList()->isGlobalVariableExcluded($key)) {
-                if (array_key_exists($key, $globalVariables)) {
-                    $GLOBALS[$key] = $globalVariables[$key];
-                } else {
-                    unset($GLOBALS[$key]);
-                }
-            }
-        }
-    }
-
-    /**
-     * Restores all static attributes in user-defined classes from this snapshot.
-     */
-    public function restoreStaticAttributes(Snapshot $snapshot): void
-    {
-        $current    = new Snapshot($snapshot->excludeList(), false, false, false, false, true, false, false, false, false);
-        $newClasses = array_diff($current->classes(), $snapshot->classes());
-
-        unset($current);
-
-        foreach ($snapshot->staticAttributes() as $className => $staticAttributes) {
-            foreach ($staticAttributes as $name => $value) {
-                $reflector = new ReflectionProperty($className, $name);
-                $reflector->setAccessible(true);
-                $reflector->setValue($value);
-            }
-        }
-
-        foreach ($newClasses as $className) {
-            $class    = new ReflectionClass($className);
-            $defaults = $class->getDefaultProperties();
-
-            foreach ($class->getProperties() as $attribute) {
-                if (!$attribute->isStatic()) {
-                    continue;
-                }
-
-                $name = $attribute->getName();
-
-                if ($snapshot->excludeList()->isStaticAttributeExcluded($className, $name)) {
-                    continue;
-                }
-
-                if (!isset($defaults[$name])) {
-                    continue;
-                }
-
-                $attribute->setAccessible(true);
-                $attribute->setValue($defaults[$name]);
-            }
-        }
-    }
-
-    /**
-     * Restores a super-global variable array from this snapshot.
-     */
-    private function restoreSuperGlobalArray(Snapshot $snapshot, string $superGlobalArray): void
-    {
-        $superGlobalVariables = $snapshot->superGlobalVariables();
-
-        if (isset($GLOBALS[$superGlobalArray]) &&
-            is_array($GLOBALS[$superGlobalArray]) &&
-            isset($superGlobalVariables[$superGlobalArray])) {
-            $keys = array_keys(
-                array_merge(
-                    $GLOBALS[$superGlobalArray],
-                    $superGlobalVariables[$superGlobalArray]
-                )
-            );
-
-            foreach ($keys as $key) {
-                if (isset($superGlobalVariables[$superGlobalArray][$key])) {
-                    $GLOBALS[$superGlobalArray][$key] = $superGlobalVariables[$superGlobalArray][$key];
-                } else {
-                    unset($GLOBALS[$superGlobalArray][$key]);
-                }
-            }
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

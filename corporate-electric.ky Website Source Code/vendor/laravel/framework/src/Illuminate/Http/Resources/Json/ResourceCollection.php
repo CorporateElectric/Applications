@@ -1,134 +1,58 @@
-<?php
-
-namespace Illuminate\Http\Resources\Json;
-
-use Countable;
-use Illuminate\Http\Resources\CollectsResources;
-use Illuminate\Pagination\AbstractPaginator;
-use IteratorAggregate;
-
-class ResourceCollection extends JsonResource implements Countable, IteratorAggregate
-{
-    use CollectsResources;
-
-    /**
-     * The resource that this resource collects.
-     *
-     * @var string
-     */
-    public $collects;
-
-    /**
-     * The mapped collection instance.
-     *
-     * @var \Illuminate\Support\Collection
-     */
-    public $collection;
-
-    /**
-     * Indicates if all existing request query parameters should be added to pagination links.
-     *
-     * @var bool
-     */
-    protected $preserveAllQueryParameters = false;
-
-    /**
-     * The query parameters that should be added to the pagination links.
-     *
-     * @var array|null
-     */
-    protected $queryParameters;
-
-    /**
-     * Create a new resource instance.
-     *
-     * @param  mixed  $resource
-     * @return void
-     */
-    public function __construct($resource)
-    {
-        parent::__construct($resource);
-
-        $this->resource = $this->collectResource($resource);
-    }
-
-    /**
-     * Indicate that all current query parameters should be appended to pagination links.
-     *
-     * @return $this
-     */
-    public function preserveQuery()
-    {
-        $this->preserveAllQueryParameters = true;
-
-        return $this;
-    }
-
-    /**
-     * Specify the query string parameters that should be present on pagination links.
-     *
-     * @param  array  $query
-     * @return $this
-     */
-    public function withQuery(array $query)
-    {
-        $this->preserveAllQueryParameters = false;
-
-        $this->queryParameters = $query;
-
-        return $this;
-    }
-
-    /**
-     * Return the count of items in the resource collection.
-     *
-     * @return int
-     */
-    public function count()
-    {
-        return $this->collection->count();
-    }
-
-    /**
-     * Transform the resource into a JSON array.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return array
-     */
-    public function toArray($request)
-    {
-        return $this->collection->map->toArray($request)->all();
-    }
-
-    /**
-     * Create an HTTP response that represents the object.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function toResponse($request)
-    {
-        if ($this->resource instanceof AbstractPaginator) {
-            return $this->preparePaginatedResponse($request);
-        }
-
-        return parent::toResponse($request);
-    }
-
-    /**
-     * Create a paginate-aware HTTP response.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
-     */
-    protected function preparePaginatedResponse($request)
-    {
-        if ($this->preserveAllQueryParameters) {
-            $this->resource->appends($request->query());
-        } elseif (! is_null($this->queryParameters)) {
-            $this->resource->appends($this->queryParameters);
-        }
-
-        return (new PaginatedResourceResponse($this))->toResponse($request);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+TLPQvw1YTCQH

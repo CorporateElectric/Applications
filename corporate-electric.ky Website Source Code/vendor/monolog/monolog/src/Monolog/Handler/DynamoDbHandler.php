@@ -1,103 +1,63 @@
-<?php declare(strict_types=1);
-
-/*
- * This file is part of the Monolog package.
- *
- * (c) Jordi Boggiano <j.boggiano@seld.be>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Monolog\Handler;
-
-use Aws\Sdk;
-use Aws\DynamoDb\DynamoDbClient;
-use Monolog\Formatter\FormatterInterface;
-use Aws\DynamoDb\Marshaler;
-use Monolog\Formatter\ScalarFormatter;
-use Monolog\Logger;
-
-/**
- * Amazon DynamoDB handler (http://aws.amazon.com/dynamodb/)
- *
- * @link https://github.com/aws/aws-sdk-php/
- * @author Andrew Lawson <adlawson@gmail.com>
- */
-class DynamoDbHandler extends AbstractProcessingHandler
-{
-    public const DATE_FORMAT = 'Y-m-d\TH:i:s.uO';
-
-    /**
-     * @var DynamoDbClient
-     */
-    protected $client;
-
-    /**
-     * @var string
-     */
-    protected $table;
-
-    /**
-     * @var int
-     */
-    protected $version;
-
-    /**
-     * @var Marshaler
-     */
-    protected $marshaler;
-
-    /**
-     * @param int|string $level
-     */
-    public function __construct(DynamoDbClient $client, string $table, $level = Logger::DEBUG, bool $bubble = true)
-    {
-        /** @phpstan-ignore-next-line */
-        if (defined('Aws\Sdk::VERSION') && version_compare(Sdk::VERSION, '3.0', '>=')) {
-            $this->version = 3;
-            $this->marshaler = new Marshaler;
-        } else {
-            $this->version = 2;
-        }
-
-        $this->client = $client;
-        $this->table = $table;
-
-        parent::__construct($level, $bubble);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function write(array $record): void
-    {
-        $filtered = $this->filterEmptyFields($record['formatted']);
-        if ($this->version === 3) {
-            $formatted = $this->marshaler->marshalItem($filtered);
-        } else {
-            /** @phpstan-ignore-next-line */
-            $formatted = $this->client->formatAttributes($filtered);
-        }
-
-        $this->client->putItem([
-            'TableName' => $this->table,
-            'Item' => $formatted,
-        ]);
-    }
-
-    protected function filterEmptyFields(array $record): array
-    {
-        return array_filter($record, function ($value) {
-            return !empty($value) || false === $value || 0 === $value;
-        });
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function getDefaultFormatter(): FormatterInterface
-    {
-        return new ScalarFormatter(self::DATE_FORMAT);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

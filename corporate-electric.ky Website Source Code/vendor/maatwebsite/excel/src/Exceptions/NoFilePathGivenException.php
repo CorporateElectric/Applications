@@ -1,38 +1,34 @@
-<?php
-
-namespace Maatwebsite\Excel\Exceptions;
-
-use InvalidArgumentException;
-use Throwable;
-
-class NoFilePathGivenException extends InvalidArgumentException implements LaravelExcelException
-{
-    /**
-     * @param string         $message
-     * @param int            $code
-     * @param Throwable|null $previous
-     */
-    public function __construct(
-        $message = 'A filepath needs to be passed.',
-        $code = 0,
-        Throwable $previous = null
-    ) {
-        parent::__construct($message, $code, $previous);
-    }
-
-    /**
-     * @return NoFilePathGivenException
-     */
-    public static function import()
-    {
-        return new static('A filepath or UploadedFile needs to be passed to start the import.');
-    }
-
-    /**
-     * @return NoFilePathGivenException
-     */
-    public static function export()
-    {
-        return new static('A filepath needs to be passed in order to store the export.');
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

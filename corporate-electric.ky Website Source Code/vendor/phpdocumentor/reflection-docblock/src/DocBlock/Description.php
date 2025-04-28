@@ -1,114 +1,37 @@
-<?php
-
-declare(strict_types=1);
-
-/**
- * This file is part of phpDocumentor.
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @link      http://phpdoc.org
- */
-
-namespace phpDocumentor\Reflection\DocBlock;
-
-use phpDocumentor\Reflection\DocBlock\Tags\Formatter;
-use phpDocumentor\Reflection\DocBlock\Tags\Formatter\PassthroughFormatter;
-use function vsprintf;
-
-/**
- * Object representing to description for a DocBlock.
- *
- * A Description object can consist of plain text but can also include tags. A Description Formatter can then combine
- * a body template with sprintf-style placeholders together with formatted tags in order to reconstitute a complete
- * description text using the format that you would prefer.
- *
- * Because parsing a Description text can be a verbose process this is handled by the {@see DescriptionFactory}. It is
- * thus recommended to use that to create a Description object, like this:
- *
- *     $description = $descriptionFactory->create('This is a {@see Description}', $context);
- *
- * The description factory will interpret the given body and create a body template and list of tags from them, and pass
- * that onto the constructor if this class.
- *
- * > The $context variable is a class of type {@see \phpDocumentor\Reflection\Types\Context} and contains the namespace
- * > and the namespace aliases that apply to this DocBlock. These are used by the Factory to resolve and expand partial
- * > type names and FQSENs.
- *
- * If you do not want to use the DescriptionFactory you can pass a body template and tag listing like this:
- *
- *     $description = new Description(
- *         'This is a %1$s',
- *         [ new See(new Fqsen('\phpDocumentor\Reflection\DocBlock\Description')) ]
- *     );
- *
- * It is generally recommended to use the Factory as that will also apply escaping rules, while the Description object
- * is mainly responsible for rendering.
- *
- * @see DescriptionFactory to create a new Description.
- * @see Description\Formatter for the formatting of the body and tags.
- */
-class Description
-{
-    /** @var string */
-    private $bodyTemplate;
-
-    /** @var Tag[] */
-    private $tags;
-
-    /**
-     * Initializes a Description with its body (template) and a listing of the tags used in the body template.
-     *
-     * @param Tag[] $tags
-     */
-    public function __construct(string $bodyTemplate, array $tags = [])
-    {
-        $this->bodyTemplate = $bodyTemplate;
-        $this->tags         = $tags;
-    }
-
-    /**
-     * Returns the body template.
-     */
-    public function getBodyTemplate() : string
-    {
-        return $this->bodyTemplate;
-    }
-
-    /**
-     * Returns the tags for this DocBlock.
-     *
-     * @return Tag[]
-     */
-    public function getTags() : array
-    {
-        return $this->tags;
-    }
-
-    /**
-     * Renders this description as a string where the provided formatter will format the tags in the expected string
-     * format.
-     */
-    public function render(?Formatter $formatter = null) : string
-    {
-        if ($formatter === null) {
-            $formatter = new PassthroughFormatter();
-        }
-
-        $tags = [];
-        foreach ($this->tags as $tag) {
-            $tags[] = '{' . $formatter->format($tag) . '}';
-        }
-
-        return vsprintf($this->bodyTemplate, $tags);
-    }
-
-    /**
-     * Returns a plain string representation of this description.
-     */
-    public function __toString() : string
-    {
-        return $this->render();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

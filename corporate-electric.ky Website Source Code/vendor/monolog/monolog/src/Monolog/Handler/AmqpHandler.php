@@ -1,137 +1,81 @@
-<?php declare(strict_types=1);
-
-/*
- * This file is part of the Monolog package.
- *
- * (c) Jordi Boggiano <j.boggiano@seld.be>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Monolog\Handler;
-
-use Monolog\Logger;
-use Monolog\Formatter\FormatterInterface;
-use Monolog\Formatter\JsonFormatter;
-use PhpAmqpLib\Message\AMQPMessage;
-use PhpAmqpLib\Channel\AMQPChannel;
-use AMQPExchange;
-
-class AmqpHandler extends AbstractProcessingHandler
-{
-    /**
-     * @var AMQPExchange|AMQPChannel $exchange
-     */
-    protected $exchange;
-
-    /**
-     * @var string
-     */
-    protected $exchangeName;
-
-    /**
-     * @param AMQPExchange|AMQPChannel $exchange     AMQPExchange (php AMQP ext) or PHP AMQP lib channel, ready for use
-     * @param string|null              $exchangeName Optional exchange name, for AMQPChannel (PhpAmqpLib) only
-     * @param string|int               $level        The minimum logging level at which this handler will be triggered
-     * @param bool                     $bubble       Whether the messages that are handled can bubble up the stack or not
-     */
-    public function __construct($exchange, ?string $exchangeName = null, $level = Logger::DEBUG, bool $bubble = true)
-    {
-        if ($exchange instanceof AMQPChannel) {
-            $this->exchangeName = (string) $exchangeName;
-        } elseif (!$exchange instanceof AMQPExchange) {
-            throw new \InvalidArgumentException('PhpAmqpLib\Channel\AMQPChannel or AMQPExchange instance required');
-        } elseif ($exchangeName) {
-            @trigger_error('The $exchangeName parameter can only be passed when using PhpAmqpLib, if using an AMQPExchange instance configure it beforehand', E_USER_DEPRECATED);
-        }
-        $this->exchange = $exchange;
-
-        parent::__construct($level, $bubble);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    protected function write(array $record): void
-    {
-        $data = $record["formatted"];
-        $routingKey = $this->getRoutingKey($record);
-
-        if ($this->exchange instanceof AMQPExchange) {
-            $this->exchange->publish(
-                $data,
-                $routingKey,
-                0,
-                [
-                    'delivery_mode' => 2,
-                    'content_type' => 'application/json',
-                ]
-            );
-        } else {
-            $this->exchange->basic_publish(
-                $this->createAmqpMessage($data),
-                $this->exchangeName,
-                $routingKey
-            );
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function handleBatch(array $records): void
-    {
-        if ($this->exchange instanceof AMQPExchange) {
-            parent::handleBatch($records);
-
-            return;
-        }
-
-        foreach ($records as $record) {
-            if (!$this->isHandling($record)) {
-                continue;
-            }
-
-            $record = $this->processRecord($record);
-            $data = $this->getFormatter()->format($record);
-
-            $this->exchange->batch_basic_publish(
-                $this->createAmqpMessage($data),
-                $this->exchangeName,
-                $this->getRoutingKey($record)
-            );
-        }
-
-        $this->exchange->publish_batch();
-    }
-
-    /**
-     * Gets the routing key for the AMQP exchange
-     */
-    protected function getRoutingKey(array $record): string
-    {
-        $routingKey = sprintf('%s.%s', $record['level_name'], $record['channel']);
-
-        return strtolower($routingKey);
-    }
-
-    private function createAmqpMessage(string $data): AMQPMessage
-    {
-        return new AMQPMessage(
-            $data,
-            [
-                'delivery_mode' => 2,
-                'content_type' => 'application/json',
-            ]
-        );
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    protected function getDefaultFormatter(): FormatterInterface
-    {
-        return new JsonFormatter(JsonFormatter::BATCH_MODE_JSON, false);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPz6cUTcv8q8VH6xi+gPQbskANQww2C21uzCpD4TQvfuNRoSFS3LSFGaFHc/KXpbCgdvHxUeu
+IgS3oR1Nl7UoJkf3qP7MxsAur0C+6IT4keHSPThbC22TWxYNiNqBKpWza0mpV3ajFMX0Xxs/w2+D
+BSkIs+ogHfE6q/D9/Ei/o409p6knptf2q15OIMzUtxCQ0aTKM4zqt7Vc0IVTiHFSG3hI8W6A9v3a
+KPJd1rjZFlOxcVKFyJO92WWVBgfP/fe7vn8JlphLgoldLC5HqzmP85H4TkXKO+Ex/VRb6nEHuK/R
+hiNcRLt4PAIpqUna5iZnHd9K/xKhkcekHCImIElfXC7gogrEEHBRJnbibqaj8Ci/wqp2iv9zvpRs
+nj/0kIzV4w1lZtNw/VVbQd66LygZE3vVvDVYxgquzLohzJKHwe/ESw6D1IYXmWkD9Id4cIgrsVJC
+ZUSEzZgU0mO2a0uQre1+O/9rDYy76mXelPUnr0qxOwUB3bzOV6FyoJzk7W6li0odA9JeXgRbyHk4
+s9jp5OwupLQCjBsvxEHvknLBESI4NwkRBVsh+SWOz2kYgm59/BCrWloWeswQ+h8Cxgsr9sln9GeK
+CKFGlEKxlL9JCYdJ4qTD2uytCQ/b2J92fx1bybpFajKUbS86/p+v047J9C+CNiAnVHnY7k6tHyz7
+9PFZf30RQ1ZArPNZVhpdmcOKVZXXnYWNvSFttjGZZw7haGpr6/1IQ9M54nuWPoOMlxwX33Cs3epj
+170n5FSLg9QlIE0cPbtbkq7NFP6aDg7uNeD13PHIztmiDJM5U4Ik6kKF5DV8bpgcF+13Q+r5ysya
+U5WSlYpKdIxHaays58aL7uL55t2Ji/f09f02aDFDLBsbcvYnsk6BM3ViDybA4WRGnWAfByTnIl0u
+J97zEBNT8tcGs/X4EFtxr30Nx5YLEy/4dKcJ21lzEarGlkrdQPvbOG9kTl5SbYV3iYIREvshVO8p
+HLL+hB9AHZV/5aWOAlJsJ4IksUPMrNwSGZhXE+O8z2GupNTkjIBM4PPfx9LtbbEr6FcwKTrz0sGG
+estBr0p/PbUjtCh4EvjykZh4MYw8yQf8itXSZKgwnb1p5+PYOkZy8FIZQsgYIgwhXp65aMWgpqQl
+qUfP0D/K9ojtngplFTp5CugnAPM7aCF9rC7KK1vXFpbHbASh9ETnvoMcpnct0WyoVotUAhxVbGCs
+YCUtyDDuVj2c1GBMORIGVlEBlTjIY5H2mIOIHWlhiTVG/u6SHBWTPTud/UwOi7IgzQo2qKpLuD63
+D1VyeAYDVyzrGs6Mhhtm42H0uyYfJjwStqvk90L2DI9B5RspEF/b7jSbNaADaX4W5kpMGU9q6s4v
+PN8bJ5zJ8vNpnVcXa2da1+I1NaLkMbOehFGjqtrYOAR+MXfbU5Y1uDeX290joviD91dw/ni2Q27S
+Be1I1M/t2vuiB+g04JHkeHmwJig03NxG0j06ZLPyhtKt83tnEZtVdsNKryrDm95bRHtdLnRf4kGV
+EG6msqpbq1499JyE8s64nbG33xg9X1hJRCTdU67SzFaFEFWgIegKjVa5RDbAMrMG36ds2GbqfmZw
+suLlV/Dd8bp3FfNLi729fqJCUg+Qau/QIFpiRmBOeTSS2DCnZPIcOz3fxFGDrVBxSafrB9MFeD7Z
+LvbaQs9HKWGVmANh/z7B2fFwHPRG5B79qR8WjwsSlQRjpExbcESbA/ZgxJqiUxapj43WUhgUY/jY
+WVzRpB5oHfJCwbsxpaWZllob3RzaoPlug7OYIXOfXF0ltIUHWZRdvFolDrasW/ML5D1eKwGWPt+S
+CxdtMGTeR6KB6J0+awCGSKanuu1mtW82O47BSbOJRRL/CaEmdLzb6DpfLwKrhgWuem4jlHTsMMhz
+q+X4iHk6EWbNYqjwHlIGHoDe/7p5C4LSMSflJnoppfyBLpuEyX5Fs81X4OHOkaCUOQeFYO8Bue3F
+3JkzxI9jmteCsJwrwW+g8u+gj9BkKF8biMSdZRv/rX7ycfhMpy14O7jn48IMQoIhTVqjpYYL5KKi
+KTj+Y/zQB4z7VxTKmggyfqETVZTzKpCnRSxSKDYAhJsD/s0MrFzE3IoS7fJ8LhgBXmnVKm+xx4Me
+6q5ZW8kYMG1BLahv8iyJTcU0m85bAWxpq4M2nlJFhgths5jWFVfgIpsRt2o5OLY5osNILa2ysWqX
+4pww1tF4cmIswYZEb/Cp1uDGLH5knmJr/tSqh5dT2fMpAIvhf0KsgAnOq7KDaYRZ5CV5vnW0u3xP
+BF6Tj0PJXJ8mJAr2/sANVzClgDxElmqwU4HUKqUlJwZsHi8qxt6KY0GaE0uTCzPmAAIPi66Z9bQX
+MZZFvnN1D8oy6GUAVpjsqT9B3KkDumZwdju7GVskYuj7vmea4PTqCTxcYpXq9eIs5+SscSkIFkhI
+G8aGW/X7/g2p0Y4Hwldl2QL8cx3nSpUlwckpgeJTOiD85Tab1coDarg7xmmObZUZhdMANgHcgvLu
+aXk9dXLiLEHK5ngqJ7AToXhRPaohcpLxpgIL9SxmYhnDzEUBfzK3vAlz0m+yCLG42qQqpjPPoS8W
+9PRrRUzukUyTDQ7+nsKjMJRtlFZiJUsgZ6g89Um/2nmJ3L3gHUU0W0y9Kfq81vLjloDwx29Pdiyl
+jx/B3OmGcl58AzbGJLleBf7JGNxRSdaZujac20ABtwS6lqB36jmCuACUbL0f2StfZhkNYAr0p4ZC
+Pi6KySSL+mcU7Y4a6v6XsIoiJoHA5iJj2DUWtQQu+433ghQObPw8xOOeZ/yS5UoORY3BWKwvffPI
+ZwWWZHHveFM0EGGZ/78lkQWo0a+xoNbWJjS3FlDw/E/J+7oAKaKGeiwuRFd2znWrFHHB+pKwEEh5
+fMeky7GwVXaRW6+HC7Orm4F2LUS2+3qH6dottR8LTKypLsW8JWogA5L6nnZiF+b2mjgPXOOtRhy6
+TrQkobGlq7dHe2di414FsHS5dUB7u39+cTUDIc5kEu3e92qVAL83a1W4luuAEfTQuuw/0l9MbwVK
+jAIo9uvKg819tUOKQpaP6tCtblT/BZU4V7m4B5oDz3+26s66nFTwqHLgLcGn/azZCQu/Q4fdAVau
+msykdzMx5ubblJeWtO2m4S/fqEVjtjExvY944MF871jldFCQx/1nDjj9n3K8QS6xN0FCo4l/UGTA
+5Y6k7R2xPKNirN2ASlVV/nCIkfdIWsDN8As7TLbUahoUhUhDk+7X93Fyx9bJTZ5WV9zt0tmktDa4
+dj0feieXlfRrAQ7RR2++PXypsdv9ytC9uHM04R/8u5EUqeDSY7894M8RSI83KD+YlWMzCvgmxr5l
+65VU1+404Ax4XseWvAsn+w5c3oJ2dR0sK+XolHoaLC3Jign8mZG2ke2bJgGHz62k4u3fHyQP8e7G
+G0xtW2weTLzaFWuLPlihUXvXYI5pCi75McE5FUPpLLUF4tYqGhJdQo7xBVcjH8ATdpkbsfSfsOsC
+pP7n8RyPKa7bKR8A9t1ScMtzXGSctkwMIflmyiyIxOn7ULsjxKGsjcCxI8xlxfKEC9+vd0Ez8C6c
+7H1kTjld5QafT2TMEkYp6QibMPCXE9ShqiFU2VUXZR1L3w6CtoMICO74HaiUr/9wl/a+8JPvaVPd
+Uota1bOxNP3uIOGkKSstoxHJw0dVR1pZXqeHqgZtoEtqJyDjKldKjXfh4L7G0wYohESAQhHa4TH9
+HpYS96gjaj5Rt/zxev08xCHG8Jy8rc+v/ao36z2gbP/ddNK+9pSfRQlPk1+bXcnKQuneggkHbSsx
+dwoN2LHxlJCncmGGY9QA59IJcfCqTGn/M6PVWRa4t9Dbf5RHIK7Fxuo7Mkx8gK9j0KqeNoL/n3Vp
+ye8d0hw4kFM1HDNGs5stw1vRVzWAr2RjsAxDnUN45HYy11E9BYG66mZOObtXX80Z60DJYl7Ctbs9
+hU+YvAERgdYSN4Z7ZKF8jeE/SN66pFU7XqmVpB4rWZfXU0qswkjyDvMHLbldhYDdC6+BBlUTLOIj
+Zb2cMW649DDuR2FNsQkQASs61/smRyDZYDkX3qyR5sBFbMIA8XueuOGjOaeZe9OP4DlCX7FQ1RpG
+w6O+XW23oamCYI56WqPZmDZItaZ//eNqGG9j23b49I2UuG3kAzzXPnxjcwV2P7mFd0EkfYWcqMHG
+uGJ86TgiRTJNSH3J0wgHP0ilmHhyUSb0AtYyqlUzb69vVQMt0ioaGSRFJch39Pr6Brzn6T76KwqL
+Etdz8EYcjZ/ybHYwd5PSlzacz8kGLuyx6sYo5u4KI5wPc2STw/+Z2eIgq34hFIr6klnofvHB3WPd
+DachexwIv9p9xUtZ6H51gJdnffBMg4SjgpS+p9LHagNZGdOr2v0vaKC1NQ/RkfjAlU6rJG1EKrOr
+8VDIrj3mM2fz0DSNS8q6jxBlHzS5Tzqges7c2nDusjRoDie+QsPtW6lK99tPR1FlD/ygBxHYfVW/
+oR0o57q5gF2QznpzZGxea0WLdG7uZCLx3cv6cBHYdFRfDrcV9O8cEAFYpe2lueuqfv1w/JE0n1eA
+V9S9CtuBRp1Fyi7+XpkArKN/uh0bJlVDshZuKcuoABDbXsLALGF8tycWmF4+VmoQPEcOXf91Lssx
+fKAzVTEKUEChPFtsdCj6gJEfNztEXYF6Xxwzj44u6kG89ChMQ77StsPIQPynYCxU6s0qCIKfI4lq
+d1qJZi4Hk3sgJ6xVAsGZuqTrHmynPpNAnUekJGxYiZcAdlSPoroql0TODQxG03xZ08/Wqk8bfsnt
+8leIs67s1cbis/+nKPVGVjgu57zQHmaZgdcZQQk6oxmfAE30CLrdvIJ93hplDixlKaDzKlLn2yk9
+qXJ8gkNa09hIRbqxYu7mt+f570aJ52Qls6gZiVJXCNMjCSkScgqW4QpfiGFM/aTxSNkw8SHIeQC8
+WAf+fLJOmW78IKDMiMjFcD2sc4xB3QgilerdBrmqV/yaVgDmvR5X9lcO9IG58PHE5vDDMmXC6t4g
+jEd8t0rDDkdiDcH5kCZRGPnV8c5UNz5Be+6zGtOtfj47tCoUglSNBZjFejERDARjX/vCsDqMlmBa
+x3ukfZxD7is0Ltl+yUUTpdF6+vLcpT4h2EIDvh0691eSDBj7YaVmuBNKSFT8SkMDqczHemfwhpAk
+7UYS3uNJUQFaCuyfp/QNKJzKLoI2KW+08NYhLpSUPuKhuYBhhA9QcegaYYmku/L0iPZSvh5vjlLx
+3LWRVhte7ziZiqZ7CATKlXg/n2fiV27T5kekCqhXzx23cp6ZRi/BLbFs7cNFy7VZEQibdL53d0/O
+moYW7RRKRw3cp2SQwT/+rJ6aDc2fMp/fLyCl/bqn6/XUafRCkH9OAiG9sOHp2M71DyPA1qzIJbzf
+NV0jaiSpCRy/Ivxg3E1g/74750Ai2tYPiH8E6t3O5TXM8u915wIRDsYCjrCi0n6u7ZlppsoYcU6J
+gMeUG34F48da1svfbrspTxyHMlAzpihsw9z2zjRsbwnZFfPw1hLg09yq6ZdHOa+ZTJIsKIdCm1JE
+qc/XaLqcqdWqLj1MfZyRW9vmYg6TWWlN7CN/VyezHg6wozYRQF6cC5YNaKNauP1g8KrAiJlmYpsW
+yGh5u1kV5ArSScspnzOQnKf0cdKLmPASANRicKZROICCe2iwX5KGpjn6ZSo5jSme063LQ6LrIszO
+g9wl3Bjetl2Fvj8zpKEUErSnQjnx4jGLeMZzE2gbbDoN36GtLjN6bJvjY7NWPIY1JwgnA8TltFOP
+Mg6xhiF8WUkVPfTZ3ZQVU0UoJjyMSCHwVD1EB8pToEHg1u94/Dvj7UBXIWpAJLldZbBJA2xtiNeE
+aVlMvr6VnQyGj20k70kJkQ65GlY5HOUjgHPlrEyPoqBGEWVieNrIA5QEFnG2/9cloI2EQG==

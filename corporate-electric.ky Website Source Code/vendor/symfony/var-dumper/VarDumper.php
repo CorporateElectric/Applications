@@ -1,109 +1,87 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\VarDumper;
-
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\RequestStack;
-use Symfony\Component\HttpKernel\Debug\FileLinkFormatter;
-use Symfony\Component\VarDumper\Caster\ReflectionCaster;
-use Symfony\Component\VarDumper\Cloner\VarCloner;
-use Symfony\Component\VarDumper\Dumper\CliDumper;
-use Symfony\Component\VarDumper\Dumper\ContextProvider\CliContextProvider;
-use Symfony\Component\VarDumper\Dumper\ContextProvider\RequestContextProvider;
-use Symfony\Component\VarDumper\Dumper\ContextProvider\SourceContextProvider;
-use Symfony\Component\VarDumper\Dumper\ContextualizedDumper;
-use Symfony\Component\VarDumper\Dumper\HtmlDumper;
-use Symfony\Component\VarDumper\Dumper\ServerDumper;
-
-// Load the global dump() function
-require_once __DIR__.'/Resources/functions/dump.php';
-
-/**
- * @author Nicolas Grekas <p@tchwork.com>
- */
-class VarDumper
-{
-    private static $handler;
-
-    public static function dump($var)
-    {
-        if (null === self::$handler) {
-            self::register();
-        }
-
-        return (self::$handler)($var);
-    }
-
-    public static function setHandler(callable $callable = null)
-    {
-        $prevHandler = self::$handler;
-
-        // Prevent replacing the handler with expected format as soon as the env var was set:
-        if (isset($_SERVER['VAR_DUMPER_FORMAT'])) {
-            return $prevHandler;
-        }
-
-        self::$handler = $callable;
-
-        return $prevHandler;
-    }
-
-    private static function register(): void
-    {
-        $cloner = new VarCloner();
-        $cloner->addCasters(ReflectionCaster::UNSET_CLOSURE_FILE_INFO);
-
-        $format = $_SERVER['VAR_DUMPER_FORMAT'] ?? null;
-        switch (true) {
-            case 'html' === $format:
-                $dumper = new HtmlDumper();
-                break;
-            case 'cli' === $format:
-                $dumper = new CliDumper();
-                break;
-            case 'server' === $format:
-            case 'tcp' === parse_url($format, \PHP_URL_SCHEME):
-                $host = 'server' === $format ? $_SERVER['VAR_DUMPER_SERVER'] ?? '127.0.0.1:9912' : $format;
-                $dumper = \in_array(\PHP_SAPI, ['cli', 'phpdbg'], true) ? new CliDumper() : new HtmlDumper();
-                $dumper = new ServerDumper($host, $dumper, self::getDefaultContextProviders());
-                break;
-            default:
-                $dumper = \in_array(\PHP_SAPI, ['cli', 'phpdbg'], true) ? new CliDumper() : new HtmlDumper();
-        }
-
-        if (!$dumper instanceof ServerDumper) {
-            $dumper = new ContextualizedDumper($dumper, [new SourceContextProvider()]);
-        }
-
-        self::$handler = function ($var) use ($cloner, $dumper) {
-            $dumper->dump($cloner->cloneVar($var));
-        };
-    }
-
-    private static function getDefaultContextProviders(): array
-    {
-        $contextProviders = [];
-
-        if (!\in_array(\PHP_SAPI, ['cli', 'phpdbg'], true) && (class_exists(Request::class))) {
-            $requestStack = new RequestStack();
-            $requestStack->push(Request::createFromGlobals());
-            $contextProviders['request'] = new RequestContextProvider($requestStack);
-        }
-
-        $fileLinkFormatter = class_exists(FileLinkFormatter::class) ? new FileLinkFormatter(null, $requestStack ?? null) : null;
-
-        return $contextProviders + [
-            'cli' => new CliContextProvider(),
-            'source' => new SourceContextProvider(null, null, $fileLinkFormatter),
-        ];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

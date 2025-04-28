@@ -1,136 +1,59 @@
-<?php
-
-/*
- * Copyright 2012 Johannes M. Schmitt <schmittjoh@gmail.com>
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-namespace PhpOption;
-
-use EmptyIterator;
-
-/**
- * @extends Option<mixed>
- */
-final class None extends Option
-{
-    /** @var None|null */
-    private static $instance;
-
-    /**
-     * @return None
-     */
-    public static function create()
-    {
-        if (null === self::$instance) {
-            self::$instance = new self();
-        }
-
-        return self::$instance;
-    }
-
-    public function get()
-    {
-        throw new \RuntimeException('None has no value.');
-    }
-
-    public function getOrCall($callable)
-    {
-        return $callable();
-    }
-
-    public function getOrElse($default)
-    {
-        return $default;
-    }
-
-    public function getOrThrow(\Exception $ex)
-    {
-        throw $ex;
-    }
-
-    public function isEmpty()
-    {
-        return true;
-    }
-
-    public function isDefined()
-    {
-        return false;
-    }
-
-    public function orElse(Option $else)
-    {
-        return $else;
-    }
-
-    public function ifDefined($callable)
-    {
-        // Just do nothing in that case.
-    }
-
-    public function forAll($callable)
-    {
-        return $this;
-    }
-
-    public function map($callable)
-    {
-        return $this;
-    }
-
-    public function flatMap($callable)
-    {
-        return $this;
-    }
-
-    public function filter($callable)
-    {
-        return $this;
-    }
-
-    public function filterNot($callable)
-    {
-        return $this;
-    }
-
-    public function select($value)
-    {
-        return $this;
-    }
-
-    public function reject($value)
-    {
-        return $this;
-    }
-
-    public function getIterator()
-    {
-        return new EmptyIterator();
-    }
-
-    public function foldLeft($initialValue, $callable)
-    {
-        return $initialValue;
-    }
-
-    public function foldRight($initialValue, $callable)
-    {
-        return $initialValue;
-    }
-
-    private function __construct()
-    {
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+i1UGQmkgCBMfJOYQedJ95xy=

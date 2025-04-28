@@ -1,78 +1,49 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Predis\Command;
-
-/**
- * @link http://redis.io/commands/zunionstore
- *
- * @author Daniele Alessandri <suppakilla@gmail.com>
- */
-class ZSetUnionStore extends Command
-{
-    /**
-     * {@inheritdoc}
-     */
-    public function getId()
-    {
-        return 'ZUNIONSTORE';
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function filterArguments(array $arguments)
-    {
-        $options = array();
-        $argc = count($arguments);
-
-        if ($argc > 2 && is_array($arguments[$argc - 1])) {
-            $options = $this->prepareOptions(array_pop($arguments));
-        }
-
-        if (is_array($arguments[1])) {
-            $arguments = array_merge(
-                array($arguments[0], count($arguments[1])),
-                $arguments[1]
-            );
-        }
-
-        return array_merge($arguments, $options);
-    }
-
-    /**
-     * Returns a list of options and modifiers compatible with Redis.
-     *
-     * @param array $options List of options.
-     *
-     * @return array
-     */
-    private function prepareOptions($options)
-    {
-        $opts = array_change_key_case($options, CASE_UPPER);
-        $finalizedOpts = array();
-
-        if (isset($opts['WEIGHTS']) && is_array($opts['WEIGHTS'])) {
-            $finalizedOpts[] = 'WEIGHTS';
-
-            foreach ($opts['WEIGHTS'] as $weight) {
-                $finalizedOpts[] = $weight;
-            }
-        }
-
-        if (isset($opts['AGGREGATE'])) {
-            $finalizedOpts[] = 'AGGREGATE';
-            $finalizedOpts[] = $opts['AGGREGATE'];
-        }
-
-        return $finalizedOpts;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

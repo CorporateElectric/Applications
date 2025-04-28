@@ -1,166 +1,43 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpFoundation\Session;
-
-use Symfony\Component\HttpFoundation\Session\Storage\MetadataBag;
-
-/**
- * Interface for the session.
- *
- * @author Drak <drak@zikula.org>
- */
-interface SessionInterface
-{
-    /**
-     * Starts the session storage.
-     *
-     * @return bool
-     *
-     * @throws \RuntimeException if session fails to start
-     */
-    public function start();
-
-    /**
-     * Returns the session ID.
-     *
-     * @return string
-     */
-    public function getId();
-
-    /**
-     * Sets the session ID.
-     */
-    public function setId(string $id);
-
-    /**
-     * Returns the session name.
-     *
-     * @return string
-     */
-    public function getName();
-
-    /**
-     * Sets the session name.
-     */
-    public function setName(string $name);
-
-    /**
-     * Invalidates the current session.
-     *
-     * Clears all session attributes and flashes and regenerates the
-     * session and deletes the old session from persistence.
-     *
-     * @param int $lifetime Sets the cookie lifetime for the session cookie. A null value
-     *                      will leave the system settings unchanged, 0 sets the cookie
-     *                      to expire with browser session. Time is in seconds, and is
-     *                      not a Unix timestamp.
-     *
-     * @return bool
-     */
-    public function invalidate(int $lifetime = null);
-
-    /**
-     * Migrates the current session to a new session id while maintaining all
-     * session attributes.
-     *
-     * @param bool $destroy  Whether to delete the old session or leave it to garbage collection
-     * @param int  $lifetime Sets the cookie lifetime for the session cookie. A null value
-     *                       will leave the system settings unchanged, 0 sets the cookie
-     *                       to expire with browser session. Time is in seconds, and is
-     *                       not a Unix timestamp.
-     *
-     * @return bool
-     */
-    public function migrate(bool $destroy = false, int $lifetime = null);
-
-    /**
-     * Force the session to be saved and closed.
-     *
-     * This method is generally not required for real sessions as
-     * the session will be automatically saved at the end of
-     * code execution.
-     */
-    public function save();
-
-    /**
-     * Checks if an attribute is defined.
-     *
-     * @return bool
-     */
-    public function has(string $name);
-
-    /**
-     * Returns an attribute.
-     *
-     * @param mixed $default The default value if not found
-     *
-     * @return mixed
-     */
-    public function get(string $name, $default = null);
-
-    /**
-     * Sets an attribute.
-     *
-     * @param mixed $value
-     */
-    public function set(string $name, $value);
-
-    /**
-     * Returns attributes.
-     *
-     * @return array
-     */
-    public function all();
-
-    /**
-     * Sets attributes.
-     */
-    public function replace(array $attributes);
-
-    /**
-     * Removes an attribute.
-     *
-     * @return mixed The removed value or null when it does not exist
-     */
-    public function remove(string $name);
-
-    /**
-     * Clears all attributes.
-     */
-    public function clear();
-
-    /**
-     * Checks if the session was started.
-     *
-     * @return bool
-     */
-    public function isStarted();
-
-    /**
-     * Registers a SessionBagInterface with the session.
-     */
-    public function registerBag(SessionBagInterface $bag);
-
-    /**
-     * Gets a bag instance by name.
-     *
-     * @return SessionBagInterface
-     */
-    public function getBag(string $name);
-
-    /**
-     * Gets session meta.
-     *
-     * @return MetadataBag
-     */
-    public function getMetadataBag();
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+27H1msBeam/l9rqDz2K2Srl3istimYa=

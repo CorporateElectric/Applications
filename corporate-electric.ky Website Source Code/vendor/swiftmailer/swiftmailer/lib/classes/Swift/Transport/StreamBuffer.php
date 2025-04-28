@@ -1,319 +1,165 @@
-<?php
-
-/*
- * This file is part of SwiftMailer.
- * (c) 2004-2009 Chris Corbyn
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-/**
- * A generic IoBuffer implementation supporting remote sockets and local processes.
- *
- * @author     Chris Corbyn
- */
-class Swift_Transport_StreamBuffer extends Swift_ByteStream_AbstractFilterableInputStream implements Swift_Transport_IoBuffer
-{
-    /** A primary socket */
-    private $stream;
-
-    /** The input stream */
-    private $in;
-
-    /** The output stream */
-    private $out;
-
-    /** Buffer initialization parameters */
-    private $params = [];
-
-    /** The ReplacementFilterFactory */
-    private $replacementFactory;
-
-    /** Translations performed on data being streamed into the buffer */
-    private $translations = [];
-
-    /**
-     * Create a new StreamBuffer using $replacementFactory for transformations.
-     */
-    public function __construct(Swift_ReplacementFilterFactory $replacementFactory)
-    {
-        $this->replacementFactory = $replacementFactory;
-    }
-
-    /**
-     * Perform any initialization needed, using the given $params.
-     *
-     * Parameters will vary depending upon the type of IoBuffer used.
-     */
-    public function initialize(array $params)
-    {
-        $this->params = $params;
-        switch ($params['type']) {
-            case self::TYPE_PROCESS:
-                $this->establishProcessConnection();
-                break;
-            case self::TYPE_SOCKET:
-            default:
-                $this->establishSocketConnection();
-                break;
-        }
-    }
-
-    /**
-     * Set an individual param on the buffer (e.g. switching to SSL).
-     *
-     * @param string $param
-     * @param mixed  $value
-     */
-    public function setParam($param, $value)
-    {
-        if (isset($this->stream)) {
-            switch ($param) {
-                case 'timeout':
-                    if ($this->stream) {
-                        stream_set_timeout($this->stream, $value);
-                    }
-                    break;
-
-                case 'blocking':
-                    if ($this->stream) {
-                        stream_set_blocking($this->stream, 1);
-                    }
-            }
-        }
-        $this->params[$param] = $value;
-    }
-
-    public function startTLS()
-    {
-        // STREAM_CRYPTO_METHOD_TLS_CLIENT only allow tls1.0 connections (some php versions)
-        // To support modern tls we allow explicit tls1.0, tls1.1, tls1.2
-        // Ssl3 and older are not allowed because they are vulnerable
-        // @TODO make tls arguments configurable
-        return stream_socket_enable_crypto($this->stream, true, STREAM_CRYPTO_METHOD_TLSv1_0_CLIENT | STREAM_CRYPTO_METHOD_TLSv1_1_CLIENT | STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT);
-    }
-
-    /**
-     * Perform any shutdown logic needed.
-     */
-    public function terminate()
-    {
-        if (isset($this->stream)) {
-            switch ($this->params['type']) {
-                case self::TYPE_PROCESS:
-                    fclose($this->in);
-                    fclose($this->out);
-                    proc_close($this->stream);
-                    break;
-                case self::TYPE_SOCKET:
-                default:
-                    fclose($this->stream);
-                    break;
-            }
-        }
-        $this->stream = null;
-        $this->out = null;
-        $this->in = null;
-    }
-
-    /**
-     * Set an array of string replacements which should be made on data written
-     * to the buffer.
-     *
-     * This could replace LF with CRLF for example.
-     *
-     * @param string[] $replacements
-     */
-    public function setWriteTranslations(array $replacements)
-    {
-        foreach ($this->translations as $search => $replace) {
-            if (!isset($replacements[$search])) {
-                $this->removeFilter($search);
-                unset($this->translations[$search]);
-            }
-        }
-
-        foreach ($replacements as $search => $replace) {
-            if (!isset($this->translations[$search])) {
-                $this->addFilter(
-                    $this->replacementFactory->createFilter($search, $replace), $search
-                    );
-                $this->translations[$search] = true;
-            }
-        }
-    }
-
-    /**
-     * Get a line of output (including any CRLF).
-     *
-     * The $sequence number comes from any writes and may or may not be used
-     * depending upon the implementation.
-     *
-     * @param int $sequence of last write to scan from
-     *
-     * @return string
-     *
-     * @throws Swift_IoException
-     */
-    public function readLine($sequence)
-    {
-        if (isset($this->out) && !feof($this->out)) {
-            $line = fgets($this->out);
-            if (0 == \strlen($line)) {
-                $metas = stream_get_meta_data($this->out);
-                if ($metas['timed_out']) {
-                    throw new Swift_IoException('Connection to '.$this->getReadConnectionDescription().' Timed Out');
-                }
-            }
-
-            return $line;
-        }
-    }
-
-    /**
-     * Reads $length bytes from the stream into a string and moves the pointer
-     * through the stream by $length.
-     *
-     * If less bytes exist than are requested the remaining bytes are given instead.
-     * If no bytes are remaining at all, boolean false is returned.
-     *
-     * @param int $length
-     *
-     * @return string|bool
-     *
-     * @throws Swift_IoException
-     */
-    public function read($length)
-    {
-        if (isset($this->out) && !feof($this->out)) {
-            $ret = fread($this->out, $length);
-            if (0 == \strlen($ret)) {
-                $metas = stream_get_meta_data($this->out);
-                if ($metas['timed_out']) {
-                    throw new Swift_IoException('Connection to '.$this->getReadConnectionDescription().' Timed Out');
-                }
-            }
-
-            return $ret;
-        }
-    }
-
-    /** Not implemented */
-    public function setReadPointer($byteOffset)
-    {
-    }
-
-    /** Flush the stream contents */
-    protected function flush()
-    {
-        if (isset($this->in)) {
-            fflush($this->in);
-        }
-    }
-
-    /** Write this bytes to the stream */
-    protected function doCommit($bytes)
-    {
-        if (isset($this->in)) {
-            $bytesToWrite = \strlen($bytes);
-            $totalBytesWritten = 0;
-
-            while ($totalBytesWritten < $bytesToWrite) {
-                $bytesWritten = fwrite($this->in, substr($bytes, $totalBytesWritten));
-                if (false === $bytesWritten || 0 === $bytesWritten) {
-                    break;
-                }
-
-                $totalBytesWritten += $bytesWritten;
-            }
-
-            if ($totalBytesWritten > 0) {
-                return ++$this->sequence;
-            }
-        }
-    }
-
-    /**
-     * Establishes a connection to a remote server.
-     */
-    private function establishSocketConnection()
-    {
-        $host = $this->params['host'];
-        if (!empty($this->params['protocol'])) {
-            $host = $this->params['protocol'].'://'.$host;
-        }
-        $timeout = 15;
-        if (!empty($this->params['timeout'])) {
-            $timeout = $this->params['timeout'];
-        }
-        $options = [];
-        if (!empty($this->params['sourceIp'])) {
-            $options['socket']['bindto'] = $this->params['sourceIp'].':0';
-        }
-
-        if (isset($this->params['stream_context_options'])) {
-            $options = array_merge($options, $this->params['stream_context_options']);
-        }
-        $streamContext = stream_context_create($options);
-
-        set_error_handler(function ($type, $msg) {
-            throw new Swift_TransportException('Connection could not be established with host '.$this->params['host'].' :'.$msg);
-        });
-        try {
-            $this->stream = stream_socket_client($host.':'.$this->params['port'], $errno, $errstr, $timeout, STREAM_CLIENT_CONNECT, $streamContext);
-        } finally {
-            restore_error_handler();
-        }
-
-        if (!empty($this->params['blocking'])) {
-            stream_set_blocking($this->stream, 1);
-        } else {
-            stream_set_blocking($this->stream, 0);
-        }
-        stream_set_timeout($this->stream, $timeout);
-        $this->in = &$this->stream;
-        $this->out = &$this->stream;
-    }
-
-    /**
-     * Opens a process for input/output.
-     */
-    private function establishProcessConnection()
-    {
-        $command = $this->params['command'];
-        $descriptorSpec = [
-            0 => ['pipe', 'r'],
-            1 => ['pipe', 'w'],
-            2 => ['pipe', 'w'],
-            ];
-        $pipes = [];
-        $this->stream = proc_open($command, $descriptorSpec, $pipes);
-        stream_set_blocking($pipes[2], 0);
-        if ($err = stream_get_contents($pipes[2])) {
-            throw new Swift_TransportException('Process could not be started ['.$err.']');
-        }
-        $this->in = &$pipes[0];
-        $this->out = &$pipes[1];
-    }
-
-    private function getReadConnectionDescription()
-    {
-        switch ($this->params['type']) {
-            case self::TYPE_PROCESS:
-                return 'Process '.$this->params['command'];
-                break;
-
-            case self::TYPE_SOCKET:
-            default:
-                $host = $this->params['host'];
-                if (!empty($this->params['protocol'])) {
-                    $host = $this->params['protocol'].'://'.$host;
-                }
-                $host .= ':'.$this->params['port'];
-
-                return $host;
-                break;
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

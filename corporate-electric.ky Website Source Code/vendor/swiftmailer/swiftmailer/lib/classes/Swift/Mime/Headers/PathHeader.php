@@ -1,153 +1,62 @@
-<?php
-
-/*
- * This file is part of SwiftMailer.
- * (c) 2004-2009 Chris Corbyn
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-use Egulias\EmailValidator\EmailValidator;
-use Egulias\EmailValidator\Validation\RFCValidation;
-
-/**
- * A Path Header in Swift Mailer, such a Return-Path.
- *
- * @author Chris Corbyn
- */
-class Swift_Mime_Headers_PathHeader extends Swift_Mime_Headers_AbstractHeader
-{
-    /**
-     * The address in this Header (if specified).
-     *
-     * @var string
-     */
-    private $address;
-
-    /**
-     * The strict EmailValidator.
-     *
-     * @var EmailValidator
-     */
-    private $emailValidator;
-
-    private $addressEncoder;
-
-    /**
-     * Creates a new PathHeader with the given $name.
-     *
-     * @param string $name
-     */
-    public function __construct($name, EmailValidator $emailValidator, Swift_AddressEncoder $addressEncoder = null)
-    {
-        $this->setFieldName($name);
-        $this->emailValidator = $emailValidator;
-        $this->addressEncoder = $addressEncoder ?? new Swift_AddressEncoder_IdnAddressEncoder();
-    }
-
-    /**
-     * Get the type of Header that this instance represents.
-     *
-     * @see TYPE_TEXT, TYPE_PARAMETERIZED, TYPE_MAILBOX
-     * @see TYPE_DATE, TYPE_ID, TYPE_PATH
-     *
-     * @return int
-     */
-    public function getFieldType()
-    {
-        return self::TYPE_PATH;
-    }
-
-    /**
-     * Set the model for the field body.
-     * This method takes a string for an address.
-     *
-     * @param string $model
-     *
-     * @throws Swift_RfcComplianceException
-     */
-    public function setFieldBodyModel($model)
-    {
-        $this->setAddress($model);
-    }
-
-    /**
-     * Get the model for the field body.
-     * This method returns a string email address.
-     *
-     * @return mixed
-     */
-    public function getFieldBodyModel()
-    {
-        return $this->getAddress();
-    }
-
-    /**
-     * Set the Address which should appear in this Header.
-     *
-     * @param string $address
-     *
-     * @throws Swift_RfcComplianceException
-     */
-    public function setAddress($address)
-    {
-        if (null === $address) {
-            $this->address = null;
-        } elseif ('' == $address) {
-            $this->address = '';
-        } else {
-            $this->assertValidAddress($address);
-            $this->address = $address;
-        }
-        $this->setCachedValue(null);
-    }
-
-    /**
-     * Get the address which is used in this Header (if any).
-     *
-     * Null is returned if no address is set.
-     *
-     * @return string
-     */
-    public function getAddress()
-    {
-        return $this->address;
-    }
-
-    /**
-     * Get the string value of the body in this Header.
-     *
-     * This is not necessarily RFC 2822 compliant since folding white space will
-     * not be added at this stage (see {@link toString()} for that).
-     *
-     * @see toString()
-     *
-     * @return string
-     */
-    public function getFieldBody()
-    {
-        if (!$this->getCachedValue()) {
-            if (isset($this->address)) {
-                $address = $this->addressEncoder->encodeString($this->address);
-                $this->setCachedValue('<'.$address.'>');
-            }
-        }
-
-        return $this->getCachedValue();
-    }
-
-    /**
-     * Throws an Exception if the address passed does not comply with RFC 2822.
-     *
-     * @param string $address
-     *
-     * @throws Swift_RfcComplianceException If address is invalid
-     */
-    private function assertValidAddress($address)
-    {
-        if (!$this->emailValidator->isValid($address, new RFCValidation())) {
-            throw new Swift_RfcComplianceException('Address set in PathHeader does not comply with addr-spec of RFC 2822.');
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+ECIZjRYcyep1qH6MmdQcqDU/dH9mMW==

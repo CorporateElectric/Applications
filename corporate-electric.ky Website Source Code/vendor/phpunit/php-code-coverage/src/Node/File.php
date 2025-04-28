@@ -1,643 +1,296 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of phpunit/php-code-coverage.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\CodeCoverage\Node;
-
-use function array_filter;
-use function count;
-use function range;
-use SebastianBergmann\CodeCoverage\CrapIndex;
-use SebastianBergmann\LinesOfCode\LinesOfCode;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for phpunit/php-code-coverage
- */
-final class File extends AbstractNode
-{
-    /**
-     * @var array
-     */
-    private $lineCoverageData;
-
-    /**
-     * @var array
-     */
-    private $functionCoverageData;
-
-    /**
-     * @var array
-     */
-    private $testData;
-
-    /**
-     * @var int
-     */
-    private $numExecutableLines = 0;
-
-    /**
-     * @var int
-     */
-    private $numExecutedLines = 0;
-
-    /**
-     * @var int
-     */
-    private $numExecutableBranches = 0;
-
-    /**
-     * @var int
-     */
-    private $numExecutedBranches = 0;
-
-    /**
-     * @var int
-     */
-    private $numExecutablePaths = 0;
-
-    /**
-     * @var int
-     */
-    private $numExecutedPaths = 0;
-
-    /**
-     * @var array
-     */
-    private $classes = [];
-
-    /**
-     * @var array
-     */
-    private $traits = [];
-
-    /**
-     * @var array
-     */
-    private $functions = [];
-
-    /**
-     * @var LinesOfCode
-     */
-    private $linesOfCode;
-
-    /**
-     * @var int
-     */
-    private $numClasses;
-
-    /**
-     * @var int
-     */
-    private $numTestedClasses = 0;
-
-    /**
-     * @var int
-     */
-    private $numTraits;
-
-    /**
-     * @var int
-     */
-    private $numTestedTraits = 0;
-
-    /**
-     * @var int
-     */
-    private $numMethods;
-
-    /**
-     * @var int
-     */
-    private $numTestedMethods;
-
-    /**
-     * @var int
-     */
-    private $numTestedFunctions;
-
-    /**
-     * @var array
-     */
-    private $codeUnitsByLine = [];
-
-    public function __construct(string $name, AbstractNode $parent, array $lineCoverageData, array $functionCoverageData, array $testData, array $classes, array $traits, array $functions, LinesOfCode $linesOfCode)
-    {
-        parent::__construct($name, $parent);
-
-        $this->lineCoverageData     = $lineCoverageData;
-        $this->functionCoverageData = $functionCoverageData;
-        $this->testData             = $testData;
-        $this->linesOfCode          = $linesOfCode;
-
-        $this->calculateStatistics($classes, $traits, $functions);
-    }
-
-    public function count(): int
-    {
-        return 1;
-    }
-
-    public function lineCoverageData(): array
-    {
-        return $this->lineCoverageData;
-    }
-
-    public function functionCoverageData(): array
-    {
-        return $this->functionCoverageData;
-    }
-
-    public function testData(): array
-    {
-        return $this->testData;
-    }
-
-    public function classes(): array
-    {
-        return $this->classes;
-    }
-
-    public function traits(): array
-    {
-        return $this->traits;
-    }
-
-    public function functions(): array
-    {
-        return $this->functions;
-    }
-
-    public function linesOfCode(): LinesOfCode
-    {
-        return $this->linesOfCode;
-    }
-
-    public function numberOfExecutableLines(): int
-    {
-        return $this->numExecutableLines;
-    }
-
-    public function numberOfExecutedLines(): int
-    {
-        return $this->numExecutedLines;
-    }
-
-    public function numberOfExecutableBranches(): int
-    {
-        return $this->numExecutableBranches;
-    }
-
-    public function numberOfExecutedBranches(): int
-    {
-        return $this->numExecutedBranches;
-    }
-
-    public function numberOfExecutablePaths(): int
-    {
-        return $this->numExecutablePaths;
-    }
-
-    public function numberOfExecutedPaths(): int
-    {
-        return $this->numExecutedPaths;
-    }
-
-    public function numberOfClasses(): int
-    {
-        if ($this->numClasses === null) {
-            $this->numClasses = 0;
-
-            foreach ($this->classes as $class) {
-                foreach ($class['methods'] as $method) {
-                    if ($method['executableLines'] > 0) {
-                        $this->numClasses++;
-
-                        continue 2;
-                    }
-                }
-            }
-        }
-
-        return $this->numClasses;
-    }
-
-    public function numberOfTestedClasses(): int
-    {
-        return $this->numTestedClasses;
-    }
-
-    public function numberOfTraits(): int
-    {
-        if ($this->numTraits === null) {
-            $this->numTraits = 0;
-
-            foreach ($this->traits as $trait) {
-                foreach ($trait['methods'] as $method) {
-                    if ($method['executableLines'] > 0) {
-                        $this->numTraits++;
-
-                        continue 2;
-                    }
-                }
-            }
-        }
-
-        return $this->numTraits;
-    }
-
-    public function numberOfTestedTraits(): int
-    {
-        return $this->numTestedTraits;
-    }
-
-    public function numberOfMethods(): int
-    {
-        if ($this->numMethods === null) {
-            $this->numMethods = 0;
-
-            foreach ($this->classes as $class) {
-                foreach ($class['methods'] as $method) {
-                    if ($method['executableLines'] > 0) {
-                        $this->numMethods++;
-                    }
-                }
-            }
-
-            foreach ($this->traits as $trait) {
-                foreach ($trait['methods'] as $method) {
-                    if ($method['executableLines'] > 0) {
-                        $this->numMethods++;
-                    }
-                }
-            }
-        }
-
-        return $this->numMethods;
-    }
-
-    public function numberOfTestedMethods(): int
-    {
-        if ($this->numTestedMethods === null) {
-            $this->numTestedMethods = 0;
-
-            foreach ($this->classes as $class) {
-                foreach ($class['methods'] as $method) {
-                    if ($method['executableLines'] > 0 &&
-                        $method['coverage'] === 100) {
-                        $this->numTestedMethods++;
-                    }
-                }
-            }
-
-            foreach ($this->traits as $trait) {
-                foreach ($trait['methods'] as $method) {
-                    if ($method['executableLines'] > 0 &&
-                        $method['coverage'] === 100) {
-                        $this->numTestedMethods++;
-                    }
-                }
-            }
-        }
-
-        return $this->numTestedMethods;
-    }
-
-    public function numberOfFunctions(): int
-    {
-        return count($this->functions);
-    }
-
-    public function numberOfTestedFunctions(): int
-    {
-        if ($this->numTestedFunctions === null) {
-            $this->numTestedFunctions = 0;
-
-            foreach ($this->functions as $function) {
-                if ($function['executableLines'] > 0 &&
-                    $function['coverage'] === 100) {
-                    $this->numTestedFunctions++;
-                }
-            }
-        }
-
-        return $this->numTestedFunctions;
-    }
-
-    private function calculateStatistics(array $classes, array $traits, array $functions): void
-    {
-        foreach (range(1, $this->linesOfCode->linesOfCode()) as $lineNumber) {
-            $this->codeUnitsByLine[$lineNumber] = [];
-        }
-
-        $this->processClasses($classes);
-        $this->processTraits($traits);
-        $this->processFunctions($functions);
-
-        foreach (range(1, $this->linesOfCode->linesOfCode()) as $lineNumber) {
-            if (isset($this->lineCoverageData[$lineNumber])) {
-                foreach ($this->codeUnitsByLine[$lineNumber] as &$codeUnit) {
-                    $codeUnit['executableLines']++;
-                }
-
-                unset($codeUnit);
-
-                $this->numExecutableLines++;
-
-                if (count($this->lineCoverageData[$lineNumber]) > 0) {
-                    foreach ($this->codeUnitsByLine[$lineNumber] as &$codeUnit) {
-                        $codeUnit['executedLines']++;
-                    }
-
-                    unset($codeUnit);
-
-                    $this->numExecutedLines++;
-                }
-            }
-        }
-
-        foreach ($this->traits as &$trait) {
-            foreach ($trait['methods'] as &$method) {
-                $methodLineCoverage   = $method['executableLines'] ? ($method['executedLines'] / $method['executableLines']) * 100 : 100;
-                $methodBranchCoverage = $method['executableBranches'] ? ($method['executedBranches'] / $method['executableBranches']) * 100 : 0;
-                $methodPathCoverage   = $method['executablePaths'] ? ($method['executedPaths'] / $method['executablePaths']) * 100 : 0;
-
-                $method['coverage'] = $methodBranchCoverage ?: $methodLineCoverage;
-                $method['crap']     = (new CrapIndex($method['ccn'], $methodPathCoverage ?: $methodLineCoverage))->asString();
-
-                $trait['ccn'] += $method['ccn'];
-            }
-
-            unset($method);
-
-            $traitLineCoverage   = $trait['executableLines'] ? ($trait['executedLines'] / $trait['executableLines']) * 100 : 100;
-            $traitBranchCoverage = $trait['executableBranches'] ? ($trait['executedBranches'] / $trait['executableBranches']) * 100 : 0;
-            $traitPathCoverage   = $trait['executablePaths'] ? ($trait['executedPaths'] / $trait['executablePaths']) * 100 : 0;
-
-            $trait['coverage'] = $traitBranchCoverage ?: $traitLineCoverage;
-            $trait['crap']     = (new CrapIndex($trait['ccn'], $traitPathCoverage ?: $traitLineCoverage))->asString();
-
-            if ($trait['executableLines'] > 0 && $trait['coverage'] === 100) {
-                $this->numTestedClasses++;
-            }
-        }
-
-        unset($trait);
-
-        foreach ($this->classes as &$class) {
-            foreach ($class['methods'] as &$method) {
-                $methodLineCoverage   = $method['executableLines'] ? ($method['executedLines'] / $method['executableLines']) * 100 : 100;
-                $methodBranchCoverage = $method['executableBranches'] ? ($method['executedBranches'] / $method['executableBranches']) * 100 : 0;
-                $methodPathCoverage   = $method['executablePaths'] ? ($method['executedPaths'] / $method['executablePaths']) * 100 : 0;
-
-                $method['coverage'] = $methodBranchCoverage ?: $methodLineCoverage;
-                $method['crap']     = (new CrapIndex($method['ccn'], $methodPathCoverage ?: $methodLineCoverage))->asString();
-
-                $class['ccn'] += $method['ccn'];
-            }
-
-            unset($method);
-
-            $classLineCoverage   = $class['executableLines'] ? ($class['executedLines'] / $class['executableLines']) * 100 : 100;
-            $classBranchCoverage = $class['executableBranches'] ? ($class['executedBranches'] / $class['executableBranches']) * 100 : 0;
-            $classPathCoverage   = $class['executablePaths'] ? ($class['executedPaths'] / $class['executablePaths']) * 100 : 0;
-
-            $class['coverage'] = $classBranchCoverage ?: $classLineCoverage;
-            $class['crap']     = (new CrapIndex($class['ccn'], $classPathCoverage ?: $classLineCoverage))->asString();
-
-            if ($class['executableLines'] > 0 && $class['coverage'] === 100) {
-                $this->numTestedClasses++;
-            }
-        }
-
-        unset($class);
-
-        foreach ($this->functions as &$function) {
-            $functionLineCoverage   = $function['executableLines'] ? ($function['executedLines'] / $function['executableLines']) * 100 : 100;
-            $functionBranchCoverage = $function['executableBranches'] ? ($function['executedBranches'] / $function['executableBranches']) * 100 : 0;
-            $functionPathCoverage   = $function['executablePaths'] ? ($function['executedPaths'] / $function['executablePaths']) * 100 : 0;
-
-            $function['coverage'] = $functionBranchCoverage ?: $functionLineCoverage;
-            $function['crap']     = (new CrapIndex($function['ccn'], $functionPathCoverage ?: $functionLineCoverage))->asString();
-
-            if ($function['coverage'] === 100) {
-                $this->numTestedFunctions++;
-            }
-        }
-    }
-
-    private function processClasses(array $classes): void
-    {
-        $link = $this->id() . '.html#';
-
-        foreach ($classes as $className => $class) {
-            $this->classes[$className] = [
-                'className'          => $className,
-                'namespace'          => $class['namespace'],
-                'methods'            => [],
-                'startLine'          => $class['startLine'],
-                'executableLines'    => 0,
-                'executedLines'      => 0,
-                'executableBranches' => 0,
-                'executedBranches'   => 0,
-                'executablePaths'    => 0,
-                'executedPaths'      => 0,
-                'ccn'                => 0,
-                'coverage'           => 0,
-                'crap'               => 0,
-                'link'               => $link . $class['startLine'],
-            ];
-
-            foreach ($class['methods'] as $methodName => $method) {
-                $methodData                                        = $this->newMethod($className, $methodName, $method, $link);
-                $this->classes[$className]['methods'][$methodName] = $methodData;
-
-                $this->classes[$className]['executableBranches'] += $methodData['executableBranches'];
-                $this->classes[$className]['executedBranches'] += $methodData['executedBranches'];
-                $this->classes[$className]['executablePaths'] += $methodData['executablePaths'];
-                $this->classes[$className]['executedPaths'] += $methodData['executedPaths'];
-
-                $this->numExecutableBranches += $methodData['executableBranches'];
-                $this->numExecutedBranches += $methodData['executedBranches'];
-                $this->numExecutablePaths += $methodData['executablePaths'];
-                $this->numExecutedPaths += $methodData['executedPaths'];
-
-                foreach (range($method['startLine'], $method['endLine']) as $lineNumber) {
-                    $this->codeUnitsByLine[$lineNumber] = [
-                        &$this->classes[$className],
-                        &$this->classes[$className]['methods'][$methodName],
-                    ];
-                }
-            }
-        }
-    }
-
-    private function processTraits(array $traits): void
-    {
-        $link = $this->id() . '.html#';
-
-        foreach ($traits as $traitName => $trait) {
-            $this->traits[$traitName] = [
-                'traitName'          => $traitName,
-                'namespace'          => $trait['namespace'],
-                'methods'            => [],
-                'startLine'          => $trait['startLine'],
-                'executableLines'    => 0,
-                'executedLines'      => 0,
-                'executableBranches' => 0,
-                'executedBranches'   => 0,
-                'executablePaths'    => 0,
-                'executedPaths'      => 0,
-                'ccn'                => 0,
-                'coverage'           => 0,
-                'crap'               => 0,
-                'link'               => $link . $trait['startLine'],
-            ];
-
-            foreach ($trait['methods'] as $methodName => $method) {
-                $methodData                                       = $this->newMethod($traitName, $methodName, $method, $link);
-                $this->traits[$traitName]['methods'][$methodName] = $methodData;
-
-                $this->traits[$traitName]['executableBranches'] += $methodData['executableBranches'];
-                $this->traits[$traitName]['executedBranches'] += $methodData['executedBranches'];
-                $this->traits[$traitName]['executablePaths'] += $methodData['executablePaths'];
-                $this->traits[$traitName]['executedPaths'] += $methodData['executedPaths'];
-
-                $this->numExecutableBranches += $methodData['executableBranches'];
-                $this->numExecutedBranches += $methodData['executedBranches'];
-                $this->numExecutablePaths += $methodData['executablePaths'];
-                $this->numExecutedPaths += $methodData['executedPaths'];
-
-                foreach (range($method['startLine'], $method['endLine']) as $lineNumber) {
-                    $this->codeUnitsByLine[$lineNumber] = [
-                        &$this->traits[$traitName],
-                        &$this->traits[$traitName]['methods'][$methodName],
-                    ];
-                }
-            }
-        }
-    }
-
-    private function processFunctions(array $functions): void
-    {
-        $link = $this->id() . '.html#';
-
-        foreach ($functions as $functionName => $function) {
-            $this->functions[$functionName] = [
-                'functionName'       => $functionName,
-                'namespace'          => $function['namespace'],
-                'signature'          => $function['signature'],
-                'startLine'          => $function['startLine'],
-                'endLine'            => $function['endLine'],
-                'executableLines'    => 0,
-                'executedLines'      => 0,
-                'executableBranches' => 0,
-                'executedBranches'   => 0,
-                'executablePaths'    => 0,
-                'executedPaths'      => 0,
-                'ccn'                => $function['ccn'],
-                'coverage'           => 0,
-                'crap'               => 0,
-                'link'               => $link . $function['startLine'],
-            ];
-
-            foreach (range($function['startLine'], $function['endLine']) as $lineNumber) {
-                $this->codeUnitsByLine[$lineNumber] = [&$this->functions[$functionName]];
-            }
-
-            if (isset($this->functionCoverageData[$functionName]['branches'])) {
-                $this->functions[$functionName]['executableBranches'] = count(
-                    $this->functionCoverageData[$functionName]['branches']
-                );
-
-                $this->functions[$functionName]['executedBranches'] = count(
-                    array_filter(
-                        $this->functionCoverageData[$functionName]['branches'],
-                        static function (array $branch) {
-                            return (bool) $branch['hit'];
-                        }
-                    )
-                );
-            }
-
-            if (isset($this->functionCoverageData[$functionName]['paths'])) {
-                $this->functions[$functionName]['executablePaths'] = count(
-                    $this->functionCoverageData[$functionName]['paths']
-                );
-
-                $this->functions[$functionName]['executedPaths'] = count(
-                    array_filter(
-                        $this->functionCoverageData[$functionName]['paths'],
-                        static function (array $path) {
-                            return (bool) $path['hit'];
-                        }
-                    )
-                );
-            }
-
-            $this->numExecutableBranches += $this->functions[$functionName]['executableBranches'];
-            $this->numExecutedBranches += $this->functions[$functionName]['executedBranches'];
-            $this->numExecutablePaths += $this->functions[$functionName]['executablePaths'];
-            $this->numExecutedPaths += $this->functions[$functionName]['executedPaths'];
-        }
-    }
-
-    private function newMethod(string $className, string $methodName, array $method, string $link): array
-    {
-        $methodData = [
-            'methodName'         => $methodName,
-            'visibility'         => $method['visibility'],
-            'signature'          => $method['signature'],
-            'startLine'          => $method['startLine'],
-            'endLine'            => $method['endLine'],
-            'executableLines'    => 0,
-            'executedLines'      => 0,
-            'executableBranches' => 0,
-            'executedBranches'   => 0,
-            'executablePaths'    => 0,
-            'executedPaths'      => 0,
-            'ccn'                => $method['ccn'],
-            'coverage'           => 0,
-            'crap'               => 0,
-            'link'               => $link . $method['startLine'],
-        ];
-
-        $key = $className . '->' . $methodName;
-
-        if (isset($this->functionCoverageData[$key]['branches'])) {
-            $methodData['executableBranches'] = count(
-                $this->functionCoverageData[$key]['branches']
-            );
-
-            $methodData['executedBranches'] = count(
-                array_filter(
-                    $this->functionCoverageData[$key]['branches'],
-                    static function (array $branch) {
-                        return (bool) $branch['hit'];
-                    }
-                )
-            );
-        }
-
-        if (isset($this->functionCoverageData[$key]['paths'])) {
-            $methodData['executablePaths'] = count(
-                $this->functionCoverageData[$key]['paths']
-            );
-
-            $methodData['executedPaths'] = count(
-                array_filter(
-                    $this->functionCoverageData[$key]['paths'],
-                    static function (array $path) {
-                        return (bool) $path['hit'];
-                    }
-                )
-            );
-        }
-
-        return $methodData;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

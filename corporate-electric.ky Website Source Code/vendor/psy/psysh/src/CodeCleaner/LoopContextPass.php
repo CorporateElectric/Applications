@@ -1,103 +1,65 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\CodeCleaner;
-
-use PhpParser\Node;
-use PhpParser\Node\Scalar\DNumber;
-use PhpParser\Node\Scalar\LNumber;
-use PhpParser\Node\Stmt\Break_;
-use PhpParser\Node\Stmt\Continue_;
-use PhpParser\Node\Stmt\Do_;
-use PhpParser\Node\Stmt\For_;
-use PhpParser\Node\Stmt\Foreach_;
-use PhpParser\Node\Stmt\Switch_;
-use PhpParser\Node\Stmt\While_;
-use Psy\Exception\FatalErrorException;
-
-/**
- * The loop context pass handles invalid `break` and `continue` statements.
- */
-class LoopContextPass extends CodeCleanerPass
-{
-    private $loopDepth;
-
-    /**
-     * {@inheritdoc}
-     */
-    public function beforeTraverse(array $nodes)
-    {
-        $this->loopDepth = 0;
-    }
-
-    /**
-     * @throws FatalErrorException if the node is a break or continue in a non-loop or switch context
-     * @throws FatalErrorException if the node is trying to break out of more nested structures than exist
-     * @throws FatalErrorException if the node is a break or continue and has a non-numeric argument
-     * @throws FatalErrorException if the node is a break or continue and has an argument less than 1
-     *
-     * @param Node $node
-     */
-    public function enterNode(Node $node)
-    {
-        switch (true) {
-            case $node instanceof Do_:
-            case $node instanceof For_:
-            case $node instanceof Foreach_:
-            case $node instanceof Switch_:
-            case $node instanceof While_:
-                $this->loopDepth++;
-                break;
-
-            case $node instanceof Break_:
-            case $node instanceof Continue_:
-                $operator = $node instanceof Break_ ? 'break' : 'continue';
-
-                if ($this->loopDepth === 0) {
-                    $msg = \sprintf("'%s' not in the 'loop' or 'switch' context", $operator);
-                    throw new FatalErrorException($msg, 0, \E_ERROR, null, $node->getLine());
-                }
-
-                if ($node->num instanceof LNumber || $node->num instanceof DNumber) {
-                    $num = $node->num->value;
-                    if ($node->num instanceof DNumber || $num < 1) {
-                        $msg = \sprintf("'%s' operator accepts only positive numbers", $operator);
-                        throw new FatalErrorException($msg, 0, \E_ERROR, null, $node->getLine());
-                    }
-
-                    if ($num > $this->loopDepth) {
-                        $msg = \sprintf("Cannot '%s' %d levels", $operator, $num);
-                        throw new FatalErrorException($msg, 0, \E_ERROR, null, $node->getLine());
-                    }
-                } elseif ($node->num) {
-                    $msg = \sprintf("'%s' operator with non-constant operand is no longer supported", $operator);
-                    throw new FatalErrorException($msg, 0, \E_ERROR, null, $node->getLine());
-                }
-                break;
-        }
-    }
-
-    /**
-     * @param Node $node
-     */
-    public function leaveNode(Node $node)
-    {
-        switch (true) {
-            case $node instanceof Do_:
-            case $node instanceof For_:
-            case $node instanceof Foreach_:
-            case $node instanceof Switch_:
-            case $node instanceof While_:
-                $this->loopDepth--;
-                break;
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cP+LDYZtI7Gyogu4V7YYpmBBzVizV41IHlu2uo+CHn5Umwxx4qT5aGzP4H+KrXNwhHFFw9YfP
+/GlbVlIbQmtozVvbRFLfqAbwpGaANtzo7McQCVXR81DbqRbxc4WaTKN0S4e+O3ik5KfPtj+gsk6k
+iizpcYbWnLYFOIJkPV3njSmDPd9VD32uUfV71vDv4hVdjPXmy9e+2WSXGJI41d3HqOMQDKuUv3IV
+UQR/kuzcY7Pfzutj9Rtmv+pl+IKjt/XPyzzCEjMhA+TKmL7Jt1aWL4Hsw5rjJtz0/BHGlsHXvXCp
+PqqPAPlm/K7jOfXb8dm78oYqjFSsDv4YAnW/DBV8p5ytP2nBl5gkP34+Wu76cRL5JH9eYxpbDgLj
+LQOdtSo9G3yacZjWwORKHSGok4NXRKkH+N0Fdggo6HMTU9r2lW/d22g88ct4Eo14rvGF+zbPKnAF
+8+BwiZWFXXi5eDWdXP0iXuFym+QHYkrpi/bZ3xDU6rcKrZ+bi+i/dM/rpLFPzKW/VOSYZe/qIodJ
+dolojpKA2PRDbg3v6dbuy0iXhrr1Sb8nIDBcJrqL4fOwXx6bJcydA4UsikXp6INzuusmXxjBU3fn
+UpVmiOl2syr1c13QdiyLG6SHxu8ukmtMHkDz6+InZfrR9IokLYh/jpyejnwgUZwCM24OUHlM4GBQ
+po7lcfGgkVEOK5dAr2rdk91B8wjQ/FOWpFy2cLrwxHaijk2sdiOlyrun9F0vVKuw8qI4tnwSrL5c
+k5VCcBVMZ7vs+qW6rWqxt6zt0Pz6EhVuTApFOYKgaHKu6WD/ww15vR+/OUl9tevxNStunQqQKyyO
+JkVTBDqiD8VFjeRuZs8Bx5cay1SVO9HFoLVkk8odhaE91RW1jI0MbTEA9GvO++mbZWuXG7sxTmwU
+eB3EwEo/L4x7LwTsTxO8AL242CfA23aC0W/RhnS7WzjDZ0w0zeASWviCtb2J3+ie0kydck7bQqxj
+Hp9KczEI+V5yK2YEbZcnsLEd5ntXhMjIwgB32j4nzr8guRrewihjOF10+u8goFflemP/a3GFP9NO
+R6EHUAWaZpfbcSLxgGyBQceUXbbAI4N3x1mBsItqlc9v9yK1ox/Y4BriSbIxgC41hpCTeTRc6XSG
+JdzUKQGT64U47PqOpVOPgUqovDRGeSXqkW8w/6rSftQqSv5IW9jVCJcF/0jnBIfa8wWVWqpa8XyL
+I+34J85gdtC7En5qzfUb2mTqFxuZGBA5/QkN/ujpOybv4+tdQlOPaRi3U4liPUTT22Fz5Bq7uvwv
+Mh/LXSEaV7GlPBx7+P4RBIKloUUpNPT4PH+b3iEOoCSYov6yviKmqbTZao1f/oXC/P90iXjdQLWa
+OIkb2IcSqkCpP3JO65DLiPJ/KzvqdS2QEiIBacedaa/gSr/dxfUMeAhpDzsm8nZnlbYzptG5Gbyt
+eouTUL/REMlv1qk7uKDPhpY9yRrnLzFWLOlIKqP+CB37GpjaXlYrQet/Imn+B5PRsqbtuGoQpvKO
+Ytm+iFVo7vF5TenYt9vXs+YI5aQt6CKwImHCxj22jk5gjcZGKJ9GVYz/sg5UEvUTaD1ZCTpdFMv2
+1ODwjmpxXkPpYNIwc5lqsPD9mHbUskHN3UpdPuGQhAyGOY4rvVOfUFXJvXyqeGD5O5MXrKVlZCLw
+WP46hLnBGOYYEzFLZhvUAcd/iPz5mopaaNEHTguVVWM2t2/vaILzN6dai2OAQTx+AOXptcwDnTNo
+N1an1Ty1eZgOQEMAuSBTMUKRQdLfnIArNr89SvOSYyi8KMEpsi3nlzTqQrCEVwjFb4Sm0q1YBRTQ
+EJ7vWEKXJdXFaSjwv5L0uiTQcT1EH9hlexhbb1JnozjpDzMitjJIcCluqcBEMQoXsBp1jKGSl5t7
+DAXS/rG6uguz0HhEK16lQKFfrx2TCk//4vzVhiNcKm6kZDW9Fp8mDGzUMoP6nIxe97imrBjV+KIw
+Cv7S791gJJIQajBWtPnNeDuuzZ+mftlk823FwtcUmUCVD16mUtSo391qjPwTK/zqMk8HUX7+DZTB
+0nt859CTy1nYG9jhm46AAEInYRxocibTvf1+r6hGaxh9Qb/AP7OncyZ0xASCUw5/MzbcrBFrswK+
+oJh9xemqYpMP1xsBBv2BtADJJJEvFSOo6xUxO+njdT/aS7s+Tk8fK+ahjbDyBksJEsUOukhLPIPi
+qm7Ju+4OMkc6vyyPUK2a+TsTf4R7Usk9K+0JCH3eXvLjUALccts+tUFJlYyfru5v/qAe+vwx6Gmm
+zlwx+FK7bZAKsYuuIKaxHbuOgtBF1a3ENd/H6euBsbfrmpqjKbHxgNAWQOAjHeoeM/DCLujmSKdg
+aymtXiOkS9PQRiGnKce7JrCFG2s1DaK1F+upB4h56dY6kX/xLDmr9qt+4bk+HLXRnZxC4PG9T/n2
+BVHoIBENzU4RchKL/dD2W3Hyoye3XLceL0+FItPxwxq7+Nn3AnAJA7k9NznM5FGhib/eMd6+olYB
+++Qx7cVTpRg2L6zPB36T/cUZ8C/h3x61zsQ+6lQE55ZPI85XigvIKtxnLElAr9RWTq2JMiGE4D8C
+dB5ZWrSxvwPqyAM4tw+nOIzHrnlPoomC5X/pHpbH09+TavDcB4htbaq7GhZX9y3jYmo8xH6YlYSs
+Zn8lhhRb2QjhkdlLDAWvoGWFp70pa+AwvF2jwRYPes1Kyqni5OIc8aV1j3xj0jleE0avpGfCYNRH
+2SY7a6wZ64/i5epsJhZLIjxjuyd8kK2cr+KsmT3MjbGEastpQFJA1keo1WYAWJ/nkm44biaQ2py5
+bm80Wp9H3+OGrpa5bmUchuh1LJ3CVOj9qfD5w5kbnImSpGtTWUgYVQ8Hq0eDfrAtLquth+OUfIbg
+rTJkgj4vW916EGwLc7CM0b9zbcg6WFoqHX0oRFyzPt8rasKlK9CXNJgXOmGCwMZi+48nbxI30l9/
+MJZ8W2ku6MN+8fosojvnsVFkuSVTJpEWLFl/9bMCCg6fP9/nJK6NAoZDdLDEBqamRjtdYd9o43rp
+E7azrkioweAjPm4EkKGs14caCZke+zOmm9vFjvBDiB1CHUZiMF+xRvOrug5AJgDaYE6W2qKB0DqA
+u8VBEItsQjAvR6+twXswfuodR06u/pj0dw/aouGVo43NKTL6te9NFPAkZq9NbPC7+sL3lSdFtrXH
+hq0fw84orPDRJOwvSyIusY14KJ9/eS9MCeRIxG8jVjsO51qhMroviw3hxUd95FAkiT5xtxlPtmjd
+WVKpxZNr9amj6GCFPmRIeR55rFfU6mhjHipWfNlQz5VKjvQK8xQYJJ6Bal8wnk0Ajf9EqiT/gcN7
+A9ZEkPGNkIyE4QvkZNCnRb04GnVU4KFI656L/G9Y9LjoXNDfsWsoPQ8uf7S91lPIzy2KtlKrHqEy
+grbGn9gQpcrzzta9ojMFAm4Rxa6drI9qzft4CQAHa0q6qsyUJGLSWvtzBQ+vsMyX9EVjYBDljdr9
+EgPyaWQXC0cspMeR/VvWi2rHfoIaxaAxy3lJtnM/v2EawAoFqOZRtGDnEvUy1GhpZPvqo3imFp1s
+cnqmKZTZzqkmvk18ERVUqI8ibDVjwRWjcEDtYo7fQH50NhVBGMKZbpyQjnyKnwdCvn8zYL5g6Bo7
+k4WTsY+Wk5N6xRWX6evv+eNNb5MZkH6BY11ZB97Bl/y+OXqdh5gxR9OinggW6Gg1CUWukWRKaz3e
+p5za08PVLLlqbkB1IjCj+vOp2yr3QYzF2u50jz6T0KW7Hwhmf3FwyJKYunVKdf00onPGoKcmqnuv
+G/tnMe3M3M0Bki6BDAEBZMAgzfNRVzpVcSokjphEhNv9boZND6qZuG9WVgYO7PcRb9LOYOOqikaH
+TNTljjaot3vUZS0u9OvK2MSjHUqY2lerwCb84bEdS9dGEcbRxZMimsY1Pn/DwWclbDTw51NGx34u
+SYLlXIUwD0PBra0nFrsGhEyg9kYtbKK7xekloCxMFiatMy0KI2m2133eHFBigxmaB8gXpo5/dVcR
+qI0lzhxfNAicVQy0S1tQXqccCWbSXOLWxW666hhAqDelFvuh9yVFAyEX9lBfL+AZ4WAfleutDLhw
++9+wNCnf8Vy1dgfDxawuHsbLSdL9T+U8oH/5WKAXnFtp1Ia8MzksmjeENq7/GWmcTDSPhNces5H/
+/omZuKbamhpXwIdn2CO/B3JwIJUEp1/BQHD9XBObAdtD9LR9bKUjrzdhcDlDbiJ+XykJUWLI/02O
+WaCaWwF38UI7VKsL6xfjotUml0GjXbCrDxuHedWNyaejjeko+w/CwHC9iFgGSMP8NKN2xjis/o+T
+6h+gtSlg/Qn/91XmssSwLz81IiDmNeHTBor6LHHZul4tM/oOn/HMaaG8UZdd/+xoqZ7uIUzELKu4
+SaonrydAuh7hcOlFHulT5CkdY2ZdJgq7cuMUgmFe10rQV1bQfrjXZ34RZsz0SPecVi8Qm7IghDsg
+Mv4qh2ugeMq32tNY+HeGNPjcMnmmuXRnVjxiRaEDeoVT8K1yEbuRi2QWG6jvE6q34hlNPefTzYnB
+FU8Dq6b7ZtOb1+8kNbHVvMwTOsud3Lfo4Q+bMQO+e+ABgj6FKHkqLD37udHcr/ZHJdpGBXo8feT1
+9pwUeheVK2wO

@@ -1,157 +1,69 @@
-<?php
-
-declare(strict_types=1);
-
-/**
- * This file is part of phpDocumentor.
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @link      http://phpdoc.org
- */
-
-namespace phpDocumentor\Reflection\DocBlock;
-
-use phpDocumentor\Reflection\DocBlock\Tags\Example;
-use function array_slice;
-use function file;
-use function getcwd;
-use function implode;
-use function is_readable;
-use function rtrim;
-use function sprintf;
-use function trim;
-use const DIRECTORY_SEPARATOR;
-
-/**
- * Class used to find an example file's location based on a given ExampleDescriptor.
- */
-class ExampleFinder
-{
-    /** @var string */
-    private $sourceDirectory = '';
-
-    /** @var string[] */
-    private $exampleDirectories = [];
-
-    /**
-     * Attempts to find the example contents for the given descriptor.
-     */
-    public function find(Example $example) : string
-    {
-        $filename = $example->getFilePath();
-
-        $file = $this->getExampleFileContents($filename);
-        if (!$file) {
-            return sprintf('** File not found : %s **', $filename);
-        }
-
-        return implode('', array_slice($file, $example->getStartingLine() - 1, $example->getLineCount()));
-    }
-
-    /**
-     * Registers the project's root directory where an 'examples' folder can be expected.
-     */
-    public function setSourceDirectory(string $directory = '') : void
-    {
-        $this->sourceDirectory = $directory;
-    }
-
-    /**
-     * Returns the project's root directory where an 'examples' folder can be expected.
-     */
-    public function getSourceDirectory() : string
-    {
-        return $this->sourceDirectory;
-    }
-
-    /**
-     * Registers a series of directories that may contain examples.
-     *
-     * @param string[] $directories
-     */
-    public function setExampleDirectories(array $directories) : void
-    {
-        $this->exampleDirectories = $directories;
-    }
-
-    /**
-     * Returns a series of directories that may contain examples.
-     *
-     * @return string[]
-     */
-    public function getExampleDirectories() : array
-    {
-        return $this->exampleDirectories;
-    }
-
-    /**
-     * Attempts to find the requested example file and returns its contents or null if no file was found.
-     *
-     * This method will try several methods in search of the given example file, the first one it encounters is
-     * returned:
-     *
-     * 1. Iterates through all examples folders for the given filename
-     * 2. Checks the source folder for the given filename
-     * 3. Checks the 'examples' folder in the current working directory for examples
-     * 4. Checks the path relative to the current working directory for the given filename
-     *
-     * @return string[] all lines of the example file
-     */
-    private function getExampleFileContents(string $filename) : ?array
-    {
-        $normalizedPath = null;
-
-        foreach ($this->exampleDirectories as $directory) {
-            $exampleFileFromConfig = $this->constructExamplePath($directory, $filename);
-            if (is_readable($exampleFileFromConfig)) {
-                $normalizedPath = $exampleFileFromConfig;
-                break;
-            }
-        }
-
-        if (!$normalizedPath) {
-            if (is_readable($this->getExamplePathFromSource($filename))) {
-                $normalizedPath = $this->getExamplePathFromSource($filename);
-            } elseif (is_readable($this->getExamplePathFromExampleDirectory($filename))) {
-                $normalizedPath = $this->getExamplePathFromExampleDirectory($filename);
-            } elseif (is_readable($filename)) {
-                $normalizedPath = $filename;
-            }
-        }
-
-        $lines = $normalizedPath && is_readable($normalizedPath) ? file($normalizedPath) : false;
-
-        return $lines !== false ? $lines : null;
-    }
-
-    /**
-     * Get example filepath based on the example directory inside your project.
-     */
-    private function getExamplePathFromExampleDirectory(string $file) : string
-    {
-        return getcwd() . DIRECTORY_SEPARATOR . 'examples' . DIRECTORY_SEPARATOR . $file;
-    }
-
-    /**
-     * Returns a path to the example file in the given directory..
-     */
-    private function constructExamplePath(string $directory, string $file) : string
-    {
-        return rtrim($directory, '\\/') . DIRECTORY_SEPARATOR . $file;
-    }
-
-    /**
-     * Get example filepath based on sourcecode.
-     */
-    private function getExamplePathFromSource(string $file) : string
-    {
-        return sprintf(
-            '%s%s%s',
-            trim($this->getSourceDirectory(), '\\/'),
-            DIRECTORY_SEPARATOR,
-            trim($file, '"')
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

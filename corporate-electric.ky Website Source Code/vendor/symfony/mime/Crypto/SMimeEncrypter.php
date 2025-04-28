@@ -1,63 +1,67 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Mime\Crypto;
-
-use Symfony\Component\Mime\Exception\RuntimeException;
-use Symfony\Component\Mime\Message;
-
-/**
- * @author Sebastiaan Stok <s.stok@rollerscapes.net>
- */
-final class SMimeEncrypter extends SMime
-{
-    private $certs;
-    private $cipher;
-
-    /**
-     * @param string|string[] $certificate The path (or array of paths) of the file(s) containing the X.509 certificate(s)
-     * @param int|null        $cipher      A set of algorithms used to encrypt the message. Must be one of these PHP constants: https://www.php.net/manual/en/openssl.ciphers.php
-     */
-    public function __construct($certificate, int $cipher = null)
-    {
-        if (!\extension_loaded('openssl')) {
-            throw new \LogicException('PHP extension "openssl" is required to use SMime.');
-        }
-
-        if (\is_array($certificate)) {
-            $this->certs = array_map([$this, 'normalizeFilePath'], $certificate);
-        } else {
-            $this->certs = $this->normalizeFilePath($certificate);
-        }
-
-        $this->cipher = $cipher ?? \OPENSSL_CIPHER_AES_256_CBC;
-    }
-
-    public function encrypt(Message $message): Message
-    {
-        $bufferFile = tmpfile();
-        $outputFile = tmpfile();
-
-        $this->iteratorToFile($message->toIterable(), $bufferFile);
-
-        if (!@openssl_pkcs7_encrypt(stream_get_meta_data($bufferFile)['uri'], stream_get_meta_data($outputFile)['uri'], $this->certs, [], 0, $this->cipher)) {
-            throw new RuntimeException(sprintf('Failed to encrypt S/Mime message. Error: "%s".', openssl_error_string()));
-        }
-
-        $mimePart = $this->convertMessageToSMimePart($outputFile, 'application', 'pkcs7-mime');
-        $mimePart->getHeaders()
-            ->addTextHeader('Content-Transfer-Encoding', 'base64')
-            ->addParameterizedHeader('Content-Disposition', 'attachment', ['name' => 'smime.p7m'])
-        ;
-
-        return new Message($message->getHeaders(), $mimePart);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPt7IE/A5Su35K1wkqVFbWr0DI1diME21fEirmdVX3Uh1UNmM0MGlGDUl9AwZQ4g5XdCfNziF
+qiD3GdXz846GIr0aX4H2MNXKkCbWWC+akZgQWa5FVe0MiWA8AGg4Z4kx4SG91Z9S9hu2M7gPVvUE
+yobbVhK2ct9QCk9dg+U5eucc1zfPZJjZrPUS1yxxKCQpwENPgchdkkDOtBIMOHTeJJE+ejhp7uvH
+GMQYVboO9Gf4otv2bT/FYIYCtid/Q0hiK3CbqphLgoldLC5HqzmP85H4TkXpPnaYAqJr3PNoA59R
+ioHIFgB/Gyp06QIYy/NDxiiDUnAborRzqWy1ApxYokyNuiLv1PI9hlu9uYseQy87WifgI5lnAUMC
+2S8n84hYOnh2D6d7vtkMnHfCdhiO33TNpFtvmmf42lASVMDwxbDAT/yR59gI1aMUKs4rQsP6ZRwp
+2dRfV4YheVJmbjyjEl9VO+/xUxlbkbXednbDsVZy5oIL/j3vokEyrkQff7p89BUQW6yvnrQUiXTS
+OO1BJX9+gF+Xo5xeIojpmsyFRRFSTM6Xop/0FgyO0r/9wmjSfGBmOOSf6IkJK82skQj2hnjbpXtL
+sRXC8KqLjabI8XJxQnPLrnJK2mQKNzcNp02oYEAGV+rztAXb/+Qw9Q8/iQL8+VFQB96hHwU8iOT6
+rhIaFQ7LM4j79ACLXl7DSqSqE0NLZ0EnDWx68KG/yO9x8l2m/J1t73iYR++GlNV9/ehkZCx8yYZu
+IDa5/AkMb5uaGi8m7JyqQNmg5QqcTCoD0FbSADa7Z5He1fINLeb1bCGDQrWhau+J3xWHgDwI4iWG
+6k9t9muduCjPNaetypJY2Ef2ZqcQqIyURT5tFPUft1hCL/4exg6v0Lh3pVDm54XADzSPcCnwZ6Rp
+AxA1TLKorohjwNefRYp2Dql3MB6c7KDF/OKls2rzn+cutxPYZ0h4dascukZoPt54Tno/Q6SGX10C
+b6j0SD9ZDZ3/vezNv36eDSqe5uRYn9HmoM1iQXMOQzJABgfzHxl28f8YXOWWYqCADRsi4hLMV8+p
+ArMY+76GrAwUG3zZJfTcdNJC7Wk3yD7mmS4BhvVB9pb/fMBDoSMk+cLZiTwWh6QSS5T9rx+qJzDc
+9MRmlfiHeYnIvZ3A6RTTrPr3CShlj5KU8OsAza1y28QwTo+n76RaUBNHxhrPYhVooUOR02FPIVrZ
+mBjWP+QatIbJXFRpM22YlKNOf++AGe5h36Aine3J1s6rIe4Oat1qSW4pPXdBwgVhq9QYsy123xKU
+i9qUoBAxvXmJLzyawL2utq+3dU5GlmqXEaFedMb9FaopaGCGOnrNt2yUeevB8TUn9vReG3MjMCKn
+x5JzrTr1v4DmniDx9nikE0kjlJtzqJ0eCnLnnmf7o9s9k4AzigiP4Rs7Rd/5Y3tmvpbedC0COjFM
+wS5CVUPPZ9ae/pBpSeG1Cfr3/7HRx177+RCG3l1D8Ynm4v2ELGU/MJh7hpL3fgL9pWzz8qejaGur
+h+gN0XKjU2BrQi2nTGS0wacynpP46UVGZnnYo7GPXD3DNmPKv13R3xADfOn7FJInGYatT2Fqx9kx
+314bA5py/ExD3mMNXdadJmYdEO4CDhO8KqeYwZ0qDQWjLT93uLyvKaiSrqspmtCW/64r8ce+ZOBU
+N+fS+7goiYbmX+iT9vbv/nboPNVxIiUr6Jhpybqs2DKRyE+ejgDjfwueGmbtrVRsy7aEYjucN2/9
++vaw8NB5MgDg2AuEV3zl0L6arPL502AFkOL1euUgd2zvxRZVvvtFUG7+oOkI2dWtCn7xZcEdC+8k
+vmNmP58iqpHPVdmEtqRH+VLtiejB61dMrVTMzsn0kqg6iawwsWv7OiwByT4BsuOwvxel9bh9IYUq
+sJ4fXX3lf/ukNoj/I9jbYtaTAIHsCBPGKUkCz1JBMMlEdEBC1Bff3AB7/8GvTaQgC6Y5vMZd0d5d
+/y1gg0tSG/qgaykNcQD30lTB76ktGzYsXC6BMhz46Fj4wKFZUgrlRQ5w/ZJ/aIMMoewUCllGSwy4
+WsjTn0tY6CyYKX8bxDFfZ4wOAa1Trm2pxEpwLwn6FdVS0pXhBu+QDNfAkneM5Sl8O4/R8NvJNrKC
+TmKRYMhVii4eAtQOoz9n7Y0uOKAiINkd3Vam5JcUWloMypc2igsA5zCYSASjVj0w5H34zk8oEvSd
+VBJVTaiZtrEJhZflUtJyq40jAn6Ba3dRqt0PDxc8Fi6Jv8naRm4P/h1j4aA4EDJZsRG/YKRPpGPS
+ZHNFBuAjXNYOd3/KtqyemN2A51+IPAlQdFWf6t1R8t2M9Hk28ZI7E3zXaKXvdlhI3RrCEypcAJx+
+Ur5fISK8n8V7Mm299m4C10L5QGcf0OI00JVYoNc6EOcW4Xec8TDI9lnHPbYANsXUDzIe3S6YvSy+
+M1XRelapoCsYfDcLpaZNCot3N1cJmWsVWHvNbap+9hsu4EXlP4p0qZe6C7l00EXqvcWVyddGwQb+
+PJ3+uvi/urEDI2717D+1qjuY2SA4V2S4pJNvI30vXFVVKVkC2zt74892thg3C4C6Znszv7xb2VcA
+uXr5wn/GyRK4tYIQKxSq0HroTQrKj7Mss6Dq92Wj6MZ6HfYU0E8L8h40ZyQmluDM9iVyh+g7z0Fy
+cKBxlcS7N9TJCoeM2gUA/VNddGKP5dab/qjq07u2AtBxhrKEfQK+Y+VGFTZ5SXET+d+QeAW8mb7f
+yqCQlaYjRKY4DLKpTTUyZy+4146mBJRRRXQPd4tJgONEtXVHBGIrWb1NrF1Or9cSHuF/EYa+VZTT
+eb4YNgVgEVDoZcigWJdGr1uVhlBkVuz/siyKyynL85NDfT13AN4BN3P5uK+CujUP2FoSCrmuCpF+
+UrtkobwK6xjql2LieHKN9nBuyTJNU4vJaAGKGa9HUuF5vHCELx53skHkkS5wA4/g7tK49CwAe9Cv
+v1gBdsPxqQjSAG+77j3BKjCe8xesY71pErRYPnyI8fu9FfUDB8itQdNmMtK/vfa3gwoUOUcnPYyG
+bzM21Rw5PIfouQc2BaeGeTdFsWqk2PvYCAkD9m7hURsSzlMQeqbJc3Byc5Ghu6SxA7hUy3kRipRd
+5xGSf3j/+A7jL+dCL4P8EkkvBV9v6CoDTam7J2GPC6YmxaKJWT+rHoCLzz6Jh1C/zXY6Nn6C2/zn
+adXaDOF3ZkgXML36P/FAh0qbAGBmewbIgbmYgBkeHrNc6GkQ5BKGolKOqRXTLdd3A83HRBV9WZqX
+ffPBgqY+dCBtuk01nZIgu25QUvI3oLdPfwNC/qugZisGUCPtkahCvSmkCgjinVbG2eQP+Z11mjyq
+BZhIu/uNblninRNe34crbDpJ7JlhSipWpYxkfQT0E1oIkmh0HquxqcnBU7G5Yv1ZuLG3M8oI/ieh
+E4EAl95D23+afJz8anC8ZTylzkj4Qjv/1zSE6/z2T4Uyrbls/I0KlcZwpVVCOAB7Msiz79IhuNTy
+jMfiLsE149rtQs0WmZOdlLyonEzHQMh7SZCdE4ILfMwGujKxAv69Z/JTKnc0BnKPI1308yX8AfDO
+PKszxt8iyOfZwhNAtc5D3hXpFtKRAxLKPjVXaLoqmFoelkATRk2CNM2gYzxt17gahWFzNFYlkjpA
+BN1ViuabB8MIg3AbAYLbVix5XAwM+a4revzFlQuNDbtbiUvqREXE7rK4x4QHT1SrUuE7MUKE+PTF
+ioSRvLjzen16jQi71gZ6Wyjhqg4lIJUUXmypzitvDv2PZjgtzrr4DhS1icKpFYMdbUj39SxwAI3G
+/dab9K72GYYOI5jkEr6hq/Pt48m7Pm8tApyTkfq8lrB967DgFewoJyXu0YOBwR4BG4gTa42K2CoM
+l3uwV0M/AzXCBkoA7rLZFqb8fw8R+XI7PGEuNM+83fJWMA/MUn+oWF8YhV2jnLt9JTJcE3A/EPQP
+lRwruP3jnL0UHKr1sAqchhEXc2mOoGuf+7LSC1yugMs6mL+ubFw0oVobDIP7j5uLocd87+hvYipq
+rkKxma7mEChhlJZnxMe46yLfVGDMaUjf5DBJTBFCLe2tJYNjpLHJTKW9xuzsa747gBFmUZGErO0A
+f6Eb+smhstgyibjnewU634QeXf7vrjenvfd1g+5MYbD/JHKdULf4zolYk8zdKrBtbw1K/vZcsqxw
+PGE6ZF9x1U01TY65jmQlcPQ/c/eJTkxDOIl6YcT+ZCbgK7ig+yBvQTRHSAOkNYH/iAVnxSKPtof/
+CU7eKuIRYThfhVLSUuq3vK4GEjNbvjr0FZO6Tm2/ckGXwf1b4FDWf0KCj9Jd4sHdPW+B+UrPQqgC
+Yevh6WQNA/PuURgnwaJigwKal6WE40NCokIErypoYqyrJ64Ddm0VP/kBfUA2H+ndyAlks1ORxQjY
+47zpKep/ecSJr9T20/2JY07j5LCp0XWVrMXFm0If2wTRVlD4QqYC/Nz84S9Si+ai5P46xBLwe48b
++uHk3bR4QzGRGy9KkL+Pka/8wCxp1p9HrnWNk4CYD3bAuYrisuWCdUrm1zmmyh3bbfEltnFGbmEf
+uR+9B+VTwde9ZWS+OnLjd5QYUa88Xgdoyt2Gule/nTnjQJiBHb9jy4LyD/dJp0wHUmc/dQOuu+UE
+9aI4l0yUn+pgttKscZhMivJGTU+07KS0diPw3seEvVkSk+0/M8jGsGKiaYgQi1X3wqo1EY8kwQVy
+gDNbwF/8nQ6oOICvumK2UjmomtUd9MUlt+OS+yy4Irv2TKn6SSgg5XcikdZTGPJScwnK3BwpIAOs
+lwygV7xy

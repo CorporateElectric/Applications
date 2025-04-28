@@ -1,89 +1,30 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Shared\Escher\DggContainer\BstoreContainer;
-
-class BSE
-{
-    const BLIPTYPE_ERROR = 0x00;
-    const BLIPTYPE_UNKNOWN = 0x01;
-    const BLIPTYPE_EMF = 0x02;
-    const BLIPTYPE_WMF = 0x03;
-    const BLIPTYPE_PICT = 0x04;
-    const BLIPTYPE_JPEG = 0x05;
-    const BLIPTYPE_PNG = 0x06;
-    const BLIPTYPE_DIB = 0x07;
-    const BLIPTYPE_TIFF = 0x11;
-    const BLIPTYPE_CMYKJPEG = 0x12;
-
-    /**
-     * The parent BLIP Store Entry Container.
-     *
-     * @var \PhpOffice\PhpSpreadsheet\Shared\Escher\DggContainer\BstoreContainer
-     */
-    private $parent;
-
-    /**
-     * The BLIP (Big Large Image or Picture).
-     *
-     * @var BSE\Blip
-     */
-    private $blip;
-
-    /**
-     * The BLIP type.
-     *
-     * @var int
-     */
-    private $blipType;
-
-    /**
-     * Set parent BLIP Store Entry Container.
-     *
-     * @param \PhpOffice\PhpSpreadsheet\Shared\Escher\DggContainer\BstoreContainer $parent
-     */
-    public function setParent($parent): void
-    {
-        $this->parent = $parent;
-    }
-
-    /**
-     * Get the BLIP.
-     *
-     * @return BSE\Blip
-     */
-    public function getBlip()
-    {
-        return $this->blip;
-    }
-
-    /**
-     * Set the BLIP.
-     *
-     * @param BSE\Blip $blip
-     */
-    public function setBlip($blip): void
-    {
-        $this->blip = $blip;
-        $blip->setParent($this);
-    }
-
-    /**
-     * Get the BLIP type.
-     *
-     * @return int
-     */
-    public function getBlipType()
-    {
-        return $this->blipType;
-    }
-
-    /**
-     * Set the BLIP type.
-     *
-     * @param int $blipType
-     */
-    public function setBlipType($blipType): void
-    {
-        $this->blipType = $blipType;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+lOvXwWS=

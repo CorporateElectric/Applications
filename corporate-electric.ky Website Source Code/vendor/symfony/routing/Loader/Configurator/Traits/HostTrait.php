@@ -1,49 +1,41 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Routing\Loader\Configurator\Traits;
-
-use Symfony\Component\Routing\RouteCollection;
-
-/**
- * @internal
- */
-trait HostTrait
-{
-    final protected function addHost(RouteCollection $routes, $hosts)
-    {
-        if (!$hosts || !\is_array($hosts)) {
-            $routes->setHost($hosts ?: '');
-
-            return;
-        }
-
-        foreach ($routes->all() as $name => $route) {
-            if (null === $locale = $route->getDefault('_locale')) {
-                $routes->remove($name);
-                foreach ($hosts as $locale => $host) {
-                    $localizedRoute = clone $route;
-                    $localizedRoute->setDefault('_locale', $locale);
-                    $localizedRoute->setRequirement('_locale', preg_quote($locale));
-                    $localizedRoute->setDefault('_canonical_route', $name);
-                    $localizedRoute->setHost($host);
-                    $routes->add($name.'.'.$locale, $localizedRoute);
-                }
-            } elseif (!isset($hosts[$locale])) {
-                throw new \InvalidArgumentException(sprintf('Route "%s" with locale "%s" is missing a corresponding host in its parent collection.', $name, $locale));
-            } else {
-                $route->setHost($hosts[$locale]);
-                $route->setRequirement('_locale', preg_quote($locale));
-                $routes->add($name, $route);
-            }
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+psRo+u7Zh32tCzW=

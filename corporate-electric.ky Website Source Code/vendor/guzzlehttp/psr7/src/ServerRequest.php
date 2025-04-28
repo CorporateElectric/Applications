@@ -1,378 +1,158 @@
-<?php
-
-namespace GuzzleHttp\Psr7;
-
-use InvalidArgumentException;
-use Psr\Http\Message\ServerRequestInterface;
-use Psr\Http\Message\UriInterface;
-use Psr\Http\Message\StreamInterface;
-use Psr\Http\Message\UploadedFileInterface;
-
-/**
- * Server-side HTTP request
- *
- * Extends the Request definition to add methods for accessing incoming data,
- * specifically server parameters, cookies, matched path parameters, query
- * string arguments, body parameters, and upload file information.
- *
- * "Attributes" are discovered via decomposing the request (and usually
- * specifically the URI path), and typically will be injected by the application.
- *
- * Requests are considered immutable; all methods that might change state are
- * implemented such that they retain the internal state of the current
- * message and return a new instance that contains the changed state.
- */
-class ServerRequest extends Request implements ServerRequestInterface
-{
-    /**
-     * @var array
-     */
-    private $attributes = [];
-
-    /**
-     * @var array
-     */
-    private $cookieParams = [];
-
-    /**
-     * @var null|array|object
-     */
-    private $parsedBody;
-
-    /**
-     * @var array
-     */
-    private $queryParams = [];
-
-    /**
-     * @var array
-     */
-    private $serverParams;
-
-    /**
-     * @var array
-     */
-    private $uploadedFiles = [];
-
-    /**
-     * @param string                               $method       HTTP method
-     * @param string|UriInterface                  $uri          URI
-     * @param array                                $headers      Request headers
-     * @param string|null|resource|StreamInterface $body         Request body
-     * @param string                               $version      Protocol version
-     * @param array                                $serverParams Typically the $_SERVER superglobal
-     */
-    public function __construct(
-        $method,
-        $uri,
-        array $headers = [],
-        $body = null,
-        $version = '1.1',
-        array $serverParams = []
-    ) {
-        $this->serverParams = $serverParams;
-
-        parent::__construct($method, $uri, $headers, $body, $version);
-    }
-
-    /**
-     * Return an UploadedFile instance array.
-     *
-     * @param array $files A array which respect $_FILES structure
-     *
-     * @return array
-     *
-     * @throws InvalidArgumentException for unrecognized values
-     */
-    public static function normalizeFiles(array $files)
-    {
-        $normalized = [];
-
-        foreach ($files as $key => $value) {
-            if ($value instanceof UploadedFileInterface) {
-                $normalized[$key] = $value;
-            } elseif (is_array($value) && isset($value['tmp_name'])) {
-                $normalized[$key] = self::createUploadedFileFromSpec($value);
-            } elseif (is_array($value)) {
-                $normalized[$key] = self::normalizeFiles($value);
-                continue;
-            } else {
-                throw new InvalidArgumentException('Invalid value in files specification');
-            }
-        }
-
-        return $normalized;
-    }
-
-    /**
-     * Create and return an UploadedFile instance from a $_FILES specification.
-     *
-     * If the specification represents an array of values, this method will
-     * delegate to normalizeNestedFileSpec() and return that return value.
-     *
-     * @param array $value $_FILES struct
-     * @return array|UploadedFileInterface
-     */
-    private static function createUploadedFileFromSpec(array $value)
-    {
-        if (is_array($value['tmp_name'])) {
-            return self::normalizeNestedFileSpec($value);
-        }
-
-        return new UploadedFile(
-            $value['tmp_name'],
-            (int) $value['size'],
-            (int) $value['error'],
-            $value['name'],
-            $value['type']
-        );
-    }
-
-    /**
-     * Normalize an array of file specifications.
-     *
-     * Loops through all nested files and returns a normalized array of
-     * UploadedFileInterface instances.
-     *
-     * @param array $files
-     * @return UploadedFileInterface[]
-     */
-    private static function normalizeNestedFileSpec(array $files = [])
-    {
-        $normalizedFiles = [];
-
-        foreach (array_keys($files['tmp_name']) as $key) {
-            $spec = [
-                'tmp_name' => $files['tmp_name'][$key],
-                'size'     => $files['size'][$key],
-                'error'    => $files['error'][$key],
-                'name'     => $files['name'][$key],
-                'type'     => $files['type'][$key],
-            ];
-            $normalizedFiles[$key] = self::createUploadedFileFromSpec($spec);
-        }
-
-        return $normalizedFiles;
-    }
-
-    /**
-     * Return a ServerRequest populated with superglobals:
-     * $_GET
-     * $_POST
-     * $_COOKIE
-     * $_FILES
-     * $_SERVER
-     *
-     * @return ServerRequestInterface
-     */
-    public static function fromGlobals()
-    {
-        $method = isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : 'GET';
-        $headers = getallheaders();
-        $uri = self::getUriFromGlobals();
-        $body = new CachingStream(new LazyOpenStream('php://input', 'r+'));
-        $protocol = isset($_SERVER['SERVER_PROTOCOL']) ? str_replace('HTTP/', '', $_SERVER['SERVER_PROTOCOL']) : '1.1';
-
-        $serverRequest = new ServerRequest($method, $uri, $headers, $body, $protocol, $_SERVER);
-
-        return $serverRequest
-            ->withCookieParams($_COOKIE)
-            ->withQueryParams($_GET)
-            ->withParsedBody($_POST)
-            ->withUploadedFiles(self::normalizeFiles($_FILES));
-    }
-
-    private static function extractHostAndPortFromAuthority($authority)
-    {
-        $uri = 'http://'.$authority;
-        $parts = parse_url($uri);
-        if (false === $parts) {
-            return [null, null];
-        }
-
-        $host = isset($parts['host']) ? $parts['host'] : null;
-        $port = isset($parts['port']) ? $parts['port'] : null;
-
-        return [$host, $port];
-    }
-
-    /**
-     * Get a Uri populated with values from $_SERVER.
-     *
-     * @return UriInterface
-     */
-    public static function getUriFromGlobals()
-    {
-        $uri = new Uri('');
-
-        $uri = $uri->withScheme(!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http');
-
-        $hasPort = false;
-        if (isset($_SERVER['HTTP_HOST'])) {
-            list($host, $port) = self::extractHostAndPortFromAuthority($_SERVER['HTTP_HOST']);
-            if ($host !== null) {
-                $uri = $uri->withHost($host);
-            }
-
-            if ($port !== null) {
-                $hasPort = true;
-                $uri = $uri->withPort($port);
-            }
-        } elseif (isset($_SERVER['SERVER_NAME'])) {
-            $uri = $uri->withHost($_SERVER['SERVER_NAME']);
-        } elseif (isset($_SERVER['SERVER_ADDR'])) {
-            $uri = $uri->withHost($_SERVER['SERVER_ADDR']);
-        }
-
-        if (!$hasPort && isset($_SERVER['SERVER_PORT'])) {
-            $uri = $uri->withPort($_SERVER['SERVER_PORT']);
-        }
-
-        $hasQuery = false;
-        if (isset($_SERVER['REQUEST_URI'])) {
-            $requestUriParts = explode('?', $_SERVER['REQUEST_URI'], 2);
-            $uri = $uri->withPath($requestUriParts[0]);
-            if (isset($requestUriParts[1])) {
-                $hasQuery = true;
-                $uri = $uri->withQuery($requestUriParts[1]);
-            }
-        }
-
-        if (!$hasQuery && isset($_SERVER['QUERY_STRING'])) {
-            $uri = $uri->withQuery($_SERVER['QUERY_STRING']);
-        }
-
-        return $uri;
-    }
-
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getServerParams()
-    {
-        return $this->serverParams;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getUploadedFiles()
-    {
-        return $this->uploadedFiles;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function withUploadedFiles(array $uploadedFiles)
-    {
-        $new = clone $this;
-        $new->uploadedFiles = $uploadedFiles;
-
-        return $new;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getCookieParams()
-    {
-        return $this->cookieParams;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function withCookieParams(array $cookies)
-    {
-        $new = clone $this;
-        $new->cookieParams = $cookies;
-
-        return $new;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getQueryParams()
-    {
-        return $this->queryParams;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function withQueryParams(array $query)
-    {
-        $new = clone $this;
-        $new->queryParams = $query;
-
-        return $new;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getParsedBody()
-    {
-        return $this->parsedBody;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function withParsedBody($data)
-    {
-        $new = clone $this;
-        $new->parsedBody = $data;
-
-        return $new;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getAttributes()
-    {
-        return $this->attributes;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getAttribute($attribute, $default = null)
-    {
-        if (false === array_key_exists($attribute, $this->attributes)) {
-            return $default;
-        }
-
-        return $this->attributes[$attribute];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function withAttribute($attribute, $value)
-    {
-        $new = clone $this;
-        $new->attributes[$attribute] = $value;
-
-        return $new;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function withoutAttribute($attribute)
-    {
-        if (false === array_key_exists($attribute, $this->attributes)) {
-            return $this;
-        }
-
-        $new = clone $this;
-        unset($new->attributes[$attribute]);
-
-        return $new;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cP+ddvNbZKDv+UZvmMek7ra+jW3J6aoW1hFOtGboBqyaV6/acO76K+gUspDwWAOmgLcUbc3MC
+wZ3MTmXuoWIEuUIGyGuXMc18vy+mmtDfOV6+zwc08inWzClgjAGfngaV8EpuaT04HttrYezsa0lp
+9Iabh3ikxNPx1l6jqrEDUiDUBG8GrdCzJpFW5Dty0Qv1ghZTaP8ApIFkoGiblglakt5RzJq1fPQM
+88T/DssPtRWc9JYe/cgDyQA1N/wtWSafmBQoFZhLgoldLC5HqzmP85H4TkXLRjdsAvGPr6XAZOB3
+goJKH/0C40iY4YgtZM3cbNRz0SbZ7rQYN2haxxmSg9/e0LUKfbPxE0panjSxnzqzTAxJPsF5E+BO
+vYnpOQ8uLb/x8S+lygEIRzMePgSgwFuWqHzn4q79VEoLiM6z6zJzIx5MpO5KsvyjOIvfkqS2jYDj
+/cecFNfzGX9UEQTECDihut06rHBIEQZsApM2VkFLLR+hCVtWRWfTTsIppsRaGSyFIbpM8vWAiEKE
+5txaiDxf9tmHtoApGQhaXmyUisg/UfSqnNB4+ir/QT1mmQO3TancmDl8X4HyDrutvseGWFUb1jlO
+jM7BpXqC9XOEA3d4Hvgo1v27OH8EZf+F8mr2ZRMVeIiuSxT5rMy/w2bij+uWNezaPgMoqdX4n0lY
+4dCj7QLs+oGG81riqW/iuCGwXXO2NC8TsadLvJ4uNGzzdKELxjNTG5aLT7Ev+hYK5mzWuvTN5l5G
+QsiJ84A1nCXxlaCIOvxxGzIIwB1k5x/d4qx6sHLe+TT51RNi413nQjeNK0ACLmyvt1oV+hSNPdBN
+nhoAIhgTGfDlhA43xkWKEE3M1ucCBKJHQIQ6ZB75T9GWXF/LfFtiGKGprgqvTTnwOiLlS0pefw8D
+8lzFFuulfwFG/cpM5JMcwITz1uEUD8NPJ2cokSztHnm/Xxrd3JxEY0XZGjNri7KRex0MPILcgxz1
+GSOX9EzrjOvjCpJ/VcR2xpJ3TQrISwEsibX6YeYnCrE8FcXaFQ5HKaL70CYliUtcCwHdsAwEHsVX
+AUdx7YRv+DfWiXaqwtmKNd7N+rsOSOrVv3q71hQ9WfFhXo7KCKkE4923FY/WNqH11PAOhu4Nikot
+Ki31DOcZaY7AvGkWJVGPgUc0udCHUSsTo/goW01pyTS79FuN8hhZJ5TfwNfZr5wNXCpHd59GXoI8
+FGIxCYiCZwCSengy9hIB/6unx6bZu9c9S2BS+qoCPiDgLrP6TDRcI1i6KTOqfco5IwkaBqDLanlC
+u6y4lQW7LlS8VMn4mPoEFp4swLG0kHCHjzpd5i5/ugGjvChuTSlf7Fz6PcOS9UuKc9zs6nudg1yQ
+MRp6D2KkBJszETG7912jAoblWOREcEgtZQkGLSZwXgD8ESzilyTA5jbdbR5oqMRqFrThlFWD7akv
+Fc7WMWRQHhJq4Q2cLTKKv8tQLuFbBR4VnoV14gAyDiBw26UNAGxZEJHSTeKNyK5UtxpnmD2BtWKO
+CaUr6IoY87dMkbCzctUVUpFt3wkk+5+xLX1VAR4zyzfOf9w8FdEqgIrKUc6Mu9A+dBYRs1cIcJZa
+R32srJuQJ2gCAvH/xdmDLnTUVt/LzXoFXvRxZj/ct1NZ0d5jADuro/aA0phk8jW9WG50nDhp/Sr9
+iTDuntiRbHPpev1SDMc5iXd9JPGBsBVTSkzQxUpSTwFonz6fLGbrNpC5nL5YQOYH8StkCV/yd7Y6
+Xu8CKSmxOyWdd85SPckXB1CBEYWmuiknzA7625OctXjYEwsYFdT0czZVTBmsCSG2nkGeMa3I4pKC
+2JN5G+DFXRHXBFJWTDSoWc6uUzZbLUx1zyl0miEQxNUc1TnM/f6LLCspIld3TdyK6yL1ompY8XSR
+u9n773QU9bxVkRFIMeZQ+1kZTnnFrvc8lWowIFUrxXeco3Vjq6enRZG98gMh1skzd/ExwrB/wTa7
+KXoST85q8YgfO2ONmLlG5g+GntmZuLkbpM0BGnFIfbPEB0P0EoCKQn8IByavYLLz9uuW6NMD7vSH
+wfTkh3fPhdz6sanRNoR+0br0b7w0pHpOPEfFdDlBKX//J7o8Mt17GdWRbuJijy8gginlEpNHyy8N
+B+WvJpb9D8aSv4jbyepl272xtC6MhhQPFo2IbMyTi4Lb+z7SVsFpujdieE79J0mP6rm62RIMjYov
+p/YXcfQKNelawjKGT4U/EQtj0NvPIvm9PuUFEYl4PVnj+8faFi1Cjpbx4220SH6taiZFW1ENE7SZ
+5v3LJ6h771EAVYZP340xJdMwrCJD8qL42/XBMo3iSwlV9n7vAmcv5LAfbMRf7yzqaPWIQl3Vl8hs
+qkwwTqoawo2E8oF5d3eh10A6DGMBRtS7IqskFSE19Glktm4YXfFeSQ6wJvM80ZhhYqTJ+Re8mWSI
+mVUvP+L1KeTf8Vu7Wg5MmvfIdWyqas1BvG6FWcCiDtugeO1HYi41JRQbXbavPXaKTMiYiaZFetwc
+4EndLU1NDcEitY0cor9kTRo4DEql4arEwws/jYcFPyZYOUAsH21cvJ29vDUIq+VXbunuRC6o2GUN
+CosnrSBCIaJ+yTagJwv7+GzMSAA60VFH+MNrk6ZEzwxOujJlpNqG79heU317I8OldaNxwJyCwavU
+q2SoPuru2rc55bTPjaKV0/08d0CjhUFcV5X2x3VqhNAoZgbiVml1vcNQ/OlCRn3P9cScH+tfseLo
+UAgzHSGZ6F+N729FaBg2n8mim1YrZrxWoovEDie19TbkRdhsnKCQJqCpFburVT9a/blZemOu20BA
+RxxzW/La9wqKfgWMJY8PpS6xvAjM+WRtgyRLC2c+4Gv5GmNDUge8rATpzVmfuL0AOrYG7zzjhxrG
+/EjnnKPtCANmCOtq2opezee8Dxefh7Hdj6SnrtPGPUJTsG9REJ6wycZXYXtpm3OYni8N69tgEOlg
+swLsNlumAS4zWJe9GWVGuYa4rPRAe+56oGXR1Oybz7UWUxCWCHVewIiGfSOZiTXbyY1qhE7sdM1n
+jSohtP+S3+jX894OuIdDENFQmJhyyzNWPxTEc4b6qd9TiUu92vRhRE781NTwpnweYGv1ytx/UHdz
+4hhr6X+faqNKI9of/gByQiQgt9YayzGxkhkCxLUDMMepblawmCQJFgRwLTz05LjwgHvZ6ubrHWzz
+PbmXpWDwxx9XY/NwCWC93aGrKNxTmwGfGVt1ofNxMqvE+ZhK1k5rGG1f5g5Ew6vzZSafCF9qH0H0
+2TJK39Y5SCI5evlZO1kHhPP/mLRSmTjSI4dwYB0DKW+DveqGZ1DHQEH4LFUFaJI28zv4LCQKx2gd
+Mm/DRoqOP09/P5t9QSvyZvFAnXHn+pV9lRU7hZtCuQM9YdFSBK8CiOlE0kDtyGz5oEX6DcTw4sUq
+RT1dEj50V8zUQMp/8I13mIrYfqRsm3Tl6qQze32GSjXKy2q5geu5rts1tn2oppf18OzLGPgW0Ttk
+n1dOilAQkkJOy4wCLGzx5Bf7lpSO/MQgedzYkmxScpEjQvoa9eAWT/FFqBHedoSjhB4YpBvDd00N
+ut75j+3tKjmhXAsKMpSScCQm5QCq6WVqmNlwP7QSBqcEg4dltwxVKMM7wBblYNk6LoW5TSta42ca
+RXHujQ8ul0NF2ja7FNtweDeNINMZ9jVl/dXSwML31A5yv5g6XzjWJnvfSZLhI9g+qCF4p1zamvJ9
+j1VfzhLEE5LBCnVvaPg+lP16GdSVJbVGCS8CUCPnIpXryXR9FR9mA5s/fkUJsTZvvuJkTbi15OL/
+27WM/Eaf0Mikucy/fblrboQ8bxekzxsnRYpSMAsXm5m2z5VlLPWZj1SQrhUvBT4d1Nylc74ePXFN
+kjBm8baEUOHD+QdsS3BJtThlRWg8Xoj1Xsumfyufry8k0PKisGYfvod7UbaLnf1HYowFXi0JbmHG
+n02hteYequzLqnlpY0DaeEMfsB5LsDD8zJ3FUoZQyL6BMtbV00E/pvWtXvpD7F1IOtnWOK7ALt7N
+Sl/LiKgo2NgMoLnpDqBxy8dPPMiCEuhyiUEhotRyNFNq/fccUvhLlWpiJIAB2MFt7S7G6vTdazNE
+FfrjmbIVU3CaczfpqFtXFeOnb+5Uila5nih+axJ+SFu0rL86XJXm8d0c2mxWrPDtigxZsjJslkZ8
+lL44q71ybNHS7qBWkgmShmyHRrQ5+8mUqwLganfQrqpG3CwS4JNWo6bS0byJQLniDoKE9qWYC9qx
+WIvw3umw95AqRMNQkMaNYIDKEcOD4/5KXJvKHnXxFYD7q3EkFgOMYibPUYGPdRcQVCx5C00HaE6H
+zHfAodJfRrBWlCobt+RhfRv1XWMQckWpew8efiQ9TwvkY5VocoF8mk6EH2KZcp+p3cplk1YAbc84
+rEHjZD9VaSQWweDf5iV26UVEqPkQyLmSSjNB6zbYm2OF3AAp1TCEwUbFtQIr4YDf8k3lNnm4AUiw
+LPpoOhYjm6hBm0HwInf+elXXyU/4dbYjMdYgvhNdDLRVyW1ZD9qTvr5tIdOrKSuF0x02fvcMaaRX
+C0bZn+LopajWm44rUbjMrrx94O2l8iC6ngwtu0YuYWRNQFxlQCC9BoHKBhqOLCf/6zu5N8O5WzuP
+znrtzkTWlSUl4iyvgMZajYJ4oNJjJvrUGmNblrfAK54fK218ewnqBe4uDx4VjvSZCBx/jN0CCXEi
+vc8a3vt1TXXa5xylZk/PqIl3WeDNGMG4Av4jz2ualh/DbCQYlDphg8Jv6639aKuNkABFSnG2WHJJ
+AFwGPV+e3tJ3y4Gu3DllrJH56Db22nm8BUiOiWfjAQFh2qbWWuBMKXRDt4CCskUNgJhJK7d1uUmW
+08IdpY9OB3ft16aZTn9wtFruGiYe52sSNNh86+zWCPAcCKMoGAzuwAT9Q3x54M0VL/vgV7LzElNS
+YRBv72KBV70OpWRJ+SzciELuDxBCVBxUNrU2X0w2wTJS4iJ7gKkrf02G4iazEyTmSbvXT71g8oSq
+45zjjTqfRrk9JWhop6xqyPyLiQFMi04YYQaKMzk0vkz0bE5gQ9ykfiNEMufgmv2sYYbLsAFigchM
+mIW1Pcs9FX7/jkwlPxhtmXg1X4rVWIYRXWulBLRHbz85hstxKzdura0Ocjb7DqJtS+6bzBDBvKzE
+sq5EmUOOAoWIpPDPV6gjTF1DDzZk8wrDjA4BpWU3DAWipAH44ekXK4RDe94JmadP0WMOObmcK9W7
+TeTCrhQBDKMYEq9GORbD1fgDOnt0gDe5A69CSoZ7wIMFmzQSNZIi+6MKsUtpQe/SXF+lpCsoU+Uv
+n3JBx26ksgBGkHqOksxzD8OnvmupMP6HhCVGxLiEDcTj8PI6Q0lUJprrr7lzTiVO9rbWu6iP8Nzw
+io1VMzPLu68xL4HqkCn3UjcTmoiVJGo1tf4njgKCGUKtRKwCPLdcdvB62qyX17PPrFtjkLKR1HnE
+GSbaoqUvr+jTwWzFOPDFSSBrN2cLmExT6BMSCE6df6RdU/55SIMjX2yAgFPOz7jrz1sMkO+iHouY
+bs9dgK8gsFZQSHMJ8HsTmGGzpDMu5HH73wZK9EtOaaTmTqqRMMukYhSdfnDDXwi4nR4vIzZukSHs
+Ng3uxhc2B2v7n7KfzRM/94/fID5g2P6bLDYsHIrMM8eruw7c6XLd+3u2QBhYiO7G+n3usTYYXp6w
+FS73gWuzSDvJM23o6OqpXyOtwimTmiyeAQSBc4u1Kk1l34VrEc+zneCpelkEf9vC9k53lFo7UAfq
+XkAi/DpznWj1I+DiTeaa57F/Cy60XrrTedPnvuMtsXoeE3KVu+6vskzDUN0iFefc7KodFGTOF/S6
+waNBEe7adpLUlYb475nG/DvJTYmOmoh+HNSrJdmH/BtrK6STdfU8d6RyJvBezp4ZCrxYBEU8zkDd
+sXaNVq+yMfRJ3z9GqQ8FRku03AkE053FxCLG/hGQZ5QdcvFXZrk17zoMJs9bsmE5yhC694z2A++F
+dPHZsXmAg1MAzAbnvhhmFfjoPx6MaeghjnA1ZeaLanTRH4q4/geEhqIFZnI8EdqM5FvrJGVZwIQy
+T5i5Y1vTKly34h1huvWYy2gfYvTsTd004VZqqooq6/Tifhe3h4mojj0Yzys1OMhkC7szKjAE/u/U
+y0QlWIsj62uQpnNAsfkJEbPErjxLXgans1YWE/CZ98agQwqCfWE4Wnl0BhUV2Vuih04RamJKuYgx
+gu5Y/vVSbb1L6hCHwFiCATU8Ort/XrO2PXTOJK9OKtUXvbCJWhsuDPaGVq+311T4FjdFBZEphh+J
+p/3PQTMKay/2PB1bGycB0JP40ibsC2aN1sKkS3KcSYFPOOLkOrX6Imyp6k3Su5upnIC1DsJ9x9o+
+pwY7Vafgvx5J6J9KMzT6MjHD8cTIAy4nrVggPvjz06jelHc/9m2g3qyZL+ksL1MYdihXzgGv7zCA
+OwQNp+6YSuooGeeYKIVPfUCZ6DS7yqK8GDjmYTu+P5I6E01lwpKasADi8JQCaIrq+MwEsUMJBfF2
+HnIaNo/MDeXy9KhcDhQvv71/XzTFFl1hg2CO7Sl85QYGb0TsckonqZisIWW9EaO/geTpWwWZ53Q1
+sWtjQvMWKOzO/2yXO2n8BzbfWpGMqOu3LVWH/CRrAYF4NzYWsJj4prEG/2xoDC3D18X0bIH+9gyh
+NM/64WeYSbOpfdCsQhPXbOHTggO8Dt+hZfac+Y0J13bARtFodUCSA3V7UT4UmFeTk4kCjMONXD+6
+l4Koo7bSuhH9qN4baFALirD2sykxJFd8TxRFt/xIiCigZlxP3EMx7+N8HL17RUPdt/XhCM51gHww
+hKQ1a4fsht95SS4cS4LNIrWu6RC2RfR6qcV0vXawAVcE1yR634c3gRRrqXzeA6YFrnytJ4JlVeEo
+esMmFNgneNqK38TSyTS5RnQUIGnxXNrOqo/MlCZDPY8GqPlS2MHOTskHGKfplrYmL2gr7NLp43fo
+x407sgWloOZso0eNDWtsN+FZXPs0qMqf+egocXAbE+P2UQx7rR4DVnVSTMD6cWDKzdPGGScjSsc7
++Bgulk5e5J/RSfXMLfsW9eIjJqQ1mc0iO7EeDExOe/8Wgc1FUmLVIe0NUxS4+clRvdy3jO88z1Ip
+4kkeanlWjxOe+oVXgqc0Q3Ne1E4I8R8Bqyfwatxusatin71mHaEzQZyFOT5snqsLYzVl1Vyn/c4z
+pex+paHcseHVod7rOh2eVvlzLnQX9XgnfXLfm3QOzVKeGAuA/nYlFd9L8bRgvlV5d6rAyuZ83426
+hLce1wFpw4PIe1neMuTygbpWSQwlu/VnfSoZtpEvB8DbvCP88Q2pnZK8F+/4yjCjjZEeodUpALww
+s0eByz/F2qPYHssWC4135PyhNKPQZkXDQ5hzG+hsZaR+Sm1ib/h1mWrXs2uLlBzCauBvpK83cpz5
+/jiMPc2bN+Ayvb4wkA+O2vToJinhOTHONYWl7Jyn7tPeAQv4OUZvf75Qq/46fa6wbQCTfysEXcDS
+i9Dr5QaWYh3yoN7EeemAZ38d+lvU2cAIJL60FVxBwhXCgGUs6iKppYrTebV4MV1CK2fnZrxD9noU
+yYCk3Lloeac6cAlvSnTJyiHP0wUqbRA5ftv6xgwL9/a34/cVs2Xw4bfGKxczNyOhsZ5jVe0VBAnW
+XkURBQnIVrU6elR8w2nxvxSpbd9G2HIwv6aNwH78K/N95663gPlCmndSlvTn5KQKfmB0zHhZ/WRI
+Tj4OGiis3VXRamt5nGG/wuJcgd2UHHEJ/4J02hs9CLDuFP78tbJDfmK4+Ujs/7I+Ehy9dwOOzWGX
+h4tMLH8lo+rSr13ULPGgO1StF+ByRxYfHkif8jJ2XXm7NPXbc5IGokTTvkuFJvzDiUffNs/C+kjI
+xi9PCASRzL28T/Ql2GnwNBw4mMgxGXs4u7EG7HdRosLL3i41vL145T7YNAfzsJ6Mh9LKCdw4cSBc
+LxRZIuV16KQrDjGJjSjGCdXCsUnXnS1hMqi5fVdLklK2o7xcEKRdWRo7c3Ge5ZrQB1mamwlUeoxz
+QY8NJx4MpnFN7Mj35nZxW82m25wlz5O2IHciDVY5z97e4TW+MH9pzLz6dA7JuJLqgTv2Dz9/l7+m
+asakeChhJs0C8U4jBvxgyDkMlhlceYQA9Mp/5Jv8lJQ4Rsdrj+HLA0OWdPn5WBEV9WOFnQNKnET3
+H/tsf8RR4W5aShdb/8TD8GWXAS3JQvLM0WEKIao2BK4fZyFEoWeQm9lQHa+7kblGGKvd/MxZlMsC
+H9QyiW7bR8RoBjUBFm7Ul1TFS3x6cBzytzL9WwWoEh1fzkC5DSsHts7smdWYBJNqdRAhjj5DuxJd
+Cr0bJxoR7KV3wjNt3V1zLvtgN+EBxLdYLMF2KQM+V/J5xaQgOO2RSRLCxaOCgxV+roZJgq06Cu9Z
+L2cplwYRFLWXGxzJ8jCpAEQFLn+EsbGFBwxGaBfzLEngT45Swg7hbQoWpV/UTic2hNu1iMm6rZva
+wtkCd9bVuk3DSmwBvbsgUeywqHKAMyeQqlAuafQlEIkxk/qUwWpeslWPEjJESxir/xFeRySFSz/3
+9qx8UdZBhiG7nt7UJy4MMQc0W4r3XiAhl/tMD+ogiOhokGyMJq1JNd0fx/WwXzbT6mp/RnP22c+X
++M55DjZlNKl/Ccql5eq30+TaUSCPhczdrECLfNL3WpX1xAwLbCZ7Ty8gqJvXGQ8EnPzxaSfEse0k
+jQjoNxZiZPStHlbd5uFsYZq8UGaYwwnsmRl1FgzOHQFZCsR03ZeHSvWUYQBaSiNfOSz4/oG8i5Jy
+/Ey1eA2IDE2T4UrMcL+wYTVe4qkOULZHrMqflKBi6xiBHsjmgFpKvQe2OqOYpBkVjTTGRoyVSbQY
+c/UDybiE3D8Wi4vHvvDPRm6kOJV7MOtS+VU4jYgcWOF+ckE6jD2ICvJr4Y9utFA+ZIOmkxFZrSST
+WNB6SGydo0Y/zfU579ancwnqdFOvEFz1xA48udtDegM1UQA7DSPgusbDcAordGZNdP78KmeB13wZ
+//g1PxfzJzR4Qaz+nlOC1d0f2M4DVPYkc3wWUt3itthNGtLsGiBqINNhYGgPTRAzjUnq1lPdTzxn
+t82Wds0wE2HaPElhojAKHeakQWiX2QBqylJXHP5w4n1hR0ysDsFHi0nuJ8uczw5DxSK+K9dw3q3l
+8f997yl1LOrBNPBNsYxCegqcDGe4y/xrb+ur6dh4m9Yvmr+/iJFrdtS+AbTzN1CmVTFqoQ2/Jh0h
+MTHkfDrfvvWCVLbhAB8YIFofRjOwLKMAb+wbkqe4j2iemWltNPu10suWHZKA9eUN2zLz5ET8ccwK
+M7I7tmquv1/1UcLj8nHfdUf5QKR3iPUbOndEMdevnZvNRDzsSakjf8+mefZse8LxlB+5H0/z+Sdu
+q6Y2n9W/R9doAMnitnv9CV6dEBE3u6ymBA4pD++rmyFEQ0ELMpDjmtpM+4g2+hvDliG34NCotrqa
+2mKa0aCfo2scUeNeVI4l6O7R1XbYN8QdKQxd5QjgpseUPrguwioMi3CdTvbfcRATfGH0wXo9TLWk
+f21TAt880UeidFoHXaFpGw8Q1W8h97COExPmLXnxiHm60P8QY+dTAqCdJb+ibmScGGGRXmg4FPNU
+H8HFSHrehzQiza0Cv/OMUyKWOp1Wso41oEYMgO+hLWBUz3rZ8Y7GGBaz0aLt7qS81ZrYCorxZIU1
+DM/sBtTUe8K7+N+jlYe+1t5IeQN110416ojqdVykdSUf4Cjp8ea5G6tZBP2T4bYhuohJUQr+XpWY
+6KQZnwikEYAIPKWfWYmqbBIT6wLzdL44cuJHshmBIqi9AGS7Xl+vO0+urp9yht9GEV8zUGF4BN43
+xRGSdD4XdbGadtu5TLQ/vkKocoBYvHX3rhBgjJDwmUinq37/FuoA/ImmZ+jT+kq94ecltgiWRi9l
+iUe6HBsoK2lNi6mfHDr9diRnqmru1I88hxMJVNyiZh19UkxOkbRuhHd5E3tckBOzI5osqy0D5Vqf
+jKz8H95sTJih5l/yFUq9FJqvwFFQZn+hnRH2AAFgf6REZwZeKf9cWq6I2RAhVLiCUSJXCjlmrWTk
+y8tu0x8h7rDK1o7gSKaX0mMoIR7hjVM3Fy1rzTdUAKoYJ2hQFNst/6bIa7tPT8RRD06dPIt5j5Pk
+GcMXpbeGW13fvOLvNdQ/Rd44vE5+27Xpi//5MQ0/QIZ+l4e9824iqOf+7dNiSt4e8cxEKkzmChy2
+AMpodGMzAPg0mzGpggk33ShyjTXpnBAfmvZSvLAth3Y5q+gkURM/8cftrPtdLJwPHIMjSk26Fu3y
+lMpQm8ul2GCEwOne1Pdlb/5OyOlgL46Ev4WFsNVROOgUwDUT25aSXOBc4YpVarHx08FK8UZyTPEM
+HrzSGHmc2i5ON6C3TbZ7vkmC4/pIit1XT86TsrIywMl3AE9Dn//VNPSzUg4CYRcgai5w/KwI3FFk
+MJDfOFU/IN5JeBtTAEt5Vg2Kz+BEBWQv8gh+XSSt7SDpTudWDKIfUjSuUWYuSwwo0cEMd1seztAa
+qXMSyJvv8wiUKmWGJgjCf2LEucupdeGUTYbea+b2o/qCA3VDfpLBekSOclKFr9QO1kDXFPmdgoSm
+0NCubF6lv+wUGhdtTecc1SuXB4/UBOSMWSa3v6hZYkqEZYkJsoa1Cy70sepvOxYEeWmcKbm1Rpy0
+IfWG+8k71yrYlENVXupEOTlNpY69mj84QLbBqiYsKaqk81E73U3Nsu3OgBZDm7bx33zwXUpsUuz3
+MrlV7vmd3sE7k+8efVAj/I7WOIJAXt23WJfnxCL3GuzG1B+V+2FIfXtMZeRrJF2OlgRk1dHlzCXj
+z7bEhz63lAIPitrmfWJbt6+wxmjhAA9YDS3YGeHaf6ifTCnV2bVGI8JlxzcsDWZOVfOtmh3yNzFF
+PZDjYbeRMg2u0UVVFWQVmWjB66qQBAR80PN/qgvT0VoAweJJdSK+JQHbz8azaUwu7qHAlhEgFsNJ
+TTilzS2+Rf21fMSYsB2x14H1oQm+ZkRs5bYPTfKKDJLo8JaAAsGG4ePgOkcBuWexbH/0WXNBLTct
+VJSAp1rJ6Rr/bNOFRrl8fyeddAhKOch7JokbT0a20nD4ecmZ8Ax1JyTNOFTxFtpK/KYAxxELn31k
+E5Lnv+wy0atLMS02Mms0sSfKOyP1Xd3h2DUO2nB7Fd5LTCw/JQmJ9hgzL8OVLWL620Hea2FpkWT+
+1bDUsGWFDzCjwk2SHPn7XAhP1mR0rLf6ARJolqKnc956RO5N9b9rt4gWU2X082ZpTCJ/1YO75x13
+k8tvOsmfxTABog5kgWzh3CBI6nC0hKIYI5Pusl+hNb7oUunIi708Q0awmA3KzIGCHKw8FPyr6e6f
+TyiwpCZwToozcCOT7DUHa/M2DYf+l+/l/+vFb8qDM26sUqp8Yuff+iXlM1NItLuXNEPNK6KZA1sl
+baMOarQkqCR7t5vWuoEqOjjjv+I55u35P8fwe8kGtAZIXVV85yVJ4c9cy02PHaHUVhyhD/c8qAqI
+YU8QuGsDQpvrv05VQE9rvcHO5AoHfOwHaNVNRRp+kBCQTPx11GeEhcvZn1qf3gTeqOdnzCmpa1Dy
+kiomAvEKG6ugwllTaZwZLK6Sp8w42n04Ylqqkflsvns8X+bMHoAV5/AXz9bzxVYSmk+mI1/esGhx
+8jhic8Ie4nU3yabOixsGnTO=

@@ -1,89 +1,36 @@
-<?php
-
-/**
- * This file is part of the ramsey/uuid library
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @copyright Copyright (c) Ben Ramsey <ben@benramsey.com>
- * @license http://opensource.org/licenses/MIT MIT
- */
-
-declare(strict_types=1);
-
-namespace Ramsey\Uuid\Rfc4122;
-
-use Ramsey\Uuid\Exception\InvalidBytesException;
-use Ramsey\Uuid\Uuid;
-
-use function decbin;
-use function str_pad;
-use function strlen;
-use function strpos;
-use function substr;
-use function unpack;
-
-use const STR_PAD_LEFT;
-
-/**
- * Provides common functionality for handling the variant, as defined by RFC 4122
- *
- * @psalm-immutable
- */
-trait VariantTrait
-{
-    /**
-     * Returns the bytes that comprise the fields
-     */
-    abstract public function getBytes(): string;
-
-    /**
-     * Returns the variant identifier, according to RFC 4122, for the given bytes
-     *
-     * The following values may be returned:
-     *
-     * - `0` -- Reserved, NCS backward compatibility.
-     * - `2` -- The variant specified in RFC 4122.
-     * - `6` -- Reserved, Microsoft Corporation backward compatibility.
-     * - `7` -- Reserved for future definition.
-     *
-     * @link https://tools.ietf.org/html/rfc4122#section-4.1.1 RFC 4122, § 4.1.1: Variant
-     *
-     * @return int The variant identifier, according to RFC 4122
-     */
-    public function getVariant(): int
-    {
-        if (strlen($this->getBytes()) !== 16) {
-            throw new InvalidBytesException('Invalid number of bytes');
-        }
-
-        $parts = unpack('n*', $this->getBytes());
-
-        // $parts[5] is a 16-bit, unsigned integer containing the variant bits
-        // of the UUID. We convert this integer into a string containing a
-        // binary representation, padded to 16 characters. We analyze the first
-        // three characters (three most-significant bits) to determine the
-        // variant.
-        $binary = str_pad(
-            decbin((int) $parts[5]),
-            16,
-            '0',
-            STR_PAD_LEFT
-        );
-
-        $msb = substr($binary, 0, 3);
-
-        if ($msb === '111') {
-            $variant = Uuid::RESERVED_FUTURE;
-        } elseif ($msb === '110') {
-            $variant = Uuid::RESERVED_MICROSOFT;
-        } elseif (strpos($msb, '10') === 0) {
-            $variant = Uuid::RFC_4122;
-        } else {
-            $variant = Uuid::RESERVED_NCS;
-        }
-
-        return $variant;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

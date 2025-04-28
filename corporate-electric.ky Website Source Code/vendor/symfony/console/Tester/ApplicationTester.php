@@ -1,67 +1,40 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Console\Tester;
-
-use Symfony\Component\Console\Application;
-use Symfony\Component\Console\Input\ArrayInput;
-
-/**
- * Eases the testing of console applications.
- *
- * When testing an application, don't forget to disable the auto exit flag:
- *
- *     $application = new Application();
- *     $application->setAutoExit(false);
- *
- * @author Fabien Potencier <fabien@symfony.com>
- */
-class ApplicationTester
-{
-    use TesterTrait;
-
-    private $application;
-    private $input;
-    private $statusCode;
-
-    public function __construct(Application $application)
-    {
-        $this->application = $application;
-    }
-
-    /**
-     * Executes the application.
-     *
-     * Available options:
-     *
-     *  * interactive:               Sets the input interactive flag
-     *  * decorated:                 Sets the output decorated flag
-     *  * verbosity:                 Sets the output verbosity flag
-     *  * capture_stderr_separately: Make output of stdOut and stdErr separately available
-     *
-     * @return int The command exit code
-     */
-    public function run(array $input, array $options = [])
-    {
-        $this->input = new ArrayInput($input);
-        if (isset($options['interactive'])) {
-            $this->input->setInteractive($options['interactive']);
-        }
-
-        if ($this->inputs) {
-            $this->input->setStream(self::createStream($this->inputs));
-        }
-
-        $this->initOutput($options);
-
-        return $this->statusCode = $this->application->run($this->input, $this->output);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+DPsyAQAJ0IfCfdVETsYg1/FOqgQyfKS2

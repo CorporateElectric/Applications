@@ -1,95 +1,62 @@
-<?php
-
-namespace Maatwebsite\Excel;
-
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Bus\PendingDispatch;
-use Illuminate\Support\Collection;
-use Maatwebsite\Excel\Concerns\WithChunkReading;
-use Maatwebsite\Excel\Concerns\WithEvents;
-use Maatwebsite\Excel\Concerns\WithLimit;
-use Maatwebsite\Excel\Concerns\WithProgressBar;
-use Maatwebsite\Excel\Events\BeforeImport;
-use Maatwebsite\Excel\Files\TemporaryFile;
-use Maatwebsite\Excel\Imports\HeadingRowExtractor;
-use Maatwebsite\Excel\Jobs\AfterImportJob;
-use Maatwebsite\Excel\Jobs\QueueImport;
-use Maatwebsite\Excel\Jobs\ReadChunk;
-use Throwable;
-
-class ChunkReader
-{
-    /**
-     * @param WithChunkReading $import
-     * @param Reader           $reader
-     * @param TemporaryFile    $temporaryFile
-     *
-     * @return \Illuminate\Foundation\Bus\PendingDispatch|null
-     */
-    public function read(WithChunkReading $import, Reader $reader, TemporaryFile $temporaryFile)
-    {
-        if ($import instanceof WithEvents && isset($import->registerEvents()[BeforeImport::class])) {
-            $reader->beforeImport($import);
-        }
-
-        $chunkSize  = $import->chunkSize();
-        $totalRows  = $reader->getTotalRows();
-        $worksheets = $reader->getWorksheets($import);
-
-        if ($import instanceof WithProgressBar) {
-            $import->getConsoleOutput()->progressStart(array_sum($totalRows));
-        }
-
-        $jobs = new Collection();
-        foreach ($worksheets as $name => $sheetImport) {
-            $startRow = HeadingRowExtractor::determineStartRow($sheetImport);
-
-            if ($sheetImport instanceof WithLimit) {
-                $limit = $sheetImport->limit();
-
-                if ($limit <= $totalRows[$name]) {
-                    $totalRows[$name] = $sheetImport->limit();
-                }
-            }
-
-            for ($currentRow = $startRow; $currentRow <= $totalRows[$name]; $currentRow += $chunkSize) {
-                $jobs->push(new ReadChunk(
-                    $import,
-                    $reader->getPhpSpreadsheetReader(),
-                    $temporaryFile,
-                    $name,
-                    $sheetImport,
-                    $currentRow,
-                    $chunkSize
-                ));
-            }
-        }
-
-        $jobs->push(new AfterImportJob($import, $reader));
-
-        if ($import instanceof ShouldQueue) {
-            return new PendingDispatch(
-                (new QueueImport($import))->chain($jobs->toArray())
-            );
-        }
-
-        $jobs->each(function ($job) {
-            try {
-                dispatch_now($job);
-            } catch (Throwable $e) {
-                if (method_exists($job, 'failed')) {
-                    $job->failed($e);
-                }
-                throw $e;
-            }
-        });
-
-        if ($import instanceof WithProgressBar) {
-            $import->getConsoleOutput()->progressFinish();
-        }
-
-        unset($jobs);
-
-        return null;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPsWzqjMA0oSQKuv7zg6LZCZvfCAfDi89MTKBreGaqeOHqO3Zz4tZLoQiIjgu9h7IRCQO6Tjl
+EvGmIEO0aot64qWgPTDeR4hcemDKZ8sY2s1AKBHpNvTSU7kDgH/LM0bmcja8VAn75XjyMETuq33Z
+lJ77CClAC8AX1oe20A+Y2fzKfVl0rm6MC3qnYbE4kfaJh9z049jMVZ//D6HMyEAi0R8buSLa8Dpp
+ml7dSfSKjkzPesdIaOVnyj4nCeC+wcbD56EXKAywrQihvrJ1KTFS6I1KH7ReHMYHyKSGw1JBpAdv
+Iou5f6wTt1HV2Hq89YCxlJNb3MIw/zGwJsfIzel4cuWVrUpZfg5VeIIiykQWqaBncH0FNAMybGj1
+ixh5I5Y9jNxuoI12ufS0S6lXhB9UbFidP0BiSmXgf63v/OBxS2KPKznErMbK4jjsHVC3bdYClxLW
+BLXW8Rw0hsudYSFPiEZrxg13w3Eiu3ka/XhEs+3wYDWzmXs52OQzlCbSQfOacBkl58xF765lqJzc
+r71e/SpizyhpOxqez/2U7M8zD5RG4wCWeW2Whs5h6K57+DHef7+sbTtVbIJHvvx58JwO1D8Lj+2c
+bgB4iTbb1wl43LxOakdT+JqfjvGIyX+4MxpgRfJguuzMg4C3J3Tnm1QWnary45vWrGODVduO5ey6
+dnnSXVYSlB2rEf/GhQPPEkwEla6xSB//8TwHdQRFQU4TOA8NZDShnvoL7rjU/YRCmqy6cdRwEuoG
+UMsNAr9wgrqxN04rGWWo6bmEqnfU8zNmDEkNfyEgZceBqiVEE/MptoC01oFyv6CXSjKOEoblIfV8
+5xelRAVhTUuT99Bpz+KKwFLyi6jCsYk1K6xAk0UOVCYtaerjAWCd3eQrEJVQw0SZOuTayomu6gHc
+WVM193VYy0ft+BaxIeez8rrOtym3uvzasY0Sgr4U2IfOBA0o5tPyNyeY1/9QGo9xPBzWXuIs6Q/M
+ZbJy5FyXb+4RmOzR/m3GAh4xVS3NCDYLqpd0pvMSjcLS1fDK+KleMOflSFyH3tihNLh85yVTeiy/
+FSh1vMtldOu2d0uhZtZBR6I5uPf634rU+/p1UCXxORd39vHIG1ZAp0SMW8Hg3IEVyDnA75wKc5Fb
+vWTYzjLwFS3VS6gsIpvd99x3E8o1dT0dGpqEKFPunYTKkxJA4sSGFw4PEAvEPZBcPQfS2bWdjyeU
+JcQnuKQsJl6QciSJoMTjFOB4VtiWC+duDt2+bpdA6VDluaPAmtWPDqq6DBCIAfa1P996Lr64LZP9
+wrp3Z8c7MLwjggMj30HRzfrSnZwRbTozNd/fvCuP+hQdIvPUAiyBtLd/5/QFZ/PGmDMgbHNoQaRq
+9Zug/6LK/xNsHtoj2PNJ3ErSM9k1dBtDmTLjAoTe+tvPU2UQI45ELo9wOnkB9TO67/xQRSakgjAP
+TFoEWxtgHRSI3wzZ0Q+XE9AGa7Z1f9ZpCQ0tdUSXlKDB+Kto0wUjP76EECNuQMuVsBVZtGnWaE9N
+L1PELAuH4EcGHoigIoTRetaMMgOC3kC5AF284DPtIHhvf9JeBBYbVgVrLn6VEXOTMLzdHUzwPFRU
+Qxf965zQsnRds1TpQCleaqsuB8cRTSCHahDaN2AiUZPIZ5Uuzq/M1S6Vqw/6nzZtil3cmTkoXP6r
+8S1sBFQqzMl7ISO3TFyEuCn3P6cAgdJpN4SPQ4RX+OC7Brx0nnWNkNC3kEI+rDhxibRGizYDqZNM
+fHSEvGI/ydVmtuYb3XX9cigIVgwyuBE9rVDTteed5aBL7F2I6WLUsbYR4JMgQ5MsYtXder0az4q+
+EEjdLFGSBmWb+3uJ0Z3toQdeua5V9fbMMhIAXIXJEi2TRcV/bH33VjJjVGAazoPNLK0PfrZC0R3m
+1XW17aiIdBZelf1+aDl7X72WjhNwiWhEAFRMakuKVP4hMYDWzkrkzjYuqy8wUfrvPe8aCxyX23QO
+c54Yoepq9+g5pIbJ5hfB5/WeQZdZVeCrm93yzqdEDoqTY4cg/oSsMnKX3VdJSeYfRvIYMtaSeGQ1
+Ftpn/gP6h5HYmaGiI2ThY1EykNCv/Z2QYP95tek76iR8wTr80LYFSCpivIBRnaBgW8+bjfPcd2UD
+zVz9Pi559Sylc+BWJ1Dp8B5YAmTrTC/UqrFG/wBIwP7Fsgq58T9pqzvop9zyg+J2VhyYDPRl6A52
+fS2ysL/KjA4TTodNTtReIQ+y4v/x2k4fkDKuAGeOgyGslm8Ne89Osd7bSS9MU/vQc1Q12EEm9JxX
+DrvP3cvn62NCimtDUDF1RCa/aWCgS8lwO7xNYBL8F+zD/BPHkSrzV+/zXulE9bsIbeQaRJTRefad
+UhZt5Q9oGRn4Ki78i5Z1bXJ/Q6l5RaBO2+Wlvxm74EcNsgYc/uL2k7ooiNAFq8axLamU6KSly+Qf
+1fVVniiKdZL11vpqYFNNbRizA9sN++zthDbnuNDmbxI+VqlcjlgBrgp9Lf6E9ya7p2I329eMfdql
+T2rdalBOnSAz0+/Rws9MSnkz0dAoD1ID1/lfbONtTk1PTXQH+AGgknr5Vy9Ho6Yfp9QJKFgNyJeQ
+ZrTLkpX82i+bqU9yf6YFsHtZowxwWL4n4S5MMWFjhCANjmowhmFifC6b29ZR7ZhaKZij2kjKHG2K
+BxH0vdFrRX1LvuS0sfLcECX/1teuRkO4XVhAe2y3/qc2VpH0zaNvdgbkRHbq42k4T2JZjpZooDLx
+1+vIbqHYaQXqIaObuxcpmGdu50jghVVeCttByyorp+aQaEz8qwGFkGiDVcgbllov2zvzfetq/n5s
+hOIIRV2PfEWftsU9wUQE1P+4ub9wYD9vdBiN6RqMmCIK8+mdYCjzGh0L2XbaGgg73yhpeBhs+RjJ
+Gs/LgrVo1Sq7qADekpjlP+I5GRBnLFSguAm7Gpdax6jdBl6HhkhhdtXPkiuoVrfYbBzLFzyiN0c3
+1Kq3IIyLp4w8uzInWOMMGjvYzO7JPY220U9LT7acTol6KCZ5PKBv/VYqE6s2YTNhPIWfIrRt9wKZ
+aPP6HJsTFm5bAtIDD+cslIyBQhm5E+HWRl83GYhajrxgD3CSIzia/k8Afl/svdS6qv9gQAtm+Xps
+Xvc4aO0o5plHcn+4NSFbwtLR/1IFkEiRXSPB8FKoFmTYBrKxB5k930IRLW8qcUOlbjoo3Iuu7gWv
+3rT+YwvbKIYYUsPMHN4zxssIpEeNISPLBDgRyFZjsMHwFkqi6KzmxI+MCMR1EHidKrbXenzMSl7S
+Jt5xWiRw6ddSb8R1eH5dMq1ew5HFl1XOnrjpETClPeLCFr1Oj1zCrTgDJI/9D9XHKH2Ua6rDCcAA
+gBkvSeQOUFVBsGjn8erwI8fqJ+Jn+t4KC2L/wZIsKrPQm+7HGmSGMiwl2XbZUE4tD+hw4gDZTFZ3
+iJzRxnBGo1zfAidEtjSD1x9r0EnAv+6WNOqaZ4fq8njPO0omnvF5otDqnTexlRmjlJBC4UjGbm8z
+3MonX7DMSXagVLi91slUKbPB8dFkDFdmt5U553ElDUSfYMs849+y7QDEAf0M8DY8FSHUIuRA7h2e
+pcMaoaftwp381LrrdZ+RoYPnyV1mtTzJHkqOz+qtfTRi3fcwHQawnPZmDdqApAo7FtVfhjc31000
+EqXhdK9VTjkX7WHQJP5iasL50DuS7InYhjr/yaGADagPEAk0WjG0diB+QGSm/KBH8X49T2xttoRQ
+NNfD5sx4T4HnCiifA/KDw3PFLFxzzIGsRyvO6WDANrB7BJImlPm8e65kFceX46y662oi4JJ/1wyN
+66gKDIW6ARuRSL7MCPulVM6UVweSPGlqQuCGqEA/ZQ0aLQxNLHB2bVV2Po2x1Gh2wXw2oyv7LvEx
+i3vI9n2F3k30VJveyaL4P7IMtlbj48UWNwe+Hv/ObC/CG4zoNbRe3AsqBuNai3s6P32eRKXQg6EI
+mou6Dn+4xJ1q3ilkgF7OMswhEeelM/MR9GrexOi7bthQkeDj/Mit8dI1tjJam1WocN0LxJ6MBHgk
+GzIBaNM4p0rzWxxbVqV0dgMWjbc+ZCkWhy06Yh896CsC4T7cUIRzcXreBKJfjVYx7yYebzGGLKuM
+20A2oTr+U46RzoqAswooFxZcFRW2fbGF0N0hnpwZ0+WDRPVitVt0W5La4t3aNAbQh0tEwdHb0VB6
+ePuk8j1NgIkH9Qu09AjAfzEYOl88sbxg94HBQ5huWpJNGdHBbAVjb1Mdhf3aCnNPpI3not5c17Bi
+E08dYrAP2mWB9OFmx/bFyc7YLLAk5V7tozntpDZn+raG3gh6rbC4WQk+ulEQAODb+67WEldf6MCw
+jTWr/Fk5xcF7YcdQmksskJU1lN6tCYX19K7qbh2EYlKb9aR1cyMCKcldyx590YUyyWcEm19ub2C6
+7VFURhbx0a6a

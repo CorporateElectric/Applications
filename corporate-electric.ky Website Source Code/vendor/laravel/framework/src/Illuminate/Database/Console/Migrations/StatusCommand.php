@@ -1,115 +1,79 @@
-<?php
-
-namespace Illuminate\Database\Console\Migrations;
-
-use Illuminate\Database\Migrations\Migrator;
-use Illuminate\Support\Collection;
-use Symfony\Component\Console\Input\InputOption;
-
-class StatusCommand extends BaseCommand
-{
-    /**
-     * The console command name.
-     *
-     * @var string
-     */
-    protected $name = 'migrate:status';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Show the status of each migration';
-
-    /**
-     * The migrator instance.
-     *
-     * @var \Illuminate\Database\Migrations\Migrator
-     */
-    protected $migrator;
-
-    /**
-     * Create a new migration rollback command instance.
-     *
-     * @param  \Illuminate\Database\Migrations\Migrator  $migrator
-     * @return void
-     */
-    public function __construct(Migrator $migrator)
-    {
-        parent::__construct();
-
-        $this->migrator = $migrator;
-    }
-
-    /**
-     * Execute the console command.
-     *
-     * @return int|null
-     */
-    public function handle()
-    {
-        return $this->migrator->usingConnection($this->option('database'), function () {
-            if (! $this->migrator->repositoryExists()) {
-                $this->error('Migration table not found.');
-
-                return 1;
-            }
-
-            $ran = $this->migrator->getRepository()->getRan();
-
-            $batches = $this->migrator->getRepository()->getMigrationBatches();
-
-            if (count($migrations = $this->getStatusFor($ran, $batches)) > 0) {
-                $this->table(['Ran?', 'Migration', 'Batch'], $migrations);
-            } else {
-                $this->error('No migrations found');
-            }
-        });
-    }
-
-    /**
-     * Get the status for the given ran migrations.
-     *
-     * @param  array  $ran
-     * @param  array  $batches
-     * @return \Illuminate\Support\Collection
-     */
-    protected function getStatusFor(array $ran, array $batches)
-    {
-        return Collection::make($this->getAllMigrationFiles())
-                    ->map(function ($migration) use ($ran, $batches) {
-                        $migrationName = $this->migrator->getMigrationName($migration);
-
-                        return in_array($migrationName, $ran)
-                                ? ['<info>Yes</info>', $migrationName, $batches[$migrationName]]
-                                : ['<fg=red>No</fg=red>', $migrationName];
-                    });
-    }
-
-    /**
-     * Get an array of all of the migration files.
-     *
-     * @return array
-     */
-    protected function getAllMigrationFiles()
-    {
-        return $this->migrator->getMigrationFiles($this->getMigrationPaths());
-    }
-
-    /**
-     * Get the console command options.
-     *
-     * @return array
-     */
-    protected function getOptions()
-    {
-        return [
-            ['database', null, InputOption::VALUE_OPTIONAL, 'The database connection to use'],
-
-            ['path', null, InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY, 'The path(s) to the migrations files to use'],
-
-            ['realpath', null, InputOption::VALUE_NONE, 'Indicate any provided migration file paths are pre-resolved absolute paths'],
-        ];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

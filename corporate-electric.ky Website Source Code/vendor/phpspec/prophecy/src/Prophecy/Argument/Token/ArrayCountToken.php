@@ -1,86 +1,42 @@
-<?php
-
-/*
- * This file is part of the Prophecy.
- * (c) Konstantin Kudryashov <ever.zet@gmail.com>
- *     Marcello Duarte <marcello.duarte@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Prophecy\Argument\Token;
-
-/**
- * Array elements count token.
- *
- * @author Boris Mikhaylov <kaguxmail@gmail.com>
- */
-
-class ArrayCountToken implements TokenInterface
-{
-    private $count;
-
-    /**
-     * @param integer $value
-     */
-    public function __construct($value)
-    {
-        $this->count = $value;
-    }
-
-    /**
-     * Scores 6 when argument has preset number of elements.
-     *
-     * @param $argument
-     *
-     * @return bool|int
-     */
-    public function scoreArgument($argument)
-    {
-        return $this->isCountable($argument) && $this->hasProperCount($argument) ? 6 : false;
-    }
-
-    /**
-     * Returns false.
-     *
-     * @return boolean
-     */
-    public function isLast()
-    {
-        return false;
-    }
-
-    /**
-     * Returns string representation for token.
-     *
-     * @return string
-     */
-    public function __toString()
-    {
-        return sprintf('count(%s)', $this->count);
-    }
-
-    /**
-     * Returns true if object is either array or instance of \Countable
-     *
-     * @param $argument
-     * @return bool
-     */
-    private function isCountable($argument)
-    {
-        return (is_array($argument) || $argument instanceof \Countable);
-    }
-
-    /**
-     * Returns true if $argument has expected number of elements
-     *
-     * @param array|\Countable $argument
-     *
-     * @return bool
-     */
-    private function hasProperCount($argument)
-    {
-        return $this->count === count($argument);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

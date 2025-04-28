@@ -1,58 +1,33 @@
-<?php
-/**
- * Mockery
- *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://github.com/padraic/mockery/blob/master/LICENSE
- * If you did not receive a copy of the license and are unable to
- * obtain it through the world-wide-web, please send an email
- * to padraic@php.net so we can send you a copy immediately.
- *
- * @category   Mockery
- * @package    Mockery
- * @copyright  Copyright (c) 2010 Pádraic Brady (http://blog.astrumfutura.com)
- * @license    http://github.com/padraic/mockery/blob/master/LICENSE New BSD License
- */
-
-namespace Mockery\Generator\StringManipulation\Pass;
-
-use Mockery\Generator\MockConfiguration;
-
-/**
- * Internal classes can not be instantiated with the newInstanceWithoutArgs
- * reflection method, so need the serialization hack. If the class also
- * implements Serializable, we need to replace the standard unserialize method
- * definition with a dummy
- */
-class RemoveUnserializeForInternalSerializableClassesPass
-{
-    const DUMMY_METHOD_DEFINITION = 'public function unserialize($string) {} ';
-
-    public function apply($code, MockConfiguration $config)
-    {
-        $target = $config->getTargetClass();
-
-        if (!$target) {
-            return $code;
-        }
-
-        if (!$target->hasInternalAncestor() || !$target->implementsInterface("Serializable")) {
-            return $code;
-        }
-
-        $code = $this->appendToClass($code, self::DUMMY_METHOD_DEFINITION);
-
-        return $code;
-    }
-
-    protected function appendToClass($class, $code)
-    {
-        $lastBrace = strrpos($class, "}");
-        $class = substr($class, 0, $lastBrace) . $code . "\n    }\n";
-        return $class;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+DDW=

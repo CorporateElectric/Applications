@@ -1,416 +1,175 @@
-<?php
-
-namespace Illuminate\Console;
-
-use Illuminate\Filesystem\Filesystem;
-use Illuminate\Support\Str;
-use Symfony\Component\Console\Input\InputArgument;
-
-abstract class GeneratorCommand extends Command
-{
-    /**
-     * The filesystem instance.
-     *
-     * @var \Illuminate\Filesystem\Filesystem
-     */
-    protected $files;
-
-    /**
-     * The type of class being generated.
-     *
-     * @var string
-     */
-    protected $type;
-
-    /**
-     * Reserved names that cannot be used for generation.
-     *
-     * @var string[]
-     */
-    protected $reservedNames = [
-        '__halt_compiler',
-        'abstract',
-        'and',
-        'array',
-        'as',
-        'break',
-        'callable',
-        'case',
-        'catch',
-        'class',
-        'clone',
-        'const',
-        'continue',
-        'declare',
-        'default',
-        'die',
-        'do',
-        'echo',
-        'else',
-        'elseif',
-        'empty',
-        'enddeclare',
-        'endfor',
-        'endforeach',
-        'endif',
-        'endswitch',
-        'endwhile',
-        'eval',
-        'exit',
-        'extends',
-        'final',
-        'finally',
-        'fn',
-        'for',
-        'foreach',
-        'function',
-        'global',
-        'goto',
-        'if',
-        'implements',
-        'include',
-        'include_once',
-        'instanceof',
-        'insteadof',
-        'interface',
-        'isset',
-        'list',
-        'namespace',
-        'new',
-        'or',
-        'print',
-        'private',
-        'protected',
-        'public',
-        'require',
-        'require_once',
-        'return',
-        'static',
-        'switch',
-        'throw',
-        'trait',
-        'try',
-        'unset',
-        'use',
-        'var',
-        'while',
-        'xor',
-        'yield',
-    ];
-
-    /**
-     * Create a new controller creator command instance.
-     *
-     * @param  \Illuminate\Filesystem\Filesystem  $files
-     * @return void
-     */
-    public function __construct(Filesystem $files)
-    {
-        parent::__construct();
-
-        $this->files = $files;
-    }
-
-    /**
-     * Get the stub file for the generator.
-     *
-     * @return string
-     */
-    abstract protected function getStub();
-
-    /**
-     * Execute the console command.
-     *
-     * @return bool|null
-     *
-     * @throws \Illuminate\Contracts\Filesystem\FileNotFoundException
-     */
-    public function handle()
-    {
-        // First we need to ensure that the given name is not a reserved word within the PHP
-        // language and that the class name will actually be valid. If it is not valid we
-        // can error now and prevent from polluting the filesystem using invalid files.
-        if ($this->isReservedName($this->getNameInput())) {
-            $this->error('The name "'.$this->getNameInput().'" is reserved by PHP.');
-
-            return false;
-        }
-
-        $name = $this->qualifyClass($this->getNameInput());
-
-        $path = $this->getPath($name);
-
-        // Next, We will check to see if the class already exists. If it does, we don't want
-        // to create the class and overwrite the user's code. So, we will bail out so the
-        // code is untouched. Otherwise, we will continue generating this class' files.
-        if ((! $this->hasOption('force') ||
-             ! $this->option('force')) &&
-             $this->alreadyExists($this->getNameInput())) {
-            $this->error($this->type.' already exists!');
-
-            return false;
-        }
-
-        // Next, we will generate the path to the location where this class' file should get
-        // written. Then, we will build the class and make the proper replacements on the
-        // stub files so that it gets the correctly formatted namespace and class name.
-        $this->makeDirectory($path);
-
-        $this->files->put($path, $this->sortImports($this->buildClass($name)));
-
-        $this->info($this->type.' created successfully.');
-    }
-
-    /**
-     * Parse the class name and format according to the root namespace.
-     *
-     * @param  string  $name
-     * @return string
-     */
-    protected function qualifyClass($name)
-    {
-        $name = ltrim($name, '\\/');
-
-        $name = str_replace('/', '\\', $name);
-
-        $rootNamespace = $this->rootNamespace();
-
-        if (Str::startsWith($name, $rootNamespace)) {
-            return $name;
-        }
-
-        return $this->qualifyClass(
-            $this->getDefaultNamespace(trim($rootNamespace, '\\')).'\\'.$name
-        );
-    }
-
-    /**
-     * Qualify the given model class base name.
-     *
-     * @param  string  $model
-     * @return string
-     */
-    protected function qualifyModel(string $model)
-    {
-        $model = ltrim($model, '\\/');
-
-        $model = str_replace('/', '\\', $model);
-
-        $rootNamespace = $this->rootNamespace();
-
-        if (Str::startsWith($model, $rootNamespace)) {
-            return $model;
-        }
-
-        return is_dir(app_path('Models'))
-                    ? $rootNamespace.'Models\\'.$model
-                    : $rootNamespace.$model;
-    }
-
-    /**
-     * Get the default namespace for the class.
-     *
-     * @param  string  $rootNamespace
-     * @return string
-     */
-    protected function getDefaultNamespace($rootNamespace)
-    {
-        return $rootNamespace;
-    }
-
-    /**
-     * Determine if the class already exists.
-     *
-     * @param  string  $rawName
-     * @return bool
-     */
-    protected function alreadyExists($rawName)
-    {
-        return $this->files->exists($this->getPath($this->qualifyClass($rawName)));
-    }
-
-    /**
-     * Get the destination class path.
-     *
-     * @param  string  $name
-     * @return string
-     */
-    protected function getPath($name)
-    {
-        $name = Str::replaceFirst($this->rootNamespace(), '', $name);
-
-        return $this->laravel['path'].'/'.str_replace('\\', '/', $name).'.php';
-    }
-
-    /**
-     * Build the directory for the class if necessary.
-     *
-     * @param  string  $path
-     * @return string
-     */
-    protected function makeDirectory($path)
-    {
-        if (! $this->files->isDirectory(dirname($path))) {
-            $this->files->makeDirectory(dirname($path), 0777, true, true);
-        }
-
-        return $path;
-    }
-
-    /**
-     * Build the class with the given name.
-     *
-     * @param  string  $name
-     * @return string
-     *
-     * @throws \Illuminate\Contracts\Filesystem\FileNotFoundException
-     */
-    protected function buildClass($name)
-    {
-        $stub = $this->files->get($this->getStub());
-
-        return $this->replaceNamespace($stub, $name)->replaceClass($stub, $name);
-    }
-
-    /**
-     * Replace the namespace for the given stub.
-     *
-     * @param  string  $stub
-     * @param  string  $name
-     * @return $this
-     */
-    protected function replaceNamespace(&$stub, $name)
-    {
-        $searches = [
-            ['DummyNamespace', 'DummyRootNamespace', 'NamespacedDummyUserModel'],
-            ['{{ namespace }}', '{{ rootNamespace }}', '{{ namespacedUserModel }}'],
-            ['{{namespace}}', '{{rootNamespace}}', '{{namespacedUserModel}}'],
-        ];
-
-        foreach ($searches as $search) {
-            $stub = str_replace(
-                $search,
-                [$this->getNamespace($name), $this->rootNamespace(), $this->userProviderModel()],
-                $stub
-            );
-        }
-
-        return $this;
-    }
-
-    /**
-     * Get the full namespace for a given class, without the class name.
-     *
-     * @param  string  $name
-     * @return string
-     */
-    protected function getNamespace($name)
-    {
-        return trim(implode('\\', array_slice(explode('\\', $name), 0, -1)), '\\');
-    }
-
-    /**
-     * Replace the class name for the given stub.
-     *
-     * @param  string  $stub
-     * @param  string  $name
-     * @return string
-     */
-    protected function replaceClass($stub, $name)
-    {
-        $class = str_replace($this->getNamespace($name).'\\', '', $name);
-
-        return str_replace(['DummyClass', '{{ class }}', '{{class}}'], $class, $stub);
-    }
-
-    /**
-     * Alphabetically sorts the imports for the given stub.
-     *
-     * @param  string  $stub
-     * @return string
-     */
-    protected function sortImports($stub)
-    {
-        if (preg_match('/(?P<imports>(?:use [^;]+;$\n?)+)/m', $stub, $match)) {
-            $imports = explode("\n", trim($match['imports']));
-
-            sort($imports);
-
-            return str_replace(trim($match['imports']), implode("\n", $imports), $stub);
-        }
-
-        return $stub;
-    }
-
-    /**
-     * Get the desired class name from the input.
-     *
-     * @return string
-     */
-    protected function getNameInput()
-    {
-        return trim($this->argument('name'));
-    }
-
-    /**
-     * Get the root namespace for the class.
-     *
-     * @return string
-     */
-    protected function rootNamespace()
-    {
-        return $this->laravel->getNamespace();
-    }
-
-    /**
-     * Get the model for the default guard's user provider.
-     *
-     * @return string|null
-     */
-    protected function userProviderModel()
-    {
-        $config = $this->laravel['config'];
-
-        $provider = $config->get('auth.guards.'.$config->get('auth.defaults.guard').'.provider');
-
-        return $config->get("auth.providers.{$provider}.model");
-    }
-
-    /**
-     * Checks whether the given name is reserved.
-     *
-     * @param  string  $name
-     * @return bool
-     */
-    protected function isReservedName($name)
-    {
-        $name = strtolower($name);
-
-        return in_array($name, $this->reservedNames);
-    }
-
-    /**
-     * Get the first view directory path from the application configuration.
-     *
-     * @param  string  $path
-     * @return string
-     */
-    protected function viewPath($path = '')
-    {
-        $views = $this->laravel['config']['view.paths'][0] ?? resource_path('views');
-
-        return $views.($path ? DIRECTORY_SEPARATOR.$path : $path);
-    }
-
-    /**
-     * Get the console command arguments.
-     *
-     * @return array
-     */
-    protected function getArguments()
-    {
-        return [
-            ['name', InputArgument::REQUIRED, 'The name of the class'],
-        ];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+4UUQiByjTvw8jVm+raYbx+Gxv5e6aBm5eQdE

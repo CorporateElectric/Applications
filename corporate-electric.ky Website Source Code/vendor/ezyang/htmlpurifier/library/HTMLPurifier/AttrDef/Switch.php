@@ -1,53 +1,29 @@
-<?php
-
-/**
- * Decorator that, depending on a token, switches between two definitions.
- */
-class HTMLPurifier_AttrDef_Switch
-{
-
-    /**
-     * @type string
-     */
-    protected $tag;
-
-    /**
-     * @type HTMLPurifier_AttrDef
-     */
-    protected $withTag;
-
-    /**
-     * @type HTMLPurifier_AttrDef
-     */
-    protected $withoutTag;
-
-    /**
-     * @param string $tag Tag name to switch upon
-     * @param HTMLPurifier_AttrDef $with_tag Call if token matches tag
-     * @param HTMLPurifier_AttrDef $without_tag Call if token doesn't match, or there is no token
-     */
-    public function __construct($tag, $with_tag, $without_tag)
-    {
-        $this->tag = $tag;
-        $this->withTag = $with_tag;
-        $this->withoutTag = $without_tag;
-    }
-
-    /**
-     * @param string $string
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return bool|string
-     */
-    public function validate($string, $config, $context)
-    {
-        $token = $context->get('CurrentToken', true);
-        if (!$token || $token->name !== $this->tag) {
-            return $this->withoutTag->validate($string, $config, $context);
-        } else {
-            return $this->withTag->validate($string, $config, $context);
-        }
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

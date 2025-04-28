@@ -1,925 +1,401 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com> and Trevor Rowbotham <trevor.rowbotham@pm.me>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Polyfill\Intl\Idn;
-
-use Exception;
-use Normalizer;
-use Symfony\Polyfill\Intl\Idn\Resources\unidata\DisallowedRanges;
-use Symfony\Polyfill\Intl\Idn\Resources\unidata\Regex;
-
-/**
- * @see https://www.unicode.org/reports/tr46/
- *
- * @internal
- */
-final class Idn
-{
-    public const ERROR_EMPTY_LABEL = 1;
-    public const ERROR_LABEL_TOO_LONG = 2;
-    public const ERROR_DOMAIN_NAME_TOO_LONG = 4;
-    public const ERROR_LEADING_HYPHEN = 8;
-    public const ERROR_TRAILING_HYPHEN = 0x10;
-    public const ERROR_HYPHEN_3_4 = 0x20;
-    public const ERROR_LEADING_COMBINING_MARK = 0x40;
-    public const ERROR_DISALLOWED = 0x80;
-    public const ERROR_PUNYCODE = 0x100;
-    public const ERROR_LABEL_HAS_DOT = 0x200;
-    public const ERROR_INVALID_ACE_LABEL = 0x400;
-    public const ERROR_BIDI = 0x800;
-    public const ERROR_CONTEXTJ = 0x1000;
-    public const ERROR_CONTEXTO_PUNCTUATION = 0x2000;
-    public const ERROR_CONTEXTO_DIGITS = 0x4000;
-
-    public const INTL_IDNA_VARIANT_2003 = 0;
-    public const INTL_IDNA_VARIANT_UTS46 = 1;
-
-    public const IDNA_DEFAULT = 0;
-    public const IDNA_ALLOW_UNASSIGNED = 1;
-    public const IDNA_USE_STD3_RULES = 2;
-    public const IDNA_CHECK_BIDI = 4;
-    public const IDNA_CHECK_CONTEXTJ = 8;
-    public const IDNA_NONTRANSITIONAL_TO_ASCII = 16;
-    public const IDNA_NONTRANSITIONAL_TO_UNICODE = 32;
-
-    public const MAX_DOMAIN_SIZE = 253;
-    public const MAX_LABEL_SIZE = 63;
-
-    public const BASE = 36;
-    public const TMIN = 1;
-    public const TMAX = 26;
-    public const SKEW = 38;
-    public const DAMP = 700;
-    public const INITIAL_BIAS = 72;
-    public const INITIAL_N = 128;
-    public const DELIMITER = '-';
-    public const MAX_INT = 2147483647;
-
-    /**
-     * Contains the numeric value of a basic code point (for use in representing integers) in the
-     * range 0 to BASE-1, or -1 if b is does not represent a value.
-     *
-     * @var array<int, int>
-     */
-    private static $basicToDigit = [
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        26, 27, 28, 29, 30, 31, 32, 33, 34, 35, -1, -1, -1, -1, -1, -1,
-
-        -1,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14,
-        15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, -1, -1, -1, -1,
-
-        -1,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14,
-        15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, -1, -1, -1, -1,
-
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    ];
-
-    /**
-     * @var array<int, int>
-     */
-    private static $virama;
-
-    /**
-     * @var array<int, string>
-     */
-    private static $mapped;
-
-    /**
-     * @var array<int, bool>
-     */
-    private static $ignored;
-
-    /**
-     * @var array<int, string>
-     */
-    private static $deviation;
-
-    /**
-     * @var array<int, bool>
-     */
-    private static $disallowed;
-
-    /**
-     * @var array<int, string>
-     */
-    private static $disallowed_STD3_mapped;
-
-    /**
-     * @var array<int, bool>
-     */
-    private static $disallowed_STD3_valid;
-
-    /**
-     * @var bool
-     */
-    private static $mappingTableLoaded = false;
-
-    /**
-     * @see https://www.unicode.org/reports/tr46/#ToASCII
-     *
-     * @param string $domainName
-     * @param int    $options
-     * @param int    $variant
-     * @param array  $idna_info
-     *
-     * @return string|false
-     */
-    public static function idn_to_ascii($domainName, $options = self::IDNA_DEFAULT, $variant = self::INTL_IDNA_VARIANT_UTS46, &$idna_info = [])
-    {
-        if (\PHP_VERSION_ID >= 70200 && self::INTL_IDNA_VARIANT_2003 === $variant) {
-            @trigger_error('idn_to_ascii(): INTL_IDNA_VARIANT_2003 is deprecated', \E_USER_DEPRECATED);
-        }
-
-        $options = [
-            'CheckHyphens' => true,
-            'CheckBidi' => self::INTL_IDNA_VARIANT_2003 === $variant || 0 !== ($options & self::IDNA_CHECK_BIDI),
-            'CheckJoiners' => self::INTL_IDNA_VARIANT_UTS46 === $variant && 0 !== ($options & self::IDNA_CHECK_CONTEXTJ),
-            'UseSTD3ASCIIRules' => 0 !== ($options & self::IDNA_USE_STD3_RULES),
-            'Transitional_Processing' => self::INTL_IDNA_VARIANT_2003 === $variant || 0 === ($options & self::IDNA_NONTRANSITIONAL_TO_ASCII),
-            'VerifyDnsLength' => true,
-        ];
-        $info = new Info();
-        $labels = self::process((string) $domainName, $options, $info);
-
-        foreach ($labels as $i => $label) {
-            // Only convert labels to punycode that contain non-ASCII code points
-            if (1 === preg_match('/[^\x00-\x7F]/', $label)) {
-                try {
-                    $label = 'xn--'.self::punycodeEncode($label);
-                } catch (Exception $e) {
-                    $info->errors |= self::ERROR_PUNYCODE;
-                }
-
-                $labels[$i] = $label;
-            }
-        }
-
-        if ($options['VerifyDnsLength']) {
-            self::validateDomainAndLabelLength($labels, $info);
-        }
-
-        $idna_info = [
-            'result' => implode('.', $labels),
-            'isTransitionalDifferent' => $info->transitionalDifferent,
-            'errors' => $info->errors,
-        ];
-
-        return 0 === $info->errors ? $idna_info['result'] : false;
-    }
-
-    /**
-     * @see https://www.unicode.org/reports/tr46/#ToUnicode
-     *
-     * @param string $domainName
-     * @param int    $options
-     * @param int    $variant
-     * @param array  $idna_info
-     *
-     * @return string|false
-     */
-    public static function idn_to_utf8($domainName, $options = self::IDNA_DEFAULT, $variant = self::INTL_IDNA_VARIANT_UTS46, &$idna_info = [])
-    {
-        if (\PHP_VERSION_ID >= 70200 && self::INTL_IDNA_VARIANT_2003 === $variant) {
-            @trigger_error('idn_to_utf8(): INTL_IDNA_VARIANT_2003 is deprecated', \E_USER_DEPRECATED);
-        }
-
-        $info = new Info();
-        $labels = self::process((string) $domainName, [
-            'CheckHyphens' => true,
-            'CheckBidi' => self::INTL_IDNA_VARIANT_2003 === $variant || 0 !== ($options & self::IDNA_CHECK_BIDI),
-            'CheckJoiners' => self::INTL_IDNA_VARIANT_UTS46 === $variant && 0 !== ($options & self::IDNA_CHECK_CONTEXTJ),
-            'UseSTD3ASCIIRules' => 0 !== ($options & self::IDNA_USE_STD3_RULES),
-            'Transitional_Processing' => self::INTL_IDNA_VARIANT_2003 === $variant || 0 === ($options & self::IDNA_NONTRANSITIONAL_TO_UNICODE),
-        ], $info);
-        $idna_info = [
-            'result' => implode('.', $labels),
-            'isTransitionalDifferent' => $info->transitionalDifferent,
-            'errors' => $info->errors,
-        ];
-
-        return 0 === $info->errors ? $idna_info['result'] : false;
-    }
-
-    /**
-     * @param string $label
-     *
-     * @return bool
-     */
-    private static function isValidContextJ(array $codePoints, $label)
-    {
-        if (!isset(self::$virama)) {
-            self::$virama = require __DIR__.\DIRECTORY_SEPARATOR.'Resources'.\DIRECTORY_SEPARATOR.'unidata'.\DIRECTORY_SEPARATOR.'virama.php';
-        }
-
-        $offset = 0;
-
-        foreach ($codePoints as $i => $codePoint) {
-            if (0x200C !== $codePoint && 0x200D !== $codePoint) {
-                continue;
-            }
-
-            if (!isset($codePoints[$i - 1])) {
-                return false;
-            }
-
-            // If Canonical_Combining_Class(Before(cp)) .eq. Virama Then True;
-            if (isset(self::$virama[$codePoints[$i - 1]])) {
-                continue;
-            }
-
-            // If RegExpMatch((Joining_Type:{L,D})(Joining_Type:T)*\u200C(Joining_Type:T)*(Joining_Type:{R,D})) Then
-            // True;
-            // Generated RegExp = ([Joining_Type:{L,D}][Joining_Type:T]*\u200C[Joining_Type:T]*)[Joining_Type:{R,D}]
-            if (0x200C === $codePoint && 1 === preg_match(Regex::ZWNJ, $label, $matches, \PREG_OFFSET_CAPTURE, $offset)) {
-                $offset += \strlen($matches[1][0]);
-
-                continue;
-            }
-
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * @see https://www.unicode.org/reports/tr46/#ProcessingStepMap
-     *
-     * @param string              $input
-     * @param array<string, bool> $options
-     *
-     * @return string
-     */
-    private static function mapCodePoints($input, array $options, Info $info)
-    {
-        $str = '';
-        $useSTD3ASCIIRules = $options['UseSTD3ASCIIRules'];
-        $transitional = $options['Transitional_Processing'];
-
-        foreach (self::utf8Decode($input) as $codePoint) {
-            $data = self::lookupCodePointStatus($codePoint, $useSTD3ASCIIRules);
-
-            switch ($data['status']) {
-                case 'disallowed':
-                    $info->errors |= self::ERROR_DISALLOWED;
-
-                    // no break.
-
-                case 'valid':
-                    $str .= mb_chr($codePoint, 'utf-8');
-
-                    break;
-
-                case 'ignored':
-                    // Do nothing.
-                    break;
-
-                case 'mapped':
-                    $str .= $data['mapping'];
-
-                    break;
-
-                case 'deviation':
-                    $info->transitionalDifferent = true;
-                    $str .= ($transitional ? $data['mapping'] : mb_chr($codePoint, 'utf-8'));
-
-                    break;
-            }
-        }
-
-        return $str;
-    }
-
-    /**
-     * @see https://www.unicode.org/reports/tr46/#Processing
-     *
-     * @param string              $domain
-     * @param array<string, bool> $options
-     *
-     * @return array<int, string>
-     */
-    private static function process($domain, array $options, Info $info)
-    {
-        // If VerifyDnsLength is not set, we are doing ToUnicode otherwise we are doing ToASCII and
-        // we need to respect the VerifyDnsLength option.
-        $checkForEmptyLabels = !isset($options['VerifyDnsLength']) || $options['VerifyDnsLength'];
-
-        if ($checkForEmptyLabels && '' === $domain) {
-            $info->errors |= self::ERROR_EMPTY_LABEL;
-
-            return [$domain];
-        }
-
-        // Step 1. Map each code point in the domain name string
-        $domain = self::mapCodePoints($domain, $options, $info);
-
-        // Step 2. Normalize the domain name string to Unicode Normalization Form C.
-        if (!Normalizer::isNormalized($domain, Normalizer::FORM_C)) {
-            $domain = Normalizer::normalize($domain, Normalizer::FORM_C);
-        }
-
-        // Step 3. Break the string into labels at U+002E (.) FULL STOP.
-        $labels = explode('.', $domain);
-        $lastLabelIndex = \count($labels) - 1;
-
-        // Step 4. Convert and validate each label in the domain name string.
-        foreach ($labels as $i => $label) {
-            $validationOptions = $options;
-
-            if ('xn--' === substr($label, 0, 4)) {
-                try {
-                    $label = self::punycodeDecode(substr($label, 4));
-                } catch (Exception $e) {
-                    $info->errors |= self::ERROR_PUNYCODE;
-
-                    continue;
-                }
-
-                $validationOptions['Transitional_Processing'] = false;
-                $labels[$i] = $label;
-            }
-
-            self::validateLabel($label, $info, $validationOptions, $i > 0 && $i === $lastLabelIndex);
-        }
-
-        if ($info->bidiDomain && !$info->validBidiDomain) {
-            $info->errors |= self::ERROR_BIDI;
-        }
-
-        // Any input domain name string that does not record an error has been successfully
-        // processed according to this specification. Conversely, if an input domain_name string
-        // causes an error, then the processing of the input domain_name string fails. Determining
-        // what to do with error input is up to the caller, and not in the scope of this document.
-        return $labels;
-    }
-
-    /**
-     * @see https://tools.ietf.org/html/rfc5893#section-2
-     *
-     * @param string $label
-     */
-    private static function validateBidiLabel($label, Info $info)
-    {
-        if (1 === preg_match(Regex::RTL_LABEL, $label)) {
-            $info->bidiDomain = true;
-
-            // Step 1. The first character must be a character with Bidi property L, R, or AL.
-            // If it has the R or AL property, it is an RTL label
-            if (1 !== preg_match(Regex::BIDI_STEP_1_RTL, $label)) {
-                $info->validBidiDomain = false;
-
-                return;
-            }
-
-            // Step 2. In an RTL label, only characters with the Bidi properties R, AL, AN, EN, ES,
-            // CS, ET, ON, BN, or NSM are allowed.
-            if (1 === preg_match(Regex::BIDI_STEP_2, $label)) {
-                $info->validBidiDomain = false;
-
-                return;
-            }
-
-            // Step 3. In an RTL label, the end of the label must be a character with Bidi property
-            // R, AL, EN, or AN, followed by zero or more characters with Bidi property NSM.
-            if (1 !== preg_match(Regex::BIDI_STEP_3, $label)) {
-                $info->validBidiDomain = false;
-
-                return;
-            }
-
-            // Step 4. In an RTL label, if an EN is present, no AN may be present, and vice versa.
-            if (1 === preg_match(Regex::BIDI_STEP_4_AN, $label) && 1 === preg_match(Regex::BIDI_STEP_4_EN, $label)) {
-                $info->validBidiDomain = false;
-
-                return;
-            }
-
-            return;
-        }
-
-        // We are a LTR label
-        // Step 1. The first character must be a character with Bidi property L, R, or AL.
-        // If it has the L property, it is an LTR label.
-        if (1 !== preg_match(Regex::BIDI_STEP_1_LTR, $label)) {
-            $info->validBidiDomain = false;
-
-            return;
-        }
-
-        // Step 5. In an LTR label, only characters with the Bidi properties L, EN,
-        // ES, CS, ET, ON, BN, or NSM are allowed.
-        if (1 === preg_match(Regex::BIDI_STEP_5, $label)) {
-            $info->validBidiDomain = false;
-
-            return;
-        }
-
-        // Step 6.In an LTR label, the end of the label must be a character with Bidi property L or
-        // EN, followed by zero or more characters with Bidi property NSM.
-        if (1 !== preg_match(Regex::BIDI_STEP_6, $label)) {
-            $info->validBidiDomain = false;
-
-            return;
-        }
-    }
-
-    /**
-     * @param array<int, string> $labels
-     */
-    private static function validateDomainAndLabelLength(array $labels, Info $info)
-    {
-        $maxDomainSize = self::MAX_DOMAIN_SIZE;
-        $length = \count($labels);
-
-        // Number of "." delimiters.
-        $domainLength = $length - 1;
-
-        // If the last label is empty and it is not the first label, then it is the root label.
-        // Increase the max size by 1, making it 254, to account for the root label's "."
-        // delimiter. This also means we don't need to check the last label's length for being too
-        // long.
-        if ($length > 1 && '' === $labels[$length - 1]) {
-            ++$maxDomainSize;
-            --$length;
-        }
-
-        for ($i = 0; $i < $length; ++$i) {
-            $bytes = \strlen($labels[$i]);
-            $domainLength += $bytes;
-
-            if ($bytes > self::MAX_LABEL_SIZE) {
-                $info->errors |= self::ERROR_LABEL_TOO_LONG;
-            }
-        }
-
-        if ($domainLength > $maxDomainSize) {
-            $info->errors |= self::ERROR_DOMAIN_NAME_TOO_LONG;
-        }
-    }
-
-    /**
-     * @see https://www.unicode.org/reports/tr46/#Validity_Criteria
-     *
-     * @param string              $label
-     * @param array<string, bool> $options
-     * @param bool                $canBeEmpty
-     */
-    private static function validateLabel($label, Info $info, array $options, $canBeEmpty)
-    {
-        if ('' === $label) {
-            if (!$canBeEmpty && (!isset($options['VerifyDnsLength']) || $options['VerifyDnsLength'])) {
-                $info->errors |= self::ERROR_EMPTY_LABEL;
-            }
-
-            return;
-        }
-
-        // Step 1. The label must be in Unicode Normalization Form C.
-        if (!Normalizer::isNormalized($label, Normalizer::FORM_C)) {
-            $info->errors |= self::ERROR_INVALID_ACE_LABEL;
-        }
-
-        $codePoints = self::utf8Decode($label);
-
-        if ($options['CheckHyphens']) {
-            // Step 2. If CheckHyphens, the label must not contain a U+002D HYPHEN-MINUS character
-            // in both the thrid and fourth positions.
-            if (isset($codePoints[2], $codePoints[3]) && 0x002D === $codePoints[2] && 0x002D === $codePoints[3]) {
-                $info->errors |= self::ERROR_HYPHEN_3_4;
-            }
-
-            // Step 3. If CheckHyphens, the label must neither begin nor end with a U+002D
-            // HYPHEN-MINUS character.
-            if ('-' === substr($label, 0, 1)) {
-                $info->errors |= self::ERROR_LEADING_HYPHEN;
-            }
-
-            if ('-' === substr($label, -1, 1)) {
-                $info->errors |= self::ERROR_TRAILING_HYPHEN;
-            }
-        }
-
-        // Step 4. The label must not contain a U+002E (.) FULL STOP.
-        if (false !== strpos($label, '.')) {
-            $info->errors |= self::ERROR_LABEL_HAS_DOT;
-        }
-
-        // Step 5. The label must not begin with a combining mark, that is: General_Category=Mark.
-        if (1 === preg_match(Regex::COMBINING_MARK, $label)) {
-            $info->errors |= self::ERROR_LEADING_COMBINING_MARK;
-        }
-
-        // Step 6. Each code point in the label must only have certain status values according to
-        // Section 5, IDNA Mapping Table:
-        $transitional = $options['Transitional_Processing'];
-        $useSTD3ASCIIRules = $options['UseSTD3ASCIIRules'];
-
-        foreach ($codePoints as $codePoint) {
-            $data = self::lookupCodePointStatus($codePoint, $useSTD3ASCIIRules);
-            $status = $data['status'];
-
-            if ('valid' === $status || (!$transitional && 'deviation' === $status)) {
-                continue;
-            }
-
-            $info->errors |= self::ERROR_DISALLOWED;
-
-            break;
-        }
-
-        // Step 7. If CheckJoiners, the label must satisify the ContextJ rules from Appendix A, in
-        // The Unicode Code Points and Internationalized Domain Names for Applications (IDNA)
-        // [IDNA2008].
-        if ($options['CheckJoiners'] && !self::isValidContextJ($codePoints, $label)) {
-            $info->errors |= self::ERROR_CONTEXTJ;
-        }
-
-        // Step 8. If CheckBidi, and if the domain name is a  Bidi domain name, then the label must
-        // satisfy all six of the numbered conditions in [IDNA2008] RFC 5893, Section 2.
-        if ($options['CheckBidi'] && (!$info->bidiDomain || $info->validBidiDomain)) {
-            self::validateBidiLabel($label, $info);
-        }
-    }
-
-    /**
-     * @see https://tools.ietf.org/html/rfc3492#section-6.2
-     *
-     * @param string $input
-     *
-     * @return string
-     */
-    private static function punycodeDecode($input)
-    {
-        $n = self::INITIAL_N;
-        $out = 0;
-        $i = 0;
-        $bias = self::INITIAL_BIAS;
-        $lastDelimIndex = strrpos($input, self::DELIMITER);
-        $b = false === $lastDelimIndex ? 0 : $lastDelimIndex;
-        $inputLength = \strlen($input);
-        $output = [];
-        $bytes = array_map('ord', str_split($input));
-
-        for ($j = 0; $j < $b; ++$j) {
-            if ($bytes[$j] > 0x7F) {
-                throw new Exception('Invalid input');
-            }
-
-            $output[$out++] = $input[$j];
-        }
-
-        if ($b > 0) {
-            ++$b;
-        }
-
-        for ($in = $b; $in < $inputLength; ++$out) {
-            $oldi = $i;
-            $w = 1;
-
-            for ($k = self::BASE; /* no condition */; $k += self::BASE) {
-                if ($in >= $inputLength) {
-                    throw new Exception('Invalid input');
-                }
-
-                $digit = self::$basicToDigit[$bytes[$in++] & 0xFF];
-
-                if ($digit < 0) {
-                    throw new Exception('Invalid input');
-                }
-
-                if ($digit > intdiv(self::MAX_INT - $i, $w)) {
-                    throw new Exception('Integer overflow');
-                }
-
-                $i += $digit * $w;
-
-                if ($k <= $bias) {
-                    $t = self::TMIN;
-                } elseif ($k >= $bias + self::TMAX) {
-                    $t = self::TMAX;
-                } else {
-                    $t = $k - $bias;
-                }
-
-                if ($digit < $t) {
-                    break;
-                }
-
-                $baseMinusT = self::BASE - $t;
-
-                if ($w > intdiv(self::MAX_INT, $baseMinusT)) {
-                    throw new Exception('Integer overflow');
-                }
-
-                $w *= $baseMinusT;
-            }
-
-            $outPlusOne = $out + 1;
-            $bias = self::adaptBias($i - $oldi, $outPlusOne, 0 === $oldi);
-
-            if (intdiv($i, $outPlusOne) > self::MAX_INT - $n) {
-                throw new Exception('Integer overflow');
-            }
-
-            $n += intdiv($i, $outPlusOne);
-            $i %= $outPlusOne;
-            array_splice($output, $i++, 0, [mb_chr($n, 'utf-8')]);
-        }
-
-        return implode('', $output);
-    }
-
-    /**
-     * @see https://tools.ietf.org/html/rfc3492#section-6.3
-     *
-     * @param string $input
-     *
-     * @return string
-     */
-    private static function punycodeEncode($input)
-    {
-        $n = self::INITIAL_N;
-        $delta = 0;
-        $out = 0;
-        $bias = self::INITIAL_BIAS;
-        $inputLength = 0;
-        $output = '';
-        $iter = self::utf8Decode($input);
-
-        foreach ($iter as $codePoint) {
-            ++$inputLength;
-
-            if ($codePoint < 0x80) {
-                $output .= \chr($codePoint);
-                ++$out;
-            }
-        }
-
-        $h = $out;
-        $b = $out;
-
-        if ($b > 0) {
-            $output .= self::DELIMITER;
-            ++$out;
-        }
-
-        while ($h < $inputLength) {
-            $m = self::MAX_INT;
-
-            foreach ($iter as $codePoint) {
-                if ($codePoint >= $n && $codePoint < $m) {
-                    $m = $codePoint;
-                }
-            }
-
-            if ($m - $n > intdiv(self::MAX_INT - $delta, $h + 1)) {
-                throw new Exception('Integer overflow');
-            }
-
-            $delta += ($m - $n) * ($h + 1);
-            $n = $m;
-
-            foreach ($iter as $codePoint) {
-                if ($codePoint < $n && 0 === ++$delta) {
-                    throw new Exception('Integer overflow');
-                }
-
-                if ($codePoint === $n) {
-                    $q = $delta;
-
-                    for ($k = self::BASE; /* no condition */; $k += self::BASE) {
-                        if ($k <= $bias) {
-                            $t = self::TMIN;
-                        } elseif ($k >= $bias + self::TMAX) {
-                            $t = self::TMAX;
-                        } else {
-                            $t = $k - $bias;
-                        }
-
-                        if ($q < $t) {
-                            break;
-                        }
-
-                        $qMinusT = $q - $t;
-                        $baseMinusT = self::BASE - $t;
-                        $output .= self::encodeDigit($t + ($qMinusT) % ($baseMinusT), false);
-                        ++$out;
-                        $q = intdiv($qMinusT, $baseMinusT);
-                    }
-
-                    $output .= self::encodeDigit($q, false);
-                    ++$out;
-                    $bias = self::adaptBias($delta, $h + 1, $h === $b);
-                    $delta = 0;
-                    ++$h;
-                }
-            }
-
-            ++$delta;
-            ++$n;
-        }
-
-        return $output;
-    }
-
-    /**
-     * @see https://tools.ietf.org/html/rfc3492#section-6.1
-     *
-     * @param int  $delta
-     * @param int  $numPoints
-     * @param bool $firstTime
-     *
-     * @return int
-     */
-    private static function adaptBias($delta, $numPoints, $firstTime)
-    {
-        // xxx >> 1 is a faster way of doing intdiv(xxx, 2)
-        $delta = $firstTime ? intdiv($delta, self::DAMP) : $delta >> 1;
-        $delta += intdiv($delta, $numPoints);
-        $k = 0;
-
-        while ($delta > ((self::BASE - self::TMIN) * self::TMAX) >> 1) {
-            $delta = intdiv($delta, self::BASE - self::TMIN);
-            $k += self::BASE;
-        }
-
-        return $k + intdiv((self::BASE - self::TMIN + 1) * $delta, $delta + self::SKEW);
-    }
-
-    /**
-     * @param int  $d
-     * @param bool $flag
-     *
-     * @return string
-     */
-    private static function encodeDigit($d, $flag)
-    {
-        return \chr($d + 22 + 75 * ($d < 26 ? 1 : 0) - (($flag ? 1 : 0) << 5));
-    }
-
-    /**
-     * Takes a UTF-8 encoded string and converts it into a series of integer code points. Any
-     * invalid byte sequences will be replaced by a U+FFFD replacement code point.
-     *
-     * @see https://encoding.spec.whatwg.org/#utf-8-decoder
-     *
-     * @param string $input
-     *
-     * @return array<int, int>
-     */
-    private static function utf8Decode($input)
-    {
-        $bytesSeen = 0;
-        $bytesNeeded = 0;
-        $lowerBoundary = 0x80;
-        $upperBoundary = 0xBF;
-        $codePoint = 0;
-        $codePoints = [];
-        $length = \strlen($input);
-
-        for ($i = 0; $i < $length; ++$i) {
-            $byte = \ord($input[$i]);
-
-            if (0 === $bytesNeeded) {
-                if ($byte >= 0x00 && $byte <= 0x7F) {
-                    $codePoints[] = $byte;
-
-                    continue;
-                }
-
-                if ($byte >= 0xC2 && $byte <= 0xDF) {
-                    $bytesNeeded = 1;
-                    $codePoint = $byte & 0x1F;
-                } elseif ($byte >= 0xE0 && $byte <= 0xEF) {
-                    if (0xE0 === $byte) {
-                        $lowerBoundary = 0xA0;
-                    } elseif (0xED === $byte) {
-                        $upperBoundary = 0x9F;
-                    }
-
-                    $bytesNeeded = 2;
-                    $codePoint = $byte & 0xF;
-                } elseif ($byte >= 0xF0 && $byte <= 0xF4) {
-                    if (0xF0 === $byte) {
-                        $lowerBoundary = 0x90;
-                    } elseif (0xF4 === $byte) {
-                        $upperBoundary = 0x8F;
-                    }
-
-                    $bytesNeeded = 3;
-                    $codePoint = $byte & 0x7;
-                } else {
-                    $codePoints[] = 0xFFFD;
-                }
-
-                continue;
-            }
-
-            if ($byte < $lowerBoundary || $byte > $upperBoundary) {
-                $codePoint = 0;
-                $bytesNeeded = 0;
-                $bytesSeen = 0;
-                $lowerBoundary = 0x80;
-                $upperBoundary = 0xBF;
-                --$i;
-                $codePoints[] = 0xFFFD;
-
-                continue;
-            }
-
-            $lowerBoundary = 0x80;
-            $upperBoundary = 0xBF;
-            $codePoint = ($codePoint << 6) | ($byte & 0x3F);
-
-            if (++$bytesSeen !== $bytesNeeded) {
-                continue;
-            }
-
-            $codePoints[] = $codePoint;
-            $codePoint = 0;
-            $bytesNeeded = 0;
-            $bytesSeen = 0;
-        }
-
-        // String unexpectedly ended, so append a U+FFFD code point.
-        if (0 !== $bytesNeeded) {
-            $codePoints[] = 0xFFFD;
-        }
-
-        return $codePoints;
-    }
-
-    /**
-     * @param int  $codePoint
-     * @param bool $useSTD3ASCIIRules
-     *
-     * @return array{status: string, mapping?: string}
-     */
-    private static function lookupCodePointStatus($codePoint, $useSTD3ASCIIRules)
-    {
-        if (!self::$mappingTableLoaded) {
-            self::$mappingTableLoaded = true;
-            self::$mapped = require __DIR__.'/Resources/unidata/mapped.php';
-            self::$ignored = require __DIR__.'/Resources/unidata/ignored.php';
-            self::$deviation = require __DIR__.'/Resources/unidata/deviation.php';
-            self::$disallowed = require __DIR__.'/Resources/unidata/disallowed.php';
-            self::$disallowed_STD3_mapped = require __DIR__.'/Resources/unidata/disallowed_STD3_mapped.php';
-            self::$disallowed_STD3_valid = require __DIR__.'/Resources/unidata/disallowed_STD3_valid.php';
-        }
-
-        if (isset(self::$mapped[$codePoint])) {
-            return ['status' => 'mapped', 'mapping' => self::$mapped[$codePoint]];
-        }
-
-        if (isset(self::$ignored[$codePoint])) {
-            return ['status' => 'ignored'];
-        }
-
-        if (isset(self::$deviation[$codePoint])) {
-            return ['status' => 'deviation', 'mapping' => self::$deviation[$codePoint]];
-        }
-
-        if (isset(self::$disallowed[$codePoint]) || DisallowedRanges::inRange($codePoint)) {
-            return ['status' => 'disallowed'];
-        }
-
-        $isDisallowedMapped = isset(self::$disallowed_STD3_mapped[$codePoint]);
-
-        if ($isDisallowedMapped || isset(self::$disallowed_STD3_valid[$codePoint])) {
-            $status = 'disallowed';
-
-            if (!$useSTD3ASCIIRules) {
-                $status = $isDisallowedMapped ? 'mapped' : 'valid';
-            }
-
-            if ($isDisallowedMapped) {
-                return ['status' => $status, 'mapping' => self::$disallowed_STD3_mapped[$codePoint]];
-            }
-
-            return ['status' => $status];
-        }
-
-        return ['status' => 'valid'];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+6JiSisGWpxVlJtt2

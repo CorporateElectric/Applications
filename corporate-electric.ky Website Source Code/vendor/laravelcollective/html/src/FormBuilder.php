@@ -1,1484 +1,498 @@
-<?php
-
-namespace Collective\Html;
-
-use BadMethodCallException;
-use DateTime;
-use Illuminate\Contracts\Routing\UrlGenerator;
-use Illuminate\Contracts\Session\Session;
-use Illuminate\Contracts\View\Factory;
-use Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull;
-use Illuminate\Http\Request;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Collection;
-use Illuminate\Support\HtmlString;
-use Illuminate\Support\Traits\Macroable;
-
-class FormBuilder
-{
-    use Macroable, Componentable {
-        Macroable::__call as macroCall;
-        Componentable::__call as componentCall;
-    }
-
-    /**
-     * The HTML builder instance.
-     *
-     * @var \Collective\Html\HtmlBuilder
-     */
-    protected $html;
-
-    /**
-     * The URL generator instance.
-     *
-     * @var \Illuminate\Contracts\Routing\UrlGenerator
-     */
-    protected $url;
-
-    /**
-     * The View factory instance.
-     *
-     * @var \Illuminate\Contracts\View\Factory
-     */
-    protected $view;
-
-    /**
-     * The CSRF token used by the form builder.
-     *
-     * @var string
-     */
-    protected $csrfToken;
-
-    /**
-     * Consider Request variables while auto fill.
-     * @var bool
-     */
-    protected $considerRequest = false;
-
-    /**
-     * The session store implementation.
-     *
-     * @var \Illuminate\Contracts\Session\Session
-     */
-    protected $session;
-
-    /**
-     * The current model instance for the form.
-     *
-     * @var mixed
-     */
-    protected $model;
-
-    /**
-     * An array of label names we've created.
-     *
-     * @var array
-     */
-    protected $labels = [];
-
-    protected $request;
-
-    /**
-     * The reserved form open attributes.
-     *
-     * @var array
-     */
-    protected $reserved = ['method', 'url', 'route', 'action', 'files'];
-
-    /**
-     * The form methods that should be spoofed, in uppercase.
-     *
-     * @var array
-     */
-    protected $spoofedMethods = ['DELETE', 'PATCH', 'PUT'];
-
-    /**
-     * The types of inputs to not fill values on by default.
-     *
-     * @var array
-     */
-    protected $skipValueTypes = ['file', 'password', 'checkbox', 'radio'];
-
-
-    /**
-     * Input Type.
-     *
-     * @var null
-     */
-    protected $type = null;
-
-    /**
-     * Create a new form builder instance.
-     *
-     * @param  \Collective\Html\HtmlBuilder               $html
-     * @param  \Illuminate\Contracts\Routing\UrlGenerator $url
-     * @param  \Illuminate\Contracts\View\Factory         $view
-     * @param  string                                     $csrfToken
-     * @param  Request                                    $request
-     */
-    public function __construct(HtmlBuilder $html, UrlGenerator $url, Factory $view, $csrfToken, Request $request = null)
-    {
-        $this->url = $url;
-        $this->html = $html;
-        $this->view = $view;
-        $this->csrfToken = $csrfToken;
-        $this->request = $request;
-    }
-
-    /**
-     * Open up a new HTML form.
-     *
-     * @param  array $options
-     *
-     * @return \Illuminate\Support\HtmlString
-     */
-    public function open(array $options = [])
-    {
-        $method = Arr::get($options, 'method', 'post');
-
-        // We need to extract the proper method from the attributes. If the method is
-        // something other than GET or POST we'll use POST since we will spoof the
-        // actual method since forms don't support the reserved methods in HTML.
-        $attributes['method'] = $this->getMethod($method);
-
-        $attributes['action'] = $this->getAction($options);
-
-        $attributes['accept-charset'] = 'UTF-8';
-
-        // If the method is PUT, PATCH or DELETE we will need to add a spoofer hidden
-        // field that will instruct the Symfony request to pretend the method is a
-        // different method than it actually is, for convenience from the forms.
-        $append = $this->getAppendage($method);
-
-        if (isset($options['files']) && $options['files']) {
-            $options['enctype'] = 'multipart/form-data';
-        }
-
-        // Finally we're ready to create the final form HTML field. We will attribute
-        // format the array of attributes. We will also add on the appendage which
-        // is used to spoof requests for this PUT, PATCH, etc. methods on forms.
-        $attributes = array_merge(
-
-          $attributes, Arr::except($options, $this->reserved)
-
-        );
-
-        // Finally, we will concatenate all of the attributes into a single string so
-        // we can build out the final form open statement. We'll also append on an
-        // extra value for the hidden _method field if it's needed for the form.
-        $attributes = $this->html->attributes($attributes);
-
-        return $this->toHtmlString('<form' . $attributes . '>' . $append);
-    }
-
-    /**
-     * Create a new model based form builder.
-     *
-     * @param  mixed $model
-     * @param  array $options
-     *
-     * @return \Illuminate\Support\HtmlString
-     */
-    public function model($model, array $options = [])
-    {
-        $this->model = $model;
-
-        return $this->open($options);
-    }
-
-    /**
-     * Set the model instance on the form builder.
-     *
-     * @param  mixed $model
-     *
-     * @return void
-     */
-    public function setModel($model)
-    {
-        $this->model = $model;
-    }
-
-    /**
-     * Get the current model instance on the form builder.
-     *
-     * @return mixed $model
-     */
-    public function getModel()
-    {
-        return $this->model;
-    }
-
-    /**
-     * Close the current form.
-     *
-     * @return string
-     */
-    public function close()
-    {
-        $this->labels = [];
-
-        $this->model = null;
-
-        return $this->toHtmlString('</form>');
-    }
-
-    /**
-     * Generate a hidden field with the current CSRF token.
-     *
-     * @return string
-     */
-    public function token()
-    {
-        $token = ! empty($this->csrfToken) ? $this->csrfToken : $this->session->token();
-
-        return $this->hidden('_token', $token);
-    }
-
-    /**
-     * Create a form label element.
-     *
-     * @param  string $name
-     * @param  string $value
-     * @param  array  $options
-     * @param  bool   $escape_html
-     *
-     * @return \Illuminate\Support\HtmlString
-     */
-    public function label($name, $value = null, $options = [], $escape_html = true)
-    {
-        $this->labels[] = $name;
-
-        $options = $this->html->attributes($options);
-
-        $value = $this->formatLabel($name, $value);
-
-        if ($escape_html) {
-            $value = $this->html->entities($value);
-        }
-
-        return $this->toHtmlString('<label for="' . $name . '"' . $options . '>' . $value . '</label>');
-    }
-
-    /**
-     * Format the label value.
-     *
-     * @param  string      $name
-     * @param  string|null $value
-     *
-     * @return string
-     */
-    protected function formatLabel($name, $value)
-    {
-        return $value ?: ucwords(str_replace('_', ' ', $name));
-    }
-
-    /**
-     * Create a form input field.
-     *
-     * @param  string $type
-     * @param  string $name
-     * @param  string $value
-     * @param  array  $options
-     *
-     * @return \Illuminate\Support\HtmlString
-     */
-    public function input($type, $name, $value = null, $options = [])
-    {
-        $this->type = $type;
-
-        if (! isset($options['name'])) {
-            $options['name'] = $name;
-        }
-
-        // We will get the appropriate value for the given field. We will look for the
-        // value in the session for the value in the old input data then we'll look
-        // in the model instance if one is set. Otherwise we will just use empty.
-        $id = $this->getIdAttribute($name, $options);
-
-        if (! in_array($type, $this->skipValueTypes)) {
-            $value = $this->getValueAttribute($name, $value);
-        }
-
-        // Once we have the type, value, and ID we can merge them into the rest of the
-        // attributes array so we can convert them into their HTML attribute format
-        // when creating the HTML element. Then, we will return the entire input.
-        $merge = compact('type', 'value', 'id');
-
-        $options = array_merge($options, $merge);
-
-        return $this->toHtmlString('<input' . $this->html->attributes($options) . '>');
-    }
-
-    /**
-     * Create a text input field.
-     *
-     * @param  string $name
-     * @param  string $value
-     * @param  array  $options
-     *
-     * @return \Illuminate\Support\HtmlString
-     */
-    public function text($name, $value = null, $options = [])
-    {
-        return $this->input('text', $name, $value, $options);
-    }
-
-    /**
-     * Create a password input field.
-     *
-     * @param  string $name
-     * @param  array  $options
-     *
-     * @return \Illuminate\Support\HtmlString
-     */
-    public function password($name, $options = [])
-    {
-        return $this->input('password', $name, '', $options);
-    }
-
-    /**
-     * Create a range input field.
-     *
-     * @param  string $name
-     * @param  string $value
-     * @param  array  $options
-     *
-     * @return \Illuminate\Support\HtmlString
-     */
-    public function range($name, $value = null, $options = [])
-    {
-        return $this->input('range', $name, $value, $options);
-    }
-
-    /**
-     * Create a hidden input field.
-     *
-     * @param  string $name
-     * @param  string $value
-     * @param  array  $options
-     *
-     * @return \Illuminate\Support\HtmlString
-     */
-    public function hidden($name, $value = null, $options = [])
-    {
-        return $this->input('hidden', $name, $value, $options);
-    }
-
-    /**
-     * Create a search input field.
-     *
-     * @param  string $name
-     * @param  string $value
-     * @param  array  $options
-     *
-     * @return \Illuminate\Support\HtmlString
-     */
-    public function search($name, $value = null, $options = [])
-    {
-        return $this->input('search', $name, $value, $options);
-    }
-
-    /**
-     * Create an e-mail input field.
-     *
-     * @param  string $name
-     * @param  string $value
-     * @param  array  $options
-     *
-     * @return \Illuminate\Support\HtmlString
-     */
-    public function email($name, $value = null, $options = [])
-    {
-        return $this->input('email', $name, $value, $options);
-    }
-
-    /**
-     * Create a tel input field.
-     *
-     * @param  string $name
-     * @param  string $value
-     * @param  array  $options
-     *
-     * @return \Illuminate\Support\HtmlString
-     */
-    public function tel($name, $value = null, $options = [])
-    {
-        return $this->input('tel', $name, $value, $options);
-    }
-
-    /**
-     * Create a number input field.
-     *
-     * @param  string $name
-     * @param  string $value
-     * @param  array  $options
-     *
-     * @return \Illuminate\Support\HtmlString
-     */
-    public function number($name, $value = null, $options = [])
-    {
-        return $this->input('number', $name, $value, $options);
-    }
-
-    /**
-     * Create a date input field.
-     *
-     * @param  string $name
-     * @param  string $value
-     * @param  array  $options
-     *
-     * @return \Illuminate\Support\HtmlString
-     */
-    public function date($name, $value = null, $options = [])
-    {
-        if ($value instanceof DateTime) {
-            $value = $value->format('Y-m-d');
-        }
-
-        return $this->input('date', $name, $value, $options);
-    }
-
-    /**
-     * Create a datetime input field.
-     *
-     * @param  string $name
-     * @param  string $value
-     * @param  array  $options
-     *
-     * @return \Illuminate\Support\HtmlString
-     */
-    public function datetime($name, $value = null, $options = [])
-    {
-        if ($value instanceof DateTime) {
-            $value = $value->format(DateTime::RFC3339);
-        }
-
-        return $this->input('datetime', $name, $value, $options);
-    }
-
-    /**
-     * Create a datetime-local input field.
-     *
-     * @param  string $name
-     * @param  string $value
-     * @param  array  $options
-     *
-     * @return \Illuminate\Support\HtmlString
-     */
-    public function datetimeLocal($name, $value = null, $options = [])
-    {
-        if ($value instanceof DateTime) {
-            $value = $value->format('Y-m-d\TH:i');
-        }
-
-        return $this->input('datetime-local', $name, $value, $options);
-    }
-
-    /**
-     * Create a time input field.
-     *
-     * @param  string $name
-     * @param  string $value
-     * @param  array  $options
-     *
-     * @return \Illuminate\Support\HtmlString
-     */
-    public function time($name, $value = null, $options = [])
-    {
-        if ($value instanceof DateTime) {
-            $value = $value->format('H:i');
-        }
-
-        return $this->input('time', $name, $value, $options);
-    }
-
-    /**
-     * Create a url input field.
-     *
-     * @param  string $name
-     * @param  string $value
-     * @param  array  $options
-     *
-     * @return \Illuminate\Support\HtmlString
-     */
-    public function url($name, $value = null, $options = [])
-    {
-        return $this->input('url', $name, $value, $options);
-    }
-
-    /**
-     * Create a week input field.
-     *
-     * @param  string $name
-     * @param  string $value
-     * @param  array  $options
-     *
-     * @return \Illuminate\Support\HtmlString
-     */
-    public function week($name, $value = null, $options = [])
-    {
-        if ($value instanceof DateTime) {
-            $value = $value->format('Y-\WW');
-        }
-
-        return $this->input('week', $name, $value, $options);
-    }
-
-    /**
-     * Create a file input field.
-     *
-     * @param  string $name
-     * @param  array  $options
-     *
-     * @return \Illuminate\Support\HtmlString
-     */
-    public function file($name, $options = [])
-    {
-        return $this->input('file', $name, null, $options);
-    }
-
-    /**
-     * Create a textarea input field.
-     *
-     * @param  string $name
-     * @param  string $value
-     * @param  array  $options
-     *
-     * @return \Illuminate\Support\HtmlString
-     */
-    public function textarea($name, $value = null, $options = [])
-    {
-        $this->type = 'textarea';
-
-        if (! isset($options['name'])) {
-            $options['name'] = $name;
-        }
-
-        // Next we will look for the rows and cols attributes, as each of these are put
-        // on the textarea element definition. If they are not present, we will just
-        // assume some sane default values for these attributes for the developer.
-        $options = $this->setTextAreaSize($options);
-
-        $options['id'] = $this->getIdAttribute($name, $options);
-
-        $value = (string) $this->getValueAttribute($name, $value);
-
-        unset($options['size']);
-
-        // Next we will convert the attributes into a string form. Also we have removed
-        // the size attribute, as it was merely a short-cut for the rows and cols on
-        // the element. Then we'll create the final textarea elements HTML for us.
-        $options = $this->html->attributes($options);
-
-        return $this->toHtmlString('<textarea' . $options . '>' . e($value, false). '</textarea>');
-    }
-
-    /**
-     * Set the text area size on the attributes.
-     *
-     * @param  array $options
-     *
-     * @return array
-     */
-    protected function setTextAreaSize($options)
-    {
-        if (isset($options['size'])) {
-            return $this->setQuickTextAreaSize($options);
-        }
-
-        // If the "size" attribute was not specified, we will just look for the regular
-        // columns and rows attributes, using sane defaults if these do not exist on
-        // the attributes array. We'll then return this entire options array back.
-        $cols = Arr::get($options, 'cols', 50);
-
-        $rows = Arr::get($options, 'rows', 10);
-
-        return array_merge($options, compact('cols', 'rows'));
-    }
-
-    /**
-     * Set the text area size using the quick "size" attribute.
-     *
-     * @param  array $options
-     *
-     * @return array
-     */
-    protected function setQuickTextAreaSize($options)
-    {
-        $segments = explode('x', $options['size']);
-
-        return array_merge($options, ['cols' => $segments[0], 'rows' => $segments[1]]);
-    }
-
-    /**
-     * Create a select box field.
-     *
-     * @param  string $name
-     * @param  array  $list
-     * @param  string|bool $selected
-     * @param  array  $selectAttributes
-     * @param  array  $optionsAttributes
-     * @param  array  $optgroupsAttributes
-     *
-     * @return \Illuminate\Support\HtmlString
-     */
-    public function select(
-        $name,
-        $list = [],
-        $selected = null,
-        array $selectAttributes = [],
-        array $optionsAttributes = [],
-        array $optgroupsAttributes = []
-    ) {
-        $this->type = 'select';
-
-        // When building a select box the "value" attribute is really the selected one
-        // so we will use that when checking the model or session for a value which
-        // should provide a convenient method of re-populating the forms on post.
-        $selected = $this->getValueAttribute($name, $selected);
-
-        $selectAttributes['id'] = $this->getIdAttribute($name, $selectAttributes);
-
-        if (! isset($selectAttributes['name'])) {
-            $selectAttributes['name'] = $name;
-        }
-
-        // We will simply loop through the options and build an HTML value for each of
-        // them until we have an array of HTML declarations. Then we will join them
-        // all together into one single HTML element that can be put on the form.
-        $html = [];
-
-        if (isset($selectAttributes['placeholder'])) {
-            $html[] = $this->placeholderOption($selectAttributes['placeholder'], $selected);
-            unset($selectAttributes['placeholder']);
-        }
-
-        foreach ($list as $value => $display) {
-            $optionAttributes = $optionsAttributes[$value] ?? [];
-            $optgroupAttributes = $optgroupsAttributes[$value] ?? [];
-            $html[] = $this->getSelectOption($display, $value, $selected, $optionAttributes, $optgroupAttributes);
-        }
-
-        // Once we have all of this HTML, we can join this into a single element after
-        // formatting the attributes into an HTML "attributes" string, then we will
-        // build out a final select statement, which will contain all the values.
-        $selectAttributes = $this->html->attributes($selectAttributes);
-
-        $list = implode('', $html);
-
-        return $this->toHtmlString("<select{$selectAttributes}>{$list}</select>");
-    }
-
-    /**
-     * Create a select range field.
-     *
-     * @param  string $name
-     * @param  string $begin
-     * @param  string $end
-     * @param  string $selected
-     * @param  array  $options
-     *
-     * @return \Illuminate\Support\HtmlString
-     */
-    public function selectRange($name, $begin, $end, $selected = null, $options = [])
-    {
-        $range = array_combine($range = range($begin, $end), $range);
-
-        return $this->select($name, $range, $selected, $options);
-    }
-
-    /**
-     * Create a select year field.
-     *
-     * @param  string $name
-     * @param  string $begin
-     * @param  string $end
-     * @param  string $selected
-     * @param  array  $options
-     *
-     * @return mixed
-     */
-    public function selectYear()
-    {
-        return call_user_func_array([$this, 'selectRange'], func_get_args());
-    }
-
-    /**
-     * Create a select month field.
-     *
-     * @param  string $name
-     * @param  string $selected
-     * @param  array  $options
-     * @param  string $format
-     *
-     * @return \Illuminate\Support\HtmlString
-     */
-    public function selectMonth($name, $selected = null, $options = [], $format = '%B')
-    {
-        $months = [];
-
-        foreach (range(1, 12) as $month) {
-            $months[$month] = strftime($format, mktime(0, 0, 0, $month, 1));
-        }
-
-        return $this->select($name, $months, $selected, $options);
-    }
-
-    /**
-     * Get the select option for the given value.
-     *
-     * @param  string $display
-     * @param  string $value
-     * @param  string $selected
-     * @param  array  $attributes
-     * @param  array  $optgroupAttributes
-     *
-     * @return \Illuminate\Support\HtmlString
-     */
-    public function getSelectOption($display, $value, $selected, array $attributes = [], array $optgroupAttributes = [])
-    {
-        if (is_iterable($display)) {
-            return $this->optionGroup($display, $value, $selected, $optgroupAttributes, $attributes);
-        }
-
-        return $this->option($display, $value, $selected, $attributes);
-    }
-
-    /**
-     * Create an option group form element.
-     *
-     * @param  array  $list
-     * @param  string $label
-     * @param  string $selected
-     * @param  array  $attributes
-     * @param  array  $optionsAttributes
-     * @param  integer  $level
-     *
-     * @return \Illuminate\Support\HtmlString
-     */
-    protected function optionGroup($list, $label, $selected, array $attributes = [], array $optionsAttributes = [], $level = 0)
-    {
-        $html = [];
-        $space = str_repeat("&nbsp;", $level);
-        foreach ($list as $value => $display) {
-            $optionAttributes = $optionsAttributes[$value] ?? [];
-            if (is_iterable($display)) {
-                $html[] = $this->optionGroup($display, $value, $selected, $attributes, $optionAttributes, $level+5);
-            } else {
-                $html[] = $this->option($space.$display, $value, $selected, $optionAttributes);
-            }
-        }
-        return $this->toHtmlString('<optgroup label="' . e($space.$label, false) . '"' . $this->html->attributes($attributes) . '>' . implode('', $html) . '</optgroup>');
-    }
-
-    /**
-     * Create a select element option.
-     *
-     * @param  string $display
-     * @param  string $value
-     * @param  string $selected
-     * @param  array  $attributes
-     *
-     * @return \Illuminate\Support\HtmlString
-     */
-    protected function option($display, $value, $selected, array $attributes = [])
-    {
-        $selected = $this->getSelectedValue($value, $selected);
-
-        $options = array_merge(['value' => $value, 'selected' => $selected], $attributes);
-
-        $string = '<option' . $this->html->attributes($options) . '>';
-        if ($display !== null) {
-            $string .= e($display, false) . '</option>';
-        }
-
-        return $this->toHtmlString($string);
-    }
-
-    /**
-     * Create a placeholder select element option.
-     *
-     * @param $display
-     * @param $selected
-     *
-     * @return \Illuminate\Support\HtmlString
-     */
-    protected function placeholderOption($display, $selected)
-    {
-        $selected = $this->getSelectedValue(null, $selected);
-
-        $options = [
-            'selected' => $selected,
-            'value' => '',
-        ];
-
-        return $this->toHtmlString('<option' . $this->html->attributes($options) . '>' . e($display, false) . '</option>');
-    }
-
-    /**
-     * Determine if the value is selected.
-     *
-     * @param  string $value
-     * @param  string $selected
-     *
-     * @return null|string
-     */
-    protected function getSelectedValue($value, $selected)
-    {
-        if (is_array($selected)) {
-            return in_array($value, $selected, true) || in_array((string) $value, $selected, true) ? 'selected' : null;
-        } elseif ($selected instanceof Collection) {
-            return $selected->contains($value) ? 'selected' : null;
-        }
-        if (is_int($value) && is_bool($selected)) {
-            return (bool)$value === $selected;
-        }
-        return ((string) $value === (string) $selected) ? 'selected' : null;
-    }
-
-    /**
-     * Create a checkbox input field.
-     *
-     * @param  string $name
-     * @param  mixed  $value
-     * @param  bool   $checked
-     * @param  array  $options
-     *
-     * @return \Illuminate\Support\HtmlString
-     */
-    public function checkbox($name, $value = 1, $checked = null, $options = [])
-    {
-        return $this->checkable('checkbox', $name, $value, $checked, $options);
-    }
-
-    /**
-     * Create a radio button input field.
-     *
-     * @param  string $name
-     * @param  mixed  $value
-     * @param  bool   $checked
-     * @param  array  $options
-     *
-     * @return \Illuminate\Support\HtmlString
-     */
-    public function radio($name, $value = null, $checked = null, $options = [])
-    {
-        if (is_null($value)) {
-            $value = $name;
-        }
-
-        return $this->checkable('radio', $name, $value, $checked, $options);
-    }
-
-    /**
-     * Create a checkable input field.
-     *
-     * @param  string $type
-     * @param  string $name
-     * @param  mixed  $value
-     * @param  bool   $checked
-     * @param  array  $options
-     *
-     * @return \Illuminate\Support\HtmlString
-     */
-    protected function checkable($type, $name, $value, $checked, $options)
-    {
-        $this->type = $type;
-
-        $checked = $this->getCheckedState($type, $name, $value, $checked);
-
-        if ($checked) {
-            $options['checked'] = 'checked';
-        }
-
-        return $this->input($type, $name, $value, $options);
-    }
-
-    /**
-     * Get the check state for a checkable input.
-     *
-     * @param  string $type
-     * @param  string $name
-     * @param  mixed  $value
-     * @param  bool   $checked
-     *
-     * @return bool
-     */
-    protected function getCheckedState($type, $name, $value, $checked)
-    {
-        switch ($type) {
-            case 'checkbox':
-                return $this->getCheckboxCheckedState($name, $value, $checked);
-
-            case 'radio':
-                return $this->getRadioCheckedState($name, $value, $checked);
-
-            default:
-                return $this->compareValues($name, $value);
-        }
-    }
-
-    /**
-     * Get the check state for a checkbox input.
-     *
-     * @param  string $name
-     * @param  mixed  $value
-     * @param  bool   $checked
-     *
-     * @return bool
-     */
-    protected function getCheckboxCheckedState($name, $value, $checked)
-    {
-        $request = $this->request($name);
-
-        if (isset($this->session) && ! $this->oldInputIsEmpty() && is_null($this->old($name)) && !$request) {
-            return false;
-        }
-
-        if ($this->missingOldAndModel($name) && is_null($request)) {
-            return $checked;
-        }
-
-        $posted = $this->getValueAttribute($name, $checked);
-
-        if (is_array($posted)) {
-            return in_array($value, $posted);
-        } elseif ($posted instanceof Collection) {
-            return $posted->contains('id', $value);
-        } else {
-            return (bool) $posted;
-        }
-    }
-
-    /**
-     * Get the check state for a radio input.
-     *
-     * @param  string $name
-     * @param  mixed  $value
-     * @param  bool   $checked
-     *
-     * @return bool
-     */
-    protected function getRadioCheckedState($name, $value, $checked)
-    {
-        $request = $this->request($name);
-
-        if ($this->missingOldAndModel($name) && !$request) {
-            return $checked;
-        }
-
-        return $this->compareValues($name, $value);
-    }
-
-    /**
-     * Determine if the provide value loosely compares to the value assigned to the field.
-     * Use loose comparison because Laravel model casting may be in affect and therefore
-     * 1 == true and 0 == false.
-     *
-     * @param  string $name
-     * @param  string $value
-     * @return bool
-     */
-    protected function compareValues($name, $value)
-    {
-        return $this->getValueAttribute($name) == $value;
-    }
-
-    /**
-     * Determine if old input or model input exists for a key.
-     *
-     * @param  string $name
-     *
-     * @return bool
-     */
-    protected function missingOldAndModel($name)
-    {
-        return (is_null($this->old($name)) && is_null($this->getModelValueAttribute($name)));
-    }
-
-    /**
-     * Create a HTML reset input element.
-     *
-     * @param  string $value
-     * @param  array  $attributes
-     *
-     * @return \Illuminate\Support\HtmlString
-     */
-    public function reset($value, $attributes = [])
-    {
-        return $this->input('reset', null, $value, $attributes);
-    }
-
-    /**
-     * Create a HTML image input element.
-     *
-     * @param  string $url
-     * @param  string $name
-     * @param  array  $attributes
-     *
-     * @return \Illuminate\Support\HtmlString
-     */
-    public function image($url, $name = null, $attributes = [])
-    {
-        $attributes['src'] = $this->url->asset($url);
-
-        return $this->input('image', $name, null, $attributes);
-    }
-
-    /**
-     * Create a month input field.
-     *
-     * @param  string $name
-     * @param  string $value
-     * @param  array  $options
-     *
-     * @return \Illuminate\Support\HtmlString
-     */
-    public function month($name, $value = null, $options = [])
-    {
-        if ($value instanceof DateTime) {
-            $value = $value->format('Y-m');
-        }
-
-        return $this->input('month', $name, $value, $options);
-    }
-
-    /**
-     * Create a color input field.
-     *
-     * @param  string $name
-     * @param  string $value
-     * @param  array  $options
-     *
-     * @return \Illuminate\Support\HtmlString
-     */
-    public function color($name, $value = null, $options = [])
-    {
-        return $this->input('color', $name, $value, $options);
-    }
-
-    /**
-     * Create a submit button element.
-     *
-     * @param  string $value
-     * @param  array  $options
-     *
-     * @return \Illuminate\Support\HtmlString
-     */
-    public function submit($value = null, $options = [])
-    {
-        return $this->input('submit', null, $value, $options);
-    }
-
-    /**
-     * Create a button element.
-     *
-     * @param  string $value
-     * @param  array  $options
-     *
-     * @return \Illuminate\Support\HtmlString
-     */
-    public function button($value = null, $options = [])
-    {
-        if (! array_key_exists('type', $options)) {
-            $options['type'] = 'button';
-        }
-
-        return $this->toHtmlString('<button' . $this->html->attributes($options) . '>' . $value . '</button>');
-    }
-
-    /**
-     * Create a datalist box field.
-     *
-     * @param  string $id
-     * @param  array  $list
-     *
-     * @return \Illuminate\Support\HtmlString
-     */
-    public function datalist($id, $list = [])
-    {
-        $this->type = 'datalist';
-
-        $attributes['id'] = $id;
-
-        $html = [];
-
-        if ($this->isAssociativeArray($list)) {
-            foreach ($list as $value => $display) {
-                $html[] = $this->option($display, $value, null, []);
-            }
-        } else {
-            foreach ($list as $value) {
-                $html[] = $this->option($value, $value, null, []);
-            }
-        }
-
-        $attributes = $this->html->attributes($attributes);
-
-        $list = implode('', $html);
-
-        return $this->toHtmlString("<datalist{$attributes}>{$list}</datalist>");
-    }
-
-    /**
-     * Determine if an array is associative.
-     *
-     * @param  array $array
-     * @return bool
-     */
-    protected function isAssociativeArray($array)
-    {
-        return (array_values($array) !== $array);
-    }
-
-    /**
-     * Parse the form action method.
-     *
-     * @param  string $method
-     *
-     * @return string
-     */
-    protected function getMethod($method)
-    {
-        $method = strtoupper($method);
-
-        return $method !== 'GET' ? 'POST' : $method;
-    }
-
-    /**
-     * Get the form action from the options.
-     *
-     * @param  array $options
-     *
-     * @return string
-     */
-    protected function getAction(array $options)
-    {
-        // We will also check for a "route" or "action" parameter on the array so that
-        // developers can easily specify a route or controller action when creating
-        // a form providing a convenient interface for creating the form actions.
-        if (isset($options['url'])) {
-            return $this->getUrlAction($options['url']);
-        }
-
-        if (isset($options['route'])) {
-            return $this->getRouteAction($options['route']);
-        }
-
-        // If an action is available, we are attempting to open a form to a controller
-        // action route. So, we will use the URL generator to get the path to these
-        // actions and return them from the method. Otherwise, we'll use current.
-        elseif (isset($options['action'])) {
-            return $this->getControllerAction($options['action']);
-        }
-
-        return $this->url->current();
-    }
-
-    /**
-     * Get the action for a "url" option.
-     *
-     * @param  array|string $options
-     *
-     * @return string
-     */
-    protected function getUrlAction($options)
-    {
-        if (is_array($options)) {
-            return $this->url->to($options[0], array_slice($options, 1));
-        }
-
-        return $this->url->to($options);
-    }
-
-    /**
-     * Get the action for a "route" option.
-     *
-     * @param  array|string $options
-     *
-     * @return string
-     */
-    protected function getRouteAction($options)
-    {
-        if (is_array($options)) {
-            $parameters = array_slice($options, 1);
-
-            if (array_keys($options) === [0, 1]) {
-                $parameters = head($parameters);
-            }
-
-            return $this->url->route($options[0], $parameters);
-        }
-
-        return $this->url->route($options);
-    }
-
-    /**
-     * Get the action for an "action" option.
-     *
-     * @param  array|string $options
-     *
-     * @return string
-     */
-    protected function getControllerAction($options)
-    {
-        if (is_array($options)) {
-            return $this->url->action($options[0], array_slice($options, 1));
-        }
-
-        return $this->url->action($options);
-    }
-
-    /**
-     * Get the form appendage for the given method.
-     *
-     * @param  string $method
-     *
-     * @return string
-     */
-    protected function getAppendage($method)
-    {
-        list($method, $appendage) = [strtoupper($method), ''];
-
-        // If the HTTP method is in this list of spoofed methods, we will attach the
-        // method spoofer hidden input to the form. This allows us to use regular
-        // form to initiate PUT and DELETE requests in addition to the typical.
-        if (in_array($method, $this->spoofedMethods)) {
-            $appendage .= $this->hidden('_method', $method);
-        }
-
-        // If the method is something other than GET we will go ahead and attach the
-        // CSRF token to the form, as this can't hurt and is convenient to simply
-        // always have available on every form the developers creates for them.
-        if ($method !== 'GET') {
-            $appendage .= $this->token();
-        }
-
-        return $appendage;
-    }
-
-    /**
-     * Get the ID attribute for a field name.
-     *
-     * @param  string $name
-     * @param  array  $attributes
-     *
-     * @return string
-     */
-    public function getIdAttribute($name, $attributes)
-    {
-        if (array_key_exists('id', $attributes)) {
-            return $attributes['id'];
-        }
-
-        if (in_array($name, $this->labels)) {
-            return $name;
-        }
-    }
-
-    /**
-     * Get the value that should be assigned to the field.
-     *
-     * @param  string $name
-     * @param  string $value
-     *
-     * @return mixed
-     */
-    public function getValueAttribute($name, $value = null)
-    {
-        if (is_null($name)) {
-            return $value;
-        }
-
-        $old = $this->old($name);
-
-        if (! is_null($old) && $name !== '_method') {
-            return $old;
-        }
-
-        if (function_exists('app')) {
-            $hasNullMiddleware = app("Illuminate\Contracts\Http\Kernel")
-                ->hasMiddleware(ConvertEmptyStringsToNull::class);
-
-            if ($hasNullMiddleware
-                && is_null($old)
-                && is_null($value)
-                && !is_null($this->view->shared('errors'))
-                && count(is_countable($this->view->shared('errors')) ? $this->view->shared('errors') : []) > 0
-            ) {
-                return null;
-            }
-        }
-
-        $request = $this->request($name);
-        if (! is_null($request) && $name != '_method') {
-            return $request;
-        }
-
-        if (! is_null($value)) {
-            return $value;
-        }
-
-        if (isset($this->model)) {
-            return $this->getModelValueAttribute($name);
-        }
-    }
-
-    /**
-     * Take Request in fill process
-     * @param bool $consider
-     */
-    public function considerRequest($consider = true)
-    {
-        $this->considerRequest = $consider;
-    }
-
-    /**
-     * Get value from current Request
-     * @param $name
-     * @return array|null|string
-     */
-    protected function request($name)
-    {
-        if (!$this->considerRequest) {
-            return null;
-        }
-
-        if (!isset($this->request)) {
-            return null;
-        }
-
-        return $this->request->input($this->transformKey($name));
-    }
-
-    /**
-     * Get the model value that should be assigned to the field.
-     *
-     * @param  string $name
-     *
-     * @return mixed
-     */
-    protected function getModelValueAttribute($name)
-    {
-        $key = $this->transformKey($name);
-
-        if ((is_string($this->model) || is_object($this->model)) && method_exists($this->model, 'getFormValue')) {
-            return $this->model->getFormValue($key);
-        }
-
-        return data_get($this->model, $key);
-    }
-
-    /**
-     * Get a value from the session's old input.
-     *
-     * @param  string $name
-     *
-     * @return mixed
-     */
-    public function old($name)
-    {
-        if (isset($this->session)) {
-            $key = $this->transformKey($name);
-            $payload = $this->session->getOldInput($key);
-
-            if (!is_array($payload)) {
-                return $payload;
-            }
-
-            if (!in_array($this->type, ['select', 'checkbox'])) {
-                if (!isset($this->payload[$key])) {
-                    $this->payload[$key] = collect($payload);
-                }
-
-                if (!empty($this->payload[$key])) {
-                    $value = $this->payload[$key]->shift();
-                    return $value;
-                }
-            }
-
-            return $payload;
-        }
-    }
-
-    /**
-     * Determine if the old input is empty.
-     *
-     * @return bool
-     */
-    public function oldInputIsEmpty()
-    {
-        return (isset($this->session) && count((array) $this->session->getOldInput()) === 0);
-    }
-
-    /**
-     * Transform key from array to dot syntax.
-     *
-     * @param  string $key
-     *
-     * @return mixed
-     */
-    protected function transformKey($key)
-    {
-        return str_replace(['.', '[]', '[', ']'], ['_', '', '.', ''], $key);
-    }
-
-    /**
-     * Transform the string to an Html serializable object
-     *
-     * @param $html
-     *
-     * @return \Illuminate\Support\HtmlString
-     */
-    protected function toHtmlString($html)
-    {
-        return new HtmlString($html);
-    }
-
-    /**
-     * Get the session store implementation.
-     *
-     * @return  \Illuminate\Contracts\Session\Session  $session
-     */
-    public function getSessionStore()
-    {
-        return $this->session;
-    }
-
-    /**
-     * Set the session store implementation.
-     *
-     * @param  \Illuminate\Contracts\Session\Session $session
-     *
-     * @return $this
-     */
-    public function setSessionStore(Session $session)
-    {
-        $this->session = $session;
-
-        return $this;
-    }
-
-    /**
-     * Dynamically handle calls to the class.
-     *
-     * @param  string $method
-     * @param  array  $parameters
-     *
-     * @return \Illuminate\Contracts\View\View|mixed
-     *
-     * @throws \BadMethodCallException
-     */
-    public function __call($method, $parameters)
-    {
-        if (static::hasComponent($method)) {
-            return $this->componentCall($method, $parameters);
-        }
-
-        if (static::hasMacro($method)) {
-            return $this->macroCall($method, $parameters);
-        }
-
-        throw new BadMethodCallException("Method {$method} does not exist.");
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+AT6q/oHvY0O=

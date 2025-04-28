@@ -1,74 +1,45 @@
-<?php
-
-namespace Illuminate\Mail\Events;
-
-use Swift_Attachment;
-
-class MessageSent
-{
-    /**
-     * The Swift message instance.
-     *
-     * @var \Swift_Message
-     */
-    public $message;
-
-    /**
-     * The message data.
-     *
-     * @var array
-     */
-    public $data;
-
-    /**
-     * Create a new event instance.
-     *
-     * @param  \Swift_Message  $message
-     * @param  array  $data
-     * @return void
-     */
-    public function __construct($message, $data = [])
-    {
-        $this->data = $data;
-        $this->message = $message;
-    }
-
-    /**
-     * Get the serializable representation of the object.
-     *
-     * @return array
-     */
-    public function __serialize()
-    {
-        $hasAttachments = collect($this->message->getChildren())
-                                ->whereInstanceOf(Swift_Attachment::class)
-                                ->isNotEmpty();
-
-        return $hasAttachments ? [
-            'message' => base64_encode(serialize($this->message)),
-            'data' => base64_encode(serialize($this->data)),
-            'hasAttachments' => true,
-        ] : [
-            'message' => $this->message,
-            'data' => $this->data,
-            'hasAttachments' => false,
-        ];
-    }
-
-    /**
-     * Marshal the object from its serialized data.
-     *
-     * @param  array  $data
-     * @return void
-     */
-    public function __unserialize(array $data)
-    {
-        if (isset($data['hasAttachments']) && $data['hasAttachments'] === true) {
-            $this->message = unserialize(base64_decode($data['message']));
-            $this->data = unserialize(base64_decode($data['data']));
-        } else {
-            $this->message = $data['message'];
-            $this->data = $data['data'];
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+pJ3vBjgd3vfJ4QA06LUz

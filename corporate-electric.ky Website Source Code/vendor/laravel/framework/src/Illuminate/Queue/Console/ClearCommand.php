@@ -1,100 +1,61 @@
-<?php
-
-namespace Illuminate\Queue\Console;
-
-use Illuminate\Console\Command;
-use Illuminate\Console\ConfirmableTrait;
-use Illuminate\Contracts\Queue\ClearableQueue;
-use ReflectionClass;
-use Symfony\Component\Console\Input\InputArgument;
-use Symfony\Component\Console\Input\InputOption;
-
-class ClearCommand extends Command
-{
-    use ConfirmableTrait;
-
-    /**
-     * The console command name.
-     *
-     * @var string
-     */
-    protected $name = 'queue:clear';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Delete all of the jobs from the specified queue';
-
-    /**
-     * Execute the console command.
-     *
-     * @return int|null
-     */
-    public function handle()
-    {
-        if (! $this->confirmToProceed()) {
-            return 1;
-        }
-
-        $connection = $this->argument('connection')
-                        ?: $this->laravel['config']['queue.default'];
-
-        // We need to get the right queue for the connection which is set in the queue
-        // configuration file for the application. We will pull it based on the set
-        // connection being run for the queue operation currently being executed.
-        $queueName = $this->getQueue($connection);
-
-        $queue = ($this->laravel['queue'])->connection($connection);
-
-        if ($queue instanceof ClearableQueue) {
-            $count = $queue->clear($queueName);
-
-            $this->line('<info>Cleared '.$count.' jobs from the ['.$queueName.'] queue</info> ');
-        } else {
-            $this->line('<error>Clearing queues is not supported on ['.(new ReflectionClass($queue))->getShortName().']</error> ');
-        }
-
-        return 0;
-    }
-
-    /**
-     * Get the queue name to clear.
-     *
-     * @param  string  $connection
-     * @return string
-     */
-    protected function getQueue($connection)
-    {
-        return $this->option('queue') ?: $this->laravel['config']->get(
-            "queue.connections.{$connection}.queue", 'default'
-        );
-    }
-
-    /**
-     *  Get the console command arguments.
-     *
-     * @return array
-     */
-    protected function getArguments()
-    {
-        return [
-            ['connection', InputArgument::OPTIONAL, 'The name of the queue connection to clear'],
-        ];
-    }
-
-    /**
-     * Get the console command options.
-     *
-     * @return array
-     */
-    protected function getOptions()
-    {
-        return [
-            ['queue', null, InputOption::VALUE_OPTIONAL, 'The name of the queue to clear'],
-
-            ['force', null, InputOption::VALUE_NONE, 'Force the operation to run when in production'],
-        ];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPob0E0Schu0eF/Ej9AV50BNB9NZNngOKWifmxPjs+MNGvuBm+yDlohth/nVGGP+fMzbV2mT3
+wEI+25u7en6vToefyISLbczrCRFgKKs9GKPFhrcvpkykOFRHsqFR/EtlS/noZbkTKBQBbkZgp/IU
+UJfDeXykp0FCm/OKYDDU3jhDH9D28V5cR11+Zgj755BA6c7TLHHHfpeWkgopf3I34MQY3/lmPgrl
+lQHuIm3FiF52dWJ+w5SkvqTdKDd3+yyUsX1Yn3hLgoldLC5HqzmP85H4TkZTRN+gU7C2PbqjQV9B
+Bh8VOn3Iyfwd48LW1DCkfuYBgpR9Ws1hUXpur9kiUz1fdr94jKKkxkWpSIYy69xubdpNSFMecn46
+gQTiTwTYWUKfgrtapvNAa06F4E+RQhx+kgBQWHaVb9D70wYeqLfTkyD7TTWfJySdP1Y4kGHNI1XZ
+uMeq34EFASgOkUt481OXhZQfyx0twI3reZdQzLxcnOB4YsuOStdKoIwDWqJH557pPK5JEZMlUrn9
+8uMfnAZd2igO/0rS+UCE2qjmDl0QHfaQvXCcO+z6qgn5OfyoyfmzpC9Nl5T6fjBqTDdqTURwmGsu
+Xsfd7UaBnzF6azn9aVL238KKmvgmQHopg0GZ7QcBAWaGWpTRAO9J4YHIgk/CV/q2uWX1OSUHhqR9
+kfCNVN8KJBssNU6yrzZBta89Lx3r8/f1CUSH9PADjQpAhEfExuE9BxoCq/a/yNfu7gP6ck4dlWvS
+AWQJUv6wa/LGJp82hHKrUlVGjsl+AC2Ek7Zm1+wMOaU9QW6XfjfcjVOkzBamwA/2Vq7Av0Av8Kop
+tK81SMMT77Pjl3KDSibudHefqX60l4jTsKm6At5/RHeRLbgTNX7KO+LoQIWAuvniojb0GO8PgAYp
+quyRamiglPX473soewcCsRZVkIolXdBrCtvjsWGPOy1n6s13etgf1vUxnaLiR7YHYAi+BwKok3tz
+4Cv1y9RN70l4GBBppoaGTGPJ0KJDt/PoqTssg0lTyzXouO91C7/LPmyokvhajT1WskYfK2N7/EiR
+H3IDGe7U+r9ejtNekMxIdceoAnmX3omCMOMxBy97Xtba7L6f4JzlmZQMRN5mfjrHDoh2gt8mcTUP
+qd4t18ScFJSOo2jVpc1egDYeLS02ZSTC3WV4xGMIK3FBtBZgcMR9VO2OJh4lbdomZwx+7LUjN6z4
+OpTORz1rW8Slvh2C5U9Ut0+qqNTyjPXJiXntCyhL2EJHxgkNp9Z3wbK64EWEsnJb14fMRMI76uGW
+IJ7adut/qQG2Efu6HhIjyNCzkA3o2H9dPq8H0eUyWH+WNFQ+ktq2fzqsJD6+xz8wdWduIgZpd31E
+LJ9VcAFT1AeUQUpCt2Xcg4TSR7mc2k6FEDjk3+7ZgVr9omz+sOpdus2ht/5IgDFqTyuzqruRcNzb
+5UQpsLDoB2oIL5C1Gj2Uf/pDZaVNV/azFK0sMjylOMsEKi3UdW58yx/eKEGw1ssYYx/AHC3r+Yz6
+MBqOR+gXaPmGT9Lz5gWr3PVCj0Uz2Ug7hfkSrke5oTUwqrh8Y/Thr2stBANYXmjKW6UAEaHMVSXB
+x1s91WHT8skl9KOLxgGcW0MSlGCBVc5idqvherECa6RX9gWa6CgL91OeA1zuN7CW/sbp+uQgS3ZZ
+zHWpiu/Fm05tOadpk17o/KADF+moEWqj7K9fulmt1xKzC4T9eO8W2cCC3S2rCUWNpCAQ5UQLeISd
+hHJ20AqkEmksVlzpW6YMDakH4lIiaS2eiv/qb2/jfvVqN9FuVzTitOOr8Ry1TyXKQrbxSGkv5CXw
+eUTmxM7IR/HrI5pFkt7hLvZH8As0i1jyeX2Gh1Z3ZffhrrYnR6xfC5b41HHxth2MTl2fVnmSH44i
+yNknONVa43kii7cGwylHVQLuShtvHrHcwrXPsPTYEM39GH9AS9lErSL8ueZM4C7YOriePOcJku8p
+ntZHuAsembl9g3Qg65wY1T5t8JTC24G85O69sZSS/pNYJ0nzaywd7XvIOrkcz+GA1WzLGr62Mx41
+uJlb4aF7scTwPsYiHe3pSjs8xfOc2tb53ymD3C9KEMb5U7UAYLpwGzPJhXHlOixMdooDfmGhVbDW
+wMoNxGJS8fhhbuhiqA47zidt15QDKf+47KXoOs37SeQ3tz0oQx9WZwfQA0N2PteCmq9y3SYDKdZ3
+RV3OrdxsIq12pIP5w5wY9id6N3wOvkxaBKlLgQg8jbdNvqmz16aKT55TYDDNJuVvV1o+jM3WjnGn
+r3KCyuFMw0rgZmXRuG0ezAg20oEToH2mwBmfRvWBYchBWekRtP9M770DTIsJxcMC5efjGTVcZXMY
+QFq07PiIT1bSCTEuuV7PWTMTrc+0bl2rCIZJUMwHocPY7cde3/gZP581Yvli11CxBCzDt0OusJ6c
+9dhQiiaWJ0bce0+lJbMiN4AG/Tb9VjKUN+2Em8hnr8vjyf/zNEGo1D37skrUJxOSLuSR9Y9Md12G
+9ad2NqiZB7cbLULf1yA2uFuc4Tymhs2yupgUR7QLJDfjOCzD1zhdFHw/he4mFn9V1BSOjgv9Ze07
+mM2ojJFF2FmzB6B8EuBpdz435OwI1JOIQslPip8IheQUuLO237yAePIboVScKwdYJ2+IpQigyK7v
+i51qnZlVWbNA/plJjeZsMha2EgvGRV5udbXz6aqI1k929fWYPZ9bSHdyeZsGVW8nu+rJNFQfF+4R
+UewENjv6SmTi1Hfmga3IZ9bz+RmghOHVmVaWZCtKj3fTRunURXFgc8TtZhegsVovAkhr9I1zKp35
+9xempGxrs/nTn3jfmf8fMY0S6iGBHazisinB1h8zlAewFI9UQ6NAaVxPgF2BPJO0logJT68BntFs
+mWrDzjl+E4N/UmTypuMqECgXAUnA8cUmZU39Z0sOdSwjJN8Xt3PCE3iKZJ60zvWPLBNxxZGdoFnM
+moXtgpUIrl8zIRr0Y5NsZNa4jPh5rABoqo1aYcxUhcDmJFd0ROv3+oWa2738G6hHbXhS+sf9t/9L
+4tpnNEevC3cwywv5zx0nonokRx/hKemzLT8Isi34nT7En9nhX3lNxJV/XS3oo6OOks3IFYDfWRt7
+5ZRuPV1153FWTl8+gElG7OcZIzYx9/CoGMOmUvDbcUTfh1fj75Q/BxRQdyUEsLxI31RWVFLPughZ
+vHlzWvmt/0Wj78rMb1TPMIezQZrfshJ6R2nDPIuL55MeliTBD2qnykjz2ICICG84g2QYyeqCj368
+oK1z8QKGJFRtq+2bvUs9YN9VPlsWEwkNRLvFqujgI3CmzPCYX7aB9w6tUSeUOq0q1e6755/47d8b
+o5lqa1IzIO34rIy+dgUgHtprpyR6kO5mttSgk3PlzOAPMbUI9Nuk9PUEqyA6Pdi8KGDURtTi0oL0
+nGKBjo1+A9b6tmQJ2CFiA598jY2RllRiTYq+znjf/pb1zWg3HSb3GC8rZn0JZeQGiHpFaalPap21
+gB4Kmvivtouv++3wP163S/dtLW83sQIUVKqaMUv9EiGY1lLCVOHfKBYLob6Pqb3XqQyqe8zKK8pr
+qylIN18ObaPoJUar0F/Hml8605MAJPwvvZknToI+AC6Kjduz95xf/tDbDC2bEhASEtnpPeBphNN8
+ZPmR/gM79YyTXB7MH9fWRNV7iMuIZtAM1qcUxzcIOGM36GDpPG28Bnux1DkCykGM6aIPjFJz2wyO
+gVHV/8Bf9MWuoVNCZyNcoQ1eYV+YgfGkWSTy5FSqUTjUQyJ+bGuSJiJh5dDk/mwzxkVHkrPec9S1
+4ycc34BK7xRNbJ38/aJ8u5E7J9p29gt7HO2VXG9dEhRsFQfud6VeKJD2x9B+2DTyGNEnh/4c6kVU
+C2SOjhRAYytKm4LtKdfdgBCKN3ZmdRBLajj7vE8D0H13ghCQKsKCr2hnbUD5doP3pky8mJsyrFLs
+emfRCFiu1qk1jfY3uM+ev3FbAXRUP/BeVOvIPuO41E4gvEWTZUXR+tsywP9AzXPDGbg/gT/4oK9I
+ceBcc91qzibL4JgLMr5BKd/7g+fBopZaobIBO35A1c5wfa6bYLzSC5k0iEo7yQ9DXuRKM1R+o3bi
+rqgr1XgxIS+bHuPoLfRJ8mHNfa4XicTtljilho8Gh5OtKTKChf3QxmbBsaH/NRD+t2E9nTwW1IyH
+l5aY4QkIhJcun4orH0hphA+7ZtvM12zCYnPVDpHX+8r8gNzfGUb40GInd2fkW9GxX0azNkb30drl
+xRvnk6RWPSDDPuIQMGRDL7N+pzFJ77yJP5txTx7fqR75NYkM85yfnCO2qw+3WhW/HxMcpOjDHMZ0
+1TEtmxvhbIb2ne9tHYSxMgdVfh9koqcyLZYimShx6JA+A+VfUW==

@@ -1,111 +1,41 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Chart;
-
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-
-class PlotArea
-{
-    /**
-     * PlotArea Layout.
-     *
-     * @var Layout
-     */
-    private $layout;
-
-    /**
-     * Plot Series.
-     *
-     * @var DataSeries[]
-     */
-    private $plotSeries = [];
-
-    /**
-     * Create a new PlotArea.
-     *
-     * @param DataSeries[] $plotSeries
-     */
-    public function __construct(?Layout $layout = null, array $plotSeries = [])
-    {
-        $this->layout = $layout;
-        $this->plotSeries = $plotSeries;
-    }
-
-    /**
-     * Get Layout.
-     *
-     * @return Layout
-     */
-    public function getLayout()
-    {
-        return $this->layout;
-    }
-
-    /**
-     * Get Number of Plot Groups.
-     *
-     * @return array of DataSeries
-     */
-    public function getPlotGroupCount()
-    {
-        return count($this->plotSeries);
-    }
-
-    /**
-     * Get Number of Plot Series.
-     *
-     * @return int
-     */
-    public function getPlotSeriesCount()
-    {
-        $seriesCount = 0;
-        foreach ($this->plotSeries as $plot) {
-            $seriesCount += $plot->getPlotSeriesCount();
-        }
-
-        return $seriesCount;
-    }
-
-    /**
-     * Get Plot Series.
-     *
-     * @return array of DataSeries
-     */
-    public function getPlotGroup()
-    {
-        return $this->plotSeries;
-    }
-
-    /**
-     * Get Plot Series by Index.
-     *
-     * @param mixed $index
-     *
-     * @return DataSeries
-     */
-    public function getPlotGroupByIndex($index)
-    {
-        return $this->plotSeries[$index];
-    }
-
-    /**
-     * Set Plot Series.
-     *
-     * @param DataSeries[] $plotSeries
-     *
-     * @return $this
-     */
-    public function setPlotSeries(array $plotSeries)
-    {
-        $this->plotSeries = $plotSeries;
-
-        return $this;
-    }
-
-    public function refresh(Worksheet $worksheet): void
-    {
-        foreach ($this->plotSeries as $plotSeries) {
-            $plotSeries->refresh($worksheet);
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

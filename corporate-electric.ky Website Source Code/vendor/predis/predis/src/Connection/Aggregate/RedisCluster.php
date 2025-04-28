@@ -1,673 +1,236 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Predis\Connection\Aggregate;
-
-use Predis\ClientException;
-use Predis\Cluster\RedisStrategy as RedisClusterStrategy;
-use Predis\Cluster\StrategyInterface;
-use Predis\Command\CommandInterface;
-use Predis\Command\RawCommand;
-use Predis\Connection\ConnectionException;
-use Predis\Connection\FactoryInterface;
-use Predis\Connection\NodeConnectionInterface;
-use Predis\NotSupportedException;
-use Predis\Response\ErrorInterface as ErrorResponseInterface;
-
-/**
- * Abstraction for a Redis-backed cluster of nodes (Redis >= 3.0.0).
- *
- * This connection backend offers smart support for redis-cluster by handling
- * automatic slots map (re)generation upon -MOVED or -ASK responses returned by
- * Redis when redirecting a client to a different node.
- *
- * The cluster can be pre-initialized using only a subset of the actual nodes in
- * the cluster, Predis will do the rest by adjusting the slots map and creating
- * the missing underlying connection instances on the fly.
- *
- * It is possible to pre-associate connections to a slots range with the "slots"
- * parameter in the form "$first-$last". This can greatly reduce runtime node
- * guessing and redirections.
- *
- * It is also possible to ask for the full and updated slots map directly to one
- * of the nodes and optionally enable such a behaviour upon -MOVED redirections.
- * Asking for the cluster configuration to Redis is actually done by issuing a
- * CLUSTER SLOTS command to a random node in the pool.
- *
- * @author Daniele Alessandri <suppakilla@gmail.com>
- */
-class RedisCluster implements ClusterInterface, \IteratorAggregate, \Countable
-{
-    private $useClusterSlots = true;
-    private $pool = array();
-    private $slots = array();
-    private $slotsMap;
-    private $strategy;
-    private $connections;
-    private $retryLimit = 5;
-
-    /**
-     * @param FactoryInterface  $connections Optional connection factory.
-     * @param StrategyInterface $strategy    Optional cluster strategy.
-     */
-    public function __construct(
-        FactoryInterface $connections,
-        StrategyInterface $strategy = null
-    ) {
-        $this->connections = $connections;
-        $this->strategy = $strategy ?: new RedisClusterStrategy();
-    }
-
-    /**
-     * Sets the maximum number of retries for commands upon server failure.
-     *
-     * -1 = unlimited retry attempts
-     *  0 = no retry attempts (fails immediatly)
-     *  n = fail only after n retry attempts
-     *
-     * @param int $retry Number of retry attempts.
-     */
-    public function setRetryLimit($retry)
-    {
-        $this->retryLimit = (int) $retry;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function isConnected()
-    {
-        foreach ($this->pool as $connection) {
-            if ($connection->isConnected()) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function connect()
-    {
-        if ($connection = $this->getRandomConnection()) {
-            $connection->connect();
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function disconnect()
-    {
-        foreach ($this->pool as $connection) {
-            $connection->disconnect();
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function add(NodeConnectionInterface $connection)
-    {
-        $this->pool[(string) $connection] = $connection;
-        unset($this->slotsMap);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function remove(NodeConnectionInterface $connection)
-    {
-        if (false !== $id = array_search($connection, $this->pool, true)) {
-            unset(
-                $this->pool[$id],
-                $this->slotsMap
-            );
-
-            $this->slots = array_diff($this->slots, array($connection));
-
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Removes a connection instance by using its identifier.
-     *
-     * @param string $connectionID Connection identifier.
-     *
-     * @return bool True if the connection was in the pool.
-     */
-    public function removeById($connectionID)
-    {
-        if (isset($this->pool[$connectionID])) {
-            unset(
-                $this->pool[$connectionID],
-                $this->slotsMap
-            );
-
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Generates the current slots map by guessing the cluster configuration out
-     * of the connection parameters of the connections in the pool.
-     *
-     * Generation is based on the same algorithm used by Redis to generate the
-     * cluster, so it is most effective when all of the connections supplied on
-     * initialization have the "slots" parameter properly set accordingly to the
-     * current cluster configuration.
-     *
-     * @return array
-     */
-    public function buildSlotsMap()
-    {
-        $this->slotsMap = array();
-
-        foreach ($this->pool as $connectionID => $connection) {
-            $parameters = $connection->getParameters();
-
-            if (!isset($parameters->slots)) {
-                continue;
-            }
-
-            foreach (explode(',', $parameters->slots) as $slotRange) {
-                $slots = explode('-', $slotRange, 2);
-
-                if (!isset($slots[1])) {
-                    $slots[1] = $slots[0];
-                }
-
-                $this->setSlots($slots[0], $slots[1], $connectionID);
-            }
-        }
-
-        return $this->slotsMap;
-    }
-
-    /**
-     * Queries the specified node of the cluster to fetch the updated slots map.
-     *
-     * When the connection fails, this method tries to execute the same command
-     * on a different connection picked at random from the pool of known nodes,
-     * up until the retry limit is reached.
-     *
-     * @param NodeConnectionInterface $connection Connection to a node of the cluster.
-     *
-     * @return mixed
-     */
-    private function queryClusterNodeForSlotsMap(NodeConnectionInterface $connection)
-    {
-        $retries = 0;
-        $command = RawCommand::create('CLUSTER', 'SLOTS');
-
-        RETRY_COMMAND: {
-            try {
-                $response = $connection->executeCommand($command);
-            } catch (ConnectionException $exception) {
-                $connection = $exception->getConnection();
-                $connection->disconnect();
-
-                $this->remove($connection);
-
-                if ($retries === $this->retryLimit) {
-                    throw $exception;
-                }
-
-                if (!$connection = $this->getRandomConnection()) {
-                    throw new ClientException('No connections left in the pool for `CLUSTER SLOTS`');
-                }
-
-                ++$retries;
-                goto RETRY_COMMAND;
-            }
-        }
-
-        return $response;
-    }
-
-    /**
-     * Generates an updated slots map fetching the cluster configuration using
-     * the CLUSTER SLOTS command against the specified node or a random one from
-     * the pool.
-     *
-     * @param NodeConnectionInterface $connection Optional connection instance.
-     *
-     * @return array
-     */
-    public function askSlotsMap(NodeConnectionInterface $connection = null)
-    {
-        if (!$connection && !$connection = $this->getRandomConnection()) {
-            return array();
-        }
-
-        $this->resetSlotsMap();
-
-        $response = $this->queryClusterNodeForSlotsMap($connection);
-
-        foreach ($response as $slots) {
-            // We only support master servers for now, so we ignore subsequent
-            // elements in the $slots array identifying slaves.
-            list($start, $end, $master) = $slots;
-
-            if ($master[0] === '') {
-                $this->setSlots($start, $end, (string) $connection);
-            } else {
-                $this->setSlots($start, $end, "{$master[0]}:{$master[1]}");
-            }
-        }
-
-        return $this->slotsMap;
-    }
-
-    /**
-     * Resets the slots map cache.
-     */
-    public function resetSlotsMap()
-    {
-        $this->slotsMap = array();
-    }
-
-    /**
-     * Returns the current slots map for the cluster.
-     *
-     * The order of the returned $slot => $server dictionary is not guaranteed.
-     *
-     * @return array
-     */
-    public function getSlotsMap()
-    {
-        if (!isset($this->slotsMap)) {
-            $this->slotsMap = array();
-        }
-
-        return $this->slotsMap;
-    }
-
-    /**
-     * Pre-associates a connection to a slots range to avoid runtime guessing.
-     *
-     * @param int                            $first      Initial slot of the range.
-     * @param int                            $last       Last slot of the range.
-     * @param NodeConnectionInterface|string $connection ID or connection instance.
-     *
-     * @throws \OutOfBoundsException
-     */
-    public function setSlots($first, $last, $connection)
-    {
-        if ($first < 0x0000 || $first > 0x3FFF ||
-            $last < 0x0000 || $last > 0x3FFF ||
-            $last < $first
-        ) {
-            throw new \OutOfBoundsException(
-                "Invalid slot range for $connection: [$first-$last]."
-            );
-        }
-
-        $slots = array_fill($first, $last - $first + 1, (string) $connection);
-        $this->slotsMap = $this->getSlotsMap() + $slots;
-    }
-
-    /**
-     * Guesses the correct node associated to a given slot using a precalculated
-     * slots map, falling back to the same logic used by Redis to initialize a
-     * cluster (best-effort).
-     *
-     * @param int $slot Slot index.
-     *
-     * @return string Connection ID.
-     */
-    protected function guessNode($slot)
-    {
-        if (!$this->pool) {
-            throw new ClientException('No connections available in the pool');
-        }
-
-        if (!isset($this->slotsMap)) {
-            $this->buildSlotsMap();
-        }
-
-        if (isset($this->slotsMap[$slot])) {
-            return $this->slotsMap[$slot];
-        }
-
-        $count = count($this->pool);
-        $index = min((int) ($slot / (int) (16384 / $count)), $count - 1);
-        $nodes = array_keys($this->pool);
-
-        return $nodes[$index];
-    }
-
-    /**
-     * Creates a new connection instance from the given connection ID.
-     *
-     * @param string $connectionID Identifier for the connection.
-     *
-     * @return NodeConnectionInterface
-     */
-    protected function createConnection($connectionID)
-    {
-        $separator = strrpos($connectionID, ':');
-
-        return $this->connections->create(array(
-            'host' => substr($connectionID, 0, $separator),
-            'port' => substr($connectionID, $separator + 1),
-        ));
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getConnection(CommandInterface $command)
-    {
-        $slot = $this->strategy->getSlot($command);
-
-        if (!isset($slot)) {
-            throw new NotSupportedException(
-                "Cannot use '{$command->getId()}' with redis-cluster."
-            );
-        }
-
-        if (isset($this->slots[$slot])) {
-            return $this->slots[$slot];
-        } else {
-            return $this->getConnectionBySlot($slot);
-        }
-    }
-
-    /**
-     * Returns the connection currently associated to a given slot.
-     *
-     * @param int $slot Slot index.
-     *
-     * @throws \OutOfBoundsException
-     *
-     * @return NodeConnectionInterface
-     */
-    public function getConnectionBySlot($slot)
-    {
-        if ($slot < 0x0000 || $slot > 0x3FFF) {
-            throw new \OutOfBoundsException("Invalid slot [$slot].");
-        }
-
-        if (isset($this->slots[$slot])) {
-            return $this->slots[$slot];
-        }
-
-        $connectionID = $this->guessNode($slot);
-
-        if (!$connection = $this->getConnectionById($connectionID)) {
-            $connection = $this->createConnection($connectionID);
-            $this->pool[$connectionID] = $connection;
-        }
-
-        return $this->slots[$slot] = $connection;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getConnectionById($connectionID)
-    {
-        if (isset($this->pool[$connectionID])) {
-            return $this->pool[$connectionID];
-        }
-    }
-
-    /**
-     * Returns a random connection from the pool.
-     *
-     * @return NodeConnectionInterface|null
-     */
-    protected function getRandomConnection()
-    {
-        if ($this->pool) {
-            return $this->pool[array_rand($this->pool)];
-        }
-    }
-
-    /**
-     * Permanently associates the connection instance to a new slot.
-     * The connection is added to the connections pool if not yet included.
-     *
-     * @param NodeConnectionInterface $connection Connection instance.
-     * @param int                     $slot       Target slot index.
-     */
-    protected function move(NodeConnectionInterface $connection, $slot)
-    {
-        $this->pool[(string) $connection] = $connection;
-        $this->slots[(int) $slot] = $connection;
-    }
-
-    /**
-     * Handles -ERR responses returned by Redis.
-     *
-     * @param CommandInterface       $command Command that generated the -ERR response.
-     * @param ErrorResponseInterface $error   Redis error response object.
-     *
-     * @return mixed
-     */
-    protected function onErrorResponse(CommandInterface $command, ErrorResponseInterface $error)
-    {
-        $details = explode(' ', $error->getMessage(), 2);
-
-        switch ($details[0]) {
-            case 'MOVED':
-                return $this->onMovedResponse($command, $details[1]);
-
-            case 'ASK':
-                return $this->onAskResponse($command, $details[1]);
-
-            default:
-                return $error;
-        }
-    }
-
-    /**
-     * Handles -MOVED responses by executing again the command against the node
-     * indicated by the Redis response.
-     *
-     * @param CommandInterface $command Command that generated the -MOVED response.
-     * @param string           $details Parameters of the -MOVED response.
-     *
-     * @return mixed
-     */
-    protected function onMovedResponse(CommandInterface $command, $details)
-    {
-        list($slot, $connectionID) = explode(' ', $details, 2);
-
-        if (!$connection = $this->getConnectionById($connectionID)) {
-            $connection = $this->createConnection($connectionID);
-        }
-
-        if ($this->useClusterSlots) {
-            $this->askSlotsMap($connection);
-        }
-
-        $this->move($connection, $slot);
-        $response = $this->executeCommand($command);
-
-        return $response;
-    }
-
-    /**
-     * Handles -ASK responses by executing again the command against the node
-     * indicated by the Redis response.
-     *
-     * @param CommandInterface $command Command that generated the -ASK response.
-     * @param string           $details Parameters of the -ASK response.
-     *
-     * @return mixed
-     */
-    protected function onAskResponse(CommandInterface $command, $details)
-    {
-        list($slot, $connectionID) = explode(' ', $details, 2);
-
-        if (!$connection = $this->getConnectionById($connectionID)) {
-            $connection = $this->createConnection($connectionID);
-        }
-
-        $connection->executeCommand(RawCommand::create('ASKING'));
-        $response = $connection->executeCommand($command);
-
-        return $response;
-    }
-
-    /**
-     * Ensures that a command is executed one more time on connection failure.
-     *
-     * The connection to the node that generated the error is evicted from the
-     * pool before trying to fetch an updated slots map from another node. If
-     * the new slots map points to an unreachable server the client gives up and
-     * throws the exception as the nodes participating in the cluster may still
-     * have to agree that something changed in the configuration of the cluster.
-     *
-     * @param CommandInterface $command Command instance.
-     * @param string           $method  Actual method.
-     *
-     * @return mixed
-     */
-    private function retryCommandOnFailure(CommandInterface $command, $method)
-    {
-        $failure = false;
-
-        RETRY_COMMAND: {
-            try {
-                $response = $this->getConnection($command)->$method($command);
-            } catch (ConnectionException $exception) {
-                $connection = $exception->getConnection();
-                $connection->disconnect();
-
-                $this->remove($connection);
-
-                if ($failure) {
-                    throw $exception;
-                } elseif ($this->useClusterSlots) {
-                    $this->askSlotsMap();
-                }
-
-                $failure = true;
-
-                goto RETRY_COMMAND;
-            }
-        }
-
-        return $response;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function writeRequest(CommandInterface $command)
-    {
-        $this->retryCommandOnFailure($command, __FUNCTION__);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function readResponse(CommandInterface $command)
-    {
-        return $this->retryCommandOnFailure($command, __FUNCTION__);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function executeCommand(CommandInterface $command)
-    {
-        $response = $this->retryCommandOnFailure($command, __FUNCTION__);
-
-        if ($response instanceof ErrorResponseInterface) {
-            return $this->onErrorResponse($command, $response);
-        }
-
-        return $response;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function count()
-    {
-        return count($this->pool);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getIterator()
-    {
-        if ($this->useClusterSlots) {
-            $slotsmap = $this->getSlotsMap() ?: $this->askSlotsMap();
-        } else {
-            $slotsmap = $this->getSlotsMap() ?: $this->buildSlotsMap();
-        }
-
-        $connections = array();
-
-        foreach (array_unique($slotsmap) as $node) {
-            if (!$connection = $this->getConnectionById($node)) {
-                $this->add($connection = $this->createConnection($node));
-            }
-
-            $connections[] = $connection;
-        }
-
-        return new \ArrayIterator($connections);
-    }
-
-    /**
-     * Returns the underlying command hash strategy used to hash commands by
-     * using keys found in their arguments.
-     *
-     * @return StrategyInterface
-     */
-    public function getClusterStrategy()
-    {
-        return $this->strategy;
-    }
-
-    /**
-     * Returns the underlying connection factory used to create new connection
-     * instances to Redis nodes indicated by redis-cluster.
-     *
-     * @return FactoryInterface
-     */
-    public function getConnectionFactory()
-    {
-        return $this->connections;
-    }
-
-    /**
-     * Enables automatic fetching of the current slots map from one of the nodes
-     * using the CLUSTER SLOTS command. This option is enabled by default as
-     * asking the current slots map to Redis upon -MOVED responses may reduce
-     * overhead by eliminating the trial-and-error nature of the node guessing
-     * procedure, mostly when targeting many keys that would end up in a lot of
-     * redirections.
-     *
-     * The slots map can still be manually fetched using the askSlotsMap()
-     * method whether or not this option is enabled.
-     *
-     * @param bool $value Enable or disable the use of CLUSTER SLOTS.
-     */
-    public function useClusterSlots($value)
-    {
-        $this->useClusterSlots = (bool) $value;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+DwnX4nuzET4o9X5yis3q5mP0K0NslnI+mHA0dm==

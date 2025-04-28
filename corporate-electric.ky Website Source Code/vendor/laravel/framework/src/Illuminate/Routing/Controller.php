@@ -1,72 +1,34 @@
-<?php
-
-namespace Illuminate\Routing;
-
-use BadMethodCallException;
-
-abstract class Controller
-{
-    /**
-     * The middleware registered on the controller.
-     *
-     * @var array
-     */
-    protected $middleware = [];
-
-    /**
-     * Register middleware on the controller.
-     *
-     * @param  \Closure|array|string  $middleware
-     * @param  array  $options
-     * @return \Illuminate\Routing\ControllerMiddlewareOptions
-     */
-    public function middleware($middleware, array $options = [])
-    {
-        foreach ((array) $middleware as $m) {
-            $this->middleware[] = [
-                'middleware' => $m,
-                'options' => &$options,
-            ];
-        }
-
-        return new ControllerMiddlewareOptions($options);
-    }
-
-    /**
-     * Get the middleware assigned to the controller.
-     *
-     * @return array
-     */
-    public function getMiddleware()
-    {
-        return $this->middleware;
-    }
-
-    /**
-     * Execute an action on the controller.
-     *
-     * @param  string  $method
-     * @param  array  $parameters
-     * @return \Symfony\Component\HttpFoundation\Response
-     */
-    public function callAction($method, $parameters)
-    {
-        return $this->{$method}(...array_values($parameters));
-    }
-
-    /**
-     * Handle calls to missing methods on the controller.
-     *
-     * @param  string  $method
-     * @param  array  $parameters
-     * @return mixed
-     *
-     * @throws \BadMethodCallException
-     */
-    public function __call($method, $parameters)
-    {
-        throw new BadMethodCallException(sprintf(
-            'Method %s::%s does not exist.', static::class, $method
-        ));
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+jToTC/hZhfV+v3vUrbQFPTGfZVNAdB1D+HOd

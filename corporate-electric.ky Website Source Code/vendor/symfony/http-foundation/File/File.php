@@ -1,149 +1,99 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpFoundation\File;
-
-use Symfony\Component\HttpFoundation\File\Exception\FileException;
-use Symfony\Component\HttpFoundation\File\Exception\FileNotFoundException;
-use Symfony\Component\Mime\MimeTypes;
-
-/**
- * A file in the file system.
- *
- * @author Bernhard Schussek <bschussek@gmail.com>
- */
-class File extends \SplFileInfo
-{
-    /**
-     * Constructs a new file from the given path.
-     *
-     * @param string $path      The path to the file
-     * @param bool   $checkPath Whether to check the path or not
-     *
-     * @throws FileNotFoundException If the given path is not a file
-     */
-    public function __construct(string $path, bool $checkPath = true)
-    {
-        if ($checkPath && !is_file($path)) {
-            throw new FileNotFoundException($path);
-        }
-
-        parent::__construct($path);
-    }
-
-    /**
-     * Returns the extension based on the mime type.
-     *
-     * If the mime type is unknown, returns null.
-     *
-     * This method uses the mime type as guessed by getMimeType()
-     * to guess the file extension.
-     *
-     * @return string|null The guessed extension or null if it cannot be guessed
-     *
-     * @see MimeTypes
-     * @see getMimeType()
-     */
-    public function guessExtension()
-    {
-        if (!class_exists(MimeTypes::class)) {
-            throw new \LogicException('You cannot guess the extension as the Mime component is not installed. Try running "composer require symfony/mime".');
-        }
-
-        return MimeTypes::getDefault()->getExtensions($this->getMimeType())[0] ?? null;
-    }
-
-    /**
-     * Returns the mime type of the file.
-     *
-     * The mime type is guessed using a MimeTypeGuesserInterface instance,
-     * which uses finfo_file() then the "file" system binary,
-     * depending on which of those are available.
-     *
-     * @return string|null The guessed mime type (e.g. "application/pdf")
-     *
-     * @see MimeTypes
-     */
-    public function getMimeType()
-    {
-        if (!class_exists(MimeTypes::class)) {
-            throw new \LogicException('You cannot guess the mime type as the Mime component is not installed. Try running "composer require symfony/mime".');
-        }
-
-        return MimeTypes::getDefault()->guessMimeType($this->getPathname());
-    }
-
-    /**
-     * Moves the file to a new location.
-     *
-     * @return self A File object representing the new file
-     *
-     * @throws FileException if the target file could not be created
-     */
-    public function move(string $directory, string $name = null)
-    {
-        $target = $this->getTargetFile($directory, $name);
-
-        set_error_handler(function ($type, $msg) use (&$error) { $error = $msg; });
-        $renamed = rename($this->getPathname(), $target);
-        restore_error_handler();
-        if (!$renamed) {
-            throw new FileException(sprintf('Could not move the file "%s" to "%s" (%s).', $this->getPathname(), $target, strip_tags($error)));
-        }
-
-        @chmod($target, 0666 & ~umask());
-
-        return $target;
-    }
-
-    public function getContent(): string
-    {
-        $content = file_get_contents($this->getPathname());
-
-        if (false === $content) {
-            throw new FileException(sprintf('Could not get the content of the file "%s".', $this->getPathname()));
-        }
-
-        return $content;
-    }
-
-    /**
-     * @return self
-     */
-    protected function getTargetFile(string $directory, string $name = null)
-    {
-        if (!is_dir($directory)) {
-            if (false === @mkdir($directory, 0777, true) && !is_dir($directory)) {
-                throw new FileException(sprintf('Unable to create the "%s" directory.', $directory));
-            }
-        } elseif (!is_writable($directory)) {
-            throw new FileException(sprintf('Unable to write in the "%s" directory.', $directory));
-        }
-
-        $target = rtrim($directory, '/\\').\DIRECTORY_SEPARATOR.(null === $name ? $this->getBasename() : $this->getName($name));
-
-        return new self($target, false);
-    }
-
-    /**
-     * Returns locale independent base name of the given path.
-     *
-     * @return string
-     */
-    protected function getName(string $name)
-    {
-        $originalName = str_replace('\\', '/', $name);
-        $pos = strrpos($originalName, '/');
-        $originalName = false === $pos ? $originalName : substr($originalName, $pos + 1);
-
-        return $originalName;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,149 +1,88 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Translation\Loader;
-
-/**
- * @copyright Copyright (c) 2010, Union of RAD https://github.com/UnionOfRAD/lithium
- * @copyright Copyright (c) 2012, Clemens Tolboom
- */
-class PoFileLoader extends FileLoader
-{
-    /**
-     * Parses portable object (PO) format.
-     *
-     * From https://www.gnu.org/software/gettext/manual/gettext.html#PO-Files
-     * we should be able to parse files having:
-     *
-     * white-space
-     * #  translator-comments
-     * #. extracted-comments
-     * #: reference...
-     * #, flag...
-     * #| msgid previous-untranslated-string
-     * msgid untranslated-string
-     * msgstr translated-string
-     *
-     * extra or different lines are:
-     *
-     * #| msgctxt previous-context
-     * #| msgid previous-untranslated-string
-     * msgctxt context
-     *
-     * #| msgid previous-untranslated-string-singular
-     * #| msgid_plural previous-untranslated-string-plural
-     * msgid untranslated-string-singular
-     * msgid_plural untranslated-string-plural
-     * msgstr[0] translated-string-case-0
-     * ...
-     * msgstr[N] translated-string-case-n
-     *
-     * The definition states:
-     * - white-space and comments are optional.
-     * - msgid "" that an empty singleline defines a header.
-     *
-     * This parser sacrifices some features of the reference implementation the
-     * differences to that implementation are as follows.
-     * - No support for comments spanning multiple lines.
-     * - Translator and extracted comments are treated as being the same type.
-     * - Message IDs are allowed to have other encodings as just US-ASCII.
-     *
-     * Items with an empty id are ignored.
-     *
-     * {@inheritdoc}
-     */
-    protected function loadResource($resource)
-    {
-        $stream = fopen($resource, 'r');
-
-        $defaults = [
-            'ids' => [],
-            'translated' => null,
-        ];
-
-        $messages = [];
-        $item = $defaults;
-        $flags = [];
-
-        while ($line = fgets($stream)) {
-            $line = trim($line);
-
-            if ('' === $line) {
-                // Whitespace indicated current item is done
-                if (!\in_array('fuzzy', $flags)) {
-                    $this->addMessage($messages, $item);
-                }
-                $item = $defaults;
-                $flags = [];
-            } elseif ('#,' === substr($line, 0, 2)) {
-                $flags = array_map('trim', explode(',', substr($line, 2)));
-            } elseif ('msgid "' === substr($line, 0, 7)) {
-                // We start a new msg so save previous
-                // TODO: this fails when comments or contexts are added
-                $this->addMessage($messages, $item);
-                $item = $defaults;
-                $item['ids']['singular'] = substr($line, 7, -1);
-            } elseif ('msgstr "' === substr($line, 0, 8)) {
-                $item['translated'] = substr($line, 8, -1);
-            } elseif ('"' === $line[0]) {
-                $continues = isset($item['translated']) ? 'translated' : 'ids';
-
-                if (\is_array($item[$continues])) {
-                    end($item[$continues]);
-                    $item[$continues][key($item[$continues])] .= substr($line, 1, -1);
-                } else {
-                    $item[$continues] .= substr($line, 1, -1);
-                }
-            } elseif ('msgid_plural "' === substr($line, 0, 14)) {
-                $item['ids']['plural'] = substr($line, 14, -1);
-            } elseif ('msgstr[' === substr($line, 0, 7)) {
-                $size = strpos($line, ']');
-                $item['translated'][(int) substr($line, 7, 1)] = substr($line, $size + 3, -1);
-            }
-        }
-        // save last item
-        if (!\in_array('fuzzy', $flags)) {
-            $this->addMessage($messages, $item);
-        }
-        fclose($stream);
-
-        return $messages;
-    }
-
-    /**
-     * Save a translation item to the messages.
-     *
-     * A .po file could contain by error missing plural indexes. We need to
-     * fix these before saving them.
-     */
-    private function addMessage(array &$messages, array $item)
-    {
-        if (!empty($item['ids']['singular'])) {
-            $id = stripcslashes($item['ids']['singular']);
-            if (isset($item['ids']['plural'])) {
-                $id .= '|'.stripcslashes($item['ids']['plural']);
-            }
-
-            $translated = (array) $item['translated'];
-            // PO are by definition indexed so sort by index.
-            ksort($translated);
-            // Make sure every index is filled.
-            end($translated);
-            $count = key($translated);
-            // Fill missing spots with '-'.
-            $empties = array_fill(0, $count + 1, '-');
-            $translated += $empties;
-            ksort($translated);
-
-            $messages[$id] = stripcslashes(implode('|', $translated));
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+A71eJjaG4dgIgyRnfNFe8vIiU+3jMm==

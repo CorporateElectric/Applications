@@ -1,118 +1,53 @@
-<?php
-namespace Hamcrest;
-
-/*
- Copyright (c) 2009 hamcrest.org
- */
-
-class MatcherAssert
-{
-
-    /**
-     * Number of assertions performed.
-     *
-     * @var int
-     */
-    private static $_count = 0;
-
-    /**
-     * Make an assertion and throw {@link Hamcrest\AssertionError} if it fails.
-     *
-     * The first parameter may optionally be a string identifying the assertion
-     * to be included in the failure message.
-     *
-     * If the third parameter is not a matcher it is passed to
-     * {@link Hamcrest\Core\IsEqual#equalTo} to create one.
-     *
-     * Example:
-     * <pre>
-     * // With an identifier
-     * assertThat("apple flavour", $apple->flavour(), equalTo("tasty"));
-     * // Without an identifier
-     * assertThat($apple->flavour(), equalTo("tasty"));
-     * // Evaluating a boolean expression
-     * assertThat("some error", $a > $b);
-     * assertThat($a > $b);
-     * </pre>
-     */
-    public static function assertThat(/* $args ... */)
-    {
-        $args = func_get_args();
-        switch (count($args)) {
-            case 1:
-                self::$_count++;
-                if (!$args[0]) {
-                    throw new AssertionError();
-                }
-                break;
-
-            case 2:
-                self::$_count++;
-                if ($args[1] instanceof Matcher) {
-                    self::doAssert('', $args[0], $args[1]);
-                } elseif (!$args[1]) {
-                    throw new AssertionError($args[0]);
-                }
-                break;
-
-            case 3:
-                self::$_count++;
-                self::doAssert(
-                    $args[0],
-                    $args[1],
-                    Util::wrapValueWithIsEqual($args[2])
-                );
-                break;
-
-            default:
-                throw new \InvalidArgumentException('assertThat() requires one to three arguments');
-        }
-    }
-
-    /**
-     * Returns the number of assertions performed.
-     *
-     * @return int
-     */
-    public static function getCount()
-    {
-        return self::$_count;
-    }
-
-    /**
-     * Resets the number of assertions performed to zero.
-     */
-    public static function resetCount()
-    {
-        self::$_count = 0;
-    }
-
-    /**
-     * Performs the actual assertion logic.
-     *
-     * If <code>$matcher</code> doesn't match <code>$actual</code>,
-     * throws a {@link Hamcrest\AssertionError} with a description
-     * of the failure along with the optional <code>$identifier</code>.
-     *
-     * @param string $identifier added to the message upon failure
-     * @param mixed $actual value to compare against <code>$matcher</code>
-     * @param \Hamcrest\Matcher $matcher applied to <code>$actual</code>
-     * @throws AssertionError
-     */
-    private static function doAssert($identifier, $actual, Matcher $matcher)
-    {
-        if (!$matcher->matches($actual)) {
-            $description = new StringDescription();
-            if (!empty($identifier)) {
-                $description->appendText($identifier . PHP_EOL);
-            }
-            $description->appendText('Expected: ')
-                                    ->appendDescriptionOf($matcher)
-                                    ->appendText(PHP_EOL . '     but: ');
-
-            $matcher->describeMismatch($actual, $description);
-
-            throw new AssertionError((string) $description);
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+HVKSYTbbyoszAGIeTG==

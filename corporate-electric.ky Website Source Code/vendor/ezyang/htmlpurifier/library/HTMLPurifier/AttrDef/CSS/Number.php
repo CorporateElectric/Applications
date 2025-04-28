@@ -1,90 +1,52 @@
-<?php
-
-/**
- * Validates a number as defined by the CSS spec.
- */
-class HTMLPurifier_AttrDef_CSS_Number extends HTMLPurifier_AttrDef
-{
-
-    /**
-     * Indicates whether or not only positive values are allowed.
-     * @type bool
-     */
-    protected $non_negative = false;
-
-    /**
-     * @param bool $non_negative indicates whether negatives are forbidden
-     */
-    public function __construct($non_negative = false)
-    {
-        $this->non_negative = $non_negative;
-    }
-
-    /**
-     * @param string $number
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return string|bool
-     * @warning Some contexts do not pass $config, $context. These
-     *          variables should not be used without checking HTMLPurifier_Length
-     */
-    public function validate($number, $config, $context)
-    {
-        $number = $this->parseCDATA($number);
-
-        if ($number === '') {
-            return false;
-        }
-        if ($number === '0') {
-            return '0';
-        }
-
-        $sign = '';
-        switch ($number[0]) {
-            case '-':
-                if ($this->non_negative) {
-                    return false;
-                }
-                $sign = '-';
-            case '+':
-                $number = substr($number, 1);
-        }
-
-        if (ctype_digit($number)) {
-            $number = ltrim($number, '0');
-            return $number ? $sign . $number : '0';
-        }
-
-        // Period is the only non-numeric character allowed
-        if (strpos($number, '.') === false) {
-            return false;
-        }
-
-        list($left, $right) = explode('.', $number, 2);
-
-        if ($left === '' && $right === '') {
-            return false;
-        }
-        if ($left !== '' && !ctype_digit($left)) {
-            return false;
-        }
-
-        // Remove leading zeros until positive number or a zero stays left
-        if (ltrim($left, '0') != '') {
-            $left = ltrim($left, '0');
-        } else {
-            $left = '0';
-        }
-
-        $right = rtrim($right, '0');
-
-        if ($right === '') {
-            return $left ? $sign . $left : '0';
-        } elseif (!ctype_digit($right)) {
-            return false;
-        }
-        return $sign . $left . '.' . $right;
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+4GpmrX33LFmOsVlgIWMlGUXA/W==

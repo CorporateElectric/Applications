@@ -1,1021 +1,513 @@
-<?php declare(strict_types=1);
-
-namespace PhpParser;
-
-/*
- * This parser is based on a skeleton written by Moriyoshi Koizumi, which in
- * turn is based on work by Masato Bito.
- */
-use PhpParser\Node\Expr;
-use PhpParser\Node\Expr\Cast\Double;
-use PhpParser\Node\Name;
-use PhpParser\Node\Param;
-use PhpParser\Node\Scalar\Encapsed;
-use PhpParser\Node\Scalar\LNumber;
-use PhpParser\Node\Scalar\String_;
-use PhpParser\Node\Stmt\Class_;
-use PhpParser\Node\Stmt\ClassConst;
-use PhpParser\Node\Stmt\ClassMethod;
-use PhpParser\Node\Stmt\Interface_;
-use PhpParser\Node\Stmt\Namespace_;
-use PhpParser\Node\Stmt\Property;
-use PhpParser\Node\Stmt\TryCatch;
-use PhpParser\Node\Stmt\UseUse;
-use PhpParser\Node\VarLikeIdentifier;
-
-abstract class ParserAbstract implements Parser
-{
-    const SYMBOL_NONE = -1;
-
-    /*
-     * The following members will be filled with generated parsing data:
-     */
-
-    /** @var int Size of $tokenToSymbol map */
-    protected $tokenToSymbolMapSize;
-    /** @var int Size of $action table */
-    protected $actionTableSize;
-    /** @var int Size of $goto table */
-    protected $gotoTableSize;
-
-    /** @var int Symbol number signifying an invalid token */
-    protected $invalidSymbol;
-    /** @var int Symbol number of error recovery token */
-    protected $errorSymbol;
-    /** @var int Action number signifying default action */
-    protected $defaultAction;
-    /** @var int Rule number signifying that an unexpected token was encountered */
-    protected $unexpectedTokenRule;
-
-    protected $YY2TBLSTATE;
-    /** @var int Number of non-leaf states */
-    protected $numNonLeafStates;
-
-    /** @var int[] Map of lexer tokens to internal symbols */
-    protected $tokenToSymbol;
-    /** @var string[] Map of symbols to their names */
-    protected $symbolToName;
-    /** @var array Names of the production rules (only necessary for debugging) */
-    protected $productions;
-
-    /** @var int[] Map of states to a displacement into the $action table. The corresponding action for this
-     *             state/symbol pair is $action[$actionBase[$state] + $symbol]. If $actionBase[$state] is 0, the
-                   action is defaulted, i.e. $actionDefault[$state] should be used instead. */
-    protected $actionBase;
-    /** @var int[] Table of actions. Indexed according to $actionBase comment. */
-    protected $action;
-    /** @var int[] Table indexed analogously to $action. If $actionCheck[$actionBase[$state] + $symbol] != $symbol
-     *             then the action is defaulted, i.e. $actionDefault[$state] should be used instead. */
-    protected $actionCheck;
-    /** @var int[] Map of states to their default action */
-    protected $actionDefault;
-    /** @var callable[] Semantic action callbacks */
-    protected $reduceCallbacks;
-
-    /** @var int[] Map of non-terminals to a displacement into the $goto table. The corresponding goto state for this
-     *             non-terminal/state pair is $goto[$gotoBase[$nonTerminal] + $state] (unless defaulted) */
-    protected $gotoBase;
-    /** @var int[] Table of states to goto after reduction. Indexed according to $gotoBase comment. */
-    protected $goto;
-    /** @var int[] Table indexed analogously to $goto. If $gotoCheck[$gotoBase[$nonTerminal] + $state] != $nonTerminal
-     *             then the goto state is defaulted, i.e. $gotoDefault[$nonTerminal] should be used. */
-    protected $gotoCheck;
-    /** @var int[] Map of non-terminals to the default state to goto after their reduction */
-    protected $gotoDefault;
-
-    /** @var int[] Map of rules to the non-terminal on their left-hand side, i.e. the non-terminal to use for
-     *             determining the state to goto after reduction. */
-    protected $ruleToNonTerminal;
-    /** @var int[] Map of rules to the length of their right-hand side, which is the number of elements that have to
-     *             be popped from the stack(s) on reduction. */
-    protected $ruleToLength;
-
-    /*
-     * The following members are part of the parser state:
-     */
-
-    /** @var Lexer Lexer that is used when parsing */
-    protected $lexer;
-    /** @var mixed Temporary value containing the result of last semantic action (reduction) */
-    protected $semValue;
-    /** @var array Semantic value stack (contains values of tokens and semantic action results) */
-    protected $semStack;
-    /** @var array[] Start attribute stack */
-    protected $startAttributeStack;
-    /** @var array[] End attribute stack */
-    protected $endAttributeStack;
-    /** @var array End attributes of last *shifted* token */
-    protected $endAttributes;
-    /** @var array Start attributes of last *read* token */
-    protected $lookaheadStartAttributes;
-
-    /** @var ErrorHandler Error handler */
-    protected $errorHandler;
-    /** @var int Error state, used to avoid error floods */
-    protected $errorState;
-
-    /**
-     * Initialize $reduceCallbacks map.
-     */
-    abstract protected function initReduceCallbacks();
-
-    /**
-     * Creates a parser instance.
-     *
-     * Options: Currently none.
-     *
-     * @param Lexer $lexer A lexer
-     * @param array $options Options array.
-     */
-    public function __construct(Lexer $lexer, array $options = []) {
-        $this->lexer = $lexer;
-
-        if (isset($options['throwOnError'])) {
-            throw new \LogicException(
-                '"throwOnError" is no longer supported, use "errorHandler" instead');
-        }
-
-        $this->initReduceCallbacks();
-    }
-
-    /**
-     * Parses PHP code into a node tree.
-     *
-     * If a non-throwing error handler is used, the parser will continue parsing after an error
-     * occurred and attempt to build a partial AST.
-     *
-     * @param string $code The source code to parse
-     * @param ErrorHandler|null $errorHandler Error handler to use for lexer/parser errors, defaults
-     *                                        to ErrorHandler\Throwing.
-     *
-     * @return Node\Stmt[]|null Array of statements (or null non-throwing error handler is used and
-     *                          the parser was unable to recover from an error).
-     */
-    public function parse(string $code, ErrorHandler $errorHandler = null) {
-        $this->errorHandler = $errorHandler ?: new ErrorHandler\Throwing;
-
-        $this->lexer->startLexing($code, $this->errorHandler);
-        $result = $this->doParse();
-
-        // Clear out some of the interior state, so we don't hold onto unnecessary
-        // memory between uses of the parser
-        $this->startAttributeStack = [];
-        $this->endAttributeStack = [];
-        $this->semStack = [];
-        $this->semValue = null;
-
-        return $result;
-    }
-
-    protected function doParse() {
-        // We start off with no lookahead-token
-        $symbol = self::SYMBOL_NONE;
-
-        // The attributes for a node are taken from the first and last token of the node.
-        // From the first token only the startAttributes are taken and from the last only
-        // the endAttributes. Both are merged using the array union operator (+).
-        $startAttributes = [];
-        $endAttributes = [];
-        $this->endAttributes = $endAttributes;
-
-        // Keep stack of start and end attributes
-        $this->startAttributeStack = [];
-        $this->endAttributeStack = [$endAttributes];
-
-        // Start off in the initial state and keep a stack of previous states
-        $state = 0;
-        $stateStack = [$state];
-
-        // Semantic value stack (contains values of tokens and semantic action results)
-        $this->semStack = [];
-
-        // Current position in the stack(s)
-        $stackPos = 0;
-
-        $this->errorState = 0;
-
-        for (;;) {
-            //$this->traceNewState($state, $symbol);
-
-            if ($this->actionBase[$state] === 0) {
-                $rule = $this->actionDefault[$state];
-            } else {
-                if ($symbol === self::SYMBOL_NONE) {
-                    // Fetch the next token id from the lexer and fetch additional info by-ref.
-                    // The end attributes are fetched into a temporary variable and only set once the token is really
-                    // shifted (not during read). Otherwise you would sometimes get off-by-one errors, when a rule is
-                    // reduced after a token was read but not yet shifted.
-                    $tokenId = $this->lexer->getNextToken($tokenValue, $startAttributes, $endAttributes);
-
-                    // map the lexer token id to the internally used symbols
-                    $symbol = $tokenId >= 0 && $tokenId < $this->tokenToSymbolMapSize
-                        ? $this->tokenToSymbol[$tokenId]
-                        : $this->invalidSymbol;
-
-                    if ($symbol === $this->invalidSymbol) {
-                        throw new \RangeException(sprintf(
-                            'The lexer returned an invalid token (id=%d, value=%s)',
-                            $tokenId, $tokenValue
-                        ));
-                    }
-
-                    // Allow productions to access the start attributes of the lookahead token.
-                    $this->lookaheadStartAttributes = $startAttributes;
-
-                    //$this->traceRead($symbol);
-                }
-
-                $idx = $this->actionBase[$state] + $symbol;
-                if ((($idx >= 0 && $idx < $this->actionTableSize && $this->actionCheck[$idx] === $symbol)
-                     || ($state < $this->YY2TBLSTATE
-                         && ($idx = $this->actionBase[$state + $this->numNonLeafStates] + $symbol) >= 0
-                         && $idx < $this->actionTableSize && $this->actionCheck[$idx] === $symbol))
-                    && ($action = $this->action[$idx]) !== $this->defaultAction) {
-                    /*
-                     * >= numNonLeafStates: shift and reduce
-                     * > 0: shift
-                     * = 0: accept
-                     * < 0: reduce
-                     * = -YYUNEXPECTED: error
-                     */
-                    if ($action > 0) {
-                        /* shift */
-                        //$this->traceShift($symbol);
-
-                        ++$stackPos;
-                        $stateStack[$stackPos] = $state = $action;
-                        $this->semStack[$stackPos] = $tokenValue;
-                        $this->startAttributeStack[$stackPos] = $startAttributes;
-                        $this->endAttributeStack[$stackPos] = $endAttributes;
-                        $this->endAttributes = $endAttributes;
-                        $symbol = self::SYMBOL_NONE;
-
-                        if ($this->errorState) {
-                            --$this->errorState;
-                        }
-
-                        if ($action < $this->numNonLeafStates) {
-                            continue;
-                        }
-
-                        /* $yyn >= numNonLeafStates means shift-and-reduce */
-                        $rule = $action - $this->numNonLeafStates;
-                    } else {
-                        $rule = -$action;
-                    }
-                } else {
-                    $rule = $this->actionDefault[$state];
-                }
-            }
-
-            for (;;) {
-                if ($rule === 0) {
-                    /* accept */
-                    //$this->traceAccept();
-                    return $this->semValue;
-                } elseif ($rule !== $this->unexpectedTokenRule) {
-                    /* reduce */
-                    //$this->traceReduce($rule);
-
-                    try {
-                        $this->reduceCallbacks[$rule]($stackPos);
-                    } catch (Error $e) {
-                        if (-1 === $e->getStartLine() && isset($startAttributes['startLine'])) {
-                            $e->setStartLine($startAttributes['startLine']);
-                        }
-
-                        $this->emitError($e);
-                        // Can't recover from this type of error
-                        return null;
-                    }
-
-                    /* Goto - shift nonterminal */
-                    $lastEndAttributes = $this->endAttributeStack[$stackPos];
-                    $ruleLength = $this->ruleToLength[$rule];
-                    $stackPos -= $ruleLength;
-                    $nonTerminal = $this->ruleToNonTerminal[$rule];
-                    $idx = $this->gotoBase[$nonTerminal] + $stateStack[$stackPos];
-                    if ($idx >= 0 && $idx < $this->gotoTableSize && $this->gotoCheck[$idx] === $nonTerminal) {
-                        $state = $this->goto[$idx];
-                    } else {
-                        $state = $this->gotoDefault[$nonTerminal];
-                    }
-
-                    ++$stackPos;
-                    $stateStack[$stackPos]     = $state;
-                    $this->semStack[$stackPos] = $this->semValue;
-                    $this->endAttributeStack[$stackPos] = $lastEndAttributes;
-                    if ($ruleLength === 0) {
-                        // Empty productions use the start attributes of the lookahead token.
-                        $this->startAttributeStack[$stackPos] = $this->lookaheadStartAttributes;
-                    }
-                } else {
-                    /* error */
-                    switch ($this->errorState) {
-                        case 0:
-                            $msg = $this->getErrorMessage($symbol, $state);
-                            $this->emitError(new Error($msg, $startAttributes + $endAttributes));
-                            // Break missing intentionally
-                        case 1:
-                        case 2:
-                            $this->errorState = 3;
-
-                            // Pop until error-expecting state uncovered
-                            while (!(
-                                (($idx = $this->actionBase[$state] + $this->errorSymbol) >= 0
-                                    && $idx < $this->actionTableSize && $this->actionCheck[$idx] === $this->errorSymbol)
-                                || ($state < $this->YY2TBLSTATE
-                                    && ($idx = $this->actionBase[$state + $this->numNonLeafStates] + $this->errorSymbol) >= 0
-                                    && $idx < $this->actionTableSize && $this->actionCheck[$idx] === $this->errorSymbol)
-                            ) || ($action = $this->action[$idx]) === $this->defaultAction) { // Not totally sure about this
-                                if ($stackPos <= 0) {
-                                    // Could not recover from error
-                                    return null;
-                                }
-                                $state = $stateStack[--$stackPos];
-                                //$this->tracePop($state);
-                            }
-
-                            //$this->traceShift($this->errorSymbol);
-                            ++$stackPos;
-                            $stateStack[$stackPos] = $state = $action;
-
-                            // We treat the error symbol as being empty, so we reset the end attributes
-                            // to the end attributes of the last non-error symbol
-                            $this->startAttributeStack[$stackPos] = $this->lookaheadStartAttributes;
-                            $this->endAttributeStack[$stackPos] = $this->endAttributeStack[$stackPos - 1];
-                            $this->endAttributes = $this->endAttributeStack[$stackPos - 1];
-                            break;
-
-                        case 3:
-                            if ($symbol === 0) {
-                                // Reached EOF without recovering from error
-                                return null;
-                            }
-
-                            //$this->traceDiscard($symbol);
-                            $symbol = self::SYMBOL_NONE;
-                            break 2;
-                    }
-                }
-
-                if ($state < $this->numNonLeafStates) {
-                    break;
-                }
-
-                /* >= numNonLeafStates means shift-and-reduce */
-                $rule = $state - $this->numNonLeafStates;
-            }
-        }
-
-        throw new \RuntimeException('Reached end of parser loop');
-    }
-
-    protected function emitError(Error $error) {
-        $this->errorHandler->handleError($error);
-    }
-
-    /**
-     * Format error message including expected tokens.
-     *
-     * @param int $symbol Unexpected symbol
-     * @param int $state  State at time of error
-     *
-     * @return string Formatted error message
-     */
-    protected function getErrorMessage(int $symbol, int $state) : string {
-        $expectedString = '';
-        if ($expected = $this->getExpectedTokens($state)) {
-            $expectedString = ', expecting ' . implode(' or ', $expected);
-        }
-
-        return 'Syntax error, unexpected ' . $this->symbolToName[$symbol] . $expectedString;
-    }
-
-    /**
-     * Get limited number of expected tokens in given state.
-     *
-     * @param int $state State
-     *
-     * @return string[] Expected tokens. If too many, an empty array is returned.
-     */
-    protected function getExpectedTokens(int $state) : array {
-        $expected = [];
-
-        $base = $this->actionBase[$state];
-        foreach ($this->symbolToName as $symbol => $name) {
-            $idx = $base + $symbol;
-            if ($idx >= 0 && $idx < $this->actionTableSize && $this->actionCheck[$idx] === $symbol
-                || $state < $this->YY2TBLSTATE
-                && ($idx = $this->actionBase[$state + $this->numNonLeafStates] + $symbol) >= 0
-                && $idx < $this->actionTableSize && $this->actionCheck[$idx] === $symbol
-            ) {
-                if ($this->action[$idx] !== $this->unexpectedTokenRule
-                    && $this->action[$idx] !== $this->defaultAction
-                    && $symbol !== $this->errorSymbol
-                ) {
-                    if (count($expected) === 4) {
-                        /* Too many expected tokens */
-                        return [];
-                    }
-
-                    $expected[] = $name;
-                }
-            }
-        }
-
-        return $expected;
-    }
-
-    /*
-     * Tracing functions used for debugging the parser.
-     */
-
-    /*
-    protected function traceNewState($state, $symbol) {
-        echo '% State ' . $state
-            . ', Lookahead ' . ($symbol == self::SYMBOL_NONE ? '--none--' : $this->symbolToName[$symbol]) . "\n";
-    }
-
-    protected function traceRead($symbol) {
-        echo '% Reading ' . $this->symbolToName[$symbol] . "\n";
-    }
-
-    protected function traceShift($symbol) {
-        echo '% Shift ' . $this->symbolToName[$symbol] . "\n";
-    }
-
-    protected function traceAccept() {
-        echo "% Accepted.\n";
-    }
-
-    protected function traceReduce($n) {
-        echo '% Reduce by (' . $n . ') ' . $this->productions[$n] . "\n";
-    }
-
-    protected function tracePop($state) {
-        echo '% Recovering, uncovered state ' . $state . "\n";
-    }
-
-    protected function traceDiscard($symbol) {
-        echo '% Discard ' . $this->symbolToName[$symbol] . "\n";
-    }
-    */
-
-    /*
-     * Helper functions invoked by semantic actions
-     */
-
-    /**
-     * Moves statements of semicolon-style namespaces into $ns->stmts and checks various error conditions.
-     *
-     * @param Node\Stmt[] $stmts
-     * @return Node\Stmt[]
-     */
-    protected function handleNamespaces(array $stmts) : array {
-        $hasErrored = false;
-        $style = $this->getNamespacingStyle($stmts);
-        if (null === $style) {
-            // not namespaced, nothing to do
-            return $stmts;
-        } elseif ('brace' === $style) {
-            // For braced namespaces we only have to check that there are no invalid statements between the namespaces
-            $afterFirstNamespace = false;
-            foreach ($stmts as $stmt) {
-                if ($stmt instanceof Node\Stmt\Namespace_) {
-                    $afterFirstNamespace = true;
-                } elseif (!$stmt instanceof Node\Stmt\HaltCompiler
-                        && !$stmt instanceof Node\Stmt\Nop
-                        && $afterFirstNamespace && !$hasErrored) {
-                    $this->emitError(new Error(
-                        'No code may exist outside of namespace {}', $stmt->getAttributes()));
-                    $hasErrored = true; // Avoid one error for every statement
-                }
-            }
-            return $stmts;
-        } else {
-            // For semicolon namespaces we have to move the statements after a namespace declaration into ->stmts
-            $resultStmts = [];
-            $targetStmts =& $resultStmts;
-            $lastNs = null;
-            foreach ($stmts as $stmt) {
-                if ($stmt instanceof Node\Stmt\Namespace_) {
-                    if ($lastNs !== null) {
-                        $this->fixupNamespaceAttributes($lastNs);
-                    }
-                    if ($stmt->stmts === null) {
-                        $stmt->stmts = [];
-                        $targetStmts =& $stmt->stmts;
-                        $resultStmts[] = $stmt;
-                    } else {
-                        // This handles the invalid case of mixed style namespaces
-                        $resultStmts[] = $stmt;
-                        $targetStmts =& $resultStmts;
-                    }
-                    $lastNs = $stmt;
-                } elseif ($stmt instanceof Node\Stmt\HaltCompiler) {
-                    // __halt_compiler() is not moved into the namespace
-                    $resultStmts[] = $stmt;
-                } else {
-                    $targetStmts[] = $stmt;
-                }
-            }
-            if ($lastNs !== null) {
-                $this->fixupNamespaceAttributes($lastNs);
-            }
-            return $resultStmts;
-        }
-    }
-
-    private function fixupNamespaceAttributes(Node\Stmt\Namespace_ $stmt) {
-        // We moved the statements into the namespace node, as such the end of the namespace node
-        // needs to be extended to the end of the statements.
-        if (empty($stmt->stmts)) {
-            return;
-        }
-
-        // We only move the builtin end attributes here. This is the best we can do with the
-        // knowledge we have.
-        $endAttributes = ['endLine', 'endFilePos', 'endTokenPos'];
-        $lastStmt = $stmt->stmts[count($stmt->stmts) - 1];
-        foreach ($endAttributes as $endAttribute) {
-            if ($lastStmt->hasAttribute($endAttribute)) {
-                $stmt->setAttribute($endAttribute, $lastStmt->getAttribute($endAttribute));
-            }
-        }
-    }
-
-    /**
-     * Determine namespacing style (semicolon or brace)
-     *
-     * @param Node[] $stmts Top-level statements.
-     *
-     * @return null|string One of "semicolon", "brace" or null (no namespaces)
-     */
-    private function getNamespacingStyle(array $stmts) {
-        $style = null;
-        $hasNotAllowedStmts = false;
-        foreach ($stmts as $i => $stmt) {
-            if ($stmt instanceof Node\Stmt\Namespace_) {
-                $currentStyle = null === $stmt->stmts ? 'semicolon' : 'brace';
-                if (null === $style) {
-                    $style = $currentStyle;
-                    if ($hasNotAllowedStmts) {
-                        $this->emitError(new Error(
-                            'Namespace declaration statement has to be the very first statement in the script',
-                            $stmt->getLine() // Avoid marking the entire namespace as an error
-                        ));
-                    }
-                } elseif ($style !== $currentStyle) {
-                    $this->emitError(new Error(
-                        'Cannot mix bracketed namespace declarations with unbracketed namespace declarations',
-                        $stmt->getLine() // Avoid marking the entire namespace as an error
-                    ));
-                    // Treat like semicolon style for namespace normalization
-                    return 'semicolon';
-                }
-                continue;
-            }
-
-            /* declare(), __halt_compiler() and nops can be used before a namespace declaration */
-            if ($stmt instanceof Node\Stmt\Declare_
-                || $stmt instanceof Node\Stmt\HaltCompiler
-                || $stmt instanceof Node\Stmt\Nop) {
-                continue;
-            }
-
-            /* There may be a hashbang line at the very start of the file */
-            if ($i === 0 && $stmt instanceof Node\Stmt\InlineHTML && preg_match('/\A#!.*\r?\n\z/', $stmt->value)) {
-                continue;
-            }
-
-            /* Everything else if forbidden before namespace declarations */
-            $hasNotAllowedStmts = true;
-        }
-        return $style;
-    }
-
-    /**
-     * Fix up parsing of static property calls in PHP 5.
-     *
-     * In PHP 5 A::$b[c][d] and A::$b[c][d]() have very different interpretation. The former is
-     * interpreted as (A::$b)[c][d], while the latter is the same as A::{$b[c][d]}(). We parse the
-     * latter as the former initially and this method fixes the AST into the correct form when we
-     * encounter the "()".
-     *
-     * @param  Node\Expr\StaticPropertyFetch|Node\Expr\ArrayDimFetch $prop
-     * @param  Node\Arg[] $args
-     * @param  array      $attributes
-     *
-     * @return Expr\StaticCall
-     */
-    protected function fixupPhp5StaticPropCall($prop, array $args, array $attributes) : Expr\StaticCall {
-        if ($prop instanceof Node\Expr\StaticPropertyFetch) {
-            $name = $prop->name instanceof VarLikeIdentifier
-                ? $prop->name->toString() : $prop->name;
-            $var = new Expr\Variable($name, $prop->name->getAttributes());
-            return new Expr\StaticCall($prop->class, $var, $args, $attributes);
-        } elseif ($prop instanceof Node\Expr\ArrayDimFetch) {
-            $tmp = $prop;
-            while ($tmp->var instanceof Node\Expr\ArrayDimFetch) {
-                $tmp = $tmp->var;
-            }
-
-            /** @var Expr\StaticPropertyFetch $staticProp */
-            $staticProp = $tmp->var;
-
-            // Set start attributes to attributes of innermost node
-            $tmp = $prop;
-            $this->fixupStartAttributes($tmp, $staticProp->name);
-            while ($tmp->var instanceof Node\Expr\ArrayDimFetch) {
-                $tmp = $tmp->var;
-                $this->fixupStartAttributes($tmp, $staticProp->name);
-            }
-
-            $name = $staticProp->name instanceof VarLikeIdentifier
-                ? $staticProp->name->toString() : $staticProp->name;
-            $tmp->var = new Expr\Variable($name, $staticProp->name->getAttributes());
-            return new Expr\StaticCall($staticProp->class, $prop, $args, $attributes);
-        } else {
-            throw new \Exception;
-        }
-    }
-
-    protected function fixupStartAttributes(Node $to, Node $from) {
-        $startAttributes = ['startLine', 'startFilePos', 'startTokenPos'];
-        foreach ($startAttributes as $startAttribute) {
-            if ($from->hasAttribute($startAttribute)) {
-                $to->setAttribute($startAttribute, $from->getAttribute($startAttribute));
-            }
-        }
-    }
-
-    protected function handleBuiltinTypes(Name $name) {
-        $builtinTypes = [
-            'bool'     => true,
-            'int'      => true,
-            'float'    => true,
-            'string'   => true,
-            'iterable' => true,
-            'void'     => true,
-            'object'   => true,
-            'null'     => true,
-            'false'    => true,
-            'mixed'    => true,
-        ];
-
-        if (!$name->isUnqualified()) {
-            return $name;
-        }
-
-        $lowerName = $name->toLowerString();
-        if (!isset($builtinTypes[$lowerName])) {
-            return $name;
-        }
-
-        return new Node\Identifier($lowerName, $name->getAttributes());
-    }
-
-    /**
-     * Get combined start and end attributes at a stack location
-     *
-     * @param int $pos Stack location
-     *
-     * @return array Combined start and end attributes
-     */
-    protected function getAttributesAt(int $pos) : array {
-        return $this->startAttributeStack[$pos] + $this->endAttributeStack[$pos];
-    }
-
-    protected function getFloatCastKind(string $cast): int
-    {
-        $cast = strtolower($cast);
-        if (strpos($cast, 'float') !== false) {
-            return Double::KIND_FLOAT;
-        }
-
-        if (strpos($cast, 'real') !== false) {
-            return Double::KIND_REAL;
-        }
-
-        return Double::KIND_DOUBLE;
-    }
-
-    protected function parseLNumber($str, $attributes, $allowInvalidOctal = false) {
-        try {
-            return LNumber::fromString($str, $attributes, $allowInvalidOctal);
-        } catch (Error $error) {
-            $this->emitError($error);
-            // Use dummy value
-            return new LNumber(0, $attributes);
-        }
-    }
-
-    /**
-     * Parse a T_NUM_STRING token into either an integer or string node.
-     *
-     * @param string $str        Number string
-     * @param array  $attributes Attributes
-     *
-     * @return LNumber|String_ Integer or string node.
-     */
-    protected function parseNumString(string $str, array $attributes) {
-        if (!preg_match('/^(?:0|-?[1-9][0-9]*)$/', $str)) {
-            return new String_($str, $attributes);
-        }
-
-        $num = +$str;
-        if (!is_int($num)) {
-            return new String_($str, $attributes);
-        }
-
-        return new LNumber($num, $attributes);
-    }
-
-    protected function stripIndentation(
-        string $string, int $indentLen, string $indentChar,
-        bool $newlineAtStart, bool $newlineAtEnd, array $attributes
-    ) {
-        if ($indentLen === 0) {
-            return $string;
-        }
-
-        $start = $newlineAtStart ? '(?:(?<=\n)|\A)' : '(?<=\n)';
-        $end = $newlineAtEnd ? '(?:(?=[\r\n])|\z)' : '(?=[\r\n])';
-        $regex = '/' . $start . '([ \t]*)(' . $end . ')?/';
-        return preg_replace_callback(
-            $regex,
-            function ($matches) use ($indentLen, $indentChar, $attributes) {
-                $prefix = substr($matches[1], 0, $indentLen);
-                if (false !== strpos($prefix, $indentChar === " " ? "\t" : " ")) {
-                    $this->emitError(new Error(
-                        'Invalid indentation - tabs and spaces cannot be mixed', $attributes
-                    ));
-                } elseif (strlen($prefix) < $indentLen && !isset($matches[2])) {
-                    $this->emitError(new Error(
-                        'Invalid body indentation level ' .
-                        '(expecting an indentation level of at least ' . $indentLen . ')',
-                        $attributes
-                    ));
-                }
-                return substr($matches[0], strlen($prefix));
-            },
-            $string
-        );
-    }
-
-    protected function parseDocString(
-        string $startToken, $contents, string $endToken,
-        array $attributes, array $endTokenAttributes, bool $parseUnicodeEscape
-    ) {
-        $kind = strpos($startToken, "'") === false
-            ? String_::KIND_HEREDOC : String_::KIND_NOWDOC;
-
-        $regex = '/\A[bB]?<<<[ \t]*[\'"]?([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*)[\'"]?(?:\r\n|\n|\r)\z/';
-        $result = preg_match($regex, $startToken, $matches);
-        assert($result === 1);
-        $label = $matches[1];
-
-        $result = preg_match('/\A[ \t]*/', $endToken, $matches);
-        assert($result === 1);
-        $indentation = $matches[0];
-
-        $attributes['kind'] = $kind;
-        $attributes['docLabel'] = $label;
-        $attributes['docIndentation'] = $indentation;
-
-        $indentHasSpaces = false !== strpos($indentation, " ");
-        $indentHasTabs = false !== strpos($indentation, "\t");
-        if ($indentHasSpaces && $indentHasTabs) {
-            $this->emitError(new Error(
-                'Invalid indentation - tabs and spaces cannot be mixed',
-                $endTokenAttributes
-            ));
-
-            // Proceed processing as if this doc string is not indented
-            $indentation = '';
-        }
-
-        $indentLen = \strlen($indentation);
-        $indentChar = $indentHasSpaces ? " " : "\t";
-
-        if (\is_string($contents)) {
-            if ($contents === '') {
-                return new String_('', $attributes);
-            }
-
-            $contents = $this->stripIndentation(
-                $contents, $indentLen, $indentChar, true, true, $attributes
-            );
-            $contents = preg_replace('~(\r\n|\n|\r)\z~', '', $contents);
-
-            if ($kind === String_::KIND_HEREDOC) {
-                $contents = String_::parseEscapeSequences($contents, null, $parseUnicodeEscape);
-            }
-
-            return new String_($contents, $attributes);
-        } else {
-            assert(count($contents) > 0);
-            if (!$contents[0] instanceof Node\Scalar\EncapsedStringPart) {
-                // If there is no leading encapsed string part, pretend there is an empty one
-                $this->stripIndentation(
-                    '', $indentLen, $indentChar, true, false, $contents[0]->getAttributes()
-                );
-            }
-
-            $newContents = [];
-            foreach ($contents as $i => $part) {
-                if ($part instanceof Node\Scalar\EncapsedStringPart) {
-                    $isLast = $i === \count($contents) - 1;
-                    $part->value = $this->stripIndentation(
-                        $part->value, $indentLen, $indentChar,
-                        $i === 0, $isLast, $part->getAttributes()
-                    );
-                    $part->value = String_::parseEscapeSequences($part->value, null, $parseUnicodeEscape);
-                    if ($isLast) {
-                        $part->value = preg_replace('~(\r\n|\n|\r)\z~', '', $part->value);
-                    }
-                    if ('' === $part->value) {
-                        continue;
-                    }
-                }
-                $newContents[] = $part;
-            }
-            return new Encapsed($newContents, $attributes);
-        }
-    }
-
-    /**
-     * Create attributes for a zero-length common-capturing nop.
-     *
-     * @param Comment[] $comments
-     * @return array
-     */
-    protected function createCommentNopAttributes(array $comments) {
-        $comment = $comments[count($comments) - 1];
-        $commentEndLine = $comment->getEndLine();
-        $commentEndFilePos = $comment->getEndFilePos();
-        $commentEndTokenPos = $comment->getEndTokenPos();
-
-        $attributes = ['comments' => $comments];
-        if (-1 !== $commentEndLine) {
-            $attributes['startLine'] = $commentEndLine;
-            $attributes['endLine'] = $commentEndLine;
-        }
-        if (-1 !== $commentEndFilePos) {
-            $attributes['startFilePos'] = $commentEndFilePos + 1;
-            $attributes['endFilePos'] = $commentEndFilePos;
-        }
-        if (-1 !== $commentEndTokenPos) {
-            $attributes['startTokenPos'] = $commentEndTokenPos + 1;
-            $attributes['endTokenPos'] = $commentEndTokenPos;
-        }
-        return $attributes;
-    }
-
-    protected function checkModifier($a, $b, $modifierPos) {
-        // Jumping through some hoops here because verifyModifier() is also used elsewhere
-        try {
-            Class_::verifyModifier($a, $b);
-        } catch (Error $error) {
-            $error->setAttributes($this->getAttributesAt($modifierPos));
-            $this->emitError($error);
-        }
-    }
-
-    protected function checkParam(Param $node) {
-        if ($node->variadic && null !== $node->default) {
-            $this->emitError(new Error(
-                'Variadic parameter cannot have a default value',
-                $node->default->getAttributes()
-            ));
-        }
-    }
-
-    protected function checkTryCatch(TryCatch $node) {
-        if (empty($node->catches) && null === $node->finally) {
-            $this->emitError(new Error(
-                'Cannot use try without catch or finally', $node->getAttributes()
-            ));
-        }
-    }
-
-    protected function checkNamespace(Namespace_ $node) {
-        if (null !== $node->stmts) {
-            foreach ($node->stmts as $stmt) {
-                if ($stmt instanceof Namespace_) {
-                    $this->emitError(new Error(
-                        'Namespace declarations cannot be nested', $stmt->getAttributes()
-                    ));
-                }
-            }
-        }
-    }
-
-    protected function checkClass(Class_ $node, $namePos) {
-        if (null !== $node->name && $node->name->isSpecialClassName()) {
-            $this->emitError(new Error(
-                sprintf('Cannot use \'%s\' as class name as it is reserved', $node->name),
-                $this->getAttributesAt($namePos)
-            ));
-        }
-
-        if ($node->extends && $node->extends->isSpecialClassName()) {
-            $this->emitError(new Error(
-                sprintf('Cannot use \'%s\' as class name as it is reserved', $node->extends),
-                $node->extends->getAttributes()
-            ));
-        }
-
-        foreach ($node->implements as $interface) {
-            if ($interface->isSpecialClassName()) {
-                $this->emitError(new Error(
-                    sprintf('Cannot use \'%s\' as interface name as it is reserved', $interface),
-                    $interface->getAttributes()
-                ));
-            }
-        }
-    }
-
-    protected function checkInterface(Interface_ $node, $namePos) {
-        if (null !== $node->name && $node->name->isSpecialClassName()) {
-            $this->emitError(new Error(
-                sprintf('Cannot use \'%s\' as class name as it is reserved', $node->name),
-                $this->getAttributesAt($namePos)
-            ));
-        }
-
-        foreach ($node->extends as $interface) {
-            if ($interface->isSpecialClassName()) {
-                $this->emitError(new Error(
-                    sprintf('Cannot use \'%s\' as interface name as it is reserved', $interface),
-                    $interface->getAttributes()
-                ));
-            }
-        }
-    }
-
-    protected function checkClassMethod(ClassMethod $node, $modifierPos) {
-        if ($node->flags & Class_::MODIFIER_STATIC) {
-            switch ($node->name->toLowerString()) {
-                case '__construct':
-                    $this->emitError(new Error(
-                        sprintf('Constructor %s() cannot be static', $node->name),
-                        $this->getAttributesAt($modifierPos)));
-                    break;
-                case '__destruct':
-                    $this->emitError(new Error(
-                        sprintf('Destructor %s() cannot be static', $node->name),
-                        $this->getAttributesAt($modifierPos)));
-                    break;
-                case '__clone':
-                    $this->emitError(new Error(
-                        sprintf('Clone method %s() cannot be static', $node->name),
-                        $this->getAttributesAt($modifierPos)));
-                    break;
-            }
-        }
-    }
-
-    protected function checkClassConst(ClassConst $node, $modifierPos) {
-        if ($node->flags & Class_::MODIFIER_STATIC) {
-            $this->emitError(new Error(
-                "Cannot use 'static' as constant modifier",
-                $this->getAttributesAt($modifierPos)));
-        }
-        if ($node->flags & Class_::MODIFIER_ABSTRACT) {
-            $this->emitError(new Error(
-                "Cannot use 'abstract' as constant modifier",
-                $this->getAttributesAt($modifierPos)));
-        }
-        if ($node->flags & Class_::MODIFIER_FINAL) {
-            $this->emitError(new Error(
-                "Cannot use 'final' as constant modifier",
-                $this->getAttributesAt($modifierPos)));
-        }
-    }
-
-    protected function checkProperty(Property $node, $modifierPos) {
-        if ($node->flags & Class_::MODIFIER_ABSTRACT) {
-            $this->emitError(new Error('Properties cannot be declared abstract',
-                $this->getAttributesAt($modifierPos)));
-        }
-
-        if ($node->flags & Class_::MODIFIER_FINAL) {
-            $this->emitError(new Error('Properties cannot be declared final',
-                $this->getAttributesAt($modifierPos)));
-        }
-    }
-
-    protected function checkUseUse(UseUse $node, $namePos) {
-        if ($node->alias && $node->alias->isSpecialClassName()) {
-            $this->emitError(new Error(
-                sprintf(
-                    'Cannot use %s as %s because \'%2$s\' is a special class name',
-                    $node->name, $node->alias
-                ),
-                $this->getAttributesAt($namePos)
-            ));
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

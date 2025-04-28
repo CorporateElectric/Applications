@@ -1,236 +1,75 @@
-<?php
-
-namespace Illuminate\Routing;
-
-use Illuminate\Support\Arr;
-use Illuminate\Support\Traits\Macroable;
-
-class PendingResourceRegistration
-{
-    use CreatesRegularExpressionRouteConstraints, Macroable;
-
-    /**
-     * The resource registrar.
-     *
-     * @var \Illuminate\Routing\ResourceRegistrar
-     */
-    protected $registrar;
-
-    /**
-     * The resource name.
-     *
-     * @var string
-     */
-    protected $name;
-
-    /**
-     * The resource controller.
-     *
-     * @var string
-     */
-    protected $controller;
-
-    /**
-     * The resource options.
-     *
-     * @var array
-     */
-    protected $options = [];
-
-    /**
-     * The resource's registration status.
-     *
-     * @var bool
-     */
-    protected $registered = false;
-
-    /**
-     * Create a new pending resource registration instance.
-     *
-     * @param  \Illuminate\Routing\ResourceRegistrar  $registrar
-     * @param  string  $name
-     * @param  string  $controller
-     * @param  array  $options
-     * @return void
-     */
-    public function __construct(ResourceRegistrar $registrar, $name, $controller, array $options)
-    {
-        $this->name = $name;
-        $this->options = $options;
-        $this->registrar = $registrar;
-        $this->controller = $controller;
-    }
-
-    /**
-     * Set the methods the controller should apply to.
-     *
-     * @param  array|string|dynamic  $methods
-     * @return \Illuminate\Routing\PendingResourceRegistration
-     */
-    public function only($methods)
-    {
-        $this->options['only'] = is_array($methods) ? $methods : func_get_args();
-
-        return $this;
-    }
-
-    /**
-     * Set the methods the controller should exclude.
-     *
-     * @param  array|string|dynamic  $methods
-     * @return \Illuminate\Routing\PendingResourceRegistration
-     */
-    public function except($methods)
-    {
-        $this->options['except'] = is_array($methods) ? $methods : func_get_args();
-
-        return $this;
-    }
-
-    /**
-     * Set the route names for controller actions.
-     *
-     * @param  array|string  $names
-     * @return \Illuminate\Routing\PendingResourceRegistration
-     */
-    public function names($names)
-    {
-        $this->options['names'] = $names;
-
-        return $this;
-    }
-
-    /**
-     * Set the route name for a controller action.
-     *
-     * @param  string  $method
-     * @param  string  $name
-     * @return \Illuminate\Routing\PendingResourceRegistration
-     */
-    public function name($method, $name)
-    {
-        $this->options['names'][$method] = $name;
-
-        return $this;
-    }
-
-    /**
-     * Override the route parameter names.
-     *
-     * @param  array|string  $parameters
-     * @return \Illuminate\Routing\PendingResourceRegistration
-     */
-    public function parameters($parameters)
-    {
-        $this->options['parameters'] = $parameters;
-
-        return $this;
-    }
-
-    /**
-     * Override a route parameter's name.
-     *
-     * @param  string  $previous
-     * @param  string  $new
-     * @return \Illuminate\Routing\PendingResourceRegistration
-     */
-    public function parameter($previous, $new)
-    {
-        $this->options['parameters'][$previous] = $new;
-
-        return $this;
-    }
-
-    /**
-     * Add middleware to the resource routes.
-     *
-     * @param  mixed  $middleware
-     * @return \Illuminate\Routing\PendingResourceRegistration
-     */
-    public function middleware($middleware)
-    {
-        $this->options['middleware'] = $middleware;
-
-        return $this;
-    }
-
-    /**
-     * Specify middleware that should be removed from the resource routes.
-     *
-     * @param  array|string  $middleware
-     * @return $this|array
-     */
-    public function withoutMiddleware($middleware)
-    {
-        $this->options['excluded_middleware'] = array_merge(
-            (array) ($this->options['excluded_middleware'] ?? []), Arr::wrap($middleware)
-        );
-
-        return $this;
-    }
-
-    /**
-     * Add "where" constraints to the resource routes.
-     *
-     * @param  mixed  $wheres
-     * @return \Illuminate\Routing\PendingResourceRegistration
-     */
-    public function where($wheres)
-    {
-        $this->options['wheres'] = $wheres;
-
-        return $this;
-    }
-
-    /**
-     * Indicate that the resource routes should have "shallow" nesting.
-     *
-     * @param  bool  $shallow
-     * @return \Illuminate\Routing\PendingResourceRegistration
-     */
-    public function shallow($shallow = true)
-    {
-        $this->options['shallow'] = $shallow;
-
-        return $this;
-    }
-
-    /**
-     * Indicate that the resource routes should be scoped using the given binding fields.
-     *
-     * @param  array  $fields
-     * @return \Illuminate\Routing\PendingResourceRegistration
-     */
-    public function scoped(array $fields = [])
-    {
-        $this->options['bindingFields'] = $fields;
-
-        return $this;
-    }
-
-    /**
-     * Register the resource route.
-     *
-     * @return \Illuminate\Routing\RouteCollection
-     */
-    public function register()
-    {
-        $this->registered = true;
-
-        return $this->registrar->register(
-            $this->name, $this->controller, $this->options
-        );
-    }
-
-    /**
-     * Handle the object's destruction.
-     *
-     * @return void
-     */
-    public function __destruct()
-    {
-        if (! $this->registered) {
-            $this->register();
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

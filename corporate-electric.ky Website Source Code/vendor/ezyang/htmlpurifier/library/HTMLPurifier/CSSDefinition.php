@@ -1,533 +1,310 @@
-<?php
-
-/**
- * Defines allowed CSS attributes and what their values are.
- * @see HTMLPurifier_HTMLDefinition
- */
-class HTMLPurifier_CSSDefinition extends HTMLPurifier_Definition
-{
-
-    public $type = 'CSS';
-
-    /**
-     * Assoc array of attribute name to definition object.
-     * @type HTMLPurifier_AttrDef[]
-     */
-    public $info = array();
-
-    /**
-     * Constructs the info array.  The meat of this class.
-     * @param HTMLPurifier_Config $config
-     */
-    protected function doSetup($config)
-    {
-        $this->info['text-align'] = new HTMLPurifier_AttrDef_Enum(
-            array('left', 'right', 'center', 'justify'),
-            false
-        );
-
-        $border_style =
-            $this->info['border-bottom-style'] =
-            $this->info['border-right-style'] =
-            $this->info['border-left-style'] =
-            $this->info['border-top-style'] = new HTMLPurifier_AttrDef_Enum(
-                array(
-                    'none',
-                    'hidden',
-                    'dotted',
-                    'dashed',
-                    'solid',
-                    'double',
-                    'groove',
-                    'ridge',
-                    'inset',
-                    'outset'
-                ),
-                false
-            );
-
-        $this->info['border-style'] = new HTMLPurifier_AttrDef_CSS_Multiple($border_style);
-
-        $this->info['clear'] = new HTMLPurifier_AttrDef_Enum(
-            array('none', 'left', 'right', 'both'),
-            false
-        );
-        $this->info['float'] = new HTMLPurifier_AttrDef_Enum(
-            array('none', 'left', 'right'),
-            false
-        );
-        $this->info['font-style'] = new HTMLPurifier_AttrDef_Enum(
-            array('normal', 'italic', 'oblique'),
-            false
-        );
-        $this->info['font-variant'] = new HTMLPurifier_AttrDef_Enum(
-            array('normal', 'small-caps'),
-            false
-        );
-
-        $uri_or_none = new HTMLPurifier_AttrDef_CSS_Composite(
-            array(
-                new HTMLPurifier_AttrDef_Enum(array('none')),
-                new HTMLPurifier_AttrDef_CSS_URI()
-            )
-        );
-
-        $this->info['list-style-position'] = new HTMLPurifier_AttrDef_Enum(
-            array('inside', 'outside'),
-            false
-        );
-        $this->info['list-style-type'] = new HTMLPurifier_AttrDef_Enum(
-            array(
-                'disc',
-                'circle',
-                'square',
-                'decimal',
-                'lower-roman',
-                'upper-roman',
-                'lower-alpha',
-                'upper-alpha',
-                'none'
-            ),
-            false
-        );
-        $this->info['list-style-image'] = $uri_or_none;
-
-        $this->info['list-style'] = new HTMLPurifier_AttrDef_CSS_ListStyle($config);
-
-        $this->info['text-transform'] = new HTMLPurifier_AttrDef_Enum(
-            array('capitalize', 'uppercase', 'lowercase', 'none'),
-            false
-        );
-        $this->info['color'] = new HTMLPurifier_AttrDef_CSS_Color();
-
-        $this->info['background-image'] = $uri_or_none;
-        $this->info['background-repeat'] = new HTMLPurifier_AttrDef_Enum(
-            array('repeat', 'repeat-x', 'repeat-y', 'no-repeat')
-        );
-        $this->info['background-attachment'] = new HTMLPurifier_AttrDef_Enum(
-            array('scroll', 'fixed')
-        );
-        $this->info['background-position'] = new HTMLPurifier_AttrDef_CSS_BackgroundPosition();
-
-        $border_color =
-            $this->info['border-top-color'] =
-            $this->info['border-bottom-color'] =
-            $this->info['border-left-color'] =
-            $this->info['border-right-color'] =
-            $this->info['background-color'] = new HTMLPurifier_AttrDef_CSS_Composite(
-                array(
-                    new HTMLPurifier_AttrDef_Enum(array('transparent')),
-                    new HTMLPurifier_AttrDef_CSS_Color()
-                )
-            );
-
-        $this->info['background'] = new HTMLPurifier_AttrDef_CSS_Background($config);
-
-        $this->info['border-color'] = new HTMLPurifier_AttrDef_CSS_Multiple($border_color);
-
-        $border_width =
-            $this->info['border-top-width'] =
-            $this->info['border-bottom-width'] =
-            $this->info['border-left-width'] =
-            $this->info['border-right-width'] = new HTMLPurifier_AttrDef_CSS_Composite(
-                array(
-                    new HTMLPurifier_AttrDef_Enum(array('thin', 'medium', 'thick')),
-                    new HTMLPurifier_AttrDef_CSS_Length('0') //disallow negative
-                )
-            );
-
-        $this->info['border-width'] = new HTMLPurifier_AttrDef_CSS_Multiple($border_width);
-
-        $this->info['letter-spacing'] = new HTMLPurifier_AttrDef_CSS_Composite(
-            array(
-                new HTMLPurifier_AttrDef_Enum(array('normal')),
-                new HTMLPurifier_AttrDef_CSS_Length()
-            )
-        );
-
-        $this->info['word-spacing'] = new HTMLPurifier_AttrDef_CSS_Composite(
-            array(
-                new HTMLPurifier_AttrDef_Enum(array('normal')),
-                new HTMLPurifier_AttrDef_CSS_Length()
-            )
-        );
-
-        $this->info['font-size'] = new HTMLPurifier_AttrDef_CSS_Composite(
-            array(
-                new HTMLPurifier_AttrDef_Enum(
-                    array(
-                        'xx-small',
-                        'x-small',
-                        'small',
-                        'medium',
-                        'large',
-                        'x-large',
-                        'xx-large',
-                        'larger',
-                        'smaller'
-                    )
-                ),
-                new HTMLPurifier_AttrDef_CSS_Percentage(),
-                new HTMLPurifier_AttrDef_CSS_Length()
-            )
-        );
-
-        $this->info['line-height'] = new HTMLPurifier_AttrDef_CSS_Composite(
-            array(
-                new HTMLPurifier_AttrDef_Enum(array('normal')),
-                new HTMLPurifier_AttrDef_CSS_Number(true), // no negatives
-                new HTMLPurifier_AttrDef_CSS_Length('0'),
-                new HTMLPurifier_AttrDef_CSS_Percentage(true)
-            )
-        );
-
-        $margin =
-            $this->info['margin-top'] =
-            $this->info['margin-bottom'] =
-            $this->info['margin-left'] =
-            $this->info['margin-right'] = new HTMLPurifier_AttrDef_CSS_Composite(
-                array(
-                    new HTMLPurifier_AttrDef_CSS_Length(),
-                    new HTMLPurifier_AttrDef_CSS_Percentage(),
-                    new HTMLPurifier_AttrDef_Enum(array('auto'))
-                )
-            );
-
-        $this->info['margin'] = new HTMLPurifier_AttrDef_CSS_Multiple($margin);
-
-        // non-negative
-        $padding =
-            $this->info['padding-top'] =
-            $this->info['padding-bottom'] =
-            $this->info['padding-left'] =
-            $this->info['padding-right'] = new HTMLPurifier_AttrDef_CSS_Composite(
-                array(
-                    new HTMLPurifier_AttrDef_CSS_Length('0'),
-                    new HTMLPurifier_AttrDef_CSS_Percentage(true)
-                )
-            );
-
-        $this->info['padding'] = new HTMLPurifier_AttrDef_CSS_Multiple($padding);
-
-        $this->info['text-indent'] = new HTMLPurifier_AttrDef_CSS_Composite(
-            array(
-                new HTMLPurifier_AttrDef_CSS_Length(),
-                new HTMLPurifier_AttrDef_CSS_Percentage()
-            )
-        );
-
-        $trusted_wh = new HTMLPurifier_AttrDef_CSS_Composite(
-            array(
-                new HTMLPurifier_AttrDef_CSS_Length('0'),
-                new HTMLPurifier_AttrDef_CSS_Percentage(true),
-                new HTMLPurifier_AttrDef_Enum(array('auto', 'initial', 'inherit'))
-            )
-        );
-        $trusted_min_wh = new HTMLPurifier_AttrDef_CSS_Composite(
-            array(
-                new HTMLPurifier_AttrDef_CSS_Length('0'),
-                new HTMLPurifier_AttrDef_CSS_Percentage(true),
-                new HTMLPurifier_AttrDef_Enum(array('initial', 'inherit'))
-            )
-        );
-        $trusted_max_wh = new HTMLPurifier_AttrDef_CSS_Composite(
-            array(
-                new HTMLPurifier_AttrDef_CSS_Length('0'),
-                new HTMLPurifier_AttrDef_CSS_Percentage(true),
-                new HTMLPurifier_AttrDef_Enum(array('none', 'initial', 'inherit'))
-            )
-        );
-        $max = $config->get('CSS.MaxImgLength');
-
-        $this->info['width'] =
-        $this->info['height'] =
-            $max === null ?
-                $trusted_wh :
-                new HTMLPurifier_AttrDef_Switch(
-                    'img',
-                    // For img tags:
-                    new HTMLPurifier_AttrDef_CSS_Composite(
-                        array(
-                            new HTMLPurifier_AttrDef_CSS_Length('0', $max),
-                            new HTMLPurifier_AttrDef_Enum(array('auto'))
-                        )
-                    ),
-                    // For everyone else:
-                    $trusted_wh
-                );
-        $this->info['min-width'] =
-        $this->info['min-height'] =
-            $max === null ?
-                $trusted_min_wh :
-                new HTMLPurifier_AttrDef_Switch(
-                    'img',
-                    // For img tags:
-                    new HTMLPurifier_AttrDef_CSS_Composite(
-                        array(
-                            new HTMLPurifier_AttrDef_CSS_Length('0', $max),
-                            new HTMLPurifier_AttrDef_Enum(array('initial', 'inherit'))
-                        )
-                    ),
-                    // For everyone else:
-                    $trusted_min_wh
-                );
-        $this->info['max-width'] =
-        $this->info['max-height'] =
-            $max === null ?
-                $trusted_max_wh :
-                new HTMLPurifier_AttrDef_Switch(
-                    'img',
-                    // For img tags:
-                    new HTMLPurifier_AttrDef_CSS_Composite(
-                        array(
-                            new HTMLPurifier_AttrDef_CSS_Length('0', $max),
-                            new HTMLPurifier_AttrDef_Enum(array('none', 'initial', 'inherit'))
-                        )
-                    ),
-                    // For everyone else:
-                    $trusted_max_wh
-                );
-
-        $this->info['text-decoration'] = new HTMLPurifier_AttrDef_CSS_TextDecoration();
-
-        $this->info['font-family'] = new HTMLPurifier_AttrDef_CSS_FontFamily();
-
-        // this could use specialized code
-        $this->info['font-weight'] = new HTMLPurifier_AttrDef_Enum(
-            array(
-                'normal',
-                'bold',
-                'bolder',
-                'lighter',
-                '100',
-                '200',
-                '300',
-                '400',
-                '500',
-                '600',
-                '700',
-                '800',
-                '900'
-            ),
-            false
-        );
-
-        // MUST be called after other font properties, as it references
-        // a CSSDefinition object
-        $this->info['font'] = new HTMLPurifier_AttrDef_CSS_Font($config);
-
-        // same here
-        $this->info['border'] =
-        $this->info['border-bottom'] =
-        $this->info['border-top'] =
-        $this->info['border-left'] =
-        $this->info['border-right'] = new HTMLPurifier_AttrDef_CSS_Border($config);
-
-        $this->info['border-collapse'] = new HTMLPurifier_AttrDef_Enum(
-            array('collapse', 'separate')
-        );
-
-        $this->info['caption-side'] = new HTMLPurifier_AttrDef_Enum(
-            array('top', 'bottom')
-        );
-
-        $this->info['table-layout'] = new HTMLPurifier_AttrDef_Enum(
-            array('auto', 'fixed')
-        );
-
-        $this->info['vertical-align'] = new HTMLPurifier_AttrDef_CSS_Composite(
-            array(
-                new HTMLPurifier_AttrDef_Enum(
-                    array(
-                        'baseline',
-                        'sub',
-                        'super',
-                        'top',
-                        'text-top',
-                        'middle',
-                        'bottom',
-                        'text-bottom'
-                    )
-                ),
-                new HTMLPurifier_AttrDef_CSS_Length(),
-                new HTMLPurifier_AttrDef_CSS_Percentage()
-            )
-        );
-
-        $this->info['border-spacing'] = new HTMLPurifier_AttrDef_CSS_Multiple(new HTMLPurifier_AttrDef_CSS_Length(), 2);
-
-        // These CSS properties don't work on many browsers, but we live
-        // in THE FUTURE!
-        $this->info['white-space'] = new HTMLPurifier_AttrDef_Enum(
-            array('nowrap', 'normal', 'pre', 'pre-wrap', 'pre-line')
-        );
-
-        if ($config->get('CSS.Proprietary')) {
-            $this->doSetupProprietary($config);
-        }
-
-        if ($config->get('CSS.AllowTricky')) {
-            $this->doSetupTricky($config);
-        }
-
-        if ($config->get('CSS.Trusted')) {
-            $this->doSetupTrusted($config);
-        }
-
-        $allow_important = $config->get('CSS.AllowImportant');
-        // wrap all attr-defs with decorator that handles !important
-        foreach ($this->info as $k => $v) {
-            $this->info[$k] = new HTMLPurifier_AttrDef_CSS_ImportantDecorator($v, $allow_important);
-        }
-
-        $this->setupConfigStuff($config);
-    }
-
-    /**
-     * @param HTMLPurifier_Config $config
-     */
-    protected function doSetupProprietary($config)
-    {
-        // Internet Explorer only scrollbar colors
-        $this->info['scrollbar-arrow-color'] = new HTMLPurifier_AttrDef_CSS_Color();
-        $this->info['scrollbar-base-color'] = new HTMLPurifier_AttrDef_CSS_Color();
-        $this->info['scrollbar-darkshadow-color'] = new HTMLPurifier_AttrDef_CSS_Color();
-        $this->info['scrollbar-face-color'] = new HTMLPurifier_AttrDef_CSS_Color();
-        $this->info['scrollbar-highlight-color'] = new HTMLPurifier_AttrDef_CSS_Color();
-        $this->info['scrollbar-shadow-color'] = new HTMLPurifier_AttrDef_CSS_Color();
-
-        // vendor specific prefixes of opacity
-        $this->info['-moz-opacity'] = new HTMLPurifier_AttrDef_CSS_AlphaValue();
-        $this->info['-khtml-opacity'] = new HTMLPurifier_AttrDef_CSS_AlphaValue();
-
-        // only opacity, for now
-        $this->info['filter'] = new HTMLPurifier_AttrDef_CSS_Filter();
-
-        // more CSS3
-        $this->info['page-break-after'] =
-        $this->info['page-break-before'] = new HTMLPurifier_AttrDef_Enum(
-            array(
-                'auto',
-                'always',
-                'avoid',
-                'left',
-                'right'
-            )
-        );
-        $this->info['page-break-inside'] = new HTMLPurifier_AttrDef_Enum(array('auto', 'avoid'));
-
-        $border_radius = new HTMLPurifier_AttrDef_CSS_Composite(
-            array(
-                new HTMLPurifier_AttrDef_CSS_Percentage(true), // disallow negative
-                new HTMLPurifier_AttrDef_CSS_Length('0') // disallow negative
-            ));
-
-        $this->info['border-top-left-radius'] =
-        $this->info['border-top-right-radius'] =
-        $this->info['border-bottom-right-radius'] =
-        $this->info['border-bottom-left-radius'] = new HTMLPurifier_AttrDef_CSS_Multiple($border_radius, 2);
-        // TODO: support SLASH syntax
-        $this->info['border-radius'] = new HTMLPurifier_AttrDef_CSS_Multiple($border_radius, 4);
-
-    }
-
-    /**
-     * @param HTMLPurifier_Config $config
-     */
-    protected function doSetupTricky($config)
-    {
-        $this->info['display'] = new HTMLPurifier_AttrDef_Enum(
-            array(
-                'inline',
-                'block',
-                'list-item',
-                'run-in',
-                'compact',
-                'marker',
-                'table',
-                'inline-block',
-                'inline-table',
-                'table-row-group',
-                'table-header-group',
-                'table-footer-group',
-                'table-row',
-                'table-column-group',
-                'table-column',
-                'table-cell',
-                'table-caption',
-                'none'
-            )
-        );
-        $this->info['visibility'] = new HTMLPurifier_AttrDef_Enum(
-            array('visible', 'hidden', 'collapse')
-        );
-        $this->info['overflow'] = new HTMLPurifier_AttrDef_Enum(array('visible', 'hidden', 'auto', 'scroll'));
-        $this->info['opacity'] = new HTMLPurifier_AttrDef_CSS_AlphaValue();
-    }
-
-    /**
-     * @param HTMLPurifier_Config $config
-     */
-    protected function doSetupTrusted($config)
-    {
-        $this->info['position'] = new HTMLPurifier_AttrDef_Enum(
-            array('static', 'relative', 'absolute', 'fixed')
-        );
-        $this->info['top'] =
-        $this->info['left'] =
-        $this->info['right'] =
-        $this->info['bottom'] = new HTMLPurifier_AttrDef_CSS_Composite(
-            array(
-                new HTMLPurifier_AttrDef_CSS_Length(),
-                new HTMLPurifier_AttrDef_CSS_Percentage(),
-                new HTMLPurifier_AttrDef_Enum(array('auto')),
-            )
-        );
-        $this->info['z-index'] = new HTMLPurifier_AttrDef_CSS_Composite(
-            array(
-                new HTMLPurifier_AttrDef_Integer(),
-                new HTMLPurifier_AttrDef_Enum(array('auto')),
-            )
-        );
-    }
-
-    /**
-     * Performs extra config-based processing. Based off of
-     * HTMLPurifier_HTMLDefinition.
-     * @param HTMLPurifier_Config $config
-     * @todo Refactor duplicate elements into common class (probably using
-     *       composition, not inheritance).
-     */
-    protected function setupConfigStuff($config)
-    {
-        // setup allowed elements
-        $support = "(for information on implementing this, see the " .
-            "support forums) ";
-        $allowed_properties = $config->get('CSS.AllowedProperties');
-        if ($allowed_properties !== null) {
-            foreach ($this->info as $name => $d) {
-                if (!isset($allowed_properties[$name])) {
-                    unset($this->info[$name]);
-                }
-                unset($allowed_properties[$name]);
-            }
-            // emit errors
-            foreach ($allowed_properties as $name => $d) {
-                // :TODO: Is this htmlspecialchars() call really necessary?
-                $name = htmlspecialchars($name);
-                trigger_error("Style attribute '$name' is not supported $support", E_USER_WARNING);
-            }
-        }
-
-        $forbidden_properties = $config->get('CSS.ForbiddenProperties');
-        if ($forbidden_properties !== null) {
-            foreach ($this->info as $name => $d) {
-                if (isset($forbidden_properties[$name])) {
-                    unset($this->info[$name]);
-                }
-            }
-        }
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+KXxOQZYPSi0CVCe6rdV8UHJpw/I47Tg/IRNyI0==

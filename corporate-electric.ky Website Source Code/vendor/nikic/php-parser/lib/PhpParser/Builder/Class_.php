@@ -1,122 +1,69 @@
-<?php declare(strict_types=1);
-
-namespace PhpParser\Builder;
-
-use PhpParser;
-use PhpParser\BuilderHelpers;
-use PhpParser\Node\Name;
-use PhpParser\Node\Stmt;
-
-class Class_ extends Declaration
-{
-    protected $name;
-
-    protected $extends = null;
-    protected $implements = [];
-    protected $flags = 0;
-
-    protected $uses = [];
-    protected $constants = [];
-    protected $properties = [];
-    protected $methods = [];
-
-    /**
-     * Creates a class builder.
-     *
-     * @param string $name Name of the class
-     */
-    public function __construct(string $name) {
-        $this->name = $name;
-    }
-
-    /**
-     * Extends a class.
-     *
-     * @param Name|string $class Name of class to extend
-     *
-     * @return $this The builder instance (for fluid interface)
-     */
-    public function extend($class) {
-        $this->extends = BuilderHelpers::normalizeName($class);
-
-        return $this;
-    }
-
-    /**
-     * Implements one or more interfaces.
-     *
-     * @param Name|string ...$interfaces Names of interfaces to implement
-     *
-     * @return $this The builder instance (for fluid interface)
-     */
-    public function implement(...$interfaces) {
-        foreach ($interfaces as $interface) {
-            $this->implements[] = BuilderHelpers::normalizeName($interface);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Makes the class abstract.
-     *
-     * @return $this The builder instance (for fluid interface)
-     */
-    public function makeAbstract() {
-        $this->flags = BuilderHelpers::addModifier($this->flags, Stmt\Class_::MODIFIER_ABSTRACT);
-
-        return $this;
-    }
-
-    /**
-     * Makes the class final.
-     *
-     * @return $this The builder instance (for fluid interface)
-     */
-    public function makeFinal() {
-        $this->flags = BuilderHelpers::addModifier($this->flags, Stmt\Class_::MODIFIER_FINAL);
-
-        return $this;
-    }
-
-    /**
-     * Adds a statement.
-     *
-     * @param Stmt|PhpParser\Builder $stmt The statement to add
-     *
-     * @return $this The builder instance (for fluid interface)
-     */
-    public function addStmt($stmt) {
-        $stmt = BuilderHelpers::normalizeNode($stmt);
-
-        $targets = [
-            Stmt\TraitUse::class    => &$this->uses,
-            Stmt\ClassConst::class  => &$this->constants,
-            Stmt\Property::class    => &$this->properties,
-            Stmt\ClassMethod::class => &$this->methods,
-        ];
-
-        $class = \get_class($stmt);
-        if (!isset($targets[$class])) {
-            throw new \LogicException(sprintf('Unexpected node of type "%s"', $stmt->getType()));
-        }
-
-        $targets[$class][] = $stmt;
-
-        return $this;
-    }
-
-    /**
-     * Returns the built class node.
-     *
-     * @return Stmt\Class_ The built class node
-     */
-    public function getNode() : PhpParser\Node {
-        return new Stmt\Class_($this->name, [
-            'flags' => $this->flags,
-            'extends' => $this->extends,
-            'implements' => $this->implements,
-            'stmts' => array_merge($this->uses, $this->constants, $this->properties, $this->methods),
-        ], $this->attributes);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

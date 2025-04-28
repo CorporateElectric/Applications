@@ -1,199 +1,100 @@
-<?php
-
-declare(strict_types=1);
-
-/**
- * This file is part of phpDocumentor.
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @link      http://phpdoc.org
- */
-
-namespace phpDocumentor\Reflection\DocBlock\Tags;
-
-use phpDocumentor\Reflection\DocBlock\Tag;
-use Webmozart\Assert\Assert;
-use function array_key_exists;
-use function preg_match;
-use function rawurlencode;
-use function str_replace;
-use function strpos;
-use function trim;
-
-/**
- * Reflection class for a {@}example tag in a Docblock.
- */
-final class Example implements Tag, Factory\StaticMethod
-{
-    /** @var string Path to a file to use as an example. May also be an absolute URI. */
-    private $filePath;
-
-    /**
-     * @var bool Whether the file path component represents an URI. This determines how the file portion
-     *     appears at {@link getContent()}.
-     */
-    private $isURI;
-
-    /** @var int */
-    private $startingLine;
-
-    /** @var int */
-    private $lineCount;
-
-    /** @var string|null */
-    private $content;
-
-    public function __construct(
-        string $filePath,
-        bool $isURI,
-        int $startingLine,
-        int $lineCount,
-        ?string $content
-    ) {
-        Assert::stringNotEmpty($filePath);
-        Assert::greaterThanEq($startingLine, 1);
-        Assert::greaterThanEq($lineCount, 0);
-
-        $this->filePath     = $filePath;
-        $this->startingLine = $startingLine;
-        $this->lineCount    = $lineCount;
-        if ($content !== null) {
-            $this->content = trim($content);
-        }
-
-        $this->isURI = $isURI;
-    }
-
-    public function getContent() : string
-    {
-        if ($this->content === null || $this->content === '') {
-            $filePath = $this->filePath;
-            if ($this->isURI) {
-                $filePath = $this->isUriRelative($this->filePath)
-                    ? str_replace('%2F', '/', rawurlencode($this->filePath))
-                    : $this->filePath;
-            }
-
-            return trim($filePath);
-        }
-
-        return $this->content;
-    }
-
-    public function getDescription() : ?string
-    {
-        return $this->content;
-    }
-
-    public static function create(string $body) : ?Tag
-    {
-        // File component: File path in quotes or File URI / Source information
-        if (!preg_match('/^\s*(?:(\"[^\"]+\")|(\S+))(?:\s+(.*))?$/sux', $body, $matches)) {
-            return null;
-        }
-
-        $filePath = null;
-        $fileUri  = null;
-        if ($matches[1] !== '') {
-            $filePath = $matches[1];
-        } else {
-            $fileUri = $matches[2];
-        }
-
-        $startingLine = 1;
-        $lineCount    = 0;
-        $description  = null;
-
-        if (array_key_exists(3, $matches)) {
-            $description = $matches[3];
-
-            // Starting line / Number of lines / Description
-            if (preg_match('/^([1-9]\d*)(?:\s+((?1))\s*)?(.*)$/sux', $matches[3], $contentMatches)) {
-                $startingLine = (int) $contentMatches[1];
-                if (isset($contentMatches[2])) {
-                    $lineCount = (int) $contentMatches[2];
-                }
-
-                if (array_key_exists(3, $contentMatches)) {
-                    $description = $contentMatches[3];
-                }
-            }
-        }
-
-        return new static(
-            $filePath ?? ($fileUri ?? ''),
-            $fileUri !== null,
-            $startingLine,
-            $lineCount,
-            $description
-        );
-    }
-
-    /**
-     * Returns the file path.
-     *
-     * @return string Path to a file to use as an example.
-     *     May also be an absolute URI.
-     */
-    public function getFilePath() : string
-    {
-        return trim($this->filePath, '"');
-    }
-
-    /**
-     * Returns a string representation for this tag.
-     */
-    public function __toString() : string
-    {
-        $filePath = (string) $this->filePath;
-        $isDefaultLine = $this->startingLine === 1 && $this->lineCount === 0;
-        $startingLine = !$isDefaultLine ? (string) $this->startingLine : '';
-        $lineCount = !$isDefaultLine ? (string) $this->lineCount : '';
-        $content = (string) $this->content;
-
-        return $filePath
-            . ($startingLine !== ''
-                ? ($filePath !== '' ? ' ' : '') . $startingLine
-                : '')
-            . ($lineCount !== ''
-                ? ($filePath !== '' || $startingLine !== '' ? ' ' : '') . $lineCount
-                : '')
-            . ($content !== ''
-                ? ($filePath !== '' || $startingLine !== '' || $lineCount !== '' ? ' ' : '') . $content
-                : '');
-    }
-
-    /**
-     * Returns true if the provided URI is relative or contains a complete scheme (and thus is absolute).
-     */
-    private function isUriRelative(string $uri) : bool
-    {
-        return strpos($uri, ':') === false;
-    }
-
-    public function getStartingLine() : int
-    {
-        return $this->startingLine;
-    }
-
-    public function getLineCount() : int
-    {
-        return $this->lineCount;
-    }
-
-    public function getName() : string
-    {
-        return 'example';
-    }
-
-    public function render(?Formatter $formatter = null) : string
-    {
-        if ($formatter === null) {
-            $formatter = new Formatter\PassthroughFormatter();
-        }
-
-        return $formatter->format($this);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

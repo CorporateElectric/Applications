@@ -1,257 +1,106 @@
-<?php
-
-namespace League\Glide\Manipulators;
-
-use Intervention\Image\Image;
-use League\Flysystem\FilesystemInterface;
-use League\Glide\Filesystem\FilesystemException;
-use League\Glide\Manipulators\Helpers\Dimension;
-
-/**
- * @property string $dpr
- * @property string $mark
- * @property string $markfit
- * @property string $markh
- * @property string $markpad
- * @property string $markpos
- * @property string $markw
- * @property string $markx
- * @property string $marky
- * @property string $markalpha
- */
-class Watermark extends BaseManipulator
-{
-    /**
-     * The watermarks file system.
-     * @var FilesystemInterface|null
-     */
-    protected $watermarks;
-
-    /**
-     * The watermarks path prefix.
-     * @var string
-     */
-    protected $watermarksPathPrefix;
-
-    /**
-     * Create Watermark instance.
-     * @param FilesystemInterface $watermarks The watermarks file system.
-     */
-    public function __construct(FilesystemInterface $watermarks = null, $watermarksPathPrefix = '')
-    {
-        $this->setWatermarks($watermarks);
-        $this->setWatermarksPathPrefix($watermarksPathPrefix);
-    }
-
-    /**
-     * Set the watermarks file system.
-     * @param FilesystemInterface $watermarks The watermarks file system.
-     */
-    public function setWatermarks(FilesystemInterface $watermarks = null)
-    {
-        $this->watermarks = $watermarks;
-    }
-
-    /**
-     * Get the watermarks file system.
-     * @return FilesystemInterface The watermarks file system.
-     */
-    public function getWatermarks()
-    {
-        return $this->watermarks;
-    }
-
-    /**
-     * Set the watermarks path prefix.
-     * @param string $watermarksPathPrefix The watermarks path prefix.
-     */
-    public function setWatermarksPathPrefix($watermarksPathPrefix = '')
-    {
-        $this->watermarksPathPrefix = trim($watermarksPathPrefix, '/');
-    }
-
-    /**
-     * Get the watermarks path prefix.
-     * @return string The watermarks path prefix.
-     */
-    public function getWatermarksPathPrefix()
-    {
-        return $this->watermarksPathPrefix;
-    }
-
-    /**
-     * Perform watermark image manipulation.
-     * @param  Image $image The source image.
-     * @return Image The manipulated image.
-     */
-    public function run(Image $image)
-    {
-        if ($watermark = $this->getImage($image)) {
-            $markw = $this->getDimension($image, 'markw');
-            $markh = $this->getDimension($image, 'markh');
-            $markx = $this->getDimension($image, 'markx');
-            $marky = $this->getDimension($image, 'marky');
-            $markpad = $this->getDimension($image, 'markpad');
-            $markfit = $this->getFit();
-            $markpos = $this->getPosition();
-            $markalpha = $this->getAlpha();
-
-            if ($markpad) {
-                $markx = $marky = $markpad;
-            }
-
-            $size = new Size();
-            $size->setParams([
-                'w' => $markw,
-                'h' => $markh,
-                'fit' => $markfit,
-            ]);
-            $watermark = $size->run($watermark);
-
-            if ($markalpha < 100) {
-                $watermark->opacity($markalpha);
-            }
-
-            $image->insert($watermark, $markpos, intval($markx), intval($marky));
-        }
-
-        return $image;
-    }
-
-    /**
-     * Get the watermark image.
-     * @param  Image      $image The source image.
-     * @return Image|null The watermark image.
-     */
-    public function getImage(Image $image)
-    {
-        if (is_null($this->watermarks)) {
-            return;
-        }
-
-        if (!is_string($this->mark)) {
-            return;
-        }
-
-        if ($this->mark === '') {
-            return;
-        }
-
-        $path = $this->mark;
-
-        if ($this->watermarksPathPrefix) {
-            $path = $this->watermarksPathPrefix.'/'.$path;
-        }
-
-        if ($this->watermarks->has($path)) {
-            $source = $this->watermarks->read($path);
-
-            if ($source === false) {
-                throw new FilesystemException(
-                    'Could not read the image `'.$path.'`.'
-                );
-            }
-
-            return $image->getDriver()->init($source);
-        }
-    }
-
-    /**
-     * Get a dimension.
-     * @param  Image       $image The source image.
-     * @param  string      $field The requested field.
-     * @return double|null The dimension.
-     */
-    public function getDimension(Image $image, $field)
-    {
-        if ($this->{$field}) {
-            return (new Dimension($image, $this->getDpr()))->get($this->{$field});
-        }
-    }
-
-    /**
-     * Resolve the device pixel ratio.
-     * @return double The device pixel ratio.
-     */
-    public function getDpr()
-    {
-        if (!is_numeric($this->dpr)) {
-            return 1.0;
-        }
-
-        if ($this->dpr < 0 or $this->dpr > 8) {
-            return 1.0;
-        }
-
-        return (double) $this->dpr;
-    }
-
-    /**
-     * Get the fit.
-     * @return string The fit.
-     */
-    public function getFit()
-    {
-        $fitMethods = [
-            'contain',
-            'max',
-            'stretch',
-            'crop',
-            'crop-top-left',
-            'crop-top',
-            'crop-top-right',
-            'crop-left',
-            'crop-center',
-            'crop-right',
-            'crop-bottom-left',
-            'crop-bottom',
-            'crop-bottom-right',
-        ];
-
-        if (in_array($this->markfit, $fitMethods, true)) {
-            return $this->markfit;
-        }
-    }
-
-    /**
-     * Get the position.
-     * @return string The position.
-     */
-    public function getPosition()
-    {
-        $positions = [
-            'top-left',
-            'top',
-            'top-right',
-            'left',
-            'center',
-            'right',
-            'bottom-left',
-            'bottom',
-            'bottom-right',
-        ];
-
-        if (in_array($this->markpos, $positions, true)) {
-            return $this->markpos;
-        }
-
-        return 'bottom-right';
-    }
-
-    /**
-     * Get the alpha channel.
-     * @return int The alpha.
-     */
-    public function getAlpha()
-    {
-        if (!is_numeric($this->markalpha)) {
-            return 100;
-        }
-
-        if ($this->markalpha < 0 or $this->markalpha > 100) {
-            return 100;
-        }
-
-        return (int) $this->markalpha;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

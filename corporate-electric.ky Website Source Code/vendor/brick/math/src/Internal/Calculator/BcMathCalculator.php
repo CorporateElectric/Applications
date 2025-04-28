@@ -1,92 +1,50 @@
-<?php
-
-declare(strict_types=1);
-
-namespace Brick\Math\Internal\Calculator;
-
-use Brick\Math\Internal\Calculator;
-
-/**
- * Calculator implementation built around the bcmath library.
- *
- * @internal
- *
- * @psalm-immutable
- */
-class BcMathCalculator extends Calculator
-{
-    /**
-     * {@inheritdoc}
-     */
-    public function add(string $a, string $b) : string
-    {
-        return \bcadd($a, $b, 0);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function sub(string $a, string $b) : string
-    {
-        return \bcsub($a, $b, 0);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function mul(string $a, string $b) : string
-    {
-        return \bcmul($a, $b, 0);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function divQ(string $a, string $b) : string
-    {
-        return \bcdiv($a, $b, 0);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function divR(string $a, string $b) : string
-    {
-        return \bcmod($a, $b);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function divQR(string $a, string $b) : array
-    {
-        $q = \bcdiv($a, $b, 0);
-        $r = \bcmod($a, $b);
-
-        return [$q, $r];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function pow(string $a, int $e) : string
-    {
-        return \bcpow($a, (string) $e, 0);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function modPow(string $base, string $exp, string $mod) : string
-    {
-        return \bcpowmod($base, $exp, $mod, 0);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function sqrt(string $n) : string
-    {
-        return \bcsqrt($n, 0);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+gDS=

@@ -1,40 +1,34 @@
-<?php
-
-declare(strict_types=1);
-
-namespace Doctrine\Inflector\Rules\NorwegianBokmal;
-
-use Doctrine\Inflector\Rules\Pattern;
-use Doctrine\Inflector\Rules\Substitution;
-use Doctrine\Inflector\Rules\Transformation;
-use Doctrine\Inflector\Rules\Word;
-
-class Inflectible
-{
-    /**
-     * @return Transformation[]
-     */
-    public static function getSingular() : iterable
-    {
-        yield new Transformation(new Pattern('/re$/i'), 'r');
-        yield new Transformation(new Pattern('/er$/i'), '');
-    }
-
-    /**
-     * @return Transformation[]
-     */
-    public static function getPlural() : iterable
-    {
-        yield new Transformation(new Pattern('/e$/i'), 'er');
-        yield new Transformation(new Pattern('/r$/i'), 're');
-        yield new Transformation(new Pattern('/$/'), 'er');
-    }
-
-    /**
-     * @return Substitution[]
-     */
-    public static function getIrregular() : iterable
-    {
-        yield new Substitution(new Word('konto'), new Word('konti'));
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+6g9BGhXy63EEdXfVkAMK7g9nviVd

@@ -1,274 +1,90 @@
-<?php
-
-namespace League\Glide\Manipulators\Helpers;
-
-class Color
-{
-    /**
-     * 3 digit color code expression.
-     */
-    const SHORT_RGB = '/^[0-9a-f]{3}$/i';
-
-    /**
-     * 4 digit color code expression.
-     */
-    const SHORT_ARGB = '/^[0-9]{1}[0-9a-f]{3}$/i';
-
-    /**
-     * 6 digit color code expression.
-     */
-    const LONG_RGB = '/^[0-9a-f]{6}$/i';
-
-    /**
-     * 8 digit color code expression.
-     */
-    const LONG_ARGB = '/^[0-9]{2}[0-9a-f]{6}$/i';
-
-    /**
-     * The red value.
-     * @var int
-     */
-    protected $red;
-
-    /**
-     * The green value.
-     * @var int
-     */
-    protected $green;
-
-    /**
-     * The blue value.
-     * @var int
-     */
-    protected $blue;
-
-    /**
-     * The alpha value.
-     * @var int|double
-     */
-    protected $alpha;
-
-    /**
-     * Create color helper instance.
-     * @param string $value The color value.
-     */
-    public function __construct($value)
-    {
-        do {
-            if ($hex = $this->getHexFromColorName($value)) {
-                $rgba = $this->parseHex($hex);
-                $alpha = 1;
-                break;
-            }
-
-            if (preg_match(self::SHORT_RGB, $value)) {
-                $rgba = $this->parseHex($value.$value);
-                $alpha = 1;
-                break;
-            }
-
-            if (preg_match(self::SHORT_ARGB, $value)) {
-                $rgba = $this->parseHex(substr($value, 1).substr($value, 1));
-                $alpha = substr($value, 0, 1) / 10;
-                break;
-            }
-
-            if (preg_match(self::LONG_RGB, $value)) {
-                $rgba = $this->parseHex($value);
-                $alpha = 1;
-                break;
-            }
-
-            if (preg_match(self::LONG_ARGB, $value)) {
-                $rgba = $this->parseHex(substr($value, 2));
-                $alpha = substr($value, 0, 2) / 100;
-                break;
-            }
-
-            $rgba = [255, 255, 255];
-            $alpha = 0;
-        } while (false);
-
-        $this->red = $rgba[0];
-        $this->green = $rgba[1];
-        $this->blue = $rgba[2];
-        $this->alpha = $alpha;
-    }
-
-    /**
-     * Parse hex color to RGB values.
-     * @param  string $hex The hex value.
-     * @return array  The RGB values.
-     */
-    public function parseHex($hex)
-    {
-        return array_map('hexdec', str_split($hex, 2));
-    }
-
-    /**
-     * Format color for consumption.
-     * @return string The formatted color.
-     */
-    public function formatted()
-    {
-        return 'rgba('.$this->red.', '.$this->green.', '.$this->blue.', '.$this->alpha.')';
-    }
-
-    /**
-     * Get hex code by color name.
-     * @param  string $name The color name.
-     * @return string The hex code.
-     */
-    public function getHexFromColorName($name)
-    {
-        $colors = [
-            'aliceblue' => 'F0F8FF',
-            'antiquewhite' => 'FAEBD7',
-            'aqua' => '00FFFF',
-            'aquamarine' => '7FFFD4',
-            'azure' => 'F0FFFF',
-            'beige' => 'F5F5DC',
-            'bisque' => 'FFE4C4',
-            'black' => '000000',
-            'blanchedalmond' => 'FFEBCD',
-            'blue' => '0000FF',
-            'blueviolet' => '8A2BE2',
-            'brown' => 'A52A2A',
-            'burlywood' => 'DEB887',
-            'cadetblue' => '5F9EA0',
-            'chartreuse' => '7FFF00',
-            'chocolate' => 'D2691E',
-            'coral' => 'FF7F50',
-            'cornflowerblue' => '6495ED',
-            'cornsilk' => 'FFF8DC',
-            'crimson' => 'DC143C',
-            'cyan' => '00FFFF',
-            'darkblue' => '00008B',
-            'darkcyan' => '008B8B',
-            'darkgoldenrod' => 'B8860B',
-            'darkgray' => 'A9A9A9',
-            'darkgreen' => '006400',
-            'darkkhaki' => 'BDB76B',
-            'darkmagenta' => '8B008B',
-            'darkolivegreen' => '556B2F',
-            'darkorange' => 'FF8C00',
-            'darkorchid' => '9932CC',
-            'darkred' => '8B0000',
-            'darksalmon' => 'E9967A',
-            'darkseagreen' => '8FBC8F',
-            'darkslateblue' => '483D8B',
-            'darkslategray' => '2F4F4F',
-            'darkturquoise' => '00CED1',
-            'darkviolet' => '9400D3',
-            'deeppink' => 'FF1493',
-            'deepskyblue' => '00BFFF',
-            'dimgray' => '696969',
-            'dodgerblue' => '1E90FF',
-            'firebrick' => 'B22222',
-            'floralwhite' => 'FFFAF0',
-            'forestgreen' => '228B22',
-            'fuchsia' => 'FF00FF',
-            'gainsboro' => 'DCDCDC',
-            'ghostwhite' => 'F8F8FF',
-            'gold' => 'FFD700',
-            'goldenrod' => 'DAA520',
-            'gray' => '808080',
-            'green' => '008000',
-            'greenyellow' => 'ADFF2F',
-            'honeydew' => 'F0FFF0',
-            'hotpink' => 'FF69B4',
-            'indianred' => 'CD5C5C',
-            'indigo' => '4B0082',
-            'ivory' => 'FFFFF0',
-            'khaki' => 'F0E68C',
-            'lavender' => 'E6E6FA',
-            'lavenderblush' => 'FFF0F5',
-            'lawngreen' => '7CFC00',
-            'lemonchiffon' => 'FFFACD',
-            'lightblue' => 'ADD8E6',
-            'lightcoral' => 'F08080',
-            'lightcyan' => 'E0FFFF',
-            'lightgoldenrodyellow' => 'FAFAD2',
-            'lightgray' => 'D3D3D3',
-            'lightgreen' => '90EE90',
-            'lightpink' => 'FFB6C1',
-            'lightsalmon' => 'FFA07A',
-            'lightseagreen' => '20B2AA',
-            'lightskyblue' => '87CEFA',
-            'lightslategray' => '778899',
-            'lightsteelblue' => 'B0C4DE',
-            'lightyellow' => 'FFFFE0',
-            'lime' => '00FF00',
-            'limegreen' => '32CD32',
-            'linen' => 'FAF0E6',
-            'magenta' => 'FF00FF',
-            'maroon' => '800000',
-            'mediumaquamarine' => '66CDAA',
-            'mediumblue' => '0000CD',
-            'mediumorchid' => 'BA55D3',
-            'mediumpurple' => '9370DB',
-            'mediumseagreen' => '3CB371',
-            'mediumslateblue' => '7B68EE',
-            'mediumspringgreen' => '00FA9A',
-            'mediumturquoise' => '48D1CC',
-            'mediumvioletred' => 'C71585',
-            'midnightblue' => '191970',
-            'mintcream' => 'F5FFFA',
-            'mistyrose' => 'FFE4E1',
-            'moccasin' => 'FFE4B5',
-            'navajowhite' => 'FFDEAD',
-            'navy' => '000080',
-            'oldlace' => 'FDF5E6',
-            'olive' => '808000',
-            'olivedrab' => '6B8E23',
-            'orange' => 'FFA500',
-            'orangered' => 'FF4500',
-            'orchid' => 'DA70D6',
-            'palegoldenrod' => 'EEE8AA',
-            'palegreen' => '98FB98',
-            'paleturquoise' => 'AFEEEE',
-            'palevioletred' => 'DB7093',
-            'papayawhip' => 'FFEFD5',
-            'peachpuff' => 'FFDAB9',
-            'peru' => 'CD853F',
-            'pink' => 'FFC0CB',
-            'plum' => 'DDA0DD',
-            'powderblue' => 'B0E0E6',
-            'purple' => '800080',
-            'rebeccapurple' => '663399',
-            'red' => 'FF0000',
-            'rosybrown' => 'BC8F8F',
-            'royalblue' => '4169E1',
-            'saddlebrown' => '8B4513',
-            'salmon' => 'FA8072',
-            'sandybrown' => 'F4A460',
-            'seagreen' => '2E8B57',
-            'seashell' => 'FFF5EE',
-            'sienna' => 'A0522D',
-            'silver' => 'C0C0C0',
-            'skyblue' => '87CEEB',
-            'slateblue' => '6A5ACD',
-            'slategray' => '708090',
-            'snow' => 'FFFAFA',
-            'springgreen' => '00FF7F',
-            'steelblue' => '4682B4',
-            'tan' => 'D2B48C',
-            'teal' => '008080',
-            'thistle' => 'D8BFD8',
-            'tomato' => 'FF6347',
-            'turquoise' => '40E0D0',
-            'violet' => 'EE82EE',
-            'wheat' => 'F5DEB3',
-            'white' => 'FFFFFF',
-            'whitesmoke' => 'F5F5F5',
-            'yellow' => 'FFFF00',
-            'yellowgreen' => '9ACD32',
-        ];
-
-        $name = strtolower($name);
-
-        if (array_key_exists($name, $colors)) {
-            return $colors[$name];
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+6AK1vD+iS05qM+5/1nAxZHHYJ0==

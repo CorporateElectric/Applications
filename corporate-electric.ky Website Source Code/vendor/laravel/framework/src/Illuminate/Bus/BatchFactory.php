@@ -1,58 +1,30 @@
-<?php
-
-namespace Illuminate\Bus;
-
-use Carbon\CarbonImmutable;
-use Illuminate\Contracts\Queue\Factory as QueueFactory;
-
-class BatchFactory
-{
-    /**
-     * The queue factory implementation.
-     *
-     * @var \Illuminate\Contracts\Queue\Factory
-     */
-    protected $queue;
-
-    /**
-     * Create a new batch factory instance.
-     *
-     * @param  \Illuminate\Contracts\Queue\Factory  $queue
-     * @return void
-     */
-    public function __construct(QueueFactory $queue)
-    {
-        $this->queue = $queue;
-    }
-
-    /**
-     * Create a new batch instance.
-     *
-     * @param  \Illuminate\Bus\BatchRepository  $repository
-     * @param  string  $id
-     * @param  string  $name
-     * @param  int  $totalJobs
-     * @param  int  $pendingJobs
-     * @param  int  $failedJobs
-     * @param  array  $failedJobIds
-     * @param  array  $options
-     * @param  \Carbon\CarbonImmutable  $createdAt
-     * @param  \Carbon\CarbonImmutable|null  $cancelledAt
-     * @param  \Carbon\CarbonImmutable|null  $finishedAt
-     * @return \Illuminate\Bus\Batch
-     */
-    public function make(BatchRepository $repository,
-                         string $id,
-                         string $name,
-                         int $totalJobs,
-                         int $pendingJobs,
-                         int $failedJobs,
-                         array $failedJobIds,
-                         array $options,
-                         CarbonImmutable $createdAt,
-                         ?CarbonImmutable $cancelledAt,
-                         ?CarbonImmutable $finishedAt)
-    {
-        return new Batch($this->queue, $repository, $id, $name, $totalJobs, $pendingJobs, $failedJobs, $failedJobIds, $options, $createdAt, $cancelledAt, $finishedAt);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

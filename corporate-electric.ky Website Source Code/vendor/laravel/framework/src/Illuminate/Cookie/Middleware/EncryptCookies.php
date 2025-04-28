@@ -1,194 +1,90 @@
-<?php
-
-namespace Illuminate\Cookie\Middleware;
-
-use Closure;
-use Illuminate\Contracts\Encryption\DecryptException;
-use Illuminate\Contracts\Encryption\Encrypter as EncrypterContract;
-use Illuminate\Cookie\CookieValuePrefix;
-use Symfony\Component\HttpFoundation\Cookie;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
-
-class EncryptCookies
-{
-    /**
-     * The encrypter instance.
-     *
-     * @var \Illuminate\Contracts\Encryption\Encrypter
-     */
-    protected $encrypter;
-
-    /**
-     * The names of the cookies that should not be encrypted.
-     *
-     * @var array
-     */
-    protected $except = [];
-
-    /**
-     * Indicates if cookies should be serialized.
-     *
-     * @var bool
-     */
-    protected static $serialize = false;
-
-    /**
-     * Create a new CookieGuard instance.
-     *
-     * @param  \Illuminate\Contracts\Encryption\Encrypter  $encrypter
-     * @return void
-     */
-    public function __construct(EncrypterContract $encrypter)
-    {
-        $this->encrypter = $encrypter;
-    }
-
-    /**
-     * Disable encryption for the given cookie name(s).
-     *
-     * @param  string|array  $name
-     * @return void
-     */
-    public function disableFor($name)
-    {
-        $this->except = array_merge($this->except, (array) $name);
-    }
-
-    /**
-     * Handle an incoming request.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure  $next
-     * @return \Symfony\Component\HttpFoundation\Response
-     */
-    public function handle($request, Closure $next)
-    {
-        return $this->encrypt($next($this->decrypt($request)));
-    }
-
-    /**
-     * Decrypt the cookies on the request.
-     *
-     * @param  \Symfony\Component\HttpFoundation\Request  $request
-     * @return \Symfony\Component\HttpFoundation\Request
-     */
-    protected function decrypt(Request $request)
-    {
-        foreach ($request->cookies as $key => $cookie) {
-            if ($this->isDisabled($key) || is_array($cookie)) {
-                continue;
-            }
-
-            try {
-                $value = $this->decryptCookie($key, $cookie);
-
-                $hasValidPrefix = strpos($value, CookieValuePrefix::create($key, $this->encrypter->getKey())) === 0;
-
-                $request->cookies->set(
-                    $key, $hasValidPrefix ? CookieValuePrefix::remove($value) : null
-                );
-            } catch (DecryptException $e) {
-                $request->cookies->set($key, null);
-            }
-        }
-
-        return $request;
-    }
-
-    /**
-     * Decrypt the given cookie and return the value.
-     *
-     * @param  string  $name
-     * @param  string|array  $cookie
-     * @return string|array
-     */
-    protected function decryptCookie($name, $cookie)
-    {
-        return is_array($cookie)
-                        ? $this->decryptArray($cookie)
-                        : $this->encrypter->decrypt($cookie, static::serialized($name));
-    }
-
-    /**
-     * Decrypt an array based cookie.
-     *
-     * @param  array  $cookie
-     * @return array
-     */
-    protected function decryptArray(array $cookie)
-    {
-        $decrypted = [];
-
-        foreach ($cookie as $key => $value) {
-            if (is_string($value)) {
-                $decrypted[$key] = $this->encrypter->decrypt($value, static::serialized($key));
-            }
-        }
-
-        return $decrypted;
-    }
-
-    /**
-     * Encrypt the cookies on an outgoing response.
-     *
-     * @param  \Symfony\Component\HttpFoundation\Response  $response
-     * @return \Symfony\Component\HttpFoundation\Response
-     */
-    protected function encrypt(Response $response)
-    {
-        foreach ($response->headers->getCookies() as $cookie) {
-            if ($this->isDisabled($cookie->getName())) {
-                continue;
-            }
-
-            $response->headers->setCookie($this->duplicate(
-                $cookie,
-                $this->encrypter->encrypt(
-                    CookieValuePrefix::create($cookie->getName(), $this->encrypter->getKey()).$cookie->getValue(),
-                    static::serialized($cookie->getName())
-                )
-            ));
-        }
-
-        return $response;
-    }
-
-    /**
-     * Duplicate a cookie with a new value.
-     *
-     * @param  \Symfony\Component\HttpFoundation\Cookie  $cookie
-     * @param  mixed  $value
-     * @return \Symfony\Component\HttpFoundation\Cookie
-     */
-    protected function duplicate(Cookie $cookie, $value)
-    {
-        return new Cookie(
-            $cookie->getName(), $value, $cookie->getExpiresTime(),
-            $cookie->getPath(), $cookie->getDomain(), $cookie->isSecure(),
-            $cookie->isHttpOnly(), $cookie->isRaw(), $cookie->getSameSite()
-        );
-    }
-
-    /**
-     * Determine whether encryption has been disabled for the given cookie.
-     *
-     * @param  string  $name
-     * @return bool
-     */
-    public function isDisabled($name)
-    {
-        return in_array($name, $this->except);
-    }
-
-    /**
-     * Determine if the cookie contents should be serialized.
-     *
-     * @param  string  $name
-     * @return bool
-     */
-    public static function serialized($name)
-    {
-        return static::$serialize;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+aC/KWLaZ3qZl5i3dnZRolRyPMs8=

@@ -1,69 +1,57 @@
-<?php
-
-namespace Illuminate\Bus;
-
-use Illuminate\Contracts\Bus\Dispatcher as DispatcherContract;
-use Illuminate\Contracts\Bus\QueueingDispatcher as QueueingDispatcherContract;
-use Illuminate\Contracts\Queue\Factory as QueueFactoryContract;
-use Illuminate\Contracts\Support\DeferrableProvider;
-use Illuminate\Support\ServiceProvider;
-
-class BusServiceProvider extends ServiceProvider implements DeferrableProvider
-{
-    /**
-     * Register the service provider.
-     *
-     * @return void
-     */
-    public function register()
-    {
-        $this->app->singleton(Dispatcher::class, function ($app) {
-            return new Dispatcher($app, function ($connection = null) use ($app) {
-                return $app[QueueFactoryContract::class]->connection($connection);
-            });
-        });
-
-        $this->registerBatchServices();
-
-        $this->app->alias(
-            Dispatcher::class, DispatcherContract::class
-        );
-
-        $this->app->alias(
-            Dispatcher::class, QueueingDispatcherContract::class
-        );
-    }
-
-    /**
-     * Register the batch handling services.
-     *
-     * @return void
-     */
-    protected function registerBatchServices()
-    {
-        $this->app->singleton(BatchRepository::class, DatabaseBatchRepository::class);
-
-        $this->app->singleton(DatabaseBatchRepository::class, function ($app) {
-            return new DatabaseBatchRepository(
-                $app->make(BatchFactory::class),
-                $app->make('db')->connection(config('queue.batching.database')),
-                config('queue.batching.table', 'job_batches')
-            );
-        });
-    }
-
-    /**
-     * Get the services provided by the provider.
-     *
-     * @return array
-     */
-    public function provides()
-    {
-        return [
-            Dispatcher::class,
-            DispatcherContract::class,
-            QueueingDispatcherContract::class,
-            BatchRepository::class,
-        ];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+uModxsxpCemf4Mmv6/IiERbnO86W

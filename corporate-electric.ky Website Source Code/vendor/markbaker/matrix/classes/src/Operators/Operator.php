@@ -1,78 +1,35 @@
-<?php
-
-namespace Matrix\Operators;
-
-use Matrix\Matrix;
-use Matrix\Exception;
-
-abstract class Operator
-{
-    /**
-     * Stored internally as a 2-dimension array of values
-     *
-     * @property mixed[][] $matrix
-     **/
-    protected $matrix;
-
-    /**
-     * Number of rows in the matrix
-     *
-     * @property integer $rows
-     **/
-    protected $rows;
-
-    /**
-     * Number of columns in the matrix
-     *
-     * @property integer $columns
-     **/
-    protected $columns;
-
-    /**
-     * Create an new handler object for the operation
-     *
-     * @param Matrix $matrix The base Matrix object on which the operation will be performed
-     */
-    public function __construct(Matrix $matrix)
-    {
-        $this->rows = $matrix->rows;
-        $this->columns = $matrix->columns;
-        $this->matrix = $matrix->toArray();
-    }
-
-    /**
-     * Compare the dimensions of the matrices being operated on to see if they are valid for addition/subtraction
-     *
-     * @param Matrix $matrix The second Matrix object on which the operation will be performed
-     * @throws Exception
-     */
-    protected function validateMatchingDimensions(Matrix $matrix): void
-    {
-        if (($this->rows != $matrix->rows) || ($this->columns != $matrix->columns)) {
-            throw new Exception('Matrices have mismatched dimensions');
-        }
-    }
-
-    /**
-     * Compare the dimensions of the matrices being operated on to see if they are valid for multiplication/division
-     *
-     * @param Matrix $matrix The second Matrix object on which the operation will be performed
-     * @throws Exception
-     */
-    protected function validateReflectingDimensions(Matrix $matrix): void
-    {
-        if ($this->columns != $matrix->rows) {
-            throw new Exception('Matrices have mismatched dimensions');
-        }
-    }
-
-    /**
-     * Return the result of the operation
-     *
-     * @return Matrix
-     */
-    public function result(): Matrix
-    {
-        return new Matrix($this->matrix);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+Tyfd2ECfjPbih/O6rIC=

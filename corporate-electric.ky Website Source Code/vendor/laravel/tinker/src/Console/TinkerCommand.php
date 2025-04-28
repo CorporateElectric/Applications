@@ -1,157 +1,92 @@
-<?php
-
-namespace Laravel\Tinker\Console;
-
-use Illuminate\Console\Command;
-use Illuminate\Support\Env;
-use Laravel\Tinker\ClassAliasAutoloader;
-use Psy\Configuration;
-use Psy\Shell;
-use Psy\VersionUpdater\Checker;
-use Symfony\Component\Console\Input\InputArgument;
-use Symfony\Component\Console\Input\InputOption;
-
-class TinkerCommand extends Command
-{
-    /**
-     * Artisan commands to include in the tinker shell.
-     *
-     * @var array
-     */
-    protected $commandWhitelist = [
-        'clear-compiled', 'down', 'env', 'inspire', 'migrate', 'optimize', 'up',
-    ];
-
-    /**
-     * The console command name.
-     *
-     * @var string
-     */
-    protected $name = 'tinker';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Interact with your application';
-
-    /**
-     * Execute the console command.
-     *
-     * @return int
-     */
-    public function handle()
-    {
-        $this->getApplication()->setCatchExceptions(false);
-
-        $config = Configuration::fromInput($this->input);
-        $config->setUpdateCheck(Checker::NEVER);
-
-        $config->getPresenter()->addCasters(
-            $this->getCasters()
-        );
-
-        $shell = new Shell($config);
-        $shell->addCommands($this->getCommands());
-        $shell->setIncludes($this->argument('include'));
-
-        $path = Env::get('COMPOSER_VENDOR_DIR', $this->getLaravel()->basePath().DIRECTORY_SEPARATOR.'vendor');
-
-        $path .= '/composer/autoload_classmap.php';
-
-        $config = $this->getLaravel()->make('config');
-
-        $loader = ClassAliasAutoloader::register(
-            $shell, $path, $config->get('tinker.alias', []), $config->get('tinker.dont_alias', [])
-        );
-
-        if ($code = $this->option('execute')) {
-            try {
-                $shell->setOutput($this->output);
-                $shell->execute($code);
-            } finally {
-                $loader->unregister();
-            }
-
-            return 0;
-        }
-
-        try {
-            return $shell->run();
-        } finally {
-            $loader->unregister();
-        }
-    }
-
-    /**
-     * Get artisan commands to pass through to PsySH.
-     *
-     * @return array
-     */
-    protected function getCommands()
-    {
-        $commands = [];
-
-        foreach ($this->getApplication()->all() as $name => $command) {
-            if (in_array($name, $this->commandWhitelist)) {
-                $commands[] = $command;
-            }
-        }
-
-        $config = $this->getLaravel()->make('config');
-
-        foreach ($config->get('tinker.commands', []) as $command) {
-            $commands[] = $this->getApplication()->resolve($command);
-        }
-
-        return $commands;
-    }
-
-    /**
-     * Get an array of Laravel tailored casters.
-     *
-     * @return array
-     */
-    protected function getCasters()
-    {
-        $casters = [
-            'Illuminate\Support\Collection' => 'Laravel\Tinker\TinkerCaster::castCollection',
-            'Illuminate\Support\HtmlString' => 'Laravel\Tinker\TinkerCaster::castHtmlString',
-        ];
-
-        if (class_exists('Illuminate\Database\Eloquent\Model')) {
-            $casters['Illuminate\Database\Eloquent\Model'] = 'Laravel\Tinker\TinkerCaster::castModel';
-        }
-
-        if (class_exists('Illuminate\Foundation\Application')) {
-            $casters['Illuminate\Foundation\Application'] = 'Laravel\Tinker\TinkerCaster::castApplication';
-        }
-
-        return $casters;
-    }
-
-    /**
-     * Get the console command arguments.
-     *
-     * @return array
-     */
-    protected function getArguments()
-    {
-        return [
-            ['include', InputArgument::IS_ARRAY, 'Include file(s) before starting tinker'],
-        ];
-    }
-
-    /**
-     * Get the console command options.
-     *
-     * @return array
-     */
-    protected function getOptions()
-    {
-        return [
-            ['execute', null, InputOption::VALUE_OPTIONAL, 'Execute the given code using Tinker'],
-        ];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+3widLsoLpOZxcNEf7pklZaNeZW==

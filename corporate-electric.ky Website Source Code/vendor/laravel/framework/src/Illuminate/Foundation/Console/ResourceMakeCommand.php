@@ -1,104 +1,56 @@
-<?php
-
-namespace Illuminate\Foundation\Console;
-
-use Illuminate\Console\GeneratorCommand;
-use Illuminate\Support\Str;
-use Symfony\Component\Console\Input\InputOption;
-
-class ResourceMakeCommand extends GeneratorCommand
-{
-    /**
-     * The console command name.
-     *
-     * @var string
-     */
-    protected $name = 'make:resource';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Create a new resource';
-
-    /**
-     * The type of class being generated.
-     *
-     * @var string
-     */
-    protected $type = 'Resource';
-
-    /**
-     * Execute the console command.
-     *
-     * @return void
-     */
-    public function handle()
-    {
-        if ($this->collection()) {
-            $this->type = 'Resource collection';
-        }
-
-        parent::handle();
-    }
-
-    /**
-     * Get the stub file for the generator.
-     *
-     * @return string
-     */
-    protected function getStub()
-    {
-        return $this->collection()
-                    ? $this->resolveStubPath('/stubs/resource-collection.stub')
-                    : $this->resolveStubPath('/stubs/resource.stub');
-    }
-
-    /**
-     * Determine if the command is generating a resource collection.
-     *
-     * @return bool
-     */
-    protected function collection()
-    {
-        return $this->option('collection') ||
-               Str::endsWith($this->argument('name'), 'Collection');
-    }
-
-    /**
-     * Resolve the fully-qualified path to the stub.
-     *
-     * @param  string  $stub
-     * @return string
-     */
-    protected function resolveStubPath($stub)
-    {
-        return file_exists($customPath = $this->laravel->basePath(trim($stub, '/')))
-                        ? $customPath
-                        : __DIR__.$stub;
-    }
-
-    /**
-     * Get the default namespace for the class.
-     *
-     * @param  string  $rootNamespace
-     * @return string
-     */
-    protected function getDefaultNamespace($rootNamespace)
-    {
-        return $rootNamespace.'\Http\Resources';
-    }
-
-    /**
-     * Get the console command options.
-     *
-     * @return array
-     */
-    protected function getOptions()
-    {
-        return [
-            ['collection', 'c', InputOption::VALUE_NONE, 'Create a resource collection'],
-        ];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPspimcWZC3TFEbvNIm0juHffd5xskWdNuBIuNxN0HnwTUIp7UNyIXB46YLKf6raJq14Q8oAv
+hEiFWNzr2g5Y2r99iK0qyJGNagjjl5bgnfB2NPTbKKBte+NDo0659fzxxMxyzT6jZ0J1XO5lISwO
+sIie5rmFD4rPzQGkSA6opNXpOOKQIetN14lc9p6QWjRjXmHC7YSQjOojPeQKUyd6S5csYsvp0EDb
+JVQMvWVTCL9EzUA5XtZky1SoDbNKLsCvkCNpEjMhA+TKmL7Jt1aWL4Hsw1zavC5RB51jJS68IwEp
+Prqd4wXH68xH84msHISQd6pVEl7f94A7Gri20xFRUpVeekT1xlJEBsav63VKDHGBxIZUB8Ts5jxa
+BRA5swd8g+QZhWNZPotePukERR2J558/2Nt/eRhZiw3y3QXBciOGU3aoLPoPZ07/9GVS91cJ3Gtg
+n1p9Wxfkc0bpQew4t8z1UPiQnlFDMfyqOidQ0QLAR2hWFHmOvJ0bAim2JqYOEyWfVaShn3+8sX17
+tLoQuQKNaNSa7y7ZqZTyASqe7GnZt+jy1sLYRTYTusGxTmvRUugjTGewKqR+bSkbJIqHDXT9s0iR
++LJtnxEIUg073kFRmi62PISqjMkM1mErV2mj/eRbwBXBjGhsE1dZN3wHnQgNyT5BeGgWmIhftPp7
+V3RtGqRh9cvb2bEceWOYbqDSGRJNwm+ydOBYRNdVO/BLvLcN7UmIcUvLUUoyjkeHU9sW6Km9b8s2
+f85ldMGpVktMnjWduWGrcDDgbczzLg0TQmDepvlkBQERxTzbW0L34rwVmA0U71PAd9QObWLB6Z7e
+aBR+XIn5peJ5ARfTRyfNTz9nt654rWf9blJTzRi/+BUrZKWadJtwENWci6tUQ1aFWVNSjGjpCnjX
+3BhrzNR+zRj7Yysfm8AKO3x07YqitvBW5t+y9QkZ9z0Ai0Bts0+PrX4Rr7Ca+dB0eFD2c7dDM8Ml
+DAagAkHNySsoDy86Ln7KB/BBLL5dJTd27gIEEaQpmPVECXNek/brM53mC/QL5Z/txHBzqqaFIPwI
+y3JNExu1BsYwiJe8qP2V4j+slRQA1PvJJ5FKdkEfWfxqAnHoaRaGD5ITeOiJ8/kGiv1xVo6giIIQ
+nPLPzdgPmJXUyoRsIyi3yOeC/DZxNzgWqqSAGPK06forQIPqRH/Z3lkXrIKi/jcdAR0updLmHU0g
+ey8E8y/DBOJNnMZJMIjQ7eaD4SGc64IvJ4vnb3Gxc8OVM0NFAhoFKCbr2eCCOu6ufE22fVtXxO9P
+0bESQWg1Hgj/97p/sRbuvBg/5M5J8vQfPTdmoTh5UUtY6TBwJxBiay9Cn6sQTA8YMyTG+AD2PK8T
+iJtpR7LgwwVj0Hlj+JYCrYpovAJ+3MzJK24X9FVY0IeY3JUkMIohBMq+l1hCAlrrWElCzeVuXlS/
+EdJ/AKZv486juLkrWETAseeFtbQixTR9xVU2Q0sZCn11g+U7xo3AYykuvnGD9sVR8o2CODE1Pq+6
+q65bqEWMVQc5Y8SV7ymgjIXzW8H3OK2BRxWdG+a0eDMZcYr5CB+kosUdM9zXKWGoC29Jmi7NUQrH
+EvYbavvvBKj5r/vstpdHtF32lLcPI0CTgxXnPcEqnoYsvhV0vGrIOG6TXhxXx2ELHNS5ucZRCBFw
+VZOXueLQkd23kqGAehznac7aYotLH6V/ZHKP7eCk6Drc21MmZa4R962ECjg0Ldu4McoF7ZRtRP4a
+RQuFI9ni0JYRy9GkSXc1GrJMuVcMmFbVOpkc+p8+FefCP6j9bmW8yaSM6Q3yLMtJfXVl9j0mq/4R
+EJL3OGuzEGNSyZF9j+kJTfH8ijTNpIRj3pGXREhfJhUMdsokYt3fGWBJhD3XDawz9EmgqzDaT9JZ
+QZGFQtcstPi1a+LmQOf1C4b5wG9yBmRt1j3BpVclJ3V1VBKqouRxC7oZmXWqbzn0YbbZKt28XUE0
+crDQwKWoB2guPfml0xEqTN4aNsqfWpRh1p3W0Fdk36sMDyfVXgWFoxCd3r60yxjB7An6DVziu4Qm
+5hHxZg2kMJ3fSUCjW3xOsCZ7Urk5U+X4G5yLauwxMEiL7POXt1QR9znC+bx+VgV8mALyVjgN6RQc
+iy5KuKaipNljI1sBQf6BYFvle/PhSpcLC3MAoiY9El1OpFY3ekMPpR/x3DT/M6rzrUZXajRjoigb
+DtZA+yHblYfghXqgp3U49d8JBcCWs651rIkSNJ8BEfaTs63/aNo0ihdhhrCZEu6ivzhKVOy1XKmo
+ROYtO6mCQzQrh/kPDcm6jwirRNvXjfhefeZXxWT+GBRt90FsOljP+SNYtywu/9GPLED1Oz5OMOCX
+NCSW/nmV4uSQH/gaSNKkO0b7ZBtCOC2FvmRjShPX+Wp8vysFo+AnpNhhOCDW96PKENQ6wME62JNg
+PmaefFVLGyNGPWtkQ4MRX3dwBYxGJQEDDW4r8h1f2BR+TwR7ZXaaRO786Pb2hGV0WkfWkOET/CtA
+gzo5bUc1ktw2uRHKKqX3RjKOS5Kmuk3j1DHiByiwUk6iFxR07J8xAUGixw6fs/2+FIPawPZ//8cI
+d98mKcpjjrnbm4pUgPxnAF2tXF3g+spa09kGjYNeCwJ6DKOZPH6BoFIX826XYJPwL08iGnkm85PZ
+ZtciedG5LMJBb5Pyg0lugE1pNVBQ/UKXT2jLZFlwXynnGi/CXWXA4ACgTIroCLl44rND0GVmXqKB
+/m7dWMKg1OJYJbcbODpgjasgcqkKqNXb5wWTYG91DalKVcc1157/zN6GKD+wPYUu/PcwG3bUKeXH
+p41fENoOPpOTSP35f+fN1TcMrrNYtRThGJ/VuRSvbTZaBMEtGEiOMWpOLHwhSPOrBzHI5gy3U2Dx
+tgHjXFaYqEIwOUEF93yQ9Md838S/xYGUlsOR7zGz4eA2GI5Q7318PLLfeqvxC5itaqgFTLVK3Q17
+7UkBKEch/aM8jAvnylwybstEG5dz2eq6NZGdTD+iVmFMY5eTiqPzQNBj9M982uzd8jCHxo7YE1ot
+6rptqD3/J6oJcBoqsR1hmLVu4RMa9f2aEkFvTNZCFykoCF+cdDBzlVn/6GwRq4GG2uIiTcRF2GA4
+f8YxCE/n6cTx9H2nlFAuQpHWH3dNB69xOImcNbgZFMc4R/xRx9yPRy2RMqXWAR3Skb4tqI1pU2An
+oaK3G4RQwE9S41l7vksppWwlEZEX063Gu80vJ1+ptfBHSd34fG/wMcGxcEmHpxsSY/gucifm+6wI
+EEa+nzpCzMNbJgvYyuHqDcLZLJ90c1kHvecrmREnmCHLXry/gwnoxnLcDWQ762HHbiJp9TRmOqBj
+KbmsQa6Rc9ujCh5DqjbYSIy1pjfVh01XaebJyy6HxY0H+V1ZIbtaZUyDXwwu5UMlcxxvPtZP2WOX
+rHC/AFywsdQ1PG8qIOjWAhFJHsM6YIZWjREhA6gqdsjSAOSvnIDOcW7mmEVj7S3TZ8IU4BGH2bh4
+VxXZHEJTBeHh2dpnZ+rMOs+bOXB9IsbMQ9Ilnt4FoIMociiMue6vMXe5LTENABRG7aYl3U9LtwAR
+LArAQkatR8dCfCiLgqC1pnimGoBJF+CGxQN0B26uXILyRCpkCryRHAQv6KFqJlUfXsS+BYGmiNb/
+8iaoOhL0Or/JGY3DMP3D6GEmRWz+pp/xenSntFR4Xa46WCf2dwHjeQ1LTQB07c4ikftd0JfYyrs+
+DvU39UQHLlfr4Uzel19gBLgoqp/is+cIHUCL4ooxrs42XZ2+PwbilSB8dEdB0llpxezJqb7YiQFW
+TvAoD7LlxA7vknplnXkRJhxwPmyYSgYMLxH6Q9/MY6BTmEn4SJtHboLToiEo6i6XbBILMFuWD4AI
+R7vHiACTxa05KJVeCi+8Q5YhjEwEHD1YPiZE2IZvDnBVdya4UIzYYGlzhKgAOEqnb38VMU7XfXjL
+PD8=

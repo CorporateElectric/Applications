@@ -1,79 +1,45 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Predis\Cluster;
-
-use Predis\Cluster\Distributor\DistributorInterface;
-use Predis\Cluster\Distributor\HashRing;
-
-/**
- * Default cluster strategy used by Predis to handle client-side sharding.
- *
- * @author Daniele Alessandri <suppakilla@gmail.com>
- */
-class PredisStrategy extends ClusterStrategy
-{
-    protected $distributor;
-
-    /**
-     * @param DistributorInterface $distributor Optional distributor instance.
-     */
-    public function __construct(DistributorInterface $distributor = null)
-    {
-        parent::__construct();
-
-        $this->distributor = $distributor ?: new HashRing();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getSlotByKey($key)
-    {
-        $key = $this->extractKeyTag($key);
-        $hash = $this->distributor->hash($key);
-        $slot = $this->distributor->getSlot($hash);
-
-        return $slot;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function checkSameSlotForKeys(array $keys)
-    {
-        if (!$count = count($keys)) {
-            return false;
-        }
-
-        $currentKey = $this->extractKeyTag($keys[0]);
-
-        for ($i = 1; $i < $count; ++$i) {
-            $nextKey = $this->extractKeyTag($keys[$i]);
-
-            if ($currentKey !== $nextKey) {
-                return false;
-            }
-
-            $currentKey = $nextKey;
-        }
-
-        return true;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getDistributor()
-    {
-        return $this->distributor;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+hBKMzDi=

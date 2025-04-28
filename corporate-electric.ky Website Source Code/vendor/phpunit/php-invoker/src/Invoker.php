@@ -1,69 +1,43 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of phpunit/php-invoker.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\Invoker;
-
-use const SIGALRM;
-use function call_user_func_array;
-use function function_exists;
-use function pcntl_alarm;
-use function pcntl_async_signals;
-use function pcntl_signal;
-use function sprintf;
-use Throwable;
-
-final class Invoker
-{
-    /**
-     * @var int
-     */
-    private $timeout;
-
-    /**
-     * @throws Throwable
-     */
-    public function invoke(callable $callable, array $arguments, int $timeout)
-    {
-        if (!$this->canInvokeWithTimeout()) {
-            throw new ProcessControlExtensionNotLoadedException(
-                'The pcntl (process control) extension for PHP is required'
-            );
-        }
-
-        pcntl_signal(
-            SIGALRM,
-            function (): void {
-                throw new TimeoutException(
-                    sprintf(
-                        'Execution aborted after %d second%s',
-                        $this->timeout,
-                        $this->timeout === 1 ? '' : 's'
-                    )
-                );
-            },
-            true
-        );
-
-        $this->timeout = $timeout;
-
-        pcntl_async_signals(true);
-        pcntl_alarm($timeout);
-
-        try {
-            return call_user_func_array($callable, $arguments);
-        } finally {
-            pcntl_alarm(0);
-        }
-    }
-
-    public function canInvokeWithTimeout(): bool
-    {
-        return function_exists('pcntl_signal') && function_exists('pcntl_async_signals') && function_exists('pcntl_alarm');
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+UtyDRjXK8mkG4VedbCwWLjc/f0==

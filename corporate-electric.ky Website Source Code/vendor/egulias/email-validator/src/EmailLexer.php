@@ -1,283 +1,88 @@
-<?php
-
-namespace Egulias\EmailValidator;
-
-use Doctrine\Common\Lexer\AbstractLexer;
-
-class EmailLexer extends AbstractLexer
-{
-    //ASCII values
-    const C_DEL              = 127;
-    const C_NUL              = 0;
-    const S_AT               = 64;
-    const S_BACKSLASH        = 92;
-    const S_DOT              = 46;
-    const S_DQUOTE           = 34;
-    const S_SQUOTE           = 39;
-    const S_BACKTICK         = 96;
-    const S_OPENPARENTHESIS  = 49;
-    const S_CLOSEPARENTHESIS = 261;
-    const S_OPENBRACKET      = 262;
-    const S_CLOSEBRACKET     = 263;
-    const S_HYPHEN           = 264;
-    const S_COLON            = 265;
-    const S_DOUBLECOLON      = 266;
-    const S_SP               = 267;
-    const S_HTAB             = 268;
-    const S_CR               = 269;
-    const S_LF               = 270;
-    const S_IPV6TAG          = 271;
-    const S_LOWERTHAN        = 272;
-    const S_GREATERTHAN      = 273;
-    const S_COMMA            = 274;
-    const S_SEMICOLON        = 275;
-    const S_OPENQBRACKET     = 276;
-    const S_CLOSEQBRACKET    = 277;
-    const S_SLASH            = 278;
-    const S_EMPTY            = null;
-    const GENERIC            = 300;
-    const CRLF               = 301;
-    const INVALID            = 302;
-    const ASCII_INVALID_FROM = 127;
-    const ASCII_INVALID_TO   = 199;
-
-    /**
-     * US-ASCII visible characters not valid for atext (@link http://tools.ietf.org/html/rfc5322#section-3.2.3)
-     *
-     * @var array
-     */
-    protected $charValue = array(
-        '('    => self::S_OPENPARENTHESIS,
-        ')'    => self::S_CLOSEPARENTHESIS,
-        '<'    => self::S_LOWERTHAN,
-        '>'    => self::S_GREATERTHAN,
-        '['    => self::S_OPENBRACKET,
-        ']'    => self::S_CLOSEBRACKET,
-        ':'    => self::S_COLON,
-        ';'    => self::S_SEMICOLON,
-        '@'    => self::S_AT,
-        '\\'   => self::S_BACKSLASH,
-        '/'    => self::S_SLASH,
-        ','    => self::S_COMMA,
-        '.'    => self::S_DOT,
-        "'"    => self::S_SQUOTE,
-        "`"    => self::S_BACKTICK,
-        '"'    => self::S_DQUOTE,
-        '-'    => self::S_HYPHEN,
-        '::'   => self::S_DOUBLECOLON,
-        ' '    => self::S_SP,
-        "\t"   => self::S_HTAB,
-        "\r"   => self::S_CR,
-        "\n"   => self::S_LF,
-        "\r\n" => self::CRLF,
-        'IPv6' => self::S_IPV6TAG,
-        '{'    => self::S_OPENQBRACKET,
-        '}'    => self::S_CLOSEQBRACKET,
-        ''     => self::S_EMPTY,
-        '\0'   => self::C_NUL,
-    );
-
-    /**
-     * @var bool
-     */
-    protected $hasInvalidTokens = false;
-
-    /**
-     * @var array
-     *
-     * @psalm-var array{value:string, type:null|int, position:int}|array<empty, empty>
-     */
-    protected $previous = [];
-
-    /**
-     * The last matched/seen token.
-     *
-     * @var array
-     *
-     * @psalm-var array{value:string, type:null|int, position:int}
-     */
-    public $token;
-
-    /**
-     * The next token in the input.
-     *
-     * @var array|null
-     */
-    public $lookahead;
-
-    /**
-     * @psalm-var array{value:'', type:null, position:0}
-     */
-    private static $nullToken = [
-        'value' => '',
-        'type' => null,
-        'position' => 0,
-    ];
-
-    public function __construct()
-    {
-        $this->previous = $this->token = self::$nullToken;
-        $this->lookahead = null;
-    }
-
-    /**
-     * @return void
-     */
-    public function reset()
-    {
-        $this->hasInvalidTokens = false;
-        parent::reset();
-        $this->previous = $this->token = self::$nullToken;
-    }
-
-    /**
-     * @return bool
-     */
-    public function hasInvalidTokens()
-    {
-        return $this->hasInvalidTokens;
-    }
-
-    /**
-     * @param int $type
-     * @throws \UnexpectedValueException
-     * @return boolean
-     *
-     * @psalm-suppress InvalidScalarArgument
-     */
-    public function find($type)
-    {
-        $search = clone $this;
-        $search->skipUntil($type);
-
-        if (!$search->lookahead) {
-            throw new \UnexpectedValueException($type . ' not found');
-        }
-        return true;
-    }
-
-    /**
-     * getPrevious
-     *
-     * @return array
-     */
-    public function getPrevious()
-    {
-        return $this->previous;
-    }
-
-    /**
-     * moveNext
-     *
-     * @return boolean
-     */
-    public function moveNext()
-    {
-        $this->previous = $this->token;
-        $hasNext = parent::moveNext();
-        $this->token = $this->token ?: self::$nullToken;
-
-        return $hasNext;
-    }
-
-    /**
-     * Lexical catchable patterns.
-     *
-     * @return string[]
-     */
-    protected function getCatchablePatterns()
-    {
-        return array(
-            '[a-zA-Z_]+[46]?', //ASCII and domain literal
-            '[^\x00-\x7F]',  //UTF-8
-            '[0-9]+',
-            '\r\n',
-            '::',
-            '\s+?',
-            '.',
-            );
-    }
-
-    /**
-     * Lexical non-catchable patterns.
-     *
-     * @return string[]
-     */
-    protected function getNonCatchablePatterns()
-    {
-        return array('[\xA0-\xff]+');
-    }
-
-    /**
-     * Retrieve token type. Also processes the token value if necessary.
-     *
-     * @param string $value
-     * @throws \InvalidArgumentException
-     * @return integer
-     */
-    protected function getType(&$value)
-    {
-        if ($this->isNullType($value)) {
-            return self::C_NUL;
-        }
-
-        if ($this->isValid($value)) {
-            return $this->charValue[$value];
-        }
-
-        if ($this->isUTF8Invalid($value)) {
-            $this->hasInvalidTokens = true;
-            return self::INVALID;
-        }
-
-        return  self::GENERIC;
-    }
-
-    /**
-     * @param string $value
-     *
-     * @return bool
-     */
-    protected function isValid($value)
-    {
-        if (isset($this->charValue[$value])) {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * @param string $value
-     * @return bool
-     */
-    protected function isNullType($value)
-    {
-        if ($value === "\0") {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * @param string $value
-     * @return bool
-     */
-    protected function isUTF8Invalid($value)
-    {
-        if (preg_match('/\p{Cc}+/u', $value)) {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * @return string
-     */
-    protected function getModifiers()
-    {
-        return 'iu';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

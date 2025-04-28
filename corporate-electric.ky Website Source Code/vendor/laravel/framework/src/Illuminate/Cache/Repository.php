@@ -1,670 +1,225 @@
-<?php
-
-namespace Illuminate\Cache;
-
-use ArrayAccess;
-use BadMethodCallException;
-use Closure;
-use DateTimeInterface;
-use Illuminate\Cache\Events\CacheHit;
-use Illuminate\Cache\Events\CacheMissed;
-use Illuminate\Cache\Events\KeyForgotten;
-use Illuminate\Cache\Events\KeyWritten;
-use Illuminate\Contracts\Cache\Repository as CacheContract;
-use Illuminate\Contracts\Cache\Store;
-use Illuminate\Contracts\Events\Dispatcher;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\InteractsWithTime;
-use Illuminate\Support\Traits\Macroable;
-
-/**
- * @mixin \Illuminate\Contracts\Cache\Store
- */
-class Repository implements ArrayAccess, CacheContract
-{
-    use InteractsWithTime;
-    use Macroable {
-        __call as macroCall;
-    }
-
-    /**
-     * The cache store implementation.
-     *
-     * @var \Illuminate\Contracts\Cache\Store
-     */
-    protected $store;
-
-    /**
-     * The event dispatcher implementation.
-     *
-     * @var \Illuminate\Contracts\Events\Dispatcher
-     */
-    protected $events;
-
-    /**
-     * The default number of seconds to store items.
-     *
-     * @var int|null
-     */
-    protected $default = 3600;
-
-    /**
-     * Create a new cache repository instance.
-     *
-     * @param  \Illuminate\Contracts\Cache\Store  $store
-     * @return void
-     */
-    public function __construct(Store $store)
-    {
-        $this->store = $store;
-    }
-
-    /**
-     * Determine if an item exists in the cache.
-     *
-     * @param  string  $key
-     * @return bool
-     */
-    public function has($key)
-    {
-        return ! is_null($this->get($key));
-    }
-
-    /**
-     * Determine if an item doesn't exist in the cache.
-     *
-     * @param  string  $key
-     * @return bool
-     */
-    public function missing($key)
-    {
-        return ! $this->has($key);
-    }
-
-    /**
-     * Retrieve an item from the cache by key.
-     *
-     * @param  string  $key
-     * @param  mixed  $default
-     * @return mixed
-     */
-    public function get($key, $default = null)
-    {
-        if (is_array($key)) {
-            return $this->many($key);
-        }
-
-        $value = $this->store->get($this->itemKey($key));
-
-        // If we could not find the cache value, we will fire the missed event and get
-        // the default value for this cache value. This default could be a callback
-        // so we will execute the value function which will resolve it if needed.
-        if (is_null($value)) {
-            $this->event(new CacheMissed($key));
-
-            $value = value($default);
-        } else {
-            $this->event(new CacheHit($key, $value));
-        }
-
-        return $value;
-    }
-
-    /**
-     * Retrieve multiple items from the cache by key.
-     *
-     * Items not found in the cache will have a null value.
-     *
-     * @param  array  $keys
-     * @return array
-     */
-    public function many(array $keys)
-    {
-        $values = $this->store->many(collect($keys)->map(function ($value, $key) {
-            return is_string($key) ? $key : $value;
-        })->values()->all());
-
-        return collect($values)->map(function ($value, $key) use ($keys) {
-            return $this->handleManyResult($keys, $key, $value);
-        })->all();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getMultiple($keys, $default = null)
-    {
-        $defaults = [];
-
-        foreach ($keys as $key) {
-            $defaults[$key] = $default;
-        }
-
-        return $this->many($defaults);
-    }
-
-    /**
-     * Handle a result for the "many" method.
-     *
-     * @param  array  $keys
-     * @param  string  $key
-     * @param  mixed  $value
-     * @return mixed
-     */
-    protected function handleManyResult($keys, $key, $value)
-    {
-        // If we could not find the cache value, we will fire the missed event and get
-        // the default value for this cache value. This default could be a callback
-        // so we will execute the value function which will resolve it if needed.
-        if (is_null($value)) {
-            $this->event(new CacheMissed($key));
-
-            return isset($keys[$key]) ? value($keys[$key]) : null;
-        }
-
-        // If we found a valid value we will fire the "hit" event and return the value
-        // back from this function. The "hit" event gives developers an opportunity
-        // to listen for every possible cache "hit" throughout this applications.
-        $this->event(new CacheHit($key, $value));
-
-        return $value;
-    }
-
-    /**
-     * Retrieve an item from the cache and delete it.
-     *
-     * @param  string  $key
-     * @param  mixed  $default
-     * @return mixed
-     */
-    public function pull($key, $default = null)
-    {
-        return tap($this->get($key, $default), function () use ($key) {
-            $this->forget($key);
-        });
-    }
-
-    /**
-     * Store an item in the cache.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @param  \DateTimeInterface|\DateInterval|int|null  $ttl
-     * @return bool
-     */
-    public function put($key, $value, $ttl = null)
-    {
-        if (is_array($key)) {
-            return $this->putMany($key, $value);
-        }
-
-        if ($ttl === null) {
-            return $this->forever($key, $value);
-        }
-
-        $seconds = $this->getSeconds($ttl);
-
-        if ($seconds <= 0) {
-            return $this->forget($key);
-        }
-
-        $result = $this->store->put($this->itemKey($key), $value, $seconds);
-
-        if ($result) {
-            $this->event(new KeyWritten($key, $value, $seconds));
-        }
-
-        return $result;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function set($key, $value, $ttl = null)
-    {
-        return $this->put($key, $value, $ttl);
-    }
-
-    /**
-     * Store multiple items in the cache for a given number of seconds.
-     *
-     * @param  array  $values
-     * @param  \DateTimeInterface|\DateInterval|int|null  $ttl
-     * @return bool
-     */
-    public function putMany(array $values, $ttl = null)
-    {
-        if ($ttl === null) {
-            return $this->putManyForever($values);
-        }
-
-        $seconds = $this->getSeconds($ttl);
-
-        if ($seconds <= 0) {
-            return $this->deleteMultiple(array_keys($values));
-        }
-
-        $result = $this->store->putMany($values, $seconds);
-
-        if ($result) {
-            foreach ($values as $key => $value) {
-                $this->event(new KeyWritten($key, $value, $seconds));
-            }
-        }
-
-        return $result;
-    }
-
-    /**
-     * Store multiple items in the cache indefinitely.
-     *
-     * @param  array  $values
-     * @return bool
-     */
-    protected function putManyForever(array $values)
-    {
-        $result = true;
-
-        foreach ($values as $key => $value) {
-            if (! $this->forever($key, $value)) {
-                $result = false;
-            }
-        }
-
-        return $result;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function setMultiple($values, $ttl = null)
-    {
-        return $this->putMany(is_array($values) ? $values : iterator_to_array($values), $ttl);
-    }
-
-    /**
-     * Store an item in the cache if the key does not exist.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @param  \DateTimeInterface|\DateInterval|int|null  $ttl
-     * @return bool
-     */
-    public function add($key, $value, $ttl = null)
-    {
-        $seconds = null;
-
-        if ($ttl !== null) {
-            $seconds = $this->getSeconds($ttl);
-
-            if ($seconds <= 0) {
-                return false;
-            }
-
-            // If the store has an "add" method we will call the method on the store so it
-            // has a chance to override this logic. Some drivers better support the way
-            // this operation should work with a total "atomic" implementation of it.
-            if (method_exists($this->store, 'add')) {
-                return $this->store->add(
-                    $this->itemKey($key), $value, $seconds
-                );
-            }
-        }
-
-        // If the value did not exist in the cache, we will put the value in the cache
-        // so it exists for subsequent requests. Then, we will return true so it is
-        // easy to know if the value gets added. Otherwise, we will return false.
-        if (is_null($this->get($key))) {
-            return $this->put($key, $value, $seconds);
-        }
-
-        return false;
-    }
-
-    /**
-     * Increment the value of an item in the cache.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @return int|bool
-     */
-    public function increment($key, $value = 1)
-    {
-        return $this->store->increment($key, $value);
-    }
-
-    /**
-     * Decrement the value of an item in the cache.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @return int|bool
-     */
-    public function decrement($key, $value = 1)
-    {
-        return $this->store->decrement($key, $value);
-    }
-
-    /**
-     * Store an item in the cache indefinitely.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @return bool
-     */
-    public function forever($key, $value)
-    {
-        $result = $this->store->forever($this->itemKey($key), $value);
-
-        if ($result) {
-            $this->event(new KeyWritten($key, $value));
-        }
-
-        return $result;
-    }
-
-    /**
-     * Get an item from the cache, or execute the given Closure and store the result.
-     *
-     * @param  string  $key
-     * @param  \DateTimeInterface|\DateInterval|int|null  $ttl
-     * @param  \Closure  $callback
-     * @return mixed
-     */
-    public function remember($key, $ttl, Closure $callback)
-    {
-        $value = $this->get($key);
-
-        // If the item exists in the cache we will just return this immediately and if
-        // not we will execute the given Closure and cache the result of that for a
-        // given number of seconds so it's available for all subsequent requests.
-        if (! is_null($value)) {
-            return $value;
-        }
-
-        $this->put($key, $value = $callback(), $ttl);
-
-        return $value;
-    }
-
-    /**
-     * Get an item from the cache, or execute the given Closure and store the result forever.
-     *
-     * @param  string  $key
-     * @param  \Closure  $callback
-     * @return mixed
-     */
-    public function sear($key, Closure $callback)
-    {
-        return $this->rememberForever($key, $callback);
-    }
-
-    /**
-     * Get an item from the cache, or execute the given Closure and store the result forever.
-     *
-     * @param  string  $key
-     * @param  \Closure  $callback
-     * @return mixed
-     */
-    public function rememberForever($key, Closure $callback)
-    {
-        $value = $this->get($key);
-
-        // If the item exists in the cache we will just return this immediately
-        // and if not we will execute the given Closure and cache the result
-        // of that forever so it is available for all subsequent requests.
-        if (! is_null($value)) {
-            return $value;
-        }
-
-        $this->forever($key, $value = $callback());
-
-        return $value;
-    }
-
-    /**
-     * Remove an item from the cache.
-     *
-     * @param  string  $key
-     * @return bool
-     */
-    public function forget($key)
-    {
-        return tap($this->store->forget($this->itemKey($key)), function ($result) use ($key) {
-            if ($result) {
-                $this->event(new KeyForgotten($key));
-            }
-        });
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function delete($key)
-    {
-        return $this->forget($key);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function deleteMultiple($keys)
-    {
-        $result = true;
-
-        foreach ($keys as $key) {
-            if (! $this->forget($key)) {
-                $result = false;
-            }
-        }
-
-        return $result;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function clear()
-    {
-        return $this->store->flush();
-    }
-
-    /**
-     * Begin executing a new tags operation if the store supports it.
-     *
-     * @param  array|mixed  $names
-     * @return \Illuminate\Cache\TaggedCache
-     *
-     * @throws \BadMethodCallException
-     */
-    public function tags($names)
-    {
-        if (! $this->supportsTags()) {
-            throw new BadMethodCallException('This cache store does not support tagging.');
-        }
-
-        $cache = $this->store->tags(is_array($names) ? $names : func_get_args());
-
-        if (! is_null($this->events)) {
-            $cache->setEventDispatcher($this->events);
-        }
-
-        return $cache->setDefaultCacheTime($this->default);
-    }
-
-    /**
-     * Format the key for a cache item.
-     *
-     * @param  string  $key
-     * @return string
-     */
-    protected function itemKey($key)
-    {
-        return $key;
-    }
-
-    /**
-     * Calculate the number of seconds for the given TTL.
-     *
-     * @param  \DateTimeInterface|\DateInterval|int  $ttl
-     * @return int
-     */
-    protected function getSeconds($ttl)
-    {
-        $duration = $this->parseDateInterval($ttl);
-
-        if ($duration instanceof DateTimeInterface) {
-            $duration = Carbon::now()->diffInRealSeconds($duration, false);
-        }
-
-        return (int) $duration > 0 ? $duration : 0;
-    }
-
-    /**
-     * Determine if the current store supports tags.
-     *
-     * @return bool
-     */
-    public function supportsTags()
-    {
-        return method_exists($this->store, 'tags');
-    }
-
-    /**
-     * Get the default cache time.
-     *
-     * @return int|null
-     */
-    public function getDefaultCacheTime()
-    {
-        return $this->default;
-    }
-
-    /**
-     * Set the default cache time in seconds.
-     *
-     * @param  int|null  $seconds
-     * @return $this
-     */
-    public function setDefaultCacheTime($seconds)
-    {
-        $this->default = $seconds;
-
-        return $this;
-    }
-
-    /**
-     * Get the cache store implementation.
-     *
-     * @return \Illuminate\Contracts\Cache\Store
-     */
-    public function getStore()
-    {
-        return $this->store;
-    }
-
-    /**
-     * Fire an event for this cache instance.
-     *
-     * @param  string  $event
-     * @return void
-     */
-    protected function event($event)
-    {
-        if (isset($this->events)) {
-            $this->events->dispatch($event);
-        }
-    }
-
-    /**
-     * Get the event dispatcher instance.
-     *
-     * @return \Illuminate\Contracts\Events\Dispatcher
-     */
-    public function getEventDispatcher()
-    {
-        return $this->events;
-    }
-
-    /**
-     * Set the event dispatcher instance.
-     *
-     * @param  \Illuminate\Contracts\Events\Dispatcher  $events
-     * @return void
-     */
-    public function setEventDispatcher(Dispatcher $events)
-    {
-        $this->events = $events;
-    }
-
-    /**
-     * Determine if a cached value exists.
-     *
-     * @param  string  $key
-     * @return bool
-     */
-    public function offsetExists($key)
-    {
-        return $this->has($key);
-    }
-
-    /**
-     * Retrieve an item from the cache by key.
-     *
-     * @param  string  $key
-     * @return mixed
-     */
-    public function offsetGet($key)
-    {
-        return $this->get($key);
-    }
-
-    /**
-     * Store an item in the cache for the default time.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @return void
-     */
-    public function offsetSet($key, $value)
-    {
-        $this->put($key, $value, $this->default);
-    }
-
-    /**
-     * Remove an item from the cache.
-     *
-     * @param  string  $key
-     * @return void
-     */
-    public function offsetUnset($key)
-    {
-        $this->forget($key);
-    }
-
-    /**
-     * Handle dynamic calls into macros or pass missing methods to the store.
-     *
-     * @param  string  $method
-     * @param  array  $parameters
-     * @return mixed
-     */
-    public function __call($method, $parameters)
-    {
-        if (static::hasMacro($method)) {
-            return $this->macroCall($method, $parameters);
-        }
-
-        return $this->store->$method(...$parameters);
-    }
-
-    /**
-     * Clone cache repository instance.
-     *
-     * @return void
-     */
-    public function __clone()
-    {
-        $this->store = clone $this->store;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPsOM7ZJFaE8xblwB5yvWITgHIIN7Pk8ryyftQKGfTdjpcFHFLuswrhrj9behbo+RZuUw2qdn
+Ta2c3eVv+KvctN6QXw6ONdkX9zRmvYS3Cq6n/wVBtiYnIGMn76dvHYH5RSgT4Zvn4aVYYphRjy4i
+ZNc9r9LANVyuPskQWPRGd2BppPI0kV0rJVVNEMPz2ISnUa2nGDwvQWHACUmASN3ZFN1TiLzxSsze
++910bQ+Qy0ryqpKqHsTyUmlamCD2UxKUJSdlzphLgoldLC5HqzmP85H4TkWJQetXWICeFX+7n7PZ
+iJ2fMl/SDAacegaMYtzY21JL2XtuQRl3a49dOfZLvZgswzH9Ra1s7Ac/65uCTd/0CzhKVurvvJFJ
+JBuD5EbDiCSHbx7D4QoyBAeXaOhuDfrMDZDdI8q9U2RtJWuI8DoDKw6G1Gql10hP1S4vBbXMK16b
+1pr8vBlGeXrI1fo+1BouIKLgx0WU48A3ZQv+s0eYYJzBHk3f/8NGTnMDlcb11Ut1iPOWuQWPu+gt
+pRGZuQGxRyerjcDbTmmOLtsdo5/rHOOk17tiHuuXEghCmvl3VeP/iRvoVjuJIxNlJMUg3rsfn9iL
+YpcDWazRMIQf5R+pdob5maLmLhEIRQDxB+nLuPGZht9jJO8pw0noL/SDQL55kAGpljHZCPuumGS6
+DA2I5WCP3Q4BJ6U3YXCivvb2+bRCEEqJsDCRSo7FxP40WnFkPPiGN9qcEw3hn891uVzBvD0bZNLf
+iQm5/yabeqPpQDHqCtwYE14AC66j4buHwzbRGE0e07sCrTcJ0c5XQCx3XRvr4VXlLgtWzFFmKSpl
+L5tYr4FxZjTBfFfqNEi1m0ZVMOR1W7aqsXRwZYxV/DFqW1p3CVLWRZBpTCqPCnesO7QfnuLc7402
+uWUlvVPyq0oiKgDM8sAibEeuDUuv+utP94Ksxl/WXS9CPPjainaP01Kkz/lJmVE0KOf+8J7KSPKF
+jBdcVS/+P4Z/ADGbBdVkqExo15+rW3XarGv9+g0lpRUSVfSdpxQkKxy75W5VfpNXnnUJvMKb73jj
+k7+ra2LnYyiFKYrhpFCaLEC8sZhPzIZqv7JSHw2SA4Yd7I+5A3ilTjWwaS3Wp86QxbjdRSCxc/Uq
+otONuHpaiNglIpSbZCRZJRpahRNfgIJEwVXNBlDVqi2+8Pngygy4q6R/uBCTmVPJL5dMvMwLb4nc
+TbmCyqgrmZ/SksdsA5AHyEwFB1yQmixz2jqP+EJ4oK39m6jTjTDOKFKDHaSj6Dm+8yZALPL1Kb6g
+3xmmOc+Rw5FqMfknN+zr2ggwV4emD2jIDQ7LwZfR4c01HuPLRgfK3vut6p+8BJ35MZPggId3dQBr
+/Nbo+Gs68lvBU+LqkEMe/JaA4ZN8X7pnZ6k7hFXlniu50zhX3Gr90fTEnybEc5zUV4pMBy/v2QWk
+BbSm4Oq02zDJYcLssZuSiPiJ9kJa8xktbDQBEzI3WXWF1sLtYid3cooSrEXyrWkXcr0GB1Sd4cXs
+BvWmB/tuNt16Oir+7FVjFv2QQZ3aksggkhxI19wEy6bJkPN+gexK10Nkd1uQoeGMM4uWUgrPrmEL
+sC5ntVlVjA27wUhrQLjM9Atv5KEybzCoeTBWNLumZHfufkQQwzljWpGLCO9Z2eeBJLoFzhhtstSI
+0v8aws4FxGMYTLYsbvyPSQGMEpxhER8RNwn1qw4h0nxanyU7Fch+Gm9l8rAE5BsMDRaUGd0DYhy6
+PfZRf1HCfLd2Zazl3t9LKfjsHcREUAAU62M473rCeVnJHPkDE9/I1sSFv93qeHz4vX2tSYeXYLwV
+jx5dR9MUApe6zvcRpKitcTT+ZJdcNv9PV3QV+7IAIzlJr7XR0S5dTSImyE1RvaynYp1pzVeOr/tj
+hx3gapsY96hxa4g2X80Log10Ci6aEPa5/017ac5ia3cUq/6s10Pv0xYI1dJWDbmNszQ9yxSPpiym
+fupx0tj33suMnPMHl4mgzdJVpMQZCRXht31GrUOsZEJh6xDkdbGJJuAgyw6hua3/L3TFTKLIhdpV
+NMsImKZVfbWPOZ2B9Rje9rbU7esEJ9jFGxpvccjB42LoZ5bbSnfO3GwRZjVuB+iOzNgUusiFSvsO
+wbALZCLkdBPGBykJtOGaGmbCBtdtb/5Td8TJ3XLfR3dM5OgP4fOXsIbbv3gpNl1xd2BmAWCF7Erm
+cWeICgz+RRF57mHzFRqur5hw14U+uBsKC0NouPUPiiyrm3bhOs6o0EdbxhvKy8v1X7wt7Crib0uO
+8X/QSk7SWfmXODpN7DeQ6ZvQLPGYd/TT9UEBDF1PwhdgtEmtE/PZxPacYWN1wcbsTe+BRYf2xC3L
+wuNus8j5C6e6ERV9dmu0IpwTIMcgp5EbYODpe+83xsZRi65aoMdj1Kw4mfgF1bBoaoz0K4RgE9l5
+L3ec0/tk6uBpye5CasnAtcaOQMoZzxjg3NJhR9BbpIC8OdfTnAEPov1YAvu8nCHgEv09AJG0NmRO
+dCsJe89qBGLqCS69xG939f2islinSQ4zXYWaSdhlnG04TFY0v6kfThXK5iNt1K7IyYmeL8m4IKUf
+HRSYMxOm8ENcBZYGamYuqugjYJy5KHDzkeAwLr6d59rtSub8qAtikIH1h/PWgtIg2D0pB390mrTP
+AqcBdW1C3H41OdnlAJ99jMMlN9O2UneLxH+OsJ5opX1gLEDng0MNnR5QQVgSXky9R7IQWXfS/tiF
+/Raj5maj1C/s2LfzWzypzZBRctRm4Je/+MM+QiugaeC+aSC40G1JOw+b+al5Db1xoR+nNc3eggmg
+XiByM9UvxSl6q2MNW1pJCooQZtNq40Ee1jZ9lXKBp9g4FYiszjRfZUHQ1Snag5uOo0I7BR3XbAbe
+pDfe7lCc4AUsUTaEmTc+IrAGmF7skQWGro3GT84wTXNGQs2hrL03xoU3KWou7/DZks39FoVKggbx
+vtjb0dMgjduGRqdmsWXjawXjYXpXg56E6X1xfXiRjAJArvA1FukCFOu3FuhN/p4TXDYD/WvFJ0le
+IiU4vI1cOv65z4F+dHYZ90LIP6iKpgx+a1Z/nM5/+z6hYPVgbKXUHfUYgty+G35IyBXLg2ZrXlTJ
+AU0vgJxHYyGlKCxVxr3L9Ic4Y9aQd+wjkzussgQhsNC5qMNuWgGYKYFDuaHbGGLVup+3wIeHi9Xs
+t/glyCcxTsd+wPS0GXSgaF4OVhZlh9BKY1tvCp8OhExYrJf29asppQ4zeZ+Ev289b5hpY2x75N/6
+llBZXCbvU6QgVP0z41diHYV6uSivVv6kJ/tHl2u/4ickjdD6FVYks5dOac1n2AXa8Y/0Tz8lj95t
+OOP8o3TiT/fI/qhu0rpaOuYZ2VNdbwhVlOOsGgSn3UOYt6bSwa9Sw3VDWzlEd2v/g7m7mdg9UPuF
+joGPERWbvlbCBdlgGS04zjIQWHyaN0kkJha6PF3AOveLLvbLjFtDWT0jyjQTI2pYVd7yMfYubv7G
+Ku8EZFaQ9vtQ8gD2DawfhdiZQr1MzA4XeXpORoQnVSjpyF3XwwlGkpdyyWYqz80oRFC/7bY0HjXN
+H+OQtvO3pg/rCtLU7m/XPGcs4oLJCQVQI4dcU5PpVLVCojEA2zj0Mw/VWfdfHs2mMTTLJ4ihvmrq
+EbHAA2Segw6tTsdiwoSlKb7WzQ/PBJHKyuuerdMPdmV7lXNevaANFPu4wUkA3lrPkNaTHfaPSL+H
+pjSofWRIT+xyf39tkuXAT95gKSJgc0y95jBMELXLENP9fGobwmESHeSVToHv/+OtuTtE6+KdydTw
+4HmB0y4W0O43gwWMUSUKoxKnBrBttADBEK5NpEZHlPMMQCNIEQVubvVYakppfmx8Ck6QpWV1XPwx
+pvBPxqgF6MBxkpu0dn9VjNUsmlgF27tfmk3juUJomsZqcQvRmU12/srwZUCqWDvMbYUk4vJcq0JN
+DuOXo53dbIpDeVbzw5LDVaXB4PaMzUNEOJ3PsSuh/l6KEBsyhJEa6Amz1fhOz8XwLC1vfUg3LK8T
+kEGkDUfEwd5EylUbcWDdLNSvhS9fIn8oaXcWaqw+rnrCyi1W0Kd/wv5Y8cr3vvVglJLXktFaHEbV
+dEsI2mDv84ZeLrxSLHktbMC9kdFrhuZXNRYZzFcYX/bo7lF2NoWOfcpehA7eKcqKxGB/zQpCJ5Dl
+aLSx2nc2rcAjHy/wCJBtCLGb5KfdQc6E1x7qWKiCdaTnU9xXO1zcGpRWpXmrbaxXVU29SOc7bpTA
+wDsc6ihNclPM1aaA7eCV7eLlSd3S2b45mf7LenLRJxmjrbI3aHwT2KZxhacJW/mkOK+P51BfFjxh
+x/jKNCyYouEwCKhuUdkWb/rbakTWX16/6Q2q15eLSWMJJ8YuFGZGW/XUWCYnQEi0Ck7HXrM2DUgh
++lX1EKnhjp2wKIoujz2/OU/ZkWgqmCTEAIr+3368nu/h5yG1BsN8lU/n4HF/n9YC755Qp1w0wmKN
+oi4MOmHG/OKDoxOtJFBqkyj/4BlM6Gi7dnGF07mMLPENwccQA2/iONjDMbz7WUPgcMBR3nUkKglG
+/NnCltah7+DYTPEK0pBkjNij4/OYZGZlBu/xD5M+o80FlmPwuejmea6HqKlNKI+ohGFZn3dnXo/o
+zehQayDapCXP1Vhu2pX0igmMIor6akBmUxq/cRehVDLFh+YftMe/j6PXkERNc9TY4WTnmfV8OP14
+b9D3GughQer69HmutF7Qdqvv7toQ7hu8yi1CscPyEiJxCeBd1gY2SQtuE5TgyYOTD4Tdxn7yTnNN
+vMxLJALV1Bf6G9v6Ceff/qZrbdTgM38xN3XnYnSnEPkXE4YUgP9AtUAgMRcaFhLLLOWcnVLAyp8M
+DBdaE4c7S8RsB/eY7sl7LdfbAGZRw1bHo88C8qVAuxaFjjjlj6+K26SO0u+SvnrV82KfUQ0fR524
+gW/Bj/W3gv0SMTM82FfetTSZ1Jax9rO/nn5xe4xmixSHzsF7PDunsAr4Q0lMboLjkv7rIQXrwdaz
+hTzTafSg8T3ynXsBi7S1sR74BK3Um7e7uGHOrST0+SzrJ+A91Mxn7XZKwo8XkxS3NfLCO2hNIx/e
+e1AR9dYjHSU4zu7WEwfRK4w95V67tZPbh3u3XkbaMGyWI3CfyZMeVryrPrvx/Y2KwQ62QeLnBC8t
+42MlE5nXuiITwzb9g6jDayjr8qMBpNCBRxWaO6awB7ZXF+0MbW0jkQMNtHv588CMB4k/WCDbyhGF
+7cz5oCN4NWBqwaYM0rwGJB2b1tRluHwTwwQh/DlkL6JM+05oUd3Dw4vgeb8QSk7l3kkr+uvddljS
+I5lo2DwzpOh8ZU1YuZUOELgWvPOeR9u/zj6/8PcRXRQIhuTN0SZW1MkpFiVcQpk3rqXVn5UqwG3Z
+7eAzxbyZzoKcgKWaGMlXWfmrR3fC9IMF107hpev7hYArz7anWJrndLjZWJxcFZsJt9Rh5b6J/2uk
+PMV63fxdRQTwbk9cO1ARw94I8VLwSQtliVr2yYaKExmsjzFFKjERxn4mGRmZLX7+919YJm9ljXUU
+qNE0YDNmNKj16UXTaMqbR68Oq9BZ8mldcYwOv7/VAlao4ZTzt2+mffniLbyTwFm5xEoNr3PArs6O
+l8e2iC7P+Y/I3J27yt+16SROQN5by+NPXe3gjGvLvm8Duf7etzO0unnvrHqWhlHoiRkm2uwdh8h5
+eb+uKgttXDozQWJB05ArbsHUiZZOfWCTeP6YLr7BkHjsgxkKCNccPhU6ExUYkGSwgAbbFyUGuMt2
+Hp4i8Yux2FduMTZ6hu3y1I6s4EuEjfHx8nBXkipwKVagj5NtYz/IpcoOifkB0QjwOEX5SRb3/qo8
+1RLo7Jrj3wzUraVmZTBMFdpfvQPTrrkwXezaRBRlhLF6/BEzz8NZG/C/1eEUq5FmJdjAvK2s226I
+pcIk/IwZXGRYw9ts5/WGEsdQDl/ngK/z2Z6qAEQPPrQbSulUBBwFO0mlTFN9eMaSocBkXANQMWbW
+Jxf8WqaRnx8dx7OV8y9jXItJUFmtr3TuBZAU+czxZJjNiSJ1CVOu6MUuWtML2YDHib1WIAHBYfMY
+JKId9BiqIjpV1nxN8NPJEMJu4c3hmScYHnCFYyPxCn7EbF2N9+zwI+LHR9pMQwaCpPUoyevql5s/
+/IU46nweaiZ5aYu5lAShgVMMrzkj7YH7ZbbHNcATcOH/66gK+nxiN25UU5Puf+0onJwTKpgSb74v
+1nvBvWBPJA+KhvGXHS7NibV0VInPnVONRnhLhO5nm7PZrgz20tLN7RATf2BLgvIl0yA5cQfvLKOD
+jac7OlA+LeSXHZf89tg5/sXY9DYTRGzXMGxl/5XSDOCYViU/bF9Hb6NoIoYDptCTgakwDY+/AJYl
+waCzuUBZP5J0Mb5eInU4uVmsenhPuzAdqicPJoX0482zA4PvuMm8tx57rhZ1BVKJSqDxhehsz/Qg
+yJu2wJLo85UHpYg01/W77isqKYAKzyaj6OM5ePBVOG1K3Iz4yuWgAXQk5eIf6WF8EGUjNR/HPSqm
+IwNxVTjhUV+hd8q8iwWV24D7lE5GY0VVM7hC6cINd79neKCdh5ypiLtX2gkQgy5JZK6+fvGeHl1j
+nLfvfTpHkWDY4WXB1KQ625mrVBh9nx8qkBxwrfoszWJ5j7a1xNDDhbkLsbFipvBu6fJeGb0eWD+r
+/0CByIETx5MIIPcbpYpfpaWxDrGJ/P18a9zFnQksvPgR0vDiyu+svjSfjrl4211/9FHSmcupYGY4
+6vt+7f/jSwRPqibBAO9f2ASUrMQQKYB4sFEUzMT+m+1onBCnC0rWGBvekkhnrr7U+6MfdL8Btrwh
+LqF8baRMxA546oFNklGQlpyGXxPT1Qyedm4F8BKQ2oBz9HLN/x8p/0+mg7Ulx7BBpyk6qnaoE739
+r5+VeFUyC9P+xlgkqSJQnl3CiDoFQNMuW22dIB/vkSY1KwWG2E4BZp1lUsWtdIV+UIDwzFcdz3IR
+aU2sXsazMPQWCzCRnw7o5pi14dyXmOZ9ilSuWqGACr0+LwOUG8qIBPCjJRKtYBiRKhkVoUrYurV0
+G8goZm8l5hPJqYCmOFmJEK7nCZKgbEpG1A5jLlw5CfnQHJgwDTyLhci3sLVv5CS6b2azXD3Xc3rg
+468J8OlEQffhzNvFvyaLIN0b8I0uU3UpSbIXAIZKvr2KW4lU874XUUq7vuQdlaBC+bSC0BPAI0a2
+eCMIP7j2fpq73+G1KSCJUfrySXzRwZ5bn1Mackm5O1nzHsbJf//J3FuHhu3D82s1vJj3aeGg7Gbp
+9GTKDikfsugKLRTzfj3dujy9rNZi4DIr1NrvYiCWfLeNZ7MREBgrrP8wMRNZ+Z9NOfcgXn/PqHnH
+ViLxBCtggJ6rCfEHl7wNMLGZP09aM0UX6ATbSxN38xjbBu2FY6mFthnf0dYoW2B/9sYDIBmsBdSL
+eqQz8fzVFvibinchXMKIUQsn1ZBdFrAeieJT/NmRG+waLzmamztbgK5v+wxNoVeCNBsgx+AMt7+5
+207Ht3FpQLpbN38EEqkQCwnmvfBnTHoy481rVHCl+kHfkZk9vFd7S7oZFhv1BTL3Il/gJb02gI++
+6BX/mo/4Ol+1YgV8no3GJ+PdBK+Y1+kIBHWxeZaY9ySGvibqZ7wBEJM4XMG8DIUQi2iORwklG+o5
+oTBCRF//jhFZWruKFxFbqL68CvFKa81pmc5wBF2LRaiBsF5BtLvEHpxzR1Gaq17VxcHqjeOHG0ZT
+4Qm9L5TtrT9FQlmjJnV+AIxydkQXEQ+EbY+OtO5wulJw/FxvSwK5vLaGfnQ6NrzMS7rCcnJfLE+Z
+AKJXX+oGJZ6EJpcLjnvJLItVINtxCRxs44nqPKjSUi+HK2T9LBFZ/trctQvKwLK1GD02kvWpoZTo
+4UY+oSph3ANYlDlYOT2qUUOsBhXal7eQRnqHtjPo3h2FAzoCg5E+M1uOfS9MyVcLYxquld4coec1
+bom+REH93+lMgLHu7BUM+znwvqyQ+By0UF7X6JRXmIg88iQzP7XkCOcNNP8UHJE5+DPsw81s5MNx
+Eb6ANDNb/7Wd1sQ6Ug3HyeSALgLuPukkrQhBOG1PVCTRrt5ffo5f5757T4SUj9hCyG3bT/ljD6oo
+FO991POI+Bc/OUoI1jqsO1YehK8HyW+emF44wfYr/J4Gi/Az+F2sXBr633QM/awBOaAoriDviOOa
+H3LWQ27jNexo0nGwFdBEMtB11+RrZMPcC9VxC+dgOOzEeeorPVyPW/fhgakwazk3daByquicJaoc
+rSXs1DjwK7BaGZ2HRTPgnkVF5djW2I4EDpQMGQ/7ng+F2urmpao0A9OkXp4RgOhr8BR62LPddedD
+KTrQ22w6GxpH3TbslS9TS45PkHlnLzR9YiFBVVOURXHL9PRhC4Ecc3bJpVJ3jMJJ2zHM+2ehPM4E
+FX1l4SpCavtN5lEWbOCpATW8rhrP3uFdDGnHWwhMoKhTwOUXq9e0hMpxIhoczlf3yaXuLumiMbXv
+uLztUO1itAtmhWMuW8n/6iK/SzpL5Uy6GT0AxxruYMh3FsDoKvwVhega/joJK/izFVDCuNGOjd7g
+csXolJwRtPzg3uh6awpYtvatlXcA16aiTo/iGLF0Ip7/HtszSWSruw/uah3TSEBsAQjOviC/Ohnw
+5shBGHP3MHSzQw9xV5XYQYhnMKLgm8C9Y/uTWR4Ff3uWqajOkReFj2BA/aZ+KW/0y1eYC6MU9apX
+o/Jw18VkILIVkIyY7LQakvk3GzIJePGcZVL4ssTQvtQG+7H+aTzbyiYvXpddgz6ar1WRkEpIgWjy
+LfTnMhL9DfdxEK0mYljQClf2IhyjhnLaV4m7ssShQLx7SKIZrt2ofMDe9PrR8qIxcSk0wE2gKlLe
+U9J62XrdWcGXFXA9S+NIj01uSJdtSRV3F+XaCRClOZEppbW3MqKkvZ8bJg1DuFXXQm4kUbc4SyEQ
+EuDOQGO140+4C+Wg/qkhjapiqeitme8VWc0QPwBKhqOIoBPqaKpQU3y+hwk/aXZuRuMzEzVnhfQH
+1e70whncETzXAW9tl9hSaukthJhBspgk+wgZjoyz2xRa9D1p/dhq6Aplet8BRplgmxntKcUZKh2q
+w9ux21mYz3I7k5pL/mqaPoHCySWh1eUM62roE1tvNxwjv1qhjCdmu0+/uJMRKRlH7zKtJEjcvgqW
+HZUxxoN2xXy1rx0Whp85yGMMECMzHlbqDS3F81G5KkqoFIHkShu92aK8prj/cPOg40bz9mt0qMp5
+vJygtF7DezFXVz8JSoOLc1qQP4sPkaUFJf69wnL4Tyvn5ZlfA7xR9KKu2H7/ASVSaPkPeBZbxwsk
+xpkOzY6qkcPVNjEMiaW2lMBVK6juy2EgsrhDJiJGTKDByfZEs4m7DdU5gpB6zyP1m4bdD7d6RjV4
+4EEZz0EnZJlmsTTe8TImeiHzGQ7JztiwVxpzcFyWvoR2E3s+YsfiToeLWQreuMjz6aJGuaBIDgvL
+X6+9gDTZ9BoI7TngwfEZYM5/+cXN1nW1rKKWq52By6LBZg+7e1ifsVAF8Ew9z1Mc0HLwTTR3tlnQ
+XZlFSVhNYabImBfl2cLp4/hToxAWnIFErq67Q0EpAB5rNzd09U5Ql2Z7Di9u5SuhZS9HYSEx3OwF
+IwZioqJlvWaffvOwWDoMBFzw4lpe9zzE+F90I3Ddtdw4hRgs/WtDcez7FJUTVfv45M1z7BFMzZe0
+eBDKzoIlw05WQMT3a8vrMe/OAWLD8PLQwAffTEL9GGTK6bzE4BNEaXWZNjj+WXc+GgCoDQiBDRsr
+AmcKR5tAsWv3RBTo7gUTWHzMBln8h35RhJVLUw3kwctkjrTyYdHHGw2jP1Ovm/m+U8fdIanzMtv2
+uOgfAZYqdLaqCj6XAYMTZPcxHKl7GHwMHtMveyQ01BJ3NC01xt9v99Zu9EKd69DrjsSapfZgrj5A
+ukiYpU0zqYsfw2FkOJwmhNdsf91x22QMO2XFVggqrUy2lxSId8HNwNszmO1t/vMKDp6toogS0ADX
+wQYlzn1ytG2GuUrXJrEFLFQeiWpDjcqjhRvO+j5YjH00YgrsnHwuamF/LrXO28nWA0FvS6/MAIVg
+iBi0akbxDSBUNk3YKzgMDdClWuI9PMpNnKJvcTeOW65k+pWMAQtx3sYesMlQ/oCkuWAPHgHtIE/i
+nDHGI356OdqJaAgCr7OgDqjJdVXKdvoRx4fjOidB05J3xU2SnS2cYV3JtYWWi23aB1MLUSRu5BkJ
+gVEc2WnwKw288lf4CBJXIWin/9YFBZtGgdXjUolouj9Kp9/tYH9GbeEUlh7Fe5XLtzAatT5Fetva
+aExVtY8f9cwAB8JDTIf3dbN5TFJeq18HW2QBtRNSNWSD9m/l6sUa5pKTHkm+TLW4ueVgaIFkM/9W
+PZBLJ+gyrwwDGveuXOD5YIbXPqbj+3uno7aboCKC2+jb5gv+XjyXH8gNhYRbdP8WEE32p9ShU32D
+sfjoMD3nfWLSi2RW93NtpjcCgNP9HjidIHlNmqRkxqtEH7UXHKKlsgQJRrrFsifFH3LSa1wYLEgA
+SYNfCA8deGrJnJqMQJBUpHj2HPcQxUsaWgtRM8EbJ9eNUYYz6Uil5FuvUk2LsHOv3iv383udzISh
+E8DTzSz6TAR2z+mRRLOR7WRIy7cAZ4gdTCgtNPvIfAtppXUPmOZ+s+lvPTc+XeH15mWj/EtPGfot
+TvSZVmakJ34I7f9EO+kVq1piZrJ9XxiosEX5oFXaJXFGWojsfddL6e0qKlI1FsPfRJG8OhXT55kk
+pf7Y8JMFecnDtWlXvv3aLwSt4kQKb0V6ahj0KPts+5Q2hWdX9f+41NkwSrDeFL2cJeWpBkZb46tu
+dDZowny/Q7YopszrxMJHYbphH3zVqQens+lBkDzpdMFdZGP1+EDsufUYNxORTB2B3J0gC6ONN2iq
+4GPuoCh8KjVIl1oSyM7ifWE4hBAgoh3kM+bIAhBKnL1VCbmGwUsRb+vO+jtxJOlo4IH4e/n8Tovb
+x/E95kkhzPqi2RLdN5sSfKhbKGOgDAR3sO8d5okrc7RuVGAvDloSG4TJSWmbCdUcbpJJXnkiyinL
+2a7dVbp36NH/7IjgISGbJKjNal7gqOM/NBn+hEy2PnSleabznwVZ7XyMxeWxavb0zctutEAFTKbR
+LdElzYslMN75bMk3/zFxHX/GPUli4b6crmqKK8jLGX+HBuyzogJhw2oEGf67RaEjR0lnm1jU1wr/
+XKiT04MvI4sUfpRCGF0sch4PXhjngDRXFH5FMmK1nhhFW97GPoOAOdtxuW/6oSHHDa6Z98Vdu92K
+3VOTXt2SFTObm7Ssq33uLjAj26HMS4wHRCQDmGoK4FRz9z3HiICf3RO/w4s8ieoAssQJlqfhJSx7
+oOX1DCrs5uEpKPmQ0pfrJzn0T99X1DPbw5filu13byYl2v1tBtszukqsoMwHvleTDWRjCRSzDXyA
+X7ke3jwaE+5YG1K6pVQnUHPJDEhda6+yGTK1u8OaykeCwus1vZ8Q9qJB3oECKkRzISpeamnAT3Zn
+DYfsrdR4fp2iiHVsJwTL+LCdjkYKdtgI4vSXRarr61SQV0vLzJCPfKi7fnFgAD11cHR/VNQMQv/k
+0zmPSvohjsJDIzutc33pbiUyfGc9sblzrq2f/bIKwowRmXiNv5VKx7FSJbnPO7UeTev3UIsxwt9l
+/kkBKr7TRMw2zDjyK2vfg/AYG60W+Coo8r/at1rD4WbyvkQ4OyIWPFOgH9YJTto8hewY/2KxwYxU
+slWDxvUjqbFSc5puxaQ5WGm2BdqRIQVIWJTOlCthaj42MTztjtZZyWSgCzGtPKBwpCLJu+DmYfrf
+khfDoPgboK+YDW9za+/oNuEtK0NmD568aMura26TiXXdInAJ8Ry1mfNbRFl8FYICJ12z0PQdNVzh
+wQZjqPQ7vPvODDVUI8iJOKX+MiutByllhUPGYQMelXLrWjPW1w+vDwaRnfgh+5JEVbGN9GrrkCde
+UFYaODJvOrFEJahfs0ugTuBbpo2XPn/5IScV4O0UpjQ6A/PXy4zXWyivIx5Qh4E/vH7mD9dqxIw2
+GB91ydzXx5UP97EH+YvkKsr4wGRs54QD6+SDsWxqjDbfNYoMmpM86WRq/g6yY9VIlTJ2/RnRvAsy
+ncxRumjiUesQoDyI3iLIHwDRt9ahsx/C4iL318MD+rIwQXGIUAUWlDATLZg1raTzr4zjoFIOFOBZ
+DLu5AEBIjRvAYJEaVoIcwWPQ2h+elaNBUygOf0wqvfjh04PAQndqrf0PpMG4MAjR0CkNScnZYp3Y
+J0N8q281daUe+sQgKvFGnw6y0MOKKbFZFwhJtkuLqOKfKVtkDwLG5+KgdRh4s8aCNf4kjkLNmBvL
+MPr1ej4Qvjx/TPAZyWAoMeKGQ9Rdto6fqeLcTjlE6AFB5EdETX6YUiMRcCVzYrwZVt/NTdvwgV2p
+GYKjmJUZdu6UFgnni1EOGvB5MkyZseKEntFise5fETqiUeWlLfsfay8cQHVDlC3IuEh/QylV7hLc
+KqLTlJF12uKBg3GRCWBGVK2VAazCEbXDjKS8VCq/X1o7+nXrl1T3MLlpvhIGdq8wWCBmUdoDo6jJ
+CmScHLtVd/bSV/ojAK6F6ITJlReWwLN8LZcpSfQwE8w2Qpj0EziUVu7LAkB7VdX9n5OHUdzt+y1x
+xpqVTjSW8Nw0RyL/iDhc25XOhGxhWD9rlTYXMOxLYNmEqk9PLVfBSoQ1j+OzEM5+FO/qxNdH87kU
+8ipavKHkIK+RqWbHKK2sBiavPz/OpJTyS8uShbju3i3j46layd+r7RTSgYd+W4fYtn/KDiDZAgJQ
+myvShqQoRKX1rfOYa+iJInzKR8Mh3er/NQsDn66MeAyiETJhTF2nu8D6hypkgZsYLDhJ7cdNLOrf
+Ck75BaVmSr954S44QWoRHcSUQ0Bgo3sSXLIEdLPF3WVxTHQgN83F/o34nXp9ptE4NPOjyYMc7zwW
+klpfWh/zCAM0h6ep8dthrRGp56D6aKv6ULMF6VqQo+mG04dRMhfym71bcRnb5MZ6SeUIFYGcs55p
+bAnjJkOuQALMjFTeSGWwuaiMHc080l0nmyvbkZ2fS5qSusOYvVpERgog1N3qEDmCLvNgd3hdD1k9
+EIl2P98JeA/tmB0aignm59u6wWmOXjmAbUFP1osVrU+0KOVL5WkoqTDD6nV/mocs3vjwcgYZIVki
+MM/2TvOvBZvyYrDCauAyN/GLlLTM9IRxbBEqyKJLqcspR7GXSd9gXdpz+0InjzmapgJ3fSWicwiA
+h4gyZaMlutkkkWXHXvHdJSGYjqzm90URq6XrhsgrJPWioQ/Mgu60Rd/BeDXFxu/2+fOiXWxTP5gz
+EJCKvOLGmT8leyjRHSFRo5K8kNEOEO6il1YN6DDNKj+GE2LkwrIFdCNPoWwSdQvL+p3Joc/Rs6+a
+l7SnLmlQd5eHE08iYsJ+vui3BUp8p9YxnX2UvNKR4kmcWNPt3DQ7puhRdeQZ1AERGpk7yZivV/1N
+Hi0jIuwpCRh1H9e0EPWdN/sr9SzJPdX8qiQh+MtapjiGXjeUUj6zkmRb8jedhtpe555UZydDkqqx
+fOZ0iMIj+cQuVDfy5qKWgStgWdR0yg+mWxRfkx+czkAao553NcJZZFAQLmqdntrxoRnZ/DcNasrS
+5+yAxvYNFaxFwK1MMYlRgLHmttZNKNr1bVXSDQKfy+pdWzBnhYuDWrK2Xp7kcVtaSuQxqlVl24i1
+HZtXX4eBDC4tFHQ0MuvBUNyLKkKY6b3IGk3ekQgH6B8D23JHZ+ssq9At5WfJI5dD8zzoG0JwbXTl
+1/PL4RY7b4OR/revbrvCuv+1aDewRALt/p6b6Gn9uhoEXrqcoDezCOPMlXV1hCtKOykO4F/HLnKo
+fTDANwPf3qeXtC2B74E7U2bdm5lRUPB+xtKRzrjuaAoG0p59Mgm2CSS7yfniYW9iv2ezqRz0Cqwx
+j5k67KfabRIxrGJG2xia7FW2A1cBITfCitIKBZ2rg7dPnQIlTn6hyXyWAHyOjsUsRhzh0s4nhtnw
+s0si+dpqjz8Z2TN2PnAP7NVXo8arOZJ9nHtJXOZ/XsDF+D8aRTSidhTosbTVEeuGi6aS/W237wDs
+gDXFa50/Djn7DGTsuXqWegDP0BPYIYyVXSesU1qotDlgnhxH73F/VXLqpA1Ti4dMPd8g+3WRcvxc
+Az/Ej/yzPMvmQEvMTElgU4yfdCFdAkj8IV32yXh0TjaJwKMUqJFszqDWbTgj7Eshxqqi0Pd8VtoA
+Wafjpg01QZFxqv/7OaQ9xBnZ9PUXQ18818r1Q2FtW/H0go09KwWFFcT6tCc5I6AWqp9i6BQjDbjA
+Wc81R9sRiq5d6kn2+nOWNlDoWoEnsWfzqwjQGXd23NjTkzDOMJFHo7LDMkjXMYiL/FjzLSz4KEfW
++oVKnMgvrgHdyMY05vXJHPUPmk87zCtoL9CoWSw3ytxW2ChklNfHOvPJ+1JyOE2/9r3gsvXOdC/G
+1OMM22lnZc8TFgjYW2VFtr8xS2FPjeknvjOhiWgOA6vpiz8UN4eF/EWJjVc602U/6Q3nDLR6Mi8Q
+DZTqh6ZbOI1U35PWw69FOkgIRab7/HggT+p47qGdd+RzqVxgZpfQse6dFsfnW1Hop0t1vkaVqMGj
+y3P0d9DYoP0Hv2j5RjkbMj0WP36vxEOfusIJRlg65rz0FvFRuO0J5WtwccFBvEmITfxD3wBH/lWx
+B+Jauiq09OXMTZgUi6zJ3ovNCQZEAji2kCW7OWfsWlhkEVWwAFy5vdYYcijx3x8DKODeGqFU+cV8
+TvPcErT4PaBSHj0zPwstpB3C8rKFcs7/HeFlsFEaZEVSjpv7aH27JHSdVKE1N7IqE5knFxs0ts1B
+r42my8m6qn7zOJkhwuYxwQaw07NSZkzwkTrXhDToNVQfsNybEBYbmvk1RQbGKQols6v38jnhhJVC
+XQfc84RTmVw8jfwixJ8l+RD9Z82Hm4wBj3BFJbOI5acxAQpT53uvm1T3074JiUpvh4nV74FQXrDw
+AYUSlGGgAKhH+7q7fNPvG3ZPuZDHgWOiyGNVjtLduwkPYYLkYqJn02xXW9eR65R95HvoHeS/u/KN
+PyS7zWzPxJEVg4x585VJCT6F/nvcbR9xp8FNjfzquLxoYmC2pOvuMdL7u4Iza0FWOOgkamGwTNyD
+tnPcORAXHCdNpffw6rpeQAzogch/7FjOdGRo45dsJ/paqyeHBk/EvKmhaQxVQKhvIVuNuvY5L2Cr
+EpXH8g3g9/pmAcBOeAAFLuzEe8f619aXKeDH2oJvp3z+1bN1EVidJ8U8LhkcqRP89OLhwv2L121J
+w8VYQdFs8bDzOpAlWyJqsNej1gOGabFBARcBwFbKHrDRzfFBMhwsLebSCleLOTPaykJFQ0mlQony
+6FssXAeO42EYwhg/rd2n3hssBlu94suIXxHWvX/2GG0jMKvx+6BmMGIpsPAiJtYVqgDlQ2SPGwc4
+4jVHebR8piKSmJ43zGZzEP62Rgb3moexIoPgw7/L1PCYiDQYWbg4vdA5uIQLHqPCNp9+VigYbdMG
+SxVR56FDOyU+EShLU+jMiZsiqEDyMtIMyiRuv4XmahmM+KXr4dlTRf/qU9zZPe7hCmnoDc043UHG
+TwL/sg5mVA0u7Tan4b5Nh7bR6V4Y1Bo/zLVqMR0Y3uW7kXTNOaKzTP1fOtm3bFop1+F3JGhN8tZd
+DZeksBncGT7VhdER7U9vqVwL3XuggojhfPQyZcHdS87jK+ZmPejPNpxZJ3S58FTovQLwB3jwdmue
+cKsvO166GYPAnADNOGKDp3rNQhWAvDuE3AoFaD9nCH9TrSiCALEB0wQqjB0TZIGR+KR/InDlLAEG
+bqf1+0E0CdFQGcSSwbPyGmzPZSbojuuaXsiG/yWoBlz7STJGEQMGFVVyk3/kqw5oAUNX0/mNCPct
+6PJMdNVta+GFP2e60iPHmV6E9DmgAXDVBWK75ogJG04qo/KXpQ+Tv0eetyGxLFqY7o8H1asL+gO4
+uauo3TLAnemjEUvjA3NhtAdObUoCV/NMgJRvVEOxy7z9Meg4Le0UWSj/7cw5icnzTyzjpRJHvX7s
+M8nM2w4qxXkQXqvc1+auLG00mXcICI/SxNfylOgsXGmEAUggahvxygvqwK+TLlCg/9VW2Yz4WdoM
+p5wPxX/lSiwqav8SQDsiTcIrJ9R5tNeGJDJooU4eM82G2GC7FgXfz89znpJqK7D2AHFP047nnrpU
+EwlaBcJYqZTFqE++SGqO4uCWGg7AzMs+oVqrcMulvsxDW4uLTMX1E5Eozs3hnIhMYvP9T/KMZ24e
+wiHyrReNKy0lggSsyXw2O4gu0DjZrNpJ0APbHh+ftqlUoEQ3lqptWBllEqDz6WNeVnDcE33FDTTe
+fZwwnlCP3LETRc91ibSVP2P0rt52yX6LtxDIDvSu6Df8Cx1HxZHTmZdZZ2HKym5wNa49Q2pvhSTm
+Gf8mmIPvakwR/9krPwZwnE5NUVfsvkDOFR3m1j0R7JLsceJxw9MIu8cKnAAjAZFjxSMsd95/88Nh
+cpTOcLBRVwhToQumwZOs7BC9LQm4Fp8Lou9VHsLDVetlD2eKjMRJGXtoCCQhkLxgpqen50Z1gIji
+h7pHsb3PmEsKglMWrJ3JDAsVyiHVsfpyDx/NuYdKrqCHKNDY7Du9+1eVjP8DcJqNjp3UBtq4X0Xw
+xAMLI8NL3Pydak8VszZUwOmEmTG7CLooMIr1GNM8koeWiBamlzN1R7DSEAS8iu6ECKtyUFFJE2WW
+z4ctmJ9dEW==

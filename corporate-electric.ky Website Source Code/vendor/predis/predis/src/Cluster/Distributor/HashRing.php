@@ -1,270 +1,115 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Predis\Cluster\Distributor;
-
-use Predis\Cluster\Hash\HashGeneratorInterface;
-
-/**
- * This class implements an hashring-based distributor that uses the same
- * algorithm of memcache to distribute keys in a cluster using client-side
- * sharding.
- *
- * @author Daniele Alessandri <suppakilla@gmail.com>
- * @author Lorenzo Castelli <lcastelli@gmail.com>
- */
-class HashRing implements DistributorInterface, HashGeneratorInterface
-{
-    const DEFAULT_REPLICAS = 128;
-    const DEFAULT_WEIGHT = 100;
-
-    private $ring;
-    private $ringKeys;
-    private $ringKeysCount;
-    private $replicas;
-    private $nodeHashCallback;
-    private $nodes = array();
-
-    /**
-     * @param int   $replicas         Number of replicas in the ring.
-     * @param mixed $nodeHashCallback Callback returning a string used to calculate the hash of nodes.
-     */
-    public function __construct($replicas = self::DEFAULT_REPLICAS, $nodeHashCallback = null)
-    {
-        $this->replicas = $replicas;
-        $this->nodeHashCallback = $nodeHashCallback;
-    }
-
-    /**
-     * Adds a node to the ring with an optional weight.
-     *
-     * @param mixed $node   Node object.
-     * @param int   $weight Weight for the node.
-     */
-    public function add($node, $weight = null)
-    {
-        // In case of collisions in the hashes of the nodes, the node added
-        // last wins, thus the order in which nodes are added is significant.
-        $this->nodes[] = array(
-            'object' => $node,
-            'weight' => (int) $weight ?: $this::DEFAULT_WEIGHT,
-        );
-
-        $this->reset();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function remove($node)
-    {
-        // A node is removed by resetting the ring so that it's recreated from
-        // scratch, in order to reassign possible hashes with collisions to the
-        // right node according to the order in which they were added in the
-        // first place.
-        for ($i = 0; $i < count($this->nodes); ++$i) {
-            if ($this->nodes[$i]['object'] === $node) {
-                array_splice($this->nodes, $i, 1);
-                $this->reset();
-
-                break;
-            }
-        }
-    }
-
-    /**
-     * Resets the distributor.
-     */
-    private function reset()
-    {
-        unset(
-            $this->ring,
-            $this->ringKeys,
-            $this->ringKeysCount
-        );
-    }
-
-    /**
-     * Returns the initialization status of the distributor.
-     *
-     * @return bool
-     */
-    private function isInitialized()
-    {
-        return isset($this->ringKeys);
-    }
-
-    /**
-     * Calculates the total weight of all the nodes in the distributor.
-     *
-     * @return int
-     */
-    private function computeTotalWeight()
-    {
-        $totalWeight = 0;
-
-        foreach ($this->nodes as $node) {
-            $totalWeight += $node['weight'];
-        }
-
-        return $totalWeight;
-    }
-
-    /**
-     * Initializes the distributor.
-     */
-    private function initialize()
-    {
-        if ($this->isInitialized()) {
-            return;
-        }
-
-        if (!$this->nodes) {
-            throw new EmptyRingException('Cannot initialize an empty hashring.');
-        }
-
-        $this->ring = array();
-        $totalWeight = $this->computeTotalWeight();
-        $nodesCount = count($this->nodes);
-
-        foreach ($this->nodes as $node) {
-            $weightRatio = $node['weight'] / $totalWeight;
-            $this->addNodeToRing($this->ring, $node, $nodesCount, $this->replicas, $weightRatio);
-        }
-
-        ksort($this->ring, SORT_NUMERIC);
-        $this->ringKeys = array_keys($this->ring);
-        $this->ringKeysCount = count($this->ringKeys);
-    }
-
-    /**
-     * Implements the logic needed to add a node to the hashring.
-     *
-     * @param array $ring        Source hashring.
-     * @param mixed $node        Node object to be added.
-     * @param int   $totalNodes  Total number of nodes.
-     * @param int   $replicas    Number of replicas in the ring.
-     * @param float $weightRatio Weight ratio for the node.
-     */
-    protected function addNodeToRing(&$ring, $node, $totalNodes, $replicas, $weightRatio)
-    {
-        $nodeObject = $node['object'];
-        $nodeHash = $this->getNodeHash($nodeObject);
-        $replicas = (int) round($weightRatio * $totalNodes * $replicas);
-
-        for ($i = 0; $i < $replicas; ++$i) {
-            $key = $this->hash("$nodeHash:$i");
-            $ring[$key] = $nodeObject;
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function getNodeHash($nodeObject)
-    {
-        if (!isset($this->nodeHashCallback)) {
-            return (string) $nodeObject;
-        }
-
-        return call_user_func($this->nodeHashCallback, $nodeObject);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function hash($value)
-    {
-        return crc32($value);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getByHash($hash)
-    {
-        return $this->ring[$this->getSlot($hash)];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getBySlot($slot)
-    {
-        $this->initialize();
-
-        if (isset($this->ring[$slot])) {
-            return $this->ring[$slot];
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getSlot($hash)
-    {
-        $this->initialize();
-
-        $ringKeys = $this->ringKeys;
-        $upper = $this->ringKeysCount - 1;
-        $lower = 0;
-
-        while ($lower <= $upper) {
-            $index = ($lower + $upper) >> 1;
-            $item = $ringKeys[$index];
-
-            if ($item > $hash) {
-                $upper = $index - 1;
-            } elseif ($item < $hash) {
-                $lower = $index + 1;
-            } else {
-                return $item;
-            }
-        }
-
-        return $ringKeys[$this->wrapAroundStrategy($upper, $lower, $this->ringKeysCount)];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function get($value)
-    {
-        $hash = $this->hash($value);
-        $node = $this->getByHash($hash);
-
-        return $node;
-    }
-
-    /**
-     * Implements a strategy to deal with wrap-around errors during binary searches.
-     *
-     * @param int $upper
-     * @param int $lower
-     * @param int $ringKeysCount
-     *
-     * @return int
-     */
-    protected function wrapAroundStrategy($upper, $lower, $ringKeysCount)
-    {
-        // Binary search for the last item in ringkeys with a value less or
-        // equal to the key. If no such item exists, return the last item.
-        return $upper >= 0 ? $upper : $ringKeysCount - 1;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getHashGenerator()
-    {
-        return $this;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+lLphMiOxG+3kJ1DWzmCkVuFRmkorpQR4vk7q

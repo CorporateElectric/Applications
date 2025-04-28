@@ -1,204 +1,83 @@
-<?php
-
-/**
- * Represents a language and defines localizable string formatting and
- * other functions, as well as the localized messages for HTML Purifier.
- */
-class HTMLPurifier_Language
-{
-
-    /**
-     * ISO 639 language code of language. Prefers shortest possible version.
-     * @type string
-     */
-    public $code = 'en';
-
-    /**
-     * Fallback language code.
-     * @type bool|string
-     */
-    public $fallback = false;
-
-    /**
-     * Array of localizable messages.
-     * @type array
-     */
-    public $messages = array();
-
-    /**
-     * Array of localizable error codes.
-     * @type array
-     */
-    public $errorNames = array();
-
-    /**
-     * True if no message file was found for this language, so English
-     * is being used instead. Check this if you'd like to notify the
-     * user that they've used a non-supported language.
-     * @type bool
-     */
-    public $error = false;
-
-    /**
-     * Has the language object been loaded yet?
-     * @type bool
-     * @todo Make it private, fix usage in HTMLPurifier_LanguageTest
-     */
-    public $_loaded = false;
-
-    /**
-     * @type HTMLPurifier_Config
-     */
-    protected $config;
-
-    /**
-     * @type HTMLPurifier_Context
-     */
-    protected $context;
-
-    /**
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     */
-    public function __construct($config, $context)
-    {
-        $this->config  = $config;
-        $this->context = $context;
-    }
-
-    /**
-     * Loads language object with necessary info from factory cache
-     * @note This is a lazy loader
-     */
-    public function load()
-    {
-        if ($this->_loaded) {
-            return;
-        }
-        $factory = HTMLPurifier_LanguageFactory::instance();
-        $factory->loadLanguage($this->code);
-        foreach ($factory->keys as $key) {
-            $this->$key = $factory->cache[$this->code][$key];
-        }
-        $this->_loaded = true;
-    }
-
-    /**
-     * Retrieves a localised message.
-     * @param string $key string identifier of message
-     * @return string localised message
-     */
-    public function getMessage($key)
-    {
-        if (!$this->_loaded) {
-            $this->load();
-        }
-        if (!isset($this->messages[$key])) {
-            return "[$key]";
-        }
-        return $this->messages[$key];
-    }
-
-    /**
-     * Retrieves a localised error name.
-     * @param int $int error number, corresponding to PHP's error reporting
-     * @return string localised message
-     */
-    public function getErrorName($int)
-    {
-        if (!$this->_loaded) {
-            $this->load();
-        }
-        if (!isset($this->errorNames[$int])) {
-            return "[Error: $int]";
-        }
-        return $this->errorNames[$int];
-    }
-
-    /**
-     * Converts an array list into a string readable representation
-     * @param array $array
-     * @return string
-     */
-    public function listify($array)
-    {
-        $sep      = $this->getMessage('Item separator');
-        $sep_last = $this->getMessage('Item separator last');
-        $ret = '';
-        for ($i = 0, $c = count($array); $i < $c; $i++) {
-            if ($i == 0) {
-            } elseif ($i + 1 < $c) {
-                $ret .= $sep;
-            } else {
-                $ret .= $sep_last;
-            }
-            $ret .= $array[$i];
-        }
-        return $ret;
-    }
-
-    /**
-     * Formats a localised message with passed parameters
-     * @param string $key string identifier of message
-     * @param array $args Parameters to substitute in
-     * @return string localised message
-     * @todo Implement conditionals? Right now, some messages make
-     *     reference to line numbers, but those aren't always available
-     */
-    public function formatMessage($key, $args = array())
-    {
-        if (!$this->_loaded) {
-            $this->load();
-        }
-        if (!isset($this->messages[$key])) {
-            return "[$key]";
-        }
-        $raw = $this->messages[$key];
-        $subst = array();
-        $generator = false;
-        foreach ($args as $i => $value) {
-            if (is_object($value)) {
-                if ($value instanceof HTMLPurifier_Token) {
-                    // factor this out some time
-                    if (!$generator) {
-                        $generator = $this->context->get('Generator');
-                    }
-                    if (isset($value->name)) {
-                        $subst['$'.$i.'.Name'] = $value->name;
-                    }
-                    if (isset($value->data)) {
-                        $subst['$'.$i.'.Data'] = $value->data;
-                    }
-                    $subst['$'.$i.'.Compact'] =
-                    $subst['$'.$i.'.Serialized'] = $generator->generateFromToken($value);
-                    // a more complex algorithm for compact representation
-                    // could be introduced for all types of tokens. This
-                    // may need to be factored out into a dedicated class
-                    if (!empty($value->attr)) {
-                        $stripped_token = clone $value;
-                        $stripped_token->attr = array();
-                        $subst['$'.$i.'.Compact'] = $generator->generateFromToken($stripped_token);
-                    }
-                    $subst['$'.$i.'.Line'] = $value->line ? $value->line : 'unknown';
-                }
-                continue;
-            } elseif (is_array($value)) {
-                $keys = array_keys($value);
-                if (array_keys($keys) === $keys) {
-                    // list
-                    $subst['$'.$i] = $this->listify($value);
-                } else {
-                    // associative array
-                    // no $i implementation yet, sorry
-                    $subst['$'.$i.'.Keys'] = $this->listify($keys);
-                    $subst['$'.$i.'.Values'] = $this->listify(array_values($value));
-                }
-                continue;
-            }
-            $subst['$' . $i] = $value;
-        }
-        return strtr($raw, $subst);
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,54 +1,46 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Translation\Loader;
-
-use Symfony\Component\Translation\Exception\InvalidResourceException;
-use Symfony\Component\Translation\Exception\LogicException;
-use Symfony\Component\Yaml\Exception\ParseException;
-use Symfony\Component\Yaml\Parser as YamlParser;
-use Symfony\Component\Yaml\Yaml;
-
-/**
- * YamlFileLoader loads translations from Yaml files.
- *
- * @author Fabien Potencier <fabien@symfony.com>
- */
-class YamlFileLoader extends FileLoader
-{
-    private $yamlParser;
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function loadResource($resource)
-    {
-        if (null === $this->yamlParser) {
-            if (!class_exists('Symfony\Component\Yaml\Parser')) {
-                throw new LogicException('Loading translations from the YAML format requires the Symfony Yaml component.');
-            }
-
-            $this->yamlParser = new YamlParser();
-        }
-
-        try {
-            $messages = $this->yamlParser->parseFile($resource, Yaml::PARSE_CONSTANT);
-        } catch (ParseException $e) {
-            throw new InvalidResourceException(sprintf('The file "%s" does not contain valid YAML: ', $resource).$e->getMessage(), 0, $e);
-        }
-
-        if (null !== $messages && !\is_array($messages)) {
-            throw new InvalidResourceException(sprintf('Unable to load file "%s".', $resource));
-        }
-
-        return $messages ?: [];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

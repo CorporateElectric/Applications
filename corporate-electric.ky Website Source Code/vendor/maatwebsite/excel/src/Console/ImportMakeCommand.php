@@ -1,88 +1,49 @@
-<?php
-
-namespace Maatwebsite\Excel\Console;
-
-use Illuminate\Console\GeneratorCommand;
-use Symfony\Component\Console\Input\InputOption;
-
-class ImportMakeCommand extends GeneratorCommand
-{
-    use WithModelStub;
-
-    /**
-     * The console command name.
-     *
-     * @var string
-     */
-    protected $name = 'make:import';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Create a new import class';
-
-    /**
-     * The type of class being generated.
-     *
-     * @var string
-     */
-    protected $type = 'Import';
-
-    /**
-     * Get the stub file for the generator.
-     *
-     * @return string
-     */
-    protected function getStub()
-    {
-        return $this->option('model')
-            ? $this->resolveStubPath('/stubs/import.model.stub')
-            : $this->resolveStubPath('/stubs/import.collection.stub');
-    }
-
-    /**
-     * Get the default namespace for the class.
-     *
-     * @param  string $rootNamespace
-     *
-     * @return string
-     */
-    protected function getDefaultNamespace($rootNamespace)
-    {
-        return $rootNamespace . '\Imports';
-    }
-
-    /**
-     * Build the class with the given name.
-     * Remove the base controller import if we are already in base namespace.
-     *
-     * @param  string $name
-     *
-     * @return string
-     */
-    protected function buildClass($name)
-    {
-        $replace = [];
-        if ($this->option('model')) {
-            $replace = $this->buildModelReplacements($replace);
-        }
-
-        return str_replace(
-            array_keys($replace), array_values($replace), parent::buildClass($name)
-        );
-    }
-
-    /**
-     * Get the console command options.
-     *
-     * @return array
-     */
-    protected function getOptions()
-    {
-        return [
-            ['model', 'm', InputOption::VALUE_OPTIONAL, 'Generate an import for the given model.'],
-        ];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

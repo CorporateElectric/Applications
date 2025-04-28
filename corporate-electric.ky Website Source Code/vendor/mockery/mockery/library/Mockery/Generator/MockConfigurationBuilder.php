@@ -1,174 +1,82 @@
-<?php
-/**
- * Mockery
- *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://github.com/padraic/mockery/blob/master/LICENSE
- * If you did not receive a copy of the license and are unable to
- * obtain it through the world-wide-web, please send an email
- * to padraic@php.net so we can send you a copy immediately.
- *
- * @category   Mockery
- * @package    Mockery
- * @copyright  Copyright (c) 2010 Pádraic Brady (http://blog.astrumfutura.com)
- * @license    http://github.com/padraic/mockery/blob/master/LICENSE New BSD License
- */
-
-namespace Mockery\Generator;
-
-class MockConfigurationBuilder
-{
-    protected $name;
-    protected $blackListedMethods = array(
-        '__call',
-        '__callStatic',
-        '__clone',
-        '__wakeup',
-        '__set',
-        '__get',
-        '__toString',
-        '__isset',
-        '__destruct',
-        '__debugInfo', ## mocking this makes it difficult to debug with xdebug
-
-        // below are reserved words in PHP
-        "__halt_compiler", "abstract", "and", "array", "as",
-        "break", "callable", "case", "catch", "class",
-        "clone", "const", "continue", "declare", "default",
-        "die", "do", "echo", "else", "elseif",
-        "empty", "enddeclare", "endfor", "endforeach", "endif",
-        "endswitch", "endwhile", "eval", "exit", "extends",
-        "final", "for", "foreach", "function", "global",
-        "goto", "if", "implements", "include", "include_once",
-        "instanceof", "insteadof", "interface", "isset", "list",
-        "namespace", "new", "or", "print", "private",
-        "protected", "public", "require", "require_once", "return",
-        "static", "switch", "throw", "trait", "try",
-        "unset", "use", "var", "while", "xor"
-    );
-
-    protected $php7SemiReservedKeywords = [
-        "callable", "class", "trait", "extends", "implements", "static", "abstract", "final",
-        "public", "protected", "private", "const", "enddeclare", "endfor", "endforeach", "endif",
-        "endwhile", "and", "global", "goto", "instanceof", "insteadof", "interface", "namespace", "new",
-        "or", "xor", "try", "use", "var", "exit", "list", "clone", "include", "include_once", "throw",
-        "array", "print", "echo", "require", "require_once", "return", "else", "elseif", "default",
-        "break", "continue", "switch", "yield", "function", "if", "endswitch", "finally", "for", "foreach",
-        "declare", "case", "do", "while", "as", "catch", "die", "self", "parent",
-    ];
-
-    protected $whiteListedMethods = array();
-    protected $instanceMock = false;
-    protected $parameterOverrides = array();
-
-    protected $mockOriginalDestructor = false;
-    protected $targets = array();
-
-    protected $constantsMap = array();
-
-    public function __construct()
-    {
-        $this->blackListedMethods = array_diff($this->blackListedMethods, $this->php7SemiReservedKeywords);
-    }
-
-    public function addTarget($target)
-    {
-        $this->targets[] = $target;
-
-        return $this;
-    }
-
-    public function addTargets($targets)
-    {
-        foreach ($targets as $target) {
-            $this->addTarget($target);
-        }
-
-        return $this;
-    }
-
-    public function setName($name)
-    {
-        $this->name = $name;
-        return $this;
-    }
-
-    public function addBlackListedMethod($blackListedMethod)
-    {
-        $this->blackListedMethods[] = $blackListedMethod;
-        return $this;
-    }
-
-    public function addBlackListedMethods(array $blackListedMethods)
-    {
-        foreach ($blackListedMethods as $method) {
-            $this->addBlackListedMethod($method);
-        }
-        return $this;
-    }
-
-    public function setBlackListedMethods(array $blackListedMethods)
-    {
-        $this->blackListedMethods = $blackListedMethods;
-        return $this;
-    }
-
-    public function addWhiteListedMethod($whiteListedMethod)
-    {
-        $this->whiteListedMethods[] = $whiteListedMethod;
-        return $this;
-    }
-
-    public function addWhiteListedMethods(array $whiteListedMethods)
-    {
-        foreach ($whiteListedMethods as $method) {
-            $this->addWhiteListedMethod($method);
-        }
-        return $this;
-    }
-
-    public function setWhiteListedMethods(array $whiteListedMethods)
-    {
-        $this->whiteListedMethods = $whiteListedMethods;
-        return $this;
-    }
-
-    public function setInstanceMock($instanceMock)
-    {
-        $this->instanceMock = (bool) $instanceMock;
-    }
-
-    public function setParameterOverrides(array $overrides)
-    {
-        $this->parameterOverrides = $overrides;
-    }
-
-    public function setMockOriginalDestructor($mockDestructor)
-    {
-        $this->mockOriginalDestructor = $mockDestructor;
-        return $this;
-    }
-
-    public function setConstantsMap(array $map)
-    {
-        $this->constantsMap = $map;
-    }
-
-    public function getMockConfiguration()
-    {
-        return new MockConfiguration(
-            $this->targets,
-            $this->blackListedMethods,
-            $this->whiteListedMethods,
-            $this->name,
-            $this->instanceMock,
-            $this->parameterOverrides,
-            $this->mockOriginalDestructor,
-            $this->constantsMap
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

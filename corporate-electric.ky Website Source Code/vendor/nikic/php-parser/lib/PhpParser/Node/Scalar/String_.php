@@ -1,141 +1,91 @@
-<?php declare(strict_types=1);
-
-namespace PhpParser\Node\Scalar;
-
-use PhpParser\Error;
-use PhpParser\Node\Scalar;
-
-class String_ extends Scalar
-{
-    /* For use in "kind" attribute */
-    const KIND_SINGLE_QUOTED = 1;
-    const KIND_DOUBLE_QUOTED = 2;
-    const KIND_HEREDOC = 3;
-    const KIND_NOWDOC = 4;
-
-    /** @var string String value */
-    public $value;
-
-    protected static $replacements = [
-        '\\' => '\\',
-        '$'  =>  '$',
-        'n'  => "\n",
-        'r'  => "\r",
-        't'  => "\t",
-        'f'  => "\f",
-        'v'  => "\v",
-        'e'  => "\x1B",
-    ];
-
-    /**
-     * Constructs a string scalar node.
-     *
-     * @param string $value      Value of the string
-     * @param array  $attributes Additional attributes
-     */
-    public function __construct(string $value, array $attributes = []) {
-        $this->attributes = $attributes;
-        $this->value = $value;
-    }
-
-    public function getSubNodeNames() : array {
-        return ['value'];
-    }
-
-    /**
-     * @internal
-     *
-     * Parses a string token.
-     *
-     * @param string $str String token content
-     * @param bool $parseUnicodeEscape Whether to parse PHP 7 \u escapes
-     *
-     * @return string The parsed string
-     */
-    public static function parse(string $str, bool $parseUnicodeEscape = true) : string {
-        $bLength = 0;
-        if ('b' === $str[0] || 'B' === $str[0]) {
-            $bLength = 1;
-        }
-
-        if ('\'' === $str[$bLength]) {
-            return str_replace(
-                ['\\\\', '\\\''],
-                ['\\', '\''],
-                substr($str, $bLength + 1, -1)
-            );
-        } else {
-            return self::parseEscapeSequences(
-                substr($str, $bLength + 1, -1), '"', $parseUnicodeEscape
-            );
-        }
-    }
-
-    /**
-     * @internal
-     *
-     * Parses escape sequences in strings (all string types apart from single quoted).
-     *
-     * @param string      $str   String without quotes
-     * @param null|string $quote Quote type
-     * @param bool $parseUnicodeEscape Whether to parse PHP 7 \u escapes
-     *
-     * @return string String with escape sequences parsed
-     */
-    public static function parseEscapeSequences(string $str, $quote, bool $parseUnicodeEscape = true) : string {
-        if (null !== $quote) {
-            $str = str_replace('\\' . $quote, $quote, $str);
-        }
-
-        $extra = '';
-        if ($parseUnicodeEscape) {
-            $extra = '|u\{([0-9a-fA-F]+)\}';
-        }
-
-        return preg_replace_callback(
-            '~\\\\([\\\\$nrtfve]|[xX][0-9a-fA-F]{1,2}|[0-7]{1,3}' . $extra . ')~',
-            function($matches) {
-                $str = $matches[1];
-
-                if (isset(self::$replacements[$str])) {
-                    return self::$replacements[$str];
-                } elseif ('x' === $str[0] || 'X' === $str[0]) {
-                    return chr(hexdec(substr($str, 1)));
-                } elseif ('u' === $str[0]) {
-                    return self::codePointToUtf8(hexdec($matches[2]));
-                } else {
-                    return chr(octdec($str));
-                }
-            },
-            $str
-        );
-    }
-
-    /**
-     * Converts a Unicode code point to its UTF-8 encoded representation.
-     *
-     * @param int $num Code point
-     *
-     * @return string UTF-8 representation of code point
-     */
-    private static function codePointToUtf8(int $num) : string {
-        if ($num <= 0x7F) {
-            return chr($num);
-        }
-        if ($num <= 0x7FF) {
-            return chr(($num>>6) + 0xC0) . chr(($num&0x3F) + 0x80);
-        }
-        if ($num <= 0xFFFF) {
-            return chr(($num>>12) + 0xE0) . chr((($num>>6)&0x3F) + 0x80) . chr(($num&0x3F) + 0x80);
-        }
-        if ($num <= 0x1FFFFF) {
-            return chr(($num>>18) + 0xF0) . chr((($num>>12)&0x3F) + 0x80)
-                 . chr((($num>>6)&0x3F) + 0x80) . chr(($num&0x3F) + 0x80);
-        }
-        throw new Error('Invalid UTF-8 codepoint escape sequence: Codepoint too large');
-    }
-
-    public function getType() : string {
-        return 'Scalar_String';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

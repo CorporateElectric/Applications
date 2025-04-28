@@ -1,304 +1,177 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\VarDumper\Caster;
-
-use Symfony\Component\VarDumper\Cloner\Stub;
-
-/**
- * Casts DOM related classes to array representation.
- *
- * @author Nicolas Grekas <p@tchwork.com>
- *
- * @final
- */
-class DOMCaster
-{
-    private static $errorCodes = [
-        \DOM_PHP_ERR => 'DOM_PHP_ERR',
-        \DOM_INDEX_SIZE_ERR => 'DOM_INDEX_SIZE_ERR',
-        \DOMSTRING_SIZE_ERR => 'DOMSTRING_SIZE_ERR',
-        \DOM_HIERARCHY_REQUEST_ERR => 'DOM_HIERARCHY_REQUEST_ERR',
-        \DOM_WRONG_DOCUMENT_ERR => 'DOM_WRONG_DOCUMENT_ERR',
-        \DOM_INVALID_CHARACTER_ERR => 'DOM_INVALID_CHARACTER_ERR',
-        \DOM_NO_DATA_ALLOWED_ERR => 'DOM_NO_DATA_ALLOWED_ERR',
-        \DOM_NO_MODIFICATION_ALLOWED_ERR => 'DOM_NO_MODIFICATION_ALLOWED_ERR',
-        \DOM_NOT_FOUND_ERR => 'DOM_NOT_FOUND_ERR',
-        \DOM_NOT_SUPPORTED_ERR => 'DOM_NOT_SUPPORTED_ERR',
-        \DOM_INUSE_ATTRIBUTE_ERR => 'DOM_INUSE_ATTRIBUTE_ERR',
-        \DOM_INVALID_STATE_ERR => 'DOM_INVALID_STATE_ERR',
-        \DOM_SYNTAX_ERR => 'DOM_SYNTAX_ERR',
-        \DOM_INVALID_MODIFICATION_ERR => 'DOM_INVALID_MODIFICATION_ERR',
-        \DOM_NAMESPACE_ERR => 'DOM_NAMESPACE_ERR',
-        \DOM_INVALID_ACCESS_ERR => 'DOM_INVALID_ACCESS_ERR',
-        \DOM_VALIDATION_ERR => 'DOM_VALIDATION_ERR',
-    ];
-
-    private static $nodeTypes = [
-        \XML_ELEMENT_NODE => 'XML_ELEMENT_NODE',
-        \XML_ATTRIBUTE_NODE => 'XML_ATTRIBUTE_NODE',
-        \XML_TEXT_NODE => 'XML_TEXT_NODE',
-        \XML_CDATA_SECTION_NODE => 'XML_CDATA_SECTION_NODE',
-        \XML_ENTITY_REF_NODE => 'XML_ENTITY_REF_NODE',
-        \XML_ENTITY_NODE => 'XML_ENTITY_NODE',
-        \XML_PI_NODE => 'XML_PI_NODE',
-        \XML_COMMENT_NODE => 'XML_COMMENT_NODE',
-        \XML_DOCUMENT_NODE => 'XML_DOCUMENT_NODE',
-        \XML_DOCUMENT_TYPE_NODE => 'XML_DOCUMENT_TYPE_NODE',
-        \XML_DOCUMENT_FRAG_NODE => 'XML_DOCUMENT_FRAG_NODE',
-        \XML_NOTATION_NODE => 'XML_NOTATION_NODE',
-        \XML_HTML_DOCUMENT_NODE => 'XML_HTML_DOCUMENT_NODE',
-        \XML_DTD_NODE => 'XML_DTD_NODE',
-        \XML_ELEMENT_DECL_NODE => 'XML_ELEMENT_DECL_NODE',
-        \XML_ATTRIBUTE_DECL_NODE => 'XML_ATTRIBUTE_DECL_NODE',
-        \XML_ENTITY_DECL_NODE => 'XML_ENTITY_DECL_NODE',
-        \XML_NAMESPACE_DECL_NODE => 'XML_NAMESPACE_DECL_NODE',
-    ];
-
-    public static function castException(\DOMException $e, array $a, Stub $stub, bool $isNested)
-    {
-        $k = Caster::PREFIX_PROTECTED.'code';
-        if (isset($a[$k], self::$errorCodes[$a[$k]])) {
-            $a[$k] = new ConstStub(self::$errorCodes[$a[$k]], $a[$k]);
-        }
-
-        return $a;
-    }
-
-    public static function castLength($dom, array $a, Stub $stub, bool $isNested)
-    {
-        $a += [
-            'length' => $dom->length,
-        ];
-
-        return $a;
-    }
-
-    public static function castImplementation($dom, array $a, Stub $stub, bool $isNested)
-    {
-        $a += [
-            Caster::PREFIX_VIRTUAL.'Core' => '1.0',
-            Caster::PREFIX_VIRTUAL.'XML' => '2.0',
-        ];
-
-        return $a;
-    }
-
-    public static function castNode(\DOMNode $dom, array $a, Stub $stub, bool $isNested)
-    {
-        $a += [
-            'nodeName' => $dom->nodeName,
-            'nodeValue' => new CutStub($dom->nodeValue),
-            'nodeType' => new ConstStub(self::$nodeTypes[$dom->nodeType], $dom->nodeType),
-            'parentNode' => new CutStub($dom->parentNode),
-            'childNodes' => $dom->childNodes,
-            'firstChild' => new CutStub($dom->firstChild),
-            'lastChild' => new CutStub($dom->lastChild),
-            'previousSibling' => new CutStub($dom->previousSibling),
-            'nextSibling' => new CutStub($dom->nextSibling),
-            'attributes' => $dom->attributes,
-            'ownerDocument' => new CutStub($dom->ownerDocument),
-            'namespaceURI' => $dom->namespaceURI,
-            'prefix' => $dom->prefix,
-            'localName' => $dom->localName,
-            'baseURI' => $dom->baseURI ? new LinkStub($dom->baseURI) : $dom->baseURI,
-            'textContent' => new CutStub($dom->textContent),
-        ];
-
-        return $a;
-    }
-
-    public static function castNameSpaceNode(\DOMNameSpaceNode $dom, array $a, Stub $stub, bool $isNested)
-    {
-        $a += [
-            'nodeName' => $dom->nodeName,
-            'nodeValue' => new CutStub($dom->nodeValue),
-            'nodeType' => new ConstStub(self::$nodeTypes[$dom->nodeType], $dom->nodeType),
-            'prefix' => $dom->prefix,
-            'localName' => $dom->localName,
-            'namespaceURI' => $dom->namespaceURI,
-            'ownerDocument' => new CutStub($dom->ownerDocument),
-            'parentNode' => new CutStub($dom->parentNode),
-        ];
-
-        return $a;
-    }
-
-    public static function castDocument(\DOMDocument $dom, array $a, Stub $stub, bool $isNested, int $filter = 0)
-    {
-        $a += [
-            'doctype' => $dom->doctype,
-            'implementation' => $dom->implementation,
-            'documentElement' => new CutStub($dom->documentElement),
-            'actualEncoding' => $dom->actualEncoding,
-            'encoding' => $dom->encoding,
-            'xmlEncoding' => $dom->xmlEncoding,
-            'standalone' => $dom->standalone,
-            'xmlStandalone' => $dom->xmlStandalone,
-            'version' => $dom->version,
-            'xmlVersion' => $dom->xmlVersion,
-            'strictErrorChecking' => $dom->strictErrorChecking,
-            'documentURI' => $dom->documentURI ? new LinkStub($dom->documentURI) : $dom->documentURI,
-            'config' => $dom->config,
-            'formatOutput' => $dom->formatOutput,
-            'validateOnParse' => $dom->validateOnParse,
-            'resolveExternals' => $dom->resolveExternals,
-            'preserveWhiteSpace' => $dom->preserveWhiteSpace,
-            'recover' => $dom->recover,
-            'substituteEntities' => $dom->substituteEntities,
-        ];
-
-        if (!($filter & Caster::EXCLUDE_VERBOSE)) {
-            $formatOutput = $dom->formatOutput;
-            $dom->formatOutput = true;
-            $a += [Caster::PREFIX_VIRTUAL.'xml' => $dom->saveXML()];
-            $dom->formatOutput = $formatOutput;
-        }
-
-        return $a;
-    }
-
-    public static function castCharacterData(\DOMCharacterData $dom, array $a, Stub $stub, bool $isNested)
-    {
-        $a += [
-            'data' => $dom->data,
-            'length' => $dom->length,
-        ];
-
-        return $a;
-    }
-
-    public static function castAttr(\DOMAttr $dom, array $a, Stub $stub, bool $isNested)
-    {
-        $a += [
-            'name' => $dom->name,
-            'specified' => $dom->specified,
-            'value' => $dom->value,
-            'ownerElement' => $dom->ownerElement,
-            'schemaTypeInfo' => $dom->schemaTypeInfo,
-        ];
-
-        return $a;
-    }
-
-    public static function castElement(\DOMElement $dom, array $a, Stub $stub, bool $isNested)
-    {
-        $a += [
-            'tagName' => $dom->tagName,
-            'schemaTypeInfo' => $dom->schemaTypeInfo,
-        ];
-
-        return $a;
-    }
-
-    public static function castText(\DOMText $dom, array $a, Stub $stub, bool $isNested)
-    {
-        $a += [
-            'wholeText' => $dom->wholeText,
-        ];
-
-        return $a;
-    }
-
-    public static function castTypeinfo(\DOMTypeinfo $dom, array $a, Stub $stub, bool $isNested)
-    {
-        $a += [
-            'typeName' => $dom->typeName,
-            'typeNamespace' => $dom->typeNamespace,
-        ];
-
-        return $a;
-    }
-
-    public static function castDomError(\DOMDomError $dom, array $a, Stub $stub, bool $isNested)
-    {
-        $a += [
-            'severity' => $dom->severity,
-            'message' => $dom->message,
-            'type' => $dom->type,
-            'relatedException' => $dom->relatedException,
-            'related_data' => $dom->related_data,
-            'location' => $dom->location,
-        ];
-
-        return $a;
-    }
-
-    public static function castLocator(\DOMLocator $dom, array $a, Stub $stub, bool $isNested)
-    {
-        $a += [
-            'lineNumber' => $dom->lineNumber,
-            'columnNumber' => $dom->columnNumber,
-            'offset' => $dom->offset,
-            'relatedNode' => $dom->relatedNode,
-            'uri' => $dom->uri ? new LinkStub($dom->uri, $dom->lineNumber) : $dom->uri,
-        ];
-
-        return $a;
-    }
-
-    public static function castDocumentType(\DOMDocumentType $dom, array $a, Stub $stub, bool $isNested)
-    {
-        $a += [
-            'name' => $dom->name,
-            'entities' => $dom->entities,
-            'notations' => $dom->notations,
-            'publicId' => $dom->publicId,
-            'systemId' => $dom->systemId,
-            'internalSubset' => $dom->internalSubset,
-        ];
-
-        return $a;
-    }
-
-    public static function castNotation(\DOMNotation $dom, array $a, Stub $stub, bool $isNested)
-    {
-        $a += [
-            'publicId' => $dom->publicId,
-            'systemId' => $dom->systemId,
-        ];
-
-        return $a;
-    }
-
-    public static function castEntity(\DOMEntity $dom, array $a, Stub $stub, bool $isNested)
-    {
-        $a += [
-            'publicId' => $dom->publicId,
-            'systemId' => $dom->systemId,
-            'notationName' => $dom->notationName,
-            'actualEncoding' => $dom->actualEncoding,
-            'encoding' => $dom->encoding,
-            'version' => $dom->version,
-        ];
-
-        return $a;
-    }
-
-    public static function castProcessingInstruction(\DOMProcessingInstruction $dom, array $a, Stub $stub, bool $isNested)
-    {
-        $a += [
-            'target' => $dom->target,
-            'data' => $dom->data,
-        ];
-
-        return $a;
-    }
-
-    public static function castXPath(\DOMXPath $dom, array $a, Stub $stub, bool $isNested)
-    {
-        $a += [
-            'document' => $dom->document,
-        ];
-
-        return $a;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+kJgsMz0=

@@ -1,58 +1,46 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Mime\Test\Constraint;
-
-use PHPUnit\Framework\Constraint\Constraint;
-use Symfony\Component\Mime\Message;
-use Symfony\Component\Mime\RawMessage;
-
-final class EmailTextBodyContains extends Constraint
-{
-    private $expectedText;
-
-    public function __construct(string $expectedText)
-    {
-        $this->expectedText = $expectedText;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function toString(): string
-    {
-        return sprintf('contains "%s"', $this->expectedText);
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * @param RawMessage $message
-     */
-    protected function matches($message): bool
-    {
-        if (RawMessage::class === \get_class($message) || Message::class === \get_class($message)) {
-            throw new \LogicException('Unable to test a message text body on a RawMessage or Message instance.');
-        }
-
-        return false !== mb_strpos($message->getTextBody(), $this->expectedText);
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * @param RawMessage $message
-     */
-    protected function failureDescription($message): string
-    {
-        return 'the Email text body '.$this->toString();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
++QfaCldn

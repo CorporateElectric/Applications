@@ -1,328 +1,161 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Util\TestDox;
-
-use function array_key_exists;
-use function array_keys;
-use function array_map;
-use function array_pop;
-use function array_values;
-use function explode;
-use function get_class;
-use function gettype;
-use function implode;
-use function in_array;
-use function is_bool;
-use function is_float;
-use function is_int;
-use function is_numeric;
-use function is_object;
-use function is_scalar;
-use function is_string;
-use function mb_strtolower;
-use function ord;
-use function preg_quote;
-use function preg_replace;
-use function range;
-use function sprintf;
-use function str_replace;
-use function strlen;
-use function strpos;
-use function strtolower;
-use function strtoupper;
-use function substr;
-use function trim;
-use PHPUnit\Framework\TestCase;
-use PHPUnit\Util\Color;
-use PHPUnit\Util\Exception as UtilException;
-use PHPUnit\Util\Test;
-use ReflectionException;
-use ReflectionMethod;
-use ReflectionObject;
-use SebastianBergmann\Exporter\Exporter;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for PHPUnit
- */
-final class NamePrettifier
-{
-    /**
-     * @var string[]
-     */
-    private $strings = [];
-
-    /**
-     * @var bool
-     */
-    private $useColor;
-
-    public function __construct(bool $useColor = false)
-    {
-        $this->useColor = $useColor;
-    }
-
-    /**
-     * Prettifies the name of a test class.
-     *
-     * @psalm-param class-string $className
-     */
-    public function prettifyTestClass(string $className): string
-    {
-        try {
-            $annotations = Test::parseTestMethodAnnotations($className);
-
-            if (isset($annotations['class']['testdox'][0])) {
-                return $annotations['class']['testdox'][0];
-            }
-        } catch (UtilException $e) {
-            // ignore, determine className by parsing the provided name
-        }
-
-        $parts     = explode('\\', $className);
-        $className = array_pop($parts);
-
-        if (substr($className, -1 * strlen('Test')) === 'Test') {
-            $className = substr($className, 0, strlen($className) - strlen('Test'));
-        }
-
-        if (strpos($className, 'Tests') === 0) {
-            $className = substr($className, strlen('Tests'));
-        } elseif (strpos($className, 'Test') === 0) {
-            $className = substr($className, strlen('Test'));
-        }
-
-        if (empty($className)) {
-            $className = 'UnnamedTests';
-        }
-
-        if (!empty($parts)) {
-            $parts[]            = $className;
-            $fullyQualifiedName = implode('\\', $parts);
-        } else {
-            $fullyQualifiedName = $className;
-        }
-
-        $result       = '';
-        $wasLowerCase = false;
-
-        foreach (range(0, strlen($className) - 1) as $i) {
-            $isLowerCase = mb_strtolower($className[$i], 'UTF-8') === $className[$i];
-
-            if ($wasLowerCase && !$isLowerCase) {
-                $result .= ' ';
-            }
-
-            $result .= $className[$i];
-
-            if ($isLowerCase) {
-                $wasLowerCase = true;
-            } else {
-                $wasLowerCase = false;
-            }
-        }
-
-        if ($fullyQualifiedName !== $className) {
-            return $result . ' (' . $fullyQualifiedName . ')';
-        }
-
-        return $result;
-    }
-
-    /**
-     * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
-     */
-    public function prettifyTestCase(TestCase $test): string
-    {
-        $annotations = Test::parseTestMethodAnnotations(
-            get_class($test),
-            $test->getName(false)
-        );
-
-        $annotationWithPlaceholders = false;
-
-        $callback = static function (string $variable): string {
-            return sprintf('/%s(?=\b)/', preg_quote($variable, '/'));
-        };
-
-        if (isset($annotations['method']['testdox'][0])) {
-            $result = $annotations['method']['testdox'][0];
-
-            if (strpos($result, '$') !== false) {
-                $annotation   = $annotations['method']['testdox'][0];
-                $providedData = $this->mapTestMethodParameterNamesToProvidedDataValues($test);
-                $variables    = array_map($callback, array_keys($providedData));
-
-                $result = trim(preg_replace($variables, $providedData, $annotation));
-
-                $annotationWithPlaceholders = true;
-            }
-        } else {
-            $result = $this->prettifyTestMethod($test->getName(false));
-        }
-
-        if (!$annotationWithPlaceholders && $test->usesDataProvider()) {
-            $result .= $this->prettifyDataSet($test);
-        }
-
-        return $result;
-    }
-
-    public function prettifyDataSet(TestCase $test): string
-    {
-        if (!$this->useColor) {
-            return $test->getDataSetAsString(false);
-        }
-
-        if (is_int($test->dataName())) {
-            $data = Color::dim(' with data set ') . Color::colorize('fg-cyan', (string) $test->dataName());
-        } else {
-            $data = Color::dim(' with ') . Color::colorize('fg-cyan', Color::visualizeWhitespace((string) $test->dataName()));
-        }
-
-        return $data;
-    }
-
-    /**
-     * Prettifies the name of a test method.
-     */
-    public function prettifyTestMethod(string $name): string
-    {
-        $buffer = '';
-
-        if ($name === '') {
-            return $buffer;
-        }
-
-        $string = (string) preg_replace('#\d+$#', '', $name, -1, $count);
-
-        if (in_array($string, $this->strings, true)) {
-            $name = $string;
-        } elseif ($count === 0) {
-            $this->strings[] = $string;
-        }
-
-        if (strpos($name, 'test_') === 0) {
-            $name = substr($name, 5);
-        } elseif (strpos($name, 'test') === 0) {
-            $name = substr($name, 4);
-        }
-
-        if ($name === '') {
-            return $buffer;
-        }
-
-        $name[0] = strtoupper($name[0]);
-
-        if (strpos($name, '_') !== false) {
-            return trim(str_replace('_', ' ', $name));
-        }
-
-        $wasNumeric = false;
-
-        foreach (range(0, strlen($name) - 1) as $i) {
-            if ($i > 0 && ord($name[$i]) >= 65 && ord($name[$i]) <= 90) {
-                $buffer .= ' ' . strtolower($name[$i]);
-            } else {
-                $isNumeric = is_numeric($name[$i]);
-
-                if (!$wasNumeric && $isNumeric) {
-                    $buffer .= ' ';
-                    $wasNumeric = true;
-                }
-
-                if ($wasNumeric && !$isNumeric) {
-                    $wasNumeric = false;
-                }
-
-                $buffer .= $name[$i];
-            }
-        }
-
-        return $buffer;
-    }
-
-    /**
-     * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
-     */
-    private function mapTestMethodParameterNamesToProvidedDataValues(TestCase $test): array
-    {
-        try {
-            $reflector = new ReflectionMethod(get_class($test), $test->getName(false));
-            // @codeCoverageIgnoreStart
-        } catch (ReflectionException $e) {
-            throw new UtilException(
-                $e->getMessage(),
-                (int) $e->getCode(),
-                $e
-            );
-        }
-        // @codeCoverageIgnoreEnd
-
-        $providedData       = [];
-        $providedDataValues = array_values($test->getProvidedData());
-        $i                  = 0;
-
-        $providedData['$_dataName'] = $test->dataName();
-
-        foreach ($reflector->getParameters() as $parameter) {
-            if (!array_key_exists($i, $providedDataValues) && $parameter->isDefaultValueAvailable()) {
-                try {
-                    $providedDataValues[$i] = $parameter->getDefaultValue();
-                    // @codeCoverageIgnoreStart
-                } catch (ReflectionException $e) {
-                    throw new UtilException(
-                        $e->getMessage(),
-                        (int) $e->getCode(),
-                        $e
-                    );
-                }
-                // @codeCoverageIgnoreEnd
-            }
-
-            $value = $providedDataValues[$i++] ?? null;
-
-            if (is_object($value)) {
-                $reflector = new ReflectionObject($value);
-
-                if ($reflector->hasMethod('__toString')) {
-                    $value = (string) $value;
-                } else {
-                    $value = get_class($value);
-                }
-            }
-
-            if (!is_scalar($value)) {
-                $value = gettype($value);
-            }
-
-            if (is_bool($value) || is_int($value) || is_float($value)) {
-                $value = (new Exporter)->export($value);
-            }
-
-            if (is_string($value) && $value === '') {
-                if ($this->useColor) {
-                    $value = Color::colorize('dim,underlined', 'empty');
-                } else {
-                    $value = "''";
-                }
-            }
-
-            $providedData['$' . $parameter->getName()] = $value;
-        }
-
-        if ($this->useColor) {
-            $providedData = array_map(static function ($value) {
-                return Color::colorize('fg-cyan', Color::visualizeWhitespace((string) $value, true));
-            }, $providedData);
-        }
-
-        return $providedData;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+DOn5RXfvf3U/d50=

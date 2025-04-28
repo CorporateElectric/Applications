@@ -1,46 +1,30 @@
-<?php
-/**
- * Mockery
- *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://github.com/padraic/mockery/blob/master/LICENSE
- * If you did not receive a copy of the license and are unable to
- * obtain it through the world-wide-web, please send an email
- * to padraic@php.net so we can send you a copy immediately.
- *
- * @category   Mockery
- * @package    Mockery
- * @copyright  Copyright (c) 2010 Pádraic Brady (http://blog.astrumfutura.com)
- * @license    http://github.com/padraic/mockery/blob/master/LICENSE New BSD License
- */
-
-namespace Mockery\Matcher;
-
-class HasValue extends MatcherAbstract
-{
-    /**
-     * Check if the actual value matches the expected.
-     *
-     * @param mixed $actual
-     * @return bool
-     */
-    public function match(&$actual)
-    {
-        return in_array($this->_expected, $actual);
-    }
-
-    /**
-     * Return a string representation of this Matcher
-     *
-     * @return string
-     */
-    public function __toString()
-    {
-        $return = '<HasValue[' . (string) $this->_expected . ']>';
-        return $return;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+og+zKtm3vW==

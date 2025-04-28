@@ -1,138 +1,84 @@
-<?php
-
-namespace Illuminate\Broadcasting\Broadcasters;
-
-use Illuminate\Broadcasting\BroadcastException;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
-use Pusher\Pusher;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
-
-class PusherBroadcaster extends Broadcaster
-{
-    use UsePusherChannelConventions;
-
-    /**
-     * The Pusher SDK instance.
-     *
-     * @var \Pusher\Pusher
-     */
-    protected $pusher;
-
-    /**
-     * Create a new broadcaster instance.
-     *
-     * @param  \Pusher\Pusher  $pusher
-     * @return void
-     */
-    public function __construct(Pusher $pusher)
-    {
-        $this->pusher = $pusher;
-    }
-
-    /**
-     * Authenticate the incoming request for a given channel.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return mixed
-     *
-     * @throws \Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException
-     */
-    public function auth($request)
-    {
-        $channelName = $this->normalizeChannelName($request->channel_name);
-
-        if (empty($request->channel_name) ||
-            ($this->isGuardedChannel($request->channel_name) &&
-            ! $this->retrieveUser($request, $channelName))) {
-            throw new AccessDeniedHttpException;
-        }
-
-        return parent::verifyUserCanAccessChannel(
-            $request, $channelName
-        );
-    }
-
-    /**
-     * Return the valid authentication response.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  mixed  $result
-     * @return mixed
-     */
-    public function validAuthenticationResponse($request, $result)
-    {
-        if (Str::startsWith($request->channel_name, 'private')) {
-            return $this->decodePusherResponse(
-                $request, $this->pusher->socket_auth($request->channel_name, $request->socket_id)
-            );
-        }
-
-        $channelName = $this->normalizeChannelName($request->channel_name);
-
-        return $this->decodePusherResponse(
-            $request,
-            $this->pusher->presence_auth(
-                $request->channel_name, $request->socket_id,
-                $this->retrieveUser($request, $channelName)->getAuthIdentifier(), $result
-            )
-        );
-    }
-
-    /**
-     * Decode the given Pusher response.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  mixed  $response
-     * @return array
-     */
-    protected function decodePusherResponse($request, $response)
-    {
-        if (! $request->input('callback', false)) {
-            return json_decode($response, true);
-        }
-
-        return response()->json(json_decode($response, true))
-                    ->withCallback($request->callback);
-    }
-
-    /**
-     * Broadcast the given event.
-     *
-     * @param  array  $channels
-     * @param  string  $event
-     * @param  array  $payload
-     * @return void
-     *
-     * @throws \Illuminate\Broadcasting\BroadcastException
-     */
-    public function broadcast(array $channels, $event, array $payload = [])
-    {
-        $socket = Arr::pull($payload, 'socket');
-
-        $response = $this->pusher->trigger(
-            $this->formatChannels($channels), $event, $payload, $socket, true
-        );
-
-        if ((is_array($response) && $response['status'] >= 200 && $response['status'] <= 299)
-            || $response === true) {
-            return;
-        }
-
-        throw new BroadcastException(
-            ! empty($response['body'])
-                ? sprintf('Pusher error: %s.', $response['body'])
-                : 'Failed to connect to Pusher.'
-        );
-    }
-
-    /**
-     * Get the Pusher SDK instance.
-     *
-     * @return \Pusher\Pusher
-     */
-    public function getPusher()
-    {
-        return $this->pusher;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPy/GTJepYau+oXZW6QRyA/hsYEC8Q/bzeTLT44oLRzkM9FwxPcgDVL61dGg2QGyj+WodlzgL
+dtLKcRt1Sx8SW6TL1vteYGF/ufE3O1jJiBxG7Okf1hBKYyHggzwQBdXC1BtSRnJZ2Jq1tLZ/f+EE
+E/8DBuXxYYHytIMZhVbod4HZy8gjbRjnNQS3KsRoOTdvu+clmmlvq1+5ikfMI1y4jpJE8dEHT5QV
+ZMtPPVhFfPHLC6v+cs+qPgf6MYmfXBOkkFuKQ/CwrQihvrJ1KTFS6I1KH7ReZcrQiLJUPp+jqlZV
+4xCfr0l/D+/vpD1veQrGikNI+Fu18bB70HY03rQBLe+kx+G2X/iVCnBZlxpvda5rqaC5pCMEA8/z
+QW86fQcnotzZXzIbUSb90CUJeNraE6GX1IGk2zFYL21phSbg/S0Dat4SwuEqd32ePswvVNDXnz75
+vJDEweJgODIq+jaApQMuhQF/jt1o3gJtNw2pRzI4pKzmEbf62AeB3OE/BQSN0L0WwpOAPCXz8OwB
+tDouOmBMVQOPn9c4zl90lZV0rIXhg9POVaq455t6vYid+p9VNwa3khm+59akzsEAr2DXQIybQXRb
+yhWgxehzJOlpU4fjna/Q1gQJ9yhQfVU9pi+qBgOZVRdn5jE2mrr7WpvTWYAYCQ92uMlH3za09YrL
+gNJRK+PsI7fcLpZhiIobrI58gFG8WCZ9hSNOWraZj54emsRrtRemaNK2H9JzWbXBygvC89ohV1Hu
+AdiFADd4SDOCS38aFIFzY6fhU9klRC2J60yYgBUmG3Jw+unnVfLmzuhNYiZbHw9c1pivUHuccJh8
+uMh3pG0kGNda7krvkyVWDomuhHQexh4PjblL6APuwVlanP7LInMJLvDwsc/kYEZZSfd67Apkux0W
+6aQ1YMWMkRvhqw8mHLj2HGMFbkTkAodeaRUQoHUbkehc+Vd1UUFIchsU7qwveBBnsyIyBruSGNYT
+2vXgdQsq6mbw/xX98ilMEUdSY9hVKAdnE6DLNs61QItiDmtGp4wFczqqUrQtAqmP3n2vaESA75Aa
+Tfvs6XucxNviH9gytevgk8Y9pTyt6U+zuPqKypVWucatu4PjO29bPF1YwAQUPQzch262/WujHM5L
+zi5B9k65drOmjcgA6K550bDQExdHURMKutwGj3IO2v1eFzq6yprta7aesQ3IlEksyS/JnjdYtOoO
+E/QCZufUDp3cY0zUSU2+Xd9SaPlCDU0xfBP0T/gFSYzdPOAUMiD7Yi3m6y/gpVOIdSmDNYPIN3/H
+GRJQ5ZvvS1p+tEpMx24Cq4ijE14PEKxRD3XKFk2Y08Kus2w45KGB+Yoy0FJfgOEIvOY45YWnjTyS
+7haAI+v0D3yRQAKOd9yzY4ZpweqU2GghMA8N2KomHmvM4XCixMvWuJgwPzkbFuY0M49pJE0TkikD
+WEYS/H+RyHqm70QCpODC+E/RUAgT/5XxY0inwhiu47LOBFXKu19cmHqiPHgBdXJoyiUXeYu2w8nJ
+O4EOo2T+cVqspwaC67ryl2MtJV7PGmxefMHqxf61B8pJQH3UManTI9YH4XvyG98wbVsVj6mvsCLE
+Lv5r2THW/mNKTBmgPFJB5q77QXQyvsMtccJn7ggPNohDO3zxVY1O+4ros/Ko2xFz7IFhR6Ly9TE6
+qaxZkPOp5dRM/ym3L0jURHw3KFyGpVRabDfbSHPeE41nZ8x2Pco2D/3uEBBj1NGm0+1mZpyuAher
+GkCMlHNFGJUAU/yldQhRNtn5TK1EL/tB2zewUNsXt+NO9H9HHO20NYcXbgVTtRWxHKKemjQ35AqT
+ez0kXUu1fmGH/7Ann/SqxqSSfRpmzZNsHDS5iOGD+QJX0A82bVnId35H7VP9X8Omk1ujad/yk2ct
+gNnKhLBzLVUrlMQSlOnUpZUu9BxvpsJDe0JxRJIz9omx0DaPNnV6WI0sBjVG/2jTNGxvsDIiAJR1
+0K9hE8Weyal9iMUppuWMZAGZ5SZZD5OfsUl7oYkEK9+RMiSMyamDCHEcWWdg0cf4AZP1+lxTIyI3
+NdSCf6vxJeVkbtalc2xbZzbbuLbl7HRzWs7XToasvU1c+OJkBLO5ubRcrJM1bnr5p2BUwzeDRdEm
+D1WTvwhnMAKoaCho0IaM8qlBkwGAI1pKZGM5V3wh4WuCM1FZvjjyep0rizXJ4d+3MdWCXP6bKm5V
+Nm8o8YsL0hGbtus/N7sS7UWWTakJdZXdQPcjQr8nYSg+0j7rSnHNYu451GfhO5Kx7AYAEbibxpFQ
+xk4vFMI1gii/o1b3FopszMNfMrndGMDLzO81l3O0PtjHlM+SYyf3zUQ392qZtYn9hNmNY+QBmSMB
+n700NLC1bO5gzLKTuDpJwEsazJd4Ou9eRIPCN6eUYYOfPfMKZCXYBLS2DbUIaAFTXrhBRcYmnnT5
+5QlMzD6u3VUw/ZhSx7NWN+6Vk2hbH1RTkiYUW3h1dt/8O6GkWNCUTqWfw5I2JOQGDh9JPErD/RT0
+c+lUPWeoGR/lynLGxRYhotYne3rJA0BepzUf5pSTxWaoVZUegcF45HJJ/1dQPV6qe39nms09FyrA
+m7VNvdEW9bzUVwF82KaXB400B8dCq48hk+z+IND6Du08uM2E2QHF+Hx0C7MxBrz+G9r6i4qqCmYI
+CdXzIlGsQ/blzpy6pIVN+D8NTXlP/WX/A1Ere2Xql7VYevZR27DNwHTw3ywHBgbmKJ/lMDSrSd58
+Rkmw3lfnHq0LJqDr37GT5PWT9br3oqAXp9Sb+HDcU/dndk63Kcs85rsgIy4sh8BXKeQV/dwTsj5Z
+n9KJj9dFQRQs/Pf41al//AU4mp+5CD/jsiA+tGrUqqOcN/HIG+wraErEOdx4z/kue6NXjK9Kgn2h
+f4rIBMHKMK4ISTrttPiG80H0A0f99BxAWsChPlx8kzKwTWLD9Z384dh+pV08CfmaeLQR3/sEElUz
+tF8TshL34C1R5hxSqc2V3dxKEROAS+UMCC78R8ZXkt7tV6qX5n1zwix/15i2z8AYi4Vi0xhQozs7
+x95Dhf5n4MDbJOu1SHBtiY6aDJFtiRKunKKzFTUsNXH+/wO4zmnE9VSsgYipOSyF3TOJnSv9SzHB
+PV6GChv8AWWbCugsXd9o5oYAgTnVgsU67blG8XwBmnDwdy3NSkxW64JT8zwybzWYDRUHWIJAPfZ/
+jb4s9dq/KBn1OHOHax2WX1JyT84wndOlL6QIqEqQoQueB6BtLxrxGlypzA5yzUy0Qnqe/qzttXeE
+D0Wum9dy90RvbPK3QDUDjbCGCgb4HFb9qirWloIN0cBckWXTBZSXM6wOV9F3a689lq/uprNhkifD
+4RISAnoVGyoPKyY5mI8RWkfbwUjyRf7x3SnNT71nD+nX/f7FCl2m9LkzUN7iSdPADqwE+iyAuAwW
+WanXj7gxD6fMAZtF3LLOZjHDKzTIbiKgFGKrn96kaQ9ulO//i5N1Eess05lRTttXU1W49rvQSccP
+DuAvoodmn/TAGRTrxlxsIBmUqXGNjNvuvcE4opWqCZiwRYx2AOG1sDIKztyUDHH4kecx5flZNt1j
+FMiQ8vVfyQKtYE6A1ySwihpKBxM2jiyMRWj/FW+psdgwW1ywqXt61FAn94VOS3cpYKbS08vuYgYR
+i887K5Xxdhg70h3HqJWFThcwgfJ/xfhZNqE3msO8DwkUG7BbGUWTmMQJTRw+sZFEoLFURc0ZubXZ
+/Z4OC0mjOFJ2FTsFqKEKrurl44bTmSIicr8CeBhxs124jVLVQtafxD2f1W1rrDTHQyQPVrh+jiVn
+hGd6dgu94n0O2pc2SEZ215H5WULQR60Y3KzOjf99KRi0dZ8tyHiuGqr1rz6ZCCKTGzshTs9kVuMA
+10RZIws6kNusbIn+lVE8a+W6GLPhasDwtg8v8nu9OyxnW4qqAdLNejuNkorzYxDNXNAKAmFU+8TL
+y15DSdr4uF5umgfXdMdatQDCTaomPHNYSXY5aE+2xN10+AQ5kxdFKkJ0ZtBmPlOcATBwHj1fesfa
+3ikYVDxgdq0FXk9hE6py5ONfdLKfQad8YfMe1xY+e6V0WaGEqxmM7RiYuBdKHUcZ/685u5C+yekj
+luQaQYwn07sA2Qyr2963rSAxL5kNbQmhI9n13bjrN46lxqlKgUlqzEBPJAKi48jVDNVOfSm8R208
+jxntFjKumhq1oAURrNDITutZldMpGxCM+acqMICs5KELkJCxFdZWRull9grK9ar4ZOk7TAl8kmLs
+b/aYhQs3tQmUhq4amIBj5jMMZylJ/p8jHQ7km6xU/KBhr+GSwgn15+aLko1Z1ZKKjt6uG1UBYjcX
+MFHfnLZ/WBp52ix7g1f+I8Y5E7tXSgRl4MtCZeo5rxbz7fw01OZnafI/D4cW2erPMJvgoyL4+Ju4
+mPdNzkOs/Zee1jBUXCphk2fSR6v8BOZL7qWK4bGln5OgVXYTjjcVVX5HVd4T0coLwWHuKLk9zBw3
+gh8cRaevMY63pZ4luIPYvnluxjjBVJekuXuNWA9fC0WMb9yxQEd3zxvqGTAIqdvZm79SZ2V+hF5o
+w3a/gRiwuUaWMRyKmwvGYxn7rAU4Sp6FQf8btGDtS2h20R3T0UPzdbPj/j0ia0YvgNQLsSzUklCw
+ApVHKhcPyfuC0rmiv3lr0lEh5AgdJZNeao6Czq4uRuKB4i0dBMFd/2PqngTpCrbqkIz3OfNkD2OU
+nKquIJwBxtAoUIg13NknUSlSQiaZRxuNVzY+mWw1s303VH9Ka6nABBaM+fN7qWKKtdO0KERlFUv+
+HN27iLrDRXV4snI2hgeWDzPELetWpL70W83fFVyoCcpJ0t3slvasVkLIX1t1MkCz5h1uIYqjHZ9w
+QZS68D/5vPdE6ul8ieXV5YYsZiTLj0ARpY/7y6/TOtxN6GDTOc0g0AggbcAuGRSE60hkdKLSkVZH
+AFc5qgjcVwLsR3FaEbPSS/XZlmBl8XNQWof9oXoDk62yhbnSt6c1RFbQJ07ZfskDpzXhG0C71hOF
+a9rC96ob8XaBtw0prRg8stBxhxF+aIs7RHbSeWJewOPc3O+eD+QJL9aZESJPbyDYh07xyz5SQUyO
+ifK9/K3vaALWcy0dZ4b34I6DRkf1l0+TrU5BjC6zdTvvw/0dKYWnyCKK7pQldHJoKBy5OrwFS5zX
+8AN0WpA3JyTmP8uklGL0zNqepRqdrat6ntYlgGE9IkcSWK9rDQaHp0UdiFJov712XklpVy+Exejc
+KDNIz43DKbhIxgpuNJS5ohWV6ozgDFdS1w4UQwxNb0DQbRPrRk5RRd3XAzh5SWXVziu5OQ03GfIe
+mSeTqO6vRi5LL7gB3nAUDjjg/srNBUov8P9ErC9UFN6edN7PbRenKITX6/K8oEedLNW2GmF4uXly
+JfT6ryQM37RWsyIbx6Cja/bY0kTChIA2nmh9+cmN7UU/bNjz2b8cX5AyGMmgpvQTc4KkNMWYbSfw
+8XEFaQAVSmI0eS3M0IlJQOUB/jZwCqPYhM87HR5nQszjzrw2mR8uAYZ/me795jN3kbVBwRVzSrX/
+91dO/YsctujLJZe/UaaEBbDJwlgALhuNxXkNnnVLjZdhQntyS0z4IJBzjQ4EqldUsqWbWyZ8kd1m
+TS5r3nvS8PAwLSanUon5MOqppWtwtRhDNLy9bUnOi7oVtjMlBP4dhjgh0yTkcw/OYH+QnbyYT5CN
+Sp2Ytk7eXB+u85iAgmzTiLCBCgCne0oDjpBxJQm65ocuwIVcnKfXz2TeYGbmBbZIlmRhZdzbEwuL
+6Xm4Zne6/REccQFqHiF6bplt1ffjtwvM82WHbO7AmYElvyO7c8Ykh/1x7+PpKX9shgzUmVi0BusC
+KOaMP5RWytld7VAFDh7vl34ScljmBLueb4MmXQtxXdRi0RAN8UeX9GBMwb6Z3EldwQ73uvU9io4j
+RruTvu0pUc2yrY//t4apgXq2PNYKJlTNPg5sqymgVCDR0X/obzHTm+ERXR4UtUaEmF3NhDPBUBGh
+UNnrQEhNNSthHw30w7d1V9yriBs+LujMpNYAdy7xvYEuJMfxHIJ1x3YJj079TI/7+W5tCk09q2yr
+bSYfAvZqil01sv7frKfUL6Gd6XEqectJ20==

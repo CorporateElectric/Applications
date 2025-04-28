@@ -1,85 +1,51 @@
-<?php
-
-declare(strict_types=1);
-
-namespace NunoMaduro\Collision\Adapters\Laravel;
-
-use Illuminate\Contracts\Container\Container;
-use Illuminate\Contracts\Debug\ExceptionHandler as ExceptionHandlerContract;
-use NunoMaduro\Collision\Contracts\Provider as ProviderContract;
-use Symfony\Component\Console\Exception\ExceptionInterface as SymfonyConsoleExceptionInterface;
-use Throwable;
-
-/**
- * @internal
- */
-final class ExceptionHandler implements ExceptionHandlerContract
-{
-    /**
-     * Holds an instance of the application exception handler.
-     *
-     * @var \Illuminate\Contracts\Debug\ExceptionHandler
-     */
-    protected $appExceptionHandler;
-
-    /**
-     * Holds an instance of the container.
-     *
-     * @var \Illuminate\Contracts\Container\Container
-     */
-    protected $container;
-
-    /**
-     * Creates a new instance of the ExceptionHandler.
-     */
-    public function __construct(Container $container, ExceptionHandlerContract $appExceptionHandler)
-    {
-        $this->container           = $container;
-        $this->appExceptionHandler = $appExceptionHandler;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function report(Throwable $e)
-    {
-        $this->appExceptionHandler->report($e);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function render($request, Throwable $e)
-    {
-        return $this->appExceptionHandler->render($request, $e);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function renderForConsole($output, Throwable $e)
-    {
-        if ($e instanceof SymfonyConsoleExceptionInterface) {
-            $this->appExceptionHandler->renderForConsole($output, $e);
-        } else {
-            $handler = $this->container->make(ProviderContract::class)
-                ->register()
-                ->getHandler()
-                ->setOutput($output);
-
-            $handler->setInspector((new Inspector($e)));
-
-            $handler->handle();
-        }
-    }
-
-    /**
-     * Determine if the exception should be reported.
-     *
-     * @return bool
-     */
-    public function shouldReport(Throwable $e)
-    {
-        return $this->appExceptionHandler->shouldReport($e);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+JP+qAnw2ftMyJSW=

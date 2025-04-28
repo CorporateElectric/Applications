@@ -1,98 +1,32 @@
-<?php
-
-namespace Illuminate\Routing;
-
-use Illuminate\Http\Request;
-
-interface RouteCollectionInterface
-{
-    /**
-     * Add a Route instance to the collection.
-     *
-     * @param  \Illuminate\Routing\Route  $route
-     * @return \Illuminate\Routing\Route
-     */
-    public function add(Route $route);
-
-    /**
-     * Refresh the name look-up table.
-     *
-     * This is done in case any names are fluently defined or if routes are overwritten.
-     *
-     * @return void
-     */
-    public function refreshNameLookups();
-
-    /**
-     * Refresh the action look-up table.
-     *
-     * This is done in case any actions are overwritten with new controllers.
-     *
-     * @return void
-     */
-    public function refreshActionLookups();
-
-    /**
-     * Find the first route matching a given request.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Routing\Route
-     *
-     * @throws \Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException
-     * @throws \Symfony\Component\HttpKernel\Exception\NotFoundHttpException
-     */
-    public function match(Request $request);
-
-    /**
-     * Get routes from the collection by method.
-     *
-     * @param  string|null  $method
-     * @return \Illuminate\Routing\Route[]
-     */
-    public function get($method = null);
-
-    /**
-     * Determine if the route collection contains a given named route.
-     *
-     * @param  string  $name
-     * @return bool
-     */
-    public function hasNamedRoute($name);
-
-    /**
-     * Get a route instance by its name.
-     *
-     * @param  string  $name
-     * @return \Illuminate\Routing\Route|null
-     */
-    public function getByName($name);
-
-    /**
-     * Get a route instance by its controller action.
-     *
-     * @param  string  $action
-     * @return \Illuminate\Routing\Route|null
-     */
-    public function getByAction($action);
-
-    /**
-     * Get all of the routes in the collection.
-     *
-     * @return \Illuminate\Routing\Route[]
-     */
-    public function getRoutes();
-
-    /**
-     * Get all of the routes keyed by their HTTP verb / method.
-     *
-     * @return array
-     */
-    public function getRoutesByMethod();
-
-    /**
-     * Get all of the routes keyed by their name.
-     *
-     * @return \Illuminate\Routing\Route[]
-     */
-    public function getRoutesByName();
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+POU+mxZHg8TP

@@ -1,88 +1,70 @@
-<?php
-
-namespace Facade\Ignition\Context;
-
-use Facade\FlareClient\Context\RequestContext;
-use Illuminate\Http\Request;
-
-class LaravelRequestContext extends RequestContext
-{
-    /** @var \Illuminate\Http\Request */
-    protected $request;
-
-    public function __construct(Request $request)
-    {
-        $this->request = $request;
-    }
-
-    public function getUser(): array
-    {
-        try {
-            $user = $this->request->user();
-
-            if (! $user) {
-                return [];
-            }
-        } catch (\Throwable $e) {
-            return [];
-        }
-
-        try {
-            if (method_exists($user, 'toFlare')) {
-                return $user->toFlare();
-            }
-
-            if (method_exists($user, 'toArray')) {
-                return $user->toArray();
-            }
-        } catch (\Throwable $e) {
-            return [];
-        }
-
-        return [];
-    }
-
-    public function getRoute(): array
-    {
-        $route = $this->request->route();
-
-        return [
-            'route' => optional($route)->getName(),
-            'routeParameters' => $this->getRouteParameters(),
-            'controllerAction' => optional($route)->getActionName(),
-            'middleware' => array_values(optional($route)->gatherMiddleware() ?? []),
-        ];
-    }
-
-    public function getRequest(): array
-    {
-        $properties = parent::getRequest();
-
-
-        if ($this->request->hasHeader('x-livewire') && $this->request->hasHeader('referer')) {
-            $properties['url'] = $this->request->header('referer');
-        }
-
-        return $properties;
-    }
-
-    protected function getRouteParameters(): array
-    {
-        try {
-            return collect(optional($this->request->route())->parameters ?? [])->toArray();
-        } catch (\Throwable $e) {
-            return [];
-        }
-    }
-
-    public function toArray(): array
-    {
-        $properties = parent::toArray();
-
-        $properties['route'] = $this->getRoute();
-
-        $properties['user'] = $this->getUser();
-
-        return $properties;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

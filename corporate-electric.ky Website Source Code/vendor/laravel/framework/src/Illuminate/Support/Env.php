@@ -1,103 +1,55 @@
-<?php
-
-namespace Illuminate\Support;
-
-use Dotenv\Repository\Adapter\PutenvAdapter;
-use Dotenv\Repository\RepositoryBuilder;
-use PhpOption\Option;
-
-class Env
-{
-    /**
-     * Indicates if the putenv adapter is enabled.
-     *
-     * @var bool
-     */
-    protected static $putenv = true;
-
-    /**
-     * The environment repository instance.
-     *
-     * @var \Dotenv\Repository\RepositoryInterface|null
-     */
-    protected static $repository;
-
-    /**
-     * Enable the putenv adapter.
-     *
-     * @return void
-     */
-    public static function enablePutenv()
-    {
-        static::$putenv = true;
-        static::$repository = null;
-    }
-
-    /**
-     * Disable the putenv adapter.
-     *
-     * @return void
-     */
-    public static function disablePutenv()
-    {
-        static::$putenv = false;
-        static::$repository = null;
-    }
-
-    /**
-     * Get the environment repository instance.
-     *
-     * @return \Dotenv\Repository\RepositoryInterface
-     */
-    public static function getRepository()
-    {
-        if (static::$repository === null) {
-            $builder = RepositoryBuilder::createWithDefaultAdapters();
-
-            if (static::$putenv) {
-                $builder = $builder->addAdapter(PutenvAdapter::class);
-            }
-
-            static::$repository = $builder->immutable()->make();
-        }
-
-        return static::$repository;
-    }
-
-    /**
-     * Gets the value of an environment variable.
-     *
-     * @param  string  $key
-     * @param  mixed  $default
-     * @return mixed
-     */
-    public static function get($key, $default = null)
-    {
-        return Option::fromValue(static::getRepository()->get($key))
-            ->map(function ($value) {
-                switch (strtolower($value)) {
-                    case 'true':
-                    case '(true)':
-                        return true;
-                    case 'false':
-                    case '(false)':
-                        return false;
-                    case 'empty':
-                    case '(empty)':
-                        return '';
-                    case 'null':
-                    case '(null)':
-                        return;
-                }
-
-                if (preg_match('/\A([\'"])(.*)\1\z/', $value, $matches)) {
-                    return $matches[2];
-                }
-
-                return $value;
-            })
-            ->getOrCall(function () use ($default) {
-                return value($default);
-            });
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+Px/sq2GDLBvQXOsieK1RPW==

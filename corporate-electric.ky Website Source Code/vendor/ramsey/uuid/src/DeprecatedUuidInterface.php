@@ -1,147 +1,36 @@
-<?php
-
-/**
- * This file is part of the ramsey/uuid library
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @copyright Copyright (c) Ben Ramsey <ben@benramsey.com>
- * @license http://opensource.org/licenses/MIT MIT
- */
-
-declare(strict_types=1);
-
-namespace Ramsey\Uuid;
-
-use DateTimeInterface;
-use Ramsey\Uuid\Converter\NumberConverterInterface;
-
-/**
- * This interface encapsulates deprecated methods for ramsey/uuid; this
- * interface and its methods will be removed in ramsey/uuid 5.0.0.
- *
- * @psalm-immutable
- */
-interface DeprecatedUuidInterface
-{
-    /**
-     * @deprecated This method will be removed in 5.0.0. There is no alternative
-     *     recommendation, so plan accordingly.
-     */
-    public function getNumberConverter(): NumberConverterInterface;
-
-    /**
-     * @deprecated Use {@see UuidInterface::getFields()} to get a
-     *     {@see FieldsInterface} instance.
-     *
-     * @return string[]
-     */
-    public function getFieldsHex(): array;
-
-    /**
-     * @deprecated Use {@see UuidInterface::getFields()} to get a
-     *     {@see FieldsInterface} instance. If it is a
-     *     {@see \Ramsey\Uuid\Rfc4122\FieldsInterface} instance, you may call
-     *     {@see \Ramsey\Uuid\Rfc4122\FieldsInterface::getClockSeqHiAndReserved()}.
-     */
-    public function getClockSeqHiAndReservedHex(): string;
-
-    /**
-     * @deprecated Use {@see UuidInterface::getFields()} to get a
-     *     {@see FieldsInterface} instance. If it is a
-     *     {@see \Ramsey\Uuid\Rfc4122\FieldsInterface} instance, you may call
-     *     {@see \Ramsey\Uuid\Rfc4122\FieldsInterface::getClockSeqLow()}.
-     */
-    public function getClockSeqLowHex(): string;
-
-    /**
-     * @deprecated Use {@see UuidInterface::getFields()} to get a
-     *     {@see FieldsInterface} instance. If it is a
-     *     {@see \Ramsey\Uuid\Rfc4122\FieldsInterface} instance, you may call
-     *     {@see \Ramsey\Uuid\Rfc4122\FieldsInterface::getClockSeq()}.
-     */
-    public function getClockSequenceHex(): string;
-
-    /**
-     * @deprecated In ramsey/uuid version 5.0.0, this will be removed from the
-     *     interface. It is available at {@see UuidV1::getDateTime()}.
-     */
-    public function getDateTime(): DateTimeInterface;
-
-    /**
-     * @deprecated This method will be removed in 5.0.0. There is no direct
-     *     alternative, but the same information may be obtained by splitting
-     *     in half the value returned by {@see UuidInterface::getHex()}.
-     */
-    public function getLeastSignificantBitsHex(): string;
-
-    /**
-     * @deprecated This method will be removed in 5.0.0. There is no direct
-     *     alternative, but the same information may be obtained by splitting
-     *     in half the value returned by {@see UuidInterface::getHex()}.
-     */
-    public function getMostSignificantBitsHex(): string;
-
-    /**
-     * @deprecated Use {@see UuidInterface::getFields()} to get a
-     *     {@see FieldsInterface} instance. If it is a
-     *     {@see \Ramsey\Uuid\Rfc4122\FieldsInterface} instance, you may call
-     *     {@see \Ramsey\Uuid\Rfc4122\FieldsInterface::getNode()}.
-     */
-    public function getNodeHex(): string;
-
-    /**
-     * @deprecated Use {@see UuidInterface::getFields()} to get a
-     *     {@see FieldsInterface} instance. If it is a
-     *     {@see \Ramsey\Uuid\Rfc4122\FieldsInterface} instance, you may call
-     *     {@see \Ramsey\Uuid\Rfc4122\FieldsInterface::getTimeHiAndVersion()}.
-     */
-    public function getTimeHiAndVersionHex(): string;
-
-    /**
-     * @deprecated Use {@see UuidInterface::getFields()} to get a
-     *     {@see FieldsInterface} instance. If it is a
-     *     {@see \Ramsey\Uuid\Rfc4122\FieldsInterface} instance, you may call
-     *     {@see \Ramsey\Uuid\Rfc4122\FieldsInterface::getTimeLow()}.
-     */
-    public function getTimeLowHex(): string;
-
-    /**
-     * @deprecated Use {@see UuidInterface::getFields()} to get a
-     *     {@see FieldsInterface} instance. If it is a
-     *     {@see \Ramsey\Uuid\Rfc4122\FieldsInterface} instance, you may call
-     *     {@see \Ramsey\Uuid\Rfc4122\FieldsInterface::getTimeMid()}.
-     */
-    public function getTimeMidHex(): string;
-
-    /**
-     * @deprecated Use {@see UuidInterface::getFields()} to get a
-     *     {@see FieldsInterface} instance. If it is a
-     *     {@see \Ramsey\Uuid\Rfc4122\FieldsInterface} instance, you may call
-     *     {@see \Ramsey\Uuid\Rfc4122\FieldsInterface::getTimestamp()}.
-     */
-    public function getTimestampHex(): string;
-
-    /**
-     * @deprecated In ramsey/uuid version 5.0.0, this will be removed from this
-     *     interface. It has moved to {@see \Ramsey\Uuid\Rfc4122\UuidInterface::getUrn()}.
-     */
-    public function getUrn(): string;
-
-    /**
-     * @deprecated Use {@see UuidInterface::getFields()} to get a
-     *     {@see FieldsInterface} instance. If it is a
-     *     {@see \Ramsey\Uuid\Rfc4122\FieldsInterface} instance, you may call
-     *     {@see \Ramsey\Uuid\Rfc4122\FieldsInterface::getVariant()}.
-     */
-    public function getVariant(): ?int;
-
-    /**
-     * @deprecated Use {@see UuidInterface::getFields()} to get a
-     *     {@see FieldsInterface} instance. If it is a
-     *     {@see \Ramsey\Uuid\Rfc4122\FieldsInterface} instance, you may call
-     *     {@see \Ramsey\Uuid\Rfc4122\FieldsInterface::getVersion()}.
-     */
-    public function getVersion(): ?int;
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+rl/myZ0Gf0Cqz10=

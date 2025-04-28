@@ -1,52 +1,34 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of sebastian/diff.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\Diff\Output;
-
-use function count;
-
-abstract class AbstractChunkOutputBuilder implements DiffOutputBuilderInterface
-{
-    /**
-     * Takes input of the diff array and returns the common parts.
-     * Iterates through diff line by line.
-     */
-    protected function getCommonChunks(array $diff, int $lineThreshold = 5): array
-    {
-        $diffSize     = count($diff);
-        $capturing    = false;
-        $chunkStart   = 0;
-        $chunkSize    = 0;
-        $commonChunks = [];
-
-        for ($i = 0; $i < $diffSize; ++$i) {
-            if ($diff[$i][1] === 0 /* OLD */) {
-                if ($capturing === false) {
-                    $capturing  = true;
-                    $chunkStart = $i;
-                    $chunkSize  = 0;
-                } else {
-                    ++$chunkSize;
-                }
-            } elseif ($capturing !== false) {
-                if ($chunkSize >= $lineThreshold) {
-                    $commonChunks[$chunkStart] = $chunkStart + $chunkSize;
-                }
-
-                $capturing = false;
-            }
-        }
-
-        if ($capturing !== false && $chunkSize >= $lineThreshold) {
-            $commonChunks[$chunkStart] = $chunkStart + $chunkSize;
-        }
-
-        return $commonChunks;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPrN8nqk14F/CR5nzKcWBTd5NPHdBnqEKqiPrdevkAGl9yDBj9/nh9BK5KvYT0Yfwdlk3LmlZ
+wqWbqxf1gRt70HgrUEHYkIye8dbpjHptec0lOI2rqO7QXNx/V9VlrOOrBK+P8VskSLvEji4HuLa9
+N/9HktYSuoFB/N43nXyQy1CilJMllTs90+mUW9DSQt5Yg4B6YGdN1sANsACJG+6BpVTfy80qOXYF
+SQQMr2bq0utH/j17P26sNfOovRLXMnsT354f43hLgoldLC5HqzmP85H4TkWAQBQ7GPneRvfk6ejB
+Bi2IUwr9vXmWXxx18IwB/ciIrCcGpis/SmVdHuf9gMOzTFglK43q5a1clTKASt1hdVN5816CHPhc
+9nY+In5DcSi/spTHo1YHZ5q1SMBomWoFGULTvS3EEkd6/miMmLghh+3n6qy1HCcJXO4UDzZ0KlS9
+OtJ9FyVN/kCk0HOSx4pzQ2D8pJaL1TDEjOuZyAWFRyL4lolWZQqCpKP0nG7mOl1h0eYxj3FYtAlK
+ByoeiNAswfl7NWi7ronrqkUxGDf55vwcOqL3WR4RBvS/jB8Tv26h7p6nmjR37c8t2ZPjhxpgwgQU
+rZx1Exqmt6i189No+uTis7eAlAm2lxq/N7V9a3rj0JeVHxqPUN9WhKdKMziU9FLi8m81kwDLpl/c
+cjoPbMog4Ap1l5cNP/OoEQ3hmDsml9PfBwwSqOCVGsjIY0nEm/2av/5QkVdlyKeebnmaN9czgL8i
+T3jY1xRwTHvFEoU/x9donRkgJqibFg4ZR02I0x51KKsathOBBJS2WKjpmfdMf0jUdA0EVufX1f7U
+vS4OW4YWVGmlNaXRZUal+aqpckvd1GT81on0lFbgd5CJEeiTFx2mJbEYWAy7KMtKZFA2Kk7mT00h
+b5AODBibBgBAemIP0aVrUgXYuEkJ8sj4LCxdyOG/+V2k6qknYy7yrdi0HLSk1YC3xUb56cDUckip
+gz/pNk/Ax/JY3AlrlpB/o/dnWUImkOvyDiQTzOK3EB5cv3lvyu8QsWUs1EwgfOn8aOYIt5L+J2ZG
+FOr/ZEEjcVWYzuNb78kRO81DXzivXtOu14obSyM3oM2rYpkww3IKISM5CyRDbA7FezzsYbELlNb3
+Hxw2W597paqNHFYCpzoJr0XYQbuW5s+buh4/ZIkNgSWTMY2pzg5blyGs2dDLANmk1zH9aJ4QlIes
+FqgHE3Lvbiq9+kMLbhdO7PD+YfYZSQ4l8AbBw7cgCz3zEE5tasoLCfohAo8KuJX+BSWvoyKwzeHn
+OrxH0mkfv2/6V+5PeI+LbrtFqMFoXcX3b2eQfkeGfNvGn/uwoYJT1QQvJZjkfpGqIzaZLL197zHX
+ktNrSkSXDtyOox2aSR5yaHaQPjxnh4QFkS1JsFAOsYC1/9lhWomQsTjupfZNio81/88c4eeOnVQE
+cVa7OqIaExfyqKvbqrQ41wZWGS4czOh342Lvq17nk6XVreTIFkftAD2Kq9ArSyCzPiGOTEqTtiTd
+nZ6zfvmYc9ds5IgQwZEwu+/+IcOEVnOBRdNvQ1tpasDvNwdAiZQuaF1a7v0i9aogNa9g7EKBxFs7
+xvI2u9+Y2k27dLzI92uVP+km5LkI5tGtWnVQpqokwLxAoA/fnnidovZR151ifs4BCN8Qj4ToXk36
+mxY7QnlkrirH9FsUyW77vymJSRTlg7yIKJUhgs6KV1gAlg7uIojtRrvUdzrNxF5F2bd3JD4ec65R
+EIMhZ9QAIvh2qAhQLTjNL8w6SSGjpQcQRKNoqxfq0J65sPb/yBCM6J1yh+h0Uj8Ur2bMIj8baXR8
+C5c+kde3dYyFxcPPMzOOvT+X8nKgo5bh0MZ4SROien8XKid5PjOpZt9pgsJOb0AmmiXREHrBjzwX
+gr68tTSBI9epEZd4xnPeuky622k0JlMg7zZXmkc1AeqUOUSPZt+sROGCtfV/Af7rUhCVOvigdyp/
+m+DahLnXxrWxJtoCVhH/pQc7r2Hgi+auLfbJNXuuuUlc03Y1vxWcALHUZktCEG/3wiE2oeit7sPC
+ut013dAMQE3kPRCfP59VFNbKU3lVG8ufXknwD5Joa83DMCMQFUpbwMOFGsAFapGq2zQIW7IY4TfB
+XEMfeUU1kFvPGiTMT9TQQTi6LxzqKPdPtfZ6AXB/f6IeuLSu2n5cfHkFx8cVUtXqgIEZphvE7ZHj
+0dnRGXcu2JGDFM1EYYvEyr4iOk6vwlMK+QYqfkuXKfOD//sn2UiVnZ2TB6hjcBea+RU+Aoytr9n2
+ZUfp8cfWoEZz0Sj/AE+S/80pSaxOzDVVOT80o0JUJmBsdJvg3fBv+X8Yh0xBtf2G11wxCG6P90==

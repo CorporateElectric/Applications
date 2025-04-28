@@ -1,30 +1,36 @@
-<?php
-
-namespace Intervention\Image\Gd\Commands;
-
-use Intervention\Image\Commands\AbstractCommand;
-use Intervention\Image\Gd\Color;
-
-class RotateCommand extends AbstractCommand
-{
-    /**
-     * Rotates image counter clockwise
-     *
-     * @param  \Intervention\Image\Image $image
-     * @return boolean
-     */
-    public function execute($image)
-    {
-        $angle = $this->argument(0)->type('numeric')->required()->value();
-        $color = $this->argument(1)->value();
-        $color = new Color($color);
-
-        // restrict rotations beyond 360 degrees, since the end result is the same
-        $angle %= 360;
-
-        // rotate image
-        $image->setCore(imagerotate($image->getCore(), $angle, $color->getInt()));
-
-        return true;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,99 +1,37 @@
-<?php
-
-namespace Illuminate\Contracts\Queue;
-
-interface Queue
-{
-    /**
-     * Get the size of the queue.
-     *
-     * @param  string|null  $queue
-     * @return int
-     */
-    public function size($queue = null);
-
-    /**
-     * Push a new job onto the queue.
-     *
-     * @param  string|object  $job
-     * @param  mixed  $data
-     * @param  string|null  $queue
-     * @return mixed
-     */
-    public function push($job, $data = '', $queue = null);
-
-    /**
-     * Push a new job onto the queue.
-     *
-     * @param  string  $queue
-     * @param  string|object  $job
-     * @param  mixed  $data
-     * @return mixed
-     */
-    public function pushOn($queue, $job, $data = '');
-
-    /**
-     * Push a raw payload onto the queue.
-     *
-     * @param  string  $payload
-     * @param  string|null  $queue
-     * @param  array  $options
-     * @return mixed
-     */
-    public function pushRaw($payload, $queue = null, array $options = []);
-
-    /**
-     * Push a new job onto the queue after a delay.
-     *
-     * @param  \DateTimeInterface|\DateInterval|int  $delay
-     * @param  string|object  $job
-     * @param  mixed  $data
-     * @param  string|null  $queue
-     * @return mixed
-     */
-    public function later($delay, $job, $data = '', $queue = null);
-
-    /**
-     * Push a new job onto the queue after a delay.
-     *
-     * @param  string  $queue
-     * @param  \DateTimeInterface|\DateInterval|int  $delay
-     * @param  string|object  $job
-     * @param  mixed  $data
-     * @return mixed
-     */
-    public function laterOn($queue, $delay, $job, $data = '');
-
-    /**
-     * Push an array of jobs onto the queue.
-     *
-     * @param  array  $jobs
-     * @param  mixed  $data
-     * @param  string|null  $queue
-     * @return mixed
-     */
-    public function bulk($jobs, $data = '', $queue = null);
-
-    /**
-     * Pop the next job off of the queue.
-     *
-     * @param  string|null  $queue
-     * @return \Illuminate\Contracts\Queue\Job|null
-     */
-    public function pop($queue = null);
-
-    /**
-     * Get the connection name for the queue.
-     *
-     * @return string
-     */
-    public function getConnectionName();
-
-    /**
-     * Set the connection name for the queue.
-     *
-     * @param  string  $name
-     * @return $this
-     */
-    public function setConnectionName($name);
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+5HLkanO0+BhdKICuFNowaJhKi0==

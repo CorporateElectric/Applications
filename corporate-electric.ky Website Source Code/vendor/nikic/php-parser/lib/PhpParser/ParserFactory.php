@@ -1,44 +1,35 @@
-<?php declare(strict_types=1);
-
-namespace PhpParser;
-
-class ParserFactory
-{
-    const PREFER_PHP7 = 1;
-    const PREFER_PHP5 = 2;
-    const ONLY_PHP7 = 3;
-    const ONLY_PHP5 = 4;
-
-    /**
-     * Creates a Parser instance, according to the provided kind.
-     *
-     * @param int        $kind  One of ::PREFER_PHP7, ::PREFER_PHP5, ::ONLY_PHP7 or ::ONLY_PHP5
-     * @param Lexer|null $lexer Lexer to use. Defaults to emulative lexer when not specified
-     * @param array      $parserOptions Parser options. See ParserAbstract::__construct() argument
-     *
-     * @return Parser The parser instance
-     */
-    public function create(int $kind, Lexer $lexer = null, array $parserOptions = []) : Parser {
-        if (null === $lexer) {
-            $lexer = new Lexer\Emulative();
-        }
-        switch ($kind) {
-            case self::PREFER_PHP7:
-                return new Parser\Multiple([
-                    new Parser\Php7($lexer, $parserOptions), new Parser\Php5($lexer, $parserOptions)
-                ]);
-            case self::PREFER_PHP5:
-                return new Parser\Multiple([
-                    new Parser\Php5($lexer, $parserOptions), new Parser\Php7($lexer, $parserOptions)
-                ]);
-            case self::ONLY_PHP7:
-                return new Parser\Php7($lexer, $parserOptions);
-            case self::ONLY_PHP5:
-                return new Parser\Php5($lexer, $parserOptions);
-            default:
-                throw new \LogicException(
-                    'Kind must be one of ::PREFER_PHP7, ::PREFER_PHP5, ::ONLY_PHP7 or ::ONLY_PHP5'
-                );
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+kWHNAwBO/SH7

@@ -1,217 +1,89 @@
-<?php
-
-namespace GuzzleHttp\Psr7;
-
-use Psr\Http\Message\UriInterface;
-
-/**
- * Provides methods to normalize and compare URIs.
- *
- * @author Tobias Schultze
- *
- * @link https://tools.ietf.org/html/rfc3986#section-6
- */
-final class UriNormalizer
-{
-    /**
-     * Default normalizations which only include the ones that preserve semantics.
-     *
-     * self::CAPITALIZE_PERCENT_ENCODING | self::DECODE_UNRESERVED_CHARACTERS | self::CONVERT_EMPTY_PATH |
-     * self::REMOVE_DEFAULT_HOST | self::REMOVE_DEFAULT_PORT | self::REMOVE_DOT_SEGMENTS
-     */
-    const PRESERVING_NORMALIZATIONS = 63;
-
-    /**
-     * All letters within a percent-encoding triplet (e.g., "%3A") are case-insensitive, and should be capitalized.
-     *
-     * Example: http://example.org/a%c2%b1b → http://example.org/a%C2%B1b
-     */
-    const CAPITALIZE_PERCENT_ENCODING = 1;
-
-    /**
-     * Decodes percent-encoded octets of unreserved characters.
-     *
-     * For consistency, percent-encoded octets in the ranges of ALPHA (%41–%5A and %61–%7A), DIGIT (%30–%39),
-     * hyphen (%2D), period (%2E), underscore (%5F), or tilde (%7E) should not be created by URI producers and,
-     * when found in a URI, should be decoded to their corresponding unreserved characters by URI normalizers.
-     *
-     * Example: http://example.org/%7Eusern%61me/ → http://example.org/~username/
-     */
-    const DECODE_UNRESERVED_CHARACTERS = 2;
-
-    /**
-     * Converts the empty path to "/" for http and https URIs.
-     *
-     * Example: http://example.org → http://example.org/
-     */
-    const CONVERT_EMPTY_PATH = 4;
-
-    /**
-     * Removes the default host of the given URI scheme from the URI.
-     *
-     * Only the "file" scheme defines the default host "localhost".
-     * All of `file:/myfile`, `file:///myfile`, and `file://localhost/myfile`
-     * are equivalent according to RFC 3986. The first format is not accepted
-     * by PHPs stream functions and thus already normalized implicitly to the
-     * second format in the Uri class. See `GuzzleHttp\Psr7\Uri::composeComponents`.
-     *
-     * Example: file://localhost/myfile → file:///myfile
-     */
-    const REMOVE_DEFAULT_HOST = 8;
-
-    /**
-     * Removes the default port of the given URI scheme from the URI.
-     *
-     * Example: http://example.org:80/ → http://example.org/
-     */
-    const REMOVE_DEFAULT_PORT = 16;
-
-    /**
-     * Removes unnecessary dot-segments.
-     *
-     * Dot-segments in relative-path references are not removed as it would
-     * change the semantics of the URI reference.
-     *
-     * Example: http://example.org/../a/b/../c/./d.html → http://example.org/a/c/d.html
-     */
-    const REMOVE_DOT_SEGMENTS = 32;
-
-    /**
-     * Paths which include two or more adjacent slashes are converted to one.
-     *
-     * Webservers usually ignore duplicate slashes and treat those URIs equivalent.
-     * But in theory those URIs do not need to be equivalent. So this normalization
-     * may change the semantics. Encoded slashes (%2F) are not removed.
-     *
-     * Example: http://example.org//foo///bar.html → http://example.org/foo/bar.html
-     */
-    const REMOVE_DUPLICATE_SLASHES = 64;
-
-    /**
-     * Sort query parameters with their values in alphabetical order.
-     *
-     * However, the order of parameters in a URI may be significant (this is not defined by the standard).
-     * So this normalization is not safe and may change the semantics of the URI.
-     *
-     * Example: ?lang=en&article=fred → ?article=fred&lang=en
-     *
-     * Note: The sorting is neither locale nor Unicode aware (the URI query does not get decoded at all) as the
-     * purpose is to be able to compare URIs in a reproducible way, not to have the params sorted perfectly.
-     */
-    const SORT_QUERY_PARAMETERS = 128;
-
-    /**
-     * Returns a normalized URI.
-     *
-     * The scheme and host component are already normalized to lowercase per PSR-7 UriInterface.
-     * This methods adds additional normalizations that can be configured with the $flags parameter.
-     *
-     * PSR-7 UriInterface cannot distinguish between an empty component and a missing component as
-     * getQuery(), getFragment() etc. always return a string. This means the URIs "/?#" and "/" are
-     * treated equivalent which is not necessarily true according to RFC 3986. But that difference
-     * is highly uncommon in reality. So this potential normalization is implied in PSR-7 as well.
-     *
-     * @param UriInterface $uri   The URI to normalize
-     * @param int          $flags A bitmask of normalizations to apply, see constants
-     *
-     * @return UriInterface The normalized URI
-     * @link https://tools.ietf.org/html/rfc3986#section-6.2
-     */
-    public static function normalize(UriInterface $uri, $flags = self::PRESERVING_NORMALIZATIONS)
-    {
-        if ($flags & self::CAPITALIZE_PERCENT_ENCODING) {
-            $uri = self::capitalizePercentEncoding($uri);
-        }
-
-        if ($flags & self::DECODE_UNRESERVED_CHARACTERS) {
-            $uri = self::decodeUnreservedCharacters($uri);
-        }
-
-        if ($flags & self::CONVERT_EMPTY_PATH && $uri->getPath() === '' &&
-            ($uri->getScheme() === 'http' || $uri->getScheme() === 'https')
-        ) {
-            $uri = $uri->withPath('/');
-        }
-
-        if ($flags & self::REMOVE_DEFAULT_HOST && $uri->getScheme() === 'file' && $uri->getHost() === 'localhost') {
-            $uri = $uri->withHost('');
-        }
-
-        if ($flags & self::REMOVE_DEFAULT_PORT && $uri->getPort() !== null && Uri::isDefaultPort($uri)) {
-            $uri = $uri->withPort(null);
-        }
-
-        if ($flags & self::REMOVE_DOT_SEGMENTS && !Uri::isRelativePathReference($uri)) {
-            $uri = $uri->withPath(UriResolver::removeDotSegments($uri->getPath()));
-        }
-
-        if ($flags & self::REMOVE_DUPLICATE_SLASHES) {
-            $uri = $uri->withPath(preg_replace('#//++#', '/', $uri->getPath()));
-        }
-
-        if ($flags & self::SORT_QUERY_PARAMETERS && $uri->getQuery() !== '') {
-            $queryKeyValues = explode('&', $uri->getQuery());
-            sort($queryKeyValues);
-            $uri = $uri->withQuery(implode('&', $queryKeyValues));
-        }
-
-        return $uri;
-    }
-
-    /**
-     * Whether two URIs can be considered equivalent.
-     *
-     * Both URIs are normalized automatically before comparison with the given $normalizations bitmask. The method also
-     * accepts relative URI references and returns true when they are equivalent. This of course assumes they will be
-     * resolved against the same base URI. If this is not the case, determination of equivalence or difference of
-     * relative references does not mean anything.
-     *
-     * @param UriInterface $uri1           An URI to compare
-     * @param UriInterface $uri2           An URI to compare
-     * @param int          $normalizations A bitmask of normalizations to apply, see constants
-     *
-     * @return bool
-     * @link https://tools.ietf.org/html/rfc3986#section-6.1
-     */
-    public static function isEquivalent(UriInterface $uri1, UriInterface $uri2, $normalizations = self::PRESERVING_NORMALIZATIONS)
-    {
-        return (string) self::normalize($uri1, $normalizations) === (string) self::normalize($uri2, $normalizations);
-    }
-
-    private static function capitalizePercentEncoding(UriInterface $uri)
-    {
-        $regex = '/(?:%[A-Fa-f0-9]{2})++/';
-
-        $callback = function (array $match) {
-            return strtoupper($match[0]);
-        };
-
-        return
-            $uri->withPath(
-                preg_replace_callback($regex, $callback, $uri->getPath())
-            )->withQuery(
-                preg_replace_callback($regex, $callback, $uri->getQuery())
-            );
-    }
-
-    private static function decodeUnreservedCharacters(UriInterface $uri)
-    {
-        $regex = '/%(?:2D|2E|5F|7E|3[0-9]|[46][1-9A-F]|[57][0-9A])/i';
-
-        $callback = function (array $match) {
-            return rawurldecode($match[0]);
-        };
-
-        return
-            $uri->withPath(
-                preg_replace_callback($regex, $callback, $uri->getPath())
-            )->withQuery(
-                preg_replace_callback($regex, $callback, $uri->getQuery())
-            );
-    }
-
-    private function __construct()
-    {
-        // cannot be instantiated
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+C1C=

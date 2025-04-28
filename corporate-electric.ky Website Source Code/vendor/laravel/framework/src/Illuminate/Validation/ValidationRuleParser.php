@@ -1,277 +1,120 @@
-<?php
-
-namespace Illuminate\Validation;
-
-use Closure;
-use Illuminate\Contracts\Validation\Rule as RuleContract;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
-use Illuminate\Validation\Rules\Exists;
-use Illuminate\Validation\Rules\Unique;
-
-class ValidationRuleParser
-{
-    /**
-     * The data being validated.
-     *
-     * @var array
-     */
-    public $data;
-
-    /**
-     * The implicit attributes.
-     *
-     * @var array
-     */
-    public $implicitAttributes = [];
-
-    /**
-     * Create a new validation rule parser.
-     *
-     * @param  array  $data
-     * @return void
-     */
-    public function __construct(array $data)
-    {
-        $this->data = $data;
-    }
-
-    /**
-     * Parse the human-friendly rules into a full rules array for the validator.
-     *
-     * @param  array  $rules
-     * @return \stdClass
-     */
-    public function explode($rules)
-    {
-        $this->implicitAttributes = [];
-
-        $rules = $this->explodeRules($rules);
-
-        return (object) [
-            'rules' => $rules,
-            'implicitAttributes' => $this->implicitAttributes,
-        ];
-    }
-
-    /**
-     * Explode the rules into an array of explicit rules.
-     *
-     * @param  array  $rules
-     * @return array
-     */
-    protected function explodeRules($rules)
-    {
-        foreach ($rules as $key => $rule) {
-            if (Str::contains($key, '*')) {
-                $rules = $this->explodeWildcardRules($rules, $key, [$rule]);
-
-                unset($rules[$key]);
-            } else {
-                $rules[$key] = $this->explodeExplicitRule($rule);
-            }
-        }
-
-        return $rules;
-    }
-
-    /**
-     * Explode the explicit rule into an array if necessary.
-     *
-     * @param  mixed  $rule
-     * @return array
-     */
-    protected function explodeExplicitRule($rule)
-    {
-        if (is_string($rule)) {
-            return explode('|', $rule);
-        } elseif (is_object($rule)) {
-            return [$this->prepareRule($rule)];
-        }
-
-        return array_map([$this, 'prepareRule'], $rule);
-    }
-
-    /**
-     * Prepare the given rule for the Validator.
-     *
-     * @param  mixed  $rule
-     * @return mixed
-     */
-    protected function prepareRule($rule)
-    {
-        if ($rule instanceof Closure) {
-            $rule = new ClosureValidationRule($rule);
-        }
-
-        if (! is_object($rule) ||
-            $rule instanceof RuleContract ||
-            ($rule instanceof Exists && $rule->queryCallbacks()) ||
-            ($rule instanceof Unique && $rule->queryCallbacks())) {
-            return $rule;
-        }
-
-        return (string) $rule;
-    }
-
-    /**
-     * Define a set of rules that apply to each element in an array attribute.
-     *
-     * @param  array  $results
-     * @param  string  $attribute
-     * @param  string|array  $rules
-     * @return array
-     */
-    protected function explodeWildcardRules($results, $attribute, $rules)
-    {
-        $pattern = str_replace('\*', '[^\.]*', preg_quote($attribute));
-
-        $data = ValidationData::initializeAndGatherData($attribute, $this->data);
-
-        foreach ($data as $key => $value) {
-            if (Str::startsWith($key, $attribute) || (bool) preg_match('/^'.$pattern.'\z/', $key)) {
-                foreach ((array) $rules as $rule) {
-                    $this->implicitAttributes[$attribute][] = $key;
-
-                    $results = $this->mergeRules($results, $key, $rule);
-                }
-            }
-        }
-
-        return $results;
-    }
-
-    /**
-     * Merge additional rules into a given attribute(s).
-     *
-     * @param  array  $results
-     * @param  string|array  $attribute
-     * @param  string|array  $rules
-     * @return array
-     */
-    public function mergeRules($results, $attribute, $rules = [])
-    {
-        if (is_array($attribute)) {
-            foreach ((array) $attribute as $innerAttribute => $innerRules) {
-                $results = $this->mergeRulesForAttribute($results, $innerAttribute, $innerRules);
-            }
-
-            return $results;
-        }
-
-        return $this->mergeRulesForAttribute(
-            $results, $attribute, $rules
-        );
-    }
-
-    /**
-     * Merge additional rules into a given attribute.
-     *
-     * @param  array  $results
-     * @param  string  $attribute
-     * @param  string|array  $rules
-     * @return array
-     */
-    protected function mergeRulesForAttribute($results, $attribute, $rules)
-    {
-        $merge = head($this->explodeRules([$rules]));
-
-        $results[$attribute] = array_merge(
-            isset($results[$attribute]) ? $this->explodeExplicitRule($results[$attribute]) : [], $merge
-        );
-
-        return $results;
-    }
-
-    /**
-     * Extract the rule name and parameters from a rule.
-     *
-     * @param  array|string  $rules
-     * @return array
-     */
-    public static function parse($rules)
-    {
-        if ($rules instanceof RuleContract) {
-            return [$rules, []];
-        }
-
-        if (is_array($rules)) {
-            $rules = static::parseArrayRule($rules);
-        } else {
-            $rules = static::parseStringRule($rules);
-        }
-
-        $rules[0] = static::normalizeRule($rules[0]);
-
-        return $rules;
-    }
-
-    /**
-     * Parse an array based rule.
-     *
-     * @param  array  $rules
-     * @return array
-     */
-    protected static function parseArrayRule(array $rules)
-    {
-        return [Str::studly(trim(Arr::get($rules, 0))), array_slice($rules, 1)];
-    }
-
-    /**
-     * Parse a string based rule.
-     *
-     * @param  string  $rules
-     * @return array
-     */
-    protected static function parseStringRule($rules)
-    {
-        $parameters = [];
-
-        // The format for specifying validation rules and parameters follows an
-        // easy {rule}:{parameters} formatting convention. For instance the
-        // rule "Max:3" states that the value may only be three letters.
-        if (strpos($rules, ':') !== false) {
-            [$rules, $parameter] = explode(':', $rules, 2);
-
-            $parameters = static::parseParameters($rules, $parameter);
-        }
-
-        return [Str::studly(trim($rules)), $parameters];
-    }
-
-    /**
-     * Parse a parameter list.
-     *
-     * @param  string  $rule
-     * @param  string  $parameter
-     * @return array
-     */
-    protected static function parseParameters($rule, $parameter)
-    {
-        $rule = strtolower($rule);
-
-        if (in_array($rule, ['regex', 'not_regex', 'notregex'], true)) {
-            return [$parameter];
-        }
-
-        return str_getcsv($parameter);
-    }
-
-    /**
-     * Normalizes a rule so that we can accept short types.
-     *
-     * @param  string  $rule
-     * @return string
-     */
-    protected static function normalizeRule($rule)
-    {
-        switch ($rule) {
-            case 'Int':
-                return 'Integer';
-            case 'Bool':
-                return 'Boolean';
-            default:
-                return $rule;
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+FRu/5Coi1DglbrYlL0==

@@ -1,152 +1,67 @@
-<?php
-
-namespace Illuminate\Database\PDO;
-
-use Doctrine\DBAL\Driver\PDO\SQLSrv\Statement;
-use Doctrine\DBAL\Driver\Result;
-use Doctrine\DBAL\Driver\ServerInfoAwareConnection;
-use Doctrine\DBAL\Driver\Statement as StatementInterface;
-use Doctrine\DBAL\ParameterType;
-use PDO;
-
-class SqlServerConnection implements ServerInfoAwareConnection
-{
-    /**
-     * The underlying connection instance.
-     *
-     * @var \Illuminate\Database\PDO\Connection
-     */
-    protected $connection;
-
-    /**
-     * Create a new SQL Server connection instance.
-     *
-     * @param  \Illuminate\Database\PDO\Connection  $connection
-     * @return void
-     */
-    public function __construct(Connection $connection)
-    {
-        $this->connection = $connection;
-    }
-
-    /**
-     * Prepare a new SQL statement.
-     *
-     * @param  string  $sql
-     * @return \Doctrine\DBAL\Driver\Statement
-     */
-    public function prepare(string $sql): StatementInterface
-    {
-        return new Statement(
-            $this->connection->prepare($sql)
-        );
-    }
-
-    /**
-     * Execute a new query against the connection.
-     *
-     * @param  string  $sql
-     * @return \Doctrine\DBAL\Driver\Result
-     */
-    public function query(string $sql): Result
-    {
-        return $this->connection->query($sql);
-    }
-
-    /**
-     * Execute an SQL statement.
-     *
-     * @param  string  $statement
-     * @return int
-     */
-    public function exec(string $statement): int
-    {
-        return $this->connection->exec($statement);
-    }
-
-    /**
-     * Get the last insert ID.
-     *
-     * @param  string|null  $name
-     * @return mixed
-     */
-    public function lastInsertId($name = null)
-    {
-        if ($name === null) {
-            return $this->connection->lastInsertId($name);
-        }
-
-        return $this->prepare('SELECT CONVERT(VARCHAR(MAX), current_value) FROM sys.sequences WHERE name = ?')
-            ->execute([$name])
-            ->fetchOne();
-    }
-
-    /**
-     * Begin a new database transaction.
-     *
-     * @return void
-     */
-    public function beginTransaction()
-    {
-        return $this->connection->beginTransaction();
-    }
-
-    /**
-     * Commit a database transaction.
-     *
-     * @return void
-     */
-    public function commit()
-    {
-        return $this->connection->commit();
-    }
-
-    /**
-     * Roll back a database transaction.
-     *
-     * @return void
-     */
-    public function rollBack()
-    {
-        return $this->connection->rollBack();
-    }
-
-    /**
-     * Wrap quotes around the given input.
-     *
-     * @param  string  $value
-     * @param  int  $type
-     * @return string
-     */
-    public function quote($value, $type = ParameterType::STRING)
-    {
-        $val = $this->connection->quote($value, $type);
-
-        // Fix for a driver version terminating all values with null byte...
-        if (\is_string($val) && \strpos($val, "\0") !== false) {
-            $val = \substr($val, 0, -1);
-        }
-
-        return $val;
-    }
-
-    /**
-     * Get the server version for the connection.
-     *
-     * @return string
-     */
-    public function getServerVersion()
-    {
-        return $this->connection->getServerVersion();
-    }
-
-    /**
-     * Get the wrapped PDO connection.
-     *
-     * @return \PDO
-     */
-    public function getWrappedConnection(): PDO
-    {
-        return $this->connection->getWrappedConnection();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

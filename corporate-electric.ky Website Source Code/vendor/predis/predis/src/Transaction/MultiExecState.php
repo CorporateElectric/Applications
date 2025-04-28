@@ -1,166 +1,45 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Predis\Transaction;
-
-/**
- * Utility class used to track the state of a MULTI / EXEC transaction.
- *
- * @author Daniele Alessandri <suppakilla@gmail.com>
- */
-class MultiExecState
-{
-    const INITIALIZED = 1;    // 0b00001
-    const INSIDEBLOCK = 2;    // 0b00010
-    const DISCARDED = 4;    // 0b00100
-    const CAS = 8;    // 0b01000
-    const WATCH = 16;   // 0b10000
-
-    private $flags;
-
-    /**
-     *
-     */
-    public function __construct()
-    {
-        $this->flags = 0;
-    }
-
-    /**
-     * Sets the internal state flags.
-     *
-     * @param int $flags Set of flags
-     */
-    public function set($flags)
-    {
-        $this->flags = $flags;
-    }
-
-    /**
-     * Gets the internal state flags.
-     *
-     * @return int
-     */
-    public function get()
-    {
-        return $this->flags;
-    }
-
-    /**
-     * Sets one or more flags.
-     *
-     * @param int $flags Set of flags
-     */
-    public function flag($flags)
-    {
-        $this->flags |= $flags;
-    }
-
-    /**
-     * Resets one or more flags.
-     *
-     * @param int $flags Set of flags
-     */
-    public function unflag($flags)
-    {
-        $this->flags &= ~$flags;
-    }
-
-    /**
-     * Returns if the specified flag or set of flags is set.
-     *
-     * @param int $flags Flag
-     *
-     * @return bool
-     */
-    public function check($flags)
-    {
-        return ($this->flags & $flags) === $flags;
-    }
-
-    /**
-     * Resets the state of a transaction.
-     */
-    public function reset()
-    {
-        $this->flags = 0;
-    }
-
-    /**
-     * Returns the state of the RESET flag.
-     *
-     * @return bool
-     */
-    public function isReset()
-    {
-        return $this->flags === 0;
-    }
-
-    /**
-     * Returns the state of the INITIALIZED flag.
-     *
-     * @return bool
-     */
-    public function isInitialized()
-    {
-        return $this->check(self::INITIALIZED);
-    }
-
-    /**
-     * Returns the state of the INSIDEBLOCK flag.
-     *
-     * @return bool
-     */
-    public function isExecuting()
-    {
-        return $this->check(self::INSIDEBLOCK);
-    }
-
-    /**
-     * Returns the state of the CAS flag.
-     *
-     * @return bool
-     */
-    public function isCAS()
-    {
-        return $this->check(self::CAS);
-    }
-
-    /**
-     * Returns if WATCH is allowed in the current state.
-     *
-     * @return bool
-     */
-    public function isWatchAllowed()
-    {
-        return $this->check(self::INITIALIZED) && !$this->check(self::CAS);
-    }
-
-    /**
-     * Returns the state of the WATCH flag.
-     *
-     * @return bool
-     */
-    public function isWatching()
-    {
-        return $this->check(self::WATCH);
-    }
-
-    /**
-     * Returns the state of the DISCARDED flag.
-     *
-     * @return bool
-     */
-    public function isDiscarded()
-    {
-        return $this->check(self::DISCARDED);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+eCJS8bhfpOyOjfarjm0nXTGjqMuPiV0SLCe=

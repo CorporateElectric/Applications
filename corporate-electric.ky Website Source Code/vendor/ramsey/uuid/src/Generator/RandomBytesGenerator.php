@@ -1,44 +1,30 @@
-<?php
-
-/**
- * This file is part of the ramsey/uuid library
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @copyright Copyright (c) Ben Ramsey <ben@benramsey.com>
- * @license http://opensource.org/licenses/MIT MIT
- */
-
-declare(strict_types=1);
-
-namespace Ramsey\Uuid\Generator;
-
-use Ramsey\Uuid\Exception\RandomSourceException;
-
-/**
- * RandomBytesGenerator generates strings of random binary data using the
- * built-in `random_bytes()` PHP function
- *
- * @link http://php.net/random_bytes random_bytes()
- */
-class RandomBytesGenerator implements RandomGeneratorInterface
-{
-    /**
-     * @throws RandomSourceException if random_bytes() throws an exception/error
-     *
-     * @inheritDoc
-     */
-    public function generate(int $length): string
-    {
-        try {
-            return random_bytes($length);
-        } catch (\Throwable $exception) {
-            throw new RandomSourceException(
-                $exception->getMessage(),
-                (int) $exception->getCode(),
-                $exception
-            );
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

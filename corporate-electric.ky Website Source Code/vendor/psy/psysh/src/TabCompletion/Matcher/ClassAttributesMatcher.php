@@ -1,87 +1,64 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\TabCompletion\Matcher;
-
-/**
- * A class attribute tab completion Matcher.
- *
- * Given a namespace and class, this matcher provides completion for constants
- * and static properties.
- *
- * @author Marc Garcia <markcial@gmail.com>
- */
-class ClassAttributesMatcher extends AbstractMatcher
-{
-    /**
-     * {@inheritdoc}
-     */
-    public function getMatches(array $tokens, array $info = [])
-    {
-        $input = $this->getInput($tokens);
-
-        $firstToken = \array_pop($tokens);
-        if (self::tokenIs($firstToken, self::T_STRING)) {
-            // second token is the nekudotayim operator
-            \array_pop($tokens);
-        }
-
-        $class = $this->getNamespaceAndClass($tokens);
-
-        try {
-            $reflection = new \ReflectionClass($class);
-        } catch (\ReflectionException $re) {
-            return [];
-        }
-
-        $vars = \array_merge(
-            \array_map(
-                function ($var) {
-                    return '$'.$var;
-                },
-                \array_keys($reflection->getStaticProperties())
-            ),
-            \array_keys($reflection->getConstants())
-        );
-
-        return \array_map(
-            function ($name) use ($class) {
-                $chunks = \explode('\\', $class);
-                $className = \array_pop($chunks);
-
-                return $className.'::'.$name;
-            },
-            \array_filter(
-                $vars,
-                function ($var) use ($input) {
-                    return AbstractMatcher::startsWith($input, $var);
-                }
-            )
-        );
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function hasMatched(array $tokens)
-    {
-        $token = \array_pop($tokens);
-        $prevToken = \array_pop($tokens);
-
-        switch (true) {
-            case self::tokenIs($prevToken, self::T_DOUBLE_COLON) && self::tokenIs($token, self::T_STRING):
-            case self::tokenIs($token, self::T_DOUBLE_COLON):
-                return true;
-        }
-
-        return false;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

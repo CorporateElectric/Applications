@@ -1,60 +1,48 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Translation\Loader;
-
-use Symfony\Component\Translation\Exception\InvalidResourceException;
-
-/**
- * JsonFileLoader loads translations from an json file.
- *
- * @author singles
- */
-class JsonFileLoader extends FileLoader
-{
-    /**
-     * {@inheritdoc}
-     */
-    protected function loadResource($resource)
-    {
-        $messages = [];
-        if ($data = file_get_contents($resource)) {
-            $messages = json_decode($data, true);
-
-            if (0 < $errorCode = json_last_error()) {
-                throw new InvalidResourceException('Error parsing JSON: '.$this->getJSONErrorMessage($errorCode));
-            }
-        }
-
-        return $messages;
-    }
-
-    /**
-     * Translates JSON_ERROR_* constant into meaningful message.
-     */
-    private function getJSONErrorMessage(int $errorCode): string
-    {
-        switch ($errorCode) {
-            case \JSON_ERROR_DEPTH:
-                return 'Maximum stack depth exceeded';
-            case \JSON_ERROR_STATE_MISMATCH:
-                return 'Underflow or the modes mismatch';
-            case \JSON_ERROR_CTRL_CHAR:
-                return 'Unexpected control character found';
-            case \JSON_ERROR_SYNTAX:
-                return 'Syntax error, malformed JSON';
-            case \JSON_ERROR_UTF8:
-                return 'Malformed UTF-8 characters, possibly incorrectly encoded';
-            default:
-                return 'Unknown error';
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

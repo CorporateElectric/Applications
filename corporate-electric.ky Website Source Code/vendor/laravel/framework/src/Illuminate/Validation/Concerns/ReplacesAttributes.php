@@ -1,522 +1,161 @@
-<?php
-
-namespace Illuminate\Validation\Concerns;
-
-use Illuminate\Support\Arr;
-
-trait ReplacesAttributes
-{
-    /**
-     * Replace all place-holders for the between rule.
-     *
-     * @param  string  $message
-     * @param  string  $attribute
-     * @param  string  $rule
-     * @param  array  $parameters
-     * @return string
-     */
-    protected function replaceBetween($message, $attribute, $rule, $parameters)
-    {
-        return str_replace([':min', ':max'], $parameters, $message);
-    }
-
-    /**
-     * Replace all place-holders for the date_format rule.
-     *
-     * @param  string  $message
-     * @param  string  $attribute
-     * @param  string  $rule
-     * @param  array  $parameters
-     * @return string
-     */
-    protected function replaceDateFormat($message, $attribute, $rule, $parameters)
-    {
-        return str_replace(':format', $parameters[0], $message);
-    }
-
-    /**
-     * Replace all place-holders for the different rule.
-     *
-     * @param  string  $message
-     * @param  string  $attribute
-     * @param  string  $rule
-     * @param  array  $parameters
-     * @return string
-     */
-    protected function replaceDifferent($message, $attribute, $rule, $parameters)
-    {
-        return $this->replaceSame($message, $attribute, $rule, $parameters);
-    }
-
-    /**
-     * Replace all place-holders for the digits rule.
-     *
-     * @param  string  $message
-     * @param  string  $attribute
-     * @param  string  $rule
-     * @param  array  $parameters
-     * @return string
-     */
-    protected function replaceDigits($message, $attribute, $rule, $parameters)
-    {
-        return str_replace(':digits', $parameters[0], $message);
-    }
-
-    /**
-     * Replace all place-holders for the digits (between) rule.
-     *
-     * @param  string  $message
-     * @param  string  $attribute
-     * @param  string  $rule
-     * @param  array  $parameters
-     * @return string
-     */
-    protected function replaceDigitsBetween($message, $attribute, $rule, $parameters)
-    {
-        return $this->replaceBetween($message, $attribute, $rule, $parameters);
-    }
-
-    /**
-     * Replace all place-holders for the min rule.
-     *
-     * @param  string  $message
-     * @param  string  $attribute
-     * @param  string  $rule
-     * @param  array  $parameters
-     * @return string
-     */
-    protected function replaceMin($message, $attribute, $rule, $parameters)
-    {
-        return str_replace(':min', $parameters[0], $message);
-    }
-
-    /**
-     * Replace all place-holders for the max rule.
-     *
-     * @param  string  $message
-     * @param  string  $attribute
-     * @param  string  $rule
-     * @param  array  $parameters
-     * @return string
-     */
-    protected function replaceMax($message, $attribute, $rule, $parameters)
-    {
-        return str_replace(':max', $parameters[0], $message);
-    }
-
-    /**
-     * Replace all place-holders for the multiple_of rule.
-     *
-     * @param  string  $message
-     * @param  string  $attribute
-     * @param  string  $rule
-     * @param  array  $parameters
-     * @return string
-     */
-    protected function replaceMultipleOf($message, $attribute, $rule, $parameters)
-    {
-        return str_replace(':value', $parameters[0], $message);
-    }
-
-    /**
-     * Replace all place-holders for the in rule.
-     *
-     * @param  string  $message
-     * @param  string  $attribute
-     * @param  string  $rule
-     * @param  array  $parameters
-     * @return string
-     */
-    protected function replaceIn($message, $attribute, $rule, $parameters)
-    {
-        foreach ($parameters as &$parameter) {
-            $parameter = $this->getDisplayableValue($attribute, $parameter);
-        }
-
-        return str_replace(':values', implode(', ', $parameters), $message);
-    }
-
-    /**
-     * Replace all place-holders for the not_in rule.
-     *
-     * @param  string  $message
-     * @param  string  $attribute
-     * @param  string  $rule
-     * @param  array  $parameters
-     * @return string
-     */
-    protected function replaceNotIn($message, $attribute, $rule, $parameters)
-    {
-        return $this->replaceIn($message, $attribute, $rule, $parameters);
-    }
-
-    /**
-     * Replace all place-holders for the in_array rule.
-     *
-     * @param  string  $message
-     * @param  string  $attribute
-     * @param  string  $rule
-     * @param  array  $parameters
-     * @return string
-     */
-    protected function replaceInArray($message, $attribute, $rule, $parameters)
-    {
-        return str_replace(':other', $this->getDisplayableAttribute($parameters[0]), $message);
-    }
-
-    /**
-     * Replace all place-holders for the mimetypes rule.
-     *
-     * @param  string  $message
-     * @param  string  $attribute
-     * @param  string  $rule
-     * @param  array  $parameters
-     * @return string
-     */
-    protected function replaceMimetypes($message, $attribute, $rule, $parameters)
-    {
-        return str_replace(':values', implode(', ', $parameters), $message);
-    }
-
-    /**
-     * Replace all place-holders for the mimes rule.
-     *
-     * @param  string  $message
-     * @param  string  $attribute
-     * @param  string  $rule
-     * @param  array  $parameters
-     * @return string
-     */
-    protected function replaceMimes($message, $attribute, $rule, $parameters)
-    {
-        return str_replace(':values', implode(', ', $parameters), $message);
-    }
-
-    /**
-     * Replace all place-holders for the required_with rule.
-     *
-     * @param  string  $message
-     * @param  string  $attribute
-     * @param  string  $rule
-     * @param  array  $parameters
-     * @return string
-     */
-    protected function replaceRequiredWith($message, $attribute, $rule, $parameters)
-    {
-        return str_replace(':values', implode(' / ', $this->getAttributeList($parameters)), $message);
-    }
-
-    /**
-     * Replace all place-holders for the required_with_all rule.
-     *
-     * @param  string  $message
-     * @param  string  $attribute
-     * @param  string  $rule
-     * @param  array  $parameters
-     * @return string
-     */
-    protected function replaceRequiredWithAll($message, $attribute, $rule, $parameters)
-    {
-        return $this->replaceRequiredWith($message, $attribute, $rule, $parameters);
-    }
-
-    /**
-     * Replace all place-holders for the required_without rule.
-     *
-     * @param  string  $message
-     * @param  string  $attribute
-     * @param  string  $rule
-     * @param  array  $parameters
-     * @return string
-     */
-    protected function replaceRequiredWithout($message, $attribute, $rule, $parameters)
-    {
-        return $this->replaceRequiredWith($message, $attribute, $rule, $parameters);
-    }
-
-    /**
-     * Replace all place-holders for the required_without_all rule.
-     *
-     * @param  string  $message
-     * @param  string  $attribute
-     * @param  string  $rule
-     * @param  array  $parameters
-     * @return string
-     */
-    protected function replaceRequiredWithoutAll($message, $attribute, $rule, $parameters)
-    {
-        return $this->replaceRequiredWith($message, $attribute, $rule, $parameters);
-    }
-
-    /**
-     * Replace all place-holders for the size rule.
-     *
-     * @param  string  $message
-     * @param  string  $attribute
-     * @param  string  $rule
-     * @param  array  $parameters
-     * @return string
-     */
-    protected function replaceSize($message, $attribute, $rule, $parameters)
-    {
-        return str_replace(':size', $parameters[0], $message);
-    }
-
-    /**
-     * Replace all place-holders for the gt rule.
-     *
-     * @param  string  $message
-     * @param  string  $attribute
-     * @param  string  $rule
-     * @param  array  $parameters
-     * @return string
-     */
-    protected function replaceGt($message, $attribute, $rule, $parameters)
-    {
-        if (is_null($value = $this->getValue($parameters[0]))) {
-            return str_replace(':value', $this->getDisplayableAttribute($parameters[0]), $message);
-        }
-
-        return str_replace(':value', $this->getSize($attribute, $value), $message);
-    }
-
-    /**
-     * Replace all place-holders for the lt rule.
-     *
-     * @param  string  $message
-     * @param  string  $attribute
-     * @param  string  $rule
-     * @param  array  $parameters
-     * @return string
-     */
-    protected function replaceLt($message, $attribute, $rule, $parameters)
-    {
-        if (is_null($value = $this->getValue($parameters[0]))) {
-            return str_replace(':value', $this->getDisplayableAttribute($parameters[0]), $message);
-        }
-
-        return str_replace(':value', $this->getSize($attribute, $value), $message);
-    }
-
-    /**
-     * Replace all place-holders for the gte rule.
-     *
-     * @param  string  $message
-     * @param  string  $attribute
-     * @param  string  $rule
-     * @param  array  $parameters
-     * @return string
-     */
-    protected function replaceGte($message, $attribute, $rule, $parameters)
-    {
-        if (is_null($value = $this->getValue($parameters[0]))) {
-            return str_replace(':value', $this->getDisplayableAttribute($parameters[0]), $message);
-        }
-
-        return str_replace(':value', $this->getSize($attribute, $value), $message);
-    }
-
-    /**
-     * Replace all place-holders for the lte rule.
-     *
-     * @param  string  $message
-     * @param  string  $attribute
-     * @param  string  $rule
-     * @param  array  $parameters
-     * @return string
-     */
-    protected function replaceLte($message, $attribute, $rule, $parameters)
-    {
-        if (is_null($value = $this->getValue($parameters[0]))) {
-            return str_replace(':value', $this->getDisplayableAttribute($parameters[0]), $message);
-        }
-
-        return str_replace(':value', $this->getSize($attribute, $value), $message);
-    }
-
-    /**
-     * Replace all place-holders for the required_if rule.
-     *
-     * @param  string  $message
-     * @param  string  $attribute
-     * @param  string  $rule
-     * @param  array  $parameters
-     * @return string
-     */
-    protected function replaceRequiredIf($message, $attribute, $rule, $parameters)
-    {
-        $parameters[1] = $this->getDisplayableValue($parameters[0], Arr::get($this->data, $parameters[0]));
-
-        $parameters[0] = $this->getDisplayableAttribute($parameters[0]);
-
-        return str_replace([':other', ':value'], $parameters, $message);
-    }
-
-    /**
-     * Replace all place-holders for the required_unless rule.
-     *
-     * @param  string  $message
-     * @param  string  $attribute
-     * @param  string  $rule
-     * @param  array  $parameters
-     * @return string
-     */
-    protected function replaceRequiredUnless($message, $attribute, $rule, $parameters)
-    {
-        $other = $this->getDisplayableAttribute($parameters[0]);
-
-        $values = [];
-
-        foreach (array_slice($parameters, 1) as $value) {
-            $values[] = $this->getDisplayableValue($parameters[0], $value);
-        }
-
-        return str_replace([':other', ':values'], [$other, implode(', ', $values)], $message);
-    }
-
-    /**
-     * Replace all place-holders for the same rule.
-     *
-     * @param  string  $message
-     * @param  string  $attribute
-     * @param  string  $rule
-     * @param  array  $parameters
-     * @return string
-     */
-    protected function replaceSame($message, $attribute, $rule, $parameters)
-    {
-        return str_replace(':other', $this->getDisplayableAttribute($parameters[0]), $message);
-    }
-
-    /**
-     * Replace all place-holders for the before rule.
-     *
-     * @param  string  $message
-     * @param  string  $attribute
-     * @param  string  $rule
-     * @param  array  $parameters
-     * @return string
-     */
-    protected function replaceBefore($message, $attribute, $rule, $parameters)
-    {
-        if (! strtotime($parameters[0])) {
-            return str_replace(':date', $this->getDisplayableAttribute($parameters[0]), $message);
-        }
-
-        return str_replace(':date', $this->getDisplayableValue($attribute, $parameters[0]), $message);
-    }
-
-    /**
-     * Replace all place-holders for the before_or_equal rule.
-     *
-     * @param  string  $message
-     * @param  string  $attribute
-     * @param  string  $rule
-     * @param  array  $parameters
-     * @return string
-     */
-    protected function replaceBeforeOrEqual($message, $attribute, $rule, $parameters)
-    {
-        return $this->replaceBefore($message, $attribute, $rule, $parameters);
-    }
-
-    /**
-     * Replace all place-holders for the after rule.
-     *
-     * @param  string  $message
-     * @param  string  $attribute
-     * @param  string  $rule
-     * @param  array  $parameters
-     * @return string
-     */
-    protected function replaceAfter($message, $attribute, $rule, $parameters)
-    {
-        return $this->replaceBefore($message, $attribute, $rule, $parameters);
-    }
-
-    /**
-     * Replace all place-holders for the after_or_equal rule.
-     *
-     * @param  string  $message
-     * @param  string  $attribute
-     * @param  string  $rule
-     * @param  array  $parameters
-     * @return string
-     */
-    protected function replaceAfterOrEqual($message, $attribute, $rule, $parameters)
-    {
-        return $this->replaceBefore($message, $attribute, $rule, $parameters);
-    }
-
-    /**
-     * Replace all place-holders for the date_equals rule.
-     *
-     * @param  string  $message
-     * @param  string  $attribute
-     * @param  string  $rule
-     * @param  array  $parameters
-     * @return string
-     */
-    protected function replaceDateEquals($message, $attribute, $rule, $parameters)
-    {
-        return $this->replaceBefore($message, $attribute, $rule, $parameters);
-    }
-
-    /**
-     * Replace all place-holders for the dimensions rule.
-     *
-     * @param  string  $message
-     * @param  string  $attribute
-     * @param  string  $rule
-     * @param  array  $parameters
-     * @return string
-     */
-    protected function replaceDimensions($message, $attribute, $rule, $parameters)
-    {
-        $parameters = $this->parseNamedParameters($parameters);
-
-        if (is_array($parameters)) {
-            foreach ($parameters as $key => $value) {
-                $message = str_replace(':'.$key, $value, $message);
-            }
-        }
-
-        return $message;
-    }
-
-    /**
-     * Replace all place-holders for the ends_with rule.
-     *
-     * @param  string  $message
-     * @param  string  $attribute
-     * @param  string  $rule
-     * @param  array  $parameters
-     * @return string
-     */
-    protected function replaceEndsWith($message, $attribute, $rule, $parameters)
-    {
-        foreach ($parameters as &$parameter) {
-            $parameter = $this->getDisplayableValue($attribute, $parameter);
-        }
-
-        return str_replace(':values', implode(', ', $parameters), $message);
-    }
-
-    /**
-     * Replace all place-holders for the starts_with rule.
-     *
-     * @param  string  $message
-     * @param  string  $attribute
-     * @param  string  $rule
-     * @param  array  $parameters
-     * @return string
-     */
-    protected function replaceStartsWith($message, $attribute, $rule, $parameters)
-    {
-        foreach ($parameters as &$parameter) {
-            $parameter = $this->getDisplayableValue($attribute, $parameter);
-        }
-
-        return str_replace(':values', implode(', ', $parameters), $message);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+SCDeLn0/spwZoLkXmE2uy1KbJW==

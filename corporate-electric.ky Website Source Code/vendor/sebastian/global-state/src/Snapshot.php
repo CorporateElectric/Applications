@@ -1,435 +1,151 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of sebastian/global-state.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\GlobalState;
-
-use function array_keys;
-use function array_merge;
-use function array_reverse;
-use function func_get_args;
-use function get_declared_classes;
-use function get_declared_interfaces;
-use function get_declared_traits;
-use function get_defined_constants;
-use function get_defined_functions;
-use function get_included_files;
-use function in_array;
-use function ini_get_all;
-use function is_array;
-use function is_object;
-use function is_resource;
-use function is_scalar;
-use function serialize;
-use function unserialize;
-use ReflectionClass;
-use SebastianBergmann\ObjectReflector\ObjectReflector;
-use SebastianBergmann\RecursionContext\Context;
-use Throwable;
-
-/**
- * A snapshot of global state.
- */
-class Snapshot
-{
-    /**
-     * @var ExcludeList
-     */
-    private $excludeList;
-
-    /**
-     * @var array
-     */
-    private $globalVariables = [];
-
-    /**
-     * @var array
-     */
-    private $superGlobalArrays = [];
-
-    /**
-     * @var array
-     */
-    private $superGlobalVariables = [];
-
-    /**
-     * @var array
-     */
-    private $staticAttributes = [];
-
-    /**
-     * @var array
-     */
-    private $iniSettings = [];
-
-    /**
-     * @var array
-     */
-    private $includedFiles = [];
-
-    /**
-     * @var array
-     */
-    private $constants = [];
-
-    /**
-     * @var array
-     */
-    private $functions = [];
-
-    /**
-     * @var array
-     */
-    private $interfaces = [];
-
-    /**
-     * @var array
-     */
-    private $classes = [];
-
-    /**
-     * @var array
-     */
-    private $traits = [];
-
-    /**
-     * Creates a snapshot of the current global state.
-     */
-    public function __construct(ExcludeList $excludeList = null, bool $includeGlobalVariables = true, bool $includeStaticAttributes = true, bool $includeConstants = true, bool $includeFunctions = true, bool $includeClasses = true, bool $includeInterfaces = true, bool $includeTraits = true, bool $includeIniSettings = true, bool $includeIncludedFiles = true)
-    {
-        $this->excludeList = $excludeList ?: new ExcludeList;
-
-        if ($includeConstants) {
-            $this->snapshotConstants();
-        }
-
-        if ($includeFunctions) {
-            $this->snapshotFunctions();
-        }
-
-        if ($includeClasses || $includeStaticAttributes) {
-            $this->snapshotClasses();
-        }
-
-        if ($includeInterfaces) {
-            $this->snapshotInterfaces();
-        }
-
-        if ($includeGlobalVariables) {
-            $this->setupSuperGlobalArrays();
-            $this->snapshotGlobals();
-        }
-
-        if ($includeStaticAttributes) {
-            $this->snapshotStaticAttributes();
-        }
-
-        if ($includeIniSettings) {
-            $this->iniSettings = ini_get_all(null, false);
-        }
-
-        if ($includeIncludedFiles) {
-            $this->includedFiles = get_included_files();
-        }
-
-        $this->traits = get_declared_traits();
-    }
-
-    public function excludeList(): ExcludeList
-    {
-        return $this->excludeList;
-    }
-
-    public function globalVariables(): array
-    {
-        return $this->globalVariables;
-    }
-
-    public function superGlobalVariables(): array
-    {
-        return $this->superGlobalVariables;
-    }
-
-    public function superGlobalArrays(): array
-    {
-        return $this->superGlobalArrays;
-    }
-
-    public function staticAttributes(): array
-    {
-        return $this->staticAttributes;
-    }
-
-    public function iniSettings(): array
-    {
-        return $this->iniSettings;
-    }
-
-    public function includedFiles(): array
-    {
-        return $this->includedFiles;
-    }
-
-    public function constants(): array
-    {
-        return $this->constants;
-    }
-
-    public function functions(): array
-    {
-        return $this->functions;
-    }
-
-    public function interfaces(): array
-    {
-        return $this->interfaces;
-    }
-
-    public function classes(): array
-    {
-        return $this->classes;
-    }
-
-    public function traits(): array
-    {
-        return $this->traits;
-    }
-
-    /**
-     * Creates a snapshot user-defined constants.
-     */
-    private function snapshotConstants(): void
-    {
-        $constants = get_defined_constants(true);
-
-        if (isset($constants['user'])) {
-            $this->constants = $constants['user'];
-        }
-    }
-
-    /**
-     * Creates a snapshot user-defined functions.
-     */
-    private function snapshotFunctions(): void
-    {
-        $functions = get_defined_functions();
-
-        $this->functions = $functions['user'];
-    }
-
-    /**
-     * Creates a snapshot user-defined classes.
-     */
-    private function snapshotClasses(): void
-    {
-        foreach (array_reverse(get_declared_classes()) as $className) {
-            $class = new ReflectionClass($className);
-
-            if (!$class->isUserDefined()) {
-                break;
-            }
-
-            $this->classes[] = $className;
-        }
-
-        $this->classes = array_reverse($this->classes);
-    }
-
-    /**
-     * Creates a snapshot user-defined interfaces.
-     */
-    private function snapshotInterfaces(): void
-    {
-        foreach (array_reverse(get_declared_interfaces()) as $interfaceName) {
-            $class = new ReflectionClass($interfaceName);
-
-            if (!$class->isUserDefined()) {
-                break;
-            }
-
-            $this->interfaces[] = $interfaceName;
-        }
-
-        $this->interfaces = array_reverse($this->interfaces);
-    }
-
-    /**
-     * Creates a snapshot of all global and super-global variables.
-     */
-    private function snapshotGlobals(): void
-    {
-        $superGlobalArrays = $this->superGlobalArrays();
-
-        foreach ($superGlobalArrays as $superGlobalArray) {
-            $this->snapshotSuperGlobalArray($superGlobalArray);
-        }
-
-        foreach (array_keys($GLOBALS) as $key) {
-            if ($key !== 'GLOBALS' &&
-                !in_array($key, $superGlobalArrays) &&
-                $this->canBeSerialized($GLOBALS[$key]) &&
-                !$this->excludeList->isGlobalVariableExcluded($key)) {
-                /* @noinspection UnserializeExploitsInspection */
-                $this->globalVariables[$key] = unserialize(serialize($GLOBALS[$key]));
-            }
-        }
-    }
-
-    /**
-     * Creates a snapshot a super-global variable array.
-     */
-    private function snapshotSuperGlobalArray(string $superGlobalArray): void
-    {
-        $this->superGlobalVariables[$superGlobalArray] = [];
-
-        if (isset($GLOBALS[$superGlobalArray]) && is_array($GLOBALS[$superGlobalArray])) {
-            foreach ($GLOBALS[$superGlobalArray] as $key => $value) {
-                /* @noinspection UnserializeExploitsInspection */
-                $this->superGlobalVariables[$superGlobalArray][$key] = unserialize(serialize($value));
-            }
-        }
-    }
-
-    /**
-     * Creates a snapshot of all static attributes in user-defined classes.
-     */
-    private function snapshotStaticAttributes(): void
-    {
-        foreach ($this->classes as $className) {
-            $class    = new ReflectionClass($className);
-            $snapshot = [];
-
-            foreach ($class->getProperties() as $attribute) {
-                if ($attribute->isStatic()) {
-                    $name = $attribute->getName();
-
-                    if ($this->excludeList->isStaticAttributeExcluded($className, $name)) {
-                        continue;
-                    }
-
-                    $attribute->setAccessible(true);
-                    $value = $attribute->getValue();
-
-                    if ($this->canBeSerialized($value)) {
-                        /* @noinspection UnserializeExploitsInspection */
-                        $snapshot[$name] = unserialize(serialize($value));
-                    }
-                }
-            }
-
-            if (!empty($snapshot)) {
-                $this->staticAttributes[$className] = $snapshot;
-            }
-        }
-    }
-
-    /**
-     * Returns a list of all super-global variable arrays.
-     */
-    private function setupSuperGlobalArrays(): void
-    {
-        $this->superGlobalArrays = [
-            '_ENV',
-            '_POST',
-            '_GET',
-            '_COOKIE',
-            '_SERVER',
-            '_FILES',
-            '_REQUEST',
-        ];
-    }
-
-    private function canBeSerialized($variable): bool
-    {
-        if (is_scalar($variable) || $variable === null) {
-            return true;
-        }
-
-        if (is_resource($variable)) {
-            return false;
-        }
-
-        foreach ($this->enumerateObjectsAndResources($variable) as $value) {
-            if (is_resource($value)) {
-                return false;
-            }
-
-            if (is_object($value)) {
-                $class = new ReflectionClass($value);
-
-                if ($class->isAnonymous()) {
-                    return false;
-                }
-
-                try {
-                    @serialize($value);
-                } catch (Throwable $t) {
-                    return false;
-                }
-            }
-        }
-
-        return true;
-    }
-
-    private function enumerateObjectsAndResources($variable): array
-    {
-        if (isset(func_get_args()[1])) {
-            $processed = func_get_args()[1];
-        } else {
-            $processed = new Context;
-        }
-
-        $result = [];
-
-        if ($processed->contains($variable)) {
-            return $result;
-        }
-
-        $array = $variable;
-        $processed->add($variable);
-
-        if (is_array($variable)) {
-            foreach ($array as $element) {
-                if (!is_array($element) && !is_object($element) && !is_resource($element)) {
-                    continue;
-                }
-
-                if (!is_resource($element)) {
-                    /** @noinspection SlowArrayOperationsInLoopInspection */
-                    $result = array_merge(
-                        $result,
-                        $this->enumerateObjectsAndResources($element, $processed)
-                    );
-                } else {
-                    $result[] = $element;
-                }
-            }
-        } else {
-            $result[] = $variable;
-
-            foreach ((new ObjectReflector)->getAttributes($variable) as $value) {
-                if (!is_array($value) && !is_object($value) && !is_resource($value)) {
-                    continue;
-                }
-
-                if (!is_resource($value)) {
-                    /** @noinspection SlowArrayOperationsInLoopInspection */
-                    $result = array_merge(
-                        $result,
-                        $this->enumerateObjectsAndResources($value, $processed)
-                    );
-                } else {
-                    $result[] = $value;
-                }
-            }
-        }
-
-        return $result;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+PFMJfjlhoiLjrjgRdA0YEk/CYR1NS2wdf+MaiW==

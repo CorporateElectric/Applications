@@ -1,53 +1,48 @@
-<?php
-
-namespace GuzzleHttp\Psr7;
-
-use Psr\Http\Message\StreamInterface;
-
-/**
- * Uses PHP's zlib.inflate filter to inflate deflate or gzipped content.
- *
- * This stream decorator skips the first 10 bytes of the given stream to remove
- * the gzip header, converts the provided stream to a PHP stream resource,
- * then appends the zlib.inflate filter. The stream is then converted back
- * to a Guzzle stream resource to be used as a Guzzle stream.
- *
- * @link http://tools.ietf.org/html/rfc1952
- * @link http://php.net/manual/en/filters.compression.php
- */
-class InflateStream implements StreamInterface
-{
-    use StreamDecoratorTrait;
-
-    public function __construct(StreamInterface $stream)
-    {
-        // read the first 10 bytes, ie. gzip header
-        $header = $stream->read(10);
-        $filenameHeaderLength = $this->getLengthOfPossibleFilenameHeader($stream, $header);
-        // Skip the header, that is 10 + length of filename + 1 (nil) bytes
-        $stream = new LimitStream($stream, -1, 10 + $filenameHeaderLength);
-        $resource = StreamWrapper::getResource($stream);
-        stream_filter_append($resource, 'zlib.inflate', STREAM_FILTER_READ);
-        $this->stream = $stream->isSeekable() ? new Stream($resource) : new NoSeekStream(new Stream($resource));
-    }
-
-    /**
-     * @param StreamInterface $stream
-     * @param $header
-     * @return int
-     */
-    private function getLengthOfPossibleFilenameHeader(StreamInterface $stream, $header)
-    {
-        $filename_header_length = 0;
-
-        if (substr(bin2hex($header), 6, 2) === '08') {
-            // we have a filename, read until nil
-            $filename_header_length = 1;
-            while ($stream->read(1) !== chr(0)) {
-                $filename_header_length++;
-            }
-        }
-
-        return $filename_header_length;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

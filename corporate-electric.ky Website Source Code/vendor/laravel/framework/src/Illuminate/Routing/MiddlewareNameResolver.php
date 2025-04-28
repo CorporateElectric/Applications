@@ -1,85 +1,40 @@
-<?php
-
-namespace Illuminate\Routing;
-
-use Closure;
-
-class MiddlewareNameResolver
-{
-    /**
-     * Resolve the middleware name to a class name(s) preserving passed parameters.
-     *
-     * @param  \Closure|string  $name
-     * @param  array  $map
-     * @param  array  $middlewareGroups
-     * @return \Closure|string|array
-     */
-    public static function resolve($name, $map, $middlewareGroups)
-    {
-        // When the middleware is simply a Closure, we will return this Closure instance
-        // directly so that Closures can be registered as middleware inline, which is
-        // convenient on occasions when the developers are experimenting with them.
-        if ($name instanceof Closure) {
-            return $name;
-        }
-
-        if (isset($map[$name]) && $map[$name] instanceof Closure) {
-            return $map[$name];
-        }
-
-        // If the middleware is the name of a middleware group, we will return the array
-        // of middlewares that belong to the group. This allows developers to group a
-        // set of middleware under single keys that can be conveniently referenced.
-        if (isset($middlewareGroups[$name])) {
-            return static::parseMiddlewareGroup($name, $map, $middlewareGroups);
-        }
-
-        // Finally, when the middleware is simply a string mapped to a class name the
-        // middleware name will get parsed into the full class name and parameters
-        // which may be run using the Pipeline which accepts this string format.
-        [$name, $parameters] = array_pad(explode(':', $name, 2), 2, null);
-
-        return ($map[$name] ?? $name).(! is_null($parameters) ? ':'.$parameters : '');
-    }
-
-    /**
-     * Parse the middleware group and format it for usage.
-     *
-     * @param  string  $name
-     * @param  array  $map
-     * @param  array  $middlewareGroups
-     * @return array
-     */
-    protected static function parseMiddlewareGroup($name, $map, $middlewareGroups)
-    {
-        $results = [];
-
-        foreach ($middlewareGroups[$name] as $middleware) {
-            // If the middleware is another middleware group we will pull in the group and
-            // merge its middleware into the results. This allows groups to conveniently
-            // reference other groups without needing to repeat all their middlewares.
-            if (isset($middlewareGroups[$middleware])) {
-                $results = array_merge($results, static::parseMiddlewareGroup(
-                    $middleware, $map, $middlewareGroups
-                ));
-
-                continue;
-            }
-
-            [$middleware, $parameters] = array_pad(
-                explode(':', $middleware, 2), 2, null
-            );
-
-            // If this middleware is actually a route middleware, we will extract the full
-            // class name out of the middleware list now. Then we'll add the parameters
-            // back onto this class' name so the pipeline will properly extract them.
-            if (isset($map[$middleware])) {
-                $middleware = $map[$middleware];
-            }
-
-            $results[] = $middleware.($parameters ? ':'.$parameters : '');
-        }
-
-        return $results;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+FdEpFtja1NZ45Al1gjYB0bS=

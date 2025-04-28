@@ -1,61 +1,50 @@
-<?php declare(strict_types=1);
-
-namespace PhpParser\Internal;
-
-use PhpParser\Node;
-use PhpParser\Node\Expr;
-
-/**
- * This node is used internally by the format-preserving pretty printer to print anonymous classes.
- *
- * The normal anonymous class structure violates assumptions about the order of token offsets.
- * Namely, the constructor arguments are part of the Expr\New_ node and follow the class node, even
- * though they are actually interleaved with them. This special node type is used temporarily to
- * restore a sane token offset order.
- *
- * @internal
- */
-class PrintableNewAnonClassNode extends Expr
-{
-    /** @var Node\AttributeGroup[] PHP attribute groups */
-    public $attrGroups;
-    /** @var Node\Arg[] Arguments */
-    public $args;
-    /** @var null|Node\Name Name of extended class */
-    public $extends;
-    /** @var Node\Name[] Names of implemented interfaces */
-    public $implements;
-    /** @var Node\Stmt[] Statements */
-    public $stmts;
-
-    public function __construct(
-        array $attrGroups, array $args, Node\Name $extends = null, array $implements,
-        array $stmts, array $attributes
-    ) {
-        parent::__construct($attributes);
-        $this->attrGroups = $attrGroups;
-        $this->args = $args;
-        $this->extends = $extends;
-        $this->implements = $implements;
-        $this->stmts = $stmts;
-    }
-
-    public static function fromNewNode(Expr\New_ $newNode) {
-        $class = $newNode->class;
-        assert($class instanceof Node\Stmt\Class_);
-        // We don't assert that $class->name is null here, to allow consumers to assign unique names
-        // to anonymous classes for their own purposes. We simplify ignore the name here.
-        return new self(
-            $class->attrGroups, $newNode->args, $class->extends, $class->implements,
-            $class->stmts, $newNode->getAttributes()
-        );
-    }
-
-    public function getType() : string {
-        return 'Expr_PrintableNewAnonClass';
-    }
-
-    public function getSubNodeNames() : array {
-        return ['attrGroups', 'args', 'extends', 'implements', 'stmts'];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

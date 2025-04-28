@@ -1,193 +1,115 @@
-<?php declare(strict_types=1);
-
-/*
- * This file is part of the Monolog package.
- *
- * (c) Jordi Boggiano <j.boggiano@seld.be>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Monolog\Handler;
-
-use Monolog\Formatter\ChromePHPFormatter;
-use Monolog\Formatter\FormatterInterface;
-use Monolog\Logger;
-use Monolog\Utils;
-
-/**
- * Handler sending logs to the ChromePHP extension (http://www.chromephp.com/)
- *
- * This also works out of the box with Firefox 43+
- *
- * @author Christophe Coevoet <stof@notk.org>
- */
-class ChromePHPHandler extends AbstractProcessingHandler
-{
-    use WebRequestRecognizerTrait;
-
-    /**
-     * Version of the extension
-     */
-    protected const VERSION = '4.0';
-
-    /**
-     * Header name
-     */
-    protected const HEADER_NAME = 'X-ChromeLogger-Data';
-
-    /**
-     * Regular expression to detect supported browsers (matches any Chrome, or Firefox 43+)
-     */
-    protected const USER_AGENT_REGEX = '{\b(?:Chrome/\d+(?:\.\d+)*|HeadlessChrome|Firefox/(?:4[3-9]|[5-9]\d|\d{3,})(?:\.\d)*)\b}';
-
-    protected static $initialized = false;
-
-    /**
-     * Tracks whether we sent too much data
-     *
-     * Chrome limits the headers to 4KB, so when we sent 3KB we stop sending
-     *
-     * @var bool
-     */
-    protected static $overflowed = false;
-
-    protected static $json = [
-        'version' => self::VERSION,
-        'columns' => ['label', 'log', 'backtrace', 'type'],
-        'rows' => [],
-    ];
-
-    protected static $sendHeaders = true;
-
-    /**
-     * @param string|int $level  The minimum logging level at which this handler will be triggered
-     * @param bool       $bubble Whether the messages that are handled can bubble up the stack or not
-     */
-    public function __construct($level = Logger::DEBUG, bool $bubble = true)
-    {
-        parent::__construct($level, $bubble);
-        if (!function_exists('json_encode')) {
-            throw new \RuntimeException('PHP\'s json extension is required to use Monolog\'s ChromePHPHandler');
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function handleBatch(array $records): void
-    {
-        if (!$this->isWebRequest()) {
-            return;
-        }
-
-        $messages = [];
-
-        foreach ($records as $record) {
-            if ($record['level'] < $this->level) {
-                continue;
-            }
-            $messages[] = $this->processRecord($record);
-        }
-
-        if (!empty($messages)) {
-            $messages = $this->getFormatter()->formatBatch($messages);
-            self::$json['rows'] = array_merge(self::$json['rows'], $messages);
-            $this->send();
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    protected function getDefaultFormatter(): FormatterInterface
-    {
-        return new ChromePHPFormatter();
-    }
-
-    /**
-     * Creates & sends header for a record
-     *
-     * @see sendHeader()
-     * @see send()
-     */
-    protected function write(array $record): void
-    {
-        if (!$this->isWebRequest()) {
-            return;
-        }
-
-        self::$json['rows'][] = $record['formatted'];
-
-        $this->send();
-    }
-
-    /**
-     * Sends the log header
-     *
-     * @see sendHeader()
-     */
-    protected function send(): void
-    {
-        if (self::$overflowed || !self::$sendHeaders) {
-            return;
-        }
-
-        if (!self::$initialized) {
-            self::$initialized = true;
-
-            self::$sendHeaders = $this->headersAccepted();
-            if (!self::$sendHeaders) {
-                return;
-            }
-
-            self::$json['request_uri'] = $_SERVER['REQUEST_URI'] ?? '';
-        }
-
-        $json = Utils::jsonEncode(self::$json, Utils::DEFAULT_JSON_FLAGS & ~JSON_UNESCAPED_UNICODE, true);
-        $data = base64_encode(utf8_encode($json));
-        if (strlen($data) > 3 * 1024) {
-            self::$overflowed = true;
-
-            $record = [
-                'message' => 'Incomplete logs, chrome header size limit reached',
-                'context' => [],
-                'level' => Logger::WARNING,
-                'level_name' => Logger::getLevelName(Logger::WARNING),
-                'channel' => 'monolog',
-                'datetime' => new \DateTimeImmutable(),
-                'extra' => [],
-            ];
-            self::$json['rows'][count(self::$json['rows']) - 1] = $this->getFormatter()->format($record);
-            $json = Utils::jsonEncode(self::$json, null, true);
-            $data = base64_encode(utf8_encode($json));
-        }
-
-        if (trim($data) !== '') {
-            $this->sendHeader(static::HEADER_NAME, $data);
-        }
-    }
-
-    /**
-     * Send header string to the client
-     */
-    protected function sendHeader(string $header, string $content): void
-    {
-        if (!headers_sent() && self::$sendHeaders) {
-            header(sprintf('%s: %s', $header, $content));
-        }
-    }
-
-    /**
-     * Verifies if the headers are accepted by the current user agent
-     */
-    protected function headersAccepted(): bool
-    {
-        if (empty($_SERVER['HTTP_USER_AGENT'])) {
-            return false;
-        }
-
-        return preg_match(static::USER_AGENT_REGEX, $_SERVER['HTTP_USER_AGENT']) === 1;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+sAfarQprtoPi

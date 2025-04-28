@@ -1,122 +1,71 @@
-<?php
-
-namespace Illuminate\Routing\Middleware;
-
-use Closure;
-use Illuminate\Cache\RateLimiter;
-use Illuminate\Contracts\Redis\Factory as Redis;
-use Illuminate\Redis\Limiters\DurationLimiter;
-
-class ThrottleRequestsWithRedis extends ThrottleRequests
-{
-    /**
-     * The Redis factory implementation.
-     *
-     * @var \Illuminate\Contracts\Redis\Factory
-     */
-    protected $redis;
-
-    /**
-     * The timestamp of the end of the current duration by key.
-     *
-     * @var array
-     */
-    public $decaysAt = [];
-
-    /**
-     * The number of remaining slots by key.
-     *
-     * @var array
-     */
-    public $remaining = [];
-
-    /**
-     * Create a new request throttler.
-     *
-     * @param  \Illuminate\Cache\RateLimiter  $limiter
-     * @param  \Illuminate\Contracts\Redis\Factory  $redis
-     * @return void
-     */
-    public function __construct(RateLimiter $limiter, Redis $redis)
-    {
-        parent::__construct($limiter);
-
-        $this->redis = $redis;
-    }
-
-    /**
-     * Handle an incoming request.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure  $next
-     * @param  array  $limits
-     * @return \Symfony\Component\HttpFoundation\Response
-     *
-     * @throws \Illuminate\Http\Exceptions\ThrottleRequestsException
-     */
-    protected function handleRequest($request, Closure $next, array $limits)
-    {
-        foreach ($limits as $limit) {
-            if ($this->tooManyAttempts($limit->key, $limit->maxAttempts, $limit->decayMinutes)) {
-                throw $this->buildException($request, $limit->key, $limit->maxAttempts, $limit->responseCallback);
-            }
-        }
-
-        $response = $next($request);
-
-        foreach ($limits as $limit) {
-            $response = $this->addHeaders(
-                $response,
-                $limit->maxAttempts,
-                $this->calculateRemainingAttempts($limit->key, $limit->maxAttempts)
-            );
-        }
-
-        return $response;
-    }
-
-    /**
-     * Determine if the given key has been "accessed" too many times.
-     *
-     * @param  string  $key
-     * @param  int  $maxAttempts
-     * @param  int  $decayMinutes
-     * @return mixed
-     */
-    protected function tooManyAttempts($key, $maxAttempts, $decayMinutes)
-    {
-        $limiter = new DurationLimiter(
-            $this->redis, $key, $maxAttempts, $decayMinutes * 60
-        );
-
-        return tap(! $limiter->acquire(), function () use ($key, $limiter) {
-            [$this->decaysAt[$key], $this->remaining[$key]] = [
-                $limiter->decaysAt, $limiter->remaining,
-            ];
-        });
-    }
-
-    /**
-     * Calculate the number of remaining attempts.
-     *
-     * @param  string  $key
-     * @param  int  $maxAttempts
-     * @param  int|null  $retryAfter
-     * @return int
-     */
-    protected function calculateRemainingAttempts($key, $maxAttempts, $retryAfter = null)
-    {
-        return is_null($retryAfter) ? $this->remaining[$key] : 0;
-    }
-
-    /**
-     * Get the number of seconds until the lock is released.
-     *
-     * @param  string  $key
-     * @return int
-     */
-    protected function getTimeUntilNextRetry($key)
-    {
-        return $this->decaysAt[$key] - $this->currentTime();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+pxxtr8Ntdqae2RuqoBFRFHzpsAGE2Fxd

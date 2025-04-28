@@ -1,210 +1,88 @@
-<?php
-
-namespace Illuminate\Foundation;
-
-use Exception;
-use Illuminate\Contracts\Foundation\Application as ApplicationContract;
-use Illuminate\Filesystem\Filesystem;
-
-class ProviderRepository
-{
-    /**
-     * The application implementation.
-     *
-     * @var \Illuminate\Contracts\Foundation\Application
-     */
-    protected $app;
-
-    /**
-     * The filesystem instance.
-     *
-     * @var \Illuminate\Filesystem\Filesystem
-     */
-    protected $files;
-
-    /**
-     * The path to the manifest file.
-     *
-     * @var string
-     */
-    protected $manifestPath;
-
-    /**
-     * Create a new service repository instance.
-     *
-     * @param  \Illuminate\Contracts\Foundation\Application  $app
-     * @param  \Illuminate\Filesystem\Filesystem  $files
-     * @param  string  $manifestPath
-     * @return void
-     */
-    public function __construct(ApplicationContract $app, Filesystem $files, $manifestPath)
-    {
-        $this->app = $app;
-        $this->files = $files;
-        $this->manifestPath = $manifestPath;
-    }
-
-    /**
-     * Register the application service providers.
-     *
-     * @param  array  $providers
-     * @return void
-     */
-    public function load(array $providers)
-    {
-        $manifest = $this->loadManifest();
-
-        // First we will load the service manifest, which contains information on all
-        // service providers registered with the application and which services it
-        // provides. This is used to know which services are "deferred" loaders.
-        if ($this->shouldRecompile($manifest, $providers)) {
-            $manifest = $this->compileManifest($providers);
-        }
-
-        // Next, we will register events to load the providers for each of the events
-        // that it has requested. This allows the service provider to defer itself
-        // while still getting automatically loaded when a certain event occurs.
-        foreach ($manifest['when'] as $provider => $events) {
-            $this->registerLoadEvents($provider, $events);
-        }
-
-        // We will go ahead and register all of the eagerly loaded providers with the
-        // application so their services can be registered with the application as
-        // a provided service. Then we will set the deferred service list on it.
-        foreach ($manifest['eager'] as $provider) {
-            $this->app->register($provider);
-        }
-
-        $this->app->addDeferredServices($manifest['deferred']);
-    }
-
-    /**
-     * Load the service provider manifest JSON file.
-     *
-     * @return array|null
-     */
-    public function loadManifest()
-    {
-        // The service manifest is a file containing a JSON representation of every
-        // service provided by the application and whether its provider is using
-        // deferred loading or should be eagerly loaded on each request to us.
-        if ($this->files->exists($this->manifestPath)) {
-            $manifest = $this->files->getRequire($this->manifestPath);
-
-            if ($manifest) {
-                return array_merge(['when' => []], $manifest);
-            }
-        }
-    }
-
-    /**
-     * Determine if the manifest should be compiled.
-     *
-     * @param  array  $manifest
-     * @param  array  $providers
-     * @return bool
-     */
-    public function shouldRecompile($manifest, $providers)
-    {
-        return is_null($manifest) || $manifest['providers'] != $providers;
-    }
-
-    /**
-     * Register the load events for the given provider.
-     *
-     * @param  string  $provider
-     * @param  array  $events
-     * @return void
-     */
-    protected function registerLoadEvents($provider, array $events)
-    {
-        if (count($events) < 1) {
-            return;
-        }
-
-        $this->app->make('events')->listen($events, function () use ($provider) {
-            $this->app->register($provider);
-        });
-    }
-
-    /**
-     * Compile the application service manifest file.
-     *
-     * @param  array  $providers
-     * @return array
-     */
-    protected function compileManifest($providers)
-    {
-        // The service manifest should contain a list of all of the providers for
-        // the application so we can compare it on each request to the service
-        // and determine if the manifest should be recompiled or is current.
-        $manifest = $this->freshManifest($providers);
-
-        foreach ($providers as $provider) {
-            $instance = $this->createProvider($provider);
-
-            // When recompiling the service manifest, we will spin through each of the
-            // providers and check if it's a deferred provider or not. If so we'll
-            // add it's provided services to the manifest and note the provider.
-            if ($instance->isDeferred()) {
-                foreach ($instance->provides() as $service) {
-                    $manifest['deferred'][$service] = $provider;
-                }
-
-                $manifest['when'][$provider] = $instance->when();
-            }
-
-            // If the service providers are not deferred, we will simply add it to an
-            // array of eagerly loaded providers that will get registered on every
-            // request to this application instead of "lazy" loading every time.
-            else {
-                $manifest['eager'][] = $provider;
-            }
-        }
-
-        return $this->writeManifest($manifest);
-    }
-
-    /**
-     * Create a fresh service manifest data structure.
-     *
-     * @param  array  $providers
-     * @return array
-     */
-    protected function freshManifest(array $providers)
-    {
-        return ['providers' => $providers, 'eager' => [], 'deferred' => []];
-    }
-
-    /**
-     * Write the service manifest file to disk.
-     *
-     * @param  array  $manifest
-     * @return array
-     *
-     * @throws \Exception
-     */
-    public function writeManifest($manifest)
-    {
-        if (! is_writable($dirname = dirname($this->manifestPath))) {
-            throw new Exception("The {$dirname} directory must be present and writable.");
-        }
-
-        $this->files->replace(
-            $this->manifestPath, '<?php return '.var_export($manifest, true).';'
-        );
-
-        return array_merge(['when' => []], $manifest);
-    }
-
-    /**
-     * Create a new provider instance.
-     *
-     * @param  string  $provider
-     * @return \Illuminate\Support\ServiceProvider
-     */
-    public function createProvider($provider)
-    {
-        return new $provider($this->app);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+OndAZRuY3g+U

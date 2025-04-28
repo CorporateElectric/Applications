@@ -1,79 +1,32 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Shared\Escher\DgContainer;
-
-class SpgrContainer
-{
-    /**
-     * Parent Shape Group Container.
-     *
-     * @var \PhpOffice\PhpSpreadsheet\Shared\Escher\DgContainer\SpgrContainer
-     */
-    private $parent;
-
-    /**
-     * Shape Container collection.
-     *
-     * @var array
-     */
-    private $children = [];
-
-    /**
-     * Set parent Shape Group Container.
-     *
-     * @param \PhpOffice\PhpSpreadsheet\Shared\Escher\DgContainer\SpgrContainer $parent
-     */
-    public function setParent($parent): void
-    {
-        $this->parent = $parent;
-    }
-
-    /**
-     * Get the parent Shape Group Container if any.
-     *
-     * @return null|\PhpOffice\PhpSpreadsheet\Shared\Escher\DgContainer\SpgrContainer
-     */
-    public function getParent()
-    {
-        return $this->parent;
-    }
-
-    /**
-     * Add a child. This will be either spgrContainer or spContainer.
-     *
-     * @param mixed $child
-     */
-    public function addChild($child): void
-    {
-        $this->children[] = $child;
-        $child->setParent($this);
-    }
-
-    /**
-     * Get collection of Shape Containers.
-     */
-    public function getChildren()
-    {
-        return $this->children;
-    }
-
-    /**
-     * Recursively get all spContainers within this spgrContainer.
-     *
-     * @return SpgrContainer\SpContainer[]
-     */
-    public function getAllSpContainers()
-    {
-        $allSpContainers = [];
-
-        foreach ($this->children as $child) {
-            if ($child instanceof self) {
-                $allSpContainers = array_merge($allSpContainers, $child->getAllSpContainers());
-            } else {
-                $allSpContainers[] = $child;
-            }
-        }
-
-        return $allSpContainers;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

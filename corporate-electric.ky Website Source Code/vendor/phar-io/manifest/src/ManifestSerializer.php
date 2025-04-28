@@ -1,168 +1,132 @@
-<?php declare(strict_types = 1);
-/*
- * This file is part of PharIo\Manifest.
- *
- * (c) Arne Blankerts <arne@blankerts.de>, Sebastian Heuer <sebastian@phpeople.de>, Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PharIo\Manifest;
-
-use PharIo\Version\AnyVersionConstraint;
-use PharIo\Version\Version;
-use PharIo\Version\VersionConstraint;
-use XMLWriter;
-
-/** @psalm-suppress MissingConstructor */
-class ManifestSerializer {
-    /** @var XMLWriter */
-    private $xmlWriter;
-
-    public function serializeToFile(Manifest $manifest, string $filename): void {
-        \file_put_contents(
-            $filename,
-            $this->serializeToString($manifest)
-        );
-    }
-
-    public function serializeToString(Manifest $manifest): string {
-        $this->startDocument();
-
-        $this->addContains($manifest->getName(), $manifest->getVersion(), $manifest->getType());
-        $this->addCopyright($manifest->getCopyrightInformation());
-        $this->addRequirements($manifest->getRequirements());
-        $this->addBundles($manifest->getBundledComponents());
-
-        return $this->finishDocument();
-    }
-
-    private function startDocument(): void {
-        $xmlWriter = new XMLWriter();
-        $xmlWriter->openMemory();
-        $xmlWriter->setIndent(true);
-        $xmlWriter->setIndentString(\str_repeat(' ', 4));
-        $xmlWriter->startDocument('1.0', 'UTF-8');
-        $xmlWriter->startElement('phar');
-        $xmlWriter->writeAttribute('xmlns', 'https://phar.io/xml/manifest/1.0');
-
-        $this->xmlWriter = $xmlWriter;
-    }
-
-    private function finishDocument(): string {
-        $this->xmlWriter->endElement();
-        $this->xmlWriter->endDocument();
-
-        return $this->xmlWriter->outputMemory();
-    }
-
-    private function addContains(ApplicationName $name, Version $version, Type $type): void {
-        $this->xmlWriter->startElement('contains');
-        $this->xmlWriter->writeAttribute('name', $name->asString());
-        $this->xmlWriter->writeAttribute('version', $version->getVersionString());
-
-        switch (true) {
-            case $type->isApplication(): {
-                $this->xmlWriter->writeAttribute('type', 'application');
-
-                break;
-            }
-
-            case $type->isLibrary(): {
-                $this->xmlWriter->writeAttribute('type', 'library');
-
-                break;
-            }
-
-            case $type->isExtension(): {
-                $this->xmlWriter->writeAttribute('type', 'extension');
-                /* @var $type Extension */
-                $this->addExtension(
-                    $type->getApplicationName(),
-                    $type->getVersionConstraint()
-                );
-
-                break;
-            }
-
-            default: {
-                $this->xmlWriter->writeAttribute('type', 'custom');
-            }
-        }
-
-        $this->xmlWriter->endElement();
-    }
-
-    private function addCopyright(CopyrightInformation $copyrightInformation): void {
-        $this->xmlWriter->startElement('copyright');
-
-        foreach ($copyrightInformation->getAuthors() as $author) {
-            $this->xmlWriter->startElement('author');
-            $this->xmlWriter->writeAttribute('name', $author->getName());
-            $this->xmlWriter->writeAttribute('email', $author->getEmail()->asString());
-            $this->xmlWriter->endElement();
-        }
-
-        $license = $copyrightInformation->getLicense();
-
-        $this->xmlWriter->startElement('license');
-        $this->xmlWriter->writeAttribute('type', $license->getName());
-        $this->xmlWriter->writeAttribute('url', $license->getUrl()->asString());
-        $this->xmlWriter->endElement();
-
-        $this->xmlWriter->endElement();
-    }
-
-    private function addRequirements(RequirementCollection $requirementCollection): void {
-        $phpRequirement = new AnyVersionConstraint();
-        $extensions     = [];
-
-        foreach ($requirementCollection as $requirement) {
-            if ($requirement instanceof PhpVersionRequirement) {
-                $phpRequirement = $requirement->getVersionConstraint();
-
-                continue;
-            }
-
-            if ($requirement instanceof PhpExtensionRequirement) {
-                $extensions[] = $requirement->asString();
-            }
-        }
-
-        $this->xmlWriter->startElement('requires');
-        $this->xmlWriter->startElement('php');
-        $this->xmlWriter->writeAttribute('version', $phpRequirement->asString());
-
-        foreach ($extensions as $extension) {
-            $this->xmlWriter->startElement('ext');
-            $this->xmlWriter->writeAttribute('name', $extension);
-            $this->xmlWriter->endElement();
-        }
-
-        $this->xmlWriter->endElement();
-        $this->xmlWriter->endElement();
-    }
-
-    private function addBundles(BundledComponentCollection $bundledComponentCollection): void {
-        if (\count($bundledComponentCollection) === 0) {
-            return;
-        }
-        $this->xmlWriter->startElement('bundles');
-
-        foreach ($bundledComponentCollection as $bundledComponent) {
-            $this->xmlWriter->startElement('component');
-            $this->xmlWriter->writeAttribute('name', $bundledComponent->getName());
-            $this->xmlWriter->writeAttribute('version', $bundledComponent->getVersion()->getVersionString());
-            $this->xmlWriter->endElement();
-        }
-
-        $this->xmlWriter->endElement();
-    }
-
-    private function addExtension(ApplicationName $applicationName, VersionConstraint $versionConstraint): void {
-        $this->xmlWriter->startElement('extension');
-        $this->xmlWriter->writeAttribute('for', $applicationName->asString());
-        $this->xmlWriter->writeAttribute('compatible', $versionConstraint->asString());
-        $this->xmlWriter->endElement();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+DYi=

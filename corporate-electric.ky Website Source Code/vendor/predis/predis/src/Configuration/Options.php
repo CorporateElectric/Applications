@@ -1,122 +1,64 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Predis\Configuration;
-
-/**
- * Manages Predis options with filtering, conversion and lazy initialization of
- * values using a mini-DI container approach.
- *
- * {@inheritdoc}
- *
- * @author Daniele Alessandri <suppakilla@gmail.com>
- */
-class Options implements OptionsInterface
-{
-    protected $input;
-    protected $options;
-    protected $handlers;
-
-    /**
-     * @param array $options Array of options with their values
-     */
-    public function __construct(array $options = array())
-    {
-        $this->input = $options;
-        $this->options = array();
-        $this->handlers = $this->getHandlers();
-    }
-
-    /**
-     * Ensures that the default options are initialized.
-     *
-     * @return array
-     */
-    protected function getHandlers()
-    {
-        return array(
-            'cluster' => 'Predis\Configuration\ClusterOption',
-            'connections' => 'Predis\Configuration\ConnectionFactoryOption',
-            'exceptions' => 'Predis\Configuration\ExceptionsOption',
-            'prefix' => 'Predis\Configuration\PrefixOption',
-            'profile' => 'Predis\Configuration\ProfileOption',
-            'replication' => 'Predis\Configuration\ReplicationOption',
-        );
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getDefault($option)
-    {
-        if (isset($this->handlers[$option])) {
-            $handler = $this->handlers[$option];
-            $handler = new $handler();
-
-            return $handler->getDefault($this);
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function defined($option)
-    {
-        return
-            array_key_exists($option, $this->options) ||
-            array_key_exists($option, $this->input)
-        ;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function __isset($option)
-    {
-        return (
-            array_key_exists($option, $this->options) ||
-            array_key_exists($option, $this->input)
-        ) && $this->__get($option) !== null;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function __get($option)
-    {
-        if (isset($this->options[$option]) || array_key_exists($option, $this->options)) {
-            return $this->options[$option];
-        }
-
-        if (isset($this->input[$option]) || array_key_exists($option, $this->input)) {
-            $value = $this->input[$option];
-            unset($this->input[$option]);
-
-            if (is_object($value) && method_exists($value, '__invoke')) {
-                $value = $value($this, $option);
-            }
-
-            if (isset($this->handlers[$option])) {
-                $handler = $this->handlers[$option];
-                $handler = new $handler();
-                $value = $handler->filter($this, $value);
-            }
-
-            return $this->options[$option] = $value;
-        }
-
-        if (isset($this->handlers[$option])) {
-            return $this->options[$option] = $this->getDefault($option);
-        }
-
-        return;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+gbQqF+WePMG+cNsDhg6R7FUD

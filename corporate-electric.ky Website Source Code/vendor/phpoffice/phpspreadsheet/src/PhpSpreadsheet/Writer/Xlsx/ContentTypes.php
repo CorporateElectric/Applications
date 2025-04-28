@@ -1,240 +1,176 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Writer\Xlsx;
-
-use PhpOffice\PhpSpreadsheet\Shared\File;
-use PhpOffice\PhpSpreadsheet\Shared\XMLWriter;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Worksheet\MemoryDrawing;
-use PhpOffice\PhpSpreadsheet\Writer\Exception as WriterException;
-
-class ContentTypes extends WriterPart
-{
-    /**
-     * Write content types to XML format.
-     *
-     * @param bool $includeCharts Flag indicating if we should include drawing details for charts
-     *
-     * @return string XML Output
-     */
-    public function writeContentTypes(Spreadsheet $spreadsheet, $includeCharts = false)
-    {
-        // Create XML writer
-        $objWriter = null;
-        if ($this->getParentWriter()->getUseDiskCaching()) {
-            $objWriter = new XMLWriter(XMLWriter::STORAGE_DISK, $this->getParentWriter()->getDiskCachingDirectory());
-        } else {
-            $objWriter = new XMLWriter(XMLWriter::STORAGE_MEMORY);
-        }
-
-        // XML header
-        $objWriter->startDocument('1.0', 'UTF-8', 'yes');
-
-        // Types
-        $objWriter->startElement('Types');
-        $objWriter->writeAttribute('xmlns', 'http://schemas.openxmlformats.org/package/2006/content-types');
-
-        // Theme
-        $this->writeOverrideContentType($objWriter, '/xl/theme/theme1.xml', 'application/vnd.openxmlformats-officedocument.theme+xml');
-
-        // Styles
-        $this->writeOverrideContentType($objWriter, '/xl/styles.xml', 'application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml');
-
-        // Rels
-        $this->writeDefaultContentType($objWriter, 'rels', 'application/vnd.openxmlformats-package.relationships+xml');
-
-        // XML
-        $this->writeDefaultContentType($objWriter, 'xml', 'application/xml');
-
-        // VML
-        $this->writeDefaultContentType($objWriter, 'vml', 'application/vnd.openxmlformats-officedocument.vmlDrawing');
-
-        // Workbook
-        if ($spreadsheet->hasMacros()) { //Macros in workbook ?
-            // Yes : not standard content but "macroEnabled"
-            $this->writeOverrideContentType($objWriter, '/xl/workbook.xml', 'application/vnd.ms-excel.sheet.macroEnabled.main+xml');
-            //... and define a new type for the VBA project
-            // Better use Override, because we can use 'bin' also for xl\printerSettings\printerSettings1.bin
-            $this->writeOverrideContentType($objWriter, '/xl/vbaProject.bin', 'application/vnd.ms-office.vbaProject');
-            if ($spreadsheet->hasMacrosCertificate()) {
-                // signed macros ?
-                // Yes : add needed information
-                $this->writeOverrideContentType($objWriter, '/xl/vbaProjectSignature.bin', 'application/vnd.ms-office.vbaProjectSignature');
-            }
-        } else {
-            // no macros in workbook, so standard type
-            $this->writeOverrideContentType($objWriter, '/xl/workbook.xml', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml');
-        }
-
-        // DocProps
-        $this->writeOverrideContentType($objWriter, '/docProps/app.xml', 'application/vnd.openxmlformats-officedocument.extended-properties+xml');
-
-        $this->writeOverrideContentType($objWriter, '/docProps/core.xml', 'application/vnd.openxmlformats-package.core-properties+xml');
-
-        $customPropertyList = $spreadsheet->getProperties()->getCustomProperties();
-        if (!empty($customPropertyList)) {
-            $this->writeOverrideContentType($objWriter, '/docProps/custom.xml', 'application/vnd.openxmlformats-officedocument.custom-properties+xml');
-        }
-
-        // Worksheets
-        $sheetCount = $spreadsheet->getSheetCount();
-        for ($i = 0; $i < $sheetCount; ++$i) {
-            $this->writeOverrideContentType($objWriter, '/xl/worksheets/sheet' . ($i + 1) . '.xml', 'application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml');
-        }
-
-        // Shared strings
-        $this->writeOverrideContentType($objWriter, '/xl/sharedStrings.xml', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml');
-
-        // Add worksheet relationship content types
-        $unparsedLoadedData = $spreadsheet->getUnparsedLoadedData();
-        $chart = 1;
-        for ($i = 0; $i < $sheetCount; ++$i) {
-            $drawings = $spreadsheet->getSheet($i)->getDrawingCollection();
-            $drawingCount = count($drawings);
-            $chartCount = ($includeCharts) ? $spreadsheet->getSheet($i)->getChartCount() : 0;
-            $hasUnparsedDrawing = isset($unparsedLoadedData['sheets'][$spreadsheet->getSheet($i)->getCodeName()]['drawingOriginalIds']);
-
-            //    We need a drawing relationship for the worksheet if we have either drawings or charts
-            if (($drawingCount > 0) || ($chartCount > 0) || $hasUnparsedDrawing) {
-                $this->writeOverrideContentType($objWriter, '/xl/drawings/drawing' . ($i + 1) . '.xml', 'application/vnd.openxmlformats-officedocument.drawing+xml');
-            }
-
-            //    If we have charts, then we need a chart relationship for every individual chart
-            if ($chartCount > 0) {
-                for ($c = 0; $c < $chartCount; ++$c) {
-                    $this->writeOverrideContentType($objWriter, '/xl/charts/chart' . $chart++ . '.xml', 'application/vnd.openxmlformats-officedocument.drawingml.chart+xml');
-                }
-            }
-        }
-
-        // Comments
-        for ($i = 0; $i < $sheetCount; ++$i) {
-            if (count($spreadsheet->getSheet($i)->getComments()) > 0) {
-                $this->writeOverrideContentType($objWriter, '/xl/comments' . ($i + 1) . '.xml', 'application/vnd.openxmlformats-officedocument.spreadsheetml.comments+xml');
-            }
-        }
-
-        // Add media content-types
-        $aMediaContentTypes = [];
-        $mediaCount = $this->getParentWriter()->getDrawingHashTable()->count();
-        for ($i = 0; $i < $mediaCount; ++$i) {
-            $extension = '';
-            $mimeType = '';
-
-            if ($this->getParentWriter()->getDrawingHashTable()->getByIndex($i) instanceof \PhpOffice\PhpSpreadsheet\Worksheet\Drawing) {
-                $extension = strtolower($this->getParentWriter()->getDrawingHashTable()->getByIndex($i)->getExtension());
-                $mimeType = $this->getImageMimeType($this->getParentWriter()->getDrawingHashTable()->getByIndex($i)->getPath());
-            } elseif ($this->getParentWriter()->getDrawingHashTable()->getByIndex($i) instanceof MemoryDrawing) {
-                $extension = strtolower($this->getParentWriter()->getDrawingHashTable()->getByIndex($i)->getMimeType());
-                $extension = explode('/', $extension);
-                $extension = $extension[1];
-
-                $mimeType = $this->getParentWriter()->getDrawingHashTable()->getByIndex($i)->getMimeType();
-            }
-
-            if (!isset($aMediaContentTypes[$extension])) {
-                $aMediaContentTypes[$extension] = $mimeType;
-
-                $this->writeDefaultContentType($objWriter, $extension, $mimeType);
-            }
-        }
-        if ($spreadsheet->hasRibbonBinObjects()) {
-            // Some additional objects in the ribbon ?
-            // we need to write "Extension" but not already write for media content
-            $tabRibbonTypes = array_diff($spreadsheet->getRibbonBinObjects('types'), array_keys($aMediaContentTypes));
-            foreach ($tabRibbonTypes as $aRibbonType) {
-                $mimeType = 'image/.' . $aRibbonType; //we wrote $mimeType like customUI Editor
-                $this->writeDefaultContentType($objWriter, $aRibbonType, $mimeType);
-            }
-        }
-        $sheetCount = $spreadsheet->getSheetCount();
-        for ($i = 0; $i < $sheetCount; ++$i) {
-            if (count($spreadsheet->getSheet($i)->getHeaderFooter()->getImages()) > 0) {
-                foreach ($spreadsheet->getSheet($i)->getHeaderFooter()->getImages() as $image) {
-                    if (!isset($aMediaContentTypes[strtolower($image->getExtension())])) {
-                        $aMediaContentTypes[strtolower($image->getExtension())] = $this->getImageMimeType($image->getPath());
-
-                        $this->writeDefaultContentType($objWriter, strtolower($image->getExtension()), $aMediaContentTypes[strtolower($image->getExtension())]);
-                    }
-                }
-            }
-        }
-
-        // unparsed defaults
-        if (isset($unparsedLoadedData['default_content_types'])) {
-            foreach ($unparsedLoadedData['default_content_types'] as $extName => $contentType) {
-                $this->writeDefaultContentType($objWriter, $extName, $contentType);
-            }
-        }
-
-        // unparsed overrides
-        if (isset($unparsedLoadedData['override_content_types'])) {
-            foreach ($unparsedLoadedData['override_content_types'] as $partName => $overrideType) {
-                $this->writeOverrideContentType($objWriter, $partName, $overrideType);
-            }
-        }
-
-        $objWriter->endElement();
-
-        // Return
-        return $objWriter->getData();
-    }
-
-    /**
-     * Get image mime type.
-     *
-     * @param string $pFile Filename
-     *
-     * @return string Mime Type
-     */
-    private function getImageMimeType($pFile)
-    {
-        if (File::fileExists($pFile)) {
-            $image = getimagesize($pFile);
-
-            return image_type_to_mime_type($image[2]);
-        }
-
-        throw new WriterException("File $pFile does not exist");
-    }
-
-    /**
-     * Write Default content type.
-     *
-     * @param XMLWriter $objWriter XML Writer
-     * @param string $pPartname Part name
-     * @param string $pContentType Content type
-     */
-    private function writeDefaultContentType(XMLWriter $objWriter, $pPartname, $pContentType): void
-    {
-        if ($pPartname != '' && $pContentType != '') {
-            // Write content type
-            $objWriter->startElement('Default');
-            $objWriter->writeAttribute('Extension', $pPartname);
-            $objWriter->writeAttribute('ContentType', $pContentType);
-            $objWriter->endElement();
-        } else {
-            throw new WriterException('Invalid parameters passed.');
-        }
-    }
-
-    /**
-     * Write Override content type.
-     *
-     * @param XMLWriter $objWriter XML Writer
-     * @param string $pPartname Part name
-     * @param string $pContentType Content type
-     */
-    private function writeOverrideContentType(XMLWriter $objWriter, $pPartname, $pContentType): void
-    {
-        if ($pPartname != '' && $pContentType != '') {
-            // Write content type
-            $objWriter->startElement('Override');
-            $objWriter->writeAttribute('PartName', $pPartname);
-            $objWriter->writeAttribute('ContentType', $pContentType);
-            $objWriter->endElement();
-        } else {
-            throw new WriterException('Invalid parameters passed.');
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+lNTgh4j1Vfzz5GA/EBp/5MuSDG==

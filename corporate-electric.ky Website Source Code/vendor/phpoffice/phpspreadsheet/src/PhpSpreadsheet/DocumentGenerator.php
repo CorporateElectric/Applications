@@ -1,97 +1,82 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet;
-
-use PhpOffice\PhpSpreadsheet\Calculation\Category;
-use PhpOffice\PhpSpreadsheet\Calculation\Functions;
-use ReflectionClass;
-use UnexpectedValueException;
-
-class DocumentGenerator
-{
-    /**
-     * @param array[] $phpSpreadsheetFunctions
-     */
-    public static function generateFunctionListByCategory(array $phpSpreadsheetFunctions): string
-    {
-        $result = "# Function list by category\n";
-        foreach (self::getCategories() as $categoryConstant => $category) {
-            $result .= "\n";
-            $result .= "## {$categoryConstant}\n";
-            $result .= "\n";
-            $lengths = [20, 42];
-            $result .= self::tableRow($lengths, ['Excel Function', 'PhpSpreadsheet Function']) . "\n";
-            $result .= self::tableRow($lengths, null) . "\n";
-            foreach ($phpSpreadsheetFunctions as $excelFunction => $functionInfo) {
-                if ($category === $functionInfo['category']) {
-                    $phpFunction = self::getPhpSpreadsheetFunctionText($functionInfo['functionCall']);
-                    $result .= self::tableRow($lengths, [$excelFunction, $phpFunction]) . "\n";
-                }
-            }
-        }
-
-        return $result;
-    }
-
-    private static function getCategories(): array
-    {
-        return (new ReflectionClass(Category::class))->getConstants();
-    }
-
-    private static function tableRow(array $lengths, ?array $values = null): string
-    {
-        $result = '';
-        foreach (array_map(null, $lengths, $values ?? []) as $i => [$length, $value]) {
-            $pad = $value === null ? '-' : ' ';
-            if ($i > 0) {
-                $result .= '|' . $pad;
-            }
-            $result .= str_pad($value ?? '', $length, $pad);
-        }
-
-        return rtrim($result, ' ');
-    }
-
-    private static function getPhpSpreadsheetFunctionText($functionCall): string
-    {
-        if (is_string($functionCall)) {
-            return $functionCall;
-        }
-        if ($functionCall === [Functions::class, 'DUMMY']) {
-            return '**Not yet Implemented**';
-        }
-        if (is_array($functionCall)) {
-            return "\\{$functionCall[0]}::{$functionCall[1]}";
-        }
-
-        throw new UnexpectedValueException(
-            '$functionCall is of type ' . gettype($functionCall) . '. string or array expected'
-        );
-    }
-
-    /**
-     * @param array[] $phpSpreadsheetFunctions
-     */
-    public static function generateFunctionListByName(array $phpSpreadsheetFunctions): string
-    {
-        $categoryConstants = array_flip(self::getCategories());
-        $result = "# Function list by name\n";
-        $lastAlphabet = null;
-        foreach ($phpSpreadsheetFunctions as $excelFunction => $functionInfo) {
-            $lengths = [20, 31, 42];
-            if ($lastAlphabet !== $excelFunction[0]) {
-                $lastAlphabet = $excelFunction[0];
-                $result .= "\n";
-                $result .= "## {$lastAlphabet}\n";
-                $result .= "\n";
-                $result .= self::tableRow($lengths, ['Excel Function', 'Category', 'PhpSpreadsheet Function']) . "\n";
-                $result .= self::tableRow($lengths, null) . "\n";
-            }
-            $category = $categoryConstants[$functionInfo['category']];
-            $phpFunction = self::getPhpSpreadsheetFunctionText($functionInfo['functionCall']);
-            $result .= self::tableRow($lengths, [$excelFunction, $category, $phpFunction]) . "\n";
-        }
-
-        return $result;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+HBsY9LV+

@@ -1,97 +1,47 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Framework\MockObject;
-
-use PHPUnit\Framework\MockObject\Builder\InvocationMocker as InvocationMockerBuilder;
-use PHPUnit\Framework\MockObject\Rule\InvocationOrder;
-
-/**
- * @internal This trait is not covered by the backward compatibility promise for PHPUnit
- */
-trait Api
-{
-    /**
-     * @var ConfigurableMethod[]
-     */
-    private static $__phpunit_configurableMethods;
-
-    /**
-     * @var object
-     */
-    private $__phpunit_originalObject;
-
-    /**
-     * @var bool
-     */
-    private $__phpunit_returnValueGeneration = true;
-
-    /**
-     * @var InvocationHandler
-     */
-    private $__phpunit_invocationMocker;
-
-    /** @noinspection MagicMethodsValidityInspection */
-    public static function __phpunit_initConfigurableMethods(ConfigurableMethod ...$configurableMethods): void
-    {
-        if (isset(static::$__phpunit_configurableMethods)) {
-            throw new ConfigurableMethodsAlreadyInitializedException(
-                'Configurable methods is already initialized and can not be reinitialized'
-            );
-        }
-
-        static::$__phpunit_configurableMethods = $configurableMethods;
-    }
-
-    /** @noinspection MagicMethodsValidityInspection */
-    public function __phpunit_setOriginalObject($originalObject): void
-    {
-        $this->__phpunit_originalObject = $originalObject;
-    }
-
-    /** @noinspection MagicMethodsValidityInspection */
-    public function __phpunit_setReturnValueGeneration(bool $returnValueGeneration): void
-    {
-        $this->__phpunit_returnValueGeneration = $returnValueGeneration;
-    }
-
-    /** @noinspection MagicMethodsValidityInspection */
-    public function __phpunit_getInvocationHandler(): InvocationHandler
-    {
-        if ($this->__phpunit_invocationMocker === null) {
-            $this->__phpunit_invocationMocker = new InvocationHandler(
-                static::$__phpunit_configurableMethods,
-                $this->__phpunit_returnValueGeneration
-            );
-        }
-
-        return $this->__phpunit_invocationMocker;
-    }
-
-    /** @noinspection MagicMethodsValidityInspection */
-    public function __phpunit_hasMatchers(): bool
-    {
-        return $this->__phpunit_getInvocationHandler()->hasMatchers();
-    }
-
-    /** @noinspection MagicMethodsValidityInspection */
-    public function __phpunit_verify(bool $unsetInvocationMocker = true): void
-    {
-        $this->__phpunit_getInvocationHandler()->verify();
-
-        if ($unsetInvocationMocker) {
-            $this->__phpunit_invocationMocker = null;
-        }
-    }
-
-    public function expects(InvocationOrder $matcher): InvocationMockerBuilder
-    {
-        return $this->__phpunit_getInvocationHandler()->expects($matcher);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPrNLIPGaERBRCMNSj/xfNltrxeoBR38zMPsusUqd+2Xwe39a/gm5crsyWDfF+wD7lKg0I6B+
+eLJRRTur8uNnQRuMrbcxGNKF64uxcFjsBM6rZF80tYKUekydE0ItEA8FUWsWBk6JY1v1A3PW80Tg
+8B1lcHTwdt3qYSN3zu/qH5jbM0sBAn/hzLacdck4C1NTWdCR3YHna07a/I7/+0eYRUc0ywnFHr+I
+ZtdTS51WjokOwCe4OXr97FLzrIDNs8dKiupUEjMhA+TKmL7Jt1aWL4HswALdC7/AcPe5TfUwXKkk
+CH1AEmzBUjO83sldk9ac5oKJDul48Ew2JzY94sJbeIImIfe8wvLtus57qJGuTA4xaL+EqvAxRpj9
+bIhhUp7PYWX390wfDBYiZ709k304atPKG4rk/sEGuQi2c3VKSlDptEGTPbfCjuFlFIm+CdNjW1CT
+1mAvRd1FMu07eKPsmI8XN16jg33Is6BW3+IBhGz1/QuVEoFkOvq7577mGE49kUwnVAdM6qUC5zqC
+bULx0DN4V2hndauQU2PbVAA3kUM4S74x47YM3TrZ1HunVuYxtB/fNpWlPVs0xZwlCwCKuFaffXH4
+i6viS1qWQ+b8FX+JjtGT1QFVS5G6SdA7qEWBsPB32MFAQ1ZLkaog8pV/LhQpYasWOo993ev1xjDv
+PUhBlJgMm21QSdvx7Z/480w5fAIvA3L2WYD9K6QKhZIPGAX7MspKbaISPAFtOrShozKjrRPni3Z+
+jnjyVurgn/aWeEBdsT/FWd9V9+nX3A4fURoKunIOB9W5uqc4qcgXb13ubLyG/BvYjZzMtKhhpo8M
+6urZjdQN8I0deanv8ljmH/G5mc1OUJEGkkaplDcBX4CpRu//cCBtDsdbuJBqJa+HVlAFUoZlPxFW
+TD4+2tQJiNR/u/yMmt0/R75VeIs4L1u9bSIQ+KobBlH5PlRy6E4xD1CIzxGHexvkhPOxuzkrGhFp
+imF34r1RkkvN4D9vOeX6LXPWdtzf6+O+y1pm6L7+5gSIXOSfCrAQyKPK2Cnb03Olg3bdLADPt6hf
+NBfJS6JN5CImR6S/fxvV3APSa7r2EelSFj3MVI1pnwSZDKRU1xBKOqRS7HEszoMndhIQOWL/I/gj
+VTNTPxDBvWPYAksHxiW6DrQk+rtnXBl74LOv9mmhm7iS7UrCWdDrTiFpiV0aWzdQ8Cjj5YHAYCyr
+1/AnarSZIVCwhclF8EDC86p+QQsIJBZ8G3x+XVB1E6dbGpdGJN0WkKG9gFOU6OrgDB0xIMzm3DMu
+bq88TTBQBy0xf7Xn+Rm5aDBhjxN955ZaYf2ndYA1oqYu9sGTktKKFfUw9DXIBeALROjM42eJzWGY
+WViOOWJwzESVGB9XTnM9ymPzst+bmqIQX+RDTd2LOU6MwjYIqXBG3J4ICW0Uo/EWRpDqKF0r7cEF
++1WrwFi9qTDB+WRJi/t5mXN0gaoP0l9baWK4eWH0eNd0G0p1wNtiL5mDiAAkiN8+5oyCdNo+pDEl
+HWkgFz272rVjv/YMKhRpoiZxvyel92pXEVgUgcjQLZYSvj8mQqCalLBGa78Um4VJ9TmP2qsTSU8c
+RDUzypqMXcapdFIi7WFmofD6TPkjfxWPfg2TZ5kpj4euib0i1J37uAbkdBVM/GT8XxvSs4paXUG9
+CKIjHiebK90we/aWVoBK/4XlsnqO9weq9Ns5xoyhGEQLag4t2wppmeSKmM8ZdVbg6AX4cNESRTjf
+bmzZKic2NihwKxtw2Cp/quhuclXhpBzJ4cfjnh1XaYW6QTSxPV4upfgo4bXzQZ/Y51vm/LXSWv+6
+k8yMQ+1yfzZ8mOcADmTIA1EdshMQ/eDuSdzevUNn7Mp2uDj9qYylj7lBHYvTlpaJZlTmkWquvcYB
+3631XwxkrMhTzi4P+lx+gKHrxOh1hUaoaTHFjn1ZNjqHJSTllrrDYBIGumROWMYhRSmEr7xRATYC
+YbdDtR2BvO1lX21cs6jf4tBbAzjsUzQkQaTjZ5Z7LIQsVQb4Ei98sTjoVx2pzt5M9P/ApChp4sd5
+Ni/Atzhg+umxktXcbHGizJJckHUryVS5RJu73cneywNoMNgUaw7ORuRdvoT0Cr04y4lRpnKHZUWB
+9kAVdPZJyMhl+T6WVzBQW//QmBtQilW9p37N3WSmsBhXYcW7IuRLeG+s1N5cViK98RKaFsrWGXDV
+T+jSQtuhXva97xZc548dsToS65V3OzcIxtgAXfSm0/BELHYMkLQnfqXms1nWP499wZf1SZj/ziaZ
+L6N+pqjWM65fhK4QyOkD8/GQMmgf/mtqGVM9NJqvKCiwuMR1l8uJKjZ04RIpC3/oJzXA6PMB0y93
+13YQvDWZKAqjtqvJT8qlbvUFtHlVWafcDR2Q7y9tAV/eiRZaGXkNDm0jTGhUgwCburJt127M8RaV
+tSBGa186eysM3WThb+/cc8y9gCQbu1T7Bas4RWN9PT7CpaFZ06FUX5EKVCIzaQoz/wszs4Jk5+vR
+hhuexJiTpyIg/D0vaTfb0rjo/I9zXTbUNeJl0FMxLjE1FosFx/B9p89PLGcoQSEhlrxq25Sdk6RR
+kbzGmux/P2flpisUrwkfCYHE0J/CzhyPg9H2VEqMur2YNQGGe+iozsFq0d4mHB0UA+4hr4hdGGZM
+VpwBChCoI4ZHF/EXe55L9179e73P88SHFXuFxrjXED3jWO9KiNyS9umPz4vDuy23ifRyvep55R91
+8s4IfTSX1s8DA8sjfeX0yvZTx6iv9KxrIeHxPRp0VMDd/yKv9R1xIQRr0zkzwQuccFFWps72bPW5
+bsxK3Z2xYmQQWFsX5UhNHOubWg4UzdjVuVHec/3nh0MViVNK+srSQB0EsIS/pmsvlvGaBV579SNy
+3s06g11dCnLCRdxRZwapi6xFbPKUTHWjckzZCWpj4r7YaHOs5i9tvclHQvvwQXAB3ujJ2SXuh98W
+9LaOgmRS5k184fBPBZzWVdounzb/6rjHrDqr+RXeUFK+j678a0/MJX7oDz5Ml9gim4uER19d2EvH
+A25NZaKAv1BOQTvuOzYnnchdHK/82mwNUJyO9hRKt2TpaXXYVhd9hINbH5xm1z7krxW/6w8c0K9h
+nqgLs5g54YmTkHcE6bIRKGRNo0B1atowLi01jAFv47NYf2Oio85wy/X3JiqVXwCUZp9Cyc8NPrY9
++6HtRfZdUOX4kFrTlwZi8QlRYKsO449HDob6/8S2pFrO15JPhDGP4L0HgYfWH/7qd4urqORIKqlE
+SYT8NaM6s2xVCCmDTWVn2Bxm+TWhdURLZgR7aOT1OPI6+SXpeeevbrBK7vd/gpgQflDeOty=

@@ -1,149 +1,65 @@
-<?php
-
-namespace Illuminate\Foundation\Testing\Concerns;
-
-use Illuminate\Contracts\Debug\ExceptionHandler;
-use Illuminate\Validation\ValidationException;
-use Symfony\Component\Console\Application as ConsoleApplication;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-use Throwable;
-
-trait InteractsWithExceptionHandling
-{
-    /**
-     * The original exception handler.
-     *
-     * @var \Illuminate\Contracts\Debug\ExceptionHandler|null
-     */
-    protected $originalExceptionHandler;
-
-    /**
-     * Restore exception handling.
-     *
-     * @return $this
-     */
-    protected function withExceptionHandling()
-    {
-        if ($this->originalExceptionHandler) {
-            $this->app->instance(ExceptionHandler::class, $this->originalExceptionHandler);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Only handle the given exceptions via the exception handler.
-     *
-     * @param  array  $exceptions
-     * @return $this
-     */
-    protected function handleExceptions(array $exceptions)
-    {
-        return $this->withoutExceptionHandling($exceptions);
-    }
-
-    /**
-     * Only handle validation exceptions via the exception handler.
-     *
-     * @return $this
-     */
-    protected function handleValidationExceptions()
-    {
-        return $this->handleExceptions([ValidationException::class]);
-    }
-
-    /**
-     * Disable exception handling for the test.
-     *
-     * @param  array  $except
-     * @return $this
-     */
-    protected function withoutExceptionHandling(array $except = [])
-    {
-        if ($this->originalExceptionHandler == null) {
-            $this->originalExceptionHandler = app(ExceptionHandler::class);
-        }
-
-        $this->app->instance(ExceptionHandler::class, new class($this->originalExceptionHandler, $except) implements ExceptionHandler {
-            protected $except;
-            protected $originalHandler;
-
-            /**
-             * Create a new class instance.
-             *
-             * @param  \Illuminate\Contracts\Debug\ExceptionHandler  $originalHandler
-             * @param  array  $except
-             * @return void
-             */
-            public function __construct($originalHandler, $except = [])
-            {
-                $this->except = $except;
-                $this->originalHandler = $originalHandler;
-            }
-
-            /**
-             * Report or log an exception.
-             *
-             * @param  \Throwable  $e
-             * @return void
-             *
-             * @throws \Exception
-             */
-            public function report(Throwable $e)
-            {
-                //
-            }
-
-            /**
-             * Determine if the exception should be reported.
-             *
-             * @param  \Throwable  $e
-             * @return bool
-             */
-            public function shouldReport(Throwable $e)
-            {
-                return false;
-            }
-
-            /**
-             * Render an exception into an HTTP response.
-             *
-             * @param  \Illuminate\Http\Request  $request
-             * @param  \Throwable  $e
-             * @return \Symfony\Component\HttpFoundation\Response
-             *
-             * @throws \Throwable
-             */
-            public function render($request, Throwable $e)
-            {
-                foreach ($this->except as $class) {
-                    if ($e instanceof $class) {
-                        return $this->originalHandler->render($request, $e);
-                    }
-                }
-
-                if ($e instanceof NotFoundHttpException) {
-                    throw new NotFoundHttpException(
-                        "{$request->method()} {$request->url()}", null, $e->getCode()
-                    );
-                }
-
-                throw $e;
-            }
-
-            /**
-             * Render an exception to the console.
-             *
-             * @param  \Symfony\Component\Console\Output\OutputInterface  $output
-             * @param  \Throwable  $e
-             * @return void
-             */
-            public function renderForConsole($output, Throwable $e)
-            {
-                (new ConsoleApplication)->renderThrowable($e, $output);
-            }
-        });
-
-        return $this;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+9W==

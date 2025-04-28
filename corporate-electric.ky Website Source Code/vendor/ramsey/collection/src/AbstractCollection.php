@@ -1,409 +1,155 @@
-<?php
-
-/**
- * This file is part of the ramsey/collection library
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @copyright Copyright (c) Ben Ramsey <ben@benramsey.com>
- * @license http://opensource.org/licenses/MIT MIT
- */
-
-declare(strict_types=1);
-
-namespace Ramsey\Collection;
-
-use Ramsey\Collection\Exception\CollectionMismatchException;
-use Ramsey\Collection\Exception\InvalidArgumentException;
-use Ramsey\Collection\Exception\InvalidSortOrderException;
-use Ramsey\Collection\Exception\OutOfBoundsException;
-use Ramsey\Collection\Exception\ValueExtractionException;
-use Ramsey\Collection\Tool\TypeTrait;
-use Ramsey\Collection\Tool\ValueExtractorTrait;
-use Ramsey\Collection\Tool\ValueToStringTrait;
-
-use function array_filter;
-use function array_map;
-use function array_merge;
-use function array_search;
-use function array_udiff;
-use function array_uintersect;
-use function current;
-use function end;
-use function in_array;
-use function reset;
-use function sprintf;
-use function unserialize;
-use function usort;
-
-/**
- * This class provides a basic implementation of `CollectionInterface`, to
- * minimize the effort required to implement this interface
- */
-abstract class AbstractCollection extends AbstractArray implements CollectionInterface
-{
-    use TypeTrait;
-    use ValueToStringTrait;
-    use ValueExtractorTrait;
-
-    /**
-     * Ensures that this collection contains the specified element.
-     *
-     * @param mixed $element The element to add to the collection.
-     *
-     * @return bool `true` if this collection changed as a result of the call.
-     *
-     * @throws InvalidArgumentException when the element does not match the
-     *     specified type for this collection.
-     */
-    public function add($element): bool
-    {
-        $this[] = $element;
-
-        return true;
-    }
-
-    /**
-     * Returns `true` if this collection contains the specified element.
-     *
-     * @param mixed $element The element to check whether the collection contains.
-     * @param bool $strict Whether to perform a strict type check on the value.
-     */
-    public function contains($element, bool $strict = true): bool
-    {
-        return in_array($element, $this->data, $strict);
-    }
-
-    /**
-     * Sets the given value to the given offset in the array.
-     *
-     * @param mixed|null $offset The position to set the value in the array, or
-     *     `null` to append the value to the array.
-     * @param mixed $value The value to set at the given offset.
-     *
-     * @throws InvalidArgumentException when the value does not match the
-     *     specified type for this collection.
-     */
-    public function offsetSet($offset, $value): void
-    {
-        if ($this->checkType($this->getType(), $value) === false) {
-            throw new InvalidArgumentException(
-                'Value must be of type ' . $this->getType() . '; value is '
-                . $this->toolValueToString($value)
-            );
-        }
-
-        if ($offset === null) {
-            $this->data[] = $value;
-        } else {
-            $this->data[$offset] = $value;
-        }
-    }
-
-    /**
-     * Removes a single instance of the specified element from this collection,
-     * if it is present.
-     *
-     * @param mixed $element The element to remove from the collection.
-     *
-     * @return bool `true` if an element was removed as a result of this call.
-     */
-    public function remove($element): bool
-    {
-        if (($position = array_search($element, $this->data, true)) !== false) {
-            unset($this->data[$position]);
-
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Returns the values from given property or method.
-     *
-     * @param string $propertyOrMethod The property or method name to filter by.
-     *
-     * @return mixed[]
-     *
-     * @throws ValueExtractionException if property or method is not defined.
-     */
-    public function column(string $propertyOrMethod): array
-    {
-        $temp = [];
-
-        foreach ($this->data as $item) {
-            $temp[] = $this->extractValue($item, $propertyOrMethod);
-        }
-
-        return $temp;
-    }
-
-    /**
-     * Returns the first item of the collection.
-     *
-     * @return mixed
-     *
-     * @throws OutOfBoundsException when the collection is empty.
-     */
-    public function first()
-    {
-        if ($this->isEmpty()) {
-            throw new OutOfBoundsException('Can\'t determine first item. Collection is empty');
-        }
-
-        reset($this->data);
-
-        return current($this->data);
-    }
-
-    /**
-     * Returns the last item of the collection.
-     *
-     * @return mixed
-     *
-     * @throws OutOfBoundsException when the collection is empty.
-     */
-    public function last()
-    {
-        if ($this->isEmpty()) {
-            throw new OutOfBoundsException('Can\'t determine last item. Collection is empty');
-        }
-
-        $item = end($this->data);
-        reset($this->data);
-
-        return $item;
-    }
-
-    /**
-     * Returns a sorted collection.
-     *
-     * {@inheritdoc}
-     *
-     * @param string $propertyOrMethod The property or method to sort by.
-     * @param string $order The sort order for the resulting collection (one of
-     *     this interface's `SORT_*` constants).
-     *
-     * @return CollectionInterface<mixed, mixed>
-     *
-     * @throws InvalidSortOrderException if neither "asc" nor "desc" was given
-     *     as the order.
-     * @throws ValueExtractionException if property or method is not defined.
-     */
-    public function sort(string $propertyOrMethod, string $order = self::SORT_ASC): CollectionInterface
-    {
-        if (!in_array($order, [self::SORT_ASC, self::SORT_DESC], true)) {
-            throw new InvalidSortOrderException('Invalid sort order given: ' . $order);
-        }
-
-        $collection = clone $this;
-
-        usort($collection->data, function ($a, $b) use ($propertyOrMethod, $order) {
-            $aValue = $this->extractValue($a, $propertyOrMethod);
-            $bValue = $this->extractValue($b, $propertyOrMethod);
-
-            return ($aValue <=> $bValue) * ($order === self::SORT_DESC ? -1 : 1);
-        });
-
-        return $collection;
-    }
-
-    /**
-     * Returns a filtered collection.
-     *
-     * {@inheritdoc}
-     *
-     * @param callable $callback A callable to use for filtering elements.
-     *
-     * @return CollectionInterface<mixed, mixed>
-     */
-    public function filter(callable $callback): CollectionInterface
-    {
-        $collection = clone $this;
-        $collection->data = array_merge([], array_filter($collection->data, $callback));
-
-        return $collection;
-    }
-
-    /**
-     * Returns a collection of matching items.
-     *
-     * {@inheritdoc}
-     *
-     * @param string $propertyOrMethod The property or method to evaluate.
-     * @param mixed  $value The value to match.
-     *
-     * @return CollectionInterface<mixed, mixed>
-     *
-     * @throws ValueExtractionException if property or method is not defined.
-     */
-    public function where(string $propertyOrMethod, $value): CollectionInterface
-    {
-        return $this->filter(function ($item) use ($propertyOrMethod, $value) {
-            $accessorValue = $this->extractValue($item, $propertyOrMethod);
-
-            return $accessorValue === $value;
-        });
-    }
-
-    /**
-     * Applies a callback to each item of the collection.
-     *
-     * {@inheritdoc}
-     *
-     * @param callable $callback A callable to apply to each item of the
-     *     collection.
-     *
-     * @return CollectionInterface<mixed, mixed>
-     */
-    public function map(callable $callback): CollectionInterface
-    {
-        $collection = clone $this;
-        $collection->data = array_map($callback, $collection->data);
-
-        return $collection;
-    }
-
-    /**
-     * Create a new collection with divergent items between current and given
-     * collection.
-     *
-     * @param CollectionInterface<mixed, mixed> $other The collection to check for divergent
-     *     items.
-     *
-     * @return CollectionInterface<mixed, mixed>
-     *
-     * @throws CollectionMismatchException if the given collection is not of the
-     *     same type.
-     */
-    public function diff(CollectionInterface $other): CollectionInterface
-    {
-        if (!$other instanceof static) {
-            throw new CollectionMismatchException('Collection must be of type ' . static::class);
-        }
-
-        // When using generics (Collection.php, Set.php, etc),
-        // we also need to make sure that the internal types match each other
-        if ($other->getType() !== $this->getType()) {
-            throw new CollectionMismatchException('Collection items must be of type ' . $this->getType());
-        }
-
-        $comparator = function ($a, $b): int {
-            // If the two values are object, we convert them to unique scalars.
-            // If the collection contains mixed values (unlikely) where some are objects
-            // and some are not, we leave them as they are.
-            // The comparator should still work and the result of $a < $b should
-            // be consistent but unpredictable since not documented.
-            if (is_object($a) && is_object($b)) {
-                $a = spl_object_id($a);
-                $b = spl_object_id($b);
-            }
-
-            return $a === $b ? 0 : ($a < $b ? 1 : -1);
-        };
-
-        $diffAtoB = array_udiff($this->data, $other->data, $comparator);
-        $diffBtoA = array_udiff($other->data, $this->data, $comparator);
-        $diff = array_merge($diffAtoB, $diffBtoA);
-
-        $collection = clone $this;
-        $collection->data = $diff;
-
-        return $collection;
-    }
-
-    /**
-     * Create a new collection with intersecting item between current and given
-     * collection.
-     *
-     * @param CollectionInterface<mixed, mixed> $other The collection to check for
-     *     intersecting items.
-     *
-     * @return CollectionInterface<mixed, mixed>
-     *
-     * @throws CollectionMismatchException if the given collection is not of the
-     *     same type.
-     */
-    public function intersect(CollectionInterface $other): CollectionInterface
-    {
-        if (!$other instanceof static) {
-            throw new CollectionMismatchException('Collection must be of type ' . static::class);
-        }
-
-        // When using generics (Collection.php, Set.php, etc),
-        // we also need to make sure that the internal types match each other
-        if ($other->getType() !== $this->getType()) {
-            throw new CollectionMismatchException('Collection items must be of type ' . $this->getType());
-        }
-
-        $comparator = function ($a, $b): int {
-            // If the two values are object, we convert them to unique scalars.
-            // If the collection contains mixed values (unlikely) where some are objects
-            // and some are not, we leave them as they are.
-            // The comparator should still work and the result of $a < $b should
-            // be consistent but unpredictable since not documented.
-            if (is_object($a) && is_object($b)) {
-                $a = spl_object_id($a);
-                $b = spl_object_id($b);
-            }
-
-            return $a === $b ? 0 : ($a < $b ? 1 : -1);
-        };
-
-        $intersect = array_uintersect($this->data, $other->data, $comparator);
-
-        $collection = clone $this;
-        $collection->data = $intersect;
-
-        return $collection;
-    }
-
-    /**
-     * Merge current items and items of given collections into a new one.
-     *
-     * @param CollectionInterface<mixed, mixed> ...$collections The collections to merge.
-     *
-     * @return CollectionInterface<mixed, mixed>
-     *
-     * @throws CollectionMismatchException if any of the given collections are not of the same type.
-     */
-    public function merge(CollectionInterface ...$collections): CollectionInterface
-    {
-        $temp = [$this->data];
-
-        foreach ($collections as $index => $collection) {
-            if (!$collection instanceof static) {
-                throw new CollectionMismatchException(
-                    sprintf('Collection with index %d must be of type %s', $index, static::class)
-                );
-            }
-
-            // When using generics (Collection.php, Set.php, etc),
-            // we also need to make sure that the internal types match each other
-            if ($collection->getType() !== $this->getType()) {
-                throw new CollectionMismatchException(
-                    sprintf('Collection items in collection with index %d must be of type %s', $index, $this->getType())
-                );
-            }
-
-            $temp[] = $collection->toArray();
-        }
-
-        $merge = array_merge(...$temp);
-
-        $collection = clone $this;
-        $collection->data = $merge;
-
-        return $collection;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function unserialize($serialized): void
-    {
-        $this->data = unserialize($serialized, ['allowed_classes' => [$this->getType()]]);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+j4YDWm3j1wX6xAKJY0PD

@@ -1,177 +1,103 @@
-<?php
-
-namespace Illuminate\Database\Console\Migrations;
-
-use Illuminate\Console\ConfirmableTrait;
-use Illuminate\Contracts\Events\Dispatcher;
-use Illuminate\Database\Events\SchemaLoaded;
-use Illuminate\Database\Migrations\Migrator;
-use Illuminate\Database\SqlServerConnection;
-
-class MigrateCommand extends BaseCommand
-{
-    use ConfirmableTrait;
-
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
-    protected $signature = 'migrate {--database= : The database connection to use}
-                {--force : Force the operation to run when in production}
-                {--path=* : The path(s) to the migrations files to be executed}
-                {--realpath : Indicate any provided migration file paths are pre-resolved absolute paths}
-                {--schema-path= : The path to a schema dump file}
-                {--pretend : Dump the SQL queries that would be run}
-                {--seed : Indicates if the seed task should be re-run}
-                {--step : Force the migrations to be run so they can be rolled back individually}';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Run the database migrations';
-
-    /**
-     * The migrator instance.
-     *
-     * @var \Illuminate\Database\Migrations\Migrator
-     */
-    protected $migrator;
-
-    /**
-     * The event dispatcher instance.
-     *
-     * @var \Illuminate\Contracts\Events\Dispatcher
-     */
-    protected $dispatcher;
-
-    /**
-     * Create a new migration command instance.
-     *
-     * @param  \Illuminate\Database\Migrations\Migrator  $migrator
-     * @param  \Illuminate\Contracts\Events\Dispatcher  $dispatcher
-     * @return void
-     */
-    public function __construct(Migrator $migrator, Dispatcher $dispatcher)
-    {
-        parent::__construct();
-
-        $this->migrator = $migrator;
-        $this->dispatcher = $dispatcher;
-    }
-
-    /**
-     * Execute the console command.
-     *
-     * @return int
-     */
-    public function handle()
-    {
-        if (! $this->confirmToProceed()) {
-            return 1;
-        }
-
-        $this->migrator->usingConnection($this->option('database'), function () {
-            $this->prepareDatabase();
-
-            // Next, we will check to see if a path option has been defined. If it has
-            // we will use the path relative to the root of this installation folder
-            // so that migrations may be run for any path within the applications.
-            $this->migrator->setOutput($this->output)
-                    ->run($this->getMigrationPaths(), [
-                        'pretend' => $this->option('pretend'),
-                        'step' => $this->option('step'),
-                    ]);
-
-            // Finally, if the "seed" option has been given, we will re-run the database
-            // seed task to re-populate the database, which is convenient when adding
-            // a migration and a seed at the same time, as it is only this command.
-            if ($this->option('seed') && ! $this->option('pretend')) {
-                $this->call('db:seed', ['--force' => true]);
-            }
-        });
-
-        return 0;
-    }
-
-    /**
-     * Prepare the migration database for running.
-     *
-     * @return void
-     */
-    protected function prepareDatabase()
-    {
-        if (! $this->migrator->repositoryExists()) {
-            $this->call('migrate:install', array_filter([
-                '--database' => $this->option('database'),
-            ]));
-        }
-
-        if (! $this->migrator->hasRunAnyMigrations() && ! $this->option('pretend')) {
-            $this->loadSchemaState();
-        }
-    }
-
-    /**
-     * Load the schema state to seed the initial database schema structure.
-     *
-     * @return void
-     */
-    protected function loadSchemaState()
-    {
-        $connection = $this->migrator->resolveConnection($this->option('database'));
-
-        // First, we will make sure that the connection supports schema loading and that
-        // the schema file exists before we proceed any further. If not, we will just
-        // continue with the standard migration operation as normal without errors.
-        if ($connection instanceof SqlServerConnection ||
-            ! is_file($path = $this->schemaPath($connection))) {
-            return;
-        }
-
-        $this->line('<info>Loading stored database schema:</info> '.$path);
-
-        $startTime = microtime(true);
-
-        // Since the schema file will create the "migrations" table and reload it to its
-        // proper state, we need to delete it here so we don't get an error that this
-        // table already exists when the stored database schema file gets executed.
-        $this->migrator->deleteRepository();
-
-        $connection->getSchemaState()->handleOutputUsing(function ($type, $buffer) {
-            $this->output->write($buffer);
-        })->load($path);
-
-        $runTime = number_format((microtime(true) - $startTime) * 1000, 2);
-
-        // Finally, we will fire an event that this schema has been loaded so developers
-        // can perform any post schema load tasks that are necessary in listeners for
-        // this event, which may seed the database tables with some necessary data.
-        $this->dispatcher->dispatch(
-            new SchemaLoaded($connection, $path)
-        );
-
-        $this->line('<info>Loaded stored database schema.</info> ('.$runTime.'ms)');
-    }
-
-    /**
-     * Get the path to the stored schema for the given connection.
-     *
-     * @param  \Illuminate\Database\Connection  $connection
-     * @return string
-     */
-    protected function schemaPath($connection)
-    {
-        if ($this->option('schema-path')) {
-            return $this->option('schema-path');
-        }
-
-        if (file_exists($path = database_path('schema/'.$connection->getName().'-schema.dump'))) {
-            return $path;
-        }
-
-        return database_path('schema/'.$connection->getName().'-schema.sql');
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+fr1Dhs+yQNTMp0==

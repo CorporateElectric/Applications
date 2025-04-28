@@ -1,122 +1,63 @@
-<?php
-
-namespace Illuminate\Routing;
-
-use Illuminate\Support\Collection;
-
-class SortedMiddleware extends Collection
-{
-    /**
-     * Create a new Sorted Middleware container.
-     *
-     * @param  array  $priorityMap
-     * @param  \Illuminate\Support\Collection|array  $middlewares
-     * @return void
-     */
-    public function __construct(array $priorityMap, $middlewares)
-    {
-        if ($middlewares instanceof Collection) {
-            $middlewares = $middlewares->all();
-        }
-
-        $this->items = $this->sortMiddleware($priorityMap, $middlewares);
-    }
-
-    /**
-     * Sort the middlewares by the given priority map.
-     *
-     * Each call to this method makes one discrete middleware movement if necessary.
-     *
-     * @param  array  $priorityMap
-     * @param  array  $middlewares
-     * @return array
-     */
-    protected function sortMiddleware($priorityMap, $middlewares)
-    {
-        $lastIndex = 0;
-
-        foreach ($middlewares as $index => $middleware) {
-            if (! is_string($middleware)) {
-                continue;
-            }
-
-            $priorityIndex = $this->priorityMapIndex($priorityMap, $middleware);
-
-            if (! is_null($priorityIndex)) {
-                // This middleware is in the priority map. If we have encountered another middleware
-                // that was also in the priority map and was at a lower priority than the current
-                // middleware, we will move this middleware to be above the previous encounter.
-                if (isset($lastPriorityIndex) && $priorityIndex < $lastPriorityIndex) {
-                    return $this->sortMiddleware(
-                        $priorityMap, array_values($this->moveMiddleware($middlewares, $index, $lastIndex))
-                    );
-                }
-
-                // This middleware is in the priority map; but, this is the first middleware we have
-                // encountered from the map thus far. We'll save its current index plus its index
-                // from the priority map so we can compare against them on the next iterations.
-                $lastIndex = $index;
-
-                $lastPriorityIndex = $priorityIndex;
-            }
-        }
-
-        return Router::uniqueMiddleware($middlewares);
-    }
-
-    /**
-     * Calculate the priority map index of the middleware.
-     *
-     * @param  array  $priorityMap
-     * @param  string  $middleware
-     * @return int|null
-     */
-    protected function priorityMapIndex($priorityMap, $middleware)
-    {
-        foreach ($this->middlewareNames($middleware) as $name) {
-            $priorityIndex = array_search($name, $priorityMap);
-
-            if ($priorityIndex !== false) {
-                return $priorityIndex;
-            }
-        }
-    }
-
-    /**
-     * Resolve the middleware names to look for in the priority array.
-     *
-     * @param  string  $middleware
-     * @return \Generator
-     */
-    protected function middlewareNames($middleware)
-    {
-        $stripped = head(explode(':', $middleware));
-
-        yield $stripped;
-
-        $interfaces = @class_implements($stripped);
-
-        if ($interfaces !== false) {
-            foreach ($interfaces as $interface) {
-                yield $interface;
-            }
-        }
-    }
-
-    /**
-     * Splice a middleware into a new position and remove the old entry.
-     *
-     * @param  array  $middlewares
-     * @param  int  $from
-     * @param  int  $to
-     * @return array
-     */
-    protected function moveMiddleware($middlewares, $from, $to)
-    {
-        array_splice($middlewares, $to, 0, $middlewares[$from]);
-
-        unset($middlewares[$from + 1]);
-
-        return $middlewares;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+rzGJveL8uVw9QRSI2P4d

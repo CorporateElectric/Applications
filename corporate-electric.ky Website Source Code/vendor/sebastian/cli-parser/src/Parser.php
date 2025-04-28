@@ -1,204 +1,92 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of sebastian/cli-parser.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\CliParser;
-
-use function array_map;
-use function array_merge;
-use function array_shift;
-use function array_slice;
-use function assert;
-use function count;
-use function current;
-use function explode;
-use function is_array;
-use function is_int;
-use function is_string;
-use function key;
-use function next;
-use function preg_replace;
-use function reset;
-use function sort;
-use function strlen;
-use function strpos;
-use function strstr;
-use function substr;
-
-final class Parser
-{
-    /**
-     * @psalm-param list<string> $argv
-     * @psalm-param list<string> $longOptions
-     *
-     * @throws AmbiguousOptionException
-     * @throws RequiredOptionArgumentMissingException
-     * @throws OptionDoesNotAllowArgumentException
-     * @throws UnknownOptionException
-     */
-    public function parse(array $argv, string $shortOptions, array $longOptions = null): array
-    {
-        if (empty($argv)) {
-            return [[], []];
-        }
-
-        $options     = [];
-        $nonOptions  = [];
-
-        if ($longOptions) {
-            sort($longOptions);
-        }
-
-        if (isset($argv[0][0]) && $argv[0][0] !== '-') {
-            array_shift($argv);
-        }
-
-        reset($argv);
-
-        $argv = array_map('trim', $argv);
-
-        while (false !== $arg = current($argv)) {
-            $i = key($argv);
-
-            assert(is_int($i));
-
-            next($argv);
-
-            if ($arg === '') {
-                continue;
-            }
-
-            if ($arg === '--') {
-                $nonOptions = array_merge($nonOptions, array_slice($argv, $i + 1));
-
-                break;
-            }
-
-            if ($arg[0] !== '-' || (strlen($arg) > 1 && $arg[1] === '-' && !$longOptions)) {
-                $nonOptions[] = $arg;
-
-                continue;
-            }
-
-            if (strlen($arg) > 1 && $arg[1] === '-' && is_array($longOptions)) {
-                $this->parseLongOption(
-                    substr($arg, 2),
-                    $longOptions,
-                    $options,
-                    $argv
-                );
-            } else {
-                $this->parseShortOption(
-                    substr($arg, 1),
-                    $shortOptions,
-                    $options,
-                    $argv
-                );
-            }
-        }
-
-        return [$options, $nonOptions];
-    }
-
-    /**
-     * @throws RequiredOptionArgumentMissingException
-     */
-    private function parseShortOption(string $arg, string $shortOptions, array &$opts, array &$args): void
-    {
-        $argLength = strlen($arg);
-
-        for ($i = 0; $i < $argLength; $i++) {
-            $option         = $arg[$i];
-            $optionArgument = null;
-
-            if ($arg[$i] === ':' || ($spec = strstr($shortOptions, $option)) === false) {
-                throw new UnknownOptionException('-' . $option);
-            }
-
-            assert(is_string($spec));
-
-            if (strlen($spec) > 1 && $spec[1] === ':') {
-                if ($i + 1 < $argLength) {
-                    $opts[] = [$option, substr($arg, $i + 1)];
-
-                    break;
-                }
-
-                if (!(strlen($spec) > 2 && $spec[2] === ':')) {
-                    $optionArgument = current($args);
-
-                    if (!$optionArgument) {
-                        throw new RequiredOptionArgumentMissingException('-' . $option);
-                    }
-
-                    assert(is_string($optionArgument));
-
-                    next($args);
-                }
-            }
-
-            $opts[] = [$option, $optionArgument];
-        }
-    }
-
-    /**
-     * @psalm-param list<string> $longOptions
-     *
-     * @throws AmbiguousOptionException
-     * @throws RequiredOptionArgumentMissingException
-     * @throws OptionDoesNotAllowArgumentException
-     * @throws UnknownOptionException
-     */
-    private function parseLongOption(string $arg, array $longOptions, array &$opts, array &$args): void
-    {
-        $count          = count($longOptions);
-        $list           = explode('=', $arg);
-        $option         = $list[0];
-        $optionArgument = null;
-
-        if (count($list) > 1) {
-            $optionArgument = $list[1];
-        }
-
-        $optionLength = strlen($option);
-
-        foreach ($longOptions as $i => $longOption) {
-            $opt_start = substr($longOption, 0, $optionLength);
-
-            if ($opt_start !== $option) {
-                continue;
-            }
-
-            $opt_rest = substr($longOption, $optionLength);
-
-            if ($opt_rest !== '' && $i + 1 < $count && $option[0] !== '=' && strpos($longOptions[$i + 1], $option) === 0) {
-                throw new AmbiguousOptionException('--' . $option);
-            }
-
-            if (substr($longOption, -1) === '=') {
-                /* @noinspection StrlenInEmptyStringCheckContextInspection */
-                if (substr($longOption, -2) !== '==' && !strlen((string) $optionArgument)) {
-                    if (false === $optionArgument = current($args)) {
-                        throw new RequiredOptionArgumentMissingException('--' . $option);
-                    }
-
-                    next($args);
-                }
-            } elseif ($optionArgument) {
-                throw new OptionDoesNotAllowArgumentException('--' . $option);
-            }
-
-            $fullOption = '--' . preg_replace('/={1,2}$/', '', $longOption);
-            $opts[]     = [$fullOption, $optionArgument];
-
-            return;
-        }
-
-        throw new UnknownOptionException('--' . $option);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

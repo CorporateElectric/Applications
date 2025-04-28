@@ -1,87 +1,30 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Writer;
-
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-
-interface IWriter
-{
-    /**
-     * IWriter constructor.
-     */
-    public function __construct(Spreadsheet $spreadsheet);
-
-    /**
-     * Write charts in workbook?
-     *        If this is true, then the Writer will write definitions for any charts that exist in the PhpSpreadsheet object.
-     *        If false (the default) it will ignore any charts defined in the PhpSpreadsheet object.
-     *
-     * @return bool
-     */
-    public function getIncludeCharts();
-
-    /**
-     * Set write charts in workbook
-     *        Set to true, to advise the Writer to include any charts that exist in the PhpSpreadsheet object.
-     *        Set to false (the default) to ignore charts.
-     *
-     * @param bool $pValue
-     *
-     * @return IWriter
-     */
-    public function setIncludeCharts($pValue);
-
-    /**
-     * Get Pre-Calculate Formulas flag
-     *     If this is true (the default), then the writer will recalculate all formulae in a workbook when saving,
-     *        so that the pre-calculated values are immediately available to MS Excel or other office spreadsheet
-     *        viewer when opening the file
-     *     If false, then formulae are not calculated on save. This is faster for saving in PhpSpreadsheet, but slower
-     *        when opening the resulting file in MS Excel, because Excel has to recalculate the formulae itself.
-     *
-     * @return bool
-     */
-    public function getPreCalculateFormulas();
-
-    /**
-     * Set Pre-Calculate Formulas
-     *        Set to true (the default) to advise the Writer to calculate all formulae on save
-     *        Set to false to prevent precalculation of formulae on save.
-     *
-     * @param bool $pValue Pre-Calculate Formulas?
-     *
-     * @return IWriter
-     */
-    public function setPreCalculateFormulas($pValue);
-
-    /**
-     * Save PhpSpreadsheet to file.
-     *
-     * @param resource|string $pFilename Name of the file to save
-     */
-    public function save($pFilename);
-
-    /**
-     * Get use disk caching where possible?
-     *
-     * @return bool
-     */
-    public function getUseDiskCaching();
-
-    /**
-     * Set use disk caching where possible?
-     *
-     * @param bool $pValue
-     * @param string $pDirectory Disk caching directory
-     *
-     * @return IWriter
-     */
-    public function setUseDiskCaching($pValue, $pDirectory = null);
-
-    /**
-     * Get disk caching directory.
-     *
-     * @return string
-     */
-    public function getDiskCachingDirectory();
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+5BAr3soxZW==

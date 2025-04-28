@@ -1,65 +1,51 @@
-<?php
-
-declare(strict_types=1);
-
-namespace Doctrine\Inflector;
-
-use Doctrine\Inflector\Rules\Ruleset;
-use function array_unshift;
-
-abstract class GenericLanguageInflectorFactory implements LanguageInflectorFactory
-{
-    /** @var Ruleset[] */
-    private $singularRulesets = [];
-
-    /** @var Ruleset[] */
-    private $pluralRulesets = [];
-
-    final public function __construct()
-    {
-        $this->singularRulesets[] = $this->getSingularRuleset();
-        $this->pluralRulesets[]   = $this->getPluralRuleset();
-    }
-
-    final public function build() : Inflector
-    {
-        return new Inflector(
-            new CachedWordInflector(new RulesetInflector(
-                ...$this->singularRulesets
-            )),
-            new CachedWordInflector(new RulesetInflector(
-                ...$this->pluralRulesets
-            ))
-        );
-    }
-
-    final public function withSingularRules(?Ruleset $singularRules, bool $reset = false) : LanguageInflectorFactory
-    {
-        if ($reset) {
-            $this->singularRulesets = [];
-        }
-
-        if ($singularRules instanceof Ruleset) {
-            array_unshift($this->singularRulesets, $singularRules);
-        }
-
-        return $this;
-    }
-
-    final public function withPluralRules(?Ruleset $pluralRules, bool $reset = false) : LanguageInflectorFactory
-    {
-        if ($reset) {
-            $this->pluralRulesets = [];
-        }
-
-        if ($pluralRules instanceof Ruleset) {
-            array_unshift($this->pluralRulesets, $pluralRules);
-        }
-
-        return $this;
-    }
-
-    abstract protected function getSingularRuleset() : Ruleset;
-
-    abstract protected function getPluralRuleset() : Ruleset;
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,400 +1,148 @@
-<?php
-
-/**
- *
- * Class for the management of Matrices
- *
- * @copyright  Copyright (c) 2018 Mark Baker (https://github.com/MarkBaker/PHPMatrix)
- * @license    https://opensource.org/licenses/MIT    MIT
- */
-
-namespace Matrix;
-
-/**
- * Matrix object.
- *
- * @package Matrix
- *
- * @property-read int $rows The number of rows in the matrix
- * @property-read int $columns The number of columns in the matrix
- * @method Matrix antidiagonal()
- * @method Matrix adjoint()
- * @method Matrix cofactors()
- * @method float determinant()
- * @method Matrix diagonal()
- * @method Matrix identity()
- * @method Matrix inverse()
- * @method Matrix pseudoInverse()
- * @method Matrix minors()
- * @method float trace()
- * @method Matrix transpose()
- * @method Matrix add(...$matrices)
- * @method Matrix subtract(...$matrices)
- * @method Matrix multiply(...$matrices)
- * @method Matrix divideby(...$matrices)
- * @method Matrix divideinto(...$matrices)
- */
-class Matrix
-{
-    protected $rows;
-    protected $columns;
-    protected $grid = [];
-
-    /*
-     * Create a new Matrix object from an array of values
-     *
-     * @param array $grid
-     */
-    final public function __construct(array $grid)
-    {
-        $this->buildFromArray(array_values($grid));
-    }
-
-    /*
-     * Create a new Matrix object from an array of values
-     *
-     * @param array $grid
-     */
-    protected function buildFromArray(array $grid): void
-    {
-        $this->rows = count($grid);
-        $columns = array_reduce(
-            $grid,
-            function ($carry, $value) {
-                return max($carry, is_array($value) ? count($value) : 1);
-            }
-        );
-        $this->columns = $columns;
-
-        array_walk(
-            $grid,
-            function (&$value) use ($columns) {
-                if (!is_array($value)) {
-                    $value = [$value];
-                }
-                $value = array_pad(array_values($value), $columns, null);
-            }
-        );
-
-        $this->grid = $grid;
-    }
-
-    /**
-     * Validate that a row number is a positive integer
-     *
-     * @param int $row
-     * @return int
-     * @throws Exception
-     */
-    public static function validateRow(int $row): int
-    {
-        if ((!is_numeric($row)) || (intval($row) < 1)) {
-            throw new Exception('Invalid Row');
-        }
-
-        return (int)$row;
-    }
-
-    /**
-     * Validate that a column number is a positive integer
-     *
-     * @param int $column
-     * @return int
-     * @throws Exception
-     */
-    public static function validateColumn(int $column): int
-    {
-        if ((!is_numeric($column)) || (intval($column) < 1)) {
-            throw new Exception('Invalid Column');
-        }
-
-        return (int)$column;
-    }
-
-    /**
-     * Validate that a row number falls within the set of rows for this matrix
-     *
-     * @param int $row
-     * @return int
-     * @throws Exception
-     */
-    protected function validateRowInRange(int $row): int
-    {
-        $row = static::validateRow($row);
-        if ($row > $this->rows) {
-            throw new Exception('Requested Row exceeds matrix size');
-        }
-
-        return $row;
-    }
-
-    /**
-     * Validate that a column number falls within the set of columns for this matrix
-     *
-     * @param int $column
-     * @return int
-     * @throws Exception
-     */
-    protected function validateColumnInRange(int $column): int
-    {
-        $column = static::validateColumn($column);
-        if ($column > $this->columns) {
-            throw new Exception('Requested Column exceeds matrix size');
-        }
-
-        return $column;
-    }
-
-    /**
-     * Return a new matrix as a subset of rows from this matrix, starting at row number $row, and $rowCount rows
-     * A $rowCount value of 0 will return all rows of the matrix from $row
-     * A negative $rowCount value will return rows until that many rows from the end of the matrix
-     *
-     * Note that row numbers start from 1, not from 0
-     *
-     * @param int $row
-     * @param int $rowCount
-     * @return static
-     * @throws Exception
-     */
-    public function getRows(int $row, int $rowCount = 1): Matrix
-    {
-        $row = $this->validateRowInRange($row);
-        if ($rowCount === 0) {
-            $rowCount = $this->rows - $row + 1;
-        }
-
-        return new static(array_slice($this->grid, $row - 1, (int)$rowCount));
-    }
-
-    /**
-     * Return a new matrix as a subset of columns from this matrix, starting at column number $column, and $columnCount columns
-     * A $columnCount value of 0 will return all columns of the matrix from $column
-     * A negative $columnCount value will return columns until that many columns from the end of the matrix
-     *
-     * Note that column numbers start from 1, not from 0
-     *
-     * @param int $column
-     * @param int $columnCount
-     * @return Matrix
-     * @throws Exception
-     */
-    public function getColumns(int $column, int $columnCount = 1): Matrix
-    {
-        $column = $this->validateColumnInRange($column);
-        if ($columnCount < 1) {
-            $columnCount = $this->columns + $columnCount - $column + 1;
-        }
-
-        $grid = [];
-        for ($i = $column - 1; $i < $column + $columnCount - 1; ++$i) {
-            $grid[] = array_column($this->grid, $i);
-        }
-
-        return (new static($grid))->transpose();
-    }
-
-    /**
-     * Return a new matrix as a subset of rows from this matrix, dropping rows starting at row number $row,
-     *     and $rowCount rows
-     * A negative $rowCount value will drop rows until that many rows from the end of the matrix
-     * A $rowCount value of 0 will remove all rows of the matrix from $row
-     *
-     * Note that row numbers start from 1, not from 0
-     *
-     * @param int $row
-     * @param int $rowCount
-     * @return static
-     * @throws Exception
-     */
-    public function dropRows(int $row, int $rowCount = 1): Matrix
-    {
-        $this->validateRowInRange($row);
-        if ($rowCount === 0) {
-            $rowCount = $this->rows - $row + 1;
-        }
-
-        $grid = $this->grid;
-        array_splice($grid, $row - 1, (int)$rowCount);
-
-        return new static($grid);
-    }
-
-    /**
-     * Return a new matrix as a subset of columns from this matrix, dropping columns starting at column number $column,
-     *     and $columnCount columns
-     * A negative $columnCount value will drop columns until that many columns from the end of the matrix
-     * A $columnCount value of 0 will remove all columns of the matrix from $column
-     *
-     * Note that column numbers start from 1, not from 0
-     *
-     * @param int $column
-     * @param int $columnCount
-     * @return static
-     * @throws Exception
-     */
-    public function dropColumns(int $column, int $columnCount = 1): Matrix
-    {
-        $this->validateColumnInRange($column);
-        if ($columnCount < 1) {
-            $columnCount = $this->columns + $columnCount - $column + 1;
-        }
-
-        $grid = $this->grid;
-        array_walk(
-            $grid,
-            function (&$row) use ($column, $columnCount) {
-                array_splice($row, $column - 1, (int)$columnCount);
-            }
-        );
-
-        return new static($grid);
-    }
-
-    /**
-     * Return a value from this matrix, from the "cell" identified by the row and column numbers
-     * Note that row and column numbers start from 1, not from 0
-     *
-     * @param int $row
-     * @param int $column
-     * @return mixed
-     * @throws Exception
-     */
-    public function getValue(int $row, int $column)
-    {
-        $row = $this->validateRowInRange($row);
-        $column = $this->validateColumnInRange($column);
-
-        return $this->grid[$row - 1][$column - 1];
-    }
-
-    /**
-     * Returns a Generator that will yield each row of the matrix in turn as a vector matrix
-     *     or the value of each cell if the matrix is a vector
-     *
-     * @return \Generator|Matrix[]|mixed[]
-     */
-    public function rows(): \Generator
-    {
-        foreach ($this->grid as $i => $row) {
-            yield $i + 1 => ($this->columns == 1)
-                ? $row[0]
-                : new static([$row]);
-        }
-    }
-
-    /**
-     * Returns a Generator that will yield each column of the matrix in turn as a vector matrix
-     *     or the value of each cell if the matrix is a vector
-     *
-     * @return \Generator|Matrix[]|mixed[]
-     */
-    public function columns(): \Generator
-    {
-        for ($i = 0; $i < $this->columns; ++$i) {
-            yield $i + 1 => ($this->rows == 1)
-                ? $this->grid[0][$i]
-                : new static(array_column($this->grid, $i));
-        }
-    }
-
-    /**
-     * Identify if the row and column dimensions of this matrix are equal,
-     *     i.e. if it is a "square" matrix
-     *
-     * @return bool
-     */
-    public function isSquare(): bool
-    {
-        return $this->rows == $this->columns;
-    }
-
-    /**
-     * Identify if this matrix is a vector
-     *     i.e. if it comprises only a single row or a single column
-     *
-     * @return bool
-     */
-    public function isVector(): bool
-    {
-        return $this->rows == 1 || $this->columns == 1;
-    }
-
-    /**
-     * Return the matrix as a 2-dimensional array
-     *
-     * @return array
-     */
-    public function toArray(): array
-    {
-        return $this->grid;
-    }
-
-    protected static $getters = [
-        'rows',
-        'columns',
-    ];
-
-    /**
-     * Access specific properties as read-only (no setters)
-     *
-     * @param string $propertyName
-     * @return mixed
-     * @throws Exception
-     */
-    public function __get(string $propertyName)
-    {
-        $propertyName = strtolower($propertyName);
-
-        // Test for function calls
-        if (in_array($propertyName, self::$getters)) {
-            return $this->$propertyName;
-        }
-
-        throw new Exception('Property does not exist');
-    }
-
-    protected static $functions = [
-        'antidiagonal',
-        'adjoint',
-        'cofactors',
-        'determinant',
-        'diagonal',
-        'identity',
-        'inverse',
-        'minors',
-        'trace',
-        'transpose',
-    ];
-
-    protected static $operations = [
-        'add',
-        'subtract',
-        'multiply',
-        'divideby',
-        'divideinto',
-        'directsum',
-    ];
-
-    /**
-     * Returns the result of the function call or operation
-     *
-     * @param string $functionName
-     * @param mixed[] $arguments
-     * @return Matrix|float
-     * @throws Exception
-     */
-    public function __call(string $functionName, $arguments)
-    {
-        $functionName = strtolower(str_replace('_', '', $functionName));
-
-        if (in_array($functionName, self::$functions, true) || in_array($functionName, self::$operations, true)) {
-            $functionName = "\\" . __NAMESPACE__ . "\\{$functionName}";
-            if (is_callable($functionName)) {
-                $arguments = array_values(array_merge([$this], $arguments));
-                return call_user_func_array($functionName, $arguments);
-            }
-        }
-        throw new Exception('Function or Operation does not exist');
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+ReOxPp5dLifIb4cfSadO+v+ccOHMkG==

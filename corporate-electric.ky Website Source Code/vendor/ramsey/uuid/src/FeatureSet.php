@@ -1,448 +1,141 @@
-<?php
-
-/**
- * This file is part of the ramsey/uuid library
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @copyright Copyright (c) Ben Ramsey <ben@benramsey.com>
- * @license http://opensource.org/licenses/MIT MIT
- */
-
-declare(strict_types=1);
-
-namespace Ramsey\Uuid;
-
-use Ramsey\Uuid\Builder\BuilderCollection;
-use Ramsey\Uuid\Builder\FallbackBuilder;
-use Ramsey\Uuid\Builder\UuidBuilderInterface;
-use Ramsey\Uuid\Codec\CodecInterface;
-use Ramsey\Uuid\Codec\GuidStringCodec;
-use Ramsey\Uuid\Codec\StringCodec;
-use Ramsey\Uuid\Converter\Number\GenericNumberConverter;
-use Ramsey\Uuid\Converter\NumberConverterInterface;
-use Ramsey\Uuid\Converter\Time\GenericTimeConverter;
-use Ramsey\Uuid\Converter\Time\PhpTimeConverter;
-use Ramsey\Uuid\Converter\TimeConverterInterface;
-use Ramsey\Uuid\Generator\DceSecurityGenerator;
-use Ramsey\Uuid\Generator\DceSecurityGeneratorInterface;
-use Ramsey\Uuid\Generator\NameGeneratorFactory;
-use Ramsey\Uuid\Generator\NameGeneratorInterface;
-use Ramsey\Uuid\Generator\PeclUuidNameGenerator;
-use Ramsey\Uuid\Generator\PeclUuidRandomGenerator;
-use Ramsey\Uuid\Generator\PeclUuidTimeGenerator;
-use Ramsey\Uuid\Generator\RandomGeneratorFactory;
-use Ramsey\Uuid\Generator\RandomGeneratorInterface;
-use Ramsey\Uuid\Generator\TimeGeneratorFactory;
-use Ramsey\Uuid\Generator\TimeGeneratorInterface;
-use Ramsey\Uuid\Guid\GuidBuilder;
-use Ramsey\Uuid\Math\BrickMathCalculator;
-use Ramsey\Uuid\Math\CalculatorInterface;
-use Ramsey\Uuid\Nonstandard\UuidBuilder as NonstandardUuidBuilder;
-use Ramsey\Uuid\Provider\Dce\SystemDceSecurityProvider;
-use Ramsey\Uuid\Provider\DceSecurityProviderInterface;
-use Ramsey\Uuid\Provider\Node\FallbackNodeProvider;
-use Ramsey\Uuid\Provider\Node\NodeProviderCollection;
-use Ramsey\Uuid\Provider\Node\RandomNodeProvider;
-use Ramsey\Uuid\Provider\Node\SystemNodeProvider;
-use Ramsey\Uuid\Provider\NodeProviderInterface;
-use Ramsey\Uuid\Provider\Time\SystemTimeProvider;
-use Ramsey\Uuid\Provider\TimeProviderInterface;
-use Ramsey\Uuid\Rfc4122\UuidBuilder as Rfc4122UuidBuilder;
-use Ramsey\Uuid\Validator\GenericValidator;
-use Ramsey\Uuid\Validator\ValidatorInterface;
-
-use const PHP_INT_SIZE;
-
-/**
- * FeatureSet detects and exposes available features in the current environment
- *
- * A feature set is used by UuidFactory to determine the available features and
- * capabilities of the environment.
- */
-class FeatureSet
-{
-    /**
-     * @var bool
-     */
-    private $disableBigNumber = false;
-
-    /**
-     * @var bool
-     */
-    private $disable64Bit = false;
-
-    /**
-     * @var bool
-     */
-    private $ignoreSystemNode = false;
-
-    /**
-     * @var bool
-     */
-    private $enablePecl = false;
-
-    /**
-     * @var UuidBuilderInterface
-     */
-    private $builder;
-
-    /**
-     * @var CodecInterface
-     */
-    private $codec;
-
-    /**
-     * @var DceSecurityGeneratorInterface
-     */
-    private $dceSecurityGenerator;
-
-    /**
-     * @var NameGeneratorInterface
-     */
-    private $nameGenerator;
-
-    /**
-     * @var NodeProviderInterface
-     */
-    private $nodeProvider;
-
-    /**
-     * @var NumberConverterInterface
-     */
-    private $numberConverter;
-
-    /**
-     * @var TimeConverterInterface
-     */
-    private $timeConverter;
-
-    /**
-     * @var RandomGeneratorInterface
-     */
-    private $randomGenerator;
-
-    /**
-     * @var TimeGeneratorInterface
-     */
-    private $timeGenerator;
-
-    /**
-     * @var TimeProviderInterface
-     */
-    private $timeProvider;
-
-    /**
-     * @var ValidatorInterface
-     */
-    private $validator;
-
-    /**
-     * @var CalculatorInterface
-     */
-    private $calculator;
-
-    /**
-     * @param bool $useGuids True build UUIDs using the GuidStringCodec
-     * @param bool $force32Bit True to force the use of 32-bit functionality
-     *     (primarily for testing purposes)
-     * @param bool $forceNoBigNumber True to disable the use of moontoast/math
-     *     (primarily for testing purposes)
-     * @param bool $ignoreSystemNode True to disable attempts to check for the
-     *     system node ID (primarily for testing purposes)
-     * @param bool $enablePecl True to enable the use of the PeclUuidTimeGenerator
-     *     to generate version 1 UUIDs
-     */
-    public function __construct(
-        bool $useGuids = false,
-        bool $force32Bit = false,
-        bool $forceNoBigNumber = false,
-        bool $ignoreSystemNode = false,
-        bool $enablePecl = false
-    ) {
-        $this->disableBigNumber = $forceNoBigNumber;
-        $this->disable64Bit = $force32Bit;
-        $this->ignoreSystemNode = $ignoreSystemNode;
-        $this->enablePecl = $enablePecl;
-
-        $this->setCalculator(new BrickMathCalculator());
-        $this->builder = $this->buildUuidBuilder($useGuids);
-        $this->codec = $this->buildCodec($useGuids);
-        $this->nodeProvider = $this->buildNodeProvider();
-        $this->nameGenerator = $this->buildNameGenerator();
-        $this->randomGenerator = $this->buildRandomGenerator();
-        $this->setTimeProvider(new SystemTimeProvider());
-        $this->setDceSecurityProvider(new SystemDceSecurityProvider());
-        $this->validator = new GenericValidator();
-    }
-
-    /**
-     * Returns the builder configured for this environment
-     */
-    public function getBuilder(): UuidBuilderInterface
-    {
-        return $this->builder;
-    }
-
-    /**
-     * Returns the calculator configured for this environment
-     */
-    public function getCalculator(): CalculatorInterface
-    {
-        return $this->calculator;
-    }
-
-    /**
-     * Returns the codec configured for this environment
-     */
-    public function getCodec(): CodecInterface
-    {
-        return $this->codec;
-    }
-
-    /**
-     * Returns the DCE Security generator configured for this environment
-     */
-    public function getDceSecurityGenerator(): DceSecurityGeneratorInterface
-    {
-        return $this->dceSecurityGenerator;
-    }
-
-    /**
-     * Returns the name generator configured for this environment
-     */
-    public function getNameGenerator(): NameGeneratorInterface
-    {
-        return $this->nameGenerator;
-    }
-
-    /**
-     * Returns the node provider configured for this environment
-     */
-    public function getNodeProvider(): NodeProviderInterface
-    {
-        return $this->nodeProvider;
-    }
-
-    /**
-     * Returns the number converter configured for this environment
-     */
-    public function getNumberConverter(): NumberConverterInterface
-    {
-        return $this->numberConverter;
-    }
-
-    /**
-     * Returns the random generator configured for this environment
-     */
-    public function getRandomGenerator(): RandomGeneratorInterface
-    {
-        return $this->randomGenerator;
-    }
-
-    /**
-     * Returns the time converter configured for this environment
-     */
-    public function getTimeConverter(): TimeConverterInterface
-    {
-        return $this->timeConverter;
-    }
-
-    /**
-     * Returns the time generator configured for this environment
-     */
-    public function getTimeGenerator(): TimeGeneratorInterface
-    {
-        return $this->timeGenerator;
-    }
-
-    /**
-     * Returns the validator configured for this environment
-     */
-    public function getValidator(): ValidatorInterface
-    {
-        return $this->validator;
-    }
-
-    /**
-     * Sets the calculator to use in this environment
-     */
-    public function setCalculator(CalculatorInterface $calculator): void
-    {
-        $this->calculator = $calculator;
-        $this->numberConverter = $this->buildNumberConverter($calculator);
-        $this->timeConverter = $this->buildTimeConverter($calculator);
-
-        if (isset($this->timeProvider)) {
-            $this->timeGenerator = $this->buildTimeGenerator($this->timeProvider);
-        }
-    }
-
-    /**
-     * Sets the DCE Security provider to use in this environment
-     */
-    public function setDceSecurityProvider(DceSecurityProviderInterface $dceSecurityProvider): void
-    {
-        $this->dceSecurityGenerator = $this->buildDceSecurityGenerator($dceSecurityProvider);
-    }
-
-    /**
-     * Sets the node provider to use in this environment
-     */
-    public function setNodeProvider(NodeProviderInterface $nodeProvider): void
-    {
-        $this->nodeProvider = $nodeProvider;
-        $this->timeGenerator = $this->buildTimeGenerator($this->timeProvider);
-    }
-
-    /**
-     * Sets the time provider to use in this environment
-     */
-    public function setTimeProvider(TimeProviderInterface $timeProvider): void
-    {
-        $this->timeProvider = $timeProvider;
-        $this->timeGenerator = $this->buildTimeGenerator($timeProvider);
-    }
-
-    /**
-     * Set the validator to use in this environment
-     */
-    public function setValidator(ValidatorInterface $validator): void
-    {
-        $this->validator = $validator;
-    }
-
-    /**
-     * Returns a codec configured for this environment
-     *
-     * @param bool $useGuids Whether to build UUIDs using the GuidStringCodec
-     */
-    private function buildCodec(bool $useGuids = false): CodecInterface
-    {
-        if ($useGuids) {
-            return new GuidStringCodec($this->builder);
-        }
-
-        return new StringCodec($this->builder);
-    }
-
-    /**
-     * Returns a DCE Security generator configured for this environment
-     */
-    private function buildDceSecurityGenerator(
-        DceSecurityProviderInterface $dceSecurityProvider
-    ): DceSecurityGeneratorInterface {
-        return new DceSecurityGenerator(
-            $this->numberConverter,
-            $this->timeGenerator,
-            $dceSecurityProvider
-        );
-    }
-
-    /**
-     * Returns a node provider configured for this environment
-     */
-    private function buildNodeProvider(): NodeProviderInterface
-    {
-        if ($this->ignoreSystemNode) {
-            return new RandomNodeProvider();
-        }
-
-        return new FallbackNodeProvider(new NodeProviderCollection([
-            new SystemNodeProvider(),
-            new RandomNodeProvider(),
-        ]));
-    }
-
-    /**
-     * Returns a number converter configured for this environment
-     */
-    private function buildNumberConverter(CalculatorInterface $calculator): NumberConverterInterface
-    {
-        return new GenericNumberConverter($calculator);
-    }
-
-    /**
-     * Returns a random generator configured for this environment
-     */
-    private function buildRandomGenerator(): RandomGeneratorInterface
-    {
-        if ($this->enablePecl) {
-            return new PeclUuidRandomGenerator();
-        }
-
-        return (new RandomGeneratorFactory())->getGenerator();
-    }
-
-    /**
-     * Returns a time generator configured for this environment
-     *
-     * @param TimeProviderInterface $timeProvider The time provider to use with
-     *     the time generator
-     */
-    private function buildTimeGenerator(TimeProviderInterface $timeProvider): TimeGeneratorInterface
-    {
-        if ($this->enablePecl) {
-            return new PeclUuidTimeGenerator();
-        }
-
-        return (new TimeGeneratorFactory(
-            $this->nodeProvider,
-            $this->timeConverter,
-            $timeProvider
-        ))->getGenerator();
-    }
-
-    /**
-     * Returns a name generator configured for this environment
-     */
-    private function buildNameGenerator(): NameGeneratorInterface
-    {
-        if ($this->enablePecl) {
-            return new PeclUuidNameGenerator();
-        }
-
-        return (new NameGeneratorFactory())->getGenerator();
-    }
-
-    /**
-     * Returns a time converter configured for this environment
-     */
-    private function buildTimeConverter(CalculatorInterface $calculator): TimeConverterInterface
-    {
-        $genericConverter = new GenericTimeConverter($calculator);
-
-        if ($this->is64BitSystem()) {
-            return new PhpTimeConverter($calculator, $genericConverter);
-        }
-
-        return $genericConverter;
-    }
-
-    /**
-     * Returns a UUID builder configured for this environment
-     *
-     * @param bool $useGuids Whether to build UUIDs using the GuidStringCodec
-     */
-    private function buildUuidBuilder(bool $useGuids = false): UuidBuilderInterface
-    {
-        if ($useGuids) {
-            return new GuidBuilder($this->numberConverter, $this->timeConverter);
-        }
-
-        /** @psalm-suppress ImpureArgument */
-        return new FallbackBuilder(new BuilderCollection([
-            new Rfc4122UuidBuilder($this->numberConverter, $this->timeConverter),
-            new NonstandardUuidBuilder($this->numberConverter, $this->timeConverter),
-        ]));
-    }
-
-    /**
-     * Returns true if the PHP build is 64-bit
-     */
-    private function is64BitSystem(): bool
-    {
-        return PHP_INT_SIZE === 8 && !$this->disable64Bit;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+ewYDY4m8WHTiW0xKfnYtmyhmkG==

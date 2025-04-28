@@ -1,91 +1,60 @@
-<?php
-
-/*
- * This file is part of the league/commonmark package.
- *
- * (c) Colin O'Dell <colinodell@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace League\CommonMark\Extension\Mention;
-
-use League\CommonMark\Extension\Mention\Generator\CallbackGenerator;
-use League\CommonMark\Extension\Mention\Generator\MentionGeneratorInterface;
-use League\CommonMark\Extension\Mention\Generator\StringTemplateLinkGenerator;
-use League\CommonMark\Inline\Parser\InlineParserInterface;
-use League\CommonMark\InlineParserContext;
-
-final class MentionParser implements InlineParserInterface
-{
-    /** @var string */
-    private $symbol;
-
-    /** @var string */
-    private $mentionRegex;
-
-    /** @var MentionGeneratorInterface */
-    private $mentionGenerator;
-
-    public function __construct(string $symbol, string $mentionRegex, MentionGeneratorInterface $mentionGenerator)
-    {
-        $this->symbol = $symbol;
-        $this->mentionRegex = $mentionRegex;
-        $this->mentionGenerator = $mentionGenerator;
-    }
-
-    public function getCharacters(): array
-    {
-        return [$this->symbol];
-    }
-
-    public function parse(InlineParserContext $inlineContext): bool
-    {
-        $cursor = $inlineContext->getCursor();
-
-        // The symbol must not have any other characters immediately prior
-        $previousChar = $cursor->peek(-1);
-        if ($previousChar !== null && \preg_match('/\w/', $previousChar)) {
-            // peek() doesn't modify the cursor, so no need to restore state first
-            return false;
-        }
-
-        // Save the cursor state in case we need to rewind and bail
-        $previousState = $cursor->saveState();
-
-        // Advance past the symbol to keep parsing simpler
-        $cursor->advance();
-
-        // Parse the mention match value
-        $identifier = $cursor->match($this->mentionRegex);
-        if ($identifier === null) {
-            // Regex failed to match; this isn't a valid mention
-            $cursor->restoreState($previousState);
-
-            return false;
-        }
-
-        $mention = $this->mentionGenerator->generateMention(new Mention($this->symbol, $identifier));
-
-        if ($mention === null) {
-            $cursor->restoreState($previousState);
-
-            return false;
-        }
-
-        $inlineContext->getContainer()->appendChild($mention);
-
-        return true;
-    }
-
-    public static function createWithStringTemplate(string $symbol, string $mentionRegex, string $urlTemplate): MentionParser
-    {
-        return new self($symbol, $mentionRegex, new StringTemplateLinkGenerator($urlTemplate));
-    }
-
-    public static function createWithCallback(string $symbol, string $mentionRegex, callable $callback): MentionParser
-    {
-        return new self($symbol, $mentionRegex, new CallbackGenerator($callback));
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

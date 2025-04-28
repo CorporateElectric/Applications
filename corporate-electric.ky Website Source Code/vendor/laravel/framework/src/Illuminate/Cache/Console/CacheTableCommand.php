@@ -1,81 +1,45 @@
-<?php
-
-namespace Illuminate\Cache\Console;
-
-use Illuminate\Console\Command;
-use Illuminate\Filesystem\Filesystem;
-use Illuminate\Support\Composer;
-
-class CacheTableCommand extends Command
-{
-    /**
-     * The console command name.
-     *
-     * @var string
-     */
-    protected $name = 'cache:table';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Create a migration for the cache database table';
-
-    /**
-     * The filesystem instance.
-     *
-     * @var \Illuminate\Filesystem\Filesystem
-     */
-    protected $files;
-
-    /**
-     * @var \Illuminate\Support\Composer
-     */
-    protected $composer;
-
-    /**
-     * Create a new cache table command instance.
-     *
-     * @param  \Illuminate\Filesystem\Filesystem  $files
-     * @param  \Illuminate\Support\Composer  $composer
-     * @return void
-     */
-    public function __construct(Filesystem $files, Composer $composer)
-    {
-        parent::__construct();
-
-        $this->files = $files;
-        $this->composer = $composer;
-    }
-
-    /**
-     * Execute the console command.
-     *
-     * @return void
-     */
-    public function handle()
-    {
-        $fullPath = $this->createBaseMigration();
-
-        $this->files->put($fullPath, $this->files->get(__DIR__.'/stubs/cache.stub'));
-
-        $this->info('Migration created successfully!');
-
-        $this->composer->dumpAutoloads();
-    }
-
-    /**
-     * Create a base migration file for the table.
-     *
-     * @return string
-     */
-    protected function createBaseMigration()
-    {
-        $name = 'create_cache_table';
-
-        $path = $this->laravel->databasePath().'/migrations';
-
-        return $this->laravel['migration.creator']->create($name, $path);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

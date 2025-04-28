@@ -1,115 +1,66 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\CodeCleaner;
-
-use PhpParser\Node;
-use PhpParser\Node\Expr;
-use PhpParser\Node\Expr\Array_;
-use PhpParser\Node\Expr\ClassConstFetch;
-use PhpParser\Node\Expr\FuncCall;
-use PhpParser\Node\Expr\MethodCall;
-use PhpParser\Node\Expr\PropertyFetch;
-use PhpParser\Node\Expr\StaticCall;
-use PhpParser\Node\Expr\Variable;
-use Psy\Exception\FatalErrorException;
-
-/**
- * Validate that only variables (and variable-like things) are passed by reference.
- */
-class PassableByReferencePass extends CodeCleanerPass
-{
-    const EXCEPTION_MESSAGE = 'Only variables can be passed by reference';
-
-    /**
-     * @throws FatalErrorException if non-variables are passed by reference
-     *
-     * @param Node $node
-     */
-    public function enterNode(Node $node)
-    {
-        // @todo support MethodCall and StaticCall as well.
-        if ($node instanceof FuncCall) {
-            // if function name is an expression or a variable, give it a pass for now.
-            if ($node->name instanceof Expr || $node->name instanceof Variable) {
-                return;
-            }
-
-            $name = (string) $node->name;
-
-            if ($name === 'array_multisort') {
-                return $this->validateArrayMultisort($node);
-            }
-
-            try {
-                $refl = new \ReflectionFunction($name);
-            } catch (\ReflectionException $e) {
-                // Well, we gave it a shot!
-                return;
-            }
-
-            foreach ($refl->getParameters() as $key => $param) {
-                if (\array_key_exists($key, $node->args)) {
-                    $arg = $node->args[$key];
-                    if ($param->isPassedByReference() && !$this->isPassableByReference($arg)) {
-                        throw new FatalErrorException(self::EXCEPTION_MESSAGE, 0, \E_ERROR, null, $node->getLine());
-                    }
-                }
-            }
-        }
-    }
-
-    private function isPassableByReference(Node $arg)
-    {
-        // Unpacked arrays can be passed by reference
-        if ($arg->value instanceof Array_) {
-            return $arg->unpack;
-        }
-
-        // FuncCall, MethodCall and StaticCall are all PHP _warnings_ not fatal errors, so we'll let
-        // PHP handle those ones :)
-        return $arg->value instanceof ClassConstFetch ||
-            $arg->value instanceof PropertyFetch ||
-            $arg->value instanceof Variable ||
-            $arg->value instanceof FuncCall ||
-            $arg->value instanceof MethodCall ||
-            $arg->value instanceof StaticCall;
-    }
-
-    /**
-     * Because array_multisort has a problematic signature...
-     *
-     * The argument order is all sorts of wonky, and whether something is passed
-     * by reference or not depends on the values of the two arguments before it.
-     * We'll do a good faith attempt at validating this, but err on the side of
-     * permissive.
-     *
-     * This is why you don't design languages where core code and extensions can
-     * implement APIs that wouldn't be possible in userland code.
-     *
-     * @throws FatalErrorException for clearly invalid arguments
-     *
-     * @param Node $node
-     */
-    private function validateArrayMultisort(Node $node)
-    {
-        $nonPassable = 2; // start with 2 because the first one has to be passable by reference
-        foreach ($node->args as $arg) {
-            if ($this->isPassableByReference($arg)) {
-                $nonPassable = 0;
-            } elseif (++$nonPassable > 2) {
-                // There can be *at most* two non-passable-by-reference args in a row. This is about
-                // as close as we can get to validating the arguments for this function :-/
-                throw new FatalErrorException(self::EXCEPTION_MESSAGE, 0, \E_ERROR, null, $node->getLine());
-            }
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+YaYHgScmWdj+70==

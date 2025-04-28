@@ -1,1940 +1,781 @@
-<?php
-
-namespace Illuminate\Validation\Concerns;
-
-use Countable;
-use DateTime;
-use DateTimeInterface;
-use Egulias\EmailValidator\EmailValidator;
-use Egulias\EmailValidator\Validation\DNSCheckValidation;
-use Egulias\EmailValidator\Validation\MultipleValidationWithAnd;
-use Egulias\EmailValidator\Validation\NoRFCWarningsValidation;
-use Egulias\EmailValidator\Validation\RFCValidation;
-use Egulias\EmailValidator\Validation\SpoofCheckValidation;
-use Exception;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Date;
-use Illuminate\Support\Str;
-use Illuminate\Validation\Rules\Exists;
-use Illuminate\Validation\Rules\Unique;
-use Illuminate\Validation\ValidationData;
-use InvalidArgumentException;
-use Symfony\Component\HttpFoundation\File\File;
-use Symfony\Component\HttpFoundation\File\UploadedFile;
-
-trait ValidatesAttributes
-{
-    /**
-     * Validate that an attribute was "accepted".
-     *
-     * This validation rule implies the attribute is "required".
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @return bool
-     */
-    public function validateAccepted($attribute, $value)
-    {
-        $acceptable = ['yes', 'on', '1', 1, true, 'true'];
-
-        return $this->validateRequired($attribute, $value) && in_array($value, $acceptable, true);
-    }
-
-    /**
-     * Validate that an attribute is an active URL.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @return bool
-     */
-    public function validateActiveUrl($attribute, $value)
-    {
-        if (! is_string($value)) {
-            return false;
-        }
-
-        if ($url = parse_url($value, PHP_URL_HOST)) {
-            try {
-                return count(dns_get_record($url, DNS_A | DNS_AAAA)) > 0;
-            } catch (Exception $e) {
-                return false;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * "Break" on first validation fail.
-     *
-     * Always returns true, just lets us put "bail" in rules.
-     *
-     * @return bool
-     */
-    public function validateBail()
-    {
-        return true;
-    }
-
-    /**
-     * Validate the date is before a given date.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @param  array  $parameters
-     * @return bool
-     */
-    public function validateBefore($attribute, $value, $parameters)
-    {
-        $this->requireParameterCount(1, $parameters, 'before');
-
-        return $this->compareDates($attribute, $value, $parameters, '<');
-    }
-
-    /**
-     * Validate the date is before or equal a given date.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @param  array  $parameters
-     * @return bool
-     */
-    public function validateBeforeOrEqual($attribute, $value, $parameters)
-    {
-        $this->requireParameterCount(1, $parameters, 'before_or_equal');
-
-        return $this->compareDates($attribute, $value, $parameters, '<=');
-    }
-
-    /**
-     * Validate the date is after a given date.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @param  array  $parameters
-     * @return bool
-     */
-    public function validateAfter($attribute, $value, $parameters)
-    {
-        $this->requireParameterCount(1, $parameters, 'after');
-
-        return $this->compareDates($attribute, $value, $parameters, '>');
-    }
-
-    /**
-     * Validate the date is equal or after a given date.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @param  array  $parameters
-     * @return bool
-     */
-    public function validateAfterOrEqual($attribute, $value, $parameters)
-    {
-        $this->requireParameterCount(1, $parameters, 'after_or_equal');
-
-        return $this->compareDates($attribute, $value, $parameters, '>=');
-    }
-
-    /**
-     * Compare a given date against another using an operator.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @param  array  $parameters
-     * @param  string  $operator
-     * @return bool
-     */
-    protected function compareDates($attribute, $value, $parameters, $operator)
-    {
-        if (! is_string($value) && ! is_numeric($value) && ! $value instanceof DateTimeInterface) {
-            return false;
-        }
-
-        if ($format = $this->getDateFormat($attribute)) {
-            return $this->checkDateTimeOrder($format, $value, $parameters[0], $operator);
-        }
-
-        if (! $date = $this->getDateTimestamp($parameters[0])) {
-            $date = $this->getDateTimestamp($this->getValue($parameters[0]));
-        }
-
-        return $this->compare($this->getDateTimestamp($value), $date, $operator);
-    }
-
-    /**
-     * Get the date format for an attribute if it has one.
-     *
-     * @param  string  $attribute
-     * @return string|null
-     */
-    protected function getDateFormat($attribute)
-    {
-        if ($result = $this->getRule($attribute, 'DateFormat')) {
-            return $result[1][0];
-        }
-    }
-
-    /**
-     * Get the date timestamp.
-     *
-     * @param  mixed  $value
-     * @return int
-     */
-    protected function getDateTimestamp($value)
-    {
-        $date = is_null($value) ? null : $this->getDateTime($value);
-
-        return $date ? $date->getTimestamp() : null;
-    }
-
-    /**
-     * Given two date/time strings, check that one is after the other.
-     *
-     * @param  string  $format
-     * @param  string  $first
-     * @param  string  $second
-     * @param  string  $operator
-     * @return bool
-     */
-    protected function checkDateTimeOrder($format, $first, $second, $operator)
-    {
-        $firstDate = $this->getDateTimeWithOptionalFormat($format, $first);
-
-        if (! $secondDate = $this->getDateTimeWithOptionalFormat($format, $second)) {
-            $secondDate = $this->getDateTimeWithOptionalFormat($format, $this->getValue($second));
-        }
-
-        return ($firstDate && $secondDate) && ($this->compare($firstDate, $secondDate, $operator));
-    }
-
-    /**
-     * Get a DateTime instance from a string.
-     *
-     * @param  string  $format
-     * @param  string  $value
-     * @return \DateTime|null
-     */
-    protected function getDateTimeWithOptionalFormat($format, $value)
-    {
-        if ($date = DateTime::createFromFormat('!'.$format, $value)) {
-            return $date;
-        }
-
-        return $this->getDateTime($value);
-    }
-
-    /**
-     * Get a DateTime instance from a string with no format.
-     *
-     * @param  string  $value
-     * @return \DateTime|null
-     */
-    protected function getDateTime($value)
-    {
-        try {
-            return Date::parse($value);
-        } catch (Exception $e) {
-            //
-        }
-    }
-
-    /**
-     * Validate that an attribute contains only alphabetic characters.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @return bool
-     */
-    public function validateAlpha($attribute, $value)
-    {
-        return is_string($value) && preg_match('/^[\pL\pM]+$/u', $value);
-    }
-
-    /**
-     * Validate that an attribute contains only alpha-numeric characters, dashes, and underscores.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @return bool
-     */
-    public function validateAlphaDash($attribute, $value)
-    {
-        if (! is_string($value) && ! is_numeric($value)) {
-            return false;
-        }
-
-        return preg_match('/^[\pL\pM\pN_-]+$/u', $value) > 0;
-    }
-
-    /**
-     * Validate that an attribute contains only alpha-numeric characters.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @return bool
-     */
-    public function validateAlphaNum($attribute, $value)
-    {
-        if (! is_string($value) && ! is_numeric($value)) {
-            return false;
-        }
-
-        return preg_match('/^[\pL\pM\pN]+$/u', $value) > 0;
-    }
-
-    /**
-     * Validate that an attribute is an array.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @param  array  $parameters
-     * @return bool
-     */
-    public function validateArray($attribute, $value, $parameters = [])
-    {
-        if (! is_array($value)) {
-            return false;
-        }
-
-        if (empty($parameters)) {
-            return true;
-        }
-
-        return empty(array_diff_key($value, array_fill_keys($parameters, '')));
-    }
-
-    /**
-     * Validate the size of an attribute is between a set of values.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @param  array  $parameters
-     * @return bool
-     */
-    public function validateBetween($attribute, $value, $parameters)
-    {
-        $this->requireParameterCount(2, $parameters, 'between');
-
-        $size = $this->getSize($attribute, $value);
-
-        return $size >= $parameters[0] && $size <= $parameters[1];
-    }
-
-    /**
-     * Validate that an attribute is a boolean.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @return bool
-     */
-    public function validateBoolean($attribute, $value)
-    {
-        $acceptable = [true, false, 0, 1, '0', '1'];
-
-        return in_array($value, $acceptable, true);
-    }
-
-    /**
-     * Validate that an attribute has a matching confirmation.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @return bool
-     */
-    public function validateConfirmed($attribute, $value)
-    {
-        return $this->validateSame($attribute, $value, [$attribute.'_confirmation']);
-    }
-
-    /**
-     * Validate that an attribute is a valid date.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @return bool
-     */
-    public function validateDate($attribute, $value)
-    {
-        if ($value instanceof DateTimeInterface) {
-            return true;
-        }
-
-        if ((! is_string($value) && ! is_numeric($value)) || strtotime($value) === false) {
-            return false;
-        }
-
-        $date = date_parse($value);
-
-        return checkdate($date['month'], $date['day'], $date['year']);
-    }
-
-    /**
-     * Validate that an attribute matches a date format.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @param  array  $parameters
-     * @return bool
-     */
-    public function validateDateFormat($attribute, $value, $parameters)
-    {
-        $this->requireParameterCount(1, $parameters, 'date_format');
-
-        if (! is_string($value) && ! is_numeric($value)) {
-            return false;
-        }
-
-        $format = $parameters[0];
-
-        $date = DateTime::createFromFormat('!'.$format, $value);
-
-        return $date && $date->format($format) == $value;
-    }
-
-    /**
-     * Validate that an attribute is equal to another date.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @param  array  $parameters
-     * @return bool
-     */
-    public function validateDateEquals($attribute, $value, $parameters)
-    {
-        $this->requireParameterCount(1, $parameters, 'date_equals');
-
-        return $this->compareDates($attribute, $value, $parameters, '=');
-    }
-
-    /**
-     * Validate that an attribute is different from another attribute.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @param  array  $parameters
-     * @return bool
-     */
-    public function validateDifferent($attribute, $value, $parameters)
-    {
-        $this->requireParameterCount(1, $parameters, 'different');
-
-        foreach ($parameters as $parameter) {
-            if (Arr::has($this->data, $parameter)) {
-                $other = Arr::get($this->data, $parameter);
-
-                if ($value === $other) {
-                    return false;
-                }
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Validate that an attribute has a given number of digits.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @param  array  $parameters
-     * @return bool
-     */
-    public function validateDigits($attribute, $value, $parameters)
-    {
-        $this->requireParameterCount(1, $parameters, 'digits');
-
-        return ! preg_match('/[^0-9]/', $value)
-                    && strlen((string) $value) == $parameters[0];
-    }
-
-    /**
-     * Validate that an attribute is between a given number of digits.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @param  array  $parameters
-     * @return bool
-     */
-    public function validateDigitsBetween($attribute, $value, $parameters)
-    {
-        $this->requireParameterCount(2, $parameters, 'digits_between');
-
-        $length = strlen((string) $value);
-
-        return ! preg_match('/[^0-9]/', $value)
-                    && $length >= $parameters[0] && $length <= $parameters[1];
-    }
-
-    /**
-     * Validate the dimensions of an image matches the given values.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @param  array  $parameters
-     * @return bool
-     */
-    public function validateDimensions($attribute, $value, $parameters)
-    {
-        if ($this->isValidFileInstance($value) && in_array($value->getMimeType(), ['image/svg+xml', 'image/svg'])) {
-            return true;
-        }
-
-        if (! $this->isValidFileInstance($value) || ! $sizeDetails = @getimagesize($value->getRealPath())) {
-            return false;
-        }
-
-        $this->requireParameterCount(1, $parameters, 'dimensions');
-
-        [$width, $height] = $sizeDetails;
-
-        $parameters = $this->parseNamedParameters($parameters);
-
-        if ($this->failsBasicDimensionChecks($parameters, $width, $height) ||
-            $this->failsRatioCheck($parameters, $width, $height)) {
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * Test if the given width and height fail any conditions.
-     *
-     * @param  array  $parameters
-     * @param  int  $width
-     * @param  int  $height
-     * @return bool
-     */
-    protected function failsBasicDimensionChecks($parameters, $width, $height)
-    {
-        return (isset($parameters['width']) && $parameters['width'] != $width) ||
-               (isset($parameters['min_width']) && $parameters['min_width'] > $width) ||
-               (isset($parameters['max_width']) && $parameters['max_width'] < $width) ||
-               (isset($parameters['height']) && $parameters['height'] != $height) ||
-               (isset($parameters['min_height']) && $parameters['min_height'] > $height) ||
-               (isset($parameters['max_height']) && $parameters['max_height'] < $height);
-    }
-
-    /**
-     * Determine if the given parameters fail a dimension ratio check.
-     *
-     * @param  array  $parameters
-     * @param  int  $width
-     * @param  int  $height
-     * @return bool
-     */
-    protected function failsRatioCheck($parameters, $width, $height)
-    {
-        if (! isset($parameters['ratio'])) {
-            return false;
-        }
-
-        [$numerator, $denominator] = array_replace(
-            [1, 1], array_filter(sscanf($parameters['ratio'], '%f/%d'))
-        );
-
-        $precision = 1 / (max($width, $height) + 1);
-
-        return abs($numerator / $denominator - $width / $height) > $precision;
-    }
-
-    /**
-     * Validate an attribute is unique among other values.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @param  array  $parameters
-     * @return bool
-     */
-    public function validateDistinct($attribute, $value, $parameters)
-    {
-        $data = Arr::except($this->getDistinctValues($attribute), $attribute);
-
-        if (in_array('ignore_case', $parameters)) {
-            return empty(preg_grep('/^'.preg_quote($value, '/').'$/iu', $data));
-        }
-
-        return ! in_array($value, array_values($data));
-    }
-
-    /**
-     * Get the values to distinct between.
-     *
-     * @param  string  $attribute
-     * @return array
-     */
-    protected function getDistinctValues($attribute)
-    {
-        $attributeName = $this->getPrimaryAttribute($attribute);
-
-        if (! property_exists($this, 'distinctValues')) {
-            return $this->extractDistinctValues($attributeName);
-        }
-
-        if (! array_key_exists($attributeName, $this->distinctValues)) {
-            $this->distinctValues[$attributeName] = $this->extractDistinctValues($attributeName);
-        }
-
-        return $this->distinctValues[$attributeName];
-    }
-
-    /**
-     * Extract the distinct values from the data.
-     *
-     * @param  string  $attribute
-     * @return array
-     */
-    protected function extractDistinctValues($attribute)
-    {
-        $attributeData = ValidationData::extractDataFromPath(
-            ValidationData::getLeadingExplicitAttributePath($attribute), $this->data
-        );
-
-        $pattern = str_replace('\*', '[^.]+', preg_quote($attribute, '#'));
-
-        return Arr::where(Arr::dot($attributeData), function ($value, $key) use ($pattern) {
-            return (bool) preg_match('#^'.$pattern.'\z#u', $key);
-        });
-    }
-
-    /**
-     * Validate that an attribute is a valid e-mail address.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @param  array  $parameters
-     * @return bool
-     */
-    public function validateEmail($attribute, $value, $parameters)
-    {
-        if (! is_string($value) && ! (is_object($value) && method_exists($value, '__toString'))) {
-            return false;
-        }
-
-        $validations = collect($parameters)
-            ->unique()
-            ->map(function ($validation) {
-                if ($validation === 'rfc') {
-                    return new RFCValidation();
-                } elseif ($validation === 'strict') {
-                    return new NoRFCWarningsValidation();
-                } elseif ($validation === 'dns') {
-                    return new DNSCheckValidation();
-                } elseif ($validation === 'spoof') {
-                    return new SpoofCheckValidation();
-                } elseif ($validation === 'filter') {
-                    return new FilterEmailValidation();
-                } elseif ($validation === 'filter_unicode') {
-                    return FilterEmailValidation::unicode();
-                } elseif (is_string($validation) && class_exists($validation)) {
-                    return $this->container->make($validation);
-                }
-            })
-            ->values()
-            ->all() ?: [new RFCValidation()];
-
-        return (new EmailValidator)->isValid($value, new MultipleValidationWithAnd($validations));
-    }
-
-    /**
-     * Validate the existence of an attribute value in a database table.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @param  array  $parameters
-     * @return bool
-     */
-    public function validateExists($attribute, $value, $parameters)
-    {
-        $this->requireParameterCount(1, $parameters, 'exists');
-
-        [$connection, $table] = $this->parseTable($parameters[0]);
-
-        // The second parameter position holds the name of the column that should be
-        // verified as existing. If this parameter is not specified we will guess
-        // that the columns being "verified" shares the given attribute's name.
-        $column = $this->getQueryColumn($parameters, $attribute);
-
-        $expected = is_array($value) ? count(array_unique($value)) : 1;
-
-        return $this->getExistCount(
-            $connection, $table, $column, $value, $parameters
-        ) >= $expected;
-    }
-
-    /**
-     * Get the number of records that exist in storage.
-     *
-     * @param  mixed  $connection
-     * @param  string  $table
-     * @param  string  $column
-     * @param  mixed  $value
-     * @param  array  $parameters
-     * @return int
-     */
-    protected function getExistCount($connection, $table, $column, $value, $parameters)
-    {
-        $verifier = $this->getPresenceVerifier($connection);
-
-        $extra = $this->getExtraConditions(
-            array_values(array_slice($parameters, 2))
-        );
-
-        if ($this->currentRule instanceof Exists) {
-            $extra = array_merge($extra, $this->currentRule->queryCallbacks());
-        }
-
-        return is_array($value)
-                ? $verifier->getMultiCount($table, $column, $value, $extra)
-                : $verifier->getCount($table, $column, $value, null, null, $extra);
-    }
-
-    /**
-     * Validate the uniqueness of an attribute value on a given database table.
-     *
-     * If a database column is not specified, the attribute will be used.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @param  array  $parameters
-     * @return bool
-     */
-    public function validateUnique($attribute, $value, $parameters)
-    {
-        $this->requireParameterCount(1, $parameters, 'unique');
-
-        [$connection, $table, $idColumn] = $this->parseTable($parameters[0]);
-
-        // The second parameter position holds the name of the column that needs to
-        // be verified as unique. If this parameter isn't specified we will just
-        // assume that this column to be verified shares the attribute's name.
-        $column = $this->getQueryColumn($parameters, $attribute);
-
-        $id = null;
-
-        if (isset($parameters[2])) {
-            [$idColumn, $id] = $this->getUniqueIds($idColumn, $parameters);
-
-            if (! is_null($id)) {
-                $id = stripslashes($id);
-            }
-        }
-
-        // The presence verifier is responsible for counting rows within this store
-        // mechanism which might be a relational database or any other permanent
-        // data store like Redis, etc. We will use it to determine uniqueness.
-        $verifier = $this->getPresenceVerifier($connection);
-
-        $extra = $this->getUniqueExtra($parameters);
-
-        if ($this->currentRule instanceof Unique) {
-            $extra = array_merge($extra, $this->currentRule->queryCallbacks());
-        }
-
-        return $verifier->getCount(
-            $table, $column, $value, $id, $idColumn, $extra
-        ) == 0;
-    }
-
-    /**
-     * Get the excluded ID column and value for the unique rule.
-     *
-     * @param  string|null  $idColumn
-     * @param  array  $parameters
-     * @return array
-     */
-    protected function getUniqueIds($idColumn, $parameters)
-    {
-        $idColumn = $idColumn ?? $parameters[3] ?? 'id';
-
-        return [$idColumn, $this->prepareUniqueId($parameters[2])];
-    }
-
-    /**
-     * Prepare the given ID for querying.
-     *
-     * @param  mixed  $id
-     * @return int
-     */
-    protected function prepareUniqueId($id)
-    {
-        if (preg_match('/\[(.*)\]/', $id, $matches)) {
-            $id = $this->getValue($matches[1]);
-        }
-
-        if (strtolower($id) === 'null') {
-            $id = null;
-        }
-
-        if (filter_var($id, FILTER_VALIDATE_INT) !== false) {
-            $id = (int) $id;
-        }
-
-        return $id;
-    }
-
-    /**
-     * Get the extra conditions for a unique rule.
-     *
-     * @param  array  $parameters
-     * @return array
-     */
-    protected function getUniqueExtra($parameters)
-    {
-        if (isset($parameters[4])) {
-            return $this->getExtraConditions(array_slice($parameters, 4));
-        }
-
-        return [];
-    }
-
-    /**
-     * Parse the connection / table for the unique / exists rules.
-     *
-     * @param  string  $table
-     * @return array
-     */
-    public function parseTable($table)
-    {
-        [$connection, $table] = Str::contains($table, '.') ? explode('.', $table, 2) : [null, $table];
-
-        if (Str::contains($table, '\\') && class_exists($table) && is_a($table, Model::class, true)) {
-            $model = new $table;
-
-            $table = $model->getTable();
-            $connection = $connection ?? $model->getConnectionName();
-            $idColumn = $model->getKeyName();
-        }
-
-        return [$connection, $table, $idColumn ?? null];
-    }
-
-    /**
-     * Get the column name for an exists / unique query.
-     *
-     * @param  array  $parameters
-     * @param  string  $attribute
-     * @return bool
-     */
-    public function getQueryColumn($parameters, $attribute)
-    {
-        return isset($parameters[1]) && $parameters[1] !== 'NULL'
-                    ? $parameters[1] : $this->guessColumnForQuery($attribute);
-    }
-
-    /**
-     * Guess the database column from the given attribute name.
-     *
-     * @param  string  $attribute
-     * @return string
-     */
-    public function guessColumnForQuery($attribute)
-    {
-        if (in_array($attribute, Arr::collapse($this->implicitAttributes))
-                && ! is_numeric($last = last(explode('.', $attribute)))) {
-            return $last;
-        }
-
-        return $attribute;
-    }
-
-    /**
-     * Get the extra conditions for a unique / exists rule.
-     *
-     * @param  array  $segments
-     * @return array
-     */
-    protected function getExtraConditions(array $segments)
-    {
-        $extra = [];
-
-        $count = count($segments);
-
-        for ($i = 0; $i < $count; $i += 2) {
-            $extra[$segments[$i]] = $segments[$i + 1];
-        }
-
-        return $extra;
-    }
-
-    /**
-     * Validate the given value is a valid file.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @return bool
-     */
-    public function validateFile($attribute, $value)
-    {
-        return $this->isValidFileInstance($value);
-    }
-
-    /**
-     * Validate the given attribute is filled if it is present.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @return bool
-     */
-    public function validateFilled($attribute, $value)
-    {
-        if (Arr::has($this->data, $attribute)) {
-            return $this->validateRequired($attribute, $value);
-        }
-
-        return true;
-    }
-
-    /**
-     * Validate that an attribute is greater than another attribute.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @param  array  $parameters
-     * @return bool
-     */
-    public function validateGt($attribute, $value, $parameters)
-    {
-        $this->requireParameterCount(1, $parameters, 'gt');
-
-        $comparedToValue = $this->getValue($parameters[0]);
-
-        $this->shouldBeNumeric($attribute, 'Gt');
-
-        if (is_null($comparedToValue) && (is_numeric($value) && is_numeric($parameters[0]))) {
-            return $this->getSize($attribute, $value) > $parameters[0];
-        }
-
-        if (is_numeric($parameters[0])) {
-            return false;
-        }
-
-        if ($this->hasRule($attribute, $this->numericRules) && is_numeric($value) && is_numeric($comparedToValue)) {
-            return $value > $comparedToValue;
-        }
-
-        if (! $this->isSameType($value, $comparedToValue)) {
-            return false;
-        }
-
-        return $this->getSize($attribute, $value) > $this->getSize($attribute, $comparedToValue);
-    }
-
-    /**
-     * Validate that an attribute is less than another attribute.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @param  array  $parameters
-     * @return bool
-     */
-    public function validateLt($attribute, $value, $parameters)
-    {
-        $this->requireParameterCount(1, $parameters, 'lt');
-
-        $comparedToValue = $this->getValue($parameters[0]);
-
-        $this->shouldBeNumeric($attribute, 'Lt');
-
-        if (is_null($comparedToValue) && (is_numeric($value) && is_numeric($parameters[0]))) {
-            return $this->getSize($attribute, $value) < $parameters[0];
-        }
-
-        if (is_numeric($parameters[0])) {
-            return false;
-        }
-
-        if ($this->hasRule($attribute, $this->numericRules) && is_numeric($value) && is_numeric($comparedToValue)) {
-            return $value < $comparedToValue;
-        }
-
-        if (! $this->isSameType($value, $comparedToValue)) {
-            return false;
-        }
-
-        return $this->getSize($attribute, $value) < $this->getSize($attribute, $comparedToValue);
-    }
-
-    /**
-     * Validate that an attribute is greater than or equal another attribute.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @param  array  $parameters
-     * @return bool
-     */
-    public function validateGte($attribute, $value, $parameters)
-    {
-        $this->requireParameterCount(1, $parameters, 'gte');
-
-        $comparedToValue = $this->getValue($parameters[0]);
-
-        $this->shouldBeNumeric($attribute, 'Gte');
-
-        if (is_null($comparedToValue) && (is_numeric($value) && is_numeric($parameters[0]))) {
-            return $this->getSize($attribute, $value) >= $parameters[0];
-        }
-
-        if (is_numeric($parameters[0])) {
-            return false;
-        }
-
-        if ($this->hasRule($attribute, $this->numericRules) && is_numeric($value) && is_numeric($comparedToValue)) {
-            return $value >= $comparedToValue;
-        }
-
-        if (! $this->isSameType($value, $comparedToValue)) {
-            return false;
-        }
-
-        return $this->getSize($attribute, $value) >= $this->getSize($attribute, $comparedToValue);
-    }
-
-    /**
-     * Validate that an attribute is less than or equal another attribute.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @param  array  $parameters
-     * @return bool
-     */
-    public function validateLte($attribute, $value, $parameters)
-    {
-        $this->requireParameterCount(1, $parameters, 'lte');
-
-        $comparedToValue = $this->getValue($parameters[0]);
-
-        $this->shouldBeNumeric($attribute, 'Lte');
-
-        if (is_null($comparedToValue) && (is_numeric($value) && is_numeric($parameters[0]))) {
-            return $this->getSize($attribute, $value) <= $parameters[0];
-        }
-
-        if (is_numeric($parameters[0])) {
-            return false;
-        }
-
-        if ($this->hasRule($attribute, $this->numericRules) && is_numeric($value) && is_numeric($comparedToValue)) {
-            return $value <= $comparedToValue;
-        }
-
-        if (! $this->isSameType($value, $comparedToValue)) {
-            return false;
-        }
-
-        return $this->getSize($attribute, $value) <= $this->getSize($attribute, $comparedToValue);
-    }
-
-    /**
-     * Validate the MIME type of a file is an image MIME type.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @return bool
-     */
-    public function validateImage($attribute, $value)
-    {
-        return $this->validateMimes($attribute, $value, ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp']);
-    }
-
-    /**
-     * Validate an attribute is contained within a list of values.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @param  array  $parameters
-     * @return bool
-     */
-    public function validateIn($attribute, $value, $parameters)
-    {
-        if (is_array($value) && $this->hasRule($attribute, 'Array')) {
-            foreach ($value as $element) {
-                if (is_array($element)) {
-                    return false;
-                }
-            }
-
-            return count(array_diff($value, $parameters)) === 0;
-        }
-
-        return ! is_array($value) && in_array((string) $value, $parameters);
-    }
-
-    /**
-     * Validate that the values of an attribute is in another attribute.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @param  array  $parameters
-     * @return bool
-     */
-    public function validateInArray($attribute, $value, $parameters)
-    {
-        $this->requireParameterCount(1, $parameters, 'in_array');
-
-        $explicitPath = ValidationData::getLeadingExplicitAttributePath($parameters[0]);
-
-        $attributeData = ValidationData::extractDataFromPath($explicitPath, $this->data);
-
-        $otherValues = Arr::where(Arr::dot($attributeData), function ($value, $key) use ($parameters) {
-            return Str::is($parameters[0], $key);
-        });
-
-        return in_array($value, $otherValues);
-    }
-
-    /**
-     * Validate that an attribute is an integer.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @return bool
-     */
-    public function validateInteger($attribute, $value)
-    {
-        return filter_var($value, FILTER_VALIDATE_INT) !== false;
-    }
-
-    /**
-     * Validate that an attribute is a valid IP.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @return bool
-     */
-    public function validateIp($attribute, $value)
-    {
-        return filter_var($value, FILTER_VALIDATE_IP) !== false;
-    }
-
-    /**
-     * Validate that an attribute is a valid IPv4.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @return bool
-     */
-    public function validateIpv4($attribute, $value)
-    {
-        return filter_var($value, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false;
-    }
-
-    /**
-     * Validate that an attribute is a valid IPv6.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @return bool
-     */
-    public function validateIpv6($attribute, $value)
-    {
-        return filter_var($value, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false;
-    }
-
-    /**
-     * Validate the attribute is a valid JSON string.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @return bool
-     */
-    public function validateJson($attribute, $value)
-    {
-        if (is_array($value)) {
-            return false;
-        }
-
-        if (! is_scalar($value) && ! is_null($value) && ! method_exists($value, '__toString')) {
-            return false;
-        }
-
-        json_decode($value);
-
-        return json_last_error() === JSON_ERROR_NONE;
-    }
-
-    /**
-     * Validate the size of an attribute is less than a maximum value.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @param  array  $parameters
-     * @return bool
-     */
-    public function validateMax($attribute, $value, $parameters)
-    {
-        $this->requireParameterCount(1, $parameters, 'max');
-
-        if ($value instanceof UploadedFile && ! $value->isValid()) {
-            return false;
-        }
-
-        return $this->getSize($attribute, $value) <= $parameters[0];
-    }
-
-    /**
-     * Validate the guessed extension of a file upload is in a set of file extensions.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @param  array  $parameters
-     * @return bool
-     */
-    public function validateMimes($attribute, $value, $parameters)
-    {
-        if (! $this->isValidFileInstance($value)) {
-            return false;
-        }
-
-        if ($this->shouldBlockPhpUpload($value, $parameters)) {
-            return false;
-        }
-
-        if (in_array('jpg', $parameters) || in_array('jpeg', $parameters)) {
-            $parameters = array_unique(array_merge($parameters, ['jpg', 'jpeg']));
-        }
-
-        return $value->getPath() !== '' && in_array($value->guessExtension(), $parameters);
-    }
-
-    /**
-     * Validate the MIME type of a file upload attribute is in a set of MIME types.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @param  array  $parameters
-     * @return bool
-     */
-    public function validateMimetypes($attribute, $value, $parameters)
-    {
-        if (! $this->isValidFileInstance($value)) {
-            return false;
-        }
-
-        if ($this->shouldBlockPhpUpload($value, $parameters)) {
-            return false;
-        }
-
-        return $value->getPath() !== '' &&
-                (in_array($value->getMimeType(), $parameters) ||
-                 in_array(explode('/', $value->getMimeType())[0].'/*', $parameters));
-    }
-
-    /**
-     * Check if PHP uploads are explicitly allowed.
-     *
-     * @param  mixed  $value
-     * @param  array  $parameters
-     * @return bool
-     */
-    protected function shouldBlockPhpUpload($value, $parameters)
-    {
-        if (in_array('php', $parameters)) {
-            return false;
-        }
-
-        $phpExtensions = [
-            'php', 'php3', 'php4', 'php5', 'phtml',
-        ];
-
-        return ($value instanceof UploadedFile)
-           ? in_array(trim(strtolower($value->getClientOriginalExtension())), $phpExtensions)
-           : in_array(trim(strtolower($value->getExtension())), $phpExtensions);
-    }
-
-    /**
-     * Validate the size of an attribute is greater than a minimum value.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @param  array  $parameters
-     * @return bool
-     */
-    public function validateMin($attribute, $value, $parameters)
-    {
-        $this->requireParameterCount(1, $parameters, 'min');
-
-        return $this->getSize($attribute, $value) >= $parameters[0];
-    }
-
-    /**
-     * Validate the value of an attribute is a multiple of a given value.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @param  array  $parameters
-     * @return bool
-     */
-    public function validateMultipleOf($attribute, $value, $parameters)
-    {
-        $this->requireParameterCount(1, $parameters, 'multiple_of');
-
-        if (! $this->validateNumeric($attribute, $value) || ! $this->validateNumeric($attribute, $parameters[0])) {
-            return false;
-        }
-
-        if ((float) $parameters[0] === 0.0) {
-            return false;
-        }
-
-        return bcmod($value, $parameters[0], 16) === '0.0000000000000000';
-    }
-
-    /**
-     * "Indicate" validation should pass if value is null.
-     *
-     * Always returns true, just lets us put "nullable" in rules.
-     *
-     * @return bool
-     */
-    public function validateNullable()
-    {
-        return true;
-    }
-
-    /**
-     * Validate an attribute is not contained within a list of values.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @param  array  $parameters
-     * @return bool
-     */
-    public function validateNotIn($attribute, $value, $parameters)
-    {
-        return ! $this->validateIn($attribute, $value, $parameters);
-    }
-
-    /**
-     * Validate that an attribute is numeric.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @return bool
-     */
-    public function validateNumeric($attribute, $value)
-    {
-        return is_numeric($value);
-    }
-
-    /**
-     * Validate that the current logged in user's password matches the given value.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @param  array  $parameters
-     * @return bool
-     */
-    protected function validatePassword($attribute, $value, $parameters)
-    {
-        $auth = $this->container->make('auth');
-        $hasher = $this->container->make('hash');
-
-        $guard = $auth->guard(Arr::first($parameters));
-
-        if ($guard->guest()) {
-            return false;
-        }
-
-        return $hasher->check($value, $guard->user()->getAuthPassword());
-    }
-
-    /**
-     * Validate that an attribute exists even if not filled.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @return bool
-     */
-    public function validatePresent($attribute, $value)
-    {
-        return Arr::has($this->data, $attribute);
-    }
-
-    /**
-     * Validate that an attribute passes a regular expression check.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @param  array  $parameters
-     * @return bool
-     */
-    public function validateRegex($attribute, $value, $parameters)
-    {
-        if (! is_string($value) && ! is_numeric($value)) {
-            return false;
-        }
-
-        $this->requireParameterCount(1, $parameters, 'regex');
-
-        return preg_match($parameters[0], $value) > 0;
-    }
-
-    /**
-     * Validate that an attribute does not pass a regular expression check.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @param  array  $parameters
-     * @return bool
-     */
-    public function validateNotRegex($attribute, $value, $parameters)
-    {
-        if (! is_string($value) && ! is_numeric($value)) {
-            return false;
-        }
-
-        $this->requireParameterCount(1, $parameters, 'not_regex');
-
-        return preg_match($parameters[0], $value) < 1;
-    }
-
-    /**
-     * Validate that a required attribute exists.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @return bool
-     */
-    public function validateRequired($attribute, $value)
-    {
-        if (is_null($value)) {
-            return false;
-        } elseif (is_string($value) && trim($value) === '') {
-            return false;
-        } elseif ((is_array($value) || $value instanceof Countable) && count($value) < 1) {
-            return false;
-        } elseif ($value instanceof File) {
-            return (string) $value->getPath() !== '';
-        }
-
-        return true;
-    }
-
-    /**
-     * Validate that an attribute exists when another attribute has a given value.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @param  mixed  $parameters
-     * @return bool
-     */
-    public function validateRequiredIf($attribute, $value, $parameters)
-    {
-        $this->requireParameterCount(2, $parameters, 'required_if');
-
-        [$values, $other] = $this->prepareValuesAndOther($parameters);
-
-        if (in_array($other, $values)) {
-            return $this->validateRequired($attribute, $value);
-        }
-
-        return true;
-    }
-
-    /**
-     * Indicate that an attribute should be excluded when another attribute has a given value.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @param  mixed  $parameters
-     * @return bool
-     */
-    public function validateExcludeIf($attribute, $value, $parameters)
-    {
-        $this->requireParameterCount(2, $parameters, 'exclude_if');
-
-        [$values, $other] = $this->prepareValuesAndOther($parameters);
-
-        return ! in_array($other, $values);
-    }
-
-    /**
-     * Indicate that an attribute should be excluded when another attribute does not have a given value.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @param  mixed  $parameters
-     * @return bool
-     */
-    public function validateExcludeUnless($attribute, $value, $parameters)
-    {
-        $this->requireParameterCount(2, $parameters, 'exclude_unless');
-
-        [$values, $other] = $this->prepareValuesAndOther($parameters);
-
-        return in_array($other, $values);
-    }
-
-    /**
-     * Indicate that an attribute should be excluded when another attribute is missing.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @param  mixed  $parameters
-     * @return bool
-     */
-    public function validateExcludeWithout($attribute, $value, $parameters)
-    {
-        $this->requireParameterCount(1, $parameters, 'exclude_without');
-
-        if ($this->anyFailingRequired($parameters)) {
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * Prepare the values and the other value for validation.
-     *
-     * @param  array  $parameters
-     * @return array
-     */
-    protected function prepareValuesAndOther($parameters)
-    {
-        $other = Arr::get($this->data, $parameters[0]);
-
-        $values = array_slice($parameters, 1);
-
-        if (is_bool($other)) {
-            $values = $this->convertValuesToBoolean($values);
-        } elseif (is_null($other)) {
-            $values = $this->convertValuesToNull($values);
-        }
-
-        return [$values, $other];
-    }
-
-    /**
-     * Convert the given values to boolean if they are string "true" / "false".
-     *
-     * @param  array  $values
-     * @return array
-     */
-    protected function convertValuesToBoolean($values)
-    {
-        return array_map(function ($value) {
-            if ($value === 'true') {
-                return true;
-            } elseif ($value === 'false') {
-                return false;
-            }
-
-            return $value;
-        }, $values);
-    }
-
-    /**
-     * Convert the given values to null if they are string "null".
-     *
-     * @param  array  $values
-     * @return array
-     */
-    protected function convertValuesToNull($values)
-    {
-        return array_map(function ($value) {
-            return Str::lower($value) === 'null' ? null : $value;
-        }, $values);
-    }
-
-    /**
-     * Validate that an attribute exists when another attribute does not have a given value.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @param  mixed  $parameters
-     * @return bool
-     */
-    public function validateRequiredUnless($attribute, $value, $parameters)
-    {
-        $this->requireParameterCount(2, $parameters, 'required_unless');
-
-        [$values, $other] = $this->prepareValuesAndOther($parameters);
-
-        if (! in_array($other, $values)) {
-            return $this->validateRequired($attribute, $value);
-        }
-
-        return true;
-    }
-
-    /**
-     * Validate that an attribute exists when any other attribute exists.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @param  mixed  $parameters
-     * @return bool
-     */
-    public function validateRequiredWith($attribute, $value, $parameters)
-    {
-        if (! $this->allFailingRequired($parameters)) {
-            return $this->validateRequired($attribute, $value);
-        }
-
-        return true;
-    }
-
-    /**
-     * Validate that an attribute exists when all other attributes exists.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @param  mixed  $parameters
-     * @return bool
-     */
-    public function validateRequiredWithAll($attribute, $value, $parameters)
-    {
-        if (! $this->anyFailingRequired($parameters)) {
-            return $this->validateRequired($attribute, $value);
-        }
-
-        return true;
-    }
-
-    /**
-     * Validate that an attribute exists when another attribute does not.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @param  mixed  $parameters
-     * @return bool
-     */
-    public function validateRequiredWithout($attribute, $value, $parameters)
-    {
-        if ($this->anyFailingRequired($parameters)) {
-            return $this->validateRequired($attribute, $value);
-        }
-
-        return true;
-    }
-
-    /**
-     * Validate that an attribute exists when all other attributes do not.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @param  mixed  $parameters
-     * @return bool
-     */
-    public function validateRequiredWithoutAll($attribute, $value, $parameters)
-    {
-        if ($this->allFailingRequired($parameters)) {
-            return $this->validateRequired($attribute, $value);
-        }
-
-        return true;
-    }
-
-    /**
-     * Determine if any of the given attributes fail the required test.
-     *
-     * @param  array  $attributes
-     * @return bool
-     */
-    protected function anyFailingRequired(array $attributes)
-    {
-        foreach ($attributes as $key) {
-            if (! $this->validateRequired($key, $this->getValue($key))) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Determine if all of the given attributes fail the required test.
-     *
-     * @param  array  $attributes
-     * @return bool
-     */
-    protected function allFailingRequired(array $attributes)
-    {
-        foreach ($attributes as $key) {
-            if ($this->validateRequired($key, $this->getValue($key))) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Validate that two attributes match.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @param  array  $parameters
-     * @return bool
-     */
-    public function validateSame($attribute, $value, $parameters)
-    {
-        $this->requireParameterCount(1, $parameters, 'same');
-
-        $other = Arr::get($this->data, $parameters[0]);
-
-        return $value === $other;
-    }
-
-    /**
-     * Validate the size of an attribute.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @param  array  $parameters
-     * @return bool
-     */
-    public function validateSize($attribute, $value, $parameters)
-    {
-        $this->requireParameterCount(1, $parameters, 'size');
-
-        return $this->getSize($attribute, $value) == $parameters[0];
-    }
-
-    /**
-     * "Validate" optional attributes.
-     *
-     * Always returns true, just lets us put sometimes in rules.
-     *
-     * @return bool
-     */
-    public function validateSometimes()
-    {
-        return true;
-    }
-
-    /**
-     * Validate the attribute starts with a given substring.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @param  array  $parameters
-     * @return bool
-     */
-    public function validateStartsWith($attribute, $value, $parameters)
-    {
-        return Str::startsWith($value, $parameters);
-    }
-
-    /**
-     * Validate the attribute ends with a given substring.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @param  array  $parameters
-     * @return bool
-     */
-    public function validateEndsWith($attribute, $value, $parameters)
-    {
-        return Str::endsWith($value, $parameters);
-    }
-
-    /**
-     * Validate that an attribute is a string.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @return bool
-     */
-    public function validateString($attribute, $value)
-    {
-        return is_string($value);
-    }
-
-    /**
-     * Validate that an attribute is a valid timezone.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @return bool
-     */
-    public function validateTimezone($attribute, $value)
-    {
-        return in_array($value, timezone_identifiers_list(), true);
-    }
-
-    /**
-     * Validate that an attribute is a valid URL.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @return bool
-     */
-    public function validateUrl($attribute, $value)
-    {
-        if (! is_string($value)) {
-            return false;
-        }
-
-        /*
-         * This pattern is derived from Symfony\Component\Validator\Constraints\UrlValidator (5.0.7).
-         *
-         * (c) Fabien Potencier <fabien@symfony.com> http://symfony.com
-         */
-        $pattern = '~^
-            (aaa|aaas|about|acap|acct|acd|acr|adiumxtra|adt|afp|afs|aim|amss|android|appdata|apt|ark|attachment|aw|barion|beshare|bitcoin|bitcoincash|blob|bolo|browserext|calculator|callto|cap|cast|casts|chrome|chrome-extension|cid|coap|coap\+tcp|coap\+ws|coaps|coaps\+tcp|coaps\+ws|com-eventbrite-attendee|content|conti|crid|cvs|dab|data|dav|diaspora|dict|did|dis|dlna-playcontainer|dlna-playsingle|dns|dntp|dpp|drm|drop|dtn|dvb|ed2k|elsi|example|facetime|fax|feed|feedready|file|filesystem|finger|first-run-pen-experience|fish|fm|ftp|fuchsia-pkg|geo|gg|git|gizmoproject|go|gopher|graph|gtalk|h323|ham|hcap|hcp|http|https|hxxp|hxxps|hydrazone|iax|icap|icon|im|imap|info|iotdisco|ipn|ipp|ipps|irc|irc6|ircs|iris|iris\.beep|iris\.lwz|iris\.xpc|iris\.xpcs|isostore|itms|jabber|jar|jms|keyparc|lastfm|ldap|ldaps|leaptofrogans|lorawan|lvlt|magnet|mailserver|mailto|maps|market|message|mid|mms|modem|mongodb|moz|ms-access|ms-browser-extension|ms-calculator|ms-drive-to|ms-enrollment|ms-excel|ms-eyecontrolspeech|ms-gamebarservices|ms-gamingoverlay|ms-getoffice|ms-help|ms-infopath|ms-inputapp|ms-lockscreencomponent-config|ms-media-stream-id|ms-mixedrealitycapture|ms-mobileplans|ms-officeapp|ms-people|ms-project|ms-powerpoint|ms-publisher|ms-restoretabcompanion|ms-screenclip|ms-screensketch|ms-search|ms-search-repair|ms-secondary-screen-controller|ms-secondary-screen-setup|ms-settings|ms-settings-airplanemode|ms-settings-bluetooth|ms-settings-camera|ms-settings-cellular|ms-settings-cloudstorage|ms-settings-connectabledevices|ms-settings-displays-topology|ms-settings-emailandaccounts|ms-settings-language|ms-settings-location|ms-settings-lock|ms-settings-nfctransactions|ms-settings-notifications|ms-settings-power|ms-settings-privacy|ms-settings-proximity|ms-settings-screenrotation|ms-settings-wifi|ms-settings-workplace|ms-spd|ms-sttoverlay|ms-transit-to|ms-useractivityset|ms-virtualtouchpad|ms-visio|ms-walk-to|ms-whiteboard|ms-whiteboard-cmd|ms-word|msnim|msrp|msrps|mss|mtqp|mumble|mupdate|mvn|news|nfs|ni|nih|nntp|notes|ocf|oid|onenote|onenote-cmd|opaquelocktoken|openpgp4fpr|pack|palm|paparazzi|payto|pkcs11|platform|pop|pres|prospero|proxy|pwid|psyc|pttp|qb|query|redis|rediss|reload|res|resource|rmi|rsync|rtmfp|rtmp|rtsp|rtsps|rtspu|s3|secondlife|service|session|sftp|sgn|shttp|sieve|simpleledger|sip|sips|skype|smb|sms|smtp|snews|snmp|soap\.beep|soap\.beeps|soldat|spiffe|spotify|ssh|steam|stun|stuns|submit|svn|tag|teamspeak|tel|teliaeid|telnet|tftp|tg|things|thismessage|tip|tn3270|tool|turn|turns|tv|udp|unreal|urn|ut2004|v-event|vemmi|ventrilo|videotex|vnc|view-source|wais|webcal|wpid|ws|wss|wtai|wyciwyg|xcon|xcon-userid|xfire|xmlrpc\.beep|xmlrpc\.beeps|xmpp|xri|ymsgr|z39\.50|z39\.50r|z39\.50s)://                                 # protocol
-            (((?:[\_\.\pL\pN-]|%[0-9A-Fa-f]{2})+:)?((?:[\_\.\pL\pN-]|%[0-9A-Fa-f]{2})+)@)?  # basic auth
-            (
-                ([\pL\pN\pS\-\_\.])+(\.?([\pL\pN]|xn\-\-[\pL\pN-]+)+\.?) # a domain name
-                    |                                                 # or
-                \d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}                    # an IP address
-                    |                                                 # or
-                \[
-                    (?:(?:(?:(?:(?:(?:(?:[0-9a-f]{1,4})):){6})(?:(?:(?:(?:(?:[0-9a-f]{1,4})):(?:(?:[0-9a-f]{1,4})))|(?:(?:(?:(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9]))\.){3}(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9])))))))|(?:(?:::(?:(?:(?:[0-9a-f]{1,4})):){5})(?:(?:(?:(?:(?:[0-9a-f]{1,4})):(?:(?:[0-9a-f]{1,4})))|(?:(?:(?:(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9]))\.){3}(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9])))))))|(?:(?:(?:(?:(?:[0-9a-f]{1,4})))?::(?:(?:(?:[0-9a-f]{1,4})):){4})(?:(?:(?:(?:(?:[0-9a-f]{1,4})):(?:(?:[0-9a-f]{1,4})))|(?:(?:(?:(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9]))\.){3}(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9])))))))|(?:(?:(?:(?:(?:(?:[0-9a-f]{1,4})):){0,1}(?:(?:[0-9a-f]{1,4})))?::(?:(?:(?:[0-9a-f]{1,4})):){3})(?:(?:(?:(?:(?:[0-9a-f]{1,4})):(?:(?:[0-9a-f]{1,4})))|(?:(?:(?:(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9]))\.){3}(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9])))))))|(?:(?:(?:(?:(?:(?:[0-9a-f]{1,4})):){0,2}(?:(?:[0-9a-f]{1,4})))?::(?:(?:(?:[0-9a-f]{1,4})):){2})(?:(?:(?:(?:(?:[0-9a-f]{1,4})):(?:(?:[0-9a-f]{1,4})))|(?:(?:(?:(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9]))\.){3}(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9])))))))|(?:(?:(?:(?:(?:(?:[0-9a-f]{1,4})):){0,3}(?:(?:[0-9a-f]{1,4})))?::(?:(?:[0-9a-f]{1,4})):)(?:(?:(?:(?:(?:[0-9a-f]{1,4})):(?:(?:[0-9a-f]{1,4})))|(?:(?:(?:(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9]))\.){3}(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9])))))))|(?:(?:(?:(?:(?:(?:[0-9a-f]{1,4})):){0,4}(?:(?:[0-9a-f]{1,4})))?::)(?:(?:(?:(?:(?:[0-9a-f]{1,4})):(?:(?:[0-9a-f]{1,4})))|(?:(?:(?:(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9]))\.){3}(?:(?:25[0-5]|(?:[1-9]|1[0-9]|2[0-4])?[0-9])))))))|(?:(?:(?:(?:(?:(?:[0-9a-f]{1,4})):){0,5}(?:(?:[0-9a-f]{1,4})))?::)(?:(?:[0-9a-f]{1,4})))|(?:(?:(?:(?:(?:(?:[0-9a-f]{1,4})):){0,6}(?:(?:[0-9a-f]{1,4})))?::))))
-                \]  # an IPv6 address
-            )
-            (:[0-9]+)?                              # a port (optional)
-            (?:/ (?:[\pL\pN\-._\~!$&\'()*+,;=:@]|%[0-9A-Fa-f]{2})* )*          # a path
-            (?:\? (?:[\pL\pN\-._\~!$&\'\[\]()*+,;=:@/?]|%[0-9A-Fa-f]{2})* )?   # a query (optional)
-            (?:\# (?:[\pL\pN\-._\~!$&\'()*+,;=:@/?]|%[0-9A-Fa-f]{2})* )?       # a fragment (optional)
-        $~ixu';
-
-        return preg_match($pattern, $value) > 0;
-    }
-
-    /**
-     * Validate that an attribute is a valid UUID.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @return bool
-     */
-    public function validateUuid($attribute, $value)
-    {
-        return Str::isUuid($value);
-    }
-
-    /**
-     * Get the size of an attribute.
-     *
-     * @param  string  $attribute
-     * @param  mixed  $value
-     * @return mixed
-     */
-    protected function getSize($attribute, $value)
-    {
-        $hasNumeric = $this->hasRule($attribute, $this->numericRules);
-
-        // This method will determine if the attribute is a number, string, or file and
-        // return the proper size accordingly. If it is a number, then number itself
-        // is the size. If it is a file, we take kilobytes, and for a string the
-        // entire length of the string will be considered the attribute size.
-        if (is_numeric($value) && $hasNumeric) {
-            return $value;
-        } elseif (is_array($value)) {
-            return count($value);
-        } elseif ($value instanceof File) {
-            return $value->getSize() / 1024;
-        }
-
-        return mb_strlen($value);
-    }
-
-    /**
-     * Check that the given value is a valid file instance.
-     *
-     * @param  mixed  $value
-     * @return bool
-     */
-    public function isValidFileInstance($value)
-    {
-        if ($value instanceof UploadedFile && ! $value->isValid()) {
-            return false;
-        }
-
-        return $value instanceof File;
-    }
-
-    /**
-     * Determine if a comparison passes between the given values.
-     *
-     * @param  mixed  $first
-     * @param  mixed  $second
-     * @param  string  $operator
-     * @return bool
-     *
-     * @throws \InvalidArgumentException
-     */
-    protected function compare($first, $second, $operator)
-    {
-        switch ($operator) {
-            case '<':
-                return $first < $second;
-            case '>':
-                return $first > $second;
-            case '<=':
-                return $first <= $second;
-            case '>=':
-                return $first >= $second;
-            case '=':
-                return $first == $second;
-            default:
-                throw new InvalidArgumentException;
-        }
-    }
-
-    /**
-     * Parse named parameters to $key => $value items.
-     *
-     * @param  array  $parameters
-     * @return array
-     */
-    public function parseNamedParameters($parameters)
-    {
-        return array_reduce($parameters, function ($result, $item) {
-            [$key, $value] = array_pad(explode('=', $item, 2), 2, null);
-
-            $result[$key] = $value;
-
-            return $result;
-        });
-    }
-
-    /**
-     * Require a certain number of parameters to be present.
-     *
-     * @param  int  $count
-     * @param  array  $parameters
-     * @param  string  $rule
-     * @return void
-     *
-     * @throws \InvalidArgumentException
-     */
-    public function requireParameterCount($count, $parameters, $rule)
-    {
-        if (count($parameters) < $count) {
-            throw new InvalidArgumentException("Validation rule $rule requires at least $count parameters.");
-        }
-    }
-
-    /**
-     * Check if the parameters are of the same type.
-     *
-     * @param  mixed  $first
-     * @param  mixed  $second
-     * @return bool
-     */
-    protected function isSameType($first, $second)
-    {
-        return gettype($first) == gettype($second);
-    }
-
-    /**
-     * Adds the existing rule to the numericRules array if the attribute's value is numeric.
-     *
-     * @param  string  $attribute
-     * @param  string  $rule
-     *
-     * @return void
-     */
-    protected function shouldBeNumeric($attribute, $rule)
-    {
-        if (is_numeric($this->getValue($attribute))) {
-            $this->numericRules[] = $rule;
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+sr3kg/hxPc36LM0bNTcH5nLu91zkhJsoUua=

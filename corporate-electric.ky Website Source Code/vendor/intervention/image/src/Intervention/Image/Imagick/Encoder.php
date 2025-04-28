@@ -1,173 +1,85 @@
-<?php
-
-namespace Intervention\Image\Imagick;
-
-use Intervention\Image\AbstractEncoder;
-use Intervention\Image\Exception\NotSupportedException;
-
-class Encoder extends AbstractEncoder
-{
-    /**
-     * Processes and returns encoded image as JPEG string
-     *
-     * @return string
-     */
-    protected function processJpeg()
-    {
-        $format = 'jpeg';
-        $compression = \Imagick::COMPRESSION_JPEG;
-
-        $imagick = $this->image->getCore();
-        $imagick->setImageBackgroundColor('white');
-        $imagick->setBackgroundColor('white');
-        $imagick = $imagick->mergeImageLayers(\Imagick::LAYERMETHOD_MERGE);
-        $imagick->setFormat($format);
-        $imagick->setImageFormat($format);
-        $imagick->setCompression($compression);
-        $imagick->setImageCompression($compression);
-        $imagick->setCompressionQuality($this->quality);
-        $imagick->setImageCompressionQuality($this->quality);
-
-        return $imagick->getImagesBlob();
-    }
-
-    /**
-     * Processes and returns encoded image as PNG string
-     *
-     * @return string
-     */
-    protected function processPng()
-    {
-        $format = 'png';
-        $compression = \Imagick::COMPRESSION_ZIP;
-
-        $imagick = $this->image->getCore();
-        $imagick->setFormat($format);
-        $imagick->setImageFormat($format);
-        $imagick->setCompression($compression);
-        $imagick->setImageCompression($compression);
-
-        return $imagick->getImagesBlob();
-    }
-
-    /**
-     * Processes and returns encoded image as GIF string
-     *
-     * @return string
-     */
-    protected function processGif()
-    {
-        $format = 'gif';
-        $compression = \Imagick::COMPRESSION_LZW;
-
-        $imagick = $this->image->getCore();
-        $imagick->setFormat($format);
-        $imagick->setImageFormat($format);
-        $imagick->setCompression($compression);
-        $imagick->setImageCompression($compression);
-
-        return $imagick->getImagesBlob();
-    }
-
-    protected function processWebp()
-    {
-        if ( ! \Imagick::queryFormats('WEBP')) {
-            throw new NotSupportedException(
-                "Webp format is not supported by Imagick installation."
-            );
-        }
-
-        $format = 'webp';
-        $compression = \Imagick::COMPRESSION_JPEG;
-
-        $imagick = $this->image->getCore();
-        $imagick->setImageBackgroundColor(new \ImagickPixel('transparent'));
-
-        $imagick = $imagick->mergeImageLayers(\Imagick::LAYERMETHOD_MERGE);
-        $imagick->setFormat($format);
-        $imagick->setImageFormat($format);
-        $imagick->setCompression($compression);
-        $imagick->setImageCompression($compression);
-        $imagick->setImageCompressionQuality($this->quality);
-
-        return $imagick->getImagesBlob();
-    }
-
-    /**
-     * Processes and returns encoded image as TIFF string
-     *
-     * @return string
-     */
-    protected function processTiff()
-    {
-        $format = 'tiff';
-        $compression = \Imagick::COMPRESSION_UNDEFINED;
-
-        $imagick = $this->image->getCore();
-        $imagick->setFormat($format);
-        $imagick->setImageFormat($format);
-        $imagick->setCompression($compression);
-        $imagick->setImageCompression($compression);
-        $imagick->setCompressionQuality($this->quality);
-        $imagick->setImageCompressionQuality($this->quality);
-
-        return $imagick->getImagesBlob();
-    }
-
-    /**
-     * Processes and returns encoded image as BMP string
-     *
-     * @return string
-     */
-    protected function processBmp()
-    {
-        $format = 'bmp';
-        $compression = \Imagick::COMPRESSION_UNDEFINED;
-
-        $imagick = $this->image->getCore();
-        $imagick->setFormat($format);
-        $imagick->setImageFormat($format);
-        $imagick->setCompression($compression);
-        $imagick->setImageCompression($compression);
-
-        return $imagick->getImagesBlob();
-    }
-
-    /**
-     * Processes and returns encoded image as ICO string
-     *
-     * @return string
-     */
-    protected function processIco()
-    {
-        $format = 'ico';
-        $compression = \Imagick::COMPRESSION_UNDEFINED;
-
-        $imagick = $this->image->getCore();
-        $imagick->setFormat($format);
-        $imagick->setImageFormat($format);
-        $imagick->setCompression($compression);
-        $imagick->setImageCompression($compression);
-
-        return $imagick->getImagesBlob();
-    }
-
-    /**
-     * Processes and returns encoded image as PSD string
-     *
-     * @return string
-     */
-    protected function processPsd()
-    {
-        $format = 'psd';
-        $compression = \Imagick::COMPRESSION_UNDEFINED;
-
-        $imagick = $this->image->getCore();
-        $imagick->setFormat($format);
-        $imagick->setImageFormat($format);
-        $imagick->setCompression($compression);
-        $imagick->setImageCompression($compression);
-
-        return $imagick->getImagesBlob();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+l0q/gAloQJJg

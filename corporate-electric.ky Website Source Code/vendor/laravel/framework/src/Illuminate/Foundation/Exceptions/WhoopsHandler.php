@@ -1,86 +1,54 @@
-<?php
-
-namespace Illuminate\Foundation\Exceptions;
-
-use Illuminate\Filesystem\Filesystem;
-use Illuminate\Support\Arr;
-use Whoops\Handler\PrettyPageHandler;
-
-class WhoopsHandler
-{
-    /**
-     * Create a new Whoops handler for debug mode.
-     *
-     * @return \Whoops\Handler\PrettyPageHandler
-     */
-    public function forDebug()
-    {
-        return tap(new PrettyPageHandler, function ($handler) {
-            $handler->handleUnconditionally(true);
-
-            $this->registerApplicationPaths($handler)
-                 ->registerBlacklist($handler)
-                 ->registerEditor($handler);
-        });
-    }
-
-    /**
-     * Register the application paths with the handler.
-     *
-     * @param  \Whoops\Handler\PrettyPageHandler  $handler
-     * @return $this
-     */
-    protected function registerApplicationPaths($handler)
-    {
-        $handler->setApplicationPaths(
-            array_flip($this->directoriesExceptVendor())
-        );
-
-        return $this;
-    }
-
-    /**
-     * Get the application paths except for the "vendor" directory.
-     *
-     * @return array
-     */
-    protected function directoriesExceptVendor()
-    {
-        return Arr::except(
-            array_flip((new Filesystem)->directories(base_path())),
-            [base_path('vendor')]
-        );
-    }
-
-    /**
-     * Register the blacklist with the handler.
-     *
-     * @param  \Whoops\Handler\PrettyPageHandler  $handler
-     * @return $this
-     */
-    protected function registerBlacklist($handler)
-    {
-        foreach (config('app.debug_blacklist', config('app.debug_hide', [])) as $key => $secrets) {
-            foreach ($secrets as $secret) {
-                $handler->blacklist($key, $secret);
-            }
-        }
-
-        return $this;
-    }
-
-    /**
-     * Register the editor with the handler.
-     *
-     * @param  \Whoops\Handler\PrettyPageHandler  $handler
-     * @return $this
-     */
-    protected function registerEditor($handler)
-    {
-        if (config('app.editor', false)) {
-            $handler->setEditor(config('app.editor'));
-        }
-
-        return $this;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+hB0=

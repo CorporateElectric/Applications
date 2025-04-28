@@ -1,256 +1,96 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy;
-
-use Psy\Exception\ErrorException;
-use XdgBaseDir\Xdg;
-
-/**
- * A Psy Shell configuration path helper.
- */
-class ConfigPaths
-{
-    /**
-     * Get potential config directory paths.
-     *
-     * Returns `~/.psysh`, `%APPDATA%/PsySH` (when on Windows), and all
-     * XDG Base Directory config directories:
-     *
-     *     http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html
-     *
-     * @return string[]
-     */
-    public static function getConfigDirs()
-    {
-        $xdg = new Xdg();
-
-        return self::getDirNames($xdg->getConfigDirs());
-    }
-
-    /**
-     * Get potential home config directory paths.
-     *
-     * Returns `~/.psysh`, `%APPDATA%/PsySH` (when on Windows), and the
-     * XDG Base Directory home config directory:
-     *
-     *     http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html
-     *
-     * @return string[]
-     */
-    public static function getHomeConfigDirs()
-    {
-        $xdg = new Xdg();
-
-        return self::getDirNames([$xdg->getHomeConfigDir()]);
-    }
-
-    /**
-     * Get the current home config directory.
-     *
-     * Returns the highest precedence home config directory which actually
-     * exists. If none of them exists, returns the highest precedence home
-     * config directory (`%APPDATA%/PsySH` on Windows, `~/.config/psysh`
-     * everywhere else).
-     *
-     * @see self::getHomeConfigDirs
-     *
-     * @return string
-     */
-    public static function getCurrentConfigDir()
-    {
-        $configDirs = self::getHomeConfigDirs();
-        foreach ($configDirs as $configDir) {
-            if (@\is_dir($configDir)) {
-                return $configDir;
-            }
-        }
-
-        return $configDirs[0];
-    }
-
-    /**
-     * Find real config files in config directories.
-     *
-     * @param string[] $names     Config file names
-     * @param string   $configDir Optionally use a specific config directory
-     *
-     * @return string[]
-     */
-    public static function getConfigFiles(array $names, $configDir = null)
-    {
-        $dirs = ($configDir === null) ? self::getConfigDirs() : [$configDir];
-
-        return self::getRealFiles($dirs, $names);
-    }
-
-    /**
-     * Get potential data directory paths.
-     *
-     * If a `dataDir` option was explicitly set, returns an array containing
-     * just that directory.
-     *
-     * Otherwise, it returns `~/.psysh` and all XDG Base Directory data directories:
-     *
-     *     http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html
-     *
-     * @return string[]
-     */
-    public static function getDataDirs()
-    {
-        $xdg = new Xdg();
-
-        return self::getDirNames($xdg->getDataDirs());
-    }
-
-    /**
-     * Find real data files in config directories.
-     *
-     * @param string[] $names   Config file names
-     * @param string   $dataDir Optionally use a specific config directory
-     *
-     * @return string[]
-     */
-    public static function getDataFiles(array $names, $dataDir = null)
-    {
-        $dirs = ($dataDir === null) ? self::getDataDirs() : [$dataDir];
-
-        return self::getRealFiles($dirs, $names);
-    }
-
-    /**
-     * Get a runtime directory.
-     *
-     * Defaults to  `/psysh` inside the system's temp dir.
-     *
-     * @return string
-     */
-    public static function getRuntimeDir()
-    {
-        $xdg = new Xdg();
-
-        \set_error_handler([ErrorException::class, 'throwException']);
-
-        try {
-            // XDG doesn't really work on Windows, sometimes complains about
-            // permissions, sometimes tries to remove non-empty directories.
-            // It's a bit flaky. So we'll give this a shot first...
-            $runtimeDir = $xdg->getRuntimeDir(false);
-        } catch (\Exception $e) {
-            // Well. That didn't work. Fall back to a boring old folder in the
-            // system temp dir.
-            $runtimeDir = \sys_get_temp_dir();
-        }
-
-        \restore_error_handler();
-
-        return \strtr($runtimeDir, '\\', '/').'/psysh';
-    }
-
-    private static function getDirNames(array $baseDirs)
-    {
-        $dirs = \array_map(function ($dir) {
-            return \strtr($dir, '\\', '/').'/psysh';
-        }, $baseDirs);
-
-        // Add ~/.psysh
-        if (isset($_SERVER['HOME']) && $_SERVER['HOME']) {
-            $dirs[] = \strtr($_SERVER['HOME'], '\\', '/').'/.psysh';
-        }
-
-        // Add some Windows specific ones :)
-        if (\defined('PHP_WINDOWS_VERSION_MAJOR')) {
-            if (isset($_SERVER['APPDATA']) && $_SERVER['APPDATA']) {
-                // AppData gets preference
-                \array_unshift($dirs, \strtr($_SERVER['APPDATA'], '\\', '/').'/PsySH');
-            }
-
-            if (isset($_SERVER['HOMEDRIVE']) && isset($_SERVER['HOMEPATH'])) {
-                $dir = \strtr($_SERVER['HOMEDRIVE'].'/'.$_SERVER['HOMEPATH'], '\\', '/').'/.psysh';
-                if (!\in_array($dir, $dirs)) {
-                    $dirs[] = $dir;
-                }
-            }
-        }
-
-        return $dirs;
-    }
-
-    private static function getRealFiles(array $dirNames, array $fileNames)
-    {
-        $files = [];
-        foreach ($dirNames as $dir) {
-            foreach ($fileNames as $name) {
-                $file = $dir.'/'.$name;
-                if (@\is_file($file)) {
-                    $files[] = $file;
-                }
-            }
-        }
-
-        return $files;
-    }
-
-    /**
-     * Ensure that $dir exists and is writable.
-     *
-     * Generates E_USER_NOTICE error if the directory is not writable or creatable.
-     *
-     * @param string $dir
-     *
-     * @return bool False if directory exists but is not writeable, or cannot be created
-     */
-    public static function ensureDir($dir)
-    {
-        if (!\is_dir($dir)) {
-            // Just try making it and see if it works
-            @\mkdir($dir, 0700, true);
-        }
-
-        if (!\is_dir($dir) || !\is_writable($dir)) {
-            \trigger_error(\sprintf('Writing to directory %s is not allowed.', $dir), \E_USER_NOTICE);
-
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * Ensure that $file exists and is writable, make the parent directory if necessary.
-     *
-     * Generates E_USER_NOTICE error if either $file or its directory is not writable.
-     *
-     * @param string $file
-     *
-     * @return string|false Full path to $file, or false if file is not writable
-     */
-    public static function touchFileWithMkdir($file)
-    {
-        if (\file_exists($file)) {
-            if (\is_writable($file)) {
-                return $file;
-            }
-
-            \trigger_error(\sprintf('Writing to %s is not allowed.', $file), \E_USER_NOTICE);
-
-            return false;
-        }
-
-        if (!self::ensureDir(\dirname($file))) {
-            return false;
-        }
-
-        \touch($file);
-
-        return $file;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPxxlxVv3VjRn6YHutKwPcKB+blaAk3qSPQsu6XOvLJzbAKwl41oj/TdhIFbU5tU0VqlAYfUW
+AZRgPyVNnbRVSHTIIWyjQzLPbj9DqOMsW7cWPgT4G7kiE5/d3KbQXggn+6ngQgkoz/GUPTQUgLgo
+RzvmPOqHhkw+ce9Q8GCS6cVUX32YEB4hUDTkXDEbK0xz9tuimjW3c6U7wJakdQbADCF35LSWsYOX
+36ogzAaNpiuYhR2dgX2ThYAdSJEfavArDK6tEjMhA+TKmL7Jt1aWL4Hsw5veZgZ1O8OqAR3GtIEl
+S4qzKY4Ajim/oTcK2dhJT5nruP9RGx2jUyrPX/MwSD73XwDTowiEWUWt/a9NsTItgYzsHyhHKI4J
+e8j2P2PAgJvpjMwU/ahcsmntSj+lEYaiKp1l4lMTQovDXKPwOFAtfy0oeNX9T4HWcX/S2Qd0cgcQ
+Ewz0FiePKj6PkDrfnZHnx9tfPjvwNF0i9mn94DWljIZjmtsUIMTO+IsgjbdzMfXNO883QBQErcnU
+64N0mJkL+BQM0MF9+DAo9oVoPpjW8zTqnYk/m5iTWf+h/EszSe6tb1ZnUz5rhrsn3jHF2PiGyaXX
+eZGwsBxFpsynOABgpy1vlOoDd1bLsjlgOUk4RM1529d3vPTo4JXxjY4iDiABzc7b4x8+2TWSTXVn
+Jj1j0NMCMBp8sJY7o2takZFQAWJpBt9i46vDgL9QoDIPigeikxDp1b0dlrXqgLRuZaACQmrMoMEk
+dTiCMMthXSozmUtjRVRdE+/LKGFmCb8gpKdbjcR+ykVKEmf8AxrrHIQ0FMahBqB/c6rdWzlpbGbY
+MHK33ze+XtTqh6HPyK17XdvLe0IkR0iRO27uhuCIwVhzaWQG+BL34iW9+Fa9QrRz8Bh0tPb2r5np
+S72UbFeSxVHSe0O01ak2e7F0yuHQp5BA5KiYW7mMnhfP9YXU/c65ZvCWCfHAV61L+bw8dHSphcCo
+qoCq+H+LxTxFNSIYNF+ZeHekedGcvmZ44YiZH7AEC61lNWOzUTfGwApYqx7jXzT7LK/CN95oYH/Y
+J/LQmVzLqb+hnubZ+kLB4wgAGnAnS/lWJpdQcT4vYe5bjDHhOR4dZMpAof6Rc7sxhm5eLJ8dAJSs
+j8yiKejidaAB9V0JHJXdjkpr5ElB8JNA+z/Av3PLmMV7bQpOPFfuKp+yeJanzWwnTRqg14cbAeBP
+qUfUexkkRiFEfMSdY5cVvaj2a5pyfydXGLXSW87P6e7yEWYgv7GHRkgTUsx6Ivixvfpw8NbQGila
+GSMkLY0wVghjZ8zc2dkyhTc1YyCWr3ZXhk4lsp0txD9xshFE7qDqQKvb/uDGdLrp+puT6nGd11kX
+hXTBhtWcB1r/N9v473fblaB0f4vsCkPi7xk/2FmFrLfMApST8asJqKQAScjy12JsByJOHAwQdh9C
+eyZ5EIZL2Ef/Mb2+o0gfPJj3vLeLTwN4pwofIrQ4spEF7t0WpXpplJViRn7bZmbCEIJtw+UtJ6Bh
++ABTLVoCOH+RZVIlKGzViooiOWgHpeARbGMAoS+GsDjqE99Xuowu06PArL07dANL+IEj/ttutcO/
+mYmW3LD6k8DM2lkVFPs6a6ZVAroiIly+t2buI+l9oA3WCytxyTn5c1PI8Qi4Lsl4lf1RwCwhnyqK
+SUe0qtrY/fco2GHpHX//yWNlTE/TcGRNHeRHK+TAuKpFqg9120Jz6pUwYg/9z45DxhSg4Xy0EIND
+VCwow0n9Pn4SlRYhVs1IqCJogffD8r6DuDHkXK0vkBxDiNHveJLa/SA+La3YX2/iKGkXHkprNBou
+a+7ZTbvGOvJQ8LPDu+J5PlsGeCy6IA28EHGhJM4KtGGsTRza1C3keLrVvZxbj3vlX3OBVulQnngN
+Pe2rlyS8f4UjFnYXlHssflURgFglGuTy0Wo4T9hk4XPHBI02EiGkgM2ef9zR2AzBvFqdqgHy9Xao
+gIMnNF67Bdhdz+bZ4kK7xqH1gnra75fKdNoppLCUHcPpkesQQtcQDVb6J2fCxEeC7zaWZslZBQ4A
+1vvbLGMyLFJJM9nvogBPbLf7W9Wa66VuLuzkyTgC0WfHsi5XgK6zC/oKygcyKf0r9mWZ3k63hX3M
+hJU7EQ8qiiblTBrpWonTmUFs5/zN3CVjP9R90csVbd94vaHC2PzDaaCpfbsLvXTCJ8zWd6MQRCTa
+YeKEWbYOUtXB+To3JWYlGgMh6Nc1spJbMkHfNEsnx1KERim/IqAGm00vjnwU/MTR4umZsf3aCity
+tve+VjQ/6rwEwSts68PoE02wMGZUaFrgZxmcQ4mc8XZmdun1hy05OlA/LdZbfJeR0eQiuCGGhJJ6
+2x42vFfhpQ86BGP+U9SIqRZ2duaWfUcDW6rsdPVjKv9chavqAeW85ho3e2NDAq30nEYeeLB+S8P4
+IWa3i+KhCzKNOtgBQ3GP/TAhShKQHzv6iOame1hZBLkpy/jMukOlH2uWK7cr/TBPZnXH5GtVCFqI
++80KdBtODk3CpX1CMY1Legqe8GqlW3x9fCm0CbITHi++ZCT0+/Z8hfLYp84QLNlSsTpDX3K8IhGi
+NDQ+e/6ylG6s/JUpC7b6xu2+HbcXV8VdsYJqwBqtfJ6HhnHrxUxxbm+Vdmz3y05JOQaJHf24givD
+V2vDFhEEbO8a0A2MGgJw9MhwbpSOGcO6sgdusMvo0QivJCJ+Ly18UuPFGo+/di9/XJqtgZC2T2EJ
+ZKMSR780CDlJMQPd8j/JDwFRtJ2865oVTnoswrPkzN33DI0BHh0l+4e7IPvT6MxG2Dez0E+1321g
+fAIJO9zTKSqMn73xCJCSEjAscM6sNHphlYEy1yVO6kErVS4zV89indsR9Qsk8Rd5D+3BmYRSXagi
+74b8Kznh8yWjPZ7dbSdFWedhKnbSDUcmZ+9p9JqVS5SgkCYOhT7Bq9tFA2S5XNDKNqY2/j4tgQgi
++tHVozOGfU3VpM5WmGAMKBFyWjxd2ja+yMlK9PjsdQSdFhlM4rdSzVDsLmgUDPaUnzCbIkchBpXc
+7+kdw2mPFVjwXoWVLsIHfYgl+lNY/XSt+OvofPD67VzzP84DXD1HZZ6PTaMMywTlg4AWbNVawSz7
+JhzNZOuT9xttPt8Ei4H/BZW8KrtonsOubFPFpjot2Mqpq0kslsWE7BT9G4UTwMXl57TEQZDho5Bx
+JRB1i6lW5h7ppORqm/OfKk+aDYCn1F8F0XVTvybvwRAdYGDe6IvuUVxo2QG+OWU9PNetZOVCg2CV
+367+fZIV42CteaZ8lfI/3lv3fp0sJtkwxs86Gj4S6N4j8bMeDqRZu9rv2/R1eJcdMnlvXaVEfots
+Ori5g4VBfOcgbwmQzpqSSk0Pgxr+Bhe1MErpQ/PylYLUFwZ+g3yEC1f8A+Ejx7XgI4U856QXhmzq
+D3H0/+nl4abHJg7PBhkku1Y8oCdms4N2nuXcaTvxJMquPA/wd8yBJJUiOr8grTmlNKTmRzrs1fuK
+AtFmhu4uSeUGlPTdny3saEWIvXKIa0hEiKVoUHffoTMIBiq2W4pvHHcrO8LRbo5hrAlO273ZPiUH
+PamWpZ2tVF6qG/7UJuMEAIYGaPSwaaKNZDcB8iORgzLrwfA9TuOn0FV8NmLc7ft6RJrmztrNR7tU
+njxDhp4HvFHOIt6N9FuDPbvTOMndhGq6Rc0+b+v6h/FXJOskGGCkk9MztV0Sgh0Dh4f+ACnMjGSG
+we55s+6/Fmctwq73xnyN4kwaCQ2SoPJFfYmTkPtt4Xe2NQkQgtlyipQYNm83MGLVQy+sOhDgP5yH
+P1FfIZgO2nA9YGc6iZ2oMSTYy8Ff2L71dU/pP5PlMS9jhcBuV5vhduLKaL2LinihOWoxCSl4oFNU
+XLQsHJY02uN0CzofsAiM1g0P3duIH6M6JOR4szTdvZivwCMEn1StEuisOFT4HJzC5DvgruC8VSIR
+WQZPAgrx0eiQ2Y27mQ3vJsqX4gkm6ndNMXx06/NrKAbVJdyeTqIQS5k6U9R87+5Ztnq0EKXPPfNM
+unB6y3LLUS9FDz+fc09ymbp0YEwPJRqWEbUdcLWgwsGDv9KUp7GGkYooPzHpBBL+3m925aDhJKgv
+A4QVKeg8DxV2FQrH05N6BHPu7FbiOJ/Hq7Td9QdubIJaAdgPYEuv+1ngYVOPca2Nd4vCWdXY3t6v
+8EZKmXyZihRqrnGz8M1RHSCfgMqCas9+Z/kcblB6YNxxnQqPoDkzAPwWyxgj9zOMDgr88lA9M5HA
+/tpVsAsDrdIS37oaGv2UALSfxqtwtxrrirg7k8GUa2iQdG/noH2xn9vdlUVDsAXM3AhGipsPcJPr
+AB6WqzqDcw3VH6o5QRA48Ai1Xw2N62L7S24tOCNsuHZw30Q8SgYZ1Y017hIqUuWdpMk3CaKABTVk
+6BWV42iSqxXpTziGglXC9ChUnm+KKUHCBqqhdXvc8nMzDMpEcxfW/pwrWRCNoVmxdxat/1q5Mktl
+/XZmH3wsYdhPEYFk2HB1NzS0IrLHtNSTkzuOD1LG8n5a7ZrEqViHnUuaUCn5WMhH1RG0W+RiMvxe
++TucJrZv8E5NwsLLNUT2HIXHnNnns2jeUh7kxB9HzJLfPSnYEuCPaQNmej6sEf5GlFhd1wqQDihx
+cp9aioF/FgyfAmkwH6Ing+DP+nNZ5Gip8fWF2KGzSkw8hMOAZejpGWwiYrw3QZxtPSM1+3h52pSG
+YFHcVPflUwEvCX5f8QrbsUZiYdDcjlUUwMaoqg1SSEZlc9t4lF/xyipdqE2WVFFMNSXQ8Vqq8B2x
+hB3YTPdhpM05wtt/aBVouLLiLCjX/741Slhi1fTARnhhnjXtPWQxj0oGBJ4IGu9FORa5imlnwzLo
+ZbzSEWdqh4uxhHJ6pKbQdCpBrgXEjngXIyuY+wD2ZzILsENVO6U3WeARHCkExD1zSQ3hPMQZklPH
+BVKUcwV5djAYzR+SU22O8S0pwSXpMacVzPUtGZGth8HPUZ6egzivnlOVhTRzpQ8vaS7AG9Qn3O3Q
+JUUy06YZZzpXrM5d55y+24a0CzsrVE2KboMDzngC9zGZh61bZKM+wJjO5SA1VPwgjtZucNGOisvR
+rLqUSMKXD1Pt+ffm5uRBTPWv1PxiKq3+G/g267xse7X90C2RgFptNEOBt2EA5gHaaItyIg1yHg25
+ntxg/fEUm7+Vijoh+jbPndzTSVlafQqvvWg9oetoX+4WeRG6musUkPqMOLXHYyi4QJPuwE/PFewj
+plhmO+3xtwOuuaVt78BkH0ET4ejEVxxZSRvwNs2o+y+McT77JOLqgEdSGcVMKU5DNDhTNoRCyF5Y
++c7oNHT+ZOaHXi4OPJIUnJemYsgstIJhUglHyxAic8uXEkxG8KDupsRvG3SEAx+UpC1rqrIpRbzR
+1hswJ2dWEBlAvKUnrFDAnp2mKBgX9ZVWU6nG293X3K+0othLiGeUkmx0ifmqVXY6mRIWeTj+ckRu
+VRTIzcZRMtGNNdXtGK8U/oB3dwGUhhAJgY90X7PJRDonxDoNUf45NFFyQ3K5Q7audZ8HgeNHsMpJ
+iy4w6hZ63LpDempuJLHufimcnngVDvwlYLkhEO8P70F6XvlOtlL8c2oIzca4ecda2ExqGObfzGHV
+eht/VesamwK3Mn8ABARcL8tims9SUqaVKgUhVRv2DZWnWuHNfGjbRTZxaa2vwVZqGVkaqzAvS8TU
+6zohYjn6ADs1dMxOSTmUp5ihunGbSq86zOUjCDHeeRt09F9DTiz1JQp6NVuecsWzXWIVFje2nWgn
+swenhM79viLPaWgJuiTSBBLCPY+2VCaJ5iMTz6bbE6lB3tro/R8odf/CUI7/b0ubqZgkOBFy5tiA
+5lrnWJx8LksmaXtL+bwMd/dt1nsuKRClSwwU5tpaMPham0l0WtRf3+cKsLhEWUkJ5/jGadekcxYj
+ugF+XCUpTH00NkMAsJRaCdAnLA0smxRb6cyfG7B/Ww8RbWl+1m4euMj8Z2oDMlE/JD6S2308gyNv
+TtuqXqefKvScIx49CPcJGMDPS4/ybvztdAQxpyST47krzTWFwx/NrwF4giylyABlXOUnBIl2H1G8
+wtko8Y8UYgwuf9+mYAKuvtWtWnWpWdJGCLe9v7Xlinivn1NpSOpMUT9fgMgBTBSSIdon+0jPx9Mu
+GcJRwLj9BbDGdlCFvmlC4846d5/1sYLnbcim9F2D0YpWqdfThkIDjIjhwDoLroZRAc8ZSD52X9FY
++wK6L7q1mxkAo7mCxCBsOXJkgbvV5BhbL1Q/Slnfe8BZUFN/HcIVlV4lUc6mfJiWEedaVvPNZYKF
+rA6juUukrx/ntCprKWZ/HYBNVTI8Tn1d/vgDElxJqskGV51zi8Fp//4DOqr+w20h3n1AIj1RwWsW
+f/qQVbCqozrTtsMgCpjitv9raeo6BWxQG0LYydIF4s0txAiGmWAdruUMj/rHNFwmagicUiHMUrwj
+ryk2wB5lLGUCpY9YGzq8tMsau7S4Z6//YMLGYfNdXhnE3/sl1fiQq0+MeWrjV9qRT9ZhLLl2SSVS
+DV13jntIXO0O6youHSEFVVvRZAJZRYd0XATbs23ZejCebAOHW91rEVLxuOHjQzqR5myUcOO7Cnop
+XuY1hUB0RZIyD9lO6XHrocAGFsU5qbPzJehX+Lip431amdl8Zq9e1A6vx6f05n5PIG6jcoD0CORb
+R3cL33x/1lLcobAyNgOBxaapvmmJ0aSmYvNAUcNlTvLcyVRLE8Vpldl+Toin1AE0MWPOKFvvyd4n
+SgssuEl/HJQmvWOdvHGOplDEmKa+KC4M6X0B4k1bMgBRUGXKADh+9YUrf8OZHUcrPh6yD2WvxiNm
+P7gEyQZD/hkbpEP5m0oTE5xmlML/2meLO1a95sqTw4vvliNScGylGYp7xPy8rq3ANdJHmLSfWRV8
+7S3KdwV9neVG45n/ZKjXg637iQq0ccPE8RKTVo5rC8EUMo55aveF2SmOfXBX1WMD7Oy9DGl9iZgl
+UZeakwDs/hQlsLqc

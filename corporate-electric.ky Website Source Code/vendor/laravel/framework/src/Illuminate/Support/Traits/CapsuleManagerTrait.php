@@ -1,69 +1,29 @@
-<?php
-
-namespace Illuminate\Support\Traits;
-
-use Illuminate\Contracts\Container\Container;
-use Illuminate\Support\Fluent;
-
-trait CapsuleManagerTrait
-{
-    /**
-     * The current globally used instance.
-     *
-     * @var object
-     */
-    protected static $instance;
-
-    /**
-     * The container instance.
-     *
-     * @var \Illuminate\Contracts\Container\Container
-     */
-    protected $container;
-
-    /**
-     * Setup the IoC container instance.
-     *
-     * @param  \Illuminate\Contracts\Container\Container  $container
-     * @return void
-     */
-    protected function setupContainer(Container $container)
-    {
-        $this->container = $container;
-
-        if (! $this->container->bound('config')) {
-            $this->container->instance('config', new Fluent);
-        }
-    }
-
-    /**
-     * Make this capsule instance available globally.
-     *
-     * @return void
-     */
-    public function setAsGlobal()
-    {
-        static::$instance = $this;
-    }
-
-    /**
-     * Get the IoC container instance.
-     *
-     * @return \Illuminate\Contracts\Container\Container
-     */
-    public function getContainer()
-    {
-        return $this->container;
-    }
-
-    /**
-     * Set the IoC container instance.
-     *
-     * @param  \Illuminate\Contracts\Container\Container  $container
-     * @return void
-     */
-    public function setContainer(Container $container)
-    {
-        $this->container = $container;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

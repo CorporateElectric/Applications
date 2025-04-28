@@ -1,69 +1,44 @@
-<?php
-
-namespace Illuminate\Support;
-
-/**
- * ProcessUtils is a bunch of utility methods.
- *
- * This class was originally copied from Symfony 3.
- */
-class ProcessUtils
-{
-    /**
-     * Escapes a string to be used as a shell argument.
-     *
-     * @param  string  $argument
-     * @return string
-     */
-    public static function escapeArgument($argument)
-    {
-        // Fix for PHP bug #43784 escapeshellarg removes % from given string
-        // Fix for PHP bug #49446 escapeshellarg doesn't work on Windows
-        // @see https://bugs.php.net/bug.php?id=43784
-        // @see https://bugs.php.net/bug.php?id=49446
-        if ('\\' === DIRECTORY_SEPARATOR) {
-            if ('' === $argument) {
-                return '""';
-            }
-
-            $escapedArgument = '';
-            $quote = false;
-
-            foreach (preg_split('/(")/', $argument, -1, PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE) as $part) {
-                if ('"' === $part) {
-                    $escapedArgument .= '\\"';
-                } elseif (self::isSurroundedBy($part, '%')) {
-                    // Avoid environment variable expansion
-                    $escapedArgument .= '^%"'.substr($part, 1, -1).'"^%';
-                } else {
-                    // escape trailing backslash
-                    if ('\\' === substr($part, -1)) {
-                        $part .= '\\';
-                    }
-                    $quote = true;
-                    $escapedArgument .= $part;
-                }
-            }
-
-            if ($quote) {
-                $escapedArgument = '"'.$escapedArgument.'"';
-            }
-
-            return $escapedArgument;
-        }
-
-        return "'".str_replace("'", "'\\''", $argument)."'";
-    }
-
-    /**
-     * Is the given string surrounded by the given character?
-     *
-     * @param  string  $arg
-     * @param  string  $char
-     * @return bool
-     */
-    protected static function isSurroundedBy($arg, $char)
-    {
-        return 2 < strlen($arg) && $char === $arg[0] && $char === $arg[strlen($arg) - 1];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

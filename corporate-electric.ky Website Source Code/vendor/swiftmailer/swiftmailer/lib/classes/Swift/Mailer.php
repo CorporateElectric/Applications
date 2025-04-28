@@ -1,98 +1,40 @@
-<?php
-
-/*
- * This file is part of SwiftMailer.
- * (c) 2004-2009 Chris Corbyn
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-/**
- * Swift Mailer class.
- *
- * @author Chris Corbyn
- */
-class Swift_Mailer
-{
-    /** The Transport used to send messages */
-    private $transport;
-
-    /**
-     * Create a new Mailer using $transport for delivery.
-     */
-    public function __construct(Swift_Transport $transport)
-    {
-        $this->transport = $transport;
-    }
-
-    /**
-     * Create a new class instance of one of the message services.
-     *
-     * For example 'mimepart' would create a 'message.mimepart' instance
-     *
-     * @param string $service
-     *
-     * @return object
-     */
-    public function createMessage($service = 'message')
-    {
-        return Swift_DependencyContainer::getInstance()
-            ->lookup('message.'.$service);
-    }
-
-    /**
-     * Send the given Message like it would be sent in a mail client.
-     *
-     * All recipients (with the exception of Bcc) will be able to see the other
-     * recipients this message was sent to.
-     *
-     * Recipient/sender data will be retrieved from the Message object.
-     *
-     * The return value is the number of recipients who were accepted for
-     * delivery.
-     *
-     * @param array $failedRecipients An array of failures by-reference
-     *
-     * @return int The number of successful recipients. Can be 0 which indicates failure
-     */
-    public function send(Swift_Mime_SimpleMessage $message, &$failedRecipients = null)
-    {
-        $failedRecipients = (array) $failedRecipients;
-
-        // FIXME: to be removed in 7.0 (as transport must now start itself on send)
-        if (!$this->transport->isStarted()) {
-            $this->transport->start();
-        }
-
-        $sent = 0;
-
-        try {
-            $sent = $this->transport->send($message, $failedRecipients);
-        } catch (Swift_RfcComplianceException $e) {
-            foreach ($message->getTo() as $address => $name) {
-                $failedRecipients[] = $address;
-            }
-        }
-
-        return $sent;
-    }
-
-    /**
-     * Register a plugin using a known unique key (e.g. myPlugin).
-     */
-    public function registerPlugin(Swift_Events_EventListener $plugin)
-    {
-        $this->transport->registerPlugin($plugin);
-    }
-
-    /**
-     * The Transport used to send messages.
-     *
-     * @return Swift_Transport
-     */
-    public function getTransport()
-    {
-        return $this->transport;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

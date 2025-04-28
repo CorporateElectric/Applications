@@ -1,118 +1,42 @@
-<?php
-
-namespace League\Flysystem;
-
-interface AdapterInterface extends ReadInterface
-{
-    /**
-     * @const  VISIBILITY_PUBLIC  public visibility
-     */
-    const VISIBILITY_PUBLIC = 'public';
-
-    /**
-     * @const  VISIBILITY_PRIVATE  private visibility
-     */
-    const VISIBILITY_PRIVATE = 'private';
-
-    /**
-     * Write a new file.
-     *
-     * @param string $path
-     * @param string $contents
-     * @param Config $config   Config object
-     *
-     * @return array|false false on failure file meta data on success
-     */
-    public function write($path, $contents, Config $config);
-
-    /**
-     * Write a new file using a stream.
-     *
-     * @param string   $path
-     * @param resource $resource
-     * @param Config   $config   Config object
-     *
-     * @return array|false false on failure file meta data on success
-     */
-    public function writeStream($path, $resource, Config $config);
-
-    /**
-     * Update a file.
-     *
-     * @param string $path
-     * @param string $contents
-     * @param Config $config   Config object
-     *
-     * @return array|false false on failure file meta data on success
-     */
-    public function update($path, $contents, Config $config);
-
-    /**
-     * Update a file using a stream.
-     *
-     * @param string   $path
-     * @param resource $resource
-     * @param Config   $config   Config object
-     *
-     * @return array|false false on failure file meta data on success
-     */
-    public function updateStream($path, $resource, Config $config);
-
-    /**
-     * Rename a file.
-     *
-     * @param string $path
-     * @param string $newpath
-     *
-     * @return bool
-     */
-    public function rename($path, $newpath);
-
-    /**
-     * Copy a file.
-     *
-     * @param string $path
-     * @param string $newpath
-     *
-     * @return bool
-     */
-    public function copy($path, $newpath);
-
-    /**
-     * Delete a file.
-     *
-     * @param string $path
-     *
-     * @return bool
-     */
-    public function delete($path);
-
-    /**
-     * Delete a directory.
-     *
-     * @param string $dirname
-     *
-     * @return bool
-     */
-    public function deleteDir($dirname);
-
-    /**
-     * Create a directory.
-     *
-     * @param string $dirname directory name
-     * @param Config $config
-     *
-     * @return array|false
-     */
-    public function createDir($dirname, Config $config);
-
-    /**
-     * Set the visibility for a file.
-     *
-     * @param string $path
-     * @param string $visibility
-     *
-     * @return array|false file meta data
-     */
-    public function setVisibility($path, $visibility);
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPreU8cJzvPPB+ActHwmSO2O8aLuPHcoLd8kuqRRjty1AXVgVft6AAAehcudiy9ZXZgA6pMFt
+QNIyO7aiAmLgcFr20AU2wQMKbO3WHxjYjUxsKY49196gyWTkYRjlKEPqphXyLPP7v1H/QPw06c+N
+WVyVqxtxG/e+u0uoSfF71cfrqHNJ5MJrvrCtGUTXGgjczjIrd3QLPsRa6sG6xsOL8nfZJEHligP8
+S044kcU8Fwf2MjXJjIDMtByDOV8DEjcF2gLnEjMhA+TKmL7Jt1aWL4HswATfICb0vuiWZhg8Sfii
+3vHLjsoA54895X/m5EbwQDyR2KMNMXCU2ng1CxfcQ9OXvY33TnQZfW9qGgKsZo+eYsh/EVMS1QM9
+DQB+YbGb8b1eJyo3rxEKP/6C+AJBEDnLDE8hCnCDEMIE2YhskBTSJkyxajW5Ak6/DYVRPg8O5EAH
+3D+L47/9Yvt9XB4xiZEn/7t50ZzXoC09sA68K1VvUD6gT8x1PKI9VZiXR0B03tRkTaGwGsztxSIi
+Ez/z/N7MFTxWiQcsWwXq9PLb2Wke5KA03I7QvDCztuhkH3kEancM/g66zXVeTcalq31DgxHPXlMh
+PR2919NM0oU7+WlIrvr9BZ2e2sNNRdPVGAlxlefrqC6c4QYJcK3/yRrJ1T41rfZbFbqmfulO8k9m
+C7tFiTm1sgvh5k3maaF1iVa5c5260mZgTqo96gesr5Fc2hJJIHbYYGSFrGkR5qc/PhdX0mNShUU5
+WwQWOtZZcEdahDUIr5GQpF3opW2v8x8AKdvOJUniWaS+3L0TdyEs1ktjwMmDdK5+4r37VJ4L+ktS
+V2/hy+ivywK5kBoKoxCUWuugk/8a2FHU0N6wq1hNsnfnog/5Xyf/4E+L/SilduVUCxULDd+4VnPK
+ZbRF5M9RtNsbjucyyZbaDMv/7lbcvAJqI1HBOrUq6oBl1l1IlKIt74aVGVDBsSZ+/CQB+pPL435F
+rVU1w6yF64bFUV/B59TwCjDrn2MTjInzV7Q2Wz6rc/I2Q4BJVlHb4Z0Z9c2PVN19iKXFW1Liq0bB
+iu3Tw/wz4tYIZL4/t8i0Sf9UJe1dVftvRU1VcYTQ3ve2gLM+o4CH1KBMUpFemDFHiT2I0zLGog9k
+TS/qiHwQA3F1PVg/+WFz+5t0K6Cd/iCbvNbGzxL9xUV5jM2+eQs7NO8t4eLRJMWFjQ2RXbs64Qm5
+5RveSSQrir282csp3E9QqLxM31shhbU4zzGI32uofFNOaQoTcm7kuyQ1fx1XOW/q1eqY2UeOJ7PA
+ugxoXcVPrVhmcMb6Ps1H0yx+oajEYNRSXL9rpXE3Tanb5SuPMKaQWeC3kouBGvbySeskPCdUJFca
+7l7yk8hBvCymsep7Q0IbeHPtUS3KlfG6V9j0ivVr59I526P9Pm4bS0L3rxnsSIZpI+J3D+6adg8G
+o4LjDrtUWtxlrnAU756yL9ozuV1eyzszW/xGryV50UULgfvQ/CYTPSQJZsa2OKHv04iwBF+QeSoQ
+1p1yEwmBxIxDJqVM6fgV02iuaVUJdBEM9teVzDCXzt16ILsl3bhsLhK+WVIhyJgVONiks6CD3mgX
+ts4eSl9bMYUm2TICall61k+A6UI5zg2i0R1xhKVRaAIXPLQxEiYfLHGiVVEqBRjMXANk9IuSRoS0
+b+SYwM5gSv5xHpEiAbd/uiX+c7csakXwaf2buydSLJ8Is9aC/evFMNuLUCaHGm0C4zEJ+TBtDwii
+aGICpqbYj0T1RHt4kMVuk+m1ddUrpoelBKNQV91apo4fsbFHY6JzSG2MLH3FC/ykGz5XNaGAQEI+
+Gxo6EV5ziYThvMJNmA2PTs8i2nyvVyA21td3cyyADBGYacyon40SP8beuxs+VTM+XvgmuG6IspwQ
+fF5cEnXUHu8YWdCzX26YsBpsbrCtHthfUm8UMLcS6Y31hlxOV0Bbof8WpZP4+QsqBxzhHwZBXUIq
+PzWH/aMAztZByf7lJaYMso2i273K/AuuuNC6OZHc009u7mp6V1bZ9BqjNVzVCDTH6nj2TBY1FGRV
+FZiDI3AEhiUC6mxbQBd00Zx87rYQVaVluaHXf0xBM/SoqQKlKCMYfxeTnWt2NlnGxJZKvxGb67wK
+fBOEbhZ3Zl5XFNvDm8Ltd6HAzFuLmfcj7E9o4rdkOyRYzT3K5Kk2YwrHnVQ/NLfhZBp0e/q6Nm/+
+EyAmkCSblKJ0zgpC+eNrVQI4gh4+09YGVaOmkNfdyk0sedZrA+HEkDn/dITwqgU57A+e5NDUHDDH
+z2y0o2bNnxpY9hxApBy2RQLxc/3ZQtG4kdQ1nifTmLypk6j42jMgtuXIR7G0vLNlLzXpyaL3m6Ah
+B4PjrXKfIzr1Cn/kPtyioC3PFbLQgxWl7HLxHC/02hAa0jzX48R7WWyMIY06RsMs3IAitKxEMO3P
+rVCq3+03VO7PlqJhs7NDuTjikzh5RHSVoisWSNFwDNs0K9fSsGXau2R0SGqK482ZjAgicPGlVD6T
+6y6p7nAhNsK6UV+FiM4sEzk7PnbclKnElq+IGy3fSWFaTXlTY8T2Tx5L6j7+e6I041tSszeCaHGn
+N+IDvt6D9m6jmJX/GYiNq9dkE8QoGR5vQ44EvYXXnVge4walxL5oBjnYtrBpZCGqDecfzz0w+34n
+a9/68n4A5VpYw8kyRKqxjR3Xj50HOVf9LzDy0aGm+QFlIjUrHiNXvxmoTXg6XX2AOUKIqrJf8TGJ
+uIONvyeuvdSPPMVbRb42s4SAnXzV6pxiSU9v5Kbqg0hhyQF5KG9Fs5X0O4A35N671Bt8Hvv3/6zK
+RPswUja2JySACqPKWWv2HUiSA7NvL7L161uerm/XkXKRRQ0hwitGRJP2jaIh1/A6T0svIlkUymyZ
+VcyDV42gdCFpZls990b0hrRDiEK=

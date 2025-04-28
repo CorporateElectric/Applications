@@ -1,136 +1,63 @@
-<?php
-
-/**
- * Validates the HTML attribute style, otherwise known as CSS.
- * @note We don't implement the whole CSS specification, so it might be
- *       difficult to reuse this component in the context of validating
- *       actual stylesheet declarations.
- * @note If we were really serious about validating the CSS, we would
- *       tokenize the styles and then parse the tokens. Obviously, we
- *       are not doing that. Doing that could seriously harm performance,
- *       but would make these components a lot more viable for a CSS
- *       filtering solution.
- */
-class HTMLPurifier_AttrDef_CSS extends HTMLPurifier_AttrDef
-{
-
-    /**
-     * @param string $css
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return bool|string
-     */
-    public function validate($css, $config, $context)
-    {
-        $css = $this->parseCDATA($css);
-
-        $definition = $config->getCSSDefinition();
-        $allow_duplicates = $config->get("CSS.AllowDuplicates");
-
-
-        // According to the CSS2.1 spec, the places where a
-        // non-delimiting semicolon can appear are in strings
-        // escape sequences.   So here is some dumb hack to
-        // handle quotes.
-        $len = strlen($css);
-        $accum = "";
-        $declarations = array();
-        $quoted = false;
-        for ($i = 0; $i < $len; $i++) {
-            $c = strcspn($css, ";'\"", $i);
-            $accum .= substr($css, $i, $c);
-            $i += $c;
-            if ($i == $len) break;
-            $d = $css[$i];
-            if ($quoted) {
-                $accum .= $d;
-                if ($d == $quoted) {
-                    $quoted = false;
-                }
-            } else {
-                if ($d == ";") {
-                    $declarations[] = $accum;
-                    $accum = "";
-                } else {
-                    $accum .= $d;
-                    $quoted = $d;
-                }
-            }
-        }
-        if ($accum != "") $declarations[] = $accum;
-
-        $propvalues = array();
-        $new_declarations = '';
-
-        /**
-         * Name of the current CSS property being validated.
-         */
-        $property = false;
-        $context->register('CurrentCSSProperty', $property);
-
-        foreach ($declarations as $declaration) {
-            if (!$declaration) {
-                continue;
-            }
-            if (!strpos($declaration, ':')) {
-                continue;
-            }
-            list($property, $value) = explode(':', $declaration, 2);
-            $property = trim($property);
-            $value = trim($value);
-            $ok = false;
-            do {
-                if (isset($definition->info[$property])) {
-                    $ok = true;
-                    break;
-                }
-                if (ctype_lower($property)) {
-                    break;
-                }
-                $property = strtolower($property);
-                if (isset($definition->info[$property])) {
-                    $ok = true;
-                    break;
-                }
-            } while (0);
-            if (!$ok) {
-                continue;
-            }
-            // inefficient call, since the validator will do this again
-            if (strtolower(trim($value)) !== 'inherit') {
-                // inherit works for everything (but only on the base property)
-                $result = $definition->info[$property]->validate(
-                    $value,
-                    $config,
-                    $context
-                );
-            } else {
-                $result = 'inherit';
-            }
-            if ($result === false) {
-                continue;
-            }
-            if ($allow_duplicates) {
-                $new_declarations .= "$property:$result;";
-            } else {
-                $propvalues[$property] = $result;
-            }
-        }
-
-        $context->destroy('CurrentCSSProperty');
-
-        // procedure does not write the new CSS simultaneously, so it's
-        // slightly inefficient, but it's the only way of getting rid of
-        // duplicates. Perhaps config to optimize it, but not now.
-
-        foreach ($propvalues as $prop => $value) {
-            $new_declarations .= "$prop:$value;";
-        }
-
-        return $new_declarations ? $new_declarations : false;
-
-    }
-
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+mUkdx0S6bm==

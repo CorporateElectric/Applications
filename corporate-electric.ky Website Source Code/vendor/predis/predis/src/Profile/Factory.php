@@ -1,101 +1,39 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Predis\Profile;
-
-use Predis\ClientException;
-
-/**
- * Factory class for creating profile instances from strings.
- *
- * @author Daniele Alessandri <suppakilla@gmail.com>
- */
-final class Factory
-{
-    private static $profiles = array(
-        '2.0' => 'Predis\Profile\RedisVersion200',
-        '2.2' => 'Predis\Profile\RedisVersion220',
-        '2.4' => 'Predis\Profile\RedisVersion240',
-        '2.6' => 'Predis\Profile\RedisVersion260',
-        '2.8' => 'Predis\Profile\RedisVersion280',
-        '3.0' => 'Predis\Profile\RedisVersion300',
-        '3.2' => 'Predis\Profile\RedisVersion320',
-        'dev' => 'Predis\Profile\RedisUnstable',
-        'default' => 'Predis\Profile\RedisVersion320',
-    );
-
-    /**
-     *
-     */
-    private function __construct()
-    {
-        // NOOP
-    }
-
-    /**
-     * Returns the default server profile.
-     *
-     * @return ProfileInterface
-     */
-    public static function getDefault()
-    {
-        return self::get('default');
-    }
-
-    /**
-     * Returns the development server profile.
-     *
-     * @return ProfileInterface
-     */
-    public static function getDevelopment()
-    {
-        return self::get('dev');
-    }
-
-    /**
-     * Registers a new server profile.
-     *
-     * @param string $alias Profile version or alias.
-     * @param string $class FQN of a class implementing Predis\Profile\ProfileInterface.
-     *
-     * @throws \InvalidArgumentException
-     */
-    public static function define($alias, $class)
-    {
-        $reflection = new \ReflectionClass($class);
-
-        if (!$reflection->isSubclassOf('Predis\Profile\ProfileInterface')) {
-            throw new \InvalidArgumentException("The class '$class' is not a valid profile class.");
-        }
-
-        self::$profiles[$alias] = $class;
-    }
-
-    /**
-     * Returns the specified server profile.
-     *
-     * @param string $version Profile version or alias.
-     *
-     * @throws ClientException
-     *
-     * @return ProfileInterface
-     */
-    public static function get($version)
-    {
-        if (!isset(self::$profiles[$version])) {
-            throw new ClientException("Unknown server profile: '$version'.");
-        }
-
-        $profile = self::$profiles[$version];
-
-        return new $profile();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+c28uQpEzic7jw5Ae5VUcoaVtpZ6WNd5z3m==

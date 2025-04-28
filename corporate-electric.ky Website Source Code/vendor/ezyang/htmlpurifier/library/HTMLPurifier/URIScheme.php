@@ -1,102 +1,38 @@
-<?php
-
-/**
- * Validator for the components of a URI for a specific scheme
- */
-abstract class HTMLPurifier_URIScheme
-{
-
-    /**
-     * Scheme's default port (integer). If an explicit port number is
-     * specified that coincides with the default port, it will be
-     * elided.
-     * @type int
-     */
-    public $default_port = null;
-
-    /**
-     * Whether or not URIs of this scheme are locatable by a browser
-     * http and ftp are accessible, while mailto and news are not.
-     * @type bool
-     */
-    public $browsable = false;
-
-    /**
-     * Whether or not data transmitted over this scheme is encrypted.
-     * https is secure, http is not.
-     * @type bool
-     */
-    public $secure = false;
-
-    /**
-     * Whether or not the URI always uses <hier_part>, resolves edge cases
-     * with making relative URIs absolute
-     * @type bool
-     */
-    public $hierarchical = false;
-
-    /**
-     * Whether or not the URI may omit a hostname when the scheme is
-     * explicitly specified, ala file:///path/to/file. As of writing,
-     * 'file' is the only scheme that browsers support his properly.
-     * @type bool
-     */
-    public $may_omit_host = false;
-
-    /**
-     * Validates the components of a URI for a specific scheme.
-     * @param HTMLPurifier_URI $uri Reference to a HTMLPurifier_URI object
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return bool success or failure
-     */
-    abstract public function doValidate(&$uri, $config, $context);
-
-    /**
-     * Public interface for validating components of a URI.  Performs a
-     * bunch of default actions. Don't overload this method.
-     * @param HTMLPurifier_URI $uri Reference to a HTMLPurifier_URI object
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return bool success or failure
-     */
-    public function validate(&$uri, $config, $context)
-    {
-        if ($this->default_port == $uri->port) {
-            $uri->port = null;
-        }
-        // kludge: browsers do funny things when the scheme but not the
-        // authority is set
-        if (!$this->may_omit_host &&
-            // if the scheme is present, a missing host is always in error
-            (!is_null($uri->scheme) && ($uri->host === '' || is_null($uri->host))) ||
-            // if the scheme is not present, a *blank* host is in error,
-            // since this translates into '///path' which most browsers
-            // interpret as being 'http://path'.
-            (is_null($uri->scheme) && $uri->host === '')
-        ) {
-            do {
-                if (is_null($uri->scheme)) {
-                    if (substr($uri->path, 0, 2) != '//') {
-                        $uri->host = null;
-                        break;
-                    }
-                    // URI is '////path', so we cannot nullify the
-                    // host to preserve semantics.  Try expanding the
-                    // hostname instead (fall through)
-                }
-                // first see if we can manually insert a hostname
-                $host = $config->get('URI.Host');
-                if (!is_null($host)) {
-                    $uri->host = $host;
-                } else {
-                    // we can't do anything sensible, reject the URL.
-                    return false;
-                }
-            } while (false);
-        }
-        return $this->doValidate($uri, $config, $context);
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+XaXprxzyPXIVogLsjJwYtKS960==

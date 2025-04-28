@@ -1,103 +1,82 @@
-<?php declare(strict_types=1);
-
-namespace PhpParser;
-
-class JsonDecoder
-{
-    /** @var \ReflectionClass[] Node type to reflection class map */
-    private $reflectionClassCache;
-
-    public function decode(string $json) {
-        $value = json_decode($json, true);
-        if (json_last_error()) {
-            throw new \RuntimeException('JSON decoding error: ' . json_last_error_msg());
-        }
-
-        return $this->decodeRecursive($value);
-    }
-
-    private function decodeRecursive($value) {
-        if (\is_array($value)) {
-            if (isset($value['nodeType'])) {
-                if ($value['nodeType'] === 'Comment' || $value['nodeType'] === 'Comment_Doc') {
-                    return $this->decodeComment($value);
-                }
-                return $this->decodeNode($value);
-            }
-            return $this->decodeArray($value);
-        }
-        return $value;
-    }
-
-    private function decodeArray(array $array) : array {
-        $decodedArray = [];
-        foreach ($array as $key => $value) {
-            $decodedArray[$key] = $this->decodeRecursive($value);
-        }
-        return $decodedArray;
-    }
-
-    private function decodeNode(array $value) : Node {
-        $nodeType = $value['nodeType'];
-        if (!\is_string($nodeType)) {
-            throw new \RuntimeException('Node type must be a string');
-        }
-
-        $reflectionClass = $this->reflectionClassFromNodeType($nodeType);
-        /** @var Node $node */
-        $node = $reflectionClass->newInstanceWithoutConstructor();
-
-        if (isset($value['attributes'])) {
-            if (!\is_array($value['attributes'])) {
-                throw new \RuntimeException('Attributes must be an array');
-            }
-
-            $node->setAttributes($this->decodeArray($value['attributes']));
-        }
-
-        foreach ($value as $name => $subNode) {
-            if ($name === 'nodeType' || $name === 'attributes') {
-                continue;
-            }
-
-            $node->$name = $this->decodeRecursive($subNode);
-        }
-
-        return $node;
-    }
-
-    private function decodeComment(array $value) : Comment {
-        $className = $value['nodeType'] === 'Comment' ? Comment::class : Comment\Doc::class;
-        if (!isset($value['text'])) {
-            throw new \RuntimeException('Comment must have text');
-        }
-
-        return new $className(
-            $value['text'],
-            $value['line'] ?? -1, $value['filePos'] ?? -1, $value['tokenPos'] ?? -1,
-            $value['endLine'] ?? -1, $value['endFilePos'] ?? -1, $value['endTokenPos'] ?? -1
-        );
-    }
-
-    private function reflectionClassFromNodeType(string $nodeType) : \ReflectionClass {
-        if (!isset($this->reflectionClassCache[$nodeType])) {
-            $className = $this->classNameFromNodeType($nodeType);
-            $this->reflectionClassCache[$nodeType] = new \ReflectionClass($className);
-        }
-        return $this->reflectionClassCache[$nodeType];
-    }
-
-    private function classNameFromNodeType(string $nodeType) : string {
-        $className = 'PhpParser\\Node\\' . strtr($nodeType, '_', '\\');
-        if (class_exists($className)) {
-            return $className;
-        }
-
-        $className .= '_';
-        if (class_exists($className)) {
-            return $className;
-        }
-
-        throw new \RuntimeException("Unknown node type \"$nodeType\"");
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+0MkbTZueMn5/MeYddbPbZ0==

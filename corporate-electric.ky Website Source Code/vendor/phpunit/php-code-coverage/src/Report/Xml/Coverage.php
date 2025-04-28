@@ -1,74 +1,45 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of phpunit/php-code-coverage.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\CodeCoverage\Report\Xml;
-
-use DOMElement;
-use SebastianBergmann\CodeCoverage\ReportAlreadyFinalizedException;
-use XMLWriter;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for phpunit/php-code-coverage
- */
-final class Coverage
-{
-    /**
-     * @var XMLWriter
-     */
-    private $writer;
-
-    /**
-     * @var DOMElement
-     */
-    private $contextNode;
-
-    /**
-     * @var bool
-     */
-    private $finalized = false;
-
-    public function __construct(DOMElement $context, string $line)
-    {
-        $this->contextNode = $context;
-
-        $this->writer = new XMLWriter();
-        $this->writer->openMemory();
-        $this->writer->startElementNS(null, $context->nodeName, 'https://schema.phpunit.de/coverage/1.0');
-        $this->writer->writeAttribute('nr', $line);
-    }
-
-    /**
-     * @throws ReportAlreadyFinalizedException
-     */
-    public function addTest(string $test): void
-    {
-        if ($this->finalized) {
-            throw new ReportAlreadyFinalizedException;
-        }
-
-        $this->writer->startElement('covered');
-        $this->writer->writeAttribute('by', $test);
-        $this->writer->endElement();
-    }
-
-    public function finalize(): void
-    {
-        $this->writer->endElement();
-
-        $fragment = $this->contextNode->ownerDocument->createDocumentFragment();
-        $fragment->appendXML($this->writer->outputMemory());
-
-        $this->contextNode->parentNode->replaceChild(
-            $fragment,
-            $this->contextNode
-        );
-
-        $this->finalized = true;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

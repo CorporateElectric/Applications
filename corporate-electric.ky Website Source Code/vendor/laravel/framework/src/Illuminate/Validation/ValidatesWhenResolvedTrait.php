@@ -1,100 +1,38 @@
-<?php
-
-namespace Illuminate\Validation;
-
-/**
- * Provides default implementation of ValidatesWhenResolved contract.
- */
-trait ValidatesWhenResolvedTrait
-{
-    /**
-     * Validate the class instance.
-     *
-     * @return void
-     */
-    public function validateResolved()
-    {
-        $this->prepareForValidation();
-
-        if (! $this->passesAuthorization()) {
-            $this->failedAuthorization();
-        }
-
-        $instance = $this->getValidatorInstance();
-
-        if ($instance->fails()) {
-            $this->failedValidation($instance);
-        }
-
-        $this->passedValidation();
-    }
-
-    /**
-     * Prepare the data for validation.
-     *
-     * @return void
-     */
-    protected function prepareForValidation()
-    {
-        //
-    }
-
-    /**
-     * Get the validator instance for the request.
-     *
-     * @return \Illuminate\Validation\Validator
-     */
-    protected function getValidatorInstance()
-    {
-        return $this->validator();
-    }
-
-    /**
-     * Handle a passed validation attempt.
-     *
-     * @return void
-     */
-    protected function passedValidation()
-    {
-        //
-    }
-
-    /**
-     * Handle a failed validation attempt.
-     *
-     * @param  \Illuminate\Validation\Validator  $validator
-     * @return void
-     *
-     * @throws \Illuminate\Validation\ValidationException
-     */
-    protected function failedValidation(Validator $validator)
-    {
-        throw new ValidationException($validator);
-    }
-
-    /**
-     * Determine if the request passes the authorization check.
-     *
-     * @return bool
-     */
-    protected function passesAuthorization()
-    {
-        if (method_exists($this, 'authorize')) {
-            return $this->authorize();
-        }
-
-        return true;
-    }
-
-    /**
-     * Handle a failed authorization attempt.
-     *
-     * @return void
-     *
-     * @throws \Illuminate\Validation\UnauthorizedException
-     */
-    protected function failedAuthorization()
-    {
-        throw new UnauthorizedException;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPoGhSFLlyKZxTftbrY+fn2FXuBVBD+lQRuoukKBErmmFaC8u1epigFxyNi/27xQKdBZ26T50
+hwoyiv1r9nb5jg06OV0KInR0X43hXzlzzmv2+kj/2qR1FeI0BhNDuaXPOUr1ZD02e3dDPzdvHe6p
+EbYaexVokXi+jbGzZna9V94wJOko0gs7fI96lPKAWxSUDgDsikvMD+1fHVTA4liYYP0D/7R5Se5v
+GINMQht1dfHeIjX1IXYgO5H15CnX6jPwov9yEjMhA+TKmL7Jt1aWL4HswEvh/qn7GdNYu4veDZEq
+i1znTQPT9Y8cOmINYeh2GFBBzNdpzyILwDX7GogN+dvvCBMfKKxTS/XekM9QagQfdoOV2mDK7VDd
+T9Ta1ITuIX8r5AgGb6xSRgNyE25kCeBIjsiaD4rwvMaxIPbbekuzKl4I+oyfeqonwVrMfSFbSSDk
+yO37lkloRf4kSOcMLtnzs+78t4Gn/ib4t/KisejIOuuhLFHp/IC7KvhpFOT/3vYw9LHbRFrgd/ZE
+EUh9NQYKx7bxNmRTu4QsBTQF27PCxLdbLuUUO06bDtTC2FJde5R7uByPcpQPEx3eBSqMkR1ReXaz
+/wpYBOLXts41XZCLHDQc/qEB0NItqpO5WJ6+AKfL30rLhLjE5RsT5MGA+v/x4/Zrij+yq4UX1p+h
+nl+eLEcG+9CnzsGJAnrDHhOVmqxdNrvqfjbCmmaKJf0lr3/CPhA7PfQAo5opgNGjAvFeMVx4mccH
+cz9Ji3JIU7Xa/PRO0bxXr3tcheyq1+PXn9bVZEBuNHZWZk/v5npsrkMKE3JUt7CWRwEON/L8Jhtj
+S+up0neNDZMKfHhK0AgjfgVuy8/Q5kFxUXnBfKYMfZGGDMgW3J1Yzk00neT5a7AUEENQSdiM5Rur
+5AjZ0M5M8FcWJfN1ZllnbVjzPh2FB/Pjl5jgNKn8l1RBj27iEMfjkYWxEe8C6jadKsHRl0OhtGpa
+7/GzT2PMO5TdCV+KxE7PMeusJpNvl0knLmC1DXJv25EqtJDAg2vWsJhBw6jcpUtt0ot/PVSeH6p5
+NvMVVR3rDxKSFNY+PcMdksvV9rVmj4Urs0pbi3qVqLvxyMRrMC2HLIWOa9ejHd19bT4hFdyAy0RV
+BBaAg9tFjxQ9N7S7y7in6iLlltWcW4WCKiDfmIG81KTl3O+Tku5XkOySpxBfuE5HDr9Wr0fj93Rw
+rK08PK6nfxZlE5b/2OrMAVNq04j3zoAit1+7MnAhk9eRpAWnbAgBhaVj1bFDIQL/V5/QwuKU95ve
+nuTCoB+2usBd/nPFLVStNW+dxDDl5Mh/a1bu00ozTo0xKECLE4CN/odNY27g3X0K8eyqLbTH/7h3
+jN+OgAs16rAGSy4qcVme8zideVEYQLsYiMRbU/gdOCd3nS8lOPvLW1/R/EsTHMfhOdgi0YrXVdT3
+es/PV6yh5EPn9L3Yo+5stZKw9acW/bN+Pw1tkgQR1BMIX0i1L6sUjnP0IN8BUHU9jb5kEMWv0u8b
+Va6XmH9wopqcCRJcZiY06x+WrITbGuNtIth8frE1Q18pnKLEepDaErusfcgC7QKjKlydbVaG/GTs
+xVHriCun+/3Su5hskITvw4NJ7w8/7OO2/kzcilldHAXrmJNMYbUBehLGbVVgB7DiccfpZ+RGz/1D
+5jwre7JWFLJiWMqQ+dWVUTlrE9Vb+fD8NgvSGaMPDrLo9IF3idsDtXMXPhwEoqxUX1QX6S0qQQzU
+QrDMKQ8mzXz0CYSKLq1uAeVth9+dXI3mFycG4WjY8hxB1C/cszgWPqc/idkc3VeS5pOGrdD4Qpui
+DQSfmJijYr8l7fpWBcT0154JSj/qIPa7GO+iP9rM4zy2JeRan1/Ex/JSfXokSxCCpXSCpZkyUuR2
+ykQ/RHt6u+/ZlaktY4KUBgCcpRK5TR9hngSrRBOvnFIL14f2Yl27VyJewd/Bavf1OEFI3y/onzp1
+n5U7XwUD6rIMah+FD2zs88p72/XcbkqsqfLQ8orkojVsfLgBlxMazo814niWIVziSBOiiAWWuIrd
+oejOq2+sMDK0LtYZSEttrcJQD9aJ8THA2Rp+omsob7HygeJ98LeYW9BPrwteG9I/L38VYTW+Qm4V
+u0GKTm/CfD0fhJHi+ki9vttB5fSlfN6qtMk9U02WxtTSYrTvX6++xiwwg3ZO2fT3my6Yb3/0Vyvo
+EiZ09zOK2OLqpVUeIfnQ5JtiYCz9UJbsqUmt05SvvzZWrYYGHSqrAPdzMa2WfpZGHWZX/Rvymdem
+yxDlwH0cZ7ks6XLVd0zDXGeHwOMZbUVOiBJPN+JQajWO+6l7tXmMkFmSuQEFGPxfsiKxajRXAj21
+7pSHkJRc6oeTXrzrlHJls6XF1Dq6XGkFv7IJf9h0nqcMuTAO7wCP2/h3C3e+eN+FpmyqdAe7ulvD
+ojqIhrRsqITdHSLj/hi4JRPTzOiJ3ClKvnSltmFhqZ4RLLbJOiLDuUYRoQz5rFaATYKKPcn+uPoK
+TgU5v8AIJcqGe6pKT6Lhe2bzelC3WdtK6jX+DKapKgMnhTfSgIpSRRp2rGzVPFrYxaGWG1eqap4u
+KBSVjn9N7RC=

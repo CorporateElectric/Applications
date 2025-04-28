@@ -1,928 +1,189 @@
-<?php
-
-namespace Tightenco\Collect\Support;
-
-use Countable;
-use Tightenco\Collect\Contracts\Support\Arrayable;
-use Tightenco\Collect\Contracts\Support\Jsonable;
-use IteratorAggregate;
-use JsonSerializable;
-
-interface Enumerable extends Arrayable, Countable, IteratorAggregate, Jsonable, JsonSerializable
-{
-    /**
-     * Create a new collection instance if the value isn't one already.
-     *
-     * @param  mixed  $items
-     * @return static
-     */
-    public static function make($items = []);
-
-    /**
-     * Create a new instance by invoking the callback a given amount of times.
-     *
-     * @param  int  $number
-     * @param  callable|null  $callback
-     * @return static
-     */
-    public static function times($number, callable $callback = null);
-
-    /**
-     * Wrap the given value in a collection if applicable.
-     *
-     * @param  mixed  $value
-     * @return static
-     */
-    public static function wrap($value);
-
-    /**
-     * Get the underlying items from the given collection if applicable.
-     *
-     * @param  array|static  $value
-     * @return array
-     */
-    public static function unwrap($value);
-
-    /**
-     * Get all items in the enumerable.
-     *
-     * @return array
-     */
-    public function all();
-
-    /**
-     * Alias for the "avg" method.
-     *
-     * @param  callable|string|null  $callback
-     * @return mixed
-     */
-    public function average($callback = null);
-
-    /**
-     * Get the median of a given key.
-     *
-     * @param  string|array|null  $key
-     * @return mixed
-     */
-    public function median($key = null);
-
-    /**
-     * Get the mode of a given key.
-     *
-     * @param  string|array|null  $key
-     * @return array|null
-     */
-    public function mode($key = null);
-
-    /**
-     * Collapse the items into a single enumerable.
-     *
-     * @return static
-     */
-    public function collapse();
-
-    /**
-     * Alias for the "contains" method.
-     *
-     * @param  mixed  $key
-     * @param  mixed  $operator
-     * @param  mixed  $value
-     * @return bool
-     */
-    public function some($key, $operator = null, $value = null);
-
-    /**
-     * Determine if an item exists, using strict comparison.
-     *
-     * @param  mixed  $key
-     * @param  mixed  $value
-     * @return bool
-     */
-    public function containsStrict($key, $value = null);
-
-    /**
-     * Get the average value of a given key.
-     *
-     * @param  callable|string|null  $callback
-     * @return mixed
-     */
-    public function avg($callback = null);
-
-    /**
-     * Determine if an item exists in the enumerable.
-     *
-     * @param  mixed  $key
-     * @param  mixed  $operator
-     * @param  mixed  $value
-     * @return bool
-     */
-    public function contains($key, $operator = null, $value = null);
-
-    /**
-     * Dump the collection and end the script.
-     *
-     * @param  mixed  ...$args
-     * @return void
-     */
-    public function dd(...$args);
-
-    /**
-     * Dump the collection.
-     *
-     * @return $this
-     */
-    public function dump();
-
-    /**
-     * Get the items that are not present in the given items.
-     *
-     * @param  mixed  $items
-     * @return static
-     */
-    public function diff($items);
-
-    /**
-     * Get the items that are not present in the given items, using the callback.
-     *
-     * @param  mixed  $items
-     * @param  callable  $callback
-     * @return static
-     */
-    public function diffUsing($items, callable $callback);
-
-    /**
-     * Get the items whose keys and values are not present in the given items.
-     *
-     * @param  mixed  $items
-     * @return static
-     */
-    public function diffAssoc($items);
-
-    /**
-     * Get the items whose keys and values are not present in the given items, using the callback.
-     *
-     * @param  mixed  $items
-     * @param  callable  $callback
-     * @return static
-     */
-    public function diffAssocUsing($items, callable $callback);
-
-    /**
-     * Get the items whose keys are not present in the given items.
-     *
-     * @param  mixed  $items
-     * @return static
-     */
-    public function diffKeys($items);
-
-    /**
-     * Get the items whose keys are not present in the given items, using the callback.
-     *
-     * @param  mixed  $items
-     * @param  callable  $callback
-     * @return static
-     */
-    public function diffKeysUsing($items, callable $callback);
-
-    /**
-     * Retrieve duplicate items.
-     *
-     * @param  callable|null  $callback
-     * @param  bool  $strict
-     * @return static
-     */
-    public function duplicates($callback = null, $strict = false);
-
-    /**
-     * Retrieve duplicate items using strict comparison.
-     *
-     * @param  callable|null  $callback
-     * @return static
-     */
-    public function duplicatesStrict($callback = null);
-
-    /**
-     * Execute a callback over each item.
-     *
-     * @param  callable  $callback
-     * @return $this
-     */
-    public function each(callable $callback);
-
-    /**
-     * Execute a callback over each nested chunk of items.
-     *
-     * @param  callable  $callback
-     * @return static
-     */
-    public function eachSpread(callable $callback);
-
-    /**
-     * Determine if all items pass the given truth test.
-     *
-     * @param  string|callable  $key
-     * @param  mixed  $operator
-     * @param  mixed  $value
-     * @return bool
-     */
-    public function every($key, $operator = null, $value = null);
-
-    /**
-     * Get all items except for those with the specified keys.
-     *
-     * @param  mixed  $keys
-     * @return static
-     */
-    public function except($keys);
-
-    /**
-     * Run a filter over each of the items.
-     *
-     * @param  callable|null  $callback
-     * @return static
-     */
-    public function filter(callable $callback = null);
-
-    /**
-     * Apply the callback if the value is truthy.
-     *
-     * @param  bool  $value
-     * @param  callable  $callback
-     * @param  callable|null  $default
-     * @return static|mixed
-     */
-    public function when($value, callable $callback, callable $default = null);
-
-    /**
-     * Apply the callback if the collection is empty.
-     *
-     * @param  callable  $callback
-     * @param  callable|null  $default
-     * @return static|mixed
-     */
-    public function whenEmpty(callable $callback, callable $default = null);
-
-    /**
-     * Apply the callback if the collection is not empty.
-     *
-     * @param  callable  $callback
-     * @param  callable|null  $default
-     * @return static|mixed
-     */
-    public function whenNotEmpty(callable $callback, callable $default = null);
-
-    /**
-     * Apply the callback if the value is falsy.
-     *
-     * @param  bool  $value
-     * @param  callable  $callback
-     * @param  callable|null  $default
-     * @return static|mixed
-     */
-    public function unless($value, callable $callback, callable $default = null);
-
-    /**
-     * Apply the callback unless the collection is empty.
-     *
-     * @param  callable  $callback
-     * @param  callable|null  $default
-     * @return static|mixed
-     */
-    public function unlessEmpty(callable $callback, callable $default = null);
-
-    /**
-     * Apply the callback unless the collection is not empty.
-     *
-     * @param  callable  $callback
-     * @param  callable|null  $default
-     * @return static|mixed
-     */
-    public function unlessNotEmpty(callable $callback, callable $default = null);
-
-    /**
-     * Filter items by the given key value pair.
-     *
-     * @param  string  $key
-     * @param  mixed  $operator
-     * @param  mixed  $value
-     * @return static
-     */
-    public function where($key, $operator = null, $value = null);
-
-    /**
-     * Filter items by the given key value pair using strict comparison.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @return static
-     */
-    public function whereStrict($key, $value);
-
-    /**
-     * Filter items by the given key value pair.
-     *
-     * @param  string  $key
-     * @param  mixed  $values
-     * @param  bool  $strict
-     * @return static
-     */
-    public function whereIn($key, $values, $strict = false);
-
-    /**
-     * Filter items by the given key value pair using strict comparison.
-     *
-     * @param  string  $key
-     * @param  mixed  $values
-     * @return static
-     */
-    public function whereInStrict($key, $values);
-
-    /**
-     * Filter items such that the value of the given key is between the given values.
-     *
-     * @param  string  $key
-     * @param  array  $values
-     * @return static
-     */
-    public function whereBetween($key, $values);
-
-    /**
-     * Filter items such that the value of the given key is not between the given values.
-     *
-     * @param  string  $key
-     * @param  array  $values
-     * @return static
-     */
-    public function whereNotBetween($key, $values);
-
-    /**
-     * Filter items by the given key value pair.
-     *
-     * @param  string  $key
-     * @param  mixed  $values
-     * @param  bool  $strict
-     * @return static
-     */
-    public function whereNotIn($key, $values, $strict = false);
-
-    /**
-     * Filter items by the given key value pair using strict comparison.
-     *
-     * @param  string  $key
-     * @param  mixed  $values
-     * @return static
-     */
-    public function whereNotInStrict($key, $values);
-
-    /**
-     * Filter the items, removing any items that don't match the given type.
-     *
-     * @param  string  $type
-     * @return static
-     */
-    public function whereInstanceOf($type);
-
-    /**
-     * Get the first item from the enumerable passing the given truth test.
-     *
-     * @param  callable|null  $callback
-     * @param  mixed  $default
-     * @return mixed
-     */
-    public function first(callable $callback = null, $default = null);
-
-    /**
-     * Get the first item by the given key value pair.
-     *
-     * @param  string  $key
-     * @param  mixed  $operator
-     * @param  mixed  $value
-     * @return mixed
-     */
-    public function firstWhere($key, $operator = null, $value = null);
-
-    /**
-     * Flip the values with their keys.
-     *
-     * @return static
-     */
-    public function flip();
-
-    /**
-     * Get an item from the collection by key.
-     *
-     * @param  mixed  $key
-     * @param  mixed  $default
-     * @return mixed
-     */
-    public function get($key, $default = null);
-
-    /**
-     * Group an associative array by a field or using a callback.
-     *
-     * @param  array|callable|string  $groupBy
-     * @param  bool  $preserveKeys
-     * @return static
-     */
-    public function groupBy($groupBy, $preserveKeys = false);
-
-    /**
-     * Key an associative array by a field or using a callback.
-     *
-     * @param  callable|string  $keyBy
-     * @return static
-     */
-    public function keyBy($keyBy);
-
-    /**
-     * Determine if an item exists in the collection by key.
-     *
-     * @param  mixed  $key
-     * @return bool
-     */
-    public function has($key);
-
-    /**
-     * Concatenate values of a given key as a string.
-     *
-     * @param  string  $value
-     * @param  string|null  $glue
-     * @return string
-     */
-    public function implode($value, $glue = null);
-
-    /**
-     * Intersect the collection with the given items.
-     *
-     * @param  mixed  $items
-     * @return static
-     */
-    public function intersect($items);
-
-    /**
-     * Intersect the collection with the given items by key.
-     *
-     * @param  mixed  $items
-     * @return static
-     */
-    public function intersectByKeys($items);
-
-    /**
-     * Determine if the collection is empty or not.
-     *
-     * @return bool
-     */
-    public function isEmpty();
-
-    /**
-     * Determine if the collection is not empty.
-     *
-     * @return bool
-     */
-    public function isNotEmpty();
-
-    /**
-     * Join all items from the collection using a string. The final items can use a separate glue string.
-     *
-     * @param  string  $glue
-     * @param  string  $finalGlue
-     * @return string
-     */
-    public function join($glue, $finalGlue = '');
-
-    /**
-     * Get the keys of the collection items.
-     *
-     * @return static
-     */
-    public function keys();
-
-    /**
-     * Get the last item from the collection.
-     *
-     * @param  callable|null  $callback
-     * @param  mixed  $default
-     * @return mixed
-     */
-    public function last(callable $callback = null, $default = null);
-
-    /**
-     * Run a map over each of the items.
-     *
-     * @param  callable  $callback
-     * @return static
-     */
-    public function map(callable $callback);
-
-    /**
-     * Run a map over each nested chunk of items.
-     *
-     * @param  callable  $callback
-     * @return static
-     */
-    public function mapSpread(callable $callback);
-
-    /**
-     * Run a dictionary map over the items.
-     *
-     * The callback should return an associative array with a single key/value pair.
-     *
-     * @param  callable  $callback
-     * @return static
-     */
-    public function mapToDictionary(callable $callback);
-
-    /**
-     * Run a grouping map over the items.
-     *
-     * The callback should return an associative array with a single key/value pair.
-     *
-     * @param  callable  $callback
-     * @return static
-     */
-    public function mapToGroups(callable $callback);
-
-    /**
-     * Run an associative map over each of the items.
-     *
-     * The callback should return an associative array with a single key/value pair.
-     *
-     * @param  callable  $callback
-     * @return static
-     */
-    public function mapWithKeys(callable $callback);
-
-    /**
-     * Map a collection and flatten the result by a single level.
-     *
-     * @param  callable  $callback
-     * @return static
-     */
-    public function flatMap(callable $callback);
-
-    /**
-     * Map the values into a new class.
-     *
-     * @param  string  $class
-     * @return static
-     */
-    public function mapInto($class);
-
-    /**
-     * Merge the collection with the given items.
-     *
-     * @param  mixed  $items
-     * @return static
-     */
-    public function merge($items);
-
-    /**
-     * Recursively merge the collection with the given items.
-     *
-     * @param  mixed  $items
-     * @return static
-     */
-    public function mergeRecursive($items);
-
-    /**
-     * Create a collection by using this collection for keys and another for its values.
-     *
-     * @param  mixed  $values
-     * @return static
-     */
-    public function combine($values);
-
-    /**
-     * Union the collection with the given items.
-     *
-     * @param  mixed  $items
-     * @return static
-     */
-    public function union($items);
-
-    /**
-     * Get the min value of a given key.
-     *
-     * @param  callable|string|null  $callback
-     * @return mixed
-     */
-    public function min($callback = null);
-
-    /**
-     * Get the max value of a given key.
-     *
-     * @param  callable|string|null  $callback
-     * @return mixed
-     */
-    public function max($callback = null);
-
-    /**
-     * Create a new collection consisting of every n-th element.
-     *
-     * @param  int  $step
-     * @param  int  $offset
-     * @return static
-     */
-    public function nth($step, $offset = 0);
-
-    /**
-     * Get the items with the specified keys.
-     *
-     * @param  mixed  $keys
-     * @return static
-     */
-    public function only($keys);
-
-    /**
-     * "Paginate" the collection by slicing it into a smaller collection.
-     *
-     * @param  int  $page
-     * @param  int  $perPage
-     * @return static
-     */
-    public function forPage($page, $perPage);
-
-    /**
-     * Partition the collection into two arrays using the given callback or key.
-     *
-     * @param  callable|string  $key
-     * @param  mixed  $operator
-     * @param  mixed  $value
-     * @return static
-     */
-    public function partition($key, $operator = null, $value = null);
-
-    /**
-     * Push all of the given items onto the collection.
-     *
-     * @param  iterable  $source
-     * @return static
-     */
-    public function concat($source);
-
-    /**
-     * Get one or a specified number of items randomly from the collection.
-     *
-     * @param  int|null  $number
-     * @return static|mixed
-     *
-     * @throws \InvalidArgumentException
-     */
-    public function random($number = null);
-
-    /**
-     * Reduce the collection to a single value.
-     *
-     * @param  callable  $callback
-     * @param  mixed  $initial
-     * @return mixed
-     */
-    public function reduce(callable $callback, $initial = null);
-
-    /**
-     * Replace the collection items with the given items.
-     *
-     * @param  mixed  $items
-     * @return static
-     */
-    public function replace($items);
-
-    /**
-     * Recursively replace the collection items with the given items.
-     *
-     * @param  mixed  $items
-     * @return static
-     */
-    public function replaceRecursive($items);
-
-    /**
-     * Reverse items order.
-     *
-     * @return static
-     */
-    public function reverse();
-
-    /**
-     * Search the collection for a given value and return the corresponding key if successful.
-     *
-     * @param  mixed  $value
-     * @param  bool  $strict
-     * @return mixed
-     */
-    public function search($value, $strict = false);
-
-    /**
-     * Shuffle the items in the collection.
-     *
-     * @param  int|null  $seed
-     * @return static
-     */
-    public function shuffle($seed = null);
-
-    /**
-     * Skip the first {$count} items.
-     *
-     * @param  int  $count
-     * @return static
-     */
-    public function skip($count);
-
-    /**
-     * Get a slice of items from the enumerable.
-     *
-     * @param  int  $offset
-     * @param  int|null  $length
-     * @return static
-     */
-    public function slice($offset, $length = null);
-
-    /**
-     * Split a collection into a certain number of groups.
-     *
-     * @param  int  $numberOfGroups
-     * @return static
-     */
-    public function split($numberOfGroups);
-
-    /**
-     * Chunk the collection into chunks of the given size.
-     *
-     * @param  int  $size
-     * @return static
-     */
-    public function chunk($size);
-
-    /**
-     * Sort through each item with a callback.
-     *
-     * @param  callable|null|int  $callback
-     * @return static
-     */
-    public function sort($callback = null);
-
-    /**
-     * Sort items in descending order.
-     *
-     * @param  int  $options
-     * @return static
-     */
-    public function sortDesc($options = SORT_REGULAR);
-
-    /**
-     * Sort the collection using the given callback.
-     *
-     * @param  callable|string  $callback
-     * @param  int  $options
-     * @param  bool  $descending
-     * @return static
-     */
-    public function sortBy($callback, $options = SORT_REGULAR, $descending = false);
-
-    /**
-     * Sort the collection in descending order using the given callback.
-     *
-     * @param  callable|string  $callback
-     * @param  int  $options
-     * @return static
-     */
-    public function sortByDesc($callback, $options = SORT_REGULAR);
-
-    /**
-     * Sort the collection keys.
-     *
-     * @param  int  $options
-     * @param  bool  $descending
-     * @return static
-     */
-    public function sortKeys($options = SORT_REGULAR, $descending = false);
-
-    /**
-     * Sort the collection keys in descending order.
-     *
-     * @param  int  $options
-     * @return static
-     */
-    public function sortKeysDesc($options = SORT_REGULAR);
-
-    /**
-     * Get the sum of the given values.
-     *
-     * @param  callable|string|null  $callback
-     * @return mixed
-     */
-    public function sum($callback = null);
-
-    /**
-     * Take the first or last {$limit} items.
-     *
-     * @param  int  $limit
-     * @return static
-     */
-    public function take($limit);
-
-    /**
-     * Pass the collection to the given callback and then return it.
-     *
-     * @param  callable  $callback
-     * @return $this
-     */
-    public function tap(callable $callback);
-
-    /**
-     * Pass the enumerable to the given callback and return the result.
-     *
-     * @param  callable  $callback
-     * @return mixed
-     */
-    public function pipe(callable $callback);
-
-    /**
-     * Get the values of a given key.
-     *
-     * @param  string|array  $value
-     * @param  string|null  $key
-     * @return static
-     */
-    public function pluck($value, $key = null);
-
-    /**
-     * Create a collection of all elements that do not pass a given truth test.
-     *
-     * @param  callable|mixed  $callback
-     * @return static
-     */
-    public function reject($callback = true);
-
-    /**
-     * Return only unique items from the collection array.
-     *
-     * @param  string|callable|null  $key
-     * @param  bool  $strict
-     * @return static
-     */
-    public function unique($key = null, $strict = false);
-
-    /**
-     * Return only unique items from the collection array using strict comparison.
-     *
-     * @param  string|callable|null  $key
-     * @return static
-     */
-    public function uniqueStrict($key = null);
-
-    /**
-     * Reset the keys on the underlying array.
-     *
-     * @return static
-     */
-    public function values();
-
-    /**
-     * Pad collection to the specified length with a value.
-     *
-     * @param  int  $size
-     * @param  mixed  $value
-     * @return static
-     */
-    public function pad($size, $value);
-
-    /**
-     * Count the number of items in the collection using a given truth test.
-     *
-     * @param  callable|null  $callback
-     * @return static
-     */
-    public function countBy($callback = null);
-
-    /**
-     * Collect the values into a collection.
-     *
-     * @return \Tightenco\Collect\Support\Collection
-     */
-    public function collect();
-
-    /**
-     * Convert the collection to its string representation.
-     *
-     * @return string
-     */
-    public function __toString();
-
-    /**
-     * Add a method to the list of proxied methods.
-     *
-     * @param  string  $method
-     * @return void
-     */
-    public static function proxy($method);
-
-    /**
-     * Dynamically access collection proxies.
-     *
-     * @param  string  $key
-     * @return mixed
-     *
-     * @throws \Exception
-     */
-    public function __get($key);
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPz0oimycl0SWF+8cB3vdpCsOB6yr8Ogc7C8cYFVgdrpDWFCPB5/XWfCBtf7jwY9rw6+v1S2l
+Oyw87SR6M2brMoA8aPPgV5TsoXXNfeUNA7DcQ7mAU1loJ3irfkoZQg8ewkbPUaVsRmMsQAXSIYPO
+YyeF4+DOxrjavXpWCRQDjYQ8RAVYim2Rc4SxhnOYvhHTMTwocuWmpUYzussXX3+FgneVJ9XxXE1P
+8pe8XXRHraBt/yUs9SyvyicGHh65iZisUS17MZhLgoldLC5HqzmP85H4TkYeP+aKwoGHL0JDwmZZ
+DKwRJ+FBEl12isGkEqvZT8vb/ypJXh1jo0DgEy9+YoskuS3FkoeLY8tLqeap6nTjQ6HB714NLL9D
+QAcRC4wukbqG2523088ExPP8t3vsOIEKJsz7JRgO1/BArrOhnVuBGa5rDywP2jHmGnFexBuYZIfM
+zWxLVn9HpPgl4ELXwfgQpBLSlWXLad3pxaieZkIHMeprcLzda6TxkwwJqCTxa/08extnDrE3vutW
+D4uJlAqL51RfUhN3m9tpeBabMgLC1KfOrf9o+RMkGghTU/HNt8iU7Ca7AQCWHmTQ4AqmL9pwzEFY
+ZDtuae/JQHjztICbliMol3tJqmwPBpF9Ry1MTMXvpz6OCSa/2nAR+XKAPtIksXrId+bxynK3nroa
+N4AT+y1IJw/eqHUBLUmsmmekG2eXz8iLVMLJeWmR+NfaFp4Zsxy2EcsAZPv9MLwaUI00OBX4/hrw
+mX5dg4e2A5LbwFxkH93t2ruNWCsugqFGispDuNxqHNre6RPgbtnOWO4jFsbBryJ+o7c2fXZrOgQv
+0b2/GNuOqDY0JMRmfnpuM/itWFqpfikJy8E3Mq0kBOUYQ8cByxw5h0Ob3DaV2+lJLuSZiiUvtVfh
+Q4Yj/IfSz9InPelJZ5sVCpKYeF7ATFBTXozvoaUqu/0Kke3KLv9ahslIAh5oif3pSqoyrWjgpxvb
+j8HihWKDILfnT7zsjONtoFV1uGq+AhVBSGQjaCjqn631n5J2zpA8Xog7inExvmNoRiBRUgY9kGJL
+VHdP26t/Zj5es6I4r7WAafhUJ55ngJMAh/HTtUxsIpDFqVKsAG73eH3OxkTGZeej3FdzgIa3bZiO
+cRZ9vEF6Gi6xIPKhhbt1tv/8FOXhcUihDx0f7Cpq8INyvyoXSW6h72nf0IJ/XysoLs3VEo9mITEp
+0G5PkbYbleqNH6C73LQeE3EjzXf9L3wKn5NVWHgfEDmCSq6KTpazAQP9OuZ1MlPPnn57W8AUSWs5
+Pt5B0ASjjBwH8m7KkHdoq+UVNDy942pcqnBq0mnu2v5ehz0+JCWbsCQFEXScot/HFhURhTp+qPz6
+anY02KD4b62JlvgL0UUH95uBA2sTnP2ADMpxNiWCwkC8RYpe3D9IxQvAQPOUQxgDlZEN1CE584uj
+3K6tL3sJTXW7txmP8BCPqca/myTuOOeXsYmxMqxqqiAu2gRpa9JrjuC8tzifGMrMY9O7CUEm2LJ2
+V/ocEDADPDsW5B/arYgZON477nCIrwb2LylatzMXNW2zz9mlt3h7VIvV8xZ5AREv6ixh/pTYWeUf
+CKigJOb6Jp3547/FAUUrEqDbCJH1RJxGSbpIBT/gJP7BdZCuGSkw6xk2R7O0pQ5nGqRm9cXI4z60
+2DvZYzCv6SSHkfrY87lwIuPrT1bTU/u3mHY/SV9Ky/pV6mm3NGIa2a3x0+MbytJi+gLOAPoa5JP3
+iEFP/Yg2JhESYw0zByps3GA3ZmdWFoca5UXw6SwKt+iL0Nz3hM3lhPjHzNpFKuRBmWITxVm+ruFp
+vJVCXDvtzT1B7thy/TLqgqEf4geBbV5AYl2z6EpINA76GJL3SbJxddkW9aGlSc1T0o77OI6xCwT3
+wtzCz/BbgcQQk/tQfFnZNvFZbDK6I9Idn4HKkI9D0POzE8Gg1e1YunzGXpwK08E0v3abRs3WKO1S
+toDPUmb1GK8PlwjWENR1CebZ5STK2iKJyECtsfDbGgGrg6zRw5MzEA6kdAHvYlvQIXZ/0gnEgluO
++Y7rRe2e8NZrTX6WG3er5z0K/lvdFcr54sGrYzcyCi67hduTr2pkVcSfz7nAQunQ1uKM26ab6Mbi
+R9BdN19QoReX41bR7U5LctPwwMHQvFZLl8jPSUDzm6w/mKbTUTk+Lq00CexZQMOlk5QNx4mtfBea
+8zjDSJwWnl4CXOw1MtLRh3MEPmCeXyeuTMvRjRllqEPB9JATGXrcyjI7eOAOn8dT1zRz9NqtPLiQ
+p9YQohZ/f0TjN+ViHmol+q6Au8UlbIk2JQjof6XKNWm+PEoBCuEHeTiN4igpDUdflYjp6NkxLc8h
++R/AuS26f3ly4y6KIg3p3Y2YatiHNHMmas1VsVFtXkYzXtXXmYZYIN2lwcETtZJfEyl4z4FOC71c
+IfuGIBtPsGzjHCH75MbQT1OQky0NzZiavzbTG4u19Q6IAKhrT73LgEJXsdwCzHDngl++VacHASJj
++/AQYkksSD0TJngz3YVZp12zem9TBL42GzgkRy4MNK4L+aeVnjve9ipkOnyHU4CTJABJCtUGOvbR
+SakbPvISlRBBPqK1pSDU3ijDqXp2HHTHRpD/7RxY6fS0zkEJKUt7Fnf+EpyE9aoZj2x8ceQlwy2C
+pevZdCud/1shUsLCSe4dUdpg4UWnp2/+2XVsDbzkKUdjAq+NIgK6e0HA2u1QM5c2tE+IX2jNJeLQ
+qvhg2ShTyclqMvA0ZClKMvrYJbriNcEeu8d12aeHXZQgEuijOGR6X/ivMg6hgtah7zak60RtiRq7
+EJyIOHQAOQ3J37zbQcdzLQiDZvV90B1dufKvgfdeVItjFNZTkV76/4kFZWvoyqJ23IPJgYfJUdGf
+JUkMFj27rAq96WHCtdS4ZXQmiV655OAxkXaK1HTa+q2YhBlGvjNx2cKEB5KU7r0YIT9OO1oVk1Pu
+JzzdQ5dbW7oiyZlJ1UhbDHWtiKm1nXk+PQ9yJ5MVtuTZrs5NYB+7lv223dYEPUjUuQAUJEZLOieX
+p68ie322V0Y6UaZHql0VEIvjqFysn4+AJTuurZ7/QcFOzNL29gQjZK1BACOrCGWgBDaSu1dIPovy
+wAqEjke1XPu4uGlfaQdhhWCYSITbU6YRtAeR0CBg+pXGpKAn+8vI9lf6EQCXvojcN7wt+A+UTebP
+mrIchAx1lWiFT8E9MOHkNPrHxAMm6WtzN6ilhz6AxAvTo/p138YsUJbsLgW1jX9qdjYfEbnpzA5N
+iiHAYdgfYHLR+0Kg3BbwmKlnNqb/PVc6Ihx/yfTLN0wajfLSD1pfPwIBm7AU9jETe+vZRooz2Mgj
+6VMqvLWAhBKw81OUbU9H/JYlKW/mx23wAgupMZTT0Evi+7WQIfibmHG0XuHhumubRHWYfCUxgdW5
+4V+WqrHazJfZ08gbD1waf7iH9YVS9Qm2s2byjF/DZrzi9Pt2c3JqIpJwirv7dXhfsQkXkRQVZJyb
+a50fYhwEgwF8PTHfc0YoCQCOoZgDlZP1LZIs8Kz4OBSM/WlDtcPEI6xpMTkeg2+eIw859XHRt1js
+y0q38JVezTjzPWYUHYTnxthMWLikFO3q7QvnD/lAuqj9u3JyvtPgQhvr0dN1QFVXdYjV6LRTYqnQ
+BkRTOUU63Xofy6cOYDHgKOnZZHPFEZRLdtJpQPLnq+MHXSfL3C432+j9oXSmueakCDiJgA0VpToR
+cLBGrkbNQWfAXerR4EnJiZxW9tVan5QvCuZ0zpju/+RvXsd370AtiawT8YR9cbsEgg2mJEWS0eu7
+BfSIjucD+VAtlX4R/UbNdjw6IrnJVEHZIsKiC3XUYuXVAWx6Ej6xuuV42ABRqUkSnWRVkAkmZPrh
+q9NoS2xR9u8ua4T+Cw9rbZbKQbHdr8/f/3ar03bFPGrSzrFIsT5y8TQu4rqOyOdxr57miNaJ7l3o
+5yMiine2PRH7VMEdX6bvri7akjKVxSLkqZWDzGm/mR6TGCyYApHB26pGizWoSrZOy2HooASaoZXG
+ahlSRHK8aX2TRMlHGoc4BulHstM9lNIGhBS/mbqKkAZGwUQj2Zhzd76L9l/263igLSH2zduvOoN9
+ILGd2yoz8I5MBQXVXbUpCAS1Ab6Tcceox4P1VaReZIZBZ5lvp7ISCfr0bFfEOl3gutTFuOFKvg3v
+gBIqim6h36gn9iF4qWm5JGg/B/cglhp2hghMVD/qOo6qDWSwnQxaeXvYOOCJpgTopMjeQKkB2Sif
+K7FB9kOPdI9rj63b5usK8j1lCMqGIhHSJXl2CYVLZaWk3UKhLfujk03J1Swr+OcEN5HcGJJExfPb
+JWMiuK7UoZOlpJvweDRUqIfRyZ10Vzi5TjIzeLul9TDslkyVOzLv/B8qQZG+yeEHOr/EpKKAuNBu
+NEQuE3Ru/zG8KSKFd/PGsnxSJPmJ42yMTBROnYniTVLCbBui4EXvOlynkSQgYTIRVxV5moJ/jhfX
+qXs8sS4BxHwkvz3VFQSGKoceoHz/XZTSopjI3xjspVekeqzYlXT+nlzSlcBc6C4apIIVN2cSUd4m
+EaxUcJj1UJqw7ggzN6O9PFpMMRmkiLFs6S5JwvZnBJ1xezHqhJe5tGlN/OIHnvOYGe6SWihQVr1Y
+P/ZHh2ulFaj9bo2kzDugfnoOkQPczoNrC+jxIj00Cjsd1EMeXFo9Cc2fRLZdT4IgiLBsiIDUugNY
+SiJgxr6OE0+yQCng1yfaEvXQNkuW22SPxcWS8zO9UoJhnN1P4RjNsitlSTqGN2i7YFpDUHf4nzA7
+q1IOOFqz3phEkvKJ/+XrDmFlHwb5UTFEXEetsG1ufX2GMop9GVuP3Naz6umBaFtGpVz/sxD6XobX
+/8H5fi7msfe7leI9rHbRyT59BR22xc7vYq56iIlOz7mXnyrxWCldtuXxyoK6+TCCgLlG+S4X1W/c
+X9zGWA2CHXJKaGdrE4XzbYYyJ0W23MT1fCjQznTor7QHTIY2sl3H4hDwmU6LYBgX0vcYj0MruKYp
+u0nIJEAoE7hg3hqJfk75+AbM5nMKLEGVOoa65Ph4bsVrIph8bd/+INGqeR53iHm6EOO+Rtt6vBzs
+aNqfXwspygKkGlICsTek8NO5UogPWbdQWXLWxA2czNDnQJdKyqTaeHt/OfVp7GLvY/IUPOXC89+g
+/A07LhYqQEWK6NXH3U3WbV/riNpR4xcdA3Xve3q28Tv3VX5YGGE4s4SUR6AHMoHmL3ihi5WssRHp
+bc2SiuJTJoVpE3DrDYFYXE3fjS4a8pqex7W8SzkZZhMWSsvvpyXWsJXUQUCebPIkjeD8fVfEb/qP
+u0D0IFpzB19pEWaA8CLBxvQJaeSXYSZfxsjF1mUdVrXb5G21H/URXgeJuSM6JywHTua4lBKzHWDD
+AWu8WA1AD+IHcHLQyyJu7bLqXwZmOSuFTLEC4Qt63AgeCaOzQ6o+x6MtC/QJ4Fp0HSpdzm3KNqpd
+WEnlpXTx0+kPh7iiAl/6X6mkX+5XW81n8YeUksMdJXNGuL6ts8iS558PjC5gpxvCnGUAVCkGdobO
+zdDqNPw4HBdZH2FUqRpAby3npJjevhbHj1AOcDlMCTooSUQc85KCmr1YP9q69QcxN/J+x/28b0Y1
+qRvj0ZD+bUXqIbejkUUHoAMLZDzOpoX+sGJO79/U040L2rTqMjgElojOFHFnn/xF7CLAZgMQOtKq
+T5BAwTXvbRpfTmYynnjdaq7uYbRhZA+KEdGAbfpbgCKzz/xZvw+zhjoEiRklRFZyOqyuS3sZ9Pf/
+Do1cbKxk19OgpkxktVq4LRwcXglPFKL9aHjxSbNNpddsqeD6kjAkl9KZOUSdpO5J+sMjp5yPHyBE
+o+42gRSEeeOfWN1PZ1W1NqA3Hw2vAT5PstJEtYMTB+8b3mpZdO3wrsP9vzwEn7UfxUfU9S91Y7RT
+s7SX+oMWtj+c3ZDhLKRZkMuzUiIBiQ569yE3iscTeqLXM+SDv6f9bZ8wzpJdBQLbXTNP+uWPzmRk
+/TWS8g/S4PjNPv7sQd3owW62cb+n/Zz92e8r37G0eNXR2O9cWbfajA51MUXy/vk3eTp+izWBhzxt
+DjMBd7oyOVC4VZVPne8IVjR2zs+Vfrcm3DegzDlmGfMv5Rx90JkMDdk1zq/3z0MHXdkCK7yIUuCO
+Vk/bIXmiEgYaSbIAZ93mToZ/bopPJYMCvq/QFx7YysTk6t6+J+ymiKEYdzUAlulGq/afIOSOqNdh
+0PBFvXXu4VXugHNvW0ie1hW2NiguHc3DTQeINyeC9tbNQlsnX6QUTfV1heg447jV1OEY5G78OKAV
+6W7myuA6bYSc0kUUHZEBvWzDBcxnlbBZlwhaTAE7BVwYj2/Nrk5pU3bIostNbbM1IDXiPnPmu2+E
+rVe3xGctJKl+u1UbZ7gVBU99c46HO7dbWVswEuSeWC7a2Yg5gSsGIGFYhPT1h0IEkdMYnZuwsTx2
+bfOPIshxxdtxuUXVMQj+bx81PbmCq01vgJOYcRfvGRnEirFwvXalXOrHbi9WDZfSPYxryXcZCpP6
+iaVKnoG8S3w+xGv5cYyWcb1Y5eeNqPFGXSKThDI5Fy5/czLte7KmgT/uAJb1G3OFbb0Sn2MGcRDN
++KmrcCeKeMt3MtBdGcafFMreArKr4DugC2pZIuJqFVq1wVuzHFoEfvJUcIKNUgLBVaYyLCc71dcw
+SOHy1iLH64TYwGa+h8TVGjzXf2jCpj/5gitChww+5VDzpK+6Vk71C0W3XhSwQoyUWCKZe/4B4NKC
+7pQ+oWfgYHhrqUe21a6bXbME4cJ6sevzROHhPqrfnouOALYlQH9On7qhTkunOtyOaUk+QO+xkJ2+
+q8juYU90kUJaalbg3mRxEpegEtWJ//qPqwaXcEJap6Qz08tIwtXEsipuknpcKVzbvGxib9FeaeCx
+wBlzX5sBbWTklTpU9kIju9UtlkQOIK/YEKxaZ9BkOCxH9mt/oGG/wB6UnN9h2E7ErmgbmZxfhtz1
+D9DfXet4bB3PRRT9rweDy6UEpDMOaglbAr/7XmURVQfcB15fKxHWn5tPkxtbTLSqeuNSxd9n3W7T
+rKFjfEWA42HVM5gvHOVlc5nachabCveJEWTGwqdNWO1bb/mnWxqAyZ278L+yMCLBPs1jVP4tyOIE
+QUJ+2VGWHouKuNnwo4P4Aoa9IC2Swd3wYE/erk/J606NibU2Pqqqf8Sr+ATHsyI4Q2iLgP26UzHI
+KBGMO1TMmmhuDaiVbhadYxef8PNJh4ymmSmGcew6ySguJER0KIMd4zl2nVS4kLMC+MXeoOaRKZ+0
+LCyK04i5dNnh9qHkwwAMe/Y0VMZFyNCQoS9nDRmlSmXZvyuB1mrhOGuZs6zgUwJYy3JbkgDx7a9T
+j1TjUz+IoWyfhoyUQsYARegjHzmvqkJAde1gD/+JLvRYIApuiibc1HMwd7fDffvDHs+FXJrT2DKb
+k7B816Y6zy/+XEEZ+wD6iVOwS1evEB18KSHtiUh/PSvecNQSruPHpJ2602aoJVngb0b39dTY+aBj
+tBoVn0piFwaknIFhWHGgMLjeQ11vZoSQRZer2wDainMpB/zefp85iPCgcOrkVO15E4XSRZGk/K7R
+EGkZGPe7odHYDw/Pza1cxxtlwl5OXhYZzWgYeeE/f6m20R9Y0YpYiz8X39h0DLba4lzjb0gIUv2+
+g7AY6iU3wtlx2sfbqu8H8Kr6ciWSoEF0mk9H+tA4udeA0LmF4koD6UGeVwbZ25eKplsp7F3u+GDU
+DRpEmF7mlWLLV1VqgjAWzKevw0exaE17SSiH7SvWhhqLbCZPusYdfXDMnn/vkTmFYWDK5glBHsxJ
+baSjtfF6ldxO+/VcB/sIKDsI8XJDe4LEuDdiAt/DiDPbsQALuQZiTvISoocLLGkDkhfttKovYdRn
+6jaoG0PC3s++gxIxeD0DNcIw/7FcYeph9T9AivVqMZgQO2sWpHG/5c5PIYcIcE3rYDQT68o6Rxi6
+S/oFSt6HIXon5mD33dQXBuBGBD5qXLurEuJOzlOhGa7rUayUFsdseLVlrQmuv/gG8AIOEc/fZENw
+7U4oZFN95q6PvKJ/BKkFkWJJaxbdyi315oRJ7iqe407XV1eiEl4zarpx/2y3IOrcXU7X6rnlvuPF
+4wI07gqBYx5ogI3qI/K9uEEwISVRsMJzVlZk3SKDJh1qeLBoCZZH6AMZaLCWZ/q/f67BB6IjOE4N
+mO+HrCitmH+5tJqSDHuJr6UipKsxjM3XByREBMuqzwuQHjz7E4ekPHRhKiiq9NLWCHxYsKxrrgCY
+3gcmookMDZGKkBtkpjdImWxY/sgKzEY2cw2vjMIlOglgU6XLVQus7esbFr6p/1xp4GeB3K1RoL5J
+UTQP7B8my4qA62oF6/uGmEkse68vGnQttUuzvEzW92m4qJCktQsOutcQmkLrxOy2kECDP04gCV+s
+IcB54ZLhKEJMfcXFVy+TUIjM1BnLsJTlvH5cOP34tSyJ1MaC/FoVwFyv9hqQSGRdrFQjq6fYA82h
+Gn4KuNOibjPA+CPHXTFNPnYy2BGisA3QO4Ne4K7WHIqzmNIVbJJKw5rg5YwuLqOo8fPQ2XDN+ECW
+WGjeVXzjf74lmZkMYv3a1Dkcv+Du7WsYQ2Q2tps16CFCswkCc9zufpsVixLnpaPYdRDgG7ojZZbH
+v93YuggFJDIXegr1hUIdiXelZIwsk1d9FfRDXbcaLLQxdPwdY6EFgB7eNQH0kdvjh1N4BPmrjbiH
+xmzjGSNMXCTpYIoJJ1AWspwKZwoH9xLhWTBl/nYHYCMe40QlCQ8h9B/qggLSlksHibvbnVM6Fvrb
+7MoUiPWUA5TUpPqYPz4OmeTcrSW4ciGOajn1vP5jGwTkCwgVxc+k4OdLzHEcEDGUuPkfcXbusd25
+xryrmD6kH4E4M2u7WHHSOQW3aux4DXPuvEQpbOnD5l9mK4N4TtcwG3vfwP21be1p10ggIYeuLjEW
+gkiiKTDg+CIvX+VRcmiPEZg/9a6L7Yc0RkfT82pGJhqzWCCH2IMDd9RAyxjF+MxAyQGTg6xvml8v
+tCNqM+kjHOe7aBgVzUskzvJdPKszSIHw+1aVc6LCg9jiZxUE5al+nxC2UeQCz8Mvh6gXqRR6A9xX
+yYZk3TvwB2SIh5vaEywlAI1YaJzuEzjZ/MQHud+icOedm/RKl6fVQAUdwr/QAv8HjEtkj0jL3Zqu
+HF18xVdSalqiu7XKIIrm60ko+5S0qnfxL4Zx13ZqSexr2HH9VT/Hhq1bPzeX8s2VWf6XbiC9rucR
+u07XtZawBKAa4eT2RugRCUzc6YIvtpBeSQ8QCtaJbQ2LfBCDIfOBdL7R6w7u6jubrfa55+j5jbZC
+mHBNZ6pL4pyNLXM4hMI3LaVTD2RmBXiL0i2tyYRyKW+FGzkAHkwwM9t20FqcKaDja6JnQAoIKPNl
+c/5E6B3T0kqg11kNEHFf2s14O2pruoK49GfhwUbvUxdy/ULzvWdQrLEnGydieQ3OVYB9wMNndkA/
+ZNDFI3SrMuytyiz+lqyBmsah4dNnj2taVnaEcRG4DMG3fJz/ihBmOAS4CUo19KxqoG6edUk1rDXu
+mCcpNavTW1cBB8ECuBsPmIyZVgo5sK0pOh4De0avxli2Z2Z2MjtDazJLH0iGneaX0sxkXaAZEZSQ
+2/ktFdLB/OQo9vmSdrMKpXITFabgYlKk13DObafqnzmEUo33op/AFkyMFmTJKNoC300kJOUKGRCP
+yniBawPtQnaHEbm9N1rTz7cj+E5hh8HztU6ZkdvRNU0Z66bMiYTMEiRlMTuzQdUAz50Z+bMkSp1i
+Z3ias3AzYKEUi3A97t+UCu8mhbQiCJOdPeaqqFcvmGRubPWW4z20xaS5ggPYzwTpTbiWkeoCZhin
+oXcJ2cWKebwl1J3qyySgyN3CdnO7SUGXLP6M+xsr0B5fuOU7fNRQoOpNCtVmK5bwlP8zhOi2+DdR
+szjywTFC/OpLAtx72ggQYl+dxAUMUZJh+T2v7GHpoaN3htOY/t2IJ4MfFlRtVWT+dm2YgqhPOsYW
+4e5veAycC0A9HyOanpeZkXf00BzXP4jkTKoXczBMDMVdRTm4IdXkyNS+mzhVO7b/cAtQvvZkal+I
+mczNcGcZ7OztMvD5WulPshUIQkDlYIXcmS+LwWO95tcIeaOURh0tdpgWNjvTLD2KC8QaXqQNmM+H
+5xQuOZrL71WAASqqm4aw6qCPHRLxu8fgAi2drzMvvfquml/TKBqsRSbnH5ux3a1U59fh+o07dUyr
+oiPYc14uyxs/Lb59/bU/d417ThcD1m55PLZbNTNr2wduCKK7jBpT8pHU6ZNTmOUVmpGEDOalhLdd
+BIxDlSqo7m581KUW5WAOBAy8V0EzRY7ZG8VJ5ueZUpDVuTDx8uurz5du0pMFJ8TIHx/3qpiPX9xA
+6AqJcdhLMU+tDhCbslL5JrjTcD/vaqjaWUjQWNCF8IKQ+QztJ0L/XqYP3tsJBq7Q6eNee0ZXoZh4
+s+/6IRfe7NhFZ1qmeQqs9YHVln3fh7+Z87GXlQ9KZjqqiYTKBACKELNRpHq/o7HUlqksVtF+ACCQ
+SSUw+yQ45kO+DXn8qsbo1eJBaq2K097jFh2pDxTUHWgf4s1ozhT943robvgOPZJLiIpXDwmx+qOk
+uRXMQwKeyJr+vBv/iDH56KSZq8Pz6kFkj9DrwhV0kJ722G5Eo5UrXdvl3//nhon+z1FS9z4SuaAW
+T7pnxiyD+4iZ35X2x5BdXZwuLt+ZcDziaXi8jkM7rdFLeVkrAz+peZ9h/MVpuhGmS0/d6OIDSQFJ
+9GnoQiAN4nfBb6omWOqm5+O9yMOY9Bpp0gOw7bFUQa2nI1O0Fr52D5lCYzHb3cvi+nrVvjp9wN5g
+kVnXqlL2HnFWU4CXfHn9j+tASJwkteAG++gSxbu2sTuawzdU70bbTNukWnADR6LWotzD+O3mClZv
+ryUF3lBgn+zDarkpvQYRD8InyBTxFVrJzjvseiYc4k0MDePfZtL1mR5Y8QpyTvoYrB3NjZzhAuDp
+O2ARWJx/z6LJhrwBhEYY5RlNN7B/N9g6iIKCftLkwEdjjCk0c3V4ARCIUHNgiJym7c8iqREpAwFt
+wgVH2yaoluaS7ZynGdLD4nbxd4enmpM9mbyoZkG91ZSTy5sRDuRNt6RV7YbpX6sQ3Okcu+CRQtfl
+wGogJG3NFISSqUrsn0yrP2cm7wI1Gykf6bBD157JpEYZNkvO7T3m/+wNmZdeuhlb/Vq54HRQVbxX
+aDjep21XVF7ChdwL15B4zXADY7vsDSyJV1h4aNXUzti1bm05QWZyDN1le892RRZrPtQFLn+y0kqg
+fwfmZDFkNfL9qyYJD9+VgQEmphuW6aIhpBr+mtfGqTkIps3G+7FvyrPpdWJxy5/fFVyAvLhCWy9t
+7GJcUGCMrrdZWX3Kss2jFm+k7L8F1wNwcBo8Y2CqAJ+aycyMKR1b4q3ZaRjxymYt/Hae/Wzkye8P
+nfi6ptqmvXxVj2z/CdqV3juCB1piWWGMCTqlA06wqTqwd4ihEEnX6Qguq2ZOFLbCmS3UMqGq/t64
+Cx8RXKCv2Nh7GxtNqsADX3euxL4ahEJpDoVr4ATD37pOROzPYLV+yYMrYqqia8mQC02oLmrZfJj1
+/+2iJmS6mVM3ojQuZMC768dJQJUaAno+H6f0TWi5LK+TdQY2keTTHA1r6ewkrYxdIMznIMD7WTNT
+TE7dmYRBaVxZ7iowEB7Cek5XMAuY/z+X+Q43UxzdaLUQ3W24xLAOy4i2Rzi4PT+wweTNjeg17JbR
+VxaSU77cawwXXUYFXobvPATfd4rOelqI21CL7gZYNZ9nWaxCoEne8ac2SDC4qaMR+1JYYbl2WFY7
+Pl2xXCs6w3ShnG08WmpXyoxbd8phj83INOfVVRkEEDvl3BDfjN+p32Cuf9ehJSubJbKopvP1hIDW
+OGdjtnoll8askfEScFRjEtYmrv6Cc1EUKeQmS5KFM8rbHuljs3l5Tm62OtKXFLI1iwcNcTEpRqTH
+Jxd/WEM9n+kzSJPOcQu7983MNqmmnuVLs1eRRgoZtIoBuA7Z+cDv6b92xSNAGHF4X6kIGMpn6rEK
+a5kJWWiHX8n8tMcLMET4OsVNiAQY8QeZyH4kJLKsc4F85UnpyH6M6uwJToMwvI/gRtMFHzFs84Dw
+EqScTqvntOLIJyBNYCbuKIOHynWV1atVbYgYxbfvus07CrL225/q7CC5RQNCVLu6q2etLDR5TIlA
+qrgcWGzuyAQ3OftKyURG0zWmFZshEzi0tcEBfNq4rTHgs9qrDsTaactuUjJtfSf54AP7RPpVL0UE
+EMdgRsvHUtftn8iEvEgUR8l+EFC4a6uF8E805ojQCdKLQ0nfaV9sMpHvU7t/AySBjSgfsjb7RR+C
+onEVnWEdhovYPNwDjQMJGP+SgVCqAwAjjuHUUF+7Ii4ar6MRwFKODf1lMM+7HpD7kGxhxajhvZCp
+K/EBU2Tw14AWE/+rNdJVzBywiR+l6hvcRLT93AeUh72Nqm8n8IHFPj0dgmWkuQTrOjvLGvTdvZe4
+NlIt9wNOEyL+DamVI0unf6ROLqQ/CtZgAiyjOy9Y8jC++QZRdcxPk1dVnp8C0ynOBDnojkSaVCFS
+M0Dc6yj4et7UQcS2rs5K5g4cnWQ0KZZYiQHde8jNwan4PNNkv70q/TGE31ofqxPqCVOFaTkhCq+m
+hfi4NJZCmrz4/7IVBsaBFncJTvCIrdNl1ExR89kLOrUbifJg+lITtlbTG5hXixkFYQ3z38TksaG3
+5ceDLRRcJ+A/US6/HySKUrQEYRknRKQ3OGPN0T/ZS8CnyVjObLTgiDmnW0AhSnWSXICs56VbwqQj
+ZkPHY64j2ePQgs7xSpIVHy/DAehBQKaw/q124flSIP9KV3N2YffSR/j5BSoClp2O/sPm1WBFPaTJ
+XlGnRckQDuwiPeeBcmno2EP9KAHM+wULpeyL9PZG4JcS7ITIXbj9forHYX5Jo5SOZkLNR5tJE7Zq
+58VT+XEFKHxx2EWwWgyxGkUB3FaLbzoultwiEc7NAo+h2UbuTOuS3X7+My+9hUUVEan5HLcmOXoc
+aLfd8SDEJU84+BmJbL7eGW/oudFUZeoko3dWZLQhYpHO/8sHnoB/AG9lUhbH5rAHlAhopWSGANlT
+pDkp7KbjiRUcteL09RKpWIo3ZnMLVS5PbrFbGBZ01bA5grGxd0n8CtkKSKf387qI5MzwFJVJobiK
++BrflGy0AB2wu2BuwtLVwYHG7aAsDe81RrhqOVSFXIY7LNOnCOOGWlmjjzMWsMbV1M0TjJ//IQV7
+V4wFbkjYIvcJRttPQNhBNFIoJWo9dzC4pskON9QNtpLRoGCwXi3Auypk21ohNDzSXXjEjlMvUPAP
+k9PjajabY4TWkVHxVoYdLcQhZY3gTc+pNHqJSGRmQnC9v/25W9p+ojIOCCU+jbuCWpVtVqu3uuPJ
+ZFqMZljGt+MMSz5hRTdyNnZSvtlex2apXkIa/o3j2OCjik+GIrT7bK5F+4Do5i8Mv4Bpm9FkHfrh
+06cgW8hR7ezT9Lc8fAcCYTkI3wpLuqkrxxHr70ip+w+aLUeq+/iH9djqR2GC4mUrQ2nPJpe8fu9i
+TC4Jqd5UUNZScJG8cbrZaWvZ1MZ+4nFACJD+LVrq/oq6z1dhH+DCd1VmJT6pul0PYqdQ5jAzuLgO
+DFPTk3zPfvLP4lPTM8Gwjuru2BnV+7PeKXhM4YVBWKRgPLbH0rQthi7hig4kanDGI9EEU2s94hCc
+cjPQBTeRSv7OVS38GpLZ8bo6+s5FhYK1tdCtlEGi8UuJ3kpAl54AMAbBCnJdFLJ523kDglVkz1BG
++x+EilAovjm16LfHjeN/p9eOLhNhUGfW4VfoTobMS2N6b+J/guitV89H3yc7GthQDf58qGjYXC/k
+MaBmWodVNW7eEc4MX4rrbdYFeZ/QUZgJe/FbWLJMrRdUuKhPwv3G0PBGSpz0g2IYWgL6fbPjg3OK
+jjz2NCtF6f5VpL1uWDT0AGgj2XmfhfQGfclZQERcksNGE6YEiys8CjJuKMAMvUEEzsSW0hDrweLl
+d7bV1N91W1kKl7WOen4=

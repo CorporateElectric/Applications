@@ -1,77 +1,53 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Predis\Configuration;
-
-use Predis\Connection\Aggregate\MasterSlaveReplication;
-use Predis\Connection\Aggregate\ReplicationInterface;
-use Predis\Connection\Aggregate\SentinelReplication;
-
-/**
- * Configures an aggregate connection used for master/slave replication among
- * multiple Redis nodes.
- *
- * @author Daniele Alessandri <suppakilla@gmail.com>
- */
-class ReplicationOption implements OptionInterface
-{
-    /**
-     * {@inheritdoc}
-     *
-     * @todo There's more code than needed due to a bug in filter_var() as
-     *       discussed here https://bugs.php.net/bug.php?id=49510 and  different
-     *       behaviours when encountering NULL values on PHP 5.3.
-     */
-    public function filter(OptionsInterface $options, $value)
-    {
-        if ($value instanceof ReplicationInterface) {
-            return $value;
-        }
-
-        if ($value === 'sentinel') {
-            return function ($sentinels, $options) {
-                return new SentinelReplication($options->service, $sentinels, $options->connections);
-            };
-        }
-
-        if (
-            !is_object($value) &&
-            null !== $asbool = filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
-        ) {
-            if (true === $asbool) {
-                return $this->getDefault($options);
-            } else {
-                throw new \InvalidArgumentException(
-                    "Values evaluating to FALSE are not accepted for `replication`"
-                );
-            }
-        }
-
-        throw new \InvalidArgumentException(
-            "An instance of type 'Predis\Connection\Aggregate\ReplicationInterface' was expected."
-        );
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getDefault(OptionsInterface $options)
-    {
-        $replication = new MasterSlaveReplication();
-
-        if ($options->autodiscovery) {
-            $replication->setConnectionFactory($options->connections);
-            $replication->setAutoDiscovery(true);
-        }
-
-        return $replication;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+1Xcsp/arQm==

@@ -1,154 +1,61 @@
-<?php
-
-/*
- * This file is part of SwiftMailer.
- * (c) 2004-2009 Chris Corbyn
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-/**
- * Reduces network flooding when sending large amounts of mail.
- *
- * @author Chris Corbyn
- */
-class Swift_Plugins_BandwidthMonitorPlugin implements Swift_Events_SendListener, Swift_Events_CommandListener, Swift_Events_ResponseListener, Swift_InputByteStream
-{
-    /**
-     * The outgoing traffic counter.
-     *
-     * @var int
-     */
-    private $out = 0;
-
-    /**
-     * The incoming traffic counter.
-     *
-     * @var int
-     */
-    private $in = 0;
-
-    /** Bound byte streams */
-    private $mirrors = [];
-
-    /**
-     * Not used.
-     */
-    public function beforeSendPerformed(Swift_Events_SendEvent $evt)
-    {
-    }
-
-    /**
-     * Invoked immediately after the Message is sent.
-     */
-    public function sendPerformed(Swift_Events_SendEvent $evt)
-    {
-        $message = $evt->getMessage();
-        $message->toByteStream($this);
-    }
-
-    /**
-     * Invoked immediately following a command being sent.
-     */
-    public function commandSent(Swift_Events_CommandEvent $evt)
-    {
-        $command = $evt->getCommand();
-        $this->out += \strlen($command);
-    }
-
-    /**
-     * Invoked immediately following a response coming back.
-     */
-    public function responseReceived(Swift_Events_ResponseEvent $evt)
-    {
-        $response = $evt->getResponse();
-        $this->in += \strlen($response);
-    }
-
-    /**
-     * Called when a message is sent so that the outgoing counter can be increased.
-     *
-     * @param string $bytes
-     */
-    public function write($bytes)
-    {
-        $this->out += \strlen($bytes);
-        foreach ($this->mirrors as $stream) {
-            $stream->write($bytes);
-        }
-    }
-
-    /**
-     * Not used.
-     */
-    public function commit()
-    {
-    }
-
-    /**
-     * Attach $is to this stream.
-     *
-     * The stream acts as an observer, receiving all data that is written.
-     * All {@link write()} and {@link flushBuffers()} operations will be mirrored.
-     */
-    public function bind(Swift_InputByteStream $is)
-    {
-        $this->mirrors[] = $is;
-    }
-
-    /**
-     * Remove an already bound stream.
-     *
-     * If $is is not bound, no errors will be raised.
-     * If the stream currently has any buffered data it will be written to $is
-     * before unbinding occurs.
-     */
-    public function unbind(Swift_InputByteStream $is)
-    {
-        foreach ($this->mirrors as $k => $stream) {
-            if ($is === $stream) {
-                unset($this->mirrors[$k]);
-            }
-        }
-    }
-
-    /**
-     * Not used.
-     */
-    public function flushBuffers()
-    {
-        foreach ($this->mirrors as $stream) {
-            $stream->flushBuffers();
-        }
-    }
-
-    /**
-     * Get the total number of bytes sent to the server.
-     *
-     * @return int
-     */
-    public function getBytesOut()
-    {
-        return $this->out;
-    }
-
-    /**
-     * Get the total number of bytes received from the server.
-     *
-     * @return int
-     */
-    public function getBytesIn()
-    {
-        return $this->in;
-    }
-
-    /**
-     * Reset the internal counters to zero.
-     */
-    public function reset()
-    {
-        $this->out = 0;
-        $this->in = 0;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+epvSAUcLkr3z4xI/SzQFiPLg4bVFhixdaHu=

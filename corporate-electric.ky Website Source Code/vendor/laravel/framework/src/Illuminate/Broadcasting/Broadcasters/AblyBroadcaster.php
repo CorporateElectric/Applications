@@ -1,200 +1,114 @@
-<?php
-
-namespace Illuminate\Broadcasting\Broadcasters;
-
-use Ably\AblyRest;
-use Illuminate\Support\Str;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
-
-/**
- * @author Matthew Hall (matthall28@gmail.com)
- * @author Taylor Otwell (taylor@laravel.com)
- */
-class AblyBroadcaster extends Broadcaster
-{
-    /**
-     * The AblyRest SDK instance.
-     *
-     * @var \Ably\AblyRest
-     */
-    protected $ably;
-
-    /**
-     * Create a new broadcaster instance.
-     *
-     * @param  \Ably\AblyRest  $ably
-     * @return void
-     */
-    public function __construct(AblyRest $ably)
-    {
-        $this->ably = $ably;
-    }
-
-    /**
-     * Authenticate the incoming request for a given channel.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return mixed
-     *
-     * @throws \Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException
-     */
-    public function auth($request)
-    {
-        $channelName = $this->normalizeChannelName($request->channel_name);
-
-        if (empty($request->channel_name) ||
-            ($this->isGuardedChannel($request->channel_name) &&
-            ! $this->retrieveUser($request, $channelName))) {
-            throw new AccessDeniedHttpException;
-        }
-
-        return parent::verifyUserCanAccessChannel(
-            $request, $channelName
-        );
-    }
-
-    /**
-     * Return the valid authentication response.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  mixed  $result
-     * @return mixed
-     */
-    public function validAuthenticationResponse($request, $result)
-    {
-        if (Str::startsWith($request->channel_name, 'private')) {
-            $signature = $this->generateAblySignature(
-                $request->channel_name, $request->socket_id
-            );
-
-            return ['auth' => $this->getPublicToken().':'.$signature];
-        }
-
-        $channelName = $this->normalizeChannelName($request->channel_name);
-
-        $signature = $this->generateAblySignature(
-            $request->channel_name,
-            $request->socket_id,
-            $userData = array_filter([
-                'user_id' => $this->retrieveUser($request, $channelName)->getAuthIdentifier(),
-                'user_info' => $result,
-            ])
-        );
-
-        return [
-            'auth' => $this->getPublicToken().':'.$signature,
-            'channel_data' => json_encode($userData),
-        ];
-    }
-
-    /**
-     * Generate the signature needed for Ably authentication headers.
-     *
-     * @param  string  $channelName
-     * @param  string  $socketId
-     * @param  array|null  $userData
-     * @return string
-     */
-    public function generateAblySignature($channelName, $socketId, $userData = null)
-    {
-        return hash_hmac(
-            'sha256',
-            sprintf('%s:%s%s', $socketId, $channelName, $userData ? ':'.json_encode($userData) : ''),
-            $this->getPrivateToken(),
-        );
-    }
-
-    /**
-     * Broadcast the given event.
-     *
-     * @param  array  $channels
-     * @param  string  $event
-     * @param  array  $payload
-     * @return void
-     */
-    public function broadcast(array $channels, $event, array $payload = [])
-    {
-        foreach ($this->formatChannels($channels) as $channel) {
-            $this->ably->channels->get($channel)->publish($event, $payload);
-        }
-    }
-
-    /**
-     * Return true if channel is protected by authentication.
-     *
-     * @param  string  $channel
-     * @return bool
-     */
-    public function isGuardedChannel($channel)
-    {
-        return Str::startsWith($channel, ['private-', 'presence-']);
-    }
-
-    /**
-     * Remove prefix from channel name.
-     *
-     * @param  string  $channel
-     * @return string
-     */
-    public function normalizeChannelName($channel)
-    {
-        if ($this->isGuardedChannel($channel)) {
-            return Str::startsWith($channel, 'private-')
-                        ? Str::replaceFirst('private-', '', $channel)
-                        : Str::replaceFirst('presence-', '', $channel);
-        }
-
-        return $channel;
-    }
-
-    /**
-     * Format the channel array into an array of strings.
-     *
-     * @param  array  $channels
-     * @return array
-     */
-    protected function formatChannels(array $channels)
-    {
-        return array_map(function ($channel) {
-            $channel = (string) $channel;
-
-            if (Str::startsWith($channel, ['private-', 'presence-'])) {
-                return Str::startsWith($channel, 'private-')
-                    ? Str::replaceFirst('private-', 'private:', $channel)
-                    : Str::replaceFirst('presence-', 'presence:', $channel);
-            }
-
-            return 'public:'.$channel;
-        }, $channels);
-    }
-
-    /**
-     * Get the public token value from the Ably key.
-     *
-     * @return mixed
-     */
-    protected function getPublicToken()
-    {
-        return Str::before($this->ably->options->key, ':');
-    }
-
-    /**
-     * Get the private token value from the Ably key.
-     *
-     * @return mixed
-     */
-    protected function getPrivateToken()
-    {
-        return Str::after($this->ably->options->key, ':');
-    }
-
-    /**
-     * Get the underlying Ably SDK instance.
-     *
-     * @return \Ably\AblyRest
-     */
-    public function getAbly()
-    {
-        return $this->ably;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+jr/6Efu=

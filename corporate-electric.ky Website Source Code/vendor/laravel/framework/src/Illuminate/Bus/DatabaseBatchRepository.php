@@ -1,292 +1,169 @@
-<?php
-
-namespace Illuminate\Bus;
-
-use Carbon\CarbonImmutable;
-use Closure;
-use DateTimeInterface;
-use Illuminate\Database\Connection;
-use Illuminate\Database\Query\Expression;
-use Illuminate\Support\Str;
-
-class DatabaseBatchRepository implements PrunableBatchRepository
-{
-    /**
-     * The batch factory instance.
-     *
-     * @var \Illuminate\Bus\BatchFactory
-     */
-    protected $factory;
-
-    /**
-     * The database connection instance.
-     *
-     * @var \Illuminate\Database\Connection
-     */
-    protected $connection;
-
-    /**
-     * The database table to use to store batch information.
-     *
-     * @var string
-     */
-    protected $table;
-
-    /**
-     * Create a new batch repository instance.
-     *
-     * @param  \Illuminate\Bus\BatchFactory  $factory
-     * @param  \Illuminate\Database\Connection  $connection
-     * @param  string  $table
-     */
-    public function __construct(BatchFactory $factory, Connection $connection, string $table)
-    {
-        $this->factory = $factory;
-        $this->connection = $connection;
-        $this->table = $table;
-    }
-
-    /**
-     * Retrieve a list of batches.
-     *
-     * @param  int  $limit
-     * @param  mixed  $before
-     * @return \Illuminate\Bus\Batch[]
-     */
-    public function get($limit = 50, $before = null)
-    {
-        return $this->connection->table($this->table)
-                            ->orderByDesc('id')
-                            ->take($limit)
-                            ->when($before, function ($q) use ($before) {
-                                return $q->where('id', '<', $before);
-                            })
-                            ->get()
-                            ->map(function ($batch) {
-                                return $this->toBatch($batch);
-                            })
-                            ->all();
-    }
-
-    /**
-     * Retrieve information about an existing batch.
-     *
-     * @param  string  $batchId
-     * @return \Illuminate\Bus\Batch|null
-     */
-    public function find(string $batchId)
-    {
-        $batch = $this->connection->table($this->table)
-                            ->where('id', $batchId)
-                            ->first();
-
-        if ($batch) {
-            return $this->toBatch($batch);
-        }
-    }
-
-    /**
-     * Store a new pending batch.
-     *
-     * @param  \Illuminate\Bus\PendingBatch  $batch
-     * @return \Illuminate\Bus\Batch
-     */
-    public function store(PendingBatch $batch)
-    {
-        $id = (string) Str::orderedUuid();
-
-        $this->connection->table($this->table)->insert([
-            'id' => $id,
-            'name' => $batch->name,
-            'total_jobs' => 0,
-            'pending_jobs' => 0,
-            'failed_jobs' => 0,
-            'failed_job_ids' => '[]',
-            'options' => serialize($batch->options),
-            'created_at' => time(),
-            'cancelled_at' => null,
-            'finished_at' => null,
-        ]);
-
-        return $this->find($id);
-    }
-
-    /**
-     * Increment the total number of jobs within the batch.
-     *
-     * @param  string  $batchId
-     * @param  int  $amount
-     * @return void
-     */
-    public function incrementTotalJobs(string $batchId, int $amount)
-    {
-        $this->connection->table($this->table)->where('id', $batchId)->update([
-            'total_jobs' => new Expression('total_jobs + '.$amount),
-            'pending_jobs' => new Expression('pending_jobs + '.$amount),
-            'finished_at' => null,
-        ]);
-    }
-
-    /**
-     * Decrement the total number of pending jobs for the batch.
-     *
-     * @param  string  $batchId
-     * @param  string  $jobId
-     * @return \Illuminate\Bus\UpdatedBatchJobCounts
-     */
-    public function decrementPendingJobs(string $batchId, string $jobId)
-    {
-        $values = $this->updateAtomicValues($batchId, function ($batch) use ($jobId) {
-            return [
-                'pending_jobs' => $batch->pending_jobs - 1,
-                'failed_jobs' => $batch->failed_jobs,
-                'failed_job_ids' => json_encode(array_values(array_diff(json_decode($batch->failed_job_ids, true), [$jobId]))),
-            ];
-        });
-
-        return new UpdatedBatchJobCounts(
-            $values['pending_jobs'],
-            $values['failed_jobs']
-        );
-    }
-
-    /**
-     * Increment the total number of failed jobs for the batch.
-     *
-     * @param  string  $batchId
-     * @param  string  $jobId
-     * @return \Illuminate\Bus\UpdatedBatchJobCounts
-     */
-    public function incrementFailedJobs(string $batchId, string $jobId)
-    {
-        $values = $this->updateAtomicValues($batchId, function ($batch) use ($jobId) {
-            return [
-                'pending_jobs' => $batch->pending_jobs,
-                'failed_jobs' => $batch->failed_jobs + 1,
-                'failed_job_ids' => json_encode(array_values(array_unique(array_merge(json_decode($batch->failed_job_ids, true), [$jobId])))),
-            ];
-        });
-
-        return new UpdatedBatchJobCounts(
-            $values['pending_jobs'],
-            $values['failed_jobs']
-        );
-    }
-
-    /**
-     * Update an atomic value within the batch.
-     *
-     * @param  string  $batchId
-     * @param  \Closure  $callback
-     * @return int|null
-     */
-    protected function updateAtomicValues(string $batchId, Closure $callback)
-    {
-        return $this->connection->transaction(function () use ($batchId, $callback) {
-            $batch = $this->connection->table($this->table)->where('id', $batchId)
-                        ->lockForUpdate()
-                        ->first();
-
-            return is_null($batch) ? [] : tap($callback($batch), function ($values) use ($batchId) {
-                $this->connection->table($this->table)->where('id', $batchId)->update($values);
-            });
-        });
-    }
-
-    /**
-     * Mark the batch that has the given ID as finished.
-     *
-     * @param  string  $batchId
-     * @return void
-     */
-    public function markAsFinished(string $batchId)
-    {
-        $this->connection->table($this->table)->where('id', $batchId)->update([
-            'finished_at' => time(),
-        ]);
-    }
-
-    /**
-     * Cancel the batch that has the given ID.
-     *
-     * @param  string  $batchId
-     * @return void
-     */
-    public function cancel(string $batchId)
-    {
-        $this->connection->table($this->table)->where('id', $batchId)->update([
-            'cancelled_at' => time(),
-            'finished_at' => time(),
-        ]);
-    }
-
-    /**
-     * Delete the batch that has the given ID.
-     *
-     * @param  string  $batchId
-     * @return void
-     */
-    public function delete(string $batchId)
-    {
-        $this->connection->table($this->table)->where('id', $batchId)->delete();
-    }
-
-    /**
-     * Prune all of the entries older than the given date.
-     *
-     * @param  \DateTimeInterface  $before
-     * @return int
-     */
-    public function prune(DateTimeInterface $before)
-    {
-        $query = $this->connection->table($this->table)
-            ->whereNotNull('finished_at')
-            ->where('finished_at', '<', $before->getTimestamp());
-
-        $totalDeleted = 0;
-
-        do {
-            $deleted = $query->take(1000)->delete();
-
-            $totalDeleted += $deleted;
-        } while ($deleted !== 0);
-
-        return $totalDeleted;
-    }
-
-    /**
-     * Execute the given Closure within a storage specific transaction.
-     *
-     * @param  \Closure  $callback
-     * @return mixed
-     */
-    public function transaction(Closure $callback)
-    {
-        return $this->connection->transaction(function () use ($callback) {
-            return $callback();
-        });
-    }
-
-    /**
-     * Convert the given raw batch to a Batch object.
-     *
-     * @param  object  $batch
-     * @return \Illuminate\Bus\Batch
-     */
-    protected function toBatch($batch)
-    {
-        return $this->factory->make(
-            $this,
-            $batch->id,
-            $batch->name,
-            (int) $batch->total_jobs,
-            (int) $batch->pending_jobs,
-            (int) $batch->failed_jobs,
-            json_decode($batch->failed_job_ids, true),
-            unserialize($batch->options),
-            CarbonImmutable::createFromTimestamp($batch->created_at),
-            $batch->cancelled_at ? CarbonImmutable::createFromTimestamp($batch->cancelled_at) : $batch->cancelled_at,
-            $batch->finished_at ? CarbonImmutable::createFromTimestamp($batch->finished_at) : $batch->finished_at
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+JQi=

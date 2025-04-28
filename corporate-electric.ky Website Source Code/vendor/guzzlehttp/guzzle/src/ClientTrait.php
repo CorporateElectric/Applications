@@ -1,241 +1,51 @@
-<?php
-
-namespace GuzzleHttp;
-
-use GuzzleHttp\Exception\GuzzleException;
-use GuzzleHttp\Promise\PromiseInterface;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\UriInterface;
-
-/**
- * Client interface for sending HTTP requests.
- */
-trait ClientTrait
-{
-    /**
-     * Create and send an HTTP request.
-     *
-     * Use an absolute path to override the base path of the client, or a
-     * relative path to append to the base path of the client. The URL can
-     * contain the query string as well.
-     *
-     * @param string              $method  HTTP method.
-     * @param string|UriInterface $uri     URI object or string.
-     * @param array               $options Request options to apply.
-     *
-     * @throws GuzzleException
-     */
-    abstract public function request(string $method, $uri, array $options = []): ResponseInterface;
-
-    /**
-     * Create and send an HTTP GET request.
-     *
-     * Use an absolute path to override the base path of the client, or a
-     * relative path to append to the base path of the client. The URL can
-     * contain the query string as well.
-     *
-     * @param string|UriInterface $uri     URI object or string.
-     * @param array               $options Request options to apply.
-     *
-     * @throws GuzzleException
-     */
-    public function get($uri, array $options = []): ResponseInterface
-    {
-        return $this->request('GET', $uri, $options);
-    }
-
-    /**
-     * Create and send an HTTP HEAD request.
-     *
-     * Use an absolute path to override the base path of the client, or a
-     * relative path to append to the base path of the client. The URL can
-     * contain the query string as well.
-     *
-     * @param string|UriInterface $uri     URI object or string.
-     * @param array               $options Request options to apply.
-     *
-     * @throws GuzzleException
-     */
-    public function head($uri, array $options = []): ResponseInterface
-    {
-        return $this->request('HEAD', $uri, $options);
-    }
-
-    /**
-     * Create and send an HTTP PUT request.
-     *
-     * Use an absolute path to override the base path of the client, or a
-     * relative path to append to the base path of the client. The URL can
-     * contain the query string as well.
-     *
-     * @param string|UriInterface $uri     URI object or string.
-     * @param array               $options Request options to apply.
-     *
-     * @throws GuzzleException
-     */
-    public function put($uri, array $options = []): ResponseInterface
-    {
-        return $this->request('PUT', $uri, $options);
-    }
-
-    /**
-     * Create and send an HTTP POST request.
-     *
-     * Use an absolute path to override the base path of the client, or a
-     * relative path to append to the base path of the client. The URL can
-     * contain the query string as well.
-     *
-     * @param string|UriInterface $uri     URI object or string.
-     * @param array               $options Request options to apply.
-     *
-     * @throws GuzzleException
-     */
-    public function post($uri, array $options = []): ResponseInterface
-    {
-        return $this->request('POST', $uri, $options);
-    }
-
-    /**
-     * Create and send an HTTP PATCH request.
-     *
-     * Use an absolute path to override the base path of the client, or a
-     * relative path to append to the base path of the client. The URL can
-     * contain the query string as well.
-     *
-     * @param string|UriInterface $uri     URI object or string.
-     * @param array               $options Request options to apply.
-     *
-     * @throws GuzzleException
-     */
-    public function patch($uri, array $options = []): ResponseInterface
-    {
-        return $this->request('PATCH', $uri, $options);
-    }
-
-    /**
-     * Create and send an HTTP DELETE request.
-     *
-     * Use an absolute path to override the base path of the client, or a
-     * relative path to append to the base path of the client. The URL can
-     * contain the query string as well.
-     *
-     * @param string|UriInterface $uri     URI object or string.
-     * @param array               $options Request options to apply.
-     *
-     * @throws GuzzleException
-     */
-    public function delete($uri, array $options = []): ResponseInterface
-    {
-        return $this->request('DELETE', $uri, $options);
-    }
-
-    /**
-     * Create and send an asynchronous HTTP request.
-     *
-     * Use an absolute path to override the base path of the client, or a
-     * relative path to append to the base path of the client. The URL can
-     * contain the query string as well. Use an array to provide a URL
-     * template and additional variables to use in the URL template expansion.
-     *
-     * @param string              $method  HTTP method
-     * @param string|UriInterface $uri     URI object or string.
-     * @param array               $options Request options to apply.
-     */
-    abstract public function requestAsync(string $method, $uri, array $options = []): PromiseInterface;
-
-    /**
-     * Create and send an asynchronous HTTP GET request.
-     *
-     * Use an absolute path to override the base path of the client, or a
-     * relative path to append to the base path of the client. The URL can
-     * contain the query string as well. Use an array to provide a URL
-     * template and additional variables to use in the URL template expansion.
-     *
-     * @param string|UriInterface $uri     URI object or string.
-     * @param array               $options Request options to apply.
-     */
-    public function getAsync($uri, array $options = []): PromiseInterface
-    {
-        return $this->requestAsync('GET', $uri, $options);
-    }
-
-    /**
-     * Create and send an asynchronous HTTP HEAD request.
-     *
-     * Use an absolute path to override the base path of the client, or a
-     * relative path to append to the base path of the client. The URL can
-     * contain the query string as well. Use an array to provide a URL
-     * template and additional variables to use in the URL template expansion.
-     *
-     * @param string|UriInterface $uri     URI object or string.
-     * @param array               $options Request options to apply.
-     */
-    public function headAsync($uri, array $options = []): PromiseInterface
-    {
-        return $this->requestAsync('HEAD', $uri, $options);
-    }
-
-    /**
-     * Create and send an asynchronous HTTP PUT request.
-     *
-     * Use an absolute path to override the base path of the client, or a
-     * relative path to append to the base path of the client. The URL can
-     * contain the query string as well. Use an array to provide a URL
-     * template and additional variables to use in the URL template expansion.
-     *
-     * @param string|UriInterface $uri     URI object or string.
-     * @param array               $options Request options to apply.
-     */
-    public function putAsync($uri, array $options = []): PromiseInterface
-    {
-        return $this->requestAsync('PUT', $uri, $options);
-    }
-
-    /**
-     * Create and send an asynchronous HTTP POST request.
-     *
-     * Use an absolute path to override the base path of the client, or a
-     * relative path to append to the base path of the client. The URL can
-     * contain the query string as well. Use an array to provide a URL
-     * template and additional variables to use in the URL template expansion.
-     *
-     * @param string|UriInterface $uri     URI object or string.
-     * @param array               $options Request options to apply.
-     */
-    public function postAsync($uri, array $options = []): PromiseInterface
-    {
-        return $this->requestAsync('POST', $uri, $options);
-    }
-
-    /**
-     * Create and send an asynchronous HTTP PATCH request.
-     *
-     * Use an absolute path to override the base path of the client, or a
-     * relative path to append to the base path of the client. The URL can
-     * contain the query string as well. Use an array to provide a URL
-     * template and additional variables to use in the URL template expansion.
-     *
-     * @param string|UriInterface $uri     URI object or string.
-     * @param array               $options Request options to apply.
-     */
-    public function patchAsync($uri, array $options = []): PromiseInterface
-    {
-        return $this->requestAsync('PATCH', $uri, $options);
-    }
-
-    /**
-     * Create and send an asynchronous HTTP DELETE request.
-     *
-     * Use an absolute path to override the base path of the client, or a
-     * relative path to append to the base path of the client. The URL can
-     * contain the query string as well. Use an array to provide a URL
-     * template and additional variables to use in the URL template expansion.
-     *
-     * @param string|UriInterface $uri     URI object or string.
-     * @param array               $options Request options to apply.
-     */
-    public function deleteAsync($uri, array $options = []): PromiseInterface
-    {
-        return $this->requestAsync('DELETE', $uri, $options);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

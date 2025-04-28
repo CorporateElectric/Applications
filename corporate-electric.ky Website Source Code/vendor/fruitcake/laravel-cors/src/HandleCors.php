@@ -1,119 +1,68 @@
-<?php
-
-namespace Fruitcake\Cors;
-
-use Closure;
-use Asm89\Stack\CorsService;
-use Illuminate\Http\Request;
-use Illuminate\Contracts\Container\Container;
-use Illuminate\Foundation\Http\Events\RequestHandled;
-use Symfony\Component\HttpFoundation\Response;
-
-class HandleCors
-{
-    /** @var CorsService $cors */
-    protected $cors;
-
-    /** @var \Illuminate\Contracts\Container\Container $container */
-    protected $container;
-    
-    public function __construct(CorsService $cors, Container $container)
-    {
-        $this->cors = $cors;
-        $this->container = $container;
-    }
-
-    /**
-     * Handle an incoming request. Based on Asm89\Stack\Cors by asm89
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure  $next
-     * @return Response
-     */
-    public function handle($request, Closure $next)
-    {
-        // Check if we're dealing with CORS and if we should handle it
-        if (! $this->shouldRun($request)) {
-            return $next($request);
-        }
-
-        // For Preflight, return the Preflight response
-        if ($this->cors->isPreflightRequest($request)) {
-            return $this->cors->handlePreflightRequest($request);
-        }
-
-        // If the request is not allowed, return 403
-        if (! $this->cors->isActualRequestAllowed($request)) {
-            return new Response('Not allowed in CORS policy.', 403);
-        }
-
-        // Add the headers on the Request Handled event as fallback in case of exceptions
-        if (class_exists(RequestHandled::class) && $this->container->bound('events')) {
-            $this->container->make('events')->listen(RequestHandled::class, function (RequestHandled $event) {
-                $this->addHeaders($event->request, $event->response);
-            });
-        }
-
-        // Handle the request
-        $response = $next($request);
-
-        // Add the CORS headers to the Response
-        return $this->addHeaders($request, $response);
-    }
-
-    /**
-     * Determine if the request has a URI that should pass through the CORS flow.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return bool
-     */
-    protected function shouldRun(Request $request): bool
-    {
-        // Check if this is an actual CORS request
-        if (! $this->cors->isCorsRequest($request)) {
-            return false;
-        }
-
-        return $this->isMatchingPath($request);
-    }
-
-    /**
-     * The the path from the config, to see if the CORS Service should run
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return bool
-     */
-    protected function isMatchingPath(Request $request): bool
-    {
-        // Get the paths from the config or the middleware
-        $paths = $this->container['config']->get('cors.paths', []);
-
-        foreach ($paths as $path) {
-            if ($path !== '/') {
-                $path = trim($path, '/');
-            }
-
-            if ($request->fullUrlIs($path) || $request->is($path)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Add the headers to the Response, if they don't exist yet.
-     *
-     * @param Request $request
-     * @param Response $response
-     * @return Response
-     */
-    protected function addHeaders(Request $request, Response $response): Response
-    {
-        if (! $response->headers->has('Access-Control-Allow-Origin')) {
-            $response = $this->cors->addActualRequestHeaders($response, $request);
-        }
-
-        return $response;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+kvt3nmq=

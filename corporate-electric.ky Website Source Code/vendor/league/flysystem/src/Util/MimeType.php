@@ -1,80 +1,41 @@
-<?php
-
-namespace League\Flysystem\Util;
-
-use League\MimeTypeDetection\FinfoMimeTypeDetector;
-use League\MimeTypeDetection\GeneratedExtensionToMimeTypeMap;
-use League\MimeTypeDetection\MimeTypeDetector;
-
-/**
- * @internal
- */
-class MimeType
-{
-    protected static $extensionToMimeTypeMap = GeneratedExtensionToMimeTypeMap::MIME_TYPES_FOR_EXTENSIONS;
-    protected static $detector;
-
-    public static function useDetector(MimeTypeDetector $detector)
-    {
-        static::$detector = $detector;
-    }
-
-    /**
-     * @return MimeTypeDetector
-     */
-    protected static function detector()
-    {
-        if ( ! static::$detector instanceof MimeTypeDetector) {
-            static::$detector = new FinfoMimeTypeDetector();
-        }
-
-        return static::$detector;
-    }
-
-
-    /**
-     * Detects MIME Type based on given content.
-     *
-     * @param mixed $content
-     *
-     * @return string MIME Type
-     */
-    public static function detectByContent($content)
-    {
-        if (is_string($content)) {
-            return static::detector()->detectMimeTypeFromBuffer($content);
-        }
-
-        return 'text/plain';
-    }
-
-    /**
-     * Detects MIME Type based on file extension.
-     *
-     * @param string $extension
-     *
-     * @return string MIME Type
-     */
-    public static function detectByFileExtension($extension)
-    {
-        return static::detector()->detectMimeTypeFromPath('artificial.' . $extension) ?: 'text/plain';
-    }
-
-    /**
-     * @param string $filename
-     *
-     * @return string MIME Type
-     */
-    public static function detectByFilename($filename)
-    {
-        return static::detector()->detectMimeTypeFromPath($filename) ?: 'text/plain';
-    }
-
-    /**
-     * @return array Map of file extension to MIME Type
-     */
-    public static function getExtensionToMimeTypeMap()
-    {
-        return static::$extensionToMimeTypeMap;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

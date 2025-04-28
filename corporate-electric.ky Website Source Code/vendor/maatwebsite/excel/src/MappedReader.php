@@ -1,49 +1,32 @@
-<?php
-
-namespace Maatwebsite\Excel;
-
-use Illuminate\Support\Collection;
-use Maatwebsite\Excel\Concerns\ToArray;
-use Maatwebsite\Excel\Concerns\ToCollection;
-use Maatwebsite\Excel\Concerns\ToModel;
-use Maatwebsite\Excel\Concerns\WithCalculatedFormulas;
-use Maatwebsite\Excel\Concerns\WithMappedCells;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-
-class MappedReader
-{
-    /**
-     * @param WithMappedCells $import
-     * @param Worksheet       $worksheet
-     *
-     * @throws \PhpOffice\PhpSpreadsheet\Exception
-     */
-    public function map(WithMappedCells $import, Worksheet $worksheet)
-    {
-        $mapped = [];
-        foreach ($import->mapping() as $name => $coordinate) {
-            $cell = Cell::make($worksheet, $coordinate);
-
-            $mapped[$name] = $cell->getValue(
-                null,
-                $import instanceof WithCalculatedFormulas
-            );
-        }
-
-        if ($import instanceof ToModel) {
-            $model = $import->model($mapped);
-
-            if ($model) {
-                $model->saveOrFail();
-            }
-        }
-
-        if ($import instanceof ToCollection) {
-            $import->collection(new Collection($mapped));
-        }
-
-        if ($import instanceof ToArray) {
-            $import->array($mapped);
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,69 +1,53 @@
-<?php
-
-declare(strict_types=1);
-
-/*
- * This is part of the league/commonmark package.
- *
- * (c) Martin Hasoň <martin.hason@gmail.com>
- * (c) Webuni s.r.o. <info@webuni.cz>
- * (c) Colin O'Dell <colinodell@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace League\CommonMark\Extension\Table;
-
-use League\CommonMark\Block\Element\AbstractBlock;
-use League\CommonMark\Block\Element\AbstractStringContainerBlock;
-use League\CommonMark\Block\Element\InlineContainerInterface;
-use League\CommonMark\ContextInterface;
-use League\CommonMark\Cursor;
-
-final class Table extends AbstractStringContainerBlock implements InlineContainerInterface
-{
-    /** @var TableSection */
-    private $head;
-    /** @var TableSection */
-    private $body;
-    /** @var \Closure */
-    private $parser;
-
-    public function __construct(\Closure $parser)
-    {
-        parent::__construct();
-        $this->appendChild($this->head = new TableSection(TableSection::TYPE_HEAD));
-        $this->appendChild($this->body = new TableSection(TableSection::TYPE_BODY));
-        $this->parser = $parser;
-    }
-
-    public function canContain(AbstractBlock $block): bool
-    {
-        return $block instanceof TableSection;
-    }
-
-    public function isCode(): bool
-    {
-        return false;
-    }
-
-    public function getHead(): TableSection
-    {
-        return $this->head;
-    }
-
-    public function getBody(): TableSection
-    {
-        return $this->body;
-    }
-
-    public function matchesNextLine(Cursor $cursor): bool
-    {
-        return call_user_func($this->parser, $cursor, $this);
-    }
-
-    public function handleRemainingContents(ContextInterface $context, Cursor $cursor): void
-    {
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

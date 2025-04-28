@@ -1,2048 +1,539 @@
-<?php
-
-/*
- * This file is part of the webmozart/assert package.
- *
- * (c) Bernhard Schussek <bschussek@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Webmozart\Assert;
-
-use ArrayAccess;
-use BadMethodCallException;
-use Closure;
-use Countable;
-use DateTime;
-use DateTimeImmutable;
-use Exception;
-use InvalidArgumentException;
-use ResourceBundle;
-use SimpleXMLElement;
-use Throwable;
-use Traversable;
-
-/**
- * Efficient assertions to validate the input/output of your methods.
- *
- * @mixin Mixin
- *
- * @since  1.0
- *
- * @author Bernhard Schussek <bschussek@gmail.com>
- */
-class Assert
-{
-    /**
-     * @psalm-pure
-     * @psalm-assert string $value
-     *
-     * @param mixed  $value
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function string($value, $message = '')
-    {
-        if (!\is_string($value)) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected a string. Got: %s',
-                static::typeToString($value)
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     * @psalm-assert non-empty-string $value
-     *
-     * @param mixed  $value
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function stringNotEmpty($value, $message = '')
-    {
-        static::string($value, $message);
-        static::notEq($value, '', $message);
-    }
-
-    /**
-     * @psalm-pure
-     * @psalm-assert int $value
-     *
-     * @param mixed  $value
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function integer($value, $message = '')
-    {
-        if (!\is_int($value)) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected an integer. Got: %s',
-                static::typeToString($value)
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     * @psalm-assert numeric $value
-     *
-     * @param mixed  $value
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function integerish($value, $message = '')
-    {
-        if (!\is_numeric($value) || $value != (int) $value) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected an integerish value. Got: %s',
-                static::typeToString($value)
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     * @psalm-assert float $value
-     *
-     * @param mixed  $value
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function float($value, $message = '')
-    {
-        if (!\is_float($value)) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected a float. Got: %s',
-                static::typeToString($value)
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     * @psalm-assert numeric $value
-     *
-     * @param mixed  $value
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function numeric($value, $message = '')
-    {
-        if (!\is_numeric($value)) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected a numeric. Got: %s',
-                static::typeToString($value)
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     * @psalm-assert int $value
-     *
-     * @param mixed  $value
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function natural($value, $message = '')
-    {
-        if (!\is_int($value) || $value < 0) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected a non-negative integer. Got: %s',
-                static::valueToString($value)
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     * @psalm-assert bool $value
-     *
-     * @param mixed  $value
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function boolean($value, $message = '')
-    {
-        if (!\is_bool($value)) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected a boolean. Got: %s',
-                static::typeToString($value)
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     * @psalm-assert scalar $value
-     *
-     * @param mixed  $value
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function scalar($value, $message = '')
-    {
-        if (!\is_scalar($value)) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected a scalar. Got: %s',
-                static::typeToString($value)
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     * @psalm-assert object $value
-     *
-     * @param mixed  $value
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function object($value, $message = '')
-    {
-        if (!\is_object($value)) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected an object. Got: %s',
-                static::typeToString($value)
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     * @psalm-assert resource $value
-     *
-     * @param mixed       $value
-     * @param string|null $type    type of resource this should be. @see https://www.php.net/manual/en/function.get-resource-type.php
-     * @param string      $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function resource($value, $type = null, $message = '')
-    {
-        if (!\is_resource($value)) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected a resource. Got: %s',
-                static::typeToString($value)
-            ));
-        }
-
-        if ($type && $type !== \get_resource_type($value)) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected a resource of type %2$s. Got: %s',
-                static::typeToString($value),
-                $type
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     * @psalm-assert callable $value
-     *
-     * @param mixed  $value
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function isCallable($value, $message = '')
-    {
-        if (!\is_callable($value)) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected a callable. Got: %s',
-                static::typeToString($value)
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     * @psalm-assert array $value
-     *
-     * @param mixed  $value
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function isArray($value, $message = '')
-    {
-        if (!\is_array($value)) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected an array. Got: %s',
-                static::typeToString($value)
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     * @psalm-assert iterable $value
-     *
-     * @deprecated use "isIterable" or "isInstanceOf" instead
-     *
-     * @param mixed  $value
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function isTraversable($value, $message = '')
-    {
-        @\trigger_error(
-            \sprintf(
-                'The "%s" assertion is deprecated. You should stop using it, as it will soon be removed in 2.0 version. Use "isIterable" or "isInstanceOf" instead.',
-                __METHOD__
-            ),
-            \E_USER_DEPRECATED
-        );
-
-        if (!\is_array($value) && !($value instanceof Traversable)) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected a traversable. Got: %s',
-                static::typeToString($value)
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     * @psalm-assert array|ArrayAccess $value
-     *
-     * @param mixed  $value
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function isArrayAccessible($value, $message = '')
-    {
-        if (!\is_array($value) && !($value instanceof ArrayAccess)) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected an array accessible. Got: %s',
-                static::typeToString($value)
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     * @psalm-assert countable $value
-     *
-     * @param mixed  $value
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function isCountable($value, $message = '')
-    {
-        if (
-            !\is_array($value)
-            && !($value instanceof Countable)
-            && !($value instanceof ResourceBundle)
-            && !($value instanceof SimpleXMLElement)
-        ) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected a countable. Got: %s',
-                static::typeToString($value)
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     * @psalm-assert iterable $value
-     *
-     * @param mixed  $value
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function isIterable($value, $message = '')
-    {
-        if (!\is_array($value) && !($value instanceof Traversable)) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected an iterable. Got: %s',
-                static::typeToString($value)
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     * @psalm-template ExpectedType of object
-     * @psalm-param class-string<ExpectedType> $class
-     * @psalm-assert ExpectedType $value
-     *
-     * @param mixed         $value
-     * @param string|object $class
-     * @param string        $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function isInstanceOf($value, $class, $message = '')
-    {
-        if (!($value instanceof $class)) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected an instance of %2$s. Got: %s',
-                static::typeToString($value),
-                $class
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     * @psalm-template ExpectedType of object
-     * @psalm-param class-string<ExpectedType> $class
-     * @psalm-assert !ExpectedType $value
-     *
-     * @param mixed         $value
-     * @param string|object $class
-     * @param string        $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function notInstanceOf($value, $class, $message = '')
-    {
-        if ($value instanceof $class) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected an instance other than %2$s. Got: %s',
-                static::typeToString($value),
-                $class
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     * @psalm-param array<class-string> $classes
-     *
-     * @param mixed                $value
-     * @param array<object|string> $classes
-     * @param string               $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function isInstanceOfAny($value, array $classes, $message = '')
-    {
-        foreach ($classes as $class) {
-            if ($value instanceof $class) {
-                return;
-            }
-        }
-
-        static::reportInvalidArgument(\sprintf(
-            $message ?: 'Expected an instance of any of %2$s. Got: %s',
-            static::typeToString($value),
-            \implode(', ', \array_map(array('static', 'valueToString'), $classes))
-        ));
-    }
-
-    /**
-     * @psalm-pure
-     * @psalm-template ExpectedType of object
-     * @psalm-param class-string<ExpectedType> $class
-     * @psalm-assert ExpectedType|class-string<ExpectedType> $value
-     *
-     * @param object|string $value
-     * @param string        $class
-     * @param string        $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function isAOf($value, $class, $message = '')
-    {
-        static::string($class, 'Expected class as a string. Got: %s');
-
-        if (!\is_a($value, $class, \is_string($value))) {
-            static::reportInvalidArgument(sprintf(
-                $message ?: 'Expected an instance of this class or to this class among his parents %2$s. Got: %s',
-                static::typeToString($value),
-                $class
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     * @psalm-template UnexpectedType of object
-     * @psalm-param class-string<UnexpectedType> $class
-     * @psalm-assert !UnexpectedType $value
-     * @psalm-assert !class-string<UnexpectedType> $value
-     *
-     * @param object|string $value
-     * @param string        $class
-     * @param string        $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function isNotA($value, $class, $message = '')
-    {
-        static::string($class, 'Expected class as a string. Got: %s');
-
-        if (\is_a($value, $class, \is_string($value))) {
-            static::reportInvalidArgument(sprintf(
-                $message ?: 'Expected an instance of this class or to this class among his parents other than %2$s. Got: %s',
-                static::typeToString($value),
-                $class
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     * @psalm-param array<class-string> $classes
-     *
-     * @param object|string $value
-     * @param string[]      $classes
-     * @param string        $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function isAnyOf($value, array $classes, $message = '')
-    {
-        foreach ($classes as $class) {
-            static::string($class, 'Expected class as a string. Got: %s');
-
-            if (\is_a($value, $class, \is_string($value))) {
-                return;
-            }
-        }
-
-        static::reportInvalidArgument(sprintf(
-            $message ?: 'Expected an any of instance of this class or to this class among his parents other than %2$s. Got: %s',
-            static::typeToString($value),
-            \implode(', ', \array_map(array('static', 'valueToString'), $classes))
-        ));
-    }
-
-    /**
-     * @psalm-pure
-     * @psalm-assert empty $value
-     *
-     * @param mixed  $value
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function isEmpty($value, $message = '')
-    {
-        if (!empty($value)) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected an empty value. Got: %s',
-                static::valueToString($value)
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     * @psalm-assert !empty $value
-     *
-     * @param mixed  $value
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function notEmpty($value, $message = '')
-    {
-        if (empty($value)) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected a non-empty value. Got: %s',
-                static::valueToString($value)
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     * @psalm-assert null $value
-     *
-     * @param mixed  $value
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function null($value, $message = '')
-    {
-        if (null !== $value) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected null. Got: %s',
-                static::valueToString($value)
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     * @psalm-assert !null $value
-     *
-     * @param mixed  $value
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function notNull($value, $message = '')
-    {
-        if (null === $value) {
-            static::reportInvalidArgument(
-                $message ?: 'Expected a value other than null.'
-            );
-        }
-    }
-
-    /**
-     * @psalm-pure
-     * @psalm-assert true $value
-     *
-     * @param mixed  $value
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function true($value, $message = '')
-    {
-        if (true !== $value) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected a value to be true. Got: %s',
-                static::valueToString($value)
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     * @psalm-assert false $value
-     *
-     * @param mixed  $value
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function false($value, $message = '')
-    {
-        if (false !== $value) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected a value to be false. Got: %s',
-                static::valueToString($value)
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     * @psalm-assert !false $value
-     *
-     * @param mixed  $value
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function notFalse($value, $message = '')
-    {
-        if (false === $value) {
-            static::reportInvalidArgument(
-                $message ?: 'Expected a value other than false.'
-            );
-        }
-    }
-
-    /**
-     * @param mixed  $value
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function ip($value, $message = '')
-    {
-        if (false === \filter_var($value, \FILTER_VALIDATE_IP)) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected a value to be an IP. Got: %s',
-                static::valueToString($value)
-            ));
-        }
-    }
-
-    /**
-     * @param mixed  $value
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function ipv4($value, $message = '')
-    {
-        if (false === \filter_var($value, \FILTER_VALIDATE_IP, \FILTER_FLAG_IPV4)) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected a value to be an IPv4. Got: %s',
-                static::valueToString($value)
-            ));
-        }
-    }
-
-    /**
-     * @param mixed  $value
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function ipv6($value, $message = '')
-    {
-        if (false === \filter_var($value, \FILTER_VALIDATE_IP, \FILTER_FLAG_IPV6)) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected a value to be an IPv6. Got: %s',
-                static::valueToString($value)
-            ));
-        }
-    }
-
-    /**
-     * @param mixed  $value
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function email($value, $message = '')
-    {
-        if (false === \filter_var($value, FILTER_VALIDATE_EMAIL)) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected a value to be a valid e-mail address. Got: %s',
-                static::valueToString($value)
-            ));
-        }
-    }
-
-    /**
-     * Does non strict comparisons on the items, so ['3', 3] will not pass the assertion.
-     *
-     * @param array  $values
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function uniqueValues(array $values, $message = '')
-    {
-        $allValues = \count($values);
-        $uniqueValues = \count(\array_unique($values));
-
-        if ($allValues !== $uniqueValues) {
-            $difference = $allValues - $uniqueValues;
-
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected an array of unique values, but %s of them %s duplicated',
-                $difference,
-                (1 === $difference ? 'is' : 'are')
-            ));
-        }
-    }
-
-    /**
-     * @param mixed  $value
-     * @param mixed  $expect
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function eq($value, $expect, $message = '')
-    {
-        if ($expect != $value) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected a value equal to %2$s. Got: %s',
-                static::valueToString($value),
-                static::valueToString($expect)
-            ));
-        }
-    }
-
-    /**
-     * @param mixed  $value
-     * @param mixed  $expect
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function notEq($value, $expect, $message = '')
-    {
-        if ($expect == $value) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected a different value than %s.',
-                static::valueToString($expect)
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     *
-     * @param mixed  $value
-     * @param mixed  $expect
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function same($value, $expect, $message = '')
-    {
-        if ($expect !== $value) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected a value identical to %2$s. Got: %s',
-                static::valueToString($value),
-                static::valueToString($expect)
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     *
-     * @param mixed  $value
-     * @param mixed  $expect
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function notSame($value, $expect, $message = '')
-    {
-        if ($expect === $value) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected a value not identical to %s.',
-                static::valueToString($expect)
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     *
-     * @param mixed  $value
-     * @param mixed  $limit
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function greaterThan($value, $limit, $message = '')
-    {
-        if ($value <= $limit) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected a value greater than %2$s. Got: %s',
-                static::valueToString($value),
-                static::valueToString($limit)
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     *
-     * @param mixed  $value
-     * @param mixed  $limit
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function greaterThanEq($value, $limit, $message = '')
-    {
-        if ($value < $limit) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected a value greater than or equal to %2$s. Got: %s',
-                static::valueToString($value),
-                static::valueToString($limit)
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     *
-     * @param mixed  $value
-     * @param mixed  $limit
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function lessThan($value, $limit, $message = '')
-    {
-        if ($value >= $limit) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected a value less than %2$s. Got: %s',
-                static::valueToString($value),
-                static::valueToString($limit)
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     *
-     * @param mixed  $value
-     * @param mixed  $limit
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function lessThanEq($value, $limit, $message = '')
-    {
-        if ($value > $limit) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected a value less than or equal to %2$s. Got: %s',
-                static::valueToString($value),
-                static::valueToString($limit)
-            ));
-        }
-    }
-
-    /**
-     * Inclusive range, so Assert::(3, 3, 5) passes.
-     *
-     * @psalm-pure
-     *
-     * @param mixed  $value
-     * @param mixed  $min
-     * @param mixed  $max
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function range($value, $min, $max, $message = '')
-    {
-        if ($value < $min || $value > $max) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected a value between %2$s and %3$s. Got: %s',
-                static::valueToString($value),
-                static::valueToString($min),
-                static::valueToString($max)
-            ));
-        }
-    }
-
-    /**
-     * A more human-readable alias of Assert::inArray().
-     *
-     * @psalm-pure
-     *
-     * @param mixed  $value
-     * @param array  $values
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function oneOf($value, array $values, $message = '')
-    {
-        static::inArray($value, $values, $message);
-    }
-
-    /**
-     * Does strict comparison, so Assert::inArray(3, ['3']) does not pass the assertion.
-     *
-     * @psalm-pure
-     *
-     * @param mixed  $value
-     * @param array  $values
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function inArray($value, array $values, $message = '')
-    {
-        if (!\in_array($value, $values, true)) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected one of: %2$s. Got: %s',
-                static::valueToString($value),
-                \implode(', ', \array_map(array('static', 'valueToString'), $values))
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     *
-     * @param string $value
-     * @param string $subString
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function contains($value, $subString, $message = '')
-    {
-        if (false === \strpos($value, $subString)) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected a value to contain %2$s. Got: %s',
-                static::valueToString($value),
-                static::valueToString($subString)
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     *
-     * @param string $value
-     * @param string $subString
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function notContains($value, $subString, $message = '')
-    {
-        if (false !== \strpos($value, $subString)) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: '%2$s was not expected to be contained in a value. Got: %s',
-                static::valueToString($value),
-                static::valueToString($subString)
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     *
-     * @param string $value
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function notWhitespaceOnly($value, $message = '')
-    {
-        if (\preg_match('/^\s*$/', $value)) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected a non-whitespace string. Got: %s',
-                static::valueToString($value)
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     *
-     * @param string $value
-     * @param string $prefix
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function startsWith($value, $prefix, $message = '')
-    {
-        if (0 !== \strpos($value, $prefix)) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected a value to start with %2$s. Got: %s',
-                static::valueToString($value),
-                static::valueToString($prefix)
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     *
-     * @param string $value
-     * @param string $prefix
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function notStartsWith($value, $prefix, $message = '')
-    {
-        if (0 === \strpos($value, $prefix)) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected a value not to start with %2$s. Got: %s',
-                static::valueToString($value),
-                static::valueToString($prefix)
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     *
-     * @param mixed  $value
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function startsWithLetter($value, $message = '')
-    {
-        static::string($value);
-
-        $valid = isset($value[0]);
-
-        if ($valid) {
-            $locale = \setlocale(LC_CTYPE, 0);
-            \setlocale(LC_CTYPE, 'C');
-            $valid = \ctype_alpha($value[0]);
-            \setlocale(LC_CTYPE, $locale);
-        }
-
-        if (!$valid) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected a value to start with a letter. Got: %s',
-                static::valueToString($value)
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     *
-     * @param string $value
-     * @param string $suffix
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function endsWith($value, $suffix, $message = '')
-    {
-        if ($suffix !== \substr($value, -\strlen($suffix))) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected a value to end with %2$s. Got: %s',
-                static::valueToString($value),
-                static::valueToString($suffix)
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     *
-     * @param string $value
-     * @param string $suffix
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function notEndsWith($value, $suffix, $message = '')
-    {
-        if ($suffix === \substr($value, -\strlen($suffix))) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected a value not to end with %2$s. Got: %s',
-                static::valueToString($value),
-                static::valueToString($suffix)
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     *
-     * @param string $value
-     * @param string $pattern
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function regex($value, $pattern, $message = '')
-    {
-        if (!\preg_match($pattern, $value)) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'The value %s does not match the expected pattern.',
-                static::valueToString($value)
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     *
-     * @param string $value
-     * @param string $pattern
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function notRegex($value, $pattern, $message = '')
-    {
-        if (\preg_match($pattern, $value, $matches, PREG_OFFSET_CAPTURE)) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'The value %s matches the pattern %s (at offset %d).',
-                static::valueToString($value),
-                static::valueToString($pattern),
-                $matches[0][1]
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     *
-     * @param mixed  $value
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function unicodeLetters($value, $message = '')
-    {
-        static::string($value);
-
-        if (!\preg_match('/^\p{L}+$/u', $value)) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected a value to contain only Unicode letters. Got: %s',
-                static::valueToString($value)
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     *
-     * @param mixed  $value
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function alpha($value, $message = '')
-    {
-        static::string($value);
-
-        $locale = \setlocale(LC_CTYPE, 0);
-        \setlocale(LC_CTYPE, 'C');
-        $valid = !\ctype_alpha($value);
-        \setlocale(LC_CTYPE, $locale);
-
-        if ($valid) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected a value to contain only letters. Got: %s',
-                static::valueToString($value)
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     *
-     * @param string $value
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function digits($value, $message = '')
-    {
-        $locale = \setlocale(LC_CTYPE, 0);
-        \setlocale(LC_CTYPE, 'C');
-        $valid = !\ctype_digit($value);
-        \setlocale(LC_CTYPE, $locale);
-
-        if ($valid) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected a value to contain digits only. Got: %s',
-                static::valueToString($value)
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     *
-     * @param string $value
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function alnum($value, $message = '')
-    {
-        $locale = \setlocale(LC_CTYPE, 0);
-        \setlocale(LC_CTYPE, 'C');
-        $valid = !\ctype_alnum($value);
-        \setlocale(LC_CTYPE, $locale);
-
-        if ($valid) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected a value to contain letters and digits only. Got: %s',
-                static::valueToString($value)
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     * @psalm-assert lowercase-string $value
-     *
-     * @param string $value
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function lower($value, $message = '')
-    {
-        $locale = \setlocale(LC_CTYPE, 0);
-        \setlocale(LC_CTYPE, 'C');
-        $valid = !\ctype_lower($value);
-        \setlocale(LC_CTYPE, $locale);
-
-        if ($valid) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected a value to contain lowercase characters only. Got: %s',
-                static::valueToString($value)
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     * @psalm-assert !lowercase-string $value
-     *
-     * @param string $value
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function upper($value, $message = '')
-    {
-        $locale = \setlocale(LC_CTYPE, 0);
-        \setlocale(LC_CTYPE, 'C');
-        $valid = !\ctype_upper($value);
-        \setlocale(LC_CTYPE, $locale);
-
-        if ($valid) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected a value to contain uppercase characters only. Got: %s',
-                static::valueToString($value)
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     *
-     * @param string $value
-     * @param int    $length
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function length($value, $length, $message = '')
-    {
-        if ($length !== static::strlen($value)) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected a value to contain %2$s characters. Got: %s',
-                static::valueToString($value),
-                $length
-            ));
-        }
-    }
-
-    /**
-     * Inclusive min.
-     *
-     * @psalm-pure
-     *
-     * @param string    $value
-     * @param int|float $min
-     * @param string    $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function minLength($value, $min, $message = '')
-    {
-        if (static::strlen($value) < $min) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected a value to contain at least %2$s characters. Got: %s',
-                static::valueToString($value),
-                $min
-            ));
-        }
-    }
-
-    /**
-     * Inclusive max.
-     *
-     * @psalm-pure
-     *
-     * @param string    $value
-     * @param int|float $max
-     * @param string    $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function maxLength($value, $max, $message = '')
-    {
-        if (static::strlen($value) > $max) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected a value to contain at most %2$s characters. Got: %s',
-                static::valueToString($value),
-                $max
-            ));
-        }
-    }
-
-    /**
-     * Inclusive , so Assert::lengthBetween('asd', 3, 5); passes the assertion.
-     *
-     * @psalm-pure
-     *
-     * @param string    $value
-     * @param int|float $min
-     * @param int|float $max
-     * @param string    $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function lengthBetween($value, $min, $max, $message = '')
-    {
-        $length = static::strlen($value);
-
-        if ($length < $min || $length > $max) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected a value to contain between %2$s and %3$s characters. Got: %s',
-                static::valueToString($value),
-                $min,
-                $max
-            ));
-        }
-    }
-
-    /**
-     * Will also pass if $value is a directory, use Assert::file() instead if you need to be sure it is a file.
-     *
-     * @param mixed  $value
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function fileExists($value, $message = '')
-    {
-        static::string($value);
-
-        if (!\file_exists($value)) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'The file %s does not exist.',
-                static::valueToString($value)
-            ));
-        }
-    }
-
-    /**
-     * @param mixed  $value
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function file($value, $message = '')
-    {
-        static::fileExists($value, $message);
-
-        if (!\is_file($value)) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'The path %s is not a file.',
-                static::valueToString($value)
-            ));
-        }
-    }
-
-    /**
-     * @param mixed  $value
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function directory($value, $message = '')
-    {
-        static::fileExists($value, $message);
-
-        if (!\is_dir($value)) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'The path %s is no directory.',
-                static::valueToString($value)
-            ));
-        }
-    }
-
-    /**
-     * @param string $value
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function readable($value, $message = '')
-    {
-        if (!\is_readable($value)) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'The path %s is not readable.',
-                static::valueToString($value)
-            ));
-        }
-    }
-
-    /**
-     * @param string $value
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function writable($value, $message = '')
-    {
-        if (!\is_writable($value)) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'The path %s is not writable.',
-                static::valueToString($value)
-            ));
-        }
-    }
-
-    /**
-     * @psalm-assert class-string $value
-     *
-     * @param mixed  $value
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function classExists($value, $message = '')
-    {
-        if (!\class_exists($value)) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected an existing class name. Got: %s',
-                static::valueToString($value)
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     * @psalm-template ExpectedType of object
-     * @psalm-param class-string<ExpectedType> $class
-     * @psalm-assert class-string<ExpectedType>|ExpectedType $value
-     *
-     * @param mixed         $value
-     * @param string|object $class
-     * @param string        $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function subclassOf($value, $class, $message = '')
-    {
-        if (!\is_subclass_of($value, $class)) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected a sub-class of %2$s. Got: %s',
-                static::valueToString($value),
-                static::valueToString($class)
-            ));
-        }
-    }
-
-    /**
-     * @psalm-assert class-string $value
-     *
-     * @param mixed  $value
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function interfaceExists($value, $message = '')
-    {
-        if (!\interface_exists($value)) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected an existing interface name. got %s',
-                static::valueToString($value)
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     * @psalm-template ExpectedType of object
-     * @psalm-param class-string<ExpectedType> $interface
-     * @psalm-assert class-string<ExpectedType> $value
-     *
-     * @param mixed  $value
-     * @param mixed  $interface
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function implementsInterface($value, $interface, $message = '')
-    {
-        if (!\in_array($interface, \class_implements($value))) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected an implementation of %2$s. Got: %s',
-                static::valueToString($value),
-                static::valueToString($interface)
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     * @psalm-param class-string|object $classOrObject
-     *
-     * @param string|object $classOrObject
-     * @param mixed         $property
-     * @param string        $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function propertyExists($classOrObject, $property, $message = '')
-    {
-        if (!\property_exists($classOrObject, $property)) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected the property %s to exist.',
-                static::valueToString($property)
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     * @psalm-param class-string|object $classOrObject
-     *
-     * @param string|object $classOrObject
-     * @param mixed         $property
-     * @param string        $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function propertyNotExists($classOrObject, $property, $message = '')
-    {
-        if (\property_exists($classOrObject, $property)) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected the property %s to not exist.',
-                static::valueToString($property)
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     * @psalm-param class-string|object $classOrObject
-     *
-     * @param string|object $classOrObject
-     * @param mixed         $method
-     * @param string        $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function methodExists($classOrObject, $method, $message = '')
-    {
-        if (!(\is_string($classOrObject) || \is_object($classOrObject)) || !\method_exists($classOrObject, $method)) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected the method %s to exist.',
-                static::valueToString($method)
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     * @psalm-param class-string|object $classOrObject
-     *
-     * @param string|object $classOrObject
-     * @param mixed         $method
-     * @param string        $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function methodNotExists($classOrObject, $method, $message = '')
-    {
-        if ((\is_string($classOrObject) || \is_object($classOrObject)) && \method_exists($classOrObject, $method)) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected the method %s to not exist.',
-                static::valueToString($method)
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     *
-     * @param array      $array
-     * @param string|int $key
-     * @param string     $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function keyExists($array, $key, $message = '')
-    {
-        if (!(isset($array[$key]) || \array_key_exists($key, $array))) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected the key %s to exist.',
-                static::valueToString($key)
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     *
-     * @param array      $array
-     * @param string|int $key
-     * @param string     $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function keyNotExists($array, $key, $message = '')
-    {
-        if (isset($array[$key]) || \array_key_exists($key, $array)) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected the key %s to not exist.',
-                static::valueToString($key)
-            ));
-        }
-    }
-
-    /**
-     * Checks if a value is a valid array key (int or string).
-     *
-     * @psalm-pure
-     * @psalm-assert array-key $value
-     *
-     * @param mixed  $value
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function validArrayKey($value, $message = '')
-    {
-        if (!(\is_int($value) || \is_string($value))) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected string or integer. Got: %s',
-                static::typeToString($value)
-            ));
-        }
-    }
-
-    /**
-     * Does not check if $array is countable, this can generate a warning on php versions after 7.2.
-     *
-     * @param Countable|array $array
-     * @param int             $number
-     * @param string          $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function count($array, $number, $message = '')
-    {
-        static::eq(
-            \count($array),
-            $number,
-            \sprintf(
-                $message ?: 'Expected an array to contain %d elements. Got: %d.',
-                $number,
-                \count($array)
-            )
-        );
-    }
-
-    /**
-     * Does not check if $array is countable, this can generate a warning on php versions after 7.2.
-     *
-     * @param Countable|array $array
-     * @param int|float       $min
-     * @param string          $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function minCount($array, $min, $message = '')
-    {
-        if (\count($array) < $min) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected an array to contain at least %2$d elements. Got: %d',
-                \count($array),
-                $min
-            ));
-        }
-    }
-
-    /**
-     * Does not check if $array is countable, this can generate a warning on php versions after 7.2.
-     *
-     * @param Countable|array $array
-     * @param int|float       $max
-     * @param string          $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function maxCount($array, $max, $message = '')
-    {
-        if (\count($array) > $max) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected an array to contain at most %2$d elements. Got: %d',
-                \count($array),
-                $max
-            ));
-        }
-    }
-
-    /**
-     * Does not check if $array is countable, this can generate a warning on php versions after 7.2.
-     *
-     * @param Countable|array $array
-     * @param int|float       $min
-     * @param int|float       $max
-     * @param string          $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function countBetween($array, $min, $max, $message = '')
-    {
-        $count = \count($array);
-
-        if ($count < $min || $count > $max) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Expected an array to contain between %2$d and %3$d elements. Got: %d',
-                $count,
-                $min,
-                $max
-            ));
-        }
-    }
-
-    /**
-     * @psalm-pure
-     * @psalm-assert list $array
-     *
-     * @param mixed  $array
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function isList($array, $message = '')
-    {
-        if (!\is_array($array) || $array !== \array_values($array)) {
-            static::reportInvalidArgument(
-                $message ?: 'Expected list - non-associative array.'
-            );
-        }
-    }
-
-    /**
-     * @psalm-pure
-     * @psalm-assert non-empty-list $array
-     *
-     * @param mixed  $array
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function isNonEmptyList($array, $message = '')
-    {
-        static::isList($array, $message);
-        static::notEmpty($array, $message);
-    }
-
-    /**
-     * @psalm-pure
-     * @psalm-template T
-     * @psalm-param mixed|array<T> $array
-     * @psalm-assert array<string, T> $array
-     *
-     * @param mixed  $array
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function isMap($array, $message = '')
-    {
-        if (
-            !\is_array($array) ||
-            \array_keys($array) !== \array_filter(\array_keys($array), '\is_string')
-        ) {
-            static::reportInvalidArgument(
-                $message ?: 'Expected map - associative array with string keys.'
-            );
-        }
-    }
-
-    /**
-     * @psalm-pure
-     * @psalm-template T
-     * @psalm-param mixed|array<T> $array
-     * @psalm-assert array<string, T> $array
-     * @psalm-assert !empty $array
-     *
-     * @param mixed  $array
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function isNonEmptyMap($array, $message = '')
-    {
-        static::isMap($array, $message);
-        static::notEmpty($array, $message);
-    }
-
-    /**
-     * @psalm-pure
-     *
-     * @param string $value
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function uuid($value, $message = '')
-    {
-        $value = \str_replace(array('urn:', 'uuid:', '{', '}'), '', $value);
-
-        // The nil UUID is special form of UUID that is specified to have all
-        // 128 bits set to zero.
-        if ('00000000-0000-0000-0000-000000000000' === $value) {
-            return;
-        }
-
-        if (!\preg_match('/^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$/', $value)) {
-            static::reportInvalidArgument(\sprintf(
-                $message ?: 'Value %s is not a valid UUID.',
-                static::valueToString($value)
-            ));
-        }
-    }
-
-    /**
-     * @psalm-param class-string<Throwable> $class
-     *
-     * @param Closure $expression
-     * @param string  $class
-     * @param string  $message
-     *
-     * @throws InvalidArgumentException
-     */
-    public static function throws(Closure $expression, $class = 'Exception', $message = '')
-    {
-        static::string($class);
-
-        $actual = 'none';
-
-        try {
-            $expression();
-        } catch (Exception $e) {
-            $actual = \get_class($e);
-            if ($e instanceof $class) {
-                return;
-            }
-        } catch (Throwable $e) {
-            $actual = \get_class($e);
-            if ($e instanceof $class) {
-                return;
-            }
-        }
-
-        static::reportInvalidArgument($message ?: \sprintf(
-            'Expected to throw "%s", got "%s"',
-            $class,
-            $actual
-        ));
-    }
-
-    /**
-     * @throws BadMethodCallException
-     */
-    public static function __callStatic($name, $arguments)
-    {
-        if ('nullOr' === \substr($name, 0, 6)) {
-            if (null !== $arguments[0]) {
-                $method = \lcfirst(\substr($name, 6));
-                \call_user_func_array(array('static', $method), $arguments);
-            }
-
-            return;
-        }
-
-        if ('all' === \substr($name, 0, 3)) {
-            static::isIterable($arguments[0]);
-
-            $method = \lcfirst(\substr($name, 3));
-            $args = $arguments;
-
-            foreach ($arguments[0] as $entry) {
-                $args[0] = $entry;
-
-                \call_user_func_array(array('static', $method), $args);
-            }
-
-            return;
-        }
-
-        throw new BadMethodCallException('No such method: '.$name);
-    }
-
-    /**
-     * @param mixed $value
-     *
-     * @return string
-     */
-    protected static function valueToString($value)
-    {
-        if (null === $value) {
-            return 'null';
-        }
-
-        if (true === $value) {
-            return 'true';
-        }
-
-        if (false === $value) {
-            return 'false';
-        }
-
-        if (\is_array($value)) {
-            return 'array';
-        }
-
-        if (\is_object($value)) {
-            if (\method_exists($value, '__toString')) {
-                return \get_class($value).': '.self::valueToString($value->__toString());
-            }
-
-            if ($value instanceof DateTime || $value instanceof DateTimeImmutable) {
-                return \get_class($value).': '.self::valueToString($value->format('c'));
-            }
-
-            return \get_class($value);
-        }
-
-        if (\is_resource($value)) {
-            return 'resource';
-        }
-
-        if (\is_string($value)) {
-            return '"'.$value.'"';
-        }
-
-        return (string) $value;
-    }
-
-    /**
-     * @param mixed $value
-     *
-     * @return string
-     */
-    protected static function typeToString($value)
-    {
-        return \is_object($value) ? \get_class($value) : \gettype($value);
-    }
-
-    protected static function strlen($value)
-    {
-        if (!\function_exists('mb_detect_encoding')) {
-            return \strlen($value);
-        }
-
-        if (false === $encoding = \mb_detect_encoding($value)) {
-            return \strlen($value);
-        }
-
-        return \mb_strlen($value, $encoding);
-    }
-
-    /**
-     * @param string $message
-     *
-     * @throws InvalidArgumentException
-     *
-     * @psalm-pure this method is not supposed to perform side-effects
-     */
-    protected static function reportInvalidArgument($message)
-    {
-        throw new InvalidArgumentException($message);
-    }
-
-    private function __construct()
-    {
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

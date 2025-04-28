@@ -1,117 +1,45 @@
-<?php
-/**
- * Mockery
- *
- * LICENSE
- *
- * This source file is subject to the new BSD license that is bundled
- * with this package in the file LICENSE.txt.
- * It is also available through the world-wide-web at this URL:
- * http://github.com/padraic/mockery/blob/master/LICENSE
- * If you did not receive a copy of the license and are unable to
- * obtain it through the world-wide-web, please send an email
- * to padraic@php.net so we can send you a copy immediately.
- *
- * @category   Mockery
- * @package    Mockery
- * @copyright  Copyright (c) 2010 Pádraic Brady (http://blog.astrumfutura.com)
- * @license    http://github.com/padraic/mockery/blob/master/LICENSE New BSD License
- */
-
-namespace Mockery\Generator;
-
-use Mockery\Reflector;
-
-class Parameter
-{
-    /** @var int */
-    private static $parameterCounter = 0;
-
-    /** @var \ReflectionParameter */
-    private $rfp;
-
-    public function __construct(\ReflectionParameter $rfp)
-    {
-        $this->rfp = $rfp;
-    }
-
-    public function __call($method, array $args)
-    {
-        return call_user_func_array(array($this->rfp, $method), $args);
-    }
-
-    /**
-     * Get the reflection class for the parameter type, if it exists.
-     *
-     * This will be null if there was no type, or it was a scalar or a union.
-     *
-     * @return \ReflectionClass|null
-     *
-     * @deprecated since 1.3.3 and will be removed in 2.0.
-     */
-    public function getClass()
-    {
-        $typeHint = Reflector::getTypeHint($this->rfp, true);
-
-        return \class_exists($typeHint) ? DefinedTargetClass::factory($typeHint, false) : null;
-    }
-
-    /**
-     * Get the string representation for the paramater type.
-     *
-     * @return string|null
-     */
-    public function getTypeHint()
-    {
-        return Reflector::getTypeHint($this->rfp);
-    }
-
-    /**
-     * Get the string representation for the paramater type.
-     *
-     * @return string
-     *
-     * @deprecated since 1.3.2 and will be removed in 2.0. Use getTypeHint() instead.
-     */
-    public function getTypeHintAsString()
-    {
-        return (string) Reflector::getTypeHint($this->rfp, true);
-    }
-
-    /**
-     * Get the name of the parameter.
-     *
-     * Some internal classes have funny looking definitions!
-     *
-     * @return string
-     */
-    public function getName()
-    {
-        $name = $this->rfp->getName();
-        if (!$name || $name == '...') {
-            $name = 'arg' . self::$parameterCounter++;
-        }
-
-        return $name;
-    }
-
-    /**
-     * Determine if the parameter is an array.
-     *
-     * @return bool
-     */
-    public function isArray()
-    {
-        return Reflector::isArray($this->rfp);
-    }
-
-    /**
-     * Determine if the parameter is variadic.
-     *
-     * @return bool
-     */
-    public function isVariadic()
-    {
-        return $this->rfp->isVariadic();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

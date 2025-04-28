@@ -1,102 +1,61 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy;
-
-use Psy\Exception\BreakException;
-use Psy\Exception\ErrorException;
-use Psy\Exception\ThrowUpException;
-use Psy\Exception\TypeErrorException;
-
-/**
- * The Psy Shell's execution loop scope.
- *
- * @todo Once we're on PHP 5.5, we can switch ExecutionClosure to a generator
- * and get rid of the duplicate closure implementations :)
- */
-class ExecutionLoopClosure extends ExecutionClosure
-{
-    /**
-     * @param Shell $__psysh__
-     */
-    public function __construct(Shell $__psysh__)
-    {
-        $this->setClosure($__psysh__, function () use ($__psysh__) {
-            // Restore execution scope variables
-            \extract($__psysh__->getScopeVariables(false));
-
-            do {
-                $__psysh__->beforeLoop();
-
-                try {
-                    $__psysh__->getInput();
-
-                    try {
-                        // Pull in any new execution scope variables
-                        if ($__psysh__->getLastExecSuccess()) {
-                            \extract($__psysh__->getScopeVariablesDiff(\get_defined_vars()));
-                        }
-
-                        // Buffer stdout; we'll need it later
-                        \ob_start([$__psysh__, 'writeStdout'], 1);
-
-                        // Convert all errors to exceptions
-                        \set_error_handler([$__psysh__, 'handleError']);
-
-                        // Evaluate the current code buffer
-                        $_ = eval($__psysh__->onExecute($__psysh__->flushCode() ?: ExecutionClosure::NOOP_INPUT));
-                    } catch (\Throwable $_e) {
-                        // Clean up on our way out.
-                        if (\ob_get_level() > 0) {
-                            \ob_end_clean();
-                        }
-
-                        throw $_e;
-                    } catch (\Exception $_e) {
-                        // Clean up on our way out.
-                        if (\ob_get_level() > 0) {
-                            \ob_end_clean();
-                        }
-
-                        throw $_e;
-                    } finally {
-                        // Won't be needing this anymore
-                        \restore_error_handler();
-                    }
-
-                    // Flush stdout (write to shell output, plus save to magic variable)
-                    \ob_end_flush();
-
-                    // Save execution scope variables for next time
-                    $__psysh__->setScopeVariables(\get_defined_vars());
-
-                    $__psysh__->writeReturnValue($_);
-                } catch (BreakException $_e) {
-                    $__psysh__->writeException($_e);
-
-                    return;
-                } catch (ThrowUpException $_e) {
-                    $__psysh__->writeException($_e);
-
-                    throw $_e;
-                } catch (\TypeError $_e) {
-                    $__psysh__->writeException(TypeErrorException::fromTypeError($_e));
-                } catch (\Error $_e) {
-                    $__psysh__->writeException(ErrorException::fromError($_e));
-                } catch (\Exception $_e) {
-                    $__psysh__->writeException($_e);
-                }
-
-                $__psysh__->afterLoop();
-            } while (true);
-        });
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,131 +1,60 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Writer;
-
-abstract class BaseWriter implements IWriter
-{
-    /**
-     * Write charts that are defined in the workbook?
-     * Identifies whether the Writer should write definitions for any charts that exist in the PhpSpreadsheet object;.
-     *
-     * @var bool
-     */
-    protected $includeCharts = false;
-
-    /**
-     * Pre-calculate formulas
-     * Forces PhpSpreadsheet to recalculate all formulae in a workbook when saving, so that the pre-calculated values are
-     * immediately available to MS Excel or other office spreadsheet viewer when opening the file.
-     *
-     * @var bool
-     */
-    protected $preCalculateFormulas = true;
-
-    /**
-     * Use disk caching where possible?
-     *
-     * @var bool
-     */
-    private $useDiskCaching = false;
-
-    /**
-     * Disk caching directory.
-     *
-     * @var string
-     */
-    private $diskCachingDirectory = './';
-
-    /**
-     * @var resource
-     */
-    protected $fileHandle;
-
-    /**
-     * @var bool
-     */
-    private $shouldCloseFile;
-
-    public function getIncludeCharts()
-    {
-        return $this->includeCharts;
-    }
-
-    public function setIncludeCharts($pValue)
-    {
-        $this->includeCharts = (bool) $pValue;
-
-        return $this;
-    }
-
-    public function getPreCalculateFormulas()
-    {
-        return $this->preCalculateFormulas;
-    }
-
-    public function setPreCalculateFormulas($pValue)
-    {
-        $this->preCalculateFormulas = (bool) $pValue;
-
-        return $this;
-    }
-
-    public function getUseDiskCaching()
-    {
-        return $this->useDiskCaching;
-    }
-
-    public function setUseDiskCaching($pValue, $pDirectory = null)
-    {
-        $this->useDiskCaching = $pValue;
-
-        if ($pDirectory !== null) {
-            if (is_dir($pDirectory)) {
-                $this->diskCachingDirectory = $pDirectory;
-            } else {
-                throw new Exception("Directory does not exist: $pDirectory");
-            }
-        }
-
-        return $this;
-    }
-
-    public function getDiskCachingDirectory()
-    {
-        return $this->diskCachingDirectory;
-    }
-
-    /**
-     * Open file handle.
-     *
-     * @param resource|string $filename
-     */
-    public function openFileHandle($filename): void
-    {
-        if (is_resource($filename)) {
-            $this->fileHandle = $filename;
-            $this->shouldCloseFile = false;
-
-            return;
-        }
-
-        $fileHandle = $filename ? fopen($filename, 'wb+') : false;
-        if ($fileHandle === false) {
-            throw new Exception('Could not open file "' . $filename . '" for writing.');
-        }
-
-        $this->fileHandle = $fileHandle;
-        $this->shouldCloseFile = true;
-    }
-
-    /**
-     * Close file handle only if we opened it ourselves.
-     */
-    protected function maybeCloseFileHandle(): void
-    {
-        if ($this->shouldCloseFile) {
-            if (!fclose($this->fileHandle)) {
-                throw new Exception('Could not close file after writing.');
-            }
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

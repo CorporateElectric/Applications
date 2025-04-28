@@ -1,239 +1,60 @@
-<?php
-
-/*
- * This file is part of the Prophecy.
- * (c) Konstantin Kudryashov <ever.zet@gmail.com>
- *     Marcello Duarte <marcello.duarte@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Prophecy;
-
-use Prophecy\Argument\Token;
-
-/**
- * Argument tokens shortcuts.
- *
- * @author Konstantin Kudryashov <ever.zet@gmail.com>
- */
-class Argument
-{
-    /**
-     * Checks that argument is exact value or object.
-     *
-     * @param mixed $value
-     *
-     * @return Token\ExactValueToken
-     */
-    public static function exact($value)
-    {
-        return new Token\ExactValueToken($value);
-    }
-
-    /**
-     * Checks that argument is of specific type or instance of specific class.
-     *
-     * @param string $type Type name (`integer`, `string`) or full class name
-     *
-     * @return Token\TypeToken
-     */
-    public static function type($type)
-    {
-        return new Token\TypeToken($type);
-    }
-
-    /**
-     * Checks that argument object has specific state.
-     *
-     * @param string $methodName
-     * @param mixed  $value
-     *
-     * @return Token\ObjectStateToken
-     */
-    public static function which($methodName, $value)
-    {
-        return new Token\ObjectStateToken($methodName, $value);
-    }
-
-    /**
-     * Checks that argument matches provided callback.
-     *
-     * @param callable $callback
-     *
-     * @return Token\CallbackToken
-     */
-    public static function that($callback)
-    {
-        return new Token\CallbackToken($callback);
-    }
-
-    /**
-     * Matches any single value.
-     *
-     * @return Token\AnyValueToken
-     */
-    public static function any()
-    {
-        return new Token\AnyValueToken;
-    }
-
-    /**
-     * Matches all values to the rest of the signature.
-     *
-     * @return Token\AnyValuesToken
-     */
-    public static function cetera()
-    {
-        return new Token\AnyValuesToken;
-    }
-
-    /**
-     * Checks that argument matches all tokens
-     *
-     * @param mixed ... a list of tokens
-     *
-     * @return Token\LogicalAndToken
-     */
-    public static function allOf()
-    {
-        return new Token\LogicalAndToken(func_get_args());
-    }
-
-    /**
-     * Checks that argument array or countable object has exact number of elements.
-     *
-     * @param integer $value array elements count
-     *
-     * @return Token\ArrayCountToken
-     */
-    public static function size($value)
-    {
-        return new Token\ArrayCountToken($value);
-    }
-
-    /**
-     * Checks that argument array contains (key, value) pair
-     *
-     * @param mixed $key   exact value or token
-     * @param mixed $value exact value or token
-     *
-     * @return Token\ArrayEntryToken
-     */
-    public static function withEntry($key, $value)
-    {
-        return new Token\ArrayEntryToken($key, $value);
-    }
-
-    /**
-     * Checks that arguments array entries all match value
-     *
-     * @param mixed $value
-     *
-     * @return Token\ArrayEveryEntryToken
-     */
-    public static function withEveryEntry($value)
-    {
-        return new Token\ArrayEveryEntryToken($value);
-    }
-
-    /**
-     * Checks that argument array contains value
-     *
-     * @param mixed $value
-     *
-     * @return Token\ArrayEntryToken
-     */
-    public static function containing($value)
-    {
-        return new Token\ArrayEntryToken(self::any(), $value);
-    }
-
-    /**
-     * Checks that argument array has key
-     *
-     * @param mixed $key exact value or token
-     *
-     * @return Token\ArrayEntryToken
-     */
-    public static function withKey($key)
-    {
-        return new Token\ArrayEntryToken($key, self::any());
-    }
-
-    /**
-     * Checks that argument does not match the value|token.
-     *
-     * @param mixed $value either exact value or argument token
-     *
-     * @return Token\LogicalNotToken
-     */
-    public static function not($value)
-    {
-        return new Token\LogicalNotToken($value);
-    }
-
-    /**
-     * @param string $value
-     *
-     * @return Token\StringContainsToken
-     */
-    public static function containingString($value)
-    {
-        return new Token\StringContainsToken($value);
-    }
-
-    /**
-     * Checks that argument is identical value.
-     *
-     * @param mixed $value
-     *
-     * @return Token\IdenticalValueToken
-     */
-    public static function is($value)
-    {
-        return new Token\IdenticalValueToken($value);
-    }
-
-    /**
-     * Check that argument is same value when rounding to the
-     * given precision.
-     *
-     * @param float $value
-     * @param float $precision
-     *
-     * @return Token\ApproximateValueToken
-     */
-    public static function approximate($value, $precision = 0)
-    {
-        return new Token\ApproximateValueToken($value, $precision);
-    }
-
-    /**
-     * Checks that argument is in array.
-     *
-     * @param array $value
-     *
-     * @return Token\InArrayToken
-     */
-
-    public function in($value)
-    {
-        return new Token\InArrayToken($value);
-    }
-
-    /**
-     * Checks that argument is in array.
-     *
-     * @param array $value
-     *
-     * @return Token\InArrayToken
-     */
-
-    public function notIn($value)
-    {
-        return new Token\NotInArrayToken($value);
-    }
-
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

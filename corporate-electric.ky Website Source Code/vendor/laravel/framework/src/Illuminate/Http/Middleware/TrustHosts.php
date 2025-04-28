@@ -1,73 +1,41 @@
-<?php
-
-namespace Illuminate\Http\Middleware;
-
-use Illuminate\Contracts\Foundation\Application;
-use Illuminate\Http\Request;
-
-abstract class TrustHosts
-{
-    /**
-     * The application instance.
-     *
-     * @var \Illuminate\Contracts\Foundation\Application
-     */
-    protected $app;
-
-    /**
-     * Create a new middleware instance.
-     *
-     * @param  \Illuminate\Contracts\Foundation\Application  $app
-     * @return void
-     */
-    public function __construct(Application $app)
-    {
-        $this->app = $app;
-    }
-
-    /**
-     * Get the host patterns that should be trusted.
-     *
-     * @return array
-     */
-    abstract public function hosts();
-
-    /**
-     * Handle the incoming request.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  callable  $next
-     * @return \Illuminate\Http\Response
-     */
-    public function handle(Request $request, $next)
-    {
-        if ($this->shouldSpecifyTrustedHosts()) {
-            Request::setTrustedHosts(array_filter($this->hosts()));
-        }
-
-        return $next($request);
-    }
-
-    /**
-     * Determine if the application should specify trusted hosts.
-     *
-     * @return bool
-     */
-    protected function shouldSpecifyTrustedHosts()
-    {
-        return config('app.env') !== 'local' &&
-               ! $this->app->runningUnitTests();
-    }
-
-    /**
-     * Get a regular expression matching the application URL and all of its subdomains.
-     *
-     * @return string|null
-     */
-    protected function allSubdomainsOfApplicationUrl()
-    {
-        if ($host = parse_url($this->app['config']->get('app.url'), PHP_URL_HOST)) {
-            return '^(.+\.)?'.preg_quote($host).'$';
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

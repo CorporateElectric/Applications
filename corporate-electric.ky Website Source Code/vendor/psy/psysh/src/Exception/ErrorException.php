@@ -1,114 +1,56 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\Exception;
-
-/**
- * A custom error Exception for Psy with a formatted $message.
- */
-class ErrorException extends \ErrorException implements Exception
-{
-    private $rawMessage;
-
-    /**
-     * Construct a Psy ErrorException.
-     *
-     * @param string         $message  (default: "")
-     * @param int            $code     (default: 0)
-     * @param int            $severity (default: 1)
-     * @param string|null    $filename (default: null)
-     * @param int|null       $lineno   (default: null)
-     * @param Exception|null $previous (default: null)
-     */
-    public function __construct($message = '', $code = 0, $severity = 1, $filename = null, $lineno = null, $previous = null)
-    {
-        $this->rawMessage = $message;
-
-        if (!empty($filename) && \preg_match('{Psy[/\\\\]ExecutionLoop}', $filename)) {
-            $filename = '';
-        }
-
-        switch ($severity) {
-            case \E_STRICT:
-                $type = 'Strict error';
-                break;
-
-            case \E_NOTICE:
-            case \E_USER_NOTICE:
-                $type = 'Notice';
-                break;
-
-            case \E_WARNING:
-            case \E_CORE_WARNING:
-            case \E_COMPILE_WARNING:
-            case \E_USER_WARNING:
-                $type = 'Warning';
-                break;
-
-            case \E_DEPRECATED:
-            case \E_USER_DEPRECATED:
-                $type = 'Deprecated';
-                break;
-
-            case \E_RECOVERABLE_ERROR:
-                $type = 'Recoverable fatal error';
-                break;
-
-            default:
-                $type = 'Error';
-                break;
-        }
-
-        $message = \sprintf('PHP %s:  %s%s on line %d', $type, $message, $filename ? ' in '.$filename : '', $lineno);
-        parent::__construct($message, $code, $severity, $filename, $lineno, $previous);
-    }
-
-    /**
-     * Get the raw (unformatted) message for this error.
-     *
-     * @return string
-     */
-    public function getRawMessage()
-    {
-        return $this->rawMessage;
-    }
-
-    /**
-     * Helper for throwing an ErrorException.
-     *
-     * This allows us to:
-     *
-     *     set_error_handler([ErrorException::class, 'throwException']);
-     *
-     * @throws ErrorException
-     *
-     * @param int    $errno   Error type
-     * @param string $errstr  Message
-     * @param string $errfile Filename
-     * @param int    $errline Line number
-     */
-    public static function throwException($errno, $errstr, $errfile, $errline)
-    {
-        throw new self($errstr, 0, $errno, $errfile, $errline);
-    }
-
-    /**
-     * Create an ErrorException from an Error.
-     *
-     * @param \Error $e
-     *
-     * @return ErrorException
-     */
-    public static function fromError(\Error $e)
-    {
-        return new self($e->getMessage(), $e->getCode(), 1, $e->getFile(), $e->getLine(), $e);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

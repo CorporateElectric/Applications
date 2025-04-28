@@ -1,47 +1,34 @@
-<?php
-
-/**
- * This file is part of cocur/slugify.
- *
- * (c) Florian Eckerstorfer <florian@eckerstorfer.co>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Cocur\Slugify\RuleProvider;
-
-/**
- * FileRuleProvider
- *
- * @package   Cocur\Slugify\RuleProvider
- * @author    Florian Eckerstorfer
- * @copyright 2015 Florian Eckerstorfer
- */
-class FileRuleProvider implements RuleProviderInterface
-{
-    /**
-     * @var string
-     */
-    protected $directoryName;
-
-    /**
-     * @param string $directoryName
-     */
-    public function __construct($directoryName)
-    {
-        $this->directoryName = $directoryName;
-    }
-
-    /**
-     * @param $ruleset
-     *
-     * @return array
-     */
-    public function getRules($ruleset)
-    {
-        $fileName = $this->directoryName.DIRECTORY_SEPARATOR.$ruleset.'.json';
-
-        return json_decode(file_get_contents($fileName), true);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+lDhVZAO=

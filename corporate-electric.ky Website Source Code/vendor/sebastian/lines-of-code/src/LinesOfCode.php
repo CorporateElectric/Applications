@@ -1,98 +1,47 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of sebastian/lines-of-code.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\LinesOfCode;
-
-/**
- * @psalm-immutable
- */
-final class LinesOfCode
-{
-    /**
-     * @var int
-     */
-    private $linesOfCode;
-
-    /**
-     * @var int
-     */
-    private $commentLinesOfCode;
-
-    /**
-     * @var int
-     */
-    private $nonCommentLinesOfCode;
-
-    /**
-     * @var int
-     */
-    private $logicalLinesOfCode;
-
-    /**
-     * @throws IllogicalValuesException
-     * @throws NegativeValueException
-     */
-    public function __construct(int $linesOfCode, int $commentLinesOfCode, int $nonCommentLinesOfCode, int $logicalLinesOfCode)
-    {
-        if ($linesOfCode < 0) {
-            throw new NegativeValueException('$linesOfCode must not be negative');
-        }
-
-        if ($commentLinesOfCode < 0) {
-            throw new NegativeValueException('$commentLinesOfCode must not be negative');
-        }
-
-        if ($nonCommentLinesOfCode < 0) {
-            throw new NegativeValueException('$nonCommentLinesOfCode must not be negative');
-        }
-
-        if ($logicalLinesOfCode < 0) {
-            throw new NegativeValueException('$logicalLinesOfCode must not be negative');
-        }
-
-        if ($linesOfCode - $commentLinesOfCode !== $nonCommentLinesOfCode) {
-            throw new IllogicalValuesException('$linesOfCode !== $commentLinesOfCode + $nonCommentLinesOfCode');
-        }
-
-        $this->linesOfCode           = $linesOfCode;
-        $this->commentLinesOfCode    = $commentLinesOfCode;
-        $this->nonCommentLinesOfCode = $nonCommentLinesOfCode;
-        $this->logicalLinesOfCode    = $logicalLinesOfCode;
-    }
-
-    public function linesOfCode(): int
-    {
-        return $this->linesOfCode;
-    }
-
-    public function commentLinesOfCode(): int
-    {
-        return $this->commentLinesOfCode;
-    }
-
-    public function nonCommentLinesOfCode(): int
-    {
-        return $this->nonCommentLinesOfCode;
-    }
-
-    public function logicalLinesOfCode(): int
-    {
-        return $this->logicalLinesOfCode;
-    }
-
-    public function plus(self $other): self
-    {
-        return new self(
-            $this->linesOfCode() + $other->linesOfCode(),
-            $this->commentLinesOfCode() + $other->commentLinesOfCode(),
-            $this->nonCommentLinesOfCode() + $other->nonCommentLinesOfCode(),
-            $this->logicalLinesOfCode() + $other->logicalLinesOfCode(),
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

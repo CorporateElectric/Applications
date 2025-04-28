@@ -1,113 +1,56 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpKernel\Fragment;
-
-use Symfony\Component\HttpFoundation\RequestStack;
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpFoundation\StreamedResponse;
-use Symfony\Component\HttpKernel\Controller\ControllerReference;
-use Symfony\Component\HttpKernel\Exception\HttpException;
-
-/**
- * Renders a URI that represents a resource fragment.
- *
- * This class handles the rendering of resource fragments that are included into
- * a main resource. The handling of the rendering is managed by specialized renderers.
- *
- * @author Fabien Potencier <fabien@symfony.com>
- *
- * @see FragmentRendererInterface
- */
-class FragmentHandler
-{
-    private $debug;
-    private $renderers = [];
-    private $requestStack;
-
-    /**
-     * @param FragmentRendererInterface[] $renderers An array of FragmentRendererInterface instances
-     * @param bool                        $debug     Whether the debug mode is enabled or not
-     */
-    public function __construct(RequestStack $requestStack, array $renderers = [], bool $debug = false)
-    {
-        $this->requestStack = $requestStack;
-        foreach ($renderers as $renderer) {
-            $this->addRenderer($renderer);
-        }
-        $this->debug = $debug;
-    }
-
-    /**
-     * Adds a renderer.
-     */
-    public function addRenderer(FragmentRendererInterface $renderer)
-    {
-        $this->renderers[$renderer->getName()] = $renderer;
-    }
-
-    /**
-     * Renders a URI and returns the Response content.
-     *
-     * Available options:
-     *
-     *  * ignore_errors: true to return an empty string in case of an error
-     *
-     * @param string|ControllerReference $uri A URI as a string or a ControllerReference instance
-     *
-     * @return string|null The Response content or null when the Response is streamed
-     *
-     * @throws \InvalidArgumentException when the renderer does not exist
-     * @throws \LogicException           when no master request is being handled
-     */
-    public function render($uri, string $renderer = 'inline', array $options = [])
-    {
-        if (!isset($options['ignore_errors'])) {
-            $options['ignore_errors'] = !$this->debug;
-        }
-
-        if (!isset($this->renderers[$renderer])) {
-            throw new \InvalidArgumentException(sprintf('The "%s" renderer does not exist.', $renderer));
-        }
-
-        if (!$request = $this->requestStack->getCurrentRequest()) {
-            throw new \LogicException('Rendering a fragment can only be done when handling a Request.');
-        }
-
-        return $this->deliver($this->renderers[$renderer]->render($uri, $request, $options));
-    }
-
-    /**
-     * Delivers the Response as a string.
-     *
-     * When the Response is a StreamedResponse, the content is streamed immediately
-     * instead of being returned.
-     *
-     * @return string|null The Response content or null when the Response is streamed
-     *
-     * @throws \RuntimeException when the Response is not successful
-     */
-    protected function deliver(Response $response)
-    {
-        if (!$response->isSuccessful()) {
-            $responseStatusCode = $response->getStatusCode();
-            throw new \RuntimeException(sprintf('Error when rendering "%s" (Status code is %d).', $this->requestStack->getCurrentRequest()->getUri(), $responseStatusCode), 0, new HttpException($responseStatusCode));
-        }
-
-        if (!$response instanceof StreamedResponse) {
-            return $response->getContent();
-        }
-
-        $response->sendContent();
-
-        return null;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

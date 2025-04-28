@@ -1,415 +1,136 @@
-<?php
-
-namespace Illuminate\Database\Eloquent\Concerns;
-
-use Illuminate\Contracts\Events\Dispatcher;
-use Illuminate\Events\NullDispatcher;
-use Illuminate\Support\Arr;
-use InvalidArgumentException;
-
-trait HasEvents
-{
-    /**
-     * The event map for the model.
-     *
-     * Allows for object-based events for native Eloquent events.
-     *
-     * @var array
-     */
-    protected $dispatchesEvents = [];
-
-    /**
-     * User exposed observable events.
-     *
-     * These are extra user-defined events observers may subscribe to.
-     *
-     * @var array
-     */
-    protected $observables = [];
-
-    /**
-     * Register observers with the model.
-     *
-     * @param  object|array|string  $classes
-     * @return void
-     *
-     * @throws \RuntimeException
-     */
-    public static function observe($classes)
-    {
-        $instance = new static;
-
-        foreach (Arr::wrap($classes) as $class) {
-            $instance->registerObserver($class);
-        }
-    }
-
-    /**
-     * Register a single observer with the model.
-     *
-     * @param  object|string  $class
-     * @return void
-     *
-     * @throws \RuntimeException
-     */
-    protected function registerObserver($class)
-    {
-        $className = $this->resolveObserverClassName($class);
-
-        // When registering a model observer, we will spin through the possible events
-        // and determine if this observer has that method. If it does, we will hook
-        // it into the model's event system, making it convenient to watch these.
-        foreach ($this->getObservableEvents() as $event) {
-            if (method_exists($class, $event)) {
-                static::registerModelEvent($event, $className.'@'.$event);
-            }
-        }
-    }
-
-    /**
-     * Resolve the observer's class name from an object or string.
-     *
-     * @param  object|string  $class
-     * @return string
-     *
-     * @throws \InvalidArgumentException
-     */
-    private function resolveObserverClassName($class)
-    {
-        if (is_object($class)) {
-            return get_class($class);
-        }
-
-        if (class_exists($class)) {
-            return $class;
-        }
-
-        throw new InvalidArgumentException('Unable to find observer: '.$class);
-    }
-
-    /**
-     * Get the observable event names.
-     *
-     * @return array
-     */
-    public function getObservableEvents()
-    {
-        return array_merge(
-            [
-                'retrieved', 'creating', 'created', 'updating', 'updated',
-                'saving', 'saved', 'restoring', 'restored', 'replicating',
-                'deleting', 'deleted', 'forceDeleted',
-            ],
-            $this->observables
-        );
-    }
-
-    /**
-     * Set the observable event names.
-     *
-     * @param  array  $observables
-     * @return $this
-     */
-    public function setObservableEvents(array $observables)
-    {
-        $this->observables = $observables;
-
-        return $this;
-    }
-
-    /**
-     * Add an observable event name.
-     *
-     * @param  array|mixed  $observables
-     * @return void
-     */
-    public function addObservableEvents($observables)
-    {
-        $this->observables = array_unique(array_merge(
-            $this->observables, is_array($observables) ? $observables : func_get_args()
-        ));
-    }
-
-    /**
-     * Remove an observable event name.
-     *
-     * @param  array|mixed  $observables
-     * @return void
-     */
-    public function removeObservableEvents($observables)
-    {
-        $this->observables = array_diff(
-            $this->observables, is_array($observables) ? $observables : func_get_args()
-        );
-    }
-
-    /**
-     * Register a model event with the dispatcher.
-     *
-     * @param  string  $event
-     * @param  \Closure|string  $callback
-     * @return void
-     */
-    protected static function registerModelEvent($event, $callback)
-    {
-        if (isset(static::$dispatcher)) {
-            $name = static::class;
-
-            static::$dispatcher->listen("eloquent.{$event}: {$name}", $callback);
-        }
-    }
-
-    /**
-     * Fire the given event for the model.
-     *
-     * @param  string  $event
-     * @param  bool  $halt
-     * @return mixed
-     */
-    protected function fireModelEvent($event, $halt = true)
-    {
-        if (! isset(static::$dispatcher)) {
-            return true;
-        }
-
-        // First, we will get the proper method to call on the event dispatcher, and then we
-        // will attempt to fire a custom, object based event for the given event. If that
-        // returns a result we can return that result, or we'll call the string events.
-        $method = $halt ? 'until' : 'dispatch';
-
-        $result = $this->filterModelEventResults(
-            $this->fireCustomModelEvent($event, $method)
-        );
-
-        if ($result === false) {
-            return false;
-        }
-
-        return ! empty($result) ? $result : static::$dispatcher->{$method}(
-            "eloquent.{$event}: ".static::class, $this
-        );
-    }
-
-    /**
-     * Fire a custom model event for the given event.
-     *
-     * @param  string  $event
-     * @param  string  $method
-     * @return mixed|null
-     */
-    protected function fireCustomModelEvent($event, $method)
-    {
-        if (! isset($this->dispatchesEvents[$event])) {
-            return;
-        }
-
-        $result = static::$dispatcher->$method(new $this->dispatchesEvents[$event]($this));
-
-        if (! is_null($result)) {
-            return $result;
-        }
-    }
-
-    /**
-     * Filter the model event results.
-     *
-     * @param  mixed  $result
-     * @return mixed
-     */
-    protected function filterModelEventResults($result)
-    {
-        if (is_array($result)) {
-            $result = array_filter($result, function ($response) {
-                return ! is_null($response);
-            });
-        }
-
-        return $result;
-    }
-
-    /**
-     * Register a retrieved model event with the dispatcher.
-     *
-     * @param  \Closure|string  $callback
-     * @return void
-     */
-    public static function retrieved($callback)
-    {
-        static::registerModelEvent('retrieved', $callback);
-    }
-
-    /**
-     * Register a saving model event with the dispatcher.
-     *
-     * @param  \Closure|string  $callback
-     * @return void
-     */
-    public static function saving($callback)
-    {
-        static::registerModelEvent('saving', $callback);
-    }
-
-    /**
-     * Register a saved model event with the dispatcher.
-     *
-     * @param  \Closure|string  $callback
-     * @return void
-     */
-    public static function saved($callback)
-    {
-        static::registerModelEvent('saved', $callback);
-    }
-
-    /**
-     * Register an updating model event with the dispatcher.
-     *
-     * @param  \Closure|string  $callback
-     * @return void
-     */
-    public static function updating($callback)
-    {
-        static::registerModelEvent('updating', $callback);
-    }
-
-    /**
-     * Register an updated model event with the dispatcher.
-     *
-     * @param  \Closure|string  $callback
-     * @return void
-     */
-    public static function updated($callback)
-    {
-        static::registerModelEvent('updated', $callback);
-    }
-
-    /**
-     * Register a creating model event with the dispatcher.
-     *
-     * @param  \Closure|string  $callback
-     * @return void
-     */
-    public static function creating($callback)
-    {
-        static::registerModelEvent('creating', $callback);
-    }
-
-    /**
-     * Register a created model event with the dispatcher.
-     *
-     * @param  \Closure|string  $callback
-     * @return void
-     */
-    public static function created($callback)
-    {
-        static::registerModelEvent('created', $callback);
-    }
-
-    /**
-     * Register a replicating model event with the dispatcher.
-     *
-     * @param  \Closure|string  $callback
-     * @return void
-     */
-    public static function replicating($callback)
-    {
-        static::registerModelEvent('replicating', $callback);
-    }
-
-    /**
-     * Register a deleting model event with the dispatcher.
-     *
-     * @param  \Closure|string  $callback
-     * @return void
-     */
-    public static function deleting($callback)
-    {
-        static::registerModelEvent('deleting', $callback);
-    }
-
-    /**
-     * Register a deleted model event with the dispatcher.
-     *
-     * @param  \Closure|string  $callback
-     * @return void
-     */
-    public static function deleted($callback)
-    {
-        static::registerModelEvent('deleted', $callback);
-    }
-
-    /**
-     * Remove all of the event listeners for the model.
-     *
-     * @return void
-     */
-    public static function flushEventListeners()
-    {
-        if (! isset(static::$dispatcher)) {
-            return;
-        }
-
-        $instance = new static;
-
-        foreach ($instance->getObservableEvents() as $event) {
-            static::$dispatcher->forget("eloquent.{$event}: ".static::class);
-        }
-
-        foreach (array_values($instance->dispatchesEvents) as $event) {
-            static::$dispatcher->forget($event);
-        }
-    }
-
-    /**
-     * Get the event dispatcher instance.
-     *
-     * @return \Illuminate\Contracts\Events\Dispatcher
-     */
-    public static function getEventDispatcher()
-    {
-        return static::$dispatcher;
-    }
-
-    /**
-     * Set the event dispatcher instance.
-     *
-     * @param  \Illuminate\Contracts\Events\Dispatcher  $dispatcher
-     * @return void
-     */
-    public static function setEventDispatcher(Dispatcher $dispatcher)
-    {
-        static::$dispatcher = $dispatcher;
-    }
-
-    /**
-     * Unset the event dispatcher for models.
-     *
-     * @return void
-     */
-    public static function unsetEventDispatcher()
-    {
-        static::$dispatcher = null;
-    }
-
-    /**
-     * Execute a callback without firing any model events for any model type.
-     *
-     * @param  callable  $callback
-     * @return mixed
-     */
-    public static function withoutEvents(callable $callback)
-    {
-        $dispatcher = static::getEventDispatcher();
-
-        if ($dispatcher) {
-            static::setEventDispatcher(new NullDispatcher($dispatcher));
-        }
-
-        try {
-            return $callback();
-        } finally {
-            if ($dispatcher) {
-                static::setEventDispatcher($dispatcher);
-            }
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,89 +1,48 @@
-<?php
-
-declare(strict_types=1);
-
-namespace Dotenv\Repository\Adapter;
-
-use PhpOption\None;
-use PhpOption\Option;
-use PhpOption\Some;
-
-final class ApacheAdapter implements AdapterInterface
-{
-    /**
-     * Create a new apache adapter instance.
-     *
-     * @return void
-     */
-    private function __construct()
-    {
-        //
-    }
-
-    /**
-     * Create a new instance of the adapter, if it is available.
-     *
-     * @return \PhpOption\Option<\Dotenv\Repository\Adapter\AdapterInterface>
-     */
-    public static function create()
-    {
-        if (self::isSupported()) {
-            /** @var \PhpOption\Option<AdapterInterface> */
-            return Some::create(new self());
-        }
-
-        return None::create();
-    }
-
-    /**
-     * Determines if the adapter is supported.
-     *
-     * This happens if PHP is running as an Apache module.
-     *
-     * @return bool
-     */
-    private static function isSupported()
-    {
-        return \function_exists('apache_getenv') && \function_exists('apache_setenv');
-    }
-
-    /**
-     * Read an environment variable, if it exists.
-     *
-     * @param string $name
-     *
-     * @return \PhpOption\Option<string>
-     */
-    public function read(string $name)
-    {
-        /** @var \PhpOption\Option<string> */
-        return Option::fromValue(apache_getenv($name))->filter(static function ($value) {
-            return \is_string($value) && $value !== '';
-        });
-    }
-
-    /**
-     * Write to an environment variable, if possible.
-     *
-     * @param string $name
-     * @param string $value
-     *
-     * @return bool
-     */
-    public function write(string $name, string $value)
-    {
-        return apache_setenv($name, $value);
-    }
-
-    /**
-     * Delete an environment variable, if possible.
-     *
-     * @param string $name
-     *
-     * @return bool
-     */
-    public function delete(string $name)
-    {
-        return apache_setenv($name, '');
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

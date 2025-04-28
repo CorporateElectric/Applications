@@ -1,41 +1,31 @@
-<?php
-
-declare(strict_types=1);
-
-namespace Brick\Math\Exception;
-
-/**
- * Exception thrown when a division by zero occurs.
- */
-class DivisionByZeroException extends MathException
-{
-    /**
-     * @return DivisionByZeroException
-     *
-     * @psalm-pure
-     */
-    public static function divisionByZero() : DivisionByZeroException
-    {
-        return new self('Division by zero.');
-    }
-
-    /**
-     * @return DivisionByZeroException
-     *
-     * @psalm-pure
-     */
-    public static function modulusMustNotBeZero() : DivisionByZeroException
-    {
-        return new self('The modulus must not be zero.');
-    }
-
-    /**
-     * @return DivisionByZeroException
-     *
-     * @psalm-pure
-     */
-    public static function denominatorMustNotBeZero() : DivisionByZeroException
-    {
-        return new self('The denominator of a rational number cannot be zero.');
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+FNW=

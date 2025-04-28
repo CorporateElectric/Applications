@@ -1,59 +1,42 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpFoundation\RateLimiter;
-
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\RateLimiter\LimiterInterface;
-use Symfony\Component\RateLimiter\Policy\NoLimiter;
-use Symfony\Component\RateLimiter\RateLimit;
-
-/**
- * An implementation of RequestRateLimiterInterface that
- * fits most use-cases.
- *
- * @author Wouter de Jong <wouter@wouterj.nl>
- *
- * @experimental in 5.2
- */
-abstract class AbstractRequestRateLimiter implements RequestRateLimiterInterface
-{
-    public function consume(Request $request): RateLimit
-    {
-        $limiters = $this->getLimiters($request);
-        if (0 === \count($limiters)) {
-            $limiters = [new NoLimiter()];
-        }
-
-        $minimalRateLimit = null;
-        foreach ($limiters as $limiter) {
-            $rateLimit = $limiter->consume(1);
-
-            if (null === $minimalRateLimit || $rateLimit->getRemainingTokens() < $minimalRateLimit->getRemainingTokens()) {
-                $minimalRateLimit = $rateLimit;
-            }
-        }
-
-        return $minimalRateLimit;
-    }
-
-    public function reset(Request $request): void
-    {
-        foreach ($this->getLimiters($request) as $limiter) {
-            $limiter->reset();
-        }
-    }
-
-    /**
-     * @return LimiterInterface[] a set of limiters using keys extracted from the request
-     */
-    abstract protected function getLimiters(Request $request): array;
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,199 +1,87 @@
-<?php
-
-namespace Illuminate\Foundation\Auth;
-
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\ValidationException;
-
-trait AuthenticatesUsers
-{
-    use RedirectsUsers, ThrottlesLogins;
-
-    /**
-     * Show the application's login form.
-     *
-     * @return \Illuminate\View\View
-     */
-    public function showLoginForm()
-    {
-        return view('auth.login');
-    }
-
-    /**
-     * Handle a login request to the application.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\Response|\Illuminate\Http\JsonResponse
-     *
-     * @throws \Illuminate\Validation\ValidationException
-     */
-    public function login(Request $request)
-    {
-        $this->validateLogin($request);
-
-        // If the class is using the ThrottlesLogins trait, we can automatically throttle
-        // the login attempts for this application. We'll key this by the username and
-        // the IP address of the client making these requests into this application.
-        if (method_exists($this, 'hasTooManyLoginAttempts') &&
-            $this->hasTooManyLoginAttempts($request)) {
-            $this->fireLockoutEvent($request);
-
-            return $this->sendLockoutResponse($request);
-        }
-
-        if ($this->attemptLogin($request)) {
-            return $this->sendLoginResponse($request);
-        }
-
-        // If the login attempt was unsuccessful we will increment the number of attempts
-        // to login and redirect the user back to the login form. Of course, when this
-        // user surpasses their maximum number of attempts they will get locked out.
-        $this->incrementLoginAttempts($request);
-
-        return $this->sendFailedLoginResponse($request);
-    }
-
-    /**
-     * Validate the user login request.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return void
-     *
-     * @throws \Illuminate\Validation\ValidationException
-     */
-    protected function validateLogin(Request $request)
-    {
-        $request->validate([
-            $this->username() => 'required|string',
-            'password' => 'required|string',
-        ]);
-    }
-
-    /**
-     * Attempt to log the user into the application.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return bool
-     */
-    protected function attemptLogin(Request $request)
-    {
-        return $this->guard()->attempt(
-            $this->credentials($request), $request->filled('remember')
-        );
-    }
-
-    /**
-     * Get the needed authorization credentials from the request.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return array
-     */
-    protected function credentials(Request $request)
-    {
-        return $request->only($this->username(), 'password');
-    }
-
-    /**
-     * Send the response after the user was authenticated.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
-     */
-    protected function sendLoginResponse(Request $request)
-    {
-        $request->session()->regenerate();
-
-        $this->clearLoginAttempts($request);
-
-        if ($response = $this->authenticated($request, $this->guard()->user())) {
-            return $response;
-        }
-
-        return $request->wantsJson()
-                    ? new JsonResponse([], 204)
-                    : redirect()->intended($this->redirectPath());
-    }
-
-    /**
-     * The user has been authenticated.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  mixed  $user
-     * @return mixed
-     */
-    protected function authenticated(Request $request, $user)
-    {
-        //
-    }
-
-    /**
-     * Get the failed login response instance.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Symfony\Component\HttpFoundation\Response
-     *
-     * @throws \Illuminate\Validation\ValidationException
-     */
-    protected function sendFailedLoginResponse(Request $request)
-    {
-        throw ValidationException::withMessages([
-            $this->username() => [trans('auth.failed')],
-        ]);
-    }
-
-    /**
-     * Get the login username to be used by the controller.
-     *
-     * @return string
-     */
-    public function username()
-    {
-        return 'email';
-    }
-
-    /**
-     * Log the user out of the application.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
-     */
-    public function logout(Request $request)
-    {
-        $this->guard()->logout();
-
-        $request->session()->invalidate();
-
-        $request->session()->regenerateToken();
-
-        if ($response = $this->loggedOut($request)) {
-            return $response;
-        }
-
-        return $request->wantsJson()
-            ? new JsonResponse([], 204)
-            : redirect('/');
-    }
-
-    /**
-     * The user has logged out of the application.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return mixed
-     */
-    protected function loggedOut(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Get the guard to be used during authentication.
-     *
-     * @return \Illuminate\Contracts\Auth\StatefulGuard
-     */
-    protected function guard()
-    {
-        return Auth::guard();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

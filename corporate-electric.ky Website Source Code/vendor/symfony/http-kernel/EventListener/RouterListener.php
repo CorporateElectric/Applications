@@ -1,175 +1,129 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpKernel\EventListener;
-
-use Psr\Log\LoggerInterface;
-use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\RequestStack;
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Event\ExceptionEvent;
-use Symfony\Component\HttpKernel\Event\FinishRequestEvent;
-use Symfony\Component\HttpKernel\Event\RequestEvent;
-use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
-use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-use Symfony\Component\HttpKernel\Kernel;
-use Symfony\Component\HttpKernel\KernelEvents;
-use Symfony\Component\Routing\Exception\MethodNotAllowedException;
-use Symfony\Component\Routing\Exception\NoConfigurationException;
-use Symfony\Component\Routing\Exception\ResourceNotFoundException;
-use Symfony\Component\Routing\Matcher\RequestMatcherInterface;
-use Symfony\Component\Routing\Matcher\UrlMatcherInterface;
-use Symfony\Component\Routing\RequestContext;
-use Symfony\Component\Routing\RequestContextAwareInterface;
-
-/**
- * Initializes the context from the request and sets request attributes based on a matching route.
- *
- * @author Fabien Potencier <fabien@symfony.com>
- * @author Yonel Ceruto <yonelceruto@gmail.com>
- *
- * @final
- */
-class RouterListener implements EventSubscriberInterface
-{
-    private $matcher;
-    private $context;
-    private $logger;
-    private $requestStack;
-    private $projectDir;
-    private $debug;
-
-    /**
-     * @param UrlMatcherInterface|RequestMatcherInterface $matcher    The Url or Request matcher
-     * @param RequestContext|null                         $context    The RequestContext (can be null when $matcher implements RequestContextAwareInterface)
-     * @param string                                      $projectDir
-     *
-     * @throws \InvalidArgumentException
-     */
-    public function __construct($matcher, RequestStack $requestStack, RequestContext $context = null, LoggerInterface $logger = null, string $projectDir = null, bool $debug = true)
-    {
-        if (!$matcher instanceof UrlMatcherInterface && !$matcher instanceof RequestMatcherInterface) {
-            throw new \InvalidArgumentException('Matcher must either implement UrlMatcherInterface or RequestMatcherInterface.');
-        }
-
-        if (null === $context && !$matcher instanceof RequestContextAwareInterface) {
-            throw new \InvalidArgumentException('You must either pass a RequestContext or the matcher must implement RequestContextAwareInterface.');
-        }
-
-        $this->matcher = $matcher;
-        $this->context = $context ?: $matcher->getContext();
-        $this->requestStack = $requestStack;
-        $this->logger = $logger;
-        $this->projectDir = $projectDir;
-        $this->debug = $debug;
-    }
-
-    private function setCurrentRequest(Request $request = null)
-    {
-        if (null !== $request) {
-            try {
-                $this->context->fromRequest($request);
-            } catch (\UnexpectedValueException $e) {
-                throw new BadRequestHttpException($e->getMessage(), $e, $e->getCode());
-            }
-        }
-    }
-
-    /**
-     * After a sub-request is done, we need to reset the routing context to the parent request so that the URL generator
-     * operates on the correct context again.
-     */
-    public function onKernelFinishRequest(FinishRequestEvent $event)
-    {
-        $this->setCurrentRequest($this->requestStack->getParentRequest());
-    }
-
-    public function onKernelRequest(RequestEvent $event)
-    {
-        $request = $event->getRequest();
-
-        $this->setCurrentRequest($request);
-
-        if ($request->attributes->has('_controller')) {
-            // routing is already done
-            return;
-        }
-
-        // add attributes based on the request (routing)
-        try {
-            // matching a request is more powerful than matching a URL path + context, so try that first
-            if ($this->matcher instanceof RequestMatcherInterface) {
-                $parameters = $this->matcher->matchRequest($request);
-            } else {
-                $parameters = $this->matcher->match($request->getPathInfo());
-            }
-
-            if (null !== $this->logger) {
-                $this->logger->info('Matched route "{route}".', [
-                    'route' => isset($parameters['_route']) ? $parameters['_route'] : 'n/a',
-                    'route_parameters' => $parameters,
-                    'request_uri' => $request->getUri(),
-                    'method' => $request->getMethod(),
-                ]);
-            }
-
-            $request->attributes->add($parameters);
-            unset($parameters['_route'], $parameters['_controller']);
-            $request->attributes->set('_route_params', $parameters);
-        } catch (ResourceNotFoundException $e) {
-            $message = sprintf('No route found for "%s %s"', $request->getMethod(), $request->getPathInfo());
-
-            if ($referer = $request->headers->get('referer')) {
-                $message .= sprintf(' (from "%s")', $referer);
-            }
-
-            throw new NotFoundHttpException($message, $e);
-        } catch (MethodNotAllowedException $e) {
-            $message = sprintf('No route found for "%s %s": Method Not Allowed (Allow: %s)', $request->getMethod(), $request->getPathInfo(), implode(', ', $e->getAllowedMethods()));
-
-            throw new MethodNotAllowedHttpException($e->getAllowedMethods(), $message, $e);
-        }
-    }
-
-    public function onKernelException(ExceptionEvent $event)
-    {
-        if (!$this->debug || !($e = $event->getThrowable()) instanceof NotFoundHttpException) {
-            return;
-        }
-
-        if ($e->getPrevious() instanceof NoConfigurationException) {
-            $event->setResponse($this->createWelcomeResponse());
-        }
-    }
-
-    public static function getSubscribedEvents(): array
-    {
-        return [
-            KernelEvents::REQUEST => [['onKernelRequest', 32]],
-            KernelEvents::FINISH_REQUEST => [['onKernelFinishRequest', 0]],
-            KernelEvents::EXCEPTION => ['onKernelException', -64],
-        ];
-    }
-
-    private function createWelcomeResponse(): Response
-    {
-        $version = Kernel::VERSION;
-        $projectDir = realpath($this->projectDir).\DIRECTORY_SEPARATOR;
-        $docVersion = substr(Kernel::VERSION, 0, 3);
-
-        ob_start();
-        include \dirname(__DIR__).'/Resources/welcome.html.php';
-
-        return new Response(ob_get_clean(), Response::HTTP_NOT_FOUND);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+kG==

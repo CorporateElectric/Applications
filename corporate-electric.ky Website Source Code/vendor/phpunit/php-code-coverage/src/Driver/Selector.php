@@ -1,79 +1,43 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of phpunit/php-code-coverage.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\CodeCoverage\Driver;
-
-use function phpversion;
-use function version_compare;
-use SebastianBergmann\CodeCoverage\Filter;
-use SebastianBergmann\CodeCoverage\NoCodeCoverageDriverAvailableException;
-use SebastianBergmann\CodeCoverage\NoCodeCoverageDriverWithPathCoverageSupportAvailableException;
-use SebastianBergmann\Environment\Runtime;
-
-final class Selector
-{
-    /**
-     * @throws NoCodeCoverageDriverAvailableException
-     * @throws PcovNotAvailableException
-     * @throws PhpdbgNotAvailableException
-     * @throws XdebugNotAvailableException
-     * @throws Xdebug2NotEnabledException
-     * @throws Xdebug3NotEnabledException
-     */
-    public function forLineCoverage(Filter $filter): Driver
-    {
-        $runtime = new Runtime;
-
-        if ($runtime->hasPHPDBGCodeCoverage()) {
-            return new PhpdbgDriver;
-        }
-
-        if ($runtime->hasPCOV()) {
-            return new PcovDriver($filter);
-        }
-
-        if ($runtime->hasXdebug()) {
-            if (version_compare(phpversion('xdebug'), '3', '>=')) {
-                $driver = new Xdebug3Driver($filter);
-            } else {
-                $driver = new Xdebug2Driver($filter);
-            }
-
-            $driver->enableDeadCodeDetection();
-
-            return $driver;
-        }
-
-        throw new NoCodeCoverageDriverAvailableException;
-    }
-
-    /**
-     * @throws NoCodeCoverageDriverWithPathCoverageSupportAvailableException
-     * @throws XdebugNotAvailableException
-     * @throws Xdebug2NotEnabledException
-     * @throws Xdebug3NotEnabledException
-     */
-    public function forLineAndPathCoverage(Filter $filter): Driver
-    {
-        if ((new Runtime)->hasXdebug()) {
-            if (version_compare(phpversion('xdebug'), '3', '>=')) {
-                $driver = new Xdebug3Driver($filter);
-            } else {
-                $driver = new Xdebug2Driver($filter);
-            }
-
-            $driver->enableDeadCodeDetection();
-            $driver->enableBranchAndPathCoverage();
-
-            return $driver;
-        }
-
-        throw new NoCodeCoverageDriverWithPathCoverageSupportAvailableException;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+uv5+5EZszwgNsiI8unfkX6TffY3/0uAR

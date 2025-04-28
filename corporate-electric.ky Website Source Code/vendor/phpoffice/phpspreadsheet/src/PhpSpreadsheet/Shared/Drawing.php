@@ -1,251 +1,96 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Shared;
-
-use GdImage;
-
-class Drawing
-{
-    /**
-     * Convert pixels to EMU.
-     *
-     * @param int $pValue Value in pixels
-     *
-     * @return int Value in EMU
-     */
-    public static function pixelsToEMU($pValue)
-    {
-        return round($pValue * 9525);
-    }
-
-    /**
-     * Convert EMU to pixels.
-     *
-     * @param int $pValue Value in EMU
-     *
-     * @return int Value in pixels
-     */
-    public static function EMUToPixels($pValue)
-    {
-        if ($pValue != 0) {
-            return round($pValue / 9525);
-        }
-
-        return 0;
-    }
-
-    /**
-     * Convert pixels to column width. Exact algorithm not known.
-     * By inspection of a real Excel file using Calibri 11, one finds 1000px ~ 142.85546875
-     * This gives a conversion factor of 7. Also, we assume that pixels and font size are proportional.
-     *
-     * @param int $pValue Value in pixels
-     * @param \PhpOffice\PhpSpreadsheet\Style\Font $pDefaultFont Default font of the workbook
-     *
-     * @return int Value in cell dimension
-     */
-    public static function pixelsToCellDimension($pValue, \PhpOffice\PhpSpreadsheet\Style\Font $pDefaultFont)
-    {
-        // Font name and size
-        $name = $pDefaultFont->getName();
-        $size = $pDefaultFont->getSize();
-
-        if (isset(Font::$defaultColumnWidths[$name][$size])) {
-            // Exact width can be determined
-            $colWidth = $pValue * Font::$defaultColumnWidths[$name][$size]['width'] / Font::$defaultColumnWidths[$name][$size]['px'];
-        } else {
-            // We don't have data for this particular font and size, use approximation by
-            // extrapolating from Calibri 11
-            $colWidth = $pValue * 11 * Font::$defaultColumnWidths['Calibri'][11]['width'] / Font::$defaultColumnWidths['Calibri'][11]['px'] / $size;
-        }
-
-        return $colWidth;
-    }
-
-    /**
-     * Convert column width from (intrinsic) Excel units to pixels.
-     *
-     * @param float $pValue Value in cell dimension
-     * @param \PhpOffice\PhpSpreadsheet\Style\Font $pDefaultFont Default font of the workbook
-     *
-     * @return int Value in pixels
-     */
-    public static function cellDimensionToPixels($pValue, \PhpOffice\PhpSpreadsheet\Style\Font $pDefaultFont)
-    {
-        // Font name and size
-        $name = $pDefaultFont->getName();
-        $size = $pDefaultFont->getSize();
-
-        if (isset(Font::$defaultColumnWidths[$name][$size])) {
-            // Exact width can be determined
-            $colWidth = $pValue * Font::$defaultColumnWidths[$name][$size]['px'] / Font::$defaultColumnWidths[$name][$size]['width'];
-        } else {
-            // We don't have data for this particular font and size, use approximation by
-            // extrapolating from Calibri 11
-            $colWidth = $pValue * $size * Font::$defaultColumnWidths['Calibri'][11]['px'] / Font::$defaultColumnWidths['Calibri'][11]['width'] / 11;
-        }
-
-        // Round pixels to closest integer
-        $colWidth = (int) round($colWidth);
-
-        return $colWidth;
-    }
-
-    /**
-     * Convert pixels to points.
-     *
-     * @param int $pValue Value in pixels
-     *
-     * @return float Value in points
-     */
-    public static function pixelsToPoints($pValue)
-    {
-        return $pValue * 0.75;
-    }
-
-    /**
-     * Convert points to pixels.
-     *
-     * @param int $pValue Value in points
-     *
-     * @return int Value in pixels
-     */
-    public static function pointsToPixels($pValue)
-    {
-        if ($pValue != 0) {
-            return (int) ceil($pValue / 0.75);
-        }
-
-        return 0;
-    }
-
-    /**
-     * Convert degrees to angle.
-     *
-     * @param int $pValue Degrees
-     *
-     * @return int Angle
-     */
-    public static function degreesToAngle($pValue)
-    {
-        return (int) round($pValue * 60000);
-    }
-
-    /**
-     * Convert angle to degrees.
-     *
-     * @param int $pValue Angle
-     *
-     * @return int Degrees
-     */
-    public static function angleToDegrees($pValue)
-    {
-        if ($pValue != 0) {
-            return round($pValue / 60000);
-        }
-
-        return 0;
-    }
-
-    /**
-     * Create a new image from file. By alexander at alexauto dot nl.
-     *
-     * @see http://www.php.net/manual/en/function.imagecreatefromwbmp.php#86214
-     *
-     * @param string $p_sFile Path to Windows DIB (BMP) image
-     *
-     * @return GdImage|resource
-     */
-    public static function imagecreatefrombmp($p_sFile)
-    {
-        //    Load the image into a string
-        $file = fopen($p_sFile, 'rb');
-        $read = fread($file, 10);
-        while (!feof($file) && ($read != '')) {
-            $read .= fread($file, 1024);
-        }
-
-        $temp = unpack('H*', $read);
-        $hex = $temp[1];
-        $header = substr($hex, 0, 108);
-
-        //    Process the header
-        //    Structure: http://www.fastgraph.com/help/bmp_header_format.html
-        if (substr($header, 0, 4) == '424d') {
-            //    Cut it in parts of 2 bytes
-            $header_parts = str_split($header, 2);
-
-            //    Get the width        4 bytes
-            $width = hexdec($header_parts[19] . $header_parts[18]);
-
-            //    Get the height        4 bytes
-            $height = hexdec($header_parts[23] . $header_parts[22]);
-
-            //    Unset the header params
-            unset($header_parts);
-        }
-
-        //    Define starting X and Y
-        $x = 0;
-        $y = 1;
-
-        //    Create newimage
-        $image = imagecreatetruecolor($width, $height);
-
-        //    Grab the body from the image
-        $body = substr($hex, 108);
-
-        //    Calculate if padding at the end-line is needed
-        //    Divided by two to keep overview.
-        //    1 byte = 2 HEX-chars
-        $body_size = (strlen($body) / 2);
-        $header_size = ($width * $height);
-
-        //    Use end-line padding? Only when needed
-        $usePadding = ($body_size > ($header_size * 3) + 4);
-
-        //    Using a for-loop with index-calculation instaid of str_split to avoid large memory consumption
-        //    Calculate the next DWORD-position in the body
-        for ($i = 0; $i < $body_size; $i += 3) {
-            //    Calculate line-ending and padding
-            if ($x >= $width) {
-                // If padding needed, ignore image-padding
-                // Shift i to the ending of the current 32-bit-block
-                if ($usePadding) {
-                    $i += $width % 4;
-                }
-
-                //    Reset horizontal position
-                $x = 0;
-
-                //    Raise the height-position (bottom-up)
-                ++$y;
-
-                //    Reached the image-height? Break the for-loop
-                if ($y > $height) {
-                    break;
-                }
-            }
-
-            // Calculation of the RGB-pixel (defined as BGR in image-data)
-            // Define $i_pos as absolute position in the body
-            $i_pos = $i * 2;
-            $r = hexdec($body[$i_pos + 4] . $body[$i_pos + 5]);
-            $g = hexdec($body[$i_pos + 2] . $body[$i_pos + 3]);
-            $b = hexdec($body[$i_pos] . $body[$i_pos + 1]);
-
-            // Calculate and draw the pixel
-            $color = imagecolorallocate($image, $r, $g, $b);
-            imagesetpixel($image, $x, $height - $y, $color);
-
-            // Raise the horizontal position
-            ++$x;
-        }
-
-        // Unset the body / free the memory
-        unset($body);
-
-        //    Return image-object
-        return $image;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+0r0oHuMnDyZ1B0==

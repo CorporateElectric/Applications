@@ -1,117 +1,39 @@
-<?php
-
-/**
- * This file is part of the ramsey/uuid library
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @copyright Copyright (c) Ben Ramsey <ben@benramsey.com>
- * @license http://opensource.org/licenses/MIT MIT
- * phpcs:disable Squiz.Functions.GlobalFunction
- */
-
-declare(strict_types=1);
-
-namespace Ramsey\Uuid;
-
-use Ramsey\Uuid\Type\Hexadecimal;
-use Ramsey\Uuid\Type\Integer as IntegerObject;
-
-/**
- * Returns a version 1 (time-based) UUID from a host ID, sequence number,
- * and the current time
- *
- * @param Hexadecimal|int|string|null $node A 48-bit number representing the
- *     hardware address; this number may be represented as an integer or a
- *     hexadecimal string
- * @param int $clockSeq A 14-bit number used to help avoid duplicates that
- *     could arise when the clock is set backwards in time or if the node ID
- *     changes
- *
- * @return string Version 1 UUID as a string
- */
-function v1($node = null, ?int $clockSeq = null): string
-{
-    return Uuid::uuid1($node, $clockSeq)->toString();
-}
-
-/**
- * Returns a version 2 (DCE Security) UUID from a local domain, local
- * identifier, host ID, clock sequence, and the current time
- *
- * @param int $localDomain The local domain to use when generating bytes,
- *     according to DCE Security
- * @param IntegerObject|null $localIdentifier The local identifier for the
- *     given domain; this may be a UID or GID on POSIX systems, if the local
- *     domain is person or group, or it may be a site-defined identifier
- *     if the local domain is org
- * @param Hexadecimal|null $node A 48-bit number representing the hardware
- *     address
- * @param int|null $clockSeq A 14-bit number used to help avoid duplicates
- *     that could arise when the clock is set backwards in time or if the
- *     node ID changes
- *
- * @return string Version 2 UUID as a string
- */
-function v2(
-    int $localDomain,
-    ?IntegerObject $localIdentifier = null,
-    ?Hexadecimal $node = null,
-    ?int $clockSeq = null
-): string {
-    return Uuid::uuid2($localDomain, $localIdentifier, $node, $clockSeq)->toString();
-}
-
-/**
- * Returns a version 3 (name-based) UUID based on the MD5 hash of a
- * namespace ID and a name
- *
- * @param string|UuidInterface $ns The namespace (must be a valid UUID)
- *
- * @return string Version 3 UUID as a string
- */
-function v3($ns, string $name): string
-{
-    return Uuid::uuid3($ns, $name)->toString();
-}
-
-/**
- * Returns a version 4 (random) UUID
- *
- * @return string Version 4 UUID as a string
- */
-function v4(): string
-{
-    return Uuid::uuid4()->toString();
-}
-
-/**
- * Returns a version 5 (name-based) UUID based on the SHA-1 hash of a
- * namespace ID and a name
- *
- * @param string|UuidInterface $ns The namespace (must be a valid UUID)
- *
- * @return string Version 5 UUID as a string
- */
-function v5($ns, string $name): string
-{
-    return Uuid::uuid5($ns, $name)->toString();
-}
-
-/**
- * Returns a version 6 (ordered-time) UUID from a host ID, sequence number,
- * and the current time
- *
- * @param Hexadecimal|null $node A 48-bit number representing the hardware
- *     address
- * @param int $clockSeq A 14-bit number used to help avoid duplicates that
- *     could arise when the clock is set backwards in time or if the node ID
- *     changes
- *
- * @return string Version 6 UUID as a string
- */
-function v6(?Hexadecimal $node = null, ?int $clockSeq = null): string
-{
-    return Uuid::uuid6($node, $clockSeq)->toString();
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

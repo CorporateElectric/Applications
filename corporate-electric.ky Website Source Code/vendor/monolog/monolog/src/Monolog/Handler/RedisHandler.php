@@ -1,96 +1,67 @@
-<?php declare(strict_types=1);
-
-/*
- * This file is part of the Monolog package.
- *
- * (c) Jordi Boggiano <j.boggiano@seld.be>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Monolog\Handler;
-
-use Monolog\Formatter\LineFormatter;
-use Monolog\Formatter\FormatterInterface;
-use Monolog\Logger;
-
-/**
- * Logs to a Redis key using rpush
- *
- * usage example:
- *
- *   $log = new Logger('application');
- *   $redis = new RedisHandler(new Predis\Client("tcp://localhost:6379"), "logs", "prod");
- *   $log->pushHandler($redis);
- *
- * @author Thomas Tourlourat <thomas@tourlourat.com>
- */
-class RedisHandler extends AbstractProcessingHandler
-{
-    private $redisClient;
-    private $redisKey;
-    protected $capSize;
-
-    /**
-     * @param \Predis\Client|\Redis $redis   The redis instance
-     * @param string                $key     The key name to push records to
-     * @param string|int            $level   The minimum logging level at which this handler will be triggered
-     * @param bool                  $bubble  Whether the messages that are handled can bubble up the stack or not
-     * @param int                   $capSize Number of entries to limit list size to, 0 = unlimited
-     */
-    public function __construct($redis, string $key, $level = Logger::DEBUG, bool $bubble = true, int $capSize = 0)
-    {
-        if (!(($redis instanceof \Predis\Client) || ($redis instanceof \Redis))) {
-            throw new \InvalidArgumentException('Predis\Client or Redis instance required');
-        }
-
-        $this->redisClient = $redis;
-        $this->redisKey = $key;
-        $this->capSize = $capSize;
-
-        parent::__construct($level, $bubble);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    protected function write(array $record): void
-    {
-        if ($this->capSize) {
-            $this->writeCapped($record);
-        } else {
-            $this->redisClient->rpush($this->redisKey, $record["formatted"]);
-        }
-    }
-
-    /**
-     * Write and cap the collection
-     * Writes the record to the redis list and caps its
-     */
-    protected function writeCapped(array $record): void
-    {
-        if ($this->redisClient instanceof \Redis) {
-            $mode = defined('\Redis::MULTI') ? \Redis::MULTI : 1;
-            $this->redisClient->multi($mode)
-                ->rpush($this->redisKey, $record["formatted"])
-                ->ltrim($this->redisKey, -$this->capSize, -1)
-                ->exec();
-        } else {
-            $redisKey = $this->redisKey;
-            $capSize = $this->capSize;
-            $this->redisClient->transaction(function ($tx) use ($record, $redisKey, $capSize) {
-                $tx->rpush($redisKey, $record["formatted"]);
-                $tx->ltrim($redisKey, -$capSize, -1);
-            });
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    protected function getDefaultFormatter(): FormatterInterface
-    {
-        return new LineFormatter();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

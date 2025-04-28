@@ -1,506 +1,159 @@
-<?php
-
-declare(strict_types=1);
-
-namespace Doctrine\Inflector;
-
-use RuntimeException;
-use function chr;
-use function function_exists;
-use function lcfirst;
-use function mb_strtolower;
-use function ord;
-use function preg_match;
-use function preg_replace;
-use function sprintf;
-use function str_replace;
-use function strlen;
-use function strtolower;
-use function strtr;
-use function trim;
-use function ucwords;
-
-class Inflector
-{
-    private const ACCENTED_CHARACTERS = [
-        'À' => 'A',
-        'Á' => 'A',
-        'Â' => 'A',
-        'Ã' => 'A',
-        'Ä' => 'Ae',
-        'Æ' => 'Ae',
-        'Å' => 'Aa',
-        'æ' => 'a',
-        'Ç' => 'C',
-        'È' => 'E',
-        'É' => 'E',
-        'Ê' => 'E',
-        'Ë' => 'E',
-        'Ì' => 'I',
-        'Í' => 'I',
-        'Î' => 'I',
-        'Ï' => 'I',
-        'Ñ' => 'N',
-        'Ò' => 'O',
-        'Ó' => 'O',
-        'Ô' => 'O',
-        'Õ' => 'O',
-        'Ö' => 'Oe',
-        'Ù' => 'U',
-        'Ú' => 'U',
-        'Û' => 'U',
-        'Ü' => 'Ue',
-        'Ý' => 'Y',
-        'ß' => 'ss',
-        'à' => 'a',
-        'á' => 'a',
-        'â' => 'a',
-        'ã' => 'a',
-        'ä' => 'ae',
-        'å' => 'aa',
-        'ç' => 'c',
-        'è' => 'e',
-        'é' => 'e',
-        'ê' => 'e',
-        'ë' => 'e',
-        'ì' => 'i',
-        'í' => 'i',
-        'î' => 'i',
-        'ï' => 'i',
-        'ñ' => 'n',
-        'ò' => 'o',
-        'ó' => 'o',
-        'ô' => 'o',
-        'õ' => 'o',
-        'ö' => 'oe',
-        'ù' => 'u',
-        'ú' => 'u',
-        'û' => 'u',
-        'ü' => 'ue',
-        'ý' => 'y',
-        'ÿ' => 'y',
-        'Ā' => 'A',
-        'ā' => 'a',
-        'Ă' => 'A',
-        'ă' => 'a',
-        'Ą' => 'A',
-        'ą' => 'a',
-        'Ć' => 'C',
-        'ć' => 'c',
-        'Ĉ' => 'C',
-        'ĉ' => 'c',
-        'Ċ' => 'C',
-        'ċ' => 'c',
-        'Č' => 'C',
-        'č' => 'c',
-        'Ď' => 'D',
-        'ď' => 'd',
-        'Đ' => 'D',
-        'đ' => 'd',
-        'Ē' => 'E',
-        'ē' => 'e',
-        'Ĕ' => 'E',
-        'ĕ' => 'e',
-        'Ė' => 'E',
-        'ė' => 'e',
-        'Ę' => 'E',
-        'ę' => 'e',
-        'Ě' => 'E',
-        'ě' => 'e',
-        'Ĝ' => 'G',
-        'ĝ' => 'g',
-        'Ğ' => 'G',
-        'ğ' => 'g',
-        'Ġ' => 'G',
-        'ġ' => 'g',
-        'Ģ' => 'G',
-        'ģ' => 'g',
-        'Ĥ' => 'H',
-        'ĥ' => 'h',
-        'Ħ' => 'H',
-        'ħ' => 'h',
-        'Ĩ' => 'I',
-        'ĩ' => 'i',
-        'Ī' => 'I',
-        'ī' => 'i',
-        'Ĭ' => 'I',
-        'ĭ' => 'i',
-        'Į' => 'I',
-        'į' => 'i',
-        'İ' => 'I',
-        'ı' => 'i',
-        'Ĳ' => 'IJ',
-        'ĳ' => 'ij',
-        'Ĵ' => 'J',
-        'ĵ' => 'j',
-        'Ķ' => 'K',
-        'ķ' => 'k',
-        'ĸ' => 'k',
-        'Ĺ' => 'L',
-        'ĺ' => 'l',
-        'Ļ' => 'L',
-        'ļ' => 'l',
-        'Ľ' => 'L',
-        'ľ' => 'l',
-        'Ŀ' => 'L',
-        'ŀ' => 'l',
-        'Ł' => 'L',
-        'ł' => 'l',
-        'Ń' => 'N',
-        'ń' => 'n',
-        'Ņ' => 'N',
-        'ņ' => 'n',
-        'Ň' => 'N',
-        'ň' => 'n',
-        'ŉ' => 'N',
-        'Ŋ' => 'n',
-        'ŋ' => 'N',
-        'Ō' => 'O',
-        'ō' => 'o',
-        'Ŏ' => 'O',
-        'ŏ' => 'o',
-        'Ő' => 'O',
-        'ő' => 'o',
-        'Œ' => 'OE',
-        'œ' => 'oe',
-        'Ø' => 'O',
-        'ø' => 'o',
-        'Ŕ' => 'R',
-        'ŕ' => 'r',
-        'Ŗ' => 'R',
-        'ŗ' => 'r',
-        'Ř' => 'R',
-        'ř' => 'r',
-        'Ś' => 'S',
-        'ś' => 's',
-        'Ŝ' => 'S',
-        'ŝ' => 's',
-        'Ş' => 'S',
-        'ş' => 's',
-        'Š' => 'S',
-        'š' => 's',
-        'Ţ' => 'T',
-        'ţ' => 't',
-        'Ť' => 'T',
-        'ť' => 't',
-        'Ŧ' => 'T',
-        'ŧ' => 't',
-        'Ũ' => 'U',
-        'ũ' => 'u',
-        'Ū' => 'U',
-        'ū' => 'u',
-        'Ŭ' => 'U',
-        'ŭ' => 'u',
-        'Ů' => 'U',
-        'ů' => 'u',
-        'Ű' => 'U',
-        'ű' => 'u',
-        'Ų' => 'U',
-        'ų' => 'u',
-        'Ŵ' => 'W',
-        'ŵ' => 'w',
-        'Ŷ' => 'Y',
-        'ŷ' => 'y',
-        'Ÿ' => 'Y',
-        'Ź' => 'Z',
-        'ź' => 'z',
-        'Ż' => 'Z',
-        'ż' => 'z',
-        'Ž' => 'Z',
-        'ž' => 'z',
-        'ſ' => 's',
-        '€' => 'E',
-        '£' => '',
-    ];
-
-    /** @var WordInflector */
-    private $singularizer;
-
-    /** @var WordInflector */
-    private $pluralizer;
-
-    public function __construct(WordInflector $singularizer, WordInflector $pluralizer)
-    {
-        $this->singularizer = $singularizer;
-        $this->pluralizer   = $pluralizer;
-    }
-
-    /**
-     * Converts a word into the format for a Doctrine table name. Converts 'ModelName' to 'model_name'.
-     */
-    public function tableize(string $word) : string
-    {
-        $tableized = preg_replace('~(?<=\\w)([A-Z])~u', '_$1', $word);
-
-        if ($tableized === null) {
-            throw new RuntimeException(sprintf(
-                'preg_replace returned null for value "%s"',
-                $word
-            ));
-        }
-
-        return mb_strtolower($tableized);
-    }
-
-    /**
-     * Converts a word into the format for a Doctrine class name. Converts 'table_name' to 'TableName'.
-     */
-    public function classify(string $word) : string
-    {
-        return str_replace([' ', '_', '-'], '', ucwords($word, ' _-'));
-    }
-
-    /**
-     * Camelizes a word. This uses the classify() method and turns the first character to lowercase.
-     */
-    public function camelize(string $word) : string
-    {
-        return lcfirst($this->classify($word));
-    }
-
-    /**
-     * Uppercases words with configurable delimiters between words.
-     *
-     * Takes a string and capitalizes all of the words, like PHP's built-in
-     * ucwords function. This extends that behavior, however, by allowing the
-     * word delimiters to be configured, rather than only separating on
-     * whitespace.
-     *
-     * Here is an example:
-     * <code>
-     * <?php
-     * $string = 'top-o-the-morning to all_of_you!';
-     * echo $inflector->capitalize($string);
-     * // Top-O-The-Morning To All_of_you!
-     *
-     * echo $inflector->capitalize($string, '-_ ');
-     * // Top-O-The-Morning To All_Of_You!
-     * ?>
-     * </code>
-     *
-     * @param string $string     The string to operate on.
-     * @param string $delimiters A list of word separators.
-     *
-     * @return string The string with all delimiter-separated words capitalized.
-     */
-    public function capitalize(string $string, string $delimiters = " \n\t\r\0\x0B-") : string
-    {
-        return ucwords($string, $delimiters);
-    }
-
-    /**
-     * Checks if the given string seems like it has utf8 characters in it.
-     *
-     * @param string $string The string to check for utf8 characters in.
-     */
-    public function seemsUtf8(string $string) : bool
-    {
-        for ($i = 0; $i < strlen($string); $i++) {
-            if (ord($string[$i]) < 0x80) {
-                continue; // 0bbbbbbb
-            }
-
-            if ((ord($string[$i]) & 0xE0) === 0xC0) {
-                $n = 1; // 110bbbbb
-            } elseif ((ord($string[$i]) & 0xF0) === 0xE0) {
-                $n = 2; // 1110bbbb
-            } elseif ((ord($string[$i]) & 0xF8) === 0xF0) {
-                $n = 3; // 11110bbb
-            } elseif ((ord($string[$i]) & 0xFC) === 0xF8) {
-                $n = 4; // 111110bb
-            } elseif ((ord($string[$i]) & 0xFE) === 0xFC) {
-                $n = 5; // 1111110b
-            } else {
-                return false; // Does not match any model
-            }
-
-            for ($j = 0; $j < $n; $j++) { // n bytes matching 10bbbbbb follow ?
-                if (++$i === strlen($string) || ((ord($string[$i]) & 0xC0) !== 0x80)) {
-                    return false;
-                }
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Remove any illegal characters, accents, etc.
-     *
-     * @param  string $string String to unaccent
-     *
-     * @return string Unaccented string
-     */
-    public function unaccent(string $string) : string
-    {
-        if (preg_match('/[\x80-\xff]/', $string) === false) {
-            return $string;
-        }
-
-        if ($this->seemsUtf8($string)) {
-            $string = strtr($string, self::ACCENTED_CHARACTERS);
-        } else {
-            $characters = [];
-
-            // Assume ISO-8859-1 if not UTF-8
-            $characters['in'] =
-                  chr(128)
-                . chr(131)
-                . chr(138)
-                . chr(142)
-                . chr(154)
-                . chr(158)
-                . chr(159)
-                . chr(162)
-                . chr(165)
-                . chr(181)
-                . chr(192)
-                . chr(193)
-                . chr(194)
-                . chr(195)
-                . chr(196)
-                . chr(197)
-                . chr(199)
-                . chr(200)
-                . chr(201)
-                . chr(202)
-                . chr(203)
-                . chr(204)
-                . chr(205)
-                . chr(206)
-                . chr(207)
-                . chr(209)
-                . chr(210)
-                . chr(211)
-                . chr(212)
-                . chr(213)
-                . chr(214)
-                . chr(216)
-                . chr(217)
-                . chr(218)
-                . chr(219)
-                . chr(220)
-                . chr(221)
-                . chr(224)
-                . chr(225)
-                . chr(226)
-                . chr(227)
-                . chr(228)
-                . chr(229)
-                . chr(231)
-                . chr(232)
-                . chr(233)
-                . chr(234)
-                . chr(235)
-                . chr(236)
-                . chr(237)
-                . chr(238)
-                . chr(239)
-                . chr(241)
-                . chr(242)
-                . chr(243)
-                . chr(244)
-                . chr(245)
-                . chr(246)
-                . chr(248)
-                . chr(249)
-                . chr(250)
-                . chr(251)
-                . chr(252)
-                . chr(253)
-                . chr(255);
-
-            $characters['out'] = 'EfSZszYcYuAAAAAACEEEEIIIINOOOOOOUUUUYaaaaaaceeeeiiiinoooooouuuuyy';
-
-            $string = strtr($string, $characters['in'], $characters['out']);
-
-            $doubleChars = [];
-
-            $doubleChars['in'] = [
-                chr(140),
-                chr(156),
-                chr(198),
-                chr(208),
-                chr(222),
-                chr(223),
-                chr(230),
-                chr(240),
-                chr(254),
-            ];
-
-            $doubleChars['out'] = ['OE', 'oe', 'AE', 'DH', 'TH', 'ss', 'ae', 'dh', 'th'];
-
-            $string = str_replace($doubleChars['in'], $doubleChars['out'], $string);
-        }
-
-        return $string;
-    }
-
-    /**
-     * Convert any passed string to a url friendly string.
-     * Converts 'My first blog post' to 'my-first-blog-post'
-     *
-     * @param  string $string String to urlize.
-     *
-     * @return string Urlized string.
-     */
-    public function urlize(string $string) : string
-    {
-        // Remove all non url friendly characters with the unaccent function
-        $unaccented = $this->unaccent($string);
-
-        if (function_exists('mb_strtolower')) {
-            $lowered = mb_strtolower($unaccented);
-        } else {
-            $lowered = strtolower($unaccented);
-        }
-
-        $replacements = [
-            '/\W/' => ' ',
-            '/([A-Z]+)([A-Z][a-z])/' => '\1_\2',
-            '/([a-z\d])([A-Z])/' => '\1_\2',
-            '/[^A-Z^a-z^0-9^\/]+/' => '-',
-        ];
-
-        $urlized = $lowered;
-
-        foreach ($replacements as $pattern => $replacement) {
-            $replaced = preg_replace($pattern, $replacement, $urlized);
-
-            if ($replaced === null) {
-                throw new RuntimeException(sprintf(
-                    'preg_replace returned null for value "%s"',
-                    $urlized
-                ));
-            }
-
-            $urlized = $replaced;
-        }
-
-        return trim($urlized, '-');
-    }
-
-    /**
-     * Returns a word in singular form.
-     *
-     * @param string $word The word in plural form.
-     *
-     * @return string The word in singular form.
-     */
-    public function singularize(string $word) : string
-    {
-        return $this->singularizer->inflect($word);
-    }
-
-    /**
-     * Returns a word in plural form.
-     *
-     * @param string $word The word in singular form.
-     *
-     * @return string The word in plural form.
-     */
-    public function pluralize(string $word) : string
-    {
-        return $this->pluralizer->inflect($word);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

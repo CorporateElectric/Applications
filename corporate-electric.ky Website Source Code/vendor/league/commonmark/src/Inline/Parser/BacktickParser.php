@@ -1,64 +1,50 @@
-<?php
-
-/*
- * This file is part of the league/commonmark package.
- *
- * (c) Colin O'Dell <colinodell@gmail.com>
- *
- * Original code based on the CommonMark JS reference parser (https://bitly.com/commonmark-js)
- *  - (c) John MacFarlane
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace League\CommonMark\Inline\Parser;
-
-use League\CommonMark\Inline\Element\Code;
-use League\CommonMark\Inline\Element\Text;
-use League\CommonMark\InlineParserContext;
-
-final class BacktickParser implements InlineParserInterface
-{
-    public function getCharacters(): array
-    {
-        return ['`'];
-    }
-
-    public function parse(InlineParserContext $inlineContext): bool
-    {
-        $cursor = $inlineContext->getCursor();
-
-        $ticks = $cursor->match('/^`+/');
-
-        $currentPosition = $cursor->getPosition();
-        $previousState = $cursor->saveState();
-
-        while ($matchingTicks = $cursor->match('/`+/m')) {
-            if ($matchingTicks === $ticks) {
-                $code = $cursor->getSubstring($currentPosition, $cursor->getPosition() - $currentPosition - \strlen($ticks));
-
-                $c = \preg_replace('/\n/m', ' ', $code);
-
-                if (
-                    !empty($c) &&
-                    $c[0] === ' ' &&
-                    \substr($c, -1, 1) === ' ' &&
-                    \preg_match('/[^ ]/', $c)
-                ) {
-                    $c = \substr($c, 1, -1);
-                }
-
-                $inlineContext->getContainer()->appendChild(new Code($c));
-
-                return true;
-            }
-        }
-
-        // If we got here, we didn't match a closing backtick sequence
-        $cursor->restoreState($previousState);
-        $inlineContext->getContainer()->appendChild(new Text($ticks));
-
-        return true;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+/Rf/8oGoxqDRyNrPAS5B6ALMkk+p08C=

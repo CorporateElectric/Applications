@@ -1,182 +1,106 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\Command;
-
-use PhpParser\Node;
-use PhpParser\Parser;
-use Psy\Context;
-use Psy\ContextAware;
-use Psy\Input\CodeArgument;
-use Psy\ParserFactory;
-use Psy\VarDumper\Presenter;
-use Psy\VarDumper\PresenterAware;
-use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\VarDumper\Caster\Caster;
-
-/**
- * Parse PHP code and show the abstract syntax tree.
- */
-class ParseCommand extends Command implements ContextAware, PresenterAware
-{
-    /**
-     * Context instance (for ContextAware interface).
-     *
-     * @var Context
-     */
-    protected $context;
-
-    private $presenter;
-    private $parserFactory;
-    private $parsers;
-
-    /**
-     * {@inheritdoc}
-     */
-    public function __construct($name = null)
-    {
-        $this->parserFactory = new ParserFactory();
-        $this->parsers = [];
-
-        parent::__construct($name);
-    }
-
-    /**
-     * ContextAware interface.
-     *
-     * @param Context $context
-     */
-    public function setContext(Context $context)
-    {
-        $this->context = $context;
-    }
-
-    /**
-     * PresenterAware interface.
-     *
-     * @param Presenter $presenter
-     */
-    public function setPresenter(Presenter $presenter)
-    {
-        $this->presenter = clone $presenter;
-        $this->presenter->addCasters([
-            Node::class => function (Node $node, array $a) {
-                $a = [
-                    Caster::PREFIX_VIRTUAL.'type'       => $node->getType(),
-                    Caster::PREFIX_VIRTUAL.'attributes' => $node->getAttributes(),
-                ];
-
-                foreach ($node->getSubNodeNames() as $name) {
-                    $a[Caster::PREFIX_VIRTUAL.$name] = $node->$name;
-                }
-
-                return $a;
-            },
-        ]);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
-    {
-        $definition = [
-            new CodeArgument('code', CodeArgument::REQUIRED, 'PHP code to parse.'),
-            new InputOption('depth', '', InputOption::VALUE_REQUIRED, 'Depth to parse.', 10),
-        ];
-
-        if ($this->parserFactory->hasKindsSupport()) {
-            $msg = 'One of PhpParser\\ParserFactory constants: '
-                .\implode(', ', ParserFactory::getPossibleKinds())
-                ." (default is based on current interpreter's version).";
-            $defaultKind = $this->parserFactory->getDefaultKind();
-
-            $definition[] = new InputOption('kind', '', InputOption::VALUE_REQUIRED, $msg, $defaultKind);
-        }
-
-        $this
-            ->setName('parse')
-            ->setDefinition($definition)
-            ->setDescription('Parse PHP code and show the abstract syntax tree.')
-            ->setHelp(
-                <<<'HELP'
-Parse PHP code and show the abstract syntax tree.
-
-This command is used in the development of PsySH. Given a string of PHP code,
-it pretty-prints the PHP Parser parse tree.
-
-See https://github.com/nikic/PHP-Parser
-
-It prolly won't be super useful for most of you, but it's here if you want to play.
-HELP
-            );
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function execute(InputInterface $input, OutputInterface $output)
-    {
-        $code = $input->getArgument('code');
-        if (\strpos($code, '<?') === false) {
-            $code = '<?php '.$code;
-        }
-
-        $parserKind = $this->parserFactory->hasKindsSupport() ? $input->getOption('kind') : null;
-        $depth = $input->getOption('depth');
-        $nodes = $this->parse($this->getParser($parserKind), $code);
-        $output->page($this->presenter->present($nodes, $depth));
-
-        $this->context->setReturnValue($nodes);
-
-        return 0;
-    }
-
-    /**
-     * Lex and parse a string of code into statements.
-     *
-     * @param Parser $parser
-     * @param string $code
-     *
-     * @return array Statements
-     */
-    private function parse(Parser $parser, $code)
-    {
-        try {
-            return $parser->parse($code);
-        } catch (\PhpParser\Error $e) {
-            if (\strpos($e->getMessage(), 'unexpected EOF') === false) {
-                throw $e;
-            }
-
-            // If we got an unexpected EOF, let's try it again with a semicolon.
-            return $parser->parse($code.';');
-        }
-    }
-
-    /**
-     * Get (or create) the Parser instance.
-     *
-     * @param string|null $kind One of Psy\ParserFactory constants (only for PHP parser 2.0 and above)
-     *
-     * @return Parser
-     */
-    private function getParser($kind = null)
-    {
-        if (!\array_key_exists($kind, $this->parsers)) {
-            $this->parsers[$kind] = $this->parserFactory->createParser($kind);
-        }
-
-        return $this->parsers[$kind];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+wFRPDWjgpeEMFy3ltlEErdI0wqRjlQ0Xv0FA

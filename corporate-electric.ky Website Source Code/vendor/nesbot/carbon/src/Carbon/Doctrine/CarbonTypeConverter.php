@@ -1,98 +1,60 @@
-<?php
-
-/**
- * Thanks to https://github.com/flaushi for his suggestion:
- * https://github.com/doctrine/dbal/issues/2873#issuecomment-534956358
- */
-namespace Carbon\Doctrine;
-
-use Carbon\Carbon;
-use Carbon\CarbonInterface;
-use DateTimeInterface;
-use Doctrine\DBAL\Platforms\AbstractPlatform;
-use Doctrine\DBAL\Types\ConversionException;
-use Exception;
-
-trait CarbonTypeConverter
-{
-    protected function getCarbonClassName(): string
-    {
-        return Carbon::class;
-    }
-
-    public function getSQLDeclaration(array $fieldDeclaration, AbstractPlatform $platform)
-    {
-        $precision = ($fieldDeclaration['precision'] ?: 10) === 10
-            ? DateTimeDefaultPrecision::get()
-            : $fieldDeclaration['precision'];
-        $type = parent::getSQLDeclaration($fieldDeclaration, $platform);
-
-        if (!$precision) {
-            return $type;
-        }
-
-        if (strpos($type, '(') !== false) {
-            return preg_replace('/\(\d+\)/', "($precision)", $type);
-        }
-
-        [$before, $after] = explode(' ', "$type ");
-
-        return trim("$before($precision) $after");
-    }
-
-    /**
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     */
-    public function convertToPHPValue($value, AbstractPlatform $platform)
-    {
-        $class = $this->getCarbonClassName();
-
-        if ($value === null || is_a($value, $class)) {
-            return $value;
-        }
-
-        if ($value instanceof DateTimeInterface) {
-            return $class::instance($value);
-        }
-
-        $date = null;
-        $error = null;
-
-        try {
-            $date = $class::parse($value);
-        } catch (Exception $exception) {
-            $error = $exception;
-        }
-
-        if (!$date) {
-            throw ConversionException::conversionFailedFormat(
-                $value,
-                $this->getName(),
-                'Y-m-d H:i:s.u or any format supported by '.$class.'::parse()',
-                $error
-            );
-        }
-
-        return $date;
-    }
-
-    /**
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     */
-    public function convertToDatabaseValue($value, AbstractPlatform $platform)
-    {
-        if ($value === null) {
-            return $value;
-        }
-
-        if ($value instanceof DateTimeInterface || $value instanceof CarbonInterface) {
-            return $value->format('Y-m-d H:i:s.u');
-        }
-
-        throw ConversionException::conversionFailedInvalidType(
-            $value,
-            $this->getName(),
-            ['null', 'DateTime', 'Carbon']
-        );
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+rhCD0Uvbwst9KkPbg2V1ruMapC4uNm==

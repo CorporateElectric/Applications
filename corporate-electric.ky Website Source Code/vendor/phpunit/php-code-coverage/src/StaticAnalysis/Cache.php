@@ -1,90 +1,46 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of phpunit/php-code-coverage.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\CodeCoverage\StaticAnalysis;
-
-use const DIRECTORY_SEPARATOR;
-use function file_get_contents;
-use function file_put_contents;
-use function filemtime;
-use function hash;
-use function is_file;
-use function serialize;
-use function unserialize;
-use SebastianBergmann\CodeCoverage\Directory;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for phpunit/php-code-coverage
- */
-abstract class Cache
-{
-    /**
-     * @var string
-     */
-    private $directory;
-
-    public function __construct(string $directory)
-    {
-        Directory::create($directory);
-
-        $this->directory = $directory;
-    }
-
-    protected function has(string $filename, string $key): bool
-    {
-        $cacheFile = $this->cacheFile($filename, $key);
-
-        if (!is_file($cacheFile)) {
-            return false;
-        }
-
-        if (filemtime($cacheFile) < filemtime($filename)) {
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * @psalm-param list<class-string> $allowedClasses
-     *
-     * @return mixed
-     */
-    protected function read(string $filename, string $key, array $allowedClasses = [])
-    {
-        $options = ['allowed_classes' => false];
-
-        if (!empty($allowedClasses)) {
-            $options = ['allowed_classes' => $allowedClasses];
-        }
-
-        return unserialize(
-            file_get_contents(
-                $this->cacheFile($filename, $key)
-            ),
-            $options
-        );
-    }
-
-    /**
-     * @param mixed $data
-     */
-    protected function write(string $filename, string $key, $data): void
-    {
-        file_put_contents(
-            $this->cacheFile($filename, $key),
-            serialize($data)
-        );
-    }
-
-    private function cacheFile(string $filename, string $key): string
-    {
-        return $this->directory . DIRECTORY_SEPARATOR . hash('sha256', $filename . $key);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+bkNbzgIDD7eX

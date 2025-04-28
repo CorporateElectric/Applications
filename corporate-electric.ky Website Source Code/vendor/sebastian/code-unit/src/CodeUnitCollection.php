@@ -1,84 +1,52 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of sebastian/code-unit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\CodeUnit;
-
-use function array_merge;
-use function count;
-use Countable;
-use IteratorAggregate;
-
-final class CodeUnitCollection implements Countable, IteratorAggregate
-{
-    /**
-     * @psalm-var list<CodeUnit>
-     */
-    private $codeUnits = [];
-
-    /**
-     * @psalm-param list<CodeUnit> $items
-     */
-    public static function fromArray(array $items): self
-    {
-        $collection = new self;
-
-        foreach ($items as $item) {
-            $collection->add($item);
-        }
-
-        return $collection;
-    }
-
-    public static function fromList(CodeUnit ...$items): self
-    {
-        return self::fromArray($items);
-    }
-
-    private function __construct()
-    {
-    }
-
-    /**
-     * @psalm-return list<CodeUnit>
-     */
-    public function asArray(): array
-    {
-        return $this->codeUnits;
-    }
-
-    public function getIterator(): CodeUnitCollectionIterator
-    {
-        return new CodeUnitCollectionIterator($this);
-    }
-
-    public function count(): int
-    {
-        return count($this->codeUnits);
-    }
-
-    public function isEmpty(): bool
-    {
-        return empty($this->codeUnits);
-    }
-
-    public function mergeWith(self $other): self
-    {
-        return self::fromArray(
-            array_merge(
-                $this->asArray(),
-                $other->asArray()
-            )
-        );
-    }
-
-    private function add(CodeUnit $item): void
-    {
-        $this->codeUnits[] = $item;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPydq/pGYsrd45Q95QW6R2VkPsvEm5KQe7jg8gjPO5rNq6mGOgEaH+FZNNeD3ZUQJuGjBDB5a
+p3zh0G11bcqovmt2MAEdwh2wgcO+w6kTWKhMSzjXDd3f4Hf0XxzoQY0uIHWhxbB7yYUFGLjSKgbG
+MhVbYjG071ppMt7ttsS0D906W2IdQdAhKV9TWN8ZUNX0drs6B2XCpFE/idTuwlfGR71ZYvKlvRkz
+ZX8aHFuRInh1vsRoluNcza9ez1EUj8puBSzYXZhLgoldLC5HqzmP85H4TkY2Q3h0jXRGghqhvZNx
+hy2I04/CSAh6vzOGe7DtcVxqnoHVg8AcJk9CskncMERqKX7elwwEGgKa35CknPQBBMxnCb0tefYB
+IzV2a1ha+OksI2xzOxfOXlYs3Aj+IDd8NiFMW59P70Jq7VMpopa2mc8ny5DWxlZY5BX/Gvjy6kYu
+34gPSqz5A0Q9KFZ3krMVH5NZyen+A6fMFijd65tQJdjCXp3ZAacTaIqTxvGh4MSdemWYZqa+h7+M
+SPb09/Qwuh3asvF99pz6EnYBZuTyJ1x0Z/ESzmFyifh7+yTeaOpLvrmdJvX9NlI3qPuiKKcRsRG8
+4nFR0qhkkBNwaSPUr44HNrqGyhIwBUEjsgS5JoBB8FcMVR1a4eWq1hmN/xAYKFr9pnl1xBfICbYC
+0Jj5mfr7xzBVIsyiuS89VLfh1V86wRxC032oAPygQyfmzec3nn3aP0r35hepM5x2Yph9DVti/m8x
+3xrAnWL2d9x5+XZH/c8K9gnSluArtoWWQxmYwA6N5mrqFXzP4yOeoUTB4QMJSGV6tsp5DllZQWjr
+lB9S9p5tyNUPGXbpkDR2Z7TfukKMma6FfJ+NcpjNbGW1WI9NHFnN4zE272V9oc4ThVU+hF1svEqR
+nKsnLIW6CERm1rQioxpaYa35jeWikSKVbfXU0Fx+7FmecJT6UPrqFy+izMtadJGHZnr7fPSqtjk0
+hmKS6+Zg3KwFV9HUN3t/GLoAhqahtsv99B5JZcO7MpCz4wvRnN+lruHptDOB5nUDO7DIUx4WTXfU
++y6hj9P6OIjvwuKKgrkECuaawHifDGzFif/M40qPhxIGbWuBo5klhg9OTyeRxXBf8yWmDHdboASx
+/1emU3V94Q6HAyuTk7qdb+NZX1MresizQQKBeBmWOEbn0fHUR8lJw9H+76EzYFOW7ixPnQMHjWQD
+iWWqT6tVCKOcVzVDjvwjjANb80XJ2/U4mdl8t2GHdtc323x/oSl9f73H4aKb6fDuvvKHNUxrzpqJ
+NeoCJg3owqix68QzeQRQ6pU5HkuCwioVXpIBkQ1Dxku+uObsSWFfNlk71d/QW5kzNM5WjlWDkL7H
+/mMEHq6iRjxQoYYdksjIUUuRuFmCdmStnis0yYIrFipD3eqQSMXKswvjfHuoYpBtxfWV7rKVFUi8
+7WxWTZMe9ITLCvGUWybdhZsBXcNdJl27JFflUJuPeUNX+fTMbgQIn+JDTeMXAlZIK2VirYLM0ILM
+XefS0HISW593vCJQGC7m9aoSyXx/myKF59t8O14q3uQUj6IV5cjBuCaFC+Omc6xYrIJeHhDg2Knk
+VtAN21/AJgtn3pgENgVqR7Z7dP9hJ3b0ZfUGCeJQHiNUauqxhBzvcxzpdE9j5Kdw4210+F2oz9i/
+b6yXDf6bnPUR9LPEBTvRhsEzFRhtRIvb9h30/xk/frJ7nJlCk63Wp0xSU6zg9wcE3fJZVoUH68fM
+GC3fvsTsXLH2gWu6cwFwCVOJkjOnUJAr+blZfFw20D5edJNOO0k0LBSH3i8ogxvWhlNzU9BwadGR
+pvFYCMr42KFxN1rBFvlUL/XzqnKhZsXbnpbroV/e6bWjVz9ujBnyiAB1MNdfziwDFb3LM/IJElL5
+TubK5QfBwxzMYpgVY65M2LH24ApYRP56ssxJRnpP2xOIkhoohXaGnkLiOt0MyIhhEb/kmz4VXf4Q
+iTFzxV1Qe0hiWaPhBPnzYPMECAT1ochy2tUipyyFn0hQzqCI1Bjdaf+sMGco1Njb5+oivZzV4cPL
+csKITXeHeOmVa+kFlAPEgPzIby+XXUPDNeUDsZqa1SjQtXWb3F8vSlI+9rUgbIFw6dV/GJ547ydw
+qsRPDXVOWxVyDT27/X61/GOgOZvDdLyANUDgmMUJBKmRCu6AD5xjIse1GU0qqa1on/m7QEIfyykH
+5nJ/1ZAD7cYD5XMd8mEEtzB2za6/0nzNpKBro1nsPMsXx9R5v5LitWHb7yERvZRIyWO9744Hke/G
+f/MSo6eegoqI5vKp7h/Pg7tHfZgrWEvW1cU6ANhW4JTqY4PcclK0AduChW1ECyJPU0PTA5iOWXOW
+Yd2bFghLjgx5M8ZQFyXRd0dPhd/5d2jYAFMqU5bKrfPGvgQdK6G0+YTs29hI8+b7JjtQDUK/ULrt
+PRALGf7b5Hc2q9uIYd6mZHHoxb/3o8kp4RE7q3XyDHbPMWkl+iqf9jW3K1d0OCKIHksyfYtsjN+4
+MNfbJo2mK/dUj++fAz5HW/r7rJwdSnzRa2XUUx6Gw46uYjDYwyWpFbO2FirjDFUa/sHop6jcayf4
+32VISBtgHyEUEZ4+EcXHZ1jcUgOe2B+DNDb97RlcNx2u5NTcwXfyZpjnRv03DHRzwn8/d+naPP/1
+o0rMH32yCL15w+43G412O2JiHTjBIifJ7X4YAfjWCCHVWjlxSvvCEHxdLeT0O9aAxkNS72oQq+8m
+QM9RNM3rqZbmH24ihKz5CTNAxTLY318IS4Wnzn6GI9IfiJcMholhqw4q57h6qh52878sQhbh0Ocx
+Mj424saROfE5L5lDVUzvV7OVU0c2r5p1oMSW0O7rdSXKu4uzHzSTIktVN7wF95xRIw2z6hdtOZgu
+WrCbmzv3N4sFpFQ84yC6RTGH3Q13zp9oy5TeiCVQpZvRWWpUlqZo4TmsjHMfU2Kd0tiVD7US1gbZ
+qlXFT9WNs0IJhIbt7t5lHLvi6avNf5fML4YMfeECrC5i8dtV0fPUYHEh87kPkGhttMNVv2mXxVCc
+gxGaPwTLuDnYs1fq8wZAkVYZUekz+8DmYmkHVVSFxF+B6z/AQfQ3eNK1wUrn7qP/1MjvvriMwH1V
+QkSikTqqFuy5Nhw4wE4kjrebX95ZCbgH8iADDrO8V3kikqcRltCUoSHMKZirz0wTmKEX8phAgkn5
+tpaFq0opwvh4Y7g+v9TvefpjI9JnuUEKdSqU+8WbMbSnA+n6eD2HaD/a0LXu3BKsDSupcPYk2F1Q
+bpb67eOuHNyIIxI3WJAu8M350oULtpXagxRysL0sy1KKt2tbTUcJuFPukWdna8nh/NVhgUtvwTeA
+9IWr1/ozbttSVQ3FI9eJCL7caI5E9CLPII02kQuqG4qMs1kdnYQMvAxJu8IGwHqrqKJALVZOEiR7
+7VC8+E6wOyWeFukwgYo56v26GUS72XkNoVo+l5DEMZbiHOtp1bVZgtolad8J3PRCfzEAqLWjxoOe
+DyYHC+hOUTYSxjEH6FV5FMWSHL5OAC+bGmXUvopUvg+NWki04LvZfPJ5cAzKKWH+AUqlWM5b9OuF
+WQR7ShLZ2j76BaDAIEznRc5Y2LdSCzTsoLE2ubKgntQ2DWx27HyftOHpchRmJfr5yMAZD36ZMw+B
+e4Sb0p3BZWNLT+9hV1of4jQsZW==

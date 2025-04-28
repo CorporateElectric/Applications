@@ -1,176 +1,80 @@
-<?php
-
-/**
- * Validates shorthand CSS property font.
- */
-class HTMLPurifier_AttrDef_CSS_Font extends HTMLPurifier_AttrDef
-{
-
-    /**
-     * Local copy of validators
-     * @type HTMLPurifier_AttrDef[]
-     * @note If we moved specific CSS property definitions to their own
-     *       classes instead of having them be assembled at run time by
-     *       CSSDefinition, this wouldn't be necessary.  We'd instantiate
-     *       our own copies.
-     */
-    protected $info = array();
-
-    /**
-     * @param HTMLPurifier_Config $config
-     */
-    public function __construct($config)
-    {
-        $def = $config->getCSSDefinition();
-        $this->info['font-style'] = $def->info['font-style'];
-        $this->info['font-variant'] = $def->info['font-variant'];
-        $this->info['font-weight'] = $def->info['font-weight'];
-        $this->info['font-size'] = $def->info['font-size'];
-        $this->info['line-height'] = $def->info['line-height'];
-        $this->info['font-family'] = $def->info['font-family'];
-    }
-
-    /**
-     * @param string $string
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return bool|string
-     */
-    public function validate($string, $config, $context)
-    {
-        static $system_fonts = array(
-            'caption' => true,
-            'icon' => true,
-            'menu' => true,
-            'message-box' => true,
-            'small-caption' => true,
-            'status-bar' => true
-        );
-
-        // regular pre-processing
-        $string = $this->parseCDATA($string);
-        if ($string === '') {
-            return false;
-        }
-
-        // check if it's one of the keywords
-        $lowercase_string = strtolower($string);
-        if (isset($system_fonts[$lowercase_string])) {
-            return $lowercase_string;
-        }
-
-        $bits = explode(' ', $string); // bits to process
-        $stage = 0; // this indicates what we're looking for
-        $caught = array(); // which stage 0 properties have we caught?
-        $stage_1 = array('font-style', 'font-variant', 'font-weight');
-        $final = ''; // output
-
-        for ($i = 0, $size = count($bits); $i < $size; $i++) {
-            if ($bits[$i] === '') {
-                continue;
-            }
-            switch ($stage) {
-                case 0: // attempting to catch font-style, font-variant or font-weight
-                    foreach ($stage_1 as $validator_name) {
-                        if (isset($caught[$validator_name])) {
-                            continue;
-                        }
-                        $r = $this->info[$validator_name]->validate(
-                            $bits[$i],
-                            $config,
-                            $context
-                        );
-                        if ($r !== false) {
-                            $final .= $r . ' ';
-                            $caught[$validator_name] = true;
-                            break;
-                        }
-                    }
-                    // all three caught, continue on
-                    if (count($caught) >= 3) {
-                        $stage = 1;
-                    }
-                    if ($r !== false) {
-                        break;
-                    }
-                case 1: // attempting to catch font-size and perhaps line-height
-                    $found_slash = false;
-                    if (strpos($bits[$i], '/') !== false) {
-                        list($font_size, $line_height) =
-                            explode('/', $bits[$i]);
-                        if ($line_height === '') {
-                            // ooh, there's a space after the slash!
-                            $line_height = false;
-                            $found_slash = true;
-                        }
-                    } else {
-                        $font_size = $bits[$i];
-                        $line_height = false;
-                    }
-                    $r = $this->info['font-size']->validate(
-                        $font_size,
-                        $config,
-                        $context
-                    );
-                    if ($r !== false) {
-                        $final .= $r;
-                        // attempt to catch line-height
-                        if ($line_height === false) {
-                            // we need to scroll forward
-                            for ($j = $i + 1; $j < $size; $j++) {
-                                if ($bits[$j] === '') {
-                                    continue;
-                                }
-                                if ($bits[$j] === '/') {
-                                    if ($found_slash) {
-                                        return false;
-                                    } else {
-                                        $found_slash = true;
-                                        continue;
-                                    }
-                                }
-                                $line_height = $bits[$j];
-                                break;
-                            }
-                        } else {
-                            // slash already found
-                            $found_slash = true;
-                            $j = $i;
-                        }
-                        if ($found_slash) {
-                            $i = $j;
-                            $r = $this->info['line-height']->validate(
-                                $line_height,
-                                $config,
-                                $context
-                            );
-                            if ($r !== false) {
-                                $final .= '/' . $r;
-                            }
-                        }
-                        $final .= ' ';
-                        $stage = 2;
-                        break;
-                    }
-                    return false;
-                case 2: // attempting to catch font-family
-                    $font_family =
-                        implode(' ', array_slice($bits, $i, $size - $i));
-                    $r = $this->info['font-family']->validate(
-                        $font_family,
-                        $config,
-                        $context
-                    );
-                    if ($r !== false) {
-                        $final .= $r . ' ';
-                        // processing completed successfully
-                        return rtrim($final);
-                    }
-                    return false;
-            }
-        }
-        return false;
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

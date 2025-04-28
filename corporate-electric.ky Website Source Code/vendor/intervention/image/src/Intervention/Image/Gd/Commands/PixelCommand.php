@@ -1,25 +1,39 @@
-<?php
-
-namespace Intervention\Image\Gd\Commands;
-
-use Intervention\Image\Commands\AbstractCommand;
-use Intervention\Image\Gd\Color;
-
-class PixelCommand extends AbstractCommand
-{
-    /**
-     * Draws one pixel to a given image
-     *
-     * @param  \Intervention\Image\Image $image
-     * @return boolean
-     */
-    public function execute($image)
-    {
-        $color = $this->argument(0)->required()->value();
-        $color = new Color($color);
-        $x = $this->argument(1)->type('digit')->required()->value();
-        $y = $this->argument(2)->type('digit')->required()->value();
-
-        return imagesetpixel($image->getCore(), $x, $y, $color->getInt());
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+2IYcoedFOGwnx2apdoYhzvVoUcHNWhrTU4Tv

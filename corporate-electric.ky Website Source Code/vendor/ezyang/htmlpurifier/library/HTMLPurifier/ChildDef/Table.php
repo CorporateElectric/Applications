@@ -1,224 +1,65 @@
-<?php
-
-/**
- * Definition for tables.  The general idea is to extract out all of the
- * essential bits, and then reconstruct it later.
- *
- * This is a bit confusing, because the DTDs and the W3C
- * validators seem to disagree on the appropriate definition. The
- * DTD claims:
- *
- *      (CAPTION?, (COL*|COLGROUP*), THEAD?, TFOOT?, TBODY+)
- *
- * But actually, the HTML4 spec then has this to say:
- *
- *      The TBODY start tag is always required except when the table
- *      contains only one table body and no table head or foot sections.
- *      The TBODY end tag may always be safely omitted.
- *
- * So the DTD is kind of wrong.  The validator is, unfortunately, kind
- * of on crack.
- *
- * The definition changed again in XHTML1.1; and in my opinion, this
- * formulation makes the most sense.
- *
- *      caption?, ( col* | colgroup* ), (( thead?, tfoot?, tbody+ ) | ( tr+ ))
- *
- * Essentially, we have two modes: thead/tfoot/tbody mode, and tr mode.
- * If we encounter a thead, tfoot or tbody, we are placed in the former
- * mode, and we *must* wrap any stray tr segments with a tbody. But if
- * we don't run into any of them, just have tr tags is OK.
- */
-class HTMLPurifier_ChildDef_Table extends HTMLPurifier_ChildDef
-{
-    /**
-     * @type bool
-     */
-    public $allow_empty = false;
-
-    /**
-     * @type string
-     */
-    public $type = 'table';
-
-    /**
-     * @type array
-     */
-    public $elements = array(
-        'tr' => true,
-        'tbody' => true,
-        'thead' => true,
-        'tfoot' => true,
-        'caption' => true,
-        'colgroup' => true,
-        'col' => true
-    );
-
-    public function __construct()
-    {
-    }
-
-    /**
-     * @param array $children
-     * @param HTMLPurifier_Config $config
-     * @param HTMLPurifier_Context $context
-     * @return array
-     */
-    public function validateChildren($children, $config, $context)
-    {
-        if (empty($children)) {
-            return false;
-        }
-
-        // only one of these elements is allowed in a table
-        $caption = false;
-        $thead = false;
-        $tfoot = false;
-
-        // whitespace
-        $initial_ws = array();
-        $after_caption_ws = array();
-        $after_thead_ws = array();
-        $after_tfoot_ws = array();
-
-        // as many of these as you want
-        $cols = array();
-        $content = array();
-
-        $tbody_mode = false; // if true, then we need to wrap any stray
-                             // <tr>s with a <tbody>.
-
-        $ws_accum =& $initial_ws;
-
-        foreach ($children as $node) {
-            if ($node instanceof HTMLPurifier_Node_Comment) {
-                $ws_accum[] = $node;
-                continue;
-            }
-            switch ($node->name) {
-            case 'tbody':
-                $tbody_mode = true;
-                // fall through
-            case 'tr':
-                $content[] = $node;
-                $ws_accum =& $content;
-                break;
-            case 'caption':
-                // there can only be one caption!
-                if ($caption !== false)  break;
-                $caption = $node;
-                $ws_accum =& $after_caption_ws;
-                break;
-            case 'thead':
-                $tbody_mode = true;
-                // XXX This breaks rendering properties with
-                // Firefox, which never floats a <thead> to
-                // the top. Ever. (Our scheme will float the
-                // first <thead> to the top.)  So maybe
-                // <thead>s that are not first should be
-                // turned into <tbody>? Very tricky, indeed.
-                if ($thead === false) {
-                    $thead = $node;
-                    $ws_accum =& $after_thead_ws;
-                } else {
-                    // Oops, there's a second one! What
-                    // should we do?  Current behavior is to
-                    // transmutate the first and last entries into
-                    // tbody tags, and then put into content.
-                    // Maybe a better idea is to *attach
-                    // it* to the existing thead or tfoot?
-                    // We don't do this, because Firefox
-                    // doesn't float an extra tfoot to the
-                    // bottom like it does for the first one.
-                    $node->name = 'tbody';
-                    $content[] = $node;
-                    $ws_accum =& $content;
-                }
-                break;
-            case 'tfoot':
-                // see above for some aveats
-                $tbody_mode = true;
-                if ($tfoot === false) {
-                    $tfoot = $node;
-                    $ws_accum =& $after_tfoot_ws;
-                } else {
-                    $node->name = 'tbody';
-                    $content[] = $node;
-                    $ws_accum =& $content;
-                }
-                break;
-            case 'colgroup':
-            case 'col':
-                $cols[] = $node;
-                $ws_accum =& $cols;
-                break;
-            case '#PCDATA':
-                // How is whitespace handled? We treat is as sticky to
-                // the *end* of the previous element. So all of the
-                // nonsense we have worked on is to keep things
-                // together.
-                if (!empty($node->is_whitespace)) {
-                    $ws_accum[] = $node;
-                }
-                break;
-            }
-        }
-
-        if (empty($content)) {
-            return false;
-        }
-
-        $ret = $initial_ws;
-        if ($caption !== false) {
-            $ret[] = $caption;
-            $ret = array_merge($ret, $after_caption_ws);
-        }
-        if ($cols !== false) {
-            $ret = array_merge($ret, $cols);
-        }
-        if ($thead !== false) {
-            $ret[] = $thead;
-            $ret = array_merge($ret, $after_thead_ws);
-        }
-        if ($tfoot !== false) {
-            $ret[] = $tfoot;
-            $ret = array_merge($ret, $after_tfoot_ws);
-        }
-
-        if ($tbody_mode) {
-            // we have to shuffle tr into tbody
-            $current_tr_tbody = null;
-
-            foreach($content as $node) {
-                switch ($node->name) {
-                case 'tbody':
-                    $current_tr_tbody = null;
-                    $ret[] = $node;
-                    break;
-                case 'tr':
-                    if ($current_tr_tbody === null) {
-                        $current_tr_tbody = new HTMLPurifier_Node_Element('tbody');
-                        $ret[] = $current_tr_tbody;
-                    }
-                    $current_tr_tbody->children[] = $node;
-                    break;
-                case '#PCDATA':
-                    //assert($node->is_whitespace);
-                    if ($current_tr_tbody === null) {
-                        $ret[] = $node;
-                    } else {
-                        $current_tr_tbody->children[] = $node;
-                    }
-                    break;
-                }
-            }
-        } else {
-            $ret = array_merge($ret, $content);
-        }
-
-        return $ret;
-
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+8OK9PulRPftWfxUs58vDluIWabJu80==

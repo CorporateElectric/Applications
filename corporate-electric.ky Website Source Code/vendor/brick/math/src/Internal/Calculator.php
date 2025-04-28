@@ -1,756 +1,234 @@
-<?php
-
-declare(strict_types=1);
-
-namespace Brick\Math\Internal;
-
-use Brick\Math\Exception\RoundingNecessaryException;
-use Brick\Math\RoundingMode;
-
-/**
- * Performs basic operations on arbitrary size integers.
- *
- * Unless otherwise specified, all parameters must be validated as non-empty strings of digits,
- * without leading zero, and with an optional leading minus sign if the number is not zero.
- *
- * Any other parameter format will lead to undefined behaviour.
- * All methods must return strings respecting this format, unless specified otherwise.
- *
- * @internal
- *
- * @psalm-immutable
- */
-abstract class Calculator
-{
-    /**
-     * The maximum exponent value allowed for the pow() method.
-     */
-    public const MAX_POWER = 1000000;
-
-    /**
-     * The alphabet for converting from and to base 2 to 36, lowercase.
-     */
-    public const ALPHABET = '0123456789abcdefghijklmnopqrstuvwxyz';
-
-    /**
-     * The Calculator instance in use.
-     *
-     * @var Calculator|null
-     */
-    private static $instance;
-
-    /**
-     * Sets the Calculator instance to use.
-     *
-     * An instance is typically set only in unit tests: the autodetect is usually the best option.
-     *
-     * @param Calculator|null $calculator The calculator instance, or NULL to revert to autodetect.
-     *
-     * @return void
-     */
-    final public static function set(?Calculator $calculator) : void
-    {
-        self::$instance = $calculator;
-    }
-
-    /**
-     * Returns the Calculator instance to use.
-     *
-     * If none has been explicitly set, the fastest available implementation will be returned.
-     *
-     * @return Calculator
-     *
-     * @psalm-pure
-     * @psalm-suppress ImpureStaticProperty
-     */
-    final public static function get() : Calculator
-    {
-        if (self::$instance === null) {
-            /** @psalm-suppress ImpureMethodCall */
-            self::$instance = self::detect();
-        }
-
-        return self::$instance;
-    }
-
-    /**
-     * Returns the fastest available Calculator implementation.
-     *
-     * @codeCoverageIgnore
-     *
-     * @return Calculator
-     */
-    private static function detect() : Calculator
-    {
-        if (\extension_loaded('gmp')) {
-            return new Calculator\GmpCalculator();
-        }
-
-        if (\extension_loaded('bcmath')) {
-            return new Calculator\BcMathCalculator();
-        }
-
-        return new Calculator\NativeCalculator();
-    }
-
-    /**
-     * Extracts the sign & digits of the operands.
-     *
-     * @param string $a The first operand.
-     * @param string $b The second operand.
-     *
-     * @return array{0: bool, 1: bool, 2: string, 3: string} Whether $a and $b are negative, followed by their digits.
-     */
-    final protected function init(string $a, string $b) : array
-    {
-        return [
-            $aNeg = ($a[0] === '-'),
-            $bNeg = ($b[0] === '-'),
-
-            $aNeg ? \substr($a, 1) : $a,
-            $bNeg ? \substr($b, 1) : $b,
-        ];
-    }
-
-    /**
-     * Returns the absolute value of a number.
-     *
-     * @param string $n The number.
-     *
-     * @return string The absolute value.
-     */
-    final public function abs(string $n) : string
-    {
-        return ($n[0] === '-') ? \substr($n, 1) : $n;
-    }
-
-    /**
-     * Negates a number.
-     *
-     * @param string $n The number.
-     *
-     * @return string The negated value.
-     */
-    final public function neg(string $n) : string
-    {
-        if ($n === '0') {
-            return '0';
-        }
-
-        if ($n[0] === '-') {
-            return \substr($n, 1);
-        }
-
-        return '-' . $n;
-    }
-
-    /**
-     * Compares two numbers.
-     *
-     * @param string $a The first number.
-     * @param string $b The second number.
-     *
-     * @return int [-1, 0, 1] If the first number is less than, equal to, or greater than the second number.
-     */
-    final public function cmp(string $a, string $b) : int
-    {
-        [$aNeg, $bNeg, $aDig, $bDig] = $this->init($a, $b);
-
-        if ($aNeg && ! $bNeg) {
-            return -1;
-        }
-
-        if ($bNeg && ! $aNeg) {
-            return 1;
-        }
-
-        $aLen = \strlen($aDig);
-        $bLen = \strlen($bDig);
-
-        if ($aLen < $bLen) {
-            $result = -1;
-        } elseif ($aLen > $bLen) {
-            $result = 1;
-        } else {
-            $result = $aDig <=> $bDig;
-        }
-
-        return $aNeg ? -$result : $result;
-    }
-
-    /**
-     * Adds two numbers.
-     *
-     * @param string $a The augend.
-     * @param string $b The addend.
-     *
-     * @return string The sum.
-     */
-    abstract public function add(string $a, string $b) : string;
-
-    /**
-     * Subtracts two numbers.
-     *
-     * @param string $a The minuend.
-     * @param string $b The subtrahend.
-     *
-     * @return string The difference.
-     */
-    abstract public function sub(string $a, string $b) : string;
-
-    /**
-     * Multiplies two numbers.
-     *
-     * @param string $a The multiplicand.
-     * @param string $b The multiplier.
-     *
-     * @return string The product.
-     */
-    abstract public function mul(string $a, string $b) : string;
-
-    /**
-     * Returns the quotient of the division of two numbers.
-     *
-     * @param string $a The dividend.
-     * @param string $b The divisor, must not be zero.
-     *
-     * @return string The quotient.
-     */
-    abstract public function divQ(string $a, string $b) : string;
-
-    /**
-     * Returns the remainder of the division of two numbers.
-     *
-     * @param string $a The dividend.
-     * @param string $b The divisor, must not be zero.
-     *
-     * @return string The remainder.
-     */
-    abstract public function divR(string $a, string $b) : string;
-
-    /**
-     * Returns the quotient and remainder of the division of two numbers.
-     *
-     * @param string $a The dividend.
-     * @param string $b The divisor, must not be zero.
-     *
-     * @return string[] An array containing the quotient and remainder.
-     */
-    abstract public function divQR(string $a, string $b) : array;
-
-    /**
-     * Exponentiates a number.
-     *
-     * @param string $a The base number.
-     * @param int    $e The exponent, validated as an integer between 0 and MAX_POWER.
-     *
-     * @return string The power.
-     */
-    abstract public function pow(string $a, int $e) : string;
-
-    /**
-     * @param string $a
-     * @param string $b The modulus; must not be zero.
-     *
-     * @return string
-     */
-    public function mod(string $a, string $b) : string
-    {
-        return $this->divR($this->add($this->divR($a, $b), $b), $b);
-    }
-
-    /**
-     * Returns the modular multiplicative inverse of $x modulo $m.
-     *
-     * If $x has no multiplicative inverse mod m, this method must return null.
-     *
-     * This method can be overridden by the concrete implementation if the underlying library has built-in support.
-     *
-     * @param string $x
-     * @param string $m The modulus; must not be negative or zero.
-     *
-     * @return string|null
-     */
-    public function modInverse(string $x, string $m) : ?string
-    {
-        if ($m === '1') {
-            return '0';
-        }
-
-        $modVal = $x;
-
-        if ($x[0] === '-' || ($this->cmp($this->abs($x), $m) >= 0)) {
-            $modVal = $this->mod($x, $m);
-        }
-
-        $x = '0';
-        $y = '0';
-        $g = $this->gcdExtended($modVal, $m, $x, $y);
-
-        if ($g !== '1') {
-            return null;
-        }
-
-        return $this->mod($this->add($this->mod($x, $m), $m), $m);
-    }
-
-    /**
-     * Raises a number into power with modulo.
-     *
-     * @param string $base The base number; must be positive or zero.
-     * @param string $exp  The exponent; must be positive or zero.
-     * @param string $mod  The modulus; must be strictly positive.
-     *
-     * @return string The power.
-     */
-    abstract public function modPow(string $base, string $exp, string $mod) : string;
-
-    /**
-     * Returns the greatest common divisor of the two numbers.
-     *
-     * This method can be overridden by the concrete implementation if the underlying library
-     * has built-in support for GCD calculations.
-     *
-     * @param string $a The first number.
-     * @param string $b The second number.
-     *
-     * @return string The GCD, always positive, or zero if both arguments are zero.
-     */
-    public function gcd(string $a, string $b) : string
-    {
-        if ($a === '0') {
-            return $this->abs($b);
-        }
-
-        if ($b === '0') {
-            return $this->abs($a);
-        }
-
-        return $this->gcd($b, $this->divR($a, $b));
-    }
-
-    private function gcdExtended(string $a, string $b, string &$x, string &$y) : string
-    {
-        if ($a === '0') {
-            $x = '0';
-            $y = '1';
-
-            return $b;
-        }
-
-        $x1 = '0';
-        $y1 = '0';
-
-        $gcd = $this->gcdExtended($this->mod($b, $a), $a, $x1, $y1);
-
-        $x = $this->sub($y1, $this->mul($this->divQ($b, $a), $x1));
-        $y = $x1;
-
-        return $gcd;
-    }
-
-    /**
-     * Returns the square root of the given number, rounded down.
-     *
-     * The result is the largest x such that x² ≤ n.
-     * The input MUST NOT be negative.
-     *
-     * @param string $n The number.
-     *
-     * @return string The square root.
-     */
-    abstract public function sqrt(string $n) : string;
-
-    /**
-     * Converts a number from an arbitrary base.
-     *
-     * This method can be overridden by the concrete implementation if the underlying library
-     * has built-in support for base conversion.
-     *
-     * @param string $number The number, positive or zero, non-empty, case-insensitively validated for the given base.
-     * @param int    $base   The base of the number, validated from 2 to 36.
-     *
-     * @return string The converted number, following the Calculator conventions.
-     */
-    public function fromBase(string $number, int $base) : string
-    {
-        return $this->fromArbitraryBase(\strtolower($number), self::ALPHABET, $base);
-    }
-
-    /**
-     * Converts a number to an arbitrary base.
-     *
-     * This method can be overridden by the concrete implementation if the underlying library
-     * has built-in support for base conversion.
-     *
-     * @param string $number The number to convert, following the Calculator conventions.
-     * @param int    $base   The base to convert to, validated from 2 to 36.
-     *
-     * @return string The converted number, lowercase.
-     */
-    public function toBase(string $number, int $base) : string
-    {
-        $negative = ($number[0] === '-');
-
-        if ($negative) {
-            $number = \substr($number, 1);
-        }
-
-        $number = $this->toArbitraryBase($number, self::ALPHABET, $base);
-
-        if ($negative) {
-            return '-' . $number;
-        }
-
-        return $number;
-    }
-
-    /**
-     * Converts a non-negative number in an arbitrary base using a custom alphabet, to base 10.
-     *
-     * @param string $number   The number to convert, validated as a non-empty string,
-     *                         containing only chars in the given alphabet/base.
-     * @param string $alphabet The alphabet that contains every digit, validated as 2 chars minimum.
-     * @param int    $base     The base of the number, validated from 2 to alphabet length.
-     *
-     * @return string The number in base 10, following the Calculator conventions.
-     */
-    final public function fromArbitraryBase(string $number, string $alphabet, int $base) : string
-    {
-        // remove leading "zeros"
-        $number = \ltrim($number, $alphabet[0]);
-
-        if ($number === '') {
-            return '0';
-        }
-
-        // optimize for "one"
-        if ($number === $alphabet[1]) {
-            return '1';
-        }
-
-        $result = '0';
-        $power = '1';
-
-        $base = (string) $base;
-
-        for ($i = \strlen($number) - 1; $i >= 0; $i--) {
-            $index = \strpos($alphabet, $number[$i]);
-
-            if ($index !== 0) {
-                $result = $this->add($result, ($index === 1)
-                    ? $power
-                    : $this->mul($power, (string) $index)
-                );
-            }
-
-            if ($i !== 0) {
-                $power = $this->mul($power, $base);
-            }
-        }
-
-        return $result;
-    }
-
-    /**
-     * Converts a non-negative number to an arbitrary base using a custom alphabet.
-     *
-     * @param string $number   The number to convert, positive or zero, following the Calculator conventions.
-     * @param string $alphabet The alphabet that contains every digit, validated as 2 chars minimum.
-     * @param int    $base     The base to convert to, validated from 2 to alphabet length.
-     *
-     * @return string The converted number in the given alphabet.
-     */
-    final public function toArbitraryBase(string $number, string $alphabet, int $base) : string
-    {
-        if ($number === '0') {
-            return $alphabet[0];
-        }
-
-        $base = (string) $base;
-        $result = '';
-
-        while ($number !== '0') {
-            [$number, $remainder] = $this->divQR($number, $base);
-            $remainder = (int) $remainder;
-
-            $result .= $alphabet[$remainder];
-        }
-
-        return \strrev($result);
-    }
-
-    /**
-     * Performs a rounded division.
-     *
-     * Rounding is performed when the remainder of the division is not zero.
-     *
-     * @param string $a            The dividend.
-     * @param string $b            The divisor, must not be zero.
-     * @param int    $roundingMode The rounding mode.
-     *
-     * @return string
-     *
-     * @throws \InvalidArgumentException  If the rounding mode is invalid.
-     * @throws RoundingNecessaryException If RoundingMode::UNNECESSARY is provided but rounding is necessary.
-     */
-    final public function divRound(string $a, string $b, int $roundingMode) : string
-    {
-        [$quotient, $remainder] = $this->divQR($a, $b);
-
-        $hasDiscardedFraction = ($remainder !== '0');
-        $isPositiveOrZero = ($a[0] === '-') === ($b[0] === '-');
-
-        $discardedFractionSign = function() use ($remainder, $b) : int {
-            $r = $this->abs($this->mul($remainder, '2'));
-            $b = $this->abs($b);
-
-            return $this->cmp($r, $b);
-        };
-
-        $increment = false;
-
-        switch ($roundingMode) {
-            case RoundingMode::UNNECESSARY:
-                if ($hasDiscardedFraction) {
-                    throw RoundingNecessaryException::roundingNecessary();
-                }
-                break;
-
-            case RoundingMode::UP:
-                $increment = $hasDiscardedFraction;
-                break;
-
-            case RoundingMode::DOWN:
-                break;
-
-            case RoundingMode::CEILING:
-                $increment = $hasDiscardedFraction && $isPositiveOrZero;
-                break;
-
-            case RoundingMode::FLOOR:
-                $increment = $hasDiscardedFraction && ! $isPositiveOrZero;
-                break;
-
-            case RoundingMode::HALF_UP:
-                $increment = $discardedFractionSign() >= 0;
-                break;
-
-            case RoundingMode::HALF_DOWN:
-                $increment = $discardedFractionSign() > 0;
-                break;
-
-            case RoundingMode::HALF_CEILING:
-                $increment = $isPositiveOrZero ? $discardedFractionSign() >= 0 : $discardedFractionSign() > 0;
-                break;
-
-            case RoundingMode::HALF_FLOOR:
-                $increment = $isPositiveOrZero ? $discardedFractionSign() > 0 : $discardedFractionSign() >= 0;
-                break;
-
-            case RoundingMode::HALF_EVEN:
-                $lastDigit = (int) $quotient[-1];
-                $lastDigitIsEven = ($lastDigit % 2 === 0);
-                $increment = $lastDigitIsEven ? $discardedFractionSign() > 0 : $discardedFractionSign() >= 0;
-                break;
-
-            default:
-                throw new \InvalidArgumentException('Invalid rounding mode.');
-        }
-
-        if ($increment) {
-            return $this->add($quotient, $isPositiveOrZero ? '1' : '-1');
-        }
-
-        return $quotient;
-    }
-
-    /**
-     * Calculates bitwise AND of two numbers.
-     *
-     * This method can be overridden by the concrete implementation if the underlying library
-     * has built-in support for bitwise operations.
-     *
-     * @param string $a
-     * @param string $b
-     *
-     * @return string
-     */
-    public function and(string $a, string $b) : string
-    {
-        return $this->bitwise('and', $a, $b);
-    }
-
-    /**
-     * Calculates bitwise OR of two numbers.
-     *
-     * This method can be overridden by the concrete implementation if the underlying library
-     * has built-in support for bitwise operations.
-     *
-     * @param string $a
-     * @param string $b
-     *
-     * @return string
-     */
-    public function or(string $a, string $b) : string
-    {
-        return $this->bitwise('or', $a, $b);
-    }
-
-    /**
-     * Calculates bitwise XOR of two numbers.
-     *
-     * This method can be overridden by the concrete implementation if the underlying library
-     * has built-in support for bitwise operations.
-     *
-     * @param string $a
-     * @param string $b
-     *
-     * @return string
-     */
-    public function xor(string $a, string $b) : string
-    {
-        return $this->bitwise('xor', $a, $b);
-    }
-
-    /**
-     * Performs a bitwise operation on a decimal number.
-     *
-     * @param string $operator The operator to use, must be "and", "or" or "xor".
-     * @param string $a        The left operand.
-     * @param string $b        The right operand.
-     *
-     * @return string
-     */
-    private function bitwise(string $operator, string $a, string $b) : string
-    {
-        [$aNeg, $bNeg, $aDig, $bDig] = $this->init($a, $b);
-
-        $aBin = $this->toBinary($aDig);
-        $bBin = $this->toBinary($bDig);
-
-        $aLen = \strlen($aBin);
-        $bLen = \strlen($bBin);
-
-        if ($aLen > $bLen) {
-            $bBin = \str_repeat("\x00", $aLen - $bLen) . $bBin;
-        } elseif ($bLen > $aLen) {
-            $aBin = \str_repeat("\x00", $bLen - $aLen) . $aBin;
-        }
-
-        if ($aNeg) {
-            $aBin = $this->twosComplement($aBin);
-        }
-        if ($bNeg) {
-            $bBin = $this->twosComplement($bBin);
-        }
-
-        switch ($operator) {
-            case 'and':
-                $value = $aBin & $bBin;
-                $negative = ($aNeg and $bNeg);
-                break;
-
-            case 'or':
-                $value = $aBin | $bBin;
-                $negative = ($aNeg or $bNeg);
-                break;
-
-            case 'xor':
-                $value = $aBin ^ $bBin;
-                $negative = ($aNeg xor $bNeg);
-                break;
-
-            // @codeCoverageIgnoreStart
-            default:
-                throw new \InvalidArgumentException('Invalid bitwise operator.');
-            // @codeCoverageIgnoreEnd
-        }
-
-        if ($negative) {
-            $value = $this->twosComplement($value);
-        }
-
-        $result = $this->toDecimal($value);
-
-        return $negative ? $this->neg($result) : $result;
-    }
-
-    /**
-     * @param string $number A positive, binary number.
-     *
-     * @return string
-     */
-    private function twosComplement(string $number) : string
-    {
-        $xor = \str_repeat("\xff", \strlen($number));
-
-        $number = $number ^ $xor;
-
-        for ($i = \strlen($number) - 1; $i >= 0; $i--) {
-            $byte = \ord($number[$i]);
-
-            if (++$byte !== 256) {
-                $number[$i] = \chr($byte);
-                break;
-            }
-
-            $number[$i] = "\x00";
-
-            if ($i === 0) {
-                $number = "\x01" . $number;
-            }
-        }
-
-        return $number;
-    }
-
-    /**
-     * Converts a decimal number to a binary string.
-     *
-     * @param string $number The number to convert, positive or zero, only digits.
-     *
-     * @return string
-     */
-    private function toBinary(string $number) : string
-    {
-        $result = '';
-
-        while ($number !== '0') {
-            [$number, $remainder] = $this->divQR($number, '256');
-            $result .= \chr((int) $remainder);
-        }
-
-        return \strrev($result);
-    }
-
-    /**
-     * Returns the positive decimal representation of a binary number.
-     *
-     * @param string $bytes The bytes representing the number.
-     *
-     * @return string
-     */
-    private function toDecimal(string $bytes) : string
-    {
-        $result = '0';
-        $power = '1';
-
-        for ($i = \strlen($bytes) - 1; $i >= 0; $i--) {
-            $index = \ord($bytes[$i]);
-
-            if ($index !== 0) {
-                $result = $this->add($result, ($index === 1)
-                    ? $power
-                    : $this->mul($power, (string) $index)
-                );
-            }
-
-            if ($i !== 0) {
-                $power = $this->mul($power, '256');
-            }
-        }
-
-        return $result;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,64 +1,34 @@
-<?php
-
-namespace Illuminate\Support\Facades;
-
-use Illuminate\Queue\Worker;
-use Illuminate\Support\Testing\Fakes\QueueFake;
-
-/**
- * @method static \Illuminate\Contracts\Queue\Job|null pop(string $queue = null)
- * @method static \Illuminate\Contracts\Queue\Queue setConnectionName(string $name)
- * @method static int size(string $queue = null)
- * @method static mixed bulk(array $jobs, mixed $data = '', string $queue = null)
- * @method static mixed later(\DateTimeInterface|\DateInterval|int $delay, string|object $job, mixed $data = '', string $queue = null)
- * @method static mixed laterOn(string $queue, \DateTimeInterface|\DateInterval|int $delay, string|object $job, mixed $data = '')
- * @method static mixed push(string|object $job, mixed $data = '', $queue = null)
- * @method static mixed pushOn(string $queue, string|object $job, mixed $data = '')
- * @method static mixed pushRaw(string $payload, string $queue = null, array $options = [])
- * @method static string getConnectionName()
- * @method static void assertNotPushed(string $job, callable $callback = null)
- * @method static void assertNothingPushed()
- * @method static void assertPushed(string $job, callable|int $callback = null)
- * @method static void assertPushedOn(string $queue, string $job, callable|int $callback = null)
- * @method static void assertPushedWithChain(string $job, array $expectedChain = [], callable $callback = null)
- * @method static void popUsing(string $workerName, callable $callback)
- *
- * @see \Illuminate\Queue\QueueManager
- * @see \Illuminate\Queue\Queue
- */
-class Queue extends Facade
-{
-    /**
-     * Register a callback to be executed to pick jobs.
-     *
-     * @param  string  $workerName
-     * @param  callable  $callback
-     * @return void
-     */
-    public static function popUsing($workerName, $callback)
-    {
-        return Worker::popUsing($workerName, $callback);
-    }
-
-    /**
-     * Replace the bound instance with a fake.
-     *
-     * @return \Illuminate\Support\Testing\Fakes\QueueFake
-     */
-    public static function fake()
-    {
-        static::swap($fake = new QueueFake(static::getFacadeApplication()));
-
-        return $fake;
-    }
-
-    /**
-     * Get the registered name of the component.
-     *
-     * @return string
-     */
-    protected static function getFacadeAccessor()
-    {
-        return 'queue';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

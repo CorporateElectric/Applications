@@ -1,311 +1,128 @@
-<?php
-
-class HTMLPurifier_DefinitionCache_Serializer extends HTMLPurifier_DefinitionCache
-{
-
-    /**
-     * @param HTMLPurifier_Definition $def
-     * @param HTMLPurifier_Config $config
-     * @return int|bool
-     */
-    public function add($def, $config)
-    {
-        if (!$this->checkDefType($def)) {
-            return;
-        }
-        $file = $this->generateFilePath($config);
-        if (file_exists($file)) {
-            return false;
-        }
-        if (!$this->_prepareDir($config)) {
-            return false;
-        }
-        return $this->_write($file, serialize($def), $config);
-    }
-
-    /**
-     * @param HTMLPurifier_Definition $def
-     * @param HTMLPurifier_Config $config
-     * @return int|bool
-     */
-    public function set($def, $config)
-    {
-        if (!$this->checkDefType($def)) {
-            return;
-        }
-        $file = $this->generateFilePath($config);
-        if (!$this->_prepareDir($config)) {
-            return false;
-        }
-        return $this->_write($file, serialize($def), $config);
-    }
-
-    /**
-     * @param HTMLPurifier_Definition $def
-     * @param HTMLPurifier_Config $config
-     * @return int|bool
-     */
-    public function replace($def, $config)
-    {
-        if (!$this->checkDefType($def)) {
-            return;
-        }
-        $file = $this->generateFilePath($config);
-        if (!file_exists($file)) {
-            return false;
-        }
-        if (!$this->_prepareDir($config)) {
-            return false;
-        }
-        return $this->_write($file, serialize($def), $config);
-    }
-
-    /**
-     * @param HTMLPurifier_Config $config
-     * @return bool|HTMLPurifier_Config
-     */
-    public function get($config)
-    {
-        $file = $this->generateFilePath($config);
-        if (!file_exists($file)) {
-            return false;
-        }
-        return unserialize(file_get_contents($file));
-    }
-
-    /**
-     * @param HTMLPurifier_Config $config
-     * @return bool
-     */
-    public function remove($config)
-    {
-        $file = $this->generateFilePath($config);
-        if (!file_exists($file)) {
-            return false;
-        }
-        return unlink($file);
-    }
-
-    /**
-     * @param HTMLPurifier_Config $config
-     * @return bool
-     */
-    public function flush($config)
-    {
-        if (!$this->_prepareDir($config)) {
-            return false;
-        }
-        $dir = $this->generateDirectoryPath($config);
-        $dh = opendir($dir);
-        // Apparently, on some versions of PHP, readdir will return
-        // an empty string if you pass an invalid argument to readdir.
-        // So you need this test.  See #49.
-        if (false === $dh) {
-            return false;
-        }
-        while (false !== ($filename = readdir($dh))) {
-            if (empty($filename)) {
-                continue;
-            }
-            if ($filename[0] === '.') {
-                continue;
-            }
-            unlink($dir . '/' . $filename);
-        }
-        closedir($dh);
-        return true;
-    }
-
-    /**
-     * @param HTMLPurifier_Config $config
-     * @return bool
-     */
-    public function cleanup($config)
-    {
-        if (!$this->_prepareDir($config)) {
-            return false;
-        }
-        $dir = $this->generateDirectoryPath($config);
-        $dh = opendir($dir);
-        // See #49 (and above).
-        if (false === $dh) {
-            return false;
-        }
-        while (false !== ($filename = readdir($dh))) {
-            if (empty($filename)) {
-                continue;
-            }
-            if ($filename[0] === '.') {
-                continue;
-            }
-            $key = substr($filename, 0, strlen($filename) - 4);
-            if ($this->isOld($key, $config)) {
-                unlink($dir . '/' . $filename);
-            }
-        }
-        closedir($dh);
-        return true;
-    }
-
-    /**
-     * Generates the file path to the serial file corresponding to
-     * the configuration and definition name
-     * @param HTMLPurifier_Config $config
-     * @return string
-     * @todo Make protected
-     */
-    public function generateFilePath($config)
-    {
-        $key = $this->generateKey($config);
-        return $this->generateDirectoryPath($config) . '/' . $key . '.ser';
-    }
-
-    /**
-     * Generates the path to the directory contain this cache's serial files
-     * @param HTMLPurifier_Config $config
-     * @return string
-     * @note No trailing slash
-     * @todo Make protected
-     */
-    public function generateDirectoryPath($config)
-    {
-        $base = $this->generateBaseDirectoryPath($config);
-        return $base . '/' . $this->type;
-    }
-
-    /**
-     * Generates path to base directory that contains all definition type
-     * serials
-     * @param HTMLPurifier_Config $config
-     * @return mixed|string
-     * @todo Make protected
-     */
-    public function generateBaseDirectoryPath($config)
-    {
-        $base = $config->get('Cache.SerializerPath');
-        $base = is_null($base) ? HTMLPURIFIER_PREFIX . '/HTMLPurifier/DefinitionCache/Serializer' : $base;
-        return $base;
-    }
-
-    /**
-     * Convenience wrapper function for file_put_contents
-     * @param string $file File name to write to
-     * @param string $data Data to write into file
-     * @param HTMLPurifier_Config $config
-     * @return int|bool Number of bytes written if success, or false if failure.
-     */
-    private function _write($file, $data, $config)
-    {
-        $result = file_put_contents($file, $data);
-        if ($result !== false) {
-            // set permissions of the new file (no execute)
-            $chmod = $config->get('Cache.SerializerPermissions');
-            if ($chmod !== null) {
-                chmod($file, $chmod & 0666);
-            }
-        }
-        return $result;
-    }
-
-    /**
-     * Prepares the directory that this type stores the serials in
-     * @param HTMLPurifier_Config $config
-     * @return bool True if successful
-     */
-    private function _prepareDir($config)
-    {
-        $directory = $this->generateDirectoryPath($config);
-        $chmod = $config->get('Cache.SerializerPermissions');
-        if ($chmod === null) {
-            if (!@mkdir($directory) && !is_dir($directory)) {
-                trigger_error(
-                    'Could not create directory ' . $directory . '',
-                    E_USER_WARNING
-                );
-                return false;
-            }
-            return true;
-        }
-        if (!is_dir($directory)) {
-            $base = $this->generateBaseDirectoryPath($config);
-            if (!is_dir($base)) {
-                trigger_error(
-                    'Base directory ' . $base . ' does not exist,
-                    please create or change using %Cache.SerializerPath',
-                    E_USER_WARNING
-                );
-                return false;
-            } elseif (!$this->_testPermissions($base, $chmod)) {
-                return false;
-            }
-            if (!@mkdir($directory, $chmod) && !is_dir($directory)) {
-                trigger_error(
-                    'Could not create directory ' . $directory . '',
-                    E_USER_WARNING
-                );
-                return false;
-            }
-            if (!$this->_testPermissions($directory, $chmod)) {
-                return false;
-            }
-        } elseif (!$this->_testPermissions($directory, $chmod)) {
-            return false;
-        }
-        return true;
-    }
-
-    /**
-     * Tests permissions on a directory and throws out friendly
-     * error messages and attempts to chmod it itself if possible
-     * @param string $dir Directory path
-     * @param int $chmod Permissions
-     * @return bool True if directory is writable
-     */
-    private function _testPermissions($dir, $chmod)
-    {
-        // early abort, if it is writable, everything is hunky-dory
-        if (is_writable($dir)) {
-            return true;
-        }
-        if (!is_dir($dir)) {
-            // generally, you'll want to handle this beforehand
-            // so a more specific error message can be given
-            trigger_error(
-                'Directory ' . $dir . ' does not exist',
-                E_USER_WARNING
-            );
-            return false;
-        }
-        if (function_exists('posix_getuid') && $chmod !== null) {
-            // POSIX system, we can give more specific advice
-            if (fileowner($dir) === posix_getuid()) {
-                // we can chmod it ourselves
-                $chmod = $chmod | 0700;
-                if (chmod($dir, $chmod)) {
-                    return true;
-                }
-            } elseif (filegroup($dir) === posix_getgid()) {
-                $chmod = $chmod | 0070;
-            } else {
-                // PHP's probably running as nobody, so we'll
-                // need to give global permissions
-                $chmod = $chmod | 0777;
-            }
-            trigger_error(
-                'Directory ' . $dir . ' not writable, ' .
-                'please chmod to ' . decoct($chmod),
-                E_USER_WARNING
-            );
-        } else {
-            // generic error message
-            trigger_error(
-                'Directory ' . $dir . ' not writable, ' .
-                'please alter file permissions',
-                E_USER_WARNING
-            );
-        }
-        return false;
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

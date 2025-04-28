@@ -1,75 +1,40 @@
-<?php
-
-namespace Illuminate\Notifications\Channels;
-
-use Illuminate\Contracts\Events\Dispatcher;
-use Illuminate\Notifications\Events\BroadcastNotificationCreated;
-use Illuminate\Notifications\Messages\BroadcastMessage;
-use Illuminate\Notifications\Notification;
-use RuntimeException;
-
-class BroadcastChannel
-{
-    /**
-     * The event dispatcher.
-     *
-     * @var \Illuminate\Contracts\Events\Dispatcher
-     */
-    protected $events;
-
-    /**
-     * Create a new database channel.
-     *
-     * @param  \Illuminate\Contracts\Events\Dispatcher  $events
-     * @return void
-     */
-    public function __construct(Dispatcher $events)
-    {
-        $this->events = $events;
-    }
-
-    /**
-     * Send the given notification.
-     *
-     * @param  mixed  $notifiable
-     * @param  \Illuminate\Notifications\Notification  $notification
-     * @return array|null
-     */
-    public function send($notifiable, Notification $notification)
-    {
-        $message = $this->getData($notifiable, $notification);
-
-        $event = new BroadcastNotificationCreated(
-            $notifiable, $notification, is_array($message) ? $message : $message->data
-        );
-
-        if ($message instanceof BroadcastMessage) {
-            $event->onConnection($message->connection)
-                  ->onQueue($message->queue);
-        }
-
-        return $this->events->dispatch($event);
-    }
-
-    /**
-     * Get the data for the notification.
-     *
-     * @param  mixed  $notifiable
-     * @param  \Illuminate\Notifications\Notification  $notification
-     * @return mixed
-     *
-     * @throws \RuntimeException
-     */
-    protected function getData($notifiable, Notification $notification)
-    {
-        if (method_exists($notification, 'toBroadcast')) {
-            return $notification->toBroadcast($notifiable);
-        }
-
-        if (method_exists($notification, 'toArray')) {
-            return $notification->toArray($notifiable);
-        }
-
-        throw new RuntimeException('Notification is missing toArray method.');
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

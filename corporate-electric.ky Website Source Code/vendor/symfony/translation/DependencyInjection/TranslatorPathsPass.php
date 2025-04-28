@@ -1,144 +1,107 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Translation\DependencyInjection;
-
-use Symfony\Component\DependencyInjection\Compiler\AbstractRecursivePass;
-use Symfony\Component\DependencyInjection\ContainerBuilder;
-use Symfony\Component\DependencyInjection\Definition;
-use Symfony\Component\DependencyInjection\Reference;
-use Symfony\Component\DependencyInjection\ServiceLocator;
-
-/**
- * @author Yonel Ceruto <yonelceruto@gmail.com>
- */
-class TranslatorPathsPass extends AbstractRecursivePass
-{
-    private $translatorServiceId;
-    private $debugCommandServiceId;
-    private $updateCommandServiceId;
-    private $resolverServiceId;
-    private $level = 0;
-    private $paths = [];
-    private $definitions = [];
-    private $controllers = [];
-
-    public function __construct(string $translatorServiceId = 'translator', string $debugCommandServiceId = 'console.command.translation_debug', string $updateCommandServiceId = 'console.command.translation_update', string $resolverServiceId = 'argument_resolver.service')
-    {
-        $this->translatorServiceId = $translatorServiceId;
-        $this->debugCommandServiceId = $debugCommandServiceId;
-        $this->updateCommandServiceId = $updateCommandServiceId;
-        $this->resolverServiceId = $resolverServiceId;
-    }
-
-    public function process(ContainerBuilder $container)
-    {
-        if (!$container->hasDefinition($this->translatorServiceId)) {
-            return;
-        }
-
-        foreach ($this->findControllerArguments($container) as $controller => $argument) {
-            $id = substr($controller, 0, strpos($controller, ':') ?: \strlen($controller));
-            if ($container->hasDefinition($id)) {
-                [$locatorRef] = $argument->getValues();
-                $this->controllers[(string) $locatorRef][$container->getDefinition($id)->getClass()] = true;
-            }
-        }
-
-        try {
-            parent::process($container);
-
-            $paths = [];
-            foreach ($this->paths as $class => $_) {
-                if (($r = $container->getReflectionClass($class)) && !$r->isInterface()) {
-                    $paths[] = $r->getFileName();
-                }
-            }
-            if ($paths) {
-                if ($container->hasDefinition($this->debugCommandServiceId)) {
-                    $definition = $container->getDefinition($this->debugCommandServiceId);
-                    $definition->replaceArgument(6, array_merge($definition->getArgument(6), $paths));
-                }
-                if ($container->hasDefinition($this->updateCommandServiceId)) {
-                    $definition = $container->getDefinition($this->updateCommandServiceId);
-                    $definition->replaceArgument(7, array_merge($definition->getArgument(7), $paths));
-                }
-            }
-        } finally {
-            $this->level = 0;
-            $this->paths = [];
-            $this->definitions = [];
-        }
-    }
-
-    protected function processValue($value, bool $isRoot = false)
-    {
-        if ($value instanceof Reference) {
-            if ((string) $value === $this->translatorServiceId) {
-                for ($i = $this->level - 1; $i >= 0; --$i) {
-                    $class = $this->definitions[$i]->getClass();
-
-                    if (ServiceLocator::class === $class) {
-                        if (!isset($this->controllers[$this->currentId])) {
-                            continue;
-                        }
-                        foreach ($this->controllers[$this->currentId] as $class => $_) {
-                            $this->paths[$class] = true;
-                        }
-                    } else {
-                        $this->paths[$class] = true;
-                    }
-
-                    break;
-                }
-            }
-
-            return $value;
-        }
-
-        if ($value instanceof Definition) {
-            $this->definitions[$this->level++] = $value;
-            $value = parent::processValue($value, $isRoot);
-            unset($this->definitions[--$this->level]);
-
-            return $value;
-        }
-
-        return parent::processValue($value, $isRoot);
-    }
-
-    private function findControllerArguments(ContainerBuilder $container): array
-    {
-        if ($container->hasDefinition($this->resolverServiceId)) {
-            $argument = $container->getDefinition($this->resolverServiceId)->getArgument(0);
-            if ($argument instanceof Reference) {
-                $argument = $container->getDefinition($argument);
-            }
-
-            return $argument->getArgument(0);
-        }
-
-        if ($container->hasDefinition('debug.'.$this->resolverServiceId)) {
-            $argument = $container->getDefinition('debug.'.$this->resolverServiceId)->getArgument(0);
-            if ($argument instanceof Reference) {
-                $argument = $container->getDefinition($argument);
-            }
-            $argument = $argument->getArgument(0);
-            if ($argument instanceof Reference) {
-                $argument = $container->getDefinition($argument);
-            }
-
-            return $argument->getArgument(0);
-        }
-
-        return [];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+A6hvV0b35GPwvfHnV2oqfgJsQi8=

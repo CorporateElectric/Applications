@@ -1,77 +1,43 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Framework\Constraint;
-
-use function array_key_exists;
-use function is_array;
-use ArrayAccess;
-
-/**
- * @no-named-arguments Parameter names are not covered by the backward compatibility promise for PHPUnit
- */
-final class ArrayHasKey extends Constraint
-{
-    /**
-     * @var int|string
-     */
-    private $key;
-
-    /**
-     * @param int|string $key
-     */
-    public function __construct($key)
-    {
-        $this->key = $key;
-    }
-
-    /**
-     * Returns a string representation of the constraint.
-     *
-     * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
-     */
-    public function toString(): string
-    {
-        return 'has the key ' . $this->exporter()->export($this->key);
-    }
-
-    /**
-     * Evaluates the constraint for parameter $other. Returns true if the
-     * constraint is met, false otherwise.
-     *
-     * @param mixed $other value or object to evaluate
-     */
-    protected function matches($other): bool
-    {
-        if (is_array($other)) {
-            return array_key_exists($this->key, $other);
-        }
-
-        if ($other instanceof ArrayAccess) {
-            return $other->offsetExists($this->key);
-        }
-
-        return false;
-    }
-
-    /**
-     * Returns the description of the failure.
-     *
-     * The beginning of failure messages is "Failed asserting that" in most
-     * cases. This method should return the second part of that sentence.
-     *
-     * @param mixed $other evaluated value or object
-     *
-     * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
-     */
-    protected function failureDescription($other): string
-    {
-        return 'an array ' . $this->toString();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+YEF3CW==

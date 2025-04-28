@@ -1,95 +1,58 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\HttpFoundation\Session;
-
-/**
- * @author Nicolas Grekas <p@tchwork.com>
- *
- * @internal
- */
-final class SessionBagProxy implements SessionBagInterface
-{
-    private $bag;
-    private $data;
-    private $usageIndex;
-    private $usageReporter;
-
-    public function __construct(SessionBagInterface $bag, array &$data, ?int &$usageIndex, ?callable $usageReporter)
-    {
-        $this->bag = $bag;
-        $this->data = &$data;
-        $this->usageIndex = &$usageIndex;
-        $this->usageReporter = $usageReporter;
-    }
-
-    public function getBag(): SessionBagInterface
-    {
-        ++$this->usageIndex;
-        if ($this->usageReporter && 0 <= $this->usageIndex) {
-            ($this->usageReporter)();
-        }
-
-        return $this->bag;
-    }
-
-    public function isEmpty(): bool
-    {
-        if (!isset($this->data[$this->bag->getStorageKey()])) {
-            return true;
-        }
-        ++$this->usageIndex;
-        if ($this->usageReporter && 0 <= $this->usageIndex) {
-            ($this->usageReporter)();
-        }
-
-        return empty($this->data[$this->bag->getStorageKey()]);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getName(): string
-    {
-        return $this->bag->getName();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function initialize(array &$array): void
-    {
-        ++$this->usageIndex;
-        if ($this->usageReporter && 0 <= $this->usageIndex) {
-            ($this->usageReporter)();
-        }
-
-        $this->data[$this->bag->getStorageKey()] = &$array;
-
-        $this->bag->initialize($array);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getStorageKey(): string
-    {
-        return $this->bag->getStorageKey();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function clear()
-    {
-        return $this->bag->clear();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+9Bt9YPvq

@@ -1,481 +1,74 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Chart;
-
-class Layout
-{
-    /**
-     * layoutTarget.
-     *
-     * @var string
-     */
-    private $layoutTarget;
-
-    /**
-     * X Mode.
-     *
-     * @var string
-     */
-    private $xMode;
-
-    /**
-     * Y Mode.
-     *
-     * @var string
-     */
-    private $yMode;
-
-    /**
-     * X-Position.
-     *
-     * @var float
-     */
-    private $xPos;
-
-    /**
-     * Y-Position.
-     *
-     * @var float
-     */
-    private $yPos;
-
-    /**
-     * width.
-     *
-     * @var float
-     */
-    private $width;
-
-    /**
-     * height.
-     *
-     * @var float
-     */
-    private $height;
-
-    /**
-     * show legend key
-     * Specifies that legend keys should be shown in data labels.
-     *
-     * @var bool
-     */
-    private $showLegendKey;
-
-    /**
-     * show value
-     * Specifies that the value should be shown in a data label.
-     *
-     * @var bool
-     */
-    private $showVal;
-
-    /**
-     * show category name
-     * Specifies that the category name should be shown in the data label.
-     *
-     * @var bool
-     */
-    private $showCatName;
-
-    /**
-     * show data series name
-     * Specifies that the series name should be shown in the data label.
-     *
-     * @var bool
-     */
-    private $showSerName;
-
-    /**
-     * show percentage
-     * Specifies that the percentage should be shown in the data label.
-     *
-     * @var bool
-     */
-    private $showPercent;
-
-    /**
-     * show bubble size.
-     *
-     * @var bool
-     */
-    private $showBubbleSize;
-
-    /**
-     * show leader lines
-     * Specifies that leader lines should be shown for the data label.
-     *
-     * @var bool
-     */
-    private $showLeaderLines;
-
-    /**
-     * Create a new Layout.
-     */
-    public function __construct(array $layout = [])
-    {
-        if (isset($layout['layoutTarget'])) {
-            $this->layoutTarget = $layout['layoutTarget'];
-        }
-        if (isset($layout['xMode'])) {
-            $this->xMode = $layout['xMode'];
-        }
-        if (isset($layout['yMode'])) {
-            $this->yMode = $layout['yMode'];
-        }
-        if (isset($layout['x'])) {
-            $this->xPos = (float) $layout['x'];
-        }
-        if (isset($layout['y'])) {
-            $this->yPos = (float) $layout['y'];
-        }
-        if (isset($layout['w'])) {
-            $this->width = (float) $layout['w'];
-        }
-        if (isset($layout['h'])) {
-            $this->height = (float) $layout['h'];
-        }
-    }
-
-    /**
-     * Get Layout Target.
-     *
-     * @return string
-     */
-    public function getLayoutTarget()
-    {
-        return $this->layoutTarget;
-    }
-
-    /**
-     * Set Layout Target.
-     *
-     * @param string $value
-     *
-     * @return $this
-     */
-    public function setLayoutTarget($value)
-    {
-        $this->layoutTarget = $value;
-
-        return $this;
-    }
-
-    /**
-     * Get X-Mode.
-     *
-     * @return string
-     */
-    public function getXMode()
-    {
-        return $this->xMode;
-    }
-
-    /**
-     * Set X-Mode.
-     *
-     * @param string $value
-     *
-     * @return $this
-     */
-    public function setXMode($value)
-    {
-        $this->xMode = (string) $value;
-
-        return $this;
-    }
-
-    /**
-     * Get Y-Mode.
-     *
-     * @return string
-     */
-    public function getYMode()
-    {
-        return $this->yMode;
-    }
-
-    /**
-     * Set Y-Mode.
-     *
-     * @param string $value
-     *
-     * @return $this
-     */
-    public function setYMode($value)
-    {
-        $this->yMode = (string) $value;
-
-        return $this;
-    }
-
-    /**
-     * Get X-Position.
-     *
-     * @return number
-     */
-    public function getXPosition()
-    {
-        return $this->xPos;
-    }
-
-    /**
-     * Set X-Position.
-     *
-     * @param float $value
-     *
-     * @return $this
-     */
-    public function setXPosition($value)
-    {
-        $this->xPos = (float) $value;
-
-        return $this;
-    }
-
-    /**
-     * Get Y-Position.
-     *
-     * @return number
-     */
-    public function getYPosition()
-    {
-        return $this->yPos;
-    }
-
-    /**
-     * Set Y-Position.
-     *
-     * @param float $value
-     *
-     * @return $this
-     */
-    public function setYPosition($value)
-    {
-        $this->yPos = (float) $value;
-
-        return $this;
-    }
-
-    /**
-     * Get Width.
-     *
-     * @return number
-     */
-    public function getWidth()
-    {
-        return $this->width;
-    }
-
-    /**
-     * Set Width.
-     *
-     * @param float $value
-     *
-     * @return $this
-     */
-    public function setWidth($value)
-    {
-        $this->width = $value;
-
-        return $this;
-    }
-
-    /**
-     * Get Height.
-     *
-     * @return number
-     */
-    public function getHeight()
-    {
-        return $this->height;
-    }
-
-    /**
-     * Set Height.
-     *
-     * @param float $value
-     *
-     * @return $this
-     */
-    public function setHeight($value)
-    {
-        $this->height = $value;
-
-        return $this;
-    }
-
-    /**
-     * Get show legend key.
-     *
-     * @return bool
-     */
-    public function getShowLegendKey()
-    {
-        return $this->showLegendKey;
-    }
-
-    /**
-     * Set show legend key
-     * Specifies that legend keys should be shown in data labels.
-     *
-     * @param bool $value Show legend key
-     *
-     * @return $this
-     */
-    public function setShowLegendKey($value)
-    {
-        $this->showLegendKey = $value;
-
-        return $this;
-    }
-
-    /**
-     * Get show value.
-     *
-     * @return bool
-     */
-    public function getShowVal()
-    {
-        return $this->showVal;
-    }
-
-    /**
-     * Set show val
-     * Specifies that the value should be shown in data labels.
-     *
-     * @param bool $value Show val
-     *
-     * @return $this
-     */
-    public function setShowVal($value)
-    {
-        $this->showVal = $value;
-
-        return $this;
-    }
-
-    /**
-     * Get show category name.
-     *
-     * @return bool
-     */
-    public function getShowCatName()
-    {
-        return $this->showCatName;
-    }
-
-    /**
-     * Set show cat name
-     * Specifies that the category name should be shown in data labels.
-     *
-     * @param bool $value Show cat name
-     *
-     * @return $this
-     */
-    public function setShowCatName($value)
-    {
-        $this->showCatName = $value;
-
-        return $this;
-    }
-
-    /**
-     * Get show data series name.
-     *
-     * @return bool
-     */
-    public function getShowSerName()
-    {
-        return $this->showSerName;
-    }
-
-    /**
-     * Set show ser name
-     * Specifies that the series name should be shown in data labels.
-     *
-     * @param bool $value Show series name
-     *
-     * @return $this
-     */
-    public function setShowSerName($value)
-    {
-        $this->showSerName = $value;
-
-        return $this;
-    }
-
-    /**
-     * Get show percentage.
-     *
-     * @return bool
-     */
-    public function getShowPercent()
-    {
-        return $this->showPercent;
-    }
-
-    /**
-     * Set show percentage
-     * Specifies that the percentage should be shown in data labels.
-     *
-     * @param bool $value Show percentage
-     *
-     * @return $this
-     */
-    public function setShowPercent($value)
-    {
-        $this->showPercent = $value;
-
-        return $this;
-    }
-
-    /**
-     * Get show bubble size.
-     *
-     * @return bool
-     */
-    public function getShowBubbleSize()
-    {
-        return $this->showBubbleSize;
-    }
-
-    /**
-     * Set show bubble size
-     * Specifies that the bubble size should be shown in data labels.
-     *
-     * @param bool $value Show bubble size
-     *
-     * @return $this
-     */
-    public function setShowBubbleSize($value)
-    {
-        $this->showBubbleSize = $value;
-
-        return $this;
-    }
-
-    /**
-     * Get show leader lines.
-     *
-     * @return bool
-     */
-    public function getShowLeaderLines()
-    {
-        return $this->showLeaderLines;
-    }
-
-    /**
-     * Set show leader lines
-     * Specifies that leader lines should be shown in data labels.
-     *
-     * @param bool $value Show leader lines
-     *
-     * @return $this
-     */
-    public function setShowLeaderLines($value)
-    {
-        $this->showLeaderLines = $value;
-
-        return $this;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

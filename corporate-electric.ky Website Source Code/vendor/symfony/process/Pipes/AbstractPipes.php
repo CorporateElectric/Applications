@@ -1,178 +1,101 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Process\Pipes;
-
-use Symfony\Component\Process\Exception\InvalidArgumentException;
-
-/**
- * @author Romain Neutron <imprec@gmail.com>
- *
- * @internal
- */
-abstract class AbstractPipes implements PipesInterface
-{
-    public $pipes = [];
-
-    private $inputBuffer = '';
-    private $input;
-    private $blocked = true;
-    private $lastError;
-
-    /**
-     * @param resource|string|int|float|bool|\Iterator|null $input
-     */
-    public function __construct($input)
-    {
-        if (\is_resource($input) || $input instanceof \Iterator) {
-            $this->input = $input;
-        } elseif (\is_string($input)) {
-            $this->inputBuffer = $input;
-        } else {
-            $this->inputBuffer = (string) $input;
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function close()
-    {
-        foreach ($this->pipes as $pipe) {
-            fclose($pipe);
-        }
-        $this->pipes = [];
-    }
-
-    /**
-     * Returns true if a system call has been interrupted.
-     */
-    protected function hasSystemCallBeenInterrupted(): bool
-    {
-        $lastError = $this->lastError;
-        $this->lastError = null;
-
-        // stream_select returns false when the `select` system call is interrupted by an incoming signal
-        return null !== $lastError && false !== stripos($lastError, 'interrupted system call');
-    }
-
-    /**
-     * Unblocks streams.
-     */
-    protected function unblock()
-    {
-        if (!$this->blocked) {
-            return;
-        }
-
-        foreach ($this->pipes as $pipe) {
-            stream_set_blocking($pipe, 0);
-        }
-        if (\is_resource($this->input)) {
-            stream_set_blocking($this->input, 0);
-        }
-
-        $this->blocked = false;
-    }
-
-    /**
-     * Writes input to stdin.
-     *
-     * @throws InvalidArgumentException When an input iterator yields a non supported value
-     */
-    protected function write(): ?array
-    {
-        if (!isset($this->pipes[0])) {
-            return null;
-        }
-        $input = $this->input;
-
-        if ($input instanceof \Iterator) {
-            if (!$input->valid()) {
-                $input = null;
-            } elseif (\is_resource($input = $input->current())) {
-                stream_set_blocking($input, 0);
-            } elseif (!isset($this->inputBuffer[0])) {
-                if (!\is_string($input)) {
-                    if (!is_scalar($input)) {
-                        throw new InvalidArgumentException(sprintf('"%s" yielded a value of type "%s", but only scalars and stream resources are supported.', get_debug_type($this->input), get_debug_type($input)));
-                    }
-                    $input = (string) $input;
-                }
-                $this->inputBuffer = $input;
-                $this->input->next();
-                $input = null;
-            } else {
-                $input = null;
-            }
-        }
-
-        $r = $e = [];
-        $w = [$this->pipes[0]];
-
-        // let's have a look if something changed in streams
-        if (false === @stream_select($r, $w, $e, 0, 0)) {
-            return null;
-        }
-
-        foreach ($w as $stdin) {
-            if (isset($this->inputBuffer[0])) {
-                $written = fwrite($stdin, $this->inputBuffer);
-                $this->inputBuffer = substr($this->inputBuffer, $written);
-                if (isset($this->inputBuffer[0])) {
-                    return [$this->pipes[0]];
-                }
-            }
-
-            if ($input) {
-                for (;;) {
-                    $data = fread($input, self::CHUNK_SIZE);
-                    if (!isset($data[0])) {
-                        break;
-                    }
-                    $written = fwrite($stdin, $data);
-                    $data = substr($data, $written);
-                    if (isset($data[0])) {
-                        $this->inputBuffer = $data;
-
-                        return [$this->pipes[0]];
-                    }
-                }
-                if (feof($input)) {
-                    if ($this->input instanceof \Iterator) {
-                        $this->input->next();
-                    } else {
-                        $this->input = null;
-                    }
-                }
-            }
-        }
-
-        // no input to read on resource, buffer is empty
-        if (!isset($this->inputBuffer[0]) && !($this->input instanceof \Iterator ? $this->input->valid() : $this->input)) {
-            $this->input = null;
-            fclose($this->pipes[0]);
-            unset($this->pipes[0]);
-        } elseif (!$w) {
-            return [$this->pipes[0]];
-        }
-
-        return null;
-    }
-
-    /**
-     * @internal
-     */
-    public function handleError($type, $msg)
-    {
-        $this->lastError = $msg;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+aeYi1byInG==

@@ -1,109 +1,54 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of phpunit/php-timer.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\Timer;
-
-use function floor;
-use function sprintf;
-
-/**
- * @psalm-immutable
- */
-final class Duration
-{
-    /**
-     * @var float
-     */
-    private $nanoseconds;
-
-    /**
-     * @var int
-     */
-    private $hours;
-
-    /**
-     * @var int
-     */
-    private $minutes;
-
-    /**
-     * @var int
-     */
-    private $seconds;
-
-    /**
-     * @var int
-     */
-    private $milliseconds;
-
-    public static function fromMicroseconds(float $microseconds): self
-    {
-        return new self($microseconds * 1000);
-    }
-
-    public static function fromNanoseconds(float $nanoseconds): self
-    {
-        return new self($nanoseconds);
-    }
-
-    private function __construct(float $nanoseconds)
-    {
-        $this->nanoseconds     = $nanoseconds;
-        $timeInMilliseconds    = $nanoseconds / 1000000;
-        $hours                 = floor($timeInMilliseconds / 60 / 60 / 1000);
-        $hoursInMilliseconds   = $hours * 60 * 60 * 1000;
-        $minutes               = floor($timeInMilliseconds / 60 / 1000) % 60;
-        $minutesInMilliseconds = $minutes * 60 * 1000;
-        $seconds               = floor(($timeInMilliseconds - $hoursInMilliseconds - $minutesInMilliseconds) / 1000);
-        $secondsInMilliseconds = $seconds * 1000;
-        $milliseconds          = $timeInMilliseconds - $hoursInMilliseconds - $minutesInMilliseconds - $secondsInMilliseconds;
-        $this->hours           = (int) $hours;
-        $this->minutes         = $minutes;
-        $this->seconds         = (int) $seconds;
-        $this->milliseconds    = (int) $milliseconds;
-    }
-
-    public function asNanoseconds(): float
-    {
-        return $this->nanoseconds;
-    }
-
-    public function asMicroseconds(): float
-    {
-        return $this->nanoseconds / 1000;
-    }
-
-    public function asMilliseconds(): float
-    {
-        return $this->nanoseconds / 1000000;
-    }
-
-    public function asSeconds(): float
-    {
-        return $this->nanoseconds / 1000000000;
-    }
-
-    public function asString(): string
-    {
-        $result = '';
-
-        if ($this->hours > 0) {
-            $result = sprintf('%02d', $this->hours) . ':';
-        }
-
-        $result .= sprintf('%02d', $this->minutes) . ':';
-        $result .= sprintf('%02d', $this->seconds);
-
-        if ($this->milliseconds > 0) {
-            $result .= '.' . sprintf('%03d', $this->milliseconds);
-        }
-
-        return $result;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+BNdHeLbm3F2TGV0J5A7v9VfV

@@ -1,75 +1,43 @@
-<?php
-
-namespace Illuminate\Cache;
-
-class MemcachedLock extends Lock
-{
-    /**
-     * The Memcached instance.
-     *
-     * @var \Memcached
-     */
-    protected $memcached;
-
-    /**
-     * Create a new lock instance.
-     *
-     * @param  \Memcached  $memcached
-     * @param  string  $name
-     * @param  int  $seconds
-     * @param  string|null  $owner
-     * @return void
-     */
-    public function __construct($memcached, $name, $seconds, $owner = null)
-    {
-        parent::__construct($name, $seconds, $owner);
-
-        $this->memcached = $memcached;
-    }
-
-    /**
-     * Attempt to acquire the lock.
-     *
-     * @return bool
-     */
-    public function acquire()
-    {
-        return $this->memcached->add(
-            $this->name, $this->owner, $this->seconds
-        );
-    }
-
-    /**
-     * Release the lock.
-     *
-     * @return bool
-     */
-    public function release()
-    {
-        if ($this->isOwnedByCurrentProcess()) {
-            return $this->memcached->delete($this->name);
-        }
-
-        return false;
-    }
-
-    /**
-     * Releases this lock in disregard of ownership.
-     *
-     * @return void
-     */
-    public function forceRelease()
-    {
-        $this->memcached->delete($this->name);
-    }
-
-    /**
-     * Returns the owner value written into the driver for this lock.
-     *
-     * @return mixed
-     */
-    protected function getCurrentOwner()
-    {
-        return $this->memcached->get($this->name);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+QTpMCG==

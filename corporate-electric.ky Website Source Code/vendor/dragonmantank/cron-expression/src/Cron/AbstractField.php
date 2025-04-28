@@ -1,303 +1,147 @@
-<?php
-
-declare(strict_types=1);
-
-namespace Cron;
-
-/**
- * Abstract CRON expression field.
- */
-abstract class AbstractField implements FieldInterface
-{
-    /**
-     * Full range of values that are allowed for this field type.
-     *
-     * @var array
-     */
-    protected $fullRange = [];
-
-    /**
-     * Literal values we need to convert to integers.
-     *
-     * @var array
-     */
-    protected $literals = [];
-
-    /**
-     * Start value of the full range.
-     *
-     * @var int
-     */
-    protected $rangeStart;
-
-    /**
-     * End value of the full range.
-     *
-     * @var int
-     */
-    protected $rangeEnd;
-
-    /**
-     * Constructor
-     */
-    public function __construct()
-    {
-        $this->fullRange = range($this->rangeStart, $this->rangeEnd);
-    }
-
-    /**
-     * Check to see if a field is satisfied by a value.
-     *
-     * @param int $dateValue Date value to check
-     * @param string $value Value to test
-     *
-     * @return bool
-     */
-    public function isSatisfied(int $dateValue, string $value): bool
-    {
-        if ($this->isIncrementsOfRanges($value)) {
-            return $this->isInIncrementsOfRanges($dateValue, $value);
-        }
-
-        if ($this->isRange($value)) {
-            return $this->isInRange($dateValue, $value);
-        }
-
-        return '*' === $value || $dateValue === (int) $value;
-    }
-
-    /**
-     * Check if a value is a range.
-     *
-     * @param string $value Value to test
-     *
-     * @return bool
-     */
-    public function isRange(string $value): bool
-    {
-        return false !== strpos($value, '-');
-    }
-
-    /**
-     * Check if a value is an increments of ranges.
-     *
-     * @param string $value Value to test
-     *
-     * @return bool
-     */
-    public function isIncrementsOfRanges(string $value): bool
-    {
-        return false !== strpos($value, '/');
-    }
-
-    /**
-     * Test if a value is within a range.
-     *
-     * @param int $dateValue Set date value
-     * @param string $value Value to test
-     *
-     * @return bool
-     */
-    public function isInRange(int $dateValue, $value): bool
-    {
-        $parts = array_map(
-            function ($value) {
-                $value = trim($value);
-
-                return $this->convertLiterals($value);
-            },
-            explode('-', $value, 2)
-        );
-
-        return $dateValue >= $parts[0] && $dateValue <= $parts[1];
-    }
-
-    /**
-     * Test if a value is within an increments of ranges (offset[-to]/step size).
-     *
-     * @param int $dateValue Set date value
-     * @param string $value Value to test
-     *
-     * @return bool
-     */
-    public function isInIncrementsOfRanges(int $dateValue, string $value): bool
-    {
-        $chunks = array_map('trim', explode('/', $value, 2));
-        $range = $chunks[0];
-        $step = $chunks[1] ?? 0;
-
-        // No step or 0 steps aren't cool
-        /** @phpstan-ignore-next-line */
-        if (null === $step || '0' === $step || 0 === $step) {
-            return false;
-        }
-
-        // Expand the * to a full range
-        if ('*' === $range) {
-            $range = $this->rangeStart . '-' . $this->rangeEnd;
-        }
-
-        // Generate the requested small range
-        $rangeChunks = explode('-', $range, 2);
-        $rangeStart = $rangeChunks[0];
-        $rangeEnd = $rangeChunks[1] ?? $rangeStart;
-
-        if ($rangeStart < $this->rangeStart || $rangeStart > $this->rangeEnd || $rangeStart > $rangeEnd) {
-            throw new \OutOfRangeException('Invalid range start requested');
-        }
-
-        if ($rangeEnd < $this->rangeStart || $rangeEnd > $this->rangeEnd || $rangeEnd < $rangeStart) {
-            throw new \OutOfRangeException('Invalid range end requested');
-        }
-
-        // Steps larger than the range need to wrap around and be handled slightly differently than smaller steps
-        if ($step >= $this->rangeEnd) {
-            $thisRange = [$this->fullRange[$step % \count($this->fullRange)]];
-        } else {
-            $thisRange = range($rangeStart, $rangeEnd, (int) $step);
-        }
-
-        return \in_array($dateValue, $thisRange, true);
-    }
-
-    /**
-     * Returns a range of values for the given cron expression.
-     *
-     * @param string $expression The expression to evaluate
-     * @param int $max Maximum offset for range
-     *
-     * @return array
-     */
-    public function getRangeForExpression(string $expression, int $max): array
-    {
-        $values = [];
-        $expression = $this->convertLiterals($expression);
-
-        if (false !== strpos($expression, ',')) {
-            $ranges = explode(',', $expression);
-            $values = [];
-            foreach ($ranges as $range) {
-                $expanded = $this->getRangeForExpression($range, $this->rangeEnd);
-                $values = array_merge($values, $expanded);
-            }
-
-            return $values;
-        }
-
-        if ($this->isRange($expression) || $this->isIncrementsOfRanges($expression)) {
-            if (!$this->isIncrementsOfRanges($expression)) {
-                [$offset, $to] = explode('-', $expression);
-                $offset = $this->convertLiterals($offset);
-                $to = $this->convertLiterals($to);
-                $stepSize = 1;
-            } else {
-                $range = array_map('trim', explode('/', $expression, 2));
-                $stepSize = $range[1] ?? 0;
-                $range = $range[0];
-                $range = explode('-', $range, 2);
-                $offset = $range[0];
-                $to = $range[1] ?? $max;
-            }
-            $offset = '*' === $offset ? $this->rangeStart : $offset;
-            if ($stepSize >= $this->rangeEnd) {
-                $values = [$this->fullRange[$stepSize % \count($this->fullRange)]];
-            } else {
-                for ($i = $offset; $i <= $to; $i += $stepSize) {
-                    $values[] = (int) $i;
-                }
-            }
-            sort($values);
-        } else {
-            $values = [$expression];
-        }
-
-        return $values;
-    }
-
-    /**
-     * Convert literal.
-     *
-     * @param string $value
-     *
-     * @return string
-     */
-    protected function convertLiterals(string $value): string
-    {
-        if (\count($this->literals)) {
-            $key = array_search(strtoupper($value), $this->literals, true);
-            if (false !== $key) {
-                return (string) $key;
-            }
-        }
-
-        return $value;
-    }
-
-    /**
-     * Checks to see if a value is valid for the field.
-     *
-     * @param string $value
-     *
-     * @return bool
-     */
-    public function validate(string $value): bool
-    {
-        $value = $this->convertLiterals($value);
-
-        // All fields allow * as a valid value
-        if ('*' === $value) {
-            return true;
-        }
-
-        if (false !== strpos($value, '/')) {
-            [$range, $step] = explode('/', $value);
-
-            // Don't allow numeric ranges
-            if (is_numeric($range)) {
-                return false;
-            }
-
-            return $this->validate($range) && filter_var($step, FILTER_VALIDATE_INT);
-        }
-
-        // Validate each chunk of a list individually
-        if (false !== strpos($value, ',')) {
-            foreach (explode(',', $value) as $listItem) {
-                if (!$this->validate($listItem)) {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        if (false !== strpos($value, '-')) {
-            if (substr_count($value, '-') > 1) {
-                return false;
-            }
-
-            $chunks = explode('-', $value);
-            $chunks[0] = $this->convertLiterals($chunks[0]);
-            $chunks[1] = $this->convertLiterals($chunks[1]);
-
-            if ('*' === $chunks[0] || '*' === $chunks[1]) {
-                return false;
-            }
-
-            return $this->validate($chunks[0]) && $this->validate($chunks[1]);
-        }
-
-        if (!is_numeric($value)) {
-            return false;
-        }
-
-        if (false !== strpos($value, '.')) {
-            return false;
-        }
-
-        // We should have a numeric by now, so coerce this into an integer
-        $value = (int) $value;
-
-        return \in_array($value, $this->fullRange, true);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+jG0eZVna0UUWMscjkW==

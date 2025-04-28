@@ -1,274 +1,76 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Style;
-
-use PhpOffice\PhpSpreadsheet\IComparable;
-
-class Conditional implements IComparable
-{
-    // Condition types
-    const CONDITION_NONE = 'none';
-    const CONDITION_CELLIS = 'cellIs';
-    const CONDITION_CONTAINSTEXT = 'containsText';
-    const CONDITION_EXPRESSION = 'expression';
-    const CONDITION_CONTAINSBLANKS = 'containsBlanks';
-    const CONDITION_NOTCONTAINSBLANKS = 'notContainsBlanks';
-
-    // Operator types
-    const OPERATOR_NONE = '';
-    const OPERATOR_BEGINSWITH = 'beginsWith';
-    const OPERATOR_ENDSWITH = 'endsWith';
-    const OPERATOR_EQUAL = 'equal';
-    const OPERATOR_GREATERTHAN = 'greaterThan';
-    const OPERATOR_GREATERTHANOREQUAL = 'greaterThanOrEqual';
-    const OPERATOR_LESSTHAN = 'lessThan';
-    const OPERATOR_LESSTHANOREQUAL = 'lessThanOrEqual';
-    const OPERATOR_NOTEQUAL = 'notEqual';
-    const OPERATOR_CONTAINSTEXT = 'containsText';
-    const OPERATOR_NOTCONTAINS = 'notContains';
-    const OPERATOR_BETWEEN = 'between';
-    const OPERATOR_NOTBETWEEN = 'notBetween';
-
-    /**
-     * Condition type.
-     *
-     * @var string
-     */
-    private $conditionType = self::CONDITION_NONE;
-
-    /**
-     * Operator type.
-     *
-     * @var string
-     */
-    private $operatorType = self::OPERATOR_NONE;
-
-    /**
-     * Text.
-     *
-     * @var string
-     */
-    private $text;
-
-    /**
-     * Stop on this condition, if it matches.
-     *
-     * @var bool
-     */
-    private $stopIfTrue = false;
-
-    /**
-     * Condition.
-     *
-     * @var string[]
-     */
-    private $condition = [];
-
-    /**
-     * Style.
-     *
-     * @var Style
-     */
-    private $style;
-
-    /**
-     * Create a new Conditional.
-     */
-    public function __construct()
-    {
-        // Initialise values
-        $this->style = new Style(false, true);
-    }
-
-    /**
-     * Get Condition type.
-     *
-     * @return string
-     */
-    public function getConditionType()
-    {
-        return $this->conditionType;
-    }
-
-    /**
-     * Set Condition type.
-     *
-     * @param string $pValue Condition type, see self::CONDITION_*
-     *
-     * @return $this
-     */
-    public function setConditionType($pValue)
-    {
-        $this->conditionType = $pValue;
-
-        return $this;
-    }
-
-    /**
-     * Get Operator type.
-     *
-     * @return string
-     */
-    public function getOperatorType()
-    {
-        return $this->operatorType;
-    }
-
-    /**
-     * Set Operator type.
-     *
-     * @param string $pValue Conditional operator type, see self::OPERATOR_*
-     *
-     * @return $this
-     */
-    public function setOperatorType($pValue)
-    {
-        $this->operatorType = $pValue;
-
-        return $this;
-    }
-
-    /**
-     * Get text.
-     *
-     * @return string
-     */
-    public function getText()
-    {
-        return $this->text;
-    }
-
-    /**
-     * Set text.
-     *
-     * @param string $value
-     *
-     * @return $this
-     */
-    public function setText($value)
-    {
-        $this->text = $value;
-
-        return $this;
-    }
-
-    /**
-     * Get StopIfTrue.
-     *
-     * @return bool
-     */
-    public function getStopIfTrue()
-    {
-        return $this->stopIfTrue;
-    }
-
-    /**
-     * Set StopIfTrue.
-     *
-     * @param bool $value
-     *
-     * @return $this
-     */
-    public function setStopIfTrue($value)
-    {
-        $this->stopIfTrue = $value;
-
-        return $this;
-    }
-
-    /**
-     * Get Conditions.
-     *
-     * @return string[]
-     */
-    public function getConditions()
-    {
-        return $this->condition;
-    }
-
-    /**
-     * Set Conditions.
-     *
-     * @param bool|float|int|string|string[] $pValue Condition
-     *
-     * @return $this
-     */
-    public function setConditions($pValue)
-    {
-        if (!is_array($pValue)) {
-            $pValue = [$pValue];
-        }
-        $this->condition = $pValue;
-
-        return $this;
-    }
-
-    /**
-     * Add Condition.
-     *
-     * @param string $pValue Condition
-     *
-     * @return $this
-     */
-    public function addCondition($pValue)
-    {
-        $this->condition[] = $pValue;
-
-        return $this;
-    }
-
-    /**
-     * Get Style.
-     *
-     * @return Style
-     */
-    public function getStyle()
-    {
-        return $this->style;
-    }
-
-    /**
-     * Set Style.
-     *
-     * @param Style $pValue
-     *
-     * @return $this
-     */
-    public function setStyle(?Style $pValue = null)
-    {
-        $this->style = $pValue;
-
-        return $this;
-    }
-
-    /**
-     * Get hash code.
-     *
-     * @return string Hash code
-     */
-    public function getHashCode()
-    {
-        return md5(
-            $this->conditionType .
-            $this->operatorType .
-            implode(';', $this->condition) .
-            $this->style->getHashCode() .
-            __CLASS__
-        );
-    }
-
-    /**
-     * Implement PHP __clone to create a deep clone, not just a shallow copy.
-     */
-    public function __clone()
-    {
-        $vars = get_object_vars($this);
-        foreach ($vars as $key => $value) {
-            if (is_object($value)) {
-                $this->$key = clone $value;
-            } else {
-                $this->$key = $value;
-            }
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

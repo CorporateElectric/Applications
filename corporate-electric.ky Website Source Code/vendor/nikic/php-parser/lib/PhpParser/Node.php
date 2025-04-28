@@ -1,151 +1,39 @@
-<?php declare(strict_types=1);
-
-namespace PhpParser;
-
-interface Node
-{
-    /**
-     * Gets the type of the node.
-     *
-     * @return string Type of the node
-     */
-    public function getType() : string;
-
-    /**
-     * Gets the names of the sub nodes.
-     *
-     * @return array Names of sub nodes
-     */
-    public function getSubNodeNames() : array;
-
-    /**
-     * Gets line the node started in (alias of getStartLine).
-     *
-     * @return int Start line (or -1 if not available)
-     */
-    public function getLine() : int;
-
-    /**
-     * Gets line the node started in.
-     *
-     * Requires the 'startLine' attribute to be enabled in the lexer (enabled by default).
-     *
-     * @return int Start line (or -1 if not available)
-     */
-    public function getStartLine() : int;
-
-    /**
-     * Gets the line the node ended in.
-     *
-     * Requires the 'endLine' attribute to be enabled in the lexer (enabled by default).
-     *
-     * @return int End line (or -1 if not available)
-     */
-    public function getEndLine() : int;
-
-    /**
-     * Gets the token offset of the first token that is part of this node.
-     *
-     * The offset is an index into the array returned by Lexer::getTokens().
-     *
-     * Requires the 'startTokenPos' attribute to be enabled in the lexer (DISABLED by default).
-     *
-     * @return int Token start position (or -1 if not available)
-     */
-    public function getStartTokenPos() : int;
-
-    /**
-     * Gets the token offset of the last token that is part of this node.
-     *
-     * The offset is an index into the array returned by Lexer::getTokens().
-     *
-     * Requires the 'endTokenPos' attribute to be enabled in the lexer (DISABLED by default).
-     *
-     * @return int Token end position (or -1 if not available)
-     */
-    public function getEndTokenPos() : int;
-
-    /**
-     * Gets the file offset of the first character that is part of this node.
-     *
-     * Requires the 'startFilePos' attribute to be enabled in the lexer (DISABLED by default).
-     *
-     * @return int File start position (or -1 if not available)
-     */
-    public function getStartFilePos() : int;
-
-    /**
-     * Gets the file offset of the last character that is part of this node.
-     *
-     * Requires the 'endFilePos' attribute to be enabled in the lexer (DISABLED by default).
-     *
-     * @return int File end position (or -1 if not available)
-     */
-    public function getEndFilePos() : int;
-
-    /**
-     * Gets all comments directly preceding this node.
-     *
-     * The comments are also available through the "comments" attribute.
-     *
-     * @return Comment[]
-     */
-    public function getComments() : array;
-
-    /**
-     * Gets the doc comment of the node.
-     *
-     * @return null|Comment\Doc Doc comment object or null
-     */
-    public function getDocComment();
-
-    /**
-     * Sets the doc comment of the node.
-     *
-     * This will either replace an existing doc comment or add it to the comments array.
-     *
-     * @param Comment\Doc $docComment Doc comment to set
-     */
-    public function setDocComment(Comment\Doc $docComment);
-
-    /**
-     * Sets an attribute on a node.
-     *
-     * @param string $key
-     * @param mixed  $value
-     */
-    public function setAttribute(string $key, $value);
-
-    /**
-     * Returns whether an attribute exists.
-     *
-     * @param string $key
-     *
-     * @return bool
-     */
-    public function hasAttribute(string $key) : bool;
-
-    /**
-     * Returns the value of an attribute.
-     *
-     * @param string $key
-     * @param mixed  $default
-     *
-     * @return mixed
-     */
-    public function getAttribute(string $key, $default = null);
-
-    /**
-     * Returns all the attributes of this node.
-     *
-     * @return array
-     */
-    public function getAttributes() : array;
-
-    /**
-     * Replaces all the attributes of this node.
-     *
-     * @param array $attributes
-     */
-    public function setAttributes(array $attributes);
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPmhVyNDR9Sf48cbaKCTSiFGwm8V7ciVk6TKm9a0f9PCvfGGqiRly/dTxre5uRRlYklJmKdbX
+SkDS7aRvk9VbQM+gQoE5pzyG66NEieSJLbVHcZgCvpMhUhFBMG37MZXuama7WkguFN15EMvsQUru
+zqXJNWGmgOHdHrFryPlT9uN5Ckt8cs8oNQmvNbdAdjRAVCip6oNGnXDmRHNQz+3xPMAXmHmhci/o
+RVEsOYQvOAniW4sGv8GQmikXEIQRxy99CkvHRZhLgoldLC5HqzmP85H4TkXPRAckxuBTY1QcarJZ
+B3dISl+vlIDa2ClTpW6zZ2IRqcP7IZB0IHNJM3iBFxyAEpJLfFMcOmq7cX7oJm+Mb7rL/z82PGNX
+DSxQ+dDfg6qPHMspNXyOR2MrYZfnkqZOFu64rBhaR4VffuiHwyZx/fGCTQ3/8SCxRulYmQDvysxE
+35y802Y8u5uaE6yVxT14TSnVJBRwNjtBXe2Zzx4VdTjVGm9kETTBQ/MCsyCN4FHZEPweBFm8eNvU
+ErLbXtgXiqYlGmRxsI+sVLhRCUW+1pyTHgqkv449XCxcvq5QXnPy7IAERI3hWmNWr5BJwYH3FPvC
+J3FL8D6xGjQW78YF+llSwdAYBUwe+iCbmStJRUHdcS9T/w4fkuZIB6w0pUMDyFQofSb3KRrT4pRC
+ytHA9BMBEiDG/ioJdvZ3rkcgWxMJSZ+hP0Q19DQMIMmWQ/o5s0ZhgPHJ2qlInNzo6QBLuM50JjKj
+l6FdSU+UMuKBJn9oohvAzHlKX1XIw5cFrKtRIb2BAEO3OvB/o4cpyHXj92F9uIbCXTK3gZCWUSyD
+w2c6gfEZ0HpxewXtzsvEEHnxbKdFi5x3b5JNZXbly4ylYPwVl9Pa9QjFN81S8ubRITTsOyOvjNyM
+i7+AYErgPqIb/PRzQliDyA8sOmOXZMTH/0pQV/h/w0UiuY0I2GL7wz2ewL8idPoA6Se8XEe/EsIh
+wd4iXLjKJ3fHzIIX6YZBcUPJgTrHgnyTDF5T0Psu9ycK1z0m4bxd6yhjnARaakhrJead/iJkKXVw
+3BGV/5MwXmcd+Ky8ZU0FpRAi4XXvm8G0qDpaRISdbxcgcs04KdFC+UI81sRzCSsM97GHIreFfENd
+fbTrwfwB/89by9BagF0o1jqdMnq2tzVMcarr4wfCGWkt9Du2i/Lwjt6/KaG73vGHgf9Cf6fzf+fw
+we/rAm+4MrujNgQtltEvhxrum8OzKjPEL7D2X5nR92iJ5diTJktQJVDROblE0CGrQtsGnuwNdW4t
+AT8NLEUC1YsHcoZu8TxhyOxPRPnxw1gpkSKQtQfZrOhnQMuCmp5a2vGiHnq1+21avWjx7/KKbAMn
+aY/pwwC4jvkMCTBkXb/UM8SdQk4TRL328J2qCvsgJMw1myBOEXkfbwf4UOmZNScjpOp+LLivL0ij
+DOXZ9yClr7mZe7K4qCPlYMdzAwpJ1kfErMzI3ZRNAnEkliQcd+M4h8Kxj+TaeeSf5OiXBZjUQKvh
+XVT/OlguY9rsWVaplii1g+/FOtcgVTXyEc1LEIxaw/WaBvGjVTuprmL3sk/7bacaMZeGwoh0kuaL
+Fl4WC4ot2awm2sueAxKOsl83HChhPHfJycIvj3Xm1thclr96fleW624R2AkpFG+zL0CSx9bCFPcC
+PNrdEH3NkY7xO15fllVzyuDF2NqSc9CCxsnCyu/cVkUhLnwsD878MKC+kMP2gCqNE6pAweNhJuWt
+B9AEAc0kpbfSMZGOXEAOW48L5zutYlNzAdqPCWgZGyRnJRp5D9rSh0nPVDNPzZXzQBJcY4T2C3Iv
+vZbrb8F/XVZgd6oe7CpV39hCsoeNA5GOA16hdYBAlSb78K3JhCOTC5gSf9IHeEzh8lkny9XavzvB
+iZdVFN6f6+s3z4TdvCGh8SJxqw/HKj0Cq2BtlmWxIGFfy3kqSKz8ysPMxjQbuTqjQf7m/gIrQ6Yu
+HBAE87+zZ5AzKtF7Y2lykHIaSWOVu84ImMSEH9Z06M26rzkUxKeDmMa4FnoAG838qWkLrWTH9K5g
+pA2vr1T+k54daGZvZxivvAShljRdnjV/I3h5IA4jnV+eVGm00V34o3ctE6fFEiphLKJcQaUE1uhJ
+eIBzi3gQN8VYhKXiOFK4SePiQhwSXw8JaQU5lCQ1w2t7HkP1ju2Zx+iHaqoBQ1CUm37ESRBZc1U+
+yn8GoNmJjwF6R34/IjuIcwqOK5QAgrWlfo39uPxIARooZGfBt3X1e7jfumCzdt8ogMiP7MDJy86y
+Yk3Sw0NwcG/HA/4fiecKrYKTGUa2VrCu9ULKcB1CIccnizGq61/aoZ0qjwczCj46yMT4/PgYyYMJ
+yJKRRAeSK3qB9cKUflR2pmh5PJkorJXKbVvGZHEN1FWEAaGvghPmQgdGbjvo1BaA3xRXgaJmUwV4
+fLORjc1RmbSXMxs3SiryHFGC84rIKIpRW6zVwMxJXw4wAdoz8NyKoq8qfVYxSaB5wfbggQcPinAh
+d1xLWe9IIM8qw4hbDW6CHqGPUPslE7ASVXkH9DXzxgS2ayOfsbp1PZJOU7h4A/WAsgYqulaaJcIq
+btdNAV52JexQTkg3SG138RC/2juikxVyDbMsHCNUX59LUTSnMvXXlLtVkGHhqwg5zTqPLTB6Q0r7
+9z7pgUGTqCPBygK3lK48zqGXm+TXCiUQRqFqcKLyBWiTR3vXyjiHr7yZnc742NBg7jOE8wWTY2PX

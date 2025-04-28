@@ -1,182 +1,69 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\Reflection;
-
-/**
- * Somehow the standard reflection library doesn't include constants.
- *
- * ReflectionConstant_ corrects that omission.
- *
- * Note: For backwards compatibility reasons, this class is named
- * ReflectionConstant_ rather than ReflectionConstant. It will be renamed in
- * v0.10.0.
- */
-class ReflectionConstant_ implements \Reflector
-{
-    public $name;
-    private $value;
-
-    private static $magicConstants = [
-        '__LINE__',
-        '__FILE__',
-        '__DIR__',
-        '__FUNCTION__',
-        '__CLASS__',
-        '__TRAIT__',
-        '__METHOD__',
-        '__NAMESPACE__',
-        '__COMPILER_HALT_OFFSET__',
-    ];
-
-    /**
-     * Construct a ReflectionConstant_ object.
-     *
-     * @param string $name
-     */
-    public function __construct($name)
-    {
-        $this->name = $name;
-
-        if (!\defined($name) && !self::isMagicConstant($name)) {
-            throw new \InvalidArgumentException('Unknown constant: '.$name);
-        }
-
-        if (!self::isMagicConstant($name)) {
-            $this->value = @\constant($name);
-        }
-    }
-
-    /**
-     * Exports a reflection.
-     *
-     * @param string $name
-     * @param bool   $return pass true to return the export, as opposed to emitting it
-     *
-     * @return string|null
-     */
-    public static function export($name, $return = false)
-    {
-        $refl = new self($name);
-        $value = $refl->getValue();
-
-        $str = \sprintf('Constant [ %s %s ] { %s }', \gettype($value), $refl->getName(), $value);
-
-        if ($return) {
-            return $str;
-        }
-
-        echo $str."\n";
-    }
-
-    public static function isMagicConstant($name)
-    {
-        return \in_array($name, self::$magicConstants);
-    }
-
-    /**
-     * Get the constant's docblock.
-     *
-     * @return false
-     */
-    public function getDocComment()
-    {
-        return false;
-    }
-
-    /**
-     * Gets the constant name.
-     *
-     * @return string
-     */
-    public function getName()
-    {
-        return $this->name;
-    }
-
-    /**
-     * Gets the namespace name.
-     *
-     * Returns '' when the constant is not namespaced.
-     *
-     * @return string
-     */
-    public function getNamespaceName()
-    {
-        if (!$this->inNamespace()) {
-            return '';
-        }
-
-        return \preg_replace('/\\\\[^\\\\]+$/', '', $this->name);
-    }
-
-    /**
-     * Gets the value of the constant.
-     *
-     * @return mixed
-     */
-    public function getValue()
-    {
-        return $this->value;
-    }
-
-    /**
-     * Checks if this constant is defined in a namespace.
-     *
-     * @return bool
-     */
-    public function inNamespace()
-    {
-        return \strpos($this->name, '\\') !== false;
-    }
-
-    /**
-     * To string.
-     *
-     * @return string
-     */
-    public function __toString()
-    {
-        return $this->getName();
-    }
-
-    /**
-     * Gets the constant's file name.
-     *
-     * Currently returns null, because if it returns a file name the signature
-     * formatter will barf.
-     */
-    public function getFileName()
-    {
-        return;
-        // return $this->class->getFileName();
-    }
-
-    /**
-     * Get the code start line.
-     *
-     * @throws \RuntimeException
-     */
-    public function getStartLine()
-    {
-        throw new \RuntimeException('Not yet implemented because it\'s unclear what I should do here :)');
-    }
-
-    /**
-     * Get the code end line.
-     *
-     * @throws \RuntimeException
-     */
-    public function getEndLine()
-    {
-        return $this->getStartLine();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

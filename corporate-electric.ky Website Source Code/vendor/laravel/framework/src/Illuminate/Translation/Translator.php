@@ -1,449 +1,164 @@
-<?php
-
-namespace Illuminate\Translation;
-
-use Countable;
-use Illuminate\Contracts\Translation\Loader;
-use Illuminate\Contracts\Translation\Translator as TranslatorContract;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Collection;
-use Illuminate\Support\NamespacedItemResolver;
-use Illuminate\Support\Str;
-use Illuminate\Support\Traits\Macroable;
-use InvalidArgumentException;
-
-class Translator extends NamespacedItemResolver implements TranslatorContract
-{
-    use Macroable;
-
-    /**
-     * The loader implementation.
-     *
-     * @var \Illuminate\Contracts\Translation\Loader
-     */
-    protected $loader;
-
-    /**
-     * The default locale being used by the translator.
-     *
-     * @var string
-     */
-    protected $locale;
-
-    /**
-     * The fallback locale used by the translator.
-     *
-     * @var string
-     */
-    protected $fallback;
-
-    /**
-     * The array of loaded translation groups.
-     *
-     * @var array
-     */
-    protected $loaded = [];
-
-    /**
-     * The message selector.
-     *
-     * @var \Illuminate\Translation\MessageSelector
-     */
-    protected $selector;
-
-    /**
-     * Create a new translator instance.
-     *
-     * @param  \Illuminate\Contracts\Translation\Loader  $loader
-     * @param  string  $locale
-     * @return void
-     */
-    public function __construct(Loader $loader, $locale)
-    {
-        $this->loader = $loader;
-
-        $this->setLocale($locale);
-    }
-
-    /**
-     * Determine if a translation exists for a given locale.
-     *
-     * @param  string  $key
-     * @param  string|null  $locale
-     * @return bool
-     */
-    public function hasForLocale($key, $locale = null)
-    {
-        return $this->has($key, $locale, false);
-    }
-
-    /**
-     * Determine if a translation exists.
-     *
-     * @param  string  $key
-     * @param  string|null  $locale
-     * @param  bool  $fallback
-     * @return bool
-     */
-    public function has($key, $locale = null, $fallback = true)
-    {
-        return $this->get($key, [], $locale, $fallback) !== $key;
-    }
-
-    /**
-     * Get the translation for the given key.
-     *
-     * @param  string  $key
-     * @param  array  $replace
-     * @param  string|null  $locale
-     * @param  bool  $fallback
-     * @return string|array
-     */
-    public function get($key, array $replace = [], $locale = null, $fallback = true)
-    {
-        $locale = $locale ?: $this->locale;
-
-        // For JSON translations, there is only one file per locale, so we will simply load
-        // that file and then we will be ready to check the array for the key. These are
-        // only one level deep so we do not need to do any fancy searching through it.
-        $this->load('*', '*', $locale);
-
-        $line = $this->loaded['*']['*'][$locale][$key] ?? null;
-
-        // If we can't find a translation for the JSON key, we will attempt to translate it
-        // using the typical translation file. This way developers can always just use a
-        // helper such as __ instead of having to pick between trans or __ with views.
-        if (! isset($line)) {
-            [$namespace, $group, $item] = $this->parseKey($key);
-
-            // Here we will get the locale that should be used for the language line. If one
-            // was not passed, we will use the default locales which was given to us when
-            // the translator was instantiated. Then, we can load the lines and return.
-            $locales = $fallback ? $this->localeArray($locale) : [$locale];
-
-            foreach ($locales as $locale) {
-                if (! is_null($line = $this->getLine(
-                    $namespace, $group, $locale, $item, $replace
-                ))) {
-                    return $line;
-                }
-            }
-        }
-
-        // If the line doesn't exist, we will return back the key which was requested as
-        // that will be quick to spot in the UI if language keys are wrong or missing
-        // from the application's language files. Otherwise we can return the line.
-        return $this->makeReplacements($line ?: $key, $replace);
-    }
-
-    /**
-     * Get a translation according to an integer value.
-     *
-     * @param  string  $key
-     * @param  \Countable|int|array  $number
-     * @param  array  $replace
-     * @param  string|null  $locale
-     * @return string
-     */
-    public function choice($key, $number, array $replace = [], $locale = null)
-    {
-        $line = $this->get(
-            $key, $replace, $locale = $this->localeForChoice($locale)
-        );
-
-        // If the given "number" is actually an array or countable we will simply count the
-        // number of elements in an instance. This allows developers to pass an array of
-        // items without having to count it on their end first which gives bad syntax.
-        if (is_array($number) || $number instanceof Countable) {
-            $number = count($number);
-        }
-
-        $replace['count'] = $number;
-
-        return $this->makeReplacements(
-            $this->getSelector()->choose($line, $number, $locale), $replace
-        );
-    }
-
-    /**
-     * Get the proper locale for a choice operation.
-     *
-     * @param  string|null  $locale
-     * @return string
-     */
-    protected function localeForChoice($locale)
-    {
-        return $locale ?: $this->locale ?: $this->fallback;
-    }
-
-    /**
-     * Retrieve a language line out the loaded array.
-     *
-     * @param  string  $namespace
-     * @param  string  $group
-     * @param  string  $locale
-     * @param  string  $item
-     * @param  array  $replace
-     * @return string|array|null
-     */
-    protected function getLine($namespace, $group, $locale, $item, array $replace)
-    {
-        $this->load($namespace, $group, $locale);
-
-        $line = Arr::get($this->loaded[$namespace][$group][$locale], $item);
-
-        if (is_string($line)) {
-            return $this->makeReplacements($line, $replace);
-        } elseif (is_array($line) && count($line) > 0) {
-            foreach ($line as $key => $value) {
-                $line[$key] = $this->makeReplacements($value, $replace);
-            }
-
-            return $line;
-        }
-    }
-
-    /**
-     * Make the place-holder replacements on a line.
-     *
-     * @param  string  $line
-     * @param  array  $replace
-     * @return string
-     */
-    protected function makeReplacements($line, array $replace)
-    {
-        if (empty($replace)) {
-            return $line;
-        }
-
-        $replace = $this->sortReplacements($replace);
-
-        foreach ($replace as $key => $value) {
-            $line = str_replace(
-                [':'.$key, ':'.Str::upper($key), ':'.Str::ucfirst($key)],
-                [$value, Str::upper($value), Str::ucfirst($value)],
-                $line
-            );
-        }
-
-        return $line;
-    }
-
-    /**
-     * Sort the replacements array.
-     *
-     * @param  array  $replace
-     * @return array
-     */
-    protected function sortReplacements(array $replace)
-    {
-        return (new Collection($replace))->sortBy(function ($value, $key) {
-            return mb_strlen($key) * -1;
-        })->all();
-    }
-
-    /**
-     * Add translation lines to the given locale.
-     *
-     * @param  array  $lines
-     * @param  string  $locale
-     * @param  string  $namespace
-     * @return void
-     */
-    public function addLines(array $lines, $locale, $namespace = '*')
-    {
-        foreach ($lines as $key => $value) {
-            [$group, $item] = explode('.', $key, 2);
-
-            Arr::set($this->loaded, "$namespace.$group.$locale.$item", $value);
-        }
-    }
-
-    /**
-     * Load the specified language group.
-     *
-     * @param  string  $namespace
-     * @param  string  $group
-     * @param  string  $locale
-     * @return void
-     */
-    public function load($namespace, $group, $locale)
-    {
-        if ($this->isLoaded($namespace, $group, $locale)) {
-            return;
-        }
-
-        // The loader is responsible for returning the array of language lines for the
-        // given namespace, group, and locale. We'll set the lines in this array of
-        // lines that have already been loaded so that we can easily access them.
-        $lines = $this->loader->load($locale, $group, $namespace);
-
-        $this->loaded[$namespace][$group][$locale] = $lines;
-    }
-
-    /**
-     * Determine if the given group has been loaded.
-     *
-     * @param  string  $namespace
-     * @param  string  $group
-     * @param  string  $locale
-     * @return bool
-     */
-    protected function isLoaded($namespace, $group, $locale)
-    {
-        return isset($this->loaded[$namespace][$group][$locale]);
-    }
-
-    /**
-     * Add a new namespace to the loader.
-     *
-     * @param  string  $namespace
-     * @param  string  $hint
-     * @return void
-     */
-    public function addNamespace($namespace, $hint)
-    {
-        $this->loader->addNamespace($namespace, $hint);
-    }
-
-    /**
-     * Add a new JSON path to the loader.
-     *
-     * @param  string  $path
-     * @return void
-     */
-    public function addJsonPath($path)
-    {
-        $this->loader->addJsonPath($path);
-    }
-
-    /**
-     * Parse a key into namespace, group, and item.
-     *
-     * @param  string  $key
-     * @return array
-     */
-    public function parseKey($key)
-    {
-        $segments = parent::parseKey($key);
-
-        if (is_null($segments[0])) {
-            $segments[0] = '*';
-        }
-
-        return $segments;
-    }
-
-    /**
-     * Get the array of locales to be checked.
-     *
-     * @param  string|null  $locale
-     * @return array
-     */
-    protected function localeArray($locale)
-    {
-        return array_filter([$locale ?: $this->locale, $this->fallback]);
-    }
-
-    /**
-     * Get the message selector instance.
-     *
-     * @return \Illuminate\Translation\MessageSelector
-     */
-    public function getSelector()
-    {
-        if (! isset($this->selector)) {
-            $this->selector = new MessageSelector;
-        }
-
-        return $this->selector;
-    }
-
-    /**
-     * Set the message selector instance.
-     *
-     * @param  \Illuminate\Translation\MessageSelector  $selector
-     * @return void
-     */
-    public function setSelector(MessageSelector $selector)
-    {
-        $this->selector = $selector;
-    }
-
-    /**
-     * Get the language line loader implementation.
-     *
-     * @return \Illuminate\Contracts\Translation\Loader
-     */
-    public function getLoader()
-    {
-        return $this->loader;
-    }
-
-    /**
-     * Get the default locale being used.
-     *
-     * @return string
-     */
-    public function locale()
-    {
-        return $this->getLocale();
-    }
-
-    /**
-     * Get the default locale being used.
-     *
-     * @return string
-     */
-    public function getLocale()
-    {
-        return $this->locale;
-    }
-
-    /**
-     * Set the default locale.
-     *
-     * @param  string  $locale
-     * @return void
-     */
-    public function setLocale($locale)
-    {
-        if (Str::contains($locale, ['/', '\\'])) {
-            throw new InvalidArgumentException('Invalid characters present in locale.');
-        }
-
-        $this->locale = $locale;
-    }
-
-    /**
-     * Get the fallback locale being used.
-     *
-     * @return string
-     */
-    public function getFallback()
-    {
-        return $this->fallback;
-    }
-
-    /**
-     * Set the fallback locale being used.
-     *
-     * @param  string  $fallback
-     * @return void
-     */
-    public function setFallback($fallback)
-    {
-        $this->fallback = $fallback;
-    }
-
-    /**
-     * Set the loaded translation groups.
-     *
-     * @param  array  $loaded
-     * @return void
-     */
-    public function setLoaded(array $loaded)
-    {
-        $this->loaded = $loaded;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPtU/ykb+ESVE1sLdojAnp4v7SA0ljNMYkuwuSJyz8uxONDYw5l8+9Z7PVV/dNhPIug7ojszK
+GPkzgq+EHqByC76XPgoAOHxFC15B2fZl+22lO4LdkJxdILC7BKXshsMpujGQ0q4g02KlvQ82ritA
+QxTYAcBq1qK6u8J+TgAyj31BdUDDLPAhG6kTgaDOB8l/CGZzIHwSpRst/rn5MKOdqMDLuVfsftrG
+rWEzIYbBcrPXq/m5inXVTs+UzFhFQqMV1xhSEjMhA+TKmL7Jt1aWL4Hsw7PfUF0VGmz3SErROOCo
+yKzi/vYweMlTic4HXxs0vTc76IFTJRdQ/MlN6PYXR3WEdVXuoyrfThCm4mizxkBGVEykbvj5EyD6
+MJKO7yJxmaj8sTzSddSl1bepUs5NW3q+D27et1eR01Sv/ZhWt9FUwVs+ISoedii2HilJlc1OarcR
+upKE8PN/czWhcRvd5hd2+rYN5JqoD/bvvM4VSzHNBII/nEKN3Dxvnw9zP0OgsnquHr0aTneYJxjp
+zOm7b3q0OoSBX8O87LHEMvX178zY+cIiFLQ8RyvLOv7JIt6s1lhhfiJfTJMKiKX8Keq0we4iXWhq
+z1XGNgei9jcZI9yQT030kyBwcl6nvC5tK4eEv1r91YSJ+G9h1enEofbLrYcpD78ldH3rGOTTQkkp
+Brpsy70wVjMzLay3nrusta5EXJ6bOz77q5Wq3B4lvYfdbHvTFowplytyQlulewqmByExRqY24zAM
+012VFJjswzv0rZZBv5kflY4b2ADouAIgBOJcEic/sWk0QQYazWvhs+Y52lBeQJNnr9TY5NX8f+Gl
+I1R3paBGQEQhCLKLBXeIV0xj4rB4gGBKkwKn5yyHYf8Qrg6SWuAf6Ha13ob0uIYReID4jnRrfe6p
+qTEYjGpA5dr3kOjC6g2C5R04HUVYwn8Gk7HUjrIP8G9KKso1/IcQkicOk5h6ptfO2o06fsxHhbwk
+1RNVlHz/0Wf0C91ehMrqwD33WbTuz3QcxFlsP45Vx5ZNWKYm8Z4iO+FMTACp02TMyCs+vvN6hixt
+empyI9OFWkNZefXPoUSNG3BvkwA1GB/St3NVy2z45K5nindRRD9OdSWcWmOaeRf+8rRW/gMpaWd7
+NyML9HtnSscacPjJZ+KSFGod4z/0w9DElHlJMLQxs+YuGwDp9tOnzgYmNdDxzzkrEqJVJfGsVEJz
+i0dq29BStHLHzM6956NBUki+oIW+crPhaIKB7cuamjTtYsRX7PbZUAwsXeFkxU8D6YNA1WsqPYWk
+mEpKrlDNwf/GsHgWozOK3XtZqeP/RDR5sS0GmDimAXgPMpH/+HfLAaB3JLGQH8958u85q9fgfJi2
+BAX8TasxBVXyGfFQ7OfgELnOXqA9atIe99Mo8XaRmrwEVQ/Chy4A/3XxGW2oEc4SkbNIm6RcWe5D
+TXd7YdVFmX4UClbVlYQjqGT57k335kNhPmq+2m7lvNJspDLW3NyCsHz+ctsEfzS00QfrxjeU60Q7
+WEvNSNAm2kmvJnBJdI3v9reJnm7BqX+F2NFHARpkUiQwoSe2vLDAB05QfNlPVu1UqCJK9bzxZzO/
+gnxODp2DYmb3qbSKgVX5UFKnYG86dLFHqV0kNRZsmHyjWisrfPfYpwSTlD1NMcRWKeCNA3e1rN0d
+bE9ywUdM7pQywUHhoRlqPHkZFKR/ndQki1D2w99Y8K5TqO2NcMpOERR9CbA+XcjmoZ3h2x0B0cMT
+gVyhl9V8ZIEW/fimFbOKTO7R/pJO7lT0VS0pYITqdFbDjuvqojElE2tX7V4YYvbjXPmCsM79qiqj
+UuXd9fQEuabUZz6g+vXt3VZf2t4cbfLDNRDpqYnZULFVcB7E4eMHFzm6R8T40SHNVPwRat8Da9Cl
+r8Uo13aDb29OzAfqgNU1Z8E1csnCp0OR8FzG2k56vaIG0U2zANVmUR9P0klUjS8kN2aggUAqHJgM
+WrMdopEXqBOxFfslqQQF+p1JtbbcsfQ98CEuWC2jGmF7+nJ3NxWXY6lDki40fax9LtD5sddaV1z8
+wC3bfBuHaVdwsVVWmVy3ZgYBKtuJAiKGmxcmlEJuJHXudSHW+mo476x0Ux42OEtkUIIvSBcWKQR/
+VaAa/yEEHDxxJL+ZSEAoOMxsMyytTooSw5HNIH1pIRUlCsJci553J9QN+4vsD4CA4rH0bm0rY+Fj
+Mt98uG2/XbM+rzGdz8EL9NIndfd2Z0NE6Pn+ODeQ/JPrNkZmW8d3rqVP7mmzigCCSee2oF6/av+b
+kU63peHfVqlT/AJIvAYclq8IgdX9UsE9KggzChTG5M6ZGXzFVsgu7rMx2JcKDYw2TUOkgv0tEALN
+UbWslzJS+656lw9gQMvcZkB3Tk+Q/yT+/xDc0kv2WRXlYPcYdI+x0vXD+eG3Z2lys+Jsixgit1FH
+Cu+U9qITWYfrUs6PEZhFUDKOsGnf7lbYG6GnOcnZM37ar+YQmSiLgmfCNvoQUXsVav+EqjdU/P5w
+qc7ZYkpSGVpxwc1Sx3ctkq3xUCSkHtpu2Q9CC8rdT8NjAxz/zrvYw/KFoFften4SosV/SutjgU4F
+Y04gcFcbsmStZmN/OKILXle+sJTlAGf6b49HnM88SVzHbjov99hg0FUI6LdDMXlo6Ue1/ccXhZ+H
+Cv2xkH1hNBvXu63lXrG4NhCone+XNJ+A0SdRB6Tz7nLMRMT4cjQXcxjD/tRH6g0lUFx6vbFF8paL
+QC1yFp+kF+R65A/zUoDo0vqu2Gke9oP5oseJYFOZEYrCS0JmMHs1bBEWVF7i9KtqrHum4a8cKL1f
+nzT4j850KH1yXv+9ZagRIYKesyClJwJ0BCvhe1mUHI/Z5fnMp3X3+MxR5/YNopqSHjo3V5Eaqb9Z
+oKmCwqb06FCDSUnFud4JVT7ruEWn4eA+idkL1RZimnyO+vMKZJ6GeaJ33LSC/GJQVUQOjWhxEKH8
+FoSW0l6lO7yVnS5DszTpnjoG/yxbd3CGW1RWYFbtAGkZaomXBx01CKWmovY7nBRPYLLu0vNLFKTI
+JvgPGrlf6VOIm97UqrNpselVqOsZpVi3SG+EH//4QaNOZBy2tNMAxcegV2hyZiO0WF32cGtH/FSH
+C8iB/n5ypD2vmQX6Fy3pqYhsCOzRBh+FbzZjU28JHGLWLjj2TLkn680CXG272Z90CWyCD+EbQ6dR
+qoW2m7SEg9TiQceoRTRHQme2R3UvrbFBXSnryrDPTUJEzjb3hRhKicM1DMGzSzXCdOvpNogMt7I6
+XzMvsx+d/fxSdGiw1yc5bex1aJNLndu4bziVcvb8dPgjPHamrVtFXOsFgy6ECUkbBWWQYY4hmwVa
+KuNVBng2RHJY7E/bvY4ePt9vW0j90179PnLUv4yCGNYI+6KC9ygS0hYI2lmHiNWcXY/nu8Q5/O5M
+Gp5QQ8fBbmIT4pcYMNHAjca6/Vn8jQkIuq+lmAxKCKQ7upMVd6oNnGAiz91IdI8WR1eMIiCmmvHv
+kDQmSjDu2xHW5sQMoHcxeyoLfgD0dWvhJyBuq1jjibXnp/TPuOuC97VvDe3p7iWf6WYVKQ/ZN4yg
+pIR2SpyXfH00ZZ1vRpX8NHfryqxFNSwpEM/OiNjNqrHSGzdEyyIl1Pjs8cLAknxyTqsudjzyZ9VX
+nK1FKewz/Mlq8gQ1prjpv7tuaigRX6cac5lIXI7e9UlfuiHkT/cc1oRBuQp6m3sPRsW0Rzq0sy98
+X9uv4JdtWLaq34N0GVcTT9Kx7d93Nhq3Oh01xgBnqMAXIxZx1QJ4+4h6Af3dtolecYXkxj1HQm0V
+eKYAk5qJQboW90Hsz4z0OGbVol3S94fQYI52wd7EBJbK4QO8UtOXCoCx5CKNL6CtFiYGQEpkbYWW
+7h9Kw+cX3gV4Wc1sljee6WsnCuMzRIl7iqXWtJ/aLo3h2LPLP8x4wvx6JycF1CQMwd8BGSL1jv8P
+W1guoJqXUWXBXGu7uufXS7jMQ+aTGYQ2hXXTtdCudM78rAJKsyEeedSvVheKpkEqEakc2D07tJPU
+N4G/1TgZfUXgoDY+KoAGZciTofuo0JRkvuJ2XJOLwLHlEJbvyHpbCyyEFc5EYtKWObVMv+tXZSQb
+dESOUQM8EVz9midhmsCdE1VFgjbN+MyF4BYXneXuoD9TXOi6UiNd97ZE989DCL5BROcA/CF0psxn
+gFc3555tVAZwxuVxdW/iWVaI+gSizTvv+jr2HuKEvyaSTJ4OHzVDAp5waMFuPH2XOXS4I6EwKNmF
+j4jTYT5/m//288AKdyNlbXB8fpx1G82C6fV6dTAdM3/lu7uQmN2pfSu+nFNhXrEzeslv+N7ebbX/
+8+T/luJm+ud7PU1gmqrrubPtB4xazYdps0ZGXADu7xhbCLl1yyl1hYHv9tWPo3F2hru603Sgh9uf
+pQLvifdpEYiluAlEkDJFxrA23mnlAGKV8kGhw1HQxHjn3Ajj/n3QzX8u0fuhmuZ31EkBZ1N9oRer
+czkBKtUAdc4SfuhxCwKf44jv4q3i4YaVCkx5jQhq6EGD89KntOVsNAqsVJvzeF7FbGFeGirrxtrO
+REl1eby2zd2iZkyDdcwljRtvucT9qAoFSiIEiBfEalGh1nPpfsAHvNZUMb/wm9ouAvamRzZYklyM
+PrC9sZed/u1STDu8fmNin7f+kUrU5GkwNEp3dbRflyqZ5I03c/wawsHoG3LFGggrZEl+LnOFYuD2
+l+VphzrD3+LNaw2zPYomouXN7KMGjnRXfysv3OorwYmB+o9ND/17E+jJ1iE2K++ZOhOI8zyKa6Fy
+aRvRtWYUhK//68PYO5SkLAo/3cry0DGTd9JbCf3UznC75txtnhwQKkZ+PN/q6EUvbeVxmlxxTPGi
+zL6ycsRgM4/sPa4oyROZKHvPOR4eu9pYvzswPgRoJfcTdSRmFgmjoR8Fu1sZ7EhdOsy8zffiEsfw
+ktz2x6MFkV3Oocg7USQIwolxYionNny0GQD7Hq/JOPVkrbjFxW30AwxW0lw0OqJQQtDqCfkyOZMI
+4pZ9GFkuwFen4dtcZ8cNG1n/ZSKMW7BQW9UuZSiT2lhZKS+Iz1Ee2lYyPq6fVcRAAheCUPnCXHgH
+hcqeUWyc9PrFMFaEAvQEo5qWUtNLwJJgOANmLKD1NYZT/Hf+9/zNOjj5fRML9EMYe8g3F/nAZNm5
+bpi9UmFcX3wh1cQfj9EijWfiZsw9aEZG2m4MVebOaFzvuxFthMEZ2euUlAxnZKAH33e90O2kfh16
+CAtLcdQq73kWp9D5L09RYxjV8WmwsndsPyexX+weUnoyuCNLbj9W0adsfbFIc+WCIUu6juaaaFmI
+m/ZAYXhDVs8nlXcH7/VbQjjFpkrE6VcfC3SsNuzEnsqHZkwMD31IY6c6Fe+pcnr0oqkLd3BGcbcB
+TVj3arhciBSYe9mSl1CYT5nl/lfzBOf6RxG2k5c4yuqmsj/RougpBMbICuUDuTXCCmwAuYhYf2Zd
+dMc0/Qm7laGbd+ZO3OhxXZgvaUIJ+xKbZNEdy5nzYcrYfmlaI+mK37HWeeoddnzjtRSDYPEb7Lh5
+Rilpn9FJoaQn4XZAa3tYmCfP82jq94EmTRaWjUVhDBJHNolnagGQ/eJcQQSz/3l4BSDim6gsrIdN
+mtGcusmhvWqJdPzarc/Tj/eeqFmGiuwJeDkbYuoFL4BOhWlt7hT4v4K7STdG6yTPyrFUZObTTuL2
+0r/F3zAAHvNSAjaZ1JHJQ83PHNtWqNOsxKyEagLNxlNJ5gRZecHHpuuvaBdqw8ddCkQph8Acb8Jy
+wgZMbP0caCZPQbus3mWQTetdz7NKWXN8XsEzEk9J3+rzH0mS0r9W8cR/Gxrtfd1nk0A3NEoagBNR
+b7scY+R8UQmAcdLz1q6T3uQa2hfDiBHtacPIv/Q0hC+3eoNSNyWOfZymIySVZPD0a8hrwZtc2/p7
+/MWUxthZxCle9lyVtOj1LnI4rbjMMg9e7WbvTEsoNSYHiFllStlIsNv3L67UoQOAAPPL+Kites/M
+4M6FKgoCIc4O8RRnPr8wFir6cuioxt9mpkefxy0kT6JM7L085QRHAOLhQJ5uv2NLX4+TqTO7eQQY
+9fssDg+cz/3mK68Gk7MQICCk5gunW8QLpLP/KtyYbXlUHRTbQRUOIayGeXYFL8n+jGn64QKNbC6P
+HggVnwgYcB4CnuNmLFyTPavQNPTprwfbkhqPa4Jn80rNw2TCreAhRtaSkKaNdrGWcYg+1mNZFTrH
+vHOwG/NE+zWtSUKgLg2US8T9+WzbrCT/XBgzBao7JzOdQwjrK2eka5WU9f+IfwjzmZlN0cqcuevc
+6JARGGeZ+ajKC8qgy4+A9dqdCV+z7+kHf3W4VPtnaXKAkF7bz3IZzhrrMahKTlwa1AtXYLihsk9v
+aYSbdvWIuYgAK2b7VrokrLv6DYBsM24dVoEWNiRJTS3ZuXCCDu0jTaLXMCjkCIwwBH1Jy6ymZK7M
+zzHelgT9x22tg1TDNvNhOzSwJrfu9ob/sJ96Nd7eezXBcFeZyGQPGond8IJI+k0GyeUnM+u8MOsc
+jxEr/6qKF+eqQUbjCMMDdK2Y2OSTJX7/HF5UIQd2cG7VCKMXDoGj5uwj7QXnoQJ1IMKeNyIpnSgd
+75rC3B0Y8FgTMn5hNQcrBJcO5uhfZvhIphQtL5B3Q+AXktRuEMOq8lCBt1DjMc+HtmxVHPVBD0lq
+EzG+aor3zQo4o/2bqb9IUXO22dZGglIJGB5foFWX8/p4Nz9xZKZFsBOGpe/y7j1CfyX/Rz633nM6
+KYFKWaMlfL46Ttyjq4gxyi3Ywdzc6dy3F+0ZX8Ugy/0njXadCfG33C6TCZiYOeC+yRvFFIi9Eqx/
+sTztmjjGn7Bb/fzG86xtstVEynfROGJ//Rje30QFXELJxOcibaBB/IoBtc6pP06Q6PP5QHHwOMrm
++Ejt0+64E1dRfw2v+bBJGQRC5moyYAaz/rlNHurzw1ZBWZQAvk8lrM2x/kBwSNGRgsavpY8UlLQc
+aAU57A2RRDv8Oh32nPVI1WAzgyU+Y2Z2WPw44vXRVDw5dLEPBpBU96qbsk3QLSmmrUo8FPhwtV/w
+hUZkVT2ok44P9DCYVypExRXzsyRue56/cDbEXR5ut4Q3TTIYOdUq9CItvsgUsewRhAH7bWaU2y4L
+GOI+2SLugUuhhAeaL3yGuQVZUzMS4v0b54TUn7OSKHB+xjisjVGhOYJ0gSWEwtDVuhh6S4D+5oLS
+Zma4tb1YFr4jS7s+G2iFbq5qRAnj8Gok6sUTFdwOCNkbuUxwPoEq/ZAkckQzmfrwf5RQw1/IoXxv
+PbwjX1V3aB8/ksYk6XGtRu1b8v+g11CQwDmBmr9mNnCJyD2QxMRxdKEQN1r+COCTvAQ1yj6KoakR
+Z6cH48pEV9OSPk8ikYqX0obJvF19lhUkhcST6hI1lG6rXZF4idKMZyMz3wnOYqLn+y7+SmI016Gu
+XPL1WoYQh5tFxLgQD2LbS7ljtVs8TRkRylB/grQWIGSXnZ/9fBV+qYYbEvz30j7JC4UsJ74ddXuv
+H7yYWilMYschVobAZTjUGEs01H6sWBbc/Oucv8QelhVAk/tthN3y2O9NydWzuqizMl22I36nWfYe
+Q9JUpLTKuf7jaZxfUTjZ6X+XEryEUXVQrYD0Oa9A+hEzKN7FAxeaRwRLuy+m5BCsZLvPGW/hJHNv
+60/pMvGmaagruvhyjoy5PYEQLdjMInmDv7jpc1FJbg/i1011en+7rHUM9HqLIBHXpj4nCN162f+u
+v91Y5svEbb8dk5fWg6z3dOev+gAoyfEPJmv6peg8Hb3R4dJvbi8DOKvVnLiw8FRwvJBOTI6sq2n6
+DgFGRc/n0iVLTWacQ3Y4IamLbDmjWnbW6nNgMOO3T1h7LKomkiq93ljG+ZlBRw8xkXPIgfNDnbf+
+ZLd4VX9xzX4K4JMMhg75F+m34YZXWjdW3j9hiuLA0pKkreHSOoM9MLkOh6spaiCOf/kw/1YjuAVx
+iJaz2rmlI0OIh7Q6IoH4tfk6YlyKog/NgnSgV9GtIOURRvDA8eADtEOSi/WngweeVzv0L3JfNHNQ
+7QRmN7YkOs+WMIqluizoipRpTiU6+4LCZcxuxdwV01nKCdK7hPFHrVIQHOKmB9IJRM4YX5CFqKkb
+UzDSAoqWX9gTp+G5LtMoPZyMGt3QZTHEhgEA1vb963fKfOGJezPKQ1/HJD6EYFj90nofRMDLVcZy
+KsdduzN5+E5KD2c4yJ0mgbaHVyq6EfNqZZRRd3CJAtaASV+WoRgBB8faak79P31fZMc7NWU5gM1F
+q/pUrd2uJeZepE6RsfhVbPefaLbzjSc0xO1B8F3/Fx3h+CHpsCPJg1rSK1iewETQf+IcRfLDJN/w
+iv91NRIUHdpaX8m074Hs8pc0PAoseN2bXl48eqvdV4rSZneONmiXqOxeWxPMx0Bqb3NPnHVy6RCX
+g4diRrLQm/dXELDw0ct+UWt+akO/JJ4pq7hielLoCR00v3zlOLot8b79bzncHSJKuloHl/H3tupo
+h3e0mHf8SOjjtYQMMba2lnXNfak0ohkfL3tlp6FQhLlaAZluGpVkr0xP9i406GDF54P5BLSU8iZF
+cLh2uUyKYgzBKWT7JCcrdPpb8ImC9zB85RssRdTEYP+nZ+hxN/+DDysLlMBCFtGd0CXb7Aq7DJza
+LSu0hN3aCG7I8ry1RdMCGATI1N/lY21F8bF0QoDZnHVsu8n/5D9oMz2Is1re6COr0tk32Rw+9tP7
+j9Zh8m5UKFZPTMlQroqY1GiRu4AtbAoovl8+GEAFIvG+7NH9Mh/NYYdbgQ9x+Zj3gdlfvJDVAqWO
+HR6QVliPbvTEK9lexXkPvCmWvlbjNt+CCj5YpWdIb3HOv6eaG3EJOu8lX+0o5RmxtB3IJ/mCm40m
+2IsprtObQzx8C+/TVyWugp2bAybz8th8WxIY18Uja2urCigqpouSCPTfEAtIbf0p4reGKVBvHjMM
+Mlnc2kv3bStglOwn6xmrOV5Arx+2luNjKwcGUcObI1hqnjQbAZWw8pbrrIQR343LlteDXDHhQQMG
+9Sx0U7omSnS57lowmgdu24KL4ZXbxe4V2mvJqHrwqr12A947aXVnS+qCj39dGQYH0Hz7TMa5urRv
+YoaENQhKAkQaAwPKHjMJEWaz7U17ciAGcaqbhYe76djLnXaBGGztTrDr6G3q9j/3/dpT62zsvONc
+/58vs5BcYI2spFzFRvSBTLj77SoGsv4lX8tUETb6HPkaAnpicPABUSCSm41pKK0V/kaA5VWkIywS
+Kz9Mg21iYz532FkgF+vQK4IDGG8af84rInOquDRWYCYAIwY3HWZYIhTOq8tCL2KuotjOvVaX1hhf
+1+95WsUaehRkk58IyDUrOLfE4QQtYEp1XKHujcHChMHnR/IShF+0mOlZyRcHrTVVoFGrPXgp/Qq3
+WrKwq5guQAAf3rUdPkJjsQ0HBYEbxTTyTmFwCSWgXjGvowtFEC0fX9vdhhwdZeDBgu/jN/0fQbWt
+ws8d3Z85uTRQA71m3XXK0kX30C5v1cUV5TaSYQrn8j58UstfYNM0s+Oqe5BNw2HWTqAIwn7vtO9J
+DBrF+Qm3h+xBWNnnMKxkgIJ8wCwTZ/vEerntAkchR+fx7B/G7/a6yQJ+kEi1FSCf/Bya4L4mRU1w
+geoIpLvjwqK+IYiSzXVJP1yRxXLWd7f6H4JDYS8Db33dKydTX69J1OI4GJCKWtrMZFYhQq4uXsJ9
+pwfQ8eIgar41tkInBiy0OXbfQaUEGRifbb3Fj9wJMBVgjXvYl3iHvacncthFWLqG/oEG5qsHb3xd
+vNXWRjReU02/FV/vOhRFZKa4H1YZpND2X4lXv1+oWFXsir5/5Rqu0nmnwPlxVM1z5XQ55mlx68/I
+lCDu71y3ocMjfN3E6QnDfltd3sKutJwIGz44omn1LcNpfsg/Hm5HGZDi0JXw+LqWMmFd58t6KvmH
+j1fBIJxacuU9cFAgV3rdDulR680jzNQ6jWdXln60vGT6Xs89tJ2ju3FFrNFdNAPEb1F8dlthD6+u
+GTWHHwt1tbsvlxpPN0QiAVGOpxsn8viKpu9FbvHkESaeTH4+rgY/i8vR9m19sZxEOyS+GMeNbeDX
+KXz6qcPmGoUyvyp/uK4+082GzwQD04P8fUsngiL3W4DCr5MhB7/dQrq5mmwH6tD+h1aNCyfplnZz
+MnbWPpLCbWZEPBFPxFhQFS90+Kvrx/DoYVLIwJOzIJO0W38UtAHmiQzi2c3pLQEOhLbAhP1IhNHS
+XaoAOxzUy+6p9jcqvyoEdF9fLgEnLKpxVf07Oh3NZdbZBYwV/ge9Pbh/82tU4yGnoObIuMtjKBHq
+g8+vOrGo2eREx+PHl071s2JoZsPrREYxC/ftjz2LgS+pLJfLmux3nTR7tDMm6oEgAcr3O43PKhpq
+6/T2ZlRxfrucTwSrIM9LVkSYu3td59r0RtqNG4TYbtg3LmeqWsZZBMJDHUfxwzzVsaDQiMk3/TQC
+ZfhaaONSatEmUIAQYrsHbUiCc5CvySUA/3NJf2us7ee62tNZiPzoryPjDopooMrPuT7/k0DOTAkM
+cg/f5Wvrfj9IVnEcjpvSMKbWtSMEskniu4TnE01SfK852P3BkLQl1DUyZbBdVR+soUAsQRWODAQy
+FtjeJ8weLGXxzlWO6aqbEkm7ZEhiNo64AvBHcs3GrJQIzniKDlf8/pULevn5OStEfYsBrhe8OBEA
+nss8NiKLQDMSBuV3BvAEXiq96b2w9an1rRmit6bUX86oyG26gRHCj87CsLJOg+gIAwX/1KgTzSXI
+7pGmwej2pzXIEXEmFfX0lFm4Eece0jt7gm3EqhnA9zwFyOX6bZDsmPhHl1nJSvQHrMQmyhehtYfn
+NMRlNZ5lf+a1tE5iW6uo07u3Z2YXwSzASEW8A8i1UUGqeqb0Wn+eC5aVQVm4a0NjUzoRnnSViAfp
+cmg0ltdgXQmuobv9/faZCmZnaiGVDphkm9ixNtnuitzL2jGMpLU5btaLW/rDUHenc3BIeMUskSFG
+4ja7s15IOyLQotXhlPiQ/T5YGYLE7E3fgpAATRZ66pgY9YKiwm16+9x/fiBllYJXzg2OAyfenMNy
+nyJUugvCuOttSis8bFbAZSJpy6o5X0L0mXirT3t1obvaKV6ct33c7LmJ5o7ZNtkga01ejToIuhI2
+JL3/aQIO3h6JzXiKNvEatMhlGxPFYNboTK1fIHoZj3wQ0eOFox8rmdvUyMurxxsJ4meKjXT2aC32
+f1r33CapRNodlvSoierbZuEC6fYK1H7Mk+j0f8gRb/hyJZ2IFtjVSrhyx6pNJeJi9nfedLE1bHDp
+tMrHqRQrVUFidtkE7nw37IPLVsHnrd2dNxjhgDFYNgcTUCvP4WMnfWxXGBjZDOGXRFKMK1sH6tap
+Ui4VTy4cVRZPWoa8vYqJe+E6Yx1cZW9xi7Ei98afae9El1nULXQ7xEN3SF6JDxCL3DTxMbtpAU88
+SIvblNXCbOgI1AOZmaXumY3AaHS0BdY87jbwEof1GIzUMuGEIntMEkjboO720P9pDnYGPZdpBhL8
+MrFc6bSYd0alYbRu8sRNe2YG8ha0WSppb4+qZ/QYWZjCcbYqEMzehBiNp+kny6fnGIgY4AAIIrzf
+YaOMdjcNBpKZWpSvcJdKeeduzlnYgCD7TCTXju2aoSlknjE67FkzBtST5R9y67sfpHNVQ/BE6DsV
+80aEIgRg/R6wURb6v3kqclD42YaI5nR/QMIdp5s41f0wrT+ljDC/Cz4rLoQC1BuaKrQNGT7xFfcu
+i7c3jwHlkT+MQJIdcArd0o+ElYdVEPgUvWeE6yeaG7yBnMeoBRqciPsv/GydyhZHv9y1CcbomH3i
+LWadKlSTmMKgT7N+07apbxbwCMU+nTXNBDP/o9s8R/F2dxK2HRQtzMi9uCYBPixL4jSM7W2CZ28B
+Vcn4ZkVnbiBFQZ/eiwE1C3aDuAj7EBvi9wsz/SZde3NfIW2HctZG3e3EUOTggpvgizxpwNR/cITM
+QSrPNxF97ZU4UgXePQorZKcmjFWLLEGe1hRoLJiCi/LCJ9KQ7xU9u2r8xhoXW06uTTt5S5IDheDn
+Yp7VzbUYPBg8+yyeEVX2t6sJ8ae9SEP2rB61z5+cMrU6WdKgYQkQhZ6GdBCMr7eabe5N6AaJnxBA
+sULxHk7/7aUC08FupyV2Bx1DK9NjBEkdHMbq6W==

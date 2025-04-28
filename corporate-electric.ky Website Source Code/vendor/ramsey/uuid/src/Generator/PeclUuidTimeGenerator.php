@@ -1,36 +1,29 @@
-<?php
-
-/**
- * This file is part of the ramsey/uuid library
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @copyright Copyright (c) Ben Ramsey <ben@benramsey.com>
- * @license http://opensource.org/licenses/MIT MIT
- */
-
-declare(strict_types=1);
-
-namespace Ramsey\Uuid\Generator;
-
-use const UUID_TYPE_TIME;
-
-/**
- * PeclUuidTimeGenerator generates strings of binary data for time-base UUIDs,
- * using ext-uuid
- *
- * @link https://pecl.php.net/package/uuid ext-uuid
- */
-class PeclUuidTimeGenerator implements TimeGeneratorInterface
-{
-    /**
-     * @inheritDoc
-     */
-    public function generate($node = null, ?int $clockSeq = null): string
-    {
-        $uuid = uuid_create(UUID_TYPE_TIME);
-
-        return uuid_parse($uuid);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPvv5AZ45hQu6qF6/4dcbhdcYLvNEcQXnMUipYmkdVsnQfYlgpiqLdKy4VledhfrzWCinhgw1
+p7mNHalpCWozSMLyLeF7976Xv9a73RPsqnoGQ2BWuyqPI5NL1XkqtE8gtT/j7kIqg0C2pzxReMVC
+hZYuSo9r4xPapXhgXJ02QPowsYPjGfNRCrvOKM+kpgnR2kOXfJ5R863FrMXfVju3vGNmjm31o58d
+50D0OvgDQZFaVu20/+s46PyHIliYrEbPl9ppwduwrQihvrJ1KTFS6I1KH7RefMd/MvVOhktpxNm4
+uoo+aaHjWwBejx51pMNY47bTDNVfKw22jn5deoUq5eO3bARXBcci4aMopMSKOuUe1TFhIpAUh6jZ
+AUuUTj8I21WbGtQ+wSUGmV0hJYniyAxsF+ZuRPryrFeCuuVQs3KY65n7CNvio81QzemIrPq7sNfT
+zeIc7P5gl36VBIn+U6vu3NKENR5UWgiEdybnzesNvyNS/6AjETjHa7FpcCxduLzGYHZUZ6t8TTox
+HqIHhXC9pN4BOS+U3W29AmIvwgRwRZU266XHpBs7VL5nlMqFS/nIhBgfHldw+8XUiKo92rc+WmpV
+WPJ89F72ZlOOYdIpEDfe1WP+NbUlnBDg1/+4Ic2qb90Ib0sJ1LKpE+rOVfGQxsGZ3UbU5dMNln8Y
+VXfZuXgfyfG730KNuiKRqDUsUrfQBwLIw3y1utGXp9h8RYu8rVNI2ag0CeqL0UpU0P3fyszsUD5Y
+dCWD5RXDC5fTXJjtgVMSiV1tUb2z2J0efRWkZpZtZ3Ahvaa+IGfx9hWIgIgOgqpzUjkt7PMGhQ0f
+xcW+tVGlv33JTDadEG8Nk4yUVys/ASEwpIjDiUKGSky3xKIDY7YdJt5Dc3NxawP/L9VEkS6L5IPb
+C59wh1yiTKz0ETOXhE4Fn40bUxgQGhdKIEcojhJxFkK1seMiMAhELvNG6p2w5gluAsC8JsRtgNq/
+mzvSyJXq7I580RPg/mytPX87j2hqqi4DsFbI3WadamuhpJXM4Qd7av1la4RBi9LF0HPLe5h3jOLN
+Jp04hTw7x1hzgtF3OkyV15yb30f+ldkWBi993bDxOC1Kpd/KzOT/zASfLr5YDkZ8yrp7sXQ0p5+j
+581LZN8bXcqFrylwBG27/fZv04BixPcQb2NN/BPsYkWuBCAoceFDZuKMCsslVB5bG8pFbQB8qHS9
+5WRqdem7gba33dLPoo3ygtWow2sMD87JeBnIeE2N8mfR+65y3dQH/H1lbhMAeco/ZWCoFnog6QXT
+wztkb/wTfcB+caRadZeu4jMlJlAgphTFp+TH7eiXaujwyApzFNA0927/SDzC739PFs+tgUvOx/h3
+sq22RfHr36sZuFSaqNevHxgbBkFtFQqYxNXTFg30c+Kx2gAmKZJJoSZHUxOEQzSrc5hWCe9SZnT9
+4FS/vW46NUHTO1irtlSGEtGtZ4ZWSqGGLZTP5kUShHPaDj1xwJVlffYbZtYrgch3AXDPaumTSYVV
+3vOQmzJ4p1vrUNsMGR2S0qQMG4rO5BvpNjLk8flAfeMe77g0IgRwOS1I7QUDH2/gcg1TD9GvhgbE
+oh2GCv40S7cL1iLQXTAdvuPc/DVfKO4qHs+Vdb64PhHxefZIG9tThsIBuRpA67conAKlVUu+fV+s
+7zKdvKKhLpN6mKooKHOQSGl4ZMh8Bd32phu6kVt6dl9fnb1oaNKXS2pwo0JvUTvDuY1hxUV6Rki8
+KybY3LGAQq6FJbk9JmfVrd0X+XpC799W9f4IrJ09Km+0ZX4O6eusK2xZe5EHkK70toY5GaQEUWim
+boO5yfolp5i++wp/kQnx9zICIpH9wmvZsvat2T5bf2qNMWmCOxo1/1eNmh6NITbHIyGXNCucoVWf
+TJSTPw5kOwggZak0Km==

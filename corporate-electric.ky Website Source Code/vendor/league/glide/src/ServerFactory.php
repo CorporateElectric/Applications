@@ -1,307 +1,116 @@
-<?php
-
-namespace League\Glide;
-
-use Intervention\Image\ImageManager;
-use InvalidArgumentException;
-use League\Flysystem\Adapter\Local;
-use League\Flysystem\Filesystem;
-use League\Flysystem\FilesystemInterface;
-use League\Glide\Api\Api;
-use League\Glide\Manipulators\Background;
-use League\Glide\Manipulators\Blur;
-use League\Glide\Manipulators\Border;
-use League\Glide\Manipulators\Brightness;
-use League\Glide\Manipulators\Contrast;
-use League\Glide\Manipulators\Crop;
-use League\Glide\Manipulators\Encode;
-use League\Glide\Manipulators\Filter;
-use League\Glide\Manipulators\Flip;
-use League\Glide\Manipulators\Gamma;
-use League\Glide\Manipulators\Orientation;
-use League\Glide\Manipulators\Pixelate;
-use League\Glide\Manipulators\Sharpen;
-use League\Glide\Manipulators\Size;
-use League\Glide\Manipulators\Watermark;
-use League\Glide\Responses\ResponseFactoryInterface;
-
-class ServerFactory
-{
-    /**
-     * Configuration parameters.
-     * @var array
-     */
-    protected $config;
-
-    /**
-     * Create ServerFactory instance.
-     * @param array $config Configuration parameters.
-     */
-    public function __construct(array $config = [])
-    {
-        $this->config = $config;
-    }
-
-    /**
-     * Get configured server.
-     * @return Server Configured Glide server.
-     */
-    public function getServer()
-    {
-        $server = new Server(
-            $this->getSource(),
-            $this->getCache(),
-            $this->getApi()
-        );
-
-        $server->setSourcePathPrefix($this->getSourcePathPrefix());
-        $server->setCachePathPrefix($this->getCachePathPrefix());
-        $server->setGroupCacheInFolders($this->getGroupCacheInFolders());
-        $server->setCacheWithFileExtensions($this->getCacheWithFileExtensions());
-        $server->setDefaults($this->getDefaults());
-        $server->setPresets($this->getPresets());
-        $server->setBaseUrl($this->getBaseUrl());
-        $server->setResponseFactory($this->getResponseFactory());
-
-        return $server;
-    }
-
-    /**
-     * Get source file system.
-     * @return FilesystemInterface Source file system.
-     */
-    public function getSource()
-    {
-        if (!isset($this->config['source'])) {
-            throw new InvalidArgumentException('A "source" file system must be set.');
-        }
-
-        if (is_string($this->config['source'])) {
-            return new Filesystem(
-                new Local($this->config['source'])
-            );
-        }
-
-        return $this->config['source'];
-    }
-
-    /**
-     * Get source path prefix.
-     * @return string|null Source path prefix.
-     */
-    public function getSourcePathPrefix()
-    {
-        if (isset($this->config['source_path_prefix'])) {
-            return $this->config['source_path_prefix'];
-        }
-    }
-
-    /**
-     * Get cache file system.
-     * @return FilesystemInterface Cache file system.
-     */
-    public function getCache()
-    {
-        if (!isset($this->config['cache'])) {
-            throw new InvalidArgumentException('A "cache" file system must be set.');
-        }
-
-        if (is_string($this->config['cache'])) {
-            return new Filesystem(
-                new Local($this->config['cache'])
-            );
-        }
-
-        return $this->config['cache'];
-    }
-
-    /**
-     * Get cache path prefix.
-     * @return string|null Cache path prefix.
-     */
-    public function getCachePathPrefix()
-    {
-        if (isset($this->config['cache_path_prefix'])) {
-            return $this->config['cache_path_prefix'];
-        }
-    }
-
-    /**
-     * Get the group cache in folders setting.
-     * @return bool Whether to group cache in folders.
-     */
-    public function getGroupCacheInFolders()
-    {
-        if (isset($this->config['group_cache_in_folders'])) {
-            return $this->config['group_cache_in_folders'];
-        }
-
-        return true;
-    }
-
-    /**
-     * Get the cache with file extensions setting.
-     * @return bool Whether to cache with file extensions.
-     */
-    public function getCacheWithFileExtensions()
-    {
-        if (isset($this->config['cache_with_file_extensions'])) {
-            return $this->config['cache_with_file_extensions'];
-        }
-
-        return false;
-    }
-
-    /**
-     * Get watermarks file system.
-     * @return FilesystemInterface|null Watermarks file system.
-     */
-    public function getWatermarks()
-    {
-        if (!isset($this->config['watermarks'])) {
-            return;
-        }
-
-        if (is_string($this->config['watermarks'])) {
-            return new Filesystem(
-                new Local($this->config['watermarks'])
-            );
-        }
-
-        return $this->config['watermarks'];
-    }
-
-    /**
-     * Get watermarks path prefix.
-     * @return string|null Watermarks path prefix.
-     */
-    public function getWatermarksPathPrefix()
-    {
-        if (isset($this->config['watermarks_path_prefix'])) {
-            return $this->config['watermarks_path_prefix'];
-        }
-    }
-
-    /**
-     * Get image manipulation API.
-     * @return Api Image manipulation API.
-     */
-    public function getApi()
-    {
-        return new Api(
-            $this->getImageManager(),
-            $this->getManipulators()
-        );
-    }
-
-    /**
-     * Get Intervention image manager.
-     * @return ImageManager Intervention image manager.
-     */
-    public function getImageManager()
-    {
-        $driver = 'gd';
-
-        if (isset($this->config['driver'])) {
-            $driver = $this->config['driver'];
-        }
-
-        return new ImageManager([
-            'driver' => $driver,
-        ]);
-    }
-
-    /**
-     * Get image manipulators.
-     * @return array Image manipulators.
-     */
-    public function getManipulators()
-    {
-        return [
-            new Orientation(),
-            new Crop(),
-            new Size($this->getMaxImageSize()),
-            new Brightness(),
-            new Contrast(),
-            new Gamma(),
-            new Sharpen(),
-            new Filter(),
-            new Flip(),
-            new Blur(),
-            new Pixelate(),
-            new Watermark($this->getWatermarks(), $this->getWatermarksPathPrefix()),
-            new Background(),
-            new Border(),
-            new Encode(),
-        ];
-    }
-
-    /**
-     * Get maximum image size.
-     * @return int|null Maximum image size.
-     */
-    public function getMaxImageSize()
-    {
-        if (isset($this->config['max_image_size'])) {
-            return $this->config['max_image_size'];
-        }
-    }
-
-    /**
-     * Get default image manipulations.
-     * @return array Default image manipulations.
-     */
-    public function getDefaults()
-    {
-        if (isset($this->config['defaults'])) {
-            return $this->config['defaults'];
-        }
-
-        return [];
-    }
-
-    /**
-     * Get preset image manipulations.
-     * @return array Preset image manipulations.
-     */
-    public function getPresets()
-    {
-        if (isset($this->config['presets'])) {
-            return $this->config['presets'];
-        }
-
-        return [];
-    }
-
-    /**
-     * Get base URL.
-     * @return string|null Base URL.
-     */
-    public function getBaseUrl()
-    {
-        if (isset($this->config['base_url'])) {
-            return $this->config['base_url'];
-        }
-    }
-
-    /**
-     * Get response factory.
-     * @return ResponseFactoryInterface|null Response factory.
-     */
-    public function getResponseFactory()
-    {
-        if (isset($this->config['response'])) {
-            return $this->config['response'];
-        }
-    }
-
-    /**
-     * Create configured server.
-     * @param  array  $config Configuration parameters.
-     * @return Server Configured server.
-     */
-    public static function create(array $config = [])
-    {
-        return (new self($config))->getServer();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

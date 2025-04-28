@@ -1,156 +1,79 @@
-<?php
-
-namespace GuzzleHttp\Psr7;
-
-use Psr\Http\Message\StreamInterface;
-
-
-/**
- * Decorator used to return only a subset of a stream
- */
-class LimitStream implements StreamInterface
-{
-    use StreamDecoratorTrait;
-
-    /** @var int Offset to start reading from */
-    private $offset;
-
-    /** @var int Limit the number of bytes that can be read */
-    private $limit;
-
-    /**
-     * @param StreamInterface $stream Stream to wrap
-     * @param int             $limit  Total number of bytes to allow to be read
-     *                                from the stream. Pass -1 for no limit.
-     * @param int             $offset Position to seek to before reading (only
-     *                                works on seekable streams).
-     */
-    public function __construct(
-        StreamInterface $stream,
-        $limit = -1,
-        $offset = 0
-    ) {
-        $this->stream = $stream;
-        $this->setLimit($limit);
-        $this->setOffset($offset);
-    }
-
-    public function eof()
-    {
-        // Always return true if the underlying stream is EOF
-        if ($this->stream->eof()) {
-            return true;
-        }
-
-        // No limit and the underlying stream is not at EOF
-        if ($this->limit == -1) {
-            return false;
-        }
-
-        return $this->stream->tell() >= $this->offset + $this->limit;
-    }
-
-    /**
-     * Returns the size of the limited subset of data
-     * {@inheritdoc}
-     */
-    public function getSize()
-    {
-        if (null === ($length = $this->stream->getSize())) {
-            return null;
-        } elseif ($this->limit == -1) {
-            return $length - $this->offset;
-        } else {
-            return min($this->limit, $length - $this->offset);
-        }
-    }
-
-    /**
-     * Allow for a bounded seek on the read limited stream
-     * {@inheritdoc}
-     */
-    public function seek($offset, $whence = SEEK_SET)
-    {
-        if ($whence !== SEEK_SET || $offset < 0) {
-            throw new \RuntimeException(sprintf(
-                'Cannot seek to offset %s with whence %s',
-                $offset,
-                $whence
-            ));
-        }
-
-        $offset += $this->offset;
-
-        if ($this->limit !== -1) {
-            if ($offset > $this->offset + $this->limit) {
-                $offset = $this->offset + $this->limit;
-            }
-        }
-
-        $this->stream->seek($offset);
-    }
-
-    /**
-     * Give a relative tell()
-     * {@inheritdoc}
-     */
-    public function tell()
-    {
-        return $this->stream->tell() - $this->offset;
-    }
-
-    /**
-     * Set the offset to start limiting from
-     *
-     * @param int $offset Offset to seek to and begin byte limiting from
-     *
-     * @throws \RuntimeException if the stream cannot be seeked.
-     */
-    public function setOffset($offset)
-    {
-        $current = $this->stream->tell();
-
-        if ($current !== $offset) {
-            // If the stream cannot seek to the offset position, then read to it
-            if ($this->stream->isSeekable()) {
-                $this->stream->seek($offset);
-            } elseif ($current > $offset) {
-                throw new \RuntimeException("Could not seek to stream offset $offset");
-            } else {
-                $this->stream->read($offset - $current);
-            }
-        }
-
-        $this->offset = $offset;
-    }
-
-    /**
-     * Set the limit of bytes that the decorator allows to be read from the
-     * stream.
-     *
-     * @param int $limit Number of bytes to allow to be read from the stream.
-     *                   Use -1 for no limit.
-     */
-    public function setLimit($limit)
-    {
-        $this->limit = $limit;
-    }
-
-    public function read($length)
-    {
-        if ($this->limit == -1) {
-            return $this->stream->read($length);
-        }
-
-        // Check if the current position is less than the total allowed
-        // bytes + original offset
-        $remaining = ($this->offset + $this->limit) - $this->stream->tell();
-        if ($remaining > 0) {
-            // Only return the amount of requested data, ensuring that the byte
-            // limit is not exceeded
-            return $this->stream->read(min($remaining, $length));
-        }
-
-        return '';
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+ZFIvYYMOyb7fjlERvPtT7VgWAdrCQGkhgT09YW==

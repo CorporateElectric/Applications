@@ -1,144 +1,36 @@
-<?php
-
-namespace PhpParser\Parser;
-
-/* GENERATED file based on grammar/tokens.y */
-final class Tokens
-{
-    const YYERRTOK = 256;
-    const T_THROW = 257;
-    const T_INCLUDE = 258;
-    const T_INCLUDE_ONCE = 259;
-    const T_EVAL = 260;
-    const T_REQUIRE = 261;
-    const T_REQUIRE_ONCE = 262;
-    const T_LOGICAL_OR = 263;
-    const T_LOGICAL_XOR = 264;
-    const T_LOGICAL_AND = 265;
-    const T_PRINT = 266;
-    const T_YIELD = 267;
-    const T_DOUBLE_ARROW = 268;
-    const T_YIELD_FROM = 269;
-    const T_PLUS_EQUAL = 270;
-    const T_MINUS_EQUAL = 271;
-    const T_MUL_EQUAL = 272;
-    const T_DIV_EQUAL = 273;
-    const T_CONCAT_EQUAL = 274;
-    const T_MOD_EQUAL = 275;
-    const T_AND_EQUAL = 276;
-    const T_OR_EQUAL = 277;
-    const T_XOR_EQUAL = 278;
-    const T_SL_EQUAL = 279;
-    const T_SR_EQUAL = 280;
-    const T_POW_EQUAL = 281;
-    const T_COALESCE_EQUAL = 282;
-    const T_COALESCE = 283;
-    const T_BOOLEAN_OR = 284;
-    const T_BOOLEAN_AND = 285;
-    const T_IS_EQUAL = 286;
-    const T_IS_NOT_EQUAL = 287;
-    const T_IS_IDENTICAL = 288;
-    const T_IS_NOT_IDENTICAL = 289;
-    const T_SPACESHIP = 290;
-    const T_IS_SMALLER_OR_EQUAL = 291;
-    const T_IS_GREATER_OR_EQUAL = 292;
-    const T_SL = 293;
-    const T_SR = 294;
-    const T_INSTANCEOF = 295;
-    const T_INC = 296;
-    const T_DEC = 297;
-    const T_INT_CAST = 298;
-    const T_DOUBLE_CAST = 299;
-    const T_STRING_CAST = 300;
-    const T_ARRAY_CAST = 301;
-    const T_OBJECT_CAST = 302;
-    const T_BOOL_CAST = 303;
-    const T_UNSET_CAST = 304;
-    const T_POW = 305;
-    const T_NEW = 306;
-    const T_CLONE = 307;
-    const T_EXIT = 308;
-    const T_IF = 309;
-    const T_ELSEIF = 310;
-    const T_ELSE = 311;
-    const T_ENDIF = 312;
-    const T_LNUMBER = 313;
-    const T_DNUMBER = 314;
-    const T_STRING = 315;
-    const T_STRING_VARNAME = 316;
-    const T_VARIABLE = 317;
-    const T_NUM_STRING = 318;
-    const T_INLINE_HTML = 319;
-    const T_ENCAPSED_AND_WHITESPACE = 320;
-    const T_CONSTANT_ENCAPSED_STRING = 321;
-    const T_ECHO = 322;
-    const T_DO = 323;
-    const T_WHILE = 324;
-    const T_ENDWHILE = 325;
-    const T_FOR = 326;
-    const T_ENDFOR = 327;
-    const T_FOREACH = 328;
-    const T_ENDFOREACH = 329;
-    const T_DECLARE = 330;
-    const T_ENDDECLARE = 331;
-    const T_AS = 332;
-    const T_SWITCH = 333;
-    const T_MATCH = 334;
-    const T_ENDSWITCH = 335;
-    const T_CASE = 336;
-    const T_DEFAULT = 337;
-    const T_BREAK = 338;
-    const T_CONTINUE = 339;
-    const T_GOTO = 340;
-    const T_FUNCTION = 341;
-    const T_FN = 342;
-    const T_CONST = 343;
-    const T_RETURN = 344;
-    const T_TRY = 345;
-    const T_CATCH = 346;
-    const T_FINALLY = 347;
-    const T_USE = 348;
-    const T_INSTEADOF = 349;
-    const T_GLOBAL = 350;
-    const T_STATIC = 351;
-    const T_ABSTRACT = 352;
-    const T_FINAL = 353;
-    const T_PRIVATE = 354;
-    const T_PROTECTED = 355;
-    const T_PUBLIC = 356;
-    const T_VAR = 357;
-    const T_UNSET = 358;
-    const T_ISSET = 359;
-    const T_EMPTY = 360;
-    const T_HALT_COMPILER = 361;
-    const T_CLASS = 362;
-    const T_TRAIT = 363;
-    const T_INTERFACE = 364;
-    const T_EXTENDS = 365;
-    const T_IMPLEMENTS = 366;
-    const T_OBJECT_OPERATOR = 367;
-    const T_NULLSAFE_OBJECT_OPERATOR = 368;
-    const T_LIST = 369;
-    const T_ARRAY = 370;
-    const T_CALLABLE = 371;
-    const T_CLASS_C = 372;
-    const T_TRAIT_C = 373;
-    const T_METHOD_C = 374;
-    const T_FUNC_C = 375;
-    const T_LINE = 376;
-    const T_FILE = 377;
-    const T_START_HEREDOC = 378;
-    const T_END_HEREDOC = 379;
-    const T_DOLLAR_OPEN_CURLY_BRACES = 380;
-    const T_CURLY_OPEN = 381;
-    const T_PAAMAYIM_NEKUDOTAYIM = 382;
-    const T_NAMESPACE = 383;
-    const T_NS_C = 384;
-    const T_DIR = 385;
-    const T_NS_SEPARATOR = 386;
-    const T_ELLIPSIS = 387;
-    const T_NAME_FULLY_QUALIFIED = 388;
-    const T_NAME_QUALIFIED = 389;
-    const T_NAME_RELATIVE = 390;
-    const T_ATTRIBUTE = 391;
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+AF3l

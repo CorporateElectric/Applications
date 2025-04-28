@@ -1,81 +1,45 @@
-<?php declare(strict_types=1);
-
-namespace PhpParser;
-
-use PhpParser\NodeVisitor\FindingVisitor;
-use PhpParser\NodeVisitor\FirstFindingVisitor;
-
-class NodeFinder
-{
-    /**
-     * Find all nodes satisfying a filter callback.
-     *
-     * @param Node|Node[] $nodes  Single node or array of nodes to search in
-     * @param callable    $filter Filter callback: function(Node $node) : bool
-     *
-     * @return Node[] Found nodes satisfying the filter callback
-     */
-    public function find($nodes, callable $filter) : array {
-        if (!is_array($nodes)) {
-            $nodes = [$nodes];
-        }
-
-        $visitor = new FindingVisitor($filter);
-
-        $traverser = new NodeTraverser;
-        $traverser->addVisitor($visitor);
-        $traverser->traverse($nodes);
-
-        return $visitor->getFoundNodes();
-    }
-
-    /**
-     * Find all nodes that are instances of a certain class.
-     *
-     * @param Node|Node[] $nodes Single node or array of nodes to search in
-     * @param string      $class Class name
-     *
-     * @return Node[] Found nodes (all instances of $class)
-     */
-    public function findInstanceOf($nodes, string $class) : array {
-        return $this->find($nodes, function ($node) use ($class) {
-            return $node instanceof $class;
-        });
-    }
-
-    /**
-     * Find first node satisfying a filter callback.
-     *
-     * @param Node|Node[] $nodes  Single node or array of nodes to search in
-     * @param callable    $filter Filter callback: function(Node $node) : bool
-     *
-     * @return null|Node Found node (or null if none found)
-     */
-    public function findFirst($nodes, callable $filter) {
-        if (!is_array($nodes)) {
-            $nodes = [$nodes];
-        }
-
-        $visitor = new FirstFindingVisitor($filter);
-
-        $traverser = new NodeTraverser;
-        $traverser->addVisitor($visitor);
-        $traverser->traverse($nodes);
-
-        return $visitor->getFoundNode();
-    }
-
-    /**
-     * Find first node that is an instance of a certain class.
-     *
-     * @param Node|Node[] $nodes  Single node or array of nodes to search in
-     * @param string      $class Class name
-     *
-     * @return null|Node Found node, which is an instance of $class (or null if none found)
-     */
-    public function findFirstInstanceOf($nodes, string $class) {
-        return $this->findFirst($nodes, function ($node) use ($class) {
-            return $node instanceof $class;
-        });
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+ykUjZtDlt2JZlwB/ZRpbh3hGPqEy2YphPG==

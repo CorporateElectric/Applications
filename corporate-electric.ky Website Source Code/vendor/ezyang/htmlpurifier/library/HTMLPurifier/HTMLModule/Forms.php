@@ -1,194 +1,72 @@
-<?php
-
-/**
- * XHTML 1.1 Forms module, defines all form-related elements found in HTML 4.
- */
-class HTMLPurifier_HTMLModule_Forms extends HTMLPurifier_HTMLModule
-{
-    /**
-     * @type string
-     */
-    public $name = 'Forms';
-
-    /**
-     * @type bool
-     */
-    public $safe = false;
-
-    /**
-     * @type array
-     */
-    public $content_sets = array(
-        'Block' => 'Form',
-        'Inline' => 'Formctrl',
-    );
-
-    /**
-     * @param HTMLPurifier_Config $config
-     */
-    public function setup($config)
-    {
-        if ($config->get('HTML.Forms')) {
-            $this->safe = true;
-        }
-
-        $form = $this->addElement(
-            'form',
-            'Form',
-            'Required: Heading | List | Block | fieldset',
-            'Common',
-            array(
-                'accept' => 'ContentTypes',
-                'accept-charset' => 'Charsets',
-                'action*' => 'URI',
-                'method' => 'Enum#get,post',
-                // really ContentType, but these two are the only ones used today
-                'enctype' => 'Enum#application/x-www-form-urlencoded,multipart/form-data',
-            )
-        );
-        $form->excludes = array('form' => true);
-
-        $input = $this->addElement(
-            'input',
-            'Formctrl',
-            'Empty',
-            'Common',
-            array(
-                'accept' => 'ContentTypes',
-                'accesskey' => 'Character',
-                'alt' => 'Text',
-                'checked' => 'Bool#checked',
-                'disabled' => 'Bool#disabled',
-                'maxlength' => 'Number',
-                'name' => 'CDATA',
-                'readonly' => 'Bool#readonly',
-                'size' => 'Number',
-                'src' => 'URI#embedded',
-                'tabindex' => 'Number',
-                'type' => 'Enum#text,password,checkbox,button,radio,submit,reset,file,hidden,image',
-                'value' => 'CDATA',
-            )
-        );
-        $input->attr_transform_post[] = new HTMLPurifier_AttrTransform_Input();
-
-        $this->addElement(
-            'select',
-            'Formctrl',
-            'Required: optgroup | option',
-            'Common',
-            array(
-                'disabled' => 'Bool#disabled',
-                'multiple' => 'Bool#multiple',
-                'name' => 'CDATA',
-                'size' => 'Number',
-                'tabindex' => 'Number',
-            )
-        );
-
-        $this->addElement(
-            'option',
-            false,
-            'Optional: #PCDATA',
-            'Common',
-            array(
-                'disabled' => 'Bool#disabled',
-                'label' => 'Text',
-                'selected' => 'Bool#selected',
-                'value' => 'CDATA',
-            )
-        );
-        // It's illegal for there to be more than one selected, but not
-        // be multiple. Also, no selected means undefined behavior. This might
-        // be difficult to implement; perhaps an injector, or a context variable.
-
-        $textarea = $this->addElement(
-            'textarea',
-            'Formctrl',
-            'Optional: #PCDATA',
-            'Common',
-            array(
-                'accesskey' => 'Character',
-                'cols*' => 'Number',
-                'disabled' => 'Bool#disabled',
-                'name' => 'CDATA',
-                'readonly' => 'Bool#readonly',
-                'rows*' => 'Number',
-                'tabindex' => 'Number',
-            )
-        );
-        $textarea->attr_transform_pre[] = new HTMLPurifier_AttrTransform_Textarea();
-
-        $button = $this->addElement(
-            'button',
-            'Formctrl',
-            'Optional: #PCDATA | Heading | List | Block | Inline',
-            'Common',
-            array(
-                'accesskey' => 'Character',
-                'disabled' => 'Bool#disabled',
-                'name' => 'CDATA',
-                'tabindex' => 'Number',
-                'type' => 'Enum#button,submit,reset',
-                'value' => 'CDATA',
-            )
-        );
-
-        // For exclusions, ideally we'd specify content sets, not literal elements
-        $button->excludes = $this->makeLookup(
-            'form',
-            'fieldset', // Form
-            'input',
-            'select',
-            'textarea',
-            'label',
-            'button', // Formctrl
-            'a', // as per HTML 4.01 spec, this is omitted by modularization
-            'isindex',
-            'iframe' // legacy items
-        );
-
-        // Extra exclusion: img usemap="" is not permitted within this element.
-        // We'll omit this for now, since we don't have any good way of
-        // indicating it yet.
-
-        // This is HIGHLY user-unfriendly; we need a custom child-def for this
-        $this->addElement('fieldset', 'Form', 'Custom: (#WS?,legend,(Flow|#PCDATA)*)', 'Common');
-
-        $label = $this->addElement(
-            'label',
-            'Formctrl',
-            'Optional: #PCDATA | Inline',
-            'Common',
-            array(
-                'accesskey' => 'Character',
-                // 'for' => 'IDREF', // IDREF not implemented, cannot allow
-            )
-        );
-        $label->excludes = array('label' => true);
-
-        $this->addElement(
-            'legend',
-            false,
-            'Optional: #PCDATA | Inline',
-            'Common',
-            array(
-                'accesskey' => 'Character',
-            )
-        );
-
-        $this->addElement(
-            'optgroup',
-            false,
-            'Required: option',
-            'Common',
-            array(
-                'disabled' => 'Bool#disabled',
-                'label*' => 'Text',
-            )
-        );
-        // Don't forget an injector for <isindex>. This one's a little complex
-        // because it maps to multiple elements.
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

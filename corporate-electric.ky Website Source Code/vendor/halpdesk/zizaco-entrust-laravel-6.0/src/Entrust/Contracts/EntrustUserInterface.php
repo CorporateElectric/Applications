@@ -1,80 +1,29 @@
-<?php namespace Zizaco\Entrust\Contracts;
-
-/**
- * This file is part of Entrust,
- * a role & permission management solution for Laravel.
- *
- * @license MIT
- * @package Zizaco\Entrust
- */
-
-interface EntrustUserInterface
-{
-    /**
-     * Many-to-Many relations with Role.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
-     */
-    public function roles();
-
-    /**
-     * Checks if the user has a role by its name.
-     *
-     * @param string|array $name       Role name or array of role names.
-     * @param bool         $requireAll All roles in the array are required.
-     *
-     * @return bool
-     */
-    public function hasRole($name, $requireAll = false);
-
-    /**
-     * Check if user has a permission by its name.
-     *
-     * @param string|array $permission Permission string or array of permissions.
-     * @param bool         $requireAll All permissions in the array are required.
-     *
-     * @return bool
-     */
-    public function can($permission, $requireAll = false);
-
-    /**
-     * Checks role(s) and permission(s).
-     *
-     * @param string|array $roles       Array of roles or comma separated string
-     * @param string|array $permissions Array of permissions or comma separated string.
-     * @param array        $options     validate_all (true|false) or return_type (boolean|array|both)
-     *
-     * @throws \InvalidArgumentException
-     *
-     * @return array|bool
-     */
-    public function ability($roles, $permissions, $options = []);
-
-    /**
-     * Alias to eloquent many-to-many relation's attach() method.
-     *
-     * @param mixed $role
-     */
-    public function attachRole($role);
-
-    /**
-     * Alias to eloquent many-to-many relation's detach() method.
-     *
-     * @param mixed $role
-     */
-    public function detachRole($role);
-
-    /**
-     * Attach multiple roles to a user
-     *
-     * @param mixed $roles
-     */
-    public function attachRoles($roles);
-
-    /**
-     * Detach multiple roles from a user
-     *
-     * @param mixed $roles
-     */
-    public function detachRoles($roles);
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPr4qnz154l+Mvn20KlFqpZZN00zUE51x9jn1NIE9jyfbPCuBbF5xx7W/lr5Nk77jIh/BQk91
+hVxJXttJ4ASEgaqvGGfOZmMYweA4tO1ainEEWdkAKX6jJXr1N3kzTdjYfuOFQccVYgcQTIeO53fO
+0rW+5pKZQ3r5AOV1c+xk42xTBrQjOFNr7INe8VFsJ1SG8k8SydOc6Xe49cshXRKuo7EwCpJf1GoP
+HEKWCWQztslvilnKtAOw0sf6ygn1QArKeczAkZhLgoldLC5HqzmP85H4TkZiOIJuUxbSCpLYU5/p
+iINK7hJ9g+gmVO/BVoysKQMmKbX4Une/anWspG/0s+xP3YMYKdD/mw0jnK+DkvliKzw3gWUmZgPI
+f7hOPmosSD2TzSLlqZfZ72jpqYSruCIE29MUAa9ChtZBd34z2azFAsg5OVaL5EiL5a4v6qu4R6B1
+vAeKJxCWt7zJk0kS+uF+kf1VHvUjqJ2aHFEMOAIYvYBoGnbRRvhWIpIw79EHKVsT7CKq+n9hMjlN
+sywg+1KBnc3tUHTo+B+UIs9AOAaH7FCnkhuAUSekxziiO32saK81SvKt+D3WIOhAkV8gGQWmZjBd
+/AfqsHkcq4NvPTcQxqXle8t/D0HvmdvtCGoLoiDZwYHZtOfT/rEOMfS/Twbx99jhMjsxDvC1iXoF
+jT2i1IRvoWvZeOp3vXnpEaRpOGXfiZzI/cgtQoRnHNSTKHZjZd+EV3sZ+gs4pKNlYKYHVZBkD+CA
+zykkf+6nUSiKp+JHG2UBPeDM12S8Pgo/ONoXBG3iDAA2X3XLJr7cbR7L9O8ZSSVwDxGMVY163y8l
+9DzaVpe2uuggP5aVXVvJ9i/5cg+70lQgnRToUri0X53jG/Ur1DhLL6IR+9MTNrQArn6Vo4K2P1od
+vSz3fgXiz4fZ8qR7YGHWVPKm6CA6ro2dD+jNyDSgXXC2kUhZBwUdtFDGgiveCJk6oKV4xOoWaopP
+y4iL1nxdpoPdGovx7BpVU7k9Uixtrs58/szCvY28UrJGbXdHaAwN0GIl8RfHJdwIhEG6p+PrKVJK
+xeQ3wb3Eup0FXNuwJ7t3kHAktgnYqliesEaR4PhtHUEEUWxvuDRnMtSjNRBXHw6saE6iQ0TuuOPf
+VfVcLkzICJ0m0ve7tPtJiBn1Q72dCekJBqFnJ89QvWGg5Hhhu+pfss8X4ItgxDztvtf4VHu699l2
+BjzSr4cyMZYoFJQwBpjhYfBtE33KlOoFZJ5CPseWMHzMNnvPEDCYfnHt6+DtnG1v+U933DysEtlP
+rp0SxycK9RooPgbCrR6NWPh4aSgq9F1CU+sD0lYdjU4VJ/BI1fk2N5xaqAYWtyLrcqtSPlqL7aCw
+2eLd9+GwrvsnBrtG+73znD3N5hYdo5pYUo91VIrKA0GE8jAuzS9U6TR6KUWMmpc5rA3nyBF831rK
+OAOOjxi4nkvsVK9VBQeNswtWexCudBSQe1erJDA61zhDRH/YpFAZWtWPM6OheH6P8Em4qWXoeh0h
+i0cg+V/vQx//iU+HAkBHvLjAJfoi6LrWbCxqjEeBQCw92/yErcfLSsPnlzhCDOEubaOwsWo46Aob
+CbpNnwQvINLRcG2LCV9ujpO8+Zg4ns3FY17V4CPBn0ZvkjUxVFmV0uQ/2ailCfKj8Oyd+C+6t89o
+aP2T1wNeaSOeEPdh1OiVilL5UGmtQI31V+tCDAqzvY4U4Z70rkPANz5/M1PYEwFF0clV2cwgpnvn
+JJRTaPJnfc66KlpgAHGJ0sjIZB8M1amXP29CIYrSlJr+Qb18PsqcArNBNFU0VrXzu3ih0HMhdeKa
+7aH7TPdBCJauPycLRSO6MikY2r3rnDQ3woTmM+AGtIhcqjF4BHsd1/PfCYN3nBfnKuFBT9bDdhgk
+KJhBGByaWdnGYrPwNX0eAYqJdyN8Mf6bCbymQ0==

@@ -1,149 +1,59 @@
-<?php
-
-namespace Maatwebsite\Excel\Concerns;
-
-use Illuminate\Console\OutputStyle;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Bus\PendingDispatch;
-use Illuminate\Support\Collection;
-use InvalidArgumentException;
-use Maatwebsite\Excel\Exceptions\NoFilePathGivenException;
-use Maatwebsite\Excel\Importer;
-use Symfony\Component\HttpFoundation\File\UploadedFile;
-
-trait Importable
-{
-    /**
-     * @var OutputStyle|null
-     */
-    protected $output;
-
-    /**
-     * @param string|UploadedFile|null $filePath
-     * @param string|null              $disk
-     * @param string|null              $readerType
-     *
-     * @throws NoFilePathGivenException
-     * @return Importer|PendingDispatch
-     */
-    public function import($filePath = null, string $disk = null, string $readerType = null)
-    {
-        $filePath = $this->getFilePath($filePath);
-
-        return $this->getImporter()->import(
-            $this,
-            $filePath,
-            $disk ?? $this->disk ?? null,
-            $readerType ?? $this->readerType ?? null
-        );
-    }
-
-    /**
-     * @param string|UploadedFile|null $filePath
-     * @param string|null              $disk
-     * @param string|null              $readerType
-     *
-     * @throws NoFilePathGivenException
-     * @return array
-     */
-    public function toArray($filePath = null, string $disk = null, string $readerType = null): array
-    {
-        $filePath = $this->getFilePath($filePath);
-
-        return $this->getImporter()->toArray(
-            $this,
-            $filePath,
-            $disk ?? $this->disk ?? null,
-            $readerType ?? $this->readerType ?? null
-        );
-    }
-
-    /**
-     * @param string|UploadedFile|null $filePath
-     * @param string|null              $disk
-     * @param string|null              $readerType
-     *
-     * @throws NoFilePathGivenException
-     * @return Collection
-     */
-    public function toCollection($filePath = null, string $disk = null, string $readerType = null): Collection
-    {
-        $filePath = $this->getFilePath($filePath);
-
-        return $this->getImporter()->toCollection(
-            $this,
-            $filePath,
-            $disk ?? $this->disk ?? null,
-            $readerType ?? $this->readerType ?? null
-        );
-    }
-
-    /**
-     * @param string|UploadedFile|null $filePath
-     * @param string|null              $disk
-     * @param string|null              $readerType
-     *
-     * @throws NoFilePathGivenException
-     * @throws InvalidArgumentException
-     * @return PendingDispatch
-     */
-    public function queue($filePath = null, string $disk = null, string $readerType = null)
-    {
-        if (!$this instanceof ShouldQueue) {
-            throw new InvalidArgumentException('Importable should implement ShouldQueue to be queued.');
-        }
-
-        return $this->import($filePath, $disk, $readerType);
-    }
-
-    /**
-     * @param OutputStyle $output
-     *
-     * @return $this
-     */
-    public function withOutput(OutputStyle $output)
-    {
-        $this->output = $output;
-
-        return $this;
-    }
-
-    /**
-     * @return OutputStyle
-     */
-    public function getConsoleOutput(): OutputStyle
-    {
-        if (!$this->output instanceof OutputStyle) {
-            throw new InvalidArgumentException(
-                'Importable has no OutputStyle. Declare one by using ->withOutput($this->output).'
-            );
-        }
-
-        return $this->output;
-    }
-
-    /**
-     * @param UploadedFile|string|null $filePath
-     *
-     * @throws NoFilePathGivenException
-     * @return UploadedFile|string
-     */
-    private function getFilePath($filePath = null)
-    {
-        $filePath = $filePath ?? $this->filePath ?? null;
-
-        if (null === $filePath) {
-            throw NoFilePathGivenException::import();
-        }
-
-        return $filePath;
-    }
-
-    /**
-     * @return Importer
-     */
-    private function getImporter(): Importer
-    {
-        return app(Importer::class);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+IGW=

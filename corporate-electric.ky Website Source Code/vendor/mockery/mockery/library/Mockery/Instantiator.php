@@ -1,162 +1,78 @@
-<?php
-/*
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- * This software consists of voluntary contributions made by many individuals
- * and is licensed under the MIT license. For more information, see
- * <http://www.doctrine-project.org>.
- */
-
-namespace Mockery;
-
-use Closure;
-use ReflectionClass;
-use UnexpectedValueException;
-use InvalidArgumentException;
-
-/**
- * This is a trimmed down version of https://github.com/doctrine/instantiator,
- * basically without the caching
- *
- * @author Marco Pivetta <ocramius@gmail.com>
- */
-final class Instantiator
-{
-    /**
-     * {@inheritDoc}
-     */
-    public function instantiate($className)
-    {
-        $factory    = $this->buildFactory($className);
-        $instance   = $factory();
-
-        return $instance;
-    }
-
-    /**
-     * Builds a {@see \Closure} capable of instantiating the given $className without
-     * invoking its constructor.
-     *
-     * @param string $className
-     *
-     * @return Closure
-     */
-    private function buildFactory($className)
-    {
-        $reflectionClass = $this->getReflectionClass($className);
-
-        if ($this->isInstantiableViaReflection($reflectionClass)) {
-            return function () use ($reflectionClass) {
-                return $reflectionClass->newInstanceWithoutConstructor();
-            };
-        }
-
-        $serializedString = sprintf(
-            'O:%d:"%s":0:{}',
-            strlen($className),
-            $className
-        );
-
-        $this->attemptInstantiationViaUnSerialization($reflectionClass, $serializedString);
-
-        return function () use ($serializedString) {
-            return unserialize($serializedString);
-        };
-    }
-
-    /**
-     * @param string $className
-     *
-     * @return ReflectionClass
-     *
-     * @throws InvalidArgumentException
-     */
-    private function getReflectionClass($className)
-    {
-        if (! class_exists($className)) {
-            throw new InvalidArgumentException("Class:$className does not exist");
-        }
-
-        $reflection = new ReflectionClass($className);
-
-        if ($reflection->isAbstract()) {
-            throw new InvalidArgumentException("Class:$className is an abstract class");
-        }
-
-        return $reflection;
-    }
-
-    /**
-     * @param ReflectionClass $reflectionClass
-     * @param string          $serializedString
-     *
-     * @throws UnexpectedValueException
-     *
-     * @return void
-     */
-    private function attemptInstantiationViaUnSerialization(ReflectionClass $reflectionClass, $serializedString)
-    {
-        set_error_handler(function ($code, $message, $file, $line) use ($reflectionClass, & $error) {
-            $msg = sprintf(
-                'Could not produce an instance of "%s" via un-serialization, since an error was triggered in file "%s" at line "%d"',
-                $reflectionClass->getName(),
-                $file,
-                $line
-            );
-
-            $error = new UnexpectedValueException($msg, 0, new \Exception($message, $code));
-        });
-
-        try {
-            unserialize($serializedString);
-        } catch (\Exception $exception) {
-            restore_error_handler();
-
-            throw new UnexpectedValueException("An exception was raised while trying to instantiate an instance of \"{$reflectionClass->getName()}\" via un-serialization", 0, $exception);
-        }
-
-        restore_error_handler();
-
-        if ($error) {
-            throw $error;
-        }
-    }
-
-    /**
-     * @param ReflectionClass $reflectionClass
-     *
-     * @return bool
-     */
-    private function isInstantiableViaReflection(ReflectionClass $reflectionClass)
-    {
-        return ! ($reflectionClass->isInternal() && $reflectionClass->isFinal());
-    }
-
-    /**
-     * Verifies whether the given class is to be considered internal
-     *
-     * @param ReflectionClass $reflectionClass
-     *
-     * @return bool
-     */
-    private function hasInternalAncestors(ReflectionClass $reflectionClass)
-    {
-        do {
-            if ($reflectionClass->isInternal()) {
-                return true;
-            }
-        } while ($reflectionClass = $reflectionClass->getParentClass());
-
-        return false;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+txlnAyYtUma6bl1TeAGWq5xu

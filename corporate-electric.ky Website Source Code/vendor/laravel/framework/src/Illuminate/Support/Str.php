@@ -1,782 +1,281 @@
-<?php
-
-namespace Illuminate\Support;
-
-use Illuminate\Support\Traits\Macroable;
-use Ramsey\Uuid\Codec\TimestampFirstCombCodec;
-use Ramsey\Uuid\Generator\CombGenerator;
-use Ramsey\Uuid\Uuid;
-use Ramsey\Uuid\UuidFactory;
-use voku\helper\ASCII;
-
-class Str
-{
-    use Macroable;
-
-    /**
-     * The cache of snake-cased words.
-     *
-     * @var array
-     */
-    protected static $snakeCache = [];
-
-    /**
-     * The cache of camel-cased words.
-     *
-     * @var array
-     */
-    protected static $camelCache = [];
-
-    /**
-     * The cache of studly-cased words.
-     *
-     * @var array
-     */
-    protected static $studlyCache = [];
-
-    /**
-     * The callback that should be used to generate UUIDs.
-     *
-     * @var callable
-     */
-    protected static $uuidFactory;
-
-    /**
-     * Get a new stringable object from the given string.
-     *
-     * @param  string  $string
-     * @return \Illuminate\Support\Stringable
-     */
-    public static function of($string)
-    {
-        return new Stringable($string);
-    }
-
-    /**
-     * Return the remainder of a string after the first occurrence of a given value.
-     *
-     * @param  string  $subject
-     * @param  string  $search
-     * @return string
-     */
-    public static function after($subject, $search)
-    {
-        return $search === '' ? $subject : array_reverse(explode($search, $subject, 2))[0];
-    }
-
-    /**
-     * Return the remainder of a string after the last occurrence of a given value.
-     *
-     * @param  string  $subject
-     * @param  string  $search
-     * @return string
-     */
-    public static function afterLast($subject, $search)
-    {
-        if ($search === '') {
-            return $subject;
-        }
-
-        $position = strrpos($subject, (string) $search);
-
-        if ($position === false) {
-            return $subject;
-        }
-
-        return substr($subject, $position + strlen($search));
-    }
-
-    /**
-     * Transliterate a UTF-8 value to ASCII.
-     *
-     * @param  string  $value
-     * @param  string  $language
-     * @return string
-     */
-    public static function ascii($value, $language = 'en')
-    {
-        return ASCII::to_ascii((string) $value, $language);
-    }
-
-    /**
-     * Get the portion of a string before the first occurrence of a given value.
-     *
-     * @param  string  $subject
-     * @param  string  $search
-     * @return string
-     */
-    public static function before($subject, $search)
-    {
-        if ($search === '') {
-            return $subject;
-        }
-
-        $result = strstr($subject, (string) $search, true);
-
-        return $result === false ? $subject : $result;
-    }
-
-    /**
-     * Get the portion of a string before the last occurrence of a given value.
-     *
-     * @param  string  $subject
-     * @param  string  $search
-     * @return string
-     */
-    public static function beforeLast($subject, $search)
-    {
-        if ($search === '') {
-            return $subject;
-        }
-
-        $pos = mb_strrpos($subject, $search);
-
-        if ($pos === false) {
-            return $subject;
-        }
-
-        return static::substr($subject, 0, $pos);
-    }
-
-    /**
-     * Get the portion of a string between two given values.
-     *
-     * @param  string  $subject
-     * @param  string  $from
-     * @param  string  $to
-     * @return string
-     */
-    public static function between($subject, $from, $to)
-    {
-        if ($from === '' || $to === '') {
-            return $subject;
-        }
-
-        return static::beforeLast(static::after($subject, $from), $to);
-    }
-
-    /**
-     * Convert a value to camel case.
-     *
-     * @param  string  $value
-     * @return string
-     */
-    public static function camel($value)
-    {
-        if (isset(static::$camelCache[$value])) {
-            return static::$camelCache[$value];
-        }
-
-        return static::$camelCache[$value] = lcfirst(static::studly($value));
-    }
-
-    /**
-     * Determine if a given string contains a given substring.
-     *
-     * @param  string  $haystack
-     * @param  string|string[]  $needles
-     * @return bool
-     */
-    public static function contains($haystack, $needles)
-    {
-        foreach ((array) $needles as $needle) {
-            if ($needle !== '' && mb_strpos($haystack, $needle) !== false) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Determine if a given string contains all array values.
-     *
-     * @param  string  $haystack
-     * @param  string[]  $needles
-     * @return bool
-     */
-    public static function containsAll($haystack, array $needles)
-    {
-        foreach ($needles as $needle) {
-            if (! static::contains($haystack, $needle)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Determine if a given string ends with a given substring.
-     *
-     * @param  string  $haystack
-     * @param  string|string[]  $needles
-     * @return bool
-     */
-    public static function endsWith($haystack, $needles)
-    {
-        foreach ((array) $needles as $needle) {
-            if ($needle !== '' && substr($haystack, -strlen($needle)) === (string) $needle) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Cap a string with a single instance of a given value.
-     *
-     * @param  string  $value
-     * @param  string  $cap
-     * @return string
-     */
-    public static function finish($value, $cap)
-    {
-        $quoted = preg_quote($cap, '/');
-
-        return preg_replace('/(?:'.$quoted.')+$/u', '', $value).$cap;
-    }
-
-    /**
-     * Determine if a given string matches a given pattern.
-     *
-     * @param  string|array  $pattern
-     * @param  string  $value
-     * @return bool
-     */
-    public static function is($pattern, $value)
-    {
-        $patterns = Arr::wrap($pattern);
-
-        if (empty($patterns)) {
-            return false;
-        }
-
-        foreach ($patterns as $pattern) {
-            // If the given value is an exact match we can of course return true right
-            // from the beginning. Otherwise, we will translate asterisks and do an
-            // actual pattern match against the two strings to see if they match.
-            if ($pattern == $value) {
-                return true;
-            }
-
-            $pattern = preg_quote($pattern, '#');
-
-            // Asterisks are translated into zero-or-more regular expression wildcards
-            // to make it convenient to check if the strings starts with the given
-            // pattern such as "library/*", making any string check convenient.
-            $pattern = str_replace('\*', '.*', $pattern);
-
-            if (preg_match('#^'.$pattern.'\z#u', $value) === 1) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Determine if a given string is 7 bit ASCII.
-     *
-     * @param  string  $value
-     * @return bool
-     */
-    public static function isAscii($value)
-    {
-        return ASCII::is_ascii((string) $value);
-    }
-
-    /**
-     * Determine if a given string is a valid UUID.
-     *
-     * @param  string  $value
-     * @return bool
-     */
-    public static function isUuid($value)
-    {
-        if (! is_string($value)) {
-            return false;
-        }
-
-        return preg_match('/^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/iD', $value) > 0;
-    }
-
-    /**
-     * Convert a string to kebab case.
-     *
-     * @param  string  $value
-     * @return string
-     */
-    public static function kebab($value)
-    {
-        return static::snake($value, '-');
-    }
-
-    /**
-     * Return the length of the given string.
-     *
-     * @param  string  $value
-     * @param  string|null  $encoding
-     * @return int
-     */
-    public static function length($value, $encoding = null)
-    {
-        if ($encoding) {
-            return mb_strlen($value, $encoding);
-        }
-
-        return mb_strlen($value);
-    }
-
-    /**
-     * Limit the number of characters in a string.
-     *
-     * @param  string  $value
-     * @param  int  $limit
-     * @param  string  $end
-     * @return string
-     */
-    public static function limit($value, $limit = 100, $end = '...')
-    {
-        if (mb_strwidth($value, 'UTF-8') <= $limit) {
-            return $value;
-        }
-
-        return rtrim(mb_strimwidth($value, 0, $limit, '', 'UTF-8')).$end;
-    }
-
-    /**
-     * Convert the given string to lower-case.
-     *
-     * @param  string  $value
-     * @return string
-     */
-    public static function lower($value)
-    {
-        return mb_strtolower($value, 'UTF-8');
-    }
-
-    /**
-     * Limit the number of words in a string.
-     *
-     * @param  string  $value
-     * @param  int  $words
-     * @param  string  $end
-     * @return string
-     */
-    public static function words($value, $words = 100, $end = '...')
-    {
-        preg_match('/^\s*+(?:\S++\s*+){1,'.$words.'}/u', $value, $matches);
-
-        if (! isset($matches[0]) || static::length($value) === static::length($matches[0])) {
-            return $value;
-        }
-
-        return rtrim($matches[0]).$end;
-    }
-
-    /**
-     * Pad both sides of a string with another.
-     *
-     * @param  string  $value
-     * @param  int  $length
-     * @param  string  $pad
-     * @return string
-     */
-    public static function padBoth($value, $length, $pad = ' ')
-    {
-        return str_pad($value, $length, $pad, STR_PAD_BOTH);
-    }
-
-    /**
-     * Pad the left side of a string with another.
-     *
-     * @param  string  $value
-     * @param  int  $length
-     * @param  string  $pad
-     * @return string
-     */
-    public static function padLeft($value, $length, $pad = ' ')
-    {
-        return str_pad($value, $length, $pad, STR_PAD_LEFT);
-    }
-
-    /**
-     * Pad the right side of a string with another.
-     *
-     * @param  string  $value
-     * @param  int  $length
-     * @param  string  $pad
-     * @return string
-     */
-    public static function padRight($value, $length, $pad = ' ')
-    {
-        return str_pad($value, $length, $pad, STR_PAD_RIGHT);
-    }
-
-    /**
-     * Parse a Class[@]method style callback into class and method.
-     *
-     * @param  string  $callback
-     * @param  string|null  $default
-     * @return array<int, string|null>
-     */
-    public static function parseCallback($callback, $default = null)
-    {
-        return static::contains($callback, '@') ? explode('@', $callback, 2) : [$callback, $default];
-    }
-
-    /**
-     * Get the plural form of an English word.
-     *
-     * @param  string  $value
-     * @param  int  $count
-     * @return string
-     */
-    public static function plural($value, $count = 2)
-    {
-        return Pluralizer::plural($value, $count);
-    }
-
-    /**
-     * Pluralize the last word of an English, studly caps case string.
-     *
-     * @param  string  $value
-     * @param  int  $count
-     * @return string
-     */
-    public static function pluralStudly($value, $count = 2)
-    {
-        $parts = preg_split('/(.)(?=[A-Z])/u', $value, -1, PREG_SPLIT_DELIM_CAPTURE);
-
-        $lastWord = array_pop($parts);
-
-        return implode('', $parts).self::plural($lastWord, $count);
-    }
-
-    /**
-     * Generate a more truly "random" alpha-numeric string.
-     *
-     * @param  int  $length
-     * @return string
-     */
-    public static function random($length = 16)
-    {
-        $string = '';
-
-        while (($len = strlen($string)) < $length) {
-            $size = $length - $len;
-
-            $bytes = random_bytes($size);
-
-            $string .= substr(str_replace(['/', '+', '='], '', base64_encode($bytes)), 0, $size);
-        }
-
-        return $string;
-    }
-
-    /**
-     * Replace a given value in the string sequentially with an array.
-     *
-     * @param  string  $search
-     * @param  array<int|string, string>  $replace
-     * @param  string  $subject
-     * @return string
-     */
-    public static function replaceArray($search, array $replace, $subject)
-    {
-        $segments = explode($search, $subject);
-
-        $result = array_shift($segments);
-
-        foreach ($segments as $segment) {
-            $result .= (array_shift($replace) ?? $search).$segment;
-        }
-
-        return $result;
-    }
-
-    /**
-     * Replace the first occurrence of a given value in the string.
-     *
-     * @param  string  $search
-     * @param  string  $replace
-     * @param  string  $subject
-     * @return string
-     */
-    public static function replaceFirst($search, $replace, $subject)
-    {
-        if ($search == '') {
-            return $subject;
-        }
-
-        $position = strpos($subject, $search);
-
-        if ($position !== false) {
-            return substr_replace($subject, $replace, $position, strlen($search));
-        }
-
-        return $subject;
-    }
-
-    /**
-     * Replace the last occurrence of a given value in the string.
-     *
-     * @param  string  $search
-     * @param  string  $replace
-     * @param  string  $subject
-     * @return string
-     */
-    public static function replaceLast($search, $replace, $subject)
-    {
-        if ($search === '') {
-            return $subject;
-        }
-
-        $position = strrpos($subject, $search);
-
-        if ($position !== false) {
-            return substr_replace($subject, $replace, $position, strlen($search));
-        }
-
-        return $subject;
-    }
-
-    /**
-     * Begin a string with a single instance of a given value.
-     *
-     * @param  string  $value
-     * @param  string  $prefix
-     * @return string
-     */
-    public static function start($value, $prefix)
-    {
-        $quoted = preg_quote($prefix, '/');
-
-        return $prefix.preg_replace('/^(?:'.$quoted.')+/u', '', $value);
-    }
-
-    /**
-     * Convert the given string to upper-case.
-     *
-     * @param  string  $value
-     * @return string
-     */
-    public static function upper($value)
-    {
-        return mb_strtoupper($value, 'UTF-8');
-    }
-
-    /**
-     * Convert the given string to title case.
-     *
-     * @param  string  $value
-     * @return string
-     */
-    public static function title($value)
-    {
-        return mb_convert_case($value, MB_CASE_TITLE, 'UTF-8');
-    }
-
-    /**
-     * Get the singular form of an English word.
-     *
-     * @param  string  $value
-     * @return string
-     */
-    public static function singular($value)
-    {
-        return Pluralizer::singular($value);
-    }
-
-    /**
-     * Generate a URL friendly "slug" from a given string.
-     *
-     * @param  string  $title
-     * @param  string  $separator
-     * @param  string|null  $language
-     * @return string
-     */
-    public static function slug($title, $separator = '-', $language = 'en')
-    {
-        $title = $language ? static::ascii($title, $language) : $title;
-
-        // Convert all dashes/underscores into separator
-        $flip = $separator === '-' ? '_' : '-';
-
-        $title = preg_replace('!['.preg_quote($flip).']+!u', $separator, $title);
-
-        // Replace @ with the word 'at'
-        $title = str_replace('@', $separator.'at'.$separator, $title);
-
-        // Remove all characters that are not the separator, letters, numbers, or whitespace.
-        $title = preg_replace('![^'.preg_quote($separator).'\pL\pN\s]+!u', '', static::lower($title));
-
-        // Replace all separator characters and whitespace by a single separator
-        $title = preg_replace('!['.preg_quote($separator).'\s]+!u', $separator, $title);
-
-        return trim($title, $separator);
-    }
-
-    /**
-     * Convert a string to snake case.
-     *
-     * @param  string  $value
-     * @param  string  $delimiter
-     * @return string
-     */
-    public static function snake($value, $delimiter = '_')
-    {
-        $key = $value;
-
-        if (isset(static::$snakeCache[$key][$delimiter])) {
-            return static::$snakeCache[$key][$delimiter];
-        }
-
-        if (! ctype_lower($value)) {
-            $value = preg_replace('/\s+/u', '', ucwords($value));
-
-            $value = static::lower(preg_replace('/(.)(?=[A-Z])/u', '$1'.$delimiter, $value));
-        }
-
-        return static::$snakeCache[$key][$delimiter] = $value;
-    }
-
-    /**
-     * Determine if a given string starts with a given substring.
-     *
-     * @param  string  $haystack
-     * @param  string|string[]  $needles
-     * @return bool
-     */
-    public static function startsWith($haystack, $needles)
-    {
-        foreach ((array) $needles as $needle) {
-            if ((string) $needle !== '' && strncmp($haystack, $needle, strlen($needle)) === 0) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Convert a value to studly caps case.
-     *
-     * @param  string  $value
-     * @return string
-     */
-    public static function studly($value)
-    {
-        $key = $value;
-
-        if (isset(static::$studlyCache[$key])) {
-            return static::$studlyCache[$key];
-        }
-
-        $value = ucwords(str_replace(['-', '_'], ' ', $value));
-
-        return static::$studlyCache[$key] = str_replace(' ', '', $value);
-    }
-
-    /**
-     * Returns the portion of string specified by the start and length parameters.
-     *
-     * @param  string  $string
-     * @param  int  $start
-     * @param  int|null  $length
-     * @return string
-     */
-    public static function substr($string, $start, $length = null)
-    {
-        return mb_substr($string, $start, $length, 'UTF-8');
-    }
-
-    /**
-     * Returns the number of substring occurrences.
-     *
-     * @param  string  $haystack
-     * @param  string  $needle
-     * @param  int  $offset
-     * @param  int|null  $length
-     * @return int
-     */
-    public static function substrCount($haystack, $needle, $offset = 0, $length = null)
-    {
-        if (! is_null($length)) {
-            return substr_count($haystack, $needle, $offset, $length);
-        } else {
-            return substr_count($haystack, $needle, $offset);
-        }
-    }
-
-    /**
-     * Make a string's first character uppercase.
-     *
-     * @param  string  $string
-     * @return string
-     */
-    public static function ucfirst($string)
-    {
-        return static::upper(static::substr($string, 0, 1)).static::substr($string, 1);
-    }
-
-    /**
-     * Generate a UUID (version 4).
-     *
-     * @return \Ramsey\Uuid\UuidInterface
-     */
-    public static function uuid()
-    {
-        return static::$uuidFactory
-                    ? call_user_func(static::$uuidFactory)
-                    : Uuid::uuid4();
-    }
-
-    /**
-     * Generate a time-ordered UUID (version 4).
-     *
-     * @return \Ramsey\Uuid\UuidInterface
-     */
-    public static function orderedUuid()
-    {
-        if (static::$uuidFactory) {
-            return call_user_func(static::$uuidFactory);
-        }
-
-        $factory = new UuidFactory();
-
-        $factory->setRandomGenerator(new CombGenerator(
-            $factory->getRandomGenerator(),
-            $factory->getNumberConverter()
-        ));
-
-        $factory->setCodec(new TimestampFirstCombCodec(
-            $factory->getUuidBuilder()
-        ));
-
-        return $factory->uuid4();
-    }
-
-    /**
-     * Set the callable that will be used to generate UUIDs.
-     *
-     * @param  callable|null  $factory
-     * @return void
-     */
-    public static function createUuidsUsing(callable $factory = null)
-    {
-        static::$uuidFactory = $factory;
-    }
-
-    /**
-     * Indicate that UUIDs should be created normally and not using a custom factory.
-     *
-     * @return void
-     */
-    public static function createUuidsNormally()
-    {
-        static::$uuidFactory = null;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

@@ -1,183 +1,88 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Console\Question;
-
-use Symfony\Component\Console\Exception\InvalidArgumentException;
-
-/**
- * Represents a choice question.
- *
- * @author Fabien Potencier <fabien@symfony.com>
- */
-class ChoiceQuestion extends Question
-{
-    private $choices;
-    private $multiselect = false;
-    private $prompt = ' > ';
-    private $errorMessage = 'Value "%s" is invalid';
-
-    /**
-     * @param string $question The question to ask to the user
-     * @param array  $choices  The list of available choices
-     * @param mixed  $default  The default answer to return
-     */
-    public function __construct(string $question, array $choices, $default = null)
-    {
-        if (!$choices) {
-            throw new \LogicException('Choice question must have at least 1 choice available.');
-        }
-
-        parent::__construct($question, $default);
-
-        $this->choices = $choices;
-        $this->setValidator($this->getDefaultValidator());
-        $this->setAutocompleterValues($choices);
-    }
-
-    /**
-     * Returns available choices.
-     *
-     * @return array
-     */
-    public function getChoices()
-    {
-        return $this->choices;
-    }
-
-    /**
-     * Sets multiselect option.
-     *
-     * When multiselect is set to true, multiple choices can be answered.
-     *
-     * @return $this
-     */
-    public function setMultiselect(bool $multiselect)
-    {
-        $this->multiselect = $multiselect;
-        $this->setValidator($this->getDefaultValidator());
-
-        return $this;
-    }
-
-    /**
-     * Returns whether the choices are multiselect.
-     *
-     * @return bool
-     */
-    public function isMultiselect()
-    {
-        return $this->multiselect;
-    }
-
-    /**
-     * Gets the prompt for choices.
-     *
-     * @return string
-     */
-    public function getPrompt()
-    {
-        return $this->prompt;
-    }
-
-    /**
-     * Sets the prompt for choices.
-     *
-     * @return $this
-     */
-    public function setPrompt(string $prompt)
-    {
-        $this->prompt = $prompt;
-
-        return $this;
-    }
-
-    /**
-     * Sets the error message for invalid values.
-     *
-     * The error message has a string placeholder (%s) for the invalid value.
-     *
-     * @return $this
-     */
-    public function setErrorMessage(string $errorMessage)
-    {
-        $this->errorMessage = $errorMessage;
-        $this->setValidator($this->getDefaultValidator());
-
-        return $this;
-    }
-
-    private function getDefaultValidator(): callable
-    {
-        $choices = $this->choices;
-        $errorMessage = $this->errorMessage;
-        $multiselect = $this->multiselect;
-        $isAssoc = $this->isAssoc($choices);
-
-        return function ($selected) use ($choices, $errorMessage, $multiselect, $isAssoc) {
-            if ($multiselect) {
-                // Check for a separated comma values
-                if (!preg_match('/^[^,]+(?:,[^,]+)*$/', $selected, $matches)) {
-                    throw new InvalidArgumentException(sprintf($errorMessage, $selected));
-                }
-
-                $selectedChoices = explode(',', $selected);
-            } else {
-                $selectedChoices = [$selected];
-            }
-
-            if ($this->isTrimmable()) {
-                foreach ($selectedChoices as $k => $v) {
-                    $selectedChoices[$k] = trim($v);
-                }
-            }
-
-            $multiselectChoices = [];
-            foreach ($selectedChoices as $value) {
-                $results = [];
-                foreach ($choices as $key => $choice) {
-                    if ($choice === $value) {
-                        $results[] = $key;
-                    }
-                }
-
-                if (\count($results) > 1) {
-                    throw new InvalidArgumentException(sprintf('The provided answer is ambiguous. Value should be one of "%s".', implode('" or "', $results)));
-                }
-
-                $result = array_search($value, $choices);
-
-                if (!$isAssoc) {
-                    if (false !== $result) {
-                        $result = $choices[$result];
-                    } elseif (isset($choices[$value])) {
-                        $result = $choices[$value];
-                    }
-                } elseif (false === $result && isset($choices[$value])) {
-                    $result = $value;
-                }
-
-                if (false === $result) {
-                    throw new InvalidArgumentException(sprintf($errorMessage, $value));
-                }
-
-                // For associative choices, consistently return the key as string:
-                $multiselectChoices[] = $isAssoc ? (string) $result : $result;
-            }
-
-            if ($multiselect) {
-                return $multiselectChoices;
-            }
-
-            return current($multiselectChoices);
-        };
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

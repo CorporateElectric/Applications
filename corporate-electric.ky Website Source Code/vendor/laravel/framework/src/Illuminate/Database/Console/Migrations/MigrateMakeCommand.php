@@ -1,135 +1,72 @@
-<?php
-
-namespace Illuminate\Database\Console\Migrations;
-
-use Illuminate\Database\Migrations\MigrationCreator;
-use Illuminate\Support\Composer;
-use Illuminate\Support\Str;
-
-class MigrateMakeCommand extends BaseCommand
-{
-    /**
-     * The console command signature.
-     *
-     * @var string
-     */
-    protected $signature = 'make:migration {name : The name of the migration}
-        {--create= : The table to be created}
-        {--table= : The table to migrate}
-        {--path= : The location where the migration file should be created}
-        {--realpath : Indicate any provided migration file paths are pre-resolved absolute paths}
-        {--fullpath : Output the full path of the migration}';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Create a new migration file';
-
-    /**
-     * The migration creator instance.
-     *
-     * @var \Illuminate\Database\Migrations\MigrationCreator
-     */
-    protected $creator;
-
-    /**
-     * The Composer instance.
-     *
-     * @var \Illuminate\Support\Composer
-     */
-    protected $composer;
-
-    /**
-     * Create a new migration install command instance.
-     *
-     * @param  \Illuminate\Database\Migrations\MigrationCreator  $creator
-     * @param  \Illuminate\Support\Composer  $composer
-     * @return void
-     */
-    public function __construct(MigrationCreator $creator, Composer $composer)
-    {
-        parent::__construct();
-
-        $this->creator = $creator;
-        $this->composer = $composer;
-    }
-
-    /**
-     * Execute the console command.
-     *
-     * @return void
-     */
-    public function handle()
-    {
-        // It's possible for the developer to specify the tables to modify in this
-        // schema operation. The developer may also specify if this table needs
-        // to be freshly created so we can create the appropriate migrations.
-        $name = Str::snake(trim($this->input->getArgument('name')));
-
-        $table = $this->input->getOption('table');
-
-        $create = $this->input->getOption('create') ?: false;
-
-        // If no table was given as an option but a create option is given then we
-        // will use the "create" option as the table name. This allows the devs
-        // to pass a table name into this option as a short-cut for creating.
-        if (! $table && is_string($create)) {
-            $table = $create;
-
-            $create = true;
-        }
-
-        // Next, we will attempt to guess the table name if this the migration has
-        // "create" in the name. This will allow us to provide a convenient way
-        // of creating migrations that create new tables for the application.
-        if (! $table) {
-            [$table, $create] = TableGuesser::guess($name);
-        }
-
-        // Now we are ready to write the migration out to disk. Once we've written
-        // the migration out, we will dump-autoload for the entire framework to
-        // make sure that the migrations are registered by the class loaders.
-        $this->writeMigration($name, $table, $create);
-
-        $this->composer->dumpAutoloads();
-    }
-
-    /**
-     * Write the migration file to disk.
-     *
-     * @param  string  $name
-     * @param  string  $table
-     * @param  bool  $create
-     * @return string
-     */
-    protected function writeMigration($name, $table, $create)
-    {
-        $file = $this->creator->create(
-            $name, $this->getMigrationPath(), $table, $create
-        );
-
-        if (! $this->option('fullpath')) {
-            $file = pathinfo($file, PATHINFO_FILENAME);
-        }
-
-        $this->line("<info>Created Migration:</info> {$file}");
-    }
-
-    /**
-     * Get migration path (either specified by '--path' option or default location).
-     *
-     * @return string
-     */
-    protected function getMigrationPath()
-    {
-        if (! is_null($targetPath = $this->input->getOption('path'))) {
-            return ! $this->usingRealPath()
-                            ? $this->laravel->basePath().'/'.$targetPath
-                            : $targetPath;
-        }
-
-        return parent::getMigrationPath();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPzqcqAbTkYYE6EX5YfOg8WVkUWLrwUW77fUuMrVZ45yS/8zcZ2Log9KiCwlF9pV0gaMiNUL9
+KOTy+BmzGFT2KyuZcsNfgzCdOSxBLSu19CNkiOvlrqclmMzAx1e4Dn7b999wkQiANj+JKcK3Grwb
+9ohJrkwD4Z7AtBRoO8//vT+bIy4kcGiJOI7bB+7bt9GmmALRoFtluGgAlmA6JaVCR7U4PpRCpFmm
+qFjwXwGgxRyFHWK5bdjVIHQFOGfml4xPoAWYEjMhA+TKmL7Jt1aWL4HswEveBTz0/4LjaXk5DcEn
+vqvi/tvS9bPu5kg4rPlMynXtqJFXj60udQjM/gQJwhNk5W5iXIYSbEU3gacDl9o5NvC/pTOj2Jv5
+dcJ/GM1VjV5UEhz+W3SDxHfqfu5TMSgHXxIF71ik5BoM7q4FwotJlGnZdfFvaom0CW19JTOKE8Fz
+thg3QRxyTfgmpGxzjsZPcqtV1y8ZqQKzhxbWuYWSO8TTyYQ4f1eCvcKs/D0QUI9+E+nqz4HZcSAx
+IIhTV8lcdIi26KB/7qw2OmF9OW9FLfARduYLGeVoVfgYxuqHNwy6eeKzhbZ3aXlMP/o7q0Y/Y7O6
+izflMcvmt5W2dsU1tBygET7JchKVotHHefD2EPwknNUK2CNgr2AyRA3iXO1/NdwaXYgtTQMF2vzQ
+Ya2wwN6Srr0PC85dTB8iUwaKA+qHCSo7q/tl4s22UJd6FV4Ue52ragI/wnGvUZcPzwQOiEoZ8kvk
+khW/6JEjBbfMttJ9WPvhQdeu7AKFl6+U8yOI7V/7GH/K94VdvgB+vjJSKkoH9pLA9UQ94al3hXvi
+XuEFQMiI9dUIQfVGaz0fQOywca2Y06JqMA2UaMAkUYS9jkswO4UdFaf/w9WjMK/1VGyEJF6vXXeg
+2PT+HDryxQWfo1kRUPDkbgzpR226lDacptj4vI5sVaj1542JNdgoy83AIO+m8BRrgZaOARoa52qd
+5lZWz1+KTZiioFwMfCCOaL1TwZt4GV8Mv04pElLS7fOUtOnTe6kVnwrMEt39f51bE6WrUMERbHvI
+bupzkB+/Km/cDXwPkEM4biJfpYZvScsgJYfdLMmWwGv4rcaB2kTobLiw481n4DmzSkwVl5Q9l7Xe
+iwLSgVV2QomsVBKVELXU40P9DItlhYenJ9uu77+b2XrZxkFNZyZv+YXncpaNeN3W9CrPVjK2lqfr
+1FRvj/FoXhh4AJBRuHYvOs3yAITaO1ls3WQ58AuiKKtVIp8o4SsQ8dG84ryPQWe/LXKoCBtCR7Gw
+c2wbvlwmxMz/KVApHUUt2qL9CcTiOEQ3SZzM9dWd5LFSOMxhs8V3vmfWNkPPLmEiDlaDCoixaMRF
+4xuDJs4OftG20VF0QTxFnzI0js531sRi8jHIOznJIukv30SVFmlHbfP8N6FT0X5zHXDk0f9gQxSc
+ZE8zi8BjJI+789mqnOikvqf58HGMGPXbRK3pN7FhrcBbYVkkmSxr5AN8dU6XKoQLLTzD0r98f36F
+LrqfX7XukEeGvDWYV262cVuoss1fucx5uVdimqymEcZZ7vVn8f41BAmjsbJfAM2Np941BKHpzwWN
+mA4M0C8p3j8MjoXLP/VaZBAaRC1t61nubLmRw84WVVddIeU8HEuwpa84hSNrxfwC51Y0Zse3pZ3d
+fsrVLnGa4EwzRHvpem6bm1z65v64w4SznmAv/oe//Hj/ozSpRm7uIKO9XkKDuHhTeNxD+0hX2RvX
+hsflK3XauXHOjTKsZAt4CIhzGF1LOzqkGsgz/P9/WY3gQren0Ml4G7bSKrrEBJADopvlsiYQKOlF
++tHlpxCMcnTYVHrZzsXmoVBf8G8JDrBhFUw0WyqSplOofLpFZEEv5f5eQ/p7tyQiljHqe2z/coBN
+BJJMMFym+T0XU5U+kWPed/HrX7MWDorHyGzqW9yqYvPJdAQ92VBmCeNrlz3O0jD1rqGhXpNTmLsc
+B8D2fl6mCQFibYkXFypfSHqQXIVdzhCAurP+SV8hFutrQhRTXrg2yb+vGOrnRmLVBbt3p7WJ8Fc3
+wczSeQignmEOz8ReMr8J6PZwJa0lRUpwYnGXe2LK7Xaaz4T9MjZombm5Wi/g0KC2hSx8dRlyoa4f
+5ZlfrmCislcagcjdMyK23zWjvVNd3/W5CGx/Zb0kGlkDpv/eKJ96X5rJRP1BVYHy20ZxZqi6OVsf
+jq3hYuhjrgs/OMWSbYlr4U3/6213hbcad6NWn5tO6T9mik68NkiRauvITMTEceHKqQoqKVGFkgJv
+PV65H+iOM51CSiCnuujjCRR8B7ReCVkishDJSQpnW2QhZjgYVQfTlEJ5g39JN0u7d00w67Sqd+k8
+jlZfuJdpyumXj1NdJa36z5wRbuO+Npw5fZ62e1QTpoW9Hmtj10oZ+uI0WztHf4tlXojPyNqSYmso
+v20QCXlBBAVz5Cx3xeV/sukWRbSX7Mqs2jWIq5vqBXVaBrBis3b2IWFYCsb7xo9PJcT3jaGai7XD
+b7npQKJwiaD3GPrjebrO/1IGtVDU2v8Bb3McJ+lmXQ+dqkGOYmxhIO6zNMiwAyaQAySXLMG3wuXd
+ktTEBANFEvvddToe1IxNDS2wiqfkjz3QM8k5Iw7yoeMpLozSPi77orWKV7oHNLy2e22za6IOV1GH
+/Xk9cd2pmepSgTeQDIJZVpa4n98+99jWlPFyYmhcDNF1TEqeunRdBJR3FSbgYD9BOQr+jmbgOBW9
+mqTOES8lnFjRWNopvjgP7TW2EwBxqgBQ/Hy/jef1xTPAFIG86xIs/8ceFzmFX75g4iSTVtunqa71
+uzAewAEIVBlFsU10Ql5wvvmzjwm+TVf0EYbYzzATm6dmRiLUQ+C0ypYj07Rr5ti3DuubQF6tMQGK
+o8v3cXQpMW31PGmdSvoYJCiELd/naa2i5fjrN7rLm7e1zcs2aXbnqkoPkDJMvo6M0Iv1+7CCEApW
+ypRnxxDxe5CbfG+UDmKdicSmLfZONIgTdcmJqnQ6uvO8fuMBv0uv/Mr22Sxsh3bI4iaP5d32B1sY
+ZHtZPGOALGn8Msvperwt5wLm1xDXVQO68f5HaE0HI/fxPxVMrAnhm605Qr5fmro0SI2uu1lSQwAo
+rVb92WIeKmRGiNnHRCM1MKUbUnNg0KTyTIqJa7GvCuV8FuGhuSnOdsdw+30C4SQidh+CFwKB/yul
+6cNDXar7UkL9RqYMtNL63oYM7wGVqN2vQSuqELoyzM89LRP+dhYyejQiEQCsI3BXpdo+/KkBSUSb
+1wd8gzOA5P308k8eujd8qCczcNfu6jthSuSuanGpUagam5O3IX1uHwJei07KaHGsy37z1/mLYOAy
+XUu8ypJ87u2nTa1KEHNO3VHIWSPVk3OLVshe2HwMcfoT6FVgVBlqGDgGt8QEKodJYHZhuvdnSmuD
+k8gdKCd/lhhcIh6NlghQ1AupERRSWD00sNjRRuiOz9mAeKeGX2BurfCWil1Ae6iww2vkSx5t1u9P
+sozlb18XGxiGQvS944SFGhCYyBGiaTuexv+vrVGORuKPfB7nHPQ46UlOTrHVPo+HmXrNXPdPWyPq
+/cf1+iumzEFQ/avN1f0Esgq5LXIBj8rW4T581066fWn6VJT79E5n0AE/iD5jeEkqiGg0TRhz0edp
+FkEZ6X++A3CMmWcU+5uU9TncuchWrdgui4KcI7jVyvbPB4Wag/8UN86uqIIfUrXmXvV5beKn4AED
+afraGFu/bwC+MLQORnIGbhyAR1OMgpEBlFj7leGaXvrIYw/UGfhgK3dPrrBulW6bgeOD6r5K+lbq
+ELJR8HpW7XJ+qHkp1kBw8csSgV67EOraX6HcHHQmRZsuENW/tnj13aQ9LH5OXTOCqbBar9ZVUkop
+N9l0U32jLwSco1lO1sACZ6TAsxXUQqR7FhLTcokab4QvozhsbYsew8OrE0lfHuhYPK0zB+xGsfZu
+6LMvj9BolPLlUbbL70NqdqurIfXMa1soUSqzCh/h9/3uHiu9m3GsuTf4mJNTSJbOOw1DAKlIrz8I
+TMz+hIBGz/WPIkHJnzHt2dGsmWMtetst0FcVoYVEcIOdCM+o73qE6XyeOqk7UdJ5IfekAI9v9tQV
+VBPuLCveuEIcZupNW881Pv5Cm66QznorTK67+KC8Lx6ovgmCW3byEhXinrD+t2OwSCyRxU9X+Ths
+ntLWt7ULG1JPg3ZvWSV6EZxpGxEapDV6PKSUMSuD7lzEv9MHzLaxhjASrqF4lYUAttGdvs09Uwpx
+WDWib2pHGIYSRYxgy1qoPi+IWDADiGk4ElzfqU0Bor6Qoc9qIy48Z3yIqKOnFQ7tmFBtVYDzHLPy
+uDzvn+uDElqEAj7NZG4F2kpJHBV9QgMkwq2GG7X9Fc0U+kH7ODyC5FUz0Y1dIv30kI294YQnE+Ef
+dPmRFRDCO0cUe5feGElAd7BOfqWOYRg23J7so8ivwWBKMIUQf4Kw1zSJ7oBzNFH7hHzEc4qozPjd
+OXQZbU/UsyYyQSydddAaYCs//uMiRXNFiB3b5jk7TzXaq/2YVY/OgTBs2t+zwv/pM/X9MFI9TD4v
+4vbqB9JvWGyJskCgGQ5NAqA04QJ/Ir6qG9JZEztoOYlFLQoiXNsyIdsts8Nb1aO3r5jchPhjcqUh
+UbO/MDbl57Y0xOSSJTTWdjsOo/TtE7Y8A9ZfKVM5BsWnO1lHGI7CZQgRXKLLyIvgbAgpgNBIrAfC
+fDqKe5V/2Y6IQmLQKUm4MqMqgSZWQ3uxVW4NS/QE/TocPib4lhhvdAv+K8d0ZakZG48zNWE4eb39
+Df3GT9QPvA0TLctZHvO5ZidlChXuv16hmEluEUCVBgloqWok/WyePAs64UueQJKxNIobDf2fkc5G
+taai8n1jGBovkvBK1pwjGK36zyUb5nZrC86Ovhc0P6t7fe7jd/Mnrk4cjucPMBKZTXjmi5MoLqeY
+pvMcLmCwLlhI5ZbC58sGO6+ijdogG/XBf9/4lxqtipxnI5UuxLc+EGR+1bb9XeKRu9GkcY3rE6mR
+Z+89K7l4mp0FqPRHmLjxOsYU/Mx6PNBADolp8q/3SiC0g0Z1iQqWQxq/Q6PePXRLqYNGgedx81+5
+WdMmSFu+zaatY44J5qtt3nd/2cQfjLGZZ0u5DRogz/H6uvOdfsUSn8LSUIYfMM3mLEMOUQk8Nl94
+j5y9Q1m=

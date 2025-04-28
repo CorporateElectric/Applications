@@ -1,223 +1,167 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Writer\Xlsx;
-
-use PhpOffice\PhpSpreadsheet\Calculation\Calculation;
-use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
-use PhpOffice\PhpSpreadsheet\DefinedName;
-use PhpOffice\PhpSpreadsheet\Shared\XMLWriter;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-
-class DefinedNames
-{
-    private $objWriter;
-
-    private $spreadsheet;
-
-    public function __construct(XMLWriter $objWriter, Spreadsheet $spreadsheet)
-    {
-        $this->objWriter = $objWriter;
-        $this->spreadsheet = $spreadsheet;
-    }
-
-    public function write(): void
-    {
-        // Write defined names
-        $this->objWriter->startElement('definedNames');
-
-        // Named ranges
-        if (count($this->spreadsheet->getDefinedNames()) > 0) {
-            // Named ranges
-            $this->writeNamedRangesAndFormulae();
-        }
-
-        // Other defined names
-        $sheetCount = $this->spreadsheet->getSheetCount();
-        for ($i = 0; $i < $sheetCount; ++$i) {
-            // NamedRange for autoFilter
-            $this->writeNamedRangeForAutofilter($this->spreadsheet->getSheet($i), $i);
-
-            // NamedRange for Print_Titles
-            $this->writeNamedRangeForPrintTitles($this->spreadsheet->getSheet($i), $i);
-
-            // NamedRange for Print_Area
-            $this->writeNamedRangeForPrintArea($this->spreadsheet->getSheet($i), $i);
-        }
-
-        $this->objWriter->endElement();
-    }
-
-    /**
-     * Write defined names.
-     */
-    private function writeNamedRangesAndFormulae(): void
-    {
-        // Loop named ranges
-        $definedNames = $this->spreadsheet->getDefinedNames();
-        foreach ($definedNames as $definedName) {
-            $this->writeDefinedName($definedName);
-        }
-    }
-
-    /**
-     * Write Defined Name for named range.
-     */
-    private function writeDefinedName(DefinedName $pDefinedName): void
-    {
-        // definedName for named range
-        $this->objWriter->startElement('definedName');
-        $this->objWriter->writeAttribute('name', $pDefinedName->getName());
-        if ($pDefinedName->getLocalOnly() && $pDefinedName->getScope() !== null) {
-            $this->objWriter->writeAttribute('localSheetId', $pDefinedName->getScope()->getParent()->getIndex($pDefinedName->getScope()));
-        }
-
-        $definedRange = $pDefinedName->getValue();
-        $splitCount = preg_match_all(
-            '/' . Calculation::CALCULATION_REGEXP_CELLREF_RELATIVE . '/mui',
-            $definedRange,
-            $splitRanges,
-            PREG_OFFSET_CAPTURE
-        );
-
-        $lengths = array_map('strlen', array_column($splitRanges[0], 0));
-        $offsets = array_column($splitRanges[0], 1);
-
-        $worksheets = $splitRanges[2];
-        $columns = $splitRanges[6];
-        $rows = $splitRanges[7];
-
-        while ($splitCount > 0) {
-            --$splitCount;
-            $length = $lengths[$splitCount];
-            $offset = $offsets[$splitCount];
-            $worksheet = $worksheets[$splitCount][0];
-            $column = $columns[$splitCount][0];
-            $row = $rows[$splitCount][0];
-
-            $newRange = '';
-            if (empty($worksheet)) {
-                if (($offset === 0) || ($definedRange[$offset - 1] !== ':')) {
-                    // We should have a worksheet
-                    $worksheet = $pDefinedName->getWorksheet()->getTitle();
-                }
-            } else {
-                $worksheet = str_replace("''", "'", trim($worksheet, "'"));
-            }
-            if (!empty($worksheet)) {
-                $newRange = "'" . str_replace("'", "''", $worksheet) . "'!";
-            }
-
-            if (!empty($column)) {
-                $newRange .= $column;
-            }
-            if (!empty($row)) {
-                $newRange .= $row;
-            }
-
-            $definedRange = substr($definedRange, 0, $offset) . $newRange . substr($definedRange, $offset + $length);
-        }
-
-        if (substr($definedRange, 0, 1) === '=') {
-            $definedRange = substr($definedRange, 1);
-        }
-
-        $this->objWriter->writeRawData($definedRange);
-
-        $this->objWriter->endElement();
-    }
-
-    /**
-     * Write Defined Name for autoFilter.
-     */
-    private function writeNamedRangeForAutofilter(Worksheet $pSheet, int $pSheetId = 0): void
-    {
-        // NamedRange for autoFilter
-        $autoFilterRange = $pSheet->getAutoFilter()->getRange();
-        if (!empty($autoFilterRange)) {
-            $this->objWriter->startElement('definedName');
-            $this->objWriter->writeAttribute('name', '_xlnm._FilterDatabase');
-            $this->objWriter->writeAttribute('localSheetId', $pSheetId);
-            $this->objWriter->writeAttribute('hidden', '1');
-
-            // Create absolute coordinate and write as raw text
-            $range = Coordinate::splitRange($autoFilterRange);
-            $range = $range[0];
-            //    Strip any worksheet ref so we can make the cell ref absolute
-            [$ws, $range[0]] = Worksheet::extractSheetTitle($range[0], true);
-
-            $range[0] = Coordinate::absoluteCoordinate($range[0]);
-            $range[1] = Coordinate::absoluteCoordinate($range[1]);
-            $range = implode(':', $range);
-
-            $this->objWriter->writeRawData('\'' . str_replace("'", "''", $pSheet->getTitle()) . '\'!' . $range);
-
-            $this->objWriter->endElement();
-        }
-    }
-
-    /**
-     * Write Defined Name for PrintTitles.
-     */
-    private function writeNamedRangeForPrintTitles(Worksheet $pSheet, int $pSheetId = 0): void
-    {
-        // NamedRange for PrintTitles
-        if ($pSheet->getPageSetup()->isColumnsToRepeatAtLeftSet() || $pSheet->getPageSetup()->isRowsToRepeatAtTopSet()) {
-            $this->objWriter->startElement('definedName');
-            $this->objWriter->writeAttribute('name', '_xlnm.Print_Titles');
-            $this->objWriter->writeAttribute('localSheetId', $pSheetId);
-
-            // Setting string
-            $settingString = '';
-
-            // Columns to repeat
-            if ($pSheet->getPageSetup()->isColumnsToRepeatAtLeftSet()) {
-                $repeat = $pSheet->getPageSetup()->getColumnsToRepeatAtLeft();
-
-                $settingString .= '\'' . str_replace("'", "''", $pSheet->getTitle()) . '\'!$' . $repeat[0] . ':$' . $repeat[1];
-            }
-
-            // Rows to repeat
-            if ($pSheet->getPageSetup()->isRowsToRepeatAtTopSet()) {
-                if ($pSheet->getPageSetup()->isColumnsToRepeatAtLeftSet()) {
-                    $settingString .= ',';
-                }
-
-                $repeat = $pSheet->getPageSetup()->getRowsToRepeatAtTop();
-
-                $settingString .= '\'' . str_replace("'", "''", $pSheet->getTitle()) . '\'!$' . $repeat[0] . ':$' . $repeat[1];
-            }
-
-            $this->objWriter->writeRawData($settingString);
-
-            $this->objWriter->endElement();
-        }
-    }
-
-    /**
-     * Write Defined Name for PrintTitles.
-     */
-    private function writeNamedRangeForPrintArea(Worksheet $pSheet, int $pSheetId = 0): void
-    {
-        // NamedRange for PrintArea
-        if ($pSheet->getPageSetup()->isPrintAreaSet()) {
-            $this->objWriter->startElement('definedName');
-            $this->objWriter->writeAttribute('name', '_xlnm.Print_Area');
-            $this->objWriter->writeAttribute('localSheetId', $pSheetId);
-
-            // Print area
-            $printArea = Coordinate::splitRange($pSheet->getPageSetup()->getPrintArea());
-
-            $chunks = [];
-            foreach ($printArea as $printAreaRect) {
-                $printAreaRect[0] = Coordinate::absoluteReference($printAreaRect[0]);
-                $printAreaRect[1] = Coordinate::absoluteReference($printAreaRect[1]);
-                $chunks[] = '\'' . str_replace("'", "''", $pSheet->getTitle()) . '\'!' . implode(':', $printAreaRect);
-            }
-
-            $this->objWriter->writeRawData(implode(',', $chunks));
-
-            $this->objWriter->endElement();
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+TyAiYub69W==

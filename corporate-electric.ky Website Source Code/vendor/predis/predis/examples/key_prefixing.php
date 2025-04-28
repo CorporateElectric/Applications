@@ -1,36 +1,37 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-require __DIR__.'/shared.php';
-
-// Predis can prefix keys found in commands arguments before sending commands to
-// Redis, even for complex commands such as SORT, ZUNIONSTORE and ZINTERSTORE.
-// Prefixing keys can be useful to create user-level namespaces for you keyspace
-// thus reducing the need for separate logical databases in certain scenarios.
-
-$client = new Predis\Client($single_server, array('prefix' => 'nrk:'));
-
-$client->mset(array('foo' => 'bar', 'lol' => 'wut'));
-var_export($client->mget('foo', 'lol'));
-/*
-array (
-  0 => 'bar',
-  1 => 'wut',
-)
-*/
-
-var_export($client->keys('*'));
-/*
-array (
-  0 => 'nrk:foo',
-  1 => 'nrk:lol',
-)
-*/
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

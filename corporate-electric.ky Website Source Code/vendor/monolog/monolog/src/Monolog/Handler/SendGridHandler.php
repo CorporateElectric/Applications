@@ -1,100 +1,61 @@
-<?php declare(strict_types=1);
-
-/*
- * This file is part of the Monolog package.
- *
- * (c) Jordi Boggiano <j.boggiano@seld.be>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Monolog\Handler;
-
-use Monolog\Logger;
-
-/**
- * SendGridrHandler uses the SendGrid API v2 function to send Log emails, more information in https://sendgrid.com/docs/API_Reference/Web_API/mail.html
- *
- * @author Ricardo Fontanelli <ricardo.fontanelli@hotmail.com>
- */
-class SendGridHandler extends MailHandler
-{
-    /**
-     * The SendGrid API User
-     * @var string
-     */
-    protected $apiUser;
-
-    /**
-     * The SendGrid API Key
-     * @var string
-     */
-    protected $apiKey;
-
-    /**
-     * The email addresses to which the message will be sent
-     * @var string
-     */
-    protected $from;
-
-    /**
-     * The email addresses to which the message will be sent
-     * @var array
-     */
-    protected $to;
-
-    /**
-     * The subject of the email
-     * @var string
-     */
-    protected $subject;
-
-    /**
-     * @param string       $apiUser The SendGrid API User
-     * @param string       $apiKey  The SendGrid API Key
-     * @param string       $from    The sender of the email
-     * @param string|array $to      The recipients of the email
-     * @param string       $subject The subject of the mail
-     * @param int|string   $level   The minimum logging level at which this handler will be triggered
-     * @param bool         $bubble  Whether the messages that are handled can bubble up the stack or not
-     */
-    public function __construct(string $apiUser, string $apiKey, string $from, $to, string $subject, $level = Logger::ERROR, bool $bubble = true)
-    {
-        parent::__construct($level, $bubble);
-        $this->apiUser = $apiUser;
-        $this->apiKey = $apiKey;
-        $this->from = $from;
-        $this->to = (array) $to;
-        $this->subject = $subject;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function send(string $content, array $records): void
-    {
-        $message = [];
-        $message['api_user'] = $this->apiUser;
-        $message['api_key'] = $this->apiKey;
-        $message['from'] = $this->from;
-        foreach ($this->to as $recipient) {
-            $message['to[]'] = $recipient;
-        }
-        $message['subject'] = $this->subject;
-        $message['date'] = date('r');
-
-        if ($this->isHtmlBody($content)) {
-            $message['html'] = $content;
-        } else {
-            $message['text'] = $content;
-        }
-
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, 'https://api.sendgrid.com/api/mail.send.json');
-        curl_setopt($ch, CURLOPT_POST, 1);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($message));
-        Curl\Util::execute($ch, 2);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+IQh/j+4OAteGBmxwjwoZwTqw8W==

@@ -1,142 +1,61 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Predis\Session;
-
-use Predis\ClientInterface;
-
-/**
- * Session handler class that relies on Predis\Client to store PHP's sessions
- * data into one or multiple Redis servers.
- *
- * This class is mostly intended for PHP 5.4 but it can be used under PHP 5.3
- * provided that a polyfill for `SessionHandlerInterface` is defined by either
- * you or an external package such as `symfony/http-foundation`.
- *
- * @author Daniele Alessandri <suppakilla@gmail.com>
- */
-class Handler implements \SessionHandlerInterface
-{
-    protected $client;
-    protected $ttl;
-
-    /**
-     * @param ClientInterface $client  Fully initialized client instance.
-     * @param array           $options Session handler options.
-     */
-    public function __construct(ClientInterface $client, array $options = array())
-    {
-        $this->client = $client;
-
-        if (isset($options['gc_maxlifetime'])) {
-            $this->ttl = (int) $options['gc_maxlifetime'];
-        } else {
-            $this->ttl = ini_get('session.gc_maxlifetime');
-        }
-    }
-
-    /**
-     * Registers this instance as the current session handler.
-     */
-    public function register()
-    {
-        if (PHP_VERSION_ID >= 50400) {
-            session_set_save_handler($this, true);
-        } else {
-            session_set_save_handler(
-                array($this, 'open'),
-                array($this, 'close'),
-                array($this, 'read'),
-                array($this, 'write'),
-                array($this, 'destroy'),
-                array($this, 'gc')
-            );
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function open($save_path, $session_id)
-    {
-        // NOOP
-        return true;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function close()
-    {
-        // NOOP
-        return true;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function gc($maxlifetime)
-    {
-        // NOOP
-        return true;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function read($session_id)
-    {
-        if ($data = $this->client->get($session_id)) {
-            return $data;
-        }
-
-        return '';
-    }
-    /**
-     * {@inheritdoc}
-     */
-    public function write($session_id, $session_data)
-    {
-        $this->client->setex($session_id, $this->ttl, $session_data);
-
-        return true;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function destroy($session_id)
-    {
-        $this->client->del($session_id);
-
-        return true;
-    }
-
-    /**
-     * Returns the underlying client instance.
-     *
-     * @return ClientInterface
-     */
-    public function getClient()
-    {
-        return $this->client;
-    }
-
-    /**
-     * Returns the session max lifetime value.
-     *
-     * @return int
-     */
-    public function getMaxLifeTime()
-    {
-        return $this->ttl;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+0yJLqW==

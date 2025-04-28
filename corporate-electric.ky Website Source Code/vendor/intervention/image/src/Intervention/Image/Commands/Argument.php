@@ -1,225 +1,99 @@
-<?php
-
-namespace Intervention\Image\Commands;
-
-use Intervention\Image\Exception\InvalidArgumentException;
-
-class Argument
-{
-    /**
-     * Command with arguments
-     *
-     * @var AbstractCommand
-     */
-    public $command;
-
-    /**
-     * Key of argument in array
-     *
-     * @var int
-     */
-    public $key;
-
-    /**
-     * Creates new instance from given command and key
-     *
-     * @param AbstractCommand $command
-     * @param int             $key
-     */
-    public function __construct(AbstractCommand $command, $key = 0)
-    {
-        $this->command = $command;
-        $this->key = $key;
-    }
-
-    /**
-     * Returns name of current arguments command
-     *
-     * @return string
-     */
-    public function getCommandName()
-    {
-        preg_match("/\\\\([\w]+)Command$/", get_class($this->command), $matches);
-        return isset($matches[1]) ? lcfirst($matches[1]).'()' : 'Method';
-    }
-
-    /**
-     * Returns value of current argument
-     *
-     * @param  mixed $default
-     * @return mixed
-     */
-    public function value($default = null)
-    {
-        $arguments = $this->command->arguments;
-
-        if (is_array($arguments)) {
-            return isset($arguments[$this->key]) ? $arguments[$this->key] : $default;
-        }
-
-        return $default;
-    }
-
-    /**
-     * Defines current argument as required
-     *
-     * @return \Intervention\Image\Commands\Argument
-     */
-    public function required()
-    {
-        if ( ! array_key_exists($this->key, $this->command->arguments)) {
-            throw new InvalidArgumentException(
-                sprintf("Missing argument %d for %s", $this->key + 1, $this->getCommandName())
-            );
-        }
-
-        return $this;
-    }
-
-    /**
-     * Determines that current argument must be of given type
-     *
-     * @return \Intervention\Image\Commands\Argument
-     */
-    public function type($type)
-    {
-        $valid = true;
-        $value = $this->value();
-
-        if ($value === null) {
-            return $this;
-        }
-
-        switch (strtolower($type)) {
-            case 'bool':
-            case 'boolean':
-                $valid = \is_bool($value);
-                $message = '%s accepts only boolean values as argument %d.';
-                break;
-            case 'int':
-            case 'integer':
-                $valid = \is_int($value);
-                $message = '%s accepts only integer values as argument %d.';
-                break;
-            case 'num':
-            case 'numeric':
-                $valid = is_numeric($value);
-                $message = '%s accepts only numeric values as argument %d.';
-                break;
-            case 'str':
-            case 'string':
-                $valid = \is_string($value);
-                $message = '%s accepts only string values as argument %d.';
-                break;
-            case 'array':
-                $valid = \is_array($value);
-                $message = '%s accepts only array as argument %d.';
-                break;
-            case 'closure':
-                $valid = is_a($value, '\Closure');
-                $message = '%s accepts only Closure as argument %d.';
-                break;
-            case 'digit':
-                $valid = $this->isDigit($value);
-                $message = '%s accepts only integer values as argument %d.';
-                break;
-        }
-
-        if (! $valid) {
-            $commandName = $this->getCommandName();
-            $argument = $this->key + 1;
-
-            if (isset($message)) {
-                $message = sprintf($message, $commandName, $argument);
-            } else {
-                $message = sprintf('Missing argument for %d.', $argument);
-            }
-
-            throw new InvalidArgumentException(
-                $message
-            );
-        }
-
-        return $this;
-    }
-
-    /**
-     * Determines that current argument value must be numeric between given values
-     *
-     * @return \Intervention\Image\Commands\Argument
-     */
-    public function between($x, $y)
-    {
-        $value = $this->type('numeric')->value();
-
-        if (is_null($value)) {
-            return $this;
-        }
-
-        $alpha = min($x, $y);
-        $omega = max($x, $y);
-
-        if ($value < $alpha || $value > $omega) {
-            throw new InvalidArgumentException(
-                sprintf('Argument %d must be between %s and %s.', $this->key, $x, $y)
-            );
-        }
-
-        return $this;
-    }
-
-    /**
-     * Determines that current argument must be over a minimum value
-     *
-     * @return \Intervention\Image\Commands\Argument
-     */
-    public function min($value)
-    {
-        $v = $this->type('numeric')->value();
-
-        if (is_null($v)) {
-            return $this;
-        }
-
-        if ($v < $value) {
-            throw new InvalidArgumentException(
-                sprintf('Argument %d must be at least %s.', $this->key, $value)
-            );
-        }
-
-        return $this;
-    }
-
-    /**
-     * Determines that current argument must be under a maxiumum value
-     *
-     * @return \Intervention\Image\Commands\Argument
-     */
-    public function max($value)
-    {
-        $v = $this->type('numeric')->value();
-
-        if (is_null($v)) {
-            return $this;
-        }
-
-        if ($v > $value) {
-            throw new InvalidArgumentException(
-                sprintf('Argument %d may not be greater than %s.', $this->key, $value)
-            );
-        }
-
-        return $this;
-    }
-
-    /**
-     * Checks if value is "PHP" integer (120 but also 120.0)
-     *
-     * @param  mixed $value
-     * @return boolean
-     */
-    private function isDigit($value)
-    {
-        return is_numeric($value) ? intval($value) == $value : false;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+5wYK1kcHi1NzyxO=

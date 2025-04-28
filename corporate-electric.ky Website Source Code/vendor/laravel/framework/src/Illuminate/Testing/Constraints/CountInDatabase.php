@@ -1,83 +1,46 @@
-<?php
-
-namespace Illuminate\Testing\Constraints;
-
-use Illuminate\Database\Connection;
-use PHPUnit\Framework\Constraint\Constraint;
-use ReflectionClass;
-
-class CountInDatabase extends Constraint
-{
-    /**
-     * The database connection.
-     *
-     * @var \Illuminate\Database\Connection
-     */
-    protected $database;
-
-    /**
-     * The expected table entries count that will be checked against the actual count.
-     *
-     * @var int
-     */
-    protected $expectedCount;
-
-    /**
-     * The actual table entries count that will be checked against the expected count.
-     *
-     * @var int
-     */
-    protected $actualCount;
-
-    /**
-     * Create a new constraint instance.
-     *
-     * @param  \Illuminate\Database\Connection  $database
-     * @param  int  $expectedCount
-     * @return void
-     */
-    public function __construct(Connection $database, int $expectedCount)
-    {
-        $this->expectedCount = $expectedCount;
-
-        $this->database = $database;
-    }
-
-    /**
-     * Check if the expected and actual count are equal.
-     *
-     * @param  string  $table
-     * @return bool
-     */
-    public function matches($table): bool
-    {
-        $this->actualCount = $this->database->table($table)->count();
-
-        return $this->actualCount === $this->expectedCount;
-    }
-
-    /**
-     * Get the description of the failure.
-     *
-     * @param  string  $table
-     * @return string
-     */
-    public function failureDescription($table): string
-    {
-        return sprintf(
-            "table [%s] matches expected entries count of %s. Entries found: %s.\n",
-            $table, $this->expectedCount, $this->actualCount
-        );
-    }
-
-    /**
-     * Get a string representation of the object.
-     *
-     * @param  int  $options
-     * @return string
-     */
-    public function toString($options = 0): string
-    {
-        return (new ReflectionClass($this))->name;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+IlSRJaGPQNO8+4zI8Y94T5PmzCzP0IUfhp+kCm==

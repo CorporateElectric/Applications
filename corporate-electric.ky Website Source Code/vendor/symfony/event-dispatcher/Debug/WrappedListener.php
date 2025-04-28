@@ -1,127 +1,93 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\EventDispatcher\Debug;
-
-use Psr\EventDispatcher\StoppableEventInterface;
-use Symfony\Component\EventDispatcher\EventDispatcherInterface;
-use Symfony\Component\Stopwatch\Stopwatch;
-use Symfony\Component\VarDumper\Caster\ClassStub;
-
-/**
- * @author Fabien Potencier <fabien@symfony.com>
- */
-final class WrappedListener
-{
-    private $listener;
-    private $optimizedListener;
-    private $name;
-    private $called;
-    private $stoppedPropagation;
-    private $stopwatch;
-    private $dispatcher;
-    private $pretty;
-    private $stub;
-    private $priority;
-    private static $hasClassStub;
-
-    public function __construct($listener, ?string $name, Stopwatch $stopwatch, EventDispatcherInterface $dispatcher = null)
-    {
-        $this->listener = $listener;
-        $this->optimizedListener = $listener instanceof \Closure ? $listener : (\is_callable($listener) ? \Closure::fromCallable($listener) : null);
-        $this->stopwatch = $stopwatch;
-        $this->dispatcher = $dispatcher;
-        $this->called = false;
-        $this->stoppedPropagation = false;
-
-        if (\is_array($listener)) {
-            $this->name = \is_object($listener[0]) ? get_debug_type($listener[0]) : $listener[0];
-            $this->pretty = $this->name.'::'.$listener[1];
-        } elseif ($listener instanceof \Closure) {
-            $r = new \ReflectionFunction($listener);
-            if (false !== strpos($r->name, '{closure}')) {
-                $this->pretty = $this->name = 'closure';
-            } elseif ($class = $r->getClosureScopeClass()) {
-                $this->name = $class->name;
-                $this->pretty = $this->name.'::'.$r->name;
-            } else {
-                $this->pretty = $this->name = $r->name;
-            }
-        } elseif (\is_string($listener)) {
-            $this->pretty = $this->name = $listener;
-        } else {
-            $this->name = get_debug_type($listener);
-            $this->pretty = $this->name.'::__invoke';
-        }
-
-        if (null !== $name) {
-            $this->name = $name;
-        }
-
-        if (null === self::$hasClassStub) {
-            self::$hasClassStub = class_exists(ClassStub::class);
-        }
-    }
-
-    public function getWrappedListener()
-    {
-        return $this->listener;
-    }
-
-    public function wasCalled(): bool
-    {
-        return $this->called;
-    }
-
-    public function stoppedPropagation(): bool
-    {
-        return $this->stoppedPropagation;
-    }
-
-    public function getPretty(): string
-    {
-        return $this->pretty;
-    }
-
-    public function getInfo(string $eventName): array
-    {
-        if (null === $this->stub) {
-            $this->stub = self::$hasClassStub ? new ClassStub($this->pretty.'()', $this->listener) : $this->pretty.'()';
-        }
-
-        return [
-            'event' => $eventName,
-            'priority' => null !== $this->priority ? $this->priority : (null !== $this->dispatcher ? $this->dispatcher->getListenerPriority($eventName, $this->listener) : null),
-            'pretty' => $this->pretty,
-            'stub' => $this->stub,
-        ];
-    }
-
-    public function __invoke(object $event, string $eventName, EventDispatcherInterface $dispatcher): void
-    {
-        $dispatcher = $this->dispatcher ?: $dispatcher;
-
-        $this->called = true;
-        $this->priority = $dispatcher->getListenerPriority($eventName, $this->listener);
-
-        $e = $this->stopwatch->start($this->name, 'event_listener');
-
-        ($this->optimizedListener ?? $this->listener)($event, $eventName, $dispatcher);
-
-        if ($e->isStarted()) {
-            $e->stop();
-        }
-
-        if ($event instanceof StoppableEventInterface && $event->isPropagationStopped()) {
-            $this->stoppedPropagation = true;
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+89AwsOoh4p17i1rnhWbdoEu=

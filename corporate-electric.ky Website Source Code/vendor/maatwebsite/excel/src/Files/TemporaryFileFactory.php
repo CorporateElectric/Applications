@@ -1,86 +1,57 @@
-<?php
-
-namespace Maatwebsite\Excel\Files;
-
-use Illuminate\Support\Str;
-
-class TemporaryFileFactory
-{
-    /**
-     * @var string|null
-     */
-    private $temporaryPath;
-
-    /**
-     * @var string|null
-     */
-    private $temporaryDisk;
-
-    /**
-     * @param string|null $temporaryPath
-     * @param string|null $temporaryDisk
-     */
-    public function __construct(string $temporaryPath = null, string $temporaryDisk = null)
-    {
-        $this->temporaryPath = $temporaryPath;
-        $this->temporaryDisk = $temporaryDisk;
-    }
-
-    /**
-     * @param string|null $fileExtension
-     *
-     * @return TemporaryFile
-     */
-    public function make(string $fileExtension = null): TemporaryFile
-    {
-        if (null !== $this->temporaryDisk) {
-            return $this->makeRemote($fileExtension);
-        }
-
-        return $this->makeLocal(null, $fileExtension);
-    }
-
-    /**
-     * @param string|null $fileName
-     *
-     * @param string|null $fileExtension
-     *
-     * @return LocalTemporaryFile
-     */
-    public function makeLocal(string $fileName = null, string $fileExtension = null): LocalTemporaryFile
-    {
-        if (!file_exists($this->temporaryPath) && !mkdir($concurrentDirectory = $this->temporaryPath) && !is_dir($concurrentDirectory)) {
-            throw new \RuntimeException(sprintf('Directory "%s" was not created', $concurrentDirectory));
-        }
-
-        return new LocalTemporaryFile(
-            $this->temporaryPath . DIRECTORY_SEPARATOR . ($fileName ?: $this->generateFilename($fileExtension))
-        );
-    }
-
-    /**
-     * @param string|null $fileExtension
-     *
-     * @return RemoteTemporaryFile
-     */
-    private function makeRemote(string $fileExtension = null): RemoteTemporaryFile
-    {
-        $filename = $this->generateFilename($fileExtension);
-
-        return new RemoteTemporaryFile(
-            $this->temporaryDisk,
-            config('excel.temporary_files.remote_prefix') . $filename,
-            $this->makeLocal($filename)
-        );
-    }
-
-    /**
-     * @param string|null $fileExtension
-     *
-     * @return string
-     */
-    private function generateFilename(string $fileExtension = null): string
-    {
-        return 'laravel-excel-' . Str::random(32) . ($fileExtension ? '.' . $fileExtension : '');
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+lae=

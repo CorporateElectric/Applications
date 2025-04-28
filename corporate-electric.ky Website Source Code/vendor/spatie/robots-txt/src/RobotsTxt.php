@@ -1,223 +1,130 @@
-<?php
-
-namespace Spatie\Robots;
-
-class RobotsTxt
-{
-    protected static $robotsCache = [];
-
-    protected $disallowsPerUserAgent = [];
-
-    public static function readFrom(string $source): self
-    {
-        $content = @file_get_contents($source);
-
-        return new self($content !== false ? $content : '');
-    }
-
-    public function __construct(string $content)
-    {
-        $this->disallowsPerUserAgent = $this->getDisallowsPerUserAgent($content);
-    }
-
-    public static function create(string $source): self
-    {
-        if (
-            strpos($source, 'http') !== false
-            && strpos($source, 'robots.txt') !== false
-        ) {
-            return self::readFrom($source);
-        }
-
-        return new self($source);
-    }
-
-    public function allows(string $url, ?string $userAgent = '*'): bool
-    {
-        $requestUri = '';
-
-        $parts = parse_url($url);
-
-        if ($parts !== false) {
-            if (isset($parts['path'])) {
-                $requestUri .= $parts['path'];
-            }
-
-            if (isset($parts['query'])) {
-                $requestUri .= '?'.$parts['query'];
-            } elseif ($this->hasEmptyQueryString($url)) {
-                $requestUri .= '?';
-            }
-        }
-
-        $disallows = $this->disallowsPerUserAgent[strtolower(trim($userAgent))] ?? $this->disallowsPerUserAgent['*'] ?? [];
-
-        return ! $this->pathIsDenied($requestUri, $disallows);
-    }
-
-    protected function pathIsDenied(string $requestUri, array $disallows): bool
-    {
-        foreach ($disallows as $disallow) {
-            if ($disallow === '') {
-                continue;
-            }
-
-            $stopAtEndOfString = false;
-
-            if ($disallow[-1] === '$') {
-                // if the pattern ends with a dollar sign, the string must end there
-                $disallow = substr($disallow, 0, -1);
-                $stopAtEndOfString = true;
-            }
-
-            // convert to regexp
-            $disallowRegexp = preg_quote($disallow, '/');
-
-            // the pattern must start at the beginning of the string...
-            $disallowRegexp = '^'.$disallowRegexp;
-
-            // ...and optionally stop at the end of the string
-            if ($stopAtEndOfString) {
-                $disallowRegexp .= '$';
-            }
-
-            // replace (preg_quote'd) stars with an eager match
-            $disallowRegexp = str_replace('\\*', '.*', $disallowRegexp);
-
-            // enclose in delimiters
-            $disallowRegexp = '/'.$disallowRegexp.'/';
-
-            if (preg_match($disallowRegexp, $requestUri) === 1) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Checks for an empty query string.
-     *
-     * This works around the fact that parse_url() will not set the 'query' key when the query string is empty.
-     * See: https://bugs.php.net/bug.php?id=78385
-     */
-    protected function hasEmptyQueryString(string $url): bool
-    {
-        if ($url === '') {
-            return false;
-        }
-
-        if ($url[-1] === '?') { // ends with ?
-            return true;
-        }
-
-        if (strpos($url, '?#') !== false) { // empty query string, followed by a fragment
-            return true;
-        }
-
-        return false;
-    }
-
-    protected function getDisallowsPerUserAgent(string $content): array
-    {
-        $lines = explode(PHP_EOL, $content);
-
-        $lines = array_filter($lines);
-
-        $disallowsPerUserAgent = [];
-
-        $currentUserAgents = [];
-
-        $treatAllowDisallowLine = false;
-
-        foreach ($lines as $line) {
-            if ($this->isComment($line)) {
-                continue;
-            }
-
-            if ($this->isEmptyLine($line)) {
-                continue;
-            }
-
-            if ($this->isUserAgentLine($line)) {
-                if ($treatAllowDisallowLine) {
-                    $treatAllowDisallowLine = false;
-                    $currentUserAgents = [];
-                }
-                $disallowsPerUserAgent[$this->parseUserAgent($line)] = [];
-
-                $currentUserAgents[] = &$disallowsPerUserAgent[$this->parseUserAgent($line)];
-
-                continue;
-            }
-
-            if ($this->isDisallowLine($line)) {
-                $treatAllowDisallowLine = true;
-            }
-
-            if ($this->isAllowLine($line)) {
-                $treatAllowDisallowLine = true;
-                continue;
-            }
-
-            $disallowUrl = $this->parseDisallow($line);
-
-            foreach ($currentUserAgents as &$currentUserAgent) {
-                $currentUserAgent[$disallowUrl] = $disallowUrl;
-            }
-        }
-
-        return $disallowsPerUserAgent;
-    }
-
-    protected function isComment(string $line): bool
-    {
-        return strpos(trim($line), '#') === 0;
-    }
-
-    protected function isEmptyLine(string $line): bool
-    {
-        return trim($line) === '';
-    }
-
-    protected function isUserAgentLine(string $line): bool
-    {
-        return strpos(trim(strtolower($line)), 'user-agent') === 0;
-    }
-
-    protected function parseUserAgent(string $line): string
-    {
-        return trim(str_replace('user-agent', '', strtolower(trim($line))), ': ');
-    }
-
-    protected function parseDisallow(string $line): string
-    {
-        return trim(substr_replace(strtolower(trim($line)), '', 0, 8), ': ');
-    }
-
-    protected function isDisallowLine(string $line): string
-    {
-        return trim(substr(str_replace(' ', '', strtolower(trim($line))), 0, 8), ': ') === 'disallow';
-    }
-
-    protected function isAllowLine(string $line): string
-    {
-        return trim(substr(str_replace(' ', '', strtolower(trim($line))), 0, 6), ': ') === 'allow';
-    }
-
-    /**
-     * @deprecated
-     */
-    protected function concernsDirectory(string $path): bool
-    {
-        return substr($path, strlen($path) - 1, 1) === '/';
-    }
-
-    /**
-     * @deprecated
-     */
-    protected function isUrlInDirectory(string $url, string $path): bool
-    {
-        return strpos($url, $path) === 0;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

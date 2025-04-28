@@ -1,47 +1,30 @@
-<?php
-
-/**
- * This is in almost every respect equivalent to an array except
- * that it keeps track of which keys were accessed.
- *
- * @warning For the sake of backwards compatibility with early versions
- *     of PHP 5, you must not use the $hash[$key] syntax; if you do
- *     our version of offsetGet is never called.
- */
-class HTMLPurifier_StringHash extends ArrayObject
-{
-    /**
-     * @type array
-     */
-    protected $accessed = array();
-
-    /**
-     * Retrieves a value, and logs the access.
-     * @param mixed $index
-     * @return mixed
-     */
-    public function offsetGet($index)
-    {
-        $this->accessed[$index] = true;
-        return parent::offsetGet($index);
-    }
-
-    /**
-     * Returns a lookup array of all array indexes that have been accessed.
-     * @return array in form array($index => true).
-     */
-    public function getAccessed()
-    {
-        return $this->accessed;
-    }
-
-    /**
-     * Resets the access array.
-     */
-    public function resetAccessed()
-    {
-        $this->accessed = array();
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

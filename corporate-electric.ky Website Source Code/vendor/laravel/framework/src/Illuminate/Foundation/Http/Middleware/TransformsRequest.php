@@ -1,93 +1,52 @@
-<?php
-
-namespace Illuminate\Foundation\Http\Middleware;
-
-use Closure;
-use Symfony\Component\HttpFoundation\ParameterBag;
-
-class TransformsRequest
-{
-    /**
-     * Handle an incoming request.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure  $next
-     * @return mixed
-     */
-    public function handle($request, Closure $next)
-    {
-        $this->clean($request);
-
-        return $next($request);
-    }
-
-    /**
-     * Clean the request's data.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return void
-     */
-    protected function clean($request)
-    {
-        $this->cleanParameterBag($request->query);
-
-        if ($request->isJson()) {
-            $this->cleanParameterBag($request->json());
-        } elseif ($request->request !== $request->query) {
-            $this->cleanParameterBag($request->request);
-        }
-    }
-
-    /**
-     * Clean the data in the parameter bag.
-     *
-     * @param  \Symfony\Component\HttpFoundation\ParameterBag  $bag
-     * @return void
-     */
-    protected function cleanParameterBag(ParameterBag $bag)
-    {
-        $bag->replace($this->cleanArray($bag->all()));
-    }
-
-    /**
-     * Clean the data in the given array.
-     *
-     * @param  array  $data
-     * @param  string  $keyPrefix
-     * @return array
-     */
-    protected function cleanArray(array $data, $keyPrefix = '')
-    {
-        return collect($data)->map(function ($value, $key) use ($keyPrefix) {
-            return $this->cleanValue($keyPrefix.$key, $value);
-        })->all();
-    }
-
-    /**
-     * Clean the given value.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @return mixed
-     */
-    protected function cleanValue($key, $value)
-    {
-        if (is_array($value)) {
-            return $this->cleanArray($value, $key.'.');
-        }
-
-        return $this->transform($key, $value);
-    }
-
-    /**
-     * Transform the given value.
-     *
-     * @param  string  $key
-     * @param  mixed  $value
-     * @return mixed
-     */
-    protected function transform($key, $value)
-    {
-        return $value;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+pCmn/0==

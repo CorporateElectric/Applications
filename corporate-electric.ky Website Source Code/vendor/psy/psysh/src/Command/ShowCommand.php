@@ -1,290 +1,167 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\Command;
-
-use Psy\Exception\RuntimeException;
-use Psy\Exception\UnexpectedTargetException;
-use Psy\Formatter\CodeFormatter;
-use Psy\Formatter\SignatureFormatter;
-use Psy\Input\CodeArgument;
-use Symfony\Component\Console\Formatter\OutputFormatter;
-use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Output\OutputInterface;
-
-/**
- * Show the code for an object, class, constant, method or property.
- */
-class ShowCommand extends ReflectingCommand
-{
-    private $lastException;
-    private $lastExceptionIndex;
-
-    /**
-     * @param string|null $colorMode (deprecated and ignored)
-     */
-    public function __construct($colorMode = null)
-    {
-        parent::__construct();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function configure()
-    {
-        $this
-            ->setName('show')
-            ->setDefinition([
-                new CodeArgument('target', CodeArgument::OPTIONAL, 'Function, class, instance, constant, method or property to show.'),
-                new InputOption('ex', null, InputOption::VALUE_OPTIONAL, 'Show last exception context. Optionally specify a stack index.', 1),
-            ])
-            ->setDescription('Show the code for an object, class, constant, method or property.')
-            ->setHelp(
-                <<<HELP
-Show the code for an object, class, constant, method or property, or the context
-of the last exception.
-
-<return>cat --ex</return> defaults to showing the lines surrounding the location of the last
-exception. Invoking it more than once travels up the exception's stack trace,
-and providing a number shows the context of the given index of the trace.
-
-e.g.
-<return>>>> show \$myObject</return>
-<return>>>> show Psy\Shell::debug</return>
-<return>>>> show --ex</return>
-<return>>>> show --ex 3</return>
-HELP
-            );
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function execute(InputInterface $input, OutputInterface $output)
-    {
-        // n.b. As far as I can tell, InputInterface doesn't want to tell me
-        // whether an option with an optional value was actually passed. If you
-        // call `$input->getOption('ex')`, it will return the default, both when
-        // `--ex` is specified with no value, and when `--ex` isn't specified at
-        // all.
-        //
-        // So we're doing something sneaky here. If we call `getOptions`, it'll
-        // return the default value when `--ex` is not present, and `null` if
-        // `--ex` is passed with no value. /shrug
-        $opts = $input->getOptions();
-
-        // Strict comparison to `1` (the default value) here, because `--ex 1`
-        // will come in as `"1"`. Now we can tell the difference between
-        // "no --ex present", because it's the integer 1, "--ex with no value",
-        // because it's `null`, and "--ex 1", because it's the string "1".
-        if ($opts['ex'] !== 1) {
-            if ($input->getArgument('target')) {
-                throw new \InvalidArgumentException('Too many arguments (supply either "target" or "--ex")');
-            }
-
-            $this->writeExceptionContext($input, $output);
-
-            return 0;
-        }
-
-        if ($input->getArgument('target')) {
-            $this->writeCodeContext($input, $output);
-
-            return 0;
-        }
-
-        throw new RuntimeException('Not enough arguments (missing: "target")');
-    }
-
-    private function writeCodeContext(InputInterface $input, OutputInterface $output)
-    {
-        try {
-            list($target, $reflector) = $this->getTargetAndReflector($input->getArgument('target'));
-        } catch (UnexpectedTargetException $e) {
-            // If we didn't get a target and Reflector, maybe we got a filename?
-            $target = $e->getTarget();
-            if (\is_string($target) && \is_file($target) && $code = @\file_get_contents($target)) {
-                // @todo maybe set $__file to $target?
-                return $output->page(CodeFormatter::formatCode($code));
-            } else {
-                throw $e;
-            }
-        }
-
-        // Set some magic local variables
-        $this->setCommandScopeVariables($reflector);
-
-        try {
-            $output->page(CodeFormatter::format($reflector));
-        } catch (RuntimeException $e) {
-            $output->writeln(SignatureFormatter::format($reflector));
-            throw $e;
-        }
-    }
-
-    private function writeExceptionContext(InputInterface $input, OutputInterface $output)
-    {
-        $exception = $this->context->getLastException();
-        if ($exception !== $this->lastException) {
-            $this->lastException = null;
-            $this->lastExceptionIndex = null;
-        }
-
-        $opts = $input->getOptions();
-        if ($opts['ex'] === null) {
-            if ($this->lastException && $this->lastExceptionIndex !== null) {
-                $index = $this->lastExceptionIndex + 1;
-            } else {
-                $index = 0;
-            }
-        } else {
-            $index = \max(0, (int) $input->getOption('ex') - 1);
-        }
-
-        $trace = $exception->getTrace();
-        \array_unshift($trace, [
-            'file' => $exception->getFile(),
-            'line' => $exception->getLine(),
-        ]);
-
-        if ($index >= \count($trace)) {
-            $index = 0;
-        }
-
-        $this->lastException = $exception;
-        $this->lastExceptionIndex = $index;
-
-        $output->writeln($this->getApplication()->formatException($exception));
-        $output->writeln('--');
-        $this->writeTraceLine($output, $trace, $index);
-        $this->writeTraceCodeSnippet($output, $trace, $index);
-
-        $this->setCommandScopeVariablesFromContext($trace[$index]);
-    }
-
-    private function writeTraceLine(OutputInterface $output, array $trace, $index)
-    {
-        $file = isset($trace[$index]['file']) ? $this->replaceCwd($trace[$index]['file']) : 'n/a';
-        $line = isset($trace[$index]['line']) ? $trace[$index]['line'] : 'n/a';
-
-        $output->writeln(\sprintf(
-            'From <info>%s:%d</info> at <strong>level %d</strong> of backtrace (of %d):',
-            OutputFormatter::escape($file),
-            OutputFormatter::escape($line),
-            $index + 1,
-            \count($trace)
-        ));
-    }
-
-    private function replaceCwd($file)
-    {
-        if ($cwd = \getcwd()) {
-            $cwd = \rtrim($cwd, \DIRECTORY_SEPARATOR).\DIRECTORY_SEPARATOR;
-        }
-
-        if ($cwd === false) {
-            return $file;
-        } else {
-            return \preg_replace('/^'.\preg_quote($cwd, '/').'/', '', $file);
-        }
-    }
-
-    private function writeTraceCodeSnippet(OutputInterface $output, array $trace, $index)
-    {
-        if (!isset($trace[$index]['file'])) {
-            return;
-        }
-
-        $file = $trace[$index]['file'];
-        if ($fileAndLine = $this->extractEvalFileAndLine($file)) {
-            list($file, $line) = $fileAndLine;
-        } else {
-            if (!isset($trace[$index]['line'])) {
-                return;
-            }
-
-            $line = $trace[$index]['line'];
-        }
-
-        if (\is_file($file)) {
-            $code = @\file_get_contents($file);
-        }
-
-        if (empty($code)) {
-            return;
-        }
-
-        $startLine = \max($line - 5, 0);
-        $endLine = $line + 5;
-
-        $output->write(CodeFormatter::formatCode($code, $startLine, $endLine, $line), false);
-    }
-
-    private function setCommandScopeVariablesFromContext(array $context)
-    {
-        $vars = [];
-
-        if (isset($context['class'])) {
-            $vars['__class'] = $context['class'];
-            if (isset($context['function'])) {
-                $vars['__method'] = $context['function'];
-            }
-
-            try {
-                $refl = new \ReflectionClass($context['class']);
-                if ($namespace = $refl->getNamespaceName()) {
-                    $vars['__namespace'] = $namespace;
-                }
-            } catch (\Exception $e) {
-                // oh well
-            }
-        } elseif (isset($context['function'])) {
-            $vars['__function'] = $context['function'];
-
-            try {
-                $refl = new \ReflectionFunction($context['function']);
-                if ($namespace = $refl->getNamespaceName()) {
-                    $vars['__namespace'] = $namespace;
-                }
-            } catch (\Exception $e) {
-                // oh well
-            }
-        }
-
-        if (isset($context['file'])) {
-            $file = $context['file'];
-            if ($fileAndLine = $this->extractEvalFileAndLine($file)) {
-                list($file, $line) = $fileAndLine;
-            } elseif (isset($context['line'])) {
-                $line = $context['line'];
-            }
-
-            if (\is_file($file)) {
-                $vars['__file'] = $file;
-                if (isset($line)) {
-                    $vars['__line'] = $line;
-                }
-                $vars['__dir'] = \dirname($file);
-            }
-        }
-
-        $this->context->setCommandScopeVariables($vars);
-    }
-
-    private function extractEvalFileAndLine($file)
-    {
-        if (\preg_match('/(.*)\\((\\d+)\\) : eval\\(\\)\'d code$/', $file, $matches)) {
-            return [$matches[1], $matches[2]];
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+g+9jgrm=

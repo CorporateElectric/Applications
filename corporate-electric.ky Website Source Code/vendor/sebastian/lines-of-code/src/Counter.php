@@ -1,91 +1,53 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of sebastian/lines-of-code.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace SebastianBergmann\LinesOfCode;
-
-use function substr_count;
-use PhpParser\Error;
-use PhpParser\Lexer;
-use PhpParser\Node;
-use PhpParser\NodeTraverser;
-use PhpParser\Parser;
-use PhpParser\ParserFactory;
-
-final class Counter
-{
-    /**
-     * @throws RuntimeException
-     */
-    public function countInSourceFile(string $sourceFile): LinesOfCode
-    {
-        return $this->countInSourceString(file_get_contents($sourceFile));
-    }
-
-    /**
-     * @throws RuntimeException
-     */
-    public function countInSourceString(string $source): LinesOfCode
-    {
-        $linesOfCode = substr_count($source, "\n");
-
-        if ($linesOfCode === 0 && !empty($source)) {
-            $linesOfCode = 1;
-        }
-
-        try {
-            $nodes = $this->parser()->parse($source);
-
-            assert($nodes !== null);
-
-            return $this->countInAbstractSyntaxTree($linesOfCode, $nodes);
-
-            // @codeCoverageIgnoreStart
-        } catch (Error $error) {
-            throw new RuntimeException(
-                $error->getMessage(),
-                (int) $error->getCode(),
-                $error
-            );
-        }
-        // @codeCoverageIgnoreEnd
-    }
-
-    /**
-     * @param Node[] $nodes
-     *
-     * @throws RuntimeException
-     */
-    public function countInAbstractSyntaxTree(int $linesOfCode, array $nodes): LinesOfCode
-    {
-        $traverser = new NodeTraverser;
-        $visitor   = new LineCountingVisitor($linesOfCode);
-
-        $traverser->addVisitor($visitor);
-
-        try {
-            /* @noinspection UnusedFunctionResultInspection */
-            $traverser->traverse($nodes);
-            // @codeCoverageIgnoreStart
-        } catch (Error $error) {
-            throw new RuntimeException(
-                $error->getMessage(),
-                (int) $error->getCode(),
-                $error
-            );
-        }
-        // @codeCoverageIgnoreEnd
-
-        return $visitor->result();
-    }
-
-    private function parser(): Parser
-    {
-        return (new ParserFactory)->create(ParserFactory::PREFER_PHP7, new Lexer);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+hwpmFR1HzvS9

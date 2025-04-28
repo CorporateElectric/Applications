@@ -1,81 +1,44 @@
-<?php
-
-declare(strict_types=1);
-
-namespace Dotenv\Store\File;
-
-use Dotenv\Exception\InvalidEncodingException;
-use Dotenv\Util\Str;
-use PhpOption\Option;
-
-/**
- * @internal
- */
-final class Reader
-{
-    /**
-     * This class is a singleton.
-     *
-     * @codeCoverageIgnore
-     *
-     * @return void
-     */
-    private function __construct()
-    {
-        //
-    }
-
-    /**
-     * Read the file(s), and return their raw content.
-     *
-     * We provide the file path as the key, and its content as the value. If
-     * short circuit mode is enabled, then the returned array with have length
-     * at most one. File paths that couldn't be read are omitted entirely.
-     *
-     * @param string[]    $filePaths
-     * @param bool        $shortCircuit
-     * @param string|null $fileEncoding
-     *
-     * @throws \Dotenv\Exception\InvalidEncodingException
-     *
-     * @return array<string,string>
-     */
-    public static function read(array $filePaths, bool $shortCircuit = true, string $fileEncoding = null)
-    {
-        $output = [];
-
-        foreach ($filePaths as $filePath) {
-            $content = self::readFromFile($filePath, $fileEncoding);
-            if ($content->isDefined()) {
-                $output[$filePath] = $content->get();
-                if ($shortCircuit) {
-                    break;
-                }
-            }
-        }
-
-        return $output;
-    }
-
-    /**
-     * Read the given file.
-     *
-     * @param string      $path
-     * @param string|null $encoding
-     *
-     * @throws \Dotenv\Exception\InvalidEncodingException
-     *
-     * @return \PhpOption\Option<string>
-     */
-    private static function readFromFile(string $path, string $encoding = null)
-    {
-        /** @var Option<string> */
-        $content = Option::fromValue(@\file_get_contents($path), false);
-
-        return $content->flatMap(static function (string $content) use ($encoding) {
-            return Str::utf8($content, $encoding)->mapError(static function (string $error) {
-                throw new InvalidEncodingException($error);
-            })->success();
-        });
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

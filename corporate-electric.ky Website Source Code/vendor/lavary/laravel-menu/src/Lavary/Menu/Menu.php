@@ -1,141 +1,57 @@
-<?php
-
-namespace Lavary\Menu;
-
-use Illuminate\Support\Facades\View;
-
-class Menu
-{
-    /**
-     * Menu collection.
-     *
-     * @var \Illuminate\Support\Collection
-     */
-    protected $collection;
-
-    /**
-     * List of menu builders.
-     *
-     * @var []Builder
-     */
-    protected $menu = [];
-
-    /**
-     * Initializing the Menu manager
-     */
-    public function __construct()
-    {
-        // creating a collection for storing menu builders
-        $this->collection = new Collection();
-    }
-
-    /**
-     * Check if a menu builder exists.
-     *
-     * @param string $name
-     *
-     * @return bool
-     */
-    public function exists($name)
-    {
-        return array_key_exists($name, $this->menu);
-    }
-
-    /**
-     * Create a new menu builder instance.
-     *
-     * @param string   $name
-     * @param callable $callback
-     *
-     * @return Builder
-     */
-    public function makeOnce($name, $callback)
-    {
-        if ($this->exists($name)) {
-            return null;
-        }
-
-        return $this->make($name, $callback);
-    }
-
-    /**
-     * Create a new menu builder instance.
-     *
-     * @param string   $name
-     * @param callable $callback
-     *
-     * @return Builder
-     */
-    public function make($name, $callback)
-    {
-        if (!is_callable($callback)) {
-            return null;
-        }
-
-        if (!array_key_exists($name, $this->menu)) {
-            $this->menu[$name] = new Builder($name, $this->loadConf($name));
-        }
-
-        // Registering the items
-        call_user_func($callback, $this->menu[$name]);
-
-        // Storing each menu instance in the collection
-        $this->collection->put($name, $this->menu[$name]);
-
-        // Make the instance available in all views
-        View::share($name, $this->menu[$name]);
-
-        return $this->menu[$name];
-    }
-
-    /**
-     * Loads and merges configuration data.
-     *
-     * @param string $name
-     *
-     * @return array
-     */
-    public function loadConf($name)
-    {
-        $options = config('laravel-menu.settings');
-        $name = strtolower($name);
-
-        if (isset($options[$name]) && is_array($options[$name])) {
-            return array_merge($options['default'], $options[$name]);
-        }
-
-        return $options['default'];
-    }
-
-    /**
-     * Return Menu builder instance from the collection by key.
-     *
-     * @param string $key
-     *
-     * @return Builder
-     */
-    public function get($key)
-    {
-        return $this->collection->get($key);
-    }
-
-    /**
-     * Return Menu builder collection.
-     *
-     * @return \Illuminate\Support\Collection
-     */
-    public function getCollection()
-    {
-        return $this->collection;
-    }
-
-    /**
-     * Alias for getCollection.
-     *
-     * @return \Illuminate\Support\Collection
-     */
-    public function all()
-    {
-        return $this->collection;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+8gbcME8z

@@ -1,159 +1,36 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Writer\Xlsx;
-
-class Xlfn
-{
-    const XLFNREGEXP = '/(?<!_xlfn[.])\\b('
-            // functions added with Excel 2010
-        . 'beta[.]dist'
-        . '|beta[.]inv'
-        . '|binom[.]dist'
-        . '|binom[.]inv'
-        . '|chisq[.]dist'
-        . '|chisq[.]dist[.]rt'
-        . '|chisq[.]inv'
-        . '|chisq[.]inv[.]rt'
-        . '|chisq[.]test'
-        . '|confidence[.]norm'
-        . '|confidence[.]t'
-        . '|covariance[.]p'
-        . '|covariance[.]s'
-        . '|erf[.]precise'
-        . '|erfc[.]precise'
-        . '|expon[.]dist'
-        . '|f[.]dist'
-        . '|f[.]dist[.]rt'
-        . '|f[.]inv'
-        . '|f[.]inv[.]rt'
-        . '|f[.]test'
-        . '|gamma[.]dist'
-        . '|gamma[.]inv'
-        . '|gammaln[.]precise'
-        . '|lognorm[.]dist'
-        . '|lognorm[.]inv'
-        . '|mode[.]mult'
-        . '|mode[.]sngl'
-        . '|negbinom[.]dist'
-        . '|networkdays[.]intl'
-        . '|norm[.]dist'
-        . '|norm[.]inv'
-        . '|norm[.]s[.]dist'
-        . '|norm[.]s[.]inv'
-        . '|percentile[.]exc'
-        . '|percentile[.]inc'
-        . '|percentrank[.]exc'
-        . '|percentrank[.]inc'
-        . '|poisson[.]dist'
-        . '|quartile[.]exc'
-        . '|quartile[.]inc'
-        . '|rank[.]avg'
-        . '|rank[.]eq'
-        . '|stdev[.]p'
-        . '|stdev[.]s'
-        . '|t[.]dist'
-        . '|t[.]dist[.]2t'
-        . '|t[.]dist[.]rt'
-        . '|t[.]inv'
-        . '|t[.]inv[.]2t'
-        . '|t[.]test'
-        . '|var[.]p'
-        . '|var[.]s'
-        . '|weibull[.]dist'
-        . '|z[.]test'
-        // functions added with Excel 2013
-        . '|acot'
-        . '|acoth'
-        . '|arabic'
-        . '|averageifs'
-        . '|binom[.]dist[.]range'
-        . '|bitand'
-        . '|bitlshift'
-        . '|bitor'
-        . '|bitrshift'
-        . '|bitxor'
-        . '|ceiling[.]math'
-        . '|combina'
-        . '|cot'
-        . '|coth'
-        . '|csc'
-        . '|csch'
-        . '|days'
-        . '|dbcs'
-        . '|decimal'
-        . '|encodeurl'
-        . '|filterxml'
-        . '|floor[.]math'
-        . '|formulatext'
-        . '|gamma'
-        . '|gauss'
-        . '|ifna'
-        . '|imcosh'
-        . '|imcot'
-        . '|imcsc'
-        . '|imcsch'
-        . '|imsec'
-        . '|imsech'
-        . '|imsinh'
-        . '|imtan'
-        . '|isformula'
-        . '|iso[.]ceiling'
-        . '|isoweeknum'
-        . '|munit'
-        . '|numbervalue'
-        . '|pduration'
-        . '|permutationa'
-        . '|phi'
-        . '|rri'
-        . '|sec'
-        . '|sech'
-        . '|sheet'
-        . '|sheets'
-        . '|skew[.]p'
-        . '|unichar'
-        . '|unicode'
-        . '|webservice'
-        . '|xor'
-        // functions added with Excel 2016
-        . '|forecast[.]et2'
-        . '|forecast[.]ets[.]confint'
-        . '|forecast[.]ets[.]seasonality'
-        . '|forecast[.]ets[.]stat'
-        . '|forecast[.]linear'
-        . '|switch'
-        // functions added with Excel 2019
-        . '|concat'
-        . '|countifs'
-        . '|ifs'
-        . '|maxifs'
-        . '|minifs'
-        . '|sumifs'
-        . '|textjoin'
-        // functions added with Excel 365
-        . '|filter'
-        . '|randarray'
-        . '|sequence'
-        . '|sort'
-        . '|sortby'
-        . '|unique'
-        . '|xlookup'
-        . '|xmatch'
-        . ')(?=\\s*[(])/i';
-
-    /**
-     * Prefix function name in string with _xlfn. where required.
-     */
-    public static function addXlfn(string $funcstring): string
-    {
-        return preg_replace(self::XLFNREGEXP, '_xlfn.$1', $funcstring);
-    }
-
-    /**
-     * Prefix function name in string with _xlfn. where required.
-     * Leading character, expected to be equals sign, is stripped.
-     */
-    public static function addXlfnStripEquals(string $funcstring): string
-    {
-        return self::addXlfn(substr($funcstring, 1));
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+dR4p3dVD

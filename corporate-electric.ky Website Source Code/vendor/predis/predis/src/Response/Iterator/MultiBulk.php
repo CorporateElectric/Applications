@@ -1,77 +1,41 @@
-<?php
-
-/*
- * This file is part of the Predis package.
- *
- * (c) Daniele Alessandri <suppakilla@gmail.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Predis\Response\Iterator;
-
-use Predis\Connection\NodeConnectionInterface;
-
-/**
- * Streamable multibulk response.
- *
- * @author Daniele Alessandri <suppakilla@gmail.com>
- */
-class MultiBulk extends MultiBulkIterator
-{
-    private $connection;
-
-    /**
-     * @param NodeConnectionInterface $connection Connection to Redis.
-     * @param int                     $size       Number of elements of the multibulk response.
-     */
-    public function __construct(NodeConnectionInterface $connection, $size)
-    {
-        $this->connection = $connection;
-        $this->size = $size;
-        $this->position = 0;
-        $this->current = $size > 0 ? $this->getValue() : null;
-    }
-
-    /**
-     * Handles the synchronization of the client with the Redis protocol when
-     * the garbage collector kicks in (e.g. when the iterator goes out of the
-     * scope of a foreach or it is unset).
-     */
-    public function __destruct()
-    {
-        $this->drop(true);
-    }
-
-    /**
-     * Drop queued elements that have not been read from the connection either
-     * by consuming the rest of the multibulk response or quickly by closing the
-     * underlying connection.
-     *
-     * @param bool $disconnect Consume the iterator or drop the connection.
-     */
-    public function drop($disconnect = false)
-    {
-        if ($disconnect) {
-            if ($this->valid()) {
-                $this->position = $this->size;
-                $this->connection->disconnect();
-            }
-        } else {
-            while ($this->valid()) {
-                $this->next();
-            }
-        }
-    }
-
-    /**
-     * Reads the next item of the multibulk response from the connection.
-     *
-     * @return mixed
-     */
-    protected function getValue()
-    {
-        return $this->connection->read();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

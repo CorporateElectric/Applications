@@ -1,117 +1,56 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Runner\Extension;
-
-use function class_exists;
-use function sprintf;
-use PHPUnit\Framework\TestListener;
-use PHPUnit\Runner\Exception;
-use PHPUnit\Runner\Hook;
-use PHPUnit\TextUI\TestRunner;
-use PHPUnit\TextUI\XmlConfiguration\Extension;
-use ReflectionClass;
-use ReflectionException;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for PHPUnit
- */
-final class ExtensionHandler
-{
-    /**
-     * @throws Exception
-     */
-    public function registerExtension(Extension $extensionConfiguration, TestRunner $runner): void
-    {
-        $extension = $this->createInstance($extensionConfiguration);
-
-        if (!$extension instanceof Hook) {
-            throw new Exception(
-                sprintf(
-                    'Class "%s" does not implement a PHPUnit\Runner\Hook interface',
-                    $extensionConfiguration->className()
-                )
-            );
-        }
-
-        $runner->addExtension($extension);
-    }
-
-    /**
-     * @throws Exception
-     *
-     * @deprecated
-     */
-    public function createTestListenerInstance(Extension $listenerConfiguration): TestListener
-    {
-        $listener = $this->createInstance($listenerConfiguration);
-
-        if (!$listener instanceof TestListener) {
-            throw new Exception(
-                sprintf(
-                    'Class "%s" does not implement the PHPUnit\Framework\TestListener interface',
-                    $listenerConfiguration->className()
-                )
-            );
-        }
-
-        return $listener;
-    }
-
-    /**
-     * @throws Exception
-     */
-    private function createInstance(Extension $extensionConfiguration): object
-    {
-        $this->ensureClassExists($extensionConfiguration);
-
-        try {
-            $reflector = new ReflectionClass($extensionConfiguration->className());
-        } catch (ReflectionException $e) {
-            throw new Exception(
-                $e->getMessage(),
-                (int) $e->getCode(),
-                $e
-            );
-        }
-
-        if (!$extensionConfiguration->hasArguments()) {
-            return $reflector->newInstance();
-        }
-
-        return $reflector->newInstanceArgs($extensionConfiguration->arguments());
-    }
-
-    /**
-     * @throws Exception
-     */
-    private function ensureClassExists(Extension $extensionConfiguration): void
-    {
-        if (class_exists($extensionConfiguration->className(), false)) {
-            return;
-        }
-
-        if ($extensionConfiguration->hasSourceFile()) {
-            /**
-             * @noinspection PhpIncludeInspection
-             * @psalm-suppress UnresolvableInclude
-             */
-            require_once $extensionConfiguration->sourceFile();
-        }
-
-        if (!class_exists($extensionConfiguration->className())) {
-            throw new Exception(
-                sprintf(
-                    'Class "%s" does not exist',
-                    $extensionConfiguration->className()
-                )
-            );
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+P+Dpa2wywbESom==

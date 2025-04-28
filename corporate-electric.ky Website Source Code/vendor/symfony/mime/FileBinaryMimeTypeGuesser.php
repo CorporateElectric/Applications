@@ -1,93 +1,66 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Mime;
-
-use Symfony\Component\Mime\Exception\InvalidArgumentException;
-use Symfony\Component\Mime\Exception\LogicException;
-
-/**
- * Guesses the MIME type with the binary "file" (only available on *nix).
- *
- * @author Bernhard Schussek <bschussek@gmail.com>
- */
-class FileBinaryMimeTypeGuesser implements MimeTypeGuesserInterface
-{
-    private $cmd;
-
-    /**
-     * The $cmd pattern must contain a "%s" string that will be replaced
-     * with the file name to guess.
-     *
-     * The command output must start with the MIME type of the file.
-     *
-     * @param string $cmd The command to run to get the MIME type of a file
-     */
-    public function __construct(string $cmd = 'file -b --mime -- %s 2>/dev/null')
-    {
-        $this->cmd = $cmd;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function isGuesserSupported(): bool
-    {
-        static $supported = null;
-
-        if (null !== $supported) {
-            return $supported;
-        }
-
-        if ('\\' === \DIRECTORY_SEPARATOR || !\function_exists('passthru') || !\function_exists('escapeshellarg')) {
-            return $supported = false;
-        }
-
-        ob_start();
-        passthru('command -v file', $exitStatus);
-        $binPath = trim(ob_get_clean());
-
-        return $supported = 0 === $exitStatus && '' !== $binPath;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function guessMimeType(string $path): ?string
-    {
-        if (!is_file($path) || !is_readable($path)) {
-            throw new InvalidArgumentException(sprintf('The "%s" file does not exist or is not readable.', $path));
-        }
-
-        if (!$this->isGuesserSupported()) {
-            throw new LogicException(sprintf('The "%s" guesser is not supported.', __CLASS__));
-        }
-
-        ob_start();
-
-        // need to use --mime instead of -i. see #6641
-        passthru(sprintf($this->cmd, escapeshellarg((0 === strpos($path, '-') ? './' : '').$path)), $return);
-        if ($return > 0) {
-            ob_end_clean();
-
-            return null;
-        }
-
-        $type = trim(ob_get_clean());
-
-        if (!preg_match('#^([a-z0-9\-]+/[a-z0-9\-\+\.]+)#i', $type, $match)) {
-            // it's not a type, but an error message
-            return null;
-        }
-
-        return $match[1];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+4O22vceMQp/2O3Pl5wMLQ8YA

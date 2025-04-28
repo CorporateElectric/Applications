@@ -1,131 +1,74 @@
-<?php
-
-/*
- Copyright (c) 2009 hamcrest.org
- */
-
-class FactoryParameter
-{
-    /**
-     * @var FactoryMethod
-     */
-    private $method;
-
-    /**
-     * @var ReflectionParameter
-     */
-    private $reflector;
-
-    public function __construct(FactoryMethod $method, ReflectionParameter $reflector)
-    {
-        $this->method = $method;
-        $this->reflector = $reflector;
-    }
-
-    /**
-     * Compute the declaration code.
-     *
-     * @return string
-     */
-    public function getDeclaration()
-    {
-        $code = $this->getTypeCode() . $this->getInvocation();
-
-        if ($this->reflector->isOptional()) {
-            $default = $this->reflector->getDefaultValue();
-            if (is_null($default)) {
-                $default = 'null';
-            } elseif (is_bool($default)) {
-                $default = $default ? 'true' : 'false';
-            } elseif (is_string($default)) {
-                $default = "'" . $default . "'";
-            } elseif (is_numeric($default)) {
-                $default = strval($default);
-            } elseif (is_array($default)) {
-                $default = 'array()';
-            } else {
-                echo 'Warning: unknown default type for ' . $this->getMethod()->getFullName() . "\n";
-                var_dump($default);
-                $default = 'null';
-            }
-            $code .= ' = ' . $default;
-        }
-        return $code;
-    }
-
-    /**
-     * Compute the type code for the paramater.
-     *
-     * @return string
-     */
-    private function getTypeCode()
-    {
-        // Handle PHP 5 separately
-        if (PHP_VERSION_ID < 70000) {
-            if ($this->reflector->isArray()) {
-                return 'array';
-            }
-
-            $class = $this->reflector->getClass();
-
-            return $class ? sprintf('\\%s ', $class->getName()) : '';
-        }
-
-        if (!$this->reflector->hasType()) {
-            return '';
-        }
-
-        $type = $this->reflector->getType();
-        $name = self::getQualifiedName($type);
-
-        // PHP 7.1+ supports nullable types via a leading question mark
-        return (PHP_VERSION_ID >= 70100 && $type->allowsNull()) ? sprintf('?%s ', $name) : sprintf('%s ', $name);
-    }
-
-    /**
-     * Compute qualified name for the given type.
-     *
-     * This function knows how to prefix class names with a leading slash and
-     * also how to handle PHP 8's union types.
-     *
-     * @param ReflectionType $type
-     *
-     * @return string
-     */
-    private static function getQualifiedName(ReflectionType $type)
-    {
-        // PHP 8 union types can be recursively processed
-        if ($type instanceof ReflectionUnionType) {
-            return implode('|', array_map(function (ReflectionType $type) {
-                // The "self::" call within a Closure is fine here because this
-                // code will only ever be executed on PHP 7.0+
-                return self::getQualifiedName($type);
-            }, $type->getTypes()));
-        }
-
-        // PHP 7.0 doesn't have named types, but 7.1+ does
-        $name = $type instanceof ReflectionNamedType ? $type->getName() : (string) $type;
-
-        return $type->isBuiltin() ? $name : sprintf('\\%s', $name);
-    }
-
-    /**
-     * Compute the invocation code.
-     *
-     * @return string
-     */
-    public function getInvocation()
-    {
-        return sprintf('$%s', $this->reflector->getName());
-    }
-
-    /**
-     * Compute the method name.
-     *
-     * @return string
-     */
-    public function getMethod()
-    {
-        return $this->method;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

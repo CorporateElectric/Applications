@@ -1,112 +1,79 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Routing\Loader\Configurator;
-
-use Symfony\Component\Routing\Route;
-use Symfony\Component\Routing\RouteCollection;
-
-/**
- * @author Nicolas Grekas <p@tchwork.com>
- */
-class CollectionConfigurator
-{
-    use Traits\AddTrait;
-    use Traits\HostTrait;
-    use Traits\RouteTrait;
-
-    private $parent;
-    private $parentConfigurator;
-    private $parentPrefixes;
-    private $host;
-
-    public function __construct(RouteCollection $parent, string $name, self $parentConfigurator = null, array $parentPrefixes = null)
-    {
-        $this->parent = $parent;
-        $this->name = $name;
-        $this->collection = new RouteCollection();
-        $this->route = new Route('');
-        $this->parentConfigurator = $parentConfigurator; // for GC control
-        $this->parentPrefixes = $parentPrefixes;
-    }
-
-    public function __destruct()
-    {
-        if (null === $this->prefixes) {
-            $this->collection->addPrefix($this->route->getPath());
-        }
-        if (null !== $this->host) {
-            $this->addHost($this->collection, $this->host);
-        }
-
-        $this->parent->addCollection($this->collection);
-    }
-
-    /**
-     * Creates a sub-collection.
-     */
-    final public function collection(string $name = ''): self
-    {
-        return new self($this->collection, $this->name.$name, $this, $this->prefixes);
-    }
-
-    /**
-     * Sets the prefix to add to the path of all child routes.
-     *
-     * @param string|array $prefix the prefix, or the localized prefixes
-     *
-     * @return $this
-     */
-    final public function prefix($prefix): self
-    {
-        if (\is_array($prefix)) {
-            if (null === $this->parentPrefixes) {
-                // no-op
-            } elseif ($missing = array_diff_key($this->parentPrefixes, $prefix)) {
-                throw new \LogicException(sprintf('Collection "%s" is missing prefixes for locale(s) "%s".', $this->name, implode('", "', array_keys($missing))));
-            } else {
-                foreach ($prefix as $locale => $localePrefix) {
-                    if (!isset($this->parentPrefixes[$locale])) {
-                        throw new \LogicException(sprintf('Collection "%s" with locale "%s" is missing a corresponding prefix in its parent collection.', $this->name, $locale));
-                    }
-
-                    $prefix[$locale] = $this->parentPrefixes[$locale].$localePrefix;
-                }
-            }
-            $this->prefixes = $prefix;
-            $this->route->setPath('/');
-        } else {
-            $this->prefixes = null;
-            $this->route->setPath($prefix);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Sets the host to use for all child routes.
-     *
-     * @param string|array $host the host, or the localized hosts
-     *
-     * @return $this
-     */
-    final public function host($host): self
-    {
-        $this->host = $host;
-
-        return $this;
-    }
-
-    private function createRoute(string $path): Route
-    {
-        return (clone $this->route)->setPath($path);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+WCZRBe7zAFXCa0spy4vEPGIbLEUiz0==

@@ -1,125 +1,69 @@
-<?php
-
-namespace GuzzleHttp;
-
-use GuzzleHttp\Promise as P;
-use GuzzleHttp\Promise\EachPromise;
-use GuzzleHttp\Promise\PromiseInterface;
-use GuzzleHttp\Promise\PromisorInterface;
-use Psr\Http\Message\RequestInterface;
-
-/**
- * Sends an iterator of requests concurrently using a capped pool size.
- *
- * The pool will read from an iterator until it is cancelled or until the
- * iterator is consumed. When a request is yielded, the request is sent after
- * applying the "request_options" request options (if provided in the ctor).
- *
- * When a function is yielded by the iterator, the function is provided the
- * "request_options" array that should be merged on top of any existing
- * options, and the function MUST then return a wait-able promise.
- *
- * @final
- */
-class Pool implements PromisorInterface
-{
-    /**
-     * @var EachPromise
-     */
-    private $each;
-
-    /**
-     * @param ClientInterface $client   Client used to send the requests.
-     * @param array|\Iterator $requests Requests or functions that return
-     *                                  requests to send concurrently.
-     * @param array           $config   Associative array of options
-     *                                  - concurrency: (int) Maximum number of requests to send concurrently
-     *                                  - options: Array of request options to apply to each request.
-     *                                  - fulfilled: (callable) Function to invoke when a request completes.
-     *                                  - rejected: (callable) Function to invoke when a request is rejected.
-     */
-    public function __construct(ClientInterface $client, $requests, array $config = [])
-    {
-        if (!isset($config['concurrency'])) {
-            $config['concurrency'] = 25;
-        }
-
-        if (isset($config['options'])) {
-            $opts = $config['options'];
-            unset($config['options']);
-        } else {
-            $opts = [];
-        }
-
-        $iterable = P\Create::iterFor($requests);
-        $requests = static function () use ($iterable, $client, $opts) {
-            foreach ($iterable as $key => $rfn) {
-                if ($rfn instanceof RequestInterface) {
-                    yield $key => $client->sendAsync($rfn, $opts);
-                } elseif (\is_callable($rfn)) {
-                    yield $key => $rfn($opts);
-                } else {
-                    throw new \InvalidArgumentException('Each value yielded by the iterator must be a Psr7\Http\Message\RequestInterface or a callable that returns a promise that fulfills with a Psr7\Message\Http\ResponseInterface object.');
-                }
-            }
-        };
-
-        $this->each = new EachPromise($requests(), $config);
-    }
-
-    /**
-     * Get promise
-     */
-    public function promise(): PromiseInterface
-    {
-        return $this->each->promise();
-    }
-
-    /**
-     * Sends multiple requests concurrently and returns an array of responses
-     * and exceptions that uses the same ordering as the provided requests.
-     *
-     * IMPORTANT: This method keeps every request and response in memory, and
-     * as such, is NOT recommended when sending a large number or an
-     * indeterminate number of requests concurrently.
-     *
-     * @param ClientInterface $client   Client used to send the requests
-     * @param array|\Iterator $requests Requests to send concurrently.
-     * @param array           $options  Passes through the options available in
-     *                                  {@see \GuzzleHttp\Pool::__construct}
-     *
-     * @return array Returns an array containing the response or an exception
-     *               in the same order that the requests were sent.
-     *
-     * @throws \InvalidArgumentException if the event format is incorrect.
-     */
-    public static function batch(ClientInterface $client, $requests, array $options = []): array
-    {
-        $res = [];
-        self::cmpCallback($options, 'fulfilled', $res);
-        self::cmpCallback($options, 'rejected', $res);
-        $pool = new static($client, $requests, $options);
-        $pool->promise()->wait();
-        \ksort($res);
-
-        return $res;
-    }
-
-    /**
-     * Execute callback(s)
-     */
-    private static function cmpCallback(array &$options, string $name, array &$results): void
-    {
-        if (!isset($options[$name])) {
-            $options[$name] = static function ($v, $k) use (&$results) {
-                $results[$k] = $v;
-            };
-        } else {
-            $currentFn = $options[$name];
-            $options[$name] = static function ($v, $k) use (&$results, $currentFn) {
-                $currentFn($v, $k);
-                $results[$k] = $v;
-            };
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

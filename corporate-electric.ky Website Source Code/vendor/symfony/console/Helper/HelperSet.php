@@ -1,98 +1,52 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Console\Helper;
-
-use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Exception\InvalidArgumentException;
-
-/**
- * HelperSet represents a set of helpers to be used with a command.
- *
- * @author Fabien Potencier <fabien@symfony.com>
- */
-class HelperSet implements \IteratorAggregate
-{
-    /**
-     * @var Helper[]
-     */
-    private $helpers = [];
-    private $command;
-
-    /**
-     * @param Helper[] $helpers An array of helper
-     */
-    public function __construct(array $helpers = [])
-    {
-        foreach ($helpers as $alias => $helper) {
-            $this->set($helper, \is_int($alias) ? null : $alias);
-        }
-    }
-
-    public function set(HelperInterface $helper, string $alias = null)
-    {
-        $this->helpers[$helper->getName()] = $helper;
-        if (null !== $alias) {
-            $this->helpers[$alias] = $helper;
-        }
-
-        $helper->setHelperSet($this);
-    }
-
-    /**
-     * Returns true if the helper if defined.
-     *
-     * @return bool true if the helper is defined, false otherwise
-     */
-    public function has(string $name)
-    {
-        return isset($this->helpers[$name]);
-    }
-
-    /**
-     * Gets a helper value.
-     *
-     * @return HelperInterface The helper instance
-     *
-     * @throws InvalidArgumentException if the helper is not defined
-     */
-    public function get(string $name)
-    {
-        if (!$this->has($name)) {
-            throw new InvalidArgumentException(sprintf('The helper "%s" is not defined.', $name));
-        }
-
-        return $this->helpers[$name];
-    }
-
-    public function setCommand(Command $command = null)
-    {
-        $this->command = $command;
-    }
-
-    /**
-     * Gets the command associated with this helper set.
-     *
-     * @return Command A Command instance
-     */
-    public function getCommand()
-    {
-        return $this->command;
-    }
-
-    /**
-     * @return Helper[]
-     */
-    public function getIterator()
-    {
-        return new \ArrayIterator($this->helpers);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

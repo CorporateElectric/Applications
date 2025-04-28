@@ -1,155 +1,57 @@
-<?php declare(strict_types=1);
-/*
- * This file is part of PHPUnit.
- *
- * (c) Sebastian Bergmann <sebastian@phpunit.de>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-namespace PHPUnit\Util;
-
-use const E_DEPRECATED;
-use const E_NOTICE;
-use const E_STRICT;
-use const E_USER_DEPRECATED;
-use const E_USER_NOTICE;
-use const E_USER_WARNING;
-use const E_WARNING;
-use function error_reporting;
-use function restore_error_handler;
-use function set_error_handler;
-use PHPUnit\Framework\Error\Deprecated;
-use PHPUnit\Framework\Error\Error;
-use PHPUnit\Framework\Error\Notice;
-use PHPUnit\Framework\Error\Warning;
-
-/**
- * @internal This class is not covered by the backward compatibility promise for PHPUnit
- */
-final class ErrorHandler
-{
-    /**
-     * @var bool
-     */
-    private $convertDeprecationsToExceptions;
-
-    /**
-     * @var bool
-     */
-    private $convertErrorsToExceptions;
-
-    /**
-     * @var bool
-     */
-    private $convertNoticesToExceptions;
-
-    /**
-     * @var bool
-     */
-    private $convertWarningsToExceptions;
-
-    /**
-     * @var bool
-     */
-    private $registered = false;
-
-    public static function invokeIgnoringWarnings(callable $callable)
-    {
-        set_error_handler(
-            static function ($errorNumber, $errorString) {
-                if ($errorNumber === E_WARNING) {
-                    return;
-                }
-
-                return false;
-            }
-        );
-
-        $result = $callable();
-
-        restore_error_handler();
-
-        return $result;
-    }
-
-    public function __construct(bool $convertDeprecationsToExceptions, bool $convertErrorsToExceptions, bool $convertNoticesToExceptions, bool $convertWarningsToExceptions)
-    {
-        $this->convertDeprecationsToExceptions = $convertDeprecationsToExceptions;
-        $this->convertErrorsToExceptions       = $convertErrorsToExceptions;
-        $this->convertNoticesToExceptions      = $convertNoticesToExceptions;
-        $this->convertWarningsToExceptions     = $convertWarningsToExceptions;
-    }
-
-    public function __invoke(int $errorNumber, string $errorString, string $errorFile, int $errorLine): bool
-    {
-        /*
-         * Do not raise an exception when the error suppression operator (@) was used.
-         *
-         * @see https://github.com/sebastianbergmann/phpunit/issues/3739
-         */
-        if (!($errorNumber & error_reporting())) {
-            return false;
-        }
-
-        switch ($errorNumber) {
-            case E_NOTICE:
-            case E_USER_NOTICE:
-            case E_STRICT:
-                if (!$this->convertNoticesToExceptions) {
-                    return false;
-                }
-
-                throw new Notice($errorString, $errorNumber, $errorFile, $errorLine);
-
-            case E_WARNING:
-            case E_USER_WARNING:
-                if (!$this->convertWarningsToExceptions) {
-                    return false;
-                }
-
-                throw new Warning($errorString, $errorNumber, $errorFile, $errorLine);
-
-            case E_DEPRECATED:
-            case E_USER_DEPRECATED:
-                if (!$this->convertDeprecationsToExceptions) {
-                    return false;
-                }
-
-                throw new Deprecated($errorString, $errorNumber, $errorFile, $errorLine);
-
-            default:
-                if (!$this->convertErrorsToExceptions) {
-                    return false;
-                }
-
-                throw new Error($errorString, $errorNumber, $errorFile, $errorLine);
-        }
-    }
-
-    public function register(): void
-    {
-        if ($this->registered) {
-            return;
-        }
-
-        $oldErrorHandler = set_error_handler($this);
-
-        if ($oldErrorHandler !== null) {
-            restore_error_handler();
-
-            return;
-        }
-
-        $this->registered = true;
-    }
-
-    public function unregister(): void
-    {
-        if (!$this->registered) {
-            return;
-        }
-
-        restore_error_handler();
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+pMe=

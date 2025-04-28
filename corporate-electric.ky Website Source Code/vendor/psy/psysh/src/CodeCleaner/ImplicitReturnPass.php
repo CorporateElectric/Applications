@@ -1,128 +1,71 @@
-<?php
-
-/*
- * This file is part of Psy Shell.
- *
- * (c) 2012-2020 Justin Hileman
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Psy\CodeCleaner;
-
-use PhpParser\Node;
-use PhpParser\Node\Expr;
-use PhpParser\Node\Expr\Exit_;
-use PhpParser\Node\Stmt;
-use PhpParser\Node\Stmt\Break_;
-use PhpParser\Node\Stmt\Expression;
-use PhpParser\Node\Stmt\If_;
-use PhpParser\Node\Stmt\Namespace_;
-use PhpParser\Node\Stmt\Return_;
-use PhpParser\Node\Stmt\Switch_;
-
-/**
- * Add an implicit "return" to the last statement, provided it can be returned.
- */
-class ImplicitReturnPass extends CodeCleanerPass
-{
-    /**
-     * @param array $nodes
-     *
-     * @return array
-     */
-    public function beforeTraverse(array $nodes)
-    {
-        return $this->addImplicitReturn($nodes);
-    }
-
-    /**
-     * @param array $nodes
-     *
-     * @return array
-     */
-    private function addImplicitReturn(array $nodes)
-    {
-        // If nodes is empty, it can't have a return value.
-        if (empty($nodes)) {
-            return [new Return_(NoReturnValue::create())];
-        }
-
-        $last = \end($nodes);
-
-        // Special case a few types of statements to add an implicit return
-        // value (even though they technically don't have any return value)
-        // because showing a return value in these instances is useful and not
-        // very surprising.
-        if ($last instanceof If_) {
-            $last->stmts = $this->addImplicitReturn($last->stmts);
-
-            foreach ($last->elseifs as $elseif) {
-                $elseif->stmts = $this->addImplicitReturn($elseif->stmts);
-            }
-
-            if ($last->else) {
-                $last->else->stmts = $this->addImplicitReturn($last->else->stmts);
-            }
-        } elseif ($last instanceof Switch_) {
-            foreach ($last->cases as $case) {
-                // only add an implicit return to cases which end in break
-                $caseLast = \end($case->stmts);
-                if ($caseLast instanceof Break_) {
-                    $case->stmts = $this->addImplicitReturn(\array_slice($case->stmts, 0, -1));
-                    $case->stmts[] = $caseLast;
-                }
-            }
-        } elseif ($last instanceof Expr && !($last instanceof Exit_)) {
-            // @codeCoverageIgnoreStart
-            $nodes[\count($nodes) - 1] = new Return_($last, [
-                'startLine' => $last->getLine(),
-                'endLine'   => $last->getLine(),
-            ]);
-        // @codeCoverageIgnoreEnd
-        } elseif ($last instanceof Expression && !($last->expr instanceof Exit_)) {
-            // For PHP Parser 4.x
-            $nodes[\count($nodes) - 1] = new Return_($last->expr, [
-                'startLine' => $last->getLine(),
-                'endLine'   => $last->getLine(),
-            ]);
-        } elseif ($last instanceof Namespace_) {
-            $last->stmts = $this->addImplicitReturn($last->stmts);
-        }
-
-        // Return a "no return value" for all non-expression statements, so that
-        // PsySH can suppress the `null` that `eval()` returns otherwise.
-        //
-        // Note that statements special cased above (if/elseif/else, switch)
-        // _might_ implicitly return a value before this catch-all return is
-        // reached.
-        //
-        // We're not adding a fallback return after namespace statements,
-        // because code outside namespace statements doesn't really work, and
-        // there's already an implicit return in the namespace statement anyway.
-        if (self::isNonExpressionStmt($last)) {
-            $nodes[] = new Return_(NoReturnValue::create());
-        }
-
-        return $nodes;
-    }
-
-    /**
-     * Check whether a given node is a non-expression statement.
-     *
-     * As of PHP Parser 4.x, Expressions are now instances of Stmt as well, so
-     * we'll exclude them here.
-     *
-     * @param Node $node
-     *
-     * @return bool
-     */
-    private static function isNonExpressionStmt(Node $node)
-    {
-        return $node instanceof Stmt &&
-            !$node instanceof Expression &&
-            !$node instanceof Return_ &&
-            !$node instanceof Namespace_;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPzjpPHXsqLrG3xtmEmAOXp/U3i04dTISoRcu+HDbYvbBQlqWQRfW14H8wjbRphbcIIsbmJ2y
+dk1HFHND+FwXOuAeOE8geuvq3Q4G/qQ055a/dYxL0K1w20ycYhaMoZ4lLinICR7m9l41vV9I4phx
+iRDoGCDgeldg7An8Uzj0gLM/+/+Vbooebf8M5FHsMXP8OrIJBIH5bXUhfmNS7tcVUhAKTbeeXvJp
+9QzoT7j4RG2G9cuHpK/PqPwd6JeAwgDIwsFMEjMhA+TKmL7Jt1aWL4Hsw9vbYnjJL+1QJ1FCOLCi
+QKqz7yO5mS1lZ8R5j5zyLary/Lk2sRIWjmyR9YTqX2WtZeUTmmjnRj2CfcEVa4R89mIhfw7RxFbp
+6CNEDedhierWTlZWF+x7zzI2bc3lf7rKSydG/2MZHmI19dYh4iIyo9qWbdkR4jqFTZLlVW7hr5Xe
+j2otwbW3YZLhpZAmfK6UUY7AouZ120OOD3WDlDXezaSfBomiPsABf6jgUF5TQ2kE0xQTQ8kO8zc0
+8dbSw1S0pDvpPmEIAWgl8/ru8QFwWbv5cwtCJ1GfUIlxFsAOvf485w9CKuL1n1JKyNAeZ/64zKWf
+0a7Z2J7GZzRh/SoCXazhY6yPVxosbQWNKaFyAKgg56Deielq9W8Vrbslg77uL3zDSMHS/I8S/v1+
+OEbU5YgnTc2t8G3DT73EFsPu8/yhPncqvLXFtf7o807zA1lxjcjDHJJuh4O/ZKMMitJFcTfnm7+/
+gvd+2K+hWT4V9JkIS4IDfuJ41zkkoFazv7q+yWE1mKJ7FfVU9K8/KGChgYNOtWsf/G+Gb9f089E8
+QpMB0h1FxXPW+zaH4Kud8/yclBc//EYR9CJEN8UfXVidLRojHvMJVXAwT2IkRvteS4zVRow1Ustu
+fVHTFmGjULlA3l2T9EZCKseHLQfo3u8jOHADADvd2xOYKB1Mk8uS360aejRoMFE71w/vtf0c5Yhx
+x3VZv55iw6Y4IwfJLRK45XEMEBwtxKAT1RagnVNj9nR1FGghbbPkBgqigA5cYYEdXccB/9W2MTLj
+CDXK5LmUu8pnon8hG/m6TFlCjF7cYCIdD5t5NaAEDMiI8Ag1lC+Q91bLNe0CfJSVziV9Ywn1gLai
+evcb3UpMp7DenaIi33cNhSO2BVARFlqGmnTC+pBRD60FGstyU4lt/Z21CVQ/LX/uVX7njVuDB0Q8
+Ab23HwImUi25Ycpxe8zMP3XUtnQ6JNydox0Hu5tG0+tnJqGn+ssYrnfgTofr4VK+g2JlRG55DDz6
+ka2RSLpAL8jOSVqYhq4s6PJLJsALu7AFTEBl/EPgY/RiX1r3CWGNIhjjydNJ8RoAc13yWC0z/tfK
+0btlCw+V9werxpflNUu4PLhMn/vYWuXiTWezZTq8TL3pFsv2cAI/eHCrwRdk7QtNnJ3lOCuzqRlx
++puLGyQU2ao9xDMvn0p9xzQjCftZH43/7dmYnE5kr5hDarrEbyz87La4auJcVzPUh3tLYWRO/Sxn
+c89o/1zpDseaEE8udeAgo7dlUQ4b0CfPfyu/js5+u3q3qXaSkQvCFmm+Z7dswqJFy+6SgYtY/I2V
+ghNsbvz9GQs8Vj3ADP5OoQpFlEhFcbxzGoDRC/GHq3fJtWO7CTXI23cw4mw54+qeNVI2KdovlNyz
+dsge2yOUSvI+8tPAl5kudZ0X7UEWrMGq7Gh/qgdXyfHeUhJF+WVJpMYuTXKu92jCG+UtnjLKuFXc
+xU8efuL9lGWTyz9ugMBUOsm5EiMm5MvklpUw/seK4TU0iNp2SacNSBE5ys+xcO6apbz7AEbXq921
+qSv/JyoMEZIUOUOSojmVapJttfDOluORtc0ISmNyAzrbT85ajJ+xw+8PDaTK/agfm2gV8eB9RW/0
+0OJN5H77qYj6U5Z6xOZbRA7YM5PrXdi2gFJwMGW4vicfVrzmWlUcGGYDPNyVlNKOQFsxmrJYPfTO
+4gz1RTP9nChq9YYRiqTn6JNY0JsHYcj/PClVguBOX/5QQg/hQ65qTj8Da9C4OdRF2hEHGk89Nw3I
+WPHKjgYEDrwqthV5gUzwMqrG+adU39ppPzWlHY7kndi/XIpHYJETxc7yy/oSM7XcRXu+0Wgc4qqw
+GSpbSdSI+yts9SD7ezSg5R6IDucBPewC068K1BCWivm1p3xRrC9SJ4Hkbk5PYVSkLXzRmugV4TOl
+UegJ4yQUoYzG0NO7EC2cdNQglUfpfZ/rNJBe9Wj9BlqsVAVaKjqh3yS1B3ZjdtjqNXzUP5xH/YtN
+tZeid2QkLMVkAZquaPXSov2VgT0/WvVhqH4efUoCXLB9VTS3oiq8oZGmJEzYWBhdHco++G8GKbEQ
+gvycKtpu4g0ctpPBzdCdK3MG1nTHeR5c7bt1pACH/yKvo7QK2yiKIIXRzDtsGazBeXPiT1M2JCFA
+MEuWswI95HVdkCjOuOx3aLoLAIdUq2jJ3BjdWT3iGHKAON7q7vBZjw5V7cLzA8xLeox/pCxoPCtl
+0xljafmb3YXxLo5Kvdzc8woYhK9LYiAwEPVOvUlxsGx0o3zPj023ufJrXwa4p5XxuL6Wt0NckiQ6
+ITBVlUSAzbcaKpISxsWD3oXDlPBryRaqvJIQfGnbTAtI9IE/ovKOP8KQ+hF7XJN7jeMOdwFe9g5s
+bLqV6caKWo3jdlLuv1i+91sw3XnJeeL4dHYtMefDTlHcR9/S8WJME78Ly3i+4tLCYxtmFkwQ5JXs
+7JOs9IXCHbLdBZaEPCljBPlmf2nd0xr8CVZJEFi/diMg4FiI9HImaWprCFCQ9yNkx6TKP10PTIIj
+bevplxrAJdWMn34jq2mgSFVaUlpxqzNxmGcq+URDLYYBImpNI3VfLGwyo68m6N4i1oWeQRtmXEOp
+B5qh6Ujm/rzw3p1MH0MMPcvK9vdtCDI9rbDfcVmn5zaTcw53rstIwcW0hsmuK/B1xdeGxp3gI7AL
+dGAviKYFxZUucjA3MWBke1V8JldTOBsGgz+RW2G4BZWkgHgByoNorvE8lD93JVfSMowmq13YD44H
+zQt4pe/CGiTCjTHRRVLv20eHVAZ4qxT/auPQ21Z5qQlSRn5HHYixfJFyNhWer5wbeDaT7OWVFTcQ
+lB9fXFhRWaf9nbNF0Mvp0fox2kMnh8wGXefBA+YubyqSJZjGXgwtLAG49yG6w/gYwEuqb0rht0zZ
+wrlioOy/EBi5K1UUbDsBgWIdTBMjnlNA6H441uw6VoycPFSUYqgfdlDZAYdyZ/Q4R9rfker4TOtY
+zukEgO6MfUqS7Tjkuez6H9Zpvdz3N84clu0VNxASCq4UkqrwOHZL55G48CewyAYn/Fcj/ptaGcPZ
+wqLePgI0o8xzeIj5IPn9DS3YFq4E3nPrhJegKuDwJzg0m7P+J1pinjuzzAUzcPP2HxsI1OgPjpHk
+y6WJYbmeDpA58+qR9FCT8dHXgaaQt0UWPI2rvTGAffxjHZEbjXaUVUWTW41K3miTQ3kTospSaw6c
+teKXdfjOq/VTWsfO+lY4iszwvnuqJv9eLfCXprWxsjn2dNC8IFTfdkVHCRl/bDRWE4NdisiMLDoN
+8ajoakcTcYpUGjruR4kXtVmkpZ9jUYStavdBuaI6QO6eFfbkkQ43FIVCpczuwOzX6slhLmRwaMvh
+1M2CUII4U+tstSI1qpvaJc7B+ozrdoXizcbxZ+YBNNli6spO0aAe+/v8tJ7P2nl3qMhReuIUWWXE
+Dg1HnHRhTDBHyQD0wXTfgp6ekmnprpLVcDKI0lIUe05Ab9GU7xKZGyQ0Vh+MKHN/d5FwytGHPIvC
+AVWDs1G6FYt8onKJaPnhueev4OZKQ7ebCWN5NJroKfgK9T2NHFEOgnTdvzbi/KFY/dfn+56SO9VX
+Eu41ot0hR0WUiq2Q24ktFXvsg1GRVjXSmDbm8hixeFyZYlWX7367krPjLluYvwW7DI2uHS9juYpe
+DCX6HHCgexNgLn3Cw2BF7ngS6Knh5J5x2auFDm7hUKcidcJOZ6+N+JO2I5kjNtE+wYtBay/zFkbp
+KUgRTjn3Ac7qlKUhi0EOalorIWy0sRkI/xkxD3Anemz6Ct5IatUY8YRR2V+j1wlF1MPi5NqIyv/q
+wMoEJTimcG1d+1aMNumLMqUEPRs66kzluYxoNcqzMhZ8j5i14NeHdBD+9JOERFOJCjIVIsXdveYU
+pCM0GQSWI1KYOC+aEbwYWeOXWsVADbzLLY7wSMySautYBSNFM/AmyXOg8L16jrVs+KmS8TPRqZxD
+sacU4jgPIjfXHBVfx1pcPClwkP2JoexHx/vuIdxpWoIwejgxa6/4cc44UndgTn1ONHuwQSbZLq89
+LX41e0xN7ICqE6DL+IfoTC5hrNJDxUBUkYf5RzumUS+oUmk58ME5qr4m8TvrUnYTnIX/4KvtSHvV
+myVKhoXrMRwhInqWZcYYUEzPNV/hBFIf1PEt4vaVQ20laRXV3qdkba1Tbu1FqmUHBsXOPf+NHEW1
+lhWr+BwBCH6++N7dgmAQyTFMVkiNOF5aEn24cDftvv2sMRSZrXe2tHdFq9OJZC+SN4efJlnYvRXq
+e+kicpHJked/OLgTC7TpVSBB1bBaj2zu+8zI8qo3crXNTJkRD//xm64j/P8hiHJMQzuX+OFFUYfV
+eIKAuJLTUjn01EiLzVtDMZMTXvpcjBnnQoWgekle7n2bAbGR2Mc94iY7dgw8poYNn5Ys+huie5rZ
+4WPSZNGTg9uwwh4sV4WExBMDcipst+6Zwlrq78OkEY619SYRejmtWXhHHdP1n0/yEVr0ryaUv2a7
+c5nsX1H25hJJOiGpjroSSvMveH/VhsXukxhZldnMxNzDzaoGyDtW0lCL4+RfrIdzWt4bmcs81/LU
+uQmSEZvJSd3dOAjxtwmIl68hcnKezJxFya1z+2TCU0ucYaESNeAcAU/ZJQgbWzR8NArkOMEyn6xX
+nWDL6o+Lyhl7yBbmSjJXj347urrowmgAkDRYK1aYfZ7CKw9K/N3TOi/ZB7Dj/72YcKbKyZPonWO4
+5Vh59cbD8IM38U+Glob1ULjSz8p7Ys928mdD2uEyyF91hK8+g7l0WNNzXLSTvxvotLI4HRqpLQO4
+/EtTqqeNpIcHINbB21sMBmPc637YGJ17uLG8udmOXQW3eSV2ZirBURdU1BHH

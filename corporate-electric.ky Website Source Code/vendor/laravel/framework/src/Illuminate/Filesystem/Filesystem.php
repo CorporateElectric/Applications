@@ -1,722 +1,269 @@
-<?php
-
-namespace Illuminate\Filesystem;
-
-use ErrorException;
-use FilesystemIterator;
-use Illuminate\Contracts\Filesystem\FileNotFoundException;
-use Illuminate\Support\LazyCollection;
-use Illuminate\Support\Traits\Macroable;
-use RuntimeException;
-use SplFileObject;
-use Symfony\Component\Filesystem\Filesystem as SymfonyFilesystem;
-use Symfony\Component\Finder\Finder;
-use Symfony\Component\Mime\MimeTypes;
-
-class Filesystem
-{
-    use Macroable;
-
-    /**
-     * Determine if a file or directory exists.
-     *
-     * @param  string  $path
-     * @return bool
-     */
-    public function exists($path)
-    {
-        return file_exists($path);
-    }
-
-    /**
-     * Determine if a file or directory is missing.
-     *
-     * @param  string  $path
-     * @return bool
-     */
-    public function missing($path)
-    {
-        return ! $this->exists($path);
-    }
-
-    /**
-     * Get the contents of a file.
-     *
-     * @param  string  $path
-     * @param  bool  $lock
-     * @return string
-     *
-     * @throws \Illuminate\Contracts\Filesystem\FileNotFoundException
-     */
-    public function get($path, $lock = false)
-    {
-        if ($this->isFile($path)) {
-            return $lock ? $this->sharedGet($path) : file_get_contents($path);
-        }
-
-        throw new FileNotFoundException("File does not exist at path {$path}.");
-    }
-
-    /**
-     * Get contents of a file with shared access.
-     *
-     * @param  string  $path
-     * @return string
-     */
-    public function sharedGet($path)
-    {
-        $contents = '';
-
-        $handle = fopen($path, 'rb');
-
-        if ($handle) {
-            try {
-                if (flock($handle, LOCK_SH)) {
-                    clearstatcache(true, $path);
-
-                    $contents = fread($handle, $this->size($path) ?: 1);
-
-                    flock($handle, LOCK_UN);
-                }
-            } finally {
-                fclose($handle);
-            }
-        }
-
-        return $contents;
-    }
-
-    /**
-     * Get the returned value of a file.
-     *
-     * @param  string  $path
-     * @param  array  $data
-     * @return mixed
-     *
-     * @throws \Illuminate\Contracts\Filesystem\FileNotFoundException
-     */
-    public function getRequire($path, array $data = [])
-    {
-        if ($this->isFile($path)) {
-            $__path = $path;
-            $__data = $data;
-
-            return (static function () use ($__path, $__data) {
-                extract($__data, EXTR_SKIP);
-
-                return require $__path;
-            })();
-        }
-
-        throw new FileNotFoundException("File does not exist at path {$path}.");
-    }
-
-    /**
-     * Require the given file once.
-     *
-     * @param  string  $path
-     * @param  array  $data
-     * @return mixed
-     */
-    public function requireOnce($path, array $data = [])
-    {
-        if ($this->isFile($path)) {
-            $__path = $path;
-            $__data = $data;
-
-            return (static function () use ($__path, $__data) {
-                extract($__data, EXTR_SKIP);
-
-                return require_once $__path;
-            })();
-        }
-
-        throw new FileNotFoundException("File does not exist at path {$path}.");
-    }
-
-    /**
-     * Get the contents of a file one line at a time.
-     *
-     * @param  string  $path
-     * @return \Illuminate\Support\LazyCollection
-     *
-     * @throws \Illuminate\Contracts\Filesystem\FileNotFoundException
-     */
-    public function lines($path)
-    {
-        if (! $this->isFile($path)) {
-            throw new FileNotFoundException(
-                "File does not exist at path {$path}."
-            );
-        }
-
-        return LazyCollection::make(function () use ($path) {
-            $file = new SplFileObject($path);
-
-            $file->setFlags(SplFileObject::DROP_NEW_LINE);
-
-            while (! $file->eof()) {
-                yield $file->fgets();
-            }
-        });
-    }
-
-    /**
-     * Get the MD5 hash of the file at the given path.
-     *
-     * @param  string  $path
-     * @return string
-     */
-    public function hash($path)
-    {
-        return md5_file($path);
-    }
-
-    /**
-     * Write the contents of a file.
-     *
-     * @param  string  $path
-     * @param  string  $contents
-     * @param  bool  $lock
-     * @return int|bool
-     */
-    public function put($path, $contents, $lock = false)
-    {
-        return file_put_contents($path, $contents, $lock ? LOCK_EX : 0);
-    }
-
-    /**
-     * Write the contents of a file, replacing it atomically if it already exists.
-     *
-     * @param  string  $path
-     * @param  string  $content
-     * @return void
-     */
-    public function replace($path, $content)
-    {
-        // If the path already exists and is a symlink, get the real path...
-        clearstatcache(true, $path);
-
-        $path = realpath($path) ?: $path;
-
-        $tempPath = tempnam(dirname($path), basename($path));
-
-        // Fix permissions of tempPath because `tempnam()` creates it with permissions set to 0600...
-        chmod($tempPath, 0777 - umask());
-
-        file_put_contents($tempPath, $content);
-
-        rename($tempPath, $path);
-    }
-
-    /**
-     * Prepend to a file.
-     *
-     * @param  string  $path
-     * @param  string  $data
-     * @return int
-     */
-    public function prepend($path, $data)
-    {
-        if ($this->exists($path)) {
-            return $this->put($path, $data.$this->get($path));
-        }
-
-        return $this->put($path, $data);
-    }
-
-    /**
-     * Append to a file.
-     *
-     * @param  string  $path
-     * @param  string  $data
-     * @return int
-     */
-    public function append($path, $data)
-    {
-        return file_put_contents($path, $data, FILE_APPEND);
-    }
-
-    /**
-     * Get or set UNIX mode of a file or directory.
-     *
-     * @param  string  $path
-     * @param  int|null  $mode
-     * @return mixed
-     */
-    public function chmod($path, $mode = null)
-    {
-        if ($mode) {
-            return chmod($path, $mode);
-        }
-
-        return substr(sprintf('%o', fileperms($path)), -4);
-    }
-
-    /**
-     * Delete the file at a given path.
-     *
-     * @param  string|array  $paths
-     * @return bool
-     */
-    public function delete($paths)
-    {
-        $paths = is_array($paths) ? $paths : func_get_args();
-
-        $success = true;
-
-        foreach ($paths as $path) {
-            try {
-                if (! @unlink($path)) {
-                    $success = false;
-                }
-            } catch (ErrorException $e) {
-                $success = false;
-            }
-        }
-
-        return $success;
-    }
-
-    /**
-     * Move a file to a new location.
-     *
-     * @param  string  $path
-     * @param  string  $target
-     * @return bool
-     */
-    public function move($path, $target)
-    {
-        return rename($path, $target);
-    }
-
-    /**
-     * Copy a file to a new location.
-     *
-     * @param  string  $path
-     * @param  string  $target
-     * @return bool
-     */
-    public function copy($path, $target)
-    {
-        return copy($path, $target);
-    }
-
-    /**
-     * Create a symlink to the target file or directory. On Windows, a hard link is created if the target is a file.
-     *
-     * @param  string  $target
-     * @param  string  $link
-     * @return void
-     */
-    public function link($target, $link)
-    {
-        if (! windows_os()) {
-            return symlink($target, $link);
-        }
-
-        $mode = $this->isDirectory($target) ? 'J' : 'H';
-
-        exec("mklink /{$mode} ".escapeshellarg($link).' '.escapeshellarg($target));
-    }
-
-    /**
-     * Create a relative symlink to the target file or directory.
-     *
-     * @param  string  $target
-     * @param  string  $link
-     * @return void
-     */
-    public function relativeLink($target, $link)
-    {
-        if (! class_exists(SymfonyFilesystem::class)) {
-            throw new RuntimeException(
-                'To enable support for relative links, please install the symfony/filesystem package.'
-            );
-        }
-
-        $relativeTarget = (new SymfonyFilesystem)->makePathRelative($target, dirname($link));
-
-        $this->link($relativeTarget, $link);
-    }
-
-    /**
-     * Extract the file name from a file path.
-     *
-     * @param  string  $path
-     * @return string
-     */
-    public function name($path)
-    {
-        return pathinfo($path, PATHINFO_FILENAME);
-    }
-
-    /**
-     * Extract the trailing name component from a file path.
-     *
-     * @param  string  $path
-     * @return string
-     */
-    public function basename($path)
-    {
-        return pathinfo($path, PATHINFO_BASENAME);
-    }
-
-    /**
-     * Extract the parent directory from a file path.
-     *
-     * @param  string  $path
-     * @return string
-     */
-    public function dirname($path)
-    {
-        return pathinfo($path, PATHINFO_DIRNAME);
-    }
-
-    /**
-     * Extract the file extension from a file path.
-     *
-     * @param  string  $path
-     * @return string
-     */
-    public function extension($path)
-    {
-        return pathinfo($path, PATHINFO_EXTENSION);
-    }
-
-    /**
-     * Guess the file extension from the mime-type of a given file.
-     *
-     * @param  string  $path
-     * @return string|null
-     */
-    public function guessExtension($path)
-    {
-        if (! class_exists(MimeTypes::class)) {
-            throw new RuntimeException(
-                'To enable support for guessing extensions, please install the symfony/mime package.'
-            );
-        }
-
-        return (new MimeTypes)->getExtensions($this->mimeType($path))[0] ?? null;
-    }
-
-    /**
-     * Get the file type of a given file.
-     *
-     * @param  string  $path
-     * @return string
-     */
-    public function type($path)
-    {
-        return filetype($path);
-    }
-
-    /**
-     * Get the mime-type of a given file.
-     *
-     * @param  string  $path
-     * @return string|false
-     */
-    public function mimeType($path)
-    {
-        return finfo_file(finfo_open(FILEINFO_MIME_TYPE), $path);
-    }
-
-    /**
-     * Get the file size of a given file.
-     *
-     * @param  string  $path
-     * @return int
-     */
-    public function size($path)
-    {
-        return filesize($path);
-    }
-
-    /**
-     * Get the file's last modification time.
-     *
-     * @param  string  $path
-     * @return int
-     */
-    public function lastModified($path)
-    {
-        return filemtime($path);
-    }
-
-    /**
-     * Determine if the given path is a directory.
-     *
-     * @param  string  $directory
-     * @return bool
-     */
-    public function isDirectory($directory)
-    {
-        return is_dir($directory);
-    }
-
-    /**
-     * Determine if the given path is readable.
-     *
-     * @param  string  $path
-     * @return bool
-     */
-    public function isReadable($path)
-    {
-        return is_readable($path);
-    }
-
-    /**
-     * Determine if the given path is writable.
-     *
-     * @param  string  $path
-     * @return bool
-     */
-    public function isWritable($path)
-    {
-        return is_writable($path);
-    }
-
-    /**
-     * Determine if the given path is a file.
-     *
-     * @param  string  $file
-     * @return bool
-     */
-    public function isFile($file)
-    {
-        return is_file($file);
-    }
-
-    /**
-     * Find path names matching a given pattern.
-     *
-     * @param  string  $pattern
-     * @param  int  $flags
-     * @return array
-     */
-    public function glob($pattern, $flags = 0)
-    {
-        return glob($pattern, $flags);
-    }
-
-    /**
-     * Get an array of all files in a directory.
-     *
-     * @param  string  $directory
-     * @param  bool  $hidden
-     * @return \Symfony\Component\Finder\SplFileInfo[]
-     */
-    public function files($directory, $hidden = false)
-    {
-        return iterator_to_array(
-            Finder::create()->files()->ignoreDotFiles(! $hidden)->in($directory)->depth(0)->sortByName(),
-            false
-        );
-    }
-
-    /**
-     * Get all of the files from the given directory (recursive).
-     *
-     * @param  string  $directory
-     * @param  bool  $hidden
-     * @return \Symfony\Component\Finder\SplFileInfo[]
-     */
-    public function allFiles($directory, $hidden = false)
-    {
-        return iterator_to_array(
-            Finder::create()->files()->ignoreDotFiles(! $hidden)->in($directory)->sortByName(),
-            false
-        );
-    }
-
-    /**
-     * Get all of the directories within a given directory.
-     *
-     * @param  string  $directory
-     * @return array
-     */
-    public function directories($directory)
-    {
-        $directories = [];
-
-        foreach (Finder::create()->in($directory)->directories()->depth(0)->sortByName() as $dir) {
-            $directories[] = $dir->getPathname();
-        }
-
-        return $directories;
-    }
-
-    /**
-     * Ensure a directory exists.
-     *
-     * @param  string  $path
-     * @param  int  $mode
-     * @param  bool  $recursive
-     * @return void
-     */
-    public function ensureDirectoryExists($path, $mode = 0755, $recursive = true)
-    {
-        if (! $this->isDirectory($path)) {
-            $this->makeDirectory($path, $mode, $recursive);
-        }
-    }
-
-    /**
-     * Create a directory.
-     *
-     * @param  string  $path
-     * @param  int  $mode
-     * @param  bool  $recursive
-     * @param  bool  $force
-     * @return bool
-     */
-    public function makeDirectory($path, $mode = 0755, $recursive = false, $force = false)
-    {
-        if ($force) {
-            return @mkdir($path, $mode, $recursive);
-        }
-
-        return mkdir($path, $mode, $recursive);
-    }
-
-    /**
-     * Move a directory.
-     *
-     * @param  string  $from
-     * @param  string  $to
-     * @param  bool  $overwrite
-     * @return bool
-     */
-    public function moveDirectory($from, $to, $overwrite = false)
-    {
-        if ($overwrite && $this->isDirectory($to) && ! $this->deleteDirectory($to)) {
-            return false;
-        }
-
-        return @rename($from, $to) === true;
-    }
-
-    /**
-     * Copy a directory from one location to another.
-     *
-     * @param  string  $directory
-     * @param  string  $destination
-     * @param  int|null  $options
-     * @return bool
-     */
-    public function copyDirectory($directory, $destination, $options = null)
-    {
-        if (! $this->isDirectory($directory)) {
-            return false;
-        }
-
-        $options = $options ?: FilesystemIterator::SKIP_DOTS;
-
-        // If the destination directory does not actually exist, we will go ahead and
-        // create it recursively, which just gets the destination prepared to copy
-        // the files over. Once we make the directory we'll proceed the copying.
-        $this->ensureDirectoryExists($destination, 0777);
-
-        $items = new FilesystemIterator($directory, $options);
-
-        foreach ($items as $item) {
-            // As we spin through items, we will check to see if the current file is actually
-            // a directory or a file. When it is actually a directory we will need to call
-            // back into this function recursively to keep copying these nested folders.
-            $target = $destination.'/'.$item->getBasename();
-
-            if ($item->isDir()) {
-                $path = $item->getPathname();
-
-                if (! $this->copyDirectory($path, $target, $options)) {
-                    return false;
-                }
-            }
-
-            // If the current items is just a regular file, we will just copy this to the new
-            // location and keep looping. If for some reason the copy fails we'll bail out
-            // and return false, so the developer is aware that the copy process failed.
-            else {
-                if (! $this->copy($item->getPathname(), $target)) {
-                    return false;
-                }
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Recursively delete a directory.
-     *
-     * The directory itself may be optionally preserved.
-     *
-     * @param  string  $directory
-     * @param  bool  $preserve
-     * @return bool
-     */
-    public function deleteDirectory($directory, $preserve = false)
-    {
-        if (! $this->isDirectory($directory)) {
-            return false;
-        }
-
-        $items = new FilesystemIterator($directory);
-
-        foreach ($items as $item) {
-            // If the item is a directory, we can just recurse into the function and
-            // delete that sub-directory otherwise we'll just delete the file and
-            // keep iterating through each file until the directory is cleaned.
-            if ($item->isDir() && ! $item->isLink()) {
-                $this->deleteDirectory($item->getPathname());
-            }
-
-            // If the item is just a file, we can go ahead and delete it since we're
-            // just looping through and waxing all of the files in this directory
-            // and calling directories recursively, so we delete the real path.
-            else {
-                $this->delete($item->getPathname());
-            }
-        }
-
-        if (! $preserve) {
-            @rmdir($directory);
-        }
-
-        return true;
-    }
-
-    /**
-     * Remove all of the directories within a given directory.
-     *
-     * @param  string  $directory
-     * @return bool
-     */
-    public function deleteDirectories($directory)
-    {
-        $allDirectories = $this->directories($directory);
-
-        if (! empty($allDirectories)) {
-            foreach ($allDirectories as $directoryName) {
-                $this->deleteDirectory($directoryName);
-            }
-
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Empty the specified directory of all files and folders.
-     *
-     * @param  string  $directory
-     * @return bool
-     */
-    public function cleanDirectory($directory)
-    {
-        return $this->deleteDirectory($directory, true);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

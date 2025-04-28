@@ -1,1664 +1,672 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Process;
-
-use Symfony\Component\Process\Exception\InvalidArgumentException;
-use Symfony\Component\Process\Exception\LogicException;
-use Symfony\Component\Process\Exception\ProcessFailedException;
-use Symfony\Component\Process\Exception\ProcessSignaledException;
-use Symfony\Component\Process\Exception\ProcessTimedOutException;
-use Symfony\Component\Process\Exception\RuntimeException;
-use Symfony\Component\Process\Pipes\PipesInterface;
-use Symfony\Component\Process\Pipes\UnixPipes;
-use Symfony\Component\Process\Pipes\WindowsPipes;
-
-/**
- * Process is a thin wrapper around proc_* functions to easily
- * start independent PHP processes.
- *
- * @author Fabien Potencier <fabien@symfony.com>
- * @author Romain Neutron <imprec@gmail.com>
- */
-class Process implements \IteratorAggregate
-{
-    public const ERR = 'err';
-    public const OUT = 'out';
-
-    public const STATUS_READY = 'ready';
-    public const STATUS_STARTED = 'started';
-    public const STATUS_TERMINATED = 'terminated';
-
-    public const STDIN = 0;
-    public const STDOUT = 1;
-    public const STDERR = 2;
-
-    // Timeout Precision in seconds.
-    public const TIMEOUT_PRECISION = 0.2;
-
-    public const ITER_NON_BLOCKING = 1; // By default, iterating over outputs is a blocking call, use this flag to make it non-blocking
-    public const ITER_KEEP_OUTPUT = 2;  // By default, outputs are cleared while iterating, use this flag to keep them in memory
-    public const ITER_SKIP_OUT = 4;     // Use this flag to skip STDOUT while iterating
-    public const ITER_SKIP_ERR = 8;     // Use this flag to skip STDERR while iterating
-
-    private $callback;
-    private $hasCallback = false;
-    private $commandline;
-    private $cwd;
-    private $env;
-    private $input;
-    private $starttime;
-    private $lastOutputTime;
-    private $timeout;
-    private $idleTimeout;
-    private $exitcode;
-    private $fallbackStatus = [];
-    private $processInformation;
-    private $outputDisabled = false;
-    private $stdout;
-    private $stderr;
-    private $process;
-    private $status = self::STATUS_READY;
-    private $incrementalOutputOffset = 0;
-    private $incrementalErrorOutputOffset = 0;
-    private $tty = false;
-    private $pty;
-    private $options = ['suppress_errors' => true, 'bypass_shell' => true];
-
-    private $useFileHandles = false;
-    /** @var PipesInterface */
-    private $processPipes;
-
-    private $latestSignal;
-
-    private static $sigchild;
-
-    /**
-     * Exit codes translation table.
-     *
-     * User-defined errors must use exit codes in the 64-113 range.
-     */
-    public static $exitCodes = [
-        0 => 'OK',
-        1 => 'General error',
-        2 => 'Misuse of shell builtins',
-
-        126 => 'Invoked command cannot execute',
-        127 => 'Command not found',
-        128 => 'Invalid exit argument',
-
-        // signals
-        129 => 'Hangup',
-        130 => 'Interrupt',
-        131 => 'Quit and dump core',
-        132 => 'Illegal instruction',
-        133 => 'Trace/breakpoint trap',
-        134 => 'Process aborted',
-        135 => 'Bus error: "access to undefined portion of memory object"',
-        136 => 'Floating point exception: "erroneous arithmetic operation"',
-        137 => 'Kill (terminate immediately)',
-        138 => 'User-defined 1',
-        139 => 'Segmentation violation',
-        140 => 'User-defined 2',
-        141 => 'Write to pipe with no one reading',
-        142 => 'Signal raised by alarm',
-        143 => 'Termination (request to terminate)',
-        // 144 - not defined
-        145 => 'Child process terminated, stopped (or continued*)',
-        146 => 'Continue if stopped',
-        147 => 'Stop executing temporarily',
-        148 => 'Terminal stop signal',
-        149 => 'Background process attempting to read from tty ("in")',
-        150 => 'Background process attempting to write to tty ("out")',
-        151 => 'Urgent data available on socket',
-        152 => 'CPU time limit exceeded',
-        153 => 'File size limit exceeded',
-        154 => 'Signal raised by timer counting virtual time: "virtual timer expired"',
-        155 => 'Profiling timer expired',
-        // 156 - not defined
-        157 => 'Pollable event',
-        // 158 - not defined
-        159 => 'Bad syscall',
-    ];
-
-    /**
-     * @param array          $command The command to run and its arguments listed as separate entries
-     * @param string|null    $cwd     The working directory or null to use the working dir of the current PHP process
-     * @param array|null     $env     The environment variables or null to use the same environment as the current PHP process
-     * @param mixed|null     $input   The input as stream resource, scalar or \Traversable, or null for no input
-     * @param int|float|null $timeout The timeout in seconds or null to disable
-     *
-     * @throws LogicException When proc_open is not installed
-     */
-    public function __construct(array $command, string $cwd = null, array $env = null, $input = null, ?float $timeout = 60)
-    {
-        if (!\function_exists('proc_open')) {
-            throw new LogicException('The Process class relies on proc_open, which is not available on your PHP installation.');
-        }
-
-        $this->commandline = $command;
-        $this->cwd = $cwd;
-
-        // on Windows, if the cwd changed via chdir(), proc_open defaults to the dir where PHP was started
-        // on Gnu/Linux, PHP builds with --enable-maintainer-zts are also affected
-        // @see : https://bugs.php.net/51800
-        // @see : https://bugs.php.net/50524
-        if (null === $this->cwd && (\defined('ZEND_THREAD_SAFE') || '\\' === \DIRECTORY_SEPARATOR)) {
-            $this->cwd = getcwd();
-        }
-        if (null !== $env) {
-            $this->setEnv($env);
-        }
-
-        $this->setInput($input);
-        $this->setTimeout($timeout);
-        $this->useFileHandles = '\\' === \DIRECTORY_SEPARATOR;
-        $this->pty = false;
-    }
-
-    /**
-     * Creates a Process instance as a command-line to be run in a shell wrapper.
-     *
-     * Command-lines are parsed by the shell of your OS (/bin/sh on Unix-like, cmd.exe on Windows.)
-     * This allows using e.g. pipes or conditional execution. In this mode, signals are sent to the
-     * shell wrapper and not to your commands.
-     *
-     * In order to inject dynamic values into command-lines, we strongly recommend using placeholders.
-     * This will save escaping values, which is not portable nor secure anyway:
-     *
-     *   $process = Process::fromShellCommandline('my_command "$MY_VAR"');
-     *   $process->run(null, ['MY_VAR' => $theValue]);
-     *
-     * @param string         $command The command line to pass to the shell of the OS
-     * @param string|null    $cwd     The working directory or null to use the working dir of the current PHP process
-     * @param array|null     $env     The environment variables or null to use the same environment as the current PHP process
-     * @param mixed|null     $input   The input as stream resource, scalar or \Traversable, or null for no input
-     * @param int|float|null $timeout The timeout in seconds or null to disable
-     *
-     * @return static
-     *
-     * @throws LogicException When proc_open is not installed
-     */
-    public static function fromShellCommandline(string $command, string $cwd = null, array $env = null, $input = null, ?float $timeout = 60)
-    {
-        $process = new static([], $cwd, $env, $input, $timeout);
-        $process->commandline = $command;
-
-        return $process;
-    }
-
-    public function __destruct()
-    {
-        if ($this->options['create_new_console'] ?? false) {
-            $this->processPipes->close();
-        } else {
-            $this->stop(0);
-        }
-    }
-
-    public function __clone()
-    {
-        $this->resetProcessData();
-    }
-
-    /**
-     * Runs the process.
-     *
-     * The callback receives the type of output (out or err) and
-     * some bytes from the output in real-time. It allows to have feedback
-     * from the independent process during execution.
-     *
-     * The STDOUT and STDERR are also available after the process is finished
-     * via the getOutput() and getErrorOutput() methods.
-     *
-     * @param callable|null $callback A PHP callback to run whenever there is some
-     *                                output available on STDOUT or STDERR
-     *
-     * @return int The exit status code
-     *
-     * @throws RuntimeException         When process can't be launched
-     * @throws RuntimeException         When process is already running
-     * @throws ProcessTimedOutException When process timed out
-     * @throws ProcessSignaledException When process stopped after receiving signal
-     * @throws LogicException           In case a callback is provided and output has been disabled
-     *
-     * @final
-     */
-    public function run(callable $callback = null, array $env = []): int
-    {
-        $this->start($callback, $env);
-
-        return $this->wait();
-    }
-
-    /**
-     * Runs the process.
-     *
-     * This is identical to run() except that an exception is thrown if the process
-     * exits with a non-zero exit code.
-     *
-     * @return $this
-     *
-     * @throws ProcessFailedException if the process didn't terminate successfully
-     *
-     * @final
-     */
-    public function mustRun(callable $callback = null, array $env = []): self
-    {
-        if (0 !== $this->run($callback, $env)) {
-            throw new ProcessFailedException($this);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Starts the process and returns after writing the input to STDIN.
-     *
-     * This method blocks until all STDIN data is sent to the process then it
-     * returns while the process runs in the background.
-     *
-     * The termination of the process can be awaited with wait().
-     *
-     * The callback receives the type of output (out or err) and some bytes from
-     * the output in real-time while writing the standard input to the process.
-     * It allows to have feedback from the independent process during execution.
-     *
-     * @param callable|null $callback A PHP callback to run whenever there is some
-     *                                output available on STDOUT or STDERR
-     *
-     * @throws RuntimeException When process can't be launched
-     * @throws RuntimeException When process is already running
-     * @throws LogicException   In case a callback is provided and output has been disabled
-     */
-    public function start(callable $callback = null, array $env = [])
-    {
-        if ($this->isRunning()) {
-            throw new RuntimeException('Process is already running.');
-        }
-
-        $this->resetProcessData();
-        $this->starttime = $this->lastOutputTime = microtime(true);
-        $this->callback = $this->buildCallback($callback);
-        $this->hasCallback = null !== $callback;
-        $descriptors = $this->getDescriptors();
-
-        if ($this->env) {
-            $env += $this->env;
-        }
-
-        $env += $this->getDefaultEnv();
-
-        if (\is_array($commandline = $this->commandline)) {
-            $commandline = implode(' ', array_map([$this, 'escapeArgument'], $commandline));
-
-            if ('\\' !== \DIRECTORY_SEPARATOR) {
-                // exec is mandatory to deal with sending a signal to the process
-                $commandline = 'exec '.$commandline;
-            }
-        } else {
-            $commandline = $this->replacePlaceholders($commandline, $env);
-        }
-
-        if ('\\' === \DIRECTORY_SEPARATOR) {
-            $commandline = $this->prepareWindowsCommandLine($commandline, $env);
-        } elseif (!$this->useFileHandles && $this->isSigchildEnabled()) {
-            // last exit code is output on the fourth pipe and caught to work around --enable-sigchild
-            $descriptors[3] = ['pipe', 'w'];
-
-            // See https://unix.stackexchange.com/questions/71205/background-process-pipe-input
-            $commandline = '{ ('.$commandline.') <&3 3<&- 3>/dev/null & } 3<&0;';
-            $commandline .= 'pid=$!; echo $pid >&3; wait $pid; code=$?; echo $code >&3; exit $code';
-
-            // Workaround for the bug, when PTS functionality is enabled.
-            // @see : https://bugs.php.net/69442
-            $ptsWorkaround = fopen(__FILE__, 'r');
-        }
-
-        $envPairs = [];
-        foreach ($env as $k => $v) {
-            if (false !== $v) {
-                $envPairs[] = $k.'='.$v;
-            }
-        }
-
-        if (!is_dir($this->cwd)) {
-            throw new RuntimeException(sprintf('The provided cwd "%s" does not exist.', $this->cwd));
-        }
-
-        $this->process = @proc_open($commandline, $descriptors, $this->processPipes->pipes, $this->cwd, $envPairs, $this->options);
-
-        if (!\is_resource($this->process)) {
-            throw new RuntimeException('Unable to launch a new process.');
-        }
-        $this->status = self::STATUS_STARTED;
-
-        if (isset($descriptors[3])) {
-            $this->fallbackStatus['pid'] = (int) fgets($this->processPipes->pipes[3]);
-        }
-
-        if ($this->tty) {
-            return;
-        }
-
-        $this->updateStatus(false);
-        $this->checkTimeout();
-    }
-
-    /**
-     * Restarts the process.
-     *
-     * Be warned that the process is cloned before being started.
-     *
-     * @param callable|null $callback A PHP callback to run whenever there is some
-     *                                output available on STDOUT or STDERR
-     *
-     * @return static
-     *
-     * @throws RuntimeException When process can't be launched
-     * @throws RuntimeException When process is already running
-     *
-     * @see start()
-     *
-     * @final
-     */
-    public function restart(callable $callback = null, array $env = []): self
-    {
-        if ($this->isRunning()) {
-            throw new RuntimeException('Process is already running.');
-        }
-
-        $process = clone $this;
-        $process->start($callback, $env);
-
-        return $process;
-    }
-
-    /**
-     * Waits for the process to terminate.
-     *
-     * The callback receives the type of output (out or err) and some bytes
-     * from the output in real-time while writing the standard input to the process.
-     * It allows to have feedback from the independent process during execution.
-     *
-     * @param callable|null $callback A valid PHP callback
-     *
-     * @return int The exitcode of the process
-     *
-     * @throws ProcessTimedOutException When process timed out
-     * @throws ProcessSignaledException When process stopped after receiving signal
-     * @throws LogicException           When process is not yet started
-     */
-    public function wait(callable $callback = null)
-    {
-        $this->requireProcessIsStarted(__FUNCTION__);
-
-        $this->updateStatus(false);
-
-        if (null !== $callback) {
-            if (!$this->processPipes->haveReadSupport()) {
-                $this->stop(0);
-                throw new LogicException('Pass the callback to the "Process::start" method or call enableOutput to use a callback with "Process::wait".');
-            }
-            $this->callback = $this->buildCallback($callback);
-        }
-
-        do {
-            $this->checkTimeout();
-            $running = '\\' === \DIRECTORY_SEPARATOR ? $this->isRunning() : $this->processPipes->areOpen();
-            $this->readPipes($running, '\\' !== \DIRECTORY_SEPARATOR || !$running);
-        } while ($running);
-
-        while ($this->isRunning()) {
-            $this->checkTimeout();
-            usleep(1000);
-        }
-
-        if ($this->processInformation['signaled'] && $this->processInformation['termsig'] !== $this->latestSignal) {
-            throw new ProcessSignaledException($this);
-        }
-
-        return $this->exitcode;
-    }
-
-    /**
-     * Waits until the callback returns true.
-     *
-     * The callback receives the type of output (out or err) and some bytes
-     * from the output in real-time while writing the standard input to the process.
-     * It allows to have feedback from the independent process during execution.
-     *
-     * @throws RuntimeException         When process timed out
-     * @throws LogicException           When process is not yet started
-     * @throws ProcessTimedOutException In case the timeout was reached
-     */
-    public function waitUntil(callable $callback): bool
-    {
-        $this->requireProcessIsStarted(__FUNCTION__);
-        $this->updateStatus(false);
-
-        if (!$this->processPipes->haveReadSupport()) {
-            $this->stop(0);
-            throw new LogicException('Pass the callback to the "Process::start" method or call enableOutput to use a callback with "Process::waitUntil".');
-        }
-        $callback = $this->buildCallback($callback);
-
-        $ready = false;
-        while (true) {
-            $this->checkTimeout();
-            $running = '\\' === \DIRECTORY_SEPARATOR ? $this->isRunning() : $this->processPipes->areOpen();
-            $output = $this->processPipes->readAndWrite($running, '\\' !== \DIRECTORY_SEPARATOR || !$running);
-
-            foreach ($output as $type => $data) {
-                if (3 !== $type) {
-                    $ready = $callback(self::STDOUT === $type ? self::OUT : self::ERR, $data) || $ready;
-                } elseif (!isset($this->fallbackStatus['signaled'])) {
-                    $this->fallbackStatus['exitcode'] = (int) $data;
-                }
-            }
-            if ($ready) {
-                return true;
-            }
-            if (!$running) {
-                return false;
-            }
-
-            usleep(1000);
-        }
-    }
-
-    /**
-     * Returns the Pid (process identifier), if applicable.
-     *
-     * @return int|null The process id if running, null otherwise
-     */
-    public function getPid()
-    {
-        return $this->isRunning() ? $this->processInformation['pid'] : null;
-    }
-
-    /**
-     * Sends a POSIX signal to the process.
-     *
-     * @param int $signal A valid POSIX signal (see https://php.net/pcntl.constants)
-     *
-     * @return $this
-     *
-     * @throws LogicException   In case the process is not running
-     * @throws RuntimeException In case --enable-sigchild is activated and the process can't be killed
-     * @throws RuntimeException In case of failure
-     */
-    public function signal(int $signal)
-    {
-        $this->doSignal($signal, true);
-
-        return $this;
-    }
-
-    /**
-     * Disables fetching output and error output from the underlying process.
-     *
-     * @return $this
-     *
-     * @throws RuntimeException In case the process is already running
-     * @throws LogicException   if an idle timeout is set
-     */
-    public function disableOutput()
-    {
-        if ($this->isRunning()) {
-            throw new RuntimeException('Disabling output while the process is running is not possible.');
-        }
-        if (null !== $this->idleTimeout) {
-            throw new LogicException('Output can not be disabled while an idle timeout is set.');
-        }
-
-        $this->outputDisabled = true;
-
-        return $this;
-    }
-
-    /**
-     * Enables fetching output and error output from the underlying process.
-     *
-     * @return $this
-     *
-     * @throws RuntimeException In case the process is already running
-     */
-    public function enableOutput()
-    {
-        if ($this->isRunning()) {
-            throw new RuntimeException('Enabling output while the process is running is not possible.');
-        }
-
-        $this->outputDisabled = false;
-
-        return $this;
-    }
-
-    /**
-     * Returns true in case the output is disabled, false otherwise.
-     *
-     * @return bool
-     */
-    public function isOutputDisabled()
-    {
-        return $this->outputDisabled;
-    }
-
-    /**
-     * Returns the current output of the process (STDOUT).
-     *
-     * @return string The process output
-     *
-     * @throws LogicException in case the output has been disabled
-     * @throws LogicException In case the process is not started
-     */
-    public function getOutput()
-    {
-        $this->readPipesForOutput(__FUNCTION__);
-
-        if (false === $ret = stream_get_contents($this->stdout, -1, 0)) {
-            return '';
-        }
-
-        return $ret;
-    }
-
-    /**
-     * Returns the output incrementally.
-     *
-     * In comparison with the getOutput method which always return the whole
-     * output, this one returns the new output since the last call.
-     *
-     * @return string The process output since the last call
-     *
-     * @throws LogicException in case the output has been disabled
-     * @throws LogicException In case the process is not started
-     */
-    public function getIncrementalOutput()
-    {
-        $this->readPipesForOutput(__FUNCTION__);
-
-        $latest = stream_get_contents($this->stdout, -1, $this->incrementalOutputOffset);
-        $this->incrementalOutputOffset = ftell($this->stdout);
-
-        if (false === $latest) {
-            return '';
-        }
-
-        return $latest;
-    }
-
-    /**
-     * Returns an iterator to the output of the process, with the output type as keys (Process::OUT/ERR).
-     *
-     * @param int $flags A bit field of Process::ITER_* flags
-     *
-     * @throws LogicException in case the output has been disabled
-     * @throws LogicException In case the process is not started
-     *
-     * @return \Generator
-     */
-    public function getIterator(int $flags = 0)
-    {
-        $this->readPipesForOutput(__FUNCTION__, false);
-
-        $clearOutput = !(self::ITER_KEEP_OUTPUT & $flags);
-        $blocking = !(self::ITER_NON_BLOCKING & $flags);
-        $yieldOut = !(self::ITER_SKIP_OUT & $flags);
-        $yieldErr = !(self::ITER_SKIP_ERR & $flags);
-
-        while (null !== $this->callback || ($yieldOut && !feof($this->stdout)) || ($yieldErr && !feof($this->stderr))) {
-            if ($yieldOut) {
-                $out = stream_get_contents($this->stdout, -1, $this->incrementalOutputOffset);
-
-                if (isset($out[0])) {
-                    if ($clearOutput) {
-                        $this->clearOutput();
-                    } else {
-                        $this->incrementalOutputOffset = ftell($this->stdout);
-                    }
-
-                    yield self::OUT => $out;
-                }
-            }
-
-            if ($yieldErr) {
-                $err = stream_get_contents($this->stderr, -1, $this->incrementalErrorOutputOffset);
-
-                if (isset($err[0])) {
-                    if ($clearOutput) {
-                        $this->clearErrorOutput();
-                    } else {
-                        $this->incrementalErrorOutputOffset = ftell($this->stderr);
-                    }
-
-                    yield self::ERR => $err;
-                }
-            }
-
-            if (!$blocking && !isset($out[0]) && !isset($err[0])) {
-                yield self::OUT => '';
-            }
-
-            $this->checkTimeout();
-            $this->readPipesForOutput(__FUNCTION__, $blocking);
-        }
-    }
-
-    /**
-     * Clears the process output.
-     *
-     * @return $this
-     */
-    public function clearOutput()
-    {
-        ftruncate($this->stdout, 0);
-        fseek($this->stdout, 0);
-        $this->incrementalOutputOffset = 0;
-
-        return $this;
-    }
-
-    /**
-     * Returns the current error output of the process (STDERR).
-     *
-     * @return string The process error output
-     *
-     * @throws LogicException in case the output has been disabled
-     * @throws LogicException In case the process is not started
-     */
-    public function getErrorOutput()
-    {
-        $this->readPipesForOutput(__FUNCTION__);
-
-        if (false === $ret = stream_get_contents($this->stderr, -1, 0)) {
-            return '';
-        }
-
-        return $ret;
-    }
-
-    /**
-     * Returns the errorOutput incrementally.
-     *
-     * In comparison with the getErrorOutput method which always return the
-     * whole error output, this one returns the new error output since the last
-     * call.
-     *
-     * @return string The process error output since the last call
-     *
-     * @throws LogicException in case the output has been disabled
-     * @throws LogicException In case the process is not started
-     */
-    public function getIncrementalErrorOutput()
-    {
-        $this->readPipesForOutput(__FUNCTION__);
-
-        $latest = stream_get_contents($this->stderr, -1, $this->incrementalErrorOutputOffset);
-        $this->incrementalErrorOutputOffset = ftell($this->stderr);
-
-        if (false === $latest) {
-            return '';
-        }
-
-        return $latest;
-    }
-
-    /**
-     * Clears the process output.
-     *
-     * @return $this
-     */
-    public function clearErrorOutput()
-    {
-        ftruncate($this->stderr, 0);
-        fseek($this->stderr, 0);
-        $this->incrementalErrorOutputOffset = 0;
-
-        return $this;
-    }
-
-    /**
-     * Returns the exit code returned by the process.
-     *
-     * @return int|null The exit status code, null if the Process is not terminated
-     */
-    public function getExitCode()
-    {
-        $this->updateStatus(false);
-
-        return $this->exitcode;
-    }
-
-    /**
-     * Returns a string representation for the exit code returned by the process.
-     *
-     * This method relies on the Unix exit code status standardization
-     * and might not be relevant for other operating systems.
-     *
-     * @return string|null A string representation for the exit status code, null if the Process is not terminated
-     *
-     * @see http://tldp.org/LDP/abs/html/exitcodes.html
-     * @see http://en.wikipedia.org/wiki/Unix_signal
-     */
-    public function getExitCodeText()
-    {
-        if (null === $exitcode = $this->getExitCode()) {
-            return null;
-        }
-
-        return isset(self::$exitCodes[$exitcode]) ? self::$exitCodes[$exitcode] : 'Unknown error';
-    }
-
-    /**
-     * Checks if the process ended successfully.
-     *
-     * @return bool true if the process ended successfully, false otherwise
-     */
-    public function isSuccessful()
-    {
-        return 0 === $this->getExitCode();
-    }
-
-    /**
-     * Returns true if the child process has been terminated by an uncaught signal.
-     *
-     * It always returns false on Windows.
-     *
-     * @return bool
-     *
-     * @throws LogicException In case the process is not terminated
-     */
-    public function hasBeenSignaled()
-    {
-        $this->requireProcessIsTerminated(__FUNCTION__);
-
-        return $this->processInformation['signaled'];
-    }
-
-    /**
-     * Returns the number of the signal that caused the child process to terminate its execution.
-     *
-     * It is only meaningful if hasBeenSignaled() returns true.
-     *
-     * @return int
-     *
-     * @throws RuntimeException In case --enable-sigchild is activated
-     * @throws LogicException   In case the process is not terminated
-     */
-    public function getTermSignal()
-    {
-        $this->requireProcessIsTerminated(__FUNCTION__);
-
-        if ($this->isSigchildEnabled() && -1 === $this->processInformation['termsig']) {
-            throw new RuntimeException('This PHP has been compiled with --enable-sigchild. Term signal can not be retrieved.');
-        }
-
-        return $this->processInformation['termsig'];
-    }
-
-    /**
-     * Returns true if the child process has been stopped by a signal.
-     *
-     * It always returns false on Windows.
-     *
-     * @return bool
-     *
-     * @throws LogicException In case the process is not terminated
-     */
-    public function hasBeenStopped()
-    {
-        $this->requireProcessIsTerminated(__FUNCTION__);
-
-        return $this->processInformation['stopped'];
-    }
-
-    /**
-     * Returns the number of the signal that caused the child process to stop its execution.
-     *
-     * It is only meaningful if hasBeenStopped() returns true.
-     *
-     * @return int
-     *
-     * @throws LogicException In case the process is not terminated
-     */
-    public function getStopSignal()
-    {
-        $this->requireProcessIsTerminated(__FUNCTION__);
-
-        return $this->processInformation['stopsig'];
-    }
-
-    /**
-     * Checks if the process is currently running.
-     *
-     * @return bool true if the process is currently running, false otherwise
-     */
-    public function isRunning()
-    {
-        if (self::STATUS_STARTED !== $this->status) {
-            return false;
-        }
-
-        $this->updateStatus(false);
-
-        return $this->processInformation['running'];
-    }
-
-    /**
-     * Checks if the process has been started with no regard to the current state.
-     *
-     * @return bool true if status is ready, false otherwise
-     */
-    public function isStarted()
-    {
-        return self::STATUS_READY != $this->status;
-    }
-
-    /**
-     * Checks if the process is terminated.
-     *
-     * @return bool true if process is terminated, false otherwise
-     */
-    public function isTerminated()
-    {
-        $this->updateStatus(false);
-
-        return self::STATUS_TERMINATED == $this->status;
-    }
-
-    /**
-     * Gets the process status.
-     *
-     * The status is one of: ready, started, terminated.
-     *
-     * @return string The current process status
-     */
-    public function getStatus()
-    {
-        $this->updateStatus(false);
-
-        return $this->status;
-    }
-
-    /**
-     * Stops the process.
-     *
-     * @param int|float $timeout The timeout in seconds
-     * @param int       $signal  A POSIX signal to send in case the process has not stop at timeout, default is SIGKILL (9)
-     *
-     * @return int|null The exit-code of the process or null if it's not running
-     */
-    public function stop(float $timeout = 10, int $signal = null)
-    {
-        $timeoutMicro = microtime(true) + $timeout;
-        if ($this->isRunning()) {
-            // given SIGTERM may not be defined and that "proc_terminate" uses the constant value and not the constant itself, we use the same here
-            $this->doSignal(15, false);
-            do {
-                usleep(1000);
-            } while ($this->isRunning() && microtime(true) < $timeoutMicro);
-
-            if ($this->isRunning()) {
-                // Avoid exception here: process is supposed to be running, but it might have stopped just
-                // after this line. In any case, let's silently discard the error, we cannot do anything.
-                $this->doSignal($signal ?: 9, false);
-            }
-        }
-
-        if ($this->isRunning()) {
-            if (isset($this->fallbackStatus['pid'])) {
-                unset($this->fallbackStatus['pid']);
-
-                return $this->stop(0, $signal);
-            }
-            $this->close();
-        }
-
-        return $this->exitcode;
-    }
-
-    /**
-     * Adds a line to the STDOUT stream.
-     *
-     * @internal
-     */
-    public function addOutput(string $line)
-    {
-        $this->lastOutputTime = microtime(true);
-
-        fseek($this->stdout, 0, \SEEK_END);
-        fwrite($this->stdout, $line);
-        fseek($this->stdout, $this->incrementalOutputOffset);
-    }
-
-    /**
-     * Adds a line to the STDERR stream.
-     *
-     * @internal
-     */
-    public function addErrorOutput(string $line)
-    {
-        $this->lastOutputTime = microtime(true);
-
-        fseek($this->stderr, 0, \SEEK_END);
-        fwrite($this->stderr, $line);
-        fseek($this->stderr, $this->incrementalErrorOutputOffset);
-    }
-
-    /**
-     * Gets the last output time in seconds.
-     *
-     * @return float|null The last output time in seconds or null if it isn't started
-     */
-    public function getLastOutputTime(): ?float
-    {
-        return $this->lastOutputTime;
-    }
-
-    /**
-     * Gets the command line to be executed.
-     *
-     * @return string The command to execute
-     */
-    public function getCommandLine()
-    {
-        return \is_array($this->commandline) ? implode(' ', array_map([$this, 'escapeArgument'], $this->commandline)) : $this->commandline;
-    }
-
-    /**
-     * Gets the process timeout (max. runtime).
-     *
-     * @return float|null The timeout in seconds or null if it's disabled
-     */
-    public function getTimeout()
-    {
-        return $this->timeout;
-    }
-
-    /**
-     * Gets the process idle timeout (max. time since last output).
-     *
-     * @return float|null The timeout in seconds or null if it's disabled
-     */
-    public function getIdleTimeout()
-    {
-        return $this->idleTimeout;
-    }
-
-    /**
-     * Sets the process timeout (max. runtime) in seconds.
-     *
-     * To disable the timeout, set this value to null.
-     *
-     * @return $this
-     *
-     * @throws InvalidArgumentException if the timeout is negative
-     */
-    public function setTimeout(?float $timeout)
-    {
-        $this->timeout = $this->validateTimeout($timeout);
-
-        return $this;
-    }
-
-    /**
-     * Sets the process idle timeout (max. time since last output) in seconds.
-     *
-     * To disable the timeout, set this value to null.
-     *
-     * @return $this
-     *
-     * @throws LogicException           if the output is disabled
-     * @throws InvalidArgumentException if the timeout is negative
-     */
-    public function setIdleTimeout(?float $timeout)
-    {
-        if (null !== $timeout && $this->outputDisabled) {
-            throw new LogicException('Idle timeout can not be set while the output is disabled.');
-        }
-
-        $this->idleTimeout = $this->validateTimeout($timeout);
-
-        return $this;
-    }
-
-    /**
-     * Enables or disables the TTY mode.
-     *
-     * @return $this
-     *
-     * @throws RuntimeException In case the TTY mode is not supported
-     */
-    public function setTty(bool $tty)
-    {
-        if ('\\' === \DIRECTORY_SEPARATOR && $tty) {
-            throw new RuntimeException('TTY mode is not supported on Windows platform.');
-        }
-
-        if ($tty && !self::isTtySupported()) {
-            throw new RuntimeException('TTY mode requires /dev/tty to be read/writable.');
-        }
-
-        $this->tty = $tty;
-
-        return $this;
-    }
-
-    /**
-     * Checks if the TTY mode is enabled.
-     *
-     * @return bool true if the TTY mode is enabled, false otherwise
-     */
-    public function isTty()
-    {
-        return $this->tty;
-    }
-
-    /**
-     * Sets PTY mode.
-     *
-     * @return $this
-     */
-    public function setPty(bool $bool)
-    {
-        $this->pty = $bool;
-
-        return $this;
-    }
-
-    /**
-     * Returns PTY state.
-     *
-     * @return bool
-     */
-    public function isPty()
-    {
-        return $this->pty;
-    }
-
-    /**
-     * Gets the working directory.
-     *
-     * @return string|null The current working directory or null on failure
-     */
-    public function getWorkingDirectory()
-    {
-        if (null === $this->cwd) {
-            // getcwd() will return false if any one of the parent directories does not have
-            // the readable or search mode set, even if the current directory does
-            return getcwd() ?: null;
-        }
-
-        return $this->cwd;
-    }
-
-    /**
-     * Sets the current working directory.
-     *
-     * @return $this
-     */
-    public function setWorkingDirectory(string $cwd)
-    {
-        $this->cwd = $cwd;
-
-        return $this;
-    }
-
-    /**
-     * Gets the environment variables.
-     *
-     * @return array The current environment variables
-     */
-    public function getEnv()
-    {
-        return $this->env;
-    }
-
-    /**
-     * Sets the environment variables.
-     *
-     * Each environment variable value should be a string.
-     * If it is an array, the variable is ignored.
-     * If it is false or null, it will be removed when
-     * env vars are otherwise inherited.
-     *
-     * That happens in PHP when 'argv' is registered into
-     * the $_ENV array for instance.
-     *
-     * @param array $env The new environment variables
-     *
-     * @return $this
-     */
-    public function setEnv(array $env)
-    {
-        // Process can not handle env values that are arrays
-        $env = array_filter($env, function ($value) {
-            return !\is_array($value);
-        });
-
-        $this->env = $env;
-
-        return $this;
-    }
-
-    /**
-     * Gets the Process input.
-     *
-     * @return resource|string|\Iterator|null The Process input
-     */
-    public function getInput()
-    {
-        return $this->input;
-    }
-
-    /**
-     * Sets the input.
-     *
-     * This content will be passed to the underlying process standard input.
-     *
-     * @param string|int|float|bool|resource|\Traversable|null $input The content
-     *
-     * @return $this
-     *
-     * @throws LogicException In case the process is running
-     */
-    public function setInput($input)
-    {
-        if ($this->isRunning()) {
-            throw new LogicException('Input can not be set while the process is running.');
-        }
-
-        $this->input = ProcessUtils::validateInput(__METHOD__, $input);
-
-        return $this;
-    }
-
-    /**
-     * Performs a check between the timeout definition and the time the process started.
-     *
-     * In case you run a background process (with the start method), you should
-     * trigger this method regularly to ensure the process timeout
-     *
-     * @throws ProcessTimedOutException In case the timeout was reached
-     */
-    public function checkTimeout()
-    {
-        if (self::STATUS_STARTED !== $this->status) {
-            return;
-        }
-
-        if (null !== $this->timeout && $this->timeout < microtime(true) - $this->starttime) {
-            $this->stop(0);
-
-            throw new ProcessTimedOutException($this, ProcessTimedOutException::TYPE_GENERAL);
-        }
-
-        if (null !== $this->idleTimeout && $this->idleTimeout < microtime(true) - $this->lastOutputTime) {
-            $this->stop(0);
-
-            throw new ProcessTimedOutException($this, ProcessTimedOutException::TYPE_IDLE);
-        }
-    }
-
-    /**
-     * @throws LogicException in case process is not started
-     */
-    public function getStartTime(): float
-    {
-        if (!$this->isStarted()) {
-            throw new LogicException('Start time is only available after process start.');
-        }
-
-        return $this->starttime;
-    }
-
-    /**
-     * Defines options to pass to the underlying proc_open().
-     *
-     * @see https://php.net/proc_open for the options supported by PHP.
-     *
-     * Enabling the "create_new_console" option allows a subprocess to continue
-     * to run after the main process exited, on both Windows and *nix
-     */
-    public function setOptions(array $options)
-    {
-        if ($this->isRunning()) {
-            throw new RuntimeException('Setting options while the process is running is not possible.');
-        }
-
-        $defaultOptions = $this->options;
-        $existingOptions = ['blocking_pipes', 'create_process_group', 'create_new_console'];
-
-        foreach ($options as $key => $value) {
-            if (!\in_array($key, $existingOptions)) {
-                $this->options = $defaultOptions;
-                throw new LogicException(sprintf('Invalid option "%s" passed to "%s()". Supported options are "%s".', $key, __METHOD__, implode('", "', $existingOptions)));
-            }
-            $this->options[$key] = $value;
-        }
-    }
-
-    /**
-     * Returns whether TTY is supported on the current operating system.
-     */
-    public static function isTtySupported(): bool
-    {
-        static $isTtySupported;
-
-        if (null === $isTtySupported) {
-            $isTtySupported = (bool) @proc_open('echo 1 >/dev/null', [['file', '/dev/tty', 'r'], ['file', '/dev/tty', 'w'], ['file', '/dev/tty', 'w']], $pipes);
-        }
-
-        return $isTtySupported;
-    }
-
-    /**
-     * Returns whether PTY is supported on the current operating system.
-     *
-     * @return bool
-     */
-    public static function isPtySupported()
-    {
-        static $result;
-
-        if (null !== $result) {
-            return $result;
-        }
-
-        if ('\\' === \DIRECTORY_SEPARATOR) {
-            return $result = false;
-        }
-
-        return $result = (bool) @proc_open('echo 1 >/dev/null', [['pty'], ['pty'], ['pty']], $pipes);
-    }
-
-    /**
-     * Creates the descriptors needed by the proc_open.
-     */
-    private function getDescriptors(): array
-    {
-        if ($this->input instanceof \Iterator) {
-            $this->input->rewind();
-        }
-        if ('\\' === \DIRECTORY_SEPARATOR) {
-            $this->processPipes = new WindowsPipes($this->input, !$this->outputDisabled || $this->hasCallback);
-        } else {
-            $this->processPipes = new UnixPipes($this->isTty(), $this->isPty(), $this->input, !$this->outputDisabled || $this->hasCallback);
-        }
-
-        return $this->processPipes->getDescriptors();
-    }
-
-    /**
-     * Builds up the callback used by wait().
-     *
-     * The callbacks adds all occurred output to the specific buffer and calls
-     * the user callback (if present) with the received output.
-     *
-     * @param callable|null $callback The user defined PHP callback
-     *
-     * @return \Closure A PHP closure
-     */
-    protected function buildCallback(callable $callback = null)
-    {
-        if ($this->outputDisabled) {
-            return function ($type, $data) use ($callback): bool {
-                return null !== $callback && $callback($type, $data);
-            };
-        }
-
-        $out = self::OUT;
-
-        return function ($type, $data) use ($callback, $out): bool {
-            if ($out == $type) {
-                $this->addOutput($data);
-            } else {
-                $this->addErrorOutput($data);
-            }
-
-            return null !== $callback && $callback($type, $data);
-        };
-    }
-
-    /**
-     * Updates the status of the process, reads pipes.
-     *
-     * @param bool $blocking Whether to use a blocking read call
-     */
-    protected function updateStatus(bool $blocking)
-    {
-        if (self::STATUS_STARTED !== $this->status) {
-            return;
-        }
-
-        $this->processInformation = proc_get_status($this->process);
-        $running = $this->processInformation['running'];
-
-        $this->readPipes($running && $blocking, '\\' !== \DIRECTORY_SEPARATOR || !$running);
-
-        if ($this->fallbackStatus && $this->isSigchildEnabled()) {
-            $this->processInformation = $this->fallbackStatus + $this->processInformation;
-        }
-
-        if (!$running) {
-            $this->close();
-        }
-    }
-
-    /**
-     * Returns whether PHP has been compiled with the '--enable-sigchild' option or not.
-     *
-     * @return bool
-     */
-    protected function isSigchildEnabled()
-    {
-        if (null !== self::$sigchild) {
-            return self::$sigchild;
-        }
-
-        if (!\function_exists('phpinfo')) {
-            return self::$sigchild = false;
-        }
-
-        ob_start();
-        phpinfo(\INFO_GENERAL);
-
-        return self::$sigchild = false !== strpos(ob_get_clean(), '--enable-sigchild');
-    }
-
-    /**
-     * Reads pipes for the freshest output.
-     *
-     * @param string $caller   The name of the method that needs fresh outputs
-     * @param bool   $blocking Whether to use blocking calls or not
-     *
-     * @throws LogicException in case output has been disabled or process is not started
-     */
-    private function readPipesForOutput(string $caller, bool $blocking = false)
-    {
-        if ($this->outputDisabled) {
-            throw new LogicException('Output has been disabled.');
-        }
-
-        $this->requireProcessIsStarted($caller);
-
-        $this->updateStatus($blocking);
-    }
-
-    /**
-     * Validates and returns the filtered timeout.
-     *
-     * @throws InvalidArgumentException if the given timeout is a negative number
-     */
-    private function validateTimeout(?float $timeout): ?float
-    {
-        $timeout = (float) $timeout;
-
-        if (0.0 === $timeout) {
-            $timeout = null;
-        } elseif ($timeout < 0) {
-            throw new InvalidArgumentException('The timeout value must be a valid positive integer or float number.');
-        }
-
-        return $timeout;
-    }
-
-    /**
-     * Reads pipes, executes callback.
-     *
-     * @param bool $blocking Whether to use blocking calls or not
-     * @param bool $close    Whether to close file handles or not
-     */
-    private function readPipes(bool $blocking, bool $close)
-    {
-        $result = $this->processPipes->readAndWrite($blocking, $close);
-
-        $callback = $this->callback;
-        foreach ($result as $type => $data) {
-            if (3 !== $type) {
-                $callback(self::STDOUT === $type ? self::OUT : self::ERR, $data);
-            } elseif (!isset($this->fallbackStatus['signaled'])) {
-                $this->fallbackStatus['exitcode'] = (int) $data;
-            }
-        }
-    }
-
-    /**
-     * Closes process resource, closes file handles, sets the exitcode.
-     *
-     * @return int The exitcode
-     */
-    private function close(): int
-    {
-        $this->processPipes->close();
-        if (\is_resource($this->process)) {
-            proc_close($this->process);
-        }
-        $this->exitcode = $this->processInformation['exitcode'];
-        $this->status = self::STATUS_TERMINATED;
-
-        if (-1 === $this->exitcode) {
-            if ($this->processInformation['signaled'] && 0 < $this->processInformation['termsig']) {
-                // if process has been signaled, no exitcode but a valid termsig, apply Unix convention
-                $this->exitcode = 128 + $this->processInformation['termsig'];
-            } elseif ($this->isSigchildEnabled()) {
-                $this->processInformation['signaled'] = true;
-                $this->processInformation['termsig'] = -1;
-            }
-        }
-
-        // Free memory from self-reference callback created by buildCallback
-        // Doing so in other contexts like __destruct or by garbage collector is ineffective
-        // Now pipes are closed, so the callback is no longer necessary
-        $this->callback = null;
-
-        return $this->exitcode;
-    }
-
-    /**
-     * Resets data related to the latest run of the process.
-     */
-    private function resetProcessData()
-    {
-        $this->starttime = null;
-        $this->callback = null;
-        $this->exitcode = null;
-        $this->fallbackStatus = [];
-        $this->processInformation = null;
-        $this->stdout = fopen('php://temp/maxmemory:'.(1024 * 1024), 'w+b');
-        $this->stderr = fopen('php://temp/maxmemory:'.(1024 * 1024), 'w+b');
-        $this->process = null;
-        $this->latestSignal = null;
-        $this->status = self::STATUS_READY;
-        $this->incrementalOutputOffset = 0;
-        $this->incrementalErrorOutputOffset = 0;
-    }
-
-    /**
-     * Sends a POSIX signal to the process.
-     *
-     * @param int  $signal         A valid POSIX signal (see https://php.net/pcntl.constants)
-     * @param bool $throwException Whether to throw exception in case signal failed
-     *
-     * @return bool True if the signal was sent successfully, false otherwise
-     *
-     * @throws LogicException   In case the process is not running
-     * @throws RuntimeException In case --enable-sigchild is activated and the process can't be killed
-     * @throws RuntimeException In case of failure
-     */
-    private function doSignal(int $signal, bool $throwException): bool
-    {
-        if (null === $pid = $this->getPid()) {
-            if ($throwException) {
-                throw new LogicException('Can not send signal on a non running process.');
-            }
-
-            return false;
-        }
-
-        if ('\\' === \DIRECTORY_SEPARATOR) {
-            exec(sprintf('taskkill /F /T /PID %d 2>&1', $pid), $output, $exitCode);
-            if ($exitCode && $this->isRunning()) {
-                if ($throwException) {
-                    throw new RuntimeException(sprintf('Unable to kill the process (%s).', implode(' ', $output)));
-                }
-
-                return false;
-            }
-        } else {
-            if (!$this->isSigchildEnabled()) {
-                $ok = @proc_terminate($this->process, $signal);
-            } elseif (\function_exists('posix_kill')) {
-                $ok = @posix_kill($pid, $signal);
-            } elseif ($ok = proc_open(sprintf('kill -%d %d', $signal, $pid), [2 => ['pipe', 'w']], $pipes)) {
-                $ok = false === fgets($pipes[2]);
-            }
-            if (!$ok) {
-                if ($throwException) {
-                    throw new RuntimeException(sprintf('Error while sending signal "%s".', $signal));
-                }
-
-                return false;
-            }
-        }
-
-        $this->latestSignal = $signal;
-        $this->fallbackStatus['signaled'] = true;
-        $this->fallbackStatus['exitcode'] = -1;
-        $this->fallbackStatus['termsig'] = $this->latestSignal;
-
-        return true;
-    }
-
-    private function prepareWindowsCommandLine(string $cmd, array &$env): string
-    {
-        $uid = uniqid('', true);
-        $varCount = 0;
-        $varCache = [];
-        $cmd = preg_replace_callback(
-            '/"(?:(
-                [^"%!^]*+
-                (?:
-                    (?: !LF! | "(?:\^[%!^])?+" )
-                    [^"%!^]*+
-                )++
-            ) | [^"]*+ )"/x',
-            function ($m) use (&$env, &$varCache, &$varCount, $uid) {
-                if (!isset($m[1])) {
-                    return $m[0];
-                }
-                if (isset($varCache[$m[0]])) {
-                    return $varCache[$m[0]];
-                }
-                if (false !== strpos($value = $m[1], "\0")) {
-                    $value = str_replace("\0", '?', $value);
-                }
-                if (false === strpbrk($value, "\"%!\n")) {
-                    return '"'.$value.'"';
-                }
-
-                $value = str_replace(['!LF!', '"^!"', '"^%"', '"^^"', '""'], ["\n", '!', '%', '^', '"'], $value);
-                $value = '"'.preg_replace('/(\\\\*)"/', '$1$1\\"', $value).'"';
-                $var = $uid.++$varCount;
-
-                $env[$var] = $value;
-
-                return $varCache[$m[0]] = '!'.$var.'!';
-            },
-            $cmd
-        );
-
-        $cmd = 'cmd /V:ON /E:ON /D /C ('.str_replace("\n", ' ', $cmd).')';
-        foreach ($this->processPipes->getFiles() as $offset => $filename) {
-            $cmd .= ' '.$offset.'>"'.$filename.'"';
-        }
-
-        return $cmd;
-    }
-
-    /**
-     * Ensures the process is running or terminated, throws a LogicException if the process has a not started.
-     *
-     * @throws LogicException if the process has not run
-     */
-    private function requireProcessIsStarted(string $functionName)
-    {
-        if (!$this->isStarted()) {
-            throw new LogicException(sprintf('Process must be started before calling "%s()".', $functionName));
-        }
-    }
-
-    /**
-     * Ensures the process is terminated, throws a LogicException if the process has a status different than "terminated".
-     *
-     * @throws LogicException if the process is not yet terminated
-     */
-    private function requireProcessIsTerminated(string $functionName)
-    {
-        if (!$this->isTerminated()) {
-            throw new LogicException(sprintf('Process must be terminated before calling "%s()".', $functionName));
-        }
-    }
-
-    /**
-     * Escapes a string to be used as a shell argument.
-     */
-    private function escapeArgument(?string $argument): string
-    {
-        if ('' === $argument || null === $argument) {
-            return '""';
-        }
-        if ('\\' !== \DIRECTORY_SEPARATOR) {
-            return "'".str_replace("'", "'\\''", $argument)."'";
-        }
-        if (false !== strpos($argument, "\0")) {
-            $argument = str_replace("\0", '?', $argument);
-        }
-        if (!preg_match('/[\/()%!^"<>&|\s]/', $argument)) {
-            return $argument;
-        }
-        $argument = preg_replace('/(\\\\+)$/', '$1$1', $argument);
-
-        return '"'.str_replace(['"', '^', '%', '!', "\n"], ['""', '"^^"', '"^%"', '"^!"', '!LF!'], $argument).'"';
-    }
-
-    private function replacePlaceholders(string $commandline, array $env)
-    {
-        return preg_replace_callback('/"\$\{:([_a-zA-Z]++[_a-zA-Z0-9]*+)\}"/', function ($matches) use ($commandline, $env) {
-            if (!isset($env[$matches[1]]) || false === $env[$matches[1]]) {
-                throw new InvalidArgumentException(sprintf('Command line is missing a value for parameter "%s": ', $matches[1]).$commandline);
-            }
-
-            return $this->escapeArgument($env[$matches[1]]);
-        }, $commandline);
-    }
-
-    private function getDefaultEnv(): array
-    {
-        $env = [];
-
-        foreach ($_SERVER as $k => $v) {
-            if (\is_string($v) && false !== $v = getenv($k)) {
-                $env[$k] = $v;
-            }
-        }
-
-        foreach ($_ENV as $k => $v) {
-            if (\is_string($v)) {
-                $env[$k] = $v;
-            }
-        }
-
-        return $env;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+lqBuKIO=

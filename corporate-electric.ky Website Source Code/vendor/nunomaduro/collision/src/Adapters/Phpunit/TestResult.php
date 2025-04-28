@@ -1,190 +1,80 @@
-<?php
-
-declare(strict_types=1);
-
-namespace NunoMaduro\Collision\Adapters\Phpunit;
-
-use NunoMaduro\Collision\Contracts\Adapters\Phpunit\HasPrintableTestCaseName;
-use PHPUnit\Framework\TestCase;
-use Throwable;
-
-/**
- * @internal
- */
-final class TestResult
-{
-    public const FAIL       = 'failed';
-    public const SKIPPED    = 'skipped';
-    public const INCOMPLETE = 'incompleted';
-    public const RISKY      = 'risked';
-    public const WARN       = 'warnings';
-    public const RUNS       = 'pending';
-    public const PASS       = 'passed';
-
-    /**
-     * @readonly
-     *
-     * @var string
-     */
-    public $testCaseName;
-
-    /**
-     * @readonly
-     *
-     * @var string
-     */
-    public $description;
-
-    /**
-     * @readonly
-     *
-     * @var string
-     */
-    public $type;
-
-    /**
-     * @readonly
-     *
-     * @var string
-     */
-    public $icon;
-
-    /**
-     * @readonly
-     *
-     * @var string
-     */
-    public $color;
-
-    /**
-     * @readonly
-     *
-     * @var Throwable|null
-     */
-    public $throwable;
-
-    /**
-     * @readonly
-     *
-     * @var string
-     */
-    public $warning = '';
-
-    /**
-     * Test constructor.
-     */
-    private function __construct(string $testCaseName, string $description, string $type, string $icon, string $color, Throwable $throwable = null)
-    {
-        $this->testCaseName = $testCaseName;
-        $this->description  = $description;
-        $this->type         = $type;
-        $this->icon         = $icon;
-        $this->color        = $color;
-        $this->throwable    = $throwable;
-
-        $asWarning = $this->type === TestResult::WARN
-             || $this->type === TestResult::RISKY
-             || $this->type === TestResult::SKIPPED
-             || $this->type === TestResult::INCOMPLETE;
-
-        if ($throwable instanceof Throwable && $asWarning) {
-            $this->warning     = trim((string) preg_replace("/\r|\n/", ' ', $throwable->getMessage()));
-        }
-    }
-
-    /**
-     * Creates a new test from the given test case.
-     */
-    public static function fromTestCase(TestCase $testCase, string $type, Throwable $throwable = null): self
-    {
-        $testCaseName = State::getPrintableTestCaseName($testCase);
-
-        $description = self::makeDescription($testCase);
-
-        $icon = self::makeIcon($type);
-
-        $color = self::makeColor($type);
-
-        return new self($testCaseName, $description, $type, $icon, $color, $throwable);
-    }
-
-    /**
-     * Get the test case description.
-     */
-    public static function makeDescription(TestCase $testCase): string
-    {
-        $name = $testCase->getName(false);
-
-        if ($testCase instanceof HasPrintableTestCaseName) {
-            return $name;
-        }
-
-        // First, lets replace underscore by spaces.
-        $name = str_replace('_', ' ', $name);
-
-        // Then, replace upper cases by spaces.
-        $name = (string) preg_replace('/([A-Z])/', ' $1', $name);
-
-        // Finally, if it starts with `test`, we remove it.
-        $name = (string) preg_replace('/^test/', '', $name);
-
-        // Removes spaces
-        $name = trim($name);
-
-        // Lower case everything
-        $name = mb_strtolower($name);
-
-        // Add the dataset name if it has one
-        if ($dataName = $testCase->dataName()) {
-            if (is_int($dataName)) {
-                $name .= sprintf(' with data set #%d', $dataName);
-            } else {
-                $name .= sprintf(' with data set "%s"', $dataName);
-            }
-        }
-
-        return $name;
-    }
-
-    /**
-     * Get the test case icon.
-     */
-    public static function makeIcon(string $type): string
-    {
-        switch ($type) {
-            case self::FAIL:
-                return '⨯';
-            case self::SKIPPED:
-                return '-';
-            case self::RISKY:
-                return '!';
-            case self::INCOMPLETE:
-                return '…';
-            case self::WARN:
-                return '!';
-            case self::RUNS:
-                return '•';
-            default:
-                return '✓';
-        }
-    }
-
-    /**
-     * Get the test case color.
-     */
-    public static function makeColor(string $type): string
-    {
-        switch ($type) {
-            case self::FAIL:
-                return 'red';
-            case self::SKIPPED:
-            case self::INCOMPLETE:
-            case self::RISKY:
-            case self::WARN:
-            case self::RUNS:
-                return 'yellow';
-            default:
-                return 'green';
-        }
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

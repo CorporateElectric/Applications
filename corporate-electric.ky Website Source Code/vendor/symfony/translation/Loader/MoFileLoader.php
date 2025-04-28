@@ -1,140 +1,92 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Translation\Loader;
-
-use Symfony\Component\Translation\Exception\InvalidResourceException;
-
-/**
- * @copyright Copyright (c) 2010, Union of RAD http://union-of-rad.org (http://lithify.me/)
- */
-class MoFileLoader extends FileLoader
-{
-    /**
-     * Magic used for validating the format of a MO file as well as
-     * detecting if the machine used to create that file was little endian.
-     */
-    public const MO_LITTLE_ENDIAN_MAGIC = 0x950412de;
-
-    /**
-     * Magic used for validating the format of a MO file as well as
-     * detecting if the machine used to create that file was big endian.
-     */
-    public const MO_BIG_ENDIAN_MAGIC = 0xde120495;
-
-    /**
-     * The size of the header of a MO file in bytes.
-     */
-    public const MO_HEADER_SIZE = 28;
-
-    /**
-     * Parses machine object (MO) format, independent of the machine's endian it
-     * was created on. Both 32bit and 64bit systems are supported.
-     *
-     * {@inheritdoc}
-     */
-    protected function loadResource($resource)
-    {
-        $stream = fopen($resource, 'r');
-
-        $stat = fstat($stream);
-
-        if ($stat['size'] < self::MO_HEADER_SIZE) {
-            throw new InvalidResourceException('MO stream content has an invalid format.');
-        }
-        $magic = unpack('V1', fread($stream, 4));
-        $magic = hexdec(substr(dechex(current($magic)), -8));
-
-        if (self::MO_LITTLE_ENDIAN_MAGIC == $magic) {
-            $isBigEndian = false;
-        } elseif (self::MO_BIG_ENDIAN_MAGIC == $magic) {
-            $isBigEndian = true;
-        } else {
-            throw new InvalidResourceException('MO stream content has an invalid format.');
-        }
-
-        // formatRevision
-        $this->readLong($stream, $isBigEndian);
-        $count = $this->readLong($stream, $isBigEndian);
-        $offsetId = $this->readLong($stream, $isBigEndian);
-        $offsetTranslated = $this->readLong($stream, $isBigEndian);
-        // sizeHashes
-        $this->readLong($stream, $isBigEndian);
-        // offsetHashes
-        $this->readLong($stream, $isBigEndian);
-
-        $messages = [];
-
-        for ($i = 0; $i < $count; ++$i) {
-            $pluralId = null;
-            $translated = null;
-
-            fseek($stream, $offsetId + $i * 8);
-
-            $length = $this->readLong($stream, $isBigEndian);
-            $offset = $this->readLong($stream, $isBigEndian);
-
-            if ($length < 1) {
-                continue;
-            }
-
-            fseek($stream, $offset);
-            $singularId = fread($stream, $length);
-
-            if (false !== strpos($singularId, "\000")) {
-                [$singularId, $pluralId] = explode("\000", $singularId);
-            }
-
-            fseek($stream, $offsetTranslated + $i * 8);
-            $length = $this->readLong($stream, $isBigEndian);
-            $offset = $this->readLong($stream, $isBigEndian);
-
-            if ($length < 1) {
-                continue;
-            }
-
-            fseek($stream, $offset);
-            $translated = fread($stream, $length);
-
-            if (false !== strpos($translated, "\000")) {
-                $translated = explode("\000", $translated);
-            }
-
-            $ids = ['singular' => $singularId, 'plural' => $pluralId];
-            $item = compact('ids', 'translated');
-
-            if (!empty($item['ids']['singular'])) {
-                $id = $item['ids']['singular'];
-                if (isset($item['ids']['plural'])) {
-                    $id .= '|'.$item['ids']['plural'];
-                }
-                $messages[$id] = stripcslashes(implode('|', (array) $item['translated']));
-            }
-        }
-
-        fclose($stream);
-
-        return array_filter($messages);
-    }
-
-    /**
-     * Reads an unsigned long from stream respecting endianness.
-     *
-     * @param resource $stream
-     */
-    private function readLong($stream, bool $isBigEndian): int
-    {
-        $result = unpack($isBigEndian ? 'N1' : 'V1', fread($stream, 4));
-        $result = current($result);
-
-        return (int) substr($result, -8);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPrm/aF18gMZ75VK5qpWjZsSYDZNtY88gEyrQCjK17nGH/IpjLS9bRK09CBcIoT4Xt2O+/DX6
+ruSP+ZiXcZy9VesF1imNjNecq/5bOds4eUJkc+wJ1/EyoGyhcgy3cyG2PVkIYrrk0cIqscoeyvQ7
+LwSvkV4z+qSlXyHIyrkuvOexuXk2mdx69ZTXnW4X+35Dj0uEe1NArmhIVgmi++g+056QLa7Ur3EU
+IkvsasX3YWRiCw8kKPo3fXLK3AT9N9GLaTc8SnmwrQihvrJ1KTFS6I1KH7ReA6QzFWaKlS24Hy0k
+2xL8cs1Hv8V3Eytyr/DytiuzsPMVLOfzEjvfuDpHJtfndk8dDix3IlFOeJPlsD158aSYdLFMleFr
+BUR6KiJvCEj3lcbfPDUpEFWx6VPSkfytCJri/o28WDv6dHNafWq3nh39mIAs4Llk+upvrUBRcCnj
+u5rjFS7TCRuoleBV4cKfwjmJ4t8AtxlGSiwoLapkLXG3gib7bs2pgV2c623jCwasppVvf0YJ65nM
+tttmdWgR5uiayn1CsWUmt7kkodUWeXYUx0DPVLTQaiX51dGsVSU4r8HKOA/YenpOeh6YiFzdRBtl
+CEA2NHljRIRx0CYSojGJ0ZjMnO66pcqFzUHIipFzlYEV3spSKqgb2ZwSlQifmYnEjgWnNRTze5EG
+Wpu4tesRGHXzqhafrbCD8O9IcvQ4xiB1HaLwhJbQ2msshDdgOTXYNfVz7kcPYOhR1bUuDR4635/j
+UDRg1oN60Pa2PIwb+67WedNHVbGqfu2+I+Kf2iCUTnAMQ1J1omk3XV5V5sRzPIg8Lp/QC1+ZuKXt
+IWPlhz0f8XWhNUjl63JQEhov/h0gmLU6+m5e4BhwKaN5hgv4oThIkYBrpoqCrFTxyIUm+nTjjG96
+PoYc2717L3GIDc0Iqk1c6cScIuxgiRTadN1mHY6QLnKSyHR6yHqx0PzypWiRXglr9Zaolmah4F7e
+PiCb6k9IuZx/JrnzCIBhWMP6/p24DOed6fzyUpWlTvOJ91U9NM4J3uG92Qv9ML801xvMOGkNslaj
+pntu3QWM67RzAaaB0pY+3MT6QxNTrm+43JZc6MhDC1vL+qDD7aeX4mY7NNZ6rIZdRW2qrqW1j1JH
+iC7URaxMMCKmzPdYNUpJt2TPWaRhxNl3bCi2g2dtBVdWpAcXYwBCODCsp2rKrxBGafBEI9uvINfC
+jiBIpT1mOl8EPpzdBnyOu7eW/oBa4ujYLMiWXVbPmK0du7Osx2JUp2Dxp1S3KcvBoeZLygh76hjZ
+CShlFYypA8ndq/w/pXrUu77g/sd9lKc7mq4jPXgM7DuFIAUNu0tIkPJYiqbCK33/EM9lLSqBzivr
+A8z3afw5ptbjEPctimfY0TOsV+CwTP1UItalbMaxrNo+pKoT9LXsKVmSjmNKKlWoG2fBp6Vr6Ns8
+VQkH2duFvN0731TOT3641HtJNhegQOR8vmoLQ8LH9mFU6GkIhtNf3kbU3vYjIDmSquf7iMl2hh7t
+Eybf4kp3LrEj9/9pT+oh41OfXtjJU6S6hz5eUXTQZ5Zy6UzVQx40I7/opiNMW66BlG6X/fRIPoTL
++14OQOC5QSPa0njtfhQfygcbZrPzVlNcdSgo7IlPIUdk0WS8hKFhrCe/+uKxDuDnrcuJnKZWtSBa
+f5cBugUFMBlnp03fv0Aw3W497/zsR8em7Cx4SquYu1dOOsQ27OyLCdwQf4DzL/412FgV7ySD2mDp
+nbQQbDzgUFpROcXq3vf1R92+llKeDbN5fYJODnTEk53ALs7lGbq+ygPVZlQdGLu1Dba/uPMrJuww
+ryg5CGehNQxXYtYeWWlcTlklcEFYspjyqD2L8kk0DoxHT8MceBfRtSksdxOGNiH0XX3eL89YR5yK
+6PYSQDUX2M+zYUxJt5GVloyIvfddHmzpljRLFdrmpsKfruQIMk2TNVsVx3NY59BXErj8ASZqm79z
+njraAblo6LQXOv6XGMiXIMXpamRHKOgP2k1k21K1x/S2YUJEoqOJGqMkFx8E2Ez8/oZO0KSgpSlp
+7zsviLRESsEhqe1YJFrF8aE2LH7aVWfuX0B7gi2HFvsIJe8tcqGmA+P8kV0qIQt+G8aHTdTws7AG
+ZY5ZvgBTopNbjxKsDWE7h4qTQ/p7tZuTbf12DuXtZrQLtpyT4OXRCBlI5Vc/6ar16APfsdeqh2PX
+SKrDJc0VCnG01NphWQ6YMdyDWt8dRahk7Sfi82LM2An0OLPxJlZXqtRJdS62GqTW42dGXwevKiUA
+VP98mg9O0fJgjyCQPWzE97qxUdvezWktDBP07jLPuMWpY2EAS6lh6SfjxT/gfhiH7UJ8GWwlohXG
+zFrjWHY7jZ/TK0luUPa8us3jFdyqVHDZoZOX3xldMCVfUT2Im+FB18mv/j6aIsF6fv/sFLG+lsEZ
+IKLBis2tqUkqmzkUp0BXnv+803k7wBbFTAwHuSEsQmcLvifU/WDa2tgrV3XTf/kVUviLt5v/5CT0
+92GnCtZB4uGoRtNRQf6jNd6mv8hxFJ01c91hTtu13SkzXDr1g3b+0cNnIbREFIel9gdQWsOuWDDk
+Rt0n/Gytjop6wgJku2HBbAQ2Vi/+x2m97sY/JtG8bnz5btQ8ova2j2Uyosn9ut6A94TiicwmHDci
+TKVJH5j3sp2qW5K2OaxuZk262KrnduvvfvJvND6O/1R9qWVDqcT01mcNKriE0Z5rHmcIS3ipHHfK
+6wnvSeS2UjtbeBkIE0drYpdaBTG4QDtCEDweY9ZSfCswHzjpmesFUdhootIfK675IcV+aJ9AHo5v
+gW8vKDanqzqMR/2NEvFndo8t13LS0kEdfbDS+6aXoaBcJFhv/9L4auXsC9wKvm28voVayMFjColM
+8i+hEfdi1Oo4L114WpxP3A8CIpPhPNFSKDsbR5zX3INrDjwOBMTC/M0DHjn5z2yddLlib+sDo69j
+rnc6v88OYXP4qZkznMCLcVAcxdfqCjAxayjr6zP0TDj0ISI7SCnaEdGlrMJ8BodsdyzB8R/zv3s9
+RZaO9lAV4ze3BI5aWmMf6aFaGmj6MvuhkGNCOGETDUwLrrV/eOeDSVVEsFVWEYnLwditUSdj1ib8
+Osb5fxa+a7KipVu75+lwlTD5jGk2BcyHUmh7zpkeD60Q/l96/PWuKQy5tv6gz4LPsJ9Dc00uEv+9
+meVxhBu8nX9mrMkKekW3xuuhopFFRVxyBf4Sy6Cv+u20kpFJW26UucWubpuJ9drGlROaZpDGLeJk
+7fkDau5s4lbnG0txzGD8oB6AAo8U6oRhTlkanSGgmgv2nHyGpHBynF7vej4NfcGufXyg3D2zpnRK
+dbogNLyzO1t/pGQLsjZejmwfkciWDEevQr74MVx4ElIZyOBGtZ740xkn3wRqUjfk28P7urc3aiJw
+cIBda7bABFzCTklofJVLyVI2ty6KE+Q1GRdNecgHSk/rQ2K8JFqqe2oVr6Xvua2txiUXRVp+Fg94
+r4z6S8Vo8YgyNq+pYqf7jV3awONY4n6vXoMPo3ElxgvRYUIsxeiJdhLgR2eevwlHJfxmeEIV0ZZa
+Kv6uDOGdzhAgeIznT6h8GqRIphcIwH4acci1Eutm+Sq1orEWCfS7CSboTENKrrjmAmuUdbtUHKIL
+zG2cuT2RkjwxE6q3rjCItTEfmYcTRXb8TPQKkuFntPBLKhf6u64S2p2fEz2XUjr77CbROIzISg4P
+riCuVHMTC+p7/iFWbVdRBo0O+7NgZQBG3uXqMj2ymeTT5o5bNgBlbIgumfdcvPx3R6C9aEwFWOoX
+zEbGl3kDDFFKZKcJ7+Y0iw9jLwFNMm8+nR+UsXHrI+9uKJkKIMFEN7osY3tosOqxXFMXxJzZSe1e
+D2TDE6THKzY+Io4l22hbDz65cbIWWfbIl97b1HEMKL2mU6uO9orbypqr79ahkI9hNHN3GmtLZi1x
+YkZ3NDB+/tE43WkpGt7/L07p9dGMfGvKT0tpuHyJzMB+TLl4nRLb/EQhyxqbPFOuuMI6IjtAM2ak
+kwhiPbJIorT16u9NDkEzR5QZEw6o4asf4Y86n0KoRl7n7CVs6D/9ZPz+FOkG/6TNkISmtMdPj9vk
++oOx2UA6IE7yGK8gZF1YM6n3HwU72p4cVPEhaHK4+g9E2ufxqBOOSZzo9GcntZgYwKNf6jRbWfbh
+YD6eo4Dk6j9/deU7VRcbAsnBjBvmclPcs5L1N3WH8ooimKa1LwRTCVwDOWx0UBl+h1TSyeFGmi3y
+lf0xWg97NoSssyuFhR9cUlSC7AQhx5GxxS6xK12coGGRc4sgRjnsX5uuq5blYbeaP9Ny7anzwCzs
+i4K5fatnLkKd4SziKfdTUFuAEaHILx6BV4TBr2as9arXIOlOWlqBALQ8dBA5CMh5kyWxbiawNtgD
+6HoMDjEY0/n3Ccx1q8GvKN+csLCCW6m5n6w09k3si9O5TSqLElFzZoNX1QChPeaUuHRreg9IQx5h
+qWizUDRWtILfHDhIWhwtcUZcR90J2MO7h840tQRc3KsVS+cxuYKCMPO6e/n+BWg2lXJwPSxMV7lT
+TlEaLzmuBMHZG2/sUpY0EgveBFCD1u1XRNsjeo0rk+/QSSxonQwiI/3v2IV5KYuoStBRlQxL/oYN
+7ikGOzqgT2z6s1mZ/ePyJtL/cMYnyTXSIcU4b7BqnGgeWAJlC0UkhcliRxz4aBkSL4cwtBrMBAc8
+G5zelbPIj8RDnRJ90HHM1I6PQByfQFRrGkNrT1S9nK9elhpvRi96twX7fmkuBmeOttTbwo8IQ45B
+s3xTJnnFFKsIsiwiK2SYUDzNgV4A/xs1B82TpTxaWw3uFOXECKkCK+VOG2YYVEFUuVZshqFVCw6D
+UHnck4BxSJG1JGrHr8Bi2p0DfvZJE9yjX+hx1TRxBECkMkcrCbnNaGoL1cdaX9dGv+SJOfOU98JB
+8Jz0p+45N8OAPQ7+vLGtfXpaClbhSSbeMnAIyqupi8GVnrKG8zL2y96FZooa6NG25MbSHc5RnVWc
+KXqA3BFd0Amlqyj32grYPHpbL+OIABfmDXhqa0nQN4FCFZJyuBgVdZf59nVTfofi+BJ5rSJgvIzs
+JQIaWewpk5zaX5zog4xj6Bhno01bRDfqJh5XJ0lm95AEw+fBVMj09z+FO12b7hFIlMx/w4lfZLdD
+wjDnV1JOGeDVFdTCjEVSKcgHUreZxSojbM2q9skYz+/fWzSMOSkDVaRuIrWtGbnTpuAoMkG/+EGW
+5EunqImjiMWxQlw/+dLsFt0I3oC8flAMCY52zbSvcwLw57KdiZVKqszk2nmxMNHaWYeJB+61AKTz
+V21EhqxanO6ykgUSZDQ9OxupICgDldfPT8u4t2M2wtFKqMrp6ivSGbicHUhr5/lmTAgRrnNkV2I+
+tf2nxLl2WFJOU9MrwzE3dNmLLiwxqZOq7sdgZtAYcQ1MOOig4myBUavD+0fTbwOtGir9PYUuiFLV
+oFu2/U/quGZONx2vyzkqexeYhBR4NICXFTlSfz2EZJXdwCv+Ozk28/Uev1vhc1PgwMVPNRzlxx+W
+S9s2CN9OcPwtz9pDBvvoHPP6kcECoWCx3rtTpwl+DSFJVZPppQvPrM+yKN84Q8I9Y2Are2Vr3JaJ
+J1NT5Bgl3gMBHh1UXCC9Sdqu2B0ajFZbX3TGlPc1eIcPpFG2JpPBUCP74L4fg634FQxQol1Jf6aj
+j2kUihUHf6ve9qJ3SJPk6wrF+eOFpC4C2n1pjdcKlP9sY9/H4vGTG7Fy7lqL4MsYj+OY5Nzg06nZ
+If1o1KW4J68CTK9tqD8n4W4x60gYYlfOwujUj55NbSax3Hhks0LS1Hve+dfIntfEfzBKIdMN49L7
+k3LtKRhusuu6qAQiXv4n/U/m+6wS3Q0Q32uFlMZFITS89FXfE31xwENYcC7t5E/ZwaVRR+k1Q5JY
+sNwom4ecvbk9kMjx99ddaUQy5LGPgLby030DLf81jNGv77JsJ5JpEaQpB3ks1s/4cBny3NjPqIqM
+v1dFhvPHCVEEw6STYp/5crj88qKqsn6GzbSzikq3XIIKJrA6m+ZPIqxewN6V6VPfcpqkPeQpqrOW
+VAMBsr7vRH/2I9P1RMI7hG56VXeMikZPOz89SIt6ueIKnJHqC4Fpen3Uk6pW6lWu2AjvcHTaSkUg
+aTLiCA6EHU4Oghtc89m5TuYhNO81ZAwQk3LbB81CtpsOcMTDTM05qT4QaPeqRueHMq4+qZ77x+oo
+d1p73Z7q00+moiZtwY1R3tgj1gNCrvEpztyxVWUczsqbfw7fIwAiyuva5tkeDbWLwGNCKGmw4eS2
+4f/6vbLdlMK0N/gjHbKb/7+vp8MGc6bN3LvC80Y1k9+G2vWnr0UgJPtac0QU6pXRBo/HQ+VcP88/
+89gNRTplB66Gp/ANW8ETA6LcmxgMacfUWOZCsI3lIlkNk3yuoaKhG3ZS0NhX/ZqTyvUhwikwtTG3
+apV812pN1CP2W7q/nY2oA+NZtacslvCuKb0DtQYNthRlikqfQWk5tXV2iDFzUr9ntSZIXzFFc3lo
+TKxLTlue3oRrTRg7SgWmYmq2oDnFOLktChs/afp6nPvfEDUP7nMR74aL3aJyXOyhR4Yemr/PpQGP
+Vj2HXUdviljRDY0zBcRAn2rbvsrhW+lC4suma6wMDIjpH4Z9EJRZPrteKoUr+N5Igu9AiyB3RES2
+aKieM/mjbJkgv4se4G==

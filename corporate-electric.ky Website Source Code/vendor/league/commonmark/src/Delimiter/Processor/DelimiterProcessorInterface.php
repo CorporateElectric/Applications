@@ -1,86 +1,26 @@
-<?php
-
-/*
- * This file is part of the league/commonmark package.
- *
- * (c) Colin O'Dell <colinodell@gmail.com>
- *
- * Original code based on the CommonMark JS reference parser (https://bitly.com/commonmark-js)
- *  - (c) John MacFarlane
- *
- * Additional emphasis processing code based on commonmark-java (https://github.com/atlassian/commonmark-java)
- *  - (c) Atlassian Pty Ltd
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace League\CommonMark\Delimiter\Processor;
-
-use League\CommonMark\Delimiter\DelimiterInterface;
-use League\CommonMark\Inline\Element\AbstractStringContainer;
-
-/**
- * Interface for a delimiter processor
- */
-interface DelimiterProcessorInterface
-{
-    /**
-     * Returns the character that marks the beginning of a delimited node.
-     *
-     * This must not clash with any other processors being added to the environment.
-     *
-     * @return string
-     */
-    public function getOpeningCharacter(): string;
-
-    /**
-     * Returns the character that marks the ending of a delimited node.
-     *
-     * This must not clash with any other processors being added to the environment.
-     *
-     * Note that for a symmetric delimiter such as "*", this is the same as the opening.
-     *
-     * @return string
-     */
-    public function getClosingCharacter(): string;
-
-    /**
-     * Minimum number of delimiter characters that are needed to active this.
-     *
-     * Must be at least 1.
-     *
-     * @return int
-     */
-    public function getMinLength(): int;
-
-    /**
-     * Determine how many (if any) of the delimiter characters should be used.
-     *
-     * This allows implementations to decide how many characters to be used
-     * based on the properties of the delimiter runs. An implementation can also
-     * return 0 when it doesn't want to allow this particular combination of
-     * delimiter runs.
-     *
-     * @param DelimiterInterface $opener The opening delimiter run
-     * @param DelimiterInterface $closer The closing delimiter run
-     *
-     * @return int
-     */
-    public function getDelimiterUse(DelimiterInterface $opener, DelimiterInterface $closer): int;
-
-    /**
-     * Process the matched delimiters, e.g. by wrapping the nodes between opener
-     * and closer in a new node, or appending a new node after the opener.
-     *
-     * Note that removal of the delimiter from the delimiter nodes and detaching
-     * them is done by the caller.
-     *
-     * @param AbstractStringContainer $opener       The node that contained the opening delimiter
-     * @param AbstractStringContainer $closer       The node that contained the closing delimiter
-     * @param int                     $delimiterUse The number of delimiters that were used
-     *
-     * @return void
-     */
-    public function process(AbstractStringContainer $opener, AbstractStringContainer $closer, int $delimiterUse);
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+HR+cPr3QMD+G/uoX46rXpVoxH8L4LRKsaI5jwgEuaKfkHeEUHlOiMDR5L5gDPhnzd9jyuC7aWTcc
+hYitasY3jcdkHzgOyMdzPRE1H25VPmHXJ2C7WlynbVUycnwDEfyVfW224Vv6HtKouU+mFosYO5YQ
+7BLsZf41Rda7Vn9jLWpzlKnVc5Hq4GL35ITCHJho5uCS9iMUkDN+5tVoCKBunrQWyu+xriHGECbk
+/9WidBwSf9QE4xLeVjNKZ31Bwv/ZyGH7HDREEjMhA+TKmL7Jt1aWL4Hsw7nfvABlf3FRGz/Z8rCi
+2PH8L76+LUTMv0bmRPaUDRtT/2eA0dpRQBhkrLKhKVnjg0QFmD7P9FVMZQ1HM4evDACeJIQuKFhP
+aA3wdEZw0znWU+nF3LpZLguClCeDV7pAqfAEmwdwTeXp10jx127Rgg0urmJ0MuJNI9q7L948+jEV
+VaV34a2x+UnGCio/ORx7ohmNtEzCkmZeU+sNUjnyp4/xoOoB/XO10/NZHgPUAVE8GvDs103KDBPZ
+X1QWUtubRgMgJa2Tig+Km8YlYqDVKWIhz/p+KmorXDGoct+SyAM2fL3YqQlvPXvFvyROKmfjJU2z
+FXY0HGL8ynOHQFHY4dupmi6tPkZzIUpgRgPO0iGSEVE7mucXY2Wo/zwTOFBUxCnJoebWJ360HwCG
+d2sF+lzNcrFAaoSxmXaioShbwZ8t6BkCGGsC2HzJbCNkQfjZfflL78jCARRYRLf4lt2sRxwiPbPZ
+3nFnmtrRsj5+jLJdhbZomDpnFyNqGyRLun9qG2OMBaBw0nNijWBY5SGOAzOIcTY14B1T/gTLbouO
+z182vA2aEnpNVIWZLA0Jdox3R0RH2/SeTLI0g5sqk29zVukSH9OE2cBJfAO9YRqn2yfYb4ig7ia4
+RQBAQDcyGiyLPfuS4W+H4e/WBHfZ7byWtZ4MJkOL84CueYAjssPdbRoeUr5GSA0K+vu1S7WOcHIS
+2qbFd74EqJFbzakeIZSDa37wkhhuGR+XDufnDnX0sYocDNpQ7EYzCltltXTeH8EpzTSlT5NbZVOt
+DAfSupESycjpfZgsrtDYsdBUhF93iCd2kNVJJ7JEXrx6OPYpk9dHd5KDe5un1oKFHbUgc+FCyMkM
+N6pF51QOrBchJkVIHu5sQ1JILVNeUWDJyvBSLK1jjciq2BM3PYzQTx85keTV9p/mXDrcN8O2MkQr
+NU2nr6H75GLKY+1DLimwE8K4ZR3SvnJxeaEW9MzTyeshKpeoBulJk1p9PIjRG0RDLB6s9uuUHf82
+nRgAUWbIyQ615u+wMXgxd5dPL6OSWSdG/3s2ISl+9d9a79AAb4FC+lzEP4ZLekSP/Fk7lTSwzsQn
+e2r1pIB+t1oSps7WgwI/kuD/cBQzgLiqIv24nOvUDIlKmh/WY4Z2eb+uHw0pKcDpsV1+U6FSIp5W
+Z764r4whD5SmwY0uCcjBAXlX3p78W8P81dCl3nmQV8FNxkbj5IQ2lPpjssImGUJPzAW/n0KQpREo
+dyNFOhkRok+O/MmGVl+I7Bqnw/KMCu+jAGs0BRV2o6k58geqsja0IH3YWzUjvM+gor3z/2MtJ1AH
+qBStuIU21/DFHtoCn3uaW1hMyskksjIlwPcigZPgecugzMNAXBgrHtDJWe2d3Sxx7vqJdMsXvU0J
+qUHUHHl8iFm8t7C=

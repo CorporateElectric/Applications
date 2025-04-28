@@ -1,162 +1,64 @@
-<?php
-
-/**
- * Represents a measurable length, with a string numeric magnitude
- * and a unit. This object is immutable.
- */
-class HTMLPurifier_Length
-{
-
-    /**
-     * String numeric magnitude.
-     * @type string
-     */
-    protected $n;
-
-    /**
-     * String unit. False is permitted if $n = 0.
-     * @type string|bool
-     */
-    protected $unit;
-
-    /**
-     * Whether or not this length is valid. Null if not calculated yet.
-     * @type bool
-     */
-    protected $isValid;
-
-    /**
-     * Array Lookup array of units recognized by CSS 3
-     * @type array
-     */
-    protected static $allowedUnits = array(
-        'em' => true, 'ex' => true, 'px' => true, 'in' => true,
-        'cm' => true, 'mm' => true, 'pt' => true, 'pc' => true,
-        'ch' => true, 'rem' => true, 'vw' => true, 'vh' => true,
-        'vmin' => true, 'vmax' => true
-    );
-
-    /**
-     * @param string $n Magnitude
-     * @param bool|string $u Unit
-     */
-    public function __construct($n = '0', $u = false)
-    {
-        $this->n = (string) $n;
-        $this->unit = $u !== false ? (string) $u : false;
-    }
-
-    /**
-     * @param string $s Unit string, like '2em' or '3.4in'
-     * @return HTMLPurifier_Length
-     * @warning Does not perform validation.
-     */
-    public static function make($s)
-    {
-        if ($s instanceof HTMLPurifier_Length) {
-            return $s;
-        }
-        $n_length = strspn($s, '1234567890.+-');
-        $n = substr($s, 0, $n_length);
-        $unit = substr($s, $n_length);
-        if ($unit === '') {
-            $unit = false;
-        }
-        return new HTMLPurifier_Length($n, $unit);
-    }
-
-    /**
-     * Validates the number and unit.
-     * @return bool
-     */
-    protected function validate()
-    {
-        // Special case:
-        if ($this->n === '+0' || $this->n === '-0') {
-            $this->n = '0';
-        }
-        if ($this->n === '0' && $this->unit === false) {
-            return true;
-        }
-        if (!ctype_lower($this->unit)) {
-            $this->unit = strtolower($this->unit);
-        }
-        if (!isset(HTMLPurifier_Length::$allowedUnits[$this->unit])) {
-            return false;
-        }
-        // Hack:
-        $def = new HTMLPurifier_AttrDef_CSS_Number();
-        $result = $def->validate($this->n, false, false);
-        if ($result === false) {
-            return false;
-        }
-        $this->n = $result;
-        return true;
-    }
-
-    /**
-     * Returns string representation of number.
-     * @return string
-     */
-    public function toString()
-    {
-        if (!$this->isValid()) {
-            return false;
-        }
-        return $this->n . $this->unit;
-    }
-
-    /**
-     * Retrieves string numeric magnitude.
-     * @return string
-     */
-    public function getN()
-    {
-        return $this->n;
-    }
-
-    /**
-     * Retrieves string unit.
-     * @return string
-     */
-    public function getUnit()
-    {
-        return $this->unit;
-    }
-
-    /**
-     * Returns true if this length unit is valid.
-     * @return bool
-     */
-    public function isValid()
-    {
-        if ($this->isValid === null) {
-            $this->isValid = $this->validate();
-        }
-        return $this->isValid;
-    }
-
-    /**
-     * Compares two lengths, and returns 1 if greater, -1 if less and 0 if equal.
-     * @param HTMLPurifier_Length $l
-     * @return int
-     * @warning If both values are too large or small, this calculation will
-     *          not work properly
-     */
-    public function compareTo($l)
-    {
-        if ($l === false) {
-            return false;
-        }
-        if ($l->unit !== $this->unit) {
-            $converter = new HTMLPurifier_UnitConverter();
-            $l = $converter->convert($l, $this->unit);
-            if ($l === false) {
-                return false;
-            }
-        }
-        return $this->n - $l->n;
-    }
-}
-
-// vim: et sw=4 sts=4
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+ke56ePubrwy=

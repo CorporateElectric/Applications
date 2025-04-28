@@ -1,85 +1,33 @@
-<?php
-
-namespace PhpOffice\PhpSpreadsheet\Cell;
-
-use PhpOffice\PhpSpreadsheet\RichText\RichText;
-use PhpOffice\PhpSpreadsheet\Shared\StringHelper;
-
-class DataType
-{
-    // Data types
-    const TYPE_STRING2 = 'str';
-    const TYPE_STRING = 's';
-    const TYPE_FORMULA = 'f';
-    const TYPE_NUMERIC = 'n';
-    const TYPE_BOOL = 'b';
-    const TYPE_NULL = 'null';
-    const TYPE_INLINE = 'inlineStr';
-    const TYPE_ERROR = 'e';
-
-    /**
-     * List of error codes.
-     *
-     * @var array
-     */
-    private static $errorCodes = [
-        '#NULL!' => 0,
-        '#DIV/0!' => 1,
-        '#VALUE!' => 2,
-        '#REF!' => 3,
-        '#NAME?' => 4,
-        '#NUM!' => 5,
-        '#N/A' => 6,
-    ];
-
-    /**
-     * Get list of error codes.
-     *
-     * @return array
-     */
-    public static function getErrorCodes()
-    {
-        return self::$errorCodes;
-    }
-
-    /**
-     * Check a string that it satisfies Excel requirements.
-     *
-     * @param null|RichText|string $pValue Value to sanitize to an Excel string
-     *
-     * @return null|RichText|string Sanitized value
-     */
-    public static function checkString($pValue)
-    {
-        if ($pValue instanceof RichText) {
-            // TODO: Sanitize Rich-Text string (max. character count is 32,767)
-            return $pValue;
-        }
-
-        // string must never be longer than 32,767 characters, truncate if necessary
-        $pValue = StringHelper::substring($pValue, 0, 32767);
-
-        // we require that newline is represented as "\n" in core, not as "\r\n" or "\r"
-        $pValue = str_replace(["\r\n", "\r"], "\n", $pValue);
-
-        return $pValue;
-    }
-
-    /**
-     * Check a value that it is a valid error code.
-     *
-     * @param mixed $pValue Value to sanitize to an Excel error code
-     *
-     * @return string Sanitized value
-     */
-    public static function checkErrorCode($pValue)
-    {
-        $pValue = (string) $pValue;
-
-        if (!isset(self::$errorCodes[$pValue])) {
-            $pValue = '#NULL!';
-        }
-
-        return $pValue;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

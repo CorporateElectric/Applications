@@ -1,226 +1,64 @@
-<?php
-
-/**
- * This file is part of the ramsey/collection library
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @copyright Copyright (c) Ben Ramsey <ben@benramsey.com>
- * @license http://opensource.org/licenses/MIT MIT
- */
-
-declare(strict_types=1);
-
-namespace Ramsey\Collection;
-
-use Ramsey\Collection\Exception\InvalidArgumentException;
-use Ramsey\Collection\Exception\NoSuchElementException;
-use Ramsey\Collection\Tool\TypeTrait;
-use Ramsey\Collection\Tool\ValueToStringTrait;
-
-/**
- * This class provides a basic implementation of `QueueInterface`, to minimize
- * the effort required to implement this interface.
- */
-class Queue extends AbstractArray implements QueueInterface
-{
-    use TypeTrait;
-    use ValueToStringTrait;
-
-    /**
-     * The type of elements stored in this queue.
-     *
-     * A queue's type is immutable once it is set. For this reason, this
-     * property is set private.
-     *
-     * @var string
-     */
-    private $queueType;
-
-    /**
-     * The index of the head of the queue.
-     *
-     * @var int
-     */
-    protected $index = 0;
-
-    /**
-     * Constructs a queue object of the specified type, optionally with the
-     * specified data.
-     *
-     * @param string $queueType The type (FQCN) associated with this queue.
-     * @param mixed[] $data The initial items to store in the collection.
-     */
-    public function __construct(string $queueType, array $data = [])
-    {
-        $this->queueType = $queueType;
-        parent::__construct($data);
-    }
-
-    /**
-     * Sets the given value to the given offset in the queue.
-     *
-     * Since arbitrary offsets may not be manipulated in a queue, this method
-     * serves only to fulfill the `ArrayAccess` interface requirements. It is
-     * invoked by other operations when adding values to the queue.
-     *
-     * @link http://php.net/manual/en/arrayaccess.offsetset.php ArrayAccess::offsetSet()
-     *
-     * @param mixed|null $offset The offset is ignored and is treated as `null`.
-     * @param mixed $value The value to set at the given offset.
-     *
-     * @throws InvalidArgumentException when the value does not match the
-     *     specified type for this queue.
-     */
-    public function offsetSet($offset, $value): void
-    {
-        if ($this->checkType($this->getType(), $value) === false) {
-            throw new InvalidArgumentException(
-                'Value must be of type ' . $this->getType() . '; value is '
-                . $this->toolValueToString($value)
-            );
-        }
-
-        $this->data[] = $value;
-    }
-
-    /**
-     * Ensures that this queue contains the specified element.
-     *
-     * This method differs from `offer()` only in that it throws an exception if
-     * it cannot add the element to the queue.
-     *
-     * @see self::offer()
-     *
-     * @param mixed $element The element to add to this queue.
-     *
-     * @return bool `true` if this queue changed as a result of the call.
-     *
-     * @throws InvalidArgumentException when the element does not match the
-     *     specified type for this queue.
-     */
-    public function add($element): bool
-    {
-        $this[] = $element;
-
-        return true;
-    }
-
-    /**
-     * Retrieves, but does not remove, the head of this queue.
-     *
-     * This method differs from `peek()` only in that it throws an exception if
-     * this queue is empty.
-     *
-     * @see self::peek()
-     *
-     * @return mixed the head of this queue.
-     *
-     * @throws NoSuchElementException if this queue is empty.
-     */
-    public function element()
-    {
-        if ($this->count() === 0) {
-            throw new NoSuchElementException(
-                'Can\'t return element from Queue. Queue is empty.'
-            );
-        }
-
-        return $this[$this->index];
-    }
-
-    /**
-     * Inserts the specified element into this queue.
-     *
-     * This method differs from `add()` only in that it does not throw an
-     * exception if it cannot add the element to the queue.
-     *
-     * @see self::add()
-     *
-     * @param mixed $element The element to add to this queue.
-     *
-     * @return bool `true` if the element was added to this queue, else `false`.
-     */
-    public function offer($element): bool
-    {
-        try {
-            return $this->add($element);
-        } catch (InvalidArgumentException $e) {
-            return false;
-        }
-    }
-
-    /**
-     * Retrieves, but does not remove, the head of this queue, or returns `null`
-     * if this queue is empty.
-     *
-     * @see self::element()
-     *
-     * @return mixed|null the head of this queue, or `null` if this queue is empty.
-     */
-    public function peek()
-    {
-        if ($this->count() === 0) {
-            return null;
-        }
-
-        return $this[$this->index];
-    }
-
-    /**
-     * Retrieves and removes the head of this queue, or returns `null`
-     * if this queue is empty.
-     *
-     * @see self::remove()
-     *
-     * @return mixed|null the head of this queue, or `null` if this queue is empty.
-     */
-    public function poll()
-    {
-        if ($this->count() === 0) {
-            return null;
-        }
-
-        $head = $this[$this->index];
-
-        unset($this[$this->index]);
-        $this->index++;
-
-        return $head;
-    }
-
-    /**
-     * Retrieves and removes the head of this queue.
-     *
-     * This method differs from `poll()` only in that it throws an exception if
-     * this queue is empty.
-     *
-     * @see self::poll()
-     *
-     * @return mixed the head of this queue.
-     *
-     * @throws NoSuchElementException if this queue is empty.
-     */
-    public function remove()
-    {
-        if ($this->count() === 0) {
-            throw new NoSuchElementException('Can\'t return element from Queue. Queue is empty.');
-        }
-
-        $head = $this[$this->index];
-
-        unset($this[$this->index]);
-        $this->index++;
-
-        return $head;
-    }
-
-    /**
-     * Returns the type associated with this queue.
-     */
-    public function getType(): string
-    {
-        return $this->queueType;
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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

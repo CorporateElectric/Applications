@@ -1,118 +1,55 @@
-<?php
-
-/**
- * This file is part of the ramsey/collection library
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- *
- * @copyright Copyright (c) Ben Ramsey <ben@benramsey.com>
- * @license http://opensource.org/licenses/MIT MIT
- */
-
-declare(strict_types=1);
-
-namespace Ramsey\Collection\Map;
-
-use Ramsey\Collection\Exception\InvalidArgumentException;
-use Ramsey\Collection\Tool\TypeTrait;
-use Ramsey\Collection\Tool\ValueToStringTrait;
-
-use function array_combine;
-use function array_key_exists;
-use function is_int;
-
-/**
- * `NamedParameterMap` represents a mapping of values to a set of named keys
- * that may optionally be typed
- */
-class NamedParameterMap extends AbstractMap
-{
-    use TypeTrait;
-    use ValueToStringTrait;
-
-    /**
-     * Named parameters defined for this map.
-     *
-     * @var array<mixed, string>
-     */
-    protected $namedParameters;
-
-    /**
-     * Constructs a new `NamedParameterMap`.
-     *
-     * @param array<mixed, string> $namedParameters The named parameters defined for this map.
-     * @param mixed[] $data An initial set of data to set on this map.
-     */
-    public function __construct(array $namedParameters, array $data = [])
-    {
-        $this->namedParameters = $this->filterNamedParameters($namedParameters);
-        parent::__construct($data);
-    }
-
-    /**
-     * Returns named parameters set for this `NamedParameterMap`.
-     *
-     * @return array<mixed, string>
-     */
-    public function getNamedParameters(): array
-    {
-        return $this->namedParameters;
-    }
-
-    /**
-     * Sets the given value to the given offset in the map.
-     *
-     * @param mixed $offset The offset to set.
-     * @param mixed $value The value to set at the given offset.
-     *
-     * @throws InvalidArgumentException if the offset provided is not a
-     *     defined named parameter, or if the value is not of the type defined
-     *     for the given named parameter.
-     */
-    public function offsetSet($offset, $value): void
-    {
-        if (!array_key_exists($offset, $this->namedParameters)) {
-            throw new InvalidArgumentException(
-                'Attempting to set value for unconfigured parameter \''
-                . $offset . '\''
-            );
-        }
-
-        if ($this->checkType($this->namedParameters[$offset], $value) === false) {
-            throw new InvalidArgumentException(
-                'Value for \'' . $offset . '\' must be of type '
-                . $this->namedParameters[$offset] . '; value is '
-                . $this->toolValueToString($value)
-            );
-        }
-
-        $this->data[$offset] = $value;
-    }
-
-    /**
-     * Given an array of named parameters, constructs a proper mapping of
-     * named parameters to types.
-     *
-     * @param array<mixed, string> $namedParameters The named parameters to filter.
-     *
-     * @return array<mixed, string>
-     */
-    protected function filterNamedParameters(array $namedParameters): array
-    {
-        $names = [];
-        $types = [];
-
-        foreach ($namedParameters as $key => $value) {
-            if (is_int($key)) {
-                $names[] = (string) $value;
-                $types[] = 'mixed';
-            } else {
-                $names[] = $key;
-                $types[] = (string) $value;
-            }
-        }
-
-        return array_combine($names, $types) ?: [];
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
+UyVxTFriqMGx1WgshanDGm==

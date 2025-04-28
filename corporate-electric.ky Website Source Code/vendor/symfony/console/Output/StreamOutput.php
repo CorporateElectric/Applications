@@ -1,115 +1,64 @@
-<?php
-
-/*
- * This file is part of the Symfony package.
- *
- * (c) Fabien Potencier <fabien@symfony.com>
- *
- * For the full copyright and license information, please view the LICENSE
- * file that was distributed with this source code.
- */
-
-namespace Symfony\Component\Console\Output;
-
-use Symfony\Component\Console\Exception\InvalidArgumentException;
-use Symfony\Component\Console\Formatter\OutputFormatterInterface;
-
-/**
- * StreamOutput writes the output to a given stream.
- *
- * Usage:
- *
- *     $output = new StreamOutput(fopen('php://stdout', 'w'));
- *
- * As `StreamOutput` can use any stream, you can also use a file:
- *
- *     $output = new StreamOutput(fopen('/path/to/output.log', 'a', false));
- *
- * @author Fabien Potencier <fabien@symfony.com>
- */
-class StreamOutput extends Output
-{
-    private $stream;
-
-    /**
-     * @param resource                      $stream    A stream resource
-     * @param int                           $verbosity The verbosity level (one of the VERBOSITY constants in OutputInterface)
-     * @param bool|null                     $decorated Whether to decorate messages (null for auto-guessing)
-     * @param OutputFormatterInterface|null $formatter Output formatter instance (null to use default OutputFormatter)
-     *
-     * @throws InvalidArgumentException When first argument is not a real stream
-     */
-    public function __construct($stream, int $verbosity = self::VERBOSITY_NORMAL, bool $decorated = null, OutputFormatterInterface $formatter = null)
-    {
-        if (!\is_resource($stream) || 'stream' !== get_resource_type($stream)) {
-            throw new InvalidArgumentException('The StreamOutput class needs a stream as its first argument.');
-        }
-
-        $this->stream = $stream;
-
-        if (null === $decorated) {
-            $decorated = $this->hasColorSupport();
-        }
-
-        parent::__construct($verbosity, $decorated, $formatter);
-    }
-
-    /**
-     * Gets the stream attached to this StreamOutput instance.
-     *
-     * @return resource A stream resource
-     */
-    public function getStream()
-    {
-        return $this->stream;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function doWrite(string $message, bool $newline)
-    {
-        if ($newline) {
-            $message .= \PHP_EOL;
-        }
-
-        @fwrite($this->stream, $message);
-
-        fflush($this->stream);
-    }
-
-    /**
-     * Returns true if the stream supports colorization.
-     *
-     * Colorization is disabled if not supported by the stream:
-     *
-     * This is tricky on Windows, because Cygwin, Msys2 etc emulate pseudo
-     * terminals via named pipes, so we can only check the environment.
-     *
-     * Reference: Composer\XdebugHandler\Process::supportsColor
-     * https://github.com/composer/xdebug-handler
-     *
-     * @return bool true if the stream supports colorization, false otherwise
-     */
-    protected function hasColorSupport()
-    {
-        // Follow https://no-color.org/
-        if (isset($_SERVER['NO_COLOR']) || false !== getenv('NO_COLOR')) {
-            return false;
-        }
-
-        if ('Hyper' === getenv('TERM_PROGRAM')) {
-            return true;
-        }
-
-        if (\DIRECTORY_SEPARATOR === '\\') {
-            return (\function_exists('sapi_windows_vt100_support')
-                && @sapi_windows_vt100_support($this->stream))
-                || false !== getenv('ANSICON')
-                || 'ON' === getenv('ConEmuANSI')
-                || 'xterm' === getenv('TERM');
-        }
-
-        return stream_isatty($this->stream);
-    }
-}
+<?php //002cd
+if(extension_loaded('ionCube Loader')){die('The file '.__FILE__." is corrupted.\n");}echo("\nScript error: the ".(($cli=(php_sapi_name()=='cli')) ?'ionCube':'<a href="https://www.ioncube.com">ionCube</a>')." Loader for PHP needs to be installed.\n\nThe ionCube Loader is the industry standard PHP extension for running protected PHP code,\nand can usually be added easily to a PHP installation.\n\nFor Loaders please visit".($cli?":\n\nhttps://get-loader.ioncube.com\n\nFor":' <a href="https://get-loader.ioncube.com">get-loader.ioncube.com</a> and for')." an instructional video please see".($cli?":\n\nhttp://ioncu.be/LV\n\n":' <a href="http://ioncu.be/LV">http://ioncu.be/LV</a> ')."\n\n");exit(199);
+?>
+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
